@@ -61,15 +61,22 @@ struct Functions {
     Real dtime;                     // model phsyics time step [s]
     bool is_first_step;             // flag for first call
 
-    static constexpr int num_2d_midlv_c_views = 2;
-    static constexpr int num_2d_midlv_f_views = 10;
-    static constexpr int num_2d_intfc_c_views = 1;
-    static constexpr int num_2d_intfc_f_views = 2;
+    static constexpr int num_1d_scalr_views   = 1;  // number of 1D scalar variables
+    static constexpr int num_1d_intgr_views   = 0;  // number of 1D integer variables
+    static constexpr int num_2d_midlv_c_views = 2;  // number of 2D variables on mid-point levels
+    static constexpr int num_2d_intfc_c_views = 1;  // number of 2D variables on interface levels
+    static constexpr int num_2d_midlv_f_views = 10; // number of 2D variables on mid-point levels
+    static constexpr int num_2d_intfc_f_views = 2;  // number of 2D variables on interface levels
 
-    view_1d<const Scalar> phis;     // surface geopotential height  [m2/s]
+    uview_1d<     Scalar> tpert;    // temperature perturbation at top of PBL
+
     uview_2d<     Spack>  z_mid;    // mid-point level altitude     [m]
-    uview_2d<     Spack>  z_int;    // interface level altitude     [m]
     uview_2d<     Spack>  z_del;    // altitude thickness           [m]
+
+    uview_2d<     Spack>  z_int;    // interface level altitude     [m]
+
+    // variables we get from the field manager
+    view_1d<const Scalar> phis;     // surface geopotential height  [m2/s]
     view_2d<const Spack>  p_mid;    // mid-point level pressure     [Pa]
     view_2d<const Spack>  p_int;    // interface level pressure     [Pa]
     view_2d<const Spack>  p_del;    // pressure thickness           [Pa]
@@ -85,11 +92,8 @@ struct Functions {
 
     // unmanaged LayoutLeft views for fortran bridging
     uview_2dl<Real>  f_z_mid;
-    uview_2dl<Real>  f_z_int;
     uview_2dl<Real>  f_p_mid;
-    uview_2dl<Real>  f_p_int;
     uview_2dl<Real>  f_p_del;
-
     uview_2dl<Real>  f_T_mid;
     uview_2dl<Real>  f_qv;
     uview_2dl<Real>  f_qc;
@@ -97,6 +101,9 @@ struct Functions {
     uview_2dl<Real>  f_vwind;
     uview_2dl<Real>  f_omega;
     uview_2dl<Real>  f_cldfrac;
+
+    uview_2dl<Real>  f_z_int;
+    uview_2dl<Real>  f_p_int;
 
     // -------------------------------------------------------------------------
     // vectors for alternate transpose method
@@ -127,20 +134,20 @@ struct Functions {
       if (D == ekat::TransposeDirection::c2f) {
         for (int i=0; i<ncol_in; ++i) {
           for (int j=0; j<pver_in; ++j) {
-            f_z_mid   (i,j) = z_mid   (i, j / Spack::n)[j % Spack::n];
-            f_p_mid   (i,j) = p_mid   (i, j / Spack::n)[j % Spack::n];
-            f_p_del   (i,j) = p_del   (i, j / Spack::n)[j % Spack::n];
-            f_T_mid   (i,j) = T_mid   (i, j / Spack::n)[j % Spack::n];
-            f_qv      (i,j) = qv      (i, j / Spack::n)[j % Spack::n];
-            f_qc      (i,j) = qc      (i, j / Spack::n)[j % Spack::n];
-            f_uwind   (i,j) = uwind   (i, j / Spack::n)[j % Spack::n];
-            f_vwind   (i,j) = vwind   (i, j / Spack::n)[j % Spack::n];
-            f_omega   (i,j) = omega   (i, j / Spack::n)[j % Spack::n];
-            f_cldfrac (i,j) = cldfrac (i, j / Spack::n)[j % Spack::n];
+            f_z_mid   (i,j) = z_mid   (i,j/Spack::n)[j%Spack::n];
+            f_p_mid   (i,j) = p_mid   (i,j/Spack::n)[j%Spack::n];
+            f_p_del   (i,j) = p_del   (i,j/Spack::n)[j%Spack::n];
+            f_T_mid   (i,j) = T_mid   (i,j/Spack::n)[j%Spack::n];
+            f_qv      (i,j) = qv      (i,j/Spack::n)[j%Spack::n];
+            f_qc      (i,j) = qc      (i,j/Spack::n)[j%Spack::n];
+            f_uwind   (i,j) = uwind   (i,j/Spack::n)[j%Spack::n];
+            f_vwind   (i,j) = vwind   (i,j/Spack::n)[j%Spack::n];
+            f_omega   (i,j) = omega   (i,j/Spack::n)[j%Spack::n];
+            f_cldfrac (i,j) = cldfrac (i,j/Spack::n)[j%Spack::n];
           }
           for (int j=0; j<pverp; ++j) {
-            f_z_int(i,j) = z_int(i, j / Spack::n)[j % Spack::n];
-            f_p_int(i,j) = p_int(i, j / Spack::n)[j % Spack::n];
+            f_z_int   (i,j) = z_int   (i,j/Spack::n)[j%Spack::n];
+            f_p_int   (i,j) = p_int   (i,j/Spack::n)[j%Spack::n];
           }
         }
       }
@@ -151,18 +158,21 @@ struct Functions {
   struct zm_output_tend {
     zm_output_tend() = default;
 
-    static constexpr int num_1d_scalr_views   = 3; // number of 1D variables
-    static constexpr int num_2d_midlv_c_views = 6; // number of 2D variables on mid-point levels
-    static constexpr int num_2d_midlv_f_views = 6; // number of 2D variables on mid-point levels
-    static constexpr int num_2d_intfc_c_views = 3; // number of 2D variables on interface levels
-    static constexpr int num_2d_intfc_f_views = 3; // number of 2D variables on interface levels
+    static constexpr int num_1d_intgr_views   = 1;  // number of 1D integer variables
+    static constexpr int num_1d_scalr_views   = 3;  // number of 1D scalar variables
+    static constexpr int num_2d_midlv_c_views = 6;  // number of 2D variables on mid-point levels
+    static constexpr int num_2d_intfc_c_views = 3;  // number of 2D variables on interface levels
+    static constexpr int num_2d_midlv_f_views = 6;  // number of 2D variables on mid-point levels
+    static constexpr int num_2d_intfc_f_views = 3;  // number of 2D variables on interface levels
+
+    uview_1d<Int>    activity;       // integer deep convection activity flag
 
     uview_1d<Scalar> prec;           // surface precipitation                   [m/s]
     uview_1d<Scalar> snow;           // surface snow                            [m/s]
-
     uview_1d<Scalar> cape;           // convective available potential energy   [J]
+
     uview_2d<Spack>  tend_s;         // output tendency of dry static energy    []
-    uview_2d<Spack>  tend_qv;         // output tendency of water vapor          []
+    uview_2d<Spack>  tend_qv;        // output tendency of water vapor          []
     uview_2d<Spack>  tend_u;         // output tendency of zonal wind           []
     uview_2d<Spack>  tend_v;         // output tendency of meridional wind      []
     uview_2d<Spack>  rain_prod;      // rain production rate
@@ -238,6 +248,7 @@ struct Functions {
         prec(i) = init_fill_value;
         snow(i) = init_fill_value;
         cape(i) = init_fill_value;
+        activity(i) = -1;
       }
       // mid-point level variables
       for (int i=0; i<ncol_in; ++i) {
