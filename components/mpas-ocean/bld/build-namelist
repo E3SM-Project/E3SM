@@ -743,26 +743,8 @@ add_default($nl, 'config_precip_scaling_write_to_logfile');
 # Namelist group: coupling #
 ############################
 
-# When we have a data representation of icebergs, remove ice runoff
-if ($OCN_ICEBERG eq 'true') {
-	add_default($nl, 'config_remove_ais_ice_runoff', 'val'=>".true.");
-} else {
-	add_default($nl, 'config_remove_ais_ice_runoff', 'val'=>".false.");
-}
-# Assume river runoff corresponds to ISMF in Southern Ocean only for G-cases
-# (true for JRA). When atm active, we assume liquid runoff corresonds to precip
-# or snow melt so we do not remove it. In either case, the energy for melting
-# doesn't come from the ocean.
-if ((   ($OCN_GLC_ISMF_COUPLING eq 'coupler')
-     || ($OCN_GLC_ISMF_COUPLING eq 'internal_mpaso')
-     || ($OCN_GLC_ISMF_COUPLING eq 'data_mpaso')
-    )
-    && ($OCN_FORCING ne 'active_atm'))
-{
-	add_default($nl, 'config_remove_ais_river_runoff', 'val'=>".true.");
-} else {
-	add_default($nl, 'config_remove_ais_river_runoff', 'val'=>".false.");
-}
+add_default($nl, 'config_remove_ais_ice_runoff');
+add_default($nl, 'config_remove_ais_river_runoff');
 add_default($nl, 'config_scale_dismf_by_removed_ice_runoff');
 add_default($nl, 'config_ais_ice_runoff_history_days');
 add_default($nl, 'config_n_glc_z_levels', 'val'=>"$GLC_NZOC");

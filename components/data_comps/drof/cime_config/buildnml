@@ -42,6 +42,12 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen, data_list_path
     rof_domain_path = case.get_value("ROF_DOMAIN_PATH")
     drof_mode = case.get_value("DROF_MODE")
     rof_grid = case.get_value("ROF_GRID")
+    ocn_iceberg = case.get_value("MPASO_ICEBERG")
+    ocn_glc_ismf_coupling = case.get_value("OCN_GLC_ISMF_COUPLING")
+    ocn_forcing = case.get_value("MPASO_FORCING")
+    comp_glc = case.get_value("COMP_GLC")
+    mali_prognostic_mode = case.get_value("MALI_PROGNOSTIC_MODE")
+    glc_grid = case.get_value("GLC_GRID")
 
     #----------------------------------------------------
     # Check for incompatible options.
@@ -109,6 +115,34 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen, data_list_path
             nmlgen.add_default("domainfile", value=full_domain_path)
         else:
             nmlgen.add_default("domainfile", value="null")
+
+    #----------------------------------------------------
+    # Set runoff modifications for ice sheets if needed
+    #----------------------------------------------------
+    if ocn_iceberg == 'true':
+        print('Setting remove_ais_rofi to .true.')
+        nmlgen.set_value("remove_ais_rofi", '.true.')
+    elif comp_glc =='mali' and mali_prognostic_mode == 'PROGNOSTIC'):
+        if 'ais' in glc_grid:
+            print('Setting remove_ais_rofi to .true.')
+            nmlgen.set_value("remove_ais_rofi", '.true.')
+        if 'gis' in glc_grid:
+            print('Setting remove_gis_rofi to .true.')
+            nmlgen.set_value("remove_gis_rofi", '.true.')
+
+    if (((ocn_glc_ismf_coupling == 'coupler') or
+         (ocn_glc_ismf_coupling == 'internal_mpaso') or
+         (ocn_glc_ismf_coupling == 'data_mpaso'))
+        and (ocn_forcing != 'active_atm')):
+        print('Setting remove_ais_rofl to .true.')
+        nmlgen.set_value("remove_ais_rofl", '.true.')
+    elif (ocn_glc_ismf_coupling == 'tf'
+          and ocn_forcing != 'active_atm'):
+        if 'ais' in glc_grid:
+            print('Setting remove_ais_rofl to .true.')
+            nmlgen.set_value("remove_ais_rofl", '.true.')
+        # Don't handle GIS because DROF rofl will be a large part
+        # surface runoff and not from ISMF
 
     #----------------------------------------------------
     # Finally, write out all the namelists.
