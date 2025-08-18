@@ -1,5 +1,8 @@
 #include "diagnostics/histogram.hpp"
 
+#include <ekat_team_policy_utils.hpp>
+
+
 namespace scream {
 
 HistogramDiag::HistogramDiag(const ekat::Comm &comm, const ekat::ParameterList &params)
@@ -73,13 +76,13 @@ void HistogramDiag::compute_diagnostic_impl() {
   using KT         = ekat::KokkosTypes<DefaultDevice>;
   using TeamPolicy = Kokkos::TeamPolicy<Field::device_t::execution_space>;
   using TeamMember = typename TeamPolicy::member_type;
-  using ESU        = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
+  using TPF        = ekat::TeamPolicyFactory<typename KT::ExeSpace>;
   switch (field_layout.rank())
   {
     case 1: {
       const int d1 = field_layout.dim(0);
       auto field_view = field.get_view<const Real *>();
-      TeamPolicy team_policy = ESU::get_default_team_policy(num_bins, d1);
+      TeamPolicy team_policy = TPF::get_default_team_policy(num_bins, d1);
       Kokkos::parallel_for("compute_histogram_" + field.name(), team_policy,
           KOKKOS_LAMBDA(const TeamMember &tm) {
             const int bin_i = tm.league_rank();
@@ -97,7 +100,7 @@ void HistogramDiag::compute_diagnostic_impl() {
       const int d1 = field_layout.dim(0);
       const int d2 = field_layout.dim(1);
       auto field_view = field.get_view<const Real **>();
-      TeamPolicy team_policy = ESU::get_default_team_policy(num_bins, d1*d2);
+      TeamPolicy team_policy = TPF::get_default_team_policy(num_bins, d1*d2);
       Kokkos::parallel_for("compute_histogram_" + field.name(), team_policy,
           KOKKOS_LAMBDA(const TeamMember &tm) {
             const int bin_i = tm.league_rank();
@@ -119,7 +122,7 @@ void HistogramDiag::compute_diagnostic_impl() {
       const int d2 = field_layout.dim(1);
       const int d3 = field_layout.dim(2);
       auto field_view = field.get_view<const Real ***>();
-      TeamPolicy team_policy = ESU::get_default_team_policy(num_bins, d1*d2*d3);
+      TeamPolicy team_policy = TPF::get_default_team_policy(num_bins, d1*d2*d3);
       Kokkos::parallel_for("compute_histogram_" + field.name(), team_policy,
           KOKKOS_LAMBDA(const TeamMember &tm) {
             const int bin_i = tm.league_rank();

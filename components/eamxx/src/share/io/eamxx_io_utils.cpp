@@ -247,11 +247,6 @@ create_diagnostic (const std::string& diag_field_name,
     params.set<std::string>("condition_field", matches[2].str());
     params.set<std::string>("condition_operator", matches[3].str());
     params.set<std::string>("condition_value", matches[4].str());
-  else if (std::regex_search(diag_field_name,matches,histogram)) {
-    diag_name = "HistogramDiag";
-    params.set("grid_name", grid->name());
-    params.set<std::string>("field_name", matches[1].str());
-    params.set<std::string>("bin_configuration", matches[2].str());
   }
   else if (std::regex_search(diag_field_name,matches,binary_ops)) {
     diag_name = "BinaryOpsDiag";
@@ -259,6 +254,12 @@ create_diagnostic (const std::string& diag_field_name,
     params.set<std::string>("field_1", matches[1].str());
     params.set<std::string>("field_2", matches[3].str());
     params.set<std::string>("binary_op", matches[2].str());
+  }
+  else if (std::regex_search(diag_field_name,matches,histogram)) {
+    diag_name = "HistogramDiag";
+    params.set("grid_name", grid->name());
+    params.set<std::string>("field_name", matches[1].str());
+    params.set<std::string>("bin_configuration", matches[2].str());
   }
   else
   {
