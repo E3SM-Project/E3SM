@@ -22,30 +22,6 @@ class zm_deep_convection : public AtmosphereProcess
   using Spack                = typename ZMF::Spack;
   using SPackInt             = typename ZMF::SPackInt;
 
-  // using view_1d_int          = typename KT::template view_1d<Int>;
-  // using view_1d              = typename ZMF::view_1d<Real>;
-  // using view_1d_const        = typename ZMF::view_1d<const Real>;
-  // using view_2d              = typename ZMF::view_2d<ZMF::Spack>;
-  // using view_2dl             = typename ZMF::view_2dl<ZMF::Spack>;
-  // using view_2d_const        = typename ZMF::view_2d<const Spack>;
-  // using view_3d              = typename ZMF::view_3d<Spack>;
-  // using view_3d_const        = typename ZMF::view_3d<const Spack>;
-  // using view_3d_strided      = typename ZMF::view_3d_strided<Spack>;
-  // using uview_1d  = Unmanaged<view_1d>;
-  // using uview_2d  = Unmanaged<view_2d>;
-  // using uview_2dl = Unmanaged<view_2dl>;
-
-  // using view_1d           = ZMF::view_1d;
-  // using view_2d           = ZMF::view_2d;
-  // using view_2dl          = ZMF::view_2dl;
-  // using view_3d           = ZMF::view_3d;
-  // using view_2d_strided   = ZMF::view_2d_strided;
-  // using view_3d_strided   = ZMF::view_3d_strided;
-  // using uview_1d          = ZMF::uview_1d;
-  // using uview_2d          = ZMF::uview_2d;
-  // using uview_2dl         = ZMF::uview_2dl;
-  // using uview_2d_strided  = ZMF::uview_2d_strided;
-
   public:
 
     // Constructors
@@ -82,7 +58,6 @@ class zm_deep_convection : public AtmosphereProcess
     ZMF::zm_input_state zm_input;
     ZMF::zm_output_tend zm_output;
     ZMF::zm_output_diag zm_diag;
-    // ZMF::zm_buffer_data zm_buffer;
     
 }; // class zm_deep_convection
 
