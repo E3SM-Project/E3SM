@@ -429,8 +429,7 @@ contains
     character(len=*), parameter :: subname = 'dyn_iac_init'
   !-----------------------------------------------------------------------
 
-    SHR_ASSERT_ALL(bounds%level == BOUNDS_LEVEL_PROC, subname // &
-                     ': argument must be PROC-level bounds')
+    SHR_ASSERT_ALL(bounds%level == BOUNDS_LEVEL_PROC, subname // ': argument must be PROC-level bounds')
 
     ! TRS
     ! We need to allocate if do_harvest = .false., befause then

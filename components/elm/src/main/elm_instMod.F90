@@ -272,7 +272,7 @@ contains
     use elm_varcon                        , only : h2osno_max, bdsno, bdfirn
     use domainMod                         , only : ldomain
     use elm_varpar                        , only : nlevsno, numpft
-    use elm_varctl                        , only : single_column, fsurdat, scmlat, scmlon, use_extrasnowlayers
+    use elm_varctl                        , only : single_column, fsurdat, scmlat, scmlon, use_extrasnowlayers, iac_active
     use controlMod                        , only : nlfilename
     use SoilWaterRetentionCurveFactoryMod , only : create_soil_water_retention_curve
     use fileutils                         , only : getfil
@@ -400,8 +400,10 @@ contains
     call lnd2glc_vars%Init( bounds_proc )
 
     ! Initialize lnd2iac and iac2lnd
-    call lnd2iac_vars%Init( bounds_proc )
-    call iac2lnd_vars%Init( bounds_proc )
+    if (iac_active) then
+      call lnd2iac_vars%Init( bounds_proc )
+      call iac2lnd_vars%Init( bounds_proc )
+    endif
 
     ! If single-column determine closest latitude and longitude
 
