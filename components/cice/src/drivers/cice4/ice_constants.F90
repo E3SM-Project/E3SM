@@ -75,7 +75,7 @@
          zvir      = 0.606_dbl_kind   ,&! rh2o/rair - 1.0
          vonkar    = 0.4_dbl_kind     ,&! von Karman constant
          cp_wv     = 1.81e3_dbl_kind  ,&! specific heat of water vapor (J/kg/K)
-         stefan_boltzmann = 567.0e-10_dbl_kind,&!  W/m^2/K^4
+         stefan_boltzmann = 5.670374419e-8_dbl_kind,&!  W/m^2/K^4
          Tffresh   = 273.15_dbl_kind  ,&! freezing temp of fresh ice (K)
          Lsub      = 2.835e6_dbl_kind ,&! latent heat, sublimation freshwater (J/kg)
          Lvap      = 2.501e6_dbl_kind ,&! latent heat, vaporization freshwater (J/kg)
