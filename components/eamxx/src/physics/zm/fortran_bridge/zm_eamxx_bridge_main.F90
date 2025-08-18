@@ -1,6 +1,7 @@
 module zm_eamxx_bridge_main
   !-----------------------------------------------------------------------------
-  ! Purpose:
+  ! Purpose: This replicates the functionality of zm_conv_intr.F90 to provide
+  ! an interface between EAMxx and EAM's fortran Zhang-McFarlane Deeep Cu scheme
   !-----------------------------------------------------------------------------
   use iso_c_binding
   use cam_logfile,   only: iulog
@@ -8,17 +9,11 @@ module zm_eamxx_bridge_main
   use zm_eamxx_bridge_params, only: masterproc, r8, pcols, pver, pverp, top_lev
   !-----------------------------------------------------------------------------
   implicit none
-
   private
   !-----------------------------------------------------------------------------
-  ! public methods for bridging
+  ! public methods
   public :: zm_eamxx_bridge_init_c
   public :: zm_eamxx_bridge_run_c
-  !-----------------------------------------------------------------------------
-  ! public variables
-
-  !-----------------------------------------------------------------------------
-  ! private variables
 
 !===================================================================================================
 #include "eamxx_config.f"
@@ -59,13 +54,13 @@ subroutine zm_eamxx_bridge_init_c( pcol_in, pver_in ) bind(C)
   call zm_const_set_for_testing(zm_const)
   call zm_param_set_for_testing(zm_param)
   call zm_param_mpi_broadcast(zm_param)
-  if (masterproc) call zm_param_print(zm_param)
+  call zm_param_print(zm_param)
   !-----------------------------------------------------------------------------
   ! make sure we are turning off the extra stuff
   zm_param%zm_microp       = .false.
   zm_param%trig_dcape      = .false.
-  zm_param%trig_ull        = .false.
-  zm_param%clos_dyn_adj    = .false.
+  zm_param%trig_ull        = .true.
+  zm_param%clos_dyn_adj    = .true.
   zm_param%mcsp_enabled    = .true.
   !-----------------------------------------------------------------------------
   call wv_sat_init()
@@ -79,8 +74,8 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
                                   state_phis, state_zm, state_zi, &
                                   state_p_mid, state_p_int, state_p_del, &
                                   state_t, state_qv, state_qc, state_u, state_v, &
-                                  state_omega, state_cldfrac, state_pblh, landfrac, &
-                                  output_prec, output_snow, output_cape, &
+                                  state_omega, state_cldfrac, state_pblh, tpert, landfrac, &
+                                  output_prec, output_snow, output_cape, output_activity, &
                                   output_tend_s, output_tend_q, output_tend_u, output_tend_v, &
                                   output_rain_prod, output_snow_prod, &
                                   output_prec_flux, output_snow_flux, output_mass_flux ) bind(C)
@@ -92,48 +87,48 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
   use zm_conv_mcsp,             only: zm_conv_mcsp_tend
   use zm_transport,             only: zm_transport_momentum
   ! use zm_transport,             only: zm_transport_tracer
+  use zm_conv_types, only: zm_param_print, zm_const_print
   !-----------------------------------------------------------------------------
   ! Arguments
-  integer(kind=c_int),               value, intent(in   ) :: ncol
-  real(kind=c_real),                 value, intent(in   ) :: dtime
-  logical(kind=c_bool),              value, intent(in   ) :: is_first_step
-  real(kind=c_real), dimension(pcols),      intent(in   ) :: state_phis         ! input state surface geopotential height
-  real(kind=c_real), dimension(pcols,pver), intent(in   ) :: state_zm           ! input state altitude at mid-levels
-  real(kind=c_real), dimension(pcols,pverp),intent(in   ) :: state_zi           ! input state altitude at interfaces
-  real(kind=c_real), dimension(pcols,pver), intent(in   ) :: state_p_mid        ! input state mid-point pressure
-  real(kind=c_real), dimension(pcols,pverp),intent(in   ) :: state_p_int        ! input state interface pressure
-  real(kind=c_real), dimension(pcols,pver), intent(in   ) :: state_p_del        ! input state pressure thickness
-  real(kind=c_real), dimension(pcols,pver), intent(in   ) :: state_t            ! input state temperature
-  real(kind=c_real), dimension(pcols,pver), intent(in   ) :: state_qv           ! input state water vapor
-  real(kind=c_real), dimension(pcols,pver), intent(in   ) :: state_qc           ! input state cloud liquid water          (ql)
-  real(kind=c_real), dimension(pcols,pver), intent(in   ) :: state_u            ! input state zonal wind
-  real(kind=c_real), dimension(pcols,pver), intent(in   ) :: state_v            ! input state meridional wind
-  real(kind=c_real), dimension(pcols,pver), intent(in   ) :: state_omega        ! input state vertical pressure velocity
-  real(kind=c_real), dimension(pcols,pver), intent(in   ) :: state_cldfrac      ! input state cloud fraction              (cld)
-  real(kind=c_real), dimension(pcols),      intent(in   ) :: state_pblh         ! input planetary boundary layer height   (pblh)
-  real(kind=c_real), dimension(pcols),      intent(in   ) :: landfrac           ! land fraction
-  real(kind=c_real), dimension(pcols),      intent(  out) :: output_prec        ! output total precipitation              (prec)
-  real(kind=c_real), dimension(pcols),      intent(  out) :: output_snow        ! output frozen precipitation             (snow)
-  real(kind=c_real), dimension(pcols),      intent(  out) :: output_cape        ! output convective avail. pot. energy    (cape)
-  real(kind=c_real), dimension(pcols,pver), intent(  out) :: output_tend_s      ! output tendency of dry static energy    (ptend_loc_s)
-  real(kind=c_real), dimension(pcols,pver), intent(  out) :: output_tend_q      ! output tendency of water vapor          (ptend_loc_q)
-  real(kind=c_real), dimension(pcols,pver), intent(  out) :: output_tend_u      ! output tendency of zonal wind           (ptend_loc_u)
-  real(kind=c_real), dimension(pcols,pver), intent(  out) :: output_tend_v      ! output tendency of meridional wind      (ptend_loc_v)
-  real(kind=c_real), dimension(pcols,pver), intent(  out) :: output_rain_prod   ! rain production rate                    (rprd)
-  real(kind=c_real), dimension(pcols,pver), intent(  out) :: output_snow_prod   ! snow production rate                    (sprd)
-  real(kind=c_real), dimension(pcols,pverp),intent(  out) :: output_prec_flux   ! output precip flux at each mid-levels   (flxprec/pflx)
-  real(kind=c_real), dimension(pcols,pverp),intent(  out) :: output_snow_flux   ! output precip flux at each mid-levels   (flxsnow)
-  real(kind=c_real), dimension(pcols,pverp),intent(  out) :: output_mass_flux   ! output convective mass flux--m sub c    (mcon)
+  integer(kind=c_int),                value, intent(in   ) :: ncol               ! 01 number of columns on rank
+  real(kind=c_real),                  value, intent(in   ) :: dtime              ! 02 time step
+  logical(kind=c_bool),               value, intent(in   ) :: is_first_step      ! 03 flag for first step
+  real(kind=c_real),  dimension(pcols),      intent(in   ) :: state_phis         ! 04 input state surface geopotential height
+  real(kind=c_real),  dimension(pcols,pver), intent(in   ) :: state_zm           ! 05 input state altitude at mid-levels
+  real(kind=c_real),  dimension(pcols,pverp),intent(in   ) :: state_zi           ! 06 input state altitude at interfaces
+  real(kind=c_real),  dimension(pcols,pver), intent(in   ) :: state_p_mid        ! 07 input state mid-point pressure
+  real(kind=c_real),  dimension(pcols,pverp),intent(in   ) :: state_p_int        ! 08 input state interface pressure
+  real(kind=c_real),  dimension(pcols,pver), intent(in   ) :: state_p_del        ! 09 input state pressure thickness
+  real(kind=c_real),  dimension(pcols,pver), intent(in   ) :: state_t            ! 10 input state temperature
+  real(kind=c_real),  dimension(pcols,pver), intent(in   ) :: state_qv           ! 11 input state water vapor
+  real(kind=c_real),  dimension(pcols,pver), intent(in   ) :: state_qc           ! 12 input state cloud liquid water          (ql)
+  real(kind=c_real),  dimension(pcols,pver), intent(in   ) :: state_u            ! 13 input state zonal wind
+  real(kind=c_real),  dimension(pcols,pver), intent(in   ) :: state_v            ! 14 input state meridional wind
+  real(kind=c_real),  dimension(pcols,pver), intent(in   ) :: state_omega        ! 15 input state vertical pressure velocity
+  real(kind=c_real),  dimension(pcols,pver), intent(in   ) :: state_cldfrac      ! 16 input state cloud fraction              (cld)
+  real(kind=c_real),  dimension(pcols),      intent(in   ) :: state_pblh         ! 17 input planetary boundary layer height   (pblh)
+  real(kind=c_real),  dimension(pcols),      intent(in   ) :: tpert
+  real(kind=c_real),  dimension(pcols),      intent(in   ) :: landfrac           ! 18 land fraction
+  real(kind=c_real),  dimension(pcols),      intent(  out) :: output_prec        ! 19 output total precipitation              (prec)
+  real(kind=c_real),  dimension(pcols),      intent(  out) :: output_snow        ! 20 output frozen precipitation             (snow)
+  real(kind=c_real),  dimension(pcols),      intent(  out) :: output_cape        ! 21 output convective avail. pot. energy    (cape)
+  integer(kind=c_int),dimension(pcols),      intent(  out) :: output_activity    ! 22 integer deep convection activity flag   (ideep)
+  real(kind=c_real),  dimension(pcols,pver), intent(  out) :: output_tend_s      ! 23 output tendency of dry static energy    (ptend_loc_s)
+  real(kind=c_real),  dimension(pcols,pver), intent(  out) :: output_tend_q      ! 24 output tendency of water vapor          (ptend_loc_q)
+  real(kind=c_real),  dimension(pcols,pver), intent(  out) :: output_tend_u      ! 25 output tendency of zonal wind           (ptend_loc_u)
+  real(kind=c_real),  dimension(pcols,pver), intent(  out) :: output_tend_v      ! 26 output tendency of meridional wind      (ptend_loc_v)
+  real(kind=c_real),  dimension(pcols,pver), intent(  out) :: output_rain_prod   ! 27 rain production rate                    (rprd)
+  real(kind=c_real),  dimension(pcols,pver), intent(  out) :: output_snow_prod   ! 28 snow production rate                    (sprd)
+  real(kind=c_real),  dimension(pcols,pverp),intent(  out) :: output_prec_flux   ! 29 output precip flux at each mid-levels   (flxprec/pflx)
+  real(kind=c_real),  dimension(pcols,pverp),intent(  out) :: output_snow_flux   ! 30 output precip flux at each mid-levels   (flxsnow)
+  real(kind=c_real),  dimension(pcols,pverp),intent(  out) :: output_mass_flux   ! 31 output convective mass flux--m sub c    (mcon)
   !-----------------------------------------------------------------------------
   ! Local variables
   integer :: i,k
 
-  integer :: diag_kt
-  integer :: diag_kb
-
   logical :: loc_is_first_step
 
-  ! arguments for zm_convr - order consistent with current interface
+  ! arguments for zm_convr - order somewhat consistent with current interface
   integer :: lchnk = 0
 
   integer,  dimension(pcols)      :: jctop          ! output top-of-deep-convection indices
@@ -141,7 +136,7 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
   ! real(r8), dimension(pcols,pverp):: mcon           ! convective mass flux--m sub c
   real(r8), dimension(pcols,pver) :: cme            ! condensation - evaporation
   ! real(r8), dimension(pcols)      :: cape           ! convective available potential energy
-  real(r8), dimension(pcols)      :: tpert          ! thermal temperature excess
+  ! real(r8), dimension(pcols)      :: tpert          ! thermal temperature excess
   real(r8), dimension(pcols,pver) :: dlf            ! detrained convective cloud water mixing ratio
   ! real(r8), dimension(pcols,pverp):: pflx           ! precip flux at each level
   real(r8), dimension(pcols,pver) :: zdu            ! detraining mass flux
@@ -177,6 +172,7 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
   real(r8), dimension(pcols,pver) :: wuc            ! pbuf variable for in-cloud vertical velocity
 
   real(r8), dimension(pcols,pver) :: state_s
+  real(r8), dimension(pcols,pver) :: zm_qc          ! ZM in-cloud liquid water
 
   ! local copy of state variables for calling zm_conv_evap()
   real(r8), dimension(pcols,pver) :: local_state_t
@@ -190,8 +186,8 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
   real(r8), dimension(pcols,pver) :: local_tend_u        ! output tendency of zonal wind
   real(r8), dimension(pcols,pver) :: local_tend_v        ! output tendency of meridional wind
 
-  real(r8), dimension(pcols,pver) :: tend_s_snwprd
-  real(r8), dimension(pcols,pver) :: tend_s_snwevmlt
+  real(r8), dimension(pcols,pver) :: tend_s_snwprd       ! DSE tend from snow production
+  real(r8), dimension(pcols,pver) :: tend_s_snwevmlt     ! DSE tend from snow evap/melt
   ! real(r8), dimension(pcols,pver) :: snow
   real(r8), dimension(pcols,pver) :: ntprprd             ! net precip production in layer
   real(r8), dimension(pcols,pver) :: ntsnprd             ! net snow production in layer
@@ -206,31 +202,26 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
    real(r8), dimension(pcols,pver,2) :: tx_icwu
    real(r8), dimension(pcols,pver,2) :: tx_icwd
   
-  logical :: old_snow  = .true. ! flag to use snow production from zm_conv_evap - set false to use zm microphysics
+  logical :: old_snow ! flag to use snow production from zm_conv_evap - set false when using zm microphysics
+
   !-----------------------------------------------------------------------------
+  ! initialize various thing
+
   loc_is_first_step = is_first_step
-  diag_kt = 1
-  diag_kb = pver
-  !-----------------------------------------------------------------------------
-  ! if (is_first_step) then
-  !   write(iulog,*) 'zm_eamxx_bridge_run_c - pcols: ',pcols
-  !   write(iulog,*) 'zm_eamxx_bridge_run_c - ncol: ',ncol
-  !   call shr_sys_flush(iulog)
-  ! end if
-  !-----------------------------------------------------------------------------
-  ! ! assign fake values for checking data made it back to C++
-  ! do i = 1,ncol
-  !   output_prec(i) = 1
-  !   output_cape(i) = 2
-  !   do k = 1,pver
-  !     output_tend_s(i,k) = 10000 + i*100.0 + k*1.0
-  !     output_tend_q(i,k) = 20000 + i*100.0 + k*1.0
-  !   end do
-  ! end do
+
+  if (zm_param%zm_microp) then
+    old_snow  = .false.
+  else
+    old_snow  = .true.
+  end if
+
   !-----------------------------------------------------------------------------
   ! initialize output tendencies - normally done by physics_ptend_init()
+
   do i = 1,ncol
-    output_prec(i) = 0
+    output_prec(i) = -1
+    output_cape(i) = -1
+    output_activity(i) = 0
     do k = 1,pver
       output_tend_s(i,k) = 0
       output_tend_q(i,k) = 0
@@ -239,7 +230,8 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
     end do
   end do
   !-----------------------------------------------------------------------------
-  ! update local copy of state variables for zm_conv_evap()
+  ! populate local copies of state variables for zm_conv_evap()
+
   do i = 1,ncol
     do k = 1,pver
       local_state_t (i,k) = state_t (i,k)
@@ -248,15 +240,10 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
       local_state_zi(i,k) = state_zi(i,k)
     end do
   end do
-  !-----------------------------------------------------------------------------
-  ! do i = 1,ncol
-  !   write(iulog,*) 'zm_eamxx_bridge_run_c 0 - prec(',i,') : ',output_prec(i)
-  !   do k = diag_kt,diag_kb
-  !     write(iulog,*) 'zm_eamxx_bridge_run_c 0 - (',i,',',k,') pmid / tend_s / tend_q : ',state_p_mid(i,k),' / ',output_tend_s(i,k),' / ',output_tend_q(i,k)
-  !   end do
-  ! end do
+
   !-----------------------------------------------------------------------------
   ! Call the primary Zhang-McFarlane convection parameterization
+
   call zm_convr( lchnk, ncol, loc_is_first_step, &
                  state_t, state_qv, &
                  output_prec, &
@@ -278,7 +265,7 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
                  dsubcld, &
                  jt, &
                  maxg, ideep, lengath, &
-                 state_qc, &
+                 zm_qc, &
                  rliq, &
                  landfrac, &
                  t_star, q_star, dcape, &
@@ -289,21 +276,14 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
                  mudpcu, lambdadpcu, &
                  microp_st, &
                  wuc )
-  !-----------------------------------------------------------------------------
-  ! do i = 1,ncol
-  !   write(iulog,*) 'zm_eamxx_bridge_run_c 1 - (',i,') prec / cape : ',output_prec(i),' / ',output_cape(i)
-  !   ! do k = diag_kt,diag_kb
-  !   !   write(iulog,*) 'zm_eamxx_bridge_run_c 1 - (',i,',',k,') pmid / tend_s / tend_q : ',state_p_mid(i,k),' / ',output_tend_s(i,k),' / ',output_tend_q(i,k)
-  !   ! end do
-  ! end do
 
-  !----------------------------------------------------------------------------
-  ! mesoscale coherent structure parameterization (MCSP)
-  ! This modifies the tendencies from zm_convr() prior to updating the state
+  !-----------------------------------------------------------------------------
+  ! mesoscale coherent structure parameterization (MCSP)- modifies tendencies from zm_convr() prior to updating the state
+
   if (zm_param%mcsp_enabled) then
 
     ! initialize local output tendencies for MCSP
-    call zm_tend_init( ncol, pver, local_tend_s, local_tend_q, local_tend_u, local_tend_v )
+    call zm_tend_init( ncol, pcols, pver, local_tend_s, local_tend_q, local_tend_u, local_tend_v )
 
     do i = 1,ncol
       do k = 1,pver
@@ -332,9 +312,11 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
 
   end if
 
-  !----------------------------------------------------------------------------
+  !-----------------------------------------------------------------------------
   ! apply tendencies from zm_convr() & MCSP to local copy of state variables
-  call zm_physics_update( ncol, dtime, state_phis, local_state_zm, local_state_zi, &
+
+  call zm_physics_update( ncol, pcols, dtime, &
+                          state_phis, local_state_zm, local_state_zi, &
                           state_p_mid, state_p_int, state_p_del, &
                           local_state_t, local_state_qv, &
                           output_tend_s, output_tend_q)
@@ -344,7 +326,7 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
   ! Note - this routine expects an updated state following zm_convr() (+MCSP)
 
   ! initialize local output tendencies for zm_conv_evap()
-  call zm_tend_init( ncol, pver, local_tend_s, local_tend_q, local_tend_u, local_tend_v )
+  call zm_tend_init( ncol, pcols, pver, local_tend_s, local_tend_q, local_tend_u, local_tend_v )
 
   ! perform the convective evaporation calculations
   call zm_conv_evap(ncol, lchnk, &
@@ -356,8 +338,7 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
                     output_rain_prod, state_cldfrac, &
                     dtime, &
                     output_prec, output_snow, &
-                    ntprprd, &
-                    ntsnprd, &
+                    ntprprd, ntsnprd, &
                     output_prec_flux, output_snow_flux, &
                     output_snow_prod, old_snow)
 
@@ -370,16 +351,17 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
   end do
 
   ! apply tendencies from zm_conv_evap() to local copy of state variables
-  call zm_physics_update( ncol, dtime, state_phis, local_state_zm, local_state_zi, &
+  call zm_physics_update( ncol, pcols, dtime, &
+                          state_phis, local_state_zm, local_state_zi, &
                           state_p_mid, state_p_int, state_p_del, &
                           local_state_t, local_state_qv, &
                           local_tend_s, local_tend_q)
 
-  !----------------------------------------------------------------------------
+  !-----------------------------------------------------------------------------
   ! convective momentum transport
 
   ! initialize local output tendencies for zm_conv_evap()
-  call zm_tend_init( ncol, pver, local_tend_s, local_tend_q, tx_wind_tend(:,:,1), tx_wind_tend(:,:,2) )
+  call zm_tend_init( ncol, pcols, pver, local_tend_s, local_tend_q, tx_wind_tend(:,:,1), tx_wind_tend(:,:,2) )
 
   do i = 1,ncol
     do k = 1,pver
@@ -403,18 +385,21 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
     end do
   end do
 
-  !----------------------------------------------------------------------------
+  !-----------------------------------------------------------------------------
   ! convective tracer transport
 
+  ! this is just a placeholder for now
+  ! call zm_transport_tracer(...)
+
   !-----------------------------------------------------------------------------
-  ! do i = 1,ncol
-  !   write(iulog,*) 'zm_eamxx_bridge_run_c 2 - (',i,') prec / cape : ',output_prec(i),' / ',output_cape(i)
-  !   ! do k = diag_kt,diag_kb
-  !   !   write(iulog,*) 'zm_eamxx_bridge_run_c 2 - (',i,',',k,') pmid / tend_s / tend_q : ',state_p_mid(i,k),' / ',output_tend_s(i,k),' / ',output_tend_q(i,k)
-  !   !   ! write(iulog,*) 'zm_eamxx_bridge_run_c 2 - (',i,',',k,') output_prec_flux : ',output_prec_flux(i,k)
-  !   !   ! write(iulog,*) 'zm_eamxx_bridge_run_c 2 - (',i,',',k,') flxprec          : ',flxprec(i,k)
-  !   ! end do
-  ! end do
+  ! populate deep convection activity flag
+
+  if (lengath.gt.0) then
+    do i=1,lengath
+      output_activity(ideep(i)) = 1
+    end do
+  end if
+
   !-----------------------------------------------------------------------------
   return
 end subroutine zm_eamxx_bridge_run_c
