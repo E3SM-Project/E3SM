@@ -50,6 +50,7 @@ set_grids (const std::shared_ptr<const GridsManager> grids_manager)
   const auto nondim = Units::nondimensional();
   const auto m2 = pow(m,2);
   const auto s2 = pow(s,2);
+  const auto K2 = pow(K,2);
 
   FieldLayout scalar2d     = m_grid->get_2d_scalar_layout();        // Layout for 2D variable
   FieldLayout scalar3d_mid = m_grid->get_3d_scalar_layout(true);    // Layout for 3D variable at mid-levels
@@ -57,34 +58,37 @@ set_grids (const std::shared_ptr<const GridsManager> grids_manager)
   FieldLayout vector3d_mid = m_grid->get_3d_vector_layout(true,2);  // Layout for horiz_wind field
 
   // Input variables
-  add_field<Required>("p_mid",                scalar3d_mid, Pa,    grid_name, pack_size);
-  add_field<Required>("p_int",                scalar3d_int, Pa,    grid_name, pack_size);
-  add_field<Required>("pseudo_density",       scalar3d_mid, Pa,    grid_name, pack_size);
-  add_field<Required>("phis",                 scalar2d    , m2/s2, grid_name);
-  add_field<Required>("omega",                scalar3d_mid, Pa/s,  grid_name, pack_size);
-  add_field<Required>("cldfrac_tot",          scalar3d_mid, nondim,grid_name, pack_size);
-  add_field<Required>("pbl_height",           scalar2d    , m,     grid_name);
-  add_field<Required>("landfrac",             scalar2d    , nondim,grid_name);
+  add_field<Required>("p_mid",                scalar3d_mid, Pa,     grid_name, pack_size);
+  add_field<Required>("p_int",                scalar3d_int, Pa,     grid_name, pack_size);
+  add_field<Required>("pseudo_density",       scalar3d_mid, Pa,     grid_name, pack_size);
+  add_field<Required>("phis",                 scalar2d    , m2/s2,  grid_name);
+  add_field<Required>("omega",                scalar3d_mid, Pa/s,   grid_name, pack_size);
+  add_field<Required>("cldfrac_tot",          scalar3d_mid, nondim, grid_name, pack_size);
+  add_field<Required>("pbl_height",           scalar2d    , m,      grid_name);
+  add_field<Required>("landfrac",             scalar2d    , nondim, grid_name);
+
+  // add_field<Required>("thl_sec",              scalar3d_int, K2,     grid_name, pack_size); // thetal variance for PBL temperature perturbation
 
   // Input/Output variables
-  add_field <Updated>("T_mid",                scalar3d_mid, K,     grid_name, pack_size);
-  add_field <Updated>("horiz_winds",          vector3d_mid, m/s,   grid_name, pack_size);
-  add_tracer<Updated>("qv",                   m_grid,       kg/kg,            pack_size);
-  add_tracer<Updated>("qc",                   m_grid,       kg/kg,            pack_size);
+  add_field <Updated>("T_mid",                scalar3d_mid, K,      grid_name, pack_size);
+  add_field <Updated>("horiz_winds",          vector3d_mid, m/s,    grid_name, pack_size);
+  add_tracer<Updated>("qv",                   m_grid,       kg/kg,             pack_size);
+  add_tracer<Updated>("qc",                   m_grid,       kg/kg,             pack_size);
 
   // Output variables
-  add_field <Updated>("precip_liq_surf_mass", scalar2d,     kg/m2, grid_name, "ACCUMULATED");
-  add_field <Updated>("precip_ice_surf_mass", scalar2d,     kg/m2, grid_name, "ACCUMULATED");
+  add_field <Updated>("precip_liq_surf_mass", scalar2d,     kg/m2,  grid_name, "ACCUMULATED");
+  add_field <Updated>("precip_ice_surf_mass", scalar2d,     kg/m2,  grid_name, "ACCUMULATED");
 
   // Diagnostic Outputs
-  add_field<Computed>("zm_prec",              scalar2d,     m/s,   grid_name);
-  add_field<Computed>("zm_snow",              scalar2d,     m/s,   grid_name);
-  add_field<Computed>("zm_cape",              scalar2d,     m/s,   grid_name);
+  add_field<Computed>("zm_prec",              scalar2d,     m/s,    grid_name);
+  add_field<Computed>("zm_snow",              scalar2d,     m/s,    grid_name);
+  add_field<Computed>("zm_cape",              scalar2d,     J/kg,   grid_name);
+  add_field<Computed>("zm_activity",          scalar2d,     nondim, grid_name);
 
-  add_field<Computed>("zm_T_mid_tend",        scalar3d_mid, K,     grid_name, pack_size);
-  add_field<Computed>("zm_qv_tend",           scalar3d_mid, K,     grid_name, pack_size);
-  add_field<Computed>("zm_u_tend",            scalar3d_mid, K,     grid_name, pack_size);
-  add_field<Computed>("zm_v_tend",            scalar3d_mid, K,     grid_name, pack_size);
+  add_field<Computed>("zm_T_mid_tend",        scalar3d_mid, K/s,    grid_name, pack_size);
+  add_field<Computed>("zm_qv_tend",           scalar3d_mid, kg/kg/s,grid_name, pack_size);
+  add_field<Computed>("zm_u_tend",            scalar3d_mid, m/s/s,  grid_name, pack_size);
+  add_field<Computed>("zm_v_tend",            scalar3d_mid, m/s/s,  grid_name, pack_size);
 
 }
 
@@ -108,19 +112,21 @@ void zm_deep_convection::run_impl (const double dt)
 
   const int nlevm_packs = ekat::npack<Spack>(m_nlev);
 
-  const auto team_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_ncol, nlevm_packs);
-
   // calculate_z_int() contains a team-level parallel_scan, which requires a special policy
   const auto scan_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(m_ncol, nlevm_packs);
+  const auto team_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_ncol, nlevm_packs);
 
   auto ts_start = start_of_step_ts();
 
   //----------------------------------------------------------------------------
   // get constants
-  const Real cpair = PC::Cpair;
+
+  const Real cpair  = PC::Cpair;
+  const Real latvap = PC::LatVap;
 
   //----------------------------------------------------------------------------
   // get fields
+
   const auto& phis     = get_field_in("phis")                         .get_view<const Real*>();
   const auto& p_mid    = get_field_in("p_mid")                        .get_view<const Spack**, Host>();
   const auto& p_int    = get_field_in("p_int")                        .get_view<const Spack**, Host>();
@@ -135,11 +141,14 @@ void zm_deep_convection::run_impl (const double dt)
   const auto& pblh     = get_field_in("pbl_height")                   .get_view<const Real*>();
   const auto& landfrac = get_field_in("landfrac")                     .get_view<const Real*>();
 
+  // const auto& thl_sec  = get_field_in("thl_sec")                      .get_view<const Spack**, Host>();
+
   const auto& precip_liq_surf_mass = get_field_out("precip_liq_surf_mass").get_view<Real*>();
   const auto& precip_ice_surf_mass = get_field_out("precip_ice_surf_mass").get_view<Real*>();
 
   //----------------------------------------------------------------------------
   // prepare input struct
+
   zm_input.dtime          = dt;
   zm_input.is_first_step  = (ts_start.get_num_steps()==0);
   zm_input.phis           = phis;
@@ -157,10 +166,11 @@ void zm_deep_convection::run_impl (const double dt)
   zm_input.landfrac       = landfrac;
 
   // initialize output buffer variables
-  zm_output.init( m_ncol, m_nlev );
+  zm_output.init( m_pcol, m_nlev );
 
   //----------------------------------------------------------------------------
   // calculate interface and mid-point altitudes
+
   Kokkos::parallel_for(scan_policy, KOKKOS_LAMBDA (const ZMF::KT::MemberType& team) {
     const int i = team.league_rank();
     const auto z_mid_i = ekat::subview(zm_input.z_mid, i);
@@ -171,33 +181,80 @@ void zm_deep_convection::run_impl (const double dt)
     const auto T_mid_i = ekat::subview(zm_input.T_mid, i);
     const auto qv_i    = ekat::subview(zm_input.qv,    i);
     // Calculate z_mid
-    auto z_surf = 0.0; // ZM expects Z_mid & z_int to be altitude above the surface
+    auto z_surf = 0.0; // ZM expects z_mid & z_int to be altitude above the surface
     PF::calculate_dz(team, p_del_i, p_mid_i, T_mid_i, qv_i, z_del_i);
     team.team_barrier();
     PF::calculate_z_int(team, m_nlev, z_del_i, z_surf, z_int_i);
     team.team_barrier();
     PF::calculate_z_mid(team, m_nlev, z_int_i, z_mid_i);
+    team.team_barrier();
   });
-  //----------------------------------------------------------------------------
 
-  // Run ZM
-  zm_eamxx_bridge_run( m_ncol, m_pcol, m_nlev, zm_input, zm_output );
+  //----------------------------------------------------------------------------
+  // calculate temperature perturbation from SHOC thetal varance for ZM parcel/CAPE
+
+  Kokkos::parallel_for("zm_calculate_tpert",m_ncol, KOKKOS_LAMBDA (int i) {
+    zm_input.tpert(i) = 1.0;
+  });
+
+  //----------------------------------------------------------------------------
+  // // calculate temperature perturbation from SHOC thetal varance for ZM parcel/CAPE
+
+  // Kokkos::parallel_for("zm_calculate_tpert",m_ncol, KOKKOS_LAMBDA (int i) {
+    // const auto thl_sec_i = ekat::subview(thl_sec, i);
+    // const auto z_mid_i   = ekat::subview(zm_input.z_mid, i);
+    // const auto p_mid_i   = ekat::subview(zm_input.p_mid, i);
+    // // identify interface index for top of PBL
+    // int pblh_k_ind;
+    // for (int k=0; k<m_nlev; ++k) {
+    //   auto z_mid_tmp = z_mid(i,k/Spack::n)[k%Spack::n];
+    //   auto z_int_tmp = z_int(i,k/Spack::n)[k%Spack::n];
+    //   if ( z_int_tmp>pblh(i) && state1%zi(i,k+1)<=pblh(i) ) {
+    //     pblh_k_ind = k;
+    //   }
+    // }
+    // auto p_mid_pbl = p_mid(i,pblh_k_ind/Spack::n)[pblh_k_ind%Spack::n];
+    // auto exner_pbl = PF::exner_function(p_mid_pbl);
+    // auto qc_pbl      = qc(i,pblh_k_ind/Spack::n)[pblh_k_ind%Spack::n];
+    // auto thl_sec_pbl = thl_sec(i,pblh_k_ind/Spack::n)[pblh_k_ind%Spack::n];
+    // auto thl_std_pbl = sqrt( thl_sec_pbl ) ; // std deviation of thetal;
+    // zm_input.tpert(i) = ( thl_std_pbl + (latvap/cpair)*qc_pbl ) / exner_pbl;
+    // zm_input.tpert(i) = min(2.0,zm_input.tpert(i)); // apply limiter 
+    // 
+  // });
+
+  //----------------------------------------------------------------------------
+  ////// from fortran/EAM CLUBB
+  // do i = 1,ncol
+      // do k=1,pver
+      //    if (state1%zi(i,k)>pblh(i).and.state1%zi(i,k+1)<=pblh(i)) then
+      //       ktopi(i) = k
+      //       exit
+      //    end if
+      // end do
+  //   tmp_exner = max( state1%exner(i,ktopi(i)), 1.e-3_r8 )
+  //   tmp_qc = state1%q(i,ktopi(i),ixcldliq)
+  //   tmp_thl_std = sqrt( thlp2(i,ktopi(i)) ) ! std deviation of thetal 
+  //   tpert(i) = ( tmp_thl_std + (latvap/cpair)*tmp_qc ) / tmp_exner
+  //   tpert(i) = min(2._r8,tpert(i))
+  // end do
+  //----------------------------------------------------------------------------
+  // run the ZM scheme
+
+  zm_eamxx_bridge_run( m_ncol, m_nlev, zm_input, zm_output );
 
   //----------------------------------------------------------------------------
   // update prognostic fields
 
   if (zm_opts.apply_tendencies) {
-
     Kokkos::parallel_for("zm_update_prognostic",team_policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
       const int i = team.league_rank();
-
       // accumulate surface precipitation fluxes
       Kokkos::single(Kokkos::PerTeam(team), [&] {
         auto prec_liq = zm_output.prec(i) - zm_output.snow(i);
         precip_liq_surf_mass(i) += prec_liq          * PC::RHO_H2O * dt;
         precip_ice_surf_mass(i) += zm_output.snow(i) * PC::RHO_H2O * dt;
       });
-      
       // update 3D prognostic variables
       Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlevm_packs), [&](const int& k) {
         T_mid(i,k) += zm_output.tend_s (i,k)/cpair * dt;
@@ -207,29 +264,33 @@ void zm_deep_convection::run_impl (const double dt)
         vwind(i,k) += zm_output.tend_v (i,k)       * dt;
       });
     });
-
   }
 
   //----------------------------------------------------------------------------
   // Update output fields
 
+  // NOTE - in the future we might want to clean this up using Kokkos::deep_copy(),
+  // but this is currently not possible due to the pcol/ncol thing for the fortran bridge
+
   // 2D output
-  const auto& zm_prec = get_field_out("zm_prec").get_view<Real*>();
-  const auto& zm_snow = get_field_out("zm_snow").get_view<Real*>();
-  const auto& zm_cape = get_field_out("zm_cape").get_view<Real*>();
+  const auto& zm_prec       = get_field_out("zm_prec")        .get_view<Real*>();
+  const auto& zm_snow       = get_field_out("zm_snow")        .get_view<Real*>();
+  const auto& zm_cape       = get_field_out("zm_cape")        .get_view<Real*>();
+  const auto& zm_activity   = get_field_out("zm_activity")    .get_view<Real*>();
+  Kokkos::parallel_for("zm_diag_outputs_2D",m_ncol, KOKKOS_LAMBDA (int i) {
+    zm_prec    (i) = zm_output.prec    (i);
+    zm_snow    (i) = zm_output.snow    (i);
+    zm_cape    (i) = zm_output.cape    (i);
+    zm_activity(i) = zm_output.activity(i);
+  });
+
   // 3D output (vertically resolved)
   const auto& zm_T_mid_tend = get_field_out("zm_T_mid_tend")  .get_view<Spack**, Host>();
   const auto& zm_qv_tend    = get_field_out("zm_qv_tend")     .get_view<Spack**, Host>();
   const auto& zm_u_tend     = get_field_out("zm_u_tend")      .get_view<Spack**, Host>();
   const auto& zm_v_tend     = get_field_out("zm_v_tend")      .get_view<Spack**, Host>();
-
   Kokkos::parallel_for("zm_diag_outputs",team_policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
     const auto i = team.league_rank();
-    // 2D output
-    zm_prec(i) = zm_output.prec(i);
-    zm_snow(i) = zm_output.snow(i);
-    zm_cape(i) = zm_output.cape(i);
-    // 3D output (vertically resolved)
     Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlevm_packs), [&](const int& k) {
       zm_T_mid_tend(i,k) = zm_output.tend_s (i,k)/cpair;
       zm_qv_tend   (i,k) = zm_output.tend_qv(i,k);
@@ -254,12 +315,16 @@ size_t zm_deep_convection::requested_buffer_size_in_bytes() const
   const int nlevi_packs = ekat::npack<Spack>(m_nlev+1);
   size_t zm_buffer_size = 0;
 
+  zm_buffer_size+= ZMF::zm_input_state::num_1d_intgr_views * sizeof(Int)     * m_pcol;
+  zm_buffer_size+= ZMF::zm_input_state::num_1d_scalr_views * sizeof(Scalar)  * m_pcol;
+
   zm_buffer_size+= ZMF::zm_input_state::num_2d_midlv_c_views * sizeof(Spack) * m_pcol * nlevm_packs;
   zm_buffer_size+= ZMF::zm_input_state::num_2d_intfc_c_views * sizeof(Spack) * m_pcol * nlevi_packs;
   zm_buffer_size+= ZMF::zm_input_state::num_2d_midlv_f_views * sizeof(Real)  * m_pcol * m_nlev;
   zm_buffer_size+= ZMF::zm_input_state::num_2d_intfc_f_views * sizeof(Real)  * m_pcol * (m_nlev+1);
 
   zm_buffer_size+= ZMF::zm_output_tend::num_1d_scalr_views * sizeof(Scalar)  * m_pcol;
+  zm_buffer_size+= ZMF::zm_output_tend::num_1d_intgr_views * sizeof(Int)     * m_pcol;
 
   zm_buffer_size+= ZMF::zm_output_tend::num_2d_midlv_c_views * sizeof(Spack) * m_pcol * nlevm_packs;
   zm_buffer_size+= ZMF::zm_output_tend::num_2d_intfc_c_views * sizeof(Spack) * m_pcol * nlevi_packs;
@@ -279,24 +344,38 @@ void zm_deep_convection::init_buffers(const ATMBufferManager &buffer_manager)
   const int nlevm_packs = ekat::npack<Spack>(m_nlev);
   const int nlevi_packs = ekat::npack<Spack>(m_nlev+1);
 
-  auto num_1d_scalr_views   = ZMF::zm_output_tend::num_1d_scalr_views;
+  auto num_1d_intgr_views   = ZMF::zm_input_state::num_1d_intgr_views   + ZMF::zm_output_tend::num_1d_intgr_views;
+  auto num_1d_scalr_views   = ZMF::zm_input_state::num_1d_scalr_views   + ZMF::zm_output_tend::num_1d_scalr_views;
   auto num_2d_midlv_c_views = ZMF::zm_input_state::num_2d_midlv_c_views + ZMF::zm_output_tend::num_2d_midlv_c_views;
   auto num_2d_intfc_c_views = ZMF::zm_input_state::num_2d_intfc_c_views + ZMF::zm_output_tend::num_2d_intfc_c_views;
   auto num_2d_midlv_f_views = ZMF::zm_input_state::num_2d_midlv_f_views + ZMF::zm_output_tend::num_2d_midlv_f_views;
   auto num_2d_intfc_f_views = ZMF::zm_input_state::num_2d_intfc_f_views + ZMF::zm_output_tend::num_2d_intfc_f_views;
 
   //----------------------------------------------------------------------------
-  Real* mem = reinterpret_cast<Real*>(buffer_manager.get_memory());
+  Int* i_mem = reinterpret_cast<Int*>(buffer_manager.get_memory());
+  //----------------------------------------------------------------------------
+  // 1D integer variables
+  ZMF::uview_1d<Int>* int_ptrs[num_1d_intgr_views]    = { &zm_output.activity
+                                                        };
+  for (int i=0; i<num_1d_intgr_views; ++i) {
+    *int_ptrs[i] = ZMF::uview_1d<Int>(i_mem, m_pcol);
+    i_mem += int_ptrs[i]->size();
+  }
+  //----------------------------------------------------------------------------
+  Scalar* scl_mem = reinterpret_cast<Scalar*>(i_mem);
   //----------------------------------------------------------------------------
   // 1D scalar variables
-  ZMF::uview_1d<Scalar>* scl_ptrs[num_1d_scalr_views] = { &zm_output.prec,
+  ZMF::uview_1d<Scalar>* scl_ptrs[num_1d_scalr_views] = { &zm_input.tpert,
+                                                          &zm_output.prec,
                                                           &zm_output.snow,
-                                                          &zm_output.cape,
+                                                          &zm_output.cape
                                                         };
   for (int i=0; i<num_1d_scalr_views; ++i) {
-    *scl_ptrs[i] = ZMF::uview_1d<Scalar>(mem, m_pcol);
-    mem += scl_ptrs[i]->size();
+    *scl_ptrs[i] = ZMF::uview_1d<Scalar>(scl_mem, m_pcol);
+    scl_mem += scl_ptrs[i]->size();
   }
+  //----------------------------------------------------------------------------
+  Real* r_mem = reinterpret_cast<Real*>(scl_mem);
   //----------------------------------------------------------------------------
   // 2D "f_" views on mid-point levels
   ZMF::uview_2dl<Real>* midlv_f_ptrs[num_2d_midlv_f_views]  = { &zm_input.f_z_mid,
@@ -317,8 +396,8 @@ void zm_deep_convection::init_buffers(const ATMBufferManager &buffer_manager)
                                                                 &zm_output.f_snow_prod
                                                               };
   for (int i=0; i<num_2d_midlv_f_views; ++i) {
-    *midlv_f_ptrs[i] = ZMF::uview_2dl<Real>(mem, m_pcol, m_nlev);
-    mem += midlv_f_ptrs[i]->size();
+    *midlv_f_ptrs[i] = ZMF::uview_2dl<Real>(r_mem, m_pcol, m_nlev);
+    r_mem += midlv_f_ptrs[i]->size();
   }
   //----------------------------------------------------------------------------
   // 2D "f_" views on interface levels
@@ -329,11 +408,11 @@ void zm_deep_convection::init_buffers(const ATMBufferManager &buffer_manager)
                                                                 &zm_output.f_mass_flux
                                                               };
   for (int i=0; i<num_2d_intfc_f_views; ++i) {
-    *intfc_f_ptrs[i] = ZMF::uview_2dl<Real>(mem, m_pcol, (m_nlev+1));
-    mem += intfc_f_ptrs[i]->size();
+    *intfc_f_ptrs[i] = ZMF::uview_2dl<Real>(r_mem, m_pcol, (m_nlev+1));
+    r_mem += intfc_f_ptrs[i]->size();
   }
   //----------------------------------------------------------------------------
-  Spack* s_mem = reinterpret_cast<Spack*>(mem);
+  Spack* spk_mem = reinterpret_cast<Spack*>(r_mem);
   //----------------------------------------------------------------------------
   // 2D views on mid-point levels
   ZMF::uview_2d<Spack>* midlv_c_ptrs[num_2d_midlv_c_views]  = { &zm_input.z_mid,
@@ -346,8 +425,8 @@ void zm_deep_convection::init_buffers(const ATMBufferManager &buffer_manager)
                                                                 &zm_output.snow_prod
                                                               };
   for (int i=0; i<num_2d_midlv_c_views; ++i) {
-    *midlv_c_ptrs[i] = ZMF::uview_2d<Spack>(s_mem, m_pcol, nlevm_packs);
-    s_mem += midlv_c_ptrs[i]->size();
+    *midlv_c_ptrs[i] = ZMF::uview_2d<Spack>(spk_mem, m_pcol, nlevm_packs);
+    spk_mem += midlv_c_ptrs[i]->size();
   }
   //----------------------------------------------------------------------------
   // 2D variables on interface levels
@@ -357,12 +436,12 @@ void zm_deep_convection::init_buffers(const ATMBufferManager &buffer_manager)
                                                                 &zm_output.mass_flux
                                                               };
   for (int i=0; i<num_2d_intfc_c_views; ++i) {
-    *intfc_c_ptrs[i] = ZMF::uview_2d<Spack>(s_mem, m_pcol, nlevi_packs);
-    s_mem += intfc_c_ptrs[i]->size();
+    *intfc_c_ptrs[i] = ZMF::uview_2d<Spack>(spk_mem, m_pcol, nlevi_packs);
+    spk_mem += intfc_c_ptrs[i]->size();
   }
   //----------------------------------------------------------------------------
-
-  size_t used_mem = (reinterpret_cast<Real*>(s_mem) - buffer_manager.get_memory())*sizeof(Real);
+  Real* total_mem = reinterpret_cast<Real*>(spk_mem);
+  size_t used_mem = (reinterpret_cast<Real*>(total_mem) - buffer_manager.get_memory())*sizeof(Real);
   auto mem_chk = ( used_mem == requested_buffer_size_in_bytes() );
   EKAT_REQUIRE_MSG(mem_chk,"Error! Used memory != requested memory for zm_deep_convection.");
 }
