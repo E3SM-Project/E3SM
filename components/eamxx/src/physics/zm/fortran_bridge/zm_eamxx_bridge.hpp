@@ -15,7 +15,7 @@ using ZMF = zm::Functions<Real, DefaultDevice>;
 
 // Glue functions to call fortran from from C++ with the Data struct
 void zm_eamxx_bridge_init( Int pcols, Int pver );
-void zm_eamxx_bridge_run( Int ncol, Int pcol, Int pver,
+void zm_eamxx_bridge_run( Int ncol, Int pver,
                           ZMF::zm_input_state& zm_input,
                           ZMF::zm_output_tend& zm_output
                         );
