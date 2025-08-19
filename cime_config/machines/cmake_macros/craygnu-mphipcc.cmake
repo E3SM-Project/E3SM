@@ -9,7 +9,7 @@ string(APPEND CPPDEFS " -DLINUX -DFORTRANUNDERSCORE -DNO_R16 -DCPRGNU -DMPINIT_W
 if (COMP_NAME STREQUAL gptl)
     string(APPEND CPPDEFS " -DHAVE_NANOTIME -DBIT64 -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY")
 endif()
-string(APPEND CMAKE_Fortran_FLAGS " -fconvert=big-endian -ffree-line-length-none -ffixed-line-length-none -fallow-argument-mismatch")
+string(APPEND CMAKE_Fortran_FLAGS " -fconvert=big-endian -ffree-line-length-none -ffixed-line-length-none -fallow-argument-mismatch -cpp")
 
 string(APPEND CMAKE_C_FLAGS_DEBUG " -O0 -g -Wall -fbacktrace -fcheck=bounds -ffpe-trap=invalid,zero,overflow")
 string(APPEND CMAKE_Fortran_FLAGS_DEBUG " -O0 -g -Wall -fbacktrace -fcheck=bounds -ffpe-trap=zero,overflow")
