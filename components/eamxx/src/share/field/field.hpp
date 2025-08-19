@@ -292,9 +292,9 @@ public:
   // If this field is a vector field, get a subfield for the ith component.
   // If dynamic = true, it is possible to "reset" the component index at runtime.
   // Note: throws if this is not a vector field.
-  Field get_component (const int i, const bool dynamic = false);
+  Field get_component (const int i, const bool dynamic = false) const;
   // version for slicing across multiple, contiguous indices
-  Field get_components (const int beg, const int end);
+  Field get_components (const int beg, const int end) const;
 
   // Checks whether the underlying view has been already allocated.
   bool is_allocated () const { return m_data.d_view.data()!=nullptr; }
