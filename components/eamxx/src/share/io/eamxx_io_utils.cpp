@@ -148,6 +148,7 @@ create_diagnostic (const std::string& diag_field_name,
   std::regex zonal_avg (R"()" + generic_field + R"(_zonal_avg_(\d+)_bins$)");
   std::regex conditional_sampling (R"()" + generic_field + R"(_where_)" + generic_field + R"(_(gt|ge|eq|ne|le|lt)_([+-]?\d+(?:\.\d+)?)$)");
   std::regex binary_ops (generic_field + "_" "(plus|minus|times|over)" + "_" + generic_field + "$");
+  std::regex vert_derivative (generic_field + "_(p|z)vert_derivative$");
 
   std::string diag_name;
   std::smatch matches;
@@ -217,6 +218,12 @@ create_diagnostic (const std::string& diag_field_name,
       // note that the 4th match is (dp|dz)_weighted, while the 5th is (dp|dz)
       params.set<std::string>("weighting_method", matches[5].str());
     }
+  }
+  else if (std::regex_search(diag_field_name,matches,vert_derivative)) {
+    diag_name = "VertDerivativeDiag";
+    params.set("grid_name", grid->name());
+    params.set<std::string>("field_name", matches[1].str());
+    params.set<std::string>("derivative_method", matches[2].str());
   }
   else if (std::regex_search(diag_field_name,matches,zonal_avg)) {
     diag_name = "ZonalAvgDiag";
