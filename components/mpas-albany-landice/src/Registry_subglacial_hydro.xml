@@ -49,7 +49,7 @@
 		            description="conductivity coefficient for subglacial water flux for fraction of water thickness that exceeds bump height.  Use 0.0 or negative value to disable."
 		            possible_values="positive real number or 0.0"
 		/>
-		<nml_option name="config_SGH_till_drainage" type="real" default_value="0.0" units="m s^{-1}"
+		<nml_option name="config_SGH_till_drainage" type="real" default_value="0.0" units="m s^-1"
 		            description="background subglacial till drainage rate"
                             possible_values="positive real number.  Disabled by default.  Bueler and van Pelt use 3.1709792e-11 m/s (0.001 m/yr)."
 		/>
@@ -61,7 +61,7 @@
 		            description="Advection method for SGH. 'fo'=first-order upwind; 'fct'=flux-corrected transport. FCT currently not enabled."
 		            possible_values="'fo','fct'"
 		/>
-		<nml_option name="config_SGH_bed_roughness" type="real" default_value="0.5" units="m^{-1}"
+		<nml_option name="config_SGH_bed_roughness" type="real" default_value="0.5" units="m^-1"
 		            description="cavitation coefficient"
 		            possible_values="positive real number"
 		/>
@@ -156,7 +156,7 @@
                      description="water layer thickness in subglacial hydrology system" />
                 <var name="waterThicknessOld" type="real" dimensions="nCells Time" units="m"
                      description="water layer thickness in subglacial hydrology system from previous time step" />
-                <var name="waterThicknessTendency" type="real" dimensions="nCells Time" units="m s^{-1}"
+                <var name="waterThicknessTendency" type="real" dimensions="nCells Time" units="m s^-1"
                      description="rate of change in water layer thickness in subglacial hydrology system" />
                 <var name="tillWaterThickness" type="real" dimensions="nCells Time" units="m"
                      description="water layer thickness in subglacial till" />
@@ -168,14 +168,14 @@
 								description="smoothed water pressure used only for calculation of channelPressureFreeze" />
 					 <var name="waterPressureOld" type="real" dimensions="nCells Time" units="Pa"
                      description="pressure in subglacial hydrology system from previous time step" />
-                <var name="waterPressureTendency" type="real" dimensions="nCells Time" units="Pa s^{-1}"
+                <var name="waterPressureTendency" type="real" dimensions="nCells Time" units="Pa s^-1"
                      description="tendency in pressure in subglacial hydrology system" />
                 <!-- inputs -->
-                <var name="basalMeltInput" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
+                <var name="basalMeltInput" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
                      description="basal meltwater input to subglacial hydrology system" />
-                <var name="externalWaterInput" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
+                <var name="externalWaterInput" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
                      description="external water input to subglacial hydrology system" />
-                <var name="frictionAngle" type="real" dimensions="nCells Time" units="None"
+                <var name="frictionAngle" type="real" dimensions="nCells Time"
                      description="subglacial till friction angle" />
                 <!-- convenience variables -->
                 <var name="effectivePressureSGH" type="real" dimensions="nCells Time" units="Pa"
@@ -184,31 +184,31 @@
                         description="Effective pressure used in basal friction calculation.  If subglacial hydrology model is active, this will be effectivePressureSGH averaged over the subglacial hydrology model timestepping subcycles. If subglacial hydrology model is inactive, this will come from a file or a parameterization."/>
                 <var name="hydropotential" type="real" dimensions="nCells Time" units="Pa"
                      description="hydropotential in subglacial hydrology system" />
-                <var name="waterFlux" type="real" dimensions="nEdges Time" units="m{^2} s^{-1}"
+                <var name="waterFlux" type="real" dimensions="nEdges Time" units="m^2 s^-1"
                      description="total water flux in subglacial hydrology system" />
-                <var name="waterFluxMask" type="integer" dimensions="nEdges Time" units="none"
+                <var name="waterFluxMask" type="integer" dimensions="nEdges Time"
                      description="mask indicating how to handle fluxes on each edge: 0=calculate based on hydropotential gradient; 1=allow outflow based on hydropotential gradient, but no inflow (NOT YET IMPLEMENTED); 2=zero flux" />
-                <var name="hydroMarineMarginMask" type="integer" dimensions="nEdges Time" units="none"
+                <var name="hydroMarineMarginMask" type="integer" dimensions="nEdges Time"
                      description="mask indicating the marine boundary of the active subglacial hydrology domain" />
-		<var name="hydroTerrestrialMarginMask" type="integer" dimensions="nEdges Time" units="none"
+		<var name="hydroTerrestrialMarginMask" type="integer" dimensions="nEdges Time"
 	 	     description="mask indicating the terrestrial boundary of the active subglacial hydrology domain" />
-		<var name="waterFluxAdvec" type="real" dimensions="nEdges Time" units="m{^2} s^{-1}"
+		<var name="waterFluxAdvec" type="real" dimensions="nEdges Time" units="m^2 s^-1"
                      description="advective water flux in subglacial hydrology system" />
-                <var name="waterFluxDiffu" type="real" dimensions="nEdges Time" units="m{^2} s^{-1}"
+                <var name="waterFluxDiffu" type="real" dimensions="nEdges Time" units="m^2 s^-1"
                      description="diffusive water flux in subglacial hydrology system" />
-                <var name="waterVelocity" type="real" dimensions="nEdges Time" units="m s^{-1}"
+                <var name="waterVelocity" type="real" dimensions="nEdges Time" units="m s^-1"
                      description="water velocity in subglacial hydrology system" />
-                <var name="waterVelocityCellX" type="real" dimensions="nCells Time" units="m s^{-1}"
+                <var name="waterVelocityCellX" type="real" dimensions="nCells Time" units="m s^-1"
                      description="subglacial water velocity reconstructed on cell centers, x-component" />
-                <var name="waterVelocityCellY" type="real" dimensions="nCells Time" units="m s^{-1}"
+                <var name="waterVelocityCellY" type="real" dimensions="nCells Time" units="m s^-1"
                      description="subglacial water velocity reconstructed on cell centers, y-component" />
-                <var name="effectiveConducEdge" type="real" dimensions="nEdges Time" units="m^2 s^{-1} Pa^{-1}"
+                <var name="effectiveConducEdge" type="real" dimensions="nEdges Time" units="m^2 s^-1 Pa^-1"
                      description="effective Darcy hydraulic conductivity on edges in subglacial hydrology system" />
                 <var name="waterThicknessEdge" type="real" dimensions="nEdges Time" units="m"
                      description="water layer thickness on edges in subglacial hydrology system" />
                 <var name="waterThicknessEdgeUpwind" type="real" dimensions="nEdges Time" units="m"
                      description="water layer thickness of cell upwind of edge in subglacial hydrology system" />
-                <var name="diffusivity" type="real" dimensions="nEdges Time" units="m^{2} s^{-1}"
+                <var name="diffusivity" type="real" dimensions="nEdges Time" units="m^2 s^-1"
                      description="diffusivity of water sheet in subglacial hydrology system" />
                 <var name="hydropotentialBase" type="real" dimensions="nCells Time" units="Pa"
                      description="hydropotential in subglacial hydrology system without water thickness contribution" />
@@ -216,27 +216,27 @@
                      description="hydropotential without water thickness contribution on vertices.  Only used for some choices of config_SGH_tangent_slope_calculation." />
                 <var name="hydropotentialVertex" type="real" dimensions="nVertices Time" units="Pa"
                      description="hydropotential on vertices.  Only used for some choices of config_SGH_tangent_slope_calculation." />
-                <var name="hydropotentialBaseSlopeNormal" type="real" dimensions="nEdges Time" units="Pa m^{-1}"
+                <var name="hydropotentialBaseSlopeNormal" type="real" dimensions="nEdges Time" units="Pa m^-1"
                      description="normal component of gradient of hydropotentialBase" />
-                <var name="hydropotentialSlopeNormal" type="real" dimensions="nEdges Time" units="Pa m^{-1}"
+                <var name="hydropotentialSlopeNormal" type="real" dimensions="nEdges Time" units="Pa m^-1"
                      description="normal component of gradient of hydropotential" />
-                <var name="hydropotentialBaseSlopeTangent" type="real" dimensions="nEdges Time" units="Pa m^{-1}"
+                <var name="hydropotentialBaseSlopeTangent" type="real" dimensions="nEdges Time" units="Pa m^-1"
                      description="tangent component of gradient of hydropotentialBase" />
-                <var name="hydropotentialSlopeTangent" type="real" dimensions="nEdges Time" units="Pa m^{-1}"
+                <var name="hydropotentialSlopeTangent" type="real" dimensions="nEdges Time" units="Pa m^-1"
                      description="tangent component of gradient of hydropotential" />
-                <var name="gradMagPhiBaseEdge" type="real" dimensions="nEdges Time" units="Pa m^{-1}"
+                <var name="gradMagPhiBaseEdge" type="real" dimensions="nEdges Time" units="Pa m^-1"
                      description="magnitude of the gradient of hydropotentialBase, on Edges" />
-                <var name="gradMagPhiEdge" type="real" dimensions="nEdges Time" units="Pa m^{-1}"
+                <var name="gradMagPhiEdge" type="real" dimensions="nEdges Time" units="Pa m^-1"
                      description="magnitude of the gradient of hydropotential, on Edges" />
-                <var name="waterPressureSlopeNormal" type="real" dimensions="nEdges Time" units="Pa m^{-1}"
+                <var name="waterPressureSlopeNormal" type="real" dimensions="nEdges Time" units="Pa m^-1"
                      description="normal component of gradient of waterPressure in subglacial hydrology system" />
-                <var name="divergence" type="real" dimensions="nCells Time" units="m s^{-1}"
+                <var name="divergence" type="real" dimensions="nCells Time" units="m s^-1"
                      description="flux divergence of water in subglacial hydrology system" />
-                <var name="openingRate" type="real" dimensions="nCells Time" units="m s^{-1}"
+                <var name="openingRate" type="real" dimensions="nCells Time" units="m s^-1"
                      description="rate of cavity opening in subglacial hydrology system" />
-                <var name="closingRate" type="real" dimensions="nCells Time" units="m s^{-1}"
+                <var name="closingRate" type="real" dimensions="nCells Time" units="m s^-1"
                      description="rate of ice creep closure in subglacial hydrology system" />
-                <var name="zeroOrderSum" type="real" dimensions="nCells Time" units="m s^{-1}"
+                <var name="zeroOrderSum" type="real" dimensions="nCells Time" units="m s^-1"
                      description="sum of zero order terms in subglacial hydrology system" />
                 <var name="deltatSGHadvec" type="real" dimensions="Time" units="s"
                      description="advective CFL limited time step length in subglacial hydrology system" />
@@ -246,44 +246,44 @@
                      description="time step length limited by pressure equation scheme in subglacial hydrology system" />
                 <var name="deltatSGH" type="real" dimensions="Time" units="s"
                      description="time step used for evolving subglacial hydrology system" />
-	     	<var name="distGroundingLineDischargeCell" type="real" dimensions="Time nCells" units="m^{3} s^{-1}"
+	     	<var name="distGroundingLineDischargeCell" type="real" dimensions="Time nCells" units="m^3 s^-1"
 		     description="distributed discharge across the grounding line, summed from grounding line edges to adjacent ungrounded cell. Values from all edges are summed if multiple grounding line edges border a single ungrounded cell" />
-	     	<var name="totalGroundingLineDischargeCell" type="real" dimensions="Time nCells" units="m^{3} s^{-1}"
+	     	<var name="totalGroundingLineDischargeCell" type="real" dimensions="Time nCells" units="m^3 s^-1"
 		     description="total (channel + dist.) discharge across the grounding line, summed from grounding line edges to adjacent ungrounded cell. Values from all edges are summed if multiple grounding line edges border a single ungrounded cell" />
 	     	<!-- channel variables -->
-	     	<var name="chnlGroundingLineDischargeCell" type="real" dimensions="Time nCells" units="m^{3} s^{-1}"
+	     	<var name="chnlGroundingLineDischargeCell" type="real" dimensions="Time nCells" units="m^3 s^-1"
 		     description="channel discharge across the grounding line, summed from grounding line edges to adjacent ungrounded cell. Values from all edges are summed if multiple grounding line edges border a single ungrounded cell" />
-                <var name="channelArea" type="real" dimensions="nEdges Time" units="m^{2}"
+                <var name="channelArea" type="real" dimensions="nEdges Time" units="m^2"
                      description="area of channel in subglacial hydrology system" />
-                <var name="channelDischarge" type="real" dimensions="nEdges Time" units="m^{3} s^{-1}"
+                <var name="channelDischarge" type="real" dimensions="nEdges Time" units="m^3 s^-1"
                      description="discharge through channel in subglacial hydrology system" />
-                <var name="channelVelocity" type="real" dimensions="nEdges Time" units="m s^{-1}"
+                <var name="channelVelocity" type="real" dimensions="nEdges Time" units="m s^-1"
                      description="water velocity in channel in subglacial hydrology system" />
-                <var name="channelMelt" type="real" dimensions="nEdges Time" units="kg m^{-1} s^{-1}"
+                <var name="channelMelt" type="real" dimensions="nEdges Time" units="kg m^-1 s^-1"
                      description="melt rate in channel in subglacial hydrology system" />
-                <var name="channelPressureFreeze" type="real" dimensions="nEdges Time" units="kg m^{-1} s^{-1}"
+                <var name="channelPressureFreeze" type="real" dimensions="nEdges Time" units="kg m^-1 s^-1"
                      description="freezing rate in subglacial channel due to water pressure gradient (positive=freezing, negative=melting)" />
-                <var name="flowParamAChannel" type="real" dimensions="nEdges Time" units="Pa^{-3} s^{-1}"
+                <var name="flowParamAChannel" type="real" dimensions="nEdges Time" units="Pa^-3 s^-1"
                      description="flow parameter A on edges used for channel in subglacial hydrology system" />
                 <var name="channelEffectivePressure" type="real" dimensions="nEdges Time" units="Pa"
                      description="effective pressure in the channel in subglacial hydrology system" />
-                <var name="channelClosingRate" type="real" dimensions="nEdges Time" units="m^{2} s^{-1}"
+                <var name="channelClosingRate" type="real" dimensions="nEdges Time" units="m^2 s^-1"
                      description="closing rate from creep of the channel in subglacial hydrology system" />
-                <var name="channelOpeningRate" type="real" dimensions="nEdges Time" units="m^{2} s^{-1}"
+                <var name="channelOpeningRate" type="real" dimensions="nEdges Time" units="m^2 s^-1"
                      description="opening rate from melt of the channel in subglacial hydrology system" />
-                <var name="channelChangeRate" type="real" dimensions="nEdges Time" units="m^{2} s^{-1}"
+                <var name="channelChangeRate" type="real" dimensions="nEdges Time" units="m^2 s^-1"
                      description="rate of change of channel area in subglacial hydrology system" />
                 <var name="deltatSGHadvecChannel" type="real" dimensions="Time" units="s"
                      description="time step length limited by channel advection" />
                 <var name="deltatSGHdiffuChannel" type="real" dimensions="Time" units="s"
                      description="time step length limited by channel diffusion" />
-                <var name="divergenceChannel" type="real" dimensions="nCells Time" units="m s^{-1}"
+                <var name="divergenceChannel" type="real" dimensions="nCells Time" units="m s^-1"
                      description="divergence due to channel flow in subglacial hydrology system" />
-                <var name="channelAreaChangeCell" type="real" dimensions="nCells Time" units="m s^{-1}"
+                <var name="channelAreaChangeCell" type="real" dimensions="nCells Time" units="m s^-1"
                      description="change in channel area within each cell, averaged over cell area" />
-                <var name="channelMeltInputCell" type="real" dimensions="nCells Time" units="m s^{-1}"
+                <var name="channelMeltInputCell" type="real" dimensions="nCells Time" units="m s^-1"
                      description="rate of channel melt production within each cell, averaged over cell area" />
-                <var name="channelDiffusivity" type="real" dimensions="nEdges Time" units="m^{2} s^{-1}"
+                <var name="channelDiffusivity" type="real" dimensions="nEdges Time" units="m^2 s^-1"
                      description="diffusivity in channel in subglacial hydrology system" />
 	</var_struct>
 

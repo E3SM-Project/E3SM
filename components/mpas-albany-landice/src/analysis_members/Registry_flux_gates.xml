@@ -1,0 +1,48 @@
+        <nml_record name="AM_fluxGates" mode="forward;analysis">
+                <nml_option name="config_AM_fluxGates_enable" type="logical" default_value=".false." units="unitless"
+                        description="If true, landice analysis member fluxGates is called."
+                        possible_values=".true. or .false."
+                />
+                <nml_option name="config_AM_fluxGates_compute_interval" type="character" default_value="output_interval" units="unitless"
+                        description="Timestamp determining how often analysis member computations should be performed."
+                        possible_values="Any valid time stamp, 'dt', or 'output_interval'"
+                />
+                <nml_option name="config_AM_fluxGates_stream_name" type="character" default_value="fluxGatesOutput" units="unitless"
+                        description="Name of the stream that the fluxGates analysis member should be tied to."
+                        possible_values="Any existing stream name or 'none'"
+                />
+                <nml_option name="config_AM_fluxGates_compute_on_startup" type="logical" default_value=".true." units="unitless"
+                        description="Logical flag determining if analysis member computations occur on start-up."
+                        possible_values=".true. or .false."
+                />
+                <nml_option name="config_AM_fluxGates_write_on_startup" type="logical" default_value=".true." units="unitless"
+                        description="Logical flag determining if an analysis member write occurs on start-up."
+                        possible_values=".true. or .false."
+                />
+        </nml_record>
+        <packages>
+                <package name="fluxGatesAMPKG" description="This package includes variables required for the fluxGates analysis member."/>
+        </packages>
+        <var_struct name="fluxGatesAM" time_levs="1" packages="fluxGatesAMPKG">
+
+                <var name="iceFluxThroughGates" type="real" dimensions="nFluxGates Time" units="kg yr^-1"
+                        description="ice flux through flux gates"
+                />
+        </var_struct>
+        <streams>
+                <stream name="fluxGatesOutput" type="output"
+                                mode="forward;analysis"
+                                filename_template="fluxGates.nc"
+                                filename_interval="01-00-00_00:00:00"
+                                output_interval="00-00-01_00:00:00"
+                                reference_time="0000-01-01_00:00:00"
+                                packages="fluxGatesAMPKG"
+                                clobber_mode="truncate"
+                                runtime_format="single_file">
+                        <var name="xtime"/>
+                        <var name="deltat"/>
+                        <var name="daysSinceStart"/>
+                        <var name="simulationStartTime"/>
+                        <var_struct name="fluxGatesAM"/>
+                </stream>
+        </streams>

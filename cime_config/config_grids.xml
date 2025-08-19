@@ -6266,10 +6266,7 @@
     <gridmap glc_grid="mpas.gis4to40km" ocn_grid="oQU240wLI">
       <map name="OCN2GLC_SHELF_FMAPNAME">cpl/gridmaps/oQU240wLI/map_oQU240wLI_to_gis4to40_esmfaave.20250303.nc</map>
       <map name="OCN2GLC_SHELF_SMAPNAME">cpl/gridmaps/oQU240wLI/map_oQU240wLI_to_gis4to40_esmfbilin.20250303.nc</map>
-      <!-- due to a known issue with ocean extrapolation in MALI, as of 2025-04-04 it is necessary to use a mapping file with
-           extrapolation included for OCN2GLC_TF_SMAPNAME.  After that is fixed, this file should be switched to the
-           version WITHOUT extrapolation:  map_oQU240wLI-nomask_to_gis4to40_esmfbilin.20250403.nc -->
-      <map name="OCN2GLC_TF_SMAPNAME">cpl/gridmaps/oQU240wLI/map_oQU240wLI_to_gis4to40_esmfbilin.20250303.nc</map>
+      <map name="OCN2GLC_TF_SMAPNAME">cpl/gridmaps/oQU240wLI/map_oQU240wLI-nomask_to_gis4to40_esmfbilin.20250403.nc</map>
       <map name="GLC2ICE_FMAPNAME">cpl/gridmaps/mpas.gis4to40km/map_gis4to40_to_oQU240wLI_esmfaave.20250303.nc</map>
       <map name="GLC2ICE_SMAPNAME">cpl/gridmaps/mpas.gis4to40km/map_gis4to40_to_oQU240wLI_esmfaave.20250303.nc</map>
       <map name="GLC2OCN_FMAPNAME">cpl/gridmaps/mpas.gis4to40km/map_gis4to40_to_oQU240wLI_esmfaave.20250303.nc</map>
@@ -6281,10 +6278,7 @@
     <gridmap glc_grid="mpas.gis4to40km" ocn_grid="IcoswISC30E3r5">
       <map name="OCN2GLC_SHELF_FMAPNAME">cpl/gridmaps/IcoswISC30E3r5/map_IcoswISC30E3r5_to_gis4to40_esmfaave.20250218.nc</map>
       <map name="OCN2GLC_SHELF_SMAPNAME">cpl/gridmaps/IcoswISC30E3r5/map_IcoswISC30E3r5_to_gis4to40_esmfbilin.20250218.nc</map>
-      <!-- due to a known issue with ocean extrapolation in MALI, as of 2025-04-04 it is necessary to use a mapping file with
-           extrapolation includedi for OCN2GLC_TF_SMAPNAME.  After that is fixed, this file should be switched to the
-           version WITHOUT extrapolation: map_IcoswISC30E3r5-nomask_to_gis4to40_esmfbilin.20250403.nc -->
-      <map name="OCN2GLC_TF_SMAPNAME">cpl/gridmaps/IcoswISC30E3r5/map_IcoswISC30E3r5_to_gis4to40_esmfbilin.20250218.nc</map>
+      <map name="OCN2GLC_TF_SMAPNAME">cpl/gridmaps/IcoswISC30E3r5/map_IcoswISC30E3r5-nomask_to_gis4to40_esmfbilin.20250403.nc</map>
       <map name="GLC2ICE_FMAPNAME">cpl/gridmaps/mpas.gis4to40km/map_gis4to40_to_IcoswISC30E3r5_esmfaave.20250218.nc</map>
       <map name="GLC2ICE_SMAPNAME">cpl/gridmaps/mpas.gis4to40km/map_gis4to40_to_IcoswISC30E3r5_esmfaave.20250218.nc</map>
       <map name="GLC2OCN_FMAPNAME">cpl/gridmaps/mpas.gis4to40km/map_gis4to40_to_IcoswISC30E3r5_esmfaave.20250218.nc</map>
@@ -6386,10 +6380,11 @@
     <gridmap glc_grid="mpas.gis1to10kmR2" ocn_grid="IcoswISC30E3r5">
       <map name="OCN2GLC_SHELF_FMAPNAME">cpl/gridmaps/IcoswISC30E3r5/map_IcoswISC30E3r5_to_gis1to10kmR2_esmfaave.20240403.nc</map>
       <map name="OCN2GLC_SHELF_SMAPNAME">cpl/gridmaps/IcoswISC30E3r5/map_IcoswISC30E3r5_to_gis1to10kmR2_esmfbilin.20240403.nc</map>
-      <!-- due to the "ocean gutter" on mpas.gis1to10kmR2 being very narrow, it is necessary to use a mapping file with
-           extrapolation included for OCN2GLC_TF_SMAPNAME.  Switching to a mapping file without extrapolation would require a new
+      <!-- due to the "ocean gutter" on mpas.gis1to10kmR2 being very narrow, it is necessary to use a OCN2GLC_TF_SMAPNAME mapping file that
+           only includes MPAS-Ocean grid cells with bathymetry deeper than 1400m.  This means ocean information on the continental shelf is largely
+           ignored. Switching to a mapping file without that restriction would require a new
            GLC mesh with an ocean gutter that has sufficient overlap with IcoswISC30E3r5. -->
-      <map name="OCN2GLC_TF_SMAPNAME">cpl/gridmaps/IcoswISC30E3r5/map_IcoswISC30E3r5_to_gis1to10kmR2_esmfbilin.20240403.nc</map>
+      <map name="OCN2GLC_TF_SMAPNAME">cpl/gridmaps/IcoswISC30E3r5/map_IcoswISC30E3r5_to_gis1to10kmR2_deeperThan1400m.esmfneareststod.20250731.nc</map>
       <map name="GLC2ICE_FMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10kmR2_to_IcoswISC30E3r5_esmfaave.20240403.nc</map>
       <map name="GLC2ICE_SMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10kmR2_to_IcoswISC30E3r5_esmfaave.20240403.nc</map>
       <map name="GLC2OCN_FMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10kmR2_to_IcoswISC30E3r5_esmfaave.20240403.nc</map>
