@@ -48,7 +48,6 @@ module elm_varpar
   integer, parameter :: ndst        =   4     ! number of dust size classes (BGC only)
   integer, parameter :: dst_src_nbr =   3     ! number of size distns in src soil (BGC only)
   integer, parameter :: sz_nbr      = 200     ! number of sub-grid bins in large bin of dust size distribution (BGC only)
-  !integer, parameter :: mxpft       =  50     ! maximum number of PFT's for any mode;
   integer :: mxpft                  =  50     ! maximum number of PFT's for any mode;
                                               ! can be modified from reading pft-physiology in 'main/pftvarcon.F90:pftconrd'
   ! FIX(RF,032414) might we set some of these automatically from reading pft-physiology?
