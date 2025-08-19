@@ -9,25 +9,25 @@
       
       
       
-        <link rel="prev" href="../style/resources/clang-format_HOWTO/">
+        <link rel="prev" href="../binary_ops/">
       
       
-        <link rel="next" href="testing_for_development/">
+        <link rel="next" href="../../presentations/">
       
       
-      <link rel="icon" href="../../../assets/images/favicon.png">
+      <link rel="icon" href="../../../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.17">
     
     
       
-        <title>Overview - E3SM</title>
+        <title>Vertical derivative - E3SM</title>
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.7e37652d.min.css">
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.7e37652d.min.css">
       
         
-        <link rel="stylesheet" href="../../../assets/stylesheets/palette.06af60db.min.css">
+        <link rel="stylesheet" href="../../../../assets/stylesheets/palette.06af60db.min.css">
       
       
   
@@ -54,7 +54,7 @@
       
     
     
-    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
   
@@ -90,7 +90,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#overview" class="md-skip">
+        <a href="#vertical-derivative-diagnostics" class="md-skip">
           Skip to content
         </a>
       
@@ -106,7 +106,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../../.." title="E3SM" class="md-header__button md-logo" aria-label="E3SM" data-md-component="logo">
+    <a href="../../../.." title="E3SM" class="md-header__button md-logo" aria-label="E3SM" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -126,7 +126,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Overview
+              Vertical derivative
             
           </span>
         </div>
@@ -249,7 +249,7 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../../.." title="E3SM" class="md-nav__button md-logo" aria-label="E3SM" data-md-component="logo">
+    <a href="../../../.." title="E3SM" class="md-nav__button md-logo" aria-label="E3SM" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -279,7 +279,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../.." class="md-nav__link">
+      <a href="../../../.." class="md-nav__link">
         
   
   
@@ -330,7 +330,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../.." class="md-nav__link ">
+            <a href="../../../.." class="md-nav__link ">
               
   
   
@@ -365,7 +365,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../installation/" class="md-nav__link">
+      <a href="../../../../installation/" class="md-nav__link">
         
   
   
@@ -388,7 +388,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../user-guide/" class="md-nav__link">
+      <a href="../../../../user-guide/" class="md-nav__link">
         
   
   
@@ -433,7 +433,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../dev-guide/" class="md-nav__link ">
+            <a href="../../../../dev-guide/" class="md-nav__link ">
               
   
   
@@ -468,7 +468,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../dev-guide/adding-grid-support/" class="md-nav__link">
+      <a href="../../../../dev-guide/adding-grid-support/" class="md-nav__link">
         
   
   
@@ -593,7 +593,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../Data-Models/" class="md-nav__link ">
+            <a href="../../../../Data-Models/" class="md-nav__link ">
               
   
   
@@ -628,7 +628,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../Data-Models/user-guide/data-atmos/" class="md-nav__link">
+      <a href="../../../../Data-Models/user-guide/data-atmos/" class="md-nav__link">
         
   
   
@@ -651,7 +651,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../Data-Models/user-guide/data-land/" class="md-nav__link">
+      <a href="../../../../Data-Models/user-guide/data-land/" class="md-nav__link">
         
   
   
@@ -674,7 +674,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../Data-Models/user-guide/data-ocean/" class="md-nav__link">
+      <a href="../../../../Data-Models/user-guide/data-ocean/" class="md-nav__link">
         
   
   
@@ -731,7 +731,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../EAM/" class="md-nav__link ">
+            <a href="../../../../EAM/" class="md-nav__link ">
               
   
   
@@ -792,7 +792,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../EAM/user-guide/" class="md-nav__link ">
+            <a href="../../../../EAM/user-guide/" class="md-nav__link ">
               
   
   
@@ -827,7 +827,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../EAM/user-guide/namelist_parameters/" class="md-nav__link">
+      <a href="../../../../EAM/user-guide/namelist_parameters/" class="md-nav__link">
         
   
   
@@ -850,7 +850,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../EAM/user-guide/aerosol_phys_prop/" class="md-nav__link">
+      <a href="../../../../EAM/user-guide/aerosol_phys_prop/" class="md-nav__link">
         
   
   
@@ -873,7 +873,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../EAM/user-guide/emission_oxidant_files/" class="md-nav__link">
+      <a href="../../../../EAM/user-guide/emission_oxidant_files/" class="md-nav__link">
         
   
   
@@ -904,7 +904,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../EAM/dev-guide/" class="md-nav__link">
+      <a href="../../../../EAM/dev-guide/" class="md-nav__link">
         
   
   
@@ -975,7 +975,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../EAM/tech-guide/" class="md-nav__link ">
+            <a href="../../../../EAM/tech-guide/" class="md-nav__link ">
               
   
   
@@ -1010,7 +1010,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../EAM/tech-guide/homme/" class="md-nav__link">
+      <a href="../../../../EAM/tech-guide/homme/" class="md-nav__link">
         
   
   
@@ -1033,7 +1033,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../EAM/tech-guide/atmosphere-grid-overview/" class="md-nav__link">
+      <a href="../../../../EAM/tech-guide/atmosphere-grid-overview/" class="md-nav__link">
         
   
   
@@ -1056,7 +1056,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../EAM/tech-guide/p3/" class="md-nav__link">
+      <a href="../../../../EAM/tech-guide/p3/" class="md-nav__link">
         
   
   
@@ -1079,7 +1079,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../EAM/tech-guide/clubb/" class="md-nav__link">
+      <a href="../../../../EAM/tech-guide/clubb/" class="md-nav__link">
         
   
   
@@ -1102,7 +1102,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../EAM/tech-guide/zm/" class="md-nav__link">
+      <a href="../../../../EAM/tech-guide/zm/" class="md-nav__link">
         
   
   
@@ -1125,7 +1125,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../EAM/tech-guide/rrtmg/" class="md-nav__link">
+      <a href="../../../../EAM/tech-guide/rrtmg/" class="md-nav__link">
         
   
   
@@ -1148,7 +1148,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../EAM/tech-guide/orodrag/" class="md-nav__link">
+      <a href="../../../../EAM/tech-guide/orodrag/" class="md-nav__link">
         
   
   
@@ -1171,7 +1171,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../EAM/tech-guide/mam/" class="md-nav__link">
+      <a href="../../../../EAM/tech-guide/mam/" class="md-nav__link">
         
   
   
@@ -1194,7 +1194,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../EAM/tech-guide/vbs/" class="md-nav__link">
+      <a href="../../../../EAM/tech-guide/vbs/" class="md-nav__link">
         
   
   
@@ -1217,7 +1217,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../EAM/tech-guide/dust/" class="md-nav__link">
+      <a href="../../../../EAM/tech-guide/dust/" class="md-nav__link">
         
   
   
@@ -1240,7 +1240,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../EAM/tech-guide/oceanfilms/" class="md-nav__link">
+      <a href="../../../../EAM/tech-guide/oceanfilms/" class="md-nav__link">
         
   
   
@@ -1263,7 +1263,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../EAM/tech-guide/chemUCIlinozv3/" class="md-nav__link">
+      <a href="../../../../EAM/tech-guide/chemUCIlinozv3/" class="md-nav__link">
         
   
   
@@ -1286,7 +1286,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../EAM/tech-guide/cosp/" class="md-nav__link">
+      <a href="../../../../EAM/tech-guide/cosp/" class="md-nav__link">
         
   
   
@@ -1309,7 +1309,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../EAM/tech-guide/armdiags/" class="md-nav__link">
+      <a href="../../../../EAM/tech-guide/armdiags/" class="md-nav__link">
         
   
   
@@ -1376,7 +1376,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../" class="md-nav__link ">
+            <a href="../../../" class="md-nav__link ">
               
   
   
@@ -1408,6 +1408,8 @@
                 
   
   
+    
+  
   
   
     
@@ -1451,15 +1453,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_2" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../user/" class="md-nav__link ">
+            <a href="../../" class="md-nav__link ">
               
   
   
@@ -1478,7 +1480,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_3_2_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_3_2_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3_3_2">
             <span class="md-nav__icon md-icon"></span>
             User Guide
@@ -1494,7 +1496,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../user/eamxx_cases/" class="md-nav__link">
+      <a href="../../eamxx_cases/" class="md-nav__link">
         
   
   
@@ -1517,7 +1519,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../user/model_configuration/" class="md-nav__link">
+      <a href="../../model_configuration/" class="md-nav__link">
         
   
   
@@ -1540,7 +1542,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../user/nudging/" class="md-nav__link">
+      <a href="../../nudging/" class="md-nav__link">
         
   
   
@@ -1563,7 +1565,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../user/clean_clear_sky/" class="md-nav__link">
+      <a href="../../clean_clear_sky/" class="md-nav__link">
         
   
   
@@ -1586,7 +1588,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../user/cosp/" class="md-nav__link">
+      <a href="../../cosp/" class="md-nav__link">
         
   
   
@@ -1609,7 +1611,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../user/rrm_eamxx/" class="md-nav__link">
+      <a href="../../rrm_eamxx/" class="md-nav__link">
         
   
   
@@ -1632,7 +1634,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../user/dp_eamxx/" class="md-nav__link">
+      <a href="../../dp_eamxx/" class="md-nav__link">
         
   
   
@@ -1655,7 +1657,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../user/python/" class="md-nav__link">
+      <a href="../../python/" class="md-nav__link">
         
   
   
@@ -1678,7 +1680,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../user/io_metadata/" class="md-nav__link">
+      <a href="../../io_metadata/" class="md-nav__link">
         
   
   
@@ -1701,7 +1703,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../user/multi-instance-mvk/" class="md-nav__link">
+      <a href="../../multi-instance-mvk/" class="md-nav__link">
         
   
   
@@ -1724,7 +1726,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../user/eamxx_params/" class="md-nav__link">
+      <a href="../../eamxx_params/" class="md-nav__link">
         
   
   
@@ -1744,6 +1746,8 @@
                 
   
   
+    
+  
   
   
     
@@ -1767,15 +1771,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_2_13" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_2_13" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../user/diags/" class="md-nav__link ">
+            <a href="../" class="md-nav__link ">
               
   
   
@@ -1794,7 +1798,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_3_2_13_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_3_2_13_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3_3_2_13">
             <span class="md-nav__icon md-icon"></span>
             Diagnostics
@@ -1810,7 +1814,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../user/diags/field_contraction/" class="md-nav__link">
+      <a href="../field_contraction/" class="md-nav__link">
         
   
   
@@ -1833,7 +1837,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../user/diags/conditional_sampling/" class="md-nav__link">
+      <a href="../conditional_sampling/" class="md-nav__link">
         
   
   
@@ -1856,7 +1860,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../user/diags/binary_ops/" class="md-nav__link">
+      <a href="../binary_ops/" class="md-nav__link">
         
   
   
@@ -1876,10 +1880,32 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../user/diags/vert_derivative/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Vertical derivative
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1890,6 +1916,44 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#brief-description-of-algorithm" class="md-nav__link">
+    <span class="md-ellipsis">
+      Brief description of algorithm
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example" class="md-nav__link">
+    <span class="md-ellipsis">
+      Example
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1910,7 +1974,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../user/presentations/" class="md-nav__link">
+      <a href="../../presentations/" class="md-nav__link">
         
   
   
@@ -1933,7 +1997,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../user/io_aliases/" class="md-nav__link">
+      <a href="../../io_aliases/" class="md-nav__link">
         
   
   
@@ -1961,10 +2025,8 @@
                 
   
   
-    
   
   
-  
     
     
       
@@ -1984,11 +2046,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_3" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_3" >
         
           
           <label class="md-nav__link" for="__nav_3_3_3" id="__nav_3_3_3_label" tabindex="0">
@@ -2004,7 +2066,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_3_3_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_3_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3_3_3">
             <span class="md-nav__icon md-icon"></span>
             Developer Guide
@@ -2018,7 +2080,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../dev_quickstart/" class="md-nav__link">
+      <a href="../../../developer/dev_quickstart/" class="md-nav__link">
         
   
   
@@ -2041,7 +2103,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../code_structure/" class="md-nav__link">
+      <a href="../../../developer/code_structure/" class="md-nav__link">
         
   
   
@@ -2114,7 +2176,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../style/style_guide_overview/" class="md-nav__link">
+      <a href="../../../developer/style/style_guide_overview/" class="md-nav__link">
         
   
   
@@ -2137,7 +2199,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../style/format/" class="md-nav__link">
+      <a href="../../../developer/style/format/" class="md-nav__link">
         
   
   
@@ -2212,7 +2274,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../style/style/" class="md-nav__link">
+      <a href="../../../developer/style/style/" class="md-nav__link">
         
   
   
@@ -2235,7 +2297,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../style/types/" class="md-nav__link">
+      <a href="../../../developer/style/types/" class="md-nav__link">
         
   
   
@@ -2258,7 +2320,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../style/functions/" class="md-nav__link">
+      <a href="../../../developer/style/functions/" class="md-nav__link">
         
   
   
@@ -2281,7 +2343,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../style/variables/" class="md-nav__link">
+      <a href="../../../developer/style/variables/" class="md-nav__link">
         
   
   
@@ -2304,7 +2366,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../style/templates/" class="md-nav__link">
+      <a href="../../../developer/style/templates/" class="md-nav__link">
         
   
   
@@ -2379,7 +2441,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../style/resources/clang-format_HOWTO/" class="md-nav__link">
+      <a href="../../../developer/style/resources/clang-format_HOWTO/" class="md-nav__link">
         
   
   
@@ -2415,8 +2477,6 @@
                 
   
   
-    
-  
   
   
     
@@ -2440,15 +2500,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_3_4" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_3_4" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="./" class="md-nav__link md-nav__link--active">
+            <a href="../../../developer/dev_testing/" class="md-nav__link ">
               
   
   
@@ -2461,13 +2521,13 @@
             </a>
             
               
-              <label class="md-nav__link md-nav__link--active" for="__nav_3_3_3_4" id="__nav_3_3_3_4_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_3_3_3_4" id="__nav_3_3_3_4_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_3_3_4_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_3_3_4_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3_3_3_4">
             <span class="md-nav__icon md-icon"></span>
             Testing
@@ -2483,7 +2543,7 @@
   
   
     <li class="md-nav__item">
-      <a href="testing_for_development/" class="md-nav__link">
+      <a href="../../../developer/dev_testing/testing_for_development/" class="md-nav__link">
         
   
   
@@ -2506,7 +2566,7 @@
   
   
     <li class="md-nav__item">
-      <a href="test_all_eamxx/" class="md-nav__link">
+      <a href="../../../developer/dev_testing/test_all_eamxx/" class="md-nav__link">
         
   
   
@@ -2529,7 +2589,7 @@
   
   
     <li class="md-nav__item">
-      <a href="full_model_testing/" class="md-nav__link">
+      <a href="../../../developer/dev_testing/full_model_testing/" class="md-nav__link">
         
   
   
@@ -2552,7 +2612,7 @@
   
   
     <li class="md-nav__item">
-      <a href="ci_nightly/" class="md-nav__link">
+      <a href="../../../developer/dev_testing/ci_nightly/" class="md-nav__link">
         
   
   
@@ -2637,7 +2697,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../kokkos_ekat/" class="md-nav__link">
+      <a href="../../../developer/kokkos_ekat/" class="md-nav__link">
         
   
   
@@ -2660,7 +2720,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../field/" class="md-nav__link">
+      <a href="../../../developer/field/" class="md-nav__link">
         
   
   
@@ -2683,7 +2743,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../grid/" class="md-nav__link">
+      <a href="../../../developer/grid/" class="md-nav__link">
         
   
   
@@ -2706,7 +2766,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../processes/" class="md-nav__link">
+      <a href="../../../developer/processes/" class="md-nav__link">
         
   
   
@@ -2729,7 +2789,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../io/" class="md-nav__link">
+      <a href="../../../developer/io/" class="md-nav__link">
         
   
   
@@ -2752,7 +2812,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../TPLs/" class="md-nav__link">
+      <a href="../../../developer/TPLs/" class="md-nav__link">
         
   
   
@@ -2813,7 +2873,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../technical/" class="md-nav__link ">
+            <a href="../../../technical/" class="md-nav__link ">
               
   
   
@@ -2848,7 +2908,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../technical/aerocom_cldtop/" class="md-nav__link">
+      <a href="../../../technical/aerocom_cldtop/" class="md-nav__link">
         
   
   
@@ -2913,7 +2973,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../ELM/" class="md-nav__link ">
+            <a href="../../../../ELM/" class="md-nav__link ">
               
   
   
@@ -2948,7 +3008,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../ELM/user-guide/" class="md-nav__link">
+      <a href="../../../../ELM/user-guide/" class="md-nav__link">
         
   
   
@@ -2971,7 +3031,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../ELM/dev-guide/" class="md-nav__link">
+      <a href="../../../../ELM/dev-guide/" class="md-nav__link">
         
   
   
@@ -2994,7 +3054,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../ELM/tech-guide/" class="md-nav__link">
+      <a href="../../../../ELM/tech-guide/" class="md-nav__link">
         
   
   
@@ -3051,7 +3111,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../MOSART/" class="md-nav__link ">
+            <a href="../../../../MOSART/" class="md-nav__link ">
               
   
   
@@ -3086,7 +3146,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../MOSART/user-guide/" class="md-nav__link">
+      <a href="../../../../MOSART/user-guide/" class="md-nav__link">
         
   
   
@@ -3109,7 +3169,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../MOSART/dev-guide/" class="md-nav__link">
+      <a href="../../../../MOSART/dev-guide/" class="md-nav__link">
         
   
   
@@ -3132,7 +3192,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../MOSART/tech-guide/" class="md-nav__link">
+      <a href="../../../../MOSART/tech-guide/" class="md-nav__link">
         
   
   
@@ -3189,7 +3249,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../MPAS-Ocean/" class="md-nav__link ">
+            <a href="../../../../MPAS-Ocean/" class="md-nav__link ">
               
   
   
@@ -3224,7 +3284,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../MPAS-Ocean/user-guide/" class="md-nav__link">
+      <a href="../../../../MPAS-Ocean/user-guide/" class="md-nav__link">
         
   
   
@@ -3247,7 +3307,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../MPAS-Ocean/dev-guide/" class="md-nav__link">
+      <a href="../../../../MPAS-Ocean/dev-guide/" class="md-nav__link">
         
   
   
@@ -3270,7 +3330,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../MPAS-Ocean/tech-guide/" class="md-nav__link">
+      <a href="../../../../MPAS-Ocean/tech-guide/" class="md-nav__link">
         
   
   
@@ -3329,7 +3389,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../MPAS-seaice/" class="md-nav__link ">
+            <a href="../../../../MPAS-seaice/" class="md-nav__link ">
               
   
   
@@ -3364,7 +3424,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../MPAS-seaice/user-guide/" class="md-nav__link">
+      <a href="../../../../MPAS-seaice/user-guide/" class="md-nav__link">
         
   
   
@@ -3387,7 +3447,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../MPAS-seaice/tech-guide/" class="md-nav__link">
+      <a href="../../../../MPAS-seaice/tech-guide/" class="md-nav__link">
         
   
   
@@ -3410,7 +3470,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../MPAS-seaice/dev-guide/" class="md-nav__link">
+      <a href="../../../../MPAS-seaice/dev-guide/" class="md-nav__link">
         
   
   
@@ -3433,7 +3493,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../MPAS-seaice/references/" class="md-nav__link">
+      <a href="../../../../MPAS-seaice/references/" class="md-nav__link">
         
   
   
@@ -3538,7 +3598,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../generate_domain_files/" class="md-nav__link ">
+            <a href="../../../../generate_domain_files/" class="md-nav__link ">
               
   
   
@@ -3705,9 +3765,18 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#testing-philosophy-and-motivation" class="md-nav__link">
+  <a href="#brief-description-of-algorithm" class="md-nav__link">
     <span class="md-ellipsis">
-      Testing Philosophy and Motivation
+      Brief description of algorithm
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example" class="md-nav__link">
+    <span class="md-ellipsis">
+      Example
     </span>
   </a>
   
@@ -3733,28 +3802,73 @@
     
       
     
-    <a href="https://github.com/E3SM-Project/screamdeveloper/dev_testing/index.md" title="View source of this page" class="md-content__button md-icon">
+    <a href="https://github.com/E3SM-Project/screamuser/diags/vert_derivative.md" title="View source of this page" class="md-content__button md-icon">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 18c.56 0 1 .44 1 1s-.44 1-1 1-1-.44-1-1 .44-1 1-1m0-3c-2.73 0-5.06 1.66-6 4 .94 2.34 3.27 4 6 4s5.06-1.66 6-4c-.94-2.34-3.27-4-6-4m0 6.5a2.5 2.5 0 0 1-2.5-2.5 2.5 2.5 0 0 1 2.5-2.5 2.5 2.5 0 0 1 2.5 2.5 2.5 2.5 0 0 1-2.5 2.5M9.27 20H6V4h7v5h5v4.07c.7.08 1.36.25 2 .49V8l-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h4.5a8.2 8.2 0 0 1-1.23-2"/></svg>
     </a>
   
 
 
-<h1 id="overview">Overview</h1>
-<h2 id="testing-philosophy-and-motivation">Testing Philosophy and Motivation</h2>
-<p>Rigorous testing has been and continues to be <strong>integral</strong> to our development
-approach of moving quickly and embracing leading-edge software practices.
-We believe that scientific code must be tested for the results to be trusted, and
-as the complexity of advanced algorithms and code increases, the burden of
-proof increases right alongside it.
-These practices have enabled us to design a novel, high-resolution model of Earth's
-atmosphere that is trusted by the Department of Energy to provide high-quality
-answers for the forthcoming versions of E3SM.</p>
-<p>For these reasons, we devote significant space and effort to describing our
-testing practices in these documentation pages.
-This is not meant to make development more difficult, but, rather, to raise the
-bar of expectations for the next generation of scientists and
-<a href="https://us-rse.org">research software engineers</a> (RSEs).</p>
+<h1 id="vertical-derivative-diagnostics">Vertical derivative diagnostics</h1>
+<p>We can automatically calculate the vertical derivative of a given field
+with respect to a vertical coordinate (pressure or height).
+In other words, the vertical derivative is the derivative of the field
+along a vertical coordinate.
+To automatically get the derivative of a field X, we can request
+<code>X_pvert_derivative</code> or <code>X_zvert_derivative</code>
+in the output yaml files.</p>
+<p><em>WARNING: support for the dz-based derivative is experimental!</em></p>
+<h2 id="brief-description-of-algorithm">Brief description of algorithm</h2>
+<p>For simplicity, the field <code>X</code> can only have two dimensions
+(column and level). This covers most fields of interest, but
+notably does not cover higher-dimensioned fields in radiation and MAM.
+We calculate the derivative by finding the difference in the
+input field <code>X</code>, which must be provided on midpoints, by interpolating
+its values at interfaces weighted by the pressure differential.
+That is, for a pressure-based derivative</p>
+<div class="arithmatex">\[
+\nabla_{p} X = \frac{\Delta X}{\Delta p}
+\]</div>
+<p>and for height-based derivative</p>
+<div class="arithmatex">\[
+\nabla_{p} X = \frac{\Delta X}{\Delta z}
+\]</div>
+<p>where</p>
+<div class="arithmatex">\[
+\Delta X = \tilde{X}_{i,k+1} - \tilde{X}_{i,k}
+\]</div>
+<div class="arithmatex">\[
+\tilde{X}_{i,k+1} = \frac{\left(
+    X_{i,k} \times \Delta p_{i,k+1} +
+    X_{i,k+1} \times \Delta p_{i,k}
+  \right)}
+  {\left(
+    \Delta p_{i,k+1} + \Delta p_{i,k}
+  \right)}
+\]</div>
+<p>Here, <span class="arithmatex">\(\Delta p\)</span> is the "pseudo density" pressure differential in Pa;
+and <span class="arithmatex">\(\Delta z\)</span> is the height of the layer in m</p>
+<p>Note that the definition <span class="arithmatex">\(\tilde{X}_{i,k+1}\)</span> assumes that all
+fields are weighted by the pressure differential, which is a
+prognostic parameter of the dynamics core solver. Also note that
+when <span class="arithmatex">\(\Delta p_{i,k+1} \gg \Delta p_{i,k}\)</span>,
+<span class="arithmatex">\(\tilde{X}_{i,k+1}\)</span> is closer to <span class="arithmatex">\(X_{i,k}\)</span> than <span class="arithmatex">\(X_{i,k+1}\)</span>.</p>
+<h2 id="example">Example</h2>
+<div class="highlight"><pre><span></span><code><span class="nt">%YAML</span><span class="w"> </span><span class="m">1.1</span>
+<span class="nn">---</span>
+<span class="nt">filename_prefix</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">monthly.outputs</span>
+<span class="nt">averaging_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">average</span>
+<span class="nt">max_snapshots_per_file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="nt">fields</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">physics_pg2</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">field_names</span><span class="p">:</span>
+<span class="w">      </span><span class="c1"># in this example, we use T_mid in units of K</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_pvert_derivative</span><span class="w">  </span><span class="c1"># K / Pa</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_zvert_derivative</span><span class="w">  </span><span class="c1"># K / m</span>
+<span class="nt">output_control</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">frequency</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">  </span><span class="nt">frequency_units</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nmonths</span>
+</code></pre></div>
 
 
 
@@ -3811,12 +3925,12 @@ bar of expectations for the next generation of scientists and
     
     
       
-      <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.indexes", "navigation.instant", "navigation.instant.prefetch", "navigation.sections", "navigation.path", "navigation.tracking", "navigation.top", "search.suggest", "search.highlight", "search.share", "content.code.select", "content.code.copy", "content.action.view", "content.tooltips"], "search": "../../../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"base": "../../../..", "features": ["navigation.indexes", "navigation.instant", "navigation.instant.prefetch", "navigation.sections", "navigation.path", "navigation.tracking", "navigation.top", "search.suggest", "search.highlight", "search.share", "content.code.select", "content.code.copy", "content.action.view", "content.tooltips"], "search": "../../../../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.92b07e13.min.js"></script>
+      <script src="../../../../assets/javascripts/bundle.92b07e13.min.js"></script>
       
-        <script src="../../../javascript/mathjax.js"></script>
+        <script src="../../../../javascript/mathjax.js"></script>
       
         <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
       
