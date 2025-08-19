@@ -61,6 +61,46 @@
       $CASEROOT/user_nl_gcam file.</desc>
   </entry>
 
+    <entry id="ATM_DOMAIN_FILE">
+    <type>char</type>
+    <default_value>domain.lnd.ne30pg2_oEC60to30v3.200220.nc</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>atm domain file</desc>
+  </entry>
+
+  <entry id="LND_DOMAIN_FILE">
+    <type>char</type>
+    <default_value>domain.lnd.0.9x1.25_oEC60to30v3.231108.nc</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>lnd domain file</desc>
+  </entry>
+
+  <entry id="GCAM_PATH">
+    <type>char</type>
+    <default_value>$DIN_LOC_ROOT/iac/giac/gcam/gcam_6_0</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>path of gcam file</desc>
+  </entry>
+
+  <entry id="GLM_PATH">
+    <type>char</type>
+    <default_value>$DIN_LOC_ROOT/iac/giac/glm</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>path of glm file</desc>
+  </entry>
+
+  <entry id="GLM2IAC_PATH">
+    <type>char</type>
+    <default_value>$DIN_LOC_ROOT/iac/giac/glm2iac</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>path of glm2iac file</desc>
+  </entry>
+
   <help>
     =========================================
     IAC naming conventions

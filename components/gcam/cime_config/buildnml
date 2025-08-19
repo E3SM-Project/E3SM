@@ -33,6 +33,9 @@ def buildnml(case, caseroot, compname):
     gcam_bldnml_opts   = case.get_value("GCAM_BLDNML_OPTS")
     gcam_nml_use_case = case.get_value("GCAM_NML_USE_CASE")
     gcam_namelist_opts = case.get_value("GCAM_NAMELIST_OPTS")
+    gcam_idir           =case.get_value("GCAM_PATH")
+    glm_idir            =case.get_value("GLM_PATH")
+    glm2iacdir          =case.get_value("GLDM2IAC_PATH")
     rundir               = case.get_value("RUNDIR")
     run_type             = case.get_value("RUN_TYPE")
     run_refcase          = case.get_value("RUN_REFCASE")
@@ -91,6 +94,10 @@ def buildnml(case, caseroot, compname):
                    os.path.exists(os.path.join(rundir, "rpointer.iac")):
                 safe_copy(os.path.join(rundir, "rpointer.iac"),
                           os.path.join(rundir, "rpointer.iac{}".format(inst_string)))
+
+
+
+
 
         # -----------------------------------------------------
         # create gcamconf/namelist

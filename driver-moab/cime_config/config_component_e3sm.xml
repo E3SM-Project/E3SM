@@ -274,6 +274,8 @@
       <value compset="_CAM.*_CLM.*MPASO">day</value>
       <value compset="_CAM.*_CLM.*MPASO" grid="a%ne11np4">day</value>
       <value compset="_CAM.*_CLM.*MPASO" grid="a%ne120np4">day</value>
+      <value compset="SSP245(?:SOI)?_EAM.*CMIP6.*_GCAM">year</value>
+      <value compset="SSP370(?:SOI)?_EAM.*CMIP6.*_GCAM">year</value>
     </values>
     <desc>Base period associated with NCPL coupling frequency.
     This xml variable is only used to set the driver namelist variables,
@@ -348,6 +350,8 @@
       <value compset="_CAM5%SP.*ECPP" grid="a%ne4np4">72</value>
       <value compset="_CAM5%MMF"      grid="a%ne4np4">96</value>
       <value compset="_CAM5%MMF"      grid="a%ne4np4.pg2">72</value>
+      <value compset="SSP245(?:SOI)?_EAM.*CMIP6.*_GCAM">17520</value>
+      <value compset="SSP370(?:SOI)?_EAM.*CMIP6.*_GCAM">17520</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
@@ -369,6 +373,8 @@
       <value compset="_CAM.*_CLM.*MPASO" grid="a%ne11np4">12</value>
       <value compset="_CAM.*_CLM.*MPASO" grid="a%ne120np4">96</value>
       <value compset="_CAM.*_CLM.*MPASO" grid="oi%oARRM60to10">96</value>
+      <value compset="SSP245(?:SOI)?_EAM.*CMIP6.*_GCAM">17520</value>
+      <value compset="SSP370(?:SOI)?_EAM.*CMIP6.*_GCAM">17520</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
@@ -386,6 +392,8 @@
       <value compset="_SLND.*SOCN.*_MALI">1</value>
       <value compset="_DATM.*_SLND.*MPASO.*_MALI">$ATM_NCPL</value>
       <value compset="_CAM.*_CLM.*MPASO">$ATM_NCPL</value>
+      <value compset="SSP245(?:SOI)?_EAM.*CMIP6.*_GCAM">17520</value>
+      <value compset="SSP370(?:SOI)?_EAM.*CMIP6.*_GCAM">17520</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
@@ -421,7 +429,8 @@
       <value compset="_MPASO" grid="oi%oRRS15to5">96</value>
       <value compset="_MPASO" grid="oi%oARRM60to10">48</value>
       <value compset="_MPASO" grid="oi%oARRM60to6">48</value>
-
+      <value compset="SSP245(?:SOI)?_EAM.*CMIP6.*_GCAM">17520</value>
+      <value compset="SSP370(?:SOI)?_EAM.*CMIP6.*_GCAM">17520</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
@@ -441,6 +450,8 @@
       <value compset="_CAM.*_CLM.*MPASO">1</value>
       <value compset="_CAM.*_CLM.*MPASO" grid="a%ne11np4">1</value>
       <value compset="_CAM.*_CLM.*MPASO" grid="a%ne120np4">1</value>
+      <value compset="SSP245(?:SOI)?_EAM.*CMIP6.*_GCAM">1</value>
+      <value compset="SSP370(?:SOI)?_EAM.*CMIP6.*_GCAM">1</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
@@ -487,6 +498,8 @@
       <value compset="_CAM.*_CLM.*MPASO" grid="a%ne4np4">6</value>
       <value compset="_CAM.*_CLM.*MPASO" grid="a%ne11np4">4</value>
       <value compset="_CAM.*_CLM.*MPASO" grid="a%ne120np4">8</value>
+      <value compset="SSP245(?:SOI)?_EAM.*CMIP6.*_GCAM">17520</value>
+      <value compset="SSP370(?:SOI)?_EAM.*CMIP6.*_GCAM">17520</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
@@ -498,6 +511,10 @@
   <entry id="WAV_NCPL">
     <type>integer</type>
     <default_value>$ATM_NCPL</default_value>
+    <values>
+      <value compset="SSP245(?:SOI)?_EAM.*CMIP6.*_GCAM">17520</value>
+      <value compset="SSP370(?:SOI)?_EAM.*CMIP6.*_GCAM">17520</value>
+    </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
     <desc>Number of wav coupling intervals per NCPL_BASE_PERIOD.
@@ -507,7 +524,10 @@
 
   <entry id="IAC_NCPL">
     <type>integer</type>
-    <default_value>$ATM_NCPL</default_value>
+     <values>
+       <value compset="SSP245(?:SOI)?_EAM.*CMIP6.*_GCAM">1</value>
+       <value compset="SSP370(?:SOI)?_EAM.*CMIP6.*_GCAM">1</value>
+     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
     <desc>Number of iac coupling intervals per NCPL_BASE_PERIOD.

@@ -24,8 +24,11 @@ readonly CASE_NAME="test_${COMPSET}_${RESOLUTION}_${MYDATE}"
 
 # ---- Eva's settings for IAC run script ----
 # domain files
-export lnd_domainfile=domain.lnd.0.9x1.25_oEC60to30v3.231108.nc
-export atm_domainfile=domain.lnd.ne30pg2_oEC60to30v3.200220.nc
+#### I added them to components/gcam/cime_config/config_component.xml
+# export lnd_domainfile=domain.lnd.0.9x1.25_oEC60to30v3.231108.nc
+# export atm_domainfile=domain.lnd.ne30pg2_oEC60to30v3.200220.nc
+
+
 # select based on the model resolution
 # 2 deg : surfdata_iESM_dyn_hist_simyr2015_c230516.nc
 # 1 deg : landuse.timeseries_0.9x1.25_HIST_simyr2015_c201021.nc
@@ -50,7 +53,6 @@ readonly GET_REFCASE=TRUE
 readonly RUN_REFCASE="20241204_I20TREAMELMCNPRDCTCBCBGC_${RESOLUTION}" 
 readonly RUN_REFDATE="2015-01-01"
 readonly RUN_REFDIR="/lcrc/group/e3sm/ac.eva.sinha/E3SM_GCAM_lnd_init/${RUN_REFCASE}"
-export finidat="${RUN_REFDIR}/run/${RUN_REFCASE}.elm.r.${RUN_REFDATE}-00000.nc"
 
 # Set paths
 readonly CODE_ROOT="${HOME}/code/E3SM_GCAM/E3SM"
@@ -172,17 +174,18 @@ cat << EOF >> user_nl_eam
 
  hist_mfilt = 1
  hist_nhtfrq = -24
+
+ ncdata = '20241204_I20TREAMELMCNPRDCTCBCBGC_ne30pg2_f09_oEC60to30v3.eam.i.2015-01-01-00000.nc'
+
  
- co2_flag = .true.
+ co2_flag = .true. !check if this one is neccessary
  co2_readFlux_fuel = .false.
- co2_readFlux_aircraft = .false.
+ co2_readFlux_aircraft = .false. ! I see the aircraft emission file is determined in the use case namelist. should we turn it on?
  co2_readFlux_ocn = .true.
- co2flux_ocn_file = '${input_data_dir}/ocn/CMIP6_SSP245_ne30/fgco2_CESM2_SSP245_ne30pg2_2015-2100.nc'
- 
- co2vmr = 0.000001e-6
- scenario_ghg = 'RAMPED'
- bndtvghg = '${input_data_dir}/atm/cam/ggas/GHG_GCAM_SSP245_Annual_Global_2015-2102_c20240712.nc'
+
  co2_conserv_error_tol_per_year = 1.e-5
+
+
 
 EOF
 
@@ -196,22 +199,11 @@ cat << EOF >> user_nl_elm
  hist_mfilt = 1
  hist_nhtfrq = -24
  hist_dov2xy = .true.
- model_year_align_pdep = 2000
- stream_year_first_pdep = 2000
- stream_year_last_pdep = 2000
- stream_fldfilename_ndep = '${input_data_dir}/lnd/clm2/ndepdata/fndep_elm_cbgc_exp_simyr1849-2101_1.9x2.5_ssp245_c240903.nc'
- model_year_align_ndep = 2015
- stream_year_first_ndep = 2015
- stream_year_last_ndep = 2100
- stream_fldfilename_popdens = '${input_data_dir}/lnd/clm2/firedata/elmforc.ssp2_hdm_0.5x0.5_simyr1850-2101_c20200623.nc'
- model_year_align_popdens = 2015
- stream_year_first_popdens = 2015
- stream_year_last_popdens = 2100
- check_finidat_fsurdat_consistency = .false.
- check_finidat_year_consistency = .false.
- check_dynpft_consistency = .false.
  do_budgets = .true.
  do_harvest = .false.
+
+ finidat = '20241204_I20TREAMELMCNPRDCTCBCBGC_ne30pg2_f09_oEC60to30v3.elm.r.2015-01-01-00000.nc'
+ 
 EOF
 
 cat << EOF >> user_nl_gcam
@@ -433,22 +425,28 @@ case_setup() {
     
     # Extracts input_data_dir in case it is needed for user edits to the namelist later
     local input_data_dir=`./xmlquery DIN_LOC_ROOT --value`
-    export domainpath=${input_data_dir}/share/domains
+    local glm_idir=`./xmlquery GLM_PATH --value`
+    local gcam_idir=`./xmlquery GCAM_PATH --value`
+    local glm2iacdir=`./xmlquery GLM2IAC_PATH --value`
+    # export domainpath=${input_data_dir}/share/domains
+
     # echo $input_data_dir
 
     # Custom user_nl
     user_nl
 
     # other setups inherit from Eva's run script 
-    ./xmlchange SAVE_TIMING=TRUE
-    ./xmlchange ATM_DOMAIN_PATH=${domainpath}
-    ./xmlchange LND_DOMAIN_PATH=${domainpath}
-    ./xmlchange ATM_DOMAIN_FILE=${atm_domainfile}
-    ./xmlchange LND_DOMAIN_FILE=${lnd_domainfile}
-    ./xmlchange DOUT_S_ROOT=${CASE_ARCHIVE_DIR}
-    ./xmlchange NCPL_BASE_PERIOD=year
-    ./xmlchange ATM_NCPL=17520
-    ./xmlchange IAC_NCPL=1
+#  !!!! I addded them to components/gcam/cime_config/config_component.xml
+    # ./xmlchange SAVE_TIMING=TRUE
+    # ./xmlchange ATM_DOMAIN_PATH=${domainpath}
+    # ./xmlchange LND_DOMAIN_PATH=${domainpath}
+    # ./xmlchange ATM_DOMAIN_FILE=${atm_domainfile}
+    # ./xmlchange LND_DOMAIN_FILE=${lnd_domainfile}
+    ./xmlchange DOUT_S_ROOT=${CASE_ARCHIVE_DIR} # may not be neccessary 
+# !!!! I added them to components/gcam/cime_config/config_compsets.xml   
+    # ./xmlchange NCPL_BASE_PERIOD=year
+    # ./xmlchange ATM_NCPL=17520
+    # ./xmlchange IAC_NCPL=1
 
     # docn setup
     ./xmlchange --id PIO_TYPENAME  --val "pnetcdf"
@@ -461,11 +459,11 @@ case_setup() {
     ./case.setup --reset
 
     # gcam setups iherit from Eva's run script
-    gcam_rdir=${input_data_dir}/iac/giac/gcam/gcam_6_0/restart/ssp2rcp45/${MACHINE}
+    gcam_rdir=${gcam_idir}/restart/ssp2rcp45/${MACHINE}
     ldir=${input_data_dir}/lnd/clm2/rawdata/LUT_input_files_current
-    gcam_idir=${input_data_dir}/iac/giac/gcam/gcam_6_0
-    glm_idir=${input_data_dir}/iac/giac/glm
-    glm2iacdir=${input_data_dir}/iac/giac/glm2iac
+    # gcam_idir=${input_data_dir}/iac/giac/gcam/gcam_6_0
+    # glm_idir=${input_data_dir}/iac/giac/glm
+    # glm2iacdir=${input_data_dir}/iac/giac/glm2iac
 
     # GCAM and GLM currently read some configuration and input files from
     # the current directory, as we haven't yet put them in a standard
@@ -601,6 +599,8 @@ runtime_options() {
 
         ln -sf  ${RUN_REFDIR}/${RUN_REFCASE}.eam.i.${RUN_REFDATE}-00000.nc ${CASE_RUN_DIR}/.
         ln -sf  ${RUN_REFDIR}/${RUN_REFCASE}.elm.r.${RUN_REFDATE}-00000.nc ${CASE_RUN_DIR}/.
+        cp ${RUN_REFDIR}/rpointer.atm ${CASE_RUN_DIR}/
+        cp ${RUN_REFDIR}/rpointer.lnd ${CASE_RUN_DIR}/
 
         else
         echo 'ERROR: $MODEL_START_TYPE = '${MODEL_START_TYPE}' is unrecognized. Exiting.'
