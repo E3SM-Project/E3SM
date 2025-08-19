@@ -7,9 +7,7 @@
 #include <array>
 
 #ifdef EAMXX_HAS_PYTHON
-#include <pybind11/pybind11.h>
-#include <pybind11/numpy.h>
-namespace py = pybind11;
+#include "share/atm_process/atmosphere_process_pyhelpers.hpp"
 #endif
 
 namespace scream
@@ -103,10 +101,9 @@ void CldFraction::run_impl (const double /* dt */)
     // Sync input to host
     liq_cld_frac.sync_to_host();
 
-    auto py_module = get_py_module();
     double ice_threshold      = m_params.get<double>("ice_cloud_threshold");
     double ice_4out_threshold = m_params.get<double>("ice_cloud_for_analysis_threshold");
-    py_module.attr("main")(ice_threshold,ice_4out_threshold,py_qi,py_liq_cld_frac,py_ice_cld_frac,py_tot_cld_frac,py_ice_cld_frac_4out,py_tot_cld_frac_4out);
+    py_module_call("main",ice_threshold,ice_4out_threshold,py_qi,py_liq_cld_frac,py_ice_cld_frac,py_tot_cld_frac,py_ice_cld_frac_4out,py_tot_cld_frac_4out);
 
     // Sync outputs to dev
     qi.sync_to_dev();

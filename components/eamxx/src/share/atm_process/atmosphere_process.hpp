@@ -19,10 +19,9 @@
 #include <ekat_string_utils.hpp>
 #include <ekat_logger.hpp>
 
-#ifdef EAMXX_HAS_PYTHON
-#include <pybind11/pybind11.h>
-#include <pybind11/numpy.h>
-#endif
+namespace pybind11 {
+class array;
+}
 
 #include <memory>
 #include <string>
@@ -645,17 +644,19 @@ protected:
   strmap_t<strmap_t<std::any>> m_py_fields_dev;
   strmap_t<strmap_t<std::any>> m_py_fields_host;
 
+  bool has_py_module () const { return m_py_module.has_value(); }
+
+  template<typename... Args>
+  void py_module_call (const std::string& name, const Args&... args);
+
   // These utilities allow to retrieve pybind11 objects from the std::any wrappers
-  bool has_py_module () const;
-  pybind11::module get_py_module () const;
+  const pybind11::array& get_py_field_host (const std::string& fname) const;
+  const pybind11::array& get_py_field_dev (const std::string& fname) const;
 
-  pybind11::array get_py_field_host (const std::string& fname) const;
-  pybind11::array get_py_field_dev (const std::string& fname) const;
+  const pybind11::array& get_py_field_host (const std::string& fname, const std::string& grid) const;
+  const pybind11::array& get_py_field_dev (const std::string& fname, const std::string& grid) const;
 
-  pybind11::array get_py_field_host (const std::string& fname, const std::string& grid) const;
-  pybind11::array get_py_field_dev (const std::string& fname, const std::string& grid) const;
-
-  pybind11::array get_py_field_impl (const strmap_t<strmap_t<std::any>>& py_fields,
+  const pybind11::array& get_py_field_impl (const strmap_t<strmap_t<std::any>>& py_fields,
                                      const std::string& fname, const std::string& grid) const;
 #endif
 };
@@ -680,57 +681,6 @@ add_invariant_check (const Args... args) {
   auto fpc = std::make_shared<FPC>(args...);
   add_invariant_check(fpc);
 }
-
-#ifdef EAMXX_HAS_PYTHON
-inline bool AtmosphereProcess::
-has_py_module () const
-{
-  return m_py_module.has_value();
-}
-
-inline pybind11::module AtmosphereProcess::get_py_module () const
-{
-  return std::any_cast<pybind11::module>(m_py_module);
-}
-
-inline pybind11::array AtmosphereProcess::
-get_py_field_impl (const strmap_t<strmap_t<std::any>>& py_fields,
-                   const std::string& fname, const std::string& grid) const
-{
-  auto any_f = py_fields.at(fname).at(grid);
-  return std::any_cast<pybind11::array>(any_f);
-}
-
-inline pybind11::array AtmosphereProcess::
-get_py_field_host (const std::string& fname, const std::string& grid) const
-{
-  return get_py_field_impl(m_py_fields_host,fname,grid);
-}
-
-inline pybind11::array AtmosphereProcess::
-get_py_field_dev (const std::string& fname, const std::string& grid) const
-{  
-  return get_py_field_impl(m_py_fields_dev,fname,grid);
-}
-
-inline pybind11::array AtmosphereProcess::
-get_py_field_host (const std::string& fname) const
-{
-  EKAT_REQUIRE_MSG (m_py_fields_host.at(fname).size()==1,
-      "Cannot request pyfield by field name only. Multiple copies exist on multiple grids.\n"
-      "  - field name: " + fname + "\n");
-  return std::any_cast<pybind11::array>(m_py_fields_host.at(fname).begin()->second);
-}
-
-inline pybind11::array AtmosphereProcess::
-get_py_field_dev (const std::string& fname) const
-{
-  EKAT_REQUIRE_MSG (m_py_fields_dev.at(fname).size()==1,
-      "Cannot request pyfield by field name only. Multiple copies exist on multiple grids.\n"
-      "  - field name: " + fname + "\n");
-  return std::any_cast<pybind11::array>(m_py_fields_dev.at(fname).begin()->second);
-}
-#endif
 
 
 // A short name for the factory for atmosphere processes
