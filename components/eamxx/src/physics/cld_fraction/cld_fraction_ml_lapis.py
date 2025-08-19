@@ -41,7 +41,7 @@ class CldFracNet(nn.Module):
         y13_categorical = (y13_probabilities > 0.5).float()
 
     # Now compute cld_tot from cld_ice and cld_liq
-    y21 = self.tot1(torch.cat((liq, y13_categorical), dim=1))
+    y21 = self.tot1(torch.cat((liq, y13_categorical), dim=0))
     y22 = self.relu(y21)
     y23 = self.tot2(y22)
     return y13_categorical, y23
@@ -56,27 +56,11 @@ def main ():
     model = CldFracNet(nlevs,nlevs)
     model.load_state_dict(torch.load(model_file,map_location=torch.device('cpu')))
 
-    dtype=torch.float32
-
-    batch_size = 1
-    col = torch.ones((batch_size,nlevs))
-    #  col = TensorPlaceholder([-1, -1], dtype)
-
-
-    qi = col
-    liq = col
+    qi = torch.ones((nlevs))
+    liq = torch.ones((nlevs))
     mlir_module = torchscript.compile(model, (qi, liq), output_type='linalg-on-tensors')
     with open("cldfrac.mlir",'w') as fd:
         fd.write(str(mlir_module))
-
-    #  backend = KokkosBackend.KokkosBackend(dump_mlir=False)
-    #  backend.package_name = "cld_fraction_cppml"
-
-    #  moduleLowered = backend.run_cli("lapis-opt",[f'--sparse-compiler-kokkos=parallelization-strategy={backend.parallel_strategy}'],str(mlir_module))
-    #  with open("cldfrac_lower.mlir",'w') as fd:
-    #      fd.write(moduleLowered)
-
-    #  backend.run_cli("lapis-translate",['-o', f'{os.getcwd()}/cldfrac_ml_lapis.cpp'],moduleLowered)
 
 if __name__ == "__main__":
     main()

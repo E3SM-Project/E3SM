@@ -32,39 +32,33 @@ struct GlobalViews_forward {
 // Return the total amount of scratch that the function uses
 // This is the upper bound to what forward_L0_scratch_required can return
 KOKKOS_INLINE_FUNCTION constexpr int forward_total_scratch_required() {
-  return 2280;
+  return 2024;
 }
 
 // Find L1 address shift: for allocations spilling into level 1 scratch,
 // this is subtracted from the allocation address to find its relative address within L1.
 KOKKOS_INLINE_FUNCTION constexpr int forward_L1_shift(int L0_scratch_max) {
-  int tmp = 2280;
+  int tmp = 2024;
   if(328 > L0_scratch_max && 72 < tmp)
     tmp = 72;
   if(584 > L0_scratch_max && 328 < tmp)
     tmp = 328;
   if(840 > L0_scratch_max && 584 < tmp)
     tmp = 584;
-  if(1096 > L0_scratch_max && 840 < tmp)
-    tmp = 840;
-  if(1128 > L0_scratch_max && 840 < tmp)
-    tmp = 840;
-  if(1416 > L0_scratch_max && 1128 < tmp)
-    tmp = 1128;
-  if(1416 > L0_scratch_max && 1128 < tmp)
-    tmp = 1128;
+  if(872 > L0_scratch_max && 584 < tmp)
+    tmp = 584;
+  if(1160 > L0_scratch_max && 872 < tmp)
+    tmp = 872;
+  if(1160 > L0_scratch_max && 872 < tmp)
+    tmp = 872;
   if(72 > L0_scratch_max && 0 < tmp)
     tmp = 0;
-  if(1704 > L0_scratch_max && 1416 < tmp)
-    tmp = 1416;
-  if(1704 > L0_scratch_max && 1128 < tmp)
-    tmp = 1128;
-  if(2280 > L0_scratch_max && 1704 < tmp)
-    tmp = 1704;
-  if(1704 > L0_scratch_max && 1128 < tmp)
-    tmp = 1128;
-  if(840 > L0_scratch_max && 584 < tmp)
-    tmp = 584;
+  if(1448 > L0_scratch_max && 872 < tmp)
+    tmp = 872;
+  if(2024 > L0_scratch_max && 1448 < tmp)
+    tmp = 1448;
+  if(1448 > L0_scratch_max && 872 < tmp)
+    tmp = 872;
   return tmp;
 }
 
@@ -78,33 +72,27 @@ KOKKOS_INLINE_FUNCTION constexpr int forward_L0_scratch_required(int L0_scratch_
     tmp = 584;
   if(840 <= L0_scratch_max && 840 > tmp)
     tmp = 840;
-  if(1096 <= L0_scratch_max && 1096 > tmp)
-    tmp = 1096;
-  if(1128 <= L0_scratch_max && 1128 > tmp)
-    tmp = 1128;
-  if(1416 <= L0_scratch_max && 1416 > tmp)
-    tmp = 1416;
-  if(1416 <= L0_scratch_max && 1416 > tmp)
-    tmp = 1416;
+  if(872 <= L0_scratch_max && 872 > tmp)
+    tmp = 872;
+  if(1160 <= L0_scratch_max && 1160 > tmp)
+    tmp = 1160;
+  if(1160 <= L0_scratch_max && 1160 > tmp)
+    tmp = 1160;
   if(72 <= L0_scratch_max && 72 > tmp)
     tmp = 72;
-  if(1704 <= L0_scratch_max && 1704 > tmp)
-    tmp = 1704;
-  if(1704 <= L0_scratch_max && 1704 > tmp)
-    tmp = 1704;
-  if(2280 <= L0_scratch_max && 2280 > tmp)
-    tmp = 2280;
-  if(1704 <= L0_scratch_max && 1704 > tmp)
-    tmp = 1704;
-  if(840 <= L0_scratch_max && 840 > tmp)
-    tmp = 840;
+  if(1448 <= L0_scratch_max && 1448 > tmp)
+    tmp = 1448;
+  if(2024 <= L0_scratch_max && 2024 > tmp)
+    tmp = 2024;
+  if(1448 <= L0_scratch_max && 1448 > tmp)
+    tmp = 1448;
   return tmp;
 }
 
 // Find the actual level 1 scratch required by the function, assuming this limit for L0 scratch.
 // This has no strict upper bound.
 KOKKOS_INLINE_FUNCTION constexpr int forward_L1_scratch_required(int L0_scratch_max) {
-  return 2280 - forward_L1_shift(L0_scratch_max);
+  return 2024 - forward_L1_shift(L0_scratch_max);
 }
 
 template<typename ExecSpace, int L0_scratch_max, typename ViewArg0, typename ViewArg1, typename ViewArg2, typename ViewArg3>
@@ -119,255 +107,246 @@ KOKKOS_INLINE_FUNCTION void forward(const typename Kokkos::TeamPolicy<ExecSpace>
   const auto& v11 = globals.m__constant_72xf32_0;
   const auto& v12 = globals.m__constant_72x64xf32;
   constexpr bool v13_spill = 328 > L0_scratch_max;
-  Kokkos::View<float[1][64], Kokkos::LayoutRight, Kokkos::AnonymousSpace, Kokkos::MemoryTraits<Kokkos::Unmanaged>> v13((float*) (v13_spill ? (scratch1 + 72 - l1_cutoff) : (scratch0 + 72)));
+  Kokkos::View<float[64], Kokkos::LayoutRight, Kokkos::AnonymousSpace, Kokkos::MemoryTraits<Kokkos::Unmanaged>> v13((float*) (v13_spill ? (scratch1 + 72 - l1_cutoff) : (scratch0 + 72)));
   ;
   constexpr bool v14_spill = 584 > L0_scratch_max;
-  Kokkos::View<float[1][64], Kokkos::LayoutRight, Kokkos::AnonymousSpace, Kokkos::MemoryTraits<Kokkos::Unmanaged>> v14((float*) (v14_spill ? (scratch1 + 328 - l1_cutoff) : (scratch0 + 328)));
+  Kokkos::View<float[64], Kokkos::LayoutRight, Kokkos::AnonymousSpace, Kokkos::MemoryTraits<Kokkos::Unmanaged>> v14((float*) (v14_spill ? (scratch1 + 328 - l1_cutoff) : (scratch0 + 328)));
   ;
-  Kokkos::parallel_for(Kokkos::TeamVectorMDRange(team, 1, 64),
-  [=](size_t v15, size_t v16) {
-    v14(v15, v16) = 0.0e+00f;
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, 0, 64),
+  [=](size_t v15) {
+    v14(v15) = 0.0e+00f;
   });
   team.team_barrier();
-  constexpr bool v17_spill = 840 > L0_scratch_max;
-  Kokkos::View<float[1][64], Kokkos::LayoutRight, Kokkos::AnonymousSpace, Kokkos::MemoryTraits<Kokkos::Unmanaged>> v17((float*) (v17_spill ? (scratch1 + 584 - l1_cutoff) : (scratch0 + 584)));
+  constexpr bool v16_spill = 840 > L0_scratch_max;
+  Kokkos::View<float[64], Kokkos::LayoutRight, Kokkos::AnonymousSpace, Kokkos::MemoryTraits<Kokkos::Unmanaged>> v16((float*) (v16_spill ? (scratch1 + 584 - l1_cutoff) : (scratch0 + 584)));
   ;
-  Kokkos::parallel_for(Kokkos::TeamVectorMDRange(team, 1, 64),
-  [=](size_t v18, size_t v19) {
-    float v20 = v14(v18, v19);
-    v17(v18, v19) = v20;
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, 0, 64),
+  [=](size_t v17) {
+    float v18 = v14(v17);
+    v16(v17) = v18;
   });
   team.team_barrier();
-  Kokkos::parallel_for(Kokkos::TeamThreadMDRange(team, 1, 64),
-  [=](size_t v21, size_t v22) {
-    float v23 = v17(v21, v22);
-    float v24;
+  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, 0, 64),
+  [=](size_t v19) {
+    float v20 = v16(v19);
+    float v21;
     Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(team, 0, 72),
-    [=](size_t v25, float& lreduce1) {
-      float v26 = v3(v21, v25);
-      float v27 = v12(v25, v22);
-      float v28 = v26 * v27;
-      float v29 = lreduce1 + v28;
-      lreduce1 = v29;
+    [=](size_t v22, float& lreduce1) {
+      float v23 = v3(v22);
+      float v24 = v12(v22, v19);
+      float v25 = v23 * v24;
+      float v26 = lreduce1 + v25;
+      lreduce1 = v26;
       ;
-    }, (v24));
+    }, (v21));
     Kokkos::single(Kokkos::PerThread(team), [&]() {
-      v17(v21, v22) = v24;
+      v16(v19) = v21;
     });
   });
   team.team_barrier();
-  constexpr bool v30_spill = 1096 > L0_scratch_max;
-  Kokkos::View<float[1][64], Kokkos::LayoutRight, Kokkos::AnonymousSpace, Kokkos::MemoryTraits<Kokkos::Unmanaged>> v30((float*) (v30_spill ? (scratch1 + 840 - l1_cutoff) : (scratch0 + 840)));
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, 0, 64),
+  [=](size_t v27) {
+    float v28 = v16(v27);
+    float v29 = v8(v27);
+    float v30 = v28 + v29;
+    v13(v27) = v30;
+  });
+  team.team_barrier();
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, 0, 64),
+  [=](size_t v31) {
+    float v32 = v13(v31);
+    bool v33 = (Kokkos::isnan(v32) || Kokkos::isnan(0.0e+00f)) || (v32 > 0.0e+00f);
+    float v34 = v33? v32 : 0.0e+00f;
+    v13(v31) = v34;
+  });
+  team.team_barrier();
+  constexpr bool v35_spill = 872 > L0_scratch_max;
+  Kokkos::View<float[72], Kokkos::LayoutRight, Kokkos::AnonymousSpace, Kokkos::MemoryTraits<Kokkos::Unmanaged>> v35((float*) (v35_spill ? (scratch1 + 584 - l1_cutoff) : (scratch0 + 584)));
   ;
-  Kokkos::parallel_for(Kokkos::TeamVectorMDRange(team, 1, 64),
-  [=](size_t v31, size_t v32) {
-    float v33 = v17(0, v32);
-    float v34 = v8(v32);
-    float v35 = v33 + v34;
-    v30(v31, v32) = v35;
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, 0, 72),
+  [=](size_t v36) {
+    v35(v36) = 0.0e+00f;
   });
   team.team_barrier();
-  Kokkos::parallel_for(Kokkos::TeamVectorMDRange(team, 1, 64),
-  [=](size_t v36, size_t v37) {
-    float v38 = v30(0, v37);
-    bool v39 = (Kokkos::isnan(v38) || Kokkos::isnan(0.0e+00f)) || (v38 > 0.0e+00f);
-    float v40 = v39? v38 : 0.0e+00f;
-    v13(v36, v37) = v40;
-  });
-  team.team_barrier();
-  constexpr bool v41_spill = 1128 > L0_scratch_max;
-  Kokkos::View<float[1][72], Kokkos::LayoutRight, Kokkos::AnonymousSpace, Kokkos::MemoryTraits<Kokkos::Unmanaged>> v41((float*) (v41_spill ? (scratch1 + 840 - l1_cutoff) : (scratch0 + 840)));
+  constexpr bool v37_spill = 1160 > L0_scratch_max;
+  Kokkos::View<float[72], Kokkos::LayoutRight, Kokkos::AnonymousSpace, Kokkos::MemoryTraits<Kokkos::Unmanaged>> v37((float*) (v37_spill ? (scratch1 + 872 - l1_cutoff) : (scratch0 + 872)));
   ;
-  Kokkos::parallel_for(Kokkos::TeamVectorMDRange(team, 1, 72),
-  [=](size_t v42, size_t v43) {
-    v41(v42, v43) = 0.0e+00f;
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, 0, 72),
+  [=](size_t v38) {
+    float v39 = v35(v38);
+    v37(v38) = v39;
   });
   team.team_barrier();
-  constexpr bool v44_spill = 1416 > L0_scratch_max;
-  Kokkos::View<float[1][72], Kokkos::LayoutRight, Kokkos::AnonymousSpace, Kokkos::MemoryTraits<Kokkos::Unmanaged>> v44((float*) (v44_spill ? (scratch1 + 1128 - l1_cutoff) : (scratch0 + 1128)));
-  ;
-  Kokkos::parallel_for(Kokkos::TeamVectorMDRange(team, 1, 72),
-  [=](size_t v45, size_t v46) {
-    float v47 = v41(v45, v46);
-    v44(v45, v46) = v47;
-  });
-  team.team_barrier();
-  Kokkos::parallel_for(Kokkos::TeamThreadMDRange(team, 1, 72),
-  [=](size_t v48, size_t v49) {
-    float v50 = v44(v48, v49);
-    float v51;
+  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, 0, 72),
+  [=](size_t v40) {
+    float v41 = v37(v40);
+    float v42;
     Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(team, 0, 64),
-    [=](size_t v52, float& lreduce1) {
-      float v53 = v13(v48, v52);
-      float v54 = v7(v52, v49);
-      float v55 = v53 * v54;
-      float v56 = lreduce1 + v55;
-      lreduce1 = v56;
+    [=](size_t v43, float& lreduce1) {
+      float v44 = v13(v43);
+      float v45 = v7(v43, v40);
+      float v46 = v44 * v45;
+      float v47 = lreduce1 + v46;
+      lreduce1 = v47;
       ;
-    }, (v51));
+    }, (v42));
     Kokkos::single(Kokkos::PerThread(team), [&]() {
-      v44(v48, v49) = v51;
+      v37(v40) = v42;
     });
   });
   team.team_barrier();
-  Kokkos::parallel_for(Kokkos::TeamVectorMDRange(team, 1, 72),
-  [=](size_t v57, size_t v58) {
-    float v59 = v44(0, v58);
-    float v60 = v9(v58);
-    float v61 = v59 + v60;
-    v2(v57, v58) = v61;
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, 0, 72),
+  [=](size_t v48) {
+    float v49 = v37(v48);
+    float v50 = v9(v48);
+    float v51 = v49 + v50;
+    v2(v48) = v51;
   });
   team.team_barrier();
-  constexpr bool v62_spill = 1416 > L0_scratch_max;
-  Kokkos::View<float[1][72], Kokkos::LayoutRight, Kokkos::AnonymousSpace, Kokkos::MemoryTraits<Kokkos::Unmanaged>> v62((float*) (v62_spill ? (scratch1 + 1128 - l1_cutoff) : (scratch0 + 1128)));
+  constexpr bool v52_spill = 1160 > L0_scratch_max;
+  Kokkos::View<float[72], Kokkos::LayoutRight, Kokkos::AnonymousSpace, Kokkos::MemoryTraits<Kokkos::Unmanaged>> v52((float*) (v52_spill ? (scratch1 + 872 - l1_cutoff) : (scratch0 + 872)));
   ;
-  Kokkos::parallel_for(Kokkos::TeamVectorMDRange(team, 1, 72),
-  [=](size_t v63, size_t v64) {
-    float v65 = v2(0, v64);
-    float v66 = -v65;
-    float v67 = Kokkos::exp(v66);
-    float v68 = v67 + 1.000000000e+00f;
-    float v69 = 1.000000000e+00f / v68;
-    v62(v63, v64) = v69;
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, 0, 72),
+  [=](size_t v53) {
+    float v54 = v2(v53);
+    float v55 = -v54;
+    float v56 = Kokkos::exp(v55);
+    float v57 = v56 + 1.000000000e+00f;
+    float v58 = 1.000000000e+00f / v57;
+    v52(v53) = v58;
   });
   team.team_barrier();
-  constexpr bool v70_spill = 72 > L0_scratch_max;
-  Kokkos::View<bool[1][72], Kokkos::LayoutRight, Kokkos::AnonymousSpace, Kokkos::MemoryTraits<Kokkos::Unmanaged>> v70((bool*) (v70_spill ? (scratch1 + 0 - l1_cutoff) : (scratch0 + 0)));
+  constexpr bool v59_spill = 72 > L0_scratch_max;
+  Kokkos::View<bool[72], Kokkos::LayoutRight, Kokkos::AnonymousSpace, Kokkos::MemoryTraits<Kokkos::Unmanaged>> v59((bool*) (v59_spill ? (scratch1 + 0 - l1_cutoff) : (scratch0 + 0)));
   ;
-  Kokkos::parallel_for(Kokkos::TeamVectorMDRange(team, 1, 72),
-  [=](size_t v71, size_t v72) {
-    float v73 = v62(0, v72);
-    double v74 = (double) v73;
-    bool v75 = (v74 > 5.00000000000000000e-01);
-    v70(v71, v72) = v75;
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, 0, 72),
+  [=](size_t v60) {
+    float v61 = v52(v60);
+    double v62 = (double) v61;
+    bool v63 = (v62 > 5.00000000000000000e-01);
+    v59(v60) = v63;
   });
   team.team_barrier();
-  constexpr bool v76_spill = 1704 > L0_scratch_max;
-  Kokkos::View<float[1][72], Kokkos::LayoutRight, Kokkos::AnonymousSpace, Kokkos::MemoryTraits<Kokkos::Unmanaged>> v76((float*) (v76_spill ? (scratch1 + 1416 - l1_cutoff) : (scratch0 + 1416)));
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, 0, 72),
+  [=](size_t v64) {
+    bool v65 = v59(v64);
+    float v66 = (float) v65;
+    v2(v64) = v66;
+  });
+  team.team_barrier();
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, 0, 72),
+  [=](size_t v67) {
+    float v68 = v2(v67);
+    float v69 = v52(v67);
+    float v70 = v68 - v69;
+    v2(v67) = v70;
+  });
+  team.team_barrier();
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, 0, 72),
+  [=](size_t v71) {
+    float v72 = v2(v71);
+    float v73 = v52(v71);
+    float v74 = v72 + v73;
+    v1(v71) = v74;
+  });
+  team.team_barrier();
+  constexpr bool v75_spill = 1448 > L0_scratch_max;
+  Kokkos::View<float[144], Kokkos::LayoutRight, Kokkos::AnonymousSpace, Kokkos::MemoryTraits<Kokkos::Unmanaged>> v75((float*) (v75_spill ? (scratch1 + 872 - l1_cutoff) : (scratch0 + 872)));
   ;
-  Kokkos::parallel_for(Kokkos::TeamVectorMDRange(team, 1, 72),
-  [=](size_t v77, size_t v78) {
-    bool v79 = v70(0, v78);
-    float v80 = (float) v79;
-    v76(v77, v78) = v80;
-  });
-  team.team_barrier();
-  Kokkos::parallel_for(Kokkos::TeamVectorMDRange(team, 1, 72),
-  [=](size_t v81, size_t v82) {
-    float v83 = v76(0, v82);
-    float v84 = v62(0, v82);
-    float v85 = v83 - v84;
-    v2(v81, v82) = v85;
-  });
-  team.team_barrier();
-  Kokkos::parallel_for(Kokkos::TeamVectorMDRange(team, 1, 72),
-  [=](size_t v86, size_t v87) {
-    float v88 = v2(0, v87);
-    float v89 = v62(0, v87);
-    float v90 = v88 + v89;
-    v1(v86, v87) = v90;
-  });
-  team.team_barrier();
-  constexpr bool v91_spill = 1704 > L0_scratch_max;
-  Kokkos::View<float[1][144], Kokkos::LayoutRight, Kokkos::AnonymousSpace, Kokkos::MemoryTraits<Kokkos::Unmanaged>> v91((float*) (v91_spill ? (scratch1 + 1128 - l1_cutoff) : (scratch0 + 1128)));
+  constexpr bool v76_spill = 2024 > L0_scratch_max;
+  Kokkos::View<float[144], Kokkos::LayoutRight, Kokkos::AnonymousSpace, Kokkos::MemoryTraits<Kokkos::Unmanaged>> v76((float*) (v76_spill ? (scratch1 + 1448 - l1_cutoff) : (scratch0 + 1448)));
   ;
-  constexpr bool v92_spill = 2280 > L0_scratch_max;
-  Kokkos::View<float[1][144], Kokkos::LayoutRight, Kokkos::AnonymousSpace, Kokkos::MemoryTraits<Kokkos::Unmanaged>> v92((float*) (v92_spill ? (scratch1 + 1704 - l1_cutoff) : (scratch0 + 1704)));
-  ;
-  Kokkos::parallel_for(Kokkos::TeamVectorMDRange(team, 1, 144),
-  [=](size_t v93, size_t v94) {
-    float v95 = v91(v93, v94);
-    v92(v93, v94) = v95;
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, 0, 144),
+  [=](size_t v77) {
+    float v78 = v75(v77);
+    v76(v77) = v78;
   });
   team.team_barrier();
-  Kokkos::LayoutStride v96_layout(1, 144, 72, 1);
-  Kokkos::View<float[1][72], Kokkos::LayoutStride, Kokkos::AnonymousSpace> v96(v92.data() + 0, v96_layout);
+  Kokkos::LayoutStride v79_layout(72, 1);
+  Kokkos::View<float[72], Kokkos::LayoutStride, Kokkos::AnonymousSpace> v79(v76.data() + 0, v79_layout);
   ;
-  Kokkos::parallel_for(Kokkos::TeamVectorMDRange(team, 1, 72),
-  [=](size_t v97, size_t v98) {
-    float v99 = v4(v97, v98);
-    v96(v97, v98) = v99;
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, 0, 72),
+  [=](size_t v80) {
+    float v81 = v4(v80);
+    v79(v80) = v81;
   });
   team.team_barrier();
-  constexpr bool v100_spill = 1704 > L0_scratch_max;
-  Kokkos::View<float[1][144], Kokkos::LayoutRight, Kokkos::AnonymousSpace, Kokkos::MemoryTraits<Kokkos::Unmanaged>> v100((float*) (v100_spill ? (scratch1 + 1128 - l1_cutoff) : (scratch0 + 1128)));
+  constexpr bool v82_spill = 1448 > L0_scratch_max;
+  Kokkos::View<float[144], Kokkos::LayoutRight, Kokkos::AnonymousSpace, Kokkos::MemoryTraits<Kokkos::Unmanaged>> v82((float*) (v82_spill ? (scratch1 + 872 - l1_cutoff) : (scratch0 + 872)));
   ;
-  Kokkos::parallel_for(Kokkos::TeamVectorMDRange(team, 1, 144),
-  [=](size_t v101, size_t v102) {
-    float v103 = v92(v101, v102);
-    v100(v101, v102) = v103;
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, 0, 144),
+  [=](size_t v83) {
+    float v84 = v76(v83);
+    v82(v83) = v84;
   });
   team.team_barrier();
-  Kokkos::LayoutStride v104_layout(1, 144, 72, 1);
-  Kokkos::View<float[1][72], Kokkos::LayoutStride, Kokkos::AnonymousSpace> v104(v100.data() + 72, v104_layout);
+  Kokkos::LayoutStride v85_layout(72, 1);
+  Kokkos::View<float[72], Kokkos::LayoutStride, Kokkos::AnonymousSpace> v85(v82.data() + 72, v85_layout);
   ;
-  Kokkos::parallel_for(Kokkos::TeamVectorMDRange(team, 1, 72),
-  [=](size_t v105, size_t v106) {
-    float v107 = v1(v105, v106);
-    v104(v105, v106) = v107;
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, 0, 72),
+  [=](size_t v86) {
+    float v87 = v1(v86);
+    v85(v86) = v87;
   });
   team.team_barrier();
-  Kokkos::parallel_for(Kokkos::TeamThreadMDRange(team, 1, 64),
-  [=](size_t v108, size_t v109) {
-    float v110 = v14(v108, v109);
-    float v111;
+  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, 0, 64),
+  [=](size_t v88) {
+    float v89 = v14(v88);
+    float v90;
     Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(team, 0, 144),
-    [=](size_t v112, float& lreduce1) {
-      float v113 = v100(v108, v112);
-      float v114 = v6(v112, v109);
-      float v115 = v113 * v114;
-      float v116 = lreduce1 + v115;
-      lreduce1 = v116;
+    [=](size_t v91, float& lreduce1) {
+      float v92 = v82(v91);
+      float v93 = v6(v91, v88);
+      float v94 = v92 * v93;
+      float v95 = lreduce1 + v94;
+      lreduce1 = v95;
       ;
-    }, (v111));
+    }, (v90));
     Kokkos::single(Kokkos::PerThread(team), [&]() {
-      v14(v108, v109) = v111;
+      v14(v88) = v90;
     });
   });
   team.team_barrier();
-  constexpr bool v117_spill = 840 > L0_scratch_max;
-  Kokkos::View<float[1][64], Kokkos::LayoutRight, Kokkos::AnonymousSpace, Kokkos::MemoryTraits<Kokkos::Unmanaged>> v117((float*) (v117_spill ? (scratch1 + 584 - l1_cutoff) : (scratch0 + 584)));
-  ;
-  Kokkos::parallel_for(Kokkos::TeamVectorMDRange(team, 1, 64),
-  [=](size_t v118, size_t v119) {
-    float v120 = v14(0, v119);
-    float v121 = v10(v119);
-    float v122 = v120 + v121;
-    v117(v118, v119) = v122;
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, 0, 64),
+  [=](size_t v96) {
+    float v97 = v14(v96);
+    float v98 = v10(v96);
+    float v99 = v97 + v98;
+    v13(v96) = v99;
   });
   team.team_barrier();
-  Kokkos::parallel_for(Kokkos::TeamVectorMDRange(team, 1, 64),
-  [=](size_t v123, size_t v124) {
-    float v125 = v117(0, v124);
-    bool v126 = (Kokkos::isnan(v125) || Kokkos::isnan(0.0e+00f)) || (v125 > 0.0e+00f);
-    float v127 = v126? v125 : 0.0e+00f;
-    v13(v123, v124) = v127;
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, 0, 64),
+  [=](size_t v100) {
+    float v101 = v13(v100);
+    bool v102 = (Kokkos::isnan(v101) || Kokkos::isnan(0.0e+00f)) || (v101 > 0.0e+00f);
+    float v103 = v102? v101 : 0.0e+00f;
+    v13(v100) = v103;
   });
   team.team_barrier();
-  Kokkos::parallel_for(Kokkos::TeamThreadMDRange(team, 1, 72),
-  [=](size_t v128, size_t v129) {
-    float v130 = v41(v128, v129);
-    float v131;
+  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, 0, 72),
+  [=](size_t v104) {
+    float v105 = v35(v104);
+    float v106;
     Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(team, 0, 64),
-    [=](size_t v132, float& lreduce1) {
-      float v133 = v13(v128, v132);
-      float v134 = v5(v132, v129);
-      float v135 = v133 * v134;
-      float v136 = lreduce1 + v135;
-      lreduce1 = v136;
+    [=](size_t v107, float& lreduce1) {
+      float v108 = v13(v107);
+      float v109 = v5(v107, v104);
+      float v110 = v108 * v109;
+      float v111 = lreduce1 + v110;
+      lreduce1 = v111;
       ;
-    }, (v131));
+    }, (v106));
     Kokkos::single(Kokkos::PerThread(team), [&]() {
-      v41(v128, v129) = v131;
+      v35(v104) = v106;
     });
   });
   team.team_barrier();
-  Kokkos::parallel_for(Kokkos::TeamVectorMDRange(team, 1, 72),
-  [=](size_t v137, size_t v138) {
-    float v139 = v41(0, v138);
-    float v140 = v11(v138);
-    float v141 = v139 + v140;
-    v2(v137, v138) = v141;
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, 0, 72),
+  [=](size_t v112) {
+    float v113 = v35(v112);
+    float v114 = v11(v112);
+    float v115 = v113 + v114;
+    v2(v112) = v115;
   });
   team.team_barrier();
   return;

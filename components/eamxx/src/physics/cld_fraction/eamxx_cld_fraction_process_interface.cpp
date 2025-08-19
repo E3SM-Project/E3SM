@@ -135,24 +135,18 @@ void CldFraction::run_impl (const double /* dt */)
     policy.set_scratch_size(0, Kokkos::PerTeam(scratch0_required));
     policy.set_scratch_size(1, Kokkos::PerTeam(scratch1_required));
 
-    using view_2d = KT::template view_2d<Real>;
-    using cview_2d = KT::template view_2d<const Real>;
     // Execute the appropriate specialization based on shared amount
     auto lambda = KOKKOS_LAMBDA (const MemberType& team) {
-      return;
       int icol = team.league_rank();
       auto qi_col = ekat::subview(qi_v,icol);
       auto liq_col = ekat::subview(liq_cld_frac_v,icol);
       auto ice_col = ekat::subview(ice_cld_frac_v,icol);
       auto tot_col = ekat::subview(tot_cld_frac_v,icol);
 
-       view_2d qi_2d  (const_cast<Real*>(qi_col.data()),1,qi_col.size());
-       view_2d liq_2d (const_cast<Real*>(liq_col.data()),1,liq_col.size());
-       view_2d ice_2d (ice_col.data(),1,ice_col.size());
-       view_2d tot_2d (tot_col.data(),1,tot_col.size());
       char* scratch0 = (char*)(team.team_scratch(0).get_shmem(scratch0_required));
       char* scratch1 = (char*)(team.team_scratch(1).get_shmem(scratch1_required));
-      forward<ExeSpace, max_shared>(team, globalViews, qi_2d, liq_2d, ice_2d, tot_2d, scratch0, scratch1);
+
+      forward<ExeSpace, max_shared>(team, globalViews, ice_col, tot_col, qi_col, liq_col, scratch0, scratch1);
     };
 
     Kokkos::parallel_for(policy,lambda);
