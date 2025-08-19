@@ -21,18 +21,22 @@ if (USE_ALBANY OR USE_TRILINOS)
   if (USE_ALBANY)
     find_package(Albany REQUIRED)
   endif()
-elseif (USE_KOKKOS)
-  if (NOT DEFINED ENV{Ekat_ROOT})
-    set(ENV{Ekat_ROOT} ${INSTALL_SHAREDPATH})
-  endif()
-  # We will get kokkos from EKAT unless Kokkos_ROOT is set.
-  if (NOT DEFINED ENV{Kokkos_ROOT})
-    # Kokkos will be built in the sharedlibs if Kokkos_ROOT is unset.
-    set(ENV{Kokkos_ROOT} $ENV{Ekat_ROOT})
-  endif()
-  find_package(Kokkos REQUIRED)
-  find_package(Ekat REQUIRED)
+
+  # We will use the kokkos from Trilinos
+  set(ENV{Kokkos_ROOT} $ENV{Trilinos_ROOT})
 endif()
+
+if (NOT DEFINED ENV{Ekat_ROOT})
+  set(ENV{Ekat_ROOT} ${INSTALL_SHAREDPATH})
+endif()
+
+# We will get kokkos from EKAT unless Kokkos_ROOT is set.
+if (NOT DEFINED ENV{Kokkos_ROOT})
+  # Kokkos will be built in the sharedlibs if Kokkos_ROOT is unset.
+  set(ENV{Kokkos_ROOT} $ENV{Ekat_ROOT})
+endif()
+
+find_package(Ekat REQUIRED)
 
 if (USE_MOAB)
   find_package(MOAB REQUIRED)
