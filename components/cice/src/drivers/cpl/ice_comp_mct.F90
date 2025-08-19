@@ -1504,7 +1504,7 @@ end function restart_filename
     type(seq_infodata_type)     , pointer :: infodata   ! Input init object
 
     integer,allocatable :: gindex(:)  ! Number the local grid points; used for global ID
-    integer :: lsz !  keep local size
+    integer :: lsz, lsz3 !  keep local size
     integer :: gsize ! global size, that we do not need, actually
     integer :: n, iam, i, j, dims, gi
 
@@ -1602,18 +1602,20 @@ end function restart_filename
     enddo       !iblk
     
 
+    lsz3 = lsz*dims
     allocate(moab_vert_coords(lsz*dims))
     do n = 1, lsz
       moab_vert_coords(3*n-2)=COS(latv(n))*COS(lonv(n))
       moab_vert_coords(3*n-1)=COS(latv(n))*SIN(lonv(n))
       moab_vert_coords(3*n  )=SIN(latv(n))
     enddo
-    ierr = iMOAB_CreateVertices(MPSIID, lsz*3, dims, moab_vert_coords)
-    if (ierr > 0 )  then
-       write(nu_diag, *) 'Error: fail to create MOAB vertices in cice model'
-       call shr_sys_abort()
+    if (lsz > 0) then
+      ierr = iMOAB_CreateVertices(MPSIID, lsz3, dims, moab_vert_coords(1))
+      if (ierr > 0 )  then
+        write(nu_diag, *) 'Error: fail to create MOAB vertices in cice model lsz3=', lsz3
+        call shr_sys_abort()
+      endif
     endif
-
     tagtype = 0  ! dense, integer
     numco = 1
     tagname='GLOBAL_ID'//C_NULL_CHAR
@@ -1624,10 +1626,12 @@ end function restart_filename
     endif
 
     ent_type = 0 ! vertex type
-    ierr = iMOAB_SetIntTagStorage ( MPSIID, tagname, lsz , ent_type, gindex)
-    if (ierr > 0 )  then
-       write(nu_diag, *) 'Error: fail to set GLOBAL_ID tag'
-       call shr_sys_abort()
+    if (lsz  > 0) then
+       ierr = iMOAB_SetIntTagStorage ( MPSIID, tagname, lsz , ent_type, gindex)
+       if (ierr > 0 )  then
+          write(nu_diag, *) 'Error: fail to set GLOBAL_ID tag'
+          call shr_sys_abort()
+       endif
     endif
     ierr = iMOAB_ResolveSharedEntities( MPSIID, lsz, gindex );
     if (ierr > 0 )  then
@@ -1644,11 +1648,13 @@ end function restart_filename
        call shr_sys_abort()
     endif
 
-    gindex = iam
-    ierr = iMOAB_SetIntTagStorage ( MPSIID, tagname, lsz , ent_type, gindex)
-    if (ierr > 0 )  then
-       write(nu_diag, *) 'Error: fail to set partition tag '
-       call shr_sys_abort()
+    if (lsz > 0) then
+       gindex = iam
+       ierr = iMOAB_SetIntTagStorage ( MPSIID, tagname, lsz , ent_type, gindex)
+       if (ierr > 0 )  then
+          write(nu_diag, *) 'Error: fail to set partition tag '
+          call shr_sys_abort()
+       endif
     endif
 
     tagname='lat:lon:area:mask:frac:aream'//C_NULL_CHAR
@@ -1660,41 +1666,42 @@ end function restart_filename
     endif
 
     tagname='frac'//C_NULL_CHAR
-    ierr = iMOAB_SetDoubleTagStorage ( MPSIID, tagname, lsz , ent_type, frac)
-    if (ierr > 0 )  then
-       write(nu_diag, *) 'Error: fail to set frac tag  '
-       call shr_sys_abort()
-    endif
+    if (lsz > 0) then 
+       ierr = iMOAB_SetDoubleTagStorage ( MPSIID, tagname, lsz , ent_type, frac)
+       if (ierr > 0 )  then
+          write(nu_diag, *) 'Error: fail to set frac tag  '
+          call shr_sys_abort()
+       endif
 
-    tagname='area'//C_NULL_CHAR
-    ierr = iMOAB_SetDoubleTagStorage ( MPSIID, tagname, lsz , ent_type, area)
-    if (ierr > 0 )  then
-       write(nu_diag, *) 'Error: fail to set area tag  '
-       call shr_sys_abort()
-    endif
-    tagname='mask'//C_NULL_CHAR
-    ierr = iMOAB_SetDoubleTagStorage ( MPSIID, tagname, lsz , ent_type, mask)
-    if (ierr > 0 )  then
-       write(nu_diag, *) 'Error: fail to set mask tag  '
-       call shr_sys_abort()
-    endif
-    latv = latv*rad_to_deg  ! bring them back as degrees?
-    lonv = lonv*rad_to_deg
+       tagname='area'//C_NULL_CHAR
+       ierr = iMOAB_SetDoubleTagStorage ( MPSIID, tagname, lsz , ent_type, area)
+       if (ierr > 0 )  then
+          write(nu_diag, *) 'Error: fail to set area tag  '
+          call shr_sys_abort()
+       endif
+       tagname='mask'//C_NULL_CHAR
+       ierr = iMOAB_SetDoubleTagStorage ( MPSIID, tagname, lsz , ent_type, mask)
+       if (ierr > 0 )  then
+          write(nu_diag, *) 'Error: fail to set mask tag  '
+          call shr_sys_abort()
+       endif
+       latv = latv*rad_to_deg  ! bring them back as degrees?
+       lonv = lonv*rad_to_deg
 
-    tagname='lat'//C_NULL_CHAR
-    ierr = iMOAB_SetDoubleTagStorage ( MPSIID, tagname, lsz , ent_type, latv)
-    if (ierr > 0 )  then
-       write(nu_diag, *) 'Error: fail to set lat tag  '
-       call shr_sys_abort()
-    endif
+       tagname='lat'//C_NULL_CHAR
+       ierr = iMOAB_SetDoubleTagStorage ( MPSIID, tagname, lsz , ent_type, latv)
+       if (ierr > 0 )  then
+          write(nu_diag, *) 'Error: fail to set lat tag  '
+          call shr_sys_abort()
+       endif
     
-    tagname='lon'//C_NULL_CHAR
-    ierr = iMOAB_SetDoubleTagStorage ( MPSIID, tagname, lsz , ent_type, lonv)
-    if (ierr > 0 )  then
-       write(nu_diag, *) 'Error: fail to set lon tag  '
-       call shr_sys_abort()
+       tagname='lon'//C_NULL_CHAR
+       ierr = iMOAB_SetDoubleTagStorage ( MPSIID, tagname, lsz , ent_type, lonv)
+       if (ierr > 0 )  then
+          write(nu_diag, *) 'Error: fail to set lon tag  '
+          call shr_sys_abort()
+       endif
     endif
-
     ierr = iMOAB_UpdateMeshInfo( MPSIID )
     if (ierr > 0 )  then
        write(nu_diag, *) 'Error: fail to update mesh info  '
