@@ -945,6 +945,11 @@ contains
        if (mbofxid .ge. 0) then
           nloc_of = mbGetnCells(mbofxid)
 
+          if (nloc_of .ne. lSize) then
+            write(logunit,*) subname,' size of mbofxid and mboxid do not match  ', nloc_of, lSize
+            call shr_sys_abort(subname//' ERROR in size of mbofxid and mboxid')
+          endif
+
           allocate( olats(nloc_of), stat=ier)
           if(ier/=0) call mct_die(subName,'allocate olats',ier)
           olats = 0.0_r8
@@ -997,11 +1002,10 @@ contains
           allocate(tagValues2(nloc_of) )
 
           ! get lat and lon values
-          call mbGetCellTagVals(mbofxid, 'lat', olats, nloc_of)
-          call mbGetCellTagVals(mbofxid, 'lon', olons, nloc_of)
+          call mbGetCellTagVals(mboxid, 'lat', olats, nloc_of)
+          call mbGetCellTagVals(mboxid, 'lon', olons, nloc_of)
        endif
 
-       first_call = .false.
     endif
     ent_type = 1 ! cells for mpas ocean
 
@@ -1033,15 +1037,20 @@ contains
        !--- flux_atmocn needs swdn & swup = swdn*(-albedo)
        !--- swdn & albedos are time-aligned  BEFORE albedos get updated below ---
        if (mbofxid .ge. 0) then
-          call mbGetCellTagVals(mbofxid, 'So_avsdr', avsdr, nloc_of)
-          call mbGetCellTagVals(mbofxid, 'So_anidr', anidr, nloc_of)
-          call mbGetCellTagVals(mbofxid, 'So_avsdf', avsdf, nloc_of)
-          call mbGetCellTagVals(mbofxid, 'So_anidf', anidf, nloc_of)
 
-          call mbGetCellTagVals(mboxid, 'Faxa_swndr', swndr, nloc_of)
-          call mbGetCellTagVals(mboxid, 'Faxa_swndf', swndf, nloc_of)
-          call mbGetCellTagVals(mboxid, 'Faxa_swvdr', swndr, nloc_of)
-          call mbGetCellTagVals(mboxid, 'Faxa_swvdf', swvdf, nloc_of)
+! Note these are undefined in first call during init
+! so use the initial value of zero set above which MCT assumed
+          if(.not.first_call) then
+            call mbGetCellTagVals(mbofxid, 'So_avsdr', avsdr, nloc_of)
+            call mbGetCellTagVals(mbofxid, 'So_anidr', anidr, nloc_of)
+            call mbGetCellTagVals(mbofxid, 'So_avsdf', avsdf, nloc_of)
+            call mbGetCellTagVals(mbofxid, 'So_anidf', anidf, nloc_of)
+
+            call mbGetCellTagVals(mboxid, 'Faxa_swndr', swndr, nloc_of)
+            call mbGetCellTagVals(mboxid, 'Faxa_swndf', swndf, nloc_of)
+            call mbGetCellTagVals(mboxid, 'Faxa_swvdr', swndr, nloc_of)
+            call mbGetCellTagVals(mboxid, 'Faxa_swvdf', swvdf, nloc_of)
+          endif
           do n=1,nloc_of
              avsdr1 = avsdr(n)
              anidr1 = anidr(n)
@@ -1126,6 +1135,7 @@ contains
        endif
 
     endif
+    if (first_call) first_call=.false.
 #ifdef MOABDEBUG
     if (mbofxid > 0) then
         ! debug out file
@@ -1903,6 +1913,7 @@ contains
     call mbSetCellTagVals(mbfid, 'So_u10', u10res, nloc)
     u10gust = sqrt(duu10n)
     call mbSetCellTagVals(mbfid, 'So_u10withgusts', u10gust, nloc)
+    call mbSetCellTagVals(mbfid, 'So_fswpen', fswpen, nloc)
     !TODO find better way for above
 
     do n = 1,nloc
