@@ -33,7 +33,7 @@ class ConvectiveMix {
       Real ConvDiff       = 1.0; ///< Convective vertical viscosity and diffusivity (m^2 s^-1)
       Real ConvTriggerBVF = 0.0; ///< Reference density (kg m^-3) at (T,S)=(0,0)
 
-      /// Constructor for PP
+      /// Constructor for ConvectiveMix
       ConvectiveMix();
 
       KOKKOS_FUNCTION void operator()(Array2DReal VertDiff, Array2DReal VertVisc,
@@ -56,7 +56,7 @@ class PPShearMix {
       Real ShearAlpha    = 5.0;   ///< Alpha value used in Pacanowski and Philander (1981) Eqs (1) and (2).
       Real ShearExponent = 2.0;   /// Exponent value used in Pacanowski and Philander (1981) Eqs (1).
 
-      /// Constructor for PP
+      /// Constructor for PPShearMix
       PPShearMix(const HorzMesh *Mesh);
 
       KOKKOS_FUNCTION void operator()(Array2DReal VertDiff, Array2DReal VertVisc,
@@ -161,7 +161,7 @@ class VertMix {
     VertMix& operator=(VertMix&&) = delete;
 
    I4 NCellsAll;         ///< Number of horizontal cells
-   I4 NVertLevels;           ///< Number of vertical chunks (for vectorization)
+   I4 NVertLevels;       ///< Number of vertical levels
 
    // Define fields and metadata
    void defineFields();
