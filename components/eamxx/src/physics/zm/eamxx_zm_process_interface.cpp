@@ -1,5 +1,6 @@
 #include "eamxx_config.h"
 
+#include "ekat/ekat_assert.hpp"
 #include "share/property_checks/field_lower_bound_check.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
 
@@ -29,6 +30,8 @@ set_grids (const std::shared_ptr<const GridsManager> grids_manager)
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
 
+  constexpr int pack_size = Spack::n;
+
   // Gather runtime options from file
   zm_opts.load_runtime_options(m_params);
 
@@ -44,8 +47,6 @@ set_grids (const std::shared_ptr<const GridsManager> grids_manager)
   // get max ncol value across ranks to mimic how pcols is used on the fortran side
   m_pcol = m_ncol;
   comm.all_reduce(&m_pcol,1,MPI_MAX);
-
-  constexpr int pack_size = Spack::n;
 
   const auto nondim = Units::nondimensional();
   const auto m2 = pow(m,2);
@@ -67,12 +68,12 @@ set_grids (const std::shared_ptr<const GridsManager> grids_manager)
   add_field<Required>("pbl_height",           scalar2d    , m,      grid_name);
   add_field<Required>("landfrac",             scalar2d    , nondim, grid_name);
   add_field<Required>("thl_sec",              scalar3d_int, K2,     grid_name, pack_size); // thetal variance for PBL temperature perturbation
+  add_tracer<Required>("qc",                  m_grid,       kg/kg,             pack_size);
 
   // Input/Output variables
   add_field <Updated>("T_mid",                scalar3d_mid, K,      grid_name, pack_size);
-  add_field <Updated>("horiz_winds",          vector3d_mid, m/s,    grid_name, pack_size);
   add_tracer<Updated>("qv",                   m_grid,       kg/kg,             pack_size);
-  add_tracer<Updated>("qc",                   m_grid,       kg/kg,             pack_size);
+  add_field <Updated>("horiz_winds",          vector3d_mid, m/s,    grid_name, pack_size);
 
   // Output variables
   add_field <Updated>("precip_liq_surf_mass", scalar2d,     kg/m2,  grid_name, "ACCUMULATED");
@@ -108,7 +109,7 @@ void zm_deep_convection::initialize_impl (const RunType)
 /*------------------------------------------------------------------------------------------------*/
 void zm_deep_convection::run_impl (const double dt)
 {
-
+  constexpr int pack_size = Spack::n;
   const int nlevm_packs = ekat::npack<Spack>(m_nlev);
 
   // calculate_z_int() contains a team-level parallel_scan, which requires a special policy
@@ -127,20 +128,24 @@ void zm_deep_convection::run_impl (const double dt)
   //----------------------------------------------------------------------------
   // get fields
 
-  const auto& phis     = get_field_in("phis")                         .get_view<const Real*>();
-  const auto& p_mid    = get_field_in("p_mid")                        .get_view<const Spack**, Host>();
-  const auto& p_int    = get_field_in("p_int")                        .get_view<const Spack**, Host>();
-  const auto& p_del    = get_field_in("pseudo_density")               .get_view<const Spack**, Host>();
-  const auto& T_mid    = get_field_out("T_mid")                       .get_view<Spack**, Host>();
-  const auto& qv       = get_field_out("qv")                          .get_view<Spack**, Host>();
-  const auto& qc       = get_field_out("qc")                          .get_view<Spack**, Host>();
-  const auto& uwind    = get_field_out("horiz_winds").get_component(0).get_view<Spack**, Host>();
-  const auto& vwind    = get_field_out("horiz_winds").get_component(1).get_view<Spack**, Host>();
-  const auto& omega    = get_field_in("omega")                        .get_view<const Spack**, Host>();
-  const auto& cldfrac  = get_field_in("cldfrac_tot")                  .get_view<const Spack**, Host>();
-  const auto& pblh     = get_field_in("pbl_height")                   .get_view<const Real*>();
-  const auto& landfrac = get_field_in("landfrac")                     .get_view<const Real*>();
-  const auto& thl_sec  = get_field_in("thl_sec")                      .get_view<const Spack**, Host>();
+  // variables not updated by ZM
+  const auto& phis        = get_field_in("phis")          .get_view<const Real*>();
+  const auto& p_mid       = get_field_in("p_mid")         .get_view<const Spack**, Host>();
+  const auto& p_int       = get_field_in("p_int")         .get_view<const Spack**, Host>();
+  const auto& p_del       = get_field_in("pseudo_density").get_view<const Spack**, Host>();
+  const auto& omega       = get_field_in("omega")         .get_view<const Spack**, Host>();
+  const auto& cldfrac     = get_field_in("cldfrac_tot")   .get_view<const Spack**, Host>();
+  const auto& pblh        = get_field_in("pbl_height")    .get_view<const Real*>();
+  const auto& landfrac    = get_field_in("landfrac")      .get_view<const Real*>();
+  const auto& thl_sec     = get_field_in("thl_sec")       .get_view<const Spack**, Host>();
+  const auto& qc          = get_field_in("qc")            .get_view<const Spack**, Host>();
+
+  // variables updated by ZM
+  const auto& T_mid       = get_field_out("T_mid")        .get_view<Spack**, Host>();
+  const auto& qv          = get_field_out("qv")           .get_view<Spack**, Host>();
+  const auto& hwinds_fld  = get_field_out("horiz_winds");
+  const auto& uwind       = hwinds_fld.get_component(0)   .get_view<Spack**, Host>();
+  const auto& vwind       = hwinds_fld.get_component(1)   .get_view<Spack**, Host>();
 
   const auto& precip_liq_surf_mass = get_field_out("precip_liq_surf_mass").get_view<Real*>();
   const auto& precip_ice_surf_mass = get_field_out("precip_ice_surf_mass").get_view<Real*>();
@@ -156,7 +161,6 @@ void zm_deep_convection::run_impl (const double dt)
   zm_input.p_del          = p_del;
   zm_input.T_mid          = T_mid;
   zm_input.qv             = qv;
-  zm_input.qc             = qc;
   zm_input.uwind          = uwind;
   zm_input.vwind          = vwind;
   zm_input.omega          = omega;
@@ -168,7 +172,7 @@ void zm_deep_convection::run_impl (const double dt)
   zm_output.init( m_pcol, m_nlev );
 
   //----------------------------------------------------------------------------
-  // calculate interface and mid-point altitudes
+  // calculate altitude on interfaces (z_int) and mid-points (z_mid)
 
   Kokkos::parallel_for(scan_policy, KOKKOS_LAMBDA (const ZMF::KT::MemberType& team) {
     const int i = team.league_rank();
@@ -179,7 +183,6 @@ void zm_deep_convection::run_impl (const double dt)
     const auto p_del_i = ekat::subview(zm_input.p_del, i);
     const auto T_mid_i = ekat::subview(zm_input.T_mid, i);
     const auto qv_i    = ekat::subview(zm_input.qv,    i);
-    // Calculate z_mid
     auto z_surf = 0.0; // ZM expects z_mid & z_int to be altitude above the surface
     PF::calculate_dz(team, p_del_i, p_mid_i, T_mid_i, qv_i, z_del_i);
     team.team_barrier();
@@ -190,7 +193,7 @@ void zm_deep_convection::run_impl (const double dt)
   });
 
   //----------------------------------------------------------------------------
-  // // calculate temperature perturbation from SHOC thetal varance for ZM parcel/CAPE
+  // calculate temperature perturbation from SHOC thetal varance for ZM parcel/CAPE
 
   Kokkos::parallel_for("zm_calculate_tpert",m_ncol, KOKKOS_LAMBDA (int i) {
     if (is_first_step) {
@@ -199,23 +202,20 @@ void zm_deep_convection::run_impl (const double dt)
       // identify interface index for top of PBL
       int pblh_k_ind = -1;
       for (int k=0; k<m_nlev; ++k) {
-        // auto z_mid_tmp = zm_input.z_mid(i,k/Spack::n)[k%Spack::n];
-        auto z_int_tmp_k   = zm_input.z_int(i,k/Spack::n)[k%Spack::n];
-        auto z_int_tmp_kp1 = zm_input.z_int(i,k/Spack::n)[k%Spack::n];
+        auto z_int_tmp_k   = zm_input.z_int(i,k/pack_size)[k%pack_size];
+        auto z_int_tmp_kp1 = zm_input.z_int(i,k/pack_size)[k%pack_size];
         if ( z_int_tmp_k>pblh(i) && z_int_tmp_kp1<=pblh(i) ) {
           pblh_k_ind = k;
         }
       }
-      // deal with case where PBL top is not found
       if (pblh_k_ind==-1) {
+        // PBL top index not found, so just set the perturbation to zero
         zm_input.tpert(i) = 0.0;
       } else {
-        // calculate std deviation of temperature from theta-l variance
-        auto p_mid_pbl    = p_mid(i,pblh_k_ind/Spack::n)[pblh_k_ind%Spack::n];
-        auto exner_pbl    = PF::exner_function(p_mid_pbl);
-        // auto exner_pbl    = PF::exner_function( p_mid(i,pblh_k_ind/Spack::n)[pblh_k_ind%Spack::n] );
-        auto qc_pbl       = qc(i,pblh_k_ind/Spack::n)[pblh_k_ind%Spack::n];
-        auto thl_sec_pbl  = thl_sec(i,pblh_k_ind/Spack::n)[pblh_k_ind%Spack::n];
+        // calculate tpert as std deviation of temperature from SHOC's theta-l variance
+        auto exner_pbl    = PF::exner_function( p_mid(i,pblh_k_ind/pack_size)[pblh_k_ind%pack_size] );
+        auto qc_pbl       = qc(i,pblh_k_ind/pack_size)[pblh_k_ind%pack_size];
+        auto thl_sec_pbl  = thl_sec(i,pblh_k_ind/pack_size)[pblh_k_ind%pack_size];
         auto thl_std_pbl  = sqrt( thl_sec_pbl ); // std deviation of thetal;
         zm_input.tpert(i) = ( thl_std_pbl + (latvap/cpair)*qc_pbl ) / exner_pbl;
         zm_input.tpert(i) = std::min(2.0,zm_input.tpert(i)); // apply limiter
@@ -244,7 +244,6 @@ void zm_deep_convection::run_impl (const double dt)
       Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlevm_packs), [&](const int& k) {
         T_mid(i,k) += zm_output.tend_s (i,k)/cpair * dt;
         qv   (i,k) += zm_output.tend_qv(i,k)       * dt;
-        // qc   (i,k) += zm_output.tend_qc(i,k)       * dt;
         uwind(i,k) += zm_output.tend_u (i,k)       * dt;
         vwind(i,k) += zm_output.tend_v (i,k)       * dt;
       });
@@ -368,7 +367,6 @@ void zm_deep_convection::init_buffers(const ATMBufferManager &buffer_manager)
                                                                 &zm_input.f_p_del,
                                                                 &zm_input.f_T_mid,
                                                                 &zm_input.f_qv,
-                                                                &zm_input.f_qc,
                                                                 &zm_input.f_uwind,
                                                                 &zm_input.f_vwind,
                                                                 &zm_input.f_omega,

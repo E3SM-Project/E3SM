@@ -25,27 +25,26 @@ extern "C" {
                         const Real *state_p_del,        // 09
                               Real *state_t,            // 10
                               Real *state_qv,           // 11
-                              Real *state_qc,           // 12
-                              Real *state_u,            // 13
-                              Real *state_v,            // 14
-                              Real *state_omega,        // 15
-                        const Real *state_cldfrac,      // 16
-                        const Real *state_pblh,         // 17
-                        const Real *tpert,              // 18
-                        const Real *landfrac,           // 19
-                              Real *output_prec,        // 20
-                              Real *output_snow,        // 21
-                              Real *output_cape,        // 22
-                              Int  *output_activity,    // 23
-                              Real *output_tend_s,      // 24
-                              Real *output_tend_q,      // 25
-                              Real *output_tend_u,      // 26
-                              Real *output_tend_v,      // 27
-                              Real *output_rain_prod,   // 28
-                              Real *output_snow_prod,   // 29
-                              Real *output_prec_flux,   // 30
-                              Real *output_snow_flux,   // 31
-                              Real *output_mass_flux    // 32
+                              Real *state_u,            // 12
+                              Real *state_v,            // 13
+                              Real *state_omega,        // 14
+                        const Real *state_cldfrac,      // 15
+                        const Real *state_pblh,         // 16
+                        const Real *tpert,              // 17
+                        const Real *landfrac,           // 18
+                              Real *output_prec,        // 19
+                              Real *output_snow,        // 20
+                              Real *output_cape,        // 21
+                              Int  *output_activity,    // 22
+                              Real *output_tend_s,      // 23
+                              Real *output_tend_q,      // 24
+                              Real *output_tend_u,      // 25
+                              Real *output_tend_v,      // 26
+                              Real *output_rain_prod,   // 27
+                              Real *output_snow_prod,   // 28
+                              Real *output_prec_flux,   // 29
+                              Real *output_snow_flux,   // 30
+                              Real *output_mass_flux    // 31
                             );
 } // extern "C" : end _c decls
 
@@ -75,27 +74,26 @@ void zm_eamxx_bridge_run( Int ncol, Int pver,
                          zm_input.f_p_del       .data(),  // 09
                          zm_input.f_T_mid       .data(),  // 10
                          zm_input.f_qv          .data(),  // 11
-                         zm_input.f_qc          .data(),  // 12
-                         zm_input.f_uwind       .data(),  // 13
-                         zm_input.f_vwind       .data(),  // 14
-                         zm_input.f_omega       .data(),  // 15
-                         zm_input.f_cldfrac     .data(),  // 16
-                         zm_input.pblh          .data(),  // 17
-                         zm_input.tpert         .data(),  // 18
-                         zm_input.landfrac      .data(),  // 19
-                         zm_output.prec         .data(),  // 20
-                         zm_output.snow         .data(),  // 21
-                         zm_output.cape         .data(),  // 22
-                         zm_output.activity     .data(),  // 23
-                         zm_output.f_tend_s     .data(),  // 24
-                         zm_output.f_tend_qv    .data(),  // 25
-                         zm_output.f_tend_u     .data(),  // 26
-                         zm_output.f_tend_v     .data(),  // 27
-                         zm_output.f_rain_prod  .data(),  // 28
-                         zm_output.f_snow_prod  .data(),  // 29
-                         zm_output.f_prec_flux  .data(),  // 30
-                         zm_output.f_snow_flux  .data(),  // 31
-                         zm_output.f_mass_flux  .data()   // 32
+                         zm_input.f_uwind       .data(),  // 12
+                         zm_input.f_vwind       .data(),  // 13
+                         zm_input.f_omega       .data(),  // 14
+                         zm_input.f_cldfrac     .data(),  // 15
+                         zm_input.pblh          .data(),  // 16
+                         zm_input.tpert         .data(),  // 17
+                         zm_input.landfrac      .data(),  // 18
+                         zm_output.prec         .data(),  // 19
+                         zm_output.snow         .data(),  // 20
+                         zm_output.cape         .data(),  // 21
+                         zm_output.activity     .data(),  // 22
+                         zm_output.f_tend_s     .data(),  // 23
+                         zm_output.f_tend_qv    .data(),  // 24
+                         zm_output.f_tend_u     .data(),  // 25
+                         zm_output.f_tend_v     .data(),  // 26
+                         zm_output.f_rain_prod  .data(),  // 27
+                         zm_output.f_snow_prod  .data(),  // 28
+                         zm_output.f_prec_flux  .data(),  // 29
+                         zm_output.f_snow_flux  .data(),  // 30
+                         zm_output.f_mass_flux  .data()   // 31
                         );
 
   zm_input.transpose<ekat::TransposeDirection::f2c>(ncol,pver);

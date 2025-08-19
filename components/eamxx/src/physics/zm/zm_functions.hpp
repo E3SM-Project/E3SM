@@ -5,8 +5,8 @@
 
 #include "share/core/eamxx_types.hpp"
 
-#include <ekat_pack_kokkos.hpp>
-#include <ekat_workspace.hpp>
+#include "ekat/ekat_pack_kokkos.hpp"
+#include "ekat/ekat_workspace.hpp"
 
 namespace scream {
 namespace zm {
@@ -65,7 +65,7 @@ struct Functions {
     static constexpr int num_1d_intgr_views   = 0;  // number of 1D integer variables
     static constexpr int num_2d_midlv_c_views = 2;  // number of 2D variables on mid-point levels
     static constexpr int num_2d_intfc_c_views = 1;  // number of 2D variables on interface levels
-    static constexpr int num_2d_midlv_f_views = 10; // number of 2D variables on mid-point levels
+    static constexpr int num_2d_midlv_f_views = 9;  // number of 2D variables on mid-point levels
     static constexpr int num_2d_intfc_f_views = 2;  // number of 2D variables on interface levels
 
     uview_1d<     Scalar> tpert;    // temperature perturbation at top of PBL
@@ -80,9 +80,8 @@ struct Functions {
     view_2d<const Spack>  p_mid;    // mid-point level pressure     [Pa]
     view_2d<const Spack>  p_int;    // interface level pressure     [Pa]
     view_2d<const Spack>  p_del;    // pressure thickness           [Pa]
-    view_2d<      Spack>  T_mid;    // temperature [K]
+    view_2d<      Spack>  T_mid;    // temperature                  [K]
     view_2d<      Spack>  qv;       // water vapor mixing ratio     [kg kg-1]
-    view_2d<      Spack>  qc;       // cloud mass mixing ratio      [kg kg-1]
     view_2d<      Spack>  uwind;    // zonal wind                   [m/s]
     view_2d<      Spack>  vwind;    // meridional wind              [m/s]
     view_2d<const Spack>  omega;    // vertical pressure velocity   [Pa/s]
@@ -96,7 +95,6 @@ struct Functions {
     uview_2dl<Real>  f_p_del;
     uview_2dl<Real>  f_T_mid;
     uview_2dl<Real>  f_qv;
-    uview_2dl<Real>  f_qc;
     uview_2dl<Real>  f_uwind;
     uview_2dl<Real>  f_vwind;
     uview_2dl<Real>  f_omega;
@@ -106,28 +104,7 @@ struct Functions {
     uview_2dl<Real>  f_p_int;
 
     // -------------------------------------------------------------------------
-    // vectors for alternate transpose method
-    std::vector<Real> phis_v;
-    std::vector<Real> T_mid_v;
-    std::vector<Real> qv_v;
-    // -------------------------------------------------------------------------
-    // // transpose method for fortran bridging
-    // template <ekat::TransposeDirection::Enum D>
-    // void transpose()
-    // {
-    //   std::vector<view_2d<Spack>> transposed_views(2);
-    //   ekat::host_to_device<D>({ekat::scalarize(T_mid).data(),
-    //                            ekat::scalarize(qv).data()},
-    //                            T_mid.extent(0), T_mid.extent(1) * Spack::n, transposed_views, true);
-    //   if (D == ekat::TransposeDirection::c2f) {
-    //     T_mid = transposed_views[0];
-    //     qv    = transposed_views[1];
-    //   // else {
-    //     // ???
-    //   }
-    // };
-    // -------------------------------------------------------------------------
-    // alternate transpose method
+    // transpose method for fortran bridging
     template <ekat::TransposeDirection::Enum D>
     void transpose(int ncol_in, int pver_in) {
       auto pverp = pver_in+1;
@@ -139,7 +116,6 @@ struct Functions {
             f_p_del   (i,j) = p_del   (i,j/Spack::n)[j%Spack::n];
             f_T_mid   (i,j) = T_mid   (i,j/Spack::n)[j%Spack::n];
             f_qv      (i,j) = qv      (i,j/Spack::n)[j%Spack::n];
-            f_qc      (i,j) = qc      (i,j/Spack::n)[j%Spack::n];
             f_uwind   (i,j) = uwind   (i,j/Spack::n)[j%Spack::n];
             f_vwind   (i,j) = vwind   (i,j/Spack::n)[j%Spack::n];
             f_omega   (i,j) = omega   (i,j/Spack::n)[j%Spack::n];

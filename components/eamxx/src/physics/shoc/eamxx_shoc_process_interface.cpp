@@ -94,6 +94,9 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   add_field<Computed>("ustar",            scalar2d,     m/s,         grid_name, ps);
   add_field<Computed>("obklen",           scalar2d,     m,           grid_name, ps);
 
+  // thl_sec is needed for ZM deep convection
+  add_field<Computed>("thl_sec", scalar3d_int, pow(K,2), grid_name, ps);
+
   // Extra SHOC output diagnostics
   if (m_params.get<bool>("extra_shoc_diags", false)) {
 
@@ -106,7 +109,6 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
 
     // Diagnostic output - interface grid
     add_field<Computed>("wthl_sec", scalar3d_int, K*(m/s), grid_name, ps);
-    add_field<Computed>("thl_sec", scalar3d_int, pow(K,2), grid_name, ps);
     add_field<Computed>("wqw_sec", scalar3d_int, (kg/kg)*(m/s), grid_name, ps);
     add_field<Computed>("qw_sec", scalar3d_int, pow(kg/kg,2), grid_name, ps);
     add_field<Computed>("uw_sec", scalar3d_int, pow(m/s,2), grid_name, ps);
@@ -540,6 +542,10 @@ void SHOCMacrophysics::run_impl (const double dt)
                        shoc_postprocess);
   Kokkos::fence();
 
+  // thl_sec is needed for ZM deep convection
+  const auto& thl_sec = get_field_out("thl_sec").get_view<Spack**>();
+  Kokkos::deep_copy(thl_sec,history_output.thl_sec);
+
   // Extra SHOC output diagnostics
   if (m_params.get<bool>("extra_shoc_diags", false)) {
 
@@ -569,9 +575,6 @@ void SHOCMacrophysics::run_impl (const double dt)
 
     const auto& qw_sec = get_field_out("qw_sec").get_view<Spack**>();
     Kokkos::deep_copy(qw_sec,history_output.qw_sec);
-
-    const auto& thl_sec = get_field_out("thl_sec").get_view<Spack**>();
-    Kokkos::deep_copy(thl_sec,history_output.thl_sec);
 
   } // Extra SHOC output diagnostics
 }

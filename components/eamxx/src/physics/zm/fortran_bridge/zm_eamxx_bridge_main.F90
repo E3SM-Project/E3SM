@@ -73,7 +73,7 @@ end subroutine zm_eamxx_bridge_init_c
 subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
                                   state_phis, state_zm, state_zi, &
                                   state_p_mid, state_p_int, state_p_del, &
-                                  state_t, state_qv, state_qc, state_u, state_v, &
+                                  state_t, state_qv, state_u, state_v, &
                                   state_omega, state_cldfrac, state_pblh, tpert, landfrac, &
                                   output_prec, output_snow, output_cape, output_activity, &
                                   output_tend_s, output_tend_q, output_tend_u, output_tend_v, &
@@ -101,13 +101,12 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
   real(kind=c_real),  dimension(pcols,pver), intent(in   ) :: state_p_del        ! 09 input state pressure thickness
   real(kind=c_real),  dimension(pcols,pver), intent(in   ) :: state_t            ! 10 input state temperature
   real(kind=c_real),  dimension(pcols,pver), intent(in   ) :: state_qv           ! 11 input state water vapor
-  real(kind=c_real),  dimension(pcols,pver), intent(in   ) :: state_qc           ! 12 input state cloud liquid water          (ql)
-  real(kind=c_real),  dimension(pcols,pver), intent(in   ) :: state_u            ! 13 input state zonal wind
-  real(kind=c_real),  dimension(pcols,pver), intent(in   ) :: state_v            ! 14 input state meridional wind
-  real(kind=c_real),  dimension(pcols,pver), intent(in   ) :: state_omega        ! 15 input state vertical pressure velocity
-  real(kind=c_real),  dimension(pcols,pver), intent(in   ) :: state_cldfrac      ! 16 input state cloud fraction              (cld)
-  real(kind=c_real),  dimension(pcols),      intent(in   ) :: state_pblh         ! 17 input planetary boundary layer height   (pblh)
-  real(kind=c_real),  dimension(pcols),      intent(in   ) :: tpert
+  real(kind=c_real),  dimension(pcols,pver), intent(in   ) :: state_u            ! 12 input state zonal wind
+  real(kind=c_real),  dimension(pcols,pver), intent(in   ) :: state_v            ! 13 input state meridional wind
+  real(kind=c_real),  dimension(pcols,pver), intent(in   ) :: state_omega        ! 14 input state vertical pressure velocity
+  real(kind=c_real),  dimension(pcols,pver), intent(in   ) :: state_cldfrac      ! 15 input state cloud fraction              (cld)
+  real(kind=c_real),  dimension(pcols),      intent(in   ) :: state_pblh         ! 16 input planetary boundary layer height   (pblh)
+  real(kind=c_real),  dimension(pcols),      intent(in   ) :: tpert              ! 17 input parcel temperature perturbation
   real(kind=c_real),  dimension(pcols),      intent(in   ) :: landfrac           ! 18 land fraction
   real(kind=c_real),  dimension(pcols),      intent(  out) :: output_prec        ! 19 output total precipitation              (prec)
   real(kind=c_real),  dimension(pcols),      intent(  out) :: output_snow        ! 20 output frozen precipitation             (snow)
@@ -265,8 +264,7 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
                  dsubcld, &
                  jt, &
                  maxg, ideep, lengath, &
-                 zm_qc, &
-                 rliq, &
+                 zm_qc, rliq, &
                  landfrac, &
                  t_star, q_star, dcape, &
                  aero, &
