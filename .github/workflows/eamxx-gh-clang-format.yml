@@ -3,11 +3,14 @@ name: "eamxx-format"
 # if .{cpp,hpp} files are touched in a PR, lint them!
 
 on:
-  pull_request:
-    branches: ["master"]
-    paths:
-      - 'components/eamxx/**/*.cpp'
-      - 'components/eamxx/**/*.hpp'
+  # pull_request:
+  #   branches: ["master"]
+  #   paths:
+  #     - 'components/eamxx/**/*.cpp'
+  #     - 'components/eamxx/**/*.hpp'
+
+  # Manual run
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}
@@ -26,17 +29,76 @@ jobs:
       with:
         files: 'components/eamxx/**/*.{cpp,hpp}'
         separator: " "
-    # 1. runs clang-format on the files changed by this PR, and returns pass/fail
-    #    error code.
-    # 2. prints the diff to screen (action log), comparing to the changes
-    #    that *would* be made
-    # 3. the E3SM-Project fork of DoozyX/clang-format-lint-action@v0.20
-    #    adds a Step summary to the workflow page, and, on failure, lists the
-    #    files that fail the clang-format test
-    - uses: E3SM-Project/clang-format-lint-action@v1.0.0
+    # 1. runs clang-format on the files changed by this PR, modifying them in-place
+    # 2. any files that required formatting are returned by a 'git diff --name-only'
+    #    and written to the job summary along with an informational message
+    # if (formatting required) {
+    #   3. runs a full diff to generate a patch file
+    #   4. uploads the patch as an artifact
+    # }
+    # 5. return the pass/fail status of the job
+    # NOTE: different versions of clang-format are likely to give different
+    #       results, so we keep an eye on this
+    - name: get version clang-format-18
+      run: |
+        ver=$(clang-format-18 --version)
+        if [ "${ver}" = "18.1.3" ]; then
+          echo "Running clang-format version ${ver}."
+        else
+          echo "Warning! clang-format version has changed! (default 18.1.3)"
+          echo "Please inform developers by opening an issue."
+          echo "Running clang-format with non-standard version ${ver}."
+        fi
+    - name: run formatter looping over files
+      run: |
+        flist="${{ steps.changed-files.outputs.all_changed_files }}"
+        run_cfmt () {
+          clang-format-18 -i --style=file:"components/eamxx/.clang-format" $1
+        }
+        for f in ${flist[@]}; do
+          echo "--Running clang-format on ${f}--"
+          run_cfmt "${f}"
+        done
+        git diff --name-only > diffiles.txt
+        if [[ $(wc -l < diffiles.txt) -gt 0 ]]; then
+          # we don't want to return a nonzero exit code in this step because
+          # it'll stop the job, so we store it in the ENV
+          echo "status_fail=true" >> "${GITHUB_ENV}"
+          echo "## Status: \`clang-format\` Check Failed." > "${GITHUB_STEP_SUMMARY}"
+          echo "" >> "${GITHUB_STEP_SUMMARY}"
+          echo "The following files require formatting:" >> "${GITHUB_STEP_SUMMARY}"
+          echo "" >> "${GITHUB_STEP_SUMMARY}"
+          echo "\`\`\`" >> "${GITHUB_STEP_SUMMARY}"
+          cat diffiles.txt >> "${GITHUB_STEP_SUMMARY}"
+          echo "\`\`\`" >> "${GITHUB_STEP_SUMMARY}"
+          echo "" >> "${GITHUB_STEP_SUMMARY}"
+          echo "To format all of these files at once, download the " \
+               "patch file below, \`clang-format-patch_[...].diff\`, " \
+               "from the ***Artifacts*** section." >> "${GITHUB_STEP_SUMMARY}"
+          echo "Note that it may take a moment for the file to appear " \
+               "or may require reloading the page." >> "${GITHUB_STEP_SUMMARY}"
+          echo "" >> "${GITHUB_STEP_SUMMARY}"
+          echo "To apply the patch containing the formatting edits, " \
+               "execute \`git apply <patch-file>\` from your local E3SM " \
+               "branch." >> "${GITHUB_STEP_SUMMARY}"
+          echo "Then commit the changes and push to your remote branch." >> "${GITHUB_STEP_SUMMARY}"
+        else
+          echo "status_fail=false" >> "${GITHUB_ENV}"
+          echo "## Status: \`clang-format\` Check Passed!" > "${GITHUB_STEP_SUMMARY}"
+        fi
+    - name: diff format changes
+      run: git diff > "components/eamxx/clang-format-patch.diff"
+    - name: upload diff patch
+      if: ${{ env.status_fail }}
+      uses: actions/upload-artifact@v4
       with:
-        source: ${{ steps.changed-files.outputs.all_changed_files }}
-        exclude: ''
-        extensions: 'hpp,cpp'
-        clangFormatVersion: 14
-        style: 'file:components/eamxx/.clang-format'
+        name: clang-format-patch_${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}.diff
+        path: |
+          components/eamxx/clang-format-patch.diff
+    - name: return pass-fail status
+      run: |
+        if [[ ${status_fail} ]]; then
+          exit 1
+        else
+          exit 0
+        fi
