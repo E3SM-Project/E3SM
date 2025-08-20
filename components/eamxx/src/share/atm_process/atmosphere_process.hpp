@@ -19,6 +19,10 @@
 #include <ekat_string_utils.hpp>
 #include <ekat_logger.hpp>
 
+namespace pybind11 {
+class array;
+}
+
 #include <memory>
 #include <string>
 #include <set>
@@ -432,6 +436,7 @@ protected:
     }
   }
 
+
   // Override this method to initialize the derived
   virtual void initialize_impl(const RunType run_type) = 0;
 
@@ -638,6 +643,21 @@ protected:
 
   strmap_t<strmap_t<std::any>> m_py_fields_dev;
   strmap_t<strmap_t<std::any>> m_py_fields_host;
+
+  bool has_py_module () const { return m_py_module.has_value(); }
+
+  template<typename... Args>
+  void py_module_call (const std::string& name, const Args&... args);
+
+  // These utilities allow to retrieve pybind11 objects from the std::any wrappers
+  const pybind11::array& get_py_field_host (const std::string& fname) const;
+  const pybind11::array& get_py_field_dev (const std::string& fname) const;
+
+  const pybind11::array& get_py_field_host (const std::string& fname, const std::string& grid) const;
+  const pybind11::array& get_py_field_dev (const std::string& fname, const std::string& grid) const;
+
+  const pybind11::array& get_py_field_impl (const strmap_t<strmap_t<std::any>>& py_fields,
+                                     const std::string& fname, const std::string& grid) const;
 #endif
 };
 
@@ -661,6 +681,7 @@ add_invariant_check (const Args... args) {
   auto fpc = std::make_shared<FPC>(args...);
   add_invariant_check(fpc);
 }
+
 
 // A short name for the factory for atmosphere processes
 // WARNING: you do not need to write your own creator function to register your atmosphere process in the factory.
