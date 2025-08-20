@@ -1559,6 +1559,7 @@ contains
             ! Figg_rofi
             g2x_g % rAttr(index_g2x_Figg_rofi,n) = 0.0 ! placeholder
             ! Fogg_rofi
+            g2x_g % rAttr(index_g2x_Fogg_rofi,n) = 0.0
             !g2x_g % rAttr(index_g2x_Fogg_rofi,n) = avgCalvingFlux(i) 
             g2x_g % rAttr(index_g2x_Fogg_rofi,n) = g2x_g % rAttr(index_g2x_Fogg_rofi,n) + avgFaceMeltFlux(i)
             if (trim(config_basal_mass_bal_float) == 'ismip6') then
