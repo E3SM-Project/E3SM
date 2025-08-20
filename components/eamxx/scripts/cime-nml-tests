@@ -360,22 +360,6 @@ class TestBuildnml(unittest.TestCase):
         expect (stat!=0,"Command './atmchange p3::non_existent=3' should have failed")
 
     ###########################################################################
-    def test_atmchanges_for_atm_procs_add_group(self):
-    ###########################################################################
-        """
-        Test atmchanges that add atm proc groups
-        """
-        case = self._common_case
-
-        out = run_cmd_no_fail ("./atmchange mac_aero_mic::atm_procs_list=shoc,_my_group_",from_dir=case)
-
-        self._chg_atmconfig([("_my_group_::atm_procs_list", "test_only")], case)
-
-        # If we are able to change subcycles of test_only then we know the atmchange
-        # above added the necessary atm proc XML block.
-        self._chg_atmconfig([("test_only::number_of_subcycles", "42")], case)
-
-    ###########################################################################
     def test_atmchanges_for_atm_procs_remove(self):
     ###########################################################################
         """

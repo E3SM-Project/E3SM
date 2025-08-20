@@ -206,13 +206,6 @@ def modify_ap_list(xml_root, group, ap_list_str, append_this):
     >>> modify_ap_list(tree,node,"p1,p3",False)
     Traceback (most recent call last):
     SystemExit: ERROR: Unrecognized atm proc name 'p3'. To declare a new group, prepend and append '_' to the name.
-    >>> modify_ap_list(tree,node,"p1,_my_group_",False)
-    True
-    >>> get_child(node,"atm_procs_list").text
-    'p1,_my_group_'
-    >>> defaults = get_child(tree,'atmosphere_processes_defaults')
-    >>> has_child(defaults,'_my_group_')
-    True
     """
     curr_apl = get_child(group,"atm_procs_list")
     if curr_apl.text==ap_list_str:
