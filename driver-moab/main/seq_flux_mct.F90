@@ -1048,7 +1048,7 @@ contains
 
             call mbGetCellTagVals(mboxid, 'Faxa_swndr', swndr, nloc_of)
             call mbGetCellTagVals(mboxid, 'Faxa_swndf', swndf, nloc_of)
-            call mbGetCellTagVals(mboxid, 'Faxa_swvdr', swndr, nloc_of)
+            call mbGetCellTagVals(mboxid, 'Faxa_swvdr', swvdr, nloc_of)
             call mbGetCellTagVals(mboxid, 'Faxa_swvdf', swvdf, nloc_of)
           endif
           do n=1,nloc_of
