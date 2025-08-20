@@ -1011,7 +1011,8 @@ CONTAINS
         curr_day=day_spec, curr_tod=sec_spec )
    fname_srf_cam = interpret_filename_spec( rsfilename_spec_cam, case=get_restcase(), &
         yr_spec=yr_spec, mon_spec=mon_spec, day_spec=day_spec, sec_spec= sec_spec )
-   moab_fname_srf_cam = 'moab_'//trim(fname_srf_cam)
+   !moab_fname_srf_cam = 'moab_'//trim(fname_srf_cam)
+   moab_fname_srf_cam = trim(fname_srf_cam)
    moab_pname_srf_cam = trim(get_restartdir() )//trim(moab_fname_srf_cam)
    call getfil(moab_pname_srf_cam, moab_fname_srf_cam)
 
@@ -1127,7 +1128,8 @@ CONTAINS
 
       ! Determine and open surface restart dataset
 
-   moab_fname_srf_cam = 'moab_'//trim(fname_srf_cam)
+   !moab_fname_srf_cam = 'moab_'//trim(fname_srf_cam)
+   moab_fname_srf_cam = trim(fname_srf_cam)
 
    call cam_pio_createfile(File, trim(moab_fname_srf_cam))
    if (masterproc) then
@@ -1239,7 +1241,6 @@ CONTAINS
          yr_spec=yr_spec, mon_spec=mon_spec, day_spec=day_spec, sec_spec= sec_spec )
     pname_srf_cam = trim(get_restartdir() )//fname_srf_cam
     call getfil(pname_srf_cam, fname_srf_cam)
-
     call cam_pio_openfile(File, fname_srf_cam, 0)
     call pio_initdecomp(pio_subsystem, pio_double, (/ngcols/), dof, iodesc)
     allocate(tmp(size(dof)))
@@ -1309,6 +1310,7 @@ CONTAINS
     type(io_desc_t)           :: iodesc
     character(CL)             :: itemc       ! string converted to char
     type(mct_string)          :: mstring     ! mct char type
+    character(len=nlen)       :: tmp_fname_srf_cam 
     !-----------------------------------------------------------------------
 
     ! Determine and open surface restart dataset
@@ -1316,7 +1318,8 @@ CONTAINS
     fname_srf_cam = interpret_filename_spec( rsfilename_spec_cam, &
          yr_spec=yr_spec, mon_spec=mon_spec, day_spec=day_spec, sec_spec= sec_spec )
 
-    call cam_pio_createfile(File, fname_srf_cam)
+    tmp_fname_srf_cam = 'mct_'//trim(fname_srf_cam)
+    call cam_pio_createfile(File, tmp_fname_srf_cam)
     call pio_initdecomp(pio_subsystem, pio_double, (/ngcols/), dof, iodesc)
 
     nf_x2a = mct_aVect_nRattr(x2a_a)
