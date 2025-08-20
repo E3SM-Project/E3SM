@@ -221,10 +221,9 @@ def buildnml(case, caseroot, compname):
     gcam_idir   = os.path.join(input_data_dir, "iac", "giac", "gcam", "gcam_6_0")
     glm_idir    = os.path.join(input_data_dir, "iac", "giac", "glm")
     glm2iacdir  = os.path.join(input_data_dir, "iac", "giac", "glm2iac")
-    gcam_rdir   = os.path.join(gcam_idir, "restart", "ssp2rcp45", mach)
     ldir        = os.path.join(input_data_dir, "lnd", "clm2", "rawdata", "LUT_input_files_current")
 
-    for pth, label in ((gcam_idir, "gcam_idir"), (glm_idir, "glm_idir"), (glm2iacdir, "glm2iacdir"), (gcam_rdir, "gcam_rdir"), (ldir, "ldir")):
+    for pth, label in ((gcam_idir, "gcam_idir"), (glm_idir, "glm_idir"), (glm2iacdir, "glm2iacdir"), (ldir, "ldir")):
         expect(os.path.exists(pth), "Required path missing ({}): {}".format(label, pth))
 
     # If iesm_dyn_source is not provided, try to parse it from gcam_in as gcam_gridfile or gcam_grid
@@ -251,6 +250,48 @@ def buildnml(case, caseroot, compname):
             logger.info("Derived dynamic surface dataset from gcam_in (gcam_gridfile/gcam_grid): {}".format(iesm_dyn_source))
         else:
             logger.warning("IESM_DYN_SOURCE not set and could not be derived from gcam_in; dynamic file link may be skipped.")
+
+    # Derive restart scenario directory from case_name in gcam_in
+    def _extract_case_name_from_gcam_in(rundir_path):
+        pat = re.compile(r"^\s*case_name\s*=\s*['\"]([^'\"]+)['\"]", re.IGNORECASE)
+        candidates = [os.path.join(rundir_path, "gcam_in")] + sorted(glob.glob(os.path.join(rundir_path, "gcam_in*")))
+        for fn in candidates:
+            if not os.path.isfile(fn):
+                continue
+            try:
+                with open(fn, 'r') as fh:
+                    for line in fh:
+                        m = pat.match(line)
+                        if m:
+                            return m.group(1)
+            except Exception:
+                pass
+        return None
+
+    def _scenario_dir_from_case_name(case_name):
+        s = (case_name or "").upper()
+        if "SSP245" in s:
+            return "ssp2rcp45"
+        if "SSP370" in s:
+            return "ssp3"
+        if "SSP585" in s:
+            return "ssp5"
+        m = re.search(r"SSP(\d+)", s)
+        if m:
+            code = m.group(1)
+            if code == "245":
+                return "ssp2rcp45"
+            if code == "370":
+                return "ssp3"
+            if code == "585": #place holder for 585
+                return "ssp5"
+        logger.warning("Unrecognized case_name for scenario mapping: %s", case_name)
+        return "ssp2rcp45"  # conservative default
+
+    case_name = _extract_case_name_from_gcam_in(rundir)
+    scenario_dir = _scenario_dir_from_case_name(case_name)
+    gcam_rdir = os.path.join(gcam_idir, "restart", scenario_dir, mach)
+    expect(os.path.isdir(gcam_rdir), "GCAM restart dir missing: {}".format(gcam_rdir))
 
     # === Symlinks formerly created by the run script ===
     _ensure_symlink(os.path.join(gcam_idir, "input"),
