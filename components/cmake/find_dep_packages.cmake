@@ -30,13 +30,15 @@ if (NOT DEFINED ENV{Ekat_ROOT})
   set(ENV{Ekat_ROOT} ${INSTALL_SHAREDPATH})
 endif()
 
-# We will get kokkos from EKAT unless Kokkos_ROOT is set.
-if (NOT DEFINED ENV{Kokkos_ROOT})
-  # Kokkos will be built in the sharedlibs if Kokkos_ROOT is unset.
-  set(ENV{Kokkos_ROOT} $ENV{Ekat_ROOT})
-endif()
+if (USE_KOKKOS)
+  # We will get kokkos from EKAT unless Kokkos_ROOT is set.
+  if (NOT DEFINED ENV{Kokkos_ROOT})
+    # Kokkos will be built in the sharedlibs if Kokkos_ROOT is unset.
+    set(ENV{Kokkos_ROOT} $ENV{Ekat_ROOT})
+  endif()
 
-find_package(Ekat REQUIRED)
+  find_package(Ekat REQUIRED)
+endif()
 
 if (USE_MOAB)
   find_package(MOAB REQUIRED)
