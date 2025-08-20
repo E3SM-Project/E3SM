@@ -79,4 +79,16 @@
 <!-- sim_year used for CLM datasets and SSTs forcings -->
 <sim_year>2015-2100</sim_year>
 
+<!-- CO2 rampping setting -->
+<co2vmr>0.000001e-6</co2vmr>
+<scenario_ghg>'RAMPED'</scenario_ghg>
+<bndtvghg>atm/cam/ggas/GHG_CMIP_SSP370-1-2-1_Annual_Global_2015-2500_c20210509.nc</bndtvghg>
+
+<!-- Time-variant CO2 fossil fuel emissions -->
+<!-- <aircraft_datapath>atm/cam/chem/trop_mozart_aero/emis/GCAM_E3SM_SSP245/co2_emission_data_SSP245_GCAM/</aircraft_datapath> -->
+<co2_readFlux_aircraft>.false.</co2_readFlux_aircraft>
+<co2_readFlux_fuel>.false.</co2_readFlux_fuel>
+<co2_readFlux_ocn>.true.</co2_readFlux_ocn>
+<co2flux_ocn_file>ocn/CMIP6_SSP370_ne30/ne30pg2_CSEM_hist_ssp370_ocean_flux_1850-2100_c20231108.nc'</co2flux_ocn_file>
+
 </namelist_defaults>
