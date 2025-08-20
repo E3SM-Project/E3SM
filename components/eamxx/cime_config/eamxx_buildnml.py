@@ -5,7 +5,6 @@ Used by buildnml. See buildnml for documetation.
 """
 
 import os, sys, re, pwd, grp, stat, getpass
-from collections import OrderedDict
 
 import xml.etree.ElementTree as ET
 import xml.dom.minidom as md
@@ -234,7 +233,7 @@ def ordered_dump(data, item, Dumper=yaml.SafeDumper, **kwds):
         return dumper.represent_mapping(
             yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
             data.items())
-    OrderedDumper.add_representer(OrderedDict, _dict_representer)
+    OrderedDumper.add_representer(dict, _dict_representer)
 
     # These allow to dump arrays with a tag specifying the type
     OrderedDumper.add_representer(Bools,    array_representer)
@@ -602,11 +601,11 @@ def _create_raw_xml_file_impl(case, xml, filepath=None):
     >>> import pprint
     >>> pp = pprint.PrettyPrinter(indent=4)
     >>> pp.pprint(d)
-    OrderedDict([   ('atm_procs_list', 'P1,P2'),
-                    ('prop2', 'one'),
-                    ('prop1', 'zero'),
-                    ('P1', OrderedDict({'prop1': 'two'})),
-                    ('P2', OrderedDict({'prop1': 'zero'}))])
+    {   'P1': {'prop1': 'two'},
+        'P2': {'prop1': 'zero'},
+        'atm_procs_list': 'P1,P2',
+        'prop1': 'zero',
+        'prop2': 'one'}
     >>> ############## INHERIT+CHILD SELECTOR #####################
     >>> case = MockCase({'ATM_GRID':'ne4ne4'})
     >>> xml = '''
@@ -642,11 +641,11 @@ def _create_raw_xml_file_impl(case, xml, filepath=None):
     >>> import pprint
     >>> pp = pprint.PrettyPrinter(indent=4)
     >>> pp.pprint(d)
-    OrderedDict([   ('atm_procs_list', 'P1,P2'),
-                    ('prop2', 'one'),
-                    ('prop1', 'zero'),
-                    ('P1', OrderedDict({'prop1': 'two_selected'})),
-                    ('P2', OrderedDict({'prop1': 'zero'}))])
+    {   'P1': {'prop1': 'two_selected'},
+        'P2': {'prop1': 'zero'},
+        'atm_procs_list': 'P1,P2',
+        'prop1': 'zero',
+        'prop2': 'one'}
     >>> ############## INHERIT+PARENT SELECTOR #####################
     >>> case = MockCase({'ATM_GRID':'ne4ne4'})
     >>> xml = '''
@@ -688,23 +687,20 @@ def _create_raw_xml_file_impl(case, xml, filepath=None):
     >>> import pprint
     >>> pp = pprint.PrettyPrinter(indent=4)
     >>> pp.pprint(d)
-    OrderedDict([   ('atm_procs_list', 'P1,P2'),
-                    ('prop2', 'one'),
-                    ('number_of_subcycles', 1),
-                    ('enable_precondition_checks', True),
-                    ('enable_postcondition_checks', True),
-                    (   'P1',
-                        OrderedDict([   ('prop1', 'hi'),
-                                        ('Grid', 'physics_pg2'),
-                                        ('number_of_subcycles', 1),
-                                        ('enable_precondition_checks', True),
-                                        ('enable_postcondition_checks', True)])),
-                    (   'P2',
-                        OrderedDict([   ('prop1', 'there'),
-                                        ('number_of_subcycles', 1),
-                                        ('enable_precondition_checks', True),
-                                        ('enable_postcondition_checks', True)]))])
-
+    {   'P1': {   'Grid': 'physics_pg2',
+                  'enable_postcondition_checks': True,
+                  'enable_precondition_checks': True,
+                  'number_of_subcycles': 1,
+                  'prop1': 'hi'},
+        'P2': {   'enable_postcondition_checks': True,
+                  'enable_precondition_checks': True,
+                  'number_of_subcycles': 1,
+                  'prop1': 'there'},
+        'atm_procs_list': 'P1,P2',
+        'enable_postcondition_checks': True,
+        'enable_precondition_checks': True,
+        'number_of_subcycles': 1,
+        'prop2': 'one'}
     """
 
     # 0. Remove internal sections, that are not to appear in the
@@ -813,12 +809,9 @@ def convert_to_dict(element):
     >>> root = ET.fromstring(xml)
     >>> d = convert_to_dict(root)
     >>> pp.pprint(d)
-    OrderedDict([   ('my int', 1),
-                    (   'my list',
-                        OrderedDict([   ('my_ints', [2, 3]),
-                                        ('my_strings', ['two', 'three'])]))])
+    {'my int': 1, 'my list': {'my_ints': [2, 3], 'my_strings': ['two', 'three']}}
     """
-    result = OrderedDict()
+    result = {}
     for child in element:
         child_name = child.tag.replace("__", " ")
 
@@ -1003,7 +996,11 @@ def get_file_parameters(caseroot):
         result.extend(refine_type(item.text, force_type="array(file)"))
 
     # Remove duplicates. Not sure if an error would be warranted if dupes exist
-    return list(OrderedDict.fromkeys(result))
+    result_no_dups = []
+    for item in result:
+        if item not in result:
+            result_no_dups.append(item)
+    return result_no_dups
 
 ###############################################################################
 def create_input_data_list_file(case,caseroot):
