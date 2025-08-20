@@ -41,8 +41,8 @@ jobs:
           - ERS_Ld5_P4.ne4pg2_oQU480.F2010.ghci-oci_gnu.eam-wcprod_F2010
           - SMS_D_Ln5_P4.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.ghci-oci_gnu
           - ERS_Ld5_P4.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.ghci-oci_gnu.eamxx-prod
-          - ERS_P4.f19_g16_rx1.A.ghci-oci_gnu
-          - ERS_P4.f19_g16.I1850ELM.ghci-oci_gnu.elm-betr
+          - ERS_P4.ne4pg2_oQU480.A.ghci-oci_gnu
+          - ERS_P4.ne4pg2_oQU480.I1850ELM.ghci-oci_gnu.elm-betr
     container:
       image: ghcr.io/e3sm-project/containers-ghci:ghci-0.2.1
 
