@@ -92,7 +92,8 @@ module ocn_subgrid
    public :: ocn_subgrid_layer_thickness_lookup, &
              ocn_subgrid_wet_fraction_lookup, &
              ocn_subgrid_ssh_lookup, &
-             ocn_subgrid_init
+             ocn_subgrid_init, &
+             bisection_index
 
    !--------------------------------------------------------------------
    !
@@ -379,16 +380,13 @@ contains
       else if (zeta <= tableMin) then
         layerThick = 0.0_RKIND
       else
-        do lev = 1, nSubgridTableLevels-1
-          zeta0 = (real(lev,RKIND)-1.0_RKIND)*deltaZ + tableMin
-          zeta1 = zeta0 + deltaZ
 
-          if ((zeta <= zeta1) .and. (zeta >= zeta0)) then
-            layerThick = ((zeta-zeta0)*subgridTable(lev+1) - (zeta-zeta1)*subgridTable(lev))/deltaZ
-            return
-          end if
+        lev = int((zeta - tableMin)/deltaZ) + 1
+        zeta0 = (real(lev,RKIND)-1.0_RKIND)*deltaZ + tableMin
+        zeta1 = zeta0 + deltaZ
 
-        end do
+        layerThick = ((zeta-zeta0)*subgridTable(lev+1) - (zeta-zeta1)*subgridTable(lev))/deltaZ
+
       end if
 
    end subroutine ocn_subgrid_layer_thickness_lookup!}}}
@@ -444,16 +442,12 @@ contains
       else if (zeta <= tableMin) then
         wetFraction = 0.0_RKIND
       else
-        do lev = 1, nSubgridTableLevels-1
-          zeta0 = (real(lev,RKIND)-1.0_RKIND)*deltaZ + tableMin
-          zeta1 = zeta0 + deltaZ
+        lev = int((zeta - tableMin)/deltaZ) + 1
 
-          if ((zeta <= zeta1) .and. (zeta >= zeta0)) then
-            wetFraction = ((zeta-zeta0)*subgridTable(lev+1) - (zeta-zeta1)*subgridTable(lev))/deltaZ
-            return
-          end if
+        zeta0 = (real(lev,RKIND)-1.0_RKIND)*deltaZ + tableMin
+        zeta1 = zeta0 + deltaZ
 
-        end do
+        wetFraction = ((zeta-zeta0)*subgridTable(lev+1) - (zeta-zeta1)*subgridTable(lev))/deltaZ
       end if
 
    end subroutine ocn_subgrid_wet_fraction_lookup!}}}
@@ -519,21 +513,18 @@ contains
         zeta = - bathymetryMin ! prevent_drying likely fails to ensure positive water columbn
       else
 
-       do lev = 1, nSubgridTableLevels-1
-          zeta0 = (real(lev,RKIND)-1.0_RKIND)*deltaZ + tableMin
-          zeta1 = zeta0 + deltaZ
+         lev = bisection_index(layerThick, subgridTable, nSubgridTableLevels)
 
-          layerThick0 = subgridTable(lev)
-          layerThick1 = subgridTable(lev+1)
+         zeta0 = (real(lev,RKIND)-1.0_RKIND)*deltaZ + tableMin
+         zeta1 = zeta0 + deltaZ
 
-          if ((layerThick <= layerThick1) .and. (layerThick >= layerThick0)) then
-            phi0 = (layerThick-layerThick1)/(layerThick0-layerThick1)
-            phi1 = (layerThick-layerThick0)/(layerThick1-layerThick0)
-            zeta = phi0*zeta0 + phi1*zeta1
-            return
-          end if
+         layerThick0 = subgridTable(lev)
+         layerThick1 = subgridTable(lev+1)
 
-        end do
+         phi0 = (layerThick-layerThick1)/(layerThick0-layerThick1)
+         phi1 = (layerThick-layerThick0)/(layerThick1-layerThick0)
+         zeta = phi0*zeta0 + phi1*zeta1
+
       end if
 
    end subroutine ocn_subgrid_ssh_lookup!}}}
@@ -626,6 +617,40 @@ contains
       call mpas_pool_get_array(statePool, 'wetFractionEdge', wetFractionEdge, timeLevel)
 
    end subroutine ocn_subgrid_init!}}}
+
+   !--------------------------------------------------------------------
+   ! Bisection search to find index such that:
+   !   arr(index) <= value < arr(index+1)
+   ! If value is outside the grid, -9999 is returned.
+   !--------------------------------------------------------------------
+   integer function bisection_index(value, arr, n) result(idx)
+      implicit none 
+      integer, intent(in) :: n 
+      real(kind=RKIND), intent(in) :: value
+      real(kind=RKIND), intent(in) :: arr(n)
+      integer :: low, high, mid
+
+      if (value < arr(1)) then 
+         idx = -9999
+         return
+      end if
+      if (value > arr(n)) then 
+         idx = -9999 
+         return
+      end if
+
+      low = 1
+      high = n
+      do while (high - low > 1) 
+         mid = (low + high) / 2
+         if (value < arr(mid)) then 
+            high = mid
+         else 
+            low = mid
+         end if
+      end do
+      idx = low
+   end function bisection_index
 
 end module ocn_subgrid
 
