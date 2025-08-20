@@ -10,7 +10,6 @@ import xml.etree.ElementTree as ET # pylint: disable=unused-import
 # Add path to cime_config folder
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "cime_config"))
 from eamxx_buildnml_impl import check_value, is_array_type, get_child, find_node
-from eamxx_buildnml_impl import gen_atm_proc_group
 from utils import expect, run_cmd_no_fail
 
 ATMCHANGE_SEP = "-ATMCHANGE_SEP-"
