@@ -122,7 +122,7 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen, data_list_path
     if ocn_iceberg == 'true':
         print('Setting remove_ais_rofi to .true.')
         nmlgen.set_value("remove_ais_rofi", '.true.')
-    elif comp_glc =='mali' and mali_prognostic_mode == 'PROGNOSTIC'):
+    elif comp_glc =='mali' and mali_prognostic_mode == 'PROGNOSTIC':
         if 'ais' in glc_grid:
             print('Setting remove_ais_rofi to .true.')
             nmlgen.set_value("remove_ais_rofi", '.true.')
