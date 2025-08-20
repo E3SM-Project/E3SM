@@ -271,12 +271,7 @@ def buildnml(case, caseroot, compname):
                     os.path.join(rundir, "iESM_Init_CropPast.nc"))
     _ensure_symlink(os.path.join(ldir, "surfdata_360x720_mcrop2015_c07082020.nc"),
                     os.path.join(rundir, "surfdata_360x720_mcrop_init.nc"))
-
-    _ensure_symlink(os.path.join(ldir, "iESM_Ref_CropPast2015_c10142019.nc"),
-                os.path.join(rundir, "iESM_Dyn_CropPast.nc"))
-    _ensure_symlink(os.path.join(ldir, "surfdata_360x720_mcrop2015_c07082020.nc"),
-                os.path.join(rundir, "surfdata_360x720_mcrop_dyn.nc"))
-
+    
     # Dynamic source: absolute path or relative to glm2iacdir
     dyn_src_path = None
     if iesm_dyn_source:
@@ -291,13 +286,9 @@ def buildnml(case, caseroot, compname):
         expect(os.path.isfile(src), "Missing GLM2IAC file: {}".format(src))
         _ensure_symlink(src, os.path.join(rundir, fname))
 
-    # === Refresh dynamic run-time datasets ===
-    # Keep copies for CropPast and mcrop (model may write to these).
-    # For surfdata_iESM_dyn.nc: create a symlink by default; set GCAM_COPY_DYN=1 to copy instead.
+    # === Copies to refresh each run (were `cp` lines) ===
     init_crop_past = os.path.join(rundir, "iESM_Init_CropPast.nc")
     mcrop_init     = os.path.join(rundir, "surfdata_360x720_mcrop_init.nc")
-    dyn_crop_past = os.path.join(rundir, "iESM_Dyn_CropPast.nc")
-    mcrop_dyn     = os.path.join(rundir, "surfdata_360x720_mcrop_dyn.nc")
     if dyn_src_path is None and iesm_dyn_source:
         # In unlikely case symlink creation was skipped but we still have a path
         dyn_src_path = iesm_dyn_source if os.path.isabs(iesm_dyn_source) else os.path.join(glm2iacdir, iesm_dyn_source)
@@ -305,14 +296,13 @@ def buildnml(case, caseroot, compname):
 
     expect(os.path.exists(init_crop_past), "Expected iESM_Init_CropPast.nc in RUNDIR")
     expect(os.path.exists(mcrop_init),     "Expected surfdata_360x720_mcrop_init.nc in RUNDIR")
-    expect(os.path.exists(dyn_crop_past), "Expected iESM_Dyn_CropPast.nc in RUNDIR")
-    expect(os.path.exists(mcrop_dyn),     "Expected surfdata_360x720_mcrop_dyn.nc in RUNDIR")
     if iesm_dyn_source:
         expect(os.path.exists(dyn_src_in_rundir), "Expected dynamic source in RUNDIR: {}".format(dyn_src_in_rundir))
 
+    _ensure_copy(init_crop_past, os.path.join(rundir, "iESM_Dyn_CropPast.nc"))
+    _ensure_copy(mcrop_init,     os.path.join(rundir, "surfdata_360x720_mcrop_dyn.nc"))
     if iesm_dyn_source:
-        dyn_target = os.path.join(rundir, "surfdata_iESM_dyn.nc")
-        _ensure_symlink(dyn_src_in_rundir, dyn_target)
+        _ensure_copy(dyn_src_in_rundir, os.path.join(rundir, "surfdata_iESM_dyn.nc"))
 
 ###############################################################################
 def _main_func():
