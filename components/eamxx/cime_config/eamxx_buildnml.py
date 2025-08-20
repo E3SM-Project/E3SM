@@ -715,8 +715,8 @@ def _create_raw_xml_file_impl(case, xml, filepath=None):
 
     try:
         # In the WHOLE xml, resolve inheritance, evaluate selectors, and expand CIME vars
-        resolve_all_inheritances(xml)
         evaluate_selectors(xml, case, selectors)
+        resolve_all_inheritances(xml)
         expand_cime_vars(xml,case)
 
         # Generate default atm process list for this COMPSET (i.e., NO atmchanges considered yet)
