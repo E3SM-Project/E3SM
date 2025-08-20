@@ -659,39 +659,6 @@ contains
            
       end subroutine extrapolate_topography        
 
-      !--------------------------------------------------------------------
-      ! Bisection search to find index such that:
-      !   arr(index) <= value < arr(index+1)
-      ! If value is outside the grid, -9999 is returned.
-      !--------------------------------------------------------------------
-      integer function bisection_index(value, arr, n) result(idx)
-         implicit none
-         integer, intent(in) :: n
-         real(kind=RKIND), intent(in) :: value
-         real(kind=RKIND), intent(in) :: arr(n)
-         integer :: low, high, mid
-
-         if (value < arr(1)) then
-            idx = -9999
-            return
-         end if
-         if (value > arr(n)) then
-            idx = -9999 
-            return
-         end if
-
-         low = 1
-         high = n
-         do while (high - low > 1)
-            mid = (low + high) / 2
-            if (value < arr(mid)) then
-               high = mid
-            else
-               low = mid
-            end if
-         end do
-         idx = low
-         end function bisection_index
    end subroutine ocn_init_Buttermilk_bay_bathymetry!}}}
 
 !***********************************************************************
