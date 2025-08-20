@@ -593,7 +593,7 @@ contains
         bath(1) = TopoIC%array(ix(1),ix(2))  ;
         bath(2) = TopoIC%array(ix(1)+1,ix(2)) ;
         bath(3) = TopoIC%array(ix(1)+1,ix(2)+1) ;
-        bath(4) = TopoIC%array(ix(1),ix(2)) ;
+        bath(4) = TopoIC%array(ix(1),ix(2)+1) ;
 
         xv(1) = topoLon%array(ix(1)) ;
         xv(2) = topoLon%array(ix(1)+1) ;
@@ -611,6 +611,11 @@ contains
         depth = sum( bath*f ) ;
         !depth = -1.0_RKIND*depth
 
+        if ((bath(1) /= bath(1)) .or. (bath(2) /= bath(2)) .or. (bath(3) /= bath(3)) .or. (bath(4) /= bath(4))) then
+            call extrapolate_topography( )
+            return
+        end if
+
         if ( minval(bath) < -(abs(config_Buttermilk_bay_topography_fill_value) - 1)  ) then
 !            depth = config_Buttermilk_bay_topography_extrapolation_constant_value ;  
           call extrapolate_topography( ) ;              
@@ -620,9 +625,7 @@ contains
 !            depth = config_Buttermilk_bay_topography_extrapolation_constant_value ;  
         end if    
 
-        if ((bath(1) /= bath(1)) .or. (bath(2) /= bath(2)) .or. (bath(3) /= bath(3)) .or. (bath(4) /= bath(4))) then
-            call extrapolate_topography( )
-        end if
+
 
 !        if (minval(bath) < -99998) then
 !          depth = -1d10
@@ -633,18 +636,6 @@ contains
       else
 
          call extrapolate_topography( ) ;
-!      
-!        ! depth = -1e10
-!        if ( adjustl(trim(config_Buttermilk_bay_topography_extrapolation_method)) == 'constant' ) then
-!          depth = config_Buttermilk_bay_topography_extrapolation_constant_value ;       
-!        else
-!          !! nearest extrapolation !
-!          ix(1) = merge( 1, ix(1), ix(1) < 1 ) ;
-!          ix(1) = merge( nLonTopo, ix(1), ix(1) >= nLonTopo ) ;
-!          ix(2) = merge( 1, ix(2), ix(2) < 1 )  ;
-!          ix(2) = merge( nLatTopo, ix(2), ix(2) >= nLatTopo ) ;
-!          depth = TopoIC%array(ix(1),ix(2)) ;
-!        end if
 
       endif
 
