@@ -168,14 +168,16 @@ def get_xml_nodes(xml_root, name):
     return result
 
 ###############################################################################
-def modify_ap_list(xml_root, group, ap_list_str, append_this):
+def modify_ap_list(group, ap_list_str, append_this, defaults_xml=None):
 ###############################################################################
     """
     Modify the atm_procs_list entry of this XML node (which is an atm proc group).
     This routine can only be used to add an atm proc group OR to remove some
     atm procs.
+    NOTE: defaults_xml is not None only in doctest tests. In regular use cases,
+    we load the defaults from the defaults xml file in eamxx/cime_config
     >>> xml = '''
-    ... <root>
+    ... <dummy_defaults>
     ...     <atmosphere_processes_defaults>
     ...         <atm_proc_group>
     ...             <atm_procs_list type="array(string)"/>
@@ -187,25 +189,26 @@ def modify_ap_list(xml_root, group, ap_list_str, append_this):
     ...             <my_param>2</my_param>
     ...         </p2>
     ...     </atmosphere_processes_defaults>
-    ... </root>
+    ... </dummy_defaults>
     ... '''
     >>> from eamxx_buildnml_impl import has_child
     >>> import xml.etree.ElementTree as ET
-    >>> tree = ET.fromstring(xml)
+    >>> defaults = ET.fromstring(xml)
     >>> node = ET.Element("my_group")
     >>> node.append(ET.Element("atm_procs_list"))
     >>> get_child(node,"atm_procs_list").text = ""
-    >>> modify_ap_list(tree,node,"p1,p2",False)
+    >>> modify_ap_list(node,"p1,p2",False,defaults)
     True
     >>> get_child(node,"atm_procs_list").text
     'p1,p2'
-    >>> modify_ap_list(tree,node,"p1",True)
+    >>> modify_ap_list(node,"p1",True,defaults)
     True
     >>> get_child(node,"atm_procs_list").text
     'p1,p2,p1'
-    >>> modify_ap_list(tree,node,"p1,p3",False)
+    >>> modify_ap_list(node,"p1,p3",False,defaults)
     Traceback (most recent call last):
-    SystemExit: ERROR: Unrecognized atm proc name 'p3'. To declare a new group, prepend and append '_' to the name.
+    SystemExit: ERROR: Cannot modify ap list for group 'my_group'
+    Process 'p3' not found in XML tree 'dummy_defaults'
     """
     curr_apl = get_child(group,"atm_procs_list")
     if curr_apl.text==ap_list_str:
@@ -217,14 +220,15 @@ def modify_ap_list(xml_root, group, ap_list_str, append_this):
 
     # To avoid buffering a change that has an invalid atm proc name,
     # we load the defaults here, and check that the added procs exist
-    defaults_xml = pathlib.Path(__file__).parent.parent.resolve() / "cime_config/namelist_defaults_eamxx.xml"
-    with open(defaults_xml, "r") as fd:
-        defaults = ET.parse(fd).getroot()
-        procs_defaults = get_child(defaults,"atmosphere_processes_defaults")
-        for ap in ap_list:
-            expect (find_node(procs_defaults,ap) is not None,
-                    f"Cannot modify ap list for group '{group.tag}'.\n"
-                    f"Process '{ap}' not found in {defaults_xml}")
+    if defaults_xml is None:
+        defaults_xml_file = pathlib.Path(__file__).parent.parent.resolve() / "cime_config/namelist_defaults_eamxx.xml"
+        with open(defaults_xml_file, "r") as fd:
+            defaults_xml = ET.parse(fd).getroot()
+    procs_defaults = get_child(defaults_xml,"atmosphere_processes_defaults")
+    for ap in ap_list:
+        expect (find_node(procs_defaults,ap) is not None,
+                f"Cannot modify ap list for group '{group.tag}'\n"
+                f"Process '{ap}' not found in XML tree '{defaults_xml.tag}'")
 
     # Update the 'atm_procs_list' in this node
     if append_this:
@@ -263,7 +267,7 @@ def apply_change(xml_root, node, new_value, append_this):
     if node.tag=="atm_procs_list":
         parent_map = create_parent_map(xml_root)
         group = get_parents(node,parent_map)[-1]
-        return modify_ap_list (xml_root,group,new_value,append_this)
+        return modify_ap_list (group,new_value,append_this)
 
     if append_this:
 

@@ -605,8 +605,8 @@ def _create_raw_xml_file_impl(case, xml, filepath=None):
     OrderedDict([   ('atm_procs_list', 'P1,P2'),
                     ('prop2', 'one'),
                     ('prop1', 'zero'),
-                    ('P1', OrderedDict([('prop1', 'two')])),
-                    ('P2', OrderedDict([('prop1', 'zero')]))])
+                    ('P1', OrderedDict({'prop1': 'two'})),
+                    ('P2', OrderedDict({'prop1': 'zero'}))])
     >>> ############## INHERIT+CHILD SELECTOR #####################
     >>> case = MockCase({'ATM_GRID':'ne4ne4'})
     >>> xml = '''
@@ -645,8 +645,8 @@ def _create_raw_xml_file_impl(case, xml, filepath=None):
     OrderedDict([   ('atm_procs_list', 'P1,P2'),
                     ('prop2', 'one'),
                     ('prop1', 'zero'),
-                    ('P1', OrderedDict([('prop1', 'two_selected')])),
-                    ('P2', OrderedDict([('prop1', 'zero')]))])
+                    ('P1', OrderedDict({'prop1': 'two_selected'})),
+                    ('P2', OrderedDict({'prop1': 'zero'}))])
     >>> ############## INHERIT+PARENT SELECTOR #####################
     >>> case = MockCase({'ATM_GRID':'ne4ne4'})
     >>> xml = '''
