@@ -4225,53 +4225,48 @@
     </mpirun>
 
     <module_system type="module" allow_error="true">
-      <init_path lang="sh">/sw/baseline/lmod/8.7.23/init/sh</init_path>
-      <init_path lang="csh">/sw/baseline/lmod/8.7.23/init/csh</init_path>
-      <init_path lang="python">/sw/baseline/lmod/8.7.23/init/env_modules_python.py</init_path>
-      <init_path lang="perl">/sw/baseline/lmod/8.7.23/init/perl</init_path>
+      <init_path lang="sh">/sw/baseline/nsp/lmod/8.7.37/init/sh</init_path>
+      <init_path lang="csh">/sw/baseline/nsp/lmod/8.7.37/init/csh</init_path>
+      <init_path lang="python">/sw/baseline/nsp/lmod/8.7.37/init/env_modules_python.py</init_path>
+      <init_path lang="perl">/sw/baseline/nsp/lmod/8.7.37/init/perl</init_path>
       <cmd_path lang="perl">module</cmd_path>
-      <cmd_path lang="python">/sw/baseline/lmod/8.7.23/libexec/lmod python</cmd_path>
+      <cmd_path lang="python">/sw/baseline/nsp/lmod/8.7.37/libexec/lmod python</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
       <modules>
         <command name="purge"/>
-        <command name="load">python/3.11-anaconda3</command>
-	    <command name="load">cmake/3.26.3</command>
+        <command name="load">miniforge3/24.11.3-0</command>
+	    <command name="load">cmake/3.30.5</command>
       </modules>
       
       <modules compiler="gnu" mpilib="openmpi">
 	    <command name="load">DefApps</command>
-	    <command name="load">gcc/12.2.0</command>
-        <command name="load">openmpi/4.0.4</command>
+	    <command name="load">gcc/12.4.0</command>
+        <command name="load">openmpi/5.0.5</command>
 	    <command name="load">netlib-lapack/3.11.0</command>
-	    <command name="load">hdf5/1.14.3</command>
-        <command name="load">netcdf-c/4.9.2-h5f</command>
-        <command name="load">netcdf-cxx/4.2</command>
-        <command name="load">netcdf-fortran/4.6.1-h5f</command>
-        <command name="load">parallel-netcdf/1.12.3</command>
+	    <command name="load">hdf5/1.14.5-mpi</command>
+        <command name="load">netcdf-c/4.9.2-mpi-h5f</command>
+        <command name="load">netcdf-cxx/4.2-mpi</command>
+        <command name="load">netcdf-fortran/4.6.1-mpi-h5f</command>
+        <command name="load">parallel-netcdf/1.12.3-mpi</command>
       </modules>
 
       <modules compiler="gnu" mpilib="openmpi-amanzitpls">
         <command name="load">DefApps</command>
-        <command name="load">gcc/12.2.0</command>
-        <command name="load">openmpi/4.0.4</command>
-        <command name="load">openblas/0.3.23</command>
+        <command name="load">gcc/12.4.0</command>
+        <command name="load">openmpi/5.0.5</command>
+        <command name="load">openblas/0.3.28</command>
         <command name="use">-a /ccsopen/proj/cli185/ats-dev/modulefiles</command>
-        <command name="load">ats/tpls-0.98.9+master/cades-baseline/openblas-0.3.23-openmpi-4.0.4-gcc-12.2.0/opt</command>
+        <command name="load">ats/tpls-0.98.12+master/cades-baseline/openblas-0.3.28-openmpi-5.0.5-gcc-12.4.0/opt</command>
       </modules>
 
       <modules compiler="gnu" mpilib="mpi-serial">
         <command name="load">DefApps</command>
-        <command name="load">gcc/12.2.0</command>
+        <command name="load">gcc/12.4.0</command>
         <command name="unload">openmpi</command>
         <command name="load">netlib-lapack/3.11.0</command>
       </modules>
 
-      <!--
-      <modules compiler="gnu" mpilib="mpi-serial">
-        <command name="load">nco</comand>
-      </modules>
-      -->
     </module_system>
 
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
@@ -4294,11 +4289,11 @@
       <env name="BLASLAPACK_LIBDIR">$ENV{OLCF_NETLIB_LAPACK_ROOT}/lib64</env>
     </environment_variables>
     <environment_variables compiler="gnu" mpilib="openmpi-amanzitpls">
-      <env name="PETSC_PATH">/ccsopen/proj/cli185/ats-dev/amanzi-tpls/install/tpls-0.98.9/cades-baseline/openblas-0.3.23-openmpi-4.0.4-gcc-12.2.0/opt/petsc-3.20/</env>
+      <env name="PETSC_PATH">/ccsopen/proj/cli185/ats-dev/amanzi-tpls/install/tpls-0.98.12/cades-baseline/openblas-0.3.28-openmpi-5.0.5-gcc-12.4.0/opt/petsc-3.20/</env>
       <env name="PATH">/ccsopen/home/zdr/opt/perl/bin:$ENV{PATH}/</env>
-      <env name="HDF5_ROOT">/ccsopen/proj/cli185/ats-dev/amanzi-tpls/install/tpls-0.98.9/cades-baseline/openblas-0.3.23-openmpi-4.0.4-gcc-12.2.0/opt</env>
-      <env name="NETCDF_C_PATH">/ccsopen/proj/cli185/ats-dev/amanzi-tpls/install/tpls-0.98.9/cades-baseline/openblas-0.3.23-openmpi-4.0.4-gcc-12.2.0/opt</env>
-      <env name="NETCDF_FORTRAN_PATH">/ccsopen/proj/cli185/ats-dev/amanzi-tpls/install/tpls-0.98.9/cades-baseline/openblas-0.3.23-openmpi-4.0.4-gcc-12.2.0/opt</env>
+      <env name="HDF5_ROOT">/ccsopen/proj/cli185/ats-dev/amanzi-tpls/install/tpls-0.98.12/cades-baseline/openblas-0.3.28-openmpi-5.0.5-gcc-12.4.0/opt</env>
+      <env name="NETCDF_C_PATH">/ccsopen/proj/cli185/ats-dev/amanzi-tpls/install/tpls-0.98.12/cades-baseline/openblas-0.3.28-openmpi-5.0.5-gcc-12.4.0/opt</env>
+      <env name="NETCDF_FORTRAN_PATH">/ccsopen/proj/cli185/ats-dev/amanzi-tpls/install/tpls-0.98.12/cades-baseline/openblas-0.3.28-openmpi-5.0.5-gcc-12.4.0/opt</env>
     </environment_variables>
     <environment_variables compiler="gnu" mpilib="mpi-serial">
       <env name="PATH">/ccsopen/proj/cli185/netcdf-hdf5_mpi-serial/bin:/ccsopen/home/zdr/opt/perl/bin:$ENV{PATH}/</env>
