@@ -68,14 +68,19 @@ jobs:
         test:
           - full_name: ERS_Ln9.ne4_ne4.F2000-SCREAMv1-AQP1.ghci-snl-cpu_gnu.eamxx-output-preset-2
             short_name: ERS_Ln9.ne4_ne4.F2000-SCREAMv1-AQP1.eamxx-output-preset-2
+            id: 1
           - full_name: ERS_P16_Ln22.ne30pg2_ne30pg2.FIOP-SCREAMv1-DP.ghci-snl-cpu_gnu.eamxx-dpxx-arm97
             short_name: ERS_P16_Ln22.ne30pg2_ne30pg2.FIOP-SCREAMv1-DP.eamxx-dpxx-arm97
+            id: 2
           - full_name: ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci-snl-cpu_gnu.eamxx-small_kernels--eamxx-output-preset-5
             short_name: ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-small_kernels--eamxx-output-preset-5
+            id: 3
           - full_name: REP_D_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.ghci-snl-cpu_gnu
             short_name: REP_D_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx
+            id: 4
           - full_name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci-snl-cpu_gnu.eamxx-prod
             short_name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-prod
+            id: 5
       fail-fast: false
     name: cpu-gcc / ${{ matrix.test.short_name }}
     steps:
@@ -105,7 +110,9 @@ jobs:
           fi
       - name: Set test id
         run: |
-          TESTID=${{ github.sha }}-$(date -u +"%y%m%d-%H%M%S")
+          GITHUB_SHA=${{ github.sha }}
+          SHORT_SHA=${GITHUB_SHA::7}
+          TESTID=$SHORT_SHA-${{ matrix.test.id }}-$(date -u +"%y%m%d-%H%M%S")
           echo "testid=$TESTID" >> $GITHUB_ENV
       - name: Run test
         id: run-tests
