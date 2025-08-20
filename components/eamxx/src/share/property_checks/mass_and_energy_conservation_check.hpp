@@ -127,8 +127,8 @@ public:
 
 protected:
 
-  std::shared_ptr<const AbstractGrid> m_grid;
   ekat::Comm m_comm;
+  std::shared_ptr<const AbstractGrid> m_grid;
   std::map<std::string, Field>  m_fields;
 
   int m_num_cols;

@@ -1263,8 +1263,8 @@ void AtmosphereProcess::add_py_fields (const Field& f)
 #ifdef EAMXX_HAS_PYTHON
   if (m_py_module.has_value()) {
     const auto& grid_name = f.get_header().get_identifier().get_grid_name();
-    m_py_fields_dev[grid_name][f.name()] = create_py_field<Device>(f);
-    m_py_fields_host[grid_name][f.name()] = create_py_field<Host>(f);
+    m_py_fields_dev[f.name()][grid_name] = create_py_field<Device>(f);
+    m_py_fields_host[f.name()][grid_name] = create_py_field<Host>(f);
   }
 #else
   (void) f;
