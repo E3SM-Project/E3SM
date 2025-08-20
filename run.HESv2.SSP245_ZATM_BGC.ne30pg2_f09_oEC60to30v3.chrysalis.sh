@@ -381,8 +381,6 @@ case_setup() {
       ./xmlchange --id CAM_CONFIG_OPTS --append --val='-cosp'
     fi
 
-    # ./xmlchange --append CAM_CONFIG_OPTS='-co2_cycle'
-    
     # Extracts input_data_dir in case it is needed for user edits to the namelist later
     local input_data_dir=`./xmlquery DIN_LOC_ROOT --value`
 
@@ -399,8 +397,6 @@ case_setup() {
 
     # Finally, run CIME case.setup
     ./case.setup --reset
-
-    # ln -sf ${gcam_idir}/input ${CASE_ROOT}  - what is this for? seems not needed
 
     popd
 }
