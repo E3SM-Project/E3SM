@@ -1,7 +1,5 @@
 #!/bin/bash -fe
-
 # E3SM+GCAM SSP245 production run script for chrysalis
-# 
 
 main() {
 
@@ -22,20 +20,6 @@ readonly RESOLUTION="ne30pg2_f09_oEC60to30v3" # non-default grids are: atm:ne30n
 readonly CASE_NAME="test_${COMPSET}_${RESOLUTION}_${MYDATE}"
 # readonly CASE_GROUP="E3SM_GCAM"
 
-# ---- Eva's settings for IAC run script ----
-# domain files
-#### I added them to components/gcam/cime_config/config_component.xml
-# export lnd_domainfile=domain.lnd.0.9x1.25_oEC60to30v3.231108.nc
-# export atm_domainfile=domain.lnd.ne30pg2_oEC60to30v3.200220.nc
-
-
-# select based on the model resolution
-# 2 deg : surfdata_iESM_dyn_hist_simyr2015_c230516.nc
-# 1 deg : landuse.timeseries_0.9x1.25_HIST_simyr2015_c201021.nc
-#export iesm_dyn_source=surfdata_iESM_dyn_hist_simyr2015_c230516.nc
-export iesm_dyn_source=landuse.timeseries_0.9x1.25_HIST_simyr2015_c201021.nc
-# ---- End of Eva's settings for IAC run script ----
-
 # Code and compilation
 #readonly CHECKOUT="${MYDATE}"
 #readonly BRANCH="main" 
@@ -49,7 +33,6 @@ readonly START_DATE="2015-01-01"
 
 # Additional options for 'branch' and 'hybrid'
 readonly GET_REFCASE=TRUE
-# will need to change the following variables according to initial files
 readonly RUN_REFCASE="20241204_I20TREAMELMCNPRDCTCBCBGC_${RESOLUTION}" 
 readonly RUN_REFDATE="2015-01-01"
 readonly RUN_REFDIR="/lcrc/group/e3sm/ac.eva.sinha/E3SM_GCAM_lnd_init/${RUN_REFCASE}"
@@ -79,14 +62,9 @@ if [ "${run}" != "production" ]; then
   units=${tmp[2]}
   resubmit=$(( ${tmp[1]%%x*} -1 ))
   length=${tmp[1]##*x}
-  echo layout=$layout
-  echo resubmit=$resubmit
-  echo length=$length$units
    
-  # readonly CASE_SCRIPTS_DIR=${CASE_ROOT}/tests/${run}/case_scripts
-  # readonly CASE_RUN_DIR=${CASE_ROOT}/tests/${run}/run
-  readonly CASE_SCRIPTS_DIR=${CASE_ROOT}/case_scripts
-  readonly CASE_RUN_DIR=${CASE_ROOT}/run
+  readonly CASE_SCRIPTS_DIR=${CASE_ROOT}/tests/${run}/case_scripts
+  readonly CASE_RUN_DIR=${CASE_ROOT}/tests/${run}/run
   readonly PELAYOUT=${layout}
   readonly STOP_OPTION=${units}
   readonly STOP_N=${length}
@@ -114,10 +92,8 @@ else
 fi
 
 # Coupler history 
-# readonly HIST_OPTION="nyears"
-# readonly HIST_N="5"
-readonly HIST_OPTION=${STOP_OPTION}
-readonly HIST_N=${STOP_N}
+readonly HIST_OPTION="nyears"
+readonly HIST_N="5"
 
 # Leave empty (unless you understand what it does)
 readonly OLD_EXECUTABLE=""
@@ -171,39 +147,25 @@ echo $'\n----- All done -----\n'
 user_nl() {
 
 cat << EOF >> user_nl_eam
-
+ co2_conserv_error_tol_per_year = 1.e-5
+ 
+ ncdata = '20241204_I20TREAMELMCNPRDCTCBCBGC_ne30pg2_f09_oEC60to30v3.eam.i.2015-01-01-00000.nc'
+ 
  hist_mfilt = 1
  hist_nhtfrq = -24
-
- ncdata = '20241204_I20TREAMELMCNPRDCTCBCBGC_ne30pg2_f09_oEC60to30v3.eam.i.2015-01-01-00000.nc'
-
- 
- co2_flag = .true. !check if this one is neccessary
- co2_readFlux_fuel = .false.
- co2_readFlux_aircraft = .false. ! I see the aircraft emission file is determined in the use case namelist. should we turn it on?
- co2_readFlux_ocn = .true.
-
- co2_conserv_error_tol_per_year = 1.e-5
-
-
-
 EOF
 
-# suplphos = 'ALL' sets supplemental phosphorus as active for all vegetation types
-
 # Setting do_harvest == .false. because the iac takes care of this
-# transient pft flag automatically set to false when flanduse.timeseries is not set 
-# note that the elm namelis basis here is 2000_control
-
 cat << EOF >> user_nl_elm
- hist_mfilt = 1
- hist_nhtfrq = -24
- hist_dov2xy = .true.
  do_budgets = .true.
  do_harvest = .false.
 
  finidat = '20241204_I20TREAMELMCNPRDCTCBCBGC_ne30pg2_f09_oEC60to30v3.elm.r.2015-01-01-00000.nc'
  
+ hist_dov2xy = .true.
+ 
+ hist_mfilt = 1
+ hist_nhtfrq = -24
 EOF
 
 cat << EOF >> user_nl_gcam
@@ -299,7 +261,6 @@ create_newcase() {
       echo $'  * or set do_newcase=false\n'
       exit 35
     fi
-
 }
 
 modify_pe_layout() {
@@ -420,34 +381,15 @@ case_setup() {
       ./xmlchange --id CAM_CONFIG_OPTS --append --val='-cosp'
     fi
 
-    # Turn on co2-cycle for temeporay solution. - sf 1/14/2022
-    ./xmlchange --append CAM_CONFIG_OPTS='-co2_cycle'
+    # ./xmlchange --append CAM_CONFIG_OPTS='-co2_cycle'
     
     # Extracts input_data_dir in case it is needed for user edits to the namelist later
     local input_data_dir=`./xmlquery DIN_LOC_ROOT --value`
-    local glm_idir=`./xmlquery GLM_PATH --value`
-    local gcam_idir=`./xmlquery GCAM_PATH --value`
-    local glm2iacdir=`./xmlquery GLM2IAC_PATH --value`
-    # export domainpath=${input_data_dir}/share/domains
-
-    # echo $input_data_dir
 
     # Custom user_nl
     user_nl
 
-    # other setups inherit from Eva's run script 
-#  !!!! I addded them to components/gcam/cime_config/config_component.xml
-    # ./xmlchange SAVE_TIMING=TRUE
-    # ./xmlchange ATM_DOMAIN_PATH=${domainpath}
-    # ./xmlchange LND_DOMAIN_PATH=${domainpath}
-    # ./xmlchange ATM_DOMAIN_FILE=${atm_domainfile}
-    # ./xmlchange LND_DOMAIN_FILE=${lnd_domainfile}
-    ./xmlchange DOUT_S_ROOT=${CASE_ARCHIVE_DIR} # may not be neccessary 
-# !!!! I added them to components/gcam/cime_config/config_compsets.xml   
-    # ./xmlchange NCPL_BASE_PERIOD=year
-    # ./xmlchange ATM_NCPL=17520
-    # ./xmlchange IAC_NCPL=1
-
+    # ./xmlchange DOUT_S_ROOT=${CASE_ARCHIVE_DIR} # may not be neccessary 
     # docn setup
     ./xmlchange --id PIO_TYPENAME  --val "pnetcdf"
     ./xmlchange SSTICE_DATA_FILENAME=${input_data_dir}/ocn/docn7/SSTDATA/sst_ice_GFDL-ESM4_ssp245_r2i1p1f1_gr_201501-210012_land_interpolated.nc
@@ -458,39 +400,7 @@ case_setup() {
     # Finally, run CIME case.setup
     ./case.setup --reset
 
-    # gcam setups iherit from Eva's run script
-    gcam_rdir=${gcam_idir}/restart/ssp2rcp45/${MACHINE}
-    ldir=${input_data_dir}/lnd/clm2/rawdata/LUT_input_files_current
-    # gcam_idir=${input_data_dir}/iac/giac/gcam/gcam_6_0
-    # glm_idir=${input_data_dir}/iac/giac/glm
-    # glm2iacdir=${input_data_dir}/iac/giac/glm2iac
-
-    # GCAM and GLM currently read some configuration and input files from
-    # the current directory, as we haven't yet put them in a standard
-    # place or modified code to look for them there.  Thus, we manually
-    # copy them over for now.
-    ln -sf ${gcam_idir}/input ${CASE_ROOT}
-    ln -sf ${gcam_idir}/configuration/log_conf.xml ${CASE_RUN_DIR}
-    ln -sf ${glm_idir}/glm.fut.conf.${MACHINE}  ${CASE_RUN_DIR}/glm.fut.conf
-
-    # separate restarts for carbon scaling on or off; maybe not
-    ln -sf ${gcam_rdir}/restart.0 ${CASE_RUN_DIR}
-    ln -sf ${gcam_rdir}/restart.1 ${CASE_RUN_DIR}
-    ln -sf ${gcam_rdir}/restart.2 ${CASE_RUN_DIR}
-    ln -sf ${gcam_rdir}/restart.3 ${CASE_RUN_DIR}
-    ln -sf ${gcam_rdir}/restart.4 ${CASE_RUN_DIR}
-
-
-    ln -sf ${ldir}/iESM_Ref_CropPast2015_c10142019.nc ${CASE_RUN_DIR}/iESM_Init_CropPast.nc
-    ln -sf ${ldir}/surfdata_360x720_mcrop2015_c07082020.nc ${CASE_RUN_DIR}/surfdata_360x720_mcrop_init.nc
-    ln -sf ${glm2iacdir}/$iesm_dyn_source ${CASE_RUN_DIR}
-    ln -sf ${glm2iacdir}/surfdata_360x720_potveg.nc ${CASE_RUN_DIR}
-    ln -sf ${glm2iacdir}/mksurf_landuse_iESM_720x360.nc ${CASE_RUN_DIR}
-
-    #### remember to re-do these three copies before each run
-    cp ${CASE_RUN_DIR}/iESM_Init_CropPast.nc ${CASE_RUN_DIR}/iESM_Dyn_CropPast.nc
-    cp ${CASE_RUN_DIR}/surfdata_360x720_mcrop_init.nc  ${CASE_RUN_DIR}/surfdata_360x720_mcrop_dyn.nc
-    cp ${CASE_RUN_DIR}/${iesm_dyn_source}  ${CASE_RUN_DIR}/surfdata_iESM_dyn.nc
+    # ln -sf ${gcam_idir}/input ${CASE_ROOT}  - what is this for? seems not needed
 
     popd
 }
@@ -551,8 +461,6 @@ case_build() {
 #-----------------------------------------------------
 runtime_options() {
     
-    # source /lcrc/soft/climate/e3sm-unified/load_latest_e3sm_unified_chrysalis.sh
-
     echo $'\n----- Starting runtime_options -----\n'
     pushd ${CASE_SCRIPTS_DIR}
 
@@ -599,8 +507,6 @@ runtime_options() {
 
         ln -sf  ${RUN_REFDIR}/${RUN_REFCASE}.eam.i.${RUN_REFDATE}-00000.nc ${CASE_RUN_DIR}/.
         ln -sf  ${RUN_REFDIR}/${RUN_REFCASE}.elm.r.${RUN_REFDATE}-00000.nc ${CASE_RUN_DIR}/.
-        cp ${RUN_REFDIR}/rpointer.atm ${CASE_RUN_DIR}/
-        cp ${RUN_REFDIR}/rpointer.lnd ${CASE_RUN_DIR}/
 
         else
         echo 'ERROR: $MODEL_START_TYPE = '${MODEL_START_TYPE}' is unrecognized. Exiting.'
