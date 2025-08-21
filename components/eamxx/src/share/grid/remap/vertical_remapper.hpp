@@ -112,9 +112,8 @@ protected:
 
   ekat::Comm            m_comm;
 
-  // Source and target fields
-  std::vector<Field>    m_src_masks;
-  std::vector<Field>    m_tgt_masks;
+  // Tgt grid masks (in case extrap type at top or bot is Mask)
+  std::map<std::string,Field>    m_masks;
 
   // Vertical profile fields, both for source and target
   Field                 m_src_pmid;
