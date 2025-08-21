@@ -248,7 +248,6 @@
         <command name="load">cray-netcdf-hdf5parallel/4.9.0.9</command>
         <command name="load">cray-parallel-netcdf/1.12.3.9</command>
         <command name="load">cmake/3.24.3</command>
-        <command name="load">evp-patch</command>
       </modules>
     </module_system>
 
