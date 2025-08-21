@@ -70,6 +70,30 @@ jobs:
               core.exportVariable('proceed', 'no');
               console.log(`The label ${process.env.LABEL_NAME} will be removed.`);
             }
+      - name: Check actor is an assignee
+        if: ${{ env.proceed == 'yes' }}
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const assignees = context.payload.pull_request.assignees;
+            let isAssignee = false;
+
+            if (assignees && assignees.length > 0) {
+              for (const assignee of assignees) {
+                if (assignee.login === ${context.actor}) {
+                  isAssignee = true;
+                  break;
+                }
+              }
+            }
+
+            if (isAssignee) {
+              console.log(`${context.actor} is one of the assignees of the PR. Will proceed.`);
+            } else {
+              console.log(`${context.actor} is NOT an assignee of the PR.`);
+              console.log(`The label ${process.env.LABEL_NAME} will be removed.`);
+              core.exportVariable('proceed', 'no');
+            }
 
       - name: Check mergeability
         if: ${{ env.proceed == 'yes' }}
