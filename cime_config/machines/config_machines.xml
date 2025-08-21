@@ -259,7 +259,6 @@
 
       <modules>
         <command name="load">cmake/3.24.3</command>
-        <command name="load">evp-patch</command>
       </modules>
     </module_system>
 
