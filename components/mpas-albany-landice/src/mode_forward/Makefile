@@ -60,7 +60,8 @@ mpas_li_calving.o: mpas_li_thermal.o \
 
 mpas_li_thermal.o:
 
-mpas_li_iceshelf_melt.o: mpas_li_calving.o
+mpas_li_iceshelf_melt.o: mpas_li_calving.o \
+								 mpas_li_ocean_extrap.o
 
 mpas_li_diagnostic_vars.o: mpas_li_thermal.o
 
