@@ -5,7 +5,6 @@ Used by buildnml. See buildnml for documetation.
 """
 
 import os, sys, re, pwd, grp, stat, getpass
-from collections import OrderedDict
 
 import xml.etree.ElementTree as ET
 import xml.dom.minidom as md
@@ -14,7 +13,7 @@ import xml.dom.minidom as md
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts"))
 
 # SCREAM imports
-from eamxx_buildnml_impl import get_valid_selectors, get_child, refine_type, \
+from eamxx_buildnml_impl import get_valid_selectors, get_child, has_child, refine_type, \
         resolve_all_inheritances, gen_atm_proc_group, check_all_values, find_node
 from atm_manip import apply_atm_procs_list_changes_from_buffer, apply_non_atm_procs_list_changes_from_buffer
 
@@ -234,7 +233,7 @@ def ordered_dump(data, item, Dumper=yaml.SafeDumper, **kwds):
         return dumper.represent_mapping(
             yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
             data.items())
-    OrderedDumper.add_representer(OrderedDict, _dict_representer)
+    OrderedDumper.add_representer(dict, _dict_representer)
 
     # These allow to dump arrays with a tag specifying the type
     OrderedDumper.add_representer(Bools,    array_representer)
@@ -602,11 +601,11 @@ def _create_raw_xml_file_impl(case, xml, filepath=None):
     >>> import pprint
     >>> pp = pprint.PrettyPrinter(indent=4)
     >>> pp.pprint(d)
-    OrderedDict([   ('atm_procs_list', 'P1,P2'),
-                    ('prop2', 'one'),
-                    ('prop1', 'zero'),
-                    ('P1', OrderedDict([('prop1', 'two')])),
-                    ('P2', OrderedDict([('prop1', 'zero')]))])
+    {   'P1': {'prop1': 'two'},
+        'P2': {'prop1': 'zero'},
+        'atm_procs_list': 'P1,P2',
+        'prop1': 'zero',
+        'prop2': 'one'}
     >>> ############## INHERIT+CHILD SELECTOR #####################
     >>> case = MockCase({'ATM_GRID':'ne4ne4'})
     >>> xml = '''
@@ -642,11 +641,11 @@ def _create_raw_xml_file_impl(case, xml, filepath=None):
     >>> import pprint
     >>> pp = pprint.PrettyPrinter(indent=4)
     >>> pp.pprint(d)
-    OrderedDict([   ('atm_procs_list', 'P1,P2'),
-                    ('prop2', 'one'),
-                    ('prop1', 'zero'),
-                    ('P1', OrderedDict([('prop1', 'two_selected')])),
-                    ('P2', OrderedDict([('prop1', 'zero')]))])
+    {   'P1': {'prop1': 'two_selected'},
+        'P2': {'prop1': 'zero'},
+        'atm_procs_list': 'P1,P2',
+        'prop1': 'zero',
+        'prop2': 'one'}
     >>> ############## INHERIT+PARENT SELECTOR #####################
     >>> case = MockCase({'ATM_GRID':'ne4ne4'})
     >>> xml = '''
@@ -688,23 +687,20 @@ def _create_raw_xml_file_impl(case, xml, filepath=None):
     >>> import pprint
     >>> pp = pprint.PrettyPrinter(indent=4)
     >>> pp.pprint(d)
-    OrderedDict([   ('atm_procs_list', 'P1,P2'),
-                    ('prop2', 'one'),
-                    ('number_of_subcycles', 1),
-                    ('enable_precondition_checks', True),
-                    ('enable_postcondition_checks', True),
-                    (   'P1',
-                        OrderedDict([   ('prop1', 'hi'),
-                                        ('Grid', 'physics_pg2'),
-                                        ('number_of_subcycles', 1),
-                                        ('enable_precondition_checks', True),
-                                        ('enable_postcondition_checks', True)])),
-                    (   'P2',
-                        OrderedDict([   ('prop1', 'there'),
-                                        ('number_of_subcycles', 1),
-                                        ('enable_precondition_checks', True),
-                                        ('enable_postcondition_checks', True)]))])
-
+    {   'P1': {   'Grid': 'physics_pg2',
+                  'enable_postcondition_checks': True,
+                  'enable_precondition_checks': True,
+                  'number_of_subcycles': 1,
+                  'prop1': 'hi'},
+        'P2': {   'enable_postcondition_checks': True,
+                  'enable_precondition_checks': True,
+                  'number_of_subcycles': 1,
+                  'prop1': 'there'},
+        'atm_procs_list': 'P1,P2',
+        'enable_postcondition_checks': True,
+        'enable_precondition_checks': True,
+        'number_of_subcycles': 1,
+        'prop2': 'one'}
     """
 
     # 0. Remove internal sections, that are not to appear in the
@@ -713,35 +709,43 @@ def _create_raw_xml_file_impl(case, xml, filepath=None):
     get_child(xml,"generated_files",remove=True)
     selectors = get_valid_selectors(xml)
 
-    # 1. Evaluate all selectors
     try:
+        # In the WHOLE xml, resolve inheritance, evaluate selectors, and expand CIME vars
         evaluate_selectors(xml, case, selectors)
-
-        # 2. Apply all changes in the SCREAM_ATMCHANGE_BUFFER that may alter
-        #    which atm processes are used
-        apply_atm_procs_list_changes_from_buffer (case,xml)
-
-        # 3. Resolve all inheritances
         resolve_all_inheritances(xml)
-
-        # 4. Expand any CIME var that appears inside XML nodes text
         expand_cime_vars(xml,case)
 
-        # 5. Grab the atmosphere_processes_defaults node, with all the procs defaults
+        # Generate default atm process list for this COMPSET (i.e., NO atmchanges considered yet)
         atm_procs_defaults = get_child(xml,"atmosphere_processes_defaults",remove=True)
+        eamxx_procs_list = get_child(get_child(atm_procs_defaults,"eamxx"),"atm_procs_list")
+        eamxx_group = gen_atm_proc_group(eamxx_procs_list.text, atm_procs_defaults)
+        eamxx_group.tag = "eamxx"
 
-        # 6. Get eamxx atm procs list
-        eamxx_group = get_child(atm_procs_defaults,"eamxx",remove=True)
-        atm_procs_list = get_child(eamxx_group,"atm_procs_list",remove=True)
+        # Apply atm changes that modify the list of processes
+        any_change = apply_atm_procs_list_changes_from_buffer (case,eamxx_group)
 
-        # 7. Form the nested list of atm procs needed, append to atmosphere_driver section
-        atm_procs = gen_atm_proc_group(atm_procs_list.text, atm_procs_defaults)
-        atm_procs.tag = "eamxx"
-        xml.append(atm_procs)
+        if any_change:
+            # Re-generate the process group. To avoid regenerating the same atm proc group,
+            # we MUST replace matching nodes in atm_procs_defaults with what is in the
+            # current atm_procs tree (as some atm procs lists have changed)
+            for default in atm_procs_defaults:
+                actual = find_node(eamxx_group,default.tag)
+                if actual is not None and has_child(actual,'atm_procs_list'):
+                    # Update the atm_procs_list of the default with the one from actual
+                    default_apl = get_child(default,'atm_procs_list')
+                    actual_apl = get_child(actual,'atm_procs_list')
+                    default_apl.text = actual_apl.text
 
-        # 8. Apply all changes in the SCREAM_ATMCHANGE_BUFFER that do not alter
-        #    which atm processes are used
+            eamxx_procs_list = get_child(eamxx_group,"atm_procs_list")
+            eamxx_group = gen_atm_proc_group(eamxx_procs_list.text, atm_procs_defaults)
+            eamxx_group.tag = "eamxx"
+
+        # Add atm procs node to xml
+        xml.append(eamxx_group)
+
+        # Apply remaining atm changes
         apply_non_atm_procs_list_changes_from_buffer (case,xml)
+
     except BaseException as e:
         if filepath is not None:
             dbg_xml_path = filepath.replace(".xml", ".dbg.xml")
@@ -805,12 +809,9 @@ def convert_to_dict(element):
     >>> root = ET.fromstring(xml)
     >>> d = convert_to_dict(root)
     >>> pp.pprint(d)
-    OrderedDict([   ('my int', 1),
-                    (   'my list',
-                        OrderedDict([   ('my_ints', [2, 3]),
-                                        ('my_strings', ['two', 'three'])]))])
+    {'my int': 1, 'my list': {'my_ints': [2, 3], 'my_strings': ['two', 'three']}}
     """
-    result = OrderedDict()
+    result = {}
     for child in element:
         child_name = child.tag.replace("__", " ")
 
@@ -995,7 +996,11 @@ def get_file_parameters(caseroot):
         result.extend(refine_type(item.text, force_type="array(file)"))
 
     # Remove duplicates. Not sure if an error would be warranted if dupes exist
-    return list(OrderedDict.fromkeys(result))
+    result_no_dups = []
+    for item in result:
+        if item not in result:
+            result_no_dups.append(item)
+    return result_no_dups
 
 ###############################################################################
 def create_input_data_list_file(case,caseroot):
