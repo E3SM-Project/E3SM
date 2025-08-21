@@ -146,3 +146,4 @@ jobs:
         if: ${{ always() }}
         run: |
           rm -rf /projects/e3sm/scratch/${{ matrix.test.full_name }}${{ env.compgen_suffix }}${{ env.testid }}
+          rm -f /projects/e3sm/scratch/cs.status.${{ env.testid }}
