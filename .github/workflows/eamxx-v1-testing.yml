@@ -113,12 +113,9 @@ jobs:
           path: |
             /projects/e3sm/scratch/${{ matrix.test.full_name }}*/TestStatus
             /projects/e3sm/scratch/${{ matrix.test.full_name }}*/TestStatus.log
-            /projects/e3sm/scratch/${{ matrix.test.full_name }}*/bld/*.bldlog.*
-            /projects/e3sm/scratch/${{ matrix.test.full_name }}*/bld/case2bld/*.bldlog.*
-            /projects/e3sm/scratch/${{ matrix.test.full_name }}*/run/*.log.*
-            /projects/e3sm/scratch/${{ matrix.test.full_name }}*/run/case2run/*.log.*
-            /projects/e3sm/scratch/${{ matrix.test.full_name }}*/run/*.cprnc.out
-            /projects/e3sm/scratch/${{ matrix.test.full_name }}*/run/case2run/*.cprnc.out
+            /projects/e3sm/scratch/${{ matrix.test.full_name }}*/bld/**/*.bldlog.*
+            /projects/e3sm/scratch/${{ matrix.test.full_name }}*/run/**/*.log.*
+            /projects/e3sm/scratch/${{ matrix.test.full_name }}*/run/**/*.cprnc.out
           retention-days: 14
         env:
           NODE_EXTRA_CA_CERTS: ${{ env.NODE_EXTRA_CA_CERTS }}
@@ -128,8 +125,7 @@ jobs:
         with:
           name: outputs.${{ matrix.test.short_name }}
           path: |
-            /projects/e3sm/scratch/${{ matrix.test.full_name }}*/run/*.nc*
-            /projects/e3sm/scratch/${{ matrix.test.full_name }}*/run/case2run/*.nc*
+            /projects/e3sm/scratch/${{ matrix.test.full_name }}*/run/**/*.nc*
           retention-days: 14
         env:
           NODE_EXTRA_CA_CERTS: ${{ env.NODE_EXTRA_CA_CERTS }}
