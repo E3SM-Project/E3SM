@@ -1741,7 +1741,7 @@ contains
           swup       (n) = 0.0_r8
        enddo
     else  ! not dead comps
-
+       ! these calls will completely fill the arrays.
        call mbGetCellTagVals(mbid, 'Sa_z', zbot, nloc)
        call mbGetCellTagVals(mbid, 'Sa_u', ubot, nloc)
        call mbGetCellTagVals(mbid, 'Sa_v', vbot, nloc)
@@ -1793,17 +1793,18 @@ contains
          call mbGetCellTagVals(mbfid, 'So_warm_diurn', warm, nloc)
          call mbGetCellTagVals(mbfid, 'So_salt_diurn', salt, nloc)
          call mbGetCellTagVals(mbfid, 'So_speed_diurn', speed, nloc)
-         ! TODO:  Finish
+         ! TODO:  Finish with more diun if we're keeping that option
        endif
 
        do n = 1,nloc
           nInc(n) = 0._r8 ! needed for minval/maxval calculation
+
           ! set some values that are needed but not a tag.
           if (mask(n) /= 0) then
              uGust(n) = 0.0_r8
              prec(n)  = rainc(n)+rainl(n)+snowc(n)+snowl(n)
           endif
-          ! make sure values are 0 where mask is 0
+          ! make sure values are 0 where mask is 0 (ocean is not active)
           if (mask(n) == 0) then
              zbot(n) = 0.0_r8
              ubot(n) = 0.0_r8
@@ -1897,6 +1898,27 @@ contains
        !duu10n,ustar, re  , ssq, missval = 0.0_r8 )
     endif
 
+    ! make sure its 0 where there's no ocean to match MCT history
+    do n = 1,nloc
+       if (mask(n) == 0) then
+          sen(n) = 0.0_r8
+          lat(n) = 0.0_r8
+          taux(n) = 0.0_r8
+          tauy(n) = 0.0_r8
+          evap(n) = 0.0_r8
+          tref(n) = 0.0_r8
+          qref(n) = 0.0_r8
+          ustar(n) = 0.0_r8
+          re(n) = 0.0_r8
+          ssq(n) = 0.0_r8
+          lwup(n) = 0.0_r8
+          duu10n(n) = 0.0_r8
+          u10res(n) = 0.0_r8
+          fswpen(n) = 0.0_r8
+       endif
+    enddo
+
+
     call mbSetCellTagVals(mbfid, 'Faox_sen', sen, nloc)
     call mbSetCellTagVals(mbfid, 'Faox_lat', lat, nloc)
     call mbSetCellTagVals(mbfid, 'Faox_taux', taux, nloc)
@@ -1914,7 +1936,6 @@ contains
     u10gust = sqrt(duu10n)
     call mbSetCellTagVals(mbfid, 'So_u10withgusts', u10gust, nloc)
     call mbSetCellTagVals(mbfid, 'So_fswpen', fswpen, nloc)
-    !TODO find better way for above
 
     do n = 1,nloc
        if (mask(n) == 0) then
