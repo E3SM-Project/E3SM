@@ -70,7 +70,6 @@ void HistogramDiag::compute_diagnostic_impl() {
   auto histogram_layout = m_diagnostic_output.get_header().get_identifier().get_layout();
   const int num_bins = histogram_layout.dim(0);
 
-  m_diagnostic_output.deep_copy(sp(0.0));
   auto bin_values_view = m_bin_values.get_view<Real *>();
   auto histogram_view = m_diagnostic_output.get_view<Real *>();
   using KT         = ekat::KokkosTypes<DefaultDevice>;
@@ -106,7 +105,6 @@ void HistogramDiag::compute_diagnostic_impl() {
             const int bin_i = tm.league_rank();
             const Real bin_lower = bin_values_view(bin_i);
             const Real bin_upper = bin_values_view(bin_i+1);
-            histogram_view(bin_i) = 0;
             Kokkos::parallel_reduce(Kokkos::TeamVectorRange(tm, d1*d2),
                 [&](int ind, Real &val) {
                   const int i1 = ind / d2;
@@ -128,7 +126,6 @@ void HistogramDiag::compute_diagnostic_impl() {
             const int bin_i = tm.league_rank();
             const Real bin_lower = bin_values_view(bin_i);
             const Real bin_upper = bin_values_view(bin_i+1);
-            histogram_view(bin_i) = 0;
             Kokkos::parallel_reduce(Kokkos::TeamVectorRange(tm, d1*d2*d3),
                 [&](int ind, Real &val) {
                   const int i1 = ind / (d2*d3);
