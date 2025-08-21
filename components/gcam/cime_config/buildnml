@@ -184,7 +184,7 @@ def buildnml(case, caseroot, compname):
             if os.path.islink(dst):
                 cur = os.readlink(dst)
                 if os.path.abspath(cur) == os.path.abspath(src):
-                    logger.info("Symlink exists and matches: {} -> {}".format(dst, src))
+                    # logger.info("Symlink exists and matches: {} -> {}".format(dst, src))
                     return
             if not _OVERWRITE:
                 expect(False, "Refusing to overwrite existing path: {} (set GCAM_OVERWRITE=1 to override)".format(dst))
@@ -193,7 +193,7 @@ def buildnml(case, caseroot, compname):
             else:
                 os.remove(dst)
         os.symlink(src, dst)
-        logger.info("Created symlink: {} -> {}".format(dst, src))
+        # logger.info("Created symlink: {} -> {}".format(dst, src))
 
     def _ensure_copy(src, dst):
         """Copy src -> dst without clobbering by default; skip if identical."""
@@ -202,7 +202,7 @@ def buildnml(case, caseroot, compname):
         if os.path.exists(dst):
             try:
                 if filecmp.cmp(src, dst, shallow=False):
-                    logger.info("Copy target exists and is identical; skipping: {}".format(dst))
+                    # logger.info("Copy target exists and is identical; skipping: {}".format(dst))
                     return
             except Exception:
                 pass
@@ -210,7 +210,7 @@ def buildnml(case, caseroot, compname):
                 expect(False, "Refusing to overwrite existing file: {} (set GCAM_OVERWRITE=1 to override)".format(dst))
             os.remove(dst)
         shutil.copy2(src, dst)
-        logger.info("Copied file to: {}".format(dst))
+        # logger.info("Copied file to: {}".format(dst))
 
     # Derive standard directories from DIN_LOC_ROOT (input_data_dir in the run script)
     input_data_dir = din_loc_root
@@ -247,7 +247,7 @@ def buildnml(case, caseroot, compname):
         guessed = _extract_gcam_grid_from_gcam_in(rundir)
         if guessed:
             iesm_dyn_source = guessed
-            logger.info("Derived dynamic surface dataset from gcam_in (gcam_gridfile/gcam_grid): {}".format(iesm_dyn_source))
+            # logger.info("Derived dynamic surface dataset from gcam_in (gcam_gridfile/gcam_grid): {}".format(iesm_dyn_source))
         else:
             logger.warning("IESM_DYN_SOURCE not set and could not be derived from gcam_in; dynamic file link may be skipped.")
 
