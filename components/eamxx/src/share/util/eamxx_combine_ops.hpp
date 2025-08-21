@@ -39,6 +39,8 @@ enum class CombineMode {
   Min         // out = min(beta*out,alpha*in)
 };
 
+namespace impl {
+
 // Small helper functions to combine a new value with an old one.
 // The template argument help reducing the number of operations
 // performed (the if is resolved at compile time). In the most
@@ -46,6 +48,41 @@ enum class CombineMode {
 //    result = (op beta*result alpha*newVal) (where op can be +, *, /, max, min)
 // This routine should have no overhead compared to a manual
 // update (assuming you call it with the proper CM)
+template<CombineMode CM, typename ScalarIn, typename ScalarOut, typename CoeffType>
+KOKKOS_FORCEINLINE_FUNCTION
+void combine (const ScalarIn& newVal, ScalarOut& result,
+              const CoeffType alpha, const CoeffType beta)
+{
+  using ekat::impl::max;
+  using ekat::impl::min;
+  switch (CM) {
+    case CombineMode::Replace:
+      result = newVal;
+      break;
+    case CombineMode::Update:
+      result *= beta;
+      result += alpha*newVal;
+      break;
+    case CombineMode::Multiply:
+      result *= (alpha*beta)*newVal;
+      break;
+    case CombineMode::Divide:
+      result /= (alpha/beta) * newVal;
+      break;
+    case CombineMode::Max:
+      result = max(beta*result,static_cast<const ScalarOut&>(alpha*newVal));
+      break;
+    case CombineMode::Min:
+      result = min(beta*result,static_cast<const ScalarOut&>(alpha*newVal));
+      break;
+    default:
+      EKAT_KERNEL_ASSERT ("Unsupported/unexpected combine mode.\n");
+  }
+}
+
+} // namespace impl
+
+// This is the function that user will call, which uses the one above internally
 // If fill-aware=true, we only perform the combine operation if either
 //   a) CM is Replace
 //   b) the new value is NOT fill_value
@@ -57,68 +94,27 @@ enum class CombineMode {
 template<CombineMode CM, bool fill_aware = false, typename ScalarIn = void, typename ScalarOut = void,
          typename CoeffType = typename ekat::ScalarTraits<ScalarIn>::scalar_type>
 KOKKOS_FORCEINLINE_FUNCTION
-std::enable_if_t<not ekat::ScalarTraits<ScalarIn>::is_simd and
-                 not ekat::ScalarTraits<ScalarOut>::is_simd>
-combine (const ScalarIn& newVal, ScalarOut& result,
-         const CoeffType alpha, const CoeffType beta)
+void combine (const ScalarIn& newVal, ScalarOut& result,
+              const CoeffType alpha, const CoeffType beta)
 {
-  // Replace is simple, and does not care about fill_aware
-  if constexpr (CM==CombineMode::Replace) {
-    result = newVal;
-    return;
+  // If not fill-aware, or if CM==Replace, we don't need to check newValue
+  if constexpr (not fill_aware or CM==CombineMode::Replace) {
+    return impl::combine<CM>(newVal,result,alpha,beta);
   }
 
-  if constexpr (fill_aware) {
-    if (newVal!=constants::fill_value<ScalarIn>) {
-      combine<CM,false>(newVal,result,alpha,beta);
-    }
-  } else {
-    // Not a fill-aware combine
-    using ekat::impl::max;
-    using ekat::impl::min;
-    switch (CM) {
-      case CombineMode::Update:
-        result *= beta;
-        result += alpha*newVal;
-        break;
-      case CombineMode::Multiply:
-        result *= (alpha*beta)*newVal;
-        break;
-      case CombineMode::Divide:
-        result /= (alpha/beta) * newVal;
-        break;
-      case CombineMode::Max:
-        result  = max(beta*result,static_cast<const ScalarOut&>(alpha*newVal));
-        break;
-      case CombineMode::Min:
-        result  = min(beta*result,static_cast<const ScalarOut&>(alpha*newVal));
-        break;
-      default:
-        EKAT_KERNEL_ASSERT ("Unsupported/unexpected combine mode.\n");
-    }
-  }
-}
-
-// Special version of combine for pack types
-template<CombineMode CM, bool fill_aware = false, typename ScalarIn = void, typename ScalarOut = void,
-         typename CoeffType = typename ekat::ScalarTraits<ScalarIn>::scalar_type>
-KOKKOS_FORCEINLINE_FUNCTION
-std::enable_if_t<ekat::ScalarTraits<ScalarIn>::is_simd or
-                 ekat::ScalarTraits<ScalarOut>::is_simd>
-combine (const ScalarIn& newVal, ScalarOut& result,
-         const CoeffType alpha, const CoeffType beta)
-{
-  if constexpr (CM==CombineMode::Replace) {
-    result = newVal;
-    return;
-  }
-  if constexpr (fill_aware) {
-    auto where = ekat::where(newVal!=constants::fill_value<ScalarIn>,result);
-
+  // For the non-simd type case, we can avoid ekat::where, and simply check newVal against fill_value
+  if constexpr (ekat::ScalarTraits<ScalarIn>::is_simd) {
+    using inner_type = typename ekat::ScalarTraits<ScalarIn>::scalar_type;
+    constexpr auto fill_val = constants::fill_value<inner_type>;
+    auto where = ekat::where(newVal!=fill_val,result);
     if (where.any()) {
       auto tmp = result;
-      combine<CM,false>(newVal,tmp,alpha,beta);
+      impl::combine<CM>(newVal,tmp,alpha,beta);
       where = tmp;
+    }
+  } else {
+    if (newVal!=constants::fill_value<ScalarIn>) {
+      impl::combine<CM>(newVal,result,alpha,beta);
     }
   }
 }
