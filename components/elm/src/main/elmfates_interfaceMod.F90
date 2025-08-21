@@ -3851,7 +3851,7 @@ end subroutine wrap_update_hifrq_hist
 
 ! ======================================================================================
 
- subroutine WrapTransferBCOut(this, nc, dtime)
+ subroutine WrapTransferBCOut(this, nc)
 
    ! !DESCRIPTION:
    ! ---------------------------------------------------------------------------------
