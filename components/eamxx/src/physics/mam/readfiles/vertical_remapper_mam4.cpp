@@ -73,7 +73,7 @@ apply_vertical_interpolation(const Field& f_src, const Field& f_tgt,
   using Team = Kokkos::TeamPolicy<KT::ExeSpace>::member_type;
   if (m_vremap_type== MAM4_PSRef) {
 
-    const int unit_factor_pin=1;
+    constexpr int unit_factor_pin=1;
     const auto p_src_c = p_src.get_view<const Real **>();
 
     Kokkos::parallel_for(
