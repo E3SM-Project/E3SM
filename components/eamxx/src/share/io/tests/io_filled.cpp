@@ -100,6 +100,7 @@ get_fm (const std::shared_ptr<const AbstractGrid>& grid,
     f.allocate_view();
     f.deep_copy(0.0); // For the "filled" field we start with a filled value.
     f.get_header().get_tracking().update_time_stamp(t0);
+    f.get_header().set_may_be_filled(true);
     fm->add_field(f);
   }
 
