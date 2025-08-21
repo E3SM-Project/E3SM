@@ -266,7 +266,8 @@ MAMMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_manag
     }
   }
   for(const auto &field_name : var_names_oxi_) {
-      add_field<Computed>(field_name, scalar3d_mid, nondim, grid_name);
+    // Adding oxid_ to avoid conflicts with gases treated as tracers.
+    add_field<Computed>("oxid_"+field_name, scalar3d_mid, nondim, grid_name);
   }
 
   // list of species for elevated emissiones.
@@ -398,7 +399,7 @@ void MAMMicrophysics::set_oxid_reader()
   // get fields from FM.
   std::vector<Field> oxid_fields;
   for(const auto &field_name : var_names_oxi_) {
-      oxid_fields.push_back(get_field_out(field_name));
+      oxid_fields.push_back(get_field_out("oxid_"+field_name).alias(field_name));
   }
 
   // Beg of any year, since we use yearly periodic timeline
@@ -613,7 +614,7 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   */
 
   if (config_.linoz.compute) {
-    // // climatology data for linear stratospheric chemistry
+    // climatology data for linear stratospheric chemistry
     auto ts = start_of_step_ts();
     std::string linoz_chlorine_file =
         m_params.get<std::string>("mam4_linoz_chlorine_file");
@@ -771,25 +772,29 @@ void MAMMicrophysics::run_impl(const double dt) {
   view_2d linoz_dPmL_dO3col;
   // Cariolle parameter for PSC loss of ozone [1/s]
   view_2d linoz_cariolle_pscs;
+  view_2d linoz_views[8];
 
   data_interp_oxid_->run(end_of_step_ts());
 
   if (config_.linoz.compute) {
     data_interp_linoz_->run(end_of_step_ts());
-    linoz_o3_clim = get_field_out("o3_clim").get_view<Real **>();
-    linoz_o3col_clim = get_field_out("o3col_clim").get_view<Real **>();
-    linoz_t_clim = get_field_out("t_clim").get_view<Real **>();
-    linoz_PmL_clim = get_field_out("PmL_clim").get_view<Real **>();
-    linoz_dPmL_dO3 = get_field_out("dPmL_dO3").get_view<Real **>();
-    linoz_dPmL_dT = get_field_out("dPmL_dT").get_view<Real **>();
-    linoz_dPmL_dO3col = get_field_out("dPmL_dO3col").get_view<Real **>();
-    linoz_cariolle_pscs = get_field_out("cariolle_pscs").get_view<Real **>();
+    for (size_t i = 0; i < var_names_linoz_.size(); ++i) {
+      linoz_views[i] = get_field_out(var_names_linoz_[i]).get_view<Real **>();
+    }
+    linoz_o3_clim = linoz_views[0];
+    linoz_o3col_clim = linoz_views[1];
+    linoz_t_clim = linoz_views[2];
+    linoz_PmL_clim = linoz_views[3];
+    linoz_dPmL_dO3 = linoz_views[4];
+    linoz_dPmL_dT = linoz_views[5];
+    linoz_dPmL_dO3col = linoz_views[6];
+    linoz_cariolle_pscs = linoz_views[7];
   }
-
-  const auto oxid_O3 = get_field_out("O3").get_view<Real **>();
-  const auto oxid_OH = get_field_out("OH").get_view<Real **>();
-  const auto oxid_NO3 = get_field_out("NO3").get_view<Real **>();
-  const auto oxid_HO2 = get_field_out("HO2").get_view<Real **>();
+  constexpr int num_oxidants=4;
+  view_2d oxidants[num_oxidants];
+  for (size_t i = 0; i < var_names_oxi_.size(); ++i) {
+    oxidants[i] = get_field_out("oxid_"+var_names_oxi_[i]).get_view<Real **>();
+  }
 
   // it's a bit wasteful to store this for all columns, but simpler from an
   // allocation perspective
@@ -813,15 +818,11 @@ void MAMMicrophysics::run_impl(const double dt) {
   mam_coupling::DryAtmosphere &dry_atm = dry_atm_;
   mam_coupling::AerosolState &dry_aero = dry_aero_;
 
-
   mam4::mo_photo::PhotoTableData &photo_table = photo_table_;
   const Config &config                        = config_;
   const auto &work_photo_table                = work_photo_table_;
   const auto &photo_rates                     = photo_rates_;
-
   const auto &invariants   = invariants_;
-
-
   // Compute orbital parameters; these are used both for computing
   // the solar zenith angle.
   // Note: We are following the RRTMGP EAMxx interface to compute the zenith
@@ -950,10 +951,10 @@ void MAMMicrophysics::run_impl(const double dt) {
         const auto extfrc_icol = ekat::subview(extfrc, icol);
 
         view_1d cnst_offline_icol[mam4::mo_setinv::num_tracer_cnst];
-        cnst_offline_icol[0] = ekat::subview(oxid_O3, icol);;
-        cnst_offline_icol[1] = ekat::subview(oxid_OH, icol);;
-        cnst_offline_icol[2] = ekat::subview(oxid_NO3, icol);;
-        cnst_offline_icol[3] = ekat::subview(oxid_HO2, icol);;
+        for (size_t i = 0; i < num_oxidants; i++)
+        {
+          cnst_offline_icol[i] = ekat::subview(oxidants[i], icol);
+        }
 
         // calculate o3 column densities (first component of col_dens in Fortran
         // code)
