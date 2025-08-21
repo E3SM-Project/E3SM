@@ -39,10 +39,6 @@ void Functions<S,D>::momentum_energy_conservation(
     lsum += pdel(k) / C::gravit;
   }, Kokkos::Sum<Real>(dz));
 
-  // for (int k = pver - 1; k > tend_level; --k) {
-  //   dz += pdel(k) / C::gravit;
-  // }
-
   // Tendency for U & V below source level.
   const Real ut_dz = -(taucd(tend_level+1, GWC::east) +
                        taucd(tend_level+1, GWC::west))/dz;
@@ -57,6 +53,8 @@ void Functions<S,D>::momentum_energy_conservation(
     vtgw(k) += vt_dz;
   });
 
+  team.team_barrier();
+
   // Net gain/loss of total energy in the column.
   Real dE = 0.;
   Kokkos::parallel_reduce(
@@ -66,11 +64,7 @@ void Functions<S,D>::momentum_energy_conservation(
                          dvdt(k)*(v(k)+dvdt(k)*0.5*dt) );
     }, Kokkos::Sum<Real>(dE));
 
-  Kokkos::single(Kokkos::PerTeam(team), [&] {
-    dE = dE/(pint(pver)-pint(tend_level+1));
-  });
-
-  team.team_barrier();
+  dE = dE/(pint(pver)-pint(tend_level+1));
 
   // Subtract net gain/loss of total energy below source level.
   Kokkos::parallel_for(
