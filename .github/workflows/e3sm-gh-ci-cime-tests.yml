@@ -42,7 +42,7 @@ jobs:
           - SMS_D_Ln5_P4.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.ghci-oci_gnu
           - ERS_Ld5_P4.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.ghci-oci_gnu.eamxx-prod
           - ERS_P4.ne4pg2_oQU480.A.ghci-oci_gnu
-          - ERS_P4.ne4pg2_oQU480.I1850ELM.ghci-oci_gnu.elm-betr
+          - ERS_P4.ne4pg2_oQU480.I1850ELMCN.ghci-oci_gnu.elm-qian_1948
     container:
       image: ghcr.io/e3sm-project/containers-ghci:ghci-0.2.1
 
