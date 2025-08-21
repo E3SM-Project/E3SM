@@ -1652,6 +1652,7 @@ subroutine  copy_aream_from_area(mbappid)
                   call shr_sys_abort(subname//' ERROR in sending sea ice mesh to coupler ')
                endif
             else
+               ! we could be using cice model 
                comp%mbGridType = 0 ! 0 or 1, pc or cells
                comp%mblsize = nvert(1) ! vertices
             endif
@@ -1668,6 +1669,7 @@ subroutine  copy_aream_from_area(mbappid)
                endif
             else
                ! we need to read the mesh ice (domain file) 
+               ! we could be using cice model or data sea ice; in both cases ice_domain should be non-empty
                ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE=;NO_CULLING;REPARTITION'//C_NULL_CHAR
                infile = trim(ice_domain)//C_NULL_CHAR
                if (seq_comm_iamroot(CPLID)) then
