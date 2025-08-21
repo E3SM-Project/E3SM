@@ -1,3 +1,3 @@
 ./xmlchange ELM_BLDNML_OPTS="-bgc bgc -nutrient cnp -nutrient_comp_pathway eca -soil_decomp century -methane -betr_mode on"
 
-./xmlchange DATM_CLMNCEP_YR_END="\$DATM_CLMNCEP_YR_START"
+./xmlchange DATM_CLMNCEP_YR_END=1948
