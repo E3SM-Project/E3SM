@@ -245,12 +245,100 @@ void gw_prof(GwProfData& d)
   d.transition<ekat::TransposeDirection::f2c>();
 }
 
-void momentum_energy_conservation(MomentumEnergyConservationData& d)
+void momentum_energy_conservation_f(MomentumEnergyConservationData& d)
 {
   gw_init(d.init);
   d.transition<ekat::TransposeDirection::c2f>();
   momentum_energy_conservation_c(d.ncol, d.tend_level, d.dt, d.taucd, d.pint, d.pdel, d.u, d.v, d.dudt, d.dvdt, d.dsdt, d.utgw, d.vtgw, d.ttgw);
   d.transition<ekat::TransposeDirection::f2c>();
+}
+
+void momentum_energy_conservation(MomentumEnergyConservationData& d)
+{
+  gw_init_cxx(d.init);
+
+  // create device views and copy
+  std::vector<view1di_d> one_d_ints_in(1);
+  std::vector<view2dr_d> two_d_reals_in(10);
+  std::vector<view3dr_d> three_d_reals_in(1);
+
+  ekat::host_to_device({d.tend_level}, d.ncol, one_d_ints_in);
+  std::vector<int> dim2_sizes(10, d.init.pver);
+  dim2_sizes[0] += 1; // pint
+  ekat::host_to_device({d.pint, d.pdel, d.u, d.v, d.dudt, d.dvdt, d.dsdt, d.utgw, d.vtgw, d.ttgw},
+                       std::vector<int>(10, d.ncol),
+                       dim2_sizes,
+                       two_d_reals_in);
+  ekat::host_to_device({d.taucd},
+                       d.ncol, d.init.pver + 1, 4,
+                       three_d_reals_in);
+
+  const auto tend_level = one_d_ints_in[0];
+
+  const auto pint = two_d_reals_in[0];
+  const auto pdel = two_d_reals_in[1];
+  const auto u    = two_d_reals_in[2];
+  const auto v    = two_d_reals_in[3];
+  const auto dudt = two_d_reals_in[4];
+  const auto dvdt = two_d_reals_in[5];
+  const auto dsdt = two_d_reals_in[6];
+  const auto utgw = two_d_reals_in[7];
+  const auto vtgw = two_d_reals_in[8];
+  const auto ttgw = two_d_reals_in[9];
+
+  const auto taucd = three_d_reals_in[0];
+
+  auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.ncol, d.init.pver);
+
+  WSM wsm((d.init.pver + 1) * (2*d.init.pgwv + 1), 1, policy);
+  GWF::GwCommonInit init_cp = GWF::s_common_init;
+
+  // unpack init because we do not want the lambda to capture it
+  const int pver = d.init.pver;
+  const Real dt = d.dt;
+
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    const int col = team.league_rank();
+
+    // Get single-column subviews of all inputs, shouldn't need any i-indexing
+    // after this.
+    const auto pint_c  = ekat::subview(pint, col);
+    const auto pdel_c  = ekat::subview(pdel, col);
+    const auto u_c     = ekat::subview(u, col);
+    const auto v_c     = ekat::subview(v, col);
+    const auto dudt_c  = ekat::subview(dudt, col);
+    const auto dvdt_c  = ekat::subview(dvdt, col);
+    const auto dsdt_c  = ekat::subview(dsdt, col);
+    const auto utgw_c  = ekat::subview(utgw, col);
+    const auto vtgw_c  = ekat::subview(vtgw, col);
+    const auto ttgw_c  = ekat::subview(ttgw, col);
+    const auto taucd_c = ekat::subview(taucd, col);
+
+    GWF::momentum_energy_conservation(
+      team,
+      pver,
+      tend_level(col),
+      dt,
+      taucd_c,
+      pint_c,
+      pdel_c,
+      u_c,
+      v_c,
+      dudt_c,
+      dvdt_c,
+      dsdt_c,
+      utgw_c,
+      vtgw_c,
+      ttgw_c
+    );
+  });
+
+  // Get outputs back
+  std::vector<view2dr_d> two_d_reals_out = {dudt, dvdt, dsdt, utgw, vtgw, ttgw};
+  ekat::device_to_host({d.dudt, d.dvdt, d.dsdt, d.utgw, d.vtgw, d.ttgw},
+                       d.ncol, d.init.pver, two_d_reals_out);
+
+  gw_finalize_cxx(d.init);
 }
 
 void gwd_compute_stress_profiles_and_diffusivities_f(GwdComputeStressProfilesAndDiffusivitiesData& d)

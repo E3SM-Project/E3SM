@@ -35,8 +35,9 @@ struct UnitWrap::UnitTest<D>::TestMomentumEnergyConservation : public UnitWrap::
 
     // Generate random input data
     // Alternatively, you can use the baseline_data construtors/initializer lists to hardcode data
-    for (auto& d : baseline_data) {
-      d.randomize(engine);
+    for (Int i = 0; i < num_runs; ++i) {
+      auto& d = baseline_data[i];
+      d.randomize(engine, { {d.tend_level, {init_data[i].ktop+1, init_data[i].kbotbg-1}} });
     }
 
     // Create copies of data for use by test. Needs to happen before read calls so that
@@ -57,31 +58,41 @@ struct UnitWrap::UnitTest<D>::TestMomentumEnergyConservation : public UnitWrap::
 
     // Get data from test
     for (auto& d : test_data) {
-      momentum_energy_conservation(d);
+      if (this->m_baseline_action == GENERATE) {
+        momentum_energy_conservation_f(d);
+      }
+      else {
+        momentum_energy_conservation(d);
+      }
     }
+
+    // We need a tolerance since the order of operations is different from f90.
+    // This tol can be removed once we are no longer using
+    // fortran to generate baselines.
+    const auto margin = std::numeric_limits<Real>::epsilon() *
+      (ekat::is_single_precision<Real>::value ? 1000 : 1);
 
     // Verify BFB results, all data should be in C layout
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < num_runs; ++i) {
         MomentumEnergyConservationData& d_baseline = baseline_data[i];
         MomentumEnergyConservationData& d_test = test_data[i];
+        REQUIRE(d_baseline.total(d_baseline.dudt) == d_test.total(d_test.dudt));
+        REQUIRE(d_baseline.total(d_baseline.dudt) == d_test.total(d_test.dsdt));
+        REQUIRE(d_baseline.total(d_baseline.dudt) == d_test.total(d_test.dsdt));
         for (Int k = 0; k < d_baseline.total(d_baseline.dudt); ++k) {
-          REQUIRE(d_baseline.total(d_baseline.dudt) == d_test.total(d_test.dudt));
-          REQUIRE(d_baseline.dudt[k] == d_test.dudt[k]);
-          REQUIRE(d_baseline.total(d_baseline.dudt) == d_test.total(d_test.dvdt));
-          REQUIRE(d_baseline.dvdt[k] == d_test.dvdt[k]);
-          REQUIRE(d_baseline.total(d_baseline.dudt) == d_test.total(d_test.dsdt));
-          REQUIRE(d_baseline.dsdt[k] == d_test.dsdt[k]);
+          REQUIRE(d_baseline.dudt[k] == Approx(d_test.dudt[k]).margin(margin));
+          REQUIRE(d_baseline.dvdt[k] == Approx(d_test.dvdt[k]).margin(margin));
+          REQUIRE(d_baseline.dsdt[k] == Approx(d_test.dsdt[k]).margin(margin));
         }
+        REQUIRE(d_baseline.total(d_baseline.utgw) == d_test.total(d_test.utgw));
+        REQUIRE(d_baseline.total(d_baseline.utgw) == d_test.total(d_test.vtgw));
+        REQUIRE(d_baseline.total(d_baseline.utgw) == d_test.total(d_test.ttgw));
         for (Int k = 0; k < d_baseline.total(d_baseline.utgw); ++k) {
-          REQUIRE(d_baseline.total(d_baseline.utgw) == d_test.total(d_test.utgw));
-          REQUIRE(d_baseline.utgw[k] == d_test.utgw[k]);
-          REQUIRE(d_baseline.total(d_baseline.utgw) == d_test.total(d_test.vtgw));
-          REQUIRE(d_baseline.vtgw[k] == d_test.vtgw[k]);
-          REQUIRE(d_baseline.total(d_baseline.utgw) == d_test.total(d_test.ttgw));
-          REQUIRE(d_baseline.ttgw[k] == d_test.ttgw[k]);
+          REQUIRE(d_baseline.utgw[k] == Approx(d_test.utgw[k]).margin(margin));
+          REQUIRE(d_baseline.vtgw[k] == Approx(d_test.vtgw[k]).margin(margin));
+          REQUIRE(d_baseline.ttgw[k] == Approx(d_test.ttgw[k]).margin(margin));
         }
-
       }
     }
     else if (this->m_baseline_action == GENERATE) {

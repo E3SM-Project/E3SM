@@ -219,22 +219,22 @@ struct Functions
   KOKKOS_FUNCTION
   static void momentum_energy_conservation(
     // Inputs
+    const MemberType& team,
     const Int& pver,
-    const Int& ncol,
-    const uview_1d<const Int>& tend_level,
-    const Spack& dt,
-    const uview_1d<const Spack>& taucd,
-    const uview_1d<const Spack>& pint,
-    const uview_1d<const Spack>& pdel,
-    const uview_1d<const Spack>& u,
-    const uview_1d<const Spack>& v,
+    const Int& tend_level,
+    const Real& dt,
+    const uview_2d<const Real>& taucd,
+    const uview_1d<const Real>& pint,
+    const uview_1d<const Real>& pdel,
+    const uview_1d<const Real>& u,
+    const uview_1d<const Real>& v,
     // Inputs/Outputs
-    const uview_1d<Spack>& dudt,
-    const uview_1d<Spack>& dvdt,
-    const uview_1d<Spack>& dsdt,
-    const uview_1d<Spack>& utgw,
-    const uview_1d<Spack>& vtgw,
-    const uview_1d<Spack>& ttgw);
+    const uview_1d<Real>& dudt,
+    const uview_1d<Real>& dvdt,
+    const uview_1d<Real>& dsdt,
+    const uview_1d<Real>& utgw,
+    const uview_1d<Real>& vtgw,
+    const uview_1d<Real>& ttgw);
 
   KOKKOS_FUNCTION
   static void gwd_compute_stress_profiles_and_diffusivities(
