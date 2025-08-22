@@ -447,7 +447,16 @@ contains
             ! we also need to compute the comm graph for the second hop, from the atm on coupler to the
             ! atm for the intx atm-ocn context (coverage)
             call seq_comm_getinfo(CPLID, mpigrp=mpigrp_CPLID)
-
+            ! To project fields from ATM to OCN grid, we need to define
+            ! ATM a2x fields to OCN grid on coupler side
+            tagname = trim(seq_flds_a2x_fields)//C_NULL_CHAR
+            tagtype = 1 ! dense
+            numco = 1 !
+            ierr = iMOAB_DefineTagStorage(mboxid, tagname, tagtype, numco, tagindex )
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in defining tags for seq_flds_a2x_fields on OCN cpl'
+               call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_a2x_fields on OCN cpl')
+            endif
             ! next, let us compute the ATM and OCN data transfer
             if (.not. samegrid_ao) then ! not a data OCN model
 
@@ -499,17 +508,6 @@ contains
                   endif
 #endif
                end if
-
-               ! To project fields from ATM to OCN grid, we need to define
-               ! ATM a2x fields to OCN grid on coupler side
-               tagname = trim(seq_flds_a2x_fields)//C_NULL_CHAR
-               tagtype = 1 ! dense
-               numco = 1 !
-               ierr = iMOAB_DefineTagStorage(mboxid, tagname, tagtype, numco, tagindex )
-               if (ierr .ne. 0) then
-                  write(logunit,*) subname,' error in defining tags for seq_flds_a2x_fields on OCN cpl'
-                  call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_a2x_fields on OCN cpl')
-               endif
 
                if (compute_maps_online_a2o) then
                   volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL;
@@ -655,7 +653,7 @@ contains
             end if
 
             ! If loading map from disk, then load the scalar map as well
-            if (.not. compute_maps_online_a2o) then
+            if (.not. compute_maps_online_a2o .and. .not. samegrid_ao ) then
                type1 = 3 ! this is type of grid
                arearead = 0 ! no need for areas
                call moab_map_init_rcfile( mbaxid, mboxid, mbintxao, type1, &
@@ -669,6 +667,14 @@ contains
                if (ierr .ne. 0) then
                   write(logunit,*) subname,' error in migrating atm mesh for map atm c2 ocn '
                   call shr_sys_abort(subname//' ERROR in migrating atm mesh for map atm c2 ocn ')
+               endif
+
+               type2 = 3;  ! FV mesh on coupler OCN
+               ierr = iMOAB_ComputeCommGraph( mbaxid, mbintxao, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
+                                             atm(1)%cplcompid, idintx)
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in computing comm graph atm c2 ocn '
+                  call shr_sys_abort(subname//' ERROR in computing comm graph atm c2 ocn ')
                endif
             else ! if (.not. compute_maps_online_a2o)
                wgtIdVa2o = wgtIdFa2o ! use the same map as Sa2o
@@ -767,7 +773,7 @@ contains
           end if
 
           ! If loading map from disk, then load the R2O_liq map
-          if (.not. compute_maps_online_r2o) then
+          if (.not. compute_maps_online_r2o .and. .not. samegrid_ro) then
             type_grid = 3 ! this is type of grid
             arearead = 1 ! read area_a for river model
             call moab_map_init_rcfile( mbrxid, mboxid, mbintxro, type_grid, &
@@ -849,7 +855,7 @@ contains
          end if
 
          ! If loading map from disk, then load the R2O_ice map
-         if (.not. compute_maps_online_r2o) then
+         if (.not. compute_maps_online_r2o  .and. .not. samegrid_ro) then
             type_grid = 3 ! this is type of grid
             arearead = 0 ! no need for areas
             call moab_map_init_rcfile( mbrxid, mboxid, mbintxro, type_grid, &
@@ -878,7 +884,7 @@ contains
                write(logunit,F00) 'Initializing MOAB mapper_Fr2o'
             end if
             ! If loading map from disk, then load the scalar map as well
-            if (.not. compute_maps_online_r2o) then
+            if (.not. compute_maps_online_r2o .and. .not. samegrid_ro) then
                type_grid = 3 ! this is type of grid
                arearead = 0 ! no need for areas
                call moab_map_init_rcfile( mbrxid, mboxid, mbintxro, type_grid, &
@@ -896,7 +902,7 @@ contains
 
          context_id = rmapid ! ocn(1)%cplcompid*100+rof(1)%cplcompid
          type_grid = 3 ! this is type of grid
-         if (.not. compute_maps_online_r2o) then
+         if (.not. compute_maps_online_r2o .and. .not. samegrid_ro) then
             ierr = iMOAB_MigrateMapMesh ( mbrxid, mbintxro, mpicom_CPLID, mpigrp_CPLID, &
                                           mpigrp_CPLID, type_grid, rof(1)%cplcompid, context_id )
             if (ierr .ne. 0) then
@@ -904,17 +910,34 @@ contains
                call shr_sys_abort(subname//' ERROR in migrating rof mesh for map rof c2 ocn ')
             endif
          endif
-         ! this creates a parallel communication graph between mbrxid and mbintxro,
-         ! with ids rof(1)%cplcompid, rmapid (rmapid is 100*src+tgt)
-         ! this will be used in send/receive mappers
-         ierr = iMOAB_ComputeCommGraph( mbrxid, mbintxro, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, &
-                                          type_grid, type_grid, rof(1)%cplcompid, rmapid )
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in compute graph ROF - ROF coverage for ocean context'
-            call shr_sys_abort(subname//' ERROR in compute graph ROF - ROF coverage for ocean context ')
+
+         if (samegrid_ro) then
+            ! this creates a parallel communication graph between mbrxid and mboxid,
+            ! with ids rof(1)%cplcompid, ocn(1)%cplcompid
+            ! this will be used in send/receive mappers 
+            ierr = iMOAB_ComputeCommGraph( mbrxid, mboxid, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, &
+                                             type_grid, type_grid, rof(1)%cplcompid, ocn(1)%cplcompid )
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in compute graph ROF -  ocean '
+               call shr_sys_abort(subname//' ERROR in compute graph ROF - ocean  ')
+            endif
+            mapper_Fr2o%intx_context = ocn(1)%cplcompid 
+            mapper_Rr2o_ice%intx_context = ocn(1)%cplcompid
+            mapper_Rr2o_liq%intx_context = ocn(1)%cplcompid
+
+         else
+            ! this creates a parallel communication graph between mbrxid and mbintxro,
+            ! with ids rof(1)%cplcompid, rmapid (rmapid is 100*src+tgt)
+            ! this will be used in send/receive mappers
+            ierr = iMOAB_ComputeCommGraph( mbrxid, mbintxro, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, &
+                                             type_grid, type_grid, rof(1)%cplcompid, rmapid )
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in compute graph ROF - ROF coverage for ocean context'
+               call shr_sys_abort(subname//' ERROR in compute graph ROF - ROF coverage for ocean context ')
+            endif
          endif
 
-       endif
+       endif ! endif for rof_c2_ocn
        call shr_sys_flush(logunit)
 
        if (glc_c2_ocn) then

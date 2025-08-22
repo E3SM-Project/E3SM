@@ -885,6 +885,7 @@ _TESTS = {
             "ERS_Vmoab_Ld3.T62_oQU240wLI.GMPAS-IAF",
             "ERS_Vmoab_Ld3.T62_oQU120.CMPASO-NYF",
             "ERS_Vmoab_Ld3.r05_r05.RMOSGPCC",
+            "ERS_Vmoab_Ld3.ne4pg2_ne4pg2.F2010-SCREAMv1",
         )
     },
 
@@ -899,6 +900,7 @@ _TESTS = {
             "PEM_Vmoab_Ld3.T62_oQU240wLI.GMPAS-IAF",
             "PEM_Vmoab_Ld3.T62_oQU120.CMPASO-NYF",
             "PEM_Vmoab_Ld3.r05_r05.RMOSGPCC",
+            "PEM_Vmoab_Ld3.ne4pg2_ne4pg2.F2010-SCREAMv1",
         )
     },
 
@@ -913,6 +915,7 @@ _TESTS = {
             "SMS_Vmoab_Ld1.T62_oQU240wLI.GMPAS-IAF",
             "SMS_Vmoab_Ld1.T62_oQU120.CMPASO-NYF",
             "SMS_Vmoab_Ld1.r05_r05.RMOSGPCC",
+            "SMS_Vmoab_Ld1.ne4pg2_ne4pg2.F2010-SCREAMv1",
             "SMS_Ld1.ne4pg2_r05_oQU480.WCYCL1850NS",
             "SMS_Ld1.ne4pg2_oQU480.WCYCL1850NS",
             "SMS_Ld1.ne4pg2_oQU480.F1850",
@@ -921,6 +924,7 @@ _TESTS = {
             "SMS_Ld1.T62_oQU240wLI.GMPAS-IAF",
             "SMS_Ld1.T62_oQU120.CMPASO-NYF",
             "SMS_Ld1.r05_r05.RMOSGPCC",
+            "SMS_Ld1.ne4pg2_ne4pg2.F2010-SCREAMv1",
         )
     },
 
