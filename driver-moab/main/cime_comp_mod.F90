@@ -2529,17 +2529,17 @@ contains
     call seq_diagBGC_zero_mct(mode='all')
     if (read_restart .and. iamin_CPLID) then
 
-      !  if (iamroot_CPLID) then
-      !     write(logunit,103) subname,' Reading restart file ',trim(rest_file)
-      !     call shr_sys_flush(logunit)
-      !  end if
+       if (iamroot_CPLID) then
+          write(logunit,103) subname,' Reading restart file ',trim(rest_file)
+          call shr_sys_flush(logunit)
+       end if
 
-      !  call t_startf('CPL:seq_rest_read-init')
-      !  call seq_rest_read(rest_file, infodata, &
-      !       atm, lnd, ice, ocn, rof, glc, wav, esp, iac, &
-      !       fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
-      !       fractions_rx, fractions_gx, fractions_wx, fractions_zx)
-      !  call t_stopf('CPL:seq_rest_read-init')
+       call t_startf('CPL:seq_rest_read-init')
+       call seq_rest_read(rest_file, infodata, &
+            atm, lnd, ice, ocn, rof, glc, wav, esp, iac, &
+            fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
+            fractions_rx, fractions_gx, fractions_wx, fractions_zx)
+       call t_stopf('CPL:seq_rest_read-init')
        if (iamroot_CPLID) then
           write(logunit,103) subname,' Reading moab restart file ','moab_'//trim(rest_file)
           call shr_sys_flush(logunit)
@@ -3570,16 +3570,16 @@ contains
              call shr_sys_flush(logunit)
           end if
           if (iamin_CPLID) then
-            !  call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:RESTART_READ_BARRIER')
-            !  call t_drvstartf ('CPL:RESTART_READ',cplrun=.true.,barrier=mpicom_CPLID)
-            !  call t_startf('CPL:seq_rest_read')
-            !  call seq_rest_read(drv_resume_file, infodata,                     &
-            !       atm, lnd, ice, ocn, rof, glc, wav, esp, iac,                 &
-            !       fractions_ax, fractions_lx, fractions_ix, fractions_ox,      &
-            !       fractions_rx, fractions_gx, fractions_wx, fractions_zx)
-            !  call t_stopf('CPL:seq_rest_read')
+             call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:RESTART_READ_BARRIER')
+             call t_drvstartf ('CPL:RESTART_READ',cplrun=.true.,barrier=mpicom_CPLID)
+             call t_startf('CPL:seq_rest_read')
+             call seq_rest_read(drv_resume_file, infodata,                     &
+                  atm, lnd, ice, ocn, rof, glc, wav, esp, iac,                 &
+                  fractions_ax, fractions_lx, fractions_ix, fractions_ox,      &
+                  fractions_rx, fractions_gx, fractions_wx, fractions_zx)
+             call t_stopf('CPL:seq_rest_read')
 
-            !  call t_drvstopf  ('CPL:RESTART_READ',cplrun=.true.)
+             call t_drvstopf  ('CPL:RESTART_READ',cplrun=.true.)
 
              if (iamroot_CPLID) then
                write(logunit,103) subname,' resume by moab restart file ','moab_'//trim(drv_resume_file)
