@@ -2032,7 +2032,10 @@ contains
 
                   call FluxIntoLitterPools(this%fates(nc)%sites(s), &
                        this%fates(nc)%bc_in(s))
+                       
                end do
+
+               ! call this%WrapTransferBCOut(nc, dtime)
 
                if(use_fates_sp)then
                   do s = 1,this%fates(nc)%nsites
