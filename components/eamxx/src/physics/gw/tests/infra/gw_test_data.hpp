@@ -854,6 +854,7 @@ struct GwOroSrcData : public PhysicsTestData {
 // Glue functions to call fortran from from C++ with the Data struct
 void gwd_compute_tendencies_from_stress_divergence(GwdComputeTendenciesFromStressDivergenceData& d);
 void gwd_compute_tendencies_from_stress_divergence_f(GwdComputeTendenciesFromStressDivergenceData& d);
+void gw_prof_f(GwProfData& d);
 void gw_prof(GwProfData& d);
 void momentum_energy_conservation_f(MomentumEnergyConservationData& d);
 void momentum_energy_conservation(MomentumEnergyConservationData& d);
