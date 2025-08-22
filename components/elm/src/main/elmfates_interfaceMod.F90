@@ -3873,7 +3873,7 @@ end subroutine wrap_update_hifrq_hist
 
    do s = 1, this%fates(nc)%nsites
       do ivar = 1,this%num_hlmvar_out
-         call this%fates(nc)%sites(s)%TransferBCIn(this%bc_out(ivar)%api_str, &
+         call this%fates(nc)%sites(s)%TransferBCOut(this%bc_out(ivar)%api_str, &
                                                    this%bc_out(ivar)%hlm_var, dtime)
       end do
    end do
