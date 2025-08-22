@@ -52,11 +52,12 @@ void Functions<S,D>::gw_prof(
     rhoi(k) = pint(k) / (C::Rair*ti(k));
     const Real dtdp = (t(k)-t(k-1)) / (pmid(k)-pmid(k-1));
     const Real n2 = C::gravit*C::gravit/ti(k) * (1/cpair - rhoi(k)*dtdp);
-    ni(k) = std::sqrt(std::max(n2min, n2));
+    ni(k) = std::sqrt(ekat::impl::max(n2min, n2));
   });
 
   // Bottom interface uses bottom level temperature, density; next interface
   // B-V frequency.
+  team.team_barrier();
   Kokkos::single(Kokkos::PerTeam(team), [&] {
     ti(pver) = t(pver-1);
     rhoi(pver) = pint(pver) / (C::Rair*ti(pver));
