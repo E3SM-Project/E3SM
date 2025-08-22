@@ -38,28 +38,35 @@ void Functions<S,D>::gw_prof(
 
   // The top interface values are calculated assuming an isothermal
   // atmosphere above the top level.
-  ti(0) = t(0);
-  rhoi(0) = pint(0) / (C::Rair*ti(0));
-  ni(0) = sqrt(C::gravit*C::gravit / (cpair*ti(0)));
+  Kokkos::single(Kokkos::PerTeam(team), [&] {
+    ti(0) = t(0);
+    rhoi(0) = pint(0) / (C::Rair*ti(0));
+    ni(0) = sqrt(C::gravit*C::gravit / (cpair*ti(0)));
+  });
 
   // Interior points use centered differences.
   midpoint_interp(team, t, ekat::subview(ti, Kokkos::pair<int, int>{1, pver}));
-  for (int k = 1; k < pver; ++k) {
+  team.team_barrier();
+  Kokkos::parallel_for(
+    Kokkos::TeamVectorRange(team, 1, pver), [&] (const int k) {
     rhoi(k) = pint(k) / (C::Rair*ti(k));
     const Real dtdp = (t(k)-t(k-1)) / (pmid(k)-pmid(k-1));
     const Real n2 = C::gravit*C::gravit/ti(k) * (1/cpair - rhoi(k)*dtdp);
     ni(k) = std::sqrt(std::max(n2min, n2));
-  }
+  });
 
   // Bottom interface uses bottom level temperature, density; next interface
   // B-V frequency.
-  ti(pver) = t(pver-1);
-  rhoi(pver) = pint(pver) / (C::Rair*ti(pver));
-  ni(pver) = ni(pver-1);
+  Kokkos::single(Kokkos::PerTeam(team), [&] {
+    ti(pver) = t(pver-1);
+    rhoi(pver) = pint(pver) / (C::Rair*ti(pver));
+    ni(pver) = ni(pver-1);
+  });
 
   //------------------------------------------------------------------------
   // Determine the midpoint Brunt-Vaisala frequencies.
   //------------------------------------------------------------------------
+  team.team_barrier();
   midpoint_interp(team, ni, nm);
 }
 
