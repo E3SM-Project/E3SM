@@ -14,26 +14,64 @@ namespace gw {
 template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>::momentum_energy_conservation(
-// Inputs
-const Int& pver,
-const Int& ncol,
-const uview_1d<const Int>& tend_level,
-const Spack& dt,
-const uview_1d<const Spack>& taucd,
-const uview_1d<const Spack>& pint,
-const uview_1d<const Spack>& pdel,
-const uview_1d<const Spack>& u,
-const uview_1d<const Spack>& v,
-// Inputs/Outputs
-const uview_1d<Spack>& dudt,
-const uview_1d<Spack>& dvdt,
-const uview_1d<Spack>& dsdt,
-const uview_1d<Spack>& utgw,
-const uview_1d<Spack>& vtgw,
-const uview_1d<Spack>& ttgw)
+  // Inputs
+  const MemberType& team,
+  const Int& pver,
+  const Int& tend_level,
+  const Real& dt,
+  const uview_2d<const Real>& taucd,
+  const uview_1d<const Real>& pint,
+  const uview_1d<const Real>& pdel,
+  const uview_1d<const Real>& u,
+  const uview_1d<const Real>& v,
+  // Inputs/Outputs
+  const uview_1d<Real>& dudt,
+  const uview_1d<Real>& dvdt,
+  const uview_1d<Real>& dsdt,
+  const uview_1d<Real>& utgw,
+  const uview_1d<Real>& vtgw,
+  const uview_1d<Real>& ttgw)
 {
-  // TODO
-  // Note, argument types may need tweaking. Generator is not always able to tell what needs to be packed
+  // Total mass from ground to source level: rho*dz = dp/gravit
+  Real dz = 0.;
+  Kokkos::parallel_reduce(
+    Kokkos::TeamVectorRange(team, tend_level+1, pver), [&] (const int k, Real& lsum) {
+    lsum += pdel(k) / C::gravit;
+  }, Kokkos::Sum<Real>(dz));
+
+  // Tendency for U & V below source level.
+  const Real ut_dz = -(taucd(tend_level+1, GWC::east) +
+                       taucd(tend_level+1, GWC::west))/dz;
+  const Real vt_dz = -(taucd(tend_level+1, GWC::north) +
+                       taucd(tend_level+1, GWC::south))/dz;
+
+  Kokkos::parallel_for(
+    Kokkos::TeamVectorRange(team, tend_level+1, pver), [&] (const int k) {
+    dudt(k) += ut_dz;
+    dvdt(k) += vt_dz;
+    utgw(k) += ut_dz;
+    vtgw(k) += vt_dz;
+  });
+
+  team.team_barrier();
+
+  // Net gain/loss of total energy in the column.
+  Real dE = 0.;
+  Kokkos::parallel_reduce(
+    Kokkos::TeamVectorRange(team, 0, pver), [&] (const int k, Real& lsum) {
+      lsum += pdel(k) * (dsdt(k) +
+                         dudt(k)*(u(k)+dudt(k)*0.5*dt) +
+                         dvdt(k)*(v(k)+dvdt(k)*0.5*dt) );
+    }, Kokkos::Sum<Real>(dE));
+
+  dE = dE/(pint(pver)-pint(tend_level+1));
+
+  // Subtract net gain/loss of total energy below source level.
+  Kokkos::parallel_for(
+    Kokkos::TeamVectorRange(team, tend_level+1, pver), [&] (const int k) {
+    dsdt(k) -= dE;
+    ttgw(k) -= dE;
+  });
 }
 
 } // namespace gw

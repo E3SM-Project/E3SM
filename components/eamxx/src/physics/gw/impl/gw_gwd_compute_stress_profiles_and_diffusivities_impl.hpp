@@ -53,7 +53,7 @@ void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities(
   // of parallelism, we collapse all the parallelism into the top level by multiplying
   // the level by num_pgwv.
   Kokkos::parallel_for(
-    Kokkos::TeamThreadRange(team, init.ktop*num_pgwv, (src_level+1)*num_pgwv), [&] (const int k_pgwv) {
+    Kokkos::TeamVectorRange(team, init.ktop*num_pgwv, (src_level+1)*num_pgwv), [&] (const int k_pgwv) {
 
     const int k = k_pgwv / num_pgwv;
     const int l = k_pgwv % num_pgwv;
