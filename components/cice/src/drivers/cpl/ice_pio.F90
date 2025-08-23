@@ -117,7 +117,10 @@ contains
          
          if (File%fh<0) then
             ! filename not open
-            inquire(file=trim(filename),exist=exists)
+            if (my_task == master_task) then
+               inquire(file=trim(filename),exist=exists)
+            end if
+            call broadcast_scalar(exists,master_task)
             if (exists) then
                if (lclobber) then
                   nmode = pio_clobber
@@ -146,7 +149,10 @@ contains
       end if
       
       if (trim(mode) == 'read') then
-         inquire(file=trim(filename),exist=exists)
+         if (my_task == master_task) then
+            inquire(file=trim(filename),exist=exists)
+         end if
+         call broadcast_scalar(exists,master_task)
          if (exists) then
             status = pio_openfile(ice_pio_subsystem, File, pio_iotype, trim(filename), pio_nowrite)
          else
