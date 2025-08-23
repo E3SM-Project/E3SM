@@ -116,6 +116,85 @@ public:
                   "Error! Do not use PackSize>1 on GPU.\n");
   }
 
+  // Apply combine operation y(i) = combine(x(i),y(i),a,b)
+  template<CombineMode CM = CombineMode::Update, typename InputProvider, typename ScalarT, typename MT>
+  KOKKOS_INLINE_FUNCTION
+  static void
+  update (const TeamMember& team,
+          const InputProvider& x,
+          const view_1d<ScalarT,MT>& y,
+          const scalar_type& alpha,
+          const scalar_type& beta)
+  {
+    auto lambda = [&](int k) {
+      combine<CM>(x(k),y(k),alpha,beta);
+    };
+    team_parallel_for(team,y.size(),lambda);
+  }
+
+  // Given X at compute dx via fwd difference dX(i)=x(i+1)-x(i). dx(end) is untouched.
+  // NOTE: we ask for x_len since x may not be a view (e.g., a lambda)
+  template<CombineMode CM = CombineMode::Replace, typename InputProvider, typename ScalarT, typename MT>
+  KOKKOS_INLINE_FUNCTION
+  static void
+  fwd_delta (const TeamMember& team,
+             const int x_len,
+             const InputProvider& x,
+             const view_1d<ScalarT,MT>& dx,
+             const scalar_type alpha = one(),
+             const scalar_type beta = zero())
+  {
+    auto lambda = [&](int k) {
+      auto tmp = ekat::adj_diff<true>(x,k,x_len);
+      combine<CM>(tmp,dx(k),alpha,beta);
+    };
+    team_parallel_for(team,dx.size(),lambda);
+  }
+  // Same as above, but compute bwd difference dx(i)=x(i)-x(i-1).
+  template<CombineMode CM = CombineMode::Replace, typename InputProvider, typename ScalarT, typename MT>
+  KOKKOS_INLINE_FUNCTION
+  static void
+  bwd_delta (const TeamMember& team,
+             const int x_len,
+             const InputProvider& x,
+             const view_1d<ScalarT,MT>& dx,
+             const scalar_type alpha = one(),
+             const scalar_type beta = zero())
+  {
+    auto lambda = [&](int k) {
+      auto tmp = ekat::adj_diff<false>(x,k,x_len);
+      combine<CM>(tmp,dx(k),alpha,beta);
+    };
+    team_parallel_for(team,dx.size(),lambda);
+  }
+
+  // Compute adjacent averages
+  template<CombineMode CM = CombineMode::Replace, typename InputProvider, typename ScalarT, typename MT>
+  KOKKOS_INLINE_FUNCTION
+  static void
+  adj_avg (const TeamMember& team,
+           const int x_len,
+           const InputProvider& x,
+           const view_1d<ScalarT,MT>& y,
+           const scalar_type alpha = one(),
+           const scalar_type beta = zero())
+  {
+    // Compute avg = x(k) + (x(k+1)-x(k))/2
+    auto lambda = [&](int k) {
+      ScalarT tmp;
+      if constexpr (pack_size<ScalarT>()==1) {
+        tmp = (x(k) + x(k+1)) / 2;
+      } else {
+        auto fill_right = k<(x_len-1) ? x(k+1)[0] : 0;
+        tmp = ekat::shift_left(fill_right,x(k));
+        tmp += x(k);
+        tmp /= 2;
+      }
+      combine<CM>(tmp,y(k),alpha,beta);
+    };
+    team_parallel_for(team,y.size(),lambda);
+  }
+
   // Compute X at level midpoints, given X at level interfaces
   template<typename InputProvider, typename ScalarT, typename MT>
   KOKKOS_INLINE_FUNCTION
