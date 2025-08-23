@@ -100,8 +100,8 @@ public:
   KOKKOS_INLINE_FUNCTION
   static void debug_checks (const int num_levels, const view_1d<ScalarT,MT>& x) {
 
-    // Mini function to check that InputProvider supports op()(int)->pack_type,
-    // and that the number of levels is compatible with pack_type and x's size.
+    // Mini function to check that InputProvider supports op()(int)->ScalarT,
+    // and that the number of levels is compatible with x's size.
 
     EKAT_KERNEL_ASSERT_MSG (num_levels>=0 && pack_size<ScalarT>()*x.extent_int(0)>=num_levels,
         "Error! Number of levels out of bounds.\n");
@@ -220,7 +220,10 @@ public:
     // Sanity checks
     debug_checks<InputProvider>(num_mid_levels,x_m);
 
-    compute_midpoint_values_impl<CM,InputProvider,ScalarT,MT>(team,num_mid_levels,x_i,x_m,alpha,beta);
+    using pack_info = ekat::PackInfo<pack_size<ScalarT>()>;
+    const auto NUM_INT_PACKS = pack_info::num_packs(num_mid_levels+1);
+
+    adj_avg<CM>(team,NUM_INT_PACKS,x_i,x_m,alpha,beta);
   }
 
   // Compute X at level interfaces, given X at level midpoints and top and bot bc.
@@ -295,7 +298,10 @@ public:
     // Sanity checks
     debug_checks<InputProvider>(num_mid_levels,dx_m);
 
-    compute_midpoint_delta_impl<CM>(team,num_mid_levels,x_i,dx_m,alpha,beta);
+    using pack_info = ekat::PackInfo<pack_size<ScalarT>()>;
+    const auto NUM_INT_PACKS = pack_info::num_packs(num_mid_levels+1);
+
+    fwd_delta<CM>(team,NUM_INT_PACKS,x_i,dx_m,alpha,beta);
   }
 
   // Scan sum of a quantity defined at midpoints, to retrieve its integral at interfaces.
@@ -322,139 +328,6 @@ public:
   }
 
 protected:
-
-  // ------------ Impls of midpoint_value ------------- //
-
-  template<CombineMode CM, typename InputProvider, typename ScalarT, typename MT>
-  KOKKOS_INLINE_FUNCTION
-  static typename std::enable_if<(pack_size<ScalarT>()==1)>::type
-  compute_midpoint_values_impl (const TeamMember& team,
-                                const int num_mid_levels,
-                                const InputProvider& x_i,
-                                const view_1d<ScalarT,MT>& x_m,
-                                const scalar_type alpha,
-                                const scalar_type beta)
-  {
-    // For GPU (or any build with pack size 1), things are simpler
-    team_parallel_for(team,num_mid_levels,
-                      [&](const int& k) {
-      auto tmp = ( x_i(k) + x_i(k+1) ) / 2.0;
-      combine<CM>(tmp, x_m(k), alpha, beta);
-    });
-  }
-
-  template<CombineMode CM, typename InputProvider, typename ScalarT, typename MT>
-  KOKKOS_INLINE_FUNCTION
-  static typename std::enable_if<(pack_size<ScalarT>()>1)>::type
-  compute_midpoint_values_impl (const TeamMember& team,
-                                const int num_mid_levels,
-                                const InputProvider& x_i,
-                                const view_1d<ScalarT,MT>& x_m,
-                                const scalar_type alpha,
-                                const scalar_type beta)
-  {
-    using pack_type = ScalarT;
-    using pack_info = ekat::PackInfo<pack_size<ScalarT>()>;
-
-    const auto NUM_MID_PACKS = pack_info::num_packs(num_mid_levels);
-    const auto NUM_INT_PACKS = pack_info::num_packs(num_mid_levels+1);
-
-    // It is easier to read if we check whether #int_packs==#mid_packs.
-    // This lambda can be used in both cases to process packs that have a next pack
-    auto shift_and_avg = [&](const int k){
-      // Shift's first arg is the scalar to put in the "empty" spot at the end
-      pack_type tmp = ekat::shift_left(x_i(k+1)[0], x_i(k));
-      tmp += x_i(k);
-      tmp /= 2.0;
-      combine<CM>(tmp, x_m(k), alpha, beta);
-    };
-    if (NUM_MID_PACKS==NUM_INT_PACKS) {
-      const auto LAST_PACK =  NUM_MID_PACKS-1;
-
-      // Use SIMD operations only on NUM_MID_PACKS-1, since mid pack
-      // does not have a 'next' one
-      team_parallel_for(team,NUM_MID_PACKS-1,shift_and_avg);
-
-      team_single (team, [&]() {
-        // Last level pack treated separately, since int pack k+1 does not exist.
-        // Shift's first arg is the scalar to put in the "empty" spot at the end.
-        // In this case, we don't need it, so just uze zero.
-        const auto& xi_last = x_i(LAST_PACK);
-        pack_type tmp = ekat::shift_left(zero(), xi_last);
-
-        tmp += xi_last;
-        tmp /= 2.0;
-        combine<CM>(tmp, x_m(LAST_PACK), alpha, beta);
-      });
-    } else {
-      // We can use SIMD operations on all NUM_MID_PACKS mid packs,
-      // since x_i(k+1) is *always* fine
-      team_parallel_for(team,NUM_MID_PACKS,shift_and_avg);
-    }
-  }
-
-  // ------------ Impls of midpoint_delta ------------- //
-
-  template<CombineMode CM, typename InputProvider, typename ScalarT, typename MT>
-  KOKKOS_INLINE_FUNCTION
-  static typename std::enable_if<(pack_size<ScalarT>()==1)>::type
-  compute_midpoint_delta_impl (const TeamMember& team,
-                               const int num_mid_levels,
-                               const InputProvider& x_i,
-                               const view_1d<ScalarT,MT>& dx_m,
-                               const scalar_type alpha,
-                               const scalar_type beta)
-  {
-    // For GPU (or any build with pack size 1), things are simpler
-    team_parallel_for(team,num_mid_levels,
-                      [&](const int& k) {
-      auto tmp = x_i(k+1)-x_i(k);
-      combine<CM>(tmp,dx_m(k),alpha,beta);
-    });
-  }
-
-  template<CombineMode CM, typename InputProvider, typename ScalarT, typename MT>
-  KOKKOS_INLINE_FUNCTION
-  static typename std::enable_if<(pack_size<ScalarT>()>1)>::type
-  compute_midpoint_delta_impl (const TeamMember& team,
-                               const int num_mid_levels,
-                               const InputProvider& x_i,
-                               const view_1d<ScalarT,MT>& dx_m,
-                               const scalar_type alpha,
-                               const scalar_type beta)
-  {
-    using pack_info = ekat::PackInfo<pack_size<ScalarT>()>;
-
-    const auto NUM_MID_PACKS     = pack_info::num_packs(num_mid_levels);
-    const auto NUM_INT_PACKS     = pack_info::num_packs(num_mid_levels+1);
-
-    // It is easier to read if we check whether #int_packs==#mid_packs.
-    // This lambda can be used in both cases to process packs that have a next pack
-    auto shift_and_subtract = [&](const int k){
-      auto tmp = ekat::shift_left(x_i(k+1)[0], x_i(k));
-      combine<CM>(tmp - x_i(k),dx_m(k),alpha,beta);
-    };
-    if (NUM_MID_PACKS==NUM_INT_PACKS) {
-      const auto LAST_PACK = NUM_MID_PACKS - 1;
-
-      // Use SIMD operations only on NUM_MID_PACKS-1, since mid pack
-      // does not have a 'next' one
-      team_parallel_for(team,NUM_MID_PACKS-1,shift_and_subtract);
-
-      // Last pack does not have a next one, so needs to be treated separately and serially.
-      team_single(team, [&](){
-        // Shift's first arg is the scalar to put in the "empty" spot at the end.
-        // In this case, we don't need it, so just uze zero.
-        const auto& xi_last = x_i(LAST_PACK);
-        auto tmp = ekat::shift_left(zero(),xi_last);
-        combine<CM>(tmp - xi_last,dx_m(LAST_PACK),alpha,beta);
-      });
-    } else {
-      // We can use SIMD operations on all NUM_MID_PACKS mid packs,
-      // since x_i(k+1) is *always* fine
-      team_parallel_for(team,NUM_MID_PACKS,shift_and_subtract);
-    }
-  }
 
   // ------------ Impls of column_scan ------------- //
 
