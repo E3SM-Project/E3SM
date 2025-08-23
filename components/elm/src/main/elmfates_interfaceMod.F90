@@ -3487,7 +3487,7 @@ end subroutine wrap_update_hifrq_hist
 
    ! !LOCAL:
    integer :: ivar                               ! array index
-   integer, parameter :: num_bc_in = 2           ! number of HLM variables
+   integer, parameter :: num_bc_in  = 3          ! number of HLM variables
    integer, parameter :: num_bc_out = 3          ! number of HLM variables
    
    ! Allocate the arrays
@@ -3498,6 +3498,11 @@ end subroutine wrap_update_hifrq_hist
    ivar = 0
 
    ! ! HLM -> FATES (bc_in)
+   ! Scalar data
+   ivar = ivar + 1
+   this%bc_in(ivar)%api_str = 'nlevdecomp'
+   this%bc_in(ivar)%hlm_var => nlevdecomp
+
    ! 2D arrays
    ivar = ivar + 1
    this%bc_in(ivar)%api_str = 'decomp_frac_moisture'
