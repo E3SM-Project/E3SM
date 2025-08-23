@@ -68,11 +68,11 @@ create_field(const std::string& name,
 
   if (create_mask) {
     // Set a mask (1=filled, 0=valid) to be used in testing the results
-    FieldIdentifier mask_id("mask",fl,units,grid->name(),DataType::IntType);
+    FieldIdentifier mask_id("is_filled",fl,units,grid->name(),DataType::IntType);
     Field mask(mask_id);
     mask.allocate_view();
     mask.deep_copy(0); // Init with "all good"
-    f.get_header().set_extra_data("mask",mask);
+    f.get_header().set_extra_data("is_filled",mask);
   }
   return f;
 }
@@ -173,7 +173,7 @@ void extrapolate (const Field& p_src, const Field& p_tgt, const Field& f,
   const int ncols = l.dims().front();
   const int nlevs = l.dims().back();
   const int nlevs_src = p_src.get_header().get_identifier().get_layout().dims().back();
-  auto mask = f.get_header().get_extra_data<Field>("mask");
+  auto mask = f.get_header().get_extra_data<Field>("is_filled");
 
   switch (l.type()) {
     case LayoutType::Scalar2D: break;
@@ -556,7 +556,7 @@ TEST_CASE ("vertical_remapper") {
 
               // Now set expected=0 where it's filled, so we can compute the norm
               // (summing x[i]*x[i] would overflow in SP, causing NaN's)
-              auto mask = expected.get_header().get_extra_data<Field>("mask");
+              auto mask = expected.get_header().get_extra_data<Field>("is_filled");
               expected.deep_copy(0,mask);
               auto ex_norm = frobenius_norm<Real>(expected);
               REQUIRE (frobenius_norm<Real>(diff)<tol*ex_norm);
