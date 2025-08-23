@@ -34,6 +34,88 @@ TEST_CASE("column_ops_ps_1") {
   auto dv_mid_h = Kokkos::create_mirror_view(dv_mid);
   auto dz_mid_h = Kokkos::create_mirror_view(dz_mid);
 
+  SECTION ("update") {
+    auto x = v_mid;
+    auto y = dz_mid;
+    for (int k=0; k<num_levs; ++k) {
+      x(0,k) = k;
+      y(0,k) = 1;
+    }
+
+    // We compute y = 3*y + 2*x
+    auto lambda = KOKKOS_LAMBDA(const member_type& team) {
+      const int icol = team.league_rank();
+      auto x_i = ekat::subview(x,icol);
+      auto y_i = ekat::subview(y,icol);
+
+      column_ops::update(team,x_i,y_i,2,3);
+    };
+    Kokkos::parallel_for(policy,lambda);
+    Kokkos::fence();
+
+    auto y_h = dz_mid_h;
+    Kokkos::deep_copy(y_h,y);
+    for (int k=0; k<num_levs; ++k) {
+      REQUIRE (y_h(0,k)[0]==(2*k+3));
+    }
+  }
+
+  SECTION ("fwd_delta") {
+    auto x = v_mid;
+    auto y = dz_mid;
+    for (int k=0; k<num_levs; ++k) {
+      x(0,k) = k;
+      y(0,k) = k;
+    }
+
+    // We compute y = 3*y + 2*diff(x). Given x/y initialization,
+    // we should get y(k)==3*k+2
+    auto lambda = KOKKOS_LAMBDA(const member_type& team) {
+      const int icol = team.league_rank();
+      auto x_i = ekat::subview(x,icol);
+      auto y_i = ekat::subview(y,icol);
+
+      column_ops::fwd_delta<CombineMode::Update>(team,num_levs,x_i,y_i,2,3);
+    };
+    Kokkos::parallel_for(policy,lambda);
+    Kokkos::fence();
+
+    auto y_h = dz_mid_h;
+    auto x_h = v_mid_h;
+    Kokkos::deep_copy(y_h,y);
+    for (int k=0; k<num_levs-1; ++k) {
+      REQUIRE (y_h(0,k)[0]==(3*k+2));
+    }
+  }
+
+  SECTION ("bwd_delta") {
+    auto x = v_mid;
+    auto y = dz_mid;
+    for (int k=0; k<num_levs; ++k) {
+      x(0,k) = k;
+      y(0,k) = k;
+    }
+
+    // We compute y = 3*y + 2*diff(x). Given x/y initialization,
+    // we should get y(k)==3*k+2
+    auto lambda = KOKKOS_LAMBDA(const member_type& team) {
+      const int icol = team.league_rank();
+      auto x_i = ekat::subview(x,icol);
+      auto y_i = ekat::subview(y,icol);
+
+      column_ops::bwd_delta<CombineMode::Update>(team,num_levs,x_i,y_i,2,3);
+    };
+    Kokkos::parallel_for(policy,lambda);
+    Kokkos::fence();
+
+    auto y_h = dz_mid_h;
+    auto x_h = v_mid_h;
+    Kokkos::deep_copy(y_h,y);
+    for (int k=1; k<num_levs; ++k) {
+      REQUIRE (y_h(0,k)[0]==(3*k+2));
+    }
+  }
+
   SECTION ("int_to_mid") {
 
     // Fill v_int with odd numbers, so that v_mid should contain even ones.
@@ -474,11 +556,11 @@ TEST_CASE("column_ops_ps_1") {
 
 TEST_CASE("column_ops_ps_N") {
   // No point in re-running test for a larger pack size
-  if (!ekat::OnGpu<ekat::DefaultDevice::execution_space>::value) {
+  constexpr int ps = SCREAM_PACK_SIZE;
+  if constexpr (ps>1) {
     using namespace scream;
     using device_type = DefaultDevice;
     using KT = ekat::KokkosTypes<device_type>;
-    constexpr int ps = SCREAM_PACK_SIZE;
     using pack_type = ekat::Pack<Real,ps>;
     using exec_space = typename device_type::execution_space;
 
@@ -504,6 +586,100 @@ TEST_CASE("column_ops_ps_N") {
       auto dz_mid_h = Kokkos::create_mirror_view(dz_mid);
 
       policy_type policy(num_cols,std::min(num_mid_packs,exec_space().concurrency()));
+
+      SECTION ("update") {
+        auto x = v_mid;
+        auto y = dz_mid;
+        for (int k=0; k<num_levs; ++k) {
+          const int ipack = k / ps;
+          const int ivec  = k % ps;
+          x(0,ipack)[ivec] = k;
+          y(0,ipack)[ivec] = 1;
+        }
+
+        // We compute y = 3*y + 2*x
+        auto lambda = KOKKOS_LAMBDA(const member_type& team) {
+          const int icol = team.league_rank();
+          auto x_i = ekat::subview(x,icol);
+          auto y_i = ekat::subview(y,icol);
+
+          column_ops::update(team,x_i,y_i,2,3);
+        };
+        Kokkos::parallel_for(policy,lambda);
+        Kokkos::fence();
+
+        auto y_h = dz_mid_h;
+        Kokkos::deep_copy(y_h,y);
+        for (int k=0; k<num_levs; ++k) {
+          const int ipack = k / ps;
+          const int ivec  = k % ps;
+          REQUIRE (y_h(0,ipack)[ivec]==(2*k+3));
+        }
+      }
+
+      SECTION ("fwd_delta") {
+        auto x = v_mid;
+        auto y = dz_mid;
+        for (int k=0; k<num_levs; ++k) {
+          const int ipack = k / ps;
+          const int ivec  = k % ps;
+          x(0,ipack)[ivec] = k;
+          y(0,ipack)[ivec] = k;
+        }
+
+        // We compute y = 3*y + 2*diff(x). Given x/y initialization,
+        // we should get y(k)==3*k+2
+        auto lambda = KOKKOS_LAMBDA(const member_type& team) {
+          const int icol = team.league_rank();
+          auto x_i = ekat::subview(x,icol);
+          auto y_i = ekat::subview(y,icol);
+
+          column_ops::fwd_delta<CombineMode::Update>(team,num_mid_packs,x_i,y_i,2,3);
+        };
+        Kokkos::parallel_for(policy,lambda);
+        Kokkos::fence();
+
+        auto y_h = dz_mid_h;
+        auto x_h = v_mid_h;
+        Kokkos::deep_copy(y_h,y);
+        for (int k=0; k<num_levs-1; ++k) {
+          const int ipack = k / ps;
+          const int ivec  = k % ps;
+          REQUIRE (y_h(0,ipack)[ivec]==(3*k+2));
+        }
+      }
+
+      SECTION ("bwd_delta") {
+        auto x = v_mid;
+        auto y = dz_mid;
+        for (int k=0; k<num_levs; ++k) {
+          const int ipack = k / ps;
+          const int ivec  = k % ps;
+          x(0,ipack)[ivec] = k;
+          y(0,ipack)[ivec] = k;
+        }
+
+        // We compute y = 3*y + 2*diff(x). Given x/y initialization,
+        // we should get y(k)==3*k+2
+        auto lambda = KOKKOS_LAMBDA(const member_type& team) {
+          const int icol = team.league_rank();
+          auto x_i = ekat::subview(x,icol);
+          auto y_i = ekat::subview(y,icol);
+
+          column_ops::bwd_delta<CombineMode::Update>(team,num_mid_packs,x_i,y_i,2,3);
+        };
+        Kokkos::parallel_for(policy,lambda);
+        Kokkos::fence();
+
+        auto y_h = dz_mid_h;
+        auto x_h = v_mid_h;
+        Kokkos::deep_copy(y_h,y);
+        for (int k=1; k<num_levs; ++k) {
+          const int ipack = k / ps;
+          const int ivec  = k % ps;
+          REQUIRE (y_h(0,ipack)[ivec]==(3*k+2));
+        }
+      }
 
       SECTION ("int_to_mid") {
 
