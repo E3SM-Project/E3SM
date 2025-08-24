@@ -9,6 +9,6 @@ are designed generically and composably, and are requestable by users.
 - [Field contraction](field_contraction.md)
 - [Conditional sampling](conditional_sampling.md)
 - [Binary arithmetics](binary_ops.md)
-- [Vertical derivative](vertical_derivative.md)
+- [Vertical derivative](vert_derivative.md)
 
 More details to follow.
