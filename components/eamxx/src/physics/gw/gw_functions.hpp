@@ -143,6 +143,19 @@ struct Functions
     Real tndmax; // = huge(1._r8)
   };
 
+  KOKKOS_INLINE_FUNCTION
+  static void midpoint_interp(
+    const MemberType& team,
+    const uview_1d<const Real>& in,
+    const uview_1d<Real>& interp)
+  {
+    EKAT_KERNEL_REQUIRE(in.size() == interp.size() + 1);
+    Kokkos::parallel_for(
+      Kokkos::TeamVectorRange(team, 0, in.extent(0)-1), [&] (const int k) {
+        interp(k) = (in(k)+in(k+1)) / 2;
+    });
+  }
+
   //
   // --------- Init/Finalize Functions ---------
   //
@@ -201,20 +214,27 @@ struct Functions
     const uview_1d<Real>& utgw,
     const uview_1d<Real>& vtgw);
 
+  /*
+   * Compute profiles of background state quantities for the multiple
+   * gravity wave drag parameterization.
+   *
+   * The parameterization is assumed to operate only where water vapor
+   * concentrations are negligible in determining the density.
+   */
   KOKKOS_FUNCTION
   static void gw_prof(
     // Inputs
+    const MemberType& team,
     const Int& pver,
-    const Int& ncol,
-    const Spack& cpair,
-    const uview_1d<const Spack>& t,
-    const uview_1d<const Spack>& pmid,
-    const uview_1d<const Spack>& pint,
+    const Real& cpair,
+    const uview_1d<const Real>& t,
+    const uview_1d<const Real>& pmid,
+    const uview_1d<const Real>& pint,
     // Outputs
-    const uview_1d<Spack>& rhoi,
-    const uview_1d<Spack>& ti,
-    const uview_1d<Spack>& nm,
-    const uview_1d<Spack>& ni);
+    const uview_1d<Real>& rhoi,
+    const uview_1d<Real>& ti,
+    const uview_1d<Real>& nm,
+    const uview_1d<Real>& ni);
 
   KOKKOS_FUNCTION
   static void momentum_energy_conservation(
