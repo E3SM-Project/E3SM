@@ -37,10 +37,14 @@ TEST_CASE("column_ops_ps_1") {
   SECTION ("update") {
     auto x = v_mid;
     auto y = dz_mid;
+    auto x_h = v_mid_h;
+    auto y_h = dz_mid_h;
     for (int k=0; k<num_levs; ++k) {
-      x(0,k) = k;
-      y(0,k) = 1;
+      x_h(0,k) = k;
+      y_h(0,k) = 1;
     }
+    Kokkos::deep_copy(x,x_h);
+    Kokkos::deep_copy(y,y_h);
 
     // We compute y = 3*y + 2*x
     auto lambda = KOKKOS_LAMBDA(const member_type& team) {
@@ -53,7 +57,6 @@ TEST_CASE("column_ops_ps_1") {
     Kokkos::parallel_for(policy,lambda);
     Kokkos::fence();
 
-    auto y_h = dz_mid_h;
     Kokkos::deep_copy(y_h,y);
     for (int k=0; k<num_levs; ++k) {
       REQUIRE (y_h(0,k)[0]==(2*k+3));
@@ -63,10 +66,14 @@ TEST_CASE("column_ops_ps_1") {
   SECTION ("fwd_delta") {
     auto x = v_mid;
     auto y = dz_mid;
+    auto x_h = v_mid_h;
+    auto y_h = dz_mid_h;
     for (int k=0; k<num_levs; ++k) {
-      x(0,k) = k;
-      y(0,k) = k;
+      x_h(0,k) = k;
+      y_h(0,k) = k;
     }
+    Kokkos::deep_copy(x,x_h);
+    Kokkos::deep_copy(y,y_h);
 
     // We compute y = 3*y + 2*diff(x). Given x/y initialization,
     // we should get y(k)==3*k+2
@@ -80,8 +87,6 @@ TEST_CASE("column_ops_ps_1") {
     Kokkos::parallel_for(policy,lambda);
     Kokkos::fence();
 
-    auto y_h = dz_mid_h;
-    auto x_h = v_mid_h;
     Kokkos::deep_copy(y_h,y);
     for (int k=0; k<num_levs-1; ++k) {
       REQUIRE (y_h(0,k)[0]==(3*k+2));
@@ -91,10 +96,14 @@ TEST_CASE("column_ops_ps_1") {
   SECTION ("bwd_delta") {
     auto x = v_mid;
     auto y = dz_mid;
+    auto x_h = v_mid_h;
+    auto y_h = dz_mid_h;
     for (int k=0; k<num_levs; ++k) {
-      x(0,k) = k;
-      y(0,k) = k;
+      x_h(0,k) = k;
+      y_h(0,k) = k;
     }
+    Kokkos::deep_copy(x,x_h);
+    Kokkos::deep_copy(y,y_h);
 
     // We compute y = 3*y + 2*diff(x). Given x/y initialization,
     // we should get y(k)==3*k+2
@@ -108,8 +117,6 @@ TEST_CASE("column_ops_ps_1") {
     Kokkos::parallel_for(policy,lambda);
     Kokkos::fence();
 
-    auto y_h = dz_mid_h;
-    auto x_h = v_mid_h;
     Kokkos::deep_copy(y_h,y);
     for (int k=1; k<num_levs; ++k) {
       REQUIRE (y_h(0,k)[0]==(3*k+2));
