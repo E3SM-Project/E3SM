@@ -1,9 +1,4 @@
 #include "zm_eamxx_bridge.hpp"
-#include "ekat/kokkos/ekat_kokkos_types.hpp"
-
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
-#include "ekat/ekat_pack_kokkos.hpp"
-#include "ekat/ekat_assert.hpp"
 
 using scream::Real;
 using scream::Int;

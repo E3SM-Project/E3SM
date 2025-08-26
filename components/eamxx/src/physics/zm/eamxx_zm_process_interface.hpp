@@ -2,9 +2,11 @@
 #define EAMXX_ZM_PROCESS_INTERFACE_HPP
 
 #include "share/atm_process/atmosphere_process.hpp"
-#include "ekat/ekat_parameter_list.hpp"
+#include "share/atm_process/ATMBufferManager.hpp"
 #include "share/util/eamxx_common_physics_functions.hpp"
 #include "zm_functions.hpp"
+
+#include <ekat_parameter_list.hpp>
 
 namespace scream
 {
