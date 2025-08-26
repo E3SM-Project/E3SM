@@ -57,7 +57,12 @@ struct UnitWrap::UnitTest<D>::TestGwProf : public UnitWrap::UnitTest<D>::Base {
 
     // Get data from test
     for (auto& d : test_data) {
-      gw_prof(d);
+      if (this->m_baseline_action == GENERATE) {
+        gw_prof_f(d);
+      }
+      else {
+        gw_prof(d);
+      }
     }
 
     // Verify BFB results, all data should be in C layout
@@ -65,16 +70,16 @@ struct UnitWrap::UnitTest<D>::TestGwProf : public UnitWrap::UnitTest<D>::Base {
       for (Int i = 0; i < num_runs; ++i) {
         GwProfData& d_baseline = baseline_data[i];
         GwProfData& d_test = test_data[i];
+        REQUIRE(d_baseline.total(d_baseline.rhoi) == d_test.total(d_test.rhoi));
+        REQUIRE(d_baseline.total(d_baseline.rhoi) == d_test.total(d_test.ti));
+        REQUIRE(d_baseline.total(d_baseline.rhoi) == d_test.total(d_test.ni));
         for (Int k = 0; k < d_baseline.total(d_baseline.rhoi); ++k) {
-          REQUIRE(d_baseline.total(d_baseline.rhoi) == d_test.total(d_test.rhoi));
           REQUIRE(d_baseline.rhoi[k] == d_test.rhoi[k]);
-          REQUIRE(d_baseline.total(d_baseline.rhoi) == d_test.total(d_test.ti));
           REQUIRE(d_baseline.ti[k] == d_test.ti[k]);
-          REQUIRE(d_baseline.total(d_baseline.rhoi) == d_test.total(d_test.ni));
           REQUIRE(d_baseline.ni[k] == d_test.ni[k]);
         }
+        REQUIRE(d_baseline.total(d_baseline.nm) == d_test.total(d_test.nm));
         for (Int k = 0; k < d_baseline.total(d_baseline.nm); ++k) {
-          REQUIRE(d_baseline.total(d_baseline.nm) == d_test.total(d_test.nm));
           REQUIRE(d_baseline.nm[k] == d_test.nm[k]);
         }
 
