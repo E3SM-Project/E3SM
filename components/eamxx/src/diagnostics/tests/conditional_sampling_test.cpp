@@ -296,13 +296,13 @@ TEST_CASE("conditional_sampling") {
     auto qc12_v = qc12.get_view<const Real *, Host>();
     auto qc21_v = qc21.get_view<const Real **, Host>();
 
-    // Check the results - count should be 1.0 where condition is met, fill_value otherwise
+    // Check the results - count should be 1.0 where condition is met, 0 otherwise
     for (int ilev = 0; ilev < nlevs; ++ilev) {
       // check count for qc12
       if (qc12_v(ilev) > comp_val) {
         REQUIRE(count_diag12_v(ilev) == 1.0);
       } else {
-        REQUIRE(count_diag12_v(ilev) == fill_value);
+        REQUIRE(count_diag12_v(ilev) == 0.0);
       }
     }
     
@@ -311,7 +311,7 @@ TEST_CASE("conditional_sampling") {
       if (qc11_v(icol) > comp_val) {
         REQUIRE(count_diag11_v(icol) == 1.0);
       } else {
-        REQUIRE(count_diag11_v(icol) == fill_value);
+        REQUIRE(count_diag11_v(icol) == 0.0);
       }
       
       for (int ilev = 0; ilev < nlevs; ++ilev) {
@@ -319,13 +319,13 @@ TEST_CASE("conditional_sampling") {
         if (qc21_v(icol, ilev) > comp_val) {
           REQUIRE(count_diag21_v(icol, ilev) == 1.0);
         } else {
-          REQUIRE(count_diag21_v(icol, ilev) == fill_value);
+          REQUIRE(count_diag21_v(icol, ilev) == 0.0);
         }
         // check count again, but the negative
         if (qc21_v(icol, ilev) <= comp_val) {
           REQUIRE_FALSE(count_diag21_v(icol, ilev) == 1.0);
         } else {
-          REQUIRE_FALSE(count_diag21_v(icol, ilev) == fill_value);
+          REQUIRE_FALSE(count_diag21_v(icol, ilev) == 0.0);
         }
       }
     }
