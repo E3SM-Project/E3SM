@@ -237,12 +237,82 @@ void gwd_compute_tendencies_from_stress_divergence(GwdComputeTendenciesFromStres
   gw_finalize_cxx(d.init);
 }
 
-void gw_prof(GwProfData& d)
+void gw_prof_f(GwProfData& d)
 {
   gw_init(d.init);
   d.transition<ekat::TransposeDirection::c2f>();
   gw_prof_c(d.ncol, d.cpair, d.t, d.pmid, d.pint, d.rhoi, d.ti, d.nm, d.ni);
   d.transition<ekat::TransposeDirection::f2c>();
+}
+
+void gw_prof(GwProfData& d)
+{
+  gw_init_cxx(d.init);
+
+  // create device views and copy
+  std::vector<view2dr_d> two_d_reals_in(7);
+
+  ekat::host_to_device({d.t, d.pmid, d.nm, d.pint, d.rhoi, d.ti, d.ni},
+                       std::vector<int>(7, d.ncol),
+                       std::vector<int>{    // dim2 sizes
+                         d.init.pver,
+                         d.init.pver,
+                         d.init.pver,
+                         d.init.pver + 1,
+                         d.init.pver + 1,
+                         d.init.pver + 1,
+                         d.init.pver + 1},
+                       two_d_reals_in);
+
+  const auto t    = two_d_reals_in[0];
+  const auto pmid = two_d_reals_in[1];
+  const auto nm   = two_d_reals_in[2];
+  const auto pint = two_d_reals_in[3];
+  const auto rhoi = two_d_reals_in[4];
+  const auto ti   = two_d_reals_in[5];
+  const auto ni   = two_d_reals_in[6];
+
+  auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.ncol, d.init.pver);
+
+  // unpack init because we do not want the lambda to capture it
+  const int pver = d.init.pver;
+  const Real cpair = d.cpair;
+
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    const int col = team.league_rank();
+
+    // Get single-column subviews of all inputs, shouldn't need any i-indexing
+    // after this.
+    const auto t_c    = ekat::subview(t, col);
+    const auto pmid_c = ekat::subview(pmid, col);
+    const auto nm_c   = ekat::subview(nm, col);
+    const auto pint_c = ekat::subview(pint, col);
+    const auto rhoi_c = ekat::subview(rhoi, col);
+    const auto ti_c   = ekat::subview(ti, col);
+    const auto ni_c   = ekat::subview(ni, col);
+
+    GWF::gw_prof(
+      team,
+      pver,
+      cpair,
+      t_c,
+      pmid_c,
+      pint_c,
+      rhoi_c,
+      ti_c,
+      nm_c,
+      ni_c
+    );
+  });
+
+  // Get outputs back
+  std::vector<view2dr_d> two_d_reals_out = {rhoi, ti, nm, ni};
+  ekat::device_to_host({d.rhoi, d.ti, d.nm, d.ni},
+                       std::vector<int>(4, d.ncol),
+                       std::vector<int>{d.init.pver+1, d.init.pver+1, d.init.pver, d.init.pver+1},
+                       two_d_reals_out);
+
+  gw_finalize_cxx(d.init);
 }
 
 void momentum_energy_conservation_f(MomentumEnergyConservationData& d)
