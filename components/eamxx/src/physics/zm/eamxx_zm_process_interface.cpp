@@ -1,6 +1,5 @@
-#include "eamxx_config.h"
+#include "eamxx_config.h" // for SCREAM_CIME_BUILD
 
-#include "ekat/ekat_assert.hpp"
 #include "share/property_checks/field_lower_bound_check.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
 
@@ -8,6 +7,10 @@
 #include "physics/share/physics_constants.hpp"
 
 #include "zm_eamxx_bridge.hpp"
+
+#include <ekat_assert.hpp>
+#include <ekat_team_policy_utils.hpp>
+#include <ekat_reduction_utils.hpp>
 
 #include <mpi.h> // Include the MPI header for special print statement diagnostics
 
@@ -113,8 +116,9 @@ void zm_deep_convection::run_impl (const double dt)
   const int nlevm_packs = ekat::npack<Spack>(m_nlev);
 
   // calculate_z_int() contains a team-level parallel_scan, which requires a special policy
-  const auto scan_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(m_ncol, nlevm_packs);
-  const auto team_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_ncol, nlevm_packs);
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
+  const auto scan_policy = TPF::get_thread_range_parallel_scan_team_policy(m_ncol, nlevm_packs);
+  const auto team_policy = TPF::get_default_team_policy(m_ncol, nlevm_packs);
 
   auto ts_start = start_of_step_ts();
   bool is_first_step = (ts_start.get_num_steps()==0);
