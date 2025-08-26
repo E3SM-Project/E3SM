@@ -37,8 +37,10 @@ void apply_conditional_sampling_1d(
     const std::string &condition_op, const Real &condition_val,
     const Real &fill_value = constants::fill_value<Real>) {
 
+  // if fill_value is 0, we are counting
+  const auto is_counting = (fill_value == 0);
   const auto output_v    = output_field.get_view<Real *>();
-  const auto mask_v = output_field.get_header().get_extra_data<Field>("mask_data").get_view<Real *>();
+  const auto mask_v = !is_counting ? output_field.get_header().get_extra_data<Field>("mask_data").get_view<Real *>() : output_v;
   const auto input_v     = input_field.get_view<const Real *>();
   const auto condition_v = condition_field.get_view<const Real *>();
 
@@ -59,13 +61,13 @@ void apply_conditional_sampling_1d(
         bool condition_masked = has_condition_mask && (condition_mask_v(idx) == 0);
         if (input_masked || condition_masked) {
           output_v(idx) = fill_value;
-          mask_v(idx) = 0;
+          if (!is_counting) mask_v(idx) = 0;
         } else if (evaluate_condition(condition_v(idx), op_code, condition_val)) {
           output_v(idx) = input_v(idx);
-          mask_v(idx) = 1;
+          if (!is_counting) mask_v(idx) = 1;
         } else {
           output_v(idx) = fill_value;
-          mask_v(idx) = 0;
+          if (!is_counting) mask_v(idx) = 0;
         }
       });
 }
@@ -76,8 +78,11 @@ void apply_conditional_sampling_2d(
     const std::string &condition_op, const Real &condition_val,
     const Real &fill_value = constants::fill_value<Real>) {
 
+  // if fill_value is 0, we are counting
+  const auto is_counting = (fill_value == 0);
+
   const auto output_v    = output_field.get_view<Real **>();
-  const auto mask_v = output_field.get_header().get_extra_data<Field>("mask_data").get_view<Real **>();
+  const auto mask_v = !is_counting ? output_field.get_header().get_extra_data<Field>("mask_data").get_view<Real **>() : output_v;
   const auto input_v     = input_field.get_view<const Real **>();
   const auto condition_v = condition_field.get_view<const Real **>();
 
@@ -102,13 +107,13 @@ void apply_conditional_sampling_2d(
         bool condition_masked = has_condition_mask && (condition_mask_v(icol, ilev) == 0);
         if (input_masked || condition_masked) {
           output_v(icol, ilev) = fill_value;
-          mask_v(icol, ilev) = 0;
+          if (!is_counting) mask_v(icol, ilev) = 0;
         } else if (evaluate_condition(condition_v(icol, ilev), op_code, condition_val)) {
           output_v(icol, ilev) = input_v(icol, ilev);
-          mask_v(icol, ilev) = 1;
+          if (!is_counting) mask_v(icol, ilev) = 1;
         } else {
           output_v(icol, ilev) = fill_value;
-          mask_v(icol, ilev) = 0;
+          if (!is_counting) mask_v(icol, ilev) = 0;
         }
       });
 }
@@ -119,8 +124,11 @@ void apply_conditional_sampling_1d_lev(
     const std::string &condition_op, const Real &condition_val,
     const Real &fill_value = constants::fill_value<Real>) {
 
+  // if fill_value is 0, we are counting
+  const auto is_counting = (fill_value == 0);
+
   const auto output_v = output_field.get_view<Real *>();
-  const auto mask_v = output_field.get_header().get_extra_data<Field>("mask_data").get_view<Real *>();
+  const auto mask_v = !is_counting ? output_field.get_header().get_extra_data<Field>("mask_data").get_view<Real *>() : output_v;
   const auto input_v  = input_field.get_view<const Real *>();
 
   // Try to get input mask, if present
@@ -140,13 +148,13 @@ void apply_conditional_sampling_1d_lev(
         bool input_masked = has_input_mask && (input_mask_v(idx) == 0);
         if (input_masked) {
           output_v(idx) = fill_value;
-          mask_v(idx) = 0;
+          if (!is_counting) mask_v(idx) = 0;
         } else if (evaluate_condition(level_idx, op_code, condition_val)) {
           output_v(idx) = input_v(idx);
-          mask_v(idx) = 1;
+          if (!is_counting) mask_v(idx) = 1;
         } else {
           output_v(idx) = fill_value;
-          mask_v(idx) = 0;
+          if (!is_counting) mask_v(idx) = 0;
         }
       });
 }
@@ -157,8 +165,11 @@ void apply_conditional_sampling_2d_lev(
     const std::string &condition_op, const Real &condition_val,
     const Real &fill_value = constants::fill_value<Real>) {
 
+  // if fill_value is 0, we are counting
+  const auto is_counting = (fill_value == 0);
+
   const auto output_v = output_field.get_view<Real **>();
-  const auto mask_v = output_field.get_header().get_extra_data<Field>("mask_data").get_view<Real **>();
+  const auto mask_v = !is_counting ? output_field.get_header().get_extra_data<Field>("mask_data").get_view<Real **>() : output_v;
   const auto input_v  = input_field.get_view<const Real **>();
 
   // Try to get input mask, if present
@@ -181,13 +192,13 @@ void apply_conditional_sampling_2d_lev(
         bool input_masked = has_input_mask && (input_mask_v(icol, ilev) == 0);
         if (input_masked) {
           output_v(icol, ilev) = fill_value;
-          mask_v(icol, ilev) = 0;
+          if (!is_counting) mask_v(icol, ilev) = 0;
         } else if (evaluate_condition(level_idx, op_code, condition_val)) {
           output_v(icol, ilev) = input_v(icol, ilev);
-          mask_v(icol, ilev) = 1;
+          if (!is_counting) mask_v(icol, ilev) = 1;
         } else {
           output_v(icol, ilev) = fill_value;
-          mask_v(icol, ilev) = 0;
+          if (!is_counting) mask_v(icol, ilev) = 0;
         }
       });
 }
@@ -259,17 +270,14 @@ void ConditionalSampling::initialize_impl(const RunType /*run_type*/) {
 
   const auto var_fill_value = constants::fill_value<Real>;
   m_mask_val = m_params.get<double>("mask_value", var_fill_value);
-
-  m_diagnostic_output.get_header().set_extra_data("mask_data", diag_mask);
-  m_diagnostic_output.get_header().set_extra_data("mask_value", m_mask_val);
-
+  if (m_input_f != "count") {
+    m_diagnostic_output.get_header().set_extra_data("mask_data", diag_mask);
+    m_diagnostic_output.get_header().set_extra_data("mask_value", m_mask_val);
+  }
   // Special case: if the input field is "count", let's create a field of 1s
   if (m_input_f == "count") {
     ones = m_diagnostic_output.clone("count_ones");
     ones.deep_copy(1.0);
-    auto ones_mask = ones.clone("count_ones_mask");
-    ones.get_header().set_extra_data("mask_data", ones_mask);
-    ones.get_header().set_extra_data("mask_value", m_mask_val);
   }
   
   // Special case: if condition field is "lev", we don't need to check layout compatibility
@@ -308,7 +316,7 @@ void ConditionalSampling::compute_diagnostic_impl() {
                    "Valid operators are: eq, ==, ne, !=, gt, >, ge, >=, lt, <, le, <=\n");
 
   // Get the fill value from constants
-  const Real fill_value = m_mask_val;
+  const Real fill_value = (m_input_f == "count") ? 0.0 : m_mask_val;
 
   // Determine field layout and apply appropriate conditional sampling
   const auto &layout = f.get_header().get_identifier().get_layout();

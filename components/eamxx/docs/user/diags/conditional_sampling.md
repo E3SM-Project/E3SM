@@ -1,4 +1,4 @@
-# Conditional sampling
+# Conditional sampling diagnostics
 
 The conditional sampling diagnostic allows you to extract field values
 where a specified condition is met, filling other locations with a
@@ -55,7 +55,7 @@ Use the special condition field name `lev`.
 
 Count the number of grid points where a condition is met.
 Use the special input field name `count`. The output will be `1.0`
-where the condition is satisfied and the fill value elsewhere.
+where the condition is satisfied and `0.0` elsewhere.
 This is particularly useful when combined with horizontal or vertical
 reductions to count occurrences of specific conditions.
 

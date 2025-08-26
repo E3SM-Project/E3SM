@@ -1,4 +1,4 @@
-# EAMxx Field Aliasing Feature
+# Field Aliasing
 
 This document demonstrates the field aliasing feature for EAMxx I/O operations.
 
@@ -52,16 +52,16 @@ When using aliases:
 1. **NetCDF Variables**: The netcdf file will contain variables
 named according to the aliases
 
-   - `LWP` instead of `LiqWaterPath`
-   - `T` instead of `T_mid`
-   - `RH` instead of `RelativeHumidity`
+    - `LWP` instead of `LiqWaterPath`
+    - `T` instead of `T_mid`
+    - `RH` instead of `RelativeHumidity`
 
 2. **Internal Processing**: All internal model operations use the
 original field names
 
-   - Field validation uses `LiqWaterPath`, `T_mid`, etc.
-   - Diagnostic calculations use original names
-   - Memory management uses original field structures
+    - Field validation uses `LiqWaterPath`, `T_mid`, etc.
+    - Diagnostic calculations use original names
+    - Memory management uses original field structures
 
 3. **Metadata**: Variable attributes (units, long_name, etc.)
 are preserved from the original fields, and `eamxx_name`
