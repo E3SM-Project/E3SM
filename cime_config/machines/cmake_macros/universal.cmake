@@ -7,6 +7,7 @@ set(KOKKOS_OPTIONS "-DKokkos_ENABLE_SERIAL=On")
 if (compile_threaded)
   string(APPEND KOKKOS_OPTIONS " -DKokkos_ENABLE_OPENMP=On")
 endif()
+set(KOKKOS_USE_EKAT_MACH_FILE "FALSE")
 
 # Unless told otherwise, set has_contiguous to FALSE
 set(HAS_F2008_CONTIGUOUS "FALSE")

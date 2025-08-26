@@ -204,9 +204,6 @@ option(SCREAM_ENABLE_MAM "Whether to enable MAM aerosol support" ON)
 set(SCREAM_SMALL_KERNELS ${DEFAULT_SMALL_KERNELS} CACHE STRING "Use small, non-monolothic kokkos kernels for ALL components that support them")
 set(SCREAM_P3_SMALL_KERNELS ${SCREAM_SMALL_KERNELS} CACHE STRING "Use small, non-monolothic kokkos kernels for P3 only")
 set(SCREAM_SHOC_SMALL_KERNELS ${SCREAM_SMALL_KERNELS} CACHE STRING "Use small, non-monolothic kokkos kernels for SHOC only")
-if (NOT SCREAM_P3_SMALL_KERNELS AND NOT SCREAM_SHOC_SMALL_KERNELS)
-  set(EKAT_DISABLE_WORKSPACE_SHARING TRUE CACHE STRING "")
-endif()
 
 # Add RRTMGP settings. Note, we might consider also adding RRTMGP_EXPENSIVE_CHECKS
 # to turn on the RRTMGP internal checks here as well, via

@@ -78,19 +78,34 @@ def buildlib(bldroot, installpath, case):
 
     srcroot = case.get_value("SRCROOT")
     ekat_dir = os.path.join(srcroot, "externals", "ekat")
+    ekat_cmake_files = os.path.join(ekat_dir, "cmake", "machine-files")
+    mach = case.get_value("MACH")
+    ekat_cmake_mach_file = os.path.join(ekat_cmake_files, f"{mach}.cmake")
     expect(os.path.isdir(ekat_dir), "Missing ekat submodule")
 
     # We want to get the compiler and kokkos_options from Macros.make
     # (generated from cmake_macros), but we want to otherwise
     # let kokkos control flags
     mpilib = case.get_value("MPILIB")
-    macro_vals = extract_from_macros(case, "kokkos", extra_vars=("KOKKOS_OPTIONS",))
-    cc, cxx, kokkos_options_raw = macro_vals[4], macro_vals[5], macro_vals[-1]
+    macro_vals = extract_from_macros(case, "kokkos",
+                                     extra_vars=("KOKKOS_OPTIONS", "KOKKOS_USE_EKAT_MACH_FILE"))
+    cc, cxx, kokkos_options_raw, use_ekat_mach_file = \
+        macro_vals[4], macro_vals[5], macro_vals[-2], macro_vals[-1]
+    use_ekat_mach_file = True if use_ekat_mach_file.upper() == "TRUE" else False
     if mpilib == "mpi-serial":
         # Use serial compilers
         cc, cxx = macro_vals[1], macro_vals[2]
 
-    kokkos_options = kokkos_options_raw.split(":=")[-1].strip()
+    # Use the ekat mach file if requested
+    if use_ekat_mach_file:
+        expect(os.path.exists(ekat_cmake_mach_file),
+               f"No KOKKOS_OPTIONS provided and no ekat machine file exists for {mach}")
+        kokkos_options = f"-C {ekat_cmake_mach_file}"
+        # Turn off threading for non-threaded cases
+        if not case.get_build_threaded():
+            kokkos_options += " -DKokkos_ENABLE_OPENMP=Off"
+    else:
+        kokkos_options = kokkos_options_raw.split(":=")[-1].strip()
 
     # We will take care of setting CMAKE_CXX_COMPILER unless user has explictly
     # set one in their KOKKOS_OPTIONS.
@@ -113,9 +128,13 @@ def buildlib(bldroot, installpath, case):
     gmake_j = case.get_value("GMAKE_J")
 
     # Just enable all ekat packages?
-    ekat_cmake_options = "-DEKAT_ENABLE_ALL_PACKAGES=On -DEKAT_ENABLE_TESTS=Off"
+    debug = case.get_value("DEBUG")
+    ekat_cmake_options = "-DEKAT_ENABLE_ALL_PACKAGES=On -DEKAT_ENABLE_TESTS=Off -DKokkos_ENABLE_SERIAL=On"
     if mpilib == "mpi-serial":
         ekat_cmake_options += " -DEKAT_ENABLE_MPI=Off"
+    if debug:
+        ekat_cmake_options += " -DCMAKE_BUILD_TYPE=Debug"
+        # More? Turn on kokkos debugging?
 
     gen_makefile_cmd = f"cmake {kokkos_options} {cc} {cxx} -DCMAKE_CXX_STANDARD=17 {ekat_cmake_options} -DCMAKE_INSTALL_PREFIX={installpath} {ekat_dir}"
 
