@@ -116,13 +116,13 @@ TEST_CASE("aodvis") {
     const auto aod_hf = diag->get_diagnostic();
 
     Field aod_tf = diag->get_diagnostic().clone();
-    aod_tf.deep_copy<Host>(0);
     auto aod_t = aod_tf.get_view<Real *, Host>();
 
     for(int icol = 0; icol < grid->get_num_local_dofs(); ++icol) {
       if(sun_h(icol) < some_limit) {
         aod_t(icol) = var_fill_value;
       } else {
+        aod_t(icol) = 0;
         for(int ilev = 0; ilev < nlevs; ++ilev) {
           aod_t(icol) += tau_h(icol, swvis, ilev);
         }
