@@ -2095,6 +2095,7 @@ contains
 !    The following fields are sometimes received from the coupler,
 !      depending on model options:
 !
+!    o  rofi     -- frozen water flux into sea ice
 !    o  algae1   --
 !    o  algae2   --
 !    o  algae3   --
@@ -2124,6 +2125,10 @@ contains
 !
 ! !REVISION HISTORY:
 !  same as module
+
+    use seaice_constants, only: &
+         seaiceLatentHeatMelting, & ! latent heat of melting of fresh ice (J/kg)
+         seaiceFreshIceSpecificHeat ! specific heat of fresh ice (J/kg/K)
 
 ! !INPUT/OUTPUT PARAMETERS:
 
@@ -2161,6 +2166,7 @@ contains
       aerosols,       &
       atmosCoupling,  &
       oceanCoupling,  &
+      icebergFluxes,  &
       biogeochemistry
 
    integer, pointer :: nCellsSolve
@@ -2170,7 +2176,11 @@ contains
       config_use_modal_aerosols,        &
       config_use_zaerosols,             &
       config_use_column_biogeochemistry, &
-      config_couple_biogeochemistry_fields
+      config_couple_biogeochemistry_fields, &
+      config_use_data_icebergs
+
+   real(kind=RKIND), pointer :: &
+      bergTemperature, & ! iceberg temperature
 
    character(len=strKIND), pointer ::   &
       config_column_physics_type,       &
@@ -2201,6 +2211,8 @@ contains
       snowfallRateField,                &
       uAirVelocityField,                &
       vAirVelocityField,                &
+      bergFreshwaterFluxField,          &
+      bergLatentHeatFluxField,          &
       oceanNitrateConcField,            &
       oceanSilicateConcField,           &
       oceanAmmoniumConcField,           &
@@ -2246,6 +2258,7 @@ contains
       snowfallRate,                &
       uAirVelocity,                &
       vAirVelocity,                &
+      bergFreshwaterFlux,          &
       oceanNitrateConc,            &
       oceanSilicateConc,           &
       oceanAmmoniumConc,           &
@@ -2291,6 +2304,8 @@ contains
       call mpas_pool_get_config(configs, "config_column_physics_type", config_column_physics_type)
       call mpas_pool_get_config(configs, "config_thermodynamics_type", config_thermodynamics_type)
       call mpas_pool_get_config(configs, "config_ocean_surface_type", config_ocean_surface_type)
+      call MPAS_pool_get_config(configs, "config_use_data_icebergs", config_use_data_icebergs)
+      call MPAS_pool_get_config(configs, "config_iceberg_temperature", bergTemperature)
       call mpas_pool_get_config(configs, "config_use_aerosols", config_use_aerosols)
       call mpas_pool_get_config(configs, "config_use_modal_aerosols", config_use_modal_aerosols)
       call mpas_pool_get_config(configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
@@ -2327,6 +2342,12 @@ contains
       call mpas_pool_get_array(atmosCoupling, 'snowfallRate', snowfallRate)
       call mpas_pool_get_array(atmosCoupling, 'uAirVelocity', uAirVelocity)
       call mpas_pool_get_array(atmosCoupling, 'vAirVelocity', vAirVelocity)
+
+      if (.not. config_use_data_icebergs) then
+         call MPAS_pool_get_subpool(block_ptr % structs, "berg_fluxes", icebergFluxes)
+         call MPAS_pool_get_array(icebergFluxes, "bergFreshwaterFlux", bergFreshwaterFlux)
+         call MPAS_pool_get_array(icebergFluxes, "bergLatentHeatFlux", bergLatentHeatFlux)
+      endif
 
       if (config_use_aerosols) then
          call mpas_pool_get_subpool(block_ptr % structs, 'aerosols', aerosols)
@@ -2416,6 +2437,13 @@ contains
         snowfallRate(i)                = x2i_i % rAttr(index_x2i_Faxa_snow, n)
         uAirVelocity(i)                = x2i_i % rAttr(index_x2i_Sa_u, n)
         vAirVelocity(i)                = x2i_i % rAttr(index_x2i_Sa_v, n)
+
+        ! if not using data icebergs, import icebergs here
+        if (.not. config_use_data_icebergs) then
+           bergFreshwaterFlux(i)       = x2i_i % rAttr(index_x2i_Fixx_rofi, n)
+           bergLatentHeatFlux(i)       = bergFreshwaterFlux(i) * &
+               (seaiceLatentHeatMelting - seaiceFreshIceSpecificHeat*bergTemperature)
+        endif
 
         ! set aerosols, if configured
         if (config_use_aerosols) then
@@ -2641,6 +2669,11 @@ contains
    call mpas_dmpar_exch_halo_field(uAirVelocityField)
    call mpas_dmpar_exch_halo_field(vAirVelocityField)
 
+   if (.not. config_use_data_icebergs) then
+      call mpas_dmpar_exch_halo_field(bergFreshwaterFluxField)
+      call mpas_dmpar_exch_halo_field(bergLatentHeatFluxField)
+   endif
+
    if (config_use_aerosols) then
       call mpas_dmpar_exch_halo_field(atmosAerosolFluxField)
    endif
@@ -2742,8 +2775,7 @@ contains
       config_use_column_biogeochemistry, &
       config_use_zaerosols,              &
       config_couple_biogeochemistry_fields, &
-      config_use_column_shortwave,       &
-      config_use_data_icebergs
+      config_use_column_shortwave
 
    real(kind=RKIND), pointer :: &
       sphere_radius
@@ -2818,7 +2850,6 @@ contains
       call MPAS_pool_get_config(configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
       call mpas_pool_get_config(configs, "config_couple_biogeochemistry_fields", config_couple_biogeochemistry_fields)
       call MPAS_pool_get_config(configs, "config_use_column_shortwave", config_use_column_shortwave)
-      call MPAS_pool_get_config(configs, "config_use_data_icebergs", config_use_data_icebergs)
 
       call MPAS_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
       call MPAS_pool_get_subpool(block_ptr % structs, "tracers_aggregate", tracersAggregate)
@@ -2872,12 +2903,10 @@ contains
       call MPAS_pool_get_array(oceanFluxes, 'oceanFreshWaterFlux', oceanFreshWaterFlux)
       call MPAS_pool_get_array(oceanFluxes, 'oceanSaltFlux', oceanSaltFlux)
 
-      if (config_use_data_icebergs) then
-         call MPAS_pool_get_subpool(block_ptr % structs, "berg_fluxes", icebergFluxes)
+      call MPAS_pool_get_subpool(block_ptr % structs, "berg_fluxes", icebergFluxes)
 
-         call MPAS_pool_get_array(icebergFluxes, "bergFreshwaterFlux", bergFreshwaterFlux)
-         call MPAS_pool_get_array(icebergFluxes, "bergLatentHeatFlux", bergLatentHeatFlux)
-      endif
+      call MPAS_pool_get_array(icebergFluxes, "bergFreshwaterFlux", bergFreshwaterFlux)
+      call MPAS_pool_get_array(icebergFluxes, "bergLatentHeatFlux", bergLatentHeatFlux)
 
       if (config_use_column_biogeochemistry .and. config_couple_biogeochemistry_fields) then
          call mpas_pool_get_subpool(block_ptr % structs, 'biogeochemistry', biogeochemistry)
@@ -2956,10 +2985,10 @@ contains
          !-------states--------------------
          i2x_i % rAttr(index_i2x_Si_ifrac ,n)    = ailohi
 
-         if (config_use_data_icebergs) then
-            i2x_i % rAttr(index_i2x_Fioi_bergw,n) = bergFreshwaterFlux(i)
-            i2x_i % rAttr(index_i2x_Fioi_bergh,n) = bergLatentHeatFlux(i)
-         endif
+         ! Always export berg fluxes - they are either from coupler or from data
+         ! but either way have been assigned at this point
+         i2x_i % rAttr(index_i2x_Fioi_bergw,n) = bergFreshwaterFlux(i)
+         i2x_i % rAttr(index_i2x_Fioi_bergh,n) = bergLatentHeatFlux(i)
 
          if ( ailohi > 0.0_RKIND ) then
 
