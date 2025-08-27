@@ -42,10 +42,15 @@ on:
         description: 'Force cdash submission'
         required: true
         type: boolean
+      use_kokkos_dev:
+        description: 'Run with Kokkos develop branch'
+        required: true
+        type: boolean
 
   # Add schedule trigger for nightly runs at midnight MT (Standard Time)
   schedule:
     - cron: '0 7 * * *'  # Runs at 7 AM UTC, which is midnight MT during Standard Time
+    - cron: '0 7 * * 1'  # Weekly run every Monday at 7 AM UTC (using Kokkos develop branch)
 
 concurrency:
   # Two runs are in the same group if they are testing the same git ref
@@ -60,6 +65,8 @@ env:
   generate: ${{ github.event_name == 'workflow_dispatch' && inputs.bless }}
   # Do EKAT testing for nightlies or (TODO: if EKAT label is present)
   ekat: ${{ github.event_name == 'schedule' }}
+  # For the weekly run, we test using the kokkos develop branch
+  kokkos_dev_test: ${{ github.event_name == 'schedule' && github.event.schedule == '0 7 * * 1' || (github.event_name == 'workflow_dispatch' && inputs.use_kokkos_dev) }}
 
 jobs:
   gcc-openmp:
@@ -95,6 +102,7 @@ jobs:
           submit: ${{ env.submit }}
           cmake-configs: Kokkos_ENABLE_OPENMP=ON
           ekat: ${{ env.ekat }}
+          kokkos_develop: ${{ env.kokkos_dev_test }}
   gcc-cuda:
     if: |
       ${{
@@ -163,3 +171,4 @@ jobs:
           submit: ${{ env.submit }}
           cmake-configs: Kokkos_ARCH_HOPPER90=${{ env.Hopper }};Kokkos_ARCH_AMPERE80=${{ env.Ampere }};Kokkos_ARCH_VOLTA70=${{ env.Volta }};CMAKE_CUDA_ARCHITECTURES=${{ env.CUDA_ARCH }};SCREAM_SMALL_KERNELS=${{ matrix.test.SK }}
           ekat: ${{ env.ekat }}
+          kokkos_develop: ${{ env.kokkos_dev_test }}
