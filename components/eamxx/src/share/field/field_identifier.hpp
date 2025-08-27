@@ -14,8 +14,8 @@ namespace scream
 {
 
 // A list of currently supported Field data types
-using FieldValidDataTypes = ekat::TypeList<int,float,double>;
-using FieldValidDataNames = ekat::TypeList<DataType,DataType,DataType>;
+using FieldValidDataTypes = ekat::TypeList<int,float,double,bool>;
+using FieldValidDataNames = ekat::TypeList<DataType,DataType,DataType,BoolType>;
 
 inline ekat::TypeMap<FieldValidDataTypes,FieldValidDataNames>
 field_valid_data_types ()
@@ -24,6 +24,7 @@ field_valid_data_types ()
   map.at<int>()    = DataType::IntType;
   map.at<float>()  = DataType::FloatType;
   map.at<double>() = DataType::DoubleType;
+  map.at<bool>()   = DataType::BoolType;
 
   return map;
 }

@@ -39,7 +39,16 @@ enum class CombineMode {
   Min         // out = min(beta*out,alpha*in)
 };
 
-namespace impl {
+enum class LogicalOp {
+  And,          // lhs =  lsh &&  rhs
+  NotAnd        // lhs = !lhs &&  rhs
+  AndNot,       // lhs =  lhs && !rhs
+  NotAndNot,    // lhs = !lhs && !rhs
+  Or,           // lhs =  lhs ||  rhs
+  NotOr,        // lhs = !lhs ||  rhs
+  OrNot,        // lhs =  lhs || !rhs
+  NotOrNot      // lhs = !lhs || !rhs
+};
 
 // Small helper functions to combine a new value with an old one.
 // The template argument help reducing the number of operations
@@ -116,6 +125,38 @@ void combine (const ScalarIn& newVal, ScalarOut& result,
     if (newVal!=constants::fill_value<ScalarIn>) {
       impl::combine<CM>(newVal,result,alpha,beta);
     }
+  }
+}
+
+template<LogicalOp Op>
+KOKKOS_FORCEINLINE_FUNCTION
+void combine_bool (const bool& rhs, bool& lhs)
+{
+  switch (Op) {
+    case LogicalOp::And:
+      lhs &&= rhs;
+      break;
+    case LogicalOp::NotAnd:
+      lhs = !lhs and rhs;
+      break;
+    case LogicalOp::AndNot:
+      lhs &&= !rhs;
+      break;
+    case LogicalOp::NotAndNot:
+      lhs = !lsh and !rhs;
+      break;
+    case LogicalOp::Or:
+      lhs ||= rhs;
+      break;
+    case LogicalOp::NotOr:
+      lhs = !lhs or rhs;
+      break;
+    case LogicalOp::OrNot:
+      lhs ||= !rhs;
+      break;
+    case LogicalOp::NotOrNot:
+      lhs = !lsh or !rhs;
+      break;
   }
 }
 
