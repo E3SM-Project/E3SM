@@ -996,11 +996,7 @@ def get_file_parameters(caseroot):
         result.extend(refine_type(item.text, force_type="array(file)"))
 
     # Remove duplicates. Not sure if an error would be warranted if dupes exist
-    result_no_dups = []
-    for item in result:
-        if item not in result:
-            result_no_dups.append(item)
-    return result_no_dups
+    return list(dict.fromkeys(result))
 
 ###############################################################################
 def create_input_data_list_file(case,caseroot):
