@@ -190,11 +190,9 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
                                                 skip_restart_if_rhist_not_found,m_avg_type,m_output_control);
 
     if (rhist_file=="") {
-      if (m_atm_logger) {
-        m_atm_logger->warn("[OutputManager::setup] The rhist file not found in rpointer.atm.\n"
-                           "  Continuing without restart, since 'skip_restart_if_rhist_not_found=true'.\n"
-                           "   - output yaml file for this stream: " + m_params.name() + "\n");
-      }
+      m_atm_logger->warn("[OutputManager::setup] The rhist file not found in rpointer.atm.\n"
+                         "  Continuing without restart, since 'skip_restart_if_rhist_not_found=true'.\n"
+                         "   - output yaml file for this stream: " + m_params.name() + "\n");
     } else {
 
       scorpio::register_file(rhist_file,scorpio::Read);
@@ -308,6 +306,12 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
 }
 
 void OutputManager::
+set_logger(const std::shared_ptr<ekat::logger::LoggerBase>& atm_logger) {
+  EKAT_REQUIRE_MSG (atm_logger, "Error! Invalid logger pointer.\n");
+  m_atm_logger = atm_logger;
+}
+
+void OutputManager::
 add_global (const std::string& name, const std::shared_ptr<std::any>& global) {
   EKAT_REQUIRE_MSG (m_globals.find(name)==m_globals.end(),
       "Error! Global attribute was already set in this output manager.\n"
@@ -352,9 +356,7 @@ void OutputManager::init_timestep (const util::TimeStamp& start_of_step, const R
     return;
   }
 
-  if (m_atm_logger) {
-    m_atm_logger->debug("[OutputManager::init_timestep] filename_prefix: " + m_filename_prefix + "\n");
-  }
+  m_atm_logger->debug("[OutputManager::init_timestep] filename_prefix: " + m_filename_prefix + "\n");
 
   for (auto s : m_output_streams) {
     s->init_timestep(start_of_step);
@@ -379,9 +381,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
       "The most likely cause is an output frequency that is faster than the atm timestep.\n"
       "Try to increase 'frequency' and/or 'frequency_units' in your output yaml file.\n");
 
-  if (m_atm_logger) {
-    m_atm_logger->debug("[OutputManager::run] filename_prefix: " + m_filename_prefix + "\n");
-  }
+  m_atm_logger->debug("[OutputManager::run] filename_prefix: " + m_filename_prefix + "\n");
 
   using namespace scorpio;
 
@@ -451,10 +451,8 @@ void OutputManager::run(const util::TimeStamp& timestamp)
       rpointer << filespecs.filename << std::endl;
     }
 
-    if (m_atm_logger) {
-      m_atm_logger->info("[EAMxx::output_manager] - Writing " + e2str(filespecs.ftype) + ":");
-      m_atm_logger->info("[EAMxx::output_manager]      FILE: " + filespecs.filename);
-    }
+    m_atm_logger->info("[EAMxx::output_manager] - Writing " + e2str(filespecs.ftype) + ":");
+    m_atm_logger->info("[EAMxx::output_manager]      FILE: " + filespecs.filename);
   };
 
   if (is_output_step) {
@@ -478,9 +476,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
   const auto& fields_write_filename = is_output_step ? m_output_file_specs.filename : m_checkpoint_file_specs.filename;
   for (auto& it : m_output_streams) {
     // Note: filename only matters if is_output_step || is_full_checkpoint_step=true. In that case, it will definitely point to a valid file name.
-    if (m_atm_logger) {
-      m_atm_logger->debug("[OutputManager]: writing fields from grid " + it->get_io_grid()->name() + "...\n");
-    }
+    m_atm_logger->debug("[OutputManager]: writing fields from grid " + it->get_io_grid()->name() + "...\n");
     it->run(fields_write_filename,is_output_step,is_full_checkpoint_step,m_output_control.nsamples_since_last_write,is_t0_output);
   }
   stop_timer(timer_root+"::run_output_streams");
@@ -498,9 +494,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
     }
 
     auto write_global_data = [&](IOControl& control, IOFileSpecs& filespecs) {
-      if (m_atm_logger) {
-        m_atm_logger->debug("[OutputManager]: writing globals...\n");
-      }
+      m_atm_logger->debug("[OutputManager]: writing globals...\n");
 
       // Since we wrote to file we need to reset the timestamps
       control.last_write_ts = timestamp;
@@ -620,7 +614,7 @@ void OutputManager::finalize()
   m_checkpoint_file_specs = {};
   m_case_t0 = {};
   m_run_t0 = {};
-  m_atm_logger = {};
+  m_atm_logger = console_logger(ekat::logger::LogLevel::warn);
 }
 
 long long OutputManager::res_dep_memory_footprint () const {
@@ -953,9 +947,6 @@ close_or_flush_if_needed (      IOFileSpecs& file_specs,
 void OutputManager::
 push_to_logger()
 {
-  // If no atm logger set then don't do anything
-  if (!m_atm_logger) return;
-
   auto bool_to_string = [](const bool x) {
     std::string y = x ? "YES" : "NO";
     return y;

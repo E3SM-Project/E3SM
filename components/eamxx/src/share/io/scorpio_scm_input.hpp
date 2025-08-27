@@ -31,9 +31,7 @@ public:
   void read_variables (const int time_index = -1);
 
   // Option to add a logger
-  void set_logger(const std::shared_ptr<ekat::logger::LoggerBase>& atm_logger) {
-      m_atm_logger = atm_logger;
-  }
+  void set_logger(const std::shared_ptr<ekat::logger::LoggerBase>& atm_logger);
 
 #ifndef KOKKOS_ENABLE_CUDA
   // Cuda requires methods enclosing __device__ lambda's to be public
@@ -64,8 +62,7 @@ protected:
 
   ClosestColInfo            m_closest_col_info;
 
-  // The logger to be used throughout the ATM to log message
-  std::shared_ptr<ekat::logger::LoggerBase> m_atm_logger;
+  std::shared_ptr<ekat::logger::LoggerBase> m_atm_logger = console_logger(ekat::logger::LogLevel::warn);
 };
 
 } //namespace scream
