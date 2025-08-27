@@ -842,6 +842,7 @@ _TESTS = {
         "time"  : "03:00:00",
         "tests" : (
             "SMS_D_Lm2.ne4pg2_oQU480.F2010-EAMxx-MAM4xx-MPASSI",
+            "ERS_Ld80.ne4pg2_ne4pg2.F2010-EAMxx-MAM4xx",
             "SMS_Ly1.ne4pg2_oQU480.F2010-EAMxx-MAM4xx"
         )
     },
