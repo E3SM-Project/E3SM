@@ -2180,7 +2180,7 @@ contains
       config_use_data_icebergs
 
    real(kind=RKIND), pointer :: &
-      bergTemperature, & ! iceberg temperature
+      bergTemperature  ! iceberg temperature
 
    character(len=strKIND), pointer ::   &
       config_column_physics_type,       &
@@ -2259,6 +2259,7 @@ contains
       uAirVelocity,                &
       vAirVelocity,                &
       bergFreshwaterFlux,          &
+      bergLatentHeatFlux,          &
       oceanNitrateConc,            &
       oceanSilicateConc,           &
       oceanAmmoniumConc,           &
