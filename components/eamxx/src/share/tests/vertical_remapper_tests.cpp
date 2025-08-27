@@ -15,7 +15,7 @@ constexpr auto Mask = VerticalRemapper::Mask;
 constexpr auto Top = VerticalRemapper::Top;
 constexpr auto Bot = VerticalRemapper::Bot;
 constexpr auto TopBot = VerticalRemapper::TopAndBot;
-constexpr Real mask_val = -99999.0;
+constexpr Real fill_val = constants::fill_value<Real>;
 
 template<typename... Args>
 void print (const std::string& fmt, const ekat::Comm& comm, Args&&... args) {
@@ -48,7 +48,10 @@ build_grid(const ekat::Comm& comm, const int nldofs, const int nlevs)
 
 // Helper function to create fields
 Field
-create_field(const std::string& name, const std::shared_ptr<const AbstractGrid>& grid, const bool twod, const bool vec, const bool mid = false, const int ps = 1)
+create_field(const std::string& name,
+             const std::shared_ptr<const AbstractGrid>& grid,
+             const bool create_mask, const bool twod,
+             const bool vec, const bool mid = false, const int ps = 1)
 {
   using namespace ShortFieldTagsNames;
   constexpr int vec_dim = 3;
@@ -62,6 +65,15 @@ create_field(const std::string& name, const std::shared_ptr<const AbstractGrid>&
   Field f(fid);
   f.get_header().get_alloc_properties().request_allocation(ps);
   f.allocate_view();
+
+  if (create_mask) {
+    // Set a mask (1=filled, 0=valid) to be used in testing the results
+    FieldIdentifier mask_id("is_filled",fl,units,grid->name(),DataType::IntType);
+    Field mask(mask_id);
+    mask.allocate_view();
+    mask.deep_copy(0); // Init with "all good"
+    f.get_header().set_extra_data("is_filled",mask);
+  }
   return f;
 }
 
@@ -161,28 +173,43 @@ void extrapolate (const Field& p_src, const Field& p_tgt, const Field& f,
   const int ncols = l.dims().front();
   const int nlevs = l.dims().back();
   const int nlevs_src = p_src.get_header().get_identifier().get_layout().dims().back();
-  // print_field_hyperslab(p_src);
+  auto mask = f.get_header().get_extra_data<Field>("is_filled");
+
   switch (l.type()) {
     case LayoutType::Scalar2D: break;
     case LayoutType::Vector2D: break;
     case LayoutType::Scalar3D:
     {
       const auto v = f.get_view<Real**,Host>();
+      const auto m = mask.get_view<int**,Host>();
+
       for (int i=0; i<ncols; ++i) {
         auto pmin = pval(p1d_src,p2d_src,i,0,p_src.rank());
         auto pmax = pval(p1d_src,p2d_src,i,nlevs_src-1,p_src.rank());
         for (int j=0; j<nlevs; ++j) {
           auto p = pval(p1d_tgt,p2d_tgt,i,j,p_tgt.rank());
           if (p>pmax) {
-            v(i,j) = etype_bot==Mask ? mask_val : data_func(i,0,pmax);
+            if (etype_bot==Mask) {
+              v(i,j) = fill_val;
+              m(i,j) = 1;
+            } else {
+              v(i,j) = data_func(i,0,pmax);
+            }
           } else if (p<pmin) {
-            v(i,j) = etype_top==Mask ? mask_val : data_func(i,0,pmin);
+            if (etype_top==Mask) {
+              v(i,j) = fill_val;
+              m(i,j) = 1;
+            } else {
+              v(i,j) = data_func(i,0,pmin);
+            }
           }
       }}
     } break;
     case LayoutType::Vector3D:
     {
       const auto v = f.get_view<Real***,Host>();
+      const auto m = mask.get_view<int***,Host>();
+
       for (int i=0; i<ncols; ++i) {
         auto pmin = pval(p1d_src,p2d_src,i,0,p_src.rank());
         auto pmax = pval(p1d_src,p2d_src,i,nlevs_src-1,p_src.rank());
@@ -190,9 +217,19 @@ void extrapolate (const Field& p_src, const Field& p_tgt, const Field& f,
           for (int k=0; k<nlevs; ++k) {
             auto p = pval(p1d_tgt,p2d_tgt,i,k,p_tgt.rank());
             if (p>pmax) {
-              v(i,j,k) = etype_bot==Mask ? mask_val : data_func(i,j,pmax);
+              if (etype_bot==Mask) {
+                v(i,j,k) = fill_val;
+                m(i,j,k) = 1;
+              } else {
+                v(i,j,k) = data_func(i,j,pmax);
+              }
             } else if (p<pmin) {
-              v(i,j,k) = etype_top==Mask ? mask_val : data_func(i,j,pmin);
+              if (etype_top==Mask) {
+                v(i,j,k) = fill_val;
+                m(i,j,k) = 1;
+              } else {
+                v(i,j,k) = data_func(i,j,pmin);
+              }
             }
       }}}
     } break;
@@ -200,6 +237,8 @@ void extrapolate (const Field& p_src, const Field& p_tgt, const Field& f,
       EKAT_ERROR_MSG ("Unexpected layout.\n");
   }
   f.sync_to_dev();
+
+  mask.sync_to_dev();
 }
 
 // Helper function to create a remap file
@@ -390,7 +429,6 @@ TEST_CASE ("vertical_remapper") {
 
   const Real ptop_src = 50;
   const Real pbot_src = 1000;
-  const Real mask_val = -99999.0;
 
   // Test tgt grid with 2x and 0.5x as many levels as src grid
   for (int nlevs_tgt : {nlevs_src/2, 2*nlevs_src}) {
@@ -423,26 +461,27 @@ TEST_CASE ("vertical_remapper") {
             print (" -> creating src/tgt pressure fields ... done!\n",comm);
 
             print (" -> creating fields ... done!\n",comm);
-            auto src_s2d   = create_field("s2d",  src_grid,true,false);
-            auto src_v2d   = create_field("v2d",  src_grid,true,true);
-            auto src_s3d_m = create_field("s3d_m",src_grid,false,false,true, 1);
-            auto src_s3d_i = create_field("s3d_i",src_grid,false,false,false,SCREAM_PACK_SIZE);
-            auto src_v3d_m = create_field("v3d_m",src_grid,false,true ,true, 1);
-            auto src_v3d_i = create_field("v3d_i",src_grid,false,true ,false,SCREAM_PACK_SIZE);
+            auto src_s2d   = create_field("s2d",  src_grid,false,true,false);
+            auto src_v2d   = create_field("v2d",  src_grid,false,true,true);
+            auto src_s3d_m = create_field("s3d_m",src_grid,false,false,false,true, 1);
+            auto src_s3d_i = create_field("s3d_i",src_grid,false,false,false,false,SCREAM_PACK_SIZE);
+            auto src_v3d_m = create_field("v3d_m",src_grid,false,false,true ,true, 1);
+            auto src_v3d_i = create_field("v3d_i",src_grid,false,false,true ,false,SCREAM_PACK_SIZE);
 
-            auto tgt_s2d   = create_field("s2d",  tgt_grid,true,false);
-            auto tgt_v2d   = create_field("v2d",  tgt_grid,true,true);
-            auto tgt_s3d_m = create_field("s3d_m",tgt_grid,false,false,true, 1);
-            auto tgt_s3d_i = create_field("s3d_i",tgt_grid,false,false,true, SCREAM_PACK_SIZE);
-            auto tgt_v3d_m = create_field("v3d_m",tgt_grid,false,true ,true, 1);
-            auto tgt_v3d_i = create_field("v3d_i",tgt_grid,false,true ,true, SCREAM_PACK_SIZE);
+            auto tgt_s2d   = create_field("s2d",  tgt_grid,false,true,false);
+            auto tgt_v2d   = create_field("v2d",  tgt_grid,false,true,true);
+            auto tgt_s3d_m = create_field("s3d_m",tgt_grid,false,false,false,true, 1);
+            auto tgt_s3d_i = create_field("s3d_i",tgt_grid,false,false,false,true, SCREAM_PACK_SIZE);
+            auto tgt_v3d_m = create_field("v3d_m",tgt_grid,false,false,true ,true, 1);
+            auto tgt_v3d_i = create_field("v3d_i",tgt_grid,false,false,true ,true, SCREAM_PACK_SIZE);
 
-            auto expected_s2d   = tgt_s2d.clone();
-            auto expected_v2d   = tgt_v2d.clone();
-            auto expected_s3d_m = tgt_s3d_m.clone();
-            auto expected_s3d_i = tgt_s3d_i.clone();
-            auto expected_v3d_m = tgt_v3d_m.clone();
-            auto expected_v3d_i = tgt_v3d_i.clone();
+            // For expected fields, also create the mask extra data
+            auto expected_s2d   = create_field("s2d",  tgt_grid,true,true,false);
+            auto expected_v2d   = create_field("v2d",  tgt_grid,true,true,true);
+            auto expected_s3d_m = create_field("s3d_m",tgt_grid,true,false,false,true, 1);
+            auto expected_s3d_i = create_field("s3d_i",tgt_grid,true,false,false,true, SCREAM_PACK_SIZE);
+            auto expected_v3d_m = create_field("v3d_m",tgt_grid,true,false,true ,true, 1);
+            auto expected_v3d_i = create_field("v3d_i",tgt_grid,true,false,true ,true, SCREAM_PACK_SIZE);
             print (" -> creating fields ... done!\n",comm);
 
             // -------------------------------------- //
@@ -455,8 +494,6 @@ TEST_CASE ("vertical_remapper") {
             remap->set_target_pressure (pmid_tgt, pint_tgt);
             remap->set_extrapolation_type(etype_top,Top);
             remap->set_extrapolation_type(etype_bot,Bot);
-            REQUIRE_THROWS (remap->set_mask_value(std::numeric_limits<Real>::quiet_NaN()));
-            remap->set_mask_value(mask_val); // Only needed if top and/or bot use etype=Mask
 
             remap->register_field(src_s2d,  tgt_s2d);
             remap->register_field(src_v2d,  tgt_v2d);
@@ -513,43 +550,25 @@ TEST_CASE ("vertical_remapper") {
             using namespace Catch::Matchers;
             Real tol = 10*std::numeric_limits<Real>::epsilon();
 
+            auto check = [&](const Field& computed, Field& expected) {
+              auto diff = computed.clone("diff");
+              diff.update(expected,1,-1);
+
+              // Now set expected=0 where it's filled, so we can compute the norm
+              // (summing x[i]*x[i] would overflow in SP, causing NaN's)
+              auto mask = expected.get_header().get_extra_data<Field>("is_filled");
+              expected.deep_copy(0,mask);
+              auto ex_norm = frobenius_norm<Real>(expected);
+              REQUIRE (frobenius_norm<Real>(diff)<tol*ex_norm);
+            };
+
             print (" -> check tgt fields ...\n",comm);
-            {
-              auto diff = tgt_s2d.clone("diff");
-              auto ex_norm = frobenius_norm<Real>(expected_s2d);
-              diff.update(expected_s2d,1/ex_norm,-1/ex_norm);
-              REQUIRE (frobenius_norm<Real>(diff)<tol);
-            }
-            {
-              auto diff = tgt_v2d.clone("diff");
-              auto ex_norm = frobenius_norm<Real>(expected_v2d);
-              diff.update(expected_v2d,1/ex_norm,-1/ex_norm);
-              REQUIRE (frobenius_norm<Real>(diff)<tol);
-            }
-            {
-              auto diff = tgt_s3d_m.clone("diff");
-              auto ex_norm = frobenius_norm<Real>(expected_s3d_m);
-              diff.update(expected_s3d_m,1/ex_norm,-1/ex_norm);
-              REQUIRE (frobenius_norm<Real>(diff)<tol);
-            }
-            {
-              auto diff = tgt_s3d_i.clone("diff");
-              auto ex_norm = frobenius_norm<Real>(expected_s3d_i);
-              diff.update(expected_s3d_i,1/ex_norm,-1/ex_norm);
-              REQUIRE (frobenius_norm<Real>(diff)<tol);
-            }
-            {
-              auto diff = tgt_v3d_m.clone("diff");
-              auto ex_norm = frobenius_norm<Real>(expected_v3d_m);
-              diff.update(expected_v3d_m,1 / ex_norm,-1 / ex_norm);
-              REQUIRE (frobenius_norm<Real>(diff)<tol);
-            }
-            {
-              auto diff = tgt_v3d_i.clone("diff");
-              auto ex_norm = frobenius_norm<Real>(expected_v3d_i);
-              diff.update(expected_v3d_i,1 / ex_norm,-1 / ex_norm);
-              REQUIRE (frobenius_norm<Real>(diff)<tol);
-            }
+            check(tgt_s2d,expected_s2d);
+            check(tgt_v2d,expected_v2d);
+            check(tgt_s3d_m,expected_s3d_m);
+            check(tgt_v3d_m,expected_v3d_m);
+            check(tgt_s3d_i,expected_s3d_i);
+            check(tgt_v3d_i,expected_v3d_i);
             print (" -> check tgt fields ... done!\n",comm);
           }
         }

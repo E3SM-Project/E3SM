@@ -890,7 +890,7 @@ TEST_CASE ("update") {
 
       // Check that updating with rhs==fill_value ignores the rhs
       f3.deep_copy(constants::fill_value<Real>);
-      f3.get_header().set_extra_data("mask_value",constants::fill_value<Real>);
+      f3.get_header().set_may_be_filled(true);
       f2.deep_copy(1.0);
       f2.max(f3);
       REQUIRE (views_are_equal(f2,one));
@@ -914,7 +914,7 @@ TEST_CASE ("update") {
 
       // Check that updating with rhs==fill_value ignores the rhs
       f3.deep_copy(constants::fill_value<int>);
-      f3.get_header().set_extra_data("mask_value",constants::fill_value<int>);
+      f3.get_header().set_may_be_filled(true);
       f2.deep_copy(1);
       f2.max(f3);
       REQUIRE (views_are_equal(f2,one));
@@ -969,7 +969,7 @@ TEST_CASE ("update") {
       one.deep_copy(1.0);
 
       f3.deep_copy(constants::fill_value<Real>);
-      f3.get_header().set_extra_data("mask_value",constants::fill_value<Real>);
+      f3.get_header().set_may_be_filled(true);
       f2.deep_copy(1.0);
       f2.update(f3,1,1);
       if (not views_are_equal(f2,one)) {
@@ -1001,7 +1001,7 @@ TEST_CASE ("update") {
       one.deep_copy(1);
 
       f3.deep_copy(constants::fill_value<int>);
-      f3.get_header().set_extra_data("mask_value",constants::fill_value<int>);
+      f3.get_header().set_may_be_filled(true);
       f2.deep_copy(1);
       f2.update(f3,1,1);
       REQUIRE (views_are_equal(f2,one));

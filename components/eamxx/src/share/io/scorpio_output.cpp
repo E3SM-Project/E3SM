@@ -13,15 +13,23 @@
 #include <numeric>
 
 namespace {
-  // Helper lambda, to copy io string attributes. This will be used if any
-  // remapper is created, to ensure atts set by atm_procs are not lost
-  void transfer_io_str_atts  (const scream::Field& src, scream::Field& tgt) {
+  // Helper lambda, to copy extra data (io string attributes plus filled settings).
+  // This will be used if any remapper is created, to ensure atts set by atm_procs are not lost
+  void transfer_extra_data  (const scream::Field& src, scream::Field& tgt) {
+
+    // Transfer io string attributes
     const std::string io_string_atts_key ="io: string attributes";
     using stratts_t = std::map<std::string,std::string>;
     const auto& src_atts = src.get_header().get_extra_data<stratts_t>(io_string_atts_key);
           auto& dst_atts = tgt.get_header().get_extra_data<stratts_t>(io_string_atts_key);
     for (const auto& [name,val] : src_atts) {
       dst_atts[name] = val;
+    }
+
+    // Transfer whether or not this field MAY contain fill_value (to trigger usage of the
+    // proper implementation of Field update methods
+    if (src.get_header().may_be_filled()) {
+      tgt.get_header().set_may_be_filled(true);
     }
   };
 }
@@ -191,10 +199,6 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
     }
   }
 
-  if (params.isParameter("fill_value")) {
-    m_fill_value = static_cast<float>(params.get<double>("fill_value"));
-  }
-
   // Setup remappers - if needed
   auto grid_after_vr = fm_grid;
   if (use_vertical_remap_from_file) {
@@ -204,7 +208,6 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
     auto p_int = fm_model->get_field("p_int");
     auto vert_remapper = std::make_shared<VerticalRemapper>(fm_model->get_grid(),vert_remap_file);
     vert_remapper->set_source_pressure (p_mid,p_int);
-    vert_remapper->set_mask_value(m_fill_value);
     vert_remapper->set_extrapolation_type(VerticalRemapper::Mask); // both Top AND Bot
     m_vert_remapper = vert_remapper;
 
@@ -214,7 +217,7 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
     for (const auto& fname : m_fields_names) {
       auto src = fm_model->get_field(fname,fm_grid->name());
       auto tgt = m_vert_remapper->register_field_from_src(src);
-      transfer_io_str_atts (src,tgt);
+      transfer_extra_data (src,tgt);
       fm_after_vr->add_field(tgt);
     }
     m_vert_remapper->registration_ends();
@@ -243,7 +246,7 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
     for (const auto& fname : m_fields_names) {
       auto src = fm_after_vr->get_field(fname,grid_after_vr->name());
       auto tgt = m_horiz_remapper->register_field_from_src(src);
-      transfer_io_str_atts (src,tgt);
+      transfer_extra_data (src,tgt);
       fm_after_hr->add_field(tgt);
     }
     m_horiz_remapper->registration_ends();
@@ -296,17 +299,14 @@ void AtmosphereOutput::init()
 
     // Check if the field for scorpio can alias the field after hremap.
     // It can do so only for Instant output, and if the field is NOT a subfield ant NOT padded
-    // Also, if we track avg cnt, we MUST add the mask_value extra data, to trigger fill-value logic
+    // Also, if we track avg cnt, we MUST add the fill_value extra data, to trigger fill-value logic
     // when calling Field's update methods
     if (m_avg_type!=OutputAvgType::Instant or
         fh.get_alloc_properties().get_padding()>0 or
         fh.get_parent()!=nullptr) {
       Field copy(fid);
       copy.allocate_view();
-      transfer_io_str_atts (f,copy);
-      if (m_track_avg_cnt) {
-        copy.get_header().set_extra_data("mask_value",Real(m_fill_value));
-      }
+      transfer_extra_data (f,copy);
       fm_scorpio->add_field(copy);
     } else {
       fm_scorpio->add_field(f);
@@ -440,11 +440,30 @@ run (const std::string& filename,
         continue;
       }
 
+      //////////////////////// TODO ////////////////////////
+      // 1. Make the diags/procs COMPUTE the mask for the field, and
+      //    set the mask as extra data. We DON'T want to compute it here
+      // 2. Create count with same layout as the mask
+      // 3. In avg=tally/count, count MAY have smaller layout, hence
+      //    be incompatible. E.g., mask came from FieldAtPressureLevel,
+      //    and was (ncol), but the field is (ncol,2). In this case, we
+      //    ASSUME same mask for all slices, so do scaling on all slices:
+      //      avg.component(i).scale_inv(count)
+      // 4. In FieldAtPressureLevel, make ALL instances at same Plev share
+      //    the same mask field. How? Two ideas:
+      //      - store a static map string->Field in class, and use a string
+      //        key that encodes grid and press level. Only compute mask if
+      //        timestamp of mask field is "old"
+      //      - make another diag that computes the mask, make F@plev depend
+      //        on that diag.
+      // 5. FieldAtPressureLevel (and vremap) should only fill the mask field
+      //    if we later need it. E.g, if no AvgCount AND no hremap, we don't need it.
+      //////////////////////////////////////////////////////
       auto field = fm_after_hr->get_field(fname);
       auto mask  = count.get_header().get_extra_data<Field>("mask");
 
-      // Find where the field is NOT equal to m_fill_value
-      compute_mask<Comparison::NE>(field,m_fill_value,mask);
+      // Find where the field is NOT equal to fill_value
+      compute_mask<Comparison::NE>(field,constants::fill_value<Real>,mask);
 
       // mask=1 for "good" entries, and mask=0 otherwise.
       count.update(mask,1,1);
@@ -512,7 +531,7 @@ run (const std::string& filename,
           f_out.scale_inv(avg_count);
 
           const auto& mask = avg_count.get_header().get_extra_data<Field>("mask");
-          f_out.deep_copy(m_fill_value,mask);
+          f_out.deep_copy(constants::fill_value<Real>,mask);
         } else {
           // Divide by steps count only when the summation is complete
           f_out.scale(Real(1.0) / nsteps_since_last_output);
@@ -702,11 +721,9 @@ register_variables(const std::string& filename,
       // FillValue is a protected metadata, do not add it if it already existed
       if (fp_precision=="double" or
           (fp_precision=="real" and std::is_same<Real,double>::value)) {
-        double fill_value = m_fill_value;
-        scorpio::set_attribute(filename, alias_name, "_FillValue",fill_value);
+        scorpio::set_attribute(filename, alias_name, "_FillValue",constants::fill_value<double>);
       } else {
-        float fill_value = m_fill_value;
-        scorpio::set_attribute(filename, alias_name, "_FillValue",fill_value);
+        scorpio::set_attribute(filename, alias_name, "_FillValue",constants::fill_value<float>);
       }
 
       // If this is has subfields, add list of its children
@@ -897,11 +914,11 @@ compute_diagnostics(const bool allow_invalid_fields)
     if (not computed) {
       // The diag was either not computable or it may have failed to compute
       // (e.g., t=0 output with a flux-like diag).
-      // If we're allowing invalid fields, then we should simply set diag=m_fill_value
+      // If we're allowing invalid fields, then we should simply set diag=fill_value
       EKAT_REQUIRE_MSG (allow_invalid_fields,
         "Error! Failed to compute diagnostic.\n"
         " - diag name: " + diag->get_diagnostic().name() + "\n");
-      d.deep_copy(m_fill_value);
+      d.deep_copy(constants::fill_value<float>);
     }
   }
 }
@@ -950,7 +967,6 @@ init_diagnostics ()
     std::string diag_avg_cnt_name = "";
     auto& params = diag->get_params();
     if (diag->name()=="FieldAtPressureLevel") {
-      params.set<double>("mask_value",m_fill_value);
       diag_avg_cnt_name = "_"
                         + params.get<std::string>("pressure_value")
                         + params.get<std::string>("pressure_units");
@@ -963,12 +979,10 @@ init_diagnostics ()
         m_track_avg_cnt |= m_avg_type!=OutputAvgType::Instant;
       }
     } else if (diag->name()=="AerosolOpticalDepth550nm") {
-      params.set<double>("mask_value", m_fill_value);
       m_track_avg_cnt = m_track_avg_cnt || m_avg_type!=OutputAvgType::Instant;
       diag_avg_cnt_name = "_" + diag->name();
     }
     else if (diag_field.get_header().has_extra_data("mask_data")) {
-      params.set<double>("mask_value", m_fill_value);
       m_track_avg_cnt = m_track_avg_cnt || m_avg_type!=OutputAvgType::Instant;
       diag_avg_cnt_name = "_" + diag_field.name();
     }
