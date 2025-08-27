@@ -36,6 +36,15 @@ if (DEFINED ENV{HDF5_ROOT})
     set(HDF5_USE_STATIC_LIBRARIES On)
   endif()
   find_package(HDF5 REQUIRED)
+
+  # Find HDF5 filter libraries
+  set(H5Z_ZFP_USE_STATIC_LIBS ON)
+  list(APPEND CMAKE_PREFIX_PATH "$ENV{H5Z_ZFP_DIR}")
+  find_package(H5Z_ZFP)
+
+  set(H5Z_BLOSC2_USE_STATIC_LIBS ON)
+  list(APPEND CMAKE_PREFIX_PATH "$ENV{H5Z_BLOSC2_DIR}")
+  find_package(H5Z_BLOSC2)
 endif()
 
 # Not all machines/PIO installations use ADIOS but, for now,
@@ -61,6 +70,12 @@ endif()
 
 if (DEFINED ENV{HDF5_ROOT})
   list(APPEND PIOLIBS hdf5)
+  if (H5Z_ZFP_FOUND)
+    list(APPEND PIOLIBS h5z_zfp::h5z_zfp)
+  endif ()
+  if (H5Z_BLOSC2_FOUND)
+    list(APPEND PIOLIBS h5z_blosc2::h5z_blosc2)
+  endif ()
 endif()
 
 # Create the interface library, and set target properties
