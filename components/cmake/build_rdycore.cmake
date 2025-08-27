@@ -5,6 +5,7 @@ function(build_rdycore)
     message(STATUS "Found rdycore component")
 
     include(${CMAKE_SOURCE_DIR}/cmake/common_setup.cmake)
+    set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${EXTERNALS_SOURCE_DIR}/rdycore/cmake")
 
     ## FIXME: how much of this is needed??
     ## SCREAM manages its own kokkos settings. We can think about
