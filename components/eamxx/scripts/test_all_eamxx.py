@@ -32,7 +32,8 @@ class TestAllScream(object):
                  local=False, root_dir=None, work_dir=None,
                  quick_rerun=False,quick_rerun_failed=False,
                  make_parallel_level=0, ctest_parallel_level=0,
-                 extra_verbose=False, limit_test_regex=None, test_level="at", test_size=None):
+                 extra_verbose=False, limit_test_regex=None, test_level="at", test_size=None,
+                 additional_id=""):
     ###########################################################################
 
         # When using scripts-tests, we can't pass "-l" to test-all-eamxx,
@@ -61,6 +62,7 @@ class TestAllScream(object):
         self._test_level              = test_level
         self._test_size               = test_size
         self._generate                = generate
+        self._additional_id           = additional_id
 
         if self._quick_rerun_failed:
             self._quick_rerun = True
@@ -474,7 +476,8 @@ class TestAllScream(object):
         result += f"-DBUILD_WORK_DIR={work_dir} "
 
         build_name_mod = str(test)
-        result += f"-DBUILD_NAME_MOD={build_name_mod} "
+        testid = "_" + self._additional_id if self._additional_id != "" else ""
+        result += f"-DBUILD_NAME_MOD={build_name_mod}{testid} "
 
         if self._limit_test_regex:
             result += f"-DINCLUDE_REGEX={self._limit_test_regex} "
