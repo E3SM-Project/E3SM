@@ -9,6 +9,7 @@
 #include "share/io/scorpio_input.hpp"
 #include "share/io/eamxx_io_utils.hpp"
 #include "share/util/eamxx_universal_constants.hpp"
+#include "share/util/eamxx_utils.hpp"
 #include "physics/share/physics_constants.hpp"
 
 #include <ekat_team_policy_utils.hpp>
@@ -36,6 +37,16 @@ DataInterpolation (const std::shared_ptr<const AbstractGrid>& model_grid,
   m_input_files_dimnames[COL] = "ncol";
   m_input_files_dimnames[LEV] = "lev";
   e2str(LEV);
+
+  // Initialize logger with a console logger for warnings (logs on all ranks)
+  m_logger = console_logger(ekat::logger::LogLevel::warn);
+}
+
+void DataInterpolation::
+set_logger (const std::shared_ptr<ekat::logger::LoggerBase>& logger)
+{
+  EKAT_REQUIRE_MSG (logger, "Error! Invalid logger pointer.\n");
+  m_logger = logger;
 }
 
 void DataInterpolation::run (const util::TimeStamp& ts)
@@ -150,13 +161,18 @@ update_end_fields ()
   m_reader->set_fields(fields);
 
   // If we're also changing the file, must (re)init the scorpio structures
-  const auto& slice = m_time_database.slices[m_curr_interval_idx.second];
-  if (m_reader->get_filename()!=slice.filename) {
-    m_reader->reset_filename(slice.filename);
+  const auto& slice_beg = m_time_database.slices[m_curr_interval_idx.first];
+  const auto& slice_end = m_time_database.slices[m_curr_interval_idx.second];
+  if (m_reader->get_filename()!=slice_end.filename) {
+    m_reader->reset_filename(slice_end.filename);
   }
 
   // Read and interpolate fields
-  m_reader->read_variables(slice.time_idx);
+  m_logger->info("[DataInterpolation] Reading end of interval fields.");
+  m_logger->info(" - interval: [" + slice_beg.time.to_string() + ", " + slice_end.time.to_string() + "]");
+  m_logger->info(" - filename: " + slice_end.filename);
+  m_logger->info(" - file time idx: " + std::to_string(slice_end.time_idx));
+  m_reader->read_variables(slice_end.time_idx);
   m_horiz_remapper_end->remap_fwd();
 }
 
@@ -198,11 +214,9 @@ setup_time_database (const strvec_t& input_files,
                      const util::TimeStamp& ref_ts)
 {
   // Log the final list of files, so the user know if something went wrong (e.g. a bad regex)
-  if (m_dbg_output and m_comm.am_i_root()) {
-    std::cout << "Setting up DataInerpolation object. List of input files:\n";
-    for (const auto& fname : input_files) {
-      std::cout << "  - " << fname << "\n";
-    }
+  m_logger->debug("Setting up DataInerpolation object. List of input files:");
+  for (const auto& fname : input_files) {
+    m_logger->debug("  - " + fname);
   }
 
   // Make sure there are no repetitions
