@@ -223,7 +223,16 @@ public:
     using pack_info = ekat::PackInfo<pack_size<ScalarT>()>;
     const auto NUM_INT_PACKS = pack_info::num_packs(num_mid_levels+1);
 
-    adj_avg<CM>(team,NUM_INT_PACKS,x_i,x_m,alpha,beta);
+    // adj_avg uses the length of the output view as loop size. If the view passed here is
+    // longer than the number of midpoint packs, we get an OOB error. Hence, if needed,
+    // subview x_m with the proper length
+    const auto NUM_MID_PACKS = pack_info::num_packs(num_mid_levels);
+    if (static_cast<int>(x_m.size())>NUM_MID_PACKS) {
+      ekat::Unmanaged<view_1d<ScalarT,MT>> x_m_sub(x_m.data(),NUM_MID_PACKS);
+      adj_avg<CM>(team,NUM_INT_PACKS,x_i,x_m_sub,alpha,beta);
+    } else {
+      adj_avg<CM>(team,NUM_INT_PACKS,x_i,x_m,alpha,beta);
+    }
   }
 
   // Compute X at level interfaces, given X at level midpoints and top and bot bc.
