@@ -239,19 +239,6 @@ module ELMFatesInterfaceMod
 
    end type f2hmap_type
    
-   type, public :: hlm_fates_api_var_type
-
-      ! This is the pointer to the host land model variable
-      ! data associated with the common API vocabulary string
-      real(r8), pointer :: hlm_var(:,:)
-
-      ! This is the array that contains the common API vocabulary
-      ! between FATES and the host land model.
-      character(len=24) :: api_str
-      
-   end type hlm_fates_api_var_type
-
-
    type, public :: hlm_fates_interface_type
 
       ! See above for descriptions of the sub-types populated
@@ -308,7 +295,7 @@ module ELMFatesInterfaceMod
       procedure, public :: Init2  ! Initialization after determining subgrid weights
       procedure, public :: InitAccBuffer ! Initialize any accumulation buffers
       procedure, public :: InitAccVars   ! Initialize any accumulation variables
-      procedure, public :: InitAndSetAPIAssociation
+      procedure, public :: RegisterHLMInterfaceVariables
       procedure, public :: UpdateAccVars ! Update any accumulation variables
       procedure, public :: UpdateLitterFluxes
       procedure, private :: init_history_io
@@ -959,6 +946,9 @@ contains
       !$OMP PARALLEL DO PRIVATE (nc,bounds_clump,nmaxcol,s,c,l,g,collist,pi,pf,ft)
       do nc = 1,nclumps
 
+         ! Register HLM variables to the interface registry
+         call this%RegisterHLMInterfaceVariables(nc)
+
          call get_clump_bounds(nc, bounds_clump)
          nmaxcol = bounds_clump%endc - bounds_clump%begc + 1
 
@@ -1058,7 +1048,7 @@ contains
             else
                ndecomp = 1
             end if
-
+            
             call allocate_bcin(this%fates(nc)%bc_in(s), col_pp%nlevbed(c), ndecomp, &
                                num_harvest_vars, num_landuse_state_vars, num_landuse_transition_vars, &
                                surfpft_lb, surfpft_ub)
@@ -3571,81 +3561,6 @@ end subroutine wrap_update_hifrq_hist
     return
  end subroutine init_soil_depths
 
-! ======================================================================================
- 
- subroutine InitAndSetAPIAssociation(this)
-
-   ! !DESCRIPTION:
-   ! ---------------------------------------------------------------------------------
-   ! This subroutine sets the association between the hlm variables and the common API
-   ! vocabulary strings.
-   ! ---------------------------------------------------------------------------------
-
-   ! !USES:
-
-   ! !ARGUMENTS:
-   class(hlm_fates_interface_type), intent(inout) :: this
-
-   ! !LOCAL:
-   integer :: ivar                               ! array index
-   integer, parameter :: num_bc_in  = 3          ! number of HLM variables
-   integer, parameter :: num_bc_out = 3          ! number of HLM variables
-   
-   ! Allocate the arrays
-   allocate(this%bc_in(num_bc_in))
-   allocate(this%bc_out(num_bc_out))
-   
-   ! Increment through the arrays and assign HLM variables to common API vocab
-   ivar = 0
-
-   ! ! HLM -> FATES (bc_in)
-   ! Scalar data
-   ivar = ivar + 1
-   this%bc_in(ivar)%api_str = 'nlevdecomp'
-   this%bc_in(ivar)%hlm_var => nlevdecomp
-
-   ! 2D arrays
-   ivar = ivar + 1
-   this%bc_in(ivar)%api_str = 'decomp_frac_moisture'
-   this%bc_in(ivar)%hlm_var => col_cf%w_scalar(:,:)
-
-   ivar = ivar + 1
-   this%bc_in(ivar)%api_str = 'decomp_frac_temperature'
-   this%bc_in(ivar)%hlm_var => col_cf%t_scalar(:,:)
-   
-   this%num_hlmvar_in = ivar
-
-   ! ! FATES -> HLM (bc_out)
-   ivar = 0
-
-   ! 2D arrays
-   ivar = ivar + 1
-   this%bc_out(ivar)%api_str = 'decomp_cpools_met'
-   this%bc_out(ivar)%hlm_var => col_cf%decomp_cpools_sourcesink(:,:,i_met_lit)
-
-   ivar = ivar + 1
-   this%bc_out(ivar)%api_str = 'decomp_cpools_cel'
-   this%bc_out(ivar)%hlm_var => col_cf%decomp_cpools_sourcesink(:,:,i_cel_lit)
-
-   ivar = ivar + 1
-   this%bc_out(ivar)%api_str = 'decomp_cpools_lig'
-   this%bc_out(ivar)%hlm_var => col_cf%decomp_cpools_sourcesink(:,:,i_lig_lit)
-   
-   this%num_hlmvar_out = ivar
-   
-   ! 3D arrays
-   
-   ! TODO: is this really helpful since we'd hit out of bounds issues prior to this?
-   ! Check that the number of variables set matches
-   ! specifically in the case in which the number set
-   ! is lower than the allocated amount
-   if ((this%num_hlmvar_out /= num_bc_out) .or. (this%num_hlmvar_in /= num_bc_in)) then
-      write(iulog,*) 'FATES API: Number of API variables does not match the expected array size'
-      call endrun(msg=errMsg(sourcefile, __LINE__))
-   end if
-
- end subroutine InitAndSetAPIAssociation
-
  ! ======================================================================================
 
  subroutine ComputeRootSoilFlux(this, bounds_clump, num_filterc, filterc, &
@@ -4207,4 +4122,23 @@ end subroutine wrap_update_hifrq_hist
 
  end subroutine SetPatchIndex
 
+! ======================================================================================
+ 
+ subroutine RegisterHLMInterfaceVariables(this, nc)
+   
+   class(hlm_fates_interface_type) :: this
+   
+   integer, intent(in) :: nc   ! clump number
+   
+   ! Initialize the HLM-FATES interface variable registry
+   call this%fates(nc)%InitializeInterfaceRegistry()
+         
+   ! Register the HLM data
+   call this%fates(nc)%Register(vname='decomp_frac_moisture', data=col_cf%w_scalar)
+   call this%fates(nc)%Register(vname='decomp_frac_temperature', data=col_cf%t_scalar)
+   
+ end subroutine RegisterHLMInterfaceVariables
+ 
+! ======================================================================================
+ 
 end module ELMFatesInterfaceMod
