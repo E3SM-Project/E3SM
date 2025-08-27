@@ -61,7 +61,6 @@ void AtmBackTendDiag::init_timestep(const util::TimeStamp &start_of_step) {
 }
 
 void AtmBackTendDiag::compute_diagnostic_impl() {
-  Real var_fill_value = constants::fill_value<Real>;
   std::int64_t dt;
 
   const auto &f       = get_field_in(m_name);
@@ -77,7 +76,7 @@ void AtmBackTendDiag::compute_diagnostic_impl() {
   } else {
     // This is the first time we evaluate this diag. We cannot compute a tend
     // yet, so fill with an invalid value
-    m_diagnostic_output.deep_copy(var_fill_value);
+    m_diagnostic_output.deep_copy(constants::fill_value<Real>);
   }
 }
 

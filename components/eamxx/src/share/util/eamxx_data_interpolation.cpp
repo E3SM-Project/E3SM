@@ -539,10 +539,6 @@ create_vert_remapper (const VertRemapData& data)
     vremap->set_extrapolation_type(s2et(data.extrap_top),VerticalRemapper::Top);
     vremap->set_extrapolation_type(s2et(data.extrap_bot),VerticalRemapper::Bot);
 
-    // Set the mask value only if needed. RemapData has a default that is invalid for VerticalRemapper
-    if (data.extrap_bot=="Mask" or data.extrap_top=="Mask") {
-      vremap->set_mask_value(data.mask_value);
-    }
     m_vert_remapper = vremap;
   }
 

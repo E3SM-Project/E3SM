@@ -10,7 +10,7 @@ namespace scream
 
 namespace details {
 
-template<CombineMode CM, bool use_fill, typename LhsView, typename RhsView, typename ST>
+template<CombineMode CM, bool FillAware, typename LhsView, typename RhsView, typename ST>
 struct CombineViewsHelper {
 
   using exec_space = typename LhsView::traits::execution_space;
@@ -52,77 +52,54 @@ struct CombineViewsHelper {
 
   KOKKOS_INLINE_FUNCTION
   void operator() (int i) const {
-    if constexpr (use_fill)
-      if constexpr (N==0)
-        fill_aware_combine<CM>(rhs(),lhs(),fill_val,alpha,beta);
-      else
-        fill_aware_combine<CM>(rhs(i),lhs(i),fill_val,alpha,beta);
+    if constexpr (N==0)
+      combine<CM,FillAware>(rhs(),lhs(),alpha,beta);
     else
-      if constexpr (N==0)
-        combine<CM>(rhs(),lhs(),alpha,beta);
-      else
-        combine<CM>(rhs(i),lhs(i),alpha,beta);
+      combine<CM,FillAware>(rhs(i),lhs(i),alpha,beta);
   }
 
   KOKKOS_INLINE_FUNCTION
   void operator() (int i, int j) const {
-    if constexpr (use_fill)
-      fill_aware_combine<CM>(rhs(i,j),lhs(i,j),fill_val,alpha,beta);
-    else
-      combine<CM>(rhs(i,j),lhs(i,j),alpha,beta);
+    combine<CM,FillAware>(rhs(i,j),lhs(i,j),alpha,beta);
   }
 
   KOKKOS_INLINE_FUNCTION
   void operator() (int i, int j, int k) const {
-    if constexpr (use_fill)
-      fill_aware_combine<CM>(rhs(i,j,k),lhs(i,j,k),fill_val,alpha,beta);
-    else
-      combine<CM>(rhs(i,j,k),lhs(i,j,k),alpha,beta);
+    combine<CM,FillAware>(rhs(i,j,k),lhs(i,j,k),alpha,beta);
   }
 
   KOKKOS_INLINE_FUNCTION
   void operator() (int i, int j, int k, int l) const {
-    if constexpr (use_fill)
-      fill_aware_combine<CM>(rhs(i,j,k,l),lhs(i,j,k,l),fill_val,alpha,beta);
-    else
-      combine<CM>(rhs(i,j,k,l),lhs(i,j,k,l),alpha,beta);
+    combine<CM,FillAware>(rhs(i,j,k,l),lhs(i,j,k,l),alpha,beta);
   }
 
   KOKKOS_INLINE_FUNCTION
   void operator() (int i, int j, int k, int l, int m) const {
-    if constexpr (use_fill)
-      fill_aware_combine<CM>(rhs(i,j,k,l,m),lhs(i,j,k,l,m),fill_val,alpha,beta);
-    else
-      combine<CM>(rhs(i,j,k,l,m),lhs(i,j,k,l,m),alpha,beta);
+    combine<CM,FillAware>(rhs(i,j,k,l,m),lhs(i,j,k,l,m),alpha,beta);
   }
 
   KOKKOS_INLINE_FUNCTION
   void operator() (int i, int j, int k, int l, int m, int n) const {
-    if constexpr (use_fill)
-      fill_aware_combine<CM>(rhs(i,j,k,l,m,n),lhs(i,j,k,l,m,n),fill_val,alpha,beta);
-    else
-      combine<CM>(rhs(i,j,k,l,m,n),lhs(i,j,k,l,m,n),alpha,beta);
+    combine<CM,FillAware>(rhs(i,j,k,l,m,n),lhs(i,j,k,l,m,n),alpha,beta);
   }
 
   ST alpha;
   ST beta;
   LhsView lhs;
   RhsView rhs;
-  typename LhsView::traits::value_type fill_val;
 };
 
-template<CombineMode CM, bool use_fill, typename LhsView, typename RhsView, typename ST>
+template<CombineMode CM, bool FillAware, typename LhsView, typename RhsView, typename ST>
 void
 cvh (LhsView lhs, RhsView rhs,
-     ST alpha, ST beta, typename RhsView::traits::value_type fill_val,
+     ST alpha, ST beta,
      const std::vector<int>& dims)
 {
-  CombineViewsHelper <CM, use_fill, LhsView, RhsView,  ST> helper;
+  CombineViewsHelper <CM, FillAware, LhsView, RhsView,  ST> helper;
   helper.lhs = lhs;
   helper.rhs = rhs;
   helper.alpha = alpha;
   helper.beta = beta;
-  helper.fill_val = fill_val;
   helper.run(dims);
 }
 

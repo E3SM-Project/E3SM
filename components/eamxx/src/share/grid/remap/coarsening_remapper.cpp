@@ -96,18 +96,13 @@ registration_ends_impl ()
   for (int i=0; i<m_num_fields; ++i) {
     const auto& src = m_src_fields[i];
           auto& tgt = m_tgt_fields[i];
-    if (not src.get_header().has_extra_data("mask_data"))
+    if (not src.get_header().has_extra_data("mask_field"))
       continue;
 
-    // First, check that we also have the mask value, to be used if mask_data is too small
-    EKAT_REQUIRE_MSG (src.get_header().has_extra_data("mask_value"),
-        "Error! Field " + src.name() + " stores a mask field but not a mask value.\n");
-
-    const auto& src_mask = src.get_header().get_extra_data<Field>("mask_data");
-    const auto& src_mask_val = src.get_header().get_extra_data<Real>("mask_value");
+    const auto& src_mask = src.get_header().get_extra_data<Field>("mask_field");
 
     // Make sure fields representing masks are not themselves meant to be masked.
-    EKAT_REQUIRE_MSG(not src_mask.get_header().has_extra_data("mask_data"),
+    EKAT_REQUIRE_MSG(not src_mask.get_header().has_extra_data("mask_field"),
         "Error! A mask field cannot be itself masked.\n"
         "  - field name: " + src.name() + "\n"
         "  - mask field name: " + src_mask.name() + "\n");
@@ -127,20 +122,6 @@ registration_ends_impl ()
         "  - field layout: " + f_lt.to_string() + "\n"
         "  - mask layout: " + m_lt.to_string() + "\n");
 
-    // If not there, set mask value in the tgt field too
-    if (tgt.get_header().has_extra_data("mask_value")) {
-      const auto& tgt_mask_val = tgt.get_header().get_extra_data<Real>("mask_value");
-
-      EKAT_REQUIRE_MSG (tgt_mask_val==src_mask_val,
-          "Error! Target field stores a mask data different from the src field.\n"
-          "  - src field name: " + src.name() + "\n"
-          "  - tgt field name: " + tgt.name() + "\n"
-          "  - src mask value: " << src_mask_val << "\n"
-          "  - tgt mask value: " << tgt_mask_val << "\n");
-    } else {
-      tgt.get_header().set_extra_data("mask_value",src_mask_val);
-    }
-
     // If it's the first time we find this mask, store it, so we can register later
     const auto& src_mask_fid = src_mask.get_header().get_identifier();
     int mask_idx = get_mask_idx(src_mask_fid);
@@ -153,7 +134,7 @@ registration_ends_impl ()
       masks.push_back(std::make_pair(src_mask,tgt_mask));
       mask_idx = masks.size()-1;
     }
-    tgt.get_header().set_extra_data("mask_data",masks[mask_idx].second);
+    tgt.get_header().set_extra_data("mask_field",masks[mask_idx].second);
   }
 
   // Add all masks to the fields to remap
@@ -196,10 +177,10 @@ void CoarseningRemapper::remap_fwd_impl ()
     const auto& f_src = m_src_fields[i];
     const auto& f_ov  = m_ov_fields[i];
 
-    const bool masked = m_track_mask and f_src.get_header().has_extra_data("mask_data");
+    const bool masked = m_track_mask and f_src.get_header().has_extra_data("mask_field");
     if (masked) {
       // Pass the mask to the local_mat_vec routine
-      const auto& mask = f_src.get_header().get_extra_data<Field>("mask_data");
+      const auto& mask = f_src.get_header().get_extra_data<Field>("mask_field");
 
       // If possible, dispatch kernel with SCREAM_PACK_SIZE
       if (can_pack_field(f_src) and can_pack_field(f_ov) and can_pack_field(mask)) {
@@ -235,9 +216,9 @@ void CoarseningRemapper::remap_fwd_impl ()
   if (m_track_mask) {
     for (int i=0; i<m_num_fields; ++i) {
       const auto& f_tgt = m_tgt_fields[i];
-      if (f_tgt.get_header().has_extra_data("mask_data")) {
+      if (f_tgt.get_header().has_extra_data("mask_field")) {
         // Then this field did use a mask
-        const auto& mask = f_tgt.get_header().get_extra_data<Field>("mask_data");
+        const auto& mask = f_tgt.get_header().get_extra_data<Field>("mask_field");
         if (can_pack_field(f_tgt) and can_pack_field(mask)) {
           rescale_masked_fields<SCREAM_PACK_SIZE>(f_tgt,mask);
         } else {
@@ -258,15 +239,11 @@ rescale_masked_fields (const Field& x, const Field& mask) const
   using Pack        = ekat::Pack<Real,PackSize>;
   using PackInfo    = ekat::PackInfo<PackSize>;
 
+  constexpr auto fill_val = constants::fill_value<Real>;
+
   const auto& layout = x.get_header().get_identifier().get_layout();
   const int rank = layout.rank();
   const int ncols = m_tgt_grid->get_num_local_dofs();
-  Real mask_val = std::numeric_limits<float>::max()/10.0;
-  if (x.get_header().has_extra_data("mask_value")) {
-    mask_val = x.get_header().get_extra_data<Real>("mask_value");
-  } else {
-    EKAT_ERROR_MSG ("ERROR! Field " + x.name() + " is masked, but stores no mask_value extra data.\n");
-  }
   const Real mask_threshold = std::numeric_limits<Real>::epsilon();  // TODO: Should we not hardcode the threshold for simply masking out the column.
 
   switch (rank) {
@@ -282,7 +259,7 @@ rescale_masked_fields (const Field& x, const Field& mask) const
         if (m_view(icol)>mask_threshold) {
           x_view(icol) /= m_view(icol);
         } else {
-          x_view(icol) = mask_val;
+          x_view(icol) = fill_val;
         }
       });
       break;
@@ -322,7 +299,7 @@ rescale_masked_fields (const Field& x, const Field& mask) const
             if (masked.any()) {
               x_sub(j).set(masked,x_sub(j)/m_sub(j));
             }
-            x_sub(j).set(!masked,mask_val);
+            x_sub(j).set(!masked,fill_val);
           });
         }
       });
@@ -370,7 +347,7 @@ rescale_masked_fields (const Field& x, const Field& mask) const
             if (masked.any()) {
               x_sub(k).set(masked,x_sub(k)/m_sub(k));
             }
-            x_sub(k).set(!masked,mask_val);
+            x_sub(k).set(!masked,fill_val);
           });
         }
       });
@@ -421,7 +398,7 @@ rescale_masked_fields (const Field& x, const Field& mask) const
             if (masked.any()) {
               x_sub(l).set(masked,x_sub(l)/m_sub(l));
             }
-            x_sub(l).set(!masked,mask_val);
+            x_sub(l).set(!masked,fill_val);
           });
         }
       });

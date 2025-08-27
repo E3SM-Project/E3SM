@@ -37,8 +37,6 @@ protected:
 
   Real                m_pressure_level;
   int                 m_num_levs;
-  Real                m_mask_val;
-
 }; // class FieldAtPressureLevel
 
 } //namespace scream

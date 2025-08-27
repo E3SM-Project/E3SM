@@ -85,15 +85,6 @@ set_extrapolation_type (const ExtrapType etype, const TopBot where)
 }
 
 void VerticalRemapper::
-set_mask_value (const Real mask_val)
-{
-  EKAT_REQUIRE_MSG (not Kokkos::isnan(mask_val),
-      "[VerticalRemapper::set_mask_value] Error! Input mask value must be a valid number.\n");
-
-  m_mask_val = mask_val;
-}
-
-void VerticalRemapper::
 set_source_pressure (const Field& p, const ProfileType ptype)
 {
   set_pressure (p, "source", ptype);
@@ -169,8 +160,7 @@ registration_ends_impl ()
     const auto& src = m_src_fields[i];
           auto& tgt = m_tgt_fields[i];
 
-    // Clone src layout, since we may strip dims later for mask creation
-    auto src_layout = src.get_header().get_identifier().get_layout().clone();
+    const auto& src_layout = src.get_header().get_identifier().get_layout().clone();
 
     if (src_layout.has_tag(LEV) or src_layout.has_tag(ILEV)) {
       // Determine if this field can be handled with packs, and whether it's at midpoints
@@ -194,69 +184,47 @@ registration_ends_impl ()
         // NOTE: for now we assume that masking is determined only by the COL,LEV location in space
         //       and that fields with multiple components will have the same masking for each component
         //       at a specific COL,LEV
-        src_layout.strip_dims({CMP});
+
+        auto src_layout_no_cmp = src_layout.clone();
+        src_layout_no_cmp.strip_dims({CMP});
+        auto tgt_layout = create_tgt_layout(src_layout_no_cmp);
 
         // I this mask has already been created, retrieve it, otherwise create it
-        const auto mask_name = m_tgt_grid->name() + "_" + ekat::join(src_layout.names(),"_") + "_mask";
-        Field tgt_mask;
-        if (m_field2type.count(mask_name)==0) {
+        // CAVEAT: the tgt layout ALWAYS has LEV as vertical dim tag. But we NEED different masks for
+        // src fields defined at LEV and ILEV. So use src_layout_no_cmp to craft the mask name
+        const auto mask_name = m_tgt_grid->name() + "_" + ekat::join(src_layout_no_cmp.names(),"_") + "_mask";
+        auto& mask = m_masks[mask_name];
+        if (not mask.is_allocated()) {
           auto nondim = ekat::units::Units::nondimensional();
           // Create this src/tgt mask fields, and assign them to these src/tgt fields extra data
 
-          FieldIdentifier src_mask_fid (mask_name, src_layout, nondim, m_src_grid->name() );
-          FieldIdentifier tgt_mask_fid = create_tgt_fid(src_mask_fid);
-
-          Field src_mask (src_mask_fid);
-          src_mask.allocate_view();
-
-          tgt_mask  = Field (tgt_mask_fid);
-          tgt_mask.allocate_view();
-
-          // Initialize the src mask values to 1.0
-          src_mask.deep_copy(1.0);
-
-          m_src_masks.push_back(src_mask);
-          m_tgt_masks.push_back(tgt_mask);
-
-          auto& mt = m_field2type[src_mask_fid.name()];
-          mt.packed = false;
-          mt.midpoints = src_layout.has_tag(LEV);
-        } else {
-          for (size_t i=0; i<m_tgt_masks.size(); ++i) {
-            if (m_tgt_masks[i].name()==mask_name) {
-              tgt_mask = m_tgt_masks[i];
-              break;
-            }
-          }
+          FieldIdentifier mask_fid (mask_name, tgt_layout, nondim, m_tgt_grid->name() );
+          mask  = Field (mask_fid);
+          mask.allocate_view();
         }
 
-        EKAT_REQUIRE_MSG(not tgt.get_header().has_extra_data("mask_data"),
+        EKAT_REQUIRE_MSG(not tgt.get_header().has_extra_data("mask_field"),
             "[VerticalRemapper::registration_ends_impl] Error! Target field already has mask data assigned.\n"
-            " - tgt field name: " + tgt.name() + "\n");
-        EKAT_REQUIRE_MSG(not tgt.get_header().has_extra_data("mask_value"),
-            "[VerticalRemapper::registration_ends_impl] Error! Target field already has mask value assigned.\n"
             " - tgt field name: " + tgt.name() + "\n");
 
-        tgt.get_header().set_extra_data("mask_data",tgt_mask);
-        tgt.get_header().set_extra_data("mask_value",m_mask_val);
+        tgt.get_header().set_extra_data("mask_field",mask);
+
+        // Since we do mask (at top and/or bot), the tgt field MAY be contain fill_value entries
+        tgt.get_header().set_may_be_filled(true);
       }
     } else {
-      // If a field does not have LEV or ILEV it may still have mask tracking assigned from somewhere else.
+      // If a field does not have LEV or ILEV it may still have fill_value tracking assigned from somewhere else.
       // For instance, this could be a 2d field computed by FieldAtPressureLevel diagnostic.
-      // In those cases we want to copy that mask tracking to the target field.
-      if (src.get_header().has_extra_data("mask_data")) {
-        EKAT_REQUIRE_MSG(not tgt.get_header().has_extra_data("mask_data"),
+      // In those cases we want to copy that fill_value tracking to the target field.
+      if (src.get_header().has_extra_data("mask_field")) {
+        EKAT_REQUIRE_MSG(not tgt.get_header().has_extra_data("mask_field"),
             "[VerticalRemapper::registration_ends_impl] Error! Target field already has mask data assigned.\n"
             " - tgt field name: " + tgt.name() + "\n");
-        auto src_mask = src.get_header().get_extra_data<Field>("mask_data");
-        tgt.get_header().set_extra_data("mask_data",src_mask);
+        auto src_mask = src.get_header().get_extra_data<Field>("mask_field");
+        tgt.get_header().set_extra_data("mask_field",src_mask);
       }
-      if (src.get_header().has_extra_data("mask_value")) {
-        EKAT_REQUIRE_MSG(not tgt.get_header().has_extra_data("mask_value"),
-            "[VerticalRemapper::registration_ends_impl] Error! Target field already has mask value assigned.\n"
-            " - tgt field name: " + tgt.name() + "\n");
-        auto src_mask_val = src.get_header().get_extra_data<Real>("mask_value");
-        tgt.get_header().set_extra_data("mask_value",src_mask_val);
+      if (src.get_header().may_be_filled()) {
+        tgt.get_header().set_may_be_filled(true);
       }
     }
   }
@@ -397,6 +365,8 @@ create_layout (const FieldLayout& from_layout,
 
 void VerticalRemapper::remap_fwd_impl ()
 {
+  using namespace ShortFieldTagsNames;
+
   // 1. Setup any interp object that was created (if nullptr, no fields need it)
   if (m_lin_interp_mid_packed) {
     setup_lin_interp(*m_lin_interp_mid_packed,m_src_pmid,m_tgt_pmid);
@@ -411,9 +381,12 @@ void VerticalRemapper::remap_fwd_impl ()
     setup_lin_interp(*m_lin_interp_int_scalar,m_src_pint,m_tgt_pint);
   }
 
-  using namespace ShortFieldTagsNames;
+  // 2. Init all masks fields (if any) to 1 (signaling no masked entries)
+  for (auto& [name, mask] : m_masks) {
+    mask.deep_copy(1);
+  }
 
-  // 2. Interpolate the fields
+  // 3. Interpolate the fields
   for (int i=0; i<m_num_fields; ++i) {
     const auto& f_src    = m_src_fields[i];
           auto& f_tgt    = m_tgt_fields[i];
@@ -427,51 +400,28 @@ void VerticalRemapper::remap_fwd_impl ()
         } else {
           apply_vertical_interpolation(*m_lin_interp_mid_scalar,f_src,f_tgt,m_src_pmid,m_tgt_pmid);
         }
-        extrapolate(f_src,f_tgt,m_src_pmid,m_tgt_pmid,m_mask_val);
+        extrapolate(f_src,f_tgt,m_src_pmid,m_tgt_pmid);
       } else {
         if (type.packed) {
           apply_vertical_interpolation(*m_lin_interp_int_packed,f_src,f_tgt,m_src_pint,m_tgt_pint);
         } else {
           apply_vertical_interpolation(*m_lin_interp_int_scalar,f_src,f_tgt,m_src_pint,m_tgt_pint);
         }
-        extrapolate(f_src,f_tgt,m_src_pint,m_tgt_pint,m_mask_val);
+        extrapolate(f_src,f_tgt,m_src_pint,m_tgt_pint);
       }
     } else {
       // There is nothing to do, this field does not need vertical interpolation,
       // so just copy it over.  Note, if this field has its own mask data make
       // sure that is copied too.
       f_tgt.deep_copy(f_src);
-      if (f_tgt.get_header().has_extra_data("mask_data")) {
-        auto f_tgt_mask = f_tgt.get_header().get_extra_data<Field>("mask_data");
-        auto f_src_mask = f_src.get_header().get_extra_data<Field>("mask_data");
+      if (f_tgt.get_header().has_extra_data("mask_field")) {
+        auto f_tgt_mask = f_tgt.get_header().get_extra_data<Field>("mask_field");
+        auto f_src_mask = f_src.get_header().get_extra_data<Field>("mask_field");
         f_tgt_mask.deep_copy(f_src_mask);
       }
     }
   }
 
-  // 3. Interpolate the mask fields
-  for (unsigned i=0; i<m_tgt_masks.size(); ++i) {
-          auto& f_src = m_src_masks[i];
-          auto& f_tgt = m_tgt_masks[i];
-    const auto& type = m_field2type.at(f_src.name());
-
-    // Dispatch interpolation to the proper lin interp object
-    if (type.midpoints) {
-      if (type.packed) {
-        apply_vertical_interpolation(*m_lin_interp_mid_packed,f_src,f_tgt,m_src_pmid,m_tgt_pmid);
-      } else {
-        apply_vertical_interpolation(*m_lin_interp_mid_scalar,f_src,f_tgt,m_src_pmid,m_tgt_pmid);
-      }
-      extrapolate(f_src,f_tgt,m_src_pmid,m_tgt_pmid,0);
-    } else {
-      if (type.packed) {
-        apply_vertical_interpolation(*m_lin_interp_int_packed,f_src,f_tgt,m_src_pint,m_tgt_pint);
-      } else {
-        apply_vertical_interpolation(*m_lin_interp_int_scalar,f_src,f_tgt,m_src_pint,m_tgt_pint);
-      }
-      extrapolate(f_src,f_tgt,m_src_pint,m_tgt_pint,0);
-    }
-  }
 }
 
 template<int Packsize>
@@ -621,13 +571,14 @@ void VerticalRemapper::
 extrapolate (const Field& f_src,
              const Field& f_tgt,
              const Field& p_src,
-             const Field& p_tgt,
-             const Real mask_val) const
+             const Field& p_tgt) const
 {
   using TPF = ekat::TeamPolicyFactory<DefaultDevice::execution_space>;
 
   using view2d = typename KokkosTypes<DefaultDevice>::view<const Real**>;
   using view1d = typename KokkosTypes<DefaultDevice>::view<const Real*>;
+
+  constexpr auto fill_val = constants::fill_value<Real>;
 
   auto src1d = p_src.rank()==1;
   auto tgt1d = p_tgt.rank()==1;
@@ -654,6 +605,12 @@ extrapolate (const Field& f_src,
   auto etop = m_etype_top;
   auto ebot = m_etype_bot;
   auto mid = nlevs_tgt / 2;
+  auto do_mask = etop==Mask or ebot==Mask;
+  decltype(f_tgt.get_view<Real**>()) mask_v;
+  if (do_mask) {
+    mask_v = f_tgt.get_header().get_extra_data<Field>("mask_field").get_view<Real**>();
+  }
+
   switch(f_src.rank()) {
     case 2:
     {
@@ -686,7 +643,8 @@ extrapolate (const Field& f_src,
               if (ebot==P0) {
                 y_tgt[ilev] = y_src[nlevs_src-1];
               } else {
-                y_tgt[ilev] = mask_val;
+                y_tgt[ilev] = fill_val;
+                mask_v(icol,ilev) = 0;
               }
             }
           } else {
@@ -695,7 +653,8 @@ extrapolate (const Field& f_src,
               if (etop==P0) {
                 y_tgt[ilev] = y_src[0];
               } else {
-                y_tgt[ilev] = mask_val;
+                y_tgt[ilev] = fill_val;
+                mask_v(icol,ilev) = 0;
               }
             }
           }
@@ -737,7 +696,8 @@ extrapolate (const Field& f_src,
               if (ebot==P0) {
                 y_tgt[ilev] = y_src[nlevs_src-1];
               } else {
-                y_tgt[ilev] = mask_val;
+                y_tgt[ilev] = fill_val;
+                mask_v(icol,ilev) = 0;
               }
             }
           } else {
@@ -746,7 +706,8 @@ extrapolate (const Field& f_src,
               if (etop==P0) {
                 y_tgt[ilev] = y_src[0];
               } else {
-                y_tgt[ilev] = mask_val;
+                y_tgt[ilev] = fill_val;
+                mask_v(icol,ilev) = 0;
               }
             }
           }
