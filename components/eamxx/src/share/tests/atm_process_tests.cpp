@@ -95,72 +95,6 @@ protected:
 
 };
 
-class DiagFail : public DummyDiag
-{
-public:
-  DiagFail (const ekat::Comm& comm, const ekat::ParameterList& params)
-    : DummyDiag(comm,params)
-  {
-    // Nothing to do here
-  }
-
-  std::string name() const { return "Failure Dianostic"; }
-
-  void set_grids (const std::shared_ptr<const GridsManager> gm) {
-    using namespace ekat::units;
-
-    const auto grid = gm->get_grid(m_grid_name);
-    const auto lt = grid->get_2d_scalar_layout ();
-
-    add_field<Required>("Field A",lt,K,m_grid_name);
-    add_field<Computed>("Field B",lt,K,m_grid_name);
-
-    // We have to initialize the m_diagnostic_output:
-    FieldIdentifier fid (name(), lt, K, m_grid_name);
-    m_diagnostic_output = Field(fid);
-    m_diagnostic_output.allocate_view();
-  }
-protected:
-  void compute_diagnostic_impl () {
-    // Do nothing, this diagnostic should fail.
-  }
-};
-
-class DiagIdentity : public DummyDiag
-{
-public:
-  DiagIdentity (const ekat::Comm& comm, const ekat::ParameterList& params)
-    : DummyDiag(comm,params)
-  {
-    // Nothing to do here
-  }
-
-  std::string name() const { return "Identity Dianostic"; }
-
-  void set_grids (const std::shared_ptr<const GridsManager> gm) {
-    using namespace ekat::units;
-
-    const auto grid = gm->get_grid(m_grid_name);
-    const auto lt = grid->get_2d_scalar_layout ();
-
-    add_field<Required>("Field A",lt,K,m_grid_name);
-
-    // We have to initialize the m_diagnostic_output:
-    FieldIdentifier fid (name(), lt, K, m_grid_name);
-    m_diagnostic_output = Field(fid);
-    m_diagnostic_output.allocate_view();
-  }
-protected:
-  void compute_diagnostic_impl () {
-    auto f = get_field_in("Field A", m_grid_name);
-    auto v_A = f.get_view<const Real*,Host>();
-    auto v_me = m_diagnostic_output.get_view<Real*,Host>();
-    for (size_t i=0; i<v_me.size(); ++i) {
-      v_me[i] = v_A[i];
-    }
-  }
-};
-
 class DiagSum : public DummyDiag
 {
 public:
@@ -191,12 +125,8 @@ protected:
   void compute_diagnostic_impl () {
     auto f_A = get_field_in("Field A", m_grid_name);
     auto f_B = get_field_in("Field B", m_grid_name);
-    auto v_A = f_A.get_view<const Real*,Host>();
-    auto v_B = f_B.get_view<const Real*,Host>();
-    auto v_me = m_diagnostic_output.get_view<Real*,Host>();
-    for (size_t i=0; i<v_me.size(); ++i) {
-      v_me[i] = v_A[i]+v_B[i];
-    }
+    m_diagnostic_output.deep_copy(f_A);
+    m_diagnostic_output.update(f_B,1,1);
   }
 };
 // =============================== Processes ========================== //
@@ -347,7 +277,7 @@ TEST_CASE("process_factory", "") {
   factory.register_product("Bar",&create_atmosphere_process<Bar>);
   factory.register_product("Baz",&create_atmosphere_process<Baz>);
   factory.register_product("grouP",&create_atmosphere_process<AtmosphereProcessGroup>);
-  factory.register_product("DiagIdentity",&create_atmosphere_process<DiagIdentity>);
+  factory.register_product("DiagSum",&create_atmosphere_process<DiagSum>);
 
   // Load ad parameter list
   std::string fname = "atm_process_tests_named_procs.yaml";
@@ -595,67 +525,39 @@ TEST_CASE ("diagnostics") {
   // Create a grids manager
   auto gm = create_gm(comm);
 
-  // Create the identity diagnostic
-  ekat::ParameterList params_identity("DiagIdentity");
-  params_identity.set<std::string>("grid_name", "point_grid");
-  auto diag_identity = std::make_shared<DiagIdentity>(comm,params_identity);
-  diag_identity->set_grids(gm);
-
   // Create the sum diagnostic
   ekat::ParameterList params_sum("DiagSum");
   params_sum.set<std::string>("grid_name", "point_grid");
   auto diag_sum = std::make_shared<DiagSum>(comm,params_sum);
   diag_sum->set_grids(gm);
 
-  // Create the fail diagnostic
-  ekat::ParameterList params_fail("DiagFail");
-  params_fail.set<std::string>("grid_name", "point_grid");
-  auto diag_fail = std::make_shared<DiagFail>(comm,params_fail);
-  diag_fail->set_grids(gm);
-
   std::map<std::string,Field> input_fields;
   for (const auto& req : diag_sum->get_required_field_requests()) {
     Field f(req.fid);
     f.allocate_view();
-    const auto name = f.name();
     f.get_header().get_tracking().update_time_stamp(t0);
-    diag_sum->set_required_field(f.get_const());
-    REQUIRE_THROWS(diag_fail->set_computed_field(f));
-    if (name == "Field A") {
-      diag_identity->set_required_field(f.get_const());
-      f.deep_copy<Host>(1.0);
-    } else {
-      f.deep_copy<Host>(2.0);
-    } 
-    input_fields.emplace(name,f);
+    input_fields[f.name()] = f;
   }
-  auto f_A        = input_fields["Field A"];
-  auto f_B        = input_fields["Field B"];
-  auto v_A        = f_A.get_view<Real*,Host>();
-  auto v_B        = f_B.get_view<Real*,Host>();
+  auto f_A = input_fields["Field A"];
+  auto f_B = input_fields["Field B"];
+  f_A.deep_copy(1.0);
+  f_B.deep_copy(1.0);
 
-  diag_identity->initialize(t0,RunType::Initial);
+  diag_sum->set_required_field(f_A.get_const());
+  diag_sum->set_required_field(f_B.get_const());
+  // diag fields are created INSIDE diags, not set from outside
+  REQUIRE_THROWS(diag_sum->set_computed_field(f_A));
+
   diag_sum->initialize(t0,RunType::Initial);
 
-  // Run the diagnostics
-  diag_identity->compute_diagnostic();
+  // Run the diagnostic
   diag_sum->compute_diagnostic();
 
   // Get diagnostics outputs
-  const auto& f_identity = diag_identity->get_diagnostic();
   const auto& f_sum      = diag_sum->get_diagnostic();
 
-  // For the identity diagnostic check that the fields match
-  auto v_identity = f_identity.get_view<const Real*,Host>();
-  auto v_sum      = f_sum.get_view<const Real*,Host>();
-  REQUIRE (v_A.size()==v_identity.size());
-  REQUIRE (v_A.size()==v_sum.size());
-  REQUIRE (v_B.size()==v_sum.size());
-  for (size_t i=0; i<v_A.size(); ++i) {
-    REQUIRE (v_identity[i]==v_A[i]);
-    REQUIRE (v_sum[i]==v_A[i]+v_B[i]);
-    REQUIRE (v_sum[i]==3);
-  }
+  f_B.update(f_A,1,1);
+  REQUIRE (views_are_equal(f_B,f_sum));
 }
 
 } // empty namespace
