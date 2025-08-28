@@ -4967,7 +4967,7 @@
 	</var_struct>
 
 	<!-- fluxes from icebergs to ocean -->
-	<var_struct name="berg_fluxes" time_levs="1" packages="pkgBergs">
+	<var_struct name="berg_fluxes" time_levs="1">
 		<var name="bergFreshwaterFlux"
 		     type="real"
 		     dimensions="nCells Time"
