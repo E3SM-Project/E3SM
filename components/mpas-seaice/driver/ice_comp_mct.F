@@ -874,7 +874,7 @@ contains
 
     call t_stopf ('mpassi_mct_init')
 
-    call seq_infodata_PutData( infodata, ice_prognostic=.true.)
+    call seq_infodata_PutData( infodata, ice_prognostic=.true., iceberg_prognostic=.true.)
 
 !-----------------------------------------------------------------------
 !
