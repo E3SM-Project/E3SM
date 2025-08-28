@@ -4748,6 +4748,35 @@
     </values>
   </entry>
 
+  <entry id="rof2ice_rmapname"    modify_via_xml="ROF2ICE_RMAPNAME">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      runoff to ice mapping file
+    </desc>
+    <values>
+      <value>$ROF2ICE_RMAPNAME</value>
+    </values>
+  </entry>
+
+  <entry id="rof2ice_rmaptype"    modify_via_xml="ROF2ICE_RMAPTYPE">
+    <type>char</type>
+    <category>mapping</category>
+    <group>seq_maps</group>
+    <desc>
+      The type of mapping desired, either "source" or "destination" mapping.
+      X is associated with rearrangement of the source grid to the
+      destination grid and then local mapping.  Y is associated with mapping
+      on the source grid and then rearrangement and sum to the destination
+      grid.
+    </desc>
+    <values>
+      <value>$ROF2ICE_RMAPTYPE</value>
+      <value bfbflag="on">X</value>
+    </values>
+  </entry>
 
   <entry id="lnd2glc_fmapname"    modify_via_xml="LND2GLC_FMAPNAME">
     <type>char</type>
