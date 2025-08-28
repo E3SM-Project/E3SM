@@ -101,11 +101,12 @@ def buildlib(bldroot, installpath, case):
         expect(os.path.exists(ekat_cmake_mach_file),
                f"No KOKKOS_OPTIONS provided and no ekat machine file exists for {mach}")
         kokkos_options = f"-C {ekat_cmake_mach_file}"
-        # Turn off threading for non-threaded cases
-        if not case.get_build_threaded():
-            kokkos_options += " -DKokkos_ENABLE_OPENMP=Off"
     else:
         kokkos_options = kokkos_options_raw.split(":=")[-1].strip()
+
+    # Turn off threading for non-threaded cases
+    if not case.get_build_threaded():
+        kokkos_options += " -DKokkos_ENABLE_OPENMP=Off"
 
     # We will take care of setting CMAKE_CXX_COMPILER unless user has explictly
     # set one in their KOKKOS_OPTIONS.
@@ -134,7 +135,9 @@ def buildlib(bldroot, installpath, case):
         ekat_cmake_options += " -DEKAT_ENABLE_MPI=Off"
     if debug:
         ekat_cmake_options += " -DCMAKE_BUILD_TYPE=Debug"
-        # More? Turn on kokkos debugging?
+        # Kokkos bounds checking is too expensive to always turn on
+        if "E3SM_ENABLE_KOKKOS_BOUNDS_CHECKING" in os.environ:
+            ekat_cmake_options += " -DKokkos_ENABLE_DEBUG_BOUNDS_CHECK=On"
 
     gen_makefile_cmd = f"cmake {kokkos_options} {cc} {cxx} -DCMAKE_CXX_STANDARD=17 {ekat_cmake_options} -DCMAKE_INSTALL_PREFIX={installpath} {ekat_dir}"
 
