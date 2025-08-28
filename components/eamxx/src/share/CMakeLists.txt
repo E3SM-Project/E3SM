@@ -47,72 +47,54 @@ set(SHARE_SRC
 
 # Append ETI sources (I didn't do it above for clarity of reading)
 list (APPEND SHARE_SRC
-  field/eti/field_eti_deep_copy_double_host.cpp
-  field/eti/field_eti_deep_copy_float_host.cpp
-  field/eti/field_eti_deep_copy_int_host.cpp
-  field/eti/field_eti_get_strided_view_double_host.cpp
-  field/eti/field_eti_get_strided_view_float_host.cpp
-  field/eti/field_eti_get_strided_view_int_host.cpp
-  field/eti/field_eti_get_view_double_host.cpp
-  field/eti/field_eti_get_view_float_host.cpp
-  field/eti/field_eti_get_view_int_host.cpp
-  field/eti/field_eti_update_double_host.cpp
-  field/eti/field_eti_update_float_host.cpp
-  field/eti/field_eti_update_impl_double_host.cpp
-  field/eti/field_eti_update_impl_fill_double_host.cpp
-  field/eti/field_eti_update_impl_fill_float_host.cpp
-  field/eti/field_eti_update_impl_fill_int_host.cpp
-  field/eti/field_eti_update_impl_float_host.cpp
-  field/eti/field_eti_update_impl_int_host.cpp
-  field/eti/field_eti_update_int_host.cpp
+  field/eti/field_eti_deep_copy_double_device.cpp
+  field/eti/field_eti_deep_copy_float_device.cpp
+  field/eti/field_eti_deep_copy_int_device.cpp
+  field/eti/field_eti_get_strided_view_double_device.cpp
+  field/eti/field_eti_get_strided_view_float_device.cpp
+  field/eti/field_eti_get_strided_view_int_device.cpp
+  field/eti/field_eti_get_view_double_device.cpp
+  field/eti/field_eti_get_view_float_device.cpp
+  field/eti/field_eti_get_view_int_device.cpp
+  field/eti/field_eti_update_double_device.cpp
+  field/eti/field_eti_update_float_device.cpp
+  field/eti/field_eti_update_impl_double_device.cpp
+  field/eti/field_eti_update_impl_fill_double_device.cpp
+  field/eti/field_eti_update_impl_fill_float_device.cpp
+  field/eti/field_eti_update_impl_fill_int_device.cpp
+  field/eti/field_eti_update_impl_float_device.cpp
+  field/eti/field_eti_update_impl_int_device.cpp
+  field/eti/field_eti_update_int_device.cpp
   field/eti/field_utils_eti_compute_mask_le_int.cpp
   field/eti/field_utils_eti_compute_mask_le_float.cpp
   field/eti/field_utils_eti_compute_mask_le_double.cpp
   field/eti/field_utils_eti_compute_mask_ne_int.cpp
   field/eti/field_utils_eti_compute_mask_ne_float.cpp
   field/eti/field_utils_eti_compute_mask_ne_double.cpp
-  field/eti/field_eti_update_max_min_double_host.cpp
-  field/eti/field_eti_update_max_min_float_host.cpp
-  field/eti/field_eti_update_max_min_impl_double_host.cpp
-  field/eti/field_eti_update_max_min_impl_fill_double_host.cpp
-  field/eti/field_eti_update_max_min_impl_fill_float_host.cpp
-  field/eti/field_eti_update_max_min_impl_fill_int_host.cpp
-  field/eti/field_eti_update_max_min_impl_float_host.cpp
-  field/eti/field_eti_update_max_min_impl_int_host.cpp
-  field/eti/field_eti_update_max_min_int_host.cpp
+  field/eti/field_eti_update_max_min_double_device.cpp
+  field/eti/field_eti_update_max_min_float_device.cpp
+  field/eti/field_eti_update_max_min_impl_double_device.cpp
+  field/eti/field_eti_update_max_min_impl_fill_double_device.cpp
+  field/eti/field_eti_update_max_min_impl_fill_float_device.cpp
+  field/eti/field_eti_update_max_min_impl_fill_int_device.cpp
+  field/eti/field_eti_update_max_min_impl_float_device.cpp
+  field/eti/field_eti_update_max_min_impl_int_device.cpp
+  field/eti/field_eti_update_max_min_int_device.cpp
 )
 
 if (EAMXX_ENABLE_GPU)
   # The HostOrDevice::Device is different from HostOrDevice::Host,
   # so we need to ETI also these fcns for HostOrDevice::Host
+  # NOTE: we DON'T do ETI for the update/max/min utils, as they are
+  #       only used on device (at least for now). OTOH, the methods
+  #       to extract views are used in a few places
   list (APPEND SHARE_SRC
-    field/eti/field_eti_deep_copy_double_device.cpp
-    field/eti/field_eti_deep_copy_float_device.cpp
-    field/eti/field_eti_deep_copy_int_device.cpp
-    field/eti/field_eti_get_strided_view_double_device.cpp
-    field/eti/field_eti_get_strided_view_float_device.cpp
-    field/eti/field_eti_get_strided_view_int_device.cpp
-    field/eti/field_eti_get_view_double_device.cpp
-    field/eti/field_eti_get_view_float_device.cpp
-    field/eti/field_eti_get_view_int_device.cpp
-    field/eti/field_eti_update_double_device.cpp
-    field/eti/field_eti_update_float_device.cpp
-    field/eti/field_eti_update_impl_double_device.cpp
-    field/eti/field_eti_update_impl_fill_double_device.cpp
-    field/eti/field_eti_update_impl_fill_float_device.cpp
-    field/eti/field_eti_update_impl_fill_int_device.cpp
-    field/eti/field_eti_update_impl_float_device.cpp
-    field/eti/field_eti_update_impl_int_device.cpp
-    field/eti/field_eti_update_int_device.cpp
-    field/eti/field_eti_update_max_min_double_device.cpp
-    field/eti/field_eti_update_max_min_float_device.cpp
-    field/eti/field_eti_update_max_min_impl_double_device.cpp
-    field/eti/field_eti_update_max_min_impl_fill_double_device.cpp
-    field/eti/field_eti_update_max_min_impl_fill_float_device.cpp
-    field/eti/field_eti_update_max_min_impl_fill_int_device.cpp
-    field/eti/field_eti_update_max_min_impl_float_device.cpp
-    field/eti/field_eti_update_max_min_impl_int_device.cpp
-    field/eti/field_eti_update_max_min_int_device.cpp
+    field/eti/field_eti_get_strided_view_double_host.cpp
+    field/eti/field_eti_get_strided_view_float_host.cpp
+    field/eti/field_eti_get_strided_view_int_host.cpp
+    field/eti/field_eti_get_view_double_host.cpp
+    field/eti/field_eti_get_view_float_host.cpp
+    field/eti/field_eti_get_view_int_host.cpp
   )
 endif()
 

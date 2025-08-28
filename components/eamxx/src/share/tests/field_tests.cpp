@@ -6,6 +6,7 @@
 #include "share/field/field.hpp"
 #include "share/field/field_manager.hpp"
 #include "share/field/field_utils.hpp"
+#include "share/field/field_impl.hpp"
 #include "share/util/eamxx_setup_random_test.hpp"
 
 #include "share/grid/point_grid.hpp"

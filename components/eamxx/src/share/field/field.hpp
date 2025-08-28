@@ -473,11 +473,8 @@ extern template Field::get_strided_view_type<T******,S> Field::get_strided_view<
 
 #define EAMXX_FIELD_ETI_DECL_FOR_ONE_TYPE(T) \
 EAMXX_FIELD_ETI_DECL_UPDATE(Device,T);          \
-EAMXX_FIELD_ETI_DECL_UPDATE(Host,T);            \
 EAMXX_FIELD_ETI_DECL_UPDATE_MAX_MIN(Device,T);  \
-EAMXX_FIELD_ETI_DECL_UPDATE_MAX_MIN(Host,T);    \
 EAMXX_FIELD_ETI_DECL_DEEP_COPY(Device,T);       \
-EAMXX_FIELD_ETI_DECL_DEEP_COPY(Host,T);         \
 EAMXX_FIELD_ETI_DECL_GET_VIEW(Device,T);        \
 EAMXX_FIELD_ETI_DECL_GET_VIEW(Host,T);          \
 EAMXX_FIELD_ETI_DECL_GET_VIEW(Device,const T);  \
@@ -485,9 +482,7 @@ EAMXX_FIELD_ETI_DECL_GET_VIEW(Host,const T)
 
 #define EAMXX_FIELD_ETI_DECL_FOR_TWO_TYPES(T1,T2) \
 EAMXX_FIELD_ETI_DECL_UPDATE_IMPL(Device,T1,T2);           \
-EAMXX_FIELD_ETI_DECL_UPDATE_IMPL(Host,T1,T2);             \
 EAMXX_FIELD_ETI_DECL_UPDATE_MAX_MIN_IMPL(Device,T1,T2);   \
-EAMXX_FIELD_ETI_DECL_UPDATE_MAX_MIN_IMPL(Host,T1,T2)
 
 // TODO: should we ETI other scalar types too? E.g. Pack<Real,SCREAM_PACK_SIZE??
 //       Real is by far the most common, so it'd be nice to just to that. But

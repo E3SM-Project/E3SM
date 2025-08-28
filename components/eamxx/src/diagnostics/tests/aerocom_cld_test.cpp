@@ -2,6 +2,7 @@
 #include "diagnostics/aerocom_cld_util.hpp"
 #include "diagnostics/register_diagnostics.hpp"
 #include "share/field/field_utils.hpp"
+#include "share/field/field_impl.hpp"
 #include "share/grid/mesh_free_grids_manager.hpp"
 #include "share/util/eamxx_setup_random_test.hpp"
 
