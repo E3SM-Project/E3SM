@@ -71,20 +71,22 @@ endif()
 #                  Kokkos related settings                         #
 ####################################################################
 
+# Note: this only does anything for standalone eamxx. CIME cases will
+# use the sharedlib EKAT/kokkos
 if (Kokkos_ENABLE_CUDA)
   if (Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE)
     if (Kokkos_ENABLE_DEBUG_BOUNDS_CHECK)
       string (CONCAT msg
-          "Kokkos_ENALBE_CUDA_RELOCATABLE_DEVICE_CODE=ON, and Kokkos_ENALBE_DEBUG_BOUNDS_CHECK=ON.\n"
+          "Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE=ON, and Kokkos_ENABLE_DEBUG_BOUNDS_CHECK=ON.\n"
           "   -> Disabling bounds checks, to prevent internal compiler errors.")
       message(WARNING "${msg}")
-      set (Kokkos_ENABLE_DEBUG_BOUNDS_CHECK OFF CACHE BOOL "" FORCE)
+      set(Kokkos_ENABLE_DEBUG_BOUNDS_CHECK OFF CACHE BOOL "" FORCE)
     else()
       string (CONCAT msg
-          "Kokkos_ENALBE_CUDA_RELOCATABLE_DEVICE_CODE=ON.\n"
+          "Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE=ON.\n"
           "   -> Disabling bounds checks, to prevent internal compiler errors.")
       message(STATUS "${msg}")
-      set (Kokkos_ENABLE_DEBUG_BOUNDS_CHECK OFF CACHE BOOL "" FORCE)
+      set(Kokkos_ENABLE_DEBUG_BOUNDS_CHECK OFF CACHE BOOL "" FORCE)
     endif()
   endif()
 endif()
@@ -204,9 +206,6 @@ option(SCREAM_ENABLE_MAM "Whether to enable MAM aerosol support" ON)
 set(SCREAM_SMALL_KERNELS ${DEFAULT_SMALL_KERNELS} CACHE STRING "Use small, non-monolothic kokkos kernels for ALL components that support them")
 set(SCREAM_P3_SMALL_KERNELS ${SCREAM_SMALL_KERNELS} CACHE STRING "Use small, non-monolothic kokkos kernels for P3 only")
 set(SCREAM_SHOC_SMALL_KERNELS ${SCREAM_SMALL_KERNELS} CACHE STRING "Use small, non-monolothic kokkos kernels for SHOC only")
-if (NOT SCREAM_P3_SMALL_KERNELS AND NOT SCREAM_SHOC_SMALL_KERNELS)
-  set(EKAT_DISABLE_WORKSPACE_SHARING TRUE CACHE STRING "")
-endif()
 
 # Add RRTMGP settings. Note, we might consider also adding RRTMGP_EXPENSIVE_CHECKS
 # to turn on the RRTMGP internal checks here as well, via
