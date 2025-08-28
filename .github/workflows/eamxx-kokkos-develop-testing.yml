@@ -86,7 +86,7 @@ jobs:
         run: |
           cd externals/ekat/extern/kokkos
           if ! git remote | grep -q upstream; then
-            git remote add upstream git@github.com:kokkos/kokkos.git
+            git remote add upstream https://github.com/kokkos/kokkos.git
           fi
           git fetch upstream
           git checkout upstream/develop
@@ -133,7 +133,7 @@ jobs:
         run: |
           cd externals/ekat/extern/kokkos
           if ! git remote | grep -q upstream; then
-            git remote add upstream git@github.com:kokkos/kokkos.git
+            git remote add upstream https://github.com/kokkos/kokkos.git
           fi
           git fetch upstream
           git checkout upstream/develop
