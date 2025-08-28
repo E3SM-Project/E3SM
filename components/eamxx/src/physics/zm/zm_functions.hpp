@@ -2,11 +2,10 @@
 #define ZM_FUNCTIONS_HPP
 
 #include "physics/share/physics_constants.hpp"
-
 #include "share/core/eamxx_types.hpp"
 
-#include "ekat/ekat_pack_kokkos.hpp"
-#include "ekat/ekat_workspace.hpp"
+#include <ekat_pack_kokkos.hpp>
+#include <ekat_workspace.hpp>
 
 namespace scream {
 namespace zm {

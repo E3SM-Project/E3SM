@@ -18,16 +18,16 @@ namespace scream
 {
 
 /*------------------------------------------------------------------------------------------------*/
-// Constructor for the zm_deep_convection interface
-zm_deep_convection::zm_deep_convection(const ekat::Comm& comm,
-                                       const ekat::ParameterList& params)
+// Constructor for the ZMDeepConvection interface
+ZMDeepConvection::ZMDeepConvection( const ekat::Comm& comm,
+                                    const ekat::ParameterList& params)
  : AtmosphereProcess(comm,params)
 {
   // Anything that can be initialized without grid information can be initialized here.
 }
 
 /*------------------------------------------------------------------------------------------------*/
-void zm_deep_convection::
+void ZMDeepConvection::
 set_grids (const std::shared_ptr<const GridsManager> grids_manager)
 {
   using namespace ekat::units;
@@ -96,7 +96,7 @@ set_grids (const std::shared_ptr<const GridsManager> grids_manager)
 }
 
 /*------------------------------------------------------------------------------------------------*/
-void zm_deep_convection::initialize_impl (const RunType)
+void ZMDeepConvection::initialize_impl (const RunType)
 {
   // Set property checks for fields in this process
   add_invariant_check<FieldWithinIntervalCheck>(get_field_out("T_mid"),m_grid,100.0,500.0,false);
@@ -110,7 +110,7 @@ void zm_deep_convection::initialize_impl (const RunType)
 }
 
 /*------------------------------------------------------------------------------------------------*/
-void zm_deep_convection::run_impl (const double dt)
+void ZMDeepConvection::run_impl (const double dt)
 {
   constexpr int pack_size = Spack::n;
   const int nlevm_packs = ekat::npack<Spack>(m_nlev);
@@ -290,14 +290,14 @@ void zm_deep_convection::run_impl (const double dt)
 }
 
 /*------------------------------------------------------------------------------------------------*/
-void zm_deep_convection::finalize_impl ()
+void ZMDeepConvection::finalize_impl ()
 {
   // placeholder for final cleanup
 }
 
 /*------------------------------------------------------------------------------------------------*/
 
-size_t zm_deep_convection::requested_buffer_size_in_bytes() const
+size_t ZMDeepConvection::requested_buffer_size_in_bytes() const
 {
   const int nlevm_packs = ekat::npack<Spack>(m_nlev);
   const int nlevi_packs = ekat::npack<Spack>(m_nlev+1);
@@ -324,7 +324,7 @@ size_t zm_deep_convection::requested_buffer_size_in_bytes() const
 
 /*------------------------------------------------------------------------------------------------*/
 
-void zm_deep_convection::init_buffers(const ATMBufferManager &buffer_manager)
+void ZMDeepConvection::init_buffers(const ATMBufferManager &buffer_manager)
 {
   auto buffer_chk = ( buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes() );
   EKAT_REQUIRE_MSG(buffer_chk,"Error! Buffers size not sufficient.\n");
@@ -430,7 +430,7 @@ void zm_deep_convection::init_buffers(const ATMBufferManager &buffer_manager)
   Real* total_mem = reinterpret_cast<Real*>(spk_mem);
   size_t used_mem = (reinterpret_cast<Real*>(total_mem) - buffer_manager.get_memory())*sizeof(Real);
   auto mem_chk = ( used_mem == requested_buffer_size_in_bytes() );
-  EKAT_REQUIRE_MSG(mem_chk,"Error! Used memory != requested memory for zm_deep_convection.");
+  EKAT_REQUIRE_MSG(mem_chk,"Error! Used memory != requested memory for ZMDeepConvection.");
 }
 
 /*------------------------------------------------------------------------------------------------*/
