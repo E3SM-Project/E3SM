@@ -2671,7 +2671,7 @@ contains
    call mpas_dmpar_exch_halo_field(vAirVelocityField)
 
    if (.not. config_use_data_icebergs) then
-      call mpas_pool_get_subpool(domain % blocklist % structs, 'icebergFluxes', icebergFluxes)
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'berg_fluxes', icebergFluxes)
       call mpas_pool_get_field(icebergFluxes, 'bergFreshwaterFlux', bergFreshwaterFluxField)
       call mpas_pool_get_field(icebergFluxes, 'bergLatentHeatFlux', bergLatentHeatFluxField)
       call mpas_dmpar_exch_halo_field(bergFreshwaterFluxField)
