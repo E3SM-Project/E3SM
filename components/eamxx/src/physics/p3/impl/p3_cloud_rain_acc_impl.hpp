@@ -36,15 +36,25 @@ void Functions<S,D>
   const auto qr_and_qc_not_small = (qr_incld >= qsmall) && (qc_incld >= qsmall) && context;
   if(qr_and_qc_not_small.any()) {
     // Khroutdinov and Kogan (2000)
-    qc2qr_accret_tend.set(qr_and_qc_not_small,
+    if(use_KK) {
+      qc2qr_accret_tend.set(qr_and_qc_not_small,
                           sgs_var_coef * accretion_prefactor *
                               pow(qc_incld, accretion_qc_exponent) *
                               pow(qr_incld, accretion_qr_exponent));
-    nc_accret_tend.set(qr_and_qc_not_small,
+      nc_accret_tend.set(qr_and_qc_not_small,
                        qc2qr_accret_tend * nc_incld / qc_incld);
 
-    qc2qr_accret_tend.set(nc_accret_tend == 0 && context, 0);
-    nc_accret_tend.set(qc2qr_accret_tend == 0 && context, 0);
+      qc2qr_accret_tend.set(nc_accret_tend == 0 && context, 0);
+      nc_accret_tend.set(qc2qr_accret_tend == 0 && context, 0);}
+   else {
+       //Seifert and Beheng (2001)
+      dum   = 1._rtype-qc_incld/(qc_incld+qr_incld)
+      dum1  = (dum/(dum+5.e-4_rtype))**4
+      qc2qr_accret_tend.set(qr_and_qc_not_small,kr*rho*0.001_rtype*qc_incld*qr_incld*dum1)
+      nc_accret_tend.set(qr_and_qc_not_small,qc2qr_accret_tend*rho*0.001_rtype*(nc_incld*rho*1.e-6_rtype)/(qc_incld*rho*   
+             0.001_rtype)*1.e+6_rtype*inv_rho;
+      qc2qr_accret_tend.set(nc_accret_tend == 0 && context, 0);
+      nc_accret_tend.set(qc2qr_accret_tend == 0 && context, 0);} 
   }
 }
 
