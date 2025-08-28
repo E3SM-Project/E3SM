@@ -9,7 +9,7 @@ class FieldMask : public Field
 {
 public:
   FieldMask (const std::string& name, const FieldLayout& layout, const std::string& grid_name)
-   : Field(FieldIdentifier(name,layout,ekat::units::Units::nondimensional(),grid_name,DataType::BoolType))
+   : Field(FieldIdentifier(name,layout,ekat::units::Units::nondimensional(),grid_name,DataType::IntType))
   {
     // Nothing to do here
   }
@@ -19,8 +19,9 @@ public:
                            f.get_header().get_identifier().get_layout(),
                            ekat::units::Units::nondimensional(),
                            f.get_header().get_identifier().get_grid_name(),
-                           DataType::BoolType))
+                           DataType::IntType))
   {
+    // Nothing to do here
   }
 
   using exec_space = typename device_t::execution_space;
@@ -30,9 +31,11 @@ public:
                     Kokkos::Rank<M,Kokkos::Iterate::Right,Kokkos::Iterate::Right>
                   >;
 
-  template<LogicalOp op>
-  void update(const FieldMask& y bool negate_this)
+  template<LogicalOp OP>
+  void update(const FieldMask& x, bool negate_lhs, bool negate_rhs)
     const auto& dims = get_header().get_identifier().get_layout().dims();
+    int not_lhs = static_cast<int>(negate_lhs);
+    int not_rhs = static_cast<int>(negate_rhs);
     switch (rank()) {
       case 1:
       {
@@ -40,7 +43,11 @@ public:
         auto yv = get_view<const bool*,Device>();
         auto policy = Kokkos::RangePolicy<device_t>(0,dims[0]);
         auto lambda = KOKKOS_LAMBDA (const int i) {
-          combine_bools<Op>(xv(i),yv(i));
+          if constexpr (OP==LogicalOp::And) {
+            xv(i) = (xv(i) ^ not_lhs) & (yv(i) ^ notate_rhs);
+          } else {
+            xv(i) = (xv(i) ^ not_lhs) | (yv(i) ^ not_rhs);
+          }
         };
         Kokkos::parallel_for(policy,lambda);
       } break;
@@ -50,7 +57,11 @@ public:
         auto yv = get_view<const bool**,Device>();
         auto policy = MDRange<2>({0,0},{dims[0],dims[1]});
         auto lambda = KOKKOS_LAMBDA (const int i, const int j) {
-          combine_bools<Op>(xv(i,j),yv(i,j));
+          if constexpr (OP==LogicalOp::And) {
+            xv(i,j) = (xv(i,j) ^ not_lhs) & (yv(i,j) ^ notate_rhs);
+          } else {
+            xv(i,j) = (xv(i,j) ^ not_lhs) | (yv(i,j) ^ not_rhs);
+          }
         };
         Kokkos::parallel_for(policy,lambda);
       } break;
@@ -60,7 +71,11 @@ public:
         auto yv = get_view<const bool***,Device>();
         auto policy = MDRange<3>({0,0,0},{dims[0],dims[1],dims[2]});
         auto lambda = KOKKOS_LAMBDA (const int i, const int j, const int k) {
-          combine_bools<Op>(xv(i,j,k),yv(i,j,k));
+          if constexpr (OP==LogicalOp::And) {
+            xv(i,j,k) = (xv(i,j,k) ^ not_lhs) & (yv(i,j,k) ^ notate_rhs);
+          } else {
+            xv(i,j,k) = (xv(i,j,k) ^ not_lhs) | (yv(i,j,k) ^ not_rhs);
+          }
         };
         Kokkos::parallel_for(policy,lambda);
       } break;

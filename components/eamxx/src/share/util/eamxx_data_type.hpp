@@ -13,7 +13,6 @@ namespace scream
 // An enum for specifying fields data type
 enum class DataType : int {
   Invalid    = 0,
-  BoolType   = 1,
   IntType    = 2,
   FloatType  = 3,
   DoubleType = 4,
@@ -33,8 +32,6 @@ DataType get_data_type () {
     return DataType::FloatType;
   } else if (std::is_same<ST,double>::value) {
     return DataType::DoubleType;
-  } else if (std::is_same<ST,bool>::value) {
-    return DataType::BoolType;
   } else {
     EKAT_ERROR_MSG ("Error! Unsupported data type.\n"
         " - typeid(ST): " + std::string(typeid(ST).name()) + "\n");
@@ -48,7 +45,6 @@ inline bool is_narrowing_conversion (const DataType from, const DataType to) {
 
 inline std::string e2str (const DataType data_type) {
   switch (data_type) {
-    case DataType::BoolType:   return "bool";
     case DataType::IntType:    return "int";
     case DataType::FloatType:  return "float";
     case DataType::DoubleType: return "double";
@@ -61,7 +57,6 @@ inline std::string e2str (const DataType data_type) {
 
 inline int get_type_size (const DataType data_type) {
   switch (data_type) {
-    case DataType::BoolType:   return sizeof(bool);
     case DataType::IntType:    return sizeof(int);
     case DataType::FloatType:  return sizeof(float);
     case DataType::DoubleType: return sizeof(double);

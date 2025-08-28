@@ -237,7 +237,7 @@ public:
   //       casting the values to whatever the data type of this field is.
   //       E.g., if data_type()=IntType, you can't pass double's.
   template<CombineMode CM = CombineMode::Update, HostOrDevice HD = Device, typename ST = void>
-  void update (const Field& x, const ST alpha, const ST beta);
+  void update (const Field& x, const ST alpha, const ST beta, const Field& mask = {});
 
   // Special case of update for particular choices of the combine mode
   template<HostOrDevice HD = Device, typename ST = void>
@@ -353,7 +353,7 @@ protected:
   // Note: use_fill is used to determine *at compile time* whether to use
   // the combine<CM> utility or combine_and_fill<CM>
   template<CombineMode CM, HostOrDevice HD, bool use_fill, typename ST, typename STX>
-  void update_impl (const Field& x, const ST alpha, const ST beta);
+  void update_impl (const Field& x, const ST alpha, const ST beta, const Field* mask);
 
 protected:
 
