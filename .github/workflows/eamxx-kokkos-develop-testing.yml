@@ -8,6 +8,7 @@ on:
     paths:
       # first, yes to these
       - '.github/workflows/eamxx-sa-testing.yml'
+      - '.github/workflows/eamxx-kokkos-develop-testing.yml'
       - '.github/actions/test-all-eamxx/**'
       - 'cime_config/machine/config_machines.xml'
       - 'components/eamxx/**'
