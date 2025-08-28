@@ -306,11 +306,22 @@ check_pack_size(${SCREAM_PACK_SIZE} ${SCREAM_POSSIBLY_NO_PACK_SIZE} "possibly no
 
 # Handle input root
 if (SCREAM_MACHINE AND NOT SCREAM_INPUT_ROOT)
+  if (SCREAM_CIME_BUILD)
+    # Use xmlquery
+    execute_process(COMMAND ./xmlquery DIN_LOC_ROOT --value
+      WORKING_DIRECTORY ${CASEROOT}
+      RESULT_VARIABLE QC_STATUS
+      OUTPUT_VARIABLE QC_OUTPUT
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+      )
+  else()
+    # There's no case to work with so we have to use query-cime
     execute_process(COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/scripts/query-cime ${SCREAM_MACHINE} DIN_LOC_ROOT
     RESULT_VARIABLE QC_STATUS
     OUTPUT_VARIABLE QC_OUTPUT
     OUTPUT_STRIP_TRAILING_WHITESPACE
     )
+  endif()
   if (QC_STATUS EQUAL 0)
     set(DEFAULT_SCREAM_INPUT_ROOT ${QC_OUTPUT})
   endif()
