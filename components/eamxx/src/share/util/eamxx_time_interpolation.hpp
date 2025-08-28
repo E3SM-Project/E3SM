@@ -4,6 +4,7 @@
 #include "share/grid/abstract_grid.hpp"
 
 #include "share/util/eamxx_time_stamp.hpp"
+#include "share/util/eamxx_utils.hpp"
 
 #include "share/field/field.hpp"
 #include "share/field/field_manager.hpp"
@@ -47,10 +48,7 @@ public:
 
   // Option to add a logger
   void set_logger(const std::shared_ptr<ekat::logger::LoggerBase>& logger,
-                  const std::string& header) {
-      m_logger = logger;
-      m_header = header;
-  }
+                  const std::string& header);
 
 protected:
 
@@ -92,7 +90,7 @@ protected:
   std::shared_ptr<AtmosphereInput>           m_file_data_atm_input;
   bool                                       m_is_data_from_file=false;
 
-  std::shared_ptr<ekat::logger::LoggerBase>  m_logger;
+  std::shared_ptr<ekat::logger::LoggerBase>  m_logger = console_logger(ekat::logger::LogLevel::warn);
   std::string                                m_header;
 }; // class TimeInterpolation
 
