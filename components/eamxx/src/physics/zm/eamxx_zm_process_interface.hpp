@@ -13,7 +13,7 @@ namespace scream
 
 // Zhang-McFarlane Deep Convection scheme
 
-class zm_deep_convection : public AtmosphereProcess
+class ZMDeepConvection : public AtmosphereProcess
 {
   using KT  = ekat::KokkosTypes<DefaultDevice>;
   using ZMF = zm::Functions<Real, DefaultDevice>;
@@ -27,7 +27,7 @@ class zm_deep_convection : public AtmosphereProcess
   public:
 
     // Constructors
-    zm_deep_convection(const ekat::Comm& comm, const ekat::ParameterList& params);
+    ZMDeepConvection(const ekat::Comm& comm, const ekat::ParameterList& params);
 
     // The type of subcomponent
     AtmosphereProcessType type() const override { return AtmosphereProcessType::Physics; }
@@ -61,7 +61,7 @@ class zm_deep_convection : public AtmosphereProcess
     ZMF::zm_output_tend zm_output;
     ZMF::zm_output_diag zm_diag;
     
-}; // class zm_deep_convection
+}; // class ZMDeepConvection
 
 } // namespace scream
 
