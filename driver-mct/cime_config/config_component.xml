@@ -1738,6 +1738,23 @@
     <desc>rof2ocn runoff mapping file decomp type</desc>
   </entry>
 
+  <entry id="ROF2ICE_RMAPNAME">
+    <type>char</type>
+    <default_value>idmap</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>rof2ice runoff mapping file</desc>
+  </entry>
+
+  <entry id="ROF2ICE_RMAPTYPE">
+    <type>char</type>
+    <valid_values>X,Y</valid_values>
+    <default_value>Y</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>rof2ice runoff mapping file decomp type</desc>
+  </entry>
+
   <entry id="GLC2LND_FMAPNAME">
     <type>char</type>
     <default_value>idmap</default_value>
