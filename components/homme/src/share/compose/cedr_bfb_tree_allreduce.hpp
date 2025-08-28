@@ -17,7 +17,7 @@ struct BfbTreeAllReducer {
   typedef BfbTreeAllReducer<ExeSpace> Me;
   typedef std::shared_ptr<Me> Ptr;
   typedef Kokkos::View<Real*, Device> RealList;
-  typedef typename Kokkos::View<Real*, Device>::HostMirror RealListHost;
+  typedef typename Kokkos::View<Real*, Device>::host_mirror_type RealListHost;
   typedef Kokkos::View<const Real*, Device> ConstRealList;
 
   BfbTreeAllReducer(const mpi::Parallel::Ptr& p, const tree::Node::Ptr& tree,

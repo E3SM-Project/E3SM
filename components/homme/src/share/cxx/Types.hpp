@@ -92,7 +92,7 @@ using ExecView = ViewType<DataType, ExecMemSpace, Properties...>;
 template <typename DataType, typename... Properties>
 using MPIView = typename std::conditional<std::is_same<MPIMemSpace,ExecMemSpace>::value,
                                           ExecView<DataType,Properties...>,
-                                          typename ExecView<DataType,Properties...>::HostMirror>::type;
+                                          typename ExecView<DataType,Properties...>::host_mirror_type>::type;
 #else
 # if HOMMEXX_MPI_ON_DEVICE
 template <typename DataType, typename... Properties>
@@ -101,7 +101,7 @@ using MPIView = ExecView<DataType,Properties...>;
 /// A Cuda 9.1.85 (and probably other 9.1.* versions) parse bug requires us to
 /// spell out this type rather than rely on our layers of abstraction.
 template <typename DataType, typename... Properties>
-using MPIView = typename Kokkos::View<DataType, Kokkos::LayoutRight, ExecMemSpace, Properties...>::HostMirror;
+using MPIView = typename Kokkos::View<DataType, Kokkos::LayoutRight, ExecMemSpace, Properties...>::host_mirror_type;
 # endif
 #endif
 

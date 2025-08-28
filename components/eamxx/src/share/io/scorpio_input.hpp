@@ -45,7 +45,7 @@ public:
 
   using KT = KokkosTypes<DefaultDevice>;
   template<int N>
-  using view_Nd_host = typename KT::template view_ND<Real,N>::HostMirror;
+  using view_Nd_host = typename KT::template view_ND<Real,N>::host_mirror_type;
   using view_1d_host = view_Nd_host<1>;
 
   // --- Constructor(s) & Destructor --- //

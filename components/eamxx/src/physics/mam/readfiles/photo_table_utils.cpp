@@ -5,8 +5,8 @@ namespace scream::impl {
 // number of photolysis reactions
 using mam4::mo_photo::phtcnt;
 
-using HostView1D    = haero::DeviceType::view_1d<Real>::HostMirror;
-using HostViewInt1D = haero::DeviceType::view_1d<int>::HostMirror;
+using HostView1D    = haero::DeviceType::view_1d<Real>::host_mirror_type;
+using HostViewInt1D = haero::DeviceType::view_1d<int>::host_mirror_type;
 
 //-------------------------------------------------------------------------
 //                    Reading the photolysis table

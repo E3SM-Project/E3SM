@@ -40,28 +40,28 @@ public:
     return m_ov_coarse_grid;
   }
 
-  view_2d<int>::HostMirror get_send_f_pid_offsets () const {
+  view_2d<int>::host_mirror_type get_send_f_pid_offsets () const {
     return cmvdc(m_send_f_pid_offsets);
   }
-  view_2d<int>::HostMirror get_recv_f_pid_offsets () const {
+  view_2d<int>::host_mirror_type get_recv_f_pid_offsets () const {
     return cmvdc(m_recv_f_pid_offsets);
   }
 
-  view_1d<int>::HostMirror get_recv_lids_beg () const {
+  view_1d<int>::host_mirror_type get_recv_lids_beg () const {
     return cmvdc(m_recv_lids_beg);
   }
-  view_1d<int>::HostMirror get_recv_lids_end () const {
+  view_1d<int>::host_mirror_type get_recv_lids_end () const {
     return cmvdc(m_recv_lids_end);
   }
 
-  view_2d<int>::HostMirror get_send_lids_pids () const {
+  view_2d<int>::host_mirror_type get_send_lids_pids () const {
     return cmvdc(m_send_lids_pids );
   }
-  view_2d<int>::HostMirror get_recv_lids_pidpos () const {
+  view_2d<int>::host_mirror_type get_recv_lids_pidpos () const {
     return cmvdc(m_recv_lids_pidpos);
   }
 
-  view_1d<int>::HostMirror get_send_pid_lids_start () const {
+  view_1d<int>::host_mirror_type get_send_pid_lids_start () const {
     return cmvdc(m_send_pid_lids_start);
   }
 };

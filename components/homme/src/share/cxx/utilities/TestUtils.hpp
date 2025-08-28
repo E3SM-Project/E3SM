@@ -39,9 +39,9 @@ void genRandArray(Scalar *const x, int length, rngAlg &engine, PDF &&pdf) {
 template <typename ViewType, typename rngAlg, typename PDF>
 typename std::enable_if<Kokkos::is_view<ViewType>::value, void>::type
 genRandArray(ViewType view, rngAlg &engine, PDF &&pdf,
-             std::function<bool(typename ViewType::HostMirror)> constraint,
+             std::function<bool(typename ViewType::host_mirror_type)> constraint,
              const int max_attempts = 1000) {
-  typename ViewType::HostMirror mirror = Kokkos::create_mirror_view(view);
+  typename ViewType::host_mirror_type mirror = Kokkos::create_mirror_view(view);
   int iter=0;
   bool success;
   do {
@@ -60,7 +60,7 @@ template <typename ViewType, typename rngAlg, typename PDF>
 typename std::enable_if<Kokkos::is_view<ViewType>::value, void>::type
 genRandArray(ViewType view, rngAlg &engine, PDF &&pdf) {
   genRandArray(view, engine, pdf,
-               [](typename ViewType::HostMirror) { return true; });
+               [](typename ViewType::host_mirror_type) { return true; });
 }
 
 template <typename FPType>

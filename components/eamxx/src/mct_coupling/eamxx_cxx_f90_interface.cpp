@@ -353,7 +353,7 @@ void scream_get_cols_latlon (double* const& lat_ptr, double* const& lon_ptr) {
     auto lat_cxx = phys_grid->get_geometry_data("lat").get_view<const Real*, Host>();
     auto lon_cxx = phys_grid->get_geometry_data("lon").get_view<const Real*, Host>();
 
-    using geo_view_f90 = ekat::Unmanaged<decltype(lat_cxx)::HostMirror>;
+    using geo_view_f90 = ekat::Unmanaged<decltype(lat_cxx)::host_mirror_type>;
     geo_view_f90 lat_f90(lat_ptr, ncols);
     geo_view_f90 lon_f90(lon_ptr, ncols);
     Kokkos::deep_copy(lat_f90, lat_cxx);
@@ -371,7 +371,7 @@ void scream_get_cols_area (double* const& area_ptr) {
 
     auto area_cxx = phys_grid->get_geometry_data("area").get_view<const Real*, Host>();
 
-    using geo_view_f90 = ekat::Unmanaged<decltype(area_cxx)::HostMirror>;
+    using geo_view_f90 = ekat::Unmanaged<decltype(area_cxx)::host_mirror_type>;
     geo_view_f90  area_f90 (area_ptr, ncols);
     Kokkos::deep_copy(area_f90,area_cxx);
   });

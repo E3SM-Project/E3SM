@@ -80,7 +80,7 @@ protected:
   using mpi_view_1d = typename std::conditional<
                         MpiOnDev,
                         view_1d<T>,
-                        typename view_1d<T>::HostMirror
+                        typename view_1d<T>::host_mirror_type
                       >::type;
 
   // ----- Data structures for pack/unpack and MPI ----- //

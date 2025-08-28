@@ -531,8 +531,8 @@ const Real* get_ref_vertices () {
 }
 
 namespace test {
-Int test_sphere_to_ref(const ConstVec3s::HostMirror& p,
-                       const ConstIdxs::HostMirror& e,
+Int test_sphere_to_ref(const ConstVec3s::host_mirror_type& p,
+                       const ConstIdxs::host_mirror_type& e,
                        const bool sphere = true);
 } // namespace test
 } // namespace sqr

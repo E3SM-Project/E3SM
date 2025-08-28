@@ -26,8 +26,8 @@ template <typename MT> using DepPoints =
 template <typename MT> using QExtrema =
   ko::View<Real****, ko::LayoutRight, typename MT::DDT>;
   
-template <typename MT> using DepPointsH = typename DepPoints<MT>::HostMirror;
-template <typename MT> using QExtremaH = typename QExtrema<MT>::HostMirror;
+template <typename MT> using DepPointsH = typename DepPoints<MT>::host_mirror_type;
+template <typename MT> using QExtremaH = typename QExtrema<MT>::host_mirror_type;
 
 template <typename MT> using QExtremaHConst = ko::Const<QExtremaH<MT> >;
 template <typename MT> using QExtremaConst = ko::Const<QExtrema<MT> >;

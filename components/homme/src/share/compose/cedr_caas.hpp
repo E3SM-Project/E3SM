@@ -101,7 +101,7 @@ protected:
   mpi::Parallel::Ptr p_;
   typename UserAllReducer::Ptr user_reducer_;
   std::shared_ptr<std::vector<Decl> > tracer_decls_;
-  typename IntList::HostMirror probs_h_;
+  typename IntList::host_mirror_type probs_h_;
   IntList t2r_;
   RealList send_, recv_;
   bool finished_setup_;

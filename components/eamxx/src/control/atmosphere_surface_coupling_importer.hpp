@@ -103,7 +103,7 @@ protected:
 
   // Column info used during import
   view_1d<DefaultDevice, SurfaceCouplingColumnInfo> m_column_info_d;
-  decltype(m_column_info_d)::HostMirror             m_column_info_h;
+  decltype(m_column_info_d)::host_mirror_type             m_column_info_h;
 
   // The grid is needed for property checks
   std::shared_ptr<const AbstractGrid> m_grid;

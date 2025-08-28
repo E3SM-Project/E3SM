@@ -20,8 +20,8 @@ class TestSphereToRefKernel {
 public:
   typedef Info value_type;
 
-  TestSphereToRefKernel (const ConstVec3s::HostMirror& p_hm,
-                         const ConstIdxs::HostMirror& e_hm,
+  TestSphereToRefKernel (const ConstVec3s::host_mirror_type& p_hm,
+                         const ConstIdxs::host_mirror_type& e_hm,
                          const bool sphere,
                          const Real tol = 1e1*std::numeric_limits<Real>::epsilon())
     : tol_(tol), sphere_(sphere)
@@ -84,8 +84,8 @@ public:
   }
 };
 
-Int test_sphere_to_ref (const ConstVec3s::HostMirror& p,
-                        const ConstIdxs::HostMirror& e,
+Int test_sphere_to_ref (const ConstVec3s::host_mirror_type& p,
+                        const ConstIdxs::host_mirror_type& e,
                         const bool sphere) {
   TestSphereToRefKernel k(p, e, sphere);
   Info info;
