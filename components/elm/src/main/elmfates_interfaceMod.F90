@@ -4134,8 +4134,8 @@ end subroutine wrap_update_hifrq_hist
    call this%fates(nc)%InitializeInterfaceRegistry()
          
    ! Register the HLM data
-   call this%fates(nc)%Register(vname='decomp_frac_moisture', data=col_cf%w_scalar)
-   call this%fates(nc)%Register(vname='decomp_frac_temperature', data=col_cf%t_scalar)
+   call this%fates(nc)%Register(key='decomp_frac_moisture', data=col_cf%w_scalar)
+   call this%fates(nc)%Register(key='decomp_frac_temperature', data=col_cf%t_scalar)
    
  end subroutine RegisterHLMInterfaceVariables
  
