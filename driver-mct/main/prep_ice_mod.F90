@@ -561,7 +561,7 @@ contains
     do egi = 1,num_inst_glc
        g2x_gx => component_get_c2x_cx(glc(egi))
        call seq_map_map(mapper_Rg2i, g2x_gx, g2x_ix(egi), &
-                        fldlist='Fixx_rofi', norm=.true.)
+                        fldlist='Figg_rofi', norm=.true.)
     enddo
     call t_drvstopf  (trim(timer))
 
