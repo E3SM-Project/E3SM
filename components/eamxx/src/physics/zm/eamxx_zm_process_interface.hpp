@@ -2,7 +2,9 @@
 #define EAMXX_ZM_PROCESS_INTERFACE_HPP
 
 #include "share/atm_process/atmosphere_process.hpp"
-#include "physics/zm/zm_functions.hpp"
+#include "share/atm_process/ATMBufferManager.hpp"
+#include "share/util/eamxx_common_physics_functions.hpp"
+#include "zm_functions.hpp"
 
 #include <ekat_parameter_list.hpp>
 
@@ -15,18 +17,12 @@ class ZMDeepConvection : public AtmosphereProcess
 {
   using KT  = ekat::KokkosTypes<DefaultDevice>;
   using ZMF = zm::Functions<Real, DefaultDevice>;
+  using PF  = scream::PhysicsFunctions<DefaultDevice>;
+  using PC  = scream::physics::Constants<Real>;
   
+  using Scalar               = typename ZMF::Scalar;
   using Spack                = typename ZMF::Spack;
   using SPackInt             = typename ZMF::SPackInt;
-
-  using view_1d_int          = typename KT::template view_1d<Int>;
-  using view_1d              = typename ZMF::view_1d<Real>;
-  using view_1d_const        = typename ZMF::view_1d<const Real>;
-  using view_2d              = typename ZMF::view_2d<ZMF::Spack>;
-  using view_2d_const        = typename ZMF::view_2d<const Spack>;
-  using view_3d              = typename ZMF::view_3d<Spack>;
-  using view_3d_const        = typename ZMF::view_3d<const Spack>;
-  using view_3d_strided      = typename ZMF::view_3d_strided<Spack>;
 
   public:
 
@@ -47,12 +43,25 @@ class ZMDeepConvection : public AtmosphereProcess
     void run_impl        (const double dt) override;
     void finalize_impl   () override;
 
+    // Computes total number of bytes needed for local variables
+    size_t requested_buffer_size_in_bytes() const;
+
+    // Set local variables using memory provided by the ATMBufferManager
+    void init_buffers(const ATMBufferManager &buffer_manager);
+
     // define ZM process variables
     std::shared_ptr<const AbstractGrid> m_grid;
-    int m_ncols;
-    int m_nlevs;
+    int m_pcol;
+    int m_ncol;
+    int m_nlev;
+
+    // Structures for arguments to ZM
+    ZMF::zm_runtime_opt zm_opts;
+    ZMF::zm_input_state zm_input;
+    ZMF::zm_output_tend zm_output;
+    ZMF::zm_output_diag zm_diag;
     
-};
+}; // class ZMDeepConvection
 
 } // namespace scream
 
