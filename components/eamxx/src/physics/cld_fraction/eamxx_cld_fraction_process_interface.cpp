@@ -75,6 +75,19 @@ void CldFraction::initialize_impl (const RunType /* run_type */)
   add_postcondition_check<Interval>(get_field_out("cldfrac_tot"),m_grid,0.0,1.0,false);
   add_postcondition_check<Interval>(get_field_out("cldfrac_ice_for_analysis"),m_grid,0.0,1.0,false);
   add_postcondition_check<Interval>(get_field_out("cldfrac_tot_for_analysis"),m_grid,0.0,1.0,false);
+#ifdef EAMXX_HAS_PYTHON
+  if (has_py_module()) {
+    try {
+      py_module_call("init");
+    } catch (const pybind11::error_already_set& e) {
+      std::cout << "[CldFraction::initialize_impl] Error! Something went wrong while calling the python module's function 'init'.\n"
+                   " - module name: " + m_params.get<std::string>("py_module_name") + "\n"
+                   " - pybind11 error: " + std::string(e.what()) + "\n";
+      throw e;
+    }
+
+  }
+#endif
 }
 
 // =========================================================================================
@@ -103,7 +116,15 @@ void CldFraction::run_impl (const double /* dt */)
 
     double ice_threshold      = m_params.get<double>("ice_cloud_threshold");
     double ice_4out_threshold = m_params.get<double>("ice_cloud_for_analysis_threshold");
-    py_module_call("main",ice_threshold,ice_4out_threshold,py_qi,py_liq_cld_frac,py_ice_cld_frac,py_tot_cld_frac,py_ice_cld_frac_4out,py_tot_cld_frac_4out);
+
+    try {
+      py_module_call("main",ice_threshold,ice_4out_threshold,py_qi,py_liq_cld_frac,py_ice_cld_frac,py_tot_cld_frac,py_ice_cld_frac_4out,py_tot_cld_frac_4out);
+    } catch (const pybind11::error_already_set& e) {
+      std::cout << "[CldFraction::run_impl] Error! Something went wrong while calling the python module's function 'main'.\n"
+                   " - module name: " + m_params.get<std::string>("py_module_name") + "\n"
+                   " - pybind11 error: " + std::string(e.what()) + "\n";
+      throw e;
+    }
 
     // Sync outputs to dev
     qi.sync_to_dev();
