@@ -871,6 +871,7 @@ void gw_heating_depth(GwHeatingDepthData& d);
 void gw_storm_speed(GwStormSpeedData& d);
 void gw_convect_gw_sources(GwConvectGwSourcesData& d);
 void gw_beres_src(GwBeresSrcData& d);
+void gw_ediff_f(GwEdiffData& d);
 void gw_ediff(GwEdiffData& d);
 void gw_diff_tend(GwDiffTendData& d);
 void gw_oro_src(GwOroSrcData& d);

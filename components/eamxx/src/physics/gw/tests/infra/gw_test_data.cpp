@@ -606,12 +606,105 @@ void gw_beres_src(GwBeresSrcData& d)
   d.transition<ekat::TransposeDirection::f2c>();
 }
 
-void gw_ediff(GwEdiffData& d)
+void gw_ediff_f(GwEdiffData& d)
 {
   gw_init(d.init);
   d.transition<ekat::TransposeDirection::c2f>();
   gw_ediff_c(d.ncol, d.kbot, d.ktop, d.tend_level, d.gwut, d.ubm, d.nm, d.rho, d.dt, GWC::gravit, d.pmid, d.rdpm, d.c, d.egwdffi, d.decomp_ca, d.decomp_cc, d.decomp_dnom, d.decomp_ze);
   d.transition<ekat::TransposeDirection::f2c>();
+}
+
+void gw_ediff(GwEdiffData& d)
+{
+  gw_init_cxx(d.init);
+
+  // create device views and copy
+  std::vector<view1di_d> one_d_ints_in(1);
+  std::vector<view2dr_d> two_d_reals_in(11);
+  std::vector<view3dr_d> three_d_reals_in(1);
+
+  ekat::host_to_device({d.tend_level}, d.ncol, one_d_ints_in);
+  ekat::host_to_device({d.ubm, d.nm, d.pmid, d.rdpm, d.decomp_ca, d.decomp_cc, d.decomp_dnom, d.decomp_ze,
+      d.rho, d.egwdffi, d.c},
+                       std::vector<int>(11, d.ncol),
+                       std::vector<int>{     // dim2 sizes
+                         d.init.pver,        // ubm
+                         d.init.pver,        // nm
+                         d.init.pver,        // pmid
+                         d.init.pver,        // rdpm
+                         d.init.pver,        // decomp_ca
+                         d.init.pver,        // decomp_cc
+                         d.init.pver,        // decomp_dnom
+                         d.init.pver,        // decomp_ze
+                         d.init.pver + 1,    // rho
+                         d.init.pver + 1,    // egwdffi
+                         2*d.init.pgwv + 1}, // c
+                       two_d_reals_in);
+  ekat::host_to_device({d.gwut}, d.ncol, d.init.pver, 2*d.init.pgwv + 1, three_d_reals_in);
+
+  const auto tend_level = one_d_ints_in[0];
+
+  const auto ubm         = two_d_reals_in[0];
+  const auto nm          = two_d_reals_in[1];
+  const auto pmid        = two_d_reals_in[2];
+  const auto rdpm        = two_d_reals_in[3];
+  const auto decomp_ca   = two_d_reals_in[4];
+  const auto decomp_cc   = two_d_reals_in[5];
+  const auto decomp_dnom = two_d_reals_in[6];
+  const auto decomp_ze   = two_d_reals_in[7];
+  const auto rho         = two_d_reals_in[8];
+  const auto egwdffi     = two_d_reals_in[9];
+  const auto c           = two_d_reals_in[10];
+
+  const auto gwut = three_d_reals_in[0];
+
+  auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.ncol, d.init.pver);
+
+  WSM wsm(d.init.pver+1, 2, policy);
+  GWF::GwCommonInit init_cp = GWF::s_common_init;
+
+  // unpack init because we do not want the lambda to capture it
+  const int pver = d.init.pver;
+  const int pgwv = d.init.pgwv;
+  const int ktop = d.ktop;
+  const int kbot = d.kbot;
+  const Real dt = d.dt;
+
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    const int col = team.league_rank();
+
+    // Get single-column subviews of all inputs, shouldn't need any i-indexing
+    // after this.
+    const auto gwut_c    = ekat::subview(gwut, col);
+    const auto ubm_c     = ekat::subview(ubm, col);
+    const auto nm_c      = ekat::subview(nm, col);
+    const auto rho_c     = ekat::subview(rho, col);
+    const auto pmid_c    = ekat::subview(pmid, col);
+    const auto rdpm_c    = ekat::subview(rdpm, col);
+    const auto c_c       = ekat::subview(c, col);
+    const auto egwdffi_c = ekat::subview(egwdffi, col);
+
+    GWF::gw_ediff(
+      team,
+      wsm.get_workspace(team),
+      pver, pgwv, ktop, kbot,
+      tend_level(col),
+      dt,
+      gwut_c,
+      ubm_c,
+      nm_c,
+      rho_c,
+      pmid_c,
+      rdpm_c,
+      c_c,
+      egwdffi_c);
+  });
+
+  // Get outputs back
+  std::vector<view2dr_d> two_d_reals_out = {egwdffi};
+  ekat::device_to_host({d.egwdffi}, d.ncol, d.init.pver + 1, two_d_reals_out);
+
+  gw_finalize_cxx(d.init);
 }
 
 void gw_diff_tend(GwDiffTendData& d)

@@ -44,7 +44,7 @@ void Functions<S,D>::gwd_compute_tendencies_from_stress_divergence(
   const uview_1d<Real>& utgw,
   const uview_1d<Real>& vtgw)
 {
-  const Real ptaper = do_taper ? std::cos(lat) : 1.;
+  const Real ptaper = do_taper ? std::cos(lat) : 1;
 
   // Get temporary workspaces and change them to desired dimensions
   auto work_1d = workspace.take("work_1d");
@@ -58,7 +58,7 @@ void Functions<S,D>::gwd_compute_tendencies_from_stress_divergence(
 
     // Force tau at the top of the model to zero, if requested.
     if (init.tau_0_ubc) {
-      tau(pl_idx,0) = 0.;
+      tau(pl_idx,0) = 0;
     }
 
     // Loop over levels from top to bottom. Each level reads and writes to
@@ -115,7 +115,7 @@ void Functions<S,D>::gwd_compute_tendencies_from_stress_divergence(
   Kokkos::parallel_for(
     Kokkos::TeamVectorRange(team, init.ktop, tend_level+1), [&] (const int k) {
     // Serialize the sum so it's repeatable
-    Real ubt = 0.;
+    Real ubt = 0;
     for (size_t i = 0; i < work.extent(1); ++i) {
       ubt += work(k, i);
     }
