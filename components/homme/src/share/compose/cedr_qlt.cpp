@@ -77,7 +77,7 @@ int Timer::cnt_[Timer::NTIMERS];
 
 template <typename ES>
 void QLT<ES>::init (const std::string& name, IntList& d,
-                    typename IntList::HostMirror& h, size_t n) {
+                    typename IntList::host_mirror_type& h, size_t n) {
   d = IntList("QLT " + name, n);
   h = Kokkos::create_mirror_view(d);
 }

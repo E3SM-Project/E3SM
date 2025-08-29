@@ -101,7 +101,7 @@ struct PhysicsFunctions
   //   theta  is the potential temperature, [K]
   //   temperature  is the temperature, [K]
   //   qc is the cloud liquid mixing ratio, [kg/kg]
-  //   and the others are constants 
+  //   and the others are constants
   //-----------------------------------------------------------------------------------------------//
   template<typename ScalarT>
   KOKKOS_INLINE_FUNCTION
@@ -375,7 +375,7 @@ struct PhysicsFunctions
   using KT = KokkosTypes<Device>;
   using MemberType = typename KT::MemberType;
 
-  template<typename ScalarT, typename MT = Kokkos::MemoryManaged>
+  template<typename ScalarT, typename MT = Kokkos::MemoryTraits<0>>
   using view_1d = typename KT::template view_1d<ScalarT, MT>;
 
   template<typename ScalarT, typename InputProviderP, typename InputProviderZ>
@@ -411,7 +411,7 @@ struct PhysicsFunctions
                                       const InputProviderTheta& theta,
                                       const InputProviderT& temperature,
                                       const InputProviderQ& qc,
-                                      const view_1d<ScalarT>& thetal);  
+                                      const view_1d<ScalarT>& thetal);
   template<typename ScalarT, typename InputProviderT, typename InputProviderP>
   KOKKOS_INLINE_FUNCTION
   static void calculate_T_from_theta (const MemberType& team,
@@ -483,7 +483,7 @@ struct PhysicsFunctions
   template<typename ScalarT,
            typename InputProviderPD, typename InputProviderP,
            typename InputProviderT,  typename InputProviderQ,
-           typename MT = Kokkos::MemoryManaged>
+           typename MT = Kokkos::MemoryTraits<0>>
   KOKKOS_INLINE_FUNCTION
   static void calculate_dz (const MemberType& team,
                             const InputProviderPD& pseudo_density,
@@ -508,7 +508,7 @@ struct PhysicsFunctions
                                      const InputProviderX& vmr,
                                      const view_1d<ScalarT>& mmr);
 
-  template<typename ScalarT, typename InputProviderOtau, typename MT = Kokkos::MemoryManaged>
+  template<typename ScalarT, typename InputProviderOtau, typename MT = Kokkos::MemoryTraits<0>>
   KOKKOS_INLINE_FUNCTION
   static void apply_rayleigh_friction (const MemberType& team,
                                        const Real dt,
@@ -525,7 +525,7 @@ struct PhysicsFunctions
   // Note: because this function does an integral it cannot be run just on a single level.  It requires
   // the full column wise integration.
   //-----------------------------------------------------------------------------------------------//
-  template<typename ScalarT, typename InputProviderZ, typename MT = Kokkos::MemoryManaged>
+  template<typename ScalarT, typename InputProviderZ, typename MT = Kokkos::MemoryTraits<0>>
   KOKKOS_INLINE_FUNCTION
   static void calculate_z_int (const MemberType& team,
                                const int num_levs,
@@ -539,7 +539,7 @@ struct PhysicsFunctions
   // where
   //   z_int is the vertical layer interface height, [m]
   //-----------------------------------------------------------------------------------------------//
-  template<typename ScalarT, typename InputProviderZ, typename MT = Kokkos::MemoryManaged>
+  template<typename ScalarT, typename InputProviderZ, typename MT = Kokkos::MemoryTraits<0>>
   KOKKOS_INLINE_FUNCTION
   static void calculate_z_mid (const MemberType& team,
                                const int num_levs,

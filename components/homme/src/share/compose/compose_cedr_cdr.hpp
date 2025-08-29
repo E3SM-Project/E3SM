@@ -51,10 +51,10 @@ struct CDR {
 #endif
 
   typedef Kokkos::View<Int*, typename MT::DES> Idxs;
-  typedef typename Idxs::HostMirror IdxsH;
+  typedef typename Idxs::host_mirror_type IdxsH;
 
   typedef Kokkos::View<char*, typename MT::DES> Bools;
-  typedef typename Bools::HostMirror BoolsH;
+  typedef typename Bools::host_mirror_type BoolsH;
 
   enum { nsublev_per_suplev = 8 };
   

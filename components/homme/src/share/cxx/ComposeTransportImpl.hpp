@@ -152,7 +152,7 @@ struct ComposeTransportImpl {
 
   int run_trajectory_unit_tests();
   int run_enhanced_trajectory_unit_tests();
-  ComposeTransport::TestDepView::HostMirror
+  ComposeTransport::TestDepView::host_mirror_type
   test_trajectory(Real t0, Real t1, const bool independent_time_steps);
 
   // In test code, the bfb flag says to construct manufactured fields on host to

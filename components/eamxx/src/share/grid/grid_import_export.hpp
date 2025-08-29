@@ -64,18 +64,18 @@ public:
   view_1d<int> num_exports_per_pid () const { return m_num_exports_per_pid; }
   view_1d<int> num_imports_per_pid () const { return m_num_imports_per_pid; }
 
-  view_1d<int>::HostMirror num_exports_per_pid_h () const { return m_num_exports_per_pid_h; }
-  view_1d<int>::HostMirror num_imports_per_pid_h () const { return m_num_imports_per_pid_h; }
+  view_1d<int>::host_mirror_type num_exports_per_pid_h () const { return m_num_exports_per_pid_h; }
+  view_1d<int>::host_mirror_type num_imports_per_pid_h () const { return m_num_imports_per_pid_h; }
 
   view_1d<int> import_pids () const { return m_import_pids; }
   view_1d<int> import_lids () const { return m_import_lids; }
   view_1d<int> export_pids () const { return m_export_pids; }
   view_1d<int> export_lids () const { return m_export_lids; }
 
-  view_1d<int>::HostMirror import_pids_h () const { return m_import_pids_h; }
-  view_1d<int>::HostMirror import_lids_h () const { return m_import_lids_h; }
-  view_1d<int>::HostMirror export_pids_h () const { return m_export_pids_h; }
-  view_1d<int>::HostMirror export_lids_h () const { return m_export_lids_h; }
+  view_1d<int>::host_mirror_type import_pids_h () const { return m_import_pids_h; }
+  view_1d<int>::host_mirror_type import_lids_h () const { return m_import_lids_h; }
+  view_1d<int>::host_mirror_type export_pids_h () const { return m_export_pids_h; }
+  view_1d<int>::host_mirror_type export_lids_h () const { return m_export_lids_h; }
 
 protected:
 
@@ -91,16 +91,16 @@ protected:
   view_1d<int>  m_export_pids;
   view_1d<int>  m_export_lids;
 
-  view_1d<int>::HostMirror  m_import_pids_h;
-  view_1d<int>::HostMirror  m_import_lids_h;
-  view_1d<int>::HostMirror  m_export_pids_h;
-  view_1d<int>::HostMirror  m_export_lids_h;
+  view_1d<int>::host_mirror_type  m_import_pids_h;
+  view_1d<int>::host_mirror_type  m_import_lids_h;
+  view_1d<int>::host_mirror_type  m_export_pids_h;
+  view_1d<int>::host_mirror_type  m_export_lids_h;
 
   view_1d<int>  m_num_imports_per_pid;
   view_1d<int>  m_num_exports_per_pid;
 
-  view_1d<int>::HostMirror  m_num_imports_per_pid_h;
-  view_1d<int>::HostMirror  m_num_exports_per_pid_h;
+  view_1d<int>::host_mirror_type  m_num_imports_per_pid_h;
+  view_1d<int>::host_mirror_type  m_num_exports_per_pid_h;
 
   ekat::Comm    m_comm;
 };

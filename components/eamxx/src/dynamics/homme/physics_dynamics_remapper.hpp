@@ -93,8 +93,8 @@ public:
   struct ViewsRepo {
     using views_t  = view_1d<ViewsContainer<Real>>;
     using cviews_t = view_1d<ViewsContainer<const Real>>;
-    using hviews_t = typename views_t::HostMirror;
-    using hcviews_t = typename cviews_t::HostMirror;
+    using hviews_t = typename views_t::host_mirror_type;
+    using hcviews_t = typename cviews_t::host_mirror_type;
 
     views_t   views;
     cviews_t  cviews;

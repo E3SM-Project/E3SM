@@ -69,7 +69,7 @@ void HyperviscosityFunctorImpl::init_params(const SimulationParams& params)
   if (m_data.nu_top>0) {
 
     m_nu_scale_top = ExecViewManaged<Scalar[NUM_LEV]>("nu_scale_top");
-    ExecViewManaged<Scalar[NUM_LEV]>::HostMirror h_nu_scale_top;
+    ExecViewManaged<Scalar[NUM_LEV]>::host_mirror_type h_nu_scale_top;
     h_nu_scale_top = Kokkos::create_mirror_view(m_nu_scale_top);
 
     const auto etai_h = Kokkos::create_mirror_view(m_hvcoord.etai);

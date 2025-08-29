@@ -379,14 +379,14 @@ struct ListOfLists {
     ListOfLists<T,DT> ulol;
     ulol.d_ = Array<T>(d_.data(), d_.extent(0));
     ulol.ptr_ = Array<Int>(ptr_.data(), ptr_.extent(0));
-    ulol.ptr_h_ = typename Array<Int>::HostMirror(ptr_h_.data(), ptr_h_.extent(0));
+    ulol.ptr_h_ = typename Array<Int>::host_mirror_type(ptr_h_.data(), ptr_h_.extent(0));
     return ulol;
   }
 
   // For device-host stuff:
 
   void set_views (const Array<T>& d, const Array<Int>& ptr,
-                  const typename Array<Int>::HostMirror& ptr_h) {
+                  const typename Array<Int>::host_mirror_type& ptr_h) {
     d_ = d; ptr_ = ptr; ptr_h_ = ptr_h;
   }
 
@@ -400,13 +400,13 @@ struct ListOfLists {
 
   const Array<T>& d_view () const { return d_; }
   const Array<Int>& ptr_view () const { return ptr_; }
-  const typename Array<Int>::HostMirror& ptr_h_view () const { return ptr_h_; }
+  const typename Array<Int>::host_mirror_type& ptr_h_view () const { return ptr_h_; }
 
 private:
   friend struct BufferLayoutArray<DT>;
   Array<T> d_;
   Array<Int> ptr_;
-  typename Array<Int>::HostMirror ptr_h_;
+  typename Array<Int>::host_mirror_type ptr_h_;
 };
 
 struct LayoutTriple {

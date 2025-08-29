@@ -97,7 +97,7 @@ struct RawArrayRaft {
     : a_(a), n_(n)
   {
     a_d_ = List("RawArrayRaft::a_d_", n_);
-    a_h_ = typename List::HostMirror(a_, n_);
+    a_h_ = typename List::host_mirror_type(a_, n_);
   }
 
   const List& sync_device () {
@@ -116,7 +116,7 @@ private:
   T* a_;
   Int n_;
   List a_d_;
-  typename List::HostMirror a_h_;
+  typename List::host_mirror_type a_h_;
 };
 
 }

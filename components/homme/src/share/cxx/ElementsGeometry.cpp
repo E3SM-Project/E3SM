@@ -82,16 +82,16 @@ set_elem_data (const int ie,
   using TensorViewF90   = HostViewUnmanaged<const Real [2][2][NP][NP]>;
   using Tensor23ViewF90 = HostViewUnmanaged<const Real [2][3][NP][NP]>;
 
-  ScalarView::HostMirror h_fcor      = Kokkos::create_mirror_view(Homme::subview(m_fcor,ie));
-  ScalarView::HostMirror h_metdet    = Kokkos::create_mirror_view(Homme::subview(m_metdet,ie));
-  ScalarView::HostMirror h_spheremp  = Kokkos::create_mirror_view(Homme::subview(m_spheremp,ie));
-  ScalarView::HostMirror h_rspheremp = Kokkos::create_mirror_view(Homme::subview(m_rspheremp,ie));
-  TensorView::HostMirror h_metinv    = Kokkos::create_mirror_view(Homme::subview(m_metinv,ie));
-  TensorView::HostMirror h_d         = Kokkos::create_mirror_view(Homme::subview(m_d,ie));
-  TensorView::HostMirror h_dinv      = Kokkos::create_mirror_view(Homme::subview(m_dinv,ie));
+  ScalarView::host_mirror_type h_fcor      = Kokkos::create_mirror_view(Homme::subview(m_fcor,ie));
+  ScalarView::host_mirror_type h_metdet    = Kokkos::create_mirror_view(Homme::subview(m_metdet,ie));
+  ScalarView::host_mirror_type h_spheremp  = Kokkos::create_mirror_view(Homme::subview(m_spheremp,ie));
+  ScalarView::host_mirror_type h_rspheremp = Kokkos::create_mirror_view(Homme::subview(m_rspheremp,ie));
+  TensorView::host_mirror_type h_metinv    = Kokkos::create_mirror_view(Homme::subview(m_metinv,ie));
+  TensorView::host_mirror_type h_d         = Kokkos::create_mirror_view(Homme::subview(m_d,ie));
+  TensorView::host_mirror_type h_dinv      = Kokkos::create_mirror_view(Homme::subview(m_dinv,ie));
 
-  TensorView::HostMirror h_tensorvisc;
-  Tensor23View::HostMirror h_vec_sph2cart;
+  TensorView::host_mirror_type h_tensorvisc;
+  Tensor23View::host_mirror_type h_vec_sph2cart;
   if( !consthv ){
     h_tensorvisc   = Kokkos::create_mirror_view(Homme::subview(m_tensorvisc,ie));
   }
@@ -185,7 +185,7 @@ set_phis (const int ie, CF90Ptr& phis) {
   using ScalarViewF90 = HostViewUnmanaged<const Real [NP][NP]>;
 
   ScalarViewF90           h_phis_f90 (phis);
-  ScalarView::HostMirror  h_phis = Kokkos::create_mirror_view(Homme::subview(m_phis,ie));
+  ScalarView::host_mirror_type  h_phis = Kokkos::create_mirror_view(Homme::subview(m_phis,ie));
 
   for (int igp = 0; igp < NP; ++igp) {
     for (int jgp = 0; jgp < NP; ++jgp) {
