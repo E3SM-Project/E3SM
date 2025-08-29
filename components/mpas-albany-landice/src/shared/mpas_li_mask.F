@@ -354,7 +354,7 @@ contains
       ! ====
       ! Calculate cellMask values===========================
       ! ====
-
+      call mpas_log_write("Updating masks")
       !call mpas_timer_start('calculate mask cell')
       ! Set mask to 0 everywhere, but need to preserve bits the initial ice extent bit
       do i=1, nCells
