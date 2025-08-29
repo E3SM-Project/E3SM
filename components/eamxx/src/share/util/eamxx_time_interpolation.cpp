@@ -313,10 +313,8 @@ void TimeInterpolation::read_data()
     m_file_data_atm_input->set_logger(m_logger);
   }
 
-  if (m_logger) {
-    m_logger->info(m_header);
-    m_logger->info("[EAMxx:time_interpolation] Reading data at time " + triplet_curr.timestamp.to_string());
-  }
+  m_logger->info(m_header);
+  m_logger->info("[EAMxx:time_interpolation] Reading data at time " + triplet_curr.timestamp.to_string());
   m_file_data_atm_input->read_variables(triplet_curr.time_idx);
   m_time1 = triplet_curr.timestamp;
 }
@@ -371,6 +369,17 @@ void TimeInterpolation::check_and_update_data(const TimeStamp& ts_in)
 
   }
 }
+
+void TimeInterpolation::
+set_logger(const std::shared_ptr<ekat::logger::LoggerBase>& logger,
+           const std::string& header)
+{
+  EKAT_REQUIRE_MSG (logger, "Error! Invalid logger pointer.\n");
+
+  m_logger = logger;
+  m_header = header;
+}
+
 /*-----------------------------------------------------------------------------------------------*/
 
 } // namespace util

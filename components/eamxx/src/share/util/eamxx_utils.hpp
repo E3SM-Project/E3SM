@@ -5,6 +5,7 @@
 
 #include <ekat_assert.hpp>
 #include <ekat_kokkos_types.hpp>
+#include <ekat_logger.hpp>
 #include <ekat_comm.hpp>
 
 #include <iterator>
@@ -448,6 +449,9 @@ struct DefaultMetadata {
     file.close();
   }
 };
+
+// Create an console logger that logs all ranks
+std::shared_ptr<ekat::logger::LoggerBase> console_logger (const ekat::logger::LogLevel log_level = ekat::logger::LogLevel::info);
 
 extern "C"
 void eamxx_repro_sum(const Real* send, Real* recv,
