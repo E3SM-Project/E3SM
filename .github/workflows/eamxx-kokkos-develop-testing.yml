@@ -99,11 +99,7 @@ jobs:
           machine: ghci-snl-cpu
           generate: ${{ env.generate }}
           submit: ${{ env.submit }}
-          cmake-configs: |
-            CMAKE_CXX_STANDARD=20;
-            Kokkos_ENABLE_IMPL_VIEW_LEGACY=ON; # Currently a bug exists in Kokkos' mdspan view impl
-            Kokkos_ENABLE_DEPRECATED_CODE_4=ON; # Remove once PRs merged in MAM4xx and EKAT fixing deprecated code
-            Kokkos_ENABLE_OPENMP=ON;
+          cmake-configs: CMAKE_CXX_STANDARD=20;Kokkos_ENABLE_IMPL_VIEW_LEGACY=ON;Kokkos_ENABLE_DEPRECATED_CODE_4=ON;Kokkos_ENABLE_OPENMP=ON;
           ekat: ${{ env.ekat }}
   gcc-cuda:
     if: |
