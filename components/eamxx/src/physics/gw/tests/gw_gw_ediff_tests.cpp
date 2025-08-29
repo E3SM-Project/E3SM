@@ -35,8 +35,9 @@ struct UnitWrap::UnitTest<D>::TestGwEdiff : public UnitWrap::UnitTest<D>::Base {
 
     // Generate random input data
     // Alternatively, you can use the baseline_data construtors/initializer lists to hardcode data
-    for (auto& d : baseline_data) {
-      d.randomize(engine);
+    for (Int i = 0; i < num_runs; ++i) {
+      auto& d = baseline_data[i];
+      d.randomize(engine, { {d.tend_level, {d.ktop+1, d.kbot-1}} });
     }
 
     // Create copies of data for use by test. Needs to happen before read calls so that
@@ -57,7 +58,12 @@ struct UnitWrap::UnitTest<D>::TestGwEdiff : public UnitWrap::UnitTest<D>::Base {
 
     // Get data from test
     for (auto& d : test_data) {
-      gw_ediff(d);
+      if (this->m_baseline_action == GENERATE) {
+        gw_ediff_f(d);
+      }
+      else {
+        gw_ediff(d);
+      }
     }
 
     // Verify BFB results, all data should be in C layout
@@ -65,18 +71,18 @@ struct UnitWrap::UnitTest<D>::TestGwEdiff : public UnitWrap::UnitTest<D>::Base {
       for (Int i = 0; i < num_runs; ++i) {
         GwEdiffData& d_baseline = baseline_data[i];
         GwEdiffData& d_test = test_data[i];
+        REQUIRE(d_baseline.total(d_baseline.decomp_ca) == d_test.total(d_test.decomp_ca));
+        REQUIRE(d_baseline.total(d_baseline.decomp_cc) == d_test.total(d_test.decomp_cc));
+        REQUIRE(d_baseline.total(d_baseline.decomp_dnom) == d_test.total(d_test.decomp_dnom));
+        REQUIRE(d_baseline.total(d_baseline.decomp_ze) == d_test.total(d_test.decomp_ze));
         for (Int k = 0; k < d_baseline.total(d_baseline.decomp_ca); ++k) {
-          REQUIRE(d_baseline.total(d_baseline.decomp_ca) == d_test.total(d_test.decomp_ca));
           REQUIRE(d_baseline.decomp_ca[k] == d_test.decomp_ca[k]);
-          REQUIRE(d_baseline.total(d_baseline.decomp_cc) == d_test.total(d_test.decomp_cc));
           REQUIRE(d_baseline.decomp_cc[k] == d_test.decomp_cc[k]);
-          REQUIRE(d_baseline.total(d_baseline.decomp_dnom) == d_test.total(d_test.decomp_dnom));
           REQUIRE(d_baseline.decomp_dnom[k] == d_test.decomp_dnom[k]);
-          REQUIRE(d_baseline.total(d_baseline.decomp_ze) == d_test.total(d_test.decomp_ze));
           REQUIRE(d_baseline.decomp_ze[k] == d_test.decomp_ze[k]);
         }
+        REQUIRE(d_baseline.total(d_baseline.egwdffi) == d_test.total(d_test.egwdffi));
         for (Int k = 0; k < d_baseline.total(d_baseline.egwdffi); ++k) {
-          REQUIRE(d_baseline.total(d_baseline.egwdffi) == d_test.total(d_test.egwdffi));
           REQUIRE(d_baseline.egwdffi[k] == d_test.egwdffi[k]);
         }
 

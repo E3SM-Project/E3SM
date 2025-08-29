@@ -296,25 +296,24 @@ struct Functions
     // Inputs
     const Int& pver,
     const Int& pgwv,
-    const Int& ncol,
-    const Spack& dt,
+    const Real& dt,
     const uview_1d<const Int>& tend_level,
-    const uview_1d<const Spack>& pmid,
-    const uview_1d<const Spack>& pint,
-    const uview_1d<const Spack>& t,
-    const uview_1d<const Spack>& gwut,
-    const uview_1d<const Spack>& ubm,
-    const uview_1d<const Spack>& nm,
-    const uview_1d<const Spack>& rdpm,
-    const uview_1d<const Spack>& c,
-    const uview_1d<const Spack>& q,
-    const uview_1d<const Spack>& dse,
+    const uview_1d<const Real>& pmid,
+    const uview_1d<const Real>& pint,
+    const uview_1d<const Real>& t,
+    const uview_1d<const Real>& gwut,
+    const uview_1d<const Real>& ubm,
+    const uview_1d<const Real>& nm,
+    const uview_1d<const Real>& rdpm,
+    const uview_1d<const Real>& c,
+    const uview_1d<const Real>& q,
+    const uview_1d<const Real>& dse,
     // Outputs
-    const uview_1d<Spack>& egwdffi,
-    const uview_1d<Spack>& qtgw,
-    const uview_1d<Spack>& dttdf,
-    const uview_1d<Spack>& dttke,
-    const uview_1d<Spack>& ttgw);
+    const uview_1d<Real>& egwdffi,
+    const uview_1d<Real>& qtgw,
+    const uview_1d<Real>& dttdf,
+    const uview_1d<Real>& dttke,
+    const uview_1d<Real>& ttgw);
 
   KOKKOS_FUNCTION
   static void gw_drag_prof(
@@ -501,22 +500,23 @@ struct Functions
   KOKKOS_FUNCTION
   static void gw_ediff(
     // Inputs
-    const Int& ncol,
+    const MemberType& team,
+    const Workspace& workspace,
     const Int& pver,
+    const Int& pgwv,
     const Int& kbot,
     const Int& ktop,
-    const uview_1d<const Int>& tend_level,
-    const uview_1d<const Spack>& gwut,
-    const uview_1d<const Spack>& ubm,
-    const uview_1d<const Spack>& nm,
-    const uview_1d<const Spack>& rho,
-    const Spack& dt,
-    const Spack& gravit,
-    const uview_1d<const Spack>& pmid,
-    const uview_1d<const Spack>& rdpm,
-    const uview_1d<const Spack>& c,
+    const Int& tend_level,
+    const Real& dt,
+    const uview_2d<const Real>& gwut,
+    const uview_1d<const Real>& ubm,
+    const uview_1d<const Real>& nm,
+    const uview_1d<const Real>& rho,
+    const uview_1d<const Real>& pmid,
+    const uview_1d<const Real>& rdpm,
+    const uview_1d<const Real>& c,
     // Outputs
-    const uview_1d<Spack>& egwdffi);
+    const uview_1d<Real>& egwdffi);
 
   KOKKOS_FUNCTION
   static void gw_diff_tend(
