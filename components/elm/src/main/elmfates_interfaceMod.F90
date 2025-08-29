@@ -266,8 +266,8 @@ module ELMFatesInterfaceMod
       
       ! This is the array of pointer to the host land model data and its associated
       ! common variable name
-      type(hlm_fates_api_var_type), allocatable :: bc_in(:)
-      type(hlm_fates_api_var_type), allocatable :: bc_out(:)
+      ! type(hlm_fates_api_var_type), allocatable :: bc_in(:)
+      ! type(hlm_fates_api_var_type), allocatable :: bc_out(:)
 
       ! This is the number of HLM variables that are being passed in and out of FATES
       integer, public :: num_hlmvar_in, num_hlmvar_out
@@ -306,8 +306,8 @@ module ELMFatesInterfaceMod
       procedure, public  :: WrapUpdateFatesRmean
       procedure, public  :: WrapGlobalSeedDispersal
       procedure, public  :: WrapUpdateFatesSeedInOut
-      procedure, public  :: WrapTransferBCIn
-      procedure, public  :: WrapTransferBCOut
+      ! procedure, public  :: WrapTransferBCIn
+      ! procedure, public  :: WrapTransferBCOut
 
    end type hlm_fates_interface_type
    
@@ -934,7 +934,7 @@ contains
       end if
       
       ! Initialize the fates to host land model API variable mapping
-      call this%InitAndSetAPIAssociation()
+      ! call this%InitAndSetAPIAssociation()
 
       ! Retrieve the landuse x pft static data if the optional switch has been set
       if (use_fates_fixed_biogeog .and. use_fates_luh) then
@@ -1265,7 +1265,7 @@ contains
       end if
       
       ! Transfer decomposition fluxes to the FATES patch data structure
-      call this%WrapTransferBCIn(nc)
+      ! call this%WrapTransferBCIn(nc)
 
       do s=1,this%fates(nc)%nsites
 
@@ -3744,61 +3744,61 @@ end subroutine wrap_update_hifrq_hist
 
 ! ======================================================================================
 
- subroutine WrapTransferBCIn(this, nc)
+!  subroutine WrapTransferBCIn(this, nc)
 
-   ! !DESCRIPTION:
-   ! ---------------------------------------------------------------------------------
-   ! This call passes the HLM inputs to FATES patch-level boundary conditions
-   ! ---------------------------------------------------------------------------------
+!    ! !DESCRIPTION:
+!    ! ---------------------------------------------------------------------------------
+!    ! This call passes the HLM inputs to FATES patch-level boundary conditions
+!    ! ---------------------------------------------------------------------------------
 
-   ! !USES:
-   !
-   ! !ARGUMENTS:
-   class(hlm_fates_interface_type), intent(inout) :: this
-   integer, intent(in) :: nc 
+!    ! !USES:
+!    !
+!    ! !ARGUMENTS:
+!    class(hlm_fates_interface_type), intent(inout) :: this
+!    integer, intent(in) :: nc 
    
-   ! !LOCAL:
-   integer :: s, ivar  ! indices and loop counters
+!    ! !LOCAL:
+!    integer :: s, ivar  ! indices and loop counters
    
-   do s = 1, this%fates(nc)%nsites
-      do ivar = 1,this%num_hlmvar_in
-         call this%fates(nc)%sites(s)%TransferBCIn(this%bc_in(ivar)%api_str, &
-                                                   this%bc_in(ivar)%hlm_var)
-      end do
-   end do
+!    do s = 1, this%fates(nc)%nsites
+!       do ivar = 1,this%num_hlmvar_in
+!          call this%fates(nc)%sites(s)%TransferBCIn(this%bc_in(ivar)%api_str, &
+!                                                    this%bc_in(ivar)%hlm_var)
+!       end do
+!    end do
 
- end subroutine WrapTransferBCIn
+!  end subroutine WrapTransferBCIn
 
-! ======================================================================================
+! ! ======================================================================================
 
- subroutine WrapTransferBCOut(this, nc)
+!  subroutine WrapTransferBCOut(this, nc)
 
-   ! !DESCRIPTION:
-   ! ---------------------------------------------------------------------------------
-   ! This call passes the HLM inputs to FATES patch-level boundary conditions
-   ! ---------------------------------------------------------------------------------
+!    ! !DESCRIPTION:
+!    ! ---------------------------------------------------------------------------------
+!    ! This call passes the HLM inputs to FATES patch-level boundary conditions
+!    ! ---------------------------------------------------------------------------------
 
-   ! !USES:
-   !
-   ! !ARGUMENTS:
-   class(hlm_fates_interface_type), intent(inout) :: this
-   integer, intent(in) :: nc 
+!    ! !USES:
+!    !
+!    ! !ARGUMENTS:
+!    class(hlm_fates_interface_type), intent(inout) :: this
+!    integer, intent(in) :: nc 
    
-   ! !LOCAL:
-   integer :: s, ivar  ! indices and loop counters
-   real(r8) :: dtime   ! step size to pass to FATES to handle timestep conversions
+!    ! !LOCAL:
+!    integer :: s, ivar  ! indices and loop counters
+!    real(r8) :: dtime   ! step size to pass to FATES to handle timestep conversions
 
-   ! Get the step size in seconds
-   dtime = real(get_step_size(),r8)
+!    ! Get the step size in seconds
+!    dtime = real(get_step_size(),r8)
 
-   do s = 1, this%fates(nc)%nsites
-      do ivar = 1,this%num_hlmvar_out
-         call this%fates(nc)%sites(s)%TransferBCOut(this%bc_out(ivar)%api_str, &
-                                                   this%bc_out(ivar)%hlm_var, dtime)
-      end do
-   end do
+!    do s = 1, this%fates(nc)%nsites
+!       do ivar = 1,this%num_hlmvar_out
+!          call this%fates(nc)%sites(s)%TransferBCOut(this%bc_out(ivar)%api_str, &
+!                                                    this%bc_out(ivar)%hlm_var, dtime)
+!       end do
+!    end do
 
- end subroutine WrapTransferBCOut
+!  end subroutine WrapTransferBCOut
 
  ! ======================================================================================
 
