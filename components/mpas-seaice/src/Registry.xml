@@ -1866,9 +1866,9 @@
 			description="Initial temperature of icebergs."
 			possible_values="Any real number."
 		/>
-		<nml_option name="config_scale_dib_by_removed_ice_runoff" type="logical" default_value="false"
-			description="Whether to scale data iceberg fluxes by the running mean of removed ice runoff"
-			possible_values="true or false"
+		<nml_option name="config_dib_scale_mode" type="character" default_value="none"
+                        description="How to scale data iceberg fluxes: 'none'=no scaling, 'removed_ice_runoff'=running mean of removed ice runoff, 'coupler_ice_runoff'=sum of Fixx_rofi from coupler"
+			possible_values="'none', 'removed_ice_runoff','coupler_ice_runoff'"
 		/>
 		<nml_option name="config_salt_flux_coupling_type" type="character" default_value="constant" units="unitless"
 			description="Type of salt flux to ocean method"

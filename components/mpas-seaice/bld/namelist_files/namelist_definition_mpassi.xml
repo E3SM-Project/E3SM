@@ -2662,11 +2662,11 @@ Valid values: Any real number.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_scale_dib_by_removed_ice_runoff" type="logical"
+<entry id="config_dib_scale_mode" type="char*1024"
 	category="ocean" group="ocean">
-Whether to scale data iceberg fluxes by the running mean of removed ice runoff
+How to scale data iceberg fluxes: 'none'=no scaling, 'removed_ice_runoff'=running mean of removed ice runoff, 'coupler_ice_runoff'=sum of Fixx_rofi from coupler"
 
-Valid values: true or false
+Valid values: 'none', 'removed_ice_runoff','coupler_ice_runoff'
 Default: Defined in namelist_defaults.xml
 </entry>
 

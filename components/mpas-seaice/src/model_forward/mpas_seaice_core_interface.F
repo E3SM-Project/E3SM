@@ -552,8 +552,11 @@ module seaice_core_interface
 
           ! icebergs package
      logical, pointer :: &
-          config_use_data_icebergs, &
-          config_scale_dib_by_removed_ice_runoff
+          config_use_data_icebergs
+
+
+     character(len=strKind), pointer :: &
+          config_dib_scale_mode
 
 
      logical, pointer :: &
@@ -570,9 +573,11 @@ module seaice_core_interface
      call MPAS_pool_get_package(packagePool, "pkgBergsActive", pkgBergsActive)
      pkgBergsActive = config_use_data_icebergs
 
-     call MPAS_pool_get_config(configPool, "config_scale_dib_by_removed_ice_runoff", config_scale_dib_by_removed_ice_runoff)
+     call MPAS_pool_get_config(configPool, "config_dib_scale_mode", config_dib_scale_mode)
      call MPAS_pool_get_package(packagePool, "pkgScaledDIBActive", pkgScaledDIBActive)
-     pkgScaledDIBActive = config_scale_dib_by_removed_ice_runoff
+     if (trim(config_dib_scale_mode) == 'removed_ice_runoff') then
+        pkgScaledDIBActive = .true.
+     endif
 
    end subroutine setup_packages_bergs!}}}
 
