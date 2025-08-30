@@ -1,1 +1,1 @@
- config_scale_dib_by_removed_ice_runoff = .true.
+ config_dib_scale_mode = 'removed_ice_runoff'

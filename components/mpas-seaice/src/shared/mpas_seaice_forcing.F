@@ -3312,8 +3312,8 @@ contains
          berg_forcing, &
          berg_fluxes
 
-    logical, pointer :: &
-         config_scale_dib_by_removed_ice_runoff
+    character(len=strKIND), pointer :: &
+         config_dib_scale_mode
 
     integer, pointer :: &
          nCellsSolve
@@ -3321,7 +3321,9 @@ contains
     real(kind=RKIND), dimension(:), pointer :: &
          bergFreshwaterFluxData, & ! iceberg freshwater flux read in from file (kg/m^2/s)
          bergFreshwaterFlux, & ! iceberg freshwater flux for ocean (kg/m^2/s)
-         bergLatentHeatFlux ! iceberg latent heat flux for ocean (J/m^2/s)
+         bergLatentHeatFlux, & ! iceberg latent heat flux for ocean (J/m^2/s)
+         areaCell, &
+         latCell
 
     real(kind=RKIND), pointer :: &
          bergTemperature, & ! iceberg temperature
@@ -3332,23 +3334,67 @@ contains
          iCell
 
     real(kind=RKIND) :: &
-         scaling
+         scaling, &
+         globalBergFluxIn, &
+         globalBergFluxOut
 
     call MPAS_pool_get_config(domain % configs, "config_iceberg_temperature", &
                               bergTemperature)
 
-    call MPAS_pool_get_config(domain % configs, "config_scale_dib_by_removed_ice_runoff", &
-                              config_scale_dib_by_removed_ice_runoff)
+    call MPAS_pool_get_config(domain % configs, "config_dib_scale_mode", &
+                              config_dib_scale_mode)
 
-    if (config_scale_dib_by_removed_ice_runoff) then
+    if (trim(config_dib_scale_mode) == 'removed_ice_runoff') then
        block => domain % blocklist
        call MPAS_pool_get_subpool(block % structs, "berg_forcing", berg_forcing)
        call mpas_pool_get_array(berg_forcing, 'runningMeanRemovedIceRunoff', runningMeanRemovedIceRunoff)
        call mpas_pool_get_array(berg_forcing, 'areaIntegAnnMeanDataIcebergIceShelfFreshwaterFlux', &
                                 areaIntegAnnMeanDataIcebergIceShelfFreshwaterFlux)
        scaling = runningMeanRemovedIceRunoff / areaIntegAnnMeanDataIcebergIceShelfFreshwaterFlux
-    else
+
+    elseif (trim(config_dib_scale_mode) == 'coupler_ice_runoff') then
+       ! TODO: add check for both of these options
+
+       ! global reudction of coupler ice runoff
+       globalBergFluxIn = 0.0_RKIND
+       globalBergFluxOut = 0.0_RKIND
+       block => domain % blocklist
+       do while (associated(block))
+
+          call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+          call MPAS_pool_get_subpool(block % structs, "berg_fluxes", berg_fluxes)
+          call MPAS_pool_get_subpool(block % structs, "berg_forcing", berg_forcing)
+
+          call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
+          call MPAS_pool_get_array(mesh, "areaCell", areaCell)
+          call MPAS_pool_get_array(mesh, "latCell", latCell)
+
+          call MPAS_pool_get_array(berg_fluxes, "bergFreshwaterFlux", bergFreshwaterFlux)
+          call mpas_pool_get_array(berg_forcing, 'areaIntegAnnMeanDataIcebergIceShelfFreshwaterFlux', &
+                                   areaIntegAnnMeanDataIcebergIceShelfFreshwaterFlux)
+
+          do iCell = 1, nCellsSolve
+             ! TODO: Generalize to both ice sheets, accounting for the possibility of rofi from
+             ! runoff model at low-mid latitudes
+             if ((latCell(iCell) < 0.0_RKIND) .and. (bergFreshwaterFlux(iCell) > 0.0_RKIND)) then
+                globalBergFluxIn = globalBergFluxIn + areaCell(iCell) * bergFreshwaterFlux(iCell)
+             endif
+          enddo
+
+          block => block % next
+       enddo
+
+       call mpas_dmpar_sum_real(domain % dminfo, globalBergFluxIn, globalBergFluxOut)
+       scaling = globalBergFluxOut / areaIntegAnnMeanDataIcebergIceShelfFreshwaterFlux
+       call mpas_log_write("globalBergIn=$r, globalBergOut=$r, iceberg flux scaling=$r", realArgs=(/globalBergFluxIn, globalBergFluxOut, scaling/))
+       if (scaling == 0.0_RKIND) scaling = 1.0_RKIND  ! coupler rofi flux may be 0 on first coupling interval
+
+    elseif (trim(config_dib_scale_mode) == 'none') then
        scaling = 1.0_RKIND
+    else
+       call mpas_log_write('Unknown value for config_dib_scale_mode', MPAS_LOG_ERR)
+       ! TODO: how to throw an error?
+       return
     end if
 
     block => domain % blocklist
