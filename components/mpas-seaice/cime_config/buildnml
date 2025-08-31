@@ -680,6 +680,7 @@ def buildnml(case, caseroot, compname):
                 lines.append('                  input_interval="none" >')
                 lines.append('')
                 lines.append('    <var name="bergFreshwaterFluxData"/>')
+                lines.append('    <var name="areaIntegAnnMeanDataIcebergFreshwaterFlux"/>')
                 lines.append('    <var name="areaIntegAnnMeanDataIcebergIceShelfFreshwaterFlux"/>')
                 lines.append('    <var name="xtime"/>')
                 lines.append('</stream>')

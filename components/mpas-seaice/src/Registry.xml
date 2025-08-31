@@ -4956,6 +4956,13 @@
 			 units="kg s-1"
 			 packages="pkgScaledDIB"
 			 description="The area integrated, annually averaged freshwater flux into the ocean from both data icebergs and ice-shelf melting."
+                />
+		<var name="areaIntegAnnMeanDataIcebergFreshwaterFlux"
+		     type="real"
+			 dimensions="Time"
+			 units="kg s-1"
+			 packages="pkgScaledDIB"
+			 description="The area integrated, annually averaged freshwater flux into the ocean from both data icebergs."
 		/>
 		<var name="runningMeanRemovedIceRunoff"
 		     type="real"
