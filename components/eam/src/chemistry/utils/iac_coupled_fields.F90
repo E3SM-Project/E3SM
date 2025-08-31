@@ -137,29 +137,27 @@ contains
   end subroutine iac_coupled_fields_init
 
 
-  subroutine iac_coupled_fields_adv( state, pbuf2d)
+  subroutine iac_coupled_fields_adv( state, pbuf)
     !-------------------------------------------------------------------
-    ! Update pbuf2d with the iac coupled fields (just co2, for now)
-    ! called by: phys_timestep_init at every time step (in physpkg.F90)
+    ! Update pbuf with the iac coupled fields (just co2, for now)
+    ! called by: tphysac at every time step (in physpkg.F90)
     !-------------------------------------------------------------------
 
     use perf_mod,     only: t_startf, t_stopf
     use physics_types,only: physics_state
-    use ppgrid,       only: begchunk, endchunk
-    use ppgrid,       only: pcols, pver
-    use physics_buffer, only : physics_buffer_desc, pbuf_get_field, pbuf_get_chunk
+    use ppgrid,       only: pver
+    use physics_buffer, only : physics_buffer_desc, pbuf_get_field
 
     implicit none
 
-    type(physics_state), intent(in)    :: state(begchunk:endchunk)
-    type(physics_buffer_desc), pointer :: pbuf2d(:,:)
-    type(physics_buffer_desc), pointer :: pbuf_chnk(:)
+    type(physics_state), intent(in)    :: state
+    type(physics_buffer_desc), pointer :: pbuf(:)
 
     character(len=cxx)  :: err_str
     integer, parameter :: HIGH_LAYER = 11000 !Height at which fco2_high should be released [m]
     integer, parameter :: iac_low_height_option = 1 !FIXMEB: This should be a namelist option
 
-    integer  :: ichunk, ncol, klev, icol, high_lev
+    integer  :: ncol, klev, icol, high_lev
     real(r8), pointer :: tmpptr(:,:) ! pointer for storing CO2 values [kg/m2/s]
     real(r8) :: denominator, dist_amount
 
@@ -169,11 +167,8 @@ contains
     if (.not. iac_present) return
     call t_startf('iac_coupled_fields_adv')
 
-
-    do ichunk = begchunk,endchunk
-       ncol = state(ichunk)%ncol !number of columns in this chunk
-       pbuf_chnk => pbuf_get_chunk(pbuf2d, ichunk)
-       call pbuf_get_field(pbuf_chnk, iac_co2_pbuf_ndx, tmpptr )! get tmpptr point to the iac field
+    ncol = state%ncol
+    call pbuf_get_field(pbuf, iac_co2_pbuf_ndx, tmpptr )! get tmpptr point to the iac field
 
        ! In the following do-loop, we will populate tmpptr with the CO2 values read in from
        ! iac_vertical_emiss. iac_vertical_emiss has CO2 at two heights, the high height and the low
@@ -188,12 +183,12 @@ contains
 
           ! Find the layer containing HIGH_LAYER value
           do klev = 1, pver
-            if (state(ichunk)%zi(icol, klev+1) > HIGH_LAYER) cycle
+        if (state%zi(icol, klev+1) > HIGH_LAYER) cycle
             high_lev = klev !found the level at HIGH_LAYER
             exit
           enddo
           !assign the fco2_high_height to the "high_lev" level
-          tmpptr(icol,high_lev) = iac_vertical_emiss(ichunk)%fco2_high_height(icol)
+      tmpptr(icol,high_lev) = iac_vertical_emiss(state%lchnk)%fco2_high_height(icol)
 
           !For the fco2_low_height, we have several options in the following select case statement
           select case (iac_low_height_option)
@@ -201,13 +196,14 @@ contains
               !Distribut the fco2_low_height equally among all the levels below "high_lev"
 
               !Divide by zero check
-              denominator = (pver - high_lev+1)
-              if (denominator < 1.e-11 .and. denominator > -1.e-11) then !Checking if denominator is zero
+          denominator = (pver - high_lev)
+          if (denominator < 1.e-11 .and. denominator > -1.e-11) then !Checking if denominator is near zero or a very tinay number
                 write(err_str,*) 'ERROR: possible divide by zero, denominator is: ',denominator ,',',errmsg(__FILE__, __LINE__)
                 call endrun(err_str)
               end if
+
               !Amount of CO2 to distribute
-              dist_amount = iac_vertical_emiss(ichunk)%fco2_low_height(icol)/(pver - high_lev+1)
+          dist_amount = iac_vertical_emiss(state%lchnk)%fco2_low_height(icol)/(pver - high_lev)
               do klev = high_lev+1, pver
                 tmpptr(icol,klev) = dist_amount
               enddo
@@ -217,10 +213,10 @@ contains
                 write(err_str,*) 'ERROR: Invalid fco2_low_height distribution option : ',iac_low_height_option,',',errmsg(__FILE__, __LINE__)
                 call endrun(err_str)
           end select
-       end do
-    enddo
+    end do ! End of loop over columns
 
     call t_stopf('iac_coupled_fields_adv')
+
   end subroutine iac_coupled_fields_adv
 
   subroutine iac_coupled_timeinterp(lower_bound, upper_bound, time_interp_frac) !output
