@@ -3353,41 +3353,7 @@ contains
        scaling = runningMeanRemovedIceRunoff / areaIntegAnnMeanDataIcebergIceShelfFreshwaterFlux
 
     elseif (trim(config_dib_scale_mode) == 'coupler_ice_runoff') then
-       ! TODO: add check for both of these options
-
-       ! global reudction of coupler ice runoff
-       globalBergFluxIn = 0.0_RKIND
-       globalBergFluxOut = 0.0_RKIND
-       block => domain % blocklist
-       do while (associated(block))
-
-          call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
-          call MPAS_pool_get_subpool(block % structs, "berg_fluxes", berg_fluxes)
-          call MPAS_pool_get_subpool(block % structs, "berg_forcing", berg_forcing)
-
-          call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
-          call MPAS_pool_get_array(mesh, "areaCell", areaCell)
-          call MPAS_pool_get_array(mesh, "latCell", latCell)
-
-          call MPAS_pool_get_array(berg_fluxes, "bergFreshwaterFlux", bergFreshwaterFlux)
-          call mpas_pool_get_array(berg_forcing, 'areaIntegAnnMeanDataIcebergIceShelfFreshwaterFlux', &
-                                   areaIntegAnnMeanDataIcebergIceShelfFreshwaterFlux)
-
-          do iCell = 1, nCellsSolve
-             ! TODO: Generalize to both ice sheets, accounting for the possibility of rofi from
-             ! runoff model at low-mid latitudes
-             if ((latCell(iCell) < 0.0_RKIND) .and. (bergFreshwaterFlux(iCell) > 0.0_RKIND)) then
-                globalBergFluxIn = globalBergFluxIn + areaCell(iCell) * bergFreshwaterFlux(iCell)
-             endif
-          enddo
-
-          block => block % next
-       enddo
-
-       call mpas_dmpar_sum_real(domain % dminfo, globalBergFluxIn, globalBergFluxOut)
-       scaling = globalBergFluxOut / areaIntegAnnMeanDataIcebergIceShelfFreshwaterFlux
-       call mpas_log_write("globalBergIn=$r, globalBergOut=$r, iceberg flux scaling=$r", realArgs=(/globalBergFluxIn, globalBergFluxOut, scaling/))
-       if (scaling == 0.0_RKIND) scaling = 1.0_RKIND  ! coupler rofi flux may be 0 on first coupling interval
+       return ! handled in ice_comp_mct.F
 
     elseif (trim(config_dib_scale_mode) == 'none') then
        scaling = 1.0_RKIND

@@ -575,7 +575,8 @@ module seaice_core_interface
 
      call MPAS_pool_get_config(configPool, "config_dib_scale_mode", config_dib_scale_mode)
      call MPAS_pool_get_package(packagePool, "pkgScaledDIBActive", pkgScaledDIBActive)
-     if (trim(config_dib_scale_mode) == 'removed_ice_runoff') then
+     if ((trim(config_dib_scale_mode) == 'removed_ice_runoff') .or. &
+         (trim(config_dib_scale_mode) == 'coupler_ice_runoff')) then
         pkgScaledDIBActive = .true.
      endif
 
