@@ -1010,9 +1010,10 @@ contains
     garr(bounds%begg : bounds%endg) = spval
     sumwt(bounds%begg : bounds%endg) = 0._r8
     do c = bounds%begc,bounds%endc
-       ! TRS - nans during initialization cause problems with debugger.
+       !NaNs during initialization cause problems with debugger.
        if (isnan(carr(c))) then
-          cycle
+          call endrun(msg='carr(c) is NaN '//&
+                errMsg(__FILE__, __LINE__))
        endif
        if (col_pp%active(c) .and. col_pp%wtgcell(c) /= 0._r8) then
           l = col_pp%landunit(c)

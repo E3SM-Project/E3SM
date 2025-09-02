@@ -196,7 +196,6 @@ contains
     use dynColumnStateUpdaterMod  , only : set_old_column_weights, set_new_column_weights
     use dynPriorWeightsMod        , only : set_prior_weights
     use elm_time_manager , only : get_step_size
-    ! avd
     use elm_varctl, only :  iulog
 
     !
@@ -279,7 +278,7 @@ contains
     end if
 
     ! pft and harvest come from iac when active
-    ! avd - the above namelist values are false in this case
+    ! The above namelist values are false in this case
     !       may want to ensure this with namelist checks
 
     if (iac_active) then
@@ -431,8 +430,7 @@ contains
 
     SHR_ASSERT_ALL(bounds%level == BOUNDS_LEVEL_PROC, subname // ': argument must be PROC-level bounds')
 
-    ! TRS
-    ! We need to allocate if do_harvest = .false., befause then
+    ! We need to allocate if do_harvest = .false., because then
     ! dynHarvest_ini() has not been called but we still need
     ! harvest_rates.  Should we switch on do_harvest == .false.?
     if (.not. get_do_harvest()) then

@@ -363,7 +363,7 @@ contains
     end if
 
     ! Create land export state 
-    ! avd - note that lnd2iac_vars is not set yet for restart
+    ! Note that lnd2iac_vars is not set yet for restart
     if (atm_present .or. iac_present) then 
       call lnd_export(bounds, lnd2atm_vars, lnd2glc_vars, lnd2iac_vars, l2x_l%rattr)
 #ifdef HAVE_MOAB

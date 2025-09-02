@@ -367,11 +367,11 @@ contains
     ! IAC coupling
     !---------------------------------
 
-    ! avd - this is called before the pft number is set
+    ! This is called before the pft number is set 
     ! and these are indexed from zero on this elm side 
     ! KVC: this has a different value than in iac. Need to align. Doing manually now
     iac_npft = 17
-    ! avd - hardcode this for now, but should be able to get it from namelist like
+    ! Hardcode this for now, but should be able to get it from namelist like
     ! in the iac
     iac_nharvest = 5
     do p = 0,iac_npft-1

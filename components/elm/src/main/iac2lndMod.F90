@@ -19,7 +19,6 @@ module iac2lndMod
   use VegetationType , only : veg_pp
   use dynHarvestMod  , only : harvest_rates, do_cn_harvest
 
-  ! !PUBLIC TYPES:
   implicit none
   private
   save
@@ -114,7 +113,7 @@ contains
     use elm_time_manager, only : get_curr_yearfrac
     use landunit_varcon , only : istsoil
     use elm_varctl, only : iac_active, iulog
-    use netcdf   !avd - this is for a diagnostic file
+    use netcdf   !This is for a diagnostic file
     use domainMod,   only : ldomain
     !
     ! !ARGUMENTS:
@@ -126,7 +125,7 @@ contains
     integer :: begp, endp
     real(r8) :: wt1    ! weight of time1 (prev time point)
 
-    ! avd - diagnostic file
+    ! Diagnostic file
     character(len=128) :: hfile
     integer :: ierr, nmode, ncid, ngcells, pft_varid, pft_prev_varid
     integer :: harv_varid, cid_varid
@@ -147,10 +146,6 @@ contains
        
        ! the the weight of prev time point
        wt1 = 1.0_r8 - get_curr_yearfrac()
-
-!avd
-!write(iulog,*) subname, 'begg,endg=', begg,endg
-!write(iulog,*) subname, 'begp,endp=', begp,endp
 
        do p = begp,endp
           g=veg_pp%gridcell(p)
@@ -216,9 +211,6 @@ contains
                 ! sum the harvest data into one field 
                 do h=0,(numharvest-1)
                    if (.not.(col_pp%wtgcell(c) .eq. 0._r8)) then
-                      ! TRS - now using harvest-distinct harvest_rates var
-                      !harvest(g) = harvest(g) + &
-                      !           this%harvest_frac(g,h) / col_pp%wtgcell(c)
                       ! Note harvest_rates is one-offset in h 
                       ! or not?
                       harvest_rates(h+1,g) = this%harvest_frac(g,h) / col_pp%wtgcell(c)
@@ -228,10 +220,10 @@ contains
           end do
        end do
 
-! avd - don't do this to see if it speeds up; besides, it isn't useful in
+! Don't do this to see if it speeds up; besides, it isn't useful in
 ! parallel
 if (.false.) then
-       ! avd - write these values to a file
+       ! Write these values to a file
        write(iulog,*) subname, 'Writing diagnostic iac2land file'
 
        ngcells = endg-begg+1

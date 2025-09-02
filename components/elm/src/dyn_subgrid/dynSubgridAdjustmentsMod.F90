@@ -26,6 +26,8 @@ module dynSubgridAdjustmentsMod
   use VegetationDataType     , only : vegetation_carbon_state, vegetation_nitrogen_state
   use VegetationDataType     , only : vegetation_phosphorus_state
   use SpeciesMod             , only : CN_SPECIES_N, CN_SPECIES_P
+  use abortutils             , only : endrun
+  use shr_log_mod            , only : errMsg => shr_log_errMsg
 
   !
   ! !PUBLIC MEMBER FUNCTIONS:
@@ -817,8 +819,6 @@ contains
     use dynPriorWeightsMod       , only : prior_weights_type
     use landunit_varcon          , only : istsoil, istcrop
     use dynColumnStateUpdaterMod , only : column_state_updater_type
-    use shr_log_mod        , only : errMsg => shr_log_errMsg
-    use abortutils      , only : endrun
         !
     ! !ARGUMENTS:
     type(bounds_type)               , intent(in)    :: bounds
@@ -913,12 +913,10 @@ contains
            var         = sminn_vr(begc:endc, j), &
            adjustment  = adjustment_one_level(begc:endc))
 
-       ! TRS NaN trap, for debugging
-       if (.not. isnan(col_ns%dyn_nbal_adjustments(begc))) then 
-          col_ns%dyn_nbal_adjustments(begc:endc) = &
-               col_ns%dyn_nbal_adjustments(begc:endc) + &
-               adjustment_one_level(begc:endc) * dzsoi_decomp(j)
-       endif
+       col_ns%dyn_nbal_adjustments(begc:endc) = &
+           col_ns%dyn_nbal_adjustments(begc:endc) + &
+           adjustment_one_level(begc:endc) * dzsoi_decomp(j)
+
        call update_column_state_no_special_handling(column_state_updater, &
             bounds      = bounds                          , &
             clump_index = clump_index                     , &
@@ -937,11 +935,11 @@ contains
          var         = prod1n(begc:endc),     &
          adjustment  = adjustment_one_level(begc:endc))
 
-    if (.not. isnan(col_ns%dyn_nbal_adjustments(begc))) then
-       col_ns%dyn_nbal_adjustments(begc:endc) = &
-            col_ns%dyn_nbal_adjustments(begc:endc) + &
-            adjustment_one_level(begc:endc)
-    endif
+    
+    col_ns%dyn_nbal_adjustments(begc:endc) = &
+          col_ns%dyn_nbal_adjustments(begc:endc) + &
+          adjustment_one_level(begc:endc)
+    
 
     call update_column_state_no_special_handling(column_state_updater, &
          bounds      = bounds,                                         &
@@ -949,11 +947,10 @@ contains
          var         = prod10n(begc:endc),     &
          adjustment  = adjustment_one_level(begc:endc))
 
-    if (.not. isnan(col_ns%dyn_nbal_adjustments(begc))) then
-       col_ns%dyn_nbal_adjustments(begc:endc) = &
-            col_ns%dyn_nbal_adjustments(begc:endc) + &
-            adjustment_one_level(begc:endc)
-    endif
+    col_ns%dyn_nbal_adjustments(begc:endc) = &
+          col_ns%dyn_nbal_adjustments(begc:endc) + &
+          adjustment_one_level(begc:endc)
+    
 
     call update_column_state_no_special_handling(column_state_updater, &
          bounds      = bounds,                                         &
@@ -961,11 +958,10 @@ contains
          var         = prod100n(begc:endc),     &
          adjustment  = adjustment_one_level(begc:endc))
 
-    if (.not. isnan(col_ns%dyn_nbal_adjustments(begc))) then
-       col_ns%dyn_nbal_adjustments(begc:endc) = &
-            col_ns%dyn_nbal_adjustments(begc:endc) + &
-            adjustment_one_level(begc:endc)
-    endif
+    
+    col_ns%dyn_nbal_adjustments(begc:endc) = &
+          col_ns%dyn_nbal_adjustments(begc:endc) + &
+          adjustment_one_level(begc:endc)
 
     call update_column_state_no_special_handling(column_state_updater, &
          bounds      = bounds,                                         &
@@ -1575,11 +1571,12 @@ contains
                var         = decomp_ppools_vr(begc:endc, j, l),     &
                adjustment  = adjustment_one_level(begc:endc) )
 
-          if (.not. isnan(col_ps%dyn_pbal_adjustments(begc))) then
-             col_ps%dyn_pbal_adjustments(begc:endc) =      &
-                  col_ps%dyn_pbal_adjustments(begc:endc) + &
-                  adjustment_one_level(begc:endc) * dzsoi_decomp(j)
+          if (isnan(col_ps%dyn_pbal_adjustments(begc))) then
+               call endrun(msg='dyn_col_ps_Adjustments: col_ps%dyn_pbal_adjustments(begc) is NaN '//errMsg(__FILE__, __LINE__))
           endif
+          col_ps%dyn_pbal_adjustments(begc:endc) =      &
+               col_ps%dyn_pbal_adjustments(begc:endc) + &
+               adjustment_one_level(begc:endc) * dzsoi_decomp(j)
 
        end do
     end do
@@ -1591,22 +1588,22 @@ contains
             var         = ptrunc_vr(begc:endc,j),                &
             adjustment  = adjustment_one_level(begc:endc))
 
-       if (.not. isnan(col_ps%dyn_pbal_adjustments(begc))) then
-          col_ps%dyn_pbal_adjustments(begc:endc) =      &
-               col_ps%dyn_pbal_adjustments(begc:endc) + &
-               adjustment_one_level(begc:endc) * dzsoi_decomp(j)
+       if (isnan(col_ps%dyn_pbal_adjustments(begc))) then
+           call endrun(msg='dyn_col_ps_Adjustments: col_ps%dyn_pbal_adjustments(begc) is NaN '//errMsg(__FILE__, __LINE__))
        endif
+       col_ps%dyn_pbal_adjustments(begc:endc) =      &
+           col_ps%dyn_pbal_adjustments(begc:endc) + &
+           adjustment_one_level(begc:endc) * dzsoi_decomp(j)
+
        call update_column_state_no_special_handling( column_state_updater, &
             bounds      = bounds,                                         &
             clump_index = clump_index,                                    &
             var         = solutionp_vr(begc:endc,j),             &
             adjustment  = adjustment_one_level(begc:endc))
 
-       if (.not. isnan(col_ps%dyn_pbal_adjustments(begc))) then
-          col_ps%dyn_pbal_adjustments(begc:endc) =      &
-               col_ps%dyn_pbal_adjustments(begc:endc) + &
-               adjustment_one_level(begc:endc) * dzsoi_decomp(j)
-       endif
+       col_ps%dyn_pbal_adjustments(begc:endc) =      &
+           col_ps%dyn_pbal_adjustments(begc:endc) + &
+           adjustment_one_level(begc:endc) * dzsoi_decomp(j)
 
        call update_column_state_no_special_handling( column_state_updater, &
             bounds      = bounds,                                         &
@@ -1614,11 +1611,10 @@ contains
             var         = labilep_vr(begc:endc,j),               &
             adjustment  = adjustment_one_level(begc:endc))
 
-       if (.not. isnan(col_ps%dyn_pbal_adjustments(begc))) then
-          col_ps%dyn_pbal_adjustments(begc:endc) =      &
-               col_ps%dyn_pbal_adjustments(begc:endc) + &
-               adjustment_one_level(begc:endc) * dzsoi_decomp(j)
-       endif
+       col_ps%dyn_pbal_adjustments(begc:endc) =      &
+           col_ps%dyn_pbal_adjustments(begc:endc) + &
+           adjustment_one_level(begc:endc) * dzsoi_decomp(j)
+
        !!
        call update_column_state_no_special_handling( column_state_updater, &
             bounds      = bounds,                                         &
@@ -1649,11 +1645,9 @@ contains
          var         = prod1p(begc:endc),     &
          adjustment  = adjustment_one_level(begc:endc))
 
-    if (.not. isnan(col_ps%dyn_pbal_adjustments(begc))) then
-       col_ps%dyn_pbal_adjustments(begc:endc) = &
-            col_ps%dyn_pbal_adjustments(begc:endc) + &
-            adjustment_one_level(begc:endc)
-    endif
+   col_ps%dyn_pbal_adjustments(begc:endc) = &
+         col_ps%dyn_pbal_adjustments(begc:endc) + &
+         adjustment_one_level(begc:endc)
 
     call update_column_state_no_special_handling( column_state_updater, &
          bounds      = bounds,                                         &
@@ -1661,11 +1655,9 @@ contains
          var         = prod10p(begc:endc),     &
          adjustment  = adjustment_one_level(begc:endc))
 
-    if (.not. isnan(col_ps%dyn_pbal_adjustments(begc))) then
-       col_ps%dyn_pbal_adjustments(begc:endc) = &
-            col_ps%dyn_pbal_adjustments(begc:endc) + &
-            adjustment_one_level(begc:endc)
-    endif
+    col_ps%dyn_pbal_adjustments(begc:endc) = &
+         col_ps%dyn_pbal_adjustments(begc:endc) + &
+         adjustment_one_level(begc:endc)
 
     call update_column_state_no_special_handling( column_state_updater, &
          bounds      = bounds,                                         &
@@ -1673,11 +1665,9 @@ contains
          var         = prod100p(begc:endc),     &
          adjustment  = adjustment_one_level(begc:endc))
 
-    if (.not. isnan(col_ps%dyn_pbal_adjustments(begc))) then
-       col_ps%dyn_pbal_adjustments(begc:endc) = &
-            col_ps%dyn_pbal_adjustments(begc:endc) + &
-            adjustment_one_level(begc:endc)
-    endif
+    col_ps%dyn_pbal_adjustments(begc:endc) = &
+         col_ps%dyn_pbal_adjustments(begc:endc) + &
+         adjustment_one_level(begc:endc)
 
     end associate
 
