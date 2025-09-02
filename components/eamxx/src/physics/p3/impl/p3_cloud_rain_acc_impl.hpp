@@ -24,6 +24,7 @@ void Functions<S,D>
   const Smask& context)
 {
   constexpr Scalar qsmall = C::QSMALL;
+  constexpr Scalar kr = C::kr
 
   const Scalar accretion_prefactor   = runtime_options.accretion_prefactor;
   const Scalar accretion_qc_exponent = runtime_options.accretion_qc_exponent;
@@ -42,19 +43,18 @@ void Functions<S,D>
                               pow(qc_incld, accretion_qc_exponent) *
                               pow(qr_incld, accretion_qr_exponent));
       nc_accret_tend.set(qr_and_qc_not_small,
-                       qc2qr_accret_tend * nc_incld / qc_incld);
-
-      qc2qr_accret_tend.set(nc_accret_tend == 0 && context, 0);
-      nc_accret_tend.set(qc2qr_accret_tend == 0 && context, 0);}
+                       qc2qr_accret_tend * nc_incld / qc_incld);}
    else {
        //Seifert and Beheng (2001)
-      dum   = 1._rtype-qc_incld/(qc_incld+qr_incld)
-      dum1  = (dum/(dum+5.e-4_rtype))**4
-      qc2qr_accret_tend.set(qr_and_qc_not_small,kr*rho*0.001_rtype*qc_incld*qr_incld*dum1)
-      nc_accret_tend.set(qr_and_qc_not_small,qc2qr_accret_tend*rho*0.001_rtype*(nc_incld*rho*1.e-6_rtype)/(qc_incld*rho*   
-             0.001_rtype)*1.e+6_rtype*inv_rho;
-      qc2qr_accret_tend.set(nc_accret_tend == 0 && context, 0);
-      nc_accret_tend.set(qc2qr_accret_tend == 0 && context, 0);} 
+      Spack dum;
+      Spack dum1;
+      dum   = 1 - qc_incld/(qc_incld+qr_incld)
+      dum1  = pow(dum/(dum+5.e-4),4)
+      qc2qr_accret_tend.set(qr_and_qc_not_small,kr*rho*0.001*qc_incld*qr_incld*dum1)
+      nc_accret_tend.set(qr_and_qc_not_small,qc2qr_accret_tend*rho*0.001_rtype*(nc_incld*rho*1.e-6)/(qc_incld*rho*   
+             0.001_rtype)*1.e+6_rtype*inv_rho;}
+   qc2qr_accret_tend.set(nc_accret_tend == 0 && context, 0);
+   nc_accret_tend.set(qc2qr_accret_tend == 0 && context, 0); 
   }
 }
 

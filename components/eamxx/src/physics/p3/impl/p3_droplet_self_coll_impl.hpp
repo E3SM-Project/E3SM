@@ -22,6 +22,10 @@ void Functions<S,D>
 {
   constexpr Scalar qsmall = C::QSMALL;
 
+  constexpr Scalar kc = C::kc
+
+  const bool use_KK = runtime_options.use_KK;
+
   const auto qc_not_small = (qc_incld >= qsmall) && context;
   if (qc_not_small.any()) {
     if(use_KK){

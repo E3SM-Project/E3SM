@@ -137,6 +137,7 @@ struct Functions
     bool set_cld_frac_r_to_one = false;
     bool use_hetfrz_classnuc = false;
     bool use_separate_ice_liq_frac = false;
+    bool use_KK = true;
     bool extra_p3_diags = false;
 
     void load_runtime_options_from_file(ekat::ParameterList& params) {
@@ -166,6 +167,7 @@ struct Functions
       set_cld_frac_r_to_one = params.get<bool>("set_cld_frac_r_to_one", set_cld_frac_r_to_one);
       use_hetfrz_classnuc = params.get<bool>("use_hetfrz_classnuc", use_hetfrz_classnuc);
       use_separate_ice_liq_frac = params.get<bool>("use_separate_ice_liq_frac", use_separate_ice_liq_frac);
+      use_KK = params.get<bool>("use_KK", use_KK);
       extra_p3_diags = params.get<bool>("extra_p3_diags", extra_p3_diags);
     }
 
@@ -817,7 +819,7 @@ struct Functions
   KOKKOS_FUNCTION
   static void cloud_water_autoconversion(const Spack& rho,  const Spack& qc_incld,
     const Spack& nc_incld, const Spack& inv_qc_relvar,
-    Spack& qc2qr_autoconv_tend, Spack& nc2nr_autoconv_tend, Spack& ncautr,
+    Spack& qc2qr_autoconv_tend, Spack& nc2nr_autoconv_tend, Spack& ncautr,  Spack& nu, Spack& inv_rho,
     const P3Runtime& runtime_options,
     const Smask& context = Smask(true));
 
