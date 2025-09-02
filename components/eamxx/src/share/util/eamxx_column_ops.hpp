@@ -132,41 +132,24 @@ public:
     team_parallel_for(team,y.size(),lambda);
   }
 
-  // Given X at compute dx via fwd difference dX(i)=x(i+1)-x(i). dx(end) is untouched.
-  // NOTE: we ask for x_len since x may not be a view (e.g., a lambda)
+  // Given input x, compute adjacent increment dx via fwd difference dX(i)=x(i+1)-x(i).
+  // NOTE: we ask for x_scalar_len since x may not be a view (e.g., a lambda). Also,
+  // we ask for the SCALAR length (i.e., without any simd type) so that we can correctly
+  // deduce what the length of the loop is
   template<CombineMode CM = CombineMode::Replace, typename InputProvider, typename ScalarT, typename MT>
   KOKKOS_INLINE_FUNCTION
   static void
-  fwd_delta (const TeamMember& team,
-             const int x_scalar_len,
-             const InputProvider& x,
-             const view_1d<ScalarT,MT>& dx,
-             const scalar_type alpha = one(),
-             const scalar_type beta = zero())
+  diff (const TeamMember& team,
+        const int x_scalar_len,
+        const InputProvider& x,
+        const view_1d<ScalarT,MT>& dx,
+        const scalar_type alpha = one(),
+        const scalar_type beta = zero())
   {
     const int x_len = ekat::PackInfo<pack_size<ScalarT>()>::num_packs(x_scalar_len);
     const int dx_len = ekat::PackInfo<pack_size<ScalarT>()>::num_packs(x_scalar_len-1);
     auto lambda = [&](int k) {
       auto tmp = ekat::adj_diff<true>(x,k,x_len);
-      combine<CM>(tmp,dx(k),alpha,beta);
-    };
-    team_parallel_for(team,dx_len,lambda);
-  }
-  // Same as above, but compute bwd difference dx(i)=x(i)-x(i-1).
-  template<CombineMode CM = CombineMode::Replace, typename InputProvider, typename ScalarT, typename MT>
-  KOKKOS_INLINE_FUNCTION
-  static void
-  bwd_delta (const TeamMember& team,
-             const int x_scalar_len,
-             const InputProvider& x,
-             const view_1d<ScalarT,MT>& dx,
-             const scalar_type alpha = one(),
-             const scalar_type beta = zero())
-  {
-    const int x_len = ekat::PackInfo<pack_size<ScalarT>()>::num_packs(x_scalar_len);
-    const int dx_len = ekat::PackInfo<pack_size<ScalarT>()>::num_packs(x_scalar_len-1);
-    auto lambda = [&](int k) {
-      auto tmp = ekat::adj_diff<false>(x,k,x_len);
       combine<CM>(tmp,dx(k),alpha,beta);
     };
     team_parallel_for(team,dx_len,lambda);
@@ -302,7 +285,7 @@ public:
     // Sanity checks
     debug_checks<InputProvider>(num_mid_levels,dx_m);
 
-    fwd_delta<CM>(team,num_mid_levels+1,x_i,dx_m,alpha,beta);
+    diff<CM>(team,num_mid_levels+1,x_i,dx_m,alpha,beta);
   }
 
   // Scan sum of a quantity defined at midpoints, to retrieve its integral at interfaces.

@@ -63,7 +63,7 @@ TEST_CASE("column_ops_ps_1") {
     }
   }
 
-  SECTION ("fwd_delta") {
+  SECTION ("diff") {
     auto x = v_mid;
     auto y = dz_mid;
     auto x_h = v_mid_h;
@@ -82,43 +82,13 @@ TEST_CASE("column_ops_ps_1") {
       auto x_i = ekat::subview(x,icol);
       auto y_i = ekat::subview(y,icol);
 
-      column_ops::fwd_delta<CombineMode::Update>(team,num_levs,x_i,y_i,2,3);
+      column_ops::diff<CombineMode::Update>(team,num_levs,x_i,y_i,2,3);
     };
     Kokkos::parallel_for(policy,lambda);
     Kokkos::fence();
 
     Kokkos::deep_copy(y_h,y);
     for (int k=0; k<num_levs-1; ++k) {
-      REQUIRE (y_h(0,k)[0]==(3*k+2));
-    }
-  }
-
-  SECTION ("bwd_delta") {
-    auto x = v_mid;
-    auto y = dz_mid;
-    auto x_h = v_mid_h;
-    auto y_h = dz_mid_h;
-    for (int k=0; k<num_levs; ++k) {
-      x_h(0,k) = k;
-      y_h(0,k) = k;
-    }
-    Kokkos::deep_copy(x,x_h);
-    Kokkos::deep_copy(y,y_h);
-
-    // We compute y = 3*y + 2*diff(x). Given x/y initialization,
-    // we should get y(k)==3*k+2
-    auto lambda = KOKKOS_LAMBDA(const member_type& team) {
-      const int icol = team.league_rank();
-      auto x_i = ekat::subview(x,icol);
-      auto y_i = ekat::subview(y,icol);
-
-      column_ops::bwd_delta<CombineMode::Update>(team,num_levs,x_i,y_i,2,3);
-    };
-    Kokkos::parallel_for(policy,lambda);
-    Kokkos::fence();
-
-    Kokkos::deep_copy(y_h,y);
-    for (int k=1; k<num_levs; ++k) {
       REQUIRE (y_h(0,k)[0]==(3*k+2));
     }
   }
@@ -624,7 +594,7 @@ TEST_CASE("column_ops_ps_N") {
         }
       }
 
-      SECTION ("fwd_delta") {
+      SECTION ("diff") {
         auto x = v_mid;
         auto y = dz_mid;
         for (int k=0; k<num_levs; ++k) {
@@ -641,7 +611,7 @@ TEST_CASE("column_ops_ps_N") {
           auto x_i = ekat::subview(x,icol);
           auto y_i = ekat::subview(y,icol);
 
-          column_ops::fwd_delta<CombineMode::Update>(team,num_levs,x_i,y_i,2,3);
+          column_ops::diff<CombineMode::Update>(team,num_levs,x_i,y_i,2,3);
         };
         Kokkos::parallel_for(policy,lambda);
         Kokkos::fence();
@@ -650,38 +620,6 @@ TEST_CASE("column_ops_ps_N") {
         auto x_h = v_mid_h;
         Kokkos::deep_copy(y_h,y);
         for (int k=0; k<num_levs-1; ++k) {
-          const int ipack = k / ps;
-          const int ivec  = k % ps;
-          REQUIRE (y_h(0,ipack)[ivec]==(3*k+2));
-        }
-      }
-
-      SECTION ("bwd_delta") {
-        auto x = v_mid;
-        auto y = dz_mid;
-        for (int k=0; k<num_levs; ++k) {
-          const int ipack = k / ps;
-          const int ivec  = k % ps;
-          x(0,ipack)[ivec] = k;
-          y(0,ipack)[ivec] = k;
-        }
-
-        // We compute y = 3*y + 2*diff(x). Given x/y initialization,
-        // we should get y(k)==3*k+2
-        auto lambda = KOKKOS_LAMBDA(const member_type& team) {
-          const int icol = team.league_rank();
-          auto x_i = ekat::subview(x,icol);
-          auto y_i = ekat::subview(y,icol);
-
-          column_ops::bwd_delta<CombineMode::Update>(team,num_levs,x_i,y_i,2,3);
-        };
-        Kokkos::parallel_for(policy,lambda);
-        Kokkos::fence();
-
-        auto y_h = dz_mid_h;
-        auto x_h = v_mid_h;
-        Kokkos::deep_copy(y_h,y);
-        for (int k=1; k<num_levs; ++k) {
           const int ipack = k / ps;
           const int ivec  = k % ps;
           REQUIRE (y_h(0,ipack)[ivec]==(3*k+2));
