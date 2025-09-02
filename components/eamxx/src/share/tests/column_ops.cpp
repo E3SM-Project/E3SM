@@ -641,7 +641,7 @@ TEST_CASE("column_ops_ps_N") {
           auto x_i = ekat::subview(x,icol);
           auto y_i = ekat::subview(y,icol);
 
-          column_ops::fwd_delta<CombineMode::Update>(team,num_mid_packs,x_i,y_i,2,3);
+          column_ops::fwd_delta<CombineMode::Update>(team,num_levs,x_i,y_i,2,3);
         };
         Kokkos::parallel_for(policy,lambda);
         Kokkos::fence();
@@ -673,7 +673,7 @@ TEST_CASE("column_ops_ps_N") {
           auto x_i = ekat::subview(x,icol);
           auto y_i = ekat::subview(y,icol);
 
-          column_ops::bwd_delta<CombineMode::Update>(team,num_mid_packs,x_i,y_i,2,3);
+          column_ops::bwd_delta<CombineMode::Update>(team,num_levs,x_i,y_i,2,3);
         };
         Kokkos::parallel_for(policy,lambda);
         Kokkos::fence();

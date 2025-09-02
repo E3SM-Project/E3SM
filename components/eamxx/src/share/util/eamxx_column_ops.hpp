@@ -138,34 +138,38 @@ public:
   KOKKOS_INLINE_FUNCTION
   static void
   fwd_delta (const TeamMember& team,
-             const int x_len,
+             const int x_scalar_len,
              const InputProvider& x,
              const view_1d<ScalarT,MT>& dx,
              const scalar_type alpha = one(),
              const scalar_type beta = zero())
   {
+    const int x_len = ekat::PackInfo<pack_size<ScalarT>()>::num_packs(x_scalar_len);
+    const int dx_len = ekat::PackInfo<pack_size<ScalarT>()>::num_packs(x_scalar_len-1);
     auto lambda = [&](int k) {
       auto tmp = ekat::adj_diff<true>(x,k,x_len);
       combine<CM>(tmp,dx(k),alpha,beta);
     };
-    team_parallel_for(team,dx.size(),lambda);
+    team_parallel_for(team,dx_len,lambda);
   }
   // Same as above, but compute bwd difference dx(i)=x(i)-x(i-1).
   template<CombineMode CM = CombineMode::Replace, typename InputProvider, typename ScalarT, typename MT>
   KOKKOS_INLINE_FUNCTION
   static void
   bwd_delta (const TeamMember& team,
-             const int x_len,
+             const int x_scalar_len,
              const InputProvider& x,
              const view_1d<ScalarT,MT>& dx,
              const scalar_type alpha = one(),
              const scalar_type beta = zero())
   {
+    const int x_len = ekat::PackInfo<pack_size<ScalarT>()>::num_packs(x_scalar_len);
+    const int dx_len = ekat::PackInfo<pack_size<ScalarT>()>::num_packs(x_scalar_len-1);
     auto lambda = [&](int k) {
       auto tmp = ekat::adj_diff<false>(x,k,x_len);
       combine<CM>(tmp,dx(k),alpha,beta);
     };
-    team_parallel_for(team,dx.size(),lambda);
+    team_parallel_for(team,dx_len,lambda);
   }
 
   // Compute adjacent averages
@@ -173,12 +177,15 @@ public:
   KOKKOS_INLINE_FUNCTION
   static void
   adj_avg (const TeamMember& team,
-           const int x_len,
+           const int x_scalar_len,
            const InputProvider& x,
            const view_1d<ScalarT,MT>& y,
            const scalar_type alpha = one(),
            const scalar_type beta = zero())
   {
+    const int x_len = ekat::PackInfo<pack_size<ScalarT>()>::num_packs(x_scalar_len);
+    const int y_len = ekat::PackInfo<pack_size<ScalarT>()>::num_packs(x_scalar_len-1);
+
     // Compute avg = x(k) + (x(k+1)-x(k))/2
     auto lambda = [&](int k) {
       ScalarT tmp;
@@ -192,7 +199,7 @@ public:
       }
       combine<CM>(tmp,y(k),alpha,beta);
     };
-    team_parallel_for(team,y.size(),lambda);
+    team_parallel_for(team,y_len,lambda);
   }
 
   // Compute X at level midpoints, given X at level interfaces
@@ -220,10 +227,7 @@ public:
     // Sanity checks
     debug_checks<InputProvider>(num_mid_levels,x_m);
 
-    using pack_info = ekat::PackInfo<pack_size<ScalarT>()>;
-    const auto NUM_INT_PACKS = pack_info::num_packs(num_mid_levels+1);
-
-    adj_avg<CM>(team,NUM_INT_PACKS,x_i,x_m,alpha,beta);
+    adj_avg<CM>(team,num_mid_levels+1,x_i,x_m,alpha,beta);
   }
 
   // Compute X at level interfaces, given X at level midpoints and top and bot bc.
@@ -298,10 +302,7 @@ public:
     // Sanity checks
     debug_checks<InputProvider>(num_mid_levels,dx_m);
 
-    using pack_info = ekat::PackInfo<pack_size<ScalarT>()>;
-    const auto NUM_INT_PACKS = pack_info::num_packs(num_mid_levels+1);
-
-    fwd_delta<CM>(team,NUM_INT_PACKS,x_i,dx_m,alpha,beta);
+    fwd_delta<CM>(team,num_mid_levels+1,x_i,dx_m,alpha,beta);
   }
 
   // Scan sum of a quantity defined at midpoints, to retrieve its integral at interfaces.
