@@ -487,18 +487,6 @@ void IOPForcing::run_impl (const double dt)
       auto T_mid_i = ekat::subview(T_mid, icol);
       auto qv_i = ekat::subview(qv, icol);
 
-      auto ws = wsm.get_workspace(team);
-      uview_1d<Pack> ref_p_mid;
-      ws.take_many_contiguous_unsafe<1>({"ref_p_mid"},{&ref_p_mid});
-
-      // Compute reference pressures and layer thickness.
-      // TODO: Allow geometry data to allocate packsize
-      auto s_ref_p_mid = ekat::scalarize(ref_p_mid);
-      Kokkos::parallel_for(Kokkos::TeamVectorRange(team, num_levs), [&](const int& k) {
-        s_ref_p_mid(k) = hyam(k)*ps0 + hybm(k)*ps_i;
-      });
-      team.team_barrier();
-
       Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_packs), [&](const int& k) {
         if (iop_nudge_tq) {
           // Restrict nudging of T and qv to certain levels if requested by user
@@ -521,9 +509,6 @@ void IOPForcing::run_impl (const double dt)
           v_i(k).update(horiz_winds_mean(1, k) - v_iop(k), -dt/rtau, 1.0);
         }
       });
-
-      // Release WS views
-      ws.release_many_contiguous<1>({&ref_p_mid});
     });
   }
 }
