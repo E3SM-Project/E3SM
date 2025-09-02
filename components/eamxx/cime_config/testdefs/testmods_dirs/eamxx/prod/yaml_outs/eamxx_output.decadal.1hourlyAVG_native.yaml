@@ -11,7 +11,6 @@ fields:
     - isccp_ctptau
     - modis_ctptau
     - misr_cthtau
-    - cosp_sunlit
     - isccp_cldtot
 output_control:
   frequency: 1
