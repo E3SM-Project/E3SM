@@ -66,7 +66,7 @@ void Cosp::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   add_field<Required>("surf_radiative_T", scalar2d    , K,      grid_name);
   //add_field<Required>("surfelev",    scalar2d    , m,      grid_name);
   //add_field<Required>("landmask",    scalar2d    , nondim, grid_name);
-  add_field<Required>("sunlit",           scalar2d    , nondim, grid_name);
+  add_field<Required>("sunlit_mask",       scalar2d    , nondim, grid_name);
   add_field<Required>("p_mid",             scalar3d_mid, Pa,     grid_name);
   add_field<Required>("p_int",             scalar3d_int, Pa,     grid_name);
   //add_field<Required>("height_mid",  scalar3d_mid, m,      grid_name);
@@ -108,15 +108,11 @@ void Cosp::initialize_impl (const RunType /* run_type */)
   // Set property checks for fields in this process
   CospFunc::initialize(m_num_cols, m_num_subcols, m_num_levs);
 
-  // Set a mask field for each of the cosp computed fields
-  // NOTE: we only mask columns, so ALL masks will be rank-1
+  // Set the mask field for each of the cosp computed fields
   std::list<std::string> vnames = {"isccp_cldtot", "isccp_ctptau", "modis_ctptau", "misr_cthtau"};
   for (const auto& field_name : vnames) {
-      auto& f = get_field_out(field_name);
-      // if we did the work correctly in set_grids, cldtot is rank-1, so clone it for masks
-      // NOTE: this kinda lacks "transparency," but it makes for simpler/cleaner code
-      auto mask = get_field_out("isccp_cldtot").clone("mask_" + field_name);
-      f.get_header().set_extra_data("mask_field", mask);
+    // the mask here is just the sunlit mask, so set it
+    get_field_out(field_name).get_header().set_extra_data("mask_field", get_field_in("sunlit_mask"));
   }
 }
 
@@ -151,7 +147,7 @@ void Cosp::run_impl (const double dt)
     get_field_in("qv").sync_to_host();
     get_field_in("qc").sync_to_host();
     get_field_in("qi").sync_to_host();
-    get_field_in("sunlit").sync_to_host();
+    get_field_in("sunlit_mask").sync_to_host();
     get_field_in("surf_radiative_T").sync_to_host();
     get_field_in("T_mid").sync_to_host();
     get_field_in("p_mid").sync_to_host();
@@ -212,7 +208,7 @@ void Cosp::run_impl (const double dt)
     const auto p_mid_h   = get_field_in("p_mid").get_view<const Real**,Host>();
     const auto qc_h      = get_field_in("qc").get_view<const Real**, Host>();
     const auto qi_h      = get_field_in("qi").get_view<const Real**, Host>();
-    const auto sunlit_h  = get_field_in("sunlit").get_view<const Real*, Host>();
+    const auto sunlit_h  = get_field_in("sunlit_mask").get_view<const Real*, Host>();
     const auto skt_h     = get_field_in("surf_radiative_T").get_view<const Real*, Host>();
     const auto p_int_h   = get_field_in("p_int").get_view<const Real**, Host>();
     const auto cldfrac_h = get_field_in("cldfrac_rad").get_view<const Real**, Host>();
@@ -226,11 +222,6 @@ void Cosp::run_impl (const double dt)
     auto modis_ctptau_h = get_field_out("modis_ctptau").get_view<Real***, Host>();
     auto misr_cthtau_h  = get_field_out("misr_cthtau"). get_view<Real***, Host>();
 
-    auto isccp_cldtot_h_mask = get_field_out("isccp_cldtot").get_header().get_extra_data<Field>("mask_field").get_view<Real*, Host>();
-    auto isccp_ctptau_h_mask = get_field_out("isccp_ctptau").get_header().get_extra_data<Field>("mask_field").get_view<Real*, Host>();
-    auto modis_ctptau_h_mask = get_field_out("modis_ctptau").get_header().get_extra_data<Field>("mask_field").get_view<Real*, Host>();
-    auto misr_cthtau_h_mask  = get_field_out("misr_cthtau") .get_header().get_extra_data<Field>("mask_field").get_view<Real*, Host>();
-
     Real emsfc_lw = 0.99;
     CospFunc::main(
             m_num_cols, m_num_subcols, m_num_levs, m_num_tau, m_num_ctp, m_num_cth, emsfc_lw,
@@ -242,12 +233,7 @@ void Cosp::run_impl (const double dt)
     constexpr auto fill_value = constants::fill_value<Real>;
     for (int i = 0; i < m_num_cols; i++) {
       if (sunlit_h(i) == 0) {
-        // if night, set to fill val and set mask to 0
-        // set masks to 0 first
-        isccp_cldtot_h_mask(i) = 0;
-        isccp_ctptau_h_mask(i) = 0;
-        modis_ctptau_h_mask(i) = 0;
-        misr_cthtau_h_mask (i) = 0;
+        // if night, set to fill val
         isccp_cldtot_h(i) = fill_value;
         for (int j = 0; j < m_num_tau; j++) {
           for (int k = 0; k < m_num_ctp; k++) {
@@ -258,13 +244,6 @@ void Cosp::run_impl (const double dt)
             misr_cthtau_h (i,j,k) = fill_value;
           }
         }
-      } else {
-        // if NOT night, persist and set mask to 1
-        // set masks to 1 only
-        isccp_cldtot_h_mask(i) = 1;
-        isccp_ctptau_h_mask(i) = 1;
-        modis_ctptau_h_mask(i) = 1;
-        misr_cthtau_h_mask (i) = 1;
       }
     }
 
