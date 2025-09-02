@@ -432,9 +432,9 @@ local_mat_vec (const Field& x, const Field& y, const Field& mask) const
       // Unlike get_view, get_strided_view returns a LayoutStride view,
       // therefore allowing the 1d field to be a subfield of a 2d field
       // along the 2nd dimension.
-      auto x_view = x.get_strided_view<const Real*>();
-      auto y_view = y.get_strided_view<      Real*>();
-      auto mask_view = mask.get_strided_view<Real*>();
+      auto x_view    =    x.get_strided_view<const Real*>();
+      auto y_view    =    y.get_strided_view<      Real*>();
+      auto mask_view = mask.get_strided_view<const Real*>();
       Kokkos::parallel_for(RangePolicy(0,nrows),
                            KOKKOS_LAMBDA(const int& row) {
         const auto beg = row_offsets(row);
