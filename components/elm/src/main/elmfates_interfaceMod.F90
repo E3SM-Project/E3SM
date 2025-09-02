@@ -964,12 +964,15 @@ contains
          ! This assumes one site per landunit currently.
          s = 0
          num_landunits_veg = 0
-         do l = bounds_clump%begl,bounds_clump%endl
-            if (lun_pp%itype(l) == istsoil) then
+         do c = bounds_clump%begc,bounds_clump%endc
+            l = col_pp%landunit(c)
+         ! do l = bounds_clump%begl,bounds_clump%endl
+         !    if (lun_pp%itype(l) == istsoil) then
 
-               num_landunits_veg = num_landunits_veg + 1
+               ! num_landunits_veg = num_landunits_veg + 1
 
                ! To be deprecated/refactored
+            if ( (lun_pp%itype(l) == istsoil) .and. (col_pp%active(c)) ) then
                s = s + 1
                collist(s) = c
                this%f2hmap(nc)%hsites(c) = s
@@ -4134,8 +4137,8 @@ end subroutine wrap_update_hifrq_hist
    call this%fates(nc)%InitializeInterfaceRegistry()
          
    ! Register the HLM data
-   call this%fates(nc)%Register(key='decomp_frac_moisture', data=col_cf%w_scalar)
-   call this%fates(nc)%Register(key='decomp_frac_temperature', data=col_cf%t_scalar)
+   call this%fates(nc)%Register('decomp_frac_moisture', col_cf%w_scalar)
+   call this%fates(nc)%Register('decomp_frac_temperature', col_cf%t_scalar)
    
  end subroutine RegisterHLMInterfaceVariables
  
