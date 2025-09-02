@@ -2,6 +2,7 @@
 #include "share/util/eamxx_timing.hpp"
 #include "share/property_checks/mass_and_energy_conservation_check.hpp"
 #include "share/field/field_utils.hpp"
+#include "share/util/eamxx_utils.hpp"
 
 #ifdef EAMXX_HAS_PYTHON
 #include "share/field/field_pyutils.hpp"
@@ -18,10 +19,6 @@ namespace py = pybind11;
 #include <string>
 #include <sstream>
 #include <iomanip>
-
-
-namespace scream
-{
 
 ekat::logger::LogLevel str2LogLevel (const std::string& s) {
   using namespace ekat::logger;
@@ -41,7 +38,10 @@ ekat::logger::LogLevel str2LogLevel (const std::string& s) {
     EKAT_ERROR_MSG ("Invalid string value for log level: " + s + "\n");
   }
   return log_level;
-}
+};
+
+namespace scream
+{
 
 AtmosphereProcess::
 AtmosphereProcess (const ekat::Comm& comm, const ekat::ParameterList& params)
@@ -52,11 +52,7 @@ AtmosphereProcess (const ekat::Comm& comm, const ekat::ParameterList& params)
     m_atm_logger = m_params.get<std::shared_ptr<logger_t>>("logger");
   } else {
     // Create a console-only logger, that logs all ranks
-    using namespace ekat::logger;
-    using logger_impl_t = Logger<LogNoFile,LogAllRanks>;
-    auto log_level = m_params.get<std::string>("log_level","trace");
-    m_atm_logger = std::make_shared<logger_impl_t>("",str2LogLevel(log_level),m_comm);
-    m_atm_logger->set_no_format();
+    m_atm_logger = console_logger(str2LogLevel(m_params.get<std::string>("log_level","trace")));
   }
 
   if (m_params.isParameter("number_of_subcycles")) {

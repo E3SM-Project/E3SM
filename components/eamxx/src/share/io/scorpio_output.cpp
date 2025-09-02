@@ -259,6 +259,12 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
   init ();
 }
 
+void AtmosphereOutput::
+set_logger(const std::shared_ptr<ekat::logger::LoggerBase>& atm_logger) {
+  EKAT_REQUIRE_MSG (atm_logger, "Error! Invalid logger pointer.\n");
+  m_atm_logger = atm_logger;
+}
+
 /* ---------------------------------------------------------- */
 void AtmosphereOutput::restart (const std::string& filename)
 {
@@ -385,10 +391,8 @@ run (const std::string& filename,
   }
   Real duration_write = 0.0;  // Record of time spent writing output
   if (is_write_step) {
-    if (m_atm_logger) {
-      m_atm_logger->info("[EAMxx::scorpio_output] Writing variables to file");
-      m_atm_logger->info("  file name: " + filename);
-    }
+    m_atm_logger->info("[EAMxx::scorpio_output] Writing variables to file");
+    m_atm_logger->info("  file name: " + filename);
   }
 
   // Update all diagnostics, we need to do this before applying the remapper
@@ -551,9 +555,7 @@ run (const std::string& filename,
   }
 
   if (is_write_step) {
-    if (m_atm_logger) {
-      m_atm_logger->info("  Done! Elapsed time: " + std::to_string(duration_write/1000.0) +" seconds");
-    }
+    m_atm_logger->info("  Done! Elapsed time: " + std::to_string(duration_write/1000.0) +" seconds");
   }
 } // run
 

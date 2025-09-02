@@ -3,6 +3,7 @@
 
 #include "share/field/field_manager.hpp"
 #include "share/grid/abstract_grid.hpp"
+#include "share/util/eamxx_utils.hpp"
 
 #include <ekat_parameter_list.hpp>
 #include <ekat_logger.hpp>
@@ -98,9 +99,7 @@ public:
   void reset_filename (const std::string& filename);
 
   // Option to add a logger
-  void set_logger(const std::shared_ptr<ekat::logger::LoggerBase>& atm_logger) {
-      m_atm_logger = atm_logger;
-  }
+  void set_logger(const std::shared_ptr<ekat::logger::LoggerBase>& atm_logger);
 protected:
 
   void set_grid (const std::shared_ptr<const AbstractGrid>& grid);
@@ -125,8 +124,7 @@ protected:
   bool m_fields_inited  = false;
   bool m_scorpio_inited = false;
 
-  // The logger to be used throughout the ATM to log message
-  std::shared_ptr<ekat::logger::LoggerBase> m_atm_logger;
+  std::shared_ptr<ekat::logger::LoggerBase> m_atm_logger = console_logger(ekat::logger::LogLevel::warn);
 }; // Class AtmosphereInput
 
 } //namespace scream

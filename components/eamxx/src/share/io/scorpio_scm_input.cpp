@@ -82,6 +82,12 @@ SCMInput::
   scorpio::release_file(m_filename);
 }
 
+void SCMInput::
+set_logger(const std::shared_ptr<ekat::logger::LoggerBase>& atm_logger) {
+  EKAT_REQUIRE_MSG (atm_logger, "Error! Invalid logger pointer.\n");
+  m_atm_logger = atm_logger;
+}
+
 void SCMInput::create_io_grid ()
 {
   EKAT_REQUIRE_MSG (scorpio::has_dim(m_filename,"ncol"),
@@ -137,13 +143,12 @@ void SCMInput::read_variables (const int time_index)
 {
   auto func_start = std::chrono::steady_clock::now();
   auto fname = [](const Field& f) { return f.name(); };
-  if (m_atm_logger) {
-    m_atm_logger->info("[EAMxx::scorpio_scm_input] Reading variables from file");
-    m_atm_logger->info("  file name: " + m_filename);
-    m_atm_logger->info("  var names: " + ekat::join(m_fields,fname,", "));
-    if (time_index!=-1) {
-      m_atm_logger->info("  time idx : " + std::to_string(time_index));
-    }
+
+  m_atm_logger->info("[EAMxx::scorpio_scm_input] Reading variables from file");
+  m_atm_logger->info("  file name: " + m_filename);
+  m_atm_logger->info("  var names: " + ekat::join(m_fields,fname,", "));
+  if (time_index!=-1) {
+    m_atm_logger->info("  time idx : " + std::to_string(time_index));
   }
 
   // MPI rank with closest column index store column data
