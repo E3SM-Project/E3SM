@@ -2024,7 +2024,7 @@ contains
                   ! internally in fates dynamics as well.
 
                   call FluxIntoLitterPools(this%fates(nc)%sites(s), &
-                       this%fates(nc)%bc_in(s))
+                       this%fates(nc)%bc_in(s), this%fates(nc)%bc_out(s))
                        
                end do
 
@@ -2280,7 +2280,8 @@ contains
               ! internally in fates dynamics as well.
 
               call FluxIntoLitterPools(this%fates(nc)%sites(s), &
-                   this%fates(nc)%bc_in(s))
+                   this%fates(nc)%bc_in(s), &
+                   this%fates(nc)%bc_out(s))
            end do
 
            ! ------------------------------------------------------------------------
