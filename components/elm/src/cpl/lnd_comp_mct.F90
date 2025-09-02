@@ -558,7 +558,6 @@ contains
     call lnd_import( bounds, x2l_l%rattr, atm2lnd_vars, glc2lnd_vars, lnd2atm_vars, iac2lnd_vars)
     
 #ifdef HAVE_MOAB
-balli
 #ifdef MOABCOMP
     ! loop over all fields in seq_flds_x2l_fields
     call mct_list_init(temp_list ,seq_flds_x2l_fields)
