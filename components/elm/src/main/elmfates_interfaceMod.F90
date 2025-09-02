@@ -218,7 +218,7 @@ module ELMFatesInterfaceMod
    implicit none
 
 
-   type :: f2hmap_type
+   type, public :: f2hmap_type
 
       ! HLM patch index to FATES patchno index mapping, by site
       integer, allocatable :: hlm_patch_index(:,:)
