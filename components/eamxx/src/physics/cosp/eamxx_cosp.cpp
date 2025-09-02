@@ -257,21 +257,6 @@ void Cosp::run_impl (const double dt)
     get_field_out("modis_ctptau").sync_to_dev();
     get_field_out("misr_cthtau").sync_to_dev();
     get_field_out("cosp_sunlit").sync_to_dev();
-  } else {
-    // If not updating COSP statistics, set these to ZERO; this essentially weights
-    // the ISCCP cloud properties by the sunlit mask. What will be output for time-averages
-    // then is the time-average mask-weighted statistics; to get true averages, we need to
-    // divide by the time-average of the mask. I.e., if M is the sunlit mask, and X is the ISCCP
-    // statistic, then
-    //
-    //     avg(X) = sum(M * X) / sum(M) = (sum(M * X)/N) / (sum(M)/N) = avg(M * X) / avg(M)
-    //
-    // TODO: mask this when/if the AD ever supports masked averages
-    get_field_out("isccp_cldtot").deep_copy(0);
-    get_field_out("isccp_ctptau").deep_copy(0);
-    get_field_out("modis_ctptau").deep_copy(0);
-    get_field_out("misr_cthtau").deep_copy(0);
-    get_field_out("cosp_sunlit").deep_copy(0);
   }
 }
 
