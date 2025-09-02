@@ -144,10 +144,7 @@ public:
     return m_io_grid;
   }
 
-  // Option to add a logger
-  void set_logger(const std::shared_ptr<ekat::logger::LoggerBase>& atm_logger) {
-      m_atm_logger = atm_logger;
-  }
+  void set_logger(const std::shared_ptr<ekat::logger::LoggerBase>& atm_logger);
 
 protected:
 
@@ -223,8 +220,7 @@ protected:
   bool m_track_avg_cnt = false;
   std::string m_decomp_dimname = "";
 
-  // The logger to be used throughout the ATM to log message
-  std::shared_ptr<ekat::logger::LoggerBase> m_atm_logger;
+  std::shared_ptr<ekat::logger::LoggerBase> m_atm_logger = console_logger(ekat::logger::LogLevel::warn);
 };
 
 } //namespace scream

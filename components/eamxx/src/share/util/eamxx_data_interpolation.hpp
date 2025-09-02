@@ -6,6 +6,8 @@
 #include "share/util/eamxx_time_stamp.hpp"
 #include "share/field/field.hpp"
 
+#include <ekat_logger.hpp>
+
 namespace scream
 {
 
@@ -45,7 +47,7 @@ public:
 
   ~DataInterpolation () = default;
 
-  void toggle_debug_output (bool enable_dbg_output) { m_dbg_output = enable_dbg_output; }
+  void set_logger (const std::shared_ptr<ekat::logger::LoggerBase>& logger);
 
   void setup_time_database (const strvec_t& input_files,
                             const util::TimeLine timeline,
@@ -130,7 +132,7 @@ protected:
   bool                  m_time_db_created   = false;
   bool                  m_data_initialized  = false;
 
-  bool m_dbg_output = false;
+  std::shared_ptr<ekat::logger::LoggerBase> m_logger;
 };
 
 } // namespace scream
