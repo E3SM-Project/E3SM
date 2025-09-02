@@ -1,4 +1,4 @@
-module iac2lndMod
+   module iac2lndMod
 
   !------------------------------------------------------------------
   ! !DESCRIPTION:
@@ -219,46 +219,6 @@ contains
              end if
           end do
        end do
-
-! Don't do this to see if it speeds up; besides, it isn't useful in
-! parallel
-if (.false.) then
-       ! Write these values to a file
-       write(iulog,*) subname, 'Writing diagnostic iac2land file'
-
-       ngcells = endg-begg+1
-       allocate(cell_ids(ngcells))
-       p = 1
-       do c = begg,endg
-          cell_ids(p) = c
-          p = p+1
-       end do
-       write(hfile,'(a)') './iac2lnd_update.nc'
-
-       ierr = nf90_create(trim(hfile),nf90_clobber,ncid)
-       ierr = nf90_def_dim(ncid,'ngcells',ngcells,pdimid(1))
-       ierr = nf90_def_dim(ncid,'npfts',17,pdimid(2))
-       ierr = nf90_def_dim(ncid,'ngcells',ngcells,hdimid(1))
-       ierr = nf90_def_dim(ncid,'nharv',5,hdimid(2))
-
-       ierr = nf90_def_var(ncid,'pftdata',NF90_DOUBLE,pdimid,pft_varid)
-       ierr = nf90_def_var(ncid,'prev_pftdata',NF90_DOUBLE,pdimid,pft_prev_varid)
-       ierr = nf90_def_var(ncid,'harvdata',NF90_DOUBLE,hdimid,harv_varid)
-       ierr = nf90_def_var(ncid,'cell_ids',NF90_INT,pdimid(1),cid_varid)
-
-       ierr = nf90_enddef(ncid)
-
-       ierr = nf90_put_var(ncid,pft_varid,this%frac_pft(begg:endg,:))
-
-       ierr = nf90_put_var(ncid,pft_prev_varid,this%frac_pft_prev(begg:endg,:))
-
-       ierr = nf90_put_var(ncid,harv_varid,this%harvest_frac(begg:endg,:))
-
-       ierr = nf90_put_var(ncid,cid_varid,cell_ids)
-
-       ierr = nf90_close(ncid)
-end if
-
     endif
   end subroutine update_iac2lnd
 

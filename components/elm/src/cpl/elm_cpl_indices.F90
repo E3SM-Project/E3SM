@@ -369,7 +369,7 @@ contains
 
     ! This is called before the pft number is set 
     ! and these are indexed from zero on this elm side 
-    ! KVC: this has a different value than in iac. Need to align. Doing manually now
+    ! This has a different value than in iac. Need to align. Doing manually now
     iac_npft = 17
     ! Hardcode this for now, but should be able to get it from namelist like
     ! in the iac

@@ -66,6 +66,7 @@ contains
     !
     ! !USES:
     use abortutils       , only : endrun
+    use shr_log_mod      , only : errMsg => shr_log_errMsg
     use shr_kind_mod     , only : SHR_KIND_CL
     use elm_time_manager , only : get_nstep, get_step_size, set_timemgr_init, set_nextsw_cday
     use elm_initializeMod, only : initialize1, initialize2, initialize3
@@ -322,6 +323,9 @@ contains
 
     call lnd_domain_mct( bounds, lsz, gsMap_lnd, dom_l )
 #ifdef HAVE_MOAB
+    if (iac_present) then
+      call endrun(msg=sub//'ERROR: IAC not supported with MOAB yet'//errMsg(__FILE__, __LINE__))
+    endif
     call init_moab_land(bounds, LNDID)
 #endif
     call mct_aVect_init(x2l_l, rList=seq_flds_x2l_fields, lsize=lsz)
@@ -554,6 +558,7 @@ contains
     call lnd_import( bounds, x2l_l%rattr, atm2lnd_vars, glc2lnd_vars, lnd2atm_vars, iac2lnd_vars)
     
 #ifdef HAVE_MOAB
+balli
 #ifdef MOABCOMP
     ! loop over all fields in seq_flds_x2l_fields
     call mct_list_init(temp_list ,seq_flds_x2l_fields)

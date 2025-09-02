@@ -503,8 +503,6 @@ contains
        t = veg_pp%topounit(p)
        g = veg_pp%gridcell(p)
        if (col_pp%wtgcell(c) .eq. 0._r8) then
-          !write(iulog,*) subname//'setting wtcol to zero' // &
-           !              'for p, c, l, g ', p,c,l,g
           if (veg_pp%itype(p) .eq. 0) then
              veg_pp%wtcol(p) = 1._r8
           else
@@ -518,17 +516,12 @@ contains
        veg_pp%wtgcell(p)    = veg_pp%wtcol(p) * col_pp%wtgcell(c)
        ! get the sums for normalizing below
        sumwtcol(c) = sumwtcol(c) + veg_pp%wtcol(p)
-       !sumwtlunit(l) = sumwtlunit(l) + veg_pp%wtlunit(p)
-       !sumwttopounit(t) = sumwttopounit(t) + veg_pp%wttopounit(p)
-       !sumwtgcell(g) = sumwtgcell(g) + veg_pp%wtgcell(p)
     end do
 
     ! Normalize the wtcol if necessary and recalc higher order weights
     do c = bounds%begc,bounds%endc
        weights_equal_1 = (abs(sumwtcol(c) - 1._r8) <= tolerance)
        if (.not.weights_equal_1) then
-          !write(iulog,*) subname//'weights not equal 1, sumwtcol = ', &
-                !           sumwtcol(c), 'c= ', c
           do p = bounds%begp, bounds%endp
              if (veg_pp%column(p) .eq. c) then
                 if (sumwtcol(c) .eq. 0._r8) then
@@ -541,16 +534,6 @@ contains
                 veg_pp%wtlunit(p)    = veg_pp%wtcol(p) * col_pp%wtlunit(c)
                 veg_pp%wttopounit(p) = veg_pp%wtcol(p) * col_pp%wttopounit(c)
                 veg_pp%wtgcell(p)    = veg_pp%wtcol(p) * col_pp%wtgcell(c)
-
-
-                ! get the higher order sums
-                !l = veg_pp%landunit(p)
-                !t = veg_pp%topounit(p)
-                !g = veg_pp%gridcell(p)
-                !sumwtlunit(l) = sumwtlunit(l) + veg_pp%wtlunit(p)
-                !sumwttopounit(t) = sumwttopounit(t) + veg_pp%wttopounit(p)
-                !sumwtgcell(g) = sumwtgcell(g) + veg_pp%wtgcell(p)
-
              end if
           end do
        end if
