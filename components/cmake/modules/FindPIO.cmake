@@ -29,6 +29,31 @@ endif()
 # Handle gptl. Just hardcode it for now.
 list(APPEND PIOLIBS "${INSTALL_SHAREDPATH}/lib/libgptl.a")
 
+# Find the MPI library
+if (NOT MPILIB STREQUAL "mpi-serial")
+  find_package(MPI REQUIRED COMPONENTS C)
+endif()
+
+# ADIOS & HDF5 use Blosc2, ZFP for data compression
+if (NOT MPILIB STREQUAL "mpi-serial" AND
+      (DEFINED ENV{ADIOS2_ROOT} OR DEFINED ENV{HDF5_ROOT}))
+  if(DEFINED ENV{BLOSC2_ROOT})
+    set(ENV{Blosc2_DIR} "$ENV{BLOSC2_ROOT}")
+  endif()
+  if(DEFINED ENV{ZFP_ROOT})
+    set(ENV{ZFP_DIR} "$ENV{ZFP_ROOT}")
+  endif()
+  if (DEFINED ENV{HDF5_ROOT)
+    # Set paths to HDF5 filter libs for Blosc2, ZFP
+    if(DEFINED ENV{H5Z_BLOSC2_ROOT})
+      set(ENV{H5Z_BLOSC2_DIR} "$ENV{H5Z_BLOSC2_ROOT}")
+    endif()
+    if(DEFINED ENV{H5Z_ZFP_ROOT})
+      set(ENV{H5Z_ZFP_DIR} "$ENV{H5Z_ZFP_ROOT}")
+    endif()
+  endif()
+endif()
+
 find_package(NETCDF REQUIRED)
 # Check if scorpio has hdf5 enabled
 if (DEFINED ENV{HDF5_ROOT})
@@ -51,10 +76,6 @@ endif()
 # we can assume that an MPI case with ADIOS2_ROOT set is probably
 # using adios.
 if (NOT MPILIB STREQUAL "mpi-serial" AND DEFINED ENV{ADIOS2_ROOT})
-  if(DEFINED ENV{BLOSC2_ROOT})
-    set(ENV{Blosc2_DIR} "$ENV{BLOSC2_ROOT}")
-  endif()
-  find_package(MPI REQUIRED COMPONENTS C)
   find_package(ADIOS2 REQUIRED COMPONENTS C)
   list(APPEND PIOLIBS adios2::adios2)
 endif()
