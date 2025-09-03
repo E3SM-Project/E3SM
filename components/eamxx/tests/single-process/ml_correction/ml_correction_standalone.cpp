@@ -5,6 +5,7 @@
 #include "share/grid/mesh_free_grids_manager.hpp"
 
 #include <ekat_yaml.hpp>
+#include <ekat_fpe.hpp>
 
 #include <pybind11/embed.h>
 #include <pybind11/numpy.h>
