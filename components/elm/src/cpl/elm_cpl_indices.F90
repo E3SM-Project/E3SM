@@ -22,9 +22,7 @@ module elm_cpl_indices
                                   ! (from coupler) - must equal maxpatch_glcmec from namelist
   integer , parameter, private:: glc_nec_max = 100
 
-  integer, public :: iac_npft ! Number of veg pfts (index 0 for bare ground)
   integer , parameter, private :: iac_npft_max = 30  ! just for allocation
-  integer, public :: iac_nharvest ! Number of harvest variables
   integer , parameter, private :: iac_nharvest_max = 5  ! just for allocation
   
   ! lnd -> drv (required)
@@ -166,6 +164,7 @@ contains
     use shr_megan_mod  , only: shr_megan_fields_token, shr_megan_mechcomps_n
     use shr_fan_mod    , only: shr_fan_fields_token, shr_fan_to_atm
     use elm_varctl     , only: use_voc
+    use elm_varpar     , only: iac_npft, iac_nharvest
     !
     ! !ARGUMENTS:
     implicit none
@@ -366,13 +365,6 @@ contains
     ! IAC coupling
     !---------------------------------
 
-    ! This is called before the pft number is set 
-    ! and these are indexed from zero on this elm side 
-    ! This has a different value than in iac. Need to align. Doing manually now
-    iac_npft = 17
-    ! Hardcode this for now, but should be able to get it from namelist like
-    ! in the iac
-    iac_nharvest = 5
     do p = 0,iac_npft-1
        write(cpft,'(I0)') p
        cpft=trim(cpft)

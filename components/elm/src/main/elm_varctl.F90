@@ -58,6 +58,9 @@ module elm_varctl
   !true => no valid land points -- do NOT run
   logical, public :: noland = .false.
 
+   ! true => EHC component is present
+  logical, public :: iac_present = .false.
+
   ! Hostname of machine running on
   character(len=256), public :: hostname = ' '
 

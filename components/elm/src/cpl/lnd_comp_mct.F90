@@ -13,7 +13,6 @@ module lnd_comp_mct
   use decompmod        , only : bounds_type, ldecomp
   use lnd_import_export
   use iso_c_binding
-  use elm_cpl_indices
   use esmf, only: ESMF_clock
 
 #ifdef HAVE_MOAB
@@ -33,7 +32,6 @@ module lnd_comp_mct
   public :: lnd_init_mct      ! elm initialization
   public :: lnd_run_mct       ! elm run phase
   public :: lnd_final_mct     ! elm finalization/cleanup
-  logical, public :: iac_present
   !
   ! !private member functions:
   private :: lnd_setgsmap_mct ! set the land model mct gs map
@@ -74,7 +72,7 @@ contains
     use elm_instMod      , only : lnd2atm_vars, lnd2glc_vars, lnd2iac_vars
     use elm_instance     , only : elm_instance_init
     use elm_varctl       , only : finidat,single_column, elm_varctl_set, iulog, noland, fatmlndfrc, &
-                                  scm_multcols, scm_nx, scm_ny
+                                  scm_multcols, scm_nx, scm_ny, iac_present
     use elm_varctl       , only : inst_index, inst_suffix, inst_name, precip_downscaling_method
     use elm_varorb       , only : eccen, obliqr, lambm0, mvelpp
     use controlMod       , only : control_setNL
