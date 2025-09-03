@@ -12,7 +12,7 @@ void Functions<S,D>
 ::rain_self_collection(
   const Spack& rho, const Spack& qr_incld, const Spack& nr_incld, Spack& nr_selfcollect_tend,
   const P3Runtime& runtime_options,
-  const Spack& context)
+  const Smask& context)
 {
   // ------------------------------------------------------
   // self-collection and breakup of rain
@@ -21,7 +21,7 @@ void Functions<S,D>
   constexpr Scalar qsmall   = C::QSMALL;
   constexpr Scalar rho_h2o  = C::RHO_H2O;
   constexpr Scalar pi       = C::Pi;
-  constexpr Scalar kc = C::kc
+  constexpr Scalar kr = C::kr;
 
   const Scalar rain_selfcollection_breakup_diameter =
       runtime_options.rain_selfcollection_breakup_diameter;
@@ -55,7 +55,7 @@ void Functions<S,D>
        qr_incld_not_small,
        dum * rain_selfcollection_prefactor * nr_incld * qr_incld * rho);}
     else{
-       nr_selfcollect_tend.set(qr_incld_not_small,dum*kr*1.0e-3*qr_incld*nr_incld*rho;)}
+       nr_selfcollect_tend.set(qr_incld_not_small,dum*kr*1.0e-3*qr_incld*nr_incld*rho);}
   }
 }
 
