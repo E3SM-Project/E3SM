@@ -2380,52 +2380,7 @@ contains
 
     if (.not.lateral_connectivity) then
 
-       ! No ghost cells
-       procinfo%ncells_ghost    = 0
-       procinfo%ntunits_ghost   = 0
-       procinfo%nlunits_ghost   = 0
-       procinfo%ncols_ghost     = 0
-       procinfo%npfts_ghost     = 0
-       procinfo%nCohorts_ghost  = 0
-
-       procinfo%begg_ghost      = 0
-       procinfo%begt_ghost      = 0
-       procinfo%begl_ghost      = 0
-       procinfo%begc_ghost      = 0
-       procinfo%begp_ghost      = 0
-       procinfo%begCohort_ghost = 0
-       procinfo%endg_ghost      = 0
-       procinfo%endt_ghost      = 0
-       procinfo%endl_ghost      = 0
-       procinfo%endc_ghost      = 0
-       procinfo%endp_ghost      = 0
-       procinfo%endCohort_ghost = 0
-
-       ! All = local (as no ghost cells)
-       procinfo%ncells_all      = procinfo%ncells
-       procinfo%ntunits_all     = procinfo%ntunits
-       procinfo%nlunits_all     = procinfo%nlunits
-       procinfo%ncols_all       = procinfo%ncols
-       procinfo%npfts_all       = procinfo%npfts
-       procinfo%nCohorts_all    = procinfo%nCohorts
-
-       procinfo%begg_all        = procinfo%begg
-       procinfo%begt_all        = procinfo%begt
-       procinfo%begl_all        = procinfo%begl
-       procinfo%begc_all        = procinfo%begc
-       procinfo%begp_all        = procinfo%begp
-       procinfo%begCohort_all   = procinfo%begCohort
-       procinfo%endg_all        = procinfo%endg
-       procinfo%endt_all        = procinfo%endt
-       procinfo%endl_all        = procinfo%endl
-       procinfo%endc_all        = procinfo%endc
-       procinfo%endp_all        = procinfo%endp
-       procinfo%endCohort_all   = procinfo%endCohort
-
-    else
-
 #if defined(HAVE_MOAB)
-
       call get_proc_bounds(begg, endg)
 
       tagname     = 'nsubgrid'//C_NULL_CHAR
@@ -2528,7 +2483,53 @@ contains
       procinfo%endp_all        = procinfo%endp      + procinfo%npfts_ghost
       procinfo%endCohort_all   = procinfo%endCohort + procinfo%nCohorts_ghost
 
-#elif defined(USE_PETSC_LIB)
+#else
+      ! No ghost cells
+       procinfo%ncells_ghost    = 0
+       procinfo%ntunits_ghost   = 0
+       procinfo%nlunits_ghost   = 0
+       procinfo%ncols_ghost     = 0
+       procinfo%npfts_ghost     = 0
+       procinfo%nCohorts_ghost  = 0
+
+       procinfo%begg_ghost      = 0
+       procinfo%begt_ghost      = 0
+       procinfo%begl_ghost      = 0
+       procinfo%begc_ghost      = 0
+       procinfo%begp_ghost      = 0
+       procinfo%begCohort_ghost = 0
+       procinfo%endg_ghost      = 0
+       procinfo%endt_ghost      = 0
+       procinfo%endl_ghost      = 0
+       procinfo%endc_ghost      = 0
+       procinfo%endp_ghost      = 0
+       procinfo%endCohort_ghost = 0
+
+       ! All = local (as no ghost cells)
+       procinfo%ncells_all      = procinfo%ncells
+       procinfo%ntunits_all     = procinfo%ntunits
+       procinfo%nlunits_all     = procinfo%nlunits
+       procinfo%ncols_all       = procinfo%ncols
+       procinfo%npfts_all       = procinfo%npfts
+       procinfo%nCohorts_all    = procinfo%nCohorts
+
+       procinfo%begg_all        = procinfo%begg
+       procinfo%begt_all        = procinfo%begt
+       procinfo%begl_all        = procinfo%begl
+       procinfo%begc_all        = procinfo%begc
+       procinfo%begp_all        = procinfo%begp
+       procinfo%begCohort_all   = procinfo%begCohort
+       procinfo%endg_all        = procinfo%endg
+       procinfo%endt_all        = procinfo%endt
+       procinfo%endl_all        = procinfo%endl
+       procinfo%endc_all        = procinfo%endc
+       procinfo%endp_all        = procinfo%endp
+       procinfo%endCohort_all   = procinfo%endCohort
+#endif
+
+    else
+
+#if defined(USE_PETSC_LIB)
 
        call get_proc_bounds(begg, endg)
 
