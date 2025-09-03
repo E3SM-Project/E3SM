@@ -27,8 +27,8 @@ def buildlib(bldroot, installpath, case):
     srcroot   = case.get_value("SRCROOT")
 
     #-------------------------------------------------------
-    # create Filepath in bldroot, unlike most other components,
-    # rdycore makes it's Filepath right here.
+    # create Filepath in bldroot; unlike most other components,
+    # rdycore makes its Filepath right here.
     #-------------------------------------------------------
 
     filepaths = \
