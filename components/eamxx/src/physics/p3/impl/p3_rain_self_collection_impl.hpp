@@ -12,7 +12,7 @@ void Functions<S,D>
 ::rain_self_collection(
   const Spack& rho, const Spack& qr_incld, const Spack& nr_incld, Spack& nr_selfcollect_tend,
   const P3Runtime& runtime_options,
-  const Smask& context)
+  const Spack& context)
 {
   // ------------------------------------------------------
   // self-collection and breakup of rain

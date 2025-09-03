@@ -804,7 +804,7 @@ struct Functions
   KOKKOS_FUNCTION
   static void droplet_self_collection(const Spack& rho, const Spack& inv_rho,
     const Spack& qc_incld, const Spack& mu_c, const Spack& nu,
-    const Spack& nc2nr_autoconv_tend, Spack& nc_selfcollect_tend,
+    const Spack& nc2nr_autoconv_tend, Spack& nc_selfcollect_tend,const P3Runtime& runtime_options,
     const Smask& context = Smask(true) );
 
   // Computes the accretion of clouds by rain
@@ -817,7 +817,7 @@ struct Functions
 
   // Computes cloud water autoconversion process rate
   KOKKOS_FUNCTION
-  static void cloud_water_autoconversion(const Spack& rho,  const Spack& qc_incld,
+  static void cloud_water_autoconversion(const Spack& rho,  const Spack& qc_incld, const Spack& qr_incld,
     const Spack& nc_incld, const Spack& inv_qc_relvar,
     Spack& qc2qr_autoconv_tend, Spack& nc2nr_autoconv_tend, Spack& ncautr,  Spack& nu, Spack& inv_rho,
     const P3Runtime& runtime_options,

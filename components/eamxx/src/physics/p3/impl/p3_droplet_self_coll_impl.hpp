@@ -17,12 +17,12 @@ void Functions<S,D>
 ::droplet_self_collection(
   const Spack& rho, const Spack& inv_rho,
   const Spack& qc_incld, const Spack& mu_c,
-  const Spack& nu, const Spack& nc2nr_autoconv_tend, Spack& nc_selfcollect_tend,
+  const Spack& nu, const Spack& nc2nr_autoconv_tend, Spack& nc_selfcollect_tend, const P3Runtime& runtime_options,
   const Smask& context)
 {
   constexpr Scalar qsmall = C::QSMALL;
 
-  constexpr Scalar kc = C::kc
+  constexpr Scalar kc = C::kc;
 
   const bool use_KK = runtime_options.use_KK;
 
@@ -33,7 +33,7 @@ void Functions<S,D>
       nc_selfcollect_tend.set(qc_not_small, 0);}
     else {
       nc_selfcollect_tend.set(qc_not_small,-kc*pow(1.e-3*rho*qc_incld,2)*(nu+2)/(nu+1)*         
-              1.e+6*inv_rho+nc2nr_autoconv_tend;}
+              1.e+6*inv_rho+nc2nr_autoconv_tend);}
   }
 }
 
