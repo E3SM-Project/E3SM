@@ -4135,11 +4135,11 @@ end subroutine wrap_update_hifrq_hist
    integer, intent(in) :: nc   ! clump number
    
    ! Initialize the HLM-FATES interface variable registry
-   call this%fates(nc)%InitializeInterfaceRegistry()
+   call this%fates(nc)%api%InitializeInterfaceRegistry()
          
    ! Register the HLM data
-   call this%fates(nc)%Register('decomp_frac_moisture', col_cf%w_scalar)
-   call this%fates(nc)%Register('decomp_frac_temperature', col_cf%t_scalar)
+   call this%fates(nc)%api%Register('decomp_frac_moisture', col_cf%w_scalar)
+   call this%fates(nc)%api%Register('decomp_frac_temperature', col_cf%t_scalar)
    
  end subroutine RegisterHLMInterfaceVariables
  
