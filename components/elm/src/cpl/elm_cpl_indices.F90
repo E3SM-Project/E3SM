@@ -166,7 +166,6 @@ contains
     use shr_megan_mod  , only: shr_megan_fields_token, shr_megan_mechcomps_n
     use shr_fan_mod    , only: shr_fan_fields_token, shr_fan_to_atm
     use elm_varctl     , only: use_voc
-    use elm_varpar     , only: numpft
     !
     ! !ARGUMENTS:
     implicit none
