@@ -99,7 +99,7 @@ jobs:
           machine: ghci-snl-cpu
           generate: ${{ env.generate }}
           submit: ${{ env.submit }}
-          cmake-configs: CMAKE_CXX_STANDARD=20;Kokkos_ENABLE_IMPL_VIEW_LEGACY=ON;Kokkos_ENABLE_DEPRECATED_CODE_4=ON;Kokkos_ENABLE_DEPRECATION_WARNINGS=OFF;Kokkos_ENABLE_OPENMP=ON;
+          cmake-configs: CMAKE_CXX_STANDARD=20;Kokkos_ENABLE_IMPL_VIEW_LEGACY=ON;Kokkos_ENABLE_DEPRECATED_CODE_4=ON;Kokkos_ENABLE_DEPRECATION_WARNINGS=ON;Kokkos_ENABLE_OPENMP=ON;
           ekat: ${{ env.ekat }}
   # gcc-cuda:
   #   if: |
@@ -175,5 +175,5 @@ jobs:
   #         machine: ghci-snl-cuda
   #         generate: ${{ env.generate }}
   #         submit: ${{ env.submit }}
-  #         cmake-configs: CMAKE_CXX_STANDARD=20;Kokkos_ENABLE_IMPL_VIEW_LEGACY=ON;Kokkos_ENABLE_DEPRECATED_CODE_4=ON;Kokkos_ENABLE_DEPRECATION_WARNINGS=OFF;Kokkos_ARCH_HOPPER90=${{ env.Hopper }};Kokkos_ARCH_AMPERE80=${{ env.Ampere }};Kokkos_ARCH_VOLTA70=${{ env.Volta }};CMAKE_CUDA_ARCHITECTURES=${{ env.CUDA_ARCH }};SCREAM_SMALL_KERNELS=${{ matrix.test.SK }};
+  #         cmake-configs: CMAKE_CXX_STANDARD=20;Kokkos_ENABLE_IMPL_VIEW_LEGACY=ON;Kokkos_ENABLE_DEPRECATED_CODE_4=ON;Kokkos_ENABLE_DEPRECATION_WARNINGS=ON;Kokkos_ARCH_HOPPER90=${{ env.Hopper }};Kokkos_ARCH_AMPERE80=${{ env.Ampere }};Kokkos_ARCH_VOLTA70=${{ env.Volta }};CMAKE_CUDA_ARCHITECTURES=${{ env.CUDA_ARCH }};SCREAM_SMALL_KERNELS=${{ matrix.test.SK }};
   #         ekat: ${{ env.ekat }}
