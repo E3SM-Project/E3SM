@@ -173,7 +173,6 @@ struct Functions
 
   // This struct stores prognostic variables evolved by P3.
   struct P3PrognosticState {
-    P3PrognosticState() = default;
     // Cloud mass mixing ratio [kg kg-1]
     view_2d<Spack> qc;
     // Cloud number mixing ratio [# kg-1]
@@ -198,7 +197,6 @@ struct Functions
 
   // This struct stores diagnostic variables used by P3.
   struct P3DiagnosticInputs {
-    P3DiagnosticInputs() = default;
     // CCN activated number tendency [kg-1 s-1]
     view_2d<const Spack> nc_nuceat_tend;
     // CCN prescribed number density [kg-1 s-1]
@@ -235,7 +233,6 @@ struct Functions
 
   // This struct stores diagnostic outputs computed by P3.
   struct P3DiagnosticOutputs {
-    P3DiagnosticOutputs() = default;
     // qitend due to deposition/sublimation
     view_2d<Spack> qv2qi_depos_tend;
     // Precipitation rate, liquid [m s-1]
@@ -264,7 +261,6 @@ struct Functions
 
   // This struct stores time stepping and grid-index-related information.
   struct P3Infrastructure {
-    P3Infrastructure() = default;
     // Model time step [s]
     Real dt;
     // Time step counter (1-based)
@@ -288,7 +284,6 @@ struct Functions
   // This struct stores tendencies computed by P3 and used by other
   // parameterizations.
   struct P3HistoryOnly {
-    P3HistoryOnly() = default;
     // Sum of liq-ice phase change tendencies
     view_2d<Spack> liq_ice_exchange;
     // Sum of vap-liq phase change tendencies
@@ -329,7 +324,6 @@ struct Functions
 
 #ifdef SCREAM_P3_SMALL_KERNELS
   struct P3Temporaries {
-    P3Temporaries() = default;
     // shape parameter of rain
     view_2d<Spack> mu_r;
     // temperature at the beginning of the microphysics step [K]
