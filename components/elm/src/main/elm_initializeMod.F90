@@ -229,11 +229,15 @@ contains
             'Unsupported domain_decomp_type = ' // trim(domain_decomp_type))
     end select
 
+#ifdef HAVE_MOAB
+    call domainlateral_init(ldomain_lateral)
+#else
     if (lateral_connectivity) then
        call domainlateral_init(ldomain_lateral, cellsOnCell, edgesOnCell, &
             nEdgesOnCell, areaCell, dcEdge, dvEdge, &
             nCells_loc, nEdges_loc, maxEdges)
     endif
+#endif
 
     ! *** Get JUST gridcell processor bounds ***
     ! Remaining bounds (landunits, columns, patches) will be determined
@@ -421,6 +425,7 @@ contains
     ! This is needed here for the following call to decompInit_glcp
 
     call initGridCells()
+    call initGhostGridCells()
 
     ! Set global seg maps for gridcells, topounits, landlunits, columns and patches
     !if(max_topounits > 1) then
