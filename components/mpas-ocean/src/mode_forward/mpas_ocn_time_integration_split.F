@@ -286,6 +286,10 @@ module ocn_time_integration_split
       real (kind=RKIND), dimension(:,:), pointer :: &
          layerThicknessLagNew
 
+      ! Variables for the GEOMETRIC GM parameterization
+      real (kind=RKIND), dimension(:), pointer :: &
+        totalParamEddyEnergyCur, totalParamEddyEnergyNew, totalParamEddyEnergyTend
+
       ! These are public variables used from the diagnostics module
       ! indexSurfaceVelocityZonal, indexSurfaceVelocityMeridional
       ! indexSSHGradientZonal, indexSSHGradientMeridional
@@ -397,6 +401,17 @@ module ocn_time_integration_split
                                           lowFreqDivergenceTend)
 
       call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracersNew, 2)
+
+      !*** Retireve the state and tendency vars for the GEOMETRIC param
+      if ( config_use_GM .and. config_GM_closure == 'geometric') then
+         call mpas_pool_get_array(statePool, 'totalParamEddyEnergy', &
+                                              totalParamEddyEnergyCur, 1)
+         call mpas_pool_get_array(statePool, 'totalParamEddyEnergy', &
+                                              totalParamEddyEnergyNew, 2)
+         call mpas_pool_get_array(tendPool, 'totalParamEddyEnergy', &
+                                             totalParamEddyEnergyTend)
+         totalParamEddyEnergyTend(:) = 0.0_RKIND
+      endif
 
       allocate(baroclinicThickness(nEdgesAll+1))
 
@@ -585,7 +600,7 @@ module ocn_time_integration_split
       call mpas_pool_get_array(forcingPool, 'atmosphericPressure', atmosphericPressure)
       call mpas_pool_get_array(forcingPool, 'frazilSurfacePressure', frazilSurfacePressure)
 
-      if (landIcePressureOn) then 
+      if (landIcePressureOn) then
          call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
          call mpas_pool_get_array(forcingPool, 'landIceDraft', landIceDraft)
       endif
@@ -1718,7 +1733,7 @@ module ocn_time_integration_split
                   ! normalTransportVelocity = normalBarotropicVelocity
                   !                         + normalBaroclinicVelocity
                   !                         + normalGMBolusVelocity
-                  !                         + normalMLEvelocity 
+                  !                         + normalMLEvelocity
                   !                         + normalVelocityCorrection
                   ! This is the velocity used in advective terms for layerThickness
                   ! and tracers in tendency calls in stage 3.
@@ -2011,6 +2026,21 @@ module ocn_time_integration_split
             call ocn_diagnostic_solve(dt, statePool, forcingPool, &
                                       meshPool, verticalMeshPool, scratchPool, &
                                       tracersPool, 2, full=.false.)
+
+             ! eddyEnergy at n+1
+             ! Compute the eddy energy tendency for the GEOMETRIC parameterization
+             call ocn_GM_eddyEnergy_tendency(statePool, meshPool, tendPool, dt, 1)
+             call mpas_dmpar_field_halo_exch(domain, 'tendEddyEnergy')
+             do iCell = 1, nCellsAll
+                totalParamEddyEnergyNew(iCell) = totalParamEddyEnergyCur(iCell) &
+                                              + dt * totalParamEddyEnergyTend(iCell)
+
+                if ( totalParamEddyEnergyNew(iCell) < 0.0_RKIND ) then
+                   totalParamEddyEnergyNew(iCell) = 1.0E-2_RKIND
+                endif
+                ! Save the old tendency of the eddy energy
+                totalParamEddyEnergyTendOld(iCell) = totalParamEddyEnergyTend(iCell)
+             end do
 
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          ! If large iteration complete, compute all variables at
@@ -2476,6 +2506,20 @@ module ocn_time_integration_split
 #endif
       call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, verticalMeshPool, &
                                 scratchPool, tracersPool, 2)
+
+      call ocn_GM_compute_kappa_geometric(statePool, meshPool, 2)
+      call ocn_GM_eddyEnergy_tendency(statePool, meshPool, tendPool, dt, 2)
+      call mpas_dmpar_field_halo_exch(domain, 'tendEddyEnergy')
+      do iCell = 1, nCellsAll
+         totalParamEddyEnergyNew(iCell) = totalParamEddyEnergyCur(iCell) &
+                                       + dt * 0.5_RKIND * ( totalParamEddyEnergyTendOld(iCell) + &
+                                                            totalParamEddyEnergyTend(iCell) )
+         if ( totalParamEddyEnergyNew(iCell) <= 0.0_RKIND ) then
+            totalParamEddyEnergyNew(iCell) = 1.0E-1_RKIND
+         !elseif (totalParamEddyEnergyNew(iCell) > 1.0_RKIND) then
+         !   totalParamEddyEnergyNew(iCell) = 1.0_RKIND
+         endif
+      end do
 
       call mpas_dmpar_field_halo_exch(domain, 'surfaceFrictionVelocity')
       call mpas_dmpar_field_halo_exch(domain, 'tangentialVelocity')
