@@ -128,6 +128,13 @@ contains
   !------------------------------------------------------------------------------
   
   subroutine elm_varpar_init()
+
+    use abortutils ,     only : endrun
+    use shr_log_mod,     only : errMsg => shr_log_errMsg
+    use elm_cpl_indices, only : iac_npft, iac_nharvest
+    use iac2lndMod,      only : numharvest
+    use lnd_comp_mct,    only : iac_present
+
     !
     ! !DESCRIPTION:
     ! Initialize module variables 
@@ -246,9 +253,20 @@ contains
        i_cwd = 4
     end if
 
-    
+   ! Consistency checks for EHC coupling
+   if (iac_present) then
+      ! EHC number of PFTs consistency checks
+      if (mxpft_nc + 1 <= iac_npft) then
+         call endrun(msg='mxpft_nc + 1 should less than or equal to iac_npft:'//&
+                  errMsg(__FILE__, __LINE__))
+      endif
 
-
+      !EHC number of harvests consistency checks
+      if(iac_nharvest .ne. numharvest) then
+         call endrun(msg='iac_nharvest should be equal to numharvest:'//&
+                  errMsg(__FILE__, __LINE__))
+      endif
+   endif
   end subroutine elm_varpar_init
 
 end module elm_varpar

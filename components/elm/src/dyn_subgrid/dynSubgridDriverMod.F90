@@ -436,7 +436,7 @@ contains
     if (.not. get_do_harvest()) then
        allocate(harvest_rates(num_harvest_vars,bounds%begg:bounds%endg),stat=ier)
        if (ier /= 0) then
-          call endrun(msg=' allocation error for harvest'//errMsg(__FILE__, &
+          call endrun(msg=' allocation error for harvest: '//errMsg(__FILE__, &
                           __LINE__))
        end if
 
@@ -446,7 +446,7 @@ contains
     if ( maxpatch_pft /= numpft+1 ) then
        call endrun(msg=' maxpatch_pft does NOT equal numpft+1'// &
                    ' -- this is invalid for dynamic PFT case'// &
-                   'for dynamic PFT case'// &
+                   'for dynamic PFT case: '// &
                    errMsg(__FILE__, __LINE__) )
     end if
 

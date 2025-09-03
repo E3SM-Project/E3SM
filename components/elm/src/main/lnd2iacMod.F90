@@ -14,7 +14,6 @@ module lnd2iacMod
   use domainMod       , only : ldomain
   use elm_varctl      , only : iulog
   use elm_varpar      , only : numpft
-  use abortutils      , only : endrun
   use ColumnType      , only : col_pp   ! 
   use ColumnDataType  , only : col_cf   ! for hr
   use VegetationType  , only : veg_pp   ! pftwgt

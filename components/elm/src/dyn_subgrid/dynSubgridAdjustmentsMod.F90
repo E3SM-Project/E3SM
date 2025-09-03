@@ -878,7 +878,7 @@ contains
 
           ! Exit if the first element of col_ns%dyn_nbal_adjustments is NaN
           if (isnan(col_ns%dyn_nbal_adjustments(begc))) then
-               call endrun(msg='dyn_col_ns_Adjustments: col_ns%dyn_nbal_adjustments is NaN '//&
+               call endrun(msg='dyn_col_ns_Adjustments: col_ns%dyn_nbal_adjustments is NaN: '//&
                errMsg(__FILE__, __LINE__))
           endif
 
@@ -899,7 +899,7 @@ contains
 
        ! Exit if the first element of col_ns%dyn_nbal_adjustments is NaN
        if (isnan(col_ns%dyn_nbal_adjustments(begc))) then
-          call endrun(msg='dyn_col_ns_Adjustments: col_ns%dyn_nbal_adjustments is NaN '//&
+          call endrun(msg='dyn_col_ns_Adjustments: col_ns%dyn_nbal_adjustments is NaN: '//&
                errMsg(__FILE__, __LINE__))
        endif
        col_ns%dyn_nbal_adjustments(begc:endc) = &
@@ -1572,7 +1572,7 @@ contains
                adjustment  = adjustment_one_level(begc:endc) )
 
           if (isnan(col_ps%dyn_pbal_adjustments(begc))) then
-               call endrun(msg='dyn_col_ps_Adjustments: col_ps%dyn_pbal_adjustments(begc) is NaN '//errMsg(__FILE__, __LINE__))
+               call endrun(msg='dyn_col_ps_Adjustments: col_ps%dyn_pbal_adjustments(begc) is NaN: '//errMsg(__FILE__, __LINE__))
           endif
           col_ps%dyn_pbal_adjustments(begc:endc) =      &
                col_ps%dyn_pbal_adjustments(begc:endc) + &
@@ -1589,7 +1589,7 @@ contains
             adjustment  = adjustment_one_level(begc:endc))
 
        if (isnan(col_ps%dyn_pbal_adjustments(begc))) then
-           call endrun(msg='dyn_col_ps_Adjustments: col_ps%dyn_pbal_adjustments(begc) is NaN '//errMsg(__FILE__, __LINE__))
+           call endrun(msg='dyn_col_ps_Adjustments: col_ps%dyn_pbal_adjustments(begc) is NaN: '//errMsg(__FILE__, __LINE__))
        endif
        col_ps%dyn_pbal_adjustments(begc:endc) =      &
            col_ps%dyn_pbal_adjustments(begc:endc) + &

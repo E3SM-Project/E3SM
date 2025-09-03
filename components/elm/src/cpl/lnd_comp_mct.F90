@@ -33,6 +33,7 @@ module lnd_comp_mct
   public :: lnd_init_mct      ! elm initialization
   public :: lnd_run_mct       ! elm run phase
   public :: lnd_final_mct     ! elm finalization/cleanup
+  logical, public :: iac_present
   !
   ! !private member functions:
   private :: lnd_setgsmap_mct ! set the land model mct gs map
@@ -123,7 +124,7 @@ contains
     logical  :: verbose_taskmap_output               ! true then use verbose task-to-node mapping format
     logical  :: atm_aero                             ! Flag if aerosol data sent from atm model
     logical  :: atm_present                          ! Flag if atmosphere model present
-    logical  :: iac_present     ! Flag if iac model present
+    !logical  :: iac_present                          ! Flag if iac model present
     real(r8) :: scmlat                               ! single-column latitude
     real(r8) :: scmlon                               ! single-column longitude
     real(r8) :: nextsw_cday                          ! calday from clock of next radiation computation
@@ -324,7 +325,7 @@ contains
     call lnd_domain_mct( bounds, lsz, gsMap_lnd, dom_l )
 #ifdef HAVE_MOAB
     if (iac_present) then
-      call endrun(msg=sub//'ERROR: IAC not supported with MOAB yet'//errMsg(__FILE__, __LINE__))
+      call endrun(msg=sub//'ERROR: EHC not supported with MOAB yet: '//errMsg(__FILE__, __LINE__))
     endif
     call init_moab_land(bounds, LNDID)
 #endif
@@ -370,10 +371,6 @@ contains
     ! Note that lnd2iac_vars is not set yet for restart
     if (atm_present .or. iac_present) then 
       call lnd_export(bounds, lnd2atm_vars, lnd2glc_vars, lnd2iac_vars, l2x_l%rattr)
-#ifdef HAVE_MOAB
-!     Also send data through the MOAB path in driver-moab
-      call lnd_export_moab(EClock, bounds, lnd2atm_vars, lnd2glc_vars, lnd2iac_vars) ! it is private here
-#endif
     endif
 
     ! Fill in infodata settings
@@ -634,9 +631,6 @@ contains
 #ifndef CPL_BYPASS       
        call t_startf ('lc_lnd_export')
        call lnd_export(bounds, lnd2atm_vars, lnd2glc_vars, lnd2iac_vars, l2x_l%rattr)
-#ifdef HAVE_MOAB
-       call lnd_export_moab(EClock, bounds, lnd2atm_vars, lnd2glc_vars, lnd2iac_vars) ! it is private here
-#endif
        call t_stopf ('lc_lnd_export')
 #endif
 
