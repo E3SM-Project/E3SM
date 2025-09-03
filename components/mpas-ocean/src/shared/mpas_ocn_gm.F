@@ -1382,8 +1382,7 @@ contains
              tangentialFlux(iEdge) + weightsOnEdge(i,iEdge)* &
                                      ! [Normal BTR Vel] - [Long Rossby C]
                                      (  normalBarotropicVelocity(eoe)    &
-                                      - longRossbyPhaseSpeed(iEdge)  ) * &
-                                     edgeMask(minLevelEdgeBot(iEdge),iEdge) !* &
+                                      - longRossbyPhaseSpeed(eoe)  )
           end do
        end do
 
