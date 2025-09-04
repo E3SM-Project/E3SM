@@ -42,7 +42,7 @@ jobs:
     - name: get version clang-format-18
       run: |
         ver=$(clang-format-18 --version)
-        # Note: "ver" can contain more than the numerical version number
+        # Note: "ver" likely contains more than the numerical version number
         if [[ "${ver}" == *"18.1.3"* ]]; then
           echo "Running clang-format version ${ver}."
         else
@@ -111,8 +111,6 @@ jobs:
         fi
     - name: diff format changes
       run: git diff > "components/eamxx/clang-format-patch.diff"
-    - name: echo status shell
-      run: "echo ${{ env.status_fail }}"
     - name: upload diff patch
       if: ${{ env.status_fail == 'true' }}
       uses: actions/upload-artifact@v4
