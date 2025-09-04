@@ -47,6 +47,7 @@ contains
     integer, pointer   :: dst_a5_ndx, dst_a7_ndx
     integer, pointer   :: dst_a1_ndx, dst_a3_ndx
     logical :: overwrite_flds
+    logical :: runtime = .false.
     !-----------------------------------------------------------------------
     overwrite_flds = .true.
     ! don't overwrite fields if invoked during the initialization phase
@@ -167,7 +168,10 @@ contains
           ! the optional argument "is_runtime" to detect runtime as it should only be present if
           ! atm_import is called during the runtime
           !------------------------------------------------------------------------------------------
-          if (present(is_runtime) .and. is_runtime .and. iac_present) then
+          runtime = .false.
+          if (present(is_runtime)) runtime = is_runtime
+
+          if (runtime .and. iac_present) then
              !if surface flux from IAC exists for this month, interpolate all IAC fields in time
              if (index_x2a_Fazz_co2sfc_iac(mon_spec) /= 0) then
 
