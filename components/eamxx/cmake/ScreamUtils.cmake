@@ -88,7 +88,7 @@ function(CreateUnitTestExec exec_name test_srcs)
 ###############################################################################
   # Call Ekat function, with a couple of extra params
   EkatCreateUnitTestExec("${exec_name}" "${test_srcs}" ${ARGN}
-    USER_DEFINED_TEST_SESSION LIBS scream_share scream_test_support)
+    USER_DEFINED_TEST_SESSION LIBS eamxx_test_session)
 endfunction(CreateUnitTestExec)
 
 ###############################################################################
