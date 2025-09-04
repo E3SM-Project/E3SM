@@ -513,7 +513,6 @@ void OutputManager::run(const util::TimeStamp& timestamp)
             scorpio::set_attribute (filespecs.filename,"GLOBAL","last_output_file_num_snaps",m_output_file_specs.storage.num_snapshots_in_file);
             scorpio::set_attribute (filespecs.filename,"GLOBAL","last_output_filename",m_output_file_specs.filename);
           } else {
-            scorpio::set_attribute (filespecs.filename,"GLOBAL","last_output_file_num_snaps", std::numeric_limits<int>::max());
             scorpio::set_attribute (filespecs.filename,"GLOBAL","last_output_filename","");
           }
         }
