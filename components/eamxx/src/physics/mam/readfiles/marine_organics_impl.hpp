@@ -1,8 +1,8 @@
 #ifndef MARINE_ORGANICS_IMPL_HPP
 #define MARINE_ORGANICS_IMPL_HPP
 
-#include "share/grid/remap/identity_remapper.hpp"
-#include "share/grid/remap/refining_remapper_p2p.hpp"
+#include "share/remap/identity_remapper.hpp"
+#include "share/remap/refining_remapper_p2p.hpp"
 #include "share/io/eamxx_scorpio_interface.hpp"
 #include "share/util/eamxx_timing.hpp"
 

@@ -14,7 +14,7 @@
 #include "share/io/scorpio_input.hpp"
 #include "share/grid/se_grid.hpp"
 #include "share/grid/point_grid.hpp"
-#include "share/grid/remap/inverse_remapper.hpp"
+#include "share/remap/inverse_remapper.hpp"
 
 // Get all Homme's compile-time dims and constants
 #include "homme_dimensions.hpp"

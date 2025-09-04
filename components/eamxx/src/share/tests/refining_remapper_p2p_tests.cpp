@@ -1,6 +1,6 @@
 #include <catch2/catch.hpp>
 
-#include "share/grid/remap/refining_remapper_p2p.hpp"
+#include "share/remap/refining_remapper_p2p.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/io/eamxx_scorpio_interface.hpp"
 #include "share/util/eamxx_setup_random_test.hpp"

@@ -3,7 +3,7 @@
 
 #include "share/eamxx_config.hpp"
 
-#include "share/grid/remap/abstract_remapper.hpp"
+#include "share/remap/abstract_remapper.hpp"
 
 #include <ekat_pack.hpp>
 

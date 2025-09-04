@@ -218,7 +218,7 @@ add_definitions("-DRRTMGP_ENABLE_KOKKOS")
 
 set(SCREAM_DOUBLE_PRECISION TRUE CACHE BOOL "Set to double precision (default True)")
 
-# For now, only used in share/grid/remap/refining_remapper_rma.*pp
+# For now, only used in share/remap/refining_remapper_rma.*pp
 option (EAMXX_ENABLE_EXPERIMENTAL_CODE "Compile one-sided MPI for refining remappers" OFF)
 
 option (SCREAM_ENABLE_ML_CORRECTION "Whether to enable ML correction parametrization" OFF)

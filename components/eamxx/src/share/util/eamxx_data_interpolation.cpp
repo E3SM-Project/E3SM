@@ -1,9 +1,9 @@
 #include "share/util/eamxx_data_interpolation.hpp"
 
-#include "share/grid/remap/identity_remapper.hpp"
-#include "share/grid/remap/vertical_remapper.hpp"
-#include "share/grid/remap/refining_remapper_p2p.hpp"
-#include "share/grid/remap/iop_remapper.hpp"
+#include "share/remap/identity_remapper.hpp"
+#include "share/remap/vertical_remapper.hpp"
+#include "share/remap/refining_remapper_p2p.hpp"
+#include "share/remap/iop_remapper.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/io/eamxx_scorpio_interface.hpp"
 #include "share/io/scorpio_input.hpp"

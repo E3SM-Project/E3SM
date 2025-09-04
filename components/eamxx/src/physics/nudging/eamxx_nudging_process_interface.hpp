@@ -4,7 +4,7 @@
 #include "share/atm_process/atmosphere_process.hpp"
 
 #include "share/util/eamxx_time_interpolation.hpp"
-#include "share/grid/remap/abstract_remapper.hpp"
+#include "share/remap/abstract_remapper.hpp"
 
 #include <ekat_parameter_list.hpp>
 #include <string>
