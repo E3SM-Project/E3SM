@@ -2,10 +2,19 @@ function(build_rdycore)
 
   if (COMP_NAMES MATCHES ".*rdycore.*")
 
-    # set PETSc include directories
-    # FIXME: this isn't the way!
-    include_directories("/global/cfs/projectdirs/m4267/petsc/petsc_v3.22.0/include")
-    include_directories("/global/cfs/projectdirs/m4267/petsc/petsc_v3.22.0/pm-cpu-hdf5_1_14_3-opt-64bit-gcc-11-2-0-v3.22.0/include")
+    # set PETSc environment variables by compiler and machine
+    if (NOT COMPILER MATCHES "gnu")
+      message(FATAL_ERROR "Unsupported compiler: ${COMPILER} -- RDycore requires GNU compilers.")
+    endif()
+    set(ENV{PETSC_DIR} "/global/cfs/projectdirs/m4267/petsc/petsc_v3.23.0")
+    if (MACH STREQUAL "pm-cpu" OR MACH STREQUAL "pm-gpu")
+      set(ENV{PETSC_ARCH} "${MACH}-opt-32bit-gcc-13-2-1-95934b0d393")
+    else()
+      message(FATAL_ERROR "RDycore is not supported on the machine '${MACH}'")
+    endif()
+
+    # use PETSc's bundled version of Kokkos
+    set(ENV{Kokkos_ROOT} "$ENV{PETSC_DIR}/$ENV{PETSC_ARCH}")
 
     message(STATUS "Found rdycore component")
 
