@@ -1,12 +1,12 @@
 # Generate eamxx_config.h and eamxx_config.f
 include (EkatUtils)
-EkatConfigFile(${CMAKE_CURRENT_SOURCE_DIR}/src/eamxx_config.h.in
-               ${CMAKE_CURRENT_BINARY_DIR}/src/eamxx_config.h
-               F90_FILE ${CMAKE_CURRENT_BINARY_DIR}/src/eamxx_config.f)
+EkatConfigFile(${CMAKE_CURRENT_SOURCE_DIR}/eamxx_config.h.in
+               ${CMAKE_CURRENT_BINARY_DIR}/eamxx_config.h
+               F90_FILE ${CMAKE_CURRENT_BINARY_DIR}/eamxx_config.f)
 
 # Generate eamxx_version.h
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/eamxx_version.h.in
-               ${CMAKE_CURRENT_BINARY_DIR}/src/eamxx_version.h)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/eamxx_version.h.in
+               ${CMAKE_CURRENT_BINARY_DIR}/eamxx_version.h)
 
 add_library(eamxx_core
   eamxx_config.cpp
