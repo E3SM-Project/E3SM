@@ -1511,7 +1511,6 @@ contains
           end do
        end if
 
-       ! iac coupling - need an iac_active logical somewhere
        if (iac_active) then
           do p = 0,numpft
              l2x(index_l2x_Sl_hr(p),i) = lnd2iac_vars%hr(g,p)

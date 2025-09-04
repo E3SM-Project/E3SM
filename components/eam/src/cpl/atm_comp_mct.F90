@@ -141,6 +141,8 @@ CONTAINS
 
   subroutine atm_init_mct( EClock, cdata_a, x2a_a, a2x_a, NLFilename )
 
+    use phys_control,     only: iac_present
+
     !-----------------------------------------------------------------------
     !
     ! Arguments
