@@ -1,5 +1,5 @@
 #!/bin/bash -fe
-# E3SM+GCAM SSP245 production run script for chrysalis
+# E3SM+GCAM SSP370 production run script for chrysalis
 
 main() {
 
@@ -14,8 +14,8 @@ readonly PROJECT="e3sm"
 
 # Simulation
 readonly MYDATE=$(date '+%Y%m%d%H') # use current date if MYDATE is not set
-#export COMPSET=SSP245_EAM%CMIP6_ELM%CNPRDCTCBC_MPASSI%PRES_DOCN%DOM_SROF_SGLC_SWAV_GCAM_BGC%LNDATM
-export COMPSET="SSP245_ZATM_BGC"
+#export COMPSET=SSP370_EAM%CMIP6_ELM%CNPRDCTCBC_MPASSI%PRES_DOCN%DOM_SROF_SGLC_SWAV_GCAM_BGC%LNDATM
+export COMPSET="SSP370_ZATM_BGC"
 readonly RESOLUTION="ne30pg2_f09_oEC60to30v3" # non-default grids are: atm:ne30np4.pg2  lnd:0.9x1.25  ocnice:oEC60to30v3  rof:null  glc:null  wav:null   mask is: oEC60to30v3
 readonly CASE_NAME="${COMPSET}_${RESOLUTION}_${MYDATE}"
 # readonly CASE_GROUP="E3SM_GCAM"

@@ -7,8 +7,6 @@
 <use_case_desc bgc="cndv"      >Simulate transient land-use, aerosol deposition, and Nitrogen deposition changes from 2015 to 2100</use_case_desc>
 <use_case_desc use_cn=".true." >Simulate transient land-use, aerosol deposition, and Nitrogen deposition changes from 2015 to 2100</use_case_desc>
 
-<!-- <sim_year>1850</sim_year> -->
-
 <sim_year_range>2015-2100</sim_year_range>
 
 <clm_start_type>arb_ic</clm_start_type>

@@ -48,6 +48,7 @@
        <value compset="SSP245_ZATM_BGC">year</value>
        <value compset="SSP370_ZATM_BGC">year</value>
        <value compset="SSP245(?:SOI)?_EAM.*CMIP6.*_GCAM_BGC%LNDATM">year</value>
+       <value compset="SSP370(?:SOI)?_EAM.*CMIP6.*_GCAM_BGC%LNDATM">year</value>
      </values>
    </entry>
 
@@ -71,7 +72,7 @@
        <value compset="SSP245_ZATM_BGC">1</value>
        <value compset="SSP370_ZATM_BGC">1</value>
        <value compset="SSP245(?:SOI)?_EAM.*CMIP6.*_GCAM">1</value>
-       <value compset="SSP370(?:SOI)?_EAM.*CMIP6.*_GCAM_BGC%LNDATM">1</value>
+       <value compset="SSP370(?:SOI)?_EAM.*CMIP6.*_GCAM">1</value>
      </values>
    </entry>
 
