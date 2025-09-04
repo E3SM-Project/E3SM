@@ -16,6 +16,19 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: true
 
+# RECIPE:
+# 0. install clang-format via conda. This allows us to pick virtually any clang-format
+#    version we want, without having to rely on what's available on the runner
+# 1a. runs clang-format on the files changed by this PR, modifying them in-place
+# 1b. in case of workflow_disaptch, run clang-format on ALL eamxx cpp/hpp files
+# 2. any files that required formatting are returned by a 'git diff --name-only'
+#    and written to the job summary along with an informational message
+# if (formatting required) {
+#   3. runs a full diff to generate a patch file
+#   4. uploads the patch as an artifact
+# }
+# 5. return the pass/fail status of the job
+
 jobs:
   clang-format-linter:
     if: ${{ github.repository == 'E3SM-Project/E3SM' }}
@@ -29,27 +42,11 @@ jobs:
       with:
         files: 'components/eamxx/**/*.{cpp,hpp}'
         separator: " "
-    # 1. runs clang-format on the files changed by this PR, modifying them in-place
-    # 2. any files that required formatting are returned by a 'git diff --name-only'
-    #    and written to the job summary along with an informational message
-    # if (formatting required) {
-    #   3. runs a full diff to generate a patch file
-    #   4. uploads the patch as an artifact
-    # }
-    # 5. return the pass/fail status of the job
-    # NOTE: different versions of clang-format are likely to give different
-    #       results, so we keep an eye on this
-    - name: get version clang-format-18
+    - name: create conda env
       run: |
-        ver=$(clang-format-18 --version)
-        # Note: "ver" likely contains more than the numerical version number
-        if [[ "${ver}" == *"18.1.3"* ]]; then
-          echo "Running clang-format version ${ver}."
-        else
-          echo "Warning! clang-format version has changed! (default 18.1.3)"
-          echo "Please inform developers by opening an issue."
-          echo "Running clang-format with non-standard version ${ver}."
-        fi
+        conda create -n clang-format
+        conda activate clang-format
+        conda install clang-format
     - name: run formatter looping over PR-changed files, then diff -  PR trigger
       # Note: this (json) variable contains a handful of sub-fields, but its
       # existence encapsulates all of the PR-related triggers
@@ -57,6 +54,7 @@ jobs:
       # like "synchronization," which falls under the umbrella of PR triggers
       if: ${{ github.event.pull_request }}
       run: |
+        conda activate clang-format
         flist="${{ steps.changed-files.outputs.all_changed_files }}"
         run_cfmt () {
           clang-format-18 -i --style=file:"components/eamxx/.clang-format" $1
@@ -71,6 +69,7 @@ jobs:
       # github.event.workflow_dispatch, but this will always be the event_name
       if: ${{ github.event_name == 'workflow_dispatch' }}
       run: |
+        conda activate clang-format
         # when it's a manual trigger, we'll choose to consider all cpp/hpp files
         flist=($(find components/eamxx -depth -name "*.*pp"))
         run_cfmt () {
