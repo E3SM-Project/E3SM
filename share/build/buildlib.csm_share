@@ -4,6 +4,10 @@ from CIME.utils import copyifnewer, run_bld_cmd_ensure_logging, expect, symlink_
 from CIME.case import Case
 from CIME.build import get_standard_cmake_args
 from CIME.XML.files import Files
+
+sys.path.append(os.path.dirname(__file__))
+from buildlib_util import config_if_not_configured
+
 import glob
 
 logger = logging.getLogger(__name__)
@@ -130,9 +134,9 @@ def buildlib(bldroot, installpath, case):
     for _file in glob.iglob(os.path.join(srcroot,"share","RandNum","include","*")):
         copyifnewer(_file, os.path.join(installdir, "include", os.path.basename(_file)))
 
-    # This runs the cmake command
+    # Do cmake
     cmake_args = get_standard_cmake_args(case, installpath)
-    run_bld_cmd_ensure_logging(f"cmake {cmake_args} {csm_share_dir}", logger, from_dir=libdir)
+    config_if_not_configured("csm_share", libdir, f"cmake {cmake_args} {csm_share_dir}", logger)
 
     gmake_cmd = case.get_value("GMAKE")
     gmake_j   = case.get_value("GMAKE_J")
