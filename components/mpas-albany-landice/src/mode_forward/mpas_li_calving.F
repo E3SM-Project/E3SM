@@ -2600,6 +2600,10 @@ module li_calving
       ! The mask includes both the dynamic AND non-dynamic cells along the prescribed interface type(s).
       frontAblationMask(:) = 0
 
+      ! Calculate open ocean mask for use below
+      call find_open_ocean(domain, openOceanMask, err_tmp)
+      err = ior(err, err_tmp)
+
       ! First identify the dynamic cells for each mask type.
 
       if ( applyToGrounded .or. applyToGroundingLine ) then
@@ -2619,11 +2623,13 @@ module li_calving
                nEmptyNeighbors = 0
                do iEdge = 1, nEdgesOnCell(iCell)
                   iNeighbor = cellsOnCell(iEdge, iCell)
-                  if ( (((thickness(iNeighbor) == 0.0_RKIND) .and. bedTopography(iNeighbor) < config_sea_level)) &
+                  if ( (((thickness(iNeighbor) == 0.0_RKIND) .and. bedTopography(iNeighbor) < config_sea_level) &
+                          .and. (openOceanMask(iNeighbor) == 1)) &
                      !< these previous conditions are open ocean
                      .or. &
                      !> these following conditions are inactive floating margin cells
                      ((li_mask_is_floating_ice(cellMask(iNeighbor)) &
+                     .and. (openOceanMask(iNeighbor) == 1) &
                      .and. li_mask_is_margin(cellMask(iNeighbor)) &
                      .and. (.not. li_mask_is_dynamic_ice(cellMask(iNeighbor)))))) then
                      nEmptyNeighbors = nEmptyNeighbors + 1
@@ -2655,8 +2661,6 @@ module li_calving
       endif
 
       if ( applyToFloating ) then
-         call find_open_ocean(domain, openOceanMask, err_tmp)
-         err = ior(err, err_tmp)
          do iCell = 1,nCells
             ! If applyToFloating: marine marginal cells are dynamic floating margin cells
             if ( li_mask_is_floating_ice(cellMask(iCell)) .and. &
