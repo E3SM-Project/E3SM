@@ -79,7 +79,6 @@ struct Functions
 
   // This struct stores runtime options for shoc_main
  struct SHOCRuntime {
-   SHOCRuntime() = default;
    // Runtime options for isotropic_ts
    Scalar lambda_low;
    Scalar lambda_high;
@@ -99,8 +98,6 @@ struct Functions
 
   // This struct stores input views for shoc_main.
   struct SHOCInput {
-    SHOCInput() = default;
-
     // Grid spacing of host model in x direction [m]
     view_1d<const Scalar> dx;
     // grid spacing of host model in y direction [m]
@@ -137,8 +134,6 @@ struct Functions
 
   // This struct stores input/outputs views for shoc_main.
   struct SHOCInputOutput {
-    SHOCInputOutput() = default;
-
     // prognostic temp variable of host model
     // dry static energy [J/kg]
     // dse = Cp*T + g*z + phis
@@ -165,8 +160,6 @@ struct Functions
 
   // This struct stores output only views for shoc_main.
   struct SHOCOutput {
-    SHOCOutput() = default;
-
     // planetary boundary layer depth [m]
     view_1d<Scalar> pblh;
     // surface friction velocity [m/s]
@@ -181,8 +174,6 @@ struct Functions
 
   // This struct stores output views for SHOC diagnostics for shoc_main.
   struct SHOCHistoryOutput {
-    SHOCHistoryOutput() = default;
-
     // Turbulent length scale [m]
     view_2d<Spack>  shoc_mix;
     // vertical velocity variance [m2/s2]
@@ -219,8 +210,6 @@ struct Functions
 
 #ifdef SCREAM_SHOC_SMALL_KERNELS
   struct SHOCTemporaries {
-    SHOCTemporaries() = default;
-
     view_1d<Scalar> se_b;
     view_1d<Scalar> ke_b;
     view_1d<Scalar> wv_b;
