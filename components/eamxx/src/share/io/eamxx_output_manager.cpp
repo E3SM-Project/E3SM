@@ -509,13 +509,13 @@ void OutputManager::run(const util::TimeStamp& timestamp)
           // Update the date of last write and sample size
           write_timestamp (filespecs.filename,"last_write",m_output_control.last_write_ts,true);
           scorpio::set_attribute (filespecs.filename,"GLOBAL","num_snapshots_since_last_write",m_output_control.nsamples_since_last_write);
-	  if (m_output_file_specs.is_open) {
-              scorpio::set_attribute (filespecs.filename,"GLOBAL","last_output_file_num_snaps",m_output_file_specs.storage.num_snapshots_in_file);
-              scorpio::set_attribute (filespecs.filename,"GLOBAL","last_output_filename",m_output_file_specs.filename);
-	  } else {
-	      scorpio::set_attribute (filespecs.filename,"GLOBAL","last_output_file_num_snaps", std::numeric_limits<int>::max());
-              scorpio::set_attribute (filespecs.filename,"GLOBAL","last_output_filename","");
-	  }
+          if (m_output_file_specs.is_open) {
+            scorpio::set_attribute (filespecs.filename,"GLOBAL","last_output_file_num_snaps",m_output_file_specs.storage.num_snapshots_in_file);
+            scorpio::set_attribute (filespecs.filename,"GLOBAL","last_output_filename",m_output_file_specs.filename);
+          } else {
+            scorpio::set_attribute (filespecs.filename,"GLOBAL","last_output_file_num_snaps", std::numeric_limits<int>::max());
+            scorpio::set_attribute (filespecs.filename,"GLOBAL","last_output_filename","");
+          }
         }
         // Write these in both output and rhist file. The former, b/c we need these info when we postprocess
         // output, and the latter b/c we want to make sure these params don't change across restarts
