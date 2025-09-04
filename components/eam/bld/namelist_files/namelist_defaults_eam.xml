@@ -1377,6 +1377,9 @@
 <fixed_total_solar_irradiance>-1       </fixed_total_solar_irradiance>
 <do_spa_optics> .false.</do_spa_optics>
 
+<!-- Only for use with RRTMG -->
+<rad_asym_splt> .true.</rad_asym_splt>
+
 <!-- ================================================================== -->
 <!-- Defaults for SE                                                    -->
 <!-- ================================================================== -->
