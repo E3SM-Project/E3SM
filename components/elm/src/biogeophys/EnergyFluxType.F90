@@ -6,6 +6,7 @@ module EnergyFluxType
   use shr_kind_mod   , only : r8 => shr_kind_r8
   use shr_log_mod    , only : errMsg => shr_log_errMsg
   use elm_varcon     , only : spval
+  use elm_varctl     , only : iulog
   use decompMod      , only : bounds_type
   use LandunitType   , only : lun_pp                
   use ColumnType     , only : col_pp                
@@ -88,6 +89,8 @@ module EnergyFluxType
 
      ! Transpiration
      real(r8), pointer :: btran_patch             (:)   ! patch transpiration wetness factor (0 to 1)
+     real(r8), pointer :: btran_min_patch         (:)   ! patch daily minimum transpiration wetness factor (0 to 1)
+     real(r8), pointer :: btran_min_inst_patch    (:)   ! patch instantaneous daily minimum transpiration wetness factor (0 to 1)
      !plant hydraulics
      real(r8), pointer :: bsun_patch              (:)   ! patch sunlit canopy transpiration wetness factor (0 to 1)
      real(r8), pointer :: bsha_patch              (:)   ! patch shaded canopy transpiration wetness factor (0 to 1)
@@ -122,11 +125,14 @@ module EnergyFluxType
 
    contains
 
-     procedure, public  :: Init         
-     procedure, private :: InitAllocate 
-     procedure, private :: InitHistory  
-     procedure, private :: InitCold     
-     procedure, public  :: Restart      
+     procedure, public  :: Init          ! MAin interface for initialisation
+     procedure, private :: InitAllocate  ! Allocate and initialise variables
+     procedure, private :: InitHistory   ! Set up history output
+     procedure, private :: InitCold      ! Initialise for cold start
+     procedure, public  :: Restart       ! Set up restart fields
+     procedure, public  :: InitAccBuffer ! Initialise accumulation buffer
+     procedure, public  :: InitAccVars   ! Initialise time accumulation variables
+     procedure, public  :: UpdateAccVars ! Update accumulation variables
 
   end type energyflux_type
   !------------------------------------------------------------------------
@@ -248,6 +254,8 @@ contains
     allocate(this%rresis_patch             (begp:endp,1:nlevgrnd))  ; this%rresis_patch            (:,:) = spval
     allocate(this%btran_patch              (begp:endp))             ; this%btran_patch             (:)   = spval
     allocate(this%btran2_patch             (begp:endp))             ; this%btran2_patch            (:)   = spval
+    allocate(this%btran_min_patch          (begp:endp))             ; this%btran_min_patch         (:)   = spval
+    allocate(this%btran_min_inst_patch     (begp:endp))             ; this%btran_min_inst_patch    (:)   = spval
     allocate( this%bsun_patch              (begp:endp))             ; this%bsun_patch              (:)   = spval 
     allocate( this%bsha_patch              (begp:endp))             ; this%bsha_patch              (:)   = spval 
 
@@ -299,6 +307,11 @@ contains
          avgflag='A', long_name='transpiration beta factor', &
          ptr_patch=this%btran_patch, set_lake=spval, set_urb=spval)
 
+    this%btran_min_patch(begp:endp) = spval
+    call hist_addfld1d (fname='BTRAN_DAILY_MIN', units='unitless',  &
+         avgflag='A', long_name='daily minimum of transpiration beta factor', &
+         ptr_patch=this%btran_min_patch, l2g_scale_type='veg')
+
     if (use_cn) then
        this%rresis_patch(begp:endp,:) = spval
        call hist_addfld2d (fname='RRESIS', units='proportion', type2d='levgrnd', &
@@ -323,7 +336,6 @@ contains
     use landunit_varcon , only : istice, istwet, istsoil, istdlak, istice_mec
     use column_varcon   , only : icol_road_imperv, icol_roof, icol_sunwall
     use column_varcon   , only : icol_shadewall, icol_road_perv
-    use elm_varctl      , only : iulog, use_vancouver, use_mexicocity
     !
     ! !ARGUMENTS:
     class(energyflux_type)         :: this
@@ -380,8 +392,179 @@ contains
          long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%btran2_patch) 
 
+    call restartvar(ncid=ncid, flag=flag, varname='BTRAN_MIN', xtype=ncd_double,  &
+         dim1name='pft', &
+         long_name='daily minimum of transpiration wetness factor', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%btran_min_patch) 
+
+    call restartvar(ncid=ncid, flag=flag, varname='BTRAN_MIN_INST', xtype=ncd_double,  &
+         dim1name='pft', &
+         long_name='instantaneous daily minimum of transpiration wetness factor', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%btran_min_inst_patch) 
+
     call this%eflx_dynbal_dribbler%Restart(bounds, ncid, flag)
 
   end subroutine Restart
 
+
+  !-----------------------------------------------------------------------
+  subroutine InitAccBuffer (this, bounds)
+    !
+    ! Original source of this sub-routine:
+    ! https://github.com/ESCOMP/CTSM
+    !
+    ! !DESCRIPTION:
+    ! Initialize accumulation buffer for all required module accumulated fields
+    ! This routine set defaults values that are then overwritten by the
+    ! restart file for restart or branch runs
+    ! Each interval and accumulation type is unique to each field processed.
+    ! Routine [initAccBuffer] defines the fields to be processed
+    ! and the type of accumulation. 
+    ! Routine [updateAccVars] does the actual accumulation for a given field.
+    ! Fields are accumulated by calls to subroutine [update_accum_field]. 
+    ! To accumulate a field, it must first be defined in subroutine [initAccVars] 
+    ! and then accumulated by calls to [updateAccVars].
+    ! Four types of accumulations are possible:
+    !   o average over time interval
+    !   o running mean over time interval
+    !   o running accumulation over time interval
+    ! Time average fields are only valid at the end of the averaging interval.
+    ! Running means are valid once the length of the simulation exceeds the
+    ! averaging interval. Accumulated fields are continuously accumulated.
+    ! The trigger value "-99999." resets the accumulation to zero.
+    !
+    ! !USES 
+    use accumulMod       , only : init_accum_field
+    use elm_time_manager , only : get_step_size_real
+    !
+    ! !ARGUMENTS:
+    class(energyflux_type) :: this
+    type(bounds_type), intent(in) :: bounds
+    !
+    ! !LOCAL VARIABLES: 
+    real(r8) :: dtime
+    integer, parameter :: not_used = huge(1)
+    !---------------------------------------------------------------------
+
+    dtime = get_step_size_real()
+
+    call init_accum_field(name='BTRANAVG', units='-', &
+         desc='average over an hour of btran', accum_type='timeavg', accum_period=nint(3600._r8/dtime), &
+         subgrid_type='pft', numlev=1, init_value=0._r8)
+
+  end subroutine InitAccBuffer
+
+  !-----------------------------------------------------------------------
+  subroutine InitAccVars(this, bounds)
+    !
+    ! Original source of this sub-routine:
+    ! https://github.com/ESCOMP/CTSM
+    !
+    ! !DESCRIPTION:
+    ! Initialize module variables that are associated with
+    ! time accumulated fields. This routine is called for both an initial run
+    ! and a restart run (and must therefore must be called after the restart file 
+    ! is read in and the accumulation buffer is obtained)
+    !
+    ! !USES 
+    use elm_time_manager , only : get_nstep
+    use elm_varctl       , only : nsrest, nsrStartup
+    use abortutils       , only : endrun
+    !
+    ! !ARGUMENTS:
+    class(energyflux_type) :: this
+    type(bounds_type), intent(in) :: bounds
+    !
+    ! !LOCAL VARIABLES:
+    integer  :: begp, endp
+    integer  :: nstep
+    integer  :: ier
+    !---------------------------------------------------------------------
+
+    begp = bounds%begp; endp = bounds%endp
+
+    ! Initialize variables that are to be time accumulated
+    ! Initialize btran min values
+    if (nsrest == nsrStartup) then
+       this%btran_min_patch(begp:endp)        =  spval
+
+       this%btran_min_inst_patch(begp:endp)   =  spval
+    end if
+
+  end subroutine InitAccVars
+
+  !-----------------------------------------------------------------------
+  subroutine UpdateAccVars (this, bounds)
+    !
+    ! Original source of this sub-routine:
+    ! https://github.com/ESCOMP/CTSM
+    !
+    !
+    ! USES
+    use elm_time_manager , only : get_step_size, get_nstep, is_end_curr_day, get_curr_date
+    use accumulMod       , only : update_accum_field, extract_accum_field
+    use abortutils       , only : endrun
+    !
+    ! !ARGUMENTS:
+    class(energyflux_type)                :: this
+    type(bounds_type)      , intent(in)    :: bounds
+
+    !
+    ! !LOCAL VARIABLES:
+    integer :: m,g,l,c,p                 ! indices
+    integer :: ier                       ! error status
+    integer :: dtime                     ! timestep size [seconds]
+    integer :: nstep                     ! timestep number
+    integer :: year                      ! year (0, ...) for nstep
+    integer :: month                     ! month (1, ..., 12) for nstep
+    integer :: day                       ! day of month (1, ..., 31) for nstep
+    integer :: secs                      ! seconds into current date for nstep
+    logical :: end_cd                    ! temporary for is_end_curr_day() value
+    integer :: begp, endp
+    real(r8), pointer :: rbufslp(:)      ! temporary single level - pft level
+    !---------------------------------------------------------------------
+
+    begp = bounds%begp; endp = bounds%endp
+
+    dtime = get_step_size()
+    nstep = get_nstep()
+    call get_curr_date (year, month, day, secs)
+
+    ! Allocate needed dynamic memory for single level pft field
+
+    allocate(rbufslp(begp:endp), stat=ier)
+    if (ier/=0) then
+       write(iulog,*)'update_accum_hist allocation error for rbuf1dp'
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    endif
+
+    ! Accumulate and extract BTRAN_HRLY_AVG - hourly average btran
+    ! Used to compute minimum of hourly averaged btran
+    ! over a day. Note that "spval" is returned by the call to
+    ! accext if the time step does not correspond to the end of an
+    ! accumulation interval. First, initialize the necessary values for
+    ! an initial run at the first time step the accumulator is called
+
+    call update_accum_field  ('BTRANAVG', this%btran_patch, nstep)
+    call extract_accum_field ('BTRANAVG', rbufslp, nstep)
+    end_cd = is_end_curr_day()
+    do p = begp,endp
+       if (rbufslp(p) /= spval) then
+          if (this%btran_min_inst_patch(p) == spval) then
+             this%btran_min_inst_patch(p) = rbufslp(p)
+          else
+             this%btran_min_inst_patch(p) = min(rbufslp(p), this%btran_min_inst_patch(p))
+          end if
+       endif
+       if (end_cd) then
+          this%btran_min_patch(p) = this%btran_min_inst_patch(p)
+          this%btran_min_inst_patch(p) =  spval
+       else if (secs == dtime) then
+          this%btran_min_patch(p) = spval
+       endif
+    end do
+
+    deallocate(rbufslp)
+
+  end subroutine UpdateAccVars
 end module EnergyFluxType
