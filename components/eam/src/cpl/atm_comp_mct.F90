@@ -142,6 +142,7 @@ CONTAINS
   subroutine atm_init_mct( EClock, cdata_a, x2a_a, a2x_a, NLFilename )
 
     use phys_control,     only: iac_present
+    use shr_log_mod      , only : errMsg => shr_log_errMsg
 
     !-----------------------------------------------------------------------
     !
@@ -323,8 +324,7 @@ CONTAINS
        ! Currently, iac is always prognostic if it is present - may need to
        ! check this if this changes
        if (iac_present .and. co2_readFlux_fuel) then
-          co2_readFlux_fuel = .false.
-          write(iulog,*)'warning: co2_readFlux_fuel set false as iac is present'
+          call endrun('co2_readFlux_fuel should be false as it is not supported if EHC component is present'//errMsg(__FILE__, __LINE__))
        end if
 
        !
