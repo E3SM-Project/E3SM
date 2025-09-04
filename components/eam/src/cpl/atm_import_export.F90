@@ -6,7 +6,7 @@ module atm_import_export
 
 contains
 
-  subroutine atm_import( x2a, cam_in, restart_init , mon_spec, day_spec, tod_spec)
+  subroutine atm_import( x2a, cam_in, restart_init , mon_spec, day_spec, tod_spec, is_runtime)
 
     !-----------------------------------------------------------------------
     use cam_cpl_indices
@@ -18,7 +18,8 @@ contains
     use co2_cycle     , only: c_i, co2_readFlux_ocn, co2_readFlux_fuel
     use co2_cycle     , only: co2_transport, co2_time_interp_ocn, co2_time_interp_fuel
     use co2_cycle     , only: data_flux_ocn, data_flux_fuel
-    use iac_coupled_fields, only: iac_coupled_timeinterp, iac_vertical_emiss, iac_present
+    use iac_coupled_fields, only: iac_coupled_timeinterp, iac_vertical_emiss
+    use phys_control  , only: iac_present
     use physconst     , only: mwco2
     use time_manager  , only: is_first_step
     !
@@ -31,6 +32,7 @@ contains
     integer, intent(in), optional :: mon_spec        ! Simulation month
     integer, intent(in), optional :: day_spec        ! Simulation day
     integer, intent(in), optional :: tod_spec        ! Simulation time of day [s]
+    logical, intent(in), optional :: is_runtime      ! flag to indicate if atm_import is called during the runtime
     !
     ! Local variables
     !
@@ -162,12 +164,10 @@ contains
           ! Interpolate IAC fields: Interpolate one surface field and two vertical emissions field
           !
           ! NOTE: Interpolation should only be done during the runtime. We use the presence of
-          ! optional argument "mon_spec" to detect runtime as it should only be present if
+          ! the optional argument "is_runtime" to detect runtime as it should only be present if
           ! atm_import is called during the runtime
           !------------------------------------------------------------------------------------------
-          ! MUST FIXME:B- This should be controlled by a flag set to true by IAC, like "flux_from_iac" or something similar
-          ! we also need a flag to detect runtime
-          if (present(mon_spec) .and. iac_present) then
+          if (present(is_runtime) .and. is_runtime .and. iac_present) then
              !if surface flux from IAC exists for this month, interpolate all IAC fields in time
              if (index_x2a_Fazz_co2sfc_iac(mon_spec) /= 0) then
 
@@ -247,7 +247,7 @@ contains
              ! co2 flux from fossil fuel
              if ( present(mon_spec)) then
                if( index_x2a_Fazz_co2sfc_iac(mon_spec) /= 0) then
-                  cam_in(c)%cflx(i,c_i(2)) = cam_in(c)%fco2_surface_iac(i) !FIXMEB: Verify this and the units!!
+                  cam_in(c)%cflx(i,c_i(2)) = cam_in(c)%fco2_surface_iac(i)
                else if (co2_readFlux_fuel) then
                 cam_in(c)%cflx(i,c_i(2)) = data_flux_fuel%co2flx(i,1,c)
 !--BEH  ^^^ new implementation ^^^

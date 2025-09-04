@@ -1603,9 +1603,10 @@ subroutine tphysac (ztodt,   cam_in,  &
     use flux_avg,           only: flux_avg_run
     use nudging,            only: Nudge_Model,Nudge_ON,nudging_timestep_tend
     use phys_control,       only: use_qqflx_fixer
-    use co2_cycle,          only: co2_cycle_set_ptend, co2_transport, co2_cycle_iac_ptend, co2_readFlux_aircraft
+    use co2_cycle,          only: co2_cycle_set_ptend, co2_cycle_iac_ptend
     use co2_diagnostics,    only: get_carbon_sfc_fluxes, get_carbon_air_fluxes
-    use iac_coupled_fields, only: iac_present, iac_co2_name, iac_coupled_fields_adv
+    use iac_coupled_fields, only: iac_co2_name, iac_coupled_fields_adv
+    use phys_control,       only: iac_present
 
     implicit none
 
@@ -1827,10 +1828,10 @@ if (l_tracer_aero) then
       call get_carbon_air_fluxes(state, pbuf, ztodt, iac_co2_name)
 
     else
-    ! add tendency from aircraft emissions
-    call co2_cycle_set_ptend(state, pbuf, ptend)
-    call physics_update(state, ptend, ztodt, tend)
-    call get_carbon_air_fluxes(state, pbuf, ztodt)
+      ! add tendency from aircraft emissions
+      call co2_cycle_set_ptend(state, pbuf, ptend)
+      call physics_update(state, ptend, ztodt, tend)
+      call get_carbon_air_fluxes(state, pbuf, ztodt)
     endif
 
     ! Chemistry calculation

@@ -117,7 +117,6 @@ module atm_comp_mct
   ! Are all surface types present
   logical :: lnd_present ! if true => land is present
   logical :: ocn_present ! if true => ocean is present
-  logical :: iac_present ! if true => iac is present
 
   integer,                 pointer :: dof(:) ! needed for pio_init decomp for restarts
   type(seq_infodata_type), pointer :: infodata
@@ -663,7 +662,7 @@ CONTAINS
     call t_startf ('CAM_import')
 ! move moab import after regular atm import, so it would be in charge
     call atm_import( x2a_a%rattr, cam_in, mon_spec=mon_sync , &
-         day_spec=day_sync, tod_spec=tod_sync)
+         day_spec=day_sync, tod_spec=tod_sync, is_runtime=.true. )
 #ifdef HAVE_MOAB
 
 #ifdef MOABCOMP

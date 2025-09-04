@@ -291,7 +291,7 @@ contains
       ! Called by: tphysac
       !-------------------------------------------------
       use physics_buffer,     only: physics_buffer_desc, pbuf_get_index, pbuf_get_field
-      use iac_coupled_fields, only: iac_present
+      use phys_control  , only: iac_present
 
       type(physics_state), intent(inout) :: state
       type(physics_buffer_desc), pointer :: pbuf(:)

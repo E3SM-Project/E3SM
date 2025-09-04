@@ -100,7 +100,7 @@ contains
 
   subroutine cam_cpl_indices_set( )
 
-    use iac_coupled_fields, only: iac_present
+    use phys_control  , only: iac_present
 
     type(mct_aVect) :: a2x      ! temporary
     type(mct_aVect) :: x2a      ! temporary

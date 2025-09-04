@@ -20,6 +20,7 @@ module iac_coupled_fields
   use shr_kind_mod,     only: r8 => shr_kind_r8, cxx =>SHR_KIND_CXX
   use shr_log_mod ,     only: errMsg => shr_log_errMsg
   use time_manager,     only: set_time_float_from_date, get_curr_date
+  use phys_control,     only: iac_present
 
   implicit none
   private
@@ -35,7 +36,6 @@ module iac_coupled_fields
 
   ! Public data
   public iac_vertical_emiss
-  logical, public, protected :: iac_present=.false.
 
   !------------------------------------------------
   ! This is the chunked and columnated data from the iac coupling
@@ -66,9 +66,6 @@ contains
 
     integer            :: idx
 
-    ! FIXMEB: Hardwire it true for now - I don't know if this is an infodata or namelist
-    ! variable or some other way of setting this for non-iac coupled runs.
-    iac_present=.false.
     if (.not. iac_present) return
 
     ! Register the co2 field with the pbuf
