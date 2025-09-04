@@ -34,7 +34,7 @@ initial_conditions:
   cldfrac_rad: 0.5
   eff_radius_qc: 10.0
   eff_radius_qi: 10.0
-  sunlit: 1.0
+  sunlit_mask: 1.0
   surf_radiative_T: 288.0
   pseudo_density: 1.0
 
