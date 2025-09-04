@@ -2,13 +2,9 @@
 #define SCREAM_GRIDS_MANAGER_HPP
 
 #include "share/grid/abstract_grid.hpp"
-#include "share/grid/remap/abstract_remapper.hpp"
-#include "share/grid/remap/identity_remapper.hpp"
 
 #include <ekat_factory.hpp>
-#include <ekat_string_utils.hpp>
 #include <ekat_parameter_list.hpp>
-#include <ekat_assert.hpp>
 #include <ekat_comm.hpp>
 
 #include <map>
@@ -26,8 +22,6 @@ public:
   using grid_repo_type         = std::map<std::string, grid_ptr_type>;
   using nonconstgrid_ptr_type  = std::shared_ptr<grid_type>;
   using nonconstgrid_repo_type = std::map<std::string, nonconstgrid_ptr_type>;
-  using remapper_type          = AbstractRemapper;
-  using remapper_ptr_type      = std::shared_ptr<remapper_type>;
 
   GridsManager () = default;
   virtual ~GridsManager () = default;
@@ -42,16 +36,6 @@ public:
 
   virtual void build_grids () = 0;
 
-  remapper_ptr_type
-  create_remapper (const grid_ptr_type& from_grid,
-                   const grid_ptr_type& to_grid) const;
-
-  remapper_ptr_type
-  create_remapper (const std::string& from_grid,
-                   const std::string& to_grid) const {
-    return create_remapper(get_grid(from_grid),get_grid(to_grid));
-  }
-
   const grid_repo_type& get_repo () const { return m_grids; }
 
   std::set<std::string> get_grid_names () const;
@@ -65,10 +49,6 @@ protected:
   void add_nonconst_grid (nonconstgrid_ptr_type grid);
   void add_grid (grid_ptr_type grid);
   void alias_grid (const std::string& grid_name, const std::string& grid_alias);
-
-  virtual remapper_ptr_type
-  do_create_remapper (const grid_ptr_type from_grid,
-                      const grid_ptr_type to_grid) const = 0;
 
 private:
 

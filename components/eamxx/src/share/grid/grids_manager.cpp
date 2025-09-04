@@ -40,33 +40,6 @@ has_grid (const std::string& grid_name) const
   return false;
 }
 
-auto GridsManager::
-create_remapper (const grid_ptr_type& from_grid,
-                 const grid_ptr_type& to_grid) const
- -> GridsManager::remapper_ptr_type
-{
-  EKAT_REQUIRE_MSG( has_grid(from_grid->name()),
-                    "Error! Source grid '" + from_grid->name() + "' is not supported.\n");
-  EKAT_REQUIRE_MSG( has_grid(to_grid->name()),
-                    "Error! Target grid '" + to_grid->name() + "' is not supported.\n");
-
-  remapper_ptr_type remapper;
-
-  if (from_grid->name()==to_grid->name()) {
-    // We can handle the identity remapper from here
-    remapper = std::make_shared<IdentityRemapper>(from_grid);
-  } else {
-    remapper = do_create_remapper(from_grid,to_grid);
-  }
-
-  EKAT_REQUIRE_MSG(
-    remapper!=nullptr,
-    "Error! A remapper from grid '" + from_grid->name() + "' to grid '" + to_grid->name() + "' is not available.\n"
-    "       Perhaps you forgot to add its creation to the implementation of the grids manager?\n");
-
-  return remapper;
-}
-
 void GridsManager::
 add_nonconst_grid (nonconstgrid_ptr_type grid)
 {

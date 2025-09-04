@@ -23,15 +23,6 @@ MeshFreeGridsManager (const ekat::Comm& comm, const ekat::ParameterList& p)
   // Nothing else to do here
 }
 
-MeshFreeGridsManager::remapper_ptr_type
-MeshFreeGridsManager::
-do_create_remapper (const grid_ptr_type /* from_grid */,
-                    const grid_ptr_type /* to_grid */) const
-{
-  EKAT_ERROR_MSG ("Error! MeshFreeGridsManager does not offer any remapper.\n");
-  return nullptr;
-}
-
 void MeshFreeGridsManager::
 build_grids ()
 {
