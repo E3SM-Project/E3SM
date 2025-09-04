@@ -3,11 +3,11 @@ name: "eamxx-format"
 # if .{cpp,hpp} files are touched in a PR, lint them!
 
 on:
-  # pull_request:
-  #   branches: ["master"]
-  #   paths:
-  #     - 'components/eamxx/**/*.cpp'
-  #     - 'components/eamxx/**/*.hpp'
+  pull_request:
+    branches: ["master"]
+    paths:
+      - 'components/eamxx/**/*.cpp'
+      - 'components/eamxx/**/*.hpp'
 
   # Manual run
   workflow_dispatch:
@@ -42,14 +42,20 @@ jobs:
     - name: get version clang-format-18
       run: |
         ver=$(clang-format-18 --version)
-        if [ "${ver}" = "18.1.3" ]; then
+        # Note: "ver" can contain more than the numerical version number
+        if [[ "${ver}" == *"18.1.3"* ]]; then
           echo "Running clang-format version ${ver}."
         else
           echo "Warning! clang-format version has changed! (default 18.1.3)"
           echo "Please inform developers by opening an issue."
           echo "Running clang-format with non-standard version ${ver}."
         fi
-    - name: run formatter looping over files
+    - name: run formatter looping over PR-changed files, then diff -  PR trigger
+      # Note: this (json) variable contains a handful of sub-fields, but its
+      # existence encapsulates all of the PR-related triggers
+      # this is the best option because github.event_name could be something
+      # like "synchronization," which falls under the umbrella of PR triggers
+      if: ${{ github.event.pull_request }}
       run: |
         flist="${{ steps.changed-files.outputs.all_changed_files }}"
         run_cfmt () {
@@ -60,6 +66,23 @@ jobs:
           run_cfmt "${f}"
         done
         git diff --name-only > diffiles.txt
+    - name: run formatter looping over all files, then diff - manual trigger
+      # Note: different from above, this trigger does not result in a variable
+      # github.event.workflow_dispatch, but this will always be the event_name
+      if: ${{ github.event_name == 'workflow_dispatch' }}
+      run: |
+        # when it's a manual trigger, we'll choose to consider all cpp/hpp files
+        flist=($(find components/eamxx -depth -name "*.*pp"))
+        run_cfmt () {
+          clang-format-18 -i --style=file:"components/eamxx/.clang-format" $1
+        }
+        for f in ${flist[@]}; do
+          echo "--Running clang-format on ${f}--"
+          run_cfmt "${f}"
+        done
+        git diff --name-only > diffiles.txt
+    - name: examine diff and write to summary
+      run: |
         if [[ $(wc -l < diffiles.txt) -gt 0 ]]; then
           # we don't want to return a nonzero exit code in this step because
           # it'll stop the job, so we store it in the ENV
@@ -88,8 +111,10 @@ jobs:
         fi
     - name: diff format changes
       run: git diff > "components/eamxx/clang-format-patch.diff"
+    - name: echo status shell
+      run: "echo ${{ env.status_fail }}"
     - name: upload diff patch
-      if: ${{ env.status_fail }}
+      if: ${{ env.status_fail == 'true' }}
       uses: actions/upload-artifact@v4
       with:
         name: clang-format-patch_${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}.diff
@@ -97,7 +122,7 @@ jobs:
           components/eamxx/clang-format-patch.diff
     - name: return pass-fail status
       run: |
-        if [[ ${status_fail} ]]; then
+        if [[ ${status_fail} = true ]]; then
           exit 1
         else
           exit 0
