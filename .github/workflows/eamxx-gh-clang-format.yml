@@ -32,7 +32,6 @@ concurrency:
 
 jobs:
   clang-format-linter:
-    if: ${{ github.repository == 'E3SM-Project/E3SM' }}
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v5
@@ -62,6 +61,7 @@ jobs:
         run_cfmt () {
           clang-format -i --style=file:"components/eamxx/.clang-format" $1
         }
+        clang-format --version
         for f in ${flist[@]}; do
           echo "--Running clang-format on ${f}--"
           run_cfmt "${f}"
@@ -78,6 +78,7 @@ jobs:
         run_cfmt () {
           clang-format -i --style=file:"components/eamxx/.clang-format" $1
         }
+        clang-format --version
         for f in ${flist[@]}; do
           echo "--Running clang-format on ${f}--"
           run_cfmt "${f}"
