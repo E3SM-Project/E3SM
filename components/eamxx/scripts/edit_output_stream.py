@@ -58,7 +58,7 @@ def generate_empty_yaml(filename,overwrite):
 ###############################################################################
 def edit_output_stream_impl(filename,prefix=None,generate=False,overwrite=False,
                             avg_type=None,skip_t0_output=False,freq_units=None,freq=None,
-                            grid=None,fields=[],reset=None,io_grid=None,
+                            grid=None,fields=[],reset=None,
                             horiz_remap_file=None,vertical_remap_file=None):
 ###############################################################################
     """
@@ -78,18 +78,12 @@ def edit_output_stream_impl(filename,prefix=None,generate=False,overwrite=False,
     >>> data['output_control']['frequency_units']
     'ndays'
     >>> # Set fields options, and then check
-    >>> edit_output_stream_impl(fname,fields=['a','b'],grid='my_grid',io_grid='other_grid')
+    >>> edit_output_stream_impl(fname,fields=['a','b'],grid='my_grid')
     >>> data = yaml.load(open(fname,'r'),Loader=yaml.SafeLoader)
     >>> f = data['fields']['my_grid']['field_names']
     >>> f.sort()
     >>> f
     ['a', 'b']
-    >>> data['fields']['my_grid']['io_grid_name']
-    'other_grid'
-    >>> # No remap if online remap (io_grid_name) is set
-    >>> edit_output_stream_impl(fname,horiz_remap_file='blah')
-    Traceback (most recent call last):
-    SystemExit: ERROR: Cannot use online remap and horiz/vert remap at the same time.
     >>> edit_output_stream_impl(fname,vertical_remap_file='blah')
     Traceback (most recent call last):
     SystemExit: ERROR: Cannot use online remap and horiz/vert remap at the same time.
@@ -148,16 +142,6 @@ def edit_output_stream_impl(filename,prefix=None,generate=False,overwrite=False,
                     # Remove this grid if there are no other options set
                     if len(data["fields"][grid])==1:
                         del data["fields"][grid]
-            elif s=="io-grid":
-                expect (grid is not None,
-                        "IO grid reset requested, but no grid name provided. Re-run with --grid GRID_NAME")
-                if grid in data["fields"].keys():
-                    del data["fields"][grid]["io_grid_name"]
-
-                    # Remove this grid if there's not other options set other than
-                    # fields names, and field names is an empty list
-                    if len(data["fields"][grid])==1 and len(data["fields"][grid]["field_names"])==0:
-                        del data["fields"][grid]
 
     if prefix is not None:
         data["filename_prefix"] = prefix
@@ -190,7 +174,7 @@ def edit_output_stream_impl(filename,prefix=None,generate=False,overwrite=False,
     if vertical_remap_file is not None:
         data["vertical_remap_file"] = vertical_remap_file
 
-    if len(fields)>0 or io_grid is not None:
+    if len(fields)>0:
         expect (grid is not None,
                 "fields list specified, but no grid name provided. Re-run with --grid GRID_NAME")
 
@@ -203,21 +187,7 @@ def edit_output_stream_impl(filename,prefix=None,generate=False,overwrite=False,
         fnames = list(set(fnames))
         section["field_names"] = fnames
 
-        if io_grid is not None:
-            section["io_grid_name"] = io_grid
-            # If not already present, add an empty list of field names
-            section.setdefault("field_names",[])
-
         data["fields"][grid] = section
-
-    # We cannot do online remap (typically dyn->physgll) if horiz or vert remap is used
-    has_online_remap = False
-    for k,v in data["fields"].items():
-        has_online_remap = has_online_remap or "io_grid_name" in v.keys();
-    has_vert_remap   = "vertical_remap_file" in data.keys()
-    has_horiz_remap  = "horiz_remap_file" in data.keys()
-    expect (not has_online_remap or (not has_vert_remap and not has_horiz_remap),
-            "Cannot use online remap and horiz/vert remap at the same time.")
 
     with open(file,'w') as fd:
         yaml.dump(dict(data),fd,Dumper=yaml.SafeDumper,explicit_start=True,explicit_end=True,version=(1,2))

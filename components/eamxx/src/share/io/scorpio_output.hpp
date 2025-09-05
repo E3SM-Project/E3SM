@@ -33,14 +33,12 @@
  *  fields:
  *     GRID_NAME_1:
  *        field_names:                  ARRAY OF STRINGS
- *        io_grid_name:                 STRING                (optional)
  *     GRID_NAME_2:
  *        field_names:                  ARRAY OF STRINGS
- *        io_grid_name:                 STRING                (optional)
+ *        use_native_grid:              BOOL                  (default: false)
  *     ...
  *     GRID_NAME_N:
  *        field_names:                  ARRAY OF STRINGS
- *        io_grid_name:                 STRING                (optional)
  *  output_control:
  *    frequency:                        INT
  *    frequency_units:                  STRING                (default: nsteps)
@@ -60,8 +58,10 @@
  *  - fields: parameters specifying fields to output
  *     - GRID_NAME: parameters specifyign fields to output from grid $GRID_NAME
  *        - field_names: names of fields defined on grid $grid_name that need to be outputed
- *        - io_grid_name: if provided, remap fields to this grid before output (useful to remap
- *                        SEGrid fields to PointGrid fields on the fly, to save on output size)
+ *        - use_native_grid: if this grid stores a unique_grid different from the grid,
+ *                           the default behavior is to build a remapper to the unique_grid,
+ *                           and remap fields to that grid first. If this is set to false, we output the fields
+ *                           directly on the current grid
  *  - max_snapshots_per_file: the maximum number of snapshots saved per file. After this many
  *    snapshots, the current files is closed and a new file created.
  *  - Output: parameters for output control
@@ -89,8 +89,7 @@
  *      - item_N
  *
  *   - in case of single-grid tests, you can specify fields names by adding 'field_names' directly
- *     in the top-level parameter list. In that case, you can also add 'io_grid_name' in the top-level
- *     parameter list.
+ *     in the top-level parameter list.
  *   - each instance of this class can only handle ONE grid, so if multiple grids are specified,
  *     you will need one instance per grid.
  *   - usage of this class is to create an output file, write data to the file and close the file.

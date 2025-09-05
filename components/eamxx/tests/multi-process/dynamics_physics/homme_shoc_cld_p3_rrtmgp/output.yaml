@@ -77,7 +77,6 @@ fields:
       - phis_dyn
       - omega_dyn
       - Qdp_dyn
-    io_grid_name: physics_gll
 
 output_control:
   frequency: ${NUM_STEPS}
