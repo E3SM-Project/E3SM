@@ -12,6 +12,10 @@ PackConstructorInitializers: Never
 
 AlwaysBreakAfterDefinitionReturnType: All
 BreakBeforeBraces: Linux
+Macros: [EKAT_REQUIRE_MSG, EKAT_ERROR_MSG, EKAT_KERNEL_ERROR_MSG]
+MaxEmptyLinesToKeep: 1
+ConstructorInitializerIndentWidth: 1
+
 ---
 # # you can obtain the defaults for the LLVM style by running
 # #   clang-format --style=llvm --dump-config > [outfile]

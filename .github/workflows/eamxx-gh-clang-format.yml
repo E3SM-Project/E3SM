@@ -74,7 +74,7 @@ jobs:
       shell: bash -leo pipefail {0}
       run: |
         # when it's a manual trigger, we'll choose to consider all cpp/hpp files
-        flist=($(find components/eamxx -depth -name "*.*pp"))
+        flist=($(find components/eamxx -depth -name "*.?pp"))
         run_cfmt () {
           clang-format -i --style=file:"components/eamxx/.clang-format" $1
         }
