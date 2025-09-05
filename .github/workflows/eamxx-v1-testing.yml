@@ -17,6 +17,7 @@ on:
       - 'externals/haero'
       - 'externals/scorpio'
       # second, no to these
+      - '!components/eamxx/.clang-format'
       - '!components/eamxx/docs/**'
       - '!components/eamxx/mkdocs.yml'
 
