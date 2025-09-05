@@ -146,7 +146,7 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
   EKAT_REQUIRE_MSG (not has_duplicates(m_fields_names),
       "[AtmosphereOutput] Error! One of the output yaml files has duplicate field entries.\n"
       " - yaml file: " + params.name() + "\n"
-      " - fields names; " + ekat::join(m_fields_names,",") + "\n");
+      " - fields names: " + ekat::join(m_fields_names,",") + "\n");
 
   // Check if remapping and if so create the appropriate remapper
   // Note: We currently support three remappers
@@ -174,6 +174,7 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
   }
 
   // ... then add diagnostic fields
+  // ... and we also use this to init track avg cnt for regular fields
   init_diagnostics ();
 
   // Avg count only makes sense if we have
@@ -507,6 +508,16 @@ run (const std::string& filename,
     // Get all the info for this field.
     const auto& f_in  = fm_after_hr->get_field(field_name);
           auto& f_out = fm_scorpio->get_field(field_name);
+
+    // Safety check: if a field may contain fill values and we are computing an Average,
+    // we must have created an avg-count tracking field; otherwise division by the raw
+    // number of steps would bias the result wherever fill values occurred.
+    if (m_avg_type==OutputAvgType::Average && f_in.get_header().may_be_filled()) {
+      EKAT_REQUIRE_MSG(m_field_to_avg_count.count(field_name),
+        "[AtmosphereOutput::run] Error! Averaging a fill-aware field without avg-count tracking.\n"
+        " - field name : " + field_name + "\n"
+        "This indicates the field was marked may_be_filled after output initialization or tracking logic missed it." );
+    }
 
     switch (m_avg_type) {
       case OutputAvgType::Instant:
@@ -1003,6 +1014,26 @@ init_diagnostics ()
   for (const auto& fname : m_fields_names) {
     if (not m_field_mgrs[FromModel]->has_field(fname)) {
       create_diag(fname);
+    } else {
+      // This is a regular field, not a diagnostic.
+      // Still, we might need to do some extra setup, like for avg_count.
+      const auto& f = m_field_mgrs[FromModel]->get_field(fname);
+      // We need avg-count tracking for any averaged (non-instant) field that:
+      //  - supplies explicit mask info (mask_data or mask_field), OR
+      //  - is marked as potentially containing fill values (may_be_filled()).
+      // Without this, fill-aware updates skip fill_value during accumulation (good)
+      // but we would still divide by the raw nsteps, biasing the result low.
+      if (m_avg_type!=OutputAvgType::Instant) {
+        const bool has_mask = f.get_header().has_extra_data("mask_data") || f.get_header().has_extra_data("mask_field");
+        const bool may_be_filled = f.get_header().may_be_filled();
+        if (has_mask || may_be_filled) {
+          m_track_avg_cnt = true;
+          // Avoid duplicate insertion if already present (e.g., mask + filled both true)
+          if (m_field_to_avg_cnt_suffix.count(f.name())==0) {
+            m_field_to_avg_cnt_suffix.emplace(f.name(), "_" + f.name());
+          }
+        }
+      }
     }
   }
 }
