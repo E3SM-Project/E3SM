@@ -72,7 +72,7 @@ contains
     use elm_instMod      , only : lnd2atm_vars, lnd2glc_vars, lnd2iac_vars
     use elm_instance     , only : elm_instance_init
     use elm_varctl       , only : finidat,single_column, elm_varctl_set, iulog, noland, fatmlndfrc, &
-                                  scm_multcols, scm_nx, scm_ny, iac_present
+                                  scm_multcols, scm_nx, scm_ny
     use elm_varctl       , only : inst_index, inst_suffix, inst_name, precip_downscaling_method
     use elm_varorb       , only : eccen, obliqr, lambm0, mvelpp
     use controlMod       , only : control_setNL
@@ -118,6 +118,7 @@ contains
     integer  :: g,i,j                                ! indices
     integer  :: dtime_sync                           ! coupling time-step from the input synchronization clock
     integer  :: dtime_elm                            ! elm time-step
+    logical  :: iac_present                          ! Flag if E3SM Human Component(EHC) is present
     logical  :: exists                               ! true if file exists
     logical  :: verbose_taskmap_output               ! true then use verbose task-to-node mapping format
     logical  :: atm_aero                             ! Flag if aerosol data sent from atm model
