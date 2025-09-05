@@ -65,8 +65,6 @@ TEST_CASE("atm_backtend") {
   REQUIRE_THROWS(diag_factory.create("AtmBackTendDiag", comm,
                                      params));  // No 'tendency_name'
 
-  Real var_fill_value = constants::DefaultFillValue<Real>().value;
-
   // Set time for qc and randomize its values
   qc.get_header().get_tracking().update_time_stamp(t0);
   randomize(qc, engine, pdf);
@@ -83,9 +81,9 @@ TEST_CASE("atm_backtend") {
   diag->compute_diagnostic();
   auto diag_f = diag->get_diagnostic();
 
-  // Check result: diag should be filled with var_fill_value
+  // Check result: diag should be filled with fill_value
   auto some_field = qc.clone();
-  some_field.deep_copy(var_fill_value);
+  some_field.deep_copy(constants::fill_value<Real>);
   REQUIRE(views_are_equal(diag_f, some_field));
 
   const Real a_day = 24.0 * 60.0 * 60.0;  // seconds

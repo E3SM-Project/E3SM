@@ -164,47 +164,7 @@ void TimeInterpolation::initialize_data_from_files()
   input_params.set("filename",triplet_curr.filename);
   m_file_data_atm_input = std::make_shared<AtmosphereInput>(input_params,m_fm_time1);
   m_file_data_atm_input->set_logger(m_logger);
-  // Assign the mask value gathered from the FillValue found in the source file.
-  // TODO: Should we make it possible to check if FillValue is in the metadata and only assign mask_value if it is?
-  for (auto& name : m_field_names) {
-    auto& field0 = m_fm_time0->get_field(name);
-    auto& field1 = m_fm_time1->get_field(name);
-    auto& field_out = m_interp_fields.at(name);
 
-    auto set_fill_value = [&](const auto var_fill_value) {
-      const auto dt = field_out.data_type();
-      if (dt==DataType::FloatType) {
-        field0.get_header().set_extra_data("mask_value",static_cast<float>(var_fill_value));
-        field1.get_header().set_extra_data("mask_value",static_cast<float>(var_fill_value));
-        field_out.get_header().set_extra_data("mask_value",static_cast<float>(var_fill_value));
-      } else if (dt==DataType::DoubleType) {
-        field0.get_header().set_extra_data("mask_value",static_cast<double>(var_fill_value));
-        field1.get_header().set_extra_data("mask_value",static_cast<double>(var_fill_value));
-        field_out.get_header().set_extra_data("mask_value",static_cast<double>(var_fill_value));
-      } else {
-        EKAT_ERROR_MSG (
-            "[TimeInterpolation] Unexpected/unsupported field data type.\n"
-            " - field name: " + field_out.name() + "\n"
-            " - data type : " + e2str(dt) + "\n");
-      }
-    };
-
-    const auto& pio_var = scorpio::get_var(triplet_curr.filename,name);
-    if (scorpio::refine_dtype(pio_var.nc_dtype)=="float") {
-      auto var_fill_value = scorpio::get_attribute<float>(triplet_curr.filename,name,"_FillValue");
-      set_fill_value(var_fill_value);
-    } else if (scorpio::refine_dtype(pio_var.nc_dtype)=="double") {
-      auto var_fill_value = scorpio::get_attribute<double>(triplet_curr.filename,name,"_FillValue");
-      set_fill_value(var_fill_value);
-    } else {
-      EKAT_ERROR_MSG (
-          "Unrecognized/unsupported data type\n"
-          " - filename: " + triplet_curr.filename + "\n"
-          " - varname : " + name + "\n"
-          " - dtype   : " + pio_var.dtype + "\n");
-    }
-
-  }
   // Read first snap of data and shift to time0
   read_data();
   shift_data();
@@ -351,30 +311,10 @@ void TimeInterpolation::read_data()
     input_params.set("filename",triplet_curr.filename);
     m_file_data_atm_input = std::make_shared<AtmosphereInput>(input_params,m_fm_time1);
     m_file_data_atm_input->set_logger(m_logger);
-    // Also determine the FillValue, if used
-    // TODO: Should we make it possible to check if FillValue is in the metadata and only assign mask_value if it is?
-    for (auto& name : m_field_names) {
-      auto& field = m_fm_time1->get_field(name);
-      const auto dt = field.data_type();
-      if (dt==DataType::FloatType) {
-        auto var_fill_value = scorpio::get_attribute<float>(triplet_curr.filename,name,"_FillValue");
-        field.get_header().set_extra_data("mask_value",var_fill_value);
-      } else if (dt==DataType::DoubleType) {
-        auto var_fill_value = scorpio::get_attribute<double>(triplet_curr.filename,name,"_FillValue");
-        field.get_header().set_extra_data("mask_value",var_fill_value);
-      } else {
-        EKAT_ERROR_MSG (
-            "[TimeInterpolation] Unexpected/unsupported field data type.\n"
-            " - field name: " + field.name() + "\n"
-            " - data type : " + e2str(dt) + "\n");
-      }
-    }
   }
 
-  if (m_logger) {
-    m_logger->info(m_header);
-    m_logger->info("[EAMxx:time_interpolation] Reading data at time " + triplet_curr.timestamp.to_string());
-  }
+  m_logger->info(m_header);
+  m_logger->info("[EAMxx:time_interpolation] Reading data at time " + triplet_curr.timestamp.to_string());
   m_file_data_atm_input->read_variables(triplet_curr.time_idx);
   m_time1 = triplet_curr.timestamp;
 }
@@ -429,6 +369,17 @@ void TimeInterpolation::check_and_update_data(const TimeStamp& ts_in)
 
   }
 }
+
+void TimeInterpolation::
+set_logger(const std::shared_ptr<ekat::logger::LoggerBase>& logger,
+           const std::string& header)
+{
+  EKAT_REQUIRE_MSG (logger, "Error! Invalid logger pointer.\n");
+
+  m_logger = logger;
+  m_header = header;
+}
+
 /*-----------------------------------------------------------------------------------------------*/
 
 } // namespace util

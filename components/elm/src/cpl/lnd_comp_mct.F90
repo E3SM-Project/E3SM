@@ -149,10 +149,8 @@ contains
     character(len=*),  parameter :: format = "('("//trim(sub)//") :',A)"
 
 #ifdef HAVE_MOAB
-    character*100 outfile, wopts, localmeshfile
+    character*100 outfile, wopts
     integer :: ierr, nsend,n
-    character(len=SHR_KIND_CL) :: atm_gnam          ! atm grid
-    character(len=SHR_KIND_CL) :: lnd_gnam          ! lnd grid
 #endif
     !-----------------------------------------------------------------------
 
@@ -547,7 +545,6 @@ contains
     call lnd_import( bounds, x2l_l%rattr, atm2lnd_vars, glc2lnd_vars, lnd2atm_vars)
     
 #ifdef HAVE_MOAB
-    ! first call moab import 
 #ifdef MOABCOMP
     ! loop over all fields in seq_flds_x2l_fields
     call mct_list_init(temp_list ,seq_flds_x2l_fields)
@@ -558,13 +555,13 @@ contains
       call mct_list_get(mctOStr,index_list,temp_list)
       mct_field = mct_string_toChar(mctOStr)
       tagname= trim(mct_field)//C_NULL_CHAR
-      modelStr = 'lnd run'
+      modelStr = 'lnd run import'
       call seq_comm_compare_mb_mct(modelStr, mpicom_lnd_moab, x2l_l, mct_field,  mlnid, tagname, ent_type, difference)
     enddo
     call mct_list_clean(temp_list)
-
 #endif
 ! calling MOAB's import last means this is what the model will use.
+! also, call after comparisons are made, so we can see the eventual differences
     call lnd_import_moab( EClock, bounds, atm2lnd_vars, glc2lnd_vars)
 #endif
 
@@ -867,11 +864,9 @@ contains
     real(r8)   :: latv, lonv
     integer   dims, i, iv, ilat, ilon, igdx, ierr, tagindex
     integer tagtype, numco, ent_type, mbtype, block_ID
-    character*100 outfile, wopts, localmeshfile
+    character*100 outfile, wopts
     character(CXX) ::  tagname ! hold all fields
     character*32  appname
-
-    integer, allocatable :: moabconn(:) ! will have the connectivity in terms of local index in verts
 
     ! define a MOAB app for ELM
     appname="LNDMB"//C_NULL_CHAR
@@ -1149,7 +1144,7 @@ contains
     end do
     tagname=trim(seq_flds_l2x_fields)//C_NULL_CHAR
     ent_type = 0 ! vertices only, from now on
-    ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, totalmbls , ent_type, l2x_lm )
+    ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, totalmbls , ent_type, l2x_lm(1,1) )
     if (ierr > 0 )  &
        call shr_sys_abort( sub//' Error: fail to set moab l2x '// trim(seq_flds_l2x_fields) )
 
@@ -1342,7 +1337,7 @@ contains
 #endif
     tagname=trim(seq_flds_x2l_fields)//C_NULL_CHAR
     ent_type = 0 ! vertices 
-    ierr = iMOAB_GetDoubleTagStorage ( mlnid, tagname, totalmblsimp , ent_type, x2l_lm )
+    ierr = iMOAB_GetDoubleTagStorage ( mlnid, tagname, totalmblsimp , ent_type, x2l_lm(1,1) )
     if ( ierr > 0) then
       call endrun('Error: fail to get seq_flds_x2l_fields for land moab instance on component')
     endif

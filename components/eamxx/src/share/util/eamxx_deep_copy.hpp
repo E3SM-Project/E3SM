@@ -1,8 +1,8 @@
 #ifndef SCREAM_DEEP_COPY_HPP
 #define SCREAM_DEEP_COPY_HPP
 
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
-#include "ekat/ekat_assert.hpp"
+#include <ekat_assert.hpp>
+
 #include <vector>
 
 namespace scream {

@@ -10,8 +10,9 @@
 #include "share/util/eamxx_utils.hpp"
 #include "share/atm_process/atmosphere_diagnostic.hpp"
 
-#include "ekat/ekat_parameter_list.hpp"
-#include "ekat/mpi/ekat_comm.hpp"
+#include <ekat_parameter_list.hpp>
+#include <ekat_comm.hpp>
+
 /*  The AtmosphereOutput class handles an output stream in SCREAM.
  *  Typical usage is to register an AtmosphereOutput object with the OutputManager (see eamxx_output_manager.hpp
  *
@@ -143,10 +144,7 @@ public:
     return m_io_grid;
   }
 
-  // Option to add a logger
-  void set_logger(const std::shared_ptr<ekat::logger::LoggerBase>& atm_logger) {
-      m_atm_logger = atm_logger;
-  }
+  void set_logger(const std::shared_ptr<ekat::logger::LoggerBase>& atm_logger);
 
 protected:
 
@@ -212,21 +210,17 @@ protected:
   strmap_t<int>                         m_dims_len;
   std::list<diag_ptr_type>              m_diagnostics;
 
-  DefaultMetadata                       m_default_metadata;
+  // Field aliasing support
+  strmap_t<std::string>                 m_alias_to_field_map;  // Map from alias names to internal field names
+  strvec_t                              m_alias_names;         // List of alias names (for netcdf variables)
 
-  // Use float, so that if output fp_precision=float, this is a representable value.
-  // Otherwise, you would get an error from Netcdf, like
-  //   NetCDF: Numeric conversion not representable
-  // Also, by default, don't pick max float, to avoid any overflow if the value
-  // is used inside other calculation and/or remap.
-  float m_fill_value = constants::DefaultFillValue<float>().value;
+  DefaultMetadata                       m_default_metadata;
 
   bool m_add_time_dim;
   bool m_track_avg_cnt = false;
   std::string m_decomp_dimname = "";
 
-  // The logger to be used throughout the ATM to log message
-  std::shared_ptr<ekat::logger::LoggerBase> m_atm_logger;
+  std::shared_ptr<ekat::logger::LoggerBase> m_atm_logger = console_logger(ekat::logger::LogLevel::warn);
 };
 
 } //namespace scream

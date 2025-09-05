@@ -14,11 +14,10 @@
 #include "share/util/eamxx_time_stamp.hpp"
 #include "share/eamxx_types.hpp"
 
-#include "ekat/util/ekat_units.hpp"
-#include "ekat/ekat_parameter_list.hpp"
-#include "ekat/ekat_assert.hpp"
-#include "ekat/mpi/ekat_comm.hpp"
-#include "ekat/util/ekat_test_utils.hpp"
+#include <ekat_units.hpp>
+#include <ekat_parameter_list.hpp>
+#include <ekat_assert.hpp>
+#include <ekat_comm.hpp>
 
 #include <iomanip>
 #include <memory>
@@ -274,7 +273,7 @@ void read (const std::string& avg_type, const std::string& freq_units,
   // Check that the expected metadata was appropriately set for each variable
   for (const auto& fn: fnames) {
     auto att_fill = scorpio::get_attribute<float>(filename,fn,"_FillValue");
-    REQUIRE(att_fill==constants::DefaultFillValue<float>().value);
+    REQUIRE(att_fill==constants::fill_value<Real>);
 
     auto att_str = scorpio::get_attribute<std::string>(filename,fn,"test");
     REQUIRE (att_str==fn);

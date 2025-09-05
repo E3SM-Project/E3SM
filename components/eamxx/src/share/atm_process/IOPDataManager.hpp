@@ -7,10 +7,8 @@
 #include "share/grid/remap/abstract_remapper.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
 
-#include "ekat/ekat_parameter_list.hpp"
-#include "ekat/ekat_pack.hpp"
-#include "ekat/mpi/ekat_comm.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
+#include <ekat_parameter_list.hpp>
+#include <ekat_comm.hpp>
 
 namespace scream {
 namespace control {
@@ -23,9 +21,6 @@ class IOPDataManager
   using grid_ptr = std::shared_ptr<const AbstractGrid>;
 
   using KT = ekat::KokkosTypes<DefaultDevice>;
-  using ESU = ekat::ExeSpaceUtils<KT::ExeSpace>;
-  using Pack = ekat::Pack<Real, SCREAM_PACK_SIZE>;
-  using Pack1d = ekat::Pack<Real, 1>;
 
   template<typename ScalarT>
   using view_1d = KT::template view_1d<ScalarT>;

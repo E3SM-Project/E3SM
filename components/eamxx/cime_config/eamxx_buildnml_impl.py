@@ -7,7 +7,6 @@ sys.path.append(_CIMEROOT)
 from CIME.utils import expect
 from yaml_utils import make_array
 
-
 ###############################################################################
 class MockCase(object):
 ###############################################################################
@@ -502,7 +501,9 @@ def resolve_inheritance(root, elem):
                         for child in elem:
                             if child.tag==entry.tag:
                                 expect (att not in child.attrib.keys(),
-                                        f"Do not set '{att}' attribute when parent node already specifies it.")
+                                        f"Do not set '{att}' attribute when parent node already specifies it."
+                                        f" parent node: {parent.tag}\n"
+                                        f" child node : {entry.tag}")
                                 child.attrib[att] = parent_type
 
     for child in elem:

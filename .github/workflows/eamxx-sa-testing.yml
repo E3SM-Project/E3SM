@@ -20,6 +20,7 @@ on:
       # second, no to these
       - '!components/eamxx/docs/**'
       - '!components/eamxx/mkdocs.yml'
+      - '!components/eamxx/cime_config/**'
 
   # Manual run is used to bless
   workflow_dispatch:
@@ -77,7 +78,7 @@ jobs:
     name: gcc-openmp / ${{ matrix.build_type }}
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           persist-credentials: false
           show-progress: false
@@ -116,7 +117,7 @@ jobs:
     name: gcc-cuda / ${{ matrix.test.build_type }}
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           persist-credentials: false
           show-progress: false

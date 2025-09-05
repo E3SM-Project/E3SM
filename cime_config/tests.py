@@ -315,6 +315,7 @@ _TESTS = {
             "SMS_P480_Ld5.TL319_IcoswISC30E3r5.GMPAS-JRA1p5-DIB-PISMF-TMIX.mpaso-jra_1958",
             "PET_P480_Ld2.TL319_IcoswISC30E3r5.GMPAS-JRA1p5-DIB-PISMF-DSGR.mpaso-jra_1958",
             "PET_P480_Ld2.TL319_IcoswISC30E3r5.GMPAS-JRA1p5-DIB-PISMF-DSGR.mpaso-freshwater_tracers_jra_1958",
+            "SMS_P480_Ld5.TL319_IcoswISC30E3r5.GMPAS-JRA1p5.mpaso-precip_scaling_jra_1958",
             )
         },
 
@@ -346,7 +347,7 @@ _TESTS = {
             "ERS_Ld5.TL319_oQU240wLI_ais8to30.MPAS_LISIO_JRA1p5.mpaso-ocn_glcshelf",
             "SMS_P12x2.ne4pg2_oQU480.WCYCL1850NS.allactive-mach_mods",
             "ERS_Ln9.ne4pg2_ne4pg2.F2010-MMF1.eam-mmf_crmout",
-            "SMS_Lh4.ne4_ne4.F2010-SCREAMv1.eamxx-output-preset-1",
+            "SMS_Lh4.ne4_ne4.F2010-SCREAMv1.eamxx-output-preset-1--eamxx-fixer_debug_output",
             "SMS_Lh4.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-output-preset-1--eamxx-prod",
             )
         },
@@ -760,6 +761,7 @@ _TESTS = {
             "SMS.ne30pg2_EC30to60E2r2.WCYCLXX2010",
             "ERS_Ln90.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-L128--eamxx-sl_nsubstep2",
             "ERS.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-prod",
+            "SMS.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-hremap_nudged",
             )
     },
 
@@ -840,8 +842,37 @@ _TESTS = {
         "time"  : "03:00:00",
         "tests" : (
             "SMS_D_Lm2.ne4pg2_oQU480.F2010-EAMxx-MAM4xx-MPASSI",
-            "SMS_Ly1.ne4pg2_oQU480.F2010-EAMxx-MAM4xx"
+            "ERS_Ld80.ne4pg2_oQU480.F2010-EAMxx-MAM4xx-MPASSI",
+            "SMS_Ly1.ne4pg2_oQU480.F2010-EAMxx-MAM4xx-MPASSI"
         )
+    },
+
+
+    #ndk: suggest to remove above eamxx suites and start with new suite names (in a diff PR), perhaps:
+    # e3sm_eamxx        (base, if only running one suite, use this one)
+    # e3sm_eamxx_small  (1 node, quick -- which is most of our current tests.  could be 2 or 4 nodes as well)
+    # e3sm_eamxx_mam4xx (or any other special purpose suite as we have been doing)
+    # e3sm_eamxx_large  (basically ne256, but throw in a couple of ne120 as can be very useful)
+    # e3sm_eamxx_extra_large (ne512/ne1024 -- not only do these require larger node counts, they write large files)
+    "e3sm_eamxx_large" : {
+        "time"  : "01:00:00",
+        "tests" : (
+            "SMS.ne120pg2_ne120pg2.F2010-SCREAMv1.eamxx-L128",
+            #"PEM_Ld1.ne120pg2_ne120pg2.F2010-SCREAMv1.eamxx-L128", # second test hits OOM, need either P2048 or change def pelayout
+            "ERS_Lh6.ne120pg2_ne120pg2.F2010-SCREAMv1.eamxx-L128--eamxx-prod",
+            "SMS_D_Lh6.ne120pg2_ne120pg2.F2010-SCREAMv1.eamxx-prod",
+            "SMS.ne256pg2_ne256pg2.F2010-SCREAMv1",
+            "ERS_Lh6.ne256pg2_ne256pg2.F2010-SCREAMv1.eamxx-prod"
+            )
+    },
+
+    "e3sm_eamxx_extra_large" : {
+        "time"  : "01:00:00",
+        "tests" : (
+            "SMS_Ld1.ne512pg2_ne512pg2.F2010-SCREAMv1",
+            "ERS_Lh6.ne512pg2_ne512pg2.F2010-SCREAMv1.eamxx-prod",
+            "SMS_Ld1.ne1024pg2_ne1024pg2.F2010-SCREAMv1"
+            )
     },
 
     "e3sm_moab_dev" : {
@@ -850,10 +881,12 @@ _TESTS = {
             "ERS_Vmoab_Ld3.ne4pg2_r05_oQU480.WCYCL1850NS",
             "ERS_Vmoab_Ld3.ne4pg2_oQU480.WCYCL1850NS",
             "ERS_Vmoab_Ld3.ne4pg2_oQU480.F1850",
+            "ERS_Vmoab_Ld3.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI",
             "ERS_Vmoab_Ld3.ne4pg2_ne4pg2.I1850CNPRDCTCBCTOP",
             "ERS_Vmoab_Ld3.T62_oQU240wLI.GMPAS-IAF",
             "ERS_Vmoab_Ld3.T62_oQU120.CMPASO-NYF",
             "ERS_Vmoab_Ld3.r05_r05.RMOSGPCC",
+            "ERS_Vmoab_Ld3.ne4pg2_ne4pg2.F2010-SCREAMv1",
         )
     },
 
@@ -863,13 +896,38 @@ _TESTS = {
             "PEM_Vmoab_Ld3.ne4pg2_r05_oQU480.WCYCL1850NS",
             "PEM_Vmoab_Ld3.ne4pg2_oQU480.WCYCL1850NS",
             "PEM_Vmoab_Ld3.ne4pg2_oQU480.F1850",
+            "PEM_Vmoab_Ld3.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI",
             "PEM_Vmoab_Ld3.ne4pg2_ne4pg2.I1850CNPRDCTCBCTOP",
             "PEM_Vmoab_Ld3.T62_oQU240wLI.GMPAS-IAF",
             "PEM_Vmoab_Ld3.T62_oQU120.CMPASO-NYF",
             "PEM_Vmoab_Ld3.r05_r05.RMOSGPCC",
+            "PEM_Vmoab_Ld3.ne4pg2_ne4pg2.F2010-SCREAMv1",
         )
     },
 
+    "e3sm_diff_dev" : {
+        "time"  : "01:00:00",
+        "tests" : (
+            "SMS_Vmoab_Ld1.ne4pg2_r05_oQU480.WCYCL1850NS",
+            "SMS_Vmoab_Ld1.ne4pg2_oQU480.WCYCL1850NS",
+            "SMS_Vmoab_Ld1.ne4pg2_oQU480.F1850",
+            "SMS_Vmoab_Ld1.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI",
+            "SMS_Vmoab_Ld1.ne4pg2_ne4pg2.I1850CNPRDCTCBCTOP",
+            "SMS_Vmoab_Ld1.T62_oQU240wLI.GMPAS-IAF",
+            "SMS_Vmoab_Ld1.T62_oQU120.CMPASO-NYF",
+            "SMS_Vmoab_Ld1.r05_r05.RMOSGPCC",
+            "SMS_Vmoab_Ld1.ne4pg2_ne4pg2.F2010-SCREAMv1",
+            "SMS_Ld1.ne4pg2_r05_oQU480.WCYCL1850NS",
+            "SMS_Ld1.ne4pg2_oQU480.WCYCL1850NS",
+            "SMS_Ld1.ne4pg2_oQU480.F1850",
+            "SMS_Ld1.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI",
+            "SMS_Ld1.ne4pg2_ne4pg2.I1850CNPRDCTCBCTOP",
+            "SMS_Ld1.T62_oQU240wLI.GMPAS-IAF",
+            "SMS_Ld1.T62_oQU120.CMPASO-NYF",
+            "SMS_Ld1.r05_r05.RMOSGPCC",
+            "SMS_Ld1.ne4pg2_ne4pg2.F2010-SCREAMv1",
+        )
+    },
 
 
     "e3sm_gpuacc" : {

@@ -1,13 +1,11 @@
 #include "catch2/catch.hpp"
 
 #include "tms_unit_tests_common.hpp"
-
-#include "share/eamxx_types.hpp"
-#include "ekat/ekat_pack.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "tms_functions.hpp"
 #include "tms_test_data.hpp"
+
 #include "share/util/eamxx_setup_random_test.hpp"
+#include "share/eamxx_types.hpp"
 
 namespace scream {
 namespace tms {

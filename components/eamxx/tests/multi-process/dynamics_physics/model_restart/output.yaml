@@ -2,8 +2,6 @@
 ---
 filename_prefix: model_output_${SUFFIX}
 averaging_type: average
-track_avg_cnt: true
-fill_threshold: 0.25
 fields:
   physics_gll:
     field_names:

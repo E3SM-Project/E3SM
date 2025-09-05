@@ -37,15 +37,15 @@ void compute_heating_rate (
                                   ));
 }
 
-inline bool radiation_do(const int rad_freq, const int nstep) {
-  // If rad_freq == 0, then never do radiation;
+inline bool radiation_do(const int irad, const int nstep) {
+  // If irad == 0, then never do radiation;
   // Otherwise, we always call radiation at the first step,
   // and afterwards we do radiation if the timestep is divisible
-  // by rad_freq
-  if (rad_freq == 0) {
+  // by irad
+  if (irad == 0) {
     return false;
   } else {
-    return nstep % rad_freq == 0;
+    return ( (nstep == 0) || (nstep % irad == 0) );
   }
 }
 

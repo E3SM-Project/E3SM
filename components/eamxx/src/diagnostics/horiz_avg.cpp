@@ -53,13 +53,23 @@ void HorizAvgDiag::initialize_impl(const RunType /*run_type*/) {
   // scale the area field
   auto total_area = field_sum<Real>(m_scaled_area, &m_comm);
   m_scaled_area.scale(sp(1.0) / total_area);
+
+  if (f.get_header().has_extra_data("mask_data")) {
+    m_dummy_field = m_diagnostic_output.clone(m_diag_name + "_dummy_field");
+    m_diagnostic_output.get_header().set_extra_data("mask_data", m_diagnostic_output.clone(m_diag_name+"_mask"));
+    m_diagnostic_output.get_header().set_extra_data("mask_value", f.get_header().get_extra_data<Real>("mask_value"));
+  }
 }
 
 void HorizAvgDiag::compute_diagnostic_impl() {
   const auto &f = get_fields_in().front();
   const auto &d = m_diagnostic_output;
   // Call the horiz_contraction impl that will take care of everything
-  horiz_contraction<Real>(d, f, m_scaled_area, &m_comm);
+  if (f.get_header().has_extra_data("mask_data")) {
+    horiz_contraction<Real>(d, f, m_scaled_area, &m_comm, m_dummy_field);
+  } else {
+    horiz_contraction<Real>(d, f, m_scaled_area, &m_comm);
+  }
 }
 
 }  // namespace scream

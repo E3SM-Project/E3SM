@@ -10,8 +10,9 @@
 #include "share/eamxx_types.hpp"
 #include "share/util/eamxx_setup_random_test.hpp"
 
-#include <ekat/ekat_parse_yaml_file.hpp>
-#include <ekat/util/ekat_test_utils.hpp>
+#include <ekat_yaml.hpp>
+#include <ekat_view_utils.hpp>
+#include <ekat_team_policy_utils.hpp>
 
 #include <iomanip>
 
@@ -90,7 +91,6 @@ std::vector<std::string> create_from_file_test_data(const ekat::Comm& comm, cons
   om_pl.set("filename_prefix",std::string("surface_coupling_forcing"));
   om_pl.set("field_names",fnames);
   om_pl.set("averaging_type", std::string("INSTANT"));
-  om_pl.set("max_snapshots_per_file",2);
   auto& ctrl_pl = om_pl.sublist("output_control");
   ctrl_pl.set("frequency_units",std::string("nsteps"));
   ctrl_pl.set("frequency",1);
@@ -301,8 +301,10 @@ void test_exports(const FieldManager& fm,
                   const int dt,
                   const bool called_directly_after_init = false)
 {
-  using PF = PhysicsFunctions<DefaultDevice>;
-  using PC = physics::Constants<Real>;
+  using PF       = PhysicsFunctions<DefaultDevice>;
+  using PC       = physics::Constants<Real>;
+  using ExeSpace = typename KokkosTypes<DefaultDevice>::ExeSpace;
+  using TPF      = ekat::TeamPolicyFactory<ExeSpace>;
 
   // Some computed fields rely on calculations that are done in the AD.
   // Recompute here and verify that they were exported correctly.
@@ -329,8 +331,7 @@ void test_exports(const FieldManager& fm,
   KokkosTypes<DefaultDevice>::view_1d<Real> Faxa_rainl("Faxa_rainl", ncols);
   KokkosTypes<DefaultDevice>::view_1d<Real> Faxa_snowl("Faxa_snowl", ncols);
 
-  const auto setup_policy =
-      ekat::ExeSpaceUtils<KokkosTypes<DefaultDevice>::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncols, nlevs);
+  const auto setup_policy = TPF::get_thread_range_parallel_scan_team_policy(ncols, nlevs);
   Kokkos::parallel_for(setup_policy, KOKKOS_LAMBDA(const Kokkos::TeamPolicy<KokkosTypes<DefaultDevice>::ExeSpace>::member_type& team) {
     const int i = team.league_rank();
 
@@ -460,7 +461,7 @@ TEST_CASE("surface-coupling", "") {
   // Load ad parameter list
   std::string fname = "input.yaml";
   ekat::ParameterList ad_params("Atmosphere Driver");
-  parse_yaml_file(fname,ad_params);
+  ekat::parse_yaml_file(fname,ad_params);
 
   // Parameters
   auto& ts          = ad_params.sublist("time_stepping");
@@ -475,7 +476,7 @@ TEST_CASE("surface-coupling", "") {
   // This requires us to add a sublist to the parsed AD params yaml list.
   std::uniform_real_distribution<Real> pdf_real_constant_data(0.0,1.0);
 
-  auto& ap_params     = ad_params.sublist("atmosphere_processes");
+  auto& ap_params     = ad_params.sublist("eamxx");
   auto& sc_exp_params = ap_params.sublist("surface_coupling_exporter");
   // Set up forcing to a constant value
   const Real Faxa_swndf_const = pdf_real_constant_data(engine);

@@ -71,7 +71,7 @@ module docn_comp_mod
 
   integer(IN)   :: kt,ks,ku,kv,kdhdx,kdhdy,kq,kswp  ! field indices
   integer(IN)   :: kswnet,klwup,klwdn,ksen,klat,kmelth,ksnow,krofi
-  integer(IN)   :: kh,kqbot,kfraz
+  integer(IN)   :: kh,kqbot,kfraz,kssh,kh2ot
   integer(IN)   :: k10uu           ! index for u10
   integer(IN)   :: kRSO_bckgrd_sst ! index for background SST (relaxed slab ocean)
   integer(IN)   :: index_lat, index_lon
@@ -284,9 +284,11 @@ CONTAINS
     kv    = mct_aVect_indexRA(o2x,'So_v')
     kdhdx = mct_aVect_indexRA(o2x,'So_dhdx')
     kdhdy = mct_aVect_indexRA(o2x,'So_dhdy')
+    kssh  = mct_aVect_indexRA(o2x,'So_ssh')
     kswp  = mct_aVect_indexRA(o2x,'So_fswpen', perrwith='quiet')
     kq    = mct_aVect_indexRA(o2x,'Fioo_q') ! ocn freezing melting potential
     kfraz = mct_aVect_indexRA(o2x,'Fioo_frazil') ! ocn frazil
+    kh2ot = mct_aVect_indexRA(o2x,'Faoo_h2otemp') ! ocn frazil
 
     call mct_aVect_init(x2o, rList=seq_flds_x2o_fields, lsize=lsize)
     call mct_aVect_zero(x2o)
@@ -377,12 +379,28 @@ CONTAINS
       call shr_sys_abort('Error: fail to update mesh info ')
 
    allocate(data(lsize))
-   ierr = iMOAB_DefineTagStorage( mpoid, "area:aream:frac:mask"//C_NULL_CHAR, &
+   ierr = iMOAB_DefineTagStorage( mpoid, "lat:lon:area:aream:frac:mask"//C_NULL_CHAR, &
                                      1, & ! dense, double
                                      1, & ! number of components
                                      tagindex )
    if (ierr > 0 )  &
       call errorout(ierr, 'Error: fail to create tag: area:aream:frac:mask' )
+
+   data(:) = ggrid%data%rAttr(mct_aVect_indexRA(ggrid%data,'lat'),:)
+   tagname='lat'//C_NULL_CHAR
+   ierr = iMOAB_SetDoubleTagStorage ( mpoid, tagname, lsize, &
+                                      0, & ! set data on vertices
+                                      data)
+   if (ierr > 0 )  &
+      call errorout(ierr, 'Error: fail to set lat tag ')
+
+   data(:) = ggrid%data%rAttr(mct_aVect_indexRA(ggrid%data,'lon'),:)
+   tagname='lon'//C_NULL_CHAR
+   ierr = iMOAB_SetDoubleTagStorage ( mpoid, tagname, lsize, &
+                                      0, & ! set data on vertices
+                                      data)
+   if (ierr > 0 )  &
+      call errorout(ierr, 'Error: fail to set lon tag ')
 
    data(:) = ggrid%data%rAttr(mct_aVect_indexRA(ggrid%data,'area'),:)
    tagname='area'//C_NULL_CHAR
@@ -390,7 +408,7 @@ CONTAINS
                                       0, & ! set data on vertices
                                       data)
    if (ierr > 0 )  &
-      call errorout(ierr, 'Error: fail to get area tag ')
+      call errorout(ierr, 'Error: fail to set area tag ')
 
    ! set the same data for aream (model area) as area
    ! data(:) = ggrid%data%rAttr(mct_aVect_indexRA(ggrid%data,'aream'),:)
@@ -904,13 +922,17 @@ CONTAINS
 
    call moab_set_tag_from_av( 'So_v'//C_NULL_CHAR, o2x, kv, mpoid, data, lsize)
 
+   call moab_set_tag_from_av( 'So_ssh'//C_NULL_CHAR, o2x, kssh, mpoid, data, lsize)
+
    call moab_set_tag_from_av( 'So_dhdx'//C_NULL_CHAR, o2x, kdhdx, mpoid, data, lsize)
 
    call moab_set_tag_from_av( 'So_dhdy'//C_NULL_CHAR, o2x, kdhdy, mpoid, data, lsize)
 
    call moab_set_tag_from_av( 'Fioo_q'//C_NULL_CHAR, o2x, kq, mpoid, data, lsize)
 
-   call moab_set_tag_from_av( 'Fioo_frazil'//C_NULL_CHAR, o2x, kq, mpoid, data, lsize)
+   call moab_set_tag_from_av( 'Fioo_frazil'//C_NULL_CHAR, o2x, kfraz, mpoid, data, lsize)
+
+   call moab_set_tag_from_av( 'Faoo_h2otemp'//C_NULL_CHAR, o2x, kh2ot, mpoid, data, lsize)
 
    if (kswp /= 0) then
       call moab_set_tag_from_av( 'So_fswpen'//C_NULL_CHAR, o2x, kswp, mpoid, data, lsize)

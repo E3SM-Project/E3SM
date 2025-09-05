@@ -4,8 +4,8 @@
 #include "share/field/field_layout.hpp"
 #include "share/eamxx_types.hpp"
 
-#include "ekat/ekat_scalar_traits.hpp"
-#include "ekat/ekat_assert.hpp"
+#include <ekat_scalar_traits.hpp>
+#include <ekat_assert.hpp>
 
 #include <vector>
 #include <memory>

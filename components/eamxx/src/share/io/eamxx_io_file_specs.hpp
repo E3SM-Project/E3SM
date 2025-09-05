@@ -5,7 +5,7 @@
 #include "share/io/eamxx_io_utils.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
 
-#include <ekat/ekat_assert.hpp>
+#include <ekat_assert.hpp>
 
 #include <string>
 #include <limits>
@@ -39,7 +39,7 @@ struct StorageSpecs {
 
   // Current index for type!=NumSnaps. It stores the year/month/day
   // index associated with this file
-  int  curr_idx = -1;
+  int  time_idx = -1;
 
   // A snapshot fits if
   //  - type=NumSnaps: the number of stored snaps is less than the max allowed per file.
@@ -50,7 +50,7 @@ struct StorageSpecs {
       case Yearly:  [[fallthrough]];
       case Monthly: [[fallthrough]];
       case Daily:
-        return curr_idx==-1 or curr_idx==t.get_date()[static_cast<int>(type)];
+        return time_idx==-1 or time_idx==t.get_date()[static_cast<int>(type)];
       case NumSnaps:
         return num_snapshots_in_file<max_snapshots_in_file;
       default:
@@ -59,19 +59,11 @@ struct StorageSpecs {
     return false;
   }
 
-  void update_storage (const util::TimeStamp& t) {
-    // We always update the snap counter (regardless of storage type),
-    // so that FileSpecs can correctly detect if it needs flushing
-    switch (type) {
-      case Yearly:  [[fallthrough]];
-      case Monthly: [[fallthrough]];
-      case Daily:
-          curr_idx = t.get_date()[static_cast<int>(type)]; [[fallthrough]];
-      case NumSnaps:
-        ++num_snapshots_in_file;  break;
-      default:
-        EKAT_ERROR_MSG ("Error! Unrecognized/unsupported file storage type.\n");
-    }
+  void set_time_idx (const util::TimeStamp& t) {
+    EKAT_REQUIRE_MSG (type!=NumSnaps,
+        "Error! The method 'set_time_idx' should only be used with storage type != NumSnaps.\n"
+        " - storage type: " + e2str(type) + "\n");
+    time_idx = t.get_date()[static_cast<int>(type)];
   }
 
   // If type==NumSnaps, we need to keep track of the snapshots count
@@ -118,7 +110,8 @@ struct IOFileSpecs {
   void close () {
     is_open = false;
     storage.num_snapshots_in_file = 0;
-    storage.curr_idx = -1;
+    storage.time_idx = -1;
+    filename = "";
   }
 };
 

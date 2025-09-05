@@ -34,7 +34,6 @@ module seq_map_type_mod
      real(R8), pointer       :: clat_d(:)
      integer(IN)             :: mpicom    ! mpicom
 
-#ifdef HAVE_MOAB
      ! MOAB additional members, that store source, target and intx MOAB appids
      !  these are integers greater than or equal to 0
      !
@@ -48,7 +47,17 @@ module seq_map_type_mod
      integer                 :: tag_entity_type
      integer                 :: nentities ! this should be used only if copy_only is true
      !
-#endif
+     ! MOAB-specific coordinate arrays for vector mapping
+     real(R8), pointer       :: slon_s_moab(:)
+     real(R8), pointer       :: clon_s_moab(:)
+     real(R8), pointer       :: slat_s_moab(:)
+     real(R8), pointer       :: clat_s_moab(:)
+     real(R8), pointer       :: slon_d_moab(:)
+     real(R8), pointer       :: clon_d_moab(:)
+     real(R8), pointer       :: slat_d_moab(:)
+     real(R8), pointer       :: clat_d_moab(:)
+     character(CL)           :: cart3d_init_moab
+     !
 
   end type seq_map
   public seq_map
@@ -156,18 +165,26 @@ contains
     mapper%strategy       = "undefined"
     mapper%mapfile        = "undefined"
 
-#ifdef HAVE_MOAB
     mapper%src_mbid  = -1
     mapper%tgt_mbid  = -1
     mapper%intx_mbid = -1
     mapper%tag_entity_type = 1 ! cells most of the time when we need it
     mapper%mbname    = "undefined"
+    ! Initialize MOAB coordinate pointers
+    nullify(mapper%slon_s_moab)
+    nullify(mapper%clon_s_moab)
+    nullify(mapper%slat_s_moab)
+    nullify(mapper%clat_s_moab)
+    nullify(mapper%slon_d_moab)
+    nullify(mapper%clon_d_moab)
+    nullify(mapper%slat_d_moab)
+    nullify(mapper%clat_d_moab)
+    mapper%cart3d_init_moab = "undefined"
 #ifdef MOABCOMP
     if (seq_comm_iamroot(CPLID)) then
       write(logunit,'(A,i6)') subname//' call init map for mapper with id ',mapper%counter
       call shr_sys_flush(logunit)
     endif
-#endif
 #endif
 
   end subroutine seq_map_mapinit
@@ -208,5 +225,5 @@ contains
     endif
 
   end subroutine seq_map_gsmapcheck
-  
+
 end module seq_map_type_mod

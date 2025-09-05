@@ -12,7 +12,7 @@
 
 #include "share/io/eamxx_output_manager.hpp"
 
-#include "ekat/ekat_parameter_list.hpp"
+#include <ekat_parameter_list.hpp>
 /*-----------------------------------------------------------------------------------------------
  * Test TimeInterpolation class
  *-----------------------------------------------------------------------------------------------*/

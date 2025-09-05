@@ -3,7 +3,6 @@
 #include "physics/share/physics_test_data.hpp"
 #include "share/eamxx_types.hpp"
 #include "physics_unit_tests_common.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "share/util/eamxx_setup_random_test.hpp"
 
 namespace scream {
@@ -184,8 +183,8 @@ struct UnitWrap::UnitTest<D>::TestTestData
         REQUIRE(d1.bools1[i] == d3.bools1[i]);
       }
 
-      // Check transpose
-      d1.transpose<ekat::TransposeDirection::c2f>();
+      // Check transition
+      d1.transition<ekat::TransposeDirection::c2f>();
       for (Int i = 0; i < d1.dim(d1.one123, 0); ++i) {
         for (Int j = 0; j < d1.dim(d1.one123, 1); ++j) {
           const Int cidx = d1.dim2*i + j;
@@ -207,7 +206,7 @@ struct UnitWrap::UnitTest<D>::TestTestData
         }
       }
 
-      d1.transpose<ekat::TransposeDirection::f2c>();
+      d1.transition<ekat::TransposeDirection::f2c>();
       for (Int i = 0; i < d1.total(d1.one123); ++i) {
         REQUIRE(d1.one123[i] == d2.one123[i]);
         REQUIRE(d1.two123[i] == d2.two123[i]);

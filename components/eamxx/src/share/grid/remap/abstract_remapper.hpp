@@ -4,10 +4,10 @@
 #include "share/field/field.hpp"
 #include "share/grid/abstract_grid.hpp"
 
-#include "ekat/util/ekat_factory.hpp"
-#include "ekat/util/ekat_string_utils.hpp"
-#include "ekat/std_meta/ekat_std_utils.hpp"
-#include "ekat/ekat_parameter_list.hpp"
+#include <ekat_factory.hpp>
+#include <ekat_string_utils.hpp>
+#include <ekat_std_utils.hpp>
+#include <ekat_parameter_list.hpp>
 
 namespace scream
 {

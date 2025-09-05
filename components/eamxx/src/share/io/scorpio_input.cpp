@@ -3,7 +3,7 @@
 #include "share/field/field_utils.hpp"
 #include "share/io/eamxx_scorpio_interface.hpp"
 
-#include <ekat/util/ekat_string_utils.hpp>
+#include <ekat_string_utils.hpp>
 
 #include <memory>
 #include <numeric>
@@ -70,6 +70,12 @@ AtmosphereInput::
 ~AtmosphereInput ()
 {
   finalize();
+}
+
+void AtmosphereInput::
+set_logger(const std::shared_ptr<ekat::logger::LoggerBase>& atm_logger) {
+  EKAT_REQUIRE_MSG (atm_logger, "Error! Invalid logger pointer.\n");
+  m_atm_logger = atm_logger;
 }
 
 void AtmosphereInput::
@@ -196,14 +202,13 @@ set_grid (const std::shared_ptr<const AbstractGrid>& grid)
 void AtmosphereInput::read_variables (const int time_index)
 {
   auto func_start = std::chrono::steady_clock::now();
-  if (m_atm_logger) {
-    m_atm_logger->info("[EAMxx::scorpio_input] Reading variables from file");
-    m_atm_logger->info("  file name: " + m_filename);
-    m_atm_logger->info("  var names: " + ekat::join(m_fields_names,", "));
-    if (time_index!=-1) {
-      m_atm_logger->info("  time idx : " + std::to_string(time_index));
-    }
+  m_atm_logger->info("[EAMxx::scorpio_input] Reading variables from file");
+  m_atm_logger->info("  file name: " + m_filename);
+  m_atm_logger->info("  var names: " + ekat::join(m_fields_names,", "));
+  if (time_index!=-1) {
+    m_atm_logger->info("  time idx : " + std::to_string(time_index));
   }
+
   EKAT_REQUIRE_MSG (m_fields_inited and m_scorpio_inited,
       "Error! Internal structures not fully inited yet. Did you forget to call 'init(..)'?\n");
 

@@ -9,7 +9,10 @@
 #include "share/io/scorpio_input.hpp"
 #include "share/io/eamxx_io_utils.hpp"
 #include "share/util/eamxx_universal_constants.hpp"
+#include "share/util/eamxx_utils.hpp"
 #include "physics/share/physics_constants.hpp"
+
+#include <ekat_team_policy_utils.hpp>
 
 #include <filesystem>
 #include <fstream>
@@ -34,6 +37,16 @@ DataInterpolation (const std::shared_ptr<const AbstractGrid>& model_grid,
   m_input_files_dimnames[COL] = "ncol";
   m_input_files_dimnames[LEV] = "lev";
   e2str(LEV);
+
+  // Initialize logger with a console logger for warnings (logs on all ranks)
+  m_logger = console_logger(ekat::logger::LogLevel::warn);
+}
+
+void DataInterpolation::
+set_logger (const std::shared_ptr<ekat::logger::LoggerBase>& logger)
+{
+  EKAT_REQUIRE_MSG (logger, "Error! Invalid logger pointer.\n");
+  m_logger = logger;
 }
 
 void DataInterpolation::run (const util::TimeStamp& ts)
@@ -94,7 +107,7 @@ void DataInterpolation::run (const util::TimeStamp& ts)
     using KT = KokkosTypes<DefaultDevice>;
     using ExeSpace = typename KT::ExeSpace;
     using MemberType = typename KT::MemberType;
-    using ESU = ekat::ExeSpaceUtils<ExeSpace>;
+    using TPF = ekat::TeamPolicyFactory<ExeSpace>;
     using C = scream::physics::Constants<Real>;
     using PT = ekat::Pack<Real,SCREAM_PACK_SIZE>;
 
@@ -107,7 +120,7 @@ void DataInterpolation::run (const util::TimeStamp& ts)
 
     const int ncols = ps_v.extent(0);
     const int num_vert_packs = p_v.extent(1);
-    const auto policy = ESU::get_default_team_policy(ncols, num_vert_packs);
+    const auto policy = TPF::get_default_team_policy(ncols, num_vert_packs);
 
     Kokkos::parallel_for("spa_compute_p_src_loop", policy,
       KOKKOS_LAMBDA (const MemberType& team) {
@@ -148,13 +161,18 @@ update_end_fields ()
   m_reader->set_fields(fields);
 
   // If we're also changing the file, must (re)init the scorpio structures
-  const auto& slice = m_time_database.slices[m_curr_interval_idx.second];
-  if (m_reader->get_filename()!=slice.filename) {
-    m_reader->reset_filename(slice.filename);
+  const auto& slice_beg = m_time_database.slices[m_curr_interval_idx.first];
+  const auto& slice_end = m_time_database.slices[m_curr_interval_idx.second];
+  if (m_reader->get_filename()!=slice_end.filename) {
+    m_reader->reset_filename(slice_end.filename);
   }
 
   // Read and interpolate fields
-  m_reader->read_variables(slice.time_idx);
+  m_logger->info("[DataInterpolation] Reading end of interval fields.");
+  m_logger->info(" - interval: [" + slice_beg.time.to_string() + ", " + slice_end.time.to_string() + "]");
+  m_logger->info(" - filename: " + slice_end.filename);
+  m_logger->info(" - file time idx: " + std::to_string(slice_end.time_idx));
+  m_reader->read_variables(slice_end.time_idx);
   m_horiz_remapper_end->remap_fwd();
 }
 
@@ -196,11 +214,9 @@ setup_time_database (const strvec_t& input_files,
                      const util::TimeStamp& ref_ts)
 {
   // Log the final list of files, so the user know if something went wrong (e.g. a bad regex)
-  if (m_dbg_output and m_comm.am_i_root()) {
-    std::cout << "Setting up DataInerpolation object. List of input files:\n";
-    for (const auto& fname : input_files) {
-      std::cout << "  - " << fname << "\n";
-    }
+  m_logger->debug("Setting up DataInerpolation object. List of input files:");
+  for (const auto& fname : input_files) {
+    m_logger->debug("  - " + fname);
   }
 
   // Make sure there are no repetitions
@@ -428,7 +444,7 @@ create_horiz_remappers (const Real iop_lat, const Real iop_lon)
   EKAT_REQUIRE_MSG (m_horiz_remapper_beg==nullptr,
       "[DataInterpolation] Error! Horizontal remappers were already setup.\n");
 
-  EKAT_REQUIRE_MSG (not ekat::is_invalid(iop_lat) and not ekat::is_invalid(iop_lon),
+  EKAT_REQUIRE_MSG (not std::isnan(iop_lat) and not std::isnan(iop_lon),
       "[DataInterpolation] Error! At least one between iop_lat and iop_lon appears to be invalid.\n"
       "  - iop_lat: " << iop_lat << "\n"
       "  - iop_lon: " << iop_lon << "\n");
@@ -537,10 +553,6 @@ create_vert_remapper (const VertRemapData& data)
     vremap->set_extrapolation_type(s2et(data.extrap_top),VerticalRemapper::Top);
     vremap->set_extrapolation_type(s2et(data.extrap_bot),VerticalRemapper::Bot);
 
-    // Set the mask value only if needed. RemapData has a default that is invalid for VerticalRemapper
-    if (data.extrap_bot=="Mask" or data.extrap_top=="Mask") {
-      vremap->set_mask_value(data.mask_value);
-    }
     m_vert_remapper = vremap;
   }
 

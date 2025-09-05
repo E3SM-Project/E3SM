@@ -10329,6 +10329,9 @@ contains
          config_DMSP_to_DMS_conversion_time, &
          config_DMS_oxidation_time, &
          config_fallen_snow_radius, &
+         config_snow_growth_wet_factor, &
+         config_minimum_snow_growth_factor, &
+         config_snow_liq_saturation, &
          config_new_snow_density, &
          config_max_snow_density, &
          config_minimum_wind_compaction, &
@@ -10537,6 +10540,9 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_DMS_oxidation_time", config_DMS_oxidation_time)
     call MPAS_pool_get_config(domain % configs, "config_snow_redistribution_scheme", config_snow_redistribution_scheme)
     call MPAS_pool_get_config(domain % configs, "config_fallen_snow_radius", config_fallen_snow_radius)
+    call MPAS_pool_get_config(domain % configs, "config_snow_growth_wet_factor", config_snow_growth_wet_factor)
+    call MPAS_pool_get_config(domain % configs, "config_minimum_snow_growth_factor", config_minimum_snow_growth_factor)
+    call MPAS_pool_get_config(domain % configs, "config_snow_liq_saturation", config_snow_liq_saturation)
     call MPAS_pool_get_config(domain % configs, "config_use_snow_liquid_ponds", config_use_snow_liquid_ponds)
     call MPAS_pool_get_config(domain % configs, "config_new_snow_density", config_new_snow_density)
     call MPAS_pool_get_config(domain % configs, "config_max_snow_density", config_max_snow_density)
@@ -10869,6 +10875,9 @@ contains
          snwredist_in            = config_snow_redistribution_scheme, &
          use_smliq_pnd_in        = config_use_snow_liquid_ponds, &
          rsnw_fall_in            = config_fallen_snow_radius, &
+         snw_growth_wet_in       = config_snow_growth_wet_factor, &
+         drsnw_min_in            = config_minimum_snow_growth_factor, &
+         snwliq_max_in           = config_snow_liq_saturation, &
          rsnw_tmax_in            = config_max_dry_snow_radius, &
          rhosnew_in              = config_new_snow_density, &
          rhosmax_in              = config_max_snow_density, &
@@ -11774,6 +11783,18 @@ contains
     ! rsnw_fall:
     ! fallen snow grain radius (um)
     ! rsnw_fall = config_fallen_snow_radius
+
+    ! snw_growth_wet:
+    ! wet metamorphism parameter (um3 s-1)
+    ! snw_growth_wet = config_snow_growth_wet_factor
+
+    ! drsnw_min:
+    ! minimum snow grain growth factor (1)
+    ! drsnw_min = config_minimum_snow_growth_factor
+
+    ! snwliq_max:
+    ! irreducible saturation fraction (1)
+    ! snwliq_max = config_snow_liq_saturation
 
     ! rsnw_tmax:
     ! maximum dry metamorphism snow grain radius (um)

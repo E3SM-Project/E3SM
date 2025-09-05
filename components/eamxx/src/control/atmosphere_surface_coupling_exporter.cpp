@@ -1,7 +1,8 @@
 #include "atmosphere_surface_coupling_exporter.hpp"
 
-#include "ekat/ekat_assert.hpp"
-#include "ekat/util/ekat_units.hpp"
+#include <ekat_team_policy_utils.hpp>
+#include <ekat_assert.hpp>
+#include <ekat_units.hpp>
 
 #include <iomanip>
 
@@ -87,7 +88,7 @@ void SurfaceCouplingExporter::create_helper_field (const std::string& name,
   Field f(id);
   f.get_header().get_alloc_properties().request_allocation();
   f.allocate_view();
-  f.deep_copy(ekat::ScalarTraits<Real>::invalid());
+  f.deep_copy(ekat::invalid<Real>());
 
   m_helper_fields[name] = f;
 }
@@ -266,7 +267,7 @@ void SurfaceCouplingExporter::initialize_impl (const RunType /* run_type */)
         ++m_num_from_file_exports;
         --m_num_from_model_exports;
         auto& f_helper = m_helper_fields.at(fname);
-	// We want to add the field as a deep copy so that the helper_fields are automatically updated.
+        // We want to add the field as a deep copy so that the helper_fields are automatically updated.
         m_time_interp.add_field(f_helper.alias(rname), true);
         m_export_from_file_field_names.push_back(fname);
       }
@@ -288,9 +289,9 @@ void SurfaceCouplingExporter::initialize_impl (const RunType /* run_type */)
       for (size_t ii=0; ii<export_constant_fields.size(); ii++) {
         auto fname = export_constant_fields[ii];
         // Find the index for this field in the list of export fields.
-	auto v_loc = std::find(m_export_field_names_vector.begin(),m_export_field_names_vector.end(),fname);
-	EKAT_REQUIRE_MSG(v_loc != m_export_field_names_vector.end(), "ERROR!! surface_coupling_exporter::init - prescribed_constants has field with name " << fname << " which can't be found in set of exported fields\n.");
-	auto idx = v_loc - m_export_field_names_vector.begin();
+        auto v_loc = std::find(m_export_field_names_vector.begin(),m_export_field_names_vector.end(),fname);
+        EKAT_REQUIRE_MSG(v_loc != m_export_field_names_vector.end(), "ERROR!! surface_coupling_exporter::init - prescribed_constants has field with name " << fname << " which can't be found in set of exported fields\n.");
+        auto idx = v_loc - m_export_field_names_vector.begin();
         // This field should not have been set to anything else yet (recall FROM_MODEL is the default)
         EKAT_REQUIRE_MSG(m_export_source_h(idx)==FROM_MODEL,"Error! surface_coupling_exporter::init - attempting to set field " + fname + " export type, which has already been set.  Please check namelist options");
         m_export_source_h(idx) = CONSTANT;
@@ -364,7 +365,8 @@ void SurfaceCouplingExporter::set_from_file_exports()
 // index query in the below.
 void SurfaceCouplingExporter::compute_eamxx_exports(const double dt, const bool called_during_initialization)
 {
-  using PC = physics::Constants<Real>;
+  using PC  = physics::Constants<Real>;
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
 
   const auto& p_int                = get_field_in("p_int").get_view<const Real**>();
   const auto& pseudo_density       = get_field_in("pseudo_density").get_view<const Spack**>();
@@ -432,7 +434,7 @@ void SurfaceCouplingExporter::compute_eamxx_exports(const double dt, const bool 
 
   // Preprocess exports
   auto export_source = m_export_source;
-  const auto setup_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(num_cols, num_levs);
+  const auto setup_policy = TPF::get_thread_range_parallel_scan_team_policy(num_cols, num_levs);
   Kokkos::parallel_for(setup_policy, KOKKOS_LAMBDA(const Kokkos::TeamPolicy<KT::ExeSpace>::member_type& team) {
     const int i = team.league_rank();
 

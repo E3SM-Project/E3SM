@@ -6,6 +6,7 @@
 #include "share/grid/mesh_free_grids_manager.hpp"
 #include "share/util/eamxx_setup_random_test.hpp"
 #include "share/util/eamxx_universal_constants.hpp"
+
 namespace scream {
 
 std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols,
@@ -30,8 +31,6 @@ std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols,
 TEST_CASE("aodvis") {
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
-
-  Real var_fill_value = constants::DefaultFillValue<Real>().value;
 
   Real some_limit = 0.0025;
 
@@ -115,13 +114,13 @@ TEST_CASE("aodvis") {
     const auto aod_hf = diag->get_diagnostic();
 
     Field aod_tf = diag->get_diagnostic().clone();
-    aod_tf.deep_copy<Host>(0);
     auto aod_t = aod_tf.get_view<Real *, Host>();
 
     for(int icol = 0; icol < grid->get_num_local_dofs(); ++icol) {
       if(sun_h(icol) < some_limit) {
-        aod_t(icol) = var_fill_value;
+        aod_t(icol) = constants::fill_value<Real>;
       } else {
+        aod_t(icol) = 0;
         for(int ilev = 0; ilev < nlevs; ++ilev) {
           aod_t(icol) += tau_h(icol, swvis, ilev);
         }

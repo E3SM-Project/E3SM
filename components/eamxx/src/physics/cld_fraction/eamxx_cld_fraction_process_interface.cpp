@@ -1,15 +1,13 @@
 #include "eamxx_cld_fraction_process_interface.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
 
-#include "ekat/ekat_assert.hpp"
-#include "ekat/util/ekat_units.hpp"
+#include <ekat_assert.hpp>
+#include <ekat_units.hpp>
 
 #include <array>
 
 #ifdef EAMXX_HAS_PYTHON
-#include <pybind11/pybind11.h>
-#include <pybind11/numpy.h>
-namespace py = pybind11;
+#include "share/atm_process/atmosphere_process_pyhelpers.hpp"
 #endif
 
 namespace scream
@@ -91,24 +89,21 @@ void CldFraction::run_impl (const double /* dt */)
   auto ice_cld_frac_4out = get_field_out("cldfrac_ice_for_analysis");
   auto tot_cld_frac_4out = get_field_out("cldfrac_tot_for_analysis");
 #ifdef EAMXX_HAS_PYTHON
-  if (m_py_module.has_value()) {
+  if (has_py_module()) {
     // For now, we run Python code only on CPU
-    const auto& py_fields = m_py_fields_host.at(m_grid->name());
-
-    const auto& py_qi                = std::any_cast<const py::array&>(py_fields.at("qi"));
-    const auto& py_liq_cld_frac      = std::any_cast<const py::array&>(py_fields.at("cldfrac_liq"));
-    const auto& py_ice_cld_frac      = std::any_cast<const py::array&>(py_fields.at("cldfrac_ice"));
-    const auto& py_tot_cld_frac      = std::any_cast<const py::array&>(py_fields.at("cldfrac_tot"));
-    const auto& py_ice_cld_frac_4out = std::any_cast<const py::array&>(py_fields.at("cldfrac_ice_for_analysis"));
-    const auto& py_tot_cld_frac_4out = std::any_cast<const py::array&>(py_fields.at("cldfrac_tot_for_analysis"));
+    const auto& py_qi                = get_py_field_host("qi");
+    const auto& py_liq_cld_frac      = get_py_field_host("cldfrac_liq");
+    const auto& py_ice_cld_frac      = get_py_field_host("cldfrac_ice");
+    const auto& py_tot_cld_frac      = get_py_field_host("cldfrac_tot");
+    const auto& py_ice_cld_frac_4out = get_py_field_host("cldfrac_ice_for_analysis");
+    const auto& py_tot_cld_frac_4out = get_py_field_host("cldfrac_tot_for_analysis");
 
     // Sync input to host
     liq_cld_frac.sync_to_host();
 
-    const auto& py_module = std::any_cast<const py::module&>(m_py_module);
     double ice_threshold      = m_params.get<double>("ice_cloud_threshold");
     double ice_4out_threshold = m_params.get<double>("ice_cloud_for_analysis_threshold");
-    py_module.attr("main")(ice_threshold,ice_4out_threshold,py_qi,py_liq_cld_frac,py_ice_cld_frac,py_tot_cld_frac,py_ice_cld_frac_4out,py_tot_cld_frac_4out);
+    py_module_call("main",ice_threshold,ice_4out_threshold,py_qi,py_liq_cld_frac,py_ice_cld_frac,py_tot_cld_frac,py_ice_cld_frac_4out,py_tot_cld_frac_4out);
 
     // Sync outputs to dev
     qi.sync_to_dev();

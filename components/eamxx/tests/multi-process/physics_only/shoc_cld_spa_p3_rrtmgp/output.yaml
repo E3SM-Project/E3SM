@@ -2,7 +2,6 @@
 ---
 filename_prefix: shoc_cld_spa_p3_rrtmgp_output
 averaging_type: instant
-max_snapshots_per_file: 1
 field_names:
   # SHOC
   - cldfrac_liq

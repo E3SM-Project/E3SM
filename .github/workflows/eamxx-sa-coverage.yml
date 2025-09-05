@@ -27,7 +27,7 @@ jobs:
     name: gcc-openmp / cov
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           persist-credentials: false
           show-progress: false
@@ -47,7 +47,7 @@ jobs:
     name: gcc-cuda / cov
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           persist-credentials: false
           show-progress: false

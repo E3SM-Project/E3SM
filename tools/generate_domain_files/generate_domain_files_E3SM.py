@@ -94,7 +94,7 @@ parser.add_option('--date-stamp',
                   help='Creation date stamp for domain files')
 parser.add_option('--fminval',
                   dest='fminval',
-                  default=1e-3,
+                  default=1e-8,
                   help='Minimum allowable land fraction (reset to 0 below fminval)')
 parser.add_option('--fmaxval',
                   dest='fmaxval',

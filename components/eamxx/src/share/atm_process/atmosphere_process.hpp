@@ -13,17 +13,20 @@
 #include "share/field/field_group.hpp"
 #include "share/grid/grids_manager.hpp"
 
-#include "ekat/mpi/ekat_comm.hpp"
-#include "ekat/ekat_parameter_list.hpp"
-#include "ekat/util/ekat_factory.hpp"
-#include "ekat/util/ekat_string_utils.hpp"
-#include "ekat/std_meta/ekat_std_enable_shared_from_this.hpp"
-#include "ekat/std_meta/ekat_std_any.hpp"
-#include "ekat/logging/ekat_logger.hpp"
+#include <ekat_comm.hpp>
+#include <ekat_parameter_list.hpp>
+#include <ekat_factory.hpp>
+#include <ekat_string_utils.hpp>
+#include <ekat_logger.hpp>
+
+namespace pybind11 {
+class array;
+}
 
 #include <memory>
 #include <string>
 #include <set>
+#include <any>
 #include <list>
 #include <any>
 
@@ -71,7 +74,7 @@ namespace scream
  *     to override the get_internal_fields method.
  */
 
-class AtmosphereProcess : public ekat::enable_shared_from_this<AtmosphereProcess>
+class AtmosphereProcess : public std::enable_shared_from_this<AtmosphereProcess>
 {
 public:
   using TimeStamp = util::TimeStamp;
@@ -166,8 +169,8 @@ public:
     return m_postcondition_checks;
   }
   std::pair<CheckFailHandling,prop_check_ptr>
-  get_column_conservation_check() {
-    return m_column_conservation_check;
+  get_conservation() {
+    return m_conservation;
   }
 
 
@@ -264,14 +267,16 @@ public:
   // For restarts, it is possible that some atm proc need to write/read some ad-hoc data.
   // E.g., some atm proc might need to read/write certain scalar values.
   // Assumptions:
-  //  - these maps are: data_name -> ekat::any
+  //  - these maps are: data_name -> std::any
   //  - the data_name is unique across the whole atm
   // The AD will take care of ensuring these are written/read to/from restart files.
-  const strmap_t<ekat::any>& get_restart_extra_data () const { return m_restart_extra_data; }
-        strmap_t<ekat::any>& get_restart_extra_data ()       { return m_restart_extra_data; }
+  const strmap_t<std::shared_ptr<std::any>>& get_restart_extra_data () const { return m_restart_extra_data; }
+        strmap_t<std::shared_ptr<std::any>>& get_restart_extra_data ()       { return m_restart_extra_data; }
 
   // Boolean that dictates whether or not the conservation checks are run for this process
-  bool has_column_conservation_check () { return m_column_conservation_check_data.has_check; }
+  bool has_column_conservation_check () { return m_conservation_data.has_column_conservation_check; }
+  bool has_energy_fixer () { return m_conservation_data.has_energy_fixer; }
+  bool has_energy_fixer_debug_info () { return m_conservation_data.has_energy_fixer_debug_info; }
 
   // Print a global hash of internal fields (useful for debugging non-bfbness)
   // Note: (mem, nmem) describe an arbitrary device array. If mem!=nullptr,
@@ -431,6 +436,7 @@ protected:
     }
   }
 
+
   // Override this method to initialize the derived
   virtual void initialize_impl(const RunType run_type) = 0;
 
@@ -507,7 +513,7 @@ protected:
   std::shared_ptr<logger_t>  m_atm_logger;
 
   // Extra data needed for restart
-  strmap_t<ekat::any>  m_restart_extra_data;
+  strmap_t<std::shared_ptr<std::any>>  m_restart_extra_data;
 
   // Use at your own risk. Motivation: Free up device memory for a field that is
   // no longer used, such as a field read in the ICs used only to initialize
@@ -536,7 +542,9 @@ private:
 
   // Compute/store data needed for this processes mass and energy conservation
   // check: dt, tolerance, current mass and energy value per column.
-  void compute_column_conservation_checks_data (const int dt);
+  void compute_column_conservation_checks_data (const double dt);
+
+  void fix_energy (const double dt, const bool & print_debug_info);
 
   // Run an individual property check. The input property_check_category_name
   void run_property_check (const prop_check_ptr&       property_check,
@@ -574,17 +582,20 @@ private:
   std::list<std::pair<CheckFailHandling,prop_check_ptr>> m_postcondition_checks;
 
   // Column local mass and energy conservation check
-  std::pair<CheckFailHandling,prop_check_ptr> m_column_conservation_check;
+  std::pair<CheckFailHandling,prop_check_ptr> m_conservation;
 
   // Store data related to this processes conservation check.
-  struct ColumnConservationCheckData {
+  struct ConservationData {
     // Boolean which dictates whether or not this process
     // contains the mass and energy conservation checks.
-    bool has_check;
+    bool has_column_conservation_check;
     // Tolerance used for the conservation check
+    // mass or energy or both? rename
     Real tolerance;
+    bool has_energy_fixer;
+    bool has_energy_fixer_debug_info;
   };
-  ColumnConservationCheckData m_column_conservation_check_data;
+  ConservationData m_conservation_data;
 
   // This process's copy of the timestamps (current, as well as beg/end of step)
   TimeStamp m_start_of_step_ts;
@@ -632,6 +643,21 @@ protected:
 
   strmap_t<strmap_t<std::any>> m_py_fields_dev;
   strmap_t<strmap_t<std::any>> m_py_fields_host;
+
+  bool has_py_module () const { return m_py_module.has_value(); }
+
+  template<typename... Args>
+  void py_module_call (const std::string& name, const Args&... args);
+
+  // These utilities allow to retrieve pybind11 objects from the std::any wrappers
+  const pybind11::array& get_py_field_host (const std::string& fname) const;
+  const pybind11::array& get_py_field_dev (const std::string& fname) const;
+
+  const pybind11::array& get_py_field_host (const std::string& fname, const std::string& grid) const;
+  const pybind11::array& get_py_field_dev (const std::string& fname, const std::string& grid) const;
+
+  const pybind11::array& get_py_field_impl (const strmap_t<strmap_t<std::any>>& py_fields,
+                                     const std::string& fname, const std::string& grid) const;
 #endif
 };
 
@@ -656,6 +682,7 @@ add_invariant_check (const Args... args) {
   add_invariant_check(fpc);
 }
 
+
 // A short name for the factory for atmosphere processes
 // WARNING: you do not need to write your own creator function to register your atmosphere process in the factory.
 //          You could, but there's no need. You can simply register the common one right below, using your
@@ -673,9 +700,7 @@ using AtmosphereProcessFactory =
 template <typename AtmProcType>
 inline std::shared_ptr<AtmosphereProcess>
 create_atmosphere_process (const ekat::Comm& comm, const ekat::ParameterList& p) {
-  auto ptr = std::make_shared<AtmProcType>(comm,p);
-  ptr->setSelfPointer(ptr);
-  return ptr;
+  return std::make_shared<AtmProcType>(comm,p);
 }
 
 } // namespace scream

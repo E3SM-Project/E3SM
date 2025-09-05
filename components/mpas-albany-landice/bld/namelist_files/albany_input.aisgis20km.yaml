@@ -2,6 +2,9 @@
 ---
 ANONYMOUS:
 
+  Problem:
+    Depth Integrated Model: true
+
 # Discretization Description
   Discretization:
     #Exodus Output File Name: albany_output.exo

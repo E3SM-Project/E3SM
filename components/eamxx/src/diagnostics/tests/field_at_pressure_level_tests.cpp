@@ -1,12 +1,12 @@
 #include "catch2/catch.hpp"
 
-#include "ekat/ekat_pack_utils.hpp"
-
 #include "diagnostics/field_at_pressure_level.hpp"
 
 #include "share/grid/mesh_free_grids_manager.hpp"
 #include "share/field/field_utils.hpp"
 #include "share/util/eamxx_setup_random_test.hpp"
+
+#include <ekat_pack.hpp>
 
 namespace scream {
 
@@ -104,7 +104,7 @@ TEST_CASE("field_at_pressure_level_p2")
       diag_f.sync_to_host();
       auto test2_diag_v = diag_f.get_view<const Real*, Host>();
       // Check the mask field inside the diag_f
-      auto mask_f = diag_f.get_header().get_extra_data<Field>("mask_data");
+      auto mask_f = diag_f.get_header().get_extra_data<Field>("mask_field");
       mask_f.sync_to_host();
       auto test2_mask_v = mask_f.get_view<const Real*, Host>();
       //
@@ -125,13 +125,12 @@ TEST_CASE("field_at_pressure_level_p2")
       diag_f.sync_to_host();
       auto test2_diag_v = diag_f.get_view<const Real*, Host>();
       // Check the mask field inside the diag_f
-      auto mask_f = diag_f.get_header().get_extra_data<Field>("mask_data");
+      auto mask_f = diag_f.get_header().get_extra_data<Field>("mask_field");
       mask_f.sync_to_host();
       auto test2_mask_v = mask_f.get_view<const Real*, Host>();
-      auto mask_val = diag_f.get_header().get_extra_data<Real>("mask_value");
-      //
+
       for (int icol=0;icol<ncols;icol++) {
-        REQUIRE(approx(test2_diag_v(icol),Real(mask_val)));
+        REQUIRE(approx(test2_diag_v(icol),constants::fill_value<Real>));
         REQUIRE(approx(test2_mask_v(icol),Real(0.0)));
       }
     }

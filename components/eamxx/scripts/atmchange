@@ -76,7 +76,6 @@ def atm_config_chg(changes, reset=False, buffer_only=False):
             this_changed = atm_config_chg_impl(root, change)
             any_change |= this_changed
 
-
     if any_change:
         # NOTE: if a change is wrong (e.g., typo in param name), we are still buffering it.
         #       We have no way of checking this, unfortunately. If you get an error that is

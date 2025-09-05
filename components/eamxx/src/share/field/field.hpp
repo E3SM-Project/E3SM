@@ -5,8 +5,8 @@
 #include "share/util/eamxx_combine_ops.hpp"
 #include "share/eamxx_types.hpp"
 
-#include "ekat/std_meta/ekat_std_type_traits.hpp"
-#include "ekat/kokkos/ekat_subview_utils.hpp"
+#include <ekat_std_type_traits.hpp>
+#include <ekat_subview_utils.hpp>
 
 #include <memory>   // For std::shared_ptr
 #include <string>
@@ -292,9 +292,9 @@ public:
   // If this field is a vector field, get a subfield for the ith component.
   // If dynamic = true, it is possible to "reset" the component index at runtime.
   // Note: throws if this is not a vector field.
-  Field get_component (const int i, const bool dynamic = false);
+  Field get_component (const int i, const bool dynamic = false) const;
   // version for slicing across multiple, contiguous indices
-  Field get_components (const int beg, const int end);
+  Field get_components (const int beg, const int end) const;
 
   // Checks whether the underlying view has been already allocated.
   bool is_allocated () const { return m_data.d_view.data()!=nullptr; }
@@ -473,11 +473,8 @@ extern template Field::get_strided_view_type<T******,S> Field::get_strided_view<
 
 #define EAMXX_FIELD_ETI_DECL_FOR_ONE_TYPE(T) \
 EAMXX_FIELD_ETI_DECL_UPDATE(Device,T);          \
-EAMXX_FIELD_ETI_DECL_UPDATE(Host,T);            \
 EAMXX_FIELD_ETI_DECL_UPDATE_MAX_MIN(Device,T);  \
-EAMXX_FIELD_ETI_DECL_UPDATE_MAX_MIN(Host,T);    \
 EAMXX_FIELD_ETI_DECL_DEEP_COPY(Device,T);       \
-EAMXX_FIELD_ETI_DECL_DEEP_COPY(Host,T);         \
 EAMXX_FIELD_ETI_DECL_GET_VIEW(Device,T);        \
 EAMXX_FIELD_ETI_DECL_GET_VIEW(Host,T);          \
 EAMXX_FIELD_ETI_DECL_GET_VIEW(Device,const T);  \
@@ -485,9 +482,7 @@ EAMXX_FIELD_ETI_DECL_GET_VIEW(Host,const T)
 
 #define EAMXX_FIELD_ETI_DECL_FOR_TWO_TYPES(T1,T2) \
 EAMXX_FIELD_ETI_DECL_UPDATE_IMPL(Device,T1,T2);           \
-EAMXX_FIELD_ETI_DECL_UPDATE_IMPL(Host,T1,T2);             \
 EAMXX_FIELD_ETI_DECL_UPDATE_MAX_MIN_IMPL(Device,T1,T2);   \
-EAMXX_FIELD_ETI_DECL_UPDATE_MAX_MIN_IMPL(Host,T1,T2)
 
 // TODO: should we ETI other scalar types too? E.g. Pack<Real,SCREAM_PACK_SIZE??
 //       Real is by far the most common, so it'd be nice to just to that. But

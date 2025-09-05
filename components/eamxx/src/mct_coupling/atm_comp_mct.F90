@@ -620,6 +620,22 @@ CONTAINS
       call mpi_abort(mpicom_atm,ierr,mpi_ierr)
     endif
 
+
+    ! lat and lon are in data1 and data2
+    tagname = 'lat'//C_NULL_CHAR !
+    ierr = iMOAB_SetDoubleTagStorage(mphaid, tagname, num_local_cols , ent_type, data1)
+    if (ierr > 0 )  then
+      print *, 'Error: fail to set lat '
+      call mpi_abort(mpicom_atm,ierr,mpi_ierr)
+    endif
+
+    tagname = 'lon'//C_NULL_CHAR !
+    ierr = iMOAB_SetDoubleTagStorage(mphaid, tagname, num_local_cols , ent_type, data2)
+    if (ierr > 0 )  then
+      print *, 'Error: fail to set lon '
+      call mpi_abort(mpicom_atm,ierr,mpi_ierr)
+    endif
+
     call scream_get_cols_area(c_loc(data1))
     tagname = 'area'//C_NULL_CHAR !
     ierr = iMOAB_SetDoubleTagStorage(mphaid, tagname, num_local_cols , ent_type, data1)

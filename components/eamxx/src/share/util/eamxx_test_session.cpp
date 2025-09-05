@@ -9,7 +9,7 @@
  * work, you MUST define these functions in a cpp file. Your implementation should
  * likely call EKAT's session initialization/finalization, but are allowed to do
  * additional work.
- * When calling EkatCreateUnitTest, you must specify the option EXCLUDE_TEST_SESSION,
+ * When calling EkatCreateUnitTest, you must specify the option USER_DEFINED_TEST_SESSION,
  * which will prevent Ekat from linking in this file (avoiding multiple definition
  * of these routines).
  */

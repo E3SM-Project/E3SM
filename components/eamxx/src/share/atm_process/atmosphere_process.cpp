@@ -1,7 +1,8 @@
 #include "share/atm_process/atmosphere_process.hpp"
 #include "share/util/eamxx_timing.hpp"
-#include "share/property_checks/mass_and_energy_column_conservation_check.hpp"
+#include "share/property_checks/mass_and_energy_conservation_check.hpp"
 #include "share/field/field_utils.hpp"
+#include "share/util/eamxx_utils.hpp"
 
 #ifdef EAMXX_HAS_PYTHON
 #include "share/field/field_pyutils.hpp"
@@ -11,14 +12,13 @@
 namespace py = pybind11;
 #endif
 
-#include "ekat/ekat_assert.hpp"
+#include <ekat_assert.hpp>
 
 #include <set>
 #include <stdexcept>
 #include <string>
-
-namespace scream
-{
+#include <sstream>
+#include <iomanip>
 
 ekat::logger::LogLevel str2LogLevel (const std::string& s) {
   using namespace ekat::logger;
@@ -38,7 +38,10 @@ ekat::logger::LogLevel str2LogLevel (const std::string& s) {
     EKAT_ERROR_MSG ("Invalid string value for log level: " + s + "\n");
   }
   return log_level;
-}
+};
+
+namespace scream
+{
 
 AtmosphereProcess::
 AtmosphereProcess (const ekat::Comm& comm, const ekat::ParameterList& params)
@@ -49,11 +52,7 @@ AtmosphereProcess (const ekat::Comm& comm, const ekat::ParameterList& params)
     m_atm_logger = m_params.get<std::shared_ptr<logger_t>>("logger");
   } else {
     // Create a console-only logger, that logs all ranks
-    using namespace ekat::logger;
-    using logger_impl_t = Logger<LogNoFile,LogAllRanks>;
-    auto log_level = m_params.get<std::string>("log_level","trace");
-    m_atm_logger = std::make_shared<logger_impl_t>("",str2LogLevel(log_level),m_comm);
-    m_atm_logger->set_no_format();
+    m_atm_logger = console_logger(str2LogLevel(m_params.get<std::string>("log_level","trace")));
   }
 
   if (m_params.isParameter("number_of_subcycles")) {
@@ -68,8 +67,27 @@ AtmosphereProcess (const ekat::Comm& comm, const ekat::ParameterList& params)
   m_repair_log_level = str2LogLevel(m_params.get<std::string>("repair_log_level","warn"));
 
   // Info for mass and energy conservation checks
-  m_column_conservation_check_data.has_check =
+  m_conservation_data.has_column_conservation_check =
       m_params.get<bool>("enable_column_conservation_checks", false);
+
+  // Energy fixer
+  m_conservation_data.has_energy_fixer =
+      m_params.get<bool>("enable_energy_fixer", false);
+
+  // Energy fixer
+  m_conservation_data.has_energy_fixer_debug_info =
+      m_params.get<bool>("enable_energy_fixer_debug_info", false);
+
+  //either energy fixer or column checks, but not both at the same time
+  EKAT_REQUIRE_MSG ( 
+      !(m_conservation_data.has_energy_fixer && m_conservation_data.has_column_conservation_check),
+      "Error! In param list " + m_params.name() + " both enable_energy_fixer and"
+           " enable_column_conservation_check are on, which is not allowed. \n");
+
+  EKAT_REQUIRE_MSG (
+      !((!m_conservation_data.has_energy_fixer) && m_conservation_data.has_energy_fixer_debug_info),
+      "Error! In param list " + m_params.name() + " enable_energy_fixer is false and"
+           " enable_energy_fixer_debug_info is true, which is not allowed. \n");
 
   m_internal_diagnostics_level = m_params.get<int>("internal_diagnostics_level", 0);
 #ifdef EAMXX_HAS_PYTHON
@@ -139,7 +157,16 @@ void AtmosphereProcess::run (const double dt) {
     m_start_of_step_ts = m_end_of_step_ts;
     m_end_of_step_ts += dt_sub;
 
-    if (has_column_conservation_check()) {
+    //energy fixer needs both mass and energy fields that are computed by compute_column_conservation_checks_data(dt_sub)
+    //but this will change with cp* (with cpdry heat_glob const is much easier to compute)
+    //actually we do not need mass_before, so mass_before is redundant
+
+    //however, we do not want to use column checks if the fixer is on. without a correction 
+    //from the fixer, column checks would fail after fixer. 
+    //we decided that using the column check to verify the fixer (after intorducing a new "flux")
+    //is not that practical. the fixer will be verified by another call to global integral,
+    //but disabled by default.
+    if (has_column_conservation_check() || has_energy_fixer()) {
       // Column local mass and energy checks requires the total mass and energy
       // to be computed directly before the atm process is run, as well and store
       // the correct timestep for the process.
@@ -160,6 +187,11 @@ void AtmosphereProcess::run (const double dt) {
       print_global_state_hash(name() + "-pst-sc-" + std::to_string(m_subcycle_iter),
                               m_end_of_step_ts,
                               false, true, true);
+
+    if (has_energy_fixer()){
+      const bool & debug_info = has_energy_fixer_debug_info();
+      fix_energy(dt_sub, debug_info );
+    }
 
     if (has_column_conservation_check()) {
       // Run the column local mass and energy conservation checks
@@ -546,8 +578,8 @@ void AtmosphereProcess::run_column_conservation_check () const {
   m_atm_logger->debug("[" + this->name() + "] run_column_conservation_check...");
   start_timer(m_timer_prefix + this->name() + "::run-column-conservation-checks");
   // Conservation check is run as a postcondition check
-  run_property_check(m_column_conservation_check.second,
-                     m_column_conservation_check.first,
+  run_property_check(m_conservation.second,
+                     m_conservation.first,
                      PropertyCheckCategory::Postcondition);
   stop_timer(m_timer_prefix + this->name() + "::run-column-conservation-checks");
   m_atm_logger->debug("[" + this->name() + "] run_column-conservation_checks...done!");
@@ -847,11 +879,11 @@ add_postcondition_check (const prop_check_ptr& pc, const CheckFailHandling cfh)
 void AtmosphereProcess::
 add_column_conservation_check(const prop_check_ptr &prop_check, const CheckFailHandling cfh)
 {
-  EKAT_REQUIRE_MSG(m_column_conservation_check.second == nullptr,
+  EKAT_REQUIRE_MSG(m_conservation.second == nullptr,
                    "Error! Conservation check for process \""+ name() +
                    "\" has already been added.");
 
-  m_column_conservation_check = std::make_pair(cfh,prop_check);
+  m_conservation = std::make_pair(cfh,prop_check);
 }
 
 void AtmosphereProcess::set_fields_and_groups_pointers () {
@@ -1183,18 +1215,43 @@ void AtmosphereProcess
   rmg(m_groups_out, m_groups_out_pointers);
 }
 
-void AtmosphereProcess::compute_column_conservation_checks_data (const int dt)
+void AtmosphereProcess::compute_column_conservation_checks_data (const double dt)
 {
-  EKAT_REQUIRE_MSG(m_column_conservation_check.second != nullptr,
+  EKAT_REQUIRE_MSG(m_conservation.second != nullptr,
                    "Error! User set enable_column_conservation_checks=true, "
-                   "but no conservation check exists.\n");
+                   "or has_energy_fixer=true, "
+                   "but no conservation check class exists.\n");
 
   // Set dt and compute current mass and energy.
   const auto& conservation_check =
-      std::dynamic_pointer_cast<MassAndEnergyColumnConservationCheck>(m_column_conservation_check.second);
+      std::dynamic_pointer_cast<MassAndEnergyConservationCheck>(m_conservation.second);
   conservation_check->set_dt(dt);
   conservation_check->compute_current_mass();
   conservation_check->compute_current_energy();
+}
+
+void AtmosphereProcess::fix_energy (const double dt, const bool &print_debug_info)
+{
+  EKAT_REQUIRE_MSG(m_conservation.second != nullptr,
+                   "Error! User set has_energy_fixer=true, "
+                   "but no conservation check class exists.\n");
+
+  // Set dt and compute current mass and energy.
+  const auto& conservation_check =
+      std::dynamic_pointer_cast<MassAndEnergyConservationCheck>(m_conservation.second);
+
+  //dt is needed to convert flux to change
+  conservation_check->set_dt(dt);
+  conservation_check->global_fixer(print_debug_info);
+
+  if(print_debug_info){
+    //print everything about the fixer only in debug mode
+    m_atm_logger->info("EAMxx:: energy fixer: T tend added to each physics midlevel " + std::to_string( conservation_check->get_pb_fixer() ) + " K" );
+    m_atm_logger->info("EAMxx:: energy fixer: total energy before fix " + std::to_string( conservation_check->get_total_energy_before() ) + " J");
+    std::stringstream ss;
+    ss << "EAMxx:: energy fixer: rel energy error after fix " << std::setprecision(15) << conservation_check->get_echeck() << "\n";
+    m_atm_logger->info(ss.str());
+  }
 }
 
 void AtmosphereProcess::add_py_fields (const Field& f)
@@ -1202,8 +1259,8 @@ void AtmosphereProcess::add_py_fields (const Field& f)
 #ifdef EAMXX_HAS_PYTHON
   if (m_py_module.has_value()) {
     const auto& grid_name = f.get_header().get_identifier().get_grid_name();
-    m_py_fields_dev[grid_name][f.name()] = create_py_field<Device>(f);
-    m_py_fields_host[grid_name][f.name()] = create_py_field<Host>(f);
+    m_py_fields_dev[f.name()][grid_name] = create_py_field<Device>(f);
+    m_py_fields_host[f.name()][grid_name] = create_py_field<Host>(f);
   }
 #else
   (void) f;

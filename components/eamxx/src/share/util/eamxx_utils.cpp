@@ -77,4 +77,15 @@ std::vector<std::string> globloc(const std::string& pattern) {
 std::map<std::string, std::string> DefaultMetadata::name_2_standardname;
 std::map<std::string, std::string> DefaultMetadata::name_2_longname;
 
+std::shared_ptr<ekat::logger::LoggerBase> console_logger (const ekat::logger::LogLevel log_level)
+{
+  using namespace ekat::logger;
+  using logger_impl_t = Logger<ekat::logger::LogNoFile,LogAllRanks>;
+
+  ekat::Comm comm;
+  auto logger = std::make_shared<logger_impl_t>("",log_level,comm);
+  logger->set_no_format();
+  return logger;
+}
+
 } // namespace scream

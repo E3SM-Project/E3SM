@@ -47,8 +47,6 @@ env:
   submit: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch') }}
   # Generate only if user requested via workflow_dispatch
   generate: ${{ github.event_name == 'workflow_dispatch' && inputs.bless }}
-  # Correct case folder suffix for generate/compare, used to find files to upload as artifacts
-  folder_suffix: ${{ github.event_name == 'workflow_dispatch' && inputs.bless && '.G' || '.C' }}
   # Compare/generate flags for create_test
   flags: ${{ github.event_name == 'workflow_dispatch' && inputs.bless && '-o -g -b master' || '-c -b master' }}
 
@@ -74,13 +72,13 @@ jobs:
             short_name: ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-small_kernels--eamxx-output-preset-5
           - full_name: REP_D_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.ghci-snl-cpu_gnu
             short_name: REP_D_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx
-          - full_name: "ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci-snl-cpu_gnu.eamxx-prod"
+          - full_name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci-snl-cpu_gnu.eamxx-prod
             short_name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-prod
       fail-fast: false
     name: cpu-gcc / ${{ matrix.test.short_name }}
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           persist-credentials: false
           show-progress: false
@@ -113,13 +111,11 @@ jobs:
         with:
           name: logs.${{ matrix.test.short_name }}
           path: |
-            /projects/e3sm/scratch/${{ matrix.test.full_name }}${{ env.folder_suffix }}*/TestStatus.log
-            /projects/e3sm/scratch/${{ matrix.test.full_name }}${{ env.folder_suffix }}*/bld/*.bldlog.*
-            /projects/e3sm/scratch/${{ matrix.test.full_name }}${{ env.folder_suffix }}*/bld/case2bld/*.bldlog.*
-            /projects/e3sm/scratch/${{ matrix.test.full_name }}${{ env.folder_suffix }}*/run/*.log.*
-            /projects/e3sm/scratch/${{ matrix.test.full_name }}${{ env.folder_suffix }}*/run/case2run/*.log.*
-            /projects/e3sm/scratch/${{ matrix.test.full_name }}${{ env.folder_suffix }}*/run/*.cprnc.out
-            /projects/e3sm/scratch/${{ matrix.test.full_name }}${{ env.folder_suffix }}*/run/case2run/*.cprnc.out
+            /tmp/${{ matrix.test.full_name }}*/TestStatus
+            /tmp/${{ matrix.test.full_name }}*/TestStatus.log
+            /tmp/${{ matrix.test.full_name }}*/bld/**/*.bldlog.*
+            /tmp/${{ matrix.test.full_name }}*/run/**/*.log.*
+            /tmp/${{ matrix.test.full_name }}*/run/**/*.cprnc.out
           retention-days: 14
         env:
           NODE_EXTRA_CA_CERTS: ${{ env.NODE_EXTRA_CA_CERTS }}
@@ -129,12 +125,7 @@ jobs:
         with:
           name: outputs.${{ matrix.test.short_name }}
           path: |
-            /projects/e3sm/scratch/${{ matrix.test.full_name }}${{ env.folder_suffix }}*/run/*.nc*
-            /projects/e3sm/scratch/${{ matrix.test.full_name }}${{ env.folder_suffix }}*/run/case2run/*.nc*
+            /tmp/${{ matrix.test.full_name }}*/run/**/*.nc*
           retention-days: 14
         env:
           NODE_EXTRA_CA_CERTS: ${{ env.NODE_EXTRA_CA_CERTS }}
-      - name: Clean up
-        if: ${{ always() }}
-        run: |
-          rm -rf /projects/e3sm/scratch/${{ matrix.test.full_name }}*

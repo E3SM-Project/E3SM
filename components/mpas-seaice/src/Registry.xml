@@ -1588,6 +1588,21 @@
 			possible_values="positive real"
 			icepack_name="rsnw_fall"
 		/>
+		<nml_option name="config_snow_growth_wet_factor" type="real" default_value="4.22e5" units="um3 s-1"
+			description="wet metamorphism parameter"
+			possible_values="positive real"
+			icepack_name="snw_growth_wet"
+		/>
+		<nml_option name="config_minimum_snow_growth_factor" type="real" default_value="0.0" units="1"
+			description="minimum snow grain growth factor"
+			possible_values="positive real"
+			icepack_name="drsnw_min"
+		/>
+		<nml_option name="config_snow_liq_saturation" type="real" default_value="0.033" units="1"
+			description="irreducible saturation fraction"
+			possible_values="positive real"
+			icepack_name="snwliq_max"
+		/>
 		<nml_option name="config_use_snow_liquid_ponds" type="logical" default_value="false" units="none"
 			description="use snow liquid tracer for ponds"
 			possible_values="true or false"

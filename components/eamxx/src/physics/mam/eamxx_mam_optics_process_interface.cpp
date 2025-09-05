@@ -1,11 +1,12 @@
-#include <ekat/ekat_assert.hpp>
 #include <physics/mam/eamxx_mam_optics_process_interface.hpp>
 #include <share/property_checks/field_lower_bound_check.hpp>
 #include <share/property_checks/field_within_interval_check.hpp>
 
-#include "eamxx_config.h"  // for SCREAM_CIME_BUILD
 #include "share/grid/point_grid.hpp"
 #include "share/io/scorpio_input.hpp"
+
+#include <ekat_team_policy_utils.hpp>
+#include <ekat_assert.hpp>
 
 namespace scream {
 
@@ -85,13 +86,7 @@ void MAMOptics::set_grids(
   add_tracers_gases();
   // add fields e.g., num_c1, soa_c1
   add_fields_cloudborne_aerosol();
-
-  // aerosol-related gases: mass mixing ratios
-  for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
-    const char *gas_mmr_field_name = mam_coupling::gas_mmr_field_name(g);
-    add_tracer<Updated>(gas_mmr_field_name, grid_, kg / kg);
-  }
-}
+} //set_grids
 
 size_t MAMOptics::requested_buffer_size_in_bytes() const {
   return mam_coupling::buffer_size(ncol_, nlev_, num_2d_scratch_,
@@ -305,13 +300,13 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   calsize_data_.initialize();
 }
 void MAMOptics::run_impl(const double dt) {
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
+
   constexpr Real zero = 0.0;
   constexpr Real one  = 1.0;
 
-  const auto policy =
-      ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol_, nlev_);
-  const auto scan_policy = ekat::ExeSpaceUtils<
-      KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
+  const auto policy = TPF::get_default_team_policy(ncol_, nlev_);
+  const auto scan_policy = TPF::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
 
   // preprocess input -- needs a scan for the calculation of atm height
   pre_process(wet_aero_, dry_aero_, wet_atm_, dry_atm_);

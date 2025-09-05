@@ -2,6 +2,8 @@
 #include <physics/mam/physical_limits.hpp>
 #include <share/property_checks/field_within_interval_check.hpp>
 
+#include <ekat_team_policy_utils.hpp>
+
 namespace scream {
 // ================================================================
 //  Constructor
@@ -10,6 +12,7 @@ namespace scream {
 MAMGenericInterface::MAMGenericInterface(const ekat::Comm &comm,
                                          const ekat::ParameterList &params)
     : AtmosphereProcess(comm, params) {
+      use_prescribed_ozone_   = m_params.get<bool>("use_mam4_precribed_ozone", false);
   /* Anything that can be initialized without grid information can be
    * initialized here. Like universal constants, mam wetscav options.
    */
@@ -50,8 +53,7 @@ void MAMGenericInterface::set_aerosol_and_gas_ranges() {
   }
 
   for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
-    const std::string gas_mmr_field_name = mam_coupling::gas_mmr_field_name(g);
-    limits_aerosol_gas_tracers_[gas_mmr_field_name] =
+    limits_aerosol_gas_tracers_[std::string(mam_coupling::gas_mmr_name[g])] =
         mam_coupling::physical_min_max(mmr_label);
   }  // end for loop num gases
 }
@@ -99,6 +101,7 @@ void MAMGenericInterface::add_fields_cloudborne_aerosol() {
   auto n_unit           = 1 / kg;   // units of number mixing ratios of tracers
   const auto &grid_name = grid_->name();
 
+  //Layout for 3D scalar fields at midpoints(col, level))
   FieldLayout scalar3d_mid = grid_->get_3d_scalar_layout(true);
 
   // ---------------------------------------------------------------------
@@ -167,11 +170,30 @@ void MAMGenericInterface::add_tracers_interstitial_aerosol() {
 // ================================================================
 
 void MAMGenericInterface::add_tracers_gases() {
+  //Note that the gas list in MAM4 is: 
+  //{"O3",  "H2O2", "H2SO4", "SO2", "DMS",  "SOAG"}
   using namespace ekat::units;
-  auto q_unit = kg / kg;  // units of mass mixing ratios of tracers
-  for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
-    const std::string gas_mmr_field_name = mam_coupling::gas_mmr_field_name(g);
-    add_tracer<Updated>(gas_mmr_field_name, grid_, q_unit);
+  constexpr auto q_unit = kg / kg;  // units of mass mixing ratios of tracers
+  const auto &grid_name = grid_->name();
+
+  //Layout for 3D scalar fields at midpoints(col, level))
+  const FieldLayout scalar3d_mid = grid_->get_3d_scalar_layout(true);
+
+  //O3 can be prescribed or prognostic depending upon the user input
+  //Index of Ozone in the gas list (currently order of species is fixed)
+  constexpr int o3_id = 0;
+  static_assert(mam_coupling::gas_mmr_name[o3_id] == "O3", "The first gas must be O3");
+  if (use_prescribed_ozone_) {
+    // If using prescribed O3, we add it as a field
+    add_field<Updated>(std::string(mam_coupling::gas_mmr_name[o3_id]), scalar3d_mid, q_unit, grid_name);
+  } else {
+    // If not using prescribed O3 (i.e., prognostic O3), we add it as a tracer
+    add_tracer<Updated>(std::string(mam_coupling::gas_mmr_name[o3_id]), grid_, q_unit);
+  }
+
+  // add other gases as tracers (note that the index of gases starts from 1)
+  for(int g = 1; g < mam_coupling::num_aero_gases(); ++g) {
+    add_tracer<Updated>(std::string(mam_coupling::gas_mmr_name[g]), grid_, q_unit);
   }  // end for loop num gases
 }
 // ================================================================
@@ -252,8 +274,7 @@ void MAMGenericInterface::set_buffer_scratch_to_zero(
 void MAMGenericInterface::populate_gases_wet_aero(
     mam_coupling::AerosolState &wet_aero) {
   for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
-    const std::string gas_mmr_field_name = mam_coupling::gas_mmr_field_name(g);
-    wet_aero.gas_mmr[g] = get_field_out(gas_mmr_field_name).get_view<Real **>();
+    wet_aero.gas_mmr[g] = get_field_out(std::string(mam_coupling::gas_mmr_name[g])).get_view<Real **>();
   }
 }
 
@@ -442,8 +463,8 @@ void MAMGenericInterface::pre_process(mam_coupling::AerosolState &wet_aero,
                                       mam_coupling::AerosolState &dry_aero,
                                       mam_coupling::WetAtmosphere &wet_atm,
                                       mam_coupling::DryAtmosphere &dry_atm) {
-  const auto scan_policy = ekat::ExeSpaceUtils<
-      KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
+  const auto scan_policy = TPF::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
   Kokkos::parallel_for(
       scan_policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
         const int i = team.league_rank();  // column index
@@ -464,8 +485,8 @@ void MAMGenericInterface::pre_process(mam_coupling::AerosolState &wet_aero,
 void MAMGenericInterface::post_process(mam_coupling::AerosolState &wet_aero,
                                        mam_coupling::AerosolState &dry_aero,
                                        mam_coupling::DryAtmosphere &dry_atm) {
-  const auto scan_policy = ekat::ExeSpaceUtils<
-      KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
+  const auto scan_policy = TPF::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
   Kokkos::parallel_for(
       scan_policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
         const int i = team.league_rank();  // column index

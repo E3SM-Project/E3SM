@@ -119,9 +119,10 @@ void perturb (Field& f,
 // - f_out, f_in, and weight must be provided and allocated
 // - The first dimension is for the columns (COL)
 // - There can be only up to 3 dimensions of f_in
-template <typename ST>
+template <typename ST, bool AVG = 1>
 void horiz_contraction(const Field &f_out, const Field &f_in,
-                       const Field &weight, const ekat::Comm *comm = nullptr) {
+                       const Field &weight, const ekat::Comm *comm = nullptr,
+                       const Field &f_tmp = Field()) {
   using namespace ShortFieldTagsNames;
 
   const auto &l_out = f_out.get_header().get_identifier().get_layout();
@@ -178,7 +179,7 @@ void horiz_contraction(const Field &f_out, const Field &f_in,
       "Error! Weight field must have the same data type as input fields.");
 
   // All good, call the implementation
-  impl::horiz_contraction<ST>(f_out, f_in, weight, comm);
+  impl::horiz_contraction<ST, AVG>(f_out, f_in, weight, comm, f_tmp);
 }
 
 // Utility to compute the contraction of a field along its level dimension.
@@ -191,7 +192,7 @@ void horiz_contraction(const Field &f_out, const Field &f_in,
 //   - rank-1, with only LEV/ILEV dimension
 //   - rank-2, with only COL and LEV/ILEV dimensions
 // NOTE: we assume the LEV/ILEV dimension is NOT partitioned.
-template <typename ST>
+template <typename ST, int AVG = 0>
 void vert_contraction(const Field &f_out, const Field &f_in, const Field &weight) {
   using namespace ShortFieldTagsNames;
 
@@ -266,7 +267,7 @@ void vert_contraction(const Field &f_out, const Field &f_in, const Field &weight
       "Error! Weight field must have the same data type as input field.");
 
   // All good, call the implementation
-  impl::vert_contraction<ST>(f_out, f_in, weight);
+  impl::vert_contraction<ST, AVG>(f_out, f_in, weight);
 }
 
 template<typename ST>
