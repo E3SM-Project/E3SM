@@ -466,6 +466,11 @@ contains
                    errMsg(__FILE__, __LINE__))
           end if
 
+          if( use_lch4 ) then
+             call endrun(msg=' ERROR: use_lch4 (methane) and use_fates cannot both be set to true.'//&
+                   errMsg(__FILE__, __LINE__))
+          end if
+
           if ( n_drydep > 0 .and. drydep_method /= DD_XLND ) then
              call endrun(msg=' ERROR: dry deposition via ML Welsey is not compatible with FATES.'//&
                    errMsg(__FILE__, __LINE__))
@@ -505,7 +510,7 @@ contains
                    errMsg(__FILE__, __LINE__))
           end if
 
-       end if
+       end if !use_fates
 
 
        if (use_crop .and. (use_c13 .or. use_c14)) then
@@ -518,6 +523,11 @@ contains
             errMsg(__FILE__, __LINE__))
        end if
 
+       if (.not. use_crop .and. irrigate) then
+          call endrun(msg=' ERROR: irrigate = .true. requires CROP model active.'//&
+            errMsg(__FILE__, __LINE__))
+       end if
+       
        if (.not. use_erosion .and. ero_ccycle) then
           call endrun(msg=' ERROR: ero_ccycle = .true. requires erosion model active.'//&
             errMsg(__FILE__, __LINE__))
@@ -1161,7 +1171,10 @@ contains
        write(iulog, *) '   pftspecific_rootingprofile                            : ', pftspecific_rootingprofile
        write(iulog, *) '   dynamic roots                                         : ', use_dynroot
     end if
-
+    if (use_cn) then
+       write(iulog, *) '   no_frozen_nitrif_denitrif                             : ', no_frozen_nitrif_denitrif
+    end if
+       
     if (use_cn) then
        write(iulog, *) '  use_c13                                                : ', use_c13
        write(iulog, *) '  use_c14                                                : ', use_c14
@@ -1327,6 +1340,7 @@ contains
 
     ! NGEE Arctic options
     if (use_polygonal_tundra) write(iulog, *) '    use_polygonal_tundra    =', use_polygonal_tundra
+    write(iulog, *) '    use_polygonal_tundra    =', use_polygonal_tundra
     if (use_arctic_init) write(iulog, *)      '    use_arctic_init    ='     , use_arctic_init
 
   end subroutine control_print
