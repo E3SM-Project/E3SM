@@ -284,30 +284,33 @@ class Teos10BruntVaisalaFreq {
       Teos10BruntVaisalaFreq();
 
       KOKKOS_FUNCTION void operator()(Array2DReal BruntVaisalaFreq,
-                                      I4 ICell, I4 K,
+                                      I4 ICell, I4 KChunk,
                                       const Array2DReal &ConservTemp,
                                       const Array2DReal &AbsSalinity,
                                       const Array2DReal &Pressure,
                                       const Array2DReal &SpecVol) const {
-         constexpr Real Gravity   = 9.81;
-         constexpr Real Db2Pa     = 1.0e-4;
-
-         if (K == 0) {
-            BruntVaisalaFreq(ICell, K) = 0.0; // No Brunt-Vaisala frequency at surface
-         } else {
-            Real DSa       = (AbsSalinity(ICell, K) - AbsSalinity(ICell, K-1));
-            Real SaMid     = 0.5*(AbsSalinity(ICell, K) + AbsSalinity(ICell, K-1));
-            Real DCt       = (ConservTemp(ICell, K)- ConservTemp(ICell, K-1));
-            Real CtMid     = 0.5*(ConservTemp(ICell, K) + ConservTemp(ICell, K-1));
-            Real Dp        = (Pressure(ICell, K) - Pressure(ICell, K-1));
-            Real PMid      = 0.5*(Pressure(ICell, K) + Pressure(ICell, K-1));
-            Real RhoMid    = 1.0 / (0.5*(SpecVol(ICell, K) + SpecVol(ICell, K-1)));
+         Real Gravity = 9.80616_Real; // gravitationl acceleration
+         Real Db2Pa   = 1.0e-4;
+         const I4 KStart = KChunk * VecLength;
+         for (int KVec = 0; KVec < VecLength; ++KVec) {
+            const I4 K = KStart + KVec;
+            if (K == 0) {
+               BruntVaisalaFreq(ICell, K) = 0.0; // No Brunt-Vaisala frequency at surface
+            } else {
+               Real DSa       = (AbsSalinity(ICell, K) - AbsSalinity(ICell, K-1));
+               Real SaMid     = 0.5*(AbsSalinity(ICell, K) + AbsSalinity(ICell, K-1));
+               Real DCt       = (ConservTemp(ICell, K)- ConservTemp(ICell, K-1));
+               Real CtMid     = 0.5*(ConservTemp(ICell, K) + ConservTemp(ICell, K-1));
+               Real Dp        = (Pressure(ICell, K) - Pressure(ICell, K-1));
+               Real PMid      = 0.5*(Pressure(ICell, K) + Pressure(ICell, K-1));
+               Real RhoMid    = 1.0 / (0.5*(SpecVol(ICell, K) + SpecVol(ICell, K-1)));
          
-            Real alpha_mid = calcAlpha(SaMid, CtMid, PMid, 1.0/RhoMid);
-            Real beta_mid  = calcBeta(SaMid, CtMid, PMid, 1.0/RhoMid);
+               Real AlphaMid  = calcAlpha(SaMid, CtMid, PMid, 1.0/RhoMid);
+               Real BetaMid   = calcBeta(SaMid, CtMid, PMid, 1.0/RhoMid);
 
-            BruntVaisalaFreq(ICell, K) = Gravity * Gravity * (RhoMid/(Db2Pa*Dp)) 
-                                       * (beta_mid*DSa - alpha_mid*DCt);
+               BruntVaisalaFreq(ICell, K) = Gravity * Gravity * (RhoMid/(Db2Pa*Dp)) 
+                                          * (BetaMid*DSa - AlphaMid*DCt);
+            }
          }
       }
 
@@ -474,7 +477,7 @@ class Teos10BruntVaisalaFreq {
 class LinearBruntVaisalaFreq {
  public:
    /// Coefficients for LinearEos (overwritten by config file if set there)
-   Real RhoT0S0 = 1000.0; ///< Reference density (kg m^-3) at (T,S)=(0,0)
+   Real RhoT0S0 = 1000.0_Real; ///< Reference density (kg m^-3) at (T,S)=(0,0)
 
    /// constructor declaration
    LinearBruntVaisalaFreq();
@@ -484,17 +487,21 @@ class LinearBruntVaisalaFreq {
    //   temperature, and (absolute) salinity as inputs, and outputs the
    //   linear specific volume.
    KOKKOS_FUNCTION void operator()(Array2DReal BruntVaisalaFreq,
-                                    I4 ICell, I4 K,
-                                    const Array2DReal &SpecVol) const {
-      constexpr Real Gravity   = 9.81;
-
-      if (K == 0) {
-         // No Brunt-Vaisala frequency at the top level
-         BruntVaisalaFreq(ICell, K) = 0.0;
-      } else {
-         BruntVaisalaFreq(ICell, K) = - (Gravity / RhoT0S0) * 
-                     ((1.0 / SpecVol(ICell, K-1)) - (1.0 / SpecVol(ICell, K)));
-                     //// (ZMid(ICell, K-1) - ZMid(ICell, K));
+                                    I4 ICell, I4 KChunk,
+                                    const Array2DReal &SpecVol,
+                                    const Array2DReal &ZMid) const {
+      Real Gravity = 9.80616_Real; // gravitationl acceleration
+      const I4 KStart = KChunk * VecLength;
+      for (int KVec = 0; KVec < VecLength; ++KVec) {
+         const I4 K = KStart + KVec;
+         if (K == 0) {
+            // No Brunt-Vaisala frequency at the top level
+            BruntVaisalaFreq(ICell, K) = 0.0;
+         } else {
+            BruntVaisalaFreq(ICell, K) = - (Gravity / RhoT0S0) * 
+                        ((1.0 / SpecVol(ICell, K-1)) - (1.0 / SpecVol(ICell, K)))
+                        / (ZMid(ICell, K-1) - ZMid(ICell, K));
+         }
       }
    }
 };
@@ -534,7 +541,8 @@ class Eos {
    void computeBruntVaisalaFreq(const Array2DReal &ConservTemp,
                                 const Array2DReal &AbsSalinity,
                                 const Array2DReal &Pressure,
-                                const Array2DReal &SpecVol);
+                                const Array2DReal &SpecVol,
+                                const Array2DReal &ZMid);
 
    /// Initialize EOS from config and mesh
    static void init();

@@ -152,7 +152,8 @@ void VertMix::init() {
 /// Compute diffusivity and viscosity for all cells/levels (no displacement)
 void VertMix::computeVertMix(const Array2DReal &NormalVelocity,
                              const Array2DReal &TangentialVelocity,
-                             const Array2DReal &BruntVaisalaFreq) {
+                             const Array2DReal &BruntVaisalaFreq,
+                             const Array2DReal &ZMid) {
    OMEGA_SCOPE(LocVertDiff, VertDiff); /// Create a local view for computation
    OMEGA_SCOPE(LocVertVisc, VertVisc); /// Create a local view for computation
    OMEGA_SCOPE(LocComputeVertMixConv,
@@ -174,7 +175,7 @@ void VertMix::computeVertMix(const Array2DReal &NormalVelocity,
                   BruntVaisalaFreq);
                LocComputeVertMixShear(LocVertDiff, LocVertVisc, ICell, K, 
                   NormalVelocity, TangentialVelocity,
-                  BruntVaisalaFreq);
+                  BruntVaisalaFreq, ZMid);
          });
       } else if (LocComputeVertMixShear.Enabled) {
          parallelFor(
@@ -183,7 +184,7 @@ void VertMix::computeVertMix(const Array2DReal &NormalVelocity,
                //LocComputeVertMixBack(LocVertDiff, LocVertVisc, ICell, K);
                LocComputeVertMixShear(LocVertDiff, LocVertVisc, ICell, K, 
                   NormalVelocity, TangentialVelocity,
-                  BruntVaisalaFreq);
+                  BruntVaisalaFreq, ZMid);
          });
       } else if (LocComputeVertMixConv.Enabled) {
          parallelFor(

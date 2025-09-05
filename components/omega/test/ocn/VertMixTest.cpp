@@ -31,7 +31,7 @@
 using namespace OMEGA;
 
 /// Test constants and expected values
-constexpr int NVertLevels    = 60;
+constexpr int NVertLevels      = 60;
 
 /// Published values (TEOS-10 and linear) to test against
 const Real VertDiffExpValue    = 0.0009732819628;      // Expected value for diffusivity
@@ -110,6 +110,7 @@ int testVertMix() {
    Array2DReal UArray   = Array2DReal("UArray", Mesh->NCellsAll, NVertLevels);
    Array2DReal VArray   = Array2DReal("VArray", Mesh->NCellsAll, NVertLevels);
    Array2DReal BVFArray = Array2DReal("BVFArray", Mesh->NCellsAll, NVertLevels);
+   Array2DReal ZMid     = Array2DReal("ZMid", Mesh->NCellsAll, NVertLevels);
    /// Use Kokkos::deep_copy to fill the entire view with the ref value
    deepCopy(UArray, U);
    deepCopy(VArray, V);
@@ -117,8 +118,14 @@ int testVertMix() {
    deepCopy(TestVertMix->VertDiff, 0.0);
    deepCopy(TestVertMix->VertVisc, 0.0);
 
+   parallelFor(
+          "populateZMid", {Mesh->NCellsAll, NVertLevels},
+          KOKKOS_LAMBDA(I4 ICell, I4 K) {
+             ZMid(ICell, K) = -K;
+          });
+
    /// Compute vertical viscosity and diffusivity
-   TestVertMix->computeVertMix(UArray, VArray, BVFArray);
+   TestVertMix->computeVertMix(UArray, VArray, BVFArray, ZMid);
 
    /// Check all VertDiff array values against expected value
    int numMismatches = 0;
@@ -177,6 +184,7 @@ int testVertMixLinearity() {
    Array2DReal UArray   = Array2DReal("UArray", Mesh->NCellsAll, NVertLevels);
    Array2DReal VArray   = Array2DReal("VArray", Mesh->NCellsAll, NVertLevels);
    Array2DReal BVFArray = Array2DReal("BVFArray", Mesh->NCellsAll, NVertLevels);
+   Array2DReal ZMid     = Array2DReal("ZMid", Mesh->NCellsAll, NVertLevels);
    /// Use Kokkos::deep_copy to fill the entire view with the ref value
    deepCopy(UArray, U);
    deepCopy(VArray, V);
@@ -184,12 +192,18 @@ int testVertMixLinearity() {
    deepCopy(TestVertMix->VertDiff, 0.0);
    deepCopy(TestVertMix->VertVisc, 0.0);
 
+   parallelFor(
+          "populateZMid", {Mesh->NCellsAll, NVertLevels},
+          KOKKOS_LAMBDA(I4 ICell, I4 K) {
+             ZMid(ICell, K) = -K;
+          });
+
    /// Compute background vertical viscosity and diffusivity
    TestVertMix->BackDiff = 1.0e-5;
    TestVertMix->BackVisc = 1.0e-4;
    TestVertMix->ComputeVertMixConv.Enabled = false;
    TestVertMix->ComputeVertMixShear.Enabled = false;
-   TestVertMix->computeVertMix(UArray, VArray, BVFArray);
+   TestVertMix->computeVertMix(UArray, VArray, BVFArray, ZMid);
    Array2DReal BackVertVisc = TestVertMix->VertVisc;
    Array2DReal BackVertDiff = TestVertMix->VertDiff;
 
@@ -198,7 +212,7 @@ int testVertMixLinearity() {
    TestVertMix->BackVisc = 0.0;
    TestVertMix->ComputeVertMixConv.Enabled = true;
    TestVertMix->ComputeVertMixShear.Enabled = false;
-   TestVertMix->computeVertMix(UArray, VArray, BVFArray);
+   TestVertMix->computeVertMix(UArray, VArray, BVFArray, ZMid);
    Array2DReal ConvVertVisc = TestVertMix->VertVisc;
    Array2DReal ConvVertDiff = TestVertMix->VertDiff;
 
@@ -207,7 +221,7 @@ int testVertMixLinearity() {
    TestVertMix->BackVisc = 0.0;
    TestVertMix->ComputeVertMixConv.Enabled = false;
    TestVertMix->ComputeVertMixShear.Enabled = true;
-   TestVertMix->computeVertMix(UArray, VArray, BVFArray);
+   TestVertMix->computeVertMix(UArray, VArray, BVFArray, ZMid);
    Array2DReal ShearVertVisc = TestVertMix->VertVisc;
    Array2DReal ShearVertDiff = TestVertMix->VertDiff;
 
@@ -216,7 +230,7 @@ int testVertMixLinearity() {
    TestVertMix->BackVisc = 1.0e-4;
    TestVertMix->ComputeVertMixConv.Enabled = true;
    TestVertMix->ComputeVertMixShear.Enabled = true;
-   TestVertMix->computeVertMix(UArray, VArray, BVFArray);
+   TestVertMix->computeVertMix(UArray, VArray, BVFArray, ZMid);
    Array2DReal VertViscTotal = TestVertMix->VertVisc;
    Array2DReal VertDiffTotal = TestVertMix->VertDiff;
 

@@ -63,7 +63,8 @@ class PPShearMix {
                                       I4 ICell, I4 K,
                                       const Array2DReal &NormalVelocity,
                                       const Array2DReal &TangentialVelocity,
-                                      const Array2DReal &BruntVaisalaFreq) const {
+                                      const Array2DReal &BruntVaisalaFreq,
+                                      const Array2DReal &ZMid) const {
          Real ShearViscVal = 0.0;
 
          Real InvAreaCell = 1.0 / AreaCell(ICell);
@@ -76,6 +77,7 @@ class PPShearMix {
                Kokkos::pow(TangentialVelocity(JEdge,K-1) - TangentialVelocity(JEdge,K), 2.0);
             ShearSquared = ShearSquared + Factor * DelU2;
          }
+         ShearSquared = ShearSquared / Kokkos::pow(ZMid(ICell, K-1) - ZMid(ICell, K), 2.0);
 
          Real RichardsonNum = BruntVaisalaFreq(ICell, K) / 
                               Kokkos::max(1.0e-12_Real, ShearSquared);
@@ -140,7 +142,8 @@ class VertMix {
    /// Compute vertical diffusivity and viscosity for all cells/levels
    void computeVertMix(const Array2DReal &NormalVelocity,
                        const Array2DReal &TangentialVelocity,
-                       const Array2DReal &BruntVaisalaFreq);
+                       const Array2DReal &BruntVaisalaFreq,
+                       const Array2DReal &ZMid);
 
    /// Initialize VertMix from config and mesh
    static void init();

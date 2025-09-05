@@ -221,7 +221,8 @@ void Eos::computeSpecVolDisp(const Array2DReal &ConservTemp,
 void Eos::computeBruntVaisalaFreq(const Array2DReal &ConservTemp,
                                   const Array2DReal &AbsSalinity,
                                   const Array2DReal &Pressure,
-                                  const Array2DReal &SpecVol) {
+                                  const Array2DReal &SpecVol,
+                                  const Array2DReal &ZMid) {
    OMEGA_SCOPE(LocBruntVaisalaFreq,
                BruntVaisalaFreq); /// Local view for computation
    OMEGA_SCOPE(LocComputeBruntVaisalaFreqLinear,
@@ -233,17 +234,18 @@ void Eos::computeBruntVaisalaFreq(const Array2DReal &ConservTemp,
 
    /// Dispatch to the correct Brunt-Vaisala frequency calculation
    if (EosChoice == EosType::LinearEos) {
+      //LOG_INFO("Eos::computeBruntVaisalaFreq called with Linear EOS.");
       parallelFor(
-          "eos-linear", {NCellsAll, NVertLevels},
-          KOKKOS_LAMBDA(I4 ICell, I4 K) {
-             LocComputeBruntVaisalaFreqLinear(LocBruntVaisalaFreq, ICell, K,
-                                     SpecVol);
+          "eos-linear", {NCellsAll, NChunks},
+          KOKKOS_LAMBDA(I4 ICell, I4 KChunk) {
+             LocComputeBruntVaisalaFreqLinear(LocBruntVaisalaFreq, ICell, KChunk,
+                                     SpecVol, ZMid);
           });
    } else if (EosChoice == EosType::Teos10Eos) {
       parallelFor(
-          "eos-teos10", {NCellsAll, NVertLevels},
-          KOKKOS_LAMBDA(I4 ICell, I4 K) {
-             LocComputeBruntVaisalaFreqTeos10(LocBruntVaisalaFreq, ICell, K,
+          "eos-teos10", {NCellsAll, NChunks},
+          KOKKOS_LAMBDA(I4 ICell, I4 KChunk) {
+             LocComputeBruntVaisalaFreqTeos10(LocBruntVaisalaFreq, ICell, KChunk,
                                      ConservTemp, AbsSalinity, Pressure,
                                      SpecVol);
           });
