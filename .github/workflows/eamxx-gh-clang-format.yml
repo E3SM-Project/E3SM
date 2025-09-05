@@ -8,6 +8,7 @@ on:
     paths:
       - 'components/eamxx/**/*.cpp'
       - 'components/eamxx/**/*.hpp'
+      - .github/workflows/eamxx-gh-clang-format.yml
 
   # Manual run
   workflow_dispatch:
