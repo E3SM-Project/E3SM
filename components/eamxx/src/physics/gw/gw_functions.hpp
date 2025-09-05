@@ -555,11 +555,44 @@ struct Functions
     const uview_1d<Spack>& yv,
     const uview_1d<Spack>& c);
 
+  KOKKOS_FUNCTION
+  static void vd_lu_decomp(
+    // Inputs
+    const Int& pver,
+    const uview_1d<const Real>& ksrf,
+    const uview_1d<const Real>& kv,
+    const uview_1d<const Real>& tmpi,
+    const uview_1d<const Real>& rpdel,
+    const Real& ztodt,
+    const Real& gravit,
+    const uview_1d<const Real>& cc_top,
+    const Int& ntop,
+    const Int& nbot,
+    const uview_1d<const Real>& cpairv,
+    // Outputs
+    const uview_1d<Real>& decomp_ca,
+    const uview_1d<Real>& decomp_cc,
+    const uview_1d<Real>& decomp_dnom,
+    const uview_1d<Real>& decomp_ze);
+
+  KOKKOS_FUNCTION
+  static void vd_lu_solve(
+    // Inputs
+    const Int& pver,
+    const uview_1d<const Real>& decomp_ca,
+    const uview_1d<const Real>& decomp_cc,
+    const uview_1d<const Real>& decomp_dnom,
+    const uview_1d<const Real>& decomp_ze,
+    const Int& ntop,
+    const Int& nbot,
+    const uview_1d<const Real>& cd_top,
+    // Inputs/Outputs
+    const uview_1d<Real>& q);
+
   //
   // --------- Members ---------
   //
   inline static GwCommonInit s_common_init;
-
 }; // struct Functions
 
 } // namespace gw
@@ -588,5 +621,7 @@ struct Functions
 # include "impl/gw_gw_diff_tend_impl.hpp"
 # include "impl/gw_gw_oro_src_impl.hpp"
 # include "impl/gw_gw_common_init_impl.hpp"
+# include "impl/gw_vd_lu_decomp_impl.hpp"
+# include "impl/gw_vd_lu_solve_impl.hpp"
 #endif // GPU && !KOKKOS_ENABLE_*_RELOCATABLE_DEVICE_CODE
 #endif // P3_FUNCTIONS_HPP

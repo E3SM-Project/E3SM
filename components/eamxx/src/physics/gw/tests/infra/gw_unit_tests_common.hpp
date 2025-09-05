@@ -120,6 +120,8 @@ struct UnitWrap {
     struct TestGwEdiff;
     struct TestGwDiffTend;
     struct TestGwOroSrc;
+    struct TestVdLuDecomp;
+    struct TestVdLuSolve;
   }; // UnitWrap
 };
 

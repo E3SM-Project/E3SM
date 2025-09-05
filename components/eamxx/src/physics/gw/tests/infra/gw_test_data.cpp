@@ -76,6 +76,9 @@ void gw_oro_init_c();
 
 void gw_oro_src_c(Int ncol, Real* u, Real* v, Real* t, Real* sgh, Real* pmid, Real* pint, Real* dpm, Real* zm, Real* nm, Int* src_level, Int* tend_level, Real* tau, Real* ubm, Real* ubi, Real* xv, Real* yv, Real* c);
 
+void vd_lu_decomp_c(Int ncol, Real* ksrf, Real* kv, Real* tmpi, Real* rpdel, Real ztodt, Real gravit, Real* cc_top, Int ntop, Int nbot, Real* decomp_ca, Real* decomp_cc, Real* decomp_dnom, Real* decomp_ze, Real* cpairv);
+
+void vd_lu_solve_c(Int ncol, Real* q, Real* decomp_ca, Real* decomp_cc, Real* decomp_dnom, Real* decomp_ze, Int ntop, Int nbot, Real* cd_top);
 } // extern "C" : end _c decls
 
 // Wrapper around gw_init
@@ -721,6 +724,22 @@ void gw_oro_src(GwOroSrcData& d)
   gw_oro_init_c();
   d.transition<ekat::TransposeDirection::c2f>();
   gw_oro_src_c(d.ncol, d.u, d.v, d.t, d.sgh, d.pmid, d.pint, d.dpm, d.zm, d.nm, d.src_level, d.tend_level, d.tau, d.ubm, d.ubi, d.xv, d.yv, d.c);
+  d.transition<ekat::TransposeDirection::f2c>();
+}
+
+void vd_lu_decomp(VdLuDecompData& d)
+{
+  gw_init(d.init);
+  d.transition<ekat::TransposeDirection::c2f>();
+  vd_lu_decomp_c(d.ncol, d.ksrf, d.kv, d.tmpi, d.rpdel, d.ztodt, GWC::gravit, d.cc_top, d.ntop, d.nbot, d.decomp_ca, d.decomp_cc, d.decomp_dnom, d.decomp_ze, d.cpairv);
+  d.transition<ekat::TransposeDirection::f2c>();
+}
+
+void vd_lu_solve(VdLuSolveData& d)
+{
+  gw_init(d.init);
+  d.transition<ekat::TransposeDirection::c2f>();
+  vd_lu_solve_c(d.ncol, d.q, d.decomp_ca, d.decomp_cc, d.decomp_dnom, d.decomp_ze, d.ntop, d.nbot, d.cd_top);
   d.transition<ekat::TransposeDirection::f2c>();
 }
 
