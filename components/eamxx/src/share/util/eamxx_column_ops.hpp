@@ -133,8 +133,10 @@ public:
   }
 
   // Given input x, compute adjacent increment dx via fwd difference dX(i)=x(i+1)-x(i).
-  // NOTE: we ask for x_scalar_len since x may not be a view (e.g., a lambda). Also,
-  // we ask for the SCALAR length (i.e., without any simd type) so that we can correctly
+  // NOTE: we ask for x_scalar_len since x may not be a view (e.g., a lambda). And since
+  // the output view may have a size larger than what is actually needed (e.g., recycling
+  // another scratch view), we cannot rely on dx.size().
+  // Also, we ask for the SCALAR length (i.e., without any simd type) so that we can correctly
   // deduce what the length of the loop is
   template<CombineMode CM = CombineMode::Replace, typename InputProvider, typename ScalarT, typename MT>
   KOKKOS_INLINE_FUNCTION
@@ -155,7 +157,12 @@ public:
     team_parallel_for(team,dx_len,lambda);
   }
 
-  // Compute adjacent averages
+  // Compute adjacent averages y(i) = (x(i)+x(i+1))/2
+  // NOTE: we ask for x_scalar_len since x may not be a view (e.g., a lambda). And since
+  // the output view may have a size larger than what is actually needed (e.g., recycling
+  // another scratch view), we cannot rely on dx.size().
+  // Also, we ask for the SCALAR length (i.e., without any simd type) so that we can correctly
+  // deduce what the length of the loop is
   template<CombineMode CM = CombineMode::Replace, typename InputProvider, typename ScalarT, typename MT>
   KOKKOS_INLINE_FUNCTION
   static void
