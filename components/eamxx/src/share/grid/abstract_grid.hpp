@@ -175,6 +175,12 @@ public:
   // view returned by this method.
   std::vector<gid_type> get_unique_gids () const;
 
+  // Get the IO auxiliary grid. If set, IO will attempt to remap data to this aux grid
+  // before writing to file. This is mainly used by the dyn grid in order to remap
+  // to the physics_gll grid (to save on storage)
+  std::shared_ptr<AbstractGrid> get_io_aux_grid() const { return m_io_aux_grid; }
+  void set_io_aux_grid (const std::shared_ptr<AbstractGrid>& io_aux_grid) { m_io_aux_grid = io_aux_grid; }
+
   // For each entry in the input list of GIDs, retrieve the process id that owns it
   std::vector<int> get_owners (const gid_view_h& gids) const;
   std::vector<int> get_owners (const std::vector<gid_type>& gids) const {
@@ -250,6 +256,8 @@ protected:
   // The fcn is_unique is expensive, so we lazy init this at the first call.
   mutable bool m_is_unique;
   mutable bool m_is_unique_computed = false;
+
+  std::shared_ptr<AbstractGrid> m_io_aux_grid;
 
   // The map lid->idx
   Field     m_lid_to_idx;

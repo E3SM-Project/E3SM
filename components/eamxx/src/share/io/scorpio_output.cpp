@@ -89,7 +89,6 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
 
   // By default, IO is done directly on the field mgr grid
   auto fm_grid = field_mgr->get_grids_manager()->get_grid(grid_name);
-  std::string io_grid_name = fm_grid->name();
   std::vector<std::string> field_specs; // Raw field specifications from YAML (may include aliases)
   
   if (params.isParameter("field_names")) {
@@ -112,12 +111,6 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
             field_specs.clear();
           }
         }
-
-        // Check if the user wants to remap fields on a different grid first
-        if (pl.isParameter("io_grid_name")) {
-          io_grid_name = pl.get<std::string>("io_grid_name");
-        }
-        break;
       }
     }
     EKAT_REQUIRE_MSG (grid_found,
@@ -155,7 +148,8 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
   //   - online remapping which is setup using the create_remapper function
   const bool use_vertical_remap_from_file = params.isParameter("vertical_remap_file");
   const bool use_horiz_remap_from_file = params.isParameter("horiz_remap_file");
-  const bool use_online_remapper = io_grid_name!=fm_grid->name();
+  const bool use_native_grid = params.isParameter("use_native_grid") && params.get<bool>("use_native_grid");
+  const bool use_online_remapper = not use_native_grid and fm_grid->get_io_aux_grid();
   if (use_online_remapper) {
     EKAT_REQUIRE_MSG(!use_vertical_remap_from_file and !use_horiz_remap_from_file,
         "[AtmosphereOutput] Error! Online Dyn->PhysGLL remapping not supported along with vertical and/or horizontal remapping from file");
@@ -236,7 +230,7 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
       m_horiz_remapper = std::make_shared<CoarseningRemapper>(grid_after_vr,horiz_remap_file,true);
     } else {
       // Construct a generic remapper (likely, Dyn->PhysicsGLL)
-      grid_after_hr = gm->get_grid(io_grid_name);
+      grid_after_hr = fm_grid->get_io_aux_grid();
       m_horiz_remapper = gm->create_remapper(grid_after_vr,grid_after_hr);
     }
 
