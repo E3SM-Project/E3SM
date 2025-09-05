@@ -8,29 +8,30 @@
 namespace scream
 {
 // =========================================================================================
-void IOPForcing::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
+void
+IOPForcing::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 {
   using namespace ekat::units;
 
-  m_grid = grids_manager->get_grid("physics");
-  const auto& grid_name = m_grid->name();
+  m_grid                = grids_manager->get_grid("physics");
+  const auto &grid_name = m_grid->name();
 
-  m_num_cols = m_grid->get_num_local_dofs(); // Number of columns on this rank
-  m_num_levs = m_grid->get_num_vertical_levels();  // Number of levels per column
+  m_num_cols = m_grid->get_num_local_dofs();      // Number of columns on this rank
+  m_num_levs = m_grid->get_num_vertical_levels(); // Number of levels per column
 
   // Define the different field layouts that will be used for this process
   FieldLayout scalar2d     = m_grid->get_2d_scalar_layout();
   FieldLayout scalar3d_mid = m_grid->get_3d_scalar_layout(true);
-  FieldLayout vector3d_mid = m_grid->get_3d_vector_layout(true,2);
+  FieldLayout vector3d_mid = m_grid->get_3d_vector_layout(true, 2);
 
   constexpr int pack_size = Pack::n;
 
   add_field<Required>("ps", scalar2d, Pa, grid_name);
 
-  add_field<Updated>("horiz_winds", vector3d_mid, m/s, grid_name, pack_size);
+  add_field<Updated>("horiz_winds", vector3d_mid, m / s, grid_name, pack_size);
   add_field<Updated>("T_mid", scalar3d_mid, K, grid_name, pack_size);
 
-  add_tracer<Updated>("qv", m_grid, kg/kg, pack_size);
+  add_tracer<Updated>("qv", m_grid, kg / kg, pack_size);
   add_group<Updated>("tracers", grid_name, pack_size, MonolithicAlloc::Required);
 
   // Sanity check that iop data manager is setup by driver
