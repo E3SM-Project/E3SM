@@ -355,7 +355,7 @@
       </mach>
     </grid>
   <grid name="a%ne30np4.pg2_l%r05_oi%IcoswISC30E3r5_r%r05_g%mpas.gis20km_w%null_z%null_m%IcoswISC30E3r5">
-    <mach name="chrysalis|pm-cpu|alvarez">
+    <mach name="chrysalis|pm-cpu|muller-cpu|alvarez-cpu">
       <pes compset="1850_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_MALI_SWAV" pesize="any">
         <comment>GIS 20km (low-res) testing config</comment>
         <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>

@@ -4,7 +4,6 @@ if (COMP_NAME STREQUAL gptl)
 endif()
 string(APPEND CMAKE_C_FLAGS_RELEASE " -O2 -g")
 string(APPEND CMAKE_Fortran_FLAGS_RELEASE " -O2 -g")
-
 set(MPICC "cc")
 set(MPICXX "CC")
 set(MPIFC "ftn")
