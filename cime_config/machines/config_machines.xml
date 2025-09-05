@@ -233,9 +233,9 @@
       </modules>
 
       <modules compiler="gnu">
-        <command name="load">PrgEnv-gnu/8.3.3</command>
-        <command name="load">gcc/11.2.0</command>
-        <command name="load">cray-libsci/23.02.1.1</command>
+        <command name="load">PrgEnv-gnu/8.5.0</command>
+        <command name="load">gcc-native/12.3</command>
+        <command name="load">cray-libsci/23.12.5</command>
       </modules>
 
       <modules compiler="intel">
@@ -245,23 +245,33 @@
 
       <modules compiler="nvidia">
         <command name="load">PrgEnv-nvidia</command>
-        <command name="load">nvidia/22.7</command>
-        <command name="load">cray-libsci/23.02.1.1</command>
+        <command name="load">nvidia/24.5</command>
+        <command name="load">cray-libsci/23.12.5</command>
       </modules>
 
       <modules compiler="amdclang">
         <command name="load">PrgEnv-aocc</command>
-        <command name="load">aocc/4.0.0</command>
-        <command name="load">cray-libsci/23.02.1.1</command>
+        <command name="load">aocc/4.1.0</command>
+        <command name="load">cray-libsci/23.12.5</command>
       </modules>
 
-      <modules>
+      <modules compiler="intel">
         <command name="load">craype-accel-host</command>
-        <command name="load">craype/2.7.30</command>
+        <command name="load">craype/2.7.20</command>
         <command name="load">cray-mpich/8.1.27</command>
         <command name="load">cray-hdf5-parallel/1.12.2.3</command>
         <command name="load">cray-netcdf-hdf5parallel/4.9.0.3</command>
         <command name="load">cray-parallel-netcdf/1.12.3.3</command>
+        <command name="load">cmake/3.24.3</command>
+      </modules>
+
+      <modules compiler="!intel">
+        <command name="load">craype-accel-host</command>
+        <command name="load">craype/2.7.30</command>
+        <command name="load">cray-mpich/8.1.28</command>
+        <command name="load">cray-hdf5-parallel/1.12.2.9</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.9.0.9</command>
+        <command name="load">cray-parallel-netcdf/1.12.3.9</command>
         <command name="load">cmake/3.24.3</command>
       </modules>
     </module_system>
