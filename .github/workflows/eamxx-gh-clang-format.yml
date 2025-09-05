@@ -108,19 +108,44 @@ jobs:
                "execute \`git apply <patch-file>\` from your local E3SM " \
                "branch." >> "${GITHUB_STEP_SUMMARY}"
           echo "Then commit the changes and push to your remote branch." >> "${GITHUB_STEP_SUMMARY}"
+          echo "" >> "${GITHUB_STEP_SUMMARY}"
+          echo "For diffs with ***fewer than 10 files***, we also include the text of " \
+               "the patch file in a collapsed section, below."  >> "${GITHUB_STEP_SUMMARY}"
+          if [[ $(wc -l < diffiles.txt) -lt 10 ]]; then
+            echo "<details>" >> "${GITHUB_STEP_SUMMARY}"
+            echo "" >> "${GITHUB_STEP_SUMMARY}"
+            echo "<summary>" >> "${GITHUB_STEP_SUMMARY}"
+            echo "### Contents of \`clang-format-patch.diff\`" >> "${GITHUB_STEP_SUMMARY}"
+            echo "</summary>" >> "${GITHUB_STEP_SUMMARY}"
+            echo "To apply this version of the patch, save the text to a local file, " \
+                 "and \`git apply <patch-file>\`, etc., as above." >> "${GITHUB_STEP_SUMMARY}"
+            echo "" >> "${GITHUB_STEP_SUMMARY}"
+            echo "\`\`\`" >> "${GITHUB_STEP_SUMMARY}"
+            cat clang-format-patch.diff >> "${GITHUB_STEP_SUMMARY}"
+            echo "\`\`\`" >> "${GITHUB_STEP_SUMMARY}"
+            echo "" >> "${GITHUB_STEP_SUMMARY}"
+            echo "</details>" >> "${GITHUB_STEP_SUMMARY}"
+          fi
         else
           echo "status_fail=false" >> "${GITHUB_ENV}"
           echo "## Status: \`clang-format\` Check Passed!" > "${GITHUB_STEP_SUMMARY}"
         fi
     - name: diff format changes
-      run: git diff > "components/eamxx/clang-format-patch.diff"
+      run: |
+        d_str=$(date +"%Y%m%d%H%M%S")
+        fname="clang-format-patch_${{ github.event.pull_request.number || github.event_name }}-${d_str}.diff"
+        echo "fname=${fname}" >> "${GITHUB_ENV}"
+        git diff > "components/eamxx/${fname}"
+    - name: debug diff
+      run: |
+        echo "${fname}"
+        tail -10 "components/eamxx/${fname}"
     - name: upload diff patch
       if: ${{ env.status_fail == 'true' }}
       uses: actions/upload-artifact@v4
       with:
-        name: clang-format-patch_${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}.diff
-        path: |
-          components/eamxx/clang-format-patch.diff
+        name: ${{ env.fname }}
+        path: "components/eamxx/${{ env.fname }}"
     - name: return pass-fail status
       run: |
         if [[ ${status_fail} = true ]]; then
