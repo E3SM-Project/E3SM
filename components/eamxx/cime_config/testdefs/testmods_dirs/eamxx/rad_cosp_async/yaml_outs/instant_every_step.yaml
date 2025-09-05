@@ -1,0 +1,16 @@
+%YAML 1.1
+---
+filename_prefix: eamxx_output.decadal.instant_every_step.h
+iotype: pnetcdf
+averaging_type: instant
+max_snapshots_per_file: 5
+fields:
+  physics_pg2:
+    field_names:
+    - isccp_ctptau
+    - modis_ctptau
+    - misr_cthtau
+    - isccp_cldtot
+output_control:
+  frequency: 1
+  frequency_units: nsteps
