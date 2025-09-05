@@ -32,8 +32,7 @@ class MassAndEnergyConservationCheck: public PropertyCheck {
 public:
 
   // Constructor
-  MassAndEnergyConservationCheck (const ekat::Comm& comm,
-                                        const std::shared_ptr<const AbstractGrid>& grid,
+  MassAndEnergyConservationCheck (      const std::shared_ptr<const AbstractGrid>& grid,
                                         const Real    mass_error_tolerance,
                                         const Real    energy_error_tolerance,
                                         const Field&  pseudo_density_ptr,
@@ -146,6 +145,8 @@ protected:
   view_1d<Real> m_current_mass;
 
   view_1d<Real> m_energy_change;
+
+  view_2d<Real> m_sendbuff;
 }; // class EnergyConservationCheck
 
 } // namespace scream

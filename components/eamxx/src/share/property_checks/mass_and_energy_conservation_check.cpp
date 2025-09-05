@@ -11,8 +11,7 @@ namespace scream
 {
 
 MassAndEnergyConservationCheck::
-MassAndEnergyConservationCheck (const ekat::Comm& comm,
-                                const std::shared_ptr<const AbstractGrid>& grid,
+MassAndEnergyConservationCheck (const std::shared_ptr<const AbstractGrid>& grid,
                                 const Real          mass_error_tolerance,
                                 const Real          energy_error_tolerance,
                                 const Field&        pseudo_density,
@@ -28,8 +27,8 @@ MassAndEnergyConservationCheck (const ekat::Comm& comm,
                                 const Field&        water_flux,
                                 const Field&        ice_flux,
                                 const Field&        heat_flux)
-  : m_comm (comm)
-  , m_grid (grid)
+  : m_grid (grid)
+  , m_comm (grid->get_comm() )
   , m_dt (std::nan(""))
   , m_mass_tol (mass_error_tolerance)
   , m_energy_tol (energy_error_tolerance)
@@ -41,6 +40,8 @@ MassAndEnergyConservationCheck (const ekat::Comm& comm,
   m_current_energy = view_1d<Real> ("current_total_energy", m_num_cols);
 
   m_energy_change = view_1d<Real> ("energy change fixer", m_num_cols);
+
+  m_sendbuff = view_2d<Real> ("sendbuff for fixer", m_num_cols, 2);
 
   m_fields["pseudo_density"] = pseudo_density;
   m_fields["ps"]             = ps;
@@ -305,6 +306,10 @@ PropertyCheck::ResultAndMsg MassAndEnergyConservationCheck::check() const
 void MassAndEnergyConservationCheck::global_fixer(const bool & print_debug_info)
 {
   using TPF = ekat::TeamPolicyFactory<DefaultDevice::execution_space>;
+
+  //template <typename T> using FA2 = Kokkos::View<T**, Kokkos::LayoutLeft, Kokkos::HostSpace>;
+  //const FA2<Real> 
+
   const auto ncols = m_num_cols;
   const auto nlevs = m_num_levs;
 
@@ -339,6 +344,7 @@ void MassAndEnergyConservationCheck::global_fixer(const bool & print_debug_info)
   auto area = m_grid->get_geometry_data("area").clone();
   auto area_view = area.get_view<const Real*>();
 
+#if 0  
   //reprosum vars
   const Real* send;
   Real recv;
@@ -392,6 +398,66 @@ void MassAndEnergyConservationCheck::global_fixer(const bool & print_debug_info)
   eamxx_repro_sum(send, &recv, nlocal, ncount, MPI_Comm_c2f(m_comm.mpi_comm()));
   field_version_s1.sync_to_dev();
   m_glob_average_fixer = recv;
+#endif
+
+
+
+
+
+  const auto sendbuff = m_sendbuff;
+   
+  const auto howmany = 2;
+  //reprosum vars
+  Real recv2[howmany];
+  Int nlocal = ncols;
+  Int ncount = howmany;
+
+  auto energy_change = m_energy_change;
+  auto current_energy = m_current_energy;
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
+    const int i = team.league_rank();
+    const auto pseudo_density_i = ekat::subview(pseudo_density, i);
+
+    // Calculate total gas mass (sum dp, no water loading)
+    sendbuff(i,0) = compute_gas_mass_on_column(team, nlevs, pseudo_density_i) * area_view(i);
+
+    const auto T_mid_i          = ekat::subview(T_mid, i);
+    const auto horiz_winds_i    = ekat::subview(horiz_winds, i);
+    const auto qv_i             = ekat::subview(qv, i);
+    const auto qc_i             = ekat::subview(qc, i);
+    const auto qr_i             = ekat::subview(qr, i);
+    const auto qi_i             = ekat::subview(qi, i);
+
+    // Calculate total energy
+    const auto new_energy_for_fixer = compute_total_energy_on_column(team, nlevs, pseudo_density_i, T_mid_i, horiz_winds_i,
+                                                   qv_i, qc_i, qr_i, ps(i), phis(i));
+    Kokkos::single(Kokkos::PerTeam(team),[&]() {
+      energy_change(i) = compute_energy_boundary_flux_on_column(vapor_flux(i), water_flux(i), ice_flux(i), heat_flux(i))*dt;
+      sendbuff(i,1) = (current_energy(i)-new_energy_for_fixer-energy_change(i)) * area_view(i);
+    });
+  });
+  Kokkos::fence();
+
+  //get host view of sendbuff
+  auto sendbuff_h = create_mirror_view(sendbuff);
+  Kokkos::deep_copy(sendbuff_h,sendbuff);
+
+  eamxx_repro_sum(sendbuff_h.data(), recv2, nlocal, ncount, MPI_Comm_c2f(m_comm.mpi_comm()));
+
+  m_total_gas_mass_after = recv2[0];
+  m_glob_average_fixer = recv2[1];
+
+
+
+
+
+
+/////////////////
+
+  const Real* send;
+  Real recv;
+  nlocal = ncols;
+  ncount = 1;
 
   if(print_debug_info) {
     //total energy needed for relative error
