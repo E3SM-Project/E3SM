@@ -56,10 +56,11 @@ jobs:
       # this is the best option because github.event_name could be something
       # like "synchronization," which falls under the umbrella of PR triggers
       if: ${{ github.event.pull_request }}
+      shell: bash -leo pipefail {0}
       run: |
         flist="${{ steps.changed-files.outputs.all_changed_files }}"
         run_cfmt () {
-          clang-format-18 -i --style=file:"components/eamxx/.clang-format" $1
+          clang-format -i --style=file:"components/eamxx/.clang-format" $1
         }
         for f in ${flist[@]}; do
           echo "--Running clang-format on ${f}--"
@@ -70,11 +71,12 @@ jobs:
       # Note: different from above, this trigger does not result in a variable
       # github.event.workflow_dispatch, but this will always be the event_name
       if: ${{ github.event_name == 'workflow_dispatch' }}
+      shell: bash -leo pipefail {0}
       run: |
         # when it's a manual trigger, we'll choose to consider all cpp/hpp files
         flist=($(find components/eamxx -depth -name "*.*pp"))
         run_cfmt () {
-          clang-format-18 -i --style=file:"components/eamxx/.clang-format" $1
+          clang-format -i --style=file:"components/eamxx/.clang-format" $1
         }
         for f in ${flist[@]}; do
           echo "--Running clang-format on ${f}--"
