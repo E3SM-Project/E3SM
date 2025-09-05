@@ -21,6 +21,8 @@ set(GW_TESTS_SRCS
     gw_gw_ediff_tests.cpp
     gw_gw_diff_tend_tests.cpp
     gw_gw_oro_src_tests.cpp
+    gw_vd_lu_decomp_tests.cpp
+    gw_vd_lu_solve_tests.cpp
 ) # GW_TESTS_SRCS
 
 # All tests should understand the same baseline args
