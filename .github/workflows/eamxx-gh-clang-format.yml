@@ -42,11 +42,13 @@ jobs:
       with:
         files: 'components/eamxx/**/*.{cpp,hpp}'
         separator: " "
-    - name: create conda env
-      run: |
-        conda create -n clang-format
-        conda activate clang-format
-        conda install clang-format
+    - name: setup micromamba env
+      uses: mamba-org/setup-micromamba@v2
+      with:
+        init-shell: bash
+        environment-name: clang-format
+        create-args:
+          clang-format=20.1.8
     - name: run formatter looping over PR-changed files, then diff -  PR trigger
       # Note: this (json) variable contains a handful of sub-fields, but its
       # existence encapsulates all of the PR-related triggers
@@ -54,7 +56,6 @@ jobs:
       # like "synchronization," which falls under the umbrella of PR triggers
       if: ${{ github.event.pull_request }}
       run: |
-        conda activate clang-format
         flist="${{ steps.changed-files.outputs.all_changed_files }}"
         run_cfmt () {
           clang-format-18 -i --style=file:"components/eamxx/.clang-format" $1
@@ -69,7 +70,6 @@ jobs:
       # github.event.workflow_dispatch, but this will always be the event_name
       if: ${{ github.event_name == 'workflow_dispatch' }}
       run: |
-        conda activate clang-format
         # when it's a manual trigger, we'll choose to consider all cpp/hpp files
         flist=($(find components/eamxx -depth -name "*.*pp"))
         run_cfmt () {
