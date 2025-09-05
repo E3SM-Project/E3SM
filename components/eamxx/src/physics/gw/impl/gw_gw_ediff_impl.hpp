@@ -57,11 +57,16 @@ void Functions<S,D>::gw_ediff(
   Kokkos::parallel_for(
     Kokkos::TeamVectorRange(team, 0, pver), [&] (const int k) {
       egwdffi(k) = 0;
+      egwdffm(k) = 0;
+      tmpi2(k)   = 0;
+      if (k == pver-1) {
+        egwdffm(k+1) = 0;
+        tmpi2(k+1)   = 0;
+      }
   });
 
   // Calculate effective diffusivity at midpoints.
   const int num_pgwv = 2*pgwv + 1;
-  Kokkos::deep_copy(egwdffm, 0);
   Kokkos::parallel_for(
     Kokkos::TeamVectorRange(team, num_pgwv * (ktop+1), num_pgwv * kbot), [&] (const int k_pgwv) {
       const int k = k_pgwv / num_pgwv;
@@ -70,7 +75,6 @@ void Functions<S,D>::gw_ediff(
       const Real add = prndl * half * gwut(k,l) * (c(l)-ubm(k)) / bfb_square(nm(k));
       Kokkos::atomic_add(&egwdffm(k), add);
   });
-
 
   // Interpolate effective diffusivity to interfaces.
   // Assume zero at top and bottom interfaces.
@@ -92,7 +96,6 @@ void Functions<S,D>::gw_ediff(
   });
 
   // Calculate dt * (gravit*rho)^2/dp at interior interfaces.
-  Kokkos::deep_copy(tmpi2, 0);
   Kokkos::parallel_for(
     Kokkos::TeamVectorRange(team, ktop+2, kbot+1), [&] (const int k) {
       tmpi2(k) = dt * bfb_square(C::gravit * rho(k)) / (pmid(k) - pmid(k-1));

@@ -687,7 +687,7 @@ void gw_ediff(GwEdiffData& d)
     GWF::gw_ediff(
       team,
       wsm.get_workspace(team),
-      pver, pgwv, ktop, kbot,
+      pver, pgwv, kbot, ktop,
       tend_level(col),
       dt,
       gwut_c,
