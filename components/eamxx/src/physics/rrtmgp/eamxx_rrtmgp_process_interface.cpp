@@ -209,7 +209,7 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   // 0.67 micron and 10.5 micron optical depth (needed for COSP)
   add_field<Computed>("dtau067"       , scalar3d_mid, nondim, grid_name);
   add_field<Computed>("dtau105"       , scalar3d_mid, nondim, grid_name);
-  add_field<Computed>("sunlit"        , scalar2d    , nondim, grid_name);
+  add_field<Computed>("sunlit_mask"   , scalar2d    , nondim, grid_name);
   add_field<Computed>("cldfrac_rad"   , scalar3d_mid, nondim, grid_name);
   // Cloud-top diagnostics following AeroCom recommendation
   add_field<Computed>("T_mid_at_cldtop", scalar2d, K, grid_name);
@@ -612,7 +612,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
   // Outputs for COSP
   auto d_dtau067 = get_field_out("dtau067").get_view<Real**>();
   auto d_dtau105 = get_field_out("dtau105").get_view<Real**>();
-  auto d_sunlit = get_field_out("sunlit").get_view<Real*>();
+  auto d_sunlit = get_field_out("sunlit_mask").get_view<Real*>();
 
   Kokkos::deep_copy(d_dtau067,0.0);
   Kokkos::deep_copy(d_dtau105,0.0);

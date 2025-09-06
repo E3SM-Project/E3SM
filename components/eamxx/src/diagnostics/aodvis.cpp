@@ -31,7 +31,7 @@ set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 
   // The fields required for this diagnostic to be computed
   add_field<Required>("aero_tau_sw", vector3d, nondim, grid_name);
-  add_field<Required>("sunlit",      scalar2d, nondim, grid_name);
+  add_field<Required>("sunlit_mask", scalar2d, nondim, grid_name);
 
   // Construct and allocate the aodvis field
   FieldIdentifier fid(name(), scalar2d, nondim, grid_name);
@@ -41,21 +41,7 @@ set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 }
 
 void AODVis::initialize_impl(const RunType /*run_type*/) {
-  // we use initialize_impl to primarily deal with the mask
-  using namespace ekat::units;
-  using namespace ShortFieldTagsNames;
-
-  auto nondim = ekat::units::Units::nondimensional();
-  const auto &grid_name =
-      m_diagnostic_output.get_header().get_identifier().get_grid_name();
-
-  std::string mask_name = name() + " mask";
-  FieldLayout mask_layout({COL}, {m_ncols});
-  FieldIdentifier mask_fid(mask_name, mask_layout, nondim, grid_name);
-  Field diag_mask(mask_fid);
-  diag_mask.allocate_view();
-
-  m_diagnostic_output.get_header().set_extra_data("mask_field", diag_mask);
+  m_diagnostic_output.get_header().set_extra_data("mask_field", get_field_in("sunlit_mask"));
 }
 
 void AODVis::compute_diagnostic_impl() {
@@ -67,13 +53,10 @@ void AODVis::compute_diagnostic_impl() {
   constexpr auto fill_value = constants::fill_value<Real>;
 
   const auto aod     = m_diagnostic_output.get_view<Real *>();
-  const auto mask    = m_diagnostic_output.get_header()
-                        .get_extra_data<Field>("mask_field")
-                        .get_view<Real *>();
   const auto tau_vis = get_field_in("aero_tau_sw")
                            .subfield(1, m_vis_bnd)
                            .get_view<const Real **>();
-  const auto sunlit = get_field_in("sunlit").get_view<const Real *>();
+  const auto sunlit = get_field_in("sunlit_mask").get_view<const Real *>();
 
   const auto num_levs = m_nlevs;
   const auto policy   = TPF::get_default_team_policy(m_ncols, m_nlevs);
@@ -82,11 +65,9 @@ void AODVis::compute_diagnostic_impl() {
         const int icol = team.league_rank();
         if(sunlit(icol) == 0.0) {
           aod(icol) = fill_value;
-          Kokkos::single(Kokkos::PerTeam(team), [&] { mask(icol) = 0; });
         } else {
           auto tau_icol = ekat::subview(tau_vis, icol);
           aod(icol)     = RU::view_reduction(team, 0, num_levs, tau_icol);
-          Kokkos::single(Kokkos::PerTeam(team), [&] { mask(icol) = 1; });
         }
       });
 }
