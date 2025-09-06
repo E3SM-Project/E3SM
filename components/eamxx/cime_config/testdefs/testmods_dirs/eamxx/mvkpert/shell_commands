@@ -6,7 +6,7 @@ atmchange=$cime_root/../components/eamxx/scripts/atmchange
 case_name=$(./xmlquery --value CASE)
 
 # Change run length
-./xmlchange RUN_STARTDATE="1994-10-01"
+./xmlchange RUN_STARTDATE="1995-01-01"
 
 # Turn on budget reporting
 ./xmlchange BUDGETS=TRUE
