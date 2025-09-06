@@ -153,7 +153,6 @@ module ELMFatesInterfaceMod
    use FatesInterfaceTypesMod,   only : hlm_num_luh2_states
    use FatesIOVariableKindMod, only : group_dyna_simple, group_dyna_complx
    use PRTGenericMod         , only : num_elements
-   use FatesPatchMod         , only : fates_patch_type
    use FatesDispersalMod     , only : lneighbors, dispersal_type, IsItDispersalTime
    use FatesInterfaceTypesMod, only : hlm_stepsize, hlm_current_day
    use EDMainMod             , only : ed_ecosystem_dynamics
@@ -220,16 +219,25 @@ module ELMFatesInterfaceMod
 
    type, public :: f2hmap_type
 
-      ! This is the associated column index of each FATES site
+      ! HLM patch index to FATES patchno index mapping, by site
+      integer, allocatable :: hlm_patch_index(:,:)
+      
+      ! This is the associated column index of each FATES site - to be deprecated
       integer, allocatable :: fcolumn (:)
 
-      ! This is the associated site index of any HLM columns
+      ! This is the associated site index of any HLM columns - to be deprecated
       ! This vector may be sparse, and non-sites have index 0
       integer, allocatable :: hsites  (:)
 
+      contains
+
+        procedure, public :: SetPatchIndex
+      !   procedure, public :: GetPatchIndex
+        procedure, public :: GetColumnIndex
+      !   procedure, public :: GetLandunitIndex
+
    end type f2hmap_type
-
-
+   
    type, public :: hlm_fates_interface_type
 
       ! See above for descriptions of the sub-types populated
@@ -255,6 +263,15 @@ module ELMFatesInterfaceMod
       ! Type structure that holds allocatable arrays for mpi-based seed dispersal
       type(dispersal_type) :: fates_seed
       
+      ! This is the array of pointer to the host land model data and its associated
+      ! common variable name
+      ! type(hlm_fates_api_var_type), allocatable :: bc_in(:)
+      ! type(hlm_fates_api_var_type), allocatable :: bc_out(:)
+
+      ! This is the number of HLM variables that are being passed in and out of FATES
+      integer, public :: num_hlmvar_in, num_hlmvar_out
+
+      
    contains
 
       procedure, public :: init
@@ -275,6 +292,7 @@ module ELMFatesInterfaceMod
       procedure, public :: Init2  ! Initialization after determining subgrid weights
       procedure, public :: InitAccBuffer ! Initialize any accumulation buffers
       procedure, public :: InitAccVars   ! Initialize any accumulation variables
+      procedure, public :: RegisterHLMInterfaceVariables
       procedure, public :: UpdateAccVars ! Update any accumulation variables
       procedure, public :: UpdateLitterFluxes
       procedure, private :: init_history_io
@@ -285,6 +303,8 @@ module ELMFatesInterfaceMod
       procedure, public  :: WrapUpdateFatesRmean
       procedure, public  :: WrapGlobalSeedDispersal
       procedure, public  :: WrapUpdateFatesSeedInOut
+      ! procedure, public  :: WrapTransferBCIn
+      ! procedure, public  :: WrapTransferBCOut
 
    end type hlm_fates_interface_type
    
@@ -870,6 +890,7 @@ contains
       integer                                        :: nmaxcol
       integer                                        :: ndecomp
       integer                                        :: numg
+      integer                                        :: num_landunits_veg
 
       real(r8), allocatable :: landuse_pft_map(:,:,:)
       real(r8), allocatable :: landuse_bareground(:)
@@ -891,6 +912,7 @@ contains
          call DetermineGridCellNeighbors(lneighbors,this%fates_seed,numg)
       end if
 
+      ! Allocate fates interface and fates to HLM interfac vectors
       nclumps = get_proc_clumps()
       allocate(this%fates(nclumps))
       allocate(this%f2hmap(nclumps))
@@ -898,6 +920,9 @@ contains
       if(debug)then
          write(iulog,*) 'alm_fates%init():  allocating for ',nclumps,' threads'
       end if
+      
+      ! Initialize the fates to host land model API variable mapping
+      ! call this%InitAndSetAPIAssociation()
 
       ! Retrieve the landuse x pft static data if the optional switch has been set
       if (use_fates_fixed_biogeog .and. use_fates_luh) then
@@ -908,6 +933,9 @@ contains
 
       !$OMP PARALLEL DO PRIVATE (nc,bounds_clump,nmaxcol,s,c,l,g,collist,pi,pf,ft)
       do nc = 1,nclumps
+
+         ! Register HLM variables to the interface registry
+         call this%RegisterHLMInterfaceVariables(nc)
 
          call get_clump_bounds(nc, bounds_clump)
          nmaxcol = bounds_clump%endc - bounds_clump%begc + 1
@@ -920,33 +948,33 @@ contains
          ! Initialize all columns with a zero index, which indicates no FATES site
          this%f2hmap(nc)%hsites(:) = 0
 
+         ! Determine the number of FATES site based of the clumping
+         ! This assumes one site per landunit currently.
          s = 0
+         num_landunits_veg = 0
          do c = bounds_clump%begc,bounds_clump%endc
             l = col_pp%landunit(c)
+         ! do l = bounds_clump%begl,bounds_clump%endl
+         !    if (lun_pp%itype(l) == istsoil) then
 
-            ! These are the key constraints that determine if this column
-            ! will have a FATES site associated with it
+               ! num_landunits_veg = num_landunits_veg + 1
 
-            ! INTERF-TODO: WE HAVE NOT FILTERED OUT FATES SITES ON INACTIVE COLUMNS.. YET
-            ! NEED A RUN-TIME ROUTINE THAT CLEARS AND REWRITES THE SITE LIST
-
+               ! To be deprecated/refactored
             if ( (lun_pp%itype(l) == istsoil) .and. (col_pp%active(c)) ) then
                s = s + 1
                collist(s) = c
                this%f2hmap(nc)%hsites(c) = s
-               col_pp%is_fates(c) = .true.
+               col_pp%is_fates(c) = .true. 
 
                if(debug)then
-                  write(iulog,*) 'alm_fates%init(): thread',nc,': found column',c,'with lu',l
+                  ! write(iulog,*) 'alm_fates%init(): thread',nc,': found column',c,'with lu',l
                   write(iulog,*) 'LU type:', lun_pp%itype(l)
                end if
             endif
-
          enddo
 
-         if(debug)then
-           write(iulog,*) 'alm_fates%init(): thread',nc,': allocated ',s,' sites'
-         end if
+         ! TODO Add adjustment to fates calculation here based on multi-column FATES options
+         ! s = num_landunits_veg
 
          ! Allocate vectors that match FATES sites with HLM columns
          ! RGK: Sites and fcolumns are forced as args during clm_driv() as of 6/4/2016
@@ -961,11 +989,21 @@ contains
          ! Deallocate the temporary arrays
          deallocate(collist)
 
+         if(debug)then
+           write(iulog,*) 'alm_fates%init(): thread',nc,': allocated ',s,' sites'
+         end if
+
+         ! Allocate map from FATES patchno index to HLM patch index by site
+         allocate(this%f2hmap(nc)%hlm_patch_index(fates_maxPatchesperSite,s))
+
+         ! Populate the fates to hlm patch map
+         call this%f2hmap(nc)%SetPatchIndex(bounds_clump)
+
          ! Set the number of FATES sites
          this%fates(nc)%nsites = s
 
          ! Allocate the FATES sites
-         allocate (this%fates(nc)%sites(this%fates(nc)%nsites))
+         allocate(this%fates(nc)%sites(this%fates(nc)%nsites))
 
          ! Allocate the FATES boundary arrays (in)
          allocate(this%fates(nc)%bc_in(this%fates(nc)%nsites))
@@ -986,6 +1024,13 @@ contains
 
          do s = 1, this%fates(nc)%nsites
 
+            ! Allocate HLM-FATES mapping arrays
+            ! TODO: update this to be agnostic to fates column run mode
+            allocate(this%fates(nc)%sites(s)%column_map(1))
+            allocate(this%fates(nc)%sites(s)%patch_map(natpft_size))
+
+            ! TODO: Assign column_map and patch_map values
+
             c = this%f2hmap(nc)%fcolumn(s)
             this%fates(nc)%sites(s)%h_gid = c
 
@@ -994,7 +1039,7 @@ contains
             else
                ndecomp = 1
             end if
-
+            
             call allocate_bcin(this%fates(nc)%bc_in(s), col_pp%nlevbed(c), ndecomp, &
                                num_harvest_vars, num_landuse_state_vars, num_landuse_transition_vars, &
                                surfpft_lb, surfpft_ub)
@@ -1209,6 +1254,9 @@ contains
          endif
          gdp_lf_col = this%fates_fire_data_method%GetGDP()
       end if
+      
+      ! Transfer decomposition fluxes to the FATES patch data structure
+      ! call this%WrapTransferBCIn(nc)
 
       do s=1,this%fates(nc)%nsites
 
@@ -1234,11 +1282,7 @@ contains
          end if
 
          nlevsoil = this%fates(nc)%bc_in(s)%nlevsoil
-
-         ! Decomposition fluxes
-         this%fates(nc)%bc_in(s)%w_scalar_sisl(1:nlevsoil) = col_cf%w_scalar(c,1:nlevsoil)
-         this%fates(nc)%bc_in(s)%t_scalar_sisl(1:nlevsoil) = col_cf%t_scalar(c,1:nlevsoil)
-
+         
          ! Soil water
          this%fates(nc)%bc_in(s)%h2o_liqvol_sl(1:nlevsoil)  = &
                col_ws%h2osoi_vol(c,1:nlevsoil)
@@ -1554,8 +1598,7 @@ contains
 
        ! Canopy diagnostics for FATES
        call canopy_summarization(this%fates(nc)%nsites, &
-            this%fates(nc)%sites,  &
-            this%fates(nc)%bc_in)
+            this%fates(nc)%sites)
 
        ! Canopy diagnostic outputs for HLM, including LUC
        call update_hlm_dynamics(this%fates(nc)%nsites, &
@@ -1962,9 +2005,11 @@ contains
                   ! internally in fates dynamics as well.
 
                   call FluxIntoLitterPools(this%fates(nc)%sites(s), &
-                       this%fates(nc)%bc_in(s), &
-                       this%fates(nc)%bc_out(s))
+                       this%fates(nc)%bc_in(s), this%fates(nc)%bc_out(s))
+                       
                end do
+
+               ! call this%WrapTransferBCOut(nc, dtime)
 
                if(use_fates_sp)then
                   do s = 1,this%fates(nc)%nsites
@@ -2106,7 +2151,7 @@ contains
            call get_clump_bounds(nc, bounds_clump)
 
            do s = 1,this%fates(nc)%nsites
-              call init_site_vars(this%fates(nc)%sites(s),this%fates(nc)%bc_in(s),this%fates(nc)%bc_out(s) )
+              call init_site_vars(this%fates(nc)%sites(s),this%fates(nc)%bc_in(s) )
               call zero_site(this%fates(nc)%sites(s))
            end do
 
@@ -2288,9 +2333,6 @@ contains
                                               ! this is the order increment of patch
                                               ! on the site
       integer  :: nc                          ! clump index
-
-      type(fates_patch_type), pointer :: cpatch  ! c"urrent" patch  INTERF-TODO: SHOULD
-                                              ! BE HIDDEN AS A FATES PRIVATE
 
       associate( forc_solad => top_af_inst%solad, &
                  forc_solai => top_af_inst%solai, &
@@ -2720,7 +2762,6 @@ contains
     call  AccumulateFluxes_ED(this%fates(nc)%nsites,  &
                                this%fates(nc)%sites, &
                                this%fates(nc)%bc_in,  &
-                               this%fates(nc)%bc_out, &
                                dtime)
     return
  end subroutine wrap_accumulatefluxes
@@ -3604,6 +3645,64 @@ end subroutine wrap_update_hifrq_hist
    return
  end subroutine wrap_hydraulics_drive
 
+! ======================================================================================
+
+!  subroutine WrapTransferBCIn(this, nc)
+
+!    ! !DESCRIPTION:
+!    ! ---------------------------------------------------------------------------------
+!    ! This call passes the HLM inputs to FATES patch-level boundary conditions
+!    ! ---------------------------------------------------------------------------------
+
+!    ! !USES:
+!    !
+!    ! !ARGUMENTS:
+!    class(hlm_fates_interface_type), intent(inout) :: this
+!    integer, intent(in) :: nc 
+   
+!    ! !LOCAL:
+!    integer :: s, ivar  ! indices and loop counters
+   
+!    do s = 1, this%fates(nc)%nsites
+!       do ivar = 1,this%num_hlmvar_in
+!          call this%fates(nc)%sites(s)%TransferBCIn(this%bc_in(ivar)%api_str, &
+!                                                    this%bc_in(ivar)%hlm_var)
+!       end do
+!    end do
+
+!  end subroutine WrapTransferBCIn
+
+! ! ======================================================================================
+
+!  subroutine WrapTransferBCOut(this, nc)
+
+!    ! !DESCRIPTION:
+!    ! ---------------------------------------------------------------------------------
+!    ! This call passes the HLM inputs to FATES patch-level boundary conditions
+!    ! ---------------------------------------------------------------------------------
+
+!    ! !USES:
+!    !
+!    ! !ARGUMENTS:
+!    class(hlm_fates_interface_type), intent(inout) :: this
+!    integer, intent(in) :: nc 
+   
+!    ! !LOCAL:
+!    integer :: s, ivar  ! indices and loop counters
+!    real(r8) :: dtime   ! step size to pass to FATES to handle timestep conversions
+
+!    ! Get the step size in seconds
+!    dtime = real(get_step_size(),r8)
+
+!    do s = 1, this%fates(nc)%nsites
+!       do ivar = 1,this%num_hlmvar_out
+!          call this%fates(nc)%sites(s)%TransferBCOut(this%bc_out(ivar)%api_str, &
+!                                                    this%bc_out(ivar)%hlm_var, dtime)
+!       end do
+!    end do
+
+!  end subroutine WrapTransferBCOut
+
  ! ======================================================================================
 
  subroutine hlm_bounds_to_fates_bounds(hlm, fates)
@@ -3874,4 +3973,72 @@ end subroutine wrap_update_hifrq_hist
 
  end subroutine GetLandusePFTData
 
+! ======================================================================================
+
+ integer function GetColumnIndex(this,ifp,s) result(ifc)
+
+   !------------------------------------------------------------------------
+   ! This subroutine gets the mapping between the FATES patches and HLM columns
+   ! ------------------------------------------------------------------------
+
+   class(f2hmap_type), intent(inout) :: this
+
+   integer :: ifp  ! FATES bc_in/out patch dimension index
+   integer :: s    ! FATES site index
+
+   ifc = veg_pp%column(this%hlm_patch_index(ifp,s))
+
+ end function GetColumnIndex
+
+! ======================================================================================
+
+ subroutine SetPatchIndex(this,bounds_clump)
+
+   !------------------------------------------------------------------------
+   ! This subroutine sets the mapping between the FATES and HLM patches
+   ! ------------------------------------------------------------------------
+
+   class(f2hmap_type), intent(inout) :: this
+   type(bounds_type), intent(in)    :: bounds_clump
+
+   integer :: s    ! FATES site index
+   integer :: l    ! HLM landunit index
+   integer :: ifp  ! FATES patch index (patchno)
+
+   ! Note while each HLM clump can have multiple sites, the site indices are not global, 
+   ! i.e. the first site on each clump will have an index of 1
+   s = 0
+   do l = bounds_clump%begl,bounds_clump%endl
+      if (lun_pp%itype(l) == istsoil) then
+         s = s + 1
+         do ifp = 1,fates_maxPatchesperSite
+            ! This assumes that the first patch on the land unit is a vegetated
+            ! patch and that the patch indices are monotonically increasing.
+            ! See decompmod and initGridCellsMod for corroboration
+            this%hlm_patch_index(ifp,s) = lun_pp%pfti(l) + ifp
+         end do
+      end if
+    end do
+
+ end subroutine SetPatchIndex
+
+! ======================================================================================
+ 
+ subroutine RegisterHLMInterfaceVariables(this, nc)
+   
+   class(hlm_fates_interface_type) :: this
+   
+   integer, intent(in) :: nc   ! clump number
+   
+   ! Initialize the HLM-FATES interface variable registry
+   call this%fates(nc)%api%InitializeInterfaceRegistry()
+         
+   ! Register the HLM data
+   call this%fates(nc)%api%Register('decomp_frac_moisture', col_cf%w_scalar)
+   call this%fates(nc)%api%Register('decomp_frac_temperature', col_cf%t_scalar)
+   
+ end subroutine RegisterHLMInterfaceVariables
+ 
+! ======================================================================================
+ 
 end module ELMFatesInterfaceMod
