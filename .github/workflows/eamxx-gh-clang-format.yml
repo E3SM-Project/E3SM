@@ -59,7 +59,7 @@ jobs:
       run: |
         flist="${{ steps.changed-files.outputs.all_changed_files }}"
         run_cfmt () {
-          clang-format -i --style=file:"components/eamxx/.clang-format" $1
+        clang-format -i --style=file:"components/eamxx/.clang-format" $1
         }
         clang-format --version
         for f in ${flist[@]}; do
@@ -115,13 +115,13 @@ jobs:
             echo "<details>" >> "${GITHUB_STEP_SUMMARY}"
             echo "" >> "${GITHUB_STEP_SUMMARY}"
             echo "<summary>" >> "${GITHUB_STEP_SUMMARY}"
-            echo "### Contents of \`clang-format-patch.diff\`" >> "${GITHUB_STEP_SUMMARY}"
+            echo 'Contents of \`clang-format-patch.diff\`" >> "${GITHUB_STEP_SUMMARY}"
             echo "</summary>" >> "${GITHUB_STEP_SUMMARY}"
             echo "To apply this version of the patch, save the text to a local file, " \
                  "and \`git apply <patch-file>\`, etc., as above." >> "${GITHUB_STEP_SUMMARY}"
             echo "" >> "${GITHUB_STEP_SUMMARY}"
             echo "\`\`\`" >> "${GITHUB_STEP_SUMMARY}"
-            cat clang-format-patch.diff >> "${GITHUB_STEP_SUMMARY}"
+            cat diffiles.txt >> "${GITHUB_STEP_SUMMARY}"
             echo "\`\`\`" >> "${GITHUB_STEP_SUMMARY}"
             echo "" >> "${GITHUB_STEP_SUMMARY}"
             echo "</details>" >> "${GITHUB_STEP_SUMMARY}"

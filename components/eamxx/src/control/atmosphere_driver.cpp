@@ -21,6 +21,8 @@
 #include <ekat_yaml.hpp>
 #include <ekat_std_utils.hpp>
 
+// trigger CI
+
 // The global variable fvphyshack is used to help the initial pgN implementation
 // work around some current AD constraints. Search the code for "fvphyshack" to
 // find blocks that eventually should be removed in favor of a design that
