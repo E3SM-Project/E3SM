@@ -59,7 +59,7 @@ jobs:
       run: |
         flist="${{ steps.changed-files.outputs.all_changed_files }}"
         run_cfmt () {
-          clang-format -i --style=file:"components/eamxx/.clang-format" $1
+        clang-format -i --style=file:"components/eamxx/.clang-format" $1
         }
         clang-format --version
         for f in ${flist[@]}; do
@@ -109,23 +109,8 @@ jobs:
                "branch." >> "${GITHUB_STEP_SUMMARY}"
           echo "Then commit the changes and push to your remote branch." >> "${GITHUB_STEP_SUMMARY}"
           echo "" >> "${GITHUB_STEP_SUMMARY}"
-          echo "For diffs with ***fewer than 10 files***, we also include the text of " \
+          echo "For diffs with ***fewer than 100 lines***, we also include the text of " \
                "the patch file in a collapsed section, below."  >> "${GITHUB_STEP_SUMMARY}"
-          if [[ $(wc -l < diffiles.txt) -lt 10 ]]; then
-            echo "<details>" >> "${GITHUB_STEP_SUMMARY}"
-            echo "" >> "${GITHUB_STEP_SUMMARY}"
-            echo "<summary>" >> "${GITHUB_STEP_SUMMARY}"
-            echo "### Contents of \`clang-format-patch.diff\`" >> "${GITHUB_STEP_SUMMARY}"
-            echo "</summary>" >> "${GITHUB_STEP_SUMMARY}"
-            echo "To apply this version of the patch, save the text to a local file, " \
-                 "and \`git apply <patch-file>\`, etc., as above." >> "${GITHUB_STEP_SUMMARY}"
-            echo "" >> "${GITHUB_STEP_SUMMARY}"
-            echo "\`\`\`" >> "${GITHUB_STEP_SUMMARY}"
-            cat clang-format-patch.diff >> "${GITHUB_STEP_SUMMARY}"
-            echo "\`\`\`" >> "${GITHUB_STEP_SUMMARY}"
-            echo "" >> "${GITHUB_STEP_SUMMARY}"
-            echo "</details>" >> "${GITHUB_STEP_SUMMARY}"
-          fi
         else
           echo "status_fail=false" >> "${GITHUB_ENV}"
           echo "## Status: \`clang-format\` Check Passed!" > "${GITHUB_STEP_SUMMARY}"
@@ -136,10 +121,21 @@ jobs:
         fname="clang-format-patch_${{ github.event.pull_request.number || github.event_name }}-${d_str}.diff"
         echo "fname=${fname}" >> "${GITHUB_ENV}"
         git diff > "components/eamxx/${fname}"
-    - name: debug diff
-      run: |
-        echo "${fname}"
-        tail -10 "components/eamxx/${fname}"
+        if [[ ${status_fail} = true ]] && [[ $(wc -l < "components/eamxx/${fname}") -lt 100 ]]; then
+          echo "<details>" >> "${GITHUB_STEP_SUMMARY}"
+          echo "" >> "${GITHUB_STEP_SUMMARY}"
+          echo "<summary>" >> "${GITHUB_STEP_SUMMARY}"
+          echo "<b>Contents of</b> <tt>clang-format-patch.diff</tt>" >> "${GITHUB_STEP_SUMMARY}"
+          echo "</summary>" >> "${GITHUB_STEP_SUMMARY}"
+          echo "To apply this version of the patch, save the text to a local file, " \
+               "and <tt>git apply &lt;patch-file&gt;</tt>, etc., as above." >> "${GITHUB_STEP_SUMMARY}"
+          echo "" >> "${GITHUB_STEP_SUMMARY}"
+          echo "\`\`\`" >> "${GITHUB_STEP_SUMMARY}"
+          cat "components/eamxx/${fname}" >> "${GITHUB_STEP_SUMMARY}"
+          echo "\`\`\`" >> "${GITHUB_STEP_SUMMARY}"
+          echo "" >> "${GITHUB_STEP_SUMMARY}"
+          echo "</details>" >> "${GITHUB_STEP_SUMMARY}"
+        fi
     - name: upload diff patch
       if: ${{ env.status_fail == 'true' }}
       uses: actions/upload-artifact@v4
