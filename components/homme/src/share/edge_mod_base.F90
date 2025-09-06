@@ -124,18 +124,16 @@ module edge_mod_base
 
 contains
 
-  subroutine initEdgeSBuffer(par,edge,elem,nlyr,bptr,rptr)
+  subroutine initEdgeSBuffer(par,edge,elem,nlyr)
     implicit none 
     type (parallel_t), intent(in) :: par
     type (EdgeBuffer_t), intent(out), target :: edge 
     type (element_t), intent(in) :: elem(:)
     integer, intent(in)          :: nlyr
-    real(kind=real_kind), optional, pointer :: bptr(:), rptr(:)
     
     !local 
     logical (kind=log_kind), parameter :: nMethod =.TRUE.
 
-!    call initEdgeBuffer(par,edge,elem,nlyr,NewMethod=nMethod,buf_ptr=bptr,receive_ptr=rptr)
     call initEdgeBuffer(par,edge,elem,nlyr,NewMethod=nMethod)
 
   end subroutine initEdgeSBuffer

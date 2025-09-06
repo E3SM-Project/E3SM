@@ -502,7 +502,7 @@ contains
     else
        if (tstep > zero) then
           if (nsplit > 0) then
-             dtime = tstep*nstep_factor
+             dtime = INT(tstep*nstep_factor)
           else
 #ifdef CAM
              if (par%masterproc .and. .not. silent_in) then

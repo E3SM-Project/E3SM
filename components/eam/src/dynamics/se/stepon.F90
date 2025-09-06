@@ -420,7 +420,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    end do   ! ie loop
 
    if (ftype==1) then
-      call applyCAMforcing_dynamics(dyn_in%elem,hvcoord,tl_f,dtime,1,nelemd)
+      call applyCAMforcing_dynamics(dyn_in%elem,tl_f,dtime,1,nelemd)
    endif
 
    call t_stopf('stepon_bndry_exch')

@@ -51,13 +51,17 @@ module gllfvremap_util_mod
 
   public :: &
        ! Test gllfvremap's main API.
-       gfr_check_api, &
+       gfr_check_api
+#if !defined(CAM) && !defined(SCREAM)
+  ! These are used by homme's tool
+  public :: &
        ! Convert a topography file from pure GLL to physgrid format, as a
        ! convenience to avoid going through the full tool chain; see next
        ! function.
        gfr_convert_topo, &
        ! One part of the full physgrid from-scratch topography tool chain.
        gfr_pgn_to_smoothed_topo
+#endif
 
 contains
   
@@ -324,7 +328,7 @@ contains
        end if
        call applyCAMforcing_tracers(elem(ie), hvcoord, nt2, nt2, dt, logical(ftype /= 0))
     end do
-    call applyCAMforcing_dynamics(elem, hvcoord, nt2, dt, nets, nete)
+    call applyCAMforcing_dynamics(elem, nt2, dt, nets, nete)
 
     ! Test GLL state nt2 vs the original state nt1.
     if (hybrid%masterthread) write(iulog, '(a,l2)') 'gfrt> tendency', tendency
@@ -424,7 +428,7 @@ contains
     do ie = nets,nete
        elem(ie)%derived%vstar(:,:,1,1) = elem(ie)%state%phis
     end do
-    call gfr_dyn_to_fv_phys_topo(hybrid, elem, nets, nete, pg_data%zs)
+    call gfr_dyn_to_fv_phys_topo(elem, nets, nete, pg_data%zs)
     call gfr_fv_phys_to_dyn_topo(hybrid, elem, nets, nete, pg_data%zs)
     ! Do the DSS w/o (r)spheremp, as in inidata.F90. gfr_fv_phys_to_dyn_topo has
     ! prepped phis for this.
@@ -635,15 +639,14 @@ contains
     if (hybrid%ithr == 0) ftype = ftype_in
   end function gfr_check_api
 
+#if !defined(CAM) && !defined(SCREAM)
   subroutine gfr_convert_topo(par, elem, nphys, intopofn, outtopoprefix)
     ! Read a pure-GLL topography file. Remap all fields to physgrid. Write a new
 
-#if !defined(CAM) && !defined(SCREAM)
     use common_io_mod, only: varname_len
     use gllfvremap_mod, only: gfr_init, gfr_finish, gfr_dyn_to_fv_phys_topo_data, gfr_f_get_latlon
     use interpolate_driver_mod, only: read_gll_topo_file, write_physgrid_topo_file
     use physical_constants, only: dd_pi
-#endif
     use parallel_mod, only: parallel_t
 
     type (parallel_t), intent(in) :: par
@@ -651,7 +654,6 @@ contains
     integer, intent(in) :: nphys
     character(*), intent(in) :: intopofn, outtopoprefix
 
-#if !defined(CAM) && !defined(SCREAM)
     real(real_kind), allocatable :: gll_fields(:,:,:,:), pg_fields(:,:,:), latlon(:,:,:)
     integer :: nf2, vari, ie, i, j, k
     logical :: square, augment
@@ -699,11 +701,9 @@ contains
          'Converted from '// trim(intopofn) // ' by HOMME gfr_convert_topo')
 
     deallocate(gll_fields, pg_fields, latlon)
-#endif
   end subroutine gfr_convert_topo
 
   function gfr_pgn_to_smoothed_topo(par, elem, output_nphys, intopofn, outtopoprefix) result(stat)
-#if !defined(CAM) && !defined(SCREAM)
     use common_io_mod, only: varname_len
     use gllfvremap_mod, only: gfr_init, gfr_finish, gfr_fv_phys_to_dyn_topo, &
          gfr_dyn_to_fv_phys_topo, gfr_f_get_latlon
@@ -714,7 +714,6 @@ contains
     use bndry_mod, only: bndry_exchangev
     use prim_driver_base, only: smooth_topo_datasets
     use hybrid_mod, only: hybrid_t, hybrid_create
-#endif
     use parallel_mod, only: parallel_t
 
     type (parallel_t), intent(in) :: par
@@ -723,7 +722,6 @@ contains
     character(*), intent(in) :: intopofn, outtopoprefix
     integer :: stat
 
-#if !defined(CAM) && !defined(SCREAM)
     real(real_kind), allocatable :: gll_fields(:,:,:,:), pg_fields(:,:,:)
     integer :: intopo_nphys, ie, i, j, k, nvar, nf2
     character(len=varname_len) :: fieldnames(1)
@@ -805,7 +803,8 @@ contains
          write_latlon)
 
     deallocate(gll_fields, pg_fields)
-#endif
     stat = 0
   end function gfr_pgn_to_smoothed_topo
+#endif
+
 end module gllfvremap_util_mod

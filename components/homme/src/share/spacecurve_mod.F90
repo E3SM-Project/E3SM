@@ -70,10 +70,10 @@ module spacecurve_mod
 
 contains 
   !---------------------------------------------------------
-  recursive function Cinco(l,type,ma,md,ja,jd) result(ierr)
+  recursive function Cinco(l,ma,md,ja,jd) result(ierr)
 
     implicit none
-    integer,intent(in) ::   l,type,ma,md,ja,jd
+    integer,intent(in) ::   l,ma,md,ja,jd
 
     integer ::  lma,lmd,lja,ljd,ltype
     integer :: ll
@@ -537,10 +537,10 @@ contains
   end function Cinco
 
   !---------------------------------------------------------
-  recursive function PeanoM(l,type,ma,md,ja,jd) result(ierr)
+  recursive function PeanoM(l,ma,md,ja,jd) result(ierr)
 
     implicit none
-    integer,intent(in) ::   l,type,ma,md,ja,jd
+    integer,intent(in) ::   l,ma,md,ja,jd
 
     integer ::  lma,lmd,lja,ljd,ltype
     integer :: ll
@@ -714,10 +714,10 @@ contains
 
   end function PeanoM
   !---------------------------------------------------------
-  recursive function hilbert(l,type,ma,md,ja,jd) result(ierr)
+  recursive function hilbert(l,ma,md,ja,jd) result(ierr)
 
     implicit none
-    integer,intent(in) ::   l,type,ma,md,ja,jd
+    integer,intent(in) ::   l,ma,md,ja,jd
 
     integer ::  lma,lmd,lja,ljd,ltype
     integer :: ll
@@ -862,11 +862,11 @@ contains
     integer                          :: ierr
 
     if(type == 2) then
-       ierr = hilbert(l,type,ma,md,ja,jd)
+       ierr = hilbert(l,ma,md,ja,jd)
     elseif ( type == 3) then
-       ierr = PeanoM(l,type,ma,md,ja,jd)
+       ierr = PeanoM(l,ma,md,ja,jd)
     elseif ( type == 5) then
-       ierr = Cinco(l,type,ma,md,ja,jd)
+       ierr = Cinco(l,ma,md,ja,jd)
     endif
 
   end function GenCurve

@@ -1587,6 +1587,16 @@ contains
     if(partmethod .eq. SFCURVE) then
         call initialize_space_filling_curve(GridVertex, element_nodes)
     endif
+#else
+    if ( .false. ) then
+      ! Use dummy args just to silence compiler warnings
+      print *, size(GridEdge)
+      print *, size(GridVertex)
+      print *, size(coord_dim1)
+      print *, size(coord_dim2)
+      print *, size(coord_dim3)
+      print *, coord_dimension
+    endif
 #endif
   end subroutine MeshCubeTopologyCoords
 
@@ -1791,6 +1801,9 @@ contains
     else
       call abortmp('Error in MeshCubeElemCount: Should not call for non-exodus mesh file.')
     end if
+#else
+    ! Set it anyways, to silence compiler warnings
+    nelem = 0
 #endif
   end function MeshCubeElemCount
 

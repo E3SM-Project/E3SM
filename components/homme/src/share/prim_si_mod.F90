@@ -314,10 +314,9 @@ contains
 !  compute omega/p using ps, modeled after CCM3 formulas 
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
-  subroutine preq_omega_ps(omega_p,hvcoord,p,vgrad_p,divdp)
+  subroutine preq_omega_ps(omega_p,p,vgrad_p,divdp)
     use kinds, only : real_kind
     use dimensions_mod, only : np, nlev
-    use hybvcoord_mod, only : hvcoord_t
     implicit none
 
 
@@ -325,7 +324,6 @@ contains
     real(kind=real_kind), intent(in) :: divdp(np,np,nlev)      ! divergence
     real(kind=real_kind), intent(in) :: vgrad_p(np,np,nlev) ! v.grad(p)
     real(kind=real_kind), intent(in) :: p(np,np,nlev)     ! layer thicknesses (pressure)
-    type (hvcoord_t),     intent(in) :: hvcoord
     real(kind=real_kind), intent(out):: omega_p(np,np,nlev)   ! vertical pressure velocity
     !------------------------------------------------------------------------------------------------------
 
@@ -369,9 +367,7 @@ contains
     use kinds, only : real_kind
     use dimensions_mod, only : np, nlev
     use physical_constants, only : rgas
-!    use hybvcoord_mod, only : hvcoord_t
     implicit none
-
 
     !------------------------------Arguments---------------------------------------------------------------
     real(kind=real_kind), intent(out) :: phi(np,np,nlev)     
@@ -379,7 +375,6 @@ contains
     real(kind=real_kind), intent(in) :: T_v(np,np,nlev)
     real(kind=real_kind), intent(in) :: p(np,np,nlev)   
     real(kind=real_kind), intent(in) :: dp(np,np,nlev)  
- !   type (hvcoord_t),     intent(in) :: hvcoord
     !------------------------------------------------------------------------------------------------------
 
     !---------------------------Local workspace-----------------------------
@@ -391,34 +386,31 @@ contains
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,j,i,hkk,hkl)
 #endif
-       do j=1,np   !   Loop inversion (AAM)
+    do j=1,np   !   Loop inversion (AAM)
 
-          do i=1,np
-             hkk = dp(i,j,nlev)*0.5d0/p(i,j,nlev)
-             hkl = 2*hkk
-             phii(i,j,nlev)  = Rgas*T_v(i,j,nlev)*hkl
-             phi(i,j,nlev) = phis(i,j) + Rgas*T_v(i,j,nlev)*hkk 
-          end do
-
-          do k=nlev-1,2,-1
-             do i=1,np
-                ! hkk = dp*ckk
-                hkk = dp(i,j,k)*0.5d0/p(i,j,k)
-                hkl = 2*hkk
-                phii(i,j,k) = phii(i,j,k+1) + Rgas*T_v(i,j,k)*hkl
-                phi(i,j,k) = phis(i,j) + phii(i,j,k+1) + Rgas*T_v(i,j,k)*hkk
-             end do
-          end do
-
-          do i=1,np
-             ! hkk = dp*ckk
-             hkk = 0.5d0*dp(i,j,1)/p(i,j,1)
-             phi(i,j,1) = phis(i,j) + phii(i,j,2) + Rgas*T_v(i,j,1)*hkk
-          end do
-
+       do i=1,np
+          hkk = dp(i,j,nlev)*0.5d0/p(i,j,nlev)
+          hkl = 2*hkk
+          phii(i,j,nlev)  = Rgas*T_v(i,j,nlev)*hkl
+          phi(i,j,nlev) = phis(i,j) + Rgas*T_v(i,j,nlev)*hkk 
        end do
 
+       do k=nlev-1,2,-1
+          do i=1,np
+             ! hkk = dp*ckk
+             hkk = dp(i,j,k)*0.5d0/p(i,j,k)
+             hkl = 2*hkk
+             phii(i,j,k) = phii(i,j,k+1) + Rgas*T_v(i,j,k)*hkl
+             phi(i,j,k) = phis(i,j) + phii(i,j,k+1) + Rgas*T_v(i,j,k)*hkk
+          end do
+       end do
 
+       do i=1,np
+          ! hkk = dp*ckk
+          hkk = 0.5d0*dp(i,j,1)/p(i,j,1)
+          phi(i,j,1) = phis(i,j) + phii(i,j,2) + Rgas*T_v(i,j,1)*hkk
+       end do
+    end do
 end subroutine preq_hydrostatic
 
 
@@ -432,7 +424,6 @@ end subroutine preq_hydrostatic
     use kinds, only : real_kind
     use dimensions_mod, only : np, nlev
     use physical_constants, only : rgas
-!    use hybvcoord_mod, only : hvcoord_t
     implicit none
 
 

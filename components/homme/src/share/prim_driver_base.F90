@@ -15,7 +15,10 @@ module prim_driver_base
 
   use derivative_mod,   only: derivative_t, derivinit
   use dimensions_mod,   only: np, nlev, nlevp, nelem, nelemd, nelemdmax, GlobalUniqueCols, qsize
-  use element_mod,      only: element_t, allocate_element_desc, setup_element_pointers
+  use element_mod,      only: element_t, allocate_element_desc
+#if USE_OPENACC
+  use element_mod,      only: setup_element_pointers
+#endif
   use element_ops,      only: copy_state
   use gridgraph_mod,    only: GridVertex_t, GridEdge_t
   use hybrid_mod,       only: hybrid_t
@@ -109,6 +112,7 @@ contains
     ! ==================================
     call prim_init1_geometry(elem,par,dom_mt)
 
+#if USE_OPENACC
     ! ==================================
     ! Initialize element pointers (if any)
     ! ==================================
@@ -117,6 +121,7 @@ contains
     !       the call to setup_element_pointers, which should be removed from
     !       the base version of prim_init1
     call setup_element_pointers(elem)
+#endif
 
     ! ==================================
     ! Initialize element arrays (fluxes and state)
@@ -1021,7 +1026,7 @@ contains
 
 
 
-  subroutine prim_run_subcycle(elem, hybrid,nets,nete, dt, single_column, tl, hvcoord,nsubstep)
+  subroutine prim_run_subcycle(elem, hybrid,nets,nete, dt, single_column, tl, hvcoord)
 
     !   advance dynamic variables and tracers (u,v,T,ps,Q,C) from time t to t + dt_q
     !
@@ -1037,14 +1042,14 @@ contains
     !       tl%nm1   tracers:  t    dynamics:  t+(qsplit-1)*dt
     !       tl%n0    time t + dt_q
 
-    use control_mod,        only: statefreq, qsplit, rsplit, disable_diagnostics, &
-         dt_remap_factor, dt_tracer_factor, transport_alg, prim_step_type
+    use control_mod,        only: statefreq, rsplit, disable_diagnostics, &
+                                  dt_remap_factor, dt_tracer_factor, prim_step_type
     use hybvcoord_mod,      only: hvcoord_t
     use parallel_mod,       only: abortmp
     use prim_state_mod,     only: prim_printstate
     use vertremap_mod,      only: vertical_remap
     use reduction_mod,      only: parallelmax
-    use time_mod,           only: TimeLevel_t, timelevel_update, timelevel_qdp, nsplit, tstep
+    use time_mod,           only: TimeLevel_t, timelevel_update, timelevel_qdp
 #if USE_OPENACC
     use openacc_utils_mod,  only: copy_qdp_h2d, copy_qdp_d2h
 #endif
@@ -1059,7 +1064,6 @@ contains
     real(kind=real_kind), intent(in)    :: dt                           ! "timestep dependent" timestep
     logical,              intent(in)    :: single_column
     type (TimeLevel_t),   intent(inout) :: tl
-    integer,              intent(in)    :: nsubstep                     ! nsubstep = 1 .. nsplit
 
     real(kind=real_kind) :: dt_q, dt_remap
     integer :: n0_qdp,np1_qdp,r,nstep_end,nets_in,nete_in,step_factor
@@ -1123,10 +1127,10 @@ contains
 
         ! Single Column Case
         ! Loop over rsplit vertically lagrangian timesiteps
-        call prim_step_scm(elem, nets, nete, dt, tl, hvcoord)
+        call prim_step_scm(elem, nets, nete, dt, tl)
         do r=2,rsplit
           call TimeLevel_update(tl,"leapfrog")
-          call prim_step_scm(elem, nets, nete, dt, tl, hvcoord)
+          call prim_step_scm(elem, nets, nete, dt, tl)
         enddo
 
       endif
@@ -1245,7 +1249,7 @@ contains
     ! for ftype==4, energy diagnostics will be incorrect
     ! ===============
     if (ftype==4) then
-       call ApplyCAMforcing_dynamics(elem,hvcoord,tl%n0,dt,nets,nete)
+       call ApplyCAMforcing_dynamics(elem,tl%n0,dt,nets,nete)
        ! E(1) Energy after CAM forcing applied
        ! with ftype==4, need (E(1)-E(3))/dt_dyn instead (E(1)-E(3))/dt_tracer
        if (compute_diagnostics) call run_diagnostics(elem,hvcoord,tl,1,.true.,nets,nete)
@@ -1254,7 +1258,7 @@ contains
     call prim_advance_exp(elem,deriv1,hvcoord,hybrid,dt,tl,nets,nete,compute_diagnostics)
     do n=2,dt_tracer_factor
        call TimeLevel_update(tl,"leapfrog")
-       if (ftype==4) call ApplyCAMforcing_dynamics(elem,hvcoord,tl%n0,dt,nets,nete)
+       if (ftype==4) call ApplyCAMforcing_dynamics(elem,tl%n0,dt,nets,nete)
        call prim_advance_exp(elem, deriv1, hvcoord,hybrid, dt, tl, nets, nete, .false.)
        ! defer final timelevel update until after Q update.
     enddo
@@ -1350,7 +1354,7 @@ contains
        if (ftype == 4) then
           ! also apply dynamics tendencies from forcing; energy
           ! diagnostics will be incorrect
-          call ApplyCAMforcing_dynamics(elem,hvcoord,tl%n0,dt,nets,nete)
+          call ApplyCAMforcing_dynamics(elem,tl%n0,dt,nets,nete)
           if (compute_diagnostics_it) call run_diagnostics(elem,hvcoord,tl,1,.true.,nets,nete)
        else if (ftype == 2 .or. ftype == 0) then
           ! Apply dynamics forcing over the dynamics (vertically Eulerian) or
@@ -1361,7 +1365,7 @@ contains
              apply_forcing = .true.
           end if
           if (apply_forcing) then
-             call ApplyCAMforcing_dynamics(elem,hvcoord,tl%n0,dt_remap,nets,nete)
+             call ApplyCAMforcing_dynamics(elem,tl%n0,dt_remap,nets,nete)
              if (compute_diagnostics_it) call run_diagnostics(elem,hvcoord,tl,1,.true.,nets,nete)
           end if
        end if
@@ -1417,7 +1421,7 @@ contains
 
     ! Remap tracers.
     if (qsize > 0) then
-       call sl_vertically_remap_tracers(hybrid, elem, nets, nete, tl, dt_q)
+       call sl_vertically_remap_tracers(hybrid, elem, nets, nete, tl)
     end if
   end subroutine prim_step_flexible
 
@@ -1495,7 +1499,7 @@ contains
     do ie = nets,nete
        call applyCAMforcing_tracers (elem(ie),hvcoord,n0,n0qdp,dt_remap,.false.)
     enddo
-    call applyCAMforcing_dynamics(elem,hvcoord,n0,dt_remap,nets,nete)
+    call applyCAMforcing_dynamics(elem,n0,dt_remap,nets,nete)
   elseif (ftype==1) then
     !do nothing
   elseif (ftype==2) then
@@ -1505,7 +1509,7 @@ contains
        call ApplyCAMForcing_tracers (elem(ie),hvcoord,n0,n0qdp,dt_remap,.false.)
     enddo
 #endif
-    call ApplyCAMForcing_dynamics(elem,hvcoord,n0,dt_remap,nets,nete)
+    call ApplyCAMForcing_dynamics(elem,n0,dt_remap,nets,nete)
  elseif (ftype==4) then
     ! with CAM physics, tracers were adjusted in dp coupling layer
 #ifndef CAM
@@ -1763,8 +1767,7 @@ contains
 
   end subroutine applyCAMforcing_tracers
   
-  
-  subroutine prim_step_scm(elem, nets,nete, dt, tl, hvcoord)
+  subroutine prim_step_scm(elem, nets,nete, dt, tl)
   !
   !   prim_step version for single column model (SCM)
   !   Here we simply want to compute the floating level tendency
@@ -1787,7 +1790,6 @@ contains
   !
     use control_mod,        only: ftype, nu_p, dt_tracer_factor
     use control_mod,        only: transport_alg
-    use hybvcoord_mod,      only : hvcoord_t
     use parallel_mod,       only: abortmp
     use prim_advance_mod,   only: prim_advance_exp, applyCAMforcing_dynamics
     use reduction_mod,      only: parallelmax
@@ -1795,7 +1797,6 @@ contains
     use prim_state_mod,     only: prim_printstate, prim_diag_scalars, prim_energy_halftimes
 
     type(element_t),      intent(inout) :: elem(:)
-    type(hvcoord_t),      intent(in)    :: hvcoord  ! hybrid vertical coordinate struct
     integer,              intent(in)    :: nets     ! starting thread element number (private)
     integer,              intent(in)    :: nete     ! ending thread element number   (private)
     real(kind=real_kind), intent(in)    :: dt       ! "timestep dependent" timestep
@@ -1830,7 +1831,7 @@ contains
     do n=2,dt_tracer_factor
  
       call TimeLevel_update(tl,"leapfrog")
-      if (ftype==4) call ApplyCAMforcing_dynamics(elem,hvcoord,tl%n0,dt,nets,nete)       
+      if (ftype==4) call ApplyCAMforcing_dynamics(elem,tl%n0,dt,nets,nete)       
 
       ! get timelevel for accessing tracer mass Qdp() to compute virtual temperature      
       call TimeLevel_Qdp(tl, dt_tracer_factor, qn0)  ! compute current Qdp() timelevel      
@@ -1890,7 +1891,7 @@ contains
     type (quadrature_t)    :: gp
 
     gp=gausslobatto(np)
-    xgll = gp%points(1:np)
+    xgll = real(gp%points(1:np), kind=real_kind)
     deallocate(gp%points)
     deallocate(gp%weights)
 

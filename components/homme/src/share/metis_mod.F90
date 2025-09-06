@@ -267,25 +267,6 @@ contains
 
   end subroutine genmetispart
 
-  subroutine NewPartitionNumber(newnum,oldnum,cnt)
-
-    implicit none
-
-    integer, intent(in)           :: oldnum(:)
-    integer, intent(in)           :: cnt(:)
-    integer, intent(out)          :: newnum(:)
-
-    integer                       :: i,n
-
-    n = SIZE(cnt)
-
-    newnum(1) = oldnum(1)
-    do i=2,n
-       newnum(i) = newnum(i-1) + cnt(i-1)
-    enddo
-
-  end subroutine NewPartitionNumber
-
   subroutine genLocal2Global(local2Global,part,newP)
 
     implicit none 
@@ -336,6 +317,23 @@ contains
     else if (partmethod .eq. VOLUME) then  
        call METIS_PartGraphVKway(nelem,xadj,adjncy, &
             vwgt,adjwgt,wgtflag,numflag,npart,options,edgecut,part)
+    endif
+#else
+    ! Silence compiler warnings
+    if ( .false. ) then
+      print *, partmethod
+      print *, nelem
+      print *, xadj(:)
+      print *, adjncy(:)
+      print *, vwgt(:)
+      print *, adjwgt(:)
+      print *, wgtflag
+      print *, numflag
+      print *, npart
+      print *, tpwgts
+      print *, options(:)
+      print *, edgecut
+      print *, part(:)
     endif
 #endif
 

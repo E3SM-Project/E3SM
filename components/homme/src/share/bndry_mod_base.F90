@@ -42,7 +42,6 @@ module bndry_mod_base
 
   interface bndry_exchangeS_start
      module procedure bndry_exchangeS_threaded_start
-     module procedure bndry_exchangeS_nonthreaded_start
      module procedure bndry_exchangeS_core_start
   end interface
 
@@ -53,8 +52,7 @@ contains
     use schedtype_mod, only : schedule_t, cycle_t, schedule
     use perf_mod, only : t_startf, t_stopf
 #ifdef _MPI
-    use parallel_mod, only : status, srequest, rrequest, &
-         mpireal_t, mpiinteger_t, mpi_success
+    use parallel_mod, only : mpireal_t, mpi_success
 #endif
     use perf_mod, only : t_startf, t_stopf
     type (parallel_t)              :: par
@@ -172,8 +170,7 @@ contains
     use kinds, only : log_kind
     use schedtype_mod, only : schedule_t, cycle_t, schedule
 #ifdef _MPI
-    use parallel_mod, only : status, srequest, rrequest, &
-         mpireal_t, mpiinteger_t, mpi_success
+    use parallel_mod, only : mpireal_t, mpi_success
 #endif
     type (parallel_t)              :: par
     integer                        :: ithr
@@ -276,15 +273,13 @@ contains
 
   end subroutine bndry_exchangeS_core
 
-  subroutine bndry_exchangeS_core_start(par,ithr,buffer)
+  subroutine bndry_exchangeS_core_start(par,buffer)
     use kinds, only : log_kind
     use schedtype_mod, only : schedule_t, cycle_t, schedule
 #ifdef _MPI
-    use parallel_mod, only : status, srequest, rrequest, &
-         mpireal_t, mpiinteger_t, mpi_success
+    use parallel_mod, only : mpireal_t, mpi_success
 #endif
     type (parallel_t)              :: par
-    integer                        :: ithr
     type (EdgeBuffer_t)            :: buffer
 
     type (Schedule_t),pointer                     :: pSchedule
@@ -298,16 +293,12 @@ contains
 
     logical(kind=log_kind),parameter              :: Debug=.FALSE.
 
-    integer        :: i,j
-
     pSchedule => Schedule(1)
     nlyr = buffer%nlyr       
-
 
     !$OMP MASTER
     nSendCycles = pSchedule%nSendCycles
     nRecvCycles = pSchedule%nRecvCycles
-
 
     !==================================================
     !  Fire off the sends
@@ -352,25 +343,18 @@ contains
     
   end subroutine bndry_exchangeS_core_start
 
-  subroutine bndry_exchangeS_core_finish(par,ithr,buffer)
+  subroutine bndry_exchangeS_core_finish(ithr,buffer)
     use kinds, only : log_kind
     use schedtype_mod, only : schedule_t, cycle_t, schedule
-#ifdef _MPI
-    use parallel_mod, only : status, srequest, rrequest, &
-         mpireal_t, mpiinteger_t, mpi_success
-#endif
-    type (parallel_t)              :: par
+
     integer                        :: ithr
     type (EdgeBuffer_t)            :: buffer
 
     type (Schedule_t),pointer                     :: pSchedule
-    type (Cycle_t),pointer                        :: pCycle
-    integer                                       :: dest,length,tag
-    integer                                       :: icycle,ierr
-    integer                                       :: iptr,source,nlyr
+    integer                                       :: length
+    integer                                       :: ierr
+    integer                                       :: iptr,nlyr
     integer                                       :: nSendCycles,nRecvCycles
-    integer                                       :: errorcode,errorlen
-    character*(80) errorstring
 
     logical(kind=log_kind),parameter              :: Debug=.FALSE.
     logical :: singlethread_copy
@@ -390,7 +374,7 @@ contains
           singlethread_copy=.true.
        else
           call abortmp('edgebuffer threads does not match number of active threads')
-       endif			   
+       endif
     endif
 
     call MPI_Waitall(nSendCycles,buffer%Srequest,buffer%status,ierr)
@@ -427,7 +411,7 @@ contains
     use schedtype_mod, only : schedule_t, cycle_t, schedule
 #ifdef _MPI
     use parallel_mod, only : status, srequest, rrequest, &
-         mpireal_t, mpiinteger_t, mpi_success
+         mpiinteger_t, mpi_success
 #endif
     type (parallel_t)              :: par
     type (LongEdgeBuffer_t)            :: buffer
@@ -439,7 +423,7 @@ contains
     integer                                       :: iptr,source,nlyr
     integer                                       :: nSendCycles,nRecvCycles
     integer                                       :: errorcode,errorlen
-    character*(80) errorstring
+    character*(80) :: errorstring
 
     logical(kind=log_kind),parameter              :: Debug=.FALSE.
 
@@ -601,7 +585,7 @@ contains
 #if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
-    call bndry_exchangeS_core_start(hybrid%par,hybrid%ithr,buffer)
+    call bndry_exchangeS_core_start(hybrid%par,buffer)
 !#if (defined HORIZ_OPENMP)
 !    !$OMP BARRIER
 !#endif
@@ -623,7 +607,7 @@ contains
 !#if (defined HORIZ_OPENMP)
 !    !$OMP BARRIER
 !#endif
-    call bndry_exchangeS_core_finish(hybrid%par,hybrid%ithr,buffer)
+    call bndry_exchangeS_core_finish(hybrid%ithr,buffer)
 #if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
@@ -655,34 +639,10 @@ contains
 
   end subroutine bndry_exchangeS_nonthreaded
 
- subroutine bndry_exchangeS_nonthreaded_start(par,buffer)
+ subroutine bndry_exchangeS_nonthreaded_finish(buffer)
     use perf_mod, only: t_startf, t_stopf, t_adj_detailf
     implicit none
 
-    type (parallel_t)                 :: par
-    integer                           :: ithr
-    type (EdgeBuffer_t)               :: buffer
-
-!pw call t_adj_detailf(+2)
-!pw call t_startf('bndry_exchangeS_start')
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-#endif
-    ithr=0
-    call bndry_exchangeS_core_start(par,ithr,buffer)
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-#endif
-!pw call t_stopf('bndry_exchangeS_start')
-!pw call t_adj_detailf(-2)
-
- end subroutine bndry_exchangeS_nonthreaded_start
-
- subroutine bndry_exchangeS_nonthreaded_finish(par,buffer)
-    use perf_mod, only: t_startf, t_stopf, t_adj_detailf
-    implicit none
-
-    type (parallel_t)                 :: par
     integer                           :: ithr
     type (EdgeBuffer_t)               :: buffer
 
@@ -692,7 +652,7 @@ contains
 !    !$OMP BARRIER
 !#endif
     ithr=0
-    call bndry_exchangeS_core_finish(par,ithr,buffer)
+    call bndry_exchangeS_core_finish(ithr,buffer)
 #if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
@@ -710,10 +670,9 @@ contains
     use hybrid_mod, only : hybrid_t
     use kinds, only : log_kind
     use schedtype_mod, only : schedule_t, cycle_t, schedule
-    use dimensions_mod, only: nelemd
 #ifdef _MPI
     use parallel_mod, only : status, srequest, rrequest, &
-         mpireal_t, mpiinteger_t, mpi_success
+         mpireal_t, mpi_success
 #endif
     implicit none
     type (parallel_t)              :: par
@@ -731,9 +690,8 @@ contains
     integer                                       :: errorcode,errorlen
     character*(80) errorstring
 
-    integer        :: i,i1,i2
-    logical(kind=log_kind),parameter      :: Debug = .FALSE.
-
+    integer :: i
+    logical(kind=log_kind), parameter :: Debug = .FALSE.
 
 #if (defined HORIZ_OPENMP)
     !$OMP BARRIER
@@ -819,7 +777,7 @@ contains
 !  will have its on ghostbuffer.   initghostbufer3D() should detect this and abort.
 !
   use kinds, only : real_kind
-  use dimensions_mod, only: nelemd, np
+  use dimensions_mod, only: np
   use hybrid_mod, only : hybrid_t
   use element_mod, only : element_t
   use edge_mod, only : ghostvpackfull, ghostvunpackfull, &
@@ -835,8 +793,8 @@ contains
 
   real (kind=real_kind) :: cin(2,2,1,nets:nete)  !CE: fvm tracer
   real (kind=real_kind) :: cout(-1:4,-1:4,1,nets:nete)  !CE: fvm tracer
-  integer :: i,j,ie,kptr,np1,np2,nc,nc1,nc2,k,nlev
-  logical :: fail,fail1,fail2
+  integer :: ie,kptr,nc,nc1,nc2,nlev
+  logical :: fail1,fail2
   real (kind=real_kind) :: tol=.1
   call syncmp(hybrid%par)
 !   if (hybrid%par%masterproc) print *,'computing ghost cell corner orientations'
@@ -964,7 +922,7 @@ contains
 #endif
 
   use kinds, only : real_kind, iulog
-  use dimensions_mod, only: nelemd, np, max_neigh_edges
+  use dimensions_mod, only: max_neigh_edges
   use element_mod, only : element_t
   use edge_mod, only : ghostvpack_unoriented, ghostvunpack_unoriented, &
        initghostbuffer3D,freeghostbuffer3D
@@ -979,10 +937,7 @@ contains
 
   real (kind=real_kind) :: cin(2,2,4)                      ! 1x1 element input data
   real (kind=real_kind) :: cout(2,2,4,max_neigh_edges+1)   ! 1x1 element output data
-  real (kind=real_kind) :: u   (2,2,4)   
-  integer :: i,j,ie,kptr,np1,np2,nc,k,nlev,patch_size,l,l2,sum1,sum2,m
-  logical :: fail,fail1,fail2
-  real (kind=real_kind) :: tol=.1
+  integer :: i,j,ie,kptr,nc,k,nlev,patch_size,l,sum1,sum2
     
   if (par%masterproc) write(iulog,*) 'creating sorted ghost cell neigbor map...' 
   if (par%masterproc) write(iulog,*) 'checking ghost cell neighbor buffer sorting...' 
@@ -1086,7 +1041,7 @@ contains
               elem(ie)%desc%neigh_corners(k,l)%z = cout(i,j,3,l) 
            enddo
         enddo
-        elem(ie)%desc%globalID_neigh_corners(l) = cout(1,1,nlev,l)
+        elem(ie)%desc%globalID_neigh_corners(l) = INT(cout(1,1,nlev,l))
      enddo
   enddo
 

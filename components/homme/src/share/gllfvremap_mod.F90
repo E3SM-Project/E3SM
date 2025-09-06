@@ -503,12 +503,11 @@ contains
     end if
   end subroutine gfr_fv_phys_to_dyn_hybrid
 
-  subroutine gfr_dyn_to_fv_phys_topo_hybrid(hybrid, elem, nets, nete, phis)
+  subroutine gfr_dyn_to_fv_phys_topo_hybrid(elem, nets, nete, phis)
     ! If needed, remap topography data defined on the GLL grid to the
     ! FV grid. The intended EAM configuration is to use topography
     ! data on the FV grid, so this routine is unlikely to be used.
 
-    type (hybrid_t), intent(in) :: hybrid
     type (element_t), intent(in) :: elem(:)
     integer, intent(in) :: nets, nete
     real(kind=real_kind), intent(out) :: phis(:,:)
@@ -520,7 +519,7 @@ contains
     end do
   end subroutine gfr_dyn_to_fv_phys_topo_hybrid
 
-  subroutine gfr_dyn_to_fv_phys_topo_data(par, elem, nets, nete, g, gsz, p, psz, square, augment)
+  subroutine gfr_dyn_to_fv_phys_topo_data(elem, nets, nete, g, gsz, p, psz, square, augment)
     ! Remap SGH, SGH30, phis, landm_coslat, landfrac from GLL to FV grids. For
     ! SGH* fields, square should be true. Then variance is remapped and so
     ! conserved. For SGH, but not SGH30, set augment to true to add the variance
@@ -529,17 +528,15 @@ contains
     ! added since it's the variance due to truncation of wave numbers at a
     ! separation length scale; this is independent of grid.
 
-    use parallel_mod, only: parallel_t, abortmp
+    use parallel_mod, only: abortmp
     use hybrid_mod, only: hybrid_create
 
-    type (parallel_t), intent(in) :: par
     type (element_t), intent(inout) :: elem(:)
     integer, intent(in) :: nets, nete, gsz, psz
     real(kind=real_kind), intent(in) :: g(gsz)
     real(kind=real_kind), intent(out) :: p(psz)
     logical, intent(in), optional :: square, augment
 
-    type (hybrid_t) :: hybrid
     integer :: ie, nf2
     logical :: augment_in
 
@@ -566,8 +563,8 @@ contains
     real(kind=real_kind), intent(in) :: g(:)
     real(kind=real_kind), intent(out) :: p(:)
 
-    real(kind=real_kind) :: wg(np,np,1), wf(np*np,2), ones(np,np), qmin, qmax, phispg(npsq)
-    integer :: nf, nf2, i, j, k
+    real(kind=real_kind) :: wg(np,np,1), wf(np*np,2), ones(np,np), phispg(npsq)
+    integer :: nf, nf2, k
 
     ones = one
     nf = gfr%nphys
@@ -606,7 +603,7 @@ contains
     ! extrema. Conserve the integral of height.
 
     use kinds, only: iulog
-    use edge_mod, only: edgeVpack_nlyr, edgeVunpack_nlyr, edge_g
+    use edge_mod, only: edgeVpack_nlyr, edgeVunpack_nlyr
     use bndry_mod, only: bndry_exchangeV
 
     type (hybrid_t), intent(in) :: hybrid
@@ -670,7 +667,9 @@ contains
     use parallel_mod, only: parallel_t
     use domain_mod, only: domain1d_t
     use hybvcoord_mod, only: hvcoord_t
+#ifdef HORIZ_OPENMP
     use thread_mod, only: hthreads
+#endif
 
     type (parallel_t), intent(in) :: par
     type (domain1d_t), intent(in) :: dom_mt(:)
@@ -701,7 +700,9 @@ contains
     use parallel_mod, only: parallel_t
     use domain_mod, only: domain1d_t
     use hybvcoord_mod, only: hvcoord_t
+#ifdef HORIZ_OPENMP
     use thread_mod, only: hthreads
+#endif
 
     type (parallel_t), intent(in) :: par
     type (domain1d_t), intent(in) :: dom_mt(:)
@@ -729,7 +730,9 @@ contains
 
     use parallel_mod, only: parallel_t
     use domain_mod, only: domain1d_t
+#ifdef HORIZ_OPENMP
     use thread_mod, only: hthreads
+#endif
 
     type (parallel_t), intent(in) :: par
     type (domain1d_t), intent(in) :: dom_mt(:)
@@ -744,7 +747,7 @@ contains
     !$omp parallel num_threads(hthreads), default(shared), private(nets,nete,hybrid)
 #endif
     call gfr_hybrid_create(par, dom_mt, hybrid, nets, nete)
-    call gfr_dyn_to_fv_phys_topo_hybrid(hybrid, elem, nets, nete, phis)
+    call gfr_dyn_to_fv_phys_topo_hybrid(elem, nets, nete, phis)
 #ifdef HORIZ_OPENMP
     !$omp end parallel
 #endif
@@ -765,7 +768,7 @@ contains
 
     if (.not. par%dynproc) return
     hybrid = hybrid_create(par, 0, 1)
-    call gfr_dyn_to_fv_phys_topo_hybrid(hybrid, elem, 1, nelemd, phis)
+    call gfr_dyn_to_fv_phys_topo_hybrid(elem, 1, nelemd, phis)
   end subroutine gfr_dyn_to_fv_phys_topo_mpi_only
 
   subroutine gfr_fv_phys_to_dyn_topo_dom_mt(par, dom_mt, elem, phis)
@@ -773,7 +776,9 @@ contains
 
     use parallel_mod, only: parallel_t
     use domain_mod, only: domain1d_t
+#ifdef HORIZ_OPENMP
     use thread_mod, only: hthreads
+#endif
 
     type (parallel_t), intent(in) :: par
     type (domain1d_t), intent(in) :: dom_mt(:)
@@ -830,7 +835,7 @@ contains
 
     do j = 1,np
        do i = 1,np
-          w_gg(i,j) = gll%weights(i)*gll%weights(j)
+          w_gg(i,j) = real(gll%weights(i)*gll%weights(j), kind=real_kind)
        end do
     end do
     
@@ -874,7 +879,7 @@ contains
        f = one
        do j = 1,np
           if (j /= i) then
-             f = f*((x - gll%points(j))/(gll%points(i) - gll%points(j)))
+             f = real(f*((x - gll%points(j))/(gll%points(i) - gll%points(j))), kind=real_kind)
           end if
        end do
        y(i) = f
@@ -910,17 +915,17 @@ contains
           do qj = 1,np
              ! (xref,yref) are w.r.t. the [-1,1]^2 reference domain mapped to
              ! the subcell.
-             ref = xs + half*(xe - xs)*(one + gll%points(qj))
+             ref = real(xs + half*(xe - xs)*(one + gll%points(qj)), kind=real_kind)
              call eval_lagrange_bases(gll, np, ref, bj)
              do qi = 1,np
-                ref = ys + half*(ye - ys)*(one + gll%points(qi))
+                ref = real(ys + half*(ye - ys)*(one + gll%points(qi)), kind=real_kind)
                 call eval_lagrange_bases(gll, np, ref, bi)
                 do gj = 1,np
                    do gi = 1,np
                       ! Accumulate each GLL basis's contribution to this
                       ! subcell.
-                      M_gf(gi,gj,fi,fj) = M_gf(gi,gj,fi,fj) + &
-                           gll%weights(qi)*gll%weights(qj)*bi(gi)*bj(gj)
+                      M_gf(gi,gj,fi,fj) = real(M_gf(gi,gj,fi,fj) + &
+                           gll%weights(qi)*gll%weights(qj)*bi(gi)*bj(gj), kind=real_kind)
                    end do
                 end do
              end do
@@ -935,9 +940,9 @@ contains
        ! precision.
        do gj = 1,np
           do gi = 1,np
-             M_gf(gi,gj,:nphys,:nphys) = M_gf(gi,gj,:nphys,:nphys)* &
+             M_gf(gi,gj,:nphys,:nphys) = real(M_gf(gi,gj,:nphys,:nphys)* &
                   ((gll%weights(gi)*gll%weights(gj))/ &
-                  sum(M_gf(gi,gj,:nphys,:nphys)))
+                  sum(M_gf(gi,gj,:nphys,:nphys))), kind=real_kind)
           end do
        end do
     end if
@@ -1725,11 +1730,11 @@ contains
     M(:np1sq,:np2sq) = zero
 
     do jq = 1,npq
-       jr = quad%points(jq)
+       jr = real(quad%points(jq), kind=real_kind)
        call eval_lagrange_bases(gll1, np1, jr, jv1)
        call eval_lagrange_bases(gll2, np2, jr, jv2)
        do iq = 1,npq
-          ir = quad%points(iq)
+          ir = real(quad%points(iq), kind=real_kind)
           call eval_lagrange_bases(gll1, np1, ir, iv1)
           call eval_lagrange_bases(gll2, np2, ir, iv2)
           do j2 = 1,np2
@@ -1738,9 +1743,9 @@ contains
                 do j1 = 1,np1
                    do i1 = 1,np1
                       k1 = (j1-1)*np1 + i1
-                      M(k1,k2) = M(k1,k2) + &
+                      M(k1,k2) = real(M(k1,k2) + &
                            quad%weights(iq)*quad%weights(jq)* &
-                           iv1(i1)*iv2(i2)*jv1(j1)*jv2(j2)
+                           iv1(i1)*iv2(i2)*jv1(j1)*jv2(j2), kind=real_kind)
                    end do
                 end do
              end do
@@ -1773,7 +1778,7 @@ contains
 
     do ie = nets,nete
        wr(:,:,1) = elem(ie)%state%phis
-       call gfr_pg1_g_reconstruct_scalar(gfr, ie, elem(ie)%metdet, wr(:,:,:1))
+       call gfr_pg1_g_reconstruct_scalar(gfr, elem(ie)%metdet, wr(:,:,:1))
        elem(ie)%state%phis = wr(:,:,1)
        call limiter_clip_and_sum(elem(ie)%spheremp, gfr%qmin(1,1,ie), &
             gfr%qmax(1,1,ie), ones(:,:,1), elem(ie)%state%phis)
@@ -1828,7 +1833,7 @@ contains
        call get_field(elem(ie), 'p', p, hvcoord, nt, -1)
        wr1 = (p0/p)**kappa
        elem(ie)%derived%FT = elem(ie)%derived%FT*wr1
-       call gfr_pg1_g_reconstruct_scalar_dp(gfr, ie, elem(ie)%metdet, dp, &
+       call gfr_pg1_g_reconstruct_scalar_dp(gfr, elem(ie)%metdet, dp, &
             elem(ie)%derived%FT)
        elem(ie)%derived%FT = elem(ie)%derived%FT/wr1
 
@@ -1836,7 +1841,7 @@ contains
 
        do qi = 1,qsize
           ! Reconstruct Q_ten.
-          call gfr_pg1_g_reconstruct_scalar_dp(gfr, ie, elem(ie)%metdet, dp, &
+          call gfr_pg1_g_reconstruct_scalar_dp(gfr, elem(ie)%metdet, dp, &
                elem(ie)%derived%FQ(:,:,:,qi))
           ! GLL Q.
           elem(ie)%derived%FQ(:,:,:,qi) = elem(ie)%derived%FQ(:,:,:,qi) + &
@@ -1860,11 +1865,10 @@ contains
     call gfr_f2g_dss(hybrid, elem, nets, nete)
   end subroutine gfr_pg1_reconstruct_hybrid
 
-  subroutine gfr_pg1_g_reconstruct_scalar(gfr, ie, gll_metdet, g)
+  subroutine gfr_pg1_g_reconstruct_scalar(gfr, gll_metdet, g)
     ! Wrapper to core solve routine. g is a density.
 
     type (GllFvRemap_t), intent(in) :: gfr
-    integer, intent(in) :: ie
     real(kind=real_kind), intent(in) :: gll_metdet(:,:)
     real(kind=real_kind), intent(inout) :: g(:,:,:)
 
@@ -1878,18 +1882,15 @@ contains
     end do
   end subroutine gfr_pg1_g_reconstruct_scalar
 
-  subroutine gfr_pg1_g_reconstruct_scalar_dp(gfr, ie, gll_metdet, dp, g)
+  subroutine gfr_pg1_g_reconstruct_scalar_dp(gfr, gll_metdet, dp, g)
     ! Wrapper to core solve routine. g is a mixing ratio.
 
     type (GllFvRemap_t), intent(in) :: gfr
-    integer, intent(in) :: ie
     real(kind=real_kind), intent(in) :: gll_metdet(:,:), dp(:,:,:)
     real(kind=real_kind), intent(inout) :: g(:,:,:)
 
-    real(kind=real_kind) wr(np*np)
-
     g = dp*g
-    call gfr_pg1_g_reconstruct_scalar(gfr, ie, gll_metdet, g)
+    call gfr_pg1_g_reconstruct_scalar(gfr, gll_metdet, g)
     g = g/dp
   end subroutine gfr_pg1_g_reconstruct_scalar_dp
 
@@ -1911,7 +1912,7 @@ contains
           wr(:,:,d) = elem(ie)%Dinv(:,:,d,1)*v(:,:,1,k) + elem(ie)%Dinv(:,:,d,2)*v(:,:,2,k)
        end do
        do d = 1,2
-          call gfr_pg1_g_reconstruct_scalar(gfr, ie, elem(ie)%metdet, wr(:,:,d:d))
+          call gfr_pg1_g_reconstruct_scalar(gfr, elem(ie)%metdet, wr(:,:,d:d))
        end do
        ! ref -> sphere
        do d = 1,2
@@ -1925,7 +1926,9 @@ contains
 
     use parallel_mod, only: parallel_t
     use domain_mod, only: domain1d_t
+#ifdef HORIZ_OPENMP
     use thread_mod, only: hthreads
+#endif
     use hybvcoord_mod, only: hvcoord_t
 
     type (parallel_t), intent(in) :: par
@@ -1953,7 +1956,9 @@ contains
 
     use parallel_mod, only: parallel_t
     use domain_mod, only: domain1d_t
+#ifdef HORIZ_OPENMP
     use thread_mod, only: hthreads
+#endif
 
     type (parallel_t), intent(in) :: par
     type (domain1d_t), intent(in) :: dom_mt(:)
@@ -2022,7 +2027,7 @@ contains
           accum = zero
           do gj = 1,npi
              do gi = 1,npi
-                accum = accum + gfr%interp(gi,gj,fi,fj)*x(gi,gj)
+                accum = accum + interp(gi,gj,fi,fj)*x(gi,gj)
              end do
           end do
           y(fi,fj) = accum
@@ -2807,7 +2812,7 @@ contains
                       qmins(1,1,ie) = min(minval(elem(ie)%state%Q(:,:,1,1)), qmins(1,1,ie))
                       qmaxs(1,1,ie) = max(maxval(elem(ie)%state%Q(:,:,1,1)), qmaxs(1,1,ie))
                    end if
-                   call gfr_pg1_g_reconstruct_scalar_dp(gfr, ie, elem(ie)%metdet, &
+                   call gfr_pg1_g_reconstruct_scalar_dp(gfr, elem(ie)%metdet, &
                         elem(ie)%state%ps_v(:,:,:1), elem(ie)%state%Q(:,:,:1,1))
                    if (limit) then
                       call limiter_clip_and_sum(gfr%w_gg*elem(ie)%metdet, qmins(1,1,ie), &
@@ -2954,18 +2959,14 @@ contains
     end subroutine ref2spherea
   end function test_sphere2ref
 
-  function gfr_test(hybrid, dom_mt, hvcoord, deriv, elem) result(nerr)
+  function gfr_test(hybrid, dom_mt, elem) result(nerr)
     ! Driver for check subroutine.
 
     use domain_mod, only: domain1d_t
-    use derivative_mod, only: derivative_t
-    use hybvcoord_mod, only: hvcoord_t
 
     type (hybrid_t), intent(in) :: hybrid
     type (domain1d_t), intent(in) :: dom_mt(:)
-    type (derivative_t), intent(in) :: deriv
     type (element_t), intent(inout) :: elem(:)
-    type (hvcoord_t) , intent(in) :: hvcoord
 
     integer :: nphys, bi, nerr
     logical :: boost_pg1

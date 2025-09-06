@@ -276,26 +276,25 @@ contains
     real (kind=real_kind      )       :: dp    (np)
     integer                           :: i,j
 
-      gll=gausslobatto(np)
-      dp = 1
-      do i=1,np
-        do j=1,np
-          if (i /= j) then
-            dp(i) = dp(i) * (gll%points(i) - gll%points(j))
-          end if
-        end do
-      end do 
-      do i=1,np
-        do j=1,np
-          interp_c(i,j) = 1/(dp(i)*dp(j))
-        end do
-      end do 
-      interp_gll(:) = gll%points(:)
-      interp_tracers_init = .true.
+    gll=gausslobatto(np)
+    dp = 1
+    do i=1,np
+      do j=1,np
+        if (i /= j) then
+          dp(i) = real(dp(i) * (gll%points(i) - gll%points(j)), kind=real_kind)
+        end if
+      end do
+    end do 
+    do i=1,np
+      do j=1,np
+        interp_c(i,j) = 1/(dp(i)*dp(j))
+      end do
+    end do 
+    interp_gll(:) = real(gll%points(:), kind=real_kind)
+    interp_tracers_init = .true.
 
-      deallocate(gll%points)
-      deallocate(gll%weights)
-
+    deallocate(gll%points)
+    deallocate(gll%weights)
 
   end subroutine interpolate_tracers_init
 
@@ -369,19 +368,19 @@ contains
     if (np==i) i = i-1
     if (np==j) j = j-1
 
-    dx = x(i+1)     - x(i)
-    dy = y(i+1,j,:) - y(i,j,:)
+    dx = real(x(i+1)     - x(i), kind=real_kind)
+    dy = real(y(i+1,j,:) - y(i,j,:), kind=real_kind)
     dydx = dy/dx
-    y0 = y(i,j,:) + (r%x-x(i))*dydx 
+    y0 = real(y(i,j,:) + (r%x-x(i))*dydx, kind=real_kind)
     
     dy = y(i+1,j+1,:) - y(i,j+1,:)
     dydx = dy/dx
-    y1 = y(i,j+1,:) + (r%x-x(i))*dydx 
+    y1 = real(y(i,j+1,:) + (r%x-x(i))*dydx , kind=real_kind)
 
-    dx = x(j+1)     - x(j)
+    dx = real(x(j+1) - x(j), kind=real_kind)
     dy = y1         - y0          
     dydx = dy/dx
-    v  = y0         + (r%y-x(j))*dydx 
+    v  = real(y0 + (r%y-x(j))*dydx, kind=real_kind)
 
   end function linear_interpolate_2d
 
@@ -1084,7 +1083,7 @@ contains
        gp=gauss(nlat)
        do j=1,nlat
           lat(j) = asin(gp%points(j))
-          gweight(j) = gp%weights(j)
+          gweight(j) = real(gp%weights(j), kind=real_kind)
        end do
     endif
     if (gridtype==3) then

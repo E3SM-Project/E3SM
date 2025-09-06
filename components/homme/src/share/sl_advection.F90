@@ -398,7 +398,7 @@ contains
     call slmm_csl(nets, nete, dep_points_all, dep_points_ndim, minq, maxq, info)
     ! No barrier needed: slmm_csl has a horiz thread barrier at the end.
     if (info /= 0) then
-       call write_velocity_data(elem, nets, nete, hybrid, dt, tl)
+       call write_velocity_data(elem, nets, nete, hybrid, tl)
        call abortmp('slmm_csl returned -1; see output above for more information.')
     end if
     if (barrier) call perf_barrier(hybrid)
@@ -406,7 +406,7 @@ contains
 
     if (semi_lagrange_hv_q > 0 .and. nu_q > 0) then
        n = semi_lagrange_hv_q
-       call advance_hypervis_scalar(elem, hvcoord, hybrid, deriv, tl%np1, np1_qdp, nets, nete, dt, n)
+       call advance_hypervis_scalar(elem, hybrid, deriv, nets, nete, dt, n)
        ! No barrier needed: advance_hypervis_scalar has a horiz thread barrier at the end.
     end if
 
@@ -502,7 +502,7 @@ contains
        end if
        do ie = nets,nete
           ! divdp is dp_star
-          call calc_vertically_lagrangian_levels(hybrid, elem(ie), ie, hvcoord, tl, dt, &
+          call calc_vertically_lagrangian_levels(hybrid, elem(ie), hvcoord, tl, dt, &
                deriv, dp_tol, elem(ie)%derived%divdp)
           wr(:,:,:,1) = elem(ie)%derived%vn0(:,:,1,:)*elem(ie)%state%dp3d(:,:,:,tl%np1)
           wr(:,:,:,2) = elem(ie)%derived%vn0(:,:,2,:)*elem(ie)%state%dp3d(:,:,:,tl%np1)
@@ -514,7 +514,7 @@ contains
        call t_stopf('SLMM_reconstruct')
     end if
 
-    call ALE_RKdss(elem, nets, nete, hybrid, deriv, dt, tl, independent_time_steps)
+    call ALE_RKdss(elem, nets, nete, hybrid, deriv, dt, independent_time_steps)
 
     if (barrier) call perf_barrier(hybrid)
     call t_startf('SLMM_v2x')
@@ -544,7 +544,7 @@ contains
 
   ! this will calculate the velocity at time t+1/2  along the trajectory s(t) given the velocities
   ! at the GLL points at time t and t+1 using a second order time accurate formulation.
-  subroutine ALE_RKdss(elem, nets, nete, hy, deriv, dt, tl, independent_time_steps)
+  subroutine ALE_RKdss(elem, nets, nete, hy, deriv, dt, independent_time_steps)
     use edgetype_mod,    only : EdgeBuffer_t
     use bndry_mod,       only : bndry_exchangev
     use kinds,           only : real_kind
@@ -560,7 +560,6 @@ contains
     type (hybrid_t)      , intent(in)                :: hy ! distributed parallel structure (shared)
     type (derivative_t)  , intent(in)                :: deriv ! derivative struct
     real (kind=real_kind), intent(in)                :: dt ! timestep
-    type (TimeLevel_t)   , intent(in)                :: tl
     logical              , intent(in)                :: independent_time_steps
 
     integer                                          :: ie, k
@@ -630,7 +629,7 @@ contains
 #endif
   end subroutine ALE_RKdss
 
-  subroutine write_velocity_data(elem, nets, nete, hy, dt, tl)
+  subroutine write_velocity_data(elem, nets, nete, hy, tl)
     use edgetype_mod,    only : EdgeBuffer_t
     use bndry_mod,       only : bndry_exchangev
     use kinds,           only : real_kind
@@ -643,7 +642,6 @@ contains
     integer              , intent(in)    :: nets
     integer              , intent(in)    :: nete
     type (hybrid_t)      , intent(in)    :: hy
-    real (kind=real_kind), intent(in)    :: dt
     type (TimeLevel_t)   , intent(in)    :: tl
 
     integer :: ie, i, j, k, np1
@@ -786,7 +784,7 @@ contains
 #endif
   end subroutine perf_barrier
 
-  subroutine advance_hypervis_scalar(elem, hvcoord , hybrid , deriv , nt , nt_qdp , nets , nete , dt2, nq)
+  subroutine advance_hypervis_scalar(elem, hybrid , deriv , nets , nete , dt2, nq)
     !  hyperviscsoity operator for foward-in-time scheme
     !  take one timestep of:
     !          Q(:,:,:,np) = Q(:,:,:,np) +  dt2*nu*laplacian**order ( Q )
@@ -802,11 +800,8 @@ contains
     use control_mod    , only : nu_q, hypervis_subcycle_q
     implicit none
     type (element_t)     , intent(inout), target :: elem(:)
-    type (hvcoord_t)     , intent(in   )         :: hvcoord
     type (hybrid_t)      , intent(in   )         :: hybrid
     type (derivative_t)  , intent(in   )         :: deriv
-    integer              , intent(in   )         :: nt
-    integer              , intent(in   )         :: nt_qdp
     integer              , intent(in   )         :: nets
     integer              , intent(in   )         :: nete
     integer              , intent(in   )         :: nq
@@ -944,7 +939,7 @@ contains
   end subroutine biharmonic_wk_scalar
 
   subroutine calc_vertically_lagrangian_levels( &
-       hybrid, elem, ie, hvcoord, tl, dt, deriv, dp_tol, dprecon)
+       hybrid, elem, hvcoord, tl, dt, deriv, dp_tol, dprecon)
 
     ! Reconstruct the vertically Lagrangian levels, thus permitting the dynamics
     ! vertical remap time step to be shorter than the tracer time step.
@@ -1005,7 +1000,6 @@ contains
 #endif
     type (hybrid_t), intent(in) :: hybrid
     type (element_t), intent(in) :: elem
-    integer, intent(in) :: ie
     type (hvcoord_t), intent(in) :: hvcoord
     type (TimeLevel_t), intent(in) :: tl
     real(kind=real_kind), intent(in) :: dt, dp_tol
@@ -1198,7 +1192,7 @@ contains
     end do
   end function reconstruct_and_limit_dp
 
-  subroutine sl_vertically_remap_tracers(hybrid, elem, nets, nete, tl, dt_q)
+  subroutine sl_vertically_remap_tracers(hybrid, elem, nets, nete, tl)
     ! Remap the tracers after a tracer time step, in the case that the
     ! vertical remap time step for dynamics is shorter than the tracer
     ! time step.
@@ -1212,7 +1206,6 @@ contains
     type (hybrid_t), intent(in) :: hybrid
     type (element_t), intent(inout) :: elem(:)
     integer, intent(in) :: nets, nete
-    real(kind=real_kind), intent(in) :: dt_q
     type (TimeLevel_t), intent(in) :: tl
 
     integer :: ie, i, j, q, n0_qdp, np1_qdp
@@ -1361,7 +1354,7 @@ contains
           alpha(1) = real(nsubstep - step    , real_kind)/nsubstep
           alpha(2) = real(nsubstep - step + 1, real_kind)/nsubstep
           do ie = nets, nete
-             call calc_nodal_velocities(elem(ie), deriv, hvcoord, tl, &
+             call calc_nodal_velocities(elem(ie), deriv, hvcoord, &
                   independent_time_steps, dtsub, alpha, &
                   elem(ie)%derived%vstar, elem(ie)%derived%dp, &
                   elem(ie)%state%v(:,:,:,:,tl%np1), elem(ie)%state%dp3d(:,:,:,tl%np1), &
@@ -1479,14 +1472,14 @@ contains
        end do
        alpha(1) = 0
        alpha(2) = 1
-       call calc_nodal_velocities(elem(ie), deriv, hvcoord, tl, &
+       call calc_nodal_velocities(elem(ie), deriv, hvcoord, &
             independent_time_steps, dtsub, alpha, &
             vs(:,:,:,:,1), dps(:,:,:,1), vs(:,:,:,:,2), dps(:,:,:,2), &
             vnode(:,:,:,:,ie))
     end do    
   end subroutine calc_nodal_velocities_using_vrec
 
-  subroutine calc_nodal_velocities(elem, deriv, hvcoord, tl, &
+  subroutine calc_nodal_velocities(elem, deriv, hvcoord, &
        independent_time_steps, dtsub, alpha, v1, dp1, v2, dp2, vnode)
     ! Evaluate a formula to provide an estimate of nodal velocities that
     ! are use to create a 2nd-order update to the trajectory. The
@@ -1499,7 +1492,6 @@ contains
     type (element_t), intent(in) :: elem
     type (derivative_t), intent(in) :: deriv
     type (hvcoord_t), intent(in) :: hvcoord
-    type (TimeLevel_t), intent(in) :: tl
     logical, intent(in) :: independent_time_steps
     real(real_kind), intent(in) :: dtsub, alpha(2)
     real(real_kind), dimension(np,np,2,nlev), intent(in) :: v1, v2
@@ -1510,7 +1502,7 @@ contains
     integer :: t
 
     if (independent_time_steps) then
-       call calc_eta_dot_ref_mid(elem, deriv, tl, hvcoord, alpha, &
+       call calc_eta_dot_ref_mid(elem, deriv, hvcoord, alpha, &
             &                    v1, dp1, v2, dp2, eta_dot)
     else
        eta_dot = zero
@@ -1533,12 +1525,11 @@ contains
     end if
   end subroutine calc_nodal_velocities
 
-  subroutine calc_eta_dot_ref_mid(elem, deriv, tl, hvcoord, alpha, v1, dp1, v2, dp2, eta_dot)
+  subroutine calc_eta_dot_ref_mid(elem, deriv, hvcoord, alpha, v1, dp1, v2, dp2, eta_dot)
     ! Compute eta_dot at midpoint nodes at the start and end of the substep.
 
     type (element_t), intent(in) :: elem
     type (derivative_t), intent(in) :: deriv
-    type (TimeLevel_t), intent(in) :: tl
     type (hvcoord_t), intent(in) :: hvcoord
     real(real_kind), intent(in) :: alpha(2)
     real(real_kind), dimension(np,np,2,nlev), intent(in) :: v1, v2

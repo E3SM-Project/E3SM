@@ -26,8 +26,10 @@ void ttype7_imex_timestep (const TimeLevel& tl, const Real dt, const Real eta_av
 void ttype9_imex_timestep (const TimeLevel& tl, const Real dt, const Real eta_ave_w);
 void ttype10_imex_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w);
 
+#if !defined(CAM) && !defined(SCREAM)
 // Prescribed-wind F90-C++ bridge. Test inputs are all implemented in F90.
 extern "C" void set_prescribed_wind_f_bridge(int n0, int np1, int nstep, Real dt);
+#endif
 
 // -------------- IMPLEMENTATIONS -------------- //
 

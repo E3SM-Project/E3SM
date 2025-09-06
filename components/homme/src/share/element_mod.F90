@@ -19,7 +19,9 @@ module element_mod
   public :: element_var_coordinates3D
   public :: GetColumnIdP
   public :: allocate_element_desc
+#if USE_OPENACC
   public :: setup_element_pointers
+#endif
 
   type, public :: index_t
 !    native grid "uniquepoints" output global id given by  UniquePtOffset + 0..NumUniquePts
@@ -151,7 +153,7 @@ contains
     type(element_t), intent(in) :: elem
     integer, intent(in) :: i,j
     integer :: col_id
-    col_id = elem%gdofP(i,j)
+    col_id = INT(elem%gdofP(i,j))
   end function GetColumnIdP
 
   !___________________________________________________________________
@@ -176,8 +178,8 @@ contains
     do j=1,SIZE(points)
        y = centroid%y + length%y*points(j)
        do i=1,SIZE(points)
-          cart(i,j)%x = centroid%x + length%x*points(i)
-          cart(i,j)%y = y
+          cart(i,j)%x = real(centroid%x + length%x*points(i), kind=real_kind)
+          cart(i,j)%y = real(y, kind=real_kind)
        end do
     end do
   end function element_coordinates
@@ -275,15 +277,15 @@ contains
 !     much the same as the version in prim_driver_base, with the addition
 !     of a call to this subroutine (which should be removed from the base
 !     version of prim_init1
+#if USE_OPENACC
   subroutine setup_element_pointers(elem)
     use dimensions_mod, only: nelemd, qsize
-#if USE_OPENACC
     use element_state, only : state_Qdp, derived_vn0, derived_divdp, derived_divdp_proj
-#endif
+
     implicit none
     type(element_t), intent(inout) :: elem(:)
     integer :: ie
-#if USE_OPENACC
+
     allocate( state_Qdp                (np,np,nlev,qsize,2,nelemd)            )
     allocate( derived_vn0              (np,np,2,nlev,nelemd)                  )
     allocate( derived_divdp            (np,np,nlev,nelemd)                    )
@@ -294,7 +296,7 @@ contains
       elem(ie)%derived%divdp             => derived_divdp            (:,:,:,ie)    
       elem(ie)%derived%divdp_proj        => derived_divdp_proj       (:,:,:,ie)    
     enddo
-#endif
   end subroutine setup_element_pointers
+#endif
   
 end module element_mod

@@ -8,7 +8,6 @@ module prim_driver_mod
   use kinds,                only : real_kind
   use dimensions_mod,       only : qsize, nelemd, np, qsize
   use element_mod,          only : element_t
-  use prim_driver_base,     only : deriv1, smooth_topo_datasets
   use prim_cxx_driver_base, only : prim_init1, prim_finalize
   use physical_constants,   only : scale_factor, laplacian_rigid_factor
   use hybrid_mod,           only : hybrid_t
@@ -35,17 +34,21 @@ module prim_driver_mod
      integer :: nets, nete
   end type PrescribedWind_t
 
+#if !defined(CAM) && !defined(SCREAM)
   type (PrescribedWind_t), private :: prescribed_wind_args
+#endif
 
 contains
 
   subroutine prim_init2(elem, hybrid, nets, nete, tl, hvcoord)
     use hybvcoord_mod,    only : hvcoord_t
     use time_mod,         only : timelevel_t
-    use prim_driver_base, only : deriv1, prim_init2_base => prim_init2
+    use prim_driver_base, only : prim_init2_base => prim_init2
     use prim_state_mod,   only : prim_printstate
     use theta_f2c_mod,    only : initialize_dp3d_from_ps_c
+#if !defined(CAM) && !defined(SCREAM)
     use control_mod,      only : prescribed_wind
+#endif
     !
     ! Inputs
     !
@@ -71,9 +74,11 @@ contains
     ! Initialize dp3d from ps_v
     call initialize_dp3d_from_ps_c ()
 
+#if !defined(CAM) && !defined(SCREAM)
     if (prescribed_wind == 1) then
        call init_standalone_test(elem,deriv1,hybrid,hvcoord,tl,nets,nete)
     end if
+#endif
   end subroutine prim_init2
 
   subroutine prim_create_c_data_structures (tl, hvcoord, mp)
@@ -259,17 +264,13 @@ contains
     enddo
   end subroutine prim_init_geopotential_views
 
-  subroutine prim_init_state_views (elem)
+  subroutine prim_init_state_views ()
     use iso_c_binding, only : c_ptr, c_loc
     use element_mod,   only : element_t
     use element_state, onlY : elem_state_dp3d, elem_state_phinh_i, elem_state_ps_v, &
                               elem_state_qdp, elem_state_v,                         &
                               elem_state_vtheta_dp, elem_state_w_i
     use theta_f2c_mod, only : init_elements_states_c
-    !
-    ! Input(s)
-    !
-    type (element_t), intent(in) :: elem (:)
     !
     ! Local(s)
     !
@@ -290,15 +291,11 @@ contains
                                  elem_state_Qdp_ptr)
   end subroutine prim_init_state_views
 
-  subroutine prim_init_ref_states_views (elem)
+  subroutine prim_init_ref_states_views ()
     use iso_c_binding, only : c_ptr, c_loc
     use element_mod,   only : element_t
     use element_state, onlY : elem_theta_ref, elem_dp_ref, elem_phi_ref
     use theta_f2c_mod, only : init_reference_states_c
-    !
-    ! Input(s)
-    !
-    type (element_t), intent(in) :: elem (:)
     !
     ! Local(s)
     !
@@ -310,17 +307,13 @@ contains
     call init_reference_states_c (elem_theta_ref_ptr, elem_dp_ref_ptr, elem_phi_ref_ptr)
   end subroutine prim_init_ref_states_views
 
-  subroutine prim_init_diags_views (elem)
+  subroutine prim_init_diags_views ()
     use iso_c_binding, only : c_ptr, c_loc
     use element_mod,   only : element_t
     use element_state, onlY : elem_accum_iener, elem_accum_kener, elem_accum_pener, &
                               elem_accum_q1mass, elem_accum_qmass, elem_accum_qvar, &
                               elem_state_q
     use theta_f2c_mod, only : init_diagnostics_c
-    !
-    ! Input(s)
-    !
-    type (element_t), intent(in) :: elem (:)
     !
     ! Local(s)
     !
@@ -355,13 +348,13 @@ contains
     call prim_init_geopotential_views (elem)
 
     ! Initialize the 3d states views in C++
-    call prim_init_state_views (elem)
+    call prim_init_state_views ()
 
     ! Initialize the reference states in C++
-    call prim_init_ref_states_views (elem)
+    call prim_init_ref_states_views ()
 
     ! Initialize the diagnostics arrays in C++
-    call prim_init_diags_views (elem)
+    call prim_init_diags_views ()
   end subroutine prim_init_elements_views
 
   subroutine prim_init_kokkos_functors (allocate_buffer)
@@ -386,7 +379,7 @@ contains
 
   end subroutine prim_init_kokkos_functors
 
-  subroutine prim_run_subcycle(elem, hybrid, nets, nete, dt, single_column, tl, hvcoord, nsplit_iteration)
+  subroutine prim_run_subcycle(elem, hybrid, nets, nete, dt, tl, hvcoord, nsplit_iteration)
     use iso_c_binding,  only : c_int, c_ptr, c_loc
     use control_mod,    only : qsplit, rsplit, statefreq, disable_diagnostics, &
                                dt_remap_factor, dt_tracer_factor
@@ -415,7 +408,6 @@ contains
     integer,              intent(in)    :: nets                         ! starting thread element number (private)
     integer,              intent(in)    :: nete                         ! ending thread element number   (private)
     real(kind=real_kind), intent(in)    :: dt                           ! "timestep dependent" timestep
-    logical,              intent(in)    :: single_column
     type (TimeLevel_t),   intent(inout) :: tl
     integer,              intent(in)    :: nsplit_iteration             !  = 1 .. nsplit
     !
@@ -560,6 +552,13 @@ contains
     endif
 #endif
 
+#ifndef CAM
+    ! Do something with dummy arg, to silence compiler warning
+    if ( .false. ) then
+      print *, nsplit_iter
+    endif
+#endif
+
   end function is_push_to_c_required
 
   function is_push_to_f_required(tl,statefreq,nextOutputStep,compute_diagnostics,nsplit_iter) &
@@ -622,8 +621,33 @@ contains
     if (prescribed_wind == 1) push_to_f = .true.
 #endif
 
+#ifndef CAM
+    ! Do something with dummy arg, to silence compiler warning
+    if ( .false. ) then
+      print *, nsplit_iter
+    endif
+#endif
+
   end function is_push_to_f_required
 
+  subroutine init_prescribed_wind_subcycle(elem, nets, nete, tl)
+    ! Set the derived values used in tracer transport on the F90 side even
+    ! though most of the work is done on the C++ side. This is needed because
+    ! set_prescribed_wind accumulates certain derived quantities during
+    ! prim_advance_exp that get repeatedly copied from F90 to C++. Here we
+    ! initialize values for accumulation.
+    !   In summary: Call this before entering the prim_run_subcycle loop.
+    
+    use prim_driver_base, only: set_tracer_transport_derived_values
+    
+    type (element_t), intent(inout) :: elem(:)
+    integer, intent(in) :: nets, nete
+    type (timelevel_t) :: tl
+
+    call set_tracer_transport_derived_values(elem, nets, nete, tl)
+  end subroutine init_prescribed_wind_subcycle
+
+#if !defined(CAM) && !defined(SCREAM)
   subroutine init_standalone_test(elem,deriv,hybrid,hvcoord,tl,nets,nete)
     ! set_prescribed_wind takes hvcoord as intent(inout) because it modifies it
     ! in the first call. In the C++ dycore init, we need hvcoord already
@@ -634,9 +658,7 @@ contains
     use time_mod,         only : timelevel_t
     use element_mod,      only : element_t
     use derivative_mod,   only : derivative_t
-#if !defined(CAM) && !defined(SCREAM)
     use test_mod,         only : set_test_initial_conditions
-#endif
 
     type (element_t),      intent(inout), target  :: elem(:)
     type (derivative_t),   intent(in)             :: deriv
@@ -646,7 +668,6 @@ contains
     integer              , intent(in)             :: nets
     integer              , intent(in)             :: nete
 
-#if !defined(CAM) && !defined(SCREAM)
     ! Already called in prim_driver_base::prim_init2:
     !   call set_test_initial_conditions(elem,deriv,hybrid,hvcoord,tl,nets,nete)
     ! Also already taken care of:
@@ -659,7 +680,6 @@ contains
     prescribed_wind_args%deriv = deriv
     prescribed_wind_args%nets = nets
     prescribed_wind_args%nete = nete
-#endif
   end subroutine init_standalone_test
 
   subroutine compute_test_forcing_f(elem,hybrid,hvcoord,nt,ntQ,dt,nets,nete,tl)
@@ -667,9 +687,7 @@ contains
     use hybvcoord_mod,    only : hvcoord_t
     use time_mod,         only : timelevel_t
     use element_mod,      only : element_t
-#if !defined(CAM) && !defined(SCREAM)
     use test_mod,       only : compute_test_forcing
-#endif
     implicit none
     type(element_t),     intent(inout) :: elem(:)                            ! element array
     type(hybrid_t),      intent(in)    :: hybrid                             ! hybrid parallel structure
@@ -678,13 +696,10 @@ contains
     integer,             intent(in)    :: nets,nete,nt,ntQ
     type(TimeLevel_t),   intent(in)    :: tl
 
-#if !defined(CAM) && !defined(SCREAM)
     call compute_test_forcing(elem,hybrid,hvcoord,nt,ntQ,dt,nets,nete,tl)
-#endif
   end subroutine compute_test_forcing_f
 
   subroutine push_test_state_to_c_wrapper()
-#if !defined(CAM) && !defined(SCREAM)
     use iso_c_binding, only : c_ptr, c_loc
     use perf_mod,      only : t_startf, t_stopf
     use theta_f2c_mod, only : push_test_state_to_c
@@ -709,25 +724,7 @@ contains
          elem_state_vtheta_dp_ptr, elem_state_phinh_i_ptr, elem_state_v_ptr, &
          elem_state_w_i_ptr, elem_derived_eta_dot_dpdn_ptr, elem_derived_vn0_ptr)
     call t_stopf('push_to_cxx')
-#endif
   end subroutine push_test_state_to_c_wrapper
-
-  subroutine init_prescribed_wind_subcycle(elem, nets, nete, tl)
-    ! Set the derived values used in tracer transport on the F90 side even
-    ! though most of the work is done on the C++ side. This is needed because
-    ! set_prescribed_wind accumulates certain derived quantities during
-    ! prim_advance_exp that get repeatedly copied from F90 to C++. Here we
-    ! initialize values for accumulation.
-    !   In summary: Call this before entering the prim_run_subcycle loop.
-    
-    use prim_driver_base, only: set_tracer_transport_derived_values
-    
-    type (element_t), intent(inout) :: elem(:)
-    integer, intent(in) :: nets, nete
-    type (timelevel_t) :: tl
-
-    call set_tracer_transport_derived_values(elem, nets, nete, tl)
-  end subroutine init_prescribed_wind_subcycle
 
   subroutine set_prescribed_wind_f_bridge(n0, np1, nstep, dt) bind(c)
     ! This routine is called from the C++ prim_advance_exp implementation inside
@@ -759,10 +756,8 @@ contains
     use time_mod,         only : timelevel_t
     use element_mod,      only : element_t
     use derivative_mod,   only : derivative_t
-#if !defined(CAM) && !defined(SCREAM)
     use control_mod,      only : qsplit
     use test_mod,         only : set_prescribed_wind
-#endif
 
     type (element_t),      intent(inout), target  :: elem(:)
     type (derivative_t),   intent(in)             :: deriv
@@ -773,7 +768,6 @@ contains
     integer              , intent(in)             :: nets
     integer              , intent(in)             :: nete
 
-#if !defined(CAM) && !defined(SCREAM)
     type (hvcoord_t) :: hv
 
     real(kind=real_kind) :: eta_ave_w
@@ -786,7 +780,7 @@ contains
     call set_prescribed_wind(elem,deriv,hybrid,hv,dt,tl,nets,nete,eta_ave_w)
 
     call push_test_state_to_c_wrapper()
-#endif
   end subroutine set_prescribed_wind_f
+#endif
 
 end module

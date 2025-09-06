@@ -548,25 +548,23 @@ contains
   end subroutine prim_advance_exp
 
 
-  subroutine applyCAMforcing_dynamics(elem,hvcoord,np1,dt,nets,nete)
-  !
-  ! applies dynamic tendencies without dp adjustment
-  !
-  use hybvcoord_mod,  only: hvcoord_t
+  subroutine applyCAMforcing_dynamics(elem,np1,dt,nets,nete)
+    !
+    ! applies dynamic tendencies without dp adjustment
+    !
 
-  implicit none
-  type (element_t)     ,  intent(inout) :: elem(:)
-  real (kind=real_kind),  intent(in)    :: dt
-  type (hvcoord_t),       intent(in)    :: hvcoord
-  integer,                intent(in)    :: np1,nets,nete
+    implicit none
+    type (element_t)     ,  intent(inout) :: elem(:)
+    real (kind=real_kind),  intent(in)    :: dt
+    integer,                intent(in)    :: np1,nets,nete
 
-  integer :: i,j,k,ie,q
-  real (kind=real_kind) :: v1,dp
+    integer :: i,j,k,ie,q
+    real (kind=real_kind) :: v1,dp
 
-  do ie=nets,nete
-     elem(ie)%state%T(:,:,:,np1)  = elem(ie)%state%T(:,:,:,np1)    + dt*elem(ie)%derived%FT(:,:,:)
-     elem(ie)%state%v(:,:,:,:,np1) = elem(ie)%state%v(:,:,:,:,np1) + dt*elem(ie)%derived%FM(:,:,:,:)
-  enddo
+    do ie=nets,nete
+       elem(ie)%state%T(:,:,:,np1)  = elem(ie)%state%T(:,:,:,np1)    + dt*elem(ie)%derived%FT(:,:,:)
+       elem(ie)%state%v(:,:,:,:,np1) = elem(ie)%state%v(:,:,:,:,np1) + dt*elem(ie)%derived%FM(:,:,:,:)
+    enddo
   end subroutine applyCAMforcing_dynamics
 
 

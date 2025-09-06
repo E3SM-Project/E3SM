@@ -31,11 +31,6 @@ module coordinate_systems_mod
      real(real_kind) :: lat           ! latitude
   end type spherical_polar_t
 
-
-  interface assignment ( = )
-     module procedure copy_cart2d
-  end interface
-
   interface operator( == )
      module procedure eq_cart2d
   end interface
@@ -77,7 +72,6 @@ module coordinate_systems_mod
   public :: cart2cubedspherexy  !  (x,y,z)          -> gnomonic (x,y)
   public :: cart2spherical      !  gnominic (x,y)   -> (lat,lon) 
 
-  private :: copy_cart2d
   private :: eq_cart2d
   private :: distance_cart2D
   private :: distance_cart2D_v
@@ -90,20 +84,6 @@ module coordinate_systems_mod
   private :: aray_to_spherical
 
 contains
-
-  ! ============================================
-  ! copy_cart2d:
-  !
-  ! Overload assignment operator for cartesian2D_t
-  ! ============================================
-
-  subroutine copy_cart2d(cart2,cart1)
-    implicit none
-    type(cartesian2D_t), intent(out) :: cart2
-    type(cartesian2D_t), intent(in)  :: cart1
-    cart2%x=cart1%x
-    cart2%y=cart1%y
-  end subroutine copy_cart2d
 
   ! ============================================
   ! eq_cart2d:

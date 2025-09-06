@@ -50,53 +50,12 @@ module metagraph_mod
   !public :: MetaEdgeCount
   public :: initMetaGraph, destroyMetaGraph
 
-  interface assignment ( = )
-     module procedure copy_metaedge
-  end interface
-
 
 contains 
   ! =====================================
   ! copy vertex:
   ! copy device for overloading = sign.
   ! =====================================
-
-  recursive subroutine copy_metaedge(edge2,edge1)
-
-    type (MetaEdge_t), intent(out) :: edge2
-    type (MetaEdge_t), intent(in)  :: edge1
-
-    integer i
-
-    edge2%number   = edge1%number
-    edge2%type     = edge1%type
-    edge2%wgtP      = edge1%wgtP
-    edge2%wgtP_ghost      = edge1%wgtP_ghost
-    edge2%nmembers = edge1%nmembers
-
-    if (associated(edge1%members)) then
-       allocate(edge2%members(edge2%nmembers))
-       do i=1,edge2%nmembers
-          edge2%members(i)=edge1%members(i)
-       end do
-    end if
-
-    if (associated(edge1%edgeptrP)) then
-       allocate(edge2%edgeptrP(edge2%nmembers))
-       allocate(edge2%edgeptrS(edge2%nmembers))
-       allocate(edge2%edgeptrP_ghost(edge2%nmembers))
-       do i=1,edge2%nmembers
-          edge2%edgeptrP(i)=edge1%edgeptrP(i)
-          edge2%edgeptrS(i)=edge1%edgeptrS(i)
-          edge2%edgeptrP_ghost(i)=edge1%edgeptrP_ghost(i)
-       end do
-    end if
-
-    edge2%HeadVertex = edge1%HeadVertex
-    edge2%TailVertex = edge1%TailVertex
-
-  end subroutine copy_metaedge
-
 
 ! function findedge(mEdge,Edge) result(number)
 

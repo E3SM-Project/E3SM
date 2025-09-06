@@ -214,7 +214,7 @@ contains
     nerr = 0
     
     if (se_fv_phys_remap_alg == -1) then
-       nerr = nerr + gfr_test(hybrid, dom_mt, hvcoord, deriv, elem)
+       nerr = nerr + gfr_test(hybrid, dom_mt, elem)
        nerr = nerr + gfr_check_api(hybrid, nets, nete, hvcoord, elem)
        return
     end if

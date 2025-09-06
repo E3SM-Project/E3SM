@@ -68,6 +68,12 @@ contains
     type (element_t), intent(inout), target   :: elem(:)
     character(len=*)    , intent(in) :: integration
 
+    if ( .false. ) then
+      ! Trick the compiler into thinking we're using the dummy args
+      print *, par%rank
+      print *, size(elem)
+      print *, integration
+    endif
 
   end subroutine prim_advance_init1
 
@@ -495,7 +501,7 @@ contains
 
 
     ! warning: advance_physical_vis currently requires levels that are equally spaced in z
-    if (dcmip16_mu>0) call advance_physical_vis(elem,hvcoord,hybrid,deriv,np1,nets,nete,dt,dcmip16_mu_s,dcmip16_mu)
+    if (dcmip16_mu>0) call advance_physical_vis(elem,hybrid,deriv,np1,nets,nete,dt,dcmip16_mu_s,dcmip16_mu)
 
     if (compute_diagnostics) then
        call t_startf("prim_diag")
@@ -508,32 +514,30 @@ contains
 
 !----------------------------- APPLYCAMFORCING-DYNAMICS ----------------------------
 
-  subroutine applyCAMforcing_dynamics(elem,hvcoord,np1,dt,nets,nete)
+  subroutine applyCAMforcing_dynamics(elem,np1,dt,nets,nete)
 
-  type (element_t)     ,  intent(inout) :: elem(:)
-  real (kind=real_kind),  intent(in)    :: dt
-  type (hvcoord_t),       intent(in)    :: hvcoord
-  integer,                intent(in)    :: np1,nets,nete
+    type (element_t)     ,  intent(inout) :: elem(:)
+    real (kind=real_kind),  intent(in)    :: dt
+    integer,                intent(in)    :: np1,nets,nete
 
-  integer :: k,ie
-  do ie=nets,nete
+    integer :: ie
+    do ie=nets,nete
 
-     elem(ie)%state%vtheta_dp(:,:,:,np1) = elem(ie)%state%vtheta_dp(:,:,:,np1) + dt*elem(ie)%derived%FVTheta(:,:,:)
-     elem(ie)%state%phinh_i(:,:,1:nlev,np1) = elem(ie)%state%phinh_i(:,:,1:nlev,np1) + dt*elem(ie)%derived%FPHI(:,:,1:nlev)
+       elem(ie)%state%vtheta_dp(:,:,:,np1) = elem(ie)%state%vtheta_dp(:,:,:,np1) + dt*elem(ie)%derived%FVTheta(:,:,:)
+       elem(ie)%state%phinh_i(:,:,1:nlev,np1) = elem(ie)%state%phinh_i(:,:,1:nlev,np1) + dt*elem(ie)%derived%FPHI(:,:,1:nlev)
 
-     elem(ie)%state%v(:,:,:,:,np1) = elem(ie)%state%v(:,:,:,:,np1) + dt*elem(ie)%derived%FM(:,:,1:2,:)
+       elem(ie)%state%v(:,:,:,:,np1) = elem(ie)%state%v(:,:,:,:,np1) + dt*elem(ie)%derived%FM(:,:,1:2,:)
 
 #ifndef CAM
-     elem(ie)%state%w_i(:,:,1:nlev,np1) = elem(ie)%state%w_i(:,:,1:nlev,np1) + dt*elem(ie)%derived%FM(:,:,3,:)
+       elem(ie)%state%w_i(:,:,1:nlev,np1) = elem(ie)%state%w_i(:,:,1:nlev,np1) + dt*elem(ie)%derived%FM(:,:,3,:)
 #endif
 
-     ! finally update w at the surface: 
-     elem(ie)%state%w_i(:,:,nlevp,np1) = (elem(ie)%state%v(:,:,1,nlev,np1)*elem(ie)%derived%gradphis(:,:,1) + &
-          elem(ie)%state%v(:,:,2,nlev,np1)*elem(ie)%derived%gradphis(:,:,2))/g
-  enddo
+       ! finally update w at the surface: 
+       elem(ie)%state%w_i(:,:,nlevp,np1) = (elem(ie)%state%v(:,:,1,nlev,np1)*elem(ie)%derived%gradphis(:,:,1) + &
+            elem(ie)%state%v(:,:,2,nlev,np1)*elem(ie)%derived%gradphis(:,:,2))/g
+    enddo
   
   end subroutine applyCAMforcing_dynamics
-
 
 !----------------------------- ADVANCE-HYPERVIS ----------------------------
 
@@ -859,7 +863,7 @@ contains
 
 
 
-  subroutine advance_physical_vis(elem,hvcoord,hybrid,deriv,nt,nets,nete,dt,mu_s,mu)
+  subroutine advance_physical_vis(elem,hybrid,deriv,nt,nets,nete,dt,mu_s,mu)
   !
   !  take one timestep of of physical viscosity (single laplace operator) for
   !  all state variables in both horizontal and vertical
@@ -875,7 +879,6 @@ contains
   type (hybrid_t)      , intent(in) :: hybrid
   type (element_t)     , intent(inout), target :: elem(:)
   type (derivative_t)  , intent(in) :: deriv
-  type (hvcoord_t), intent(in)      :: hvcoord
 
   real (kind=real_kind) :: dt, mu_s, mu
   integer :: nt,nets,nete
@@ -1614,6 +1617,9 @@ contains
            * dp3d_i(:,:,nlevp)/2
 
    endif
+#else
+   ! Silence compiler warning
+   if ( .false. ) print *, compute_diagnostics
 #endif
 
 

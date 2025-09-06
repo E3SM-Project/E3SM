@@ -120,11 +120,14 @@ contains
     type(hvcoord_t)   , intent(in) :: hvcoord
     type (hybrid_t)   , intent(in) :: hybrid
     !dummy routine does nothing.  some models override this routine
+    if ( .false. ) then
+      ! Silence compiler warning by fake-using the dummy args
+      print *, size(elem)
+      print *, hvcoord%ps0
+      print *, hybrid%ithr
+    endif
   end subroutine Prim_Advec_Init2
 
-
-
-!-----------------------------------------------------------------------------
 !-----------------------------------------------------------------------------
   subroutine Prim_Advec_Tracers_remap_rk2( elem , deriv , hvcoord , hybrid , dt , tl , nets , nete )
     use perf_mod      , only : t_startf, t_stopf            ! _EXTERNAL
@@ -162,7 +165,7 @@ contains
     !       and a DSS'ed version stored in derived%div(:,:,:,2)
 
     call t_startf('precomput_divdp')
-    call precompute_divdp( elem , hybrid , deriv , dt , nets , nete , n0_qdp )   
+    call precompute_divdp( elem , deriv , nets , nete )
     call t_stopf('precomput_divdp')
 
     !rhs_multiplier is for obtaining dp_tracers at each stage:
@@ -185,7 +188,7 @@ contains
 
     !to finish the 2D advection step, we need to average the t and t+2 results to get a second order estimate for t+1.
     call t_startf('qdp_tavg')
-    call qdp_time_avg( elem , rkstage , n0_qdp , np1_qdp , limiter_option , nu_p , nets , nete )
+    call qdp_time_avg( elem , rkstage , n0_qdp , np1_qdp , nets , nete )
     call t_stopf('qdp_tavg')
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -195,7 +198,7 @@ contains
       ! dissipation was applied in RHS.
     else
       call t_startf('ah_scalar')
-      call advance_hypervis_scalar(elem,hvcoord,hybrid,deriv,tl%np1,np1_qdp,nets,nete,dt)
+      call advance_hypervis_scalar(elem,hvcoord,hybrid,deriv,np1_qdp,nets,nete,dt)
       call t_stopf('ah_scalar')
     endif
 !    call extrae_user_function(0)
@@ -212,13 +215,11 @@ contains
 !-----------------------------------------------------------------------------
 !-----------------------------------------------------------------------------
 
-  subroutine precompute_divdp( elem , hybrid , deriv , dt , nets , nete , n0_qdp )
+  subroutine precompute_divdp( elem , deriv , nets , nete)
     implicit none
     type(element_t)      , intent(inout) :: elem(:)
-    type (hybrid_t)      , intent(in   ) :: hybrid
     type (derivative_t)  , intent(in   ) :: deriv
-    real(kind=real_kind) , intent(in   ) :: dt
-    integer              , intent(in   ) :: nets , nete , n0_qdp
+    integer              , intent(in   ) :: nets , nete
     integer :: ie , k
 
     do ie = nets , nete 
@@ -231,11 +232,10 @@ contains
 !-----------------------------------------------------------------------------
 !-----------------------------------------------------------------------------
 
-  subroutine qdp_time_avg( elem , rkstage , n0_qdp , np1_qdp , limiter_option , nu_p , nets , nete )
+  subroutine qdp_time_avg( elem , rkstage , n0_qdp , np1_qdp , nets , nete )
     implicit none
     type(element_t)     , intent(inout) :: elem(:)
-    integer             , intent(in   ) :: rkstage , n0_qdp , np1_qdp , nets , nete , limiter_option
-    real(kind=real_kind), intent(in   ) :: nu_p
+    integer             , intent(in   ) :: rkstage , n0_qdp , np1_qdp , nets , nete
     integer :: ie
 
     do ie=nets,nete
@@ -591,7 +591,7 @@ OMP_SIMD
 !-----------------------------------------------------------------------------
 !-----------------------------------------------------------------------------
 
-  subroutine advance_hypervis_scalar(elem, hvcoord , hybrid , deriv , nt , nt_qdp , nets , nete , dt2 )
+  subroutine advance_hypervis_scalar(elem, hvcoord , hybrid , deriv , nt_qdp , nets , nete , dt2 )
   !  hyperviscsoity operator for foward-in-time scheme
   !  take one timestep of:
   !          Q(:,:,:,np) = Q(:,:,:,np) +  dt2*nu*laplacian**order ( Q )
@@ -609,7 +609,6 @@ OMP_SIMD
   type (hvcoord_t)     , intent(in   )         :: hvcoord
   type (hybrid_t)      , intent(in   )         :: hybrid
   type (derivative_t)  , intent(in   )         :: deriv
-  integer              , intent(in   )         :: nt
   integer              , intent(in   )         :: nt_qdp
   integer              , intent(in   )         :: nets
   integer              , intent(in   )         :: nete

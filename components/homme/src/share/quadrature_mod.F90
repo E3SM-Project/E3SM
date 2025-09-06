@@ -957,7 +957,7 @@ contains
     s = 0.0D0
     do i=1,SIZE(gs%points)
        x = 0.50D0*((b-a)*gs%points(i) + (b+a))
-       s = s + gs%weights(i)*f(x)
+       s = real(s + gs%weights(i)*f(x), kind=real_kind)
     end do
     Integral = s*(0.5D0*(b-a))
 

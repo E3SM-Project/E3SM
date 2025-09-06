@@ -115,12 +115,12 @@ contains
     gp=gausslobatto(np)
 
     call dvvinit(dvv,gp)
-    deriv%Dvv(:,:)   = dvv(:,:)
+    deriv%Dvv(:,:) = real(dvv(:,:),kind=real_kind)
 
     do i=1,np
        do j=1,np
           if (i.eq.j) then
-             deriv%dvv_diag(i,j)   = dvv(i,j)
+             deriv%dvv_diag(i,j) = real(dvv(i,j),kind=real_kind)
           else
              deriv%dvv_diag(i,j) = 0.0D0
           endif 
@@ -139,8 +139,8 @@ contains
        end do
     end do
 
-    deriv%Dvv_twt = TRANSPOSE(dvv)
-    deriv%Mvv_twt = v2v
+    deriv%Dvv_twt = real(TRANSPOSE(dvv),kind=real_kind)
+    deriv%Mvv_twt = real(v2v,kind=real_kind)
 
     ! notice we deallocate this memory here even though it was allocated 
     ! by the call to gausslobatto.
@@ -1140,7 +1140,7 @@ contains
        laplace=vlaplace_sphere_wk_cartesian(v,deriv,elem,var_coef)
     else  
        ! all other cases, use contra formulation:
-       laplace=vlaplace_sphere_wk_contra(v,deriv,elem,var_coef,nu_ratio)
+       laplace=vlaplace_sphere_wk_contra(v,deriv,elem,nu_ratio)
     endif
 
   end function vlaplace_sphere_wk
@@ -1194,7 +1194,7 @@ contains
 
 
 
-  function vlaplace_sphere_wk_contra(v,deriv,elem,var_coef,nu_ratio) result(laplace)
+  function vlaplace_sphere_wk_contra(v,deriv,elem,nu_ratio) result(laplace)
 !
 !   input:  v = vector in lat-lon coordinates
 !   ouput:  weak laplacian of v, in lat-lon coordinates
@@ -1205,7 +1205,6 @@ contains
 !                 = grad_wk(div) - curl_wk(vor)               
 !
     real(kind=real_kind), intent(in) :: v(np,np,2) 
-    logical, intent(in) :: var_coef
     type (derivative_t), intent(in) :: deriv
     type (element_t), intent(in) :: elem
     real(kind=real_kind) :: laplace(np,np,2)
@@ -1576,7 +1575,7 @@ contains
     do i=1,intervals
       a = -one + (i-one)*two/intervals   
       b = -one +  i     *two/intervals  
-      sub_gll(i,:) = (a+b)/two + gll%points(:)/intervals
+      sub_gll(i,:) = real((a+b)/two + gll%points(:)/intervals, kind=real_kind)
     end do
 
     ! Now to interpolate from the values at the input GLL
@@ -1591,11 +1590,11 @@ contains
     ! this is OK since all the points are of order 1 so should
     ! be well behaved.
     do n = 1,np
-      x_j = gll%points(n)
+      x_j = real(gll%points(n),kind=real_kind)
       x   = one 
       do m = 1,np 
         if (m.ne.n) then
-          x_i = gll%points(m)
+          x_i = real(gll%points(m),kind=real_kind)
           x = x * (x_j-x_i)
         endif
       end do
@@ -1608,7 +1607,7 @@ contains
           y = one
           do m = 1,np
             if (m.ne.j) then
-              x_i = gll%points(m)
+              x_i = real(gll%points(m),kind=real_kind)
               y = y * (x-x_i)
             end if
           end do
@@ -1628,7 +1627,7 @@ contains
     !                       J = w^t I
     ! J is integration_matrix
     do i=1,intervals
-      integration_matrix(i,:) = MATMUL(gll%weights(:),Lagrange_interp(i,:,:))
+      integration_matrix(i,:) = real(MATMUL(gll%weights(:),Lagrange_interp(i,:,:)),kind=real_kind)
     end do
 
     ! There is still the Jacobian to consider.  We are 

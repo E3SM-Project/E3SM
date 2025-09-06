@@ -313,7 +313,7 @@ contains
     end do
 
     gp=gausslobatto(np)
-    min_gw = minval(gp%weights)
+    min_gw = real(minval(gp%weights), kind=real_kind)
 
     deallocate(gp%weights)
 
@@ -462,9 +462,9 @@ contains
             se = elem(ie)%tensorVisc(np,1,rowind,colind)
             sw = elem(ie)%tensorVisc(1,1,rowind,colind)
             do i=1,np
-              x = gp%points(i)
+              x = real(gp%points(i), kind=real_kind)
               do j=1,np
-                y = gp%points(j)
+                y = real(gp%points(j), kind=real_kind)
                 elem(ie)%tensorVisc(i,j,rowind,colind) = 0.25d0*( &
                 (1.0d0-x)*(1.0d0-y)*sw + &
                 (1.0d0-x)*(y+1.0d0)*nw + &
