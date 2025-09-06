@@ -15,17 +15,25 @@ template <typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::droplet_self_collection(
-  const Spack&, const Spack&,
-  const Spack& qc_incld, const Spack&,
-  const Spack&, const Spack&, Spack& nc_selfcollect_tend,
+  const Spack& rho, const Spack& inv_rho,
+  const Spack& qc_incld, const Spack& mu_c,
+  const Spack& nu, const Spack& nc2nr_autoconv_tend, Spack& nc_selfcollect_tend, const P3Runtime& runtime_options,
   const Smask& context)
 {
   constexpr Scalar qsmall = C::QSMALL;
 
+  constexpr Scalar kc = C::kc;
+
+  const bool use_KK = runtime_options.use_KK;
+
   const auto qc_not_small = (qc_incld >= qsmall) && context;
   if (qc_not_small.any()) {
+    if(use_KK){
     // Khroutdinov and Kogan (2000)
-    nc_selfcollect_tend.set(qc_not_small, 0);
+      nc_selfcollect_tend.set(qc_not_small, 0);}
+    else {
+      nc_selfcollect_tend.set(qc_not_small,-kc*pow(1.e-3*rho*qc_incld,2)*(nu+2)/(nu+1)*         
+              1.e+6*inv_rho+nc2nr_autoconv_tend);}
   }
 }
 

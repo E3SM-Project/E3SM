@@ -21,11 +21,14 @@ void Functions<S,D>
   constexpr Scalar qsmall   = C::QSMALL;
   constexpr Scalar rho_h2o  = C::RHO_H2O;
   constexpr Scalar pi       = C::Pi;
+  constexpr Scalar kr = C::kr;
 
   const Scalar rain_selfcollection_breakup_diameter =
       runtime_options.rain_selfcollection_breakup_diameter;
   const Scalar rain_selfcollection_prefactor =
       runtime_options.rain_selfcollection_prefactor;
+
+  const bool use_KK = runtime_options.use_KK;
 
   const auto qr_incld_not_small = qr_incld >= qsmall && context;
 
@@ -47,10 +50,12 @@ void Functions<S,D>
       dum.set(dum2_gt_dum1,
               2 - exp(2300 * (dum2 - rain_selfcollection_breakup_diameter)));
     }
-
-    nr_selfcollect_tend.set(
-        qr_incld_not_small,
-        dum * rain_selfcollection_prefactor * nr_incld * qr_incld * rho);
+    if(use_KK){
+       nr_selfcollect_tend.set(
+       qr_incld_not_small,
+       dum * rain_selfcollection_prefactor * nr_incld * qr_incld * rho);}
+    else{
+       nr_selfcollect_tend.set(qr_incld_not_small,dum*kr*1.0e-3*qr_incld*nr_incld*rho);}
   }
 }
 

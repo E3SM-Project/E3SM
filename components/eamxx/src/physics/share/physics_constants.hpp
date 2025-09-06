@@ -80,6 +80,8 @@ struct Constants
   static constexpr Scalar bcn           = 2.;
   static constexpr Scalar dropmass      = 5.2e-7;
   static constexpr Scalar NCCNST        = 200.0e+6;
+  static constexpr Scalar kc            = 9.44e+9;
+  static constexpr Scalar kr            = 5.78e+3;
   static constexpr Scalar incloud_limit = 5.1e-3;
   static constexpr Scalar precip_limit  = 1.0e-2;
   static constexpr Scalar Karman        = 0.4;

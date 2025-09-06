@@ -245,6 +245,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <set_cld_frac_r_to_one hgrid="ne1024np4.pg2">true</set_cld_frac_r_to_one>
       <set_cld_frac_i_to_one type="logical" doc="set P3 input ice cloud fraction to 1 everywhere">false</set_cld_frac_i_to_one>
       <use_separate_ice_liq_frac type="logical" doc="use separate ice and liquid cloud fractions from shoc">false</use_separate_ice_liq_frac>
+      <use_KK type="logical" doc="use KK warm cloud microphysics">true</use_KK>
       <extra_p3_diags type="logical" doc="Extra P3 diagnostics">false</extra_p3_diags>
     </p3>
 
