@@ -32,8 +32,7 @@ class MassAndEnergyConservationCheck: public PropertyCheck {
 public:
 
   // Constructor
-  MassAndEnergyConservationCheck (const ekat::Comm& comm,
-                                        const std::shared_ptr<const AbstractGrid>& grid,
+  MassAndEnergyConservationCheck (      const std::shared_ptr<const AbstractGrid>& grid,
                                         const Real    mass_error_tolerance,
                                         const Real    energy_error_tolerance,
                                         const Field&  pseudo_density_ptr,
@@ -81,7 +80,7 @@ public:
 
   Real get_echeck() const;
   Real get_total_energy_before() const;
-  Real get_pb_fixer() const;
+  Real get_glob_average_fixer() const;
 
 // CUDA requires the parent fcn of a KOKKOS_LAMBDA to have public access
 #ifndef KOKKOS_ENABLE_CUDA
@@ -137,7 +136,7 @@ protected:
   Real m_mass_tol;
   Real m_energy_tol;
 
-  Real m_pb_fixer, m_echeck;
+  Real m_glob_average_fixer, m_echeck;
   Real m_total_gas_mass_after, m_total_energy_before;
 
   // Current value for total energy. These values
@@ -146,6 +145,8 @@ protected:
   view_1d<Real> m_current_mass;
 
   view_1d<Real> m_energy_change;
+
+  view_2d<Real> m_sendbuff;
 }; // class EnergyConservationCheck
 
 } // namespace scream

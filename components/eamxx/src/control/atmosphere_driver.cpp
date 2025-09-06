@@ -467,7 +467,7 @@ void AtmosphereDriver::setup_column_conservation_checks ()
   const auto heat_flux      = m_field_mgr->get_field("heat_flux",      phys_grid_name);
 
   auto conservation_check =
-    std::make_shared<MassAndEnergyConservationCheck>(m_atm_comm,phys_grid,
+    std::make_shared<MassAndEnergyConservationCheck>(      phys_grid,
                                                            mass_error_tol, energy_error_tol,
                                                            pseudo_density, ps, phis,
                                                            horiz_winds, T_mid, qv,
