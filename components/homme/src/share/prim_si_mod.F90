@@ -105,7 +105,10 @@ contains
     ! Local Variables
     ! ========================
 
-    integer :: k,nf
+    integer :: k
+#if (defined COLUMN_OPENMP)
+    integer :: nf
+#endif
     real (kind=real_kind) :: facp(np,np), facm(np,np)
 
     ! ===========================================================
@@ -304,14 +307,7 @@ contains
        enddo
     enddo
     
-
-    end subroutine 
-
-
-
-
-
-
+  end subroutine 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
 !
@@ -363,12 +359,6 @@ contains
        end do
 
   end subroutine preq_omega_ps
-
-
-
-
-
-
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
 !
@@ -480,19 +470,14 @@ end subroutine preq_hydrostatic
        end do
        
     end do
-    
-    
 end subroutine preq_hydrostatic_v2
-
-
 
 !
 !  The hydrostatic routine from CAM physics.
 !  (FV stuff removed)
 !  t,q input changed to take t_v
 !  removed gravit, so this routine returns PHI, not zm
-subroutine geopotential_t(                                 &
-       pmid   , pdel   ,  tv      , rair   ,  zm)
+subroutine geopotential_t(pmid, pdel, tv, rair, zm)
 
 !----------------------------------------------------------------------- 
 ! 
@@ -508,8 +493,6 @@ subroutine geopotential_t(                                 &
 !------------------------------Arguments--------------------------------
 !
 ! Input arguments
-
-
 
     real(real_kind), intent(in) :: pmid (np*np,nlev)    ! Midpoint pressures
     real(real_kind), intent(in) :: pdel (np*np,nlev)    ! layer thickness
@@ -561,8 +544,6 @@ subroutine geopotential_t(                                 &
 
     return
   end subroutine geopotential_t
-
-
 
   subroutine prim_set_mass(elem, tl,hybrid,hvcoord,nets,nete)
   use kinds, only : real_kind

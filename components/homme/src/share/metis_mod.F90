@@ -25,7 +25,7 @@ contains
     use dimensions_mod , only : nmpi_per_node, npart, nnodes, nelem
     use control_mod, only:  partmethod
     use params_mod, only : wrecursive
-    
+
     implicit none
 
     type (GridVertex_t), intent(inout) :: GridVertex(:)
@@ -44,18 +44,12 @@ contains
 
     integer(kind=int_kind), allocatable          :: part(:)
     integer, allocatable          :: part_nl(:),local2global_nl(:)
-    integer, allocatable          :: part_fl(:),local2global_fl(:)
-
-
-    integer, allocatable          :: cnt(:),newnum(:),oldnum(:)
 
     integer                       :: nelem_edge,numflag,edgecut,wgtflag
-    integer                       :: head_part,tail_part
     integer                       :: options(5)
-    integer                       :: i,j,ii,ig,in,ip,if
-    integer                       :: nelem_nl,nelem_fl,newPartition
+    integer                       :: i,ig,in,ip
+    integer                       :: nelem_nl,newPartition
     integer                       :: partitionmethod,numpartitions
-    integer                       :: nodes_per_frame
     logical , parameter           :: Debug = .true.
     real (kind=4)                 :: dummy(1) 
     nelem_edge = SIZE(GridEdge) 
@@ -353,7 +347,7 @@ contains
     type (GridVertex_t), intent(in) :: GridVertex(:)
     integer,intent(out)           :: xadj(:),adjncy(:),adjwgt(:)
 
-    integer                         :: i,j,k,ii,jj
+    integer                         :: i,j,k,ii
     integer                         :: degree,nelem
     !integer(kind=int_kind),allocatable  :: neigh_list(:),sort_indices(:)
     !real(kind=REAL_KIND),allocatable    :: neigh_wgt(:)

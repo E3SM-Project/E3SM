@@ -148,10 +148,7 @@ contains
     type (element_t) :: elem
     real (kind=longdouble_kind)      :: gll_points(np)
 
-
-    real (kind=real_kind)      :: area1,area2
-    type (cartesian3d_t) :: quad(4)
-    integer face_no,i,j
+    integer :: face_no,i,j
 
     face_no = elem%vertex%face_number
     ! compute the corners in Cartesian coordinates
@@ -224,21 +221,16 @@ contains
     real(kind=real_kind) :: alpha
     real (kind=longdouble_kind)      :: gll_points(np)
     ! Local variables
-    integer ii
-    integer i,j,nn
-    integer iptr
+    integer :: i,j
 
-    real (kind=real_kind) :: r         ! distance from origin for point on cube tangent to unit sphere
-
-    real (kind=real_kind) :: const, norm
+    real (kind=real_kind) :: norm
     real (kind=real_kind) :: detD      ! determinant of vector field mapping matrix.  
 
     real (kind=real_kind) :: x1        ! 1st cube face coordinate
     real (kind=real_kind) :: x2        ! 2nd cube face coordinate
-    real (kind=real_kind) :: tmpD(2,2)
-    real (kind=real_kind) :: M(2,2),E(2,2),eig(2),DE(2,2),DEL(2,2),V(2,2), nu1, nu2, lamStar1, lamStar2
+    real (kind=real_kind) :: M(2,2),E(2,2),eig(2),DE(2,2),DEL(2,2),V(2,2), lamStar1, lamStar2
     integer :: imaxM(2)
-    real (kind=real_kind) :: l1, l2, sc,min_svd,max_svd,max_normDinv
+    real (kind=real_kind) :: l1, l2, min_svd,max_svd,max_normDinv
 
     
     ! ==============================================
@@ -352,9 +344,8 @@ contains
           E(2,2)= E(1,1)
 
 !normalize columns
-	  E(:,1)=E(:,1)/sqrt(sum(E(:,1)*E(:,1))); 
-	  E(:,2)=E(:,2)/sqrt(sum(E(:,2)*E(:,2))); 
-
+          E(:,1)=E(:,1)/sqrt(sum(E(:,1)*E(:,1))); 
+          E(:,2)=E(:,2)/sqrt(sum(E(:,2)*E(:,2))); 
 
 ! OBTAINING TENSOR FOR HV:
 
@@ -411,8 +402,8 @@ contains
           DE(2,1)=sum(elem%D(i,j,2,:)*E(:,1))
           DE(2,2)=sum(elem%D(i,j,2,:)*E(:,2))
 
-	  lamStar1=1/(eig(1)**(hypervis_scaling/4.0d0)) *(rearth**2.0d0)
-	  lamStar2=1/(eig(2)**(hypervis_scaling/4.0d0)) *(rearth**2.0d0)
+          lamStar1=1/(eig(1)**(hypervis_scaling/4.0d0)) *(rearth**2.0d0)
+          lamStar2=1/(eig(2)**(hypervis_scaling/4.0d0)) *(rearth**2.0d0)
 
 !matrix (DE) * Lam^* * Lam , tensor HV when V is applied at each Laplace calculation
 !          DEL(1:2,1) = lamStar1*eig(1)*DE(1:2,1)
@@ -429,7 +420,7 @@ contains
           V(2,1)=sum(DEL(2,:)*DE(1,:))
           V(2,2)=sum(DEL(2,:)*DE(2,:))
 
-	  elem%tensorVisc(i,j,:,:)=V(:,:)
+          elem%tensorVisc(i,j,:,:)=V(:,:)
 
        end do
     end do
@@ -739,19 +730,19 @@ contains
 
     do i=1,3
       do j=1,2
-	D3(i,j)=sum(c(i,:)*dd(:,j))
+        D3(i,j)=sum(c(i,:)*dd(:,j))
       enddo
     enddo
 
     do i=1,3
       do j=1,2
-	D4(i,j)=sum(D2(i,:)*D3(:,j))
+        D4(i,j)=sum(D2(i,:)*D3(:,j))
       enddo
     enddo   
 
     do i=1,2
       do j=1,2
-	D(i,j)=sum(D1(i,:)*D4(:,j))
+        D(i,j)=sum(D1(i,:)*D4(:,j))
       enddo
     enddo
 
@@ -786,7 +777,7 @@ contains
              if ( rotate_grid /= 0) then
                 lat = elem%spherep(i,j)%lat
                 lon = elem%spherep(i,j)%lon
-             	elem%fcor(i,j)= 2*omega* &
+                elem%fcor(i,j)= 2*omega* &
                      (-cos(lon)*cos(lat)*sin(rangle) + sin(lat)*cos(rangle))
              else
                 elem%fcor(i,j) = 2.0D0*omega*SIN(elem%spherep(i,j)%lat)
@@ -803,8 +794,11 @@ contains
     type (element_t) :: elem 
 
     ! Local variables
-    integer  i,ie,je,face_no,nn
+    integer :: ie,je,face_no
     real (kind=real_kind)  :: dx,dy, startx, starty
+#if 0
+    integer :: i
+#endif
 
     if (0==ne) call abortmp('Error in set_corner_coordinates: ne is zero')
 
@@ -1857,11 +1851,8 @@ contains
     use control_mod, only : north, south, east, west, neast, seast, swest, nwest
     type (GridEdge_t),target           :: Edge
 
-    integer                            :: np0,sFace,dFace
+    integer                            :: sFace,dFace
     logical                            :: reverse
-    integer,allocatable                :: forwardV(:), forwardP(:)
-    integer,allocatable                :: backwardV(:), backwardP(:)
-    integer                            :: i,ii
 
     sFace = Edge%tail_face
     dFace = Edge%head_face

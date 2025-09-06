@@ -39,7 +39,6 @@ module interpolate_mod
   private
   save
 
-  logical   :: debug=.false.
 #ifndef CAM
   integer, parameter, public :: MAX_VECVARS=25
   character(len=10), public :: vector_uvars(MAX_VECVARS), vector_vvars(MAX_VECVARS)
@@ -66,16 +65,12 @@ module interpolate_mod
      logical                                  :: first_entry = .TRUE.
   end type interpdata_t
 
-  real (kind=real_kind), private :: delta  = 1.0D-9  ! move tiny bit off center to
   ! avoid landing on element edges
-
 
   ! static data for interp_tracers
   logical                           :: interp_tracers_init=.false.
   real (kind=real_kind      )       :: interp_c(np,np)
   real (kind=real_kind      )       :: interp_gll(np)
-
-
 
   public :: interp_init
   public :: setup_latlon_interp
@@ -271,7 +266,7 @@ contains
 
   subroutine interpolate_tracers_init()
     use kinds,          only : longdouble_kind
-    use dimensions_mod, only : np, qsize
+    use dimensions_mod, only : np
     use quadrature_mod, only : quadrature_t, gausslobatto
 
 
@@ -304,13 +299,9 @@ contains
 
   end subroutine interpolate_tracers_init
 
-
-
-
   subroutine interpolate_tracers(r, tracers, f)
     use kinds,          only : longdouble_kind
     use dimensions_mod, only : np, qsize
-
 
     implicit none
     type (cartesian2D_t), intent(in)  :: r
@@ -322,7 +313,6 @@ contains
     real (kind=real_kind      )       :: xy    (np*np)
 
     integer                           :: i,j
-
     
     if (.not. interp_tracers_init   ) then
        stop 'ERROR: interpolate_tracers() was not initialized'
@@ -358,7 +348,7 @@ contains
     real (kind=real_kind),intent(in)  :: y(np,np,qsize)
     type (cartesian2D_t), intent(in)  :: s        
 
-    integer                           :: i,j,q
+    integer                           :: i,j
     real (kind=real_kind)  dx, dy(qsize), dydx(qsize), v(qsize)
     real (kind=real_kind)  y0(qsize), y1(qsize)
     type (cartesian2D_t)              :: r
@@ -410,8 +400,6 @@ contains
     type (quadrature_t), save         :: gll        
     integer                           :: i,j
     logical            , save         :: first_time=.true.
-    real (kind=real_kind)             :: y1           (qsize)
-    real (kind=real_kind)             :: y2           (qsize)
     real (kind=real_kind)             :: q_interp     (4,qsize)
     type (cartesian2D_t)              :: s
     real (kind=real_kind)             :: delta
@@ -595,7 +583,7 @@ contains
     real (kind=real_kind)             :: xoy(npts)
     real (kind=real_kind)             :: p,q,xp,yp ,y4(4)
 
-    integer                           :: l,j,k, ii, jj, na,nb,nm
+    integer                           :: ii, jj, na,nb,nm
 
     xp = cart%x
     yp = cart%y
@@ -671,7 +659,7 @@ contains
     integer               :: i, MAX_NR_ITER=10
     real(kind=real_kind)  :: D(2,2),Dinv(2,2),detD,a,b,resa,resb,dela,delb,costh
     real(kind=real_kind)  :: tol_sq=1e-26
-    type (spherical_polar_t) :: sphere1, sphere_tmp
+    type (spherical_polar_t) :: sphere1
     integer  :: ref_map
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -741,15 +729,17 @@ contains
     implicit none
     type (cartesian3D_t),     intent(in)    :: sphere_xyz
     type (element_t)        , intent(in)     :: elem
-    logical                              :: inside, inside2
-    integer               :: i,j,ii
-    type (cartesian2D_t) :: corners(4),sphere_xy,cart
-    type (cartesian3D_t) :: corners_xyz(4),center,a,b,cross(4)
-    real (kind=real_kind) :: yp(4), y, elem_diam,dotprod
-    real (kind=real_kind) :: xp(4), x
-    real (kind=real_kind) :: d1,d2, tol_inside = 1e-12
+    logical                              :: inside
+    integer               :: i,j
+    type (cartesian3D_t)  :: corners_xyz(4),center,cross(4)
+    real (kind=real_kind) :: elem_diam,dotprod
+    real (kind=real_kind) :: tol_inside = 1e-12
 
-    type (spherical_polar_t)   :: sphere  ! debug
+#if 0
+    type (spherical_polar_t)  :: sphere  ! debug
+    type (cartesian2D_t)      :: cart
+    integer                   :: ii
+#endif
 
     inside = .false.
 
@@ -984,7 +974,6 @@ contains
     integer               :: ii, globalid, maxglobalid
     Logical               :: found
     type (cartesian3D_t)       :: sphere_xyz
-    type (cartesian2D_t)  :: cube
     sphere_xyz=spherical_to_cart(sphere)
 
     number=-1
@@ -1028,8 +1017,8 @@ contains
     type (interpdata_t)  , intent(out)        :: interpdata(:)
 
     ! local
-    integer i,j,ii,count_total,n_interp,count_max
-    integer ngrid, number, elem_num, plat
+    integer i,j,ii,count_total,count_max
+    integer ngrid, plat
     integer countx, missing_pts,ierr
     integer :: npts_mult_claims,max_claims
 
@@ -1045,7 +1034,6 @@ contains
 
     ! Array to make sure each interp point is on exactly one process
     type (cartesian2D_t),allocatable    :: cart_vec(:,:)
-    integer :: k
     integer, allocatable :: global_elem_gid(:,:),local_elem_gid(:,:), local_elem_num(:,:)
 
     ! these arrays often are too large for stack, so lets make sure
@@ -1341,11 +1329,6 @@ subroutine interpolate_ce(cart,fld_cube,npts,fld, fillvalue)
   ! Local variables
   type (interpolate_t), pointer  ::  interp          ! interpolation structure
 
-  integer :: ne
-
-  integer :: i
-
-
   if (npts==np) then
      interp => interp_p
   else
@@ -1373,11 +1356,7 @@ end subroutine interpolate_ce
     ! Local variables
     type (interpolate_t), pointer  ::  interp          ! interpolation structure
 
-    integer :: ne
-
     integer :: i
-
-    type (cartesian2D_t) :: cart
 
     if (npts==np) then
        interp => interp_p
@@ -1419,11 +1398,7 @@ end subroutine interpolate_ce
     ! Local variables
     type (interpolate_t), pointer  ::  interp          ! interpolation structure
 
-    integer :: ne
-
     integer :: i, k
-
-    type (cartesian2D_t) :: cart
 
     if (npts==np) then
        interp => interp_p
@@ -1489,22 +1464,16 @@ end subroutine interpolate_ce
     integer, intent(in)                  ::  input_coords
 
     ! Local variables
-    real (kind=real_kind)    ::  fld_contra(np,np,2,nlev) ! vector field
     real (kind=real_kind)    ::  fld_lonlat(np,np,2,nlev) ! vector field in lonlat
     real (kind=real_kind)    ::  fld_cart(np,np,3,nlev) ! vector field in cartesian
     real (kind=real_kind), allocatable    ::  fld_cart_interp(:,:,:) ! vector field in cartesian
     type (interpolate_t), pointer  ::  interp          ! interpolation structure
 
-    real (kind=real_kind)    ::  v1,v2
-    real (kind=real_kind)    ::  D(2,2)   ! derivative of gnomonic mapping
-    real (kind=real_kind)    ::  JJ(2,2), tmpD(2,2)   ! derivative of gnomonic mapping
     real (kind=real_kind)    ::  Km(3,2) !transform from/to lonlat basis for vectors at interp. point
     real (kind=real_kind)    ::  llon, llat
     
     integer :: i,j,k 
     integer :: ilon, ilat
-    type (cartesian2D_t) :: cart
-    
     
     if(present(fillvalue)) then
        if (any(fld_cube==fillvalue)) then

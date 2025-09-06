@@ -54,13 +54,9 @@ module planar_mod
 
 contains
 
-
-
 ! =======================================
 ! TOPOLOGY RELATED ROUTINES
 ! =======================================
-
-
 
   subroutine PlaneTopology(GridEdge, GridVertex)
     use gridgraph_mod, only : GridEdge_t, GridVertex_t, initgridedge, PrintGridEdge, &

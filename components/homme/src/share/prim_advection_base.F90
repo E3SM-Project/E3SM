@@ -91,19 +91,13 @@ module prim_advection_base
       module procedure prim_advec_init1_rk2
   end interface
 
-
 contains
 
   subroutine Prim_Advec_Init1_rk2(par, elem)
     use dimensions_mod, only : nlev, qsize, nelemd
-    use control_mod, only : transport_alg
     use interpolate_mod,        only : interpolate_tracers_init
     type(parallel_t) :: par
     type (element_t) :: elem(:)
-    type (EdgeDescriptor_t), allocatable :: desc(:)
-
-
-    integer :: ie
 
     ! This is a different type of buffer pointer allocation 
     ! used for determine the minimum and maximum value from 
@@ -115,8 +109,6 @@ contains
     allocate (qmax(nlev,qsize,nelemd))
 
   end subroutine 
-
-
 
 !=================================================================================================!
 
@@ -137,7 +129,7 @@ contains
   subroutine Prim_Advec_Tracers_remap_rk2( elem , deriv , hvcoord , hybrid , dt , tl , nets , nete )
     use perf_mod      , only : t_startf, t_stopf            ! _EXTERNAL
     use derivative_mod, only : divergence_sphere
-    use control_mod   , only : qsplit, dcmip16_mu_s, dcmip16_mu_q
+    use control_mod   , only : qsplit, dcmip16_mu_q
     implicit none
     type (element_t)     , intent(inout) :: elem(:)
     type (derivative_t)  , intent(in   ) :: deriv
@@ -148,8 +140,7 @@ contains
     integer              , intent(in   ) :: nets
     integer              , intent(in   ) :: nete
 
-    integer :: i,j,k,l,ie,q,nmin
-    integer :: nfilt,rkstage,rhs_multiplier
+    integer :: rkstage,rhs_multiplier
     integer :: n0_qdp, np1_qdp
 
     call t_barrierf('sync_prim_advec_tracers_remap_rk2', hybrid%par%comm)
@@ -245,8 +236,7 @@ contains
     type(element_t)     , intent(inout) :: elem(:)
     integer             , intent(in   ) :: rkstage , n0_qdp , np1_qdp , nets , nete , limiter_option
     real(kind=real_kind), intent(in   ) :: nu_p
-    integer :: ie,q,k
-    real(kind=real_kind) :: rrkstage
+    integer :: ie
 
     do ie=nets,nete
       elem(ie)%state%Qdp(:,:,:,1:qsize,np1_qdp) =               &
@@ -292,7 +282,6 @@ contains
   integer              , intent(in   )         :: rhs_multiplier
 
   ! local
-  real(kind=real_kind), dimension(np,np                       ) :: divdp, dpdiss
   real(kind=real_kind), dimension(np,np,nlev) :: dpdissk
   real(kind=real_kind), dimension(np,np,2                     ) :: gradQ
   real(kind=real_kind), dimension(np,np,2,nlev                ) :: Vstar
@@ -300,7 +289,7 @@ contains
   real(kind=real_kind), dimension(np,np  ,nlev                ) :: dp,dp_star
   real(kind=real_kind), dimension(np,np  ,nlev,qsize,nets:nete) :: Qtens_biharmonic
   real(kind=real_kind), pointer, dimension(:,:,:)               :: DSSvar
-  integer :: ie,q,i,j,k, kptr
+  integer :: ie,q,k
   integer :: rhs_viss
 
 !  call t_barrierf('sync_euler_step', hybrid%par%comm)
@@ -565,7 +554,6 @@ OMP_SIMD
   real (kind=real_kind), intent(inout) :: Q(np,np,nlev)
 
   ! local
-  real (kind=real_kind) :: dp(np,np)
   real (kind=real_kind) :: mass,mass_new,ml
   integer i,j,k
 
@@ -732,11 +720,6 @@ OMP_SIMD
   call t_stopf('advance_hypervis_scalar')
   end subroutine advance_hypervis_scalar
 
-
-
-
-
-
   subroutine advance_physical_vis(elem,hvcoord,hybrid,deriv,nt,nt_qdp,nets,nete,dt,mu)
   !
   !  take one timestep of of physical viscosity (single laplace operator) for
@@ -772,8 +755,8 @@ OMP_SIMD
 
   ! local
   real (kind=real_kind), dimension(np,np,nlev                ) :: Q_prime,Qt
-  real (kind=real_kind) :: dp0, delz
-  integer :: k , i,j,ie,ic,q
+  real (kind=real_kind) :: delz
+  integer :: k,ie,q
 
   !if(test_case .ne. 'dcmip2016_test3') call abortmp("dcmip16_mu is currently limited to dcmip16 test 3")
 

@@ -15,7 +15,7 @@ module model_init_mod
 
   use element_mod,        only: element_t
   use derivative_mod,     only: derivative_t,gradient_sphere, laplace_sphere_wk
-  use hybvcoord_mod, 	  only: hvcoord_t
+  use hybvcoord_mod,      only: hvcoord_t
   use hybrid_mod,         only: hybrid_t
   use dimensions_mod,     only: np,nlev,nlevp
   use element_ops,        only: initialize_reference_states
@@ -23,7 +23,7 @@ module model_init_mod
   use viscosity_mod,      only: make_c0_vector
   use kinds,              only: real_kind,iulog
   use control_mod,        only: qsplit,theta_hydrostatic_mode, hv_ref_profiles, &
-       hv_theta_correction, tom_sponge_start
+                                hv_theta_correction, tom_sponge_start
   use time_mod,           only: timelevel_qdp, timelevel_t
   use physical_constants, only: g, TREF, Rgas, kappa
   use imex_mod,           only: test_imex_jacobian

@@ -1087,7 +1087,7 @@ module repro_sum_mod
 !
 ! Local workspace
 !
-      integer :: old_cw                  ! for x86 processors, save
+      ! integer :: old_cw                  ! for x86 processors, save
                                          !  current arithmetic mode
       integer :: ifld, isum              ! loop variables
       integer :: ierr                    ! MPI error return
