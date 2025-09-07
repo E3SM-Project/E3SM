@@ -852,6 +852,14 @@ contains
             call shr_sys_abort(subname//' ERROR in writing mesh ')
          endif
     endif
+    if (mbofxid .ge. 0  ) then
+        outfile = 'ocnfCplFr.h5m'//C_NULL_CHAR
+        ierr = iMOAB_WriteMesh(mbofxid, trim(outfile), trim(wopts))
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in writing mesh '
+            call shr_sys_abort(subname//' ERROR in writing mesh ')
+         endif
+    endif
 #endif
 
   end subroutine seq_frac_init
