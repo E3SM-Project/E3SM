@@ -9,7 +9,7 @@ module seq_flux_mct
 
   use prep_aoflux_mod,   only: prep_aoflux_get_xao_omct, prep_aoflux_get_xao_amct
 
-  use iMOAB, only :  iMOAB_SetDoubleTagStorageWithGid, iMOAB_WriteMesh, iMOAB_SetDoubleTagStorage, iMOAB_GetDoubleTagStorage
+  use iMOAB, only :  iMOAB_WriteMesh, iMOAB_SetDoubleTagStorage, iMOAB_GetDoubleTagStorage
   use iMOAB, only : iMOAB_GetMeshInfo
 
   use mct_mod
@@ -1073,7 +1073,7 @@ contains
           end do
           call mbSetCellTagVals(mbofxid, 'Faox_swdn', swdnc, nloc_of)
           call mbSetCellTagVals(mbofxid, 'Faox_swup', swupc, nloc_of)
-        endif
+       endif ! end if mbofxid
 
        ! Solar declination
        ! Will only do albedo calculation if nextsw_cday is not -1.
