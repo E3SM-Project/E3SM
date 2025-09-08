@@ -284,12 +284,21 @@ _TESTS = {
             )
         },
 
-    # experimental eamxx nbfb tests
-    "eamxx_nbfb" : {
-        "tests" : (
-            "MVKxx_Ly1.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-mvkpert"
-            )
-        },
+    # experimental eamxx nbfb tests (elr: ne4, lr: ne30)
+    "eamxx_nbfb_ulr": {
+        "tests": (
+            "MVKxx_Ly1.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-mvkpert",
+        )
+    },
+    "eamxx_nbfb_lr": {
+        "tests": (
+            "MVKxx_Ly1.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-mvkpert",
+        )
+    },
+    "eamxx_nbfb": {
+        "inherit": ("eamxx_nbfb_ulr", "eamxx_nbfb_lr"),
+    },
+
     #ocean non bit-for-bit test
     "e3sm_ocn_nbfb": {
         "tests": (
@@ -298,7 +307,7 @@ _TESTS = {
         },
 
     "e3sm_nbfb": {
-        "inherit": ("e3sm_atm_nbfb", "e3sm_ocn_nbfb", "eamxx_nbfb")
+        "inherit": ("e3sm_atm_nbfb", "e3sm_ocn_nbfb", "eamxx_nbfb_lr")
     },
 
     "e3sm_ocnice_stealth_features" : {
@@ -717,14 +726,16 @@ _TESTS = {
 
     "e3sm_eamxx_v1_lowres" : {
         "time"  : "01:00:00",
-        "inherit" : ("e3sm_eamxx_mam4xx_lowres"),
+        "inherit" : (
+            "e3sm_eamxx_mam4xx_lowres",
+            "eamxx_nbfb_ulr",
+        ),
         "tests" : (
             "ERS_Ln9.ne4_ne4.F2000-SCREAMv1-AQP1.eamxx-output-preset-2",
             "ERP_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-output-preset-4",
             "ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-small_kernels--eamxx-output-preset-5",
             "ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-small_kernels_p3--eamxx-output-preset-5",
             "ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-small_kernels_shoc--eamxx-output-preset-5",
-            "MVKxx_Ly1.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-mvkpert",
             )
     },
     "e3sm_eamxx_v1_lowres_debug" : {
@@ -757,6 +768,9 @@ _TESTS = {
 
     "e3sm_eamxx_v1_medres" : {
         "time"  : "02:00:00",
+        "inherit" : (
+            "eamxx_nbfb_lr",
+        ),
         "tests" : (
             #  "SMS_D_Ln2.ne30_ne30.F2000-SCREAMv1-AQP1", # Uncomment once IC file for ne30 is ready
             "ERS_Ln22.ne30_ne30.F2010-SCREAMv1.eamxx-internal_diagnostics_level--eamxx-output-preset-3",
@@ -769,7 +783,6 @@ _TESTS = {
             "ERS_Ln90.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-L128--eamxx-sl_nsubstep2",
             "ERS.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-prod",
             "SMS.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-hremap_nudged",
-            "MVKxx_Ly1.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-mvkpert",
             )
     },
 
@@ -798,10 +811,12 @@ _TESTS = {
 
     "e3sm_eamxx_v1_long" : {
         "time"  : "01:00:00",
+        "inherit" : (
+            "eamxx_nbfb_lr",
+        ),
         "tests" : (
             "ERP_D_Lh182.ne4pg2_ne4pg2.F2010-SCREAMv1",
-            "ERS_Ln362.ne30pg2_ne30pg2.F2010-SCREAMv1",
-            "MVKxx_Ly1.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-mvkpert"
+            "ERS_Ln362.ne30pg2_ne30pg2.F2010-SCREAMv1"
             )
     },
 
@@ -866,7 +881,6 @@ _TESTS = {
     "e3sm_eamxx_large" : {
         "time"  : "01:00:00",
         "tests" : (
-            "MVKxx_Ly1.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-mvkpert",
             "SMS.ne120pg2_ne120pg2.F2010-SCREAMv1.eamxx-L128",
             #"PEM_Ld1.ne120pg2_ne120pg2.F2010-SCREAMv1.eamxx-L128", # second test hits OOM, need either P2048 or change def pelayout
             "ERS_Lh6.ne120pg2_ne120pg2.F2010-SCREAMv1.eamxx-L128--eamxx-prod",
