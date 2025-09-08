@@ -91,8 +91,8 @@ We currently have a utility to calculate histograms online.
 To select the histogram, you need to suffix a field name `X` with
 `_histogram_` followed by the values specifying the edges of the bins,
 separated by `_`. For example, the histogram specified by
-`T_mid_histogram_250_270_290_310` has 3 bins defined by
-[250, 270), [270, 290), and [290, 310].
+`T_mid_histogram_250_270_290_310` has 5 bins effectively defined by
+[$-\infty$, 250), [250, 270), [270, 290), [290, 310), and [310, $\infty$).
 
 | Reduction | Weight | Description |
 | --------- | ------ | ----------- |
