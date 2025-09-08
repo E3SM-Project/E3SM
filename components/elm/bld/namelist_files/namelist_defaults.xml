@@ -2244,7 +2244,7 @@ this mask will have smb calculated over the entire global land surface
 <fates_leafresp_model           use_fates=".true.">ryan1991</fates_leafresp_model>
 <fates_cstarvation_model        use_fates=".true.">linear</fates_cstarvation_model>
 <fates_regeneration_model       use_fates=".true.">default</fates_regeneration_model>
-<fates_hydro_solver             use_fates=".true.">1D_Taylor</fates_hydro_solver>
+<fates_hydro_solver             use_fates=".true.">2D_Picard</fates_hydro_solver>
 <fates_radiation_model          use_fates=".true.">norman</fates_radiation_model>
 <fates_electron_transport_model use_fates=".true.">FvCB1980</fates_electron_transport_model>
 <use_fates_luh                  use_fates=".true." fates_harvest_mode="luhdata_area"  >.true.</use_fates_luh>

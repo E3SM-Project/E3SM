@@ -382,7 +382,7 @@ Set the FATES electron transport model
 </entry>
 
 <entry id="fates_hydro_solver" type="char*256" category="physics"
-        group="elm_inparm" valid_values="1D_Taylor,2D_Picard,2D_Newton" value="1D_Taylor">
+        group="elm_inparm" valid_values="1D_Taylor,2D_Picard,2D_Newton" value="2D_Picard">
 Set the FATES hydro solver method
 </entry>
 
