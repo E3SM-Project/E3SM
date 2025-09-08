@@ -841,7 +841,7 @@ sub setup_cmdl_fates_mode {
                      "fates_regeneration_model",
                      "fates_hydro_solver",
                      "fates_radiation_model",
-	                   "fates_electron_transport_model");
+                     "fates_electron_transport_model");
 
       foreach my $var ( @list ) {
 	  if ( defined($nl->get_value($var))  ) {
@@ -3472,7 +3472,7 @@ sub setup_logic_fates {
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_fixed_biogeog', 'use_fates'=>$nl_flags->{'use_fates'},
                                                                                       'use_fates_lupft'=>$nl->get_value('use_fates_lupft'),
                                                                                       'use_fates_sp'=>$nl->get_value('use_fates_sp') );
-	  add_default($opts, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fates_spitfire_mode', 'use_fates'=>$nl_flags->{'use_fates'},
+	add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fates_spitfire_mode', 'use_fates'=>$nl_flags->{'use_fates'},
               'use_fates_managed_fire'=>$nl->get_value('use_fates_managed_fire'),
               'use_fates_sp'=>$nl_flags->{'use_fates_sp'} );                                                                              
 
@@ -3602,7 +3602,7 @@ sub setup_logic_fates {
      if ( defined($nl->get_value($var))  ) {
         if ( &value_is_true($nl->get_value($var)) ) {
            if ( $nl->get_value('fates_spitfire_mode') == 0 ) {
-              $log->fatal_error("fates_spitfire_mode must be non-zero when $var is true");
+              fatal_error("fates_spitfire_mode must be non-zero when $var is true");
 	         }
         }
      }
