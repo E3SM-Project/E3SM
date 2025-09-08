@@ -724,6 +724,7 @@ _TESTS = {
             "ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-small_kernels--eamxx-output-preset-5",
             "ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-small_kernels_p3--eamxx-output-preset-5",
             "ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-small_kernels_shoc--eamxx-output-preset-5",
+            "MVKxx_Ly1.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-mvkpert",
             )
     },
     "e3sm_eamxx_v1_lowres_debug" : {
@@ -768,6 +769,7 @@ _TESTS = {
             "ERS_Ln90.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-L128--eamxx-sl_nsubstep2",
             "ERS.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-prod",
             "SMS.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-hremap_nudged",
+            "MVKxx_Ly1.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-mvkpert",
             )
     },
 
@@ -798,7 +800,8 @@ _TESTS = {
         "time"  : "01:00:00",
         "tests" : (
             "ERP_D_Lh182.ne4pg2_ne4pg2.F2010-SCREAMv1",
-            "ERS_Ln362.ne30pg2_ne30pg2.F2010-SCREAMv1"
+            "ERS_Ln362.ne30pg2_ne30pg2.F2010-SCREAMv1",
+            "MVKxx_Ly1.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-mvkpert"
             )
     },
 
@@ -863,6 +866,7 @@ _TESTS = {
     "e3sm_eamxx_large" : {
         "time"  : "01:00:00",
         "tests" : (
+            "MVKxx_Ly1.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-mvkpert",
             "SMS.ne120pg2_ne120pg2.F2010-SCREAMv1.eamxx-L128",
             #"PEM_Ld1.ne120pg2_ne120pg2.F2010-SCREAMv1.eamxx-L128", # second test hits OOM, need either P2048 or change def pelayout
             "ERS_Lh6.ne120pg2_ne120pg2.F2010-SCREAMv1.eamxx-L128--eamxx-prod",
