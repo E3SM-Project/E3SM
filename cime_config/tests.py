@@ -284,6 +284,12 @@ _TESTS = {
             )
         },
 
+    # experimental eamxx nbfb tests
+    "eamxx_nbfb" : {
+        "tests" : (
+            "MVKxx_Ly1.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-mvkpert"
+            )
+        },
     #ocean non bit-for-bit test
     "e3sm_ocn_nbfb": {
         "tests": (
@@ -292,7 +298,7 @@ _TESTS = {
         },
 
     "e3sm_nbfb": {
-        "inherit": ("e3sm_atm_nbfb", "e3sm_ocn_nbfb")
+        "inherit": ("e3sm_atm_nbfb", "e3sm_ocn_nbfb", "eamxx_nbfb")
     },
 
     "e3sm_ocnice_stealth_features" : {
