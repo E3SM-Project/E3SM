@@ -60,12 +60,9 @@ contains
   end subroutine PrintEdgeList
 
   subroutine LLFree(List)
-
     implicit none
     type(root_t) :: List
     type(node_t), pointer :: temp_node
-    integer :: nlist,i
-
 
     temp_node => List%first
     ! Find the end of the list
