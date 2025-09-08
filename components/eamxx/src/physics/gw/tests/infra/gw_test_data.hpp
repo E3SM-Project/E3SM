@@ -854,7 +854,7 @@ struct GwOroSrcData : public PhysicsTestData {
 struct VdLuDecompData : public PhysicsTestData {
   // Inputs
   Int ncol, ntop, nbot;
-  Real *ksrf, *kv, *tmpi, *rpdel, *cc_top, *cpairv;
+  Real *ksrf, *kv, *tmpi, *rpdel, *cc_top;
   Real ztodt;
   GwInit init;
 
@@ -865,14 +865,12 @@ struct VdLuDecompData : public PhysicsTestData {
     PhysicsTestData({
       {ncol_},
       {ncol_, init_.pver + 1},
-      {ncol_, init_.pver},
       {ncol_, init_.pver}
     },
     {
       {&ksrf, &cc_top},
       {&kv, &tmpi},
-      {&rpdel, &cpairv},
-      {&decomp_ca, &decomp_cc, &decomp_dnom, &decomp_ze}
+      {&rpdel, &decomp_ca, &decomp_cc, &decomp_dnom, &decomp_ze}
     }),
     ncol(ncol_), ntop(ntop_), nbot(nbot_), ztodt(ztodt_), init(init_)
   {}
@@ -952,6 +950,7 @@ void gw_ediff_f(GwEdiffData& d);
 void gw_ediff(GwEdiffData& d);
 void gw_diff_tend(GwDiffTendData& d);
 void gw_oro_src(GwOroSrcData& d);
+void vd_lu_decomp_f(VdLuDecompData& d);
 void vd_lu_decomp(VdLuDecompData& d);
 void vd_lu_solve(VdLuSolveData& d);
 

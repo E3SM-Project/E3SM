@@ -558,17 +558,16 @@ struct Functions
   KOKKOS_FUNCTION
   static void vd_lu_decomp(
     // Inputs
+    const MemberType& team,
     const Int& pver,
-    const uview_1d<const Real>& ksrf,
+    const Real& ksrf,
     const uview_1d<const Real>& kv,
     const uview_1d<const Real>& tmpi,
     const uview_1d<const Real>& rpdel,
     const Real& ztodt,
-    const Real& gravit,
-    const uview_1d<const Real>& cc_top,
+    const Real& cc_top,
     const Int& ntop,
     const Int& nbot,
-    const uview_1d<const Real>& cpairv,
     // Outputs
     const uview_1d<Real>& decomp_ca,
     const uview_1d<Real>& decomp_cc,
