@@ -1,6 +1,7 @@
 #include "diagnostics/histogram.hpp"
 
 #include <ekat_team_policy_utils.hpp>
+#include <ekat_string_utils.hpp>
 
 
 namespace scream {
@@ -34,13 +35,8 @@ void HistogramDiag::initialize_impl(const RunType /*run_type*/) {
                        field_layout.to_string() + "\n");
 
   // extract bin values from configuration
-  std::istringstream stream(m_bin_configuration);
-  std::string token;
-  std::vector<Real> bin_values;
-  while (std::getline(stream, token, '_')) {
-    bin_values.push_back(std::stod(token));
-  }
-  const int num_bins = bin_values.size()-1;
+  std::vector<std::string> bin_strings = ekat::split(m_bin_configuration, "_");
+  const int num_bins = bin_strings.size()-1;
 
   // allocate histogram field
   FieldLayout diagnostic_layout({CMP}, {num_bins}, {"bin"});
@@ -60,7 +56,7 @@ void HistogramDiag::initialize_impl(const RunType /*run_type*/) {
   using RangePolicy    = Kokkos::RangePolicy<Field::device_t::execution_space>;
   Kokkos::parallel_for("store_histogram_bin_values_" + field.name(),
       RangePolicy(0, bin_values_layout.dim(0)), [&] (int i) {
-        bin_values_view(i) = bin_values[i];
+        bin_values_view(i) = std::stod(bin_strings[i]);
       });
 }
 
