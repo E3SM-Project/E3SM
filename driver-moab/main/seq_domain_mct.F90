@@ -726,7 +726,7 @@ contains
     real(R8)               :: rmask,rarea,raream
     character(cl)          :: lcomment
     character(len=*),parameter :: subName = '(seq_domain_areafactinit) '
-    character(len=*),parameter :: F0R = "(2A,2g23.15,A )"
+    character(len=*),parameter :: F0R = "(2A,2g25.17,A )"
     !
     !-----------------------------------------------------------
 

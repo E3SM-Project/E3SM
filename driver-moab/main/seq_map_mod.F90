@@ -110,13 +110,13 @@ contains
     gsmap_d => component_get_gsmap_cx(comp_d)
 
     if (mct_gsmap_Identical(gsmap_s,gsmap_d)) then
-       call seq_map_mapmatch(mapid,gsmap_s=gsmap_s,gsmap_d=gsmap_d,strategy="copy")
+       if(.not.skip_match) call seq_map_mapmatch(mapid,gsmap_s=gsmap_s,gsmap_d=gsmap_d,strategy="copy")
 
        if (mapid > 0 .and. .not. skip_match) then
           call seq_map_mappoint(mapid,mapper)
        else
           if(skip_match .and. seq_comm_iamroot(CPLID)) then
-             write(logunit,'(A)') subname, 'skip_match true, force new map'
+             write(logunit,'(A)') subname//' skip_match true, force new map'
           endif
           call seq_map_mapinit(mapper,mpicom)
           mapper%copy_only = .true.
@@ -126,13 +126,13 @@ contains
        endif
 
     elseif (samegrid) then
-       call seq_map_mapmatch(mapid,gsmap_s=gsmap_s,gsmap_d=gsmap_d,strategy="rearrange")
+       if(.not.skip_match) call seq_map_mapmatch(mapid,gsmap_s=gsmap_s,gsmap_d=gsmap_d,strategy="rearrange")
 
        if (mapid > 0 .and. .not. skip_match) then
           call seq_map_mappoint(mapid,mapper)
        else
           if(skip_match .and. seq_comm_iamroot(CPLID)) then
-             write(logunit,'(A)') subname, 'skip_match true, force new map'
+             write(logunit,'(A)') subname//'skip_match true, force new map'
           endif
           ! --- Initialize rearranger
           call seq_map_mapinit(mapper,mpicom)
@@ -149,13 +149,13 @@ contains
        ! --- Initialize Smatp
        call shr_mct_queryConfigFile(mpicom,maprcfile,maprcname,mapfile,maprctype,maptype)
 
-       call seq_map_mapmatch(mapid,gsMap_s=gsMap_s,gsMap_d=gsMap_d,mapfile=mapfile,strategy=maptype)
+       if(.not.skip_match) call seq_map_mapmatch(mapid,gsMap_s=gsMap_s,gsMap_d=gsMap_d,mapfile=mapfile,strategy=maptype)
 
        if (mapid > 0 .and. .not. skip_match) then
           call seq_map_mappoint(mapid,mapper)
        else
           if(skip_match .and. seq_comm_iamroot(CPLID)) then
-             write(logunit,'(A)') subname, 'skip_match true, force new map'
+             write(logunit,'(A)') subname//'skip_match true, force new map'
           endif
           call seq_map_mapinit(mapper,mpicom)
           mapper%mapfile = trim(mapfile)
@@ -299,12 +299,15 @@ contains
     if (present(no_match)) then
        if (no_match) skip_match = .true.
     endif
-    if (mct_gsmap_Identical(gsmap_s,gsmap_d) .and. .not.skip_match ) then
-       call seq_map_mapmatch(mapid,gsmap_s=gsmap_s,gsmap_d=gsmap_d,strategy="copy")
+    if (mct_gsmap_Identical(gsmap_s,gsmap_d)) then
+       if(.not.skip_match) call seq_map_mapmatch(mapid,gsmap_s=gsmap_s,gsmap_d=gsmap_d,strategy="copy")
 
-       if (mapid > 0) then
+       if (mapid > 0 .and. .not.skip_match) then
           call seq_map_mappoint(mapid,mapper)
        else
+          if(skip_match .and. seq_comm_iamroot(CPLID)) then
+             write(logunit,'(A)') subname//' skip_match true, force new map'
+          endif
           call seq_map_mapinit(mapper,mpicom)
           mapper%copy_only = .true.
           mapper%strategy = "copy"
@@ -313,11 +316,14 @@ contains
        endif
 
     else
-       call seq_map_mapmatch(mapid,gsmap_s=gsmap_s,gsmap_d=gsmap_d,strategy="rearrange")
+       if(.not.skip_match) call seq_map_mapmatch(mapid,gsmap_s=gsmap_s,gsmap_d=gsmap_d,strategy="rearrange")
 
-       if (mapid > 0) then
+       if (mapid > 0 .and. .not.skip_match) then
           call seq_map_mappoint(mapid,mapper)
        else
+          if(skip_match .and. seq_comm_iamroot(CPLID)) then
+             write(logunit,'(A)') subname//'skip_match true, force new map'
+          endif
           ! --- Initialize rearranger
           call seq_map_mapinit(mapper, mpicom)
           mapper%rearrange_only = .true.
