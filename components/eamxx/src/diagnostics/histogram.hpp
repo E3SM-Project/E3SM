@@ -31,8 +31,7 @@ public:
 
 protected:
   std::string m_diag_name;
-  std::string m_bin_configuration;
-
+  std::vector<Real> m_bin_reals;
   Field m_bin_values;
 };
 

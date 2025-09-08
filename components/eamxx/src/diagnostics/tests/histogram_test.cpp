@@ -46,8 +46,8 @@ TEST_CASE("histogram") {
   auto grid           = gm->get_grid("Physics");
 
   // Specify histogram bins
-  const std::string bin_configuration = "0_50_100_150_200";
-  const std::vector<Real> bin_values = {0.0, 50.0, 100.0, 150.0, 200.0};
+  const std::string bin_configuration = "50_100_150";
+  const std::vector<Real> bin_values = {-100.0, 50.0, 100.0, 150.0, 1000.0};
 
   // Input (randomized) qc
   FieldLayout scalar1d_layout{{COL}, {ncols}};
@@ -97,7 +97,12 @@ TEST_CASE("histogram") {
   REQUIRE_THROWS(diag_factory.create("HistogramDiag", comm,
                                      params)); // Still no bin configuration
 
+  params.set<std::string>("bin_configuration", "100_25");
+  REQUIRE_THROWS(diag_factory.create("HistogramDiag", comm,
+                                     params)); // Non-monotonic bin configuation
+
   params.set<std::string>("bin_configuration", bin_configuration);
+
   // Now we should be good to go...
   auto diag1 = diag_factory.create("HistogramDiag", comm, params);
   auto diag2 = diag_factory.create("HistogramDiag", comm, params);

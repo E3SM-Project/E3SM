@@ -8,9 +8,23 @@ namespace scream {
 
 HistogramDiag::HistogramDiag(const ekat::Comm &comm, const ekat::ParameterList &params)
     : AtmosphereDiagnostic(comm, params) {
-  const auto &field_name = m_params.get<std::string>("field_name");
-  m_bin_configuration    = params.get<std::string>("bin_configuration");
-  m_diag_name            = field_name + "_histogram_" + m_bin_configuration;
+  const auto &field_name       = m_params.get<std::string>("field_name");
+  const std::string bin_config = m_params.get<std::string>("bin_configuration");
+  m_diag_name                  = field_name + "_histogram_" + bin_config;
+
+  // extract bin values from configuration, append end values, and check
+  const std::vector<std::string> bin_strings = ekat::split(bin_config, "_");
+  m_bin_reals.resize(bin_strings.size()+2);
+  m_bin_reals[0] = std::numeric_limits<Real>::lowest();
+  for (int i=1; i < m_bin_reals.size()-1; i++)
+  {
+    m_bin_reals[i] = std::stod(bin_strings[i-1]);
+    EKAT_REQUIRE_MSG(m_bin_reals[i] > m_bin_reals[i-1],
+                     "Error! HistogramDiag bin values must be monotonically "
+                     "increasing.\n"
+                     " - bin configuration: " + bin_config + "\n");
+  }
+  m_bin_reals.back() = std::numeric_limits<Real>::max();
 }
 
 void HistogramDiag::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
@@ -34,11 +48,8 @@ void HistogramDiag::initialize_impl(const RunType /*run_type*/) {
                        " - field layout: " +
                        field_layout.to_string() + "\n");
 
-  // extract bin values from configuration
-  std::vector<std::string> bin_strings = ekat::split(m_bin_configuration, "_");
-  const int num_bins = bin_strings.size()-1;
-
   // allocate histogram field
+  const int num_bins = m_bin_reals.size()-1;
   FieldLayout diagnostic_layout({CMP}, {num_bins}, {"bin"});
   FieldIdentifier diagnostic_id(m_diag_name, diagnostic_layout,
                                 FieldIdentifier::Units::nondimensional(),
@@ -56,7 +67,7 @@ void HistogramDiag::initialize_impl(const RunType /*run_type*/) {
   using RangePolicy    = Kokkos::RangePolicy<Field::device_t::execution_space>;
   Kokkos::parallel_for("store_histogram_bin_values_" + field.name(),
       RangePolicy(0, bin_values_layout.dim(0)), [&] (int i) {
-        bin_values_view(i) = std::stod(bin_strings[i]);
+        bin_values_view(i) = m_bin_reals[i];
       });
 }
 
