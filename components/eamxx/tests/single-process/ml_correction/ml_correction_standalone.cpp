@@ -4,6 +4,7 @@
 #include "physics/register_physics.hpp"
 #include "share/grid/mesh_free_grids_manager.hpp"
 
+#include <ekat_fpe.hpp>
 #include <ekat_yaml.hpp>
 #include <ekat_fpe.hpp>
 
