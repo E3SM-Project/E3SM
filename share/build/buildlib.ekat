@@ -8,7 +8,7 @@ from CIME.utils import expect, run_bld_cmd_ensure_logging
 from CIME.case import Case
 
 sys.path.append(os.path.dirname(__file__))
-from buildlib_util import extract_from_macros
+from buildlib_util import extract_from_macros, config_if_not_configured
 
 logger = logging.getLogger(__name__)
 
@@ -151,7 +151,7 @@ def buildlib(bldroot, installpath, case):
     if not os.path.isdir(bldroot):
         os.makedirs(bldroot)
 
-    run_bld_cmd_ensure_logging(gen_makefile_cmd, logger, from_dir=bldroot)
+    config_if_not_configured("EKAT", bldroot, gen_makefile_cmd, logger)
     run_bld_cmd_ensure_logging(
         "{} VERBOSE=1 -j {}".format(gmake_cmd, gmake_j), logger, from_dir=bldroot
     )

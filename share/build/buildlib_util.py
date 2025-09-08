@@ -1,6 +1,7 @@
 
-from CIME.utils import run_cmd
+from CIME.utils import run_cmd, run_bld_cmd_ensure_logging
 from CIME.build import get_standard_makefile_args
+from pathlib import Path
 
 ###############################################################################
 def get_macro_var(macro_dump, varname):
@@ -37,3 +38,14 @@ def extract_from_macros(case, comp_name, extra_vars=()):
         result.append(macro_val)
 
     return result
+
+###############################################################################
+def config_if_not_configured(name, bldroot, cmd, log_obj, is_cmake=True):
+###############################################################################
+    check_file = Path(bldroot) / ("CMakeCache.txt" if is_cmake else "config.status")
+    # Don't re-run config if it has already been called
+    if not check_file.exists():
+        log_obj.info(f"Configuring {name} in {bldroot}")
+        run_bld_cmd_ensure_logging(cmd, log_obj, from_dir=bldroot)
+    else:
+        log_obj.info(f"{name} appears to have been configured already in {bldroot}, skipping CMake")
