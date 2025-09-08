@@ -12,7 +12,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.17">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.19">
     
     
       
@@ -29,6 +29,8 @@
   
   
     
+      
+      
     
   
   
@@ -1751,6 +1753,8 @@
       
         
       
+        
+      
     
     
     
@@ -1852,6 +1856,29 @@
   
   <span class="md-ellipsis">
     Binary arithmetics
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../EAMxx/user/diags/vert_derivative/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Vertical derivative
     
   </span>
   
@@ -4000,8 +4027,8 @@ follows:</p>
 <li>The model accounts for radiation in two bands: visible
   (<span class="arithmatex">\(&lt; 0.7\mu\)</span>m) and near-infrared (<span class="arithmatex">\(\ge 0.7 \mu\)</span>m).</li>
 <li>The model uses the two-stream approximation of
-  Dickenson 1983<sup id="fnref:1"><a class="footnote-ref" href="#fn:1">1</a></sup> and
-  Sellers 1985<sup id="fnref:2"><a class="footnote-ref" href="#fn:2">2</a></sup>.</li>
+  Dickenson 1983<sup id="fnref:1"><a class="footnote-ref" href="#fn:1">7</a></sup> and
+  Sellers 1985<sup id="fnref:2"><a class="footnote-ref" href="#fn:2">8</a></sup>.</li>
 <li>The model is a single-layer canopy model.</li>
 <li>Sunlit leaf absorbs unscattered direct radiation,
   scattered direct radiation, and diffuse radiation.</li>
@@ -4009,13 +4036,13 @@ follows:</p>
   diffuse radiation.</li>
 <li>Snow albedo and the shortwave radiative heating of each snowpack layer
   is modeled using the hybrid SNICAR-AD model
-  of Dang et al. 2019<sup id="fnref2:3"><a class="footnote-ref" href="#fn:3">3</a></sup>.</li>
+  of Dang et al. 2019<sup id="fnref2:3"><a class="footnote-ref" href="#fn:3">5</a></sup>.</li>
 <li>The sub-grid impacts of topography on solar radiation
   are parameterized using the approach of Hao et al. 2021
-  <sup id="fnref2:4"><a class="footnote-ref" href="#fn:4">4</a></sup>.</li>
+  <sup id="fnref2:4"><a class="footnote-ref" href="#fn:4">6</a></sup>.</li>
 </ul>
 <p>ELM's shortwave radiation model is similar to
-CLM4.5<sup id="fnref:5"><a class="footnote-ref" href="#fn:5">5</a></sup>, and its new features include
+CLM4.5<sup id="fnref:5"><a class="footnote-ref" href="#fn:5">1</a></sup>, and its new features include
 the hybrid SNICAR-AD model for snow albedo and a
 parameterization for the sub-grid effects of topography
 on solar radiation.</p>
@@ -4074,7 +4101,7 @@ computation of these optical parameters.</p>
 radiation, (b) downward diffuse radiation, and (c)
 downward direct radiation.</p>
 <h3 id="projected-leaf-and-stem-area">Projected leaf and stem area</h3>
-<p>ELM uses the Ross-Gourdriaan<sup id="fnref:6"><a class="footnote-ref" href="#fn:6">6</a></sup><sup id="fnref:7"><a class="footnote-ref" href="#fn:7">7</a></sup>
+<p>ELM uses the Ross-Gourdriaan<sup id="fnref:6"><a class="footnote-ref" href="#fn:6">2</a></sup><sup id="fnref:7"><a class="footnote-ref" href="#fn:7">3</a></sup>
 function to compute the projection of leaf area in the direction of the solar
 radiation as:</p>
 <div class="arithmatex">\[
@@ -4468,7 +4495,7 @@ to simplify the notation, <span class="arithmatex">\(\kappa\)</span> has been om
 the equations.</p>
 <h4 id="radiation-absorbed-by-sunlit-and-shaded-leaves_1">Radiation Absorbed By Sunlit and Shaded Leaves</h4>
 <p>Using analytical solutions of the two-stream
-approximation, Dai et al. 2004<sup id="fnref:8"><a class="footnote-ref" href="#fn:8">8</a></sup> provided
+approximation, Dai et al. 2004<sup id="fnref:8"><a class="footnote-ref" href="#fn:8">4</a></sup> provided
 analytical solutions for the radiation absorbed by the sunlit
 and shaded leaves presented below.</p>
 <h4 id="sunlit-leaves">Sunlit leaves</h4>
@@ -4563,7 +4590,7 @@ f_{sno})  + \alpha_{d,\Lambda}^{sno} f_{sno}
 <p>where <span class="arithmatex">\(f_{sno}\)</span> is the snow fraction.</p>
 <h3 id="soil-albedo">Soil Albedo</h3>
 <p>The soil albedo for the various ELM landunits remains the
-same as in CLM4.5<sup id="fnref2:5"><a class="footnote-ref" href="#fn:5">5</a></sup> are:</p>
+same as in CLM4.5<sup id="fnref2:5"><a class="footnote-ref" href="#fn:5">1</a></sup> are:</p>
 <h4 id="glacier-albedo">Glacier Albedo</h4>
 <div class="arithmatex">\[
 \begin{eqnarray}
@@ -4604,16 +4631,16 @@ the first soil layer, <span class="arithmatex">\(\theta_1\)</span>, as <span cla
 soil color classes.</p>
 <h3 id="snow-albedo">Snow Albedo</h3>
 <p>The hybrid SNICAR-AD model of Dang et al.
-(2019)<sup id="fnref:3"><a class="footnote-ref" href="#fn:3">3</a></sup> is used to compute snow
+(2019)<sup id="fnref:3"><a class="footnote-ref" href="#fn:3">5</a></sup> is used to compute snow
 albedo and the contribution of solar absorption to the heating of each snow layer.</p>
 <h3 id="parameterization-for-sub-grid-effect-of-topographic-on-solar-radiation">Parameterization for Sub-Grid Effect of Topographic on Solar radiation</h3>
 <p>The surface abedos given by equation \eqref{eqn_g_dir} -
-\eqn{eqn_g_dif} neglect topography by assuming a
-plane-parallel Earth. Hao et al. (2021)<sup id="fnref:4"><a class="footnote-ref" href="#fn:4">4</a></sup>
+\eqref{eqn_g_dif} neglect topography by assuming a
+plane-parallel Earth. Hao et al. (2021)<sup id="fnref:4"><a class="footnote-ref" href="#fn:4">6</a></sup>
 developed a parameterization for sub-grid topographic
 effects on solar radiation that essentially modify the
 surface albedo by equation \eqref{eqn_g_dir} -
-\eqn{eqn_g_dif}. The section on <a href="../top_solar_parameterization/">TOP
+\eqref{eqn_g_dif}. The section on <a href="../top_solar_parameterization/">TOP
 Parameterization</a> presents a
 detailed description of the parameterization.</p>
 <h2 id="solar-radiation-fluxes">Solar Radiation Fluxes</h2>
@@ -4672,29 +4699,29 @@ L^{sha} &amp;=&amp; (L+S) - L^{sun}
 <div class="footnote">
 <hr />
 <ol>
-<li id="fn:1">
-<p>Robert E Dickinson. Land surface processes and climate—surface albedos and energy balance. In <em>Advances in geophysics</em>, volume 25, pages 305–353. Elsevier, 1983.&#160;<a class="footnote-backref" href="#fnref:1" title="Jump back to footnote 1 in the text">&#8617;</a></p>
-</li>
-<li id="fn:2">
-<p>Piers J Sellers. Canopy reflectance, photosynthesis and transpiration. <em>International journal of remote sensing</em>, 6(8):1335–1372, 1985.&#160;<a class="footnote-backref" href="#fnref:2" title="Jump back to footnote 2 in the text">&#8617;</a></p>
-</li>
-<li id="fn:3">
-<p>Cheng Dang, Charles S Zender, and Mark G Flanner. Intercomparison and improvement of two-stream shortwave radiative transfer schemes in earth system models for a unified treatment of cryospheric surfaces. <em>The Cryosphere</em>, 13(9):2325–2343, 2019.&#160;<a class="footnote-backref" href="#fnref:3" title="Jump back to footnote 3 in the text">&#8617;</a><a class="footnote-backref" href="#fnref2:3" title="Jump back to footnote 3 in the text">&#8617;</a></p>
-</li>
-<li id="fn:4">
-<p>Dalei Hao, Gautam Bisht, Yu Gu, Wei-Liang Lee, Kuo-Nan Liou, and L Ruby Leung. A parameterization of sub-grid topographical effects on solar radiation in the e3sm land model (version 1.0): implementation and evaluation over the tibetan plateau. <em>Geoscientific Model Development</em>, 14(10):6273–6289, 2021. <a href="https://doi.org/https://doi.org/10.5194/gmd-14-6273-2021">doi:https://doi.org/10.5194/gmd-14-6273-2021</a>.&#160;<a class="footnote-backref" href="#fnref:4" title="Jump back to footnote 4 in the text">&#8617;</a><a class="footnote-backref" href="#fnref2:4" title="Jump back to footnote 4 in the text">&#8617;</a></p>
-</li>
 <li id="fn:5">
-<p>K. Oleson, D. Lawrence, G. Bonan, B. Drewniak, M. Huang, C. Koven, Z. M. Subin, and S. C. Swenson. Technical description of version 4.5 of the community land model (clm), ncar technical note. Technical Report NCAR/TN-503+ STR, National Center for Atmospheric Research (NCAR), Boulder, CO, USA, 2013. <a href="https://doi.org/https://doi.org/10.5065/D6RR1W7M">doi:https://doi.org/10.5065/D6RR1W7M</a>.&#160;<a class="footnote-backref" href="#fnref:5" title="Jump back to footnote 5 in the text">&#8617;</a><a class="footnote-backref" href="#fnref2:5" title="Jump back to footnote 5 in the text">&#8617;</a></p>
+<p>K. Oleson, D. Lawrence, G. Bonan, B. Drewniak, M. Huang, C. Koven, Z. M. Subin, and S. C. Swenson. Technical description of version 4.5 of the community land model (clm), ncar technical note. Technical Report NCAR/TN-503+ STR, National Center for Atmospheric Research (NCAR), Boulder, CO, USA, 2013. <a href="https://doi.org/https://doi.org/10.5065/D6RR1W7M">doi:https://doi.org/10.5065/D6RR1W7M</a>.&#160;<a class="footnote-backref" href="#fnref:5" title="Jump back to footnote 1 in the text">&#8617;</a><a class="footnote-backref" href="#fnref2:5" title="Jump back to footnote 1 in the text">&#8617;</a></p>
 </li>
 <li id="fn:6">
-<p>Juhan Ross. Radiative transfer in plant communities. <em>Vegetation and the Atmosphere 1</em>, 1:13–55, 1975.&#160;<a class="footnote-backref" href="#fnref:6" title="Jump back to footnote 6 in the text">&#8617;</a></p>
+<p>Juhan Ross. Radiative transfer in plant communities. <em>Vegetation and the Atmosphere 1</em>, 1:13–55, 1975.&#160;<a class="footnote-backref" href="#fnref:6" title="Jump back to footnote 2 in the text">&#8617;</a></p>
 </li>
 <li id="fn:7">
-<p>Jan Goudriaan. <em>Crop micrometeorology: a simulation study</em>. Wageningen University and Research, 1977.&#160;<a class="footnote-backref" href="#fnref:7" title="Jump back to footnote 7 in the text">&#8617;</a></p>
+<p>Jan Goudriaan. <em>Crop micrometeorology: a simulation study</em>. Wageningen University and Research, 1977.&#160;<a class="footnote-backref" href="#fnref:7" title="Jump back to footnote 3 in the text">&#8617;</a></p>
 </li>
 <li id="fn:8">
-<p>Yongjiu Dai, Robert E Dickinson, and Ying-Ping Wang. A two-big-leaf model for canopy temperature, photosynthesis, and stomatal conductance. <em>Journal of climate</em>, 17(12):2281–2299, 2004.&#160;<a class="footnote-backref" href="#fnref:8" title="Jump back to footnote 8 in the text">&#8617;</a></p>
+<p>Yongjiu Dai, Robert E Dickinson, and Ying-Ping Wang. A two-big-leaf model for canopy temperature, photosynthesis, and stomatal conductance. <em>Journal of climate</em>, 17(12):2281–2299, 2004.&#160;<a class="footnote-backref" href="#fnref:8" title="Jump back to footnote 4 in the text">&#8617;</a></p>
+</li>
+<li id="fn:3">
+<p>Cheng Dang, Charles S Zender, and Mark G Flanner. Intercomparison and improvement of two-stream shortwave radiative transfer schemes in earth system models for a unified treatment of cryospheric surfaces. <em>The Cryosphere</em>, 13(9):2325–2343, 2019.&#160;<a class="footnote-backref" href="#fnref:3" title="Jump back to footnote 5 in the text">&#8617;</a><a class="footnote-backref" href="#fnref2:3" title="Jump back to footnote 5 in the text">&#8617;</a></p>
+</li>
+<li id="fn:4">
+<p>Dalei Hao, Gautam Bisht, Yu Gu, Wei-Liang Lee, Kuo-Nan Liou, and L Ruby Leung. A parameterization of sub-grid topographical effects on solar radiation in the e3sm land model (version 1.0): implementation and evaluation over the tibetan plateau. <em>Geoscientific Model Development</em>, 14(10):6273–6289, 2021. <a href="https://doi.org/https://doi.org/10.5194/gmd-14-6273-2021">doi:https://doi.org/10.5194/gmd-14-6273-2021</a>.&#160;<a class="footnote-backref" href="#fnref:4" title="Jump back to footnote 6 in the text">&#8617;</a><a class="footnote-backref" href="#fnref2:4" title="Jump back to footnote 6 in the text">&#8617;</a></p>
+</li>
+<li id="fn:1">
+<p>Robert E Dickinson. Land surface processes and climate—surface albedos and energy balance. In <em>Advances in geophysics</em>, volume 25, pages 305–353. Elsevier, 1983.&#160;<a class="footnote-backref" href="#fnref:1" title="Jump back to footnote 7 in the text">&#8617;</a></p>
+</li>
+<li id="fn:2">
+<p>Piers J Sellers. Canopy reflectance, photosynthesis and transpiration. <em>International journal of remote sensing</em>, 6(8):1335–1372, 1985.&#160;<a class="footnote-backref" href="#fnref:2" title="Jump back to footnote 8 in the text">&#8617;</a></p>
 </li>
 </ol>
 </div>
