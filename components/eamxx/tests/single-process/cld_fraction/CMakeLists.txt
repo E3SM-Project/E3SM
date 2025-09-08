@@ -23,6 +23,7 @@ if (EAMXX_ENABLE_PYTHON)
   # Configure yaml files to run directory
   set (POSTFIX py)
   set (PY_MODULE_NAME "cld_fraction")
+  set (PY_MODULE_PATH ${SCREAM_SOURCE_DIR}/src/physics/cld_fraction)
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
                  ${CMAKE_CURRENT_BINARY_DIR}/input_py.yaml)
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/output.yaml
@@ -48,4 +49,18 @@ if (EAMXX_ENABLE_PYTHON)
         LABELS "cldfrac;infrastructure"
         FIXTURES_REQUIRED "cldfrac_py;cldfrac_cpp")
 
+  # Run an ml emulator for cld-fraction
+  set (PY_MODULE_NAME "cld_fraction_ml")
+  set (PY_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR})
+  set (POSTFIX pyml)
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
+                 ${CMAKE_CURRENT_BINARY_DIR}/input_pyml.yaml)
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/output.yaml
+                 ${CMAKE_CURRENT_BINARY_DIR}/output_pyml.yaml)
+
+  # Test the process with python ml emulator
+  CreateUnitTestFromExec(cld_fraction_standalone_pyml cld_fraction_standalone
+    EXE_ARGS "--args -ifile=input_pyml.yaml"
+    LABELS cld_fraction physics
+    FIXTURES_SETUP cldfrac_pyml)
 endif()
