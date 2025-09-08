@@ -118,6 +118,13 @@ build_grids ()
   // Also the GLL grid with no rebalance is needed for sure
   build_physics_grid("gll","none");
 
+  // Set the physics_gll grid as io_aux_grid in the dyn grid
+  auto physics_gll_grid = get_grid_nonconst("physics_gll");
+  auto dyn_grid = get_grid_nonconst("dynamics");
+  dyn_grid->set_aux_grid("default",physics_gll_grid);
+  dyn_grid->set_aux_grid("cg",physics_gll_grid);
+  dyn_grid->set_aux_grid("dg",dyn_grid);
+
   // If (pg type,rebalance) is (gll,none), this will be a no op
   build_physics_grid(pg_type,pg_rebalance);
 

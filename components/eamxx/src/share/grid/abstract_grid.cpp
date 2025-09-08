@@ -468,6 +468,31 @@ AbstractGrid::get_unique_gids () const
   return unique_dofs;
 }
 
+std::shared_ptr<AbstractGrid>
+AbstractGrid::get_aux_grid(const std::string& data_layout) const
+{
+  if (m_aux_grids.count(data_layout)==1) {
+    return m_aux_grids.at(data_layout);
+  } else {
+    return nullptr;
+  }
+}
+
+void AbstractGrid::
+set_aux_grid (const std::string& data_layout, const std::shared_ptr<AbstractGrid>& aux_grid)
+{
+  m_aux_grids[data_layout] = aux_grid;
+}
+
+std::vector<std::string> AbstractGrid::get_aux_grids_keys () const
+{
+  std::vector<std::string> keys;
+  for (const auto& it : m_aux_grids) {
+    keys.push_back(it.first);
+  }
+  return keys;
+}
+
 std::vector<int> AbstractGrid::
 get_owners (const gid_view_h& gids) const
 {

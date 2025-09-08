@@ -5,7 +5,6 @@
 #include "share/field/field_layout.hpp"
 #include "share/field/field.hpp"
 
-#include <ekat_std_enable_shared_from_this.hpp>
 #include <ekat_comm.hpp>
 
 #include <map>
@@ -45,6 +44,8 @@ public:
   // So far, 32 bits seem enough for 2d dofs numbering
   using gid_type = int;
   using gid_view_h = Field::view_host_t<const gid_type*>;
+  template<typename T>
+  using strmap_t = std::map<std::string,T>;
 
   // Constructor(s) & Destructor
   AbstractGrid (const std::string& name,
@@ -175,6 +176,11 @@ public:
   // view returned by this method.
   std::vector<gid_type> get_unique_gids () const;
 
+  // Get/set IO auxiliary grids. See comments below (for m_aux_grids) for an explanation.
+  std::shared_ptr<AbstractGrid> get_aux_grid(const std::string& data_layout) const;
+  void set_aux_grid (const std::string& data_layout, const std::shared_ptr<AbstractGrid>& aux_grid);
+  std::vector<std::string> get_aux_grids_keys () const;
+
   // For each entry in the input list of GIDs, retrieve the process id that owns it
   std::vector<int> get_owners (const gid_view_h& gids) const;
   std::vector<int> get_owners (const std::vector<gid_type>& gids) const {
@@ -250,6 +256,13 @@ protected:
   // The fcn is_unique is expensive, so we lazy init this at the first call.
   mutable bool m_is_unique;
   mutable bool m_is_unique_computed = false;
+
+  // Auxiliary grids (if any). The map key is an 'output_data_layout' description.
+  // IO can use these grids to change the layout of the outputed fields on the fly.
+  // For now, the only use case is to save 'dynamics' grid fields using the 'physics_gll'
+  // grid (to save on storage). IO will rely on the grids manager to build a remapper
+  // from this grid to the requested aux grid
+  strmap_t<std::shared_ptr<AbstractGrid>> m_aux_grids;
 
   // The map lid->idx
   Field     m_lid_to_idx;
