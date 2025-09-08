@@ -673,10 +673,10 @@ contains
       !$acc          present(circulation, relativeVorticity, edgesOnVertex, &
       !$acc                  maxLevelVertexBot, dcEdge, normalVelocity, &
       !$acc                  minLevelVertexTop, areaTriangle, edgeSignOnVertex) &
-      !$acc          private(invAreaTri1, i, iEdge, k, r_tmp, wall_slip_factor)
+      !$acc          private(invAreaTri1, i, iEdge, k, r_tmp)
 #else
       !$omp do schedule(runtime) &
-      !$omp          private(invAreaTri1, i, iEdge, k, r_tmp, wall_slip_factor)
+      !$omp          private(invAreaTri1, i, iEdge, k, r_tmp)
 #endif
       do iVertex = 1, nVerticesAll
          invAreaTri1 = 1.0_RKIND / areaTriangle(iVertex)
@@ -817,6 +817,12 @@ contains
 #ifdef MPAS_OPENACC
          !$acc exit data copyout(wctEdge) delete(baroclinicThickness, deltaSSH, btrVelocity)
 #endif
+
+      case (thickEdgeFluxConstant)
+         do iEdge = 1, nEdgesAll
+            if ( maxLevelEdgeTop(iEdge) == 0 ) cycle
+            wctEdge(iEdge) = baroclinicThickness(iEdge)
+         end do
 
       case default
          ! Should have been caught on init
