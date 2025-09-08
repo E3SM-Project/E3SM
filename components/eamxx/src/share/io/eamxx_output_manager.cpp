@@ -88,33 +88,41 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
   } else {
     // Loop over all grids, creating an output stream for each
     for (auto it=fields_pl.sublists_names_cbegin(); it!=fields_pl.sublists_names_cend(); ++it) {
-      // If this is a GLL grid (or IO Grid is GLL) and PG2 fields
-      // were found above, we must reset the grid COL tag name to
-      // be "ncol_d" to avoid conflicting lengths with ncol on
-      // the PG2 grid.
-      if (pg2_grid_in_io_streams) {
-        const auto& grid_pl = fields_pl.sublist(*it);
-        bool reset_ncol_naming = false;
-        if (*it == "physics_gll") reset_ncol_naming = true;
-        if (grid_pl.isParameter("io_grid_name")) {
-          if (grid_pl.get<std::string>("io_grid_name") == "physics_gll") {
-            reset_ncol_naming = true;
-          }
-        }
-        if (reset_ncol_naming) {
-          field_mgr->get_grids_manager()->
-            get_grid_nonconst(grid_pl.get<std::string>("io_grid_name"))->
-              reset_field_tag_name(ShortFieldTagsNames::COL,"ncol_d");
-	      }
-      }
-
       // Verify this grid exists in FM
       EKAT_REQUIRE_MSG (field_mgr->get_grids_manager()->has_grid(*it),
           "Error! Output requested on grid '" + *it + "', but the field manager does not store such grid.\n");
 
       // This grid could be an alias. Get the grid name from the grid itself
       // as this is what the FieldManager expects.
-      const auto& gname = field_mgr->get_grids_manager()->get_grid(*it)->name();
+      const auto grid = field_mgr->get_grids_manager()->get_grid_nonconst(*it);
+      const auto& gname = grid->name();
+
+      // If this is a GLL grid (or Dyn Grid, with GLL grid set as aux_io_grid)
+      // and PG2 fields were found above, we must reset the grid COL tag name to
+      // be "ncol_d" to avoid conflicting lengths with ncol on the PG2 grid.
+      if (pg2_grid_in_io_streams) {
+        const auto& grid_pl = fields_pl.sublist(*it);
+        auto io_grid = grid;
+
+        std::string output_data_layout = "default";
+        if (grid_pl.isParameter("output_data_layout")) {
+          output_data_layout = grid_pl.get<std::string>("output_data_layout");
+        }
+        auto aux_grid = grid->get_aux_grid(output_data_layout);
+        if (aux_grid) {
+          io_grid = aux_grid;
+        } else {
+          EKAT_REQUIRE_MSG (output_data_layout=="native" or output_data_layout=="default",
+              "Error! Non-default output layout requested, but no aux grid found in this grid.\n"
+              " - grid name: " + grid->name() + "\n"
+              " - output_data_layout: " + output_data_layout + "\n"
+              " - suppored output layout choices: " + ekat::join(grid->get_aux_grids_keys(),",") + "\n");
+        }
+
+        if (io_grid->name()=="physics_gll") {
+          io_grid->reset_field_tag_name(ShortFieldTagsNames::COL,"ncol_d");
+        }
+      }
 
       auto output = std::make_shared<output_type>(m_io_comm,m_params,field_mgr,gname);
       output->set_logger(m_atm_logger);
@@ -692,6 +700,7 @@ setup_internals (const std::shared_ptr<fm_type>& field_mgr,
         }
       }
       fields_pl.sublist(gname).set("field_names",fnames);
+      fields_pl.sublist(gname).set<std::string>("output_data_layout","native");
     }
     m_filename_prefix = m_params.get<std::string>("filename_prefix");
 
