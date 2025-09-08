@@ -8,29 +8,30 @@
 namespace scream
 {
 // =========================================================================================
-void IOPForcing::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
+void
+IOPForcing::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 {
   using namespace ekat::units;
 
-  m_grid = grids_manager->get_grid("physics");
-  const auto& grid_name = m_grid->name();
+  m_grid                = grids_manager->get_grid("physics");
+  const auto &grid_name = m_grid->name();
 
-  m_num_cols = m_grid->get_num_local_dofs(); // Number of columns on this rank
-  m_num_levs = m_grid->get_num_vertical_levels();  // Number of levels per column
+  m_num_cols = m_grid->get_num_local_dofs();      // Number of columns on this rank
+  m_num_levs = m_grid->get_num_vertical_levels(); // Number of levels per column
 
   // Define the different field layouts that will be used for this process
   FieldLayout scalar2d     = m_grid->get_2d_scalar_layout();
   FieldLayout scalar3d_mid = m_grid->get_3d_scalar_layout(true);
-  FieldLayout vector3d_mid = m_grid->get_3d_vector_layout(true,2);
+  FieldLayout vector3d_mid = m_grid->get_3d_vector_layout(true, 2);
 
   constexpr int pack_size = Pack::n;
 
   add_field<Required>("ps", scalar2d, Pa, grid_name);
 
-  add_field<Updated>("horiz_winds", vector3d_mid, m/s, grid_name, pack_size);
+  add_field<Updated>("horiz_winds", vector3d_mid, m / s, grid_name, pack_size);
   add_field<Updated>("T_mid", scalar3d_mid, K, grid_name, pack_size);
 
-  add_tracer<Updated>("qv", m_grid, kg/kg, pack_size);
+  add_tracer<Updated>("qv", m_grid, kg / kg, pack_size);
   add_group<Updated>("tracers", grid_name, pack_size, MonolithicAlloc::Required);
 
   // Sanity check that iop data manager is setup by driver
@@ -487,18 +488,6 @@ void IOPForcing::run_impl (const double dt)
       auto T_mid_i = ekat::subview(T_mid, icol);
       auto qv_i = ekat::subview(qv, icol);
 
-      auto ws = wsm.get_workspace(team);
-      uview_1d<Pack> ref_p_mid;
-      ws.take_many_contiguous_unsafe<1>({"ref_p_mid"},{&ref_p_mid});
-
-      // Compute reference pressures and layer thickness.
-      // TODO: Allow geometry data to allocate packsize
-      auto s_ref_p_mid = ekat::scalarize(ref_p_mid);
-      Kokkos::parallel_for(Kokkos::TeamVectorRange(team, num_levs), [&](const int& k) {
-        s_ref_p_mid(k) = hyam(k)*ps0 + hybm(k)*ps_i;
-      });
-      team.team_barrier();
-
       Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_packs), [&](const int& k) {
         if (iop_nudge_tq) {
           // Restrict nudging of T and qv to certain levels if requested by user
@@ -521,9 +510,6 @@ void IOPForcing::run_impl (const double dt)
           v_i(k).update(horiz_winds_mean(1, k) - v_iop(k), -dt/rtau, 1.0);
         }
       });
-
-      // Release WS views
-      ws.release_many_contiguous<1>({&ref_p_mid});
     });
   }
 }
