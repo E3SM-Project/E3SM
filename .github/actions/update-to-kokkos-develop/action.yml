@@ -12,9 +12,11 @@ runs:
         fi
         git fetch upstream
         git checkout upstream/develop
+      shell: sh
     - name: Modify ghci-snl.cmake file
       run: |
         cmake_file="components/eamxx/cmake/machine-files/ghci-snl.cmake"
         echo "set(CMAKE_CXX_STANDARD 20)" >> $cmake_file
         echo "set(Kokkos_ENABLE_IMPL_VIEW_LEGACY ON)" >> $cmake_file
         echo "set(Kokkos_ENABLE_DEPRECATED_CODE_4 ON)" >> $cmake_file
+      shell: sh
