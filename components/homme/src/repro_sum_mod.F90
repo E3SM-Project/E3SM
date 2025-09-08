@@ -1087,8 +1087,6 @@ module repro_sum_mod
 !
 ! Local workspace
 !
-      integer :: old_cw                  ! for x86 processors, save
-                                         !  current arithmetic mode
       integer :: ifld, isum              ! loop variables
       integer :: ierr                    ! MPI error return
 
@@ -1104,7 +1102,6 @@ module repro_sum_mod
 !
 !-----------------------------------------------------------------------
 !
-!     call x86_fix_start (old_cw)
 
       if (first_time) then
 #if ( defined SPMD )
@@ -1143,10 +1140,6 @@ module repro_sum_mod
          arr_gsum(ifld) = real(arr_lsum_dd(ifld))
       enddo
 #endif
-
-!     call x86_fix_end (old_cw)
-
-      return
 
    end subroutine repro_sum_ddpdd
 !

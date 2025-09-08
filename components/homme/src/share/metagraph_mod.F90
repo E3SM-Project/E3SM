@@ -255,12 +255,11 @@ contains
     integer                          :: nelem,nelem_edge, nedges  
     integer,allocatable              :: icount(:)
     integer                          :: ic,i,j,ii
-    integer                          :: npart
     integer                          :: head_processor_number
     integer                          :: tail_processor_number
-    integer :: nedge_active,enum
+    integer :: enum
     logical :: found
-    integer iTail, iHead, wgtP,wgtS
+    integer :: wgtP,wgtS
 
     type (root_t) :: mEdgeList ! root_t = C++ std::set<std::pair<int,int> >
 
@@ -474,9 +473,6 @@ contains
     endif
 
     call LLFree(mEdgeList)
-
-90  format('EDGE #',I2,2x,'TYPE ',I1,2x,'Processor Numbers ',I2,' ---> ',I2)
-100 format(10x,I2,1x,'(',I1,') ---> ',I2,1x,'(',I1,')')
 
   end subroutine initMetaGraph
 

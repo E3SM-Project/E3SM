@@ -68,7 +68,7 @@ module physical_constants
   real (kind=real_kind), public, parameter :: Rwater_vapor = 461.50D0
   real (kind=real_kind), public, parameter :: Cpwater_vapor= 1870.0D0
   real (kind=real_kind), public, parameter :: kappa        = Rgas/Cp
-  real (kind=real_kind), public, parameter :: Rd_on_Rv     = Rgas/Rwater_vapor	
+  real (kind=real_kind), public, parameter :: Rd_on_Rv     = Rgas/Rwater_vapor
   real (kind=real_kind), public, parameter :: Cpd_on_Cpv   = Cp/Cpwater_vapor
   real (kind=real_kind), public, parameter :: rrearth0     = 1.0_real_kind/rearth0
   real (kind=real_kind), public            :: rrearth      = rrearth0

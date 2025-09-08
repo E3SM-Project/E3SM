@@ -105,7 +105,10 @@ contains
     ! Local Variables
     ! ========================
 
-    integer :: k,nf
+    integer :: k
+#if (defined COLUMN_OPENMP)
+    integer :: nf
+#endif
     real (kind=real_kind) :: facp(np,np), facm(np,np)
 
     ! ===========================================================

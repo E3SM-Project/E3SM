@@ -231,7 +231,7 @@ module control_mod
   ! kmass = level index with density.  other levels contain test tracers
   integer, public  :: kmass  = -1
   integer, public  :: toy_chemistry = 0            !  1 = toy chemestry is turned on in 2D advection code
-  real (kind=real_kind), public :: g_sw_output            	   = 9.80616D0          ! m s^-2
+  real (kind=real_kind), public :: g_sw_output = 9.80616D0          ! m s^-2
 
   ! parameters for dcmip12 test 2-0: steady state atmosphere with orography
   real(real_kind), public :: dcmip2_0_h0      = 2000.d0        ! height of mountain range        (meters)
@@ -292,7 +292,6 @@ contains
     !   If you want a value to be computed, set it to <0 on input.
 
     use parallel_mod, only: abortmp, parallel_t
-    use kinds, only: iulog
 
     type (parallel_t), intent(in) :: par
     integer, intent(inout) :: &

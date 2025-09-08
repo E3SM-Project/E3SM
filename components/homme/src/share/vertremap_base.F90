@@ -91,12 +91,12 @@ subroutine remap1(Qdp,nx,qsize,dp1,dp2,remap_alg)
   ! ========================
 
   real (kind=real_kind), dimension(nlev+1)    :: rhs,lower_diag,diag,upper_diag,q_diag,zgam,z1c,z2c,zv
-  real (kind=real_kind), dimension(nlev)      :: h,Qcol,dy,za0,za1,za2,zarg,zhdp,dp_star,dp_np1
+  real (kind=real_kind), dimension(nlev)      :: h,Qcol,dy,za0,za1,za2,zarg,zhdp
   real (kind=real_kind)  :: f_xm,level1,level2,level3,level4,level5, &
                             peaks_min,peaks_max,tmp_cal,xm,xm_d,zv1,zv2, &
                             zero = 0,one = 1,tiny = 1e-12,qmax = 1d50
   integer(kind=int_kind) :: zkr(nlev+1),filter_code(nlev),peaks,im1,im2,im3,ip1,ip2, &
-                            lt1,lt2,lt3,t0,t1,t2,t3,t4,tm,tp,ie,i,ilev,j,jk,k,q
+                            lt1,lt2,lt3,t1,t2,t3,t4,tm,tp,i,ilev,j,jk,k,q
   logical :: abrtf=.false.
 
   q = remap_alg
@@ -114,7 +114,7 @@ subroutine remap1(Qdp,nx,qsize,dp1,dp2,remap_alg)
 
   call t_startf('remap_Q_noppm')
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(q,i,j,z1c,z2c,zv,k,dp_np1,dp_star,Qcol,zkr,ilev) &
+!$omp parallel do private(q,i,j,z1c,z2c,zv,k,Qcol,zkr,ilev) &
 !$omp    private(jk,zgam,zhdp,h,zarg,rhs,lower_diag,diag,upper_diag,q_diag,tmp_cal,filter_code) &
 !$omp    private(dy,im1,im2,im3,ip1,t1,t2,t3,za0,za1,za2,xm_d,xm,f_xm,t4,tm,tp,peaks,peaks_min) &
 !$omp    private(peaks_max,ip2,level1,level2,level3,level4,level5,lt1,lt2,lt3,zv1,zv2)
@@ -374,20 +374,17 @@ subroutine remap1_nofilter(Qdp,nx,qsize,dp1,dp2)
   ! ========================
 
   real (kind=real_kind), dimension(nlev+1)    :: rhs,lower_diag,diag,upper_diag,q_diag,zgam,z1c,z2c,zv
-  real (kind=real_kind), dimension(nlev)      :: h,Qcol,dy,za0,za1,za2,zarg,zhdp,dp_star,dp_np1
-  real (kind=real_kind)  :: f_xm,level1,level2,level3,level4,level5, &
-                            peaks_min,peaks_max,tmp_cal,xm,xm_d,zv1,zv2, &
-                            zero = 0,one = 1,tiny = 1e-12,qmax = 1d50
-  integer(kind=int_kind) :: zkr(nlev+1),filter_code(nlev),peaks,im1,im2,im3,ip1,ip2, &
-                            lt1,lt2,lt3,t0,t1,t2,t3,t4,tm,tp,ie,i,ilev,j,jk,k,q
+  real (kind=real_kind), dimension(nlev)      :: h,Qcol,za0,za1,za2,zarg,zhdp
+  real (kind=real_kind)  :: tmp_cal,zv1,zv2
+  integer(kind=int_kind) :: zkr(nlev+1),i,ilev,j,jk,k,q
   logical :: abrtf=.false.
 !   call t_startf('remap1_nofilter')
 
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(q,i,j,z1c,z2c,zv,k,dp_np1,dp_star,Qcol,zkr,ilev) &
-!$omp    private(jk,zgam,zhdp,h,zarg,rhs,lower_diag,diag,upper_diag,q_diag,tmp_cal,filter_code) &
-!$omp    private(dy,im1,im2,im3,ip1,t1,t2,t3,za0,za1,za2,xm_d,xm,f_xm,t4,tm,tp,peaks,peaks_min) &
-!$omp    private(peaks_max,ip2,level1,level2,level3,level4,level5,lt1,lt2,lt3,zv1,zv2)
+!$omp parallel do private(q,i,j,z1c,z2c,zv,k,Qcol,zkr,ilev) &
+!$omp    private(jk,zgam,zhdp,h,zarg,rhs,lower_diag,diag,upper_diag,q_diag,tmp_cal) &
+!$omp    private(za0,za1,za2) &
+!$omp    private(zv1,zv2)
 #endif
   do q=1,qsize
   do i=1,nx
@@ -537,7 +534,7 @@ subroutine remap_Q_ppm(Qdp,nx,qsize,dp1,dp2,remap_alg)
   real(kind=real_kind), dimension(3,     nlev   ) :: coefs  !PPM coefficients within each cell
   real(kind=real_kind), dimension(       nlev   ) :: z1, z2
   real(kind=real_kind) :: ppmdx(10,0:nlev+1)  !grid spacings
-  real(kind=real_kind) :: mymass, massn1, massn2, ext(2)
+  real(kind=real_kind) :: massn1, massn2, ext(2)
   integer :: i, j, k, q, kk, kid(nlev)
   logical :: limit_linear_extrap
 
@@ -655,7 +652,6 @@ function compute_ppm_grids( dx )   result(rslt)
   real(kind=real_kind), intent(in) :: dx(-1:nlev+2)  !grid spacings
   real(kind=real_kind)             :: rslt(10,0:nlev+1)  !grid spacings
   integer :: j
-  integer :: indB, indE
 
   !Calculate grid-based coefficients for stage 1 of compute_ppm
   do j = 0 , nlev+1
@@ -690,10 +686,8 @@ function compute_ppm( a , dx )    result(coefs)
   real(kind=real_kind) :: dma(0:nlev+1)                     !An expression from Collela's '84 publication
   real(kind=real_kind) :: da                                !Ditto
   ! Hold expressions based on the grid (which are cumbersome).
-  real(kind=real_kind) :: dx1, dx2, dx3, dx4, dx5, dx6, dx7, dx8, dx9, dx10
   real(kind=real_kind) :: al, ar                            !Left and right interface values for cell-local limiting
   integer :: j
-  integer :: indB, indE
 
   ! Stage 1: Compute dma for each cell, allowing a 1-cell ghost stencil below and above the domain
   do j = 0 , nlev+1
@@ -750,7 +744,7 @@ end function integrate_parabola
   subroutine binary_search(pio, pivot, k)
     real(kind=real_kind), intent(in) :: pio(nlev+2), pivot
     integer, intent(inout) :: k
-    integer :: lo, hi, mid
+    integer :: lo, hi
 
     if (pio(k) > pivot) then
        lo = 1
@@ -776,7 +770,6 @@ end function integrate_parabola
     real(kind=real_kind), intent(out) :: y3,y4
 
     real(kind=real_kind) :: den,num,a
-    real(kind=real_kind) :: z3,z4
     logical :: limit
 
     ! In exact arithmetic, the following is equivalent to

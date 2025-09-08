@@ -15,7 +15,7 @@ module model_init_mod
 
   use element_mod,        only: element_t
   use derivative_mod,     only: derivative_t,gradient_sphere, laplace_sphere_wk
-  use hybvcoord_mod, 	  only: hvcoord_t
+  use hybvcoord_mod,      only: hvcoord_t
   use hybrid_mod,         only: hybrid_t
   use dimensions_mod,     only: np,nlev,nlevp
   use element_ops,        only: initialize_reference_states

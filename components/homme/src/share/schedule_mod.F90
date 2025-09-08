@@ -56,7 +56,6 @@ contains
     integer                       :: i,j,is,ir,ncycle
     integer                       :: il,ie,ig
     integer                       :: nelemd0
-    integer                       :: jmd
     integer                       :: inbr
     integer                       :: nSched
     integer,allocatable           :: tmpP(:,:)
@@ -67,7 +66,6 @@ contains
     integer			  :: iSched
     logical, parameter            :: VerbosePrint=.FALSE.
     logical, parameter            :: Debug=.FALSE.
-    integer :: ierr
     integer :: l1,l2,l1id,l2id
 
 
@@ -297,7 +295,6 @@ contains
        endif
     enddo
 100 format('CheckSchedule: ERR IAM:',I3,' SIZEOF(SendBuffer):',I10,' != SIZEOF(RecvBuffer) :',I10)
-110 format('CheckSchedule: ERR IAM:',I3,' LENGTH(SendBuffer):',I10,' != LENGTH(RecvBuffer) :',I10)
 
   end subroutine CheckSchedule
   subroutine PrintSchedule(Schedule)
@@ -337,10 +334,6 @@ contains
        call PrintGridEdge(pCycle%edge%members)
     enddo
 90  format('NODE # ',I2,2x,'NCYCLES ',I2)
-97  format(10x,'EDGE #',I2,2x,'TYPE ',I1,2x,'G.EDGES',I4,2x,'WORDS ',I5,2x, &
-         'SRC ',I3,2x,'DEST ',I3,2x,'PTR ',I4)
-100 format(15x,I4,5x,I3,1x,'(',I1,') --',I1,'--> ',I3,1x,'(',I1,')')
-
 
   end subroutine PrintSchedule
 
@@ -454,7 +447,7 @@ contains
     do i=1,n
        if( tmp(1,i) == inbr) then 
           ptr = tmp(2,i)
-          return	
+          return
        endif
        if( tmp(1,i) == -1 ) then  
           tmp(1,i) = inbr

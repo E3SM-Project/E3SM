@@ -215,8 +215,11 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     character(len=MAX_FILE_LEN) :: mesh_file
     integer :: se_ftype, se_limiter_option
     integer :: se_nsplit
-    integer :: interp_nlat, interp_nlon, interp_gridtype, interp_type
-    integer :: i, ii, j
+    integer :: interp_nlat, interp_nlon, interp_gridtype
+    integer :: i, ii
+#if !defined(CAM) && !defined(SCREAM) && !defined(HOMME_WITHOUT_PIOLIBRARY)
+    integer :: j, interp_type
+#endif
     integer  :: ierr
     character(len=80) :: errstr, arg
     real(kind=real_kind) :: dt_max, se_tstep
