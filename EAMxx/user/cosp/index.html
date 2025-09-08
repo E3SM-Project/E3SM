@@ -16,7 +16,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.18">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.19">
     
     
       
@@ -3848,7 +3848,6 @@ cat<span class="w"> </span><span class="s">&lt;&lt; EOF &gt; eamxx_cosp_daily_ou
 <span class="s">    - isccp_ctptau</span>
 <span class="s">    - modis_ctptau</span>
 <span class="s">    - misr_cthtau</span>
-<span class="s">    - cosp_sunlit</span>
 <span class="s">max_snapshots_per_file: 1</span>
 <span class="s">filename_prefix: eamxx</span>
 <span class="s">output_control:</span>
@@ -3875,22 +3874,7 @@ cat<span class="w"> </span><span class="s">&lt;&lt; EOF &gt; eamxx_cosp_daily_ou
 <li>MISR-simulated cloud top height/optical depth joint histogram</li>
 </ul>
 </li>
-<li><code>cosp_sunlit</code><ul>
-<li>sunlit flag aggregated at COSP frequency for renormalizing daytime averages</li>
 </ul>
-</li>
-</ul>
-<p>ISCCP, MODIS, and MISR outputs are valid only for daytime/sunlit columns
-(to be consistent with available satellite retrievals).
-In order to aggregate only daytime columns in time averages, these outputs are
-multiplied by the sunlit flag (0 or 1) at each COSP calculation time.
-Time averages of these quantities are then aggregated, along with the COSP
-sunlit flag each time COSP is called.
-In order to back out the daytime-only time averages from the outputs,
-one needs to divide the output fields by <code>cosp_sunlit</code>.
-E.g.,</p>
-<div class="highlight"><pre><span></span><code><span class="nv">isccp_ctptau</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>mean<span class="o">(</span>isccp_ctptau<span class="o">)</span><span class="w"> </span>/<span class="w"> </span>mean<span class="o">(</span>cosp_sunlit<span class="o">)</span>
-</code></pre></div>
 
 
 
