@@ -100,7 +100,7 @@ OR
         "--grid",
         default=None,
         type=str,
-        help="Specify grid for which --fields/--io-grid options apply to",
+        help="Specify grid for which --fields/--output-data-layout options apply to",
     )
 
     parser.add_argument(
@@ -111,10 +111,10 @@ OR
     )
 
     parser.add_argument(
-        "--io-grid",
+        "--output-data-layout",
         default=None,
         type=str,
-        help="Name of grid onto which to remap fields before outputing them",
+        help="What kind of layout to use for the saved data (e.g., whether dyn->phys_gll remap is needed)",
     )
 
     parser.add_argument(
