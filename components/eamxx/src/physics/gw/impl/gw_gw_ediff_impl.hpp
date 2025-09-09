@@ -53,7 +53,6 @@ void Functions<S,D>::gw_ediff(
   // Inverse Prandtl number.
   static constexpr Real prndl=0.25;
   // Density scale height.
-  static constexpr Real dscale=7000;
   static constexpr Real half=0.5;
 
   //--------------------------------------------------------------------------

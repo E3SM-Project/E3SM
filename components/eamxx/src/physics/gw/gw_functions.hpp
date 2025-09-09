@@ -1,4 +1,3 @@
-
 #ifndef GW_FUNCTIONS_HPP
 #define GW_FUNCTIONS_HPP
 
