@@ -3956,7 +3956,7 @@ contains
      if (inundflag) then
         if (use_linear_inund) then
             !!allocate(TUnit%nr(begr:endr))   !(Repetitive, removed on 6-1-17. --Inund.)
-            ier = pio_inq_varid(ncid, name='nr', vardesc=vardesc)
+            ier = pio_inq_varid(ncid, 'nr', vardesc)
             call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%nr, ier)
             if (masterproc) write(iulog,FORMR) trim(subname),' read nr ',minval(Tunit%nr),maxval(Tunit%nr)
             call shr_sys_flush(iulog)
@@ -4148,19 +4148,19 @@ contains
        ! Read linear inundation model parameters 
        if (use_linear_inund) then
           allocate(TUnit%linear_a(begr:endr))  
-          ier = pio_inq_varid(ncid, name='a', vardesc=vardesc)
+          ier = pio_inq_varid(ncid, 'a', vardesc)
           call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%linear_a, ier)
           if (masterproc) write(iulog,FORMR) trim(subname),' read linear inundation scheme a',minval(Tunit%linear_a),maxval(Tunit%linear_a)
           call shr_sys_flush(iulog)
 
           allocate(TUnit%linear_b(begr:endr))  
-          ier = pio_inq_varid(ncid, name='b', vardesc=vardesc)
+          ier = pio_inq_varid(ncid, 'b', vardesc)
           call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%linear_b, ier)
           if (masterproc) write(iulog,FORMR) trim(subname),' read linear inundation scheme b',minval(Tunit%linear_b),maxval(Tunit%linear_b)
           call shr_sys_flush(iulog)
 
           allocate(TUnit%linear_vcri(begr:endr))  
-          ier = pio_inq_varid(ncid, name='vcri', vardesc=vardesc)
+          ier = pio_inq_varid(ncid, 'vcri', vardesc)
           call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%linear_vcri, ier)
           if (masterproc) write(iulog,FORMR) trim(subname),' read linear inundation scheme v',minval(Tunit%linear_vcri),maxval(Tunit%linear_vcri)
           call shr_sys_flush(iulog)
