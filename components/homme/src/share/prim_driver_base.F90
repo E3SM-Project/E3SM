@@ -55,7 +55,6 @@ module prim_driver_base
   type (MetaVertex_t), public :: MetaVertex
   logical :: can_scalably_init_grid
 
-  type (quadrature_t)   :: gp                     ! element GLL points
   type (ReductionBuffer_ordered_1d_t), save :: red   ! reduction buffer               (shared)
   type (derivative_t)  :: deriv1
 
@@ -259,7 +258,7 @@ contains
     ! --------------------------------
     use parallel_mod, only : iam, parallel_t, syncmp, abortmp, global_shared_buf, nrepro_vars
 #ifdef _MPI
-    use parallel_mod, only : mpiinteger_t, mpireal_t, mpi_max, mpi_sum, haltmp
+    use parallel_mod, only : mpiinteger_t, mpi_max, mpi_sum, haltmp
 #endif
     ! --------------------------------
     use metis_mod, only : genmetispart
@@ -288,15 +287,11 @@ contains
     type (parallel_t),  intent(in)  :: par
     type (domain1d_t),  pointer     :: dom_mt(:)
 
-    integer :: ii,ie, ith
-    integer :: nelem_edge,nedge
-    integer :: nstep
-    integer :: nlyr
-    integer :: iMv
-    integer :: err, ierr, l, j
+    integer :: ie, ith
+    integer :: nelem_edge
+    ! integer :: nlyr
+    integer :: ierr, j
     logical, parameter :: Debug = .FALSE.
-
-    integer  :: i
 
     type (quadrature_t)   :: gp                     ! element GLL points
 
@@ -591,9 +586,10 @@ contains
     ! --------------------------------
     use prim_state_mod, only : prim_printstate_init
     use parallel_mod,   only : parallel_t
-    use control_mod,    only : runtype, restartfreq, transport_alg
+    use control_mod,    only : transport_alg
     use bndry_mod,      only : sort_neighbor_buffer_mapping
 #if !defined(CAM) && !defined(SCREAM)
+    use control_mod,    only : runtype, restartfreq
     use restart_io_mod, only : RestFile,readrestart
 #endif
 
@@ -639,14 +635,14 @@ contains
 
   subroutine prim_init1_compose(par, elem)
     use parallel_mod, only : parallel_t, abortmp
-    use control_mod,  only : transport_alg, semi_lagrange_cdr_alg
+    use control_mod,  only : transport_alg
 #ifdef HOMME_ENABLE_COMPOSE
     use compose_mod,  only : kokkos_init, compose_init, cedr_set_ie2gci, cedr_unittest
 #endif
 
     type (parallel_t), intent(in) :: par
     type (element_t), pointer, intent(in) :: elem(:)
-    integer :: ie, ierr
+    integer :: ie
 
     if (transport_alg > 0) then
 #ifdef HOMME_ENABLE_COMPOSE
@@ -686,7 +682,6 @@ contains
     use parallel_mod,       only : parallel_t
     use prim_advance_mod,   only : prim_advance_init1
     use prim_advection_mod, only : prim_advec_init1
-    use thread_mod,         only : hthreads
 #ifdef TRILINOS
     use prim_implicit_mod,  only : prim_implicit_init
 #endif
@@ -737,10 +732,8 @@ contains
   !_____________________________________________________________________
   subroutine prim_init2(elem, hybrid, nets, nete, tl, hvcoord)
 
-    use control_mod,          only: runtype, test_case, &
-                                    debug_level, vfile_int, vfile_mid, &
-                                    topology, dt_remap_factor, dt_tracer_factor,&
-                                    sub_case, limiter_option, nu, nu_q, nu_div, tstep_type, hypervis_subcycle, &
+    use control_mod,          only: runtype, topology, dt_remap_factor, dt_tracer_factor,&
+                                    tstep_type, hypervis_subcycle, &
                                     hypervis_subcycle_q, hypervis_subcycle_tom, &
                                     transport_alg, prim_step_type
     use global_norms_mod,     only: test_global_integral, print_cfl, dss_hvtensor
@@ -749,8 +742,10 @@ contains
     use prim_state_mod,       only: prim_printstate, prim_diag_scalars
     use prim_advection_mod,   only: prim_advec_init2
     use model_init_mod,       only: model_init2
-    use time_mod,             only: timelevel_t, tstep, timelevel_init, nendstep, smooth, nsplit, TimeLevel_Qdp
-    use control_mod,          only: smooth_phis_numcycle
+    use time_mod,             only: timelevel_t, tstep, timelevel_init, nendstep, TimeLevel_Qdp
+#ifdef CAM
+    use time_mod,             only: nsplit
+#endif
 
 #ifdef TRILINOS
     use prim_derived_type_mod ,only : derived_type, initialize
@@ -768,25 +763,14 @@ contains
     ! Local variables
     ! ==================================
 
-    real (kind=real_kind) :: dt                 ! timestep
-
     ! variables used to calculate CFL
     real (kind=real_kind) :: dt_dyn_vis         ! viscosity timestep used in dynamics
     real (kind=real_kind) :: dt_tracer_vis      ! viscosity timestep used in tracers
 
-    real (kind=real_kind) :: dp
-    real (kind=real_kind) :: ps(np,np)          ! surface pressure
-
-    character(len=80)     :: fname
-    character(len=8)      :: njusn
-    character(len=4)      :: charnum
-
-    real (kind=real_kind) :: Tp(np)             ! transfer function
-
-    integer :: simday
-    integer :: i,j,k,ie,iptr,t,q
-    integer :: ierr
-    integer :: nfrc
+#ifdef CAM
+    integer :: k
+#endif
+    integer :: ie,q
     integer :: n0_qdp
 
 #ifdef TRILINOS
@@ -1077,9 +1061,7 @@ contains
     type (TimeLevel_t),   intent(inout) :: tl
     integer,              intent(in)    :: nsubstep                     ! nsubstep = 1 .. nsplit
 
-    real(kind=real_kind) :: dp, dt_q, dt_remap
-    real(kind=real_kind) :: dp_np1(np,np)
-    integer :: ie,i,j,k,n,q,t,scm_dum
+    real(kind=real_kind) :: dt_q, dt_remap
     integer :: n0_qdp,np1_qdp,r,nstep_end,nets_in,nete_in,step_factor
     logical :: compute_diagnostics
 
@@ -1232,14 +1214,13 @@ contains
   !       tl%n0    time t + dt_q
   !
   !
-    use control_mod,        only: statefreq, integration, ftype, nu_p, dt_tracer_factor, dt_remap_factor
-    use control_mod,        only: transport_alg
+    use control_mod,        only: ftype, dt_tracer_factor
     use hybvcoord_mod,      only: hvcoord_t
     use parallel_mod,       only: abortmp
     use prim_advance_mod,   only: prim_advance_exp, applycamforcing_dynamics
     use prim_advection_mod, only: prim_advec_tracers_remap
     use reduction_mod,      only: parallelmax
-    use time_mod,           only: time_at,TimeLevel_t, timelevel_update, nsplit
+    use time_mod,           only: time_at,TimeLevel_t, timelevel_update
     use prim_state_mod,     only: prim_printstate
 
     type(element_t),      intent(inout) :: elem(:)
@@ -1250,10 +1231,8 @@ contains
     real(kind=real_kind), intent(in)    :: dt       ! "timestep dependent" timestep
     type(TimeLevel_t),    intent(inout) :: tl
 
-    real(kind=real_kind) :: st, st1, dp, dt_q
-    integer :: ie, t, q,k,i,j,n
-    real (kind=real_kind)                          :: maxcflx, maxcfly
-    real (kind=real_kind) :: dp_np1(np,np)
+    real(kind=real_kind) :: dt_q
+    integer :: n
     logical :: compute_diagnostics
 
     dt_q = dt*dt_tracer_factor
@@ -1310,7 +1289,7 @@ contains
   end subroutine prim_step
 
   subroutine prim_step_flexible(hybrid, elem, nets, nete, dt, tl, hvcoord, compute_diagnostics)
-    use control_mod,        only: ftype, nu_p, dt_tracer_factor, dt_remap_factor, prescribed_wind, transport_alg
+    use control_mod,        only: ftype, dt_tracer_factor, dt_remap_factor, prescribed_wind
     use hybvcoord_mod,      only: hvcoord_t
     use parallel_mod,       only: abortmp
     use prim_advance_mod,   only: prim_advance_exp, applycamforcing_dynamics
@@ -1331,7 +1310,7 @@ contains
     logical,              intent(in)    :: compute_diagnostics
 
     real(kind=real_kind) :: dt_q, dt_remap, dp(np,np,nlev)
-    integer :: ie, q, k, n, n0_qdp, np1_qdp
+    integer :: ie, k, n, n0_qdp, np1_qdp
     logical :: compute_diagnostics_it, apply_forcing, observe
 
     dt_q = dt*dt_tracer_factor
@@ -1572,7 +1551,6 @@ contains
   use control_mod,        only : use_moisture, dt_remap_factor
   use hybvcoord_mod,      only : hvcoord_t
 #ifdef MODEL_THETA_L
-  use control_mod,        only : theta_hydrostatic_mode
   use physical_constants, only : cp, g, kappa, Rgas, p0
   use element_ops,        only : get_temperature, get_r_star, get_hydro_pressure
   use eos,                only : pnh_and_exner_from_eos
@@ -1807,13 +1785,13 @@ contains
   !       tl%n0    time t + dt_q
   !
   !
-    use control_mod,        only: statefreq, integration, ftype, nu_p, dt_tracer_factor, dt_remap_factor
+    use control_mod,        only: ftype, nu_p, dt_tracer_factor
     use control_mod,        only: transport_alg
     use hybvcoord_mod,      only : hvcoord_t
     use parallel_mod,       only: abortmp
     use prim_advance_mod,   only: prim_advance_exp, applyCAMforcing_dynamics
     use reduction_mod,      only: parallelmax
-    use time_mod,           only: time_at,TimeLevel_t, timelevel_update, timelevel_qdp, nsplit
+    use time_mod,           only: time_at,TimeLevel_t, timelevel_update, timelevel_qdp
     use prim_state_mod,     only: prim_printstate, prim_diag_scalars, prim_energy_halftimes
 
     type(element_t),      intent(inout) :: elem(:)
@@ -1823,10 +1801,7 @@ contains
     real(kind=real_kind), intent(in)    :: dt       ! "timestep dependent" timestep
     type(TimeLevel_t),    intent(inout) :: tl
 
-    real(kind=real_kind) :: st, st1, dp, dt_q
-    integer :: ie, t, q,k,i,j,n,qn0
-    real (kind=real_kind)                          :: maxcflx, maxcfly
-    real (kind=real_kind) :: dp_np1(np,np)
+    integer :: ie,n,qn0
  
     ! ===============
     ! initialize mean flux accumulation variables and save some variables at n0
@@ -1867,9 +1842,7 @@ contains
 
   end subroutine prim_step_scm
 
-
 !=======================================================================================================!
-
 
   subroutine prim_finalize()
 #ifdef TRILINOS
@@ -1899,9 +1872,7 @@ contains
     ! ==========================
   end subroutine prim_finalize
 
-
-
-    subroutine smooth_topo_datasets(elem,hybrid,nets,nete)
+  subroutine smooth_topo_datasets(elem,hybrid,nets,nete)
     use control_mod, only : smooth_phis_numcycle, smooth_phis_nudt, smooth_phis_p2filt
     use hybrid_mod, only : hybrid_t
     use bndry_mod, only : bndry_exchangev
@@ -1913,10 +1884,11 @@ contains
     type (hybrid_t)      , intent(in) :: hybrid
     type (element_t)     , intent(inout), target :: elem(:)
     ! local
-    integer :: ie, p2filt
+    integer :: ie
     real (kind=real_kind) :: minf
-    real (kind=real_kind) :: phis(np,np,nets:nete),phis4(4),xgll(np)
+    real (kind=real_kind) :: phis(np,np,nets:nete),xgll(np)
     type (quadrature_t)    :: gp
+
     gp=gausslobatto(np)
     xgll = gp%points(1:np)
     deallocate(gp%points)
@@ -1940,7 +1912,7 @@ contains
        elem(ie)%state%phis(:,:)=phis(:,:,ie)
     enddo
 
-    end subroutine smooth_topo_datasets
+  end subroutine smooth_topo_datasets
     
   !_____________________________________________________________________
   subroutine set_prescribed_scm(elem,dt,tl)
@@ -1957,10 +1929,9 @@ contains
     real (kind=real_kind), intent(in)             :: dt
     type (TimeLevel_t)   , intent(in)             :: tl
     
-    real (kind=real_kind) :: dp(np,np)! pressure thickness, vflux
     real(kind=real_kind)  :: eta_dot_dpdn(np,np,nlevp)
     
-    integer :: ie,k,p,n0,np1,n0_qdp,np1_qdp
+    integer :: k,p,n0,np1,n0_qdp,np1_qdp
 
     n0    = tl%n0
     np1   = tl%np1

@@ -71,8 +71,6 @@ contains
     type (parallel_t) :: par
     type (element_t), intent(inout), target   :: elem(:)
     character(len=*)    , intent(in) :: integration
-    integer :: i
-    integer :: ie
 
 
   end subroutine prim_advance_init1
@@ -100,13 +98,13 @@ contains
     integer              , intent(in)            :: nete
     logical,               intent(in)            :: compute_diagnostics
 
-    real (kind=real_kind) :: dt2, time, dt_vis, x, eta_ave_w
-    real (kind=real_kind) :: itertol,a1,a2,a3,a4,a5,a6,ahat1,ahat2
-    real (kind=real_kind) :: ahat3,ahat4,ahat5,ahat6,dhat1,dhat2,dhat3,dhat4
-    real (kind=real_kind) ::  gamma,delta,ap,aphat,dhat5,offcenter
+    real (kind=real_kind) :: dt2, dt_vis, eta_ave_w
+    real (kind=real_kind) :: itertol,a1,a2,a3
+    real (kind=real_kind) :: dhat3
+    real (kind=real_kind) :: aphat,offcenter
 
-    integer :: ie,nm1,n0,np1,nstep,qsplit_stage,k
-    integer :: n,i,j,maxiter
+    integer :: ie,nm1,n0,np1,nstep
+    integer :: maxiter
 
 #ifdef ARKODE 
     type(parameter_list)    :: arkode_parameters
@@ -566,7 +564,7 @@ contains
 
   ! local
   real (kind=real_kind) :: eta_ave_w  ! weighting for mean flux terms
-  integer :: k2,k,kptr,i,j,ie,ic,nt,nlyr_tot,nlyr_tom,ssize
+  integer :: k,kptr,ie,ic,nt,nlyr_tot,nlyr_tom,ssize
   real (kind=real_kind), dimension(np,np,2,nlev,nets:nete)      :: vtens
   real (kind=real_kind), dimension(np,np,nlev,4,nets:nete)      :: stens  ! dp3d,theta,w,phi
 
@@ -580,14 +578,16 @@ contains
   real (kind=real_kind), dimension(np,np,4) :: lap_s  ! dp3d,theta,w,phi
   real (kind=real_kind), dimension(np,np,2) :: lap_v
   real (kind=real_kind) :: exner0(nlev)
-  real (kind=real_kind) :: heating(np,np,nlev)
+#if 0
   real (kind=real_kind) :: exner(np,np,nlev)
-  real (kind=real_kind) :: pnh(np,np,nlevp)    
   real (kind=real_kind) :: temp(np,np,nlev)    
+  real (kind=real_kind) :: pnh(np,np,nlevp)    
   real (kind=real_kind) :: temp_i(np,np,nlevp)    
+  real (kind=real_kind) :: heating(np,np,nlev)
+  integer :: k2
+#endif
   real (kind=real_kind) :: dt,xfac
 
-  integer :: l1p,l2p,l1n,l2n,l
   call t_startf('advance_hypervis')
 
 #ifdef HOMMEXX_BFB_TESTING
@@ -1070,7 +1070,6 @@ contains
 
   real (kind=real_kind) :: gradw_i(np,np,2,nlevp)
   real (kind=real_kind) :: v_gradw_i(np,np,nlevp)     
-  real (kind=real_kind) :: v_gradtheta(np,np,nlev)     
   real (kind=real_kind) :: v_theta(np,np,2,nlev)
   real (kind=real_kind) :: div_v_theta(np,np,nlev)
   real (kind=real_kind) :: v_gradphinh_i(np,np,nlevp) ! v*gradphi at interfaces
@@ -1083,8 +1082,6 @@ contains
 
   real (kind=real_kind) :: vtens1(np,np,nlev)
   real (kind=real_kind) :: vtens2(np,np,nlev)
-  real (kind=real_kind) :: stens(np,np,nlev,3) ! tendencies w,phi,theta
-                                               ! w,phi tendencies not computed at nlevp
   real (kind=real_kind) :: w_tens(np,np,nlevp)  ! need to update w at surface as well
   real (kind=real_kind) :: theta_tens(np,np,nlev)
   real (kind=real_kind) :: phi_tens(np,np,nlevp)
@@ -1097,7 +1094,11 @@ contains
   real (kind=real_kind) ::  temp(np,np,nlev)
   real (kind=real_kind) ::  vtemp(np,np,2,nlev)       ! generic gradient storage
   real (kind=real_kind), dimension(np,np) :: sdot_sum ! temporary field
-  real (kind=real_kind) ::  v1,v2,w,d_eta_dot_dpdn_dn, T0
+  real (kind=real_kind) ::  v1,v2, T0
+
+#ifdef ENERGY_DIAGNOSTICS
+  real (kind=real_kind) ::  d_eta_dot_dpdn_dn
+#endif
   integer :: i,j,k,kptr,ie, nlyr_tot
 
   call t_startf('compute_andor_apply_rhs')

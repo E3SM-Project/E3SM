@@ -376,7 +376,7 @@ contains
     type (hybrid_t),       intent(in)    :: hybrid  ! parallel handle
 
     ! Local variables
-    integer ierr, k
+    integer ierr
 
     !$OMP BARRIER
     ! the first and fastest thread performs initializing copy
@@ -421,7 +421,7 @@ contains
     type (hybrid_t),       intent(in)    :: hybrid  ! parallel handle
 
     ! Local variables
-    integer ierr, k
+    integer ierr
 
     !$OMP BARRIER
     ! the first and fastest thread performs initializing copy
@@ -556,10 +556,10 @@ contains
   ! =======================================
   subroutine ElementSum_1d(res,variable,type,hybrid)
     use hybrid_mod, only : hybrid_t
-    use dimensions_mod, only : nelem
 #ifdef _MPI
   use parallel_mod, only : ORDERED, mpireal_t, mpi_min, mpi_max, mpi_sum, mpi_success
 #else
+  use dimensions_mod, only : nelem
   use parallel_mod, only : ORDERED
 #endif
     implicit none

@@ -32,14 +32,11 @@ contains
 
     type (EdgeBuffer_t)    :: edge
 
-    real(kind=real_kind)  da                     ! area element
-
     type (quadrature_t) :: gp
 
-    integer ii
-    integer i,j
-    integer kptr
-    integer iptr
+    integer :: ii
+    integer :: i,j
+    integer :: kptr
 
     ! ===================
     ! begin code

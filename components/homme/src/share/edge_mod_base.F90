@@ -163,17 +163,13 @@ contains
     !
     ! 
     ! Local variables
-    integer :: nbuf,ith
+    integer :: nbuf
     integer :: nSendCycles, nRecvCycles
-    integer :: icycle, ierr
     integer :: iam,ie, i 
-    integer :: edgeid,elemid
     integer :: ptr,llen,moveLength, mLen, tlen 
     integer :: numthreads
-    type (Cycle_t), pointer :: pCycle
     type (Schedule_t), pointer :: pSchedule
-    integer :: dest, source, length, tag, iptr
-    integer :: nlen, ithr
+    integer :: iptr, nlen
 
 !    call t_adj_detailf(+3)
 !    call t_startf('initedgebuffer')
@@ -512,9 +508,7 @@ endif
     integer,              intent(in)   :: nlyr_tot
     type (EdgeDescriptor_t)            :: desc        ! =>elem(ie)%desc
     ! Local variables
-    integer :: i,k,ir,ll,llval,iptr
-
-
+    integer :: i,k,ll,llval,iptr
     integer :: is,ie,in,iw
 
     if (edge%nlyr_max < (kptr+vlyr) ) then
@@ -648,10 +642,9 @@ endif
 !    type (EdgeDescriptor_t),intent(in) :: desc
 
     ! Local variables
-    integer :: i,k,ir,ll,llval,iptr
+    integer :: k,ll,llval
     type (EdgeDescriptor_t), pointer  :: desc
     integer :: is,ie,in,iw
-    real (kind=real_kind) :: tmp
 
     if (edge%nlyr_max < (kptr+vlyr) ) then
        call abortmp('edgeSpack: Buffer overflow: edge%nlyr_max too small')
@@ -741,7 +734,7 @@ endif
     type (EdgeDescriptor_t),intent(in) :: desc
 
     ! Local variables
-    integer :: i,k,ir,l
+    integer :: i,k,l
     integer :: is,ie,in,iw
 
     if(.not. threadsafe) then
@@ -852,7 +845,7 @@ endif
   end subroutine LongEdgeVpack
 
   subroutine edgeVunpack(edge,v,vlyr,kptr,ielem)
-    use dimensions_mod, only : np, max_corner_elem
+    use dimensions_mod, only : np
     use control_mod, only : north, south, east, west, neast, nwest, seast, swest
     type (EdgeBuffer_t),         intent(in)  :: edge
 
@@ -882,7 +875,6 @@ endif
     ! Local
     integer :: i,k,ll,iptr
     integer :: is,ie,in,iw
-    integer :: ks,ke,kblock
     integer :: getmapL
 
     ! for nlyr_tot, dont use edge%nlyr, since some threads may be ahead of this thread
@@ -963,7 +955,7 @@ endif
 
     ! Local
     logical, parameter :: UseUnroll = .TRUE.
-    integer :: i,k,l, nce
+    integer :: i,l, nce
     integer :: is,ie,in,iw,ine,inw,isw,ise,nlyr_tot
     type (EdgeDescriptor_t), pointer   :: desc
 
@@ -1201,7 +1193,7 @@ endif
   ! ========================================
 
   subroutine edgeDGVunpack(edge,v,vlyr,kptr,ielem)
-    use dimensions_mod, only : np, max_corner_elem
+    use dimensions_mod, only : np
     use control_mod, only : north, south, east, west, neast, nwest, seast, swest
 
     type (EdgeBuffer_t),         intent(in)  :: edge
@@ -1211,7 +1203,7 @@ endif
     integer,               intent(in)  :: ielem
 
     ! Local
-    integer :: i,k,iptr,nce
+    integer :: i,k,iptr
     integer :: is,ie,in,iw, nlyr_tot
     type (EdgeDescriptor_t), pointer   :: desc
 
@@ -1336,7 +1328,7 @@ endif
     integer,               intent(in)  :: ielem
 
     ! Local
-    integer :: i,k,l,iptr
+    integer :: k,l,iptr
     integer :: is,ie,in,iw
     integer :: getmapL
     type (EdgeDescriptor_t), pointer   :: desc
@@ -1426,7 +1418,7 @@ endif
 
     ! Local
 
-    integer :: i,k,l,iptr
+    integer :: k,l,iptr
     integer :: is,ie,in,iw
     integer :: getmapL
     type (EdgeDescriptor_t), pointer   :: desc
@@ -2115,7 +2107,7 @@ endif
 
     ! Local variables
 
-    integer :: nbuf,nhc,i
+    integer :: nbuf,nhc
 
     ! sanity check for threading
     if (omp_get_num_threads()>1) then
@@ -2175,7 +2167,7 @@ endif
     integer                               :: nhc, np
 
     ! Local variables
-    integer :: i,j,k,ir,l,e
+    integer :: i,j,k,ir,l
 
     integer :: is,ie,in,iw
 

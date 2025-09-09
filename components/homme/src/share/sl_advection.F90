@@ -116,8 +116,8 @@ contains
 
   subroutine sl_init1(par, elem)
     use interpolate_mod,        only : interpolate_tracers_init
-    use control_mod,            only : transport_alg, semi_lagrange_cdr_alg, cubed_sphere_map, &
-         nu_q, semi_lagrange_hv_q, semi_lagrange_cdr_check, semi_lagrange_trajectory_nsubstep, &
+    use control_mod,            only : transport_alg, semi_lagrange_cdr_alg, &
+         nu_q, semi_lagrange_hv_q, semi_lagrange_trajectory_nsubstep, &
          semi_lagrange_trajectory_nvelocity, geometry, dt_remap_factor, dt_tracer_factor, &
          semi_lagrange_halo
     use element_state,          only : timelevels
@@ -310,7 +310,7 @@ contains
     integer              , intent(in   ) :: nets
     integer              , intent(in   ) :: nete
 
-    integer :: nstore, islot, slot, k, ie
+    integer :: islot, slot, k, ie
 
     if (vrec%nvel == 2) return
 
@@ -340,7 +340,6 @@ contains
 
   subroutine prim_advec_tracers_remap_ALE(elem, deriv, hvcoord, hybrid, dt, tl, nets, nete)
     use coordinate_systems_mod, only : cartesian3D_t, cartesian2D_t
-    use dimensions_mod,         only : max_neigh_edges
     use interpolate_mod,        only : interpolate_tracers, minmax_tracers
     use control_mod,            only : dt_tracer_factor, nu_q, transport_alg, semi_lagrange_hv_q, &
          semi_lagrange_cdr_alg, semi_lagrange_cdr_check, semi_lagrange_trajectory_nsubstep
@@ -359,7 +358,7 @@ contains
     integer              , intent(in   ) :: nets
     integer              , intent(in   ) :: nete
 
-    integer :: i,j,k,l,n,q,ie,n0_qdp,np1_qdp
+    integer :: k,n,q,ie,n0_qdp,np1_qdp
     integer :: scalar_q_bounds, info
     logical :: slmm, cisl, qos, sl_test, independent_time_steps
     logical(kind=c_bool) :: h2d, d2h
@@ -693,7 +692,7 @@ contains
     real (kind=real_kind)   ,intent(in)   :: dt
     logical                 ,intent(in)   :: normalize
 
-    integer                               :: i,j, d
+    integer                               :: i,j
     type (cartesian3D_t)                  :: c3d
     real (kind=real_kind)                 :: uxyz (np,np,3), norm
 
@@ -800,7 +799,7 @@ contains
     use derivative_mod , only : derivative_t
     use bndry_mod      , only : bndry_exchangev
     use perf_mod       , only : t_startf, t_stopf                          ! _EXTERNAL
-    use control_mod    , only : nu_q, nu_p, hypervis_subcycle_q
+    use control_mod    , only : nu_q, hypervis_subcycle_q
     implicit none
     type (element_t)     , intent(inout), target :: elem(:)
     type (hvcoord_t)     , intent(in   )         :: hvcoord
@@ -815,7 +814,6 @@ contains
 
     ! local
     real (kind=real_kind), dimension(np,np,nlev,nq,nets:nete) :: Qtens
-    real (kind=real_kind), dimension(np,np,nlev             ) :: dp
     real (kind=real_kind) :: dt
     integer :: k , ie , ic , q
 
@@ -897,7 +895,7 @@ contains
     type (derivative_t)  , intent(in) :: deriv
 
     ! local
-    integer :: k,kptr,i,j,ie,ic,q
+    integer :: k,ie,q
     real (kind=real_kind), dimension(np,np) :: lap_p
     logical var_coef1
 
@@ -1001,10 +999,10 @@ contains
     ! sign. Note also that a straightforward first-order accurate formula is
     !     z(x0,t1) = z0 + dt w(p0,th) + O(dt^2).
 
-    use control_mod, only: dt_remap_factor
     use derivative_mod, only: derivative_t, gradient_sphere
+#if 0
     use kinds, only: iulog
-
+#endif
     type (hybrid_t), intent(in) :: hybrid
     type (element_t), intent(in) :: elem
     integer, intent(in) :: ie
@@ -1019,7 +1017,7 @@ contains
     real(real_kind), dimension(np,np) :: dps, ptp0, v1, v2, divdp
     real(real_kind), dimension(np,np,2) :: grad, vdp
     real(real_kind) :: dp_neg_min
-    integer :: i, j, k, k1, k2, d, t
+    integer :: k, k1, k2, d, t
 
 #ifndef NDEBUG
     if (abs(hvcoord%hybi(1)) > 10*eps .or. hvcoord%hyai(nlevp) > 10*eps) then
@@ -1217,7 +1215,7 @@ contains
     real(kind=real_kind), intent(in) :: dt_q
     type (TimeLevel_t), intent(in) :: tl
 
-    integer :: ie, i, j, k, q, n0_qdp, np1_qdp
+    integer :: ie, i, j, q, n0_qdp, np1_qdp
 
     call t_startf('SLMM vertical remap')
     call TimeLevel_Qdp(tl, dt_tracer_factor, n0_qdp, np1_qdp)
@@ -1254,7 +1252,7 @@ contains
     real(rt), parameter :: xs(3) = (/-one, zero, half/)
     integer, parameter :: n = 3, ntrial = 10
 
-    real(rt) :: a, b, c, x, y1, y2, alpha, ys(3), xsi(np,np,n), ysi(np,np,n), &
+    real(rt) :: a, b, c, x, y1, alpha, ys(3), xsi(np,np,n), ysi(np,np,n), &
          xi(np,np), y2i(np,np)
     integer :: i, j, trial, nerr
 
@@ -1640,8 +1638,8 @@ contains
 
     integer, parameter :: t0 = 1, t1 = 2
     
-    real(real_kind) :: vfsph(np,np,2), w1(np,np), w2(np,np), w3(np,np,3), w4(np,np,3)
-    integer :: k, d, i, k1, k2
+    real(real_kind) :: w1(np,np), w2(np,np), w3(np,np,3), w4(np,np,3)
+    integer :: k, i, k1, k2
 
     do k = 1, nlev
        w2 = hvcoord%etam(k)
@@ -1788,7 +1786,6 @@ contains
     type (hvcoord_t), intent(in) :: hvcoord
 
     real(real_kind) :: deta_ave
-    integer :: k
 
     if (deta_tol >= 0) return
 
@@ -2025,35 +2022,35 @@ contains
 #endif
   end subroutine dss_vnode
 
-  subroutine dss_divdp(elem, nets, nete, hybrid)
-    type (element_t), intent(inout) :: elem(:)
-    type (hybrid_t), intent(in) :: hybrid
-    integer, intent(in) :: nets, nete
+!   subroutine dss_divdp(elem, nets, nete, hybrid)
+!     type (element_t), intent(inout) :: elem(:)
+!     type (hybrid_t), intent(in) :: hybrid
+!     integer, intent(in) :: nets, nete
 
-    integer :: ie, k
+!     integer :: ie, k
 
-    do ie = nets, nete
-       do k = 1, nlev
-          elem(ie)%derived%divdp(:,:,k) = elem(ie)%derived%divdp(:,:,k)* &
-               &                          elem(ie)%spheremp*elem(ie)%rspheremp
-       end do
-       call edgeVpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%derived%divdp, &
-            &              nlev, 0, nlev)
-    end do
+!     do ie = nets, nete
+!        do k = 1, nlev
+!           elem(ie)%derived%divdp(:,:,k) = elem(ie)%derived%divdp(:,:,k)* &
+!                &                          elem(ie)%spheremp*elem(ie)%rspheremp
+!        end do
+!        call edgeVpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%derived%divdp, &
+!             &              nlev, 0, nlev)
+!     end do
 
-    call t_startf('SLMM_bexchV')
-    call bndry_exchangeV(hybrid, edge_g)
-    call t_stopf('SLMM_bexchV')
+!     call t_startf('SLMM_bexchV')
+!     call bndry_exchangeV(hybrid, edge_g)
+!     call t_stopf('SLMM_bexchV')
 
-    do ie = nets, nete
-       call edgeVunpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%derived%divdp, &
-            &                nlev, 0, nlev)
-    end do
+!     do ie = nets, nete
+!        call edgeVunpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%derived%divdp, &
+!             &                nlev, 0, nlev)
+!     end do
 
-#if (defined HORIZ_OPENMP)
-    !$omp barrier
-#endif
-  end subroutine dss_divdp
+! #if (defined HORIZ_OPENMP)
+!     !$omp barrier
+! #endif
+!   end subroutine dss_divdp
 
   function assert(b, msg) result(nerr)
     use kinds, only: iulog

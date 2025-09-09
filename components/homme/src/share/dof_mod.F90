@@ -72,16 +72,9 @@ contains
 
     type (LongEdgeBuffer_t)    :: edge
 
-    real(kind=real_kind)  da                     ! area element
-
-    type (quadrature_t) :: gp
-
     integer (kind=int_kind) :: ldofP(np,np,nelemd)
 
-    integer ii
-    integer i,j,ig,ie
-    integer kptr
-    integer iptr
+    integer :: ig,ie,kptr
 
     ! ===================
     ! begin code
@@ -96,7 +89,7 @@ contains
     do ie=1,nelemd
        ig = elem(ie)%vertex%number
        call genLocalDOF(ig,np,ldofP(:,:,ie))
-	 
+
        kptr=0
        call LongEdgeVpack(edge,ldofP(:,:,ie),1,kptr,elem(ie)%desc)
     end do
@@ -362,7 +355,6 @@ contains
     type (index_t), pointer  :: idx 
     type (LongEdgeBuffer_t)    :: edge
     integer :: i, j, ii, ie, base
-    integer(kind=long_kind), pointer :: gdof(:,:)
     integer :: fdofp_local(np,np,nelemd)
 
     call initLongEdgeBuffer(edge,1)
@@ -426,7 +418,6 @@ contains
          write(6,*) (elem(ie)%gdofP(i,j), i=1,np)
       enddo
    enddo
- 10 format('I5')
 
  end subroutine PrintDofP
 

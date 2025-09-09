@@ -184,7 +184,7 @@ contains
     use dimensions_mod, only: nlev
     use parallel_mod, only: parallel_t, abortmp
     use quadrature_mod, only: gausslobatto, quadrature_t
-    use control_mod, only: geometry, cubed_sphere_map
+    use control_mod, only: geometry
 
     type (parallel_t), intent(in) :: par
     type (element_t), intent(in) :: elem(:)
@@ -319,10 +319,8 @@ contains
 
     real(kind=real_kind), dimension(np,np,nlev) :: wg1, dp, p
     real(kind=real_kind), dimension(np*np,nlev) :: wf1, dp_fv, p_fv
-    real(kind=real_kind) :: qmin, qmax, ones(np,np)
-    integer :: ie, nf, nf2, qi, qsize, k, nerr
+    integer :: ie, nf, nf2, qi, qsize, nerr
 
-    ones = one
     nf = gfr%nphys
     nf2 = nf*nf
 
@@ -415,8 +413,7 @@ contains
     real(kind=real_kind), intent(in) :: T(:,:,:), uv(:,:,:,:), q(:,:,:,:)
 
     real(kind=real_kind), dimension(np,np,nlev) :: dp, wg1, p
-    real(kind=real_kind), dimension(np*np,nlev) :: wf1, wf2, dp_fv, p_fv
-    real(kind=real_kind) :: qmin, qmax
+    real(kind=real_kind), dimension(np*np,nlev) :: wf1, dp_fv, p_fv
     integer :: ie, nf, nf2, k, qsize, qi, nerr
 
     nf = gfr%nphys
@@ -765,7 +762,6 @@ contains
     real(kind=real_kind), intent(out) :: phis(:,:)
 
     type (hybrid_t) :: hybrid
-    integer :: nets, nete
 
     if (.not. par%dynproc) return
     hybrid = hybrid_create(par, 0, 1)
@@ -810,7 +806,6 @@ contains
     real(kind=real_kind), intent(in) :: phis(:,:)
 
     type (hybrid_t) :: hybrid
-    integer :: nets, nete
 
     if (.not. par%dynproc) return
     hybrid = hybrid_create(par, 0, 1)
@@ -981,7 +976,7 @@ contains
     real(kind=real_kind), intent(out) :: R(:,:), tau(:)
 
     real(kind=real_kind) :: wrk(np*np*nphys*nphys), v
-    integer :: gi, gj, fi, fj, npsq, info
+    integer :: gi, gj, fi, fj, info
 
     do fj = 1,nphys
        do fi = 1,nphys
@@ -1038,7 +1033,7 @@ contains
     type (GllFvRemap_t), intent(inout) :: gfr
     real(kind=real_kind), intent(in) :: R(:,:), tau(:)
 
-    integer :: nf, fi, fj, gi, gj
+    integer :: nf, fi, fj
     real(kind=real_kind) :: f(np,np), g(np,np)
 
     gfr%f2g_remapd = zero
@@ -1065,7 +1060,7 @@ contains
     real(kind=real_kind), intent(out) :: g(:,:)
 
     integer :: nf, nf2, npi, np2, gi, gj, fi, fj, info
-    real(kind=real_kind) :: accum, wrk(gfr%nphys,gfr%nphys), x(np,np), wr(np*np)
+    real(kind=real_kind) :: wrk(gfr%nphys,gfr%nphys), x(np,np), wr(np*np)
 
     nf = gfr%nphys
     nf2 = nf*nf
@@ -1118,7 +1113,6 @@ contains
   end subroutine gfr_f2g_remapd_op
 
   subroutine gfr_init_geometry(elem, gfr)
-    use kinds, only: iulog
     use control_mod, only: cubed_sphere_map
     use coordinate_systems_mod, only: cartesian3D_t, spherical_polar_t, &
          sphere_tri_area, change_coordinates
@@ -1346,7 +1340,7 @@ contains
     real(kind=real_kind), intent(in) :: gll_metdet(:,:), fv_metdet(:), g(:,:)
     real(kind=real_kind), intent(out) :: f(:)
 
-    integer :: nf, nf2, gi, gj, k
+    integer :: nf, nf2, k
     real(kind=real_kind) :: gw(np,np)
 
     nf = gfr%nphys
@@ -1428,7 +1422,7 @@ contains
     real(kind=real_kind), intent(out) :: q_f(:,:)
 
     real(kind=real_kind) :: qmin, qmax, wg(np,np), wf1(np*np), wf2(np*np)
-    integer :: q, k, nf, nf2, nlev
+    integer :: k, nf, nf2, nlev
 
     nf = gfr%nphys
     nf2 = nf*nf
@@ -1618,7 +1612,7 @@ contains
     real(kind=real_kind), intent(in) :: gll_metdet(:,:), fv_metdet(:), f(:)
     real(kind=real_kind), intent(out) :: g(:,:)
 
-    integer :: nf, nf2, gi, gj, fi, fj
+    integer :: nf, nf2, gi, gj
     real(kind=real_kind) :: wrk(np*np)
 
     nf = gfr%nphys
@@ -1640,8 +1634,8 @@ contains
 
     type (GllFvRemap_t), intent(inout) :: gfr
 
-    real(kind=real_kind) :: Mnp2(np*np,4), wr(np*np)
-    integer :: i, j, k, info, n
+    real(kind=real_kind) :: Mnp2(np*np,4)
+    integer :: i, info, n
 
     if (gfr%nphys /= 1) return
 
@@ -1771,7 +1765,7 @@ contains
     integer, intent(in) :: nets, nete
 
     real(kind=real_kind) :: wr(np,np,2), ones(np,np,1)
-    integer :: ie, nf, nerr
+    integer :: ie, nerr
 
     if (gfr%nphys /= 1 .or. .not. gfr%boost_pg1) return
 
@@ -1824,7 +1818,6 @@ contains
     integer, intent(in) :: nets, nete
 
     real(kind=real_kind), dimension(np,np,nlev) :: dp, p, wr1
-    real(kind=real_kind) :: qmin, qmax
     integer :: ie, k, qi, nerr
 
     if (gfr%nphys /= 1 .or. .not. gfr%boost_pg1) return
@@ -2021,7 +2014,7 @@ contains
     integer, intent(in) :: np, npi
     real(kind=real_kind), intent(out) :: y(:,:)
 
-    integer :: gi, gj, fi, fj, info
+    integer :: gi, gj, fi, fj
     real(kind=real_kind) :: accum
 
     do fj = 1,np
@@ -2127,8 +2120,6 @@ contains
     integer, intent(in) :: ie, i, j
     type (cartesian3D_t), intent(out) :: p
 
-    real(kind=real_kind) :: r
-
     p = gfr%center_f(i,j,ie)
   end subroutine gfr_f_get_cartesian3d
 
@@ -2166,7 +2157,7 @@ contains
     real (kind=real_kind), intent(in) :: spheremp(n), dp(n)
     real (kind=real_kind), intent(inout) :: qmin, qmax, q(n)
 
-    integer :: n2, k1, i, j
+    integer :: k1
     logical :: modified
     real(kind=real_kind) :: addmass, mass, sumc, den
     real(kind=real_kind) :: x(n), c(n), v(n)
@@ -2452,7 +2443,7 @@ contains
     real(kind=real_kind), intent(in) :: dp(:,:,:), dp_fv(:,:), q_g(:,:,:), q_f(:,:)
 
     real(kind=real_kind) :: qmin_f, qmin_g, qmax_f, qmax_g, mass_f, mass_g, den
-    integer :: q, k, nf, nf2, nerr
+    integer :: k, nf, nf2, nerr
 
     nerr = 0
     nf = gfr%nphys
@@ -2490,9 +2481,8 @@ contains
     type (element_t), intent(in) :: elem(:)
     real(kind=real_kind), intent(in) :: qmin(:), qmax(:), dp(:,:,:), q0_g(:,:,:), q1_g(:,:,:)
 
-    real(kind=real_kind) :: qmin_f, qmin_g, qmax_f, qmax_g, mass_f, mass0, mass1, den, &
-         wr(np,np)
-    integer :: q, k, nerr
+    real(kind=real_kind) :: qmin_f, qmin_g, qmax_f, qmax_g, mass0, mass1, den
+    integer :: k, nerr
 
     nerr = 0
     do k = 1,size(dp,3)
@@ -2629,7 +2619,7 @@ contains
     real(kind=real_kind) :: a, b, rd, x, y, f0(np*np), f1(np*np), g(np,np), &
          wf(np*np), wg(np,np), qmin, qmax, qmin1, qmax1, lat, lon, latext(2), &
          lonext(2), tol
-    integer :: nf, nf2, ie, i, j, k, iremap, info, ilimit, it
+    integer :: nf, nf2, ie, i, j, k, iremap, ilimit, it
     real(kind=real_kind), allocatable :: Qdp_fv(:,:), ps_v_fv(:,:), &
          qmins(:,:,:), qmaxs(:,:,:)
     logical :: limit

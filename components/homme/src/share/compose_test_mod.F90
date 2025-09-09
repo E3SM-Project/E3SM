@@ -83,7 +83,10 @@ contains
     use parallel_mod, only: parallel_t
     use domain_mod, only: domain1d_t
     use element_mod, only: element_t
-    use thread_mod, only: hthreads, vthreads, omp_set_num_threads, omp_get_thread_num
+    use thread_mod, only: hthreads, omp_get_thread_num
+#if defined (HORIZ_OPENMP)
+    use thread_mod, only: vthreads, omp_set_num_threads
+#endif
     use hybrid_mod, only: hybrid_t, hybrid_create
     use derivative_mod, only: derivative_t, derivinit
     use hybvcoord_mod, only: hvcoord_t
@@ -179,7 +182,6 @@ contains
     use element_mod, only: element_t
     use time_mod, only: timelevel_t, timelevel_init_default, timelevel_qdp
     use kinds, only: real_kind
-    use thread_mod, only: hthreads, vthreads, omp_set_num_threads, omp_get_thread_num
     use derivative_mod, only: derivative_t, derivinit
     use dimensions_mod, only: ne, np, nlev, qsize, qsize_d, nelemd
     use coordinate_systems_mod, only: spherical_polar_t
@@ -206,7 +208,7 @@ contains
     real (kind=real_kind), parameter :: twelve_days = 3600.d0 * 24 * 12
 
     type (timelevel_t) :: tl
-    integer :: nsteps, n0_qdp, np1_qdp, ie, i, j, geometry_type, nerr
+    integer :: nsteps, n0_qdp, np1_qdp, ie, i, geometry_type, nerr
     real (kind=real_kind) :: dt, tprev, t, unused((nlev+1)*qsize)
 
     nerr = 0
