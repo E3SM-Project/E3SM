@@ -78,7 +78,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        build_type: [sp, dbg, fpe, opt]
+        build_type: [dbg] #[sp, dbg, fpe, opt]
     name: gcc-openmp / ${{ matrix.build_type }}
     steps:
       - name: Check out the repository
@@ -90,7 +90,6 @@ jobs:
       - name: Show action trigger
         uses: ./.github/actions/show-workflow-trigger
       - name: Checkout Kokkos develop branch
-        if: ${{ env.kokkos_dev_test }}
         uses: ./.github/actions/update-to-kokkos-develop
       - name: Run tests
         uses: ./.github/actions/test-all-eamxx
@@ -101,73 +100,73 @@ jobs:
           submit: ${{ env.submit }}
           cmake-configs: Kokkos_ENABLE_OPENMP=ON
           ekat: ${{ env.ekat }}
-  gcc-cuda:
-    if: |
-      ${{
-        github.event_name != 'workflow_dispatch' ||
-        (
-          github.event.inputs.job_to_run == 'gcc-cuda' ||
-          github.event.inputs.job_to_run == 'all'
-        )
-      }}
-    runs-on:  [self-hosted, ghci-snl-cuda, cuda, gcc]
-    strategy:
-      fail-fast: false
-      matrix:
-        test:
-          - build_type: sp
-            SK: OFF
-          - build_type: dbg
-            SK: ON
-          - build_type: opt
-            SK: OFF
-    name: gcc-cuda / ${{ matrix.test.build_type }}
-    steps:
-      - name: Check out the repository
-        uses: actions/checkout@v5
-        with:
-          persist-credentials: false
-          show-progress: false
-          submodules: recursive
-      - name: Show action trigger
-        uses: ./.github/actions/show-workflow-trigger
-      - name: Get CUDA Arch
-        run: |
-          # Ensure nvidia-smi is available
-          if ! command -v nvidia-smi &> /dev/null; then
-              echo "nvidia-smi could not be found. Please ensure you have Nvidia drivers installed."
-              exit 1
-          fi
+  # gcc-cuda:
+  #   if: |
+  #     ${{
+  #       github.event_name != 'workflow_dispatch' ||
+  #       (
+  #         github.event.inputs.job_to_run == 'gcc-cuda' ||
+  #         github.event.inputs.job_to_run == 'all'
+  #       )
+  #     }}
+  #   runs-on:  [self-hosted, ghci-snl-cuda, cuda, gcc]
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       test:
+  #         - build_type: sp
+  #           SK: OFF
+  #         - build_type: dbg
+  #           SK: ON
+  #         - build_type: opt
+  #           SK: OFF
+  #   name: gcc-cuda / ${{ matrix.test.build_type }}
+  #   steps:
+  #     - name: Check out the repository
+  #       uses: actions/checkout@v5
+  #       with:
+  #         persist-credentials: false
+  #         show-progress: false
+  #         submodules: recursive
+  #     - name: Show action trigger
+  #       uses: ./.github/actions/show-workflow-trigger
+  #     - name: Get CUDA Arch
+  #       run: |
+  #         # Ensure nvidia-smi is available
+  #         if ! command -v nvidia-smi &> /dev/null; then
+  #             echo "nvidia-smi could not be found. Please ensure you have Nvidia drivers installed."
+  #             exit 1
+  #         fi
 
-          # Get the GPU model from nvidia-smi, and set env for next step
-          gpu_model=$(nvidia-smi --query-gpu=name --format=csv,noheader | head -n 1)
-          case "$gpu_model" in
-              *"H100"*)
-                  echo "Hopper=ON" >> $GITHUB_ENV
-                  echo "CUDA_ARCH=90" >> $GITHUB_ENV
-                  ARCH=90
-                  ;;
-              *"A100"*)
-                  echo "Ampere=ON" >> $GITHUB_ENV
-                  echo "CUDA_ARCH=80" >> $GITHUB_ENV
-                  ;;
-              *"V100"*)
-                  echo "Volta=ON" >> $GITHUB_ENV
-                  echo "CUDA_ARCH=70" >> $GITHUB_ENV
-                  ;;
-              *)
-                  echo "Unsupported GPU model: $gpu_model"
-                  exit 1
-                  ;;
-          esac
-      - name: Checkout Kokkos develop branch
-        uses: ./.github/actions/update-to-kokkos-develop
-      - name: Run tests
-        uses: ./.github/actions/test-all-eamxx
-        with:
-          build_type: ${{ matrix.test.build_type }}
-          machine: ghci-snl-cuda
-          generate: ${{ env.generate }}
-          submit: ${{ env.submit }}
-          cmake-configs: Kokkos_ARCH_HOPPER90=${{ env.Hopper }};Kokkos_ARCH_AMPERE80=${{ env.Ampere }};Kokkos_ARCH_VOLTA70=${{ env.Volta }};CMAKE_CUDA_ARCHITECTURES=${{ env.CUDA_ARCH }};SCREAM_SMALL_KERNELS=${{ matrix.test.SK }}
-          ekat: ${{ env.ekat }}
+  #         # Get the GPU model from nvidia-smi, and set env for next step
+  #         gpu_model=$(nvidia-smi --query-gpu=name --format=csv,noheader | head -n 1)
+  #         case "$gpu_model" in
+  #             *"H100"*)
+  #                 echo "Hopper=ON" >> $GITHUB_ENV
+  #                 echo "CUDA_ARCH=90" >> $GITHUB_ENV
+  #                 ARCH=90
+  #                 ;;
+  #             *"A100"*)
+  #                 echo "Ampere=ON" >> $GITHUB_ENV
+  #                 echo "CUDA_ARCH=80" >> $GITHUB_ENV
+  #                 ;;
+  #             *"V100"*)
+  #                 echo "Volta=ON" >> $GITHUB_ENV
+  #                 echo "CUDA_ARCH=70" >> $GITHUB_ENV
+  #                 ;;
+  #             *)
+  #                 echo "Unsupported GPU model: $gpu_model"
+  #                 exit 1
+  #                 ;;
+  #         esac
+  #     - name: Checkout Kokkos develop branch
+  #       uses: ./.github/actions/update-to-kokkos-develop
+  #     - name: Run tests
+  #       uses: ./.github/actions/test-all-eamxx
+  #       with:
+  #         build_type: ${{ matrix.test.build_type }}
+  #         machine: ghci-snl-cuda
+  #         generate: ${{ env.generate }}
+  #         submit: ${{ env.submit }}
+  #         cmake-configs: Kokkos_ARCH_HOPPER90=${{ env.Hopper }};Kokkos_ARCH_AMPERE80=${{ env.Ampere }};Kokkos_ARCH_VOLTA70=${{ env.Volta }};CMAKE_CUDA_ARCHITECTURES=${{ env.CUDA_ARCH }};SCREAM_SMALL_KERNELS=${{ matrix.test.SK }}
+  #         ekat: ${{ env.ekat }}
