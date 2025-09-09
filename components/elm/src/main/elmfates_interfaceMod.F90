@@ -1249,6 +1249,9 @@ contains
       ! Set the FATES global time and date variables
       call GetAndSetTime
       
+      ! Update boundary conditions that change on a daily basis
+      call this%fates(nc)%UpdateInterfaceVariables()
+      
       if (fates_spitfire_mode > scalar_lightning) then
          allocate(lnfm24(bounds_clump%begg:bounds_clump%endg), stat=ier)
          if (ier /= 0) then
