@@ -11,17 +11,13 @@
 namespace scream
 {
 // Constructor(s) & Destructor
-AbstractGrid::
-AbstractGrid (const std::string& name,
-              const GridType type,
-              const int num_local_dofs,
-              const int num_vertical_lev,
-              const ekat::Comm& comm)
- : m_type (type)
- , m_name (name)
- , m_num_local_dofs (num_local_dofs)
- , m_num_vert_levs  (num_vertical_lev)
- , m_comm (comm)
+AbstractGrid::AbstractGrid(const std::string &name, const GridType type, const int num_local_dofs,
+                           const int num_vertical_lev, const ekat::Comm &comm)
+ : m_type(type),
+   m_name(name),
+   m_num_local_dofs(num_local_dofs),
+   m_num_vert_levs(num_vertical_lev),
+   m_comm(comm)
 {
   // Sanity checks
   EKAT_REQUIRE_MSG (m_num_local_dofs>=0, "Error! Number of local dofs must be non-negative.\n");

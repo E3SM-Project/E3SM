@@ -1,32 +1,28 @@
 #include "eamxx_output_manager.hpp"
 
-#include "share/io/scorpio_input.hpp"
-#include "share/io/eamxx_scorpio_interface.hpp"
-#include "share/util/eamxx_timing.hpp"
 #include "share/eamxx_config.hpp"
+#include "share/io/eamxx_scorpio_interface.hpp"
+#include "share/io/scorpio_input.hpp"
+#include "share/util/eamxx_timing.hpp"
 
-#include <ekat_parameter_list.hpp>
 #include <ekat_comm.hpp>
+#include <ekat_parameter_list.hpp>
 #include <ekat_string_utils.hpp>
 
-#include <fstream>
-#include <memory>
 #include <chrono>
 #include <ctime>
+#include <fstream>
+#include <memory>
 
 namespace scream
 {
 
-OutputManager::
-~OutputManager ()
-{
-  finalize();
-}
+OutputManager::~OutputManager() { finalize(); }
 
-void OutputManager::
-initialize(const ekat::Comm& io_comm, const ekat::ParameterList& params,
-           const util::TimeStamp& run_t0, const util::TimeStamp& case_t0,
-           const bool is_model_restart_output, const RunType run_type)
+void
+OutputManager::initialize(const ekat::Comm &io_comm, const ekat::ParameterList &params,
+                          const util::TimeStamp &run_t0, const util::TimeStamp &case_t0,
+                          const bool is_model_restart_output, const RunType run_type)
 {
   // Sanity checks
   EKAT_REQUIRE_MSG (run_t0.is_valid(),

@@ -1,72 +1,76 @@
 #include "share/io/scorpio_output.hpp"
-#include "share/io/scorpio_input.hpp"
-#include "share/io/eamxx_io_utils.hpp"
+#include "share/field/field_utils.hpp"
 #include "share/grid/remap/coarsening_remapper.hpp"
 #include "share/grid/remap/vertical_remapper.hpp"
+#include "share/io/eamxx_io_utils.hpp"
+#include "share/io/scorpio_input.hpp"
 #include "share/util/eamxx_timing.hpp"
-#include "share/field/field_utils.hpp"
 
-#include <ekat_units.hpp>
-#include <ekat_string_utils.hpp>
 #include <ekat_std_utils.hpp>
+#include <ekat_string_utils.hpp>
+#include <ekat_units.hpp>
 
 #include <numeric>
 
-namespace {
-  // Helper lambda, to copy extra data (io string attributes plus filled settings).
-  // This will be used if any remapper is created, to ensure atts set by atm_procs are not lost
-  void transfer_extra_data  (const scream::Field& src, scream::Field& tgt) {
+namespace
+{
+// Helper lambda, to copy extra data (io string attributes plus filled settings).
+// This will be used if any remapper is created, to ensure atts set by atm_procs are not lost
+void
+transfer_extra_data(const scream::Field &src, scream::Field &tgt)
+{
 
-    // Transfer io string attributes
-    const std::string io_string_atts_key ="io: string attributes";
-    using stratts_t = std::map<std::string,std::string>;
-    const auto& src_atts = src.get_header().get_extra_data<stratts_t>(io_string_atts_key);
-          auto& dst_atts = tgt.get_header().get_extra_data<stratts_t>(io_string_atts_key);
-    for (const auto& [name,val] : src_atts) {
-      dst_atts[name] = val;
-    }
-
-    // Transfer whether or not this field MAY contain fill_value (to trigger usage of the
-    // proper implementation of Field update methods
-    if (src.get_header().may_be_filled()) {
-      tgt.get_header().set_may_be_filled(true);
-    }
-  };
-
-  // Note: this is also declared in eamxx_scorpio_interface.cpp. Move it somewhere else?
-  template<typename T>
-  std::string print_map_keys (const std::map<std::string,T>& map) {
-    std::string s;
-    for (const auto& it : map) {
-      s += it.first + ",";
-    }
-    s.pop_back();
-    return s;
+  // Transfer io string attributes
+  const std::string io_string_atts_key = "io: string attributes";
+  using stratts_t                      = std::map<std::string, std::string>;
+  const auto &src_atts = src.get_header().get_extra_data<stratts_t>(io_string_atts_key);
+  auto &dst_atts       = tgt.get_header().get_extra_data<stratts_t>(io_string_atts_key);
+  for (const auto &[name, val] : src_atts) {
+    dst_atts[name] = val;
   }
+
+  // Transfer whether or not this field MAY contain fill_value (to trigger usage of the
+  // proper implementation of Field update methods
+  if (src.get_header().may_be_filled()) {
+    tgt.get_header().set_may_be_filled(true);
+  }
+};
+
+// Note: this is also declared in eamxx_scorpio_interface.cpp. Move it somewhere else?
+template <typename T>
+std::string
+print_map_keys(const std::map<std::string, T> &map)
+{
+  std::string s;
+  for (const auto &it : map) {
+    s += it.first + ",";
+  }
+  s.pop_back();
+  return s;
+}
 } // anonymous namespace
 
 namespace scream
 {
 
-template<typename T>
-bool has_duplicates (const std::vector<T>& c)
+template <typename T>
+bool
+has_duplicates(const std::vector<T> &c)
 {
-  std::set<T> s(c.begin(),c.end());
-  return c.size()>s.size();
+  std::set<T> s(c.begin(), c.end());
+  return c.size() > s.size();
 }
 
-AtmosphereOutput::
-AtmosphereOutput (const ekat::Comm& comm,
-                  const std::vector<Field>& fields,
-                  const std::shared_ptr<const grid_type>& grid)
- : m_comm (comm)
+AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const std::vector<Field> &fields,
+                                   const std::shared_ptr<const grid_type> &grid)
+ : m_comm(comm)
 {
   // This version of AtmosphereOutput is for quick output of fields (no remaps, no time dim)
-  m_avg_type = OutputAvgType::Instant;
+  m_avg_type     = OutputAvgType::Instant;
   m_add_time_dim = false;
 
   // Create a FieldManager with the input fields
-  auto fm = std::make_shared<FieldManager> (grid);
+  auto fm = std::make_shared<FieldManager>(grid);
   for (auto f : fields) {
     fm->add_field(f);
     m_fields_names.push_back(f.name());
@@ -77,15 +81,14 @@ AtmosphereOutput (const ekat::Comm& comm,
   m_field_mgrs[FromModel] = m_field_mgrs[AfterVertRemap] = m_field_mgrs[AfterHorizRemap] = fm;
 
   // Setup I/O structures
-  init ();
+  init();
 }
 
-AtmosphereOutput::
-AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
-                  const std::shared_ptr<const fm_type>& field_mgr,
-                  const std::string& grid_name)
- : m_comm           (comm)
- , m_add_time_dim   (true)
+AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::ParameterList &params,
+                                   const std::shared_ptr<const fm_type> &field_mgr,
+                                   const std::string &grid_name)
+ : m_comm(comm),
+   m_add_time_dim(true)
 {
   using vos_t = std::vector<std::string>;
 
@@ -93,7 +96,7 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
 
   // Figure out what kind of averaging is requested
   auto avg_type = params.get<std::string>("averaging_type");
-  m_avg_type = str2avg(avg_type);
+  m_avg_type    = str2avg(avg_type);
   EKAT_REQUIRE_MSG (m_avg_type!=OutputAvgType::Invalid,
       "Error! Unsupported averaging type '" + avg_type + "'.\n"
       "       Valid options: instant, Max, Min, Average. Case insensitive.\n");

@@ -2,30 +2,31 @@
 
 #include "TimeLevel.hpp"
 
-#include "dynamics/homme/homme_grids_manager.hpp"
 #include "dynamics/homme/homme_dimensions.hpp"
+#include "dynamics/homme/homme_grids_manager.hpp"
 #include "dynamics/homme/interface/eamxx_homme_interface.hpp"
 
-#include "share/io/scorpio_input.hpp"
 #include "share/io/eamxx_output_manager.hpp"
+#include "share/io/scorpio_input.hpp"
 
-#include "share/field/field_utils.hpp"
 #include "share/field/field_manager.hpp"
+#include "share/field/field_utils.hpp"
 #include "share/grid/grids_manager.hpp"
 #include "share/util/eamxx_setup_random_test.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
 
-#include <ekat_units.hpp>
-#include <ekat_parameter_list.hpp>
 #include <ekat_comm.hpp>
+#include <ekat_parameter_list.hpp>
+#include <ekat_units.hpp>
 
 extern "C" {
 // These are specific C/F calls for these tests (i.e., not part of eamxx_homme_interface.hpp)
-void init_test_params_f90 ();
-void cleanup_test_f90 ();
+void init_test_params_f90();
+void cleanup_test_f90();
 }
 
-namespace {
+namespace
+{
 
 /*
  * In this test we do a dyn->physGLL remap "on the fly" during the output phase.
@@ -38,7 +39,7 @@ TEST_CASE("dyn_grid_io")
   using namespace scream;
   using namespace ShortFieldTagsNames;
 
-  ekat::Comm comm(MPI_COMM_WORLD);  // MPI communicator group used for I/O set as ekat object.
+  ekat::Comm comm(MPI_COMM_WORLD); // MPI communicator group used for I/O set as ekat object.
 
   // Initialize the pio_subsystem for this test:
   scorpio::init_subsystem(comm);
@@ -48,17 +49,17 @@ TEST_CASE("dyn_grid_io")
     auto comm_f = MPI_Comm_c2f(MPI_COMM_WORLD);
     init_parallel_f90(comm_f);
   }
-  init_test_params_f90 ();
+  init_test_params_f90();
 
   // Set parameters
   constexpr int ne = 2;
-  set_homme_param("ne",ne);
+  set_homme_param("ne", ne);
 
   // Create the grids
   ekat::ParameterList params;
-  params.set<std::string>("physics_grid_type","gll");
-  params.set<std::string>("vertical_coordinate_filename","NONE");
-  auto gm = std::make_shared<HommeGridsManager>(comm,params);
+  params.set<std::string>("physics_grid_type", "gll");
+  params.set<std::string>("vertical_coordinate_filename", "NONE");
+  auto gm = std::make_shared<HommeGridsManager>(comm, params);
   gm->build_grids();
 
   auto dyn_grid  = gm->get_grid("dynamics");

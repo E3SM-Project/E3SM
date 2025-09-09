@@ -1,20 +1,21 @@
 #ifndef SCREAM_SCORPIO_OUTPUT_HPP
 #define SCREAM_SCORPIO_OUTPUT_HPP
 
-#include "share/io/eamxx_scorpio_interface.hpp"
-#include "share/io/eamxx_io_utils.hpp"
+#include "share/atm_process/atmosphere_diagnostic.hpp"
 #include "share/field/field_manager.hpp"
 #include "share/grid/abstract_grid.hpp"
 #include "share/grid/grids_manager.hpp"
+#include "share/io/eamxx_io_utils.hpp"
+#include "share/io/eamxx_scorpio_interface.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
 #include "share/util/eamxx_utils.hpp"
-#include "share/atm_process/atmosphere_diagnostic.hpp"
 
-#include <ekat_parameter_list.hpp>
 #include <ekat_comm.hpp>
+#include <ekat_parameter_list.hpp>
 
 /*  The AtmosphereOutput class handles an output stream in SCREAM.
- *  Typical usage is to register an AtmosphereOutput object with the OutputManager (see eamxx_output_manager.hpp
+ *  Typical usage is to register an AtmosphereOutput object with the OutputManager (see
+ eamxx_output_manager.hpp
  *
  *  Similar to other SCREAM classes, output streams have a init, run and finalize routines.
  *  These routines are called during the homonymous steps of the AD.
@@ -54,7 +55,8 @@
  *      min     - minimum value of the field over time interval.
  *      max     - maximum value of the field over time interval.
  *    Here, 'time interval' is described by ${Output frequency} and ${Output frequency_units}.
- *    E.g., with 'Output frequency'=10 and 'Output frequency_units'="Days", the time interval is 10 days.
+ *    E.g., with 'Output frequency'=10 and 'Output frequency_units'="Days", the time interval is 10
+ days.
  *  - fields: parameters specifying fields to output
  *     - GRID_NAME: parameters specifyign fields to output from grid $GRID_NAME
  *        - field_names: names of fields defined on grid $grid_name that need to be outputed
@@ -71,9 +73,11 @@
  *  - max_snapshots_per_file: the maximum number of snapshots saved per file. After this many
  *    snapshots, the current files is closed and a new file created.
  *  - Output: parameters for output control
- *    - frequency: the frequency of output writes (in the units specified by ${Output frequency_units})
+ *    - frequency: the frequency of output writes (in the units specified by ${Output
+ frequency_units})
  *    - frequency_units: the units of output frequency (nsteps, nmonths, nyears, nhours, ndays,...)
- *      snapshots have been written on a single nc file, the class will close the file, and open a new one
+ *      snapshots have been written on a single nc file, the class will close the file, and open a
+ new one
  *  - Checkpointing: parameters for checkpointing control
  *    - frequency: the frequenct of checkpoints writes. This option is used/matters only if
  *      if averaging_type is *not* instant. A value of 0 is interpreted as 'no checkpointing'.
@@ -119,57 +123,55 @@ public:
   using remapper_type = AbstractRemapper;
   using diag_ptr_type = std::shared_ptr<AtmosphereDiagnostic>;
 
-  virtual ~AtmosphereOutput () = default;
+  virtual ~AtmosphereOutput() = default;
 
   // Constructor
-  AtmosphereOutput(const ekat::Comm& comm, const ekat::ParameterList& params,
-                   const std::shared_ptr<const fm_type>& field_mgr,
-                   const std::string& grid_name);
+  AtmosphereOutput(const ekat::Comm &comm, const ekat::ParameterList &params,
+                   const std::shared_ptr<const fm_type> &field_mgr, const std::string &grid_name);
 
   // Short version for outputing a list of fields (no remapping supported)
-  AtmosphereOutput(const ekat::Comm& comm,
-                   const std::vector<Field>& fields,
-                   const std::shared_ptr<const grid_type>& grid);
+  AtmosphereOutput(const ekat::Comm &comm, const std::vector<Field> &fields,
+                   const std::shared_ptr<const grid_type> &grid);
 
   // Main Functions
-  void restart (const std::string& filename);
+  void restart(const std::string &filename);
   void init();
   void reset_scorpio_fields();
-  void setup_output_file (const std::string& filename, const std::string& fp_precision, const scorpio::FileMode mode);
+  void setup_output_file(const std::string &filename, const std::string &fp_precision,
+                         const scorpio::FileMode mode);
 
-  void init_timestep (const util::TimeStamp& start_of_step);
-  void run (const std::string& filename,
-            const bool output_step, const bool checkpoint_step,
-            const int nsteps_since_last_output,
-            const bool allow_invalid_fields = false);
+  void init_timestep(const util::TimeStamp &start_of_step);
+  void run(const std::string &filename, const bool output_step, const bool checkpoint_step,
+           const int nsteps_since_last_output, const bool allow_invalid_fields = false);
 
-  long long res_dep_memory_footprint () const;
+  long long res_dep_memory_footprint() const;
 
-  std::shared_ptr<const AbstractGrid> get_io_grid () const {
+  std::shared_ptr<const AbstractGrid>
+  get_io_grid() const
+  {
     return m_io_grid;
   }
 
-  void set_logger(const std::shared_ptr<ekat::logger::LoggerBase>& atm_logger);
+  void set_logger(const std::shared_ptr<ekat::logger::LoggerBase> &atm_logger);
 
 protected:
-
-  template<typename T>
-  using strmap_t = std::map<std::string,T>;
+  template <typename T> using strmap_t = std::map<std::string, T>;
 
   using strvec_t = std::vector<std::string>;
 
   // Internal functions
-  void register_variables(const std::string& filename, const std::string& fp_precision, const scorpio::FileMode mode);
-  void set_decompositions(const std::string& filename);
-  void compute_diagnostics (const bool allow_invalid_fields);
-  void init_diagnostics ();
-  strvec_t get_var_dimnames (const FieldLayout& layout) const;
+  void register_variables(const std::string &filename, const std::string &fp_precision,
+                          const scorpio::FileMode mode);
+  void set_decompositions(const std::string &filename);
+  void compute_diagnostics(const bool allow_invalid_fields);
+  void init_diagnostics();
+  strvec_t get_var_dimnames(const FieldLayout &layout) const;
 
   // Tracking the averaging of any filled values:
-  void set_avg_cnt_tracking(const std::string& name, const FieldLayout& layout);
+  void set_avg_cnt_tracking(const std::string &name, const FieldLayout &layout);
 
   // --- Internal variables --- //
-  ekat::Comm                          m_comm;
+  ekat::Comm m_comm;
 
   // We store separate shared pointers for field mgrs at different stages of IO:
   // More specifically, the order of operations is as follows:
@@ -182,52 +184,57 @@ protected:
   //  FromModel -> AfterVertRemap -> AfterHorizRemap -> Scorpio
   // The last 2 field mgrs contain DIFFERENT fields if 1+ of the following happens:
   //  - fields are padded: we have PackSize>1 during remaps, but Scorpio needs CONTIGUOUS memory
-  //  - there's no remap (so the first 3 FM are the same), but the field is a subfield: again NOT CONTIGUOUS
+  //  - there's no remap (so the first 3 FM are the same), but the field is a subfield: again NOT
+  //  CONTIGUOUS
   //  - the avg type is NOT instant: we need a separate Field to store the tallies
-  // Also, FromModel is NOT the same field mgr as stored in the AD. In particular, it is a "clone" of the AD field mgr
-  // but restricted to the grid that this object is handling, AND we stuff all diags in this field mgr (so that we
-  // do not pollute the AD field mgr with output-only fields).
-  // NOTE: if avg_type!=Instant, then ALL fields in the last two field mgrs are different, otherwise SOME field
-  //       MAY be the same. E.g., field that are NOT subfields and are NOT padded can be "soft copies", to reduce
-  //       memory footprint and runtime costs.
+  // Also, FromModel is NOT the same field mgr as stored in the AD. In particular, it is a "clone"
+  // of the AD field mgr but restricted to the grid that this object is handling, AND we stuff all
+  // diags in this field mgr (so that we do not pollute the AD field mgr with output-only fields).
+  // NOTE: if avg_type!=Instant, then ALL fields in the last two field mgrs are different, otherwise
+  // SOME field
+  //       MAY be the same. E.g., field that are NOT subfields and are NOT padded can be "soft
+  //       copies", to reduce memory footprint and runtime costs.
   enum Phase {
-    FromModel,        // Output fields as from the model (or diags computed from model fields)
-    AfterVertRemap,   // Output fields after vertical remap
-    AfterHorizRemap,  // Output fields after horiz remap
-    Scorpio           // Output fields to pass to scorpio (may differ from the above in case of packing)
+    FromModel,       // Output fields as from the model (or diags computed from model fields)
+    AfterVertRemap,  // Output fields after vertical remap
+    AfterHorizRemap, // Output fields after horiz remap
+    Scorpio // Output fields to pass to scorpio (may differ from the above in case of packing)
   };
-  std::map<Phase,std::shared_ptr<fm_type>> m_field_mgrs;
+  std::map<Phase, std::shared_ptr<fm_type>> m_field_mgrs;
 
-  std::shared_ptr<const grid_type>      m_io_grid;
-  std::shared_ptr<remapper_type>        m_horiz_remapper;
-  std::shared_ptr<remapper_type>        m_vert_remapper;
+  std::shared_ptr<const grid_type> m_io_grid;
+  std::shared_ptr<remapper_type> m_horiz_remapper;
+  std::shared_ptr<remapper_type> m_vert_remapper;
 
   // How to combine multiple snapshots in the output: instant, Max, Min, Average
-  OutputAvgType                         m_avg_type;
-  Real                                  m_avg_coeff_threshold = 0.5; // % of unfilled values required to not just assign value as FillValue
+  OutputAvgType m_avg_type;
+  Real m_avg_coeff_threshold =
+      0.5; // % of unfilled values required to not just assign value as FillValue
 
-  // Internal maps to the output fields, how the columns are distributed, the file dimensions and the global ids.
-  strvec_t                              m_fields_names;
-  strmap_t<Field>                       m_field_to_avg_count;
-  std::vector<Field>                    m_avg_counts;
-  strmap_t<std::string>                 m_field_to_avg_cnt_suffix;
-  strmap_t<strvec_t>                    m_vars_dims;
-  strmap_t<int>                         m_dims_len;
-  std::list<diag_ptr_type>              m_diagnostics;
+  // Internal maps to the output fields, how the columns are distributed, the file dimensions and
+  // the global ids.
+  strvec_t m_fields_names;
+  strmap_t<Field> m_field_to_avg_count;
+  std::vector<Field> m_avg_counts;
+  strmap_t<std::string> m_field_to_avg_cnt_suffix;
+  strmap_t<strvec_t> m_vars_dims;
+  strmap_t<int> m_dims_len;
+  std::list<diag_ptr_type> m_diagnostics;
 
   // Field aliasing support
-  strmap_t<std::string>                 m_alias_to_field_map;  // Map from alias names to internal field names
-  strvec_t                              m_alias_names;         // List of alias names (for netcdf variables)
+  strmap_t<std::string> m_alias_to_field_map; // Map from alias names to internal field names
+  strvec_t m_alias_names;                     // List of alias names (for netcdf variables)
 
-  DefaultMetadata                       m_default_metadata;
+  DefaultMetadata m_default_metadata;
 
   bool m_add_time_dim;
-  bool m_track_avg_cnt = false;
+  bool m_track_avg_cnt         = false;
   std::string m_decomp_dimname = "";
 
-  std::shared_ptr<ekat::logger::LoggerBase> m_atm_logger = console_logger(ekat::logger::LogLevel::warn);
+  std::shared_ptr<ekat::logger::LoggerBase> m_atm_logger =
+      console_logger(ekat::logger::LogLevel::warn);
 };
 
-} //namespace scream
+} // namespace scream
 
 #endif // SCREAM_SCORPIO_OUTPUT_HPP
