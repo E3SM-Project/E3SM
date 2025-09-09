@@ -411,6 +411,9 @@ void compute_mask (const Field& x, const ST value, Field& mask)
   }
 }
 
+void transpose (const Field& src, Field& tgt);
+Field transpose (const Field& src, std::string src_T_name = "");
+
 } // namespace scream
 
 #endif // SCREAM_FIELD_UTILS_HPP
