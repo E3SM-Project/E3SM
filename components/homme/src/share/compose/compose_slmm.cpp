@@ -275,21 +275,6 @@ static void initialize_kokkos () {
   if (Kokkos::is_initialized()) return;
   in_charge_of_kokkos = true;
   std::vector<char*> args;
-#ifdef HOMMEXX_ENABLE_GPU
-  int nd;
-  const auto ret = cudaGetDeviceCount(&nd);
-  if (ret != cudaSuccess) {
-    // It isn't a big deal if we can't get the device count.
-    nd = 1;
-  }
-  std::stringstream ss;
-  ss << "--kokkos-ndevices=" << nd;
-  const auto key = ss.str();
-  std::vector<char> str(key.size()+1);
-  std::copy(key.begin(), key.end(), str.begin());
-  str.back() = 0;
-  args.push_back(const_cast<char*>(str.data()));
-#endif
   const char* silence = "--kokkos-disable-warnings";
   args.push_back(const_cast<char*>(silence));
   int narg = args.size();
