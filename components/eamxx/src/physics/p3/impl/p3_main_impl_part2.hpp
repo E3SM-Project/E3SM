@@ -405,13 +405,13 @@ void Functions<S,D>
     // cloud water autoconversion
     // NOTE: cloud_water_autoconversion must be called before droplet_self_collection
     cloud_water_autoconversion(
-      rho(k), qc_incld(k), nc_incld(k), inv_qc_relvar(k),
-      qc2qr_autoconv_tend, nc2nr_autoconv_tend, ncautr, runtime_options, not_skip_all);
+      rho(k), qc_incld(k),qr_incld(k), nc_incld(k), inv_qc_relvar(k),
+      qc2qr_autoconv_tend, nc2nr_autoconv_tend, ncautr,nu(k),inv_rho(k), runtime_options, not_skip_all);
 
     // self-collection of droplets
     droplet_self_collection(
       rho(k), inv_rho(k), qc_incld(k),
-      mu_c(k), nu(k), nc2nr_autoconv_tend, nc_selfcollect_tend, not_skip_all);
+      mu_c(k), nu(k), nc2nr_autoconv_tend, nc_selfcollect_tend, runtime_options, not_skip_all);
 
     // accretion of cloud by rain
     cloud_rain_accretion(
