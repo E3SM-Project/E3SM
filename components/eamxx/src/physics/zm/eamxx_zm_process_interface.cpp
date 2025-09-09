@@ -230,21 +230,21 @@ void ZMDeepConvection::run_impl (const double dt)
   //----------------------------------------------------------------------------
   // run the ZM scheme
 
-  zm_eamxx_bridge_run( m_ncol, m_nlev, zm_input, zm_output );
+  zm_eamxx_bridge_run( m_ncol, m_nlev, zm_input, zm_output, zm_opts );
 
   //----------------------------------------------------------------------------
   // update prognostic fields
 
   if (zm_opts.apply_tendencies) {
-    Kokkos::parallel_for("zm_update_prognostic",team_policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
+    // accumulate surface precipitation fluxes
+    Kokkos::parallel_for("zm_update_precip",KT::RangePolicy(0, m_ncol), KOKKOS_LAMBDA (const int i) {
+      auto prec_liq = zm_output.prec(i) - zm_output.snow(i);
+      precip_liq_surf_mass(i) += prec_liq          * PC::RHO_H2O * dt;
+      precip_ice_surf_mass(i) += zm_output.snow(i) * PC::RHO_H2O * dt;
+    });
+    // update 3D prognostic variables
+    Kokkos::parallel_for("zm_update_prognostics",team_policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
       const int i = team.league_rank();
-      // accumulate surface precipitation fluxes
-      Kokkos::single(Kokkos::PerTeam(team), [&] {
-        auto prec_liq = zm_output.prec(i) - zm_output.snow(i);
-        precip_liq_surf_mass(i) += prec_liq          * PC::RHO_H2O * dt;
-        precip_ice_surf_mass(i) += zm_output.snow(i) * PC::RHO_H2O * dt;
-      });
-      // update 3D prognostic variables
       Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlevm_packs), [&](const int& k) {
         T_mid(i,k) += zm_output.tend_s (i,k)/cpair * dt;
         qv   (i,k) += zm_output.tend_qv(i,k)       * dt;
@@ -260,7 +260,7 @@ void ZMDeepConvection::run_impl (const double dt)
   // NOTE - in the future we might want to clean this up using Kokkos::deep_copy(),
   // but this is currently not possible due to the pcol/ncol thing for the fortran bridge
 
-  // 2D output
+  // 2D output (no vertical dimension)
   const auto& zm_prec       = get_field_out("zm_prec")        .get_view<Real*>();
   const auto& zm_snow       = get_field_out("zm_snow")        .get_view<Real*>();
   const auto& zm_cape       = get_field_out("zm_cape")        .get_view<Real*>();
@@ -303,16 +303,16 @@ size_t ZMDeepConvection::requested_buffer_size_in_bytes() const
   const int nlevi_packs = ekat::npack<Spack>(m_nlev+1);
   size_t zm_buffer_size = 0;
 
-  zm_buffer_size+= ZMF::zm_input_state::num_1d_intgr_views * sizeof(Int)     * m_pcol;
-  zm_buffer_size+= ZMF::zm_input_state::num_1d_scalr_views * sizeof(Scalar)  * m_pcol;
+  zm_buffer_size+= ZMF::zm_input_state::num_1d_intgr_views   * sizeof(Int)   * m_pcol;
+  zm_buffer_size+= ZMF::zm_input_state::num_1d_scalr_views   * sizeof(Scalar)* m_pcol;
 
   zm_buffer_size+= ZMF::zm_input_state::num_2d_midlv_c_views * sizeof(Spack) * m_pcol * nlevm_packs;
   zm_buffer_size+= ZMF::zm_input_state::num_2d_intfc_c_views * sizeof(Spack) * m_pcol * nlevi_packs;
   zm_buffer_size+= ZMF::zm_input_state::num_2d_midlv_f_views * sizeof(Real)  * m_pcol * m_nlev;
   zm_buffer_size+= ZMF::zm_input_state::num_2d_intfc_f_views * sizeof(Real)  * m_pcol * (m_nlev+1);
 
-  zm_buffer_size+= ZMF::zm_output_tend::num_1d_scalr_views * sizeof(Scalar)  * m_pcol;
-  zm_buffer_size+= ZMF::zm_output_tend::num_1d_intgr_views * sizeof(Int)     * m_pcol;
+  zm_buffer_size+= ZMF::zm_output_tend::num_1d_scalr_views   * sizeof(Scalar)* m_pcol;
+  zm_buffer_size+= ZMF::zm_output_tend::num_1d_intgr_views   * sizeof(Int)   * m_pcol;
 
   zm_buffer_size+= ZMF::zm_output_tend::num_2d_midlv_c_views * sizeof(Spack) * m_pcol * nlevm_packs;
   zm_buffer_size+= ZMF::zm_output_tend::num_2d_intfc_c_views * sizeof(Spack) * m_pcol * nlevi_packs;

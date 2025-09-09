@@ -228,6 +228,7 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
       output_tend_v(i,k) = 0
     end do
   end do
+
   !-----------------------------------------------------------------------------
   ! populate local copies of state variables for zm_conv_evap()
 

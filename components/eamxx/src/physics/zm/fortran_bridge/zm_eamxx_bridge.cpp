@@ -52,7 +52,8 @@ void zm_eamxx_bridge_init( Int pcol, Int pver ){
 
 void zm_eamxx_bridge_run( Int ncol, Int pver,
                           ZMF::zm_input_state& zm_input,
-                          ZMF::zm_output_tend& zm_output
+                          ZMF::zm_output_tend& zm_output,
+                          ZMF::zm_runtime_opt& zm_opts
                         ){
   //----------------------------------------------------------------------------
   zm_input.transpose<ekat::TransposeDirection::c2f>(ncol,pver);

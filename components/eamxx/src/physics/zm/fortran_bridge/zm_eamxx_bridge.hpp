@@ -17,7 +17,8 @@ using ZMF = zm::Functions<Real, DefaultDevice>;
 void zm_eamxx_bridge_init( Int pcols, Int pver );
 void zm_eamxx_bridge_run( Int ncol, Int pver,
                           ZMF::zm_input_state& zm_input,
-                          ZMF::zm_output_tend& zm_output
+                          ZMF::zm_output_tend& zm_output,
+                          ZMF::zm_runtime_opt& zm_opts
                         );
 
 extern "C" { // _f function decls
