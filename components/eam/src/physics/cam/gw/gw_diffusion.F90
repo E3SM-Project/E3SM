@@ -96,7 +96,6 @@ subroutine gw_ediff(ncol, pver, ngwv, kbot, ktop, tend_level, &
      end do
   end do
 
-
   ! Interpolate effective diffusivity to interfaces.
   ! Assume zero at top and bottom interfaces.
   egwdffi(:,ktop+1:kbot-1) = midpoint_interp(egwdffm(:,ktop+1:kbot))

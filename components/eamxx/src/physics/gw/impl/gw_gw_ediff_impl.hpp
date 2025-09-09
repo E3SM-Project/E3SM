@@ -34,7 +34,11 @@ void Functions<S,D>::gw_ediff(
   const uview_1d<const Real>& rdpm,
   const uview_1d<const Real>& c,
   // Outputs
-  const uview_1d<Real>& egwdffi)
+  const uview_1d<Real>& egwdffi,
+  const uview_1d<Real>& decomp_ca,
+  const uview_1d<Real>& decomp_cc,
+  const uview_1d<Real>& decomp_dnom,
+  const uview_1d<Real>& decomp_ze)
 {
   //-----------------------------Local Workspace------------------------------
 
@@ -55,20 +59,16 @@ void Functions<S,D>::gw_ediff(
   //--------------------------------------------------------------------------
 
   Kokkos::parallel_for(
-    Kokkos::TeamVectorRange(team, 0, pver), [&] (const int k) {
+    Kokkos::TeamVectorRange(team, pver+1), [&] (const int k) {
       egwdffi(k) = 0;
       egwdffm(k) = 0;
       tmpi2(k)   = 0;
-      if (k == pver-1) {
-        egwdffm(k+1) = 0;
-        tmpi2(k+1)   = 0;
-      }
   });
 
   // Calculate effective diffusivity at midpoints.
   const int num_pgwv = 2*pgwv + 1;
   Kokkos::parallel_for(
-    Kokkos::TeamVectorRange(team, num_pgwv * (ktop+1), num_pgwv * kbot), [&] (const int k_pgwv) {
+    Kokkos::TeamVectorRange(team, num_pgwv * (ktop+1), num_pgwv * (kbot+1)), [&] (const int k_pgwv) {
       const int k = k_pgwv / num_pgwv;
       const int l = k_pgwv % num_pgwv;
 
@@ -79,33 +79,33 @@ void Functions<S,D>::gw_ediff(
   // Interpolate effective diffusivity to interfaces.
   // Assume zero at top and bottom interfaces.
   midpoint_interp(team,
-                  ekat::subview(egwdffm, Kokkos::pair<int, int>{ktop+1, kbot}),
-                  ekat::subview(egwdffi, Kokkos::pair<int, int>{ktop+1, kbot-1}));
+                  ekat::subview(egwdffm, Kokkos::pair<int, int>{ktop+1, kbot+1}),
+                  ekat::subview(egwdffi, Kokkos::pair<int, int>{ktop+2, kbot+1}));
 
   // Limit diffusivity to some reasonable value.
   Kokkos::parallel_for(
-    Kokkos::TeamVectorRange(team, 0, pver+1), [&] (const int k) {
+    Kokkos::TeamVectorRange(team, pver+1), [&] (const int k) {
       egwdffi(k) = ekat::impl::min((Real)150., egwdffi(k));
   });
 
   // Do not calculate diffusivities below level where tendencies are
   // actually allowed.
   Kokkos::parallel_for(
-    Kokkos::TeamVectorRange(team, tend_level, kbot), [&] (const int k) {
+    Kokkos::TeamVectorRange(team, tend_level+1, kbot+1), [&] (const int k) {
       egwdffi(k) = 0;
   });
 
   // Calculate dt * (gravit*rho)^2/dp at interior interfaces.
   Kokkos::parallel_for(
-    Kokkos::TeamVectorRange(team, ktop+2, kbot+1), [&] (const int k) {
+    Kokkos::TeamVectorRange(team, ktop+2, kbot+2), [&] (const int k) {
       tmpi2(k) = dt * bfb_square(C::gravit * rho(k)) / (pmid(k) - pmid(k-1));
   });
 
   // Decompose the diffusion matrix.
   // Note that [ktop,kbot] are model interfaces (beginning at zero), whereas
   // in vd_lu_decomp they are expected as midpoints.
-  // vd_lu_decomp(team, pver, ncol,
-  //              zero, egwdffi, tmpi2, rdpm, dt, gravit, zero, ktop+1, kbot+1, decomp);
+  vd_lu_decomp(team, pver,
+               zero, egwdffi, tmpi2, rdpm, dt, zero, ktop+1, kbot+1, decomp_ca, decomp_cc, decomp_dnom, decomp_ze);
 
   workspace.template release_many_contiguous<2>(
     {&egwdffm, &tmpi2});

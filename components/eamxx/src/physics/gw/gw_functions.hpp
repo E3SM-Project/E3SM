@@ -1,3 +1,4 @@
+
 #ifndef GW_FUNCTIONS_HPP
 #define GW_FUNCTIONS_HPP
 
@@ -516,7 +517,11 @@ struct Functions
     const uview_1d<const Real>& rdpm,
     const uview_1d<const Real>& c,
     // Outputs
-    const uview_1d<Real>& egwdffi);
+    const uview_1d<Real>& egwdffi,
+    const uview_1d<Real>& decomp_ca,
+    const uview_1d<Real>& decomp_cc,
+    const uview_1d<Real>& decomp_dnom,
+    const uview_1d<Real>& decomp_ze);
 
   KOKKOS_FUNCTION
   static void gw_diff_tend(

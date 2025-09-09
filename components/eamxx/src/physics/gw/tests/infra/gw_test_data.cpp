@@ -686,6 +686,10 @@ void gw_ediff(GwEdiffData& d)
     const auto rdpm_c    = ekat::subview(rdpm, col);
     const auto c_c       = ekat::subview(c, col);
     const auto egwdffi_c = ekat::subview(egwdffi, col);
+    const auto decomp_ca_c   = ekat::subview(decomp_ca, col);
+    const auto decomp_cc_c   = ekat::subview(decomp_cc, col);
+    const auto decomp_dnom_c = ekat::subview(decomp_dnom, col);
+    const auto decomp_ze_c   = ekat::subview(decomp_ze, col);
 
     GWF::gw_ediff(
       team,
@@ -700,12 +704,24 @@ void gw_ediff(GwEdiffData& d)
       pmid_c,
       rdpm_c,
       c_c,
-      egwdffi_c);
+      egwdffi_c,
+      decomp_ca_c,
+      decomp_cc_c,
+      decomp_dnom_c,
+      decomp_ze_c);
   });
 
   // Get outputs back
-  std::vector<view2dr_d> two_d_reals_out = {egwdffi};
-  ekat::device_to_host({d.egwdffi}, d.ncol, d.init.pver + 1, two_d_reals_out);
+  std::vector<view2dr_d> two_d_reals_out = {egwdffi, decomp_ca, decomp_cc, decomp_dnom, decomp_ze};
+  ekat::device_to_host({d.egwdffi, d.decomp_ca, d.decomp_cc, d.decomp_dnom, d.decomp_ze},
+                       std::vector<int>(5, d.ncol),
+                       std::vector<int>{
+                         d.init.pver + 1,
+                         d.init.pver,
+                         d.init.pver,
+                         d.init.pver,
+                         d.init.pver},
+                       two_d_reals_out);
 
   gw_finalize_cxx(d.init);
 }
