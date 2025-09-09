@@ -43,7 +43,6 @@ struct UnitWrap::UnitTest<D>::TestVdLuSolve : public UnitWrap::UnitTest<D>::Base
     // Create copies of data for use by test. Needs to happen before read calls so that
     // inout data is in original state
     VdLuSolveData test_data[] = {
-      // TODO
       VdLuSolveData(baseline_data[0]),
       VdLuSolveData(baseline_data[1]),
       VdLuSolveData(baseline_data[2]),
@@ -59,7 +58,12 @@ struct UnitWrap::UnitTest<D>::TestVdLuSolve : public UnitWrap::UnitTest<D>::Base
 
     // Get data from test
     for (auto& d : test_data) {
-      vd_lu_solve(d);
+      if (this->m_baseline_action == GENERATE) {
+        vd_lu_solve_f(d);
+      }
+      else {
+        vd_lu_solve(d);
+      }
     }
 
     // Verify BFB results, all data should be in C layout
@@ -67,11 +71,10 @@ struct UnitWrap::UnitTest<D>::TestVdLuSolve : public UnitWrap::UnitTest<D>::Base
       for (Int i = 0; i < num_runs; ++i) {
         VdLuSolveData& d_baseline = baseline_data[i];
         VdLuSolveData& d_test = test_data[i];
+        REQUIRE(d_baseline.total(d_baseline.q) == d_test.total(d_test.q));
         for (Int k = 0; k < d_baseline.total(d_baseline.q); ++k) {
-          REQUIRE(d_baseline.total(d_baseline.q) == d_test.total(d_test.q));
           REQUIRE(d_baseline.q[k] == d_test.q[k]);
         }
-
       }
     }
     else if (this->m_baseline_action == GENERATE) {

@@ -816,12 +816,73 @@ void vd_lu_decomp(VdLuDecompData& d)
   gw_finalize_cxx(d.init);
 }
 
-void vd_lu_solve(VdLuSolveData& d)
+void vd_lu_solve_f(VdLuSolveData& d)
 {
   gw_init(d.init);
   d.transition<ekat::TransposeDirection::c2f>();
   vd_lu_solve_c(d.ncol, d.q, d.decomp_ca, d.decomp_cc, d.decomp_dnom, d.decomp_ze, d.ntop, d.nbot, d.cd_top);
   d.transition<ekat::TransposeDirection::f2c>();
+}
+
+void vd_lu_solve(VdLuSolveData& d)
+{
+  gw_init_cxx(d.init);
+
+  // create device views and copy
+  std::vector<view1dr_d> one_d_reals_in(1);
+  std::vector<view2dr_d> two_d_reals_in(5);
+
+  ekat::host_to_device({d.cd_top}, d.ncol, one_d_reals_in);
+  ekat::host_to_device({d.q, d.decomp_ca, d.decomp_cc, d.decomp_dnom, d.decomp_ze}, d.ncol, d.init.pver, two_d_reals_in);
+
+  const auto cd_top = one_d_reals_in[0];
+
+  const auto q           = two_d_reals_in[0];
+  const auto decomp_ca   = two_d_reals_in[1];
+  const auto decomp_cc   = two_d_reals_in[2];
+  const auto decomp_dnom = two_d_reals_in[3];
+  const auto decomp_ze   = two_d_reals_in[4];
+
+  auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.ncol, d.init.pver);
+  WSM wsm(d.init.pver, 1, policy);
+
+  GWF::GwCommonInit init_cp = GWF::s_common_init;
+
+  // unpack init because we do not want the lambda to capture it
+  const int pver = d.init.pver;
+  const int ntop = d.ntop;
+  const int nbot = d.nbot;
+
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    const int col = team.league_rank();
+
+    // Get single-column subviews of all inputs, shouldn't need any i-indexing
+    // after this.
+    const auto q_c           = ekat::subview(q, col);
+    const auto decomp_ca_c   = ekat::subview(decomp_ca, col);
+    const auto decomp_cc_c   = ekat::subview(decomp_cc, col);
+    const auto decomp_dnom_c = ekat::subview(decomp_dnom, col);
+    const auto decomp_ze_c   = ekat::subview(decomp_ze, col);
+
+    GWF::vd_lu_solve(
+      team,
+      wsm.get_workspace(team),
+      pver,
+      decomp_ca_c,
+      decomp_cc_c,
+      decomp_dnom_c,
+      decomp_ze_c,
+      ntop,
+      nbot,
+      cd_top(col),
+      q_c);
+  });
+
+  // Get outputs back
+  std::vector<view2dr_d> two_d_reals_out = {q};
+  ekat::device_to_host({d.q}, d.ncol, d.init.pver, two_d_reals_out);
+
+  gw_finalize_cxx(d.init);
 }
 
 // end _c impls

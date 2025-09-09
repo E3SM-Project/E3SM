@@ -577,6 +577,8 @@ struct Functions
   KOKKOS_FUNCTION
   static void vd_lu_solve(
     // Inputs
+    const MemberType& team,
+    const Workspace& workspace,
     const Int& pver,
     const uview_1d<const Real>& decomp_ca,
     const uview_1d<const Real>& decomp_cc,
@@ -584,7 +586,7 @@ struct Functions
     const uview_1d<const Real>& decomp_ze,
     const Int& ntop,
     const Int& nbot,
-    const uview_1d<const Real>& cd_top,
+    const Real& cd_top,
     // Inputs/Outputs
     const uview_1d<Real>& q);
 

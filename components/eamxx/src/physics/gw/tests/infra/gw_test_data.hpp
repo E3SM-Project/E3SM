@@ -901,12 +901,10 @@ struct VdLuSolveData : public PhysicsTestData {
   VdLuSolveData(Int ncol_, Int ntop_, Int nbot_, GwInit init_) :
     PhysicsTestData({
       {ncol_, init_.pver},
-      {ncol_, init_.pver},
       {ncol_}
     },
     {
-      {&q},
-      {&decomp_ca, &decomp_cc, &decomp_dnom, &decomp_ze},
+      {&q, &decomp_ca, &decomp_cc, &decomp_dnom, &decomp_ze},
       {&cd_top}
     }),
     ncol(ncol_), ntop(ntop_), nbot(nbot_), init(init_)
@@ -952,6 +950,7 @@ void gw_diff_tend(GwDiffTendData& d);
 void gw_oro_src(GwOroSrcData& d);
 void vd_lu_decomp_f(VdLuDecompData& d);
 void vd_lu_decomp(VdLuDecompData& d);
+void vd_lu_solve_f(VdLuSolveData& d);
 void vd_lu_solve(VdLuSolveData& d);
 
 extern "C" { // _f function decls
