@@ -43,7 +43,6 @@ struct UnitWrap::UnitTest<D>::TestVdLuDecomp : public UnitWrap::UnitTest<D>::Bas
     // Create copies of data for use by test. Needs to happen before read calls so that
     // inout data is in original state
     VdLuDecompData test_data[] = {
-      // TODO
       VdLuDecompData(baseline_data[0]),
       VdLuDecompData(baseline_data[1]),
       VdLuDecompData(baseline_data[2]),
@@ -59,7 +58,12 @@ struct UnitWrap::UnitTest<D>::TestVdLuDecomp : public UnitWrap::UnitTest<D>::Bas
 
     // Get data from test
     for (auto& d : test_data) {
-      vd_lu_decomp(d);
+      if (this->m_baseline_action == GENERATE) {
+        vd_lu_decomp_f(d);
+      }
+      else {
+        vd_lu_decomp(d);
+      }
     }
 
     // Verify BFB results, all data should be in C layout
@@ -67,17 +71,16 @@ struct UnitWrap::UnitTest<D>::TestVdLuDecomp : public UnitWrap::UnitTest<D>::Bas
       for (Int i = 0; i < num_runs; ++i) {
         VdLuDecompData& d_baseline = baseline_data[i];
         VdLuDecompData& d_test = test_data[i];
+        REQUIRE(d_baseline.total(d_baseline.decomp_ca) == d_test.total(d_test.decomp_ca));
+        REQUIRE(d_baseline.total(d_baseline.decomp_ca) == d_test.total(d_test.decomp_cc));
+        REQUIRE(d_baseline.total(d_baseline.decomp_ca) == d_test.total(d_test.decomp_dnom));
+        REQUIRE(d_baseline.total(d_baseline.decomp_ca) == d_test.total(d_test.decomp_ze));
         for (Int k = 0; k < d_baseline.total(d_baseline.decomp_ca); ++k) {
-          REQUIRE(d_baseline.total(d_baseline.decomp_ca) == d_test.total(d_test.decomp_ca));
           REQUIRE(d_baseline.decomp_ca[k] == d_test.decomp_ca[k]);
-          REQUIRE(d_baseline.total(d_baseline.decomp_ca) == d_test.total(d_test.decomp_cc));
           REQUIRE(d_baseline.decomp_cc[k] == d_test.decomp_cc[k]);
-          REQUIRE(d_baseline.total(d_baseline.decomp_ca) == d_test.total(d_test.decomp_dnom));
           REQUIRE(d_baseline.decomp_dnom[k] == d_test.decomp_dnom[k]);
-          REQUIRE(d_baseline.total(d_baseline.decomp_ca) == d_test.total(d_test.decomp_ze));
           REQUIRE(d_baseline.decomp_ze[k] == d_test.decomp_ze[k]);
         }
-
       }
     }
     else if (this->m_baseline_action == GENERATE) {

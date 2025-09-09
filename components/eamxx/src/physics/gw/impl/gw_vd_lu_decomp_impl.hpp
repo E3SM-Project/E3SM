@@ -31,6 +31,15 @@ void Functions<S,D>::vd_lu_decomp(
   const uview_1d<Real>& decomp_dnom,
   const uview_1d<Real>& decomp_ze)
 {
+  // Zero-out all decomp fields
+  Kokkos::parallel_for(
+    Kokkos::TeamVectorRange(team, 0, pver), [&] (const int k) {
+      decomp_ca(k) = 0;
+      decomp_cc(k) = 0;
+      decomp_dnom(k) = 0;
+      decomp_ze(k) = 0;
+    });
+
   // Determine superdiagonal (ca(k)) and subdiagonal (cc(k)) coeffs of the
   // tridiagonal diffusion matrix. The diagonal elements  (cb=1+ca+cc) are
   // a combination of ca and cc; they are not required by the solver.
@@ -38,29 +47,26 @@ void Functions<S,D>::vd_lu_decomp(
     Kokkos::TeamVectorRange(team, ntop, nbot), [&] (const int k) {
       decomp_ca(k  ) = kv(k+1) * tmpi(k+1) * rpdel(k  );
       decomp_cc(k+1) = kv(k+1) * tmpi(k+1) * rpdel(k+1);
-      // The bottom element of the upper diagonal (ca) is zero (not used).
-      // The subdiagonal (cc) is not needed in the solver.
-      if (k == nbot - 1) {
-        decomp_ca(nbot) = 0;
-      }
     });
 
   // Calculate e(k). This term is required in the solution of the
   // tridiagonal matrix as defined by the implicit diffusion equation.
   team.team_barrier();
-  const Real dnom = 1 / (1 + decomp_cc(nbot) + ksrf*ztodt*C::gravit*rpdel(nbot));
-  decomp_dnom(nbot) = dnom;
-  decomp_ze(nbot)   = decomp_cc(nbot) * dnom;
+  Kokkos::single(Kokkos::PerTeam(team), [&] {
+    const Real dnom = 1 / (1 + decomp_cc(nbot) + ksrf*ztodt*C::gravit*rpdel(nbot));
+    decomp_dnom(nbot) = dnom;
+    decomp_ze(nbot)   = decomp_cc(nbot) * dnom;
 
-  Kokkos::parallel_for(
-    Kokkos::TeamVectorRange(team, ntop+1, nbot), [&] (const int k) {
+    // Each level depends on the prior level, so there's no parallelism possible here
+    for (int k = nbot - 1; k >= ntop + 1; --k) {
       decomp_dnom(k) = 1 / (1 + decomp_ca(k) + decomp_cc(k) -
                             decomp_ca(k)*decomp_ze(k+1));
       decomp_ze(k)   = decomp_cc(k) * decomp_dnom(k);
-    });
+    }
 
-  team.team_barrier();
-  decomp_dnom(ntop) = 1 / (1 + decomp_ca(ntop) + cc_top - decomp_ca(ntop)*decomp_ze(ntop+1));
+
+    decomp_dnom(ntop) = 1 / (1 + decomp_ca(ntop) + cc_top - decomp_ca(ntop)*decomp_ze(ntop+1));
+  });
 }
 
 } // namespace gw
