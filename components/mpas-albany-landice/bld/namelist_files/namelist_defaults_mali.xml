@@ -44,7 +44,7 @@
 <config_data_calving>.false.</config_data_calving>
 <config_calving_timescale>0.0</config_calving_timescale>
 <config_restore_calving_front>.true.</config_restore_calving_front>
-<config_restore_calving_front_prevent_retreat>.true.</config_restore_calving_front_prevent_retreat>
+<config_restore_calving_front_prevent_retreat>.false.</config_restore_calving_front_prevent_retreat>
 <config_remove_icebergs>.true.</config_remove_icebergs>
 <config_remove_small_islands>.true.</config_remove_small_islands>
 <config_calving_speed_limit>100.0</config_calving_speed_limit>
