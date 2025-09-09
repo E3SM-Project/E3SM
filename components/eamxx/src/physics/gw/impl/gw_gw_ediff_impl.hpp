@@ -70,13 +70,11 @@ void Functions<S,D>::gw_ediff(
   // Calculate effective diffusivity at midpoints.
   const int num_pgwv = 2*pgwv + 1;
   Kokkos::parallel_for(
-    Kokkos::TeamVectorRange(team, num_pgwv * (ktop+1), num_pgwv * (kbot+1)), [&] (const int k_pgwv) {
-      const int k = k_pgwv / num_pgwv;
-      const int l = k_pgwv % num_pgwv;
-
-      const Real add = prndl * half * gwut(k,l) * (c(l)-ubm(k)) / bfb_square(nm(k));
-      Kokkos::atomic_add(&egwdffm(k), add);
-  });
+    Kokkos::TeamVectorRange(team, ktop+1, kbot+1), [&] (const int k) {
+      for (int l = 0; l < num_pgwv; ++l) {
+        egwdffm(k) += prndl * half * gwut(k,l) * (c(l)-ubm(k)) / bfb_square(nm(k));
+      }
+    });
 
   team.team_barrier();
 

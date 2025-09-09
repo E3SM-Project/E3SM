@@ -66,12 +66,6 @@ struct UnitWrap::UnitTest<D>::TestGwEdiff : public UnitWrap::UnitTest<D>::Base {
       }
     }
 
-    // We need a tolerance since the order of operations is different from f90.
-    // This tol can be removed once we are no longer using
-    // fortran to generate baselines.
-    const auto margin = std::numeric_limits<Real>::epsilon() *
-      (ekat::is_single_precision<Real>::value ? 1000 : 1);
-
     // Verify BFB results, all data should be in C layout
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < num_runs; ++i) {
@@ -82,14 +76,14 @@ struct UnitWrap::UnitTest<D>::TestGwEdiff : public UnitWrap::UnitTest<D>::Base {
         REQUIRE(d_baseline.total(d_baseline.decomp_dnom) == d_test.total(d_test.decomp_dnom));
         REQUIRE(d_baseline.total(d_baseline.decomp_ze) == d_test.total(d_test.decomp_ze));
         for (Int k = 0; k < d_baseline.total(d_baseline.decomp_ca); ++k) {
-          REQUIRE(d_baseline.decomp_ca[k] == Approx(d_test.decomp_ca[k]).margin(margin));
-          REQUIRE(d_baseline.decomp_cc[k] == Approx(d_test.decomp_cc[k]).margin(margin));
-          REQUIRE(d_baseline.decomp_dnom[k] == Approx(d_test.decomp_dnom[k]).margin(margin));
-          REQUIRE(d_baseline.decomp_ze[k] == Approx(d_test.decomp_ze[k]).margin(margin));
+          REQUIRE(d_baseline.decomp_ca[k] == d_test.decomp_ca[k]);
+          REQUIRE(d_baseline.decomp_cc[k] == d_test.decomp_cc[k]);
+          REQUIRE(d_baseline.decomp_dnom[k] == d_test.decomp_dnom[k]);
+          REQUIRE(d_baseline.decomp_ze[k] == d_test.decomp_ze[k]);
         }
         REQUIRE(d_baseline.total(d_baseline.egwdffi) == d_test.total(d_test.egwdffi));
         for (Int k = 0; k < d_baseline.total(d_baseline.egwdffi); ++k) {
-          REQUIRE(d_baseline.egwdffi[k] == Approx(d_test.egwdffi[k]).margin(margin));
+          REQUIRE(d_baseline.egwdffi[k] == d_test.egwdffi[k]);
         }
 
       }
