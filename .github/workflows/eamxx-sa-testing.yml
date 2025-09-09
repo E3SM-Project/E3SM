@@ -161,7 +161,6 @@ jobs:
                   ;;
           esac
       - name: Checkout Kokkos develop branch
-        if: ${{ env.kokkos_dev_test }}
         uses: ./.github/actions/update-to-kokkos-develop
       - name: Run tests
         uses: ./.github/actions/test-all-eamxx
