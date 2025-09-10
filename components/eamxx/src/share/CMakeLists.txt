@@ -129,34 +129,6 @@ endif()
 
 target_link_libraries(scream_share PUBLIC ekat::AllLibs pioc)
 
-target_compile_options(scream_share PUBLIC
-  $<$<COMPILE_LANGUAGE:Fortran>:${SCREAM_Fortran_FLAGS}>
-)
-
-# This used to be in `eamxx_config.h/eamxx_config.f`, but we did accidentally remove
-# the includes at least twice. To avoid this from happening again, we add this crucial
-# macro as a compile definition of the scream_share, which is linked to all other
-# scream libraries.
-if (SCREAM_CIME_BUILD)
-  target_compile_definitions (scream_share PUBLIC SCREAM_CIME_BUILD)
-endif()
-
-# When dealing with subtle bugs in read/write of unit tests baselines,
-# using ascii baselines can help inspect that the file indeed looks as expected
-option (EAMXX_ASCII_BASELINES "Whether physics units tests should assume ascii (instead of binary) format for baselines" OFF)
-if (EAMXX_ASCII_BASELINES)
-  target_compile_definitions (scream_share PUBLIC EAMXX_ASCII_BASELINES)
-endif()
-
-# We have some issues with RDC and repeated libraries in the link line.
-# It's a known issue, and nvcc_wrapper has a flag for handling this.
-if (Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE)
-  if(CMAKE_VERSION VERSION_LESS "3.13.0")
-    target_link_librarires(scream_share PUBLIC "--remove-duplicate-link-files")
-  else()
-    target_link_options(scream_share PUBLIC "--remove-duplicate-link-files")
-  endif()
-endif()
 SetOmpFlags(scream_share Fortran)
 
 # The "build_cf_dictionary" target downloads an XML file containing valid field

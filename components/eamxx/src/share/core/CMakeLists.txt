@@ -27,6 +27,11 @@ if (SCREAM_CIME_BUILD)
   target_compile_definitions (eamxx_core PUBLIC SCREAM_CIME_BUILD)
 endif()
 
+# Attach custom f90 flags, so they are picked up by any EAMxx target
+target_compile_options(eamxx_core PUBLIC
+  $<$<COMPILE_LANGUAGE:Fortran>:${SCREAM_Fortran_FLAGS}>
+)
+
 # When dealing with subtle bugs in read/write of unit tests baselines,
 # using ascii baselines can help inspect that the file indeed looks as expected
 option (EAMXX_ASCII_BASELINES "Whether physics units tests should assume ascii (instead of binary) format for baselines" OFF)
