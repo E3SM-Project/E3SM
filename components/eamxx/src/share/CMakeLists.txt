@@ -103,8 +103,6 @@ if (EAMXX_ENABLE_EXPERIMENTAL_CODE)
 endif()
 
 add_library(scream_share ${SHARE_SRC})
-set_target_properties(scream_share PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules)
-target_include_directories (scream_share PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/modules)
 
 target_include_directories(scream_share PUBLIC
   ${SCREAM_SRC_DIR}
@@ -120,8 +118,6 @@ target_link_libraries(scream_share PUBLIC
 target_link_libraries(scream_share PUBLIC stdc++fs)
 
 target_link_libraries(scream_share PUBLIC ekat::AllLibs pioc)
-
-SetOmpFlags(scream_share Fortran)
 
 # The "build_cf_dictionary" target downloads an XML file containing valid field
 # names and aliases based on the CF conventions, and transforms it into a YAML
