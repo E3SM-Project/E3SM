@@ -1,5 +1,6 @@
 #include <catch2/catch.hpp>
 
+#include "share/util/eamxx_family_tracking.hpp"
 #include "share/util/eamxx_universal_constants.hpp"
 #include "share/util/eamxx_utils.hpp"
 
@@ -48,4 +49,23 @@ TEST_CASE("contiguous_superset") {
   auto superset3 = contiguous_superset(lol3);
   REQUIRE ( (superset2==tgt || superset2==tgt_rev) );
   REQUIRE ( (superset3==tgt || superset3==tgt_rev) );
+}
+
+struct Dummy : scream::FamilyTracking<Dummy> {
+  Dummy (int i) : value(i) {}
+  int value;
+};
+
+TEST_CASE("family_tracking") {
+  using namespace scream;
+
+  auto child = std::make_shared<Dummy>(2);
+  auto parent = std::make_shared<Dummy>(3);
+
+  REQUIRE (not child->get_parent());
+  child->create_parent_child_link(parent->shared_from_this());
+  REQUIRE (child->get_parent());
+  REQUIRE (child->get_parent()==parent);
+  REQUIRE (parent->get_children().size()==1);
+  REQUIRE (child->get_children().size()==0);
 }
