@@ -619,10 +619,10 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   const int curr_month = start_of_step_ts().get_month() - 1;  // 0-based
   if (config_.linoz.compute) {
     scream::mam_coupling::update_tracer_data_from_file(
-      LinozDataReader_, curr_month, *LinozHorizInterp_, linoz_data_);
+      LinozDataReader_, curr_month+linoz_data_.offset_time_index_, *LinozHorizInterp_, linoz_data_);
   }
   scream::mam_coupling::update_tracer_data_from_file(
-      TracerDataReader_, curr_month, *TracerHorizInterp_, tracer_data_);
+      TracerDataReader_, curr_month+tracer_data_.offset_time_index_, *TracerHorizInterp_, tracer_data_);
 
   for(int i = 0; i < static_cast<int>(extfrc_lst_.size()); ++i) {
     scream::mam_coupling::update_tracer_data_from_file(
