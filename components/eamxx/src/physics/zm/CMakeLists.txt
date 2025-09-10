@@ -2,12 +2,13 @@ set(PATH_TO_LEGACY_ZM ${SCREAM_BASE_DIR}/../eam/src/physics/cam/)
 
 set(ZM_F90_SRCS
   # ----------------------------------------------------------------------------
-  # EAMxx side bridge modules
-  fortran_bridge/zm_eamxx_bridge_main.F90
-  fortran_bridge/zm_eamxx_bridge_params.F90
-  fortran_bridge/zm_eamxx_bridge_methods.F90
-  fortran_bridge/zm_eamxx_bridge_physconst.F90
-  fortran_bridge/zm_eamxx_bridge_wv_saturation.F90
+  # EAMxx side C++ bridge methods
+  ${CMAKE_CURRENT_SOURCE_DIR}/fortran_bridge/zm_eamxx_bridge.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/fortran_bridge/zm_eamxx_bridge_main.F90
+  ${CMAKE_CURRENT_SOURCE_DIR}/fortran_bridge/zm_eamxx_bridge_params.F90
+  ${CMAKE_CURRENT_SOURCE_DIR}/fortran_bridge/zm_eamxx_bridge_methods.F90
+  ${CMAKE_CURRENT_SOURCE_DIR}/fortran_bridge/zm_eamxx_bridge_physconst.F90
+  ${CMAKE_CURRENT_SOURCE_DIR}/fortran_bridge/zm_eamxx_bridge_wv_saturation.F90
   # ----------------------------------------------------------------------------
   # Fortran ZM code
   ${PATH_TO_LEGACY_ZM}/zm_conv.F90
@@ -36,8 +37,6 @@ set(ZM_CXX_SRCS
   # C++/EAMxx atomsphere process for ZM
   eamxx_zm_process_interface.cpp
   # ----------------------------------------------------------------------------
-  # EAMxx side C++ bridge methods
-  fortran_bridge/zm_eamxx_bridge.cpp
 )
 
 # Add ETI source files if not on CUDA/HIP
