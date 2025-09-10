@@ -3,7 +3,7 @@
 
 #include "shoc_functions.hpp"
 #include "share/core/eamxx_types.hpp"
-#include "share/util/eamxx_setup_random_test.hpp"
+#include "share/core/eamxx_setup_random_test.hpp"
 #include "physics/share/physics_test_data.hpp"
 
 namespace scream {

@@ -5,7 +5,7 @@
 #include "share/field/field.hpp"
 #include "share/grid/se_grid.hpp"
 #include "share/grid/point_grid.hpp"
-#include "share/util/eamxx_setup_random_test.hpp"
+#include "eamxx_setup_random_test.hpp"
 
 #include "mpi/BoundaryExchange.hpp"
 #include "SimulationParams.hpp"

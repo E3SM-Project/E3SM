@@ -76,3 +76,17 @@ if (EAMXX_ENABLE_PYTHON)
   target_link_libraries(eamxx_core PUBLIC pybind11::embed)
   target_compile_definitions (eamxx_core PUBLIC EAMXX_HAS_PYTHON)
 endif()
+
+if (NOT SCREAM_LIB_ONLY)
+  # Nano-library, providing ekat_initialize/finalize_test_session implementations
+  # This lib is linked to ALL tests created by CreateUnitTest from cmake/ScreamUtils.cmake
+  add_library(eamxx_test_session
+    eamxx_test_session.cpp
+  )
+  target_include_directories(eamxx_test_session PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}
+  )
+  target_link_libraries(eamxx_test_session PUBLIC eamxx_core)
+
+  add_subdirectory(tests)
+endif()

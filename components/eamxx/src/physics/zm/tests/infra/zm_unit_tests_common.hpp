@@ -2,7 +2,7 @@
 #define ZM_UNIT_TESTS_COMMON_HPP
 
 #include "share/core/eamxx_types.hpp"
-#include "share/util/eamxx_setup_random_test.hpp"
+#include "share/core/eamxx_setup_random_test.hpp"
 #include "zm_functions.hpp"
 #include "zm_test_data.hpp"
 

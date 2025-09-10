@@ -2,7 +2,7 @@
 
 #include "physics/share/physics_test_data.hpp"
 #include "physics_unit_tests_common.hpp"
-#include "share/util/eamxx_setup_random_test.hpp"
+#include "share/core/eamxx_setup_random_test.hpp"
 #include "share/core/eamxx_types.hpp"
 
 namespace scream {

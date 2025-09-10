@@ -7,7 +7,7 @@
 #include "share/io/scorpio_input.hpp"
 #include "share/io/eamxx_scorpio_interface.hpp"
 #include "share/field/field_utils.hpp"
-#include "share/util/eamxx_setup_random_test.hpp"
+#include "eamxx_setup_random_test.hpp"
 
 #include "share/grid/point_grid.hpp"
 

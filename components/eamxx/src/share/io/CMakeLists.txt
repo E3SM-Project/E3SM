@@ -60,7 +60,3 @@ add_library(scream_io
 )
 
 target_link_libraries(scream_io PUBLIC scream_share eamxx_scorpio_interface diagnostics)
-
-if (NOT SCREAM_LIB_ONLY)
-  add_subdirectory(tests)
-endif()
