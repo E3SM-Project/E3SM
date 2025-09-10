@@ -9,7 +9,7 @@ module lnd_import_export
   use glc2lndMod   , only: glc2lnd_type
   use lnd2iacMod   , only: lnd2iac_type
   use iac2lndMod   , only: iac2lnd_type
-  use elm_varctl   , only: iac_active, iulog
+  use elm_varctl   , only: iac_present, iulog
   use elm_varpar   , only: numpft, numharvest
   use GridcellType , only: grc_pp          ! for access to gridcell topology
   use TopounitDataType , only: top_as, top_af  ! atmospheric state and flux variables  
@@ -1360,7 +1360,7 @@ contains
        ! the passed values are fraction of actual grid cell (not fraction of
        ! land), even though the coupler pct labels are still present
 
-       if (iac_active) then
+       if (iac_present) then
 
           do num = 0,numpft
              iac2lnd_vars%frac_pft(g,num) = x2l(index_x2l_Sz_pct_pft(num),i)
@@ -1388,7 +1388,7 @@ contains
     ! 
     ! !USES:
     use shr_kind_mod       , only : r8 => shr_kind_r8
-    use elm_varctl         , only : iulog, create_glacier_mec_landunit, iac_active
+    use elm_varctl         , only : iulog, create_glacier_mec_landunit, iac_present
     use elm_time_manager   , only : get_nstep, get_step_size  
     use domainMod          , only : ldomain
     use seq_drydep_mod     , only : n_drydep
@@ -1511,7 +1511,7 @@ contains
           end do
        end if
 
-       if (iac_active) then
+       if (iac_present) then
           do p = 0,numpft
              l2x(index_l2x_Sl_hr(p),i) = lnd2iac_vars%hr(g,p)
              l2x(index_l2x_Sl_npp(p),i) = lnd2iac_vars%npp(g,p)

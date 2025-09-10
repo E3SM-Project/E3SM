@@ -41,7 +41,7 @@ module VegetationType
   use shr_kind_mod   , only : r8 => shr_kind_r8
   use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
   use elm_varcon     , only : ispval, spval
-  use elm_varctl     , only : use_fates, iac_active
+  use elm_varctl     , only : use_fates, iac_present
   use elm_varctl     , only : use_fates, iulog
   !
   ! !PUBLIC TYPES:
@@ -130,7 +130,7 @@ contains
        allocate(this%sp_pftorder_index      (begp:endp)); this%sp_pftorder_index      (:) = spval
     end if
 
-    if (iac_active) then
+    if (iac_present) then
        allocate(this%wtgcell_iac   (begp:endp)); this%wtgcell (:) = nan
     end if
 	end subroutine veg_pp_init
@@ -161,7 +161,7 @@ contains
        deallocate(this%wt_ed)
        deallocate(this%sp_pftorder_index)
     end if
-    if (iac_active) then
+    if (iac_present) then
        deallocate(this%wtgcell_iac)
     end if
 

@@ -92,7 +92,7 @@ contains
     use seq_flds_mod     , only : seq_flds_x2l_fields, seq_flds_l2x_fields, lnd_rof_two_way
     use spmdMod          , only : masterproc, npes, spmd_init
     use elm_varctl       , only : nsrStartup, nsrContinue, nsrBranch, use_lnd_rof_two_way
-    use elm_varctl        , only: elm_varctl_set_iac_active_only, iac_active 
+    use elm_varctl       , only:  elm_varctl_set_iac_flag
     use elm_cpl_indices  , only : elm_cpl_indices_set
     use perf_mod         , only : t_startf, t_stopf
     use mct_mod
@@ -118,7 +118,7 @@ contains
     integer  :: g,i,j                                ! indices
     integer  :: dtime_sync                           ! coupling time-step from the input synchronization clock
     integer  :: dtime_elm                            ! elm time-step
-    logical  :: iac_present                          ! Flag if E3SM Human Component(EHC) is present
+    logical  :: iac_flag                             ! Flag if IAC is present
     logical  :: exists                               ! true if file exists
     logical  :: verbose_taskmap_output               ! true then use verbose task-to-node mapping format
     logical  :: atm_aero                             ! Flag if aerosol data sent from atm model
@@ -289,8 +289,8 @@ contains
     use_lnd_rof_two_way = lnd_rof_two_way
     
     ! Determine if iac is active, and set flag
-    call seq_infodata_GetData(infodata, iac_present=iac_present)
-    call elm_varctl_set_iac_active_only(iac_present)
+    call seq_infodata_GetData(infodata, iac_present=iac_flag)
+    call elm_varctl_set_iac_flag(iac_flag)
 
     ! Read namelist, grid and surface data
 

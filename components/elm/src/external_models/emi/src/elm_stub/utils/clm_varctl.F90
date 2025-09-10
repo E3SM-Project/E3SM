@@ -18,7 +18,7 @@ module clm_varctl
   public :: cnallocate_carbonphosphorus_only_set
   public :: cnallocate_carbonphosphorus_only
   public :: get_carbontag ! get the tag for carbon simulations  
-  public :: clm_varctl_set_iac_active_only
+  public :: clm_varctl_set_iac_flag
   !
   private
   save
@@ -144,7 +144,7 @@ module clm_varctl
   !----------------------------------------------------------
 
   ! true => iac/gcam component is present and prognostic
-  logical, public :: iac_active = .false.
+  logical, public, protected :: iac_present = .false.
 
   ! values of 'prognostic','diagnostic','constant'
   character(len=16), public :: co2_type = 'constant'    
@@ -470,11 +470,11 @@ contains
     cnallocate_carbonphosphorus_only = carbonphosphorus_only
   end function CNAllocate_CarbonPhosphorus_only
 
-  ! set module iac_active flag only
-  subroutine clm_varctl_set_iac_active_only(iac_active_in)
-     logical, intent(in) :: iac_active_in
-     iac_active = iac_active_in
-  end subroutine clm_varctl_set_iac_active_only
+  ! set module iac flag
+  subroutine clm_varctl_set_flag(iac_flag_in)
+     logical, intent(in) :: iac_flag_in
+     iac_present = iac_flag_in
+  end subroutine clm_varctl_set_iac_flag
 
   function get_carbontag(carbon_type)result(ctag)
     implicit none

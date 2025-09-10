@@ -15,7 +15,7 @@ module elm_driver
   use elm_varctl             , only : wrtdia, iulog, create_glacier_mec_landunit, use_fates, use_betr, use_firn_percolation_and_compaction
   use elm_varctl             , only : use_cn, use_lch4, use_voc, use_noio, use_c13, use_c14
   use elm_varctl             , only : use_erosion, use_fates_sp, use_fan
-  use elm_varctl             , only : iac_active
+  use elm_varctl             , only : iac_present
   use elm_varctl             , only : mpi_sync_nstep_freq
   use elm_time_manager       , only : get_step_size, get_curr_date, get_ref_date, get_nstep, is_beg_curr_day, get_curr_time_string
   use elm_time_manager       , only : get_curr_calday, get_days_per_year
@@ -1442,7 +1442,7 @@ contains
     ! Update stuff to send to iac
     ! ============================================================================
 
-    if (iac_active) then
+    if (iac_present) then
        call t_startf('lnd2iac')
        !$OMP PARALLEL DO PRIVATE (nc, bounds_clump)
        do nc = 1,nclumps

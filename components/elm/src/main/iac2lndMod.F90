@@ -105,7 +105,7 @@ contains
     ! !USES:
     use elm_time_manager, only : get_curr_yearfrac
     use landunit_varcon , only : istsoil
-    use elm_varctl, only : iac_active, iulog
+    use elm_varctl, only : iac_present, iulog
     use netcdf   !This is for a diagnostic file
     use domainMod,   only : ldomain
     !
@@ -131,7 +131,7 @@ contains
     begg = bounds%begg; endg = bounds%endg
     begp = bounds%begp; endp = bounds%endp
 
-    if (iac_active) then  ! this is also checked in order to this function
+    if (iac_present) then  ! this is also checked in order to this function
        ! The idea is to convert (ngrid,pft) to a patch-dimensioned 1D array
        ! So, loop over patches, and extract pft and g, and copy over.
        ! currently, each patch is a pft

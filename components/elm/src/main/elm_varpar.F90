@@ -10,7 +10,7 @@ module elm_varpar
   use elm_varctl   , only: use_century_decomp, use_c13, use_c14, use_fates
   use elm_varctl   , only: iulog, create_crop_landunit, irrigate
   use elm_varctl   , only: use_vichydro
-  use elm_varctl   , only: use_extrasnowlayers, iac_active
+  use elm_varctl   , only: use_extrasnowlayers, iac_present
 
   !
   ! !PUBLIC TYPES:
@@ -253,7 +253,7 @@ contains
     end if
 
    ! Consistency checks for EHC coupling
-   if (iac_active) then
+   if (iac_present) then
       ! EHC number of PFTs consistency checks
       if (mxpft_nc + 1 <= iac_npft) then
          write(iulog,*) 'ERROR: mxpft_nc + 1 = ', mxpft_nc + 1, ' is less than or equal to iac_npft = ', iac_npft

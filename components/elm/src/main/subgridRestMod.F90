@@ -637,7 +637,7 @@ contains
       !
       ! !USES:
       use elm_varctl          , only : nsrest, nsrContinue, use_fates
-      use elm_varctl          , only : iac_active
+      use elm_varctl          , only : iac_present
       use dynSubgridControlMod, only : get_do_transient_pfts
       !
       ! !ARGUMENTS:
@@ -662,7 +662,7 @@ contains
          ! Don't check weights for a ed case, because the weights will almost certainly
          ! differ from the surface dataset in this case
          do_check_weights = .false.
-      else if (iac_active) then
+      else if (iac_present) then
          ! Don't check weights if iac is active
          do_check_weights = .false.
       else

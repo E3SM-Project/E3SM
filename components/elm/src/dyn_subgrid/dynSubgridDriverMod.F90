@@ -36,7 +36,7 @@ module dynSubgridDriverMod
   use ColumnDataType      , only : col_ns, col_ps
   use VegetationDataType  , only : vegetation_carbon_state, veg_ns, veg_ps
 
-  use elm_varctl          , only : iac_active
+  use elm_varctl          , only : iac_present
   use shr_log_mod         , only : errMsg => shr_log_errMsg
   use decompMod           , only : bounds_type, BOUNDS_LEVEL_PROC
   use ColumnType          , only : col_pp
@@ -127,7 +127,7 @@ contains
     end if
 
     ! Initialize for iac instead of files
-    if (iac_active) then
+    if (iac_present) then
        call dyn_iac_init(bounds)
     end if
 
@@ -172,7 +172,7 @@ contains
     ! OUTSIDE any loops over clumps in the driver.
     !
     ! !USES:
-    use elm_varctl           , only : use_cn, create_glacier_mec_landunit, iac_active
+    use elm_varctl           , only : use_cn, create_glacier_mec_landunit, iac_present
     use elm_varctl           , only : use_fates, use_fates_luh, fates_harvest_mode
     use elm_varctl           , only : use_fates_potentialveg
     use decompMod            , only : bounds_type, get_proc_clumps, get_clump_bounds
@@ -281,7 +281,7 @@ contains
     ! The above namelist values are false in this case
     !       may want to ensure this with namelist checks
 
-    if (iac_active) then
+    if (iac_present) then
        call iac2lnd_vars%update_iac2lnd(bounds_proc)
     end if
 
@@ -388,7 +388,7 @@ contains
 
     call compute_higher_order_weights(bounds_clump)
 
-    if (iac_active) then
+    if (iac_present) then
        ! make sure weights are all in order before applying the new pft wts
        ! this is because the active elements need to be correct
        call reweight_wrapup(bounds_clump, &

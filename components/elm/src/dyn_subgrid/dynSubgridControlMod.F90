@@ -14,7 +14,7 @@ module dynSubgridControlMod
 #include "shr_assert.h"
   use shr_log_mod        , only : errMsg => shr_log_errMsg
   use abortutils         , only : endrun
-  use elm_varctl         , only : fname_len, iac_active
+  use elm_varctl         , only : fname_len, iac_present
   !
   implicit none
   private
@@ -158,7 +158,7 @@ contains
     ! the pft, crop, and harvest flags and landuse timeseries should be false or unset
     !    if the ehc is active
     ! so halt the run and tell the user, so as to avoid setup confusion
-    if (iac_active) then
+    if (iac_present) then
        if (do_harvest .or. do_transient_crops .or. do_transient_pfts .or. &
            flanduse_timeseries /= '') then
           call endrun(msg='ERROR in dynamic_subgrid namelist: when EHC is active ' // &

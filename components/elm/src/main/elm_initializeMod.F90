@@ -17,7 +17,6 @@ module elm_initializeMod
   use elm_varsur       , only : fert_cft, fert_p_cft, wt_polygon
   use elm_varsur       , only : wt_tunit, elv_tunit, slp_tunit,asp_tunit,num_tunit_per_grd
   use perf_mod         , only : t_startf, t_stopf
-  use elm_varctl       , only : iac_active
   !use readParamsMod    , only : readParameters
   use readParamsMod    , only : readSharedParameters, readPrivateParameters
   use ncdio_pio        , only : file_desc_t
