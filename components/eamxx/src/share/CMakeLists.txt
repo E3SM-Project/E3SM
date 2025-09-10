@@ -40,7 +40,6 @@ set(SHARE_SRC
   util/eamxx_data_interpolation.cpp
   util/eamxx_fv_phys_rrtmgp_active_gases_workaround.cpp
   util/eamxx_time_interpolation.cpp
-  util/eamxx_timing.cpp
 )
 
 # Append ETI sources (I didn't do it above for clarity of reading)
@@ -119,12 +118,6 @@ target_link_libraries(scream_share PUBLIC
 
 # Used in the data interpolation
 target_link_libraries(scream_share PUBLIC stdc++fs)
-
-if (GPTL_PATH)
-  target_include_directories(scream_share PUBLIC ${GPTL_PATH})
-else()
-  target_include_directories(scream_share PUBLIC ${INSTALL_SHAREDPATH}/include)
-endif()
 
 target_link_libraries(scream_share PUBLIC ekat::AllLibs pioc)
 
