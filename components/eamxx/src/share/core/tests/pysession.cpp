@@ -1,6 +1,6 @@
 #include <catch2/catch.hpp>
 
-#include "eamxx_pysession.hpp"
+#include "share/core/eamxx_pysession.hpp"
 
 #include <pybind11/pybind11.h>
 #include <pybind11/embed.h>
