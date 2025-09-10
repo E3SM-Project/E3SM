@@ -55,10 +55,10 @@ void ZMDeepConvection::set_grids (const std::shared_ptr<const GridsManager> grid
   const auto s2     = pow(s,2);
   const auto K2     = pow(K,2);
 
-  FieldLayout scalar2d     = m_grid->get_2d_scalar_layout();        // Layout for 2D vars
-  FieldLayout scalar3d_mid = m_grid->get_3d_scalar_layout(true);    // Layout for vars at mid-levels
-  FieldLayout scalar3d_int = m_grid->get_3d_scalar_layout(false);   // Layout for vars at interfaces
-  FieldLayout vector3d_mid = m_grid->get_3d_vector_layout(true,2);  // Layout for horiz_wind field
+  FieldLayout scalar2d     = m_grid->get_2d_scalar_layout();        // 2D variables
+  FieldLayout scalar3d_mid = m_grid->get_3d_scalar_layout(true);    // 3D variables at mid-levels
+  FieldLayout scalar3d_int = m_grid->get_3d_scalar_layout(false);   // 3D variables at interfaces
+  FieldLayout vector3d_mid = m_grid->get_3d_vector_layout(true,2);  // horiz_wind field
 
   // Input variables
   add_field<Required>("p_mid",                scalar3d_mid, Pa,     grid_name, pack_size);
@@ -105,21 +105,21 @@ void ZMDeepConvection::initialize_impl (const RunType)
   add_postcondition_check<FieldLowerBoundCheck>(get_field_out("precip_ice_surf_mass"),m_grid,0.0,false);
 
   // initialize variables on the fortran side
-  zm::zm_eamxx_bridge_init( m_pcol, m_nlev );
+  zm::zm_eamxx_bridge_init(m_pcol, m_nlev);
 }
 
 /*------------------------------------------------------------------------------------------------*/
 void ZMDeepConvection::run_impl (const double dt)
 {
   constexpr int pack_size = Spack::n;
-  const int nlevm_packs = ekat::npack<Spack>(m_nlev);
+  const int nlevm_packs   = ekat::npack<Spack>(m_nlev);
 
   // calculate_z_int() contains a team-level parallel_scan, which requires a special policy
   using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
   const auto scan_policy = TPF::get_thread_range_parallel_scan_team_policy(m_ncol, nlevm_packs);
   const auto team_policy = TPF::get_default_team_policy(m_ncol, nlevm_packs);
 
-  auto ts_start = start_of_step_ts();
+  auto ts_start      = start_of_step_ts();
   bool is_first_step = (ts_start.get_num_steps()==0);
 
   //----------------------------------------------------------------------------
@@ -172,7 +172,7 @@ void ZMDeepConvection::run_impl (const double dt)
   zm_input.landfrac       = landfrac;
 
   // initialize output buffer variables
-  zm_output.init( m_pcol, m_nlev );
+  zm_output.init(m_pcol, m_nlev);
 
   //----------------------------------------------------------------------------
   // calculate altitude on interfaces (z_int) and mid-points (z_mid)
@@ -229,7 +229,7 @@ void ZMDeepConvection::run_impl (const double dt)
   //----------------------------------------------------------------------------
   // run the ZM scheme
 
-  zm_eamxx_bridge_run( m_ncol, m_nlev, zm_input, zm_output, zm_opts );
+  zm_eamxx_bridge_run(m_ncol, m_nlev, zm_input, zm_output, zm_opts);
 
   //----------------------------------------------------------------------------
   // update prognostic fields
