@@ -76,9 +76,9 @@ number of bins `Y` as `_Y_bins`. All zonal averages are calculated
 using the area fraction in each bin as the weight.
 
 For 180 latitude bins, the bins are defined
-as follows: [-90, -89), [-89, -88), ..., [89, 90).
+as follows: [-90, -89), [-89, -88), ..., [89, 90].
 For 90 latitude bins, the bins are defined as follows:
-[-90, -88), [-88, -86), ..., [88, 90).
+[-90, -88), [-88, -86), ..., [88, 90].
 And so on...
 
 | Reduction | Weight | Description |
@@ -99,7 +99,7 @@ fields:
       # in this example, we use T_mid in units of K
       - T_mid_horiz_avg  # K
       - T_mid_vert_avg_dp_weighted  # K
-      - T_mid_vert_sum_dp_weighted  # K * Pa * s / (m * m) 
+      - T_mid_vert_sum_dp_weighted  # K * Pa * s / (m * m)
       - T_mid_vert_avg_dz_weighted  # K
       - T_mid_vert_sum_dz_weighted  # K * m
       - T_mid_vert_avg  # K
