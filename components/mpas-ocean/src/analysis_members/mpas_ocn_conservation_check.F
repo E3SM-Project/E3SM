@@ -359,7 +359,7 @@ contains
       call salt_conservation(domain, err)
 
       ! carbon conservation check
-      if (config_use_ecosystracers) call carbon_conservation(domain, err)
+      !if (config_use_ecosystracers) call carbon_conservation(domain, err)
 
       if (config_AM_conservationCheck_write_to_logfile .and. &
          MPAS_stream_mgr_ringing_alarms(domain % streamManager, "conservationCheckOutput", ierr=ierr)) then

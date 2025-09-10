@@ -60,6 +60,7 @@ OBJS = mpas_ocn_init_routines.o \
 	   mpas_ocn_constants.o \
 	   mpas_ocn_config.o \
 	   mpas_ocn_forcing.o \
+           mpas_ocn_sediment_settling.o \
 	   mpas_ocn_surface_bulk_forcing.o \
 	   mpas_ocn_surface_land_ice_fluxes.o \
 	   mpas_ocn_effective_density_in_land_ice.o \
@@ -137,13 +138,15 @@ mpas_ocn_tracer_hmix_del4.o: mpas_ocn_constants.o mpas_ocn_config.o
 
 mpas_ocn_tracer_advection.o: mpas_ocn_config.o mpas_ocn_mesh.o mpas_ocn_tracer_advection_mono.o mpas_ocn_tracer_advection_std.o mpas_ocn_tracer_advection_vert.o mpas_ocn_tracer_advection_shared.o
 
-mpas_ocn_tracer_advection_mono.o: mpas_ocn_config.o mpas_ocn_mesh.o mpas_ocn_diagnostics_variables.o mpas_ocn_tracer_advection_vert.o mpas_ocn_tracer_advection_shared.o
+mpas_ocn_tracer_advection_mono.o: mpas_ocn_config.o mpas_ocn_mesh.o mpas_ocn_diagnostics_variables.o mpas_ocn_tracer_advection_vert.o mpas_ocn_tracer_advection_shared.o mpas_ocn_sediment_settling.o
 
 mpas_ocn_tracer_advection_std.o: mpas_ocn_config.o mpas_ocn_mesh.o mpas_ocn_tracer_advection_vert.o mpas_ocn_tracer_advection_shared.o
 
 mpas_ocn_tracer_advection_vert.o: mpas_ocn_mesh.o mpas_ocn_config.o
 
 mpas_ocn_tracer_advection_shared.o: mpas_ocn_constants.o mpas_ocn_mesh.o mpas_ocn_config.o
+
+mpas_ocn_sediment_settling.o: mpas_ocn_config.o mpas_ocn_mesh.o
 
 mpas_ocn_tracer_hmix_redi.o: mpas_ocn_constants.o mpas_ocn_config.o
 

@@ -31,6 +31,7 @@ module ocn_tracer_advection_mono
    use ocn_diagnostics_variables
    use ocn_tracer_advection_shared
    use ocn_tracer_advection_vert
+   use ocn_sediment_settling
 
    implicit none
    private
@@ -66,7 +67,9 @@ module ocn_tracer_advection_mono
    subroutine ocn_tracer_advection_mono_tend( &
                                         tend, tracers, layerThickness, &
                                         normalThicknessFlux, w, dt,    &
-                                        computeBudgets, skipTracer)!{{{
+                                        computeBudgets, skipTracer,    &
+                                        sinkTracer, sinkingRate, &
+                                        sedimentBottomFlux, netSedimentStorage) !{{{
 
       !-----------------------------------------------------------------
       ! Input/Output parameters
@@ -74,6 +77,12 @@ module ocn_tracer_advection_mono
 
       real (kind=RKIND), dimension(:,:,:), intent(inout) :: &
          tend    !< [inout] Tracer tendency to which advection added
+
+      real (kind=RKIND), dimension(:), intent(inout) :: &
+         netSedimentStorage  !< [in,out] temporary sediment storage term (kg/m2)
+
+      real (kind=RKIND), dimension(:), intent(inout) :: &
+         sedimentBottomFlux  !< [out]  sediment bottom flux (kg/m2/s)
 
       !-----------------------------------------------------------------
       ! Input parameters
@@ -92,6 +101,12 @@ module ocn_tracer_advection_mono
 
       logical, intent(in) :: &
          computeBudgets        !< [in] Flag to compute active tracer budgets
+
+      integer, intent(in) :: &
+         sinkTracer          ! index of tracer to sink
+
+      real (kind=RKIND), intent(in) :: &
+         sinkingRate           !< [in] Settling Velocity (m/s)
 
       logical, dimension(:), intent(in) :: &
          skipTracer            !< [in] Flag to skip tracer in tracers
@@ -125,6 +140,7 @@ module ocn_tracer_advection_mono
          tracerMax,     &! max tracer in neighbors for limiting
          tracerMin,     &! min tracer in neighbors for limiting
          hNewInv,       &! inverse of new layer thickness
+         hNew,          &! new layer thickness
          hProv,         &! provisional layer thickness
          hProvInv,      &! inverse of provisional layer thickness
          flxIn,         &! flux coming into each cell
@@ -151,17 +167,18 @@ module ocn_tracer_advection_mono
                tracerMin   (nVertLevels  ,nCellsAll), &
                tracerMax   (nVertLevels  ,nCellsAll), &
                hNewInv     (nVertLevels  ,nCellsAll), &
+               hNew        (nVertLevels  ,nCellsAll), &
                hProv       (nVertLevels  ,nCellsAll), &
                hProvInv    (nVertLevels  ,nCellsAll), &
-               flxIn       (nVertLevels  ,nCellsAll+1), &
-               flxOut      (nVertLevels  ,nCellsAll+1), &
-               workTend    (nVertLevels  ,nCellsAll+1), &
+               flxIn       (nVertLevels,nCellsAll+1), &
+               flxOut      (nVertLevels,nCellsAll+1), &
+               workTend    (nVertLevels,nCellsAll+1), &
                lowOrderFlx (nVertLevels+1,max(nCellsAll,nEdgesAll)+1), &
                highOrderFlx(nVertLevels+1,max(nCellsAll,nEdgesAll)+1))
 
       !$acc enter data create(tracerCur, tracerMin, tracerMax, &
       !$acc                   hNewInv, hProv, hProvInv, flxIn, flxOut, &
-      !$acc                   workTend, lowOrderFlx, highOrderFlx)
+      !$acc                   hNew, workTend, lowOrderFlx, highOrderFlx)
 
 #ifdef _ADV_TIMERS
       call mpas_timer_stop('allocates')
@@ -179,7 +196,7 @@ module ocn_tracer_advection_mono
       !$acc    present(areaCell, dvEdge, minLevelCell, maxLevelCell, &
       !$acc            nEdgesOnCell, edgesOnCell, edgeSignOnCell, &
       !$acc            layerThickness, normalThicknessFlux, w, &
-      !$acc            hProv, hProvInv, hNewInv) &
+      !$acc            hProv, hProvInv, hNewInv, hNew) &
       !$acc    private(k,kmin,kmax,i,iEdge, invAreaCell1, signedFactor) 
 #else
       !$omp parallel
@@ -210,6 +227,7 @@ module ocn_tracer_advection_mono
             hProvInv(k,iCell) = 1.0_RKIND/ hProv(k,iCell)
             hNewInv (k,iCell) = 1.0_RKIND/(hProv(k,iCell) - &
                                 dt*w(k,iCell) + dt*w(k+1, iCell))
+            hNew    (k,iCell) = 1.0_RKIND / hNewInv(k,iCell)
          end do
       end do
 #ifndef MPAS_OPENACC
@@ -960,6 +978,50 @@ module ocn_tracer_advection_mono
            end do
 
         end if ! monotonicity check
+
+        if (iTracer == sinkTracer) then
+
+           ! Add a settling tendency using 
+           ! flxIn as a temp for the tracer value
+           ! after monotonic advection
+
+#ifdef MPAS_OPENACC
+           !$acc parallel loop collapse(2) &
+           !$acc    present(flxIn, tracerCur, hProv, hNewInv, &
+           !$acc            workTend, cellMask, &
+           !$acc            activeTracerVerticalAdvectionTendency, &
+           !$acc            minLevelCell, maxLevelCell) &
+           !$acc    private(k, kmin, kmax)
+#else
+           !$omp parallel
+           !$omp do schedule(runtime) private(k, kmin, kmax)
+#endif
+           do iCell = 1,nCellsOwned
+           do k = 1,nVertLevels
+              ! workTend on the RHS is total vertical advection tendency
+              flxIn(k,iCell) = max(0.0_RKIND, (tracerCur(k, iCell)*hProv(k, iCell) &
+                             + dt*workTend(k, iCell)) &
+                             * hNewInv(k,iCell)*cellMask(k,iCell))
+              
+              workTend(k,iCell) = 0.0_RKIND
+           end do ! vert
+
+           kmin = minLevelCell(iCell)
+           kmax = maxLevelCell(iCell)
+           call ocn_sediment_settling_flx (flxIn(:,iCell),sinkingRate, workTend(:,iCell), &
+                 hNew(:,iCell), dt, kmin, kmax, sedimentBottomFlux(iCell), &
+                 netSedimentStorage(iCell))
+
+           do k = kmin,kmax
+              activeTracerVerticalAdvectionTendency(iTracer,k,iCell) = &
+                 activeTracerVerticalAdvectionTendency(iTracer,k,iCell) + workTend(k,iCell)
+           end do
+           end do ! cell loop
+#ifndef MPAS_OPENACC
+           !$omp end do
+           !$omp end parallel
+#endif
+        end if ! sinkTracer
 #ifdef _ADV_TIMERS
         call mpas_timer_stop('advect diags vert')
 #endif
@@ -976,6 +1038,7 @@ module ocn_tracer_advection_mono
                  tracerMin,    &
                  tracerMax,    &
                  hNewInv,      &
+                 hNew   ,      &
                  hProv,        &
                  hProvInv,     &
                  flxIn,        &

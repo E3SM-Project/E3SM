@@ -65,12 +65,20 @@ module ocn_tracer_advection
 
    subroutine ocn_tracer_advection_tend(tracers, normalThicknessFlux, &
                                         w, layerThickness, dt, tend,  &
-                                        computeBudgets, skipTracer)!{{{
+                                        computeBudgets, skipTracer,   &
+                                        sinkingRate, sinkTracer, &
+                                        sedimentBottomFlux,netSedimentStorage)!{{{
 
       !*** Input/Output parameters
 
       real (kind=RKIND), dimension(:,:,:), intent(inout) :: &
          tend            !< [in,out] Tracer tendency to which advection added
+
+      real (kind=RKIND), dimension(:), intent(inout) :: &
+         netSedimentStorage  !< [in,out] temporary sediment storage term (kg/m2)
+
+      real (kind=RKIND), dimension(:), intent(inout) :: &
+         sedimentBottomFlux  !< [out]  sediment bottom flux (kg/m2/s)
 
       !*** Input parameters
 
@@ -81,6 +89,12 @@ module ocn_tracer_advection
          normalThicknessFlux, &!< [in] Thickness weighted horiz velocity
          w,                   &!< [in] Vertical velocity
          layerThickness        !< [in] Thickness field
+
+      integer, intent(in) :: &
+         sinkTracer          ! index of tracer to sink
+
+      real (kind=RKIND), intent(in) :: &
+         sinkingRate           !< [in] Settling Velocity (m/s)
 
       real (kind=RKIND), intent(in) :: &
          dt                    !< [in] Time step
@@ -104,8 +118,9 @@ module ocn_tracer_advection
       if (monotonicOn) then
          call ocn_tracer_advection_mono_tend(tend, tracers, layerThickness,    &
                                              normalThicknessFlux, w, dt,       &
-                                             computeBudgets, skipTracer)
-
+                                             computeBudgets, skipTracer,       &
+                                             sinkTracer, sinkingRate,          &
+                                             sedimentBottomFlux, netSedimentStorage)
       else
          call ocn_tracer_advection_std_tend(tracers, normalThicknessFlux, &
                                             w, layerThickness, dt, tend,  &

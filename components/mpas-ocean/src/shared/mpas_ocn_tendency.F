@@ -612,7 +612,8 @@ contains
          tracersInteriorRestoringFieldsPool,&! interior restoring
          tracersExponentialDecayFieldsPool, &! exponential decay
          tracersIdealAgeFieldsPool,         &! ideal age
-         tracersTTDFieldsPool     ! transit time distribution
+         tracersTTDFieldsPool, &     ! transit time distribution
+         ecosysAuxiliaryPool         ! sediment bottom flux
 
       ! pointers for retrieving data from pools
       integer, pointer :: &
@@ -659,11 +660,18 @@ contains
          tracerGroupInteriorRestoringRate, &! int restoring timescale 
          tracerGroupInteriorRestoringValue  ! int restoring value
 
+      real (kind=RKIND), dimension(:), pointer, contiguous :: &
+         sedimentBottomFlux, & ! kg/m2/s
+         netSedimentStorage    ! kg/m2
+
       ! Scratch Arrays
       real (kind=RKIND), dimension(:,:), allocatable :: &
          normalThicknessFlux ! Flux of thickness through edge (m^2/s)
       integer, parameter :: num_fields = 8
       logical, dimension(:), allocatable :: skipTracer
+      ! NJ-Sed
+      integer :: sinkTracer
+      real( kind=RKIND) :: sinkingRate
       character(len=20), dimension(num_fields) :: &
             fieldNames = [character(len=20) :: &
                           'rain', 'snow', &
@@ -703,6 +711,9 @@ contains
                                                tracersSurfaceFluxPool)
       call mpas_pool_get_subpool(forcingPool, 'ecosysFrazilForcing', &
                                                ecosysFrazilForcingPool)
+      !NJ-sed
+      call mpas_pool_get_subpool(forcingPool, 'ecosysAuxiliary', &
+                                               ecosysAuxiliaryPool)
       call mpas_pool_get_dimension(tracersPool, 'index_temperature', &
                                                  indexTemperature)
       call mpas_pool_get_dimension(tracersPool, 'index_salinity', &
@@ -841,8 +852,14 @@ contains
          call mpas_pool_get_array(tracersSurfaceFluxPool, &
                                   modifiedGroupName, &
                                   tracerGroupSurfaceFlux)
+
+         sinkTracer = 0
+         sinkingRate = 0.0_RKIND
+
          allocate(skipTracer(nTracersGroup))
          skipTracer(:) = .false.
+
+
          if ( groupName == 'freshwaterTracers' ) then
             do i = 1, num_fields
                call mpas_pool_get_dimension( &
@@ -853,6 +870,19 @@ contains
                                          config_use_tracerField)
                skipTracer(indexTracer) = (.not. config_use_tracerField)
             enddo
+         endif
+
+         !NJ-Sed
+         if ( groupName == 'ecosysTracers' ) then            
+            call mpas_pool_get_array(tracersPool, 'ecosysTracers', &
+                                     ecosysTracers, timeLevel)
+            call mpas_pool_get_dimension(  tracersTendPool, &
+                      'index_DOCrTend', indexTracer)
+            !NJ-Sed: see Undzis et al (Hasnt been peer reviewed)
+            !Sediment Type   :Unaggregated mud ; Aggregated mud ; Very fine sand; Coarse sand; Pebbles/Gravel
+            !Velocities(mm/s):         .1 ; 1.0 ; 15; 90; 1000.  
+            sinkTracer = indexTracer
+            sinkingRate =  -0.001_RKIND   ! Should this be negative? 
          endif
 
          ! Get Array of total surface temp/salt flux 
@@ -1210,10 +1240,21 @@ contains
          !     -div( layerThickness \phi u)
          ! Tracer budget is computed and stored within the tracer adv
          ! routine
+
+         ! NJ-Sed 
+         call mpas_pool_get_array(ecosysAuxiliaryPool, &                                       
+                                     'sedimentBottomFlux', & 
+                                     sedimentBottomFlux)  
+         call mpas_pool_get_array(ecosysAuxiliaryPool, &                                       
+                                     'netSedimentStorage', & 
+                                     netSedimentStorage)  
          call ocn_tracer_advection_tend(tracerGroup, &
                             normalThicknessFlux, vertAleTransportTop, &
                             layerThickness, dt, tracerGroupTend, &
-                            computeBudgets, skipTracer)
+                            computeBudgets, skipTracer, sinkingRate, &
+                            sinkTracer,sedimentBottomFlux,netSedimentStorage)
+
+         
          deallocate(skipTracer)
 
          !$acc update host (activeTracerHorizontalAdvectionEdgeFlux, &

@@ -78,6 +78,7 @@ module ocn_forward_mode
    use ocn_tracer_CFC
    use ocn_tracer_surface_restoring
    use ocn_gm
+   use ocn_sediment_settling
    use ocn_submesoscale_eddies
    use ocn_stokes_drift
    use ocn_manufactured_solution
@@ -480,6 +481,8 @@ module ocn_forward_mode
       call ocn_tracer_nonlocalflux_init(err_tmp)
       ierr = ior(ierr,err_tmp)
       call ocn_tracer_ecosys_init(domain, err_tmp)
+      ierr = ior(ierr,err_tmp)
+      call ocn_sediment_init(domain, err_tmp)
       ierr = ior(ierr,err_tmp)
       call ocn_tracer_DMS_init(domain, err_tmp)
       ierr = ior(ierr,err_tmp)

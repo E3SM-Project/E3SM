@@ -1022,10 +1022,12 @@ contains
          do iLevel=minLevelCell(iCell),maxLevelCell(iCell)
 
 ! load tendencies
+! NJ:  no marbl tendencies added
             do n = 1, ecosys_tracer_cnt
                ecosysTracersTend(ecosysIndexMARBLtoMPASO(n),iLevel,iCell) =  &
-                  ecosysTracersTend(ecosysIndexMARBLtoMPASO(n),iLevel,iCell) &
-                  + marbl_instances(1)%interior_tendencies(n,iLevel)*layerThickness(iLevel,iCell)
+                  ecosysTracersTend(ecosysIndexMARBLtoMPASO(n),iLevel,iCell)
+!                  ecosysTracersTend(ecosysIndexMARBLtoMPASO(n),iLevel,iCell) &
+!                  + marbl_instances(1)%interior_tendencies(n,iLevel)*layerThickness(iLevel,iCell)
             end do
 
 ! load pH
@@ -1697,7 +1699,8 @@ contains
       real (kind=RKIND), dimension(:), pointer :: &
          atmosphericPressure,   &
          iceFraction,          &
-         landIceFraction
+         landIceFraction,      &
+         riverRunoffFlux
 
 ! input flux components in ecosysAuxiliary
       real (kind=RKIND), dimension(:), pointer :: &
@@ -1775,6 +1778,7 @@ contains
       call mpas_pool_get_array(forcingPool, 'atmosphericPressure', atmosphericPressure)
       call mpas_pool_get_array(forcingPool, 'iceFraction', iceFraction)
       call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction)
+      call mpas_pool_get_array(forcingPool, 'riverRunoffFlux', riverRunoffFlux)
 
       call mpas_pool_get_subpool(forcingPool, 'ecosysAuxiliary', ecosysAuxiliary)
 
@@ -1964,8 +1968,14 @@ contains
             ecosysSurfaceFlux(alk_alt_co2_ind_MPAS,iCell) + riverFluxALK(iCell)
          ecosysSurfaceFlux(doc_ind_MPAS,iCell) =  &
             ecosysSurfaceFlux(doc_ind_MPAS,iCell) + riverFluxDOC(iCell) * 0.8_RKIND
+
+         !NJ-Sed -- Syvitski2002: Sediment load for the 10 major Arctic rivers is 0.194 +- 0.297 is kg/m3 
+         ! (i.e.  the concentration of sediments per volume flux of river water)
+         !ecosysSurfaceFlux(docr_ind_MPAS,iCell) =  &
+         !   ecosysSurfaceFlux(docr_ind_MPAS,iCell) + riverFluxDOC(iCell) * 0.2_RKIND
+
          ecosysSurfaceFlux(docr_ind_MPAS,iCell) =  &
-            ecosysSurfaceFlux(docr_ind_MPAS,iCell) + riverFluxDOC(iCell) * 0.2_RKIND
+            ecosysSurfaceFlux(docr_ind_MPAS,iCell) + max(0.0_RKIND,riverRunoffFlux(iCell))/rho_fw * 0.194_RKIND
 
 ! now add contribution from sea ice fluxes if available (assume MKS)
          if (config_use_ecosysTracers_sea_ice_coupling) then
@@ -1988,9 +1998,13 @@ contains
             ecosysSurfaceFlux(doc_ind_MPAS,iCell) =  &
                ecosysSurfaceFlux(doc_ind_MPAS,iCell) + iceFluxDOC(1,iCell) + iceFluxDOC(2,iCell) &
                + iceFluxDOC(3,iCell)
+!NJ
+            ecosysSurfaceFlux(docr_ind_MPAS,iCell) =  &
+               ecosysSurfaceFlux(docr_ind_MPAS,iCell) + iceFluxDOCr(iCell)
 ! this is just a placeholder
-            ecosysSurfaceFlux(donr_ind_MPAS,iCell) =  &
-               ecosysSurfaceFlux(donr_ind_MPAS,iCell) + iceFluxDOCr(iCell)
+! NJ
+!            ecosysSurfaceFlux(donr_ind_MPAS,iCell) =  &
+!               ecosysSurfaceFlux(donr_ind_MPAS,iCell) + iceFluxDOCr(iCell)
 
             ecosysSurfaceFlux(diatC_ind_MPAS,iCell) =  &
                ecosysSurfaceFlux(diatC_ind_MPAS,iCell) + iceFluxPhytoC(1,iCell)
@@ -2420,7 +2434,7 @@ contains
                 '0000-01-01_00:00:00', &
                 '0001-00-00_00:00:00', &
                 config_do_restart)
-
+ 
       call mpas_pool_get_subpool(domain % blocklist % structs, 'forcing', forcingPool)
       call mpas_pool_get_subpool(forcingPool, 'ecosysAuxiliary', ecosysAuxiliary)
 

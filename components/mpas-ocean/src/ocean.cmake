@@ -101,6 +101,7 @@ list(APPEND RAW_SOURCES
   core_ocean/shared/mpas_ocn_constants.F
   core_ocean/shared/mpas_ocn_config.F
   core_ocean/shared/mpas_ocn_forcing.F
+  core_ocean/shared/mpas_ocn_sediment_settling.F
   core_ocean/shared/mpas_ocn_surface_bulk_forcing.F
   core_ocean/shared/mpas_ocn_surface_land_ice_fluxes.F
   core_ocean/shared/mpas_ocn_effective_density_in_land_ice.F
