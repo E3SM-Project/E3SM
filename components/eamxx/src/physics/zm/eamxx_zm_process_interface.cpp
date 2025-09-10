@@ -27,8 +27,7 @@ ZMDeepConvection::ZMDeepConvection( const ekat::Comm& comm,
 }
 
 /*------------------------------------------------------------------------------------------------*/
-void ZMDeepConvection::
-set_grids (const std::shared_ptr<const GridsManager> grids_manager)
+void ZMDeepConvection::set_grids (const std::shared_ptr<const GridsManager> grids_manager)
 {
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
@@ -38,10 +37,10 @@ set_grids (const std::shared_ptr<const GridsManager> grids_manager)
   // Gather runtime options from file
   zm_opts.load_runtime_options(m_params);
 
-  auto m_grid = grids_manager->get_grid("physics");
+  auto m_grid           = grids_manager->get_grid("physics");
   const auto& grid_name = m_grid->name();
-  const auto layout = m_grid->get_3d_scalar_layout(true);
-  const auto comm = m_grid->get_comm();
+  const auto layout     = m_grid->get_3d_scalar_layout(true);
+  const auto comm       = m_grid->get_comm();
 
   // retrieve local grid parameters
   m_ncol = m_grid->get_num_local_dofs();
@@ -49,16 +48,16 @@ set_grids (const std::shared_ptr<const GridsManager> grids_manager)
 
   // get max ncol value across ranks to mimic how pcols is used on the fortran side
   m_pcol = m_ncol;
-  comm.all_reduce(&m_pcol,1,MPI_MAX);
+  comm.all_reduce(&m_pcol, 1, MPI_MAX);
 
   const auto nondim = Units::nondimensional();
-  const auto m2 = pow(m,2);
-  const auto s2 = pow(s,2);
-  const auto K2 = pow(K,2);
+  const auto m2     = pow(m,2);
+  const auto s2     = pow(s,2);
+  const auto K2     = pow(K,2);
 
-  FieldLayout scalar2d     = m_grid->get_2d_scalar_layout();        // Layout for 2D variable
-  FieldLayout scalar3d_mid = m_grid->get_3d_scalar_layout(true);    // Layout for 3D variable at mid-levels
-  FieldLayout scalar3d_int = m_grid->get_3d_scalar_layout(false);   // Layout for 3D variable at interfaces
+  FieldLayout scalar2d     = m_grid->get_2d_scalar_layout();        // Layout for 2D vars
+  FieldLayout scalar3d_mid = m_grid->get_3d_scalar_layout(true);    // Layout for vars at mid-levels
+  FieldLayout scalar3d_int = m_grid->get_3d_scalar_layout(false);   // Layout for vars at interfaces
   FieldLayout vector3d_mid = m_grid->get_3d_vector_layout(true,2);  // Layout for horiz_wind field
 
   // Input variables
