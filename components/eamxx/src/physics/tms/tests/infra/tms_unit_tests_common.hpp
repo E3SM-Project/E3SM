@@ -2,7 +2,7 @@
 #define TMS_UNIT_TESTS_COMMON_HPP
 
 #include "tms_functions.hpp"
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 #include "physics/share/physics_test_data.hpp"
 
 namespace scream {

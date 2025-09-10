@@ -2,7 +2,7 @@
 #define SCREAM_FIELD_ALLOC_PROP_HPP
 
 #include "share/field/field_layout.hpp"
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 
 #include <ekat_scalar_traits.hpp>
 #include <ekat_assert.hpp>

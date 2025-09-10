@@ -5,7 +5,7 @@
 #include "tms_test_data.hpp"
 
 #include "share/util/eamxx_setup_random_test.hpp"
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 
 namespace scream {
 namespace tms {

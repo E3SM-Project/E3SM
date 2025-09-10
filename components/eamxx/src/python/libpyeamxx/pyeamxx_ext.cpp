@@ -1,4 +1,4 @@
-#include <share/eamxx_session.hpp>
+#include <share/core/eamxx_session.hpp>
 #include "pyfield.hpp"
 #include "pygrid.hpp"
 #include "pyatmproc.hpp"

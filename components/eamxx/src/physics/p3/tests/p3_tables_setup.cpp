@@ -1,7 +1,7 @@
 // This is a tiny program that calls p3_init() to generate tables used by p3
 
 #include "physics/p3/p3_functions.hpp"
-#include "share/eamxx_session.hpp"
+#include "share/core/eamxx_session.hpp"
 
 int main(int argc, char** argv) {
   using P3F = scream::p3::Functions<scream::Real, ekat::DefaultDevice>;

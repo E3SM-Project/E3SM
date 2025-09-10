@@ -1,8 +1,7 @@
-include (EkatSetCompilerFlags)
+# Core types and configuration options
+add_subdirectory(core)
 
 set(SHARE_SRC
-  eamxx_config.cpp
-  eamxx_session.cpp
   atm_process/atmosphere_process.cpp
   atm_process/atmosphere_process_hash.cpp
   atm_process/atmosphere_process_group.cpp
@@ -115,6 +114,8 @@ target_include_directories(scream_share PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
+target_link_libraries(scream_share PUBLIC eamxx_core)
+
 # Used in the data interpolation
 target_link_libraries(scream_share PUBLIC stdc++fs)
 
@@ -124,35 +125,6 @@ if (GPTL_PATH)
   target_include_directories(scream_share PUBLIC ${GPTL_PATH})
 else()
   target_include_directories(scream_share PUBLIC ${INSTALL_SHAREDPATH}/include)
-endif()
-
-if (EAMXX_ENABLE_PYTHON)
-  if (NOT Python_EXECUTABLE)
-    message (FATAL_ERROR "You must set Python_EXECUTABLE to point to a valid python3 interpreter")
-  endif()
-
-  execute_process(
-    COMMAND "${Python_EXECUTABLE}" -c "import sys; assert sys.version_info >= (3,9), 'Python version must be >= 3.9'"
-    RESULT_VARIABLE python_version_check_result
-    ERROR_VARIABLE python_version_check_error
-  )
-  if (python_version_check_result)
-      message(FATAL_ERROR "Python version check failed: ${python_version_check_error}")
-  endif()
-
-  # Need pybind11
-  execute_process(
-    COMMAND "${Python_EXECUTABLE}" -c "import pybind11; print(pybind11.get_cmake_dir())"
-    OUTPUT_STRIP_TRAILING_WHITESPACE OUTPUT_VARIABLE pybind11_ROOT)
-
-  find_package(pybind11 REQUIRED HINTS ${pybind11_ROOT})
-
-  # Add py sources and link pybind11
-  target_sources (scream_share PUBLIC
-    eamxx_pysession.cpp)
-
-  target_link_libraries(scream_share PUBLIC pybind11::embed)
-  target_compile_definitions (scream_share PUBLIC EAMXX_HAS_PYTHON)
 endif()
 
 target_link_libraries(scream_share PUBLIC ekat::AllLibs pioc)

@@ -2,9 +2,9 @@
 #include "shoc_test_data.hpp"
 #include "shoc_ic_cases.hpp"
 
-#include "share/eamxx_types.hpp"
-#include "share/eamxx_session.hpp"
 #include "share/util/eamxx_utils.hpp"
+#include "share/core/eamxx_session.hpp"
+#include "share/core/eamxx_types.hpp"
 
 
 #include <vector>

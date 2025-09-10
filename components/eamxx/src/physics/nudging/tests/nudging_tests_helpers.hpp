@@ -3,7 +3,7 @@
 #include "share/field/field.hpp"
 #include "share/field/field_manager.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 
 namespace scream
 {

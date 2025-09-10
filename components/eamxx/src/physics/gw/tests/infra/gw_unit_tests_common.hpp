@@ -4,7 +4,7 @@
 #include "gw_functions.hpp"
 #include "gw_test_data.hpp"
 
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 #include "share/util/eamxx_setup_random_test.hpp"
 
 #include <vector>

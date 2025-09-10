@@ -1,7 +1,7 @@
 #ifndef SCREAM_TRCMIX_HPP
 #define SCREAM_TRCMIX_HPP
 
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 
 //
 // Bridge function to call trcmix from CXX

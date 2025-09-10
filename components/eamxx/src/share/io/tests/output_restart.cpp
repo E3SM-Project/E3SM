@@ -15,7 +15,7 @@
 #include "share/field/field_utils.hpp"
 #include "share/util//eamxx_setup_random_test.hpp"
 
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 
 #include <ekat_parameter_list.hpp>
 

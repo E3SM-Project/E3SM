@@ -1,7 +1,7 @@
 #ifndef PHYSICS_CONSTANTS_HPP
 #define PHYSICS_CONSTANTS_HPP
 
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 
 #include <ekat_string_utils.hpp>
 #include <ekat_math_utils.hpp>

@@ -5,7 +5,7 @@
 #include "shoc_functions.hpp"
 #include "shoc_test_data.hpp"
 
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 
 
 #include <thread>
