@@ -5,6 +5,9 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
   # Test TimeStamp
   CreateUnitTest(time_stamp "time_stamp_tests.cpp" LIBS eamxx_utils)
 
+  # Test bfb hash
+  CreateUnitTest(bfb_hash "bfbhash_tests.cpp" LIBS eamxx_utils)
+
   # Test array utils
   CreateUnitTest(array_utils "array_utils_tests.cpp" LIBS eamxx_utils)
 

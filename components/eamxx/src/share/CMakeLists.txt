@@ -41,7 +41,6 @@ set(SHARE_SRC
   util/eamxx_fv_phys_rrtmgp_active_gases_workaround.cpp
   util/eamxx_time_interpolation.cpp
   util/eamxx_timing.cpp
-  util/eamxx_bfbhash.cpp
 )
 
 # Append ETI sources (I didn't do it above for clarity of reading)
