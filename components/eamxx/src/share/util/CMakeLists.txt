@@ -1,4 +1,5 @@
 add_library(eamxx_utils
+  eamxx_bfbhash.cpp
   eamxx_time_stamp.cpp
   eamxx_repro_sum_mod.F90
   eamxx_utils.cpp
