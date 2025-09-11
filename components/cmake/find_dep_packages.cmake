@@ -48,6 +48,7 @@ if (USE_PETSC)
   find_package(PETSc REQUIRED)
 endif()
 
+find_package(gptl REQUIRED)
 find_package(PIO REQUIRED)
 find_package(MCT REQUIRED)
 find_package(CsmShare REQUIRED)

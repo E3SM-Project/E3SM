@@ -26,9 +26,6 @@ else()
   set(PIOLIBS "${PIO_LIBDIR}/libpio.a")
 endif()
 
-# Handle gptl. Just hardcode it for now.
-list(APPEND PIOLIBS "${INSTALL_SHAREDPATH}/lib/libgptl.a")
-
 find_package(NETCDF REQUIRED)
 # Check if scorpio has hdf5 enabled
 if (DEFINED ENV{HDF5_ROOT})
@@ -66,3 +63,8 @@ endif()
 # Create the interface library, and set target properties
 add_library(spio INTERFACE)
 target_link_libraries(spio INTERFACE ${PIOLIBS})
+
+# GPTL should have already been found, but doesn't hurt to call find_package again
+# (if already found, this is a no-op)
+find_package(gptl REQUIRED)
+target_link_libraries(spio INTERFACE gptl)
