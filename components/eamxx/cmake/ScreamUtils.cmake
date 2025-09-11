@@ -92,7 +92,7 @@ function(CreateUnitTestExec exec_name test_srcs)
   #       Then, we will ask unit test to REALLY link against all they need
   if (TARGET scream_test_support)
     EkatCreateUnitTestExec("${exec_name}" "${test_srcs}" ${ARGN}
-      USER_DEFINED_TEST_SESSION LIBS eamxx_test_session scream_test_support)
+      USER_DEFINED_TEST_SESSION LIBS scream_share eamxx_test_session scream_test_support)
   else()
     EkatCreateUnitTestExec("${exec_name}" "${test_srcs}" ${ARGN}
       USER_DEFINED_TEST_SESSION LIBS eamxx_test_session)
