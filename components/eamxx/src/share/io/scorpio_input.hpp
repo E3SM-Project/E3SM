@@ -1,7 +1,7 @@
 #ifndef SCREAM_SCORPIO_INPUT_HPP
 #define SCREAM_SCORPIO_INPUT_HPP
 
-#include "share/field/field_manager.hpp"
+#include "share/manager/field_manager.hpp"
 #include "share/grid/abstract_grid.hpp"
 #include "share/util/eamxx_utils.hpp"
 

@@ -82,7 +82,7 @@ namespace control {
  *
  * For more info see header comments in the proper files:
  *  - for field                -> src/share/field/field.hpp
- *  - for field manager        -> src/share/field/field_manager.hpp
+ *  - for field manager        -> src/share/manager/field_manager.hpp
  *  - for field groups         -> src/share/field/field_group.hpp
  *  - for field/group requests -> src/share/field/field_request.hpp
  *  - for grid                 -> src/share/grid/abstract_grid.hpp

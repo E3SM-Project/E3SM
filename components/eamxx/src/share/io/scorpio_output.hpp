@@ -2,7 +2,7 @@
 #define SCREAM_SCORPIO_OUTPUT_HPP
 
 #include "share/atm_process/atmosphere_diagnostic.hpp"
-#include "share/field/field_manager.hpp"
+#include "share/manager/field_manager.hpp"
 #include "share/grid/abstract_grid.hpp"
 #include "share/grid/grids_manager.hpp"
 #include "share/io/eamxx_io_utils.hpp"
