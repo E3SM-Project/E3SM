@@ -3,7 +3,6 @@
 
 #include "physics/tms/tms_functions.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
-#include "share/util/eamxx_common_physics_functions.hpp"
 
 #include <ekat_parameter_list.hpp>
 
@@ -22,7 +21,6 @@ namespace scream
 
 class TurbulentMountainStress : public AtmosphereProcess
 {
-  using PF           = scream::PhysicsFunctions<DefaultDevice>;
   using TMSFunctions = tms::Functions<Real, DefaultDevice>;
   using Spack        = ekat::Pack<Real,SCREAM_PACK_SIZE>;
   using view_2d      = TMSFunctions::view_2d<Spack>;

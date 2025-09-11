@@ -1,6 +1,12 @@
 # Core types and configuration options
 add_subdirectory(core)
 
+# Small/generic utilities
+add_subdirectory(util)
+
+# Field structures
+add_subdirectory(field)
+
 set(SHARE_SRC
   atm_process/atmosphere_process.cpp
   atm_process/atmosphere_process_hash.cpp
@@ -8,15 +14,6 @@ set(SHARE_SRC
   atm_process/atmosphere_process_dag.cpp
   atm_process/atmosphere_diagnostic.cpp
   atm_process/IOPDataManager.cpp
-  field/field_alloc_prop.cpp
-  field/field_identifier.cpp
-  field/field_header.cpp
-  field/field_layout.cpp
-  field/field_tracking.cpp
-  field/field.cpp
-  field/field_group.cpp
-  field/field_manager.cpp
-  field/field_sync.cpp
   grid/abstract_grid.cpp
   grid/grids_manager.cpp
   grid/grid_import_export.cpp
@@ -30,18 +27,14 @@ set(SHARE_SRC
   grid/remap/identity_remapper.cpp
   grid/remap/refining_remapper_p2p.cpp
   grid/remap/vertical_remapper.cpp
+  manager/field_manager.cpp
   property_checks/property_check.cpp
   property_checks/field_nan_check.cpp
   property_checks/field_within_interval_check.cpp
   property_checks/mass_and_energy_conservation_check.cpp
-  util/eamxx_data_interpolation.cpp
-  util/eamxx_fv_phys_rrtmgp_active_gases_workaround.cpp
-  util/eamxx_time_interpolation.cpp
-  util/eamxx_time_stamp.cpp
-  util/eamxx_timing.cpp
-  util/eamxx_utils.cpp
-  util/eamxx_bfbhash.cpp
-  util/eamxx_repro_sum_mod.F90
+  algorithm/eamxx_data_interpolation.cpp
+  algorithm/eamxx_fv_phys_rrtmgp_active_gases_workaround.cpp
+  algorithm/eamxx_time_interpolation.cpp
 )
 
 # Append ETI sources (I didn't do it above for clarity of reading)
@@ -105,8 +98,6 @@ if (EAMXX_ENABLE_EXPERIMENTAL_CODE)
 endif()
 
 add_library(scream_share ${SHARE_SRC})
-set_target_properties(scream_share PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules)
-target_include_directories (scream_share PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/modules)
 
 target_include_directories(scream_share PUBLIC
   ${SCREAM_SRC_DIR}
@@ -114,22 +105,15 @@ target_include_directories(scream_share PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-target_link_libraries(scream_share PUBLIC eamxx_core)
+target_link_libraries(scream_share PUBLIC
+  eamxx_core
+  eamxx_utils
+  eamxx_field)
 
 # Used in the data interpolation
 target_link_libraries(scream_share PUBLIC stdc++fs)
 
-target_link_libraries(scream_share PUBLIC csm_share)
-
-if (GPTL_PATH)
-  target_include_directories(scream_share PUBLIC ${GPTL_PATH})
-else()
-  target_include_directories(scream_share PUBLIC ${INSTALL_SHAREDPATH}/include)
-endif()
-
 target_link_libraries(scream_share PUBLIC ekat::AllLibs pioc)
-
-SetOmpFlags(scream_share Fortran)
 
 # The "build_cf_dictionary" target downloads an XML file containing valid field
 # names and aliases based on the CF conventions, and transforms it into a YAML

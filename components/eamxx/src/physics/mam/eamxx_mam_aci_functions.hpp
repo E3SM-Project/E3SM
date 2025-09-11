@@ -2,7 +2,6 @@
 #define EAMXX_MAM_ACI_FUNCTION_HPP
 
 #include <mam4xx/mam4.hpp>
-#include <share/util/eamxx_common_physics_functions.hpp>
 
 #include <ekat_subview_utils.hpp>
 

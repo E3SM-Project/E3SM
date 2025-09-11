@@ -1,6 +1,7 @@
 #include "eamxx_tms_process_interface.hpp"
 
 #include "physics/tms/tms_functions.hpp"
+#include "share/physics/eamxx_common_physics_functions.hpp"
 
 #include <ekat_team_policy_utils.hpp>
 #include <ekat_assert.hpp>
@@ -69,6 +70,7 @@ void TurbulentMountainStress::initialize_impl (const RunType /* run_type */)
 void TurbulentMountainStress::run_impl (const double /* dt */)
 {
   using TPF = ekat::TeamPolicyFactory<TMSFunctions::KT::ExeSpace>;
+  using PF  = scream::PhysicsFunctions<DefaultDevice>;
 
   // Helper views
   const auto pseudo_density = get_field_in("pseudo_density").get_view<const Spack**>();

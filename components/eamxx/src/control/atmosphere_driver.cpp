@@ -26,7 +26,7 @@
 // find blocks that eventually should be removed in favor of a design that
 // accounts for pg2. Some blocks may turn out to be unnecessary, and I simply
 // didn't realize I could do without the workaround.
-#include "share/util/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp"
+#include "share/algorithm/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp"
 
 #ifndef SCREAM_CIME_BUILD
 #include <unistd.h>
@@ -82,7 +82,7 @@ namespace control {
  *
  * For more info see header comments in the proper files:
  *  - for field                -> src/share/field/field.hpp
- *  - for field manager        -> src/share/field/field_manager.hpp
+ *  - for field manager        -> src/share/manager/field_manager.hpp
  *  - for field groups         -> src/share/field/field_group.hpp
  *  - for field/group requests -> src/share/field/field_request.hpp
  *  - for grid                 -> src/share/grid/abstract_grid.hpp

@@ -1,4 +1,4 @@
-#include "share/field/field_manager.hpp"
+#include "share/manager/field_manager.hpp"
 
 namespace scream
 {
