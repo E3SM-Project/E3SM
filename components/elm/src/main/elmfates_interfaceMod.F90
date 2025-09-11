@@ -4137,12 +4137,19 @@ end subroutine wrap_update_hifrq_hist
    
    integer, intent(in) :: nc   ! clump number
    
+   ! Subgrid levels for HLM-FATES interface variables
+   integer, parameter, private :: subgrid_gridcell = 5
+   integer, parameter, private :: subgrid_topounit = 4
+   integer, parameter, private :: subgrid_landunit = 3
+   integer, parameter, private :: subgrid_column = 2
+   integer, parameter, private :: subgrid_patch = 1
+   
    ! Initialize the HLM-FATES interface variable registry
    call this%fates(nc)%api%InitializeInterfaceRegistry()
          
    ! Register the HLM data
-   call this%fates(nc)%api%Register('decomp_frac_moisture', col_cf%w_scalar)
-   call this%fates(nc)%api%Register('decomp_frac_temperature', col_cf%t_scalar)
+   call this%fates(nc)%api%Register('decomp_frac_moisture', col_cf%w_scalar, subgrid_column)
+   call this%fates(nc)%api%Register('decomp_frac_temperature', col_cf%t_scalar, subgrid_column)
    
  end subroutine RegisterHLMInterfaceVariables
  
