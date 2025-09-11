@@ -222,13 +222,6 @@
   </batch_system>
 
   <!-- for lawrence livermore computing -->
-  <batch_system MACH="ruby" type="slurm">
-    <queues>
-      <queue walltimemax="24:00:00" nodemax="520" default="true">pbatch</queue>
-      <queue walltimemax="01:00:00" nodemax="12">pdebug</queue>
-    </queues>
-  </batch_system>
-
   <batch_system MACH="dane" type="slurm">
     <queues>
       <queue walltimemax="24:00:00" nodemax="520" default="true">pbatch</queue>
