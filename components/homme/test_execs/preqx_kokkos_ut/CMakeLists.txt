@@ -2,7 +2,6 @@ SET(SRC_DIR          ${HOMME_SOURCE_DIR}/src)
 SET(SRC_SHARE_DIR    ${HOMME_SOURCE_DIR}/src/share)
 SET(SRC_PREQX_DIR    ${HOMME_SOURCE_DIR}/src/preqx_kokkos)
 SET(PREQX_UT_DIR     ${CMAKE_CURRENT_SOURCE_DIR})
-SET(UTILS_TIMING_DIR ${HOMME_SOURCE_DIR}/utils/cime/CIME/non_py/src/timing)
 
 ### Build a 'preqx_kokkos' library ###
 # We do this once, and link against it for all unit tests. This reduces compilation times
@@ -37,7 +36,7 @@ TARGET_INCLUDE_DIRECTORIES(preqx_kokkos_ut_lib PUBLIC ${EXEC_INCLUDE_DIRS})
 TARGET_INCLUDE_DIRECTORIES(preqx_kokkos_ut_lib PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 TARGET_COMPILE_DEFINITIONS(preqx_kokkos_ut_lib PUBLIC "HAVE_CONFIG_H")
 TARGET_LINK_LIBRARIES(preqx_kokkos_ut_lib Kokkos::kokkos)
-TARGET_LINK_LIBRARIES(preqx_kokkos_ut_lib timing csm_share ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
+TARGET_LINK_LIBRARIES(preqx_kokkos_ut_lib gptl csm_share ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
 IF (HOMME_USE_MKL)
   IF (MKL_TYPE STREQUAL "oneMKL")
     TARGET_LINK_LIBRARIES(preqx_kokkos_ut_lib -qmkl)
@@ -71,7 +70,6 @@ SET (RANDOM_INIT_UT_INCLUDE_DIRS
   ${SRC_SHARE_DIR}
   ${SRC_SHARE_DIR}/cxx
   ${PREQX_UT_DIR}
-  ${UTILS_TIMING_DIR}
   ${CMAKE_CURRENT_BINARY_DIR}
   ${CMAKE_BINARY_DIR}/src/share/cxx
 )
@@ -88,11 +86,6 @@ IF (HOMMEXX_BFB_TESTING)
 
   ### Remap unit test ###
 
-  SET (REMAP_PREQX_UT_F90_SRCS
-    # ${UTILS_TIMING_DIR}/perf_mod.F90
-    # ${UTILS_TIMING_DIR}/perf_utils.F90
-  )
-
   SET (REMAP_PREQX_UT_CXX_SRCS
     ${PREQX_UT_DIR}/remap_preqx_ut.cpp
   )
@@ -102,7 +95,6 @@ IF (HOMMEXX_BFB_TESTING)
     ${SRC_SHARE_DIR}
     ${SRC_SHARE_DIR}/cxx
     ${PREQX_UT_DIR}
-    ${UTILS_TIMING_DIR}
     ${CMAKE_BINARY_DIR}/src/share/cxx
   )
 

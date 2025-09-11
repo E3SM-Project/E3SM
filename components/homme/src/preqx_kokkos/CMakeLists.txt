@@ -14,14 +14,9 @@ MACRO(PREQX_KOKKOS_SETUP)
   SET(TRILINOS_ZOLTAN_DIR   ${HOMME_SOURCE_DIR}/src/zoltan)
   SET(TEST_SRC_DIR          ${HOMME_SOURCE_DIR}/src/test_src)
 
-  SET(UTILS_TIMING_SRC_DIR  ${HOMME_SOURCE_DIR}/utils/cime/CIME/non_py/src/timing)
-  SET(UTILS_TIMING_DIR      ${HOMME_BINARY_DIR}/utils/cime/CIME/non_py/src/timing)
-
   # Make INCLUDE_DIRS global so the tests can access it
   SET (EXEC_LIB_INCLUDE_DIRS
     ${TARGET_DIR}/cxx
-    ${UTILS_TIMING_DIR}
-    ${UTILS_TIMING_SRC_DIR}
     ${PREQX_SHARE_DIR}
     ${SRC_SHARE_DIR}/cxx
     ${HOMME_BINARY_DIR}/src/share/cxx

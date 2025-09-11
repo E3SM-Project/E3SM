@@ -152,7 +152,7 @@ macro(createTestExec execName execType macroNP macroNC
     set (COMPOSE_LIBRARY_TYPE ${COMPOSE_LIBRARY_CPP})
   endif ()
 
-  TARGET_LINK_LIBRARIES(${execName} timing ${COMPOSE_LIBRARY_TYPE} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
+  TARGET_LINK_LIBRARIES(${execName} gptl ${COMPOSE_LIBRARY_TYPE} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
   IF(NOT BUILD_HOMME_WITHOUT_PIOLIBRARY)
     IF(HOMME_USE_SCORPIO)
       TARGET_LINK_LIBRARIES(${execName} piof pioc)
@@ -266,7 +266,7 @@ macro(createExecLib libName execType libSrcs inclDirs macroNP
   ENDIF ()
 
   # COMPOSE_LIBRARY is empty if Compose SL transport is not enabled.
-  TARGET_LINK_LIBRARIES(${libName} PUBLIC timing ${COMPOSE_LIBRARY} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
+  TARGET_LINK_LIBRARIES(${libName} PUBLIC gptl ${COMPOSE_LIBRARY} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
 
   IF (HOMME_USE_KOKKOS)
     TARGET_LINK_LIBRARIES(${libName} PUBLIC Kokkos::kokkos)
