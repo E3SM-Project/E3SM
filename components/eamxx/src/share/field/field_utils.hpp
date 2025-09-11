@@ -343,6 +343,7 @@ print_field_hyperslab (const Field& f,
 {
   const auto dt = f.data_type();
   const auto rank = f.rank();
+  const auto& fl = f.get_header().get_identifier().get_layout();
 
   EKAT_REQUIRE_MSG (rank>=static_cast<int>(tags.size()),
       "Error! Requested location incompatible with field rank.\n"
