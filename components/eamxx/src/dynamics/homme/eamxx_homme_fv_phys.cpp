@@ -9,8 +9,8 @@
 #include "GllFvRemap.hpp"
 
 // Scream includes
-#include "share/field/field_manager.hpp"
-#include "share/util/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp"
+#include "share/algorithm/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp"
+#include "share/manager/field_manager.hpp"
 #include "dynamics/homme/homme_dimensions.hpp"
 
 // Ekat includes

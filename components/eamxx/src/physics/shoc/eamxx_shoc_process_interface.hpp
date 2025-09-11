@@ -3,7 +3,7 @@
 
 #include "share/atm_process/atmosphere_process.hpp"
 #include "physics/shoc/shoc_functions.hpp"
-#include "share/util/eamxx_common_physics_functions.hpp"
+#include "share/physics/eamxx_common_physics_functions.hpp"
 #include "share/atm_process/ATMBufferManager.hpp"
 
 #include <ekat_parameter_list.hpp>

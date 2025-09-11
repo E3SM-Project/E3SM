@@ -3,7 +3,7 @@
 #include "dynamics/homme/interface/eamxx_homme_interface.hpp"
 #include "dynamics/homme/physics_dynamics_remapper.hpp"
 
-#include "share/util/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp"
+#include "share/algorithm/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp"
 
 #ifndef NDEBUG
 #include "share/property_checks/field_lower_bound_check.hpp"
@@ -12,7 +12,7 @@
 #endif
 
 #include "share/grid/point_grid.hpp"
-#include "share/grid/remap/inverse_remapper.hpp"
+#include "share/remap/remap/inverse_remapper.hpp"
 #include "share/grid/se_grid.hpp"
 #include "share/io/scorpio_input.hpp"
 
