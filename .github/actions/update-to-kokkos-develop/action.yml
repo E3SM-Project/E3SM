@@ -15,8 +15,11 @@ runs:
       shell: sh
     - name: Modify ghci-snl.cmake file
       run: |
-        cmake_file="components/eamxx/cmake/machine-files/ghci-snl.cmake"
-        cat $cmake_file
+        cmake_file_cpu="components/eamxx/cmake/machine-files/ghci-snl.cmake"
+        echo "set(CMAKE_CXX_STANDARD 20)" >> $cmake_file_cpu
+        echo "set(Kokkos_ENABLE_IMPL_VIEW_LEGACY ON)" >> $cmake_file_cpu
+        echo "set(Kokkos_ENABLE_DEPRECATED_CODE_4 ON)" >> $cmake_file_cpu       
+        cat $cmake_file_cpu
       shell: sh
 
 # echo "set(CMAKE_CXX_STANDARD 20)" >> $cmake_file
