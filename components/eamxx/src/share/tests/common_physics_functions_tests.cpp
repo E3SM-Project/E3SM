@@ -2,7 +2,7 @@
 
 #include "physics/share/physics_constants.hpp"
 
-#include "share/util/eamxx_common_physics_functions.hpp"
+#include "share/physics/eamxx_common_physics_functions.hpp"
 #include "share/util/eamxx_utils.hpp"
 #include "share/core/eamxx_setup_random_test.hpp"
 

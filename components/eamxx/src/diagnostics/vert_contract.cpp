@@ -2,7 +2,7 @@
 
 #include "physics/share/physics_constants.hpp"
 #include "share/field/field_utils.hpp"
-#include "share/util/eamxx_common_physics_functions.hpp"
+#include "share/physics/eamxx_common_physics_functions.hpp"
 
 #include <ekat_team_policy_utils.hpp>
 
