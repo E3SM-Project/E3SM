@@ -1,8 +1,8 @@
 #ifndef SCREAM_REFINING_REMAPPER_P2P_HPP
 #define SCREAM_REFINING_REMAPPER_P2P_HPP
 
-#include "share/grid/remap/abstract_remapper.hpp"
-#include "share/grid/remap/horiz_interp_remapper_base.hpp"
+#include "share/remap/abstract_remapper.hpp"
+#include "share/remap/horiz_interp_remapper_base.hpp"
 #include "eamxx_config.h"
 
 #include <ekat_pack.hpp>

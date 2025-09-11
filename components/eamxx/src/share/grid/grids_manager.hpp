@@ -2,8 +2,8 @@
 #define SCREAM_GRIDS_MANAGER_HPP
 
 #include "share/grid/abstract_grid.hpp"
-#include "share/grid/remap/abstract_remapper.hpp"
-#include "share/grid/remap/identity_remapper.hpp"
+#include "share/remap/abstract_remapper.hpp"
+#include "share/remap/identity_remapper.hpp"
 
 #include <ekat_factory.hpp>
 #include <ekat_string_utils.hpp>

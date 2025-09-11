@@ -1,9 +1,10 @@
 #include "share/io/scorpio_output.hpp"
+
 #include "share/field/field_utils.hpp"
-#include "share/grid/remap/coarsening_remapper.hpp"
-#include "share/grid/remap/vertical_remapper.hpp"
 #include "share/io/eamxx_io_utils.hpp"
 #include "share/io/scorpio_input.hpp"
+#include "share/remap/coarsening_remapper.hpp"
+#include "share/remap/vertical_remapper.hpp"
 #include "share/util/eamxx_timing.hpp"
 
 #include <ekat_std_utils.hpp>
