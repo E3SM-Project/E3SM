@@ -482,7 +482,6 @@ void IOPForcing::run_impl (const double dt)
                           KOKKOS_LAMBDA (const MemberType& team) {
       const int icol = team.league_rank();
 
-      auto ps_i = ps(icol);
       auto u_i = Kokkos::subview(horiz_winds, icol, 0, Kokkos::ALL());
       auto v_i = Kokkos::subview(horiz_winds, icol, 1, Kokkos::ALL());
       auto T_mid_i = ekat::subview(T_mid, icol);
