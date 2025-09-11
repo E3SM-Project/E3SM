@@ -1,7 +1,7 @@
 #ifndef SCREAM_HOMME_GRIDS_MANAGER_HPP
 #define SCREAM_HOMME_GRIDS_MANAGER_HPP
 
-#include "share/grid/grids_manager.hpp"
+#include "share/manager/grids_manager.hpp"
 
 namespace scream
 {

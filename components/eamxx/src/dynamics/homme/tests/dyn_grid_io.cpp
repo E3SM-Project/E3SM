@@ -10,7 +10,7 @@
 #include "share/io/scorpio_input.hpp"
 
 #include "share/field/field_utils.hpp"
-#include "share/grid/grids_manager.hpp"
+#include "share/manager/grids_manager.hpp"
 #include "share/manager/field_manager.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
 

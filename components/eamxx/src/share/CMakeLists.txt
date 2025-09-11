@@ -17,7 +17,6 @@ set(SHARE_SRC
   atm_process/atmosphere_process_dag.cpp
   atm_process/atmosphere_diagnostic.cpp
   atm_process/IOPDataManager.cpp
-  grid/grids_manager.cpp
   remap/abstract_remapper.cpp
   remap/coarsening_remapper.cpp
   remap/horiz_interp_remapper_base.cpp
@@ -27,6 +26,7 @@ set(SHARE_SRC
   remap/refining_remapper_p2p.cpp
   remap/vertical_remapper.cpp
   manager/field_manager.cpp
+  manager/grids_manager.cpp
   property_checks/property_check.cpp
   property_checks/field_nan_check.cpp
   property_checks/field_within_interval_check.cpp
@@ -136,7 +136,7 @@ add_subdirectory(io)
 if (NOT SCREAM_LIB_ONLY)
   # Create test_support lib
   add_library(scream_test_support
-    grid/mesh_free_grids_manager.cpp
+    manager/mesh_free_grids_manager.cpp
   )
   target_link_libraries(scream_test_support PUBLIC scream_share scream_io)
   target_include_directories (scream_test_support PUBLIC ${EKAT_SOURCE_DIR}/extern/Catch2/single_include)
