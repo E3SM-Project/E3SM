@@ -284,6 +284,21 @@ _TESTS = {
             )
         },
 
+    # experimental eamxx nbfb tests (elr: ne4, lr: ne30)
+    "eamxx_nbfb_ulr": {
+        "tests": (
+            "MVKxx_Ly1.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-mvkpert",
+        )
+    },
+    "eamxx_nbfb_lr": {
+        "tests": (
+            "MVKxx_Ly1.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-mvkpert",
+        )
+    },
+    "eamxx_nbfb": {
+        "inherit": ("eamxx_nbfb_ulr", "eamxx_nbfb_lr"),
+    },
+
     #ocean non bit-for-bit test
     "e3sm_ocn_nbfb": {
         "tests": (
@@ -292,7 +307,7 @@ _TESTS = {
         },
 
     "e3sm_nbfb": {
-        "inherit": ("e3sm_atm_nbfb", "e3sm_ocn_nbfb")
+        "inherit": ("e3sm_atm_nbfb", "e3sm_ocn_nbfb", "eamxx_nbfb_lr")
     },
 
     "e3sm_ocnice_stealth_features" : {
@@ -315,6 +330,7 @@ _TESTS = {
             "SMS_P480_Ld5.TL319_IcoswISC30E3r5.GMPAS-JRA1p5-DIB-PISMF-TMIX.mpaso-jra_1958",
             "PET_P480_Ld2.TL319_IcoswISC30E3r5.GMPAS-JRA1p5-DIB-PISMF-DSGR.mpaso-jra_1958",
             "PET_P480_Ld2.TL319_IcoswISC30E3r5.GMPAS-JRA1p5-DIB-PISMF-DSGR.mpaso-freshwater_tracers_jra_1958",
+            "SMS_P480_Ld5.TL319_IcoswISC30E3r5.GMPAS-JRA1p5.mpaso-precip_scaling_jra_1958",
             )
         },
 
@@ -346,7 +362,7 @@ _TESTS = {
             "ERS_Ld5.TL319_oQU240wLI_ais8to30.MPAS_LISIO_JRA1p5.mpaso-ocn_glcshelf",
             "SMS_P12x2.ne4pg2_oQU480.WCYCL1850NS.allactive-mach_mods",
             "ERS_Ln9.ne4pg2_ne4pg2.F2010-MMF1.eam-mmf_crmout",
-            "SMS_Lh4.ne4_ne4.F2010-SCREAMv1.eamxx-output-preset-1",
+            "SMS_Lh4.ne4_ne4.F2010-SCREAMv1.eamxx-output-preset-1--eamxx-fixer_debug_output",
             "SMS_Lh4.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-output-preset-1--eamxx-prod",
             )
         },
@@ -710,7 +726,10 @@ _TESTS = {
 
     "e3sm_eamxx_v1_lowres" : {
         "time"  : "01:00:00",
-        "inherit" : ("e3sm_eamxx_mam4xx_lowres"),
+        "inherit" : (
+            "e3sm_eamxx_mam4xx_lowres",
+            "eamxx_nbfb_ulr",
+        ),
         "tests" : (
             "ERS_Ln9.ne4_ne4.F2000-SCREAMv1-AQP1.eamxx-output-preset-2",
             "ERP_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-output-preset-4",
@@ -749,6 +768,9 @@ _TESTS = {
 
     "e3sm_eamxx_v1_medres" : {
         "time"  : "02:00:00",
+        "inherit" : (
+            "eamxx_nbfb_lr",
+        ),
         "tests" : (
             #  "SMS_D_Ln2.ne30_ne30.F2000-SCREAMv1-AQP1", # Uncomment once IC file for ne30 is ready
             "ERS_Ln22.ne30_ne30.F2010-SCREAMv1.eamxx-internal_diagnostics_level--eamxx-output-preset-3",
@@ -789,6 +811,9 @@ _TESTS = {
 
     "e3sm_eamxx_v1_long" : {
         "time"  : "01:00:00",
+        "inherit" : (
+            "eamxx_nbfb_lr",
+        ),
         "tests" : (
             "ERP_D_Lh182.ne4pg2_ne4pg2.F2010-SCREAMv1",
             "ERS_Ln362.ne30pg2_ne30pg2.F2010-SCREAMv1"
@@ -841,7 +866,8 @@ _TESTS = {
         "time"  : "03:00:00",
         "tests" : (
             "SMS_D_Lm2.ne4pg2_oQU480.F2010-EAMxx-MAM4xx-MPASSI",
-            "SMS_Ly1.ne4pg2_oQU480.F2010-EAMxx-MAM4xx"
+            "ERS_Ld80.ne4pg2_oQU480.F2010-EAMxx-MAM4xx-MPASSI",
+            "SMS_Ly1.ne4pg2_oQU480.F2010-EAMxx-MAM4xx-MPASSI"
         )
     },
 
@@ -856,7 +882,7 @@ _TESTS = {
         "time"  : "01:00:00",
         "tests" : (
             "SMS.ne120pg2_ne120pg2.F2010-SCREAMv1.eamxx-L128",
-            "PEM_Ld1.ne120pg2_ne120pg2.F2010-SCREAMv1.eamxx-L128",
+            #"PEM_Ld1.ne120pg2_ne120pg2.F2010-SCREAMv1.eamxx-L128", # second test hits OOM, need either P2048 or change def pelayout
             "ERS_Lh6.ne120pg2_ne120pg2.F2010-SCREAMv1.eamxx-L128--eamxx-prod",
             "SMS_D_Lh6.ne120pg2_ne120pg2.F2010-SCREAMv1.eamxx-prod",
             "SMS.ne256pg2_ne256pg2.F2010-SCREAMv1",
@@ -879,10 +905,12 @@ _TESTS = {
             "ERS_Vmoab_Ld3.ne4pg2_r05_oQU480.WCYCL1850NS",
             "ERS_Vmoab_Ld3.ne4pg2_oQU480.WCYCL1850NS",
             "ERS_Vmoab_Ld3.ne4pg2_oQU480.F1850",
+            "ERS_Vmoab_Ld3.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI",
             "ERS_Vmoab_Ld3.ne4pg2_ne4pg2.I1850CNPRDCTCBCTOP",
             "ERS_Vmoab_Ld3.T62_oQU240wLI.GMPAS-IAF",
             "ERS_Vmoab_Ld3.T62_oQU120.CMPASO-NYF",
             "ERS_Vmoab_Ld3.r05_r05.RMOSGPCC",
+            "ERS_Vmoab_Ld3.ne4pg2_ne4pg2.F2010-SCREAMv1",
         )
     },
 
@@ -892,13 +920,38 @@ _TESTS = {
             "PEM_Vmoab_Ld3.ne4pg2_r05_oQU480.WCYCL1850NS",
             "PEM_Vmoab_Ld3.ne4pg2_oQU480.WCYCL1850NS",
             "PEM_Vmoab_Ld3.ne4pg2_oQU480.F1850",
+            "PEM_Vmoab_Ld3.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI",
             "PEM_Vmoab_Ld3.ne4pg2_ne4pg2.I1850CNPRDCTCBCTOP",
             "PEM_Vmoab_Ld3.T62_oQU240wLI.GMPAS-IAF",
             "PEM_Vmoab_Ld3.T62_oQU120.CMPASO-NYF",
             "PEM_Vmoab_Ld3.r05_r05.RMOSGPCC",
+            "PEM_Vmoab_Ld3.ne4pg2_ne4pg2.F2010-SCREAMv1",
         )
     },
 
+    "e3sm_diff_dev" : {
+        "time"  : "01:00:00",
+        "tests" : (
+            "SMS_Vmoab_Ld1.ne4pg2_r05_oQU480.WCYCL1850NS",
+            "SMS_Vmoab_Ld1.ne4pg2_oQU480.WCYCL1850NS",
+            "SMS_Vmoab_Ld1.ne4pg2_oQU480.F1850",
+            "SMS_Vmoab_Ld1.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI",
+            "SMS_Vmoab_Ld1.ne4pg2_ne4pg2.I1850CNPRDCTCBCTOP",
+            "SMS_Vmoab_Ld1.T62_oQU240wLI.GMPAS-IAF",
+            "SMS_Vmoab_Ld1.T62_oQU120.CMPASO-NYF",
+            "SMS_Vmoab_Ld1.r05_r05.RMOSGPCC",
+            "SMS_Vmoab_Ld1.ne4pg2_ne4pg2.F2010-SCREAMv1",
+            "SMS_Ld1.ne4pg2_r05_oQU480.WCYCL1850NS",
+            "SMS_Ld1.ne4pg2_oQU480.WCYCL1850NS",
+            "SMS_Ld1.ne4pg2_oQU480.F1850",
+            "SMS_Ld1.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI",
+            "SMS_Ld1.ne4pg2_ne4pg2.I1850CNPRDCTCBCTOP",
+            "SMS_Ld1.T62_oQU240wLI.GMPAS-IAF",
+            "SMS_Ld1.T62_oQU120.CMPASO-NYF",
+            "SMS_Ld1.r05_r05.RMOSGPCC",
+            "SMS_Ld1.ne4pg2_ne4pg2.F2010-SCREAMv1",
+        )
+    },
 
 
     "e3sm_gpuacc" : {

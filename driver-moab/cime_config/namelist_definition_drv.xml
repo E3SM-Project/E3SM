@@ -49,7 +49,7 @@
     <category>cime_driver_inst</category>
     <group>cime_driver_inst</group>
     <desc>
-      Number of CESM driver instances.  Only used if MULTI_DRIVER is TRUE.
+      Number of cpl7 driver instances.  Only used if MULTI_DRIVER is TRUE.
     </desc>
     <values>
       <value>1</value>
@@ -251,7 +251,6 @@
     </desc>
     <values>
       <value>.false.</value>
-      <value cime_model='cesm'>.true.</value>
     </values>
   </entry>
 
@@ -364,10 +363,9 @@
     <type>char</type>
     <category>expdef</category>
     <group>seq_infodata_inparm</group>
-    <valid_values>e3sm,cesm</valid_values>
+    <valid_values>e3sm</valid_values>
     <desc>cime model</desc>
     <values>
-      <value cime_model='cesm'>cesm</value>
       <value cime_model='e3sm'>e3sm</value>
     </values>
   </entry>
@@ -568,7 +566,6 @@
     </desc>
     <values>
       <value>fixed_year</value>
-      <value iyear='HIST' cime_model='cesm'>variable_year</value>
     </values>
   </entry>
 
@@ -581,9 +578,6 @@
     </desc>
     <values>
       <value>1990</value>
-      <value iyear="1850" cime_model="cesm">1850</value>
-      <value iyear="2000" cime_model="cesm">2000</value>
-      <value iyear='HIST' cime_model='cesm'>1850</value>
     </values>
   </entry>
 
@@ -596,9 +590,6 @@
     </desc>
     <values>
       <value>1990</value>
-      <value iyear="1850" cime_model="cesm">1850</value>
-      <value iyear="2000" cime_model="cesm">2000</value>
-      <value iyear='HIST' cime_model='cesm'>1850</value>
     </values>
   </entry>
 
@@ -821,10 +812,7 @@
       if true use  Mahrt and Sun 1995,MWR modification to surface flux calculation
     </desc>
     <values>
-      <value cime_model='e3sm'>.false.</value>
-      <value cime_model='cesm'>.true.</value>
-      <value cime_model='cesm' atm_grid="T62">.false.</value>
-      <value cime_model='cesm' atm_grid="TL319">.false.</value>
+      <value>.false.</value>
     </values>
   </entry>
 
@@ -867,9 +855,7 @@
     <values>
       <!-- the value for f09 grids is maintained as 0.0 for compatibility with cmip6 experiments
            the 1% convergence criteria improves performance of the atm ocn flux calculation in shr_flux_mod.F90 -->
-      <value cime_model='cesm'>0.01</value>
-      <value cime_model='cesm' atm_grid="0.9x1.25">0.0</value>
-      <value cime_model='e3sm'>0.0</value>
+      <value>0.0</value>
     </values>
   </entry>
 
@@ -883,8 +869,7 @@
       depends on the setting of atm_flux_method.
     </desc>
     <values>
-      <value cime_model='cesm'>5</value>
-      <value cime_model='e3sm'>-1</value>
+      <value>-1</value>
     </values>
   </entry>
 
@@ -1081,7 +1066,7 @@
     <type>char</type>
     <category>expdef</category>
     <group>seq_infodata_inparm</group>
-    <valid_values>CESM1_MOD,CESM1_MOD_TIGHT,RASM_OPTION1,RASM_OPTION2,NUOPC,NUOPC_TIGHT</valid_values>
+    <valid_values>CESM1_MOD,CESM1_MOD_TIGHT,RASM_OPTION1,RASM_OPTION2</valid_values>
     <desc>
       Set the coupler sequencing.
     </desc>
@@ -5011,8 +4996,7 @@
       components that need to look at the same data.
     </desc>
     <values>
-      <value cime_model='cesm'>Buildconf/camconf/drv_flds_in,Buildconf/clmconf/drv_flds_in</value>
-      <value cime_model='e3sm'>Buildconf/eamconf/drv_flds_in,Buildconf/elmconf/drv_flds_in</value>
+      <value>Buildconf/eamconf/drv_flds_in,Buildconf/elmconf/drv_flds_in</value>
     </values>
   </entry>
 

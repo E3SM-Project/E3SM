@@ -829,6 +829,7 @@ contains
 
       ! Set MPAS Log module instance
       mpas_log_info => domain % logInfo
+      call mpas_log_write("")
       call mpas_log_write("=== Beginning glc_run_mct ===")
 
       err = 0
@@ -1561,9 +1562,10 @@ contains
             g2x_g % rAttr(index_g2x_Fogg_rofi,n) = avgCalvingFlux(i) 
             g2x_g % rAttr(index_g2x_Fogg_rofi,n) = g2x_g % rAttr(index_g2x_Fogg_rofi,n) + avgFaceMeltFlux(i)
             if (trim(config_basal_mass_bal_float) == 'ismip6') then
-               ! if MALI is calculating ISMF, add that to rofl
+               ! if MALI is calculating ISMF, add that to rofi
                ! In some configurations, ISMF will be calculated in coupler or MPAS-Ocean
-               g2x_g % rAttr(index_g2x_Fogg_rofi,n) = g2x_g % rAttr(index_g2x_Fogg_rofi,n) + avgFloatingBMBFlux(i)
+               ! Note avgFloatingBMBFlux is + for mass gain to ice sheet, so sign should be flipped for rofi
+               g2x_g % rAttr(index_g2x_Fogg_rofi,n) = g2x_g % rAttr(index_g2x_Fogg_rofi,n) - avgFloatingBMBFlux(i)
             endif
 
             g2x_g % rAttr(index_g2x_Sg_topo, n) = max(0.0, upperSurface(i)) !updated to avoid warning for values below sea level

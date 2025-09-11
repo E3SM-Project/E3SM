@@ -1,12 +1,12 @@
 #include "catch2/catch.hpp"
 
 #include "share/eamxx_types.hpp"
-#include "ekat/ekat_pack.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "physics/gw/gw_functions.hpp"
 #include "physics/gw/tests/infra/gw_test_data.hpp"
 
 #include "gw_unit_tests_common.hpp"
+
+#include <ekat_pack.hpp>
 
 namespace scream {
 namespace gw {
@@ -20,32 +20,25 @@ struct UnitWrap::UnitTest<D>::TestGwdComputeStressProfilesAndDiffusivities : pub
     auto engine = Base::get_engine();
 
     // Set up init data
-    GwInit init_data[] = {
-          // pver, pgwv,   dc, orog_only, molec_diff, tau_0_ubc, nbot_molec, ktop, kbotbg, fcrit2, kwv
-      GwInit(  72,   20, 0.75,     false,      false,     false,         16,   60,     16,    .67, 6.28e-5),
-      GwInit(  72,   20, 0.75,     true ,      false,     true ,         16,   60,     16,    .67, 6.28e-5),
-      GwInit(  72,   20, 0.75,     false,      true ,     true ,         16,   60,     16,    .67, 6.28e-5),
-      GwInit(  72,   20, 0.75,     true ,      true ,     false,         16,   60,     16,    .67, 6.28e-5),
-    };
-
-    for (auto& d : init_data) {
-      d.randomize(engine);
-    }
+    auto init_data = get_common_init_data(engine);
 
     // Set up inputs
     GwdComputeStressProfilesAndDiffusivitiesData baseline_data[] = {
-      GwdComputeStressProfilesAndDiffusivitiesData(2, 10, init_data[0]),
-      GwdComputeStressProfilesAndDiffusivitiesData(3, 11, init_data[1]),
-      GwdComputeStressProfilesAndDiffusivitiesData(4, 12, init_data[2]),
-      GwdComputeStressProfilesAndDiffusivitiesData(5, 13, init_data[3]),
+      //                                        ncol
+      GwdComputeStressProfilesAndDiffusivitiesData(2, init_data[0]),
+      GwdComputeStressProfilesAndDiffusivitiesData(3, init_data[1]),
+      GwdComputeStressProfilesAndDiffusivitiesData(4, init_data[2]),
+      GwdComputeStressProfilesAndDiffusivitiesData(5, init_data[3]),
     };
 
     static constexpr Int num_runs = sizeof(baseline_data) / sizeof(GwdComputeStressProfilesAndDiffusivitiesData);
 
     // Generate random input data
     // Alternatively, you can use the baseline_data construtors/initializer lists to hardcode data
-    for (auto& d : baseline_data) {
-      d.randomize(engine);
+    for (Int i = 0; i < num_runs; ++i) {
+      auto& d = baseline_data[i];
+      // ni must be very small or else we risk a FPE due to a huge exp
+      d.randomize(engine, { {d.ni, {1.E-06, 2.E-06}}, {d.src_level, {init_data[i].ktop+1, init_data[i].kbotbg-1}}, {d.ubi, {2.E-04, 3.E-04}}, {d.c, {1.E-04, 2.E-04}} });
     }
 
     // Create copies of data for use by test. Needs to happen before read calls so that
@@ -66,17 +59,29 @@ struct UnitWrap::UnitTest<D>::TestGwdComputeStressProfilesAndDiffusivities : pub
 
     // Get data from test
     for (auto& d : test_data) {
-      gwd_compute_stress_profiles_and_diffusivities(d);
+      if (this->m_baseline_action == GENERATE) {
+        gwd_compute_stress_profiles_and_diffusivities_f(d);
+      }
+      else {
+        gwd_compute_stress_profiles_and_diffusivities(d);
+      }
     }
+
+    const auto margin = std::numeric_limits<Real>::epsilon() *
+      (ekat::is_single_precision<Real>::value ? 1000 : 1);
 
     // Verify BFB results, all data should be in C layout
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < num_runs; ++i) {
         GwdComputeStressProfilesAndDiffusivitiesData& d_baseline = baseline_data[i];
         GwdComputeStressProfilesAndDiffusivitiesData& d_test = test_data[i];
+        REQUIRE(d_baseline.total(d_baseline.tau) == d_test.total(d_test.tau));
         for (Int k = 0; k < d_baseline.total(d_baseline.tau); ++k) {
-          REQUIRE(d_baseline.total(d_baseline.tau) == d_test.total(d_test.tau));
-          REQUIRE(d_baseline.tau[k] == d_test.tau[k]);
+          // We must add a tolerance here since we are doing the operations
+          // in a different order in order to improve the amount of parallel
+          // computation. This tol can be removed once we are no longer using
+          // fortran to generate baselines.
+          REQUIRE(d_baseline.tau[k] == Approx(d_test.tau[k]).margin(margin));
         }
 
       }

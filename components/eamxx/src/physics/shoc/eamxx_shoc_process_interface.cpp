@@ -1,10 +1,13 @@
-#include "ekat/ekat_assert.hpp"
 #include "physics/shoc/eamxx_shoc_process_interface.hpp"
 
 #include "share/property_checks/field_lower_bound_check.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
 
 #include "eamxx_config.h" // for SCREAM_CIME_BUILD
+
+#include <ekat_assert.hpp>
+#include <ekat_team_policy_utils.hpp>
+#include <ekat_reduction_utils.hpp>
 
 namespace scream
 {
@@ -146,6 +149,8 @@ set_computed_group_impl (const FieldGroup& group)
 // =========================================================================================
 size_t SHOCMacrophysics::requested_buffer_size_in_bytes() const
 {
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
+
   const int nlev_packs       = ekat::npack<Spack>(m_num_levs);
   const int nlevi_packs      = ekat::npack<Spack>(m_num_levs+1);
   const int num_tracer_packs = ekat::npack<Spack>(m_num_tracers);
@@ -158,7 +163,7 @@ size_t SHOCMacrophysics::requested_buffer_size_in_bytes() const
                                    Buffer::num_2d_vector_tr*m_num_cols*num_tracer_packs*sizeof(Spack);
 
   // Number of Reals needed by the WorkspaceManager passed to shoc_main
-  const auto policy       = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nlev_packs);
+  const auto policy       = TPF::get_default_team_policy(m_num_cols, nlev_packs);
   const int n_wind_slots  = ekat::npack<Spack>(2)*Spack::n;
   const int n_trac_slots  = ekat::npack<Spack>(m_num_tracers+3)*Spack::n;
   const size_t wsm_request= WSM::get_total_bytes_needed(nlevi_packs, 14+(n_wind_slots+n_trac_slots), policy);
@@ -169,6 +174,8 @@ size_t SHOCMacrophysics::requested_buffer_size_in_bytes() const
 // =========================================================================================
 void SHOCMacrophysics::init_buffers(const ATMBufferManager &buffer_manager)
 {
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
+
   EKAT_REQUIRE_MSG(buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes(), "Error! Buffers size not sufficient.\n");
 
   Real* mem = reinterpret_cast<Real*>(buffer_manager.get_memory());
@@ -234,7 +241,7 @@ void SHOCMacrophysics::init_buffers(const ATMBufferManager &buffer_manager)
 
   // Compute workspace manager size to check used memory
   // vs. requested memory
-  const auto policy      = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nlev_packs);
+  const auto policy      = TPF::get_default_team_policy(m_num_cols, nlev_packs);
   const int n_wind_slots = ekat::npack<Spack>(2)*Spack::n;
   const int n_trac_slots = ekat::npack<Spack>(m_num_tracers+3)*Spack::n;
   const int wsm_size     = WSM::get_total_bytes_needed(nlevi_packs, 14+(n_wind_slots+n_trac_slots), policy)/sizeof(Spack);
@@ -247,6 +254,8 @@ void SHOCMacrophysics::init_buffers(const ATMBufferManager &buffer_manager)
 // =========================================================================================
 void SHOCMacrophysics::initialize_impl (const RunType run_type)
 {
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
+
   // Gather runtime options
   runtime_options.lambda_low    = m_params.get<double>("lambda_low");
   runtime_options.lambda_high   = m_params.get<double>("lambda_high");
@@ -436,7 +445,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   const auto nlevi_packs = ekat::npack<Spack>(m_num_levs+1);
   const int n_wind_slots = ekat::npack<Spack>(2)*Spack::n;
   const int n_trac_slots = ekat::npack<Spack>(m_num_tracers+3)*Spack::n;
-  const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nlev_packs);
+  const auto default_policy = TPF::get_default_team_policy(m_num_cols, nlev_packs);
   workspace_mgr.setup(m_buffer.wsm_data, nlevi_packs, 14+(n_wind_slots+n_trac_slots), default_policy);
 
   // Calculate pref_mid, and use that to calculate
@@ -480,13 +489,15 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
 // =========================================================================================
 void SHOCMacrophysics::run_impl (const double dt)
 {
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
+
   EKAT_REQUIRE_MSG (dt<=300,
       "Error! SHOC is intended to run with a timestep no longer than 5 minutes.\n"
       "       Please, reduce timestep (perhaps increasing subcycling iterations).\n");
 
   const auto nlev_packs  = ekat::npack<Spack>(m_num_levs);
-  const auto scan_policy    = ekat::ExeSpaceUtils<KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(m_num_cols, nlev_packs);
-  const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nlev_packs);
+  const auto scan_policy    = TPF::get_thread_range_parallel_scan_team_policy(m_num_cols, nlev_packs);
+  const auto default_policy = TPF::get_default_team_policy(m_num_cols, nlev_packs);
 
   // Preprocessing of SHOC inputs. Kernel contains a parallel_scan,
   // so a special TeamPolicy is required.
@@ -593,6 +604,9 @@ void SHOCMacrophysics::apply_turbulent_mountain_stress()
 void SHOCMacrophysics::check_flux_state_consistency(const double dt)
 {
   using PC = scream::physics::Constants<Real>;
+  using RU = ekat::ReductionUtils<KT::ExeSpace>;
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
+
   const Real gravit = PC::gravit;
   const Real qmin   = 1e-12; // minimum permitted constituent concentration (kg/kg)
 
@@ -604,7 +618,7 @@ void SHOCMacrophysics::check_flux_state_consistency(const double dt)
   const auto nlev_packs      = ekat::npack<Spack>(nlevs);
   const auto last_pack_idx   = (nlevs-1)/Spack::n;
   const auto last_pack_entry = (nlevs-1)%Spack::n;
-  const auto policy          = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nlev_packs);
+  const auto policy          = TPF::get_default_team_policy(m_num_cols, nlev_packs);
   Kokkos::parallel_for("check_flux_state_consistency",
                        policy,
                        KOKKOS_LAMBDA (const KT::MemberType& team) {
@@ -625,7 +639,7 @@ void SHOCMacrophysics::check_flux_state_consistency(const double dt)
       auto tracer_mass = [&](const int k) {
         return qv_i(k)*pseudo_density_i(k);
       };
-      Real mm = ekat::ExeSpaceUtils<KT::ExeSpace>::view_reduction(team, 0, nlevs, tracer_mass);
+      Real mm = RU::view_reduction(team, 0, nlevs, tracer_mass);
 
       EKAT_KERNEL_ASSERT_MSG(mm >= cc, "Error! Total mass of column vapor should be greater than mass of surf_evap.\n");
 

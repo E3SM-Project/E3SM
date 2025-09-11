@@ -1,71 +1,94 @@
 #include "share/io/scorpio_output.hpp"
-#include "share/io/scorpio_input.hpp"
-#include "share/io/eamxx_io_utils.hpp"
+#include "share/field/field_utils.hpp"
 #include "share/grid/remap/coarsening_remapper.hpp"
 #include "share/grid/remap/vertical_remapper.hpp"
+#include "share/io/eamxx_io_utils.hpp"
+#include "share/io/scorpio_input.hpp"
 #include "share/util/eamxx_timing.hpp"
-#include "share/field/field_utils.hpp"
 
-#include <ekat/util/ekat_units.hpp>
-#include <ekat/util/ekat_string_utils.hpp>
-#include <ekat/std_meta/ekat_std_utils.hpp>
+#include <ekat_std_utils.hpp>
+#include <ekat_string_utils.hpp>
+#include <ekat_units.hpp>
 
 #include <numeric>
 
-namespace {
-  // Helper lambda, to copy io string attributes. This will be used if any
-  // remapper is created, to ensure atts set by atm_procs are not lost
-  void transfer_io_str_atts  (const scream::Field& src, scream::Field& tgt) {
-    const std::string io_string_atts_key ="io: string attributes";
-    using stratts_t = std::map<std::string,std::string>;
-    const auto& src_atts = src.get_header().get_extra_data<stratts_t>(io_string_atts_key);
-          auto& dst_atts = tgt.get_header().get_extra_data<stratts_t>(io_string_atts_key);
-    for (const auto& [name,val] : src_atts) {
-      dst_atts[name] = val;
-    }
-  };
+namespace
+{
+// Helper lambda, to copy extra data (io string attributes plus filled settings).
+// This will be used if any remapper is created, to ensure atts set by atm_procs are not lost
+void
+transfer_extra_data(const scream::Field &src, scream::Field &tgt)
+{
+
+  // Transfer io string attributes
+  const std::string io_string_atts_key = "io: string attributes";
+  using stratts_t                      = std::map<std::string, std::string>;
+  const auto &src_atts = src.get_header().get_extra_data<stratts_t>(io_string_atts_key);
+  auto &dst_atts       = tgt.get_header().get_extra_data<stratts_t>(io_string_atts_key);
+  for (const auto &[name, val] : src_atts) {
+    dst_atts[name] = val;
+  }
+
+  // Transfer whether or not this field MAY contain fill_value (to trigger usage of the
+  // proper implementation of Field update methods
+  if (src.get_header().may_be_filled()) {
+    tgt.get_header().set_may_be_filled(true);
+  }
+};
+
+// Note: this is also declared in eamxx_scorpio_interface.cpp. Move it somewhere else?
+template <typename T>
+std::string
+print_map_keys(const std::map<std::string, T> &map)
+{
+  std::string s;
+  for (const auto &it : map) {
+    s += it.first + ",";
+  }
+  s.pop_back();
+  return s;
 }
+} // anonymous namespace
 
 namespace scream
 {
 
-template<typename T>
-bool has_duplicates (const std::vector<T>& c)
+template <typename T>
+bool
+has_duplicates(const std::vector<T> &c)
 {
-  std::set<T> s(c.begin(),c.end());
-  return c.size()>s.size();
+  std::set<T> s(c.begin(), c.end());
+  return c.size() > s.size();
 }
 
-AtmosphereOutput::
-AtmosphereOutput (const ekat::Comm& comm,
-                  const std::vector<Field>& fields,
-                  const std::shared_ptr<const grid_type>& grid)
- : m_comm (comm)
+AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const std::vector<Field> &fields,
+                                   const std::shared_ptr<const grid_type> &grid)
+ : m_comm(comm)
 {
   // This version of AtmosphereOutput is for quick output of fields (no remaps, no time dim)
-  m_avg_type = OutputAvgType::Instant;
+  m_avg_type     = OutputAvgType::Instant;
   m_add_time_dim = false;
 
   // Create a FieldManager with the input fields
-  auto fm = std::make_shared<FieldManager> (grid);
+  auto fm = std::make_shared<FieldManager>(grid);
   for (auto f : fields) {
     fm->add_field(f);
     m_fields_names.push_back(f.name());
+    m_alias_names.push_back(f.name()); // Use field name as alias (no aliasing)
   }
 
   // No remaps: set all FM except the one for scorpio (created in init())
   m_field_mgrs[FromModel] = m_field_mgrs[AfterVertRemap] = m_field_mgrs[AfterHorizRemap] = fm;
 
   // Setup I/O structures
-  init ();
+  init();
 }
 
-AtmosphereOutput::
-AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
-                  const std::shared_ptr<const fm_type>& field_mgr,
-                  const std::string& grid_name)
- : m_comm           (comm)
- , m_add_time_dim   (true)
+AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::ParameterList &params,
+                                   const std::shared_ptr<const fm_type> &field_mgr,
+                                   const std::string &grid_name)
+ : m_comm(comm),
+   m_add_time_dim(true)
 {
   using vos_t = std::vector<std::string>;
 
@@ -73,19 +96,23 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
 
   // Figure out what kind of averaging is requested
   auto avg_type = params.get<std::string>("averaging_type");
-  m_avg_type = str2avg(avg_type);
+  m_avg_type    = str2avg(avg_type);
   EKAT_REQUIRE_MSG (m_avg_type!=OutputAvgType::Invalid,
       "Error! Unsupported averaging type '" + avg_type + "'.\n"
       "       Valid options: instant, Max, Min, Average. Case insensitive.\n");
 
   // By default, IO is done directly on the field mgr grid
   auto fm_grid = field_mgr->get_grids_manager()->get_grid(grid_name);
-  std::string io_grid_name = fm_grid->name();
+  std::vector<std::string> field_specs; // Raw field specifications from YAML (may include aliases)
+  
+  std::string output_data_layout = "default";
   if (params.isParameter("field_names")) {
     // This simple parameter list option does *not* allow to remap fields
     // to an io grid different from that of the field manager. In order to
     // use that functionality, you need the full syntax
-    m_fields_names = params.get<vos_t>("field_names");
+    field_specs = params.get<vos_t>("field_names");
+    if (params.isParameter("output_data_layout"))
+      output_data_layout = params.get<std::string>("output_data_layout");
   } else if (params.isSublist("fields")){
     const auto& f_pl = params.sublist("fields");
     bool grid_found = false;
@@ -93,30 +120,55 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
       if (f_pl.isSublist(grid_name)) {
         grid_found = true;
         const auto& pl = f_pl.sublist(grid_name);
+        if (pl.isParameter("output_data_layout"))
+          output_data_layout = pl.get<std::string>("output_data_layout");
         if (pl.isType<vos_t>("field_names")) {
-          m_fields_names = pl.get<vos_t>("field_names");
+          field_specs = pl.get<vos_t>("field_names");
         } else if (pl.isType<std::string>("field_names")) {
-          m_fields_names.resize(1, pl.get<std::string>("field_names"));
-          if (m_fields_names[0]=="NONE") {
-            m_fields_names.clear();
+          field_specs.resize(1, pl.get<std::string>("field_names"));
+          if (field_specs[0]=="NONE") {
+            field_specs.clear();
           }
         }
-
-        // Check if the user wants to remap fields on a different grid first
-        if (pl.isParameter("io_grid_name")) {
-          io_grid_name = pl.get<std::string>("io_grid_name");
-        }
-        break;
       }
     }
     EKAT_REQUIRE_MSG (grid_found,
         "Error! Bad formatting of output yaml file. Missing 'fields->$grid_name` sublist.\n");
   }
 
+  bool change_data_layout = false;
+  if (not fm_grid->get_aux_grid(output_data_layout)) {
+    EKAT_REQUIRE_MSG (output_data_layout=="native" or output_data_layout=="default",
+        "Error! Grid for requested output_data_layout not found among this grid's aux grids.\n"
+        " - grid name: " + fm_grid->name() + "\n"
+        " - output_data_layout: " + output_data_layout + "\n");
+  } else {
+    change_data_layout = true;
+  }
+
+  // Process field specifications to extract aliases and internal field names
+  auto [alias_to_field_map, alias_names] = process_field_aliases(field_specs);
+  m_alias_to_field_map = alias_to_field_map;
+  m_alias_names = alias_names;
+  
+  // Extract internal field names for further processing
+  m_fields_names.clear();
+  for (const auto& spec : field_specs) {
+    auto [alias, field_name] = parse_field_alias(spec);
+    m_fields_names.push_back(field_name);
+  }
+
+  // TODO: allow users to request the same field more than once via different aliases
+  // TODO: currently, that would result in issues downstream, and so it must be done
+  // TODO: more carefully. The rationale is to enable users to debug their aliasing, etc.
+  EKAT_REQUIRE_MSG (not has_duplicates(m_alias_names),
+      "[AtmosphereOutput] Error! One of the output yaml files has duplicate field alias entries.\n"
+      " - yaml file: " + params.name() + "\n"
+      " - alias names; " + ekat::join(m_alias_names,",") + "\n");
   EKAT_REQUIRE_MSG (not has_duplicates(m_fields_names),
       "[AtmosphereOutput] Error! One of the output yaml files has duplicate field entries.\n"
       " - yaml file: " + params.name() + "\n"
-      " - fields names; " + ekat::join(m_fields_names,",") + "\n");
+      " - fields names: " + ekat::join(m_fields_names,",") + "\n");
 
   // Check if remapping and if so create the appropriate remapper
   // Note: We currently support three remappers
@@ -125,8 +177,7 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
   //   - online remapping which is setup using the create_remapper function
   const bool use_vertical_remap_from_file = params.isParameter("vertical_remap_file");
   const bool use_horiz_remap_from_file = params.isParameter("horiz_remap_file");
-  const bool use_online_remapper = io_grid_name!=fm_grid->name();
-  if (use_online_remapper) {
+  if (change_data_layout) {
     EKAT_REQUIRE_MSG(!use_vertical_remap_from_file and !use_horiz_remap_from_file,
         "[AtmosphereOutput] Error! Online Dyn->PhysGLL remapping not supported along with vertical and/or horizontal remapping from file");
   }
@@ -144,6 +195,7 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
   }
 
   // ... then add diagnostic fields
+  // ... and we also use this to init track avg cnt for regular fields
   init_diagnostics ();
 
   // Avg count only makes sense if we have
@@ -169,10 +221,6 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
     }
   }
 
-  if (params.isParameter("fill_value")) {
-    m_fill_value = static_cast<float>(params.get<double>("fill_value"));
-  }
-
   // Setup remappers - if needed
   auto grid_after_vr = fm_grid;
   if (use_vertical_remap_from_file) {
@@ -182,7 +230,6 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
     auto p_int = fm_model->get_field("p_int");
     auto vert_remapper = std::make_shared<VerticalRemapper>(fm_model->get_grid(),vert_remap_file);
     vert_remapper->set_source_pressure (p_mid,p_int);
-    vert_remapper->set_mask_value(m_fill_value);
     vert_remapper->set_extrapolation_type(VerticalRemapper::Mask); // both Top AND Bot
     m_vert_remapper = vert_remapper;
 
@@ -192,7 +239,7 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
     for (const auto& fname : m_fields_names) {
       auto src = fm_model->get_field(fname,fm_grid->name());
       auto tgt = m_vert_remapper->register_field_from_src(src);
-      transfer_io_str_atts (src,tgt);
+      transfer_extra_data (src,tgt);
       fm_after_vr->add_field(tgt);
     }
     m_vert_remapper->registration_ends();
@@ -203,7 +250,7 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
 
   // Online remapper and horizontal remapper follow a similar pattern so we check in the same conditional.
   auto grid_after_hr = grid_after_vr;
-  if (use_online_remapper || use_horiz_remap_from_file) {
+  if (change_data_layout || use_horiz_remap_from_file) {
     // We build a remapper, to remap fields from the fm grid to the io grid
     if (use_horiz_remap_from_file) {
       // Construct the coarsening remapper
@@ -211,7 +258,7 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
       m_horiz_remapper = std::make_shared<CoarseningRemapper>(grid_after_vr,horiz_remap_file,true);
     } else {
       // Construct a generic remapper (likely, Dyn->PhysicsGLL)
-      grid_after_hr = gm->get_grid(io_grid_name);
+      grid_after_hr = fm_grid->get_aux_grid(output_data_layout);
       m_horiz_remapper = gm->create_remapper(grid_after_vr,grid_after_hr);
     }
 
@@ -221,7 +268,7 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
     for (const auto& fname : m_fields_names) {
       auto src = fm_after_vr->get_field(fname,grid_after_vr->name());
       auto tgt = m_horiz_remapper->register_field_from_src(src);
-      transfer_io_str_atts (src,tgt);
+      transfer_extra_data (src,tgt);
       fm_after_hr->add_field(tgt);
     }
     m_horiz_remapper->registration_ends();
@@ -232,6 +279,12 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
 
   // Setup I/O structures (including the scorpio FM)
   init ();
+}
+
+void AtmosphereOutput::
+set_logger(const std::shared_ptr<ekat::logger::LoggerBase>& atm_logger) {
+  EKAT_REQUIRE_MSG (atm_logger, "Error! Invalid logger pointer.\n");
+  m_atm_logger = atm_logger;
 }
 
 /* ---------------------------------------------------------- */
@@ -265,54 +318,53 @@ void AtmosphereOutput::init()
 
   // Create FM for scorpio. The fields in this FM are guaranteed to NOT have parents/padding
   auto fm_scorpio = m_field_mgrs[Scorpio] = std::make_shared<FieldManager>(fm_after_hr->get_grid(),RepoState::Closed);
-  for (const auto& fname : m_fields_names) {
+  for (size_t i = 0; i < m_fields_names.size(); ++i) {
+    const auto& fname = m_fields_names[i];
+    const auto& alias = m_alias_names[i];
     const auto& f = fm_after_hr->get_field(fname);
     const auto& fh = f.get_header();
     const auto& fid = fh.get_identifier();
 
     // Check if the field for scorpio can alias the field after hremap.
     // It can do so only for Instant output, and if the field is NOT a subfield ant NOT padded
-    // Also, if we track avg cnt, we MUST add the mask_value extra data, to trigger fill-value logic
+    // Also, if we track avg cnt, we MUST add the fill_value extra data, to trigger fill-value logic
     // when calling Field's update methods
     if (m_avg_type!=OutputAvgType::Instant or
         fh.get_alloc_properties().get_padding()>0 or
         fh.get_parent()!=nullptr) {
       Field copy(fid);
       copy.allocate_view();
-      transfer_io_str_atts (f,copy);
-      if (m_track_avg_cnt) {
-        copy.get_header().set_extra_data("mask_value",Real(m_fill_value));
-      }
+      transfer_extra_data (f,copy);
       fm_scorpio->add_field(copy);
     } else {
       fm_scorpio->add_field(f);
     }
 
-    // Store the field layout, so that calls to setup_output_file are easier
+    // Store the field layout using alias name, so that calls to setup_output_file are easier
     const auto& layout = fid.get_layout();
-    m_vars_dims[fname] = get_var_dimnames(layout);
+    m_vars_dims[alias] = get_var_dimnames(layout);
 
     // Now check that all the dims of this field are already set to be registered.
     const auto& tags = layout.tags();
     const auto& dims = layout.dims();
-    for (int i=0; i<layout.rank(); ++i) {
+    for (int j=0; j<layout.rank(); ++j) {
       // check tag against m_dims_len map.  If not in there, then add it.
-      std::string dimname = m_io_grid->has_special_tag_name(tags[i])
-                          ? m_io_grid->get_special_tag_name(tags[i])
-                          : layout.names()[i];
+      std::string dimname = m_io_grid->has_special_tag_name(tags[j])
+                          ? m_io_grid->get_special_tag_name(tags[j])
+                          : layout.names()[j];
 
       // If t==CMP, and the name stored in the layout is "dim" (the default) or "bin",
       // we append also the extent, to allow different vector dims in the file
       // TODO: generalize this to all tags, for now hardcoding to dim and bin only
-      dimname += (dimname=="dim" or dimname=="bin") ? std::to_string(dims[i]) : "";
+      dimname += (dimname=="dim" or dimname=="bin") ? std::to_string(dims[j]) : "";
 
-      auto is_partitioned = m_io_grid->get_partitioned_dim_tag()==tags[i];
+      auto is_partitioned = m_io_grid->get_partitioned_dim_tag()==tags[j];
       int dimlen = is_partitioned
                   ? m_io_grid->get_partitioned_dim_global_size()
-                  : layout.dim(i);
+                  : layout.dim(j);
       auto it_bool = m_dims_len.emplace(dimname,dimlen);
       EKAT_REQUIRE_MSG(it_bool.second or it_bool.first->second==dimlen,
-        "Error! Dimension " + dimname + " on field " + fname + " has conflicting lengths.\n"
+        "Error! Dimension " + dimname + " on field " + fname + " (alias: " + alias + ") has conflicting lengths.\n"
         "  - old length: " + std::to_string(it_bool.first->second) + "\n"
         "  - new length: " + std::to_string(dimlen) + "\n"
         "If same name applies to different dims (e.g. PhysicsGLL and PhysicsPG2 define "
@@ -361,10 +413,8 @@ run (const std::string& filename,
   }
   Real duration_write = 0.0;  // Record of time spent writing output
   if (is_write_step) {
-    if (m_atm_logger) {
-      m_atm_logger->info("[EAMxx::scorpio_output] Writing variables to file");
-      m_atm_logger->info("  file name: " + filename);
-    }
+    m_atm_logger->info("[EAMxx::scorpio_output] Writing variables to file");
+    m_atm_logger->info("  file name: " + filename);
   }
 
   // Update all diagnostics, we need to do this before applying the remapper
@@ -416,11 +466,30 @@ run (const std::string& filename,
         continue;
       }
 
+      //////////////////////// TODO ////////////////////////
+      // 1. Make the diags/procs COMPUTE the mask for the field, and
+      //    set the mask as extra data. We DON'T want to compute it here
+      // 2. Create count with same layout as the mask
+      // 3. In avg=tally/count, count MAY have smaller layout, hence
+      //    be incompatible. E.g., mask came from FieldAtPressureLevel,
+      //    and was (ncol), but the field is (ncol,2). In this case, we
+      //    ASSUME same mask for all slices, so do scaling on all slices:
+      //      avg.component(i).scale_inv(count)
+      // 4. In FieldAtPressureLevel, make ALL instances at same Plev share
+      //    the same mask field. How? Two ideas:
+      //      - store a static map string->Field in class, and use a string
+      //        key that encodes grid and press level. Only compute mask if
+      //        timestamp of mask field is "old"
+      //      - make another diag that computes the mask, make F@plev depend
+      //        on that diag.
+      // 5. FieldAtPressureLevel (and vremap) should only fill the mask field
+      //    if we later need it. E.g, if no AvgCount AND no hremap, we don't need it.
+      //////////////////////////////////////////////////////
       auto field = fm_after_hr->get_field(fname);
       auto mask  = count.get_header().get_extra_data<Field>("mask");
 
-      // Find where the field is NOT equal to m_fill_value
-      compute_mask<Comparison::NE>(field,m_fill_value,mask);
+      // Find where the field is NOT equal to fill_value
+      compute_mask<Comparison::NE>(field,constants::fill_value<Real>,mask);
 
       // mask=1 for "good" entries, and mask=0 otherwise.
       count.update(mask,1,1);
@@ -457,10 +526,23 @@ run (const std::string& filename,
   }
 
   // Take care of updating and possibly writing fields.
-  for (auto const& name : m_fields_names) {
+  for (size_t i = 0; i < m_fields_names.size(); ++i) {
+    const auto& field_name = m_fields_names[i];
+    const auto& alias_name = m_alias_names[i];
+    
     // Get all the info for this field.
-    const auto& f_in  = fm_after_hr->get_field(name);
-          auto& f_out = fm_scorpio->get_field(name);
+    const auto& f_in  = fm_after_hr->get_field(field_name);
+          auto& f_out = fm_scorpio->get_field(field_name);
+
+    // Safety check: if a field may contain fill values and we are computing an Average,
+    // we must have created an avg-count tracking field; otherwise division by the raw
+    // number of steps would bias the result wherever fill values occurred.
+    if (m_avg_type==OutputAvgType::Average && f_in.get_header().may_be_filled()) {
+      EKAT_REQUIRE_MSG(m_field_to_avg_count.count(field_name),
+        "[AtmosphereOutput::run] Error! Averaging a fill-aware field without avg-count tracking.\n"
+        " - field name : " + field_name + "\n"
+        "This indicates the field was marked may_be_filled after output initialization or tracking logic missed it." );
+    }
 
     switch (m_avg_type) {
       case OutputAvgType::Instant:
@@ -480,12 +562,12 @@ run (const std::string& filename,
       if (output_step and m_avg_type==OutputAvgType::Average) {
         // Even if m_track_avg_cnt=true, this field may not need it
         if (m_track_avg_cnt) {
-          auto avg_count = m_field_to_avg_count.at(name);
+          auto avg_count = m_field_to_avg_count.at(field_name);
 
           f_out.scale_inv(avg_count);
 
           const auto& mask = avg_count.get_header().get_extra_data<Field>("mask");
-          f_out.deep_copy(m_fill_value,mask);
+          f_out.deep_copy(constants::fill_value<Real>,mask);
         } else {
           // Divide by steps count only when the summation is complete
           f_out.scale(Real(1.0) / nsteps_since_last_output);
@@ -495,9 +577,9 @@ run (const std::string& filename,
       // Bring data to host
       f_out.sync_to_host();
 
-      // Write
+      // Write using alias name for netcdf variable
       auto func_start = std::chrono::steady_clock::now();
-      scorpio::write_var(filename,name,f_out.get_internal_view_data<Real,Host>());
+      scorpio::write_var(filename,alias_name,f_out.get_internal_view_data<Real,Host>());
       auto func_finish = std::chrono::steady_clock::now();
       auto duration_loc = std::chrono::duration_cast<std::chrono::milliseconds>(func_finish - func_start);
       duration_write += duration_loc.count();
@@ -505,9 +587,7 @@ run (const std::string& filename,
   }
 
   if (is_write_step) {
-    if (m_atm_logger) {
-      m_atm_logger->info("  Done! Elapsed time: " + std::to_string(duration_write/1000.0) +" seconds");
-    }
+    m_atm_logger->info("  Done! Elapsed time: " + std::to_string(duration_write/1000.0) +" seconds");
   }
 } // run
 
@@ -629,11 +709,13 @@ register_variables(const std::string& filename,
       "  - input value: " + fp_precision + "\n"
       "  - supported values: float, single, double, real\n");
 
-  // Cycle through all fields and register.
-  for (auto const& name : m_fields_names) {
-    const auto& f = m_field_mgrs[Scorpio]->get_field(name);
+  // Cycle through all fields and register using alias names.
+  for (size_t i = 0; i < m_fields_names.size(); ++i) {
+    const auto& field_name = m_fields_names[i];
+    const auto& alias_name = m_alias_names[i];
+    const auto& f = m_field_mgrs[Scorpio]->get_field(field_name);
     const auto& fid  = f.get_header().get_identifier();
-    const auto& dimnames = m_vars_dims.at(name);
+    const auto& dimnames = m_vars_dims.at(alias_name);
     std::string units = fid.get_units().to_string();
 
     // TODO  Need to change dtype to allow for other variables.
@@ -642,42 +724,40 @@ register_variables(const std::string& filename,
 
     if (mode==scorpio::FileMode::Append) {
       // Simply check that the var is in the file, and has the right properties
-      EKAT_REQUIRE_MSG (scorpio::has_var(filename,name),
+      EKAT_REQUIRE_MSG (scorpio::has_var(filename,alias_name),
           "Error! Cannot append, due to variable missing from the file.\n"
           "  - filename : " + filename + "\n"
-          "  - varname  : " + name + "\n");
-      const auto& var = scorpio::get_var(filename,name);
+          "  - varname  : " + alias_name + "\n");
+      const auto& var = scorpio::get_var(filename,alias_name);
       EKAT_REQUIRE_MSG (var.dim_names()==dimnames,
           "Error! Cannot append, due to variable dimensions mismatch.\n"
           "  - filename : " + filename + "\n"
-          "  - varname  : " + name + "\n"
+          "  - varname  : " + alias_name + "\n"
           "  - var dims : " + ekat::join(dimnames,",") + "\n"
           "  - var dims from file: " + ekat::join(var.dim_names(),",") + "\n");
       EKAT_REQUIRE_MSG (var.units==units,
           "Error! Cannot append, due to variable units mismatch.\n"
           "  - filename : " + filename + "\n"
-          "  - varname  : " + name + "\n"
+          "  - varname  : " + alias_name + "\n"
           "  - var units: " + units + "\n"
           "  - var units from file: " + var.units + "\n");
       EKAT_REQUIRE_MSG (var.time_dep==m_add_time_dim,
           "Error! Cannot append, due to time dependency mismatch.\n"
           "  - filename : " + filename + "\n"
-          "  - varname  : " + name + "\n"
+          "  - varname  : " + alias_name + "\n"
           "  - var time dep: " + (m_add_time_dim ? "yes" : "no") + "\n"
           "  - var time dep from file: " + (var.time_dep ? "yes" : "no") + "\n");
     } else {
-      scorpio::define_var (filename, name, units, dimnames,
+      scorpio::define_var (filename, alias_name, units, dimnames,
                             "real",fp_precision, m_add_time_dim);
 
       // Add FillValue as an attribute of each variable
       // FillValue is a protected metadata, do not add it if it already existed
       if (fp_precision=="double" or
           (fp_precision=="real" and std::is_same<Real,double>::value)) {
-        double fill_value = m_fill_value;
-        scorpio::set_attribute(filename, name, "_FillValue",fill_value);
+        scorpio::set_attribute(filename, alias_name, "_FillValue",constants::fill_value<double>);
       } else {
-        float fill_value = m_fill_value;
-        scorpio::set_attribute(filename, name, "_FillValue",fill_value);
+        scorpio::set_attribute(filename, alias_name, "_FillValue",constants::fill_value<float>);
       }
 
       // If this is has subfields, add list of its children
@@ -694,33 +774,63 @@ register_variables(const std::string& filename,
         children_list.pop_back();
         children_list.pop_back();
         children_list += " ]";
-        scorpio::set_attribute(filename,name,"sub_fields",children_list);
+        scorpio::set_attribute(filename,alias_name,"sub_fields",children_list);
       }
 
       // If tracking average count variables then add the name of the tracking variable for this variable
-      if (m_field_to_avg_count.count(name)) {
-        const auto& count = m_field_to_avg_count.at(name);
-        scorpio::set_attribute(filename,name,"averaging_count_tracker",count.name());
+      if (m_field_to_avg_count.count(field_name)) {
+        const auto& count = m_field_to_avg_count.at(field_name);
+        scorpio::set_attribute(filename,alias_name,"averaging_count_tracker",count.name());
       }
 
       // Atm procs may have set some request for metadata.
       using stratts_t = std::map<std::string,std::string>;
       const auto& str_atts = f.get_header().get_extra_data<stratts_t>("io: string attributes");
       for (const auto& [att_name,att_val] : str_atts) {
-        scorpio::set_attribute(filename,name,att_name,att_val);
+        scorpio::set_attribute(filename,alias_name,att_name,att_val);
       }
 
       // Gather longname (if not already in the io: string attributes)
       if (str_atts.count("long_name")==0) {
-        auto longname = m_default_metadata.get_longname(name);
-        scorpio::set_attribute(filename, name, "long_name", longname);
+        auto longname = m_default_metadata.get_longname(field_name);
+        scorpio::set_attribute(filename, alias_name, "long_name", longname);
       }
 
       // Gather standard name, CF-Compliant (if not already in the io: string attributes)
       if (str_atts.count("standard_name")==0) {
-        auto standardname = m_default_metadata.get_standardname(name);
-        scorpio::set_attribute(filename, name, "standard_name", standardname);
+        auto standardname = m_default_metadata.get_standardname(field_name);
+        scorpio::set_attribute(filename, alias_name, "standard_name", standardname);
       }
+      
+      // Add alias information if variable name differs from field name
+      if (alias_name != field_name) {
+        scorpio::set_attribute(filename, alias_name, "eamxx_name", field_name);
+      }
+
+      // If output represents an statistic over a time range add a "cell methods"
+      // attribute.
+      switch (m_avg_type) {
+        case OutputAvgType::Instant:
+          scorpio::set_attribute(filename, alias_name, "cell_methods", "time: point");
+          break;  // Don't add the attribute
+        case OutputAvgType::Max:
+          scorpio::set_attribute(filename, alias_name, "cell_methods", "time: maximum");
+          break;
+        case OutputAvgType::Min:
+          scorpio::set_attribute(filename, alias_name, "cell_methods", "time: minimum");
+          break;
+        case OutputAvgType::Average:
+          scorpio::set_attribute(filename, alias_name, "cell_methods", "time: mean");
+          break;
+        default:
+          EKAT_ERROR_MSG ("Unexpected/unsupported averaging type.\n");
+      }
+
+      // If output contains the column dimension add a "coordinates" attribute.
+      if (fid.get_layout().has_tag(COL)) {
+        scorpio::set_attribute(filename, alias_name, "coordinates", "lat lon");
+      }
+
     }
   }
 
@@ -838,11 +948,11 @@ compute_diagnostics(const bool allow_invalid_fields)
     if (not computed) {
       // The diag was either not computable or it may have failed to compute
       // (e.g., t=0 output with a flux-like diag).
-      // If we're allowing invalid fields, then we should simply set diag=m_fill_value
+      // If we're allowing invalid fields, then we should simply set diag=fill_value
       EKAT_REQUIRE_MSG (allow_invalid_fields,
         "Error! Failed to compute diagnostic.\n"
         " - diag name: " + diag->get_diagnostic().name() + "\n");
-      d.deep_copy(m_fill_value);
+      d.deep_copy(constants::fill_value<float>);
     }
   }
 }
@@ -891,7 +1001,6 @@ init_diagnostics ()
     std::string diag_avg_cnt_name = "";
     auto& params = diag->get_params();
     if (diag->name()=="FieldAtPressureLevel") {
-      params.set<double>("mask_value",m_fill_value);
       diag_avg_cnt_name = "_"
                         + params.get<std::string>("pressure_value")
                         + params.get<std::string>("pressure_units");
@@ -904,9 +1013,12 @@ init_diagnostics ()
         m_track_avg_cnt |= m_avg_type!=OutputAvgType::Instant;
       }
     } else if (diag->name()=="AerosolOpticalDepth550nm") {
-      params.set<double>("mask_value", m_fill_value);
       m_track_avg_cnt = m_track_avg_cnt || m_avg_type!=OutputAvgType::Instant;
       diag_avg_cnt_name = "_" + diag->name();
+    }
+    else if (diag_field.get_header().has_extra_data("mask_data")) {
+      m_track_avg_cnt = m_track_avg_cnt || m_avg_type!=OutputAvgType::Instant;
+      diag_avg_cnt_name = "_" + diag_field.name();
     }
 
     // If specified, set avg_cnt tracking for this diagnostic.
@@ -925,6 +1037,26 @@ init_diagnostics ()
   for (const auto& fname : m_fields_names) {
     if (not m_field_mgrs[FromModel]->has_field(fname)) {
       create_diag(fname);
+    } else {
+      // This is a regular field, not a diagnostic.
+      // Still, we might need to do some extra setup, like for avg_count.
+      const auto& f = m_field_mgrs[FromModel]->get_field(fname);
+      // We need avg-count tracking for any averaged (non-instant) field that:
+      //  - supplies explicit mask info (mask_data or mask_field), OR
+      //  - is marked as potentially containing fill values (may_be_filled()).
+      // Without this, fill-aware updates skip fill_value during accumulation (good)
+      // but we would still divide by the raw nsteps, biasing the result low.
+      if (m_avg_type!=OutputAvgType::Instant) {
+        const bool has_mask = f.get_header().has_extra_data("mask_data") || f.get_header().has_extra_data("mask_field");
+        const bool may_be_filled = f.get_header().may_be_filled();
+        if (has_mask || may_be_filled) {
+          m_track_avg_cnt = true;
+          // Avoid duplicate insertion if already present (e.g., mask + filled both true)
+          if (m_field_to_avg_cnt_suffix.count(f.name())==0) {
+            m_field_to_avg_cnt_suffix.emplace(f.name(), "_" + f.name());
+          }
+        }
+      }
     }
   }
 }

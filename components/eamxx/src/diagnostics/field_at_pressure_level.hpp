@@ -3,8 +3,6 @@
 
 #include "share/atm_process/atmosphere_diagnostic.hpp"
 
-#include <ekat/ekat_pack.hpp>
-
 namespace scream
 {
 
@@ -39,8 +37,6 @@ protected:
 
   Real                m_pressure_level;
   int                 m_num_levs;
-  Real                m_mask_val;
-
 }; // class FieldAtPressureLevel
 
 } //namespace scream

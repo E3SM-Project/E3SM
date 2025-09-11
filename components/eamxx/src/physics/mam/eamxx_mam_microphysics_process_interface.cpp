@@ -6,6 +6,8 @@
 #include "readfiles/find_season_index_utils.hpp"
 #include "readfiles/photo_table_utils.cpp"
 
+#include <ekat_team_policy_utils.hpp>
+
 namespace scream {
 
 MAMMicrophysics::MAMMicrophysics(const ekat::Comm &comm,
@@ -617,10 +619,10 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   const int curr_month = start_of_step_ts().get_month() - 1;  // 0-based
   if (config_.linoz.compute) {
     scream::mam_coupling::update_tracer_data_from_file(
-      LinozDataReader_, curr_month, *LinozHorizInterp_, linoz_data_);
+      LinozDataReader_, curr_month+linoz_data_.offset_time_index_, *LinozHorizInterp_, linoz_data_);
   }
   scream::mam_coupling::update_tracer_data_from_file(
-      TracerDataReader_, curr_month, *TracerHorizInterp_, tracer_data_);
+      TracerDataReader_, curr_month+tracer_data_.offset_time_index_, *TracerHorizInterp_, tracer_data_);
 
   for(int i = 0; i < static_cast<int>(extfrc_lst_.size()); ++i) {
     scream::mam_coupling::update_tracer_data_from_file(
@@ -639,8 +641,11 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
 //  RUN_IMPL
 // ================================================================
 void MAMMicrophysics::run_impl(const double dt) {
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
+
   const int ncol = ncol_;
   const int nlev = nlev_;
+
   //NOTE: get_default_team_policy produces a team size of 96 (nlev=72).
   // This interface hangs with this team size. Therefore,
   // let's use a team size of nlev.
@@ -648,9 +653,8 @@ void MAMMicrophysics::run_impl(const double dt) {
        const int team_size=nlev;
 #else
        const int team_size=1;
-#endif
-  const auto policy =
-       ekat::ExeSpaceUtils<KT::ExeSpace>::get_team_policy_force_team_size(ncol, team_size);
+#endif  
+  const auto policy = TPF::get_default_team_policy(ncol, team_size);
 
   // preprocess input -- needs a scan for the calculation of atm height
   pre_process(wet_aero_, dry_aero_, wet_atm_, dry_atm_);

@@ -6,9 +6,9 @@
 #include "share/eamxx_types.hpp"
 #include "share/util/eamxx_setup_random_test.hpp"
 
-#include "ekat/util/ekat_math_utils.hpp"
-#include "ekat/ekat_assert.hpp"
-#include "ekat/util/ekat_test_utils.hpp"
+#include <ekat_math_utils.hpp>
+#include <ekat_assert.hpp>
+#include <ekat_test_utils.hpp>
 
 #include <random>
 #include <vector>
@@ -383,19 +383,35 @@ class PhysicsTestData
     }
   }
 
-  // Since we are also preparing index data, this function is doing more than transposing. It's shifting the
-  // format of all data from one language to another
   template <ekat::TransposeDirection::Enum D>
-  void transpose()
+  void shift_int_scalar(int& scalar)
+  {
+    const int shift = (D == ekat::TransposeDirection::c2f ? 1 : -1);
+    scalar += shift;
+
+    // Since f90 allows for negative index ranges (-foo:foo), we may
+    // have to remove this check.
+    EKAT_ASSERT_MSG(scalar >= 0, "Bad index: " << scalar);
+  }
+
+  // Since we are also preparing index data, this function is doing more than transposing. It's shifting the
+  // format of all data from one language to another.
+  //
+  // There is currently no way for this struct to know which integer scalars need
+  // to be shifted, so any subclass that has those will need to define their own
+  // transition method which will call this one and then adjust their int scalars
+  // that represent indices.
+  template <ekat::TransposeDirection::Enum D>
+  void transition()
   {
     m_reals.transpose<D>();
     m_ints.transpose<D>();
     m_bools.transpose<D>();
 
-    // Shift the indices. We might not be able to make the assumption that int data represented indices
+    // Shift the indices. We might not be able to make the assumption that int data represented indices.
+    // NOTE! This will not shift scalar integers. It is up the children structs to do that
     for (size_t i = 0; i < m_ints.m_data.size(); ++i) {
-      m_ints.m_data[i] += (D == ekat::TransposeDirection::c2f ? 1 : -1);
-      EKAT_ASSERT_MSG(m_ints.m_data[i] >= 0, "Bad index: " << m_ints.m_data[i]);
+      shift_int_scalar<D>(m_ints.m_data[i]);
     }
   }
 

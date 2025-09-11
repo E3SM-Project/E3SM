@@ -31,6 +31,7 @@ if (NOT EAMXX_ENABLE_GPU OR Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE OR Kokkos
     eti/gw_gw_ediff.cpp
     eti/gw_gw_diff_tend.cpp
     eti/gw_gw_oro_src.cpp
+    eti/gw_gw_common_init.cpp
   ) # GW ETI SRCS
 endif()
 
@@ -44,6 +45,7 @@ target_include_directories(gw PUBLIC
   ${CMAKE_CURRENT_BINARY_DIR}/modules
   ${CMAKE_CURRENT_SOURCE_DIR}/impl
   ${PATH_TO_LEGACY_GW}
+  ${PATH_TO_LEGACY_GW}/..
 )
 target_link_libraries(gw physics_share scream_share)
 

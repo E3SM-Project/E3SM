@@ -6,9 +6,8 @@ namespace scream
 
 Field::
 Field (const identifier_type& id)
- : m_header (create_header(id))
 {
-  // Nothing to do here
+  m_header = std::make_shared<FieldHeader>(id);
 }
 
 Field
@@ -167,7 +166,7 @@ Field Field::subfield(const int idim, const int index_beg,
 }
 
 Field Field::
-get_component (const int i, const bool dynamic) {
+get_component (const int i, const bool dynamic) const {
   const auto& layout = get_header().get_identifier().get_layout();
   const auto& fname = get_header().get_identifier().name();
   EKAT_REQUIRE_MSG (layout.is_vector_layout(),
@@ -183,7 +182,7 @@ get_component (const int i, const bool dynamic) {
   return subfield (fname + "_" + std::to_string(i),idim,i,dynamic);
 }
 
-Field Field::get_components(const int beg, const int end) {
+Field Field::get_components(const int beg, const int end) const {
   const auto& layout = get_header().get_identifier().get_layout();
   const auto& fname = get_header().get_identifier().name();
   EKAT_REQUIRE_MSG(layout.is_vector_layout(),

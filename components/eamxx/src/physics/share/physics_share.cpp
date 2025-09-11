@@ -1,8 +1,6 @@
 #include "physics_share.hpp"
 
-#include "ekat/ekat_assert.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
-#include "ekat/ekat_pack_kokkos.hpp"
+#include <ekat_assert.hpp>
 
 #include <random>
 
@@ -50,6 +48,7 @@ static Scalar wrap_name(Scalar input) {                                       \
   cuda_wrap_single_arg(exp, std::exp)
   cuda_wrap_single_arg(expm1, std::expm1)
   cuda_wrap_single_arg(tanh, std::tanh)
+  cuda_wrap_single_arg(cos, std::cos)
   cuda_wrap_single_arg(erf, std::erf)
 
 #undef cuda_wrap_single_arg
@@ -128,13 +127,22 @@ Real scream_expm1(Real input)
   return std::expm1(input);
 #endif
 }
-  
+
 Real scream_tanh(Real input)
 {
 #ifdef EAMXX_ENABLE_GPU
   return CudaWrap<Real, DefaultDevice>::tanh(input);
 #else
   return std::tanh(input);
+#endif
+}
+
+Real scream_cos(Real input)
+{
+#ifdef EAMXX_ENABLE_GPU
+  return CudaWrap<Real, DefaultDevice>::cos(input);
+#else
+  return std::cos(input);
 #endif
 }
 

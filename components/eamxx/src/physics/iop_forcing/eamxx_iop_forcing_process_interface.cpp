@@ -3,32 +3,35 @@
 #include "share/field/field_utils.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
 
+#include <ekat_math_utils.hpp>
+
 namespace scream
 {
 // =========================================================================================
-void IOPForcing::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
+void
+IOPForcing::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 {
   using namespace ekat::units;
 
-  m_grid = grids_manager->get_grid("physics");
-  const auto& grid_name = m_grid->name();
+  m_grid                = grids_manager->get_grid("physics");
+  const auto &grid_name = m_grid->name();
 
-  m_num_cols = m_grid->get_num_local_dofs(); // Number of columns on this rank
-  m_num_levs = m_grid->get_num_vertical_levels();  // Number of levels per column
+  m_num_cols = m_grid->get_num_local_dofs();      // Number of columns on this rank
+  m_num_levs = m_grid->get_num_vertical_levels(); // Number of levels per column
 
   // Define the different field layouts that will be used for this process
   FieldLayout scalar2d     = m_grid->get_2d_scalar_layout();
   FieldLayout scalar3d_mid = m_grid->get_3d_scalar_layout(true);
-  FieldLayout vector3d_mid = m_grid->get_3d_vector_layout(true,2);
+  FieldLayout vector3d_mid = m_grid->get_3d_vector_layout(true, 2);
 
   constexpr int pack_size = Pack::n;
 
   add_field<Required>("ps", scalar2d, Pa, grid_name);
 
-  add_field<Updated>("horiz_winds", vector3d_mid, m/s, grid_name, pack_size);
+  add_field<Updated>("horiz_winds", vector3d_mid, m / s, grid_name, pack_size);
   add_field<Updated>("T_mid", scalar3d_mid, K, grid_name, pack_size);
 
-  add_tracer<Updated>("qv", m_grid, kg/kg, pack_size);
+  add_tracer<Updated>("qv", m_grid, kg / kg, pack_size);
   add_group<Updated>("tracers", grid_name, pack_size, MonolithicAlloc::Required);
 
   // Sanity check that iop data manager is setup by driver
@@ -72,9 +75,11 @@ set_computed_group_impl (const FieldGroup& group)
 // =========================================================================================
 size_t IOPForcing::requested_buffer_size_in_bytes() const
 {
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
+
   // Number of bytes needed by the WorkspaceManager passed to shoc_main
   const int nlevi_packs  = ekat::npack<Pack>(m_num_levs+1);
-  const auto policy      = ESU::get_default_team_policy(m_num_cols, nlevi_packs);
+  const auto policy      = TPF::get_default_team_policy(m_num_cols, nlevi_packs);
   const size_t wsm_bytes = WorkspaceMgr::get_total_bytes_needed(nlevi_packs, 7+m_num_tracers, policy);
 
   return wsm_bytes;
@@ -82,6 +87,8 @@ size_t IOPForcing::requested_buffer_size_in_bytes() const
 // =========================================================================================
 void IOPForcing::init_buffers(const ATMBufferManager &buffer_manager)
 {
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
+
   EKAT_REQUIRE_MSG(buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes(),
                    "Error! Buffers size not sufficient.\n");
 
@@ -91,7 +98,7 @@ void IOPForcing::init_buffers(const ATMBufferManager &buffer_manager)
   // WSM data
   m_buffer.wsm_data = mem;
 
-  const auto policy       = ESU::get_default_team_policy(m_num_cols, nlevi_packs);
+  const auto policy       = TPF::get_default_team_policy(m_num_cols, nlevi_packs);
   const size_t wsm_npacks = WorkspaceMgr::get_total_bytes_needed(nlevi_packs, 7+m_num_tracers, policy)/sizeof(Pack);
   mem += wsm_npacks;
 
@@ -111,13 +118,15 @@ void IOPForcing::create_helper_field (const std::string& name,
   Field f(id);
   f.get_header().get_alloc_properties().request_allocation(ps);
   f.allocate_view();
-  f.deep_copy(ekat::ScalarTraits<Real>::invalid());
+  f.deep_copy(ekat::invalid<Real>());
 
   m_helper_fields[name] = f;
 }
 // =========================================================================================
 void IOPForcing::initialize_impl (const RunType run_type)
 {
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
+
   // Set field property checks for the fields in this process
   using Interval = FieldWithinIntervalCheck;
   add_postcondition_check<Interval>(get_field_out("T_mid"),m_grid,100.0,500.0,false);
@@ -128,7 +137,7 @@ void IOPForcing::initialize_impl (const RunType run_type)
 
   // Setup WSM for internal local variables
   const auto nlevi_packs = ekat::npack<Pack>(m_num_levs+1);
-  const auto policy = ESU::get_default_team_policy(m_num_cols, nlevi_packs);
+  const auto policy = TPF::get_default_team_policy(m_num_cols, nlevi_packs);
   m_workspace_mgr.setup(m_buffer.wsm_data, nlevi_packs, 7+m_num_tracers, policy);
 
   // Compute field for horizontal contraction weights (1/num_global_dofs)
@@ -328,6 +337,8 @@ iop_apply_coriolis(const MemberType& team,
 // =========================================================================================
 void IOPForcing::run_impl (const double dt)
 {
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
+
   // Pack dimensions
   const auto nlev_packs  = ekat::npack<Pack>(m_num_levs);
 
@@ -387,7 +398,7 @@ void IOPForcing::run_impl (const double dt)
   }
 
   // Team policy and workspace manager for eamxx
-  const auto policy_iop = ESU::get_default_team_policy(m_num_cols, nlev_packs);
+  const auto policy_iop = TPF::get_default_team_policy(m_num_cols, nlev_packs);
 
   // Reset internal WSM variables.
   m_workspace_mgr.reset_internals();
@@ -471,23 +482,10 @@ void IOPForcing::run_impl (const double dt)
                           KOKKOS_LAMBDA (const MemberType& team) {
       const int icol = team.league_rank();
 
-      auto ps_i = ps(icol);
       auto u_i = Kokkos::subview(horiz_winds, icol, 0, Kokkos::ALL());
       auto v_i = Kokkos::subview(horiz_winds, icol, 1, Kokkos::ALL());
       auto T_mid_i = ekat::subview(T_mid, icol);
       auto qv_i = ekat::subview(qv, icol);
-
-      auto ws = wsm.get_workspace(team);
-      uview_1d<Pack> ref_p_mid;
-      ws.take_many_contiguous_unsafe<1>({"ref_p_mid"},{&ref_p_mid});
-
-      // Compute reference pressures and layer thickness.
-      // TODO: Allow geometry data to allocate packsize
-      auto s_ref_p_mid = ekat::scalarize(ref_p_mid);
-      Kokkos::parallel_for(Kokkos::TeamVectorRange(team, num_levs), [&](const int& k) {
-        s_ref_p_mid(k) = hyam(k)*ps0 + hybm(k)*ps_i;
-      });
-      team.team_barrier();
 
       Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_packs), [&](const int& k) {
         if (iop_nudge_tq) {
@@ -511,9 +509,6 @@ void IOPForcing::run_impl (const double dt)
           v_i(k).update(horiz_winds_mean(1, k) - v_iop(k), -dt/rtau, 1.0);
         }
       });
-
-      // Release WS views
-      ws.release_many_contiguous<1>({&ref_p_mid});
     });
   }
 }

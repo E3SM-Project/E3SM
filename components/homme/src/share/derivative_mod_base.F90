@@ -102,12 +102,8 @@ contains
     ! Local variables
     type (quadrature_t) :: gp   ! Quadrature points and weights on pressure grid
     
-    real (kind=longdouble_kind) :: dmat(np,np)
-    real (kind=longdouble_kind) :: dpv(np,np)
     real (kind=longdouble_kind) :: dvv(np,np)
-    real (kind=longdouble_kind) :: dvv_diag(np,np)
     real (kind=longdouble_kind) :: v2v(np,np)
-    real (kind=longdouble_kind) :: xnorm
     integer i,j
 
     ! ============================================
@@ -342,8 +338,8 @@ contains
     integer i
     integer j
     integer l
-    real(kind=real_kind) ::  dsdx00,dsdx01
-    real(kind=real_kind) ::  dsdy00,dsdy01
+    real(kind=real_kind) ::  dsdx00
+    real(kind=real_kind) ::  dsdy00
 #ifdef DEBUG
     print *, "gradient_str_nonstag"
 !   write(17) np,s,deriv
@@ -381,8 +377,7 @@ contains
     integer j
     integer l
     
-    real(kind=real_kind) ::  dvdx00,dvdx01
-    real(kind=real_kind) ::  dudy00,dudy01
+    real(kind=real_kind) ::  dvdx00,dudy00
 
     real(kind=real_kind)  :: vvtemp(np,np)
     do j=1,np
@@ -492,7 +487,7 @@ contains
 
     real(kind=real_kind) :: ds(np,np,2)
 
-    integer i,j,l,m,n
+    integer i,j,m,n
     real(kind=real_kind) ::  dscontra(np,np,2)
 
     dscontra=0
@@ -553,7 +548,7 @@ contains
 
     real(kind=real_kind) :: ds(np,np,2)
 
-    integer i,j,l,m,n
+    integer i,j,m,n
     real(kind=real_kind) ::  dscontra(np,np,2)
 
 
@@ -609,14 +604,17 @@ contains
 
     real(kind=real_kind) :: ds(np,np,2)
 
-    integer i,j,l,m,n
+    integer j,m,n
     real(kind=real_kind) ::  dscov(np,np,2)
 
     ! debug: 
+#if 0
+    ! To use for debugging below
     real(kind=real_kind) ::  vcontra(np,np,2)
     real(kind=real_kind) ::  v(np,np,2)
     real(kind=real_kind) ::  div(np,np)
-
+    integer :: i
+#endif
 
 
     dscov=0
@@ -749,9 +747,7 @@ contains
 
     real(kind=real_kind) :: ds(np,np,2)
 
-    integer i
-    integer j
-    integer l
+    integer :: i,j,l
 
     real(kind=real_kind) ::  dsdx00
     real(kind=real_kind) ::  dsdy00
@@ -806,10 +802,13 @@ contains
     integer i,j,m,n
 
     real(kind=real_kind) ::  vtemp(np,np,2)
+#if 0
+    ! Used below only for debugging
     real(kind=real_kind) ::  ggtemp(np,np,2)
     real(kind=real_kind) ::  gtemp(np,np,2)
-    real(kind=real_kind) ::  psi(np,np)
     real(kind=real_kind) :: xtmp
+    real(kind=real_kind) ::  psi(np,np)
+#endif
 
     ! latlon- > contra
     do j=1,np
@@ -985,8 +984,6 @@ contains
       real(kind=real_kind) :: dvdx00,dudy00
       real(kind=real_kind) :: vco(np,np,2)
       real(kind=real_kind) :: vtemp(np,np)
-      real(kind=real_kind) :: rdx
-      real(kind=real_kind) :: rdy
 
       ! convert to covariant form
                                                                     
@@ -1083,8 +1080,7 @@ contains
     type (derivative_t), intent(in) :: deriv
     type (element_t), intent(in) :: elem
     real(kind=real_kind)             :: laplace(np,np)
-    real(kind=real_kind)             :: laplace2(np,np)
-    integer i,j
+    integer :: i,j
 
     ! Local
     real(kind=real_kind) :: grads(np,np,2), oldgrads(np,np,2)
@@ -1216,9 +1212,8 @@ contains
     real(kind=real_kind), optional :: nu_ratio
     ! Local
 
-    integer i,j,l,m,n
+    integer m,n
     real(kind=real_kind) :: vor(np,np),div(np,np)
-    real(kind=real_kind) :: v1,v2,div1,div2,vor1,vor2,phi_x,phi_y
 
     div=divergence_sphere(v,deriv,elem)
     vor=vorticity_sphere(v,deriv,elem)
@@ -1414,8 +1409,6 @@ contains
     real (kind=real_kind)              :: flux_r(n,n)
     real (kind=real_kind)              :: flux_b(n,n)
     real (kind=real_kind)              :: flux_t(n,n)
-    
-    integer i,j
 
     if (.not.ALLOCATED(integration_matrix)      .or. &
         SIZE(integration_matrix,1).ne.n .or. &
@@ -1519,8 +1512,6 @@ contains
     real (kind=real_kind)              :: val(np,np)
     real (kind=real_kind)              :: values(intervals,intervals)
 
-    integer i,j
-
     if (.not.ALLOCATED(integration_matrix)      .or. &
         SIZE(integration_matrix,1).ne.intervals .or. &
         SIZE(integration_matrix,2).ne.np) then
@@ -1555,9 +1546,8 @@ contains
     
     implicit none
 
-    integer              , intent(in)  :: np
-    integer              , intent(in)  :: intervals
-    real (kind=real_kind)              :: values(intervals,intervals)
+    integer, intent(in)  :: np
+    integer, intent(in)  :: intervals
 
 
     real(kind=real_kind), parameter :: zero = 0.0D0, one=1.0D0, two=2.0D0
@@ -1570,7 +1560,6 @@ contains
 
     real (kind=real_kind) :: legrange_div(np)
     real (kind=real_kind) :: a,b,x,y, x_j, x_i 
-    real (kind=real_kind) :: r(1) 
     integer i,j,n,m
 
     if (ALLOCATED(integration_matrix)) deallocate(integration_matrix)
@@ -1676,7 +1665,7 @@ contains
     real (kind=real_kind), dimension(np*np,nlev), intent(in), optional  :: dpmass
     real (kind=real_kind), dimension(np*np), intent(in)   :: sphweights
 
-    integer  k1, k, iter, weightsnum
+    integer  k1, k, iter
     real (kind=real_kind) :: addmass, weightssum, mass, sumc, minpk, maxpk
     real (kind=real_kind) :: x(np*np),c(np*np)
     real (kind=real_kind) :: tol_limiter = 5e-14

@@ -14,11 +14,11 @@
 #include "dynamics/homme/homme_dimensions.hpp"
 
 // Ekat includes
-#include "ekat/ekat_assert.hpp"
-#include "ekat/kokkos/ekat_subview_utils.hpp"
-#include "ekat/ekat_pack.hpp"
-#include "ekat/ekat_pack_kokkos.hpp"
-#include "ekat/ekat_pack_utils.hpp"
+#include <ekat_assert.hpp>
+#include <ekat_team_policy_utils.hpp>
+#include <ekat_subview_utils.hpp>
+#include <ekat_pack.hpp>
+#include <ekat_pack_utils.hpp>
 
 extern "C" void gfr_init_hxx();
 
@@ -79,8 +79,9 @@ static void copy_prev (const int ncols, const int npacks,
                        const T_t& T, const uv_t& uv,
                        const FT_t& FT, const FM_t& FM) {
   using KT = KokkosTypes<DefaultDevice>;
-  using ESU = ekat::ExeSpaceUtils<KT::ExeSpace>;
-  const auto policy = ESU::get_default_team_policy(ncols, npacks);
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
+
+  const auto policy = TPF::get_default_team_policy(ncols, npacks);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
     const int& icol = team.league_rank();
     Kokkos::parallel_for(Kokkos::TeamVectorRange(team, npacks),

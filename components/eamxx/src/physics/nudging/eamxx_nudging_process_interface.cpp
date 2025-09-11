@@ -5,9 +5,9 @@
 #include "share/util/eamxx_utils.hpp"
 #include "share/io/eamxx_scorpio_interface.hpp"
 
-#include <ekat/util/ekat_lin_interp.hpp>
-#include <ekat/util/ekat_math_utils.hpp>
-#include <ekat/kokkos/ekat_kokkos_utils.hpp>
+#include <ekat_lin_interp.hpp>
+#include <ekat_math_utils.hpp>
+#include <ekat_team_policy_utils.hpp>
 
 namespace scream
 {
@@ -322,7 +322,7 @@ void Nudging::run_impl (const double dt)
   using KT            = KokkosTypes<DefaultDevice>;
   using RangePolicy   = typename KT::RangePolicy;
   using MemberType    = typename KT::MemberType;
-  using ESU           = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
+  using TPF           = ekat::TeamPolicyFactory<typename KT::ExeSpace>;
   using PackT         = ekat::Pack<Real,1>;
   using view_1d       = KT::view_1d<PackT>;
   using view_2d       = KT::view_2d<PackT>;
@@ -344,21 +344,17 @@ void Nudging::run_impl (const double dt)
     const auto fl = f.get_header().get_identifier().get_layout();
     const auto v  = f.get_view<Real**>();
 
-    Real var_fill_value = constants::DefaultFillValue<Real>().value;
-    // Query the helper field for the fill value, if not present use default
-    if (f.get_header().has_extra_data("mask_value")) {
-      var_fill_value = f.get_header().get_extra_data<Real>("mask_value");
-    }
+    constexpr Real fill_value = constants::fill_value<Real>;
 
     const int ncols = fl.dim(0);
     const int nlevs = fl.dim(1);
-    const auto thresh = std::abs(var_fill_value)*0.0001;
+    const auto thresh = std::abs(fill_value)*0.0001;
     auto lambda = KOKKOS_LAMBDA(const int icol) {
       int first_good = nlevs;
       int last_good = -1;
       for (int k=0; k<nlevs; ++k) {
-        if (std::abs(v(icol,k)-var_fill_value)>thresh) {
-          // This entry is substantially different from var_fill_value, so it's good
+        if (std::abs(v(icol,k)-fill_value)>thresh) {
+          // This entry is substantially different from fill_value, so it's good
           first_good = ekat::impl::min(first_good,k);
           last_good  = ekat::impl::max(last_good,k);
         }
@@ -437,7 +433,7 @@ void Nudging::run_impl (const double dt)
       });
     };
 
-    auto policy = ESU::get_default_team_policy(ncols,nlevs_src);
+    auto policy = TPF::get_default_team_policy(ncols,nlevs_src);
     Kokkos::parallel_for("", policy, copy_3d);
   };
 
@@ -476,7 +472,7 @@ void Nudging::run_impl (const double dt)
   using LI = ekat::LinInterp<Real,1>;
   const int nlevs_tgt = m_num_levs;
   LI vert_interp(ncols,nlevs_src+2,nlevs_tgt);
-  const auto policy_vinterp = ESU::get_default_team_policy(ncols, nlevs_tgt);
+  const auto policy_vinterp = TPF::get_default_team_policy(ncols, nlevs_tgt);
   auto p_tgt = get_field_in("p_mid").get_view<const PackT**>();
   Kokkos::parallel_for("nudging_vert_interp_setup_loop", policy_vinterp,
     KOKKOS_LAMBDA(const MemberType& team) {
@@ -552,7 +548,7 @@ Field Nudging::create_helper_field (const std::string& name,
   Field f(id);
   f.get_header().get_alloc_properties().request_allocation(ps);
   f.allocate_view();
-  f.deep_copy(ekat::ScalarTraits<Real>::invalid());
+  f.deep_copy(ekat::invalid<Real>());
 
   m_helper_fields[name] = f;
   return m_helper_fields[name];

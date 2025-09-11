@@ -6,3 +6,5 @@ string(APPEND CMAKE_Fortran_FLAGS_RELEASE " -O2")
 if (MPILIB STREQUAL mpi-serial AND NOT compile_threaded)
   set(PFUNIT_PATH "$ENV{SEMS_PFUNIT_ROOT}")
 endif()
+
+set(KOKKOS_USE_EKAT_MACH_FILE "TRUE")

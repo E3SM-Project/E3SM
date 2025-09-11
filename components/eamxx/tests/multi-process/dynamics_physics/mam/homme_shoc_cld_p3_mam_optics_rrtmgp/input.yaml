@@ -25,7 +25,7 @@ initial_conditions:
   pbl_height : 1.0
   phis : 1.0
 
-atmosphere_processes:
+eamxx:
   atm_procs_list: [homme,physics]
   schedule_type: sequential
   homme:

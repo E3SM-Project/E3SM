@@ -1,7 +1,7 @@
 #include "diagnostics/field_at_height.hpp"
 
-#include "ekat/std_meta/ekat_std_utils.hpp"
-#include "ekat/util/ekat_units.hpp"
+#include <ekat_std_utils.hpp>
+#include <ekat_units.hpp>
 
 namespace
 {

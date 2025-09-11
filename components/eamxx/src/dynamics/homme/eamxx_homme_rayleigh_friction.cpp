@@ -6,6 +6,8 @@
 // Homme includes
 #include "dynamics/homme/homme_dimensions.hpp"
 
+#include <ekat_team_policy_utils.hpp>
+
 namespace scream {
 
 void HommeDynamics::rayleigh_friction_init()
@@ -54,7 +56,7 @@ void HommeDynamics::rayleigh_friction_init()
 void HommeDynamics::rayleigh_friction_apply(const Real dt) const
 {
   using PF = PhysicsFunctions<DefaultDevice>;
-  using ESU = ekat::ExeSpaceUtils<KT::ExeSpace>;
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
 
   // If m_raytau0==0, then no Rayleigh friction is applied. Return.
   if (m_raytau0 == 0) return;
@@ -69,7 +71,7 @@ void HommeDynamics::rayleigh_friction_apply(const Real dt) const
   // local for lambda captures to avoid issues on GPU
   auto otau = m_otau;
 
-  const auto policy = ESU::get_default_team_policy(ncols, npacks);
+  const auto policy = TPF::get_default_team_policy(ncols, npacks);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
     const int& icol = team.league_rank();
 

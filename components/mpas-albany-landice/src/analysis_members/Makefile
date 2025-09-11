@@ -3,7 +3,8 @@
 OBJS = mpas_li_analysis_driver.o
 
 MEMBERS = mpas_li_global_stats.o \
-          mpas_li_regional_stats.o 
+          mpas_li_regional_stats.o \
+          mpas_li_flux_gates.o
 
 all: $(OBJS)
 

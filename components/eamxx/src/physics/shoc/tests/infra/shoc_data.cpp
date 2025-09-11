@@ -1,8 +1,9 @@
 #include "shoc_data.hpp"
-#include "physics_constants.hpp"
 #include "shoc_ic_cases.hpp"
 
-#include "ekat/ekat_assert.hpp"
+#include "physics_constants.hpp"
+
+#include <ekat_assert.hpp>
 
 using scream::Real;
 using scream::Int;

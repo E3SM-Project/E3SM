@@ -4,6 +4,8 @@
 #include "share/field/field_utils.hpp"
 #include "share/util/eamxx_common_physics_functions.hpp"
 
+#include <ekat_team_policy_utils.hpp>
+
 namespace scream {
 
 VertContractDiag::VertContractDiag(const ekat::Comm &comm,
@@ -116,6 +118,11 @@ void VertContractDiag::initialize_impl(const RunType /*run_type*/) {
   FieldIdentifier d_fid(m_diag_name, layout.clone().strip_dim(LEV), diag_units, fid.get_grid_name());
   m_diagnostic_output = Field(d_fid);
   m_diagnostic_output.allocate_view();
+
+  if (f.get_header().has_extra_data("mask_data")) {
+    m_diagnostic_output.get_header().set_extra_data("mask_data", m_diagnostic_output.clone(m_diag_name+"_mask"));
+    m_diagnostic_output.get_header().set_extra_data("mask_value", f.get_header().get_extra_data<Real>("mask_value"));
+  }
 }
 
 // TODO: move this to field_utils.hpp
@@ -186,11 +193,11 @@ void VertContractDiag::compute_diagnostic_impl() {
     // m_weighting.update(get_field_in("dz"), 1.0, 0.0);
     using KT          = KokkosTypes<DefaultDevice>;
     using MT          = typename KT::MemberType;
-    using ESU         = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
+    using TPF         = ekat::TeamPolicyFactory<typename KT::ExeSpace>;
     using PF          = scream::PhysicsFunctions<DefaultDevice>;
     const int ncols   = m_weighting.get_header().get_identifier().get_layout().dim(0);
     const int nlevs   = m_weighting.get_header().get_identifier().get_layout().dim(1);
-    const auto policy = ESU::get_default_team_policy(ncols, nlevs);
+    const auto policy = TPF::get_default_team_policy(ncols, nlevs);
 
     auto dz_v = m_weighting.get_view<Real **>();
     auto dp_v = get_field_in("pseudo_density").get_view<const Real **>();
@@ -216,7 +223,12 @@ void VertContractDiag::compute_diagnostic_impl() {
   }
 
   // call the vert_contraction impl that will take care of everything
-  vert_contraction<Real>(d, f, m_weighting);
+  // if f has a mask and we are averaging, need to call the avg specialization
+  if (m_contract_method == "avg" && f.get_header().has_extra_data("mask_data")) {
+    vert_contraction<Real,1>(d, f, m_weighting);
+  } else {
+    vert_contraction<Real,0>(d, f, m_weighting);
+  }
 }
 
 } // namespace scream

@@ -5,7 +5,6 @@ Used by buildnml. See buildnml for documetation.
 """
 
 import os, sys, re, pwd, grp, stat, getpass
-from collections import OrderedDict
 
 import xml.etree.ElementTree as ET
 import xml.dom.minidom as md
@@ -14,8 +13,8 @@ import xml.dom.minidom as md
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts"))
 
 # SCREAM imports
-from eamxx_buildnml_impl import get_valid_selectors, get_child, refine_type, \
-        resolve_all_inheritances, gen_atm_proc_group, check_all_values
+from eamxx_buildnml_impl import get_valid_selectors, get_child, has_child, refine_type, \
+        resolve_all_inheritances, gen_atm_proc_group, check_all_values, find_node
 from atm_manip import apply_atm_procs_list_changes_from_buffer, apply_non_atm_procs_list_changes_from_buffer
 
 from utils import ensure_yaml # pylint: disable=no-name-in-module
@@ -29,6 +28,7 @@ sys.path.append(os.path.join(_CIMEROOT, "CIME", "Tools"))
 # Cime imports
 from standard_script_setup import * # pylint: disable=wildcard-import
 from CIME.utils import expect, safe_copy, SharedArea
+from CIME.test_status import TestStatus, RUN_PHASE
 
 logger = logging.getLogger(__name__) # pylint: disable=undefined-variable
 
@@ -105,6 +105,121 @@ def do_cime_vars(entry, case, refine=False, extra=None):
     return entry
 
 ###############################################################################
+def perform_consistency_checks(case, xml):
+###############################################################################
+    """
+    There may be separate parts of the xml that must satisfy some consistency
+    Here, we run any such check, so we can catch errors before submit time
+
+    >>> from eamxx_buildnml_impl import MockCase
+    >>> xml_str = '''
+    ... <params>
+    ...   <rrtmgp>
+    ...     <rad_frequency type="integer">3</rad_frequency>
+    ...   </rrtmgp>
+    ... </params>
+    ... '''
+    >>> import xml.etree.ElementTree as ET
+    >>> xml = ET.fromstring(xml_str)
+    >>> case = MockCase({'ATM_NCPL':'24', 'REST_N':24, 'REST_OPTION':'nsteps'})
+    >>> perform_consistency_checks(case,xml)
+    >>> case = MockCase({'ATM_NCPL':'24', 'REST_N':2, 'REST_OPTION':'nsteps'})
+    >>> perform_consistency_checks(case,xml)
+    Traceback (most recent call last):
+    CIME.utils.CIMEError: ERROR: rrtmgp::rad_frequency (3 steps) incompatible with restart frequency (2 steps).
+     Please, ensure restart happens on a step when rad is ON
+    >>> case = MockCase({'ATM_NCPL':'24', 'REST_N':10800, 'REST_OPTION':'nseconds'})
+    >>> perform_consistency_checks(case,xml)
+    >>> case = MockCase({'ATM_NCPL':'24', 'REST_N':7200, 'REST_OPTION':'nseconds'})
+    >>> perform_consistency_checks(case,xml)
+    Traceback (most recent call last):
+    CIME.utils.CIMEError: ERROR: rrtmgp::rad_frequency incompatible with restart frequency.
+     Please, ensure restart happens on a step when rad is ON
+      rest_tstep: 7200
+      rad_testep: 10800.0
+    >>> case = MockCase({'ATM_NCPL':'24', 'REST_N':180, 'REST_OPTION':'nminutes'})
+    >>> perform_consistency_checks(case,xml)
+    >>> case = MockCase({'ATM_NCPL':'24', 'REST_N':120, 'REST_OPTION':'nminutes'})
+    >>> perform_consistency_checks(case,xml)
+    Traceback (most recent call last):
+    CIME.utils.CIMEError: ERROR: rrtmgp::rad_frequency incompatible with restart frequency.
+     Please, ensure restart happens on a step when rad is ON
+      rest_tstep: 7200
+      rad_testep: 10800.0
+    >>> case = MockCase({'ATM_NCPL':'24', 'REST_N':6, 'REST_OPTION':'nhours'})
+    >>> perform_consistency_checks(case,xml)
+    >>> case = MockCase({'ATM_NCPL':'24', 'REST_N':8, 'REST_OPTION':'nhours'})
+    >>> perform_consistency_checks(case,xml)
+    Traceback (most recent call last):
+    CIME.utils.CIMEError: ERROR: rrtmgp::rad_frequency incompatible with restart frequency.
+     Please, ensure restart happens on a step when rad is ON
+      rest_tstep: 28800
+      rad_testep: 10800.0
+    >>> case = MockCase({'ATM_NCPL':'12', 'REST_N':2, 'REST_OPTION':'ndays'})
+    >>> perform_consistency_checks(case,xml)
+    >>> case = MockCase({'ATM_NCPL':'10', 'REST_N':2, 'REST_OPTION':'ndays'})
+    >>> perform_consistency_checks(case,xml)
+    Traceback (most recent call last):
+    CIME.utils.CIMEError: ERROR: rrtmgp::rad_frequency incompatible with restart frequency.
+     Please, ensure restart happens on a step when rad is ON
+     For daily (or less frequent) restart, rad_frequency must divide ATM_NCPL
+    """
+
+    # RRTMGP can be supercycled. Restarts cannot fall in the middle
+    # of a rad superstep
+    rrtmgp = find_node(xml,"rrtmgp")
+    rest_opt = case.get_value("REST_OPTION")
+    is_test = case.get_value("TEST")
+    caseraw = case.get_value("CASE")
+    caseroot = case.get_value("CASEROOT")
+    casebaseid  = case.get_value("CASEBASEID")
+    if rrtmgp is not None and rest_opt is not None and rest_opt not in ["never","none"]:
+        rest_n = int(case.get_value("REST_N"))
+        rad_freq = int(find_node(rrtmgp,"rad_frequency").text)
+        atm_ncpl = int(case.get_value("ATM_NCPL"))
+        atm_tstep = 86400 / atm_ncpl
+        rad_tstep = atm_tstep * rad_freq
+
+        # Some tests (ERS) make late (run-phase) changes, so we cannot validate restart
+        # settings until RUN phase
+        is_test_not_yet_run = False
+        if is_test:
+            test_name = casebaseid if casebaseid is not None else caseraw
+            ts = TestStatus(test_dir=caseroot, test_name=test_name)
+            phase = ts.get_latest_phase()
+            if phase != RUN_PHASE:
+                is_test_not_yet_run = True
+
+        if rad_freq==1 or is_test_not_yet_run:
+            pass
+        elif rest_opt in ["nsteps", "nstep"]:
+            expect (rest_n % rad_freq == 0,
+                    f"rrtmgp::rad_frequency ({rad_freq} steps) incompatible with "
+                    f"restart frequency ({rest_n} steps).\n"
+                    " Please, ensure restart happens on a step when rad is ON")
+        elif rest_opt in ["nseconds", "nsecond", "nminutes", "nminute", "nhours", "nhour"]:
+            if rest_opt in ["nseconds", "nsecond"]:
+                factor = 1
+            elif rest_opt in ["nminutes", "nminute"]:
+                factor = 60
+            else:
+                factor = 3600
+
+            rest_tstep = factor*rest_n
+            expect (rest_tstep % rad_tstep == 0,
+                    "rrtmgp::rad_frequency incompatible with restart frequency.\n"
+                    " Please, ensure restart happens on a step when rad is ON\n"
+                    f"  rest_tstep: {rest_tstep}\n"
+                    f"  rad_testep: {rad_tstep}")
+
+        else:
+            # for "very infrequent" restarts, we request rad_freq to divide atm_ncpl
+            expect (atm_ncpl % rad_freq ==0,
+                    "rrtmgp::rad_frequency incompatible with restart frequency.\n"
+                    " Please, ensure restart happens on a step when rad is ON\n"
+                    " For daily (or less frequent) restart, rad_frequency must divide ATM_NCPL")
+
+###############################################################################
 def ordered_dump(data, item, Dumper=yaml.SafeDumper, **kwds):
 ###############################################################################
     """
@@ -118,7 +233,7 @@ def ordered_dump(data, item, Dumper=yaml.SafeDumper, **kwds):
         return dumper.represent_mapping(
             yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
             data.items())
-    OrderedDumper.add_representer(OrderedDict, _dict_representer)
+    OrderedDumper.add_representer(dict, _dict_representer)
 
     # These allow to dump arrays with a tag specifying the type
     OrderedDumper.add_representer(Bools,    array_representer)
@@ -461,7 +576,6 @@ def _create_raw_xml_file_impl(case, xml, filepath=None):
     ...     <selectors/>
     ...     <generated_files/>
     ...     <atmosphere_processes_defaults>
-    ...         <atm_procs_list type="array(string)">P1,P2</atm_procs_list>
     ...         <atm_proc_base>
     ...             <prop1>zero</prop1>
     ...         </atm_proc_base>
@@ -469,6 +583,9 @@ def _create_raw_xml_file_impl(case, xml, filepath=None):
     ...             <atm_procs_list>NONE</atm_procs_list>
     ...             <prop2>one</prop2>
     ...         </atm_proc_group>
+    ...         <eamxx inherit="atm_proc_group">
+    ...             <atm_procs_list>P1,P2</atm_procs_list>
+    ...         </eamxx>
     ...         <P1 inherit="atm_proc_base">
     ...             <prop1>two</prop1>
     ...         </P1>
@@ -480,25 +597,24 @@ def _create_raw_xml_file_impl(case, xml, filepath=None):
     >>> import xml.etree.ElementTree as ET
     >>> defaults = ET.fromstring(xml)
     >>> generated = _create_raw_xml_file_impl(case,defaults)
-    >>> d = convert_to_dict(get_child(generated,'atmosphere_processes'))
+    >>> d = convert_to_dict(get_child(generated,'eamxx'))
     >>> import pprint
     >>> pp = pprint.PrettyPrinter(indent=4)
     >>> pp.pprint(d)
-    OrderedDict([   ('atm_procs_list', 'P1,P2'),
-                    ('prop2', 'one'),
-                    ('prop1', 'zero'),
-                    ('P1', OrderedDict([('prop1', 'two')])),
-                    ('P2', OrderedDict([('prop1', 'zero')]))])
+    {   'P1': {'prop1': 'two'},
+        'P2': {'prop1': 'zero'},
+        'atm_procs_list': 'P1,P2',
+        'prop1': 'zero',
+        'prop2': 'one'}
     >>> ############## INHERIT+CHILD SELECTOR #####################
     >>> case = MockCase({'ATM_GRID':'ne4ne4'})
     >>> xml = '''
     ... <namelist_defaults>
     ...     <selectors>
-    ...       <selector name="grid" case_env="ATM_GRID"/>
+    ...         <selector name="grid" case_env="ATM_GRID"/>
     ...     </selectors>
     ...     <generated_files/>
     ...     <atmosphere_processes_defaults>
-    ...         <atm_procs_list type="array(string)">P1,P2</atm_procs_list>
     ...         <atm_proc_base>
     ...             <prop1>zero</prop1>
     ...         </atm_proc_base>
@@ -506,6 +622,9 @@ def _create_raw_xml_file_impl(case, xml, filepath=None):
     ...             <atm_procs_list>NONE</atm_procs_list>
     ...             <prop2>one</prop2>
     ...         </atm_proc_group>
+    ...         <eamxx inherit="atm_proc_group">
+    ...             <atm_procs_list>P1,P2</atm_procs_list>
+    ...         </eamxx>
     ...         <P1 inherit="atm_proc_base">
     ...             <prop1>two</prop1>
     ...             <prop1 grid='ne4ne4'>two_selected</prop1>
@@ -518,15 +637,15 @@ def _create_raw_xml_file_impl(case, xml, filepath=None):
     >>> import xml.etree.ElementTree as ET
     >>> defaults = ET.fromstring(xml)
     >>> generated = _create_raw_xml_file_impl(case,defaults)
-    >>> d = convert_to_dict(get_child(generated,'atmosphere_processes'))
+    >>> d = convert_to_dict(get_child(generated,'eamxx'))
     >>> import pprint
     >>> pp = pprint.PrettyPrinter(indent=4)
     >>> pp.pprint(d)
-    OrderedDict([   ('atm_procs_list', 'P1,P2'),
-                    ('prop2', 'one'),
-                    ('prop1', 'zero'),
-                    ('P1', OrderedDict([('prop1', 'two_selected')])),
-                    ('P2', OrderedDict([('prop1', 'zero')]))])
+    {   'P1': {'prop1': 'two_selected'},
+        'P2': {'prop1': 'zero'},
+        'atm_procs_list': 'P1,P2',
+        'prop1': 'zero',
+        'prop2': 'one'}
     >>> ############## INHERIT+PARENT SELECTOR #####################
     >>> case = MockCase({'ATM_GRID':'ne4ne4'})
     >>> xml = '''
@@ -536,12 +655,14 @@ def _create_raw_xml_file_impl(case, xml, filepath=None):
     ...     </selectors>
     ...     <generated_files/>
     ...     <atmosphere_processes_defaults>
-    ...       <atm_procs_list type="array(string)">P1,P2</atm_procs_list>
     ...       <atm_proc_base>
     ...         <number_of_subcycles constraints='gt 0'>1</number_of_subcycles>
     ...         <enable_precondition_checks type='logical'>true</enable_precondition_checks>
     ...         <enable_postcondition_checks type='logical'>true</enable_postcondition_checks>
     ...       </atm_proc_base>
+    ...       <eamxx inherit="atm_proc_group">
+    ...         <atm_procs_list>P1,P2</atm_procs_list>
+    ...       </eamxx>
     ...       <physics_proc_base inherit='atm_proc_base'>
     ...         <Grid>physics_gll</Grid>
     ...         <Grid grid='ne4ne4'>physics_pg2</Grid>
@@ -562,27 +683,24 @@ def _create_raw_xml_file_impl(case, xml, filepath=None):
     >>> import xml.etree.ElementTree as ET
     >>> defaults = ET.fromstring(xml)
     >>> generated = _create_raw_xml_file_impl(case,defaults)
-    >>> d = convert_to_dict(get_child(generated,'atmosphere_processes'))
+    >>> d = convert_to_dict(get_child(generated,'eamxx'))
     >>> import pprint
     >>> pp = pprint.PrettyPrinter(indent=4)
     >>> pp.pprint(d)
-    OrderedDict([   ('atm_procs_list', 'P1,P2'),
-                    ('prop2', 'one'),
-                    ('number_of_subcycles', 1),
-                    ('enable_precondition_checks', True),
-                    ('enable_postcondition_checks', True),
-                    (   'P1',
-                        OrderedDict([   ('prop1', 'hi'),
-                                        ('Grid', 'physics_pg2'),
-                                        ('number_of_subcycles', 1),
-                                        ('enable_precondition_checks', True),
-                                        ('enable_postcondition_checks', True)])),
-                    (   'P2',
-                        OrderedDict([   ('prop1', 'there'),
-                                        ('number_of_subcycles', 1),
-                                        ('enable_precondition_checks', True),
-                                        ('enable_postcondition_checks', True)]))])
-
+    {   'P1': {   'Grid': 'physics_pg2',
+                  'enable_postcondition_checks': True,
+                  'enable_precondition_checks': True,
+                  'number_of_subcycles': 1,
+                  'prop1': 'hi'},
+        'P2': {   'enable_postcondition_checks': True,
+                  'enable_precondition_checks': True,
+                  'number_of_subcycles': 1,
+                  'prop1': 'there'},
+        'atm_procs_list': 'P1,P2',
+        'enable_postcondition_checks': True,
+        'enable_precondition_checks': True,
+        'number_of_subcycles': 1,
+        'prop2': 'one'}
     """
 
     # 0. Remove internal sections, that are not to appear in the
@@ -591,34 +709,43 @@ def _create_raw_xml_file_impl(case, xml, filepath=None):
     get_child(xml,"generated_files",remove=True)
     selectors = get_valid_selectors(xml)
 
-    # 1. Evaluate all selectors
     try:
+        # In the WHOLE xml, resolve inheritance, evaluate selectors, and expand CIME vars
         evaluate_selectors(xml, case, selectors)
-
-        # 2. Apply all changes in the SCREAM_ATMCHANGE_BUFFER that may alter
-        #    which atm processes are used
-        apply_atm_procs_list_changes_from_buffer (case,xml)
-
-        # 3. Resolve all inheritances
         resolve_all_inheritances(xml)
-
-        # 4. Expand any CIME var that appears inside XML nodes text
         expand_cime_vars(xml,case)
 
-        # 5. Grab the atmosphere_processes macro list, with all the defaults
+        # Generate default atm process list for this COMPSET (i.e., NO atmchanges considered yet)
         atm_procs_defaults = get_child(xml,"atmosphere_processes_defaults",remove=True)
+        eamxx_procs_list = get_child(get_child(atm_procs_defaults,"eamxx"),"atm_procs_list")
+        eamxx_group = gen_atm_proc_group(eamxx_procs_list.text, atm_procs_defaults)
+        eamxx_group.tag = "eamxx"
 
-        # 6. Get atm procs list
-        atm_procs_list = get_child(atm_procs_defaults,"atm_procs_list",remove=True)
+        # Apply atm changes that modify the list of processes
+        any_change = apply_atm_procs_list_changes_from_buffer (case,eamxx_group)
 
-        # 7. Form the nested list of atm procs needed, append to atmosphere_driver section
-        atm_procs = gen_atm_proc_group(atm_procs_list.text, atm_procs_defaults)
-        atm_procs.tag = "atmosphere_processes"
-        xml.append(atm_procs)
+        if any_change:
+            # Re-generate the process group. To avoid regenerating the same atm proc group,
+            # we MUST replace matching nodes in atm_procs_defaults with what is in the
+            # current atm_procs tree (as some atm procs lists have changed)
+            for default in atm_procs_defaults:
+                actual = find_node(eamxx_group,default.tag)
+                if actual is not None and has_child(actual,'atm_procs_list'):
+                    # Update the atm_procs_list of the default with the one from actual
+                    default_apl = get_child(default,'atm_procs_list')
+                    actual_apl = get_child(actual,'atm_procs_list')
+                    default_apl.text = actual_apl.text
 
-        # 8. Apply all changes in the SCREAM_ATMCHANGE_BUFFER that do not alter
-        #    which atm processes are used
+            eamxx_procs_list = get_child(eamxx_group,"atm_procs_list")
+            eamxx_group = gen_atm_proc_group(eamxx_procs_list.text, atm_procs_defaults)
+            eamxx_group.tag = "eamxx"
+
+        # Add atm procs node to xml
+        xml.append(eamxx_group)
+
+        # Apply remaining atm changes
         apply_non_atm_procs_list_changes_from_buffer (case,xml)
+
     except BaseException as e:
         if filepath is not None:
             dbg_xml_path = filepath.replace(".xml", ".dbg.xml")
@@ -626,6 +753,8 @@ def _create_raw_xml_file_impl(case, xml, filepath=None):
             print(f"Error during XML creation, writing {dbg_xml_path}")
 
         raise e
+
+    perform_consistency_checks (case, xml)
 
     return xml
 
@@ -680,12 +809,9 @@ def convert_to_dict(element):
     >>> root = ET.fromstring(xml)
     >>> d = convert_to_dict(root)
     >>> pp.pprint(d)
-    OrderedDict([   ('my int', 1),
-                    (   'my list',
-                        OrderedDict([   ('my_ints', [2, 3]),
-                                        ('my_strings', ['two', 'three'])]))])
+    {'my int': 1, 'my list': {'my_ints': [2, 3], 'my_strings': ['two', 'three']}}
     """
-    result = OrderedDict()
+    result = {}
     for child in element:
         child_name = child.tag.replace("__", " ")
 
@@ -870,7 +996,7 @@ def get_file_parameters(caseroot):
         result.extend(refine_type(item.text, force_type="array(file)"))
 
     # Remove duplicates. Not sure if an error would be warranted if dupes exist
-    return list(OrderedDict.fromkeys(result))
+    return list(dict.fromkeys(result))
 
 ###############################################################################
 def create_input_data_list_file(case,caseroot):

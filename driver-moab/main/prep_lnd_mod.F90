@@ -33,13 +33,11 @@ module prep_lnd_mod
   use component_type_mod, only: lnd, atm, rof, glc
   use map_glc2lnd_mod   , only: map_glc2lnd_ec
   use iso_c_binding
-#ifdef  HAVE_MOAB
   use iMOAB , only: iMOAB_ComputeCommGraph, iMOAB_ComputeMeshIntersectionOnSphere, &
     iMOAB_ComputeScalarProjectionWeights, iMOAB_DefineTagStorage, iMOAB_RegisterApplication, &
     iMOAB_WriteMesh, iMOAB_GetMeshInfo, iMOAB_SetDoubleTagStorage, &
     iMOAB_SetMapGhostLayers, iMOAB_MigrateMapMesh
   use seq_comm_mct,     only : num_moab_exports
-#endif
 
 #ifdef MOABCOMP
   use component_type_mod, only:  compare_mct_av_moab_tag
@@ -67,6 +65,7 @@ module prep_lnd_mod
   public :: prep_lnd_get_r2x_lx
   public :: prep_lnd_get_g2x_lx
   public :: prep_lnd_get_z2x_lx
+  public :: prep_lnd_get_x2l_lm
 
   public :: prep_lnd_get_mapper_Sa2l
   public :: prep_lnd_get_mapper_Fa2l
@@ -111,6 +110,8 @@ module prep_lnd_mod
   ! separated by elevation class
   character(CXX) :: glc2lnd_ec_extra_fields
 
+  real (kind=r8) , allocatable, private,target :: x2l_lm (:,:)
+
 #ifdef MOABDEBUG
     character*32             :: outfile, wopts, lnum
 #endif
@@ -149,7 +150,6 @@ contains
     character(CL)            :: rof_gnam      ! rof grid
     character(CL)            :: glc_gnam      ! glc grid
     type(mct_avect), pointer :: l2x_lx
-#ifdef HAVE_MOAB
    ! MOAB stuff
     integer                  :: ierr, idintx, rank
     character*32             :: appname
@@ -174,7 +174,6 @@ contains
     integer  nghlay ! used to set the number of ghost layers, needed for bilinear map
     integer  nghlay_tgt, arearead
 
-#endif
     character(*), parameter  :: subname = '(prep_lnd_init)'
     character(*), parameter  :: F00 = "('"//subname//" : ', 4A )"
     !---------------------------------------------------------------
@@ -194,14 +193,12 @@ contains
     allocate(mapper_Sg2l)
     allocate(mapper_Fg2l)
 
-#ifdef HAVE_MOAB
       wgtIdFr2l = 'flux_r2l'//C_NULL_CHAR
       wgtIdFa2l = 'flux_a2l'//C_NULL_CHAR
       wgtIdSa2l = 'scalar_a2l'//C_NULL_CHAR
       compute_maps_online_r2l = cpl_compute_maps_online ! read from disk or compute online
       compute_maps_online_a2l = cpl_compute_maps_online ! read from disk or compute online
       ! compute_maps_online_a2l = .false. ! Explicitly force read from disk
-#endif
 
     if (lnd_present) then
 
@@ -243,7 +240,6 @@ contains
                'seq_maps.rc','rof2lnd_fmapname:','rof2lnd_fmaptype:',samegrid_lr, &
                string='mapper_Fr2l initialization',esmf_map=esmf_map_flag)
 ! symmetric of l2r, from prep_rof
-#ifdef HAVE_MOAB
           ! Call moab intx only if land and river are init in moab
           if ((mbrxid .ge. 0) .and.  (mblxid .ge. 0)) then
             if (iamroot_CPLID) then
@@ -308,17 +304,6 @@ contains
                     endif
                   endif
 #endif
-                 ! we also need to compute the comm graph for the second hop, from the rof on coupler to the
-                 ! rof for the intx rof-lnd context (coverage)
-
-                  type1 = 3 ! land is FV now on coupler side
-                  type2 = 3;
-                  ierr = iMOAB_ComputeCommGraph( mbrxid, mbintxrl, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
-                                              rof(1)%cplcompid, idintx)
-                  if (ierr .ne. 0) then
-                    write(logunit,*) subname,' error in computing comm graph for second hop, lnd-rof'
-                    call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, lnd-rof')
-                  endif
               endif ! (compute_maps_online_r2l)
 
               ! now take care of the mapper
@@ -383,6 +368,17 @@ contains
                      call shr_sys_abort(subname//' ERROR in migrating rof mesh for map rof c2 lnd')
                   endif
               endif ! compute or read mape
+              ! we also need to compute the comm graph for the second hop, from the rof on coupler to the
+                 ! rof for the intx rof-lnd context (coverage)
+
+              type1 = 3 ! land is FV now on coupler side
+              type2 = 3;
+              ierr = iMOAB_ComputeCommGraph( mbrxid, mbintxrl, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
+                                          rof(1)%cplcompid, idintx)
+              if (ierr .ne. 0) then
+                write(logunit,*) subname,' error in computing comm graph for second hop, lnd-rof'
+                call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, lnd-rof')
+              endif
 
             endif ! samegrid_lr or not
 
@@ -420,8 +416,6 @@ contains
             deallocate (tmparray)
 
          end if !((mbrxid .ge. 0) .and.  (mblxid .ge. 0))
-! endif HAVE_MOAB
-#endif
        end if ! rof_c2_lnd
        call shr_sys_flush(logunit)
 
@@ -432,16 +426,15 @@ contains
           end if
           call seq_map_init_rcfile(mapper_Sa2l, atm(1), lnd(1), &
                'seq_maps.rc','atm2lnd_smapname:','atm2lnd_smaptype:',samegrid_al, &
-               'mapper_Sa2l initialization',esmf_map_flag)
+               'mapper_Sa2l initialization',esmf_map_flag, no_match=.true.)
           if (iamroot_CPLID) then
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_Fa2l'
           end if
           call seq_map_init_rcfile(mapper_Fa2l, atm(1), lnd(1), &
                'seq_maps.rc','atm2lnd_fmapname:','atm2lnd_fmaptype:',samegrid_al, &
-               'mapper_Fa2l initialization',esmf_map_flag)
+               'mapper_Fa2l initialization',esmf_map_flag, no_match=.true.)
 ! similar to prep_atm_init, lnd and atm reversed
-#ifdef HAVE_MOAB
           ! important change: do not compute intx at all between atm and land when we have samegrid_al
           ! we will use just a comm graph to send data from atm to land on coupler
           ! this is just a rearrange in a way
@@ -638,7 +631,6 @@ contains
 
           endif    ! if ((mbaxid .ge. 0) .and.  (mblxid .ge. 0) ) then
 
-#endif
        endif
        call shr_sys_flush(logunit)
 
@@ -744,6 +736,10 @@ contains
 
 ! this does almost nothing now, except documenting
   subroutine prep_lnd_mrg_moab (infodata)
+
+    use shr_moab_mod, only : mbGetnCells
+    use shr_moab_mod, only : mbGetCellTagVals
+
     type(seq_infodata_type) , intent(in) :: infodata
 
 
@@ -762,7 +758,7 @@ contains
     ! Create input land state directly from atm, runoff and glc outputs
     !
     !-----------------------------------------------------------------------
-    integer       :: nflds,i,i1,o1
+    integer       :: i,i1,o1
     logical       :: iamroot
     logical, save :: first_time = .true.
     character(CL),allocatable :: mrgstr(:)   ! temporary string
@@ -770,6 +766,7 @@ contains
     type(mct_aVect_sharedindices),save :: a2x_sharedindices
     type(mct_aVect_sharedindices),save :: r2x_sharedindices
     type(mct_aVect_sharedindices),save :: g2x_sharedindices
+    integer,save :: mbsize, nflds
 #ifdef MOABDEBUG
     integer :: ierr
 #endif
@@ -785,11 +782,14 @@ contains
     call seq_comm_getdata(CPLID, iamroot=iamroot)
 
     if (first_time) then
-      a2x_l => a2x_lx(1)
-      r2x_l => r2x_lx(1)
-      g2x_l => g2x_lx(1)
-      x2l_l => component_get_x2c_cx(lnd(1))
+       a2x_l => a2x_lx(1)
+       r2x_l => r2x_lx(1)
+       g2x_l => g2x_lx(1)
+       x2l_l => component_get_x2c_cx(lnd(1))
        nflds = mct_aVect_nRattr(x2l_l)
+       mbsize = mbGetnCells(mblxid)
+
+       allocate (x2l_lm(mbsize,nflds))
 
        allocate(mrgstr(nflds))
        do i = 1,nflds
@@ -820,11 +820,14 @@ contains
           field = mct_aVect_getRList2c(i1, g2x_l)
           mrgstr(o1) = trim(mrgstr(o1))//' = g2x%'//trim(field)
        enddo
-    endif
+
+    endif  ! if first time
 
     ! call mct_aVect_copy(aVin=a2x_l, aVout=x2l_l, vector=mct_usevector, sharedIndices=a2x_SharedIndices)
     ! call mct_aVect_copy(aVin=r2x_l, aVout=x2l_l, vector=mct_usevector, sharedIndices=r2x_SharedIndices)
     ! call mct_aVect_copy(aVin=g2x_l, aVout=x2l_l, vector=mct_usevector, sharedIndices=g2x_SharedIndices)
+
+    call mbGetCellTagVals(mblxid, trim(seq_flds_x2l_fields)//C_NULL_CHAR,x2l_lm,mbsize*nflds)
 
     if (first_time) then
        if (iamroot) then
@@ -1099,6 +1102,11 @@ contains
     type(mct_aVect), pointer :: prep_lnd_get_g2x_lx(:)
     prep_lnd_get_g2x_lx => g2x_lx(:)
   end function prep_lnd_get_g2x_lx
+
+  function prep_lnd_get_x2l_lm()
+    real(R8), DIMENSION(:, :), pointer :: prep_lnd_get_x2l_lm
+    prep_lnd_get_x2l_lm => x2l_lm
+  end function prep_lnd_get_x2l_lm
 
   function prep_lnd_get_z2x_lx()
     type(mct_aVect), pointer :: prep_lnd_get_z2x_lx(:)

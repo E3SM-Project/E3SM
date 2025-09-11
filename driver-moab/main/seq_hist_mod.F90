@@ -34,10 +34,20 @@ module seq_hist_mod
 
   use prep_ocn_mod,      only: prep_ocn_get_r2x_ox
   use prep_ocn_mod,      only: prep_ocn_get_x2oacc_ox
-  use prep_ocn_mod,      only: prep_ocn_get_x2oacc_ox_cnt
-  use prep_atm_mod,      only: prep_atm_get_o2x_ax
+  use prep_ocn_mod,      only: prep_ocn_get_x2oacc_om_cnt
+  use prep_ocn_mod,      only: prep_ocn_get_x2oacc_om
+  use prep_atm_mod,      only: prep_atm_get_o2x_am
+  use prep_lnd_mod,      only: prep_lnd_get_x2l_lm
   use prep_aoflux_mod,   only: prep_aoflux_get_xao_ox
   use prep_aoflux_mod,   only: prep_aoflux_get_xao_ax
+
+  use seq_comm_mct,     only: mbaxid, mbixid, mboxid, mblxid, mbrxid, mbofxid
+  use seq_flds_mod, only: seq_flds_a2x_fields, seq_flds_xao_fields, seq_flds_o2x_fields, seq_flds_x2o_fields
+  use seq_flds_mod, only: seq_flds_i2x_fields, seq_flds_r2x_fields,seq_flds_dom_fields
+  use seq_flds_mod, only: seq_flds_l2x_fields, seq_flds_x2a_fields, seq_flds_x2i_fields
+  use seq_flds_mod, only: seq_flds_x2l_fields, seq_flds_x2r_fields
+  use iMOAB,            only: iMOAB_GetGlobalInfo
+  use shr_moab_mod,      only: mbGetnCells,mbGetCellTagVals
 
   use component_type_mod
 
@@ -129,8 +139,7 @@ contains
 
   subroutine seq_hist_write(infodata, EClock_d, &
        atm, lnd, ice, ocn, rof, glc, wav, iac, &
-       fractions_ax, fractions_lx, fractions_ix, fractions_ox, fractions_rx,  &
-       fractions_gx, fractions_wx, fractions_zx, cpl_inst_tag)
+       samegrid_al, samegrid_lr,cpl_inst_tag)
     implicit none
     !
     ! Arguments
@@ -144,14 +153,8 @@ contains
     type (component_type)   , intent(inout) :: glc(:)
     type (component_type)   , intent(inout) :: wav(:)
     type (component_type)   , intent(inout) :: iac(:)
-    type(mct_aVect)         , intent(inout) :: fractions_ax(:) ! Fractions on atm grid/decomp
-    type(mct_aVect)         , intent(inout) :: fractions_lx(:) ! Fractions on lnd grid/decomp
-    type(mct_aVect)         , intent(inout) :: fractions_ix(:) ! Fractions on ice grid/decomp
-    type(mct_aVect)         , intent(inout) :: fractions_ox(:) ! Fractions on ocn grid/decomp
-    type(mct_aVect)         , intent(inout) :: fractions_rx(:) ! Fractions on rof grid/decomp
-    type(mct_aVect)         , intent(inout) :: fractions_gx(:) ! Fractions on glc grid/decomp
-    type(mct_aVect)         , intent(inout) :: fractions_wx(:) ! Fractions on wav grid/decomp
-    type(mct_aVect)         , intent(inout) :: fractions_zx(:) ! Fractions on iac grid/decomp
+    logical        ,         intent(in) :: samegrid_al ! needed for land nx
+    logical        ,         intent(in) :: samegrid_lr ! needed for land nx, too
     character(len=*)        ,  intent(in) :: cpl_inst_tag
     !
     ! Local Variables
@@ -161,18 +164,25 @@ contains
     integer(IN)   :: start_tod    ! Starting time-of-day (s)
     real(r8)      :: curr_time    ! Time interval since reference time
     integer(IN)   :: fk           ! index
+    integer(IN)   :: latlonid(2)  ! ids of lat lon dimensions
+    integer(IN)   :: alatlonid(2)  ! ids of atmosphere lat lon dimensions
     character(CL) :: time_units   ! units of time variable
     character(CL) :: calendar     ! calendar type
     character(CL) :: case_name    ! case name
     character(CL) :: hist_file    ! Local path to history filename
     real(r8)      :: tbnds(2)     ! CF1.0 time bounds
     logical       :: whead,wdata  ! for writing restart/history cdf files
-    integer       :: nmask        ! location of mask in dom structure
     character(len=18) :: date_str
-    type(mct_gsMap), pointer :: gsmap
-    type(mct_gGrid), pointer :: dom    ! comp domain on cpl pes
     character(CL) :: model_doi_url
     logical       :: bfbflag      !to write out bfbflag value
+    integer       ::  ierr, dummy,nx_lnd, numpts
+    real(r8), dimension(:,:), pointer  :: p_x2oacc_om
+    real(r8), dimension(:,:), pointer  :: p_o2x_am
+    real(r8), dimension(:,:), pointer  :: p_x2l_lm
+    real(r8), dimension(:), allocatable  :: mask
+    real(r8), dimension(:,:), allocatable,target  :: zeros
+    type(mct_list) :: temp_list
+    integer :: size_list
 
     !-------------------------------------------------------------------------------
     !
@@ -256,151 +266,165 @@ contains
                time_units=time_units, time_cal=calendar, time_val=curr_time, &
                nt=1,whead=whead, wdata=wdata)
           if (atm_present) then
-             gsmap => component_get_gsmap_cx(atm(1))
-             dom   => component_get_dom_cx(atm(1))
-             call seq_io_write(hist_file, gsmap, dom%data, 'dom_ax',  &
-                  nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata, pre='doma', &
-                  scolumn=single_column)
-             call seq_io_write(hist_file, gsmap, fractions_ax, 'fractions_ax',  &
-                  nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata, pre='fraca', &
-                  scolumn=single_column)
-             call seq_io_write(hist_file, atm, 'x2c', 'x2a_ax', &
-                  nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata, pre='x2a', &
-                  scolumn=single_column)
-             call seq_io_write(hist_file, atm, 'c2x', 'a2x_ax', &
-                  nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata, pre='a2x', &
-                  scolumn=single_column)
-             !call seq_io_write(hist_file, gsmap, l2x_ax, 'l2x_ax',  &
-             !    nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata, pre='l2x_ax')
-             !call seq_io_write(hist_file, gsmap, o2x_ax, 'o2x_ax',  &
-             !    nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata, pre='o2x_ax')
-             !call seq_io_write(hist_file, gsmap, i2x_ax, 'i2x_ax',  &
-             !    nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata, pre='i2x_ax')
+             call seq_io_write(hist_file, mbaxid, 'doma',  &
+                  trim(seq_flds_dom_fields), whead=whead, wdata=wdata,nx=atm_nx, ny=atm_ny, nt=1, dims2do=alatlonid)
+             call seq_io_write(hist_file, mbaxid, 'fraca',  &
+                  'afrac:ifrac:ofrac:lfrac:lfrin',whead=whead, wdata=wdata,nx=atm_nx, ny=atm_ny, nt=1,dims2din=alatlonid)
+             call seq_io_write(hist_file, mbaxid, 'x2a', &
+                  trim(seq_flds_x2a_fields),whead=whead, wdata=wdata, nx=atm_nx, ny=atm_ny, nt=1, dims2din=alatlonid)
+             call seq_io_write(hist_file, mbaxid, 'a2x', &
+                  trim(seq_flds_a2x_fields),whead=whead, wdata=wdata, nx=atm_nx, ny=atm_ny, nt=1,dims2din=alatlonid)
           endif
 
           if (lnd_present) then
-             gsmap => component_get_gsmap_cx(lnd(1))
-             dom   => component_get_dom_cx(lnd(1))
-             call seq_io_write(hist_file, gsmap, dom%data, 'dom_lx',  &
-                  nx=lnd_nx, ny=lnd_ny, nt=1, whead=whead, wdata=wdata, pre='doml')
-             call seq_io_write(hist_file, gsmap, fractions_lx, 'fractions_lx',  &
-                  nx=lnd_nx, ny=lnd_ny, nt=1, whead=whead, wdata=wdata, pre='fracl')
-             call seq_io_write(hist_file, lnd, 'c2x', 'l2x_lx', &
-                  nx=lnd_nx, ny=lnd_ny, nt=1, whead=whead, wdata=wdata, pre='l2x')
-             call seq_io_write(hist_file, lnd, 'x2c', 'x2l_lx',&
-                  nx=lnd_nx, ny=lnd_ny, nt=1, whead=whead, wdata=wdata, pre='x2l')
+                call seq_io_write(hist_file, mblxid, 'doml', &
+                  trim(seq_flds_dom_fields), whead=whead, wdata=wdata,nx=lnd_nx, ny=lnd_ny, nt=1,dims2do=latlonid)
+                call seq_io_write(hist_file, mblxid, 'fracl',  &
+                    'afrac:lfrac:lfrin', whead=whead, wdata=wdata, nx=lnd_nx, ny=lnd_ny, nt=1,dims2din=latlonid)
+                call seq_io_write(hist_file, mblxid, 'l2x', &
+                  trim(seq_flds_l2x_fields),whead=whead, wdata=wdata,nx=lnd_nx, ny=lnd_ny, nt=1, dims2din=latlonid)
+                ! the land mrg, where prep_lnd_get_x2l_lm is defined, is only called if lnd_prognostic is true.
+                ! MCT will still output zero because x2l is initialized to zero.  MOAB needs to
+                ! handle and match that.
+                if(lnd_prognostic) then
+                   p_x2l_lm =>  prep_lnd_get_x2l_lm()
+                   call seq_io_write(hist_file, mblxid, 'x2l',&
+                     trim(seq_flds_x2l_fields), whead=whead, wdata=wdata, nx=lnd_nx, ny=lnd_ny, &
+                     nt=1,matrix=p_x2l_lm,dims2din=latlonid)
+                else
+                   numpts = mbGetnCells(mblxid)
+                   call mct_list_init(temp_list ,seq_flds_x2l_fields)
+                   size_list=mct_list_nitem (temp_list)
+                   allocate(zeros(numpts,size_list))
+                   zeros(:,:)=0.0_r8
+                   p_x2l_lm => zeros
+                   call seq_io_write(hist_file, mblxid, 'x2l',&
+                     trim(seq_flds_x2l_fields), whead=whead, wdata=wdata, nx=lnd_nx, ny=lnd_ny, &
+                     nt=1,matrix=p_x2l_lm,dims2din=latlonid)
+                   call mct_list_clean(temp_list)
+                   deallocate(zeros)
+                endif
           endif
 
           if (rof_present) then
-             gsmap => component_get_gsmap_cx(rof(1))
-             dom   => component_get_dom_cx(rof(1))
-             call seq_io_write(hist_file, gsmap, dom%data, 'dom_rx',  &
-                  nx=rof_nx, ny=rof_ny, nt=1, whead=whead, wdata=wdata, pre='domr')
-             call seq_io_write(hist_file, gsmap, fractions_rx, 'fractions_rx',  &
-                  nx=rof_nx, ny=rof_ny, nt=1, whead=whead, wdata=wdata, pre='fracr')
-             call seq_io_write(hist_file, rof, 'c2x', 'r2x_rx', &
-                  nx=rof_nx, ny=rof_ny, nt=1, whead=whead, wdata=wdata, pre='r2x')
-             call seq_io_write(hist_file, rof, 'x2c', 'x2r_rx', &
-                  nx=rof_nx, ny=rof_ny, nt=1, whead=whead, wdata=wdata, pre='x2r')
-          endif
-
-          if (rof_present .and. ocnrof_prognostic) then
-             gsmap  => component_get_gsmap_cx(ocn(1))
-             r2x_ox => prep_ocn_get_r2x_ox()
-             call seq_io_write(hist_file, gsmap, r2x_ox, 'r2x_ox',  &
-                  nx=ocn_nx, ny=ocn_ny, nt=1, whead=whead, wdata=wdata, pre='r2xo')
+             call seq_io_write(hist_file, mbrxid, 'domr',  &
+                  trim(seq_flds_dom_fields),whead=whead, wdata=wdata, nx=rof_nx, ny=rof_ny, nt=1,dims2do=latlonid)
+             call seq_io_write(hist_file, mbrxid, 'fracr',  &
+                  'lfrac:lfrin:rfrac', whead=whead, wdata=wdata, nx=rof_nx, ny=rof_ny, nt=1,dims2din=latlonid)
+             call seq_io_write(hist_file, mbrxid,  'r2x', &
+                  trim(seq_flds_r2x_fields), whead=whead, wdata=wdata, nx=rof_nx, ny=rof_ny, nt=1,dims2din=latlonid)
+             call seq_io_write(hist_file, mbrxid, 'x2r',  &
+                  trim(seq_flds_x2r_fields), whead=whead, wdata=wdata,nx=rof_nx, ny=rof_ny, nt=1, dims2din=latlonid)
           endif
 
           if (ocn_present) then
-             gsmap => component_get_gsmap_cx(ocn(1))
-             dom   => component_get_dom_cx(ocn(1))
-             call seq_io_write(hist_file, gsmap, dom%data, 'dom_ox',  &
-                  nx=ocn_nx, ny=ocn_ny, nt=1, whead=whead, wdata=wdata, pre='domo')
-             call seq_io_write(hist_file, gsmap, fractions_ox, 'fractions_ox',  &
-                  nx=ocn_nx, ny=ocn_ny, nt=1, whead=whead, wdata=wdata, pre='fraco')
-             call seq_io_write(hist_file, ocn, 'c2x', 'o2x_ox', &
-                  nx=ocn_nx, ny=ocn_ny, nt=1, whead=whead, wdata=wdata, pre='o2x')
-             !call seq_io_write(hist_file, ocn, 'x2c', 'x2o_ox', &
-             !                  nx=ocn_nx, ny=ocn_ny, nt=1, whead=whead, wdata=wdata, pre='x2o')
+             call seq_io_write(hist_file, mboxid, 'domo',  &
+                  trim(seq_flds_dom_fields), whead=whead, wdata=wdata, nx=ocn_nx, ny=ocn_ny, nt=1, dims2do=latlonid)
+             call seq_io_write(hist_file, mboxid, 'fraco',  &
+                  'afrac:ifrac:ofrac:ifrad:ofrad', whead=whead, wdata=wdata, nx=ocn_nx, ny=ocn_ny, nt=1, dims2din=latlonid)
+             call seq_io_write(hist_file, mboxid,  'o2x', &
+                  trim(seq_flds_o2x_fields), whead=whead, wdata=wdata, nx=ocn_nx, ny=ocn_ny, nt=1, dims2din=latlonid)
 
-             gsmap     => component_get_gsmap_cx(ocn(1))
-             x2oacc_ox => prep_ocn_get_x2oacc_ox()
-             call seq_io_write(hist_file, gsmap, x2oacc_ox, 'x2oacc_ox',  &
-                  nx=ocn_nx, ny=ocn_ny, nt=1, whead=whead, wdata=wdata, pre='x2oacc')
+             ! instead of writing x2o, write x2oacc
+             ! x2oacc_om is allocated in prep_ocn_init which is always called
+             p_x2oacc_om => prep_ocn_get_x2oacc_om()
+             call seq_io_write(hist_file, mboxid, 'x2oacc', &
+                  trim(seq_flds_x2o_fields), &
+                  whead=whead, wdata=wdata, nx=ocn_nx, ny=ocn_ny, nt=1, dims2din=latlonid,  matrix=p_x2oacc_om)
 
-             gsmap         => component_get_gsmap_cx(ocn(1))
-             x2oacc_ox_cnt => prep_ocn_get_x2oacc_ox_cnt()
+             x2oacc_ox_cnt => prep_ocn_get_x2oacc_om_cnt()
              call seq_io_write(hist_file, x2oacc_ox_cnt, 'x2oacc_ox_cnt',  &
                   whead=whead, wdata=wdata)
-             gsmap => component_get_gsmap_cx(ocn(1))
-             xao_ox => prep_aoflux_get_xao_ox()
-             call seq_io_write(hist_file, gsmap, xao_ox, 'xao_ox',  &
-                  nx=ocn_nx, ny=ocn_ny, nt=1, whead=whead, wdata=wdata, pre='xaoo')
 
-             gsmap  => component_get_gsmap_cx(atm(1))
-             o2x_ax => prep_atm_get_o2x_ax()
-             call seq_io_write(hist_file, gsmap, o2x_ax, 'o2x_ax',  &
-                  nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata, pre='o2xa')
+             call seq_io_write(hist_file, mbofxid, 'xaoo',  &
+                   trim(seq_flds_xao_fields), whead=whead, wdata=wdata, nx=ocn_nx, ny=ocn_ny, nt=1, dims2din=latlonid)
 
-             gsmap  => component_get_gsmap_cx(atm(1))
-             xao_ax => prep_aoflux_get_xao_ax()
-             call seq_io_write(hist_file, gsmap, xao_ax, 'xao_ax',  &
-                  nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata, pre='xaoa')
+             ! the atm mrg, where prep_atm_get_o2x_am is defined, is only called if atm_prognostic is true.
+             ! MCT will still output zero because o2xa is initialized to zero.  MOAB needs to
+             ! handle and match that.
+             if(atm_prognostic) then
+                p_o2x_am => prep_atm_get_o2x_am()
+                call seq_io_write(hist_file, mbaxid, 'o2xa',  &
+                    trim(seq_flds_o2x_fields), &
+                    whead=whead, wdata=wdata, nx=atm_nx, ny=atm_ny, nt=1, dims2din=alatlonid, matrix=p_o2x_am)
+             else
+                numpts = mbGetnCells(mbaxid)
+                call mct_list_init(temp_list ,seq_flds_o2x_fields)
+                size_list=mct_list_nitem (temp_list)
+                allocate(zeros(numpts,size_list))
+                zeros(:,:)=0.0_r8
+                p_o2x_am => zeros
+                call seq_io_write(hist_file, mbaxid, 'o2xa',  &
+                    trim(seq_flds_o2x_fields), &
+                    whead=whead, wdata=wdata, nx=atm_nx, ny=atm_ny, nt=1, dims2din=alatlonid, matrix=p_o2x_am)
+                call mct_list_clean(temp_list)
+                deallocate(zeros)
+             endif
+
+             call seq_io_write(hist_file, mbaxid,  'xaoa',  &
+                  trim(seq_flds_xao_fields), whead=whead, wdata=wdata, nx=atm_nx, ny=atm_ny, nt=1, dims2din=alatlonid)
+          endif
+
+          if (rof_present .and. ocnrof_prognostic) then
+             call seq_io_write(hist_file, mboxid, 'r2xo',  &
+                  trim(seq_flds_r2x_fields), whead=whead, wdata=wdata, nx=ocn_nx, ny=ocn_ny, nt=1, dims2din=latlonid)
           endif
 
           if (ice_present) then
-             gsmap => component_get_gsmap_cx(ice(1))
-             dom   => component_get_dom_cx(ice(1))
-             nmask = mct_aVect_indexRA(dom%data,'mask')
-             call seq_io_write(hist_file, gsmap, dom%data, 'dom_ix',  &
-                  nx=ice_nx, ny=ice_ny, nt=1, whead=whead, wdata=wdata, pre='domi')
-             call seq_io_write(hist_file, gsmap, fractions_ix, 'fractions_ix',  &
-                  nx=ice_nx, ny=ice_ny, nt=1, whead=whead, wdata=wdata, pre='fraci')
-             call seq_io_write(hist_file, ice, 'c2x', 'i2x_ix', &
-                  nx=ice_nx, ny=ice_ny, nt=1, whead=whead, wdata=wdata, pre='i2x', mask=dom%data%rattr(nmask,:))
-             call seq_io_write(hist_file, ice, 'x2c', 'x2i_ix', &
-                  nx=ice_nx, ny=ice_ny, nt=1, whead=whead, wdata=wdata, pre='x2i', mask=dom%data%rattr(nmask,:))
+             call seq_io_write(hist_file, mbixid, 'domi',  &
+                  trim(seq_flds_dom_fields), whead=whead, wdata=wdata, nx=ice_nx, ny=ice_ny, nt=1, dims2do=latlonid)
+             call seq_io_write(hist_file, mbixid, 'fraci',  &
+                  'afrac:ifrac:ofrac', whead=whead, wdata=wdata, nx=ice_nx, ny=ice_ny, nt=1, dims2din=latlonid)
+             numpts = mbGetnCells(mbixid)
+             allocate(mask(numpts))
+             call mbGetCellTagVals(mbixid, 'mask',mask,numpts)
+             call seq_io_write(hist_file, mbixid, 'i2x', trim(seq_flds_i2x_fields), &
+                  whead=whead, wdata=wdata, nx=ice_nx, ny=ice_ny, nt=1, dims2din=latlonid,mask=mask)
+             call seq_io_write(hist_file, mbixid, 'x2i', trim(seq_flds_x2i_fields), &
+                  whead=whead, wdata=wdata, nx=ice_nx, ny=ice_ny, nt=1, dims2din=latlonid,mask=mask)
+             deallocate(mask)
           endif
 
-          if (glc_present) then
-             gsmap => component_get_gsmap_cx(glc(1))
-             dom   => component_get_dom_cx(glc(1))
-             call seq_io_write(hist_file, gsmap, dom%data, 'dom_gx',  &
-                  nx=glc_nx, ny=glc_ny, nt=1, whead=whead, wdata=wdata, pre='domg')
-             call seq_io_write(hist_file, gsmap, fractions_gx, 'fractions_gx',  &
-                  nx=glc_nx, ny=glc_ny, nt=1, whead=whead, wdata=wdata, pre='fracg')
-             call seq_io_write(hist_file, glc, 'c2x', 'g2x_gx', &
-                  nx=glc_nx, ny=glc_ny, nt=1, whead=whead, wdata=wdata, pre='g2x')
-             call seq_io_write(hist_file, glc, 'x2c', 'x2g_gx', &
-                  nx=glc_nx, ny=glc_ny, nt=1, whead=whead, wdata=wdata, pre='x2g')
-          endif
+!          ! Ready to uncomment once mbgxid exists
+!          if (glc_present) then
+!             call seq_io_write(hist_file, mbgxid, 'domg',  &
+!                  trim(seq_flds_dom_fields), whead=whead, wdata=wdata, dims2do=latlonid)
+!             call seq_io_write(hist_file, mbgxid, 'fracg',  &
+!                  'gfrac:lfrac', whead=whead, wdata=wdata, dims2din=latlonid)
+!             call seq_io_write(hist_file, mbgxid, 'g2x', &
+!                  trim(seq_flds_g2x_fields), nt=1, whead=whead, wdata=wdata, dims2din=latlonid)
+!             call seq_io_write(hist_file, mbgxid, 'x2g', &
+!                  trim(seq_flds_x2g_fields), nt=1, whead=whead, wdata=wdata, dims2din=latlonid)
+!          endif
 
-          if (wav_present) then
-             gsmap => component_get_gsmap_cx(wav(1))
-             dom   => component_get_dom_cx(wav(1))
-             call seq_io_write(hist_file, gsmap, dom%data, 'dom_wx',  &
-                  nx=wav_nx, ny=wav_ny, nt=1, whead=whead, wdata=wdata, pre='domw')
-             call seq_io_write(hist_file, gsmap, fractions_wx, 'fractions_wx',  &
-                  nx=wav_nx, ny=wav_ny, nt=1, whead=whead, wdata=wdata, pre='fracw')
-             call seq_io_write(hist_file, wav, 'c2x', 'w2x_wx', &
-                  nx=wav_nx, ny=wav_ny, nt=1, whead=whead, wdata=wdata, pre='w2x')
-             call seq_io_write(hist_file, wav, 'x2c', 'x2w_wx', &
-                  nx=wav_nx, ny=wav_ny, nt=1, whead=whead, wdata=wdata, pre='x2w')
-          endif
+          !MOAB TODO:  convert this
+!         if (wav_present) then
+!             gsmap => component_get_gsmap_cx(wav(1))
+!             dom   => component_get_dom_cx(wav(1))
+!             call seq_io_write(hist_file, gsmap, dom%data, 'dom_wx',  &
+!                  nx=wav_nx, ny=wav_ny, nt=1, whead=whead, wdata=wdata, dims2do=latlonid, pre='domw')
+!             call seq_io_write(hist_file, gsmap, fractions_wx, 'fractions_wx',  &
+!                  nx=wav_nx, ny=wav_ny, nt=1, whead=whead, wdata=wdata, dims2din=latlonid, pre='fracw')
+!             call seq_io_write(hist_file, wav, 'c2x', 'w2x_wx', &
+!                  nx=wav_nx, ny=wav_ny, nt=1, whead=whead, wdata=wdata, dims2din=latlonid, pre='w2x')
+!             call seq_io_write(hist_file, wav, 'x2c', 'x2w_wx', &
+!                  nx=wav_nx, ny=wav_ny, nt=1, whead=whead, wdata=wdata, dims2din=latlonid, pre='x2w')
+!          endif
 
-          if (iac_present) then
-             gsmap => component_get_gsmap_cx(iac(1))
-             dom   => component_get_dom_cx(iac(1))
-             call seq_io_write(hist_file, gsmap, dom%data, 'dom_zx',  &
-                  nx=iac_nx, ny=iac_ny, nt=1, whead=whead, wdata=wdata, pre='domz')
-             call seq_io_write(hist_file, gsmap, fractions_zx, 'fractions_zx',  &
-                  nx=iac_nx, ny=iac_ny, nt=1, whead=whead, wdata=wdata, pre='fracz')
-             call seq_io_write(hist_file, iac, 'c2x', 'z2x_zx', &
-                  nx=iac_nx, ny=iac_ny, nt=1, whead=whead, wdata=wdata, pre='w2x')
-             call seq_io_write(hist_file, iac, 'x2c', 'x2z_zx', &
-                  nx=iac_nx, ny=iac_ny, nt=1, whead=whead, wdata=wdata, pre='x2w')
-          endif
-       enddo
+          ! MOAB TODO: convert this
+!          if (iac_present) then
+!             gsmap => component_get_gsmap_cx(iac(1))
+!             dom   => component_get_dom_cx(iac(1))
+!             call seq_io_write(hist_file, gsmap, dom%data, 'dom_zx',  &
+!                  nx=iac_nx, ny=iac_ny, nt=1, whead=whead, wdata=wdata, dims2do=latlonid, pre='domz')
+!             call seq_io_write(hist_file, gsmap, fractions_zx, 'fractions_zx',  &
+!                  nx=iac_nx, ny=iac_ny, nt=1, whead=whead, wdata=wdata, dims2din=latlonid, pre='fracz')
+!             call seq_io_write(hist_file, iac, 'c2x', 'z2x_zx', &
+!                  nx=iac_nx, ny=iac_ny, nt=1, whead=whead, wdata=wdata, dims2din=latlonid, pre='w2x')
+!             call seq_io_write(hist_file, iac, 'x2c', 'x2z_zx', &
+!                  nx=iac_nx, ny=iac_ny, nt=1, whead=whead, wdata=wdata, dims2din=latlonid, pre='x2w')
+!          endif
+        enddo
        call seq_io_close(hist_file)
        if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
     endif

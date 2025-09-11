@@ -3,7 +3,7 @@
 
 #include "share/util/eamxx_time_stamp.hpp"
 
-#include <ekat/ekat_assert.hpp>
+#include <ekat_assert.hpp>
 
 #include <string>
 
@@ -63,7 +63,7 @@ struct IOControl {
   }
 
   void set_dt (const double dt_in) {
-    EKAT_REQUIRE_MSG (dt==0 or dt==dt_in,
+    EKAT_REQUIRE_MSG (dt==0,
         "[IOControl::set_dt] Error! Cannot reset dt once it is set.\n");
 
     dt = dt_in;

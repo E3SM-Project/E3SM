@@ -3,8 +3,9 @@
 
 #include "share/property_checks/field_nan_check.hpp"
 
-#include "ekat/std_meta/ekat_std_utils.hpp"
-#include "ekat/util/ekat_string_utils.hpp"
+#include <ekat_std_utils.hpp>
+#include <ekat_string_utils.hpp>
+#include <ekat_assert.hpp>
 
 #include <memory>
 
@@ -24,9 +25,9 @@ AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& param
       m_group_schedule_type = ScheduleType::Sequential;
     } else if (m_params.get<std::string>("schedule_type") == "parallel") {
       m_group_schedule_type = ScheduleType::Parallel;
-      ekat::error::runtime_abort("Error! Parallel schedule not yet implemented.\n");
+      EKAT_ERROR_MSG("Error! Parallel schedule not yet implemented.\n");
     } else {
-      ekat::error::runtime_abort("Error! Invalid 'schedule_type'. Available choices are 'parallel' and 'sequential'.\n");
+      EKAT_ERROR_MSG("Error! Invalid 'schedule_type'. Available choices are 'parallel' and 'sequential'.\n");
     }
   } else {
     // Pointless to handle this group as parallel, if only one process is in it
@@ -221,7 +222,7 @@ gather_internal_fields  () {
 }
 
 bool AtmosphereProcessGroup::
-are_column_conservation_checks_enabled () const
+are_conservation_checks_enabled () const
 {
   // Loop through processes and return true if an instance is found.
   for (auto atm_proc : m_atm_processes) {
@@ -230,7 +231,7 @@ are_column_conservation_checks_enabled () const
     // else continue to the next process.
     auto atm_proc_group = std::dynamic_pointer_cast<AtmosphereProcessGroup>(atm_proc);
     if (atm_proc_group) {
-      if (atm_proc_group->are_column_conservation_checks_enabled()) {
+      if (atm_proc_group->are_conservation_checks_enabled()) {
         return true;
       } else {
         continue;
@@ -239,7 +240,7 @@ are_column_conservation_checks_enabled () const
 
     // If this process is not a group, query enable_column_conservation_checks
     // and return true if true.
-    if (atm_proc->has_column_conservation_check()) {
+    if (atm_proc->has_column_conservation_check() || atm_proc->has_energy_fixer()) {
       return true;
     }
   }
@@ -249,7 +250,7 @@ are_column_conservation_checks_enabled () const
 }
 
 void AtmosphereProcessGroup::
-setup_column_conservation_checks (const std::shared_ptr<MassAndEnergyColumnConservationCheck>& conservation_check,
+setup_column_conservation_checks (const std::shared_ptr<MassAndEnergyConservationCheck>& conservation_check,
                                   const CheckFailHandling                                      fail_handling_type) const
 {
   // Loop over atm processes and add mass and energy checker where relevant
@@ -265,38 +266,28 @@ setup_column_conservation_checks (const std::shared_ptr<MassAndEnergyColumnConse
       // fluxes over multiple processes implemented in the model.
       EKAT_REQUIRE_MSG(not atm_proc_group->has_column_conservation_check(),
                        "Error! The ATM process group \"" + atm_proc_group->name() + "\" attempted to enable "
-                       "conservation checks. Should have enable_column_conservation_checks=false for all "
-                       "process groups.\n");
-
+                       "conservation checks. A process group cannot have enable_column_conservation_checks=true. \n");
       atm_proc_group->setup_column_conservation_checks(conservation_check, fail_handling_type);
       continue;
     }
 
     // For individual processes, first query if the checks are enabled.
     // If not, continue to the next process.
-    if (not atm_proc->has_column_conservation_check()) {
+    if (not (atm_proc->has_column_conservation_check() || atm_proc->has_energy_fixer()) ) {
       continue;
     }
-
-    // Since the checker is column local, require that an atm
-    // process that enables the check is a Physics process.
-    EKAT_REQUIRE_MSG(atm_proc->type() == AtmosphereProcessType::Physics,
-                     "Error! enable_column_conservation_checks=true "
-                     "for non-physics process \"" + atm_proc->name() + "\". "
-                     "This check is column local and therefore can only be run "
-                     "on physics processes.\n");
 
     // Query the computed fields for this atm process and see if either the mass or energy computation
     // might be changed after the process has run. If no field used in the mass or energy calculate
     // is updated by this process, there is no need to run the check.
     const std::string phys_grid_name  = conservation_check->get_grid()->name();
-    const bool updates_static_energy  = atm_proc->has_computed_field("T_mid", phys_grid_name);
+    const bool updates_internal_energy  = atm_proc->has_computed_field("T_mid", phys_grid_name);
     const bool updates_kinetic_energy = atm_proc->has_computed_field("horiz_winds", phys_grid_name);
     const bool updates_water_vapor    = atm_proc->has_computed_field("qv", phys_grid_name);
     const bool updates_water_liquid   = atm_proc->has_computed_field("qc", phys_grid_name) ||
                                         atm_proc->has_computed_field("qr", phys_grid_name);
     const bool updates_water_ice      = atm_proc->has_computed_field("qi", phys_grid_name);
-    const bool mass_or_energy_is_updated = updates_static_energy || updates_kinetic_energy ||
+    const bool mass_or_energy_is_updated = updates_internal_energy || updates_kinetic_energy ||
                                            updates_water_vapor   || updates_water_liquid ||
                                            updates_water_ice;
     EKAT_REQUIRE_MSG(mass_or_energy_is_updated, "Error! enable_column_conservation_checks=true for "
@@ -319,7 +310,8 @@ setup_column_conservation_checks (const std::shared_ptr<MassAndEnergyColumnConse
 
     // If all conditions are satisfied, add as postcondition_check
     atm_proc->add_column_conservation_check(conservation_check, fail_handling_type);
-  }
+  }// for (auto atm_proc : m_atm_processes) 
+
 }
 
 void AtmosphereProcessGroup::add_postcondition_nan_checks () const {
@@ -358,7 +350,7 @@ void AtmosphereProcessGroup::add_additional_data_fields_to_property_checks (cons
         prop_check.second->set_additional_data_field(data_field);
       }
       if (proc->has_column_conservation_check()) {
-        proc->get_column_conservation_check().second->set_additional_data_field(data_field);
+        proc->get_conservation().second->set_additional_data_field(data_field);
       }
     }
   }

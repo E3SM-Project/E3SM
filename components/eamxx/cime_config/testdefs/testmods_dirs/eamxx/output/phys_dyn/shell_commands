@@ -28,7 +28,7 @@ $YAML_EDIT_SCRIPT -g \
  --freq-units HIST_OPTION             \
  --prefix ${CASE}.scream.phys_dyn.h   \
  --grid dynamics                      \
- --io-grid 'physics_gll'              \
+ --output-data-layout cg              \
  --fields ${FIELDS}
 
 # Add also a couple of fields on the phys grid, to trigger 2-grid in same stream

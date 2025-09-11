@@ -2,10 +2,10 @@
 #define SCREAM_ATMOSPHERE_PROCESS_GROUP_HPP
 
 #include "share/atm_process/atmosphere_process.hpp"
-#include "share/property_checks/mass_and_energy_column_conservation_check.hpp"
+#include "share/property_checks/mass_and_energy_conservation_check.hpp"
 #include "control/surface_coupling_utils.hpp"
 
-#include "ekat/ekat_parameter_list.hpp"
+#include <ekat_parameter_list.hpp>
 
 #include <string>
 #include <list>
@@ -89,12 +89,12 @@ public:
 
   // Returns true if any internal processes enables
   // the mass and energy conservation checks.
-  bool are_column_conservation_checks_enabled () const;
+  bool are_conservation_checks_enabled () const;
 
   // Adds the mass and energy conservation
   // checks to appropriate physics processes.
   void setup_column_conservation_checks (
-      const std::shared_ptr<MassAndEnergyColumnConservationCheck>& conservation_check,
+      const std::shared_ptr<MassAndEnergyConservationCheck>& conservation_check,
       const CheckFailHandling                                      fail_handling_type) const;
 
   // Add nan checks after each non-group process, for each computed field.

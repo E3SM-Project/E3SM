@@ -2073,7 +2073,7 @@
   <entry id="VECT_MAP">
     <type>char</type>
     <valid_values>none,npfix,cart3d,cart3d_diag,cart3d_uvw,cart3d_uvw_diag</valid_values>
-    <default_value>none</default_value>
+    <default_value>cart3d</default_value>
     <group>run_domain</group>
     <file>env_run.xml</file>
     <desc>vector mapping option</desc>
@@ -3106,15 +3106,6 @@
    <group>job_submission</group>
    <file>env_batch.xml</file>
    <desc>whether the PROJECT value is required on this machine</desc>
- </entry>
-
- <entry id="COMPARE_TO_NUOPC">
-   <type>logical</type>
-   <valid_values>TRUE,FALSE</valid_values>
-   <default_value>FALSE</default_value>
-   <group>comparison_to_nuopc</group>
-   <file>env_build.xml</file>
-   <desc>TRUE=>turn on CPP variable COMPARE_TO_NUOPC</desc>
  </entry>
 
  <help>
