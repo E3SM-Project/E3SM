@@ -1977,10 +1977,6 @@ contains
                        this%fates(nc)%bc_in(s), &
                        this%fates(nc)%bc_out(s))
 
-                  ! Update bc_out variables from the restart vectors that need to be accumulated
-                  ! from the cohort data structure restart variables
-                  call this%fates(nc)%RestartUpdateBCOut(s)
-
                end do
 
                if(use_fates_sp)then
