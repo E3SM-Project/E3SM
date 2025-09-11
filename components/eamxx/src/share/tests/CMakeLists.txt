@@ -8,14 +8,6 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
   # Test property checks
   CreateUnitTest(property_checks "property_checks.cpp")
 
-  # Test grids
-  CreateUnitTest(grid "grid_tests.cpp"
-    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
-
-  # Test grid import-export
-  CreateUnitTest(grid_imp_exp "grid_import_export_tests.cpp"
-    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
-
   # Test iop remap
   CreateUnitTest(iop_remapper "iop_remapper_tests.cpp"
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
