@@ -313,12 +313,22 @@ void print_field_hyperslab (const Field& f,
 {
   const auto dt = f.data_type();
   const auto rank = f.rank();
+  const auto& fl = f.get_header().get_identifier().get_layout();
 
   EKAT_REQUIRE_MSG (rank>=static_cast<int>(tags.size()),
       "Error! Requested location incompatible with field rank.\n"
       "  - field name: " + f.name() + "\n"
       "  - field rank: " + std::to_string(rank) + "\n"
-      "  - requested indices: (" + ekat::join(indices,",") + "\n");
+      "  - requested indices: (" + ekat::join(indices,",") + ")\n");
+
+  const int num_indices = indices.size();
+  for (int i=0; i<num_indices; ++i) {
+    EKAT_REQUIRE_MSG ( indices[i]>=0 && indices[i]<fl.dim(i),
+      "Error! Requested index is invalid.\n"
+      "  - field name: " + f.name() + "\n"
+      "  - field layout: " + fl.to_string() + "\n"
+      "  - requested indices: (" + ekat::join(indices,",") + ")\n");
+  }
 
   switch (dt) {
     case DataType::IntType:
