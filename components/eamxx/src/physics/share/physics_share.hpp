@@ -1,7 +1,7 @@
 #ifndef SCREAM_PHYSICS_SHARE_HPP
 #define SCREAM_PHYSICS_SHARE_HPP
 
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 
 namespace scream {
 

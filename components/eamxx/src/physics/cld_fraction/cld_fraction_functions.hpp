@@ -1,7 +1,7 @@
 #ifndef CLD_FRAC_FUNCTIONS_HPP
 #define CLD_FRAC_FUNCTIONS_HPP
 
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 
 #include <ekat_pack_kokkos.hpp>
 #include <ekat_workspace.hpp>

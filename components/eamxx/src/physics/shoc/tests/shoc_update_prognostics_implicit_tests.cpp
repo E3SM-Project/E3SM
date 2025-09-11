@@ -1,9 +1,9 @@
 #include "catch2/catch.hpp"
 
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 #include "shoc_functions.hpp"
 #include "shoc_test_data.hpp"
-#include "share/util/eamxx_setup_random_test.hpp"
+#include "eamxx_setup_random_test.hpp"
 
 #include "shoc_unit_tests_common.hpp"
 

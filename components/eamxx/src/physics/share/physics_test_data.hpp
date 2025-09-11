@@ -3,8 +3,8 @@
 
 #include "physics_test_read_write_helpers.hpp"
 
-#include "share/eamxx_types.hpp"
-#include "share/util/eamxx_setup_random_test.hpp"
+#include "share/core/eamxx_types.hpp"
+#include "eamxx_setup_random_test.hpp"
 
 #include <ekat_math_utils.hpp>
 #include <ekat_assert.hpp>

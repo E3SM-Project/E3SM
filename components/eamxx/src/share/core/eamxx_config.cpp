@@ -1,6 +1,6 @@
 #include "eamxx_config.hpp"
 #include "eamxx_session.hpp"
-#include "eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 #include "eamxx_version.h"
 
 #include <ekat_kokkos_session.hpp>

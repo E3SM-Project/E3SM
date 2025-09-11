@@ -4,8 +4,8 @@
 #include "share/util/eamxx_universal_constants.hpp"
 #include "share/util/eamxx_utils.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
-#include "share/util/eamxx_setup_random_test.hpp"
-#include "share/eamxx_config.hpp"
+#include "share/core/eamxx_setup_random_test.hpp"
+#include "share/core/eamxx_config.hpp"
 
 TEST_CASE("fill_value") {
   using namespace scream::constants;

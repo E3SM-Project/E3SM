@@ -7,7 +7,7 @@
 #include "share/field/field.hpp"
 #include "share/field/field_utils.hpp"
 
-#include "share/util/eamxx_setup_random_test.hpp"
+#include "eamxx_setup_random_test.hpp"
 
 namespace scream {
 

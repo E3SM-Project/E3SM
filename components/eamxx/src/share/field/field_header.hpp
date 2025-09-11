@@ -5,7 +5,7 @@
 #include "share/field/field_tracking.hpp"
 #include "share/field/field_alloc_prop.hpp"
 #include "share/util/eamxx_family_tracking.hpp"
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
 
 #include <vector>

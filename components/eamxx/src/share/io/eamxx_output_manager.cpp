@@ -1,9 +1,9 @@
 #include "eamxx_output_manager.hpp"
 
-#include "share/eamxx_config.hpp"
 #include "share/io/eamxx_scorpio_interface.hpp"
 #include "share/io/scorpio_input.hpp"
 #include "share/util/eamxx_timing.hpp"
+#include "share/core/eamxx_config.hpp"
 
 #include <ekat_comm.hpp>
 #include <ekat_parameter_list.hpp>

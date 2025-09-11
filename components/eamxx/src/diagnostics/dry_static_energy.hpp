@@ -3,7 +3,7 @@
 
 #include "share/atm_process/atmosphere_diagnostic.hpp"
 
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 
 namespace scream
 {

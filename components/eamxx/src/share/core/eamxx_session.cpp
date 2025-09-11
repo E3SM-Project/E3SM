@@ -27,7 +27,7 @@ void initialize_eamxx_session (bool print_config) {
   ekat::disable_all_fpes();
   ekat::enable_fpes(get_default_fpes());
 
-  if (print_config) 
+  if (print_config)
     std::cout << eamxx_config_string() << "\n";
 }
 
@@ -38,7 +38,7 @@ void initialize_eamxx_session (int argc, char **argv, bool print_config) {
   ekat::disable_all_fpes();
   ekat::enable_fpes(get_default_fpes());
 
-  if (print_config) 
+  if (print_config)
     std::cout << eamxx_config_string() << "\n";
 }
 

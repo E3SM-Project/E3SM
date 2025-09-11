@@ -1,6 +1,6 @@
 #ifndef SCREAM_COSP_FUNCTIONS_HPP
 #define SCREAM_COSP_FUNCTIONS_HPP
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 using scream::Real;
 extern "C" void cosp_c2f_init(int ncol, int nsubcol, int nlay);
 extern "C" void cosp_c2f_final();
