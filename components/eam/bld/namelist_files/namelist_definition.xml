@@ -4499,7 +4499,7 @@ group="radiation_nl" valid_values="" >
 Split surface insolation asymmetrically between VIS/NIR. 
 Coefficient determines fraction of VIS flux (i.e., less than 0.7 um) 
 in RRTMG overlap band that spans 0.625–0.778 um
-Default: FALSE
+Default: TRUE
 </entry>
 
 <entry id="use_rad_dt_cosz" type="logical"  category="radiation"

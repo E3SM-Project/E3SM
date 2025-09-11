@@ -860,6 +860,10 @@ if ($rad_pkg eq 'rrtmgp') {
   add_default($nl,'fixed_total_solar_irradiance');
 }
 
+if ($rad_pkg eq 'rrtmg') {
+  add_default($nl, 'rad_asym_splt')
+}
+
 #
 # Simulated years: sim_year and sim_year_start
 #
