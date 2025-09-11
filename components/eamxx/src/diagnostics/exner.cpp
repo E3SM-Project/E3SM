@@ -1,5 +1,5 @@
 #include "diagnostics/exner.hpp"
-#include "share/util/eamxx_common_physics_functions.hpp"
+#include "share/physics/eamxx_common_physics_functions.hpp"
 
 namespace scream
 {

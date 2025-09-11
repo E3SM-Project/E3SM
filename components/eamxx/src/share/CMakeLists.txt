@@ -37,9 +37,9 @@ set(SHARE_SRC
   property_checks/field_nan_check.cpp
   property_checks/field_within_interval_check.cpp
   property_checks/mass_and_energy_conservation_check.cpp
-  util/eamxx_data_interpolation.cpp
-  util/eamxx_fv_phys_rrtmgp_active_gases_workaround.cpp
-  util/eamxx_time_interpolation.cpp
+  algorithm/eamxx_data_interpolation.cpp
+  algorithm/eamxx_fv_phys_rrtmgp_active_gases_workaround.cpp
+  algorithm/eamxx_time_interpolation.cpp
 )
 
 # Append ETI sources (I didn't do it above for clarity of reading)
