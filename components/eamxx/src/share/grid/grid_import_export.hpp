@@ -2,7 +2,7 @@
 #define EAMXX_GRID_IMPORT_EXPORT_HPP
 
 #include "share/grid/abstract_grid.hpp"
-#include "share/eamxx_types.hpp"       // For KokkosTypes
+#include "share/core/eamxx_types.hpp"       // For KokkosTypes
 #include "share/util/eamxx_utils.hpp"  // For check_mpi_call
 
 #include <ekat_comm.hpp>

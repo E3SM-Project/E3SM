@@ -10,7 +10,7 @@
 // 3. Integration with OutputManager to create files with aliased names
 // 4. Verification that aliased names appear correctly in NetCDF output files
 
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 #include "share/field/field.hpp"
 #include "share/field/field_manager.hpp"
 #include "share/field/field_utils.hpp"

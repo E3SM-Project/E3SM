@@ -1,8 +1,7 @@
-include (EkatSetCompilerFlags)
+# Core types and configuration options
+add_subdirectory(core)
 
 set(SHARE_SRC
-  eamxx_config.cpp
-  eamxx_session.cpp
   atm_process/atmosphere_process.cpp
   atm_process/atmosphere_process_hash.cpp
   atm_process/atmosphere_process_group.cpp
@@ -115,6 +114,8 @@ target_include_directories(scream_share PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
+target_link_libraries(scream_share PUBLIC eamxx_core)
+
 # Used in the data interpolation
 target_link_libraries(scream_share PUBLIC stdc++fs)
 
@@ -126,65 +127,8 @@ else()
   target_include_directories(scream_share PUBLIC ${INSTALL_SHAREDPATH}/include)
 endif()
 
-if (EAMXX_ENABLE_PYTHON)
-  if (NOT Python_EXECUTABLE)
-    message (FATAL_ERROR "You must set Python_EXECUTABLE to point to a valid python3 interpreter")
-  endif()
-
-  execute_process(
-    COMMAND "${Python_EXECUTABLE}" -c "import sys; assert sys.version_info >= (3,9), 'Python version must be >= 3.9'"
-    RESULT_VARIABLE python_version_check_result
-    ERROR_VARIABLE python_version_check_error
-  )
-  if (python_version_check_result)
-      message(FATAL_ERROR "Python version check failed: ${python_version_check_error}")
-  endif()
-
-  # Need pybind11
-  execute_process(
-    COMMAND "${Python_EXECUTABLE}" -c "import pybind11; print(pybind11.get_cmake_dir())"
-    OUTPUT_STRIP_TRAILING_WHITESPACE OUTPUT_VARIABLE pybind11_ROOT)
-
-  find_package(pybind11 REQUIRED HINTS ${pybind11_ROOT})
-
-  # Add py sources and link pybind11
-  target_sources (scream_share PUBLIC
-    eamxx_pysession.cpp)
-
-  target_link_libraries(scream_share PUBLIC pybind11::embed)
-  target_compile_definitions (scream_share PUBLIC EAMXX_HAS_PYTHON)
-endif()
-
 target_link_libraries(scream_share PUBLIC ekat::AllLibs pioc)
 
-target_compile_options(scream_share PUBLIC
-  $<$<COMPILE_LANGUAGE:Fortran>:${SCREAM_Fortran_FLAGS}>
-)
-
-# This used to be in `eamxx_config.h/eamxx_config.f`, but we did accidentally remove
-# the includes at least twice. To avoid this from happening again, we add this crucial
-# macro as a compile definition of the scream_share, which is linked to all other
-# scream libraries.
-if (SCREAM_CIME_BUILD)
-  target_compile_definitions (scream_share PUBLIC SCREAM_CIME_BUILD)
-endif()
-
-# When dealing with subtle bugs in read/write of unit tests baselines,
-# using ascii baselines can help inspect that the file indeed looks as expected
-option (EAMXX_ASCII_BASELINES "Whether physics units tests should assume ascii (instead of binary) format for baselines" OFF)
-if (EAMXX_ASCII_BASELINES)
-  target_compile_definitions (scream_share PUBLIC EAMXX_ASCII_BASELINES)
-endif()
-
-# We have some issues with RDC and repeated libraries in the link line.
-# It's a known issue, and nvcc_wrapper has a flag for handling this.
-if (Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE)
-  if(CMAKE_VERSION VERSION_LESS "3.13.0")
-    target_link_librarires(scream_share PUBLIC "--remove-duplicate-link-files")
-  else()
-    target_link_options(scream_share PUBLIC "--remove-duplicate-link-files")
-  endif()
-endif()
 SetOmpFlags(scream_share Fortran)
 
 # The "build_cf_dictionary" target downloads an XML file containing valid field
@@ -209,10 +153,10 @@ if (NOT SCREAM_LIB_ONLY)
   # Create test_support lib
   add_library(scream_test_support
     grid/mesh_free_grids_manager.cpp
-    util/eamxx_test_session.cpp
   )
   target_link_libraries(scream_test_support PUBLIC scream_share scream_io)
   target_include_directories (scream_test_support PUBLIC ${EKAT_SOURCE_DIR}/extern/Catch2/single_include)
 
   add_subdirectory(tests)
+  add_subdirectory(io/tests)
 endif()

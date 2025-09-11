@@ -3,7 +3,7 @@
 
 #include "share/field/field_header.hpp"
 #include "share/util/eamxx_combine_ops.hpp"
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 
 #include <ekat_std_type_traits.hpp>
 #include <ekat_subview_utils.hpp>

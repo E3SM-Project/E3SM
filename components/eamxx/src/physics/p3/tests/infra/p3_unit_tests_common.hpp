@@ -1,7 +1,7 @@
 #ifndef P3_UNIT_TESTS_COMMON_HPP
 #define P3_UNIT_TESTS_COMMON_HPP
 
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 #include "p3_functions.hpp"
 #include "p3_data.hpp"
 #include "p3_test_data.hpp"

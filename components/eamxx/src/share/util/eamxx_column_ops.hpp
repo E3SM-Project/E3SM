@@ -1,7 +1,7 @@
 #ifndef SCREAM_COLUMN_OPS_HPP
 #define SCREAM_COLUMN_OPS_HPP
 
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 #include "share/util/eamxx_combine_ops.hpp"
 
 #include <ekat_arch.hpp>

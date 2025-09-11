@@ -5,7 +5,7 @@
 #include "p3_data.hpp"
 #include "p3_unit_tests_common.hpp"
 
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 
 #include <thread>
 #include <array>

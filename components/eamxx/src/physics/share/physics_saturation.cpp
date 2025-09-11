@@ -1,6 +1,6 @@
 #include "physics_saturation_impl.hpp"
 
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 
 namespace scream {
 namespace physics {

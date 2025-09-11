@@ -1,6 +1,6 @@
 #include "catch2/catch.hpp"
 
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 #include "physics/zm/zm_functions.hpp"
 #include "physics/zm/tests/infra/zm_test_data.hpp"
 #include "physics/zm/tests/infra/zm_test_data_functions.hpp"

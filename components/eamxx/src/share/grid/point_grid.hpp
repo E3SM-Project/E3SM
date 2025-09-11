@@ -2,7 +2,7 @@
 #define SCREAM_POINT_GRID_HPP
 
 #include "share/grid/abstract_grid.hpp"
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 
 #include <ekat_comm.hpp>
 

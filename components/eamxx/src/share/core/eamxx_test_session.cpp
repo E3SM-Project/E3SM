@@ -1,4 +1,4 @@
-#include "share/eamxx_session.hpp"
+#include "eamxx_session.hpp"
 
 /*
  * This small file contains the default implementation of a test session

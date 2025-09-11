@@ -3,7 +3,7 @@
 
 #include "physics/p3/p3_functions.hpp"
 #include "physics/share/physics_test_data.hpp"
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 
 #include <array>
 #include <utility>

@@ -8,7 +8,7 @@
 #include "share/field/field_group.hpp"
 #include "share/field/field_request.hpp"
 #include "share/util/eamxx_utils.hpp"
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 
 #include <map>
 #include <memory>

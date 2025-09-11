@@ -1,7 +1,7 @@
 #ifndef SCREAM_SHOC_FUNCTIONS_F90_HPP
 #define SCREAM_SHOC_FUNCTIONS_F90_HPP
 
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 #include "physics/share/physics_test_data.hpp"
 
 #include "shoc_functions.hpp"

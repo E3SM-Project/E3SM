@@ -87,8 +87,16 @@ list(REMOVE_ITEM SCREAM_CUT_EXEC_OPTIONS USER_DEFINED_TEST_SESSION)
 function(CreateUnitTestExec exec_name test_srcs)
 ###############################################################################
   # Call Ekat function, with a couple of extra params
-  EkatCreateUnitTestExec("${exec_name}" "${test_srcs}" ${ARGN}
-    USER_DEFINED_TEST_SESSION LIBS scream_share scream_test_support)
+  # NTOE: this if statement will disappear, as soon as the share folder reorg
+  #       is completed, and we get rid of cyclic dep between share and io
+  #       Then, we will ask unit test to REALLY link against all they need
+  if (TARGET scream_test_support)
+    EkatCreateUnitTestExec("${exec_name}" "${test_srcs}" ${ARGN}
+      USER_DEFINED_TEST_SESSION LIBS scream_share eamxx_test_session scream_test_support)
+  else()
+    EkatCreateUnitTestExec("${exec_name}" "${test_srcs}" ${ARGN}
+      USER_DEFINED_TEST_SESSION LIBS eamxx_test_session)
+  endif()
 endfunction(CreateUnitTestExec)
 
 ###############################################################################

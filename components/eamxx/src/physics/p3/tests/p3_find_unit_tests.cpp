@@ -4,7 +4,7 @@
 #include "p3_test_data.hpp"
 #include "p3_unit_tests_common.hpp"
 
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 
 #include <ekat_team_policy_utils.hpp>
 

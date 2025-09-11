@@ -2,7 +2,7 @@
 
 #include "share/util/eamxx_combine_ops.hpp"
 #include "share/util/eamxx_universal_constants.hpp"
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 
 #include <ekat_pack.hpp>
 

@@ -6,7 +6,7 @@
 
 #ifdef EAMXX_HAS_PYTHON
 #include "share/field/field_pyutils.hpp"
-#include "share/eamxx_pysession.hpp"
+#include "eamxx_pysession.hpp"
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
 namespace py = pybind11;

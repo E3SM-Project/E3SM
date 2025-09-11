@@ -14,20 +14,6 @@ namespace py = pybind11;
 
 namespace scream {
 
-TEST_CASE("pysession", "") {
-  auto& ps = PySession::get();
-
-  REQUIRE_THROWS(ps.finalize());
-
-  REQUIRE (not ps.is_initialized());
-
-  ps.initialize();
-  REQUIRE (ps.is_initialized());
-
-  ps.finalize();
-  REQUIRE (not ps.is_initialized());
-}
-
 TEST_CASE("pyfield", "") {
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;

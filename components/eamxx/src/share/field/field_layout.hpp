@@ -2,7 +2,7 @@
 #define SCREAM_FIELD_LAYOUT_HPP
 
 #include "share/field/field_tag.hpp"
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 
 #include <ekat_std_utils.hpp>
 #include <ekat_string_utils.hpp>

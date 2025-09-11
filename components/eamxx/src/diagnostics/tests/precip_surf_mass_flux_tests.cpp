@@ -5,7 +5,7 @@
 
 #include "physics/share/physics_constants.hpp"
 
-#include "share/util/eamxx_setup_random_test.hpp"
+#include "share/core/eamxx_setup_random_test.hpp"
 #include "share/field/field_utils.hpp"
 
 #include <ekat_view_utils.hpp>

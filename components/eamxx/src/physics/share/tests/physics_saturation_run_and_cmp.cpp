@@ -5,9 +5,9 @@
 #include "physics/share/physics_saturation_impl.hpp"
 #include "physics_unit_tests_common.hpp"
 
-#include "share/eamxx_types.hpp"
-#include "share/eamxx_session.hpp"
 #include "share/util/eamxx_utils.hpp"
+#include "share/core/eamxx_session.hpp"
+#include "share/core/eamxx_types.hpp"
 
 #include <ekat_pack.hpp>
 #include <ekat_test_utils.hpp>

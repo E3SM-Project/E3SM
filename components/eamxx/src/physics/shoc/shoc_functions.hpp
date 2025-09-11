@@ -4,7 +4,7 @@
 #include "physics/share/physics_constants.hpp"
 #include "physics/shoc/shoc_constants.hpp"
 
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 
 #include <ekat_pack_kokkos.hpp>
 #include <ekat_workspace.hpp>
