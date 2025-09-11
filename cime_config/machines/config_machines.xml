@@ -3534,7 +3534,7 @@
         <command name="load">oneapi/release/2025.2.0</command>
         <command name="load">mpich-config/collective-tuning/1024</command>
         <command name="load">netcdf/4.9.3c-4.6.2f</command>
-        <command name="load">pnetcdf/1.14.1</command>
+        <command name="load">pnetcdf/1.14.0</command>
         <command name="load">adios2/2.10.2</command>
       </modules>
     </module_system>
