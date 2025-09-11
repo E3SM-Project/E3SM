@@ -4,6 +4,9 @@ add_subdirectory(core)
 # Small/generic utilities
 add_subdirectory(util)
 
+# Field structures
+add_subdirectory(field)
+
 set(SHARE_SRC
   atm_process/atmosphere_process.cpp
   atm_process/atmosphere_process_hash.cpp
@@ -11,14 +14,6 @@ set(SHARE_SRC
   atm_process/atmosphere_process_dag.cpp
   atm_process/atmosphere_diagnostic.cpp
   atm_process/IOPDataManager.cpp
-  field/field_alloc_prop.cpp
-  field/field_identifier.cpp
-  field/field_header.cpp
-  field/field_layout.cpp
-  field/field_tracking.cpp
-  field/field.cpp
-  field/field_group.cpp
-  field/field_sync.cpp
   grid/abstract_grid.cpp
   grid/grids_manager.cpp
   grid/grid_import_export.cpp
@@ -112,7 +107,8 @@ target_include_directories(scream_share PUBLIC
 
 target_link_libraries(scream_share PUBLIC
   eamxx_core
-  eamxx_utils)
+  eamxx_utils
+  eamxx_field)
 
 # Used in the data interpolation
 target_link_libraries(scream_share PUBLIC stdc++fs)
