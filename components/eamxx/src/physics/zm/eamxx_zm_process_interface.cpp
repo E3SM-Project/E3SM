@@ -37,7 +37,8 @@ void ZMDeepConvection::set_grids (const std::shared_ptr<const GridsManager> grid
   // Gather runtime options from file
   zm_opts.load_runtime_options(m_params);
 
-  auto m_grid           = grids_manager->get_grid("physics");
+  m_grid = grids_manager->get_grid("physics");
+
   const auto& grid_name = m_grid->name();
   const auto layout     = m_grid->get_3d_scalar_layout(true);
   const auto comm       = m_grid->get_comm();
@@ -238,8 +239,8 @@ void ZMDeepConvection::run_impl (const double dt)
     // accumulate surface precipitation fluxes
     Kokkos::parallel_for("zm_update_precip",KT::RangePolicy(0, m_ncol), KOKKOS_LAMBDA (const int i) {
       auto prec_liq = zm_output.prec(i) - zm_output.snow(i);
-      precip_liq_surf_mass(i) += prec_liq          * PC::RHO_H2O * dt;
-      precip_ice_surf_mass(i) += zm_output.snow(i) * PC::RHO_H2O * dt;
+      precip_liq_surf_mass(i) += std::max(prec_liq,0.0) * PC::RHO_H2O * dt;
+      precip_ice_surf_mass(i) += zm_output.snow(i)      * PC::RHO_H2O * dt;
     });
     // update 3D prognostic variables
     Kokkos::parallel_for("zm_update_prognostics",team_policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
