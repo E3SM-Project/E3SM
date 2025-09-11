@@ -1,5 +1,5 @@
 #include "share/grid/point_grid.hpp"
-#include "share/grid/remap/iop_remapper.hpp"
+#include "share/remap/iop_remapper.hpp"
 #include "share/io/scorpio_input.hpp"
 #include "share/io/eamxx_scorpio_interface.hpp"
 #include "share/atm_process/IOPDataManager.hpp"

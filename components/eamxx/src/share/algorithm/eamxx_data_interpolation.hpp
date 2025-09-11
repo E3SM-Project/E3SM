@@ -2,7 +2,7 @@
 #define EAMXX_DATA_INTERPOLATION_HPP
 
 #include "share/grid/abstract_grid.hpp"
-#include "share/grid/remap/abstract_remapper.hpp"
+#include "share/remap/abstract_remapper.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
 #include "share/field/field.hpp"
 

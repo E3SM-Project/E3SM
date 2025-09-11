@@ -19,14 +19,14 @@ set(SHARE_SRC
   grid/grid_import_export.cpp
   grid/se_grid.cpp
   grid/point_grid.cpp
-  grid/remap/abstract_remapper.cpp
-  grid/remap/coarsening_remapper.cpp
-  grid/remap/horiz_interp_remapper_base.cpp
-  grid/remap/horiz_interp_remapper_data.cpp
-  grid/remap/iop_remapper.cpp
-  grid/remap/identity_remapper.cpp
-  grid/remap/refining_remapper_p2p.cpp
-  grid/remap/vertical_remapper.cpp
+  remap/abstract_remapper.cpp
+  remap/coarsening_remapper.cpp
+  remap/horiz_interp_remapper_base.cpp
+  remap/horiz_interp_remapper_data.cpp
+  remap/iop_remapper.cpp
+  remap/identity_remapper.cpp
+  remap/refining_remapper_p2p.cpp
+  remap/vertical_remapper.cpp
   manager/field_manager.cpp
   property_checks/property_check.cpp
   property_checks/field_nan_check.cpp
@@ -40,7 +40,7 @@ set(SHARE_SRC
 if (EAMXX_ENABLE_EXPERIMENTAL_CODE)
   list (APPEND
     SHARE_SRC
-    grid/remap/refining_remapper_rma.cpp
+    remap/refining_remapper_rma.cpp
   )
 endif()
 
