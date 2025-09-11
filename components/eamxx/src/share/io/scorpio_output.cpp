@@ -1,61 +1,76 @@
 #include "share/io/scorpio_output.hpp"
-#include "share/io/scorpio_input.hpp"
-#include "share/io/eamxx_io_utils.hpp"
+#include "share/field/field_utils.hpp"
 #include "share/grid/remap/coarsening_remapper.hpp"
 #include "share/grid/remap/vertical_remapper.hpp"
+#include "share/io/eamxx_io_utils.hpp"
+#include "share/io/scorpio_input.hpp"
 #include "share/util/eamxx_timing.hpp"
-#include "share/field/field_utils.hpp"
 
-#include <ekat_units.hpp>
-#include <ekat_string_utils.hpp>
 #include <ekat_std_utils.hpp>
+#include <ekat_string_utils.hpp>
+#include <ekat_units.hpp>
 
 #include <numeric>
 
-namespace {
-  // Helper lambda, to copy extra data (io string attributes plus filled settings).
-  // This will be used if any remapper is created, to ensure atts set by atm_procs are not lost
-  void transfer_extra_data  (const scream::Field& src, scream::Field& tgt) {
+namespace
+{
+// Helper lambda, to copy extra data (io string attributes plus filled settings).
+// This will be used if any remapper is created, to ensure atts set by atm_procs are not lost
+void
+transfer_extra_data(const scream::Field &src, scream::Field &tgt)
+{
 
-    // Transfer io string attributes
-    const std::string io_string_atts_key ="io: string attributes";
-    using stratts_t = std::map<std::string,std::string>;
-    const auto& src_atts = src.get_header().get_extra_data<stratts_t>(io_string_atts_key);
-          auto& dst_atts = tgt.get_header().get_extra_data<stratts_t>(io_string_atts_key);
-    for (const auto& [name,val] : src_atts) {
-      dst_atts[name] = val;
-    }
+  // Transfer io string attributes
+  const std::string io_string_atts_key = "io: string attributes";
+  using stratts_t                      = std::map<std::string, std::string>;
+  const auto &src_atts = src.get_header().get_extra_data<stratts_t>(io_string_atts_key);
+  auto &dst_atts       = tgt.get_header().get_extra_data<stratts_t>(io_string_atts_key);
+  for (const auto &[name, val] : src_atts) {
+    dst_atts[name] = val;
+  }
 
-    // Transfer whether or not this field MAY contain fill_value (to trigger usage of the
-    // proper implementation of Field update methods
-    if (src.get_header().may_be_filled()) {
-      tgt.get_header().set_may_be_filled(true);
-    }
-  };
+  // Transfer whether or not this field MAY contain fill_value (to trigger usage of the
+  // proper implementation of Field update methods
+  if (src.get_header().may_be_filled()) {
+    tgt.get_header().set_may_be_filled(true);
+  }
+};
+
+// Note: this is also declared in eamxx_scorpio_interface.cpp. Move it somewhere else?
+template <typename T>
+std::string
+print_map_keys(const std::map<std::string, T> &map)
+{
+  std::string s;
+  for (const auto &it : map) {
+    s += it.first + ",";
+  }
+  s.pop_back();
+  return s;
 }
+} // anonymous namespace
 
 namespace scream
 {
 
-template<typename T>
-bool has_duplicates (const std::vector<T>& c)
+template <typename T>
+bool
+has_duplicates(const std::vector<T> &c)
 {
-  std::set<T> s(c.begin(),c.end());
-  return c.size()>s.size();
+  std::set<T> s(c.begin(), c.end());
+  return c.size() > s.size();
 }
 
-AtmosphereOutput::
-AtmosphereOutput (const ekat::Comm& comm,
-                  const std::vector<Field>& fields,
-                  const std::shared_ptr<const grid_type>& grid)
- : m_comm (comm)
+AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const std::vector<Field> &fields,
+                                   const std::shared_ptr<const grid_type> &grid)
+ : m_comm(comm)
 {
   // This version of AtmosphereOutput is for quick output of fields (no remaps, no time dim)
-  m_avg_type = OutputAvgType::Instant;
+  m_avg_type     = OutputAvgType::Instant;
   m_add_time_dim = false;
 
   // Create a FieldManager with the input fields
-  auto fm = std::make_shared<FieldManager> (grid);
+  auto fm = std::make_shared<FieldManager>(grid);
   for (auto f : fields) {
     fm->add_field(f);
     m_fields_names.push_back(f.name());
@@ -66,15 +81,14 @@ AtmosphereOutput (const ekat::Comm& comm,
   m_field_mgrs[FromModel] = m_field_mgrs[AfterVertRemap] = m_field_mgrs[AfterHorizRemap] = fm;
 
   // Setup I/O structures
-  init ();
+  init();
 }
 
-AtmosphereOutput::
-AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
-                  const std::shared_ptr<const fm_type>& field_mgr,
-                  const std::string& grid_name)
- : m_comm           (comm)
- , m_add_time_dim   (true)
+AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::ParameterList &params,
+                                   const std::shared_ptr<const fm_type> &field_mgr,
+                                   const std::string &grid_name)
+ : m_comm(comm),
+   m_add_time_dim(true)
 {
   using vos_t = std::vector<std::string>;
 
@@ -82,21 +96,23 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
 
   // Figure out what kind of averaging is requested
   auto avg_type = params.get<std::string>("averaging_type");
-  m_avg_type = str2avg(avg_type);
+  m_avg_type    = str2avg(avg_type);
   EKAT_REQUIRE_MSG (m_avg_type!=OutputAvgType::Invalid,
       "Error! Unsupported averaging type '" + avg_type + "'.\n"
       "       Valid options: instant, Max, Min, Average. Case insensitive.\n");
 
   // By default, IO is done directly on the field mgr grid
   auto fm_grid = field_mgr->get_grids_manager()->get_grid(grid_name);
-  std::string io_grid_name = fm_grid->name();
   std::vector<std::string> field_specs; // Raw field specifications from YAML (may include aliases)
   
+  std::string output_data_layout = "default";
   if (params.isParameter("field_names")) {
     // This simple parameter list option does *not* allow to remap fields
     // to an io grid different from that of the field manager. In order to
     // use that functionality, you need the full syntax
     field_specs = params.get<vos_t>("field_names");
+    if (params.isParameter("output_data_layout"))
+      output_data_layout = params.get<std::string>("output_data_layout");
   } else if (params.isSublist("fields")){
     const auto& f_pl = params.sublist("fields");
     bool grid_found = false;
@@ -104,6 +120,8 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
       if (f_pl.isSublist(grid_name)) {
         grid_found = true;
         const auto& pl = f_pl.sublist(grid_name);
+        if (pl.isParameter("output_data_layout"))
+          output_data_layout = pl.get<std::string>("output_data_layout");
         if (pl.isType<vos_t>("field_names")) {
           field_specs = pl.get<vos_t>("field_names");
         } else if (pl.isType<std::string>("field_names")) {
@@ -112,16 +130,20 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
             field_specs.clear();
           }
         }
-
-        // Check if the user wants to remap fields on a different grid first
-        if (pl.isParameter("io_grid_name")) {
-          io_grid_name = pl.get<std::string>("io_grid_name");
-        }
-        break;
       }
     }
     EKAT_REQUIRE_MSG (grid_found,
         "Error! Bad formatting of output yaml file. Missing 'fields->$grid_name` sublist.\n");
+  }
+
+  bool change_data_layout = false;
+  if (not fm_grid->get_aux_grid(output_data_layout)) {
+    EKAT_REQUIRE_MSG (output_data_layout=="native" or output_data_layout=="default",
+        "Error! Grid for requested output_data_layout not found among this grid's aux grids.\n"
+        " - grid name: " + fm_grid->name() + "\n"
+        " - output_data_layout: " + output_data_layout + "\n");
+  } else {
+    change_data_layout = true;
   }
 
   // Process field specifications to extract aliases and internal field names
@@ -155,8 +177,7 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
   //   - online remapping which is setup using the create_remapper function
   const bool use_vertical_remap_from_file = params.isParameter("vertical_remap_file");
   const bool use_horiz_remap_from_file = params.isParameter("horiz_remap_file");
-  const bool use_online_remapper = io_grid_name!=fm_grid->name();
-  if (use_online_remapper) {
+  if (change_data_layout) {
     EKAT_REQUIRE_MSG(!use_vertical_remap_from_file and !use_horiz_remap_from_file,
         "[AtmosphereOutput] Error! Online Dyn->PhysGLL remapping not supported along with vertical and/or horizontal remapping from file");
   }
@@ -229,7 +250,7 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
 
   // Online remapper and horizontal remapper follow a similar pattern so we check in the same conditional.
   auto grid_after_hr = grid_after_vr;
-  if (use_online_remapper || use_horiz_remap_from_file) {
+  if (change_data_layout || use_horiz_remap_from_file) {
     // We build a remapper, to remap fields from the fm grid to the io grid
     if (use_horiz_remap_from_file) {
       // Construct the coarsening remapper
@@ -237,7 +258,7 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
       m_horiz_remapper = std::make_shared<CoarseningRemapper>(grid_after_vr,horiz_remap_file,true);
     } else {
       // Construct a generic remapper (likely, Dyn->PhysicsGLL)
-      grid_after_hr = gm->get_grid(io_grid_name);
+      grid_after_hr = fm_grid->get_aux_grid(output_data_layout);
       m_horiz_remapper = gm->create_remapper(grid_after_vr,grid_after_hr);
     }
 

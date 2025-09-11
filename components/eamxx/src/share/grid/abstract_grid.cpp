@@ -11,17 +11,13 @@
 namespace scream
 {
 // Constructor(s) & Destructor
-AbstractGrid::
-AbstractGrid (const std::string& name,
-              const GridType type,
-              const int num_local_dofs,
-              const int num_vertical_lev,
-              const ekat::Comm& comm)
- : m_type (type)
- , m_name (name)
- , m_num_local_dofs (num_local_dofs)
- , m_num_vert_levs  (num_vertical_lev)
- , m_comm (comm)
+AbstractGrid::AbstractGrid(const std::string &name, const GridType type, const int num_local_dofs,
+                           const int num_vertical_lev, const ekat::Comm &comm)
+ : m_type(type),
+   m_name(name),
+   m_num_local_dofs(num_local_dofs),
+   m_num_vert_levs(num_vertical_lev),
+   m_comm(comm)
 {
   // Sanity checks
   EKAT_REQUIRE_MSG (m_num_local_dofs>=0, "Error! Number of local dofs must be non-negative.\n");
@@ -466,6 +462,31 @@ AbstractGrid::get_unique_gids () const
   }
 
   return unique_dofs;
+}
+
+std::shared_ptr<AbstractGrid>
+AbstractGrid::get_aux_grid(const std::string& data_layout) const
+{
+  if (m_aux_grids.count(data_layout)==1) {
+    return m_aux_grids.at(data_layout);
+  } else {
+    return nullptr;
+  }
+}
+
+void AbstractGrid::
+set_aux_grid (const std::string& data_layout, const std::shared_ptr<AbstractGrid>& aux_grid)
+{
+  m_aux_grids[data_layout] = aux_grid;
+}
+
+std::vector<std::string> AbstractGrid::get_aux_grids_keys () const
+{
+  std::vector<std::string> keys;
+  for (const auto& it : m_aux_grids) {
+    keys.push_back(it.first);
+  }
+  return keys;
 }
 
 std::vector<int> AbstractGrid::
