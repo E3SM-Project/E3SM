@@ -32,8 +32,10 @@ void Functions<S,D>::momentum_energy_conservation(
   const uview_1d<Real>& vtgw,
   const uview_1d<Real>& ttgw)
 {
+  static constexpr Real half=0.5;
+
   // Total mass from ground to source level: rho*dz = dp/gravit
-  Real dz = 0.;
+  Real dz = 0;
   Kokkos::parallel_reduce(
     Kokkos::TeamVectorRange(team, tend_level+1, pver), [&] (const int k, Real& lsum) {
     lsum += pdel(k) / C::gravit;
@@ -56,12 +58,12 @@ void Functions<S,D>::momentum_energy_conservation(
   team.team_barrier();
 
   // Net gain/loss of total energy in the column.
-  Real dE = 0.;
+  Real dE = 0;
   Kokkos::parallel_reduce(
     Kokkos::TeamVectorRange(team, 0, pver), [&] (const int k, Real& lsum) {
       lsum += pdel(k) * (dsdt(k) +
-                         dudt(k)*(u(k)+dudt(k)*0.5*dt) +
-                         dvdt(k)*(v(k)+dvdt(k)*0.5*dt) );
+                         dudt(k)*(u(k)+dudt(k)*half*dt) +
+                         dvdt(k)*(v(k)+dvdt(k)*half*dt) );
     }, Kokkos::Sum<Real>(dE));
 
   dE = dE/(pint(pver)-pint(tend_level+1));

@@ -323,6 +323,11 @@ contains
     type(lu_decomp) :: decomp
     decomp = lu_decomp(ncol, pver)
 
+    decomp%ca = decomp_ca
+    decomp%cc = decomp_cc
+    decomp%dnom = decomp_dnom
+    decomp%ze = decomp_ze
+
     call gw_diff_tend(ncol, pver, kbot, ktop, q, dt, decomp, dq)
 
     call decomp%finalize()
@@ -353,4 +358,47 @@ contains
 
     call gw_oro_src(ncol, u, v, t, sgh, pmid, pint, dpm, zm, nm, src_level, tend_level, tau, ubm, ubi, xv, yv, c)
   end subroutine gw_oro_src_c
+
+  subroutine vd_lu_decomp_c(ncol, ksrf, kv, tmpi, rpdel, ztodt, gravit, cc_top, ntop, nbot, decomp_ca, decomp_cc, decomp_dnom, decomp_ze) bind(C)
+    use vdiff_lu_solver, only: lu_decomp, vd_lu_decomp
+    use gw_common, only : pver
+
+    integer(kind=c_int) , value, intent(in) :: ncol, ntop, nbot
+    real(kind=c_real) , intent(in), dimension(ncol) :: ksrf, cc_top
+    real(kind=c_real) , intent(in), dimension(ncol, pver+1) :: kv, tmpi
+    real(kind=c_real) , intent(in), dimension(ncol, pver) :: rpdel
+    real(kind=c_real) , value, intent(in) :: ztodt, gravit
+    real(kind=c_real) , intent(out), dimension(ncol, pver) :: decomp_ca, decomp_cc, decomp_dnom, decomp_ze
+
+    type(lu_decomp) :: decomp
+
+    call vd_lu_decomp(ncol, pver, ncol, ksrf, kv, tmpi, rpdel, ztodt, gravit, cc_top, ntop, nbot, decomp)
+    decomp_ca = decomp%ca
+    decomp_cc = decomp%cc
+    decomp_dnom = decomp%dnom
+    decomp_ze = decomp%ze
+
+    call decomp%finalize()
+  end subroutine vd_lu_decomp_c
+
+  subroutine vd_lu_solve_c(ncol, q, decomp_ca, decomp_cc, decomp_dnom, decomp_ze, ntop, nbot, cd_top) bind(C)
+    use vdiff_lu_solver, only: lu_decomp, vd_lu_solve
+    use gw_common, only : pver
+
+    integer(kind=c_int) , value, intent(in) :: ncol, ntop, nbot
+    real(kind=c_real) , intent(inout), dimension(ncol, pver) :: q
+    real(kind=c_real) , intent(in), dimension(ncol, pver) :: decomp_ca, decomp_cc, decomp_dnom, decomp_ze
+    real(kind=c_real) , intent(in), dimension(ncol) :: cd_top
+
+    type(lu_decomp) :: decomp
+    decomp = lu_decomp(ncol, pver)
+    decomp%ca = decomp_ca
+    decomp%cc = decomp_cc
+    decomp%dnom = decomp_dnom
+    decomp%ze = decomp_ze
+
+    call vd_lu_solve(ncol, pver, ncol, q, decomp, ntop, nbot, cd_top)
+
+    call decomp%finalize()
+  end subroutine vd_lu_solve_c
 end module gw_iso_c

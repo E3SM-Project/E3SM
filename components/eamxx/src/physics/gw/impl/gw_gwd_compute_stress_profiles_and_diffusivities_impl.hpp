@@ -63,13 +63,13 @@ void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities(
     const Real ubmc = ubi(k) - c(l);
 
     // Test to see if u-c has the same sign here as the level below.
-    if (ubmc * (ubi(k + 1) - c(l)) > 0.0) {
+    if (ubmc * (ubi(k + 1) - c(l)) > 0) {
       tausat(k, l) = std::abs(init.effkwv * rhoi(k) * bfb_cube(ubmc) /
-                                   (2.0 * ni(k)));
-      if (tausat(k, l) <= GWC::taumin) tausat(k, l) = 0.0;
+                                   (2 * ni(k)));
+      if (tausat(k, l) <= GWC::taumin) tausat(k, l) = 0;
     }
     else {
-      tausat(k, l) = 0.0;
+      tausat(k, l) = 0;
     }
 
     if (!init.do_molec_diff) {
@@ -80,10 +80,10 @@ void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities(
 
     if (k <= init.nbot_molec || !init.do_molec_diff) {
       const Real ubmc2 = ekat::impl::max(bfb_square(ubmc), ubmc2mn);
-      const Real at = ni(k) / (2.0 * init.kwv * ubmc2);
+      const Real at = ni(k) / (2 * init.kwv * ubmc2);
       const Real bt = init.alpha(k);
       const Real ct = bfb_square(ni(k)) / ubmc2;
-      const Real et = -2.0 * GWC::rog * t(k) * (piln(k + 1) - piln(k));
+      const Real et = -2 * GWC::rog * t(k) * (piln(k + 1) - piln(k));
       wrk1(k, l) = at*bt*et;
       wrk2(k, l) = at*ct*et;
     }
@@ -124,12 +124,12 @@ void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities(
         const Real wrk = wrk1(k, pl_idx) + wrk2(k, pl_idx) * d;
 
         Real taudmp;
-        if (wrk >= -150.0 || !init.do_molec_diff) {
+        if (wrk >= -150 || !init.do_molec_diff) {
           taudmp = tau(pl_idx, k+1) * std::exp(wrk);
         } else {
-          taudmp = 0.0;
+          taudmp = 0;
         }
-        if (taudmp <= GWC::taumin) taudmp = 0.0;
+        if (taudmp <= GWC::taumin) taudmp = 0;
         tau(pl_idx, k) = ekat::impl::min(taudmp, tausat(k, pl_idx));
       });
     }
