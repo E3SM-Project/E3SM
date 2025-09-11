@@ -1,0 +1,27 @@
+name: Update Kokkos to develop branch
+description: Updates to Kokkos develop branch and append necessary cmake vars
+
+runs:
+  using: "composite"
+  steps:
+    - name: Check out develop branch in externals/ekat/extern/kokkos
+      run: |
+        cd externals/ekat/extern/kokkos
+        if ! git remote | grep -q upstream; then
+          git remote add upstream https://github.com/kokkos/kokkos.git
+        fi
+        git fetch upstream
+        git checkout upstream/develop
+      shell: sh
+    - name: Modify ghci-snl.cmake file
+      run: |
+        cmake_file_cpu="components/eamxx/cmake/machine-files/ghci-snl-cpu.cmake"
+        echo "set(CMAKE_CXX_STANDARD 20)" >> $cmake_file_cpu
+        echo "set(Kokkos_ENABLE_IMPL_VIEW_LEGACY ON)" >> $cmake_file_cpu
+        echo "set(Kokkos_ENABLE_DEPRECATED_CODE_4 ON)" >> $cmake_file_cpu       
+        cat $cmake_file_cpu
+      shell: sh
+
+# echo "set(CMAKE_CXX_STANDARD 20)" >> $cmake_file
+# echo "set(Kokkos_ENABLE_IMPL_VIEW_LEGACY ON)" >> $cmake_file
+# echo "set(Kokkos_ENABLE_DEPRECATED_CODE_4 ON)" >> $cmake_file
