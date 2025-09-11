@@ -76,8 +76,6 @@ subroutine gw_ediff(ncol, pver, ngwv, kbot, ktop, tend_level, &
   integer :: k, l
   ! Inverse Prandtl number.
   real(r8), parameter :: prndl=0.25_r8
-  ! Density scale height.
-  real(r8), parameter :: dscale=7000._r8
 
 !--------------------------------------------------------------------------
 
@@ -95,7 +93,6 @@ subroutine gw_ediff(ncol, pver, ngwv, kbot, ktop, tend_level, &
 
      end do
   end do
-
 
   ! Interpolate effective diffusivity to interfaces.
   ! Assume zero at top and bottom interfaces.
