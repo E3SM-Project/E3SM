@@ -57,7 +57,12 @@ struct UnitWrap::UnitTest<D>::TestGwdProjectTau : public UnitWrap::UnitTest<D>::
 
     // Get data from test
     for (auto& d : test_data) {
-      gwd_project_tau(d);
+      if (this->m_baseline_action == GENERATE) {
+        gwd_project_tau_f(d);
+      }
+      else {
+        gwd_project_tau(d);
+      }
     }
 
     // Verify BFB results, all data should be in C layout
@@ -65,11 +70,10 @@ struct UnitWrap::UnitTest<D>::TestGwdProjectTau : public UnitWrap::UnitTest<D>::
       for (Int i = 0; i < num_runs; ++i) {
         GwdProjectTauData& d_baseline = baseline_data[i];
         GwdProjectTauData& d_test = test_data[i];
+        REQUIRE(d_baseline.total(d_baseline.taucd) == d_test.total(d_test.taucd));
         for (Int k = 0; k < d_baseline.total(d_baseline.taucd); ++k) {
-          REQUIRE(d_baseline.total(d_baseline.taucd) == d_test.total(d_test.taucd));
           REQUIRE(d_baseline.taucd[k] == d_test.taucd[k]);
         }
-
       }
     }
     else if (this->m_baseline_action == GENERATE) {

@@ -279,17 +279,19 @@ struct Functions
   KOKKOS_FUNCTION
   static void gwd_project_tau(
     // Inputs
+    const MemberType& team,
+    const Workspace& workspace,
+    const GwCommonInit& init,
     const Int& pver,
     const Int& pgwv,
-    const Int& ncol,
-    const uview_1d<const Int>& tend_level,
-    const uview_1d<const Spack>& tau,
-    const uview_1d<const Spack>& ubi,
-    const uview_1d<const Spack>& c,
-    const uview_1d<const Spack>& xv,
-    const uview_1d<const Spack>& yv,
+    const Int& tend_level,
+    const uview_2d<const Real>& tau,
+    const uview_1d<const Real>& ubi,
+    const uview_1d<const Real>& c,
+    const Real& xv,
+    const Real& yv,
     // Outputs
-    const uview_1d<Spack>& taucd);
+    const uview_2d<Real>& taucd);
 
   KOKKOS_FUNCTION
   static void gwd_precalc_rhoi(
