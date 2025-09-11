@@ -66,8 +66,8 @@ set(CPPDEFS "${CPPDEFS} ${TIMING_CPPDEFS}")
 separate_arguments(CPPDEFS_LIST UNIX_COMMAND "${CPPDEFS}")
 
 add_library(gptl ${SRCS_F90} ${SRCS_C})
-target_include_directories(gptl PRIVATE ${TIMING_INCLUDE_DIRS})
-target_compile_definitions(gptl PRIVATE ${CPPDEFS_LIST})
+target_include_directories(gptl PUBLIC ${TIMING_INCLUDE_DIRS})
+target_compile_definitions(gptl PUBLIC ${CPPDEFS_LIST})
 set_target_properties(gptl PROPERTIES PUBLIC_HEADER "gptl.h;${CMAKE_BINARY_DIR}/perf_mod.mod;${CMAKE_BINARY_DIR}/perf_utils.mod;")
 
 install(TARGETS gptl
