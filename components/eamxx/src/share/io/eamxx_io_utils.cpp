@@ -123,7 +123,8 @@ util::TimeStamp read_timestamp (const std::string& filename,
 
 std::shared_ptr<AtmosphereDiagnostic>
 create_diagnostic (const std::string& diag_field_name,
-                   const std::shared_ptr<const AbstractGrid>& grid)
+                   const std::shared_ptr<const AbstractGrid>& grid,
+                   const ekat::ParameterList& diag_params)
 {
   // Note: use grouping (the (..) syntax), so you can later query the content
   //       of each group in the matches output var!
@@ -154,7 +155,15 @@ create_diagnostic (const std::string& diag_field_name,
   std::smatch matches;
   ekat::ParameterList params(diag_field_name);
 
-  if (std::regex_search(diag_field_name,matches,field_at_l)) {
+  if (diag_params.name() != "") {
+    // Presume that if a parameter sublist is passed to create_diagnostic that
+    // all settings for the diagnostic are set there.  Elsewise check if the
+    // diagnostic name matches any of the known regex
+    params = diag_params;
+    params.rename(diag_field_name);
+    params.set("grid_name",grid->name());
+    diag_name = params.get<std::string>("diag_name");
+  } else if (std::regex_search(diag_field_name,matches,field_at_l)) {
     params.set("field_name",matches[1].str());
     params.set("grid_name",grid->name());
     params.set("vertical_location", matches[2].str());

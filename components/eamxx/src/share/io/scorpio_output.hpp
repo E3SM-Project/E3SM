@@ -172,6 +172,7 @@ protected:
 
   // --- Internal variables --- //
   ekat::Comm m_comm;
+  ekat::ParameterList m_params;
 
   // We store separate shared pointers for field mgrs at different stages of IO:
   // More specifically, the order of operations is as follows:
@@ -214,6 +215,7 @@ protected:
   // Internal maps to the output fields, how the columns are distributed, the file dimensions and
   // the global ids.
   strvec_t m_fields_names;
+  std::map<std::string, ekat::ParameterList> m_fields_params;
   strmap_t<Field> m_field_to_avg_count;
   std::vector<Field> m_avg_counts;
   strmap_t<std::string> m_field_to_avg_cnt_suffix;
