@@ -4133,16 +4133,11 @@ end subroutine wrap_update_hifrq_hist
  
  subroutine RegisterHLMInterfaceVariables(this, nc)
    
+   use FatesInterfaceTypesMod, only : subgrid_column
+
    class(hlm_fates_interface_type) :: this
    
    integer, intent(in) :: nc   ! clump number
-   
-   ! Subgrid levels for HLM-FATES interface variables
-   integer, parameter, private :: subgrid_gridcell = 5
-   integer, parameter, private :: subgrid_topounit = 4
-   integer, parameter, private :: subgrid_landunit = 3
-   integer, parameter, private :: subgrid_column = 2
-   integer, parameter, private :: subgrid_patch = 1
    
    ! Initialize the HLM-FATES interface variable registry
    call this%fates(nc)%api%InitializeInterfaceRegistry()
