@@ -1,8 +1,8 @@
 #include "catch2/catch.hpp"
 
-#include "share/eamxx_types.hpp"
 #include "physics/gw/gw_functions.hpp"
 #include "physics/gw/tests/infra/gw_test_data.hpp"
+#include "share/core/eamxx_types.hpp"
 
 #include "gw_unit_tests_common.hpp"
 
