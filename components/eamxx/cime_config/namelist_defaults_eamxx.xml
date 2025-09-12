@@ -317,12 +317,12 @@ be lost if SCREAM_HACK_XML is not enabled.
       <mam4_o3_lbl    type="integer" doc="Linoz lbl parameter">4</mam4_o3_lbl>
       <mam4_psc_T    type="real" doc="Linoz psc ozone loss temperature (K) threshold">193.0</mam4_psc_T>
       <mam4_linoz_ymd type="integer" > 20100101</mam4_linoz_ymd>
-      <mam4_linoz_file_name type="file" doc="LINOZ chemistry file"> ${DIN_LOC_ROOT}/atm/scream/mam4xx/linoz/ne30pg2/linoz1850-2015_2010JPL_CMIP6_10deg_58km_ne30pg2_c20240724.nc</mam4_linoz_file_name>
-      <mam4_linoz_file_name hgrid="ne4np4.pg2" type="file" doc="LINOZ chemistry file"> ${DIN_LOC_ROOT}/atm/scream/mam4xx/linoz/ne4pg2/linoz1850-2015_2010JPL_CMIP6_10deg_58km_ne4pg2_c20240724.nc</mam4_linoz_file_name>
+      <mam4_linoz_file_name type="file" doc="LINOZ chemistry file"> ${DIN_LOC_ROOT}/atm/scream/mam4xx/linoz/ne30pg2/linoz2010_2010JPL_CMIP6_10deg_58km_ne30pg2_c20250826.nc</mam4_linoz_file_name>
+      <mam4_linoz_file_name hgrid="ne4np4.pg2" type="file" doc="LINOZ chemistry file"> ${DIN_LOC_ROOT}/atm/scream/mam4xx/linoz/ne4pg2/linoz2010_2010JPL_CMIP6_10deg_58km_ne4pg2_c20250826.nc</mam4_linoz_file_name>
       <!--Invariants-->
       <mam4_oxid_ymd type="integer" > 20150101 </mam4_oxid_ymd>
-      <mam4_oxid_file_name  type="file" doc="File containing oxidants data">${DIN_LOC_ROOT}/atm/scream/mam4xx/invariants/ne30pg2/oxid_1.9x2.5_L26_1850-2015_ne30pg2_c20241009.nc</mam4_oxid_file_name>
-      <mam4_oxid_file_name  hgrid="ne4np4.pg2" type="file" doc="File containing oxidants data">${DIN_LOC_ROOT}/atm/scream/mam4xx/invariants/ne4pg2/oxid_1.9x2.5_L26_1850-2015_ne4pg2_c20241009.nc</mam4_oxid_file_name>
+      <mam4_oxid_file_name  type="file" doc="File containing oxidants data">${DIN_LOC_ROOT}/atm/scream/mam4xx/invariants/ne30pg2/oxid_1.9x2.5_L26_2015_ne30pg2_c20250813.nc</mam4_oxid_file_name>
+      <mam4_oxid_file_name  hgrid="ne4np4.pg2" type="file" doc="File containing oxidants data">${DIN_LOC_ROOT}/atm/scream/mam4xx/invariants/ne4pg2/oxid_1.9x2.5_L26_2015_ne4pg2_c20250813.nc</mam4_oxid_file_name>
       <mam4_chlorine_loading_ymd type="integer" doc="Cycle year for chlorine"> 20100101 </mam4_chlorine_loading_ymd>
       <mam4_linoz_chlorine_file type="file" doc="File containing chlorine data"> ${DIN_LOC_ROOT}/atm/scream/mam4xx/linoz/Linoz_Chlorine_Loading_CMIP6_0003-2017_c20171114.nc</mam4_linoz_chlorine_file>
       <!--Photolysis-->
