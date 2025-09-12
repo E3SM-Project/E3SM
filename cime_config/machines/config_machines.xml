@@ -3490,7 +3490,7 @@
     <NODENAME_REGEX>aurora-uan-.*</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>oneapi-ifxgpu,oneapi-ifx</COMPILERS>
-    <MPILIBS>mpich</MPILIBS>
+    <MPILIBS>mpich,mpich1024</MPILIBS>
     <PROJECT>E3SM_Dec</PROJECT>
     <SAVE_TIMING_DIR>/lus/flare/projects/E3SMinput/baselines</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
@@ -3532,10 +3532,12 @@
         <command name="use">/lus/flare/projects/E3SMinput/soft/modulefiles</command>
         <command name="load">cmake/3.31.8</command>
         <command name="load">oneapi/release/2025.2.0</command>
-        <command name="load">mpich-config/collective-tuning/1024</command>
         <command name="load">netcdf/4.9.3c-4.6.2f</command>
         <command name="load">pnetcdf/1.14.0</command>
         <command name="load">adios2/2.10.2</command>
+        </modules>
+      <modules mpilib="mpich1024">
+        <command name="load">mpich-config/collective-tuning/1024</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
