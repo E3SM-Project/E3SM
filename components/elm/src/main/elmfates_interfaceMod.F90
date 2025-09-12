@@ -4135,7 +4135,7 @@ end subroutine wrap_update_hifrq_hist
    
    use FatesInterfaceTypesMod, only : subgrid_column
 
-   class(hlm_fates_interface_type) :: this
+   class(hlm_fates_interface_type), intent(inout) :: this
    
    integer, intent(in) :: nc   ! clump number
    
