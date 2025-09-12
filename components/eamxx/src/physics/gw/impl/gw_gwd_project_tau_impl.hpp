@@ -34,12 +34,21 @@ void Functions<S,D>::gwd_project_tau(
     {"taub", "tauf"},
     {&taub, &tauf});
 
-  const Real ubi_tend = ubi(tend_level);
+  const Real ubi_tend = ubi(tend_level+1);
 
   const int num_pgwv = 2*pgwv + 1;
 
   Kokkos::parallel_for(
-    Kokkos::TeamVectorRange(team, init.ktop, tend_level + 1), [&] (const int k) {
+    Kokkos::TeamVectorRange(team, taub.size()), [&] (const int k) {
+      taub(k) = 0;
+      tauf(k) = 0;
+    }
+  );
+
+  team.team_barrier();
+
+  Kokkos::parallel_for(
+    Kokkos::TeamVectorRange(team, init.ktop+1, tend_level + 2), [&] (const int k) {
 
       for (int l = 0; l < num_pgwv; ++l) {
         const Real tausg = Kokkos::copysign(tau(l,k), c(l)-ubi(k));
@@ -55,7 +64,7 @@ void Functions<S,D>::gwd_project_tau(
   team.team_barrier();
 
   Kokkos::parallel_for(
-    Kokkos::TeamVectorRange(team, init.ktop, tend_level + 1), [&] (const int k) {
+    Kokkos::TeamVectorRange(team, init.ktop+1, tend_level + 2), [&] (const int k) {
       if (xv > 0) {
         taucd(k, GWC::east) = tauf(k) * xv;
         taucd(k, GWC::west) = taub(k) * xv;
