@@ -87,7 +87,8 @@ util::TimeStamp read_timestamp (const std::string& filename,
 // E.g., create the diag to compute fieldX_at_500hPa.
 std::shared_ptr<AtmosphereDiagnostic>
 create_diagnostic (const std::string& diag_name,
-                   const std::shared_ptr<const AbstractGrid>& grid);
+                   const std::shared_ptr<const AbstractGrid>& grid,
+                   const ekat::ParameterList& diag_params = ekat::ParameterList{});
 
 // Parse field alias from field specification string.
 // Format: "alias:=field_name" returns {alias, field_name}
