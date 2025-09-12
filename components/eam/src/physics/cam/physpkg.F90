@@ -1814,6 +1814,22 @@ if (l_tracer_aero) then
          cam_in%cflx)
     
     if(iac_present) then
+
+          !------------------------------------------------------------------------------------------
+          ! Have moved iac_coupled_fields_adv from phys_timestep_init to
+          !    tphysac immediately before co2_cycle_iac_ptend
+          ! This aligns the setting of aircraft emissions to pbuf with the
+          !    surface emissions during atm_run for the current time step,
+          !    after the x2a vars have been set
+          ! This works for co2 because it isn't set until tphysac, but if
+          !    other constituents are added they may need to be advanced in
+          !    phys_timestep_init
+          !    Note that phys_timestep_init is called via atm_init for the
+          !       current time step during start and restart,
+          !       and also at the end of atm_run for the next time step
+          ! Note that any EHC co2 values set during init are not used, as they
+          !    reset during the run step
+          !------------------------------------------------------------------------------------------
       
       ! Set ehc aircraft emissions in pbuf
       call iac_coupled_fields_adv(state, pbuf)
