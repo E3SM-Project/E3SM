@@ -736,6 +736,20 @@
          </queues>
    </batch_system>
 
+
+   <batch_system MACH="cades-baseline" type="slurm" >
+         <submit_args>
+           <arg flag="-A CLI185"/>
+           <arg flag="--mem=0G"/>
+           <arg flag="--ntasks-per-node 128"/>
+         </submit_args>
+         <queues>
+            <queue walltimemax="24:00" default="true">batch_ccsi</queue>
+            <!-- note: if above limited by computing resources, can use the following -->
+            <!-- <queue walltimemax="24:00" default="true">batch</queue> -->
+         </queues>
+   </batch_system>
+
    <batch_system MACH="itasca" type="pbs">
      <queues>
        <queue walltimemax="24:00" default="true">batch</queue>
