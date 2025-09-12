@@ -1,4 +1,4 @@
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 
 #include <array>
 #include <utility>
