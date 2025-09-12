@@ -932,6 +932,7 @@
 <micro_aerosolactivation            microphys="p3"> .true.  </micro_aerosolactivation>
 <micro_subgrid_cloud                microphys="p3"> .true.  </micro_subgrid_cloud>
 <do_prescribed_CCN                  microphys="p3"> .false. </do_prescribed_CCN>
+<p3_warm_rain_method                microphys="p3"> kk2000  </p3_warm_rain_method>
   
 <!-- P3 specific namelist variables (for v3 version of P3) -->
 <micro_p3_lookup_dir    clubb_sgs="1" microphys="p3"> atm/cam/physprops </micro_p3_lookup_dir>

@@ -2542,6 +2542,11 @@ Embryonic rain size from autoconversion in P3
 Default: 0.000025_rtype
 </entry>
 
+<entry id="p3_warm_rain_method" type="char*32" category="microphys"
+       group="micro_nl" valid_values="kk2000,tau,emulated,boss,ftorch_emulator" >
+Warm rain formation method (autoconversion/accretion or alternatives)
+Default: kk2000
+</entry>
 
 <!-- micro_p3 -->
 <entry id="p3_qc_autoCon_Expon" type="real" category="microphysics"

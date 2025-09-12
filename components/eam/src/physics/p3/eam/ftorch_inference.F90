@@ -51,7 +51,7 @@ module ftorch_inference
         type(torch_tensor), dimension(1) :: out_tensors
 
    ! Test input
-        write(iulog, *) 'Inference Input:', input_data(:) 
+!        write(iulog, *) 'Inference Input:', input_data(:) 
 
    ! Create Torch input/output tensors from the above arrays
         call torch_tensor_from_array(in_tensors(1), input_data, torch_kCPU)

@@ -143,6 +143,7 @@ module micro_p3_interface
 
    character(len=128) :: micro_p3_lookup_dir     = unset_str ! location of p3 input files
    character(len=16)  :: micro_p3_tableversion   = unset_str ! P3 table version
+   character(len=32)  :: p3_warm_rain_method     = unset_str ! P3 Autoconversion/Accretion method
    logical            :: micro_aerosolactivation = .false.   ! Use aerosol activation
    logical            :: micro_subgrid_cloud     = .false.   ! Use subgrid cloudiness
    logical            :: micro_tend_output       = .false.   ! Default microphysics tendencies to output file
@@ -166,7 +167,7 @@ subroutine micro_p3_readnl(nlfile)
        micro_p3_tableversion, micro_p3_lookup_dir, micro_aerosolactivation, micro_subgrid_cloud, &
        micro_tend_output, p3_autocon_coeff, p3_qc_autocon_expon, p3_nc_autocon_expon, p3_accret_coeff, &
        p3_qc_accret_expon, p3_wbf_coeff, p3_max_mean_rain_size, p3_embryonic_rain_size, &
-       do_prescribed_CCN, do_Cooper_inP3, p3_mincdnc, micro_nccons
+       do_prescribed_CCN, do_Cooper_inP3, p3_mincdnc, micro_nccons, p3_warm_rain_method
 
   !-----------------------------------------------------------------------------
 
@@ -200,6 +201,7 @@ subroutine micro_p3_readnl(nlfile)
      write(iulog,'(A30,1x,8e12.4)') 'p3_embryonic_rain_size',  p3_embryonic_rain_size
      write(iulog,'(A30,1x,L)')    'do_prescribed_CCN: ',       do_prescribed_CCN
      write(iulog,'(A30,1x,L)')    'do_Cooper_inP3: ',          do_Cooper_inP3
+     write(iulog,'(A29,1x,A19)')  'p3_warm_rain_method: ',     p3_warm_rain_method
 
   end if
 
@@ -222,6 +224,7 @@ subroutine micro_p3_readnl(nlfile)
   call mpibcast(do_prescribed_CCN,       1,                          mpilog,  0, mpicom)
   call mpibcast(do_Cooper_inP3,          1,                          mpilog,  0, mpicom)
   call mpibcast(micro_nccons,            1,                          mpir8,   0, mpicom)
+  call mpibcast(p3_warm_rain_method,     len(p3_warm_rain_method),   mpichar, 0, mpicom)
 
 #endif
 
@@ -487,7 +490,7 @@ end subroutine micro_p3_readnl
       frzdep_idx = pbuf_get_index('FRZDEP') 
     endif 
 
-    call p3_init(micro_p3_lookup_dir,micro_p3_tableversion)
+    call p3_init(micro_p3_lookup_dir,micro_p3_tableversion,p3_warm_rain_method)
 
     ! Initialize physics buffer grid fields for accumulating precip and
     ! condensation
@@ -678,6 +681,38 @@ end subroutine micro_p3_readnl
    call addfld('diag_equiv_reflectivity',  (/ 'lev' /), 'A', 'dBz', 'Equivalent reflectivity (rain + ice)')
    call addfld('diag_ze_rain',      (/ 'lev' /), 'A', 'dBz', 'Equivalent reflectivity rain')
    call addfld('diag_ze_ice',       (/ 'lev' /), 'A', 'dBz', 'Equivalent reflectivity ice')
+
+  ! Stochastic collection diagnsotics (I/O and process rates)
+   call addfld('P3_mu_c',  (/ 'lev' /), 'A', 'unitless', 'P3 Size Distribution mu for liquid (mu_c)')
+   call addfld('P3_lamc',  (/ 'lev' /), 'A', 'unitless', 'P3 Size Distribution lambda for liquid (lamc)')
+   call addfld('P3_nr',  (/ 'lev' /), 'A', 'unitless', 'P3 Size Distribution n0r for rain (nr)')
+   call addfld('P3_lamr',  (/ 'lev' /), 'A', 'unitless', 'P3 Size Distribution lambda for rain (lamr)')
+
+   call addfld('P3_qctend_TAU',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 TAU Stochastic collection qc tendency')
+   call addfld('P3_nctend_TAU',  (/ 'lev' /), 'A', '#/kg/s', 'P3 TAU Stochastic collection nc tendency')
+   call addfld('P3_qrtend_TAU',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 TAU Stochastic collection qr tendency')
+   call addfld('P3_nrtend_TAU',  (/ 'lev' /), 'A', '#/kg/s', 'P3 TAU Stochastic collection nr tendency')
+
+   call addfld('P3_qc_in_TAU',  (/ 'lev' /), 'A', 'kg/kg', 'P3 TAU Stochastic collection input qc in cloud')
+   call addfld('P3_qr_in_TAU',  (/ 'lev' /), 'A', 'kg/kg', 'P3 TAU Stochastic collection input qr in cloud')
+   call addfld('P3_nc_in_TAU',  (/ 'lev' /), 'A', '#/kg', 'P3 TAU Stochastic collection input nc in cloud')
+   call addfld('P3_nr_in_TAU',  (/ 'lev' /), 'A', '#/kg', 'P3 TAU Stochastic collection input qr in cloud')
+
+   call addfld('P3_qc_out_TAU',  (/ 'lev' /), 'A', 'kg/kg', 'P3 TAU Stochastic collection output qc in cloud')
+   call addfld('P3_qr_out_TAU',  (/ 'lev' /), 'A', 'kg/kg', 'P3 TAU Stochastic collection output qr in cloud')
+   call addfld('P3_nc_out_TAU',  (/ 'lev' /), 'A', '#/kg', 'P3 TAU Stochastic collection output nc in cloud')
+   call addfld('P3_nr_out_TAU',  (/ 'lev' /), 'A', '#/kg', 'P3 TAU Stochastic collection output qr in cloud')
+
+   call addfld('P3_qctend_TAU_raw',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 TAU Stochastic collection raw in-cloud qc tendency')
+   call addfld('P3_qrtend_TAU_raw',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 TAU Stochastic collection raw in-cloud qr tendency')
+   call addfld('P3_nctend_TAU_raw',  (/ 'lev' /), 'A', '#/kg/s', 'P3 TAU Stochastic collection raw in-cloud nc tendency')
+   call addfld('P3_nrtend_TAU_raw',  (/ 'lev' /), 'A', '#/kg/s', 'P3 TAU Stochastic collection raw in-cloud nr tendency')
+
+   call addfld('P3_ML_fixer',  (/ 'lev' /), 'A', 'frequency', 'P3 ML Emulator Fixer Frequency of Occurrence')
+   call addfld('P3_qc_fixer',  (/ 'lev' /), 'A', 'kg/kg', 'P3 Emulator qc fixer amount for conservation')
+   call addfld('P3_qr_fixer',  (/ 'lev' /), 'A', 'kg/kg', 'P3 Emulator qr fixer amount for conservation')
+   call addfld('P3_nc_fixer',  (/ 'lev' /), 'A', '#/kg', 'P3 Emulator nc fixer amount for conservation')
+   call addfld('P3_nr_fixer',  (/ 'lev' /), 'A', '#/kg', 'P3 Emulator nr fixer amount for conservation')
 
    ! determine the add_default fields
    call phys_getopts(history_amwg_out           = history_amwg         , &
@@ -1009,6 +1044,7 @@ end subroutine micro_p3_readnl
     real(rtype) :: cld_frac_l(pcols,pver)      !liquid cloud fraction
     real(rtype) :: cld_frac_i(pcols,pver)      !ice cloud fraction
     real(rtype) :: tend_out(pcols,pver,49) !microphysical tendencies
+    real(rtype) :: sc_tau_out(pcols,pver,25) ! Stochastic collection tau output
     real(rtype), dimension(pcols,pver) :: liq_ice_exchange ! sum of liq-ice phase change tendenices
     real(rtype), dimension(pcols,pver) :: vap_liq_exchange ! sum of vap-liq phase change tendenices
     real(rtype), dimension(pcols,pver) :: vap_ice_exchange ! sum of vap-ice phase change tendenices
@@ -1358,6 +1394,7 @@ end subroutine micro_p3_readnl
          cld_frac_l(its:ite,kts:kte),      & ! IN liquid cloud fraction
          cld_frac_i(its:ite,kts:kte),      & ! IN ice cloud fraction
          tend_out(its:ite,kts:kte,:), & ! OUT p3 microphysics tendencies
+         sc_tau_out(its:ite,kts:kte,:), & ! OUT p3 microphysics detailed warm rain diagnostics 
          mu(its:ite,kts:kte),         & ! OUT Size distribution shape parameter for radiation
          lambdac(its:ite,kts:kte),    & ! OUT Size distribution slope parameter for radiation
          liq_ice_exchange(its:ite,kts:kte),& ! OUT sum of liq-ice phase change tendenices   
@@ -1369,8 +1406,8 @@ end subroutine micro_p3_readnl
          precip_off,                       & ! IN Option to turn precip (liquid) off
          micro_nccons,                     & ! IN Option for constant droplet concentration
          diag_equiv_reflectivity(its:ite,kts:kte), & !OUT equivalent reflectivity (rain + ice) [dBz]
-         diag_ze_rain(its:ite,kts:kte),diag_ze_ice(its:ite,kts:kte)) !OUT equivalent reflectivity for rain and ice [dBz]
-         
+         diag_ze_rain(its:ite,kts:kte),diag_ze_ice(its:ite,kts:kte), & !OUT equivalent reflectivity for rain and ice [dBz]
+         p3_warm_rain_method) ! IN Select warm rain method (autoconversion/accretion) from namelist      
 
     p3_main_outputs(:,:,:) = -999._rtype
     do k = 1,pver

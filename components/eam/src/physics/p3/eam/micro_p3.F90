@@ -79,6 +79,10 @@ module micro_p3
                                scream_log10, scream_exp, scream_expm1, scream_tanh
 #endif
 
+  ! Warm Rain processes
+  use p3_stochastic_collect_tau, only: ncd, p3_stochastic_collect_tau_tend, p3_stochastic_kernel_init
+  use tau_neural_net_quantile, only: tau_emulated_cloud_rain_interactions, initialize_tau_emulators
+  use ml_fixer_check, only: ml_fixer_calc
 
   ! Import library for interfacing with PyTorch to load Neural Networks
   use ftorch, only : torch_model, torch_tensor, torch_kCPU, torch_delete, &
@@ -197,7 +201,7 @@ pure function bfb_expm1(val) result(res)
    res = exp(val) - 1.0_rtype
 end function bfb_expm1
 
-  SUBROUTINE p3_init(lookup_file_dir,version_p3)
+  SUBROUTINE p3_init(lookup_file_dir,version_p3,warm_rain_method)
     !------------------------------------------------------------------------------------------!
     ! This subroutine initializes all physical constants and parameters needed by the P3       !
     ! scheme, including reading in two lookup table files and creating a third.                !
@@ -209,8 +213,20 @@ end function bfb_expm1
     ! Passed arguments:
     character*(*), intent(in)    :: lookup_file_dir                !directory of the lookup tables
     character(len=16), intent(in) :: version_p3  !version number of P3 package
+    character(len=*), intent(in)  :: warm_rain_method  ! Autoconversion/accretion method. 
 
     character(len=1024)   :: ftorch_emulator_file
+
+    ! These need to come from namelist ideally
+    character(len=1024) :: stochastic_emulated_filename_quantile, &
+    stochastic_emulated_filename_input_scale, &
+    stochastic_emulated_filename_output_scale ! Files for emulated machine learning
+
+  ! For now, assumed to be copied into run_directory. 
+  ! Eventually/Ideally Make namelist
+    stochastic_emulated_filename_quantile =  '/global/homes/a/agett/e3sm/ftorch/old_emulator_files/quantile_neural_net_fortran.nc'
+    stochastic_emulated_filename_input_scale = '/global/homes/a/agett/e3sm/ftorch/old_emulator_files/input_quantile_scaler.nc'
+    stochastic_emulated_filename_output_scale = '/global/homes/a/agett/e3sm/ftorch/old_emulator_files/output_quantile_scaler.nc'
 
     ftorch_emulator_file = '/global/homes/a/agett/python/ftorch/saved_simplenet_model_cpu.pt'
 
@@ -218,7 +234,9 @@ end function bfb_expm1
     if (masterproc) write(iulog,*) ' P3 microphysics: v',version_p3
 
     call p3_init_a(lookup_file_dir, version_p3)
-    call p3_init_b(ftorch_emulator_file)
+    call p3_init_b(lookup_file_dir,warm_rain_method,stochastic_emulated_filename_quantile, &
+                   stochastic_emulated_filename_input_scale, stochastic_emulated_filename_output_scale, &
+                   ftorch_emulator_file)
 
     if (masterproc) write(iulog,*) '   P3_INIT DONE.'
     if (masterproc) write(iulog,*) ''
@@ -328,17 +346,22 @@ end function bfb_expm1
 
   end subroutine p3_set_tables
 
-  SUBROUTINE p3_init_b(ftorch_emulator_file)
+  SUBROUTINE p3_init_b(lookup_file_dir,warm_rain_method,stochastic_emulated_filename_quantile, &
+   stochastic_emulated_filename_input_scale, stochastic_emulated_filename_output_scale,ftorch_emulator_file)
     implicit none
     
+    character*(*), intent(in)     :: lookup_file_dir       !directory of the lookup tables
+    character*(*), intent(in)     :: warm_rain_method      ! 'tau','emulated', 'kk2000','ftorch_emulator'
+    character*(*), intent(in) :: stochastic_emulated_filename_quantile, &
+               stochastic_emulated_filename_input_scale, &
+               stochastic_emulated_filename_output_scale ! Files for emulated machine learning
     character*(*), intent(in)     :: ftorch_emulator_file
+
+    character(128) :: errstring    ! Output status (non-blank for error return)
 
     integer                      :: i,ii,jj,kk
     real(rtype)                         :: lamr,mu_r,dm,dum1,dum2,dum3,dum4,dum5,  &
          dd,amg,vt,dia
-
-
-    call init_ftorch_inference(ftorch_emulator_file, model)
 
     !------------------------------------------------------------------------------------------!
 
@@ -456,6 +479,19 @@ end function bfb_expm1
        enddo meansize_loop
 
     enddo mu_r_loop
+
+    if (trim(warm_rain_method) == 'tau') then
+      call p3_stochastic_kernel_init(lookup_file_dir)
+    endif
+
+    if (trim(warm_rain_method) == 'emulated') then
+      call initialize_tau_emulators(stochastic_emulated_filename_quantile, stochastic_emulated_filename_input_scale, &
+                                    stochastic_emulated_filename_output_scale, iulog, errstring)
+    endif
+
+    if (trim(warm_rain_method) == 'ftorch_emulator') then
+      call init_ftorch_inference(ftorch_emulator_file, model)
+   endif
 
   END SUBROUTINE p3_init_b
 
@@ -587,7 +623,7 @@ end function bfb_expm1
        qm, bm, latent_heat_vapor, latent_heat_sublim, latent_heat_fusion, qc_incld, qr_incld, qi_incld, qm_incld, nc_incld, nr_incld, &
        ni_incld, bm_incld, mu_c, nu, lamc, cdist, cdist1, cdistr, mu_r, lamr, logn0r, qv2qi_depos_tend, precip_total_tend, &
        nevapr, qr_evap_tend, vap_liq_exchange, vap_ice_exchange, liq_ice_exchange, pratot, &
-       prctot, frzimm, frzcnt, frzdep, p3_tend_out, is_hydromet_present, do_precip_off, nccnst)
+       prctot, frzimm, frzcnt, frzdep, p3_tend_out, p3_sc_tau_out, is_hydromet_present, do_precip_off, nccnst, warm_rain_method)
 
     implicit none
 
@@ -611,7 +647,11 @@ end function bfb_expm1
 
     real(rtype), intent(inout), dimension(kts:kte,49) :: p3_tend_out ! micro physics tendencies
 
+    real(rtype), intent(inout), dimension(kts:kte,25) :: p3_sc_tau_out ! diagnostics for warm rain methods (stochastic collection)
+
     logical(btype), intent(out) :: is_hydromet_present
+
+    character(len=*),  intent(in)  ::  warm_rain_method
 
     ! -------- locals ------- !
 
@@ -661,6 +701,16 @@ end function bfb_expm1
     real(rtype) :: rho_qm_cloud ! density of rime (from cloud)
     real(rtype) :: ncshdc    ! source for rain number due to cloud water/ice collision above freezing  and shedding (combined with NRSHD in the paper)
     real(rtype) :: qiberg    ! Bergeron process
+
+    ! Stochastic collection emulator I/O and process rates (for training as well)
+    real(rtype) :: n0r,qcin_new,ncin_new,qrin_new,nrin_new,qctend_TAU,nctend_TAU,  &
+                   qrtend_TAU,nrtend_TAU,scale_qc,scale_nc,scale_qr, scale_nr, gmnnn_lmnnn_TAU, &
+                   qc_in_TAU,qr_in_TAU,nc_in_TAU,nr_in_TAU,qctend_TAU_raw,nctend_TAU_raw,qrtend_TAU_raw,nrtend_TAU_raw
+    ! Mass fixer diagnostics from emulator
+    real(rtype) :: ML_fixer, QC_fixer,NC_fixer,QR_fixer,NR_fixer
+
+   ! By bins
+    real(rtype), dimension(ncd) :: amk_c,ank_c,amk_r,ank_r,amk,ank,amk_out,ank_out
 
     real(rtype)    :: table_val_qi_fallspd   ! mass-weighted fallspeed              See lines  731 -  808  ums
     real(rtype)    :: table_val_ni_self_collect   ! ice collection within a category     See lines  809 -  928  nagg
@@ -724,6 +774,15 @@ end function bfb_expm1
       qicnt = 0.0_rtype;      ninuc_cnt = 0.0_rtype;  qinuc_cnt = 0.0_rtype
       qi_wetDepos = 0.0_rtype
 
+      ! initialize stochastic collection process rates
+
+      qcin_new   = 0._rtype; ncin_new   = 0._rtype; qrin_new   = 0._rtype; nrin_new   = 0._rtype 
+      qctend_TAU   = 0._rtype; nctend_TAU   = 0._rtype; qrtend_TAU   = 0._rtype; nrtend_TAU   = 0._rtype 
+      scale_qc   = 0._rtype; scale_nc   = 0._rtype; scale_qr   = 0._rtype;  scale_nr   = 0._rtype  
+      qc_in_TAU   = 0._rtype; qr_in_TAU   = 0._rtype; nc_in_TAU   = 0._rtype; nr_in_TAU   = 0._rtype
+      qctend_TAU_raw   = 0._rtype; nctend_TAU_raw   = 0._rtype; qrtend_TAU_raw   = 0._rtype; nrtend_TAU_raw   = 0._rtype 
+      gmnnn_lmnnn_TAU   = 0._rtype
+      n0r = 0._rtype
 
       log_wetgrowth = .false.
 
@@ -745,6 +804,8 @@ end function bfb_expm1
       call get_rain_dsd2(qr_incld(k),p3_max_mean_rain_size,nr_incld(k),mu_r(k),lamr(k),   &
            cdistr(k),logn0r(k))
       nr(k) = nr_incld(k)*cld_frac_r(k)
+
+      n0r=10.0**logn0r(k)  ! used by stochastic collection code, and for diagnostics
 
       ! initialize inverse supersaturation relaxation timescale for combined ice categories
       epsi_tot = 0._rtype
@@ -901,36 +962,91 @@ end function bfb_expm1
            ni(k),ni_activated(k),qv_supersat_i(k),inv_dt,do_predict_nc, do_prescribed_CCN, &
            qinuc, ni_nucleat_tend)
 
-      !.....................................................     
-      ! Test: Do inference with Ftorch here....
-      ! This test is single precision, so pass that, and convert output back to double
-
-      ftorch_in = [0.0_rtype, 1.0_rtype, 2.0_rtype, 3.0_rtype, 4.0_rtype]
-
-      call ftorch_inference_cpu(model,real(ftorch_in, kind=sp),ftorch_out_sp)
-
-      ftorch_out = real(ftorch_out_sp, kind=rtype)
-
-      write(iulog, *) 'P3 Ftorch Output:', ftorch_out(:)
-
       !................
       ! cloud water autoconversion
       ! NOTE: cloud_water_autoconversion must be called before droplet_self_collection
-      call cloud_water_autoconversion(rho(k),qc_incld(k),nc_incld(k),inv_qc_relvar(k),&
-           p3_autocon_coeff,p3_qc_autocon_expon,p3_nc_autocon_expon,p3_embryonic_rain_size,&
-           do_precip_off,qc2qr_autoconv_tend,nc2nr_autoconv_tend,ncautr)
+
+       !++ag
+ !     For now, always run kk2000 method, even if another option is used.
+ !     if (warm_rain_method=='kk2000') then
+         call cloud_water_autoconversion(rho(k),qc_incld(k),nc_incld(k),inv_qc_relvar(k),&
+            p3_autocon_coeff,p3_qc_autocon_expon,p3_nc_autocon_expon,p3_embryonic_rain_size,&
+            do_precip_off,qc2qr_autoconv_tend,nc2nr_autoconv_tend,ncautr)
 
       !............................
       ! self-collection of droplets
-      call droplet_self_collection(rho(k),inv_rho(k),qc_incld(k),&
-           mu_c(k),nu(k),nc2nr_autoconv_tend,nc_selfcollect_tend)
+         call droplet_self_collection(rho(k),inv_rho(k),qc_incld(k),&
+            mu_c(k),nu(k),nc2nr_autoconv_tend,nc_selfcollect_tend)
 
       !............................
       ! accretion of cloud by rain
-      call cloud_rain_accretion(rho(k),inv_rho(k),&
-           qc_incld(k),nc_incld(k), qr_incld(k),inv_qc_relvar(k),&
-           p3_accret_coeff,p3_qc_accret_expon,&
-           qc2qr_accret_tend, nc_accret_tend)
+         call cloud_rain_accretion(rho(k),inv_rho(k),&
+            qc_incld(k),nc_incld(k), qr_incld(k),inv_qc_relvar(k),&
+            p3_accret_coeff,p3_qc_accret_expon,&
+            qc2qr_accret_tend, nc_accret_tend)
+
+ !     endif
+
+      if (warm_rain_method=='tau') then  
+
+         call p3_stochastic_collect_tau_tend(dt,t_atm(k),rho(k),qc_incld(k),     &
+              nc_incld(k),qr_incld(k),nr_incld(k), &
+              mu_c(k),lamc(k),n0r,lamr(k), &
+              qcin_new,ncin_new,qrin_new,nrin_new,   &
+              qctend_TAU_raw,nctend_TAU_raw,qrtend_TAU_raw,nrtend_TAU_raw, &
+              scale_qc,scale_nc,scale_qr,   &
+              scale_nr,amk_c,ank_c,amk_r,ank_r,amk,ank,amk_out,   &
+              ank_out,gmnnn_lmnnn_TAU)
+
+         ! E3SM P3 expects rates (sinks) are positive
+         qctend_TAU = -1. * qctend_TAU_raw
+         nctend_TAU = -1. * nctend_TAU_raw
+         nrtend_TAU = nrtend_TAU_raw
+         !qrtend_TAU = qctend_TAU_raw
+         !qrtend_TAU is already positive
+         !nrtend_TAU can be pos or negative, so leave as a source (negative). Seems mostly negative. Separated out in the conservation check.
+
+         ! Output initial state. 
+         qc_in_TAU=qc_incld(k)
+         nc_in_TAU=nc_incld(k)
+         qr_in_TAU=qr_incld(k)
+         nr_in_TAU=nr_incld(k)
+
+         ! For training, need unadjusted (raw) in-cloud tendencies. These are used for training and diagnostics
+
+      elseif (trim(warm_rain_method) == 'emulated') then
+
+         call tau_emulated_cloud_rain_interactions(qc_incld(k),nc_incld(k), &
+              qr_incld(k),nr_incld(k),rho(k),mu_c(k),lamc(k),lamr(k),n0r,cld_frac_l(k),cld_frac_r(k),qsmall, &
+               qctend_TAU_raw,qrtend_TAU_raw,nctend_TAU_raw,nrtend_TAU_raw)
+         
+         ! The fixer is assuming the rates are as for tau: qctend_TAU < 0 and nctend_TAU < 0 (e.g. not all rates positive)
+               
+         call ml_fixer_calc(dt,qc_incld(k),nc_incld(k),qr_incld(k), nr_incld(k), &
+                           qctend_TAU_raw, nctend_TAU_raw, qrtend_TAU_raw, nrtend_TAU_raw, &
+                           ML_fixer,QC_fixer,NC_fixer,QR_fixer,NR_fixer)
+!         
+!         ! Still need to flip these signs for E3SM: assume qctend, ntend are positive
+!
+         qctend_TAU = -1. * qctend_TAU_raw
+         nctend_TAU = -1. * nctend_TAU_raw
+         nrtend_TAU = nrtend_TAU_raw
+!         qrtend_TAU = qrtend_TAU_raw
+
+      elseif (trim(warm_rain_method) == 'ftorch_emulator') then
+      ! Test: Do inference with Ftorch here....
+      ! This test is single precision, so pass that, and convert output back to double
+
+         ftorch_in = [0.0_rtype, 1.0_rtype, 2.0_rtype, 3.0_rtype, 4.0_rtype]
+
+         call ftorch_inference_cpu(model,real(ftorch_in, kind=sp),ftorch_out_sp)
+
+         ftorch_out = real(ftorch_out_sp, kind=rtype)
+
+!         write(iulog, *) 'P3 Ftorch Output:', ftorch_out(:)
+
+      endif
+
 
       !.....................................
       ! self-collection and breakup of rain
@@ -946,7 +1062,7 @@ end function bfb_expm1
            qrcol, qc2qr_ice_shed_tend, qi2qr_melt_tend, qccol, qr2qi_immers_freeze_tend, ni2nr_melt_tend, nc_collect_tend,          &
            ncshdc, nc2ni_immers_freeze_tend, nr_collect_tend, ni_selfcollect_tend,                                                  &
            qidep, nr2ni_immers_freeze_tend, ni_sublim_tend, qinuc, ni_nucleat_tend, qiberg,                                         &
-           ncheti_cnt, qcheti_cnt, nicnt, qicnt, ninuc_cnt, qinuc_cnt)
+           ncheti_cnt, qcheti_cnt, nicnt, qicnt, ninuc_cnt, qinuc_cnt, qctend_TAU, nctend_TAU, qrtend_TAU, nrtend_TAU)
 
       !.................................................................
       ! conservation of water
@@ -976,11 +1092,14 @@ end function bfb_expm1
       
       ! cloud mass
       call cloud_water_conservation(qc(k), dt, qc2qr_autoconv_tend, qc2qr_accret_tend, qccol, qc2qi_hetero_freeze_tend, &
-           qc2qr_ice_shed_tend, qiberg, qi2qv_sublim_tend, qidep, qcheti_cnt, qicnt)
+           qc2qr_ice_shed_tend, qiberg, qi2qv_sublim_tend, qidep, qcheti_cnt, qicnt, qctend_TAU)
 
       ! rain mass
       call rain_water_conservation(qr(k), qc2qr_autoconv_tend, qc2qr_accret_tend, qi2qr_melt_tend, qc2qr_ice_shed_tend, dt, &
-           qr2qv_evap_tend, qrcol, qr2qi_immers_freeze_tend)
+           qr2qv_evap_tend, qrcol, qr2qi_immers_freeze_tend, qctend_TAU)
+
+      !Now update qrtend_TAU with value above after conservation check (keep positive)
+      qrtend_TAU = qctend_TAU
 
       ! ice mass
       call ice_water_conservation(qi(k), qidep, qinuc, qiberg, qrcol, qccol, qr2qi_immers_freeze_tend, qc2qi_hetero_freeze_tend, &
@@ -988,11 +1107,11 @@ end function bfb_expm1
 
       ! cloud number     
       call nc_conservation(nc(k), nc_selfcollect_tend, dt, nc_collect_tend, nc2ni_immers_freeze_tend, &
-           nc_accret_tend, nc2nr_autoconv_tend, ncheti_cnt, nicnt)
+           nc_accret_tend, nc2nr_autoconv_tend, ncheti_cnt, nicnt, nctend_TAU)
 
       ! rain number     
       call nr_conservation(nr(k),ni2nr_melt_tend,nr_ice_shed_tend,ncshdc,nc2nr_autoconv_tend,dt,nr_collect_tend,nmltratio, &
-           nr2ni_immers_freeze_tend,nr_selfcollect_tend,nr_evap_tend)
+           nr2ni_immers_freeze_tend,nr_selfcollect_tend,nr_evap_tend, nrtend_TAU)
       
       ! ice number     
       call ni_conservation(ni(k),ni_nucleat_tend,nr2ni_immers_freeze_tend,nc2ni_immers_freeze_tend,ncheti_cnt,nicnt,ninuc_cnt,dt,ni2nr_melt_tend,&
@@ -1020,7 +1139,7 @@ end function bfb_expm1
 
       !-- warm-phase only processes:
       call update_prognostic_liquid(qc2qr_accret_tend, nc_accret_tend, qc2qr_autoconv_tend, nc2nr_autoconv_tend, ncautr, &
-           nc_selfcollect_tend, qr2qv_evap_tend, nr_evap_tend, nr_selfcollect_tend,           &
+           nc_selfcollect_tend, qr2qv_evap_tend, nr_evap_tend, nr_selfcollect_tend, qctend_TAU, nctend_TAU, nrtend_TAU,  &
            do_predict_nc, nccnst, do_prescribed_CCN, inv_rho(k), exner(k), latent_heat_vapor(k), dt,                     &
            th_atm(k), qv(k), qc(k), nc(k), qr(k), nr(k))
 
@@ -1112,6 +1231,41 @@ end function bfb_expm1
       pratot(k) = qc2qr_accret_tend                   ! cloud drop accretion by rain
       prctot(k) = qc2qr_autoconv_tend                 ! cloud drop autoconversion to rain
       !---------------------------------------------------------------------------------
+
+      ! Record stochastic collection Input and tendencies for aouptut. 
+      ! Size distribution parameters
+      p3_sc_tau_out(k,1) = mu_c(k)    
+      p3_sc_tau_out(k,2) = lamc(k)
+      p3_sc_tau_out(k,3) = n0r
+      p3_sc_tau_out(k,4) = lamr(k)
+      ! Bulk Hydrometeor Inputs to TAU
+      p3_sc_tau_out(k,5) = qc_in_TAU
+      p3_sc_tau_out(k,6) = nc_in_TAU
+      p3_sc_tau_out(k,7) = qr_in_TAU
+      p3_sc_tau_out(k,8) = nr_in_TAU
+      ! TAU Hydrometeor tendencies
+      p3_sc_tau_out(k,9) = qctend_TAU
+      p3_sc_tau_out(k,10) = nctend_TAU
+      p3_sc_tau_out(k,11) = qrtend_TAU
+      p3_sc_tau_out(k,12) = nrtend_TAU
+      ! TAU internal sum of bins (Needed)?
+      p3_sc_tau_out(k,13) = qcin_new
+      p3_sc_tau_out(k,14) = ncin_new
+      p3_sc_tau_out(k,15) = qrin_new
+      p3_sc_tau_out(k,16) = nrin_new
+
+      ! TAU raw output for training (in-cloud, not fixer)
+      p3_sc_tau_out(k,17) = qctend_TAU_raw
+      p3_sc_tau_out(k,18) = nctend_TAU_raw
+      p3_sc_tau_out(k,19) = qrtend_TAU_raw
+      p3_sc_tau_out(k,20) = nrtend_TAU_raw
+
+      ! ML Emulator conservation fixer output for training (in-cloud)
+      p3_sc_tau_out(k,21) = ML_fixer
+      p3_sc_tau_out(k,22) = QC_fixer
+      p3_sc_tau_out(k,23) = NC_fixer
+      p3_sc_tau_out(k,24) = QR_fixer
+      p3_sc_tau_out(k,25) = NR_fixer  
 
       ! Recalculate in-cloud values for sedimentation
       call calculate_incloud_mixingratios(qc(k),qr(k),qi(k),qm(k),nc(k),nr(k),ni(k),bm(k), &
@@ -1301,8 +1455,8 @@ end function bfb_expm1
        diag_eff_radius_qi,rho_qi,do_predict_nc, do_prescribed_CCN,p3_autocon_coeff,p3_accret_coeff,p3_qc_autocon_expon,p3_nc_autocon_expon,p3_qc_accret_expon,           &
        p3_wbf_coeff,p3_mincdnc,p3_max_mean_rain_size,p3_embryonic_rain_size,                                                                                             &
        dpres,exner,qv2qi_depos_tend,precip_total_tend,nevapr,qr_evap_tend,precip_liq_flux,precip_ice_flux,rflx,sflx,cflx,cld_frac_r,cld_frac_l,cld_frac_i,               &
-       p3_tend_out,mu_c,lamc,liq_ice_exchange,vap_liq_exchange,                                                                                                          &
-       vap_ice_exchange,qv_prev,t_prev,col_location,do_precip_off,nccnst,diag_equiv_reflectivity,diag_ze_rain,diag_ze_ice                                                                     &
+       p3_tend_out,p3_sc_tau_out,mu_c,lamc,liq_ice_exchange,vap_liq_exchange,                                                                                                          &
+       vap_ice_exchange,qv_prev,t_prev,col_location,do_precip_off,nccnst,diag_equiv_reflectivity,diag_ze_rain,diag_ze_ice,warm_rain_method                                                                     &
 #ifdef SCREAM_CONFIG_IS_CMAKE
        ,elapsed_s &
 #endif
@@ -1403,9 +1557,13 @@ end function bfb_expm1
     ! so that they can be written as ouput.  NOTE TO C++ PORT: This variable is entirely optional and doesn't need to be
     ! included in the port to C++, or can be changed if desired.
     real(rtype), intent(out),   dimension(its:ite,kts:kte,49)   :: p3_tend_out ! micro physics tendencies
+    ! Location where stochastic collection and other warm rain diagnostics for offline training are output
+    real(rtype), intent(out),   dimension(its:ite,kts:kte,25)   :: p3_sc_tau_out  
     real(rtype), intent(in),    dimension(its:ite,3)            :: col_location
     real(rtype), intent(in),    dimension(its:ite,kts:kte)      :: inv_qc_relvar
     real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: diag_equiv_reflectivity,diag_ze_rain,diag_ze_ice  ! equivalent reflectivity [dBZ]
+
+    character(len=*), intent(in)  :: warm_rain_method  ! 'tau','emulated', 'kk2000','ftorch_emulator'
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
     real(rtype), optional, intent(out) :: elapsed_s ! duration of main loop in seconds
@@ -1509,6 +1667,7 @@ end function bfb_expm1
     sflx    = 0._rtype
     cflx    = 0._rtype
     p3_tend_out = 0._rtype
+    p3_sc_tau_out = 0._rtype
 
     inv_cld_frac_i = 1.0_rtype/cld_frac_i
     inv_cld_frac_l = 1.0_rtype/cld_frac_l
@@ -1588,8 +1747,8 @@ end function bfb_expm1
             bm_incld(i,:), mu_c(i,:), nu(i,:), lamc(i,:), cdist(i,:), cdist1(i,:), &
             cdistr(i,:), mu_r(i,:), lamr(i,:), logn0r(i,:), qv2qi_depos_tend(i,:), precip_total_tend(i,:), &
             nevapr(i,:), qr_evap_tend(i,:), vap_liq_exchange(i,:), vap_ice_exchange(i,:), &
-            liq_ice_exchange(i,:), pratot(i,:), prctot(i,:), frzimm(i,:), frzcnt(i,:), frzdep(i,:), p3_tend_out(i,:,:), is_hydromet_present, &
-	    do_precip_off, nccnst)
+            liq_ice_exchange(i,:), pratot(i,:), prctot(i,:), frzimm(i,:), frzcnt(i,:), frzdep(i,:), p3_tend_out(i,:,:), p3_sc_tau_out(i,:,:), is_hydromet_present, &
+	         do_precip_off, nccnst, warm_rain_method)
 
 
        ! measure microphysics processes tendency output
@@ -3045,7 +3204,7 @@ subroutine back_to_cell_average(cld_frac_l,cld_frac_r,cld_frac_i,               
    nr_ice_shed_tend,qc2qi_hetero_freeze_tend, qrcol,qc2qr_ice_shed_tend,qi2qr_melt_tend,qccol,qr2qi_immers_freeze_tend, &
    ni2nr_melt_tend,nc_collect_tend,ncshdc,nc2ni_immers_freeze_tend,nr_collect_tend,ni_selfcollect_tend,                 &
    qidep,nr2ni_immers_freeze_tend,ni_sublim_tend,qinuc,ni_nucleat_tend,qiberg,                                          &
-   ncheti_cnt, qcheti_cnt, nicnt, qicnt, ninuc_cnt, qinuc_cnt)
+   ncheti_cnt, qcheti_cnt, nicnt, qicnt, ninuc_cnt, qinuc_cnt, qctend_TAU,nctend_TAU,qrtend_TAU,nrtend_TAU)
 
    ! Here we map the microphysics tendency rates back to CELL-AVERAGE quantities for updating
    ! cell-average quantities.
@@ -3064,6 +3223,7 @@ subroutine back_to_cell_average(cld_frac_l,cld_frac_r,cld_frac_i,               
         nc_collect_tend, ncshdc, nc2ni_immers_freeze_tend, nr_collect_tend, ni_selfcollect_tend, qidep
    real(rtype), intent(inout) :: nr2ni_immers_freeze_tend, ni_sublim_tend, qinuc, ni_nucleat_tend, qiberg
    real(rtype), intent(inout) :: ncheti_cnt,qcheti_cnt,nicnt,qicnt,ninuc_cnt,qinuc_cnt
+   real(rtype), intent(inout) :: qctend_TAU,nctend_TAU,qrtend_TAU,nrtend_TAU
 
    real(rtype) :: ir_cldm, il_cldm, lr_cldm
 
@@ -3085,6 +3245,11 @@ subroutine back_to_cell_average(cld_frac_l,cld_frac_r,cld_frac_i,               
    nr_selfcollect_tend   = nr_selfcollect_tend*cld_frac_r       ! Self collection occurs locally in rain cloud
    nr_evap_tend   = nr_evap_tend*cld_frac_r       ! Change in rain number due to evaporation
    ncautr  = ncautr*lr_cldm    ! Autoconversion of rain drops within rain/liq cloud
+
+   qctend_TAU = qctend_TAU*cld_frac_l    ! Cloud liquid water tendency stochastic collection
+   qrtend_TAU = qrtend_TAU*cld_frac_l    ! Rain water tendency stochastic collection
+   nctend_TAU = nctend_TAU*cld_frac_l    ! Cloud liquid drop number tendency stochastic collection
+   nrtend_TAU = nrtend_TAU*cld_frac_l    ! Rain number tendency stochastic collection
 
    ! map ice-phase  process rates to cell-avg
    qi2qv_sublim_tend   = qi2qv_sublim_tend*cld_frac_i       ! Sublimation of ice in ice cloud
@@ -3235,28 +3400,29 @@ subroutine ice_supersat_conservation(qidep,qinuc,qi2qv_sublim_tend,qr2qv_evap_te
 end subroutine ice_supersat_conservation
 
 subroutine nc_conservation(nc, nc_selfcollect_tend, dt, nc_collect_tend, nc2ni_immers_freeze_tend, &
-     nc_accret_tend, nc2nr_autoconv_tend, ncheti_cnt, nicnt)
+     nc_accret_tend, nc2nr_autoconv_tend, ncheti_cnt, nicnt, nctend_TAU)
   !Make sure sinks of nc don't force end-of-step nc below 0. Rescale them if they do.
 
   implicit none
 
   real(rtype), intent(in) :: nc,nc_selfcollect_tend,dt
   real(rtype), intent(inout) :: nc_collect_tend,nc2ni_immers_freeze_tend,&
-                                nc_accret_tend,nc2nr_autoconv_tend,ncheti_cnt,nicnt
+                                nc_accret_tend,nc2nr_autoconv_tend,ncheti_cnt,nicnt,nctend_TAU
   real(rtype) :: sink_nc, source_nc, ratio
 
   if(use_hetfrz_classnuc)then
-      sink_nc = (nc_collect_tend + ncheti_cnt + nc_accret_tend + nc2nr_autoconv_tend + nicnt)*dt
+      sink_nc = (nc_collect_tend + ncheti_cnt + nc_accret_tend + nc2nr_autoconv_tend + nicnt + nctend_TAU)*dt
   else
-      sink_nc = (nc_collect_tend + nc2ni_immers_freeze_tend + nc_accret_tend + nc2nr_autoconv_tend)*dt
-  endif 
-  
+      sink_nc = (nc_collect_tend + nc2ni_immers_freeze_tend + nc_accret_tend + nc2nr_autoconv_tend + nctend_TAU)*dt
+  endif
+
   source_nc = nc + nc_selfcollect_tend*dt
   if(sink_nc > source_nc) then
      ratio = source_nc/sink_nc
      nc_collect_tend  = nc_collect_tend*ratio
      nc_accret_tend  = nc_accret_tend*ratio
      nc2nr_autoconv_tend = nc2nr_autoconv_tend*ratio
+     nctend_TAU = nctend_TAU*ratio
      if(use_hetfrz_classnuc)then
       ncheti_cnt = ncheti_cnt*ratio
       nicnt = nicnt*ratio
@@ -3269,23 +3435,37 @@ subroutine nc_conservation(nc, nc_selfcollect_tend, dt, nc_collect_tend, nc2ni_i
 end subroutine nc_conservation
 
 subroutine nr_conservation(nr,ni2nr_melt_tend,nr_ice_shed_tend,ncshdc,nc2nr_autoconv_tend,dt,nr_collect_tend,nmltratio,&
-     nr2ni_immers_freeze_tend,nr_selfcollect_tend,nr_evap_tend)
+     nr2ni_immers_freeze_tend,nr_selfcollect_tend,nr_evap_tend, nrtend_TAU)
   !Make sure sinks of nr don't force end-of-step nr below 0. Rescale them if they do.
 
   implicit none
 
   real(rtype), intent(in) :: nr,ni2nr_melt_tend,nr_ice_shed_tend,ncshdc,nc2nr_autoconv_tend,dt,nmltratio
-  real(rtype), intent(inout) :: nr_collect_tend,nr2ni_immers_freeze_tend,nr_selfcollect_tend,nr_evap_tend
+  real(rtype), intent(inout) :: nr_collect_tend,nr2ni_immers_freeze_tend,nr_selfcollect_tend,nr_evap_tend,nrtend_TAU
   real(rtype) :: sink_nr, source_nr, ratio
 
-  sink_nr = (nr_collect_tend + nr2ni_immers_freeze_tend + nr_selfcollect_tend + nr_evap_tend)*dt
-  source_nr = nr + (ni2nr_melt_tend*nmltratio + nr_ice_shed_tend + ncshdc + nc2nr_autoconv_tend)*dt
+  !nrtend_TAU can be postive or negative, so split it..
+  real(rtype) :: pos_nr_tau,neg_nr_tau
+  pos_nr_tau = 0.
+  neg_nr_tau = 0.
+
+  if (nrtend_TAU > 0.) then
+   pos_nr_tau = nrtend_TAU
+  elseif (nrtend_TAU < 0.) then
+   neg_nr_tau = -1. * nrtend_TAU
+  endif
+
+  sink_nr = (nr_collect_tend + nr2ni_immers_freeze_tend + nr_selfcollect_tend + nr_evap_tend + neg_nr_tau)*dt
+  source_nr = nr + (ni2nr_melt_tend*nmltratio + nr_ice_shed_tend + ncshdc + nc2nr_autoconv_tend + pos_nr_tau)*dt
   if(sink_nr > source_nr) then
      ratio = source_nr/sink_nr
      nr_collect_tend  = nr_collect_tend*ratio
      nr2ni_immers_freeze_tend = nr2ni_immers_freeze_tend*ratio
      nr_selfcollect_tend  = nr_selfcollect_tend*ratio
      nr_evap_tend  = nr_evap_tend*ratio
+     if (nrtend_TAU < 0.) then
+         nrtend_TAU = nrtend_TAU*ratio
+     endif
   endif
 
   return
@@ -3320,19 +3500,19 @@ end subroutine ni_conservation
 
 subroutine cloud_water_conservation(qc,dt,    &
    qc2qr_autoconv_tend,qc2qr_accret_tend,qccol,qc2qi_hetero_freeze_tend,qc2qr_ice_shed_tend,qiberg,qi2qv_sublim_tend,qidep, &
-   qcheti_cnt,qicnt)
+   qcheti_cnt,qicnt,qctend_TAU)
 
    implicit none
 
    real(rtype), intent(in) :: qc, dt
    real(rtype), intent(inout) :: qc2qr_autoconv_tend, qc2qr_accret_tend, qccol, qc2qi_hetero_freeze_tend, qc2qr_ice_shed_tend, &
-                                 qiberg, qi2qv_sublim_tend, qidep, qcheti_cnt, qicnt
+                                 qiberg, qi2qv_sublim_tend, qidep, qcheti_cnt, qicnt, qctend_TAU
    real(rtype) :: sinks, ratio
 
    if(use_hetfrz_classnuc)then
-      sinks = (qc2qr_autoconv_tend+qc2qr_accret_tend+qccol+qcheti_cnt+qc2qr_ice_shed_tend+qiberg+qicnt)*dt
+      sinks = (qc2qr_autoconv_tend+qc2qr_accret_tend+qccol+qcheti_cnt+qc2qr_ice_shed_tend+qiberg+qicnt+qctend_TAU)*dt
    else
-      sinks = (qc2qr_autoconv_tend+qc2qr_accret_tend+qccol+qc2qi_hetero_freeze_tend+qc2qr_ice_shed_tend+qiberg)*dt
+      sinks = (qc2qr_autoconv_tend+qc2qr_accret_tend+qccol+qc2qi_hetero_freeze_tend+qc2qr_ice_shed_tend+qiberg+qctend_TAU)*dt
    endif
 
    if (sinks .gt. qc .and. sinks.ge.1.e-20_rtype) then
@@ -3347,7 +3527,8 @@ subroutine cloud_water_conservation(qc,dt,    &
          qicnt = qicnt*ratio
       else
          qc2qi_hetero_freeze_tend = qc2qi_hetero_freeze_tend*ratio
-      endif   
+      endif
+      qctend_TAU= qctend_TAU*ratio    
    else
       ratio = 1.0 ! If not limiting sinks on qc then most likely did not run out of qc
    endif
@@ -3365,17 +3546,17 @@ subroutine cloud_water_conservation(qc,dt,    &
 end subroutine cloud_water_conservation
 
 subroutine rain_water_conservation(qr,qc2qr_autoconv_tend,qc2qr_accret_tend,qi2qr_melt_tend,qc2qr_ice_shed_tend,dt,    &
-   qr2qv_evap_tend,qrcol,qr2qi_immers_freeze_tend)
+   qr2qv_evap_tend,qrcol,qr2qi_immers_freeze_tend,qrtend_TAU)
 
    implicit none
 
    real(rtype), intent(in) :: qr, qc2qr_autoconv_tend, qc2qr_accret_tend, qi2qr_melt_tend, qc2qr_ice_shed_tend, dt
-   real(rtype), intent(inout) :: qr2qv_evap_tend, qrcol, qr2qi_immers_freeze_tend
+   real(rtype), intent(inout) :: qr2qv_evap_tend, qrcol, qr2qi_immers_freeze_tend, qrtend_TAU
 
    real(rtype) :: sinks, sources, ratio
 
    sinks   = (qr2qv_evap_tend+qrcol+qr2qi_immers_freeze_tend)*dt
-   sources = qr + (qc2qr_autoconv_tend+qc2qr_accret_tend+qi2qr_melt_tend+qc2qr_ice_shed_tend)*dt
+   sources = qr + (qc2qr_autoconv_tend+qc2qr_accret_tend+qi2qr_melt_tend+qc2qr_ice_shed_tend+qrtend_TAU)*dt
    if (sinks.gt.sources .and. sinks.ge.1.e-20_rtype) then
       ratio  = sources/sinks
       qr2qv_evap_tend  = qr2qv_evap_tend*ratio
@@ -3552,7 +3733,7 @@ subroutine update_prognostic_ice(qc2qi_hetero_freeze_tend,qccol,qc2qr_ice_shed_t
 end subroutine update_prognostic_ice
 
 subroutine update_prognostic_liquid(qc2qr_accret_tend,nc_accret_tend,qc2qr_autoconv_tend,nc2nr_autoconv_tend, &
-     ncautr,nc_selfcollect_tend, qr2qv_evap_tend,nr_evap_tend,nr_selfcollect_tend,         &
+     ncautr,nc_selfcollect_tend, qr2qv_evap_tend,nr_evap_tend,nr_selfcollect_tend,qctend_TAU, nctend_TAU, nrtend_TAU, &
     do_predict_nc, nccnst, do_prescribed_CCN, inv_rho,exner,latent_heat_vapor,dt,          &
     th_atm,qv,qc,nc,qr,nr)
 
@@ -3568,6 +3749,10 @@ subroutine update_prognostic_liquid(qc2qr_accret_tend,nc_accret_tend,qc2qr_autoc
    real(rtype), intent(in) :: qr2qv_evap_tend
    real(rtype), intent(in) :: nr_evap_tend
    real(rtype), intent(in) :: nr_selfcollect_tend
+   real(rtype), intent(in) :: qctend_TAU
+   real(rtype), intent(in) :: nctend_TAU
+   real(rtype), intent(in) :: nrtend_TAU
+
 
 
    logical(btype), intent(in) :: do_predict_nc, do_prescribed_CCN
@@ -3584,18 +3769,18 @@ subroutine update_prognostic_liquid(qc2qr_accret_tend,nc_accret_tend,qc2qr_autoc
    real(rtype), intent(inout) :: qr
    real(rtype), intent(inout) :: nr
 
-   qc = qc + (-qc2qr_accret_tend-qc2qr_autoconv_tend)*dt
-   qr = qr + (qc2qr_accret_tend+qc2qr_autoconv_tend-qr2qv_evap_tend)*dt
+   qc = qc + (-qc2qr_accret_tend-qc2qr_autoconv_tend-qctend_TAU)*dt
+   qr = qr + (qc2qr_accret_tend+qc2qr_autoconv_tend-qr2qv_evap_tend+qctend_TAU)*dt
 
    if (do_predict_nc .or. do_prescribed_CCN) then
-      nc = nc + (-nc_accret_tend-nc2nr_autoconv_tend+nc_selfcollect_tend)*dt
+      nc = nc + (-nc_accret_tend-nc2nr_autoconv_tend+nc_selfcollect_tend-nctend_TAU)*dt
    else
       nc = nccnst*inv_rho
    endif
    if (iparam.eq.1 .or. iparam.eq.2) then
-      nr = nr + (0.5_rtype*nc2nr_autoconv_tend-nr_selfcollect_tend-nr_evap_tend)*dt
+      nr = nr + (0.5_rtype*nc2nr_autoconv_tend-nr_selfcollect_tend-nr_evap_tend+nrtend_TAU)*dt
    else
-      nr = nr + (ncautr-nr_selfcollect_tend-nr_evap_tend)*dt
+      nr = nr + (ncautr-nr_selfcollect_tend-nr_evap_tend+nrtend_TAU)*dt
    endif
 
    qv = qv + qr2qv_evap_tend*dt

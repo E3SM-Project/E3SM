@@ -3892,6 +3892,7 @@ if ($clubb_sgs  =~ /$TRUE/io) {
 if ($cfg->get('microphys') =~ /^p3/) {
    if ($shoc_sgs  =~ /$TRUE/io) {
       add_default($nl, 'micro_p3_lookup_dir');
+      add_default($nl, 'p3_warm_rain_method');
       add_default($nl, 'micro_p3_tableversion');
       add_default($nl, 'micro_aerosolactivation');
       add_default($nl, 'micro_subgrid_cloud');
@@ -3902,6 +3903,7 @@ if ($cfg->get('microphys') =~ /^p3/) {
    }
    if ($clubb_sgs  =~ /$TRUE/io) {
       add_default($nl, 'micro_p3_lookup_dir');
+      add_default($nl, 'p3_warm_rain_method');
       add_default($nl, 'micro_p3_tableversion');
       add_default($nl, 'micro_aerosolactivation');
       add_default($nl, 'micro_subgrid_cloud');
