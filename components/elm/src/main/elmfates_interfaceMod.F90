@@ -1039,9 +1039,10 @@ contains
             ! Allocate HLM-FATES mapping arrays
             ! TODO: update this to be agnostic to fates column run mode
             allocate(this%fates(nc)%sites(s)%column_map(1))
-            allocate(this%fates(nc)%sites(s)%patch_map(natpft_size))
+            ! allocate(this%fates(nc)%sites(s)%patch_map(natpft_size))
 
             ! TODO: Assign column_map and patch_map values
+            this%fates(nc)%sites(s)%column_map(1) = this%f2hmap(nc)%GetColumnIndex(1,s)
 
             c = this%f2hmap(nc)%fcolumn(s)
             this%fates(nc)%sites(s)%h_gid = c
