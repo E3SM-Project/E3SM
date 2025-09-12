@@ -663,8 +663,7 @@ CONTAINS
 
     call t_startf ('CAM_import')
 ! move moab import after regular atm import, so it would be in charge
-    call atm_import( x2a_a%rattr, cam_in, mon_spec=mon_sync , &
-         day_spec=day_sync, tod_spec=tod_sync, is_runtime=.true. )
+    call atm_import( x2a_a%rattr, cam_in)
 #ifdef HAVE_MOAB
 
 #ifdef MOABCOMP
