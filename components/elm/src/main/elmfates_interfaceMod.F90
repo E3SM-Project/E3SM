@@ -4133,6 +4133,8 @@ end subroutine wrap_update_hifrq_hist
  
  subroutine RegisterHLMInterfaceVariables(this, nc)
    
+   use FatesInterfaceTypesMod, only : subgrid_column_index
+
    use FatesInterfaceTypesMod, only : hlm_fates_soil_level
    use FatesInterfaceTypesMod, only : hlm_fates_decomp_frac_moisture
    use FatesInterfaceTypesMod, only : hlm_fates_decomp_frac_temperature
