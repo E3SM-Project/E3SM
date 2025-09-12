@@ -1,0 +1,151 @@
+name: "eamxx-format"
+
+# if .{cpp,hpp} files are touched in a PR, lint them!
+
+on:
+  pull_request:
+    branches: ["master"]
+    paths:
+      - 'components/eamxx/**/*.cpp'
+      - 'components/eamxx/**/*.hpp'
+      - .github/workflows/eamxx-uncrustify-format.yml
+
+  # Manual run
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+# RECIPE:
+# 0. install uncrustify via conda. This allows us to pick virtually any uncrustify
+#    version we want, without having to rely on what's available on the runner
+# 1a. runs uncrustify on the files changed by this PR, modifying them in-place
+# 1b. in case of workflow_disaptch, run uncrustify on ALL eamxx cpp/hpp files
+# 2. any files that required formatting are returned by a 'git diff --name-only'
+#    and written to the job summary along with an informational message
+# if (formatting required) {
+#   3. runs a full diff to generate a patch file
+#   4. uploads the patch as an artifact
+# }
+# 5. return the pass/fail status of the job
+
+jobs:
+  uncrustify-format-linter:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v5
+      with:
+        fetch-depth: 0
+    - uses: tj-actions/changed-files@v46
+      id: changed-files
+      with:
+        files: 'components/eamxx/**/*.{cpp,hpp}'
+        separator: " "
+    - name: setup micromamba env
+      uses: mamba-org/setup-micromamba@v2
+      with:
+        init-shell: bash
+        environment-name: uncrustify
+        create-args:
+          uncrustify=0.81.0
+    - name: run formatter looping over PR-changed files, then diff -  PR trigger
+      # Note: this (json) variable contains a handful of sub-fields, but its
+      # existence encapsulates all of the PR-related triggers
+      # this is the best option because github.event_name could be something
+      # like "synchronization," which falls under the umbrella of PR triggers
+      if: ${{ github.event.pull_request }}
+      shell: bash -leo pipefail {0}
+      run: |
+        flist="${{ steps.changed-files.outputs.all_changed_files }}"
+        run_cfmt () {
+        uncrustify -c "components/eamxx/.uncrustify.cfg" --replace $1
+        }
+        uncrustify --version
+        for f in ${flist[@]}; do
+          echo "--Running uncrustifyon ${f}--"
+          run_cfmt "${f}"
+        done
+        git diff --name-only > diffiles.txt
+    - name: run formatter looping over all files, then diff - manual trigger
+      # Note: different from above, this trigger does not result in a variable
+      # github.event.workflow_dispatch, but this will always be the event_name
+      if: ${{ github.event_name == 'workflow_dispatch' }}
+      shell: bash -leo pipefail {0}
+      run: |
+        # when it's a manual trigger, we'll choose to consider all cpp/hpp files
+        flist=($(find components/eamxx -depth -name "*.?pp"))
+        run_cfmt () {
+          uncrustify -c :"components/eamxx/.uncrustify" --replace $1
+        }
+        uncrustify --version
+        for f in ${flist[@]}; do
+          echo "--Running uncrustify on ${f}--"
+          run_cfmt "${f}"
+        done
+        git diff --name-only > diffiles.txt
+    - name: examine diff and write to summary
+      run: |
+        if [[ $(wc -l < diffiles.txt) -gt 0 ]]; then
+          # we don't want to return a nonzero exit code in this step because
+          # it'll stop the job, so we store it in the ENV
+          echo "status_fail=true" >> "${GITHUB_ENV}"
+          echo "## Status: \`uncrustify-format\` Check Failed." > "${GITHUB_STEP_SUMMARY}"
+          echo "" >> "${GITHUB_STEP_SUMMARY}"
+          echo "The following files require formatting:" >> "${GITHUB_STEP_SUMMARY}"
+          echo "" >> "${GITHUB_STEP_SUMMARY}"
+          echo "\`\`\`" >> "${GITHUB_STEP_SUMMARY}"
+          cat diffiles.txt >> "${GITHUB_STEP_SUMMARY}"
+          echo "\`\`\`" >> "${GITHUB_STEP_SUMMARY}"
+          echo "" >> "${GITHUB_STEP_SUMMARY}"
+          echo "To format all of these files at once, download the " \
+               "patch file below, \`uncrustify-format-patch_[...].diff\`, " \
+               "from the ***Artifacts*** section." >> "${GITHUB_STEP_SUMMARY}"
+          echo "Note that it may take a moment for the file to appear " \
+               "or may require reloading the page." >> "${GITHUB_STEP_SUMMARY}"
+          echo "" >> "${GITHUB_STEP_SUMMARY}"
+          echo "To apply the patch containing the formatting edits, " \
+               "execute \`git apply <patch-file>\` from your local E3SM " \
+               "branch." >> "${GITHUB_STEP_SUMMARY}"
+          echo "Then commit the changes and push to your remote branch." >> "${GITHUB_STEP_SUMMARY}"
+          echo "" >> "${GITHUB_STEP_SUMMARY}"
+          echo "For diffs with ***fewer than 100 lines***, we also include the text of " \
+               "the patch file in a collapsed section, below."  >> "${GITHUB_STEP_SUMMARY}"
+        else
+          echo "status_fail=false" >> "${GITHUB_ENV}"
+          echo "## Status: \`uncrustify-format\` Check Passed!" > "${GITHUB_STEP_SUMMARY}"
+        fi
+    - name: diff format changes
+      run: |
+        d_str=$(date +"%Y%m%d%H%M%S")
+        fname="uncrustify-format-patch_${{ github.event.pull_request.number || github.event_name }}-${d_str}.diff"
+        echo "fname=${fname}" >> "${GITHUB_ENV}"
+        git diff > "components/eamxx/${fname}"
+        if [[ ${status_fail} = true ]] && [[ $(wc -l < "components/eamxx/${fname}") -lt 100 ]]; then
+          echo "<details>" >> "${GITHUB_STEP_SUMMARY}"
+          echo "" >> "${GITHUB_STEP_SUMMARY}"
+          echo "<summary>" >> "${GITHUB_STEP_SUMMARY}"
+          echo "<b>Contents of</b> <tt>uncrustify-format-patch.diff</tt>" >> "${GITHUB_STEP_SUMMARY}"
+          echo "</summary>" >> "${GITHUB_STEP_SUMMARY}"
+          echo "To apply this version of the patch, save the text to a local file, " \
+               "and <tt>git apply &lt;patch-file&gt;</tt>, etc., as above." >> "${GITHUB_STEP_SUMMARY}"
+          echo "" >> "${GITHUB_STEP_SUMMARY}"
+          echo "\`\`\`" >> "${GITHUB_STEP_SUMMARY}"
+          cat "components/eamxx/${fname}" >> "${GITHUB_STEP_SUMMARY}"
+          echo "\`\`\`" >> "${GITHUB_STEP_SUMMARY}"
+          echo "" >> "${GITHUB_STEP_SUMMARY}"
+          echo "</details>" >> "${GITHUB_STEP_SUMMARY}"
+        fi
+    - name: upload diff patch
+      if: ${{ env.status_fail == 'true' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ env.fname }}
+        path: "components/eamxx/${{ env.fname }}"
+    - name: return pass-fail status
+      run: |
+        if [[ ${status_fail} = true ]]; then
+          exit 1
+        else
+          exit 0
+        fi
