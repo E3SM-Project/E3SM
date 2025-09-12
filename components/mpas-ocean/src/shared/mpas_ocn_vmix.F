@@ -814,6 +814,7 @@ contains
       real (kind=RKIND) :: inundation_depth, von_karman, cff1, cff2, cff3, cff4
       integer :: iCell
       real (kind=RKIND) :: wetFraction, sshMean
+      real (kind=RKIND) :: Cd1, Cd2
 
       err = 0
       von_karman = 0.4_RKIND
@@ -907,12 +908,18 @@ contains
            if (config_use_subgrid_wetting_drying) then 
               sshMean = 0.5_RKIND * (subgridSSH(cell1) + subgridSSH(cell2))
     
-              call ocn_subgrid_wet_fraction_lookup(sshMean, &
-                                                   subgridWetFractionEdgeTable(:,iEdge), &
-                                                   subgridSshEdgeTableRange(:,iEdge), &
-                                                   wetFraction)
+              !call ocn_subgrid_wet_fraction_lookup(sshMean, &
+              !                                     subgridWetFractionEdgeTable(:,iEdge), &
+              !                                     subgridSshEdgeTableRange(:,iEdge), &
+              !                                     wetFraction)
+              !implicitCd = wetFraction*implicitCd
 
-                implicitCd = wetFraction*implicitCd
+              call ocn_subgrid_drag_lookup(sshMean, &
+                                           subgridDragEdgeTable(:,iEdge), &
+                                           subgridSshDragEdgeTableRange(:,iEdge), &
+                                           0.5_RKIND*(bottomDrag(cell1) + bottomDrag(cell2)), &
+                                           columnThicknessDrag, &
+                                           implicitCd)
            endif
            
            normalVelocity(N,iEdge) = normalVelocity(N,iEdge)  &
