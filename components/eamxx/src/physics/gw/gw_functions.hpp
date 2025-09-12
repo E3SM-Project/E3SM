@@ -296,23 +296,25 @@ struct Functions
   KOKKOS_FUNCTION
   static void gwd_precalc_rhoi(
     // Inputs
+    const MemberType& team,
+    const Workspace& workspace,
     const Int& pver,
     const Int& pgwv,
     const Real& dt,
-    const uview_1d<const Int>& tend_level,
+    const Int& tend_level,
     const uview_1d<const Real>& pmid,
     const uview_1d<const Real>& pint,
     const uview_1d<const Real>& t,
-    const uview_1d<const Real>& gwut,
+    const uview_2d<const Real>& gwut,
     const uview_1d<const Real>& ubm,
     const uview_1d<const Real>& nm,
     const uview_1d<const Real>& rdpm,
     const uview_1d<const Real>& c,
-    const uview_1d<const Real>& q,
+    const uview_2d<const Real>& q,
     const uview_1d<const Real>& dse,
     // Outputs
     const uview_1d<Real>& egwdffi,
-    const uview_1d<Real>& qtgw,
+    const uview_2d<Real>& qtgw,
     const uview_1d<Real>& dttdf,
     const uview_1d<Real>& dttke,
     const uview_1d<Real>& ttgw);
@@ -527,14 +529,19 @@ struct Functions
   KOKKOS_FUNCTION
   static void gw_diff_tend(
     // Inputs
-    const Int& ncol,
+    const MemberType& team,
+    const Workspace& workspace,
     const Int& pver,
     const Int& kbot,
     const Int& ktop,
-    const uview_1d<const Spack>& q,
-    const Spack& dt,
+    const uview_1d<const Real>& q,
+    const Real& dt,
+    const uview_1d<const Real>& decomp_ca,
+    const uview_1d<const Real>& decomp_cc,
+    const uview_1d<const Real>& decomp_dnom,
+    const uview_1d<const Real>& decomp_ze,
       // Outputs
-    const uview_1d<Spack>& dq);
+    const uview_1d<Real>& dq);
 
   KOKKOS_FUNCTION
   static void gw_oro_src(

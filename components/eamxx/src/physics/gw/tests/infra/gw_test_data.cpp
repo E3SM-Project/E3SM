@@ -801,12 +801,71 @@ void gw_ediff(GwEdiffData& d)
   gw_finalize_cxx(d.init);
 }
 
-void gw_diff_tend(GwDiffTendData& d)
+void gw_diff_tend_f(GwDiffTendData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
   gw_init(d.init);
   gw_diff_tend_c(d.ncol, d.kbot, d.ktop, d.q, d.dt, d.decomp_ca, d.decomp_cc, d.decomp_dnom, d.decomp_ze, d.dq);
   d.transition<ekat::TransposeDirection::f2c>();
+}
+
+void gw_diff_tend(GwDiffTendData& d)
+{
+  gw_init_cxx(d.init);
+
+  // create device views and copy
+  std::vector<view2dr_d> two_d_reals_in(6);
+
+  ekat::host_to_device({d.q, d.dq, d.decomp_ca, d.decomp_cc, d.decomp_dnom, d.decomp_ze}, d.ncol, d.init.pver, two_d_reals_in);
+
+  const auto q           = two_d_reals_in[0];
+  const auto dq          = two_d_reals_in[1];
+  const auto decomp_ca   = two_d_reals_in[2];
+  const auto decomp_cc   = two_d_reals_in[3];
+  const auto decomp_dnom = two_d_reals_in[4];
+  const auto decomp_ze   = two_d_reals_in[5];
+
+  auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.ncol, d.init.pver);
+
+  WSM wsm(d.init.pver, 2, policy);
+  GWF::GwCommonInit init_cp = GWF::s_common_init;
+
+  // unpack init because we do not want the lambda to capture it
+  const int pver = d.init.pver;
+  const int ktop = d.ktop;
+  const int kbot = d.kbot;
+  const Real dt = d.dt;
+
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    const int col = team.league_rank();
+
+    // Get single-column subviews of all inputs, shouldn't need any i-indexing
+    // after this.
+    const auto q_c           = ekat::subview(q, col);
+    const auto dq_c          = ekat::subview(dq, col);
+    const auto decomp_ca_c   = ekat::subview(decomp_ca, col);
+    const auto decomp_cc_c   = ekat::subview(decomp_cc, col);
+    const auto decomp_dnom_c = ekat::subview(decomp_dnom, col);
+    const auto decomp_ze_c   = ekat::subview(decomp_ze, col);
+
+    GWF::gw_diff_tend(
+      team,
+      wsm.get_workspace(team),
+      pver, kbot, ktop,
+      q_c,
+      dt,
+      decomp_ca_c,
+      decomp_cc_c,
+      decomp_dnom_c,
+      decomp_ze_c,
+      dq_c);
+  });
+
+  // Get outputs back
+  std::vector<view2dr_d> two_d_reals_out = {dq};
+  ekat::device_to_host({d.dq}, d.ncol, d.init.pver, two_d_reals_out);
+
+  gw_finalize_cxx(d.init);
 }
 
 void gw_oro_src(GwOroSrcData& d)
