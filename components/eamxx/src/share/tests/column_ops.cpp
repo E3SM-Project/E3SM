@@ -1,6 +1,6 @@
 #include <catch2/catch.hpp>
 
-#include "share/util/eamxx_column_ops.hpp"
+#include "share/algorithm/eamxx_column_ops.hpp"
 
 #include <ekat_arch.hpp>
 #include <ekat_kokkos_types.hpp>

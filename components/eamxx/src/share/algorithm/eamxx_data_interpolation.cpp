@@ -1,4 +1,4 @@
-#include "share/util/eamxx_data_interpolation.hpp"
+#include "share/algorithm/eamxx_data_interpolation.hpp"
 
 #include "share/grid/remap/identity_remapper.hpp"
 #include "share/grid/remap/vertical_remapper.hpp"
