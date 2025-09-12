@@ -79,7 +79,7 @@ inline void PySession::initialize () {
     // Note: if Py interpreter is already inited, we ASSUME someone else
     // is handling the interpreter initialization/finalization
     if (not Py_IsInitialized()) {
-      py_guard = std::make_shared<py::scoped_interpreter>();
+      py_guard = std::make_shared<pybind11::scoped_interpreter>();
     }
   }
   ++num_customers;
@@ -103,14 +103,14 @@ inline void PySession::add_path (const std::string& path)
 
   try {
     // Import the sys module
-    py::module sysModule = py::module::import("sys");
+    pybind11::module sysModule = pybind11::module::import("sys");
 
     // Get the sys.path list
-    py::list sysPath = sysModule.attr("path");
+    pybind11::list sysPath = sysModule.attr("path");
 
     // Append the new path to sys.path
     sysPath.append(path);
-  } catch (const py::error_already_set& e) {
+  } catch (const pybind11::error_already_set& e) {
     std::cerr << "Error: " << e.what() << std::endl;
     throw std::runtime_error("Could not modify sys.path. Aborting.");
   }
