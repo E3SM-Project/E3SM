@@ -4136,7 +4136,10 @@ end subroutine wrap_update_hifrq_hist
  
  subroutine RegisterHLMInterfaceVariables(this, nc)
    
-   use FatesInterfaceTypesMod, only : subgrid_column
+   use FatesInterfaceTypesMod, only : hlm_fates_soil_level
+   use FatesInterfaceTypesMod, only : hlm_fates_decomp_frac_moisture
+   use FatesInterfaceTypesMod, only : hlm_fates_decomp_frac_temperature
+
 
    class(hlm_fates_interface_type), intent(inout) :: this
    
@@ -4146,9 +4149,10 @@ end subroutine wrap_update_hifrq_hist
    call this%fates(nc)%api%InitializeInterfaceRegistry()
          
    ! Register the HLM data
-   call this%fates(nc)%api%Register('decomp_frac_moisture', col_cf%w_scalar, subgrid_column)
-   call this%fates(nc)%api%Register('decomp_frac_temperature', col_cf%t_scalar, subgrid_column)
-   
+   call this%fates(nc)%api%Register(hlm_fates_soil_level, col_pp%nlevbed, subgrid_column_index)
+   call this%fates(nc)%api%Register(hlm_fates_decomp_frac_moisture, col_cf%w_scalar, subgrid_column_index)
+   call this%fates(nc)%api%Register(hlm_fates_decomp_frac_temperature, col_cf%t_scalar, subgrid_column_index)
+
  end subroutine RegisterHLMInterfaceVariables
  
 ! ======================================================================================
