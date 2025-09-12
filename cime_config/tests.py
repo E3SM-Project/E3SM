@@ -514,6 +514,7 @@ _TESTS = {
             "ERP_Ld15.ne4pg2_ne4pg2.IELMFATES.elm-fates_cold_allvars",
             "ERP_Ld3.f09_g16.IELMFATES.elm-fates_cold",
             "ERP_D_Ld3.f19_g16.IELMFATES.elm-fates_cold",
+            "ERP_D_Ld3.f19_g16.IELMFATES.elm-fates_cold",
             "ERS_D_Ld3_PS.f09_g16.IELMFATES.elm-fates_cold",
             "ERS_D_Ld5.f45_g37.IELMFATES.elm-fates_cold",
             "ERS_Ld30.f45_g37.IELMFATES.elm-fates_satphen",
@@ -525,6 +526,7 @@ _TESTS = {
             "ERS_Ld60.f45_g37.IELMFATES.elm-fates_cold_st3",
             "ERS_Ld60.f45_g37.IELMFATES.elm-fates_cold_pphys",
             "SMS_D_Ld15.f45_g37.IELMFATES.elm-fates_cold_twostream",
+            "ERS_Ld60.f45_g37.IELMFATES.elm-fates_cold_nofire"
             )
         },
 
