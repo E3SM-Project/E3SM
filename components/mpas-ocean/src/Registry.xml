@@ -1762,10 +1762,106 @@
 					possible_values="Any positive real number"
 		/>
 	</nml_record>
-	<nml_record name="init_mode_subgrid">
+	<nml_record name="init_mode_subgrid" mode="init">
 		<nml_option name="config_subgrid_table_levels" type="integer" default_value="-1"
 					description="Number of levels in subgrid lookup tables"
 					possible_values="Any positive non-zero integer. A value of -1 causes this to be overwritten with the configurations subgrid table levels definition."
+		/>
+		<nml_option name="config_subgrid_topography_extrapolation_method" type="character" default_value="nearest" units="unitless"
+					description="extrapolation method"
+					possible_values="nearest/constant"
+		/>
+		<nml_option name="config_subgrid_topography_extrapolation_constant_value" type="real" default_value="-1.0e10" units="unitless"
+					description="value to be used in the extrapolcation method if it is set to constant"
+					possible_values="any real number"
+		/>
+		<nml_option name="config_subgrid_use_thin_layer" type="logical" default_value=".false." units="unitless"
+					description="Whether to include thin layer in subgrid tables"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_subgrid_edge_bathymetry_max_pixel" type="logical" default_value=".true." units="unitless"
+					description="Use maximum elevation pixels as subgrid bathymetry on cell edges"
+					possible_values=".true. or .false."
+	    />
+		<nml_option name="config_subgrid_refinement_level" type="integer" default_value="3" units="unitless"
+					description="Level of refinement to evaluate subgrid bathymety"
+					possible_values="Any positive integer number"
+	    />	
+		<nml_option name="config_subgrid_topography_source" type="character" default_value="xy_file" units="unitless"
+					description="If 'latlon_file/xy_file', reads in topography from file specified in config_subgrid_topography_file"
+					possible_values="'latlon_file' or 'xy_file'"
+		/>
+		<nml_option name="config_subgrid_topography_file" type="character" default_value="none" units="unitless"
+					description="Path to the topography initial condition file."
+					possible_values="path/to/topography/file.nc"
+		/>
+		<nml_option name="config_subgrid_topography_latlon_degrees"  type="logical" default_value=".false." units="unitless"
+					description="Logical flag that controls if the Lat/Lon fields for topography should be converted to radians. True means input is degrees, false means input is radians."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_subgrid_topography_nlat_dimname" type="character" default_value="y" units="unitless"
+					description="Dimension name for the latitude in the topography file."
+					possible_values="Dimension name from input file."
+		/>
+		<nml_option name="config_subgrid_topography_nlon_dimname" type="character" default_value="x" units="unitless"
+					description="Dimension name for the longitude in the topography file."
+					possible_values="Dimension name from input file."
+		/>
+		<nml_option name="config_subgrid_topography_lat_varname" type="character" default_value="y" units="unitless"
+					description="Variable name for the latitude in the topography file."
+					possible_values="Variable name from input file."
+		/>
+		<nml_option name="config_subgrid_topography_lon_varname" type="character" default_value="x" units="unitless"
+					description="Variable name for the longitude in the topography file."
+					possible_values="Variable name from input file."
+		/>
+		<nml_option name="config_subgrid_topography_varname" type="character" default_value="Band1" units="unitless"
+					description="Variable name for the topography in the topography file."
+					possible_values="Variable name from input file."
+	    />
+		<nml_option name="config_subgrid_topography_fill_value" type="real" default_value="99999" units="unitless"
+					description="fill value in the topography file."
+					possible_values="any real number"
+		/>
+		<nml_option name="config_subgrid_topography_positive" type="character" default_value="up" units="unitless"
+					description="direction in which the topo value is positive"
+					possible_values="up/down"
+		/>
+		<nml_option name="config_subgrid_lulc_source" type="character" default_value="xy_file" units="unitless"
+					description="If 'latlon_file/xy_file', reads in lulc from file specified in config_subgrid_lulc_file"
+					possible_values="'latlon_file' or 'xy_file'"
+		/>
+		<nml_option name="config_subgrid_lulc_file" type="character" default_value="none" units="unitless"
+					description="Path to the lulc initial condition file."
+					possible_values="path/to/lulc/file.nc"
+		/>
+		<nml_option name="config_subgrid_lulc_latlon_degrees"  type="logical" default_value=".false." units="unitless"
+					description="Logical flag that controls if the Lat/Lon fields for lulc should be converted to radians. True means input is degrees, false means input is radians."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_subgrid_lulc_nlat_dimname" type="character" default_value="y" units="unitless"
+					description="Dimension name for the latitude in the lulc file."
+					possible_values="Dimension name from input file."
+		/>
+		<nml_option name="config_subgrid_lulc_nlon_dimname" type="character" default_value="x" units="unitless"
+					description="Dimension name for the longitude in the lulc file."
+					possible_values="Dimension name from input file."
+		/>
+		<nml_option name="config_subgrid_lulc_lat_varname" type="character" default_value="y" units="unitless"
+					description="Variable name for the latitude in the lulc file."
+					possible_values="Variable name from input file."
+		/>
+		<nml_option name="config_subgrid_lulc_lon_varname" type="character" default_value="x" units="unitless"
+					description="Variable name for the longitude in the lulc file."
+					possible_values="Variable name from input file."
+		/>
+		<nml_option name="config_subgrid_lulc_varname" type="character" default_value="Band1" units="unitless"
+					description="Variable name for the lulc in the lulc file."
+					possible_values="Variable name from input file."
+	    />
+		<nml_option name="config_subgrid_lulc_fill_value" type="real" default_value="99999" units="unitless"
+					description="fill value in the lulc file."
+					possible_values="any real number"
 		/>
 	</nml_record>
 	<packages>
@@ -2872,6 +2968,18 @@
 		/>
 		<var name="subgridWetFractionVertexTable" type="real" dimensions="nSubgridTableLevels nVertices" units="m"
 			 description="Pre-computed wet fraction for each edge at given ssh value"
+			 packages="subgridWetDryPKG"
+		/>
+		<var name="subgridSshDragEdgeTableRange" type="real" dimensions="R3 nEdges" units="m"
+			 description="Range of ssh values used for edge drag lookup table"
+			 packages="subgridWetDryPKG"
+		/>
+		<var name="subgridDragEdgeTable" type="real" dimensions="nSubgridTableLevels nEdges" units="m"
+			 description="Pre-computed drag coefficient for each edge at given ssh value"
+			 packages="subgridWetDryPKG"
+		/>
+		<var name="subgridEdgeArea" type="real" dimensions="nEdges" units="radians^2"
+			 description="Area of triangular region between edge vertices and cell center on each side of edge"
 			 packages="subgridWetDryPKG"
 		/>
 	</var_struct>

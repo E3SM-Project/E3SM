@@ -62,14 +62,17 @@ module ocn_subgrid
       subgridWetFractionVertexTable, &
       subgridSshCellTableRange, &
       subgridSshEdgeTableRange, &
-      subgridSshVertexTableRange
+      subgridSshVertexTableRange, &
+      subgridSshDragEdgeTableRange, &
+      subgridDragEdgeTable
    real(kind=RKIND), public, dimension(:), pointer :: &
       subgridEdgeBathymetryMean, &
       subgridVertexBathymetryMean, &
       subgridCellBathymetryMin, &
       subgridEdgeBathymetryMin, &
       subgridVertexBathymetryMin, &
-      subgridLayerThicknessDebug
+      subgridLayerThicknessDebug, &
+      subgridEdgeArea
    real(kind=RKIND), public, dimension(:), pointer :: &
       subgridSSH
 
@@ -92,6 +95,7 @@ module ocn_subgrid
    public :: ocn_subgrid_layer_thickness_lookup, &
              ocn_subgrid_wet_fraction_lookup, &
              ocn_subgrid_ssh_lookup, &
+             ocn_subgrid_drag_lookup, &
              ocn_subgrid_init, &
              bisection_index
 
@@ -454,6 +458,72 @@ contains
 
 !***********************************************************************
 !
+!  routine ocn_subgrid_drag_lookup
+!
+!> \brief   Drag coefficient lookup
+!> \author  Steven Brus, Damrongsak Wirasaet
+!> \date    September 2025
+!> \details Returns the drag coefficient for a given ssh (defined over the
+!>          wet fraction) value based on subgrid lookup table information
+!
+!-----------------------------------------------------------------------
+
+   subroutine ocn_subgrid_drag_lookup(zeta, &
+                                       subgridTable, &
+                                       subgridTableRange, &
+                                       mannings_n, &
+                                       columnThickness, &
+                                       dragCoefficient)!{{{
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), intent(in) :: zeta
+      real (kind=RKIND), dimension(:), intent(in) :: subgridTable
+      real (kind=RKIND), dimension(:), intent(in) :: subgridTableRange
+      real (kind=RKIND), intent(in) :: mannings_n
+      real (kind=RKIND), intent(in) :: columnThickness
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), intent(out) :: dragCoefficient
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+
+      integer :: lev
+
+      real (kind=RKIND) :: tableMin
+      real (kind=RKIND) :: tableMax
+      real (kind=RKIND) :: deltaZ
+      real (kind=RKIND) :: zeta0, zeta1
+
+      tableMin = subgridTableRange(1)
+      tableMax = subgridTableRange(2)
+      deltaZ = (tableMax - tableMin)/real(nSubgridTableLevels-1,RKIND)
+
+      dragCoefficient = gravity*mannings_n**2 / (columnThickness**(1.0_RKIND/3.0_RKIND))
+      if (zeta >= tableMax) then
+         return 
+      else if (zeta <= tableMin) then
+         return
+      else
+        lev = int((zeta - tableMin)/deltaZ) + 1
+
+        zeta0 = (real(lev,RKIND)-1.0_RKIND)*deltaZ + tableMin
+        zeta1 = zeta0 + deltaZ
+
+        dragCoefficient = ((zeta-zeta0)*subgridTable(lev+1) - (zeta-zeta1)*subgridTable(lev))/deltaZ
+      end if
+
+   end subroutine ocn_subgrid_drag_lookup!}}}
+
+!***********************************************************************
+!
 !  routine ocn_subgrid_ssh_lookup
 !> \brief   Inverse subgrid lookup (layerThickness -> ssh)
 !> \author  Steven Brus, Damrongsak Wirasaet
@@ -606,6 +676,12 @@ contains
                                subgridVertexBathymetryMin)
       call mpas_pool_get_array(meshPool, 'subgridLayerThicknessDebug', &
                                subgridLayerThicknessDebug)
+      call mpas_pool_get_array(meshPool, 'subgridSshDragEdgeTableRange', &
+                               subgridSshDragEdgeTableRange)
+      call mpas_pool_get_array(meshPool, 'subgridDragEdgeTable', &
+                               subgridDragEdgeTable)
+      call mpas_pool_get_array(meshPool, 'subgridEdgeArea', &
+                               subgridEdgeArea)
 
       call mpas_pool_get_dimension(meshPool, 'nSubgridTableLevels', &
                                      nSubgridTableLevels)

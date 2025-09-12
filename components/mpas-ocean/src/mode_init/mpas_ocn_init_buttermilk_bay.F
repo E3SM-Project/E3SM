@@ -58,22 +58,14 @@ module ocn_init_Buttermilk_bay
 
    public :: ocn_init_setup_Buttermilk_bay, &
              ocn_init_validate_Buttermilk_bay, &
-             ocn_init_Buttermilk_bay_bathymetry, &
              ocn_init_Buttermilk_bay_ssh, &
-             ocn_init_Buttermilk_bay_velocity, &
-             ocn_init_setup_Buttermilk_bay_read_topo
+             ocn_init_Buttermilk_bay_velocity
 
    !--------------------------------------------------------------------
    !
    ! Private module variables
    !
    !--------------------------------------------------------------------
-
-   ! For netcdf topobathy input variables
-   integer, public :: nLatTopo, nLonTopo
-
-   type (field1DReal), public :: topoLat, topoLon
-   type (field2DReal), public :: topoIC
 
    real(kind=RKIND), parameter:: eps = 1.0e-10_RKIND ;
 !***********************************************************************
@@ -236,11 +228,36 @@ contains
 
     call mpas_log_write( 'Reading bathymetry from a NetCDF file')
 
-    if (config_Buttermilk_bay_topography_source == 'latlon_file' .or. &
-             config_Buttermilk_bay_topography_source == 'xy_file' ) then
-       call mpas_log_write( 'Reading topography data from file.')
-       call ocn_init_setup_Buttermilk_bay_read_topo(domain, iErr)
-    endif
+         if (config_subgrid_topography_source == 'latlon_file' .or. &
+                   config_subgrid_topography_source == 'xy_file' ) then
+             call mpas_log_write( 'Reading subgrid topography data from file.')
+             call ocn_init_read_subgrid_data(domain, topoLon, topoLat, topoData, &
+                                             config_subgrid_topography_file, &
+                                             config_subgrid_topography_source, &
+                                             config_subgrid_topography_latlon_degrees, &
+                                             config_subgrid_topography_positive, &
+                                             config_subgrid_topography_lon_varname, &
+                                             config_subgrid_topography_lat_varname, &
+                                             config_subgrid_topography_nlon_dimname, &
+                                             config_subgrid_topography_nlat_dimname, &
+                                             config_subgrid_topography_varname, &
+                                             iErr)
+          endif
+          if (config_subgrid_lulc_source == 'latlon_file' .or. &
+                   config_subgrid_lulc_source == 'xy_file' ) then
+             call mpas_log_write( 'Reading subgrid LULC data from file.')
+             call ocn_init_read_subgrid_data(domain, lulcLon, lulcLat, lulcData, &
+                                             config_subgrid_lulc_file, &
+                                             config_subgrid_lulc_source, &
+                                             config_subgrid_lulc_latlon_degrees, &
+                                             "down", &
+                                             config_subgrid_lulc_lon_varname, &
+                                             config_subgrid_lulc_lat_varname, &
+                                             config_subgrid_lulc_nlon_dimname, &
+                                             config_subgrid_lulc_nlat_dimname, &
+                                             config_subgrid_lulc_varname, &
+                                             iErr)
+          endif
 
     !--------------------------------------------------------------------
     ! Use this section to set initial values
@@ -395,7 +412,8 @@ contains
 
        call ocn_subgrid_init(domain,iErr)
        call ocn_init_subgrid_calculations(domain, &
-                                          ocn_init_Buttermilk_bay_bathymetry, &
+                                          ocn_init_subgrid_interpolate_topo, &
+                                          ocn_init_subgrid_interpolate_drag, &
                                           ocn_init_Buttermilk_bay_velocity, &
                                           ocn_init_Buttermilk_bay_ssh, &
                                           config_Buttermilk_bay_subgrid_refinement_level, &
@@ -467,7 +485,7 @@ contains
 
           else
             ! Initial condition for a standard run
-            call ocn_init_Buttermilk_bay_bathymetry(xCell(iCell), yCell(iCell), bottomDepth(iCell))
+            call ocn_init_subgrid_interpolate_topo(xCell(iCell), yCell(iCell), bottomDepth(iCell))
 
             ssh(iCell) = -bottomDepth(iCell) ;
             do k = 1, maxLevelCell(iCell)
@@ -523,10 +541,6 @@ contains
      end do
 
     deallocate(interfaceLocations)
-    if (config_global_ocean_topography_source == 'latlon_file') then
-        call mpas_log_write( 'Cleaning up topography IC fields')
-        call ocn_init_Buttermilk_bay_destroy_topo_fields()
-    endif
     !--------------------------------------------------------------------
 
     print*, "****** End Butter milk bay init *****" ;
@@ -534,132 +548,7 @@ contains
     return ;
   end subroutine ocn_init_setup_Buttermilk_bay!}}}
 
-!***********************************************************************
-!
-!  routine ocn_init_Buttermilk_bay_bathymetry
-!
-!> \brief   Interpolate bathymetry
-!> \author  Steven Brus, D. Wirasaet
-!> \date    November 2022
-!> \details Return the value of the bathymetry at a given x,y point
-!>
-!
-!-----------------------------------------------------------------------
 
-   subroutine ocn_init_Buttermilk_bay_bathymetry(xin, yin, depth)!{{{
-
-      implicit none
-
-      real (kind=RKIND), intent(in) :: xin, yin
-      real (kind=RKIND), intent(out) :: depth
-
-      integer :: ix(2)
-      integer :: i, idx_lon, idx_lat
-
-      real (kind=RKIND) :: x, y
-      real (kind=RKIND) :: xc(2)
-      real (kind=RKIND) :: dx(2), bath(4), f(4), den
-      real (kind=RKIND) :: xv(2), yv(2)
-
-      !--------------------------------------------------------------------
-      !
-      ! DEM must be on a uniform grid
-
-      y = yin 
-      x = xin
-
-      if (config_Buttermilk_bay_topography_latlon_degrees .and. &
-          config_Buttermilk_bay_topography_source == 'latlon_file' ) then
-
-          if (x > pii) then
-              x = x - 2.0_RKIND*pii
-          end if
-
-      end if
-     
-
-      ! Bilienar interpolation
-      xc = (/ x, y /) ;
-
-      ix(1) = bisection_index(x, topoLon%array, nLonTopo)
-      ix(2) = bisection_index(y, topoLat%array, nLatTopo)
-
-      !PRINT*, ix(1), ix(2)
-      if ((ix(1) > 0) .and. (ix(2) > 0)) then
-
-        dx = (/ topoLon%array(ix(1)+1) - topoLon%array(ix(1)), &
-                topoLat%array(ix(2)+1) - topoLat%array(ix(2)) /) ;
-
-        bath(1) = TopoIC%array(ix(1),ix(2))  ;
-        bath(2) = TopoIC%array(ix(1)+1,ix(2)) ;
-        bath(3) = TopoIC%array(ix(1)+1,ix(2)+1) ;
-        bath(4) = TopoIC%array(ix(1),ix(2)+1) ;
-
-        xv(1) = topoLon%array(ix(1)) ;
-        xv(2) = topoLon%array(ix(1)+1) ;
-
-        yv(1) = topoLat%array(ix(2)) ;
-        yv(2) = topoLat%array(ix(2)+1) ;
-
-        den = dx(1)*dx(2) ;
-
-        f(1) = ( xc(1) - xv(2) )*( xc(2) - yv(2) )/den ;
-        f(2) = ( xc(1) - xv(1) )*( xc(2) - yv(2) )/(-den) ;
-        f(3) = ( xc(1) - xv(1) )*( xc(2) - yv(1) )/den  ;
-        f(4) = ( xc(1) - xv(2) )*( xc(2) - yv(1) )/(-den) ;
-
-        depth = sum( bath*f ) ;
-        !depth = -1.0_RKIND*depth
-
-        if ((bath(1) /= bath(1)) .or. (bath(2) /= bath(2)) .or. (bath(3) /= bath(3)) .or. (bath(4) /= bath(4))) then
-            call extrapolate_topography( )
-            return
-        end if
-
-        if ( minval(bath) < -(abs(config_Buttermilk_bay_topography_fill_value) - 1)  ) then
-!            depth = config_Buttermilk_bay_topography_extrapolation_constant_value ;  
-          call extrapolate_topography( ) ;              
-        end if    
-        if ( minval(bath) >  (abs(config_Buttermilk_bay_topography_fill_value) - 1)  ) then
-           call extrapolate_topography( ) ;
-!            depth = config_Buttermilk_bay_topography_extrapolation_constant_value ;  
-        end if    
-
-
-
-!        if (minval(bath) < -99998) then
-!          depth = -1d10
-!        end if
-!        if (maxval(bath) > 99998) then
-!          depth = -1d10
-!        end if
-      else
-
-         call extrapolate_topography( ) ;
-
-      endif
-
-      return ;
-   contains
-     
-      subroutine extrapolate_topography(  )
-        implicit none 
-
-        ! depth = -1e10
-        if ( adjustl(trim(config_Buttermilk_bay_topography_extrapolation_method)) == 'constant' ) then
-          depth = config_Buttermilk_bay_topography_extrapolation_constant_value ;       
-        else
-          !! nearest extrapolation !
-          ix(1) = merge( 1, ix(1), ix(1) < 1 ) ;
-          ix(1) = merge( nLonTopo, ix(1), ix(1) >= nLonTopo ) ;
-          ix(2) = merge( 1, ix(2), ix(2) < 1 )  ;
-          ix(2) = merge( nLatTopo, ix(2), ix(2) >= nLatTopo ) ;
-          depth = TopoIC%array(ix(1),ix(2)) ;
-        end if
-           
-      end subroutine extrapolate_topography        
-
-   end subroutine ocn_init_Buttermilk_bay_bathymetry!}}}
 
 !***********************************************************************
 !
@@ -719,123 +608,6 @@ contains
    !--------------------------------------------------------------------
 
    end subroutine ocn_init_Buttermilk_bay_velocity!}}}
-
-!***********************************************************************
-!
-!  routine ocn_init_setup_global_ocean_read_topo
-!
-!> \brief   Read the topography IC file
-!> \author  D. Wirasaet, S. Brus
-!> \date    Sep 2023
-!> \details
-!>  This routine reads the topography IC file, including latitude and longitude
-!>   information for topography data.
-!>
-!>  Adapted from ocn_init_setup_global_ocean_read_topo
-!-----------------------------------------------------------------------
-    subroutine ocn_init_setup_Buttermilk_bay_read_topo(domain, iErr)!{{{
-       type (domain_type), intent(inout) :: domain
-       integer, intent(out) :: iErr
-       integer :: i
-
-       type (MPAS_Stream_type) :: topographyStream
-
-       iErr = 0
-
-       ! Define stream for depth levels
-       call MPAS_createStream(topographyStream, domain % iocontext, &
-                config_Buttermilk_bay_topography_file, MPAS_IO_NETCDF, &
-                                                   MPAS_IO_READ, ierr=iErr)
-
-       ! Setup topoLat, topoLon, and topoIC fields for stream to be read in
-       topoLat % fieldName = trim(config_Buttermilk_bay_topography_lat_varname)
-       topoLat % dimSizes(1) = nLatTopo
-       topoLat % dimNames(1) = trim(config_Buttermilk_bay_topography_nlat_dimname)
-       topoLat % isVarArray = .false.
-       topoLat % isPersistent = .true.
-       topoLat % isActive = .true.
-       topoLat % hasTimeDimension = .false.
-       topoLat % block => domain % blocklist
-       allocate(topoLat % attLists(1))
-       allocate(topoLat % array(nLatTopo))
-
-       topoLon % fieldName = trim(config_Buttermilk_bay_topography_lon_varname)
-       topoLon % dimSizes(1) = nLonTopo
-       topoLon % dimNames(1) = trim(config_Buttermilk_bay_topography_nlon_dimname)
-       topoLon % isVarArray = .false.
-       topoLon % isPersistent = .true.
-       topoLon % isActive = .true.
-       topoLon % hasTimeDimension = .false.
-       topoLon % block => domain % blocklist
-       allocate(topoLon % attLists(1))
-       allocate(topoLon % array(nLonTopo))
-
-       topoIC % fieldName = trim(config_Buttermilk_bay_topography_varname)
-       topoIC % dimSizes(1) = nLonTopo
-       topoIC % dimSizes(2) = nLatTopo
-       topoIC % dimNames(1) = trim(config_Buttermilk_bay_topography_nlon_dimname)
-       topoIC % dimNames(2) = trim(config_Buttermilk_bay_topography_nlat_dimname)
-       topoIC % isVarArray = .false.
-       topoIC % isPersistent = .true.
-       topoIC % isActive = .true.
-       topoIC % hasTimeDimension = .false.
-       topoIC % block => domain % blocklist
-       allocate(topoIC % attLists(1))
-       allocate(topoIC % array(nLonTopo, nLatTopo))
-
-
-       ! Add topoLat, topoLon, and topoIC fields to stream
-       call MPAS_streamAddField(topographyStream, topoLat, iErr)
-       call MPAS_streamAddField(topographyStream, topoLon, iErr)
-       call MPAS_streamAddField(topographyStream, topoIC, iErr)
-
-       ! Read stream
-       call MPAS_readStream(topographyStream, 1, iErr)
-       if ( adjustl(trim(config_Buttermilk_bay_topography_positive)) /= 'down' ) then
-           topoIC%array = -topoIC%array ;
-       end if
-
-
-       ! Close stream
-       call MPAS_closeStream(topographyStream)
-
-       if ( config_Buttermilk_bay_topography_latlon_degrees .and. &
-              config_Buttermilk_bay_topography_source == 'latlon_file' ) then
-          !do i = 1,nLonTopo
-          !   if (topoLon % array(i) < 0.0) then
-          !      topoLon % array(i) = topoLon % array(i) + 360.0_RKIND
-          !   end if
-          !end do
-
-          topoLat % array(:) = topoLat % array(:) * pii / 180.0_RKIND
-          topoLon % array(:) = topoLon % array(:) * pii / 180.0_RKIND
-       end if
-
-    end subroutine ocn_init_setup_Buttermilk_bay_read_topo!}}}
-
-
-!***********************************************************************
-!
-!  routine ocn_init_Buttermilk_bay_destroy_topo_fields
-!
-!> \brief   Topography field cleanup routine
-!> \author  D. Wirasaet and S. Brus
-!> \date    Sep 2023
-!> \details
-!>  This routine destroys the fields that were created to hold topography
-!>  initial condition information
-!>
-!>  NOTE: adapteed from ocn_init_global_ocaen_destroy_topo_fileds
-!-----------------------------------------------------------------------
-
-    subroutine ocn_init_Buttermilk_bay_destroy_topo_fields()!{{{
-       implicit none
-
-       deallocate(topoIC % array)
-       deallocate(topoLat % array)
-       deallocate(topoLon % array)
-    end subroutine ocn_init_Buttermilk_bay_destroy_topo_fields!}}}
-
 
 !***********************************************************************
 !
@@ -942,23 +714,7 @@ contains
 
       call mpas_log_write( ' in ocn_init_validate_buttermilk_bay '//config_Buttermilk_bay_topography_source )
 
-      if (config_Buttermilk_bay_topography_source == 'latlon_file' .or. &
-           config_Buttermilk_bay_topography_source == 'xy_file'  ) then
 
-         inputFile = MPAS_io_open(trim(config_Buttermilk_bay_topography_file), &
-                        MPAS_IO_READ, MPAS_IO_NETCDF, iocontext_ptr, ierr=iErr)
-         if (iErr /= 0) then
-            call mpas_log_write( 'could not open file '// &
-                   trim(config_Buttermilk_bay_topography_file), MPAS_LOG_CRIT)
-            return
-         end if
-
-         call MPAS_io_inq_dim(inputFile, config_Buttermilk_bay_topography_nlat_dimname, nLatTopo, iErr)
-         call MPAS_io_inq_dim(inputFile, config_Buttermilk_bay_topography_nlon_dimname, nLonTopo, iErr)
-
-         call MPAS_io_close(inputFile, iErr)
-
-      end if
       !----------
 
       call mpas_log_write( ' Done ocn_init_validate_buttermilk_bay ' )

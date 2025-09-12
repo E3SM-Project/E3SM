@@ -32,7 +32,6 @@ module ocn_init_hurricane
    use ocn_init_cell_markers
    use ocn_subgrid
    use ocn_init_subgrid
-   use ocn_init_Buttermilk_bay
 
    use mpas_io
    use mpas_io_streams
@@ -250,20 +249,45 @@ contains
           allocate(uVelocityAverage(nEdgesSolve))
           allocate(vVelocityAverage(nEdgesSolve))
 
-          if (config_Buttermilk_bay_topography_source == 'latlon_file' .or. &
-                   config_Buttermilk_bay_topography_source == 'xy_file' ) then
+          if (config_subgrid_topography_source == 'latlon_file' .or. &
+                   config_subgrid_topography_source == 'xy_file' ) then
              call mpas_log_write( 'Reading subgrid topography data from file.')
-             call ocn_init_setup_Buttermilk_bay_read_topo(domain, iErr)
+             call ocn_init_read_subgrid_data(domain, topoLon, topoLat, topoData, &
+                                             config_subgrid_topography_file, &
+                                             config_subgrid_topography_source, &
+                                             config_subgrid_topography_latlon_degrees, &
+                                             config_subgrid_topography_positive, &
+                                             config_subgrid_topography_lon_varname, &
+                                             config_subgrid_topography_lat_varname, &
+                                             config_subgrid_topography_nlon_dimname, &
+                                             config_subgrid_topography_nlat_dimname, &
+                                             config_subgrid_topography_varname, &
+                                             iErr)
+          endif
+          if (config_subgrid_lulc_source == 'latlon_file' .or. &
+                   config_subgrid_lulc_source == 'xy_file' ) then
+             call mpas_log_write( 'Reading subgrid LULC data from file.')
+             call ocn_init_read_subgrid_data(domain, lulcLon, lulcLat, lulcData, &
+                                             config_subgrid_lulc_file, &
+                                             config_subgrid_lulc_source, &
+                                             config_subgrid_lulc_latlon_degrees, &
+                                             "down", &
+                                             config_subgrid_lulc_lon_varname, &
+                                             config_subgrid_lulc_lat_varname, &
+                                             config_subgrid_lulc_nlon_dimname, &
+                                             config_subgrid_lulc_nlat_dimname, &
+                                             config_subgrid_lulc_varname, &
+                                             iErr)
           endif
 
-
           call ocn_init_subgrid_calculations(domain, &
-                                             ocn_init_Buttermilk_bay_bathymetry, &
-                                             ocn_init_Buttermilk_bay_velocity, &
-                                             ocn_init_Buttermilk_bay_ssh, &
-                                             config_Buttermilk_bay_subgrid_refinement_level, &
-                                             config_Buttermilk_bay_subgrid_edge_bathymetry_max_pixel, &
-                                             config_Buttermilk_bay_subgrid_use_thin_layer, &
+                                             ocn_init_subgrid_interpolate_topo, &
+                                             ocn_init_subgrid_interpolate_drag, &
+                                             ocn_init_hurricane_velocity, &
+                                             ocn_init_hurricane_ssh, &
+                                             config_subgrid_refinement_level, &
+                                             config_subgrid_edge_bathymetry_max_pixel, &
+                                             config_subgrid_use_thin_layer, &
                                              uVelocityAverage, &
                                              vVelocityAverage, &
                                              iErr) !
@@ -277,6 +301,8 @@ contains
          do iEdge = 1, nEdgesSolve
             subgridWetVolumeEdgeTable(nSubgridTableLevels,iEdge) = -1e10
             subgridSshEdgeTableRange(2,iEdge) = -1e10
+            subgridSshDragEdgeTableRange(2,iEdge) = -1e10
+            subgridDragEdgeTable(nSubgridTableLevels,iEdge) = -1e10
          end do
          do iVertex = 1, nVerticesSolve
             subgridWetVolumeVertexTable(nSubgridTableLevels,iVertex) = -1e10
@@ -316,6 +342,8 @@ contains
        call mpas_pool_get_array(meshPool, 'fCell', fCell)
        call mpas_pool_get_array(meshPool, 'fEdge', fEdge)
        call mpas_pool_get_array(meshPool, 'fVertex', fVertex)
+       call mpas_pool_get_dimension(meshPool, 'nEdgesArray', &
+                                    nEdgesArrayTmp)
 
        call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
        call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
@@ -332,6 +360,7 @@ contains
 
        ! Set vertCoordMovementWeights
        vertCoordMovementWeights(:) = 1.0_RKIND
+
 
 
        ! Set ssh
@@ -540,14 +569,10 @@ contains
 
       character (len=StrKIND), pointer :: config_init_configuration
       integer, pointer :: config_vert_levels, config_hurricane_vert_levels
-      integer, pointer :: config_subgrid_table_levels, config_Buttermilk_bay_subgrid_table_levels
+      integer, pointer :: config_subgrid_table_levels 
 
       type (mpas_io_context_type), pointer :: iocontext_ptr
       type (MPAS_IO_Handle_type) :: inputFile
-      character (len=StrKIND), pointer :: config_Buttermilk_bay_topography_source, &
-                                          config_Buttermilk_bay_topography_file, &
-                                          config_Buttermilk_bay_topography_nlat_dimname, &
-                                          config_Buttermilk_bay_topography_nlon_dimname
 
       iErr = 0
 
@@ -567,73 +592,73 @@ contains
          iErr = 1
       end if
 
-      call mpas_pool_get_config(configPool, 'config_subgrid_table_levels', config_subgrid_table_levels)
-      call mpas_pool_get_config(configPool, &
-                                'config_Buttermilk_bay_subgrid_table_levels', &
-                                config_Buttermilk_bay_subgrid_table_levels)
-      if (config_subgrid_table_levels <=0 .and. config_Buttermilk_bay_subgrid_table_levels >0) then
-         config_subgrid_table_levels = config_Buttermilk_bay_subgrid_table_levels
-      else if (config_subgrid_table_levels <=0) then
-         call mpas_log_write( 'Validation failed for Buttermilk bay.'// &
-           'Not given a usable value for subgrid table levels.', MPAS_LOG_CRIT)
-         iErr = 1 
-      end if
+      !call mpas_pool_get_config(configPool, 'config_subgrid_table_levels', config_subgrid_table_levels)
+      !call mpas_pool_get_config(configPool, &
+      !                          'config_Buttermilk_bay_subgrid_table_levels', &
+      !                          config_Buttermilk_bay_subgrid_table_levels)
+      !if (config_subgrid_table_levels <=0 .and. config_Buttermilk_bay_subgrid_table_levels >0) then
+      !   config_subgrid_table_levels = config_Buttermilk_bay_subgrid_table_levels
+      !else if (config_subgrid_table_levels <=0) then
+      !   call mpas_log_write( 'Validation failed for Buttermilk bay.'// &
+      !     'Not given a usable value for subgrid table levels.', MPAS_LOG_CRIT)
+      !   iErr = 1 
+      !end if
 
-      !---------- adapted from ocn_init_validate_global_ocean
-      call mpas_pool_get_config(configPool, 'config_Buttermilk_bay_topography_source', &
-                                config_Buttermilk_bay_topography_source)
-      call mpas_pool_get_config(configPool, 'config_Buttermilk_bay_topography_file', &
-                                config_Buttermilk_bay_topography_file)
-      call mpas_pool_get_config(configPool, 'config_Buttermilk_bay_topography_nlat_dimname', &
-                                config_Buttermilk_bay_topography_nlat_dimname)
-      call mpas_pool_get_config(configPool, 'config_Buttermilk_bay_topography_nlon_dimname', &
-                                config_Buttermilk_bay_topography_nlon_dimname)
+      !!---------- adapted from ocn_init_validate_global_ocean
+      !call mpas_pool_get_config(configPool, 'config_Buttermilk_bay_topography_source', &
+      !                          config_Buttermilk_bay_topography_source)
+      !call mpas_pool_get_config(configPool, 'config_Buttermilk_bay_topography_file', &
+      !                          config_Buttermilk_bay_topography_file)
+      !call mpas_pool_get_config(configPool, 'config_Buttermilk_bay_topography_nlat_dimname', &
+      !                          config_Buttermilk_bay_topography_nlat_dimname)
+      !call mpas_pool_get_config(configPool, 'config_Buttermilk_bay_topography_nlon_dimname', &
+      !                          config_Buttermilk_bay_topography_nlon_dimname)
 
 
-      call mpas_log_write( config_Buttermilk_bay_topography_source  )
-      call mpas_log_write( config_Buttermilk_bay_topography_file )
-      call mpas_log_write( config_Buttermilk_bay_topography_nlat_dimname )
-      call mpas_log_write( config_Buttermilk_bay_topography_nlon_dimname )
+      !call mpas_log_write( config_Buttermilk_bay_topography_source  )
+      !call mpas_log_write( config_Buttermilk_bay_topography_file )
+      !call mpas_log_write( config_Buttermilk_bay_topography_nlat_dimname )
+      !call mpas_log_write( config_Buttermilk_bay_topography_nlon_dimname )
 
-      if (config_Buttermilk_bay_topography_source /= 'latlon_file' .and. &
-          config_Buttermilk_bay_topography_source /= 'xy_file') then
-         call mpas_log_write( 'Unexpected value for &
-                   config_Buttermilk_bay_topography_source: ' &
-             // trim(config_Buttermilk_bay_topography_source), MPAS_LOG_CRIT)
-         iErr = 1 
-         return
-      end if
+      !if (config_Buttermilk_bay_topography_source /= 'latlon_file' .and. &
+      !    config_Buttermilk_bay_topography_source /= 'xy_file') then
+      !   call mpas_log_write( 'Unexpected value for &
+      !             config_Buttermilk_bay_topography_source: ' &
+      !       // trim(config_Buttermilk_bay_topography_source), MPAS_LOG_CRIT)
+      !   iErr = 1 
+      !   return
+      !end if
 
-      if (config_Buttermilk_bay_topography_file == 'none' .and. &
-          (config_Buttermilk_bay_topography_source == 'latlon_file' .or. &
-          config_Buttermilk_bay_topography_source == 'xy_file') ) then
-         call mpas_log_write( 'Validation failed for Buttermilk bay test case. ' &
-           // 'Invalid filename for config_Buttermilk_bay_topography_file ' &
-           // config_Buttermilk_bay_topography_file // '  ' &
-           // config_Buttermilk_bay_topography_source , MPAS_LOG_CRIT)
-         iErr = 1 
-         return
-      end if
+      !if (config_Buttermilk_bay_topography_file == 'none' .and. &
+      !    (config_Buttermilk_bay_topography_source == 'latlon_file' .or. &
+      !    config_Buttermilk_bay_topography_source == 'xy_file') ) then
+      !   call mpas_log_write( 'Validation failed for Buttermilk bay test case. ' &
+      !     // 'Invalid filename for config_Buttermilk_bay_topography_file ' &
+      !     // config_Buttermilk_bay_topography_file // '  ' &
+      !     // config_Buttermilk_bay_topography_source , MPAS_LOG_CRIT)
+      !   iErr = 1 
+      !   return
+      !end if
 
-      call mpas_log_write( ' in ocn_init_validate_buttermilk_bay '//config_Buttermilk_bay_topography_source )
+      !call mpas_log_write( ' in ocn_init_validate_buttermilk_bay '//config_Buttermilk_bay_topography_source )
 
-      if (config_Buttermilk_bay_topography_source == 'latlon_file' .or. &
-           config_Buttermilk_bay_topography_source == 'xy_file'  ) then
+      !if (config_Buttermilk_bay_topography_source == 'latlon_file' .or. &
+      !     config_Buttermilk_bay_topography_source == 'xy_file'  ) then
 
-         inputFile = MPAS_io_open(trim(config_Buttermilk_bay_topography_file), &
-                        MPAS_IO_READ, MPAS_IO_NETCDF, iocontext_ptr, ierr=iErr)
-         if (iErr /= 0) then
-            call mpas_log_write( 'could not open file '// &
-                   trim(config_Buttermilk_bay_topography_file), MPAS_LOG_CRIT)
-            return
-         end if
+      !   inputFile = MPAS_io_open(trim(config_Buttermilk_bay_topography_file), &
+      !                  MPAS_IO_READ, MPAS_IO_NETCDF, iocontext_ptr, ierr=iErr)
+      !   if (iErr /= 0) then
+      !      call mpas_log_write( 'could not open file '// &
+      !             trim(config_Buttermilk_bay_topography_file), MPAS_LOG_CRIT)
+      !      return
+      !   end if
 
-         call MPAS_io_inq_dim(inputFile, config_Buttermilk_bay_topography_nlat_dimname, nLatTopo, iErr)
-         call MPAS_io_inq_dim(inputFile, config_Buttermilk_bay_topography_nlon_dimname, nLonTopo, iErr)
+      !   call MPAS_io_inq_dim(inputFile, config_Buttermilk_bay_topography_nlat_dimname, nLatTopo, iErr)
+      !   call MPAS_io_inq_dim(inputFile, config_Buttermilk_bay_topography_nlon_dimname, nLonTopo, iErr)
 
-         call MPAS_io_close(inputFile, iErr)
+      !   call MPAS_io_close(inputFile, iErr)
 
-      end if
+      !end if
       !----------
 
 
@@ -641,8 +666,67 @@ contains
 
    end subroutine ocn_init_validate_hurricane!}}}
 
+!***********************************************************************
+!
+!  routine ocn_init_hurricane_ssh
+!
+!> \brief   Compute initial ssh field
+!> \author  Steven Brus
+!> \date    September 2025
+!> \details Compute ssh field for initial conditions
+!>
+!
+!-----------------------------------------------------------------------
+
+   subroutine ocn_init_hurricane_ssh(x, y, bottomDepth, ssh)!{{{
+
+      implicit none
+
+      real (kind=RKIND), intent(in) :: x, y
+      real (kind=RKIND), intent(in) :: bottomDepth
+      real (kind=RKIND), intent(out) :: ssh
+      real (kind=RKIND) :: RR
+
+   !--------------------------------------------------------------------
+
+      ssh = 0.0_RKIND ;
+      ssh = - bottomDepth + max( ssh + bottomDepth, 0.0_RKIND ) ;
+
+      return
+   !--------------------------------------------------------------------
+
+   end subroutine ocn_init_hurricane_ssh!}}}
+
 
 !***********************************************************************
+
+!***********************************************************************
+!
+!  routine ocn_init_hurricane_velocity
+!
+!> \brief   Compute initial velocity field
+!> \author  Steven Brus
+!> \date    September 2025
+!> \details Compute velocity field for initial conditions
+!>
+!
+!-----------------------------------------------------------------------
+
+   subroutine ocn_init_hurricane_velocity(x, y, u, v)!{{{
+
+      implicit none
+
+      real (kind=RKIND), intent(in) :: x, y
+      real (kind=RKIND), intent(out) :: u, v
+      real (kind=RKIND) :: RR, HH
+
+   !--------------------------------------------------------------------
+
+      u = 0.0_RKIND ;
+      v = 0.0_RKIND ;
+   !--------------------------------------------------------------------
+
+   end subroutine ocn_init_hurricane_velocity!}}}
 
 end module ocn_init_hurricane
 
