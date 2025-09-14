@@ -4,7 +4,6 @@
 
 <namelist_definition>
 
-
 <entry id="case_name"
 	type="char*256"
 	category="gcam"
@@ -394,6 +393,15 @@ Name of dynamic landuse timeseries file
 	group="gcam_inparm">
 If FALSE, scalars are calculated from npp/hr
 </entry>
+
+<entry id="scalar_source_dir"
+        type="char*256"
+        category="gcam"
+        group="gcam_inparm"
+        valid_values="">
+Directory containing previously saved scalar files (for use when read_scalars = .true.)
+</entry>
+
 
 <entry id="write_scalars"
         type="logical"  

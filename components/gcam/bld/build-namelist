@@ -429,6 +429,9 @@ add_default($nl, 'num_emiss_sectors');
 add_default($nl, 'num_emiss_ctys');
 add_default($nl, 'num_periods');
 
+# Add scalar_source_dir to gcam_inparm group
+add_default($nl, 'scalar_source_dir');
+
 # gcam config and init files, relative to inputdata
 add_default($nl, 'gcam_config');
 add_default($nl, 'base_gcam_co2_file');
