@@ -322,6 +322,44 @@ def buildnml(case, caseroot, compname):
     else:
         logger.warning("Skipping dynamic source symlink because iesm_dyn_source was not determined.")
 
+    # Link previously saved scalar files if read_scalars = .true. in gcam_in
+    def _get_namelist_item(path, key):
+        pat = re.compile(rf"^\s*{key}\s*=\s*['\"]?([^'\"\s]+)['\"]?", re.IGNORECASE)
+        try:
+            with open(path, 'r') as fh:
+                for line in fh:
+                    m = pat.match(line)
+                    if m:
+                        return m.group(1)
+        except Exception:
+            pass
+        return None
+
+    gcam_in_path = os.path.join(rundir, "gcam_in")
+    read_scalars = False
+    scalar_source_dir = None
+    if os.path.isfile(gcam_in_path):
+        # Check for read_scalars = .true.
+        try:
+            with open(gcam_in_path, 'r') as fh:
+                for line in fh:
+                    if re.search(r"read_scalars\s*=\s*\.true\.", line, re.IGNORECASE):
+                        read_scalars = True
+                        break
+        except Exception:
+            pass
+        # Get scalar_source_dir from namelist
+        scalar_source_dir = _get_namelist_item(gcam_in_path, "scalar_source_dir")
+
+    if read_scalars:
+        expect(scalar_source_dir, "read_scalars = .true. but scalar_source_dir is not specified in gcam_in")
+        expect(os.path.isdir(scalar_source_dir), f"scalar_source_dir '{scalar_source_dir}' does not exist")
+        for src in glob.glob(os.path.join(scalar_source_dir, "scalar.*")):
+            fname = os.path.basename(src)
+            dst = os.path.join(rundir, fname)
+            _ensure_symlink(src, dst)
+        logger.info("Linked scalar files from control run: %s", scalar_source_dir)
+
     for fname in ("surfdata_360x720_potveg.nc", "mksurf_landuse_iESM_720x360.nc"):
         src = os.path.join(glm2iacdir, fname)
         expect(os.path.isfile(src), "Missing GLM2IAC file: {}".format(src))
