@@ -340,10 +340,14 @@ def buildnml(case, caseroot, compname):
     if iesm_dyn_source:
         expect(os.path.exists(dyn_src_in_rundir), "Expected dynamic source in RUNDIR: {}".format(dyn_src_in_rundir))
 
-    _ensure_copy(init_crop_past, os.path.join(rundir, "iESM_Dyn_CropPast.nc"))
-    _ensure_copy(mcrop_init,     os.path.join(rundir, "surfdata_360x720_mcrop_dyn.nc"))
-    if iesm_dyn_source:
-        _ensure_copy(dyn_src_in_rundir, os.path.join(rundir, "surfdata_iESM_dyn.nc"))
+    # Only copy dynamic files when starting fresh at 2015
+    if run_type == "startup" and str(run_refdate).startswith("2015"):
+        _ensure_copy(init_crop_past, os.path.join(rundir, "iESM_Dyn_CropPast.nc"))
+        _ensure_copy(mcrop_init,     os.path.join(rundir, "surfdata_360x720_mcrop_dyn.nc"))
+        if iesm_dyn_source:
+            _ensure_copy(dyn_src_in_rundir, os.path.join(rundir, "surfdata_iESM_dyn.nc"))
+    else:
+        logger.info("Skipping dynamic file copy: not a fresh start at 2015 (run_type=%s, run_refdate=%s)", run_type, run_refdate)
 
 ###############################################################################
 def _main_func():
