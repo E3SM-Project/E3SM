@@ -13,6 +13,9 @@ add_subdirectory(field)
 # Grid structures
 add_subdirectory(grid)
 
+# Property checks structures
+add_subdirectory(property_checks)
+
 # Remapper structures
 add_subdirectory(remap)
 
@@ -25,10 +28,6 @@ set(SHARE_SRC
   atm_process/IOPDataManager.cpp
   manager/field_manager.cpp
   manager/grids_manager.cpp
-  property_checks/property_check.cpp
-  property_checks/field_nan_check.cpp
-  property_checks/field_within_interval_check.cpp
-  property_checks/mass_and_energy_conservation_check.cpp
   algorithm/eamxx_data_interpolation.cpp
   algorithm/eamxx_fv_phys_rrtmgp_active_gases_workaround.cpp
   algorithm/eamxx_time_interpolation.cpp
@@ -48,7 +47,8 @@ target_link_libraries(scream_share PUBLIC
   eamxx_utils
   eamxx_field
   eamxx_grid
-  eamxx_remap)
+  eamxx_remap
+  eamxx_property_checks)
 
 # Used in the data interpolation
 target_link_libraries(scream_share PUBLIC stdc++fs)

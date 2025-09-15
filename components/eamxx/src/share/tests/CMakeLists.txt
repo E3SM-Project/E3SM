@@ -5,9 +5,6 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
   # Test column ops
   CreateUnitTest(column_ops "column_ops.cpp")
 
-  # Test property checks
-  CreateUnitTest(property_checks "property_checks.cpp")
-
   # Generate data for data interpolation test
   CreateUnitTest(data_interpolation_setup "data_interpolation_setup.cpp"
     LIBS scream_io
