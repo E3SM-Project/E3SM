@@ -56,6 +56,7 @@ target_compile_definitions(zm PUBLIC EAMXX_HAS_ZM)
 target_include_directories(zm PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_CURRENT_SOURCE_DIR}/fortran_bridge
+  ${CMAKE_CURRENT_BINARY_DIR}/modules
   ${PATH_TO_LEGACY_ZM}
 )
 target_link_libraries(zm physics_share scream_share csm_share)
