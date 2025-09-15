@@ -123,7 +123,7 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
       if (f_pl.isSublist(grid_name)) {
         grid_found = true;
         const auto& pl = f_pl.sublist(grid_name);
-	fields_sublist = pl;
+        fields_sublist = pl;
         if (pl.isParameter("output_data_layout"))
           output_data_layout = pl.get<std::string>("output_data_layout");
         if (pl.isType<vos_t>("field_names")) {

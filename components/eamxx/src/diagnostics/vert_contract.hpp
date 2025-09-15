@@ -33,8 +33,6 @@ class VertContractDiag : public AtmosphereDiagnostic {
   void scale_wts(Field &wts, const Field &wts_sum);
 
 
-  // Name of each field (because the diagnostic impl is generic)
-  std::string m_diag_name;
   // Name of contraction method (avg, sum)
   std::string m_contract_method;
   // Name of weighting method (dp, dz, none)

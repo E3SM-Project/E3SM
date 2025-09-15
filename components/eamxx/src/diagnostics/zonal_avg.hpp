@@ -43,7 +43,6 @@ public:
                                 const Field &lat, const ekat::Comm *comm = nullptr);
 
 protected:
-  std::string m_diag_name;
   int m_num_zonal_bins;
 
   Field m_lat;

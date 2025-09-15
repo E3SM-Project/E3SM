@@ -29,8 +29,6 @@ public:
   void compute_diagnostic_impl();
   void initialize_impl(const RunType /*run_type*/);
 
-  // Name of each field (because the diagnostic impl is generic)
-  std::string m_diag_name;
   // Name of derivative method (differential dp or dz)
   std::string m_derivative_method;
 };

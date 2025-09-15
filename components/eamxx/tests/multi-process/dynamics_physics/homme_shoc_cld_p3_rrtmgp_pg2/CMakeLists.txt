@@ -101,7 +101,7 @@ add_test (NAME diag_regex_vs_sublist_check_np${SCREAM_TEST_MAX_RANKS}
           WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 set_tests_properties (diag_regex_vs_sublist_check_np${SCREAM_TEST_MAX_RANKS} PROPERTIES
                       RESOURCE_GROUPS "devices:1"
-                      FIXTURES_REQUIRED ${FIXTURES_BASE_NAME})
+                      FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_np${SCREAM_TEST_MAX_RANKS}_omp1)
 
 
 

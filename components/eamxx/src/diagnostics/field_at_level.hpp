@@ -30,7 +30,6 @@ public:
 protected:
   void initialize_impl (const RunType /*run_type*/);
 
-  std::string   m_diag_name;
   int           m_field_level;
 }; // class FieldAtLevel
 

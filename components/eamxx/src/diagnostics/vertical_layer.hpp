@@ -47,9 +47,6 @@ protected:
   Field m_tmp_interface;
   Field m_tmp_midpoint;
 
-  // The diagnostic name.
-  std::string m_diag_name;
-
   // Store if the diagnostic output field exists on interface values
   bool m_is_interface_layout;
 

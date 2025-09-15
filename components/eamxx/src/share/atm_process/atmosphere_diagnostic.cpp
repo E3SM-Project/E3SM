@@ -7,7 +7,9 @@ AtmosphereDiagnostic::
 AtmosphereDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params)
   : AtmosphereProcess(comm,params)
 {
-  // Nothing to do here
+  m_diag_name = params.isParameter("diagnostic_field_name") 
+                        ? params.get<std::string>("diagnostic_field_name")
+                        : params.name();
 }
 
 // Function to retrieve the diagnostic output which is stored in m_diagnostic_output

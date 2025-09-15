@@ -75,6 +75,10 @@ protected:
 
   // Diagnostics are meant to return a field
   Field m_diagnostic_output;
+
+  // Define a potentially unique name to this instance of the diagnostic class.
+  // Particularly useful for complicated diagnostics.
+  std::string m_diag_name;
 };
 
 // A short name for the factory for atmosphere diagnostics

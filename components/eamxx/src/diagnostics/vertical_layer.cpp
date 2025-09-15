@@ -14,7 +14,6 @@ VerticalLayerDiagnostic::
 VerticalLayerDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params)
   : AtmosphereDiagnostic(comm,params)
 {
-  m_diag_name = params.get<std::string>("diag_name");
   std::vector<std::string> supported = {"z","geopotential","height","dz"};
 
   EKAT_REQUIRE_MSG(ekat::contains(supported,m_diag_name),
