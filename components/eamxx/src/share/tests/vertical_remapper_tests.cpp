@@ -3,7 +3,7 @@
 #include "share/remap/vertical_remapper.hpp"
 #include "share/remap/coarsening_remapper.hpp"
 #include "share/grid/point_grid.hpp"
-#include "share/io/eamxx_scorpio_interface.hpp"
+#include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 #include "share/util/eamxx_timing.hpp"
 #include "share/field/field_utils.hpp"
 

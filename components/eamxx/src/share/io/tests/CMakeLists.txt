@@ -5,12 +5,6 @@ include(ScreamUtils)
 include (BuildCprnc)
 BuildCprnc()
 
-## Test scorpio interfaces
-CreateUnitTest(scorpio_interface_tests "scorpio_interface_tests.cpp"
-  LIBS eamxx_scorpio_interface LABELS "io"
-  MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
-)
-
 ## Test io utils
 CreateUnitTest(io_utils "io_utils.cpp"
   LIBS scream_io LABELS io
