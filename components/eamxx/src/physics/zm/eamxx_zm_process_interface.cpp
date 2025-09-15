@@ -178,7 +178,8 @@ void ZMDeepConvection::run_impl (const double dt)
   //----------------------------------------------------------------------------
   // calculate altitude on interfaces (z_int) and mid-points (z_mid)
 
-  Kokkos::parallel_for(scan_policy, KOKKOS_LAMBDA (const ZMF::KT::MemberType& team) {
+  // const auto zm_input_loc = zm_input;
+  Kokkos::parallel_for(scan_policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
     const int i = team.league_rank();
     const auto z_mid_i = ekat::subview(zm_input.z_mid, i);
     const auto z_del_i = ekat::subview(zm_input.z_del, i);
@@ -199,7 +200,7 @@ void ZMDeepConvection::run_impl (const double dt)
   //----------------------------------------------------------------------------
   // calculate temperature perturbation from SHOC thetal varance for ZM parcel/CAPE
 
-  Kokkos::parallel_for("zm_calculate_tpert",m_ncol, KOKKOS_LAMBDA (int i) {
+  Kokkos::parallel_for("zm_calculate_tpert",m_ncol, KOKKOS_LAMBDA (const int i) {
     if (is_first_step) {
       zm_input.tpert(i) = 0.0;
     } else {
@@ -235,21 +236,23 @@ void ZMDeepConvection::run_impl (const double dt)
   //----------------------------------------------------------------------------
   // update prognostic fields
 
+  const auto zm_output_loc = zm_output; // create temp to avoid "Implicit capture" warning
+
   if (zm_opts.apply_tendencies) {
     // accumulate surface precipitation fluxes
     Kokkos::parallel_for("zm_update_precip",KT::RangePolicy(0, m_ncol), KOKKOS_LAMBDA (const int i) {
-      auto prec_liq = zm_output.prec(i) - zm_output.snow(i);
+      auto prec_liq = zm_output_loc.prec(i) - zm_output_loc.snow(i);
       precip_liq_surf_mass(i) += std::max(prec_liq,0.0) * PC::RHO_H2O * dt;
-      precip_ice_surf_mass(i) += zm_output.snow(i)      * PC::RHO_H2O * dt;
+      precip_ice_surf_mass(i) += zm_output_loc.snow(i)  * PC::RHO_H2O * dt;
     });
     // update 3D prognostic variables
     Kokkos::parallel_for("zm_update_prognostics",team_policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
       const int i = team.league_rank();
-      Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlevm_packs), [&](const int& k) {
-        T_mid(i,k) += zm_output.tend_s (i,k)/cpair * dt;
-        qv   (i,k) += zm_output.tend_qv(i,k)       * dt;
-        uwind(i,k) += zm_output.tend_u (i,k)       * dt;
-        vwind(i,k) += zm_output.tend_v (i,k)       * dt;
+      Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlevm_packs), [&](const int k) {
+        T_mid(i,k) += zm_output_loc.tend_s (i,k)/cpair * dt;
+        qv   (i,k) += zm_output_loc.tend_qv(i,k)       * dt;
+        uwind(i,k) += zm_output_loc.tend_u (i,k)       * dt;
+        vwind(i,k) += zm_output_loc.tend_v (i,k)       * dt;
       });
     });
   }
@@ -265,11 +268,11 @@ void ZMDeepConvection::run_impl (const double dt)
   const auto& zm_snow       = get_field_out("zm_snow")        .get_view<Real*>();
   const auto& zm_cape       = get_field_out("zm_cape")        .get_view<Real*>();
   const auto& zm_activity   = get_field_out("zm_activity")    .get_view<Real*>();
-  Kokkos::parallel_for("zm_diag_outputs_2D",m_ncol, KOKKOS_LAMBDA (int i) {
-    zm_prec    (i) = zm_output.prec    (i);
-    zm_snow    (i) = zm_output.snow    (i);
-    zm_cape    (i) = zm_output.cape    (i);
-    zm_activity(i) = zm_output.activity(i);
+  Kokkos::parallel_for("zm_diag_outputs_2D",m_ncol, KOKKOS_LAMBDA (const int i) {
+    zm_prec    (i) = zm_output_loc.prec    (i);
+    zm_snow    (i) = zm_output_loc.snow    (i);
+    zm_cape    (i) = zm_output_loc.cape    (i);
+    zm_activity(i) = zm_output_loc.activity(i);
   });
 
   // 3D output (vertically resolved)
@@ -279,11 +282,11 @@ void ZMDeepConvection::run_impl (const double dt)
   const auto& zm_v_tend     = get_field_out("zm_v_tend")      .get_view<Spack**, Host>();
   Kokkos::parallel_for("zm_diag_outputs",team_policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
     const auto i = team.league_rank();
-    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlevm_packs), [&](const int& k) {
-      zm_T_mid_tend(i,k) = zm_output.tend_s (i,k)/cpair;
-      zm_qv_tend   (i,k) = zm_output.tend_qv(i,k);
-      zm_u_tend    (i,k) = zm_output.tend_u (i,k);
-      zm_v_tend    (i,k) = zm_output.tend_v (i,k);
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlevm_packs), [&](const int k) {
+      zm_T_mid_tend(i,k) = zm_output_loc.tend_s (i,k)/cpair;
+      zm_qv_tend   (i,k) = zm_output_loc.tend_qv(i,k);
+      zm_u_tend    (i,k) = zm_output_loc.tend_u (i,k);
+      zm_v_tend    (i,k) = zm_output_loc.tend_v (i,k);
     });
   });
 

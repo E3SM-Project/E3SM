@@ -38,10 +38,17 @@ class ZMDeepConvection : public AtmosphereProcess
     // Set the grid
     void set_grids(const std::shared_ptr<const GridsManager> grids_manager) override;
 
+#ifndef KOKKOS_ENABLE_CUDA
+  // Cuda requires methods enclosing __device__ lambda's to be public
   protected:
-    void initialize_impl (const RunType run_type) override;
-    void run_impl        (const double dt) override;
-    void finalize_impl   () override;
+#endif
+
+    void initialize_impl (const RunType run_type);
+    void run_impl        (const double dt);
+
+  protected:
+
+    void finalize_impl   ();
 
     // Computes total number of bytes needed for local variables
     size_t requested_buffer_size_in_bytes() const;
