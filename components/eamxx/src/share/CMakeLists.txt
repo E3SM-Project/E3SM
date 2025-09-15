@@ -7,6 +7,9 @@ add_subdirectory(util)
 # Field structures
 add_subdirectory(field)
 
+# Grid structures
+add_subdirectory(grid)
+
 set(SHARE_SRC
   atm_process/atmosphere_process.cpp
   atm_process/atmosphere_process_hash.cpp
@@ -14,10 +17,6 @@ set(SHARE_SRC
   atm_process/atmosphere_process_dag.cpp
   atm_process/atmosphere_diagnostic.cpp
   atm_process/IOPDataManager.cpp
-  grid/abstract_grid.cpp
-  grid/grid_import_export.cpp
-  grid/se_grid.cpp
-  grid/point_grid.cpp
   remap/abstract_remapper.cpp
   remap/coarsening_remapper.cpp
   remap/horiz_interp_remapper_base.cpp
@@ -55,7 +54,8 @@ target_include_directories(scream_share PUBLIC
 target_link_libraries(scream_share PUBLIC
   eamxx_core
   eamxx_utils
-  eamxx_field)
+  eamxx_field
+  eamxx_grid)
 
 # Used in the data interpolation
 target_link_libraries(scream_share PUBLIC stdc++fs)
