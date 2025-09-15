@@ -4290,9 +4290,9 @@
     <OS>Linux</OS>
     <COMPILERS>gnu,intel,nvidia,amdclang</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
-    <CIME_OUTPUT_ROOT>/lustre/scratch5/$ENV{USER}/E3SM/scratch/chicoma-cpu</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/lustre/scratch5/$ENV{USER}/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/lustre/scratch5/$ENV{USER}/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <CIME_OUTPUT_ROOT>/lustre/scratch5/$ENV{USER}/E3SM</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/usr/projects/w25_acoustics/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/usr/projects/w25_acoustics/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/lustre/scratch5/$ENV{USER}/E3SM/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>/lustre/scratch5/$ENV{USER}/E3SM/input_data/ccsm_baselines/$COMPILER</BASELINE_ROOT>
     <CCSM_CPRNC>/usr/projects/e3sm/software/chicoma-cpu/cprnc</CCSM_CPRNC>
