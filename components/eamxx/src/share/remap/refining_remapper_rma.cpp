@@ -1,9 +1,6 @@
 #include "refining_remapper_rma.hpp"
 
 #include "share/grid/point_grid.hpp"
-#include "share/io/scorpio_input.hpp"
-
-#include <ekat_pack_utils.hpp>
 
 #include <numeric>
 
