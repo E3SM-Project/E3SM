@@ -1,6 +1,6 @@
 #include "catch2/catch.hpp"
 
-#include "share/grid/mesh_free_grids_manager.hpp"
+#include "share/manager/mesh_free_grids_manager.hpp"
 #include "diagnostics/sea_level_pressure.hpp"
 #include "diagnostics/register_diagnostics.hpp"
 

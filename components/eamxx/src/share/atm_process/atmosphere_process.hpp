@@ -11,7 +11,7 @@
 #include "share/field/field_request.hpp"
 #include "share/field/field.hpp"
 #include "share/field/field_group.hpp"
-#include "share/grid/grids_manager.hpp"
+#include "share/manager/grids_manager.hpp"
 
 #include <ekat_comm.hpp>
 #include <ekat_parameter_list.hpp>

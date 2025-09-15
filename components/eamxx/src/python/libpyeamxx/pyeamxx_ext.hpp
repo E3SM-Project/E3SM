@@ -5,7 +5,7 @@
 #include "diagnostics/register_diagnostics.hpp"
 #include "dynamics/register_dynamics.hpp"
 
-#include "share/grid/grids_manager.hpp"
+#include "share/manager/grids_manager.hpp"
 
 #include <ekat_comm.hpp>
 
