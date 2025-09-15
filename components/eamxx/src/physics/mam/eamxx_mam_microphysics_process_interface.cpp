@@ -6,7 +6,7 @@
 #include "readfiles/find_season_index_utils.hpp"
 #include "readfiles/photo_table_utils.cpp"
 #include "physics/mam/readfiles/vertical_remapper_mam4.hpp"
-#include "share/util/eamxx_data_interpolation.hpp"
+#include "share/algorithm/eamxx_data_interpolation.hpp"
 
 #include <ekat_team_policy_utils.hpp>
 
