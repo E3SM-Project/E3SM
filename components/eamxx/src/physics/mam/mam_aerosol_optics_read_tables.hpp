@@ -4,7 +4,7 @@
 #include "mam_coupling.hpp"
 #include "share/manager/field_manager.hpp"
 #include "share/grid/abstract_grid.hpp"
-#include "share/grid/grids_manager.hpp"
+#include "share/manager/grids_manager.hpp"
 #include "share/io/eamxx_scorpio_interface.hpp"
 #include "share/io/scorpio_input.hpp"
 

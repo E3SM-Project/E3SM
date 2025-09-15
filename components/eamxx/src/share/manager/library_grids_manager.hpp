@@ -1,7 +1,7 @@
 #ifndef EAMXX_LIBRARY_GRIDS_MANAGER_HPP
 #define EAMXX_LIBRARY_GRIDS_MANAGER_HPP
 
-#include "share/grid/grids_manager.hpp"
+#include "share/manager/grids_manager.hpp"
 
 namespace scream {
 

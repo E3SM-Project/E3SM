@@ -1,8 +1,8 @@
 #include <catch2/catch.hpp>
 
+#include "share/manager/mesh_free_grids_manager.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/grid/se_grid.hpp"
-#include "share/grid/mesh_free_grids_manager.hpp"
 #include "share/grid/grid_utils.hpp"
 #include "share/core/eamxx_setup_random_test.hpp"
 #include "share/core/eamxx_types.hpp"
