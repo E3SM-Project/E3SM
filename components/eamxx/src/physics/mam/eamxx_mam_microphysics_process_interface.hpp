@@ -3,7 +3,6 @@
 
 #include <physics/mam/eamxx_mam_generic_process_interface.hpp>
 #include <physics/mam/mam_coupling.hpp>
-#include <share/util/eamxx_common_physics_functions.hpp>
 
 #include "readfiles/tracer_reader_utils.hpp"
 // For calling MAM4 processes
@@ -15,7 +14,6 @@ namespace scream {
 // The process responsible for handling MAM4 aerosol microphysics. The AD
 // stores exactly ONE instance of this class in its list of subcomponents.
 class MAMMicrophysics final : public MAMGenericInterface {
-  using PF = scream::PhysicsFunctions<DefaultDevice>;
   using KT = ekat::KokkosTypes<DefaultDevice>;
 
   // views for single- and multi-column data

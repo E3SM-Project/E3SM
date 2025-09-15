@@ -1,4 +1,5 @@
 #include "atmosphere_surface_coupling_exporter.hpp"
+#include "share/physics/eamxx_common_physics_functions.hpp"
 
 #include <ekat_team_policy_utils.hpp>
 #include <ekat_assert.hpp>
@@ -365,6 +366,7 @@ void SurfaceCouplingExporter::set_from_file_exports()
 // index query in the below.
 void SurfaceCouplingExporter::compute_eamxx_exports(const double dt, const bool called_during_initialization)
 {
+  using PF  = scream::PhysicsFunctions<DefaultDevice>;
   using PC  = physics::Constants<Real>;
   using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
 

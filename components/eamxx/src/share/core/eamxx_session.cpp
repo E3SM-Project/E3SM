@@ -1,5 +1,5 @@
-#include "eamxx_session.hpp"
-#include "eamxx_config.hpp"
+#include "share/core/eamxx_session.hpp"
+#include "share/core/eamxx_config.hpp"
 
 #include <ekat_fpe.hpp>
 #include <ekat_assert.hpp>

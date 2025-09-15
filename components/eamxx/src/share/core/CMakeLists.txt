@@ -14,7 +14,6 @@ add_library(eamxx_core
 )
 
 target_include_directories(eamxx_core PUBLIC
-  ${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_CURRENT_BINARY_DIR} # for config/version headers
   ${SCREAM_SRC_DIR}           # for all eamxx headers
 )
