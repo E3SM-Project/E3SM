@@ -2,12 +2,6 @@
 if (NOT SCREAM_ONLY_GENERATE_BASELINES)
   include(ScreamUtils)
 
-  # Test utils
-  CreateUnitTest(utils "utils_tests.cpp")
-
-  # Test combine operations
-  CreateUnitTest(combine_ops "combine_ops.cpp")
-
   # Test column ops
   CreateUnitTest(column_ops "column_ops.cpp")
 

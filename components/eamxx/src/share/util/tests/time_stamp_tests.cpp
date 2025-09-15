@@ -1,58 +1,8 @@
 #include <catch2/catch.hpp>
 
-#include "share/util/eamxx_array_utils.hpp"
 #include "share/util/eamxx_universal_constants.hpp"
-#include "share/util/eamxx_utils.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
-#include "share/core/eamxx_setup_random_test.hpp"
 #include "share/core/eamxx_config.hpp"
-
-TEST_CASE("fill_value") {
-  using namespace scream::constants;
-
-  // Ensure we have the SAME numerical value for both float and double
-  auto fv_d = fill_value<double>;
-  auto fv_f = fill_value<float>;
-
-  REQUIRE (fv_d==fv_f);
-}
-
-TEST_CASE("contiguous_superset") {
-  using namespace scream;
-
-  std::string A = "A";
-  std::string B = "B";
-  std::string C = "C";
-  std::string D = "D";
-  std::string E = "E";
-  std::string F = "F";
-  std::string G = "G";
-
-  using LOLS_type = std::list<std::list<std::string>>;
-
-  // These three lists do not allow a superset from which they can all be
-  // contiguously subviewed.
-  LOLS_type lol1 = { {A,B}, {B,C}, {A,C} };
-  REQUIRE(contiguous_superset(lol1).size()==0);
-
-  // Input inner lists are not sorted
-  REQUIRE_THROWS(contiguous_superset(LOLS_type{ {B,A} }));
-
-  // The following should both allow the superset (A,B,C,D,E,F,G)
-  // Note: lol3 is simply a shuffled version of lol2
-  LOLS_type lol2 = { {A,B,C}, {B,C,D,E}, {C,D}, {C,D,E,F}, {D,E,F,G} };
-  LOLS_type lol3 = { {D,E,F,G}, {C,D,E,F}, {A,B,C}, {C,D}, {B,C,D,E} };
-
-  // Flipping a list is still a valid solution, so consider both tgt and its reverse.
-  std::list<std::string> tgt = {A,B,C,D,E,F,G};
-  std::list<std::string> tgt_rev = tgt;
-  tgt_rev.reverse();
-
-  auto superset2 = contiguous_superset(lol2);
-  auto superset3 = contiguous_superset(lol3);
-  REQUIRE ( (superset2==tgt || superset2==tgt_rev) );
-  REQUIRE ( (superset3==tgt || superset3==tgt_rev) );
-}
 
 TEST_CASE ("time_stamp") {
   using namespace scream;
@@ -203,66 +153,6 @@ TEST_CASE ("time_stamp") {
       TS time = base;
       time += diff;
       REQUIRE (time==curr);
-    }
-  }
-}
-
-TEST_CASE ("array_utils") {
-  using namespace scream;
-
-  auto engine = setup_random_test ();
-  using IPDF = std::uniform_int_distribution<int>;
-  IPDF pdf(1,10);
-
-  auto total_size = [](const std::vector<int>& v) -> int {
-    int s = 1;
-    for (int i : v) {
-      s *= i;
-    }
-    return s;
-  };
-
-  // Adds one to fastest striding, doing carrying (if possible) based on max dims d
-  // Note: cannot use recursion with a pure lambda
-  std::function<bool(int*,int,int*)> add_one = [&](int* v, int n, int* d) -> bool{
-    // Increase fastest striding index
-    ++v[n];
-
-    // If we reached d[n], we need to carry
-    if (v[n]>=d[n]) {
-      if (n>0) {
-        // Try to carry
-        v[n] = 0;
-
-        bool b = add_one(v,n-1,d);
-
-        if (not b) {
-          // There was no room to carry. Reset v[n]=d[n] and return false
-          v[n] = d[n];
-          return false;
-        }
-      } else {
-        v[0] = d[0];
-        return false;
-      }
-    }
-
-    return true;
-  };
-
-  for (int rank : {1,2,3,4,5,6}) {
-    std::vector<int> dims(rank);
-    for (int d=0; d<rank; ++d) {
-      dims[d] = pdf(engine);
-    }
-
-    std::vector<int> ind(rank,0);
-    auto s = total_size(dims);
-    for (int idx_1d=0; idx_1d<s; ++idx_1d) {
-      auto idx_nd = unflatten_idx(dims,idx_1d);    
-
-      REQUIRE (idx_nd==ind);
-      add_one(ind.data(),rank-1,dims.data());
     }
   }
 }

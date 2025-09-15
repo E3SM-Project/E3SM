@@ -4,8 +4,7 @@
 #include "surface_coupling_utils.hpp"
 
 #include "share/atm_process/atmosphere_process.hpp"
-#include "share/util/eamxx_common_physics_functions.hpp"
-#include "share/util/eamxx_time_interpolation.hpp"
+#include "share/algorithm/eamxx_time_interpolation.hpp"
 #include "share/atm_process/ATMBufferManager.hpp"
 #include "share/atm_process/SCDataManager.hpp"
 
@@ -35,7 +34,6 @@ class SurfaceCouplingExporter : public AtmosphereProcess
 {
 public:
 
-  using PF      = scream::PhysicsFunctions<DefaultDevice>;
   using KT      = ekat::KokkosTypes<DefaultDevice>;
   using Spack   = ekat::Pack<Real,SCREAM_SMALL_PACK_SIZE>;
 

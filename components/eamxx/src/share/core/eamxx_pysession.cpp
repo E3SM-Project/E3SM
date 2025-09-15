@@ -1,4 +1,4 @@
-#include <eamxx_pysession.hpp>
+#include "share/core/eamxx_pysession.hpp"
 
 #include <ekat_assert.hpp>
 #include <ekat_fpe.hpp>

@@ -12,7 +12,7 @@
 
 // scream share headers
 #include "share/grid/mesh_free_grids_manager.hpp"
-#include "share/util/eamxx_common_physics_functions.hpp"
+#include "share/physics/eamxx_common_physics_functions.hpp"
 
 // EKAT headers
 #include <ekat_yaml.hpp>

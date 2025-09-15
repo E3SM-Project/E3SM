@@ -1,5 +1,21 @@
 include (ScreamUtils)
 
+set (EAMXX_AD_TEST_CPP ${CMAKE_CURRENT_LIST_DIR}/eamxx_ad_test.cpp)
+
+# Shortcut utils to create a unit test that uses the atm driver
+# These functions call the equivalent ones in ScreamUtils with some hardcoded libs/sources
+function(CreateADUnitTestExec exec_name)
+  CreateUnitTestExec("${exec_name}" "${EAMXX_AD_TEST_CPP}"
+    LIBS scream_control scream_io diagnostics ${ARGN})
+endfunction(CreateADUnitTestExec)
+
+function(CreateADUnitTest test_name)
+  CreateUnitTest("${test_name}" "${EAMXX_AD_TEST_CPP}"
+    LABELS driver LIBS scream_control scream_io diagnostics ${ARGN})
+endfunction(CreateADUnitTest)
+
+###############################################################################
+
 # This function compares an output file created by an AD-driven test with its
 # corresponding one in the baselines dir. The inputs (all REQUIRED) are
 #

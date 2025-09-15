@@ -8,7 +8,7 @@
 #include "share/io/eamxx_scorpio_interface.hpp"
 #include "share/io/scorpio_input.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
-#include "share/util/eamxx_time_interpolation.hpp"
+#include "share/algorithm/eamxx_time_interpolation.hpp"
 
 #include <ekat_team_policy_utils.hpp>
 #include <ekat_lin_interp.hpp>
@@ -133,7 +133,7 @@ struct TracerTimeDatabase {
 
   void build(const std::vector<int>& raw_dates) {
     slices.clear();
-    for (int i = 0; i < raw_dates.size(); ++i) {
+    for (int i = 0; i < static_cast<int>(raw_dates.size()); ++i) {
       slices.push_back({ convert_date(raw_dates[i]), i });
     }
     std::sort(slices.begin(), slices.end(), [](const auto& a, const auto& b) {
@@ -153,7 +153,7 @@ struct TracerTimeDatabase {
   int find_interval(const util::TimeStamp& ts) const {
     EKAT_REQUIRE_MSG(size() >= 2, "Time database has fewer than 2 time slices.");
 
-    for (int i = 0; i < slices.size(); ++i) {
+    for (int i = 0; i < static_cast<int>(slices.size()); ++i) {
       int j = get_next_idx(i);
       util::TimeInterval interval(slices[i].time, slices[j].time, timeline);
       if (interval.contains(ts)) {
