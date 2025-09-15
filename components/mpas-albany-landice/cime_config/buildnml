@@ -30,6 +30,8 @@ def buildnml(case, caseroot, compname):
     srcroot           = case.get_value("SRCROOT")
     din_loc_root      = case.get_value("DIN_LOC_ROOT")
     glc_grid          = case.get_value("GLC_GRID")
+    glc_pio_typename  = case.get_value("GLC_PIO_TYPENAME")
+    glc_pio_netcdf_format = case.get_value("GLC_PIO_NETCDF_FORMAT")
     #ninst_glc        = case.get_value("NINST_GLC")
     ninst_glc = 1 # Change if you want multiple instances... though this isn't coded yet.
     ninst_glc_real    = case.get_value("NINST_GLC")
@@ -46,6 +48,12 @@ def buildnml(case, caseroot, compname):
     glc_two_way_coupling = case.get_value("GLC_TWO_WAY_COUPLING")
     stream_name       = 'streams.landice'
     albany_input_name = 'albany_input.yaml'
+
+     # Use 'pnetcdf,cdf5' when GLC_PIO_NETCDF_FORMAT requests 64-bit data, else use the standard type
+    if glc_pio_typename.lower() == 'pnetcdf' and glc_pio_netcdf_format.lower() == '64bit_data':
+        io_type_str = 'pnetcdf,cdf5'
+    else:
+        io_type_str = glc_pio_typename
 
     maliconf_dir = os.path.join(casebuild, "maliconf")
 
@@ -240,11 +248,13 @@ def buildnml(case, caseroot, compname):
         lines.append('')
         lines.append('    <immutable_stream name="basicmesh"')
         lines.append('                      type="none"')
+        lines.append('                      io_type="{}"'.format(io_type_str))
         lines.append('                      filename_template="not-to-be-used.nc"')
         lines.append('    />')
         lines.append('')
         lines.append('    <immutable_stream name="input"')
         lines.append('                      type="input"')
+        lines.append('                      io_type="{}"'.format(io_type_str))
         lines.append('                      filename_template="{}"'.format(input_file))
         lines.append('                      input_interval="initial_only"/>')
         lines.append('')
@@ -260,6 +270,7 @@ def buildnml(case, caseroot, compname):
         lines.append('    -->')
         lines.append('    <immutable_stream name="restart"')
         lines.append('                      type="input;output"')
+        lines.append('                      io_type="{}"'.format(io_type_str))
         lines.append('                      filename_template="{}.mali.rst.$Y-$M-$D_$S.nc"'.format(casename))
         lines.append('                      filename_interval="output_interval"')
         lines.append('                      clobber_mode="truncate"')
@@ -291,6 +302,7 @@ def buildnml(case, caseroot, compname):
         lines.append('')
         lines.append('    <stream name="output"')
         lines.append('            type="output"')
+        lines.append('            io_type="{}"'.format(io_type_str))
         lines.append('            filename_template="{}.mali.hist.$Y-$M-$D_$S.nc"'.format(casename))
         lines.append('            filename_interval="0001-00-00_00:00:00"')
         lines.append('            clobber_mode="truncate"')
@@ -325,6 +337,7 @@ def buildnml(case, caseroot, compname):
         lines.append('')
         lines.append('<stream name="globalStatsOutput"')
         lines.append('        type="output"')
+        lines.append('        io_type="{}"'.format(io_type_str))
         lines.append('        filename_template="{}.mali.hist.am.globalStats.$Y-$M-$D_$S.nc"'.format(casename))
         lines.append('        filename_interval="5000-00-00_00:00:00"')
         lines.append('        reference_time ="0001-01-01_00:00:00"')
@@ -370,6 +383,7 @@ def buildnml(case, caseroot, compname):
             # in MALI data mode, read an input stream with ice thickness monthly
             lines.append('    <stream name="data-mode-input"')
             lines.append('            type="input"')
+            lines.append('            io_type="{}"'.format(io_type_str))
             lines.append(f'            filename_template="{datamode_file}"')
             lines.append('            reference_time="2000-01-01_00:00:00"')
             lines.append('            input_interval="0000-01-00_00:00:00">')
