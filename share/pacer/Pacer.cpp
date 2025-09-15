@@ -54,11 +54,11 @@ static MPI_Comm InternalComm;
 /// MPI rank of process
 static int MyRank;
 
-// Vector-based stack of open timers
+/// Vector-based stack of open timers
 static std::vector<std::string> OpenTimers;
 
-// GPTL doesn't seem to provide a function to obtain the current prefix
-// so we track it ourselves
+/// GPTL doesn't seem to provide a function to obtain the current prefix
+/// so we track it ourselves
 static std::string CurrentPrefix = "";
 
 /// Pacer Mode: standalone or within CIME
@@ -70,12 +70,12 @@ static int TimingLevel = 0;
 /// Flag to determine if timing barriers are enabled
 static bool TimingBarriersEnabled = false;
 
-// Flag to determine if automatic Kokkos fences are enabled
+/// Flag to determine if automatic Kokkos fences are enabled
 static bool AutoFenceEnabled = false;
 
 /// Check if Pacer is initialized
 /// Returns true if initialized
-inline bool isInitialized(void){
+inline bool isInitialized(){
     if (!IsInitialized) {
         std::cerr << "[ERROR] Pacer: Not initialized." << std::endl;
         return false;
@@ -145,12 +145,12 @@ bool start(const std::string &TimerName, int Level)
 {
     // Return immediately if this timer level is above the global timing level
     if (Level > TimingLevel) {
-       return true;
+        return true;
     }
 
 #ifdef PACER_HAVE_KOKKOS
     if (AutoFenceEnabled) {
-       Kokkos::fence();
+        Kokkos::fence();
     }
 
     // If CUDA is enabled start an NVTX range
@@ -176,7 +176,7 @@ bool stop(const std::string &TimerName, int Level)
 {
     // Return immediately if this timer level is above the global timing level
     if (Level > TimingLevel) {
-       return true;
+        return true;
     }
 
     PACER_CHECK_INIT();
@@ -193,7 +193,7 @@ bool stop(const std::string &TimerName, int Level)
 #endif
 
         if (AutoFenceEnabled) {
-           Kokkos::fence();
+            Kokkos::fence();
         }
 #endif
 
@@ -310,9 +310,9 @@ bool timingBarrier(const std::string &TimerName, int Level, MPI_Comm Comm)
     bool Ok = true;
     if (TimingBarriersEnabled && Level <= TimingLevel) {
 
-      Ok = Ok && start(TimerName, Level);
-      MPI_Barrier(Comm);
-      Ok = Ok && stop(TimerName, Level);
+        Ok = Ok && start(TimerName, Level);
+        MPI_Barrier(Comm);
+        Ok = Ok && stop(TimerName, Level);
     }
     return Ok;
 }

@@ -25,7 +25,7 @@ namespace Pacer {
 
     /// Check if Pacer is initialized
     /// Returns true if initialized
-    bool isInitialized(void);
+    bool isInitialized();
 
     /// IntegratedMode: Pacer standalone (default:false) or within CIME (true)
     // bool initialize(MPI_Comm InComm, bool IntegratedMode = false);
