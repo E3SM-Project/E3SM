@@ -1,6 +1,6 @@
 %YAML 1.1
 ---
-filename_prefix: homme_shoc_cld_p3_rrtmgp_pg2_output
+filename_prefix: homme_shoc_cld_p3_rrtmgp_pg2_output_test_diags_sublist
 averaging_type: instant
 fields:
   physics_pg2:
@@ -93,8 +93,8 @@ fields:
       - ZonalVapFlux
       - MeridionalVapFlux
       # Diagnostics At Levels, note we use alias for easy comparison with sublist version
-      - T_500mb:=T_mid_at_500mb
-      - T_top:=T_mid_at_model_top
+      - T_500mb
+      - T_top
       - T_mid_at_lev_2
       - T_mid_at_model_bot
       - T_mid_at_500hPa
@@ -102,13 +102,46 @@ fields:
       - PotentialTemperature_at_model_top
       - PotentialTemperature_at_500mb
       # Conditional Diagnostics, note we use alias for easy comparison with sublist version
-      - theta_p400:=PotentialTemperature_where_p_mid_gt_400
-      - theta_p400_800:=PotentialTemperature_where_p_mid_lt_800_where_p_mid_gt_400
-      - theta_p400_800_weighted:=PotentialTemperature_where_p_mid_lt_800_where_p_mid_gt_400_vert_avg_dp_weighted
-      - qv_hot:=qv_where_T_mid_gt_270.5
+      - theta_p400
+      - theta_p400_800
+      - theta_p400_800_weighted
+      - qv_hot
       - T_mid_where_T_mid_gt_250
       - T_mid_where_T_mid_gt_300_horiz_avg 
       - PotentialTemperature_where_p_mid_lt_800_where_p_mid_gt_400_vert_avg_dz_weighted
+    # Diagnostics aliased above, set by sublist instead of regex
+    T_500mb:
+      field_name: T_mid
+      pressure_value: "500"
+      pressure_units: mb
+      diag_name: FieldAtPressureLevel
+    T_top:
+      field_name: T_mid
+      vertical_location: model_top
+      diag_name: FieldAtLevel
+    qv_hot:
+      input_field: qv
+      condition_field: T_mid
+      condition_operator: gt
+      condition_value: "270.5"
+      diag_name: ConditionalSampling
+    theta_p400: 
+      input_field: PotentialTemperature
+      condition_field: p_mid
+      condition_operator: gt
+      condition_value: "400"
+      diag_name: ConditionalSampling
+    theta_p400_800:
+      input_field: PotentialTemperature_where_p_mid_lt_800 
+      condition_field: p_mid
+      condition_operator: gt
+      condition_value: "400"
+      diag_name: ConditionalSampling
+    theta_p400_800_weighted: 
+      field_name: PotentialTemperature_where_p_mid_lt_800_where_p_mid_gt_400
+      contract_method: avg
+      weighting_method: dp
+      diag_name: VertContractDiag
   # GLL output for homme states. These
   # represent all current possible homme
   # states available.
