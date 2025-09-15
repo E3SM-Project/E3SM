@@ -5,7 +5,7 @@
 #include "share/field/field_tag.hpp"
 #include "share/field/field_identifier.hpp"
 #include "share/util/eamxx_universal_constants.hpp"
-#include "share/io/eamxx_scorpio_interface.hpp"
+#include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 
 #include <ekat_units.hpp>
 #include <ekat_team_policy_utils.hpp>

@@ -5,7 +5,7 @@
 #include "share/remap/coarsening_remapper.hpp"
 #include "share/remap/identity_remapper.hpp"
 #include "share/remap/refining_remapper_p2p.hpp"
-#include "share/io/eamxx_scorpio_interface.hpp"
+#include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 #include "share/io/scorpio_input.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
 #include "share/algorithm/eamxx_time_interpolation.hpp"

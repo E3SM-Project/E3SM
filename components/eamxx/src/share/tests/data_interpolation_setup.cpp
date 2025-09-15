@@ -3,7 +3,7 @@
 #include "data_interpolation_tests.hpp"
 
 #include "share/io/eamxx_io_utils.hpp"
-#include "share/io/eamxx_scorpio_interface.hpp"
+#include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 #include "share/grid/point_grid.hpp"
 
 namespace scream {
