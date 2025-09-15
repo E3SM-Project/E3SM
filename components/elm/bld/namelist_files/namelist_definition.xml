@@ -316,7 +316,7 @@ Allowed values are:
 </entry>
 
 <entry id="use_fates_managed_fire" type="logical" category="physics"
-        group="clm_inparm" valid_values="" value=".false.">
+        group="elm_inparm" valid_values="" value=".false.">
 Enable FATES managed fire mode.  Requires that fates_spitfire_mode is on (in any mode).
 This mode allows the FATES model to conduct fuel-load reduction through managed burns.
 The boundary conditions in which a managed fire is allowed is set via the FATES parameter
