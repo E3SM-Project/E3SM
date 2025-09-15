@@ -11,9 +11,9 @@
 
 /*
  * This file contains interfaces to scorpio C library routines
- * 
+ *
  * There are two reasons for these interfaces:
- * 
+ *
  * - allow better context when exceptions/errors occour: throwing exceptions
  *   can even allow host code to use try-catch blocks to figure out what works.
  *   Moreover, the user does not need to continuously check return codes, since

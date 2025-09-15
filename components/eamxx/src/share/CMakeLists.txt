@@ -1,6 +1,9 @@
 # Core types and configuration options
 add_subdirectory(core)
 
+# Low-level scorpio interfaces
+add_subdirectory(scorpio_interface)
+
 # Small/generic utilities
 add_subdirectory(util)
 
@@ -53,6 +56,7 @@ target_include_directories(scream_share PUBLIC
 
 target_link_libraries(scream_share PUBLIC
   eamxx_core
+  eamxx_scorpio_interface
   eamxx_utils
   eamxx_field
   eamxx_grid)
