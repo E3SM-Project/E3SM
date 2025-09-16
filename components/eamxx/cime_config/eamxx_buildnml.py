@@ -1175,3 +1175,32 @@ def do_cime_vars_on_yaml_output_files(case, caseroot):
 ################################################################
 """)
         ordered_dump(scream_input, fd)
+
+###############################################################################
+def archive_case_docs(case,caseroot):
+###############################################################################
+    # Copy ALL eamxx input yaml/nml files to CaseDocs, for provenance
+    with SharedArea():
+        # We for sure have scream_input.yaml and namelist.nl
+        files = ['scream_input.yaml', 'namelist.nl']
+
+        # Get the XML configs, and find all output yaml files
+        rundir = case.get_value("RUNDIR")
+        eamxx_xml_file = os.path.join(caseroot, "namelist_scream.xml")
+
+        with open(eamxx_xml_file, "r") as fd:
+            eamxx_xml = ET.parse(fd).getroot()
+
+        scorpio = get_child(eamxx_xml,'scorpio')
+        out_files_xml = get_child(scorpio,"output_yaml_files",must_exist=False)
+        out_files = out_files_xml.text.split(",") if (out_files_xml is not None and out_files_xml.text is not None) else []
+
+        for fn in out_files:
+            # Get full name
+            src_yaml = os.path.expanduser(os.path.join(fn.strip()))
+            files.append(os.path.basename(src_yaml))
+
+        for f in files:
+            src = os.path.join(caseroot,f'run/data/{f}')
+            dst = os.path.join(caseroot,f'CaseDocs/{f}')
+            safe_copy(src,dst)
