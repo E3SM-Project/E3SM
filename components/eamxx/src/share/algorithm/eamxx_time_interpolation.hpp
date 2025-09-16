@@ -7,7 +7,7 @@
 #include "share/util/eamxx_utils.hpp"
 
 #include "share/field/field.hpp"
-#include "share/manager/field_manager.hpp"
+#include "share/data_managers/field_manager.hpp"
 
 #include "share/io/scorpio_input.hpp"
 

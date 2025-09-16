@@ -2,7 +2,7 @@
 #define SCREAM_FIELD_MANAGER_HPP
 
 #include "share/grid/abstract_grid.hpp"
-#include "share/manager/grids_manager.hpp"
+#include "share/data_managers/grids_manager.hpp"
 #include "share/field/field.hpp"
 #include "share/field/field_group.hpp"
 #include "share/field/field_request.hpp"

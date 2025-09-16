@@ -1,9 +1,9 @@
-add_library(eamxx_managers
+add_library(eamxx_data_managers
   field_manager.cpp
   grids_manager.cpp
 )
 
-target_link_libraries(eamxx_managers PUBLIC
+target_link_libraries(eamxx_data_managers PUBLIC
   eamxx_field
   eamxx_grid
   eamxx_remap

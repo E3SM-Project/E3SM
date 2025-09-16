@@ -1,8 +1,8 @@
 #include <catch2/catch.hpp>
 #include <numeric>
 
-#include "share/manager/library_grids_manager.hpp"
-#include "share/manager/field_manager.hpp"
+#include "share/data_managers/library_grids_manager.hpp"
+#include "share/data_managers/field_manager.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/field/field_utils.hpp"
 #include "share/field/field.hpp"

@@ -2,7 +2,7 @@
 
 #include "diagnostics/register_diagnostics.hpp"
 #include "physics/share/physics_constants.hpp"
-#include "share/manager/mesh_free_grids_manager.hpp"
+#include "share/data_managers/mesh_free_grids_manager.hpp"
 
 namespace scream {
 

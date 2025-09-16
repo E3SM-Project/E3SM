@@ -1,4 +1,4 @@
-#include "share/manager/mesh_free_grids_manager.hpp"
+#include "share/data_managers/mesh_free_grids_manager.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/grid/se_grid.hpp"
 #include "share/property_checks/field_nan_check.hpp"

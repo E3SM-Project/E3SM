@@ -11,7 +11,7 @@
 #include "physics/share/physics_constants.hpp"
 
 // scream share headers
-#include "share/manager/mesh_free_grids_manager.hpp"
+#include "share/data_managers/mesh_free_grids_manager.hpp"
 #include "share/physics/eamxx_common_physics_functions.hpp"
 
 // EKAT headers

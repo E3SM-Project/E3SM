@@ -1,7 +1,7 @@
 #include "catch2/catch.hpp"
 
 #include "diagnostics/register_diagnostics.hpp"
-#include "share/manager/mesh_free_grids_manager.hpp"
+#include "share/data_managers/mesh_free_grids_manager.hpp"
 #include "share/core/eamxx_setup_random_test.hpp"
 #include "share/field/field_utils.hpp"
 

@@ -2,9 +2,9 @@
 
 #include "share/core/eamxx_types.hpp"
 #include "share/field/field.hpp"
-#include "share/manager/field_manager.hpp"
+#include "share/data_managers/field_manager.hpp"
 #include "share/field/field_utils.hpp"
-#include "share/manager/mesh_free_grids_manager.hpp"
+#include "share/data_managers/mesh_free_grids_manager.hpp"
 #include "share/io/eamxx_io_utils.hpp"
 #include "share/io/eamxx_output_manager.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
