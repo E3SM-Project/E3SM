@@ -11,7 +11,6 @@
 #include <ekat_comm.hpp>
 
 namespace scream {
-namespace control {
 /*
  * Class which data for an intensive observation period (IOP).
  */
@@ -132,6 +131,10 @@ private:
   void initialize_iop_file(const util::TimeStamp& run_t0,
                            int model_nlevs);
 
+  void read_fields(const std::string& filename,
+                   const std::vector<Field>& fields,
+                   const std::shared_ptr<const AbstractGrid>& grid);
+
   ekat::Comm m_comm;
   ekat::ParameterList m_params;
 
@@ -149,7 +152,6 @@ private:
   std::map<std::string, IOPFieldType> m_iop_field_type;
 }; // class IOPDataManager
 
-} // namespace control
 } // namespace scream
 
 #endif // #ifndef SCREAM_IOP_HPP
