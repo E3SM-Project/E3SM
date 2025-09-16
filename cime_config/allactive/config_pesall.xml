@@ -2447,6 +2447,7 @@
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+MALI.+SWAV.+" pesize="M">
         <comment>pm-cpu: GIS 1-to-10km (high-res) baseline config</comment>
         <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>
+        <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
         <ntasks>
           <ntasks_atm>1350</ntasks_atm>
           <ntasks_lnd>960</ntasks_lnd>
@@ -2522,6 +2523,7 @@
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+MALI.+SWAV.+" pesize="M">
         <comment>pm-cpu: GIS 4-to-40km (med-res) baseline config</comment>
         <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>
+        <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
         <ntasks>
           <ntasks_atm>1350</ntasks_atm>
           <ntasks_lnd>960</ntasks_lnd>
