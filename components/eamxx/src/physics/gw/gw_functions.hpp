@@ -527,7 +527,6 @@ struct Functions
     const uview_1d<Real>& decomp_dnom,
     const uview_1d<Real>& decomp_ze);
 
-  template <typename QT, typename DqT>
   KOKKOS_FUNCTION
   static void gw_diff_tend(
     // Inputs
@@ -536,14 +535,14 @@ struct Functions
     const Int& pver,
     const Int& kbot,
     const Int& ktop,
-    const QT& q, // will be a 1d view, but could be strided
+    const uview_1d<const Real>& q,
     const Real& dt,
     const uview_1d<const Real>& decomp_ca,
     const uview_1d<const Real>& decomp_cc,
     const uview_1d<const Real>& decomp_dnom,
     const uview_1d<const Real>& decomp_ze,
       // Outputs
-    const DqT& dq); // will be a 1d view, but could be strided
+    const uview_1d<Real>& dq);
 
   KOKKOS_FUNCTION
   static void gw_oro_src(

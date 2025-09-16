@@ -42,10 +42,10 @@ void Functions<S,D>::gwd_precalc_rhoi(
   const uview_1d<Real>& ttgw)
 {
   // rhoi_kludge: Recalculated rhoi to preserve answers.
-  uview_1d<Real> rhoi_kludge, decomp_ca, decomp_cc, decomp_dnom, decomp_ze;
-  workspace.template take_many_contiguous_unsafe<5>(
-    {"rhoi_kludge", "decomp_ca", "decomp_cc", "decomp_dnom", "decomp_ze"},
-    {&rhoi_kludge, &decomp_ca, &decomp_cc, &decomp_dnom, &decomp_ze});
+  uview_1d<Real> rhoi_kludge, decomp_ca, decomp_cc, decomp_dnom, decomp_ze, q_nostride, qtgw_nostride;
+  workspace.template take_many_contiguous_unsafe<7>(
+    {"rhoi_kludge", "decomp_ca", "decomp_cc", "decomp_dnom", "decomp_ze", "q_nostride", "qtgw_nostride"},
+    {&rhoi_kludge, &decomp_ca, &decomp_cc, &decomp_dnom, &decomp_ze, &q_nostride, &qtgw_nostride});
 
   rhoi_kludge(0) = pint(0) / (C::Rair * t(0));
   Kokkos::parallel_for(
@@ -61,10 +61,17 @@ void Functions<S,D>::gwd_precalc_rhoi(
             egwdffi, decomp_ca, decomp_cc, decomp_dnom, decomp_ze);
 
   // Calculate tendency on each constituent.
-  const int pcnst = q.extent(0);
+  const int pcnst = q.extent(1);
   for (int m = 0; m < pcnst; ++m) {
-    gw_diff_tend(team, workspace, pver, init.kbotbg, init.ktop, ekat::subview_1(q, m), dt,
-                 decomp_ca, decomp_cc, decomp_dnom, decomp_ze, ekat::subview_1(qtgw, m));
+    auto q_stride    = ekat::subview_1(q, m);
+    auto qtgw_stride = ekat::subview_1(qtgw, m);
+    Kokkos::parallel_for(
+      Kokkos::TeamVectorRange(team, pver), [&] (const int k) {
+        q_nostride(k) = q_stride(k);
+        qtgw_nostride(k) = qtgw_stride(k);
+      });
+    gw_diff_tend(team, workspace, pver, init.kbotbg, init.ktop, q_nostride, dt,
+                 decomp_ca, decomp_cc, decomp_dnom, decomp_ze, qtgw_nostride);
   }
 
   // Calculate tendency from diffusing dry static energy (dttdf).
@@ -85,8 +92,8 @@ void Functions<S,D>::gwd_precalc_rhoi(
       ttgw(k) = dttke(k) + dttdf(k);
     });
 
-  workspace.template release_many_contiguous<5>(
-    {&rhoi_kludge, &decomp_ca, &decomp_cc, &decomp_dnom, &decomp_ze});
+  workspace.template release_many_contiguous<7>(
+    {&rhoi_kludge, &decomp_ca, &decomp_cc, &decomp_dnom, &decomp_ze, &q_nostride, &qtgw_nostride});
 }
 
 } // namespace gw

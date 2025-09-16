@@ -656,7 +656,7 @@ void gwd_precalc_rhoi(GwdPrecalcRhoiData& d)
 
   auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.ncol, d.init.pver);
 
-  WSM wsm(d.init.pver+1, 7, policy);
+  WSM wsm(d.init.pver+1, 9, policy);
   GWF::GwCommonInit init_cp = GWF::s_common_init;
 
   // unpack init because we do not want the lambda to capture it
