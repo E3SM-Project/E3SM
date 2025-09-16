@@ -113,6 +113,7 @@ void CldFraction::run_impl (const double /* dt */)
 
     // Sync input to host
     liq_cld_frac.sync_to_host();
+    qi.sync_to_host();
 
     double ice_threshold      = m_params.get<double>("ice_cloud_threshold");
     double ice_4out_threshold = m_params.get<double>("ice_cloud_for_analysis_threshold");
@@ -127,8 +128,6 @@ void CldFraction::run_impl (const double /* dt */)
     }
 
     // Sync outputs to dev
-    qi.sync_to_dev();
-    liq_cld_frac.sync_to_dev();
     ice_cld_frac.sync_to_dev();
     tot_cld_frac.sync_to_dev();
     ice_cld_frac_4out.sync_to_dev();
