@@ -154,7 +154,7 @@ contains
     real(kind=RKIND) :: bathyVertex
 
     ! Define dimension pointers
-    integer, pointer :: nCellsSolve, nEdgesSolve, nVerticesSolve 
+    integer, pointer :: nCellsSolve, nCellsAll, nEdgesSolve, nVerticesSolve 
     integer, pointer :: maxEdges
 
     ! Define variable pointers
@@ -176,6 +176,7 @@ contains
     real (kind=RKIND), dimension(:), allocatable :: subgridSshValues
     real (kind=RKIND), dimension(:), allocatable :: subgridUValues, subgridVValues
     real (kind=RKIND), dimension(:), allocatable :: subgridDragValues
+    type (field1DReal), pointer :: lonCellField, latCellField
 
     integer :: nSubgridCell, nSubgridEdge, nSubgridVertex
     integer :: nSubgridTriPerSlice
@@ -205,6 +206,7 @@ contains
 
     call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
     call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve) ;
+    call mpas_pool_get_dimension(meshPool, 'nCells', nCellsAll) ;
     call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve) ; 
     call mpas_pool_get_dimension(meshPool, 'nVerticesSolve', nVerticesSolve) ; 
     call mpas_pool_get_dimension(meshPool, 'maxEdges', maxEdges)
@@ -384,6 +386,11 @@ cell:do iCell = 1,nCellsSolve
     allocate( dsEdge(nSubgridCellEdge) ) 
     cellEdgeBathymetryValues = -99999 ; 
 
+    call mpas_pool_get_field(meshPool, 'lonCell', lonCellField)
+    call mpas_pool_get_field(meshPool, 'latCell', latCellField)
+    call mpas_dmpar_exch_halo_field(latCellField)
+    call mpas_dmpar_exch_halo_field(lonCellField)
+
 
 edge:do iEdge = 1,nEdgesSolve
 
@@ -407,7 +414,7 @@ edge:do iEdge = 1,nEdgesSolve
 
       nSlice = 0
       do slice = 1,2
-        if (cellsOnEdge(slice,iEdge) <= nCellsSolve) then
+        if (cellsOnEdge(slice,iEdge) <= nCellsAll) then
           nSlice = nSlice + 1
         endif
       enddo
