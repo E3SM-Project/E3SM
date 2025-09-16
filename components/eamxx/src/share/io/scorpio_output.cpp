@@ -88,6 +88,7 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
                                    const std::shared_ptr<const fm_type> &field_mgr,
                                    const std::string &grid_name)
  : m_comm(comm),
+   m_params(params),
    m_add_time_dim(true)
 {
   using vos_t = std::vector<std::string>;
@@ -95,7 +96,7 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
   auto gm = field_mgr->get_grids_manager();
 
   // Figure out what kind of averaging is requested
-  auto avg_type = params.get<std::string>("averaging_type");
+  auto avg_type = m_params.get<std::string>("averaging_type");
   m_avg_type    = str2avg(avg_type);
   EKAT_REQUIRE_MSG (m_avg_type!=OutputAvgType::Invalid,
       "Error! Unsupported averaging type '" + avg_type + "'.\n"
@@ -104,22 +105,25 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
   // By default, IO is done directly on the field mgr grid
   auto fm_grid = field_mgr->get_grids_manager()->get_grid(grid_name);
   std::vector<std::string> field_specs; // Raw field specifications from YAML (may include aliases)
+  ekat::ParameterList fields_sublist; // We need to track which output fields have a matching yaml sublist
   
   std::string output_data_layout = "default";
-  if (params.isParameter("field_names")) {
+  if (m_params.isParameter("field_names")) {
+    fields_sublist = m_params.sublist("field_names");
     // This simple parameter list option does *not* allow to remap fields
     // to an io grid different from that of the field manager. In order to
     // use that functionality, you need the full syntax
-    field_specs = params.get<vos_t>("field_names");
-    if (params.isParameter("output_data_layout"))
-      output_data_layout = params.get<std::string>("output_data_layout");
-  } else if (params.isSublist("fields")){
-    const auto& f_pl = params.sublist("fields");
+    field_specs = m_params.get<vos_t>("field_names");
+    if (m_params.isParameter("output_data_layout"))
+      output_data_layout = m_params.get<std::string>("output_data_layout");
+  } else if (m_params.isSublist("fields")){
+    const auto& f_pl = m_params.sublist("fields");
     bool grid_found = false;
     for (const auto& grid_name : fm_grid->aliases()) {
       if (f_pl.isSublist(grid_name)) {
         grid_found = true;
         const auto& pl = f_pl.sublist(grid_name);
+	fields_sublist = pl;
         if (pl.isParameter("output_data_layout"))
           output_data_layout = pl.get<std::string>("output_data_layout");
         if (pl.isType<vos_t>("field_names")) {
@@ -156,6 +160,12 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
   for (const auto& spec : field_specs) {
     auto [alias, field_name] = parse_field_alias(spec);
     m_fields_names.push_back(field_name);
+    // If this field also had an accompanying sublist than
+    // we retain that for the next step
+    if (fields_sublist.isSublist(field_name)) {
+      auto f_sub = fields_sublist.sublist(field_name);
+      m_fields_params.insert(std::make_pair(field_name,f_sub));
+    }
   }
 
   // TODO: allow users to request the same field more than once via different aliases
@@ -163,11 +173,11 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
   // TODO: more carefully. The rationale is to enable users to debug their aliasing, etc.
   EKAT_REQUIRE_MSG (not has_duplicates(m_alias_names),
       "[AtmosphereOutput] Error! One of the output yaml files has duplicate field alias entries.\n"
-      " - yaml file: " + params.name() + "\n"
+      " - yaml file: " + m_params.name() + "\n"
       " - alias names; " + ekat::join(m_alias_names,",") + "\n");
   EKAT_REQUIRE_MSG (not has_duplicates(m_fields_names),
       "[AtmosphereOutput] Error! One of the output yaml files has duplicate field entries.\n"
-      " - yaml file: " + params.name() + "\n"
+      " - yaml file: " + m_params.name() + "\n"
       " - fields names: " + ekat::join(m_fields_names,",") + "\n");
 
   // Check if remapping and if so create the appropriate remapper
@@ -175,8 +185,8 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
   //   - vertical remapping from file
   //   - horizontal remapping from file
   //   - online remapping which is setup using the create_remapper function
-  const bool use_vertical_remap_from_file = params.isParameter("vertical_remap_file");
-  const bool use_horiz_remap_from_file = params.isParameter("horiz_remap_file");
+  const bool use_vertical_remap_from_file = m_params.isParameter("vertical_remap_file");
+  const bool use_horiz_remap_from_file = m_params.isParameter("horiz_remap_file");
   if (change_data_layout) {
     EKAT_REQUIRE_MSG(!use_vertical_remap_from_file and !use_horiz_remap_from_file,
         "[AtmosphereOutput] Error! Online Dyn->PhysGLL remapping not supported along with vertical and/or horizontal remapping from file");
@@ -208,16 +218,16 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
   // Hence, here we only check if vert remap is active
 
   if (m_avg_type!=OutputAvgType::Instant) {
-    if (params.isParameter("track_avg_cnt")) {
+    if (m_params.isParameter("track_avg_cnt")) {
       // This is to be used for unit testing only, so that we can test avg cnt even
       // if there is no vert remap and no field_at_XhPa diagnostic in the stream
-      m_track_avg_cnt = params.get<bool>("track_avg_cnt");
+      m_track_avg_cnt = m_params.get<bool>("track_avg_cnt");
     }
     if (use_vertical_remap_from_file) {
       m_track_avg_cnt = true;
     }
-    if (params.isParameter("fill_threshold")) {
-      m_avg_coeff_threshold = params.get<Real>("fill_threshold");
+    if (m_params.isParameter("fill_threshold")) {
+      m_avg_coeff_threshold = m_params.get<Real>("fill_threshold");
     }
   }
 
@@ -225,7 +235,7 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
   auto grid_after_vr = fm_grid;
   if (use_vertical_remap_from_file) {
     // We build a remapper, to remap fields from the fm grid to the io grid
-    auto vert_remap_file   = params.get<std::string>("vertical_remap_file");
+    auto vert_remap_file   = m_params.get<std::string>("vertical_remap_file");
     auto p_mid = fm_model->get_field("p_mid");
     auto p_int = fm_model->get_field("p_int");
     auto vert_remapper = std::make_shared<VerticalRemapper>(fm_model->get_grid(),vert_remap_file);
@@ -254,7 +264,7 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
     // We build a remapper, to remap fields from the fm grid to the io grid
     if (use_horiz_remap_from_file) {
       // Construct the coarsening remapper
-      auto horiz_remap_file   = params.get<std::string>("horiz_remap_file");
+      auto horiz_remap_file   = m_params.get<std::string>("horiz_remap_file");
       m_horiz_remapper = std::make_shared<CoarseningRemapper>(grid_after_vr,horiz_remap_file,true);
     } else {
       // Construct a generic remapper (likely, Dyn->PhysicsGLL)
@@ -971,8 +981,13 @@ init_diagnostics ()
   //       inside a std::function, so that the lambda body CAN call create_diag.
   std::function<void(const std::string&)> create_diag;
   create_diag = [&](const std::string& name) {
+    // Check if this diag has an entry in the fields parameter list
+    ekat::ParameterList d_params;
+    if (m_fields_params.find(name) != m_fields_params.end()) {
+      d_params = m_fields_params.at(name);
+    }
     // Create the diag
-    auto diag = create_diagnostic(name,fm_model->get_grid());
+    auto diag = create_diagnostic(name,fm_model->get_grid(),d_params);
 
     // Set inputs in the diag (and recurse if inputs are also diags not yet created)
     for (const auto& freq : diag->get_required_field_requests()) {
@@ -1024,6 +1039,17 @@ init_diagnostics ()
     // If specified, set avg_cnt tracking for this diagnostic.
     if (m_track_avg_cnt) {
       m_field_to_avg_cnt_suffix.emplace(diag_field.name(),diag_avg_cnt_name);
+    }
+
+    // In cases where a parameter list was provided we need to set the field name
+    // to the actual field name in the produced diagnostic.  The entry in the yaml
+    // that names the sublist will be an alias for this output.
+    if (m_fields_params.find(name) != m_fields_params.end()) {
+      auto diag_ind = std::find(m_fields_names.begin(),m_fields_names.end(),name);
+      if (diag_ind != m_fields_names.end()) {
+        size_t ind = std::distance(m_fields_names.begin(), diag_ind);
+        m_fields_names.at(ind) = diag_field.name();
+      }
     }
 
     // All done, add to the diags vector
