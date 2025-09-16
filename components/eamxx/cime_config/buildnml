@@ -76,7 +76,7 @@ def buildnml(case, caseroot, compname):
     create_input_data_list_file(case,caseroot)
 
     # archive yaml/nml files in CaseDocs
-    archive_case_docs(case,caseroot)
+    archive_case_docs(caseroot)
 
 ###############################################################################
 def _main_func():

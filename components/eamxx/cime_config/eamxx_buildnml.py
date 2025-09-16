@@ -1177,7 +1177,7 @@ def do_cime_vars_on_yaml_output_files(case, caseroot):
         ordered_dump(scream_input, fd)
 
 ###############################################################################
-def archive_case_docs(case,caseroot):
+def archive_case_docs(caseroot):
 ###############################################################################
     # Copy ALL eamxx input yaml/nml files to CaseDocs, for provenance
     with SharedArea():
@@ -1185,7 +1185,6 @@ def archive_case_docs(case,caseroot):
         files = ['scream_input.yaml', 'namelist.nl']
 
         # Get the XML configs, and find all output yaml files
-        rundir = case.get_value("RUNDIR")
         eamxx_xml_file = os.path.join(caseroot, "namelist_scream.xml")
 
         with open(eamxx_xml_file, "r") as fd:
