@@ -169,7 +169,6 @@ void Nudging::apply_tendency(Field& state, const Field& nudge, const Real dt, co
   Real dtend = dt / m_timescale;
   if (!name.empty() && (name=="U" || name=="V")){
       dtend = dt / 21600;
-    }
   }
 
   using cview_2d = decltype(state.get_view<const Real**>());
