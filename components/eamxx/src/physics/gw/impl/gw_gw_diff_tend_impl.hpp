@@ -12,6 +12,7 @@ namespace gw {
  */
 
 template<typename S, typename D>
+template<typename QT, typename DqT>
 KOKKOS_FUNCTION
 void Functions<S,D>::gw_diff_tend(
   // Inputs
@@ -20,14 +21,14 @@ void Functions<S,D>::gw_diff_tend(
   const Int& pver,
   const Int& kbot,
   const Int& ktop,
-  const uview_1d<const Real>& q,
+  const QT& q,
   const Real& dt,
   const uview_1d<const Real>& decomp_ca,
   const uview_1d<const Real>& decomp_cc,
   const uview_1d<const Real>& decomp_dnom,
   const uview_1d<const Real>& decomp_ze,
   // Outputs
-  const uview_1d<Real>& dq)
+  const DqT& dq)
 {
   auto qnew = workspace.take("qnew");
 

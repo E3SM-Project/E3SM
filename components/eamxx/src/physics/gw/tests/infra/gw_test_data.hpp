@@ -935,6 +935,7 @@ void gwd_compute_stress_profiles_and_diffusivities_f(GwdComputeStressProfilesAnd
 void gwd_compute_stress_profiles_and_diffusivities(GwdComputeStressProfilesAndDiffusivitiesData& d);
 void gwd_project_tau(GwdProjectTauData& d);
 void gwd_project_tau_f(GwdProjectTauData& d);
+void gwd_precalc_rhoi_f(GwdPrecalcRhoiData& d);
 void gwd_precalc_rhoi(GwdPrecalcRhoiData& d);
 void gw_drag_prof(GwDragProfData& d);
 void gw_front_project_winds(GwFrontProjectWindsData& d);

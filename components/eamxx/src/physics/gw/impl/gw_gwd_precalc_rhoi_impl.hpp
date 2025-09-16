@@ -3,6 +3,8 @@
 
 #include "gw_functions.hpp" // for ETI only but harmless for GPU
 
+#include <ekat_subview_utils.hpp>
+
 namespace scream {
 namespace gw {
 
@@ -17,6 +19,7 @@ void Functions<S,D>::gwd_precalc_rhoi(
   // Inputs
   const MemberType& team,
   const Workspace& workspace,
+  const GwCommonInit& init,
   const Int& pver,
   const Int& pgwv,
   const Real& dt,
@@ -38,49 +41,52 @@ void Functions<S,D>::gwd_precalc_rhoi(
   const uview_1d<Real>& dttke,
   const uview_1d<Real>& ttgw)
 {
-#if 0
   // rhoi_kludge: Recalculated rhoi to preserve answers.
-  uview_1d<Real> rhoi_kludge, decomp_ca_1d, decomp_cc_1d, decomp_dnom_1d, decomp_ze_1d;
-  workspace2.template take_many_contiguous_unsafe<5>(
+  uview_1d<Real> rhoi_kludge, decomp_ca, decomp_cc, decomp_dnom, decomp_ze;
+  workspace.template take_many_contiguous_unsafe<5>(
     {"rhoi_kludge", "decomp_ca", "decomp_cc", "decomp_dnom", "decomp_ze"},
-    {&rhoi_kludge, &decomp_ca_1d, &decomp_cc_1d, &decomp_dnom_1d, &decomp_ze_1d});
+    {&rhoi_kludge, &decomp_ca, &decomp_cc, &decomp_dnom, &decomp_ze});
 
-  // Note: pint is from 0 to pver instead of 1 to pver+1.
-  rhoi_kludge(:,1) = pint(:,0) / (rair * t(:,1))
-  do k = 2, pver
-     rhoi_kludge(:,k) = pint(:,k-1) * 2._r8 / &
-          (rair * (t(:,k) + t(:,k-1)))
-  end do
-  rhoi_kludge(:,pver+1) = pint(:,pver) / (rair * t(:,pver))
+  rhoi_kludge(0) = pint(0) / (C::Rair * t(0));
+  Kokkos::parallel_for(
+    Kokkos::TeamVectorRange(team, 1, pver), [&] (const int k) {
+      rhoi_kludge(k) = pint(k) * 2 / (C::Rair * (t(k) + t(k-1)));
+    });
+  rhoi_kludge(pver) = pint(pver) / (C::Rair * t(pver-1));
 
   // Calculate effective diffusivity and LU decomposition for the
   // vertical diffusion solver.
-  call gw_ediff (ncol, pver, ngwv, kbotbg, ktop, tend_level, &
-       gwut, ubm, nm, rhoi_kludge, dt, gravit, pmid, rdpm, c, &
-       egwdffi, decomp)
+  gw_ediff (team, workspace, pver, pgwv, init.kbotbg, init.ktop, tend_level, dt,
+            gwut, ubm, nm, rhoi_kludge, pmid, rdpm, c,
+            egwdffi, decomp_ca, decomp_cc, decomp_dnom, decomp_ze);
 
   // Calculate tendency on each constituent.
-  do m = 1, size(q,3)
-     call gw_diff_tend(ncol, pver, kbotbg, ktop, q(:,:,m), dt, &
-          decomp, qtgw(:,:,m))
-  enddo
+  const int pcnst = q.extent(0);
+  for (int m = 0; m < pcnst; ++m) {
+    gw_diff_tend(team, workspace, pver, init.kbotbg, init.ktop, ekat::subview_1(q, m), dt,
+                 decomp_ca, decomp_cc, decomp_dnom, decomp_ze, ekat::subview_1(qtgw, m));
+  }
 
   // Calculate tendency from diffusing dry static energy (dttdf).
-  call gw_diff_tend(ncol, pver, kbotbg, ktop, dse, dt, decomp, dttdf)
+  gw_diff_tend(team, workspace, pver, init.kbotbg, init.ktop, dse, dt, decomp_ca, decomp_cc, decomp_dnom, decomp_ze, dttdf);
 
   // Evaluate second temperature tendency term: Conversion of kinetic
   // energy into thermal.
-  do l = -ngwv, ngwv
-     do k = ktop+1, kbotbg
-        dttke(:,k) = dttke(:,k) + c(:,l) * gwut(:,k,l)
-     end do
-  end do
+  const int num_pgwv = 2*pgwv + 1;
+  Kokkos::parallel_for(
+    Kokkos::TeamVectorRange(team, (init.ktop+1), (init.kbotbg+1)), [&] (const int k) {
+      for (int l = 0; l < num_pgwv; ++l) {
+        dttke(k) += c(l) * gwut(k,l);
+      }
+    });
 
-  ttgw = dttke + dttdf
+  Kokkos::parallel_for(
+    Kokkos::TeamVectorRange(team, pver), [&] (const int k) {
+      ttgw(k) = dttke(k) + dttdf(k);
+    });
 
   workspace.template release_many_contiguous<5>(
-    {&rhoi_kludge, &decomp_ca_1d, &decomp_cc_1d, &decomp_dnom_1d, &decomp_ze_1d});
-#endif
+    {&rhoi_kludge, &decomp_ca, &decomp_cc, &decomp_dnom, &decomp_ze});
 }
 
 } // namespace gw
