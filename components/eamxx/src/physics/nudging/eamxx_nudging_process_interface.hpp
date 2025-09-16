@@ -47,7 +47,7 @@ protected:
 
   // Internal function to apply nudging at specific timescale
   // NOTE: this method will handle weighted and cutoff cases as well
-  void apply_tendency (Field &state, const Field &nudge, const Real dt) const;
+  void apply_tendency (Field &state, const Field &nudge, const Real dt, const std::string name="") const;
 
 protected:
 

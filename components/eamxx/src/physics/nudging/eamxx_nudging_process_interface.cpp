@@ -163,10 +163,14 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   }
 }
 // =========================================================================================
-void Nudging::apply_tendency(Field& state, const Field& nudge, const Real dt) const
+void Nudging::apply_tendency(Field& state, const Field& nudge, const Real dt, const std::string name) const
 {
   // Calculate the weight to apply the tendency
-  const Real dtend = dt / m_timescale;
+  Real dtend = dt / m_timescale;
+  if (!name.empty() && (name=="U" || name=="V")){
+      dtend = dt / 21600;
+    }
+  }
 
   using cview_2d = decltype(state.get_view<const Real**>());
 
@@ -391,7 +395,7 @@ void Nudging::run_impl (const double dt)
 
       if (m_timescale > 0) {
         auto atm_state_field = get_field_out_wrap(name);
-        apply_tendency(atm_state_field,tmp_state_field,dt);
+        apply_tendency(atm_state_field,tmp_state_field,dt,name);
       }
     }
     return;
@@ -523,7 +527,7 @@ void Nudging::run_impl (const double dt)
     // If timescale>0, then we need to back out a tendency.
     if (m_timescale > 0) {
       auto atm_state_field = get_field_out_wrap(name);
-      apply_tendency(atm_state_field,field_after_vinterp,dt);
+      apply_tendency(atm_state_field,field_after_vinterp,dt, name);
     }
   }
 }
