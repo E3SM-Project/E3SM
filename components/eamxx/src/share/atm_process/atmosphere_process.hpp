@@ -3,15 +3,15 @@
 
 #include "share/atm_process/atmosphere_process_utils.hpp"
 #include "share/atm_process/ATMBufferManager.hpp"
-#include "share/atm_process/SCDataManager.hpp"
 #include "share/atm_process/IOPDataManager.hpp"
-#include "share/field/field_identifier.hpp"
+#include "share/data_managers/SCDataManager.hpp"
+#include "share/data_managers/grids_manager.hpp"
 #include "share/data_managers/field_manager.hpp"
 #include "share/property_checks/property_check.hpp"
+#include "share/field/field_identifier.hpp"
 #include "share/field/field_request.hpp"
 #include "share/field/field.hpp"
 #include "share/field/field_group.hpp"
-#include "share/data_managers/grids_manager.hpp"
 
 #include <ekat_comm.hpp>
 #include <ekat_parameter_list.hpp>
