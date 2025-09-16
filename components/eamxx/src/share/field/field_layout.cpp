@@ -197,7 +197,21 @@ FieldLayout::prepend_dim (const FieldTag t, const int extent, const std::string&
 
 FieldLayout FieldLayout::clone() const
 {
-  return *this;
+  FieldLayout copy(*this);
+  copy.set_extents();
+  return copy;
+}
+
+FieldLayout FieldLayout::transpose() const
+{
+  auto flt = clone();
+  std::reverse(flt.m_dims.begin(),flt.m_dims.end());
+  std::reverse(flt.m_tags.begin(),flt.m_tags.end());
+  std::reverse(flt.m_names.begin(),flt.m_names.end());
+
+  flt.set_extents();
+
+  return flt;
 }
 
 FieldLayout& FieldLayout::rename_dim (const int idim, const std::string& n)

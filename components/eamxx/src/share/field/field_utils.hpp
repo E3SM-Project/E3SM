@@ -7,23 +7,7 @@ namespace scream {
 
 // Check that two fields store the same entries.
 // NOTE: if the field is padded, padding entries are NOT checked.
-inline bool views_are_equal(const Field& f1, const Field& f2, const ekat::Comm* comm = nullptr) {
-  EKAT_REQUIRE_MSG (f1.data_type()==f2.data_type(),
-      "Error! Views have different data types.\n");
-
-  bool ret = false;
-  switch (f1.data_type()) {
-    case DataType::IntType:
-      ret = impl::views_are_equal<const int>(f1,f2,comm); break;
-    case DataType::FloatType:
-      ret = impl::views_are_equal<const float>(f1,f2,comm); break;
-    case DataType::DoubleType:
-      ret = impl::views_are_equal<const double>(f1,f2,comm); break;
-    default:
-      EKAT_ERROR_MSG ("Error! Unrecognized field data type.\n");
-  }
-  return ret;
-}
+bool views_are_equal(const Field& f1, const Field& f2, const ekat::Comm* comm = nullptr);
 
 template<typename Engine, typename PDF>
 void randomize (const Field& f, Engine& engine, PDF&& pdf)
@@ -335,36 +319,10 @@ ST field_min(const Field& f, const ekat::Comm* comm = nullptr)
 // If the field layout contains all the location tags, we will slice the field along
 // those tags, and print it. E.g., f might be a <COL,LEV> field, and the tags/indices
 // refer to a single column, in which case we'll print a whole column worth of data.
-inline void
-print_field_hyperslab (const Field& f,
-                       const std::vector<FieldTag>& tags = {},
-                       const std::vector<int>& indices = {},
-                       std::ostream& out = std::cout)
-{
-  const auto dt = f.data_type();
-  const auto rank = f.rank();
-
-  EKAT_REQUIRE_MSG (rank>=static_cast<int>(tags.size()),
-      "Error! Requested location incompatible with field rank.\n"
-      "  - field name: " + f.name() + "\n"
-      "  - field rank: " + std::to_string(rank) + "\n"
-      "  - requested indices: (" + ekat::join(indices,",") + "\n");
-
-  switch (dt) {
-    case DataType::IntType:
-      impl::print_field_hyperslab<int>(f,tags,indices,out,rank,0);
-      break;
-    case DataType::FloatType:
-      impl::print_field_hyperslab<float>(f,tags,indices,out,rank,0);
-      break;
-    case DataType::DoubleType:
-      impl::print_field_hyperslab<double>(f,tags,indices,out,rank,0);
-      break;
-    default:
-      EKAT_ERROR_MSG ("[print_field_hyperslab] Error! Invalid/unsupported data type.\n"
-          " - field name: " + f.name() + "\n");
-  }
-}
+void print_field_hyperslab (const Field& f,
+                            const std::vector<FieldTag>& tags = {},
+                            const std::vector<int>& indices = {},
+                            std::ostream& out = std::cout);
 
 template<Comparison CMP, typename ST>
 void compute_mask (const Field& x, const ST value, Field& mask)
@@ -410,6 +368,9 @@ void compute_mask (const Field& x, const ST value, Field& mask)
       EKAT_ERROR_MSG ("Error! Unexpected/unsupported data type.\n");
   }
 }
+
+void transpose (const Field& src, Field& tgt);
+Field transpose (const Field& src, std::string src_T_name = "");
 
 } // namespace scream
 

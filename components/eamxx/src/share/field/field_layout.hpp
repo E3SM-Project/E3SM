@@ -144,6 +144,7 @@ public:
   FieldLayout& rename_dims (const std::map<FieldTag,std::string>& new_names); // Does not throw if not found
 
   FieldLayout clone() const;
+  FieldLayout transpose () const;
 
   // NOTE: congruent does not check the tags names. It only checks
   //       rank, m_tags, and m_dims. Use operator== if names are important
