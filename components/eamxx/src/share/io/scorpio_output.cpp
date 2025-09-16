@@ -728,6 +728,10 @@ register_variables(const std::string& filename,
       } else {
         scorpio::set_attribute(filename, field_name, "_FillValue",constants::fill_value<float>);
       }
+      if (m_alias_to_orig.count(field_name)==1) {
+        // Store what this field is the alias of
+        scorpio::set_attribute(filename, field_name, "alias_of",m_alias_to_orig[field_name]);
+      }
 
       // If this is has subfields, add list of its children
       const auto& children = f.get_header().get_children();
@@ -934,7 +938,6 @@ process_requested_fields(const std::string& stream_name)
 
   // First, find out which field names are just aliases
   // NOTE: we must parse ALL field names in case someone creates an alias of an alias
-  strmap_t<std::string> alias2orig;
   strvec_t orig_fields;
   for (auto& name : m_fields_names) {
     auto tokens = ekat::split(name,":=");
@@ -942,7 +945,7 @@ process_requested_fields(const std::string& stream_name)
         "Error! Invalid alias request. Should be 'alias:=original'.\n"
         " - request: " + name + "\n");
     if (tokens.size()==2) {
-      alias2orig[tokens[0]] = tokens[1];
+      m_alias_to_orig[tokens[0]] = tokens[1];
       name = tokens[0];
       orig_fields.push_back(tokens[1]);
     } else {
@@ -955,7 +958,7 @@ process_requested_fields(const std::string& stream_name)
   // and be able to store diags in the correct order for evaluation
   strmap_t<std::shared_ptr<AtmosphereDiagnostic>> name2diag;
   for (const auto& name : orig_fields) {
-    if (alias2orig.count(name)==1) {
+    if (m_alias_to_orig.count(name)==1) {
       // This is an alias of an alias. We'll allow it.
       continue;
     }
@@ -1054,7 +1057,7 @@ process_requested_fields(const std::string& stream_name)
   // This ensures we can evaluate diags in order at runtime
   bool done = false;
   std::set<std::string> remaining(m_fields_names.begin(),m_fields_names.end());
-  for (const auto& it : alias2orig) {
+  for (const auto& it : m_alias_to_orig) {
     remaining.insert(it.second);
   }
   while (not done) {
@@ -1066,16 +1069,13 @@ process_requested_fields(const std::string& stream_name)
         const auto& f = m_field_mgrs[FromModel]->get_field(name);
         check_for_avg_cnt(f);
         remove_these.insert(name);
-      } else if (alias2orig.count(name)==1) {
+      } else if (m_alias_to_orig.count(name)==1) {
         // An alias. If the aliased field was already processed, we can
         // process the alias as well
-        if (fm_model->has_field(alias2orig[name])) {
-          const auto& orig = fm_model->get_field(alias2orig[name]);
+        if (fm_model->has_field(m_alias_to_orig[name])) {
+          const auto& orig = fm_model->get_field(m_alias_to_orig[name]);
           auto alias = orig.alias(name);
           fm_model->add_field(alias);
-          // Store what this field is the alias of
-          auto& str_atts = alias.get_header().get_extra_data<stratts_t>("io: string attributes");
-          str_atts["alias_of: " + orig.name()];
           remove_these.insert(name);
         }
       } else {

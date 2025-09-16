@@ -222,8 +222,7 @@ protected:
   std::list<diag_ptr_type> m_diagnostics;
 
   // Field aliasing support
-  strmap_t<std::string> m_alias_to_field_map; // Map from alias names to internal field names
-  strvec_t m_alias_names;                     // List of alias names (for netcdf variables)
+  strmap_t<std::string> m_alias_to_orig; // Map from alias names to original names (used to set io attribute)
 
   DefaultMetadata m_default_metadata;
 
