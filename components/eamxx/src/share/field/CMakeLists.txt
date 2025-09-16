@@ -7,6 +7,7 @@ add_library(eamxx_field
   field.cpp
   field_group.cpp
   field_sync.cpp
+  field_utils.cpp
   eti/field_eti_deep_copy_double_device.cpp
   eti/field_eti_deep_copy_float_device.cpp
   eti/field_eti_deep_copy_int_device.cpp
