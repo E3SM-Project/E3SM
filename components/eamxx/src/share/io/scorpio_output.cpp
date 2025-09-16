@@ -945,6 +945,11 @@ process_requested_fields(const std::string& stream_name)
         "Error! Invalid alias request. Should be 'alias:=original'.\n"
         " - request: " + name + "\n");
     if (tokens.size()==2) {
+      EKAT_REQUIRE_MSG (m_alias_to_orig.count(tokens[0])==0,
+          "Error! The same alias has been used multiple times.\n"
+          " - stream name: " + stream_name + "\n"
+          " - first alias: " + tokens[0] + ":=" + m_alias_to_orig[tokens[0]] + "\n"
+          " - second alias: " + tokens[0] + ":=" + tokens[1] + "\n");
       m_alias_to_orig[tokens[0]] = tokens[1];
       name = tokens[0];
       orig_fields.push_back(tokens[1]);
@@ -952,6 +957,11 @@ process_requested_fields(const std::string& stream_name)
       orig_fields.push_back(name);
     }
   }
+
+  EKAT_REQUIRE_MSG (not has_duplicates(m_fields_names),
+      "Error! The list of requested output fields contains duplicates.\n"
+      " - stream name:  " + stream_name + "\n"
+      " - fields names: " + ekat::join(m_fields_names,",") + "\n");
 
   // Due to aliasing, we are not yet able to establish the diags eval order,
   // so just create them for now. Once we have all diags, we will resolve aliasing,
