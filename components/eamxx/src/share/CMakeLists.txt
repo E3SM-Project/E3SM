@@ -19,8 +19,8 @@ add_subdirectory(property_checks)
 # Remapper structures
 add_subdirectory(remap)
 
-# Data manager structures
-add_subdirectory(manager)
+# Data managers structures
+add_subdirectory(data_managers)
 
 set(SHARE_SRC
   atm_process/atmosphere_process.cpp
