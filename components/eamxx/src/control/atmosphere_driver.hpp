@@ -9,7 +9,7 @@
 #include "share/io/eamxx_output_manager.hpp"
 #include "share/io/scorpio_input.hpp"
 #include "share/atm_process/ATMBufferManager.hpp"
-#include "share/atm_process/SCDataManager.hpp"
+#include "share/data_managers/SCDataManager.hpp"
 #include "share/data_managers/IOPDataManager.hpp"
 
 #include <ekat_logger.hpp>
