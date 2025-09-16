@@ -927,8 +927,6 @@ compute_diagnostics(const bool allow_invalid_fields)
 void AtmosphereOutput::
 process_requested_fields(const std::string& stream_name)
 {
-  using stratts_t = std::map<std::string,std::string>;
-
   // So far, all fields (on the output grid) that ARE in the model FM have been added
   // to the FM stored in this class for the FromModel phase. Anything missing
   // must be either a diagnostic or an alias.
@@ -1071,7 +1069,10 @@ process_requested_fields(const std::string& stream_name)
     remaining.insert(it.second);
   }
   while (not done) {
-    std::set<std::string> remove_these;
+    // We can't add-to/rm-form a std:;set while iterating on it, as that could
+    // change the end iterator. Hence, keep track of what we add or remove,
+    // and add/remove after the for loop ends
+    std::set<std::string> remove_these, add_these;
     for (const auto& name : remaining) {
       if (fm_model->has_field(name)) {
         // This is a regular field, not a diagnostic nor an alias.
@@ -1096,8 +1097,15 @@ process_requested_fields(const std::string& stream_name)
         auto diag = name2diag[name];
         bool ready_to_init = true;
         for (const auto& freq : diag->get_required_field_requests()) {
-          if (not fm_model->has_field(freq.fid.name())) {
+          const auto& dep_name = freq.fid.name();
+          if (not fm_model->has_field(dep_name)) {
             ready_to_init = false;
+            if (not remaining.count(dep_name)) {
+              // This requirement MUST be another diagnostic, since it was not in the original m_fields_names
+              // Create the diag, and add it to the list of fields to process
+              name2diag[freq.fid.name()] = create_diagnostic(freq.fid.name(),fm_model->get_grid());
+              add_these.insert(freq.fid.name());
+            }
             break;
           }
         }
@@ -1108,12 +1116,15 @@ process_requested_fields(const std::string& stream_name)
       }
     }
 
-    EKAT_REQUIRE_MSG (remove_these.size()>0,
+    EKAT_REQUIRE_MSG (add_these.size()>0 or remove_these.size()>0,
         "Error! We're stuck in an endless loop while processing output fields.\n"
         " - stream name: " + stream_name + "\n");
 
     for (const auto& n : remove_these) {
       remaining.erase(n);
+    }
+    for (const auto& n : add_these) {
+      remaining.insert(n);
     }
 
     done = remaining.size()==0;
