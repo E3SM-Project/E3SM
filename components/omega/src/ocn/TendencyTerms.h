@@ -11,6 +11,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "AuxiliaryState.h"
+#include "GlobalConstants.h"
 #include "HorzMesh.h"
 #include "MachEnv.h"
 #include "OceanState.h"
@@ -166,14 +167,13 @@ class SSHGradOnEdge {
 
       for (int KVec = 0; KVec < VecLength; ++KVec) {
          const I4 K = KStart + KVec;
-         Tend(IEdge, K) -= EdgeMask(IEdge, K) * Grav *
+         Tend(IEdge, K) -= EdgeMask(IEdge, K) * Gravity *
                            (SshCell(ICell1, K) - SshCell(ICell0, K)) *
                            InvDcEdge;
       }
    }
 
  private:
-   Real Grav = 9.80665_Real;
    Array2DI4 CellsOnEdge;
    Array1DReal DcEdge;
    Array2DReal EdgeMask;
