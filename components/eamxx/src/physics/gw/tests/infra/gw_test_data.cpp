@@ -652,7 +652,7 @@ void gwd_precalc_rhoi(GwdPrecalcRhoiData& d)
 
   const auto gwut = three_d_reals_in[0];
   const auto q    = three_d_reals_in[1];
-  const auto qtwg = three_d_reals_in[2];
+  const auto qtgw = three_d_reals_in[2];
 
   auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.ncol, d.init.pver);
 
@@ -680,7 +680,7 @@ void gwd_precalc_rhoi(GwdPrecalcRhoiData& d)
     const auto q_c       = ekat::subview(q, col);
     const auto dse_c     = ekat::subview(dse, col);
     const auto egwdffi_c = ekat::subview(egwdffi, col);
-    const auto qtgw_c    = ekat::subview(qtwg, col);
+    const auto qtgw_c    = ekat::subview(qtgw, col);
     const auto dttdf_c   = ekat::subview(dttdf, col);
     const auto dttke_c   = ekat::subview(dttke, col);
     const auto ttgw_c    = ekat::subview(ttgw, col);
@@ -719,8 +719,8 @@ void gwd_precalc_rhoi(GwdPrecalcRhoiData& d)
                          d.init.pver,
                          d.init.pver},
                        two_d_reals_out);
-  std::vector<view3dr_d> three_d_reals_out = {q};
-  ekat::device_to_host({d.q}, d.ncol, d.init.pver, d.pcnst, three_d_reals_out);
+  std::vector<view3dr_d> three_d_reals_out = {qtgw};
+  ekat::device_to_host({d.qtgw}, d.ncol, d.init.pver, d.pcnst, three_d_reals_out);
 
   gw_finalize_cxx(d.init);
 }

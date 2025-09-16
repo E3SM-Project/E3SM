@@ -68,10 +68,13 @@ void Functions<S,D>::gwd_precalc_rhoi(
     Kokkos::parallel_for(
       Kokkos::TeamVectorRange(team, pver), [&] (const int k) {
         q_nostride(k) = q_stride(k);
-        qtgw_nostride(k) = qtgw_stride(k);
       });
     gw_diff_tend(team, workspace, pver, init.kbotbg, init.ktop, q_nostride, dt,
                  decomp_ca, decomp_cc, decomp_dnom, decomp_ze, qtgw_nostride);
+    Kokkos::parallel_for(
+      Kokkos::TeamVectorRange(team, pver), [&] (const int k) {
+        qtgw_stride(k) = qtgw_nostride(k);
+      });
   }
 
   // Calculate tendency from diffusing dry static energy (dttdf).
