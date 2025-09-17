@@ -1,0 +1,88 @@
+%YAML 1.1
+---
+filename_prefix: homme_shoc_cld_p3_rrtmgp_pg2_output_diag
+averaging_type: instant
+fields:
+  physics_pg2:
+    field_names:
+      # Diagnostics Basic, note we use alias for easy comparison with sublist version
+      - AeroComCldTop
+      - AeroComCldBot
+      - PotentialTemperature
+      - LiqPotentialTemperature
+      - AtmosphereDensity
+      - Exner
+      - VirtualTemperature
+      - z_int
+      - z_mid
+      - height_int
+      - height_mid
+      - geopotential_int
+      - geopotential_mid
+      - dz
+      - DryStaticEnergy
+      - SeaLevelPressure
+      - LiqWaterPath
+      - IceWaterPath
+      - VapWaterPath
+      - RainWaterPath
+      - RimeWaterPath
+      - LiqNumberPath
+      - IceNumberPath
+      - RainNumberPath
+      - ShortwaveCloudForcing
+      - LongwaveCloudForcing
+      - RelativeHumidity
+      - wind_speed
+      - MeridionalVapFlux
+      - ZonalVapFlux
+      - precip_liq_surf_mass_flux
+      - precip_ice_surf_mass_flux
+      - precip_total_surf_mass_flux
+      - surface_upward_latent_heat_flux 
+      # Back Tendency
+      - qc_atm_backtend
+      # Diagnostics At Levels, note we use alias for easy comparison with sublist version
+      - T_mid_at_lev_2
+      - T_mid_at_model_top
+      - T_mid_at_model_bot
+      - T_mid_at_500mb
+      - T_mid_at_500hPa
+      - T_mid_at_50000Pa
+      - PotentialTemperature_at_model_top
+      - PotentialTemperature_at_500mb
+      # Vertical contraction and derivative
+      - T_mid_vert_avg_dp_weighted 
+      - T_mid_vert_sum_dp_weighted 
+      - T_mid_vert_avg_dz_weighted 
+      - T_mid_vert_sum_dz_weighted 
+      - T_mid_pvert_derivative
+      - T_mid_zvert_derivative
+      # Binary Ops
+      - qc_plus_qi
+      - qc_minus_qi
+      - qc_times_qv
+      - qc_over_qi
+      # Vertical and Horizontal averaging.
+      - T_mid_horiz_avg 
+      - T_mid_vert_avg 
+      - T_mid_vert_sum 
+      # Conditional Diagnostics, note we use alias for easy comparison with sublist version
+      - T_mid_where_T_mid_gt_250
+      - T_mid_where_T_mid_lt_300
+      - T_mid_where_T_mid_ge_250
+      - T_mid_where_T_mid_le_300
+      - T_mid_where_T_mid_eq_270
+      - T_mid_where_T_mid_ne_270
+      - qv_where_T_mid_gt_270.5
+      # Complicated combo's of all the options
+      - PotentialTemperature_where_p_mid_gt_400
+      - PotentialTemperature_where_p_mid_lt_800_where_p_mid_gt_400
+      - PotentialTemperature_where_p_mid_lt_800_where_p_mid_gt_400_vert_avg_dp_weighted
+      - PotentialTemperature_where_p_mid_lt_800_where_p_mid_gt_400_vert_avg_dp_weighted_horiz_avg
+      - PotentialTemperature_where_VirtualTemperature_gt_270_where_VirtualTemperature_lt_300
+
+output_control:
+  frequency: ${NUM_STEPS}
+  frequency_units: nsteps
+...

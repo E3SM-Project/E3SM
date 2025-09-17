@@ -1,0 +1,79 @@
+%YAML 1.1
+---
+filename_prefix: homme_shoc_cld_p3_rrtmgp_pg2_output_diag_regex
+averaging_type: instant
+fields:
+  physics_pg2:
+    field_names:
+      # We will use the alias option here to have more coverage and make it possible to
+      # test if combined diags can detect the use of an alias
+      # Diagnostics Basic, note we use alias for easy comparison with sublist version
+      - aero_cld_top:=AeroComCldTop
+      - aero_cld_bot:=AeroComCldBot
+      - theta:=PotentialTemperature
+      - liq_theta:=LiqPotentialTemperature
+      - z_int
+      - z_mid
+      - height_int
+      - height_mid
+      - geopotential_int
+      - geopotential_mid
+      - TLWP:=LiqWaterPath
+      - TIWP:=IceWaterPath
+      - TWVAPP:=VapWaterPath
+      - TRWP:=RainWaterPath
+      - TBWP:=RimeWaterPath
+      - TLNP:=LiqNumberPath
+      - TINP:=IceNumberPath
+      - TRNP:=RainNumberPath
+      - zonal_vapor_flux:=ZonalVapFlux
+      - meridional_vapor_flux:=MeridionalVapFlux
+      - precip_liq_surf_mass_flux
+      - precip_ice_surf_mass_flux
+      - precip_total_surf_mass_flux
+      # Back Tendency
+      - qc_atm_backtend
+      # Diagnostics At Levels, note we use alias for easy comparison with sublist version
+      - T_mid_at_lev_2
+      - T_top:=T_mid_at_model_top
+      - T_bot:=T_mid_at_model_bot
+      - T_500:=T_mid_at_500mb
+      - T_mid_at_500hPa
+      - T_mid_at_50000Pa
+      - theta_at_model_top
+      - theta_at_500mb
+      # Vertical contraction and derivative
+      - T_dpavg:=T_mid_vert_avg_dp_weighted 
+      - T_dpsum:=T_mid_vert_sum_dp_weighted 
+      - T_dzavg:=T_mid_vert_avg_dz_weighted 
+      - T_dzsum:=T_mid_vert_sum_dz_weighted 
+      - dTdp:=T_mid_pvert_derivative
+      - dTdz:=T_mid_zvert_derivative
+      # Binary Ops
+      - qc_p_qi:=qc_plus_qi
+      - qc_m_qi:=qc_minus_qi
+      - qcqv:=qc_times_qv
+      - qcqi_ratio:=qc_over_qi
+      # Vertical and Horizontal averaging.
+      - T_havg:=T_mid_horiz_avg 
+      - T_vavg:=T_mid_vert_avg 
+      - T_vsum:=T_mid_vert_sum 
+      # Conditional Diagnostics, note we use alias for easy comparison with sublist version
+      - T_mid_where_T_mid_gt_250
+      - T_mid_where_T_mid_lt_300
+      - T_mid_where_T_mid_ge_250
+      - T_mid_where_T_mid_le_300
+      - T_mid_where_T_mid_eq_270
+      - T_mid_where_T_mid_ne_270
+      - qv_where_T_mid_gt_270.5
+      # Complicated combo's of all the options
+      - theta_p400:=theta_where_p_mid_gt_400
+      - theta_p400_800:=theta_p400_where_p_mid_lt_800
+      - theta_p400_800_vavg:=theta_p400_800_vert_avg_dp_weighted
+      - theta_p400_800_vavg_havg:=theta_p400_800_pavg_horiz_avg
+      - theta_wrt_vtemp:=theta_where_VirtualTemperature_gt_270_where_VirtualTemperature_lt_300
+
+output_control:
+  frequency: ${NUM_STEPS}
+  frequency_units: nsteps
+...
