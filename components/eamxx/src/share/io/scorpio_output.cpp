@@ -254,6 +254,20 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
   init ();
 }
 
+AtmosphereOutput::
+~AtmosphereOutput()
+{
+  // NOTE: yes, we remove ALL the diags in the static var, even if some other
+  //       output stream may still use it. But by the time this destructor runs,
+  //       we are likely at finalization. This static var is only needed at init,
+  //       to prevent two output streams creating the same diag. So when this
+  //       destructor runs, it's fine to clean up this static var
+  for (auto d : m_diagnostics) {
+    const auto& name = d->get_diagnostic().name();
+    m_diag_repo.erase(name);
+  }
+}
+
 void AtmosphereOutput::
 set_logger(const std::shared_ptr<ekat::logger::LoggerBase>& atm_logger) {
   EKAT_REQUIRE_MSG (atm_logger, "Error! Invalid logger pointer.\n");
@@ -972,7 +986,13 @@ process_requested_fields(const std::string& stream_name)
     }
 
     if (not m_field_mgrs[FromModel]->has_field(name)) {
-      name2diag[name] = create_diagnostic(name,fm_model->get_grid());
+      // Ensure we only have ONE copy of the SAME diag class across all streams
+      auto& diag = m_diag_repo[name];
+      if (diag==nullptr) {
+        diag = create_diagnostic(name,fm_model->get_grid());
+      }
+
+      name2diag[name] = diag;
     }
   }
 
@@ -1147,5 +1167,9 @@ get_var_dimnames (const FieldLayout& layout) const
   }
   return dims;
 }
+
+// Instantiate the static member var
+AtmosphereOutput::strmap_t<AtmosphereOutput::diag_ptr_type>
+AtmosphereOutput::m_diag_repo;
 
 } // namespace scream

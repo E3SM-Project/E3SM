@@ -123,7 +123,7 @@ public:
   using remapper_type = AbstractRemapper;
   using diag_ptr_type = std::shared_ptr<AtmosphereDiagnostic>;
 
-  virtual ~AtmosphereOutput() = default;
+  ~AtmosphereOutput();
 
   // Constructor
   AtmosphereOutput(const ekat::Comm &comm, const ekat::ParameterList &params,
@@ -220,6 +220,8 @@ protected:
   strmap_t<strvec_t> m_vars_dims;
   strmap_t<int> m_dims_len;
   std::list<diag_ptr_type> m_diagnostics;
+
+  static strmap_t<diag_ptr_type> m_diag_repo;
 
   // Field aliasing support
   strmap_t<std::string> m_alias_to_orig; // Map from alias names to original names (used to set io attribute)

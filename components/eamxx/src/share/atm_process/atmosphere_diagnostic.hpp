@@ -75,6 +75,9 @@ protected:
 
   // Diagnostics are meant to return a field
   Field m_diagnostic_output;
+
+  // Timestamp of the last diag evaluation
+  util::TimeStamp m_last_eval_ts;
 };
 
 // A short name for the factory for atmosphere diagnostics

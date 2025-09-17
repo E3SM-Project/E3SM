@@ -38,6 +38,11 @@ void AtmosphereDiagnostic::compute_diagnostic (const double dt) {
       "Error! All inputs to diagnostic have invalid timestamp.\n"
       "  - Diag name: " + name() + "\n");
 
+  if (ts==m_last_eval_ts) {
+    // No need to compute the diag again
+    return;
+  }
+
   m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
 
   // Note: call the impl method *after* setting the diag time stamp.
@@ -46,6 +51,8 @@ void AtmosphereDiagnostic::compute_diagnostic (const double dt) {
   // to something invalid, which can be used by downstream classes to determine
   // if the diag has been successfully computed or not.
   compute_diagnostic_impl ();
+
+  m_last_eval_ts = ts;
 }
 
 void AtmosphereDiagnostic::run_impl (const double dt) {
