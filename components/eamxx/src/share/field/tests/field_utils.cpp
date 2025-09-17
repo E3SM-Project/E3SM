@@ -4,19 +4,17 @@
 #include "share/field/field_identifier.hpp"
 #include "share/field/field_header.hpp"
 #include "share/field/field.hpp"
-#include "share/field/field_manager.hpp"
 #include "share/field/field_utils.hpp"
-#include "eamxx_setup_random_test.hpp"
 #include "share/util/eamxx_universal_constants.hpp"
 
-#include "share/grid/point_grid.hpp"
+#include "eamxx_setup_random_test.hpp"
 
 #include <ekat_pack.hpp>
 #include <ekat_subview_utils.hpp>
 
 namespace {
 
-TEST_CASE("utils") {
+TEST_CASE("field_utils") {
   using namespace scream;
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
