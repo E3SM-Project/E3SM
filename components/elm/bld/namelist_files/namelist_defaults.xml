@@ -458,7 +458,7 @@ lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr1850_c211019.nc</fsurdat>
 <fsurdat hgrid="r05"          sim_year="1850" use_crop=".false."  use_atm_downscaling_to_topunit =".true.">
 lnd/clm2/surfdata_map/topounit_based_half_degree_merge_surfdata_0.5x0.5_simyr1850_c211019.20211108.nc</fsurdat>
 <fsurdat hgrid="r0125"        sim_year="1850" use_crop=".false." >
-lnd/clm2/surfdata_map/surfdata_0.125x0.125_simyr1850_c190730.nc</fsurdat>
+lnd/clm2/surfdata_map/surfdata_0.125x0.125_simyr1850_c250910_TOP.nc</fsurdat>
 <fsurdat hgrid="r0125"        sim_year="1950" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_0.125x0.125_simyr1950_c210924.nc</fsurdat>
 <fsurdat hgrid="r025"    sim_year="1850" use_crop=".false." >
