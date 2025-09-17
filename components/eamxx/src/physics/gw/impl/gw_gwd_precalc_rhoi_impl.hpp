@@ -90,6 +90,7 @@ void Functions<S,D>::gwd_precalc_rhoi(
       }
     });
 
+  team.team_barrier();
   Kokkos::parallel_for(
     Kokkos::TeamVectorRange(team, pver), [&] (const int k) {
       ttgw(k) = dttke(k) + dttdf(k);
