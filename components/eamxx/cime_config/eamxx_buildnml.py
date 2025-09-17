@@ -5,6 +5,7 @@ Used by buildnml. See buildnml for documetation.
 """
 
 import os, sys, re, pwd, grp, stat, getpass
+from pathlib import Path
 
 import xml.etree.ElementTree as ET
 import xml.dom.minidom as md
@@ -1184,8 +1185,10 @@ def archive_case_docs(caseroot):
         # We for sure have scream_input.yaml and namelist.nl
         files = ['scream_input.yaml', 'namelist.nl']
 
+        caseroot = Path(caseroot)
+
         # Get the XML configs, and find all output yaml files
-        eamxx_xml_file = os.path.join(caseroot, "namelist_scream.xml")
+        eamxx_xml_file = caseroot / "namelist_scream.xml"
 
         with open(eamxx_xml_file, "r") as fd:
             eamxx_xml = ET.parse(fd).getroot()
@@ -1196,10 +1199,13 @@ def archive_case_docs(caseroot):
 
         for fn in out_files:
             # Get full name
-            src_yaml = os.path.expanduser(os.path.join(fn.strip()))
-            files.append(os.path.basename(src_yaml))
+            src_yaml = Path(fn.strip())
+            files.append(src_yaml.name)
 
-        for f in files:
-            src = os.path.join(caseroot,f'run/data/{f}')
-            dst = os.path.join(caseroot,f'CaseDocs/{f}')
-            safe_copy(src,dst)
+        casedocs = caseroot / 'CaseDocs'
+        if casedocs.exists():
+            for f in files:
+                src = caseroot / 'run/data' / f
+                if src.exists():
+                    dst = caseroot / 'CaseDocs' / f
+                    safe_copy(src,dst)
