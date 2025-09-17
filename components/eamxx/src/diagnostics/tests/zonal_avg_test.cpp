@@ -151,6 +151,9 @@ TEST_CASE("zonal_avg") {
   // Set qc1_v to 1.0 to get zonal averages of 1.0/nlats
   const Real zavg1 = sp(1.0);
   qc1.deep_copy(zavg1);
+  // Change the input timestamp, to prevent early return and trigger diag recalculation
+  t0 += 1;
+  qc1.get_header().get_tracking().update_time_stamp(t0);
   diag1->compute_diagnostic();
   auto diag1_view_host = diag1_field.get_view<const Real *, Host>();
   for (int nlat = 0; nlat < nlats; nlat++) {
