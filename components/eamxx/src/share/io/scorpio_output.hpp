@@ -164,7 +164,7 @@ protected:
                           const scorpio::FileMode mode);
   void set_decompositions(const std::string &filename);
   void compute_diagnostics(const bool allow_invalid_fields);
-  void init_diagnostics();
+  void process_requested_fields(const std::string& stream_name);
   strvec_t get_var_dimnames(const FieldLayout &layout) const;
 
   // Tracking the averaging of any filled values:
@@ -222,8 +222,7 @@ protected:
   std::list<diag_ptr_type> m_diagnostics;
 
   // Field aliasing support
-  strmap_t<std::string> m_alias_to_field_map; // Map from alias names to internal field names
-  strvec_t m_alias_names;                     // List of alias names (for netcdf variables)
+  strmap_t<std::string> m_alias_to_orig; // Map from alias names to original names (used to set io attribute)
 
   DefaultMetadata m_default_metadata;
 

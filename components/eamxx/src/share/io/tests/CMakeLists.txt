@@ -19,7 +19,7 @@ CreateUnitTest(io_utils "io_utils.cpp"
 
 ## Test field aliasing functionality
 CreateUnitTest(io_alias "io_alias.cpp"
-  LIBS scream_io LABELS io
+  LIBS scream_io diagnostics LABELS io
 )
 
 # Test creation of diagnostic from diag_field_name

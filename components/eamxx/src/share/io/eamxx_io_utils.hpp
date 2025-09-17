@@ -89,16 +89,6 @@ std::shared_ptr<AtmosphereDiagnostic>
 create_diagnostic (const std::string& diag_name,
                    const std::shared_ptr<const AbstractGrid>& grid);
 
-// Parse field alias from field specification string.
-// Format: "alias:=field_name" returns {alias, field_name}
-// For non-aliased fields, returns {field_name, field_name}
-std::pair<std::string, std::string>
-parse_field_alias (const std::string& field_spec);
-
-// Process a list of field specifications with potential aliases.
-// Returns a map from alias_name -> internal_field_name and a vector of alias names
-std::pair<std::map<std::string, std::string>, std::vector<std::string>>
-process_field_aliases (const std::vector<std::string>& field_specs);
-
 } // namespace scream
+
 #endif // SCREAM_IO_UTILS_HPP
