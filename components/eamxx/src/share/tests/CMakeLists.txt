@@ -5,16 +5,6 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
   # Test column ops
   CreateUnitTest(column_ops "column_ops.cpp")
 
-  # Test fields
-  CreateUnitTest(field "field_tests.cpp")
-
-  # Test fields
-  CreateUnitTest(subfield "subfield_tests.cpp")
-
-  # Test field utils
-  CreateUnitTest(field_utils "field_utils.cpp"
-    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
-
   # Test property checks
   CreateUnitTest(property_checks "property_checks.cpp")
 
@@ -72,7 +62,4 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
 
   CreateUnitTest(atm_proc "atm_process_tests.cpp")
 
-  if (EAMXX_ENABLE_PYTHON)
-    CreateUnitTest(pyfield "pyfield.cpp")
-  endif()
 endif()

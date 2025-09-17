@@ -4,6 +4,9 @@ add_subdirectory(core)
 # Small/generic utilities
 add_subdirectory(util)
 
+# Field structures
+add_subdirectory(field)
+
 set(SHARE_SRC
   atm_process/atmosphere_process.cpp
   atm_process/atmosphere_process_hash.cpp
@@ -11,16 +14,6 @@ set(SHARE_SRC
   atm_process/atmosphere_process_dag.cpp
   atm_process/atmosphere_diagnostic.cpp
   atm_process/IOPDataManager.cpp
-  field/field_alloc_prop.cpp
-  field/field_identifier.cpp
-  field/field_header.cpp
-  field/field_layout.cpp
-  field/field_tracking.cpp
-  field/field.cpp
-  field/field_group.cpp
-  field/field_manager.cpp
-  field/field_sync.cpp
-  field/field_utils.cpp
   grid/abstract_grid.cpp
   grid/grids_manager.cpp
   grid/grid_import_export.cpp
@@ -34,6 +27,7 @@ set(SHARE_SRC
   grid/remap/identity_remapper.cpp
   grid/remap/refining_remapper_p2p.cpp
   grid/remap/vertical_remapper.cpp
+  manager/field_manager.cpp
   property_checks/property_check.cpp
   property_checks/field_nan_check.cpp
   property_checks/field_within_interval_check.cpp
@@ -42,59 +36,6 @@ set(SHARE_SRC
   algorithm/eamxx_fv_phys_rrtmgp_active_gases_workaround.cpp
   algorithm/eamxx_time_interpolation.cpp
 )
-
-# Append ETI sources (I didn't do it above for clarity of reading)
-list (APPEND SHARE_SRC
-  field/eti/field_eti_deep_copy_double_device.cpp
-  field/eti/field_eti_deep_copy_float_device.cpp
-  field/eti/field_eti_deep_copy_int_device.cpp
-  field/eti/field_eti_get_strided_view_double_device.cpp
-  field/eti/field_eti_get_strided_view_float_device.cpp
-  field/eti/field_eti_get_strided_view_int_device.cpp
-  field/eti/field_eti_get_view_double_device.cpp
-  field/eti/field_eti_get_view_float_device.cpp
-  field/eti/field_eti_get_view_int_device.cpp
-  field/eti/field_eti_update_double_device.cpp
-  field/eti/field_eti_update_float_device.cpp
-  field/eti/field_eti_update_impl_double_device.cpp
-  field/eti/field_eti_update_impl_fill_double_device.cpp
-  field/eti/field_eti_update_impl_fill_float_device.cpp
-  field/eti/field_eti_update_impl_fill_int_device.cpp
-  field/eti/field_eti_update_impl_float_device.cpp
-  field/eti/field_eti_update_impl_int_device.cpp
-  field/eti/field_eti_update_int_device.cpp
-  field/eti/field_utils_eti_compute_mask_le_int.cpp
-  field/eti/field_utils_eti_compute_mask_le_float.cpp
-  field/eti/field_utils_eti_compute_mask_le_double.cpp
-  field/eti/field_utils_eti_compute_mask_ne_int.cpp
-  field/eti/field_utils_eti_compute_mask_ne_float.cpp
-  field/eti/field_utils_eti_compute_mask_ne_double.cpp
-  field/eti/field_eti_update_max_min_double_device.cpp
-  field/eti/field_eti_update_max_min_float_device.cpp
-  field/eti/field_eti_update_max_min_impl_double_device.cpp
-  field/eti/field_eti_update_max_min_impl_fill_double_device.cpp
-  field/eti/field_eti_update_max_min_impl_fill_float_device.cpp
-  field/eti/field_eti_update_max_min_impl_fill_int_device.cpp
-  field/eti/field_eti_update_max_min_impl_float_device.cpp
-  field/eti/field_eti_update_max_min_impl_int_device.cpp
-  field/eti/field_eti_update_max_min_int_device.cpp
-)
-
-if (EAMXX_ENABLE_GPU)
-  # The HostOrDevice::Device is different from HostOrDevice::Host,
-  # so we need to ETI also these fcns for HostOrDevice::Host
-  # NOTE: we DON'T do ETI for the update/max/min utils, as they are
-  #       only used on device (at least for now). OTOH, the methods
-  #       to extract views are used in a few places
-  list (APPEND SHARE_SRC
-    field/eti/field_eti_get_strided_view_double_host.cpp
-    field/eti/field_eti_get_strided_view_float_host.cpp
-    field/eti/field_eti_get_strided_view_int_host.cpp
-    field/eti/field_eti_get_view_double_host.cpp
-    field/eti/field_eti_get_view_float_host.cpp
-    field/eti/field_eti_get_view_int_host.cpp
-  )
-endif()
 
 if (EAMXX_ENABLE_EXPERIMENTAL_CODE)
   list (APPEND
@@ -113,7 +54,8 @@ target_include_directories(scream_share PUBLIC
 
 target_link_libraries(scream_share PUBLIC
   eamxx_core
-  eamxx_utils)
+  eamxx_utils
+  eamxx_field)
 
 # Used in the data interpolation
 target_link_libraries(scream_share PUBLIC stdc++fs)
