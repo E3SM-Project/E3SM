@@ -74,7 +74,6 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const std::vector<Fie
   for (auto f : fields) {
     fm->add_field(f);
     m_fields_names.push_back(f.name());
-    m_alias_names.push_back(f.name()); // Use field name as alias (no aliasing)
   }
 
   // No remaps: set all FM except the one for scorpio (created in init())
@@ -103,14 +102,13 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
 
   // By default, IO is done directly on the field mgr grid
   auto fm_grid = field_mgr->get_grids_manager()->get_grid(grid_name);
-  std::vector<std::string> field_specs; // Raw field specifications from YAML (may include aliases)
   
   std::string output_data_layout = "default";
   if (params.isParameter("field_names")) {
     // This simple parameter list option does *not* allow to remap fields
     // to an io grid different from that of the field manager. In order to
     // use that functionality, you need the full syntax
-    field_specs = params.get<vos_t>("field_names");
+    m_fields_names = params.get<vos_t>("field_names");
     if (params.isParameter("output_data_layout"))
       output_data_layout = params.get<std::string>("output_data_layout");
   } else if (params.isSublist("fields")){
@@ -123,11 +121,11 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
         if (pl.isParameter("output_data_layout"))
           output_data_layout = pl.get<std::string>("output_data_layout");
         if (pl.isType<vos_t>("field_names")) {
-          field_specs = pl.get<vos_t>("field_names");
+          m_fields_names = pl.get<vos_t>("field_names");
         } else if (pl.isType<std::string>("field_names")) {
-          field_specs.resize(1, pl.get<std::string>("field_names"));
-          if (field_specs[0]=="NONE") {
-            field_specs.clear();
+          m_fields_names.resize(1, pl.get<std::string>("field_names"));
+          if (m_fields_names[0]=="NONE") {
+            m_fields_names.clear();
           }
         }
       }
@@ -145,30 +143,6 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
   } else {
     change_data_layout = true;
   }
-
-  // Process field specifications to extract aliases and internal field names
-  auto [alias_to_field_map, alias_names] = process_field_aliases(field_specs);
-  m_alias_to_field_map = alias_to_field_map;
-  m_alias_names = alias_names;
-  
-  // Extract internal field names for further processing
-  m_fields_names.clear();
-  for (const auto& spec : field_specs) {
-    auto [alias, field_name] = parse_field_alias(spec);
-    m_fields_names.push_back(field_name);
-  }
-
-  // TODO: allow users to request the same field more than once via different aliases
-  // TODO: currently, that would result in issues downstream, and so it must be done
-  // TODO: more carefully. The rationale is to enable users to debug their aliasing, etc.
-  EKAT_REQUIRE_MSG (not has_duplicates(m_alias_names),
-      "[AtmosphereOutput] Error! One of the output yaml files has duplicate field alias entries.\n"
-      " - yaml file: " + params.name() + "\n"
-      " - alias names; " + ekat::join(m_alias_names,",") + "\n");
-  EKAT_REQUIRE_MSG (not has_duplicates(m_fields_names),
-      "[AtmosphereOutput] Error! One of the output yaml files has duplicate field entries.\n"
-      " - yaml file: " + params.name() + "\n"
-      " - fields names: " + ekat::join(m_fields_names,",") + "\n");
 
   // Check if remapping and if so create the appropriate remapper
   // Note: We currently support three remappers
@@ -194,9 +168,8 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
     fm_model->add_field(*f_ptr);
   }
 
-  // ... then add diagnostic fields
-  // ... and we also use this to init track avg cnt for regular fields
-  init_diagnostics ();
+  // Then we 1) create aliases, and b) create diagnostics, adding alias/diag fields to fm_model
+  process_requested_fields (params.name());
 
   // Avg count only makes sense if we have
   //  - non-instant output
@@ -204,7 +177,7 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
   //    - vertically remapped output
   //    - field_at_XhPa diagnostic
   //    - fields that can contain invalid values (not yet supported, but RAD may want this at some point)
-  // We already set m_track_avg_cnt to true if field_at_XhPa is found in init_diagnostics.
+  // We already set m_track_avg_cnt to true if field_at_XhPa is found in process_requested_fields.
   // Hence, here we only check if vert remap is active
 
   if (m_avg_type!=OutputAvgType::Instant) {
@@ -320,7 +293,6 @@ void AtmosphereOutput::init()
   auto fm_scorpio = m_field_mgrs[Scorpio] = std::make_shared<FieldManager>(fm_after_hr->get_grid(),RepoState::Closed);
   for (size_t i = 0; i < m_fields_names.size(); ++i) {
     const auto& fname = m_fields_names[i];
-    const auto& alias = m_alias_names[i];
     const auto& f = fm_after_hr->get_field(fname);
     const auto& fh = f.get_header();
     const auto& fid = fh.get_identifier();
@@ -340,9 +312,9 @@ void AtmosphereOutput::init()
       fm_scorpio->add_field(f);
     }
 
-    // Store the field layout using alias name, so that calls to setup_output_file are easier
+    // Store the field layout, so that calls to setup_output_file are easier
     const auto& layout = fid.get_layout();
-    m_vars_dims[alias] = get_var_dimnames(layout);
+    m_vars_dims[fname] = get_var_dimnames(layout);
 
     // Now check that all the dims of this field are already set to be registered.
     const auto& tags = layout.tags();
@@ -364,7 +336,7 @@ void AtmosphereOutput::init()
                   : layout.dim(j);
       auto it_bool = m_dims_len.emplace(dimname,dimlen);
       EKAT_REQUIRE_MSG(it_bool.second or it_bool.first->second==dimlen,
-        "Error! Dimension " + dimname + " on field " + fname + " (alias: " + alias + ") has conflicting lengths.\n"
+        "Error! Dimension " + dimname + " on field " + fname + " has conflicting lengths.\n"
         "  - old length: " + std::to_string(it_bool.first->second) + "\n"
         "  - new length: " + std::to_string(dimlen) + "\n"
         "If same name applies to different dims (e.g. PhysicsGLL and PhysicsPG2 define "
@@ -528,7 +500,6 @@ run (const std::string& filename,
   // Take care of updating and possibly writing fields.
   for (size_t i = 0; i < m_fields_names.size(); ++i) {
     const auto& field_name = m_fields_names[i];
-    const auto& alias_name = m_alias_names[i];
     
     // Get all the info for this field.
     const auto& f_in  = fm_after_hr->get_field(field_name);
@@ -577,9 +548,9 @@ run (const std::string& filename,
       // Bring data to host
       f_out.sync_to_host();
 
-      // Write using alias name for netcdf variable
+      // Write to file
       auto func_start = std::chrono::steady_clock::now();
-      scorpio::write_var(filename,alias_name,f_out.get_internal_view_data<Real,Host>());
+      scorpio::write_var(filename,field_name,f_out.get_internal_view_data<Real,Host>());
       auto func_finish = std::chrono::steady_clock::now();
       auto duration_loc = std::chrono::duration_cast<std::chrono::milliseconds>(func_finish - func_start);
       duration_write += duration_loc.count();
@@ -709,13 +680,11 @@ register_variables(const std::string& filename,
       "  - input value: " + fp_precision + "\n"
       "  - supported values: float, single, double, real\n");
 
-  // Cycle through all fields and register using alias names.
-  for (size_t i = 0; i < m_fields_names.size(); ++i) {
-    const auto& field_name = m_fields_names[i];
-    const auto& alias_name = m_alias_names[i];
+  // Cycle through all fields and register variables
+  for (const auto& field_name : m_fields_names) {
     const auto& f = m_field_mgrs[Scorpio]->get_field(field_name);
     const auto& fid  = f.get_header().get_identifier();
-    const auto& dimnames = m_vars_dims.at(alias_name);
+    const auto& dimnames = m_vars_dims.at(field_name);
     std::string units = fid.get_units().to_string();
 
     // TODO  Need to change dtype to allow for other variables.
@@ -724,40 +693,44 @@ register_variables(const std::string& filename,
 
     if (mode==scorpio::FileMode::Append) {
       // Simply check that the var is in the file, and has the right properties
-      EKAT_REQUIRE_MSG (scorpio::has_var(filename,alias_name),
+      EKAT_REQUIRE_MSG (scorpio::has_var(filename,field_name),
           "Error! Cannot append, due to variable missing from the file.\n"
           "  - filename : " + filename + "\n"
-          "  - varname  : " + alias_name + "\n");
-      const auto& var = scorpio::get_var(filename,alias_name);
+          "  - varname  : " + field_name + "\n");
+      const auto& var = scorpio::get_var(filename,field_name);
       EKAT_REQUIRE_MSG (var.dim_names()==dimnames,
           "Error! Cannot append, due to variable dimensions mismatch.\n"
           "  - filename : " + filename + "\n"
-          "  - varname  : " + alias_name + "\n"
+          "  - varname  : " + field_name + "\n"
           "  - var dims : " + ekat::join(dimnames,",") + "\n"
           "  - var dims from file: " + ekat::join(var.dim_names(),",") + "\n");
       EKAT_REQUIRE_MSG (var.units==units,
           "Error! Cannot append, due to variable units mismatch.\n"
           "  - filename : " + filename + "\n"
-          "  - varname  : " + alias_name + "\n"
+          "  - varname  : " + field_name + "\n"
           "  - var units: " + units + "\n"
           "  - var units from file: " + var.units + "\n");
       EKAT_REQUIRE_MSG (var.time_dep==m_add_time_dim,
           "Error! Cannot append, due to time dependency mismatch.\n"
           "  - filename : " + filename + "\n"
-          "  - varname  : " + alias_name + "\n"
+          "  - varname  : " + field_name + "\n"
           "  - var time dep: " + (m_add_time_dim ? "yes" : "no") + "\n"
           "  - var time dep from file: " + (var.time_dep ? "yes" : "no") + "\n");
     } else {
-      scorpio::define_var (filename, alias_name, units, dimnames,
+      scorpio::define_var (filename, field_name, units, dimnames,
                             "real",fp_precision, m_add_time_dim);
 
       // Add FillValue as an attribute of each variable
       // FillValue is a protected metadata, do not add it if it already existed
       if (fp_precision=="double" or
           (fp_precision=="real" and std::is_same<Real,double>::value)) {
-        scorpio::set_attribute(filename, alias_name, "_FillValue",constants::fill_value<double>);
+        scorpio::set_attribute(filename, field_name, "_FillValue",constants::fill_value<double>);
       } else {
-        scorpio::set_attribute(filename, alias_name, "_FillValue",constants::fill_value<float>);
+        scorpio::set_attribute(filename, field_name, "_FillValue",constants::fill_value<float>);
+      }
+      if (m_alias_to_orig.count(field_name)==1) {
+        // Store what this field is the alias of
+        scorpio::set_attribute(filename, field_name, "alias_of",m_alias_to_orig[field_name]);
       }
 
       // If this is has subfields, add list of its children
@@ -774,53 +747,48 @@ register_variables(const std::string& filename,
         children_list.pop_back();
         children_list.pop_back();
         children_list += " ]";
-        scorpio::set_attribute(filename,alias_name,"sub_fields",children_list);
+        scorpio::set_attribute(filename,field_name,"sub_fields",children_list);
       }
 
       // If tracking average count variables then add the name of the tracking variable for this variable
       if (m_field_to_avg_count.count(field_name)) {
         const auto& count = m_field_to_avg_count.at(field_name);
-        scorpio::set_attribute(filename,alias_name,"averaging_count_tracker",count.name());
+        scorpio::set_attribute(filename,field_name,"averaging_count_tracker",count.name());
       }
 
       // Atm procs may have set some request for metadata.
       using stratts_t = std::map<std::string,std::string>;
       const auto& str_atts = f.get_header().get_extra_data<stratts_t>("io: string attributes");
       for (const auto& [att_name,att_val] : str_atts) {
-        scorpio::set_attribute(filename,alias_name,att_name,att_val);
+        scorpio::set_attribute(filename,field_name,att_name,att_val);
       }
 
       // Gather longname (if not already in the io: string attributes)
       if (str_atts.count("long_name")==0) {
         auto longname = m_default_metadata.get_longname(field_name);
-        scorpio::set_attribute(filename, alias_name, "long_name", longname);
+        scorpio::set_attribute(filename, field_name, "long_name", longname);
       }
 
       // Gather standard name, CF-Compliant (if not already in the io: string attributes)
       if (str_atts.count("standard_name")==0) {
         auto standardname = m_default_metadata.get_standardname(field_name);
-        scorpio::set_attribute(filename, alias_name, "standard_name", standardname);
+        scorpio::set_attribute(filename, field_name, "standard_name", standardname);
       }
       
-      // Add alias information if variable name differs from field name
-      if (alias_name != field_name) {
-        scorpio::set_attribute(filename, alias_name, "eamxx_name", field_name);
-      }
-
       // If output represents an statistic over a time range add a "cell methods"
       // attribute.
       switch (m_avg_type) {
         case OutputAvgType::Instant:
-          scorpio::set_attribute(filename, alias_name, "cell_methods", "time: point");
+          scorpio::set_attribute(filename, field_name, "cell_methods", "time: point");
           break;  // Don't add the attribute
         case OutputAvgType::Max:
-          scorpio::set_attribute(filename, alias_name, "cell_methods", "time: maximum");
+          scorpio::set_attribute(filename, field_name, "cell_methods", "time: maximum");
           break;
         case OutputAvgType::Min:
-          scorpio::set_attribute(filename, alias_name, "cell_methods", "time: minimum");
+          scorpio::set_attribute(filename, field_name, "cell_methods", "time: minimum");
           break;
         case OutputAvgType::Average:
-          scorpio::set_attribute(filename, alias_name, "cell_methods", "time: mean");
+          scorpio::set_attribute(filename, field_name, "cell_methods", "time: mean");
           break;
         default:
           EKAT_ERROR_MSG ("Unexpected/unsupported averaging type.\n");
@@ -828,9 +796,8 @@ register_variables(const std::string& filename,
 
       // If output contains the column dimension add a "coordinates" attribute.
       if (fid.get_layout().has_tag(COL)) {
-        scorpio::set_attribute(filename, alias_name, "coordinates", "lat lon");
+        scorpio::set_attribute(filename, field_name, "coordinates", "lat lon");
       }
-
     }
   }
 
@@ -958,30 +925,82 @@ compute_diagnostics(const bool allow_invalid_fields)
 }
 
 void AtmosphereOutput::
-init_diagnostics ()
+process_requested_fields(const std::string& stream_name)
 {
   // So far, all fields (on the output grid) that ARE in the model FM have been added
   // to the FM stored in this class for the FromModel phase. Anything missing
-  // must be a diagnostic.
+  // must be either a diagnostic or an alias.
 
   auto fm_model = m_field_mgrs[FromModel];
   auto fm_grid = m_field_mgrs[FromModel]->get_grid();
 
-  // NOTE: lambda's cannot call themselves recursively. So store the lambda
-  //       inside a std::function, so that the lambda body CAN call create_diag.
-  std::function<void(const std::string&)> create_diag;
-  create_diag = [&](const std::string& name) {
-    // Create the diag
-    auto diag = create_diagnostic(name,fm_model->get_grid());
+  // First, find out which field names are just aliases
+  // NOTE: we must parse ALL field names in case someone creates an alias of an alias
+  strvec_t orig_fields;
+  for (auto& name : m_fields_names) {
+    auto tokens = ekat::split(name,":=");
+    EKAT_REQUIRE_MSG(tokens.size()==2 or tokens.size()==1,
+        "Error! Invalid alias request. Should be 'alias:=original'.\n"
+        " - request: " + name + "\n");
+    if (tokens.size()==2) {
+      EKAT_REQUIRE_MSG (m_alias_to_orig.count(tokens[0])==0,
+          "Error! The same alias has been used multiple times.\n"
+          " - stream name: " + stream_name + "\n"
+          " - first alias: " + tokens[0] + ":=" + m_alias_to_orig[tokens[0]] + "\n"
+          " - second alias: " + tokens[0] + ":=" + tokens[1] + "\n");
+      m_alias_to_orig[tokens[0]] = tokens[1];
+      name = tokens[0];
+      orig_fields.push_back(tokens[1]);
+    } else {
+      orig_fields.push_back(name);
+    }
+  }
 
-    // Set inputs in the diag (and recurse if inputs are also diags not yet created)
+  EKAT_REQUIRE_MSG (not has_duplicates(m_fields_names),
+      "Error! The list of requested output fields contains duplicates.\n"
+      " - stream name:  " + stream_name + "\n"
+      " - fields names: " + ekat::join(m_fields_names,",") + "\n");
+
+  // Due to aliasing, we are not yet able to establish the diags eval order,
+  // so just create them for now. Once we have all diags, we will resolve aliasing,
+  // and be able to store diags in the correct order for evaluation
+  strmap_t<std::shared_ptr<AtmosphereDiagnostic>> name2diag;
+  for (const auto& name : orig_fields) {
+    if (m_alias_to_orig.count(name)==1) {
+      // This is an alias of an alias. We'll allow it.
+      continue;
+    }
+
+    if (not m_field_mgrs[FromModel]->has_field(name)) {
+      name2diag[name] = create_diagnostic(name,fm_model->get_grid());
+    }
+  }
+
+  // Helper lambda to check if this fm_model field should trigger avg count
+  auto check_for_avg_cnt = [&](const Field& f) {
+    // We need avg-count tracking for any averaged (non-instant) field that:
+    //  - supplies explicit mask info (mask_data or mask_field), OR
+    //  - is marked as potentially containing fill values (may_be_filled()).
+    // Without this, fill-aware updates skip fill_value during accumulation (good)
+    // but we would still divide by the raw nsteps, biasing the result low.
+    if (m_avg_type!=OutputAvgType::Instant) {
+      const bool has_mask = f.get_header().has_extra_data("mask_data") || f.get_header().has_extra_data("mask_field");
+      const bool may_be_filled = f.get_header().may_be_filled();
+      if (has_mask || may_be_filled) {
+        m_track_avg_cnt = true;
+        // Avoid duplicate insertion if already present (e.g., mask + filled both true)
+        if (m_field_to_avg_cnt_suffix.count(f.name())==0) {
+          m_field_to_avg_cnt_suffix.emplace(f.name(), "_" + f.name());
+        }
+      }
+    }
+  };
+
+  // Helper lambda that initializes a diagnostic
+  auto init_diag = [&](const std::shared_ptr<AtmosphereDiagnostic>& diag) {
+    // Set inputs in the diag
     for (const auto& freq : diag->get_required_field_requests()) {
       const auto& dep_name = freq.fid.name();
-
-      if (not fm_model->has_field(dep_name)) {
-        // Not a field from the model, nor another diag we already created
-        create_diag(dep_name);
-      }
 
       auto dep = fm_model->get_field(dep_name);
       diag->set_required_field(dep);
@@ -1026,38 +1045,89 @@ init_diagnostics ()
       m_field_to_avg_cnt_suffix.emplace(diag_field.name(),diag_avg_cnt_name);
     }
 
-    // All done, add to the diags vector
+    // All done, add to the diags list
     m_diagnostics.push_back(diag);
   };
-
+  
+  // Now, keep processing each field. We can process a field if either:
+  //  - it is already in the model FM
+  //  - it is an alias of a field added to the FM
+  //  - it is a diag that ONLY depends on fields already added to the FM
+  // We keep scanning the fields names and process a field, removing it from the list.
+  // There MUST be at least ONE field we can process at every iteration, but
+  // some field MAY have to wait until another is processed. E.g., if we have
+  // 'foo_at_900hPa' and 'foo:=horiz_winds', the latter (an alias) must be
+  // processed first, as it adds the 'foo' alias field to the fm, which the
+  // diag 'foo_at_900hPa' needs to be correctly initialized.
   // Notice that, thanks to how we create and add diags to m_diagnostics,
   // the order in which diags appear in m_diagnostics follows the evaluation
   // order, meaning that if diag A depends on diag B, then B appears *before* A.
   // This ensures we can evaluate diags in order at runtime
-  for (const auto& fname : m_fields_names) {
-    if (not m_field_mgrs[FromModel]->has_field(fname)) {
-      create_diag(fname);
-    } else {
-      // This is a regular field, not a diagnostic.
-      // Still, we might need to do some extra setup, like for avg_count.
-      const auto& f = m_field_mgrs[FromModel]->get_field(fname);
-      // We need avg-count tracking for any averaged (non-instant) field that:
-      //  - supplies explicit mask info (mask_data or mask_field), OR
-      //  - is marked as potentially containing fill values (may_be_filled()).
-      // Without this, fill-aware updates skip fill_value during accumulation (good)
-      // but we would still divide by the raw nsteps, biasing the result low.
-      if (m_avg_type!=OutputAvgType::Instant) {
-        const bool has_mask = f.get_header().has_extra_data("mask_data") || f.get_header().has_extra_data("mask_field");
-        const bool may_be_filled = f.get_header().may_be_filled();
-        if (has_mask || may_be_filled) {
-          m_track_avg_cnt = true;
-          // Avoid duplicate insertion if already present (e.g., mask + filled both true)
-          if (m_field_to_avg_cnt_suffix.count(f.name())==0) {
-            m_field_to_avg_cnt_suffix.emplace(f.name(), "_" + f.name());
+  bool done = false;
+  std::set<std::string> remaining(m_fields_names.begin(),m_fields_names.end());
+  for (const auto& it : m_alias_to_orig) {
+    remaining.insert(it.second);
+  }
+  while (not done) {
+    // We can't add-to/rm-form a std:;set while iterating on it, as that could
+    // change the end iterator. Hence, keep track of what we add or remove,
+    // and add/remove after the for loop ends
+    std::set<std::string> remove_these, add_these;
+    for (const auto& name : remaining) {
+      if (fm_model->has_field(name)) {
+        // This is a regular field, not a diagnostic nor an alias.
+        // Still, we might need to do some extra setup, like for avg_count.
+        const auto& f = m_field_mgrs[FromModel]->get_field(name);
+        check_for_avg_cnt(f);
+        remove_these.insert(name);
+      } else if (m_alias_to_orig.count(name)==1) {
+        // An alias. If the aliased field was already processed, we can
+        // process the alias as well
+        if (fm_model->has_field(m_alias_to_orig[name])) {
+          const auto& orig = fm_model->get_field(m_alias_to_orig[name]);
+          auto alias = orig.alias(name);
+          fm_model->add_field(alias);
+          remove_these.insert(name);
+        }
+      } else {
+        // This MUST be a diag field. If all its deps are already in fm_model,
+        // then we can process it
+        EKAT_REQUIRE_MSG (name2diag.count(name)==1,
+            "Error! Cannot process requested output field '" + name + "'\n");
+        auto diag = name2diag[name];
+        bool ready_to_init = true;
+        for (const auto& freq : diag->get_required_field_requests()) {
+          const auto& dep_name = freq.fid.name();
+          if (not fm_model->has_field(dep_name)) {
+            ready_to_init = false;
+            if (not remaining.count(dep_name)) {
+              // This requirement MUST be another diagnostic, since it was not in the original m_fields_names
+              // Create the diag, and add it to the list of fields to process
+              name2diag[freq.fid.name()] = create_diagnostic(freq.fid.name(),fm_model->get_grid());
+              add_these.insert(freq.fid.name());
+            }
+            break;
           }
+        }
+        if (ready_to_init) {
+          init_diag(diag);
+          remove_these.insert(name);
         }
       }
     }
+
+    EKAT_REQUIRE_MSG (add_these.size()>0 or remove_these.size()>0,
+        "Error! We're stuck in an endless loop while processing output fields.\n"
+        " - stream name: " + stream_name + "\n");
+
+    for (const auto& n : remove_these) {
+      remaining.erase(n);
+    }
+    for (const auto& n : add_these) {
+      remaining.insert(n);
+    }
+
+    done = remaining.size()==0;
   }
 }
 
