@@ -95,17 +95,30 @@ void CldFraction::run_impl (const double /* dt */)
   auto tot_cld_frac_4out = get_field_out("cldfrac_tot_for_analysis");
 #ifdef EAMXX_HAS_PYTHON
   if (has_py_module()) {
-    // For now, we run Python code only on CPU
-    const auto& py_qi                = get_py_field_host("qi");
-    const auto& py_liq_cld_frac      = get_py_field_host("cldfrac_liq");
-    const auto& py_ice_cld_frac      = get_py_field_host("cldfrac_ice");
-    const auto& py_tot_cld_frac      = get_py_field_host("cldfrac_tot");
-    const auto& py_ice_cld_frac_4out = get_py_field_host("cldfrac_ice_for_analysis");
-    const auto& py_tot_cld_frac_4out = get_py_field_host("cldfrac_tot_for_analysis");
+    pybind11::array py_qi,
+                    py_liq_cld_frac,
+                    py_ice_cld_frac,
+                    py_tot_cld_frac,
+                    py_ice_cld_frac_4out,
+                    py_tot_cld_frac_4out;
 
-    // Sync input to host
-    liq_cld_frac.sync_to_host();
-    qi.sync_to_host();
+    if (m_params.get<std::string>("py_backend")=="device") {
+      py_qi                = get_py_field_dev("qi");
+      py_liq_cld_frac      = get_py_field_dev("cldfrac_liq");
+      py_ice_cld_frac      = get_py_field_dev("cldfrac_ice");
+      py_tot_cld_frac      = get_py_field_dev("cldfrac_tot");
+      py_ice_cld_frac_4out = get_py_field_dev("cldfrac_ice_for_analysis");
+      py_tot_cld_frac_4out = get_py_field_dev("cldfrac_tot_for_analysis");
+    } else {
+      qi.sync_to_host();
+      liq_cld_frac.sync_to_host();
+      py_qi                = get_py_field_host("qi");
+      py_liq_cld_frac      = get_py_field_host("cldfrac_liq");
+      py_ice_cld_frac      = get_py_field_host("cldfrac_ice");
+      py_tot_cld_frac      = get_py_field_host("cldfrac_tot");
+      py_ice_cld_frac_4out = get_py_field_host("cldfrac_ice_for_analysis");
+      py_tot_cld_frac_4out = get_py_field_host("cldfrac_tot_for_analysis");
+    }
 
     double ice_threshold      = m_params.get<double>("ice_cloud_threshold");
     double ice_4out_threshold = m_params.get<double>("ice_cloud_for_analysis_threshold");
@@ -116,11 +129,12 @@ void CldFraction::run_impl (const double /* dt */)
                    py_ice_cld_frac,py_tot_cld_frac,
                    py_ice_cld_frac_4out,py_tot_cld_frac_4out);
 
-    // Sync outputs to dev
-    ice_cld_frac.sync_to_dev();
-    tot_cld_frac.sync_to_dev();
-    ice_cld_frac_4out.sync_to_dev();
-    tot_cld_frac_4out.sync_to_dev();
+    if (m_params.get<std::string>("py_backend")=="host") {
+      ice_cld_frac.sync_to_dev();
+      tot_cld_frac.sync_to_dev();
+      ice_cld_frac_4out.sync_to_dev();
+      tot_cld_frac_4out.sync_to_dev();
+    }
   } else
 #endif
   {
