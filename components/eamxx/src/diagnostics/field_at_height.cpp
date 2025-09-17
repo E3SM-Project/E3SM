@@ -54,7 +54,6 @@ FieldAtHeight (const ekat::Comm& comm, const ekat::ParameterList& params)
 
   auto z_val = m_params.get<std::string>("height_value");
   m_z = std::stod(z_val);
-  m_diag_name = m_field_name + "_at_" + z_val + units + "_above_" + surf_ref;
 }
 
 void FieldAtHeight::

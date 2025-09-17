@@ -73,7 +73,7 @@ set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
   m_dz.allocate_view();
 
   // Construct and allocate the output field
-  FieldIdentifier fid(name() + m_topbot, vector2d, nondim, grid_name);
+  FieldIdentifier fid(m_diag_name, vector2d, nondim, grid_name);
   m_diagnostic_output = Field(fid);
   m_diagnostic_output.allocate_view();
 

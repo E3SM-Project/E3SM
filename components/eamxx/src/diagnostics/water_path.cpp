@@ -13,21 +13,21 @@ WaterPathDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params)
   EKAT_REQUIRE_MSG (params.isParameter("water_kind"),
       "Error! WaterPathDiagnostic requires 'water_kind' in its input parameters.\n");
 
-  m_kind = m_params.get<std::string>("water_kind");
-  if (m_kind=="Liq") {
+  auto kind = m_params.get<std::string>("water_kind");
+  if (kind=="Liq") {
     m_qname = "qc";
-  } else if (m_kind=="Ice") {
+  } else if (kind=="Ice") {
     m_qname = "qi";
-  } else if (m_kind=="Rain") {
+  } else if (kind=="Rain") {
     m_qname = "qr";
-  } else if (m_kind=="Rime") {
+  } else if (kind=="Rime") {
     m_qname = "qm";
-  } else if (m_kind=="Vap") {
+  } else if (kind=="Vap") {
     m_qname = "qv";
   } else {
     EKAT_ERROR_MSG (
         "Error! Invalid choice for 'WaterKind' in WaterPathDiagnostic.\n"
-        "  - input value: " + m_kind + "\n"
+        "  - input value: " + kind + "\n"
         "  - valid values: Liq, Ice, Rain, Rime, Vap\n");
   }
 }
@@ -52,7 +52,7 @@ set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   add_field<Required>(m_qname,          scalar3d, kg/kg, grid_name);
 
   // Construct and allocate the diagnostic field
-  FieldIdentifier fid (m_kind + name(), scalar2d, kg/m2, grid_name);
+  FieldIdentifier fid (m_diag_name, scalar2d, kg/m2, grid_name);
   m_diagnostic_output = Field(fid);
   m_diagnostic_output.allocate_view();
 }
@@ -72,7 +72,7 @@ void WaterPathDiagnostic::compute_diagnostic_impl()
 
   const auto num_levs = m_num_levs;
   const auto policy = TPF::get_default_team_policy(m_num_cols, m_num_levs);
-  Kokkos::parallel_for("Compute " + m_kind + name(), policy,
+  Kokkos::parallel_for("Compute " + m_diag_name, policy,
                        KOKKOS_LAMBDA(const MT& team) {
     const int icol = team.league_rank();
     auto q_icol    = ekat::subview(q,icol);

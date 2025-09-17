@@ -33,7 +33,7 @@ void LongwaveCloudForcingDiagnostic::set_grids(const std::shared_ptr<const Grids
   add_field<Required>("LW_clrsky_flux_up", scalar3d_layout_mid, W/m2,  grid_name);
 
   // Construct and allocate the diagnostic field
-  FieldIdentifier fid (name(), scalar2d_layout_col, W/m2, grid_name);
+  FieldIdentifier fid (m_diag_name, scalar2d_layout_col, W/m2, grid_name);
   m_diagnostic_output = Field(fid);
   auto& C_ap = m_diagnostic_output.get_header().get_alloc_properties();
   C_ap.request_allocation();

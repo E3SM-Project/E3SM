@@ -36,10 +36,6 @@ void VertContractDiag::set_grids(
       "Error! VertContractDiag only supports 'dp' or 'dz' or 'none' as weighting_method.\n"
       " - weighting_method: " + m_weighting_method + "\n");
   
-  m_diag_name = fn + "_vert_" + m_contract_method;
-  // append weighting_method to name if needed
-  m_diag_name = (m_weighting_method == "none") ? m_diag_name : m_diag_name + "_" + m_weighting_method + "_weighted";
-
   auto scalar3d = g->get_3d_scalar_layout(true);
   if (m_weighting_method == "dp") {
     add_field<Required>("pseudo_density", scalar3d, Pa, gn);

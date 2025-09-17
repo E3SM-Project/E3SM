@@ -35,7 +35,6 @@ protected:
 
   int m_component;
 
-  std::string m_name;
 };
 
 } //namespace scream

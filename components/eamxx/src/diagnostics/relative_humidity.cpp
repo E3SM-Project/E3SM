@@ -36,7 +36,7 @@ void RelativeHumidityDiagnostic::set_grids(const std::shared_ptr<const GridsMana
   add_field<Required>("pseudo_density_dry", scalar3d, Pa,    grid_name, SCREAM_PACK_SIZE);
 
   // Construct and allocate the diagnostic field
-  FieldIdentifier fid (name(), scalar3d, nondim, grid_name);
+  FieldIdentifier fid (m_diag_name, scalar3d, nondim, grid_name);
   m_diagnostic_output = Field(fid);
   auto& C_ap = m_diagnostic_output.get_header().get_alloc_properties();
   C_ap.request_allocation(SCREAM_PACK_SIZE);

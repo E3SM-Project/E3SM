@@ -20,7 +20,6 @@ PrecipSurfMassFlux (const ekat::Comm& comm, const ekat::ParameterList& params)
   } else {
     EKAT_ERROR_MSG ("Error! Invalid choice for 'precip_type': " + type + "\n");
   }
-  m_name = "precip_" + type + "_surf_mass_flux";
 }
 
 // ==============================================================================
@@ -47,7 +46,7 @@ set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   }
 
   // Construct and allocate the diagnostic field
-  FieldIdentifier fid(m_name, scalar2d_layout_mid, m/s, grid_name);
+  FieldIdentifier fid(m_diag_name, scalar2d_layout_mid, m/s, grid_name);
   m_diagnostic_output = Field(fid);
   m_diagnostic_output.get_header().get_alloc_properties().request_allocation();
   m_diagnostic_output.allocate_view();
@@ -100,7 +99,7 @@ void PrecipSurfMassFlux::compute_diagnostic_impl()
 
   auto rhodt = PC::RHO_H2O*dt;
   const auto& flux_view  = m_diagnostic_output.get_view<Real*>();
-  Kokkos::parallel_for(m_name,
+  Kokkos::parallel_for(m_diag_name,
                        KT::RangePolicy(0,m_num_cols),
                        KOKKOS_LAMBDA(const Int& icol) {
     if (use_ice) {

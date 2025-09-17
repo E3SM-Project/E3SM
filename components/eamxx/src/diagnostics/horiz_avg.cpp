@@ -7,8 +7,10 @@ namespace scream {
 HorizAvgDiag::HorizAvgDiag(const ekat::Comm &comm,
                            const ekat::ParameterList &params)
     : AtmosphereDiagnostic(comm, params) {
-  const auto &fname = m_params.get<std::string>("field_name");
-  m_diag_name       = fname + "_horiz_avg";
+
+  EKAT_REQUIRE_MSG(m_params.isParameter("field_name"),
+                   "Error! Output request " + m_diag_name +
+		   " does not have a field specified.\n");
 }
 
 void HorizAvgDiag::set_grids(

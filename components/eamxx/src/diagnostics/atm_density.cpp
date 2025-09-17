@@ -31,7 +31,7 @@ void AtmDensityDiagnostic::set_grids(const std::shared_ptr<const GridsManager> g
   add_field<Required>("qv",             scalar3d, kg/kg, grid_name);
 
   // Construct and allocate the diagnostic field
-  FieldIdentifier fid (name(), scalar3d, kg/(m*m*m), grid_name);
+  FieldIdentifier fid (m_diag_name, scalar3d, kg/(m*m*m), grid_name);
   m_diagnostic_output = Field(fid);
   m_diagnostic_output.allocate_view();
 }

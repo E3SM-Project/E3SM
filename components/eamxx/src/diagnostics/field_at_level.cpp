@@ -11,7 +11,6 @@ FieldAtLevel::FieldAtLevel (const ekat::Comm& comm, const ekat::ParameterList& p
 {
   const auto& fname = m_params.get<std::string>("field_name");
   const auto& location = m_params.get<std::string>("vertical_location");
-  m_diag_name = fname + "_at_" + location;
 }
 
 void FieldAtLevel::

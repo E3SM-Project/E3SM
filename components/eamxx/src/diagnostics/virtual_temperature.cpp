@@ -28,7 +28,7 @@ void VirtualTemperatureDiagnostic::set_grids(const std::shared_ptr<const GridsMa
   add_field<Required>("qv",    scalar3d, kg/kg, grid_name);
 
   // Construct and allocate the diagnostic field
-  FieldIdentifier fid (name(), scalar3d, K, grid_name);
+  FieldIdentifier fid (m_diag_name, scalar3d, K, grid_name);
   m_diagnostic_output = Field(fid);
   m_diagnostic_output.allocate_view();
 }

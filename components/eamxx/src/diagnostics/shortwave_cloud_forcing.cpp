@@ -33,7 +33,7 @@ void ShortwaveCloudForcingDiagnostic::set_grids(const std::shared_ptr<const Grid
   add_field<Required>("SW_clrsky_flux_up", scalar3d, W/m2, grid_name);
 
   // Construct and allocate the diagnostic field
-  FieldIdentifier fid (name(), scalar2d, W/m2, grid_name);
+  FieldIdentifier fid (m_diag_name, scalar2d, W/m2, grid_name);
   m_diagnostic_output = Field(fid);
   m_diagnostic_output.allocate_view();
 }

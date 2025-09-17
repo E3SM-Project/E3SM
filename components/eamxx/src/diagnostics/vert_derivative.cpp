@@ -25,7 +25,6 @@ void VertDerivativeDiag::set_grids(const std::shared_ptr<const GridsManager> gri
                    "Error! VertDerivativeDiag only supports 'p' or 'z' as derivative_method.\n"
                    " - derivative_method: " +
                        m_derivative_method + "\n");
-  m_diag_name = fn + "_" + m_derivative_method + "vert_derivative";
 
   auto scalar3d = g->get_3d_scalar_layout(true);
   add_field<Required>("pseudo_density", scalar3d, Pa, gn);

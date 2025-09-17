@@ -214,8 +214,6 @@ ConditionalSampling::ConditionalSampling(const ekat::Comm &comm, const ekat::Par
   // TODO: relying on std::stod to throw if bad val is given
   m_condition_v = static_cast<Real>(std::stod(str_condition_v));
 
-  m_diag_name =
-      m_input_f + "_where_" + m_condition_f + "_" + m_condition_op + "_" + str_condition_v;
 }
 
 void ConditionalSampling::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {

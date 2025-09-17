@@ -34,7 +34,6 @@ protected:
   int m_num_levs;
 
   std::string m_qname;
-  std::string m_kind;
 }; // class WaterPathDiagnostic
 
 } //namespace scream

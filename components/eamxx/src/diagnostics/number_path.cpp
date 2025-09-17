@@ -13,21 +13,21 @@ NumberPathDiagnostic::NumberPathDiagnostic(const ekat::Comm &comm,
                    "Error! NumberPathDiagnostic requires 'number_kind' in its "
                    "input parameters.\n");
 
-  m_kind = m_params.get<std::string>("number_kind");
-  if(m_kind == "Liq") {
+  auto kind = m_params.get<std::string>("number_kind");
+  if(kind == "Liq") {
     m_qname = "qc";
     m_nname = "nc";
-  } else if(m_kind == "Ice") {
+  } else if(kind == "Ice") {
     m_qname = "qi";
     m_nname = "ni";
-  } else if(m_kind == "Rain") {
+  } else if(kind == "Rain") {
     m_qname = "qr";
     m_nname = "nr";
   } else {
     EKAT_ERROR_MSG(
         "Error! Invalid choice for 'NumberKind' in NumberPathDiagnostic.\n"
         "  - input value: " +
-        m_kind +
+        kind +
         "\n"
         "  - valid values: Liq, Ice, Rain\n");
   }
@@ -53,7 +53,7 @@ void NumberPathDiagnostic::set_grids(
   add_field<Required>(m_nname, scalar3d, 1 / kg, grid_name);
 
   // Construct and allocate the diagnostic field
-  FieldIdentifier fid(m_kind + name(), scalar2d, kg/(kg*m2), grid_name);
+  FieldIdentifier fid(m_diag_name, scalar2d, kg/(kg*m2), grid_name);
   m_diagnostic_output = Field(fid);
   m_diagnostic_output.allocate_view();
 }
@@ -74,7 +74,7 @@ void NumberPathDiagnostic::compute_diagnostic_impl() {
   const auto num_levs = m_num_levs;
   const auto policy   = TPF::get_default_team_policy(m_num_cols, m_num_levs);
   Kokkos::parallel_for(
-      "Compute " + m_kind + name(), policy, KOKKOS_LAMBDA(const MT &team) {
+      "Compute " + m_diag_name, policy, KOKKOS_LAMBDA(const MT &team) {
         const int icol = team.league_rank();
         auto q_icol    = ekat::subview(q, icol);
         auto n_icol    = ekat::subview(n, icol);

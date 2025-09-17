@@ -46,7 +46,7 @@ void PotentialTemperatureDiagnostic::set_grids(const std::shared_ptr<const Grids
   }
 
   // Construct and allocate the diagnostic field
-  FieldIdentifier fid (m_ptype, scalar3d_layout_mid, K, grid_name);
+  FieldIdentifier fid (m_diag_name, scalar3d_layout_mid, K, grid_name);
   m_diagnostic_output = Field(fid);
   m_diagnostic_output.allocate_view();
 }

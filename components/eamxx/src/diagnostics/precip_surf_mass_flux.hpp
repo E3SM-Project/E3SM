@@ -35,7 +35,6 @@ protected:
   static constexpr int s_liq = 2;
 
   int m_type;
-  std::string m_name;
 };
 
 }

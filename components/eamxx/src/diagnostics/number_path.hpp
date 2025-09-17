@@ -34,7 +34,6 @@ class NumberPathDiagnostic : public AtmosphereDiagnostic {
 
   std::string m_qname;
   std::string m_nname;
-  std::string m_kind;
 };  // class NumberPathDiagnostic
 
 }  // namespace scream

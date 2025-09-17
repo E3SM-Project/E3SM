@@ -32,7 +32,6 @@ protected:
   Int m_num_cols;
 
   int m_type;
-  std::string m_name;
   std::string cf_long_name;
 };
 

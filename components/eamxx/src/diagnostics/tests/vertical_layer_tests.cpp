@@ -51,7 +51,7 @@ void run (const std::string& diag_name, const std::string& location)
   // Construct the Diagnostic
   ekat::ParameterList params;
 
-  params.set<std::string>("diagnostic_field_name", diag_name);
+  params.set<std::string>("diag_name", diag_name);
   params.set<std::string>("vert_location",location);
   auto diag = diag_factory.create("VerticalLayer",comm,params);
   diag->set_grids(gm);

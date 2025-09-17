@@ -33,7 +33,7 @@ void SeaLevelPressureDiagnostic::set_grids(const std::shared_ptr<const GridsMana
   add_field<Required>("phis",  scalar2d, m2/s2, grid->name());
 
   // Construct and allocate the diagnostic field
-  FieldIdentifier fid (name(), scalar2d, Pa, grid->name());
+  FieldIdentifier fid (m_diag_name, scalar2d, Pa, grid->name());
   m_diagnostic_output = Field(fid);
   m_diagnostic_output.allocate_view();
 }

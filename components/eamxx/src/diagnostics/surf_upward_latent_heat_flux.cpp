@@ -8,7 +8,6 @@ namespace scream {
 SurfaceUpwardLatentHeatFlux::
 SurfaceUpwardLatentHeatFlux(const ekat::Comm& comm, const ekat::ParameterList& params)
  : AtmosphereDiagnostic(comm, params)
- , m_name("surface_upward_latent_heat_flux")
  , cf_long_name("surface_upward_latent_heat_flux_due_to_evaporation")
 {
   // In the future we may add options to include latent heat fluxes due to other water species.
@@ -36,7 +35,7 @@ set_grids (const std::shared_ptr<const GridsManager> grids_manager)
   add_field<Required>("surf_evap", scalar2d_layout_mid, surf_evap_units,  grid_name);
 
   // Construct and allocate the diagnostic field
-  FieldIdentifier fid(m_name, scalar2d_layout_mid, W/m2, grid_name);
+  FieldIdentifier fid(m_diag_name, scalar2d_layout_mid, W/m2, grid_name);
   // handle parent class member variables
   m_diagnostic_output = Field(fid);
   m_diagnostic_output.get_header().get_alloc_properties().request_allocation();
@@ -56,7 +55,7 @@ void SurfaceUpwardLatentHeatFlux::compute_diagnostic_impl()
   auto evap = get_field_in("surf_evap");
   evap_view_d = evap.get_view<const Real*>();
   const auto& flux_view = m_diagnostic_output.get_view<Real*>();
-  Kokkos::parallel_for("SurfaceUpwardLatentHeatFlux",
+  Kokkos::parallel_for(m_diag_name,
     KT::RangePolicy(0, m_num_cols),
     KOKKOS_LAMBDA (const Int& icol) {
       flux_view(icol) = evap_view_d(icol) * latent_heat_evap;
