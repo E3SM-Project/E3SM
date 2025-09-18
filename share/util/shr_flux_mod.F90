@@ -386,7 +386,7 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
         !--- ustar, tstar, qstar ---
         if (wav_atm_coup .eq. 'twoway') then
            if (ustarwav(n) == 0.0_R8 ) then 
-              ustar = ustarwav(n)+0.1_R8
+              ustar = ustarwav(n)+0.01_R8
            else
               ustar = ustarwav(n)
            endif
@@ -1164,7 +1164,7 @@ function cdn_wave(kappa,zr,z0) result(cdn_wav)
        implicit none
        
        ! input variables
-       real(R8), intent(in) :: kappa !von Karmen constant
+       real(R8), intent(in) :: kappa ! von Karman constant
        real(R8), intent(in) :: zr ! reference height (10m)
        real(R8), intent(in) :: z0 ! roughness length based on wave state
 
