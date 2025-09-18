@@ -3447,6 +3447,7 @@ sub setup_logic_fates {
                    "use_fates_sp",
                    "use_fates_tree_damage",
                    "use_fates_daylength_factor",
+                   "use_fates_managed_fire",
                    "fates_photosynth_acclimation",
                    "fates_stomatal_model",
                    "fates_stomatal_assimilation",
