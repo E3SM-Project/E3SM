@@ -6,7 +6,7 @@
 #include <ekat_subview_utils.hpp>
 
 namespace scream {
-
+ 
 namespace {
 
 void compute_w0_and_rho(haero::ThreadTeamPolicy team_policy,
