@@ -9,7 +9,18 @@
 #include "Pacer.h"
 #include <mpi.h>
 #include <gptl.h>
+#include <vector>
+#include <algorithm>
 #include <iostream>
+
+#ifdef PACER_HAVE_KOKKOS
+#include <Kokkos_Core.hpp>
+
+#if defined(PACER_ADD_RANGES) && defined(KOKKOS_ENABLE_CUDA)
+#include <nvtx3/nvToolsExt.h>
+#endif
+
+#endif
 
 #define PACER_CHECK_INIT() {\
     if (!IsInitialized) { \
@@ -32,9 +43,39 @@ extern "C" {
     extern int GPTLis_initialized(void);
 }
 
+namespace Pacer {
+
+/// Flag to determine if the timing infrastructure is initialized
+static bool IsInitialized = false;
+
+/// MPI communicator used within Pacer
+static MPI_Comm InternalComm;
+
+/// MPI rank of process
+static int MyRank;
+
+/// Vector-based stack of open timers
+static std::vector<std::string> OpenTimers;
+
+/// GPTL doesn't seem to provide a function to obtain the current prefix
+/// so we track it ourselves
+static std::string CurrentPrefix = "";
+
+/// Pacer Mode: standalone or within CIME
+static PacerModeType PacerMode;
+
+/// Global timing level
+static int TimingLevel = 0;
+
+/// Flag to determine if timing barriers are enabled
+static bool TimingBarriersEnabled = false;
+
+/// Flag to determine if automatic Kokkos fences are enabled
+static bool AutoFenceEnabled = false;
+
 /// Check if Pacer is initialized
 /// Returns true if initialized
-inline bool Pacer::isInitialized(void){
+inline bool isInitialized(){
     if (!IsInitialized) {
         std::cerr << "[ERROR] Pacer: Not initialized." << std::endl;
         return false;
@@ -45,7 +86,7 @@ inline bool Pacer::isInitialized(void){
 /// Initialize Pacer timing
 /// InComm: overall MPI communicator used by application.
 /// InMode: Pacer standalone (default) or within CIME
-bool Pacer::initialize(MPI_Comm InComm, PacerModeType InMode /* = PACER_STANDALONE */) {
+bool initialize(MPI_Comm InComm, PacerModeType InMode /* = PACER_STANDALONE */) {
 
     int errCode;
 
@@ -99,36 +140,67 @@ bool Pacer::initialize(MPI_Comm InComm, PacerModeType InMode /* = PACER_STANDALO
     return true;
 }
 
-/// Start the time named TimerName
-bool Pacer::start(const std::string &TimerName)
+/// Start the timer named TimerName active when TimingLevel >= Level 
+bool start(const std::string &TimerName, int Level)
 {
+    // Return immediately if this timer level is above the global timing level
+    if (Level > TimingLevel) {
+        return true;
+    }
+
+#ifdef PACER_HAVE_KOKKOS
+    if (AutoFenceEnabled) {
+        Kokkos::fence();
+    }
+
+    // If CUDA is enabled start an NVTX range
+#if defined(PACER_ADD_RANGES) && defined(KOKKOS_ENABLE_CUDA)
+    nvtxRangePush(TimerName.c_str());
+#endif
+
+#endif
+
     PACER_CHECK_INIT();
 
     PACER_CHECK_ERROR(GPTLstart(TimerName.c_str()));
 
-    auto it = OpenTimers.find(TimerName);
-    if (it != OpenTimers.end() )
-        OpenTimers[TimerName]++;
-    else
-        OpenTimers[TimerName] = 1;
+    // Push this timer onto the stack
+    OpenTimers.push_back(TimerName);
+
     return true;
 }
 
-/// Stop the time named TimerName
+/// Stop the timer named TimerName active when TimingLevel >= Level 
 /// Issues warning if timer hasn't been started yet
-bool Pacer::stop(const std::string &TimerName)
+bool stop(const std::string &TimerName, int Level)
 {
+    // Return immediately if this timer level is above the global timing level
+    if (Level > TimingLevel) {
+        return true;
+    }
+
     PACER_CHECK_INIT();
 
-    auto it = OpenTimers.find(TimerName);
+    auto it = std::find(OpenTimers.begin(), OpenTimers.end(), TimerName);
 
     if (it != OpenTimers.end() ) {
+
+#ifdef PACER_HAVE_KOKKOS
+
+        // If CUDA is enabled end the NVTX range
+#if defined(PACER_ADD_RANGES) && defined(KOKKOS_ENABLE_CUDA)
+        nvtxRangePop();
+#endif
+
+        if (AutoFenceEnabled) {
+            Kokkos::fence();
+        }
+#endif
+
         PACER_CHECK_ERROR(GPTLstop(TimerName.c_str()));
 
-        if ( OpenTimers[TimerName] == 1 )
-            OpenTimers.erase(TimerName);
-        else
-            OpenTimers[TimerName]--;
+        // Pop this timer from the stack
+        OpenTimers.pop_back();
     }
     else {
         std::cerr << "[WARNING] Pacer: Trying to stop timer: \""
@@ -141,30 +213,115 @@ bool Pacer::stop(const std::string &TimerName)
 }
 
 /// Sets named prefix for all subsequent timers
-bool Pacer::setPrefix(const std::string &Prefix)
+bool setPrefix(const std::string &Prefix)
 {
     PACER_CHECK_INIT();
 
     PACER_CHECK_ERROR(GPTLprefix_set(Prefix.c_str()));
 
+    CurrentPrefix = Prefix;
+
     return true;
 }
 
 /// Unsets prefix for all subsequent timers
-bool Pacer::unsetPrefix()
+bool unsetPrefix()
 {
     PACER_CHECK_INIT();
 
     PACER_CHECK_ERROR(GPTLprefix_unset());
 
+    CurrentPrefix = "";
+
     return true;
+}
+
+/// Adds the current enclosing timer name to the prefix for all subsequent timers
+bool addParentPrefix()
+{
+    PACER_CHECK_INIT();
+
+    const std::string NewPrefix = CurrentPrefix + OpenTimers.back() + ":";
+    
+    PACER_CHECK_ERROR(GPTLprefix_set(NewPrefix.c_str()));
+    
+    CurrentPrefix = NewPrefix;
+
+    return true;
+}
+
+/// Removed the current enclosing timer name to the prefix for all subsequent timers
+bool removeParentPrefix()
+{
+    PACER_CHECK_INIT();
+    
+    std::string NewPrefix = CurrentPrefix;
+    const int NCharsToErase = OpenTimers.back().length() + 1;
+    NewPrefix.erase(NewPrefix.length() - NCharsToErase);
+    
+    PACER_CHECK_ERROR(GPTLprefix_set(NewPrefix.c_str()));
+    
+    CurrentPrefix = NewPrefix;
+    
+    return true;
+}
+
+void setTimingLevel(int Level)
+{
+    TimingLevel = Level;
+}
+
+bool disableTiming()
+{
+    PACER_CHECK_ERROR(GPTLdisable());
+    
+    return true;
+}
+
+bool enableTiming()
+{
+    PACER_CHECK_ERROR(GPTLenable());
+    
+    return true;
+}
+
+void enableTimingBarriers()
+{
+    TimingBarriersEnabled = true;
+}
+
+void disableTimingBarriers()
+{
+    TimingBarriersEnabled = false;
+}
+
+void enableAutoFence()
+{
+    AutoFenceEnabled = true;
+}
+
+void disableAutoFence()
+{
+    AutoFenceEnabled = false;
+}
+
+bool timingBarrier(const std::string &TimerName, int Level, MPI_Comm Comm)
+{
+    bool Ok = true;
+    if (TimingBarriersEnabled && Level <= TimingLevel) {
+
+        Ok = Ok && start(TimerName, Level);
+        MPI_Barrier(Comm);
+        Ok = Ok && stop(TimerName, Level);
+    }
+    return Ok;
 }
 
 /// Prints timing statistics and global summary files
 /// Output Files: TimerFilePrefix.timing.<MyRank>
 /// TimerFilePrefix.summary
 /// PrintAllRanks: flag to control if per rank timing files are printed
-bool Pacer::print(const std::string &TimerFilePrefix, bool PrintAllRanks /*= = false */)
+bool print(const std::string &TimerFilePrefix, bool PrintAllRanks /*= = false */)
 {
     PACER_CHECK_INIT();
 
@@ -186,7 +343,7 @@ bool Pacer::print(const std::string &TimerFilePrefix, bool PrintAllRanks /*= = f
 
 /// Cleans up Pacer
 /// Issues warning if any timers are still open
-bool Pacer::finalize()
+bool finalize()
 {
     PACER_CHECK_INIT();
 
@@ -195,8 +352,8 @@ bool Pacer::finalize()
 
     if ( (MyRank == 0) && ( OpenTimers.size() > 0) ){
         std::cerr << "[WARNING] Pacer: Following " << OpenTimers.size() << " timer(s) is/are still open." << std::endl;
-        for (auto i = OpenTimers.begin(); i != OpenTimers.end(); i++)
-            std::cerr << '\t' << i->first << std::endl;
+        for (const auto& Timer : OpenTimers)
+            std::cerr << '\t' << Timer << std::endl;
     }
     OpenTimers.clear();
 
@@ -205,6 +362,8 @@ bool Pacer::finalize()
     MPI_Comm_free(&InternalComm);
 
     return true;
+}
+
 }
 
 
