@@ -44,35 +44,33 @@ struct TestSetupPlane {
                                               0.004200067675522098};
 
    KOKKOS_FUNCTION Real exactScalar(Real X, Real Y) const {
-      return std::sin(2 * Pi * X / Lx) * std::sin(2 * Pi * Y / Ly);
+      return std::sin(TwoPi * X / Lx) * std::sin(TwoPi * Y / Ly);
    }
 
    KOKKOS_FUNCTION Real exactGradScalarX(Real X, Real Y) const {
-      return 2 * Pi / Lx * std::cos(2 * Pi * X / Lx) *
-             std::sin(2 * Pi * Y / Ly);
+      return TwoPi / Lx * std::cos(TwoPi * X / Lx) * std::sin(TwoPi * Y / Ly);
    }
 
    KOKKOS_FUNCTION Real exactGradScalarY(Real X, Real Y) const {
-      return 2 * Pi / Ly * std::sin(2 * Pi * X / Lx) *
-             std::cos(2 * Pi * Y / Ly);
+      return TwoPi / Ly * std::sin(TwoPi * X / Lx) * std::cos(TwoPi * Y / Ly);
    }
 
    KOKKOS_FUNCTION Real exactVecX(Real X, Real Y) const {
-      return std::sin(2 * Pi * X / Lx) * std::cos(2 * Pi * Y / Ly);
+      return std::sin(TwoPi * X / Lx) * std::cos(TwoPi * Y / Ly);
    }
 
    KOKKOS_FUNCTION Real exactVecY(Real X, Real Y) const {
-      return std::cos(2 * Pi * X / Lx) * std::sin(2 * Pi * Y / Ly);
+      return std::cos(TwoPi * X / Lx) * std::sin(TwoPi * Y / Ly);
    }
 
    KOKKOS_FUNCTION Real exactDivVec(Real X, Real Y) const {
-      return 2 * Pi * (1. / Lx + 1. / Ly) * std::cos(2 * Pi * X / Lx) *
-             std::cos(2 * Pi * Y / Ly);
+      return TwoPi * (1. / Lx + 1. / Ly) * std::cos(TwoPi * X / Lx) *
+             std::cos(TwoPi * Y / Ly);
    }
 
    KOKKOS_FUNCTION Real exactCurlVec(Real X, Real Y) const {
-      return 2 * Pi * (-1. / Lx + 1. / Ly) * std::sin(2 * Pi * X / Lx) *
-             std::sin(2 * Pi * Y / Ly);
+      return TwoPi * (-1. / Lx + 1. / Ly) * std::sin(TwoPi * X / Lx) *
+             std::sin(TwoPi * Y / Ly);
    }
 };
 

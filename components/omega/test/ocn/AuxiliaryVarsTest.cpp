@@ -69,54 +69,55 @@ struct TestSetupPlane {
                                                0.0039954090464502795};
 
    KOKKOS_FUNCTION Real layerThickness(Real X, Real Y) const {
-      return 2 + std::cos(2 * Pi * X / Lx) * std::cos(2 * Pi * Y / Ly);
+      return 2 + std::cos(TwoPi * X / Lx) * std::cos(TwoPi * Y / Ly);
    }
 
    KOKKOS_FUNCTION Real velocityX(Real X, Real Y) const {
-      return std::sin(2 * Pi * X / Lx) * std::cos(2 * Pi * Y / Ly);
+      return std::sin(TwoPi * X / Lx) * std::cos(TwoPi * Y / Ly);
    }
 
    KOKKOS_FUNCTION Real velocityY(Real X, Real Y) const {
-      return std::cos(2 * Pi * X / Lx) * std::sin(2 * Pi * Y / Ly);
+      return std::cos(TwoPi * X / Lx) * std::sin(TwoPi * Y / Ly);
    }
 
    KOKKOS_FUNCTION Real windStressX(Real X, Real Y) const {
-      return std::cos(2 * Pi * X / Lx) * std::sin(2 * Pi * Y / Ly);
+      return std::cos(TwoPi * X / Lx) * std::sin(TwoPi * Y / Ly);
    }
 
    KOKKOS_FUNCTION Real windStressY(Real X, Real Y) const {
-      return std::sin(2 * Pi * X / Lx) * std::cos(2 * Pi * Y / Ly);
+      return std::sin(TwoPi * X / Lx) * std::cos(TwoPi * Y / Ly);
    }
 
    KOKKOS_FUNCTION Real divergence(Real X, Real Y) const {
-      return 2 * Pi * (1. / Lx + 1. / Ly) * std::cos(2 * Pi * X / Lx) *
-             std::cos(2 * Pi * Y / Ly);
+      return TwoPi * (1. / Lx + 1. / Ly) * std::cos(TwoPi * X / Lx) *
+             std::cos(TwoPi * Y / Ly);
    }
 
    KOKKOS_FUNCTION Real relativeVorticity(Real X, Real Y) const {
-      return 2 * Pi * (-1. / Lx + 1. / Ly) * std::sin(2 * Pi * X / Lx) *
-             std::sin(2 * Pi * Y / Ly);
+      return TwoPi * (-1. / Lx + 1. / Ly) * std::sin(TwoPi * X / Lx) *
+             std::sin(TwoPi * Y / Ly);
    }
 
    KOKKOS_FUNCTION Real velocityDel2X(Real X, Real Y) const {
-      return -4 * Pi * Pi * (1 / (Lx * Lx) + 1 / (Ly * Ly)) * velocityX(X, Y);
+      return -TwoPi * TwoPi * (1 / (Lx * Lx) + 1 / (Ly * Ly)) * velocityX(X, Y);
    }
 
    KOKKOS_FUNCTION Real velocityDel2Y(Real X, Real Y) const {
-      return -4 * Pi * Pi * (1 / (Lx * Lx) + 1 / (Ly * Ly)) * velocityY(X, Y);
+      return -TwoPi * TwoPi * (1 / (Lx * Lx) + 1 / (Ly * Ly)) * velocityY(X, Y);
    }
 
    KOKKOS_FUNCTION Real velocityDel2Div(Real X, Real Y) const {
-      return -4 * Pi * Pi * (1 / (Lx * Lx) + 1 / (Ly * Ly)) * divergence(X, Y);
+      return -TwoPi * TwoPi * (1 / (Lx * Lx) + 1 / (Ly * Ly)) *
+             divergence(X, Y);
    }
 
    KOKKOS_FUNCTION Real velocityDel2Curl(Real X, Real Y) const {
-      return -4 * Pi * Pi * (1 / (Lx * Lx) + 1 / (Ly * Ly)) *
+      return -TwoPi * TwoPi * (1 / (Lx * Lx) + 1 / (Ly * Ly)) *
              relativeVorticity(X, Y);
    }
 
    KOKKOS_FUNCTION Real planetaryVorticity(Real X, Real Y) const {
-      return std::sin(2 * Pi * X / Lx) * std::sin(2 * Pi * Y / Ly);
+      return std::sin(TwoPi * X / Lx) * std::sin(TwoPi * Y / Ly);
    }
 
    KOKKOS_FUNCTION Real normalizedRelativeVorticity(Real X, Real Y) const {
@@ -134,23 +135,23 @@ struct TestSetupPlane {
    }
 
    KOKKOS_FUNCTION Real tracer(Real X, Real Y) const {
-      return 2 - std::cos(2 * Pi * X / Lx) * std::cos(2 * Pi * Y / Ly);
+      return 2 - std::cos(TwoPi * X / Lx) * std::cos(TwoPi * Y / Ly);
    }
 
    KOKKOS_FUNCTION Real thickTracer(Real X, Real Y) const {
-      return 4 - std::pow(std::cos(2 * Pi * X / Lx), 2) *
-                     std::pow(std::cos(2 * Pi * Y / Ly), 2);
+      return 4 - std::pow(std::cos(TwoPi * X / Lx), 2) *
+                     std::pow(std::cos(TwoPi * Y / Ly), 2);
    }
 
    KOKKOS_FUNCTION Real del2Tracer(Real X, Real Y) const {
-      return 2 * Pi * Pi *
-             (4 * (1 / Lx / Lx + 1 / Ly / Ly) * std::cos(2 * Pi * X / Lx) *
-                  std::cos(2 * Pi * Y / Ly) +
-              std::pow(std::cos(2 * Pi * X / Lx), 2) *
+      return TwoPi * Pi *
+             (4 * (1 / Lx / Lx + 1 / Ly / Ly) * std::cos(TwoPi * X / Lx) *
+                  std::cos(TwoPi * Y / Ly) +
+              std::pow(std::cos(TwoPi * X / Lx), 2) *
                   (1 / Lx / Lx +
-                   (2 / Ly / Ly + 1 / Lx / Lx) * std::cos(4 * Pi * Y / Ly)) -
-              (2 / Lx / Lx) * std::pow(std::sin(2 * Pi * X / Lx), 2) *
-                  std::pow(std::cos(2 * Pi * Y / Ly), 2));
+                   (2 / Ly / Ly + 1 / Lx / Lx) * std::cos(2 * TwoPi * Y / Ly)) -
+              (2 / Lx / Lx) * std::pow(std::sin(TwoPi * X / Lx), 2) *
+                  std::pow(std::cos(TwoPi * Y / Ly), 2));
    }
 };
 

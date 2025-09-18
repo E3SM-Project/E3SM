@@ -80,8 +80,8 @@ void ManufacturedSolution::init() {
    R8 H0                 = DefHorzMesh->BottomDepthH(0);
 
    // Define and compute common constants
-   R8 Kx      = 2.0_Real * Pi / WavelengthX;              // Wave in X-dir
-   R8 Ky      = 2.0_Real * Pi / WavelengthY;              // Wave in Y-dir
+   R8 Kx      = TwoPi / WavelengthX;                      // Wave in X-dir
+   R8 Ky      = TwoPi / WavelengthY;                      // Wave in Y-dir
    R8 AngFreq = sqrt(H0 * Gravity * (Kx * Kx + Ky * Ky)); // Angular frequency
 
    // Assign constants for thickness tendency function
