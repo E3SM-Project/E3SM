@@ -81,6 +81,9 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const std::vector<Fie
 
   // Setup I/O structures
   init();
+
+  auto fname = [](const Field& f) { return f.name(); };
+  m_stream_name = ekat::join(fields,fname,",");
 }
 
 AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::ParameterList &params,
@@ -90,6 +93,11 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
    m_add_time_dim(true)
 {
   using vos_t = std::vector<std::string>;
+
+  // The param list name will be the name of this stream.
+  // This works great for regular CIME cases, where the param list name is
+  // the name of the yaml file where the options are read from.
+  m_stream_name = params.name();
 
   auto gm = field_mgr->get_grids_manager();
 
@@ -169,7 +177,7 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
   }
 
   // Then we 1) create aliases, and b) create diagnostics, adding alias/diag fields to fm_model
-  process_requested_fields (params.name());
+  process_requested_fields ();
 
   // Avg count only makes sense if we have
   //  - non-instant output
@@ -914,6 +922,7 @@ compute_diagnostics(const bool allow_invalid_fields)
 
     EKAT_REQUIRE_MSG (computable or allow_invalid_fields,
         "Error! Cannot compute a diagnostic. One dependency has an invalid timestamp.\n"
+        " - stream name: " + m_stream_name + "\n"
         " - diag name: " + diag->get_diagnostic().name() + "\n"
         " - dep  name: " + dep_name + "\n");
 
@@ -939,7 +948,7 @@ compute_diagnostics(const bool allow_invalid_fields)
 }
 
 void AtmosphereOutput::
-process_requested_fields(const std::string& stream_name)
+process_requested_fields()
 {
   // So far, all fields (on the output grid) that ARE in the model FM have been added
   // to the FM stored in this class for the FromModel phase. Anything missing
@@ -959,7 +968,7 @@ process_requested_fields(const std::string& stream_name)
     if (tokens.size()==2) {
       EKAT_REQUIRE_MSG (m_alias_to_orig.count(tokens[0])==0,
           "Error! The same alias has been used multiple times.\n"
-          " - stream name: " + stream_name + "\n"
+          " - stream name: " + m_stream_name + "\n"
           " - first alias: " + tokens[0] + ":=" + m_alias_to_orig[tokens[0]] + "\n"
           " - second alias: " + tokens[0] + ":=" + tokens[1] + "\n");
       m_alias_to_orig[tokens[0]] = tokens[1];
@@ -972,7 +981,7 @@ process_requested_fields(const std::string& stream_name)
 
   EKAT_REQUIRE_MSG (not has_duplicates(m_fields_names),
       "Error! The list of requested output fields contains duplicates.\n"
-      " - stream name:  " + stream_name + "\n"
+      " - stream name:  " + m_stream_name + "\n"
       " - fields names: " + ekat::join(m_fields_names,",") + "\n");
 
   // Due to aliasing, we are not yet able to establish the diags eval order,
@@ -1151,7 +1160,7 @@ process_requested_fields(const std::string& stream_name)
 
     EKAT_REQUIRE_MSG (add_these.size()>0 or remove_these.size()>0,
         "Error! We're stuck in an endless loop while processing output fields.\n"
-        " - stream name: " + stream_name + "\n");
+        " - stream name: " + m_stream_name + "\n");
 
     for (const auto& n : remove_these) {
       remaining.erase(n);
