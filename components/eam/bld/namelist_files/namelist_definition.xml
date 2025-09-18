@@ -2548,6 +2548,36 @@ Warm rain formation method (autoconversion/accretion or alternatives)
 Default: kk2000
 </entry>
 
+<entry id="p3_torchscript_warm_rain_emulator_file" type="char*256" category="microphys"
+       group="micro_nl" valid_values="" >
+Full Path and Filename for torchscript warm rain emulator (read with FTorch)
+Default: None
+</entry>
+
+<entry id="p3_tau_kernel_file" type="char*256" category="microphys"
+       group="micro_nl" valid_values="" >
+Full Path and Filename for TAU bin code stochastic collection kernel file (KBARF_tau_kernel.dat)
+Default: None
+</entry>
+
+<entry id="p3_stochastic_emulated_filename_quantile" type="char*256" category="microphys"
+       group="micro_nl" valid_values="" >
+Full Path and Filename for warm rain version 1 custom emulator quantile file
+Default: None
+</entry>
+
+<entry id="p3_stochastic_emulated_filename_input_scale" type="char*256" category="microphys"
+       group="micro_nl" valid_values="" >
+Full Path and Filename for warm rain version 1 custom emulator input scale file
+Default: None
+</entry>
+
+<entry id="p3_stochastic_emulated_filename_output_scale" type="char*256" category="microphys"
+       group="micro_nl" valid_values="" >
+Full Path and Filename for warm rain version 1 custom emulator output scale file
+Default: None
+</entry>
+
 <!-- micro_p3 -->
 <entry id="p3_qc_autoCon_Expon" type="real" category="microphysics"
 	group="micro_nl" valid_values="" >

@@ -101,18 +101,17 @@ subroutine calc_bins
 
 end subroutine calc_bins
 
-subroutine p3_stochastic_kernel_init(lookup_file_dir)
+subroutine p3_stochastic_kernel_init(lookup_file_dir,kernel_filename)
 
   character(len=*), intent(in) :: lookup_file_dir  ! Directory of P3 lookup tables (eventual home of sc kernel)
 
-  character(len=1024)    :: kernel_filename
+  character(len=*), intent(in) :: kernel_filename
 
   integer :: iunit ! unit number of opened file for collection kernel code from a lookup table.
 
   integer :: idd, jdd
   real(r8) :: kkfac
 
-  kernel_filename ='/global/homes/a/agett/e3sm/ftorch/old_emulator_files/KBARF_tau_kernel.dat' ! Hardcoded kernel filemame.
   ! Also assumed to be copied into run_directory. 
   ! Eventually/Ideally (1) use lookup_file_dir + kernel_filename and/or (2) Make namelist
 

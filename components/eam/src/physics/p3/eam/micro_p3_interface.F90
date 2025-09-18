@@ -149,6 +149,12 @@ module micro_p3_interface
    logical            :: micro_tend_output       = .false.   ! Default microphysics tendencies to output file
    logical            :: do_prescribed_CCN       = .false.   ! Use prescribed CCN
 
+   character(len=256) :: p3_torchscript_warm_rain_emulator_file     = unset_str ! location of p3 input files
+   character(len=256) :: p3_tau_kernel_file     = unset_str ! location of p3 input files
+   character(len=256) :: p3_stochastic_emulated_filename_quantile     = unset_str ! location of p3 input files
+   character(len=256) :: p3_stochastic_emulated_filename_input_scale = unset_str ! location of p3 input files  
+   character(len=256) :: p3_stochastic_emulated_filename_output_scale = unset_str ! location of p3 input files
+
    contains
 !===============================================================================
 subroutine micro_p3_readnl(nlfile)
@@ -167,7 +173,9 @@ subroutine micro_p3_readnl(nlfile)
        micro_p3_tableversion, micro_p3_lookup_dir, micro_aerosolactivation, micro_subgrid_cloud, &
        micro_tend_output, p3_autocon_coeff, p3_qc_autocon_expon, p3_nc_autocon_expon, p3_accret_coeff, &
        p3_qc_accret_expon, p3_wbf_coeff, p3_max_mean_rain_size, p3_embryonic_rain_size, &
-       do_prescribed_CCN, do_Cooper_inP3, p3_mincdnc, micro_nccons, p3_warm_rain_method
+       do_prescribed_CCN, do_Cooper_inP3, p3_mincdnc, micro_nccons, p3_warm_rain_method, &
+       p3_torchscript_warm_rain_emulator_file, p3_tau_kernel_file, p3_stochastic_emulated_filename_quantile, &
+       p3_stochastic_emulated_filename_input_scale, p3_stochastic_emulated_filename_output_scale
 
   !-----------------------------------------------------------------------------
 
@@ -202,6 +210,11 @@ subroutine micro_p3_readnl(nlfile)
      write(iulog,'(A30,1x,L)')    'do_prescribed_CCN: ',       do_prescribed_CCN
      write(iulog,'(A30,1x,L)')    'do_Cooper_inP3: ',          do_Cooper_inP3
      write(iulog,'(A29,1x,A19)')  'p3_warm_rain_method: ',     p3_warm_rain_method
+     write(iulog,'(A50,1x,A100)') 'p3_torchscript_warm_rain_emulator_file: ', p3_torchscript_warm_rain_emulator_file
+     write(iulog,'(A50,1x,A100)') 'p3_tau_kernel_file: ', p3_tau_kernel_file
+     write(iulog,'(A50,1x,A100)') 'p3_stochastic_emulated_filename_quantile: ', p3_stochastic_emulated_filename_quantile
+     write(iulog,'(A50,1x,A100)') 'p3_stochastic_emulated_filename_input_scale: ', p3_stochastic_emulated_filename_input_scale
+     write(iulog,'(A50,1x,A100)') 'p3_stochastic_emulated_filename_output_scale: ', p3_stochastic_emulated_filename_output_scale
 
   end if
 
@@ -225,6 +238,11 @@ subroutine micro_p3_readnl(nlfile)
   call mpibcast(do_Cooper_inP3,          1,                          mpilog,  0, mpicom)
   call mpibcast(micro_nccons,            1,                          mpir8,   0, mpicom)
   call mpibcast(p3_warm_rain_method,     len(p3_warm_rain_method),   mpichar, 0, mpicom)
+  call mpibcast(p3_torchscript_warm_rain_emulator_file, len(p3_torchscript_warm_rain_emulator_file), mpichar, 0, mpicom)
+  call mpibcast(p3_tau_kernel_file, len(p3_tau_kernel_file), mpichar, 0, mpicom)
+  call mpibcast(p3_stochastic_emulated_filename_quantile, len(p3_stochastic_emulated_filename_quantile), mpichar, 0, mpicom)
+  call mpibcast(p3_stochastic_emulated_filename_input_scale, len(p3_stochastic_emulated_filename_input_scale), mpichar, 0, mpicom)
+  call mpibcast(p3_stochastic_emulated_filename_output_scale, len(p3_stochastic_emulated_filename_output_scale), mpichar, 0, mpicom)
 
 #endif
 
@@ -490,7 +508,11 @@ end subroutine micro_p3_readnl
       frzdep_idx = pbuf_get_index('FRZDEP') 
     endif 
 
-    call p3_init(micro_p3_lookup_dir,micro_p3_tableversion,p3_warm_rain_method)
+    call p3_init(micro_p3_lookup_dir,micro_p3_tableversion,p3_warm_rain_method,&
+         p3_tau_kernel_file, p3_stochastic_emulated_filename_quantile, &
+         p3_stochastic_emulated_filename_input_scale, &
+         p3_stochastic_emulated_filename_output_scale, &
+         p3_torchscript_warm_rain_emulator_file)
 
     ! Initialize physics buffer grid fields for accumulating precip and
     ! condensation

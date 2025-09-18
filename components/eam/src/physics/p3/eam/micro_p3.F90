@@ -201,7 +201,11 @@ pure function bfb_expm1(val) result(res)
    res = exp(val) - 1.0_rtype
 end function bfb_expm1
 
-  SUBROUTINE p3_init(lookup_file_dir,version_p3,warm_rain_method)
+  SUBROUTINE p3_init(lookup_file_dir,version_p3,warm_rain_method,tau_kernel_filename, &
+       stochastic_emulated_filename_quantile, &
+       stochastic_emulated_filename_input_scale, &
+       stochastic_emulated_filename_output_scale, &
+       torchscript_warm_rain_emulator_file)
     !------------------------------------------------------------------------------------------!
     ! This subroutine initializes all physical constants and parameters needed by the P3       !
     ! scheme, including reading in two lookup table files and creating a third.                !
@@ -214,29 +218,42 @@ end function bfb_expm1
     character*(*), intent(in)    :: lookup_file_dir                !directory of the lookup tables
     character(len=16), intent(in) :: version_p3  !version number of P3 package
     character(len=*), intent(in)  :: warm_rain_method  ! Autoconversion/accretion method. 
+    character(len=*), intent(in)  :: tau_kernel_filename
+    character(len=*), intent(in)  :: stochastic_emulated_filename_quantile, &
+               stochastic_emulated_filename_input_scale, &
+               stochastic_emulated_filename_output_scale
+    character(len=*), intent(in)  :: torchscript_warm_rain_emulator_file
 
-    character(len=1024)   :: ftorch_emulator_file
 
     ! These need to come from namelist ideally
-    character(len=1024) :: stochastic_emulated_filename_quantile, &
-    stochastic_emulated_filename_input_scale, &
-    stochastic_emulated_filename_output_scale ! Files for emulated machine learning
+    !character(len=1024) :: stochastic_emulated_filename_quantile, &
+    !stochastic_emulated_filename_input_scale, &
+    !stochastic_emulated_filename_output_scale ! Files for emulated machine learning
+
+    !character(len=1024) :: tau_kernel_filename
 
   ! For now, assumed to be copied into run_directory. 
   ! Eventually/Ideally Make namelist
-    stochastic_emulated_filename_quantile =  '/global/homes/a/agett/e3sm/ftorch/old_emulator_files/quantile_neural_net_fortran.nc'
-    stochastic_emulated_filename_input_scale = '/global/homes/a/agett/e3sm/ftorch/old_emulator_files/input_quantile_scaler.nc'
-    stochastic_emulated_filename_output_scale = '/global/homes/a/agett/e3sm/ftorch/old_emulator_files/output_quantile_scaler.nc'
+    !stochastic_emulated_filename_quantile =  '/global/homes/a/agett/e3sm/ftorch/old_emulator_files/quantile_neural_net_fortran.nc'
+    !stochastic_emulated_filename_input_scale = '/global/homes/a/agett/e3sm/ftorch/old_emulator_files/input_quantile_scaler.nc'
+    !stochastic_emulated_filename_output_scale = '/global/homes/a/agett/e3sm/ftorch/old_emulator_files/output_quantile_scaler.nc'
+    !tau_kernel_filename ='/global/homes/a/agett/e3sm/ftorch/old_emulator_files/KBARF_tau_kernel.dat' 
 
-    ftorch_emulator_file = '/global/homes/a/agett/python/ftorch/saved_simplenet_model_cpu.pt'
+    !ftorch_emulator_file = '/global/homes/a/agett/python/ftorch/saved_simplenet_model_cpu.pt'
 
     if (masterproc) write(iulog,*) ''
     if (masterproc) write(iulog,*) ' P3 microphysics: v',version_p3
 
+    if (masterproc) write(iulog,*) ' P3 Init: tau_kernel_filename = ',trim(tau_kernel_filename)
+    if (masterproc) write(iulog,*) ' P3 Init: stochastic_emulated_filename_quantile = ',trim(stochastic_emulated_filename_quantile)
+    if (masterproc) write(iulog,*) ' P3 Init: stochastic_emulated_filename_input_scale = ',trim(stochastic_emulated_filename_input_scale)
+    if (masterproc) write(iulog,*) ' P3 Init: stochastic_emulated_filename_output_scale = ',trim(stochastic_emulated_filename_output_scale)
+    if (masterproc) write(iulog,*) ' P3 Init: torchscript_warm_rain_emulator_file = ',trim(torchscript_warm_rain_emulator_file)
+
     call p3_init_a(lookup_file_dir, version_p3)
     call p3_init_b(lookup_file_dir,warm_rain_method,stochastic_emulated_filename_quantile, &
                    stochastic_emulated_filename_input_scale, stochastic_emulated_filename_output_scale, &
-                   ftorch_emulator_file)
+                   torchscript_warm_rain_emulator_file,tau_kernel_filename)
 
     if (masterproc) write(iulog,*) '   P3_INIT DONE.'
     if (masterproc) write(iulog,*) ''
@@ -347,7 +364,7 @@ end function bfb_expm1
   end subroutine p3_set_tables
 
   SUBROUTINE p3_init_b(lookup_file_dir,warm_rain_method,stochastic_emulated_filename_quantile, &
-   stochastic_emulated_filename_input_scale, stochastic_emulated_filename_output_scale,ftorch_emulator_file)
+   stochastic_emulated_filename_input_scale, stochastic_emulated_filename_output_scale,ftorch_emulator_file,tau_kernel_filename)
     implicit none
     
     character*(*), intent(in)     :: lookup_file_dir       !directory of the lookup tables
@@ -356,6 +373,7 @@ end function bfb_expm1
                stochastic_emulated_filename_input_scale, &
                stochastic_emulated_filename_output_scale ! Files for emulated machine learning
     character*(*), intent(in)     :: ftorch_emulator_file
+    character*(*), intent(in)     :: tau_kernel_filename
 
     character(128) :: errstring    ! Output status (non-blank for error return)
 
@@ -481,7 +499,7 @@ end function bfb_expm1
     enddo mu_r_loop
 
     if (trim(warm_rain_method) == 'tau') then
-      call p3_stochastic_kernel_init(lookup_file_dir)
+      call p3_stochastic_kernel_init(lookup_file_dir,tau_kernel_filename)
     endif
 
     if (trim(warm_rain_method) == 'emulated') then
