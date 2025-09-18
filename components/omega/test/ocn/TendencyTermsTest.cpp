@@ -36,7 +36,6 @@
 using namespace OMEGA;
 
 struct TestSetupPlane {
-   Real Pi = M_PI;
 
    Real Lx = 1;
    Real Ly = std::sqrt(3) / 2;
@@ -182,9 +181,7 @@ struct TestSetupPlane {
 struct TestSetupSphere {
    // radius of spherical mesh
    // TODO: get this from the mesh
-   Real Radius = 6371220;
-
-   Real Pi = M_PI;
+   Real Radius = REarth;
 
    ErrorMeasures ExpectedDivErrors         = {0.0136595773989796766,
                                               0.00367052484586384131};

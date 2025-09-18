@@ -3,6 +3,7 @@
 #include "DataTypes.h"
 #include "Decomp.h"
 #include "Dimension.h"
+#include "GlobalConstants.h"
 #include "Halo.h"
 #include "HorzMesh.h"
 #include "IO.h"
@@ -22,7 +23,6 @@ using namespace OMEGA;
 // operator tests together with exact values of operators for computing errors
 // and expected error values
 struct TestSetupPlane {
-   Real Pi = M_PI;
 
    // lengths of periodic planar mesh
    // TODO: get this from the horizontal mesh once it supports periodic planar
@@ -79,7 +79,7 @@ struct TestSetupPlane {
 struct TestSetupSphere1 {
    // radius of spherical mesh
    // TODO: get this from the mesh
-   Real Radius = 6371220;
+   Real Radius = REarth;
 
    ErrorMeasures ExpectedDivErrors         = {0.013659577398978353,
                                               0.00367052484586382743};
@@ -129,7 +129,7 @@ struct TestSetupSphere1 {
 struct TestSetupSphere2 {
    // radius of spherical mesh
    // TODO: get this from the mesh
-   Real Radius = 6371220;
+   Real Radius = REarth;
 
    ErrorMeasures ExpectedDivErrors         = {1.37734693033362766e-10,
                                               0.000484370621558727582};

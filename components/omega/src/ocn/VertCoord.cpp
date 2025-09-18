@@ -10,6 +10,7 @@
 #include "VertCoord.h"
 #include "Dimension.h"
 #include "Field.h"
+#include "GlobalConstants.h"
 #include "IO.h"
 #include "IOStream.h"
 #include "OmegaKokkos.h"
@@ -656,8 +657,6 @@ void VertCoord::computePressure(
     const Array1DReal &SurfacePressure // [in] surface pressure
 ) {
 
-   Real Gravity = 9.80616_Real; // gravitationl acceleration
-
    OMEGA_SCOPE(LocRho0, Rho0);
    OMEGA_SCOPE(LocMinLayerCell, MinLayerCell);
    OMEGA_SCOPE(LocMaxLayerCell, MaxLayerCell);
@@ -745,8 +744,6 @@ void VertCoord::computeGeopotential(
     const Array1DReal &SelfAttractionLoading // [in] self attraction and loading
 ) {
 
-   Real Gravity = 9.80616_Real; // gravitationl acceleration
-
    OMEGA_SCOPE(LocMinLayerCell, MinLayerCell);
    OMEGA_SCOPE(LocMaxLayerCell, MaxLayerCell);
    OMEGA_SCOPE(LocGeopotMid, GeopotentialMid);
@@ -783,8 +780,6 @@ void VertCoord::computeGeopotential(
 // used with an outer parallel_for loop over cells, and 2 paralel_reduce
 // reductions and a parallel_for over the active layers within a column.
 void VertCoord::computeTargetThickness() {
-
-   Real Gravity = 9.80616_Real; // gravitationl acceleration
 
    OMEGA_SCOPE(LocRho0, Rho0);
    OMEGA_SCOPE(LocMinLayerCell, MinLayerCell);

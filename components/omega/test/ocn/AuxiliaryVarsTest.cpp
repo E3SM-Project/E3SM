@@ -3,6 +3,7 @@
 #include "Decomp.h"
 #include "Dimension.h"
 #include "Field.h"
+#include "GlobalConstants.h"
 #include "Halo.h"
 #include "HorzMesh.h"
 #include "IO.h"
@@ -26,7 +27,6 @@
 using namespace OMEGA;
 
 struct TestSetupPlane {
-   Real Pi = M_PI;
 
    Real Lx = 1;
    Real Ly = std::sqrt(3) / 2;
@@ -156,7 +156,7 @@ struct TestSetupPlane {
 
 struct TestSetupSphere {
 
-   Real Radius = 6371220;
+   Real Radius = REarth;
 
    ErrorMeasures ExpectedKineticEnergyErrors = {0.0143579382532765844,
                                                 0.00681096618897046764};

@@ -4,6 +4,7 @@
 #include "Decomp.h"
 #include "Dimension.h"
 #include "Field.h"
+#include "GlobalConstants.h"
 #include "Halo.h"
 #include "HorzMesh.h"
 #include "IO.h"
@@ -23,7 +24,7 @@
 using namespace OMEGA;
 
 struct TestSetup {
-   Real Radius = 6371220;
+   Real Radius = REarth;
 
    KOKKOS_FUNCTION Real layerThickness(Real Lon, Real Lat) const {
       return (2 + std::cos(Lon) * std::pow(std::cos(Lat), 4));

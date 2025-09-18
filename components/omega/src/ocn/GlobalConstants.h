@@ -12,15 +12,16 @@
 //===----------------------------------------------------------------------===//
 
 #include "DataTypes.h"
+#include <cmath>
 
 namespace OMEGA {
 
 // Earth constants
-constexpr Real Gravity = 9.80616; // Acceleration due to gravity ~ m/s^2
-constexpr Real Pi      = 3.14159265358979323846; // Pi
-constexpr Real TwoPi   = 2.0 * Pi;               // 2*Pi
-constexpr Real CDay    = 86400.0; // Seconds in a calendar day ~ sec
-constexpr Real SDay    = 86164.0; // Seconds in a sidereal day ~ sec
+constexpr Real Gravity = 9.80616;    // Acceleration due to gravity ~ m/s^2
+constexpr Real Pi      = M_PI;       // Pi
+constexpr Real TwoPi   = 2.0 * M_PI; // 2*Pi
+constexpr Real CDay    = 86400.0;    // Seconds in a calendar day ~ sec
+constexpr Real SDay    = 86164.0;    // Seconds in a sidereal day ~ sec
 constexpr Real Omega =
     2.0 * Pi / SDay;               // Angular velocity of the Earth ~ rad/sec
 constexpr Real REarth = 6.37122e6; // Mean radius of the Earth ~ m
