@@ -34,9 +34,12 @@ void AtmosphereDiagnostic::compute_diagnostic (const double dt) {
   }
 
   // If all inputs have invalid timestamps, we have a problem.
+  auto fname = [](const Field& f) { return f.name(); };
   EKAT_REQUIRE_MSG (ts.is_valid(),
       "Error! All inputs to diagnostic have invalid timestamp.\n"
-      "  - Diag name: " + name() + "\n");
+      "  - Diag name: " + name() + "\n"
+      "  - Diag field name: " + m_diagnostic_output.name() + "\n"
+      "  - Diag inputs names: " + ekat::join(inputs,fname,",") + "\n");
 
   if (ts==m_last_eval_ts) {
     // No need to compute the diag again

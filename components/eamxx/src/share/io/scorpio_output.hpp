@@ -164,7 +164,7 @@ protected:
                           const scorpio::FileMode mode);
   void set_decompositions(const std::string &filename);
   void compute_diagnostics(const bool allow_invalid_fields);
-  void process_requested_fields(const std::string& stream_name);
+  void process_requested_fields();
   strvec_t get_var_dimnames(const FieldLayout &layout) const;
 
   // Tracking the averaging of any filled values:
@@ -234,6 +234,8 @@ protected:
 
   std::shared_ptr<ekat::logger::LoggerBase> m_atm_logger =
       console_logger(ekat::logger::LogLevel::warn);
+
+  std::string m_stream_name; // used in error msgs to help distinguish which stream this is
 };
 
 } // namespace scream
