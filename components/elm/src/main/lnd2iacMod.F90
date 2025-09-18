@@ -8,13 +8,9 @@ module lnd2iacMod
   !
   ! !USES:
   use shr_kind_mod    , only : r8 => shr_kind_r8
-  use shr_infnan_mod  , only : nan => shr_infnan_nan, assignment(=)
-  use shr_log_mod     , only : errMsg => shr_log_errMsg
-  use decompMod       , only : get_proc_bounds, bounds_type
+  use decompMod       , only : bounds_type
   use domainMod       , only : ldomain
-  use elm_varctl      , only : iulog
   use elm_varpar      , only : numpft
-  use ColumnType      , only : col_pp   ! 
   use ColumnDataType  , only : col_cf   ! for hr
   use VegetationType  , only : veg_pp   ! pftwgt
   use VegetationDataType, only: veg_cf  ! for npp
@@ -44,7 +40,7 @@ contains
 
   !-------------------------------
   subroutine Init(this, bounds)
-    
+
     ! !DESCRIPTION:
     ! Initialize land variables required by glc
     !
@@ -100,15 +96,14 @@ contains
 
        c=veg_pp%column(p) ! for hr
 
-       ! Assign values
-       this%hr(g,pft) = col_cf%hr(c)   ! Every pft in this column gets this hr value
-       this%npp(g,pft) = veg_cf%npp(p)
-       ! this is the fraction of actual grid cell
-       this%pftwgt(g,pft) = veg_pp%wtgcell(p) * ldomain%frac(g) * &
+       if (veg_pp%active(p)) then
+         ! Assign values
+         this%hr(g,pft) = col_cf%hr(c)   ! Every pft in this column gets this hr value
+         this%npp(g,pft) = veg_cf%npp(p)
+         ! this is the fraction of actual grid cell
+         this%pftwgt(g,pft) = veg_pp%wtgcell(p) * ldomain%frac(g) * &
                              ldomain%mask(g)
+      end if
     end do
-
-    ! Ta da
-
   end subroutine update_lnd2iac
 end module lnd2iacMod
