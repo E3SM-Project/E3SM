@@ -411,7 +411,8 @@
 
       <modules compiler="nvidia.*">
         <command name="load">PrgEnv-nvidia</command>
-        <command name="load">nvidia/24.5</command>
+        <!-- <command name="load">nvidia/24.5</command> -->
+        <command name="load">nvidia/25.5</command>
       </modules>
 
       <modules compiler="gnugpu">
