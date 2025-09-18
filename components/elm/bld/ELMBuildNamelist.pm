@@ -3436,7 +3436,6 @@ sub setup_logic_fates {
                    "fates_inventory_ctrl_filename",
                    "fates_parteh_mode",
                    "fates_seeddisp_cadence",
-                   "fates_spitfire_mode",
                    "use_fates_cohort_age_tracking",
                    "use_fates_ed_st3",
                    "use_fates_ed_prescribed_phys",
@@ -3459,7 +3458,8 @@ sub setup_logic_fates {
 	                 "fates_electron_transport_model");
 
     foreach my $var (@list) {
-       add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, $var,'use_fates'=>$nl_flags->{'use_fates'});
+       add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, $var,'use_fates'=>$nl_flags->{'use_fates'},
+	                                                                                       'use_fates_sp'=>$nl->get_value('use_fates_sp') );
     }
 
     # Add defaults for fates modes that depend on previously set fates modes.  See namelist defaults file for list.
@@ -3474,8 +3474,8 @@ sub setup_logic_fates {
                                                                                       'use_fates_lupft'=>$nl->get_value('use_fates_lupft'),
                                                                                       'use_fates_sp'=>$nl->get_value('use_fates_sp') );
 	add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fates_spitfire_mode', 'use_fates'=>$nl_flags->{'use_fates'},
-              'use_fates_managed_fire'=>$nl->get_value('use_fates_managed_fire'),
-              'use_fates_sp'=>$nl_flags->{'use_fates_sp'} );                                                                              
+                                                                                      'use_fates_managed_fire'=>$nl->get_value('use_fates_managed_fire'),
+                                                                                      'use_fates_sp'=>$nl->get_value('use_fates_sp') );
 
     # For FATES SP mode make sure no-competion, and fixed-biogeography are also set
     # And also check for other settings that can't be trigged on as well
