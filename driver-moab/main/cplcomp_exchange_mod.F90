@@ -9,8 +9,8 @@ module cplcomp_exchange_mod
   use seq_map_type_mod
   use component_type_mod
   use seq_flds_mod, only: seq_flds_dom_coord, seq_flds_dom_other
-  use seq_flds_mod, only: seq_flds_dom_fields, seq_flds_dom_ext_fields
-  use seq_flds_mod, only: seq_flds_a2x_ext_fields, seq_flds_a2x_fields, seq_flds_x2a_ext_fields, seq_flds_x2a_fields ! 
+  use seq_flds_mod, only: seq_flds_dom_fields
+  use seq_flds_mod, only: seq_flds_a2x_fields, seq_flds_x2a_fields ! 
   use seq_flds_mod, only: seq_flds_o2x_fields ! needed for MOAB init of ocean fields o2x to be able to transfer to coupler
   use seq_flds_mod, only: seq_flds_x2o_fields ! needed for MOAB init of ocean fields x2o to be able to transfer from coupler
   use seq_flds_mod, only: seq_flds_i2x_fields, seq_flds_x2i_fields ! needed for MOAB init of ice fields x2o on coupler side, to save them
@@ -1126,7 +1126,7 @@ subroutine  copy_aream_from_area(mbappid)
                   ierr = iMOAB_SendMesh(mhpgid, mpicom_join, mpigrp_cplid, id_join, partMethod)
                else
                   ! still use the mhid, original coarse mesh
-                  ierr = iMOAB_SendMesh(mhid, mpicom_join, mpigrp_cplid, id_join, partMethod)
+                  ierr = iMOAB_SendMesh(mphaid, mpicom_join, mpigrp_cplid, id_join, partMethod)
                endif
                if (ierr .ne. 0) then
                   write(logunit,*) subname,' error in sending mesh from atm comp '
@@ -1145,6 +1145,9 @@ subroutine  copy_aream_from_area(mbappid)
             endif
             !!!!  FULL ATM
             if ( trim(atm_mesh) == 'none' ) then ! full atm
+               ! will receive either pg2 mesh, or point cloud mesh corresponding to GLL points 
+               ! (mphaid app) for spectral case
+               ! this cannot be used for maps (either computed online or read)
                ierr = iMOAB_ReceiveMesh(mbaxid, mpicom_join, mpigrp_old, id_old)
                if (ierr .ne. 0) then
                   write(logunit,*) subname,' error in receiving mesh on atm coupler '
@@ -1181,14 +1184,15 @@ subroutine  copy_aream_from_area(mbappid)
          !  iMOAB_FreeSenderBuffers needs to be called after receiving the mesh
 
 !!!!!!!!  ATM COMPONENT
-         if (mhid .ge. 0) then  ! we are on component atm pes
+         if (mphaid .ge. 0) then  ! we are on component atm pes
    !!!!! FULL ATM
             if ( trim(atm_mesh) == 'none' ) then  ! full atmosphere
                context_id = id_join
                if (atm_pg_active) then! we send mesh from mhpgid app
                   ierr = iMOAB_FreeSenderBuffers(mhpgid, context_id)
                else
-                  ierr = iMOAB_FreeSenderBuffers(mhid, context_id)
+                  ! we send mesh from point cloud data
+                  ierr = iMOAB_FreeSenderBuffers(mphaid, context_id)
                endif
                if (ierr .ne. 0) then
                   write(logunit,*) subname,' error in freeing send buffers '
@@ -1201,7 +1205,7 @@ subroutine  copy_aream_from_area(mbappid)
          ! graph between atm phys, mphaid, and atm dyn on coupler, mbaxid
          ! phys atm group is mpigrp_old, coupler group is mpigrp_cplid
          typeA = 2 ! point cloud for mphaid
-         typeB = 1 ! spectral elements
+         typeB = 2 ! in spectral case, we will have just point cloud on coupler PEs 
          if (atm_pg_active) then
             typeB = 3 ! in this case, we will have cells associated with DOFs as GLOBAL_ID tag
          endif
@@ -1209,6 +1213,8 @@ subroutine  copy_aream_from_area(mbappid)
                                     !  components/cam/src/cpl/atm_comp_mct.F90
                                     !  components/data_comps/datm/src/atm_comp_mct.F90 ! line 177 !! 
 
+         ! this is not needed for migrating point cloud to point cloud !
+         ! it is needed only after migrating pg2 mesh to cpupler 
          ierr = iMOAB_ComputeCommGraph( mphaid, mbaxid, mpicom_join, mpigrp_old, mpigrp_cplid, &
              typeA, typeB, ATM_PHYS_CID, id_join) ! ID_JOIN is now 6 
 
@@ -1218,26 +1224,17 @@ subroutine  copy_aream_from_area(mbappid)
          if (mbaxid .ge. 0 ) then   !  coupler pes
             tagtype = 1  ! dense, double
 
-            if (atm_pg_active) then
-              tagname = trim(seq_flds_a2x_fields)//C_NULL_CHAR
-              numco = 1 !  usually 1 value per cell
-            else ! this is not supported now, but leave it here
-              tagname = trim(seq_flds_a2x_ext_fields)//C_NULL_CHAR ! MOAB versions of a2x for spectral
-              numco = 16 ! np*np !  usually 16 values per cell, GLL points; should be 4 x 4 = 16
-            endif
+            tagname = trim(seq_flds_a2x_fields)//C_NULL_CHAR
+            numco = 1 !  usually 1 value per cell
 
             ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
             if (ierr .ne. 0) then
                write(logunit,*) subname,' error in defining tags on atm on coupler '
                call shr_sys_abort(subname//' ERROR in defining tags ')
             endif
-            if (atm_pg_active) then
-               tagname = trim(seq_flds_x2a_fields)//C_NULL_CHAR
-               numco = 1 !  usually 1 value per cell
-            else ! this is not supported now, but leave it here
-               tagname = trim(seq_flds_x2a_ext_fields)//C_NULL_CHAR ! MOAB versions of a2x for spectral
-               numco = 16 ! np*np !  usually 16 values per cell, GLL points; should be 4 x 4 = 16
-            endif
+            
+            tagname = trim(seq_flds_x2a_fields)//C_NULL_CHAR
+            numco = 1 !  usually 1 value per cell
 
             ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
             if (ierr .ne. 0) then
@@ -1246,28 +1243,24 @@ subroutine  copy_aream_from_area(mbappid)
             endif
 
             !add the normalization tag
-            if (atm_pg_active) then
-               tagname = trim(seq_flds_dom_fields)//C_NULL_CHAR
-               numco = 1 !  usually 1 value per cell
-            else ! this is not supported now, but leave it here
-               tagname = trim(seq_flds_dom_ext_fields)//C_NULL_CHAR ! MOAB versions of a2x for spectral
-               numco = 16 ! np*np !  usually 16 values per cell, GLL points; should be 4 x 4 = 16
-            endif
+            
+            tagname = trim(seq_flds_dom_fields)//C_NULL_CHAR
+            numco = 1 !  usually 1 value per cell
 
             ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
             if (ierr .ne. 0) then
                write(logunit,*) subname,' error in defining tags seq_flds_dom_fields on atm on coupler '
                call shr_sys_abort(subname//' ERROR in defining tags ')
             endif
-            if (atm_pg_active) then
-               ! also, frac, area,  masks has to come from atm mphaid, not from domain file reader
-               ! this is hard to digest :(
-               tagname = 'lat:lon:area:frac:mask'//C_NULL_CHAR
-               ! TODO:  this should be called on the joint procs, not coupler only.
-               call component_exch_moab(comp, mphaid, mbaxid, 0, tagname, context_exch='doma')
-               ! copy aream from area in case atm_mesh
-               call copy_aream_from_area(mbaxid)
-            endif
+
+            ! also, frac, area,  masks has to come from atm mphaid, not from domain file reader
+            ! this is hard to digest :(
+            tagname = 'lat:lon:area:frac:mask'//C_NULL_CHAR
+            ! TODO:  this should be called on the joint procs, not coupler only.
+            call component_exch_moab(comp, mphaid, mbaxid, 0, tagname, context_exch='doma')
+            ! copy aream from area in case atm_mesh
+            call copy_aream_from_area(mbaxid)
+
          endif ! coupler pes
 
 #ifdef MOABDEBUG
