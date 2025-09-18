@@ -19,6 +19,7 @@
 #include "Decomp.h"
 #include "Dimension.h"
 #include "Error.h"
+#include "GlobalConstants.h"
 #include "Halo.h"
 #include "HorzMesh.h"
 #include "IO.h"
@@ -524,8 +525,8 @@ int testSSHGrad(int NVertLayers, Real RTol) {
 
    Err += setVectorEdge(
        KOKKOS_LAMBDA(Real(&VecField)[2], Real X, Real Y) {
-          VecField[0] = -9.80665_Real * Setup.gradX(X, Y);
-          VecField[1] = -9.80665_Real * Setup.gradY(X, Y);
+          VecField[0] = -Gravity * Setup.gradX(X, Y);
+          VecField[1] = -Gravity * Setup.gradY(X, Y);
        },
        ExactSSHGrad, EdgeComponent::Normal, Geom, Mesh, ExchangeHalos::No);
 
