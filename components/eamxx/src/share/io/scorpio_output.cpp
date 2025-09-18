@@ -1064,9 +1064,6 @@ process_requested_fields(const std::string& stream_name)
     if (m_track_avg_cnt) {
       m_field_to_avg_cnt_suffix.emplace(diag_field.name(),diag_avg_cnt_name);
     }
-
-    // All done, add to the diags list
-    m_diagnostics.push_back(diag);
   };
   
   // Now, keep processing each field. We can process a field if either:
@@ -1115,23 +1112,39 @@ process_requested_fields(const std::string& stream_name)
         EKAT_REQUIRE_MSG (name2diag.count(name)==1,
             "Error! Cannot process requested output field '" + name + "'\n");
         auto diag = name2diag[name];
-        bool ready_to_init = true;
-        for (const auto& freq : diag->get_required_field_requests()) {
-          const auto& dep_name = freq.fid.name();
-          if (not fm_model->has_field(dep_name)) {
-            ready_to_init = false;
-            if (not remaining.count(dep_name)) {
-              // This requirement MUST be another diagnostic, since it was not in the original m_fields_names
-              // Create the diag, and add it to the list of fields to process
-              name2diag[freq.fid.name()] = create_diagnostic(freq.fid.name(),fm_model->get_grid());
-              add_these.insert(freq.fid.name());
-            }
-            break;
-          }
-        }
-        if (ready_to_init) {
-          init_diag(diag);
+        if (diag->is_initialized()) {
+          // Another stream must have already initialized this diag. Just add the diag field to the fm
+          fm_model->add_field(diag->get_diagnostic());
           remove_these.insert(name);
+          m_diagnostics.push_back(diag);
+        } else {
+          // Check if all the diag req are already in the FM, otherwise we may have to delay its initialization
+          bool ready_to_init = true;
+          for (const auto& freq : diag->get_required_field_requests()) {
+            const auto& dep_name = freq.fid.name();
+            if (not fm_model->has_field(dep_name)) {
+              ready_to_init = false;
+              if (not remaining.count(dep_name) and
+                  not add_these.count(dep_name))
+              {
+                // This requirement SHOULD be another diagnostic, but we may have already added it
+                // to the list of things to build, or it may have been already created by another stream
+                auto& dep_diag = m_diag_repo[dep_name];
+                if (dep_diag==nullptr) {
+                  // Create the diag, and add it to the list of fields to process
+                  dep_diag = create_diagnostic(dep_name,fm_model->get_grid());
+                }
+                name2diag[dep_name] = dep_diag;
+                add_these.insert(dep_name);
+              }
+              break;
+            }
+          }
+          if (ready_to_init) {
+            init_diag(diag);
+            remove_these.insert(name);
+            m_diagnostics.push_back(diag);
+          }
         }
       }
     }

@@ -134,6 +134,8 @@ void AtmosphereProcess::initialize (const TimeStamp& t0, const RunType run_type)
     m_atm_logger->flush(); // During init, flush often (to help debug crashes)
   }
 
+  m_is_initialized = true;
+
   if (this->type()!=AtmosphereProcessType::Group) {
     stop_timer (m_timer_prefix + this->name() + "::init");
   }
