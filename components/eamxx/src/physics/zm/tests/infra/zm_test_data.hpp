@@ -1,7 +1,6 @@
 #ifndef SCREAM_ZM_FUNCTIONS_F90_HPP
 #define SCREAM_ZM_FUNCTIONS_F90_HPP
 
-// #include "physics/zm/gw_functions.hpp"
 #include "physics/share/physics_test_data.hpp"
 #include "share/core/eamxx_types.hpp"
 
@@ -9,9 +8,7 @@
 #include <utility>
 #include <memory>   // for shared_ptr
 
-//
 // Bridge functions to call fortran version of ZM functions from C++
-//
 
 namespace scream {
 namespace zm {
