@@ -257,6 +257,9 @@ contains
     namelist /elm_inparm/ fates_paramfile, use_fates,   &
           fates_spitfire_mode,                          &
           fates_harvest_mode,                           &
+          use_fates_planthydro,                         &
+          use_fates_ed_st3,                             &
+          use_fates_cohort_age_tracking,                &
           use_fates_ed_prescribed_phys,                 &
           use_fates_inventory_init,                     &
           fates_inventory_ctrl_filename,                &
