@@ -9,8 +9,8 @@ module cplcomp_exchange_mod
   use seq_map_type_mod
   use component_type_mod
   use seq_flds_mod, only: seq_flds_dom_coord, seq_flds_dom_other
-  use seq_flds_mod, only: seq_flds_dom_fields
-  use seq_flds_mod, only: seq_flds_a2x_ext_fields, seq_flds_a2x_fields, seq_flds_x2a_fields ! 
+  use seq_flds_mod, only: seq_flds_dom_fields, seq_flds_dom_ext_fields
+  use seq_flds_mod, only: seq_flds_a2x_ext_fields, seq_flds_a2x_fields, seq_flds_x2a_ext_fields, seq_flds_x2a_fields ! 
   use seq_flds_mod, only: seq_flds_o2x_fields ! needed for MOAB init of ocean fields o2x to be able to transfer to coupler
   use seq_flds_mod, only: seq_flds_x2o_fields ! needed for MOAB init of ocean fields x2o to be able to transfer from coupler
   use seq_flds_mod, only: seq_flds_i2x_fields, seq_flds_x2i_fields ! needed for MOAB init of ice fields x2o on coupler side, to save them
@@ -1231,8 +1231,14 @@ subroutine  copy_aream_from_area(mbappid)
                write(logunit,*) subname,' error in defining tags on atm on coupler '
                call shr_sys_abort(subname//' ERROR in defining tags ')
             endif
+            if (atm_pg_active) then
+               tagname = trim(seq_flds_x2a_fields)//C_NULL_CHAR
+               numco = 1 !  usually 1 value per cell
+            else ! this is not supported now, but leave it here
+               tagname = trim(seq_flds_x2a_ext_fields)//C_NULL_CHAR ! MOAB versions of a2x for spectral
+               numco = 16 ! np*np !  usually 16 values per cell, GLL points; should be 4 x 4 = 16
+            endif
 
-            tagname = trim(seq_flds_x2a_fields)//C_NULL_CHAR ! TODO should be also x2a_ext for spectral case 
             ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
             if (ierr .ne. 0) then
                write(logunit,*) subname,' error in defining tags seq_flds_x2a_fields on atm on coupler '
@@ -1240,19 +1246,28 @@ subroutine  copy_aream_from_area(mbappid)
             endif
 
             !add the normalization tag
-            tagname = trim(seq_flds_dom_fields)//":norm8wt"//C_NULL_CHAR
+            if (atm_pg_active) then
+               tagname = trim(seq_flds_dom_fields)//C_NULL_CHAR
+               numco = 1 !  usually 1 value per cell
+            else ! this is not supported now, but leave it here
+               tagname = trim(seq_flds_dom_ext_fields)//C_NULL_CHAR ! MOAB versions of a2x for spectral
+               numco = 16 ! np*np !  usually 16 values per cell, GLL points; should be 4 x 4 = 16
+            endif
+
             ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
             if (ierr .ne. 0) then
                write(logunit,*) subname,' error in defining tags seq_flds_dom_fields on atm on coupler '
                call shr_sys_abort(subname//' ERROR in defining tags ')
             endif
-            ! also, frac, area,  masks has to come from atm mphaid, not from domain file reader
-            ! this is hard to digest :(
-            tagname = 'lat:lon:area:frac:mask'//C_NULL_CHAR
-            ! TODO:  this should be called on the joint procs, not coupler only.
-            call component_exch_moab(comp, mphaid, mbaxid, 0, tagname, context_exch='doma')
-            ! copy aream from area in case atm_mesh
-            call copy_aream_from_area(mbaxid)
+            if (atm_pg_active) then
+               ! also, frac, area,  masks has to come from atm mphaid, not from domain file reader
+               ! this is hard to digest :(
+               tagname = 'lat:lon:area:frac:mask'//C_NULL_CHAR
+               ! TODO:  this should be called on the joint procs, not coupler only.
+               call component_exch_moab(comp, mphaid, mbaxid, 0, tagname, context_exch='doma')
+               ! copy aream from area in case atm_mesh
+               call copy_aream_from_area(mbaxid)
+            endif
          endif ! coupler pes
 
 #ifdef MOABDEBUG
