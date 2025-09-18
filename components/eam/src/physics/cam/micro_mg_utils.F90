@@ -390,18 +390,26 @@ elemental subroutine size_dist_param_liq(props, qcic, ncic, rho, pgam, lamc)
 
      ! Get pgam from fit to observations of martin et al. 1994
 #if ! defined(CLUBB_BFB_S2) && ! defined(CLUBB_BFB_ALL)
-     pgam = 0.0005714_r8*(ncic/1.e6_r8*rho) + 0.2714_r8
+   !!pgam = 0.0005714_r8*(ncic/1.e6_r8*rho) + 0.2714_r8
+   !!new UA formulation
+     pgam = 0.35_r8 + 0.42_r8 * exp(-0.11_r8 * (ncic * 1.e-6_r8 * rho))
      pgam = 1._r8/(pgam**2) - 1._r8
-     pgam = max(pgam, 2._r8)
+   !!pgam = max(pgam, 2._r8)
+   !!new UA formulation
+     pgam = max(pgam, 0._r8)
      pgam = min(pgam, 15._r8)
 
      ! Set coefficient for use in size_dist_param_basic.
      props_loc%shape_coef = pi * props_loc%rho / 6._r8 * &
           rising_factorial(pgam+1._r8, props_loc%eff_dim)
 #else
-     pgam = 0.0005714_r8*1.e-6_r8*ncic*rho + 0.2714_r8
+   !!pgam = 0.0005714_r8*1.e-6_r8*ncic*rho + 0.2714_r8
+   !!new UA formulation
+     pgam = 0.35_r8 + 0.42_r8 * exp(-0.11_r8 * (ncic * 1.e-6_r8 * rho))
      pgam = 1._r8/(pgam**2) - 1._r8
-     pgam = max(pgam, 2._r8)
+   !!pgam = max(pgam, 2._r8)
+   !!new UA formulation
+     pgam = max(pgam, 0._r8)
 
      ! Set coefficient for use in size_dist_param_basic.
      ! The 3D case is so common and optimizable that we specialize it:

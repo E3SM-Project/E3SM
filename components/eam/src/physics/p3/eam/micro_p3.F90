@@ -1976,9 +1976,13 @@ end function bfb_expm1
 
        ! set minimum nc to prevent floating point error
        nc   = max(nc,nsmall)
-       mu_c = 0.0005714_rtype*(nc*1.e-6_rtype*rho)+0.2714_rtype
+     !!mu_c = 0.0005714_rtype*(nc*1.e-6_rtype*rho)+0.2714_rtype
+     !!new UA formulation
+       mu_c = 0.35_rtype+0.42_rtype*exp(-0.11_rtype*(nc*1.e-6_rtype*rho))
        mu_c = 1._rtype/(mu_c*mu_c)-1._rtype
-       mu_c = max(mu_c,2._rtype)
+     !!mu_c = max(mu_c,2._rtype)
+     !!new UA formulation
+       mu_c = max(mu_c,0._rtype)
        mu_c = min(mu_c,15._rtype)
 
        ! interpolate for mass distribution spectral shape parameter (for SB warm processes)
