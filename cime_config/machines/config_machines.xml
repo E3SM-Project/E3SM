@@ -1273,7 +1273,7 @@
     <DESC>Frontier. AMD EPYC 7A53 64C nodes, 128 hwthreads, 512GB DDR4, 4 MI250X GPUs.</DESC>
     <NODENAME_REGEX>.*frontier.*</NODENAME_REGEX>
     <OS>Linux</OS>
-    <COMPILERS>craygnu-hipcc,craygnu-mphipcc,craycray-mphipcc,crayamd-mphipcc,craygnu,craycray,crayamd</COMPILERS>
+    <COMPILERS>craygnu-mphipcc,craycray-mphipcc,crayamd-mphipcc,craygnu,craycray,crayamd</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>cli115</PROJECT>
     <SAVE_TIMING_DIR>/lustre/orion/proj-shared/cli115</SAVE_TIMING_DIR>
@@ -1326,10 +1326,6 @@
         <command name="load">cray-netcdf-hdf5parallel/4.9.0.15</command>
         <command name="load">cray-parallel-netcdf/1.12.3.15</command>
         <command name="unload">darshan-runtime</command>
-      </modules>
-      <modules compiler="craygnu-hipcc">
-        <command name="load">craype-accel-amd-gfx90a</command>
-        <command name="load">rocm/6.2.4</command>
       </modules>
       <modules compiler="craygnu-mphipcc">
         <command name="load">craype-accel-amd-gfx90a</command>
