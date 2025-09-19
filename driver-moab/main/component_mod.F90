@@ -7,7 +7,7 @@ module component_mod
   use shr_kind_mod,     only: cs => SHR_KIND_CS
   use shr_kind_mod,     only: cl => SHR_KIND_CL
   use shr_sys_mod,      only: shr_sys_abort, shr_sys_flush
-  use shr_const_mod,    only: shr_const_cday
+  use shr_const_mod,    only: shr_const_cday, shr_const_isspval
   use shr_file_mod,     only: shr_file_setLogLevel, shr_file_setLogUnit
   use shr_file_mod,     only: shr_file_setIO, shr_file_getUnit
   use shr_scam_mod,     only: shr_scam_checkSurface
@@ -262,7 +262,7 @@ contains
           ! multiple by area ratio
           if (present(seq_flds_x2c_fluxes)) then
              call mct_avect_vecmult(comp(eci)%x2c_cc, comp(eci)%drv2mdl, seq_flds_x2c_fluxes, mask_spval=.true.)
-             call factor_moab_comp(comp(eci), 'drv2mdl', seq_flds_x2c_fluxes)
+             call factor_moab_comp(comp(eci), 'drv2mdl', seq_flds_x2c_fluxes, mask_spval=.true.)
           end if
 
           ! call the component's specific init phase
@@ -279,7 +279,7 @@ contains
           ! only done in second phase of atm init
           if (present(seq_flds_c2x_fluxes)) then
              call mct_avect_vecmult(comp(eci)%c2x_cc, comp(eci)%mdl2drv, seq_flds_c2x_fluxes, mask_spval=.true.)
-             call factor_moab_comp(comp(eci), 'mdl2drv', seq_flds_c2x_fluxes)
+             call factor_moab_comp(comp(eci), 'mdl2drv', seq_flds_c2x_fluxes, mask_spval=.true.)
           end if
 
           if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
@@ -994,7 +994,7 @@ subroutine component_init_areacor_moab (comp, mbccid, mbcxid, seq_flds_c2x_fluxe
 
              if (comp_prognostic .and. firstloop .and. present(seq_flds_x2c_fluxes)) then
                 call mct_avect_vecmult(comp(eci)%x2c_cc, comp(eci)%drv2mdl, seq_flds_x2c_fluxes, mask_spval=.true.)
-               call factor_moab_comp(comp(eci), 'drv2mdl', seq_flds_x2c_fluxes)
+               call factor_moab_comp(comp(eci), 'drv2mdl', seq_flds_x2c_fluxes,mask_spval=.true.)
              end if
 
              call t_set_prefixf(comp(1)%oneletterid//":")
@@ -1008,7 +1008,7 @@ subroutine component_init_areacor_moab (comp, mbccid, mbcxid, seq_flds_c2x_fluxe
 
              if ((phase == 1) .and. present(seq_flds_c2x_fluxes)) then
                 call mct_avect_vecmult(comp(eci)%c2x_cc, comp(eci)%mdl2drv, seq_flds_c2x_fluxes, mask_spval=.true.)
-               call factor_moab_comp(comp(eci), 'mdl2drv', seq_flds_c2x_fluxes)
+               call factor_moab_comp(comp(eci), 'mdl2drv', seq_flds_c2x_fluxes,mask_spval=.true.)
              endif
 
              if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
@@ -1227,7 +1227,7 @@ subroutine component_init_areacor_moab (comp, mbccid, mbcxid, seq_flds_c2x_fluxe
 
   end subroutine component_diag
 
-   subroutine factor_moab_comp(comp, type, seq_flds_fluxes)
+   subroutine factor_moab_comp(comp, type, seq_flds_fluxes, mask_spval)
       use ISO_C_BINDING, only : C_NULL_CHAR
       use shr_kind_mod      , only :  CXX => shr_kind_CXX
       use iMOAB  , only:  iMOAB_GetDoubleTagStorage, iMOAB_SetDoubleTagStorage
@@ -1235,13 +1235,20 @@ subroutine component_init_areacor_moab (comp, mbccid, mbcxid, seq_flds_c2x_fluxe
       type(component_type)     , intent(inout) :: comp
       character(len=*)        , intent(in)               :: type
       character(len=*)        , intent(in) :: seq_flds_fluxes
+      logical, optional    ,intent(in)    :: mask_spval
 
       character(CXX)  :: tagname
       type(mct_list) :: temp_list  ! used to count number of fields
       integer        :: nfields, arrsize, ierr, i, j
       real (kind=r8) , allocatable ::  vals(:,:) ! tags values to be multiplied
       real (kind=r8) , allocatable ::  factors(:)
+      logical     :: lmspval        ! local mask spval
       character(*), parameter :: subname = '(factor_moab_comp)'
+
+      lmspval = .false.
+      if (present(mask_spval)) then
+         lmspval = mask_spval
+      endif
 
 
       call mct_list_init(temp_list, seq_flds_fluxes)
@@ -1264,11 +1271,21 @@ subroutine component_init_areacor_moab (comp, mbccid, mbcxid, seq_flds_c2x_fluxe
       if (ierr .ne. 0) then
          call shr_sys_abort(subname//' cannot get fluxes  ' //trim(type))
       endif
-      do i=1,comp%mblsize
-         do j=1,nfields
-            vals(i,j) = vals(i,j) * factors(i)
+      if (lmspval) then
+         do i=1,comp%mblsize
+            do j=1,nfields
+              if (.not. shr_const_isspval(vals(i,j))) then
+                vals(i,j) = vals(i,j) * factors(i)
+              endif
+            enddo
          enddo
-      enddo
+      else
+         do i=1,comp%mblsize
+            do j=1,nfields
+                vals(i,j) = vals(i,j) * factors(i)
+            enddo
+         enddo
+      endif
 
       ierr = iMOAB_SetDoubleTagStorage( comp%mbApCCid, tagname, arrsize , comp%mbGridType, vals)
       if (ierr .ne. 0) then
