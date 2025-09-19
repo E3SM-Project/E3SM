@@ -934,9 +934,6 @@ contains
       !$OMP PARALLEL DO PRIVATE (nc,bounds_clump,nmaxcol,s,c,l,g,collist,pi,pf,ft)
       do nc = 1,nclumps
 
-         ! Register HLM variables to the interface registry
-         call this%RegisterHLMInterfaceVariables(nc)
-
          call get_clump_bounds(nc, bounds_clump)
          nmaxcol = bounds_clump%endc - bounds_clump%begc + 1
 
@@ -1021,6 +1018,9 @@ contains
 
          ! This also needs
          call set_bcpconst(this%fates(nc)%bc_pconst,nlevdecomp)
+
+         ! Register HLM variables to the interface registry
+         call this%RegisterHLMInterfaceVariables(nc)
 
          do s = 1, this%fates(nc)%nsites
 
