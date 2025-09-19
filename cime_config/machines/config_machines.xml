@@ -3353,8 +3353,8 @@
       </modules>
       <modules>
         <command name="load">cray-libsci/25.03.0</command>
-        <command name="load">cray-hdf5-parallel/1.12.2.11</command>
-        <command name="load">cray-netcdf-hdf5parallel/4.9.0.11</command>
+        <command name="load">cray-hdf5-parallel/1.14.3.5</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.9.0.17</command>
         <command name="load">cray-parallel-netcdf/1.12.3.13</command>
       </modules>
     </module_system>
