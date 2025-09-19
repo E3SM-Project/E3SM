@@ -14,7 +14,6 @@ add_library(eamxx_core
 )
 
 target_include_directories(eamxx_core PUBLIC
-  ${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_CURRENT_BINARY_DIR} # for config/version headers
   ${SCREAM_SRC_DIR}           # for all eamxx headers
 )
@@ -74,12 +73,11 @@ if (EAMXX_ENABLE_PYTHON)
 
   find_package(pybind11 REQUIRED HINTS ${pybind11_ROOT})
 
-  # Add py sources and link pybind11
-  target_sources (eamxx_core PUBLIC
-    eamxx_pysession.cpp)
-
   target_link_libraries(eamxx_core PUBLIC pybind11::embed)
   target_compile_definitions (eamxx_core PUBLIC EAMXX_HAS_PYTHON)
+
+  # Used in eamxx_pysession.hpp to get current path
+  target_link_libraries(eamxx_core PUBLIC stdc++fs)
 endif()
 
 if (NOT SCREAM_LIB_ONLY)

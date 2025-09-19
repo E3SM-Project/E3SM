@@ -29,8 +29,9 @@ TEST_CASE("field_layout", "") {
   FieldLayout fl2 ({COL,CMP},{1,1});
   FieldLayout fl3 ({COL,CMP,CMP},{1,3,4});
   FieldLayout fl4 ({COL,LEV},{1,1});
-  FieldLayout fl5 ({COL,CMP,LEV},{1,1,1});
+  FieldLayout fl5 ({COL,CMP,LEV},{1,2,3});
   FieldLayout fl6 ({COL,CMP,CMP,ILEV},{1,5,6,1});
+  FieldLayout fl7 ({LEV,CMP,COL},{3,2,1});
 
   REQUIRE (fl1.type()==LayoutType::Scalar2D);
   REQUIRE (fl2.type()==LayoutType::Vector2D);
@@ -53,12 +54,15 @@ TEST_CASE("field_layout", "") {
   REQUIRE (not fl5.is_tensor_layout());
   REQUIRE (    fl6.is_tensor_layout());
 
+  REQUIRE (fl1.transpose()==fl1);
+  REQUIRE (fl5.transpose()==fl7);
+
   REQUIRE (fl2.get_vector_tag()==CMP);
   REQUIRE (fl5.get_vector_tag()==CMP);
   REQUIRE (fl2.get_vector_component_idx()==1);
   REQUIRE (fl5.get_vector_component_idx()==1);
   REQUIRE (fl2.get_vector_dim()==1);
-  REQUIRE (fl5.get_vector_dim()==1);
+  REQUIRE (fl5.get_vector_dim()==2);
 
   REQUIRE (fl3.get_tensor_tags()==TVec{CMP,CMP});
   REQUIRE (fl6.get_tensor_components_ids()==IVec{1,2});

@@ -5,7 +5,7 @@
 #include "Dimensions.hpp"
 
 // Get eamxx configs
-#include "eamxx_config.hpp"
+#include "share/core/eamxx_config.hpp"
 
 namespace scream {
 
