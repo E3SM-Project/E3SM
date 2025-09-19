@@ -22,8 +22,10 @@ else()
   set(GZM_THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC})
 endif()
 
-CreateUnitTest(zm_tests "${ZM_TESTS_SRCS}"
-  LIBS zm zm_test_infra
-  EXE_ARGS "--args ${BASELINE_FILE_ARG}"
-  THREADS ${ZM_THREADS}
-  LABELS "zm;physics;baseline_gen;baseline_cmp")
+if (NOT EAMXX_ENABLE_GPU)
+  CreateUnitTest(zm_tests "${ZM_TESTS_SRCS}"
+    LIBS zm zm_test_infra
+    EXE_ARGS "--args ${BASELINE_FILE_ARG}"
+    THREADS ${ZM_THREADS}
+    LABELS "zm;physics;baseline_gen;baseline_cmp")
+endif()

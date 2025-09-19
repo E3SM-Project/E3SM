@@ -657,10 +657,13 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
    ! history variables like ZMDT will include the effects of MCSP
    if (zm_param%mcsp_enabled) then
 
-      if (zm_param%mcsp_t_coeff>0) do_mcsp_t    = .true.
-      if (zm_param%mcsp_q_coeff>0) do_mcsp_q(1) = .true.
-      if (zm_param%mcsp_u_coeff>0) do_mcsp_u    = .true.
-      if (zm_param%mcsp_v_coeff>0) do_mcsp_v    = .true.
+      ! Set these all to True so that the tedency variables get allocated. The internal flags to
+      ! calculate each MCSP tedency will behave the same, but having them always allocated avoids
+      ! a problem with bridging to this routine from C++ for porting ZM to EAMxx
+      do_mcsp_t    = .true.
+      do_mcsp_q(1) = .true.
+      do_mcsp_u    = .true.
+      do_mcsp_v    = .true.
 
       call physics_ptend_init( ptend_mcsp, state%psetcols, 'zm_conv_mcsp_tend', &
                                ls=do_mcsp_t, lq=do_mcsp_q, lu=do_mcsp_u, lv=do_mcsp_v)
@@ -669,9 +672,11 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
                               ztodt, jctop, zm_const, zm_param, &
                               state%pmid, state%pint, state%pdel, &
                               state%s, state%q, state%u, state%v, &
-                              ptend_loc%s, ptend_loc%q(:,:,1), ptend_mcsp )
+                              ptend_loc%s, ptend_loc%q(:,:,1), &
+                              ptend_mcsp%s(:,:), ptend_mcsp%q(:,:,1), &
+                              ptend_mcsp%u(:,:), ptend_mcsp%v(:,:) )
 
-      ! add MCSP tendencies to ZM onvective tendencies
+      ! add MCSP tendencies to ZM convective tendencies
       call physics_ptend_sum( ptend_mcsp, ptend_loc, ncol)
       call physics_ptend_dealloc(ptend_mcsp)
 
@@ -835,12 +840,12 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
    call outfld('ZMICVU', icwu(1,1,2), pcols, lchnk )
    call outfld('ZMICVD', icwd(1,1,2), pcols, lchnk )
 
+   !----------------------------------------------------------------------------
+   ! convective tracer transport
+
    ! Transport cloud water and ice only
    call cnst_get_ind('CLDLIQ', ixcldliq)
    call cnst_get_ind('CLDICE', ixcldice)
-
-   !----------------------------------------------------------------------------
-   ! convective tracer transport
 
    lq(:)  = .FALSE.
    lq(2:) = cnst_is_convtran1(2:)
