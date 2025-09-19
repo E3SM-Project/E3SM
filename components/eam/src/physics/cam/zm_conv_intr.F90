@@ -657,10 +657,13 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
    ! history variables like ZMDT will include the effects of MCSP
    if (zm_param%mcsp_enabled) then
 
-      if (zm_param%mcsp_t_coeff>0) do_mcsp_t    = .true.
-      if (zm_param%mcsp_q_coeff>0) do_mcsp_q(1) = .true.
-      if (zm_param%mcsp_u_coeff>0) do_mcsp_u    = .true.
-      if (zm_param%mcsp_v_coeff>0) do_mcsp_v    = .true.
+      ! Set these all to True so that the tedency variables get allocated. The internal flags to
+      ! calculate each MCSP tedency will behave the same, but having them always allocated avoids
+      ! a problem with bridging to this routine from C++ for porting ZM to EAMxx
+      do_mcsp_t    = .true.
+      do_mcsp_q(1) = .true.
+      do_mcsp_u    = .true.
+      do_mcsp_v    = .true.
 
       call physics_ptend_init( ptend_mcsp, state%psetcols, 'zm_conv_mcsp_tend', &
                                ls=do_mcsp_t, lq=do_mcsp_q, lu=do_mcsp_u, lv=do_mcsp_v)
