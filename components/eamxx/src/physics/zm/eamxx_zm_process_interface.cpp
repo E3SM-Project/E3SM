@@ -335,12 +335,12 @@ void ZMDeepConvection::init_buffers(const ATMBufferManager &buffer_manager)
   const int nlevm_packs = ekat::npack<Spack>(m_nlev);
   const int nlevi_packs = ekat::npack<Spack>(m_nlev+1);
 
-  auto num_1d_intgr_views   = ZMF::zm_input_state::num_1d_intgr_views   + ZMF::zm_output_tend::num_1d_intgr_views;
-  auto num_1d_scalr_views   = ZMF::zm_input_state::num_1d_scalr_views   + ZMF::zm_output_tend::num_1d_scalr_views;
-  auto num_2d_midlv_c_views = ZMF::zm_input_state::num_2d_midlv_c_views + ZMF::zm_output_tend::num_2d_midlv_c_views;
-  auto num_2d_intfc_c_views = ZMF::zm_input_state::num_2d_intfc_c_views + ZMF::zm_output_tend::num_2d_intfc_c_views;
-  auto num_2d_midlv_f_views = ZMF::zm_input_state::num_2d_midlv_f_views + ZMF::zm_output_tend::num_2d_midlv_f_views;
-  auto num_2d_intfc_f_views = ZMF::zm_input_state::num_2d_intfc_f_views + ZMF::zm_output_tend::num_2d_intfc_f_views;
+  constexpr auto num_1d_intgr_views   = ZMF::zm_input_state::num_1d_intgr_views   + ZMF::zm_output_tend::num_1d_intgr_views;
+  constexpr auto num_1d_scalr_views   = ZMF::zm_input_state::num_1d_scalr_views   + ZMF::zm_output_tend::num_1d_scalr_views;
+  constexpr auto num_2d_midlv_c_views = ZMF::zm_input_state::num_2d_midlv_c_views + ZMF::zm_output_tend::num_2d_midlv_c_views;
+  constexpr auto num_2d_intfc_c_views = ZMF::zm_input_state::num_2d_intfc_c_views + ZMF::zm_output_tend::num_2d_intfc_c_views;
+  constexpr auto num_2d_midlv_f_views = ZMF::zm_input_state::num_2d_midlv_f_views + ZMF::zm_output_tend::num_2d_midlv_f_views;
+  constexpr auto num_2d_intfc_f_views = ZMF::zm_input_state::num_2d_intfc_f_views + ZMF::zm_output_tend::num_2d_intfc_f_views;
 
   //----------------------------------------------------------------------------
   Int* i_mem = reinterpret_cast<Int*>(buffer_manager.get_memory());
