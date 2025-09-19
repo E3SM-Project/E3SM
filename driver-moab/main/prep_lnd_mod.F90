@@ -238,7 +238,7 @@ contains
           end if
           call seq_map_init_rcfile(mapper_Fr2l, rof(1), lnd(1), &
                'seq_maps.rc','rof2lnd_fmapname:','rof2lnd_fmaptype:',samegrid_lr, &
-               string='mapper_Fr2l initialization',esmf_map=esmf_map_flag)
+               string='mapper_Fr2l initialization',esmf_map=esmf_map_flag,no_match=.true.)
 ! symmetric of l2r, from prep_rof
           ! Call moab intx only if land and river are init in moab
           if ((mbrxid .ge. 0) .and.  (mblxid .ge. 0)) then
