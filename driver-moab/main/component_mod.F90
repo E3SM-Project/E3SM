@@ -467,6 +467,7 @@ contains
     use seq_comm_mct,     only: mblxid ! iMOAB id for lnd migrated mesh to coupler pes
     use seq_comm_mct,     only: mbaxid ! iMOAB id for atm migrated mesh to coupler pes
     use seq_comm_mct,     only: mbrxid ! iMOAB id for rof migrated mesh to coupler pes
+    use seq_comm_mct,     only: atm_pg_active ! 
     !
     ! Arguments
     type (seq_infodata_type) , intent(inout) :: infodata
@@ -594,7 +595,9 @@ contains
           dom_s  => component_get_dom_cx(atm(1))   !dom_ax
           dom_d  => component_get_dom_cx(lnd(1))   !dom_lx
 
-          call seq_map_map(mapper_Sa2l, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream')
+          if (atm_pg_active) then
+             call seq_map_map(mapper_Sa2l, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream')
+          endif
        else
           gsmap_d => component_get_gsmap_cx(lnd(1)) ! gsmap_lx
           dom_d   => component_get_dom_cx(lnd(1))   ! dom_lx
