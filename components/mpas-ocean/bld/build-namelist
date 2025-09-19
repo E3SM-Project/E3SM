@@ -1212,6 +1212,8 @@ if ($ice_bgc eq 'ice_bgc' ) {
         add_default($nl, 'config_use_ecosysTracers_sea_ice_coupling', 'val'=>".false.");
 }
 add_default($nl, 'config_use_ecosysTracers_river_inputs_from_coupler');
+add_default($nl, 'config_use_ecosysTracers_iron_solubility_file');
+add_default($nl, 'config_use_ecosysTracers_atm_dust_from_coupler');
 
 ####################################################
 # Namelist group: tracer_forcing_freshwaterTracers #
