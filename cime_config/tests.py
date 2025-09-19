@@ -50,7 +50,7 @@ _TESTS = {
             "ERS.f19_g16.I20TRGSWCNPRDCTCBC.elm-ctc_f19_g16_I20TRGSWCNPRDCTCBC",
             "SMS_Ly2_P1x1.1x1_smallvilleIA.I20TRGSWCNPCROP.elm-lulcc_sville",
             "ERS.r05_r05.ICNPRDCTCBC.elm-cbudget",
-            "ERS_Lm6.ELM_USRDAT.I1850CNPRDCTCBC.elm-snowveg_arctic",
+            "ERS_Ld150.ELM_USRDAT.I1850CNPRDCTCBC.elm-snowveg_arctic",
             "ERS.ELM_USRDAT.I1850CNPRDCTCBC.elm-usrpft_default_I1850CNPRDCTCBC",
             "ERS.ELM_USRDAT.I1850CNPRDCTCBC.elm-usrpft_codetest_I1850CNPRDCTCBC",
             "ERS.1x1_icycape.I1850GSWCNPRDCTCBC.elm-polygonal_tundra"
