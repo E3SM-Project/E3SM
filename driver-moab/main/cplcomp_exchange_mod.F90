@@ -995,12 +995,18 @@ subroutine  copy_aream_from_area(mbappid)
       integer :: ierr, ent_type
 
       ! copy aream from area
-      if (mbappid >= 0) then  ! coupler atm procs
+      if (mbappid >= 0) then  ! coupler procs
          ierr  = iMOAB_GetMeshInfo ( mbappid, nvert, nvise, nbl, nsurf, nvisBC )
-         arrSize  = nvise(1) ! cells
+         if ( (mbappid .eq. mbaxid) .and. (.not. atm_pg_active)) then 
+            ! this is the spectral case, for atm only
+            arrSize  = nvert(1) ! cells
+            ent_type = 0 ! vertices
+         else
+            arrSize  = nvise(1) ! cells
+            ent_type = 1 ! cells
+         endif
          allocate(tagValues(arrSize))
          tagname = 'area'//C_NULL_CHAR
-         ent_type = 1 ! cells
          ierr  = iMOAB_GetDoubleTagStorage( mbappid, tagname, arrsize , ent_type, tagValues )
          tagname = 'aream'//C_NULL_CHAR
          ierr  = iMOAB_SetDoubleTagStorage( mbappid, tagname, arrsize , ent_type, tagValues )
@@ -1252,12 +1258,13 @@ subroutine  copy_aream_from_area(mbappid)
                write(logunit,*) subname,' error in defining tags seq_flds_dom_fields on atm on coupler '
                call shr_sys_abort(subname//' ERROR in defining tags ')
             endif
-
-            ! also, frac, area,  masks has to come from atm mphaid, not from domain file reader
-            ! this is hard to digest :(
-            tagname = 'lat:lon:area:frac:mask'//C_NULL_CHAR
-            ! TODO:  this should be called on the joint procs, not coupler only.
-            call component_exch_moab(comp, mphaid, mbaxid, 0, tagname, context_exch='doma')
+         endif ! coupler pes
+         ! also, frac, area,  masks has to come from atm mphaid, not from domain file reader
+         ! this is hard to digest :(
+         tagname = 'lat:lon:area:frac:mask'//C_NULL_CHAR
+         ! TODO:  this should be called on the joint procs, not coupler only.
+         call component_exch_moab(comp, mphaid, mbaxid, 0, tagname, context_exch='doma')
+         if (mbaxid .ge. 0 ) then   !  coupler pes only 
             ! copy aream from area in case atm_mesh
             call copy_aream_from_area(mbaxid)
 
@@ -1657,6 +1664,12 @@ subroutine  copy_aream_from_area(mbappid)
          tagname = 'lat:lon:area:frac:mask'//C_NULL_CHAR
          call component_exch_moab(comp, mlnid, mblxid, 0, tagname, context_exch='doml')
 
+         ! initialize aream with area; in some cases lnd will not have any maps, so aream still need to 
+         ! have some values (not only 0)
+         ! spectral case seems to need this, as everything is monogrid
+         if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
+            call copy_aream_from_area(mblxid)
+         endif
 #ifdef MOABDEBUG
             outfile = 'recMeshLand.h5m'//C_NULL_CHAR
             wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
@@ -1906,7 +1919,9 @@ subroutine  copy_aream_from_area(mbappid)
          call component_exch_moab(comp, mrofid, mbrxid, 0, tagname, context_exch='domr')
          ! copy aream from area in all cases
          ! initialize aream from area; it may have different values in the end, or reset again
-         call copy_aream_from_area(mbrxid)
+         if (mbrxid > 0) then ! on coupler pes only
+            call copy_aream_from_area(mbrxid)
+         endif
 #ifdef MOABDEBUG
          if (mbrxid >= 0) then
             outfile = 'recMeshRof.h5m'//C_NULL_CHAR
