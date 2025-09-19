@@ -75,12 +75,6 @@ contains
        !
        ! === Update from 2022-09 ===
 
-       !do icnst = 2,pcnst
-       !  if ( (icnst/=c_i(1)) .and. (icnst/=c_i(2)) .and. (icnst/=c_i(3)) .and. (icnst/=c_i(4)) ) then
-       !    cam_in(c)%cflx(:,icnst) = 0._r8
-       !  endif
-       !enddo
-
        do i =1,ncols
           if (overwrite_flds) then
              ! Prior to this change, "overwrite_flds" was always .true. therefore wsx and wsy were always updated.
