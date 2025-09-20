@@ -253,20 +253,20 @@ contains
        endif
        call surfrd_get_topo_for_solar_rad(ldomain, fsurdat)  
 
-    endif
-
-    if (iac_present) then
-      !When using EHC, max_topounits must be 1
-      if (max_topounits .ne. 0) then
-         write(error_msg,*)'ERROR: elm_initializeMod: When using EHC, max_topounits must be 1, but it is ',max_topounits,'. '
-         call endrun(trim(error_msg)//trim(errMsg(__FILE__, __LINE__)))
-      end if
-    endif
-    
+    endif    
     !-------------------------------------------------------------------------
     ! Topounit
     !-------------------------------------------------------------------------
     call topounit_varcon_init(begg, endg,fsurdat,ldomain)  ! Topounits
+
+    if (iac_present) then
+      !When using EHC, max_topounits must be 1
+      if (max_topounits .ne. 1) then
+         write(error_msg,*)'ERROR: elm_initializeMod: When using EHC, max_topounits must be 1, but it is ',max_topounits,'. '
+         call endrun(trim(error_msg)//trim(errMsg(__FILE__, __LINE__)))
+      end if
+    endif
+
     !-------------------------------------------------------------------------
     
     !-------------------------------------------------------------------------
