@@ -29,6 +29,8 @@ public :: &
    set_additional_diagn_in_phys_control, &! set switch for additional diagn
    waccmx_is
 
+logical, public :: iac_present = .false. ! true if EHC component is active in the run
+
 ! Private module data
 
 character(len=16), parameter :: unset_str = 'UNSET'
