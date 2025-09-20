@@ -16,7 +16,7 @@ HistogramDiag::HistogramDiag(const ekat::Comm &comm, const ekat::ParameterList &
   const std::vector<std::string> bin_strings = ekat::split(bin_config, "_");
   m_bin_reals.resize(bin_strings.size()+2);
   m_bin_reals[0] = std::numeric_limits<Real>::lowest();
-  for (int i=1; i < m_bin_reals.size()-1; i++)
+  for (long unsigned int i=1; i < m_bin_reals.size()-1; i++)
   {
     m_bin_reals[i] = std::stod(bin_strings[i-1]);
     EKAT_REQUIRE_MSG(m_bin_reals[i] > m_bin_reals[i-1],
@@ -63,12 +63,13 @@ void HistogramDiag::initialize_impl(const RunType /*run_type*/) {
                                 field_id.get_units(), field_id.get_grid_name());
   m_bin_values = Field(bin_values_id);
   m_bin_values.allocate_view();
+
+  // copy bin values into field
   auto bin_values_view = m_bin_values.get_view<Real *>();
-  using RangePolicy    = Kokkos::RangePolicy<Field::device_t::execution_space>;
-  Kokkos::parallel_for("store_histogram_bin_values_" + field.name(),
-      RangePolicy(0, bin_values_layout.dim(0)), [&] (int i) {
-        bin_values_view(i) = m_bin_reals[i];
-      });
+  auto bin_values_view_host = Kokkos::create_mirror_view(bin_values_view);
+  for (long unsigned int i=0; i < bin_values_layout.dim(0); i++)
+    bin_values_view_host(i) = m_bin_reals[i];
+  Kokkos::deep_copy(bin_values_view,bin_values_view_host);
 }
 
 void HistogramDiag::compute_diagnostic_impl() {
