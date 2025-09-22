@@ -113,6 +113,8 @@ OR
     choices_doc = ", ".join(["'{}' ({})".format(k, v) for k, v in get_test_name_dict().items()])
     parser.add_argument("-t", "--test", dest="tests", action="append", default=[],
                         help=f"Only run specific test configurations, choices={choices_doc}")
+    parser.add_argument("--build-name-suffix", default="",
+                        help="Adds a suffix to the test name in dashboard by appending BUILD_NAME_MOD=str(test)+\"_\"+build-name-suffix.")
 
     parser.add_argument("-l", "--local", action="store_true",
                         help="Allow to not specify a machine name, and have test-all-eamxx to look"
