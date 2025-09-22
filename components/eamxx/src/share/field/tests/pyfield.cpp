@@ -17,7 +17,7 @@ namespace scream {
 TEST_CASE("pyfield", "") {
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
-  
+
   auto& ps = PySession::get();
   ps.initialize();
 

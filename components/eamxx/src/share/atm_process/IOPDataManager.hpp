@@ -2,7 +2,7 @@
 #define SCREAM_IOP_HPP
 
 #include "share/core/eamxx_types.hpp"
-#include "share/field/field_manager.hpp"
+#include "share/manager/field_manager.hpp"
 #include "share/grid/abstract_grid.hpp"
 #include "share/grid/remap/abstract_remapper.hpp"
 #include "share/util/eamxx_time_stamp.hpp"

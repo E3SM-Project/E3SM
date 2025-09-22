@@ -6,7 +6,7 @@
 #include "share/atm_process/SCDataManager.hpp"
 #include "share/atm_process/IOPDataManager.hpp"
 #include "share/field/field_identifier.hpp"
-#include "share/field/field_manager.hpp"
+#include "share/manager/field_manager.hpp"
 #include "share/property_checks/property_check.hpp"
 #include "share/field/field_request.hpp"
 #include "share/field/field.hpp"
