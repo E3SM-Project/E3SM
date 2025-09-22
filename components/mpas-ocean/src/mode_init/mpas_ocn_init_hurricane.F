@@ -342,8 +342,6 @@ contains
        call mpas_pool_get_array(meshPool, 'fCell', fCell)
        call mpas_pool_get_array(meshPool, 'fEdge', fEdge)
        call mpas_pool_get_array(meshPool, 'fVertex', fVertex)
-       call mpas_pool_get_dimension(meshPool, 'nEdgesArray', &
-                                    nEdgesArrayTmp)
 
        call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
        call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)

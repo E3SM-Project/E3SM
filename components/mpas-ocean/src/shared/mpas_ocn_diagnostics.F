@@ -870,54 +870,55 @@ contains
       ! Begin code
 
       ! Compute mean layer thickness at edge
+      if ( config_use_subgrid_wetting_drying ) then
 #ifdef MPAS_OPENACC
-      !$acc parallel loop &
-      !$acc    present(layerThickness, layerThickEdgeMean, &
-      !$acc            minLevelEdgeBot, maxLevelEdgeTop, cellsOnEdge) &
-      !$acc    private(k, kmin, kmax, cell1, cell2)
+         !$acc update host(ssh)
+#endif
+
+         call ocn_subgrid_layerThickEdgeFlux_center(ssh, layerThickEdgeMean)
+
+#ifdef MPAS_OPENACC
+         !$acc update device(layerThickEdgeMean)
+#endif
+
+      else
+#ifdef MPAS_OPENACC
+         !$acc parallel loop &
+         !$acc    present(layerThickness, layerThickEdgeMean, &
+         !$acc            minLevelEdgeBot, maxLevelEdgeTop, cellsOnEdge) &
+         !$acc    private(k, kmin, kmax, cell1, cell2)
 #else
-      !$omp parallel
-      !$omp do schedule(runtime) private(k, kmin, kmax, cell1, cell2)
+         !$omp parallel
+         !$omp do schedule(runtime) private(k, kmin, kmax, cell1, cell2)
 #endif
-      do iEdge = 1, nEdgesAll
-         kmin = minLevelEdgeBot(iEdge)
-         kmax = maxLevelEdgeTop(iEdge)
-         cell1 = cellsOnEdge(1,iEdge)
-         cell2 = cellsOnEdge(2,iEdge)
-         do k = 1,nVertLevels
-            ! initialize layerThicknessEdgeMean to avoid divide by
-            ! zero and NaN problems.
-            layerThickEdgeMean(k,iEdge) = -1.0e34_RKIND
+         do iEdge = 1, nEdgesAll
+            kmin = minLevelEdgeBot(iEdge)
+            kmax = maxLevelEdgeTop(iEdge)
+            cell1 = cellsOnEdge(1,iEdge)
+            cell2 = cellsOnEdge(2,iEdge)
+            do k = 1,nVertLevels
+               ! initialize layerThicknessEdgeMean to avoid divide by
+               ! zero and NaN problems.
+               layerThickEdgeMean(k,iEdge) = -1.0e34_RKIND
+            end do
+            do k = kmin,kmax
+               ! central differenced
+               layerThickEdgeMean(k,iEdge) = 0.5_RKIND * &
+                                            (layerThickness(k,cell1) + &
+                                             layerThickness(k,cell2))
+            end do
          end do
-         do k = kmin,kmax
-            ! central differenced
-            layerThickEdgeMean(k,iEdge) = 0.5_RKIND * &
-                                         (layerThickness(k,cell1) + &
-                                          layerThickness(k,cell2))
-         end do
-      end do
 #ifndef MPAS_OPENACC
-      !$omp end do
-      !$omp end parallel
+         !$omp end do
+         !$omp end parallel
 #endif
+      endif
 
       ! Compute edge flux based on option set on init
       select case (thickEdgeFluxChoice)
 
       case (thickEdgeFluxCenter)
          ! Use centered (mean) thickness as flux value
-
-         if ( config_use_subgrid_wetting_drying ) then
-#ifdef MPAS_OPENACC
-         !$acc update host(ssh)
-#endif
-
-            call ocn_subgrid_layerThickEdgeFlux_center(ssh, layerThickEdgeFlux)
-
-#ifdef MPAS_OPENACC
-         !$acc update device(layerThickEdgeFlux)
-#endif
-         else
 
 #ifdef MPAS_OPENACC
             !$acc parallel loop collapse(2) &
@@ -937,7 +938,6 @@ contains
             !$omp end parallel
 #endif
 
-         end if  
 
       case (thickEdgeFluxUpwind)
          ! Use upwind thickness as the edge flux value
@@ -1069,6 +1069,26 @@ contains
                              MPAS_LOG_CRIT)
 
       end select
+
+      if (config_use_wetting_drying) then
+#ifdef MPAS_OPENACC
+         !$acc parallel loop collapse(2) &
+         !$acc    present(layerThickEdgeMean)
+#else
+         !$omp parallel
+         !$omp do schedule(runtime) private(k)
+#endif
+         do iEdge = 1, nEdgesAll
+            do k = 1,nVertLevels
+               layerThickEdgeMean(k,iEdge) = &
+               max(layerThickEdgeMean(k,iEdge), config_drying_min_cell_height)
+            end do
+         end do
+#ifndef MPAS_OPENACC
+        !$omp end do
+        !$omp end parallel
+#endif
+      end if
 
       ! Compute edge flux based on option set on init
       select case (thickEdgeDragChoice)
