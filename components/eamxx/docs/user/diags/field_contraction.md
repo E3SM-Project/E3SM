@@ -3,7 +3,7 @@
 In EAMxx, we can automatically calculate field reductions
 across the horizontal columns and across the model vertical levels.
 We call these horizontal and vertical reductions.
-We can also automatically calculate zonal averages.
+We can also automatically calculate zonal averages and histograms.
 We have *experimental* support for composing diagnostics; below,
 the horizontal and vertical reductions can be composed
 sequentially, but if using dp- or dz-weighted reductions,
@@ -85,6 +85,19 @@ And so on...
 | --------- | ------ | ----------- |
 | `X_zonal_avg_Y_bins` | Area fraction | Average across the zonal direction |
 
+## Histograms
+
+We currently have a utility to calculate histograms online.
+To select the histogram, you need to suffix a field name `X` with
+`_histogram_` followed by the values specifying the edges of the bins,
+separated by `_`. For example, the histogram specified by
+`T_mid_histogram_250_270_290_310` has 5 bins effectively defined by
+[$-\infty$, 250), [250, 270), [270, 290), [290, 310), and [310, $\infty$).
+
+| Reduction | Weight | Description |
+| --------- | ------ | ----------- |
+| `X_histogram_V0_V1_..._VN` | 1 or 0 | Count of field values within each range |
+
 ## Example
 
 ```yaml
@@ -99,7 +112,7 @@ fields:
       # in this example, we use T_mid in units of K
       - T_mid_horiz_avg  # K
       - T_mid_vert_avg_dp_weighted  # K
-      - T_mid_vert_sum_dp_weighted  # K * Pa * s / (m * m) 
+      - T_mid_vert_sum_dp_weighted  # K * Pa * s / (m * m)
       - T_mid_vert_avg_dz_weighted  # K
       - T_mid_vert_sum_dz_weighted  # K * m
       - T_mid_vert_avg  # K
@@ -110,6 +123,7 @@ fields:
       - T_mid_vert_avg_dp_weighted_horiz_avg  # K
       - T_mid_zonal_avg_180_bins  # K
       - T_mid_zonal_avg_90_bins  # K
+      - T_mid_histogram_250_270_290_310 # count
 output_control:
   frequency: 1
   frequency_units: nmonths
