@@ -41,6 +41,13 @@ inputs:
     description: 'Semicolon-separated list of key=value pairs for CMake to pass to test-all-eamxx'
     required: false
     default: ''
+  kokkos_develop:
+    description: 'Whether or not this is a test using Kokkos develop branch'
+    required: false
+    default: 'false'
+    valid_values:
+      - 'true'
+      - 'false'
 
 runs:
   using: "composite"
@@ -77,6 +84,18 @@ runs:
         echo "  generate     : ${{ inputs.generate }}"
         echo "  submit       : ${{ inputs.submit }}"
         echo "  cmake-configs: ${{ inputs.cmake-configs }}"
+        echo "  kokkos dev   : ${{ inputs.kokkos_develop }}"
+      shell: sh
+    - name: Checkout Kokkos develop branch
+      if: ${{ inputs.kokkos_develop == 'true' }}
+      working-directory: externals/ekat/extern/kokkos
+      run: |
+        echo "Check out up-to-date Kokkos develop branch"
+        if ! git remote | grep -q upstream; then
+          git remote add upstream https://github.com/kokkos/kokkos.git
+        fi
+        git fetch upstream
+        git checkout upstream/develop
       shell: sh
     - name: Run test-all-eamxx
       working-directory: components/eamxx
@@ -97,6 +116,14 @@ runs:
         for config in "${configs[@]}"; do
           cmd+=" -c $config"
         done
+
+        # Add suffix for CDASH build name, and necessary cmake vars if this is a kokkos-develop test
+        if [ "${{ inputs.kokkos_develop }}" = "true" ]; then
+          cmd+=" --build-name-suffix kokkos_develop"
+          cmd+=" -c CMAKE_CXX_STANDARD=20"
+          cmd+=" -c Kokkos_ENABLE_IMPL_VIEW_LEGACY=ON"
+          cmd+=" -c Kokkos_ENABLE_DEPRECATED_CODE_4=ON"
+        fi
 
         # Print the full command, then run it
         echo "test-all-eamxx call: $cmd"
