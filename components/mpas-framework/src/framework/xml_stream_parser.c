@@ -1291,6 +1291,16 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 				snprintf(msgbuf, MSGSIZE, "        %-20s%s", "I/O type:", "ADIOS");
 				mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 			}
+			else if (strstr(iotype, "hdf5c") != NULL) {
+				i_iotype = 7;
+				snprintf(msgbuf, MSGSIZE, "        %-20s%s", "I/O type:", "HDF5C");
+				mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
+			}
+			else if (strstr(iotype, "hdf5") != NULL) {
+				i_iotype = 6;
+				snprintf(msgbuf, MSGSIZE, "        %-20s%s", "I/O type:", "HDF5");
+				mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
+			}
 			else {
 				i_iotype = 0;
 				snprintf(msgbuf, MSGSIZE, "        *** unrecognized io_type specification; defaulting to Parallel-NetCDF");
