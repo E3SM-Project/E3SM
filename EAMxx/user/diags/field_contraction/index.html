@@ -1893,6 +1893,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#histograms" class="md-nav__link">
+    <span class="md-ellipsis">
+      Histograms
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#example" class="md-nav__link">
     <span class="md-ellipsis">
       Example
@@ -3812,6 +3821,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#histograms" class="md-nav__link">
+    <span class="md-ellipsis">
+      Histograms
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#example" class="md-nav__link">
     <span class="md-ellipsis">
       Example
@@ -3851,7 +3869,7 @@
 <p>In EAMxx, we can automatically calculate field reductions
 across the horizontal columns and across the model vertical levels.
 We call these horizontal and vertical reductions.
-We can also automatically calculate zonal averages.
+We can also automatically calculate zonal averages and histograms.
 We have <em>experimental</em> support for composing diagnostics; below,
 the horizontal and vertical reductions can be composed
 sequentially, but if using dp- or dz-weighted reductions,
@@ -3973,6 +3991,29 @@ And so on...</p>
 </tr>
 </tbody>
 </table>
+<h2 id="histograms">Histograms</h2>
+<p>We currently have a utility to calculate histograms online.
+To select the histogram, you need to suffix a field name <code>X</code> with
+<code>_histogram_</code> followed by the values specifying the edges of the bins,
+separated by <code>_</code>. For example, the histogram specified by
+<code>T_mid_histogram_250_270_290_310</code> has 5 bins effectively defined by
+[<span class="arithmatex">\(-\infty\)</span>, 250), [250, 270), [270, 290), [290, 310), and [310, <span class="arithmatex">\(\infty\)</span>).</p>
+<table>
+<thead>
+<tr>
+<th>Reduction</th>
+<th>Weight</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>X_histogram_V0_V1_..._VN</code></td>
+<td>1 or 0</td>
+<td>Count of field values within each range</td>
+</tr>
+</tbody>
+</table>
 <h2 id="example">Example</h2>
 <div class="highlight"><pre><span></span><code><span class="nt">%YAML</span><span class="w"> </span><span class="m">1.1</span>
 <span class="nn">---</span>
@@ -3985,7 +4026,7 @@ And so on...</p>
 <span class="w">      </span><span class="c1"># in this example, we use T_mid in units of K</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_horiz_avg</span><span class="w">  </span><span class="c1"># K</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_vert_avg_dp_weighted</span><span class="w">  </span><span class="c1"># K</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_vert_sum_dp_weighted</span><span class="w">  </span><span class="c1"># K * Pa * s / (m * m) </span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_vert_sum_dp_weighted</span><span class="w">  </span><span class="c1"># K * Pa * s / (m * m)</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_vert_avg_dz_weighted</span><span class="w">  </span><span class="c1"># K</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_vert_sum_dz_weighted</span><span class="w">  </span><span class="c1"># K * m</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_vert_avg</span><span class="w">  </span><span class="c1"># K</span>
@@ -3996,6 +4037,7 @@ And so on...</p>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_vert_avg_dp_weighted_horiz_avg</span><span class="w">  </span><span class="c1"># K</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_zonal_avg_180_bins</span><span class="w">  </span><span class="c1"># K</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_zonal_avg_90_bins</span><span class="w">  </span><span class="c1"># K</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_histogram_250_270_290_310</span><span class="w"> </span><span class="c1"># count</span>
 <span class="nt">output_control</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">frequency</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
 <span class="w">  </span><span class="nt">frequency_units</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nmonths</span>
