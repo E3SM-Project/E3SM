@@ -291,6 +291,11 @@
 <config_GMRedi_Rossby_ramp_min>0.5</config_GMRedi_Rossby_ramp_min>
 <config_GMRedi_Rossby_ramp_max>3.0</config_GMRedi_Rossby_ramp_max>
 
+<!-- eddy_killing_correction -->
+<config_eddy_killing_correction_enable>.false.</config_eddy_killing_correction_enable>
+<config_eddy_killing_cd>1.2e-3</config_eddy_killing_cd>
+<config_eddy_killing_rhoa>1.225</config_eddy_killing_rhoa>
+
 <!-- eddy_parameterization -->
 <config_eddyMLD_dens_threshold>0.03</config_eddyMLD_dens_threshold>
 <config_eddyMLD_reference_depth>10</config_eddyMLD_reference_depth>

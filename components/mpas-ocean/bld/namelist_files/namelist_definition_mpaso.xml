@@ -678,6 +678,33 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 
+<!-- eddy_killing_correction -->
+
+<entry id="config_eddy_killing_correction_enable" type="real"
+	category="eddy_killing_correction" group="eddy_killing_correction">
+flag to enable the eddy killing corrections.  NOTE: this should only be used at for RRS6to18 resolution or finer
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_eddy_killing_cd" type="real"
+	category="eddy_killing_correction" group="eddy_killing_correction">
+drag coefficient to use in the formulat to compute St
+
+Valid values: small positive values not too far from the default
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_eddy_killing_rhoa" type="real"
+	category="eddy_killing_correction" group="eddy_killing_correction">
+assumed near surface atmospheric density for computation of St
+
+Valid values: small positive numbers not far from the default
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
 <!-- eddy_parameterization -->
 
 <entry id="config_eddyMLD_dens_threshold" type="real"
@@ -1701,7 +1728,7 @@ Default: Defined in namelist_defaults.xml
 	category="land_ice" group="land_ice">
 Selects the mode in which land-ice draft is computed.
 
-Valid values: 'data', 'pressure-dependent'
+Valid values: 'data,'pressure-dependent'
 Default: Defined in namelist_defaults.xml
 </entry>
 
