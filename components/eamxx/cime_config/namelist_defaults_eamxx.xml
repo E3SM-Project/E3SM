@@ -380,10 +380,10 @@ be lost if SCREAM_HACK_XML is not enabled.
 
     <!-- MAM4xx-Wetscav -->
     <mam4_wetscav inherit="mam4_atm_proc_base">
-      <sol_facti_cloud_borne type="real" doc="In-cloud scavenging fraction [fraction]">1.0</sol_facti_cloud_borne>
-      <sol_factic_cloud_borne type="real" doc="In-cloud convective scavenging fraction [fraction]">0.0</sol_factic_cloud_borne>
-      <sol_factb_below_cloud type="real" doc="Below-cloud scavenging fraction [fraction]">0.03</sol_factb_below_cloud>
-      <f_act_conv_below_cloud type="real" doc="Convection activation fraction [fraction]">0.4</f_act_conv_below_cloud>
+      <scav_fraction_in_cloud_strat type="real" doc="In-cloud scavenging fraction has a physical basis and reflects activation fraction [fraction]">1.0</scav_fraction_in_cloud_strat>
+      <scav_fraction_in_cloud_conv type="real" doc="In-cloud convective scavenging fraction has a physical basis and reflects activation fraction [fraction]">0.0</scav_fraction_in_cloud_conv>
+      <scav_fraction_below_cloud_strat type="real" doc="Below-cloud scavenging fraction is basically a tuning factor [fraction]">0.03</scav_fraction_below_cloud_strat>
+      <activation_fraction_in_cloud_conv type="real" doc="Convection activation fraction [fraction]">0.4</activation_fraction_in_cloud_conv>
     </mam4_wetscav>
 
     <!-- MAM4xx-Surface-Emissions -->
