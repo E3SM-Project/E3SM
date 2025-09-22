@@ -131,7 +131,7 @@ create_diagnostic (const std::string& diag_field_name,
   // Note: the number for field_at_p/h can match positive integer/floating-point numbers
   // Start with a generic for a field name allowing for all letters, all numbers, dash, dot, plus, minus, product, and division
   // Escaping all the special ones just in case
-  std::string generic_field = "([A-Za-z0-9_.+\\-\\*\\÷]+)"; 
+  std::string generic_field = "([A-Za-z0-9_.+\\-\\*\\÷]+)";
   std::regex field_at_l (R"()" + generic_field + R"(_at_(lev_(\d+)|model_(top|bot))$)");
   std::regex field_at_p (R"()" + generic_field + R"(_at_(\d+(\.\d+)?)(hPa|mb|Pa)$)");
   std::regex field_at_h (R"()" + generic_field + R"(_at_(\d+(\.\d+)?)(m)_above_(sealevel|surface)$)");
@@ -230,14 +230,6 @@ create_diagnostic (const std::string& diag_field_name,
     params.set("grid_name", grid->name());
     params.set<std::string>("field_name", matches[1].str());
     params.set<std::string>("number_of_zonal_bins", matches[2].str());
-  }
-  else if (std::regex_search(diag_field_name,matches,conditional_sampling)) {
-    diag_name = "ConditionalSampling";
-    params.set("grid_name", grid->name());
-    params.set<std::string>("input_field", matches[1].str());
-    params.set<std::string>("condition_field", matches[2].str());
-    params.set<std::string>("condition_operator", matches[3].str());
-    params.set<std::string>("condition_value", matches[4].str());
   }
   else if (std::regex_search(diag_field_name,matches,conditional_sampling)) {
     diag_name = "ConditionalSampling";
