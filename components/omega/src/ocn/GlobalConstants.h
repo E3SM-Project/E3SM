@@ -16,12 +16,14 @@
 
 namespace OMEGA {
 
+// Mathematical constants
+constexpr Real Pi    = M_PI;       // Pi
+constexpr Real TwoPi = 2.0 * M_PI; // 2*Pi
+
 // Earth constants
-constexpr Real Gravity = 9.80616;    // Acceleration due to gravity ~ m/s^2
-constexpr Real Pi      = M_PI;       // Pi
-constexpr Real TwoPi   = 2.0 * M_PI; // 2*Pi
-constexpr Real CDay    = 86400.0;    // Seconds in a calendar day ~ sec
-constexpr Real SDay    = 86164.0;    // Seconds in a sidereal day ~ sec
+constexpr Real Gravity = 9.80665; // Acceleration due to gravity ~ m/s^2
+constexpr Real CDay    = 86400.0; // Seconds in a calendar day ~ sec
+constexpr Real SDay    = 86164.0; // Seconds in a sidereal day ~ sec
 constexpr Real Omega =
     2.0 * Pi / SDay;               // Angular velocity of the Earth ~ rad/sec
 constexpr Real REarth = 6.37122e6; // Mean radius of the Earth ~ m
@@ -51,8 +53,10 @@ constexpr Real Emiss     = 1.0;      // Emissivity ~ dimensionless
 constexpr Real AtmRefP   = 101325.0; // Reference atmospheric pressure ~ Pa
 
 // Conversion factors
-constexpr Real Sec2Day    = 1.0 / 86400.0; // Seconds to days
-constexpr Real Day2Sec    = 86400.0;       // Days to seconds
+constexpr Real Sec2Day    = 1.0 / 86400.0;        // Seconds to days
+constexpr Real Day2Sec    = 86400.0;              // Days to seconds
+constexpr Real Rad2Deg    = 57.29577951308232;    // Radians to degrees
+constexpr Real Deg2Rad    = 0.017453292519943295; // Degrees to radians
 constexpr Real Salt2PPt   = 1000.0;    // Salinity (kg/kg) to parts per thousand
 constexpr Real PPt2Salt   = 1.0e-3;    // Parts per thousand to salinity (kg/kg)
 constexpr Real Mass2Sv    = 1.0e-12;   // Mass flux (kg/s) to Sverdrup
