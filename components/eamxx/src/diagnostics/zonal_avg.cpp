@@ -190,7 +190,7 @@ void ZonalAvgDiag::initialize_impl(const RunType /*run_type*/) {
   Int max_ncols_per_bin = 0;
   Kokkos::parallel_reduce(RangePolicy(0, m_num_zonal_bins),
       KOKKOS_LAMBDA(int bin_i, Int &val) {
-        val = std::max(val, ncols_per_bin_view(bin_i));
+        val = ncols_per_bin_view(bin_i) > val ? ncols_per_bin_view(bin_i) : val;
       },
       Kokkos::Max<Int>(max_ncols_per_bin));
   FieldLayout bin_to_cols_layout = ncols_per_bin_layout.append_dim({COL}, {1+max_ncols_per_bin});
