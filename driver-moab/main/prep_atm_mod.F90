@@ -1088,7 +1088,11 @@ contains
                write(logunit,*) subname,' error in getting info '
                call shr_sys_abort(subname//' error in getting info ')
        endif
-       lsize = nvise(1) ! number of active cells
+       if (atm_pg_active) then
+          lsize = nvise(1) ! number of active cells
+       else
+          lsize = nvert(1) ! for the spectral case, everything is pc from now on
+       endif
        ! mct avs are used just for their fields metadata, not the actual reals
        ! (name of the fields)
        ! need these always, not only the first time
@@ -1296,7 +1300,11 @@ contains
     endif  ! end first-time
 
     !  Get data from MOAB
-    ent_type = 1 ! cells
+    if (atm_pg_active) then
+       ent_type = 1 ! cells
+    else
+       ent_type = 0 ! vertices, it is PC 
+    endif
     tagname = trim(seq_flds_x2a_fields)//C_NULL_CHAR
     arrsize = naflds * lsize
     ierr = iMOAB_GetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, x2a_am)
@@ -1536,7 +1544,11 @@ contains
     ! loop over all fields in seq_flds_x2a_fields
     call mct_list_init(temp_list ,seq_flds_x2a_fields)
     size_list=mct_list_nitem (temp_list)
-    ent_type = 1 ! cell for atm, atm_pg_active
+    if (atm_pg_active) then
+       ent_type = 1 ! cell for atm, atm_pg_active
+    else
+       ent_type = 0 ! vertices is spectral case
+    endif
     if (iamroot) print *, subname, num_moab_exports, trim(seq_flds_x2a_fields)
     do index_list = 1, size_list
       call mct_list_get(mctOStr,index_list,temp_list)

@@ -592,7 +592,7 @@ contains
               if (atm_pg_active) then
                   type1 = 3; !  fv for atm; cgll does not work anyway
               else
-                  type1 = 1 ! this projection works (cgll to fv), but reverse does not ( fv - cgll)
+                  type1 = 2 ! in this case, atm is just PC 
               endif
               type2 = 3;  ! FV mesh on coupler land
               ierr = iMOAB_ComputeCommGraph( mbaxid, mblxid, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &

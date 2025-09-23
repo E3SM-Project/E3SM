@@ -1664,12 +1664,6 @@ subroutine  copy_aream_from_area(mbappid)
          tagname = 'lat:lon:area:frac:mask'//C_NULL_CHAR
          call component_exch_moab(comp, mlnid, mblxid, 0, tagname, context_exch='doml')
 
-         ! initialize aream with area; in some cases lnd will not have any maps, so aream still need to 
-         ! have some values (not only 0)
-         ! spectral case seems to need this, as everything is monogrid
-         if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
-            call copy_aream_from_area(mblxid)
-         endif
 #ifdef MOABDEBUG
             outfile = 'recMeshLand.h5m'//C_NULL_CHAR
             wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !

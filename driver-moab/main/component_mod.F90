@@ -529,7 +529,12 @@ contains
          nloc = mct_avect_lsize(dom_s%data)
          allocate(data1(nloc))
          data1 = dom_s%data%rAttr(ka,:)
-         ent_type = 1  ! element dense double tags
+         if (atm_pg_active) then
+            ent_type = 1  ! element dense double tags
+         else ! this is true only for spectral atm now
+            ent_type = 0 ! for pure spectral case, the atm is PC on coupler side
+         endif
+          
          allocate(gids(nloc))
          gids = dom_s%data%iAttr(mct_aVect_indexIA(dom_s%data,"GlobGridNum"),:)
          ! ! now set data on the coupler side too
@@ -594,10 +599,8 @@ contains
        if (samegrid_al) then
           dom_s  => component_get_dom_cx(atm(1))   !dom_ax
           dom_d  => component_get_dom_cx(lnd(1))   !dom_lx
-
-          if (atm_pg_active) then
-             call seq_map_map(mapper_Sa2l, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream')
-          endif
+          ! it should work for FV and spectral too
+          call seq_map_map(mapper_Sa2l, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream') 
        else
           gsmap_d => component_get_gsmap_cx(lnd(1)) ! gsmap_lx
           dom_d   => component_get_dom_cx(lnd(1))   ! dom_lx
