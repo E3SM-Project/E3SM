@@ -3353,8 +3353,8 @@
       </modules>
       <modules>
         <command name="load">cray-libsci/25.03.0</command>
-        <command name="load">cray-hdf5-parallel/1.14.3.5</command>
-        <command name="load">cray-netcdf-hdf5parallel/4.9.0.17</command>
+        <command name="load">hdf5/1.14.6</command>
+        <command name="load">netcdf/4.9.3c-4.6.2f</command>
         <command name="load">cray-parallel-netcdf/1.12.3.13</command>
       </modules>
     </module_system>
@@ -3363,7 +3363,6 @@
     <MAX_GB_OLD_TEST_DATA>0</MAX_GB_OLD_TEST_DATA>
     <environment_variables>
       <env name="PERL5LIB">/grand/E3SMinput/soft/perl5/lib/perl5</env>
-      <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
       <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
       <env name="MPICH_GPU_SUPPORT_ENABLED">0</env>
       <env name="GPU_TILE_COMPACT"> </env>
