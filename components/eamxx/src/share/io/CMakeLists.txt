@@ -15,4 +15,4 @@ add_library(scream_io
   eamxx_io_utils.cpp
 )
 
-target_link_libraries(scream_io PUBLIC scream_share eamxx_scorpio_interface diagnostics)
+target_link_libraries(scream_io PUBLIC scream_share eamxx_scorpio_interface eamxx_diagnostics)

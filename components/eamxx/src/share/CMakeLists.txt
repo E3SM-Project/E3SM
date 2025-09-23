@@ -25,6 +25,9 @@ add_subdirectory(data_managers)
 # Atm process
 add_subdirectory(atm_process)
 
+# Diagnostic classes
+add_subdirectory(diagnostics)
+
 set(SHARE_SRC
   algorithm/eamxx_data_interpolation.cpp
   algorithm/eamxx_fv_phys_rrtmgp_active_gases_workaround.cpp

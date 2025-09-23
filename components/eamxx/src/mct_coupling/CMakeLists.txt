@@ -41,7 +41,7 @@ set (SCREAM_LIBS
      spa
      iop_forcing
      nudging
-     diagnostics
+     eamxx_diagnostics
      tms
 )
 if (SCREAM_ENABLE_ML_CORRECTION)
