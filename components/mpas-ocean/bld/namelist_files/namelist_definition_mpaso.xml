@@ -1728,7 +1728,7 @@ Default: Defined in namelist_defaults.xml
 	category="land_ice" group="land_ice">
 Selects the mode in which land-ice draft is computed.
 
-Valid values: 'data,'pressure-dependent'
+Valid values: 'data', 'pressure-dependent'
 Default: Defined in namelist_defaults.xml
 </entry>
 
