@@ -730,12 +730,6 @@ module ocn_time_integration_split_ab2
          endif
 #endif
 
-!        call mpas_reconstruct_gpu(meshPool, normalVelocityNew,       &
-!                                velocityX, velocityY, velocityZ,   &
-!                                velocityZonal, velocityMeridional, &
-!                                includeHalos = .true.)
-
-
          call ocn_tend_vel(domain, tendPool, statePool, forcingPool, &
                            stage1_tend_time, domain % dminfo, dt)
 

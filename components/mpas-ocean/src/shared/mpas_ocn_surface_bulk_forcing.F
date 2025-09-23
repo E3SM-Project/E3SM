@@ -259,11 +259,11 @@ contains
          windStressMerid, &! meridional wind stress from forcing
          meridWSEdge,     &! meridional wind stress avg to edge
          zonalWSEdge,     &! zonal wind stress averaged to edge
-         windSpeed10m,    &! 10m wind speed for eddy killing correction
-         iceFraction       ! sea ice fraction to mask the eddy killing correction
+         windSpeed10m,    &! 10m wind speed for eke correction scheme
+         iceFraction       ! sea ice fraction to mask the eke correction scheme
 
       real (kind=RKIND), dimension(:), pointer :: &
-         eddyKillingCorrection !variable to output for diagnostics of the correction
+         ekeCorrection !variable to output for diagnostics of the correction
 
       real (kind=RKIND) :: leadingCoeff, u10m, eddyKillCorrZon, eddyKillCorrMer
 
@@ -283,7 +283,7 @@ contains
       call mpas_pool_get_array(forcingPool, 'windStressMeridional', windStressMerid)
       call mpas_pool_get_array(forcingPool, 'iceFraction', iceFraction)
       call mpas_pool_get_array(forcingPool, 'windSpeed10m', windSpeed10m)
-      call mpas_pool_get_array(forcingPool, 'eddyKillingCorrection', eddyKillingCorrection)
+      call mpas_pool_get_array(forcingPool, 'ekeCorrection', ekeCorrection)
 
       !*** Transfer data to device
       !$acc enter data &
@@ -333,17 +333,16 @@ contains
                            sin(angleEdge(iEdge))*meridWSEdge(iEdge)
       end do
 
-      if (config_eddy_killing_correction_enable) then
-!         leadingCoeff = 1.5_RKIND*config_eddy_killing_cd*config_eddy_killing_rhoa
+      if (config_eke_correction_enable) then
          do iEdge = 1, nEdges
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
             u10m = 0.5_RKIND*(windSpeed10m(cell1) + windSpeed10m(cell2))
-            eddyKillingCorrection(iEdge) = 0.0_RKIND
+            ekeCorrection(iEdge) = 0.0_RKIND
             if (iceFraction(cell1) < 0.05_RKIND .and. iceFraction(cell2) < 0.05_RKIND) then
-               leadingCoeff = -(-2.9E-3_RKIND*u10m + 0.008_RKIND)
-               eddyKillingCorrection(iEdge) = leadingCoeff*normalVelocity(minLevelEdgeBot(iEdge),iEdge)
-               sfcStress(iEdge) = sfcStress(iEdge) + eddyKillingCorrection(iEdge)
+               leadingCoeff = -(config_eke_alpha*u10m + config_eke_beta)
+               ekeCorrection(iEdge) = leadingCoeff*normalVelocity(minLevelEdgeBot(iEdge),iEdge)
+               sfcStress(iEdge) = sfcStress(iEdge) + ekeCorrection(iEdge)
             end if
 
          end do
@@ -363,9 +362,9 @@ contains
       !$omp do schedule(runtime)
       !$omp private(eddyKillCorrZon, eddyKillCorrMer)
 #endif
-      if (config_eddy_killing_correction_enable) then
+      if (config_eke_correction_enable) then
       do iCell = 1, nCells
-        leadingCoeff = -(-2.9E-3_RKIND*windSpeed10m(iCell) + 0.008_RKIND)
+        leadingCoeff = -(config_eke_alpha*windSpeed10m(iCell) + config_eke_beta)
         eddyKillCorrZon = leadingCoeff*velocityZonal(minLevelCell(iCell),iCell)
         eddyKillCorrMer = leadingCoeff*velocityMeridional(minLevelCell(iCell),iCell)
 
