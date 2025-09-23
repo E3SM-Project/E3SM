@@ -13,5 +13,4 @@ target_link_libraries(pyeamxx_ext PUBLIC
   scream_io
   diagnostics
   eamxx_physics
-  scream_test_support
 )

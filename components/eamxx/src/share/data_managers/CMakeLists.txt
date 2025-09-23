@@ -12,5 +12,8 @@ target_link_libraries(eamxx_managers PUBLIC
 )
 
 if (NOT SCREAM_LIB_ONLY)
+  # It's used by quite a few unit tests
+  target_sources(eamxx_managers PRIVATE mesh_free_grids_manager.cpp)
+
   add_subdirectory(tests)
 endif()

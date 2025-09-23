@@ -22,7 +22,7 @@ target_link_libraries(physics_share scream_share)
 
 if (NOT SCREAM_LIB_ONLY)
 
-  target_sources(scream_test_support PRIVATE
+  target_sources(physics_share PRIVATE
     physics_test_data.cpp
   )
 
