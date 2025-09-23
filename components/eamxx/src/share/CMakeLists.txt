@@ -22,12 +22,10 @@ add_subdirectory(remap)
 # Data managers structures
 add_subdirectory(data_managers)
 
+# Atm process
+add_subdirectory(atm_process)
+
 set(SHARE_SRC
-  atm_process/atmosphere_process.cpp
-  atm_process/atmosphere_process_hash.cpp
-  atm_process/atmosphere_process_group.cpp
-  atm_process/atmosphere_process_dag.cpp
-  atm_process/atmosphere_diagnostic.cpp
   algorithm/eamxx_data_interpolation.cpp
   algorithm/eamxx_fv_phys_rrtmgp_active_gases_workaround.cpp
   algorithm/eamxx_time_interpolation.cpp
@@ -49,7 +47,8 @@ target_link_libraries(scream_share PUBLIC
   eamxx_grid
   eamxx_remap
   eamxx_property_checks
-  eamxx_data_managers)
+  eamxx_data_managers
+  eamxx_atm_process)
 
 # Used in the data interpolation
 target_link_libraries(scream_share PUBLIC stdc++fs)
