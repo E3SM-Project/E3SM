@@ -325,15 +325,23 @@ contains
 #else
       !$omp parallel
       !$omp do schedule(runtime)
-      !$omp private(cell1,cell2,leadingCoeff,u10m)
 #endif
       do iEdge = 1, nEdges
         sfcStress(iEdge) = sfcStress(iEdge) + &
                            cos(angleEdge(iEdge))*zonalWSEdge(iEdge) + &
                            sin(angleEdge(iEdge))*meridWSEdge(iEdge)
       end do
+#ifndef MPAS_OPENACC
+      !$omp end do
+      !$omp end parallel
+#endif
 
       if (config_eke_correction_enable) then
+#ifndef MPAS_OPENACC
+      !$omp parallel
+      !$omp do schedule(runtime) &
+      !$omp private(cell1,cell2,leadingCoeff,u10m)
+#endif
          do iEdge = 1, nEdges
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
@@ -346,23 +354,20 @@ contains
             end if
 
          end do
-      end if
-
 #ifndef MPAS_OPENACC
       !$omp end do
+      !$omp end parallel
 #endif
+      end if
 
       ! Calculate surface flux magnitude at cell centers
 
-#ifdef MPAS_OPENACC
-      !$acc parallel loop &
-      !$acc    present(sfcStressMag, windStressZonal, &
-      !$acc                          windStressMerid)
-#else
-      !$omp do schedule(runtime)
-      !$omp private(eddyKillCorrZon, eddyKillCorrMer)
-#endif
       if (config_eke_correction_enable) then
+#ifndef MPAS_OPENACC
+      !$omp parallel
+      !$omp do schedule(runtime) &
+      !$omp private(leadingCoeff, eddyKillCorrZon, eddyKillCorrMer)
+#endif
       do iCell = 1, nCells
         leadingCoeff = -(config_eke_alpha*windSpeed10m(iCell) + config_eke_beta)
         eddyKillCorrZon = leadingCoeff*velocityZonal(minLevelCell(iCell),iCell)
@@ -377,17 +382,29 @@ contains
                               sqrt( (windStressZonal(iCell) + eddyKillCorrZon)**2 &
                                   + (windStressMerid(iCell) + eddyKillCorrMer)**2 )
       end do
+#ifndef MPAS_OPENACC
+      !$omp end do
+      !$omp end parallel
+#endif
       else
+#ifdef MPAS_OPENACC
+      !$acc parallel loop &
+      !$acc    present(sfcStressMag, windStressZonal, &
+      !$acc                          windStressMerid)
+#else
+      !$omp parallel
+      !$omp do schedule(runtime)
+#endif
       do iCell = 1, nCells
         sfcStressMag(iCell) = sfcStressMag(iCell) + &
                               sqrt( windStressZonal(iCell)**2 &
                                   + windStressMerid(iCell)**2 )
       end do
-      end if
 #ifndef MPAS_OPENACC
       !$omp end do
       !$omp end parallel
 #endif
+      end if
 
 #ifdef MPAS_OPENACC
       !$acc exit data delete(zonalWSEdge, meridWSEdge)

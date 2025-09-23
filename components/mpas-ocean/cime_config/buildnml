@@ -1328,7 +1328,7 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var name="potentialDensity"/>')
             lines.append('    <var name="windStressZonal"/>')
             lines.append('    <var name="windStressMeridional"/>')
-            lines.append('    <var name="eddyKillingCorrection"/>')
+            lines.append('    <var name="ekeCorrection"/>')
             lines.append('    <var name="frazilLayerThicknessTendency"/>')
             lines.append('    <var_array name="avgValueWithinOceanRegion"/>')
             lines.append('    <var_array name="avgValueWithinOceanLayerRegion"/>')
