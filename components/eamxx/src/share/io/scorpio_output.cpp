@@ -81,6 +81,9 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const std::vector<Fie
 
   // Setup I/O structures
   init();
+
+  auto fname = [](const Field& f) { return f.name(); };
+  m_stream_name = ekat::join(fields,fname,",");
 }
 
 AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::ParameterList &params,
@@ -90,6 +93,11 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
    m_add_time_dim(true)
 {
   using vos_t = std::vector<std::string>;
+
+  // The param list name will be the name of this stream.
+  // This works great for regular CIME cases, where the param list name is
+  // the name of the yaml file where the options are read from.
+  m_stream_name = params.name();
 
   auto gm = field_mgr->get_grids_manager();
 
@@ -169,7 +177,7 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
   }
 
   // Then we 1) create aliases, and b) create diagnostics, adding alias/diag fields to fm_model
-  process_requested_fields (params.name());
+  process_requested_fields ();
 
   // Avg count only makes sense if we have
   //  - non-instant output
@@ -252,6 +260,20 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
 
   // Setup I/O structures (including the scorpio FM)
   init ();
+}
+
+AtmosphereOutput::
+~AtmosphereOutput()
+{
+  // NOTE: yes, we remove ALL the diags in the static var, even if some other
+  //       output stream may still use it. But by the time this destructor runs,
+  //       we are likely at finalization. This static var is only needed at init,
+  //       to prevent two output streams creating the same diag. So when this
+  //       destructor runs, it's fine to clean up this static var
+  for (auto d : m_diagnostics) {
+    const auto& name = d->get_diagnostic().name();
+    m_diag_repo.erase(name);
+  }
 }
 
 void AtmosphereOutput::
@@ -900,6 +922,7 @@ compute_diagnostics(const bool allow_invalid_fields)
 
     EKAT_REQUIRE_MSG (computable or allow_invalid_fields,
         "Error! Cannot compute a diagnostic. One dependency has an invalid timestamp.\n"
+        " - stream name: " + m_stream_name + "\n"
         " - diag name: " + diag->get_diagnostic().name() + "\n"
         " - dep  name: " + dep_name + "\n");
 
@@ -925,7 +948,7 @@ compute_diagnostics(const bool allow_invalid_fields)
 }
 
 void AtmosphereOutput::
-process_requested_fields(const std::string& stream_name)
+process_requested_fields()
 {
   // So far, all fields (on the output grid) that ARE in the model FM have been added
   // to the FM stored in this class for the FromModel phase. Anything missing
@@ -945,7 +968,7 @@ process_requested_fields(const std::string& stream_name)
     if (tokens.size()==2) {
       EKAT_REQUIRE_MSG (m_alias_to_orig.count(tokens[0])==0,
           "Error! The same alias has been used multiple times.\n"
-          " - stream name: " + stream_name + "\n"
+          " - stream name: " + m_stream_name + "\n"
           " - first alias: " + tokens[0] + ":=" + m_alias_to_orig[tokens[0]] + "\n"
           " - second alias: " + tokens[0] + ":=" + tokens[1] + "\n");
       m_alias_to_orig[tokens[0]] = tokens[1];
@@ -958,7 +981,7 @@ process_requested_fields(const std::string& stream_name)
 
   EKAT_REQUIRE_MSG (not has_duplicates(m_fields_names),
       "Error! The list of requested output fields contains duplicates.\n"
-      " - stream name:  " + stream_name + "\n"
+      " - stream name:  " + m_stream_name + "\n"
       " - fields names: " + ekat::join(m_fields_names,",") + "\n");
 
   // Due to aliasing, we are not yet able to establish the diags eval order,
@@ -972,7 +995,13 @@ process_requested_fields(const std::string& stream_name)
     }
 
     if (not m_field_mgrs[FromModel]->has_field(name)) {
-      name2diag[name] = create_diagnostic(name,fm_model->get_grid());
+      // Ensure we only have ONE copy of the SAME diag class across all streams
+      auto& diag = m_diag_repo[name];
+      if (diag==nullptr) {
+        diag = create_diagnostic(name,fm_model->get_grid());
+      }
+
+      name2diag[name] = diag;
     }
   }
 
@@ -1044,9 +1073,6 @@ process_requested_fields(const std::string& stream_name)
     if (m_track_avg_cnt) {
       m_field_to_avg_cnt_suffix.emplace(diag_field.name(),diag_avg_cnt_name);
     }
-
-    // All done, add to the diags list
-    m_diagnostics.push_back(diag);
   };
   
   // Now, keep processing each field. We can process a field if either:
@@ -1095,30 +1121,46 @@ process_requested_fields(const std::string& stream_name)
         EKAT_REQUIRE_MSG (name2diag.count(name)==1,
             "Error! Cannot process requested output field '" + name + "'\n");
         auto diag = name2diag[name];
-        bool ready_to_init = true;
-        for (const auto& freq : diag->get_required_field_requests()) {
-          const auto& dep_name = freq.fid.name();
-          if (not fm_model->has_field(dep_name)) {
-            ready_to_init = false;
-            if (not remaining.count(dep_name)) {
-              // This requirement MUST be another diagnostic, since it was not in the original m_fields_names
-              // Create the diag, and add it to the list of fields to process
-              name2diag[freq.fid.name()] = create_diagnostic(freq.fid.name(),fm_model->get_grid());
-              add_these.insert(freq.fid.name());
-            }
-            break;
-          }
-        }
-        if (ready_to_init) {
-          init_diag(diag);
+        if (diag->is_initialized()) {
+          // Another stream must have already initialized this diag. Just add the diag field to the fm
+          fm_model->add_field(diag->get_diagnostic());
           remove_these.insert(name);
+          m_diagnostics.push_back(diag);
+        } else {
+          // Check if all the diag req are already in the FM, otherwise we may have to delay its initialization
+          bool ready_to_init = true;
+          for (const auto& freq : diag->get_required_field_requests()) {
+            const auto& dep_name = freq.fid.name();
+            if (not fm_model->has_field(dep_name)) {
+              ready_to_init = false;
+              if (not remaining.count(dep_name) and
+                  not add_these.count(dep_name))
+              {
+                // This requirement SHOULD be another diagnostic, but we may have already added it
+                // to the list of things to build, or it may have been already created by another stream
+                auto& dep_diag = m_diag_repo[dep_name];
+                if (dep_diag==nullptr) {
+                  // Create the diag, and add it to the list of fields to process
+                  dep_diag = create_diagnostic(dep_name,fm_model->get_grid());
+                }
+                name2diag[dep_name] = dep_diag;
+                add_these.insert(dep_name);
+              }
+              break;
+            }
+          }
+          if (ready_to_init) {
+            init_diag(diag);
+            remove_these.insert(name);
+            m_diagnostics.push_back(diag);
+          }
         }
       }
     }
 
     EKAT_REQUIRE_MSG (add_these.size()>0 or remove_these.size()>0,
         "Error! We're stuck in an endless loop while processing output fields.\n"
-        " - stream name: " + stream_name + "\n");
+        " - stream name: " + m_stream_name + "\n");
 
     for (const auto& n : remove_these) {
       remaining.erase(n);
@@ -1147,5 +1189,9 @@ get_var_dimnames (const FieldLayout& layout) const
   }
   return dims;
 }
+
+// Instantiate the static member var
+AtmosphereOutput::strmap_t<AtmosphereOutput::diag_ptr_type>
+AtmosphereOutput::m_diag_repo;
 
 } // namespace scream
