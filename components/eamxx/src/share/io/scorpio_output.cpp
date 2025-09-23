@@ -909,39 +909,31 @@ compute_diagnostics(const bool allow_invalid_fields)
   for (auto diag : m_diagnostics) {
     // Check if all inputs are valid
     bool computable = true;
-    bool computed = false;
-    std::string dep_name;
     for (const auto& f : diag->get_fields_in()) {
-      if (not f.get_header().get_tracking().get_time_stamp().is_valid()) {
-        // Fill diag with invalid data and return
-        computable = false;
-        dep_name = f.name();
-        break;
-      }
-    }
+      computable &= f.get_header().get_tracking().get_time_stamp().is_valid();
 
-    EKAT_REQUIRE_MSG (computable or allow_invalid_fields,
+      EKAT_REQUIRE_MSG (computable or allow_invalid_fields,
         "Error! Cannot compute a diagnostic. One dependency has an invalid timestamp.\n"
         " - stream name: " + m_stream_name + "\n"
         " - diag name: " + diag->get_diagnostic().name() + "\n"
-        " - dep  name: " + dep_name + "\n");
+        " - dep  name: " + f.name() + "\n");
+    }
 
     auto d = diag->get_diagnostic();
     if (computable) {
-      computed = true;
       diag->compute_diagnostic();
-      if (not d.get_header().get_tracking().get_time_stamp().is_valid()) {
-        computed = false;
-      }
     }
+
+    bool computed = d.get_header().get_tracking().get_time_stamp().is_valid();
+
+    EKAT_REQUIRE_MSG (computed or allow_invalid_fields,
+      "Error! Failed to compute diagnostic.\n"
+      " - diag name: " + diag->get_diagnostic().name() + "\n");
 
     if (not computed) {
       // The diag was either not computable or it may have failed to compute
       // (e.g., t=0 output with a flux-like diag).
       // If we're allowing invalid fields, then we should simply set diag=fill_value
-      EKAT_REQUIRE_MSG (allow_invalid_fields,
-        "Error! Failed to compute diagnostic.\n"
-        " - diag name: " + diag->get_diagnostic().name() + "\n");
       d.deep_copy(constants::fill_value<float>);
     }
   }
