@@ -2071,7 +2071,7 @@ contains
                        config_remove_ais_river_runoff, &
                        config_remove_ais_ice_runoff, &
                        config_cvmix_kpp_use_theory_wave, &
-                       config_eddy_killing_correction_enable
+                       config_eke_correction_enable
 
    character(len=StrKIND), pointer :: config_ecosys_atm_co2_option, &
                                       config_ecosys_atm_alt_co2_option
@@ -2237,7 +2237,7 @@ contains
    call mpas_pool_get_config(domain % configs, 'config_remove_ais_river_runoff', config_remove_ais_river_runoff)
    call mpas_pool_get_config(domain % configs, 'config_remove_ais_ice_runoff', config_remove_ais_ice_runoff)
    call mpas_pool_get_config(domain % configs, 'config_cvmix_kpp_use_theory_wave', config_cvmix_kpp_use_theory_wave)
-   call mpas_pool_get_config(domain % configs, 'config_eddy_killing_correction_enable', config_eddy_killing_correction_enable)
+   call mpas_pool_get_config(domain % configs, 'config_eke_correction_enable', config_eke_correction_enable)
 
    precFactor = 1.0_RKIND  ! Default to no scaling
    !configuration for freshwater balance constrains
@@ -2431,7 +2431,7 @@ contains
          removedIceRunoffFlux(:) = 0.0_RKIND
       endif
 
-      if (config_cvmix_kpp_use_theory_wave .or. config_eddy_killing_correction_enable) then
+      if (config_cvmix_kpp_use_theory_wave .or. config_eke_correction_enable) then
          ! Initialize this field
          windSpeed10m(:) = 0.0_RKIND
       endif
@@ -2544,7 +2544,7 @@ contains
            end if
         endif
 
-        if (config_cvmix_kpp_use_theory_wave .or. config_eddy_killing_correction_enable) then
+        if (config_cvmix_kpp_use_theory_wave .or. config_eke_correction_enable) then
            if ( windSpeed10mField% isActive ) then
               windSpeed10m(i) = sqrt( x2o_o % rAttr(index_x2o_So_duu10n, n))
            end if
@@ -3704,7 +3704,7 @@ contains
                        config_remove_ais_river_runoff, &
                        config_remove_ais_ice_runoff, &
                        config_cvmix_kpp_use_theory_wave, &
-                       config_eddy_killing_correction_enable
+                       config_eke_correction_enable
 
    character(len=StrKIND), pointer :: config_ecosys_atm_co2_option, &
                                       config_ecosys_atm_alt_co2_option
@@ -3887,7 +3887,7 @@ contains
    call mpas_pool_get_config(domain % configs, 'config_remove_ais_river_runoff', config_remove_ais_river_runoff)
    call mpas_pool_get_config(domain % configs, 'config_remove_ais_ice_runoff', config_remove_ais_ice_runoff)
    call mpas_pool_get_config(domain % configs, 'config_cvmix_kpp_use_theory_wave', config_cvmix_kpp_use_theory_wave)
-   call mpas_pool_get_config(domain % configs, 'config_eddy_killing_correction_enable', config_eddy_killing_correction_enable)
+   call mpas_pool_get_config(domain % configs, 'config_eke_correction_enable', config_eke_correction_enable)
 
    n = 0
    removedRiverRunoffFluxThisProc = 0.0_RKIND
@@ -4073,7 +4073,7 @@ contains
          removedIceRunoffFlux(:) = 0.0_RKIND
       endif
 
-      if (config_cvmix_kpp_use_theory_wave .or. config_eddy_killing_correction_enable) then
+      if (config_cvmix_kpp_use_theory_wave .or. config_eke_correction_enable) then
          ! Initialize this field
          windSpeed10m(:) = 0.0_RKIND
       endif
@@ -4189,7 +4189,7 @@ contains
            end if
         endif
 
-        if (config_cvmix_kpp_use_theory_wave .or. config_eddy_killing_correction_enable) then
+        if (config_cvmix_kpp_use_theory_wave .or. config_eke_correction_enable) then
            if ( windSpeed10mField% isActive ) then
               windSpeed10m(i) = sqrt( x2o_om(n, index_x2o_So_duu10n))
            end if
