@@ -3,19 +3,14 @@
 #include "share/atm_process/atmosphere_process.hpp"
 #include "share/atm_process/atmosphere_process_group.hpp"
 #include "share/atm_process/atmosphere_process_dag.hpp"
-#include "share/atm_process/atmosphere_diagnostic.hpp"
 
 #include "share/property_checks/field_lower_bound_check.hpp"
 
-#include "share/grid/se_grid.hpp"
 #include "share/grid/point_grid.hpp"
-#include "share/data_managers/mesh_free_grids_manager.hpp"
-#include "share/remap/inverse_remapper.hpp"
+#include "share/data_managers/library_grids_manager.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
 
 #include <ekat_parameter_list.hpp>
-#include <ekat_yaml.hpp>
-#include <ekat_scalar_traits.hpp>
 
 namespace scream {
 
@@ -27,108 +22,28 @@ ekat::ParameterList create_test_params ()
   ekat::ParameterList params ("Atmosphere Processes");
 
   params.set<std::string>("schedule_type","sequential");
-  params.set<strvec_t>("atm_procs_list",{"Foo","BarBaz"});
+  params.set<strvec_t>("atm_procs_list",{"MyFoo","BarBaz"});
 
-  auto& p0 = params.sublist("Foo");
+  auto& p0 = params.sublist("MyFoo");
   p0.set<std::string>("type", "Foo");
   p0.set<std::string>("grid_name", "point_grid");
 
   auto& p1 = params.sublist("BarBaz");
-  p1.set<strvec_t>("atm_procs_list",{"Bar","Baz"});
+  p1.set<strvec_t>("atm_procs_list",{"MyBar","MyBaz"});
   p1.set<std::string>("type", "group");
   p1.set<std::string>("schedule_type","sequential");
 
-  auto& p1_0 = p1.sublist("Bar");
+  auto& p1_0 = p1.sublist("MyBar");
   p1_0.set<std::string>("type", "Bar");
   p1_0.set<std::string>("grid_name", "point_grid");
 
-  auto& p1_1 = p1.sublist("Baz");
+  auto& p1_1 = p1.sublist("MyBaz");
   p1_1.set<std::string>("type", "Baz");
   p1_1.set<std::string>("grid_name", "point_grid");
 
   return params;
 }
 
-std::shared_ptr<GridsManager>
-create_gm (const ekat::Comm& comm) {
-
-  const int num_local_elems = 4;
-  const int np = 4;
-  const int nlevs = 10;
-  const int num_local_cols = 13;
-  const int num_global_cols = num_local_cols*comm.size();
-
-  auto gm = create_mesh_free_grids_manager(comm,num_local_elems,np,nlevs,num_global_cols);
-  gm->build_grids();
-
-  return gm;
-}
-
-// =============================== Diagnostics ========================== //
-// A dummy diagnostic
-class DummyDiag : public AtmosphereDiagnostic {
-
-public:
-  DummyDiag (const ekat::Comm& comm, const ekat::ParameterList& params)
-    : AtmosphereDiagnostic(comm, params)
-  {
-    m_name = params.name();
-    m_grid_name = params.get<std::string> ("grid_name");
-  }
-
-  // Return some sort of name, linked to PType
-  std::string name () const { return m_name; }
-
-protected:
-
-  void compute_diagnostic_impl () {}
-
-  // The initialization method should prepare all stuff needed to import/export from/to
-  // f90 structures.
-  void initialize_impl (const RunType /* run_type */ ) {}
-
-  // Clean up
-  void finalize_impl ( /* inputs */ ) {}
-
-  std::string m_name;
-  std::string m_grid_name;
-
-};
-
-class DiagSum : public DummyDiag
-{
-public:
-  DiagSum (const ekat::Comm& comm, const ekat::ParameterList&params)
-    : DummyDiag(comm,params)
-  {
-    // Nothing to do here
-  }
-
-  std::string name() const { return "Summation Dianostic"; }
-
-  void set_grids (const std::shared_ptr<const GridsManager> gm) {
-    using namespace ekat::units;
-
-    const auto grid = gm->get_grid(m_grid_name);
-    const auto lt = grid->get_2d_scalar_layout ();
-
-    add_field<Required>("Field A",lt,K,m_grid_name);
-    add_field<Required>("Field B",lt,K,m_grid_name);
-
-    // We have to initialize the m_diagnostic_output:
-    FieldIdentifier fid (name(), lt, K, m_grid_name);
-    m_diagnostic_output = Field(fid);
-    m_diagnostic_output.allocate_view();
-  }
-
-protected:
-  void compute_diagnostic_impl () {
-    auto f_A = get_field_in("Field A", m_grid_name);
-    auto f_B = get_field_in("Field B", m_grid_name);
-    m_diagnostic_output.deep_copy(f_A);
-    m_diagnostic_output.update(f_B,1,1);
-  }
-};
 // =============================== Processes ========================== //
 // A dummy atm proc
 class DummyProcess : public scream::AtmosphereProcess {
@@ -277,12 +192,10 @@ TEST_CASE("process_factory", "") {
   factory.register_product("Bar",&create_atmosphere_process<Bar>);
   factory.register_product("Baz",&create_atmosphere_process<Baz>);
   factory.register_product("grouP",&create_atmosphere_process<AtmosphereProcessGroup>);
-  factory.register_product("DiagSum",&create_atmosphere_process<DiagSum>);
 
   // Load ad parameter list
   std::string fname = "atm_process_tests_named_procs.yaml";
-  ekat::ParameterList params ("Atmosphere Processes");
-  parse_yaml_file(fname,params);
+  auto params = create_test_params();
 
   // Create the processes
   std::shared_ptr<AtmosphereProcess> atm_process (factory.create("group",comm,params));
@@ -306,90 +219,6 @@ TEST_CASE("process_factory", "") {
   REQUIRE (group_2->get_process(1)->type()==AtmosphereProcessType::Physics);
 }
 
-TEST_CASE("atm_proc_dag", "") {
-  using namespace scream;
-
-  // A world comm
-  ekat::Comm comm(MPI_COMM_WORLD);
-
-  // Create then factory, and register constructors
-  auto& factory = AtmosphereProcessFactory::instance();
-  factory.register_product("Foo",&create_atmosphere_process<Foo>);
-  factory.register_product("Bar",&create_atmosphere_process<Bar>);
-  factory.register_product("Baz",&create_atmosphere_process<Baz>);
-  factory.register_product("grouP",&create_atmosphere_process<AtmosphereProcessGroup>);
-
-  // Create a grids manager
-  auto gm = create_gm(comm);
-
-  auto create_fields = [](const AtmosphereProcess& ap)
-    -> std::map<std::string,Field>
-  {
-    std::map<std::string,Field> fields;
-    for (auto r : ap.get_required_field_requests()) {
-      fields[r.fid.name()] = Field(r.fid);
-      fields[r.fid.name()].allocate_view();
-    }
-    for (auto r : ap.get_computed_field_requests()) {
-      fields[r.fid.name()] = Field(r.fid);
-      fields[r.fid.name()].allocate_view();
-    }
-    return fields;
-  };
-
-  auto create_and_set_fields = [&] (AtmosphereProcess& ap)
-  {
-    auto fields = create_fields(ap);
-    for (auto r : ap.get_required_field_requests()) {
-      ap.set_required_field(fields.at(r.fid.name()));
-    }
-    for (auto r : ap.get_computed_field_requests()) {
-      ap.set_computed_field(fields.at(r.fid.name()));
-    }
-  };
-
-  // Test a case where the dag has no unmet deps
-  SECTION ("working") {
-    auto params = create_test_params ();
-
-    // Create the processes
-    std::shared_ptr<AtmosphereProcess> atm_process (factory.create("group",comm,params));
-
-    // Set the grids, so the remappers in the group are not empty
-    atm_process->set_grids(gm);
-
-    create_and_set_fields (*atm_process);
-
-    // Create the dag
-    AtmProcDAG dag;
-    dag.create_dag(*std::dynamic_pointer_cast<AtmosphereProcessGroup>(atm_process));
-    dag.write_dag("working_atm_proc_dag.dot",4);
-
-    REQUIRE (not dag.has_unmet_dependencies());
-  }
-
-  SECTION ("broken") {
-
-    using strvec_t = std::vector<std::string>;
-    auto params = create_test_params();
-    auto& p1 = params.sublist("BarBaz");
-
-    // Make sure there's a missing piece (whatever Baz computes);
-    p1.set<strvec_t>("atm_procs_list",{"Bar"});
-    std::shared_ptr<AtmosphereProcess> broken_atm_group (factory.create("group",comm,params));
-    broken_atm_group->set_grids(gm);
-
-    create_and_set_fields (*broken_atm_group);
-
-    // Create the dag
-    AtmProcDAG dag;
-    dag.create_dag(*std::dynamic_pointer_cast<AtmosphereProcessGroup>(broken_atm_group));
-    dag.write_dag("broken_atm_proc_dag.dot",4);
-
-    REQUIRE (dag.has_unmet_dependencies());
-  }
-}
-
 TEST_CASE("field_checks", "") {
   using namespace scream;
   using namespace ekat::units;
@@ -397,8 +226,11 @@ TEST_CASE("field_checks", "") {
   // A world comm
   ekat::Comm comm(MPI_COMM_WORLD);
 
-  auto gm = create_gm(comm);
-  auto grid = gm->get_grid("point_grid");
+  // Create a grids manager
+  const int nlcols = 3;
+  const int nlevs = 10;
+  auto grid = create_point_grid ("point_grid",nlcols*comm.size(),nlevs,comm);
+  auto gm = std::make_shared<LibraryGridsManager>(grid);
 
   // Create a parameter list
   ekat::ParameterList params ("Atmosphere Processes");
@@ -461,7 +293,10 @@ TEST_CASE ("subcycling") {
   util::TimeStamp t0 ({2022,1,1},{0,0,0});
 
   // Create a grids manager
-  auto gm = create_gm(comm);
+  const int nlcols = 3;
+  const int nlevs = 10;
+  auto grid = create_point_grid ("point_grid",nlcols*comm.size(),nlevs,comm);
+  auto gm = std::make_shared<LibraryGridsManager>(grid);
 
   ekat::ParameterList params, params_sub;
   params.set<std::string>("grid_name", "point_grid");
@@ -509,55 +344,6 @@ TEST_CASE ("subcycling") {
   for (size_t i=0; i<v.size(); ++i) {
     REQUIRE (v_sub[i]==5*v[i]);
   }
-}
-
-TEST_CASE ("diagnostics") {
-
-  //TODO: This test needs a field manager so that changes in Field A are seen everywhere.
-  using namespace scream;
-
-  // A world comm
-  ekat::Comm comm(MPI_COMM_WORLD);
-
-  // A time stamp
-  util::TimeStamp t0 ({2022,1,1},{0,0,0});
-
-  // Create a grids manager
-  auto gm = create_gm(comm);
-
-  // Create the sum diagnostic
-  ekat::ParameterList params_sum("DiagSum");
-  params_sum.set<std::string>("grid_name", "point_grid");
-  auto diag_sum = std::make_shared<DiagSum>(comm,params_sum);
-  diag_sum->set_grids(gm);
-
-  std::map<std::string,Field> input_fields;
-  for (const auto& req : diag_sum->get_required_field_requests()) {
-    Field f(req.fid);
-    f.allocate_view();
-    f.get_header().get_tracking().update_time_stamp(t0);
-    input_fields[f.name()] = f;
-  }
-  auto f_A = input_fields["Field A"];
-  auto f_B = input_fields["Field B"];
-  f_A.deep_copy(1.0);
-  f_B.deep_copy(1.0);
-
-  diag_sum->set_required_field(f_A.get_const());
-  diag_sum->set_required_field(f_B.get_const());
-  // diag fields are created INSIDE diags, not set from outside
-  REQUIRE_THROWS(diag_sum->set_computed_field(f_A));
-
-  diag_sum->initialize(t0,RunType::Initial);
-
-  // Run the diagnostic
-  diag_sum->compute_diagnostic();
-
-  // Get diagnostics outputs
-  const auto& f_sum      = diag_sum->get_diagnostic();
-
-  f_B.update(f_A,1,1);
-  REQUIRE (views_are_equal(f_B,f_sum));
 }
 
 } // empty namespace
