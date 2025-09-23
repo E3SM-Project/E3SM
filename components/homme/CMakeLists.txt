@@ -365,20 +365,28 @@ IF (DEFINED SUNDIALS_DIR)
   INCLUDE_DIRECTORIES(${SUNDIALS_DIR}/fortran)
 ENDIF ()
 
-###########################################
-# Definitions for timing library
-###########################################
-# This is required in timing to set HAVE_MPI
-ADD_DEFINITIONS(-DSPMD)
-OPTION(ENABLE_NANOTIMERS "Use nano timers in timing library" FALSE)
-OPTION(USE_BIT64 "Set BIT64 (for 64 bit arch) in timing library when ENABLE_NANOTIME" FALSE)
-IF (${ENABLE_NANOTIMERS})
-  ADD_DEFINITIONS(-DHAVE_NANOTIME)
-  IF (${USE_BIT64})
-    ADD_DEFINITIONS(-DBIT64)
+if (HOMME_STANDALONE OR NOT TARGET gptl)
+  ###########################################
+  # Definitions for timing library
+  ###########################################
+  # This is required in timing to set HAVE_MPI
+  ADD_DEFINITIONS(-DSPMD)
+  OPTION(ENABLE_NANOTIMERS "Use nano timers in timing library" FALSE)
+  OPTION(USE_BIT64 "Set BIT64 (for 64 bit arch) in timing library when ENABLE_NANOTIME" FALSE)
+  IF (${ENABLE_NANOTIMERS})
+    ADD_DEFINITIONS(-DHAVE_NANOTIME)
+    IF (${USE_BIT64})
+      ADD_DEFINITIONS(-DBIT64)
+    ENDIF ()
   ENDIF ()
-ENDIF ()
-ADD_SUBDIRECTORY(utils/cime/CIME/non_py/src/timing)
+  ADD_SUBDIRECTORY(utils/cime/CIME/non_py/src/timing)
+  target_include_directories (timing PUBLIC utils/cime/CIME/non_py/src/timing)
+  target_include_directories (timing PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/utils/cime/CIME/non_py/src/timing)
+else ()
+  # EAMxx already takes care of making the gptl target available, so just make the timing tgt point to that
+  add_library(timing INTERFACE)
+  target_link_libraries (timing INTERFACE gptl)
+endif()
 
 
 # CMAKE_CURRENT_SOURCE_DIR == homme
