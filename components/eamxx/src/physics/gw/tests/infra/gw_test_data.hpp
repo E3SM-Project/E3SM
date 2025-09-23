@@ -327,21 +327,28 @@ struct GwDragProfData : public PhysicsTestData {
 
   GwDragProfData(Int pcnst_, Int ncol_, bool do_taper_, Real dt_, Real effgw_, GwInit init_) :
     PhysicsTestData({
+      // 1d
       {ncol_},
+      // 2d
       {ncol_, init_.pver},
       {ncol_, init_.pver + 1},
       {ncol_, init_.pgwv*2 + 1},
+      // 3d
       {ncol_, init_.pver, pcnst_},
       {ncol_, init_.pgwv*2 + 1, init_.pver + 1},
       {ncol_, init_.pver + 1, 4},
       {ncol_, init_.pver, init_.pgwv*2 + 1},
+      // 1d
       {ncol_}
     },
     {
+      // 1d
       {&lat, &xv, &yv},
+      // 2d
       {&t, &pmid, &dpm, &rdpm, &nm, &ubm, &dse, &utgw, &vtgw, &ttgw, &dttdf, &dttke},
       {&ti, &pint, &piln, &rhoi, &ni, &ubi, &kvtt, &egwdffi},
       {&c},
+      // 3d
       {&q, &qtgw},
       {&tau},
       {&taucd},
@@ -937,6 +944,7 @@ void gwd_project_tau(GwdProjectTauData& d);
 void gwd_project_tau_f(GwdProjectTauData& d);
 void gwd_precalc_rhoi_f(GwdPrecalcRhoiData& d);
 void gwd_precalc_rhoi(GwdPrecalcRhoiData& d);
+void gw_drag_prof_f(GwDragProfData& d);
 void gw_drag_prof(GwDragProfData& d);
 void gw_front_project_winds(GwFrontProjectWindsData& d);
 void gw_front_gw_sources(GwFrontGwSourcesData& d);

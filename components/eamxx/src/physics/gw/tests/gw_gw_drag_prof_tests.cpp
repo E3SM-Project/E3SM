@@ -35,9 +35,17 @@ struct UnitWrap::UnitTest<D>::TestGwDragProf : public UnitWrap::UnitTest<D>::Bas
 
     // Generate random input data
     // Alternatively, you can use the baseline_data construtors/initializer lists to hardcode data
-    for (auto& d : baseline_data) {
+    for (Int i = 0; i < num_runs; ++i) {
       // ni must be very small or else we risk a FPE due to a huge exp
-      d.randomize(engine, { {d.ni, {1.E-08, 2.E-08}} });
+      auto& d = baseline_data[i];
+      d.randomize(engine, {
+          {d.ni, {1.E-06, 2.E-06}},
+          {d.src_level, {init_data[i].ktop+1, init_data[i].kbotbg-1}},
+          {d.tend_level, {init_data[i].ktop+1, init_data[i].kbotbg-1}},
+          {d.ubi, {2.E-04, 3.E-04}},
+          {d.ubm, {5., 20.}},
+          {d.c, {1.E-04, 2.E-04}},
+        });
     }
 
     // Create copies of data for use by test. Needs to happen before read calls so that
@@ -58,7 +66,12 @@ struct UnitWrap::UnitTest<D>::TestGwDragProf : public UnitWrap::UnitTest<D>::Bas
 
     // Get data from test
     for (auto& d : test_data) {
-      gw_drag_prof(d);
+      if (this->m_baseline_action == GENERATE) {
+        gw_drag_prof_f(d);
+      }
+      else {
+        gw_drag_prof(d);
+      }
     }
 
     // Verify BFB results, all data should be in C layout
@@ -66,39 +79,38 @@ struct UnitWrap::UnitTest<D>::TestGwDragProf : public UnitWrap::UnitTest<D>::Bas
       for (Int i = 0; i < num_runs; ++i) {
         GwDragProfData& d_baseline = baseline_data[i];
         GwDragProfData& d_test = test_data[i];
+        REQUIRE(d_baseline.total(d_baseline.tau) == d_test.total(d_test.tau));
         for (Int k = 0; k < d_baseline.total(d_baseline.tau); ++k) {
-          REQUIRE(d_baseline.total(d_baseline.tau) == d_test.total(d_test.tau));
           REQUIRE(d_baseline.tau[k] == d_test.tau[k]);
         }
+        REQUIRE(d_baseline.total(d_baseline.utgw) == d_test.total(d_test.utgw));
+        REQUIRE(d_baseline.total(d_baseline.utgw) == d_test.total(d_test.vtgw));
+        REQUIRE(d_baseline.total(d_baseline.utgw) == d_test.total(d_test.ttgw));
+        REQUIRE(d_baseline.total(d_baseline.utgw) == d_test.total(d_test.dttdf));
+        REQUIRE(d_baseline.total(d_baseline.utgw) == d_test.total(d_test.dttke));
         for (Int k = 0; k < d_baseline.total(d_baseline.utgw); ++k) {
-          REQUIRE(d_baseline.total(d_baseline.utgw) == d_test.total(d_test.utgw));
           REQUIRE(d_baseline.utgw[k] == d_test.utgw[k]);
-          REQUIRE(d_baseline.total(d_baseline.utgw) == d_test.total(d_test.vtgw));
           REQUIRE(d_baseline.vtgw[k] == d_test.vtgw[k]);
-          REQUIRE(d_baseline.total(d_baseline.utgw) == d_test.total(d_test.ttgw));
           REQUIRE(d_baseline.ttgw[k] == d_test.ttgw[k]);
-          REQUIRE(d_baseline.total(d_baseline.utgw) == d_test.total(d_test.dttdf));
           REQUIRE(d_baseline.dttdf[k] == d_test.dttdf[k]);
-          REQUIRE(d_baseline.total(d_baseline.utgw) == d_test.total(d_test.dttke));
           REQUIRE(d_baseline.dttke[k] == d_test.dttke[k]);
         }
+        REQUIRE(d_baseline.total(d_baseline.qtgw) == d_test.total(d_test.qtgw));
         for (Int k = 0; k < d_baseline.total(d_baseline.qtgw); ++k) {
-          REQUIRE(d_baseline.total(d_baseline.qtgw) == d_test.total(d_test.qtgw));
           REQUIRE(d_baseline.qtgw[k] == d_test.qtgw[k]);
         }
+        REQUIRE(d_baseline.total(d_baseline.taucd) == d_test.total(d_test.taucd));
         for (Int k = 0; k < d_baseline.total(d_baseline.taucd); ++k) {
-          REQUIRE(d_baseline.total(d_baseline.taucd) == d_test.total(d_test.taucd));
           REQUIRE(d_baseline.taucd[k] == d_test.taucd[k]);
         }
+        REQUIRE(d_baseline.total(d_baseline.egwdffi) == d_test.total(d_test.egwdffi));
         for (Int k = 0; k < d_baseline.total(d_baseline.egwdffi); ++k) {
-          REQUIRE(d_baseline.total(d_baseline.egwdffi) == d_test.total(d_test.egwdffi));
           REQUIRE(d_baseline.egwdffi[k] == d_test.egwdffi[k]);
         }
+        REQUIRE(d_baseline.total(d_baseline.gwut) == d_test.total(d_test.gwut));
         for (Int k = 0; k < d_baseline.total(d_baseline.gwut); ++k) {
-          REQUIRE(d_baseline.total(d_baseline.gwut) == d_test.total(d_test.gwut));
           REQUIRE(d_baseline.gwut[k] == d_test.gwut[k]);
         }
-
       }
     }
     else if (this->m_baseline_action == GENERATE) {

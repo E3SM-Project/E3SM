@@ -725,12 +725,212 @@ void gwd_precalc_rhoi(GwdPrecalcRhoiData& d)
   gw_finalize_cxx(d.init);
 }
 
-void gw_drag_prof(GwDragProfData& d)
+void gw_drag_prof_f(GwDragProfData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
   gw_init(d.init);
   gw_drag_prof_c(d.pcnst, d.ncol, d.src_level, d.tend_level, d.do_taper, d.dt, d.lat, d.t, d.ti, d.pmid, d.pint, d.dpm, d.rdpm, d.piln, d.rhoi, d.nm, d.ni, d.ubm, d.ubi, d.xv, d.yv, d.effgw, d.c, d.kvtt, d.q, d.dse, d.tau, d.utgw, d.vtgw, d.ttgw, d.qtgw, d.taucd, d.egwdffi, d.gwut, d.dttdf, d.dttke);
   d.transition<ekat::TransposeDirection::f2c>();
+}
+
+void gw_drag_prof(GwDragProfData& d)
+{
+  gw_init_cxx(d.init);
+
+  // create device views and copy
+  std::vector<view1di_d> one_d_ints_in(2);
+  std::vector<view1dr_d> one_d_reals_in(3);
+  std::vector<view2dr_d> two_d_reals_in(21);
+  std::vector<view3dr_d> three_d_reals_in(5);
+
+  ekat::host_to_device({d.src_level, d.tend_level}, d.ncol, one_d_ints_in);
+  ekat::host_to_device({d.lat, d.xv, d.yv}, d.ncol, one_d_reals_in);
+  ekat::host_to_device({
+      d.t, d.pmid, d.dpm, d.rdpm, d.nm, d.ubm, d.dse, d.utgw, d.vtgw, d.ttgw, d.dttdf, d.dttke,
+      d.ti, d.pint, d.piln, d.rhoi, d.ni, d.ubi, d.kvtt, d.egwdffi,
+      d.c},
+    std::vector<int>(21, d.ncol),
+    std::vector<int>{   // dim2 sizes
+      d.init.pver,      // t
+      d.init.pver,      // pmid
+      d.init.pver,      // dpm
+      d.init.pver,      // rdpm
+      d.init.pver,      // nm
+      d.init.pver,      // ubm
+      d.init.pver,      // dse
+      d.init.pver,      // utgw
+      d.init.pver,      // vtgw
+      d.init.pver,      // ttgw
+      d.init.pver,      // dttdf
+      d.init.pver,      // dttke
+      d.init.pver + 1,  // ti
+      d.init.pver + 1,  // pint
+      d.init.pver + 1,  // piln
+      d.init.pver + 1,  // rhoi
+      d.init.pver + 1,  // ni
+      d.init.pver + 1,  // ubi
+      d.init.pver + 1,  // kvtt
+      d.init.pver + 1,  // egwdffi
+      d.init.pgwv*2 + 1 // c
+    },
+    two_d_reals_in);
+  ekat::host_to_device({
+      d.q, d.qtgw, d.tau, d.taucd, d.gwut},
+    std::vector<int>(5, d.ncol),
+    std::vector<int>{d.init.pver, d.init.pver, d.init.pgwv*2 + 1, d.init.pver + 1, d.init.pver},
+    std::vector<int>{d.pcnst,     d.pcnst,     d.init.pver + 1,   4,               d.init.pgwv*2 + 1},
+    three_d_reals_in);
+
+  const auto src_level  = one_d_ints_in[0];
+  const auto tend_level = one_d_ints_in[1];
+
+  const auto lat = one_d_reals_in[0];
+  const auto xv  = one_d_reals_in[1];
+  const auto yv  = one_d_reals_in[2];
+
+  const auto t       = two_d_reals_in[0];
+  const auto pmid    = two_d_reals_in[1];
+  const auto dpm     = two_d_reals_in[2];
+  const auto rdpm    = two_d_reals_in[3];
+  const auto nm      = two_d_reals_in[4];
+  const auto ubm     = two_d_reals_in[5];
+  const auto dse     = two_d_reals_in[6];
+  const auto utgw    = two_d_reals_in[7];
+  const auto vtgw    = two_d_reals_in[8];
+  const auto ttgw    = two_d_reals_in[9];
+  const auto dttdf   = two_d_reals_in[10];
+  const auto dttke   = two_d_reals_in[11];
+  const auto ti      = two_d_reals_in[12];
+  const auto pint    = two_d_reals_in[13];
+  const auto piln    = two_d_reals_in[14];
+  const auto rhoi    = two_d_reals_in[15];
+  const auto ni      = two_d_reals_in[16];
+  const auto ubi     = two_d_reals_in[17];
+  const auto kvtt    = two_d_reals_in[18];
+  const auto egwdffi = two_d_reals_in[19];
+  const auto c       = two_d_reals_in[20];
+
+  const auto q     = three_d_reals_in[0];
+  const auto qtgw  = three_d_reals_in[1];
+  const auto tau   = three_d_reals_in[2];
+  const auto taucd = three_d_reals_in[3];
+  const auto gwut  = three_d_reals_in[4];
+
+  // Find max tend_level
+  int max_level = 0;
+  Kokkos::parallel_reduce("find max level", d.ncol, KOKKOS_LAMBDA(const int i, int& lmax) {
+    if (tend_level(i) > lmax) {
+      lmax = tend_level(i);
+    }
+  }, Kokkos::Max<int>(max_level));
+
+  auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.ncol, d.init.pver);
+
+  // Use one workspace with the biggest size or use two, one for pver, one for pver*2*pgwv?
+  WSM wsm((d.init.pver + 1) * (2*d.init.pgwv + 1), 9, policy);
+  GWF::GwCommonInit init_cp = GWF::s_common_init;
+
+  // unpack init because we do not want the lambda to capture it
+  const int pver = d.init.pver;
+  const int pgwv = d.init.pgwv;
+  const Real dt = d.dt;
+  const bool do_taper = d.do_taper;
+  const Real effgw = d.effgw;
+
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    const int col = team.league_rank();
+
+    // Get single-column subviews of all inputs, shouldn't need any i-indexing
+    // after this.
+    const auto t_c = ekat::subview(t, col);
+    const auto pmid_c = ekat::subview(pmid, col);
+    const auto dpm_c = ekat::subview(dpm, col);
+    const auto rdpm_c = ekat::subview(rdpm, col);
+    const auto nm_c = ekat::subview(nm, col);
+    const auto ubm_c = ekat::subview(ubm, col);
+    const auto dse_c = ekat::subview(dse, col);
+    const auto utgw_c = ekat::subview(utgw, col);
+    const auto vtgw_c = ekat::subview(vtgw, col);
+    const auto ttgw_c = ekat::subview(ttgw, col);
+    const auto dttdf_c = ekat::subview(dttdf, col);
+    const auto dttke_c = ekat::subview(dttke, col);
+    const auto ti_c = ekat::subview(ti, col);
+    const auto pint_c = ekat::subview(pint, col);
+    const auto piln_c = ekat::subview(piln, col);
+    const auto rhoi_c = ekat::subview(rhoi, col);
+    const auto ni_c = ekat::subview(ni, col);
+    const auto ubi_c = ekat::subview(ubi, col);
+    const auto kvtt_c = ekat::subview(kvtt, col);
+    const auto egwdffi_c = ekat::subview(egwdffi, col);
+    const auto c_c = ekat::subview(c, col);
+    const auto q_c = ekat::subview(q, col);
+    const auto qtgw_c = ekat::subview(qtgw, col);
+    const auto tau_c = ekat::subview(tau, col);
+    const auto taucd_c = ekat::subview(taucd, col);
+    const auto gwut_c = ekat::subview(gwut, col);
+
+    GWF::gw_drag_prof(
+      team,
+      wsm.get_workspace(team),
+      init_cp,
+      pver, pgwv,
+      src_level(col),
+      max_level,
+      tend_level(col),
+      do_taper,
+      dt,
+      lat(col),
+      t_c,
+      ti_c,
+      pmid_c,
+      pint_c,
+      dpm_c,
+      rdpm_c,
+      piln_c,
+      rhoi_c,
+      nm_c,
+      ni_c,
+      ubm_c,
+      ubi_c,
+      xv(col),
+      yv(col),
+      effgw,
+      c_c,
+      kvtt_c,
+      q_c,
+      dse_c,
+      tau_c,
+      utgw_c,
+      vtgw_c,
+      ttgw_c,
+      qtgw_c,
+      taucd_c,
+      egwdffi_c,
+      gwut_c,
+      dttdf_c,
+      dttke_c);
+  });
+
+  // Get outputs back
+  std::vector<view2dr_d> two_d_reals_out = {utgw, vtgw, ttgw, egwdffi, dttdf, dttke};
+  ekat::device_to_host({d.utgw, d.vtgw, d.ttgw, d.egwdffi, d.dttdf, d.dttke},
+                       std::vector<int>(6, d.ncol),
+                       std::vector<int>{
+                         d.init.pver,     // utgw
+                         d.init.pver,     // vtgw
+                         d.init.pver,     // ttgw
+                         d.init.pver + 1, // egwdffi
+                         d.init.pver,     // dttdf
+                         d.init.pver},    // dttke
+                       two_d_reals_out);
+  std::vector<view3dr_d> three_d_reals_out = {tau, qtgw, taucd, gwut};
+  ekat::device_to_host({d.tau, d.qtgw, d.taucd, d.gwut},
+                       std::vector<int>(4, d.ncol),
+                       std::vector<int>{d.init.pgwv*2 + 1, d.init.pver, d.init.pver + 1, d.init.pver},
+                       std::vector<int>{d.init.pver + 1,   d.pcnst,     4,               d.init.pgwv*2 + 1},
+                       three_d_reals_out);
+
+  gw_finalize_cxx(d.init);
 }
 
 void gw_front_init(GwFrontInitData& d)
