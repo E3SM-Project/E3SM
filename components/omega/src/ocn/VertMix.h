@@ -34,17 +34,19 @@ class ConvectiveMix {
       Real ConvTriggerBVF = 0.0; ///< Reference density (kg m^-3) at (T,S)=(0,0)
 
       /// Constructor for ConvectiveMix
-      ConvectiveMix();
+      ConvectiveMix(int NVertLevels);
 
       KOKKOS_FUNCTION void operator()(Array2DReal VertDiff, Array2DReal VertVisc,
-                                      I4 ICell, I4 K,
-                                      const Array2DReal &BruntVaisalaFreq) const {
-
-         if (BruntVaisalaFreq(ICell, K) < ConvTriggerBVF) {
-            VertDiff(ICell, K) = VertDiff(ICell, K) + ConvDiff;
-            VertVisc(ICell, K) = VertVisc(ICell, K) + ConvDiff;
+                                      I4 ICell, const Array2DReal &BruntVaisalaFreq) const {
+         for (int K = 0; K <= NVertLevels; ++K) {
+            if (BruntVaisalaFreq(ICell, K) < ConvTriggerBVF) {
+               VertDiff(ICell, K) = VertDiff(ICell, K) + ConvDiff;
+               VertVisc(ICell, K) = VertVisc(ICell, K) + ConvDiff;
+            }
          }
       }
+      private:
+      const int NVertLevels;
 };
 
 class PPShearMix {
@@ -59,33 +61,38 @@ class PPShearMix {
       /// Constructor for PPShearMix
       PPShearMix(const HorzMesh *Mesh);
 
-      KOKKOS_FUNCTION void operator()(Array2DReal VertDiff, Array2DReal VertVisc,
-                                      I4 ICell, I4 K,
+      KOKKOS_FUNCTION void operator()(Array2DReal VertDiff, Array2DReal VertVisc, I4 ICell,
                                       const Array2DReal &NormalVelocity,
                                       const Array2DReal &TangentialVelocity,
                                       const Array2DReal &BruntVaisalaFreq,
                                       const Array2DReal &ZMid) const {
-         Real ShearViscVal = 0.0;
+         for (int K = 0; K <= NVertLevels; ++K) {
+            if (K == 0) {
+               VertVisc(ICell, K) = 0.0_Real;
+               VertDiff(ICell, K) = 0.0_Real;
+            } else {
+               Real ShearViscVal = 0.0_Real;
+               Real InvAreaCell = 1.0_Real / AreaCell(ICell);
+               Real ShearSquared = 0.0_Real;
+               for (int J = 0; J < NEdgesOnCell(ICell); ++J) {
+                  I4 JEdge = EdgesOnCell(ICell, J);
+                  Real Factor = 0.5 * DcEdge(JEdge) * DvEdge(JEdge) * InvAreaCell;
+                  Real DelU2 = 
+                     Kokkos::pow(NormalVelocity(JEdge,K-1) - NormalVelocity(JEdge,K), 2.0) + 
+                     Kokkos::pow(TangentialVelocity(JEdge,K-1) - TangentialVelocity(JEdge,K), 2.0);
+                  ShearSquared = ShearSquared + Factor * DelU2;
+               }
+               ShearSquared = ShearSquared / Kokkos::pow(ZMid(ICell, K-1) - ZMid(ICell, K), 2.0);
 
-         Real InvAreaCell = 1.0 / AreaCell(ICell);
-         Real ShearSquared = 0.0;
-         for (int J = 0; J < NEdgesOnCell(ICell); ++J) {
-            I4 JEdge = EdgesOnCell(ICell, J);
-            Real Factor = 0.5 * DcEdge(JEdge) * DvEdge(JEdge) * InvAreaCell;
-            Real DelU2 = 
-               Kokkos::pow(NormalVelocity(JEdge,K-1) - NormalVelocity(JEdge,K), 2.0) + 
-               Kokkos::pow(TangentialVelocity(JEdge,K-1) - TangentialVelocity(JEdge,K), 2.0);
-            ShearSquared = ShearSquared + Factor * DelU2;
+               Real RichardsonNum = BruntVaisalaFreq(ICell, K) / 
+                                    Kokkos::max(1.0e-12_Real, ShearSquared);
+
+               ShearViscVal = ShearNuZero / 
+                  Kokkos::pow(1.0_Real + ShearAlpha * RichardsonNum, ShearExponent);
+               VertVisc(ICell, K) = VertVisc(ICell, K) + ShearViscVal;
+               VertDiff(ICell, K) = VertDiff(ICell, K) + ShearViscVal / (1.0_Real + ShearAlpha * RichardsonNum);
          }
-         ShearSquared = ShearSquared / Kokkos::pow(ZMid(ICell, K-1) - ZMid(ICell, K), 2.0);
-
-         Real RichardsonNum = BruntVaisalaFreq(ICell, K) / 
-                              Kokkos::max(1.0e-12_Real, ShearSquared);
-
-         ShearViscVal = ShearNuZero / 
-            Kokkos::pow(1.0_Real + ShearAlpha * RichardsonNum, ShearExponent);
-         VertVisc(ICell, K) = VertVisc(ICell, K) + ShearViscVal;
-         VertDiff(ICell, K) = VertDiff(ICell, K) + ShearViscVal / (1.0_Real + ShearAlpha * RichardsonNum);
+         }
       }
 
    private:
@@ -164,6 +171,8 @@ class VertMix {
     VertMix& operator=(VertMix&&) = delete;
 
    I4 NCellsAll;         ///< Number of horizontal cells
+   I4 NEdgesAll;         ///< Number of horizontal edges
+   I4 NChunks;           ///< Number of vertical chunks (for vectorization)
    I4 NVertLevels;       ///< Number of vertical levels
 
    // Define fields and metadata
