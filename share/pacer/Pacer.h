@@ -12,28 +12,11 @@
 #define PACER_H
 
 #include <mpi.h>
-#include <gptl.h>
-#include <unordered_map>
 #include <string>
 
 namespace Pacer {
 
-    /// Flag to determine if the timing infrastructure is initialized
-    static bool IsInitialized = false;
-
-    /// MPI communicator used within Pacer
-    static MPI_Comm InternalComm;
-
-    /// MPI rank of process
-    static int MyRank;
-
-    /// hash table of open timers with count (for multiple parents)
-    static std::unordered_map<std::string,int> OpenTimers;
-
     enum PacerModeType { PACER_STANDALONE, PACER_INTEGRATED };
-
-    /// Pacer Mode: standalone or within CIME
-    static PacerModeType PacerMode;
 
     /// Initialize Pacer timing
     /// InComm: overall MPI communicator used by application.
@@ -42,23 +25,53 @@ namespace Pacer {
 
     /// Check if Pacer is initialized
     /// Returns true if initialized
-    bool isInitialized(void);
+    bool isInitialized();
 
     /// IntegratedMode: Pacer standalone (default:false) or within CIME (true)
     // bool initialize(MPI_Comm InComm, bool IntegratedMode = false);
 
-    /// Start the time named TimerName
-    bool start(const std::string &TimerName);
+    /// Start the timer named TimerName active when TimingLevel >= Level 
+    bool start(const std::string &TimerName, int Level);
 
-    /// Stop the time named TimerName
+    /// Stop the timer named TimerName active when TimingLevel >= Level 
     /// Issues warning if timer hasn't been started yet
-    bool stop(const std::string &TimerName);
+    bool stop(const std::string &TimerName, int Level);
 
     /// Sets named prefix for all subsequent timers
     bool setPrefix(const std::string &Prefix);
 
     /// Unsets prefix for all subsequent timers
     bool unsetPrefix();
+    
+    /// Adds the current enclosing timer name to the prefix for all subsequent timers
+    bool addParentPrefix();
+
+    /// Removes the current enclosing timer name from the prefix for all subsequent timers
+    bool removeParentPrefix();
+    
+    /// Call and time MPI barrier if timing barriers are turned on
+    bool timingBarrier(const std::string &TimerName, int Level, MPI_Comm comm);
+    
+    /// Sets timing level for all subsequent timers
+    void setTimingLevel(int Level);
+    
+    /// Disables timing
+    bool disableTiming();
+
+    /// Enables timing
+    bool enableTiming();
+
+    /// Enables automatic Kokkos fences
+    void enableAutoFence();
+
+    /// Disables automatic Kokkos fences
+    void disableAutoFence();
+   
+    /// Enables timing barriers
+    void enableTimingBarriers();
+
+    /// Disables timing barriers
+    void disableTimingBarriers();
 
     /// Prints timing statistics and global summary files
     /// Output Files: TimerFilePrefix.timing.<MyRank>
@@ -70,6 +83,6 @@ namespace Pacer {
     /// Issues warning if any timers are still open
     bool finalize();
 
-};
+}
 
 #endif
