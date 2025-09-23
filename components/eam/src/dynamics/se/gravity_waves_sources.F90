@@ -131,12 +131,70 @@ CONTAINS
     real(kind=real_kind) :: frontgf_gll(np,np,nlev,nets:nete)
     real(kind=real_kind) :: gradth_gll(np,np,2,nlev,nets:nete)  ! grad(theta)
     real(kind=real_kind) :: p(np,np)        ! pressure at mid points
-    real(kind=real_kind) :: theta(np,np)    ! potential temperature at mid points
     real(kind=real_kind) :: temperature(np,np,nlev)  ! Temperature
     real(kind=real_kind) :: C(np,np,2), wf1(nphys*nphys,nlev), wf2(nphys*nphys,nlev)
-    !---------------------------------------------------------------------------
+#ifdef USE_FGF_CORRECTION
+    ! variables needed for eta to pressure surface correction
+    real(kind=real_kind) :: gradp_gll(np,np,2)          ! grad(pressure)
+    real(kind=real_kind) :: theta(np,np,nlev)           ! potential temperature at mid points
+    real(kind=real_kind) :: dtheta_dp(np,np,nlev)       ! d(theta)/dp    for eta to pressure surface correction
+    real(kind=real_kind) :: dum_grad(np,np,2)           ! ?
+    real(kind=real_kind) :: dum_cart(np,np,3,nlev)      ! d/dp of ?
+    real(kind=real_kind) :: ddp_dum_cart(np,np,3,nlev)  ! ?
+#else
+    real(kind=real_kind) :: theta(np,np)    ! potential temperature at mid points
+#endif
 
+    !---------------------------------------------------------------------------
     do ie = nets,nete
+
+#ifdef USE_FGF_CORRECTION
+      call get_temperature(elem(ie),temperature,hvcoord,tl)
+      do k = 1,nlev
+        ! pressure at mid points
+        p(:,:) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem(ie)%state%ps_v(:,:,tl)
+        ! potential temperature: theta = T (p/p0)^kappa
+        theta(:,:,k) = temperature(:,:,k)*(psurf_ref / p(:,:))**kappa
+      end do
+      call compute_vertical_derivative(tl,ie,elem,theta,dtheta_dp)
+
+      do k = 1,nlev
+        gradth_gll(:,:,:,k,ie) = gradient_sphere(theta(:,:,k),deriv1,elem(ie)%Dinv)
+        ! calculate and apply correction so that gradient is effectively on a pressure surface
+        p(:,:) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem(ie)%state%ps_v(:,:,tl)
+        gradp_gll(:,:,:) = gradient_sphere(p,deriv1,elem(ie)%Dinv)
+        do component=1,2
+          gradth_gll(:,:,component,k,ie) = gradth_gll(:,:,component,k,ie) - dtheta_dp(:,:,k) * gradp_gll(:,:,component)
+        end do
+      end do
+
+      do k = 1,nlev
+        ! latlon -> cartesian - Summing along the third dimension is a sum over components for each point
+        do component=1,3
+          dum_cart(:,:,component,k)=sum( elem(ie)%vec_sphere2cart(:,:,component,:) * elem(ie)%state%v(:,:,:,k,tl) ,3)
+        end do
+      end do
+
+      do component=1,3
+        call compute_vertical_derivative(tl,ie,elem,dum_cart(:,:,component,:),ddp_dum_cart(:,:,component,:))
+      end do
+
+      do k = 1,nlev
+        p(:,:) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem(ie)%state%ps_v(:,:,tl)
+        gradp_gll(:,:,:) = gradient_sphere(p,deriv1,elem(ie)%Dinv)
+        ! Do ugradv on the cartesian components - Dot u with the gradient of each component
+        do component=1,3
+          dum_grad(:,:,:) = gradient_sphere(dum_cart(:,:,component,k),deriv1,elem(ie)%Dinv)
+          do i=1,2
+            dum_grad(:,:,i) = dum_grad(:,:,i) - ddp_dum_cart(:,:,component,k) * gradp_gll(:,:,i)
+          end do
+          dum_cart(:,:,component,k) = sum( gradth_gll(:,:,:,k,ie) * dum_grad ,3)
+        enddo
+        ! cartesian -> latlon - vec_sphere2cart is its own pseudoinverse.
+        do component=1,2
+          C(:,:,component) = sum(dum_cart(:,:,:,k)*elem(ie)%vec_sphere2cart(:,:,:,component), 3)
+        end do
+#else
       do k = 1,nlev
         ! pressure at mid points
         p(:,:) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem(ie)%state%ps_v(:,:,tl)
@@ -146,6 +204,7 @@ CONTAINS
         gradth_gll(:,:,:,k,ie) = gradient_sphere(theta,deriv1,elem(ie)%Dinv)
         ! compute C = (grad(theta) dot grad ) u
         C(:,:,:) = ugradv_sphere(gradth_gll(:,:,:,k,ie), elem(ie)%state%v(:,:,:,k,tl),deriv1,elem(ie))
+#endif
         ! gradth_gll dot C
         frontgf_gll(:,:,k,ie) = -( C(:,:,1)*gradth_gll(:,:,1,k,ie) + C(:,:,2)*gradth_gll(:,:,2,k,ie)  )
         ! apply mass matrix
@@ -154,8 +213,8 @@ CONTAINS
         frontgf_gll(:,:,k,ie)  = frontgf_gll(:,:,k,ie)*elem(ie)%spheremp(:,:)
       end do ! k
       ! pack
-       call edgeVpack_nlyr(edge_g, elem(ie)%desc, frontgf_gll(:,:,:,ie),nlev,0,3*nlev)
-       call edgeVpack_nlyr(edge_g, elem(ie)%desc, gradth_gll(:,:,:,:,ie),2*nlev,nlev,3*nlev)
+      call edgeVpack_nlyr(edge_g, elem(ie)%desc, frontgf_gll(:,:,:,ie),nlev,0,3*nlev)
+      call edgeVpack_nlyr(edge_g, elem(ie)%desc, gradth_gll(:,:,:,:,ie),2*nlev,nlev,3*nlev)
 
     end do ! ie
 
@@ -191,5 +250,41 @@ CONTAINS
     end do ! ie
 
   end subroutine compute_frontogenesis
+  !-------------------------------------------------------------------------------------------------
+  subroutine compute_vertical_derivative(tl,ie,elem,data,ddata_dp)
+    use dyn_comp, only: hvcoord
+    !---------------------------------------------------------------------------
+    integer,                intent(in ) :: tl ! timelevel to use
+    integer,                intent(in ) :: ie ! current element index
+    type(element_t),target, intent(inout) :: elem(:)
+    real(kind=real_kind),   intent(in ) :: data(np,np,nlev)
+    real(kind=real_kind),   intent(out) :: ddata_dp(np,np,nlev)
+    !---------------------------------------------------------------------------
+    integer :: k
+    real(kind=real_kind) :: pint_above(np,np) ! pressure interpolated to interface above the current k mid-point
+    real(kind=real_kind) :: pint_below(np,np) ! pressure interpolated to interface below the current k mid-point
+    real(kind=real_kind) :: dint_above(np,np) ! data interpolated to interface above the current k mid-point
+    real(kind=real_kind) :: dint_below(np,np) ! data interpolated to interface below the current k mid-point
+    !---------------------------------------------------------------------------
+    do k = 1,nlev
+      if (k==1) then
+        pint_above = hvcoord%hyam(k+0)*hvcoord%ps0 + hvcoord%hybm(k+0)*elem(ie)%state%ps_v(:,:,tl)
+        pint_below = hvcoord%hyai(k+1)*hvcoord%ps0 + hvcoord%hybi(k+1)*elem(ie)%state%ps_v(:,:,tl)
+        dint_above = data(:,:,k)
+        dint_below = ( data(:,:,k+1) + data(:,:,k) ) / 2.0
+      elseif (k==nlev) then
+        pint_above = hvcoord%hyai(k+0)*hvcoord%ps0 + hvcoord%hybi(k+0)*elem(ie)%state%ps_v(:,:,tl)
+        pint_below = hvcoord%hyam(k+0)*hvcoord%ps0 + hvcoord%hybm(k+0)*elem(ie)%state%ps_v(:,:,tl)
+        dint_above = ( data(:,:,k-1) + data(:,:,k) ) / 2.0
+        dint_below = data(:,:,k)
+      else
+        pint_above = hvcoord%hyai(k+0)*hvcoord%ps0 + hvcoord%hybi(k+0)*elem(ie)%state%ps_v(:,:,tl)
+        pint_below = hvcoord%hyai(k+1)*hvcoord%ps0 + hvcoord%hybi(k+1)*elem(ie)%state%ps_v(:,:,tl)
+        dint_above = ( data(:,:,k-1) + data(:,:,k) ) / 2.0
+        dint_below = ( data(:,:,k+1) + data(:,:,k) ) / 2.0
+      end if
+      ddata_dp(:,:,k) = ( dint_above - dint_below ) / ( pint_above - pint_below )
+    end do
+  end subroutine compute_vertical_derivative
   !-------------------------------------------------------------------------------------------------
 end module gravity_waves_sources
