@@ -958,8 +958,6 @@ process_requested_fields()
   auto fm_grid = m_field_mgrs[FromModel]->get_grid();
 
   // First, find out which field names are just aliases
-  // NOTE: we must parse ALL field names in case someone creates an alias of an alias
-  strvec_t orig_fields;
   for (auto& name : m_fields_names) {
     auto tokens = ekat::split(name,":=");
     EKAT_REQUIRE_MSG(tokens.size()==2 or tokens.size()==1,
@@ -973,37 +971,24 @@ process_requested_fields()
           " - second alias: " + tokens[0] + ":=" + tokens[1] + "\n");
       m_alias_to_orig[tokens[0]] = tokens[1];
       name = tokens[0];
-      orig_fields.push_back(tokens[1]);
-    } else {
-      orig_fields.push_back(name);
     }
   }
+
+  // In case someone has an alias of an alias, we need to resolve the TRUE orig names.
+  bool has_multiple_aliasing_layers = false;
+  do {
+    for (auto it : m_alias_to_orig) {
+      if (m_alias_to_orig.count(it.second)>0) {
+        it.second = m_alias_to_orig[it.second];
+        has_multiple_aliasing_layers = true;
+      }
+    }
+  } while (has_multiple_aliasing_layers);
 
   EKAT_REQUIRE_MSG (not has_duplicates(m_fields_names),
       "Error! The list of requested output fields contains duplicates.\n"
       " - stream name:  " + m_stream_name + "\n"
       " - fields names: " + ekat::join(m_fields_names,",") + "\n");
-
-  // Due to aliasing, we are not yet able to establish the diags eval order,
-  // so just create them for now. Once we have all diags, we will resolve aliasing,
-  // and be able to store diags in the correct order for evaluation
-  strmap_t<std::shared_ptr<AtmosphereDiagnostic>> name2diag;
-  for (const auto& name : orig_fields) {
-    if (m_alias_to_orig.count(name)==1) {
-      // This is an alias of an alias. We'll allow it.
-      continue;
-    }
-
-    if (not m_field_mgrs[FromModel]->has_field(name)) {
-      // Ensure we only have ONE copy of the SAME diag class across all streams
-      auto& diag = m_diag_repo[name];
-      if (diag==nullptr) {
-        diag = create_diagnostic(name,fm_model->get_grid());
-      }
-
-      name2diag[name] = diag;
-    }
-  }
 
   // Helper lambda to check if this fm_model field should trigger avg count
   auto check_for_avg_cnt = [&](const Field& f) {
@@ -1040,7 +1025,6 @@ process_requested_fields()
 
     // Set the diag field in the FM
     auto diag_field = diag->get_diagnostic();
-    fm_model->add_field(diag_field);
 
     // Add the field to the diag group
     diag_field.get_header().get_tracking().add_group("diagnostic");
@@ -1075,7 +1059,7 @@ process_requested_fields()
     }
   };
   
-  // Now, keep processing each field. We can process a field if either:
+  // Now process each requested field, if possible. We can process a field if either:
   //  - it is already in the model FM
   //  - it is an alias of a field added to the FM
   //  - it is a diag that ONLY depends on fields already added to the FM
@@ -1116,44 +1100,30 @@ process_requested_fields()
           remove_these.insert(name);
         }
       } else {
-        // This MUST be a diag field. If all its deps are already in fm_model,
-        // then we can process it
-        EKAT_REQUIRE_MSG (name2diag.count(name)==1,
-            "Error! Cannot process requested output field '" + name + "'\n");
-        auto diag = name2diag[name];
-        if (diag->is_initialized()) {
-          // Another stream must have already initialized this diag. Just add the diag field to the fm
-          fm_model->add_field(diag->get_diagnostic());
-          remove_these.insert(name);
-          m_diagnostics.push_back(diag);
-        } else {
-          // Check if all the diag req are already in the FM, otherwise we may have to delay its initialization
-          bool ready_to_init = true;
-          for (const auto& freq : diag->get_required_field_requests()) {
-            const auto& dep_name = freq.fid.name();
-            if (not fm_model->has_field(dep_name)) {
-              ready_to_init = false;
-              if (not remaining.count(dep_name) and
-                  not add_these.count(dep_name))
-              {
-                // This requirement SHOULD be another diagnostic, but we may have already added it
-                // to the list of things to build, or it may have been already created by another stream
-                auto& dep_diag = m_diag_repo[dep_name];
-                if (dep_diag==nullptr) {
-                  // Create the diag, and add it to the list of fields to process
-                  dep_diag = create_diagnostic(dep_name,fm_model->get_grid());
-                }
-                name2diag[dep_name] = dep_diag;
-                add_these.insert(dep_name);
-              }
-              break;
-            }
+        auto& diag = m_diag_repo[name];
+        if (not diag) {
+          // First time we run into this diag. Create it
+          diag = create_diagnostic(name,fm_model->get_grid());
+        }
+        // Add its deps to the list of fields to process (if not already in fm_model)
+        bool deps_met = true;
+        for (const auto& req : diag->get_required_field_requests()) {
+          if (not fm_model->has_field(req.fid.name())) {
+            deps_met = false;
+            add_these.insert(req.fid.name());
           }
-          if (ready_to_init) {
+        }
+
+        // If we are missing any dep, we DELAY adding this diag to m_diagnostics, so that
+        // the order in which diags appear is compatible with the evaluation order
+        if (deps_met) {
+          // Check if already inited (perhaps by another stream)
+          if (not diag->is_initialized()) {
             init_diag(diag);
-            remove_these.insert(name);
-            m_diagnostics.push_back(diag);
           }
+          remove_these.insert(name);
+          fm_model->add_field(diag->get_diagnostic());
+          m_diagnostics.push_back(diag);
         }
       }
     }
@@ -1162,6 +1132,7 @@ process_requested_fields()
         "Error! We're stuck in an endless loop while processing output fields.\n"
         " - stream name: " + m_stream_name + "\n");
 
+    // Remove fields we added to the FM, and add new diags we need
     for (const auto& n : remove_these) {
       remaining.erase(n);
     }
