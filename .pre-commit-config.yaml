@@ -11,7 +11,7 @@ repos:
       # - id: include-what-you-use
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
@@ -25,7 +25,7 @@ repos:
 
   # Can run individually with `flynt [file]` or `flynt [source]`
   - repo: https://github.com/ikamensh/flynt
-    rev: 1.0.1
+    rev: 1.0.6
     hooks:
       - id: flynt
         args: ["--fail-on-change", "--verbose", "--line-length=79"]
@@ -35,7 +35,7 @@ repos:
   # Need to use flake8 GitHub mirror due to CentOS git issue with GitLab
   # https://github.com/pre-commit/pre-commit/issues/1206
   - repo: https://github.com/pycqa/flake8
-    rev: 7.1.2
+    rev: 7.3.0
     hooks:
       - id: flake8
         args: ["--config=components/omega/python_lint.cfg"]
@@ -43,7 +43,7 @@ repos:
 
   # Can run individually with `pre-commit run mypy --all-files`
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.15.0
+    rev: v1.18.2
     hooks:
       - id: mypy
         args: ["--config=components/omega/python_lint.cfg", "--show-error-codes"]

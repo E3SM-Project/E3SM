@@ -114,6 +114,7 @@ design/IO
 design/IOStreams
 design/Reductions
 design/State
+design/SubmesoscaleEddies
 design/Tendency
 design/Tendencies
 design/AuxiliaryVariables
