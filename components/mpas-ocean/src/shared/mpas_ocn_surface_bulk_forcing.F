@@ -287,7 +287,8 @@ contains
 
       !*** Transfer data to device
       !$acc enter data &
-      !$acc    copyin(windStressZonal, windStressMerid, windSpeed10m, iceFraction)
+      !$acc    copyin(windStressZonal, windStressMerid, windSpeed10m, iceFraction, 
+      !$acc           velocityZonal, velocityMeridional, normalVelocity, ekeCorrection)
 
       !*** Forcing needed over halo regions
 
@@ -321,7 +322,7 @@ contains
 #ifdef MPAS_OPENACC
       !$acc parallel loop &
       !$acc    present(angleEdge, sfcStress, &
-      !$acc            zonalWSEdge, meridWSEdge, leadingCoeff)
+      !$acc            zonalWSEdge, meridWSEdge)
 #else
       !$omp parallel
       !$omp do schedule(runtime)
@@ -337,7 +338,12 @@ contains
 #endif
 
       if (config_eke_correction_enable) then
-#ifndef MPAS_OPENACC
+#ifdef MPAS_OPENACC
+      !$acc parallel loop &
+      !$acc    present(sfcStress,ekeCorrection,windSpeed10m,normalVelocity, &
+      !$acc            iceFraction,cellsOnEdge)
+      !$acc    private(cell1, cell2, leadingCoeff, u10m)
+#else
       !$omp parallel
       !$omp do schedule(runtime) &
       !$omp private(cell1,cell2,leadingCoeff,u10m)
@@ -352,7 +358,6 @@ contains
                ekeCorrection(iEdge) = leadingCoeff*normalVelocity(minLevelEdgeBot(iEdge),iEdge)
                sfcStress(iEdge) = sfcStress(iEdge) + ekeCorrection(iEdge)
             end if
-
          end do
 #ifndef MPAS_OPENACC
       !$omp end do
@@ -363,7 +368,13 @@ contains
       ! Calculate surface flux magnitude at cell centers
 
       if (config_eke_correction_enable) then
-#ifndef MPAS_OPENACC
+#ifdef MPAS_OPENACC
+      !$acc parallel loop &
+      !$acc    present(sfcStressMag, windStressZonal, windStressMerid, &
+      !$acc            velocityZonal, velocityMeridional, minLevelCell, &
+      !$acc            iceFraction)
+      !$acc    private(leadingCoeff, eddyKillCorrZon, eddyKillCorrMer)
+#else
       !$omp parallel
       !$omp do schedule(runtime) &
       !$omp private(leadingCoeff, eddyKillCorrZon, eddyKillCorrMer)
@@ -413,6 +424,7 @@ contains
       deallocate(zonalWSEdge, meridWSEdge)
 
       !*** Transfer any needed data back to host and delete inputs
+      !$acc copyout(ekeCorrection)
       !$acc exit data &
       !$acc    delete(windStressZonal, windStressMerid)
 
