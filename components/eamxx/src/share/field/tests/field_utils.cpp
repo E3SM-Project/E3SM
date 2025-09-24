@@ -773,6 +773,11 @@ TEST_CASE ("print_field_hyperslab") {
       }
 
     REQUIRE (out.str()==expected.str());
+
+    loc_idxs[0] = nel;
+    REQUIRE_THROWS(print_field_hyperslab(f,loc_tags,loc_idxs,out));
+    loc_idxs[0] = -1;
+    REQUIRE_THROWS(print_field_hyperslab(f,loc_tags,loc_idxs,out));
   }
   SECTION ("slice_0234") {
     std::vector<FieldTag> loc_tags = {EL,GP,GP,LEV};
