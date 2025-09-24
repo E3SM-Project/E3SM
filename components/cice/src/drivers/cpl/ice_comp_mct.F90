@@ -404,11 +404,11 @@ contains
     nsend = mct_avect_nRattr(i2x_i)
     totalmbls = mblsize * nsend ! size of the double array
     allocate (i2x_im(lsize, nsend) )
-    i2x_im = 0.
+    i2x_im(:,:) = -1.0E10_r8
     nrecv = mct_avect_nRattr(x2i_i) ! number of fields retrived from MOAB tags, based on names from seq_flds_x2l_fields
     totalmblsimp = mblsize * nrecv ! size of the double array to fill with data from MOAB
     allocate (x2i_im(lsize, nrecv) )
-    x2i_im = 0.
+    x2i_im(:,:) = 0._r8
     if (my_task == master_task) then
       write(nu_diag,*) SubName, ' mblsize= ',mblsize,' nsend, nrecv for moab:', nsend, nrecv
     end if

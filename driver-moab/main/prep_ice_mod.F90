@@ -283,7 +283,7 @@ contains
           end if
           call seq_map_init_rcfile(mapper_Rr2i, rof(1), ice(1), &
                'seq_maps.rc','rof2ice_rmapname:','rof2ice_rmaptype:',samegrid_ro, &
-               'mapper_Rr2i initialization', esmf_map_flag)
+               'mapper_Rr2i initialization', esmf_map_flag,no_match)
           if ((mbrxid .ge. 0) .and.  (mbixid .ge. 0)) then
             ! now take care of the mapper
             if (iamroot_CPLID) then

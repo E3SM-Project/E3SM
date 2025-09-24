@@ -699,7 +699,7 @@ contains
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_SFi2o'
           end if
-          call seq_map_init_rearrolap(mapper_SFi2o, ice(1), ocn(1), 'mapper_SFi2o')
+          call seq_map_init_rearrolap(mapper_SFi2o, ice(1), ocn(1), 'mapper_SFi2o',no_match=.true.)
           if ( (mbixid .ge. 0) .and. (mboxid .ge. 0)) then
              if (iamroot_CPLID) then
                write(logunit,*) ' '
