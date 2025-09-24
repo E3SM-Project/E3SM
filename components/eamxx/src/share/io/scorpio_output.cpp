@@ -1014,7 +1014,9 @@ process_requested_fields()
 
     // Initialize the diag
     diag->initialize(util::TimeStamp(),RunType::Initial);
+  };
 
+  auto check_diag_avg_cnt = [&](const std::shared_ptr<AtmosphereDiagnostic>& diag) {
     // Set the diag field in the FM
     auto diag_field = diag->get_diagnostic();
 
@@ -1113,6 +1115,7 @@ process_requested_fields()
           if (not diag->is_initialized()) {
             init_diag(diag);
           }
+          check_diag_avg_cnt (diag);
           remove_these.insert(name);
           fm_model->add_field(diag->get_diagnostic());
           m_diagnostics.push_back(diag);
