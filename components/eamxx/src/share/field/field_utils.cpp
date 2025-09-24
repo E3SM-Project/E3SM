@@ -323,11 +323,12 @@ void print_field_hyperslab (const Field& f,
 
   const int num_indices = indices.size();
   for (int i=0; i<num_indices; ++i) {
-    EKAT_REQUIRE_MSG ( indices[i]>=0 && indices[i]<fl.dim(i),
-      "Error! Requested index is invalid.\n"
+    EKAT_REQUIRE_MSG ( indices[i]>=0 && indices[i]<fl.dim(tags[i],false),
+      "Error! Requested slice index is out of bound.\n"
       "  - field name: " + f.name() + "\n"
       "  - field layout: " + fl.to_string() + "\n"
-      "  - requested indices: (" + ekat::join(indices,",") + ")\n");
+      "  - hyperslab tags: (" + ekat::join(tags2str(tags),",") + ")\n"
+      "  - hyperslab indices: (" + ekat::join(indices,",") + ")\n");
   }
 
   switch (dt) {
