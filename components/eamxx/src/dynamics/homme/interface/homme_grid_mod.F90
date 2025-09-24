@@ -16,7 +16,7 @@ module homme_grid_mod
   public :: get_num_local_columns_f90, get_num_global_columns_f90
   public :: get_num_local_elems_f90, get_num_global_elems_f90
   public :: get_np_f90, get_nlev_f90
-  public :: is_planar_geometry_f90
+  public :: is_planar_geometry_f90, check_grids_inited
 
 contains
 
@@ -31,7 +31,7 @@ contains
     endif
   end function is_planar_geometry_f90
 
-  subroutine check_grids_inited (expected)
+  subroutine check_grids_inited (expected) bind(c)
     use parallel_mod,      only: abortmp
     use homme_context_mod, only: is_geometry_inited
     !
