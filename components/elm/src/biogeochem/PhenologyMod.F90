@@ -3502,7 +3502,7 @@ contains
          ! new ones for now (slevis)
          ! The food is now directed to the product pools (BDrewniak)
 
-         if (ivt(p) >= npcropmin) then ! add livestemc to litter
+         if (iscft(ivt(p))) then ! add livestemc to litter
             ! stem litter carbon fluxes
             phenology_c_to_residue_met_c(p) = phenology_c_to_residue_met_c(p) &
                  + livestemc_to_litter(p) * lf_flab(ivt(p))
