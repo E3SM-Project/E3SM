@@ -1250,7 +1250,7 @@ subroutine  copy_aream_from_area(mbappid)
 
             !add the normalization tag
             
-            tagname = trim(seq_flds_dom_fields)//C_NULL_CHAR
+            tagname = trim(seq_flds_dom_fields)//":norm8wt"//C_NULL_CHAR
             numco = 1 !  usually 1 value per cell
 
             ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
