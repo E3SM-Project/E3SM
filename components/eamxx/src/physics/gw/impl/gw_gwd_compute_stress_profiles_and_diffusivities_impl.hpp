@@ -53,7 +53,7 @@ void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities(
   // of parallelism, we collapse all the parallelism into the top level by multiplying
   // the level by num_pgwv.
   Kokkos::parallel_for(
-    Kokkos::TeamVectorRange(team, init.ktop*num_pgwv, (src_level+1)*num_pgwv), [&] (const int k_pgwv) {
+    Kokkos::TeamVectorRange(team, (init.ktop+1)*num_pgwv, (src_level+1)*num_pgwv), [&] (const int k_pgwv) {
 
     const int k = k_pgwv / num_pgwv;
     const int l = k_pgwv % num_pgwv;
@@ -93,7 +93,7 @@ void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities(
 
   // The outer loop is serial because tau(k) depends on tau(k+1), which eliminates
   // parallelism in the vertical levels. We can still parallelize over pgwvs though.
-  for (Int k = src_level; k >= init.ktop; --k) {
+  for (Int k = src_level; k > init.ktop; --k) {
     // Determine the diffusivity for each column.
     Real d = GWC::dback;
     if (init.do_molec_diff) {

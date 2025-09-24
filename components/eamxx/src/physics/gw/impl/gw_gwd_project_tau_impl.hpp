@@ -14,21 +14,78 @@ namespace gw {
 template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>::gwd_project_tau(
-// Inputs
-const Int& pver,
-const Int& pgwv,
-const Int& ncol,
-const uview_1d<const Int>& tend_level,
-const uview_1d<const Spack>& tau,
-const uview_1d<const Spack>& ubi,
-const uview_1d<const Spack>& c,
-const uview_1d<const Spack>& xv,
-const uview_1d<const Spack>& yv,
-// Outputs
-const uview_1d<Spack>& taucd)
+  // Inputs
+  const MemberType& team,
+  const Workspace& workspace,
+  const GwCommonInit& init,
+  const Int& pver,
+  const Int& pgwv,
+  const Int& tend_level,
+  const uview_2d<const Real>& tau,
+  const uview_1d<const Real>& ubi,
+  const uview_1d<const Real>& c,
+  const Real& xv,
+  const Real& yv,
+  // Outputs
+  const uview_2d<Real>& taucd)
 {
-  // TODO
-  // Note, argument types may need tweaking. Generator is not always able to tell what needs to be packed
+  uview_1d<Real> taub, tauf;
+  workspace.template take_many_contiguous_unsafe<2>(
+    {"taub", "tauf"},
+    {&taub, &tauf});
+
+  const Real ubi_tend = ubi(tend_level+1);
+
+  const int num_pgwv = 2*pgwv + 1;
+
+  Kokkos::parallel_for(
+    Kokkos::TeamVectorRange(team, taub.size()), [&] (const int k) {
+      taub(k) = 0;
+      tauf(k) = 0;
+    }
+  );
+
+  team.team_barrier();
+
+  Kokkos::parallel_for(
+    Kokkos::TeamVectorRange(team, init.ktop+1, tend_level + 2), [&] (const int k) {
+
+      for (int l = 0; l < num_pgwv; ++l) {
+        const Real tausg = Kokkos::copysign(tau(l,k), c(l)-ubi(k));
+        if (c(l) < ubi_tend) {
+          taub(k) += tausg;
+        }
+        else if (c(l) > ubi_tend) {
+          tauf(k) += tausg;
+        }
+      }
+    });
+
+  team.team_barrier();
+
+  Kokkos::parallel_for(
+    Kokkos::TeamVectorRange(team, init.ktop+1, tend_level + 2), [&] (const int k) {
+      if (xv > 0) {
+        taucd(k, GWC::east) = tauf(k) * xv;
+        taucd(k, GWC::west) = taub(k) * xv;
+      }
+      else if (xv < 0) {
+        taucd(k, GWC::east) = taub(k) * xv;
+        taucd(k, GWC::west) = tauf(k) * xv;
+      }
+
+      if (yv > 0) {
+        taucd(k, GWC::north) = tauf(k) * yv;
+        taucd(k, GWC::south) = taub(k) * yv;
+      }
+      else if (yv < 0) {
+        taucd(k, GWC::north) = taub(k) * yv;
+        taucd(k, GWC::south) = tauf(k) * yv;
+      }
+    });
+
+  workspace.template release_many_contiguous<2>(
+    {&taub, &tauf});
 }
 
 } // namespace gw
