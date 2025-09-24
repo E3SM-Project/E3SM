@@ -57,7 +57,12 @@ struct UnitWrap::UnitTest<D>::TestGwdPrecalcRhoi : public UnitWrap::UnitTest<D>:
 
     // Get data from test
     for (auto& d : test_data) {
-      gwd_precalc_rhoi(d);
+      if (this->m_baseline_action == GENERATE) {
+        gwd_precalc_rhoi_f(d);
+      }
+      else {
+        gwd_precalc_rhoi(d);
+      }
     }
 
     // Verify BFB results, all data should be in C layout
@@ -65,23 +70,22 @@ struct UnitWrap::UnitTest<D>::TestGwdPrecalcRhoi : public UnitWrap::UnitTest<D>:
       for (Int i = 0; i < num_runs; ++i) {
         GwdPrecalcRhoiData& d_baseline = baseline_data[i];
         GwdPrecalcRhoiData& d_test = test_data[i];
+        REQUIRE(d_baseline.total(d_baseline.egwdffi) == d_test.total(d_test.egwdffi));
         for (Int k = 0; k < d_baseline.total(d_baseline.egwdffi); ++k) {
-          REQUIRE(d_baseline.total(d_baseline.egwdffi) == d_test.total(d_test.egwdffi));
           REQUIRE(d_baseline.egwdffi[k] == d_test.egwdffi[k]);
         }
+        REQUIRE(d_baseline.total(d_baseline.qtgw) == d_test.total(d_test.qtgw));
         for (Int k = 0; k < d_baseline.total(d_baseline.qtgw); ++k) {
-          REQUIRE(d_baseline.total(d_baseline.qtgw) == d_test.total(d_test.qtgw));
           REQUIRE(d_baseline.qtgw[k] == d_test.qtgw[k]);
         }
+        REQUIRE(d_baseline.total(d_baseline.dttdf) == d_test.total(d_test.dttdf));
+        REQUIRE(d_baseline.total(d_baseline.dttdf) == d_test.total(d_test.dttke));
+        REQUIRE(d_baseline.total(d_baseline.dttdf) == d_test.total(d_test.ttgw));
         for (Int k = 0; k < d_baseline.total(d_baseline.dttdf); ++k) {
-          REQUIRE(d_baseline.total(d_baseline.dttdf) == d_test.total(d_test.dttdf));
           REQUIRE(d_baseline.dttdf[k] == d_test.dttdf[k]);
-          REQUIRE(d_baseline.total(d_baseline.dttdf) == d_test.total(d_test.dttke));
           REQUIRE(d_baseline.dttke[k] == d_test.dttke[k]);
-          REQUIRE(d_baseline.total(d_baseline.dttdf) == d_test.total(d_test.ttgw));
           REQUIRE(d_baseline.ttgw[k] == d_test.ttgw[k]);
         }
-
       }
     }
     else if (this->m_baseline_action == GENERATE) {
