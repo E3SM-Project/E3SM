@@ -34,7 +34,7 @@ extern "C" {
 
 void gwd_compute_tendencies_from_stress_divergence_c(Int ncol, bool do_taper, Real dt, Real effgw, Int* tend_level, Real* lat, Real* dpm, Real* rdpm, Real* c, Real* ubm, Real* t, Real* nm, Real* xv, Real* yv, Real* tau, Real* gwut, Real* utgw, Real* vtgw);
 
-void gw_init_c(Int pver_in, Int pgwv_in, Real dc_in, Real* cref_in, bool orographic_only, bool do_molec_diff_in, bool tau_0_ubc_in, Int nbot_molec_in, Int ktop_in, Int kbotbg_in, Real fcrit2_in, Real kwv_in, Real gravit_in, Real rair_in, Real* alpha_in);
+void gw_common_init_c(Int pver_in, Int pgwv_in, Real dc_in, Real* cref_in, bool orographic_only, bool do_molec_diff_in, bool tau_0_ubc_in, Int nbot_molec_in, Int ktop_in, Int kbotbg_in, Real fcrit2_in, Real kwv_in, Real gravit_in, Real rair_in, Real* alpha_in);
 
 void gw_prof_c(Int ncol, Real cpair, Real* t, Real* pmid, Real* pint, Real* rhoi, Real* ti, Real* nm, Real* ni);
 
@@ -81,48 +81,77 @@ void vd_lu_decomp_c(Int ncol, Real* ksrf, Real* kv, Real* tmpi, Real* rpdel, Rea
 void vd_lu_solve_c(Int ncol, Real* q, Real* decomp_ca, Real* decomp_cc, Real* decomp_dnom, Real* decomp_ze, Int ntop, Int nbot, Real* cd_top);
 } // extern "C" : end _c decls
 
-// Wrapper around gw_init
-void gw_init(GwInit& init)
+// Inits and finalizes are not intended to be called outside this comp unit
+namespace {
+
+void gw_common_init_f(GwCommonInit& init)
 {
-  gw_init_c(init.pver, init.pgwv, init.dc, init.cref, init.orographic_only, init.do_molec_diff, init.tau_0_ubc, init.nbot_molec, init.ktop, init.kbotbg, init.fcrit2, init.kwv, GWC::gravit, GWC::Rair, init.alpha);
+  // Expects init has already been transitioned to f90
+  gw_common_init_c(init.pver, init.pgwv, init.dc, init.cref, init.orographic_only, init.do_molec_diff, init.tau_0_ubc, init.nbot_molec, init.ktop, init.kbotbg, init.fcrit2, init.kwv, GWC::gravit, GWC::Rair, init.alpha);
 }
 
 // Wrapper around gw_init for cxx
-void gw_init_cxx(GwInit& init)
+void gw_common_init(GwCommonInit& d)
 {
-  using uview_1d = typename GWF::uview_1d<Real>;
+  std::vector<view1dr_d> one_d_ints_in(2);
+  ekat::host_to_device({d.cref, d.alpha}, std::vector<int>{d.pgwv*2 + 1, d.pver + 1}, one_d_ints_in);
+  const auto cref  = one_d_ints_in[0];
+  const auto alpha = one_d_ints_in[1];
+
   GWF::gw_common_init(
-    init.pver,
-    init.pgwv,
-    init.dc,
-    uview_1d(init.cref, init.pgwv*2 + 1),
-    init.orographic_only,
-    init.do_molec_diff,
-    init.tau_0_ubc,
-    init.nbot_molec,
-    init.ktop,
-    init.kbotbg,
-    init.fcrit2,
-    init.kwv,
-    uview_1d(init.alpha, init.pver + 1));
+    d.pver,
+    d.pgwv,
+    d.dc,
+    cref,
+    d.orographic_only,
+    d.do_molec_diff,
+    d.tau_0_ubc,
+    d.nbot_molec,
+    d.ktop,
+    d.kbotbg,
+    d.fcrit2,
+    d.kwv,
+    alpha);
 }
 
-void gw_finalize_cxx(GwInit& init)
+void gw_convect_init_f(GwConvectInitData& d)
 {
-  GWF::gw_common_finalize();
+  // Expects d has already been transitioned to f90
+  gw_common_init_f(d.init);
+  gw_convect_init_c(d.maxh, d.maxuh, d.plev_src_wind, d.mfcc_in);
 }
+
+void gw_convect_init(GwConvectInitData& d)
+{
+  std::vector<view3dr_d> three_d_ints_in(1);
+  ekat::host_to_device({d.mfcc_in}, d.maxh, d.maxuh*2 + 1, d.init.pgwv*2 + 1, three_d_ints_in);
+  const auto mfcc_in  = three_d_ints_in[0];
+
+  gw_common_init(d.init);
+  GWF::gw_convect_init(
+    GWF::s_common_init,
+    d.plev_src_wind,
+    mfcc_in);
+}
+
+void gw_finalize_cxx()
+{
+  GWF::gw_finalize();
+}
+
+} // empty namespace
 
 void gwd_compute_tendencies_from_stress_divergence_f(GwdComputeTendenciesFromStressDivergenceData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>(); // This will shift array data + 1
-  gw_init(d.init);
+  gw_common_init_f(d.init);
   gwd_compute_tendencies_from_stress_divergence_c(d.ncol, d.do_taper, d.dt, d.effgw, d.tend_level, d.lat, d.dpm, d.rdpm, d.c, d.ubm, d.t, d.nm, d.xv, d.yv, d.tau, d.gwut, d.utgw, d.vtgw);
   d.transition<ekat::TransposeDirection::f2c>(); // This will shift array data - 1
 }
 
 void gwd_compute_tendencies_from_stress_divergence(GwdComputeTendenciesFromStressDivergenceData& d)
 {
-  gw_init_cxx(d.init);
+  gw_common_init(d.init);
 
   // create device views and copy
   std::vector<view1di_d> one_d_ints_in(1);
@@ -237,20 +266,20 @@ void gwd_compute_tendencies_from_stress_divergence(GwdComputeTendenciesFromStres
                        std::vector<int>{d.init.pver + 1, 2*d.init.pgwv + 1},
                        three_d_reals_out);
 
-  gw_finalize_cxx(d.init);
+  gw_finalize_cxx();
 }
 
 void gw_prof_f(GwProfData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  gw_init(d.init);
+  gw_common_init_f(d.init);
   gw_prof_c(d.ncol, d.cpair, d.t, d.pmid, d.pint, d.rhoi, d.ti, d.nm, d.ni);
   d.transition<ekat::TransposeDirection::f2c>();
 }
 
 void gw_prof(GwProfData& d)
 {
-  gw_init_cxx(d.init);
+  gw_common_init(d.init);
 
   // create device views and copy
   std::vector<view2dr_d> two_d_reals_in(7);
@@ -315,20 +344,20 @@ void gw_prof(GwProfData& d)
                        std::vector<int>{d.init.pver+1, d.init.pver+1, d.init.pver, d.init.pver+1},
                        two_d_reals_out);
 
-  gw_finalize_cxx(d.init);
+  gw_finalize_cxx();
 }
 
 void momentum_energy_conservation_f(MomentumEnergyConservationData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  gw_init(d.init);
+  gw_common_init_f(d.init);
   momentum_energy_conservation_c(d.ncol, d.tend_level, d.dt, d.taucd, d.pint, d.pdel, d.u, d.v, d.dudt, d.dvdt, d.dsdt, d.utgw, d.vtgw, d.ttgw);
   d.transition<ekat::TransposeDirection::f2c>();
 }
 
 void momentum_energy_conservation(MomentumEnergyConservationData& d)
 {
-  gw_init_cxx(d.init);
+  gw_common_init(d.init);
 
   // create device views and copy
   std::vector<view1di_d> one_d_ints_in(1);
@@ -411,20 +440,20 @@ void momentum_energy_conservation(MomentumEnergyConservationData& d)
   ekat::device_to_host({d.dudt, d.dvdt, d.dsdt, d.utgw, d.vtgw, d.ttgw},
                        d.ncol, d.init.pver, two_d_reals_out);
 
-  gw_finalize_cxx(d.init);
+  gw_finalize_cxx();
 }
 
 void gwd_compute_stress_profiles_and_diffusivities_f(GwdComputeStressProfilesAndDiffusivitiesData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  gw_init(d.init);
+  gw_common_init_f(d.init);
   gwd_compute_stress_profiles_and_diffusivities_c(d.ncol, d.src_level, d.ubi, d.c, d.rhoi, d.ni, d.kvtt, d.t, d.ti, d.piln, d.tau);
   d.transition<ekat::TransposeDirection::f2c>();
 }
 
 void gwd_compute_stress_profiles_and_diffusivities(GwdComputeStressProfilesAndDiffusivitiesData& d)
 {
-  gw_init_cxx(d.init);
+  gw_common_init(d.init);
 
   // create device views and copy
   std::vector<view1di_d> one_d_ints_in(1);
@@ -504,20 +533,20 @@ void gwd_compute_stress_profiles_and_diffusivities(GwdComputeStressProfilesAndDi
   std::vector<view3dr_d> three_d_reals_out = {tau};
   ekat::device_to_host({d.tau}, d.ncol, 2*d.init.pgwv + 1, d.init.pver + 1, three_d_reals_out);
 
-  gw_finalize_cxx(d.init);
+  gw_finalize_cxx();
 }
 
 void gwd_project_tau_f(GwdProjectTauData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  gw_init(d.init);
+  gw_common_init_f(d.init);
   gwd_project_tau_c(d.ncol, d.tend_level, d.tau, d.ubi, d.c, d.xv, d.yv, d.taucd);
   d.transition<ekat::TransposeDirection::f2c>();
 }
 
 void gwd_project_tau(GwdProjectTauData& d)
 {
-  gw_init_cxx(d.init);
+  gw_common_init(d.init);
 
   // create device views and copy
   std::vector<view1di_d> one_d_ints_in(1);
@@ -587,20 +616,20 @@ void gwd_project_tau(GwdProjectTauData& d)
   std::vector<view3dr_d> three_d_reals_out = {taucd};
   ekat::device_to_host({d.taucd}, d.ncol, d.init.pver + 1, 4, three_d_reals_out);
 
-  gw_finalize_cxx(d.init);
+  gw_finalize_cxx();
 }
 
 void gwd_precalc_rhoi_f(GwdPrecalcRhoiData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  gw_init(d.init);
+  gw_common_init_f(d.init);
   gwd_precalc_rhoi_c(d.pcnst, d.ncol, d.dt, d.tend_level, d.pmid, d.pint, d.t, d.gwut, d.ubm, d.nm, d.rdpm, d.c, d.q, d.dse, d.egwdffi, d.qtgw, d.dttdf, d.dttke, d.ttgw);
   d.transition<ekat::TransposeDirection::f2c>();
 }
 
 void gwd_precalc_rhoi(GwdPrecalcRhoiData& d)
 {
-  gw_init_cxx(d.init);
+  gw_common_init(d.init);
 
   // create device views and copy
   std::vector<view1di_d> one_d_ints_in(1);
@@ -722,20 +751,20 @@ void gwd_precalc_rhoi(GwdPrecalcRhoiData& d)
   std::vector<view3dr_d> three_d_reals_out = {qtgw};
   ekat::device_to_host({d.qtgw}, d.ncol, d.init.pver, d.pcnst, three_d_reals_out);
 
-  gw_finalize_cxx(d.init);
+  gw_finalize_cxx();
 }
 
 void gw_drag_prof_f(GwDragProfData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  gw_init(d.init);
+  gw_common_init_f(d.init);
   gw_drag_prof_c(d.pcnst, d.ncol, d.src_level, d.tend_level, d.do_taper, d.dt, d.lat, d.t, d.ti, d.pmid, d.pint, d.dpm, d.rdpm, d.piln, d.rhoi, d.nm, d.ni, d.ubm, d.ubi, d.xv, d.yv, d.effgw, d.c, d.kvtt, d.q, d.dse, d.tau, d.utgw, d.vtgw, d.ttgw, d.qtgw, d.taucd, d.egwdffi, d.gwut, d.dttdf, d.dttke);
   d.transition<ekat::TransposeDirection::f2c>();
 }
 
 void gw_drag_prof(GwDragProfData& d)
 {
-  gw_init_cxx(d.init);
+  gw_common_init(d.init);
 
   // create device views and copy
   std::vector<view1di_d> one_d_ints_in(2);
@@ -930,12 +959,12 @@ void gw_drag_prof(GwDragProfData& d)
                        std::vector<int>{d.init.pver + 1,   d.pcnst,     4,               d.init.pgwv*2 + 1},
                        three_d_reals_out);
 
-  gw_finalize_cxx(d.init);
+  gw_finalize_cxx();
 }
 
 void gw_front_init(GwFrontInitData& d)
 {
-  gw_init(d.init);
+  gw_common_init_f(d.init);
   gw_front_init_c(d.taubgnd, d.frontgfc_in, d.kfront_in);
 }
 
@@ -963,18 +992,10 @@ void gw_cm_src(GwCmSrcData& d)
   d.transition<ekat::TransposeDirection::f2c>();
 }
 
-void gw_convect_init(GwConvectInitData& d)
-{
-  d.transition<ekat::TransposeDirection::c2f>();
-  gw_init(d.init);
-  gw_convect_init_c(d.maxh, d.maxuh, d.plev_src_wind, d.mfcc_in);
-  d.transition<ekat::TransposeDirection::f2c>();
-}
-
 void gw_convect_project_winds(GwConvectProjectWindsData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  gw_convect_init(d.init);
+  gw_convect_init_f(d.init);
   gw_convect_project_winds_c(d.ncol, d.u, d.v, d.xv, d.yv, d.ubm, d.ubi);
   d.transition<ekat::TransposeDirection::f2c>();
 }
@@ -982,7 +1003,7 @@ void gw_convect_project_winds(GwConvectProjectWindsData& d)
 void gw_heating_depth(GwHeatingDepthData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  gw_convect_init(d.init);
+  gw_convect_init_f(d.init);
   gw_heating_depth_c(d.ncol, d.maxq0_conversion_factor, d.hdepth_scaling_factor, d.use_gw_convect_old, d.zm, d.netdt, d.mini, d.maxi, d.hdepth, d.maxq0_out, d.maxq0);
   d.transition<ekat::TransposeDirection::f2c>();
 }
@@ -990,7 +1011,7 @@ void gw_heating_depth(GwHeatingDepthData& d)
 void gw_storm_speed(GwStormSpeedData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  gw_convect_init(d.init);
+  gw_convect_init_f(d.init);
   gw_storm_speed_c(d.ncol, d.storm_speed_min, d.ubm, d.mini, d.maxi, d.storm_speed, d.uh, d.umin, d.umax);
   d.transition<ekat::TransposeDirection::f2c>();
 }
@@ -998,7 +1019,7 @@ void gw_storm_speed(GwStormSpeedData& d)
 void gw_convect_gw_sources(GwConvectGwSourcesData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  gw_convect_init(d.init);
+  gw_convect_init_f(d.init);
   gw_convect_gw_sources_c(d.ncol, d.lat, d.hdepth_min, d.hdepth, d.mini, d.maxi, d.netdt, d.uh, d.storm_speed, d.maxq0, d.umin, d.umax, d.tau);
   d.transition<ekat::TransposeDirection::f2c>();
 }
@@ -1006,7 +1027,7 @@ void gw_convect_gw_sources(GwConvectGwSourcesData& d)
 void gw_beres_src(GwBeresSrcData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  gw_convect_init(d.init);
+  gw_convect_init_f(d.init);
   gw_beres_src_c(d.ncol, d.lat, d.u, d.v, d.netdt, d.zm, d.src_level, d.tend_level, d.tau, d.ubm, d.ubi, d.xv, d.yv, d.c, d.hdepth, d.maxq0_out, d.maxq0_conversion_factor, d.hdepth_scaling_factor, d.hdepth_min, d.storm_speed_min, d.use_gw_convect_old);
   d.transition<ekat::TransposeDirection::f2c>();
 }
@@ -1014,14 +1035,14 @@ void gw_beres_src(GwBeresSrcData& d)
 void gw_ediff_f(GwEdiffData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  gw_init(d.init);
+  gw_common_init_f(d.init);
   gw_ediff_c(d.ncol, d.kbot, d.ktop, d.tend_level, d.gwut, d.ubm, d.nm, d.rho, d.dt, GWC::gravit, d.pmid, d.rdpm, d.c, d.egwdffi, d.decomp_ca, d.decomp_cc, d.decomp_dnom, d.decomp_ze);
   d.transition<ekat::TransposeDirection::f2c>();
 }
 
 void gw_ediff(GwEdiffData& d)
 {
-  gw_init_cxx(d.init);
+  gw_common_init(d.init);
 
   // create device views and copy
   std::vector<view1di_d> one_d_ints_in(1);
@@ -1125,20 +1146,20 @@ void gw_ediff(GwEdiffData& d)
                          d.init.pver},
                        two_d_reals_out);
 
-  gw_finalize_cxx(d.init);
+  gw_finalize_cxx();
 }
 
 void gw_diff_tend_f(GwDiffTendData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  gw_init(d.init);
+  gw_common_init_f(d.init);
   gw_diff_tend_c(d.ncol, d.kbot, d.ktop, d.q, d.dt, d.decomp_ca, d.decomp_cc, d.decomp_dnom, d.decomp_ze, d.dq);
   d.transition<ekat::TransposeDirection::f2c>();
 }
 
 void gw_diff_tend(GwDiffTendData& d)
 {
-  gw_init_cxx(d.init);
+  gw_common_init(d.init);
 
   // create device views and copy
   std::vector<view2dr_d> two_d_reals_in(6);
@@ -1192,13 +1213,13 @@ void gw_diff_tend(GwDiffTendData& d)
   std::vector<view2dr_d> two_d_reals_out = {dq};
   ekat::device_to_host({d.dq}, d.ncol, d.init.pver, two_d_reals_out);
 
-  gw_finalize_cxx(d.init);
+  gw_finalize_cxx();
 }
 
 void gw_oro_src(GwOroSrcData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  gw_init(d.init);
+  gw_common_init_f(d.init);
   gw_oro_init_c();
   gw_oro_src_c(d.ncol, d.u, d.v, d.t, d.sgh, d.pmid, d.pint, d.dpm, d.zm, d.nm, d.src_level, d.tend_level, d.tau, d.ubm, d.ubi, d.xv, d.yv, d.c);
   d.transition<ekat::TransposeDirection::f2c>();
@@ -1207,14 +1228,14 @@ void gw_oro_src(GwOroSrcData& d)
 void vd_lu_decomp_f(VdLuDecompData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  gw_init(d.init);
+  gw_common_init_f(d.init);
   vd_lu_decomp_c(d.ncol, d.ksrf, d.kv, d.tmpi, d.rpdel, d.ztodt, GWC::gravit, d.cc_top, d.ntop, d.nbot, d.decomp_ca, d.decomp_cc, d.decomp_dnom, d.decomp_ze);
   d.transition<ekat::TransposeDirection::f2c>();
 }
 
 void vd_lu_decomp(VdLuDecompData& d)
 {
-  gw_init_cxx(d.init);
+  gw_common_init(d.init);
 
   // create device views and copy
   std::vector<view1dr_d> one_d_reals_in(2);
@@ -1290,20 +1311,20 @@ void vd_lu_decomp(VdLuDecompData& d)
                        d.ncol, d.init.pver,
                        two_d_reals_out);
 
-  gw_finalize_cxx(d.init);
+  gw_finalize_cxx();
 }
 
 void vd_lu_solve_f(VdLuSolveData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  gw_init(d.init);
+  gw_common_init_f(d.init);
   vd_lu_solve_c(d.ncol, d.q, d.decomp_ca, d.decomp_cc, d.decomp_dnom, d.decomp_ze, d.ntop, d.nbot, d.cd_top);
   d.transition<ekat::TransposeDirection::f2c>();
 }
 
 void vd_lu_solve(VdLuSolveData& d)
 {
-  gw_init_cxx(d.init);
+  gw_common_init(d.init);
 
   // create device views and copy
   std::vector<view1dr_d> one_d_reals_in(1);
@@ -1359,7 +1380,7 @@ void vd_lu_solve(VdLuSolveData& d)
   std::vector<view2dr_d> two_d_reals_out = {q};
   ekat::device_to_host({d.q}, d.ncol, d.init.pver, two_d_reals_out);
 
-  gw_finalize_cxx(d.init);
+  gw_finalize_cxx();
 }
 
 // end _c impls

@@ -15,7 +15,7 @@ module gw_iso_c
 
 contains
 
-  subroutine gw_init_c(pver_in, pgwv_in, dc_in, cref_in, orographic_only, do_molec_diff_in, tau_0_ubc_in, nbot_molec_in, ktop_in, kbotbg_in, fcrit2_in, kwv_in, gravit_in, rair_in, alpha_in) bind(C)
+  subroutine gw_common_init_c(pver_in, pgwv_in, dc_in, cref_in, orographic_only, do_molec_diff_in, tau_0_ubc_in, nbot_molec_in, ktop_in, kbotbg_in, fcrit2_in, kwv_in, gravit_in, rair_in, alpha_in) bind(C)
     use gw_common, only : gw_common_init
 
     integer(kind=c_int) , value, intent(in) :: pver_in, pgwv_in, nbot_molec_in, ktop_in, kbotbg_in
@@ -27,7 +27,7 @@ contains
     character(len=128) :: errstring
 
     call gw_common_init(pver_in, pgwv_in, dc_in, cref_in, orographic_only, do_molec_diff_in, tau_0_ubc_in, nbot_molec_in, ktop_in, kbotbg_in, fcrit2_in, kwv_in, gravit_in, rair_in, alpha_in, errstring)
-  end subroutine gw_init_c
+  end subroutine gw_common_init_c
 
   subroutine gwd_compute_tendencies_from_stress_divergence_c(ncol, do_taper, dt, effgw, tend_level, lat, dpm, rdpm, c, ubm, t, nm, xv, yv, tau, gwut, utgw, vtgw) bind(C)
     use gw_common, only : gwd_compute_tendencies_from_stress_divergence, pver, pgwv

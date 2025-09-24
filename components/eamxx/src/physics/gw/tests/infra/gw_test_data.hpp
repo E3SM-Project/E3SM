@@ -10,7 +10,8 @@
 #include <memory>   // for shared_ptr
 
 //
-// Bridge functions to call fortran version of gw functions from C++
+// Bridge functions to call fortran version of gw functions from C++. The structs are host
+// test data that supports random generation and transition from CXX to f90 and back.
 //
 
 namespace scream {
@@ -18,7 +19,7 @@ namespace gw {
 
 // The Data struct is special; it is used to do gw initialization, which
 // must be called before any gw function.
-struct GwInit : public PhysicsTestData {
+struct GwCommonInit : public PhysicsTestData {
   // Inputs
   Int pver, pgwv;
   Real dc;
@@ -27,7 +28,7 @@ struct GwInit : public PhysicsTestData {
   Real fcrit2, kwv;
   Real *cref, *alpha;
 
-  GwInit(Int pver_, Int pgwv_, Real dc_, bool orographic_only_, bool do_molec_diff_, bool tau_0_ubc_, Int nbot_molec_, Int ktop_, Int kbotbg_, Real fcrit2_, Real kwv_) :
+  GwCommonInit(Int pver_, Int pgwv_, Real dc_, bool orographic_only_, bool do_molec_diff_, bool tau_0_ubc_, Int nbot_molec_, Int ktop_, Int kbotbg_, Real fcrit2_, Real kwv_) :
     PhysicsTestData({
       {pgwv_*2 + 1},
       {pver_ + 1}
@@ -47,7 +48,7 @@ struct GwInit : public PhysicsTestData {
     assert(nbot_molec >= ktop);
   }
 
-  PTD_STD_DEF(GwInit, 11, pver, pgwv, dc, orographic_only, do_molec_diff, tau_0_ubc, nbot_molec, ktop, kbotbg, fcrit2, kwv);
+  PTD_STD_DEF(GwCommonInit, 11, pver, pgwv, dc, orographic_only, do_molec_diff, tau_0_ubc, nbot_molec, ktop, kbotbg, fcrit2, kwv);
 
   template <ekat::TransposeDirection::Enum D>
   void transition()
@@ -66,7 +67,7 @@ struct GwdComputeTendenciesFromStressDivergenceData : public PhysicsTestData {
   Real dt, effgw;
   Int *tend_level;
   Real *lat, *dpm, *rdpm, *c, *ubm, *t, *nm, *xv, *yv;
-  GwInit init;
+  GwCommonInit init;
 
   // Inputs/Outputs
   Real *tau;
@@ -74,7 +75,7 @@ struct GwdComputeTendenciesFromStressDivergenceData : public PhysicsTestData {
   // Outputs
   Real *gwut, *utgw, *vtgw;
 
-  GwdComputeTendenciesFromStressDivergenceData(Int ncol_, bool do_taper_, Real dt_, Real effgw_, GwInit init_) :
+  GwdComputeTendenciesFromStressDivergenceData(Int ncol_, bool do_taper_, Real dt_, Real effgw_, GwCommonInit init_) :
     PhysicsTestData({
       {ncol_},
       {ncol_, init_.pver},
@@ -113,12 +114,12 @@ struct GwProfData : public PhysicsTestData {
   Int ncol;
   Real cpair;
   Real *t, *pmid, *pint;
-  GwInit init;
+  GwCommonInit init;
 
   // Outputs
   Real *rhoi, *ti, *nm, *ni;
 
-  GwProfData(Int ncol_, Real cpair_, GwInit init_) :
+  GwProfData(Int ncol_, Real cpair_, GwCommonInit init_) :
     PhysicsTestData({
       {ncol_, init_.pver},
       {ncol_, init_.pver + 1}
@@ -148,12 +149,12 @@ struct MomentumEnergyConservationData : public PhysicsTestData {
   Int *tend_level;
   Real dt;
   Real *taucd, *pint, *pdel, *u, *v;
-  GwInit init;
+  GwCommonInit init;
 
   // Inputs/Outputs
   Real *dudt, *dvdt, *dsdt, *utgw, *vtgw, *ttgw;
 
-  MomentumEnergyConservationData(Int ncol_, Real dt_, GwInit init_) :
+  MomentumEnergyConservationData(Int ncol_, Real dt_, GwCommonInit init_) :
     PhysicsTestData({
       {ncol_, init_.pver + 1, 4},
       {ncol_, init_.pver + 1},
@@ -187,12 +188,12 @@ struct GwdComputeStressProfilesAndDiffusivitiesData : public PhysicsTestData {
   Int ncol;
   Int *src_level;
   Real *ubi, *c, *rhoi, *ni, *kvtt, *t, *ti, *piln;
-  GwInit init;
+  GwCommonInit init;
 
   // Inputs/Outputs
   Real *tau;
 
-  GwdComputeStressProfilesAndDiffusivitiesData(Int ncol_, GwInit init_) :
+  GwdComputeStressProfilesAndDiffusivitiesData(Int ncol_, GwCommonInit init_) :
     PhysicsTestData({
       {ncol_, init_.pver + 1},
       {ncol_, init_.pgwv*2 + 1},
@@ -228,12 +229,12 @@ struct GwdProjectTauData : public PhysicsTestData {
   Int ncol;
   Int *tend_level;
   Real *tau, *ubi, *c, *xv, *yv;
-  GwInit init;
+  GwCommonInit init;
 
   // Outputs
   Real *taucd;
 
-  GwdProjectTauData(Int ncol_, GwInit init_) :
+  GwdProjectTauData(Int ncol_, GwCommonInit init_) :
     PhysicsTestData({
       {ncol_, init_.pgwv*2 + 1, init_.pver + 1},
       {ncol_, init_.pver + 1},
@@ -272,12 +273,12 @@ struct GwdPrecalcRhoiData : public PhysicsTestData {
   Real dt;
   Int *tend_level;
   Real *pmid, *pint, *t, *gwut, *ubm, *nm, *rdpm, *c, *q, *dse;
-  GwInit init;
+  GwCommonInit init;
 
   // Outputs
   Real *egwdffi, *qtgw, *dttdf, *dttke, *ttgw;
 
-  GwdPrecalcRhoiData(Int pcnst_, Int ncol_, Real dt_, GwInit init_) :
+  GwdPrecalcRhoiData(Int pcnst_, Int ncol_, Real dt_, GwCommonInit init_) :
     PhysicsTestData({
       {ncol_, init_.pver},
       {ncol_, init_.pver + 1},
@@ -317,7 +318,7 @@ struct GwDragProfData : public PhysicsTestData {
   bool do_taper;
   Real dt, effgw;
   Real *lat, *t, *ti, *pmid, *pint, *dpm, *rdpm, *piln, *rhoi, *nm, *ni, *ubm, *ubi, *xv, *yv, *c, *kvtt, *q, *dse;
-  GwInit init;
+  GwCommonInit init;
 
   // Inputs/Outputs
   Real *tau;
@@ -325,7 +326,7 @@ struct GwDragProfData : public PhysicsTestData {
   // Outputs
   Real *utgw, *vtgw, *ttgw, *qtgw, *taucd, *egwdffi, *gwut, *dttdf, *dttke;
 
-  GwDragProfData(Int pcnst_, Int ncol_, bool do_taper_, Real dt_, Real effgw_, GwInit init_) :
+  GwDragProfData(Int pcnst_, Int ncol_, bool do_taper_, Real dt_, Real effgw_, GwCommonInit init_) :
     PhysicsTestData({
       // 1d
       {ncol_},
@@ -375,9 +376,9 @@ struct GwFrontInitData : public PhysicsTestData{
   // Inputs
   Real taubgnd, frontgfc_in;
   Int kfront_in;
-  GwInit init;
+  GwCommonInit init;
 
-  GwFrontInitData(Real taubgnd_, Real frontgfc_in_, Int kfront_in_, GwInit init_) :
+  GwFrontInitData(Real taubgnd_, Real frontgfc_in_, Int kfront_in_, GwCommonInit init_) :
     PhysicsTestData({}, {}, {}),
     taubgnd(taubgnd_),
     frontgfc_in(frontgfc_in_),
@@ -514,9 +515,9 @@ struct GwConvectInitData : public PhysicsTestData{
   Int maxh, maxuh;
   Real plev_src_wind;
   Real *mfcc_in;
-  GwInit init;
+  GwCommonInit init;
 
-  GwConvectInitData(Int maxh_, Int maxuh_, Real plev_src_wind_, GwInit init_) :
+  GwConvectInitData(Int maxh_, Int maxuh_, Real plev_src_wind_, GwCommonInit init_) :
     PhysicsTestData({
       {maxh_, maxuh_*2 + 1, init_.pgwv*2 + 1}
     },
@@ -740,13 +741,13 @@ struct GwEdiffData : public PhysicsTestData {
   Int *tend_level;
   Real *gwut, *ubm, *nm, *rho, *pmid, *rdpm, *c;
   Real dt;
-  GwInit init;
+  GwCommonInit init;
 
   // Outputs
   Real *egwdffi;
   Real *decomp_ca, *decomp_cc, *decomp_dnom, *decomp_ze;
 
-  GwEdiffData(Int ncol_, Int kbot_, Int ktop_, Real dt_, GwInit init_) :
+  GwEdiffData(Int ncol_, Int kbot_, Int ktop_, Real dt_, GwCommonInit init_) :
     PhysicsTestData({
       {ncol_, init_.pver, 2*init_.pgwv + 1},
       {ncol_, init_.pver},
@@ -786,12 +787,12 @@ struct GwDiffTendData : public PhysicsTestData {
   Real *q;
   Real dt;
   Real *decomp_ca, *decomp_cc, *decomp_dnom, *decomp_ze;
-  GwInit init;
+  GwCommonInit init;
 
   // Outputs
   Real *dq;
 
-  GwDiffTendData(Int ncol_, Int kbot_, Int ktop_, Real dt_, GwInit init_) :
+  GwDiffTendData(Int ncol_, Int kbot_, Int ktop_, Real dt_, GwCommonInit init_) :
     PhysicsTestData({
       {ncol_, init_.pver}
     },
@@ -819,13 +820,13 @@ struct GwOroSrcData : public PhysicsTestData {
   // Inputs
   Int ncol;
   Real *u, *v, *t, *sgh, *pmid, *pint, *dpm, *zm, *nm;
-  GwInit init;
+  GwCommonInit init;
 
   // Outputs
   Int *src_level, *tend_level;
   Real *tau, *ubm, *ubi, *xv, *yv, *c;
 
-  GwOroSrcData(Int ncol_, GwInit init_) :
+  GwOroSrcData(Int ncol_, GwCommonInit init_) :
     PhysicsTestData({
       {ncol_, init_.pver},
       {ncol_},
@@ -863,12 +864,12 @@ struct VdLuDecompData : public PhysicsTestData {
   Int ncol, ntop, nbot;
   Real *ksrf, *kv, *tmpi, *rpdel, *cc_top;
   Real ztodt;
-  GwInit init;
+  GwCommonInit init;
 
   // Outputs
   Real *decomp_ca, *decomp_cc, *decomp_dnom, *decomp_ze;
 
-  VdLuDecompData(Int ncol_, Int ntop_, Int nbot_, Real ztodt_, GwInit init_) :
+  VdLuDecompData(Int ncol_, Int ntop_, Int nbot_, Real ztodt_, GwCommonInit init_) :
     PhysicsTestData({
       {ncol_},
       {ncol_, init_.pver + 1},
@@ -900,12 +901,12 @@ struct VdLuSolveData : public PhysicsTestData {
   // Inputs
   Int ncol, ntop, nbot;
   Real *decomp_ca, *decomp_cc, *decomp_dnom, *decomp_ze, *cd_top;
-  GwInit init;
+  GwCommonInit init;
 
   // Inputs/Outputs
   Real *q;
 
-  VdLuSolveData(Int ncol_, Int ntop_, Int nbot_, GwInit init_) :
+  VdLuSolveData(Int ncol_, Int ntop_, Int nbot_, GwCommonInit init_) :
     PhysicsTestData({
       {ncol_, init_.pver},
       {ncol_}
@@ -963,9 +964,6 @@ void vd_lu_decomp_f(VdLuDecompData& d);
 void vd_lu_decomp(VdLuDecompData& d);
 void vd_lu_solve_f(VdLuSolveData& d);
 void vd_lu_solve(VdLuSolveData& d);
-
-extern "C" { // _f function decls
-}
 
 }  // namespace gw
 }  // namespace scream

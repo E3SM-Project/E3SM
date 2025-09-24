@@ -143,6 +143,25 @@ struct Functions
     Real tndmax; // = huge(1._r8)
   };
 
+  struct GwConvectInit {
+    GwConvectInit() : initialized(false) {}
+
+    // Tell us if initialize has been called
+    bool initialized;
+
+    // Dimension for heating depth.
+    int maxh;
+
+    // Dimension for mean wind in heating.
+    int maxuh;
+
+    // Index for level for storm/steering flow (usually 700 mb)
+    int k_src_wind;
+
+    // Table of source spectra.
+    view_3d<Real> mfcc;
+  };
+
   KOKKOS_INLINE_FUNCTION
   static void midpoint_interp(
     const MemberType& team,
@@ -175,10 +194,17 @@ struct Functions
     const Real& kwv_in,
     const uview_1d<const Real>& alpha_in);
 
-  static void gw_common_finalize()
+  static void gw_convect_init(
+    // Inputs
+    const GwCommonInit& init,
+    const Real& plev_src_wind,
+    const uview_3d<const Real>& mfcc_in);
+
+  static void gw_finalize()
   {
     s_common_init.cref  = decltype(s_common_init.cref)();
     s_common_init.alpha = decltype(s_common_init.alpha)();
+    s_convect_init.mfcc = decltype(s_convect_init.mfcc)();
   }
 
   //
@@ -611,6 +637,8 @@ struct Functions
   // --------- Members ---------
   //
   inline static GwCommonInit s_common_init;
+  inline static GwConvectInit s_convect_init;
+
 }; // struct Functions
 
 } // namespace gw
@@ -641,5 +669,6 @@ struct Functions
 # include "impl/gw_gw_common_init_impl.hpp"
 # include "impl/gw_vd_lu_decomp_impl.hpp"
 # include "impl/gw_vd_lu_solve_impl.hpp"
+# include "impl/gw_gw_convect_init_impl.hpp"
 #endif // GPU && !KOKKOS_ENABLE_*_RELOCATABLE_DEVICE_CODE
 #endif // P3_FUNCTIONS_HPP
