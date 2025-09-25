@@ -330,6 +330,9 @@ class TestGenBoilerBasics(unittest.TestCase):
             {},
             {}))
 
+        # get_list_of_lists
+        self.assertEqual(get_list_of_lists(['a', 'b', 'c'], '  ').splitlines(),
+                         ['{', '  {a},', '  {b},', '  {c}', '}'])
 
 ###############################################################################
 class TestGenBoiler(unittest.TestCase):
