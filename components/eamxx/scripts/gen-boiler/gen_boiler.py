@@ -1,7 +1,6 @@
 from utils import expect
 from git_utils import get_git_toplevel_dir
 
-from collections import OrderedDict
 import re
 from pathlib import Path
 
@@ -84,7 +83,7 @@ template<typename S, typename D>
 # piece map. maps the name of a piece of boilerplate that needs to be genereate to:
 #   (filepath (relative to cxx_root))
 FILEPATH, FILECREATE, INSERT_REGEX, ID_SELF_BEGIN_REGEX, ID_SELF_END_REGEX, DESC = range(6)
-PIECES = OrderedDict([
+PIECES = dict([
     ("f90_c2f_bind", (
         lambda phys, sub, gb: f"tests/infra/{phys}_iso_c.f90",
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "f90_c2f_bind"),
@@ -125,9 +124,18 @@ PIECES = OrderedDict([
         lambda phys, sub, gb: f"tests/infra/{phys}_test_data.cpp",
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_c2f_glue_impl"),
         lambda phys, sub, gb: re.compile(r"^\s*// end _c impls"), # reqs special comment
+        lambda phys, sub, gb: get_cxx_function_begin_regex(sub + "_f"), # cxx(data)
+        lambda phys, sub, gb: get_cxx_close_block_regex(at_line_start=True), # terminating }
+        lambda *x           : "The cxx to c function implementation(<name>_f(Data))"
+    )),
+
+    ("cxx_t2cxx_glue_impl" , (
+        lambda phys, sub, gb: f"tests/infra/{phys}_test_data.cpp",
+        lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_t2cxx_glue_impl"),
+        lambda phys, sub, gb: re.compile(r"^\s*// end _c impls"), # reqs special comment
         lambda phys, sub, gb: get_cxx_function_begin_regex(sub), # cxx(data)
         lambda phys, sub, gb: get_cxx_close_block_regex(at_line_start=True), # terminating }
-        lambda *x           : "The cxx to c function implementation(<name>(Data))"
+        lambda *x           : "The test data to CXX function implementation(<name>(Data))"
     )),
 
     ("cxx_c2f_data"  , (
@@ -156,6 +164,15 @@ PIECES = OrderedDict([
     #     lambda phys, sub, gb: get_cxx_close_block_regex(at_line_start=True), # terminating }
     #     lambda *x           : "The f90 to cxx function implementation(<name>_f)"
     # )),
+
+    ("cxx_f2c_bind_impl"  , (
+        lambda phys, sub, gb: f"tests/infra/{phys}_test_data.cpp",
+        lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_f2c_bind_impl"),
+        lambda phys, sub, gb: get_namespace_close_regex(phys),          # insert at end of namespace
+        lambda phys, sub, gb: get_cxx_function_begin_regex(sub + "_f"),      # cxx_f
+        lambda phys, sub, gb: get_cxx_close_block_regex(at_line_start=True), # terminating }
+        lambda *x           : "The f90 to cxx function implementation(<name>_f)"
+    )),
 
     ("cxx_func_decl", (
         lambda phys, sub, gb: f"{phys}_functions.hpp",
@@ -262,52 +279,6 @@ PHYSICS = {
     ),
 }
 
-# A good set of arg data for unit testing
-UT_ARG_DATA = [
-    ("foo1", "real", "in", ("shcol",)),
-    ("foo2", "real", "in", ("shcol",)),
-    ("bar1", "real", "in", ("shcol","nlev")),
-    ("bar2", "real", "in", ("shcol","nlev")),
-    ("bak1", "real", "in", ("shcol","nlevi")),
-    ("bak2", "real", "in", ("shcol","nlevi")),
-    ("tracerd1", "real", "in", ("shcol","nlev", "ntracers")),
-    ("tracerd2", "real", "in", ("shcol","nlev", "ntracers")),
-    ("gag", "real", "in", None),
-    ("baz", "real", "inout", ("shcol",)),
-    ("bag", "integer", "in", ("shcol",)),
-    ("bab1", "integer", "out", None),
-    ("bab2", "integer", "out", None),
-    ("val", "logical", "in", None),
-    ("vals", "logical", "in", ("shcol",)),
-    ("shcol", "integer", "in", None),
-    ("nlev", "integer", "in", None),
-    ("nlevi", "integer", "in", None),
-    ("ntracers", "integer", "in", None),
-    ("ball1", "integer", "out", ("shcol",)),
-    ("ball2", "integer", "out", ("shcol",)),
-]
-
-UT_ARG_DATA_ALL_SCALAR = [
-    ("foo1", "real", "in", None),
-    ("foo2", "real", "in", None),
-    ("bar1", "real", "inout", None),
-    ("bar2", "real", "inout", None),
-    ("baz1", "real", "out", None),
-    ("baz2", "real", "out", None),
-    ("gag1", "integer", "in", None),
-    ("gag2", "integer", "in", None),
-    ("gal1", "integer", "inout", None),
-    ("gal2", "integer", "inout", None),
-    ("bal1", "integer", "out", None),
-    ("bal2", "integer", "out", None),
-    ("bit1", "logical", "in", None),
-    ("bit2", "logical", "in", None),
-    ("gut1", "logical", "inout", None),
-    ("gut2", "logical", "inout", None),
-    ("gat1", "logical", "out", None),
-    ("gat2", "logical", "out", None),
-]
-
 #
 # Free functions
 #
@@ -321,18 +292,7 @@ def get_piece_description(piece):
 def get_subroutine_begin_regex(name):
 ###############################################################################
     """
-    >>> bool(get_subroutine_begin_regex("fake_sub").match("subroutine fake_sub("))
-    True
-    >>> bool(get_subroutine_begin_regex("fake_sub").match("subroutine fake_sub_2("))
-    False
-    >>> bool(get_subroutine_begin_regex("fake_sub").match("  subroutine  fake_sub ("))
-    True
-    >>> bool(get_subroutine_begin_regex("fake_sub").match("  subroutine  fake_sub ( one, two )"))
-    True
-    >>> bool(get_subroutine_begin_regex("fake_sub").match("! subroutine fake_sub("))
-    False
-    >>> bool(get_subroutine_begin_regex("fake_sub").match("subroutine fake_sub"))
-    False
+    Get a regex object to match a fortran subroutine with a certain name
     """
     subroutine_begin_regex_str = fr"^\s*subroutine\s+{name}\s*[(]"
     return re.compile(subroutine_begin_regex_str)
@@ -341,20 +301,7 @@ def get_subroutine_begin_regex(name):
 def get_function_begin_regex(name):
 ###############################################################################
     """
-    >>> get_function_begin_regex("fake_sub").match("function fake_sub(foo, bar) result(baz)").groups()[-1]
-    'baz'
-    >>> get_function_begin_regex("fake_sub").match("pure function fake_sub(foo, bar) result(baz)").groups()[-1]
-    'baz'
-    >>> get_function_begin_regex("fake_sub").match("pure function fake_sub() result(baz)").groups()[-1]
-    'baz'
-    >>> get_function_begin_regex("fake_sub").match("  pure  function  fake_sub ( foo, bar )   result (  baz)").groups()[-1]
-    'baz'
-    >>> bool(get_function_begin_regex("fake_sub").match("function fake_sub2(foo, bar) result(baz)"))
-    False
-    >>> bool(get_function_begin_regex("fake_sub").match("! function fake_sub(foo, bar) result(baz)"))
-    False
-    >>> bool(get_function_begin_regex("fake_sub").match("end function fake_sub"))
-    False
+    Get a regex to match a fortran function with a certain name
     """
     function_begin_regex_str = fr"^\s*((pure\s+)?function)\s+{name}\s*[(].*result\s*[(]\s*([^) ]+)"
     return re.compile(function_begin_regex_str)
@@ -363,18 +310,7 @@ def get_function_begin_regex(name):
 def get_subroutine_end_regex(name):
 ###############################################################################
     """
-    >>> bool(get_subroutine_end_regex("fake_sub").match("end subroutine fake_sub"))
-    True
-    >>> bool(get_subroutine_end_regex("fake_sub").match("end subroutine fake_sub_2"))
-    False
-    >>> bool(get_subroutine_end_regex("fake_sub").match("  end  subroutine  fake_sub "))
-    True
-    >>> bool(get_subroutine_end_regex("fake_sub").match("!end  subroutine  fake_sub "))
-    False
-    >>> bool(get_subroutine_end_regex("fake_sub").match("end function fake_sub"))
-    True
-    >>> bool(get_subroutine_end_regex("fake_sub").match("end function fake_sub_2"))
-    False
+    Get a regex to match the end of a fortran function with a certain name
     """
     subroutine_end_regex_str = fr"^\s*end\s+(subroutine|function)\s+{name}\s*$"
     return re.compile(subroutine_end_regex_str)
@@ -383,22 +319,7 @@ def get_subroutine_end_regex(name):
 def get_cxx_function_begin_regex(name, static=False, template=None):
 ###############################################################################
     """
-    >>> bool(get_cxx_function_begin_regex("fake_sub").match("void fake_sub("))
-    True
-    >>> bool(get_cxx_function_begin_regex("fake_sub").match("void fake_sub_2("))
-    False
-    >>> bool(get_cxx_function_begin_regex("fake_sub").match("  void  fake_sub ("))
-    True
-    >>> bool(get_cxx_function_begin_regex("fake_sub").match("  void  fake_sub ( one, two )"))
-    True
-    >>> bool(get_cxx_function_begin_regex("fake_sub").match("// void fake_sub("))
-    False
-    >>> bool(get_cxx_function_begin_regex("fake_sub").match("void fake_sub"))
-    False
-    >>> bool(get_cxx_function_begin_regex("fake_sub", static=True).match("static void fake_sub("))
-    True
-    >>> bool(get_cxx_function_begin_regex("fake_sub", template="Foo<T>").match("void Foo<T>::fake_sub("))
-    True
+    Get a regex to match a cxx function with a certain name and properties
     """
     static_regex_str = r"static\s+" if static else ""
     template_regex_str = fr"{template}::" if template else ""
@@ -409,32 +330,7 @@ def get_cxx_function_begin_regex(name, static=False, template=None):
 def get_cxx_close_block_regex(semicolon=False, comment=None, at_line_start=False):
 ###############################################################################
     """
-    >>> bool(get_cxx_close_block_regex().match("}"))
-    True
-    >>> bool(get_cxx_close_block_regex(at_line_start=True).match("}"))
-    True
-    >>> bool(get_cxx_close_block_regex().match(" } "))
-    True
-    >>> bool(get_cxx_close_block_regex(at_line_start=True).match(" }; "))
-    False
-    >>> bool(get_cxx_close_block_regex(at_line_start=True).match(" } "))
-    False
-    >>> bool(get_cxx_close_block_regex(comment="hi").match(" } "))
-    False
-    >>> bool(get_cxx_close_block_regex(comment="hi").match(" } // hi"))
-    True
-    >>> bool(get_cxx_close_block_regex(comment="hi").match("} // hi  "))
-    True
-    >>> bool(get_cxx_close_block_regex(semicolon=True).match(" } "))
-    False
-    >>> bool(get_cxx_close_block_regex(semicolon=True).match(" } ; "))
-    True
-    >>> bool(get_cxx_close_block_regex(semicolon=True).match("};"))
-    True
-    >>> bool(get_cxx_close_block_regex(semicolon=True, comment="hi", at_line_start=True).match("};  // hi"))
-    True
-    >>> bool(get_cxx_close_block_regex(semicolon=True, comment="hi", at_line_start=True).match("};  // hi there"))
-    False
+    Get a regex to match the closing of a block with certain properties
     """
     semicolon_regex_str = r"\s*;" if semicolon else ""
     line_start_regex_str = "" if at_line_start else r"\s*"
@@ -446,10 +342,7 @@ def get_cxx_close_block_regex(semicolon=False, comment=None, at_line_start=False
 def get_namespace_close_regex(namespace):
 ###############################################################################
     """
-    >>> bool(get_namespace_close_regex("foo").match(" } // namespace foo"))
-    True
-    >>> bool(get_namespace_close_regex("foo").match(" } // namespace foo_bar"))
-    False
+    Get a regex to match the closing of a namespace
     """
     return get_cxx_close_block_regex(comment=fr"namespace\s+{namespace}")
 
@@ -457,12 +350,7 @@ def get_namespace_close_regex(namespace):
 def get_cxx_struct_begin_regex(struct):
 ###############################################################################
     """
-    >>> bool(get_cxx_struct_begin_regex("Foo").match("struct Foo {"))
-    True
-    >>> bool(get_cxx_struct_begin_regex("Foo").match("struct Foo"))
-    True
-    >>> bool(get_cxx_struct_begin_regex("Foo").match("struct FooBar"))
-    False
+    Get a regex to match the beginning of a struct with a certain name
     """
     struct_regex_str = fr"^\s*struct\s+{struct}([\W]|$)"
     return re.compile(struct_regex_str)
@@ -470,6 +358,9 @@ def get_cxx_struct_begin_regex(struct):
 ###############################################################################
 def get_plain_comment_regex(comment):
 ###############################################################################
+    """
+    Get a regex to match a C comment with a certain text
+    """
     comment_regex_str   = fr"^\s*//\s*{comment}"
     return re.compile(comment_regex_str)
 
@@ -477,10 +368,7 @@ def get_plain_comment_regex(comment):
 def get_data_struct_name(sub):
 ###############################################################################
     """
-    >>> get_data_struct_name("my_sub_name")
-    'MySubNameData'
-    >>> get_data_struct_name("sub")
-    'SubData'
+    For a function name, return the corresponding struct name
     """
     return "".join([item.capitalize() for item in sub.split("_")]) + "Data"
 
@@ -488,10 +376,7 @@ def get_data_struct_name(sub):
 def get_data_test_struct_name(sub):
 ###############################################################################
     """
-    >>> get_data_test_struct_name("my_sub_name")
-    'TestMySubName'
-    >>> get_data_test_struct_name("update_prognostics_implicit")
-    'TestUpdatePrognosticsImplicit'
+    For a function name, return the corresponding test struct name
     """
     return f"Test{get_data_struct_name(sub)[:-4]}"
 
@@ -528,37 +413,6 @@ def create_template(physics, sub, gb, piece, force=False, force_arg_data=None):
 ###############################################################################
     """
     Create a file based on a template if it doesn't exist. Return True if a file was created.
-
-    >>> gb = GenBoiler(["linear_interp"], ["cxx_func_impl"], dry_run=True)
-    >>> create_template("shoc", "linear_interp", gb, "cxx_func_impl", force=True, force_arg_data=UT_ARG_DATA) #doctest: +ELLIPSIS
-    Would create file .../components/eamxx/src/physics/shoc/impl/shoc_linear_interp_impl.hpp with contents:
-    #ifndef SHOC_LINEAR_INTERP_IMPL_HPP
-    #define SHOC_LINEAR_INTERP_IMPL_HPP
-    <BLANKLINE>
-    #include "shoc_functions.hpp" // for ETI only but harmless for GPU
-    <BLANKLINE>
-    namespace scream {
-    namespace shoc {
-    <BLANKLINE>
-    /*
-     * Implementation of shoc linear_interp. Clients should NOT
-     * #include this file, but include shoc_functions.hpp instead.
-     */
-    <BLANKLINE>
-    template<typename S, typename D>
-    KOKKOS_FUNCTION
-    void Functions<S,D>::linear_interp(const uview_1d<const Spack>& foo1, const uview_1d<const Spack>& foo2, const uview_1d<const Spack>& bar1, const uview_1d<const Spack>& bar2, const uview_1d<const Spack>& bak1, const uview_1d<const Spack>& bak2, const uview_1d<const Spack>& tracerd1, const uview_1d<const Spack>& tracerd2, const Spack& gag, const uview_1d<Spack>& baz, const uview_1d<const Int>& bag, Int& bab1, Int& bab2, const bool& val, const uview_1d<const bool>& vals, const Int& shcol, const Int& nlev, const Int& nlevi, const Int& ntracers, const uview_1d<Int>& ball1, const uview_1d<Int>& ball2)
-    {
-      // TODO
-      // Note, argument types may need tweaking. Generator is not always able to tell what needs to be packed
-    }
-    <BLANKLINE>
-    } // namespace shoc
-    } // namespace scream
-    <BLANKLINE>
-    #endif
-    <BLANKLINE>
-    True
     """
     filepath = gb.get_path_for_piece_file(physics, sub, piece)
     if not filepath.exists() or force:
@@ -568,7 +422,7 @@ def create_template(physics, sub, gb, piece, force=False, force_arg_data=None):
         gen_code = getattr(gb, f"gen_{piece}")(physics, sub, force_arg_data=force_arg_data)
         contents = FILE_TEMPLATES[piece](physics, sub, gen_code)
         if gb.dry_run():
-            print(f"Would create file {filepath} with contents:\n{contents}")
+            print(f"Would create file {filepath.relative_to(Path.cwd().parent.parent)} with contents:\n{contents}")
         else:
             with filepath.open("w", encoding="utf-8") as fd:
                 fd.write(contents)
@@ -583,31 +437,7 @@ def create_template(physics, sub, gb, piece, force=False, force_arg_data=None):
 def remove_comments_and_ws(contents):
 ###############################################################################
     """
-    >>> teststr = '''
-    ... module mymod
-    ...   subroutine foo(a, b, &{0}
-    ...                c, d, e,&
-    ... !bad{0}
-    ... &f)
-    ...
-    ...     real, intent(in) :: a, b, & !go
-    ...                 c, d, e, f{0}
-    ...
-    ...   ! hi
-    ...   !hi ! there{0}
-    ... !hi ! there
-    ...   end subroutine foo{0}
-    ... end module mymod
-    ... '''.format(" ")
-    >>> print(remove_comments_and_ws(teststr))
-    module mymod
-    subroutine foo(a, b, &
-    c, d, e,&
-    &f)
-    real, intent(in) :: a, b, &
-    c, d, e, f
-    end subroutine foo
-    end module mymod
+    Remove comments and whitespaces from fortran code
     """
     new_lines = []
     comment_regex = re.compile(r"^([^!]*)")
@@ -624,31 +454,11 @@ def remove_comments_and_ws(contents):
     return "\n".join(new_lines)
 
 ###############################################################################
-def resolve_line_continuations(contents):
+def normalize_f90(contents):
 ###############################################################################
     """
-    >>> teststr = '''
-    ... module mymod
-    ...   subroutine foo(a, b, &
-    ...                c, d, e,&{0}
-    ... !bad
-    ... &f){0}
-    ...
-    ...     real, intent(in) :: a, b, & !go{0}
-    ...                 c, d, e, f
-    ...
-    ...   ! hi
-    ...   !hi ! there
-    ... !hi ! there{0}
-    ...   end subroutine foo
-    ... end module mymod{0}
-    ... '''.format("  ")
-    >>> print(resolve_line_continuations(teststr))
-    module mymod
-    subroutine foo(a, b, c, d, e,f)
-    real, intent(in) :: a, b, c, d, e, f
-    end subroutine foo
-    end module mymod
+    Normalize fortran by removing comments, whitespaces, resolving line continuations,
+    and lowercasing everything.
     """
     # Must remove comments and whitespace for the alg below to work
     contents = remove_comments_and_ws(contents)
@@ -665,13 +475,7 @@ def resolve_line_continuations(contents):
 
             contination = line.endswith("&")
 
-    return "\n".join(new_lines)
-
-###############################################################################
-def normalize_f90(contents):
-###############################################################################
-    # We do not currently attempt to preprocess the contents
-    return resolve_line_continuations(contents).lower()
+    return ("\n".join(new_lines)).lower()
 
 ###############################################################################
 def split_top_commas(line):
@@ -697,15 +501,6 @@ def get_arg_order(line):
 ###############################################################################
     """
     Given a line of fortran declaring a subroutine, return the arg names in order
-
-    >>> get_arg_order("subroutine p3_set_tables( mu_r_user, revap_user,vn_user, vm_user )")
-    ['mu_r_user', 'revap_user', 'vn_user', 'vm_user']
-    >>> get_arg_order("function p3_set_tables( mu_r_user, revap_user,vn_user, vm_user ) result(bar)")
-    ['mu_r_user', 'revap_user', 'vn_user', 'vm_user', 'bar']
-    >>> get_arg_order("pure function p3_set_tables( mu_r_user, revap_user,vn_user, vm_user ) result( bar)")
-    ['mu_r_user', 'revap_user', 'vn_user', 'vm_user', 'bar']
-    >>> get_arg_order("pure function p3_set_tables(mu_r_user,revap_user,vn_user,vm_user) result(bar)")
-    ['mu_r_user', 'revap_user', 'vn_user', 'vm_user', 'bar']
     """
     tokens = line.split()
     if tokens[0] == "function" or tokens[1] == "function":
@@ -738,32 +533,6 @@ def parse_f90_args(line):
     Given a line of fortran code declaring an argument[s], return [(argname, argtype, intent, dims)]
     Anywhere you see "arg_data" in this program, it's referring to a list of data produced by
     this function. Anywhere you see "arg_datum", it's referring to a single item in this list.
-
-    >>> parse_f90_args('integer, intent(in) :: kts, kte, kbot')
-    [('kts', 'integer', 'in', None), ('kte', 'integer', 'in', None), ('kbot', 'integer', 'in', None)]
-    >>> parse_f90_args('real(rtype),intent(inout ), dimension(kts:kte) :: pres,dpres,  dz ')
-    [('pres', 'real', 'inout', ('kts:kte',)), ('dpres', 'real', 'inout', ('kts:kte',)), ('dz', 'real', 'inout', ('kts:kte',))]
-    >>> parse_f90_args('logical (btype), intent( in) ::do_predict_nc')
-    [('do_predict_nc', 'logical', 'in', None)]
-    >>> parse_f90_args('real(rtype),intent(inout), dimension( kts:kte, its: ite) :: dz')
-    [('dz', 'real', 'inout', ('kts:kte', 'its:ite'))]
-    >>> parse_f90_args('real(rtype),intent(inout), dimension(3) :: dz')
-    [('dz', 'real', 'inout', ('3',))]
-    >>> parse_f90_args('real(rtype),intent(inout), dimension(3,4) :: dz')
-    [('dz', 'real', 'inout', ('3', '4'))]
-    >>> parse_f90_args('real(rtype), dimension(3,4),intent(inout) :: dz')
-    [('dz', 'real', 'inout', ('3', '4'))]
-    >>> parse_f90_args('real(rtype), intent(in) :: x1(ncol,km1), y1(ncol , km1 )')
-    [('x1', 'real', 'in', ('ncol', 'km1')), ('y1', 'real', 'in', ('ncol', 'km1'))]
-    >>> parse_f90_args('real(rtype), intent(in) :: x1(ncol,km1,ntracers)')
-    [('x1', 'real', 'in', ('ncol', 'km1', 'ntracers'))]
-    >>> parse_f90_args('type(element_t), intent(inout) :: elem(:)')
-    [('elem', 'type::element_t', 'inout', (':',))]
-    >>> parse_f90_args('character*(max_path_len), intent(out), optional ::  iopfile_out')
-    [('iopfile_out', 'type::string', 'out', None)]
-    >>> parse_f90_args('real(r8), intent(out) :: nm(ncol,pver), ni(ncol,0:pver)')
-    [('nm', 'real', 'out', ('ncol', 'pver')), ('ni', 'real', 'out', ('ncol', '0:pver'))]
-
     """
     expect(line.count("::") == 1, f"Expected line format 'type-info :: names' for: {line}")
     metadata_str, names_str = line.split("::")
@@ -808,105 +577,6 @@ def parse_origin(contents, subs):
 ###############################################################################
     r"""
     Returns a map of subname->[(argname, argtype, intent, dims)]
-
-    >>> teststr = '''
-    ...
-    ...   SUBROUTINE p3_get_tables(mu_r_user, revap_user, &
-    ...           tracerd, vn_user, vm_user)
-    ...     ! This can be called after p3_init_b.
-    ...     implicit none
-    ...     real(rtype), dimension(150), intent(out) :: mu_r_user
-    ...     real(rtype), dimension(300,10), intent(out) :: vn_user, vm_user, revap_user
-    ...     real(rtype), dimension(300,10,42), intent(out) :: tracerd
-    ...     mu_r_user(:) = mu_r_table(:)
-    ...     revap_user(:,:) = revap_table(:,:)
-    ...     vn_user(:,:) = vn_table(:,:)
-    ...     vm_user(:,:) = vm_table(:,:)
-    ...
-    ...    return
-    ...
-    ...   end SUBROUTINE p3_get_tables
-    ...
-    ...   subroutine p3_set_tables( mu_r_user, revap_user,vn_user, vm_user )
-    ...     ! This can be called instead of p3_init_b.
-    ...     implicit none
-    ...     real(rtype), dimension(300,10), intent(in) :: vn_user, vm_user, revap_user
-    ...     real(rtype), dimension(150), intent(in) :: mu_r_user
-    ...     mu_r_table(:) = mu_r_user(:)
-    ...     revap_table(:,:) = revap_user(:,:)
-    ...     vn_table(:,:) = vn_user(:,:)
-    ...     vm_table(:,:) = vm_user(:,:)
-    ...
-    ...    return
-    ...
-    ...   END SUBROUTINE p3_set_tables
-    ...
-    ...   SUBROUTINE p3_init_b()
-    ...     implicit none
-    ...     integer                      :: i,ii,jj,kk
-    ...     real(rtype)                         :: lamr,mu_r,dm,dum1,dum2,dum3,dum4,dum5,  &
-    ...          dd,amg,vt,dia
-    ...
-    ...     ! AaronDonahue: Switching to table ver 4 means switching to a constand mu_r,
-    ...     ! so this section is commented out.
-    ...     do i = 1,150
-    ...   END SUBROUTINE p3_init_b
-    ...
-    ... function impli_srf_stress_term(shcol, rho_zi_sfc, uw_sfc, vw_sfc, u_wind_sfc, v_wind_sfc) result (ksrf)
-    ...   !intent-ins
-    ...   integer,     intent(in) :: shcol
-    ...
-    ...   !air density at interfaces [kg/m3]
-    ...   real(rtype), intent(in) :: rho_zi_sfc(shcol)
-    ...   !vertical zonal momentum flux at surface [m3/s3]
-    ...   real(rtype), intent(in) :: uw_sfc(shcol)
-    ...   !vertical meridional momentum flux at surface [m3/s3]
-    ...   real(rtype), intent(in) :: vw_sfc(shcol)
-    ...   !zonal wind [m/s]
-    ...   real(rtype), intent(in) :: u_wind_sfc(shcol)
-    ...   !meridional wind [m/s]
-    ...   real(rtype), intent(in) :: v_wind_sfc(shcol)
-    ...
-    ...   !function return value
-    ...   real(rtype) :: ksrf(shcol)
-    ...
-    ...   return foo
-    ...  end function impli_srf_stress_term
-    ...
-    ...  subroutine advance_iop_forcing(scm_dt, ps_in, &             ! In
-    ...                    u_in, v_in, t_in, q_in, t_phys_frc,&    ! In
-    ...                    u_update, v_update, t_update, q_update) ! Out
-    ...
-    ...    ! Input arguments
-    ...    real(r8), intent(in) :: ps_in             ! surface pressure [Pa]
-    ...    real(r8), intent(in) :: u_in(plev)        ! zonal wind [m/s]
-    ...    real(r8), intent(in) :: v_in(plev)        ! meridional wind [m/s]
-    ...    real(r8), intent(in) :: t_in(plev)        ! temperature [K]
-    ...    real(r8), intent(in) :: q_in(plev,pcnst)  ! q tracer array [units vary]
-    ...    real(r8), intent(in) :: t_phys_frc(plev)  ! temperature forcing from physics [K/s]
-    ...    real(r8), intent(in) :: scm_dt            ! model time step [s]
-    ...
-    ...    ! Output arguments
-    ...    real(r8), intent(out) :: t_update(plev)      ! updated temperature [K]
-    ...    real(r8), intent(out) :: q_update(plev,pcnst)! updated q tracer array [units vary]
-    ...    real(r8), intent(out) :: u_update(plev)      ! updated zonal wind [m/s]
-    ...    real(r8), intent(out) :: v_update(plev)      ! updated meridional wind [m/s]
-    ...
-    ...  end subroutine advance_iop_forcing
-    ...
-    ...  subroutine iop_setinitial(elem)
-    ...    type(element_t), intent(inout) :: elem(:)
-    ...  end subroutine iop_setinitial
-    ... '''
-    >>> print("\n".join([str(item) for item in sorted(parse_origin(teststr, ["p3_get_tables", "p3_init_b"]).items())]))
-    ('p3_get_tables', [('mu_r_user', 'real', 'out', ('150',)), ('revap_user', 'real', 'out', ('300', '10')), ('tracerd', 'real', 'out', ('300', '10', '42')), ('vn_user', 'real', 'out', ('300', '10')), ('vm_user', 'real', 'out', ('300', '10'))])
-    ('p3_init_b', [])
-    >>> print("\n".join([str(item) for item in parse_origin(teststr, ["impli_srf_stress_term"]).items()]))
-    ('impli_srf_stress_term', [('shcol', 'integer', 'in', None), ('rho_zi_sfc', 'real', 'in', ('shcol',)), ('uw_sfc', 'real', 'in', ('shcol',)), ('vw_sfc', 'real', 'in', ('shcol',)), ('u_wind_sfc', 'real', 'in', ('shcol',)), ('v_wind_sfc', 'real', 'in', ('shcol',)), ('ksrf', 'real', 'out', ('shcol',))])
-    >>> print("\n".join([str(item) for item in parse_origin(teststr, ["advance_iop_forcing"]).items()]))
-    ('advance_iop_forcing', [('plev', 'integer', 'in', None), ('pcnst', 'integer', 'in', None), ('scm_dt', 'real', 'in', None), ('ps_in', 'real', 'in', None), ('u_in', 'real', 'in', ('plev',)), ('v_in', 'real', 'in', ('plev',)), ('t_in', 'real', 'in', ('plev',)), ('q_in', 'real', 'in', ('plev', 'pcnst')), ('t_phys_frc', 'real', 'in', ('plev',)), ('u_update', 'real', 'out', ('plev',)), ('v_update', 'real', 'out', ('plev',)), ('t_update', 'real', 'out', ('plev',)), ('q_update', 'real', 'out', ('plev', 'pcnst'))])
-    >>> print("\n".join([str(item) for item in parse_origin(teststr, ["iop_setinitial"]).items()]))
-    ('iop_setinitial', [('elem', 'type::element_t', 'inout', (':',))])
     """
     begin_sub_regexes  = [get_subroutine_begin_regex(sub) for sub in subs]
     begin_func_regexes = [get_function_begin_regex(sub)   for sub in subs]
@@ -992,21 +662,6 @@ def gen_arg_f90_decl(argtype, intent, dims, names):
 ###############################################################################
     """
     Generate f90 argument declaration based on the input data
-
-    >>> gen_arg_f90_decl("real", "in", ("10", "150"), ["foo", "bar"])
-    'real(kind=c_real) , intent(in), dimension(10, 150) :: foo, bar'
-    >>> gen_arg_f90_decl("real", "out", ("10", "150"), ["foo", "bar"])
-    'real(kind=c_real) , intent(out), dimension(10, 150) :: foo, bar'
-    >>> gen_arg_f90_decl("real", "out", ("10", "150", "42"), ["foo", "bar"])
-    'real(kind=c_real) , intent(out), dimension(10, 150, 42) :: foo, bar'
-    >>> gen_arg_f90_decl("logical", "in", None, ["biz", "baz"])
-    'logical(kind=c_bool) , value, intent(in) :: biz, baz'
-    >>> gen_arg_f90_decl("integer", "inout", None, ["barg"])
-    'integer(kind=c_int) , intent(inout) :: barg'
-    >>> gen_arg_f90_decl("integer", "out", None, ["barg"])
-    'integer(kind=c_int) , intent(out) :: barg'
-    >>> gen_arg_f90_decl('type::element_t', 'inout', (':',), ["foo"])
-    'type(c_ptr) , intent(inout), dimension(:) :: foo'
     """
     value  = ", value" if dims is None and intent == "in" else ""
     intent_s = f", intent({intent})"
@@ -1042,23 +697,6 @@ def get_cxx_type(arg_datum):
 ###############################################################################
     """
     Based on arg datum, give c++ bridge type
-
-    >>> get_cxx_type(("foo", "real", "in", ("100",)))
-    'Real*'
-    >>> get_cxx_type(("foo", "real", "in", None))
-    'Real'
-    >>> get_cxx_type(("foo", "real", "inout", ("100",)))
-    'Real*'
-    >>> get_cxx_type(("foo", "real", "inout", None))
-    'Real*'
-    >>> get_cxx_type(("foo", "real", "out", ("100",)))
-    'Real*'
-    >>> get_cxx_type(("foo", "real", "out", None))
-    'Real*'
-    >>> get_cxx_type(("foo", "integer", "inout", None))
-    'Int*'
-    >>> get_cxx_type(('elem', 'type::element_t', 'inout', (':',)))
-    'element_t*'
     """
     is_ptr = arg_datum[ARG_DIMS] is not None or arg_datum[ARG_INTENT] != "in"
     arg_type = arg_datum[ARG_TYPE]
@@ -1074,23 +712,6 @@ def get_kokkos_type(arg_datum):
 
     Note: We can only guess at the correct types, especially whether an argument
     should be packed data or not!
-
-    >>> get_kokkos_type(("foo", "real", "in", ("100",)))
-    'const uview_1d<const Spack>&'
-    >>> get_kokkos_type(("foo", "real", "in", None))
-    'const Spack&'
-    >>> get_kokkos_type(("foo", "real", "inout", ("100",)))
-    'const uview_1d<Spack>&'
-    >>> get_kokkos_type(("foo", "real", "inout", None))
-    'Spack&'
-    >>> get_kokkos_type(("foo", "real", "out", ("100",)))
-    'const uview_1d<Spack>&'
-    >>> get_kokkos_type(("foo", "real", "out", None))
-    'Spack&'
-    >>> get_kokkos_type(("foo", "integer", "inout", None))
-    'Int&'
-    >>> get_kokkos_type(('elem', 'type::element_t', 'inout', (':',)))
-    'const uview_1d<element_t>&'
     """
     is_const  = arg_datum[ARG_INTENT] == "in"
     is_view   = arg_datum[ARG_DIMS] is not None
@@ -1110,12 +731,8 @@ def get_kokkos_type(arg_datum):
 def gen_arg_cxx_decls(arg_data, kokkos=False):
 ###############################################################################
     """
-    Get all arg decls for a set of arg data
-
-    >>> gen_arg_cxx_decls([("foo", "real", "in", ("100",)), ("bar", "real", "in", None)])
-    ['Real* foo', 'Real bar']
-    >>> gen_arg_cxx_decls([("foo", "real", "in", ("100",)), ("bar", "real", "in", None)], kokkos=True)
-    ['const uview_1d<const Spack>& foo', 'const Spack& bar']
+    Get all arg decls for a set of arg data. kokkos flag tells us to use C++/Kokkos
+    types instead of C types.
     """
     arg_names    = [item[ARG_NAME] for item in arg_data]
     get_type     = get_kokkos_type if kokkos else get_cxx_type
@@ -1141,35 +758,10 @@ def gen_arg_cxx_decls(arg_data, kokkos=False):
     return arg_sig_list
 
 ###############################################################################
-def needs_transpose(arg_data):
-###############################################################################
-    """
-    Based on data, does this sub need to have its data transposed when going between languages?
-
-    >>> needs_transpose([("foo", "real", "in", ("100",)), ("bar", "real", "in", None)])
-    False
-    >>> needs_transpose([("foo", "real", "in", ("100","50")), ("bar", "real", "in", None)])
-    True
-    >>> needs_transpose([("foo", "real", "in", ("100","50","42")), ("bar", "real", "in", None)])
-    True
-    >>> needs_transpose([("foo", "real", "in", None), ("bar", "real", "in", None)])
-    False
-    """
-    for arg_datum in arg_data:
-        arg_dims = arg_datum[ARG_DIMS]
-        if arg_dims is not None and len(arg_dims) > 1:
-            return True
-
-    return False
-
-###############################################################################
 def split_by_intent(arg_data):
 ###############################################################################
     """
     Take arg data and split into three lists of names based on intent: [inputs], [intouts], [outputs]
-
-    >>> split_by_intent(UT_ARG_DATA)
-    (['foo1', 'foo2', 'bar1', 'bar2', 'bak1', 'bak2', 'tracerd1', 'tracerd2', 'gag', 'bag', 'val', 'vals', 'shcol', 'nlev', 'nlevi', 'ntracers'], ['baz'], ['bab1', 'bab2', 'ball1', 'ball2'])
     """
     inputs, inouts, outputs = [], [], []
     for name, _, intent, _ in arg_data:
@@ -1189,9 +781,6 @@ def split_by_type(arg_data):
 ###############################################################################
     """
     Take arg data and split into three lists of names based on type: [reals], [ints], [logicals]
-
-    >>> split_by_type(UT_ARG_DATA)
-    (['foo1', 'foo2', 'bar1', 'bar2', 'bak1', 'bak2', 'tracerd1', 'tracerd2', 'gag', 'baz'], ['bag', 'bab1', 'bab2', 'shcol', 'nlev', 'nlevi', 'ntracers', 'ball1', 'ball2'], ['val', 'vals'])
     """
     reals, ints, logicals = [], [], []
     for name, argtype, _, _ in arg_data:
@@ -1228,9 +817,6 @@ def gen_cxx_data_args(physics, arg_data):
 ###############################################################################
     """
     Based on data, generate unpacking of Data struct args
-
-    >>> gen_cxx_data_args("shoc", UT_ARG_DATA)
-    ['d.foo1', 'd.foo2', 'd.bar1', 'd.bar2', 'd.bak1', 'd.bak2', 'd.tracerd1', 'd.tracerd2', 'd.gag', 'd.baz', 'd.bag', '&d.bab1', '&d.bab2', 'd.val', 'd.vals', 'd.shcol', 'd.nlev', 'd.nlevi', 'd.ntracers', 'd.ball1', 'd.ball2']
     """
     all_dims = group_data(arg_data)[3]
     args_needs_ptr = [item[ARG_DIMS] is None and item[ARG_INTENT] != "in" for item in arg_data]
@@ -1243,24 +829,10 @@ def gen_cxx_data_args(physics, arg_data):
 ###############################################################################
 def gen_arg_f90_decls(arg_data):
 ###############################################################################
-    r"""
-    Generate f90 argument declarations, will attempt to group these together if possible.
-
-    >>> print("\n".join(gen_arg_f90_decls(UT_ARG_DATA)))
-    real(kind=c_real) , intent(in), dimension(shcol) :: foo1, foo2
-    real(kind=c_real) , intent(in), dimension(shcol, nlev) :: bar1, bar2
-    real(kind=c_real) , intent(in), dimension(shcol, nlevi) :: bak1, bak2
-    real(kind=c_real) , intent(in), dimension(shcol, nlev, ntracers) :: tracerd1, tracerd2
-    real(kind=c_real) , value, intent(in) :: gag
-    real(kind=c_real) , intent(inout), dimension(shcol) :: baz
-    integer(kind=c_int) , intent(in), dimension(shcol) :: bag
-    integer(kind=c_int) , intent(out) :: bab1, bab2
-    logical(kind=c_bool) , value, intent(in) :: val
-    logical(kind=c_bool) , intent(in), dimension(shcol) :: vals
-    integer(kind=c_int) , value, intent(in) :: shcol, nlev, nlevi, ntracers
-    integer(kind=c_int) , intent(out), dimension(shcol) :: ball1, ball2
     """
-    metadata = OrderedDict()
+    Generate f90 argument declarations, will attempt to group these together if possible.
+    """
+    metadata = {}
     for name, argtype, intent, dims in arg_data:
         metatuple = (argtype, intent, dims)
         metadata.setdefault(metatuple, []).append(name)
@@ -1274,6 +846,9 @@ def gen_arg_f90_decls(arg_data):
 ###############################################################################
 def has_arrays(arg_data):
 ###############################################################################
+    """
+    Return if arg_data contains any array data
+    """
     for _, _, _, dims in arg_data:
         if dims is not None:
             return True
@@ -1283,29 +858,12 @@ def has_arrays(arg_data):
 ###############################################################################
 def gen_struct_members(arg_data):
 ###############################################################################
-    r"""
+    """
     Gen cxx code for data struct members
-
-    >>> print("\n".join(gen_struct_members(UT_ARG_DATA)))
-    // Inputs
-    Real *foo1, *foo2, *bar1, *bar2, *bak1, *bak2, *tracerd1, *tracerd2;
-    Real gag;
-    Int *bag;
-    bool val;
-    bool *vals;
-    Int shcol, nlev, nlevi, ntracers;
-    <BLANKLINE>
-    // Inputs/Outputs
-    Real *baz;
-    <BLANKLINE>
-    // Outputs
-    Int bab1, bab2;
-    Int *ball1, *ball2;
-    <BLANKLINE>
     """
     metadata = {} # intent -> (type, is_ptr) -> names
     for name, argtype, intent, dims in arg_data:
-        metadata.setdefault(intent, OrderedDict()).setdefault((argtype, dims is not None), []).append(name)
+        metadata.setdefault(intent, {}).setdefault((argtype, dims is not None), []).append(name)
 
     intent_order = ( ("in", "Inputs"), ("inout", "Inputs/Outputs"), ("out", "Outputs") )
     result = []
@@ -1326,27 +884,9 @@ def gen_struct_members(arg_data):
 ###############################################################################
 def group_data(arg_data, filter_out_intent=None, filter_scalar_custom_types=False):
 ###############################################################################
-    r"""
-    Given data, return ([fst_dims], [snd_dims], [trd_dims], [all-dims], [scalars], {dims->[real_data]}, {dims->[int_data]}, {dims->[bool_data]})
-
-    >>> print("\n".join([str(item) for item in group_data(UT_ARG_DATA)]))
-    ['shcol']
-    ['nlev', 'nlevi']
-    ['ntracers']
-    ['shcol', 'nlev', 'nlevi', 'ntracers']
-    [('gag', 'Real'), ('bab1', 'Int'), ('bab2', 'Int'), ('val', 'bool')]
-    OrderedDict([(('shcol',), ['foo1', 'foo2', 'baz']), (('shcol', 'nlev'), ['bar1', 'bar2']), (('shcol', 'nlevi'), ['bak1', 'bak2']), (('shcol', 'nlev', 'ntracers'), ['tracerd1', 'tracerd2'])])
-    OrderedDict([(('shcol',), ['bag', 'ball1', 'ball2'])])
-    OrderedDict([(('shcol',), ['vals'])])
-    >>> print("\n".join([str(item) for item in group_data(UT_ARG_DATA_ALL_SCALAR)]))
-    []
-    []
-    []
-    []
-    [('foo1', 'Real'), ('foo2', 'Real'), ('bar1', 'Real'), ('bar2', 'Real'), ('baz1', 'Real'), ('baz2', 'Real'), ('gag1', 'Int'), ('gag2', 'Int'), ('gal1', 'Int'), ('gal2', 'Int'), ('bal1', 'Int'), ('bal2', 'Int'), ('bit1', 'bool'), ('bit2', 'bool'), ('gut1', 'bool'), ('gut2', 'bool'), ('gat1', 'bool'), ('gat2', 'bool')]
-    OrderedDict()
-    OrderedDict()
-    OrderedDict()
+    """
+    Given data, return ([fst_dims], [snd_dims], [trd_dims], [all-dims], [scalars],
+                        {dims->[real_data]}, {dims->[int_data]}, {dims->[bool_data]})
     """
     scalars  = []
 
@@ -1366,10 +906,10 @@ def group_data(arg_data, filter_out_intent=None, filter_scalar_custom_types=Fals
             if len(dims) > 2 and dims[2] not in trd_dims:
                 trd_dims.append(dims[2])
 
-    all_dims = list(OrderedDict([(item, None) for item in (fst_dims + snd_dims + trd_dims)]))
-    real_data = OrderedDict()
-    int_data = OrderedDict()
-    bool_data = OrderedDict()
+    all_dims = list(dict([(item, None) for item in (fst_dims + snd_dims + trd_dims)]))
+    real_data = {}
+    int_data = {}
+    bool_data = {}
 
     for name, argtype, intent, dims in arg_data:
         if filter_out_intent is None or intent != filter_out_intent:
@@ -1535,7 +1075,9 @@ def get_rank_map(arg_data, arg_names):
         else:
             rank_map[rank] = [arg]
 
-    return rank_map
+    rank_map_sorted = dict(sorted(rank_map.items()))
+
+    return rank_map_sorted
 
 #
 # Main classes
@@ -1743,29 +1285,367 @@ class GenBoiler(object):
         >>> print(gb.gen_cxx_c2f_glue_impl("shoc", "fake_sub", force_arg_data=UT_ARG_DATA))
         void fake_sub(FakeSubData& d)
         {
+          d.transition<ekat::TransposeDirection::c2f>();
           shoc_init(d.nlev, true);
-          d.transpose<ekat::TransposeDirection::c2f>();
           fake_sub_c(d.foo1, d.foo2, d.bar1, d.bar2, d.bak1, d.bak2, d.tracerd1, d.tracerd2, d.gag, d.baz, d.bag, &d.bab1, &d.bab2, d.val, d.vals, d.shcol, d.nlev, d.nlevi, d.ntracers, d.ball1, d.ball2);
-          d.transpose<ekat::TransposeDirection::f2c>();
+          d.transition<ekat::TransposeDirection::f2c>();
         }
         <BLANKLINE>
         <BLANKLINE>
         """
         arg_data         = force_arg_data if force_arg_data else self._get_arg_data(phys, sub)
         arg_data_args    = ", ".join(gen_cxx_data_args(phys, arg_data))
-        need_transpose   = needs_transpose(arg_data)
-        transpose_code_1 = "\n  d.transpose<ekat::TransposeDirection::c2f>();" if need_transpose else ""
-        transpose_code_2 = "\n  d.transpose<ekat::TransposeDirection::f2c>();" if need_transpose else ""
+        transition_code_1 = "\n  d.transition<ekat::TransposeDirection::c2f>();"
+        transition_code_2 = "\n  d.transition<ekat::TransposeDirection::f2c>();"
         data_struct      = get_data_struct_name(sub)
-        init_code        = get_physics_data(phys, INIT_CODE)
+        init_code        = get_physics_data(phys, INIT_CODE) + "\n"
 
         result = \
 f"""void {sub}({data_struct}& d)
 {{
-  {init_code}{transpose_code_1}
-  {sub}_c({arg_data_args});{transpose_code_2}
+  {transition_code_1}
+  {init_code}
+  {sub}_c({arg_data_args});{transition_code_2}
 }}
 
+"""
+        return result
+
+    ###########################################################################
+    def gen_cxx_t2cxx_bind_impl(self, phys, sub, force_arg_data=None):
+    ###########################################################################
+        """
+        >>> gb = GenBoiler([])
+        >>> print(gb.gen_cxx_t2cxx_bind_impl("shoc", "fake_sub", force_arg_data=UT_ARG_DATA))
+        void fake_sub_f(Real* foo1, Real* foo2, Real* bar1, Real* bar2, Real* bak1, Real* bak2, Real* tracerd1, Real* tracerd2, Real gag, Real* baz, Int* bag, Int* bab1, Int* bab2, bool val, bool* vals, Int shcol, Int nlev, Int nlevi, Int ntracers, Int* ball1, Int* ball2)
+        {
+        #if 0
+          using SHF        = Functions<Real, DefaultDevice>;
+          using Scalar     = typename SHF::Scalar;
+          using Spack      = typename SHF::Spack;
+          using KT         = typename SHF::KT;
+          using ExeSpace   = typename KT::ExeSpace;
+          using MemberType = typename SHF::MemberType;
+        <BLANKLINE>
+          using view_2d = typename SHF::view_2d<Spack>;
+          using view_1d = typename SHF::view_1d<Real>;
+          using view_3d = typename SHF::view_3d<Spack>;
+          using iview_1d = typename SHF::view_1d<Int>;
+          using bview_1d = typename SHF::view_1d<bool>;
+        <BLANKLINE>
+          static constexpr Int num_arrays_2 = 4;
+          std::vector<view_2d> temp_d_2(num_arrays_2);
+          std::vector<int> dim_2_0_sizes = {shcol, shcol, shcol, shcol};
+          std::vector<int> dim_2_1_sizes = {nlevi, nlevi, nlev, nlev};
+          ekat::host_to_device({bak1, bak2, bar1, bar2}, dim_2_0_sizes, dim_2_1_sizes, temp_d_2);
+        <BLANKLINE>
+          static constexpr Int num_arrays_1 = 3;
+          std::vector<view_1d> temp_d_1(num_arrays_1);
+          std::vector<int> dim_1_0_sizes = {shcol, shcol, shcol};
+          ScreamDeepCopy::copy_to_device({baz, foo1, foo2}, dim_1_0_sizes, temp_d_1);
+        <BLANKLINE>
+          static constexpr Int num_arrays_3 = 2;
+          std::vector<view_3d> temp_d_3(num_arrays_3);
+          std::vector<int> dim_3_0_sizes = {shcol, shcol};
+          std::vector<int> dim_3_1_sizes = {nlev, nlev};
+          std::vector<int> dim_3_2_sizes = {ntracers, ntracers};
+          ekat::host_to_device({tracerd1, tracerd2}, dim_3_0_sizes, dim_3_1_sizes, dim_3_2_sizes, temp_d_3);
+        <BLANKLINE>
+          static constexpr Int inum_arrays_1 = 3;
+          std::vector<iview_1d> itemp_d_1(inum_arrays_1);
+          std::vector<int> idim_1_0_sizes = {shcol, shcol, shcol};
+          ScreamDeepCopy::copy_to_device({bag, ball1, ball2}, idim_1_0_sizes, itemp_d_1);
+        <BLANKLINE>
+          static constexpr Int bnum_arrays_1 = 1;
+          std::vector<bview_1d> btemp_d_1(bnum_arrays_1);
+          std::vector<int> bdim_1_0_sizes = {shcol};
+          ScreamDeepCopy::copy_to_device({vals}, bdim_1_0_sizes, btemp_d_1);
+        <BLANKLINE>
+          view_2d
+            bak1_d(temp_d_2[0]),
+            bak2_d(temp_d_2[1]),
+            bar1_d(temp_d_2[2]),
+            bar2_d(temp_d_2[3]);
+        <BLANKLINE>
+          view_1d
+            baz_d(temp_d_1[0]),
+            foo1_d(temp_d_1[1]),
+            foo2_d(temp_d_1[2]);
+        <BLANKLINE>
+          view_3d
+            tracerd1_d(temp_d_3[0]),
+            tracerd2_d(temp_d_3[1]);
+        <BLANKLINE>
+          iview_1d
+            bag_d(itemp_d_1[0]),
+            ball1_d(itemp_d_1[1]),
+            ball2_d(itemp_d_1[2]);
+        <BLANKLINE>
+          bview_1d
+            vals_d(btemp_d_1[0]);
+        <BLANKLINE>
+          const Int nk_pack = ekat::npack<Spack>(nlev);
+          const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(shcol, nk_pack);
+          Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+            const Int i = team.league_rank();
+        <BLANKLINE>
+            const auto bak1_s = ekat::subview(bak1_d, i);
+            const auto bak2_s = ekat::subview(bak2_d, i);
+            const auto bar1_s = ekat::subview(bar1_d, i);
+            const auto bar2_s = ekat::subview(bar2_d, i);
+            const Scalar baz_s = baz_d(i);
+            const Scalar foo1_s = foo1_d(i);
+            const Scalar foo2_s = foo2_d(i);
+            const auto tracerd1_s = ekat::subview(tracerd1_d, i);
+            const auto tracerd2_s = ekat::subview(tracerd2_d, i);
+        <BLANKLINE>
+            const Scalar bag_s = bag_d(i);
+            const Scalar ball1_s = ball1_d(i);
+            const Scalar ball2_s = ball2_d(i);
+        <BLANKLINE>
+            const Scalar vals_s = vals_d(i);
+        <BLANKLINE>
+            SHF::fake_sub(foo1_s, foo2_s, bar1_s, bar2_s, bak1_s, bak2_s, tracerd1_s, tracerd2_s, gag, baz_s, bag_s, bab1, bab2, val, vals_s, shcol, nlev, nlevi, ntracers, ball1_s, ball2_s);
+          });
+          std::vector<view_1d> tempout_d_1(num_arrays_1);
+          std::vector<int> dim_1_0_out_sizes = {shcol};
+          ScreamDeepCopy::copy_to_host({baz}, dim_1_0_out_sizes, tempout_d_1);
+        <BLANKLINE>
+          std::vector<iview_1d> itempout_d_1(inum_arrays_1);
+          std::vector<int> idim_1_0_out_sizes = {shcol, shcol};
+          ScreamDeepCopy::copy_to_host({ball1, ball2}, idim_1_0_out_sizes, itempout_d_1);
+        <BLANKLINE>
+        #endif
+        <BLANKLINE>
+        }
+        <BLANKLINE>
+        >>> print(gb.gen_cxx_f2c_bind_impl("shoc", "fake_sub", force_arg_data=UT_ARG_DATA_ALL_SCALAR))
+        void fake_sub_f(Real foo1, Real foo2, Real* bar1, Real* bar2, Real* baz1, Real* baz2, Int gag1, Int gag2, Int* gal1, Int* gal2, Int* bal1, Int* bal2, bool bit1, bool bit2, bool* gut1, bool* gut2, bool* gat1, bool* gat2)
+        {
+        #if 0
+          using PF = Functions<Real, DefaultDevice>;
+        <BLANKLINE>
+          using Spack   = typename PF::Spack;
+          using view_1d = typename PF::view_1d<Real>;
+          using iview_1d = typename PF::view_1d<Int>;
+          using bview_1d = typename PF::view_1d<bool>;
+        <BLANKLINE>
+          view_1d t_d("t_d", 4);
+          const auto t_h = Kokkos::create_mirror_view(t_d);
+        <BLANKLINE>
+          iview_1d it_d("it_d", 4);
+          const auto it_h = Kokkos::create_mirror_view(it_d);
+        <BLANKLINE>
+          bview_1d bt_d("bt_d", 4);
+          const auto bt_h = Kokkos::create_mirror_view(bt_d);
+        <BLANKLINE>
+          Real local_bar1(*bar1), local_bar2(*bar2);
+          Int local_gal1(*gal1), local_gal2(*gal2);
+          bool local_gut1(*gut1), local_gut2(*gut2);
+          Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+            Spack bar1_(local_bar1), bar2_(local_bar2), foo1_(foo1), foo2_(foo2), baz1_(), baz2_();
+            Int bal1_(), bal2_(), gal1_(local_gal1), gal2_(local_gal2);
+            bool gat1_(), gat2_(), gut1_(local_gut1), gut2_(local_gut2);
+            PF::fake_sub(foo1_, foo2_, bar1_, bar2_, baz1_, baz2_, gag1, gag2, gal1_, gal2_, bal1_, bal2_, bit1, bit2, gut1_, gut2_, gat1_, gat2_);
+            t_d(0) = bar1_[0];
+            t_d(1) = bar2_[0];
+            t_d(2) = baz1_[0];
+            t_d(3) = baz2_[0];
+            it_d(0) = bal1_;
+            it_d(1) = bal2_;
+            it_d(2) = gal1_;
+            it_d(3) = gal2_;
+            bt_d(0) = gat1_;
+            bt_d(1) = gat2_;
+            bt_d(2) = gut1_;
+            bt_d(3) = gut2_;
+          });
+          Kokkos::deep_copy(t_h, t_d);
+          Kokkos::deep_copy(it_h, it_d);
+          Kokkos::deep_copy(bt_h, bt_d);
+          *bar1 = t_h(0);
+          *bar2 = t_h(1);
+          *baz1 = t_h(2);
+          *baz2 = t_h(3);
+          *bal1 = it_h(0);
+          *bal2 = it_h(1);
+          *gal1 = it_h(2);
+          *gal2 = it_h(3);
+          *gat1 = bt_h(0);
+          *gat2 = bt_h(1);
+          *gut1 = bt_h(2);
+          *gut2 = bt_h(3);
+        #endif
+        <BLANKLINE>
+        }
+        <BLANKLINE>
+        """
+        arg_data  = force_arg_data if force_arg_data else self._get_arg_data(phys, sub)
+        arg_names = [item[ARG_NAME] for item in arg_data]
+        decl      = self.gen_cxx_f2c_bind_decl(phys, sub, force_arg_data=force_arg_data).rstrip(";")
+
+        impl = ""
+        if has_arrays(arg_data):
+            #
+            # Steps:
+            # 1) Do initialization
+            # 2) Sync to device
+            # 3) Unpack view arrays
+            # 4) Get nk_pack and policy
+            # 5) Get subviews
+            # 6) Call fn
+            # 7) Sync back to host
+            #
+            inputs, inouts, outputs = split_by_intent(arg_data)
+            reals, ints, bools   = split_by_type(arg_data)
+            scalars, views = split_by_scalar_vs_view(arg_data)
+            all_inputs = inputs + inouts
+            all_outputs = inouts + outputs
+
+            vreals = list(sorted(set(reals) & set(views)))
+            vints  = list(sorted(set(ints)  & set(views)))
+            vbools = list(sorted(set(bools) & set(views)))
+
+            sreals = list(sorted(set(reals) & set(scalars)))
+            sints  = list(sorted(set(ints)  & set(scalars)))
+            sbools = list(sorted(set(bools) & set(scalars)))
+
+            ivreals = list(sorted(set(vreals) & set(all_inputs)))
+            ivints  = list(sorted(set(vints)  & set(all_inputs)))
+            ivbools = list(sorted(set(vbools) & set(all_inputs)))
+
+            ovreals = list(sorted(set(vreals) & set(all_outputs)))
+            ovints  = list(sorted(set(vints)  & set(all_outputs)))
+            ovbools = list(sorted(set(vbools) & set(all_outputs)))
+
+            isreals = list(sorted(set(sreals) & set(all_inputs)))
+            isints  = list(sorted(set(sints)  & set(all_inputs)))
+            isbools = list(sorted(set(sbools) & set(all_inputs)))
+
+            osreals = list(sorted(set(sreals) & set(all_outputs)))
+            osints  = list(sorted(set(sints)  & set(all_outputs)))
+            osbools = list(sorted(set(sbools) & set(all_outputs)))
+
+            #
+            # 1) Set up typedefs
+            #
+
+            # set up basics
+            impl += "#if 0\n" # There's no way to guarantee this code compiles
+            init_code = get_physics_data(phys, INIT_CODE)
+            impl += f"  {init_code}\n"
+
+            prefix_list  = ["r", "i", "b"]
+            type_list    = ["Real", "Int", "bool"]
+            ktype_list   = ["Spack", "Int", "bool"]
+
+            impl += "\n"
+
+            #
+            # 2) Sync to device. Do ALL views, not just inputs, because we always have to at least
+            #    allocate the views
+            #
+
+            impl += "    // create device views and copy\n"
+            for input_group, prefix_char, typename in zip([vreals, vints, vbools], prefix_list, type_list):
+                if input_group:
+                    rank_map = get_rank_map(arg_data, input_group)
+
+                    for rank, arg_list in rank_map.items():
+                        code = f"{rank}d{prefix_char}"
+                        num_args = len(arg_list)
+                        impl += f"  std::vector<view{code}_d> vect_{code}_in({num_args});\n"
+                        for rank_itr in range(rank):
+                            dims = [get_data_by_name(arg_data, arg_name, ARG_DIMS)[rank_itr] for arg_name in arg_list]
+                            impl += f"  std::vector<int> {prefix_char}dim_{rank}_{rank_itr}_sizes = {{{', '.join(dims)}}};\n"
+                        dim_vectors = [f"{prefix_char}dim_{rank}_{rank_itr}_sizes" for rank_itr in range(rank)]
+                        funcname = "ekat::host_to_device" if (typename == "Real" and rank > 1) else "ScreamDeepCopy::copy_to_device"
+                        impl += f"  {funcname}({{{', '.join(arg_list)}}}, {', '.join(dim_vectors)}, {prefix_char}temp_d_{rank});\n\n"
+
+            # for input_group, prefix_char, typename in zip([vreals, vints, vbools], prefix_list, type_list):
+            #     if input_group:
+
+
+            #
+            # 3) Unpack view vectors
+            #
+
+            for input_group, prefix_char, typename in zip([vreals, vints, vbools], prefix_list, type_list):
+                if input_group:
+                    rank_map = get_rank_map(arg_data, input_group)
+
+                    for rank, arg_list in rank_map.items():
+                        impl += f"  {prefix_char}view_{rank}d\n"
+                        for idx, input_item in enumerate(arg_list):
+                            impl += f"    {input_item}_d({prefix_char}temp_d_{rank}[{idx}]){';' if idx == len(arg_list) - 1 else ','}\n"
+                        impl += "\n"
+
+
+            #
+            # 4) Get nk_pack and policy, launch kernel
+            #
+            impl += "  const Int nk_pack = ekat::npack<Spack>(nlev);\n"
+            impl += "  const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(shcol, nk_pack);\n"
+            impl += "  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {\n"
+            impl += "    const Int i = team.league_rank();\n\n"
+
+            #
+            # 5) Get subviews
+            #
+            for view_group, prefix_char, typename in zip([vreals, vints, vbools], prefix_list, type_list):
+                if view_group:
+                    for view_arg in view_group:
+                        dims = get_data_by_name(arg_data, view_arg, ARG_DIMS)
+                        if "shcol" in dims:
+                            if len(dims) == 1:
+                                impl += f"    const Scalar {view_arg}_s = {view_arg}_d(i);\n"
+                            else:
+                                impl += f"    const auto {view_arg}_s = ekat::subview({view_arg}_d, i);\n"
+
+                    impl += "\n"
+
+            #
+            # 6) Call fn
+            #
+            kernel_arg_names = []
+            for arg_name in arg_names:
+                if arg_name in views:
+                    if "shcol" in dims:
+                        kernel_arg_names.append(f"{arg_name}_s")
+                    else:
+                        kernel_arg_names.append(f"{arg_name}_d")
+                else:
+                    kernel_arg_names.append(arg_name)
+
+            impl += f"    SHF::{sub}({', '.join(kernel_arg_names)});\n"
+            impl +=  "  });\n"
+
+            #
+            # 7) Sync back to host
+            #
+            for output_group, prefix_char, typename in zip([ovreals, ovints, ovbools], prefix_list, type_list):
+                if output_group:
+                    rank_map = get_rank_map(arg_data, output_group)
+
+                    for rank, arg_list in rank_map.items():
+                        impl += f"  std::vector<{prefix_char}view_{rank}d> {prefix_char}tempout_d_{rank}({prefix_char}num_arrays_{rank});\n"
+                        for rank_itr in range(rank):
+                            dims = [get_data_by_name(arg_data, arg_name, ARG_DIMS)[rank_itr] for arg_name in arg_list]
+                            impl += f"  std::vector<int> {prefix_char}dim_{rank}_{rank_itr}_out_sizes = {{{', '.join(dims)}}};\n"
+                        dim_vectors = [f"{prefix_char}dim_{rank}_{rank_itr}_out_sizes" for rank_itr in range(rank)]
+                        funcname = "ekat::device_to_host" if (typename == "Real" and rank > 1) else "ScreamDeepCopy::copy_to_host"
+                        impl += f"  {funcname}({{{', '.join(arg_list)}}}, {', '.join(dim_vectors)}, {prefix_char}tempout_d_{rank});\n\n"
+
+            impl += "#endif\n"
+
+        else:
+            expect(False, "not implemented")
+
+        result = \
+f"""{decl}
+{{
+{impl}
+}}
 """
         return result
 
@@ -2374,9 +2254,7 @@ f"""{decl}
         <BLANKLINE>
             // Get data from test
             for (auto& d : test_data) {
-              d.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
               fake_sub_f(d.foo1, d.foo2, d.bar1, d.bar2, d.bak1, d.bak2, d.tracerd1, d.tracerd2, d.gag, d.baz, d.bag, &d.bab1, &d.bab2, d.val, d.vals, d.shcol, d.nlev, d.nlevi, d.ntracers, d.ball1, d.ball2);
-              d.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
             }
         <BLANKLINE>
             // Verify BFB results, all data should be in C layout
@@ -2482,7 +2360,6 @@ f"""{decl}
         arg_data = force_arg_data if force_arg_data else self._get_arg_data(phys, sub)
         data_struct = get_data_struct_name(sub)
         has_array = has_arrays(arg_data)
-        need_transpose = needs_transpose(arg_data)
         arg_data_args    = ", ".join(gen_cxx_data_args(phys, arg_data))
 
         gen_random = \
@@ -2504,14 +2381,7 @@ f"""{decl}
         scalar_comments = "// " + ", ".join(all_scalar_inputs)
 
         if has_array:
-            c2f_transpose_code = "" if not need_transpose else \
-"""
-      d.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout"""
-            f2c_transpose_code = "" if not need_transpose else \
-"""
-      d.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout"""
-
-            all_data = OrderedDict(real_data)
+            all_data = dict(real_data)
             for type_data in [int_data, bool_data]:
                 for k, v in type_data.items():
                     if k in all_data:
@@ -2578,8 +2448,6 @@ f"""{decl}
                           scalar_comments=scalar_comments,
                           sub=sub,
                           gen_random=gen_random,
-                          c2f_transpose_code=c2f_transpose_code,
-                          f2c_transpose_code=f2c_transpose_code,
                           arg_data_args=arg_data_args,
                           check_scalars=check_scalars,
                           check_arrays=check_arrays)
@@ -2773,10 +2641,10 @@ template struct Functions<Real,DefaultDevice>;
         WITH:
         void fake_sub(FakeSubData& d)
         {
+          d.transition<ekat::TransposeDirection::c2f>();
           shoc_init(d.nlev, true);
-          d.transpose<ekat::TransposeDirection::c2f>();
           fake_sub_c(d.foo1, d.foo2, d.bar1, d.bar2, d.bak1, d.bak2, d.tracerd1, d.tracerd2, d.gag, d.baz, d.bag, &d.bab1, &d.bab2, d.val, d.vals, d.shcol, d.nlev, d.nlevi, d.ntracers, d.ball1, d.ball2);
-          d.transpose<ekat::TransposeDirection::f2c>();
+          d.transition<ekat::TransposeDirection::f2c>();
         }
         <BLANKLINE>
 
@@ -2791,10 +2659,10 @@ template struct Functions<Real,DefaultDevice>;
         In file tests/infra/shoc_test_data.cpp, at line 2, would insert:
         void fake_sub(FakeSubData& d)
         {
+          d.transition<ekat::TransposeDirection::c2f>();
           shoc_init(d.nlev, true);
-          d.transpose<ekat::TransposeDirection::c2f>();
           fake_sub_c(d.foo1, d.foo2, d.bar1, d.bar2, d.bak1, d.bak2, d.tracerd1, d.tracerd2, d.gag, d.baz, d.bag, &d.bab1, &d.bab2, d.val, d.vals, d.shcol, d.nlev, d.nlevi, d.ntracers, d.ball1, d.ball2);
-          d.transpose<ekat::TransposeDirection::f2c>();
+          d.transition<ekat::TransposeDirection::f2c>();
         }
         <BLANKLINE>
 

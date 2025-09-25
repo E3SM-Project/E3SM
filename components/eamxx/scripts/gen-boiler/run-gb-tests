@@ -1,0 +1,623 @@
+#! /usr/bin/env python3
+
+"""
+Script to run gen-boiler tests.
+"""
+
+from utils import check_minimum_python_version, expect, ensure_pylint, get_timestamp, \
+                  run_cmd_assert_result, run_cmd_no_fail, run_cmd, GoodFormatter
+
+import unittest, argparse, sys, os, shutil, io
+from unittest.mock import patch
+from pathlib import Path
+
+from gen_boiler import *
+
+GEN_BOILER_DIR = Path(__file__).resolve().parent
+
+# A good set of arg data for unit testing
+UT_ARG_DATA = [
+    ("foo1", "real", "in", ("shcol",)),
+    ("foo2", "real", "in", ("shcol",)),
+    ("bar1", "real", "in", ("shcol","nlev")),
+    ("bar2", "real", "in", ("shcol","nlev")),
+    ("bak1", "real", "in", ("shcol","-nlev:nlev")),
+    ("bak2", "real", "in", ("shcol","nlevi")),
+    ("tracerd1", "real", "in", ("shcol","nlev", "ntracers")),
+    ("tracerd2", "real", "in", ("shcol","nlev", "ntracers")),
+    ("gag", "real", "in", None),
+    ("baz", "real", "inout", ("shcol",)),
+    ("bag", "integer", "in", ("shcol","0:nlev")),
+    ("bab1", "integer", "out", None),
+    ("bab2", "integer", "out", None),
+    ("val", "logical", "in", None),
+    ("vals", "logical", "in", ("shcol",)),
+    ("shcol", "integer", "in", None),
+    ("nlev", "integer", "in", None),
+    ("nlevi", "integer", "in", None),
+    ("ntracers", "integer", "in", None),
+    ("ball1", "integer", "out", ("shcol",)),
+    ("ball2", "integer", "out", ("shcol",)),
+]
+
+UT_ARG_DATA_ALL_SCALAR = [
+    ("foo1", "real", "in", None),
+    ("foo2", "real", "in", None),
+    ("bar1", "real", "inout", None),
+    ("bar2", "real", "inout", None),
+    ("baz1", "real", "out", None),
+    ("baz2", "real", "out", None),
+    ("gag1", "integer", "in", None),
+    ("gag2", "integer", "in", None),
+    ("gal1", "integer", "inout", None),
+    ("gal2", "integer", "inout", None),
+    ("bal1", "integer", "out", None),
+    ("bal2", "integer", "out", None),
+    ("bit1", "logical", "in", None),
+    ("bit2", "logical", "in", None),
+    ("gut1", "logical", "inout", None),
+    ("gut2", "logical", "inout", None),
+    ("gat1", "logical", "out", None),
+    ("gat2", "logical", "out", None),
+]
+
+###############################################################################
+def line_by_line_compare(test_obj, expected, actual):
+###############################################################################
+    expected_lines = expected.splitlines()
+    actual_lines = actual.splitlines()
+    for expected_line, actual_line in zip(expected_lines, actual_lines):
+        test_obj.assertEqual(expected_line, actual_line)
+
+    test_obj.assertEqual(len(expected_lines), len(actual_lines))
+
+###############################################################################
+class TestGenBoilerBasics(unittest.TestCase):
+###############################################################################
+
+    ###########################################################################
+    def test_doctests(self):
+    ###########################################################################
+        """
+        Run doctests for all python files
+        """
+        #run_cmd_assert_result(self, "python3 -m doctest *.py", from_dir=GEN_BOILER_DIR)
+
+    ###########################################################################
+    def test_pylint(self):
+    ###########################################################################
+        """
+        Run pylint on all python files
+        """
+        #run_cmd_assert_result(self, "python3 -m pylint --disable C,R *.py", from_dir=GEN_BOILER_DIR)
+
+    ###########################################################################
+    def test_regex_stuff(self):
+    ###########################################################################
+        # get_subroutine_begin_regex
+        self.assertTrue(get_subroutine_begin_regex("fake_sub").match("subroutine fake_sub("))
+        self.assertFalse(get_subroutine_begin_regex("fake_sub").match("subroutine fake_sub_2("))
+        self.assertTrue(get_subroutine_begin_regex("fake_sub").match("  subroutine  fake_sub ("))
+        self.assertTrue(get_subroutine_begin_regex("fake_sub").match("  subroutine  fake_sub ( one, two )"))
+        self.assertFalse(get_subroutine_begin_regex("fake_sub").match("! subroutine fake_sub("))
+        self.assertFalse(get_subroutine_begin_regex("fake_sub").match("subroutine fake_sub"))
+
+        # get_function_begin_regex
+        self.assertEqual(get_function_begin_regex("fake_sub").match("function fake_sub(foo, bar) result(baz)").groups()[-1], 'baz')
+        self.assertEqual(get_function_begin_regex("fake_sub").match("pure function fake_sub(foo, bar) result(baz)").groups()[-1], 'baz')
+        self.assertEqual(get_function_begin_regex("fake_sub").match("pure function fake_sub() result(baz)").groups()[-1], 'baz')
+        self.assertEqual(get_function_begin_regex("fake_sub").match("  pure  function  fake_sub ( foo, bar )   result (  baz)").groups()[-1], 'baz')
+        self.assertFalse(get_function_begin_regex("fake_sub").match("function fake_sub2(foo, bar) result(baz)"))
+        self.assertFalse(get_function_begin_regex("fake_sub").match("! function fake_sub(foo, bar) result(baz)"))
+        self.assertFalse(get_function_begin_regex("fake_sub").match("end function fake_sub"))
+
+        # get_subroutine_end_regex
+        self.assertTrue(get_subroutine_end_regex("fake_sub").match("end subroutine fake_sub"))
+        self.assertFalse(get_subroutine_end_regex("fake_sub").match("end subroutine fake_sub_2"))
+        self.assertTrue(get_subroutine_end_regex("fake_sub").match("  end  subroutine  fake_sub "))
+        self.assertFalse(get_subroutine_end_regex("fake_sub").match("!end  subroutine  fake_sub "))
+        self.assertTrue(get_subroutine_end_regex("fake_sub").match("end function fake_sub"))
+        self.assertFalse(get_subroutine_end_regex("fake_sub").match("end function fake_sub_2"))
+
+        # get_cxx_function_begin_regex
+        self.assertTrue(get_cxx_function_begin_regex("fake_sub").match("void fake_sub("))
+        self.assertFalse(get_cxx_function_begin_regex("fake_sub").match("void fake_sub_2("))
+        self.assertTrue(get_cxx_function_begin_regex("fake_sub").match("  void  fake_sub ("))
+        self.assertTrue(get_cxx_function_begin_regex("fake_sub").match("  void  fake_sub ( one, two )"))
+        self.assertFalse(get_cxx_function_begin_regex("fake_sub").match("// void fake_sub("))
+        self.assertFalse(get_cxx_function_begin_regex("fake_sub").match("void fake_sub"))
+        self.assertTrue(get_cxx_function_begin_regex("fake_sub", static=True).match("static void fake_sub("))
+        self.assertTrue(get_cxx_function_begin_regex("fake_sub", template="Foo<T>").match("void Foo<T>::fake_sub("))
+
+        # get_cxx_close_block_regex
+        self.assertTrue(get_cxx_close_block_regex().match("}"))
+        self.assertTrue(get_cxx_close_block_regex(at_line_start=True).match("}"))
+        self.assertTrue(get_cxx_close_block_regex().match(" } "))
+        self.assertFalse(get_cxx_close_block_regex(at_line_start=True).match(" }; "))
+        self.assertFalse(get_cxx_close_block_regex(at_line_start=True).match(" } "))
+        self.assertFalse(get_cxx_close_block_regex(comment="hi").match(" } "))
+        self.assertTrue(get_cxx_close_block_regex(comment="hi").match(" } // hi"))
+        self.assertTrue(get_cxx_close_block_regex(comment="hi").match("} // hi  "))
+        self.assertFalse(get_cxx_close_block_regex(semicolon=True).match(" } "))
+        self.assertTrue(get_cxx_close_block_regex(semicolon=True).match(" } ; "))
+        self.assertTrue(get_cxx_close_block_regex(semicolon=True).match("};"))
+        self.assertTrue(get_cxx_close_block_regex(semicolon=True, comment="hi", at_line_start=True).match("};  // hi"))
+        self.assertFalse(get_cxx_close_block_regex(semicolon=True, comment="hi", at_line_start=True).match("};  // hi there"))
+
+        # get_namespace_close_regex
+        self.assertTrue(get_namespace_close_regex("foo").match(" } // namespace foo"))
+        self.assertFalse(get_namespace_close_regex("foo").match(" } // namespace foo_bar"))
+
+        # get_plain_comment_regex
+        self.assertTrue(get_plain_comment_regex("foo").match("// foo"))
+        self.assertTrue(get_plain_comment_regex("foo").match("  //  foo"))
+        self.assertTrue(get_plain_comment_regex("a full sentence").match("// a full sentence"))
+        self.assertTrue(get_plain_comment_regex("prefix").match("// prefix foo"))
+        self.assertFalse(get_plain_comment_regex("foo").match("// bar foo"))
+
+        # get_cxx_struct_begin_regex
+        self.assertTrue(get_cxx_struct_begin_regex("Foo").match("struct Foo {"))
+        self.assertTrue(get_cxx_struct_begin_regex("Foo").match("struct Foo"))
+        self.assertFalse(get_cxx_struct_begin_regex("Foo").match("struct FooBar"))
+
+        # get_data_struct_name
+        self.assertEqual(get_data_struct_name("my_sub_name"), 'MySubNameData')
+        self.assertEqual(get_data_struct_name("sub"), 'SubData')
+
+        #get_data_test_struct_name
+        self.assertEqual(get_data_test_struct_name("my_sub_name"), 'TestMySubName')
+        self.assertEqual(get_data_test_struct_name("update_prognostics_implicit"), 'TestUpdatePrognosticsImplicit')
+
+        # split_top_commas
+        self.assertEqual(split_top_commas("real(rtype),intent(inout ), dimension(kts:kte,col)"),
+                         ['real(rtype)', 'intent(inout )', 'dimension(kts:kte,col)'])
+        self.assertEqual(split_top_commas("real(rtype),intent(inout ), dimension(kts:kte,(col,  foo))"),
+                         ['real(rtype)', 'intent(inout )', 'dimension(kts:kte,(col,foo))'])
+        self.assertEqual(split_top_commas("nm(ncol,pver), ni(ncol,0:pver)") ,['nm(ncol,pver)', 'ni(ncol,0:pver)'])
+
+        # get_arg_order
+        self.assertEqual(get_arg_order("subroutine p3_set_tables( mu_r_user, revap_user,vn_user, vm_user )"),
+                         ['mu_r_user', 'revap_user', 'vn_user', 'vm_user'])
+        self.assertEqual(get_arg_order("function p3_set_tables( mu_r_user, revap_user,vn_user, vm_user ) result(bar)"),
+                         ['mu_r_user', 'revap_user', 'vn_user', 'vm_user', 'bar'])
+        self.assertEqual(get_arg_order("pure function p3_set_tables( mu_r_user, revap_user,vn_user, vm_user ) result( bar)"),
+                         ['mu_r_user', 'revap_user', 'vn_user', 'vm_user', 'bar'])
+        self.assertEqual(get_arg_order("pure function p3_set_tables(mu_r_user,revap_user,vn_user,vm_user) result(bar)"),
+                         ['mu_r_user', 'revap_user', 'vn_user', 'vm_user', 'bar'])
+
+        # gen_arg_f90_decl
+        self.assertEqual(gen_arg_f90_decl("real", "in", ("10", "150"), ["foo", "bar"]),
+                         'real(kind=c_real) , intent(in), dimension(10, 150) :: foo, bar')
+        self.assertEqual(gen_arg_f90_decl("real", "out", ("10", "150"), ["foo", "bar"]),
+                         'real(kind=c_real) , intent(out), dimension(10, 150) :: foo, bar')
+        self.assertEqual(gen_arg_f90_decl("real", "out", ("10", "150", "42"), ["foo", "bar"]),
+                         'real(kind=c_real) , intent(out), dimension(10, 150, 42) :: foo, bar')
+        self.assertEqual(gen_arg_f90_decl("logical", "in", None, ["biz", "baz"]),
+                         'logical(kind=c_bool) , value, intent(in) :: biz, baz')
+        self.assertEqual(gen_arg_f90_decl("integer", "inout", None, ["barg"]),
+                         'integer(kind=c_int) , intent(inout) :: barg')
+        self.assertEqual(gen_arg_f90_decl("integer", "out", None, ["barg"]),
+                         'integer(kind=c_int) , intent(out) :: barg')
+        self.assertEqual(gen_arg_f90_decl('real', 'out', ('ncol', '0:pver'), ["foo", "bar"]),
+                         'real(kind=c_real) , intent(out), dimension(ncol, 0:pver) :: foo, bar')
+        self.assertEqual(gen_arg_f90_decl('type::element_t', 'inout', (':',), ["foo"]),
+                         'type(c_ptr) , intent(inout), dimension(:) :: foo')
+
+        # get_cxx_type
+        self.assertEqual(get_cxx_type(("foo", "real", "in", ("100",))), 'Real*')
+        self.assertEqual(get_cxx_type(("foo", "real", "in", None)), 'Real')
+        self.assertEqual(get_cxx_type(("foo", "real", "inout", ("100",))), 'Real*')
+        self.assertEqual(get_cxx_type(("foo", "real", "inout", None)), 'Real*')
+        self.assertEqual(get_cxx_type(("foo", "real", "out", ("100",))), 'Real*')
+        self.assertEqual(get_cxx_type(("foo", 'real', 'out', ('ncol', '0:pver'))), 'Real*')
+        self.assertEqual(get_cxx_type(("foo", "real", "out", None)), 'Real*')
+        self.assertEqual(get_cxx_type(("foo", "integer", "inout", None)), 'Int*')
+        self.assertEqual(get_cxx_type(('elem', 'type::element_t', 'inout', (':',))), 'element_t*')
+
+        # get_kokkos_type
+        self.assertEqual(get_kokkos_type(("foo", "real", "in", ("100",))),
+                         'const uview_1d<const Spack>&')
+        self.assertEqual(get_kokkos_type(("foo", "real", "in", None)),
+                         'const Spack&')
+        self.assertEqual(get_kokkos_type(("foo", "real", "inout", ("100",))),
+                         'const uview_1d<Spack>&')
+        self.assertEqual(get_kokkos_type(("foo", "real", "inout", None)),
+                         'Spack&')
+        self.assertEqual(get_kokkos_type(("foo", "real", "out", ("100",))),
+                         'const uview_1d<Spack>&')
+        self.assertEqual(get_kokkos_type(("foo", "real", "out", ('ncol', '0:pver'))),
+                         'const uview_1d<Spack>&')
+        self.assertEqual(get_kokkos_type(("foo", "real", "out", None)),
+                         'Spack&')
+        self.assertEqual(get_kokkos_type(("foo", "integer", "inout", None)),
+                         'Int&')
+        self.assertEqual(get_kokkos_type(('elem', 'type::element_t', 'inout', (':',))),
+                         'const uview_1d<element_t>&')
+
+        # gen_arg_cxx_decls
+        self.assertEqual(gen_arg_cxx_decls([("foo", "real", "in", ("100",)), ("bar", "real", "in", None)]),
+                         ['Real* foo', 'Real bar'])
+        self.assertEqual(gen_arg_cxx_decls([("foo", "real", "in", ("100",)), ("bar", "real", "out", None)], kokkos=True),
+                         ['// Inputs', 'const uview_1d<const Spack>& foo', '// Outputs', 'Spack& bar'])
+
+        # split_by_intent
+        self.assertEqual(split_by_intent(UT_ARG_DATA), (
+            ['foo1', 'foo2', 'bar1', 'bar2', 'bak1', 'bak2', 'tracerd1', 'tracerd2', 'gag', 'bag', 'val', 'vals', 'shcol', 'nlev', 'nlevi', 'ntracers'],
+            ['baz'],
+            ['bab1', 'bab2', 'ball1', 'ball2']))
+
+        # split_by_type
+        self.assertEqual(split_by_type(UT_ARG_DATA), (
+            ['foo1', 'foo2', 'bar1', 'bar2', 'bak1', 'bak2', 'tracerd1', 'tracerd2', 'gag', 'baz'],
+            ['bag', 'bab1', 'bab2', 'shcol', 'nlev', 'nlevi', 'ntracers', 'ball1', 'ball2'],
+            ['val', 'vals']))
+
+        # split_by_scalar_vs_view
+        self.assertEqual(split_by_scalar_vs_view(UT_ARG_DATA), (
+            ['gag', 'bab1', 'bab2', 'val', 'shcol', 'nlev', 'nlevi', 'ntracers'],
+            ['foo1', 'foo2', 'bar1', 'bar2', 'bak1', 'bak2', 'tracerd1', 'tracerd2', 'baz', 'bag', 'vals', 'ball1', 'ball2']))
+
+        # gen_cxx_data_args
+        self.assertEqual(gen_cxx_data_args("shoc", UT_ARG_DATA),
+                         ['d.foo1', 'd.foo2', 'd.bar1', 'd.bar2', 'd.bak1', 'd.bak2', 'd.tracerd1', 'd.tracerd2', 'd.gag', 'd.baz', 'd.bag', '&d.bab1', '&d.bab2', 'd.val', 'd.vals', 'd.shcol', 'd.nlev', 'd.nlevi', 'd.ntracers', 'd.ball1', 'd.ball2'])
+
+        # gen_arg_f90_decl
+        self.assertEqual(gen_arg_f90_decls(UT_ARG_DATA), [
+            "real(kind=c_real) , intent(in), dimension(shcol) :: foo1, foo2",
+            "real(kind=c_real) , intent(in), dimension(shcol, nlev) :: bar1, bar2",
+            "real(kind=c_real) , intent(in), dimension(shcol, -nlev:nlev) :: bak1",
+            "real(kind=c_real) , intent(in), dimension(shcol, nlevi) :: bak2",
+            "real(kind=c_real) , intent(in), dimension(shcol, nlev, ntracers) :: tracerd1, tracerd2",
+            "real(kind=c_real) , value, intent(in) :: gag",
+            "real(kind=c_real) , intent(inout), dimension(shcol) :: baz",
+            "integer(kind=c_int) , intent(in), dimension(shcol, 0:nlev) :: bag",
+            "integer(kind=c_int) , intent(out) :: bab1, bab2",
+            "logical(kind=c_bool) , value, intent(in) :: val",
+            "logical(kind=c_bool) , intent(in), dimension(shcol) :: vals",
+            "integer(kind=c_int) , value, intent(in) :: shcol, nlev, nlevi, ntracers",
+            "integer(kind=c_int) , intent(out), dimension(shcol) :: ball1, ball2",
+        ])
+
+        # has_arrays
+        self.assertTrue(has_arrays(UT_ARG_DATA))
+        self.assertFalse(has_arrays(UT_ARG_DATA_ALL_SCALAR))
+
+        # gen_struct_members
+        self.assertEqual(gen_struct_members(UT_ARG_DATA), [
+            "// Inputs",
+            "Real *foo1, *foo2, *bar1, *bar2, *bak1, *bak2, *tracerd1, *tracerd2;",
+            "Real gag;",
+            "Int *bag;",
+            "bool val;",
+            "bool *vals;",
+            "Int shcol, nlev, nlevi, ntracers;",
+            "",
+            "// Inputs/Outputs",
+            "Real *baz;",
+            "",
+            "// Outputs",
+            "Int bab1, bab2;",
+            "Int *ball1, *ball2;",
+            "",
+        ])
+
+        # group_data
+        self.assertEqual(group_data(UT_ARG_DATA), (
+            ['shcol'],
+            ['nlev', '-nlev:nlev', 'nlevi', '0:nlev'],
+            ['ntracers'],
+            ['shcol', 'nlev', '-nlev:nlev', 'nlevi', '0:nlev', 'ntracers'],
+            [('gag', 'Real'), ('bab1', 'Int'), ('bab2', 'Int'), ('val', 'bool')],
+            {
+                ('shcol',): ['foo1', 'foo2', 'baz'],
+                ('shcol', 'nlev'): ['bar1', 'bar2'],
+                ('shcol', '-nlev:nlev'): ['bak1'],
+                ('shcol', 'nlevi'): ['bak2'],
+                ('shcol', 'nlev', 'ntracers'): ['tracerd1', 'tracerd2']
+            },
+            {
+                ('shcol', '0:nlev'): ['bag'],
+                ('shcol',): ['ball1', 'ball2']
+            },
+            {('shcol',): ['vals']}))
+        self.assertEqual(group_data(UT_ARG_DATA_ALL_SCALAR), (
+            [],
+            [],
+            [],
+            [],
+            [('foo1', 'Real'), ('foo2', 'Real'), ('bar1', 'Real'), ('bar2', 'Real'), ('baz1', 'Real'), ('baz2', 'Real'), ('gag1', 'Int'), ('gag2', 'Int'), ('gal1', 'Int'), ('gal2', 'Int'), ('bal1', 'Int'), ('bal2', 'Int'), ('bit1', 'bool'), ('bit2', 'bool'), ('gut1', 'bool'), ('gut2', 'bool'), ('gat1', 'bool'), ('gat2', 'bool')],
+            {},
+            {},
+            {}))
+
+
+###############################################################################
+class TestGenBoiler(unittest.TestCase):
+###############################################################################
+
+    ###########################################################################
+    @patch('sys.stdout', new_callable=io.StringIO)
+    def test_create_template(self, mock_stdout):
+    ###########################################################################
+        gb = GenBoiler(["linear_interp"], ["cxx_func_impl"], dry_run=True)
+        create_template("shoc", "linear_interp", gb, "cxx_func_impl", force=True, force_arg_data=UT_ARG_DATA)
+
+        expected_output = \
+"""Would create file src/physics/shoc/impl/shoc_linear_interp_impl.hpp with contents:
+#ifndef SHOC_LINEAR_INTERP_IMPL_HPP
+#define SHOC_LINEAR_INTERP_IMPL_HPP
+
+#include "shoc_functions.hpp" // for ETI only but harmless for GPU
+
+namespace scream {
+namespace shoc {
+
+/*
+ * Implementation of shoc linear_interp. Clients should NOT
+ * #include this file, but include shoc_functions.hpp instead.
+ */
+
+template<typename S, typename D>
+KOKKOS_FUNCTION
+void Functions<S,D>::linear_interp(
+// Inputs
+const uview_1d<const Spack>& foo1,
+const uview_1d<const Spack>& foo2,
+const uview_1d<const Spack>& bar1,
+const uview_1d<const Spack>& bar2,
+const uview_1d<const Spack>& bak1,
+const uview_1d<const Spack>& bak2,
+const uview_1d<const Spack>& tracerd1,
+const uview_1d<const Spack>& tracerd2,
+const Spack& gag,
+// Inputs/Outputs
+const uview_1d<Spack>& baz,
+// Inputs
+const uview_1d<const Int>& bag,
+// Outputs
+Int& bab1,
+Int& bab2,
+// Inputs
+const bool& val,
+const uview_1d<const bool>& vals,
+const Int& shcol,
+const Int& nlev,
+const Int& nlevi,
+const Int& ntracers,
+// Outputs
+const uview_1d<Int>& ball1,
+const uview_1d<Int>& ball2)
+{
+  // TODO
+  // Note, argument types may need tweaking. Generator is not always able to tell what needs to be packed
+}
+
+} // namespace shoc
+} // namespace scream
+
+#endif
+
+"""
+        output = mock_stdout.getvalue()
+        line_by_line_compare(self, expected_output, output)
+
+    ###########################################################################
+    def test_normalize_f90(self):
+    ###########################################################################
+        test_str = \
+"""
+module mymod
+  subroutine foo(a, b, &{0}
+               c, d, e,&
+!bad{0}
+&f)
+
+    real, intent(in) :: a, b, & !go
+                c, d, e, f{0}
+
+  ! hi
+  !hi ! there{0}
+!hi ! there
+  end subroutine foo{0}
+end module mymod
+""".format(" ")
+
+        expected_result = \
+"""module mymod
+subroutine foo(a, b, &
+c, d, e,&
+&f)
+real, intent(in) :: a, b, &
+c, d, e, f
+end subroutine foo
+end module mymod
+"""
+        actual = remove_comments_and_ws(test_str)
+        line_by_line_compare(self, expected_result, actual)
+
+        expected_result2 = \
+"""module mymod
+subroutine foo(a, b, c, d, e,f)
+real, intent(in) :: a, b, c, d, e, f
+end subroutine foo
+end module mymod
+"""
+        actual2 = normalize_f90(test_str)
+        line_by_line_compare(self, expected_result2, actual2)
+
+    ###########################################################################
+    def test_parse_f90_args(self):
+    ###########################################################################
+        self.assertEqual(parse_f90_args('integer, intent(in) :: kts, kte, kbot'),
+                         [('kts', 'integer', 'in', None), ('kte', 'integer', 'in', None), ('kbot', 'integer', 'in', None)])
+        self.assertEqual(parse_f90_args('real(rtype),intent(inout ), dimension(kts:kte) :: pres,dpres,  dz '),
+                         [('pres', 'real', 'inout', ('kts:kte',)), ('dpres', 'real', 'inout', ('kts:kte',)), ('dz', 'real', 'inout', ('kts:kte',))])
+        self.assertEqual(parse_f90_args('logical (btype), intent( in) ::do_predict_nc'),
+                         [('do_predict_nc', 'logical', 'in', None)])
+        self.assertEqual(parse_f90_args('real(rtype),intent(inout), dimension( kts:kte, its: ite) :: dz'),
+                         [('dz', 'real', 'inout', ('kts:kte', 'its:ite'))])
+        self.assertEqual(parse_f90_args('real(rtype),intent(inout), dimension(3) :: dz'),
+                         [('dz', 'real', 'inout', ('3',))])
+        self.assertEqual(parse_f90_args('real(rtype),intent(inout), dimension(3,4) :: dz'),
+                         [('dz', 'real', 'inout', ('3', '4'))])
+        self.assertEqual(parse_f90_args('real(rtype), dimension(3,4),intent(inout) :: dz'),
+                         [('dz', 'real', 'inout', ('3', '4'))])
+        self.assertEqual(parse_f90_args('real(rtype), intent(in) :: x1(ncol,km1), y1(ncol , km1 )'),
+                         [('x1', 'real', 'in', ('ncol', 'km1')), ('y1', 'real', 'in', ('ncol', 'km1'))])
+        self.assertEqual(parse_f90_args('real(rtype), intent(in) :: x1(ncol,km1,ntracers)'),
+                         [('x1', 'real', 'in', ('ncol', 'km1', 'ntracers'))])
+        self.assertEqual(parse_f90_args('type(element_t), intent(inout) :: elem(:)'),
+                         [('elem', 'type::element_t', 'inout', (':',))])
+        self.assertEqual(parse_f90_args('character*(max_path_len), intent(out), optional ::  iopfile_out'),
+                         [('iopfile_out', 'type::string', 'out', None)])
+        self.assertEqual(parse_f90_args('real(r8), intent(out) :: nm(ncol,pver), ni(ncol,0:pver)'),
+                         [('nm', 'real', 'out', ('ncol', 'pver')), ('ni', 'real', 'out', ('ncol', '0:pver'))])
+        self.assertEqual(parse_f90_args('real(r8), intent(out) :: nm(ncol,pver), ni(ncol,-pgwv:pgwv)'),
+                         [('nm', 'real', 'out', ('ncol', 'pver')), ('ni', 'real', 'out', ('ncol', '-pgwv:pgwv'))])
+
+    ###########################################################################
+    def test_parse_origin(self):
+    ###########################################################################
+        teststr = '''
+
+   SUBROUTINE p3_get_tables(mu_r_user, revap_user, &
+           tracerd, vn_user, vm_user)
+     ! This can be called after p3_init_b.
+     implicit none
+     real(rtype), dimension(150), intent(out) :: mu_r_user
+     real(rtype), dimension(300,10), intent(out) :: vn_user, vm_user, revap_user
+     real(rtype), dimension(300,10,42), intent(out) :: tracerd
+     mu_r_user(:) = mu_r_table(:)
+     revap_user(:,:) = revap_table(:,:)
+     vn_user(:,:) = vn_table(:,:)
+     vm_user(:,:) = vm_table(:,:)
+
+    return
+
+   end SUBROUTINE p3_get_tables
+
+   subroutine p3_set_tables( mu_r_user, revap_user,vn_user, vm_user )
+     ! This can be called instead of p3_init_b.
+     implicit none
+     real(rtype), dimension(300,10), intent(in) :: vn_user, vm_user, revap_user
+     real(rtype), dimension(150), intent(in) :: mu_r_user
+     mu_r_table(:) = mu_r_user(:)
+     revap_table(:,:) = revap_user(:,:)
+     vn_table(:,:) = vn_user(:,:)
+     vm_table(:,:) = vm_user(:,:)
+
+    return
+
+   END SUBROUTINE p3_set_tables
+
+   SUBROUTINE p3_init_b()
+     implicit none
+     integer                      :: i,ii,jj,kk
+     real(rtype)                         :: lamr,mu_r,dm,dum1,dum2,dum3,dum4,dum5,  &
+          dd,amg,vt,dia
+
+     ! AaronDonahue: Switching to table ver 4 means switching to a constand mu_r,
+     ! so this section is commented out.
+     do i = 1,150
+   END SUBROUTINE p3_init_b
+
+ function impli_srf_stress_term(shcol, rho_zi_sfc, uw_sfc, vw_sfc, u_wind_sfc, v_wind_sfc) result (ksrf)
+   !intent-ins
+   integer,     intent(in) :: shcol
+
+   !air density at interfaces [kg/m3]
+   real(rtype), intent(in) :: rho_zi_sfc(shcol)
+   !vertical zonal momentum flux at surface [m3/s3]
+   real(rtype), intent(in) :: uw_sfc(shcol)
+   !vertical meridional momentum flux at surface [m3/s3]
+   real(rtype), intent(in) :: vw_sfc(shcol)
+   !zonal wind [m/s]
+   real(rtype), intent(in) :: u_wind_sfc(shcol)
+   !meridional wind [m/s]
+   real(rtype), intent(in) :: v_wind_sfc(shcol)
+
+   !function return value
+   real(rtype) :: ksrf(shcol)
+
+   return foo
+  end function impli_srf_stress_term
+
+  subroutine advance_iop_forcing(scm_dt, ps_in, &             ! In
+                    u_in, v_in, t_in, q_in, t_phys_frc,&    ! In
+                    u_update, v_update, t_update, q_update) ! Out
+
+    ! Input arguments
+    real(r8), intent(in) :: ps_in             ! surface pressure [Pa]
+    real(r8), intent(in) :: u_in(plev)        ! zonal wind [m/s]
+    real(r8), intent(in) :: v_in(plev)        ! meridional wind [m/s]
+    real(r8), intent(in) :: t_in(plev)        ! temperature [K]
+    real(r8), intent(in) :: q_in(plev,pcnst)  ! q tracer array [units vary]
+    real(r8), intent(in) :: t_phys_frc(plev)  ! temperature forcing from physics [K/s]
+    real(r8), intent(in) :: scm_dt            ! model time step [s]
+
+    ! Output arguments
+    real(r8), intent(out) :: t_update(plev)      ! updated temperature [K]
+    real(r8), intent(out) :: q_update(plev,pcnst)! updated q tracer array [units vary]
+    real(r8), intent(out) :: u_update(plev)      ! updated zonal wind [m/s]
+    real(r8), intent(out) :: v_update(plev)      ! updated meridional wind [m/s]
+
+  end subroutine advance_iop_forcing
+
+  subroutine iop_setinitial(elem)
+    type(element_t), intent(inout) :: elem(:)
+  end subroutine iop_setinitial
+ '''
+        test1 = [item for item in sorted(parse_origin(teststr, ["p3_get_tables", "p3_init_b"]).items())]
+        self.assertEqual(test1, [
+            ('p3_get_tables', [
+                ('mu_r_user', 'real', 'out', ('150',)),
+                ('revap_user', 'real', 'out', ('300', '10')),
+                ('tracerd', 'real', 'out', ('300', '10', '42')),
+                ('vn_user', 'real', 'out', ('300', '10')),
+                ('vm_user', 'real', 'out', ('300', '10'))
+            ]),
+            ('p3_init_b', [])
+        ])
+
+        test2 = [item for item in parse_origin(teststr, ["impli_srf_stress_term"]).items()]
+        self.assertEqual(test2, [
+            ('impli_srf_stress_term', [
+                ('shcol', 'integer', 'in', None),
+                ('rho_zi_sfc', 'real', 'in', ('shcol',)),
+                ('uw_sfc', 'real', 'in', ('shcol',)),
+                ('vw_sfc', 'real', 'in', ('shcol',)),
+                ('u_wind_sfc', 'real', 'in', ('shcol',)),
+                ('v_wind_sfc', 'real', 'in', ('shcol',)),
+                ('ksrf', 'real', 'out', ('shcol',))
+            ]),
+        ])
+
+        test3 = [item for item in parse_origin(teststr, ["advance_iop_forcing"]).items()]
+        self.assertEqual(test3, [
+            ('advance_iop_forcing', [
+                ('plev', 'integer', 'in', None),
+                ('pcnst', 'integer', 'in', None),
+                ('scm_dt', 'real', 'in', None),
+                ('ps_in', 'real', 'in', None),
+                ('u_in', 'real', 'in', ('plev',)),
+                ('v_in', 'real', 'in', ('plev',)),
+                ('t_in', 'real', 'in', ('plev',)),
+                ('q_in', 'real', 'in', ('plev', 'pcnst')),
+                ('t_phys_frc', 'real', 'in', ('plev',)),
+                ('u_update', 'real', 'out', ('plev',)),
+                ('v_update', 'real', 'out', ('plev',)),
+                ('t_update', 'real', 'out', ('plev',)),
+                ('q_update', 'real', 'out', ('plev', 'pcnst'))
+            ]),
+        ])
+
+        test4 = [item for item in parse_origin(teststr, ["iop_setinitial"]).items()]
+        self.assertEqual(test4, [('iop_setinitial', [('elem', 'type::element_t', 'inout', (':',))])])
+
+###############################################################################
+def _main_func(desc):
+###############################################################################
+    unittest.main(verbosity=2)
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)

@@ -11,7 +11,7 @@
 
 //
 // Bridge functions to call fortran version of gw functions from C++. The structs are host
-// test data that supports random generation and transition from CXX to f90 and back.
+// test data that do initialization/allocation, random generation, and transition from CXX to f90 and back.
 //
 
 namespace scream {
@@ -950,6 +950,7 @@ void gw_drag_prof(GwDragProfData& d);
 void gw_front_project_winds(GwFrontProjectWindsData& d);
 void gw_front_gw_sources(GwFrontGwSourcesData& d);
 void gw_cm_src(GwCmSrcData& d);
+void gw_convect_project_winds_f(GwConvectProjectWindsData& d);
 void gw_convect_project_winds(GwConvectProjectWindsData& d);
 void gw_heating_depth(GwHeatingDepthData& d);
 void gw_storm_speed(GwStormSpeedData& d);
