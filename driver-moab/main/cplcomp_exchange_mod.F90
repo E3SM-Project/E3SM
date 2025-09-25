@@ -1024,6 +1024,7 @@ subroutine  copy_aream_from_area(mbappid)
       iMOAB_FreeSenderBuffers, iMOAB_ComputeCommGraph, iMOAB_LoadMesh
       !
       use seq_infodata_mod
+      use shr_moab_mod
       !
       type(seq_infodata_type) ,  intent(in) :: infodata
       type(component_type), intent(inout) :: comp
@@ -1062,7 +1063,7 @@ subroutine  copy_aream_from_area(mbappid)
       real(r8),    allocatable    :: tagValues(:) ! used for setting aream tags for atm domain read case
       integer                     :: arrsize ! for the size of tagValues
       type(mct_list)             :: temp_list
-      integer                    :: nfields
+      integer                    :: nfields,nloc
       ! real(R8), allocatable, target :: values(:)
 
 
@@ -1094,6 +1095,7 @@ subroutine  copy_aream_from_area(mbappid)
       call shr_mpi_max(mlnid, maxMLID, mpicom_join, all=.true.)
       call shr_mpi_max(MPSIID, maxMSID, mpicom_join, all=.true.)
       call shr_mpi_max(mrofid, maxMRID, mpicom_join, all=.true.)
+
       if (seq_comm_iamroot(CPLID) ) then
          write(logunit, *) "MOAB coupling for ", comp%oneletterid,' ', comp%ntype
       endif
@@ -1105,8 +1107,9 @@ subroutine  copy_aream_from_area(mbappid)
 
          ! find atm mesh/domain file if it exists; it would be for data atm model (atm_prognostic false)
          call seq_infodata_GetData(infodata,atm_mesh = atm_mesh)
-         ! now, if on coupler pes, receive mesh; if on comp pes, send mesh
 
+
+!!!!!!!! ON ATM COMPONENT
          if (mphaid >= 0) then  ! component atm procs
             ierr  = iMOAB_GetMeshInfo ( mphaid, nvert, nvise, nbl, nsurf, nvisBC )
             comp%mbApCCid = mphaid ! phys atm 
@@ -1114,8 +1117,10 @@ subroutine  copy_aream_from_area(mbappid)
             comp%mblsize = nvert(1) ! point cloud
          endif
 
+!!!!!!!! ON ATM COMPONENT
          if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component pes (atmosphere)
          !  send mesh to coupler
+         !!!!  FULL ATM
             if ( trim(atm_mesh) == 'none' ) then ! full model
                if (atm_pg_active) then !  change : send the pg2 mesh, not coarse mesh, when atm pg active
                   ierr = iMOAB_SendMesh(mhpgid, mpicom_join, mpigrp_cplid, id_join, partMethod)
@@ -1129,6 +1134,7 @@ subroutine  copy_aream_from_area(mbappid)
                endif
             endif
          endif ! atmosphere pes
+!!!!!!!!  ON ATM IN CPL
          if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
             appname = "COUPLE_ATM"//C_NULL_CHAR
             ! migrated mesh gets another app id, moab atm to coupler (mbax)
@@ -1137,13 +1143,15 @@ subroutine  copy_aream_from_area(mbappid)
                write(logunit,*) subname,' error in registering ', appname
                call shr_sys_abort(subname//' ERROR registering '// appname)
             endif
+            !!!!  FULL ATM
             if ( trim(atm_mesh) == 'none' ) then ! full atm
                ierr = iMOAB_ReceiveMesh(mbaxid, mpicom_join, mpigrp_old, id_old)
                if (ierr .ne. 0) then
                   write(logunit,*) subname,' error in receiving mesh on atm coupler '
                   call shr_sys_abort(subname//' ERROR in receiving mesh on atm coupler ')
                endif
-            else   ! data atm
+            !!!!  DATA ATM
+            else
               ! we need to read the atm mesh on coupler, from domain file 
                infile = trim(atm_mesh)//C_NULL_CHAR
                ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE=;REPARTITION;NO_CULLING'//C_NULL_CHAR
@@ -1172,7 +1180,9 @@ subroutine  copy_aream_from_area(mbappid)
          endif  ! on coupler pes
          !  iMOAB_FreeSenderBuffers needs to be called after receiving the mesh
 
+!!!!!!!!  ATM COMPONENT
          if (mhid .ge. 0) then  ! we are on component atm pes
+   !!!!! FULL ATM
             if ( trim(atm_mesh) == 'none' ) then  ! full atmosphere
                context_id = id_join
                if (atm_pg_active) then! we send mesh from mhpgid app
@@ -1187,6 +1197,7 @@ subroutine  copy_aream_from_area(mbappid)
             endif
          endif  ! component atm pes
 
+!!!!!  back to joint COMPONENT and CPL procs
          ! graph between atm phys, mphaid, and atm dyn on coupler, mbaxid
          ! phys atm group is mpigrp_old, coupler group is mpigrp_cplid
          typeA = 2 ! point cloud for mphaid
@@ -1203,6 +1214,7 @@ subroutine  copy_aream_from_area(mbappid)
 
          ! we can receive those tags only on coupler pes, when mbaxid exists
          ! we have to check that before we can define the tag
+!!!!!!! On ATM ON CPL
          if (mbaxid .ge. 0 ) then   !  coupler pes
             tagtype = 1  ! dense, double
 
@@ -1237,7 +1249,8 @@ subroutine  copy_aream_from_area(mbappid)
             ! also, frac, area,  masks has to come from atm mphaid, not from domain file reader
             ! this is hard to digest :(
             tagname = 'lat:lon:area:frac:mask'//C_NULL_CHAR
-            call component_exch_moab(comp, mphaid, mbaxid, 0, tagname, context_exch='dom')
+            ! TODO:  this should be called on the joint procs, not coupler only.
+            call component_exch_moab(comp, mphaid, mbaxid, 0, tagname, context_exch='doma')
             ! copy aream from area in case atm_mesh
             call copy_aream_from_area(mbaxid)
          endif ! coupler pes
@@ -1270,6 +1283,7 @@ subroutine  copy_aream_from_area(mbappid)
          ! find ocean domain file if it exists; it would be for data ocean model (ocn_prognostic false)
          call seq_infodata_GetData(infodata,ocn_domain=ocn_domain)
 
+!!!!!!  OCEAN COMPONENT
          if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component pes (ocean)
 #ifdef MOABDEBUG
             !   write out the mesh file to disk, in parallel
@@ -1290,6 +1304,7 @@ subroutine  copy_aream_from_area(mbappid)
                call shr_sys_abort(subname//' ERROR in getting mesh info on ocn  ')
             endif
             comp%mbApCCid = mpoid ! ocn comp app in moab 
+   !!!!!  FULL OCN
             if ( trim(ocn_domain) == 'none' ) then
                !  send mesh to coupler
                ierr = iMOAB_SendMesh(mpoid, mpicom_join, mpigrp_cplid, id_join, partMethod)
@@ -1299,11 +1314,13 @@ subroutine  copy_aream_from_area(mbappid)
                endif
                comp%mbGridType = 1 ! cells
                comp%mblsize = nvise(1) ! cells
+   !!!!!  DATA OCN
             else
                comp%mbGridType = 0 ! vertices
                comp%mblsize = nvert(1) ! vertices
             endif
          endif
+!!!!!!  OCN ON CPL
          if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
             appname = "COUPLE_MPASO"//C_NULL_CHAR
             ! migrated mesh gets another app id, moab ocean to coupler (mbox)
@@ -1312,12 +1329,14 @@ subroutine  copy_aream_from_area(mbappid)
                write(logunit,*) subname,' cannot register ocn app on coupler '
                call shr_sys_abort(subname//' ERROR cannot register ocn app on coupler  ')
             endif
+    !!!!! FULL OCN
             if ( trim(ocn_domain) == 'none' ) then
                ierr = iMOAB_ReceiveMesh(mboxid, mpicom_join, mpigrp_old, id_old)
                if (ierr .ne. 0) then
                   write(logunit,*) subname,' cannot receive ocn mesh on coupler '
                   call shr_sys_abort(subname//' ERROR cannot receive ocn mesh on coupler  ')
                endif
+    !!!!! DATA OCN
             else
               ! we need to read the ocean mesh on coupler, from domain file 
                infile = trim(ocn_domain)//C_NULL_CHAR
@@ -1341,7 +1360,7 @@ subroutine  copy_aream_from_area(mbappid)
                   call shr_sys_abort(subname//' ERROR in adding global id tag to ocnx ')
                endif
             endif  ! end of defining couplers copy of ocean mesh
-
+    !!!! Still on OCN ON CPL
             tagname = trim(seq_flds_o2x_fields)//C_NULL_CHAR 
             tagtype = 1  ! dense, double
             numco = 1 !  one value per cell
@@ -1350,6 +1369,7 @@ subroutine  copy_aream_from_area(mbappid)
                write(logunit,*) subname,' error in defining tags o2x on coupler'
                call shr_sys_abort(subname//' ERROR in defining tags o2x on coupler ')
             endif
+
             ! need also to define seq_flds_x2o_fields on coupler instance, and on ocean comp instance
             tagname = trim(seq_flds_x2o_fields)//C_NULL_CHAR 
             ierr = iMOAB_DefineTagStorage(mboxid, tagname, tagtype, numco,  tagindex )
@@ -1378,6 +1398,7 @@ subroutine  copy_aream_from_area(mbappid)
             endif
 #endif
          endif
+!!!!!!  OCEAN COMPONENT
          if (mpoid .ge. 0) then  ! we are on component ocn pes
             if ( trim(ocn_domain) == 'none' ) then
                context_id = id_join
@@ -1389,6 +1410,8 @@ subroutine  copy_aream_from_area(mbappid)
             endif
          endif
          ! in case of domain read, we need to compute the comm graph
+!!!!!!! on joint OCN and CPL procs
+     !!!!! DATA OCN
          if ( trim(ocn_domain) /= 'none' ) then
             ! we are now on joint pes, compute comm graph between data ocn and coupler model ocn
             typeA = 2 ! point cloud on component PEs
@@ -1402,14 +1425,18 @@ subroutine  copy_aream_from_area(mbappid)
             ! also, frac, area,  masks has to come from ocean mpoid, not from domain file reader
             ! this is hard to digest :(
             tagname = 'lat:lon:area:frac:mask'//C_NULL_CHAR
-            call component_exch_moab(comp, mpoid, mboxid, 0, tagname, context_exch='afm')
+            call component_exch_moab(comp, mpoid, mboxid, 0, tagname, context_exch='domo')
          endif 
 
+!!!!!!!!!!! OCEAN 2nd COPY
          ! start copy
          ! do another ocean copy of the mesh on the coupler, just because So_fswpen field 
          ! would appear twice on original mboxid, once from xao states, once from o2x states
          id_join = id_join + 1000! kind of random 
+
+!!!!!!!!  OCEAN COMPONENT
          if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component pes (ocean)
+  !!!! FULL OCEAN
             if ( trim(ocn_domain) == 'none' ) then
                !  send mesh to coupler, the second time! a copy would be cheaper
                ierr = iMOAB_SendMesh(mpoid, mpicom_join, mpigrp_cplid, id_join, partMethod)
@@ -1420,6 +1447,7 @@ subroutine  copy_aream_from_area(mbappid)
             endif
          endif
 
+!!!!!!!!  ON 2nd OCN ON CPL
          if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
             appname = "COUPLE_MPASOF"//C_NULL_CHAR
             ! migrated mesh gets another app id, moab ocean to coupler (mbox)
@@ -1428,12 +1456,14 @@ subroutine  copy_aream_from_area(mbappid)
                write(logunit,*) subname,' cant register second ocean mesh on coupler'
                call shr_sys_abort(subname//' ERROR cant register second ocean mesh on coupler')
             endif
+    !!!!! FULL OCN
             if ( trim(ocn_domain) == 'none' ) then
                ierr = iMOAB_ReceiveMesh(mbofxid, mpicom_join, mpigrp_old, id_old)
                if (ierr .ne. 0) then
                   write(logunit,*) subname,' cant receive second ocean mesh on coupler'
                   call shr_sys_abort(subname//' ERROR cant receive second ocean mesh on coupler')
                endif
+    !!!!! DATA OCN
             else
                 ! we need to read the ocean mesh on coupler, from domain file 
                infile = trim(ocn_domain)//C_NULL_CHAR
@@ -1458,6 +1488,7 @@ subroutine  copy_aream_from_area(mbappid)
                endif
             endif
 
+     !! ON 2nd OCEAN ON COUPLER
             tagtype = 1  ! dense, real
             numco = 1
             tagname = trim(seq_flds_dom_fields)//":norm8wt"//C_NULL_CHAR
@@ -1467,8 +1498,18 @@ subroutine  copy_aream_from_area(mbappid)
                call shr_sys_abort(subname//' ERROR in defining tags ')
             endif
 
+            ! copy domain data to mbofxid
+            tagname = 'lat:lon:area:frac:mask'//C_NULL_CHAR
+            nloc = mbGetnCells(mbofxid)
+            arrsize=nloc*5
+            allocate(tagValues(arrsize))
+            call mbGetCellTagVals(mboxid,tagname,tagValues,arrsize)
+            call mbSetCellTagVals(mbofxid,tagname,tagValues,arrsize)
+            deallocate(tagValues)
+
          endif
 
+!!!!!!!!  ON OCN COMPONENT
          if (mpoid .ge. 0) then  ! we are on component ocn pes again, release buffers 
              if ( trim(ocn_domain) == 'none' ) then
                context_id = id_join
@@ -1574,6 +1615,7 @@ subroutine  copy_aream_from_area(mbappid)
                     write(logunit,*) subname,' error in zeroing Flrr tags on land', ierr
                     call shr_sys_abort(subname//' ERROR in zeroing Flrr tags land')
                  endif
+                 deallocate(tagValues)
                endif
             endif
 
@@ -1605,7 +1647,7 @@ subroutine  copy_aream_from_area(mbappid)
          endif
 
          tagname = 'lat:lon:area:frac:mask'//C_NULL_CHAR
-         call component_exch_moab(comp, mlnid, mblxid, 0, tagname, context_exch='dom')
+         call component_exch_moab(comp, mlnid, mblxid, 0, tagname, context_exch='doml')
 
 #ifdef MOABDEBUG
             outfile = 'recMeshLand.h5m'//C_NULL_CHAR
@@ -1758,7 +1800,7 @@ subroutine  copy_aream_from_area(mbappid)
             ! also, frac, area,  masks has to come from ice MPSIID , not from domain file reader
             ! this is hard to digest :(
             tagname = 'lat:lon:area:frac:mask'//C_NULL_CHAR
-            call component_exch_moab(comp, MPSIID, mbixid, 0, tagname)
+            call component_exch_moab(comp, MPSIID, mbixid, 0, tagname, context_exch='domi')
          endif 
 #ifdef MOABDEBUG
   !      debug test
@@ -1853,7 +1895,7 @@ subroutine  copy_aream_from_area(mbappid)
          endif
 
          tagname = 'area:lon:lat:frac:mask'//C_NULL_CHAR
-         call component_exch_moab(comp, mrofid, mbrxid, 0, tagname)
+         call component_exch_moab(comp, mrofid, mbrxid, 0, tagname, context_exch='domr')
          ! copy aream from area in all cases
          ! initialize aream from area; it may have different values in the end, or reset again
          call copy_aream_from_area(mbrxid)
