@@ -134,6 +134,7 @@ module ocn_core_interface
       logical, pointer :: inSituEOSActive
       logical, pointer :: variableShortwaveActive
       logical, pointer :: gmActive
+      logical, pointer :: rediActive
       logical, pointer :: submesoActive
       logical, pointer :: timeVaryingAtmosphericForcingPKGActive
       logical, pointer :: timeVaryingLandIceForcingPKGActive
@@ -396,13 +397,18 @@ module ocn_core_interface
       end if
 
       !
-      ! test for use of gm
+      ! test for use of gm/redi
       !
       call mpas_pool_get_package(packagePool, 'gmActive', gmActive)
+      call mpas_pool_get_package(packagePool, 'rediActive', rediActive)
       call mpas_pool_get_config(configPool, 'config_use_GM', config_use_GM)
       call mpas_pool_get_config(configPool, 'config_use_Redi', config_use_Redi)
-      if (config_use_GM.or.config_use_Redi) then
+      if (config_use_GM) then
          gmActive = .true.
+      end if
+
+      if (config_use_Redi) then
+         rediActive = .true.
       end if
 
       !
