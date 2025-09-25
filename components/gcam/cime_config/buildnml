@@ -307,20 +307,22 @@ def buildnml(case, caseroot, compname):
         dst = os.path.join(rundir, fname)
         _ensure_symlink(src, dst)
 
-    # Static files into run dir (with target names)
-    _ensure_symlink(os.path.join(ldir, "iESM_Ref_CropPast2015_c10142019.nc"),
-                    os.path.join(rundir, "iESM_Init_CropPast.nc"))
-    _ensure_symlink(os.path.join(ldir, "surfdata_360x720_mcrop2015_c07082020.nc"),
-                    os.path.join(rundir, "surfdata_360x720_mcrop_init.nc"))
+    # Static files into run dir (with target names) - use copies for these files
+    _ensure_copy(os.path.join(ldir, "iESM_Ref_CropPast2015_c10142019.nc"),
+                 os.path.join(rundir, "iESM_Init_CropPast.nc"))
+    _ensure_copy(os.path.join(ldir, "surfdata_360x720_mcrop2015_c07082020.nc"),
+                 os.path.join(rundir, "surfdata_360x720_mcrop_init.nc"))
     
-    # Dynamic source: absolute path or relative to glm2iacdir
+    # Dynamic source: absolute path or relative to glm2iacdir - use copies for these files
     dyn_src_path = None
     if iesm_dyn_source:
         dyn_src_path = iesm_dyn_source if os.path.isabs(iesm_dyn_source) else os.path.join(glm2iacdir, iesm_dyn_source)
         expect(os.path.isfile(dyn_src_path), "iesm_dyn_source not found: {}".format(dyn_src_path))
-        _ensure_symlink(dyn_src_path, os.path.join(rundir, os.path.basename(iesm_dyn_source)))
+        _ensure_copy(dyn_src_path, os.path.join(rundir, os.path.basename(iesm_dyn_source)))
+        # Also create the standard surfdata_iESM.nc copy for compatibility
+        _ensure_copy(dyn_src_path, os.path.join(rundir, "surfdata_iESM.nc"))
     else:
-        logger.warning("Skipping dynamic source symlink because iesm_dyn_source was not determined.")
+        logger.warning("Skipping dynamic source copy because iesm_dyn_source was not determined.")
 
     # Link previously saved scalar files if read_scalars = .true. in gcam_in
     def _get_namelist_item(path, key):
@@ -337,7 +339,6 @@ def buildnml(case, caseroot, compname):
 
     gcam_in_path = os.path.join(rundir, "gcam_in")
     read_scalars = False
-    scalar_source_dir = None
     if os.path.isfile(gcam_in_path):
         # Check for read_scalars = .true.
         try:
@@ -348,10 +349,10 @@ def buildnml(case, caseroot, compname):
                         break
         except Exception:
             pass
-        # Get scalar_source_dir from namelist
-        scalar_source_dir = _get_namelist_item(gcam_in_path, "scalar_source_dir")
 
     if read_scalars:
+        # Only get scalar_source_dir when read_scalars = .true.
+        scalar_source_dir = _get_namelist_item(gcam_in_path, "scalar_source_dir")
         expect(scalar_source_dir, "read_scalars = .true. but scalar_source_dir is not specified in gcam_in")
         expect(os.path.isdir(scalar_source_dir), f"scalar_source_dir '{scalar_source_dir}' does not exist")
         for src in glob.glob(os.path.join(scalar_source_dir, "scalar.*")):
@@ -359,11 +360,13 @@ def buildnml(case, caseroot, compname):
             dst = os.path.join(rundir, fname)
             _ensure_symlink(src, dst)
         logger.info("Linked scalar files from control run: %s", scalar_source_dir)
+    else:
+        logger.info("read_scalars = .false., skipping scalar file linking")
 
     for fname in ("surfdata_360x720_potveg.nc", "mksurf_landuse_iESM_720x360.nc"):
         src = os.path.join(glm2iacdir, fname)
         expect(os.path.isfile(src), "Missing GLM2IAC file: {}".format(src))
-        _ensure_symlink(src, os.path.join(rundir, fname))
+        _ensure_copy(src, os.path.join(rundir, fname))
 
     # === Copies to refresh each run (were `cp` lines) ===
     init_crop_past = os.path.join(rundir, "iESM_Init_CropPast.nc")
@@ -378,14 +381,30 @@ def buildnml(case, caseroot, compname):
     if iesm_dyn_source:
         expect(os.path.exists(dyn_src_in_rundir), "Expected dynamic source in RUNDIR: {}".format(dyn_src_in_rundir))
 
-    # Only copy dynamic files when starting fresh at 2015
-    if run_type == "startup" and str(run_refdate).startswith("2015"):
-        _ensure_copy(init_crop_past, os.path.join(rundir, "iESM_Dyn_CropPast.nc"))
-        _ensure_copy(mcrop_init,     os.path.join(rundir, "surfdata_360x720_mcrop_dyn.nc"))
-        if iesm_dyn_source:
-            _ensure_copy(dyn_src_in_rundir, os.path.join(rundir, "surfdata_iESM_dyn.nc"))
-    else:
-        logger.info("Skipping dynamic file copy: not a fresh start at 2015 (run_type=%s, run_refdate=%s)", run_type, run_refdate)
+    # Initialize dynamic files if they don't exist (prevents overwriting updated state from restarts)
+    dyn_files_to_check = [
+        ("iESM_Dyn_CropPast.nc", init_crop_past),
+        ("surfdata_360x720_mcrop_dyn.nc", mcrop_init)
+    ]
+    if iesm_dyn_source:
+        dyn_files_to_check.append(("surfdata_iESM_dyn.nc", dyn_src_in_rundir))
+    
+    # Check if this is a fresh start (no existing dynamic files) or if we should create missing ones
+    for dyn_name, src_file in dyn_files_to_check:
+        dyn_path = os.path.join(rundir, dyn_name)
+        if not os.path.exists(dyn_path):
+            logger.info("Creating missing dynamic file: %s", dyn_name)
+            _ensure_copy(src_file, dyn_path)
+        else:
+            logger.info("Dynamic file already exists, preserving: %s", dyn_name)
+    
+    # Special case: ensure surfdata_iESM_dyn.nc exists for non-startup runs if we have surfdata_iESM.nc
+    if not (run_type == "startup" and str(run_refdate).startswith("2015")):
+        if iesm_dyn_source and os.path.exists(os.path.join(rundir, "surfdata_iESM.nc")):
+            dyn_file = os.path.join(rundir, "surfdata_iESM_dyn.nc")
+            if not os.path.exists(dyn_file):
+                logger.info("Creating surfdata_iESM_dyn.nc for non-startup run")
+                _ensure_copy(os.path.join(rundir, "surfdata_iESM.nc"), dyn_file)
 
 ###############################################################################
 def _main_func():

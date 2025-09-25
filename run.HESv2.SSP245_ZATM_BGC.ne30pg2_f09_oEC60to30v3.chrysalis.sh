@@ -104,8 +104,8 @@ do_create_newcase=true
 do_modify_pe_layout=true
 do_case_setup=true
 do_case_build=true
-# do_case_submit=true
-do_case_submit=false
+do_case_submit=true
+# do_case_submit=false
 # --- Now, do the work ---
 
 # Make directories created by this script world-readable
@@ -169,6 +169,10 @@ cat << EOF >> user_nl_elm
 EOF
 
 cat << EOF >> user_nl_gcam
+
+!read_scalars = .false.
+read_scalars = .true.
+scalar_source_dir = '/lcrc/group/e3sm/ac.eva.sinha/20240730_SSP245_ZATM_BGC_ne30pg2_f09_oEC60to30v3/run'
 
 EOF
 
