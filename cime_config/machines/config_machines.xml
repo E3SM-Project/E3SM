@@ -3343,9 +3343,13 @@
       <modules compiler="gnu.*">
         <command name="load">PrgEnv-gnu/8.6.0</command>
         <command name="load">gcc-native/13.2</command>
+        <command name="load">hdf5/1.14.6</command>
+        <command name="load">netcdf/4.9.3c-4.6.2f</command>
       </modules>
       <modules compiler="nvidia.*">
         <command name="load">PrgEnv-nvidia/8.6.0</command>
+        <command name="load">hdf5-nvidia/1.14.6</command>
+        <command name="load">netcdf-nvidia/4.9.3c-4.6.2f</command>
       </modules>
       <modules compiler=".*gpu">
         <command name="load">cuda/12.6</command>
@@ -3353,8 +3357,6 @@
       </modules>
       <modules>
         <command name="load">cray-libsci/25.03.0</command>
-        <command name="load">hdf5/1.14.6</command>
-        <command name="load">netcdf/4.9.3c-4.6.2f</command>
         <command name="load">cray-parallel-netcdf/1.12.3.13</command>
       </modules>
     </module_system>
