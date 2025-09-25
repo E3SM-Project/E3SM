@@ -100,6 +100,11 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
   // the name of the yaml file where the options are read from.
   m_stream_name = params.name();
 
+  // Is this output set to be transposed?
+  if (params.isParameter("transpose")) {
+    m_transpose = params.get<bool>("transpose");
+  }
+
   auto gm = field_mgr->get_grids_manager();
 
   // Figure out what kind of averaging is requested
