@@ -98,6 +98,14 @@
       <support_level>Experimental, under development</support_level>
   </compset>
 
+  <!-- development compsets for EAMxx-LR -->
+
+  <compset>
+      <alias>F2010xx-ZM</alias> <!-- Coupled land-atm compset (using EAmxx+ZM), 2010 initial conditions -->
+      <lname>2010_SCREAM%ZM_ELM%SPBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV_SIAC_SESP</lname>
+      <support_level>Experimental, under development</support_level>
+  </compset>
+
   <entries>
 
     <entry id="RUN_STARTDATE">
