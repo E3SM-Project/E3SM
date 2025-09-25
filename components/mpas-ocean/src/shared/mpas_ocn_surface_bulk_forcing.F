@@ -287,7 +287,7 @@ contains
 
       !*** Transfer data to device
       !$acc enter data &
-      !$acc    copyin(windStressZonal, windStressMerid, windSpeed10m, iceFraction, 
+      !$acc    copyin(windStressZonal, windStressMerid, windSpeed10m, iceFraction, & 
       !$acc           velocityZonal, velocityMeridional, normalVelocity, ekeCorrection)
 
       !*** Forcing needed over halo regions
@@ -419,14 +419,15 @@ contains
 
 #ifdef MPAS_OPENACC
       !$acc exit data delete(zonalWSEdge, meridWSEdge)
-#endif
-
-      deallocate(zonalWSEdge, meridWSEdge)
-
       !*** Transfer any needed data back to host and delete inputs
       !$acc copyout(ekeCorrection)
       !$acc exit data &
-      !$acc    delete(windStressZonal, windStressMerid)
+      !$acc    delete(windStressZonal, windStressMerid, windSpeed10m, iceFraction, &
+      !$acc           velocityZonal, velocityMeridional, normalVelocity, ekeCorrection)
+#endif
+
+
+      deallocate(zonalWSEdge, meridWSEdge)
 
       call mpas_timer_stop("bulk_ws")
 
