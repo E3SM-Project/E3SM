@@ -678,6 +678,33 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 
+<!-- eddy_kinetic_energy_correction -->
+
+<entry id="config_eke_correction_enable" type="logical"
+	category="eddy_kinetic_energy_correction" group="eddy_kinetic_energy_correction">
+flag to enable the eddy kinetic energy corrections.  This parameterization is based on the work of Renault et al 2019 - https://doi.org/10.1029/2019MS001715 -- NOTE: this should only be used at for RRS6to18 resolution or finer
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_eke_alpha" type="real"
+	category="eddy_kinetic_energy_correction" group="eddy_kinetic_energy_correction">
+'alpha' coefficent for computations of St in equation (10) of Renault et al (2019)
+
+Valid values: small negative values not too far from the default
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_eke_beta" type="real"
+	category="eddy_kinetic_energy_correction" group="eddy_kinetic_energy_correction">
+'beta' coefficent for computation of St in equation (10) of Renault et al (2019)
+
+Valid values: small positive numbers not far from the default
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
 <!-- eddy_parameterization -->
 
 <entry id="config_eddyMLD_dens_threshold" type="real"

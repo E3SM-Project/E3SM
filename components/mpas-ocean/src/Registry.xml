@@ -454,6 +454,20 @@
 					possible_values="Any positive real value."
 		/>
 	</nml_record>
+	<nml_record name="eddy_kinetic_energy_correction" mode="forward">
+		<nml_option name="config_eke_correction_enable" type="logical" default_value=".false."
+		  description="flag to enable the eddy kinetic energy corrections.  This parameterization is based on the work of Renault et al 2019 - https://doi.org/10.1029/2019MS001715 -- NOTE: this should only be used at for RRS6to18 resolution or finer"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_eke_alpha" type="real" default_value="-2.9e-3"
+					description="'alpha' coefficent for computations of St in equation (10) of Renault et al (2019)"
+					possible_values="small negative values not too far from the default"
+		/>
+		<nml_option name="config_eke_beta" type="real" default_value="0.008"
+					description="'beta' coefficent for computation of St in equation (10) of Renault et al (2019)"
+					possible_values="small positive numbers not far from the default"
+		/>
+	</nml_record>
 	<nml_record name="eddy_parameterization" mode="forward">
 		<nml_option name="config_eddyMLD_dens_threshold" type="real" default_value="0.03" units="kg m^-3"
 					description="potential density change relative to surface for mixed layer depth threshold method.  This calculation is used for the Redi tapering, GM N2_dependent bolus kappa, and the submesoscale eddy parameterization"
@@ -4016,8 +4030,11 @@
 		<var name="windSpeed10m" type="real" dimensions="nCells Time" units="m s^-1"
 			 description="Wind speed at 10 meter."
 		/>
+	    <var name="ekeCorrection" type="real" dimensions="nEdges Time" units="m s^-2"
+			 description="Correction for high res FOSI runs"
+		/>
 
-		<!-- Waves coupling fields -->
+        <!-- Waves coupling fields -->
 		<var name="stokesDriftZonal" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
 			 description="Zonal component of the wave-induced Stokes drift current."
 			 packages="activeWavePKG"

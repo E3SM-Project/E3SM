@@ -291,6 +291,11 @@
 <config_GMRedi_Rossby_ramp_min>0.5</config_GMRedi_Rossby_ramp_min>
 <config_GMRedi_Rossby_ramp_max>3.0</config_GMRedi_Rossby_ramp_max>
 
+<!-- eddy_kinetic_energy_correction -->
+<config_eke_correction_enable>.false.</config_eke_correction_enable>
+<config_eke_alpha>-2.9e-3</config_eke_alpha>
+<config_eke_beta>0.008</config_eke_beta>
+
 <!-- eddy_parameterization -->
 <config_eddyMLD_dens_threshold>0.03</config_eddyMLD_dens_threshold>
 <config_eddyMLD_reference_depth>10</config_eddyMLD_reference_depth>

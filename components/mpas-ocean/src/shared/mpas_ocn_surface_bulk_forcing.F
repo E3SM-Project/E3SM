@@ -218,7 +218,8 @@ contains
 
    subroutine ocn_surface_bulk_forcing_vel( &
                                forcingPool, sfcStress, &
-                               sfcStressMag, err)!{{{
+                               sfcStressMag, velocityZonal, &
+                               velocityMeridional, normalVelocity, err)!{{{
 
       !-----------------------------------------------------------------
       ! input variables
@@ -226,6 +227,9 @@ contains
 
       type (mpas_pool_type), intent(in) :: &
          forcingPool         !< [in] Forcing structure w/ sfc stresses
+
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+         velocityZonal, velocityMeridional, normalVelocity
 
       !-----------------------------------------------------------------
       ! input/output variables
@@ -247,13 +251,21 @@ contains
 
       integer ::         &
          iEdge, iCell,   &! loop indices for edge, cell loops
-         nCells, nEdges   ! number of cells, edges participating
+         nCells, nEdges, &! number of cells, edges participating
+         cell1, cell2
 
       real (kind=RKIND), dimension(:), pointer :: &
          windStressZonal, &! zonal wind stress from forcing
          windStressMerid, &! meridional wind stress from forcing
          meridWSEdge,     &! meridional wind stress avg to edge
-         zonalWSEdge       ! zonal wind stress averaged to edge
+         zonalWSEdge,     &! zonal wind stress averaged to edge
+         windSpeed10m,    &! 10m wind speed for eke correction scheme
+         iceFraction       ! sea ice fraction to mask the eke correction scheme
+
+      real (kind=RKIND), dimension(:), pointer :: &
+         ekeCorrection !variable to output for diagnostics of the correction
+
+      real (kind=RKIND) :: leadingCoeff, u10m, eddyKillCorrZon, eddyKillCorrMer
 
       ! End preamble
       !-----------------------------------------------------------------
@@ -269,10 +281,14 @@ contains
 
       call mpas_pool_get_array(forcingPool, 'windStressZonal', windStressZonal)
       call mpas_pool_get_array(forcingPool, 'windStressMeridional', windStressMerid)
+      call mpas_pool_get_array(forcingPool, 'iceFraction', iceFraction)
+      call mpas_pool_get_array(forcingPool, 'windSpeed10m', windSpeed10m)
+      call mpas_pool_get_array(forcingPool, 'ekeCorrection', ekeCorrection)
 
       !*** Transfer data to device
       !$acc enter data &
-      !$acc    copyin(windStressZonal, windStressMerid)
+      !$acc    copyin(windStressZonal, windStressMerid, windSpeed10m, iceFraction, & 
+      !$acc           velocityZonal, velocityMeridional, normalVelocity, ekeCorrection)
 
       !*** Forcing needed over halo regions
 
@@ -318,15 +334,76 @@ contains
       end do
 #ifndef MPAS_OPENACC
       !$omp end do
+      !$omp end parallel
 #endif
+
+      if (config_eke_correction_enable) then
+#ifdef MPAS_OPENACC
+      !$acc parallel loop &
+      !$acc    present(sfcStress,ekeCorrection,windSpeed10m,normalVelocity, &
+      !$acc            iceFraction,cellsOnEdge)
+      !$acc    private(cell1, cell2, leadingCoeff, u10m)
+#else
+      !$omp parallel
+      !$omp do schedule(runtime) &
+      !$omp private(cell1,cell2,leadingCoeff,u10m)
+#endif
+         do iEdge = 1, nEdges
+            cell1 = cellsOnEdge(1,iEdge)
+            cell2 = cellsOnEdge(2,iEdge)
+            u10m = 0.5_RKIND*(windSpeed10m(cell1) + windSpeed10m(cell2))
+            ekeCorrection(iEdge) = 0.0_RKIND
+            if (iceFraction(cell1) < 0.05_RKIND .and. iceFraction(cell2) < 0.05_RKIND) then
+               leadingCoeff = -(config_eke_alpha*u10m + config_eke_beta)
+               ekeCorrection(iEdge) = leadingCoeff*normalVelocity(minLevelEdgeBot(iEdge),iEdge)
+               sfcStress(iEdge) = sfcStress(iEdge) + ekeCorrection(iEdge)
+            end if
+         end do
+#ifndef MPAS_OPENACC
+      !$omp end do
+      !$omp end parallel
+#endif
+      end if
 
       ! Calculate surface flux magnitude at cell centers
 
+      if (config_eke_correction_enable) then
+#ifdef MPAS_OPENACC
+      !$acc parallel loop &
+      !$acc    present(sfcStressMag, windStressZonal, windStressMerid, &
+      !$acc            velocityZonal, velocityMeridional, minLevelCell, &
+      !$acc            iceFraction)
+      !$acc    private(leadingCoeff, eddyKillCorrZon, eddyKillCorrMer)
+#else
+      !$omp parallel
+      !$omp do schedule(runtime) &
+      !$omp private(leadingCoeff, eddyKillCorrZon, eddyKillCorrMer)
+#endif
+      do iCell = 1, nCells
+        leadingCoeff = -(config_eke_alpha*windSpeed10m(iCell) + config_eke_beta)
+        eddyKillCorrZon = leadingCoeff*velocityZonal(minLevelCell(iCell),iCell)
+        eddyKillCorrMer = leadingCoeff*velocityMeridional(minLevelCell(iCell),iCell)
+
+        if (iceFraction(iCell) > 0.05_RKIND) then
+           eddyKillCorrZon = 0.0_RKIND
+           eddyKillCorrMer = 0.0_RKIND
+        end if
+
+        sfcStressMag(iCell) = sfcStressMag(iCell) + &
+                              sqrt( (windStressZonal(iCell) + eddyKillCorrZon)**2 &
+                                  + (windStressMerid(iCell) + eddyKillCorrMer)**2 )
+      end do
+#ifndef MPAS_OPENACC
+      !$omp end do
+      !$omp end parallel
+#endif
+      else
 #ifdef MPAS_OPENACC
       !$acc parallel loop &
       !$acc    present(sfcStressMag, windStressZonal, &
       !$acc                          windStressMerid)
 #else
+      !$omp parallel
       !$omp do schedule(runtime)
 #endif
       do iCell = 1, nCells
@@ -338,16 +415,19 @@ contains
       !$omp end do
       !$omp end parallel
 #endif
+      end if
 
 #ifdef MPAS_OPENACC
       !$acc exit data delete(zonalWSEdge, meridWSEdge)
+      !*** Transfer any needed data back to host and delete inputs
+      !$acc copyout(ekeCorrection)
+      !$acc exit data &
+      !$acc    delete(windStressZonal, windStressMerid, windSpeed10m, iceFraction, &
+      !$acc           velocityZonal, velocityMeridional, normalVelocity, ekeCorrection)
 #endif
 
-      deallocate(zonalWSEdge, meridWSEdge)
 
-      !*** Transfer any needed data back to host and delete inputs
-      !$acc exit data &
-      !$acc    delete(windStressZonal, windStressMerid)
+      deallocate(zonalWSEdge, meridWSEdge)
 
       call mpas_timer_stop("bulk_ws")
 
