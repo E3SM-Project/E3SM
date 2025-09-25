@@ -2,7 +2,7 @@
 #define EAMXX_HORIZ_INTERP_REMAP_DATA_HPP
 
 #include "share/grid/abstract_grid.hpp"
-#include "share/grid/remap/abstract_remapper.hpp"
+#include "share/remap/abstract_remapper.hpp"
 
 #include <ekat_comm.hpp>
 

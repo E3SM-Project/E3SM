@@ -1,5 +1,7 @@
 #include "share/manager/field_manager.hpp"
 
+#include "share/manager/library_grids_manager.hpp"
+
 namespace scream
 {
 

@@ -3,7 +3,7 @@
 #include "diagnostics/register_diagnostics.hpp"
 #include "share/field/field_utils.hpp"
 #include "share/field/field_impl.hpp"
-#include "share/grid/mesh_free_grids_manager.hpp"
+#include "share/manager/mesh_free_grids_manager.hpp"
 #include "share/core/eamxx_setup_random_test.hpp"
 
 namespace scream {

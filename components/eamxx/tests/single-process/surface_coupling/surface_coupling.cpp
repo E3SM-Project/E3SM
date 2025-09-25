@@ -5,7 +5,7 @@
 #include "control/atmosphere_surface_coupling_exporter.hpp"
 #include "diagnostics/register_diagnostics.hpp"
 #include "share/physics/eamxx_common_physics_functions.hpp"
-#include "share/grid/mesh_free_grids_manager.hpp"
+#include "share/manager/mesh_free_grids_manager.hpp"
 #include "share/manager/field_manager.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
 #include "share/core/eamxx_setup_random_test.hpp"
