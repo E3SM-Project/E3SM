@@ -8,6 +8,12 @@
 
 #include <ekat_team_policy_utils.hpp>
 
+// #include "helper_hash.cpp"
+#define MICRO_SMALL_KERNELS
+// #define MICRO_SMALL_KERNELS
+#define MICRO_SMALL_KERNELS
+#include <physics/mam/eamxx_mam_microphysics_process_functions.cpp>
+
 namespace scream {
 
 MAMMicrophysics::MAMMicrophysics(const ekat::Comm &comm,
@@ -430,6 +436,10 @@ int MAMMicrophysics::get_len_temporary_views() {
   const int photo_table_len = get_photo_table_work_len(photo_table_);
   const int sethet_work_len = mam4::mo_sethet::get_total_work_len_sethet();
   constexpr int extcnt      = mam4::gas_chemistry::extcnt;
+  constexpr int pcnst              = mam4::pcnst;
+  constexpr int gas_pcnst = mam_coupling::gas_pcnst();
+  constexpr int nmodes = mam4::AeroConfig::num_modes();
+
   int work_len              = 0;
   // work_photo_table_
   work_len += ncol_ * photo_table_len;
@@ -441,12 +451,27 @@ int MAMMicrophysics::get_len_temporary_views() {
   work_len += ncol_ * nlev_ * mam4::gas_chemistry::nfs;
   // extfrc_
   work_len += ncol_ * nlev_ * extcnt;
+  //state_q_, qqcw_pcnst_
+  work_len += 2*ncol_ * nlev_*pcnst;
+  //qq_, qqcw_, vmr_,vmr0_, vmrcw_
+  work_len += 5 * ncol_ * nlev_*gas_pcnst;
+  // het_rates_
+  work_len += ncol_ * nlev_*gas_pcnst;
+  //   vmr_pregas_ vmr_precld_
+  work_len += 2* ncol_ * nlev_*gas_pcnst;
+  // dqdt_aqso4_, dqdt_aqh2so4_
+  work_len += 2*ncol_ *nlev_*gas_pcnst;
+  // dgncur_awet_, dgncur_a_, wetdens_;
+  work_len += 3*ncol_ *nlev_*nmodes;
   return work_len;
 }
 void MAMMicrophysics::init_temporary_views() {
   const int photo_table_len = get_photo_table_work_len(photo_table_);
   const int sethet_work_len = mam4::mo_sethet::get_total_work_len_sethet();
   constexpr int extcnt      = mam4::gas_chemistry::extcnt;
+  constexpr int pcnst              = mam4::pcnst;
+  constexpr int gas_pcnst = mam_coupling::gas_pcnst();
+  constexpr int nmodes = mam4::AeroConfig::num_modes();
   auto work_ptr             = (Real *)buffer_.temporary_views.data();
 
   work_photo_table_ = view_2d(work_ptr, ncol_, photo_table_len);
@@ -460,6 +485,40 @@ void MAMMicrophysics::init_temporary_views() {
   work_ptr += ncol_ * nlev_ * mam4::gas_chemistry::nfs;
   extfrc_ = view_3d(work_ptr, ncol_, nlev_, extcnt);
   work_ptr += ncol_ * nlev_ * extcnt;
+  state_q_=view_3d(work_ptr, ncol_, nlev_, pcnst );
+  work_ptr += ncol_ * nlev_*pcnst;
+  qqcw_pcnst_=view_3d(work_ptr, ncol_, nlev_,pcnst );
+  work_ptr += ncol_ * nlev_*pcnst;
+  qq_=view_3d(work_ptr, ncol_, nlev_,gas_pcnst );
+  work_ptr += ncol_ * nlev_*gas_pcnst;
+  qqcw_=view_3d(work_ptr, ncol_, nlev_,gas_pcnst );
+  work_ptr += ncol_ * nlev_*gas_pcnst;
+  vmr_=view_3d(work_ptr, ncol_, nlev_,gas_pcnst );
+  work_ptr += ncol_ * nlev_*gas_pcnst;
+  vmr0_=view_3d(work_ptr, ncol_, nlev_,gas_pcnst );
+  work_ptr += ncol_ * nlev_*gas_pcnst;
+  vmrcw_=view_3d(work_ptr, ncol_, nlev_,gas_pcnst );
+  work_ptr += ncol_ * nlev_*gas_pcnst;
+  het_rates_ = view_3d(work_ptr, ncol_, nlev_, gas_pcnst );
+  work_ptr += ncol_ *nlev_*gas_pcnst;
+
+  vmr_pregas_ = view_3d(work_ptr, ncol_, nlev_,gas_pcnst );
+  work_ptr += ncol_ *nlev_*gas_pcnst;
+  vmr_precld_ =view_3d(work_ptr, ncol_, nlev_,gas_pcnst );
+  work_ptr += ncol_ *nlev_*gas_pcnst;
+
+  dqdt_aqso4_=view_3d(work_ptr, ncol_, nlev_,gas_pcnst );
+  work_ptr += ncol_ *nlev_*gas_pcnst;
+  dqdt_aqh2so4_=view_3d(work_ptr, ncol_, nlev_,gas_pcnst );
+  work_ptr += ncol_ *nlev_*gas_pcnst;
+
+  dgncur_awet_ = view_3d(work_ptr, ncol_, nlev_,nmodes );
+  work_ptr += ncol_ *nlev_*nmodes;
+  dgncur_a_ = view_3d(work_ptr, ncol_, nlev_,nmodes );
+  work_ptr += ncol_ *nlev_*nmodes;
+  wetdens_ = view_3d(work_ptr, ncol_, nlev_,nmodes );
+  work_ptr += ncol_ *nlev_*nmodes;
+
 
   // Error check
   // NOTE: workspace_provided can be larger than workspace_used, but let's try
@@ -634,7 +693,9 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
 
   acos_cosine_zenith_host_ = view_1d_host("host_acos(cosine_zenith)", ncol_);
   acos_cosine_zenith_      = view_1d("device_acos(cosine_zenith)", ncol_);
-
+  // test_hash_ = view_3d("my_test",ncol_, nlev_, mam4::pcnst);
+  // constexpr int gas_pcnst = mam_coupling::gas_pcnst();
+  // test_hash_ = view_3d("my_test",ncol_, nlev_, gas_pcnst);
 }  // initialize_impl
 
 // ================================================================
@@ -653,7 +714,7 @@ void MAMMicrophysics::run_impl(const double dt) {
        const int team_size=nlev;
 #else
        const int team_size=1;
-#endif  
+#endif
   const auto policy = TPF::get_default_team_policy(ncol, team_size);
 
   // preprocess input -- needs a scan for the calculation of atm height
@@ -661,7 +722,7 @@ void MAMMicrophysics::run_impl(const double dt) {
   Kokkos::fence();
 
   //----------- Variables from microphysics scheme -------------
-
+#ifndef MICRO_SMALL_KERNELS
   // Evaporation from stratiform rain [kg/kg/s]
   const auto &nevapr = get_field_in("nevapr").get_view<const Real **>();
 
@@ -736,7 +797,7 @@ void MAMMicrophysics::run_impl(const double dt) {
     gas_aero_exchange_coagulation = get_field_out("mam4_microphysics_tendency_coagulation").get_view<Real***>();
     gas_aero_exchange_renaming_cloud_borne = get_field_out("mam4_microphysics_tendency_renaming_cloud_borne").get_view<Real***>();
   }
-
+#endif
 
   // climatology data for linear stratospheric chemistry
   // ozone (climatology) [vmr]
@@ -824,7 +885,7 @@ void MAMMicrophysics::run_impl(const double dt) {
     i++;
     Kokkos::fence();
   }
-
+#ifndef MICRO_SMALL_KERNELS
   const_view_1d &col_latitudes     = col_latitudes_;
   const_view_1d &d_sfc_alb_dir_vis = d_sfc_alb_dir_vis_;
 
@@ -837,9 +898,10 @@ void MAMMicrophysics::run_impl(const double dt) {
   const auto &work_photo_table                = work_photo_table_;
   const auto &photo_rates                     = photo_rates_;
 
+
   const auto &invariants   = invariants_;
   const auto &cnst_offline = cnst_offline_;
-
+#endif
   // Compute orbital parameters; these are used both for computing
   // the solar zenith angle.
   // Note: We are following the RRTMGP EAMxx interface to compute the zenith
@@ -893,11 +955,14 @@ void MAMMicrophysics::run_impl(const double dt) {
     Kokkos::deep_copy(acos_cosine_zenith_, acos_cosine_zenith_host_);
   }
   const auto zenith_angle = acos_cosine_zenith_;
+
   constexpr int num_gas_aerosol_constituents = mam_coupling::gas_pcnst();
 
   const auto &extfrc   = extfrc_;
-  const auto &forcings = forcings_;
   constexpr int extcnt = mam4::gas_chemistry::extcnt;
+
+#ifndef MICRO_SMALL_KERNELS
+  const auto &forcings = forcings_;
 
   const int offset_aerosol = mam4::utils::gasses_start_ind();
   Real adv_mass_kg_per_moles[num_gas_aerosol_constituents];
@@ -924,8 +989,12 @@ void MAMMicrophysics::run_impl(const double dt) {
   const bool extra_mam4_aero_microphys_diags  = extra_mam4_aero_microphys_diags_;
   //NOTE: we need to initialize photo_rates_
   Kokkos::deep_copy(photo_rates_,0.0);
-  // loop over atmosphere columns and compute aerosol microphysics
+#endif
 
+  // loop over atmosphere columns and compute aerosol microphysics
+#if defined(MICRO_SMALL_KERNELS)
+    run_small_kernels_microphysics(dt, eccf);
+#else
   Kokkos::parallel_for(
       "MAMMicrophysics::run_impl", policy,
       KOKKOS_LAMBDA(const ThreadTeam &team) {
@@ -998,7 +1067,6 @@ void MAMMicrophysics::run_impl(const double dt) {
         const auto work_set_het_icol = ekat::subview(work_set_het, icol);
 
         mam4::MicrophysDiagnosticArrays diag_arrays;
-
         if (extra_mam4_aero_microphys_diags) {
           diag_arrays.dqdt_so4_aqueous_chemistry = ekat::subview(dqdt_so4_aqueous_chemistry, icol);
           diag_arrays.dqdt_h2so4_uptake          = ekat::subview(dqdt_h2so4_uptake, icol);
@@ -1087,7 +1155,9 @@ void MAMMicrophysics::run_impl(const double dt) {
           constituent_fluxes(icol, ispc) -= dflx_col[ispc - offset_aerosol];
         });
       });  // parallel_for for the column loop
-  Kokkos::fence();
+      Kokkos::fence();
+ #endif
+
 
   auto extfrc_fm = get_field_out("mam4_external_forcing").get_view<Real***>();
 
@@ -1114,7 +1184,6 @@ void MAMMicrophysics::run_impl(const double dt) {
       // Convert g → kg (× 1e-3), cm³ → m³ (× 1e6) → total factor: 1e-3 × 1e6 = 1e3 = 1000.0
       extfrc_fm(i,j,k) = extfrc(i,k,j) * (molar_mass_g_per_mol / Avogadro) * 1000.0;
   });
-
   // postprocess output
   post_process(wet_aero_, dry_aero_, dry_atm_);
   Kokkos::fence();
