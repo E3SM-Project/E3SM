@@ -172,6 +172,7 @@ protected:
 
   // --- Internal variables --- //
   ekat::Comm m_comm;
+  bool m_transpose = false;
 
   // We store separate shared pointers for field mgrs at different stages of IO:
   // More specifically, the order of operations is as follows:
