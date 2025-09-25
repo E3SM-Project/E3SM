@@ -3295,7 +3295,7 @@
     <PROJECT>E3SM_RRM</PROJECT>
     <CHARGE_ACCOUNT>E3SM_RRM</CHARGE_ACCOUNT>
     <SAVE_TIMING_DIR>/grand/E3SMinput/polaris/</SAVE_TIMING_DIR>
-    <SAVE_TIMING_DIR_PROJECTS>E3SM_RRM</SAVE_TIMING_DIR_PROJECTS>
+    <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
     <CIME_OUTPUT_ROOT>/eagle/$PROJECT/$USER/scratch</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/grand/E3SMinput/data</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/grand/E3SMinput/data/atm/datm7</DIN_LOC_ROOT_CLMFORC>
@@ -3323,10 +3323,10 @@
        </arguments>
     </mpirun>
     <module_system type="module" allow_error="true">
-      <init_path lang="python">/usr/share/lmod/lmod/init/python</init_path>
-      <init_path lang="sh">/usr/share/lmod/lmod/init/sh</init_path>
-      <init_path lang="csh">/usr/share/lmod/lmod/init/csh</init_path>
-      <cmd_path lang="python">/usr/share/lmod/lmod/libexec/lmod python</cmd_path>
+      <init_path lang="python">/opt/cray/pe/lmod/lmod/init/env_modules_python.py</init_path>
+      <init_path lang="sh">/opt/cray/pe/lmod/lmod/init/sh</init_path>
+      <init_path lang="csh">/opt/cray/pe/lmod/lmod/init/csh</init_path>
+      <cmd_path lang="python">/opt/cray/pe/lmod/lmod/libexec/lmod python</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
       <modules>
@@ -3337,22 +3337,23 @@
         <command name="load">craype-accel-host</command>
       </modules>
       <modules compiler="gnu.*">
-        <command name="load">PrgEnv-gnu/8.5.0</command>
-      </modules>
-      <modules compiler="gnugpu">
-        <command name="load">nvhpc-mixed/23.9</command>
+        <command name="load">PrgEnv-gnu/8.6.0</command>
+        <command name="load">gcc-native/13.2</command>
+        <command name="load">hdf5/1.14.6</command>
+        <command name="load">netcdf/4.9.3c-4.6.2f</command>
       </modules>
       <modules compiler="nvidia.*">
-        <command name="load">PrgEnv-nvhpc/8.5.0</command>
+        <command name="load">PrgEnv-nvidia/8.6.0</command>
+        <command name="load">hdf5-nvidia/1.14.6</command>
+        <command name="load">netcdf-nvidia/4.9.3c-4.6.2f</command>
       </modules>
       <modules compiler=".*gpu">
+        <command name="load">cuda/12.6</command>
         <command name="load">craype-accel-nvidia80</command>
       </modules>
       <modules>
-        <command name="load">cray-libsci/23.12.5</command>
-        <command name="load">cray-hdf5-parallel/1.12.2.9</command>
-        <command name="load">cray-netcdf-hdf5parallel/4.9.0.9</command>
-        <command name="load">cray-parallel-netcdf/1.12.3.9</command>
+        <command name="load">cray-libsci/25.03.0</command>
+        <command name="load">cray-parallel-netcdf/1.12.3.13</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
@@ -3360,7 +3361,6 @@
     <MAX_GB_OLD_TEST_DATA>0</MAX_GB_OLD_TEST_DATA>
     <environment_variables>
       <env name="PERL5LIB">/grand/E3SMinput/soft/perl5/lib/perl5</env>
-      <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
       <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
       <env name="MPICH_GPU_SUPPORT_ENABLED">0</env>
       <env name="GPU_TILE_COMPACT"> </env>
