@@ -1680,6 +1680,16 @@ mmode_loop_aa: &
 ! REASTER 08/11/2015 BEGIN
     do mtmp = 1, ntot_amode ! main loop over aerosol modes
        m = mtmp
+#if ( defined MODAL_AERO_5MODE_AGEDCARBON )
+       if (ntot_amode == 5) then
+          ! for mam5, do accum, aitken, pcarbon, acarbon, then coarse 
+          if (mtmp == ntot_amode) then
+             m = modeptr_coarse
+          else if (mtmp >= modeptr_coarse) then
+             m = mtmp + 1
+          endif
+       endif
+#else
        if (ntot_amode == 4) then
           ! for mam4, do accum, aitken, pcarbon, then coarse 
           if (mtmp == modeptr_coarse) then
@@ -1688,6 +1698,7 @@ mmode_loop_aa: &
              m = mtmp - 1
           endif
        endif
+#endif
 ! REASTER 08/11/2015 END
           
        !BSINGH: loop counters (strt_loop,end_loop and stride_loop) are selected based on whether
