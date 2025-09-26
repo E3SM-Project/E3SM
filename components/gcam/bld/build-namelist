@@ -429,9 +429,6 @@ add_default($nl, 'num_emiss_sectors');
 add_default($nl, 'num_emiss_ctys');
 add_default($nl, 'num_periods');
 
-# Add scalar_source_dir to gcam_inparm group (optional - only if default exists)
-add_default($nl, 'scalar_source_dir', 'nofail'=>1);
-
 # gcam config and init files, relative to inputdata
 add_default($nl, 'gcam_config');
 add_default($nl, 'base_gcam_co2_file');
@@ -477,6 +474,7 @@ add_default($nl, 'fdyndat_ehc');
 
 # runtime options
 add_default($nl, 'read_scalars');
+add_default($nl, 'scalar_source_dir', 'nofail'=>1);
 add_default($nl, 'write_scalars');
 add_default($nl, 'write_co2');
 add_default($nl, 'elm_ehc_agyield_scaling');
