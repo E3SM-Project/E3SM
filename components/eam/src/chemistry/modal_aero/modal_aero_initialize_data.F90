@@ -94,14 +94,7 @@ contains
        xname_spectype(:nspec_amode(1),1)  = (/ 'sulfate   ', 'ammonium  ', &
             'p-organic ', 's-organic ', 'black-c   ', 'seasalt   ', &
             'm-poly    ', 'm-prot    ', 'm-lip     ' /)
-#elif ( defined MODAL_AERO_5MODE_AGEDCARBON )  
-       xname_massptr(:nspec_amode(1),1)   = (/ 'so4_a1  ', &
-            'soa_a1  ', 'dst_a1  ', 'ncl_a1  ', 'mom_a1  ' /)
-       xname_massptrcw(:nspec_amode(1),1) = (/ 'so4_c1  ', &
-            'soa_c1  ', 'dst_c1  ', 'ncl_c1  ', 'mom_c1  ' /)
-       xname_spectype(:nspec_amode(1),1)  = (/ 'sulfate   ', &
-            's-organic ', 'dust      ', 'seasalt   ', 'm-organic ' /)
-#elif ( defined MODAL_AERO_4MODE_MOM )
+#elif ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_AGEDCARBON )
        xname_massptr(:nspec_amode(1),1)   = (/ 'so4_a1  ', &
             'pom_a1  ', 'soa_a1  ', 'bc_a1   ', &
             'dst_a1  ', 'ncl_a1  ', 'mom_a1  ' /)

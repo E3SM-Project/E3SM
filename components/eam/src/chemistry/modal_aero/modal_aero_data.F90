@@ -128,7 +128,7 @@
 #elif ( defined MODAL_AERO_9MODE )
     integer, parameter :: nspec_amode(ntot_amode)           = (/ 9, 7, 5, 3, 3, 3, 3, 3, 3/)  ! SS
 #elif ( ( defined MODAL_AERO_5MODE_AGEDCARBON ) && ( defined RAIN_EVAP_TO_COARSE_AERO ) )
-    integer, parameter :: nspec_amode(ntot_amode)           = (/ 5, 4, 7, 3, 6 /)
+    integer, parameter :: nspec_amode(ntot_amode)           = (/ 7, 4, 7, 3, 6 /)
 #elif ( defined MODAL_AERO_4MODE_MOM )
 #if (defined RAIN_EVAP_TO_COARSE_AERO)
     integer, parameter :: nspec_amode(ntot_amode)           = (/ 7, 4, 7, 3 /)
