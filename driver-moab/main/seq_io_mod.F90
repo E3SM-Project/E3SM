@@ -1711,9 +1711,23 @@ contains
     lpre = trim(dname)
     ! find out the number of global cells, needed for defining the variables length
     ierr = iMOAB_GetGlobalInfo( mbxid, dummy, ng)
-    lnx = ng
     lny = 1
+#ifdef MOABCOMP
+    write(logunit,*) subname, 'lnx, lny, mbxid ',  lnx, lny, mbxid 
+#endif
 
+
+    ! get the local size ns
+    ierr = iMOAB_GetMeshInfo ( mbxid, nvert, nvise, nbl, nsurf, nvisBC )
+    if (mbxid .eq. mbaxid .and. .not. atm_pg_active) then
+      ent_type = 0
+      ns = nvert(1) ! local vertices 
+      lnx = dummy ! number of global vertices
+    else
+      ent_type = 1
+      ns = nvise(1) ! local cells 
+      lnx = ng
+    endif
     ! it is needed to overwrite that for land, ng is too small
     !  ( for ne4pg2 it is 201 instead of 384)
     if (present(nx)) then
@@ -1725,16 +1739,10 @@ contains
     if (present(nt)) then
        frame = nt
     endif
-
-    ! get the local size ns
-    ierr = iMOAB_GetMeshInfo ( mbxid, nvert, nvise, nbl, nsurf, nvisBC )
-    if (mbxid .eq. mbaxid .and. .not. atm_pg_active) then
-      ent_type = 0
-      ns = nvert(1) ! local vertices 
-    else
-      ent_type = 1
-      ns = nvise(1) ! local cells 
-    endif
+#ifdef MOABCOMP
+    write(logunit,*) subname, ' ent_type, ns ', ent_type, ns  
+    write(logunit,*) subname, ' tag_list ', trim(tag_list)  
+#endif
     if (lwhead) then
        if (present(dims2din)) then
           dimid2(1)=dims2din(1)
@@ -2719,7 +2727,17 @@ contains
 
         ! find out the number of global cells, needed for defining the variables length
     ierr = iMOAB_GetGlobalInfo( mbxid, dummy, ng)
-    lnx = ng
+    lny = 1 ! do we need 2 var, or just 1 
+    ierr = iMOAB_GetMeshInfo ( mbxid, nvert, nvise, nbl, nsurf, nvisBC )
+    if (mbxid .eq. mbaxid .and. .not. atm_pg_active) then
+      ent_type = 0
+      ns = nvert(1) ! local vertices 
+      lnx = dummy ! number of global vertices
+    else
+      ent_type = 1
+      ns = nvise(1) ! local cells 
+      lnx = ng
+    endif
     ! it is needed to overwrite that for land, ng is too small
     !  ( for ne4pg2 it is 201 instead of 384)
     if (present(nx)) then
@@ -2727,15 +2745,6 @@ contains
        if (iam==0) write(logunit,*) subname, ' nx present: ', nx  
 #endif
        lnx = nx 
-    endif
-    lny = 1 ! do we need 2 var, or just 1 
-    ierr = iMOAB_GetMeshInfo ( mbxid, nvert, nvise, nbl, nsurf, nvisBC )
-    if (mbxid .eq. mbaxid .and. .not. atm_pg_active) then
-      ent_type = 0
-      ns = nvert(1) ! local vertices 
-    else
-      ent_type = 1
-      ns = nvise(1) ! local cells 
     endif
     allocate(data1(ns))
     allocate(data_reorder(ns))
