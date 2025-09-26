@@ -10,7 +10,8 @@
 // For component name
 #include <string>
 
-namespace scream {
+namespace scream
+{
 
 /*
  * The class responsible to handle the aerosol wetscavenging
@@ -20,7 +21,8 @@ namespace scream {
  *
  */
 
-class MAMWetscav : public MAMGenericInterface {
+class MAMWetscav : public MAMGenericInterface
+{
   using KT           = ekat::KokkosTypes<DefaultDevice>;
   using view_2d      = typename KT::template view_2d<Real>;
   using view_2d_host = typename KT::template view_2d<Real>::HostMirror;
@@ -29,23 +31,27 @@ class MAMWetscav : public MAMGenericInterface {
   // a thread team dispatched to a single vertical column
   using ThreadTeam = mam4::ThreadTeam;
 
- public:
+public:
   // Constructor
   MAMWetscav(const ekat::Comm &comm, const ekat::ParameterList &params);
 
   // The name of the subcomponent
-  std::string name() const override { return "mam4_wetscav"; }
+  std::string
+  name() const override
+  {
+    return "mam4_wetscav";
+  }
 
   // Set the grid and input output variables
-  void set_grids(
-      const std::shared_ptr<const GridsManager> grids_manager) override;
+  void set_grids(const std::shared_ptr<const GridsManager> grids_manager) override;
 
   // management of common atm process memory
   // ON HOST, returns the number of bytes of device memory needed by the above
   // Buffer type given the number of columns and vertical levels
-  size_t requested_buffer_size_in_bytes() const override {
-    return mam_coupling::buffer_size(ncol_, nlev_, num_2d_scratch_,
-                                     len_temporary_views_);
+  size_t
+  requested_buffer_size_in_bytes() const override
+  {
+    return mam_coupling::buffer_size(ncol_, nlev_, num_2d_scratch_, len_temporary_views_);
   }
   void init_buffers(const ATMBufferManager &buffer_manager) override;
 
@@ -56,9 +62,9 @@ class MAMWetscav : public MAMGenericInterface {
   void run_impl(const double dt) override;
 
   // Finalize
-  void finalize_impl() override{/*Do nothing*/};
+  void finalize_impl() override { /*Do nothing*/ };
 
- private:
+private:
   // -----------------------------------------------
   // Local variables
   // ------------------------------------------------
@@ -121,8 +127,20 @@ class MAMWetscav : public MAMGenericInterface {
   void init_temporary_views();
   int len_temporary_views_{0};
 
-};  // class MAMWetscav
+  // scav_fraction_in_cloud_strat_ is in-cloud scavenging fraction
+  Real scav_fraction_in_cloud_strat_ = 1.00;
 
-}  // namespace scream
+  // scav_fraction_in_cloud_conv_ is in-cloud convective scavenging fraction
+  Real scav_fraction_in_cloud_conv_ = 0.00;
 
-#endif  // EAMXX_MAM_WETSCAV_HPP
+  // scav_fraction_below_cloud_strat_ is below-cloud scavenging fraction
+  Real scav_fraction_below_cloud_strat_ = 0.03;
+
+  // activation_fraction_in_cloud_conv_ is convection activation fraction
+  Real activation_fraction_in_cloud_conv_ = 0.40;
+
+}; // class MAMWetscav
+
+} // namespace scream
+
+#endif // EAMXX_MAM_WETSCAV_HPP
