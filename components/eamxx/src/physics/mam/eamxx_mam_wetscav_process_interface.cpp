@@ -10,36 +10,42 @@ NOTES:
 3. Add assert statements to check output ranges
 */
 
-namespace scream {
+namespace scream
+{
 
 // =========================================================================================
-MAMWetscav::MAMWetscav(const ekat::Comm &comm,
-                       const ekat::ParameterList &params)
-    : MAMGenericInterface(comm, params) {
+MAMWetscav::MAMWetscav(const ekat::Comm &comm, const ekat::ParameterList &params)
+ : MAMGenericInterface(comm, params)
+{
   /* Anything that can be initialized without grid information can be
    * initialized here. Like universal constants, mam wetscav options.
    */
-  check_fields_intervals_ =
-      m_params.get<bool>("create_fields_interval_checks", false);
+  check_fields_intervals_          = m_params.get<bool>("create_fields_interval_checks", false);
+  scav_fraction_in_cloud_strat_    = m_params.get<Real>("scav_fraction_in_cloud_strat", 1.00);
+  scav_fraction_in_cloud_conv_     = m_params.get<Real>("scav_fraction_in_cloud_conv", 0.00);
+  scav_fraction_below_cloud_strat_ = m_params.get<Real>("scav_fraction_below_cloud_strat", 0.03);
+  activation_fraction_in_cloud_conv_ =
+      m_params.get<Real>("activation_fraction_in_cloud_conv", 0.40);
 }
 
 // ================================================================
 //  SET_GRIDS
 // ================================================================
-void MAMWetscav::set_grids(
-    const std::shared_ptr<const GridsManager> grids_manager) {
+void
+MAMWetscav::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
+{
   using namespace ekat::units;
 
   grid_                 = grids_manager->get_grid("physics");
   const auto &grid_name = grid_->name();
 
-  ncol_ = grid_->get_num_local_dofs();       // Number of columns on this rank
-  nlev_ = grid_->get_num_vertical_levels();  // Number of levels per column
+  ncol_                = grid_->get_num_local_dofs();      // Number of columns on this rank
+  nlev_                = grid_->get_num_vertical_levels(); // Number of levels per column
   len_temporary_views_ = get_len_temporary_views();
   buffer_.set_len_temporary_views(len_temporary_views_);
   buffer_.set_num_scratch(num_2d_scratch_);
 
-  const int nmodes    = mam4::AeroConfig::num_modes();  // Number of modes
+  const int nmodes    = mam4::AeroConfig::num_modes(); // Number of modes
   constexpr int pcnst = mam4::aero_model::pcnst;
 
   // layout for 3D (2d horiz X 1d vertical) variables at level
@@ -51,12 +57,11 @@ void MAMWetscav::set_grids(
   FieldLayout scalar2d = grid_->get_2d_scalar_layout();
 
   // layout for 3D (ncol, nmodes, nlevs)
-  FieldLayout scalar3d_mid_nmodes = grid_->get_3d_vector_layout(
-      true, nmodes, mam_coupling::num_modes_tag_name());
+  FieldLayout scalar3d_mid_nmodes =
+      grid_->get_3d_vector_layout(true, nmodes, mam_coupling::num_modes_tag_name());
 
   // layout for 2D (ncol, pcnst)
-  FieldLayout scalar2d_pcnst =
-      grid_->get_2d_vector_layout(pcnst, "num_phys_constituents");
+  FieldLayout scalar2d_pcnst = grid_->get_2d_vector_layout(pcnst, "num_phys_constituents");
 
   // --------------------------------------------------------------------------
   // These variables are "required" or pure inputs for the process
@@ -68,9 +73,9 @@ void MAMWetscav::set_grids(
   add_fields_dry_atm();
 
   // cloud liquid number mixing ratio [1/kg]
-  auto n_unit           = 1 / kg;   // units of number mixing ratios of tracers
+  auto n_unit = 1 / kg; // units of number mixing ratios of tracers
   add_tracer<Required>("nc", grid_, n_unit);
-  
+
   static constexpr auto m2 = m * m;
   static constexpr auto s2 = s * s;
 
@@ -83,8 +88,7 @@ void MAMWetscav::set_grids(
   add_field<Required>("nevapr", scalar3d_mid, kg / kg / s, grid_name);
 
   // Stratiform rain production rate [kg/kg/s]
-  add_field<Required>("precip_total_tend", scalar3d_mid, kg / kg / s,
-                      grid_name);
+  add_field<Required>("precip_total_tend", scalar3d_mid, kg / kg / s, grid_name);
 
   // For variables that are non dimensional (e.g., fractions etc.)
   static constexpr auto nondim = Units::nondimensional();
@@ -102,20 +106,16 @@ void MAMWetscav::set_grids(
   // for the land model
 
   // Wet deposition of hydrophilic black carbon [kg/m2/s]
-  add_field<Updated>("wetdep_hydrophilic_bc", scalar3d_mid, kg / m2 / s,
-                     grid_name);
+  add_field<Updated>("wetdep_hydrophilic_bc", scalar3d_mid, kg / m2 / s, grid_name);
 
   // Dry deposition of hydrophilic black carbon [kg/m2/s]
-  add_field<Updated>("drydep_hydrophilic_bc", scalar3d_mid, kg / m2 / s,
-                     grid_name);
+  add_field<Updated>("drydep_hydrophilic_bc", scalar3d_mid, kg / m2 / s, grid_name);
 
   // Wet deposition of hydrophilic organic carbon [kg/m2/s]
-  add_field<Updated>("wetdep_hydrophilic_oc", scalar3d_mid, kg / m2 / s,
-                     grid_name);
+  add_field<Updated>("wetdep_hydrophilic_oc", scalar3d_mid, kg / m2 / s, grid_name);
 
   // Dry deposition of hydrophilic organic carbon [kg/m2/s]
-  add_field<Updated>("drydep_hydrophilic_oc", scalar3d_mid, kg / m2 / s,
-                     grid_name);
+  add_field<Updated>("drydep_hydrophilic_oc", scalar3d_mid, kg / m2 / s, grid_name);
 
   // Wet deposition of dust (bin1) [kg/m2/s]
   add_field<Updated>("wetdep_dust_bin1", scalar3d_mid, kg / m2 / s, grid_name);
@@ -174,7 +174,9 @@ void MAMWetscav::set_grids(
 // ON HOST, initializeѕ the Buffer type with sufficient memory to store
 // intermediate (dry) quantities on the given number of columns with the given
 // number of vertical levels. Returns the number of bytes allocated.
-void MAMWetscav::init_buffers(const ATMBufferManager &buffer_manager) {
+void
+MAMWetscav::init_buffers(const ATMBufferManager &buffer_manager)
+{
   EKAT_REQUIRE_MSG(
       buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes(),
       "Error! Insufficient buffer size.\n");
@@ -429,7 +431,10 @@ void MAMWetscav::run_impl(const double dt) {
   const auto &calsize_data  = calsize_data_;
   const auto &scavimptblnum = scavimptblnum_;
   const auto &scavimptblvol = scavimptblvol_;
-
+  const Real scav_fraction_in_cloud_strat  = scav_fraction_in_cloud_strat_;   
+  const Real scav_fraction_in_cloud_conv = scav_fraction_in_cloud_conv_;
+  const Real scav_fraction_below_cloud_strat  = scav_fraction_below_cloud_strat_;
+  const Real activation_fraction_in_cloud_conv = activation_fraction_in_cloud_conv_;
   // Loop over atmosphere columns
   Kokkos::parallel_for(
       policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
@@ -479,6 +484,10 @@ void MAMWetscav::run_impl(const double dt) {
 
         mam4::wetdep::aero_model_wetdep(
             team, atm, progs, tends, dt,
+            scav_fraction_in_cloud_strat,
+            scav_fraction_in_cloud_conv,
+            scav_fraction_below_cloud_strat,
+            activation_fraction_in_cloud_conv,
             // inputs
             cldt_icol, rprdsh_icol, rprddp_icol, evapcdp_icol, evapcsh_icol,
             dp_frac_icol, sh_frac_icol, icwmrdp_col, icwmrsh_icol, nevapr_icol,
