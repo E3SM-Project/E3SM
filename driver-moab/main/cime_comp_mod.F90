@@ -5392,14 +5392,6 @@ contains
              call shr_sys_flush(logunit)
           endif
 
-         !  call t_startf('CPL:seq_rest_write')
-         !  call seq_rest_write(EClock_d, seq_SyncClock, infodata,       &
-         !       atm, lnd, ice, ocn, rof, glc, wav, esp, iac,            &
-         !       fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
-         !       fractions_rx, fractions_gx, fractions_wx, fractions_zx, &
-         !       trim(cpl_inst_tag), drv_resume_file)
-         !  call t_stopf('CPL:seq_rest_write')
-
 #ifdef MOABDEBUG
           call write_moab_state( .true. )
 #endif
