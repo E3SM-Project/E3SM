@@ -1,11 +1,12 @@
 module atm_import_export
 
   use shr_kind_mod  , only: r8 => shr_kind_r8, cl=>shr_kind_cl
+  use cam_logfile      , only: iulog
   implicit none
 
 contains
 
-  subroutine atm_import( x2a, cam_in, restart_init )
+  subroutine atm_import( x2a, cam_in, restart_init)
 
     !-----------------------------------------------------------------------
     use cam_cpl_indices
@@ -17,8 +18,11 @@ contains
     use co2_cycle     , only: c_i, co2_readFlux_ocn, co2_readFlux_fuel
     use co2_cycle     , only: co2_transport, co2_time_interp_ocn, co2_time_interp_fuel
     use co2_cycle     , only: data_flux_ocn, data_flux_fuel
+    use iac_coupled_fields, only: iac_vertical_emiss
+    use phys_control  , only: iac_present
     use physconst     , only: mwco2
-    use time_manager  , only: is_first_step
+    use time_manager  , only: is_first_step, get_curr_date
+    use constituents  , only: pcnst
     !
     ! Arguments
     !
@@ -35,12 +39,17 @@ contains
     integer, target    :: spc_ndx(ndst)
     integer, pointer   :: dst_a5_ndx, dst_a7_ndx
     integer, pointer   :: dst_a1_ndx, dst_a3_ndx
+    integer :: icnst, mon_idx
     logical :: overwrite_flds
     !-----------------------------------------------------------------------
     overwrite_flds = .true.
     ! don't overwrite fields if invoked during the initialization phase
     ! of a 'continue' or 'branch' run type with data from .rs file
     if (present(restart_init)) overwrite_flds = .not. restart_init
+
+    if (iac_present) then
+      mon_idx = get_month_index()
+    endif
 
     ! ccsm sign convention is that fluxes are positive downward
 
@@ -136,6 +145,28 @@ contains
           if (index_x2a_Fall_fco2_lnd /= 0) then
              cam_in(c)%fco2_lnd(i) = -x2a(index_x2a_Fall_fco2_lnd,ig)
           end if
+
+          !------------------------------------------------------------------------------------------
+          ! EHC fields do not need any interpolation: annual emissions were split assuming
+          ! the monthly flux values were applied to the seconds in each month
+          ! This is true for CEDS data as well. The last time step of the year is labelled as 
+          ! nxty0101-00000, and needs month 12
+          !------------------------------------------------------------------------------------------
+          if (iac_present) then
+             ! if surface emissions from EHC exist for this month, get them from coupler var
+             if (index_x2a_Fazz_co2sfc_iac(mon_idx) /= 0) then
+                cam_in(c)%fco2_surface_iac(i) = -x2a(index_x2a_Fazz_co2sfc_iac(mon_idx),ig)
+             end if
+             ! if aircraft lo emissions from EHC exist for this month, get them from coupler var
+             if (index_x2a_Fazz_co2airlo_iac(mon_idx) /= 0) then
+                iac_vertical_emiss(c)%fco2_low_height(i) = -x2a(index_x2a_Fazz_co2airlo_iac(mon_idx),ig)
+             end if
+             ! if aircraft lo emissions from EHC exist for this month, get them from coupler var
+             if (index_x2a_Fazz_co2airhi_iac(mon_idx) /= 0) then
+                iac_vertical_emiss(c)%fco2_high_height(i) = -x2a(index_x2a_Fazz_co2airhi_iac(mon_idx),ig)
+             endif
+          endif ! if (iac_present)
+
           if (index_x2a_Faoo_fco2_ocn /= 0) then
              cam_in(c)%fco2_ocn(i) = -x2a(index_x2a_Faoo_fco2_ocn,ig)
           end if
@@ -170,6 +201,7 @@ contains
 
              ! all co2 fluxes in unit kgCO2/m2/s ! co2 flux from ocn
              if (index_x2a_Faoo_fco2_ocn /= 0) then
+                !FIXMEB: Instead of using hardwired numbers, 1,2 etc, can't we use integer parameters for c_i indices?
                 cam_in(c)%cflx(i,c_i(1)) = cam_in(c)%fco2_ocn(i)
              else if (co2_readFlux_ocn) then
                 ! convert from molesCO2/m2/s to kgCO2/m2/s
@@ -192,10 +224,11 @@ contains
              end if
 
              ! co2 flux from fossil fuel
-             if (co2_readFlux_fuel) then
-!++BEH  vvv old implementation vvv
-!                cam_in(c)%cflx(i,c_i(2)) = data_flux_fuel%co2flx(i,c)
-!       ^^^ old implementation ^^^   ///    vvv new implementation vvv
+             if ( iac_present ) then
+               if( index_x2a_Fazz_co2sfc_iac(mon_idx) /= 0) then
+                  cam_in(c)%cflx(i,c_i(2)) = cam_in(c)%fco2_surface_iac(i)
+               end if
+             else if (co2_readFlux_fuel) then
                 cam_in(c)%cflx(i,c_i(2)) = data_flux_fuel%co2flx(i,1,c)
 !--BEH  ^^^ new implementation ^^^
              else
@@ -234,6 +267,66 @@ contains
   end subroutine atm_import
 
   !===============================================================================
+
+   function get_month_index() result(mon_idx)
+   
+      !-----------------------------------------------------------------------
+      ! Determine which month's EHC data to use based on atm time manager date
+      ! This function assumes that the atm time manager is always in sync with
+      ! the EAM tm clock during atm_import calls
+      !-----------------------------------------------------------------------
+      use time_manager  , only: get_curr_date, is_first_step
+      use shr_log_mod   , only: errMsg => shr_log_errMsg
+      use cam_abortutils, only: endrun
+      implicit none
+
+      integer :: mon_idx !return value
+
+      !local variables
+      integer, parameter :: FIRST_MONTH = 1
+      integer, parameter :: LAST_MONTH = 12
+      integer :: yr, mon, day, tod
+      character(len=256) :: errstr
+      !---------------------------------------------------------------------
+      ! Get the current model date
+      !---------------------------------------------------------------------
+      call get_curr_date( yr, mon, day, tod )
+    
+      !Sanity check for month (this shouldn't happen)
+      if (mon < FIRST_MONTH .or. mon > LAST_MONTH) then
+         write(errstr,*) 'ERROR! Month is out of bounds [',FIRST_MONTH,',', LAST_MONTH,'], current month is: ', mon,'. '
+         call endrun(trim(errstr)//errMsg(__FILE__, __LINE__))
+      end if
+      !-----------------------------------------------------------------------
+      ! Determine month index for emissions lookup
+      !-----------------------------------------------------------------------
+      ! EAM tm clock should always match atm Eclock/sync clock during
+      ! atm_import calls
+      if (mon == FIRST_MONTH .and. day == 1 .and. tod == 0) then
+         if (is_first_step()) then
+            ! Get this year's data because this timestep is run at the start of the year
+            ! for the initial model start, the actual month 12 data for the previous
+            ! data are not available
+            mon_idx = FIRST_MONTH
+         else
+            ! Timestep usually run at the end of the year
+            mon_idx = LAST_MONTH
+         end if
+      else if (day == 1 .and. tod == 0) then
+         ! Last timestep of the previous month
+         mon_idx = mon - 1
+      else
+         mon_idx = mon
+      end if ! if (mon == 1 .and. day == 1 .and. tod == 0)
+
+      !Sanity check for mon_idx
+      if (mon_idx < FIRST_MONTH .or. mon_idx > LAST_MONTH) then
+         write(errstr,*) 'ERROR! mon_idx is out of bounds [',FIRST_MONTH,',', LAST_MONTH,'], mon_idx is: ', mon_idx,'. '
+         call endrun(trim(errstr)//errMsg(__FILE__, __LINE__))
+      end if
+   end function get_month_index
+
+   !===============================================================================
 
   subroutine atm_export( cam_out, a2x )
 

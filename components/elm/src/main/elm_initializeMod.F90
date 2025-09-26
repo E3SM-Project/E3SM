@@ -10,7 +10,7 @@ module elm_initializeMod
   use decompMod        , only : bounds_type, get_proc_bounds, get_proc_clumps, get_clump_bounds
   use abortutils       , only : endrun
   use elm_varctl       , only : nsrest, nsrStartup, nsrContinue, nsrBranch
-  use elm_varctl       , only : create_glacier_mec_landunit, iulog
+  use elm_varctl       , only : create_glacier_mec_landunit, iulog, iac_present
   use elm_varctl       , only : use_lch4, use_cn, use_voc, use_c13, use_c14
   use elm_varctl       , only : use_fates, use_betr, use_fates_sp, use_fan, use_fates_luh
   use elm_varsur       , only : wt_lunit, urban_valid, wt_nat_patch, wt_cft, wt_glc_mec, topo_glc_mec,firrig,f_surf,f_grd
@@ -89,6 +89,7 @@ contains
     use reweightMod               , only: reweight_wrapup
     use topounit_varcon           , only: max_topounits, has_topounit, topounit_varcon_init
     use elm_varctl                , only: use_top_solar_rad, use_polygonal_tundra
+    use shr_log_mod               , only: errMsg => shr_log_errMsg
     !
     ! !LOCAL VARIABLES:
     integer           :: ier                     ! error status
@@ -112,6 +113,7 @@ contains
     integer           :: nclumps                 ! number of clumps on this processor
     integer           :: nc                      ! clump index
     character(len=32) :: subname = 'initialize1' ! subroutine name
+    character(len=100) :: error_msg              ! String to store error message
     !-----------------------------------------------------------------------
 
     call t_startf('elm_init1')
@@ -251,12 +253,20 @@ contains
        endif
        call surfrd_get_topo_for_solar_rad(ldomain, fsurdat)  
 
-    endif
-    
+    endif    
     !-------------------------------------------------------------------------
     ! Topounit
     !-------------------------------------------------------------------------
     call topounit_varcon_init(begg, endg,fsurdat,ldomain)  ! Topounits
+
+    if (iac_present) then
+      !When using EHC, max_topounits must be 1
+      if (max_topounits .ne. 1) then
+         write(error_msg,*)'ERROR: elm_initializeMod: When using EHC, max_topounits must be 1, but it is ',max_topounits,'. '
+         call endrun(trim(error_msg)//trim(errMsg(__FILE__, __LINE__)))
+      end if
+    endif
+
     !-------------------------------------------------------------------------
     
     !-------------------------------------------------------------------------

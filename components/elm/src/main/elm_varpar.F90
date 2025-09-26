@@ -10,7 +10,7 @@ module elm_varpar
   use elm_varctl   , only: use_century_decomp, use_c13, use_c14, use_fates
   use elm_varctl   , only: iulog, create_crop_landunit, irrigate
   use elm_varctl   , only: use_vichydro
-  use elm_varctl   , only: use_extrasnowlayers
+  use elm_varctl   , only: use_extrasnowlayers, iac_present
 
   !
   ! !PUBLIC TYPES:
@@ -20,6 +20,9 @@ module elm_varpar
   logical, public :: more_vertlayers = .false. ! true => run with more vertical soil layers
 
   ! Note - model resolution is read in from the surface dataset
+  integer, parameter :: numharvest = 5 ! number of harvest types
+  integer, parameter :: iac_npft = 17  ! number of veg pfts (index 0 for bare ground)
+  integer, parameter :: iac_nharvest = 5 ! number of harvest types in ehc
 
   integer, parameter :: nlev_equalspace   = 15
   integer, parameter :: toplev_equalspace =  6
@@ -48,7 +51,6 @@ module elm_varpar
   integer, parameter :: ndst        =   4     ! number of dust size classes (BGC only)
   integer, parameter :: dst_src_nbr =   3     ! number of size distns in src soil (BGC only)
   integer, parameter :: sz_nbr      = 200     ! number of sub-grid bins in large bin of dust size distribution (BGC only)
-  !integer, parameter :: mxpft       =  50     ! maximum number of PFT's for any mode;
   integer :: mxpft                  =  50     ! maximum number of PFT's for any mode;
                                               ! can be modified from reading pft-physiology in 'main/pftvarcon.F90:pftconrd'
   ! FIX(RF,032414) might we set some of these automatically from reading pft-physiology?
@@ -129,6 +131,9 @@ contains
   !------------------------------------------------------------------------------
   
   subroutine elm_varpar_init()
+
+    use shr_sys_mod , only: shr_sys_abort ! cannot use endrun here due to circular dependency
+
     !
     ! !DESCRIPTION:
     ! Initialize module variables 
@@ -247,9 +252,20 @@ contains
        i_cwd = 4
     end if
 
-    
+   ! Consistency checks for EHC coupling
+   if (iac_present) then
+      ! EHC number of PFTs consistency checks
+      if (mxpft_nc + 1 <= iac_npft) then
+         write(iulog,*) 'ERROR: mxpft_nc + 1 = ', mxpft_nc + 1, ' is less than or equal to iac_npft = ', iac_npft
+         call shr_sys_abort('ERROR: mxpft_nc + 1 should be greater than iac_npft')
+      endif
 
-
+      !EHC number of harvests consistency checks
+      if(iac_nharvest .ne. numharvest) then
+         write(iulog,*) 'ERROR: iac_nharvest = ', iac_nharvest, ' is not equal to numharvest = ', numharvest
+         call shr_sys_abort('ERROR: iac_nharvest should be equal to numharvest')
+      endif
+   endif
   end subroutine elm_varpar_init
 
 end module elm_varpar
