@@ -4,7 +4,7 @@
  O3
  H2O2, H2SO4, SO2, DMS -> CH3SCH3, SOAG -> C
  so4_a1 -> NH4HSO4
- soa_a1 -> C
+ pom_a1 -> C, soa_a1 -> C, bc_a1 -> C
  dst_a1 -> AlSiO5, ncl_a1 -> NaCl
  mom_a1 -> C8520H11360O8520
  num_a1 -> H
@@ -46,8 +46,8 @@
       End Explicit
       Implicit
         H2O2, H2SO4, SO2, DMS, SOAG
-        so4_a1
-        soa_a1, dst_a1, ncl_a1
+        so4_a1, pom_a1
+        soa_a1, bc_a1, dst_a1, ncl_a1
 	mom_a1
         num_a1
         so4_a2, soa_a2, ncl_a2, mom_a2, num_a2

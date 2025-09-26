@@ -838,12 +838,15 @@ contains
     ! accumulation mode #1
     !
     index_tot_mass(1,1) = get_spc_ndx('so4_a1')
-    index_tot_mass(1,2) = get_spc_ndx('soa_a1')
-    index_tot_mass(1,3) = get_spc_ndx('dst_a1')
-    index_tot_mass(1,4) = get_spc_ndx('ncl_a1')
-    index_tot_mass(1,5) = get_spc_ndx('mom_a1')
+    index_tot_mass(1,2) = get_spc_ndx('pom_a1')
+    index_tot_mass(1,3) = get_spc_ndx('soa_a1')
+    index_tot_mass(1,4) = get_spc_ndx('bc_a1' )
+    index_tot_mass(1,5) = get_spc_ndx('dst_a1')
+    index_tot_mass(1,6) = get_spc_ndx('ncl_a1')
+    index_tot_mass(1,7) = get_spc_ndx('mom_a1')
     index_chm_mass(1,1) = get_spc_ndx('so4_a1')
     index_chm_mass(1,2) = get_spc_ndx('soa_a1')
+    index_chm_mass(1,3) = get_spc_ndx('bc_a1' )
     !
     ! aitken mode
     !

@@ -111,7 +111,7 @@ subroutine modal_aero_deposition_init(bc1_ndx,pom1_ndx,soa1_ndx,soa2_ndx,soa3_nd
    else
       call cnst_get_ind('soa_a5', idx_soa5)
    endif
-#else
+#endif
    if (present(bc1_ndx)) then
       idx_bc1  = bc1_ndx
    else
@@ -127,7 +127,6 @@ subroutine modal_aero_deposition_init(bc1_ndx,pom1_ndx,soa1_ndx,soa2_ndx,soa3_nd
    else
       call cnst_get_ind('soa_a1', idx_soa1)
    endif
-#endif
    if (present(soa2_ndx)) then
       idx_soa2 = soa2_ndx
    else
@@ -319,24 +318,24 @@ subroutine set_srf_wetdep(aerdepwetis, aerdepwetcw, cam_out)
 
       ! in SNICAR+MAM, bcphiwet represents BC mixed internally within
       ! hydrometeors
-      cam_out%bcphiwet(i) = -(aerdepwetcw(i,idx_bc3)+aerdepwetcw(i,idx_bc4)+ &
-                              aerdepwetcw(i,idx_bc5))
+      cam_out%bcphiwet(i) = -(aerdepwetcw(i,idx_bc1)+aerdepwetcw(i,idx_bc3)+ &
+                              aerdepwetcw(i,idx_bc4)+aerdepwetcw(i,idx_bc5))
 
       ! bcphidry represents BC mixed externally to hydrometeors
-      cam_out%bcphidry(i) = -(aerdepwetis(i,idx_bc3)+aerdepwetis(i,idx_bc4)+ &
-                              aerdepwetis(i,idx_bc5))
+      cam_out%bcphidry(i) = -(aerdepwetis(i,idx_bc1)+aerdepwetis(i,idx_bc3)+ &
+                              aerdepwetis(i,idx_bc4)+aerdepwetis(i,idx_bc5))
 
       ! ocphiwet represents OC mixed internally within hydrometeors
-      cam_out%ocphiwet(i) = -(aerdepwetcw(i,idx_pom3)+aerdepwetcw(i,idx_pom4)+ &
-                              aerdepwetcw(i,idx_pom5)+aerdepwetcw(i,idx_soa1)+ &
-                              aerdepwetcw(i,idx_soa2)+aerdepwetcw(i,idx_soa3)+ &
-                              aerdepwetcw(i,idx_soa5))
+      cam_out%ocphiwet(i) = -(aerdepwetcw(i,idx_pom1)+aerdepwetcw(i,idx_pom3)+ &
+                              aerdepwetcw(i,idx_pom4)+aerdepwetcw(i,idx_pom5)+ &
+                              aerdepwetcw(i,idx_soa1)+aerdepwetcw(i,idx_soa2)+ &
+                              aerdepwetcw(i,idx_soa3)+aerdepwetcw(i,idx_soa5))
 
       ! ocphidry represents OC mixed externally to hydrometeors
-      cam_out%ocphidry(i) = -(aerdepwetis(i,idx_pom3)+aerdepwetis(i,idx_pom4)+ &
-                              aerdepwetis(i,idx_pom5)+aerdepwetis(i,idx_soa1)+ &
-                              aerdepwetis(i,idx_soa2)+aerdepwetis(i,idx_soa3)+ &
-                              aerdepwetis(i,idx_soa5))
+      cam_out%ocphidry(i) = -(aerdepwetis(i,idx_pom1)+aerdepwetis(i,idx_pom3)+ &
+                              aerdepwetis(i,idx_pom4)+aerdepwetis(i,idx_pom5)+ &
+                              aerdepwetis(i,idx_soa1)+aerdepwetis(i,idx_soa2)+ &
+                              aerdepwetis(i,idx_soa3)+aerdepwetis(i,idx_soa5))
 #endif
 
       ! Four dust bins in SNICAR represent dust with dry diameters of
@@ -577,13 +576,13 @@ subroutine set_srf_drydep(aerdepdryis, aerdepdrycw, cam_out)
       ! MAM5 AGEDCARBON
 
       ! in SNICAR+MAM, bcphodry represents BC mixed external to hydrometeors
-      cam_out%bcphodry(i) = aerdepdryis(i,idx_bc3)+aerdepdryis(i,idx_bc4)+aerdepdryis(i,idx_bc5)+ &
-                            aerdepdrycw(i,idx_bc3)+aerdepdrycw(i,idx_bc4)+aerdepdrycw(i,idx_bc5)
+      cam_out%bcphodry(i) = aerdepdryis(i,idx_bc1)+aerdepdryis(i,idx_bc3)+aerdepdryis(i,idx_bc4)+aerdepdryis(i,idx_bc5)+ &
+                            aerdepdrycw(i,idx_bc1)+aerdepdrycw(i,idx_bc3)+aerdepdrycw(i,idx_bc4)+aerdepdrycw(i,idx_bc5)
 
       ! ocphodry represents OC mixed external to hydrometeors
-      cam_out%ocphodry(i) = aerdepdryis(i,idx_pom3)+aerdepdryis(i,idx_pom4)+aerdepdryis(i,idx_pom5)+&
-                            aerdepdryis(i,idx_soa1)+aerdepdryis(i,idx_soa2)+aerdepdryis(i,idx_soa3)+aerdepdryis(i,idx_soa5)+&
-                            aerdepdrycw(i,idx_pom3)+aerdepdrycw(i,idx_pom4)+aerdepdrycw(i,idx_pom5)+&
+      cam_out%ocphodry(i) = aerdepdryis(i,idx_pom1)+aerdepdryis(i,idx_pom3)+aerdepdryis(i,idx_pom4)+aerdepdryis(i,idx_pom5)+ &
+                            aerdepdryis(i,idx_soa1)+aerdepdryis(i,idx_soa2)+aerdepdryis(i,idx_soa3)+aerdepdryis(i,idx_soa5)+ &
+                            aerdepdrycw(i,idx_pom1)+aerdepdrycw(i,idx_pom3)+aerdepdrycw(i,idx_pom4)+aerdepdrycw(i,idx_pom5)+ &
                             aerdepdrycw(i,idx_soa1)+aerdepdrycw(i,idx_soa2)+aerdepdrycw(i,idx_soa3)+aerdepdrycw(i,idx_soa5)
 #endif
 
