@@ -44,6 +44,7 @@ module ELMFatesInterfaceMod
    use elm_varctl        , only : use_fates
    use elm_varctl        , only : use_vertsoilc
    use elm_varctl        , only : fates_spitfire_mode
+   use elm_varctl        , only : use_fates_managed_fire
    use elm_varctl        , only : fates_harvest_mode
    use elm_varctl        , only : fates_parteh_mode
    use elm_varctl        , only : fates_seeddisp_cadence
@@ -438,6 +439,7 @@ contains
      integer                                        :: pass_hydro_solver
      integer                                        :: pass_radiation_model
      integer                                        :: pass_electron_transport_model
+     integer                                        :: pass_managed_fire
      
      ! ----------------------------------------------------------------------------------
      ! FATES lightning definitions
@@ -544,12 +546,20 @@ contains
         ! we will always pass 0 or 1.
         ! But.. we do have to define these modes, for now.
 
-
+        ! Pass spitfire mode values
         call set_fates_ctrlparms('spitfire_mode',ival=fates_spitfire_mode)
         call set_fates_ctrlparms('sf_nofire_def',ival=no_fire)
         call set_fates_ctrlparms('sf_scalar_lightning_def',ival=scalar_lightning)
         call set_fates_ctrlparms('sf_successful_ignitions_def',ival=successful_ignitions)
         call set_fates_ctrlparms('sf_anthro_ignitions_def',ival=anthro_ignitions)
+
+        ! Pass managed fire mode value
+        if (use_fates_managed_fire) then
+           pass_managed_fire = 1
+        else
+           pass_managed_fire = 0
+        end if
+        call set_fates_ctrlparms('use_managed_fire',ival=pass_managed_fire)
 
         ! FATES logging and harvest modes
         pass_logging = 0
