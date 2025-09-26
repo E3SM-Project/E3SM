@@ -303,10 +303,7 @@ class TestGenBoilerBasics(unittest.TestCase):
 
         # group_data
         self.assertEqual(group_data(UT_ARG_DATA), (
-            ['shcol'],
-            ['nlev', '-nlev:nlev', 'nlevi', '0:nlev'],
-            ['ntracers'],
-            ['shcol', 'nlev', '-nlev:nlev', 'nlevi', '0:nlev', 'ntracers'],
+            ['shcol', 'nlev', 'nlevi', 'ntracers'],
             [('gag', 'Real'), ('bab1', 'Int'), ('bab2', 'Int'), ('val', 'bool')],
             {
                 ('shcol',): ['foo1', 'foo2', 'baz'],
@@ -322,9 +319,6 @@ class TestGenBoilerBasics(unittest.TestCase):
             {('shcol',): ['vals']}))
         self.assertEqual(group_data(UT_ARG_DATA_ALL_SCALAR), (
             [],
-            [],
-            [],
-            [],
             [('foo1', 'Real'), ('foo2', 'Real'), ('bar1', 'Real'), ('bar2', 'Real'), ('baz1', 'Real'), ('baz2', 'Real'), ('gag1', 'Int'), ('gag2', 'Int'), ('gal1', 'Int'), ('gal2', 'Int'), ('bal1', 'Int'), ('bal2', 'Int'), ('bit1', 'bool'), ('bit2', 'bool'), ('gut1', 'bool'), ('gut2', 'bool'), ('gat1', 'bool'), ('gat2', 'bool')],
             {},
             {},
@@ -333,6 +327,39 @@ class TestGenBoilerBasics(unittest.TestCase):
         # get_list_of_lists
         self.assertEqual(get_list_of_lists(['a', 'b', 'c'], '  ').splitlines(),
                          ['{', '  {a},', '  {b},', '  {c}', '}'])
+
+        # extract_dim_scalars
+        self.assertEqual(extract_dim_scalars("nlev"), ["nlev"])
+        self.assertEqual(extract_dim_scalars("0:nlev"), ["nlev"])
+        self.assertEqual(extract_dim_scalars("-nlev:nlev"), ["nlev"])
+        self.assertEqual(extract_dim_scalars("-nlev:pgwv"), ["nlev", "pgwv"])
+
+        # convert_to_cxx_dim
+        self.assertEqual(convert_to_cxx_dim("nlev", True), "nlev_")
+        self.assertEqual(convert_to_cxx_dim("0:nlev", True), "nlev_ + 1")
+        self.assertEqual(convert_to_cxx_dim("-4:nlev", True), "nlev_ + 5")
+        self.assertEqual(convert_to_cxx_dim("-nlev:nlev", True), "nlev_*2 + 1")
+        self.assertEqual(convert_to_cxx_dim("-nlev:pgwv", True), "nlev_ + pgwv_ + 1")
+        self.assertEqual(convert_to_cxx_dim("nlev:pgwv", True), "pgwv_ - nlev_")
+
+        # find_insertion
+        lines = ["foo", "bar", "baz", "bag"]
+        self.assertEqual(find_insertion(lines, re.compile("baz")), 2)
+        self.assertEqual(find_insertion(lines, re.compile("ball")), None)
+
+        # check_existing_piece
+        lines = ["foo", "bar", "baz", "bag"]
+        self.assertEqual(check_existing_piece(lines, re.compile("foo"), re.compile("bag")), (0, 4))
+        self.assertEqual(check_existing_piece(lines, re.compile("foo"), re.compile("foo")), (0, 1))
+        self.assertEqual(check_existing_piece(lines, re.compile("zxzc"), re.compile("foo")), None)
+
+        # get_rank_map
+        names = ["foo1", "foo2", "bar1", "bar2", "bak1", "bak2", "tracerd1"]
+        self.assertEqual(get_rank_map(UT_ARG_DATA, names), {
+            1: ['foo1', 'foo2'],
+            2: ['bar1', 'bar2', 'bak1', 'bak2'],
+            3: ['tracerd1']
+        })
 
 ###############################################################################
 class TestGenBoiler(unittest.TestCase):
@@ -616,6 +643,108 @@ end module mymod
 
         test4 = [item for item in parse_origin(teststr, ["iop_setinitial"]).items()]
         self.assertEqual(test4, [('iop_setinitial', [('elem', 'type::element_t', 'inout', (':',))])])
+
+    ###########################################################################
+    def test_gen_struct_api(self):
+    ###########################################################################
+        expected = \
+"""DataSubName(Int shcol_, Int nlev_, Int nlevi_, Int ntracers_, Real gag_, Int bab1_, Int bab2_, bool val_) :
+  PhysicsTestData({
+      {shcol_},
+      {shcol_, nlev_},
+      {shcol_, nlev_*2 + 1},
+      {shcol_, nlevi_},
+      {shcol_, nlev_, ntracers_},
+      {shcol_, nlev_ + 1},
+      {shcol_},
+      {shcol_}
+    },
+    {
+      {&foo1, &foo2, &baz},
+      {&bar1, &bar2},
+      {&bak1},
+      {&bak2},
+      {&tracerd1, &tracerd2}
+    },
+    {
+      {&bag},
+      {&ball1, &ball2}
+    },
+    {
+      {&vals}
+    }),
+    shcol(shcol_), nlev(nlev_), nlevi(nlevi_), ntracers(ntracers_), gag(gag_), bab1(bab1_), bab2(bab2_), val(val_)
+{}
+
+PTD_STD_DEF(DataSubName, 8, shcol, nlev, nlevi, ntracers, gag, bab1, bab2, val);
+"""
+        actual = gen_struct_api("shoc", "DataSubName", UT_ARG_DATA)
+
+        line_by_line_compare(self, expected, "\n".join(actual))
+
+    ###########################################################################
+    def test_f90_c2f_bind(self):
+    ###########################################################################
+        expected = \
+"""  subroutine fake_sub_c(foo1, foo2, bar1, bar2, bak1, bak2, tracerd1, tracerd2, gag, baz, bag, bab1, bab2, val, vals, shcol, nlev, nlevi, ntracers, ball1, ball2) bind(C)
+    use shoc, only : fake_sub
+
+    real(kind=c_real) , intent(in), dimension(shcol) :: foo1, foo2
+    real(kind=c_real) , intent(in), dimension(shcol, nlev) :: bar1, bar2
+    real(kind=c_real) , intent(in), dimension(shcol, -nlev:nlev) :: bak1
+    real(kind=c_real) , intent(in), dimension(shcol, nlevi) :: bak2
+    real(kind=c_real) , intent(in), dimension(shcol, nlev, ntracers) :: tracerd1, tracerd2
+    real(kind=c_real) , value, intent(in) :: gag
+    real(kind=c_real) , intent(inout), dimension(shcol) :: baz
+    integer(kind=c_int) , intent(in), dimension(shcol, 0:nlev) :: bag
+    integer(kind=c_int) , intent(out) :: bab1, bab2
+    logical(kind=c_bool) , value, intent(in) :: val
+    logical(kind=c_bool) , intent(in), dimension(shcol) :: vals
+    integer(kind=c_int) , value, intent(in) :: shcol, nlev, nlevi, ntracers
+    integer(kind=c_int) , intent(out), dimension(shcol) :: ball1, ball2
+
+    call fake_sub(foo1, foo2, bar1, bar2, bak1, bak2, tracerd1, tracerd2, gag, baz, bag, bab1, bab2, val, vals, shcol, nlev, nlevi, ntracers, ball1, ball2)
+  end subroutine fake_sub_c
+"""
+        gb = GenBoiler([])
+        actual = gb.gen_f90_c2f_bind("shoc", "fake_sub", force_arg_data=UT_ARG_DATA)
+
+        line_by_line_compare(self, expected, actual)
+
+    ###########################################################################
+    def test_f90_f2c_bind(self):
+    ###########################################################################
+        expected = \
+"""  subroutine fake_sub_f(foo1, foo2, bar1, bar2, bak1, bak2, tracerd1, tracerd2, gag, baz, bag, bab1, bab2, val, vals, shcol, nlev, nlevi, ntracers, ball1, ball2) bind(C)
+    use iso_c_binding
+
+    real(kind=c_real) , intent(in), dimension(shcol) :: foo1, foo2
+    real(kind=c_real) , intent(in), dimension(shcol, nlev) :: bar1, bar2
+    real(kind=c_real) , intent(in), dimension(shcol, -nlev:nlev) :: bak1
+    real(kind=c_real) , intent(in), dimension(shcol, nlevi) :: bak2
+    real(kind=c_real) , intent(in), dimension(shcol, nlev, ntracers) :: tracerd1, tracerd2
+    real(kind=c_real) , value, intent(in) :: gag
+    real(kind=c_real) , intent(inout), dimension(shcol) :: baz
+    integer(kind=c_int) , intent(in), dimension(shcol, 0:nlev) :: bag
+    integer(kind=c_int) , intent(out) :: bab1, bab2
+    logical(kind=c_bool) , value, intent(in) :: val
+    logical(kind=c_bool) , intent(in), dimension(shcol) :: vals
+    integer(kind=c_int) , value, intent(in) :: shcol, nlev, nlevi, ntracers
+    integer(kind=c_int) , intent(out), dimension(shcol) :: ball1, ball2
+  end subroutine fake_sub_f
+"""
+
+        gb = GenBoiler([])
+        actual = gb.gen_f90_f2c_bind("shoc", "fake_sub", force_arg_data=UT_ARG_DATA)
+
+        line_by_line_compare(self, expected, actual)
+
+    ###########################################################################
+    def test_cxx_c2f_bind_decl(self):
+    ###########################################################################
+        gb = GenBoiler([])
+        actual = gb.gen_cxx_c2f_bind_decl("shoc", "fake_sub", force_arg_data=UT_ARG_DATA)
+        self.assertEqual(actual, "void fake_sub_c(Real* foo1, Real* foo2, Real* bar1, Real* bar2, Real* bak1, Real* bak2, Real* tracerd1, Real* tracerd2, Real gag, Real* baz, Int* bag, Int* bab1, Int* bab2, bool val, bool* vals, Int shcol, Int nlev, Int nlevi, Int ntracers, Int* ball1, Int* ball2);\n")
 
 ###############################################################################
 def _main_func(desc):

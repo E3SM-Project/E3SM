@@ -818,7 +818,7 @@ def gen_cxx_data_args(physics, arg_data):
     """
     Based on data, generate unpacking of Data struct args
     """
-    all_dims = group_data(arg_data)[3]
+    all_dims = group_data(arg_data)[0]
     args_needs_ptr = [item[ARG_DIMS] is None and item[ARG_INTENT] != "in" for item in arg_data]
     arg_names      = [item[ARG_NAME] for item in arg_data]
     arg_dim_call   = [item[ARG_NAME] in all_dims for item in arg_data]
@@ -882,31 +882,48 @@ def gen_struct_members(arg_data):
     return result
 
 ###############################################################################
+def extract_dim_tokens(dim):
+###############################################################################
+    """
+    Given a dimensions spec, extract the tokens
+    """
+    return [item.replace(" ", "") for item in dim.split(":")]
+
+###############################################################################
+def extract_dim_scalars(dim):
+###############################################################################
+    """
+    Given a dimensions spec, extract the scalar variables involved
+    """
+    tokens = extract_dim_tokens(dim)
+    result = []
+    for item in tokens:
+        # Strip off the negative if it's there
+        token = item.lstrip("-")
+        # Skip hardcoded ints
+        if not token.isdigit() and token not in result:
+            result.append(token)
+
+    return result
+
+###############################################################################
 def group_data(arg_data, filter_out_intent=None, filter_scalar_custom_types=False):
 ###############################################################################
     """
-    Given data, return ([fst_dims], [snd_dims], [trd_dims], [all-dims], [scalars],
-                        {dims->[real_data]}, {dims->[int_data]}, {dims->[bool_data]})
+    Given data, return ([all-dims], [scalars], {dims->[real_data]}, {dims->[int_data]}, {dims->[bool_data]})
     """
     scalars  = []
 
-    fst_dims = []
-    snd_dims = []
-    trd_dims = []
+    all_dims = []
 
     for name, argtype, _, dims in arg_data:
         if dims is not None:
-            expect(len(dims) >= 1 and len(dims) <= 3,
-                   f"Only 1d-3d data is supported, {name} has too many dims: {len(dims)}")
+            for dim in dims:
+                dscalars = extract_dim_scalars(dim)
+                for dscalar in dscalars:
+                    if dscalar not in all_dims:
+                        all_dims.append(dscalar)
 
-            if dims[0] not in fst_dims:
-                fst_dims.append(dims[0])
-            if len(dims) > 1 and dims[1] not in snd_dims:
-                snd_dims.append(dims[1])
-            if len(dims) > 2 and dims[2] not in trd_dims:
-                trd_dims.append(dims[2])
-
-    all_dims = list(dict([(item, None) for item in (fst_dims + snd_dims + trd_dims)]))
     real_data = {}
     int_data = {}
     bool_data = {}
@@ -919,6 +936,7 @@ def group_data(arg_data, filter_out_intent=None, filter_scalar_custom_types=Fals
                         scalars.append( (name, get_cxx_scalar_type(argtype)))
                     else:
                         expect(argtype == "integer", f"Expected dimension {name} to be of type integer")
+                        expect(intent == "in", f"Expected dimension {name} to be intent in")
 
             elif argtype == "integer":
                 int_data.setdefault(dims, []).append(name)
@@ -929,7 +947,7 @@ def group_data(arg_data, filter_out_intent=None, filter_scalar_custom_types=Fals
             elif argtype == "logical":
                 bool_data.setdefault(dims, []).append(name)
 
-    return fst_dims, snd_dims, trd_dims, all_dims, scalars, real_data, int_data, bool_data
+    return all_dims, scalars, real_data, int_data, bool_data
 
 ###############################################################################
 def get_list_of_lists(items, indent):
@@ -943,18 +961,73 @@ def get_list_of_lists(items, indent):
     return result
 
 ###############################################################################
+def convert_to_cxx_dim(dim, add_underscore=False):
+###############################################################################
+    """
+    Convert a fortran dim, potentially containing a range, to an item count
+    """
+    tokens = extract_dim_tokens(dim)
+    count_expr = ""
+    uns = "_" if add_underscore else ""
+
+    # case 1, single token
+    if len(tokens) == 1:
+        expect(not tokens[0].startswith("-"), f"Received weird negative fortran dim: '{dim}'")
+        return tokens[0] + uns
+
+    # case 2, multiple tokens
+    elif len(tokens) == 2:
+        first_token = tokens[0]
+        second_token = tokens[1]
+        first_int = None
+        second_int = None
+        try:
+            first_int = int(first_token)
+        except ValueError:
+            pass
+
+        try:
+            second_int = int(second_token)
+        except ValueError:
+            pass
+
+        # case 2.1, both tokens are ints
+        if first_int is not None and second_int is not None:
+            return str(second_int - (first_int - 1))
+
+        # case 2.2, first token is an int
+        elif first_int is not None:
+            if first_int <= 0:
+                return f"{second_token}{uns} + {1 + abs(first_int)}"
+            elif first_int == 1:
+                return second_token
+            else:
+                return f"{second_token}{uns} - {first_int - 1}"
+
+        # case 2.3, second token is an int
+        elif second_int is not None:
+            expect(False, f"Received weird fortran range with the 2nd token as int: '{dim}'")
+
+        # case 2.4, first token is negative
+        elif first_token.startswith("-"):
+            if first_token.strip("-") == second_token:
+                return f"{second_token}{uns}*2 + 1"
+            else:
+                return f"{first_token.strip('-')}{uns} + {second_token}{uns} + 1"
+
+        else:
+            return f"{second_token}{uns} - {first_token}{uns}"
+
+    else:
+        expect(False, f"Received weird fortran range with more than 2 tokens: '{dim}'")
+
+###############################################################################
 def gen_struct_api(physics, struct_name, arg_data):
 ###############################################################################
-    r"""
-    Given data, generate code for data struct api
-
-    >>> print("\n".join(gen_struct_api("shoc", "DataSubName", UT_ARG_DATA)))
-    DataSubName(Int shcol_, Int nlev_, Int nlevi_, Int ntracers_, Real gag_, Int bab1_, Int bab2_, bool val_) :
-      PhysicsTestData({{ shcol_ }, { shcol_, nlev_ }, { shcol_, nlevi_ }, { shcol_, nlev_, ntracers_ }, { shcol_ }, { shcol_ }}, {{ &foo1, &foo2, &baz }, { &bar1, &bar2 }, { &bak1, &bak2 }, { &tracerd1, &tracerd2 }}, {{ &bag, &ball1, &ball2 }}, {{ &vals }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_), ntracers(ntracers_), gag(gag_), bab1(bab1_), bab2(bab2_), val(val_) {}
-    <BLANKLINE>
-    PTD_STD_DEF(DataSubName, 8, shcol, nlev, nlevi, ntracers, gag, bab1, bab2, val);
     """
-    _, _, _, all_dims, scalars, real_data, int_data, bool_data = group_data(arg_data, filter_scalar_custom_types=True)
+    Given data, generate code for data struct api
+    """
+    all_dims, scalars, real_data, int_data, bool_data = group_data(arg_data, filter_scalar_custom_types=True)
 
     result = []
     dim_args = [(item, "Int") for item in all_dims if item is not None]
@@ -969,7 +1042,7 @@ def gen_struct_api(physics, struct_name, arg_data):
     bool_vec = []
     for data, data_vec in zip([real_data, int_data, bool_data], [real_vec, int_vec, bool_vec]):
         for dims, items in data.items():
-            dim_cxx_vec.append(f"{', '.join(['{}_'.format(item) for item in dims])}")
+            dim_cxx_vec.append(f"{', '.join([convert_to_cxx_dim(item, True) for item in dims])}")
             data_vec.append(f"{', '.join(['&{}'.format(item) for item in items])}")
 
     parent_call = "  PhysicsTestData("
@@ -1002,12 +1075,6 @@ def find_insertion(lines, insert_regex):
 ###############################################################################
     """
     Find the index that matches insert_regex. If not found, return None
-
-    >>> lines = ["foo", "bar", "baz", "bag"]
-    >>> find_insertion(lines, re.compile("baz"))
-    2
-    >>> find_insertion(lines, re.compile("ball"))
-    >>>
     """
     for idx, line in enumerate(lines):
         has_match = bool(insert_regex.match(line))
@@ -1022,13 +1089,6 @@ def check_existing_piece(lines, begin_regex, end_regex):
     """
     Check to see if an existing block/piece of code existing in a file, given its
     starting and ending regex. Returns None if not found
-
-    >>> lines = ["foo", "bar", "baz", "bag"]
-    >>> check_existing_piece(lines, re.compile("foo"), re.compile("bag"))
-    (0, 4)
-    >>> check_existing_piece(lines, re.compile("foo"), re.compile("foo"))
-    (0, 1)
-    >>> check_existing_piece(lines, re.compile("zxzc"), re.compile("foo"))
     """
     begin_idx = None
     end_idx   = None
@@ -1180,26 +1240,7 @@ class GenBoiler(object):
     def gen_f90_c2f_bind(self, phys, sub, force_arg_data=None):
     ###########################################################################
         """
-        >>> gb = GenBoiler([])
-        >>> print(gb.gen_f90_c2f_bind("shoc", "fake_sub", force_arg_data=UT_ARG_DATA))
-          subroutine fake_sub_c(foo1, foo2, bar1, bar2, bak1, bak2, tracerd1, tracerd2, gag, baz, bag, bab1, bab2, val, vals, shcol, nlev, nlevi, ntracers, ball1, ball2) bind(C)
-            use shoc, only : fake_sub
-        <BLANKLINE>
-            real(kind=c_real) , intent(in), dimension(shcol) :: foo1, foo2
-            real(kind=c_real) , intent(in), dimension(shcol, nlev) :: bar1, bar2
-            real(kind=c_real) , intent(in), dimension(shcol, nlevi) :: bak1, bak2
-            real(kind=c_real) , intent(in), dimension(shcol, nlev, ntracers) :: tracerd1, tracerd2
-            real(kind=c_real) , value, intent(in) :: gag
-            real(kind=c_real) , intent(inout), dimension(shcol) :: baz
-            integer(kind=c_int) , intent(in), dimension(shcol) :: bag
-            integer(kind=c_int) , intent(out) :: bab1, bab2
-            logical(kind=c_bool) , value, intent(in) :: val
-            logical(kind=c_bool) , intent(in), dimension(shcol) :: vals
-            integer(kind=c_int) , value, intent(in) :: shcol, nlev, nlevi, ntracers
-            integer(kind=c_int) , intent(out), dimension(shcol) :: ball1, ball2
-        <BLANKLINE>
-            call fake_sub(foo1, foo2, bar1, bar2, bak1, bak2, tracerd1, tracerd2, gag, baz, bag, bab1, bab2, val, vals, shcol, nlev, nlevi, ntracers, ball1, ball2)
-          end subroutine fake_sub_c
+        In F90, generate the F90 C to F90 bridge function.
         """
         arg_data = force_arg_data if force_arg_data else self._get_arg_data(phys, sub)
         arg_names = ", ".join([item[ARG_NAME] for item in arg_data])
@@ -1220,24 +1261,7 @@ class GenBoiler(object):
     def gen_f90_f2c_bind(self, phys, sub, force_arg_data=None):
     ###########################################################################
         """
-        >>> gb = GenBoiler([])
-        >>> print(gb.gen_f90_f2c_bind("shoc", "fake_sub", force_arg_data=UT_ARG_DATA))
-          subroutine fake_sub_f(foo1, foo2, bar1, bar2, bak1, bak2, tracerd1, tracerd2, gag, baz, bag, bab1, bab2, val, vals, shcol, nlev, nlevi, ntracers, ball1, ball2) bind(C)
-            use iso_c_binding
-        <BLANKLINE>
-            real(kind=c_real) , intent(in), dimension(shcol) :: foo1, foo2
-            real(kind=c_real) , intent(in), dimension(shcol, nlev) :: bar1, bar2
-            real(kind=c_real) , intent(in), dimension(shcol, nlevi) :: bak1, bak2
-            real(kind=c_real) , intent(in), dimension(shcol, nlev, ntracers) :: tracerd1, tracerd2
-            real(kind=c_real) , value, intent(in) :: gag
-            real(kind=c_real) , intent(inout), dimension(shcol) :: baz
-            integer(kind=c_int) , intent(in), dimension(shcol) :: bag
-            integer(kind=c_int) , intent(out) :: bab1, bab2
-            logical(kind=c_bool) , value, intent(in) :: val
-            logical(kind=c_bool) , intent(in), dimension(shcol) :: vals
-            integer(kind=c_int) , value, intent(in) :: shcol, nlev, nlevi, ntracers
-            integer(kind=c_int) , intent(out), dimension(shcol) :: ball1, ball2
-          end subroutine fake_sub_f
+        In F90, generate the C to F90 bridge declaration. The definition will be in C
         """
         arg_data = force_arg_data if force_arg_data else self._get_arg_data(phys, sub)
         arg_names = ", ".join([item[ARG_NAME] for item in arg_data])
@@ -1255,10 +1279,7 @@ class GenBoiler(object):
     def gen_cxx_c2f_bind_decl(self, phys, sub, force_arg_data=None):
     ###########################################################################
         """
-        >>> gb = GenBoiler([])
-        >>> print(gb.gen_cxx_c2f_bind_decl("shoc", "fake_sub", force_arg_data=UT_ARG_DATA))
-        void fake_sub_c(Real* foo1, Real* foo2, Real* bar1, Real* bar2, Real* bak1, Real* bak2, Real* tracerd1, Real* tracerd2, Real gag, Real* baz, Int* bag, Int* bab1, Int* bab2, bool val, bool* vals, Int shcol, Int nlev, Int nlevi, Int ntracers, Int* ball1, Int* ball2);
-        <BLANKLINE>
+        In C, generate the C to F90 brige declaration. The definition will be in fortran
         """
         arg_data = force_arg_data if force_arg_data else self._get_arg_data(phys, sub)
         arg_decls = gen_arg_cxx_decls(arg_data)
@@ -2371,12 +2392,12 @@ f"""{decl}
       d.randomize(engine);
     }"""
 
-        _, _, _, _, scalars, real_data, int_data, bool_data = group_data(arg_data, filter_out_intent="in")
+        _, scalars, real_data, int_data, bool_data = group_data(arg_data, filter_out_intent="in")
         check_scalars, check_arrays, scalar_comments = "", "", ""
         for scalar in scalars:
             check_scalars += f"        REQUIRE(d_baseline.{scalar[0]} == d_test.{scalar[0]});\n"
 
-        _, _, _, all_dims, input_scalars, _, _, _ = group_data(arg_data, filter_out_intent="out")
+        all_dims, input_scalars, _, _, _ = group_data(arg_data, filter_out_intent="out")
         all_scalar_inputs = all_dims + [scalar_name for scalar_name, _ in input_scalars]
         scalar_comments = "// " + ", ".join(all_scalar_inputs)
 
@@ -2478,7 +2499,7 @@ f"""// Init outputs
       Spack {', '.join(['{}(0)'.format(ooreal) for ooreal in ooreals])};
 """
 
-            scalars = group_data(arg_data)[4]
+            scalars = group_data(arg_data)[1]
             func_call = f"Functions::{sub}({', '.join([(scalar if scalar in reals else 'test_device(0).{}'.format(scalar)) for scalar, _ in scalars])});"
 
             spack_output_to_dview = ""
