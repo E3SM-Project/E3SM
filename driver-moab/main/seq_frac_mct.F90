@@ -901,9 +901,10 @@ contains
     integer                  :: n
     integer                  :: ki, kl, ko, kf
     real(r8),allocatable :: fcorr(:)
-    real(r8),allocatable :: tagValues(:) ! used for setting some default tags
-    real(r8),allocatable :: tagValues2(:) ! used for setting some default tags
-    real(r8),allocatable :: tagValues3(:) ! used for setting some default tags
+    real(r8),allocatable,save :: tagValues(:) ! used for setting some default tags
+    real(r8),allocatable,save :: tagValues2(:) ! used for setting some default tags
+    real(r8),allocatable,save :: tagValues3(:) ! used for setting some default tags
+    real(r8),allocatable,save :: tagValues4(:) ! used for setting some default tags
 
     logical, save :: first_time = .true.
 ! moab
@@ -939,11 +940,9 @@ contains
     dom_i => component_get_dom_cx(ice)
     i2x_i => component_get_c2x_cx(ice)
 
-    ! make local array big enough to old ocean or ice data.
+    ! make local array big enough to hold ocean or ice data.
     if (mbixid .ge. 0) arrSize_i = mbGetnCells(mbixid)
     if (mboxid .ge. 0) arrSize_o = mbGetnCells(mboxid)
-    arrSize = arrSize_i
-    if (arrSize_o .gt. arrSize) arrSize = arrSize_o
 
     ! entire update depends on if ice present.
     if (ice_present) then
@@ -960,26 +959,26 @@ contains
        call seq_frac_check(fractions_i,'ice set')
 
        ! MOAB
-       allocate(tagValues(arrSize) )
-       allocate(tagValues2(arrSize) )
-       allocate(tagValues3(arrSize) )
+       if (first_time) then
+          allocate(tagValues(arrSize_i) )
+          allocate(tagValues2(arrSize_i) )
+          allocate(tagValues3(arrSize_i) )
+       endif
 
        ! copy Si_ifrac to ifrac
-       call mbGetCellTagVals(mbixid, 'Si_ifrac',tagValues,arrSize)
-       call mbSetCellTagVals(mbixid, 'ifrac',tagValues,arrSize)
+       call mbGetCellTagVals(mbixid, 'Si_ifrac',tagValues,arrSize_i)
+       call mbSetCellTagVals(mbixid, 'ifrac',tagValues,arrSize_i)
 
        ! update ifrac and ofrac
-       call mbGetCellTagVals(mbixid, 'ifrac',tagValues,arrSize)
-       call mbGetCellTagVals(mbixid, 'frac',tagValues2,arrSize)
-       call mbGetCellTagVals(mbixid, 'ofrac',tagValues3,arrSize)
+       call mbGetCellTagVals(mbixid, 'frac',tagValues2,arrSize_i)
 
        !fractions_i%rAttr(ki,:) = fractions_i%rAttr(ki,:) * dom_i%data%rAttr(kf,:)
        tagValues(:) = tagValues(:)*tagValues2(:)
-       call mbSetCellTagVals(mbixid, 'ifrac',tagValues,arrSize)
+       call mbSetCellTagVals(mbixid, 'ifrac',tagValues,arrSize_i)
 
        !fractions_i%rAttr(ko,:) = dom_i%data%rAttr(kf,:) - fractions_i%rAttr(ki,:)
        tagValues3(:) = tagValues2(:) - tagValues(:)
-       call mbSetCellTagVals(mbixid, 'ofrac',tagValues3,arrSize)
+       call mbSetCellTagVals(mbixid, 'ofrac',tagValues3,arrSize_i)
 
 #ifdef MOABDEBUG
          write(lnum,"(I0.2)")num_moab_exports
@@ -989,16 +988,20 @@ contains
 #endif
 
        if (ocn_present) then
+          if (first_time) then
+            allocate(tagValues4(arrSize_o) )
+          endif
           mapper_i2o => prep_ocn_get_mapper_SFi2o()
           call seq_map_map(mapper_i2o, fractions_i, fractions_o, &
                fldlist='ofrac:ifrac',norm=.false.)
           call seq_frac_check(fractions_o, 'ocn set')
 
           ! set the ofrac on mbofxid instance, because it is needed for prep_aoxflux
-          call mbGetCellTagVals(mboxid, 'ofrac',tagValues,arrSize)
-          call mbSetCellTagVals(mbofxid, 'ofrac',tagValues,arrSize)
+          call mbGetCellTagVals(mboxid, 'ofrac',tagValues4,arrSize_o)
+          call mbSetCellTagVals(mbofxid, 'ofrac',tagValues4,arrSize_o)
        endif
 
+       first_time=.false.
 
        if (atm_present) then
           mapper_i2a => prep_atm_get_mapper_Fi2a()
