@@ -8,6 +8,7 @@ sourcelist_to_parent(share_genf90_sources)
 list(APPEND share_sources "${share_genf90_sources}")
 
 list(APPEND share_sources
+  pcd_const.F90
   shr_file_mod.F90
   shr_kind_mod.F90
   shr_const_mod.F90
