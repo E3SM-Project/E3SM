@@ -1008,6 +1008,10 @@ contains
          ! Populate the fates to hlm patch map
          call this%f2hmap(nc)%SetPatchIndex(bounds_clump)
 
+         ! Initialize interface registry
+         nmaxpatches = bounds_clump%endp - bounds_clump%begp
+         call this%fates(nc)%InitializeInterfaceRegistry(nmaxpatches)
+
          ! Set the number of FATES sites
          this%fates(nc)%nsites = s
 
