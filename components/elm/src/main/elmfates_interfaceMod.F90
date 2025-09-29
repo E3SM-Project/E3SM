@@ -1008,9 +1008,12 @@ contains
          ! Populate the fates to hlm patch map
          call this%f2hmap(nc)%SetPatchIndex(bounds_clump)
 
-         ! Initialize interface registry
+         ! Initialize interface registries for each patch on the clump 
          nmaxpatches = bounds_clump%endp - bounds_clump%begp
          call this%fates(nc)%InitializeInterfaceRegistry(nmaxpatches)
+
+         ! Register the HLM interface variables
+         call this%RegisterHLMInterfaceVariables(nc, nmaxpatches)
 
          ! Set the number of FATES sites
          this%fates(nc)%nsites = s
@@ -1028,6 +1031,9 @@ contains
          ! These are staticaly allocated at maximums, so
          ! No information about the patch or cohort structure is needed at this step
 
+         ! Initialize fates boundary conditions arrays
+         call this%fates(nc)%InitializeBoundaryConditions(natpft_size)
+
          ! Parameter Constants defined by FATES, but used in ELM
          ! Note that FATES has its parameters defined, so we can also set the values
          call allocate_bcpconst(this%fates(nc)%bc_pconst,nlevdecomp)
@@ -1040,13 +1046,9 @@ contains
 
          do s = 1, this%fates(nc)%nsites
 
-            ! Allocate HLM-FATES mapping arrays
-            ! TODO: update this to be agnostic to fates column run mode
-            allocate(this%fates(nc)%sites(s)%column_map(1))
-            ! allocate(this%fates(nc)%sites(s)%patch_map(natpft_size))
-
             ! TODO: Assign column_map and patch_map values
-            this%fates(nc)%sites(s)%column_map(1) = this%f2hmap(nc)%GetColumnIndex(1,s)
+            ! this%fates(nc)%sites(s)%column_map(:) = this%f2hmap(nc)%GetColumnIndex(1,s)
+            ! this%fates(nc)%sites(s)%patch_map(:)  = this%f2hmap(nc)%hlm_patch_index(:,s)
 
             c = this%f2hmap(nc)%fcolumn(s)
             this%fates(nc)%sites(s)%h_gid = c
@@ -1062,7 +1064,7 @@ contains
                                surfpft_lb, surfpft_ub)
             call allocate_bcout(this%fates(nc)%bc_out(s),col_pp%nlevbed(c),ndecomp)
             call zero_bcs(this%fates(nc),s)
-
+            
             ! Pass any grid-cell derived attributes to the site
             ! ---------------------------------------------------------------------------
 
@@ -2268,6 +2270,9 @@ contains
            call init_patches(this%fates(nc)%nsites, this%fates(nc)%sites, &
                              this%fates(nc)%bc_in)
 
+                             
+         !   ! Initialize FATES patch api registries 
+         !   call this%RegisterFatesInterfaceVariables(nc)
 
            do s = 1,this%fates(nc)%nsites
 
@@ -4123,7 +4128,7 @@ end subroutine wrap_update_hifrq_hist
    do l = bounds_clump%begl,bounds_clump%endl
       if (lun_pp%itype(l) == istsoil) then
          s = s + 1
-         do ifp = 1,fates_maxPatchesperSite
+         do ifp = 1, natpft_size
             ! This assumes that the first patch on the land unit is a vegetated
             ! patch and that the patch indices are monotonically increasing.
             ! See decompmod and initGridCellsMod for corroboration
@@ -4136,29 +4141,40 @@ end subroutine wrap_update_hifrq_hist
 
 ! ======================================================================================
  
- subroutine RegisterHLMInterfaceVariables(this, nc)
+ subroutine RegisterHLMInterfaceVariables(this, nc, nmaxpatches)
    
    use FatesInterfaceTypesMod, only : subgrid_column_index
-
    use FatesInterfaceTypesMod, only : hlm_fates_soil_level
    use FatesInterfaceTypesMod, only : hlm_fates_decomp_frac_moisture
    use FatesInterfaceTypesMod, only : hlm_fates_decomp_frac_temperature
 
-
+   ! Arguments
    class(hlm_fates_interface_type), intent(inout) :: this
-   
-   integer, intent(in) :: nc   ! clump number
-   
-   ! Initialize the HLM-FATES interface variable registry
-   call this%fates(nc)%api%InitializeInterfaceRegistry()
-         
-   ! Register the HLM data
-   call this%fates(nc)%api%Register(hlm_fates_soil_level, col_pp%nlevbed, subgrid_column_index)
-   call this%fates(nc)%api%Register(hlm_fates_decomp_frac_moisture, col_cf%w_scalar, subgrid_column_index)
-   call this%fates(nc)%api%Register(hlm_fates_decomp_frac_temperature, col_cf%t_scalar, subgrid_column_index)
+   integer, intent(in)                            :: nc          ! clump number
+   integer, intent(in)                            :: nmaxpatches ! maximum patches for this clump
+
+   ! Locals
+   integer :: p   ! register index
+   integer :: c   ! column index
+
+   do i = 1, nmaxpatches
+
+      ! Get the subgrid indices and assign them to the register metadata
+      call this%fates(nc)%register(p)%SetSubgridIndices(gridcell = veg_pp%gridcell(p), &
+                                                        topounit = veg_pp%topounit(p), &
+                                                        landunit = veg_pp%landunit(p), &
+                                                        column = veg_pp%column(p), &
+                                                        hlmpatch = p)
+
+      ! Register and initialize the boundary condition variables necessary
+      c = this%fates(nc)%register(p)%GetColumnIndex()
+      call this%fates(nc)%register(p)%Register(hlm_fates_soil_level, col_pp%nlevbed(c), subgrid_column_index)
+      call this%fates(nc)%register(p)%Register(hlm_fates_decomp_frac_moisture, col_cf%w_scalar(c), subgrid_column_index)
+      call this%fates(nc)%register(p)%Register(hlm_fates_decomp_frac_temperature, col_cf%t_scalar(c), subgrid_column_index)
+
+  end do
+
 
  end subroutine RegisterHLMInterfaceVariables
- 
-! ======================================================================================
  
 end module ELMFatesInterfaceMod
