@@ -896,13 +896,17 @@ contains
       integer                                        :: g         ! HLM grid index
       integer                                        :: m         ! HLM PFT index
       integer                                        :: ft        ! FATES PFT index
+      integer                                        :: i         ! iterator
       integer                                        :: pi,pf
+      integer                                        :: p         ! patch index
       integer, allocatable                           :: collist (:)
+      integer, allocatable                           :: patchlist(:)
       type(bounds_type)                              :: bounds_clump
       integer                                        :: nmaxcol
       integer                                        :: ndecomp
       integer                                        :: numg
       integer                                        :: num_landunits_veg
+      integer                                        :: num_veg_patches
 
       real(r8), allocatable :: landuse_pft_map(:,:,:)
       real(r8), allocatable :: landuse_bareground(:)
@@ -981,7 +985,7 @@ contains
                end if
             endif
          enddo
-
+         
          ! TODO Add adjustment to fates calculation here based on multi-column FATES options
          ! s = num_landunits_veg
 
@@ -1002,19 +1006,40 @@ contains
            write(iulog,*) 'alm_fates%init(): thread',nc,': allocated ',s,' sites'
          end if
 
-         ! Allocate map from FATES patchno index to HLM patch index by site
-         allocate(this%f2hmap(nc)%hlm_patch_index(fates_maxPatchesperSite,s))
+         ! Iterate over all patches in this clump and determine the maximum number of non-crop
+         ! vegetated patches.  These correspond to the fates patches.
+         num_veg_patches = 0
+         i = 0
+         nmaxpatches = bounds_clump%endp - bounds_clump%begp + 1
+         allocate(patchlist(nmaxpatches))
+         do p = bounds_clump%begp, bounds_clump%endp
+            c = veg_pp%column(p)
+            
+            ! If the column is a soil type, then the patch associated with it a vegetated patch, per initGridCells()
+            ! Record the patch index to the temporary patchlist
+            if (col_pp%itype(c) == istsoil) then
+               num_veg_patches = num_veg_patches + 1
+               i = i + 1
+               patchlist(i) = p
+            end if
 
-         ! Populate the fates to hlm patch map
-         call this%f2hmap(nc)%SetPatchIndex(bounds_clump)
+         end do
+
+         ! ! Allocate map from FATES patchno index to HLM patch index by site
+         ! allocate(this%f2hmap(nc)%hlm_patch_index(fates_maxPatchesperSite,s))
+
+         ! ! Populate the fates to hlm patch map
+         ! call this%f2hmap(nc)%SetPatchIndex(bounds_clump)
 
          ! Initialize interface registries for each patch on the clump 
-         nmaxpatches = bounds_clump%endp - bounds_clump%begp
-         call this%fates(nc)%InitializeInterfaceRegistry(nmaxpatches)
-
+         call this%fates(nc)%InitializeInterfaceRegistry(num_veg_patches)
+         
          ! Register the HLM interface variables
-         call this%RegisterHLMInterfaceVariables(nc, nmaxpatches)
-
+         call this%RegisterHLMInterfaceVariables(nc, num_veg_patches, patchlist)
+         
+         ! deallocate temporary patch list
+         deallocate(patchlist)
+         
          ! Set the number of FATES sites
          this%fates(nc)%nsites = s
 
@@ -4141,7 +4166,7 @@ end subroutine wrap_update_hifrq_hist
 
 ! ======================================================================================
  
- subroutine RegisterHLMInterfaceVariables(this, nc, nmaxpatches)
+ subroutine RegisterHLMInterfaceVariables(this, nc, num_veg_patches, patchlist)
    
    use FatesInterfaceTypesMod, only : subgrid_column_index
    use FatesInterfaceTypesMod, only : hlm_fates_soil_level
@@ -4150,15 +4175,18 @@ end subroutine wrap_update_hifrq_hist
 
    ! Arguments
    class(hlm_fates_interface_type), intent(inout) :: this
-   integer, intent(in)                            :: nc          ! clump number
-   integer, intent(in)                            :: nmaxpatches ! maximum patches for this clump
+   integer, intent(in)                            :: nc              ! clump number
+   integer, intent(in)                            :: num_veg_patches ! maximum patches for this clump
+   integer, intent(in)                            :: patchlist(:)    ! maximum patches for this clump
 
    ! Locals
-   integer :: p   ! register index
+   integer :: r   ! register index
+   integer :: p   ! hlm patch index
    integer :: c   ! column index
 
-   do i = 1, nmaxpatches
-
+   do r = 1, num_veg_patches
+      p = patchlist(r)
+      
       ! Get the subgrid indices and assign them to the register metadata
       call this%fates(nc)%register(p)%SetSubgridIndices(gridcell = veg_pp%gridcell(p), &
                                                         topounit = veg_pp%topounit(p), &
@@ -4173,8 +4201,7 @@ end subroutine wrap_update_hifrq_hist
       call this%fates(nc)%register(p)%Register(hlm_fates_decomp_frac_temperature, col_cf%t_scalar(c), subgrid_column_index)
 
   end do
-
-
+  
  end subroutine RegisterHLMInterfaceVariables
  
 end module ELMFatesInterfaceMod
