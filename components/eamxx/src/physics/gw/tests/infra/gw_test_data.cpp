@@ -1000,6 +1000,10 @@ void gw_convect_project_winds_f(GwConvectProjectWindsData& d)
   d.transition<ekat::TransposeDirection::f2c>();
 }
 
+void gw_convect_project_winds(GwConvectProjectWindsData& d)
+{
+}
+
 void gw_heating_depth(GwHeatingDepthData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();

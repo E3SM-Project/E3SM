@@ -5,8 +5,6 @@
 #include <ekat_team_policy_utils.hpp>
 #include <ekat_subview_utils.hpp>
 
-#include "share/util/eamxx_deep_copy.hpp"
-
 #include <random>
 
 using scream::Real;
@@ -415,7 +413,7 @@ void shoc_diag_second_moments_srf_host(Int shcol, Real* wthl_sfc, Real* uw_sfc, 
   using view_1d    = typename SHOC::view_1d<Scalar>;
 
   std::vector<view_1d> temp_d(3);
-  ScreamDeepCopy::copy_to_device({wthl_sfc, uw_sfc, vw_sfc}, shcol, temp_d);
+  ekat::host_to_device({wthl_sfc, uw_sfc, vw_sfc}, shcol, temp_d);
 
   // inputs
   view_1d
@@ -443,7 +441,7 @@ void shoc_diag_second_moments_srf_host(Int shcol, Real* wthl_sfc, Real* uw_sfc, 
    });
 
   std::vector<view_1d> inout_views = {ustar2_d, wstar_d};
-  ScreamDeepCopy::copy_to_host({ustar2, wstar}, shcol, inout_views);
+  ekat::device_to_host({ustar2, wstar}, shcol, inout_views);
 }
 
 void shoc_diag_second_moments_ubycond_host(Int shcol, Real* thl_sec, Real* qw_sec, Real* wthl_sec, Real* wqw_sec, Real* qwthl_sec, Real* uw_sec, Real* vw_sec,
@@ -488,7 +486,7 @@ void shoc_diag_second_moments_ubycond_host(Int shcol, Real* thl_sec, Real* qw_se
 
   std::vector<view_1d> host_views = {thl_sec_d, qw_sec_d, qwthl_sec_d, wthl_sec_d, wqw_sec_d, uw_sec_d, vw_sec_d, wtke_sec_d};
 
-  ScreamDeepCopy::copy_to_host({thl_sec, qw_sec, qwthl_sec, wthl_sec, wqw_sec, uw_sec, vw_sec, wtke_sec}, shcol, host_views);
+  ekat::device_to_host({thl_sec, qw_sec, qwthl_sec, wthl_sec, wqw_sec, uw_sec, vw_sec, wtke_sec}, shcol, host_views);
 }
 
 void update_host_dse_host(Int shcol, Int nlev, Real* thlm, Real* shoc_ql, Real* inv_exner, Real* zt_grid,
@@ -510,7 +508,7 @@ void update_host_dse_host(Int shcol, Int nlev, Real* thlm, Real* shoc_ql, Real* 
   std::vector<const Real*> ptr_array = {thlm,  shoc_ql, inv_exner, zt_grid, host_dse};
 
   // Sync to device
-  ScreamDeepCopy::copy_to_device({phis}, shcol, temp_1d_d);
+  ekat::host_to_device({phis}, shcol, temp_1d_d);
   ekat::host_to_device(ptr_array, shcol, nlev, temp_2d_d);
 
   view_1d phis_d(temp_1d_d[0]);
@@ -675,7 +673,7 @@ void compute_shoc_mix_shoc_length_host(Int nlev, Int shcol, bool shoc_1p5tke, Re
   std::vector<const Real*> ptr_array = {tke,   brunt, zt_grid, dz_zt, tk, shoc_mix};
 
   // Sync to device
-  ScreamDeepCopy::copy_to_device({l_inf}, shcol, temp_1d_d);
+  ekat::host_to_device({l_inf}, shcol, temp_1d_d);
   ekat::host_to_device(ptr_array, shcol, nlev, temp_2d_d);
 
   view_1d
@@ -890,7 +888,7 @@ void shoc_energy_integrals_host(Int shcol, Int nlev, Real *host_dse, Real *pdel,
 
   // Sync back to host
   std::vector<view_1d> inout_views = {se_int_d, ke_int_d, wv_int_d, wl_int_d};
-  ScreamDeepCopy::copy_to_host({se_int,ke_int,wv_int,wl_int}, shcol, inout_views);
+  ekat::device_to_host({se_int,ke_int,wv_int,wl_int}, shcol, inout_views);
 }
 
 void diag_second_moments_lbycond_host(Int shcol, Real* wthl_sfc, Real* wqw_sfc, Real* uw_sfc, Real* vw_sfc, Real* ustar2, Real* wstar,
@@ -901,7 +899,7 @@ void diag_second_moments_lbycond_host(Int shcol, Real* wthl_sfc, Real* wqw_sfc, 
   using view_1d    = typename SHOC::view_1d<Scalar>;
 
   std::vector<view_1d> lbycond_d(6);
-  ScreamDeepCopy::copy_to_device({wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, ustar2, wstar}, shcol, lbycond_d);
+  ekat::host_to_device({wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, ustar2, wstar}, shcol, lbycond_d);
 
   // inputs
   view_1d wthl_d  (lbycond_d[0]),
@@ -953,7 +951,7 @@ void diag_second_moments_lbycond_host(Int shcol, Real* wthl_sfc, Real* wqw_sfc, 
   });
 
   std::vector<view_1d> host_views = {wthlo_d, wqwo_d, uwo_d, vwo_d, wtkeo_d, thlo_d, qwo_d, qwthlo_d};
-  ScreamDeepCopy::copy_to_host({wthl_sec, wqw_sec, uw_sec, vw_sec, wtke_sec, thl_sec, qw_sec, qwthl_sec}, shcol, host_views);
+  ekat::device_to_host({wthl_sec, wqw_sec, uw_sec, vw_sec, wtke_sec, thl_sec, qw_sec, qwthl_sec}, shcol, host_views);
 }
 
 void diag_second_moments_host(Int shcol, Int nlev, Int nlevi, bool shoc_1p5tke, Real* thetal, Real* qw, Real* u_wind, Real* v_wind,
@@ -1074,7 +1072,7 @@ void diag_second_shoc_moments_host(Int shcol, Int nlev, Int nlevi, bool shoc_1p5
   using view_1d       = typename SHOC::view_1d<Scalar>;
 
   std::vector<view_1d> temp_1d(4);
-  ScreamDeepCopy::copy_to_device({wthl_sfc, wqw_sfc, uw_sfc, vw_sfc}, shcol, temp_1d);
+  ekat::host_to_device({wthl_sfc, wqw_sfc, uw_sfc, vw_sfc}, shcol, temp_1d);
 
   view_1d wthl_1d  (temp_1d[0]),
           wqw_1d   (temp_1d[1]),
@@ -1266,7 +1264,7 @@ void compute_l_inf_shoc_length_host(Int nlev, Int shcol, Real *zt_grid, Real *dz
 
   // Sync back to host
   std::vector<view_1d> inout_views = {l_inf_d};
-  ScreamDeepCopy::copy_to_host({l_inf}, shcol, inout_views);
+  ekat::device_to_host({l_inf}, shcol, inout_views);
 }
 
 void check_length_scale_shoc_length_host(Int nlev, Int shcol, Real* host_dx, Real* host_dy, Real* shoc_mix)
@@ -1285,7 +1283,7 @@ void check_length_scale_shoc_length_host(Int nlev, Int shcol, Real* host_dx, Rea
   // Sync to device
   std::vector<view_1d> temp_1d_d(2);
   std::vector<view_2d> temp_2d_d(1);
-  ScreamDeepCopy::copy_to_device({host_dx,host_dy}, shcol, temp_1d_d);
+  ekat::host_to_device({host_dx,host_dy}, shcol, temp_1d_d);
   ekat::host_to_device({shoc_mix}, shcol, nlev, temp_2d_d);
 
   view_1d
@@ -1324,7 +1322,7 @@ void shoc_diag_obklen_host(Int shcol, Real* uw_sfc, Real* vw_sfc, Real* wthl_sfc
   std::vector<view_1d> temp_d(7);
   std::vector<const Real*> ptr_array = {uw_sfc, vw_sfc, wthl_sfc, wqw_sfc, thl_sfc,
                                         cldliq_sfc, qv_sfc};
-  ScreamDeepCopy::copy_to_device(ptr_array, shcol, temp_d);
+  ekat::host_to_device(ptr_array, shcol, temp_d);
 
   // Inputs
   view_1d
@@ -1365,7 +1363,7 @@ void shoc_diag_obklen_host(Int shcol, Real* uw_sfc, Real* vw_sfc, Real* wthl_sfc
 
   // Sync back to host
   std::vector<view_1d> inout_views = {ustar_d, kbfs_d, obklen_d};
-  ScreamDeepCopy::copy_to_host({ustar, kbfs, obklen}, shcol, inout_views);
+  ekat::device_to_host({ustar, kbfs, obklen}, shcol, inout_views);
 }
 
 void shoc_pblintd_cldcheck_host(Int shcol, Int nlev, Int nlevi, Real* zi, Real* cldn, Real* pblh) {
@@ -1386,7 +1384,7 @@ void shoc_pblintd_cldcheck_host(Int shcol, Int nlev, Int nlevi, Real* zi, Real* 
     cldn_2d(cldcheck_2d[1]);
 
   std::vector<view_1d> cldcheck_1d(1);
-  ScreamDeepCopy::copy_to_device({pblh}, shcol, cldcheck_1d);
+  ekat::host_to_device({pblh}, shcol, cldcheck_1d);
 
   view_1d pblh_1d (cldcheck_1d[0]);
 
@@ -1404,7 +1402,7 @@ void shoc_pblintd_cldcheck_host(Int shcol, Int nlev, Int nlevi, Real* zi, Real* 
   });
 
   std::vector<view_1d> inout_views = {pblh_1d};
-  ScreamDeepCopy::copy_to_host({pblh}, shcol, inout_views);
+  ekat::device_to_host({pblh}, shcol, inout_views);
 }
 
 void shoc_length_host(Int shcol, Int nlev, Int nlevi, bool shoc_1p5tke, Real* host_dx, Real* host_dy,
@@ -1430,7 +1428,7 @@ void shoc_length_host(Int shcol, Int nlev, Int nlevi, bool shoc_1p5tke, Real* ho
   std::vector<const Real*> ptr_array = {zt_grid, zi_grid, dz_zt, tke,
                                         thv, tk, brunt, shoc_mix};
   // Sync to device
-  ScreamDeepCopy::copy_to_device({host_dx, host_dy}, shcol, temp_1d_d);
+  ekat::host_to_device({host_dx, host_dy}, shcol, temp_1d_d);
   ekat::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_2d_d);
 
   // inputs
@@ -1514,7 +1512,7 @@ void shoc_energy_fixer_host(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv
                                            rho_zt,  tke,     host_dse};
 
   // Sync to device
-  ScreamDeepCopy::copy_to_device(ptr_array_1d, shcol, temp_1d_d);
+  ekat::host_to_device(ptr_array_1d, shcol, temp_1d_d);
   ekat::host_to_device(ptr_array_2d, dim1_sizes, dim2_sizes, temp_2d_d);
 
   view_1d
@@ -1651,7 +1649,7 @@ void update_prognostics_implicit_host(Int shcol, Int nlev, Int nlevi, Int num_tr
                                         tke,   u_wind, v_wind};
 
   // Sync to device
-  ScreamDeepCopy::copy_to_device({uw_sfc, vw_sfc, wthl_sfc, wqw_sfc}, shcol, temp_1d_d);
+  ekat::host_to_device({uw_sfc, vw_sfc, wthl_sfc, wqw_sfc}, shcol, temp_1d_d);
   ekat::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_2d_d);
   ekat::host_to_device({tracer}, shcol, nlev, num_tracer, temp_3d_d);
 
@@ -2128,7 +2126,7 @@ void integ_column_stability_host(Int nlev, Int shcol, Real *dz_zt,
 
   // Sync back to host
   std::vector<view_1d> inout_views = {brunt_int_d};
-  ScreamDeepCopy::copy_to_host({brunt_int}, shcol, inout_views);
+  ekat::device_to_host({brunt_int}, shcol, inout_views);
 }
 
 void isotropic_ts_host(Int nlev, Int shcol, Real* brunt_int, Real* tke,
@@ -2152,7 +2150,7 @@ void isotropic_ts_host(Int nlev, Int shcol, Real* brunt_int, Real* tke,
   std::vector<const Real*> ptr_array = {tke, a_diss, brunt, isotropy};
 
   // Sync to device
-  ScreamDeepCopy::copy_to_device({brunt_int}, shcol, temp_1d);
+  ekat::host_to_device({brunt_int}, shcol, temp_1d);
   ekat::host_to_device(ptr_array, shcol, nlev, temp_2d);
 
   //inputs
@@ -2303,7 +2301,7 @@ Int shoc_main_host(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npb
                                            qwthl_sec, wthl_sec, wqw_sec,       wtke_sec,     uw_sec,
                                            vw_sec,    w3,       wqls_sec,      brunt,        isotropy};
 
-  ScreamDeepCopy::copy_to_device(ptr_array_1d, shcol, temp_1d_d);
+  ekat::host_to_device(ptr_array_1d, shcol, temp_1d_d);
   ekat::host_to_device(ptr_array_2d, dim1_2d_sizes, dim2_2d_sizes, temp_2d_d);
   ekat::host_to_device({qtracers}, shcol, nlev, num_qtracers, temp_3d_d);
 
@@ -2465,7 +2463,7 @@ Int shoc_main_host(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npb
   // Sync back to host
   // 1d
   std::vector<view_1d> out_views_1d = {pblh_d};
-  ScreamDeepCopy::copy_to_host({pblh}, shcol, out_views_1d);
+  ekat::device_to_host({pblh}, shcol, out_views_1d);
 
   // 2d
   std::vector<int> dim1_2d_out = {shcol, shcol, shcol, shcol, shcol,
@@ -2523,13 +2521,13 @@ void pblintd_height_host(Int shcol, Int nlev, Int npbl, Real* z, Real* u, Real* 
           rino_2d(views_2d[4]);
 
   std::vector<view_1d> views_1d(3);
-  ScreamDeepCopy::copy_to_device({ustar, thv_ref, pblh}, shcol, views_1d);
+  ekat::host_to_device({ustar, thv_ref, pblh}, shcol, views_1d);
   view_1d ustar_1d   (views_1d[0]),
           thv_ref_1d (views_1d[1]),
           pblh_1d    (views_1d[2]);
 
   std::vector<bview_1d> views_bool_1d(1);
-  ScreamDeepCopy::copy_to_device({check}, shcol, views_bool_1d);
+  ekat::host_to_device({check}, shcol, views_bool_1d);
   bview_1d check_1d (views_bool_1d[0]);
 
   const Int nlev_pack = ekat::npack<Spack>(nlev);
@@ -2552,13 +2550,13 @@ void pblintd_height_host(Int shcol, Int nlev, Int npbl, Real* z, Real* u, Real* 
  });
 
   std::vector<view_1d> out_1d_views = {pblh_1d};
-  ScreamDeepCopy::copy_to_host({pblh}, shcol, out_1d_views);
+  ekat::device_to_host({pblh}, shcol, out_1d_views);
 
   std::vector<view_2d> out_2d_views = {rino_2d};
   ekat::device_to_host({rino}, shcol, nlev, out_2d_views);
 
   std::vector<bview_1d> out_bool_1d_views = {check_1d};
-  ScreamDeepCopy::copy_to_host({check}, shcol, out_bool_1d_views);
+  ekat::device_to_host({check}, shcol, out_bool_1d_views);
 }
 
 void vd_shoc_decomp_and_solve_host(Int shcol, Int nlev, Int nlevi, Int num_rhs, Real dtime, Real* kv_term, Real* tmpi, Real* rdp_zt, Real* flux, Real* var)
@@ -2589,7 +2587,7 @@ void vd_shoc_decomp_and_solve_host(Int shcol, Int nlev, Int nlevi, Int num_rhs, 
   std::vector<const Real*> ptr_array = {kv_term, tmpi, rdp_zt};
 
   // Sync to device
-  ScreamDeepCopy::copy_to_device({flux}, shcol, temp_1d_d);
+  ekat::host_to_device({flux}, shcol, temp_1d_d);
   ekat::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_2d_d);
   ekat::host_to_device({var}, shcol, nlev, num_rhs, temp_3d_d);
 
@@ -2707,7 +2705,7 @@ void eddy_diffusivities_host(Int nlev, Int shcol, bool shoc_1p5tke, Real* pblh, 
                                         isotropy, tke,  tkh,      tk};
 
   // Sync to device
-  ScreamDeepCopy::copy_to_device({pblh}, shcol, temp_1d_d);
+  ekat::host_to_device({pblh}, shcol, temp_1d_d);
   ekat::host_to_device(ptr_array, shcol, nlev, temp_2d_d);
 
   view_1d pblh_d(temp_1d_d[0]);
@@ -2766,7 +2764,7 @@ void pblintd_surf_temp_host(Int shcol, Int nlev, Int nlevi, Real* z, Real* ustar
           rino_2d(views_2d[2]);
 
   std::vector<view_1d> views_1d(5);
-  ScreamDeepCopy::copy_to_device({ustar, obklen, kbfs, pblh, tlv}, shcol, views_1d);
+  ekat::host_to_device({ustar, obklen, kbfs, pblh, tlv}, shcol, views_1d);
   view_1d ustar_1d (views_1d[0]),
           obklen_1d(views_1d[1]),
           kbfs_1d  (views_1d[2]),
@@ -2774,7 +2772,7 @@ void pblintd_surf_temp_host(Int shcol, Int nlev, Int nlevi, Real* z, Real* ustar
           tlv_1d   (views_1d[4]);
 
   std::vector<view_bool_1d> bviews_1d(1);
-  ScreamDeepCopy::copy_to_device({check}, shcol, bviews_1d);
+  ekat::host_to_device({check}, shcol, bviews_1d);
   view_bool_1d check_1d (bviews_1d[0]);
 
   Int npbl = nlev;
@@ -2798,13 +2796,13 @@ void pblintd_surf_temp_host(Int shcol, Int nlev, Int nlevi, Real* z, Real* ustar
   });
 
   std::vector<view_1d> out_1d_views = {pblh_1d, tlv_1d};
-  ScreamDeepCopy::copy_to_host({pblh, tlv}, shcol, out_1d_views);
+  ekat::device_to_host({pblh, tlv}, shcol, out_1d_views);
 
   std::vector<view_2d> out_2d_views = {rino_2d};
   ekat::device_to_host({rino}, shcol, nlev, out_2d_views);
 
   std::vector<view_bool_1d> out_bool_1d_views = {check_1d};
-  ScreamDeepCopy::copy_to_host({check}, shcol, out_bool_1d_views);
+  ekat::device_to_host({check}, shcol, out_bool_1d_views);
 }
 
 void pblintd_check_pblh_host(Int shcol, Int nlev, Int nlevi, Int npbl, Real* z, Real* ustar, bool* check, Real* pblh)
@@ -2821,12 +2819,12 @@ void pblintd_check_pblh_host(Int shcol, Int nlev, Int nlevi, Int npbl, Real* z, 
   view_2d z_2d (views_2d[0]);
 
   std::vector<view_1d> views_1d(2);
-  ScreamDeepCopy::copy_to_device({ustar, pblh}, shcol, views_1d);
+  ekat::host_to_device({ustar, pblh}, shcol, views_1d);
   view_1d ustar_1d (views_1d[0]),
           pblh_1d  (views_1d[1]);
 
   std::vector<view_bool_1d> bool_views_1d(1);
-  ScreamDeepCopy::copy_to_device({check}, shcol, bool_views_1d);
+  ekat::host_to_device({check}, shcol, bool_views_1d);
   view_bool_1d check_1d(bool_views_1d[0]);
 
   Kokkos::parallel_for("pblintd_check_pblh", shcol, KOKKOS_LAMBDA (const int& i) {
@@ -2840,7 +2838,7 @@ void pblintd_check_pblh_host(Int shcol, Int nlev, Int nlevi, Int npbl, Real* z, 
  });
 
   std::vector<view_1d> out_1d_views = {pblh_1d};
-  ScreamDeepCopy::copy_to_host({pblh}, shcol, out_1d_views);
+  ekat::device_to_host({pblh}, shcol, out_1d_views);
 }
 
 void pblintd_host(Int shcol, Int nlev, Int nlevi, Int npbl, Real* z, Real* zi, Real* thl, Real* ql, Real* q, Real* u, Real* v, Real* ustar, Real* obklen, Real* kbfs, Real* cldn, Real* pblh)
@@ -2869,7 +2867,7 @@ void pblintd_host(Int shcol, Int nlev, Int nlevi, Int npbl, Real* z, Real* zi, R
                                           q, u,  v,   cldn};
 
     // Sync to device
-    ScreamDeepCopy::copy_to_device({ustar, obklen, kbfs}, shcol, temp_1d_d);
+    ekat::host_to_device({ustar, obklen, kbfs}, shcol, temp_1d_d);
     ekat::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_2d_d);
 
     view_1d
@@ -2921,7 +2919,7 @@ void pblintd_host(Int shcol, Int nlev, Int nlevi, Int npbl, Real* z, Real* zi, R
 
     // Sync back to host
     std::vector<view_1d> out_views = {pblh_d};
-    ScreamDeepCopy::copy_to_host({pblh}, shcol, out_views);
+    ekat::device_to_host({pblh}, shcol, out_views);
 }
 
 void shoc_tke_host(Int shcol, Int nlev, Int nlevi, Real dtime, bool shoc_1p5tke, Real* wthv_sec, Real* shoc_mix, Real* dz_zi, Real* dz_zt, Real* pres,
@@ -2952,7 +2950,7 @@ void shoc_tke_host(Int shcol, Int nlev, Int nlevi, Real dtime, bool shoc_1p5tke,
                                         brunt,    zt_grid,  zi_grid, tke,    tk,    tkh,   isotropy};
 
   // Sync to device
-  ScreamDeepCopy::copy_to_device({pblh}, shcol, temp_1d_d);
+  ekat::host_to_device({pblh}, shcol, temp_1d_d);
   ekat::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_2d_d);
 
   view_1d pblh_d(temp_1d_d[0]);
