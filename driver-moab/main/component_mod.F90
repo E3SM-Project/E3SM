@@ -788,7 +788,7 @@ subroutine component_init_areacor_moab (comp, mbccid, mbcxid, seq_flds_c2x_fluxe
          ! get areas
          tagname='area:aream:mask'//C_NULL_CHAR
          arrsize = 3 * lsize
-         ierr = iMOAB_GetDoubleTagStorage ( mbccid, tagname, arrsize , comp(1)%mbGridType, areas )
+         ierr = iMOAB_GetDoubleTagStorage ( mbccid, tagname, arrsize , comp(1)%mbGridType, areas(1,1) )
          if (ierr .ne. 0) then
            call shr_sys_abort(subname//' cannot get areas  ')
          endif
@@ -820,7 +820,7 @@ subroutine component_init_areacor_moab (comp, mbccid, mbcxid, seq_flds_c2x_fluxe
            call shr_sys_abort(subname//' cannot define correction tags')
          endif
          arrsize = 2 * lsize
-         ierr = iMOAB_SetDoubleTagStorage( mbccid, tagname, arrsize , comp(1)%mbGridType, factors)
+         ierr = iMOAB_SetDoubleTagStorage( mbccid, tagname, arrsize , comp(1)%mbGridType, factors(1,1))
          if (ierr .ne. 0) then
            call shr_sys_abort(subname//' cannot set correction area factors  ')
          endif
@@ -854,7 +854,7 @@ subroutine component_init_areacor_moab (comp, mbccid, mbcxid, seq_flds_c2x_fluxe
          allocate(vals(lsize, nfields))
          tagname = trim(seq_flds_c2x_fluxes)//C_NULL_CHAR
          arrsize = lsize * nfields
-         ierr = iMOAB_GetDoubleTagStorage( mbccid, tagname, arrsize, comp(1)%mbGridType, vals )
+         ierr = iMOAB_GetDoubleTagStorage( mbccid, tagname, arrsize, comp(1)%mbGridType, vals(1,1) )
          if (ierr .ne. 0) then
            call shr_sys_abort(subname//' cannot get flux values:  '//tagname)
          endif
@@ -868,7 +868,7 @@ subroutine component_init_areacor_moab (comp, mbccid, mbcxid, seq_flds_c2x_fluxe
                enddo
             endif
          enddo
-         ierr = iMOAB_SetDoubleTagStorage( mbccid, tagname, arrsize, comp(1)%mbGridType, vals)
+         ierr = iMOAB_SetDoubleTagStorage( mbccid, tagname, arrsize, comp(1)%mbGridType, vals(1,1))
          if (ierr .ne. 0) then
             call shr_sys_abort(subname//' cannot set new flux values  ')
          endif
@@ -1267,7 +1267,7 @@ subroutine component_init_areacor_moab (comp, mbccid, mbcxid, seq_flds_c2x_fluxe
       ! get vals, multiply, then reset them again
       tagname = trim(seq_flds_fluxes)//C_NULL_CHAR
       arrsize = comp%mblsize * nfields
-      ierr = iMOAB_GetDoubleTagStorage( comp%mbApCCid, tagname, arrsize , comp%mbGridType, vals)
+      ierr = iMOAB_GetDoubleTagStorage( comp%mbApCCid, tagname, arrsize , comp%mbGridType, vals(1,1))
       if (ierr .ne. 0) then
          call shr_sys_abort(subname//' cannot get fluxes  ' //trim(type))
       endif
