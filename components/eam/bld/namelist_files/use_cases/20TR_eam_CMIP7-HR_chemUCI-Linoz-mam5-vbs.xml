@@ -14,7 +14,7 @@
 <solar_data_type>SERIAL</solar_data_type>
 
 <!-- GHG values from CMIP6 input4MIPS -->
-<bndtvghg>atm/cam/ggas/GHG_CMIP-1-2-0_Annual_Global_0000-2014_c20180105.nc</bndtvghg>
+<bndtvghg>atm/cam/ggas/CMIP7/GHG_CMIP7_Annual_Global_0001-2023_c20250616.nc</bndtvghg>
 <scenario_ghg>RAMPED</scenario_ghg>
 
 <!-- External forcing for BAM or MAM.  CMIP6 input4mips data -->
