@@ -28,6 +28,7 @@ set(DIAGNOSTIC_SRCS
   vert_derivative.cpp
   zonal_avg.cpp
   conditional_sampling.cpp
+  below_or_above_interface.cpp
 )
 
 add_library(diagnostics ${DIAGNOSTIC_SRCS})
