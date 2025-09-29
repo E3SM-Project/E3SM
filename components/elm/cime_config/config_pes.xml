@@ -74,21 +74,6 @@
         </ntasks>
       </pes>
     </mach>
-    <mach name="gcp12">
-      <pes compset="any" pesize="any">
-        <comment>elm+gcp12: default 1 node, 56x1</comment>
-        <ntasks>
-          <ntasks_atm>56</ntasks_atm>
-          <ntasks_lnd>56</ntasks_lnd>
-          <ntasks_rof>56</ntasks_rof>
-          <ntasks_ice>56</ntasks_ice>
-          <ntasks_ocn>56</ntasks_ocn>
-          <ntasks_glc>16</ntasks_glc>
-          <ntasks_wav>16</ntasks_wav>
-          <ntasks_cpl>56</ntasks_cpl>
-        </ntasks>
-      </pes>
-    </mach>
     <mach name="lawrencium-lr3">
       <pes compset="any" pesize="any">
         <comment>elm+lawrencium-lr3: default, 2 nodes</comment>
@@ -276,31 +261,6 @@
         </ntasks>
       </pes>
     </mach>
-    <mach name="gcp12">
-      <pes compset="any" pesize="any">
-        <comment>elm: gcp12 PEs for grid l%360x720cru, 2 nodes, 56x2 </comment>
-        <ntasks>
-          <ntasks_atm>-2</ntasks_atm>
-          <ntasks_lnd>-2</ntasks_lnd>
-          <ntasks_rof>-2</ntasks_rof>
-          <ntasks_ice>-2</ntasks_ice>
-          <ntasks_ocn>-2</ntasks_ocn>
-          <ntasks_glc>-2</ntasks_glc>
-          <ntasks_wav>-2</ntasks_wav>
-          <ntasks_cpl>-2</ntasks_cpl>
-        </ntasks>
-        <nthrds>
-          <nthrds_atm>2</nthrds_atm>
-          <nthrds_lnd>2</nthrds_lnd>
-          <nthrds_rof>2</nthrds_rof>
-          <nthrds_ice>2</nthrds_ice>
-          <nthrds_ocn>2</nthrds_ocn>
-          <nthrds_glc>2</nthrds_glc>
-          <nthrds_wav>2</nthrds_wav>
-          <nthrds_cpl>2</nthrds_cpl>
-        </nthrds>
-      </pes>
-    </mach>
   </grid>
   <grid name="l%0.47x0.63" >
     <mach name="any">
@@ -451,21 +411,6 @@
           <ntasks_glc>256</ntasks_glc>
           <ntasks_wav>256</ntasks_wav>
           <ntasks_cpl>256</ntasks_cpl>
-        </ntasks>
-      </pes>
-    </mach>
-    <mach name="gcp12">
-      <pes compset="any" pesize="any">
-        <comment>gcp12 r05 2 nodes</comment>
-        <ntasks>
-          <ntasks_atm>-2</ntasks_atm>
-          <ntasks_lnd>-2</ntasks_lnd>
-          <ntasks_rof>-2</ntasks_rof>
-          <ntasks_ice>-2</ntasks_ice>
-          <ntasks_ocn>-2</ntasks_ocn>
-          <ntasks_glc>-2</ntasks_glc>
-          <ntasks_wav>-2</ntasks_wav>
-          <ntasks_cpl>-2</ntasks_cpl>
         </ntasks>
       </pes>
     </mach>
