@@ -23,11 +23,13 @@ void VertContractDiag::set_grids(
 
   add_field<Required>(fn, gn);
 
-  // we support either sum or avg
+  // we support sum, avg, min, max, var, and std
   m_contract_method = m_params.get<std::string>("contract_method");
   EKAT_REQUIRE_MSG(
-      m_contract_method == "avg" || m_contract_method == "sum",
-      "Error! VertContractDiag only supports 'avg' or 'sum' as contract_method.\n"
+      m_contract_method == "avg" || m_contract_method == "sum" || 
+      m_contract_method == "min" || m_contract_method == "max" ||
+      m_contract_method == "var" || m_contract_method == "std",
+      "Error! VertContractDiag only supports 'avg', 'sum', 'min', 'max', 'var', or 'std' as contract_method.\n"
       " - contract_method: " + m_contract_method + "\n");
   // we support either dp or dz weighting, or no weighting at all (none)
   m_weighting_method = m_params.get<std::string>("weighting_method", "none");
@@ -103,15 +105,17 @@ void VertContractDiag::initialize_impl(const RunType /*run_type*/) {
     // we scale by the weighting, so we use fid units * m
     diag_units = fid.get_units() * m;
   }
+  // For min, max, avg, var, std operations, the output units are typically the same as input
+  // (except for var which might be squared units, but for atmospheric fields it's often the same practical units)
 
-  if (m_contract_method == "avg") {
+  if (m_contract_method == "avg" || m_contract_method == "var" || m_contract_method == "std") {
     auto wts_layout = m_weighting.get_header().get_identifier().get_layout();
     FieldIdentifier wts_sum_fid("vert_contract_wts_sum", wts_layout.clone().strip_dim(LEV), diag_units, fid.get_grid_name());
     m_weighting_sum = Field(wts_sum_fid);
     m_weighting_sum.allocate_view();
     m_weighting_one = m_weighting.clone("vert_contract_wts_one");
     m_weighting_one.deep_copy(sp(1));
-    vert_contraction<Real>(m_weighting_sum, m_weighting, m_weighting_one);
+    vert_contraction<Real>(m_weighting_sum, m_weighting, m_weighting_one, VertContractionType::SUM);
     VertContractDiag::scale_wts(m_weighting, m_weighting_sum);
   }
 
@@ -216,19 +220,33 @@ void VertContractDiag::compute_diagnostic_impl() {
         });
   }
 
-  // if dp|dz_weighted and avg, we need to scale the weighting by its 1/sum
-  if ((m_weighting_method == "dp" || m_weighting_method == "dz") && m_contract_method == "avg") {
-    vert_contraction<Real>(m_weighting_sum, m_weighting, m_weighting_one);
+  // if dp|dz_weighted and operations that need weighted scaling
+  if ((m_weighting_method == "dp" || m_weighting_method == "dz") && 
+      (m_contract_method == "avg" || m_contract_method == "var" || m_contract_method == "std")) {
+    vert_contraction<Real>(m_weighting_sum, m_weighting, m_weighting_one, VertContractionType::SUM);
     VertContractDiag::scale_wts(m_weighting, m_weighting_sum);
   }
 
   // call the vert_contraction impl that will take care of everything
-  // if f has a mask and we are averaging, need to call the avg specialization
-  if (m_contract_method == "avg" && f.get_header().has_extra_data("mask_data")) {
-    vert_contraction<Real,1>(d, f, m_weighting);
+  // Determine the operation type based on the contract method
+  VertContractionType operation;
+  if (m_contract_method == "sum") {
+    operation = VertContractionType::SUM;
+  } else if (m_contract_method == "avg") {
+    operation = VertContractionType::AVG;
+  } else if (m_contract_method == "min") {
+    operation = VertContractionType::MIN;
+  } else if (m_contract_method == "max") {
+    operation = VertContractionType::MAX;
+  } else if (m_contract_method == "var") {
+    operation = VertContractionType::VAR;
+  } else if (m_contract_method == "std") {
+    operation = VertContractionType::STD;
   } else {
-    vert_contraction<Real,0>(d, f, m_weighting);
+    EKAT_ERROR_MSG("Error! Unsupported contract_method: " + m_contract_method);
   }
+  
+  vert_contraction<Real>(d, f, m_weighting, operation);
 }
 
 } // namespace scream

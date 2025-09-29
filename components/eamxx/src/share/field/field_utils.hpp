@@ -254,6 +254,83 @@ void vert_contraction(const Field &f_out, const Field &f_in, const Field &weight
   impl::vert_contraction<ST, AVG>(f_out, f_in, weight);
 }
 
+// New version that supports different statistical operations
+template <typename ST>
+void vert_contraction(const Field &f_out, const Field &f_in, const Field &weight, VertContractionType operation) {
+  using namespace ShortFieldTagsNames;
+
+  const auto &l_out = f_out.get_header().get_identifier().get_layout();
+  const auto &l_in = f_in.get_header().get_identifier().get_layout();
+  const auto &l_w = weight.get_header().get_identifier().get_layout();
+
+  // Same sanity checks as the original function
+  EKAT_REQUIRE_MSG(
+      l_w.rank() == 1 or l_w.rank() == 2,
+      "Error! The weight field must be at least rank-1 and at most rank-2.\n"
+      "The weight field has rank "
+          << l_w.rank() << ".\n");
+  EKAT_REQUIRE_MSG(
+      l_w.tags().back() == LEV or l_w.tags().back() == ILEV,
+      "Error! The weight field must have LEV as its last dimension.\n"
+      "The weight field layout is "
+          << l_w.to_string() << ".\n");
+  EKAT_REQUIRE_MSG(l_in.rank() <= 3,
+                   "Error! The input field must be at most rank-3.\n"
+                   "The input field rank is "
+                       << l_in.rank() << ".\n");
+  EKAT_REQUIRE_MSG(l_in.rank() >= l_w.rank(),
+                   "Error! The input field must have at least as many "
+                   "dimensions as the weight field.\n"
+                   "The input field rank is "
+                       << l_in.rank() << " and the weight field rank is "
+                       << l_w.rank() << ".\n");
+  EKAT_REQUIRE_MSG(l_in.tags().back() == LEV or l_in.tags().back() == ILEV,
+                   "Error! The input field must have a level dimension.\n"
+                   "The input field layout is "
+                       << l_in.to_string() << ".\n");
+  EKAT_REQUIRE_MSG(
+      l_in.dims().back() == l_w.dims().back(),
+      "Error! input and weight fields must have the same dimension along "
+      "which we are taking the reducing the field (last dimensions).\n"
+      "The weight field has last dimension "
+          << l_w.dims().back()
+          << " while "
+             "the input field has last dimension "
+          << l_in.dims().back() << ".\n");
+  EKAT_REQUIRE_MSG(
+      l_in.dims().back() > 0,
+      "Error! The input field must have a non-zero level dimension.\n"
+      "The input field layout is "
+          << l_in.to_string() << ".\n");
+  if(l_w.rank() == 2) {
+    EKAT_REQUIRE_MSG(l_w.congruent(l_in.clone().strip_dim(CMP, false)),
+                     "Error! Incompatible layouts\n"
+                     "  field in: " +
+                         l_in.to_string() +
+                         "\n"
+                         "  weight: " +
+                         l_w.to_string() + "\n");
+  }
+  EKAT_REQUIRE_MSG(
+      l_out == l_in.clone().strip_dim(l_in.rank() - 1),
+      "Error! The output field must have the same layout as the input field "
+      "without the level dimension.\n"
+      "The input field layout is "
+          << l_in.to_string() << " and the output field layout is "
+          << l_out.to_string() << ".\n");
+  EKAT_REQUIRE_MSG(
+      f_out.is_allocated() && f_in.is_allocated() && weight.is_allocated(),
+      "Error! All fields must be allocated.");
+  EKAT_REQUIRE_MSG(f_out.data_type() == f_in.data_type(),
+                   "Error! In/out fields must have matching data types.");
+  EKAT_REQUIRE_MSG(
+      f_out.data_type() == weight.data_type(),
+      "Error! Weight field must have the same data type as input field.");
+
+  // Call the implementation with the operation type
+  impl::vert_contraction<ST>(f_out, f_in, weight, operation);
+}
+
 template<typename ST>
 ST frobenius_norm(const Field& f, const ekat::Comm* comm = nullptr)
 {

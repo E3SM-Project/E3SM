@@ -144,7 +144,7 @@ create_diagnostic (const std::string& diag_field_name,
   std::regex pot_temp ("(Liq)?PotentialTemperature$");
   std::regex vert_layer ("(z|geopotential|height)_(mid|int)$");
   std::regex horiz_avg (generic_field + "_horiz_avg$");
-  std::regex vert_contract (generic_field + "_vert_(avg|sum)(_((dp|dz)_weighted))?$");
+  std::regex vert_contract (generic_field + "_vert_(avg|sum|min|max|var|std)(_((dp|dz)_weighted))?$");
   std::regex zonal_avg (R"()" + generic_field + R"(_zonal_avg_(\d+)_bins$)");
   std::regex conditional_sampling (R"()" + generic_field + R"(_where_)" + generic_field + R"(_(gt|ge|eq|ne|le|lt)_([+-]?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)$)");
   std::regex binary_ops (generic_field + "_" "(plus|minus|times|over)" + "_" + generic_field + "$");

@@ -7,9 +7,17 @@
 namespace scream {
 
 /*
- * This diagnostic will calculate the dp- or dz-weighted average of a field
- * across the LEV tag dimension, producing an N-1 dimensional field
- * that is a weighted average of the input field.
+ * This diagnostic will calculate various statistical operations (sum, average, min, max, 
+ * variance, standard deviation) of a field across the LEV tag dimension, with optional 
+ * dp- or dz-weighting. It produces an N-1 dimensional field from the input N-dimensional field.
+ * 
+ * Supported operations:
+ * - sum: Weighted sum across vertical levels
+ * - avg: Weighted average across vertical levels
+ * - min: Minimum value (weights used for masking only)
+ * - max: Maximum value (weights used for masking only) 
+ * - var: Weighted variance across vertical levels
+ * - std: Weighted standard deviation across vertical levels
  */
 
 class VertContractDiag : public AtmosphereDiagnostic {
