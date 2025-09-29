@@ -315,6 +315,18 @@ void AtmosphereProcess::setup_tendencies_requests () {
     auto fn = tokens.first;
     auto gn = tokens.second;
     const auto& tname = this->name() + "_" + tn + "_tend";
+    // HACK: fixing this will require deep surgery in the code, so for now, let's just
+    // pretend we trust the user to request the right things...
+    if (this->name() == "homme") {
+      if (fn == "qc" || fn == "qi") {
+        fn = "qv";
+      }
+    }
+    if (this->name() == "shoc") {
+      if (fn == "qi") {
+        fn = "qv";
+      }
+    }
     for (auto it : get_computed_field_requests()) {
       const auto& fid = it.fid;
       if (fid.name()==fn && (gn=="" || gn==fid.get_grid_name())) {
