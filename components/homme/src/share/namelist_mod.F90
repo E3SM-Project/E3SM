@@ -217,8 +217,11 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     integer :: se_nsplit
     integer :: interp_nlat, interp_nlon, interp_gridtype
     integer :: i, ii
-#if !defined(CAM) && !defined(SCREAM) && !defined(HOMME_WITHOUT_PIOLIBRARY)
-    integer :: j, interp_type
+#if !defined(CAM) && !defined(SCREAM)
+#if !defined(HOMME_WITHOUT_PIOLIBRARY)
+    integer :: j
+#endif
+    integer :: interp_type
 #endif
     integer  :: ierr
     character(len=80) :: errstr, arg

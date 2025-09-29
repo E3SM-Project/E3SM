@@ -9,12 +9,8 @@ LINK_DIRECTORIES    ( ${Trilinos_LIBRARY_DIRS} ${Trilinos_TPL_LIBRARY_DIRS} )
 SET(SRC_DIR          ${HOMME_SOURCE_DIR}/src)
 SET(SRC_SHARE_DIR    ${HOMME_SOURCE_DIR}/src/share)
 SET(UTILS_TRILINOS_DIR ${HOMME_SOURCE_DIR}/utils/trilinos)
-SET(UTILS_TIMING_DIR ${HOMME_BINARY_DIR}/utils/timing)
 
-
-SET (EXEC_INCLUDE_DIRS ${PIO_INCLUDE_DIRS}
-                       ${UTILS_TIMING_DIR} )
-                       
+SET (EXEC_INCLUDE_DIRS ${PIO_INCLUDE_DIRS})
 
 # Make SRCS global so the tests can access it
 SET(SWIM_SRCS ${SRC_SHARE_DIR}/kinds.F90
