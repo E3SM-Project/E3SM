@@ -32,7 +32,7 @@
 #include "diagnostics/binary_ops.hpp"
 #include "diagnostics/histogram.hpp"
 #include "diagnostics/below_or_above_interface.hpp"
-#include "diagnositcs/unary_ops.hpp"
+#include "diagnostics/unary_ops.hpp"
 
 namespace scream {
 

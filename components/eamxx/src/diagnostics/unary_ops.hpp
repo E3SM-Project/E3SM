@@ -29,9 +29,6 @@ class UnaryOpsDiag : public AtmosphereDiagnostic {
 #endif
   void compute_diagnostic_impl() override;
 
-  // Let's override the initialize method to do some work
-  void initialize_impl(const RunType /*run_type*/) override;
-
   std::string m_fn;
   std::string m_op;
 };
