@@ -29,6 +29,7 @@ set(DIAGNOSTIC_SRCS
   zonal_avg.cpp
   conditional_sampling.cpp
   below_or_above_interface.cpp
+  unary_ops.cpp
 )
 
 add_library(diagnostics ${DIAGNOSTIC_SRCS})
