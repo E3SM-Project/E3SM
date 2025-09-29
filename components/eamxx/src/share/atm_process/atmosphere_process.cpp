@@ -315,7 +315,7 @@ void AtmosphereProcess::setup_tendencies_requests () {
     auto fn = tokens.first;
     auto gn = tokens.second;
     const auto& tname = this->name() + "_" + tn + "_tend";
-    // HACK: fixing this will require deep surgery in the code, so for now, let's just
+    // HACK-MAHF708-250929: fixing this will require deep surgery in the code, so for now, let's just
     // pretend we trust the user to request the right things...
     if (this->name() == "homme") {
       if (fn == "qc" || fn == "qi") {
@@ -327,6 +327,7 @@ void AtmosphereProcess::setup_tendencies_requests () {
         fn = "qv";
       }
     }
+    // end HACK-MAHF708-250929
     for (auto it : get_computed_field_requests()) {
       const auto& fid = it.fid;
       if (fid.name()==fn && (gn=="" || gn==fid.get_grid_name())) {
@@ -362,7 +363,9 @@ void AtmosphereProcess::setup_tendencies_requests () {
 
     // Add an empty field, to be reset when we set the computed field
     m_proc_tendencies[tname] = {};
-    m_tend_to_field[tname] = fn;
+    // see HACK-MAHF708-250929
+    m_tend_to_field[tname] = tn;
+    // end HACK-MAHF708-250929
   }
 
   m_compute_proc_tendencies = m_proc_tendencies.size()>0;
@@ -1045,6 +1048,17 @@ get_field_out_impl(const std::string& field_name, const std::string& grid_name) 
   try {
     return *m_fields_out_pointers.at(field_name).at(grid_name);
   } catch (const std::out_of_range&) {
+    // see HACK-MAHF708-250929
+    // Field not found in direct pointers, try searching in computed groups
+    for (const auto& group : m_groups_out) {
+      if (group.grid_name() == grid_name) {
+        auto it = group.m_individual_fields.find(field_name);
+        if (it != group.m_individual_fields.end()) {
+          return *it->second;
+        }
+      }
+    }
+    // end HACK-MAHF708-250929
     // std::out_of_range message would not help detecting where
     // the exception originated, so print a more meaningful message.
     EKAT_ERROR_MSG (
@@ -1069,6 +1083,27 @@ get_field_out_impl(const std::string& field_name) const {
         "  number of copies: " + std::to_string(copies.size()) + "\n");
     return *copies.begin()->second;
   } catch (const std::out_of_range&) {
+    // see HACK-MAHF708-250929
+    // Field not found in direct pointers, try searching in computed groups
+    std::vector<std::pair<std::string, Field*>> group_matches;
+    for (const auto& group : m_groups_out) {
+      auto it = group.m_individual_fields.find(field_name);
+      if (it != group.m_individual_fields.end()) {
+        group_matches.push_back(std::make_pair(group.grid_name(), it->second.get()));
+      }
+    }
+    
+    if (!group_matches.empty()) {
+      EKAT_REQUIRE_MSG (group_matches.size()==1,
+          "Error! Attempt to find output field providing only the name,\n"
+          "       but multiple copies (in different groups/grids) are present.\n"
+          "  field name: " + field_name + "\n"
+          "  atm process: " + this->name() + "\n"
+          "  number of copies: " + std::to_string(group_matches.size()) + "\n");
+      return *group_matches[0].second;
+    }
+    // end HACK-MAHF708-250929
+  
     // std::out_of_range message would not help detecting where
     // the exception originated, so print a more meaningful message.
     EKAT_ERROR_MSG (
