@@ -4188,17 +4188,17 @@ end subroutine wrap_update_hifrq_hist
       p = patchlist(r)
       
       ! Get the subgrid indices and assign them to the register metadata
-      call this%fates(nc)%register(p)%SetSubgridIndices(gridcell = veg_pp%gridcell(p), &
+      call this%fates(nc)%register(r)%SetSubgridIndices(gridcell = veg_pp%gridcell(p), &
                                                         topounit = veg_pp%topounit(p), &
                                                         landunit = veg_pp%landunit(p), &
                                                         column = veg_pp%column(p), &
                                                         hlmpatch = p)
 
       ! Register and initialize the boundary condition variables necessary
-      c = this%fates(nc)%register(p)%GetColumnIndex()
-      call this%fates(nc)%register(p)%Register(hlm_fates_soil_level, col_pp%nlevbed(c), subgrid_column_index)
-      call this%fates(nc)%register(p)%Register(hlm_fates_decomp_frac_moisture, col_cf%w_scalar(c), subgrid_column_index)
-      call this%fates(nc)%register(p)%Register(hlm_fates_decomp_frac_temperature, col_cf%t_scalar(c), subgrid_column_index)
+      c = this%fates(nc)%register(r)%GetColumnIndex()
+      call this%fates(nc)%register(r)%Register(hlm_fates_soil_level, col_pp%nlevbed(c), subgrid_column_index)
+      call this%fates(nc)%register(r)%Register(hlm_fates_decomp_frac_moisture, col_cf%w_scalar(c,:), subgrid_column_index)
+      call this%fates(nc)%register(r)%Register(hlm_fates_decomp_frac_temperature, col_cf%t_scalar(c,:), subgrid_column_index)
 
   end do
   
