@@ -7,13 +7,12 @@ macro(sweqx_setup)
 SET(TARGET_DIR        ${HOMME_SOURCE_DIR}/src/sweqx)
 SET(SRC_BASE          ${HOMME_SOURCE_DIR}/src)
 SET(SRC_SHARE         ${HOMME_SOURCE_DIR}/src/share)
-SET(UTILS_TIMING_DIR  ${HOMME_BINARY_DIR}/utils/cime/CIME/non_py/src/timing)
 
 # Find F90 files in target directory
 FILE(GLOB TARGET_F90  ${TARGET_DIR}/*.F90)
 
 # Make INCLUDE_DIRS global so the tests can access it
-SET (EXEC_INCLUDE_DIRS ${PIO_INCLUDE_DIRS} ${UTILS_TIMING_DIR} )
+SET (EXEC_INCLUDE_DIRS ${PIO_INCLUDE_DIRS})
 
 SET(SWEQX_SRCS
   ${TARGET_F90}
