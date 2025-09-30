@@ -83,6 +83,7 @@ void Functions<S,D>
   const uview_1d<Spack>& qm_incld,
   const uview_1d<Spack>& bm,
   const uview_1d<Spack>& bm_incld,
+  const uview_1d<Spack>& precip_ice_flux,
   const uview_1d<Spack>& qi_tend,
   const uview_1d<Spack>& ni_tend,
   const view_ice_table& ice_table_vals,
@@ -99,6 +100,8 @@ void Functions<S,D>
     fluxes_ptr = {&flux_qit, &flux_nit, &flux_qir, &flux_bir},
     vs_ptr     = {&V_qit, &V_nit, &V_qit, &V_qit},
     qnr_ptr    = {&qi, &ni, &qm, &bm};
+
+  const auto sflux_qx = scalarize(flux_qit);
 
   // find top, determine qxpresent
   const auto sqi = scalarize(qi);
@@ -120,8 +123,8 @@ void Functions<S,D>
     while (dt_left > C::dt_left_tol) {
       Scalar Co_max = 0.0;
       Int kmin, kmax;
-      const Int kmin_scalar = ( kdir == 1 ? k_qxbot : k_qxtop);
-      const Int kmax_scalar = ( kdir == 1 ? k_qxtop : k_qxbot);
+      Int kmin_scalar = ( kdir == 1 ? k_qxbot : k_qxtop);
+      Int kmax_scalar = ( kdir == 1 ? k_qxtop : k_qxbot);
 
       Kokkos::parallel_for(
         Kokkos::TeamVectorRange(team, V_qit.extent(0)), [&] (Int k) {
@@ -183,7 +186,21 @@ void Functions<S,D>
 	  qm_incld(pk)=qm(pk)/cld_frac_i(pk);
 	  bm_incld(pk)=bm(pk)/cld_frac_i(pk);
 	});
-
+      // AaronDonahue, precip_liq_flux output
+      kmin_scalar = ( kdir == 1 ? k_qxbot+1 : k_qxtop+1);
+      kmax_scalar = ( kdir == 1 ? k_qxtop+1 : k_qxbot+1);
+      ekat::impl::set_min_max(kmin_scalar, kmax_scalar, kmin, kmax, Spack::n);
+      Kokkos::parallel_for(
+       Kokkos::TeamVectorRange(team, kmax-kmin+1), [&] (int pk_) {
+        const int pk = kmin + pk_;
+        const auto range_pack = ekat::range<IntSmallPack>(pk*Spack::n);
+        const auto range_mask = range_pack >= kmin_scalar && range_pack <= kmax_scalar;
+        auto index_pack = range_pack-1;
+        const auto lt_zero = index_pack < 0;
+        index_pack.set(lt_zero, 0);
+        const auto flux_qx_pk = index(sflux_qx, index_pack);
+        precip_ice_flux(pk).set(range_mask, precip_ice_flux(pk) + flux_qx_pk);
+      });
 
     } //end CFL substep loop
 

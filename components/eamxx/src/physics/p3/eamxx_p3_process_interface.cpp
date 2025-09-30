@@ -390,9 +390,11 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   diag_outputs.precip_total_tend       = get_field_out("precip_total_tend").get_view<Pack**>();
   diag_outputs.nevapr                  = get_field_out("nevapr").get_view<Pack**>();
   diag_outputs.diag_equiv_reflectivity = get_field_out("diag_equiv_reflectivity").get_view<Pack**>();
+  diag_outputs.precip_liq_flux  = get_field_out("precip_liq_flux").get_view<Pack**>();
+  diag_outputs.precip_ice_flux  = get_field_out("precip_ice_flux").get_view<Pack**>();
 
-  diag_outputs.precip_liq_surf  = m_buffer.precip_liq_surf_flux;
-  diag_outputs.precip_ice_surf  = m_buffer.precip_ice_surf_flux;
+//  diag_outputs.precip_liq_surf  = m_buffer.precip_liq_surf_flux;
+//  diag_outputs.precip_ice_surf  = m_buffer.precip_ice_surf_flux;
   diag_outputs.qv2qi_depos_tend = m_buffer.qv2qi_depos_tend;
   diag_outputs.rho_qi           = m_buffer.rho_qi;
   diag_outputs.precip_liq_flux  = m_buffer.precip_liq_flux;
