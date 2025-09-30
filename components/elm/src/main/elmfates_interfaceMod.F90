@@ -1066,9 +1066,6 @@ contains
          ! This also needs
          call set_bcpconst(this%fates(nc)%bc_pconst,nlevdecomp)
 
-         ! Register HLM variables to the interface registry
-         call this%RegisterHLMInterfaceVariables(nc)
-
          do s = 1, this%fates(nc)%nsites
 
             ! TODO: Assign column_map and patch_map values
