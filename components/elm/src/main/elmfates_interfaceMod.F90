@@ -1034,7 +1034,7 @@ contains
          ! Initialize interface registries for each patch on the clump 
          call this%fates(nc)%InitializeInterfaceRegistry(num_veg_patches)
          
-         ! Register the HLM interface variables
+         ! Register the HLM interface variables that we be used to populate the FATES boundary conditions
          call this%RegisterHLMInterfaceVariables(nc, num_veg_patches, patchlist)
          
          ! deallocate temporary patch list
@@ -4180,8 +4180,11 @@ end subroutine wrap_update_hifrq_hist
    integer :: r   ! register index
    integer :: p   ! hlm patch index
    integer :: c   ! column index
+   
+   ! Set the number of vegetated patches to the interface type level
+   this%npatches = num_veg_patches
 
-   do r = 1, num_veg_patches
+   do r = 1, this%npatches
       p = patchlist(r)
       
       ! Get the subgrid indices and assign them to the register metadata
@@ -4192,6 +4195,7 @@ end subroutine wrap_update_hifrq_hist
                                                         hlmpatch = p)
 
       ! Register and initialize the boundary condition variables
+      ! Column level variables
       c = this%fates(nc)%register(r)%GetColumnIndex()
       call this%fates(nc)%register(r)%Register(key=hlm_fates_soil_level, &
                                                data=col_pp%nlevbed(c), hlm_flag=.true.)
