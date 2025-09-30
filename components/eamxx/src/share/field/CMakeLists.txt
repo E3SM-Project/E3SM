@@ -49,7 +49,7 @@ if (EAMXX_ENABLE_GPU)
   # NOTE: we DON'T do ETI for the update/max/min utils, as they are
   #       only used on device (at least for now). OTOH, the methods
   #       to extract views are used in a few places
-  target_sources (eamxx_field PUBLIC
+  target_sources (eamxx_field PRIVATE
     eti/field_eti_get_strided_view_double_host.cpp
     eti/field_eti_get_strided_view_float_host.cpp
     eti/field_eti_get_strided_view_int_host.cpp
