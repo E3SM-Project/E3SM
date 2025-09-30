@@ -4,10 +4,9 @@
 Script to run gen-boiler tests.
 """
 
-from utils import check_minimum_python_version, expect, ensure_pylint, get_timestamp, \
-                  run_cmd_assert_result, run_cmd_no_fail, run_cmd, GoodFormatter
+from utils import expect, get_timestamp, run_cmd_assert_result
 
-import unittest, argparse, sys, os, shutil, io
+import unittest, io
 from unittest.mock import patch
 from pathlib import Path
 
@@ -92,7 +91,7 @@ class TestGenBoilerBasics(unittest.TestCase):
         """
         Run pylint on all python files
         """
-        #run_cmd_assert_result(self, "python3 -m pylint --disable C,R *.py", from_dir=GEN_BOILER_DIR)
+        run_cmd_assert_result(self, "python3 -m pylint --disable C,R *.py", from_dir=GEN_BOILER_DIR)
 
     ###########################################################################
     def test_regex_stuff(self):
@@ -970,7 +969,7 @@ PTD_STD_DEF(DataSubName, 8, shcol, nlev, nlevi, ntracers, gag, bab1, bab2, val);
         line_by_line_compare(self, expected, actual)
 
     ###########################################################################
-    def test_cxx_func_decl(self):
+    def test_cxx_incl_impl(self):
     ###########################################################################
         gb = GenBoiler([])
         actual = gb.gen_cxx_incl_impl("shoc", "fake_sub", force_arg_data=UT_ARG_DATA)
@@ -1125,6 +1124,106 @@ template struct Functions<Real,DefaultDevice>;
 } // namespace scream
 """
         line_by_line_compare(self, expected, actual)
+
+    ###########################################################################
+    def test_cmake_impl_eti(self):
+    ###########################################################################
+        gb = GenBoiler([])
+        actual = gb.gen_cmake_impl_eti("shoc", "fake_sub", force_arg_data=UT_ARG_DATA)
+        self.assertEqual("    eti/shoc_fake_sub.cpp", actual)
+
+    ###########################################################################
+    def test_cmake_unit_test(self):
+    ###########################################################################
+        gb = GenBoiler([])
+        actual = gb.gen_cmake_unit_test("shoc", "fake_sub", force_arg_data=UT_ARG_DATA)
+        self.assertEqual("    shoc_fake_sub_tests.cpp", actual)
+
+    ###########################################################################
+    @patch('sys.stdout', new_callable=io.StringIO)
+    def test_gen_piece_1(self, mock_stdout):
+    ###########################################################################
+        gb = GenBoiler(dry_run=True)
+        force_file_lines = [
+            "fake_line_before_1",
+            "fake_line_before_2",
+            "void fake_sub_f(FakeSubData& d)",
+            "{",
+            "  // bad line",
+            "}",
+            "fake_line_after_1",
+            "fake_line_after_2",
+        ]
+        expected = \
+"""In file tests/infra/shoc_test_data.cpp, would replace:
+void fake_sub_f(FakeSubData& d)
+{
+  // bad line
+}
+
+WITH:
+void fake_sub_f(FakeSubData& d)
+{
+  d.transition<ekat::TransposeDirection::c2f>();
+  shoc_init(d.nlev, true);
+  fake_sub_c(d.foo1, d.foo2, d.bar1, d.bar2, d.bak1, d.bak2, d.tracerd1, d.tracerd2, d.gag, d.baz, d.bag, &d.bab1, &d.bab2, d.val, d.vals, d.shcol, d.nlev, d.nlevi, d.ntracers, d.ball1, d.ball2);
+  d.transition<ekat::TransposeDirection::f2c>();
+}
+
+"""
+        gb.gen_piece("shoc", "fake_sub", "cxx_c2f_glue_impl", force_arg_data=UT_ARG_DATA, force_file_lines=force_file_lines)
+        output = mock_stdout.getvalue()
+        line_by_line_compare(self, expected, output)
+
+    ###########################################################################
+    @patch('sys.stdout', new_callable=io.StringIO)
+    def test_gen_piece_2(self, mock_stdout):
+    ###########################################################################
+        gb = GenBoiler(dry_run=True)
+        force_file_lines = [
+            "fake_line_before_1",
+            "fake_line_before_2",
+            "// end _c impls",
+            "fake_line_after_1",
+            "fake_line_after_2",
+        ]
+        gb.gen_piece("shoc", "fake_sub", "cxx_c2f_glue_impl", force_arg_data=UT_ARG_DATA, force_file_lines=force_file_lines)
+        expected = \
+"""In file tests/infra/shoc_test_data.cpp, at line 2, would insert:
+void fake_sub_f(FakeSubData& d)
+{
+  d.transition<ekat::TransposeDirection::c2f>();
+  shoc_init(d.nlev, true);
+  fake_sub_c(d.foo1, d.foo2, d.bar1, d.bar2, d.bak1, d.bak2, d.tracerd1, d.tracerd2, d.gag, d.baz, d.bag, &d.bab1, &d.bab2, d.val, d.vals, d.shcol, d.nlev, d.nlevi, d.ntracers, d.ball1, d.ball2);
+  d.transition<ekat::TransposeDirection::f2c>();
+}
+
+"""
+        output = mock_stdout.getvalue()
+        line_by_line_compare(self, expected, output)
+
+    ###########################################################################
+    @patch('sys.stdout', new_callable=io.StringIO)
+    def test_gen_piece_3(self, mock_stdout):
+    ###########################################################################
+        gb = GenBoiler(dry_run=True)
+        force_file_lines = [
+            "fake_line_before_1",
+            "fake_line_before_2",
+            "void fake_sub_c();",
+            "fake_line_after_1",
+            "fake_line_after_2",
+        ]
+        gb.gen_piece("shoc", "fake_sub", "cxx_c2f_bind_decl", force_arg_data=UT_ARG_DATA, force_file_lines=force_file_lines)
+        expected = \
+"""In file tests/infra/shoc_test_data.cpp, would replace:
+void fake_sub_c();
+
+WITH:
+void fake_sub_c(Real* foo1, Real* foo2, Real* bar1, Real* bar2, Real* bak1, Real* bak2, Real* tracerd1, Real* tracerd2, Real gag, Real* baz, Int* bag, Int* bab1, Int* bab2, bool val, bool* vals, Int shcol, Int nlev, Int nlevi, Int ntracers, Int* ball1, Int* ball2);
+"""
+        output = mock_stdout.getvalue()
+        line_by_line_compare(self, expected, output)
 
 ###############################################################################
 def _main_func(desc):

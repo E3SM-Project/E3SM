@@ -1824,9 +1824,7 @@ template struct Functions<Real,DefaultDevice>;
     def gen_cmake_impl_eti(self, phys, sub, force_arg_data=None): # pylint: disable=W0613
     ###########################################################################
         """
-        >>> gb = GenBoiler([])
-        >>> print(gb.gen_cmake_impl_eti("shoc", "fake_sub", force_arg_data=UT_ARG_DATA))
-            eti/shoc_fake_sub.cpp
+        In CMake, add the ETI file to the list of sources for the phys library
         """
         eti_src = get_piece_data(phys, sub, "cxx_eti", FILEPATH, self)
         return f"    {eti_src}"
@@ -1835,9 +1833,7 @@ template struct Functions<Real,DefaultDevice>;
     def gen_cmake_unit_test(self, phys, sub, force_arg_data=None): # pylint: disable=W0613
     ###########################################################################
         """
-        >>> gb = GenBoiler([])
-        >>> print(gb.gen_cmake_unit_test("shoc", "fake_sub", force_arg_data=UT_ARG_DATA))
-            shoc_fake_sub_tests.cpp
+        In CMake, add the bfb unit test to the list of sources for the test
         """
         test_src = Path(get_piece_data(phys, sub, "cxx_bfb_unit_impl", FILEPATH, self)).name
         return f"    {test_src}"
@@ -1849,79 +1845,8 @@ template struct Functions<Real,DefaultDevice>;
     ###########################################################################
     def gen_piece(self, phys, sub, piece, force_arg_data=None, force_file_lines=None):
     ###########################################################################
-        r"""
+        """
         Generate code for a specific piece for a physics+subroutine
-
-        >>> gb = GenBoiler(dry_run=True)
-        >>> force_file_lines = [
-        ... "fake_line_before_1",
-        ... "fake_line_before_2",
-        ... "void fake_sub(FakeSubData& d)",
-        ... "{",
-        ... "  // bad line",
-        ... "}",
-        ... "fake_line_after_1",
-        ... "fake_line_after_2",
-        ... ]
-        >>> gb.gen_piece("shoc", "fake_sub", "cxx_c2f_glue_impl", force_arg_data=UT_ARG_DATA, force_file_lines=force_file_lines)
-        In file tests/infra/shoc_test_data.cpp, would replace:
-        void fake_sub(FakeSubData& d)
-        {
-          // bad line
-        }
-        <BLANKLINE>
-        WITH:
-        void fake_sub(FakeSubData& d)
-        {
-          d.transition<ekat::TransposeDirection::c2f>();
-          shoc_init(d.nlev, true);
-          fake_sub_c(d.foo1, d.foo2, d.bar1, d.bar2, d.bak1, d.bak2, d.tracerd1, d.tracerd2, d.gag, d.baz, d.bag, &d.bab1, &d.bab2, d.val, d.vals, d.shcol, d.nlev, d.nlevi, d.ntracers, d.ball1, d.ball2);
-          d.transition<ekat::TransposeDirection::f2c>();
-        }
-        <BLANKLINE>
-
-        >>> force_file_lines = [
-        ... "fake_line_before_1",
-        ... "fake_line_before_2",
-        ... "// end _c impls",
-        ... "fake_line_after_1",
-        ... "fake_line_after_2",
-        ... ]
-        >>> gb.gen_piece("shoc", "fake_sub", "cxx_c2f_glue_impl", force_arg_data=UT_ARG_DATA, force_file_lines=force_file_lines)
-        In file tests/infra/shoc_test_data.cpp, at line 2, would insert:
-        void fake_sub(FakeSubData& d)
-        {
-          d.transition<ekat::TransposeDirection::c2f>();
-          shoc_init(d.nlev, true);
-          fake_sub_c(d.foo1, d.foo2, d.bar1, d.bar2, d.bak1, d.bak2, d.tracerd1, d.tracerd2, d.gag, d.baz, d.bag, &d.bab1, &d.bab2, d.val, d.vals, d.shcol, d.nlev, d.nlevi, d.ntracers, d.ball1, d.ball2);
-          d.transition<ekat::TransposeDirection::f2c>();
-        }
-        <BLANKLINE>
-
-        >>> force_file_lines[2:2] = ["void fake_sub(FakeSubData& d)", "{", "}"]
-        >>> print("\n".join(force_file_lines))
-        fake_line_before_1
-        fake_line_before_2
-        void fake_sub(FakeSubData& d)
-        {
-        }
-        // end _c impls
-        fake_line_after_1
-        fake_line_after_2
-
-        >>> force_file_lines = [
-        ... "fake_line_before_1",
-        ... "fake_line_before_2",
-        ... "void fake_sub_c();",
-        ... "fake_line_after_1",
-        ... "fake_line_after_2",
-        ... ]
-        >>> gb.gen_piece("shoc", "fake_sub", "cxx_c2f_bind_decl", force_arg_data=UT_ARG_DATA, force_file_lines=force_file_lines)
-        In file tests/infra/shoc_test_data.cpp, would replace:
-        void fake_sub_c();
-        <BLANKLINE>
-        WITH:
-        void fake_sub_c(Real* foo1, Real* foo2, Real* bar1, Real* bar2, Real* bak1, Real* bak2, Real* tracerd1, Real* tracerd2, Real gag, Real* baz, Int* bag, Int* bab1, Int* bab2, bool val, bool* vals, Int shcol, Int nlev, Int nlevi, Int ntracers, Int* ball1, Int* ball2);
         """
         if force_arg_data is None: # don't want unit tests printing this
             print("===============================================================================")
