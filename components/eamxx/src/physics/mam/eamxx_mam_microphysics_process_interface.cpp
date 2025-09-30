@@ -209,8 +209,8 @@ MAMMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_manag
         true, mam_coupling::gas_pcnst(), "num_gas_aerosol_constituents");
 
     const FieldLayout vector2d_nmodes = grid_->get_2d_vector_layout(nmodes, "nmodes");
-    const FieldLayout vector2d_pcnst = grid_->get_2d_vector_layout(
-	mam_coupling::gas_pcnst(), "num_gas_aerosol_constituents");
+    const FieldLayout vector2d_pcnst =
+        grid_->get_2d_vector_layout(mam_coupling::gas_pcnst(), "num_gas_aerosol_constituents");
 
     // Diagnostics: tendencies due to gas phase chemistry [mixed units: kg/kg/s or #/kg/s]
     add_field<Computed>("mam4_microphysics_tendency_gas_phase_chemistry",
@@ -247,8 +247,8 @@ MAMMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_manag
                         vector3d_num_gas_aerosol_constituents, nondim, grid_name);
     add_field<Computed>("mam4_microphysics_tendency_renaming_cloud_borne",
                         vector3d_num_gas_aerosol_constituents, nondim, grid_name);
-    constexpr auto cm2 = m*m/10000;
-    add_field<Computed>("mam4_gas_dry_deposition_flux", vector2d_pcnst, 1/cm2/s, grid_name);
+    constexpr auto cm2 = m * m / 10000;
+    add_field<Computed>("mam4_gas_dry_deposition_flux", vector2d_pcnst, 1 / cm2 / s, grid_name);
   }
 
   // Creating a Linoz reader and setting Linoz parameters involves reading data
