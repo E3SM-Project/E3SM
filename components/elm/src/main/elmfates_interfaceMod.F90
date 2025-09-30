@@ -4191,11 +4191,14 @@ end subroutine wrap_update_hifrq_hist
                                                         column = veg_pp%column(p), &
                                                         hlmpatch = p)
 
-      ! Register and initialize the boundary condition variables necessary
+      ! Register and initialize the boundary condition variables
       c = this%fates(nc)%register(r)%GetColumnIndex()
-      call this%fates(nc)%register(r)%Register(hlm_fates_soil_level, col_pp%nlevbed(c), subgrid_column_index)
-      call this%fates(nc)%register(r)%Register(hlm_fates_decomp_frac_moisture, col_cf%w_scalar(c,:), subgrid_column_index)
-      call this%fates(nc)%register(r)%Register(hlm_fates_decomp_frac_temperature, col_cf%t_scalar(c,:), subgrid_column_index)
+      call this%fates(nc)%register(r)%Register(key=hlm_fates_soil_level, &
+                                               data=col_pp%nlevbed(c), hlm_flag=.true.)
+      call this%fates(nc)%register(r)%Register(key=hlm_fates_decomp_frac_moisture, &
+                                               data=col_cf%w_scalar(c,:), hlm_flag=.true.)
+      call this%fates(nc)%register(r)%Register(key=hlm_fates_decomp_frac_temperature, &
+                                               data=col_cf%t_scalar(c,:), hlm_flag=.true.)
 
   end do
   
