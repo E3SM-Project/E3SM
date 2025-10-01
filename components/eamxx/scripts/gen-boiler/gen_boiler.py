@@ -80,97 +80,93 @@ namespace {phys} {{
 }
 
 # piece map. maps the name of a piece of boilerplate that needs to be genereate to:
-#   (filepath (relative to cxx_root))
+#   filepath (relative to cxx_root))
+#   file creation / file exists check
+#   insert regex : A regex that, when matched, indicates the generated code should be inserted here
+#   id self begin: A regex that, when matched, indicates the generated for the piece starts here
+#   id self end: A regex that, when matched, indicates the generated for the piece ends here
+#   desc: A description of this piece
 FILEPATH, FILECREATE, INSERT_REGEX, ID_SELF_BEGIN_REGEX, ID_SELF_END_REGEX, DESC = range(6)
 PIECES = dict([
     ("f90_c2f_bind", (
-        lambda phys, sub, gb: f"tests/infra/{phys}_iso_c.f90",
+        lambda phys, sub, gb: f"tests/infra/{phys}_c2f_bridge.f90",
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "f90_c2f_bind"),
-        lambda phys, sub, gb: re.compile(fr"^\s*end\s+module\s{phys}_iso_c"), # put at end of module
-        lambda phys, sub, gb: get_subroutine_begin_regex(sub + "_c"), # sub_c begin
-        lambda phys, sub, gb: get_subroutine_end_regex(sub + "_c"),    # sub_c end
-        lambda *x           : "The c to f90 fortran subroutine(<name>_c)"
+        lambda phys, sub, gb: re.compile(fr"^\s*end\s+module\s{phys}_c2f_bridge"), # put at end of module
+        lambda phys, sub, gb: get_subroutine_begin_regex(sub + "_bridge_f"), # sub_f begin
+        lambda phys, sub, gb: get_subroutine_end_regex(sub + "_bridge_f"),    # sub_f end
+        lambda *x           : "The c to f90 fortran subroutine implementation(<name>_bridge_f)"
     )),
 
-    # ("f90_f2c_bind"  , (
-    #     lambda phys, sub, gb: f"{phys}_iso_f.f90",
-    #     lambda phys, sub, gb: expect_exists(phys, sub, gb, "f90_f2c_bind"),
-    #     lambda phys, sub, gb: re.compile(r"^\s*end\s+interface"), # put at end of interface
-    #     lambda phys, sub, gb: get_subroutine_begin_regex(sub + "_f"), # sub_f begin
-    #     lambda phys, sub, gb: get_subroutine_end_regex(sub + "_f"),   # sub_f begin
-    #     lambda *x           : "The f90 to c fortran subroutine(<name>_f)"
-    # )),
+    ("f90_f2c_bind"  , (
+        lambda phys, sub, gb: f"{phys}_f2c_bridge.f90",
+        lambda phys, sub, gb: expect_exists(phys, sub, gb, "f90_f2c_bind"),
+        lambda phys, sub, gb: re.compile(r"^\s*end\s+interface"), # put at end of interface
+        lambda phys, sub, gb: get_subroutine_begin_regex(sub + "_bridge_c"), # sub_c begin
+        lambda phys, sub, gb: get_subroutine_end_regex(sub + "_bridge_c"),   # sub_c begin
+        lambda *x           : "The f90 to c fortran subroutine declaration(<name>_bridge_c)"
+    )),
+
+    ("cxx_f2c_bind_impl"  , (
+        lambda phys, sub, gb: f"tests/infra/{phys}_test_data.cpp",
+        lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_f2c_bind_impl"),
+        lambda phys, sub, gb: get_plain_comment_regex(comment='extern "C" : end _c decls'), # reqs special comment
+        lambda phys, sub, gb: get_cxx_function_begin_regex(sub + "_bridge_c"),      # sub_bridge_c begin
+        lambda phys, sub, gb: get_cxx_close_block_regex(at_line_start=True), # terminating }
+        lambda *x           : "The f90 to cxx function declaration and implementation(<name>_bridge_c)"
+    )),
 
     ("cxx_c2f_bind_decl"  , (
         lambda phys, sub, gb: f"tests/infra/{phys}_test_data.cpp",
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_c2f_bind_decl"),
-        lambda phys, sub, gb: get_cxx_close_block_regex(comment='extern "C" : end _c decls'), # reqs special comment
-        lambda phys, sub, gb: get_cxx_function_begin_regex(sub + "_c"), # cxx_c decl
+        lambda phys, sub, gb: get_cxx_close_block_regex(comment='extern "C" : end _f decls'), # reqs special comment
+        lambda phys, sub, gb: get_cxx_function_begin_regex(sub + "_bridge_f"), # c decl
         lambda phys, sub, gb: re.compile(r".*;\s*$"),                   # ;
-        lambda *x           : "The c to f90 c function declaration(<name>_c)"
+        lambda *x           : "The c to f90 c function declaration(<name>_bridge_f)"
     )),
 
     ("cxx_c2f_glue_decl"  , (
         lambda phys, sub, gb: f"tests/infra/{phys}_test_data.hpp",
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_c2f_glue_decl"),
-        lambda phys, sub, gb: re.compile(r'^\s*extern\s+"C"'), # put before _f decls
+        lambda phys, sub, gb: re.compile(r"^\s*// End glue function decls"),  # reqs special comment
         lambda phys, sub, gb: get_cxx_function_begin_regex(sub + "_f"), # cxx(data) decl
         lambda phys, sub, gb: re.compile(r".*;\s*"),             # ;
-        lambda *x           : "The cxx to c function declaration(<name>(Data))"
+        lambda *x           : "The cxx to f90 function declaration(<name>_f(Data))"
     )),
 
     ("cxx_c2f_glue_impl" , (
         lambda phys, sub, gb: f"tests/infra/{phys}_test_data.cpp",
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_c2f_glue_impl"),
-        lambda phys, sub, gb: re.compile(r"^\s*// end _c impls"), # reqs special comment
+        lambda phys, sub, gb: re.compile(r"^\s*// end glue impls"), # reqs special comment
         lambda phys, sub, gb: get_cxx_function_begin_regex(sub + "_f"), # cxx(data)
         lambda phys, sub, gb: get_cxx_close_block_regex(at_line_start=True), # terminating }
-        lambda *x           : "The cxx to c function implementation(<name>_f(Data))"
+        lambda *x           : "The cxx to f90 function implementation(<name>_f(Data))"
+    )),
+
+    ("cxx_t2cxx_glue_decl" , (
+        lambda phys, sub, gb: f"tests/infra/{phys}_test_data.hpp",
+        lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_t2cxx_glue_decl"),
+        lambda phys, sub, gb: re.compile(r"^\s*// End glue function decls"),  # reqs special comment
+        lambda phys, sub, gb: get_cxx_function_begin_regex(sub), # cxx(data)
+        lambda phys, sub, gb: re.compile(r".*;\s*"),             # ;
+        lambda *x           : "The CXX test data to CXX function declaration(<name>(Data))"
     )),
 
     ("cxx_t2cxx_glue_impl" , (
         lambda phys, sub, gb: f"tests/infra/{phys}_test_data.cpp",
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_t2cxx_glue_impl"),
-        lambda phys, sub, gb: re.compile(r"^\s*// end _c impls"), # reqs special comment
+        lambda phys, sub, gb: re.compile(r"^\s*// end glue impls"), # reqs special comment
         lambda phys, sub, gb: get_cxx_function_begin_regex(sub), # cxx(data)
         lambda phys, sub, gb: get_cxx_close_block_regex(at_line_start=True), # terminating }
-        lambda *x           : "The test data to CXX function implementation(<name>(Data))"
+        lambda *x           : "The CXX test data to CXX function implementation(<name>(Data))"
     )),
 
     ("cxx_c2f_data"  , (
         lambda phys, sub, gb: f"tests/infra/{phys}_test_data.hpp",
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_c2f_data"),
-        lambda phys, sub, gb: re.compile(r"^\s*// Glue functions to call fortran"),  # reqs special comment
+        lambda phys, sub, gb: re.compile(r"^\s*// Glue functions for host"),  # reqs special comment
         lambda phys, sub, gb: get_cxx_struct_begin_regex(get_data_struct_name(sub)), # struct Sub
         lambda phys, sub, gb: get_cxx_close_block_regex(semicolon=True),             # terminating };
         lambda *x           : "The cxx data struct definition(struct Data)"
-    )),
-
-    # ("cxx_f2c_bind_decl"  , (
-    #     lambda phys, sub, gb: f"tests/infra/{phys}_test_data.hpp",
-    #     lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_f2c_bind_decl"),
-    #     lambda phys, sub, gb: get_plain_comment_regex(comment="end _f function decls"), # reqs special comment
-    #     lambda phys, sub, gb: get_cxx_function_begin_regex(sub + "_f"), # cxx_f decl
-    #     lambda phys, sub, gb: re.compile(r".*;\s*$"),                   # ;
-    #     lambda *x           : "The f90 to cxx function declaration(<name>_f)"
-    # )),
-
-    # ("cxx_f2c_bind_impl"  , (
-    #     lambda phys, sub, gb: f"tests/infra/{phys}_test_data.cpp",
-    #     lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_f2c_bind_impl"),
-    #     lambda phys, sub, gb: get_namespace_close_regex(phys),          # insert at end of namespace
-    #     lambda phys, sub, gb: get_cxx_function_begin_regex(sub + "_f"),      # cxx_f
-    #     lambda phys, sub, gb: get_cxx_close_block_regex(at_line_start=True), # terminating }
-    #     lambda *x           : "The f90 to cxx function implementation(<name>_f)"
-    # )),
-
-    ("cxx_f2c_bind_impl"  , (
-        lambda phys, sub, gb: f"tests/infra/{phys}_test_data.cpp",
-        lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_f2c_bind_impl"),
-        lambda phys, sub, gb: get_namespace_close_regex(phys),          # insert at end of namespace
-        lambda phys, sub, gb: get_cxx_function_begin_regex(sub + "_f"),      # cxx_f
-        lambda phys, sub, gb: get_cxx_close_block_regex(at_line_start=True), # terminating }
-        lambda *x           : "The f90 to cxx function implementation(<name>_f)"
     )),
 
     ("cxx_func_decl", (
@@ -249,32 +245,46 @@ PIECES = dict([
 
 # physics map. maps the name of a physics packages containing the original fortran subroutines to:
 #   (path-to-origin, path-to-cxx-src, init-code)
-ORIGIN_FILES, CXX_ROOT, INIT_CODE = range(3)
+ORIGIN_FILES, CXX_ROOT, INIT_CODE, FINALIZE_CODE, COLS_DIMNAME = range(5)
 PHYSICS = {
     "p3"   : (
         ("components/eam/src/physics/cam/micro_p3.F90",),
         "components/eamxx/src/physics/p3",
-        "p3_init();"
+        "p3_init();",
+        "",
+        "its:ite"
     ),
     "shoc" : (
         ("components/eam/src/physics/cam/shoc.F90",),
         "components/eamxx/src/physics/shoc",
-        "shoc_init(d.nlev, true);"
+        "shoc_init(d.nlev, true);",
+        "",
+        "shcol"
     ),
     "dp" : (
-        ("components/eam/src/control/apply_iop_forcing.F90", "components/eam/src/dynamics/se/se_iop_intr_mod.F90", "components/eam/src/control/iop_data_mod.F90", "components/eam/src/control/history_iop.F90"),
+        (
+            "components/eam/src/control/apply_iop_forcing.F90",
+            "components/eam/src/dynamics/se/se_iop_intr_mod.F90",
+            "components/eam/src/control/iop_data_mod.F90",
+            "components/eam/src/control/history_iop.F90"
+        ),
         "components/eamxx/src/physics/dp",
-        "dp_init(d.plev, true);"
+        "dp_init(d.plev, true);",
+        ""
+        ""
     ),
     "gw" : (
-        ("components/eam/src/physics/cam/gw/gw_common.F90",
-         "components/eam/src/physics/cam/gw/gw_convect.F90",
-         "components/eam/src/physics/cam/gw/gw_diffusion.F90",
-         "components/eam/src/physics/cam/gw/gw_oro.F90",
-         "components/eam/src/physics/cam/gw/gw_utils.F90",
-         "components/eam/src/physics/cam/gw/gw_front.F90"),
+        (
+            "components/eam/src/physics/cam/gw/gw_common.F90",
+            "components/eam/src/physics/cam/gw/gw_convect.F90",
+            "components/eam/src/physics/cam/gw/gw_diffusion.F90",
+            "components/eam/src/physics/cam/gw/gw_oro.F90",
+            "components/eam/src/physics/cam/gw/gw_utils.F90",
+            "components/eam/src/physics/cam/gw/gw_front.F90"
+        ),
         "components/eamxx/src/physics/gw",
-        "gw_init();"
+        "gw_init();",
+        "ncol"
     ),
 }
 
@@ -574,7 +584,7 @@ def parse_f90_args(line):
 ###############################################################################
 def parse_origin(contents, subs):
 ###############################################################################
-    r"""
+    """
     Returns a map of subname->[(argname, argtype, intent, dims)]
     """
     begin_sub_regexes  = [get_subroutine_begin_regex(sub) for sub in subs]
@@ -738,7 +748,8 @@ def gen_arg_cxx_decls(arg_data, kokkos=False):
     arg_types    = [get_type(item) for item in arg_data]
     arg_sig_list = [f"{arg_type} {arg_name}" for arg_name, arg_type in zip(arg_names, arg_types)]
 
-    # For permanent sigs, we want them to look nice
+    # For permanent sigs, we want them to look nice. We may want to order these
+    # by intent and scalar vs array, but for now, just mimic the fortran order.
     if kokkos:
         list_with_comments = []
         intent_map = {"in" : "Inputs", "inout" : "Inputs/Outputs", "out" : "Outputs"}
@@ -960,18 +971,19 @@ def get_list_of_lists(items, indent):
     return result
 
 ###############################################################################
-def convert_to_cxx_dim(dim, add_underscore=False):
+def convert_to_cxx_dim(dim, add_underscore=False, from_d=False):
 ###############################################################################
     """
     Convert a fortran dim, potentially containing a range, to an item count
     """
     tokens = extract_dim_tokens(dim)
     uns = "_" if add_underscore else ""
+    obj = "d." if from_d else ""
 
     # case 1, single token
     if len(tokens) == 1:
         expect(not tokens[0].startswith("-"), f"Received weird negative fortran dim: '{dim}'")
-        return tokens[0] + uns
+        return obj + tokens[0] + uns
 
     # case 2, multiple tokens
     elif len(tokens) == 2:
@@ -996,11 +1008,11 @@ def convert_to_cxx_dim(dim, add_underscore=False):
         # case 2.2, first token is an int
         elif first_int is not None:
             if first_int <= 0:
-                return f"{second_token}{uns} + {1 + abs(first_int)}"
+                return f"{obj}{second_token}{uns} + {1 + abs(first_int)}"
             elif first_int == 1:
                 return second_token
             else:
-                return f"{second_token}{uns} - {first_int - 1}"
+                return f"{obj}{second_token}{uns} - {first_int - 1}"
 
         # case 2.3, second token is an int
         elif second_int is not None:
@@ -1009,12 +1021,12 @@ def convert_to_cxx_dim(dim, add_underscore=False):
         # case 2.4, first token is negative
         elif first_token.startswith("-"):
             if first_token.strip("-") == second_token:
-                return f"{second_token}{uns}*2 + 1"
+                return f"{obj}{second_token}{uns}*2 + 1"
             else:
-                return f"{first_token.strip('-')}{uns} + {second_token}{uns} + 1"
+                return f"{obj}{first_token.strip('-')}{uns} + {obj}{second_token}{uns} + 1"
 
         else:
-            return f"{second_token}{uns} - {first_token}{uns}"
+            return f"{obj}{second_token}{uns} - {obj}{first_token}{uns}"
 
     else:
         expect(False, f"Received weird fortran range with more than 2 tokens: '{dim}'")
@@ -1159,29 +1171,225 @@ def has_uniform_sizes(arg_data, rank, arg_list):
     return True
 
 ###############################################################################
-def get_htd_dth_call(arg_data, rank, arg_list, typename, is_output=False):
+def get_htd_dth_call(arg_data, rank, arg_list, typename, is_output=False, f2c=False):
 ###############################################################################
     result = ""
 
     view_type = get_view_type(typename, rank)
     prefix_char = PREFIX_MAP[typename]
+    arg_list_d = arg_list if f2c else [f"d.{item}" for item in arg_list]
+    arg_list_v = [f"{item}_d" for item in arg_list]
     vec_name = f"vec{rank}d{prefix_char}_{'out' if is_output else 'in'}"
-    result += f"  std::vector<{view_type}> {vec_name}({len(arg_list)});\n"
+    if is_output:
+        result += f"  std::vector<{view_type}> {vec_name} = {{{', '.join(arg_list_v)}}};\n"
+    else:
+        result += f"  std::vector<{view_type}> {vec_name}({len(arg_list)});\n"
     funcname = "ekat::device_to_host" if is_output else "ekat::host_to_device"
 
     if has_uniform_sizes(arg_data, rank, arg_list):
-        dims = [convert_to_cxx_dim(get_data_by_name(arg_data, arg_list[0], ARG_DIMS)[rank_itr]) for rank_itr in range(rank)]
-        result += f"  {funcname}({{{', '.join(arg_list)}}}, {', '.join(dims)}, {vec_name});\n\n"
+        dims = [convert_to_cxx_dim(get_data_by_name(arg_data, arg_list[0], ARG_DIMS)[rank_itr], from_d=not f2c) for rank_itr in range(rank)]
+        result += f"  {funcname}({{{', '.join(arg_list_d)}}}, {', '.join(dims)}, {vec_name});\n\n"
 
     else:
         for rank_itr in range(rank):
-            dims = [convert_to_cxx_dim(get_data_by_name(arg_data, arg_name, ARG_DIMS)[rank_itr]) for arg_name in arg_list]
+            dims = [convert_to_cxx_dim(get_data_by_name(arg_data, arg_name, ARG_DIMS)[rank_itr], from_d=not f2c) for arg_name in arg_list]
             result += f"  std::vector<int> {vec_name}_{rank_itr}_sizes = {{{', '.join(dims)}}};\n"
 
         dim_vectors = [f"{vec_name}_{rank_itr}_sizes" for rank_itr in range(rank)]
-        result += f"  {funcname}({{{', '.join(arg_list)}}}, {', '.join(dim_vectors)}, {vec_name});\n\n"
+        result += f"  {funcname}({{{', '.join(arg_list_d)}}}, {', '.join(dim_vectors)}, {vec_name});\n\n"
 
     return result
+
+###############################################################################
+def gen_glue_impl(phys, sub, arg_data, arg_names, col_dim, f2c=False):
+###############################################################################
+    """
+    Generate code that takes a TestData struct and unpacks it to call the CXX
+    version of the physics function.
+    """
+    init_code = get_physics_data(phys, INIT_CODE)
+    init_code = f"  {init_code}\n\n" if init_code else ""
+    final_code = get_physics_data(phys, FINALIZE_CODE)
+    final_code = f"  {final_code}\n" if final_code else ""
+    obj = "" if f2c else "d."
+
+    impl = "#if 0\n" # There's no way to guarantee this code compiles
+
+    if not f2c:
+        impl += init_code
+
+    if has_arrays(arg_data):
+        #
+        # Steps:
+        # 1) Set up typedefs
+        # 2) Sync to device
+        # 3) Unpack view array
+        # 4) Get nk_pack and policy
+        # 5) Get subviews
+        # 6) Call fn
+        # 7) Sync back to host
+        #
+        inputs, inouts, outputs = split_by_intent(arg_data)
+        reals, ints, bools   = split_by_type(arg_data)
+        scalars, views = split_by_scalar_vs_view(arg_data)
+        all_inputs  = inputs + inouts
+        all_outputs = inouts + outputs
+
+        iscalars = list(sorted(set(all_inputs) & set(scalars)))
+        oscalars = list(sorted(set(all_outputs) & set(scalars)))
+
+        oviews = list(sorted(set(all_outputs) & set(views)))
+
+        vreals = list(sorted(set(reals) & set(views)))
+        vints  = list(sorted(set(ints)  & set(views)))
+        vbools = list(sorted(set(bools) & set(views)))
+
+        sreals = list(sorted(set(reals) & set(scalars)))
+        sints  = list(sorted(set(ints)  & set(scalars)))
+        sbools = list(sorted(set(bools) & set(scalars)))
+
+        ovreals = list(sorted(set(vreals) & set(all_outputs)))
+        ovints  = list(sorted(set(vints)  & set(all_outputs)))
+        ovbools = list(sorted(set(vbools) & set(all_outputs)))
+
+        isreals = list(sorted(set(sreals) & set(all_inputs)))
+        isints  = list(sorted(set(sints)  & set(all_inputs)))
+        isbools = list(sorted(set(sbools) & set(all_inputs)))
+
+        osreals = list(sorted(set(sreals) & set(all_outputs)))
+        osints  = list(sorted(set(sints)  & set(all_outputs)))
+        osbools = list(sorted(set(sbools) & set(all_outputs)))
+
+        #
+        # 1) Set up typedefs (or just have these at the top of file so they can be shared?)
+        #
+
+        # set up basics
+
+        type_list    = ["Real", "Int", "bool"]
+        impl += "  // create device views and copy\n"
+
+        #
+        # 2) Sync to device. Do ALL views, not just inputs
+        #
+
+        for input_group, typename in zip([vreals, vints, vbools], type_list):
+            if input_group:
+                rank_map = get_rank_map(arg_data, input_group)
+
+                for rank, arg_list in rank_map.items():
+                    impl += get_htd_dth_call(arg_data, rank, arg_list, typename, f2c=f2c)
+
+        #
+        # 3) Unpack view array
+        #
+
+        for input_group, typename in zip([vreals, vints, vbools], type_list):
+            prefix_char = PREFIX_MAP[typename]
+            if input_group:
+                rank_map = get_rank_map(arg_data, input_group)
+
+                for rank, arg_list in rank_map.items():
+                    view_type = get_view_type(typename, rank)
+                    impl += f"  {view_type}\n"
+                    for idx, input_item in enumerate(arg_list):
+                        impl += f"    {input_item}_d(vec{rank}d{prefix_char}_in[{idx}]){';' if idx == len(arg_list) - 1 else ','}\n"
+                    impl += "\n"
+
+
+        #
+        # 4) Get nk_pack and policy, unpack scalars, and launch kernel
+        #
+        impl += f"  const Int nk_pack = ekat::npack<Spack>({obj}nlev);\n"
+        impl += f"  const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy({obj}{col_dim}, nk_pack);\n\n"
+        if scalars:
+            if not f2c:
+                impl += "  // unpack data scalars because we do not want the lambda to capture d\n"
+                for input_group, typename in zip([isreals, isints, isbools], type_list):
+                    if input_group:
+                        for arg in input_group:
+                            if arg not in oscalars:
+                                impl += f"  const {typename} {arg} = {obj}{arg};\n"
+
+            # We use 0-rank views to handle output scalars
+            for output_group, typename in zip([osreals, osints, osbools], type_list):
+                if output_group:
+                    view_type = get_view_type(typename, 0)
+                    hview_type = view_type[0:-2] + "_h"
+                    for arg in output_group:
+                        impl += f'  {hview_type} {arg}_h("{arg}_h");\n'
+                        if arg in iscalars:
+                            impl += f'  {arg}_h() = {obj}{arg};\n'
+                        impl += f'  {view_type} {arg}_d = Kokkos::create_mirror_view_and_copy(DefaultDevice(), {arg}_h);\n'
+
+            impl += "\n"
+
+        impl += "  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {\n"
+        impl += "    const Int i = team.league_rank();\n\n"
+
+        #
+        # 5) Get subviews
+        #
+        impl += "    // Get single-column subviews of all inputs, shouldn't need any i-indexing\n"
+        impl += "    // after this.\n"
+
+        for view_group, typename in zip([vreals, vints, vbools], type_list):
+            if view_group:
+                for view_arg in view_group:
+                    dims = get_data_by_name(arg_data, view_arg, ARG_DIMS)
+                    if col_dim in dims:
+                        if len(dims) == 1:
+                            impl += f"    const auto {view_arg}_c = {view_arg}_d(i);\n"
+                        else:
+                            impl += f"    const auto {view_arg}_c = ekat::subview({view_arg}_d, i);\n"
+
+                impl += "\n"
+
+        #
+        # 6) Call fn
+        #
+        kernel_arg_names = ["team"]
+        for arg_name in arg_names:
+            if arg_name in views:
+                kernel_arg_names.append(f"{arg_name}_c")
+            elif arg_name in oscalars:
+                kernel_arg_names.append(f"{arg_name}_d()")
+            else:
+                kernel_arg_names.append(arg_name)
+
+        joinstr = ',\n      '
+        impl += f"    SHF::{sub}(\n      {joinstr.join(kernel_arg_names)});\n"
+        impl +=  "  });\n\n"
+
+        #
+        # 7) Sync back to host
+        #
+        if oscalars:
+            impl += "  // Get outputs back, start with scalars\n"
+            for arg in oscalars:
+                impl += f"  Kokkos::deep_copy({arg}_h, {arg}_d);\n"
+                impl += f"  {obj}{arg} = {arg}_h();\n"
+
+            impl += "\n"
+
+        if oviews:
+            impl += "  // Now get arrays\n"
+            for output_group, typename in zip([ovreals, ovints, ovbools], type_list):
+                if output_group:
+                    rank_map = get_rank_map(arg_data, output_group)
+
+                    for rank, arg_list in rank_map.items():
+                        impl += get_htd_dth_call(arg_data, rank, arg_list, typename, is_output=True, f2c=f2c)
+
+    else:
+        expect(False, "Not yet supported")
+
+    if not f2c:
+        impl += final_code
+
+    impl += "#endif"
+
+    return impl
 
 #
 # Main classes
@@ -1193,13 +1401,16 @@ class GenBoiler(object):
 
     ###########################################################################
     def __init__(self,
+                 physics,
                  subs        = None,
                  pieces      = get_supported_pieces(),
-                 physics     = get_supported_physics(),
                  overwrite   = False,
                  kernel      = False,
                  source_repo = get_git_toplevel_dir(),
                  target_repo = get_git_toplevel_dir(),
+                 f2c         = False,
+                 unpack      = False,
+                 col_dim     = None,
                  dry_run     = False,
                  verbose     = False):
     ###########################################################################
@@ -1215,13 +1426,15 @@ class GenBoiler(object):
         target_repo = normalized_target_repo
 
         # configuration
-        self._subs        = subs
+        self._subs        = [] if subs is None else subs
         self._pieces      = pieces
         self._physics     = physics
         self._overwrite   = overwrite
         self._kernel      = kernel
         self._source_repo = Path(source_repo).resolve()
         self._target_repo = Path(target_repo).resolve()
+        self._unpack      = unpack
+        self._col_dim     = get_physics_data(physics, COLS_DIMNAME) if col_dim is None else col_dim
         self._dry_run     = dry_run
         self._verbose     = verbose
 
@@ -1230,6 +1443,10 @@ class GenBoiler(object):
 
         if not self._pieces:
             self._pieces = get_supported_pieces()
+
+        # If user did not request f2c bridging, don't generate them
+        if self._pieces == get_supported_pieces() and not f2c:
+            self._pieces = [piece for piece in self._pieces if "f2c" not in piece]
 
     ###########################################################################
     def _get_db(self, phys):
@@ -1284,7 +1501,7 @@ class GenBoiler(object):
         """
         arg_data = force_arg_data if force_arg_data else self._get_arg_data(phys, sub)
         arg_decls = gen_arg_cxx_decls(arg_data)
-        result = f"void {sub}_c({', '.join(arg_decls)});\n"
+        result = f"void {sub}_bridge_f({', '.join(arg_decls)});\n"
         return result
 
     ###########################################################################
@@ -1298,13 +1515,13 @@ class GenBoiler(object):
         arg_decls = gen_arg_f90_decls(arg_data)
         phys_mod = "micro_p3" if phys == "p3" else phys
         result = \
-"""  subroutine {sub}_c({arg_names}) bind(C)
+"""  subroutine {sub}_bridge_f({arg_names}) bind(C)
     use {phys_mod}, only : {sub}
 
     {arg_decls}
 
     call {sub}({arg_names})
-  end subroutine {sub}_c""".format(sub=sub, arg_names=arg_names, phys_mod=phys_mod, arg_decls="\n    ".join(arg_decls))
+  end subroutine {sub}_bridge_f""".format(sub=sub, arg_names=arg_names, phys_mod=phys_mod, arg_decls="\n    ".join(arg_decls))
 
         return result
 
@@ -1318,11 +1535,11 @@ class GenBoiler(object):
         arg_names = ", ".join([item[ARG_NAME] for item in arg_data])
         arg_decls = gen_arg_f90_decls(arg_data)
         result = \
-"""  subroutine {sub}_f({arg_names}) bind(C)
+"""  subroutine {sub}_bridge_c({arg_names}) bind(C)
     use iso_c_binding
 
     {arg_decls}
-  end subroutine {sub}_f""".format(sub=sub, arg_names=arg_names, arg_decls="\n    ".join(arg_decls))
+  end subroutine {sub}_bridge_c""".format(sub=sub, arg_names=arg_names, arg_decls="\n    ".join(arg_decls))
 
         return result
 
@@ -1364,10 +1581,37 @@ f"""void {sub}_f({data_struct}& d)
         return result
 
     ###########################################################################
-    def gen_cxx_t2cxx_bind_impl(self, phys, sub, force_arg_data=None):
+    def gen_cxx_t2cxx_glue_decl(self, phys, sub, force_arg_data=None): # pylint: disable=W0613
     ###########################################################################
         """
+        In C, generate the C to CXX bridge declaration. This version takes the test
+        data struct.
         """
+        struct_name = get_data_struct_name(sub)
+        result = f"void {sub}({struct_name}& d);"
+        return result
+
+    ###########################################################################
+    def gen_cxx_t2cxx_glue_impl(self, phys, sub, force_arg_data=None):
+    ###########################################################################
+        """
+        In C, generate the C to CXX bridge implementation. This version takes the test
+        data struct.
+        """
+        arg_data  = force_arg_data if force_arg_data else self._get_arg_data(phys, sub)
+        arg_names = [item[ARG_NAME] for item in arg_data]
+        decl      = self.gen_cxx_t2cxx_glue_decl(phys, sub, force_arg_data=force_arg_data).rstrip(";")
+
+        impl = gen_glue_impl(phys, sub, arg_data, arg_names, self._col_dim)
+
+        result = \
+f"""{decl}
+{{
+{impl}
+}}
+"""
+        return result
+
 
     ###########################################################################
     def gen_cxx_c2f_data(self, phys, sub, force_arg_data=None):
@@ -1394,141 +1638,17 @@ f"""struct {struct_name}{inheritance} {{
         return result
 
     ###########################################################################
-    def gen_cxx_f2c_bind_decl(self, phys, sub, force_arg_data=None):
-    ###########################################################################
-        """
-        In C, generate the F90 to C bridge declaration.
-        """
-        arg_data  = force_arg_data if force_arg_data else self._get_arg_data(phys, sub)
-        arg_decls = gen_arg_cxx_decls(arg_data)
-
-        return f"void {sub}_f({', '.join(arg_decls)});"
-
-    ###########################################################################
     def gen_cxx_f2c_bind_impl(self, phys, sub, force_arg_data=None):
     ###########################################################################
         """
-        In C, generate the F90 to C bridge implementation.
+        In C, generate the F90 to C bridge declatation and implementation.
         """
         arg_data  = force_arg_data if force_arg_data else self._get_arg_data(phys, sub)
         arg_names = [item[ARG_NAME] for item in arg_data]
-        decl      = self.gen_cxx_f2c_bind_decl(phys, sub, force_arg_data=force_arg_data).rstrip(";")
+        arg_decls = gen_arg_cxx_decls(arg_data)
+        decl      = f"void {sub}_bridge_c({', '.join(arg_decls)})"
 
-        impl = ""
-        if has_arrays(arg_data):
-            #
-            # Steps:
-            # 1) Set up typedefs
-            # 2) Sync to device
-            # 3) Unpack view array
-            # 4) Get nk_pack and policy
-            # 5) Get subviews
-            # 6) Call fn
-            # 7) Sync back to host
-            #
-            _, inouts, outputs = split_by_intent(arg_data)
-            reals, ints, bools   = split_by_type(arg_data)
-            _, views = split_by_scalar_vs_view(arg_data)
-            all_outputs = inouts + outputs
-
-            vreals = list(sorted(set(reals) & set(views)))
-            vints  = list(sorted(set(ints)  & set(views)))
-            vbools = list(sorted(set(bools) & set(views)))
-
-            ovreals = list(sorted(set(vreals) & set(all_outputs)))
-            ovints  = list(sorted(set(vints)  & set(all_outputs)))
-            ovbools = list(sorted(set(vbools) & set(all_outputs)))
-
-            #
-            # 1) Set up typedefs (or just have these at the top of file so they can be shared?)
-            #
-
-            # set up basics
-            impl += "#if 0\n" # There's no way to guarantee this code compiles
-
-            type_list    = ["Real", "Int", "bool"]
-
-            #
-            # 2) Sync to device. Do ALL views, not just inputs
-            #
-
-            for input_group, typename in zip([vreals, vints, vbools], type_list):
-                if input_group:
-                    rank_map = get_rank_map(arg_data, input_group)
-
-                    for rank, arg_list in rank_map.items():
-                        impl += get_htd_dth_call(arg_data, rank, arg_list, typename)
-
-            #
-            # 3) Unpack view array
-            #
-
-            for input_group, typename in zip([vreals, vints, vbools], type_list):
-                prefix_char = PREFIX_MAP[typename]
-                if input_group:
-                    rank_map = get_rank_map(arg_data, input_group)
-
-                    for rank, arg_list in rank_map.items():
-                        view_type = get_view_type(typename, rank)
-                        impl += f"  {view_type}\n"
-                        for idx, input_item in enumerate(arg_list):
-                            impl += f"    {input_item}_d(vec{rank}d{prefix_char}_in[{idx}]){';' if idx == len(arg_list) - 1 else ','}\n"
-                        impl += "\n"
-
-
-            #
-            # 4) Get nk_pack and policy, launch kernel
-            #
-            impl += "  const Int nk_pack = ekat::npack<Spack>(nlev);\n"
-            impl += "  const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(shcol, nk_pack);\n"
-            impl += "  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {\n"
-            impl += "    const Int i = team.league_rank();\n\n"
-
-            #
-            # 5) Get subviews
-            #
-            for view_group, typename in zip([vreals, vints, vbools], type_list):
-                if view_group:
-                    for view_arg in view_group:
-                        dims = get_data_by_name(arg_data, view_arg, ARG_DIMS)
-                        if "shcol" in dims:
-                            if len(dims) == 1:
-                                impl += f"    const auto {view_arg}_s = {view_arg}_d(i);\n"
-                            else:
-                                impl += f"    const auto {view_arg}_s = ekat::subview({view_arg}_d, i);\n"
-
-                    impl += "\n"
-
-            #
-            # 6) Call fn
-            #
-            kernel_arg_names = []
-            for arg_name in arg_names:
-                if arg_name in views:
-                    if "shcol" in dims:
-                        kernel_arg_names.append(f"{arg_name}_s")
-                    else:
-                        kernel_arg_names.append(f"{arg_name}_d")
-                else:
-                    kernel_arg_names.append(arg_name)
-
-            impl += f"    SHF::{sub}({', '.join(kernel_arg_names)});\n"
-            impl +=  "  });\n"
-
-            #
-            # 7) Sync back to host
-            #
-            for output_group, typename in zip([ovreals, ovints, ovbools], type_list):
-                if output_group:
-                    rank_map = get_rank_map(arg_data, output_group)
-
-                    for rank, arg_list in rank_map.items():
-                        impl += get_htd_dth_call(arg_data, rank, arg_list, typename, is_output=True)
-
-            impl += "#endif"
-
-        else:
-            expect(False, "Not yet supported")
+        impl = gen_glue_impl(phys, sub, arg_data, arg_names, self._col_dim, f2c=True)
 
         result = \
 f"""{decl}
@@ -1906,13 +2026,12 @@ template struct Functions<Real,DefaultDevice>;
     ###########################################################################
         all_success = True
         for sub in self._subs:
-            for phys in self._physics:
-                for piece in self._pieces:
-                    try:
-                        self.gen_piece(phys, sub, piece)
-                    except SystemExit as e:
-                        print(f"Warning: failed to generate subroutine {sub} piece {piece} for physics {phys}, error: {e}")
-                        all_success = False
+            for piece in self._pieces:
+                try:
+                    self.gen_piece(self._physics, sub, piece)
+                except SystemExit as e:
+                    print(f"Warning: failed to generate subroutine {sub} piece {piece} for physics {self._physics}, error:\n{e}")
+                    all_success = False
 
         print("ALL_SUCCESS" if all_success else "THERE WERE FAILURES")
 

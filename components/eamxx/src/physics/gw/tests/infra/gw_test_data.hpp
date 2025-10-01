@@ -932,39 +932,49 @@ struct VdLuSolveData : public PhysicsTestData {
   }
 };
 
-// Glue functions to call fortran from from C++ with the Data struct
+// Glue functions for host test data. We can call either fortran or CXX with this data (_f -> fortran)
 void gwd_compute_tendencies_from_stress_divergence(GwdComputeTendenciesFromStressDivergenceData& d);
 void gwd_compute_tendencies_from_stress_divergence_f(GwdComputeTendenciesFromStressDivergenceData& d);
-void gw_prof_f(GwProfData& d);
 void gw_prof(GwProfData& d);
-void momentum_energy_conservation_f(MomentumEnergyConservationData& d);
+void gw_prof_f(GwProfData& d);
 void momentum_energy_conservation(MomentumEnergyConservationData& d);
-void gwd_compute_stress_profiles_and_diffusivities_f(GwdComputeStressProfilesAndDiffusivitiesData& d);
+void momentum_energy_conservation_f(MomentumEnergyConservationData& d);
 void gwd_compute_stress_profiles_and_diffusivities(GwdComputeStressProfilesAndDiffusivitiesData& d);
+void gwd_compute_stress_profiles_and_diffusivities_f(GwdComputeStressProfilesAndDiffusivitiesData& d);
 void gwd_project_tau(GwdProjectTauData& d);
 void gwd_project_tau_f(GwdProjectTauData& d);
-void gwd_precalc_rhoi_f(GwdPrecalcRhoiData& d);
 void gwd_precalc_rhoi(GwdPrecalcRhoiData& d);
-void gw_drag_prof_f(GwDragProfData& d);
+void gwd_precalc_rhoi_f(GwdPrecalcRhoiData& d);
 void gw_drag_prof(GwDragProfData& d);
+void gw_drag_prof_f(GwDragProfData& d);
 void gw_front_project_winds(GwFrontProjectWindsData& d);
+void gw_front_project_winds_f(GwFrontProjectWindsData& d);
 void gw_front_gw_sources(GwFrontGwSourcesData& d);
+void gw_front_gw_sources_f(GwFrontGwSourcesData& d);
 void gw_cm_src(GwCmSrcData& d);
-void gw_convect_project_winds_f(GwConvectProjectWindsData& d);
+void gw_cm_src_f(GwCmSrcData& d);
 void gw_convect_project_winds(GwConvectProjectWindsData& d);
+void gw_convect_project_winds_f(GwConvectProjectWindsData& d);
 void gw_heating_depth(GwHeatingDepthData& d);
+void gw_heating_depth_f(GwHeatingDepthData& d);
 void gw_storm_speed(GwStormSpeedData& d);
+void gw_storm_speed_f(GwStormSpeedData& d);
 void gw_convect_gw_sources(GwConvectGwSourcesData& d);
+void gw_convect_gw_sources_f(GwConvectGwSourcesData& d);
 void gw_beres_src(GwBeresSrcData& d);
-void gw_ediff_f(GwEdiffData& d);
+void gw_beres_src_f(GwBeresSrcData& d);
 void gw_ediff(GwEdiffData& d);
-void gw_diff_tend_f(GwDiffTendData& d);
+void gw_ediff_f(GwEdiffData& d);
 void gw_diff_tend(GwDiffTendData& d);
+void gw_diff_tend_f(GwDiffTendData& d);
 void gw_oro_src(GwOroSrcData& d);
-void vd_lu_decomp_f(VdLuDecompData& d);
+void gw_oro_src_f(GwOroSrcData& d);
 void vd_lu_decomp(VdLuDecompData& d);
-void vd_lu_solve_f(VdLuSolveData& d);
+void vd_lu_decomp_f(VdLuDecompData& d);
 void vd_lu_solve(VdLuSolveData& d);
+void vd_lu_solve_f(VdLuSolveData& d);
+
+// End glue function decls
 
 }  // namespace gw
 }  // namespace scream

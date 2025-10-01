@@ -27,7 +27,7 @@ UT_ARG_DATA = [
     ("gag", "real", "in", None),
     ("baz", "real", "inout", ("shcol",)),
     ("bag", "integer", "in", ("shcol","0:nlev")),
-    ("bab1", "integer", "out", None),
+    ("bab1", "integer", "inout", None),
     ("bab2", "integer", "out", None),
     ("val", "logical", "in", None),
     ("vals", "logical", "in", ("shcol",)),
@@ -83,7 +83,7 @@ class TestGenBoilerBasics(unittest.TestCase):
         """
         Run doctests for all python files
         """
-        #run_cmd_assert_result(self, "python3 -m doctest *.py", from_dir=GEN_BOILER_DIR)
+        run_cmd_assert_result(self, "python3 -m doctest *.py", from_dir=GEN_BOILER_DIR)
 
     ###########################################################################
     def test_pylint(self):
@@ -94,7 +94,7 @@ class TestGenBoilerBasics(unittest.TestCase):
         run_cmd_assert_result(self, "python3 -m pylint --disable C,R *.py", from_dir=GEN_BOILER_DIR)
 
     ###########################################################################
-    def test_regex_stuff(self):
+    def test_free_functions(self):
     ###########################################################################
         # get_subroutine_begin_regex
         self.assertTrue(get_subroutine_begin_regex("fake_sub").match("subroutine fake_sub("))
@@ -245,8 +245,8 @@ class TestGenBoilerBasics(unittest.TestCase):
         # split_by_intent
         self.assertEqual(split_by_intent(UT_ARG_DATA), (
             ['foo1', 'foo2', 'bar1', 'bar2', 'bak1', 'bak2', 'tracerd1', 'tracerd2', 'gag', 'bag', 'val', 'vals', 'shcol', 'nlev', 'nlevi', 'ntracers'],
-            ['baz'],
-            ['bab1', 'bab2', 'ball1', 'ball2']))
+            ['baz', 'bab1'],
+            ['bab2', 'ball1', 'ball2']))
 
         # split_by_type
         self.assertEqual(split_by_type(UT_ARG_DATA), (
@@ -273,7 +273,8 @@ class TestGenBoilerBasics(unittest.TestCase):
             "real(kind=c_real) , value, intent(in) :: gag",
             "real(kind=c_real) , intent(inout), dimension(shcol) :: baz",
             "integer(kind=c_int) , intent(in), dimension(shcol, 0:nlev) :: bag",
-            "integer(kind=c_int) , intent(out) :: bab1, bab2",
+            "integer(kind=c_int) , intent(inout) :: bab1",
+            "integer(kind=c_int) , intent(out) :: bab2",
             "logical(kind=c_bool) , value, intent(in) :: val",
             "logical(kind=c_bool) , intent(in), dimension(shcol) :: vals",
             "integer(kind=c_int) , value, intent(in) :: shcol, nlev, nlevi, ntracers",
@@ -296,9 +297,10 @@ class TestGenBoilerBasics(unittest.TestCase):
             "",
             "// Inputs/Outputs",
             "Real *baz;",
+            "Int bab1;",
             "",
             "// Outputs",
-            "Int bab1, bab2;",
+            "Int bab2;",
             "Int *ball1, *ball2;",
             "",
         ])
@@ -377,7 +379,7 @@ class TestGenBoiler(unittest.TestCase):
     @patch('sys.stdout', new_callable=io.StringIO)
     def test_create_template(self, mock_stdout):
     ###########################################################################
-        gb = GenBoiler(["linear_interp"], ["cxx_func_impl"], dry_run=True)
+        gb = GenBoiler("shoc", ["linear_interp"], ["cxx_func_impl"], dry_run=True)
         create_template("shoc", "linear_interp", gb, "cxx_func_impl", force=True, force_arg_data=UT_ARG_DATA)
 
         expected_output = \
@@ -412,8 +414,9 @@ void Functions<S,D>::linear_interp(
   const uview_1d<Spack>& baz,
   // Inputs
   const uview_1d<const Int>& bag,
-  // Outputs
+  // Inputs/Outputs
   Int& bab1,
+  // Outputs
   Int& bab2,
   // Inputs
   const bool& val,
@@ -694,7 +697,7 @@ PTD_STD_DEF(DataSubName, 8, shcol, nlev, nlevi, ntracers, gag, bab1, bab2, val);
     def test_f90_c2f_bind(self):
     ###########################################################################
         expected = \
-"""  subroutine fake_sub_c(foo1, foo2, bar1, bar2, bak1, bak2, tracerd1, tracerd2, gag, baz, bag, bab1, bab2, val, vals, shcol, nlev, nlevi, ntracers, ball1, ball2) bind(C)
+"""  subroutine fake_sub_bridge_f(foo1, foo2, bar1, bar2, bak1, bak2, tracerd1, tracerd2, gag, baz, bag, bab1, bab2, val, vals, shcol, nlev, nlevi, ntracers, ball1, ball2) bind(C)
     use shoc, only : fake_sub
 
     real(kind=c_real) , intent(in), dimension(shcol) :: foo1, foo2
@@ -705,16 +708,17 @@ PTD_STD_DEF(DataSubName, 8, shcol, nlev, nlevi, ntracers, gag, bab1, bab2, val);
     real(kind=c_real) , value, intent(in) :: gag
     real(kind=c_real) , intent(inout), dimension(shcol) :: baz
     integer(kind=c_int) , intent(in), dimension(shcol, 0:nlev) :: bag
-    integer(kind=c_int) , intent(out) :: bab1, bab2
+    integer(kind=c_int) , intent(inout) :: bab1
+    integer(kind=c_int) , intent(out) :: bab2
     logical(kind=c_bool) , value, intent(in) :: val
     logical(kind=c_bool) , intent(in), dimension(shcol) :: vals
     integer(kind=c_int) , value, intent(in) :: shcol, nlev, nlevi, ntracers
     integer(kind=c_int) , intent(out), dimension(shcol) :: ball1, ball2
 
     call fake_sub(foo1, foo2, bar1, bar2, bak1, bak2, tracerd1, tracerd2, gag, baz, bag, bab1, bab2, val, vals, shcol, nlev, nlevi, ntracers, ball1, ball2)
-  end subroutine fake_sub_c
+  end subroutine fake_sub_bridge_f
 """
-        gb = GenBoiler([])
+        gb = GenBoiler("shoc")
         actual = gb.gen_f90_c2f_bind("shoc", "fake_sub", force_arg_data=UT_ARG_DATA)
 
         line_by_line_compare(self, expected, actual)
@@ -723,7 +727,7 @@ PTD_STD_DEF(DataSubName, 8, shcol, nlev, nlevi, ntracers, gag, bab1, bab2, val);
     def test_f90_f2c_bind(self):
     ###########################################################################
         expected = \
-"""  subroutine fake_sub_f(foo1, foo2, bar1, bar2, bak1, bak2, tracerd1, tracerd2, gag, baz, bag, bab1, bab2, val, vals, shcol, nlev, nlevi, ntracers, ball1, ball2) bind(C)
+"""  subroutine fake_sub_bridge_c(foo1, foo2, bar1, bar2, bak1, bak2, tracerd1, tracerd2, gag, baz, bag, bab1, bab2, val, vals, shcol, nlev, nlevi, ntracers, ball1, ball2) bind(C)
     use iso_c_binding
 
     real(kind=c_real) , intent(in), dimension(shcol) :: foo1, foo2
@@ -734,15 +738,16 @@ PTD_STD_DEF(DataSubName, 8, shcol, nlev, nlevi, ntracers, gag, bab1, bab2, val);
     real(kind=c_real) , value, intent(in) :: gag
     real(kind=c_real) , intent(inout), dimension(shcol) :: baz
     integer(kind=c_int) , intent(in), dimension(shcol, 0:nlev) :: bag
-    integer(kind=c_int) , intent(out) :: bab1, bab2
+    integer(kind=c_int) , intent(inout) :: bab1
+    integer(kind=c_int) , intent(out) :: bab2
     logical(kind=c_bool) , value, intent(in) :: val
     logical(kind=c_bool) , intent(in), dimension(shcol) :: vals
     integer(kind=c_int) , value, intent(in) :: shcol, nlev, nlevi, ntracers
     integer(kind=c_int) , intent(out), dimension(shcol) :: ball1, ball2
-  end subroutine fake_sub_f
+  end subroutine fake_sub_bridge_c
 """
 
-        gb = GenBoiler([])
+        gb = GenBoiler("shoc")
         actual = gb.gen_f90_f2c_bind("shoc", "fake_sub", force_arg_data=UT_ARG_DATA)
 
         line_by_line_compare(self, expected, actual)
@@ -750,21 +755,21 @@ PTD_STD_DEF(DataSubName, 8, shcol, nlev, nlevi, ntracers, gag, bab1, bab2, val);
     ###########################################################################
     def test_cxx_c2f_bind_decl(self):
     ###########################################################################
-        gb = GenBoiler([])
+        gb = GenBoiler("shoc")
         actual = gb.gen_cxx_c2f_bind_decl("shoc", "fake_sub", force_arg_data=UT_ARG_DATA)
-        self.assertEqual(actual, "void fake_sub_c(Real* foo1, Real* foo2, Real* bar1, Real* bar2, Real* bak1, Real* bak2, Real* tracerd1, Real* tracerd2, Real gag, Real* baz, Int* bag, Int* bab1, Int* bab2, bool val, bool* vals, Int shcol, Int nlev, Int nlevi, Int ntracers, Int* ball1, Int* ball2);\n")
+        self.assertEqual(actual, "void fake_sub_bridge_f(Real* foo1, Real* foo2, Real* bar1, Real* bar2, Real* bak1, Real* bak2, Real* tracerd1, Real* tracerd2, Real gag, Real* baz, Int* bag, Int* bab1, Int* bab2, bool val, bool* vals, Int shcol, Int nlev, Int nlevi, Int ntracers, Int* ball1, Int* ball2);\n")
 
     ###########################################################################
     def test_cxx_c2f_glue_decl(self):
     ###########################################################################
-        gb = GenBoiler()
+        gb = GenBoiler("shoc")
         actual = gb.gen_cxx_c2f_glue_decl("shoc", "fake_sub", force_arg_data=UT_ARG_DATA)
         self.assertEqual(actual, 'void fake_sub_f(FakeSubData& d);')
 
     ###########################################################################
     def test_cxx_c2f_glue_impl(self):
     ###########################################################################
-        gb = GenBoiler([])
+        gb = GenBoiler("shoc")
         actual = gb.gen_cxx_c2f_glue_impl("shoc", "fake_sub", force_arg_data=UT_ARG_DATA)
         expected = \
 """void fake_sub_f(FakeSubData& d)
@@ -779,9 +784,153 @@ PTD_STD_DEF(DataSubName, 8, shcol, nlev, nlevi, ntracers, gag, bab1, bab2, val);
         line_by_line_compare(self, expected, actual)
 
     ###########################################################################
+    def test_cxx_t2cxx_glue_decl(self):
+    ###########################################################################
+        gb = GenBoiler("shoc")
+        actual = gb.gen_cxx_c2f_glue_impl("shoc", "fake_sub", force_arg_data=UT_ARG_DATA)
+        expected = "void fake_sub(FakeSubData& d);"
+
+    ###########################################################################
+    def test_cxx_t2cxx_glue_impl(self):
+    ###########################################################################
+        gb = GenBoiler("shoc")
+        actual = gb.gen_cxx_t2cxx_glue_impl("shoc", "fake_sub", force_arg_data=UT_ARG_DATA)
+        expected = \
+"""void fake_sub(FakeSubData& d)
+{
+#if 0
+  shoc_init(d.nlev, true);
+
+  // create device views and copy
+  std::vector<view1dr_d> vec1dr_in(3);
+  ekat::host_to_device({d.baz, d.foo1, d.foo2}, d.shcol, vec1dr_in);
+
+  std::vector<view2dr_d> vec2dr_in(4);
+  std::vector<int> vec2dr_in_0_sizes = {d.shcol, d.shcol, d.shcol, d.shcol};
+  std::vector<int> vec2dr_in_1_sizes = {d.nlev*2 + 1, d.nlevi, d.nlev, d.nlev};
+  ekat::host_to_device({d.bak1, d.bak2, d.bar1, d.bar2}, vec2dr_in_0_sizes, vec2dr_in_1_sizes, vec2dr_in);
+
+  std::vector<view3dr_d> vec3dr_in(2);
+  ekat::host_to_device({d.tracerd1, d.tracerd2}, d.shcol, d.nlev, d.ntracers, vec3dr_in);
+
+  std::vector<view1di_d> vec1di_in(2);
+  ekat::host_to_device({d.ball1, d.ball2}, d.shcol, vec1di_in);
+
+  std::vector<view2di_d> vec2di_in(1);
+  ekat::host_to_device({d.bag}, d.shcol, d.nlev + 1, vec2di_in);
+
+  std::vector<view1db_d> vec1db_in(1);
+  ekat::host_to_device({d.vals}, d.shcol, vec1db_in);
+
+  view1dr_d
+    baz_d(vec1dr_in[0]),
+    foo1_d(vec1dr_in[1]),
+    foo2_d(vec1dr_in[2]);
+
+  view2dr_d
+    bak1_d(vec2dr_in[0]),
+    bak2_d(vec2dr_in[1]),
+    bar1_d(vec2dr_in[2]),
+    bar2_d(vec2dr_in[3]);
+
+  view3dr_d
+    tracerd1_d(vec3dr_in[0]),
+    tracerd2_d(vec3dr_in[1]);
+
+  view1di_d
+    ball1_d(vec1di_in[0]),
+    ball2_d(vec1di_in[1]);
+
+  view2di_d
+    bag_d(vec2di_in[0]);
+
+  view1db_d
+    vals_d(vec1db_in[0]);
+
+  const Int nk_pack = ekat::npack<Spack>(d.nlev);
+  const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.shcol, nk_pack);
+
+  // unpack data scalars because we do not want the lambda to capture d
+  const Real gag = d.gag;
+  const Int nlev = d.nlev;
+  const Int nlevi = d.nlevi;
+  const Int ntracers = d.ntracers;
+  const Int shcol = d.shcol;
+  const bool val = d.val;
+  view0di_h bab1_h("bab1_h");
+  bab1_h() = d.bab1;
+  view0di_d bab1_d = Kokkos::create_mirror_view_and_copy(DefaultDevice(), bab1_h);
+  view0di_h bab2_h("bab2_h");
+  view0di_d bab2_d = Kokkos::create_mirror_view_and_copy(DefaultDevice(), bab2_h);
+
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    const Int i = team.league_rank();
+
+    // Get single-column subviews of all inputs, shouldn't need any i-indexing
+    // after this.
+    const auto bak1_c = ekat::subview(bak1_d, i);
+    const auto bak2_c = ekat::subview(bak2_d, i);
+    const auto bar1_c = ekat::subview(bar1_d, i);
+    const auto bar2_c = ekat::subview(bar2_d, i);
+    const auto baz_c = baz_d(i);
+    const auto foo1_c = foo1_d(i);
+    const auto foo2_c = foo2_d(i);
+    const auto tracerd1_c = ekat::subview(tracerd1_d, i);
+    const auto tracerd2_c = ekat::subview(tracerd2_d, i);
+
+    const auto bag_c = ekat::subview(bag_d, i);
+    const auto ball1_c = ball1_d(i);
+    const auto ball2_c = ball2_d(i);
+
+    const auto vals_c = vals_d(i);
+
+    SHF::fake_sub(
+      team,
+      foo1_c,
+      foo2_c,
+      bar1_c,
+      bar2_c,
+      bak1_c,
+      bak2_c,
+      tracerd1_c,
+      tracerd2_c,
+      gag,
+      baz_c,
+      bag_c,
+      bab1_d(),
+      bab2_d(),
+      val,
+      vals_c,
+      shcol,
+      nlev,
+      nlevi,
+      ntracers,
+      ball1_c,
+      ball2_c);
+  });
+
+  // Get outputs back, start with scalars
+  Kokkos::deep_copy(bab1_h, bab1_d);
+  d.bab1 = bab1_h();
+  Kokkos::deep_copy(bab2_h, bab2_d);
+  d.bab2 = bab2_h();
+
+  // Now get arrays
+  std::vector<view1dr_d> vec1dr_out = {baz_d};
+  ekat::device_to_host({d.baz}, d.shcol, vec1dr_out);
+
+  std::vector<view1di_d> vec1di_out = {ball1_d, ball2_d};
+  ekat::device_to_host({d.ball1, d.ball2}, d.shcol, vec1di_out);
+
+#endif
+}
+"""
+        line_by_line_compare(self, expected, actual)
+
+    ###########################################################################
     def test_cxx_c2f_data(self):
     ###########################################################################
-        gb = GenBoiler([])
+        gb = GenBoiler("shoc")
         actual = gb.gen_cxx_c2f_data("shoc", "fake_sub", force_arg_data=UT_ARG_DATA)
         expected = \
 """struct FakeSubData : public PhysicsTestData {
@@ -795,9 +944,10 @@ PTD_STD_DEF(DataSubName, 8, shcol, nlev, nlevi, ntracers, gag, bab1, bab2, val);
 
   // Inputs/Outputs
   Real *baz;
+  Int bab1;
 
   // Outputs
-  Int bab1, bab2;
+  Int bab2;
   Int *ball1, *ball2;
 
   FakeSubData(Int shcol_, Int nlev_, Int nlevi_, Int ntracers_, Real gag_, Int bab1_, Int bab2_, bool val_) :
@@ -835,22 +985,15 @@ PTD_STD_DEF(DataSubName, 8, shcol, nlev, nlevi, ntracers, gag, bab1, bab2, val);
         line_by_line_compare(self, expected, actual)
 
     ###########################################################################
-    def test_cxx_f2c_bind_decl(self):
-    ###########################################################################
-        gb = GenBoiler([])
-        actual = gb.gen_cxx_f2c_bind_decl("shoc", "fake_sub", force_arg_data=UT_ARG_DATA)
-        expected = "void fake_sub_f(Real* foo1, Real* foo2, Real* bar1, Real* bar2, Real* bak1, Real* bak2, Real* tracerd1, Real* tracerd2, Real gag, Real* baz, Int* bag, Int* bab1, Int* bab2, bool val, bool* vals, Int shcol, Int nlev, Int nlevi, Int ntracers, Int* ball1, Int* ball2);"
-        self.assertEqual(expected, actual)
-
-    ###########################################################################
     def test_cxx_f2c_bind_impl(self):
     ###########################################################################
-        gb = GenBoiler([])
+        gb = GenBoiler("shoc")
         actual = gb.gen_cxx_f2c_bind_impl("shoc", "fake_sub", force_arg_data=UT_ARG_DATA)
         expected = \
-"""void fake_sub_f(Real* foo1, Real* foo2, Real* bar1, Real* bar2, Real* bak1, Real* bak2, Real* tracerd1, Real* tracerd2, Real gag, Real* baz, Int* bag, Int* bab1, Int* bab2, bool val, bool* vals, Int shcol, Int nlev, Int nlevi, Int ntracers, Int* ball1, Int* ball2)
+"""void fake_sub_bridge_c(Real* foo1, Real* foo2, Real* bar1, Real* bar2, Real* bak1, Real* bak2, Real* tracerd1, Real* tracerd2, Real gag, Real* baz, Int* bag, Int* bab1, Int* bab2, bool val, bool* vals, Int shcol, Int nlev, Int nlevi, Int ntracers, Int* ball1, Int* ball2)
 {
 #if 0
+  // create device views and copy
   std::vector<view1dr_d> vec1dr_in(3);
   ekat::host_to_device({baz, foo1, foo2}, shcol, vec1dr_in);
 
@@ -898,31 +1041,70 @@ PTD_STD_DEF(DataSubName, 8, shcol, nlev, nlevi, ntracers, gag, bab1, bab2, val);
 
   const Int nk_pack = ekat::npack<Spack>(nlev);
   const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(shcol, nk_pack);
+
+  view0di_h bab1_h("bab1_h");
+  bab1_h() = bab1;
+  view0di_d bab1_d = Kokkos::create_mirror_view_and_copy(DefaultDevice(), bab1_h);
+  view0di_h bab2_h("bab2_h");
+  view0di_d bab2_d = Kokkos::create_mirror_view_and_copy(DefaultDevice(), bab2_h);
+
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const Int i = team.league_rank();
 
-    const auto bak1_s = ekat::subview(bak1_d, i);
-    const auto bak2_s = ekat::subview(bak2_d, i);
-    const auto bar1_s = ekat::subview(bar1_d, i);
-    const auto bar2_s = ekat::subview(bar2_d, i);
-    const auto baz_s = baz_d(i);
-    const auto foo1_s = foo1_d(i);
-    const auto foo2_s = foo2_d(i);
-    const auto tracerd1_s = ekat::subview(tracerd1_d, i);
-    const auto tracerd2_s = ekat::subview(tracerd2_d, i);
+    // Get single-column subviews of all inputs, shouldn't need any i-indexing
+    // after this.
+    const auto bak1_c = ekat::subview(bak1_d, i);
+    const auto bak2_c = ekat::subview(bak2_d, i);
+    const auto bar1_c = ekat::subview(bar1_d, i);
+    const auto bar2_c = ekat::subview(bar2_d, i);
+    const auto baz_c = baz_d(i);
+    const auto foo1_c = foo1_d(i);
+    const auto foo2_c = foo2_d(i);
+    const auto tracerd1_c = ekat::subview(tracerd1_d, i);
+    const auto tracerd2_c = ekat::subview(tracerd2_d, i);
 
-    const auto bag_s = ekat::subview(bag_d, i);
-    const auto ball1_s = ball1_d(i);
-    const auto ball2_s = ball2_d(i);
+    const auto bag_c = ekat::subview(bag_d, i);
+    const auto ball1_c = ball1_d(i);
+    const auto ball2_c = ball2_d(i);
 
-    const auto vals_s = vals_d(i);
+    const auto vals_c = vals_d(i);
 
-    SHF::fake_sub(foo1_s, foo2_s, bar1_s, bar2_s, bak1_s, bak2_s, tracerd1_s, tracerd2_s, gag, baz_s, bag_s, bab1, bab2, val, vals_s, shcol, nlev, nlevi, ntracers, ball1_s, ball2_s);
+    SHF::fake_sub(
+      team,
+      foo1_c,
+      foo2_c,
+      bar1_c,
+      bar2_c,
+      bak1_c,
+      bak2_c,
+      tracerd1_c,
+      tracerd2_c,
+      gag,
+      baz_c,
+      bag_c,
+      bab1_d(),
+      bab2_d(),
+      val,
+      vals_c,
+      shcol,
+      nlev,
+      nlevi,
+      ntracers,
+      ball1_c,
+      ball2_c);
   });
-  std::vector<view1dr_d> vec1dr_out(1);
+
+  // Get outputs back, start with scalars
+  Kokkos::deep_copy(bab1_h, bab1_d);
+  bab1 = bab1_h();
+  Kokkos::deep_copy(bab2_h, bab2_d);
+  bab2 = bab2_h();
+
+  // Now get arrays
+  std::vector<view1dr_d> vec1dr_out = {baz_d};
   ekat::device_to_host({baz}, shcol, vec1dr_out);
 
-  std::vector<view1di_d> vec1di_out(2);
+  std::vector<view1di_d> vec1di_out = {ball1_d, ball2_d};
   ekat::device_to_host({ball1, ball2}, shcol, vec1di_out);
 
 #endif
@@ -933,7 +1115,7 @@ PTD_STD_DEF(DataSubName, 8, shcol, nlev, nlevi, ntracers, gag, bab1, bab2, val);
     ###########################################################################
     def test_cxx_func_decl(self):
     ###########################################################################
-        gb = GenBoiler([])
+        gb = GenBoiler("shoc")
         actual = gb.gen_cxx_func_decl("shoc", "fake_sub", force_arg_data=UT_ARG_DATA)
         expected = \
 """  KOKKOS_FUNCTION
@@ -952,8 +1134,9 @@ PTD_STD_DEF(DataSubName, 8, shcol, nlev, nlevi, ntracers, gag, bab1, bab2, val);
     const uview_1d<Spack>& baz,
     // Inputs
     const uview_1d<const Int>& bag,
-    // Outputs
+    // Inputs/Outputs
     Int& bab1,
+    // Outputs
     Int& bab2,
     // Inputs
     const bool& val,
@@ -971,7 +1154,7 @@ PTD_STD_DEF(DataSubName, 8, shcol, nlev, nlevi, ntracers, gag, bab1, bab2, val);
     ###########################################################################
     def test_cxx_incl_impl(self):
     ###########################################################################
-        gb = GenBoiler([])
+        gb = GenBoiler("shoc")
         actual = gb.gen_cxx_incl_impl("shoc", "fake_sub", force_arg_data=UT_ARG_DATA)
         expected = '# include "impl/shoc_fake_sub_impl.hpp"'
         self.assertEqual(expected, actual)
@@ -979,7 +1162,7 @@ PTD_STD_DEF(DataSubName, 8, shcol, nlev, nlevi, ntracers, gag, bab1, bab2, val);
     ###########################################################################
     def test_cxx_func_impl(self):
     ###########################################################################
-        gb = GenBoiler([])
+        gb = GenBoiler("shoc")
         actual = gb.gen_cxx_func_impl("shoc", "fake_sub", force_arg_data=UT_ARG_DATA)
         expected = \
 """template<typename S, typename D>
@@ -999,8 +1182,9 @@ void Functions<S,D>::fake_sub(
   const uview_1d<Spack>& baz,
   // Inputs
   const uview_1d<const Int>& bag,
-  // Outputs
+  // Inputs/Outputs
   Int& bab1,
+  // Outputs
   Int& bab2,
   // Inputs
   const bool& val,
@@ -1022,7 +1206,7 @@ void Functions<S,D>::fake_sub(
     ###########################################################################
     def test_cxx_bfb_unit_decl(self):
     ###########################################################################
-        gb = GenBoiler([])
+        gb = GenBoiler("shoc")
         actual = gb.gen_cxx_bfb_unit_decl("shoc", "fake_sub", force_arg_data=UT_ARG_DATA)
         expected = "    struct TestFakeSub;"
         self.assertEqual(expected, actual)
@@ -1030,7 +1214,7 @@ void Functions<S,D>::fake_sub(
     ###########################################################################
     def test_cxx_bfb_unit_impl(self):
     ###########################################################################
-        gb = GenBoiler([])
+        gb = GenBoiler("shoc")
         actual = gb.gen_cxx_bfb_unit_impl("shoc", "fake_sub", force_arg_data=UT_ARG_DATA)
         expected = \
 """  void run_bfb()
@@ -1040,7 +1224,7 @@ void Functions<S,D>::fake_sub(
     // Set up inputs
     FakeSubData baseline_data[] = {
       // TODO
-      // shcol, nlev, nlevi, ntracers, gag, val
+      // shcol, nlev, nlevi, ntracers, gag, bab1, val
       FakeSubData(),
     };
 
@@ -1105,7 +1289,7 @@ void Functions<S,D>::fake_sub(
     ###########################################################################
     def test_cxx_eti(self):
     ###########################################################################
-        gb = GenBoiler([])
+        gb = GenBoiler("shoc")
         actual = gb.gen_cxx_eti("shoc", "fake_sub", force_arg_data=UT_ARG_DATA)
         expected = \
 """#include "impl/shoc_fake_sub_impl.hpp"
@@ -1128,14 +1312,14 @@ template struct Functions<Real,DefaultDevice>;
     ###########################################################################
     def test_cmake_impl_eti(self):
     ###########################################################################
-        gb = GenBoiler([])
+        gb = GenBoiler("shoc")
         actual = gb.gen_cmake_impl_eti("shoc", "fake_sub", force_arg_data=UT_ARG_DATA)
         self.assertEqual("    eti/shoc_fake_sub.cpp", actual)
 
     ###########################################################################
     def test_cmake_unit_test(self):
     ###########################################################################
-        gb = GenBoiler([])
+        gb = GenBoiler("shoc")
         actual = gb.gen_cmake_unit_test("shoc", "fake_sub", force_arg_data=UT_ARG_DATA)
         self.assertEqual("    shoc_fake_sub_tests.cpp", actual)
 
@@ -1143,7 +1327,7 @@ template struct Functions<Real,DefaultDevice>;
     @patch('sys.stdout', new_callable=io.StringIO)
     def test_gen_piece_1(self, mock_stdout):
     ###########################################################################
-        gb = GenBoiler(dry_run=True)
+        gb = GenBoiler("shoc", dry_run=True)
         force_file_lines = [
             "fake_line_before_1",
             "fake_line_before_2",
@@ -1179,11 +1363,11 @@ void fake_sub_f(FakeSubData& d)
     @patch('sys.stdout', new_callable=io.StringIO)
     def test_gen_piece_2(self, mock_stdout):
     ###########################################################################
-        gb = GenBoiler(dry_run=True)
+        gb = GenBoiler("shoc", dry_run=True)
         force_file_lines = [
             "fake_line_before_1",
             "fake_line_before_2",
-            "// end _c impls",
+            "// end glue impls",
             "fake_line_after_1",
             "fake_line_after_2",
         ]
@@ -1206,21 +1390,21 @@ void fake_sub_f(FakeSubData& d)
     @patch('sys.stdout', new_callable=io.StringIO)
     def test_gen_piece_3(self, mock_stdout):
     ###########################################################################
-        gb = GenBoiler(dry_run=True)
+        gb = GenBoiler("shoc", dry_run=True)
         force_file_lines = [
             "fake_line_before_1",
             "fake_line_before_2",
-            "void fake_sub_c();",
+            "void fake_sub_bridge_f();",
             "fake_line_after_1",
             "fake_line_after_2",
         ]
         gb.gen_piece("shoc", "fake_sub", "cxx_c2f_bind_decl", force_arg_data=UT_ARG_DATA, force_file_lines=force_file_lines)
         expected = \
 """In file tests/infra/shoc_test_data.cpp, would replace:
-void fake_sub_c();
+void fake_sub_bridge_f();
 
 WITH:
-void fake_sub_c(Real* foo1, Real* foo2, Real* bar1, Real* bar2, Real* bak1, Real* bak2, Real* tracerd1, Real* tracerd2, Real gag, Real* baz, Int* bag, Int* bab1, Int* bab2, bool val, bool* vals, Int shcol, Int nlev, Int nlevi, Int ntracers, Int* ball1, Int* ball2);
+void fake_sub_bridge_f(Real* foo1, Real* foo2, Real* bar1, Real* bar2, Real* bak1, Real* bak2, Real* tracerd1, Real* tracerd2, Real gag, Real* baz, Int* bag, Int* bab1, Int* bab2, bool val, bool* vals, Int shcol, Int nlev, Int nlevi, Int ntracers, Int* ball1, Int* ball2);
 """
         output = mock_stdout.getvalue()
         line_by_line_compare(self, expected, output)

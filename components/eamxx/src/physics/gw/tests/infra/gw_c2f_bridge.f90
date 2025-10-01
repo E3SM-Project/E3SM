@@ -1,4 +1,4 @@
-module gw_iso_c
+module gw_c2f_bridge
   use iso_c_binding
   implicit none
 
@@ -15,7 +15,7 @@ module gw_iso_c
 
 contains
 
-  subroutine gw_common_init_c(pver_in, pgwv_in, dc_in, cref_in, orographic_only, do_molec_diff_in, tau_0_ubc_in, nbot_molec_in, ktop_in, kbotbg_in, fcrit2_in, kwv_in, gravit_in, rair_in, alpha_in) bind(C)
+  subroutine gw_common_init_bridge_f(pver_in, pgwv_in, dc_in, cref_in, orographic_only, do_molec_diff_in, tau_0_ubc_in, nbot_molec_in, ktop_in, kbotbg_in, fcrit2_in, kwv_in, gravit_in, rair_in, alpha_in) bind(C)
     use gw_common, only : gw_common_init
 
     integer(kind=c_int) , value, intent(in) :: pver_in, pgwv_in, nbot_molec_in, ktop_in, kbotbg_in
@@ -27,9 +27,9 @@ contains
     character(len=128) :: errstring
 
     call gw_common_init(pver_in, pgwv_in, dc_in, cref_in, orographic_only, do_molec_diff_in, tau_0_ubc_in, nbot_molec_in, ktop_in, kbotbg_in, fcrit2_in, kwv_in, gravit_in, rair_in, alpha_in, errstring)
-  end subroutine gw_common_init_c
+  end subroutine gw_common_init_bridge_f
 
-  subroutine gwd_compute_tendencies_from_stress_divergence_c(ncol, do_taper, dt, effgw, tend_level, lat, dpm, rdpm, c, ubm, t, nm, xv, yv, tau, gwut, utgw, vtgw) bind(C)
+  subroutine gwd_compute_tendencies_from_stress_divergence_bridge_f(ncol, do_taper, dt, effgw, tend_level, lat, dpm, rdpm, c, ubm, t, nm, xv, yv, tau, gwut, utgw, vtgw) bind(C)
     use gw_common, only : gwd_compute_tendencies_from_stress_divergence, pver, pgwv
 
     integer(kind=c_int) , value, intent(in) :: ncol
@@ -44,9 +44,9 @@ contains
     real(kind=c_real) , intent(out), dimension(ncol, pver) :: utgw, vtgw
 
     call gwd_compute_tendencies_from_stress_divergence(ncol, pgwv, do_taper, dt, effgw, tend_level, lat, dpm, rdpm, c, ubm, t, nm, xv, yv, tau, gwut, utgw, vtgw)
-  end subroutine gwd_compute_tendencies_from_stress_divergence_c
+  end subroutine gwd_compute_tendencies_from_stress_divergence_bridge_f
 
-  subroutine gw_prof_c(ncol, cpair, t, pmid, pint, rhoi, ti, nm, ni) bind(C)
+  subroutine gw_prof_bridge_f(ncol, cpair, t, pmid, pint, rhoi, ti, nm, ni) bind(C)
     use gw_common, only : gw_prof, pver
 
     integer(kind=c_int) , value, intent(in) :: ncol
@@ -57,9 +57,9 @@ contains
     real(kind=c_real) , intent(out), dimension(ncol, pver) :: nm
 
     call gw_prof(ncol, cpair, t, pmid, pint, rhoi, ti, nm, ni)
-  end subroutine gw_prof_c
+  end subroutine gw_prof_bridge_f
 
-  subroutine momentum_energy_conservation_c(ncol, tend_level, dt, taucd, pint, pdel, u, v, dudt, dvdt, dsdt, utgw, vtgw, ttgw) bind(C)
+  subroutine momentum_energy_conservation_bridge_f(ncol, tend_level, dt, taucd, pint, pdel, u, v, dudt, dvdt, dsdt, utgw, vtgw, ttgw) bind(C)
     use gw_common, only : momentum_energy_conservation, pver
 
     integer(kind=c_int) , value, intent(in) :: ncol
@@ -72,9 +72,9 @@ contains
     real(kind=c_real) , intent(inout), dimension(ncol, pver) :: utgw, vtgw, ttgw
 
     call momentum_energy_conservation(ncol, tend_level, dt, taucd, pint, pdel, u, v, dudt, dvdt, dsdt, utgw, vtgw, ttgw)
-  end subroutine momentum_energy_conservation_c
+  end subroutine momentum_energy_conservation_bridge_f
 
-  subroutine gwd_compute_stress_profiles_and_diffusivities_c(ncol, src_level, ubi, c, rhoi, ni, kvtt, t, ti, piln, tau) bind(C)
+  subroutine gwd_compute_stress_profiles_and_diffusivities_bridge_f(ncol, src_level, ubi, c, rhoi, ni, kvtt, t, ti, piln, tau) bind(C)
     use gw_common, only : gwd_compute_stress_profiles_and_diffusivities, pver, pgwv
 
     integer(kind=c_int) , value, intent(in) :: ncol
@@ -85,9 +85,9 @@ contains
     real(kind=c_real) , intent(inout), dimension(ncol, -pgwv:pgwv, 0:pver) :: tau
 
     call gwd_compute_stress_profiles_and_diffusivities(ncol, pgwv, src_level, ubi, c, rhoi, ni, kvtt, t, ti, piln, tau)
-  end subroutine gwd_compute_stress_profiles_and_diffusivities_c
+  end subroutine gwd_compute_stress_profiles_and_diffusivities_bridge_f
 
-  subroutine gwd_project_tau_c(ncol, tend_level, tau, ubi, c, xv, yv, taucd) bind(C)
+  subroutine gwd_project_tau_bridge_f(ncol, tend_level, tau, ubi, c, xv, yv, taucd) bind(C)
     use gw_common, only : gwd_project_tau, pver, pgwv
 
     integer(kind=c_int) , value, intent(in) :: ncol
@@ -99,9 +99,9 @@ contains
     real(kind=c_real) , intent(out), dimension(ncol, 0:pver, 4) :: taucd
 
     call gwd_project_tau(ncol, pgwv, tend_level, tau, ubi, c, xv, yv, taucd)
-  end subroutine gwd_project_tau_c
+  end subroutine gwd_project_tau_bridge_f
 
-  subroutine gwd_precalc_rhoi_c(pcnst, ncol, dt, tend_level, pmid, pint, t, gwut, ubm, nm, rdpm, c, q, dse, egwdffi, qtgw, dttdf, dttke, ttgw) bind(C)
+  subroutine gwd_precalc_rhoi_bridge_f(pcnst, ncol, dt, tend_level, pmid, pint, t, gwut, ubm, nm, rdpm, c, q, dse, egwdffi, qtgw, dttdf, dttke, ttgw) bind(C)
     use gw_common, only : gwd_precalc_rhoi, pver, pgwv
 
     integer(kind=c_int) , value, intent(in) :: pcnst, ncol
@@ -117,9 +117,9 @@ contains
     real(kind=c_real) , intent(out), dimension(ncol, pver) :: dttdf, dttke, ttgw
 
     call gwd_precalc_rhoi(ncol, pgwv, dt, tend_level, pmid, pint, t, gwut, ubm, nm, rdpm, c, q, dse, egwdffi, qtgw, dttdf, dttke, ttgw)
-  end subroutine gwd_precalc_rhoi_c
+  end subroutine gwd_precalc_rhoi_bridge_f
 
-  subroutine gw_drag_prof_c(pcnst, ncol, src_level, tend_level, do_taper, dt, lat, t, ti, pmid, pint, dpm, rdpm, piln, rhoi, nm, ni, ubm, ubi, xv, yv, effgw, c, kvtt, q, dse, tau, utgw, vtgw, ttgw, qtgw, taucd, egwdffi, gwut, dttdf, dttke) bind(C)
+  subroutine gw_drag_prof_bridge_f(pcnst, ncol, src_level, tend_level, do_taper, dt, lat, t, ti, pmid, pint, dpm, rdpm, piln, rhoi, nm, ni, ubm, ubi, xv, yv, effgw, c, kvtt, q, dse, tau, utgw, vtgw, ttgw, qtgw, taucd, egwdffi, gwut, dttdf, dttke) bind(C)
     use gw_common, only : gw_drag_prof, pver, pgwv
 
     integer(kind=c_int) , value, intent(in) :: pcnst, ncol
@@ -139,9 +139,9 @@ contains
     real(kind=c_real) , intent(out), dimension(ncol, pver, -pgwv:pgwv) :: gwut
 
     call gw_drag_prof(ncol, pgwv, src_level, tend_level, do_taper, dt, lat, t, ti, pmid, pint, dpm, rdpm, piln, rhoi, nm, ni, ubm, ubi, xv, yv, effgw, c, kvtt, q, dse, tau, utgw, vtgw, ttgw, qtgw, taucd, egwdffi, gwut, dttdf, dttke)
-  end subroutine gw_drag_prof_c
+  end subroutine gw_drag_prof_bridge_f
 
-  subroutine gw_front_init_c(taubgnd, frontgfc_in, kfront_in) bind(C)
+  subroutine gw_front_init_bridge_f(taubgnd, frontgfc_in, kfront_in) bind(C)
     use gw_front, only : gw_front_init
 
     real(kind=c_real) , value, intent(in) :: taubgnd, frontgfc_in
@@ -150,9 +150,9 @@ contains
     character(len=128) :: errstring
 
     call gw_front_init(taubgnd, frontgfc_in, kfront_in, errstring)
-  end subroutine gw_front_init_c
+  end subroutine gw_front_init_bridge_f
 
-  subroutine gw_front_project_winds_c(ncol, kbot, u, v, xv, yv, ubm, ubi) bind(C)
+  subroutine gw_front_project_winds_bridge_f(ncol, kbot, u, v, xv, yv, ubm, ubi) bind(C)
     use gw_common, only : pver
     use gw_front, only : gw_front_project_winds
 
@@ -163,9 +163,9 @@ contains
     real(kind=c_real) , intent(out), dimension(ncol, 0:pver) :: ubi
 
     call gw_front_project_winds(ncol, kbot, u, v, xv, yv, ubm, ubi)
-  end subroutine gw_front_project_winds_c
+  end subroutine gw_front_project_winds_bridge_f
 
-  subroutine gw_front_gw_sources_c(ncol, kbot, frontgf, tau) bind(C)
+  subroutine gw_front_gw_sources_bridge_f(ncol, kbot, frontgf, tau) bind(C)
     use gw_common, only : pver, pgwv
     use gw_front, only : gw_front_gw_sources
 
@@ -174,9 +174,9 @@ contains
     real(kind=c_real) , intent(out), dimension(ncol, -pgwv:pgwv, 0:pver) :: tau
 
     call gw_front_gw_sources(ncol, pgwv, kbot, frontgf, tau)
-  end subroutine gw_front_gw_sources_c
+  end subroutine gw_front_gw_sources_bridge_f
 
-  subroutine gw_cm_src_c(ncol, kbot, u, v, frontgf, src_level, tend_level, tau, ubm, ubi, xv, yv, c) bind(C)
+  subroutine gw_cm_src_bridge_f(ncol, kbot, u, v, frontgf, src_level, tend_level, tau, ubm, ubi, xv, yv, c) bind(C)
     use gw_common, only : pver, pgwv
     use gw_front, only : gw_cm_src
 
@@ -191,9 +191,9 @@ contains
     real(kind=c_real) , intent(out), dimension(ncol, -pgwv:pgwv) :: c
 
     call gw_cm_src(ncol, pgwv, kbot, u, v, frontgf, src_level, tend_level, tau, ubm, ubi, xv, yv, c)
-  end subroutine gw_cm_src_c
+  end subroutine gw_cm_src_bridge_f
 
-  subroutine gw_convect_init_c(maxh, maxuh, plev_src_wind, mfcc_in) bind(C)
+  subroutine gw_convect_init_bridge_f(maxh, maxuh, plev_src_wind, mfcc_in) bind(C)
     use gw_common, only : pgwv
     use gw_convect, only : gw_convect_init
 
@@ -204,9 +204,9 @@ contains
     character(len=128) :: errstring
 
     call gw_convect_init(plev_src_wind, mfcc_in, errstring)
-  end subroutine gw_convect_init_c
+  end subroutine gw_convect_init_bridge_f
 
-  subroutine gw_convect_project_winds_c(ncol, u, v, xv, yv, ubm, ubi) bind(C)
+  subroutine gw_convect_project_winds_bridge_f(ncol, u, v, xv, yv, ubm, ubi) bind(C)
     use gw_common, only : pver
     use gw_convect, only : gw_convect_project_winds
 
@@ -217,9 +217,9 @@ contains
     real(kind=c_real) , intent(out), dimension(ncol, 0:pver) :: ubi
 
     call gw_convect_project_winds(ncol, u, v, xv, yv, ubm, ubi)
-  end subroutine gw_convect_project_winds_c
+  end subroutine gw_convect_project_winds_bridge_f
 
-  subroutine gw_heating_depth_c(ncol, maxq0_conversion_factor, hdepth_scaling_factor, use_gw_convect_old, zm, netdt, mini, maxi, hdepth, maxq0_out, maxq0) bind(C)
+  subroutine gw_heating_depth_bridge_f(ncol, maxq0_conversion_factor, hdepth_scaling_factor, use_gw_convect_old, zm, netdt, mini, maxi, hdepth, maxq0_out, maxq0) bind(C)
     use gw_common, only : pver
     use gw_convect, only : gw_heating_depth
 
@@ -232,9 +232,9 @@ contains
     real(kind=c_real) , intent(out), dimension(ncol) :: hdepth, maxq0_out, maxq0
 
     call gw_heating_depth(ncol, maxq0_conversion_factor, hdepth_scaling_factor, use_gw_convect_old, zm, netdt, mini, maxi, hdepth, maxq0_out, maxq0)
-  end subroutine gw_heating_depth_c
+  end subroutine gw_heating_depth_bridge_f
 
-  subroutine gw_storm_speed_c(ncol, storm_speed_min, ubm, mini, maxi, storm_speed, uh, umin, umax) bind(C)
+  subroutine gw_storm_speed_bridge_f(ncol, storm_speed_min, ubm, mini, maxi, storm_speed, uh, umin, umax) bind(C)
     use gw_common, only : pver
     use gw_convect, only : gw_storm_speed
 
@@ -246,9 +246,9 @@ contains
     real(kind=c_real) , intent(out), dimension(ncol) :: uh, umin, umax
 
     call gw_storm_speed(ncol, storm_speed_min, ubm, mini, maxi, storm_speed, uh, umin, umax)
-  end subroutine gw_storm_speed_c
+  end subroutine gw_storm_speed_bridge_f
 
-  subroutine gw_convect_gw_sources_c(ncol, lat, hdepth_min, hdepth, mini, maxi, netdt, uh, storm_speed, maxq0, umin, umax, tau) bind(C)
+  subroutine gw_convect_gw_sources_bridge_f(ncol, lat, hdepth_min, hdepth, mini, maxi, netdt, uh, storm_speed, maxq0, umin, umax, tau) bind(C)
     use gw_common, only : pver, pgwv
     use gw_convect, only : gw_convect_gw_sources
 
@@ -260,9 +260,9 @@ contains
     real(kind=c_real) , intent(out), dimension(ncol, -pgwv:pgwv, 0:pver) :: tau
 
     call gw_convect_gw_sources(ncol, pgwv, lat, hdepth_min, hdepth, mini, maxi, netdt, uh, storm_speed, maxq0, umin, umax, tau)
-  end subroutine gw_convect_gw_sources_c
+  end subroutine gw_convect_gw_sources_bridge_f
 
-  subroutine gw_beres_src_c(ncol, lat, u, v, netdt, zm, src_level, tend_level, tau, ubm, ubi, xv, yv, c, hdepth, maxq0_out, maxq0_conversion_factor, hdepth_scaling_factor, hdepth_min, storm_speed_min, use_gw_convect_old) bind(C)
+  subroutine gw_beres_src_bridge_f(ncol, lat, u, v, netdt, zm, src_level, tend_level, tau, ubm, ubi, xv, yv, c, hdepth, maxq0_out, maxq0_conversion_factor, hdepth_scaling_factor, hdepth_min, storm_speed_min, use_gw_convect_old) bind(C)
     use gw_common, only : pver, pgwv
     use gw_convect, only : gw_beres_src
 
@@ -280,9 +280,9 @@ contains
     logical(kind=c_bool) , value, intent(in) :: use_gw_convect_old
 
     call gw_beres_src(ncol, pgwv, lat, u, v, netdt, zm, src_level, tend_level, tau, ubm, ubi, xv, yv, c, hdepth, maxq0_out, maxq0_conversion_factor, hdepth_scaling_factor, hdepth_min, storm_speed_min, use_gw_convect_old)
-  end subroutine gw_beres_src_c
+  end subroutine gw_beres_src_bridge_f
 
-  subroutine gw_ediff_c(ncol, kbot, ktop, tend_level, gwut, ubm, nm, rho, dt, gravit, pmid, rdpm, c, egwdffi, decomp_ca, decomp_cc, decomp_dnom, decomp_ze) bind(C)
+  subroutine gw_ediff_bridge_f(ncol, kbot, ktop, tend_level, gwut, ubm, nm, rho, dt, gravit, pmid, rdpm, c, egwdffi, decomp_ca, decomp_cc, decomp_dnom, decomp_ze) bind(C)
     use gw_common, only : pver, pgwv
     use gw_diffusion, only : gw_ediff
     use vdiff_lu_solver, only: lu_decomp
@@ -307,9 +307,9 @@ contains
 
     call decomp%finalize()
 
-  end subroutine gw_ediff_c
+  end subroutine gw_ediff_bridge_f
 
-  subroutine gw_diff_tend_c(ncol, kbot, ktop, q, dt, decomp_ca, decomp_cc, decomp_dnom, decomp_ze, dq) bind(C)
+  subroutine gw_diff_tend_bridge_f(ncol, kbot, ktop, q, dt, decomp_ca, decomp_cc, decomp_dnom, decomp_ze, dq) bind(C)
     use gw_common, only : pver
     use gw_diffusion, only : gw_diff_tend
     use vdiff_lu_solver, only: lu_decomp
@@ -331,17 +331,17 @@ contains
     call gw_diff_tend(ncol, pver, kbot, ktop, q, dt, decomp, dq)
 
     call decomp%finalize()
-  end subroutine gw_diff_tend_c
+  end subroutine gw_diff_tend_bridge_f
 
-  subroutine gw_oro_init_c() bind(C)
+  subroutine gw_oro_init_bridge_f() bind(C)
     use gw_oro, only : gw_oro_init
 
     character(len=128) :: errstring
 
     call gw_oro_init(errstring)
-  end subroutine gw_oro_init_c
+  end subroutine gw_oro_init_bridge_f
 
-  subroutine gw_oro_src_c(ncol, u, v, t, sgh, pmid, pint, dpm, zm, nm, src_level, tend_level, tau, ubm, ubi, xv, yv, c) bind(C)
+  subroutine gw_oro_src_bridge_f(ncol, u, v, t, sgh, pmid, pint, dpm, zm, nm, src_level, tend_level, tau, ubm, ubi, xv, yv, c) bind(C)
     use gw_common, only : pver, pgwv
     use gw_oro, only : gw_oro_src
 
@@ -357,9 +357,9 @@ contains
     real(kind=c_real) , intent(out), dimension(ncol, -pgwv:pgwv) :: c
 
     call gw_oro_src(ncol, u, v, t, sgh, pmid, pint, dpm, zm, nm, src_level, tend_level, tau, ubm, ubi, xv, yv, c)
-  end subroutine gw_oro_src_c
+  end subroutine gw_oro_src_bridge_f
 
-  subroutine vd_lu_decomp_c(ncol, ksrf, kv, tmpi, rpdel, ztodt, gravit, cc_top, ntop, nbot, decomp_ca, decomp_cc, decomp_dnom, decomp_ze) bind(C)
+  subroutine vd_lu_decomp_bridge_f(ncol, ksrf, kv, tmpi, rpdel, ztodt, gravit, cc_top, ntop, nbot, decomp_ca, decomp_cc, decomp_dnom, decomp_ze) bind(C)
     use vdiff_lu_solver, only: lu_decomp, vd_lu_decomp
     use gw_common, only : pver
 
@@ -379,9 +379,9 @@ contains
     decomp_ze = decomp%ze
 
     call decomp%finalize()
-  end subroutine vd_lu_decomp_c
+  end subroutine vd_lu_decomp_bridge_f
 
-  subroutine vd_lu_solve_c(ncol, q, decomp_ca, decomp_cc, decomp_dnom, decomp_ze, ntop, nbot, cd_top) bind(C)
+  subroutine vd_lu_solve_bridge_f(ncol, q, decomp_ca, decomp_cc, decomp_dnom, decomp_ze, ntop, nbot, cd_top) bind(C)
     use vdiff_lu_solver, only: lu_decomp, vd_lu_solve
     use gw_common, only : pver
 
@@ -400,5 +400,5 @@ contains
     call vd_lu_solve(ncol, pver, ncol, q, decomp, ntop, nbot, cd_top)
 
     call decomp%finalize()
-  end subroutine vd_lu_solve_c
-end module gw_iso_c
+  end subroutine vd_lu_solve_bridge_f
+end module gw_c2f_bridge

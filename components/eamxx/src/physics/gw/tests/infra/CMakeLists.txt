@@ -1,6 +1,6 @@
 set(INFRA_SRCS
   gw_test_data.cpp
-  gw_iso_c.f90
+  gw_c2f_bridge.f90
 )
 
 add_library(gw_test_infra ${INFRA_SRCS})
