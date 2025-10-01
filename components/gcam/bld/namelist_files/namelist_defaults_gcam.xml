@@ -80,6 +80,7 @@ for the iac data in the e3sm distribution
 <gcam2elm_cdensity_mapping_file>iac/giac/gcam/gcam_6_0/mappings/cdensity.xml</gcam2elm_cdensity_mapping_file>
 
 <!-- Grid and mapping and initialization files with relative paths from inputdata directory -->
+<gcam_gridfile hgrid="r125">iac/giac/glm2iac/landuse.timeseries_0.125x0.125_HIST_simyr2015_c241205.nc</gcam_gridfile>
 <gcam_gridfile hgrid="r025">iac/giac/glm2iac/landuse.timeseries_0.25x0.25_HIST_simyr2015_c250312.nc</gcam_gridfile>
 <gcam_gridfile hgrid="r05">iac/giac/glm2iac/landuse.timeseries_0.5x0.5_HIST_simyr2015_c241204.nc</gcam_gridfile>
 <gcam_gridfile hgrid="0.9x1.25">iac/giac/glm2iac/landuse.timeseries_0.9x1.25_HIST_simyr2015_c201021.nc</gcam_gridfile>
