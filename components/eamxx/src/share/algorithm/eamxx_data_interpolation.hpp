@@ -132,6 +132,9 @@ protected:
   bool                  m_time_db_created   = false;
   bool                  m_data_initialized  = false;
 
+  bool                  m_fields_have_col_dim = false;
+  bool                  m_fields_have_lev_dim = false;
+
   std::shared_ptr<ekat::logger::LoggerBase> m_logger;
 };
 
