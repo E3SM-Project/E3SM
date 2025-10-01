@@ -911,6 +911,7 @@ contains
       integer                                        :: num_veg_patches
       integer                                        :: nsites
       integer                                        :: gridcell_index
+      integer                                        :: c1, c2
 
       real(r8), allocatable :: landuse_pft_map(:,:,:)
       real(r8), allocatable :: landuse_bareground(:)
@@ -1042,7 +1043,7 @@ contains
             end if
 
          end do
-
+         
          ! ! Allocate map from FATES patchno index to HLM patch index by site
          ! allocate(this%f2hmap(nc)%hlm_patch_index(fates_maxPatchesperSite,s))
 
@@ -1084,6 +1085,17 @@ contains
          ! This also needs
          call set_bcpconst(this%fates(nc)%bc_pconst,nlevdecomp)
 
+         do p = 1, num_veg_patches
+            s = sitelist(p)
+            c1 = this%fates(nc)%fcolumn(s)
+            c2 = this%fates(bc)%register(p)%GetColumnIndex()
+            if (c1 /= c2 ) then
+               write(iulog,*) ' columns do not match: s, c1, c2: ', s, c1, c2
+               call endrun(msg=errMsg(sourcefile, __LINE__))
+            end if
+            
+         end do
+         
          do s = 1, this%fates(nc)%nsites
 
             ! TODO: Assign column_map and patch_map values
