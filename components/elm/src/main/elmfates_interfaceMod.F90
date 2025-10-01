@@ -878,6 +878,7 @@ contains
       use elm_varsur,               only : wt_nat_patch
       use topounit_varcon,          only : max_topounits, has_topounit
       use FATESFireFactoryMod,      only : create_fates_fire_data_method
+      use FatesConstantsMod,        only : fates_unset_int
 
       implicit none
 
@@ -901,12 +902,15 @@ contains
       integer                                        :: p         ! patch index
       integer, allocatable                           :: collist (:)
       integer, allocatable                           :: patchlist(:)
+      integer, allocatable                           :: sitelist(:)
       type(bounds_type)                              :: bounds_clump
       integer                                        :: nmaxcol
       integer                                        :: ndecomp
       integer                                        :: numg
       integer                                        :: num_landunits_veg
       integer                                        :: num_veg_patches
+      integer                                        :: nsites
+      integer                                        :: gridcell_index
 
       real(r8), allocatable :: landuse_pft_map(:,:,:)
       real(r8), allocatable :: landuse_bareground(:)
@@ -1001,17 +1005,33 @@ contains
 
          ! Iterate over all patches in this clump and determine the maximum number of non-crop
          ! vegetated patches.  These correspond to the fates patches.
+         nsites = 0
          num_veg_patches = 0
+         gridcell_index = fates_unset_int
          nmaxpatches = bounds_clump%endp - bounds_clump%begp + 1
          allocate(patchlist(nmaxpatches))
+         allocate(sitelist(nmaxpatches))
+         patchlist(:) = fates_unset_int
+         sitelist(:) = fates_unset_int
+
          do p = bounds_clump%begp, bounds_clump%endp
             c = veg_pp%column(p)
+            g = veg_pp%gridcell(p)
             
             ! If the column is a soil type, then the patch associated with it a vegetated patch, per initGridCells()
+            ! We don't use lun_pp%itype == istsoil here as crops can live on landunits with this type
             ! Record the patch index to the temporary patchlist
             if (col_pp%itype(c) == istsoil) then
+               
                num_veg_patches = num_veg_patches + 1
                patchlist(num_veg_patches) = p
+               
+               if (veg_pp%gridcell /= gridcell_index) then
+                  gridcell_index = veg_pp%gridcell(p)
+                  nsites = nsites + 1
+               end if
+               sitelist(num_veg_patches) = nsites
+                  
             end if
 
          end do
