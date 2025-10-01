@@ -999,13 +999,6 @@ contains
          ! Assign the h2hmap indexing
          this%f2hmap(nc)%fcolumn(1:s)         =  collist(1:s)
 
-         ! Deallocate the temporary arrays
-         deallocate(collist)
-
-         if(debug)then
-           write(iulog,*) 'alm_fates%init(): thread',nc,': allocated ',s,' sites'
-         end if
-
          ! Iterate over all patches in this clump and determine the maximum number of non-crop
          ! vegetated patches.  These correspond to the fates patches.
          num_veg_patches = 0
@@ -1022,6 +1015,13 @@ contains
             end if
 
          end do
+
+         ! Deallocate the temporary arrays
+         deallocate(collist)
+
+         if(debug)then
+           write(iulog,*) 'alm_fates%init(): thread',nc,': allocated ',s,' sites'
+         end if
 
          ! ! Allocate map from FATES patchno index to HLM patch index by site
          ! allocate(this%f2hmap(nc)%hlm_patch_index(fates_maxPatchesperSite,s))
