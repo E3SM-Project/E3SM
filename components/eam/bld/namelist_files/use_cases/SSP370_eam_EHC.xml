@@ -85,7 +85,6 @@
 <bndtvghg>atm/cam/ggas/GHG_CMIP_SSP370-1-2-1_Annual_Global_2015-2500_c20210509.nc</bndtvghg>
 
 <!-- Time-variant CO2 fossil fuel emissions -->
-<aircraft_datapath>atm/cam/chem/trop_mozart_aero/emis/GCAM_E3SM_SSP370/co2_emission_data_SSP370_GCAM/</aircraft_datapath>
 <co2_readFlux_aircraft>.false.</co2_readFlux_aircraft>
 <co2_readFlux_fuel>.false.</co2_readFlux_fuel>
 <co2_readFlux_ocn>.true.</co2_readFlux_ocn>
