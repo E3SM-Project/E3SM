@@ -56,7 +56,8 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
 
   // Layout for 3D (2d horiz X 1d vertical) variable defined at mid-level and interfaces
   FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols,m_num_levs} };
-
+  FieldLayout scalar3d_layout_int { {COL,ILEV}, {m_num_cols,m_num_levs+1} };
+  
   // Define fields needed in P3.
   // Note: p3_main is organized by a set of 5 structures, variables below are organized
   //       using the same approach to make it easier to follow.
@@ -126,6 +127,8 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   add_field<Computed>("precip_total_tend",       scalar3d_layout_mid, kg/(kg*s), grid_name, ps);
   add_field<Computed>("nevapr",                  scalar3d_layout_mid, kg/(kg*s), grid_name, ps);
   add_field<Computed>("diag_equiv_reflectivity", scalar3d_layout_mid, nondim,    grid_name, ps);
+  add_field<Updated>("precip_liq_flux", scalar3d_layout_int, kg/m2, grid_name, "ACCUMULATED", ps);
+  add_field<Updated>("precip_ice_flux", scalar3d_layout_int, kg/m2, grid_name, "ACCUMULATED", ps);
   if (runtime_options.extra_p3_diags) {
     add_field<Computed>("qr2qv_evap", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
     add_field<Computed>("qi2qv_sublim", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
@@ -390,15 +393,13 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   diag_outputs.precip_total_tend       = get_field_out("precip_total_tend").get_view<Pack**>();
   diag_outputs.nevapr                  = get_field_out("nevapr").get_view<Pack**>();
   diag_outputs.diag_equiv_reflectivity = get_field_out("diag_equiv_reflectivity").get_view<Pack**>();
-  diag_outputs.precip_liq_flux  = get_field_out("precip_liq_flux").get_view<Pack**>();
-  diag_outputs.precip_ice_flux  = get_field_out("precip_ice_flux").get_view<Pack**>();
+  diag_outputs.precip_liq_flux         = get_field_out("precip_liq_flux").get_view<Pack**>();
+  diag_outputs.precip_ice_flux         = get_field_out("precip_ice_flux").get_view<Pack**>();
 
-//  diag_outputs.precip_liq_surf  = m_buffer.precip_liq_surf_flux;
-//  diag_outputs.precip_ice_surf  = m_buffer.precip_ice_surf_flux;
+  diag_outputs.precip_liq_surf  = m_buffer.precip_liq_surf_flux;
+  diag_outputs.precip_ice_surf  = m_buffer.precip_ice_surf_flux;
   diag_outputs.qv2qi_depos_tend = m_buffer.qv2qi_depos_tend;
   diag_outputs.rho_qi           = m_buffer.rho_qi;
-  diag_outputs.precip_liq_flux  = m_buffer.precip_liq_flux;
-  diag_outputs.precip_ice_flux  = m_buffer.precip_ice_flux;
   // -- Infrastructure, what is left to assign
   infrastructure.col_location = m_buffer.col_location; // TODO: Initialize this here and now when P3 has access to lat/lon for each column.
   // --History Only
