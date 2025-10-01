@@ -1009,7 +1009,6 @@ contains
          ! Iterate over all patches in this clump and determine the maximum number of non-crop
          ! vegetated patches.  These correspond to the fates patches.
          num_veg_patches = 0
-         i = 0
          nmaxpatches = bounds_clump%endp - bounds_clump%begp + 1
          allocate(patchlist(nmaxpatches))
          do p = bounds_clump%begp, bounds_clump%endp
@@ -1019,8 +1018,7 @@ contains
             ! Record the patch index to the temporary patchlist
             if (col_pp%itype(c) == istsoil) then
                num_veg_patches = num_veg_patches + 1
-               i = i + 1
-               patchlist(i) = p
+               patchlist(num_veg_patches) = p
             end if
 
          end do
