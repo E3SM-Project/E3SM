@@ -1,6 +1,6 @@
 #include "catch2/catch.hpp"
 
-#include "physics/share/physics_test_data.hpp"
+#include "share/physics/physics_test_data.hpp"
 #include "physics_unit_tests_common.hpp"
 #include "share/core/eamxx_setup_random_test.hpp"
 #include "share/core/eamxx_types.hpp"

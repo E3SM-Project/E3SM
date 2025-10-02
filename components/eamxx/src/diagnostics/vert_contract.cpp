@@ -1,6 +1,6 @@
 #include "diagnostics/vert_contract.hpp"
 
-#include "physics/share/physics_constants.hpp"
+#include "share/physics/physics_constants.hpp"
 #include "share/field/field_utils.hpp"
 #include "share/physics/eamxx_common_physics_functions.hpp"
 

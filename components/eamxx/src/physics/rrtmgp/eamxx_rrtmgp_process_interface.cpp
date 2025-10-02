@@ -2,7 +2,7 @@
 #include "physics/rrtmgp/eamxx_rrtmgp_process_interface.hpp"
 #include "physics/rrtmgp/rrtmgp_utils.hpp"
 #include "physics/rrtmgp/shr_orb_mod_c2f.hpp"
-#include "physics/share/eamxx_trcmix.hpp"
+#include "share/physics/eamxx_trcmix.hpp"
 
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 #include "share/algorithm/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp"

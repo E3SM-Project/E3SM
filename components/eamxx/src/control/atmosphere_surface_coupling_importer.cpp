@@ -1,7 +1,7 @@
 #include "atmosphere_surface_coupling_importer.hpp"
 
 #include "share/property_checks/field_within_interval_check.hpp"
-#include "physics/share/physics_constants.hpp"
+#include "share/physics/physics_constants.hpp"
 
 #include <ekat_assert.hpp>
 #include <ekat_units.hpp>
