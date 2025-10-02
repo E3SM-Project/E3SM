@@ -285,7 +285,7 @@ _TESTS = {
             )
         },
 
-    # experimental eamxx nbfb tests (elr: ne4, lr: ne30)
+    # experimental eamxx nbfb tests (ulr: ne4, lr: ne30)
     "eamxx_nbfb_ulr": {
         "tests": (
             "MVKxx_Ly1.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-mvkpert",
@@ -297,7 +297,7 @@ _TESTS = {
         )
     },
     "eamxx_nbfb": {
-        "inherit": ("eamxx_nbfb_ulr", "eamxx_nbfb_lr"),
+        "inherit": ("eamxx_nbfb_ulr"),
     },
 
     #ocean non bit-for-bit test
@@ -308,7 +308,7 @@ _TESTS = {
         },
 
     "e3sm_nbfb": {
-        "inherit": ("e3sm_atm_nbfb", "e3sm_ocn_nbfb", "eamxx_nbfb_lr")
+        "inherit": ("e3sm_atm_nbfb", "e3sm_ocn_nbfb", "eamxx_nbfb_ulr")
     },
 
     "e3sm_ocnice_stealth_features" : {
@@ -770,9 +770,6 @@ _TESTS = {
 
     "e3sm_eamxx_v1_medres" : {
         "time"  : "02:00:00",
-        "inherit" : (
-            "eamxx_nbfb_lr",
-        ),
         "tests" : (
             #  "SMS_D_Ln2.ne30_ne30.F2000-SCREAMv1-AQP1", # Uncomment once IC file for ne30 is ready
             "ERS_Ln22.ne30_ne30.F2010-SCREAMv1.eamxx-internal_diagnostics_level--eamxx-output-preset-3",
@@ -814,7 +811,7 @@ _TESTS = {
     "e3sm_eamxx_v1_long" : {
         "time"  : "01:00:00",
         "inherit" : (
-            "eamxx_nbfb_lr",
+            "eamxx_nbfb_ulr",
         ),
         "tests" : (
             "ERP_D_Lh182.ne4pg2_ne4pg2.F2010-SCREAMv1",
