@@ -28,6 +28,9 @@ add_subdirectory(data_managers)
 # Atm process
 add_subdirectory(atm_process)
 
+# Diagnostic classes
+add_subdirectory(diagnostics)
+
 set(SHARE_SRC
   algorithm/eamxx_data_interpolation.cpp
   algorithm/eamxx_fv_phys_rrtmgp_active_gases_workaround.cpp
@@ -51,7 +54,8 @@ target_link_libraries(scream_share PUBLIC
   eamxx_remap
   eamxx_property_checks
   eamxx_data_managers
-  eamxx_atm_process)
+  eamxx_atm_process
+  eamxx_diagnostics)
 
 # Used in the data interpolation
 target_link_libraries(scream_share PUBLIC stdc++fs)

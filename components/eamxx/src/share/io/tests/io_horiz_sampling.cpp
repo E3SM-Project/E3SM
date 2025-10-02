@@ -1,7 +1,7 @@
 #include <catch2/catch.hpp>
 #include <memory>
 
-#include "diagnostics/register_diagnostics.hpp"
+#include "share/diagnostics/register_diagnostics.hpp"
 
 #include "share/io/eamxx_output_manager.hpp"
 #include "share/io/scorpio_input.hpp"
