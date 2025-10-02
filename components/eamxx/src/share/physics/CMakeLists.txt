@@ -1,12 +1,12 @@
 add_library (eamxx_physics_share
-  physics_share_f2c.F90
-  physics_share.cpp
   eamxx_trcmix.cpp
 )
 
 # Add ETI source files if not on CUDA/HIP
 if (NOT EAMXX_ENABLE_GPU)
   target_sources(eamxx_physics_share PRIVATE
+    physics_share_f2c.F90
+    physics_share.cpp
     physics_saturation.cpp)
 endif()
 
