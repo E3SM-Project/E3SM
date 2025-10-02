@@ -572,7 +572,11 @@ if (SCREAM_DOUBLE_PRECISION)
     set(SCREAM_Fortran_FLAGS -real-size 64)
   elseif("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "Cray")
     set(SCREAM_Fortran_FLAGS -s default32 -eZ)
-  else()
+  elseif("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "NVHPC")
+    #set(SCREAM_Fortran_FLAGS -real-size=8 -double-size=8) # these are nvidia flags, but dont need, already supports IEEE 754 floating-point standard
+  elseif("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "GNU")
+    set(SCREAM_Fortran_FLAGS -fdefault-real-8 -fdefault-double-8)
+  else() # default, currently same as GNU
     set(SCREAM_Fortran_FLAGS -fdefault-real-8 -fdefault-double-8)
   endif()
 endif()

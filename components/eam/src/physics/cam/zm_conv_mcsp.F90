@@ -27,15 +27,21 @@ module zm_conv_mcsp
    !     https://doi.org/10.1029/2019GL085316
    !
    !----------------------------------------------------------------------------
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   use zm_eamxx_bridge_params, only: r8, pcols, pver, pverp
+#else
    use shr_kind_mod,     only: r8=>shr_kind_r8
    use cam_abortutils,   only: endrun
    use cam_logfile,      only: iulog
+#endif
    use zm_conv_types,    only: zm_const_t, zm_param_t
 
    implicit none
    private
 
+#ifndef SCREAM_CONFIG_IS_CMAKE
    public :: zm_conv_mcsp_init ! Initialize MCSP output fields
+#endif
    public :: zm_conv_mcsp_tend ! Perform MCSP tendency calculations
 
    real(r8), parameter :: MCSP_storm_speed_pref = 600e2_r8 ! pressure level for winds in MCSP calculation [Pa]
@@ -46,6 +52,9 @@ module zm_conv_mcsp
 !===================================================================================================
 contains
 !===================================================================================================
+
+! We need to avoid building this for now when bridging from EAMxx
+#ifndef SCREAM_CONFIG_IS_CMAKE
 
 subroutine zm_conv_mcsp_init()
    !----------------------------------------------------------------------------
@@ -65,13 +74,19 @@ subroutine zm_conv_mcsp_init()
 
 end subroutine zm_conv_mcsp_init
 
+#endif /* SCREAM_CONFIG_IS_CMAKE */
+
 !===================================================================================================
 
 subroutine zm_conv_mcsp_calculate_shear( pcols, ncol, pver, state_pmid, state_u, state_v, mcsp_shear)
    !----------------------------------------------------------------------------
    ! Purpose: calculate shear for MCSP
    !----------------------------------------------------------------------------
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   use zm_eamxx_bridge_methods, only: vertinterp
+#else
    use interpolate_data, only: vertinterp
+#endif
    !----------------------------------------------------------------------------
    ! Arguments
    integer,                               intent(in   ) :: pcols      ! number of atmospheric columns (max)
@@ -83,7 +98,7 @@ subroutine zm_conv_mcsp_calculate_shear( pcols, ncol, pver, state_pmid, state_u,
    real(r8), dimension(pcols),            intent(  out) :: mcsp_shear
    !----------------------------------------------------------------------------
    ! Local variables
-   integer  :: i, k
+   integer  :: i
    real(r8), dimension(pcols) :: storm_u         ! u wind at storm reference level set by MCSP_storm_speed_pref
    real(r8), dimension(pcols) :: storm_v         ! v wind at storm reference level set by MCSP_storm_speed_pref
    real(r8), dimension(pcols) :: storm_u_shear   ! u shear at storm reference level set by MCSP_storm_speed_pref
@@ -117,12 +132,14 @@ subroutine zm_conv_mcsp_tend( lchnk, pcols, ncol, pver, pverp, &
                               ztodt, jctop, zm_const, zm_param, &
                               state_pmid, state_pint, state_pdel, &
                               state_s, state_q, state_u, state_v, &
-                              ptend_zm_s, ptend_zm_q, ptend )
+                              ptend_zm_s, ptend_zm_q, &
+                              ptend_s, ptend_q, ptend_u, ptend_v )
    !----------------------------------------------------------------------------
    ! Purpose: perform MCSP tendency calculations
    !----------------------------------------------------------------------------
-   use physics_types,    only: physics_ptend
+#ifndef SCREAM_CONFIG_IS_CMAKE
    use cam_history,      only: outfld
+#endif
    !----------------------------------------------------------------------------
    ! Arguments
    integer,                               intent(in   ) :: lchnk      ! chunk identifier
@@ -143,7 +160,10 @@ subroutine zm_conv_mcsp_tend( lchnk, pcols, ncol, pver, pverp, &
    real(r8), dimension(pcols,pver),       intent(in   ) :: state_v    ! physics state v momentum
    real(r8), dimension(pcols,pver),       intent(in   ) :: ptend_zm_s ! input ZM tendency for dry static energy (DSE)
    real(r8), dimension(pcols,pver),       intent(in   ) :: ptend_zm_q ! input ZM tendency for specific humidity (qv)
-   type(physics_ptend),                   intent(inout) :: ptend      ! output tendencies
+   real(r8), dimension(pcols,pver),       intent(inout) :: ptend_s    ! output tendency of DSE
+   real(r8), dimension(pcols,pver),       intent(inout) :: ptend_q    ! output tendency of qv
+   real(r8), dimension(pcols,pver),       intent(inout) :: ptend_u    ! output tendency of u-wind
+   real(r8), dimension(pcols,pver),       intent(inout) :: ptend_v    ! output tendency of v-wind
    !----------------------------------------------------------------------------
    ! Local variables
    integer  :: i, k
@@ -319,10 +339,10 @@ subroutine zm_conv_mcsp_tend( lchnk, pcols, ncol, pver, pverp, &
          end if
 
          ! update output tendencies
-         if (do_mcsp_t) ptend%s(i,k)   = ptend%s(i,k)   + mcsp_dt_out(i,k)
-         if (do_mcsp_q) ptend%q(i,k,1) = ptend%q(i,k,1) + mcsp_dq_out(i,k)
-         if (do_mcsp_u) ptend%u(i,k)   = ptend%u(i,k)   + mcsp_du_out(i,k)
-         if (do_mcsp_v) ptend%v(i,k)   = ptend%v(i,k)   + mcsp_dv_out(i,k)
+         if (do_mcsp_t) ptend_s(i,k) = ptend_s(i,k) + mcsp_dt_out(i,k)
+         if (do_mcsp_q) ptend_q(i,k) = ptend_q(i,k) + mcsp_dq_out(i,k)
+         if (do_mcsp_u) ptend_u(i,k) = ptend_u(i,k) + mcsp_du_out(i,k)
+         if (do_mcsp_v) ptend_v(i,k) = ptend_v(i,k) + mcsp_dv_out(i,k)
 
          ! adjust units for diagnostic outputs
          if (do_mcsp_t) mcsp_dt_out(i,k) = mcsp_dt_out(i,k)/zm_const%cpair
@@ -332,7 +352,7 @@ subroutine zm_conv_mcsp_tend( lchnk, pcols, ncol, pver, pverp, &
 
    !----------------------------------------------------------------------------
    ! write out MCSP diagnostic history fields
-
+#ifndef SCREAM_CONFIG_IS_CMAKE
    call outfld('MCSP_DT',       mcsp_dt_out, pcols, lchnk )
    call outfld('MCSP_DQ',       mcsp_dq_out, pcols, lchnk )
    call outfld('MCSP_DU',       mcsp_du_out, pcols, lchnk )
@@ -341,7 +361,7 @@ subroutine zm_conv_mcsp_tend( lchnk, pcols, ncol, pver, pverp, &
    call outfld('MCSP_freq',     mcsp_freq,   pcols, lchnk )
    call outfld('MCSP_shear',    mcsp_shear,  pcols, lchnk )
    call outfld('MCSP_zm_depth', zm_depth,    pcols, lchnk )
-
+#endif
    !----------------------------------------------------------------------------
    return
 

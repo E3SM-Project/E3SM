@@ -1,14 +1,13 @@
 #include "catch2/catch.hpp"
 #include "diagnostics/register_diagnostics.hpp"
 #include "share/field/field_utils.hpp"
-#include "share/grid/mesh_free_grids_manager.hpp"
+#include "share/manager/mesh_free_grids_manager.hpp"
 #include "share/core/eamxx_setup_random_test.hpp"
 #include "share/util/eamxx_universal_constants.hpp"
 
 namespace scream {
 
 std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ngcols, const int nlevs) {
-
   using vos_t = std::vector<std::string>;
   ekat::ParameterList gm_params;
   gm_params.set("grids_names", vos_t{"Point Grid"});
@@ -41,11 +40,11 @@ TEST_CASE("zonal_avg") {
   constexpr int nlevs = 3;
   constexpr int dim3  = 4;
   const int ncols    = 6;
-  const int nlats     = 4;
+  const int nlats     = 4; // needs to be <= ncols
 
   const int ngcols = ncols * comm.size();
-  auto gm   = create_gm(comm, ngcols, nlevs);
-  auto grid = gm->get_grid("Physics");
+  auto gm          = create_gm(comm, ngcols, nlevs);
+  auto grid        = gm->get_grid("Physics");
 
   Field area       = grid->get_geometry_data("area");
   auto area_view_h = area.get_view<const Real *, Host>();
@@ -60,8 +59,10 @@ TEST_CASE("zonal_avg") {
     lat_view_h(i) = sp(-90.0) + (i % nlats + sp(0.5)) * lat_delta;
     zonal_areas[i % nlats] += area_view_h[i];
   }
-  lat.sync_to_dev();
   comm.all_reduce(zonal_areas.data(), zonal_areas.size(), MPI_SUM);
+  lat_view_h(0) = sp(-90.0); // move column to be directly at southern pole
+  lat_view_h(nlats-1) = sp(90.0); // move column to be directly at northern pole
+  lat.sync_to_dev();
 
   // Input (randomized) qc
   FieldLayout scalar1d_layout{{COL}, {ncols}};
@@ -151,6 +152,9 @@ TEST_CASE("zonal_avg") {
   // Set qc1_v to 1.0 to get zonal averages of 1.0/nlats
   const Real zavg1 = sp(1.0);
   qc1.deep_copy(zavg1);
+  // Change the input timestamp, to prevent early return and trigger diag recalculation
+  t0 += 1;
+  qc1.get_header().get_tracking().update_time_stamp(t0);
   diag1->compute_diagnostic();
   auto diag1_view_host = diag1_field.get_view<const Real *, Host>();
   for (int nlat = 0; nlat < nlats; nlat++) {

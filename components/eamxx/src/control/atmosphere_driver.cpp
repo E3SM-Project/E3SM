@@ -86,7 +86,7 @@ namespace control {
  *  - for field groups         -> src/share/field/field_group.hpp
  *  - for field/group requests -> src/share/field/field_request.hpp
  *  - for grid                 -> src/share/grid/abstract_grid.hpp
- *  - for grid manager         -> src/share/grid/grids_manager.hpp
+ *  - for grid manager         -> src/share/manager/grids_manager.hpp
  *  - for atm proc             -> src/share/atm_process/atmosphere_process.hpp
  *  - for atm proc group       -> src/share/atm_process/atmosphere_process_group.hpp
  *  - for scorpio input/output -> src/share/io/scorpio_[input|output].hpp

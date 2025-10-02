@@ -10,6 +10,7 @@ my @groups = qw(run_modes
                 redi_isopycnal_mixing
                 submesoscale_eddy_parameterization
                 gm_eddy_parameterization
+                eddy_kinetic_energy_correction
                 eddy_parameterization
                 cvmix
                 wave_coupling

@@ -138,6 +138,14 @@ add_default($nl, 'config_GM_horizontal_ramp_max');
 add_default($nl, 'config_GMRedi_Rossby_ramp_min');
 add_default($nl, 'config_GMRedi_Rossby_ramp_max');
 
+##################################################
+# Namelist group: eddy_kinetic_energy_correction #
+##################################################
+
+add_default($nl, 'config_eke_correction_enable');
+add_default($nl, 'config_eke_alpha');
+add_default($nl, 'config_eke_beta');
+
 #########################################
 # Namelist group: eddy_parameterization #
 #########################################

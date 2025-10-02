@@ -29,6 +29,10 @@ macro (CreateScorpioTargets)
     #       that, so we need another way. Including the src tree folder works.
     target_include_directories(pioc INTERFACE ${SCREAM_BASE_DIR}/../../externals/scorpio/src/clib)
 
+    add_library (gptl INTERFACE)
+    target_link_libraries(gptl INTERFACE spio)
+    target_include_directories(gptl INTERFACE ${INSTALL_SHAREDPATH}/include)
+
   else ()
     # Not a CIME build. We'll add scorpio as a subdir
 
@@ -48,10 +52,12 @@ macro (CreateScorpioTargets)
     list(APPEND C_INCLUDE_DIRS "${CMAKE_BINARY_DIR}/externals/scorpio/src/clib")
     set (SCORPIO_C_INCLUDE_DIRS "${C_INCLUDE_DIRS}" CACHE INTERNAL "SCORPIO C include dirs")
 
-    # Add GPTL from SCORPIO
+    # Add include dirs to the GPTL target that SCORPIO builds (scorpio sets them as PRIVATE properties, unfortunately)
     if (NOT GPTL_PATH)
       set (GPTL_PATH ${E3SM_EXTERNALS_DIR}/scorpio/src/gptl CACHE INTERNAL "Path to GPTL library")
     endif ()
+    target_include_directories(gptl PUBLIC $<BUILD_INTERFACE:${GPTL_PATH}>)
+    target_include_directories(gptl PUBLIC $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/externals/scorpio/src/gptl>)
 
     EkatDisableAllWarning(pioc)
     EkatDisableAllWarning(piof)

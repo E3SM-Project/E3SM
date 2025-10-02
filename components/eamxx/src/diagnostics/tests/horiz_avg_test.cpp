@@ -1,7 +1,7 @@
 #include "catch2/catch.hpp"
 #include "diagnostics/register_diagnostics.hpp"
 #include "share/field/field_utils.hpp"
-#include "share/grid/mesh_free_grids_manager.hpp"
+#include "share/manager/mesh_free_grids_manager.hpp"
 #include "share/core/eamxx_setup_random_test.hpp"
 #include "share/util/eamxx_universal_constants.hpp"
 
@@ -126,7 +126,12 @@ TEST_CASE("horiz_avg") {
   // Try other known cases
   // Set qc1_v to 1.0 to get weighted average of 1.0
   Real wavg = 1;
+  // Change input timestamp, to prevent early return and trigger diag recalculation
+  qc1.get_header().get_tracking().update_time_stamp(t0+1);
   qc1.deep_copy(wavg);
+  // Change the input timestamp, to prevent early return and trigger diag recalculation
+  t0 += 1;
+  qc1.get_header().get_tracking().update_time_stamp(t0);
   diag1->compute_diagnostic();
   auto diag1_v2_host = diag1_f.get_view<Real, Host>();
   REQUIRE_THAT(diag1_v2_host(),

@@ -50,7 +50,7 @@ _TESTS = {
             "ERS.f19_g16.I20TRGSWCNPRDCTCBC.elm-ctc_f19_g16_I20TRGSWCNPRDCTCBC",
             "SMS_Ly2_P1x1.1x1_smallvilleIA.I20TRGSWCNPCROP.elm-lulcc_sville",
             "ERS.r05_r05.ICNPRDCTCBC.elm-cbudget",
-            "ERS.ELM_USRDAT.I1850CNPRDCTCBC.elm-snowveg_arctic",
+            "ERS_Ld150.ELM_USRDAT.I1850CNPRDCTCBC.elm-snowveg_arctic",
             "ERS.ELM_USRDAT.I1850CNPRDCTCBC.elm-usrpft_default_I1850CNPRDCTCBC",
             "ERS.ELM_USRDAT.I1850CNPRDCTCBC.elm-usrpft_codetest_I1850CNPRDCTCBC",
             "ERS.1x1_icycape.I1850GSWCNPRDCTCBC.elm-polygonal_tundra"
@@ -240,6 +240,7 @@ _TESTS = {
             "SMS_Ld3.ne4pg2_oQU480.F2010.eam-thetahy_sl_pg2_mass",
             "ERP_Ld3.ne4pg2_ne4pg2.FIDEAL.allactive-pioroot1",
             "ERS_Ld5.ne4pg2_oQU480.F2010.eam-sathist_F2010",
+            "ERS_Ld5.ne4pg2_oQU480.F2010xx-ZM",
             )
         },
 
@@ -331,6 +332,7 @@ _TESTS = {
             "PET_P480_Ld2.TL319_IcoswISC30E3r5.GMPAS-JRA1p5-DIB-PISMF-DSGR.mpaso-jra_1958",
             "PET_P480_Ld2.TL319_IcoswISC30E3r5.GMPAS-JRA1p5-DIB-PISMF-DSGR.mpaso-freshwater_tracers_jra_1958",
             "SMS_P480_Ld5.TL319_IcoswISC30E3r5.GMPAS-JRA1p5.mpaso-precip_scaling_jra_1958",
+            "SMS_P480_Ld5.TL319_IcoswISC30E3r5.GMPAS-JRA1p5.mpaso-eke_correction_jra_1958",
             )
         },
 

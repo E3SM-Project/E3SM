@@ -29,6 +29,10 @@ TEST_CASE("field_layout", "") {
   REQUIRE (fl5.type()==LayoutType::Vector3D);
   REQUIRE (fl6.type()==LayoutType::Tensor3D);
 
+  REQUIRE (fl3.dim(COL)==1);
+  REQUIRE_THROWS (fl3.dim(CMP));
+  REQUIRE (fl3.dim(CMP,false)==3);
+
   REQUIRE (not fl1.is_vector_layout());
   REQUIRE (    fl2.is_vector_layout());
   REQUIRE (not fl3.is_vector_layout());

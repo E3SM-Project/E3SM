@@ -111,8 +111,8 @@ subroutine compute_dilute_cape( pcols, ncol, pver, pverp, &
 
    !----------------------------------------------------------------------------
    ! Copy the incoming temperature and specific humidity values to local arrays 
-   temperature(:ncol,:) = temperature_in(:ncol,:)
-   sp_humidity(:ncol,:) = sp_humidity_in(:ncol,:)
+   temperature(1:ncol,1:pver) = temperature_in(1:ncol,1:pver)
+   sp_humidity(1:ncol,1:pver) = sp_humidity_in(1:ncol,1:pver)
 
    !----------------------------------------------------------------------------
    ! initialize msemax_klev and potentially modify T/q
@@ -122,7 +122,7 @@ subroutine compute_dilute_cape( pcols, ncol, pver, pverp, &
       ! (2) the arrays q_mx and t_mx contain q and T values at the old launching level 
       !     at the time when the old launching level was identified. 
       ! Copy the old values to work arrays for calculations in the rest of this subroutine
-      msemax_klev(:ncol) = dcapemx(:ncol)
+      msemax_klev(1:ncol) = dcapemx(1:ncol)
       do i=1,ncol
          sp_humidity(i,msemax_klev(i)) = q_mx(i)
          temperature(i,msemax_klev(i)) = t_mx(i)
@@ -132,13 +132,16 @@ subroutine compute_dilute_cape( pcols, ncol, pver, pverp, &
    end if
 
    !----------------------------------------------------------------------------
+   ! calculate virtual temperature
+   tv(1:ncol,1:pver) = temperature(1:ncol,1:pver) &
+                       * ( 1._r8+zm_const%zvir*sp_humidity(1:ncol,1:pver) ) &
+                       / ( 1._r8+sp_humidity(1:ncol,1:pver) )
+
+   !----------------------------------------------------------------------------
    ! Initialize parcel properties
-   parcel_temp(1:ncol,1:pver) = temperature(1:ncol,1:pver)
-   parcel_qsat(1:ncol,1:pver) = sp_humidity(1:ncol,1:pver)
-   tv  (1:ncol,1:pver) = temperature(1:ncol,1:pver) &
-                         * ( 1._r8+zm_const%zvir*sp_humidity(1:ncol,1:pver) ) &
-                         / ( 1._r8+sp_humidity(1:ncol,1:pver) )
-   parcel_vtemp (1:ncol,1:pver) = tv(1:ncol,1:pver)
+   parcel_temp (1:ncol,1:pver) = temperature(1:ncol,1:pver)
+   parcel_qsat (1:ncol,1:pver) = sp_humidity(1:ncol,1:pver)
+   parcel_vtemp(1:ncol,1:pver) = tv(1:ncol,1:pver)
 
    !----------------------------------------------------------------------------
    ! Find new upper bound for parcel starting level - unrestricted launch level (ULL)
@@ -161,8 +164,8 @@ subroutine compute_dilute_cape( pcols, ncol, pver, pverp, &
       if (.not.present(dcapemx)) call endrun('** ZM CONV compute_dilute_cape: dcapemx not present **')
       msemax_klev(1:ncol) = dcapemx(1:ncol)
    elseif (.not.use_input_tq_mx_loc) then
-      if (     zm_param%trig_ull) msemax_top_k(:ncol) = pblt_ull(:ncol)
-      if (.not.zm_param%trig_ull) msemax_top_k(:ncol) = pblt(:ncol)
+      if (     zm_param%trig_ull) msemax_top_k(1:ncol) = pblt_ull(1:ncol)
+      if (.not.zm_param%trig_ull) msemax_top_k(1:ncol) = pblt    (1:ncol)
       call find_mse_max( pcols, ncol, pver, num_msg, msemax_top_k, pergro_active, &
                          temperature, zmid, sp_humidity, zm_const, zm_param, &
                          msemax_klev, mse_max_val )
@@ -360,7 +363,7 @@ subroutine compute_dilute_parcel( pcols, ncol, pver, num_msg, klaunch, &
    !----------------------------------------------------------------------------
    ! The original ZM scheme only treated PBL-rooted convection. A PBL temperature 
    ! perturbation (tpert) was then used to increase the parcel temperatue at launch
-   ! level, which is in PBL. The dcape_ull or ull triggr enables ZM scheme to treat
+   ! level, which is in PBL. The dcape_ull or ull trigger enables ZM scheme to treat
    ! elevated convection with launch level above PBL. If parcel launch level is
    ! above PBL top, tempeature perturbation in PBL should not be able to influence 
    ! it. In this situation, the temporary variable tpert_loc is reset to zero.  
@@ -571,11 +574,10 @@ subroutine compute_cape_from_parcel( pcols, ncol, pver, pverp, num_cin, num_msg,
    integer,  dimension(pcols,num_cin) :: eql_klev_tmp       ! provisional value of equilibrium level index
    integer,  dimension(pcols)         :: neg_buoyancy_cnt   ! counter for levels with negative bounancy
 
-   logical plge600(pcols) ! for testing - remove!
    !----------------------------------------------------------------------------
    ! Initialize variables
-   eql_klev     (1:ncol)               = pver
-   eql_klev_tmp (1:ncol,1:num_cin)     = pver
+   eql_klev        (1:ncol)            = pver
+   eql_klev_tmp    (1:ncol,1:num_cin)  = pver
    cape            (1:ncol)            = 0._r8
    cape_tmp        (1:ncol,1:num_cin)  = 0._r8
    buoyancy        (1:ncol,1:pver)     = 0._r8
@@ -639,7 +641,7 @@ subroutine compute_cape_from_parcel( pcols, ncol, pver, pverp, num_cin, num_msg,
    do i = 1,ncol
       cape(i) = max(cape(i), 0._r8)
    end do
-   
+
    !----------------------------------------------------------------------------
    return
 

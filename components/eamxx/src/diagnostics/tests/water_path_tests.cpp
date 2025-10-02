@@ -1,6 +1,6 @@
 #include "catch2/catch.hpp"
 
-#include "share/grid/mesh_free_grids_manager.hpp"
+#include "share/manager/mesh_free_grids_manager.hpp"
 #include "diagnostics/register_diagnostics.hpp"
 
 #include "physics/share/physics_constants.hpp"
@@ -298,6 +298,10 @@ void run(std::mt19937_64& engine)
         }
       });
       Kokkos::fence();
+      // Change inputs timestamp, to prevent early return and trigger diag recalculation
+      for (auto f : {qv_f, qi_f, qc_f, qr_f, qm_f} ) {
+        f.get_header().get_tracking().update_time_stamp(t0+1);
+      }
       for (const auto& dd : diags) {
         dd.second->compute_diagnostic();
       }
@@ -355,6 +359,10 @@ void run(std::mt19937_64& engine)
         qr_v(icol,ilev) += qi_to_qr;
       });
       Kokkos::fence();
+      // Change inputs timestamp, to prevent early return and trigger diag recalculation
+      for (auto f : {qv_f, qi_f, qc_f, qr_f, qm_f} ) {
+        f.get_header().get_tracking().update_time_stamp(t0+2);
+      }
       for (const auto& dd : diags) {
         dd.second->compute_diagnostic();
       }
@@ -399,6 +407,10 @@ void run(std::mt19937_64& engine)
 
       });
       Kokkos::fence();
+      // Change inputs timestamp, to prevent early return and trigger diag recalculation
+      for (auto f : {qv_f, qi_f, qc_f, qr_f, qm_f} ) {
+        f.get_header().get_tracking().update_time_stamp(t0+3);
+      }
       for (const auto& dd : diags) {
         dd.second->compute_diagnostic();
       }
@@ -430,6 +442,10 @@ void run(std::mt19937_64& engine)
         qr_v(icol,ilev) = (icol+1) * (idx+1);
       });
       Kokkos::fence();
+      // Change inputs timestamp, to prevent early return and trigger diag recalculation
+      for (auto f : {qv_f, qi_f, qc_f, qr_f, qm_f} ) {
+        f.get_header().get_tracking().update_time_stamp(t0+4);
+      }
       for (const auto& dd : diags) {
         dd.second->compute_diagnostic();
       }

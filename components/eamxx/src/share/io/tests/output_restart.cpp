@@ -5,7 +5,7 @@
 #include "share/io/scorpio_input.hpp"
 #include "share/io/eamxx_scorpio_interface.hpp"
 
-#include "share/grid/mesh_free_grids_manager.hpp"
+#include "share/manager/mesh_free_grids_manager.hpp"
 #include "share/grid/point_grid.hpp"
 
 #include "share/field/field_identifier.hpp"

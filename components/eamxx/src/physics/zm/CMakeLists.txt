@@ -2,12 +2,13 @@ set(PATH_TO_LEGACY_ZM ${SCREAM_BASE_DIR}/../eam/src/physics/cam/)
 
 set(ZM_F90_SRCS
   # ----------------------------------------------------------------------------
-  # EAMxx side bridge modules
-  ${CMAKE_CURRENT_SOURCE_DIR}/zm_eamxx_bridge_main.F90
-  ${CMAKE_CURRENT_SOURCE_DIR}/zm_eamxx_bridge_params.F90
-  ${CMAKE_CURRENT_SOURCE_DIR}/zm_eamxx_bridge_methods.F90
-  ${CMAKE_CURRENT_SOURCE_DIR}/zm_eamxx_bridge_physconst.F90
-  ${CMAKE_CURRENT_SOURCE_DIR}/zm_eamxx_bridge_wv_saturation.F90
+  # EAMxx side C++ bridge methods
+  ${CMAKE_CURRENT_SOURCE_DIR}/fortran_bridge/zm_eamxx_bridge.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/fortran_bridge/zm_eamxx_bridge_main.F90
+  ${CMAKE_CURRENT_SOURCE_DIR}/fortran_bridge/zm_eamxx_bridge_params.F90
+  ${CMAKE_CURRENT_SOURCE_DIR}/fortran_bridge/zm_eamxx_bridge_methods.F90
+  ${CMAKE_CURRENT_SOURCE_DIR}/fortran_bridge/zm_eamxx_bridge_physconst.F90
+  ${CMAKE_CURRENT_SOURCE_DIR}/fortran_bridge/zm_eamxx_bridge_wv_saturation.F90
   # ----------------------------------------------------------------------------
   # Fortran ZM code
   ${PATH_TO_LEGACY_ZM}/zm_conv.F90
@@ -16,6 +17,8 @@ set(ZM_F90_SRCS
   ${PATH_TO_LEGACY_ZM}/zm_conv_types.F90
   ${PATH_TO_LEGACY_ZM}/zm_aero_type.F90
   ${PATH_TO_LEGACY_ZM}/zm_microphysics_state.F90
+  ${PATH_TO_LEGACY_ZM}/zm_conv_mcsp.F90
+  ${PATH_TO_LEGACY_ZM}/zm_transport.F90
   # ----------------------------------------------------------------------------
   # shared fotran modules
   ${SCREAM_BASE_DIR}/../../share/util/shr_sys_mod.F90
@@ -33,6 +36,7 @@ set(ZM_CXX_SRCS
   # ----------------------------------------------------------------------------
   # C++/EAMxx atomsphere process for ZM
   eamxx_zm_process_interface.cpp
+  # ----------------------------------------------------------------------------
 )
 
 # Add ETI source files if not on CUDA/HIP
@@ -47,10 +51,12 @@ set_target_properties(zm PROPERTIES
   Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules
 )
 
+target_compile_definitions(zm PUBLIC EAMXX_HAS_ZM)
+
 target_include_directories(zm PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}
+  ${CMAKE_CURRENT_SOURCE_DIR}/fortran_bridge
   ${CMAKE_CURRENT_BINARY_DIR}/modules
-  ${CMAKE_CURRENT_SOURCE_DIR}/impl
   ${PATH_TO_LEGACY_ZM}
 )
 target_link_libraries(zm physics_share scream_share csm_share)

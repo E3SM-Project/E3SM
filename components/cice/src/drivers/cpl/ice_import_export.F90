@@ -499,7 +499,7 @@ contains
    !-----------------------------------------------------
     !
     ! Arguments
-      real(r8), allocatable, intent(inout) :: i2x_im(:,:)
+      real(r8), intent(inout) :: i2x_im(:,:)
       type(ESMF_Clock)         , intent(inout) :: EClock
       integer, intent(in)   :: totalmbls
       !
@@ -648,7 +648,7 @@ contains
 
       tagname=trim(seq_flds_i2x_fields)//C_NULL_CHAR
       ent_type = 0 ! vertices only, from now on
-      ierr = iMOAB_SetDoubleTagStorage (MPSIID, tagname, totalmbls , ent_type, i2x_im(1,1) )
+      ierr = iMOAB_SetDoubleTagStorage (MPSIID, tagname, totalmbls , ent_type, i2x_im(:,1) )
       if (ierr > 0 )  then
          call shr_sys_abort( subname//' Error: fail to set moab i2x '// trim(seq_flds_i2x_fields) )
       endif

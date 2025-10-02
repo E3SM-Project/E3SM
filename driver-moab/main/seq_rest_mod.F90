@@ -398,7 +398,8 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
     !
     !-------------------------------------------------------------------------------
     ! actual moab name is
-    moab_rest_file = 'moab_'//trim(rest_file)
+    !moab_rest_file = 'moab_'//trim(rest_file)
+    moab_rest_file = trim(rest_file) 
     !----------------------------------------------------------------------------
     ! get required infodata
     !----------------------------------------------------------------------------
@@ -641,7 +642,7 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
        atm, lnd, ice, ocn, rof, glc, wav, esp, iac,            &
        fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
        fractions_rx, fractions_gx, fractions_wx, fractions_zx, &
-       tag, rest_file)
+       tag, rest_file_org)
 
     implicit none
 
@@ -666,7 +667,9 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
     type(mct_aVect)        , intent(inout) :: fractions_wx(:)   ! Fractions on wav grid/decomp
     type(mct_aVect)        , intent(inout) :: fractions_zx(:)   ! Fractions on iac grid/decomp
     character(len=*)       , intent(in)    :: tag
-    character(len=CL)      , intent(out)   :: rest_file         ! Restart filename
+    character(len=CL)      , intent(out)   :: rest_file_org         ! Restart filename
+
+    character(len=CL)                      :: rest_file   !  pre-pend with mct_
 
     integer(IN)   :: n,n1,n2,n3,fk
     integer(IN)   :: curr_ymd         ! Current date YYYYMMDD
@@ -736,9 +739,13 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
     call seq_timemgr_EClockGetData( EClock_d, curr_ymd=curr_ymd, curr_tod=curr_tod)
     call shr_cal_date2ymd(curr_ymd,yy,mm,dd)
     write(year_char,'(i6.4)') yy
-    write(rest_file,"(4a,i2.2,a,i2.2,a,i5.5,a)") &
+    write(rest_file_org,"(4a,i2.2,a,i2.2,a,i5.5,a)") &
          trim(case_name), '.cpl'//trim(tag)//'.r.',trim(adjustl(year_char)),'-',mm,'-',dd,'-',curr_tod,'.nc'
 
+    rest_file = 'mct_'//trim(rest_file_org) ! will actually write here, and return the original name
+    ! moab will write the original one, and read the original one; mct will read the original too
+    ! for the time being, read twice, the same file;; comapre mct_ one with original one to see how different 
+    ! they are ! tehy should be no different
     ! Write driver data to restart file
 
     if (iamin_CPLID) then
@@ -785,7 +792,7 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
           if (loglevel > 0) write(logunit,"(3A)") subname," write rpointer file ", &
                trim(cvar)
           open(iun, file=cvar, form='FORMATTED')
-          write(iun,'(a)') rest_file
+          write(iun,'(a)') rest_file_org ! will write to rpointer file the origname, not the one with mct in it
           close(iun)
           call shr_file_freeUnit( iun )
        endif
@@ -1061,7 +1068,8 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
     call shr_cal_date2ymd(curr_ymd,yy,mm,dd)
     write(year_char,'(i6.4)') yy
     write(rest_file,"(4a,i2.2,a,i2.2,a,i5.5,a)") &
-         'moab_'//trim(case_name), '.cpl'//trim(tag)//'.r.',trim(adjustl(year_char)),'-',mm,'-',dd,'-',curr_tod,'.nc'
+        trim(case_name), '.cpl'//trim(tag)//'.r.',trim(adjustl(year_char)),'-',mm,'-',dd,'-',curr_tod,'.nc'
+       !  'moab_'//trim(case_name), '.cpl'//trim(tag)//'.r.',trim(adjustl(year_char)),'-',mm,'-',dd,'-',curr_tod,'.nc'
 
     ! Write driver data to restart file
 
@@ -1103,16 +1111,16 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
           enddo
        endif
 
-!       if (cplroot) then
-!          iun = shr_file_getUnit()
-!          call seq_infodata_GetData(infodata,restart_pfile=cvar)
-!          if (loglevel > 0) write(logunit,"(3A)") subname," write rpointer file ", &
-!               trim(cvar)
-!          open(iun, file=cvar, form='FORMATTED')
-!          write(iun,'(a)') rest_file
-!          close(iun)
-!          call shr_file_freeUnit( iun )
-!       endif
+       if (cplroot) then
+         iun = shr_file_getUnit()
+         call seq_infodata_GetData(infodata,restart_pfile=cvar)
+         if (loglevel > 0) write(logunit,"(3A)") subname," write rpointer file ", &
+            trim(cvar)
+         open(iun, file=cvar, form='FORMATTED')
+         write(iun,'(a)') rest_file
+         close(iun)
+         call shr_file_freeUnit( iun )
+       endif
 
        call shr_mpi_bcast(rest_file,mpicom_CPLID)
        call seq_io_wopen(rest_file,clobber=.true., model_doi_url=model_doi_url)

@@ -1,7 +1,7 @@
 #include "catch2/catch.hpp"
 #include "diagnostics/register_diagnostics.hpp"
 #include "share/field/field_utils.hpp"
-#include "share/grid/mesh_free_grids_manager.hpp"
+#include "share/manager/mesh_free_grids_manager.hpp"
 #include "share/core/eamxx_setup_random_test.hpp"
 #include "share/util/eamxx_universal_constants.hpp"
 
@@ -147,6 +147,8 @@ TEST_CASE("histogram") {
   // Set qc1_v to so histogram is all entries in first bin
   const Real zavg1 = sp(0.5*(bin_values[0]+bin_values[1]));
   qc1.deep_copy(zavg1);
+  // Change input timestamp, to prevent early return and trigger diag recalculation
+  qc1.get_header().get_tracking().update_time_stamp(t0+1);
   diag1->compute_diagnostic();
   auto diag1_view_host = diag1_field.get_view<const Real *, Host>();
   REQUIRE_THAT(diag1_view_host(0), Catch::Matchers::WithinRel(ngcols, tol));
