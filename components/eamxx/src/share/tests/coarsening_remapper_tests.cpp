@@ -1,6 +1,6 @@
 #include <catch2/catch.hpp>
 
-#include "share/grid/remap/coarsening_remapper.hpp"
+#include "share/remap/coarsening_remapper.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/io/eamxx_scorpio_interface.hpp"
 #include "eamxx_setup_random_test.hpp"

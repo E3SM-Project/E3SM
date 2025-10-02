@@ -1,0 +1,63 @@
+#include <catch2/catch.hpp>
+
+#include "share/grid/point_grid.hpp"
+#include "share/grid/grid_utils.hpp"
+#include "share/core/eamxx_types.hpp"
+
+#include <algorithm>
+
+namespace scream {
+
+TEST_CASE("point_grid", "") {
+  using namespace scream::ShortFieldTagsNames;
+
+  ekat::Comm comm(MPI_COMM_WORLD);
+
+  const int num_procs = comm.size();
+  const int num_local_cols = 128;
+  const int num_global_cols = num_local_cols*num_procs;
+  const int num_levels = 72;
+
+  auto grid = create_point_grid("my_grid", num_global_cols, num_levels, comm);
+
+  REQUIRE(grid->type() == GridType::Point);
+  REQUIRE(grid->name() == "my_grid");
+  REQUIRE(grid->get_num_vertical_levels() == num_levels);
+  REQUIRE(grid->get_num_local_dofs()  == num_local_cols);
+  REQUIRE(grid->get_num_global_dofs() == num_global_cols);
+  REQUIRE(grid->is_unique());
+
+  // Point grids should have (global) gids spanning the interval [min_gid, min_gid+num_global_dofs)
+  const auto max_gid = grid->get_global_max_dof_gid();
+  const auto min_gid = grid->get_global_min_dof_gid();
+  REQUIRE( (max_gid-min_gid+1)==grid->get_num_global_dofs() );
+
+  auto lid_to_idx = grid->get_lid_to_idx_map().get_view<int**,Host>();
+  for (int i = 0; i < grid->get_num_local_dofs(); ++i) {
+    REQUIRE(lid_to_idx.extent_int(1) == 1);
+    REQUIRE(i == lid_to_idx(i, 0));
+  }
+
+  auto layout = grid->get_2d_scalar_layout();
+  REQUIRE(layout.tags().size() == 1);
+  REQUIRE(layout.tag(0) == COL);
+
+  auto shallow_copy = grid->clone("shallow",true);
+  auto deep_copy    = grid->clone("deep",false);
+
+  using gid_type = AbstractGrid::gid_type;
+
+  auto grid_gids = grid->get_dofs_gids().get_view<const gid_type*,Host>();
+  auto scopy_gids = shallow_copy->get_dofs_gids().get_view<const gid_type*,Host>();
+  auto dcopy_gids = deep_copy->get_dofs_gids().get_view<const gid_type*,Host>();
+  REQUIRE (scopy_gids.data()==grid_gids.data());
+  REQUIRE (dcopy_gids.data()!=grid_gids.data());
+  for (int i=0; i<grid->get_num_local_dofs(); ++i) {
+    REQUIRE (dcopy_gids[i]==grid_gids[i]);
+  }
+
+  shallow_copy->reset_num_vertical_lev(4);
+  REQUIRE (shallow_copy->get_num_vertical_levels()==4);
+}
+
+} // namespace scream

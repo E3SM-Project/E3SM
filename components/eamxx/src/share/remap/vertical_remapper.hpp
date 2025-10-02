@@ -1,7 +1,7 @@
 #ifndef EAMXX_VERTICAL_REMAPPER_HPP
 #define EAMXX_VERTICAL_REMAPPER_HPP
 
-#include "share/grid/remap/abstract_remapper.hpp"
+#include "share/remap/abstract_remapper.hpp"
 
 #include <ekat_lin_interp.hpp>
 
