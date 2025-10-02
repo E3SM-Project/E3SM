@@ -183,7 +183,11 @@ create_diagnostic (const std::string& diag_field_name,
     diag_name = "NumberPath";
     params.set<std::string>("number_kind",matches[1].str());
   } else if (std::regex_search(diag_field_name,matches,aerocom_cld)) {
-    EKAT_ERROR_MSG("Error! AeroComCld diags are disabled for now. Contact developers.")
+    EKAT_ERROR_MSG("Error! AeroComCld diags are disabled for now. Contact developers.\n"
+                    "      Some recent development made the code produce bad values,\n"
+                    "      even runtime aborts due to NaNs.\n"
+                    "      An alternative is to request variables like cdnc_at_cldtop,\n"
+                    "      which remain unaffected and scientifically valid.\n");
     diag_name = "AeroComCld";
     params.set<std::string>("aero_com_cld_kind",matches[1].str());
   } else if (std::regex_search(diag_field_name,matches,vap_flux)) {
