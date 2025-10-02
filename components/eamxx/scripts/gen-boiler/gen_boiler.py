@@ -209,7 +209,7 @@ PIECES = dict([
         lambda phys, sub, gb: f"tests/{phys}_{sub}_tests.cpp",
         lambda phys, sub, gb: create_template(phys, sub, gb, "cxx_bfb_unit_impl"),
         lambda phys, sub, gb: get_cxx_close_block_regex(semicolon=True, at_line_start=True), # insert of end of struct
-        lambda phys, sub, gb: get_cxx_function_begin_regex("run_bfb", static=True),  # run_bfb
+        lambda phys, sub, gb: get_cxx_function_begin_regex("run_bfb"),  # run_bfb
         lambda phys, sub, gb: get_cxx_close_block_regex(comment="run_bfb"), # } // run_bfb # reqs special comment
         lambda *x           : "The cxx bfb unit test implementation"
     )),
@@ -1769,7 +1769,7 @@ f"""template<typename S, typename D>
                 for datum in data:
                     check_arrays += f"          REQUIRE(d_baseline.{datum}[k] == d_test.{datum}[k]);\n"
 
-                check_arrays += "        }"
+                check_arrays += "        }\n"
 
         if has_array:
             result = \
@@ -1815,8 +1815,7 @@ f"""template<typename S, typename D>
       for (Int i = 0; i < num_runs; ++i) {{
         {data_struct}& d_baseline = baseline_data[i];
         {data_struct}& d_test = test_data[i];
-{check_scalars}{check_arrays}
-      }}
+{check_scalars}{check_arrays}      }}
     }}
     else if (this->m_baseline_action == GENERATE) {{
       for (Int i = 0; i < num_runs; ++i) {{

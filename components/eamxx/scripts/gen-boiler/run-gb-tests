@@ -876,7 +876,6 @@ PTD_STD_DEF(DataSubName, 8, shcol, nlev, nlevi, ntracers, gag, bab1, bab2, val);
   const Int nlev = d.nlev;
   const Int nlevi = d.nlevi;
   const Int ntracers = d.ntracers;
-  const Int shcol = d.shcol;
   const bool val = d.val;
   view0di_h bab1_h("bab1_h");
   bab1_h() = d.bab1;

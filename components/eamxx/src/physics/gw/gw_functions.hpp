@@ -191,7 +191,7 @@ struct Functions
     mag = sqrt(u*u + v*v);
     if (mag > 0) {
       u_n = u / mag;
-      v_n = u / mag;
+      v_n = v / mag;
     }
     else {
       u_n = 0;

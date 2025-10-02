@@ -34,7 +34,7 @@ void Functions<S,D>::gw_convect_project_winds(
 
   // Get the unit vector components and magnitude at the surface.
   Kokkos::single(Kokkos::PerTeam(team), [&] {
-    get_unit_vector(u_src, v_src, xv, yv, ubi(init.k_src_wind));
+    get_unit_vector(u_src, v_src, xv, yv, ubi(init.k_src_wind + 1));
   });
   team.team_barrier();
 
@@ -47,7 +47,7 @@ void Functions<S,D>::gw_convect_project_winds(
 
   // Compute the interface wind projection by averaging the midpoint winds.
   // Use the top level wind at the top interface.
-  ubi(0) = ubm(1);
+  ubi(0) = ubm(0);
 
   midpoint_interp(team, ubm, ekat::subview(ubi, Kokkos::pair<int, int>{1, pver}));
 }
