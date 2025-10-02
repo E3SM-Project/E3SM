@@ -2,7 +2,7 @@
 #define SCREAM_GW_FUNCTIONS_F90_HPP
 
 #include "physics/gw/gw_functions.hpp"
-#include "physics/share/physics_test_data.hpp"
+#include "share/physics/physics_test_data.hpp"
 #include "share/core/eamxx_types.hpp"
 
 #include <array>

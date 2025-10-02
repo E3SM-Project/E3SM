@@ -4,7 +4,7 @@
 
 #include "shoc_functions.hpp"
 #include "shoc_test_data.hpp"
-#include "physics/share/physics_constants.hpp"
+#include "share/physics/physics_constants.hpp"
 #include "share/core/eamxx_types.hpp"
 #include "share/core/eamxx_setup_random_test.hpp"
 

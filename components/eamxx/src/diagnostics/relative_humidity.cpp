@@ -1,6 +1,6 @@
 #include "diagnostics/relative_humidity.hpp"
-#include "physics/share/physics_functions.hpp" // also for ETI not on GPUs
-#include "physics/share/physics_saturation_impl.hpp"
+#include "share/physics/physics_functions.hpp" // also for ETI not on GPUs
+#include "share/physics/physics_saturation_impl.hpp"
 
 #include <ekat_pack.hpp>
 

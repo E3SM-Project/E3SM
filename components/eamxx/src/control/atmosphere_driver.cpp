@@ -2,7 +2,7 @@
 #include "control/atmosphere_surface_coupling_importer.hpp"
 #include "control/atmosphere_surface_coupling_exporter.hpp"
 
-#include "physics/share/physics_constants.hpp"
+#include "share/physics/physics_constants.hpp"
 
 #include "share/atm_process/atmosphere_process_group.hpp"
 #include "share/atm_process/atmosphere_process_dag.hpp"

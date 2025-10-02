@@ -4,7 +4,7 @@
 #include "diagnostics/surf_upward_latent_heat_flux.hpp"
 #include "diagnostics/register_diagnostics.hpp"
 
-#include "physics/share/physics_constants.hpp"
+#include "share/physics/physics_constants.hpp"
 
 #include "share/core/eamxx_setup_random_test.hpp"
 #include "share/field/field_utils.hpp"

@@ -2,7 +2,7 @@
 
 #include "catch2/catch.hpp"
 #include "diagnostics/register_diagnostics.hpp"
-#include "physics/share/physics_constants.hpp"
+#include "share/physics/physics_constants.hpp"
 #include "share/field/field_utils.hpp"
 #include "share/data_managers/mesh_free_grids_manager.hpp"
 #include "share/physics/eamxx_common_physics_functions.hpp"

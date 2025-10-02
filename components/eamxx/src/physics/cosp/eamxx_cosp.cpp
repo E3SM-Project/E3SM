@@ -1,6 +1,6 @@
 #include "eamxx_cosp.hpp"
 #include "cosp_functions.hpp"
-#include "physics/share/physics_constants.hpp"
+#include "share/physics/physics_constants.hpp"
 #include "share/util/eamxx_universal_constants.hpp"
 #include "share/physics/eamxx_common_physics_functions.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"

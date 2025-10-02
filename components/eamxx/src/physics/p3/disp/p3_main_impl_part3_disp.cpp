@@ -1,6 +1,6 @@
 #include "p3_functions.hpp" // for ETI only but harmless for GPU
-#include "physics/share/physics_functions.hpp" // also for ETI not on GPUs
-#include "physics/share/physics_saturation_impl.hpp"
+#include "share/physics/physics_functions.hpp" // also for ETI not on GPUs
+#include "share/physics/physics_saturation_impl.hpp"
 
 #include <ekat_subview_utils.hpp>
 #include <ekat_team_policy_utils.hpp>
