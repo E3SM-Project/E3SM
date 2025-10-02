@@ -126,7 +126,7 @@ struct TracerTimeSlice {
 
 // Converts raw YYYYMMDD date integers into sorted TimeStamp-index pairs.
 // Assumes yearly periodicity for now.
-// NOTE: Consider adding support for transient data. 
+// NOTE: Consider adding support for transient data.
 struct TracerTimeDatabase {
   std::vector<TracerTimeSlice> slices;
   scream::util::TimeLine timeline = scream::util::TimeLine::YearlyPeriodic;
@@ -148,7 +148,7 @@ struct TracerTimeDatabase {
   int get_next_idx(int idx) const {
     return (idx + 1) % slices.size();
   }
-  
+
   // Finds the interval [t_i, t_{i+1}) that contains ts. Assumes cyclic behavior.
   int find_interval(const util::TimeStamp& ts) const {
     EKAT_REQUIRE_MSG(size() >= 2, "Time database has fewer than 2 time slices.");
@@ -362,7 +362,7 @@ inline void init_monthly_time_offset(TracerData& tracer_data,
   EKAT_REQUIRE_MSG(cyclical_ymd_index >= 0,
       "Error! Model time (" + std::to_string(cyclical_ymd) +
       ") is not within tracer time period.");
-  
+
   tracer_data.offset_time_index_ = cyclical_ymd_index;
 }
 
@@ -383,7 +383,7 @@ inline void init_irregular_time_database(TracerData& tracer_data,
 
   auto ts_model = convert_date(cyclical_ymd);
   const int interval = tracer_data.time_db.find_interval(ts_model);
-  
+
   EKAT_REQUIRE_MSG(interval >= 0,
     "Error! Model time (" + std::to_string(cyclical_ymd) +
     ") is not within the tracer time range.");
@@ -461,11 +461,7 @@ inline void setup_tracer_data(TracerData &tracer_data,
   }
 
   // Time initialization logic — delegated to helpers above
-  if (tracer_file_type == ELEVATED_EMISSIONS) {
-    init_irregular_time_database(tracer_data, trace_data_file, cyclical_ymd);
-  } else {
-    init_monthly_time_offset(tracer_data, trace_data_file, cyclical_ymd);
-  }
+  init_irregular_time_database(tracer_data, trace_data_file, cyclical_ymd);
 
   scorpio::release_file(trace_data_file);
   tracer_data.file_type = tracer_file_type;
@@ -624,7 +620,7 @@ inline void update_monthly_timestate(
   }
 }
 
-// Loads time slice data before and after current timestamp (ts), 
+// Loads time slice data before and after current timestamp (ts),
 // and prepares interpolation state. First call initializes both BEG and END.
 inline void update_irregular_timestate(
     const std::shared_ptr<AtmosphereInput>& scorpio_reader,
@@ -705,13 +701,8 @@ inline void update_tracer_timestate(
     TracerTimeState& time_state,
     TracerData& data_tracer)
 {
-  if (data_tracer.file_type == ELEVATED_EMISSIONS) {
-    update_irregular_timestate(scorpio_reader, ts, tracer_horiz_interp,
+  update_irregular_timestate(scorpio_reader, ts, tracer_horiz_interp,
                                time_state, data_tracer);
-  } else {
-    update_monthly_timestate(scorpio_reader, ts, tracer_horiz_interp,
-                             time_state, data_tracer);
-  }
 }
 
 // This function is based on the SPA::perform_time_interpolation function.
