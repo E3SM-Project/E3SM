@@ -183,6 +183,7 @@ create_diagnostic (const std::string& diag_field_name,
     diag_name = "NumberPath";
     params.set<std::string>("number_kind",matches[1].str());
   } else if (std::regex_search(diag_field_name,matches,aerocom_cld)) {
+    EKAT_ERROR_MSG("Error! AeroComCld diags are disabled for now. Contact developers.")
     diag_name = "AeroComCld";
     params.set<std::string>("aero_com_cld_kind",matches[1].str());
   } else if (std::regex_search(diag_field_name,matches,vap_flux)) {
