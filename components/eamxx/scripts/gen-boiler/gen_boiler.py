@@ -655,9 +655,11 @@ def parse_origin(contents, subs):
                     arg_dims = arg_datum[ARG_DIMS]
                     if arg_dims is not None:
                         for arg_dim in arg_dims:
-                            if not arg_dim.isdigit() and arg_dim not in arg_names and arg_dim != ":":
-                                global_ints_to_insert.append((arg_dim, "integer", "in", None))
-                                arg_names.add(arg_dim)
+                            dim_scalars = extract_dim_scalars(arg_dim)
+                            for arg_dim in dim_scalars:
+                                if arg_dim not in arg_names:
+                                    global_ints_to_insert.append((arg_dim, "integer", "in", None))
+                                    arg_names.add(arg_dim)
 
                 db[active_sub] = global_ints_to_insert + ordered_decls
                 active_sub = None
@@ -898,7 +900,7 @@ def extract_dim_tokens(dim):
     """
     Given a dimensions spec, extract the tokens
     """
-    return [item.replace(" ", "") for item in dim.split(":")]
+    return [item.replace(" ", "") for item in dim.split(":") if item.strip() != ""]
 
 ###############################################################################
 def extract_dim_scalars(dim):
@@ -1202,7 +1204,7 @@ def get_htd_dth_call(arg_data, rank, arg_list, typename, is_output=False, f2c=Fa
     return result
 
 ###############################################################################
-def gen_glue_impl(phys, sub, arg_data, arg_names, col_dim, f2c=False):
+def gen_glue_impl(phys, sub, arg_data, arg_names, col_dim, f2c=False, unpack=False):
 ###############################################################################
     """
     Generate code that takes a TestData struct and unpacks it to call the CXX
@@ -1301,15 +1303,19 @@ def gen_glue_impl(phys, sub, arg_data, arg_names, col_dim, f2c=False):
         #
         # 4) Get nk_pack and policy, unpack scalars, and launch kernel
         #
-        impl += f"  const Int nk_pack = ekat::npack<Spack>({obj}nlev);\n"
-        impl += f"  const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy({obj}{col_dim}, nk_pack);\n\n"
+        if unpack:
+            impl += f"  const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy({obj}{col_dim}, {obj}nlev);\n\n"
+        else:
+            impl += f"  const Int nk_pack = ekat::npack<Spack>({obj}nlev);\n"
+            impl += f"  const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy({obj}{col_dim}, nk_pack);\n\n"
+
         if scalars:
             if not f2c:
                 impl += "  // unpack data scalars because we do not want the lambda to capture d\n"
                 for input_group, typename in zip([isreals, isints, isbools], type_list):
                     if input_group:
                         for arg in input_group:
-                            if arg not in oscalars:
+                            if arg not in oscalars and arg != col_dim:
                                 impl += f"  const {typename} {arg} = {obj}{arg};\n"
 
             # We use 0-rank views to handle output scalars
@@ -1334,17 +1340,15 @@ def gen_glue_impl(phys, sub, arg_data, arg_names, col_dim, f2c=False):
         impl += "    // Get single-column subviews of all inputs, shouldn't need any i-indexing\n"
         impl += "    // after this.\n"
 
-        for view_group, typename in zip([vreals, vints, vbools], type_list):
-            if view_group:
-                for view_arg in view_group:
-                    dims = get_data_by_name(arg_data, view_arg, ARG_DIMS)
-                    if col_dim in dims:
-                        if len(dims) == 1:
-                            impl += f"    const auto {view_arg}_c = {view_arg}_d(i);\n"
-                        else:
-                            impl += f"    const auto {view_arg}_c = ekat::subview({view_arg}_d, i);\n"
+        for view_arg in views:
+            dims = get_data_by_name(arg_data, view_arg, ARG_DIMS)
+            if col_dim in dims:
+                if len(dims) == 1:
+                    pass
+                else:
+                    impl += f"    const auto {view_arg}_c = ekat::subview({view_arg}_d, i);\n"
 
-                impl += "\n"
+        impl += "\n"
 
         #
         # 6) Call fn
@@ -1352,11 +1356,16 @@ def gen_glue_impl(phys, sub, arg_data, arg_names, col_dim, f2c=False):
         kernel_arg_names = ["team"]
         for arg_name in arg_names:
             if arg_name in views:
-                kernel_arg_names.append(f"{arg_name}_c")
+                dims = get_data_by_name(arg_data, arg_name, ARG_DIMS)
+                if len(dims) == 1 and col_dim in dims:
+                    kernel_arg_names.append(f"{arg_name}_d(i)")
+                else:
+                    kernel_arg_names.append(f"{arg_name}_c")
             elif arg_name in oscalars:
                 kernel_arg_names.append(f"{arg_name}_d()")
             else:
-                kernel_arg_names.append(arg_name)
+                if arg_name != col_dim:
+                    kernel_arg_names.append(arg_name)
 
         joinstr = ',\n      '
         impl += f"    SHF::{sub}(\n      {joinstr.join(kernel_arg_names)});\n"
@@ -1603,7 +1612,7 @@ f"""void {sub}_f({data_struct}& d)
         arg_names = [item[ARG_NAME] for item in arg_data]
         decl      = self.gen_cxx_t2cxx_glue_decl(phys, sub, force_arg_data=force_arg_data).rstrip(";")
 
-        impl = gen_glue_impl(phys, sub, arg_data, arg_names, self._col_dim)
+        impl = gen_glue_impl(phys, sub, arg_data, arg_names, self._col_dim, unpack=self._unpack)
 
         result = \
 f"""{decl}
