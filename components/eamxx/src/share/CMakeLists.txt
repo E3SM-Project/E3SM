@@ -74,13 +74,6 @@ endif()
 add_subdirectory(io)
 
 if (NOT SCREAM_LIB_ONLY)
-  # Create test_support lib
-  add_library(scream_test_support
-    data_managers/mesh_free_grids_manager.cpp
-  )
-  target_link_libraries(scream_test_support PUBLIC scream_share scream_io)
-  target_include_directories (scream_test_support PUBLIC ${EKAT_SOURCE_DIR}/extern/Catch2/single_include)
-
   add_subdirectory(tests)
   add_subdirectory(io/tests)
 endif()
