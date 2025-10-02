@@ -2,7 +2,7 @@ include(ScreamUtils)
 
 function (CreateDiagTest test_name test_srcs)
   CreateUnitTest(${test_name} ${test_srcs} ${ARGN}
-    LIBS diagnostics physics_share
+    LIBS diagnostics eamxx_physics_share
     LABELS diagnostics)
 endfunction ()
 

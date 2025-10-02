@@ -8,6 +8,7 @@ add_library(eamxx_property_checks
 target_link_libraries(eamxx_property_checks PUBLIC
   eamxx_field
   eamxx_grid
+  eamxx_physics_share
   ekat::Algorithm)
 
 if (NOT SCREAM_LIB_ONLY)
