@@ -2,6 +2,9 @@
 if (NOT SCREAM_ONLY_GENERATE_BASELINES)
   include(ScreamUtils)
 
+  # Test column ops
+  CreateUnitTest(column_ops "column_ops.cpp" LIBS eamxx_utils)
+
   # Test TimeStamp
   CreateUnitTest(time_stamp "time_stamp_tests.cpp" LIBS eamxx_utils)
 
