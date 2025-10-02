@@ -14,7 +14,7 @@ add_library(scream_io
   eamxx_io_utils.cpp
 )
 
-target_link_libraries(scream_io PUBLIC eamxx_data_managers eamxx_scorpio_interface diagnostics)
+target_link_libraries(scream_io PUBLIC eamxx_data_managers eamxx_scorpio_interface)
 
 if (NOT SCREAM_LIB_ONLY)
   add_subdirectory(tests)

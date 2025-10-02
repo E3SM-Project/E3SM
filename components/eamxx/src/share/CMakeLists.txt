@@ -28,6 +28,9 @@ add_subdirectory(data_managers)
 # Atm process
 add_subdirectory(atm_process)
 
+# Diagnostic classes
+add_subdirectory(diagnostics)
+
 # IO library
 add_subdirectory(io)
 
@@ -55,6 +58,7 @@ target_link_libraries(scream_share PUBLIC
   eamxx_property_checks
   eamxx_data_managers
   eamxx_atm_process
+  eamxx_diagnostics
   scream_io)
 
 # Used in the data interpolation

@@ -1,16 +1,16 @@
 #include <catch2/catch.hpp>
 
-#include "share/core/eamxx_types.hpp"
-#include "share/field/field.hpp"
 #include "share/data_managers/field_manager.hpp"
-#include "share/field/field_utils.hpp"
 #include "share/data_managers/mesh_free_grids_manager.hpp"
 #include "share/io/eamxx_io_utils.hpp"
 #include "share/io/eamxx_output_manager.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 #include "share/io/scorpio_input.hpp"
+#include "share/diagnostics/register_diagnostics.hpp"
+#include "share/field/field.hpp"
+#include "share/field/field_utils.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
-#include "diagnostics/register_diagnostics.hpp"
+#include "share/core/eamxx_types.hpp"
 
 #include <ekat_assert.hpp>
 #include <ekat_comm.hpp>
