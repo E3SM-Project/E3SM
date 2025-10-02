@@ -7,7 +7,7 @@ set(GW_SRCS
   ${PATH_TO_LEGACY_GW}/gw_front.F90
   ${PATH_TO_LEGACY_GW}/gw_oro.F90
   ${PATH_TO_LEGACY_GW}/../vdiff_lu_solver.F90
-  ${CMAKE_CURRENT_SOURCE_DIR}/tests/infra/gw_iso_c.f90
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/infra/gw_c2f_bridge.f90
 )
 
 # Add ETI source files if not on CUDA/HIP

@@ -283,7 +283,8 @@ PHYSICS = {
             "components/eam/src/physics/cam/gw/gw_front.F90"
         ),
         "components/eamxx/src/physics/gw",
-        "gw_init();",
+        "gw_common_init(); // Might need more specific init",
+        "gw_finalize_cxx();",
         "ncol"
     ),
 }

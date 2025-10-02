@@ -117,7 +117,7 @@ void gw_common_init(GwCommonInit& d)
 void gw_convect_init_f(GwConvectInitData& d)
 {
   // Expects d has already been transitioned to f90
-  gw_common_init_bridge_f(d.init);
+  gw_common_init_f(d.init);
   gw_convect_init_bridge_f(d.maxh, d.maxuh, d.plev_src_wind, d.mfcc_in);
 }
 
@@ -144,7 +144,7 @@ void gw_finalize_cxx()
 void gwd_compute_tendencies_from_stress_divergence_f(GwdComputeTendenciesFromStressDivergenceData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>(); // This will shift array data + 1
-  gw_common_init_bridge_f(d.init);
+  gw_common_init_f(d.init);
   gwd_compute_tendencies_from_stress_divergence_bridge_f(d.ncol, d.do_taper, d.dt, d.effgw, d.tend_level, d.lat, d.dpm, d.rdpm, d.c, d.ubm, d.t, d.nm, d.xv, d.yv, d.tau, d.gwut, d.utgw, d.vtgw);
   d.transition<ekat::TransposeDirection::f2c>(); // This will shift array data - 1
 }
@@ -272,7 +272,7 @@ void gwd_compute_tendencies_from_stress_divergence(GwdComputeTendenciesFromStres
 void gw_prof_f(GwProfData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  gw_common_init_bridge_f(d.init);
+  gw_common_init_f(d.init);
   gw_prof_bridge_f(d.ncol, d.cpair, d.t, d.pmid, d.pint, d.rhoi, d.ti, d.nm, d.ni);
   d.transition<ekat::TransposeDirection::f2c>();
 }
@@ -350,7 +350,7 @@ void gw_prof(GwProfData& d)
 void momentum_energy_conservation_f(MomentumEnergyConservationData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  gw_common_init_bridge_f(d.init);
+  gw_common_init_f(d.init);
   momentum_energy_conservation_bridge_f(d.ncol, d.tend_level, d.dt, d.taucd, d.pint, d.pdel, d.u, d.v, d.dudt, d.dvdt, d.dsdt, d.utgw, d.vtgw, d.ttgw);
   d.transition<ekat::TransposeDirection::f2c>();
 }
@@ -446,7 +446,7 @@ void momentum_energy_conservation(MomentumEnergyConservationData& d)
 void gwd_compute_stress_profiles_and_diffusivities_f(GwdComputeStressProfilesAndDiffusivitiesData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  gw_common_init_bridge_f(d.init);
+  gw_common_init_f(d.init);
   gwd_compute_stress_profiles_and_diffusivities_bridge_f(d.ncol, d.src_level, d.ubi, d.c, d.rhoi, d.ni, d.kvtt, d.t, d.ti, d.piln, d.tau);
   d.transition<ekat::TransposeDirection::f2c>();
 }
@@ -539,7 +539,7 @@ void gwd_compute_stress_profiles_and_diffusivities(GwdComputeStressProfilesAndDi
 void gwd_project_tau_f(GwdProjectTauData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  gw_common_init_bridge_f(d.init);
+  gw_common_init_f(d.init);
   gwd_project_tau_bridge_f(d.ncol, d.tend_level, d.tau, d.ubi, d.c, d.xv, d.yv, d.taucd);
   d.transition<ekat::TransposeDirection::f2c>();
 }
@@ -622,7 +622,7 @@ void gwd_project_tau(GwdProjectTauData& d)
 void gwd_precalc_rhoi_f(GwdPrecalcRhoiData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  gw_common_init_bridge_f(d.init);
+  gw_common_init_f(d.init);
   gwd_precalc_rhoi_bridge_f(d.pcnst, d.ncol, d.dt, d.tend_level, d.pmid, d.pint, d.t, d.gwut, d.ubm, d.nm, d.rdpm, d.c, d.q, d.dse, d.egwdffi, d.qtgw, d.dttdf, d.dttke, d.ttgw);
   d.transition<ekat::TransposeDirection::f2c>();
 }
@@ -757,7 +757,7 @@ void gwd_precalc_rhoi(GwdPrecalcRhoiData& d)
 void gw_drag_prof_f(GwDragProfData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  gw_common_init_bridge_f(d.init);
+  gw_common_init_f(d.init);
   gw_drag_prof_bridge_f(d.pcnst, d.ncol, d.src_level, d.tend_level, d.do_taper, d.dt, d.lat, d.t, d.ti, d.pmid, d.pint, d.dpm, d.rdpm, d.piln, d.rhoi, d.nm, d.ni, d.ubm, d.ubi, d.xv, d.yv, d.effgw, d.c, d.kvtt, d.q, d.dse, d.tau, d.utgw, d.vtgw, d.ttgw, d.qtgw, d.taucd, d.egwdffi, d.gwut, d.dttdf, d.dttke);
   d.transition<ekat::TransposeDirection::f2c>();
 }
@@ -964,7 +964,7 @@ void gw_drag_prof(GwDragProfData& d)
 
 void gw_front_init_f(GwFrontInitData& d)
 {
-  gw_common_init_bridge_f(d.init);
+  gw_common_init_f(d.init);
   gw_front_init_bridge_f(d.taubgnd, d.frontgfc_in, d.kfront_in);
 }
 
@@ -977,7 +977,7 @@ void gw_front_init(GwFrontInitData& d)
 void gw_front_project_winds_f(GwFrontProjectWindsData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  gw_front_init_bridge_f(d.init);
+  gw_front_init_f(d.init);
   gw_front_project_winds_bridge_f(d.ncol, d.kbot, d.u, d.v, d.xv, d.yv, d.ubm, d.ubi);
   d.transition<ekat::TransposeDirection::f2c>();
 }
@@ -991,7 +991,7 @@ void gw_front_project_winds(GwFrontProjectWindsData& d)
 void gw_front_gw_sources_f(GwFrontGwSourcesData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  gw_front_init_bridge_f(d.init);
+  gw_front_init_f(d.init);
   gw_front_gw_sources_bridge_f(d.ncol, d.kbot, d.frontgf, d.tau);
   d.transition<ekat::TransposeDirection::f2c>();
 }
@@ -1005,7 +1005,7 @@ void gw_front_gw_sources(GwFrontGwSourcesData& d)
 void gw_cm_src_f(GwCmSrcData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  gw_front_init_bridge_f(d.init);
+  gw_front_init_f(d.init);
   gw_cm_src_bridge_f(d.ncol, d.kbot, d.u, d.v, d.frontgf, d.src_level, d.tend_level, d.tau, d.ubm, d.ubi, d.xv, d.yv, d.c);
   d.transition<ekat::TransposeDirection::f2c>();
 }
@@ -1019,21 +1019,79 @@ void gw_cm_src(GwCmSrcData& d)
 void gw_convect_project_winds_f(GwConvectProjectWindsData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  gw_convect_init_bridge_f(d.init);
+  gw_convect_init_f(d.init);
   gw_convect_project_winds_bridge_f(d.ncol, d.u, d.v, d.xv, d.yv, d.ubm, d.ubi);
   d.transition<ekat::TransposeDirection::f2c>();
 }
 
 void gw_convect_project_winds(GwConvectProjectWindsData& d)
 {
-  // For now just call f90
-  gw_convect_project_winds_f(d);
+  gw_convect_init(d.init);
+
+  // create device views and copy
+  std::vector<view1dr_d> vec1dr_in(2);
+  ekat::host_to_device({d.xv, d.yv}, d.ncol, vec1dr_in);
+
+  std::vector<view2dr_d> vec2dr_in(4);
+  std::vector<int> vec2dr_in_0_sizes = {d.ncol, d.ncol, d.ncol, d.ncol};
+  std::vector<int> vec2dr_in_1_sizes = {d.init.init.pver, d.init.init.pver + 1, d.init.init.pver, d.init.init.pver};
+  ekat::host_to_device({d.u, d.ubi, d.ubm, d.v}, vec2dr_in_0_sizes, vec2dr_in_1_sizes, vec2dr_in);
+
+  view1dr_d
+    xv_d(vec1dr_in[0]),
+    yv_d(vec1dr_in[1]);
+
+  view2dr_d
+    u_d(vec2dr_in[0]),
+    ubi_d(vec2dr_in[1]),
+    ubm_d(vec2dr_in[2]),
+    v_d(vec2dr_in[3]);
+
+  const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.ncol, d.init.init.pver);
+
+  GWF::GwConvectInit init_cp = GWF::s_convect_init;
+
+  // unpack data scalars because we do not want the lambda to capture d
+  const Int pver = d.init.init.pver;
+
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    const Int i = team.league_rank();
+
+    // Get single-column subviews of all inputs, shouldn't need any i-indexing
+    // after this.
+    const auto u_c = ekat::subview(u_d, i);
+    const auto ubi_c = ekat::subview(ubi_d, i);
+    const auto ubm_c = ekat::subview(ubm_d, i);
+    const auto v_c = ekat::subview(v_d, i);
+
+    GWF::gw_convect_project_winds(
+      team,
+      init_cp,
+      pver,
+      u_c,
+      v_c,
+      xv_d(i),
+      yv_d(i),
+      ubm_c,
+      ubi_c);
+  });
+
+  // Now get arrays
+  std::vector<view1dr_d> vec1dr_out = {xv_d, yv_d};
+  ekat::device_to_host({d.xv, d.yv}, d.ncol, vec1dr_out);
+
+  std::vector<view2dr_d> vec2dr_out = {ubi_d, ubm_d};
+  std::vector<int> vec2dr_out_0_sizes = {d.ncol, d.ncol};
+  std::vector<int> vec2dr_out_1_sizes = {d.init.init.pver + 1, d.init.init.pver};
+  ekat::device_to_host({d.ubi, d.ubm}, vec2dr_out_0_sizes, vec2dr_out_1_sizes, vec2dr_out);
+
+  gw_finalize_cxx();
 }
 
 void gw_heating_depth_f(GwHeatingDepthData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  gw_convect_init_bridge_f(d.init);
+  gw_convect_init_f(d.init);
   gw_heating_depth_bridge_f(d.ncol, d.maxq0_conversion_factor, d.hdepth_scaling_factor, d.use_gw_convect_old, d.zm, d.netdt, d.mini, d.maxi, d.hdepth, d.maxq0_out, d.maxq0);
   d.transition<ekat::TransposeDirection::f2c>();
 }
@@ -1047,7 +1105,7 @@ void gw_heating_depth(GwHeatingDepthData& d)
 void gw_storm_speed_f(GwStormSpeedData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  gw_convect_init_bridge_f(d.init);
+  gw_convect_init_f(d.init);
   gw_storm_speed_bridge_f(d.ncol, d.storm_speed_min, d.ubm, d.mini, d.maxi, d.storm_speed, d.uh, d.umin, d.umax);
   d.transition<ekat::TransposeDirection::f2c>();
 }
@@ -1061,7 +1119,7 @@ void gw_storm_speed(GwStormSpeedData& d)
 void gw_convect_gw_sources_f(GwConvectGwSourcesData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  gw_convect_init_bridge_f(d.init);
+  gw_convect_init_f(d.init);
   gw_convect_gw_sources_bridge_f(d.ncol, d.lat, d.hdepth_min, d.hdepth, d.mini, d.maxi, d.netdt, d.uh, d.storm_speed, d.maxq0, d.umin, d.umax, d.tau);
   d.transition<ekat::TransposeDirection::f2c>();
 }
@@ -1075,7 +1133,7 @@ void gw_convect_gw_sources(GwConvectGwSourcesData& d)
 void gw_beres_src_f(GwBeresSrcData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  gw_convect_init_bridge_f(d.init);
+  gw_convect_init_f(d.init);
   gw_beres_src_bridge_f(d.ncol, d.lat, d.u, d.v, d.netdt, d.zm, d.src_level, d.tend_level, d.tau, d.ubm, d.ubi, d.xv, d.yv, d.c, d.hdepth, d.maxq0_out, d.maxq0_conversion_factor, d.hdepth_scaling_factor, d.hdepth_min, d.storm_speed_min, d.use_gw_convect_old);
   d.transition<ekat::TransposeDirection::f2c>();
 }
@@ -1089,7 +1147,7 @@ void gw_beres_src(GwBeresSrcData& d)
 void gw_ediff_f(GwEdiffData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  gw_common_init_bridge_f(d.init);
+  gw_common_init_f(d.init);
   gw_ediff_bridge_f(d.ncol, d.kbot, d.ktop, d.tend_level, d.gwut, d.ubm, d.nm, d.rho, d.dt, GWC::gravit, d.pmid, d.rdpm, d.c, d.egwdffi, d.decomp_ca, d.decomp_cc, d.decomp_dnom, d.decomp_ze);
   d.transition<ekat::TransposeDirection::f2c>();
 }
@@ -1206,7 +1264,7 @@ void gw_ediff(GwEdiffData& d)
 void gw_diff_tend_f(GwDiffTendData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  gw_common_init_bridge_f(d.init);
+  gw_common_init_f(d.init);
   gw_diff_tend_bridge_f(d.ncol, d.kbot, d.ktop, d.q, d.dt, d.decomp_ca, d.decomp_cc, d.decomp_dnom, d.decomp_ze, d.dq);
   d.transition<ekat::TransposeDirection::f2c>();
 }
@@ -1273,7 +1331,7 @@ void gw_diff_tend(GwDiffTendData& d)
 void gw_oro_src_f(GwOroSrcData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  gw_common_init_bridge_f(d.init);
+  gw_common_init_f(d.init);
   gw_oro_init_bridge_f();
   gw_oro_src_bridge_f(d.ncol, d.u, d.v, d.t, d.sgh, d.pmid, d.pint, d.dpm, d.zm, d.nm, d.src_level, d.tend_level, d.tau, d.ubm, d.ubi, d.xv, d.yv, d.c);
   d.transition<ekat::TransposeDirection::f2c>();
@@ -1288,7 +1346,7 @@ void gw_oro_src(GwOroSrcData& d)
 void vd_lu_decomp_f(VdLuDecompData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  gw_common_init_bridge_f(d.init);
+  gw_common_init_f(d.init);
   vd_lu_decomp_bridge_f(d.ncol, d.ksrf, d.kv, d.tmpi, d.rpdel, d.ztodt, GWC::gravit, d.cc_top, d.ntop, d.nbot, d.decomp_ca, d.decomp_cc, d.decomp_dnom, d.decomp_ze);
   d.transition<ekat::TransposeDirection::f2c>();
 }
@@ -1377,7 +1435,7 @@ void vd_lu_decomp(VdLuDecompData& d)
 void vd_lu_solve_f(VdLuSolveData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  gw_common_init_bridge_f(d.init);
+  gw_common_init_f(d.init);
   vd_lu_solve_bridge_f(d.ncol, d.q, d.decomp_ca, d.decomp_cc, d.decomp_dnom, d.decomp_ze, d.ntop, d.nbot, d.cd_top);
   d.transition<ekat::TransposeDirection::f2c>();
 }
