@@ -13,12 +13,13 @@ CreateUnitTest(io_utils "io_utils.cpp"
 
 ## Test field aliasing functionality
 CreateUnitTest(io_alias "io_alias.cpp"
-  LIBS scream_io diagnostics LABELS io
+  LIBS scream_io eamxx_diagnostics
+  LABELS io
 )
 
 # Test creation of diagnostic from diag_field_name
 CreateUnitTest(create_diag "create_diag.cpp"
-  LIBS diagnostics scream_io
+  LIBS scream_io eamxx_diagnostics
   LABELS io diagnostics
 )
 
@@ -83,7 +84,8 @@ endforeach()
 
 ## Test remap output
 CreateUnitTest(io_remap_test "io_remap_test.cpp"
-  LIBS scream_io diagnostics LABELS io remap
+  LIBS scream_io eamxx_diagnostics
+  LABELS io remap
   MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
 )
 

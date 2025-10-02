@@ -3,7 +3,7 @@
 #include "control/atmosphere_driver.hpp"
 #include "control/atmosphere_surface_coupling_importer.hpp"
 #include "control/atmosphere_surface_coupling_exporter.hpp"
-#include "diagnostics/register_diagnostics.hpp"
+#include "share/diagnostics/register_diagnostics.hpp"
 #include "share/physics/eamxx_common_physics_functions.hpp"
 #include "share/data_managers/mesh_free_grids_manager.hpp"
 #include "share/data_managers/field_manager.hpp"
