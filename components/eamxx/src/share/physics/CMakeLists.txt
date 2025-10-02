@@ -1,4 +1,4 @@
-set(PHYSICS_SHARE_SRCS
+add_library (eamxx_physics_share
   physics_share_f2c.F90
   physics_share.cpp
   eamxx_trcmix.cpp
@@ -6,19 +6,21 @@ set(PHYSICS_SHARE_SRCS
 
 # Add ETI source files if not on CUDA/HIP
 if (NOT EAMXX_ENABLE_GPU)
-  list(APPEND PHYSICS_SHARE_SRCS
-  physics_saturation.cpp)
+  target_sources(eamxx_physics_share PRIVATE
+    physics_saturation.cpp)
 endif()
 
-add_library(physics_share ${PHYSICS_SHARE_SRCS})
-set_target_properties(physics_share PROPERTIES
+set_target_properties(eamxx_physics_share PROPERTIES
   Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules
 )
-target_include_directories(physics_share PUBLIC
+target_include_directories(eamxx_physics_share PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_CURRENT_BINARY_DIR}/modules
 )
-target_link_libraries(physics_share scream_share)
+target_link_libraries(eamxx_physics_share PUBLIC
+  eamxx_core
+  eamxx_utils
+  ekat::Pack)
 
 if (NOT SCREAM_LIB_ONLY)
 
@@ -27,9 +29,4 @@ if (NOT SCREAM_LIB_ONLY)
   )
 
   add_subdirectory(tests)
-endif()
-
-if (TARGET eamxx_physics)
-  # Add this library to eamxx_physics
-  target_link_libraries(eamxx_physics INTERFACE physics_share)
 endif()

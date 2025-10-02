@@ -1,8 +1,5 @@
 add_library(eamxx_physics INTERFACE)
 
-# Build shared physics functions first, so other parametrizations can use them
-add_subdirectory(share)
-
 # Add all physics parametrizations subfolders
 add_subdirectory(p3)
 if (SCREAM_DOUBLE_PRECISION)

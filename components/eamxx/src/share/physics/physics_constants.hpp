@@ -1,5 +1,5 @@
-#ifndef PHYSICS_CONSTANTS_HPP
-#define PHYSICS_CONSTANTS_HPP
+#ifndef EAMXX_PHYSICS_CONSTANTS_HPP
+#define EAMXX_PHYSICS_CONSTANTS_HPP
 
 #include "share/core/eamxx_types.hpp"
 
@@ -173,4 +173,4 @@ constexpr Scalar Constants<Scalar>::macheps;
 } // namespace physics
 } // namespace scream
 
-#endif
+#endif // EAMXX_PHYSICS_CONSTANTS_HPP
