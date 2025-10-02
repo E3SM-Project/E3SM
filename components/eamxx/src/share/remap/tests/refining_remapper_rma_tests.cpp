@@ -3,7 +3,7 @@
 #include "share/remap/refining_remapper_rma.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
-#include "eamxx_setup_random_test.hpp"
+#include "share/core/eamxx_setup_random_test.hpp"
 #include "share/util/eamxx_utils.hpp"
 #include "share/field/field_utils.hpp"
 

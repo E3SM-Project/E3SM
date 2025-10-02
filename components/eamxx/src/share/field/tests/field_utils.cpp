@@ -7,7 +7,7 @@
 #include "share/field/field_utils.hpp"
 #include "share/util/eamxx_universal_constants.hpp"
 
-#include "eamxx_setup_random_test.hpp"
+#include "share/core/eamxx_setup_random_test.hpp"
 
 #include <ekat_pack.hpp>
 #include <ekat_subview_utils.hpp>
