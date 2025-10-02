@@ -527,6 +527,7 @@ _TESTS = {
             "ERS_Ld60.f45_g37.IELMFATES.elm-fates_cold_st3",
             "ERS_Ld60.f45_g37.IELMFATES.elm-fates_cold_pphys",
             "SMS_D_Ld15.f45_g37.IELMFATES.elm-fates_cold_twostream",
+            "ERS_Ld60.f45_g37.IELMFATES.elm-fates_cold_managedfire"
             )
         },
 
