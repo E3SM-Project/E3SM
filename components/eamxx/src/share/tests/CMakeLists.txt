@@ -2,6 +2,9 @@
 if (NOT SCREAM_ONLY_GENERATE_BASELINES)
   include(ScreamUtils)
 
+  # Test field manager
+  CreateUnitTest(field_mgr "field_mgr_tests.cpp")
+
   # Test column ops
   CreateUnitTest(column_ops "column_ops.cpp")
 
