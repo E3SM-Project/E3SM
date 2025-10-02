@@ -12,7 +12,6 @@ namespace gw {
  */
 
 template<typename S, typename D>
-KOKKOS_FUNCTION
 void Functions<S,D>::gw_convect_init(
   // Inputs
   const GwCommonInit& init,
