@@ -1,4 +1,4 @@
-#include "share/grid/grids_manager.hpp"
+#include "share/manager/grids_manager.hpp"
 
 namespace scream
 {

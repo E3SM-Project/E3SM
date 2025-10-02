@@ -1,4 +1,4 @@
-#include "share/grid/remap/identity_remapper.hpp"
+#include "share/remap/identity_remapper.hpp"
 
 namespace scream
 {

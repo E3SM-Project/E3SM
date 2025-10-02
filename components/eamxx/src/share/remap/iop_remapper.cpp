@@ -1,4 +1,4 @@
-#include "share/grid/remap/iop_remapper.hpp"
+#include "share/remap/iop_remapper.hpp"
 
 // Anonymous namespace, in case other TU's define the same type
 namespace {

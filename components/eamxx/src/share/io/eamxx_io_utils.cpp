@@ -1,7 +1,7 @@
 #include "share/io/eamxx_io_utils.hpp"
 
 #include "share/io/eamxx_scorpio_interface.hpp"
-#include "share/grid/library_grids_manager.hpp"
+#include "share/manager/library_grids_manager.hpp"
 #include "share/util/eamxx_utils.hpp"
 #include "share/core/eamxx_config.hpp"
 
