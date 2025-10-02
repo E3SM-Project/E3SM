@@ -81,15 +81,10 @@ if (EAMXX_ENABLE_PYTHON)
 endif()
 
 if (NOT SCREAM_LIB_ONLY)
-  # Nano-library, providing ekat_initialize/finalize_test_session implementations
+  # Add testing session source to eamxx_test_support library
   # This lib is linked to ALL tests created by CreateUnitTest from cmake/ScreamUtils.cmake
-  add_library(eamxx_test_session
-    eamxx_test_session.cpp
-  )
-  target_include_directories(eamxx_test_session PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}
-  )
-  target_link_libraries(eamxx_test_session PUBLIC eamxx_core)
+  target_sources (eamxx_test_support PRIVATE eamxx_test_session.cpp)
+  target_link_libraries(eamxx_test_support PUBLIC eamxx_core)
 
   add_subdirectory(tests)
 endif()
