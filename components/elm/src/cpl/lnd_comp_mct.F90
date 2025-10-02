@@ -13,7 +13,6 @@ module lnd_comp_mct
   use decompmod        , only : bounds_type, ldecomp
   use lnd_import_export
   use iso_c_binding
-  use elm_cpl_indices
   use esmf, only: ESMF_clock
 
 #ifdef HAVE_MOAB
@@ -66,10 +65,11 @@ contains
     !
     ! !USES:
     use abortutils       , only : endrun
+    use shr_log_mod      , only : errMsg => shr_log_errMsg
     use shr_kind_mod     , only : SHR_KIND_CL
     use elm_time_manager , only : get_nstep, get_step_size, set_timemgr_init, set_nextsw_cday
     use elm_initializeMod, only : initialize1, initialize2, initialize3
-    use elm_instMod      , only : lnd2atm_vars, lnd2glc_vars
+    use elm_instMod      , only : lnd2atm_vars, lnd2glc_vars, lnd2iac_vars
     use elm_instance     , only : elm_instance_init
     use elm_varctl       , only : finidat,single_column, elm_varctl_set, iulog, noland, fatmlndfrc, &
                                   scm_multcols, scm_nx, scm_ny
@@ -92,6 +92,7 @@ contains
     use seq_flds_mod     , only : seq_flds_x2l_fields, seq_flds_l2x_fields, lnd_rof_two_way
     use spmdMod          , only : masterproc, npes, spmd_init
     use elm_varctl       , only : nsrStartup, nsrContinue, nsrBranch, use_lnd_rof_two_way
+    use elm_varctl       , only:  elm_varctl_set_iac_flag
     use elm_cpl_indices  , only : elm_cpl_indices_set
     use perf_mod         , only : t_startf, t_stopf
     use mct_mod
@@ -117,6 +118,7 @@ contains
     integer  :: g,i,j                                ! indices
     integer  :: dtime_sync                           ! coupling time-step from the input synchronization clock
     integer  :: dtime_elm                            ! elm time-step
+    logical  :: iac_flag                             ! Flag if IAC is present
     logical  :: exists                               ! true if file exists
     logical  :: verbose_taskmap_output               ! true then use verbose task-to-node mapping format
     logical  :: atm_aero                             ! Flag if aerosol data sent from atm model
@@ -284,6 +286,10 @@ contains
 
     use_lnd_rof_two_way = lnd_rof_two_way
     
+    ! Determine if iac is active, and set flag
+    call seq_infodata_GetData(infodata, iac_present=iac_flag)
+    call elm_varctl_set_iac_flag(iac_flag)
+
     ! Read namelist, grid and surface data
 
     call initialize1( )
@@ -314,6 +320,9 @@ contains
 
     call lnd_domain_mct( bounds, lsz, gsMap_lnd, dom_l )
 #ifdef HAVE_MOAB
+    if (iac_present) then
+      call endrun(msg=sub//'ERROR: EHC not supported with MOAB yet: '//errMsg(__FILE__, __LINE__))
+    endif
     call init_moab_land(bounds, LNDID)
 #endif
     call mct_aVect_init(x2l_l, rList=seq_flds_x2l_fields, lsize=lsz)
@@ -355,13 +364,9 @@ contains
     end if
 
     ! Create land export state 
-
-    if (atm_present) then 
-      call lnd_export(bounds, lnd2atm_vars, lnd2glc_vars, l2x_l%rattr)
-#ifdef HAVE_MOAB
-!     Also send data through the MOAB path in driver-moab
-      call lnd_export_moab(EClock, bounds, lnd2atm_vars, lnd2glc_vars) ! it is private here
-#endif
+    ! Note that lnd2iac_vars is not set yet for restart
+    if (atm_present .or. iac_present) then 
+      call lnd_export(bounds, lnd2atm_vars, lnd2glc_vars, lnd2iac_vars, l2x_l%rattr)
     endif
 
     ! Fill in infodata settings
@@ -423,6 +428,7 @@ contains
     ! !USES:
     use shr_kind_mod    ,  only : r8 => shr_kind_r8
     use elm_instMod     , only : lnd2atm_vars, atm2lnd_vars, lnd2glc_vars, glc2lnd_vars
+    use elm_instMod     , only : lnd2iac_vars, iac2lnd_vars
     use elm_driver      ,  only : elm_drv
     use elm_time_manager,  only : get_curr_date, get_nstep, get_curr_calday, get_step_size
     use elm_time_manager,  only : advance_timestep, set_nextsw_cday,update_rad_dtime
@@ -542,7 +548,7 @@ contains
     ! Map to elm (only when state and/or fluxes need to be updated)
 
     call t_startf ('lc_lnd_import')
-    call lnd_import( bounds, x2l_l%rattr, atm2lnd_vars, glc2lnd_vars, lnd2atm_vars)
+    call lnd_import( bounds, x2l_l%rattr, atm2lnd_vars, glc2lnd_vars, lnd2atm_vars, iac2lnd_vars)
     
 #ifdef HAVE_MOAB
 #ifdef MOABCOMP
@@ -622,10 +628,7 @@ contains
 
 #ifndef CPL_BYPASS       
        call t_startf ('lc_lnd_export')
-       call lnd_export(bounds, lnd2atm_vars, lnd2glc_vars, l2x_l%rattr)
-#ifdef HAVE_MOAB
-       call lnd_export_moab(EClock, bounds, lnd2atm_vars, lnd2glc_vars) ! it is private here
-#endif
+       call lnd_export(bounds, lnd2atm_vars, lnd2glc_vars, lnd2iac_vars, l2x_l%rattr)
        call t_stopf ('lc_lnd_export')
 #endif
 
