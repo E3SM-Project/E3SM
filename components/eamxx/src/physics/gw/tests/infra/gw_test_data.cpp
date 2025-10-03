@@ -1098,8 +1098,73 @@ void gw_heating_depth_f(GwHeatingDepthData& d)
 
 void gw_heating_depth(GwHeatingDepthData& d)
 {
-  // For now just call f90
-  gw_heating_depth_f(d);
+  gw_convect_init(d.init);
+
+  // create device views and copy
+  std::vector<view1dr_d> vec1dr_in(3);
+  ekat::host_to_device({d.hdepth, d.maxq0, d.maxq0_out}, d.ncol, vec1dr_in);
+
+  std::vector<view2dr_d> vec2dr_in(2);
+  ekat::host_to_device({d.netdt, d.zm}, d.ncol, d.init.init.pver, vec2dr_in);
+
+  std::vector<view1di_d> vec1di_in(2);
+  ekat::host_to_device({d.maxi, d.mini}, d.ncol, vec1di_in);
+
+  view1dr_d
+    hdepth_d(vec1dr_in[0]),
+    maxq0_d(vec1dr_in[1]),
+    maxq0_out_d(vec1dr_in[2]);
+
+  view2dr_d
+    netdt_d(vec2dr_in[0]),
+    zm_d(vec2dr_in[1]);
+
+  view1di_d
+    maxi_d(vec1di_in[0]),
+    mini_d(vec1di_in[1]);
+
+  const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.ncol, d.init.init.pver);
+
+  GWF::GwConvectInit init_cp = GWF::s_convect_init;
+
+  // unpack data scalars because we do not want the lambda to capture d
+  const Real hdepth_scaling_factor = d.hdepth_scaling_factor;
+  const Real maxq0_conversion_factor = d.maxq0_conversion_factor;
+  const Int pver = d.init.init.pver;
+  const bool use_gw_convect_old = d.use_gw_convect_old;
+
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    const Int i = team.league_rank();
+
+    // Get single-column subviews of all inputs, shouldn't need any i-indexing
+    // after this.
+    const auto netdt_c = ekat::subview(netdt_d, i);
+    const auto zm_c = ekat::subview(zm_d, i);
+
+    GWF::gw_heating_depth(
+      team,
+      init_cp,
+      pver,
+      maxq0_conversion_factor,
+      hdepth_scaling_factor,
+      use_gw_convect_old,
+      zm_c,
+      netdt_c,
+      mini_d(i),
+      maxi_d(i),
+      hdepth_d(i),
+      maxq0_out_d(i),
+      maxq0_d(i));
+  });
+
+  // Now get arrays
+  std::vector<view1dr_d> vec1dr_out = {hdepth_d, maxq0_d, maxq0_out_d};
+  ekat::device_to_host({d.hdepth, d.maxq0, d.maxq0_out}, d.ncol, vec1dr_out);
+
+  std::vector<view1di_d> vec1di_out = {maxi_d, mini_d};
+  ekat::device_to_host({d.maxi, d.mini}, d.ncol, vec1di_out);
+
+  gw_finalize_cxx();
 }
 
 void gw_storm_speed_f(GwStormSpeedData& d)

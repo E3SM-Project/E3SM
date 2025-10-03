@@ -350,6 +350,9 @@ class TestGenBoilerBasics(unittest.TestCase):
         self.assertEqual(convert_to_cxx_dim("-nlev:nlev", True), "nlev_*2 + 1")
         self.assertEqual(convert_to_cxx_dim("-nlev:pgwv", True), "nlev_ + pgwv_ + 1")
         self.assertEqual(convert_to_cxx_dim("nlev:pgwv", True), "pgwv_ - nlev_")
+        self.assertEqual(convert_to_cxx_dim("nlev:pgwv", True), "pgwv_ - nlev_")
+        self.assertEqual(convert_to_cxx_dim("nlev:pgwv", from_d=True), "d.pgwv - d.nlev")
+        self.assertEqual(convert_to_cxx_dim("nlev:pgwv"), "pgwv - nlev")
 
         # find_insertion
         lines = ["foo", "bar", "baz", "bag"]
@@ -427,7 +430,6 @@ void Functions<S,D>::linear_interp(
   // Inputs
   const bool& val,
   const bool& vals,
-  const Int& shcol,
   const Int& nlev,
   const Int& nlevi,
   const Int& ntracers,
@@ -1149,7 +1151,6 @@ PTD_STD_DEF(DataSubName, 8, shcol, nlev, nlevi, ntracers, gag, bab1, bab2, val);
     // Inputs
     const bool& val,
     const bool& vals,
-    const Int& shcol,
     const Int& nlev,
     const Int& nlevi,
     const Int& ntracers,
@@ -1198,7 +1199,6 @@ void Functions<S,D>::fake_sub(
   // Inputs
   const bool& val,
   const bool& vals,
-  const Int& shcol,
   const Int& nlev,
   const Int& nlevi,
   const Int& ntracers,

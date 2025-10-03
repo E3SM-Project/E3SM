@@ -16,6 +16,7 @@ KOKKOS_FUNCTION
 void Functions<S,D>::gw_heating_depth(
   // Inputs
   const MemberType& team,
+  const GwConvectInit& init,
   const Int& pver,
   const Real& maxq0_conversion_factor,
   const Real& hdepth_scaling_factor,
@@ -23,14 +24,67 @@ void Functions<S,D>::gw_heating_depth(
   const uview_1d<const Real>& zm,
   const uview_1d<const Real>& netdt,
   // Outputs
-  const uview_1d<Int>& mini,
-  const uview_1d<Int>& maxi,
-  const uview_1d<Real>& hdepth,
-  const uview_1d<Real>& maxq0_out,
-  const uview_1d<Real>& maxq0)
+  Int& mini,
+  Int& maxi,
+  Real& hdepth,
+  Real& maxq0_out,
+  Real& maxq0)
 {
-  // TODO
-  // Note, argument types may need tweaking. Generator is not always able to tell what needs to be packed
+  static constexpr Real heating_altitude_max = 20e3; // max altitude [m] to check for max heating
+
+  // Find indices for the top and bottom of the heating range.
+  mini = 0;
+  maxi = 0;
+
+  EKAT_KERNEL_REQUIRE_MSG(!use_gw_convect_old, "The old gw convect algorithm is not supported");
+
+  //---------------------------------------------------------------------
+  // cleaner version that addresses bug in original where heating max and
+  // depth were too low whenever heating <=0 occurred in the middle of
+  // the heating profile (ex. at the melting level)
+  Kokkos::parallel_for(
+    Kokkos::TeamVectorRange(team, pver), [&] (const int k) {
+      if ( zm(k) < heating_altitude_max ) {
+        if ( netdt(k) > 0 ) {
+          // Set mini as first spot where heating rate is positive
+          if ( mini == 0 ) mini = k;
+          // Set maxi to current level
+          maxi = k;
+        }
+        else {
+          // above the max check if indices were found
+          if ( mini==0 ) mini = k;
+          if ( maxi==0 ) maxi = k;
+        }
+      }
+    });
+
+  team.team_barrier();
+
+  // Heating depth in km.
+  hdepth = (zm(maxi) -zm(mini))/1000;
+
+  // Confine depth to table range.
+  hdepth = ekat::impl::min(hdepth, static_cast<Real>(init.maxh));
+
+  // apply tunable scaling factor for the heating depth
+  hdepth *= hdepth_scaling_factor;
+
+  // Maximum heating rate.
+  Kokkos::parallel_reduce(
+    Kokkos::TeamVectorRange(team, pver), [&] (const int k, Real& lmax) {
+      if (k >= maxi && k <= mini && netdt(k) > lmax) {
+        lmax = netdt(k);
+      }
+    }, Kokkos::Max<Real>(maxq0));
+
+  team.team_barrier();
+
+  //output max heating rate in K/day
+  maxq0_out = maxq0 * 24 * 3600;
+
+  // Multipy by conversion factor
+  maxq0 *= maxq0_conversion_factor;
 }
 
 } // namespace gw

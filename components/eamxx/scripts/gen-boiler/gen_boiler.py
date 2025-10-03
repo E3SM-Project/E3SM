@@ -766,9 +766,15 @@ def gen_arg_cxx_decls(arg_data, kokkos=False, unpacked=False, col_dim=None):
     arg_sig_list = [(f"{arg_type} {arg_name}", arg_datum[ARG_INTENT])
                     for arg_name, arg_type, arg_datum in zip(arg_names, arg_types, arg_data)]
 
-    # For kokkos functions, we will almost always want the team
+    # For kokkos functions, we will almost always want the team and we don't want
+    # the col_dim
     if kokkos:
         arg_sig_list.insert(0, ("const MemberType& team", "in"))
+        for arg_sig, arg_intent in arg_sig_list:
+            if arg_sig.split()[-1] == col_dim:
+                expect(arg_intent == "in", f"col_dim {col_dim} wasn't an input, {arg_intent}?")
+                arg_sig_list.remove((arg_sig, arg_intent))
+                break
 
     result = []
 
@@ -1003,8 +1009,12 @@ def convert_to_cxx_dim(dim, add_underscore=False, from_d=False):
     uns = "_" if add_underscore else ""
     obj = "d." if from_d else ""
 
+    # null case, could not determine anything
+    if not tokens:
+        return ""
+
     # case 1, single token
-    if len(tokens) == 1:
+    elif len(tokens) == 1:
         expect(not tokens[0].startswith("-"), f"Received weird negative fortran dim: '{dim}'")
         return obj + tokens[0] + uns
 
@@ -1052,7 +1062,7 @@ def convert_to_cxx_dim(dim, add_underscore=False, from_d=False):
             return f"{obj}{second_token}{uns} - {obj}{first_token}{uns}"
 
     else:
-        expect(False, f"Received weird fortran range with more than 2 tokens: '{dim}'")
+        expect(False, f"Received weird fortran range with more than 2 tokens: '{tokens}'")
 
 ###############################################################################
 def gen_struct_api(struct_name, arg_data):
