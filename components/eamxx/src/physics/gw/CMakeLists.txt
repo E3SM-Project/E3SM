@@ -26,6 +26,7 @@ if (NOT EAMXX_ENABLE_GPU OR Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE OR Kokkos
     eti/gw_gw_common_init.cpp
     eti/gw_vd_lu_decomp.cpp
     eti/gw_vd_lu_solve.cpp
+    eti/gw_gw_convect_init.cpp
   ) # GW ETI SRCS
 endif()
 

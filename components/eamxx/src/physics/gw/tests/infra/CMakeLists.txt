@@ -1,7 +1,7 @@
 set(PATH_TO_LEGACY_GW ${SCREAM_BASE_DIR}/../eam/src/physics/cam/gw)
 set(INFRA_SRCS
   gw_test_data.cpp
-  gw_iso_c.f90
+  gw_c2f_bridge.f90
   ${PATH_TO_LEGACY_GW}/gw_utils.F90
   ${PATH_TO_LEGACY_GW}/gw_common.F90
   ${PATH_TO_LEGACY_GW}/gw_convect.F90
