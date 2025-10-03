@@ -11,7 +11,7 @@
     atm, lnd, ice, ocn, river, glc wave model-options
 
     The notation for the compset longname is
-    TIME_ATM[%phys]_LND[%phys]_ICE[%phys]_OCN[%phys]_ROF[%phys]_GLC[%phys]_WAV[%phys][_ESP%phys][_BGC%phys]
+    TIME[%scenario]_ATM[%phys]_LND[%phys]_ICE[%phys]_OCN[%phys]_ROF[%phys]_GLC[%phys]_WAV[%phys][_ESP%phys][_BGC%phys]
     Where for the EAM specific compsets below the following is supported
     TIME = Time period (e.g. 2000, HIST, RCP8...)
     ATM  = [EAM, EAMXX, SATM, SCREAM]
@@ -45,6 +45,11 @@
 </compset>
 
 <compset>
+  <alias>WCYCL1850-CMIP7</alias>
+  <lname>1850SOI%CMIP7_EAM_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
   <alias>WCYCL1850_chemUCI-Linozv3</alias>
   <lname>1850SOI_EAM%CHEMUCI-LINOZV3_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
@@ -60,8 +65,18 @@
 </compset>
 
 <compset>
+  <alias>WCYCL1850-CMIP7-1pctCO2</alias>
+  <lname>1850SOI%CMIP7-1pctCO2_EAM_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
   <alias>WCYCL1850-4xCO2</alias>
   <lname>1850SOI_EAM%CMIP6-4xCO2_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>WCYCL1850-CMIP7-4xCO2</alias>
+  <lname>1850SOI%CMIP7-4xCO2_EAM_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
 
 <!-- WCYCL1850NS uses no spun-up ICs for mpaso and mpassi. It is only being used for nigthly tests on small grids such as ne11_oQU480-->
@@ -82,8 +97,18 @@
 </compset>
 
 <compset>
+  <alias>WCYCL1950-CMIP7</alias>
+  <lname>1950SOI%CMIP7_EAM_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
   <alias>WCYCL20TR</alias>
   <lname>20TRSOI_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>WCYCL20TR-CMIP7</alias>
+  <lname>20TRSOI%CMIP7_EAM_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
 
 <!-- Compsets for historical single forcing experiments, two aliases each with WCYCL20TR or hist as prefix -->
