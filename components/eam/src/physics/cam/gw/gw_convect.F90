@@ -172,6 +172,7 @@ subroutine gw_heating_depth(ncol, maxq0_conversion_factor, hdepth_scaling_factor
   ! Find indices for the top and bottom of the heating range.
   mini = 0
   maxi = 0
+  maxq0 = 0
 
   if (use_gw_convect_old) then
      !---------------------------------------------------------------------

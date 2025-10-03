@@ -33,33 +33,31 @@ void Functions<S,D>::gw_heating_depth(
   static constexpr Real heating_altitude_max = 20e3; // max altitude [m] to check for max heating
 
   // Find indices for the top and bottom of the heating range.
-  mini = 0;
-  maxi = 0;
-
   EKAT_KERNEL_REQUIRE_MSG(!use_gw_convect_old, "The old gw convect algorithm is not supported");
+
+  // The type that holds both min and max results
+  using ResultType = Kokkos::MinMax<Int>::value_type;
+  ResultType min_max_result;
 
   //---------------------------------------------------------------------
   // cleaner version that addresses bug in original where heating max and
   // depth were too low whenever heating <=0 occurred in the middle of
   // the heating profile (ex. at the melting level)
-  Kokkos::parallel_for(
-    Kokkos::TeamVectorRange(team, pver), [&] (const int k) {
+  Kokkos::parallel_reduce(
+    Kokkos::TeamVectorRange(team, pver), [&] (const int k, ResultType& update) {
       if ( zm(k) < heating_altitude_max ) {
         if ( netdt(k) > 0 ) {
           // Set mini as first spot where heating rate is positive
-          if ( mini == 0 ) mini = k;
-          // Set maxi to current level
-          maxi = k;
-        }
-        else {
-          // above the max check if indices were found
-          if ( mini==0 ) mini = k;
-          if ( maxi==0 ) maxi = k;
+          if (k < update.min_val) update.min_val = k;
+          if (k > update.max_val) update.max_val = k;
         }
       }
-    });
+    }, Kokkos::MinMax<Int>(min_max_result));
 
   team.team_barrier();
+
+  mini = min_max_result.max_val; // Yes, I know this looks backwards..
+  maxi = min_max_result.min_val;
 
   // Heating depth in km.
   hdepth = (zm(maxi) -zm(mini))/1000;
@@ -72,8 +70,8 @@ void Functions<S,D>::gw_heating_depth(
 
   // Maximum heating rate.
   Kokkos::parallel_reduce(
-    Kokkos::TeamVectorRange(team, pver), [&] (const int k, Real& lmax) {
-      if (k >= maxi && k <= mini && netdt(k) > lmax) {
+    Kokkos::TeamVectorRange(team, maxi, mini+1), [&] (const int k, Real& lmax) {
+      if (netdt(k) > lmax) {
         lmax = netdt(k);
       }
     }, Kokkos::Max<Real>(maxq0));
