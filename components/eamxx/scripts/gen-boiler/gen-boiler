@@ -8,7 +8,7 @@ subroutines, with the potential to be expanded to additional packages later.
 This script should also help maintain the latest approved coding patterns.
 
 To test this tool, run:
-% python3 -m doctest gen_boiler.py
+% ./run-gb-tests
 """
 
 from utils import expect, check_minimum_python_version, GoodFormatter
@@ -30,31 +30,24 @@ OR
 
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# Generate all boilerplate p3 subroutine foo_bar \033[0m
-    > {0} foo_bar --physics=p3
+    > {0} p3 foo_bar
 
     \033[1;32m# Generate all boilerplate for shoc subroutine bar_baz and func_name \033[0m
-    > {0} bar_baz func_name --physics=shoc
+    > {0} shoc bar_baz func_name
 
     \033[1;32m# Generate only f90->cxx bindings for p3 subroutine foo_bar \033[0m
-    > {0} foo_bar --piece=f90_f2c_bind --physics=p3
+    > {0} p3 foo_bar --piece=f90_f2c_bind
 
     \033[1;32m# Overwrite only f90->cxx and cxx->f90 bindings for p3 subroutine foo_bar \033[0m
-    > {0} foo_bar --piece=f90_f2c_bind --piece=f90_c2f_bind -o --physics=p3
+    > {0} p3 foo_bar --piece=f90_f2c_bind --piece=f90_c2f_bind -o
 """.format(pathlib.Path(args[0]).name),
         description=description,
-        formatter_class=GoodFormatter
+        formatter_class=argparse.RawTextHelpFormatter
     )
 
     default_repo = get_git_toplevel_dir()
 
-    parser.add_argument("subs", nargs="+",
-                        help="fortran subroutine (or function) name[s]. Must specify at least one")
-
-    parser.add_argument("-p", "--piece", dest="pieces", default=[], metavar="", action="append", choices=get_supported_pieces(),
-                        help="Select which pieces of boilerplate to generate."
-                        "\nPiece choices:\n{}\n\nDefault will generate ALL pieces".format("\n".join(["{:17s}: {}".format(item, get_piece_description(item)) for item in get_supported_pieces()])))
-
-    parser.add_argument("--physics", default=[], action="append", choices=get_supported_physics(),
+    parser.add_argument("physics", choices=get_supported_physics(),
                         help=\
 """
 Limit generation to a specific set of physics. This should only be
@@ -63,6 +56,14 @@ multiple physics. This may also improve performance.
 Default will scan ALL physics.
 """
                     )
+
+    parser.add_argument("subs", nargs="+",
+                        help="fortran subroutine (or function) name[s]. Must specify at least one")
+
+    parser.add_argument("-p", "--piece", dest="pieces", default=[], metavar="", action="append", choices=get_supported_pieces(),
+                        help="Select which pieces of boilerplate to generate."
+                        "\nPiece choices:\n{}\n\nDefault will generate ALL pieces".format("\n".join(["{:17s}: {}".format(item, get_piece_description(item)) for item in get_supported_pieces()])))
+
 
     parser.add_argument("-o", "--overwrite", action="store_true",
                         help="Overwrite existing boilerplate.\nDefault: %(default)s")
@@ -75,6 +76,15 @@ Default will scan ALL physics.
 
     parser.add_argument("-t", "--target-repo", default=default_repo,
                         help="The repo you wish to generate boilerplate into.\nDefault: %(default)s")
+
+    parser.add_argument("-f", "--f2c", action="store_true",
+                        help="Also generate f2c bindings")
+
+    parser.add_argument("-u", "--unpack", action="store_true",
+                        help="Real data should not be packed into SIMD packs")
+
+    parser.add_argument("-c", "--col-dim", default=None,
+                        help="The name of the columns dimension. Default to hardcoded one")
 
     parser.add_argument("-d", "--dry-run", action="store_true",
                         help="Do a dry run instead of modifying files.\nDefault: %(default)s")

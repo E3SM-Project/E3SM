@@ -70,7 +70,12 @@ struct UnitWrap::UnitTest<D>::TestGwConvectProjectWinds : public UnitWrap::UnitT
 
     // Get data from test
     for (auto& d : test_data) {
-      gw_convect_project_winds(d);
+      if (this->m_baseline_action == GENERATE) {
+        gw_convect_project_winds_f(d);
+      }
+      else {
+        gw_convect_project_winds(d);
+      }
     }
 
     // Verify BFB results, all data should be in C layout
@@ -78,21 +83,20 @@ struct UnitWrap::UnitTest<D>::TestGwConvectProjectWinds : public UnitWrap::UnitT
       for (Int i = 0; i < num_runs; ++i) {
         GwConvectProjectWindsData& d_baseline = baseline_data[i];
         GwConvectProjectWindsData& d_test = test_data[i];
+        REQUIRE(d_baseline.total(d_baseline.xv) == d_test.total(d_test.xv));
+        REQUIRE(d_baseline.total(d_baseline.xv) == d_test.total(d_test.yv));
         for (Int k = 0; k < d_baseline.total(d_baseline.xv); ++k) {
-          REQUIRE(d_baseline.total(d_baseline.xv) == d_test.total(d_test.xv));
           REQUIRE(d_baseline.xv[k] == d_test.xv[k]);
-          REQUIRE(d_baseline.total(d_baseline.xv) == d_test.total(d_test.yv));
           REQUIRE(d_baseline.yv[k] == d_test.yv[k]);
         }
+        REQUIRE(d_baseline.total(d_baseline.ubm) == d_test.total(d_test.ubm));
         for (Int k = 0; k < d_baseline.total(d_baseline.ubm); ++k) {
-          REQUIRE(d_baseline.total(d_baseline.ubm) == d_test.total(d_test.ubm));
           REQUIRE(d_baseline.ubm[k] == d_test.ubm[k]);
         }
+        REQUIRE(d_baseline.total(d_baseline.ubi) == d_test.total(d_test.ubi));
         for (Int k = 0; k < d_baseline.total(d_baseline.ubi); ++k) {
-          REQUIRE(d_baseline.total(d_baseline.ubi) == d_test.total(d_test.ubi));
           REQUIRE(d_baseline.ubi[k] == d_test.ubi[k]);
         }
-
       }
     }
     else if (this->m_baseline_action == GENERATE) {

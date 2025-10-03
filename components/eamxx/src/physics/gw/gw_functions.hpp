@@ -143,6 +143,33 @@ struct Functions
     Real tndmax; // = huge(1._r8)
   };
 
+  struct GwConvectInit {
+    GwConvectInit() : initialized(false) {}
+
+    // Tell us if initialize has been called
+    bool initialized;
+
+    // Dimension for heating depth.
+    int maxh;
+
+    // Dimension for mean wind in heating.
+    int maxuh;
+
+    // Index for level for storm/steering flow (usually 700 mb)
+    int k_src_wind;
+
+    // Table of source spectra.
+    view_3d<Real> mfcc;
+  };
+
+  //
+  // --------- Util Functions ---------
+  //
+
+  // Pure function that interpolates the values of the input array along
+  // dimension 2. This is obviously not a very generic routine, unlike, say,
+  // CAM's lininterp. But it's used often enough that it seems worth providing
+  // here.
   KOKKOS_INLINE_FUNCTION
   static void midpoint_interp(
     const MemberType& team,
@@ -154,6 +181,30 @@ struct Functions
       Kokkos::TeamVectorRange(team, 0, in.extent(0)-1), [&] (const int k) {
         interp(k) = (in(k)+in(k+1)) / 2;
     });
+  }
+
+  // Take two components of a vector, and find the unit vector components and
+  // total magnitude.
+  KOKKOS_INLINE_FUNCTION
+  static void get_unit_vector(const Real& u, const Real& v, Real& u_n, Real& v_n, Real& mag)
+  {
+    mag = sqrt(u*u + v*v);
+    if (mag > 0) {
+      u_n = u / mag;
+      v_n = v / mag;
+    }
+    else {
+      u_n = 0;
+      v_n = 0;
+    }
+  }
+
+  // Elemental version of a 2D dot product (since the intrinsic dot_product
+  // is more suitable for arrays of contiguous vectors).
+  KOKKOS_INLINE_FUNCTION
+  static Real dot_2d(const Real& u1, const Real& v1, const Real& u2, const Real& v2)
+  {
+    return u1*u2 + v1*v2;
   }
 
   //
@@ -175,10 +226,17 @@ struct Functions
     const Real& kwv_in,
     const uview_1d<const Real>& alpha_in);
 
-  static void gw_common_finalize()
+  static void gw_convect_init(
+    // Inputs
+    const GwCommonInit& init,
+    const Real& plev_src_wind,
+    const uview_3d<const Real>& mfcc_in);
+
+  static void gw_finalize()
   {
     s_common_init.cref  = decltype(s_common_init.cref)();
     s_common_init.alpha = decltype(s_common_init.alpha)();
+    s_convect_init.mfcc = decltype(s_convect_init.mfcc)();
   }
 
   //
@@ -414,15 +472,16 @@ struct Functions
   KOKKOS_FUNCTION
   static void gw_convect_project_winds(
     // Inputs
+    const MemberType& team,
+    const GwConvectInit& init,
     const Int& pver,
-    const Int& ncol,
-    const uview_1d<const Spack>& u,
-    const uview_1d<const Spack>& v,
+    const uview_1d<const Real>& u,
+    const uview_1d<const Real>& v,
     // Outputs
-    const uview_1d<Spack>& xv,
-    const uview_1d<Spack>& yv,
-    const uview_1d<Spack>& ubm,
-    const uview_1d<Spack>& ubi);
+    Real& xv,
+    Real& yv,
+    const uview_1d<Real>& ubm,
+    const uview_1d<Real>& ubi);
 
   KOKKOS_FUNCTION
   static void gw_heating_depth(
@@ -611,6 +670,8 @@ struct Functions
   // --------- Members ---------
   //
   inline static GwCommonInit s_common_init;
+  inline static GwConvectInit s_convect_init;
+
 }; // struct Functions
 
 } // namespace gw
@@ -641,5 +702,6 @@ struct Functions
 # include "impl/gw_gw_common_init_impl.hpp"
 # include "impl/gw_vd_lu_decomp_impl.hpp"
 # include "impl/gw_vd_lu_solve_impl.hpp"
+# include "impl/gw_gw_convect_init_impl.hpp"
 #endif // GPU && !KOKKOS_ENABLE_*_RELOCATABLE_DEVICE_CODE
 #endif // P3_FUNCTIONS_HPP
