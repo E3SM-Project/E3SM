@@ -146,7 +146,7 @@ create_diagnostic (const std::string& diag_field_name,
   std::regex horiz_avg (generic_field + "_horiz_avg$");
   std::regex vert_contract (generic_field + "_vert_(avg|sum)(_((dp|dz)_weighted))?$");
   std::regex zonal_avg (R"()" + generic_field + R"(_zonal_avg_(\d+)_bins$)");
-  std::regex conditional_sampling (R"()" + generic_field + R"(_where_)" + generic_field + R"(_(gt|ge|eq|ne|le|lt)_([+-]?\d+(?:\.\d+)?)$)");
+  std::regex conditional_sampling (R"()" + generic_field + R"(_where_)" + generic_field + R"(_(gt|ge|eq|ne|le|lt)_([+-]?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)$)");
   std::regex binary_ops (generic_field + "_" "(plus|minus|times|over)" + "_" + generic_field + "$");
   std::regex histogram (R"()" + generic_field + R"(_histogram_(\d+(\.\d+)?(_\d+(\.\d+)?)+)$)");
   std::regex vert_derivative (generic_field + "_(p|z)vert_derivative$");
@@ -183,6 +183,11 @@ create_diagnostic (const std::string& diag_field_name,
     diag_name = "NumberPath";
     params.set<std::string>("number_kind",matches[1].str());
   } else if (std::regex_search(diag_field_name,matches,aerocom_cld)) {
+    EKAT_ERROR_MSG("Error! AeroComCld diags are disabled for now. Contact developers.\n"
+                    "      Some recent development made the code produce bad values,\n"
+                    "      even runtime aborts due to NaNs.\n"
+                    "      An alternative is to request variables like cdnc_at_cldtop,\n"
+                    "      which remain unaffected and scientifically valid.\n");
     diag_name = "AeroComCld";
     params.set<std::string>("aero_com_cld_kind",matches[1].str());
   } else if (std::regex_search(diag_field_name,matches,vap_flux)) {
