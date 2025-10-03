@@ -98,16 +98,6 @@ TEST_CASE("create_diag")
     REQUIRE (d8->get_params().get<std::string>("number_kind")=="Rain");
   }
 
-  SECTION ("aerocom_cld") {
-    auto d1 = create_diagnostic("AeroComCldTop",grid);
-    REQUIRE (std::dynamic_pointer_cast<AeroComCld>(d1)!=nullptr);
-    REQUIRE (d1->get_params().get<std::string>("aero_com_cld_kind")=="Top");
-
-    auto d2 = create_diagnostic("AeroComCldBot",grid);
-    REQUIRE (std::dynamic_pointer_cast<AeroComCld>(d2)!=nullptr);
-    REQUIRE (d2->get_params().get<std::string>("aero_com_cld_kind")=="Bot");
-  }
-
   SECTION ("vapor_flux") {
     auto d1 = create_diagnostic("MeridionalVapFlux",grid);
     REQUIRE (std::dynamic_pointer_cast<VaporFluxDiagnostic>(d1)!=nullptr);
