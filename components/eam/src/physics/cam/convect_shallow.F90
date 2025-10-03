@@ -911,7 +911,7 @@ end subroutine convect_shallow_init_cnst
     sh_cldliq(:ncol,:) = 0._r8
     sh_cldice(:ncol,:) = 0._r8
 
-    call zm_conv_evap( state1%ncol, state1%lchnk,                                    &
+    call zm_conv_evap( pcols, state1%ncol, pver, pverp,                              &
                        state1%t, state1%pmid, state1%pdel, state1%q(:pcols,:pver,1), &
                        ptend_loc%s, tend_s_snwprd, tend_s_snwevmlt,                  & 
                        ptend_loc%q(:pcols,:pver,1),                                  &
