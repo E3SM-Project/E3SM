@@ -2844,7 +2844,7 @@ contains
            if (config_use_ecosysTracers_iron_solubility_file) then
 ! calculate Fe flux from dust, solubility, fraction
 ! Fe flux units are mmol/m2/s, dust is kg/m2/s
-! use 55.845 for atomic weight of Fe (same as mpas-seaice and MarBL)
+! use same value for atomic weight of Fe as mpas-seaice and MarBL
              IRON_Solubility_wet(iCell)   = IRON_Zolubility_wet(iCell)
              IRON_Solubility_dry(iCell)   = IRON_Zolubility_dry(iCell)
              IRON_in_dust_fraction(iCell) = IRON_in_duzt_fraction(iCell)
@@ -2857,7 +2857,7 @@ contains
 
              IRON_FLUX_IN(iCell)  = ( dust_FLUX_WET(iCell)*IRON_Solubility_wet(iCell)    &
                                     + dust_FLUX_DRY(iCell)*IRON_Solubility_dry(iCell) )  &
-                                    * IRON_in_dust_fraction(iCell)*1.e6_RKIND/55.845_RKIND
+                                    * IRON_in_dust_fraction(iCell)*1.e6_RKIND/molecular_weight_Fe
              dust_FLUX_IN(iCell)  = dust_FLUX_WET(iCell) + dust_FLUX_DRY(iCell)
            else
              IRON_FLUX_IN(iCell)   = IRON_FLUZ_IN(iCell)
