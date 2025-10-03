@@ -486,19 +486,19 @@ struct Functions
   KOKKOS_FUNCTION
   static void gw_heating_depth(
     // Inputs
+    const MemberType& team,
     const Int& pver,
-    const Int& ncol,
-    const Spack& maxq0_conversion_factor,
-    const Spack& hdepth_scaling_factor,
+    const Real& maxq0_conversion_factor,
+    const Real& hdepth_scaling_factor,
     const bool& use_gw_convect_old,
-    const uview_1d<const Spack>& zm,
-    const uview_1d<const Spack>& netdt,
+    const uview_1d<const Real>& zm,
+    const uview_1d<const Real>& netdt,
     // Outputs
     const uview_1d<Int>& mini,
     const uview_1d<Int>& maxi,
-    const uview_1d<Spack>& hdepth,
-    const uview_1d<Spack>& maxq0_out,
-    const uview_1d<Spack>& maxq0);
+    const uview_1d<Real>& hdepth,
+    const uview_1d<Real>& maxq0_out,
+    const uview_1d<Real>& maxq0);
 
   KOKKOS_FUNCTION
   static void gw_storm_speed(

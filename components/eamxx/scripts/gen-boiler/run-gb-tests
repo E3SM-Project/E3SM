@@ -217,30 +217,34 @@ class TestGenBoilerBasics(unittest.TestCase):
         self.assertEqual(get_cxx_type(('elem', 'type::element_t', 'inout', (':',))), 'element_t*')
 
         # get_kokkos_type
-        self.assertEqual(get_kokkos_type(("foo", "real", "in", ("100",))),
+        self.assertEqual(get_kokkos_type(("foo", "real", "in", ("100",)), "ignore"),
                          'const uview_1d<const Spack>&')
-        self.assertEqual(get_kokkos_type(("foo", "real", "in", None)),
+        self.assertEqual(get_kokkos_type(("foo", "real", "in", None), "ignore"),
                          'const Spack&')
-        self.assertEqual(get_kokkos_type(("foo", "real", "inout", ("100",))),
+        self.assertEqual(get_kokkos_type(("foo", "real", "inout", ("100",)), "ignore"),
                          'const uview_1d<Spack>&')
-        self.assertEqual(get_kokkos_type(("foo", "real", "inout", None)),
+        self.assertEqual(get_kokkos_type(("foo", "real", "inout", None), "ignore"),
                          'Spack&')
-        self.assertEqual(get_kokkos_type(("foo", "real", "out", ("100",))),
+        self.assertEqual(get_kokkos_type(("foo", "real", "out", ("100",)), "ignore"),
                          'const uview_1d<Spack>&')
-        self.assertEqual(get_kokkos_type(("foo", "real", "out", ('ncol', '0:pver'))),
-                         'const uview_1d<Spack>&')
-        self.assertEqual(get_kokkos_type(("foo", "real", "out", None)),
+        self.assertEqual(get_kokkos_type(("foo", "real", "out", ('ncol', '0:pver')), "ignore"),
+                         'const uview_2d<Spack>&')
+        self.assertEqual(get_kokkos_type(("foo", "real", "out", None), "ignore"),
                          'Spack&')
-        self.assertEqual(get_kokkos_type(("foo", "integer", "inout", None)),
+        self.assertEqual(get_kokkos_type(("foo", "integer", "inout", None), "ignore"),
                          'Int&')
-        self.assertEqual(get_kokkos_type(('elem', 'type::element_t', 'inout', (':',))),
+        self.assertEqual(get_kokkos_type(('elem', 'type::element_t', 'inout', (':',)), "ignore"),
                          'const uview_1d<element_t>&')
+        self.assertEqual(get_kokkos_type(("foo", "real", "out", ('ncol', '0:pver')), "ncol"),
+                         'const uview_1d<Spack>&')
+        self.assertEqual(get_kokkos_type(("foo", "real", "out", ('ncol', '0:pver')), "ncol", unpacked=True),
+                         'const uview_1d<Real>&')
 
         # gen_arg_cxx_decls
         self.assertEqual(gen_arg_cxx_decls([("foo", "real", "in", ("100",)), ("bar", "real", "in", None)]),
                          ['Real* foo', 'Real bar'])
-        self.assertEqual(gen_arg_cxx_decls([("foo", "real", "in", ("100",)), ("bar", "real", "out", None)], kokkos=True),
-                         ['// Inputs', 'const uview_1d<const Spack>& foo', '// Outputs', 'Spack& bar'])
+        self.assertEqual(gen_arg_cxx_decls([("foo", "real", "in", ("100",)), ("bar", "real", "out", None)], kokkos=True, col_dim="ignore"),
+                         ['// Inputs', 'const MemberType& team', 'const uview_1d<const Spack>& foo', '// Outputs', 'Spack& bar'])
 
         # split_by_intent
         self.assertEqual(split_by_intent(UT_ARG_DATA), (
@@ -402,17 +406,18 @@ template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>::linear_interp(
   // Inputs
-  const uview_1d<const Spack>& foo1,
-  const uview_1d<const Spack>& foo2,
+  const MemberType& team,
+  const Spack& foo1,
+  const Spack& foo2,
   const uview_1d<const Spack>& bar1,
   const uview_1d<const Spack>& bar2,
   const uview_1d<const Spack>& bak1,
   const uview_1d<const Spack>& bak2,
-  const uview_1d<const Spack>& tracerd1,
-  const uview_1d<const Spack>& tracerd2,
+  const uview_2d<const Spack>& tracerd1,
+  const uview_2d<const Spack>& tracerd2,
   const Spack& gag,
   // Inputs/Outputs
-  const uview_1d<Spack>& baz,
+  Spack& baz,
   // Inputs
   const uview_1d<const Int>& bag,
   // Inputs/Outputs
@@ -421,14 +426,14 @@ void Functions<S,D>::linear_interp(
   Int& bab2,
   // Inputs
   const bool& val,
-  const uview_1d<const bool>& vals,
+  const bool& vals,
   const Int& shcol,
   const Int& nlev,
   const Int& nlevi,
   const Int& ntracers,
   // Outputs
-  const uview_1d<Int>& ball1,
-  const uview_1d<Int>& ball2)
+  Int& ball1,
+  Int& ball2)
 {
   // TODO
   // Note, argument types may need tweaking. Generator is not always able to tell what needs to be packed
@@ -1123,17 +1128,18 @@ PTD_STD_DEF(DataSubName, 8, shcol, nlev, nlevi, ntracers, gag, bab1, bab2, val);
 """  KOKKOS_FUNCTION
   static void fake_sub(
     // Inputs
-    const uview_1d<const Spack>& foo1,
-    const uview_1d<const Spack>& foo2,
+    const MemberType& team,
+    const Spack& foo1,
+    const Spack& foo2,
     const uview_1d<const Spack>& bar1,
     const uview_1d<const Spack>& bar2,
     const uview_1d<const Spack>& bak1,
     const uview_1d<const Spack>& bak2,
-    const uview_1d<const Spack>& tracerd1,
-    const uview_1d<const Spack>& tracerd2,
+    const uview_2d<const Spack>& tracerd1,
+    const uview_2d<const Spack>& tracerd2,
     const Spack& gag,
     // Inputs/Outputs
-    const uview_1d<Spack>& baz,
+    Spack& baz,
     // Inputs
     const uview_1d<const Int>& bag,
     // Inputs/Outputs
@@ -1142,14 +1148,14 @@ PTD_STD_DEF(DataSubName, 8, shcol, nlev, nlevi, ntracers, gag, bab1, bab2, val);
     Int& bab2,
     // Inputs
     const bool& val,
-    const uview_1d<const bool>& vals,
+    const bool& vals,
     const Int& shcol,
     const Int& nlev,
     const Int& nlevi,
     const Int& ntracers,
     // Outputs
-    const uview_1d<Int>& ball1,
-    const uview_1d<Int>& ball2);
+    Int& ball1,
+    Int& ball2);
 """
         line_by_line_compare(self, expected, actual)
 
@@ -1171,17 +1177,18 @@ PTD_STD_DEF(DataSubName, 8, shcol, nlev, nlevi, ntracers, gag, bab1, bab2, val);
 KOKKOS_FUNCTION
 void Functions<S,D>::fake_sub(
   // Inputs
-  const uview_1d<const Spack>& foo1,
-  const uview_1d<const Spack>& foo2,
+  const MemberType& team,
+  const Spack& foo1,
+  const Spack& foo2,
   const uview_1d<const Spack>& bar1,
   const uview_1d<const Spack>& bar2,
   const uview_1d<const Spack>& bak1,
   const uview_1d<const Spack>& bak2,
-  const uview_1d<const Spack>& tracerd1,
-  const uview_1d<const Spack>& tracerd2,
+  const uview_2d<const Spack>& tracerd1,
+  const uview_2d<const Spack>& tracerd2,
   const Spack& gag,
   // Inputs/Outputs
-  const uview_1d<Spack>& baz,
+  Spack& baz,
   // Inputs
   const uview_1d<const Int>& bag,
   // Inputs/Outputs
@@ -1190,14 +1197,14 @@ void Functions<S,D>::fake_sub(
   Int& bab2,
   // Inputs
   const bool& val,
-  const uview_1d<const bool>& vals,
+  const bool& vals,
   const Int& shcol,
   const Int& nlev,
   const Int& nlevi,
   const Int& ntracers,
   // Outputs
-  const uview_1d<Int>& ball1,
-  const uview_1d<Int>& ball2)
+  Int& ball1,
+  Int& ball2)
 {
   // TODO
   // Note, argument types may need tweaking. Generator is not always able to tell what needs to be packed
