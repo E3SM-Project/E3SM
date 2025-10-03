@@ -1673,7 +1673,7 @@ contains
     integer(in),target  :: dimid2(2)
     integer(in),target  :: dimid3(3)
     integer(in),pointer :: dimid(:)
-    integer(in)              :: dummy, ent_type, ierr
+    integer(in)              :: ngv, ent_type, ierr
     real(r8)                 :: lfillvalue
     integer, allocatable         :: indx(:) !  this will be ordered
     integer, allocatable         :: Dof(:)  ! will be filled with global ids from cells
@@ -1710,7 +1710,7 @@ contains
 
     lpre = trim(dname)
     ! find out the number of global cells, needed for defining the variables length
-    ierr = iMOAB_GetGlobalInfo( mbxid, dummy, ng)
+    ierr = iMOAB_GetGlobalInfo( mbxid, ngv, ng)
     lny = 1
 #ifdef MOABCOMP
     write(logunit,*) subname, 'lnx, lny, mbxid ',  lnx, lny, mbxid 
@@ -1722,7 +1722,7 @@ contains
     if (mbxid .eq. mbaxid .and. .not. atm_pg_active) then
       ent_type = 0
       ns = nvert(1) ! local vertices 
-      lnx = dummy ! number of global vertices
+      lnx = ngv ! number of global vertices
     else
       ent_type = 1
       ns = nvise(1) ! local cells 
@@ -2693,7 +2693,7 @@ contains
     type(mct_string)    :: mctOStr  !
     character(CXX) ::tagname, field
 
-    integer(in)              :: dummy, ent_type, ierr
+    integer(in)              :: ngv, ent_type, ierr
     character(*),parameter :: subName = '(seq_io_read_moab_tags) '
 
     
@@ -2726,13 +2726,13 @@ contains
     endif
 
         ! find out the number of global cells, needed for defining the variables length
-    ierr = iMOAB_GetGlobalInfo( mbxid, dummy, ng)
+    ierr = iMOAB_GetGlobalInfo( mbxid, ngv, ng)
     lny = 1 ! do we need 2 var, or just 1 
     ierr = iMOAB_GetMeshInfo ( mbxid, nvert, nvise, nbl, nsurf, nvisBC )
     if (mbxid .eq. mbaxid .and. .not. atm_pg_active) then
       ent_type = 0
       ns = nvert(1) ! local vertices 
-      lnx = dummy ! number of global vertices
+      lnx = ngv ! number of global vertices
     else
       ent_type = 1
       ns = nvise(1) ! local cells 
