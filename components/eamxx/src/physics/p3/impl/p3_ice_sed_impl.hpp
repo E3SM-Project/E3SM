@@ -175,6 +175,11 @@ void Functions<S,D>
       }, Kokkos::Max<Scalar>(Co_max));
       team.team_barrier();
 
+      // compute dt_sub
+      EKAT_KERNEL_ASSERT(Co_max >= 0);
+      const Int tmpint1 = static_cast<int>(Co_max + 1);
+      const Scalar dt_sub = dt_left/tmpint1;
+
       generalized_sedimentation<4>(rho, inv_rho, inv_dz, team, nk, k_qxtop, k_qxbot, kbot, kdir, Co_max, dt_left, prt_accum, fluxes_ptr, vs_ptr, qnr_ptr);
 
       //Update _incld values with end-of-step cell-ave values
@@ -187,6 +192,7 @@ void Functions<S,D>
 	  bm_incld(pk)=bm(pk)/cld_frac_i(pk);
 	});
       // AaronDonahue, precip_liq_flux output
+      auto inv_rho_h2o = C::INV_RHO_H2O;
       kmin_scalar = ( kdir == 1 ? k_qxbot+1 : k_qxtop+1);
       kmax_scalar = ( kdir == 1 ? k_qxtop+1 : k_qxbot+1);
       ekat::impl::set_min_max(kmin_scalar, kmax_scalar, kmin, kmax, Spack::n);
@@ -199,7 +205,7 @@ void Functions<S,D>
         const auto lt_zero = index_pack < 0;
         index_pack.set(lt_zero, 0);
         const auto flux_qx_pk = index(sflux_qx, index_pack);
-        precip_ice_flux(pk).set(range_mask, precip_ice_flux(pk) + flux_qx_pk);
+        precip_ice_flux(pk).set(range_mask, precip_ice_flux(pk) + flux_qx_pk * dt_sub * inv_rho_h2o * inv_dt);
       });
 
     } //end CFL substep loop

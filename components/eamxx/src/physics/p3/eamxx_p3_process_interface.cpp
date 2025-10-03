@@ -127,8 +127,8 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   add_field<Computed>("precip_total_tend",       scalar3d_layout_mid, kg/(kg*s), grid_name, ps);
   add_field<Computed>("nevapr",                  scalar3d_layout_mid, kg/(kg*s), grid_name, ps);
   add_field<Computed>("diag_equiv_reflectivity", scalar3d_layout_mid, nondim,    grid_name, ps);
-  add_field<Updated>("precip_liq_flux", scalar3d_layout_int, kg/m2, grid_name, "ACCUMULATED", ps);
-  add_field<Updated>("precip_ice_flux", scalar3d_layout_int, kg/m2, grid_name, "ACCUMULATED", ps);
+  add_field<Updated>("precip_liq_flux", scalar3d_layout_int, m/s, grid_name, "ACCUMULATED", ps);
+  add_field<Updated>("precip_ice_flux", scalar3d_layout_int, m/s, grid_name, "ACCUMULATED", ps);
   if (runtime_options.extra_p3_diags) {
     add_field<Computed>("qr2qv_evap", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
     add_field<Computed>("qi2qv_sublim", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
