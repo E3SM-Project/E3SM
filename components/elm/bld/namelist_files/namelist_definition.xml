@@ -315,6 +315,17 @@ Allowed values are:
  5 : use gross domestic production and population datasets to simulate anthropogenic fire supression
 </entry>
 
+<entry id="use_fates_managed_fire" type="logical" category="physics"
+        group="elm_inparm" valid_values="" value=".false.">
+Enable FATES managed fire mode.  Requires that fates_spitfire_mode is on (in any mode).
+This mode allows the FATES model to conduct fuel-load reduction through managed burns.
+The boundary conditions in which a managed fire is allowed is set via the FATES parameter
+file.  The burned area fraction of a managed burn is defined through the FATES parameter
+file as well.  This mode works in conjunction with the SPITFIRE module to determine
+whether a wildfire or managed fire takes place on a given patch.
+(Only relevant if FATES is on)
+</entry>
+
 <entry id="fates_harvest_mode" type="char*256" category="physics"
         group="elm_inparm"
         valid_values="no_harvest,event_code,landuse_timeseries,luhdata_area,luhdata_mass" >
@@ -371,7 +382,7 @@ Set the FATES electron transport model
 </entry>
 
 <entry id="fates_hydro_solver" type="char*256" category="physics"
-        group="elm_inparm" valid_values="1D_Taylor,2D_Picard,2D_Newton" value="1D_Taylor">
+        group="elm_inparm" valid_values="1D_Taylor,2D_Picard,2D_Newton" value="2D_Picard">
 Set the FATES hydro solver method
 </entry>
 

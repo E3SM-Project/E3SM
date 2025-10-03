@@ -254,9 +254,11 @@ contains
 
     namelist /elm_inparm / use_c13, use_c14
 
-    namelist /elm_inparm/ fates_paramfile, use_fates,      &
-          fates_spitfire_mode, fates_harvest_mode,        &
-          use_fates_planthydro, use_fates_ed_st3,       &
+    namelist /elm_inparm/ fates_paramfile, use_fates,   &
+          fates_spitfire_mode,                          &
+          fates_harvest_mode,                           &
+          use_fates_planthydro,                         &
+          use_fates_ed_st3,                             &
           use_fates_cohort_age_tracking,                &
           use_fates_ed_prescribed_phys,                 &
           use_fates_inventory_init,                     &
@@ -267,6 +269,7 @@ contains
           use_fates_luh,                                &
           use_fates_lupft,                              &
           use_fates_potentialveg,                       &
+          use_fates_managed_fire,                       &
           fluh_timeseries,                              &
           flandusepftdat,                               &
           fates_parteh_mode,                            &
@@ -830,6 +833,7 @@ contains
 
 
     call mpi_bcast (fates_spitfire_mode, 1, MPI_INTEGER, 0, mpicom, ier)
+    call mpi_bcast (use_fates_managed_fire, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (fates_harvest_mode, len(fates_harvest_mode), MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (fates_paramfile, len(fates_paramfile) , MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (fluh_timeseries, len(fluh_timeseries) , MPI_CHARACTER, 0, mpicom, ier)
@@ -1268,6 +1272,7 @@ contains
     write(iulog, *) '    use_fates = ', use_fates
     if (use_fates) then
        write(iulog, *) '    fates_spitfire_mode = ', fates_spitfire_mode
+       write(iulog, *) '    use_fates_managed_fire= ', use_fates_managed_fire
        write(iulog, *) '    fates_harvest_mode = ', fates_harvest_mode
        write(iulog, *) '    fates_paramfile = ', fates_paramfile
        write(iulog, *) '    fluh_timeseries = ', trim(fluh_timeseries)

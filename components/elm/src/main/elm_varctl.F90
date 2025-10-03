@@ -221,6 +221,7 @@ module elm_varctl
 
   logical, public            :: use_fates = .false.                     ! true => use  ED
   integer, public            :: fates_spitfire_mode = 0                 ! 0 for no fire; 1 for constant ignitions
+  logical, public            :: use_fates_managed_fire = .false.        ! true => turn on managed fire
   character(len=256), public :: fates_harvest_mode = ''                 ! five different harvest modes; see namelist_definitions
   character(len=256), public :: fates_photosynth_acclimation = ''       ! nonacclimating, kumarathunge2019
   character(len=256), public :: fates_stomatal_model = ''               ! stomatal conductance model, Ball-berry or Medlyn
