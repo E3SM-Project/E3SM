@@ -1,6 +1,9 @@
 # Core types and configuration options
 add_subdirectory(core)
 
+# Low-level scorpio interfaces
+add_subdirectory(scorpio_interface)
+
 # Small/generic utilities
 add_subdirectory(util)
 
@@ -10,6 +13,12 @@ add_subdirectory(field)
 # Grid structures
 add_subdirectory(grid)
 
+# Property checks structures
+add_subdirectory(property_checks)
+
+# Remapper structures
+add_subdirectory(remap)
+
 set(SHARE_SRC
   atm_process/atmosphere_process.cpp
   atm_process/atmosphere_process_hash.cpp
@@ -17,31 +26,12 @@ set(SHARE_SRC
   atm_process/atmosphere_process_dag.cpp
   atm_process/atmosphere_diagnostic.cpp
   atm_process/IOPDataManager.cpp
-  remap/abstract_remapper.cpp
-  remap/coarsening_remapper.cpp
-  remap/horiz_interp_remapper_base.cpp
-  remap/horiz_interp_remapper_data.cpp
-  remap/iop_remapper.cpp
-  remap/identity_remapper.cpp
-  remap/refining_remapper_p2p.cpp
-  remap/vertical_remapper.cpp
   manager/field_manager.cpp
   manager/grids_manager.cpp
-  property_checks/property_check.cpp
-  property_checks/field_nan_check.cpp
-  property_checks/field_within_interval_check.cpp
-  property_checks/mass_and_energy_conservation_check.cpp
   algorithm/eamxx_data_interpolation.cpp
   algorithm/eamxx_fv_phys_rrtmgp_active_gases_workaround.cpp
   algorithm/eamxx_time_interpolation.cpp
 )
-
-if (EAMXX_ENABLE_EXPERIMENTAL_CODE)
-  list (APPEND
-    SHARE_SRC
-    remap/refining_remapper_rma.cpp
-  )
-endif()
 
 add_library(scream_share ${SHARE_SRC})
 
@@ -53,9 +43,12 @@ target_include_directories(scream_share PUBLIC
 
 target_link_libraries(scream_share PUBLIC
   eamxx_core
+  eamxx_scorpio_interface
   eamxx_utils
   eamxx_field
-  eamxx_grid)
+  eamxx_grid
+  eamxx_remap
+  eamxx_property_checks)
 
 # Used in the data interpolation
 target_link_libraries(scream_share PUBLIC stdc++fs)
