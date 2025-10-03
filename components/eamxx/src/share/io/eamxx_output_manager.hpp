@@ -2,7 +2,7 @@
 #define SCREAM_OUTPUT_MANAGER_HPP
 
 #include "share/io/scorpio_output.hpp"
-#include "share/io/eamxx_scorpio_interface.hpp"
+#include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 #include "share/io/eamxx_io_utils.hpp"
 #include "share/io/eamxx_io_file_specs.hpp"
 #include "share/io/eamxx_io_control.hpp"

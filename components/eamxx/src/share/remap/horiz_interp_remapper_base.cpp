@@ -2,7 +2,6 @@
 
 #include "share/grid/point_grid.hpp"
 #include "share/grid/grid_import_export.hpp"
-#include "share/io/scorpio_input.hpp"
 
 #include <ekat_team_policy_utils.hpp>
 #include <ekat_pack_utils.hpp>
