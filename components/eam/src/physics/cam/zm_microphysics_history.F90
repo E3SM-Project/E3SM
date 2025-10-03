@@ -132,7 +132,7 @@ end subroutine zm_microphysics_history_init
 
 !===================================================================================================
 
-subroutine zm_microphysics_history_out( lchnk, ncol, microp_st, prec, dlf, dif, dnlf, dnif, frz )
+subroutine zm_microphysics_history_out( lchnk, ncol, microp_st, prec, dlf )
    !----------------------------------------------------------------------------
    ! Purpose: write out history variables for convective microphysics
    !----------------------------------------------------------------------------
@@ -144,10 +144,6 @@ subroutine zm_microphysics_history_out( lchnk, ncol, microp_st, prec, dlf, dif, 
    type(zm_microp_st),              intent(in) :: microp_st ! ZM microphysics data structure
    real(r8), dimension(pcols),      intent(in) :: prec      ! convective precip rate
    real(r8), dimension(pcols,pver), intent(in) :: dlf       ! detrainment of conv cld liq water mixing ratio
-   real(r8), dimension(pcols,pver), intent(in) :: dif       ! detrainment of conv cld ice mixing ratio
-   real(r8), dimension(pcols,pver), intent(in) :: dnlf      ! detrainment of conv cld liq water num concen
-   real(r8), dimension(pcols,pver), intent(in) :: dnif      ! detrainment of conv cld ice num concen
-   real(r8), dimension(pcols,pver), intent(in) :: frz       ! heating rate due to freezing
    !----------------------------------------------------------------------------
    ! Local variables
    integer  :: i,k
@@ -159,20 +155,21 @@ subroutine zm_microphysics_history_out( lchnk, ncol, microp_st, prec, dlf, dif, 
    real(r8), dimension(pcols,pver) :: cgraupel_snum   ! convective graupel sample number
    real(r8), dimension(pcols,pver) :: wu_snum         ! vertical velocity sample number
    !----------------------------------------------------------------------------
+   cice_snum    (1:ncol,1:pver) = 0
+   cliq_snum    (1:ncol,1:pver) = 0
+   csnow_snum   (1:ncol,1:pver) = 0
+   crain_snum   (1:ncol,1:pver) = 0
+   cgraupel_snum(1:ncol,1:pver) = 0
+   wu_snum      (1:ncol,1:pver) = 0
+
    do k = 1,pver
       do i = 1,ncol
          if (microp_st%qice(i,k)     >  0) cice_snum(i,k)     = 1
-         if (microp_st%qice(i,k)     <= 0) cice_snum(i,k)     = 0
          if (microp_st%qliq(i,k)     >  0) cliq_snum(i,k)     = 1
-         if (microp_st%qliq(i,k)     <= 0) cliq_snum(i,k)     = 0
          if (microp_st%qsnow(i,k)    >  0) csnow_snum(i,k)    = 1
-         if (microp_st%qsnow(i,k)    <= 0) csnow_snum(i,k)    = 0
          if (microp_st%qrain(i,k)    >  0) crain_snum(i,k)    = 1
-         if (microp_st%qrain(i,k)    <= 0) crain_snum(i,k)    = 0
          if (microp_st%qgraupel(i,k) >  0) cgraupel_snum(i,k) = 1
-         if (microp_st%qgraupel(i,k) <= 0) cgraupel_snum(i,k) = 0
          if (microp_st%wu(i,k)       >  0) wu_snum(i,k)       = 1
-         if (microp_st%wu(i,k)       <= 0) wu_snum(i,k)       = 0
       end do
    end do
 
@@ -183,11 +180,11 @@ subroutine zm_microphysics_history_out( lchnk, ncol, microp_st, prec, dlf, dif, 
    call outfld('CGRAPNUM',cgraupel_snum      , pcols, lchnk )
    call outfld('WUZMSNUM',wu_snum            , pcols, lchnk )
 
-   call outfld('DIFZM'   ,dif                , pcols, lchnk )
    call outfld('DLFZM'   ,dlf                , pcols, lchnk )
-   call outfld('DNIFZM'  ,dnif               , pcols, lchnk )
-   call outfld('DNLFZM'  ,dnlf               , pcols, lchnk )
-   call outfld('FRZZM'   ,frz                , pcols, lchnk )
+   call outfld('DIFZM'   ,microp_st%dif      , pcols, lchnk )
+   call outfld('DNIFZM'  ,microp_st%dnif     , pcols, lchnk )
+   call outfld('DNLFZM'  ,microp_st%dnlf     , pcols, lchnk )
+   call outfld('FRZZM'   ,microp_st%frz      , pcols, lchnk )
 
    call outfld('WUZM'    ,microp_st%wu       , pcols, lchnk )
 
