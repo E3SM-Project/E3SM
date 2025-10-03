@@ -4,6 +4,16 @@ cime_root=$(./xmlquery --value CIMEROOT)
 input_data_dir=$(./xmlquery --value DIN_LOC_ROOT)
 atmchange=$cime_root/../components/eamxx/scripts/atmchange
 case_name=$(./xmlquery --value CASE)
+machine=$(./xmlquery --value MACH)
+
+# on frontier, set proxy settings
+if [[ $machine == "frontier" ]]; then
+    export all_proxy=socks://proxy.ccs.ornl.gov:3128/
+    export ftp_proxy=ftp://proxy.ccs.ornl.gov:3128/
+    export http_proxy=http://proxy.ccs.ornl.gov:3128/
+    export https_proxy=http://proxy.ccs.ornl.gov:3128/
+    export no_proxy='localhost,127.0.0.0/8,*.ccs.ornl.gov'
+fi
 
 # Change run length
 ./xmlchange RUN_STARTDATE="1995-01-01"
