@@ -59,7 +59,7 @@
 <isop_emis_file       >atm/cam/chem/emis/CMIP7_1850_2023_2deg/cmip7_ISOP_surf_1850-2023_1.9x2.5_c20250506.nc </isop_emis_file>
 <isop_vbs_emis_file   >atm/cam/chem/emis/CMIP7_1850_2023_2deg/cmip7_ISOP_surf_1850-2023_1.9x2.5_c20250506.nc </isop_vbs_emis_file>
 <nox_emis_file        >atm/cam/chem/emis/CMIP7_1850_2023_2deg/cmip7_NO_surf_1850-2023_1.9x2.5_c20250506.nc </nox_emis_file>
-<dms_emis_file        >atm/cam/chem/trop_mozart_aero/emis/DMSflux.1850-2100.1deg_latlon_conserv.POPmonthlyClimFromACES4BGC_c20160727.nc </dms_emis_file>
+<dms_emis_file        >atm/cam/chem/trop_mozart_aero/emis/DMSflux.1850.1deg_latlon_conserv.POPmonthlyClimFromACES4BGC_c20160416.nc </dms_emis_file>
 <soag0_emis_file      >atm/cam/chem/emis/CMIP7_1850_2023_2deg/cmip7_SOAG0_surf_1850-2023_1.9x2.5_c20250506.nc </soag0_emis_file>
 <so2_emis_file        >atm/cam/chem/emis/CMIP7_1850_2023_2deg/cmip7_so2_surf_1850-2023_1.9x2.5_c20250506.nc </so2_emis_file>
 <bc_a4_emis_file      >atm/cam/chem/emis/CMIP7_1850_2023_2deg/cmip7_mam5_bc_a4_surf_1850-2023_1.9x2.5_c20250506.nc </bc_a4_emis_file>
