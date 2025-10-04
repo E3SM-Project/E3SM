@@ -34,20 +34,9 @@ add_subdirectory(diagnostics)
 # IO library
 add_subdirectory(io)
 
-set(SHARE_SRC
-  algorithm/eamxx_data_interpolation.cpp
-  algorithm/eamxx_time_interpolation.cpp
-)
-
-add_library(scream_share ${SHARE_SRC})
-
-target_include_directories(scream_share PUBLIC
-  ${SCREAM_SRC_DIR}
-  ${SCREAM_BIN_DIR}/src
-  ${CMAKE_CURRENT_SOURCE_DIR}
-)
-
-target_link_libraries(scream_share PUBLIC
+# For bwd compatibility: a "catch" all interface lib of all the stuff in the share folder
+add_library(scream_share INTERFACE)
+target_link_libraries(scream_share INTERFACE
   eamxx_core
   eamxx_scorpio_interface
   eamxx_utils
@@ -59,13 +48,6 @@ target_link_libraries(scream_share PUBLIC
   eamxx_atm_process
   eamxx_diagnostics
   scream_io)
-
-# Used in the data interpolation
-target_link_libraries(scream_share PUBLIC stdc++fs)
-
-if (NOT SCREAM_LIB_ONLY)
-  add_subdirectory(tests)
-endif()
 
 # The "build_cf_dictionary" target downloads an XML file containing valid field
 # names and aliases based on the CF conventions, and transforms it into a YAML

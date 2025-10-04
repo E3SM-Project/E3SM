@@ -1,12 +1,12 @@
 #include <catch2/catch.hpp>
 
-#include "share/grid/mesh_free_grids_manager.hpp"
+#include "share/data_managers/mesh_free_grids_manager.hpp"
 
 #include "share/field/field_utils.hpp"
 #include "share/field/field.hpp"
 #include "share/data_managers/field_manager.hpp"
 
-#include "share/util/eamxx_time_interpolation.hpp"
+#include "share/io/eamxx_time_interpolation.hpp"
 #include "share/core/eamxx_setup_random_test.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
 

@@ -3,7 +3,7 @@
 #include "data_interpolation_tests.hpp"
 
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
-#include "share/algorithm/eamxx_data_interpolation.hpp"
+#include "share/io/eamxx_data_interpolation.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/field/field_utils.hpp"
 #include "share/core/eamxx_config.hpp"

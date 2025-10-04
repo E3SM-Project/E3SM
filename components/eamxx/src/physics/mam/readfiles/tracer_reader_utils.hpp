@@ -8,7 +8,7 @@
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 #include "share/io/scorpio_input.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
-#include "share/algorithm/eamxx_time_interpolation.hpp"
+#include "share/io/eamxx_time_interpolation.hpp"
 
 #include <ekat_team_policy_utils.hpp>
 #include <ekat_lin_interp.hpp>
