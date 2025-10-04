@@ -1,7 +1,7 @@
 #ifndef SCREAM_MESH_FREE_GRIDS_MANAGER_HPP
 #define SCREAM_MESH_FREE_GRIDS_MANAGER_HPP
 
-#include "share/manager/grids_manager.hpp"
+#include "share/data_managers/grids_manager.hpp"
 
 #include <ekat_comm.hpp>
 
