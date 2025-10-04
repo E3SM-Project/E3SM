@@ -55,9 +55,6 @@
       <value compset="_ELM%[^_]*BC"            >-bc_dep_to_snow_updates</value>
       <value compset="_EAM.*_BGC%*"            >-co2_cycle</value>
 
-      <!-- Temporarily override the default v3 vertical grid (L80) and use L72 to maintain RRM test coverage -->
-      <value grid="a%ne0">-nlev 72</value>
-
       <!-- Single column model (SCM) -->
       <value compset="_EAM%SCM_"       >&eamv3_phys_defaults; &eamv3_chem_defaults; -scam</value>
 
