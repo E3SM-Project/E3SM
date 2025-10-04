@@ -101,4 +101,16 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
     LIBS eamxx_io LABELS io
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
   )
+
+  # Generate data for data interpolation test
+  CreateUnitTest(data_interpolation_setup "data_interpolation_setup.cpp"
+    LIBS eamxx_io LABELS io
+    FIXTURES_SETUP data_interpolation_setup)
+
+  # Test data interpolation
+  CreateUnitTest(data_interpolation "data_interpolation_tests.cpp"
+    LIBS eamxx_io LABELS io
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+    FIXTURES_REQUIRED data_interpolation_setup)
+
 endif()

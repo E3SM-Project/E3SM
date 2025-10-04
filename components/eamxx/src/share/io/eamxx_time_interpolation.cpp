@@ -1,4 +1,4 @@
-#include "share/algorithm/eamxx_time_interpolation.hpp"
+#include "share/io/eamxx_time_interpolation.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 #include "share/io/eamxx_io_utils.hpp"
 

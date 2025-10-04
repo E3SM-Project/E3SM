@@ -13,6 +13,8 @@ add_library(eamxx_io
   scorpio_scm_input.cpp
   scorpio_output.cpp
   eamxx_io_utils.cpp
+  eamxx_data_interpolation.cpp
+  eamxx_time_interpolation.cpp
 )
 
 target_link_libraries(eamxx_io PUBLIC

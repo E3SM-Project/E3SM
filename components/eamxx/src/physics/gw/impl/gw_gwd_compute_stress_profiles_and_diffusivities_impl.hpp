@@ -2,7 +2,8 @@
 #define GW_GWD_COMPUTE_STRESS_PROFILES_AND_DIFFUSIVITIES_IMPL_HPP
 
 #include "gw_functions.hpp" // for ETI only but harmless for GPU
-#include "util/eamxx_utils.hpp"
+#include "share/util/eamxx_utils.hpp"
+
 #include <ekat_math_utils.hpp>
 
 namespace scream {

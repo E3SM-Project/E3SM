@@ -3,8 +3,8 @@
 
 #include "surface_coupling_utils.hpp"
 
+#include "share/io/eamxx_time_interpolation.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
-#include "share/algorithm/eamxx_time_interpolation.hpp"
 #include "share/atm_process/ATMBufferManager.hpp"
 #include "share/data_managers/SCDataManager.hpp"
 

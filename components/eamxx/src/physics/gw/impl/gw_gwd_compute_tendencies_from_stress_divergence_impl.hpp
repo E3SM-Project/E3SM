@@ -2,9 +2,10 @@
 #define GW_GWD_COMPUTE_TENDENCIES_FROM_STRESS_DIVERGENCE_IMPL_HPP
 
 #include "gw_functions.hpp" // for ETI only but harmless for GPU
-#include "util/eamxx_utils.hpp"
-#include <cmath>
+#include "share/util/eamxx_utils.hpp"
+
 #include <ekat_math_utils.hpp>
+#include <cmath>
 
 namespace scream {
 namespace gw {
