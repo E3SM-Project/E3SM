@@ -36,7 +36,6 @@ add_subdirectory(io)
 
 set(SHARE_SRC
   algorithm/eamxx_data_interpolation.cpp
-  algorithm/eamxx_fv_phys_rrtmgp_active_gases_workaround.cpp
   algorithm/eamxx_time_interpolation.cpp
 )
 
