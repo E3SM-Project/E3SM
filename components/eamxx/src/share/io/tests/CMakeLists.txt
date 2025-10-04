@@ -7,62 +7,62 @@ BuildCprnc()
 
 ## Test io utils
 CreateUnitTest(io_utils "io_utils.cpp"
-  LIBS scream_io LABELS io
+  LIBS eamxx_io LABELS io
   PROPERTIES RESOURCE_LOCK rpointer_file
 )
 
 ## Test field aliasing functionality
 CreateUnitTest(io_alias "io_alias.cpp"
-  LIBS scream_io eamxx_diagnostics
+  LIBS eamxx_io eamxx_diagnostics
   LABELS io
 )
 
 # Test creation of diagnostic from diag_field_name
 CreateUnitTest(create_diag "create_diag.cpp"
-  LIBS scream_io eamxx_diagnostics
+  LIBS eamxx_io eamxx_diagnostics
   LABELS io diagnostics
 )
 
 ## Test basic output (no packs, no diags, all avg types, all freq units)
 CreateUnitTest(io_basic "io_basic.cpp"
-  LIBS scream_io LABELS io
+  LIBS eamxx_io LABELS io
   MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
 )
 
 ## Test output where we write one file per month
 CreateUnitTest(io_monthly "io_monthly.cpp"
-  LIBS scream_io LABELS io
+  LIBS eamxx_io LABELS io
   MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
 )
 
 ## Test basic output (no packs, no diags, all avg types, all freq units)
 CreateUnitTest(io_filled "io_filled.cpp"
-  LIBS scream_io LABELS io
+  LIBS eamxx_io LABELS io
   MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
 )
 
 ## Test packed I/O
 CreateUnitTest(io_packed "io_packed.cpp"
-  LIBS scream_io LABELS io
+  LIBS eamxx_io LABELS io
   MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
 )
 
 ## Test diagnostic output
 CreateUnitTest(io_diags "io_diags.cpp"
-  LIBS scream_io LABELS io
+  LIBS eamxx_io LABELS io
   MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
 )
 
 # Test output on SE grid
 CreateUnitTest(io_se_grid "io_se_grid.cpp"
-  LIBS scream_io LABELS io
+  LIBS eamxx_io LABELS io
   MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
 )
 
 ## Test output restart
 # NOTE: These tests cannot run in parallel due to contention of the rpointer file
 CreateUnitTest(output_restart "output_restart.cpp"
-  LIBS scream_io LABELS io
+  LIBS eamxx_io LABELS io
   MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
   FIXTURES_SETUP_INDIVIDUAL restart_check_setup
   PROPERTIES RESOURCE_LOCK rpointer_file
@@ -84,19 +84,19 @@ endforeach()
 
 ## Test remap output
 CreateUnitTest(io_remap_test "io_remap_test.cpp"
-  LIBS scream_io eamxx_diagnostics
+  LIBS eamxx_io eamxx_diagnostics
   LABELS io remap
   MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
 )
 
 ## Test remap output when map file is sub-sampling (ARM-style)
 CreateUnitTest(io_horiz_sampling "io_horiz_sampling.cpp"
-  LIBS scream_io LABELS io remap
+  LIBS eamxx_io LABELS io remap
   MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
 )
 
 ## Test single-column reader
 CreateUnitTest(io_scm_reader "io_scm_reader.cpp"
-  LIBS scream_io LABELS io
+  LIBS eamxx_io LABELS io
   MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
 )

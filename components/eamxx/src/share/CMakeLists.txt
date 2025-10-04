@@ -59,7 +59,7 @@ target_link_libraries(scream_share PUBLIC
   eamxx_data_managers
   eamxx_atm_process
   eamxx_diagnostics
-  scream_io)
+  eamxx_io)
 
 # Used in the data interpolation
 target_link_libraries(scream_share PUBLIC stdc++fs)

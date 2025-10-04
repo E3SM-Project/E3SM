@@ -16,7 +16,7 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
   # Test I/O on dyn grid
   CreateUnitTest(dyn_grid_io
       "dyn_grid_io.cpp;test_helper_mod.F90"
-      LIBS scream_io ${dynLibName}
+      LIBS eamxx_io ${dynLibName}
       MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
       LABELS dynamics io)
 endif()
