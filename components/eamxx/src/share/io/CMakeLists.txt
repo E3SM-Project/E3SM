@@ -15,8 +15,11 @@ add_library(eamxx_io
   eamxx_io_utils.cpp
 )
 
-target_link_libraries(eamxx_io PUBLIC eamxx_data_managers eamxx_scorpio_interface)
+target_link_libraries(eamxx_io PUBLIC
+  eamxx_data_managers
+  eamxx_atm_process
+  eamxx_scorpio_interface)
 
-# TODO: Until we are done with the refactor of eamxx libs, we still have some
-# cyclic deps. Linking scream_io to eamxx_test_support seems to fix things for now
-target_link_libraries(eamxx_test_support PUBLIC eamxx_io)
+if (NOT SCREAM_LIB_ONLY)
+  add_subdirectory(tests)
+endif()

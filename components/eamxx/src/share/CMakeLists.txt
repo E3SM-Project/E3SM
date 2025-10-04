@@ -31,6 +31,9 @@ add_subdirectory(atm_process)
 # Diagnostic classes
 add_subdirectory(diagnostics)
 
+# IO library
+add_subdirectory(io)
+
 set(SHARE_SRC
   algorithm/eamxx_data_interpolation.cpp
   algorithm/eamxx_fv_phys_rrtmgp_active_gases_workaround.cpp
@@ -55,12 +58,17 @@ target_link_libraries(scream_share PUBLIC
   eamxx_property_checks
   eamxx_data_managers
   eamxx_atm_process
-  eamxx_diagnostics)
+  eamxx_diagnostics
+  eamxx_io)
 
 # Used in the data interpolation
 target_link_libraries(scream_share PUBLIC stdc++fs)
 
 target_link_libraries(scream_share PUBLIC ekat::AllLibs pioc)
+
+if (NOT SCREAM_LIB_ONLY)
+  add_subdirectory(tests)
+endif()
 
 # The "build_cf_dictionary" target downloads an XML file containing valid field
 # names and aliases based on the CF conventions, and transforms it into a YAML
@@ -75,12 +83,4 @@ if (NOT WGET STREQUAL "WGET-NOTFOUND")
     COMMAND ${PROJECT_SOURCE_DIR}/scripts/cf-xml-to-yaml ${CF_CONVENTIONS_XML_FILE}
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/data
     COMMENT "Downloading CF conventions XML file and building YAML dictionary...")
-endif()
-
-# IO library
-add_subdirectory(io)
-
-if (NOT SCREAM_LIB_ONLY)
-  add_subdirectory(tests)
-  add_subdirectory(io/tests)
 endif()
