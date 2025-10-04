@@ -35,6 +35,10 @@ public:
   std::vector<std::string> get_active_gases() const { return active_gases; }
 };
 
-extern bool fvphyshack;
+inline bool& fvphyshack()
+{
+  static bool fvphys = false;
+  return fvphys;
+}
 
 } // namespace scream

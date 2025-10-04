@@ -21,12 +21,12 @@
 #include <ekat_yaml.hpp>
 #include <ekat_std_utils.hpp>
 
-// The global variable fvphyshack is used to help the initial pgN implementation
+// The function fvphyshack is used to help the initial pgN implementation
 // work around some current AD constraints. Search the code for "fvphyshack" to
 // find blocks that eventually should be removed in favor of a design that
 // accounts for pg2. Some blocks may turn out to be unnecessary, and I simply
 // didn't realize I could do without the workaround.
-#include "share/algorithm/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp"
+#include "share/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp"
 
 #ifndef SCREAM_CIME_BUILD
 #include <unistd.h>
@@ -771,7 +771,7 @@ void AtmosphereDriver::initialize_output_managers () {
     auto output_grids = m_grids_manager->get_grid_names();
 
     // Don't save CGLL fields from ICs to the restart file if we are running with PG2.
-    if (fvphyshack and output_grids.find("physics_gll")!=output_grids.end()) {
+    if (fvphyshack() and output_grids.find("physics_gll")!=output_grids.end()) {
       output_grids.erase("physics_gll");
     }
 
@@ -854,7 +854,7 @@ initialize_fields ()
   start_timer("EAMxx::initialize_fields");
 
   // See the [rrtmgp active gases] note in share/util/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp
-  if (fvphyshack) {
+  if (fvphyshack()) {
     TraceGasesWorkaround::singleton().run_type = m_run_type;
   }
 
@@ -932,7 +932,7 @@ void AtmosphereDriver::restart_model ()
   m_atm_logger->info("    [EAMxx] Restart filename: " + filename);
 
   for (auto& gn : m_grids_manager->get_grid_names()) {
-    if (fvphyshack and gn == "physics_gll") continue;
+    if (fvphyshack() and gn == "physics_gll") continue;
     if (not m_field_mgr->has_group("RESTART", gn)) {
       // No field needs to be restarted on this grid.
       continue;
@@ -1102,7 +1102,7 @@ void AtmosphereDriver::set_initial_conditions ()
         topography_eamxx_fields_names[grid_name].push_back(fname);
         m_fields_inited[grid_name].push_back(fname);
       }
-    } else if (not (fvphyshack and grid_name == "physics_pg2")) {
+    } else if (not (fvphyshack() and grid_name == "physics_pg2")) {
       // The IC file is written for the GLL grid, so we only load
       // fields from there. Any other input fields on the PG2 grid
       // will be properly computed in the dynamics interface.
@@ -1114,7 +1114,7 @@ void AtmosphereDriver::set_initial_conditions ()
           this_grid_ic_fnames.push_back(fname);
           m_fields_inited[grid_name].push_back(fname);
         }
-      } else if (fvphyshack and grid_name == "physics_gll") {
+      } else if (fvphyshack() and grid_name == "physics_gll") {
         // [CGLL ICs in pg2] I tried doing something like this in
         // HommeDynamics::set_grids, but I couldn't find the means to get the
         // list of fields. I think the issue is that you can't access group
@@ -1535,7 +1535,7 @@ void AtmosphereDriver::initialize_atm_procs ()
   // Add additional column data fields to pre/postcondition checks (if they exist)
   add_additional_column_data_to_property_checks();
 
-  if (fvphyshack) {
+  if (fvphyshack()) {
     // [CGLL ICs in pg2] See related notes in atmosphere_dynamics.cpp.
     const auto gn = "physics_gll";
     m_field_mgr->clean_up(gn);
