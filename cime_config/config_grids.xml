@@ -3399,7 +3399,7 @@
     <domain name="r025">
       <nx>1440</nx>
       <ny>720</ny>
-      <file grid="atm|lnd" mask="IcoswISC30E3r5">$DIN_LOC_ROOT/share/domains/domain.lnd.r025_IcoswISC30E3r5.240129.nc</file>
+      <file grid="atm|lnd" mask="IcoswISC30E3r5">$DIN_LOC_ROOT/share/domains/domain.lnd.r025_IcoswISC30E3r5.250923.nc</file>
       <file grid="atm|lnd" mask="RRSwISC6to18E3r5">$DIN_LOC_ROOT/share/domains/domain.lnd.r025_RRSwISC6to18E3r5.240402.nc</file>
       <desc>r025 is 1/4 degree river routing grid:</desc>
     </domain>
