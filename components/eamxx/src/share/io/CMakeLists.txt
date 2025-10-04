@@ -6,7 +6,7 @@
 # data structures (such as grids, fields, remappers,...) and
 # the scorpio interface library
 
-add_library(scream_io
+add_library(eamxx_io
   eamxx_output_manager.cpp
   scorpio_input.cpp
   scorpio_scm_input.cpp
@@ -14,7 +14,7 @@ add_library(scream_io
   eamxx_io_utils.cpp
 )
 
-target_link_libraries(scream_io PUBLIC eamxx_data_managers eamxx_scorpio_interface)
+target_link_libraries(eamxx_io PUBLIC eamxx_data_managers eamxx_scorpio_interface)
 
 if (NOT SCREAM_LIB_ONLY)
   add_subdirectory(tests)
