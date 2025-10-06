@@ -500,7 +500,12 @@ run (const std::string& filename,
         count.sync_to_host();
 
         auto func_start = std::chrono::steady_clock::now();
-        scorpio::write_var(filename,count.name(),count.get_internal_view_data<int,Host>());
+	if (m_transpose) {
+          const auto count_tmp = transpose(count);
+          scorpio::write_var(filename,count.name(),count_tmp.get_internal_view_data<int,Host>());
+	} else {
+          scorpio::write_var(filename,count.name(),count.get_internal_view_data<int,Host>());
+	}
         auto func_finish = std::chrono::steady_clock::now();
         auto duration_loc = std::chrono::duration_cast<std::chrono::milliseconds>(func_finish - func_start);
         duration_write += duration_loc.count();
@@ -578,7 +583,12 @@ run (const std::string& filename,
 
       // Write to file
       auto func_start = std::chrono::steady_clock::now();
-      scorpio::write_var(filename,field_name,f_out.get_internal_view_data<Real,Host>());
+      if (m_transpose) {
+        const auto f_tmp = transpose(f_out);
+        scorpio::write_var(filename,field_name,f_tmp.get_internal_view_data<Real,Host>());
+      } else {
+        scorpio::write_var(filename,field_name,f_out.get_internal_view_data<Real,Host>());
+      }
       auto func_finish = std::chrono::steady_clock::now();
       auto duration_loc = std::chrono::duration_cast<std::chrono::milliseconds>(func_finish - func_start);
       duration_write += duration_loc.count();
@@ -1150,12 +1160,13 @@ get_var_dimnames (const FieldLayout& layout) const
 {
   strvec_t dims;
   for (int i=0; i<layout.rank(); ++i) {
-    const auto t = layout.tag(i);
+    const int ind = m_transpose ? layout.rank()-i-1 : i;
+    const auto t = layout.tag(ind);
     auto tag_name = m_io_grid->has_special_tag_name(t)
                   ? m_io_grid->get_special_tag_name(t)
-                  : layout.names()[i];
+                  : layout.names()[ind];
     if (tag_name=="dim" or tag_name=="bin") {
-      tag_name += std::to_string(layout.dim(i));
+      tag_name += std::to_string(layout.dim(ind));
     }
     dims.push_back(tag_name); // Add dimensions string to vector of dims.
   }
