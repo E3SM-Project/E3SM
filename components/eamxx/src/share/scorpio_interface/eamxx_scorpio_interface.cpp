@@ -763,11 +763,6 @@ void set_var_decomp (PIOVar& var,
     "Error! Calling set_var_decomp, none of the dimensions have been set as the decomposition dimension.\n"
     " - filename: " + filename + "\n"
     " - varname : " + var.name + "\n");
-  EKAT_REQUIRE_MSG (var.dims[0]->offsets!=nullptr,
-      "Error! Calling set_var_decomp, but the var first dimension does not appear to be decomposed.\n"
-      " - filename: " + filename + "\n"
-      " - varname : " + var.name  + "\n"
-      " - var dims: " + ekat::join(var.dims,get_entity_name,",") + "\n");
   EKAT_REQUIRE_MSG (var.decomp==nullptr,
       "Error! You should have invalidated var.decomp before attempting to reset it.\n"
       " - filename  : " + filename + "\n"
