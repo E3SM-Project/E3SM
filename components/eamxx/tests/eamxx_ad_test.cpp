@@ -7,7 +7,7 @@
 #include "physics/register_physics.hpp"
 #include "diagnostics/register_diagnostics.hpp"
 #include "dynamics/register_dynamics.hpp"
-#include "share/manager/mesh_free_grids_manager.hpp"
+#include "share/data_managers/mesh_free_grids_manager.hpp"
 
 // EKAT headers
 #include <ekat_yaml.hpp>

@@ -1,8 +1,7 @@
 #include "share/grid/point_grid.hpp"
 #include "share/remap/iop_remapper.hpp"
-#include "share/io/scorpio_input.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
-#include "share/atm_process/IOPDataManager.hpp"
+#include "share/data_managers/IOPDataManager.hpp"
 
 #include <ekat_assert.hpp>
 #include <ekat_pack.hpp>
@@ -12,7 +11,59 @@
 #include <numeric>
 
 namespace scream {
-namespace control {
+
+namespace {
+
+void read_fields (const std::string& filename,
+                  const std::shared_ptr<const AbstractGrid>& grid,
+                  std::vector<Field>& fields)
+{
+  using gid_type = AbstractGrid::gid_type;
+
+  scorpio::register_file(filename,scorpio::Read);
+
+  // Some input files have the "time" dimension as non-unlimited. This messes up our
+  // scorpio interface, which stores a pointer to a "time" dim to be used to read/write
+  // slices. This ptr is automatically inited to the unlimited dim in the file. If there is
+  // no unlim dim, this ptr remains uninited.
+  if (not scorpio::has_time_dim(filename) and scorpio::has_dim(filename,"time")) {
+    scorpio::mark_dim_as_time(filename,"time");
+  }
+
+  auto min_gid = grid->get_global_min_partitioned_dim_gid();
+  auto gids_h = grid->get_dofs_gids().get_view<const gid_type*,Host>();
+  std::vector<scorpio::offset_t> offsets(gids_h.size());
+  for (size_t i=0; i<gids_h.size(); ++i) {
+    offsets[i] = gids_h[i]-min_gid;
+  }
+  const auto decomp_tag  = grid->get_partitioned_dim_tag();
+  std::string decomp_dim = grid->has_special_tag_name(decomp_tag)
+                         ? grid->get_special_tag_name(decomp_tag)
+                         : e2str(decomp_tag);
+
+  scorpio::set_dim_decomp(filename,decomp_dim,offsets);
+  for (auto& f : fields) {
+    EKAT_REQUIRE_MSG (f.get_header().get_parent()==nullptr,
+        "Error! Fields to be read from file in IOPDataManager should not be subfields.\n"
+        " - field name: " + f.name() + "\n"
+        " - parent field name: " + f.get_header().get_parent()->get_identifier().name() + "\n");
+
+    if (f.get_header().get_alloc_properties().get_padding()==0) {
+      scorpio::read_var(filename,f.name(),f.get_internal_view_data<Real,Host>());
+      f.sync_to_dev();
+    } else {
+      // Create non-padded clone
+      Field f_no_padding(f.get_header().get_identifier());
+      f_no_padding.allocate_view();
+      scorpio::read_var(filename,f.name(),f_no_padding.get_internal_view_data<Real,Host>());
+      f_no_padding.sync_to_dev();
+      f.deep_copy(f_no_padding);
+    }
+  }
+  scorpio::release_file(filename);
+}
+
+} // anonymous namespace
 
 IOPDataManager::
 IOPDataManager(const ekat::Comm& comm,
@@ -319,8 +370,7 @@ setup_io_info(const std::string& file_name,
       grid->create_geometry_data("lat",grid->get_2d_scalar_layout()),
       grid->create_geometry_data("lon",grid->get_2d_scalar_layout())
     };
-    AtmosphereInput latlon_reader (file_name,grid,latlon);
-    latlon_reader.read_variables();
+    read_fields(file_name,grid,latlon);
 
     m_io_grids[grid_name] = grid;
   }
@@ -361,9 +411,7 @@ read_fields_from_file_for_iop (const std::string& file_name,
   for (int i=0; i<remapper->get_num_fields(); ++i) {
     io_fields.push_back(remapper->get_src_field(i));
   }
-  AtmosphereInput file_reader(file_name,io_grid,io_fields);
-  file_reader.read_variables();
-  file_reader.finalize();
+  read_fields(file_name,io_grid,io_fields);
 
   // Remap
   remapper->remap_fwd();
@@ -761,5 +809,4 @@ correct_temperature_and_water_vapor(const field_mgr_ptr field_mgr, const std::st
   }
 }
 
-} // namespace control
 } // namespace scream

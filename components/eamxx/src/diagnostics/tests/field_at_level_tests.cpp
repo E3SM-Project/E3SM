@@ -2,7 +2,7 @@
 
 #include "diagnostics/field_at_level.hpp"
 
-#include "share/manager/mesh_free_grids_manager.hpp"
+#include "share/data_managers/mesh_free_grids_manager.hpp"
 #include "share/field/field_utils.hpp"
 #include "share/core/eamxx_setup_random_test.hpp"
 
