@@ -277,6 +277,40 @@
       </pes>
     </mach>
   </grid>
+  <grid name="a%ne0np4_northamericax4v1.pg2_l%.+_oi%IcoswISC30E3r5">
+    <mach name="chrysalis">
+      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+" pesize="any">
+        <comment>tests+chrysalis: --compset WCYCL --res northamericax4v1pg2_r025_IcoswISC30E3r5 on 8 nodes pure-MPI, ~0.55 sypd </comment>
+        <ntasks>
+          <ntasks_atm>384</ntasks_atm>
+          <ntasks_lnd>384</ntasks_lnd>
+          <ntasks_rof>384</ntasks_rof>
+          <ntasks_ice>384</ntasks_ice>
+          <ntasks_ocn>128</ntasks_ocn>
+          <ntasks_cpl>384</ntasks_cpl>
+        </ntasks>
+        <rootpe>
+          <rootpe_ocn>384</rootpe_ocn>
+        </rootpe>
+      </pes>
+    </mach>
+    <mach name="anvil">
+      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SWAV.+" pesize="any">
+        <comment>tests+anvil: --compset WCYCL1850 --res northamericax4v1pg2_r025_IcoswISC30E3r5 on 74 nodes pure-MPI, ~1.18 sypd </comment>
+        <ntasks>
+          <ntasks_atm>2160</ntasks_atm>
+          <ntasks_lnd>2160</ntasks_lnd>
+          <ntasks_rof>2160</ntasks_rof>
+          <ntasks_ice>2160</ntasks_ice>
+          <ntasks_ocn>504</ntasks_ocn>
+          <ntasks_cpl>2160</ntasks_cpl>
+        </ntasks>
+        <rootpe>
+          <rootpe_ocn>2160</rootpe_ocn>
+        </rootpe>
+      </pes>
+    </mach>
+  </grid>
   <!-- EAM -->
   <grid name="a%ne0np4.*">
     <mach name="anvil">
