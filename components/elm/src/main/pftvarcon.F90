@@ -206,7 +206,7 @@ module pftvarcon
   real(r8), allocatable :: fsr_pft(:)
   real(r8), allocatable :: fd_pft(:)
   ! pft parameters for crop code
-  real(r8), allocatable :: manunitro(:)    !fertilizer
+  real(r8), allocatable :: manunitro(:)    !manure nitrogen
   real(r8), allocatable :: fleafcn(:)      !C:N during grain fill; leaf
   real(r8), allocatable :: ffrootcn(:)     !C:N during grain fill; fine root
   real(r8), allocatable :: fstemcn(:)      !C:N during grain fill; stem
@@ -780,8 +780,12 @@ contains
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
     call ncd_io('season_decid',season_decid, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
-    call ncd_io('fertnitro',manunitro, 'read', ncid, readvar=readv, posNOTonfile=.true.)
-    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
+    call ncd_io('manunitro',manunitro, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+    if (.not. readv) then
+         write(iulog,*) trim(subname),' WARNING: manunitro  NOT in parameter file. Try to use fertnitro instead.'
+         call ncd_io('fertnitro',manunitro, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+         if ( .not. readv ) call endrun(msg=' ERROR: both manunitro and fertnitro not in parameter file'//errMsg(__FILE__, __LINE__))
+    endif
     call ncd_io('fleafcn',fleafcn, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
     call ncd_io('ffrootcn',ffrootcn, 'read', ncid, readvar=readv, posNOTonfile=.true.)
