@@ -1008,7 +1008,8 @@ contains
            call CNEcosystemDynBetr(bounds_clump,                                &
                  filter(nc)%num_soilc, filter(nc)%soilc,                        &
                  filter(nc)%num_soilp, filter(nc)%soilp,                        &
-                 filter(nc)%num_pcropp, filter(nc)%pcropp, doalb,               &
+                 filter(nc)%num_pcropp, filter(nc)%pcropp,                      &
+                 filter(nc)%num_ppercropp, filter(nc)%ppercropp, doalb,         &
                  cnstate_vars, carbonflux_vars, carbonstate_vars,               &
                  c13_carbonflux_vars, c13_carbonstate_vars,                     &
                  c14_carbonflux_vars, c14_carbonstate_vars,                     &
@@ -1044,6 +1045,7 @@ contains
                        filter(nc)%num_soilc, filter(nc)%soilc,  &
                        filter(nc)%num_soilp, filter(nc)%soilp,  &
                        filter(nc)%num_pcropp, filter(nc)%pcropp, &
+                       filter(nc)%num_ppercropp, filter(nc)%ppercropp, &
                        cnstate_vars,            &
                        atm2lnd_vars,            &
                        canopystate_vars, soilstate_vars, crop_vars,   &
