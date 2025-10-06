@@ -912,6 +912,7 @@ contains
       integer                                        :: nsites
       integer                                        :: gridcell_index
       integer                                        :: c1, c2
+      integer                                        :: nmaxpatches
 
       real(r8), allocatable :: landuse_pft_map(:,:,:)
       real(r8), allocatable :: landuse_bareground(:)
