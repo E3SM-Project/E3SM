@@ -62,6 +62,11 @@ ELSE()
   ENDIF()
 ENDIF()
 
+option (HOMME_ENABLE_FAD_TYPES "Whether to enable FAD types via Sacado" OFF)
+if (HOMME_ENABLE_FAD_TYPES)
+  find_package(Trilinos REQUIRED COMPONENTS Sacado)
+endif()
+
 #option to discard forcings call and push to/from F
 #set it on in cmake file
 SET(BUILD_HOMMEXX_BENCHMARK_NOFORCING OFF CACHE BOOL "")

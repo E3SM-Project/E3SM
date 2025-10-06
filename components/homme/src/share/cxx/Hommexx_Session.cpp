@@ -14,6 +14,10 @@
 
 #include "vector/vector_pragmas.hpp"
 
+#ifdef HOMME_ENABLE_FAD_TYPES
+#include "Sacado_Version.hpp"
+#endif
+
 #include <iostream>
 
 namespace Homme
@@ -58,6 +62,11 @@ void print_homme_config_settings () {
   std::cout << "HOMMEXX has vector pragmas\n";
 #else
   std::cout << "HOMMEXX doesn't have vector pragmas\n";
+#endif
+#ifdef HOMME_ENABLE_FAD_TYPES
+  std::cout << "HOMME has Sacado's FAD type support. " << Sacado_Version() << "\n";
+#else
+  std::cout << "HOMME does NOT have Sacado's FAD type support\n";
 #endif
 
 #ifdef HOMMEXX_CONFIG_IS_CMAKE

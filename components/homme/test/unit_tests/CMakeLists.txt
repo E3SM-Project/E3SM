@@ -39,6 +39,10 @@ macro(cxx_unit_test target_name target_f90_srcs target_cxx_srcs include_dirs con
     TARGET_LINK_LIBRARIES(${target_name} ittnotify)
   ENDIF()
 
+  if (HOMME_ENABLE_FAD_TYPES)
+    target_link_libraries(${target_name} Sacado::sacado)
+  endif()
+
   IF(UNIX AND NOT APPLE)
     TARGET_LINK_LIBRARIES(${target_name} rt)
   ENDIF()

@@ -249,6 +249,10 @@ macro(createExecLib libName execType libSrcs inclDirs macroNP
     TARGET_COMPILE_DEFINITIONS(${libName} PUBLIC HOMME_WITHOUT_PIOLIBRARY)
   ENDIF()
 
+  if (HOMME_ENABLE_FAD_TYPES)
+    target_link_libraries(${libName PUBLIC Sacado::sacad::sacado)
+  endif()
+
   target_link_libraries(${libName} PUBLIC csm_share)
   if (NOT HOMME_BUILD_SCORPIO)
     # Needed for netcdf.mod usage in mesh_mod.F90.
