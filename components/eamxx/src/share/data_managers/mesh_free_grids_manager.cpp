@@ -215,6 +215,9 @@ load_lat_lon (const nonconstgrid_ptr_type& grid, const std::string& filename) co
   scorpio::read_var(filename,"lon",lon_v.data());
   scorpio::release_file(filename);
 
+  lat.sync_to_dev();
+  lon.sync_to_dev();
+
 #ifndef NDEBUG
   auto lat_check = std::make_shared<FieldNaNCheck>(lat,grid)->check();
   EKAT_REQUIRE_MSG (lat_check.result==CheckResult::Pass,
