@@ -401,6 +401,13 @@ add_omega_test(
     "-n;1"
 )
 
+add_omega_test(
+  KOKKOS_HIPAR_TEST
+    testKokkosHiPar.exe
+    infra/OmegaKokkosHiParTest.cpp
+    "-n;1;"
+)
+
 ##################
 # Driver test
 ##################
