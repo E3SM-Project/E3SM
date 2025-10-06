@@ -1177,8 +1177,70 @@ void gw_storm_speed_f(GwStormSpeedData& d)
 
 void gw_storm_speed(GwStormSpeedData& d)
 {
-  // For now just call f90
-  gw_storm_speed_f(d);
+  gw_convect_init(d.init);
+
+  // create device views and copy
+  std::vector<view1dr_d> vec1dr_in(3);
+  ekat::host_to_device({d.uh, d.umax, d.umin}, d.ncol, vec1dr_in);
+
+  std::vector<view2dr_d> vec2dr_in(1);
+  ekat::host_to_device({d.ubm}, d.ncol, d.init.init.pver, vec2dr_in);
+
+  std::vector<view1di_d> vec1di_in(3);
+  ekat::host_to_device({d.maxi, d.mini, d.storm_speed}, d.ncol, vec1di_in);
+
+  view1dr_d
+    uh_d(vec1dr_in[0]),
+    umax_d(vec1dr_in[1]),
+    umin_d(vec1dr_in[2]);
+
+  view2dr_d
+    ubm_d(vec2dr_in[0]);
+
+  view1di_d
+    maxi_d(vec1di_in[0]),
+    mini_d(vec1di_in[1]),
+    storm_speed_d(vec1di_in[2]);
+
+  const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.ncol, d.init.init.pver);
+
+  GWF::GwCommonInit init_cp = GWF::s_common_init;
+  GWF::GwConvectInit cinit_cp = GWF::s_convect_init;
+
+  // unpack data scalars because we do not want the lambda to capture d
+  const Real storm_speed_min = d.storm_speed_min;
+  const Int pver = d.init.init.pver;
+
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    const Int i = team.league_rank();
+
+    // Get single-column subviews of all inputs, shouldn't need any i-indexing
+    // after this.
+    const auto ubm_c = ekat::subview(ubm_d, i);
+
+    GWF::gw_storm_speed(
+      team,
+      init_cp,
+      cinit_cp,
+      pver,
+      storm_speed_min,
+      ubm_c,
+      mini_d(i),
+      maxi_d(i),
+      storm_speed_d(i),
+      uh_d(i),
+      umin_d(i),
+      umax_d(i));
+  });
+
+  // Now get arrays
+  std::vector<view1dr_d> vec1dr_out = {uh_d, umax_d, umin_d};
+  ekat::device_to_host({d.uh, d.umax, d.umin}, d.ncol, vec1dr_out);
+
+  std::vector<view1di_d> vec1di_out = {storm_speed_d};
+  ekat::device_to_host({d.storm_speed}, d.ncol, vec1di_out);
+
+  gw_finalize_cxx();
 }
 
 void gw_convect_gw_sources_f(GwConvectGwSourcesData& d)

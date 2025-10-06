@@ -504,17 +504,19 @@ struct Functions
   KOKKOS_FUNCTION
   static void gw_storm_speed(
     // Inputs
+    const MemberType& team,
+    const GwCommonInit& init,
+    const GwConvectInit& cinit,
     const Int& pver,
-    const Int& ncol,
-    const Spack& storm_speed_min,
-    const uview_1d<const Spack>& ubm,
-    const uview_1d<const Int>& mini,
-    const uview_1d<const Int>& maxi,
+    const Real& storm_speed_min,
+    const uview_1d<const Real>& ubm,
+    const Int& mini,
+    const Int& maxi,
     // Outputs
-    const uview_1d<Int>& storm_speed,
-    const uview_1d<Spack>& uh,
-    const uview_1d<Spack>& umin,
-    const uview_1d<Spack>& umax);
+    Int& storm_speed,
+    Real& uh,
+    Real& umin,
+    Real& umax);
 
   KOKKOS_FUNCTION
   static void gw_convect_gw_sources(

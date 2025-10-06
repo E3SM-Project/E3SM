@@ -2,6 +2,7 @@
 #define GW_GW_STORM_SPEED_IMPL_HPP
 
 #include "gw_functions.hpp" // for ETI only but harmless for GPU
+#include "util/eamxx_utils.hpp"
 
 namespace scream {
 namespace gw {
@@ -14,21 +15,53 @@ namespace gw {
 template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>::gw_storm_speed(
-// Inputs
-const Int& pver,
-const Int& ncol,
-const Spack& storm_speed_min,
-const uview_1d<const Spack>& ubm,
-const uview_1d<const Int>& mini,
-const uview_1d<const Int>& maxi,
-// Outputs
-const uview_1d<Int>& storm_speed,
-const uview_1d<Spack>& uh,
-const uview_1d<Spack>& umin,
-const uview_1d<Spack>& umax)
+  // Inputs
+  const MemberType& team,
+  const GwCommonInit& init,
+  const GwConvectInit& cinit,
+  const Int& pver,
+  const Real& storm_speed_min,
+  const uview_1d<const Real>& ubm,
+  const Int& mini,
+  const Int& maxi,
+  // Outputs
+  Int& storm_speed,
+  Real& uh,
+  Real& umin,
+  Real& umax)
 {
-  // TODO
-  // Note, argument types may need tweaking. Generator is not always able to tell what needs to be packed
+  storm_speed = Int(Kokkos::copysign(ekat::impl::max(std::abs(ubm(cinit.k_src_wind))-storm_speed_min, Real(0)), ubm(cinit.k_src_wind))) - 1;
+
+  Kokkos::parallel_reduce(
+    Kokkos::TeamVectorRange(team, maxi, mini+1), [&] (const int k, Real& lsum) {
+      lsum += ubm(k)/(mini-maxi+1);
+    }, Kokkos::Sum<Real>(uh));
+
+  team.team_barrier();
+  uh -= storm_speed;
+
+  // Limit uh to table range.
+  uh = ekat::impl::min(uh, Real(cinit.maxuh));
+  uh = ekat::impl::max(uh, Real(-cinit.maxuh));
+
+  // Speeds for critical level filtering.
+  umin =  init.pgwv*init.dc;
+  umax = -init.pgwv*init.dc;
+
+  // The type that holds both min and max results
+  using ResultType = Kokkos::MinMax<Real>::value_type;
+  ResultType min_max_result;
+
+  Kokkos::parallel_reduce(
+    Kokkos::TeamVectorRange(team, maxi, mini+1), [&] (const int k, ResultType& update) {
+      if (ubm(k) < update.min_val) update.min_val = ubm(k);
+      if (ubm(k) > update.max_val) update.max_val = ubm(k);
+    }, Kokkos::MinMax<Real>(min_max_result));
+
+  team.team_barrier();
+
+  umin = min_max_result.min_val;
+  umax = min_max_result.max_val;
 }
 
 } // namespace gw
