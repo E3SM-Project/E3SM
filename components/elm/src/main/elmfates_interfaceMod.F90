@@ -4194,7 +4194,7 @@ end subroutine wrap_update_hifrq_hist
 
 ! ======================================================================================
  
- subroutine RegisterHLMInterfaceVariables(this, nc, num_veg_patches, patchlist)
+ subroutine RegisterHLMInterfaceVariables(this, nc)
    
    use FatesInterfaceTypesMod, only : hlm_fates_soil_level
    use FatesInterfaceTypesMod, only : hlm_fates_decomp_frac_moisture
@@ -4203,26 +4203,27 @@ end subroutine wrap_update_hifrq_hist
    ! Arguments
    class(hlm_fates_interface_type), intent(inout) :: this
    integer, intent(in)                            :: nc              ! clump number
-   integer, intent(in)                            :: num_veg_patches ! maximum patches for this clump
-   integer, intent(in)                            :: patchlist(:)    ! maximum patches for this clump
 
    ! Locals
    integer :: r   ! register index
    integer :: p   ! hlm patch index
    integer :: c   ! column index
+   integer :: s   ! fates site index
+   integer :: ifp ! fates patch index
    
-   ! Set the number of vegetated patches to the interface type level
-   this%fates(nc)%npatches = num_veg_patches
-
+   ! initialize the fates patch index counter
+   ifp = 0
+   
+   ! Iterate over the number of vegetated patches
    do r = 1, this%fates(nc)%npatches
-      p = patchlist(r)
+      p = this%fates(nc)%GetHLMPatchIndex()
       
       ! Get the subgrid indices and assign them to the register metadata
       call this%fates(nc)%register(r)%SetSubgridIndices(gridcell = veg_pp%gridcell(p), &
                                                         topounit = veg_pp%topounit(p), &
                                                         landunit = veg_pp%landunit(p), &
-                                                        column = veg_pp%column(p), &
-                                                        hlmpatch = p)
+                                                        column = veg_pp%column(p))
+                                                        
 
       ! Register and initialize the boundary condition variables
       ! Column level variables
