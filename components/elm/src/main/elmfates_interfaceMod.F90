@@ -1035,7 +1035,7 @@ contains
                num_veg_patches = num_veg_patches + 1
                patchlist(num_veg_patches) = p
                
-               if (veg_pp%gridcell /= gridcell_index) then
+               if (veg_pp%gridcell(p) /= gridcell_index) then
                   gridcell_index = veg_pp%gridcell(p)
                   nsites = nsites + 1
                end if
