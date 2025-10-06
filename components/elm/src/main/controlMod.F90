@@ -466,11 +466,6 @@ contains
                    errMsg(__FILE__, __LINE__))
           end if
 
-          if( use_lch4 ) then
-             call endrun(msg=' ERROR: use_lch4 (methane) and use_fates cannot both be set to true.'//&
-                   errMsg(__FILE__, __LINE__))
-          end if
-
           if ( n_drydep > 0 .and. drydep_method /= DD_XLND ) then
              call endrun(msg=' ERROR: dry deposition via ML Welsey is not compatible with FATES.'//&
                    errMsg(__FILE__, __LINE__))
@@ -520,11 +515,6 @@ contains
 
        if (use_crop .and. .not. create_crop_landunit) then
           call endrun(msg=' ERROR: prognostic crop Patches require create_crop_landunit=.true.'//&
-            errMsg(__FILE__, __LINE__))
-       end if
-
-       if (.not. use_crop .and. irrigate) then
-          call endrun(msg=' ERROR: irrigate = .true. requires CROP model active.'//&
             errMsg(__FILE__, __LINE__))
        end if
        
