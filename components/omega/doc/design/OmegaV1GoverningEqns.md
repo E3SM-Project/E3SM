@@ -731,7 +731,7 @@ $$
 & + \left[ {\bf k} \cdot \nabla \times u_{e,k} +f_v\right]_e\left(u_{e,k}^{\perp}\right) + \left[\nabla K\right]_e  \\
 & + \frac{\rho_0}{\left[\tilde{h}_{i,k}\right]_e} \left\{ \left[\left(u - u_k\right) \left\{\tilde{W}_{tr} \right\} \right]_{e,k}^\text{top} - \left[  \left(u - u_k\right) \left\{\tilde{W}_{tr} \right\} \right]_{e,k+1}^\text{top} \right\} \\
 & = - \left(\nabla \Phi \right)_{e,k} - \frac{1}{\left[\tilde{h}_k\right]_e} \nabla \left( \tilde{h}_k \alpha_k p_k \right) - \frac{1}{\left[\tilde{h}_k\right]_e} \left\{ \left[ \alpha p \nabla \tilde{z}^{\text{top}}\right]_{e,k}^\text{top} -  \left[ \alpha p \nabla \tilde{z}^{\text{bot}}\right]_{e,k+1}^\text{top} \right\} \\
-&  - \frac{1}{\left[\tilde{h}_{i,k}\right]_e} \nabla \cdot \left( \tilde{h}_k \left< {\bf u}^\prime \otimes {\bf u}^\prime \right>_k \right) - \frac{\rho_0}{\left[\tilde{h}_{i,k}\right]_e^\text{top}}  \left\{ \left[ \left<\mathbf{u}^\prime \tilde{w}_{tr}^\prime \right> - \left< \mathbf{u}^\prime \tilde{ u}^\prime \right> \right]_{e,k}^\text{top} - \left[ \left<\mathbf{u}^\prime \tilde{w}_{tr}^\prime \right> - \left< \mathbf{u}^\prime \tilde{ u}^\prime \right> \right]_{e,k+1} \right\}.
+&  - \frac{1}{\left[\tilde{h}_{i,k}\right]_e} \nabla \cdot \left( \tilde{h}_k \left< {\bf u}^\prime \otimes {\bf u}^\prime \right>_k \right) - \frac{\rho_0}{\left[\tilde{h}_{i,k}\right]_e^\text{top}}  \left\{ \left[ \left<\mathbf{u}^\prime \tilde{w}_{tr}^\prime \right> - \left< \mathbf{u}^\prime \tilde{ u}^\prime \right> \right]_{e,k}^\text{top} - \left[ \left<\mathbf{u}^\prime \tilde{w}_{tr}^\prime \right> - \left< \mathbf{u}^\prime \tilde{ u}^\prime \right> \right]_{e,k+1}^\text{top} \right\}.
 $$ (discrete-momentum)
 
 **Diagnostic Relations:**
