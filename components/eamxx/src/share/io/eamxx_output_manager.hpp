@@ -7,8 +7,8 @@
 #include "share/io/eamxx_io_file_specs.hpp"
 #include "share/io/eamxx_io_control.hpp"
 
-#include "share/manager/field_manager.hpp"
-#include "share/manager/grids_manager.hpp"
+#include "share/data_managers/field_manager.hpp"
+#include "share/data_managers/grids_manager.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
 #include "share/util/eamxx_utils.hpp"
 

@@ -19,15 +19,15 @@ add_subdirectory(property_checks)
 # Remapper structures
 add_subdirectory(remap)
 
+# Data managers structures
+add_subdirectory(data_managers)
+
 set(SHARE_SRC
   atm_process/atmosphere_process.cpp
   atm_process/atmosphere_process_hash.cpp
   atm_process/atmosphere_process_group.cpp
   atm_process/atmosphere_process_dag.cpp
   atm_process/atmosphere_diagnostic.cpp
-  atm_process/IOPDataManager.cpp
-  manager/field_manager.cpp
-  manager/grids_manager.cpp
   algorithm/eamxx_data_interpolation.cpp
   algorithm/eamxx_fv_phys_rrtmgp_active_gases_workaround.cpp
   algorithm/eamxx_time_interpolation.cpp
@@ -48,7 +48,8 @@ target_link_libraries(scream_share PUBLIC
   eamxx_field
   eamxx_grid
   eamxx_remap
-  eamxx_property_checks)
+  eamxx_property_checks
+  eamxx_data_managers)
 
 # Used in the data interpolation
 target_link_libraries(scream_share PUBLIC stdc++fs)
@@ -76,7 +77,7 @@ add_subdirectory(io)
 if (NOT SCREAM_LIB_ONLY)
   # Create test_support lib
   add_library(scream_test_support
-    manager/mesh_free_grids_manager.cpp
+    data_managers/mesh_free_grids_manager.cpp
   )
   target_link_libraries(scream_test_support PUBLIC scream_share scream_io)
   target_include_directories (scream_test_support PUBLIC ${EKAT_SOURCE_DIR}/extern/Catch2/single_include)

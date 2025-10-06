@@ -2,9 +2,9 @@
 #define MAM_AEROSOL_OPTICS_READ_TABLES_HPP
 
 #include "mam_coupling.hpp"
-#include "share/manager/field_manager.hpp"
+#include "share/data_managers/field_manager.hpp"
 #include "share/grid/abstract_grid.hpp"
-#include "share/manager/grids_manager.hpp"
+#include "share/data_managers/grids_manager.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 #include "share/io/scorpio_input.hpp"
 

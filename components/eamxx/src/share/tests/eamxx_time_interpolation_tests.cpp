@@ -4,7 +4,7 @@
 
 #include "share/field/field_utils.hpp"
 #include "share/field/field.hpp"
-#include "share/manager/field_manager.hpp"
+#include "share/data_managers/field_manager.hpp"
 
 #include "share/util/eamxx_time_interpolation.hpp"
 #include "eamxx_setup_random_test.hpp"
