@@ -629,21 +629,19 @@
     <valid_values>TRUE,FALSE</valid_values>
     <default_value>FALSE</default_value>
     <values match="last">
-      <value compset="DATM.+POP\d">TRUE</value>
-      <value compset="DATM.+DOCN%IAF">TRUE</value>
+      <value compset="DATM%IAF">TRUE</value>
+      <value compset="DATM%NYF">TRUE</value>
     </values>
     <group>run_component_cpl</group>
     <file>env_run.xml</file>
     <desc>
-      Only used for compsets with DATM and POP (currently C, G and J):
-      If true, compute albedos to work with daily avg SW down
-      If false (default), albedos are computed with the assumption that downward
+      Only used for compsets with DATM and MPASO (currently C, G and J):
+      If FALSE (default), albedos are computed with the assumption that downward
       solar radiation from the atm component has a diurnal cycle and zenith-angle
       dependence. This is normally the case when using an active atm component
-      If true, albedos are computed with the assumption that downward
+      If TRUE, albedos are computed with the assumption that downward
       solar radiation from the atm component is a daily average quantity and
-      does not have a zenith-angle dependence. This is often the case when
-      using a data atm component. Only used for compsets with DATM and POP (currently C, G and J).
+      does not have a zenith-angle dependence.
       NOTE: This should really depend on the datm forcing and not the compset per se.
       So, for example, whether it is set in a J compset should depend on
       what datm forcing is used.
