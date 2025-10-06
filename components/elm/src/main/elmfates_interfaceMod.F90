@@ -4212,9 +4212,9 @@ end subroutine wrap_update_hifrq_hist
    integer :: c   ! column index
    
    ! Set the number of vegetated patches to the interface type level
-   this%npatches = num_veg_patches
+   this%fates(nc)%npatches = num_veg_patches
 
-   do r = 1, this%npatches
+   do r = 1, this%fates(nc)%npatches
       p = patchlist(r)
       
       ! Get the subgrid indices and assign them to the register metadata
@@ -4234,7 +4234,7 @@ end subroutine wrap_update_hifrq_hist
       call this%fates(nc)%register(r)%Register(key=hlm_fates_decomp_frac_temperature, &
                                                data=col_cf%t_scalar(c,:), hlm_flag=.true.)
 
-  end do
+   end do
   
  end subroutine RegisterHLMInterfaceVariables
  
