@@ -1052,10 +1052,10 @@ contains
          ! call this%f2hmap(nc)%SetPatchIndex(bounds_clump)
 
          ! Initialize interface registries for each patch on the clump 
-         call this%fates(nc)%InitializeInterfaceRegistry(num_veg_patches)
+         call this%fates(nc)%InitializeInterfaceRegistry(num_veg_patches, patchlist)
          
          ! Register the HLM interface variables that we be used to populate the FATES boundary conditions
-         call this%RegisterHLMInterfaceVariables(nc, num_veg_patches, patchlist)
+         call this%RegisterHLMInterfaceVariables(nc)
          
          ! deallocate temporary patch list
          deallocate(patchlist)
