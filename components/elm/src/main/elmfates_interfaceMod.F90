@@ -1088,8 +1088,8 @@ contains
 
          do p = 1, num_veg_patches
             s = sitelist(p)
-            c1 = this%fates(nc)%fcolumn(s)
-            c2 = this%fates(bc)%register(p)%GetColumnIndex()
+            c1 = this%f2hmap(nc)%fcolumn(s)
+            c2 = this%fates(nc)%register(p)%GetColumnIndex()
             if (c1 /= c2 ) then
                write(iulog,*) ' columns do not match: s, c1, c2: ', s, c1, c2
                call endrun(msg=errMsg(sourcefile, __LINE__))
