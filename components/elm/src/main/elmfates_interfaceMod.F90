@@ -1057,6 +1057,9 @@ contains
          ! Register the HLM interface variables that we be used to populate the FATES boundary conditions
          call this%RegisterHLMInterfaceVariables(nc)
          
+         ! Initialize the FATES sites
+         call this%fates(nc)%InitializeFatesSites()
+         
          ! deallocate temporary patch list
          deallocate(patchlist)
          
