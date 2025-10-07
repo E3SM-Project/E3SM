@@ -117,6 +117,7 @@
 <ncdata dyn="se" hgrid="ne0np4_conus_x4v1_lowcon"         nlev="30" ocn="aquaplanet">atm/cam/inic/homme/cami_0003-01-01_conusx4v1np4_L30_ape_c000000.nc</ncdata>
 <ncdata dyn="se" hgrid="ne0np4_northamericax4v1"          nlev="80"                 >atm/cam/inic/homme/v3.LR_mapped_northamericax4v1np4-topoadj.eam.i.2010-01-01.nc</ncdata>
 <ncdata dyn="se" hgrid="ne0np4_amazonx4v1"                nlev="80"                 >atm/cam/inic/homme/HICCUP.atm_era5.2014-10-01.highorder_amazonx4v1.L80.nc</ncdata>
+<ncdata dyn="se" hgrid="ne0np4_amazonx4v2"                nlev="80"                 >atm/cam/inic/homme/v3.LR_amip_0101_mapped_amazonx4v2np4-topoadj.eam.i.1975-01-01-00000.nc</ncdata>
 <ncdata dyn="se" hgrid="ne0np4_northamericax4v1"          nlev="72"                 >atm/cam/inic/homme/cami_0001-01-01_northamericax4v1_c190709.nc</ncdata>
 <ncdata dyn="se" hgrid="ne0np4_antarcticax4v1"            nlev="72"                 >atm/cam/inic/homme/cami_mam3_Linoz_0000-01-antarcticax4v1_L72_topoadj_c20200507.nc</ncdata>
 <ncdata dyn="se" hgrid="ne0np4_arcticx4v1"                nlev="72"                 >atm/cam/inic/homme/eam_i_mam4_Linoz_0011-01-arcticx4v1np4_L72_c20220127.nc</ncdata>
@@ -157,6 +158,7 @@
 <bnd_topo hgrid="ne0np4_northamericax4v1"  >atm/cam/topo/USGS_northamericax4v1_12xdel2_consistentSGH_191023.nc</bnd_topo>
 <bnd_topo hgrid="ne0np4_northamericax4v1" npg="2">atm/cam/topo/USGS-gtopo30_northamericax4v1np4pg2_oroshp_x6t.c20250813.nc</bnd_topo>
 <bnd_topo hgrid="ne0np4_amazonx4v1" npg="2">atm/cam/topo/USGS-gtopo30_amazonx4v1np4pg2_oroshp_x6t.c20250507.nc</bnd_topo>
+<bnd_topo hgrid="ne0np4_amazonx4v2" npg="2">atm/cam/topo/USGS-gtopo30_amazonx4v2np4pg2_oroshp_x6t.c20250923.nc</bnd_topo>
 <bnd_topo hgrid="ne0np4_antarcticax4v1"  >atm/cam/topo/USGS-gtopo30_antarcticax4v1_12xdel2_consistentSGH_191120.nc</bnd_topo>
 <bnd_topo hgrid="ne0np4_antarcticax4v1"  npg="2">atm/cam/topo/USGS_gtopo30_antarcticax4v1pg2_12xdel2_consistentSGH_20200925.nc</bnd_topo>
 <bnd_topo hgrid="ne0np4_arcticx4v1"      npg="2">atm/cam/topo/USGS-gtopo30_arcticx4v1pg2_12xdel2_20210527.nc</bnd_topo>
@@ -733,6 +735,7 @@
 <drydep_srf_file hgrid="ne0np4_northamericax4v1">atm/cam/chem/trop_mam/atmsrf_northamericax4v1np4_20191023.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne0np4_northamericax4v1" npg="2">atm/cam/chem/trop_mam/atmsrf_northamericax4v1pg2_20020209.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne0np4_amazonx4v1" npg="2">atm/cam/chem/trop_mam/atmsrf_amazonx4v1pg2_20250429.nc</drydep_srf_file>
+<drydep_srf_file hgrid="ne0np4_amazonx4v2" npg="2">atm/cam/chem/trop_mam/atmsrf_amazonx4v2pg2_20251004.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne0np4_antarcticax4v1">atm/cam/chem/trop_mam/atmsrf_antarcticax4v1np4_20191127.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne0np4_antarcticax4v1" npg="2">atm/cam/chem/trop_mam/atmsrf_antarcticax4v1pg2_20020925.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne0np4_arcticx4v1"     npg="2">atm/cam/chem/trop_mam/atmsrf_arcticx4v1pg2_20210512.nc</drydep_srf_file>
@@ -1430,6 +1433,7 @@
 <se_ne hgrid="ne0np4_conus_x4v1_lowcon"  > 0 </se_ne>
 <se_ne hgrid="ne0np4_northamericax4v1"  > 0 </se_ne>
 <se_ne hgrid="ne0np4_amazonx4v1"  > 0 </se_ne>
+<se_ne hgrid="ne0np4_amazonx4v2"  > 0 </se_ne>
 <se_ne hgrid="ne0np4_svalbard_x8v1_lowcon"  > 0 </se_ne>
 <se_ne hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  > 0 </se_ne>
 <se_ne hgrid="ne0np4_enax4v1">0</se_ne>
@@ -1440,6 +1444,7 @@
 <mesh_file hgrid="ne0np4_conus_x4v1_lowcon"  >atm/cam/inic/homme/conusx4v1.g</mesh_file>
 <mesh_file hgrid="ne0np4_northamericax4v1"  >atm/cam/inic/homme/northamericax4v1.g</mesh_file>
 <mesh_file hgrid="ne0np4_amazonx4v1"  >atm/cam/inic/homme/amazonx4v1.g</mesh_file>
+<mesh_file hgrid="ne0np4_amazonx4v2"  >atm/cam/inic/homme/amazonx4v2.g</mesh_file>
 <mesh_file hgrid="ne0np4_antarcticax4v1"  >atm/cam/inic/homme/antarcticax4v1.g</mesh_file>
 <mesh_file hgrid="ne0np4_arcticx4v1"      >atm/cam/inic/homme/arcticx4v1.g</mesh_file>
 <mesh_file hgrid="ne0np4_svalbard_x8v1_lowcon"  >atm/cam/inic/homme/svalbardx8v1.g</mesh_file>
@@ -1458,6 +1463,7 @@
 <nu_top dyn_target="theta-l" hgrid="ne1024np4"> 1e4 </nu_top>
 <nu_top dyn_target="theta-l" hgrid="ne0np4_northamericax4v1"> 1e5 </nu_top>
 <nu_top dyn_target="theta-l" hgrid="ne0np4_amazonx4v1"> 1e5 </nu_top>
+<nu_top dyn_target="theta-l" hgrid="ne0np4_amazonx4v2"> 1e5 </nu_top>
 <nu_top dyn_target="theta-l" hgrid="ne0np4_antarcticax4v1"> 1e5 </nu_top>
 <nu_top dyn_target="theta-l" hgrid="ne0np4_arcticx4v1"    > 1e5 </nu_top>
 <nu_top dyn_target="theta-l" hgrid="ne0np4_conus_x4v1_lowcon"> 1e5 </nu_top>
@@ -1496,6 +1502,7 @@
 <se_tstep dyn_target="theta-l" hgrid="ne120np4">  75 </se_tstep>
 <se_tstep dyn_target="theta-l" hgrid="ne0np4_northamericax4v1"> 75 </se_tstep>
 <se_tstep dyn_target="theta-l" hgrid="ne0np4_amazonx4v1"> 75 </se_tstep>
+<se_tstep dyn_target="theta-l" hgrid="ne0np4_amazonx4v2"> 75 </se_tstep>
 <se_tstep dyn_target="theta-l" hgrid="ne0np4_antarcticax4v1"> 75 </se_tstep>
 <se_tstep dyn_target="theta-l" hgrid="ne0np4_arcticx4v1"    > 75 </se_tstep>
 <se_tstep dyn_target="theta-l" hgrid="ne0np4_conus_x4v1_lowcon"> 75 </se_tstep>
@@ -1524,6 +1531,7 @@
 
 <hypervis_subcycle_tom dyn_target="theta-l" hgrid="ne0np4_northamericax4v1"> 3 </hypervis_subcycle_tom>
 <hypervis_subcycle_tom dyn_target="theta-l" hgrid="ne0np4_amazonx4v1"> 3 </hypervis_subcycle_tom>
+<hypervis_subcycle_tom dyn_target="theta-l" hgrid="ne0np4_amazonx4v2"> 3 </hypervis_subcycle_tom>
 <hypervis_subcycle_tom dyn_target="theta-l" hgrid="ne0np4_antarcticax4v1"  > 3 </hypervis_subcycle_tom>
 <hypervis_subcycle_tom dyn_target="theta-l" hgrid="ne0np4_arcticx4v1"      > 3 </hypervis_subcycle_tom>
 <hypervis_subcycle_tom dyn_target="theta-l" hgrid="ne0np4_conus_x4v1"      > 3 </hypervis_subcycle_tom>
@@ -1533,6 +1541,7 @@
 <hypervis_subcycle dyn_target="theta-l" hgrid="ne0np4_conus_x4v1_lowcon"> 2 </hypervis_subcycle>
 <hypervis_subcycle dyn_target="theta-l" hgrid="ne0np4_northamericax4v1" > 2 </hypervis_subcycle>
 <hypervis_subcycle dyn_target="theta-l" hgrid="ne0np4_amazonx4v1" > 2 </hypervis_subcycle>
+<hypervis_subcycle dyn_target="theta-l" hgrid="ne0np4_amazonx4v2" > 2 </hypervis_subcycle>
 <hypervis_subcycle dyn_target="theta-l" hgrid="ne0np4_antarcticax4v1"   > 2 </hypervis_subcycle>
 <hypervis_subcycle dyn_target="theta-l" hgrid="ne0np4_arcticx4v1"       > 2 </hypervis_subcycle>
 <hypervis_subcycle dyn_target="theta-l" hgrid="ne0np4_twpx4v1"   > 2 </hypervis_subcycle>
@@ -1578,6 +1587,7 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <nu dyn_target="preqx" hgrid="ne0np4_conus_x4v1_lowcon"  > 8.0e-8</nu>
 <nu dyn_target="preqx" hgrid="ne0np4_northamericax4v1"  > 8.0e-8</nu>
 <nu dyn_target="preqx" hgrid="ne0np4_amazonx4v1"  > 8.0e-8</nu>
+<nu dyn_target="preqx" hgrid="ne0np4_amazonx4v2"  > 8.0e-8</nu>
 <nu dyn_target="preqx" hgrid="ne0np4_antarcticax4v1"  > 8.0e-8</nu>
 <nu dyn_target="preqx" hgrid="ne0np4_arcticx4v1"      > 8.0e-8</nu>
 <nu dyn_target="preqx" hgrid="ne0np4_svalbard_x8v1_lowcon"  > 8.0e-8</nu>
@@ -1600,6 +1610,7 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <nu_div dyn_target="preqx" hgrid="ne0np4_conus_x4v1_lowcon"  > 20.0e-8</nu_div>
 <nu_div dyn_target="preqx" hgrid="ne0np4_northamericax4v1"  > 20.0e-8</nu_div>
 <nu_div dyn_target="preqx" hgrid="ne0np4_amazonx4v1"  > 20.0e-8</nu_div>
+<nu_div dyn_target="preqx" hgrid="ne0np4_amazonx4v2"  > 20.0e-8</nu_div>
 <nu_div dyn_target="preqx" hgrid="ne0np4_antarcticax4v1"  > 20.0e-8</nu_div>
 <nu_div dyn_target="preqx" hgrid="ne0np4_arcticx4v1"      > 20.0e-8</nu_div>
 <nu_div dyn_target="preqx" hgrid="ne0np4_svalbard_x8v1_lowcon"  > 20.0e-8</nu_div>
@@ -1612,6 +1623,7 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <hypervis_scaling dyn_target="preqx" hgrid="ne0np4_conus_x4v1_lowcon"  > 3.2 </hypervis_scaling>
 <hypervis_scaling dyn_target="preqx" hgrid="ne0np4_northamericax4v1"  > 3.2 </hypervis_scaling>
 <hypervis_scaling dyn_target="preqx" hgrid="ne0np4_amazonx4v1"  > 3.2 </hypervis_scaling>
+<hypervis_scaling dyn_target="preqx" hgrid="ne0np4_amazonx4v2"  > 3.2 </hypervis_scaling>
 <hypervis_scaling dyn_target="preqx" hgrid="ne0np4_antarcticax4v1"  > 3.2 </hypervis_scaling>
 <hypervis_scaling dyn_target="preqx" hgrid="ne0np4_arcticx4v1"      > 3.2 </hypervis_scaling>
 <hypervis_scaling dyn_target="preqx" hgrid="ne0np4_svalbard_x8v1_lowcon"  > 3.2 </hypervis_scaling>
@@ -1656,6 +1668,7 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <se_nsplit dyn_target="preqx" hgrid="ne0np4_conus_x4v1_lowcon"  > 4 </se_nsplit>
 <se_nsplit dyn_target="preqx" hgrid="ne0np4_northamericax4v1"  > 4 </se_nsplit>
 <se_nsplit dyn_target="preqx" hgrid="ne0np4_amazonx4v1"  > 4 </se_nsplit>
+<se_nsplit dyn_target="preqx" hgrid="ne0np4_amazonx4v2"  > 4 </se_nsplit>
 <se_nsplit dyn_target="preqx" hgrid="ne0np4_antarcticax4v1"  > 4 </se_nsplit>
 <se_nsplit dyn_target="preqx" hgrid="ne0np4_arcticx4v1"      > 4 </se_nsplit>
 <se_nsplit dyn_target="preqx" hgrid="ne0np4_svalbard_x8v1_lowcon"  > 5 </se_nsplit>
@@ -1678,6 +1691,7 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <hypervis_subcycle hgrid="ne0np4_conus_x4v1_lowcon" dyn_target="preqx" > 7 </hypervis_subcycle>
 <hypervis_subcycle hgrid="ne0np4_northamericax4v1" dyn_target="preqx"  > 7 </hypervis_subcycle>
 <hypervis_subcycle hgrid="ne0np4_amazonx4v1" dyn_target="preqx"  > 7 </hypervis_subcycle>
+<hypervis_subcycle hgrid="ne0np4_amazonx4v2" dyn_target="preqx"  > 7 </hypervis_subcycle>
 <hypervis_subcycle hgrid="ne0np4_antarcticax4v1" dyn_target="preqx"  > 7 </hypervis_subcycle>
 <hypervis_subcycle hgrid="ne0np4_arcticx4v1"     dyn_target="preqx"  > 7 </hypervis_subcycle>
 <hypervis_subcycle hgrid="ne0np4_svalbard_x8v1_lowcon" dyn_target="preqx" > 8 </hypervis_subcycle>
