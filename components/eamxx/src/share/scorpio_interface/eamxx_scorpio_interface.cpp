@@ -768,6 +768,13 @@ void set_var_decomp (PIOVar& var,
       " - filename  : " + filename + "\n"
       " - varname   : " + var.name  + "\n"
       " - var decomp: " + var.decomp->name  + "\n");
+  EKAT_REQUIRE_MSG (decomp_dim==var.dims[0] or decomp_dim==var.dims.back(),
+      "Error! Variable decomposition only supports decompostion over the first or last dimension.\n"
+      " - filename  : " + filename + "\n"
+      " - varname   : " + var.name  + "\n"
+      " - var decomp: " + var.decomp->name  + "\n");
+  bool decomp_first_dim = var.dims[0]->offsets ? true : false;
+
 
   // Create decomp name: dtype-dim1<len1>_dim2<len2>_..._dimk<lenN>
   std::string decomp_tag = var.dtype + "-";
@@ -799,7 +806,7 @@ void set_var_decomp (PIOVar& var,
     // We haven't create this decomp yet. Go ahead and create one
     decomp = std::make_shared<PIODecomp>();
     decomp->name = decomp_tag;
-    decomp->dim = decomp_dim; 
+    decomp->dim = decomp_dim;
 
     int ndims = var.dims.size();
 
@@ -820,11 +827,21 @@ void set_var_decomp (PIOVar& var,
     const auto& dim_offsets = *decomp->dim->offsets;
     int dim_loc_len = dim_offsets.size();
     decomp->offsets.resize (non_decomp_dim_prod*dim_loc_len);
-    for (int idof=0; idof<dim_loc_len; ++idof) {
-      auto dof_offset = dim_offsets[idof];
-      auto beg = decomp->offsets.begin()+ idof*non_decomp_dim_prod;
-      auto end = beg + non_decomp_dim_prod;
-      std::iota (beg,end,non_decomp_dim_prod*dof_offset);
+    if (decomp_first_dim) {
+      for (int idof=0; idof<dim_loc_len; ++idof) {
+        auto dof_offset = dim_offsets[idof];
+        auto beg = decomp->offsets.begin()+ idof*non_decomp_dim_prod;
+        auto end = beg + non_decomp_dim_prod;
+        std::iota (beg,end,non_decomp_dim_prod*dof_offset);
+      }
+    } else {
+      for (int ii = 0; ii<non_decomp_dim_prod; ++ii) {
+        for (int idof=0; idof<dim_loc_len; ++idof) {
+          auto dof_offset = dim_offsets[idof];
+          decomp->offsets[ii * dim_loc_len + idof] =
+              ii * decomp_dim->length + dof_offset;
+        }
+      }
     }
 
     // Create PIO decomp
