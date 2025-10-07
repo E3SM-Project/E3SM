@@ -4219,7 +4219,7 @@ end subroutine wrap_update_hifrq_hist
    
    ! Iterate over the number of vegetated patches
    do r = 1, this%fates(nc)%npatches
-      p = this%fates(nc)%GetHLMPatchIndex()
+      p = this%fates(nc)%register(r)%GetHLMPatchIndex()
       
       ! Get the subgrid indices and assign them to the register metadata
       call this%fates(nc)%register(r)%SetSubgridIndices(gridcell = veg_pp%gridcell(p), &
