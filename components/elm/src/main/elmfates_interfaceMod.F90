@@ -220,22 +220,12 @@ module ELMFatesInterfaceMod
 
    type, public :: f2hmap_type
 
-      ! HLM patch index to FATES patchno index mapping, by site
-      integer, allocatable :: hlm_patch_index(:,:)
-      
       ! This is the associated column index of each FATES site - to be deprecated
       integer, allocatable :: fcolumn (:)
 
       ! This is the associated site index of any HLM columns - to be deprecated
       ! This vector may be sparse, and non-sites have index 0
       integer, allocatable :: hsites  (:)
-
-      contains
-
-        procedure, public :: SetPatchIndex
-      !   procedure, public :: GetPatchIndex
-        procedure, public :: GetColumnIndex
-      !   procedure, public :: GetLandunitIndex
 
    end type f2hmap_type
    
@@ -1045,12 +1035,6 @@ contains
 
          end do
          
-         ! ! Allocate map from FATES patchno index to HLM patch index by site
-         ! allocate(this%f2hmap(nc)%hlm_patch_index(fates_maxPatchesperSite,s))
-
-         ! ! Populate the fates to hlm patch map
-         ! call this%f2hmap(nc)%SetPatchIndex(bounds_clump)
-
          ! Initialize interface registries for each patch on the clump 
          call this%fates(nc)%InitializeInterfaceRegistry(num_veg_patches, patchlist)
          
@@ -4145,55 +4129,6 @@ end subroutine wrap_update_hifrq_hist
    call ncd_pio_closefile(ncid)
 
  end subroutine GetLandusePFTData
-
-! ======================================================================================
-
- integer function GetColumnIndex(this,ifp,s) result(ifc)
-
-   !------------------------------------------------------------------------
-   ! This subroutine gets the mapping between the FATES patches and HLM columns
-   ! ------------------------------------------------------------------------
-
-   class(f2hmap_type), intent(inout) :: this
-
-   integer :: ifp  ! FATES bc_in/out patch dimension index
-   integer :: s    ! FATES site index
-
-   ifc = veg_pp%column(this%hlm_patch_index(ifp,s))
-
- end function GetColumnIndex
-
-! ======================================================================================
-
- subroutine SetPatchIndex(this,bounds_clump)
-
-   !------------------------------------------------------------------------
-   ! This subroutine sets the mapping between the FATES and HLM patches
-   ! ------------------------------------------------------------------------
-
-   class(f2hmap_type), intent(inout) :: this
-   type(bounds_type), intent(in)    :: bounds_clump
-
-   integer :: s    ! FATES site index
-   integer :: l    ! HLM landunit index
-   integer :: ifp  ! FATES patch index (patchno)
-
-   ! Note while each HLM clump can have multiple sites, the site indices are not global, 
-   ! i.e. the first site on each clump will have an index of 1
-   s = 0
-   do l = bounds_clump%begl,bounds_clump%endl
-      if (lun_pp%itype(l) == istsoil) then
-         s = s + 1
-         do ifp = 1, natpft_size
-            ! This assumes that the first patch on the land unit is a vegetated
-            ! patch and that the patch indices are monotonically increasing.
-            ! See decompmod and initGridCellsMod for corroboration
-            this%hlm_patch_index(ifp,s) = lun_pp%pfti(l) + ifp
-         end do
-      end if
-    end do
-
- end subroutine SetPatchIndex
 
 ! ======================================================================================
  
