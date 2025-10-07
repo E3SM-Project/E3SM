@@ -1026,10 +1026,10 @@ contains
          call this%fates(nc)%InitializeFatesSites()
          
          ! Set the number of FATES sites
-         this%fates(nc)%nsites = s
+         ! this%fates(nc)%nsites = s
 
          ! Allocate the FATES sites
-         allocate(this%fates(nc)%sites(this%fates(nc)%nsites))
+         ! allocate(this%fates(nc)%sites(this%fates(nc)%nsites))
 
          ! Allocate the FATES boundary arrays (in)
          allocate(this%fates(nc)%bc_in(this%fates(nc)%nsites))
