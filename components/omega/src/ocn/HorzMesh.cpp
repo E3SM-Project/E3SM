@@ -606,6 +606,7 @@ void HorzMesh::copyToDevice() {
    YCell             = createDeviceMirrorCopy(YCellH);
    XEdge             = createDeviceMirrorCopy(XEdgeH);
    YEdge             = createDeviceMirrorCopy(YEdgeH);
+   LatCell           = createDeviceMirrorCopy(LatCellH);
 
 } // end copyToDevice
 

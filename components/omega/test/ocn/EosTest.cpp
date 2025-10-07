@@ -37,21 +37,28 @@ using namespace OMEGA;
 constexpr int NVertLayers = 60;
 
 /// Published values (TEOS-10 and linear) to test against
-const Real TeosSVExpValue = 0.0009732819628; // Expected value for TEOS-10 specific volume
+const Real TeosSVExpValue =
+    0.0009732819628; // Expected value for TEOS-10 specific volume
 const Real LinearExpValue =
     0.0009784735812133072; // Expected value for Linear specific volume
-const Real TeosBVFExpValue = 
-    0.020855053182884893; // Expected value for TEOS-10 Brunt-Vaisala frequency
-const Real SimpleBVFExpValue =
+const Real TeosBVFExpValue =
+    0.020894074060799055; // Expected value for TEOS-10 Brunt-Vaisala frequency
+const Real LinearBVFExpValue =
     0.017833905406889013; // Expected value for Linear Brunt-Vaisala frequency
-const Real GswBVFExpValue = 0.02081197958166906; // Expected value from GSW-C library
+const Real GswBVFExpValue =
+    0.02081197958166906; // Expected value from GSW-C library
 
 /// Test input values
-double Sa       = 30.0;   // Absolute Salinity in g/kg
-double Ct       = 10.0;   // Conservative Temperature in degC
-double P        = 1000.0; // Pressure in dbar
-const I4 KDisp  = 1;      // Displace parcel to K=1 for TEOS-10 eos
-const Real RTol = 1e-10;  // Relative tolerance for isApprox checks
+// double Sa       = 30.0;   // Absolute Salinity in g/kg
+// double Ct       = 10.0;   // Conservative Temperature in degC
+// double P        = 1000.0; // Pressure in dbar
+
+const Real Sa = 30.0;   // Absolute Salinity in g/kg
+const Real Ct = 10.0;   // Conservative Temperature in degC
+const Real P  = 1000.0; // Pressure in dbar
+
+const I4 KDisp  = 1;     // Displace parcel to K=1 for TEOS-10 eos
+const Real RTol = 1e-10; // Relative tolerance for isApprox checks
 
 /// The initialization routine for Eos testing. It calls various
 /// init routines, including the creation of the default decomposition.
@@ -106,17 +113,21 @@ I4 initEosTest(const std::string &mesh) {
 
 /// Test Linear EOS calculation for all cells/layers
 int testEosLinear() {
-   int Err            = 0;
-   const auto *Mesh   = HorzMesh::getDefault();
-   const auto *VCoord = VertCoord::getDefault();
+   int Err             = 0;
+   const auto Mesh     = HorzMesh::getDefault();
+   const auto VCoord   = VertCoord::getDefault();
+   VCoord->NVertLayers = NVertLayers;
    /// Get Eos instance to test
    Eos *TestEos       = Eos::getInstance();
    TestEos->EosChoice = EosType::LinearEos;
 
    /// Create and fill ocean state arrays
-   Array2DReal SArray = Array2DReal("SArray", Mesh->NCellsAll, NVertLayers);
-   Array2DReal TArray = Array2DReal("TArray", Mesh->NCellsAll, NVertLayers);
-   Array2DReal PArray = Array2DReal("PArray", Mesh->NCellsAll, NVertLayers);
+   Array2DReal SArray =
+       Array2DReal("SArray", Mesh->NCellsAll, VCoord->NVertLayers);
+   Array2DReal TArray =
+       Array2DReal("TArray", Mesh->NCellsAll, VCoord->NVertLayers);
+   Array2DReal PArray =
+       Array2DReal("PArray", Mesh->NCellsAll, VCoord->NVertLayers);
    /// Use Kokkos::deep_copy to fill the entire view with the ref value
    deepCopy(SArray, Sa);
    deepCopy(TArray, Ct);
@@ -170,17 +181,21 @@ int testEosLinear() {
 
 /// Test Linear EOS calculation with vertical displacement
 int testEosLinearDisplaced() {
-   int Err            = 0;
-   const auto *Mesh   = HorzMesh::getDefault();
-   const auto *VCoord = VertCoord::getDefault();
+   int Err             = 0;
+   const auto Mesh     = HorzMesh::getDefault();
+   const auto VCoord   = VertCoord::getDefault();
+   VCoord->NVertLayers = NVertLayers;
    /// Get Eos instance to test
    Eos *TestEos       = Eos::getInstance();
    TestEos->EosChoice = EosType::LinearEos;
 
    /// Create and fill ocean state arrays
-   Array2DReal SArray = Array2DReal("SArray", Mesh->NCellsAll, NVertLayers);
-   Array2DReal TArray = Array2DReal("TArray", Mesh->NCellsAll, NVertLayers);
-   Array2DReal PArray = Array2DReal("PArray", Mesh->NCellsAll, NVertLayers);
+   Array2DReal SArray =
+       Array2DReal("SArray", Mesh->NCellsAll, VCoord->NVertLayers);
+   Array2DReal TArray =
+       Array2DReal("TArray", Mesh->NCellsAll, VCoord->NVertLayers);
+   Array2DReal PArray =
+       Array2DReal("PArray", Mesh->NCellsAll, VCoord->NVertLayers);
    /// Use Kokkos::deep_copy to fill the entire view with the ref value
    deepCopy(SArray, Sa);
    deepCopy(TArray, Ct);
@@ -233,75 +248,90 @@ int testEosLinearDisplaced() {
    return Err;
 }
 
-/// Test simple Brunt-Vaisala frequency calculation for all cells/layers
-int testBruntVaisalaFreqSimple() {
-   int Err          = 0;
-   const auto *Mesh = HorzMesh::getDefault();
+/// Test linear Brunt-Vaisala frequency calculation for all cells/layers
+int testBruntVaisalaFreqLinear() {
+   int Err             = 0;
+   const auto Mesh     = HorzMesh::getDefault();
+   const auto VCoord   = VertCoord::getDefault();
+   VCoord->NVertLayers = NVertLayers;
    /// Get Eos instance to test
    Eos *TestEos       = Eos::getInstance();
    TestEos->EosChoice = EosType::LinearEos;
 
    /// Create and fill ocean state arrays
-   Array2DReal SArray = Array2DReal("SArray", Mesh->NCellsAll, NVertLevels);
-   Array2DReal TArray = Array2DReal("TArray", Mesh->NCellsAll, NVertLevels);
-   Array2DReal PArray = Array2DReal("PArray", Mesh->NCellsAll, NVertLevels);
-   Array2DReal ZArray = Array2DReal("ZArray", Mesh->NCellsAll, NVertLevels);
+   Array2DReal SArray =
+       Array2DReal("SArray", Mesh->NCellsAll, VCoord->NVertLayers);
+   Array2DReal TArray =
+       Array2DReal("TArray", Mesh->NCellsAll, VCoord->NVertLayers);
+   Array2DReal PArray =
+       Array2DReal("PArray", Mesh->NCellsAll, VCoord->NVertLayers);
    /// Use Kokkos::deep_copy to fill the entire view with the ref value
+   // deepCopy(SArray, Sa);
+   // deepCopy(TArray, Ct);
+   // deepCopy(PArray, P);
    deepCopy(TestEos->SpecVol, 0.0);
    deepCopy(TestEos->BruntVaisalaFreq, 0.0);
 
-   //parallelFor(
-   //       "populateArrays", {Mesh->NCellsAll, NVertLevels},
-   //       KOKKOS_LAMBDA(I4 ICell, I4 K) {
-   //          ZArray(ICell,K) = -K;
-   //          SArray(ICell,K) = Sa + 0.1*K;
-   //          TArray(ICell,K) = Ct + 0.25*K;
-   //          PArray(ICell,K) = P + 0.25*K;
-   //       });
+   // parallelFor(
+   //        "populateArrays", {Mesh->NCellsAll, NVertLayers},
+   //        KOKKOS_LAMBDA(I4 ICell, I4 K) {
+   //           VCoord->ZMid(ICell,K) = -K;
+   //           SArray(ICell,K) = Sa + 0.1*K;
+   //           TArray(ICell,K) = Ct + 0.25*K;
+   //           PArray(ICell,K) = P + 0.25*K;
+   //        });
 
    parallelFor(
-          "populateArrays", {Mesh->NCellsAll, NVertLevels},
-          KOKKOS_LAMBDA(I4 ICell, I4 K) {
-             ZArray(ICell,0) = -992.1173890198451; ZArray(ICell,1) = -993.1071379053125; ZArray(ICell,2) = -994.0968821072275;
-             SArray(ICell,0) = Sa-1.0; SArray(ICell,1) = Sa; SArray(ICell,2) = Sa+1.0;
-             TArray(ICell,0) = Ct+15.0; TArray(ICell,1) = Ct+10.0; TArray(ICell,2) = Ct+5.0;
-             PArray(ICell,0) = P; PArray(ICell,1) = P+1.0; PArray(ICell,2) = P+2.0;
-          });
+       "populateArrays", {Mesh->NCellsAll, VCoord->NVertLayers},
+       KOKKOS_LAMBDA(I4 ICell, I4 K) {
+          VCoord->ZMid(ICell, 0) = -992.1173890198451;
+          VCoord->ZMid(ICell, 1) = -993.1071379053125;
+          VCoord->ZMid(ICell, 2) = -994.0968821072275;
+          SArray(ICell, 0)       = Sa - 1.0;
+          SArray(ICell, 1)       = Sa;
+          SArray(ICell, 2)       = Sa + 1.0;
+          TArray(ICell, 0)       = Ct + 15.0;
+          TArray(ICell, 1)       = Ct + 10.0;
+          TArray(ICell, 2)       = Ct + 5.0;
+          PArray(ICell, 0)       = P;
+          PArray(ICell, 1)       = P + 1.0;
+          PArray(ICell, 2)       = P + 2.0;
+       });
 
    /// Compute specific volume first
    TestEos->computeSpecVol(TArray, SArray, PArray);
    Array2DReal SpecVol = TestEos->SpecVol;
 
    /// Compute Brunt-Vaisala frequency
-   TestEos->computeBruntVaisalaFreq(TArray, SArray, PArray, SpecVol, ZArray);
+   TestEos->computeBruntVaisalaFreq(TArray, SArray, PArray, SpecVol);
    Array2DReal BruntVaisalaFreq = TestEos->BruntVaisalaFreq;
-
+   auto BruntVaisalaFreqH       = createHostMirrorCopy(BruntVaisalaFreq);
    /// Check all array values against expected value
-   int numMismatches   = 0;
-   if (!isApprox(BruntVaisalaFreq(1, 1), SimpleBVFExpValue, RTol)) {
-         numMismatches = 1;
-      } else {
-         numMismatches = 0;
-      }
-   //int numMismatches   = 0;
-   //parallelReduce(
-   //    "CheckSpecVolMatrix-Teos", {Mesh->NCellsAll, NVertLevels},
-   //    KOKKOS_LAMBDA(int i, int j, int &localCount) {
-   //       if (!isApprox(BruntVaisalaFreq(i, j), SimpleBVFExpValue, RTol)) {
-   //          localCount++;
-   //       }
-   //    },
-   //    numMismatches);
+   int numMismatches = 0;
+   if (!isApprox(BruntVaisalaFreqH(1, 1), LinearBVFExpValue, RTol)) {
+      numMismatches = 1;
+   } else {
+      numMismatches = 0;
+   }
 
-   auto BruntVaisalaFreqH = createHostMirrorCopy(BruntVaisalaFreq);
+   // int numMismatches   = 0;
+   // parallelReduce(
+   //     "CheckSpecVolMatrix-Teos", {Mesh->NCellsAll, NVertLayers},
+   //     KOKKOS_LAMBDA(int i, int j, int &localCount) {
+   //        if (!isApprox(BruntVaisalaFreq(i, j), LinearBVFExpValue, RTol)) {
+   //           localCount++;
+   //        }
+   //     },
+   //     numMismatches);
+
    if (numMismatches != 0) {
       Err++;
-      LOG_ERROR("EosTest: Simple BruntVaisalaFreq isApprox FAIL, "
+      LOG_ERROR("EosTest: Linear BruntVaisalaFreq isApprox FAIL, "
                 "expected {}, got {} with {} mismatches",
-                SimpleBVFExpValue, BruntVaisalaFreqH(1, 1), numMismatches);
+                LinearBVFExpValue, BruntVaisalaFreqH(1, 1), numMismatches);
    }
    if (Err == 0) {
-      LOG_INFO("EosTest BruntVaisalaFreqCalc Simple: PASS");
+      LOG_INFO("EosTest BruntVaisalaFreqCalc Linear: PASS");
    }
 
    return Err;
@@ -309,17 +339,21 @@ int testBruntVaisalaFreqSimple() {
 
 /// Test TEOS-10 EOS calculation for all cells/layers
 int testEosTeos10() {
-   int Err            = 0;
-   const auto *Mesh   = HorzMesh::getDefault();
-   const auto *VCoord = VertCoord::getDefault();
+   int Err             = 0;
+   const auto Mesh     = HorzMesh::getDefault();
+   const auto VCoord   = VertCoord::getDefault();
+   VCoord->NVertLayers = NVertLayers;
    /// Get Eos instance to test
    Eos *TestEos       = Eos::getInstance();
    TestEos->EosChoice = EosType::Teos10Eos;
 
    /// Create and fill ocean state arrays
-   Array2DReal SArray = Array2DReal("SArray", Mesh->NCellsAll, NVertLayers);
-   Array2DReal TArray = Array2DReal("TArray", Mesh->NCellsAll, NVertLayers);
-   Array2DReal PArray = Array2DReal("PArray", Mesh->NCellsAll, NVertLayers);
+   Array2DReal SArray =
+       Array2DReal("SArray", Mesh->NCellsAll, VCoord->NVertLayers);
+   Array2DReal TArray =
+       Array2DReal("TArray", Mesh->NCellsAll, VCoord->NVertLayers);
+   Array2DReal PArray =
+       Array2DReal("PArray", Mesh->NCellsAll, VCoord->NVertLayers);
    /// Use Kokkos::deep_copy to fill the entire view with the ref value
    deepCopy(SArray, Sa);
    deepCopy(TArray, Ct);
@@ -371,17 +405,21 @@ int testEosTeos10() {
 
 /// Test TEOS-10 EOS calculation with vertical displacement
 int testEosTeos10Displaced() {
-   int Err            = 0;
-   const auto *Mesh   = HorzMesh::getDefault();
-   const auto *VCoord = VertCoord::getDefault();
+   int Err             = 0;
+   const auto Mesh     = HorzMesh::getDefault();
+   const auto VCoord   = VertCoord::getDefault();
+   VCoord->NVertLayers = NVertLayers;
    /// Get Eos instance to test
    Eos *TestEos       = Eos::getInstance();
    TestEos->EosChoice = EosType::Teos10Eos;
 
    /// Create and fill ocean state arrays
-   Array2DReal SArray = Array2DReal("SArray", Mesh->NCellsAll, NVertLayers);
-   Array2DReal TArray = Array2DReal("TArray", Mesh->NCellsAll, NVertLayers);
-   Array2DReal PArray = Array2DReal("PArray", Mesh->NCellsAll, NVertLayers);
+   Array2DReal SArray =
+       Array2DReal("SArray", Mesh->NCellsAll, VCoord->NVertLayers);
+   Array2DReal TArray =
+       Array2DReal("TArray", Mesh->NCellsAll, VCoord->NVertLayers);
+   Array2DReal PArray =
+       Array2DReal("PArray", Mesh->NCellsAll, VCoord->NVertLayers);
    /// Use Kokkos::deep_copy to fill the entire view with the ref value
    deepCopy(SArray, Sa);
    deepCopy(TArray, Ct);
@@ -432,68 +470,80 @@ int testEosTeos10Displaced() {
    return Err;
 }
 
-/// Test TEOS-10 Brunt-Vaisala frequency calculation for all cells/levels
+/// Test TEOS-10 Brunt-Vaisala frequency calculation for all cells/layer
 int testBruntVaisalaFreqTeos10() {
-   int Err          = 0;
-   const auto *Mesh = HorzMesh::getDefault();
+   int Err             = 0;
+   const auto Mesh     = HorzMesh::getDefault();
+   const auto VCoord   = VertCoord::getDefault();
+   VCoord->NVertLayers = NVertLayers;
    /// Get Eos instance to test
    Eos *TestEos       = Eos::getInstance();
    TestEos->EosChoice = EosType::Teos10Eos;
 
    /// Create and fill ocean state arrays
-   Array2DReal SArray  = Array2DReal("SArray", Mesh->NCellsAll, NVertLevels);
-   Array2DReal TArray  = Array2DReal("TArray", Mesh->NCellsAll, NVertLevels);
-   Array2DReal PArray  = Array2DReal("PArray", Mesh->NCellsAll, NVertLevels);
-   Array2DReal ZArray  = Array2DReal("ZArray", Mesh->NCellsAll, NVertLevels);
-   Array2DReal SpArray = Array2DReal("SpArray", Mesh->NCellsAll, NVertLevels);
+   Array2DReal SArray =
+       Array2DReal("SArray", Mesh->NCellsAll, VCoord->NVertLayers);
+   Array2DReal TArray =
+       Array2DReal("TArray", Mesh->NCellsAll, VCoord->NVertLayers);
+   Array2DReal PArray =
+       Array2DReal("PArray", Mesh->NCellsAll, VCoord->NVertLayers);
    /// Use Kokkos::deep_copy to fill the entire view with the ref value
-   deepCopy(SpArray, 0.0);
+   // deepCopy(SArray, Sa);
+   // deepCopy(TArray, Ct);
+   // deepCopy(PArray, P);
    deepCopy(TestEos->BruntVaisalaFreq, 0.0);
    deepCopy(TestEos->SpecVol, 0.0);
 
-   //parallelFor(
-   //       "populateArrays", {Mesh->NCellsAll, NVertLevels},
-   //       KOKKOS_LAMBDA(I4 ICell, I4 K) {
-   //          ZArray(ICell,K) = -K;
-   //          SArray(ICell,K) = Sa + 0.1*K;
-   //          TArray(ICell,K) = Ct + 0.25*K;
-   //          PArray(ICell,K) = P + 0.25*K;
-   //       });
+   // parallelFor(
+   //        "populateArrays", {Mesh->NCellsAll, NVertLayers},
+   //        KOKKOS_LAMBDA(I4 ICell, I4 K) {
+   //           VCoord->ZMid(ICell,K) = -K;
+   //           SArray(ICell,K) = Sa + 0.1*K;
+   //           TArray(ICell,K) = Ct + 0.25*K;
+   //           PArray(ICell,K) = P + 0.25*K;
+   //        });
 
    parallelFor(
-          "populateArrays", {Mesh->NCellsAll, NVertLevels},
-          KOKKOS_LAMBDA(I4 ICell, I4 K) {
-             ZArray(ICell,0) = -992.1173890198451; ZArray(ICell,1) = -993.1071379053125; ZArray(ICell,2) = -994.0968821072275;
-             SArray(ICell,0) = Sa-1.0; SArray(ICell,1) = Sa; SArray(ICell,2) = Sa+1.0;
-             TArray(ICell,0) = Ct+15.0; TArray(ICell,1) = Ct+10.0; TArray(ICell,2) = Ct+5.0;
-             PArray(ICell,0) = P; PArray(ICell,1) = P+1.0; PArray(ICell,2) = P+2.0;
-          });
+       "populateArrays", {Mesh->NCellsAll, VCoord->NVertLayers},
+       KOKKOS_LAMBDA(I4 ICell, I4 K) {
+          VCoord->ZMid(ICell, 0) = -992.1173890198451;
+          VCoord->ZMid(ICell, 1) = -993.1071379053125;
+          VCoord->ZMid(ICell, 2) = -994.0968821072275;
+          SArray(ICell, 0)       = Sa - 1.0;
+          SArray(ICell, 1)       = Sa;
+          SArray(ICell, 2)       = Sa + 1.0;
+          TArray(ICell, 0)       = Ct + 15.0;
+          TArray(ICell, 1)       = Ct + 10.0;
+          TArray(ICell, 2)       = Ct + 5.0;
+          PArray(ICell, 0)       = P;
+          PArray(ICell, 1)       = P + 1.0;
+          PArray(ICell, 2)       = P + 2.0;
+       });
 
    /// Compute specific volume first
    TestEos->computeSpecVol(TArray, SArray, PArray);
    Array2DReal SpecVol = TestEos->SpecVol;
 
    /// Compute Brunt-Vaisala frequency
-   TestEos->computeBruntVaisalaFreq(TArray, SArray, PArray, SpecVol, ZArray);
-   Array2DReal BruntVaisalaFreq = TestEos->BruntVaisalaFreq; 
-
+   TestEos->computeBruntVaisalaFreq(TArray, SArray, PArray, SpecVol);
+   Array2DReal BruntVaisalaFreq = TestEos->BruntVaisalaFreq;
+   auto BruntVaisalaFreqH       = createHostMirrorCopy(BruntVaisalaFreq);
    /// Check all array values against expected value
-   int numMismatches   = 0;
-   if (!isApprox(BruntVaisalaFreq(1, 1), TeosBVFExpValue, RTol)) {
-         numMismatches = 1;
+   int numMismatches = 0;
+   if (!isApprox(BruntVaisalaFreqH(1, 1), TeosBVFExpValue, RTol)) {
+      numMismatches = 1;
    } else {
-         numMismatches = 0;
+      numMismatches = 0;
    }
-   //parallelReduce(
-   //    "CheckSpecVolMatrix-Teos", {Mesh->NCellsAll, NVertLevels},
-   //    KOKKOS_LAMBDA(int i, int j, int &localCount) {
-   //       if (!isApprox(BruntVaisalaFreq(i, j), TeosBVFExpValue, RTol)) {
-   //          localCount++;
-   //       }
-   //    },
-   //    numMismatches);
+   // parallelReduce(
+   //     "CheckSpecVolMatrix-Teos", {Mesh->NCellsAll, NVertLayers},
+   //     KOKKOS_LAMBDA(int i, int j, int &localCount) {
+   //        if (!isApprox(BruntVaisalaFreq(i, j), TeosBVFExpValue, RTol)) {
+   //           localCount++;
+   //        }
+   //     },
+   //     numMismatches);
 
-   auto BruntVaisalaFreqH = createHostMirrorCopy(BruntVaisalaFreq);
    if (numMismatches != 0) {
       Err++;
       LOG_ERROR("EosTest: TEOS BruntVaisalaFreq isApprox FAIL, "
@@ -545,30 +595,30 @@ int checkValueGswcN2() {
    const Real RTol = 1e-10;
 
    // Number of intervals (nz)
-   int nz = 2;
+   int Nz = 2;
 
    // Input arrays: length nz+1
-   double SA[4] = {Sa-1.0, Sa, Sa+1.0}; // Absolute Salinity (g/kg)
-   double CT[4] = {Ct+15.0, Ct+10.0, Ct+5.0}; // Conservative Temperature (deg C)
-   double p[4]  = {P, P+1.0, P+2.0};    // Pressure (dbar)
+   double Salt[4]  = {Sa - 1.0, Sa, Sa + 1.0}; // Absolute Salinity (g/kg)
+   double Temp[4]  = {Ct + 15.0, Ct + 10.0,
+                      Ct + 5.0};            // Conservative Temperature (deg C)
+   double Press[4] = {P, P + 1.0, P + 2.0}; // Pressure (dbar)
 
    // Latitude (degrees north)
-   double latitude[4] = {0.0, 0.0, 0.0};
+   double Latitude[4] = {0.0, 0.0, 0.0};
 
    // Output arrays: length nz
-   double N2[nz];     // Brunt–Väisälä frequency squared
-   double p_mid[nz];  // Midpoint pressure
+   double N2[Nz];   // Brunt–Väisälä frequency squared
+   double PMid[Nz]; // Midpoint pressure
 
    /// Get specific volume from GSW-C library
-   gsw_nsquared(SA, CT, p, latitude, nz, N2, p_mid);
+   gsw_nsquared(Salt, Temp, Press, Latitude, Nz, N2, PMid);
 
    /// Check the value against the expected TEOS-10 value
    bool Check = isApprox(N2[0], GswBVFExpValue, RTol);
    if (!Check) {
       Err++;
-      LOG_ERROR(
-          "checkValueGswcN2: N2 isApprox FAIL, expected {}, got {}",
-          TeosBVFExpValue, N2[0]);
+      LOG_ERROR("checkValueGswcN2: N2 isApprox FAIL, expected {}, got {}",
+                GswBVFExpValue, N2[0]);
    }
    if (Err == 0) {
       LOG_INFO("checkValueGswcN2: PASS");
@@ -576,15 +626,17 @@ int checkValueGswcN2() {
    return Err;
 }
 
-// the main test (all in one to have the same log)
+// the main tests (all in one to have the same log):
 // Single value test:
 // --> test calls the external GSW-C library
 // and compares the specific volume to the published value
 // Full array tests:
 // --> one tests the value on a Eos with linear option
 // --> next checks the value on a Eos with linear displaced option
+// --> next checks the value of the linear Brunt Vaisala Freq. calculation
 // --> next checks the value on a Eos with TEOS-10 option
 // --> next checks the value on a Eos with TEOS-10 displaced option
+// --> last checks the value of the TOES-10 Brunt Vaisala Freq. calculation
 int eosTest(const std::string &MeshFile = "OmegaMesh.nc") {
    int Err = initEosTest(MeshFile);
    if (Err != 0) {
@@ -599,7 +651,7 @@ int eosTest(const std::string &MeshFile = "OmegaMesh.nc") {
    LOG_INFO("Full array checks:");
    Err += testEosLinear();
    Err += testEosLinearDisplaced();
-   Err += testBruntVaisalaFreqSimple();
+   Err += testBruntVaisalaFreqLinear();
    Err += testEosTeos10();
    Err += testEosTeos10Displaced();
    Err += testBruntVaisalaFreqTeos10();

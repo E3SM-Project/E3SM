@@ -49,7 +49,7 @@ and pressure arrays and displaced vertical index level, do
 Eos.computeSpecVolDisp(ConsrvTemp, AbsSalinity, Pressure, KDisp);
 ```
 
-where `KDisp` is the number of `k` levels you want to displace each specific volume level to.
+where `KDisp` is the number of `k` layers you want to displace each specific volume layer to.
 For example, to displace each level to one below, set `KDisp = 1`.
 
 ## Removal of Eos
