@@ -6,6 +6,7 @@ add_library(eamxx_field
   field_tracking.cpp
   field.cpp
   field_group.cpp
+  field_mask.cpp
   field_sync.cpp
   field_utils.cpp
   eti/field_eti_deep_copy_double_device.cpp
