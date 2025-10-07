@@ -285,20 +285,6 @@ _TESTS = {
             )
         },
 
-    # experimental eamxx nbfb tests (ulr: ne4, lr: ne30)
-    "eamxx_nbfb_ulr": {
-        "tests": (
-            "MVKxx_Ly1.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-mvkpert",
-        )
-    },
-    "eamxx_nbfb_lr": {
-        "tests": (
-            "MVKxx_Ly1.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-mvkpert",
-        )
-    },
-    "eamxx_nbfb": {
-        "inherit": ("eamxx_nbfb_ulr"),
-    },
 
     #ocean non bit-for-bit test
     "e3sm_ocn_nbfb": {
@@ -308,7 +294,7 @@ _TESTS = {
         },
 
     "e3sm_nbfb": {
-        "inherit": ("e3sm_atm_nbfb", "e3sm_ocn_nbfb", "eamxx_nbfb_ulr")
+        "inherit": ("e3sm_atm_nbfb", "e3sm_ocn_nbfb")
     },
 
     "e3sm_ocnice_stealth_features" : {
@@ -730,7 +716,6 @@ _TESTS = {
         "time"  : "01:00:00",
         "inherit" : (
             "e3sm_eamxx_mam4xx_lowres",
-            "eamxx_nbfb_ulr",
         ),
         "tests" : (
             "ERS_Ln9.ne4_ne4.F2000-SCREAMv1-AQP1.eamxx-output-preset-2",
@@ -811,7 +796,6 @@ _TESTS = {
     "e3sm_eamxx_v1_long" : {
         "time"  : "01:00:00",
         "inherit" : (
-            "eamxx_nbfb_ulr",
         ),
         "tests" : (
             "ERP_D_Lh182.ne4pg2_ne4pg2.F2010-SCREAMv1",
