@@ -3089,6 +3089,9 @@
       <modules compiler="oneapi-ifx">
         <command name="load">intel/2023.2.1-magic</command>
 	<command name="use">/usr/workspace/e3sm/spack/dane/intel/modules/Core</command>
+	<command name="load">intel-oneapi-runtime/2023.2.0</command>
+	<command name="load">gcc-runtime/12.1.1</command>
+	<command name="load">glibc/2.28</command>
 	<command name="load">mvapich2/2.3.7</command>
 	<command name="load">hdf5/1.14.5</command>
 	<command name="load">netcdf-c/4.9.2</command>
@@ -3102,11 +3105,10 @@
       <env name="OMP_STACKSIZE">128M</env>
     </environment_variables>
     <environment_variables compiler="oneapi-ifx">
-      <env name="HDF5_ROOT">/usr/workspace/e3sm/spack/dane/intel/libs/linux-sapphirerapids/hdf5-1.14.5-oq4xvuvma5emdmqlrhhugf5f2fbl2miq</env>
-      <env name="NETCDF_C_PATH">/usr/workspace/e3sm/spack/dane/intel/libs/linux-sapphirerapids/netcdf-c-4.9.2-3a4qa33n36d4ryrne2des3653ka4rsfa</env>
-      <env name="NETCDF_FORTRAN_PATH">/usr/workspace/e3sm/spack/dane/intel/libs/linux-sapphirerapids/netcdf-fortran-4.6.1-7mybbfylyzezbv2sc2rjhnkewhnyx3ge</env>
-      <env name="PNETCDF_PATH">/usr/workspace/e3sm/spack/dane/intel/libs/linux-sapphirerapids/parallel-netcdf-1.14.0-d6xfqf4wccp4eiohquw3idjppqff7mtj</env>
-      <env name="LD_LIBRARY_PATH">/usr/tce/packages/intel/intel-2023.2.1-magic/lib:$ENV{LD_LIBRARY_PATH}</env>
+      <env name="HDF5_ROOT">$ENV{HDF5_ROOT}</env>
+      <env name="NETCDF_C_PATH">$ENV{NETCDF_C_PATH}</env>
+      <env name="NETCDF_FORTRAN_PATH">$ENV{NETCDF_FORTRAN_PATH}</env>
+      <env name="PNETCDF_PATH">$ENV{PNETCDF_PATH}</env>
       <env name="PATH">/usr/tce/packages/intel/intel-2023.2.1/compiler/2023.2.1/linux/bin/intel64:$ENV{PATH}"</env>
     </environment_variables>
   </machine>
