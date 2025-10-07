@@ -342,7 +342,7 @@ void AtmosphereOutput::init()
 
     // Store the field layout, so that calls to setup_output_file are easier
     const auto& layout = fid.get_layout();
-    m_vars_dims[fname] = get_var_dimnames(layout);
+    m_vars_dims[fname] = get_var_dimnames(m_transpose ? layout.transpose() : layout);
 
     // Now check that all the dims of this field are already set to be registered.
     const auto& tags = layout.tags();
@@ -500,7 +500,7 @@ run (const std::string& filename,
         count.sync_to_host();
 
         auto func_start = std::chrono::steady_clock::now();
-	if (m_transpose) {
+        if (m_transpose) {
           const auto count_tmp = transpose(count);
           scorpio::write_var(filename,count.name(),count_tmp.get_internal_view_data<int,Host>());
 	} else {
@@ -666,7 +666,7 @@ void AtmosphereOutput::set_avg_cnt_tracking(const std::string& name, const Field
   }
 
   // We have not created this avg count field yet.
-  m_vars_dims[avg_cnt_name] = get_var_dimnames(layout);
+  m_vars_dims[avg_cnt_name] = get_var_dimnames(m_transpose ? layout.transpose() : layout);
 
   auto nondim = ekat::units::Units::nondimensional();
   FieldIdentifier count_id (avg_cnt_name,layout,nondim,m_io_grid->name(),DataType::IntType);
@@ -1160,13 +1160,12 @@ get_var_dimnames (const FieldLayout& layout) const
 {
   strvec_t dims;
   for (int i=0; i<layout.rank(); ++i) {
-    const int ind = m_transpose ? layout.rank()-i-1 : i;
-    const auto t = layout.tag(ind);
+    const auto t = layout.tag(i);
     auto tag_name = m_io_grid->has_special_tag_name(t)
                   ? m_io_grid->get_special_tag_name(t)
-                  : layout.names()[ind];
+                  : layout.names()[i];
     if (tag_name=="dim" or tag_name=="bin") {
-      tag_name += std::to_string(layout.dim(ind));
+      tag_name += std::to_string(layout.dim(i));
     }
     dims.push_back(tag_name); // Add dimensions string to vector of dims.
   }
