@@ -73,6 +73,8 @@ AtmosphereProcess (const ekat::Comm& comm, const ekat::ParameterList& params)
   // Energy fixer
   m_conservation_data.has_energy_fixer =
       m_params.get<bool>("enable_energy_fixer", false);
+  m_conservation_data.has_air_sea_surface_water_thermo_fixer = 
+      m_params.get<bool>("enable_air_sea_surface_water_thermo_fixer", false);
 
   // Energy fixer
   m_conservation_data.has_energy_fixer_debug_info =
@@ -84,6 +86,12 @@ AtmosphereProcess (const ekat::Comm& comm, const ekat::ParameterList& params)
       "Error! In param list " + m_params.name() + " both enable_energy_fixer and"
            " enable_column_conservation_check are on, which is not allowed. \n");
 
+  // air sea surface water thermo fixer can only be TRUE if energy fixer is TRUE
+  EKAT_REQUIRE_MSG (
+      !((!m_conservation_data.has_energy_fixer) && m_conservation_data.has_air_sea_surface_water_thermo_fixer),
+      "Error! In param list " + m_params.name() + " enable_energy_fixer is false and"
+           " enable_air_sea_surface_water_thermo_fixer is true, which is not allowed. \n");
+  // energy fixer debug info can only be TRUE if energy fixer is TRUE
   EKAT_REQUIRE_MSG (
       !((!m_conservation_data.has_energy_fixer) && m_conservation_data.has_energy_fixer_debug_info),
       "Error! In param list " + m_params.name() + " enable_energy_fixer is false and"
@@ -191,8 +199,9 @@ void AtmosphereProcess::run (const double dt) {
                               false, true, true);
 
     if (has_energy_fixer()){
+      const bool & water_thermo_fixer = has_air_sea_surface_water_thermo_fixer();
       const bool & debug_info = has_energy_fixer_debug_info();
-      fix_energy(dt_sub, debug_info );
+      fix_energy(dt_sub, water_thermo_fixer, debug_info);
     }
 
     if (has_column_conservation_check()) {
@@ -1232,7 +1241,7 @@ void AtmosphereProcess::compute_column_conservation_checks_data (const double dt
   conservation_check->compute_current_energy();
 }
 
-void AtmosphereProcess::fix_energy (const double dt, const bool &print_debug_info)
+void AtmosphereProcess::fix_energy (const double dt, const bool water_thermo_fixer, const bool print_debug_info)
 {
   EKAT_REQUIRE_MSG(m_conservation.second != nullptr,
                    "Error! User set has_energy_fixer=true, "
@@ -1244,7 +1253,7 @@ void AtmosphereProcess::fix_energy (const double dt, const bool &print_debug_inf
 
   //dt is needed to convert flux to change
   conservation_check->set_dt(dt);
-  conservation_check->global_fixer(print_debug_info);
+  conservation_check->global_fixer(water_thermo_fixer, print_debug_info);
 
   if(print_debug_info){
     //print everything about the fixer only in debug mode
