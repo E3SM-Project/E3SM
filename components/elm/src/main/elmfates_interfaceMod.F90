@@ -1004,14 +1004,10 @@ contains
 
          ! Iterate over all patches in this clump and determine the maximum number of non-crop
          ! vegetated patches.  These correspond to the fates patches.
-         nsites = 0
          num_veg_patches = 0
-         gridcell_index = fates_unset_int
          nmaxpatches = bounds_clump%endp - bounds_clump%begp + 1
          allocate(patchlist(nmaxpatches))
-         allocate(sitelist(nmaxpatches))
          patchlist(:) = fates_unset_int
-         sitelist(:) = fates_unset_int
 
          do p = bounds_clump%begp, bounds_clump%endp
             c = veg_pp%column(p)
@@ -1025,12 +1021,6 @@ contains
                num_veg_patches = num_veg_patches + 1
                patchlist(num_veg_patches) = p
                
-               if (veg_pp%gridcell(p) /= gridcell_index) then
-                  gridcell_index = veg_pp%gridcell(p)
-                  nsites = nsites + 1
-               end if
-               sitelist(num_veg_patches) = nsites
-                  
             end if
 
          end do
