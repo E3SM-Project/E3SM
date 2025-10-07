@@ -4199,6 +4199,7 @@ end subroutine wrap_update_hifrq_hist
  
  subroutine RegisterHLMInterfaceVariables(this, nc)
    
+   use FatesInterfaceTypesMod, only : hlm_fates_decomp_max
    use FatesInterfaceTypesMod, only : hlm_fates_soil_level
    use FatesInterfaceTypesMod, only : hlm_fates_decomp_frac_moisture
    use FatesInterfaceTypesMod, only : hlm_fates_decomp_frac_temperature
@@ -4229,6 +4230,9 @@ end subroutine wrap_update_hifrq_hist
                                                         
 
       ! Register and initialize the boundary condition variables
+      ! Global variables
+      call this%fates(nc)%register(r)%Register(key=hlm_fates_decomp_max, &
+                                               data=nlevdecomp_full, hlm_flag=.true.)
       ! Column level variables
       c = this%fates(nc)%register(r)%GetColumnIndex()
       call this%fates(nc)%register(r)%Register(key=hlm_fates_soil_level, &
