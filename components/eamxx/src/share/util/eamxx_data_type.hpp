@@ -11,7 +11,7 @@ namespace scream
 {
 
 // An enum for specifying fields data type
-enum class DataType {
+enum class DataType : int {
   Invalid    = 0,
   IntType    = 1,
   FloatType  = 2,
@@ -40,7 +40,7 @@ DataType get_data_type () {
 }
 
 inline bool is_narrowing_conversion (const DataType from, const DataType to) {
-  return (from==DataType::FloatType || from==DataType::DoubleType) && to==DataType::IntType;
+  return static_cast<int>(from) > static_cast<int>(to);
 }
 
 inline std::string e2str (const DataType data_type) {
