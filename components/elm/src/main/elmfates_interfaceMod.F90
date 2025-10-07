@@ -1030,7 +1030,7 @@ contains
             ! If the column is a soil type, then the patch associated with it a vegetated patch, per initGridCells()
             ! We don't use lun_pp%itype == istsoil here as crops can live on landunits with this type
             ! Record the patch index to the temporary patchlist
-            if (col_pp%itype(c) == istsoil) then
+            if ( (col_pp%itype(c) == istsoil) .and. (col_pp%active(c)) ) then
                
                num_veg_patches = num_veg_patches + 1
                patchlist(num_veg_patches) = p
