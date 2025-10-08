@@ -13,7 +13,7 @@ class CompareNcFiles(object):
 ###############################################################################
 
     ###########################################################################
-    def __init__(self,src_file,tgt_file=None,compare=None):
+    def __init__(self,src_file,tgt_file=None,compare=None,allow_transpose=False):
     ###########################################################################
 
         self._src_file = pathlib.Path(src_file).resolve().absolute()
@@ -21,6 +21,7 @@ class CompareNcFiles(object):
                 "Error! File '{}' does not exist.".format(self._src_file))
 
         self._compare  = compare
+        self._allow_transpose = allow_transpose
 
         if tgt_file is None:
             self._tgt_file = self._src_file
@@ -63,84 +64,117 @@ class CompareNcFiles(object):
     def compare_variables(self):
     ###########################################################################
 
-        #ds_src = Dataset(self._src_file,'r')
-        #ds_tgt = Dataset(self._tgt_file,'r')
         ds_src = xr.open_dataset(self._src_file)
         ds_tgt = xr.open_dataset(self._tgt_file)
 
         success = True
-        for expr in self._compare:
-            # Split the expression, to get the output var name
-            tokens = expr.split('=')
-            expect(len(tokens)==2,"Error! Compare variables with 'lhs=rhs' syntax.")
+        if self._compare == None or self._compare == []:
+            # If compare is an empty list, compare all variables
+            print(f"Specific comparison variables not provided,\n"
+                  f"will compare ALL variables in \n"
+                  f"{self._src_file}\n"
+                  f"with\n"
+                  f"{self._tgt_file}\n")
+            for var in ds_src.variables:
+                lvar = ds_src[var]
+                if var not in ds_tgt.variables:
+                    print (f" Comparison failed! Variable not found.\n"
+                           f"   - var name: {var}\n"
+                           f"   - file name: {self._tgt_file}")
+                    success = False
+                    continue
+                if self._allow_transpose:
+                    rvar = ds_tgt[var].transpose(*lvar.dims)
+                else:
+                    rvar = ds_tgt[var]
+                    expect (lvar.dims == rvar.dims,
+                            f" Error!, variables names match, but dimensions do not.\n"
+                            f"   - var name: {var}\n"
+                            f"   - src dimensions: {lvar.dims}\n"
+                            f"   - tgt dimensions: {rvar.dims}\n")
+                success = self.are_equal(lvar.data,rvar.data)
+                
+        else:
+            for expr in self._compare:
+                # Split the expression, to get the output var name
+                tokens = expr.split('=')
+                expect(len(tokens)==2,"Error! Compare variables with 'lhs=rhs' syntax.")
 
-            lhs = tokens[0]
-            rhs = tokens[1]
+                lhs = tokens[0]
+                rhs = tokens[1]
 
-            lname, ldims = self.get_name_and_dims(lhs)
-            rname, rdims = self.get_name_and_dims(rhs)
+                lname, ldims = self.get_name_and_dims(lhs)
+                rname, rdims = self.get_name_and_dims(rhs)
 
-            if lname not in ds_src.variables:
-                print (f" Comparison failed! Variable not found.\n"
-                       f"   - var name: {lname}\n"
-                       f"   - file name: {self._src_file}")
-                success = False
-                continue
-            if rname not in ds_tgt.variables:
-                print (f" Comparison failed! Variable not found.\n"
-                       f"   - var name: {rname}\n"
-                       f"   - file name: {self._tgt_file}")
-                success = False
-                continue
-            lvar = ds_src.variables[lname];
-            rvar = ds_tgt.variables[rname];
+                if lname not in ds_src.variables:
+                    print (f" Comparison failed! Variable not found.\n"
+                           f"   - var name: {lname}\n"
+                           f"   - file name: {self._src_file}")
+                    success = False
+                    continue
+                if rname not in ds_tgt.variables:
+                    print (f" Comparison failed! Variable not found.\n"
+                           f"   - var name: {rname}\n"
+                           f"   - file name: {self._tgt_file}")
+                    success = False
+                    continue
+                lvar = ds_src.variables[lname];
+                rvar = ds_tgt.variables[rname];
 
-            lvar_rank = len(lvar.dims)
-            rvar_rank = len(rvar.dims)
+                lvar_rank = len(lvar.dims)
+                rvar_rank = len(rvar.dims)
 
-            expect (len(ldims)==0 or len(ldims)==lvar_rank,
-                    f"Invalid slice specification for {lname}.\n"
-                    f"  input request: ({','.join(ldims)})\n"
-                    f"  variable rank: {lvar_rank}")
-            expect (len(rdims)==0 or len(rdims)==rvar_rank,
-                    f"Invalid slice specification for {rname}.\n"
-                    f"  input request: ({','.join(rdims)})\n"
-                    f"  variable rank: {rvar_rank}")
+                expect (len(ldims)==0 or len(ldims)==lvar_rank,
+                        f"Invalid slice specification for {lname}.\n"
+                        f"  input request: ({','.join(ldims)})\n"
+                        f"  variable rank: {lvar_rank}")
+                expect (len(rdims)==0 or len(rdims)==rvar_rank,
+                        f"Invalid slice specification for {rname}.\n"
+                        f"  input request: ({','.join(rdims)})\n"
+                        f"  variable rank: {rvar_rank}")
 
 
-            lslices = [[idim,slice] for idim,slice in enumerate(ldims) if slice!=":"]
-            rslices = [[idim,slice] for idim,slice in enumerate(rdims) if slice!=":"]
+                lslices = [[idim,slice] for idim,slice in enumerate(ldims) if slice!=":"]
+                rslices = [[idim,slice] for idim,slice in enumerate(rdims) if slice!=":"]
 
-            lrank = lvar_rank - len(lslices)
-            rrank = rvar_rank - len(rslices)
+                lrank = lvar_rank - len(lslices)
+                rrank = rvar_rank - len(rslices)
 
-            if lrank!=rrank:
-                print (f" Comparison failed. Rank mismatch.\n"
-                       f"  - input comparison: {expr}\n"
-                       f"  - upon slicing, rank({lname}) = {lrank}\n"
-                       f"  - upon slicing, rank({rname}) = {rrank}")
-                success = False
-                continue
+                if lrank!=rrank:
+                    print (f" Comparison failed. Rank mismatch.\n"
+                           f"  - input comparison: {expr}\n"
+                           f"  - upon slicing, rank({lname}) = {lrank}\n"
+                           f"  - upon slicing, rank({rname}) = {rrank}")
+                    success = False
+                    continue
 
-            lvals = self.slice_variable(lvar,lvar.data[:],lslices)
-            rvals = self.slice_variable(rvar,rvar.data[:],rslices)
+                lvals = self.slice_variable(lvar,lvar.data[:],lslices)
+                rvals = self.slice_variable(rvar,rvar.data[:],rslices)
 
-            if not np.array_equal(lvals,rvals):
-                #  print (f"lvals: {lvals}")
-                #  print (f"rvals: {rvals}")
-                item = np.argwhere(lvals!=rvals)[0]
-                rval = self.slice_variable(rvar,rvals,
-                                           [[idim,slice] for idim,slice in enumerate(item)])
-                lval = self.slice_variable(lvar,lvals,
-                                           [[idim,slice] for idim,slice in enumerate(item)])
-                loc = ",".join([str(i+1) for i in item])
-                print (f" Comparison failed. Values differ.\n"
-                       f"  - input comparison: {expr}\n"
-                       f'  - upon slicing, {lname}({loc}) = {lval}\n'
-                       f'  - upon slicing, {rname}({loc}) = {rval}')
-                success = False
+                success = self.are_equal(lvals,rvals)
+
 
         return success
+
+    ###########################################################################
+    def are_equal(self,lvals,rvals):
+    ###########################################################################
+
+        if not np.array_equal(lvals,rvals):
+            #  print (f"lvals: {lvals}")
+            #  print (f"rvals: {rvals}")
+            item = np.argwhere(lvals!=rvals)[0]
+            rval = self.slice_variable(rvar,rvals,
+                                       [[idim,slice] for idim,slice in enumerate(item)])
+            lval = self.slice_variable(lvar,lvals,
+                                       [[idim,slice] for idim,slice in enumerate(item)])
+            loc = ",".join([str(i+1) for i in item])
+            print (f" Comparison failed. Values differ.\n"
+                   f"  - input comparison: {expr}\n"
+                   f'  - upon slicing, {lname}({loc}) = {lval}\n'
+                   f'  - upon slicing, {rname}({loc}) = {rval}')
+            return False
+        return True
 
     ###########################################################################
     def slice_variable(self,var,vals,slices):
