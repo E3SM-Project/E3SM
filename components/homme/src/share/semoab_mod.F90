@@ -530,6 +530,7 @@ contains
        ! first count the number of edges in the coarse mesh;
        ! use euler: v-m+f = 2 => m = v + f - 2
        nedges_c = nverts_c + nelemd - 1 ! could be more, if unconnected regions ?
+       nedges_c = nedges_c + 3 ! assume more than one connected region
        if ( nedges_c < 0 ) nedges_c = 0 ! it cannot be negative
        internal_edges = 0
        boundary_edges = 0
