@@ -2,7 +2,7 @@
 
 #include "physics/share/physics_constants.hpp"
 #include "share/physics/eamxx_common_physics_functions.hpp"
-#include "share/algorithm/eamxx_column_ops.hpp"
+#include "share/util/eamxx_column_ops.hpp"
 
 #include <ekat_team_policy_utils.hpp>
 
