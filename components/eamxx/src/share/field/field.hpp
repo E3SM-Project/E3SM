@@ -225,8 +225,8 @@ public:
   void deep_copy (const ST value);
 
   // Like the above one, but only sets the value where the mask is active
-  // NOTE: mask field must have data type IntType, and hold the extra data
-  // "true_value", to specify where the mask is active
+  // NOTE: mask field must have data type IntType. Any nonzero value is interpreted
+  //       as 'true', while 0 is interpeeted as 'false'
   template<HostOrDevice HD = Device, typename ST = void>
   void deep_copy (const ST value, const Field& mask);
 
@@ -241,8 +241,10 @@ public:
   // NOTE: the type ST  must be such that no narrowing happens when
   //       casting the values to whatever the data type of this field is.
   //       E.g., if data_type()=IntType, you can't pass double's.
+  // NOTE: mask field must have data type IntType. Any nonzero value is interpreted
+  //       as 'true', while 0 is interpeeted as 'false'
   template<CombineMode CM = CombineMode::Update, HostOrDevice HD = Device, typename ST = void>
-  void update (const Field& x, const ST alpha, const ST beta);
+  void update (const Field& x, const ST alpha, const ST beta, const Field& mask = {});
 
   // Special case of update for particular choices of the combine mode
   template<HostOrDevice HD = Device, typename ST = void>
@@ -351,14 +353,18 @@ protected:
   template<typename ST, HostOrDevice From, HostOrDevice To>
   void sync_views_impl () const;
 
+  // NOTE: mask field must have data type IntType. Any nonzero value is interpreted
+  //       as 'true', while 0 is interpeeted as 'false'
   template<HostOrDevice HD, bool use_mask, typename ST>
   void deep_copy_impl (const ST value, const Field& mask);
 
   // The update method calls this, with ST matching this field data type.
   // Note: use_fill is used to determine *at compile time* whether to use
   // the combine<CM> utility or combine_and_fill<CM>
+  // NOTE: mask field must have data type IntType. Any nonzero value is interpreted
+  //       as 'true', while 0 is interpeeted as 'false'
   template<CombineMode CM, HostOrDevice HD, bool use_fill, typename ST, typename STX>
-  void update_impl (const Field& x, const ST alpha, const ST beta);
+  void update_impl (const Field& x, const ST alpha, const ST beta, const Field* mask);
 
 protected:
 

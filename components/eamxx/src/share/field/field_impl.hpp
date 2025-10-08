@@ -553,7 +553,7 @@ void Field::deep_copy_impl (const ST value, const Field& mask)
 
 template<CombineMode CM, HostOrDevice HD, typename ST>
 void Field::
-update (const Field& x, const ST alpha, const ST beta)
+update (const Field& x, const ST alpha, const ST beta, const Field& mask)
 {
   // Check this field is writable
   EKAT_REQUIRE_MSG (not is_read_only(),
@@ -601,37 +601,37 @@ update (const Field& x, const ST alpha, const ST beta)
 
   if (dt==DataType::IntType) {
     if (fill_aware) {
-      return update_impl<CM,HD,true,int,int>(x,alpha,beta);
+      return update_impl<CM,HD,true,int,int>(x,alpha,beta,&mask);
     } else {
-      return update_impl<CM,HD,false,int,int>(x,alpha,beta);
+      return update_impl<CM,HD,false,int,int>(x,alpha,beta,&mask);
     }
   } else if (dt==DataType::FloatType) {
     if (fill_aware) {
       if (rhs_dt==DataType::FloatType)
-        return update_impl<CM,HD,true,float,float>(x,alpha,beta);
+        return update_impl<CM,HD,true,float,float>(x,alpha,beta,&mask);
       else
-        return update_impl<CM,HD,true,float,int>(x,alpha,beta);
+        return update_impl<CM,HD,true,float,int>(x,alpha,beta,&mask);
     } else {
       if (rhs_dt==DataType::FloatType)
-        return update_impl<CM,HD,false,float,float>(x,alpha,beta);
+        return update_impl<CM,HD,false,float,float>(x,alpha,beta,&mask);
       else
-        return update_impl<CM,HD,false,float,int>(x,alpha,beta);
+        return update_impl<CM,HD,false,float,int>(x,alpha,beta,&mask);
     }
   } else if (dt==DataType::DoubleType) {
     if (fill_aware) {
       if (rhs_dt==DataType::DoubleType)
-        return update_impl<CM,HD,true,double,double>(x,alpha,beta);
+        return update_impl<CM,HD,true,double,double>(x,alpha,beta,&mask);
       else if (rhs_dt==DataType::FloatType)
-        return update_impl<CM,HD,true,double,float>(x,alpha,beta);
+        return update_impl<CM,HD,true,double,float>(x,alpha,beta,&mask);
       else
-        return update_impl<CM,HD,true,double,int>(x,alpha,beta);
+        return update_impl<CM,HD,true,double,int>(x,alpha,beta,&mask);
     } else {
       if (rhs_dt==DataType::DoubleType)
-        return update_impl<CM,HD,false,double,double>(x,alpha,beta);
+        return update_impl<CM,HD,false,double,double>(x,alpha,beta,&mask);
       else if (rhs_dt==DataType::FloatType)
-        return update_impl<CM,HD,false,double,float>(x,alpha,beta);
+        return update_impl<CM,HD,false,double,float>(x,alpha,beta,&mask);
       else
-        return update_impl<CM,HD,false,double,int>(x,alpha,beta);
+        return update_impl<CM,HD,false,double,int>(x,alpha,beta,&mask);
     }
   } else {
     EKAT_ERROR_MSG ("Error! Unrecognized/unsupported field data type in Field::update.\n");
@@ -640,10 +640,23 @@ update (const Field& x, const ST alpha, const ST beta)
 
 template<CombineMode CM, HostOrDevice HD, bool FillAware, typename ST, typename XST>
 void Field::
-update_impl (const Field& x, const ST alpha, const ST beta)
+update_impl (const Field& x, const ST alpha, const ST beta, const Field* mask)
 {
   const auto& layout = x.get_header().get_identifier().get_layout();
   const auto& dims = layout.dims();
+
+  if (mask!=nullptr) {
+    // Check mask layout
+    const auto& ml = mask->get_header().get_identifier().get_layout();
+    for (auto t : ml.tags()) {
+      EKAT_REQUIRE_MSG (layout.has_tag(t),
+          "Error! Mask field has a tag that is not part of this field's layout.\n"
+          " - field name  : " + name() + "\n"
+          " - field layout: " + layout.to_string() + "\n"
+          " - mask name   : " + mask->name() + "\n"
+          " - mask layout : " + ml.to_string() + "\n");
+    }
+  }
 
   // Must handle the case where one of the two views is strided (or both)
   const auto x_contig = x.get_header().get_alloc_properties().contiguous();
