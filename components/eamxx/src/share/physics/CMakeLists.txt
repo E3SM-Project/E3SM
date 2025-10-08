@@ -5,8 +5,6 @@ add_library (eamxx_physics_share
 # Add ETI source files if not on CUDA/HIP
 if (NOT EAMXX_ENABLE_GPU)
   target_sources(eamxx_physics_share PRIVATE
-    physics_share_f2c.F90
-    physics_share.cpp
     physics_saturation.cpp)
 endif()
 
@@ -23,6 +21,11 @@ target_link_libraries(eamxx_physics_share PUBLIC
   ekat::Pack)
 
 if (NOT SCREAM_LIB_ONLY)
+  # Add source files that are only used in testing
+  target_sources(eamxx_physics_share PRIVATE
+    physics_share_f2c.F90
+    physics_share.cpp
+  )
 
   target_sources(eamxx_test_support PRIVATE
     physics_test_data.cpp
