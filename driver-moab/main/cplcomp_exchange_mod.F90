@@ -24,6 +24,7 @@ module cplcomp_exchange_mod
   use seq_comm_mct, only : mhpgid         !    iMOAB app id for atm pgx grid, on atm pes
   use seq_comm_mct, only : atm_pg_active  ! flag if PG mesh instanced
   use seq_comm_mct, only : mlnid , mblxid !    iMOAB app id for land , on land pes and coupler pes
+  use seq_comm_mct, only : mb_scm_land    !  logical used to identify land scm case; moab will migrate land then
   use seq_comm_mct, only : mphaid !            iMOAB app id for phys atm; comp atm is 5, phys 5+200
   use seq_comm_mct, only : MPSIID, mbixid  !  sea-ice on comp pes and on coupler pes
   use seq_comm_mct, only : mrofid, mbrxid  ! iMOAB id of moab rof app on comp pes and on coupler too
@@ -1066,6 +1067,7 @@ subroutine  copy_aream_from_area(mbappid)
       character(CXX)           :: newlist
       integer                  nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
       logical                  :: rof_present, lnd_prognostic
+      integer                  :: land_nx, land_ny ! try to identify if scm case; then land mesh will be migrated, not read 
       real(r8),    allocatable    :: tagValues(:) ! used for setting aream tags for atm domain read case
       integer                     :: arrsize ! for the size of tagValues
       type(mct_list)             :: temp_list
@@ -1128,7 +1130,8 @@ subroutine  copy_aream_from_area(mbappid)
          !  send mesh to coupler
          !!!!  FULL ATM
             if ( trim(atm_mesh) == 'none' ) then ! full model
-               if (atm_pg_active) then !  change : send the pg2 mesh, not coarse mesh, when atm pg active
+               if (atm_pg_active) then !  change : send the point cloud phys grid mesh, not coarse mesh, 
+                                       !     when atm pg active
                   ierr = iMOAB_SendMesh(mhpgid, mpicom_join, mpigrp_cplid, id_join, partMethod)
                else
                   ! still use the mhid, original coarse mesh
@@ -1556,7 +1559,13 @@ subroutine  copy_aream_from_area(mbappid)
          call seq_comm_getinfo(cplid ,mpigrp=mpigrp_cplid)  ! receiver group
          call seq_comm_getinfo(id_old,mpigrp=mpigrp_old)   !  component group pes
          call seq_infodata_GetData(infodata,rof_present=rof_present, lnd_prognostic=lnd_prognostic)
+         call seq_infodata_GetData(infodata,lnd_nx=land_nx, lnd_ny=land_ny)
 
+         if (land_nx .eq. 1 .and. land_ny .eq.1 ) then
+            ! turn on mb_scm_land
+            mb_scm_land = .true. ! we identified a scm case for land, we will migrate mesh, not read 
+                                   ! the domain file anymore
+         endif 
          ! use land full mesh 
          if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
             appname = "COUPLE_LAND"//C_NULL_CHAR
@@ -1566,27 +1575,60 @@ subroutine  copy_aream_from_area(mbappid)
                write(logunit,*) subname,' error in registering coupler land '
                call shr_sys_abort(subname//' ERROR in registering coupler land')
             endif
-            ! do not receive the mesh anymore, read it from file, then pair it with mlnid, component land PC mesh
-            ! similar to rof mosart mesh  
-            ! do not cull in case of data land, like all other data models
-            ! for regular land model, cull, because the lnd component culls too
-            if (lnd_prognostic) then
-               ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE=;REPARTITION'//C_NULL_CHAR
-            else
-               ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE=;REPARTITION;NO_CULLING'//C_NULL_CHAR
+         endif
+
+         if (mb_scm_land) then
+             !  change : send the point cloud land mesh (1 point usually) 
+             !     when mb_scm_land
+            if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component pes (land)
+               !  send mesh to coupler then
+               ierr = iMOAB_SendMesh(mlnid, mpicom_join, mpigrp_cplid, id_join, partMethod)
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in sending mesh from lnd comp '
+                  call shr_sys_abort(subname//' ERROR in sending mesh from lnd comp')
+               endif
             endif
-            call seq_infodata_GetData(infodata,lnd_domain=lnd_domain)
-            outfile = trim(lnd_domain)//C_NULL_CHAR
-            nghlay = 0 ! no ghost layers 
-            if (seq_comm_iamroot(CPLID) ) then
-               write(logunit, *) "loading land domain file from file: ", trim(lnd_domain), &
-                 " with options: ", trim(ropts)
+            if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
+               ierr = iMOAB_ReceiveMesh(mblxid, mpicom_join, mpigrp_old, id_old)
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in receiving mesh from lnd comp '
+                  call shr_sys_abort(subname//' ERROR in receiving mesh from lnd comp')
+               endif
             endif
-            ierr = iMOAB_LoadMesh(mblxid, outfile, ropts, nghlay)
-            if (ierr .ne. 0) then
-               write(logunit,*) subname,' error in reading land coupler mesh from ', trim(lnd_domain)
-               call shr_sys_abort(subname//' ERROR in reading land coupler mesh')
-            endif
+            if (MPI_COMM_NULL /= mpicom_old) then  ! we are on component lnd pes again, release buffers    
+               context_id = id_join
+               ierr = iMOAB_FreeSenderBuffers(mlnid, context_id)
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in freeing buffers '
+                  call shr_sys_abort(subname//' ERROR in freeing buffers ')
+               endif 
+           endif
+         else
+            if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
+               ! do not receive the mesh anymore, read it from file, then pair it with mlnid, component land PC mesh
+               ! similar to rof mosart mesh  
+               ! do not cull in case of data land, like all other data models
+               ! for regular land model, cull, because the lnd component culls too
+               if (lnd_prognostic) then
+                  ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE=;REPARTITION'//C_NULL_CHAR
+               else
+                  ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE=;REPARTITION;NO_CULLING'//C_NULL_CHAR
+               endif
+               call seq_infodata_GetData(infodata,lnd_domain=lnd_domain)
+               outfile = trim(lnd_domain)//C_NULL_CHAR
+               nghlay = 0 ! no ghost layers 
+               if (seq_comm_iamroot(CPLID) ) then
+                  write(logunit, *) "loading land domain file from file: ", trim(lnd_domain), &
+                  " with options: ", trim(ropts)
+               endif
+               ierr = iMOAB_LoadMesh(mblxid, outfile, ropts, nghlay)
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in reading land coupler mesh from ', trim(lnd_domain)
+                  call shr_sys_abort(subname//' ERROR in reading land coupler mesh')
+               endif
+            endif 
+         endif
+         if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
             ! need to add global id tag to the app, it will be used in restart
             tagtype = 0  ! dense, integer
             numco = 1
@@ -1645,22 +1687,24 @@ subroutine  copy_aream_from_area(mbappid)
 
          endif ! end of coupler pes
 
-         ! we are now on joint pes, compute comm graph between lnd and coupler model 
-         typeA = 2 ! point cloud on component PEs, land
-         typeB = 3 ! full mesh on coupler pes, we just read it
+        
          if (mlnid >= 0) then
             ierr  = iMOAB_GetMeshInfo ( mlnid, nvert, nvise, nbl, nsurf, nvisBC )
-            comp%mbApCCid = mlnid ! phys atm 
+            comp%mbApCCid = mlnid ! land
             comp%mbGridType = typeA - 2 ! 0 or 1, pc or cells 
             comp%mblsize = nvert(1) ! vertices
          endif
-         ierr = iMOAB_ComputeCommGraph( mlnid, mblxid, mpicom_join, mpigrp_old, mpigrp_cplid, &
-             typeA, typeB, id_old, id_join) 
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in computing comm graph for lnd model '
-            call shr_sys_abort(subname//' ERROR in computing comm graph for lnd model ')
+         if ( .not. mb_scm_land ) then
+            ! we are now on joint pes, compute comm graph between lnd and coupler model 
+            typeA = 2 ! point cloud on component PEs, land
+            typeB = 3 ! full mesh on coupler pes, we just read it
+            ierr = iMOAB_ComputeCommGraph( mlnid, mblxid, mpicom_join, mpigrp_old, mpigrp_cplid, &
+               typeA, typeB, id_old, id_join) 
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in computing comm graph for lnd model '
+               call shr_sys_abort(subname//' ERROR in computing comm graph for lnd model ')
+            endif
          endif
-
          tagname = 'lat:lon:area:frac:mask'//C_NULL_CHAR
          call component_exch_moab(comp, mlnid, mblxid, 0, tagname, context_exch='doml')
 
