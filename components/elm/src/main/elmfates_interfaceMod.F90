@@ -4124,10 +4124,7 @@ end subroutine wrap_update_hifrq_hist
  
  subroutine RegisterHLMInterfaceVariables(this, nc)
    
-   use FatesInterfaceTypesMod, only : hlm_fates_decomp_max
-   use FatesInterfaceTypesMod, only : hlm_fates_soil_level
-   use FatesInterfaceTypesMod, only : hlm_fates_decomp_frac_moisture
-   use FatesInterfaceTypesMod, only : hlm_fates_decomp_frac_temperature
+   use FatesInterfaceParametersMod
 
    ! Arguments
    class(hlm_fates_interface_type), intent(inout) :: this
