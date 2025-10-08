@@ -1037,6 +1037,17 @@ contains
          ! Initialize the FATES sites
          call this%fates(nc)%InitializeFatesSites()
          
+         do p = 1, num_veg_patches
+            s = this%fates(nc)%register(p)%GetSiteIndex()
+            c1 = this%f2hmap(nc)%fcolumn(s)
+            c2 = this%fates(nc)%register(p)%GetColumnIndex()
+            if (c1 /= c2 ) then
+               write(iulog,*) ' columns do not match: p, s, c1, c2: ', p, s, c1, c2
+               write(iulog,*) ' max sites: ', maxval(sitelist)
+               call endrun(msg=errMsg(sourcefile, __LINE__))
+            end if
+         end do
+
          ! Set the number of FATES sites
          ! this%fates(nc)%nsites = s
 
@@ -1063,17 +1074,6 @@ contains
          ! This also needs
          call set_bcpconst(this%fates(nc)%bc_pconst,nlevdecomp)
 
-         do p = 1, num_veg_patches
-            s = sitelist(p)
-            c1 = this%f2hmap(nc)%fcolumn(s)
-            c2 = this%fates(nc)%register(p)%GetColumnIndex()
-            if (c1 /= c2 ) then
-               write(iulog,*) ' columns do not match: s, c1, c2: ', s, c1, c2
-               call endrun(msg=errMsg(sourcefile, __LINE__))
-            end if
-            
-         end do
-         
          do s = 1, this%fates(nc)%nsites
 
             ! TODO: Assign column_map and patch_map values
