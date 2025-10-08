@@ -11,7 +11,7 @@
 #include "share/field/field.hpp"
 #include "share/data_managers/field_manager.hpp"
 
-#include "eamxx_setup_random_test.hpp"
+#include "share/core/eamxx_setup_random_test.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
 #include "share/core/eamxx_types.hpp"
 
