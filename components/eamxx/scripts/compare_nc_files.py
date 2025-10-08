@@ -2,7 +2,6 @@ from utils import expect, ensure_netcdf4
 
 ensure_netcdf4()
 
-from netCDF4 import Dataset
 import xarray as xr
 import numpy as np
 
