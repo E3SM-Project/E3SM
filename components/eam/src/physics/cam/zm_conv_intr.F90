@@ -597,12 +597,6 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
       call pbuf_get_field(pbuf, dnsfzm_idx, dnsf)
       call pbuf_get_field(pbuf, wuc_idx,    wuc)
       wuc(1:pcols,1:pver) = 0
-   else
-      allocate(dnlf(pcols,pver), &
-               dnif(pcols,pver), &
-               dsf(pcols,pver),  &
-               dnsf(pcols,pver), &
-               wuc(pcols,pver)   )
    end if
 
    call pbuf_get_field(pbuf, lambdadpcu_idx, lambdadpcu)
@@ -644,15 +638,18 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
                   prec, ptend_loc%s, ptend_loc%q(:,:,1), cape, dcape, &
                   mcon,  pflx, zdu, mu, eu, du, md, ed, dp, dsubcld, &
                   ql, rliq, rprd, dlf, &
-                  qi, rice, sprd, dif, dsf, dnlf, dnif, dnsf, frz, &
-                  mudpcu, lambdadpcu )
+                  qi, sprd, frz, mudpcu, lambdadpcu )
    call t_stopf ('zm_convr')
 
    if (zm_param%zm_microp) then
-      microp_st%dif (1:ncol,1:pver) = dif (1:ncol,1:pver)
-      microp_st%dsf (1:ncol,1:pver) = dsf (1:ncol,1:pver)
-      microp_st%dnlf(1:ncol,1:pver) = dnlf(1:ncol,1:pver)
-      microp_st%dnif(1:ncol,1:pver) = dnif(1:ncol,1:pver)
+      ! update ZM micro variables in pbuf
+      dif (1:ncol,1:pver) = microp_st%dif (1:ncol,1:pver)
+      dsf (1:ncol,1:pver) = microp_st%dsf (1:ncol,1:pver)
+      dnlf(1:ncol,1:pver) = microp_st%dnlf(1:ncol,1:pver)
+      dnif(1:ncol,1:pver) = microp_st%dnif(1:ncol,1:pver)
+      dnsf(1:ncol,1:pver) = microp_st%dnsf(1:ncol,1:pver)
+      ! update other micro variables
+      rice(1:ncol) = microp_st%rice(1:ncol)
       microp_st%frz (1:ncol,1:pver) = frz (1:ncol,1:pver)
       dlftot(1:ncol,1:pver) = dlf(1:ncol,1:pver) + dif(1:ncol,1:pver) + dsf(1:ncol,1:pver)
       wuc(1:pcols,1:pver) = microp_st%wu(1:pcols,1:pver)
@@ -882,11 +879,7 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
    call physics_state_dealloc(state1)
    call physics_ptend_dealloc(ptend_loc)
 
-   if (zm_param%zm_microp) then
-      call zm_microp_st_dealloc(microp_st)
-   else
-      deallocate(dnlf, dnif, dsf, dnsf)
-   end if
+   if (zm_param%zm_microp) call zm_microp_st_dealloc(microp_st)
 
 end subroutine zm_conv_tend
 
