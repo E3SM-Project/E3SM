@@ -3,6 +3,7 @@ from utils import expect, ensure_netcdf4
 ensure_netcdf4()
 
 from netCDF4 import Dataset
+import xarray as xr
 import numpy as np
 
 import pathlib
@@ -62,8 +63,10 @@ class CompareNcFiles(object):
     def compare_variables(self):
     ###########################################################################
 
-        ds_src = Dataset(self._src_file,'r')
-        ds_tgt = Dataset(self._tgt_file,'r')
+        #ds_src = Dataset(self._src_file,'r')
+        #ds_tgt = Dataset(self._tgt_file,'r')
+        ds_src = xr.open_dataset(self._src_file)
+        ds_tgt = xr.open_dataset(self._tgt_file)
 
         success = True
         for expr in self._compare:
@@ -92,8 +95,8 @@ class CompareNcFiles(object):
             lvar = ds_src.variables[lname];
             rvar = ds_tgt.variables[rname];
 
-            lvar_rank = len(lvar.dimensions)
-            rvar_rank = len(rvar.dimensions)
+            lvar_rank = len(lvar.dims)
+            rvar_rank = len(rvar.dims)
 
             expect (len(ldims)==0 or len(ldims)==lvar_rank,
                     f"Invalid slice specification for {lname}.\n"
@@ -119,8 +122,8 @@ class CompareNcFiles(object):
                 success = False
                 continue
 
-            lvals = self.slice_variable(lvar,lvar[:],lslices)
-            rvals = self.slice_variable(rvar,rvar[:],rslices)
+            lvals = self.slice_variable(lvar,lvar.data[:],lslices)
+            rvals = self.slice_variable(rvar,rvar.data[:],rslices)
 
             if not np.array_equal(lvals,rvals):
                 #  print (f"lvals: {lvals}")
