@@ -344,6 +344,20 @@ void AtmosphereOutput::init()
     const auto& layout = fid.get_layout();
     m_vars_dims[fname] = get_var_dimnames(m_transpose ? layout.transpose() : layout);
 
+    // Initialize a helper_field for each unique layout.  This can be used for operations
+    // such as writing transposed output.
+    if (m_helper_fields.find(layout.to_string()) == m_helper_fields.end()) {
+      // We can add a new helper field for this layout
+      const auto        helper_layout = m_transpose ? layout.transpose() : layout;
+      const std::string helper_name   = "helper_"+helper_layout.to_string();
+      using namespace ekat::units;
+      FieldIdentifier fid_helper(helper_name,helper_layout,Units::invalid(),fid.get_grid_name());
+      Field helper(fid_helper);
+      helper.get_header().get_alloc_properties().request_allocation();
+      helper.allocate_view();
+      m_helper_fields[layout.to_string()] = helper;
+    }
+
     // Now check that all the dims of this field are already set to be registered.
     const auto& tags = layout.tags();
     const auto& dims = layout.dims();
@@ -501,8 +515,10 @@ run (const std::string& filename,
 
         auto func_start = std::chrono::steady_clock::now();
         if (m_transpose) {
-          const auto count_tmp = transpose(count);
-          scorpio::write_var(filename,count.name(),count_tmp.get_internal_view_data<int,Host>());
+          const auto& fl = count.get_header().get_identifier().get_layout().to_string();
+          auto& temp = m_helper_fields.at(fl);
+          transpose(count,temp);
+          scorpio::write_var(filename,count.name(),temp.get_internal_view_data<int,Host>());
 	} else {
           scorpio::write_var(filename,count.name(),count.get_internal_view_data<int,Host>());
 	}
@@ -584,8 +600,10 @@ run (const std::string& filename,
       // Write to file
       auto func_start = std::chrono::steady_clock::now();
       if (m_transpose) {
-        const auto f_tmp = transpose(f_out);
-        scorpio::write_var(filename,field_name,f_tmp.get_internal_view_data<Real,Host>());
+        const auto& fl = f_out.get_header().get_identifier().get_layout().to_string();
+        auto& temp = m_helper_fields.at(fl);
+        transpose(f_out,temp);
+        scorpio::write_var(filename,field_name,temp.get_internal_view_data<Real,Host>());
       } else {
         scorpio::write_var(filename,field_name,f_out.get_internal_view_data<Real,Host>());
       }
