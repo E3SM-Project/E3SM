@@ -27,3 +27,5 @@ if (SCREAM_ENABLE_MAM)
   add_subdirectory(mam)
 endif()
 add_subdirectory(gw)
+
+add_subdirectory(emulators)

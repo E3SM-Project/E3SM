@@ -24,7 +24,7 @@ class GWEmulator : public AtmosphereProcess
   AtmosphereProcessType type () const override { return AtmosphereProcessType::Physics; }
 
   // The name of the subcomponent
-  std::string name () const override { return "gw-emulator"; }
+  std::string name () const override { return "gw_emulator"; }
 
   // Set the grid
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager) override;

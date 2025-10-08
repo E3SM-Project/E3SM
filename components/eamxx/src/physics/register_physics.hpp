@@ -47,6 +47,9 @@
 #ifdef EAMXX_HAS_IOP_FORCING
 #include "physics/iop_forcing/eamxx_iop_forcing_process_interface.hpp"
 #endif
+#ifdef EAMXX_HAS_GW_EMULATOR
+#include "physics/emulators/gw/eamxx_gw_emulator_process.hpp"
+#endif
 
 namespace scream {
 
@@ -93,6 +96,9 @@ inline void register_physics () {
 #endif
 #ifdef EAMXX_HAS_IOP_FORCING
   proc_factory.register_product("iop_forcing",&create_atmosphere_process<IOPForcing>);
+#endif
+#ifdef EAMXX_HAS_GW_EMULATOR
+  proc_factory.register_product("gw_emulator",&create_atmosphere_process<GWEmulator>);
 #endif
 
   // If no physics was enabled, silence compile warning about unused var
