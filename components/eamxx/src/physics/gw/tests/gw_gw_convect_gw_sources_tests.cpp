@@ -38,10 +38,10 @@ struct UnitWrap::UnitTest<D>::TestGwConvectGwSources : public UnitWrap::UnitTest
     // Set up inputs
     GwConvectGwSourcesData baseline_data[] = {
       //                   ncol, hdepth_min
-      GwConvectGwSourcesData(10,     2000., front_init_data[0]),
-      GwConvectGwSourcesData(11,     3000., front_init_data[1]),
-      GwConvectGwSourcesData(12,     4000., front_init_data[2]),
-      GwConvectGwSourcesData(13,     5000., front_init_data[3]),
+      GwConvectGwSourcesData(10,     0, front_init_data[0]),
+      GwConvectGwSourcesData(11,     0, front_init_data[1]),
+      GwConvectGwSourcesData(12,     0, front_init_data[2]),
+      GwConvectGwSourcesData(13,     0, front_init_data[3]),
     };
 
     static constexpr Int num_runs = sizeof(baseline_data) / sizeof(GwConvectGwSourcesData);
@@ -49,7 +49,7 @@ struct UnitWrap::UnitTest<D>::TestGwConvectGwSources : public UnitWrap::UnitTest
     // Generate random input data
     // Alternatively, you can use the baseline_data construtors/initializer lists to hardcode data
     for (auto& d : baseline_data) {
-      d.randomize(engine);
+      d.randomize(engine, { {d.maxi, {10, 20}}, {d.mini, {40, 50}}, {d.hdepth, {0., 9.}} });
     }
 
     // Create copies of data for use by test. Needs to happen before read calls so that

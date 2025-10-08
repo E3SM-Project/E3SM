@@ -521,22 +521,24 @@ struct Functions
   KOKKOS_FUNCTION
   static void gw_convect_gw_sources(
     // Inputs
-    const Int& pver,
+    const MemberType& team,
+    const GwCommonInit& init,
+    const GwConvectInit& cinit,
     const Int& pgwv,
-    const Int& ncol,
-    const uview_1d<const Spack>& lat,
-    const Spack& hdepth_min,
-    const uview_1d<const Spack>& hdepth,
-    const uview_1d<const Int>& mini,
-    const uview_1d<const Int>& maxi,
-    const uview_1d<const Spack>& netdt,
-    const uview_1d<const Spack>& uh,
-    const uview_1d<const Int>& storm_speed,
-    const uview_1d<const Spack>& maxq0,
-    const uview_1d<const Spack>& umin,
-    const uview_1d<const Spack>& umax,
+    const Int& pver,
+    const Real& lat,
+    const Real& hdepth_min,
+    const Real& hdepth,
+    const Int& mini,
+    const Int& maxi,
+    const uview_1d<const Real>& netdt,
+    const Real& uh,
+    const Int& storm_speed,
+    const Real& maxq0,
+    const Real& umin,
+    const Real& umax,
     // Outputs
-    const uview_1d<Spack>& tau);
+    const uview_2d<Real>& tau);
 
   KOKKOS_FUNCTION
   static void gw_beres_src(

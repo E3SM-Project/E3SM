@@ -1253,8 +1253,83 @@ void gw_convect_gw_sources_f(GwConvectGwSourcesData& d)
 
 void gw_convect_gw_sources(GwConvectGwSourcesData& d)
 {
-  // For now just call f90
-  gw_convect_gw_sources_f(d);
+  gw_convect_init(d.init);
+
+  // create device views and copy
+  std::vector<view1dr_d> vec1dr_in(6);
+  ekat::host_to_device({d.hdepth, d.lat, d.maxq0, d.uh, d.umax, d.umin}, d.ncol, vec1dr_in);
+
+  std::vector<view2dr_d> vec2dr_in(1);
+  ekat::host_to_device({d.netdt}, d.ncol, d.init.init.pver, vec2dr_in);
+
+  std::vector<view3dr_d> vec3dr_in(1);
+  ekat::host_to_device({d.tau}, d.ncol, d.init.init.pgwv*2 + 1, d.init.init.pver + 1, vec3dr_in);
+
+  std::vector<view1di_d> vec1di_in(3);
+  ekat::host_to_device({d.maxi, d.mini, d.storm_speed}, d.ncol, vec1di_in);
+
+  view1dr_d
+    hdepth_d(vec1dr_in[0]),
+    lat_d(vec1dr_in[1]),
+    maxq0_d(vec1dr_in[2]),
+    uh_d(vec1dr_in[3]),
+    umax_d(vec1dr_in[4]),
+    umin_d(vec1dr_in[5]);
+
+  view2dr_d
+    netdt_d(vec2dr_in[0]);
+
+  view3dr_d
+    tau_d(vec3dr_in[0]);
+
+  view1di_d
+    maxi_d(vec1di_in[0]),
+    mini_d(vec1di_in[1]),
+    storm_speed_d(vec1di_in[2]);
+
+  const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.ncol, d.init.init.pver);
+
+  GWF::GwCommonInit init_cp = GWF::s_common_init;
+  GWF::GwConvectInit cinit_cp = GWF::s_convect_init;
+
+  // unpack data scalars because we do not want the lambda to capture d
+  const Real hdepth_min = d.hdepth_min;
+  const Int pgwv = d.init.init.pgwv;
+  const Int pver = d.init.init.pver;
+
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    const Int i = team.league_rank();
+
+    // Get single-column subviews of all inputs, shouldn't need any i-indexing
+    // after this.
+    const auto tau_c   = ekat::subview(tau_d, i);
+    const auto netdt_c = ekat::subview(netdt_d, i);
+
+    GWF::gw_convect_gw_sources(
+      team,
+      init_cp,
+      cinit_cp,
+      pgwv,
+      pver,
+      lat_d(i),
+      hdepth_min,
+      hdepth_d(i),
+      mini_d(i),
+      maxi_d(i),
+      netdt_c,
+      uh_d(i),
+      storm_speed_d(i),
+      maxq0_d(i),
+      umin_d(i),
+      umax_d(i),
+      tau_c);
+  });
+
+  // Now get arrays
+  std::vector<view3dr_d> vec3dr_out = {tau_d};
+  ekat::device_to_host({d.tau}, d.ncol, d.init.init.pgwv*2 + 1, d.init.init.pver + 1, vec3dr_out);
+
+  gw_finalize_cxx();
 }
 
 void gw_beres_src_f(GwBeresSrcData& d)
