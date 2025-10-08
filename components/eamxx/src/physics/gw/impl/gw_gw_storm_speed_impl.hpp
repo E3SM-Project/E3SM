@@ -30,7 +30,7 @@ void Functions<S,D>::gw_storm_speed(
   Real& umin,
   Real& umax)
 {
-  storm_speed = Int(Kokkos::copysign(ekat::impl::max(std::abs(ubm(cinit.k_src_wind))-storm_speed_min, Real(0)), ubm(cinit.k_src_wind))) - 1;
+  storm_speed = Int(Kokkos::copysign(ekat::impl::max(std::abs(ubm(cinit.k_src_wind))-storm_speed_min, Real(0)), ubm(cinit.k_src_wind)));
 
   Kokkos::parallel_reduce(
     Kokkos::TeamVectorRange(team, maxi, mini+1), [&] (const int k, Real& lsum) {
@@ -38,11 +38,14 @@ void Functions<S,D>::gw_storm_speed(
     }, Kokkos::Sum<Real>(uh));
 
   team.team_barrier();
-  uh -= storm_speed;
 
-  // Limit uh to table range.
-  uh = ekat::impl::min(uh, Real(cinit.maxuh));
-  uh = ekat::impl::max(uh, Real(-cinit.maxuh));
+  Kokkos::single(Kokkos::PerTeam(team), [&] {
+    uh -= storm_speed;
+
+    // Limit uh to table range.
+    uh = ekat::impl::min(uh, Real(cinit.maxuh));
+    uh = ekat::impl::max(uh, Real(-cinit.maxuh));
+  });
 
   // Speeds for critical level filtering.
   umin =  init.pgwv*init.dc;
