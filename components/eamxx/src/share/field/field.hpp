@@ -7,6 +7,7 @@
 
 #include <ekat_std_type_traits.hpp>
 #include <ekat_subview_utils.hpp>
+#include <ekat_broadcast_view.hpp>
 
 #include <memory>   // For std::shared_ptr
 #include <string>
@@ -133,6 +134,10 @@ public:
   template<typename DT, HostOrDevice HD = Device>
   get_view_type<DT,HD>
   get_view () const;
+
+  template<typename DT, HostOrDevice HD = Device>
+  ekat::ViewBroadcast<get_view_type<DT,HD>>
+  get_broadcasted_view (const FieldLayout& tgt_layout) const;
 
   // Like the method above, but only for rank-1 fields, returning a view with LayoutStride.
   // This is safer to use for fields that could be a subfield of another one, since a

@@ -143,6 +143,43 @@ auto Field::get_view () const
   return DstView(view_ND);
 }
 
+template<typename DT, HostOrDevice HD = Device>
+ekat::ViewBroadcast<get_view_type<DT,HD>>
+Field::get_broadcasted_view (const FieldLayout& tgt_layout) const {
+  using value_t = typename get_view_type<DT,HD>>::traits::value_type;
+  std::vector<int> extents = tgt_layout.dims();
+  const auto& src_layout = get_header().get_identifier().get_layout();
+  for (int i=0,j=0; i<rank();++j) {
+    if (src_layout.tags()[i]==tgt_layout.tags()[i]) {
+      extents[i] = -1;
+      ++i;
+    }
+  }
+
+  switch (rank()) {
+    case 1:
+    {
+      using inner_dt = ekat::DataND<value_t,1>;
+      auto v = get_view<inner_dt,HD>();
+      return broadcast(v,extents);
+    }
+    case 2:
+    {
+      using inner_dt = ekat::DataND<value_t,2>;
+      auto v = get_view<inner_dt,HD>();
+      return broadcast(v,extents);
+    }
+    case 3:
+    {
+      using inner_dt = ekat::DataND<value_t,3>;
+      auto v = get_view<inner_dt,HD>();
+      return broadcast(v,extents);
+    }
+    default:
+      EKAT_ERROR_MSG ("Unsupported rank for FieldBroadcast.");
+  }
+}
+
 template <typename DT, HostOrDevice HD>
 auto Field::get_strided_view() const ->
 get_strided_view_type<DT, HD> {
