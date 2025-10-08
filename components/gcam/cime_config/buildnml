@@ -301,11 +301,11 @@ def buildnml(case, caseroot, compname):
     _ensure_symlink(os.path.join(glm_idir, "glm.fut.conf.{}".format(mach)),
                     os.path.join(rundir, "glm.fut.conf"))
 
-    # Link all restart.* files from gcam_rdir into rundir
+    # Copy all restart.* files from gcam_rdir into rundir
     for src in glob.glob(os.path.join(gcam_rdir, "restart.*")):
         fname = os.path.basename(src)
         dst = os.path.join(rundir, fname)
-        _ensure_symlink(src, dst)
+        _ensure_copy(src, dst)
 
     # Static files into run dir (with target names) - use copies for these files
     _ensure_copy(os.path.join(ldir, "iESM_Ref_CropPast2015_c10142019.nc"),
