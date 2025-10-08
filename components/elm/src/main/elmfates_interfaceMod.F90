@@ -4164,6 +4164,18 @@ end subroutine wrap_update_hifrq_hist
       call this%fates(nc)%register(r)%Register(key=hlm_fates_decomp_frac_temperature, &
                                                data=col_cf%t_scalar(c,:), hlm_flag=.true.)
 
+      ! Variables that need to accumulate                                               
+      call this%fates(nc)%register(r)%Register(key=hlm_fates_litter_carbon_cellulose, &
+                                               data=col_cf%decomp_cpools_sourcesink(c,:,i_cel_lit), &
+                                               hlm_flag=.true., accumulate=.true.)
+      call this%fates(nc)%register(r)%Register(key=hlm_fates_litter_carbon_lignin, &
+                                               data=col_cf%decomp_cpools_sourcesink(c,:,i_lig_lit), &
+                                               hlm_flag=.true., accumulate=.true.)
+      call this%fates(nc)%register(r)%Register(key=hlm_fates_litter_carbon_labile, &
+                                               data=col_cf%decomp_cpools_sourcesink(c,:,i_lab_lit), &
+                                               hlm_flag=.true., accumulate=.true.)
+
+
    end do
   
  end subroutine RegisterHLMInterfaceVariables
