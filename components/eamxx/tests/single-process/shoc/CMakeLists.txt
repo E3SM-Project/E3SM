@@ -26,8 +26,14 @@ GetInputFile(cam/topo/${EAMxx_tests_TOPO_FILE})
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/input.yaml)
+set (TRANSPOSED_FLAG False)
+set (FPREFIX standalone)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/output.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/output.yaml)
+set (TRANSPOSED_FLAG True)
+set (FPREFIX transposed)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/output.yaml
+               ${CMAKE_CURRENT_BINARY_DIR}/output_transposed.yaml)
 
 # Compare output files produced by npX tests, to ensure they are bfb
 include (CompareNCFiles)
@@ -49,6 +55,20 @@ foreach (NRANKS RANGE ${TEST_RANK_START} ${TEST_RANK_END})
     COMMAND ${script} -f ${fname}
     -v T_mid qv tke horiz_winds sgs_buoy_flux eddy_diff_mom qc cldfrac_liq
     -t shoc_T_mid_tend shoc_qv_tend shoc_tke_tend shoc_horiz_winds_tend shoc_sgs_buoy_flux_tend shoc_eddy_diff_mom_tend shoc_qc_tend shoc_cldfrac_liq_tend
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+  set_tests_properties (${tname} PROPERTIES
+    LABELS "shoc;physics"
+    FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_np${NRANKS}_omp1)
+endforeach()
+
+# Check transpose test
+foreach (NRANKS RANGE ${TEST_RANK_START} ${TEST_RANK_END})
+  set (script ${SCREAM_BASE_DIR}/scripts/compare-nc-files)
+  set (fname_base shoc_standalone_output.INSTANT.nsteps_x1.np${NRANKS}.${RUN_T0}.nc)
+  set (fname_comp shoc_transposed_output.INSTANT.nsteps_x1.np${NRANKS}.${RUN_T0}.nc)
+  set (tname shoc_transpose_check_np${NRANKS})
+  add_test (NAME ${tname}
+    COMMAND ${script} -s ${fname_base} -t ${fname_comp} -a
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
   set_tests_properties (${tname} PROPERTIES
     LABELS "shoc;physics"
