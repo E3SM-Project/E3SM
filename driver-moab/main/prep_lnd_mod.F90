@@ -15,6 +15,7 @@ module prep_lnd_mod
   use seq_comm_mct,     only: mphaid   ! iMOAB id for phys atm on atm pes
   use seq_comm_mct,     only: mhpgid   ! iMOAB id for atm pgx grid, on atm pes; created with se and gll grids
   use seq_comm_mct,     only: mblxid ! iMOAB id for land migrated mesh to coupler pes
+  use seq_comm_mct,     only: mb_scm_land ! flag that identifies PC for land; 
   use seq_comm_mct,     only: mbrxid   !          iMOAB id of moab rof on coupler pes (FV now)
   use seq_comm_mct,     only: mbintxal ! iMOAB id for intx mesh between atm and lnd
   use seq_comm_mct,     only: mbintxrl ! iMOAB id for intx mesh between river and land
@@ -594,7 +595,11 @@ contains
               else
                   type1 = 2 ! in this case, atm is just PC 
               endif
-              type2 = 3;  ! FV mesh on coupler land
+              if (mb_scm_land) then
+                type2 = 2 ! point cloud for land too, on coupler side; just one point, actually
+              else
+                type2 = 3;  ! FV mesh on coupler land
+              endif
               ierr = iMOAB_ComputeCommGraph( mbaxid, mblxid, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
                                       atm(1)%cplcompid, lnd(1)%cplcompid)
               if (ierr .ne. 0) then
