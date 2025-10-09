@@ -1,4 +1,5 @@
 #include "eamxx_gw_emulator_process.hpp"
+#include "share/atm_process/atmosphere_process_pyhelpers.hpp"
 
 #include <ekat_assert.hpp>
 #include <ekat_units.hpp>
@@ -17,13 +18,11 @@ void GWEmulator::
 set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 {
   m_grid = grids_manager->get_grid("physics");
-
-  auto 
 }
 
 void GWEmulator::initialize_impl (const RunType /* run_type */)
 {
-#ifdef EAMXX_ENABLE_PYTHON
+#ifdef EAMXX_HAS_PYTHON
   if (has_py_module()) {
     int nlevs = m_grid->get_num_vertical_levels();
     int nn_layers = m_params.get("num_hidden_layers",1);

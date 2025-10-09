@@ -62,6 +62,8 @@ eamxx:
     gw_emulator:
       py_module_name: gw_emulator
       py_module_path: ${SCREAM_SRC_DIR}/physics/emulators/gw
+      num_hidden_layers: 4
+      state_dict_file: /home/lbertag/workdir/e3sm/e3sm-data/datasets/gw-emulator/ann_cnn_1x1_global_global_era5_uvthetaw__train_epoch94.pt
 
 grids_manager:
   type: homme
