@@ -8,7 +8,7 @@
 #include "physics/rrtmgp/eamxx_rrtmgp_interface.hpp"
 #include "physics/rrtmgp/eamxx_rrtmgp_process_interface.hpp"
 #include "physics/register_physics.hpp"
-#include "physics/share/physics_constants.hpp"
+#include "share/physics/physics_constants.hpp"
 
 // scream share headers
 #include "share/data_managers/mesh_free_grids_manager.hpp"

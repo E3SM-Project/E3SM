@@ -1,5 +1,4 @@
 #include "share/grid/point_grid.hpp"
-#include "physics/share/physics_constants.hpp"
 
 #include <numeric>
 

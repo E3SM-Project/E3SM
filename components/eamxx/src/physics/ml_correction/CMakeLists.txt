@@ -21,7 +21,7 @@ add_library(ml_correction ${MLCORRECTION_SRCS})
 target_compile_definitions(ml_correction PUBLIC EAMXX_HAS_ML_CORRECTION)
 target_compile_definitions(ml_correction PRIVATE -DML_CORRECTION_CUSTOM_PATH="${CMAKE_CURRENT_SOURCE_DIR}")
 target_include_directories(ml_correction SYSTEM PUBLIC ${PYTHON_INCLUDE_DIRS})
-target_link_libraries(ml_correction physics_share scream_share pybind11::pybind11 Python::Python)
+target_link_libraries(ml_correction eamxx_physics_share scream_share pybind11::pybind11 Python::Python)
 
 if (TARGET eamxx_physics)
   # Add this library to eamxx_physics

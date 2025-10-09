@@ -61,7 +61,7 @@ set(SCREAM_RRTMGP_SOURCES
 )
 
 add_library(scream_rrtmgp ${SCREAM_RRTMGP_SOURCES})
-target_link_libraries(scream_rrtmgp PUBLIC scream_share physics_share csm_share eamxx_rrtmgp_interface Kokkos::kokkos)
+target_link_libraries(scream_rrtmgp PUBLIC scream_share eamxx_physics_share csm_share eamxx_rrtmgp_interface Kokkos::kokkos)
 set_target_properties(scream_rrtmgp PROPERTIES
   Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules
 )

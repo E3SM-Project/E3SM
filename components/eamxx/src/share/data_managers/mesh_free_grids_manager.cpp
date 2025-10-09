@@ -5,7 +5,7 @@
 #include "share/property_checks/field_within_interval_check.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 
-#include "physics/share/physics_constants.hpp"
+#include "share/physics/physics_constants.hpp"
 
 #include <ekat_std_utils.hpp>
 

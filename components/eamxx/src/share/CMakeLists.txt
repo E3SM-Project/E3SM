@@ -7,6 +7,9 @@ add_subdirectory(scorpio_interface)
 # Small/generic utilities
 add_subdirectory(util)
 
+# Basic physics constant/functions
+add_subdirectory(physics)
+
 # Field structures
 add_subdirectory(field)
 

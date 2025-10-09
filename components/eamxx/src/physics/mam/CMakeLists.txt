@@ -56,7 +56,7 @@ target_include_directories(mam PUBLIC
   ${EXTERNALS_SOURCE_DIR}/haero
   ${EXTERNALS_SOURCE_DIR}/mam4xx/src
 )
-target_link_libraries(mam PUBLIC physics_share csm_share scream_share mam4xx haero)
+target_link_libraries(mam PUBLIC eamxx_physics_share csm_share scream_share mam4xx haero)
 
 #if (NOT SCREAM_LIB_ONLY)
 #  add_subdirectory(tests)
