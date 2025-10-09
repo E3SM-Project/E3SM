@@ -3114,9 +3114,12 @@
     </gridmap>
 
     <gridmap atm_grid="ne4np4.pg2" iac_grid="1.9x2.5">
-      <map name="IAC2ATM_FMAPNAME">cpl/gridmaps/1.9x2.5/map_1.9x2.5_TO_ne4pg2_aave.241125.nc</map>
-      <map name="IAC2ATM_SMAPNAME">cpl/gridmaps/1.9x2.5/map_1.9x2.5_TO_ne4pg2_aave.241125.nc</map>
-      <map name="ATM2IAC_SMAPNAME">cpl/gridmaps/ne4pg2/map_ne4pg2_TO_1.9x2.5_aave.241125.nc</map>
+      <!-- <map name="IAC2ATM_FMAPNAME">cpl/gridmaps/1.9x2.5/map_1.9x2.5_TO_ne4pg2_aave.241125.nc</map>
+      <map name="IAC2ATM_SMAPNAME">cpl/gridmaps/1.9x2.5/map_1.9x2.5_TO_ne4pg2_aave.241125.nc</map> -->
+      <!-- <map name="ATM2IAC_SMAPNAME">cpl/gridmaps/ne4pg2/map_ne4pg2_TO_1.9x2.5_aave.241125.nc</map> -->
+      <map name="IAC2ATM_FMAPNAME">/lcrc/group/e3sm/ac.sfeng1/gcam/domains_maps/output/map_1.9x2.5_to_ne4pg2_traave.202501008.nc</map>
+      <map name="IAC2ATM_SMAPNAME">/lcrc/group/e3sm/ac.sfeng1/gcam/domains_maps/output/map_1.9x2.5_to_ne4pg2_traave.202501008.nc</map>
+      <map name="ATM2IAC_SMAPNAME">/lcrc/group/e3sm/ac.sfeng1/gcam/domains_maps/output/map_ne4pg2_to_1.9x2.5_traave.202501008.nc</map>    
     </gridmap>
 
     <!--- atm to ocean and ocean to atm mapping files -->
@@ -3231,10 +3234,14 @@
     </gridmap>
 
     <gridmap atm_grid="ne4np4.pg2" lnd_grid="1.9x2.5">
-      <map name="ATM2LND_FMAPNAME">cpl/gridmaps/ne4pg2/map_ne4pg2_TO_1.9x2.5_aave.241125.nc</map>
-      <map name="ATM2LND_SMAPNAME">cpl/gridmaps/ne4pg2/map_ne4pg2_TO_1.9x2.5_aave.241125.nc</map>
-      <map name="LND2ATM_FMAPNAME">cpl/gridmaps/1.9x2.5/map_1.9x2.5_TO_ne4pg2_aave.241125.nc</map>
-      <map name="LND2ATM_SMAPNAME">cpl/gridmaps/1.9x2.5/map_1.9x2.5_TO_ne4pg2_aave.241125.nc</map>
+      <!-- <map name="ATM2LND_FMAPNAME">cpl/gridmaps/ne4pg2/map_ne4pg2_TO_1.9x2.5_aave.241125.nc</map>
+      <map name="ATM2LND_SMAPNAME">cpl/gridmaps/ne4pg2/map_ne4pg2_TO_1.9x2.5_aave.241125.nc</map> -->
+      <!-- <map name="LND2ATM_FMAPNAME">cpl/gridmaps/1.9x2.5/map_1.9x2.5_TO_ne4pg2_aave.241125.nc</map>
+      <map name="LND2ATM_SMAPNAME">cpl/gridmaps/1.9x2.5/map_1.9x2.5_TO_ne4pg2_aave.241125.nc</map>       -->
+      <map name="ATM2LND_FMAPNAME">/lcrc/group/e3sm/ac.sfeng1/gcam/domains_maps/output/map_ne4pg2_to_1.9x2.5_traave.202501008.nc</map>
+      <map name="ATM2LND_SMAPNAME">/lcrc/group/e3sm/ac.sfeng1/gcam/domains_maps/output/map_ne4pg2_to_1.9x2.5_traave.202501008.nc</map>
+      <map name="LND2ATM_FMAPNAME">/lcrc/group/e3sm/ac.sfeng1/gcam/domains_maps/output/map_1.9x2.5_to_ne4pg2_traave.202501008.nc</map>
+      <map name="LND2ATM_SMAPNAME">/lcrc/group/e3sm/ac.sfeng1/gcam/domains_maps/output/map_1.9x2.5_to_ne4pg2_traave.202501008.nc</map>
     </gridmap>    
 
     <gridmap atm_grid="ne11np4" ocn_grid="gx3v7">
