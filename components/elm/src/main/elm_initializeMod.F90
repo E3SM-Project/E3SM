@@ -23,6 +23,7 @@ module elm_initializeMod
   use ELMFatesInterfaceMod  , only : ELMFatesGlobals1,ELMFatesGlobals2
   use BeTRSimulationELM, only : create_betr_simulation_elm
   use SoilLittVertTranspMod, only : CreateLitterTransportList
+  use ColumnConnectionSetType, only : c2c_connections
   use iso_c_binding
   !
   !-----------------------------------------
@@ -418,6 +419,9 @@ contains
 
     call initGridCells()
     call initGhostGridCells()
+#ifdef HAVE_MOAB
+    call c2c_connections%Init(bounds_proc)
+#endif
 
     if (fsurdat /= " " .and. use_finetop_rad) then
        if (masterproc) then
