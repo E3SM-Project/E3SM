@@ -760,17 +760,17 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
 
          ! Interpolate variable from interface to mid-layer.
          if(k.lt.pver) then
-            microp_st%qice (i,k) = 0.5_r8*(microp_st%qice(i,k)+microp_st%qice(i,k+1))
-            microp_st%qliq (i,k) = 0.5_r8*(microp_st%qliq(i,k)+microp_st%qliq(i,k+1))
-            microp_st%qrain (i,k) = 0.5_r8*(microp_st%qrain(i,k)+microp_st%qrain(i,k+1))
-            microp_st%qsnow (i,k) = 0.5_r8*(microp_st%qsnow(i,k)+microp_st%qsnow(i,k+1))
+            microp_st%qice    (i,k) = 0.5_r8*(microp_st%qice    (i,k)+microp_st%qice    (i,k+1))
+            microp_st%qliq    (i,k) = 0.5_r8*(microp_st%qliq    (i,k)+microp_st%qliq    (i,k+1))
+            microp_st%qrain   (i,k) = 0.5_r8*(microp_st%qrain   (i,k)+microp_st%qrain   (i,k+1))
+            microp_st%qsnow   (i,k) = 0.5_r8*(microp_st%qsnow   (i,k)+microp_st%qsnow   (i,k+1))
             microp_st%qgraupel(i,k) = 0.5_r8*(microp_st%qgraupel(i,k)+microp_st%qgraupel(i,k+1))
-            microp_st%qni (i,k) = 0.5_r8*(microp_st%qni(i,k)+microp_st%qni(i,k+1))
-            microp_st%qnl (i,k) = 0.5_r8*(microp_st%qnl(i,k)+microp_st%qnl(i,k+1))
-            microp_st%qnr (i,k) = 0.5_r8*(microp_st%qnr(i,k)+microp_st%qnr(i,k+1))
-            microp_st%qns (i,k) = 0.5_r8*(microp_st%qns(i,k)+microp_st%qns(i,k+1))
-            microp_st%qng (i,k) = 0.5_r8*(microp_st%qng(i,k)+microp_st%qng(i,k+1))
-            microp_st%wu(i,k)   = 0.5_r8*(microp_st%wu(i,k)+microp_st%wu(i,k+1))
+            microp_st%qni     (i,k) = 0.5_r8*(microp_st%qni     (i,k)+microp_st%qni     (i,k+1))
+            microp_st%qnl     (i,k) = 0.5_r8*(microp_st%qnl     (i,k)+microp_st%qnl     (i,k+1))
+            microp_st%qnr     (i,k) = 0.5_r8*(microp_st%qnr     (i,k)+microp_st%qnr     (i,k+1))
+            microp_st%qns     (i,k) = 0.5_r8*(microp_st%qns     (i,k)+microp_st%qns     (i,k+1))
+            microp_st%qng     (i,k) = 0.5_r8*(microp_st%qng     (i,k)+microp_st%qng     (i,k+1))
+            microp_st%wu      (i,k) = 0.5_r8*(microp_st%wu      (i,k)+microp_st%wu      (i,k+1))
          end if
 
          if (t(i,k).gt.zm_const%tfreez .and. t(i,k-1).le.zm_const%tfreez) then
@@ -1365,19 +1365,19 @@ subroutine cldprp(zm_const, pcols, ncol, pver, pverp, &
          frz(i,k)  = 0._r8
          frz1(i,k) = 0._r8
          if (zm_param%zm_microp) then
-           loc_microp_st%cmel(i,k) = 0._r8
-           loc_microp_st%cmei(i,k) = 0._r8
-           loc_microp_st%wu(i,k)   = 0._r8
-           loc_microp_st%qliq(i,k) = 0._r8
-           loc_microp_st%qice(i,k) = 0._r8
-           loc_microp_st%qrain(i,k)= 0._r8
-           loc_microp_st%qsnow(i,k)= 0._r8
+           loc_microp_st%cmel(i,k)     = 0._r8
+           loc_microp_st%cmei(i,k)     = 0._r8
+           loc_microp_st%wu(i,k)       = 0._r8
+           loc_microp_st%qliq(i,k)     = 0._r8
+           loc_microp_st%qice(i,k)     = 0._r8
+           loc_microp_st%qrain(i,k)    = 0._r8
+           loc_microp_st%qsnow(i,k)    = 0._r8
            loc_microp_st%qgraupel(i,k) = 0._r8
-           loc_microp_st%qnl(i,k)  = 0._r8
-           loc_microp_st%qni(i,k)  = 0._r8
-           loc_microp_st%qnr(i,k)  = 0._r8
-           loc_microp_st%qns(i,k)  = 0._r8
-           loc_microp_st%qng(i,k)  = 0._r8
+           loc_microp_st%qnl(i,k)      = 0._r8
+           loc_microp_st%qni(i,k)      = 0._r8
+           loc_microp_st%qnr(i,k)      = 0._r8
+           loc_microp_st%qns(i,k)      = 0._r8
+           loc_microp_st%qng(i,k)      = 0._r8
          end if
       end do
    end do
