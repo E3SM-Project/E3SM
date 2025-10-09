@@ -24,6 +24,7 @@ module elm_initializeMod
   use ELMFatesParamInterfaceMod, only: FatesReadPFTs
   use BeTRSimulationELM, only : create_betr_simulation_elm
   use SoilLittVertTranspMod, only : CreateLitterTransportList
+  use ColumnConnectionSetType, only : c2c_connections
   use iso_c_binding
   !
   !-----------------------------------------
@@ -426,6 +427,9 @@ contains
 
     call initGridCells()
     call initGhostGridCells()
+#ifdef HAVE_MOAB
+    call c2c_connections%Init(bounds_proc)
+#endif
 
     ! Set global seg maps for gridcells, topounits, landlunits, columns and patches
     !if(max_topounits > 1) then
