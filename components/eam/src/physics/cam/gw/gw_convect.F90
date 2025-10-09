@@ -71,6 +71,7 @@ subroutine gw_convect_init( plev_src_wind, mfcc_in, errstring)
   ! Second dimension is -maxuh:maxuh (size 2*maxuh+1).
   maxuh = (size(mfcc_in,2)-1)/2
 
+  if (allocated(mfcc)) deallocate(mfcc) ! allows for repeated inits to work
   allocate(mfcc(maxh,-maxuh:maxuh,-pgwv:pgwv), stat=ierr, errmsg=errstring)
   if (ierr /= 0) return
   mfcc = mfcc_in

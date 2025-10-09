@@ -686,7 +686,7 @@ struct GwConvectGwSourcesData : public PhysicsTestData {
   template <ekat::TransposeDirection::Enum D>
   void transition()
   {
-    PhysicsTestData::transition<D>();
+    PhysicsTestData::transition<D>({storm_speed});
 
     init.transition<D>();
   }

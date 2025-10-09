@@ -37,7 +37,7 @@ void Functions<S,D>::gw_convect_gw_sources(
   // fixed parameters (we may want to expose these in the namelist for tuning)
   static constexpr Real tau_avg_length = 100e3; // ! spectrum averaging length [m]
 
-  const int num_pgwv = 2*pgwv + 1;
+  const Int num_pgwv = 2*pgwv + 1;
 
   //---------------------------------------------------------------------
   // Look up spectrum only if depth >= 2.5 km, else set tau0 = 0.
@@ -49,21 +49,22 @@ void Functions<S,D>::gw_convect_gw_sources(
     //------------------------------------------------------------------
 
     // Shift spectrum so that it is relative to the ground.
-    const Int shift = -static_cast<Int>(storm_speed/init.dc);
+    const Int shift = -static_cast<Int>(std::round(storm_speed/init.dc));
 
     // Adjust for critical level filtering.
-    const Int Umini = ekat::impl::max(static_cast<Int>(umin/init.dc), -pgwv);
-    const Int Umaxi = ekat::impl::min(static_cast<Int>(umax/init.dc), pgwv);
+    const Int Umini = ekat::impl::max(static_cast<Int>(std::round(umin/init.dc)), -pgwv) + pgwv;
+    const Int Umaxi = ekat::impl::min(static_cast<Int>(std::round(umax/init.dc)), pgwv) + pgwv;
 
-    const Int hdepth_i = static_cast<Int>(hdepth) - 1;
-    const Int uh_i = static_cast<Int>(uh) + cinit.maxuh;
+    const Int hdepth_i = static_cast<Int>(std::round(hdepth)) - 1;
+    const Int uh_i = static_cast<Int>(std::round(uh)) + cinit.maxuh;
     Kokkos::parallel_for(
       Kokkos::TeamVectorRange(team, num_pgwv), [&] (const int l) {
         if (Umaxi > Umini && (l >= Umini && l <= Umaxi)) {
-          tau(l, maxi) = 0;
+          tau(l, maxi+1) = 0;
         }
         else {
-          tau(l, maxi) = (cinit.mfcc(hdepth_i, uh_i, l) + shift) * maxq0 * maxq0 / tau_avg_length;
+          Int shifted_l = (l + shift + num_pgwv) % num_pgwv;
+          tau(l, maxi+1) = cinit.mfcc(hdepth_i, uh_i, shifted_l) * maxq0 * maxq0 / tau_avg_length;
         }
       });
   }  // depth >= 2.5
