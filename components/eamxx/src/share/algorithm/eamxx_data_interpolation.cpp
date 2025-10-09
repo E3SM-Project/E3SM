@@ -10,7 +10,7 @@
 #include "share/io/eamxx_io_utils.hpp"
 #include "share/util/eamxx_universal_constants.hpp"
 #include "share/util/eamxx_utils.hpp"
-#include "physics/share/physics_constants.hpp"
+#include "share/physics/physics_constants.hpp"
 
 #include <ekat_team_policy_utils.hpp>
 

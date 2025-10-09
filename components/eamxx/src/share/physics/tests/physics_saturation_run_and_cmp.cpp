@@ -1,8 +1,8 @@
 #include "catch2/catch.hpp"
 
 #include "physics_test_read_write_helpers.hpp"
-#include "physics/share/physics_functions.hpp"
-#include "physics/share/physics_saturation_impl.hpp"
+#include "share/physics/physics_functions.hpp"
+#include "share/physics/physics_saturation_impl.hpp"
 #include "physics_unit_tests_common.hpp"
 
 #include "share/util/eamxx_utils.hpp"

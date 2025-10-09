@@ -1,7 +1,7 @@
 #ifndef PHYSICS_UNIT_TESTS_COMMON_HPP
 #define PHYSICS_UNIT_TESTS_COMMON_HPP
 
-#include "physics/share/physics_functions.hpp"
+#include "share/physics/physics_functions.hpp"
 
 #include "share/core/eamxx_types.hpp"
 

@@ -3,7 +3,7 @@
 
 #include "tms_functions.hpp"
 #include "share/core/eamxx_types.hpp"
-#include "physics/share/physics_test_data.hpp"
+#include "share/physics/physics_test_data.hpp"
 
 namespace scream {
 namespace tms {

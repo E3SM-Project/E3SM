@@ -15,7 +15,7 @@
 
 #include "rrtmgp_utils.hpp"
 
-#include "physics/share/physics_constants.hpp"
+#include "share/physics/physics_constants.hpp"
 
 #include <ekat_comm.hpp>
 #include <ekat_logger.hpp>

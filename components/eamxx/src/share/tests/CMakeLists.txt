@@ -12,7 +12,4 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
     LIBS scream_share
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
     FIXTURES_REQUIRED data_interpolation_setup)
-
-  # Test common physics functions
-  CreateUnitTest(common_physics "common_physics_functions_tests.cpp")
 endif()

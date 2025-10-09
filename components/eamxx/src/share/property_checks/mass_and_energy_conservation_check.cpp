@@ -1,5 +1,5 @@
 #include "share/property_checks/mass_and_energy_conservation_check.hpp"
-#include "physics/share/physics_constants.hpp"
+#include "share/physics/physics_constants.hpp"
 #include "share/field/field_utils.hpp"
 
 #include <ekat_team_policy_utils.hpp>

@@ -2,7 +2,7 @@
 #define SHOC_SHOC_ASSUMED_PDF_IMPL_HPP
 
 #include "shoc_functions.hpp" // for ETI only but harmless for GPU
-#include "physics/share/physics_functions.hpp"
+#include "share/physics/physics_functions.hpp"
 
 #include <iomanip>
 

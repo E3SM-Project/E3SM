@@ -28,7 +28,7 @@
 #include "dynamics/homme/homme_dimensions.hpp"
 #include "dynamics/homme/homme_dynamics_helpers.hpp"
 #include "dynamics/homme/interface/eamxx_homme_interface.hpp"
-#include "physics/share/physics_constants.hpp"
+#include "share/physics/physics_constants.hpp"
 #include "share/physics/eamxx_common_physics_functions.hpp"
 #include "share/util/eamxx_column_ops.hpp"
 #include "share/property_checks/field_lower_bound_check.hpp"
