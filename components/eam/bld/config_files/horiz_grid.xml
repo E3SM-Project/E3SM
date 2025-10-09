@@ -53,11 +53,14 @@
 <horiz_grid dyn="se"    hgrid="ne30np4.pg2"  ncol="21600"   csne="30"  csnp="4" npg="2" />
 <horiz_grid dyn="se"    hgrid="ne30np4.pg3"  ncol="48600"   csne="30"  csnp="4" npg="3" />
 <horiz_grid dyn="se"    hgrid="ne30np4.pg4"  ncol="86400"   csne="30"  csnp="4" npg="4" />
+<horiz_grid dyn="se"    hgrid="ne32np4.pg2"  ncol="24576"   csne="32"  csnp="4" npg="2" />
 <horiz_grid dyn="se"    hgrid="ne45np4.pg2"  ncol="48600"   csne="45"  csnp="4" npg="2" />
 <horiz_grid dyn="se"    hgrid="ne60np4"      ncol="194402"  csne="60"  csnp="4" npg="0" />
 <horiz_grid dyn="se"    hgrid="ne60np4.pg2"  ncol="86400"   csne="60"  csnp="4" npg="2" />
+<horiz_grid dyn="se"    hgrid="ne64np4.pg2"  ncol="98304"   csne="64"  csnp="4" npg="2" />
 <horiz_grid dyn="se"    hgrid="ne120np4"     ncol="777602"  csne="120" csnp="4" npg="0" />
 <horiz_grid dyn="se"    hgrid="ne120np4.pg2" ncol="345600"  csne="120" csnp="4" npg="2" />
+<horiz_grid dyn="se"    hgrid="ne128np4.pg2" ncol="393216"  csne="128" csnp="4" npg="2" />
 <horiz_grid dyn="se"    hgrid="ne240np4"     ncol="3110402" csne="240" csnp="4" npg="0" />
 <horiz_grid dyn="se"    hgrid="ne256np4"     ncol="3538946" csne="256" csnp="4" npg="0" />
 <horiz_grid dyn="se"    hgrid="ne512np4"     ncol="14155778" csne="512"  csnp="4" npg="0" />
@@ -65,7 +68,6 @@
 <horiz_grid dyn="se"    hgrid="ne256np4.pg2" ncol="1572864"  csne="256"  csnp="4" npg="2" />
 <horiz_grid dyn="se"    hgrid="ne512np4.pg2" ncol="6291456"  csne="512"  csnp="4" npg="2" />
 <horiz_grid dyn="se"   hgrid="ne1024np4.pg2" ncol="25165824" csne="1024" csnp="4" npg="2" />
-
 
 
 <!-- Spectral Element w/ Regional Refinement -->

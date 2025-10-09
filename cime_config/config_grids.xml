@@ -1695,6 +1695,16 @@
       <mask>gx1v6</mask>
     </model_grid>
 
+    <model_grid alias="ne64pg2_r025_RRSwISC6to18E3r5">
+      <grid name="atm">ne64np4.pg2</grid>
+      <grid name="lnd">r025</grid>
+      <grid name="ocnice">RRSwISC6to18E3r5</grid>
+      <grid name="rof">r025</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>RRSwISC6to18E3r5</mask>
+    </model_grid>
+
     <model_grid alias="ne120_ne120" compset="(DOCN|XOCN|SOCN|AQP1)">
       <grid name="atm">ne120np4</grid>
       <grid name="lnd">ne120np4</grid>
@@ -1767,6 +1777,16 @@
 
     <model_grid alias="ne120pg2_r025_RRSwISC6to18E3r5">
       <grid name="atm">ne120np4.pg2</grid>
+      <grid name="lnd">r025</grid>
+      <grid name="ocnice">RRSwISC6to18E3r5</grid>
+      <grid name="rof">r025</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>RRSwISC6to18E3r5</mask>
+    </model_grid>
+
+    <model_grid alias="ne128pg2_r025_RRSwISC6to18E3r5">
+      <grid name="atm">ne128np4.pg2</grid>
       <grid name="lnd">r025</grid>
       <grid name="ocnice">RRSwISC6to18E3r5</grid>
       <grid name="rof">r025</grid>
@@ -3269,6 +3289,16 @@
     </domain>
 
     <!--=====================================================================-->
+    <!-- ne32 -->
+    <domain name="ne32np4.pg2">
+      <nx>24576</nx>
+      <ny>1</ny>
+      <file grid="atm|lnd" mask="RRSwISC6to18E3r5">$DIN_LOC_ROOT/share/domains/domain.lnd.ne32pg2_RRSwISC6to18E3r5.20251006.nc</file>
+      <file grid="ice|ocn" mask="RRSwISC6to18E3r5">$DIN_LOC_ROOT/share/domains/domain.ocn.ne32pg2_RRSwISC6to18E3r5.20251006.nc</file>
+      <desc>ne32pg2</desc>
+    </domain>
+
+    <!--=====================================================================-->
     <!-- ne45 -->
     <domain name="ne45np4.pg2">
       <nx>48600</nx>
@@ -3293,6 +3323,14 @@
       <file grid="atm|lnd" mask="gx1v6">DUMMY</file>
       <file grid="ice|ocn" mask="gx1v6">DUMMY</file>
       <desc>ne60np4.pg2 is Spectral Elem 1/2-deg grid w/ 2x2 FV physics grid per element:</desc>
+    </domain>
+
+    <domain name="ne64np4.pg2">
+      <nx>98304</nx>
+      <ny>1</ny>
+      <file grid="atm|lnd" mask="RRSwISC6to18E3r5">$DIN_LOC_ROOT/share/domains/domain.lnd.ne64pg2_RRSwISC6to18E3r5.20251006.nc</file>
+      <file grid="ice|ocn" mask="RRSwISC6to18E3r5">$DIN_LOC_ROOT/share/domains/domain.ocn.ne64pg2_RRSwISC6to18E3r5.20251006.nc</file>
+      <desc>ne64pg2</desc>
     </domain>
 
     <!--=====================================================================-->
@@ -3327,6 +3365,17 @@
       <desc>ne120np4 is Spectral Elem 1/4-deg grid w/ 2x2 FV physics grid</desc>
     </domain>
 
+    <!--=====================================================================-->
+    <!-- ne128 -->
+    <domain name="ne128np4.pg2">
+      <nx>393216</nx>
+      <ny>1</ny>
+      <file grid="atm|lnd" mask="RRSwISC6to18E3r5">$DIN_LOC_ROOT/share/domains/domain.lnd.ne128pg2_RRSwISC6to18E3r5.20251006.nc</file>
+      <file grid="ice|ocn" mask="RRSwISC6to18E3r5">$DIN_LOC_ROOT/share/domains/domain.ocn.ne128pg2_RRSwISC6to18E3r5.20251006.nc</file>
+      <desc>ne128pg2</desc>
+    </domain>
+
+    <!--=====================================================================-->
     <!-- ne240 -->
     <domain name="ne240np4">
       <nx>3110402</nx>
@@ -3395,9 +3444,6 @@
       <file grid="ice|ocn" mask="RRSwISC6to18E3r5">$DIN_LOC_ROOT/share/domains/domain.ocn.ne1024pg2_RRSwISC6to18E3r5.250421.nc</file>
       <desc>ne1024np4.pg2 is Spectral Elem 3km grid w/ 2x2 FV physics grid per element:</desc>
     </domain>
-
-
-
 
 
     <!--=====================================================================-->
