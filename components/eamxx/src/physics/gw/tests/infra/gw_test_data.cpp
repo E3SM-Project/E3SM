@@ -1342,8 +1342,118 @@ void gw_beres_src_f(GwBeresSrcData& d)
 
 void gw_beres_src(GwBeresSrcData& d)
 {
-  // For now just call f90
-  gw_beres_src_f(d);
+  gw_convect_init(d.init);
+
+  // create device views and copy
+  std::vector<view1dr_d> vec1dr_in(5);
+  ekat::host_to_device({d.hdepth, d.lat, d.maxq0_out, d.xv, d.yv}, d.ncol, vec1dr_in);
+
+  std::vector<view2dr_d> vec2dr_in(7);
+  std::vector<int> vec2dr_in_0_sizes = {d.ncol, d.ncol, d.ncol, d.ncol, d.ncol, d.ncol, d.ncol};
+  std::vector<int> vec2dr_in_1_sizes = {d.init.init.pgwv*2 + 1, d.init.init.pver, d.init.init.pver, d.init.init.pver + 1, d.init.init.pver, d.init.init.pver, d.init.init.pver};
+  ekat::host_to_device({d.c, d.netdt, d.u, d.ubi, d.ubm, d.v, d.zm}, vec2dr_in_0_sizes, vec2dr_in_1_sizes, vec2dr_in);
+
+  std::vector<view3dr_d> vec3dr_in(1);
+  ekat::host_to_device({d.tau}, d.ncol, d.init.init.pgwv*2 + 1, d.init.init.pver + 1, vec3dr_in);
+
+  std::vector<view1di_d> vec1di_in(2);
+  ekat::host_to_device({d.src_level, d.tend_level}, d.ncol, vec1di_in);
+
+  view1dr_d
+    hdepth_d(vec1dr_in[0]),
+    lat_d(vec1dr_in[1]),
+    maxq0_out_d(vec1dr_in[2]),
+    xv_d(vec1dr_in[3]),
+    yv_d(vec1dr_in[4]);
+
+  view2dr_d
+    c_d(vec2dr_in[0]),
+    netdt_d(vec2dr_in[1]),
+    u_d(vec2dr_in[2]),
+    ubi_d(vec2dr_in[3]),
+    ubm_d(vec2dr_in[4]),
+    v_d(vec2dr_in[5]),
+    zm_d(vec2dr_in[6]);
+
+  view3dr_d
+    tau_d(vec3dr_in[0]);
+
+  view1di_d
+    src_level_d(vec1di_in[0]),
+    tend_level_d(vec1di_in[1]);
+
+  const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.ncol, d.init.init.pver);
+
+  GWF::GwCommonInit init_cp = GWF::s_common_init;
+  GWF::GwConvectInit cinit_cp = GWF::s_convect_init;
+
+  // unpack data scalars because we do not want the lambda to capture d
+  const Real hdepth_min = d.hdepth_min;
+  const Real hdepth_scaling_factor = d.hdepth_scaling_factor;
+  const Real maxq0_conversion_factor = d.maxq0_conversion_factor;
+  const Real storm_speed_min = d.storm_speed_min;
+  const Int pgwv = d.init.init.pgwv;
+  const Int pver = d.init.init.pver;
+  const bool use_gw_convect_old = d.use_gw_convect_old;
+
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    const Int i = team.league_rank();
+
+    // Get single-column subviews of all inputs, shouldn't need any i-indexing
+    // after this.
+    const auto u_c = ekat::subview(u_d, i);
+    const auto v_c = ekat::subview(v_d, i);
+    const auto zm_c = ekat::subview(zm_d, i);
+    const auto tau_c = ekat::subview(tau_d, i);
+    const auto ubm_c = ekat::subview(ubm_d, i);
+    const auto ubi_c = ekat::subview(ubi_d, i);
+    const auto c_c = ekat::subview(c_d, i);
+    const auto netdt_c = ekat::subview(netdt_d, i);
+
+    GWF::gw_beres_src(
+      team,
+      init_cp,
+      cinit_cp,
+      pver,
+      pgwv,
+      lat_d(i),
+      u_c,
+      v_c,
+      netdt_c,
+      zm_c,
+      maxq0_conversion_factor,
+      hdepth_scaling_factor,
+      hdepth_min,
+      storm_speed_min,
+      use_gw_convect_old,
+      src_level_d(i),
+      tend_level_d(i),
+      tau_c,
+      ubm_c,
+      ubi_c,
+      xv_d(i),
+      yv_d(i),
+      c_c,
+      hdepth_d(i),
+      maxq0_out_d(i));
+  });
+
+  // Now get arrays
+  std::vector<view1dr_d> vec1dr_out = {hdepth_d, maxq0_out_d, xv_d, yv_d};
+  ekat::device_to_host({d.hdepth, d.maxq0_out, d.xv, d.yv}, d.ncol, vec1dr_out);
+
+  std::vector<view2dr_d> vec2dr_out = {c_d, ubi_d, ubm_d};
+  std::vector<int> vec2dr_out_0_sizes = {d.ncol, d.ncol, d.ncol};
+  std::vector<int> vec2dr_out_1_sizes = {d.init.init.pgwv*2 + 1, d.init.init.pver + 1, d.init.init.pver};
+  ekat::device_to_host({d.c, d.ubi, d.ubm}, vec2dr_out_0_sizes, vec2dr_out_1_sizes, vec2dr_out);
+
+  std::vector<view3dr_d> vec3dr_out = {tau_d};
+  ekat::device_to_host({d.tau}, d.ncol, d.init.init.pgwv*2 + 1, d.init.init.pver + 1, vec3dr_out);
+
+  std::vector<view1di_d> vec1di_out = {src_level_d, tend_level_d};
+  ekat::device_to_host({d.src_level, d.tend_level}, d.ncol, vec1di_out);
+
+  gw_finalize_cxx();
 }
 
 void gw_ediff_f(GwEdiffData& d)
