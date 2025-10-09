@@ -1503,7 +1503,7 @@ contains
 
     call t_stopf('CPL:comp_init_pre_all')
 
-    ! TRS - we need to initialize iac first so atm and lnd know it's
+    ! we need to initialize iac first so atm and lnd know it's
     ! there, via gcam_active -> iac_present
     call t_startf('comp_init_cc_iac')
     call t_adj_detailf(+2)
@@ -1793,7 +1793,7 @@ contains
        if (atm_prognostic) lnd_c2_atm = .true.
        if (rof_prognostic) lnd_c2_rof = .true.
        if (glc_prognostic) lnd_c2_glc = .true.
-       if (iac_present) lnd_c2_iac = .true.
+       if (iac_prognostic) lnd_c2_iac = .true.
     endif
     if (ocn_present) then
        if (atm_prognostic) ocn_c2_atm = .true.
@@ -4791,21 +4791,12 @@ contains
        call t_drvstartf ('CPL:BUDGET1',cplrun=lcplrun,budget=.true.,barrier=mpicom_CPLID)
        if (lnd_present) then
           call seq_diag_lnd_mct(lnd(ens1), fractions_lx(ens1), infodata, do_l2x=.true., do_x2l=.true.)
-          if (do_bgc_budgets) then
-             call seq_diagBGC_lnd_mct(lnd(ens1), fractions_lx(ens1), infodata, do_l2x=.true., do_x2l=.true.)
-          endif
        endif
        if (rof_present) then
           call seq_diag_rof_mct(rof(ens1), fractions_rx(ens1), infodata)
-          if (do_bgc_budgets) then
-             call seq_diagBGC_rof_mct(rof(ens1), fractions_rx(ens1), infodata)
-          endif
        endif
        if (ice_present) then
           call seq_diag_ice_mct(ice(ens1), fractions_ix(ens1), infodata, do_x2i=.true.)
-          if (do_bgc_budgets) then
-             call seq_diagBGC_ice_mct(ice(ens1), fractions_ix(ens1), infodata, do_x2i=.true.)
-          endif
        endif
        if (glc_present) then
           call seq_diag_glc_mct(glc(ens1), fractions_gx(ens1), infodata, do_x2g=.true.)
@@ -4845,15 +4836,9 @@ contains
        call t_drvstartf ('CPL:BUDGET2',cplrun=lcplrun,budget=.true.,barrier=mpicom_CPLID)
        if (atm_present) then
           call seq_diag_atm_mct(atm(ens1), fractions_ax(ens1), infodata, do_a2x=.true., do_x2a=.true.)
-          if (do_bgc_budgets) then
-             call seq_diagBGC_atm_mct(atm(ens1), fractions_ax(ens1), infodata, do_a2x=.true., do_x2a=.true.)
-          endif
        endif
        if (ice_present) then
           call seq_diag_ice_mct(ice(ens1), fractions_ix(ens1), infodata, do_i2x=.true.)
-          if (do_bgc_budgets) then
-             call seq_diagBGC_ice_mct(ice(ens1), fractions_ix(ens1), infodata, do_i2x=.true.)
-          endif
        endif
        if (glc_present) then
           call seq_diag_glc_mct(glc(ens1), fractions_gx(ens1), infodata, do_g2x=.true.)
