@@ -38,10 +38,10 @@ struct UnitWrap::UnitTest<D>::TestGwBeresSrc : public UnitWrap::UnitTest<D>::Bas
     // Set up inputs
     GwBeresSrcData baseline_data[] = {
       //           ncol, maxq0_conversion_factor, hdepth_scaling_factor, hdepth_min, storm_speed_min, use_gw_convect_old
-      GwBeresSrcData(10,                     0.1,                   0.2,      2000.,              1., false,  front_init_data[0]),
-      GwBeresSrcData(11,                     0.2,                   0.3,      3000.,              2., false,  front_init_data[1]),
-      GwBeresSrcData(12,                     0.3,                   0.4,      4000.,              3., true,   front_init_data[2]),
-      GwBeresSrcData(13,                     0.4,                   0.5,      5000.,              4., true,   front_init_data[3]),
+      GwBeresSrcData(10,                     0.1,                   0.2,      0.,              1., false,  front_init_data[0]),
+      GwBeresSrcData(11,                     0.2,                   0.3,      0.,              2., false,  front_init_data[1]),
+      GwBeresSrcData(12,                     0.3,                   0.4,      0.,              3., false,   front_init_data[2]),
+      GwBeresSrcData(13,                     0.4,                   0.5,      0.,              4., false,   front_init_data[3]),
     };
 
     static constexpr Int num_runs = sizeof(baseline_data) / sizeof(GwBeresSrcData);
@@ -76,7 +76,12 @@ struct UnitWrap::UnitTest<D>::TestGwBeresSrc : public UnitWrap::UnitTest<D>::Bas
 
     // Get data from test
     for (auto& d : test_data) {
-      gw_beres_src(d);
+      if (this->m_baseline_action == GENERATE) {
+        gw_beres_src_f(d);
+      }
+      else {
+        gw_beres_src(d);
+      }
     }
 
     // Verify BFB results, all data should be in C layout
@@ -84,37 +89,36 @@ struct UnitWrap::UnitTest<D>::TestGwBeresSrc : public UnitWrap::UnitTest<D>::Bas
       for (Int i = 0; i < num_runs; ++i) {
         GwBeresSrcData& d_baseline = baseline_data[i];
         GwBeresSrcData& d_test = test_data[i];
+        REQUIRE(d_baseline.total(d_baseline.tau) == d_test.total(d_test.tau));
         for (Int k = 0; k < d_baseline.total(d_baseline.tau); ++k) {
-          REQUIRE(d_baseline.total(d_baseline.tau) == d_test.total(d_test.tau));
           REQUIRE(d_baseline.tau[k] == d_test.tau[k]);
         }
+        REQUIRE(d_baseline.total(d_baseline.ubm) == d_test.total(d_test.ubm));
         for (Int k = 0; k < d_baseline.total(d_baseline.ubm); ++k) {
-          REQUIRE(d_baseline.total(d_baseline.ubm) == d_test.total(d_test.ubm));
           REQUIRE(d_baseline.ubm[k] == d_test.ubm[k]);
         }
+        REQUIRE(d_baseline.total(d_baseline.ubi) == d_test.total(d_test.ubi));
         for (Int k = 0; k < d_baseline.total(d_baseline.ubi); ++k) {
-          REQUIRE(d_baseline.total(d_baseline.ubi) == d_test.total(d_test.ubi));
           REQUIRE(d_baseline.ubi[k] == d_test.ubi[k]);
         }
+        REQUIRE(d_baseline.total(d_baseline.xv) == d_test.total(d_test.xv));
+        REQUIRE(d_baseline.total(d_baseline.xv) == d_test.total(d_test.yv));
+        REQUIRE(d_baseline.total(d_baseline.xv) == d_test.total(d_test.hdepth));
+        REQUIRE(d_baseline.total(d_baseline.xv) == d_test.total(d_test.maxq0_out));
+        REQUIRE(d_baseline.total(d_baseline.xv) == d_test.total(d_test.src_level));
+        REQUIRE(d_baseline.total(d_baseline.xv) == d_test.total(d_test.tend_level));
         for (Int k = 0; k < d_baseline.total(d_baseline.xv); ++k) {
-          REQUIRE(d_baseline.total(d_baseline.xv) == d_test.total(d_test.xv));
           REQUIRE(d_baseline.xv[k] == d_test.xv[k]);
-          REQUIRE(d_baseline.total(d_baseline.xv) == d_test.total(d_test.yv));
           REQUIRE(d_baseline.yv[k] == d_test.yv[k]);
-          REQUIRE(d_baseline.total(d_baseline.xv) == d_test.total(d_test.hdepth));
           REQUIRE(d_baseline.hdepth[k] == d_test.hdepth[k]);
-          REQUIRE(d_baseline.total(d_baseline.xv) == d_test.total(d_test.maxq0_out));
           REQUIRE(d_baseline.maxq0_out[k] == d_test.maxq0_out[k]);
-          REQUIRE(d_baseline.total(d_baseline.xv) == d_test.total(d_test.src_level));
           REQUIRE(d_baseline.src_level[k] == d_test.src_level[k]);
-          REQUIRE(d_baseline.total(d_baseline.xv) == d_test.total(d_test.tend_level));
           REQUIRE(d_baseline.tend_level[k] == d_test.tend_level[k]);
         }
         for (Int k = 0; k < d_baseline.total(d_baseline.c); ++k) {
           REQUIRE(d_baseline.total(d_baseline.c) == d_test.total(d_test.c));
           REQUIRE(d_baseline.c[k] == d_test.c[k]);
         }
-
       }
     }
     else if (this->m_baseline_action == GENERATE) {

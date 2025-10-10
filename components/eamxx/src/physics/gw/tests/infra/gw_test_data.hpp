@@ -644,7 +644,9 @@ struct GwStormSpeedData : public PhysicsTestData {
   template <ekat::TransposeDirection::Enum D>
   void transition()
   {
-    PhysicsTestData::transition<D>();
+    // Don't int-shift storm_speed, it does not represent idx data even though it
+    // it is an int array.
+    PhysicsTestData::transition<D>({storm_speed});
 
     init.transition<D>();
   }
@@ -684,7 +686,7 @@ struct GwConvectGwSourcesData : public PhysicsTestData {
   template <ekat::TransposeDirection::Enum D>
   void transition()
   {
-    PhysicsTestData::transition<D>();
+    PhysicsTestData::transition<D>({storm_speed});
 
     init.transition<D>();
   }

@@ -80,7 +80,7 @@ Default will scan ALL physics.
     parser.add_argument("-f", "--f2c", action="store_true",
                         help="Also generate f2c bindings")
 
-    parser.add_argument("-u", "--unpack", action="store_true",
+    parser.add_argument("-u", "--unpacked", action="store_true",
                         help="Real data should not be packed into SIMD packs")
 
     parser.add_argument("-c", "--col-dim", default=None,

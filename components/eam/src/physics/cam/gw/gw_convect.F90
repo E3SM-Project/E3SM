@@ -71,6 +71,7 @@ subroutine gw_convect_init( plev_src_wind, mfcc_in, errstring)
   ! Second dimension is -maxuh:maxuh (size 2*maxuh+1).
   maxuh = (size(mfcc_in,2)-1)/2
 
+  if (allocated(mfcc)) deallocate(mfcc) ! allows for repeated inits to work
   allocate(mfcc(maxh,-maxuh:maxuh,-pgwv:pgwv), stat=ierr, errmsg=errstring)
   if (ierr /= 0) return
   mfcc = mfcc_in
@@ -172,6 +173,7 @@ subroutine gw_heating_depth(ncol, maxq0_conversion_factor, hdepth_scaling_factor
   ! Find indices for the top and bottom of the heating range.
   mini = 0
   maxi = 0
+  maxq0 = 0
 
   if (use_gw_convect_old) then
      !---------------------------------------------------------------------

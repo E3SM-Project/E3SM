@@ -40,8 +40,8 @@ struct UnitWrap::UnitTest<D>::TestGwHeatingDepth : public UnitWrap::UnitTest<D>:
       //               ncol, maxq0_conversion_factor, hdepth_scaling_factor, use_gw_convect_old
       GwHeatingDepthData(2,                    0.42,                  0.43,         false, front_init_data[0]),
       GwHeatingDepthData(3,                    0.43,                  0.44,         false, front_init_data[1]),
-      GwHeatingDepthData(4,                    0.44,                  0.45,         true,  front_init_data[2]),
-      GwHeatingDepthData(5,                    0.45,                  0.46,         true,  front_init_data[3]),
+      GwHeatingDepthData(4,                    0.44,                  0.45,         false, front_init_data[2]),
+      GwHeatingDepthData(5,                    0.45,                  0.46,         false, front_init_data[3]),
     };
 
     static constexpr Int num_runs = sizeof(baseline_data) / sizeof(GwHeatingDepthData);
@@ -55,7 +55,6 @@ struct UnitWrap::UnitTest<D>::TestGwHeatingDepth : public UnitWrap::UnitTest<D>:
     // Create copies of data for use by test. Needs to happen before read calls so that
     // inout data is in original state
     GwHeatingDepthData test_data[] = {
-      // TODO
       GwHeatingDepthData(baseline_data[0]),
       GwHeatingDepthData(baseline_data[1]),
       GwHeatingDepthData(baseline_data[2]),
@@ -71,7 +70,12 @@ struct UnitWrap::UnitTest<D>::TestGwHeatingDepth : public UnitWrap::UnitTest<D>:
 
     // Get data from test
     for (auto& d : test_data) {
-      gw_heating_depth(d);
+      if (this->m_baseline_action == GENERATE) {
+        gw_heating_depth_f(d);
+      }
+      else {
+        gw_heating_depth(d);
+      }
     }
 
     // Verify BFB results, all data should be in C layout
@@ -79,19 +83,18 @@ struct UnitWrap::UnitTest<D>::TestGwHeatingDepth : public UnitWrap::UnitTest<D>:
       for (Int i = 0; i < num_runs; ++i) {
         GwHeatingDepthData& d_baseline = baseline_data[i];
         GwHeatingDepthData& d_test = test_data[i];
+        REQUIRE(d_baseline.total(d_baseline.hdepth) == d_test.total(d_test.hdepth));
+        REQUIRE(d_baseline.total(d_baseline.hdepth) == d_test.total(d_test.maxq0_out));
+        REQUIRE(d_baseline.total(d_baseline.hdepth) == d_test.total(d_test.maxq0));
+        REQUIRE(d_baseline.total(d_baseline.hdepth) == d_test.total(d_test.mini));
+        REQUIRE(d_baseline.total(d_baseline.hdepth) == d_test.total(d_test.maxi));
         for (Int k = 0; k < d_baseline.total(d_baseline.hdepth); ++k) {
-          REQUIRE(d_baseline.total(d_baseline.hdepth) == d_test.total(d_test.hdepth));
           REQUIRE(d_baseline.hdepth[k] == d_test.hdepth[k]);
-          REQUIRE(d_baseline.total(d_baseline.hdepth) == d_test.total(d_test.maxq0_out));
           REQUIRE(d_baseline.maxq0_out[k] == d_test.maxq0_out[k]);
-          REQUIRE(d_baseline.total(d_baseline.hdepth) == d_test.total(d_test.maxq0));
           REQUIRE(d_baseline.maxq0[k] == d_test.maxq0[k]);
-          REQUIRE(d_baseline.total(d_baseline.hdepth) == d_test.total(d_test.mini));
           REQUIRE(d_baseline.mini[k] == d_test.mini[k]);
-          REQUIRE(d_baseline.total(d_baseline.hdepth) == d_test.total(d_test.maxi));
           REQUIRE(d_baseline.maxi[k] == d_test.maxi[k]);
         }
-
       }
     }
     else if (this->m_baseline_action == GENERATE) {
