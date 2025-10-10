@@ -7,8 +7,9 @@ module  zm_microphysics_history
    use ppgrid,                only: pcols, pver, pverp
    use zm_microphysics_state, only: zm_microp_st
 
-   public :: zm_microphysics_history_init ! add fields for history output
-   public :: zm_microphysics_history_out  ! write history output related to ZM microphysics
+   public :: zm_microphysics_history_init    ! add fields for history output
+   public :: zm_microphysics_history_convert ! convert ZM microphysics prior to output
+   public :: zm_microphysics_history_out     ! write history output related to ZM microphysics
   
 !===================================================================================================
 contains
@@ -129,6 +130,76 @@ subroutine zm_microphysics_history_init()
    call add_default( 'FRZZM',    1, ' ')
 
 end subroutine zm_microphysics_history_init
+
+!===================================================================================================
+
+subroutine zm_microphysics_history_convert( ncol, microp_st, pmid, temperature )
+   !----------------------------------------------------------------------------
+   ! Purpose: convert ZM microphysics prior to output
+   !----------------------------------------------------------------------------
+   use zm_conv,         only: zm_const
+   !----------------------------------------------------------------------------
+   ! Arguments
+   integer,                         intent(in   ) :: ncol      ! number of columns in chunk
+   type(zm_microp_st),              intent(inout) :: microp_st    ! ZM microphysics data structure
+   real(r8), dimension(pcols,pver), intent(in   ) :: pmid         ! pressure at mid-points   [Pa]
+   real(r8), dimension(pcols,pver), intent(in   ) :: temperature  ! ambient temperature      [K]
+   !----------------------------------------------------------------------------
+   ! Local variables
+   integer  :: i,k
+   real(r8) :: rho
+   !----------------------------------------------------------------------------
+   do i = 1,ncol
+      do k = 1,pver
+         ! Interpolate variable from interface to mid-layer.
+         if (k<pver) then
+            microp_st%qice    (i,k) = 0.5_r8*(microp_st%qice    (i,k)+microp_st%qice    (i,k+1))
+            microp_st%qliq    (i,k) = 0.5_r8*(microp_st%qliq    (i,k)+microp_st%qliq    (i,k+1))
+            microp_st%qrain   (i,k) = 0.5_r8*(microp_st%qrain   (i,k)+microp_st%qrain   (i,k+1))
+            microp_st%qsnow   (i,k) = 0.5_r8*(microp_st%qsnow   (i,k)+microp_st%qsnow   (i,k+1))
+            microp_st%qgraupel(i,k) = 0.5_r8*(microp_st%qgraupel(i,k)+microp_st%qgraupel(i,k+1))
+            microp_st%qni     (i,k) = 0.5_r8*(microp_st%qni     (i,k)+microp_st%qni     (i,k+1))
+            microp_st%qnl     (i,k) = 0.5_r8*(microp_st%qnl     (i,k)+microp_st%qnl     (i,k+1))
+            microp_st%qnr     (i,k) = 0.5_r8*(microp_st%qnr     (i,k)+microp_st%qnr     (i,k+1))
+            microp_st%qns     (i,k) = 0.5_r8*(microp_st%qns     (i,k)+microp_st%qns     (i,k+1))
+            microp_st%qng     (i,k) = 0.5_r8*(microp_st%qng     (i,k)+microp_st%qng     (i,k+1))
+            microp_st%wu      (i,k) = 0.5_r8*(microp_st%wu      (i,k)+microp_st%wu      (i,k+1))
+         end if
+         ! for levels at the freezing level move ice upward
+         if (k>1) then
+            if ( temperature(i,k).gt.zm_const%tfreez .and. temperature(i,k-1).le.zm_const%tfreez ) then
+               microp_st%qice    (i,k-1) = microp_st%qice    (i,k-1) + microp_st%qice    (i,k)
+               microp_st%qni     (i,k-1) = microp_st%qni     (i,k-1) + microp_st%qni     (i,k)
+               microp_st%qsnow   (i,k-1) = microp_st%qsnow   (i,k-1) + microp_st%qsnow   (i,k)
+               microp_st%qns     (i,k-1) = microp_st%qns     (i,k-1) + microp_st%qns     (i,k)
+               microp_st%qgraupel(i,k-1) = microp_st%qgraupel(i,k-1) + microp_st%qgraupel(i,k)
+               microp_st%qng     (i,k-1) = microp_st%qng     (i,k-1) + microp_st%qng     (i,k)
+               microp_st%qice    (i,k)   = 0._r8
+               microp_st%qni     (i,k)   = 0._r8
+               microp_st%qsnow   (i,k)   = 0._r8
+               microp_st%qns     (i,k)   = 0._r8
+               microp_st%qgraupel(i,k)   = 0._r8
+               microp_st%qng     (i,k)   = 0._r8
+            end if
+         end if
+      end do ! k
+      ! Convert units from "kg/kg" to "g/m3"
+      do k = 1,pver
+         rho = pmid(i,k)/(temperature(i,k)*zm_const%rdair)
+         microp_st%qice    (i,k) = microp_st%qice(i,k)     * rho *1000._r8
+         microp_st%qliq    (i,k) = microp_st%qliq(i,k)     * rho *1000._r8
+         microp_st%qrain   (i,k) = microp_st%qrain(i,k)    * rho *1000._r8
+         microp_st%qsnow   (i,k) = microp_st%qsnow(i,k)    * rho *1000._r8
+         microp_st%qgraupel(i,k) = microp_st%qgraupel(i,k) * rho *1000._r8
+         microp_st%qni     (i,k) = microp_st%qni(i,k)      * rho
+         microp_st%qnl     (i,k) = microp_st%qnl(i,k)      * rho
+         microp_st%qnr     (i,k) = microp_st%qnr(i,k)      * rho
+         microp_st%qns     (i,k) = microp_st%qns(i,k)      * rho
+         microp_st%qng     (i,k) = microp_st%qng(i,k)      * rho
+      end do ! k
+   end do ! i
+
+end subroutine zm_microphysics_history_convert
 
 !===================================================================================================
 
