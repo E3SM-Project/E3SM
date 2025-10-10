@@ -150,7 +150,6 @@ contains
     integer :: iCell, iEdge, iVertex, k, idx
     integer :: count
     real(kind=RKIND) :: lon, lat
-    real(kind=RKIND) :: lon_min, lon_max, lat_min, lat_max
     real(kind=RKIND) :: bathyVertex
 
     ! Define dimension pointers
@@ -251,11 +250,6 @@ contains
     ! Cells
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     print*, "Begin cells", nCellsSolve
-
-    lon_min = -79.0
-    lon_max = -70.0
-    lat_min = 35.0
-    lat_max = 42.0
 
     nSubgridTriPerSlice = subgrid_refinement_level**2
     allocate(rSubgridPoints(3,maxEdges*nSubgridTriPerSlice), sSubgridPoints(3,maxEdges*nSubgridTriPerSlice))
@@ -650,17 +644,17 @@ vertex: do iVertex = 1,nVerticesSolve
           subgridSshCellTableRange(2) =  SSHMin + 2.0_RKIND*config_drying_min_cell_height  
       endif 
 
-      if (subgridSshCellTableRange(1) < -8.0_RKIND) then
-          subgridSshCellTableRange(1) = -8.0_RKIND
+      if (subgridSshCellTableRange(1) < config_subgrid_ssh_table_min) then
+          subgridSshCellTableRange(1) = config_subgrid_ssh_table_min
       endif
 
-      if (subgridSshCellTableRange(2) > 8.0_RKIND) then
-          subgridSshCellTableRange(2) = 8.0_RKIND
+      if (subgridSshCellTableRange(2) > config_subgrid_ssh_table_max) then
+          subgridSshCellTableRange(2) = config_subgrid_ssh_table_max
       endif
 
       if (present(lower_only)) then
          if (lower_only .eqv. .true.) then
-            subgridSshCellTableRange(2) = 8.0_RKIND
+            subgridSshCellTableRange(2) = config_subgrid_ssh_table_max
          endif
       endif
 
@@ -1068,7 +1062,7 @@ vertex: do iVertex = 1,nVerticesSolve
         do tri = 1,nSubgridCV
 
           H = max(ssh+subgridBathymetryValues(tri),subgrid_thin_layer) 
-          if (H > 0.0_RKIND) then
+          if ((H > 0.0_RKIND) .and. (subgridManningsValues(tri) > 0.0_RKIND)) then
              num = num + H*subgridAreas(tri)
              den = den + H**(5.0_RKIND/3.0_RKIND)/sqrt(gravity)/subgridManningsValues(tri)*subgridAreas(tri)
           endif
