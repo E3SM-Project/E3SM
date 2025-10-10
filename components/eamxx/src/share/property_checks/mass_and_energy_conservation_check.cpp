@@ -402,6 +402,7 @@ void MassAndEnergyConservationCheck::global_fixer(const bool air_sea_surface_wat
       energy_change(i) = compute_energy_boundary_flux_on_column(vapor_flux(i), water_flux(i), ice_flux(i), heat_flux(i))*dt;
       
       // Add h2otemp contribution to energy change if air sea surface water thermo fixer is enabled
+      // NOTE: careful, operating on ptr, probably a good idea to move this to a view...
       if (air_sea_surface_water_thermo_fixer && h2otemp_ptr != nullptr) {
         energy_change(i) += h2otemp_ptr[i] * dt;
       }

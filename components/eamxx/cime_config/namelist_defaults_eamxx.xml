@@ -191,7 +191,7 @@ be lost if SCREAM_HACK_XML is not enabled.
            in-fields. <= 0 disables hashing. -->
       <enable_column_conservation_checks>false</enable_column_conservation_checks>
       <enable_energy_fixer type="logical" doc="Turn on energy fixer for dycore (fixes dycore, pressure adjustment, PD coupling)">true</enable_energy_fixer>
-      <enable_air_sea_surface_water_thermo_fixer type="logical" doc="Turn on energy fixer for inconsistent internal energy due to mismatch with ocean water temperature, works by adding to energy fixer above">true</enable_air_sea_surface_water_thermo_fixer>
+      <enable_air_sea_surface_water_thermo_fixer type="logical" doc="Turn on energy fixer for inconsistent internal energy due to mismatch with ocean water thermodynamics, works by adding to energy fixer above">true</enable_air_sea_surface_water_thermo_fixer>
       <!-- true means 2 more calls to AllReduce after dycore -->
       <enable_energy_fixer_debug_info type="logical" doc="Prints debug info that energy fixer indeed fixed energy (cost of an MPI reduce)">false</enable_energy_fixer_debug_info>
       <bfb_hash type="integer">18</bfb_hash>

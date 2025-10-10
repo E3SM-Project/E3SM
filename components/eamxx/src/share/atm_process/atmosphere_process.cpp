@@ -199,8 +199,8 @@ void AtmosphereProcess::run (const double dt) {
                               false, true, true);
 
     if (has_energy_fixer()){
-      const bool & water_thermo_fixer = has_air_sea_surface_water_thermo_fixer();
-      const bool & debug_info = has_energy_fixer_debug_info();
+      const bool water_thermo_fixer = has_air_sea_surface_water_thermo_fixer();
+      const bool debug_info = has_energy_fixer_debug_info();
       fix_energy(dt_sub, water_thermo_fixer, debug_info);
     }
 
