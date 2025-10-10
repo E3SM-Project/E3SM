@@ -1384,6 +1384,8 @@ void gw_beres_src(GwBeresSrcData& d)
 
   const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.ncol, d.init.init.pver);
 
+  WSM wsm(16, 1, policy);
+
   GWF::GwCommonInit init_cp = GWF::s_common_init;
   GWF::GwConvectInit cinit_cp = GWF::s_convect_init;
 
@@ -1412,6 +1414,7 @@ void gw_beres_src(GwBeresSrcData& d)
 
     GWF::gw_beres_src(
       team,
+      wsm.get_workspace(team),
       init_cp,
       cinit_cp,
       pver,

@@ -35,10 +35,6 @@ void Functions<S,D>::gw_heating_depth(
   // Find indices for the top and bottom of the heating range.
   EKAT_KERNEL_REQUIRE_MSG(!use_gw_convect_old, "The old gw convect algorithm is not supported");
 
-  // The type that holds both min and max results
-  using ResultType = Kokkos::MinMax<Int>::value_type;
-  ResultType min_max_result;
-
   //---------------------------------------------------------------------
   // cleaner version that addresses bug in original where heating max and
   // depth were too low whenever heating <=0 occurred in the middle of

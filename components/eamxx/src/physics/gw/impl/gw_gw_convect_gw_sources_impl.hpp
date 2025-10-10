@@ -49,7 +49,7 @@ void Functions<S,D>::gw_convect_gw_sources(
     //------------------------------------------------------------------
 
     // Shift spectrum so that it is relative to the ground.
-    const Int shift = -static_cast<Int>(std::round(storm_speed/init.dc));
+    const Int shift = -static_cast<Int>(std::round(storm_speed/init.dc)) % num_pgwv;
 
     // Adjust for critical level filtering.
     const Int Umini = ekat::impl::max(static_cast<Int>(std::round(umin/init.dc)), -pgwv) + pgwv;

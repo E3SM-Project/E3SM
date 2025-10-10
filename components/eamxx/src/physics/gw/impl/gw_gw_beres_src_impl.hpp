@@ -16,6 +16,7 @@ KOKKOS_FUNCTION
 void Functions<S,D>::gw_beres_src(
   // Inputs
   const MemberType& team,
+  const Workspace& workspace,
   const GwCommonInit& init,
   const GwConvectInit& cinit,
   const Int& pver,
@@ -42,20 +43,26 @@ void Functions<S,D>::gw_beres_src(
   Real& hdepth,
   Real& maxq0_out)
 {
+  // Note all locals must be shared per team so that we have team-consistent
+  // views of these values.
+  auto local_storage = workspace.take("local_storage");
+
   // Maximum heating rate.
-  Real maxq0(0);
+  Real& maxq0 = local_storage(0); maxq0 = 0;
 
   // Bottom/top heating range index.
-  Int mini(0), maxi(0);
+  Int& mini = reinterpret_cast<Int&>(local_storage(1)); mini = 0;
+  Int& maxi = reinterpret_cast<Int&>(local_storage(2)); maxi = 0;
 
   // Mean wind in heating region.
-  Real uh(0);
+  Real& uh = local_storage(3); uh = 0;
 
   // Min/max projected wind value in each column.
-  Real Umin(0), Umax(0);
+  Real& Umin = local_storage(4); Umin = 0;
+  Real& Umax = local_storage(5); Umax = 0;
 
   // Speed of convective cells relative to storm.
-  Int storm_speed(0);
+  Int& storm_speed = reinterpret_cast<Int&>(local_storage(6)); storm_speed = 0;
 
   // note: the heating_altitude_max is probably not needed because there is
   // rarely any convective heating above this level and the performance impact
@@ -109,6 +116,8 @@ void Functions<S,D>::gw_beres_src(
     Kokkos::TeamVectorRange(team, init.cref.size()), [&] (const int l) {
       c(l) = init.cref(l);
     });
+
+  workspace.release(local_storage);
 }
 
 } // namespace gw

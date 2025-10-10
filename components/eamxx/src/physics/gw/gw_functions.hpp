@@ -544,6 +544,7 @@ struct Functions
   static void gw_beres_src(
     // Inputs
     const MemberType& team,
+    const Workspace& workspace,
     const GwCommonInit& init,
     const GwConvectInit& cinit,
     const Int& pver,
