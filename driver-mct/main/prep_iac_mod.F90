@@ -34,7 +34,6 @@ module prep_iac_mod
   public :: prep_iac_accum
   public :: prep_iac_accum_avg
 
-  public :: iac_avect_max
   public :: prep_iac_zero_max
 
   public :: prep_iac_calc_l2x_zx
@@ -253,10 +252,8 @@ contains
           write(logunit,*) 'TRS eli = ', eli, num_inst_lnd
 
           call mct_avect_avg(l2zacc_lx(eli),l2zacc_lx_cnt)
-          !call iac_avect_max(l2zacc_lx(eli), l2zmax_lx(eli))
           
           call mct_avect_info(4,l2zacc_lx(eli),istr='TRS l2zacc')
-          !call mct_avect_info(4,l2zmax_lx(eli),istr='TRS l2zmax')
        end do
     endif
     l2zacc_lx_cnt = 0
@@ -264,44 +261,6 @@ contains
     
 
   end subroutine prep_iac_accum_avg
-
-  subroutine iac_avect_max(avect, max_avect)
-    !---------------------------------------------------------------
-    ! Description
-    ! MCT-like function to take the max between two avects at each grid
-    ! point.  Used to build up the max of monthly means - after we
-    ! accum each month, call this to compare with current max
-    !
-    ! Arguments
-    type(mct_aVect),intent(inout) :: avect     ! current avect
-    type(mct_aVect),intent(inout) :: max_avect ! max avect
-    !
-    ! Local Variables
-   !--- local ---
-   integer(IN) :: i,j    ! generic indicies
-   integer(IN) :: npts   ! number of points (local) in an aVect field
-   integer(IN) :: nflds  ! number of aVect fields (real)
-   real(R8)    :: ravg   ! accumulation count
-
-   character(*), parameter :: subname = '(iac_avect_max)'
-   !---------------------------------------------------------------
-   nflds = mct_aVect_nRAttr(aVect)
-   npts  = mct_aVect_lsize (aVect)
-!DIR$ CONCURRENT
-!DIR$ PREFERVECTOR
-   
-   do i=1,npts
-      do j=1,nflds
-         ! Max goes in max_avect, so over multiple calls you build
-         ! the max across all avects
-         if (.not. isnan(avect%rattr(j,i))) then
-            if (avect%rattr(j,i) .gt. max_avect%rattr(j,i)) then 
-               max_avect%rattr(j,i) = avect%rattr(j,i)
-            endif
-         endif
-      end do
-   end do
- end subroutine iac_avect_max
 
   !================================================================================================
  subroutine prep_iac_zero_max()
