@@ -3,7 +3,7 @@
 #include "share/util/eamxx_universal_constants.hpp"
 #include "share/remap/refining_remapper_p2p.hpp"
 #include "share/util/eamxx_utils.hpp"
-#include "share/io/eamxx_scorpio_interface.hpp"
+#include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 
 #include <ekat_lin_interp.hpp>
 #include <ekat_math_utils.hpp>

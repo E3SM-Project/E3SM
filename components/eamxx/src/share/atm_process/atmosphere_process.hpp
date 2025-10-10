@@ -3,15 +3,15 @@
 
 #include "share/atm_process/atmosphere_process_utils.hpp"
 #include "share/atm_process/ATMBufferManager.hpp"
-#include "share/atm_process/SCDataManager.hpp"
-#include "share/atm_process/IOPDataManager.hpp"
-#include "share/field/field_identifier.hpp"
-#include "share/manager/field_manager.hpp"
+#include "share/data_managers/IOPDataManager.hpp"
+#include "share/data_managers/SCDataManager.hpp"
+#include "share/data_managers/grids_manager.hpp"
+#include "share/data_managers/field_manager.hpp"
 #include "share/property_checks/property_check.hpp"
+#include "share/field/field_identifier.hpp"
 #include "share/field/field_request.hpp"
 #include "share/field/field.hpp"
 #include "share/field/field_group.hpp"
-#include "share/manager/grids_manager.hpp"
 
 #include <ekat_comm.hpp>
 #include <ekat_parameter_list.hpp>
@@ -87,7 +87,7 @@ public:
 
   using prop_check_ptr = std::shared_ptr<PropertyCheck>;
 
-  using iop_data_ptr = std::shared_ptr<control::IOPDataManager>;
+  using iop_data_ptr = std::shared_ptr<IOPDataManager>;
 
   // Base constructor to set MPI communicator and params
   AtmosphereProcess (const ekat::Comm& comm, const ekat::ParameterList& params);
@@ -278,6 +278,7 @@ public:
   // Boolean that dictates whether or not the conservation checks are run for this process
   bool has_column_conservation_check () { return m_conservation_data.has_column_conservation_check; }
   bool has_energy_fixer () { return m_conservation_data.has_energy_fixer; }
+  bool has_air_sea_surface_water_thermo_fixer () { return m_conservation_data.has_air_sea_surface_water_thermo_fixer; }
   bool has_energy_fixer_debug_info () { return m_conservation_data.has_energy_fixer_debug_info; }
 
   // Print a global hash of internal fields (useful for debugging non-bfbness)
@@ -546,7 +547,7 @@ private:
   // check: dt, tolerance, current mass and energy value per column.
   void compute_column_conservation_checks_data (const double dt);
 
-  void fix_energy (const double dt, const bool & print_debug_info);
+  void fix_energy (const double dt, const bool water_thermo_fixer, const bool print_debug_info);
 
   // Run an individual property check. The input property_check_category_name
   void run_property_check (const prop_check_ptr&       property_check,
@@ -595,6 +596,7 @@ private:
     // mass or energy or both? rename
     Real tolerance;
     bool has_energy_fixer;
+    bool has_air_sea_surface_water_thermo_fixer;
     bool has_energy_fixer_debug_info;
   };
   ConservationData m_conservation_data;

@@ -1,8 +1,14 @@
 # Core types and configuration options
 add_subdirectory(core)
 
+# Low-level scorpio interfaces
+add_subdirectory(scorpio_interface)
+
 # Small/generic utilities
 add_subdirectory(util)
+
+# Basic physics constant/functions
+add_subdirectory(physics)
 
 # Field structures
 add_subdirectory(field)
@@ -10,38 +16,26 @@ add_subdirectory(field)
 # Grid structures
 add_subdirectory(grid)
 
+# Property checks structures
+add_subdirectory(property_checks)
+
+# Remapper structures
+add_subdirectory(remap)
+
+# Data managers structures
+add_subdirectory(data_managers)
+
+# Atm process
+add_subdirectory(atm_process)
+
+# IO library
+add_subdirectory(io)
+
 set(SHARE_SRC
-  atm_process/atmosphere_process.cpp
-  atm_process/atmosphere_process_hash.cpp
-  atm_process/atmosphere_process_group.cpp
-  atm_process/atmosphere_process_dag.cpp
-  atm_process/atmosphere_diagnostic.cpp
-  atm_process/IOPDataManager.cpp
-  remap/abstract_remapper.cpp
-  remap/coarsening_remapper.cpp
-  remap/horiz_interp_remapper_base.cpp
-  remap/horiz_interp_remapper_data.cpp
-  remap/iop_remapper.cpp
-  remap/identity_remapper.cpp
-  remap/refining_remapper_p2p.cpp
-  remap/vertical_remapper.cpp
-  manager/field_manager.cpp
-  manager/grids_manager.cpp
-  property_checks/property_check.cpp
-  property_checks/field_nan_check.cpp
-  property_checks/field_within_interval_check.cpp
-  property_checks/mass_and_energy_conservation_check.cpp
   algorithm/eamxx_data_interpolation.cpp
   algorithm/eamxx_fv_phys_rrtmgp_active_gases_workaround.cpp
   algorithm/eamxx_time_interpolation.cpp
 )
-
-if (EAMXX_ENABLE_EXPERIMENTAL_CODE)
-  list (APPEND
-    SHARE_SRC
-    remap/refining_remapper_rma.cpp
-  )
-endif()
 
 add_library(scream_share ${SHARE_SRC})
 
@@ -53,14 +47,22 @@ target_include_directories(scream_share PUBLIC
 
 target_link_libraries(scream_share PUBLIC
   eamxx_core
+  eamxx_scorpio_interface
   eamxx_utils
   eamxx_field
-  eamxx_grid)
+  eamxx_grid
+  eamxx_remap
+  eamxx_property_checks
+  eamxx_data_managers
+  eamxx_atm_process
+  scream_io)
 
 # Used in the data interpolation
 target_link_libraries(scream_share PUBLIC stdc++fs)
 
-target_link_libraries(scream_share PUBLIC ekat::AllLibs pioc)
+if (NOT SCREAM_LIB_ONLY)
+  add_subdirectory(tests)
+endif()
 
 # The "build_cf_dictionary" target downloads an XML file containing valid field
 # names and aliases based on the CF conventions, and transforms it into a YAML
@@ -75,19 +77,4 @@ if (NOT WGET STREQUAL "WGET-NOTFOUND")
     COMMAND ${PROJECT_SOURCE_DIR}/scripts/cf-xml-to-yaml ${CF_CONVENTIONS_XML_FILE}
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/data
     COMMENT "Downloading CF conventions XML file and building YAML dictionary...")
-endif()
-
-# IO library
-add_subdirectory(io)
-
-if (NOT SCREAM_LIB_ONLY)
-  # Create test_support lib
-  add_library(scream_test_support
-    manager/mesh_free_grids_manager.cpp
-  )
-  target_link_libraries(scream_test_support PUBLIC scream_share scream_io)
-  target_include_directories (scream_test_support PUBLIC ${EKAT_SOURCE_DIR}/extern/Catch2/single_include)
-
-  add_subdirectory(tests)
-  add_subdirectory(io/tests)
 endif()

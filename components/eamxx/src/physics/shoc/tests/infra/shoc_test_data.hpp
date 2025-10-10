@@ -2,7 +2,7 @@
 #define SCREAM_SHOC_FUNCTIONS_F90_HPP
 
 #include "share/core/eamxx_types.hpp"
-#include "physics/share/physics_test_data.hpp"
+#include "share/physics/physics_test_data.hpp"
 
 #include "shoc_functions.hpp"
 #include "physics_constants.hpp"

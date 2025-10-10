@@ -3,7 +3,7 @@
 
 #include "share/remap/identity_remapper.hpp"
 #include "share/remap/refining_remapper_p2p.hpp"
-#include "share/io/eamxx_scorpio_interface.hpp"
+#include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 
 #include <ekat_team_policy_utils.hpp>
 

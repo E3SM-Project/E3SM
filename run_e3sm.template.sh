@@ -545,6 +545,7 @@ runtime_options() {
 	echo '$RUN_REFDIR = '${RUN_REFDIR}
 	echo '$RUN_REFCASE = '${RUN_REFCASE}
 	echo '$RUN_REFDATE = '${START_DATE}
+	./preview_namelists
 
     else
         echo 'ERROR: $MODEL_START_TYPE = '${MODEL_START_TYPE}' is unrecognized. Exiting.'

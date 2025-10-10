@@ -10,7 +10,7 @@
 
 // Scream includes
 #include "share/algorithm/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp"
-#include "share/manager/field_manager.hpp"
+#include "share/data_managers/field_manager.hpp"
 #include "dynamics/homme/homme_dimensions.hpp"
 
 // Ekat includes

@@ -1,11 +1,11 @@
 #include "catch2/catch.hpp"
 
-#include "share/manager/mesh_free_grids_manager.hpp"
+#include "share/data_managers/mesh_free_grids_manager.hpp"
 #include "diagnostics/relative_humidity.hpp"
 #include "diagnostics/register_diagnostics.hpp"
 
-#include "physics/share/physics_constants.hpp"
-#include "physics/share/physics_functions.hpp" 
+#include "share/physics/physics_constants.hpp"
+#include "share/physics/physics_functions.hpp" 
 
 #include "share/core/eamxx_setup_random_test.hpp"
 #include "share/physics/eamxx_common_physics_functions.hpp"

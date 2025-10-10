@@ -341,7 +341,7 @@ contains
 #ifdef MPAS_OPENACC
       !$acc parallel loop &
       !$acc    present(sfcStress,ekeCorrection,windSpeed10m,normalVelocity, &
-      !$acc            iceFraction,cellsOnEdge)
+      !$acc            iceFraction,cellsOnEdge) &
       !$acc    private(cell1, cell2, leadingCoeff, u10m)
 #else
       !$omp parallel
@@ -372,7 +372,7 @@ contains
       !$acc parallel loop &
       !$acc    present(sfcStressMag, windStressZonal, windStressMerid, &
       !$acc            velocityZonal, velocityMeridional, minLevelCell, &
-      !$acc            iceFraction)
+      !$acc            iceFraction) &
       !$acc    private(leadingCoeff, eddyKillCorrZon, eddyKillCorrMer)
 #else
       !$omp parallel
@@ -420,8 +420,8 @@ contains
 #ifdef MPAS_OPENACC
       !$acc exit data delete(zonalWSEdge, meridWSEdge)
       !*** Transfer any needed data back to host and delete inputs
-      !$acc copyout(ekeCorrection)
       !$acc exit data &
+      !$acc    copyout(ekeCorrection) &
       !$acc    delete(windStressZonal, windStressMerid, windSpeed10m, iceFraction, &
       !$acc           velocityZonal, velocityMeridional, normalVelocity, ekeCorrection)
 #endif

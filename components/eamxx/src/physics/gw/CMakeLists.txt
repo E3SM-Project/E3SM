@@ -36,7 +36,7 @@ target_include_directories(gw PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_CURRENT_SOURCE_DIR}/impl
 )
-target_link_libraries(gw physics_share scream_share)
+target_link_libraries(gw eamxx_physics_share scream_share)
 
 if (NOT SCREAM_LIB_ONLY)
   add_subdirectory(tests)

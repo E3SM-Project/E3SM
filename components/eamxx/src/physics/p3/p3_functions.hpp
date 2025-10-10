@@ -1,7 +1,7 @@
 #ifndef P3_FUNCTIONS_HPP
 #define P3_FUNCTIONS_HPP
 
-#include "physics/share/physics_constants.hpp"
+#include "share/physics/physics_constants.hpp"
 
 #include "share/core/eamxx_types.hpp"
 
