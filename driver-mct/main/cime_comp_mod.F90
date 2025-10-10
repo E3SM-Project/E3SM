@@ -107,6 +107,7 @@ module cime_comp_mod
   use seq_timemgr_mod, only: seq_timemgr_alarm_wavrun
   use seq_timemgr_mod, only: seq_timemgr_alarm_esprun
   use seq_timemgr_mod, only: seq_timemgr_alarm_iacrun
+  use seq_timemgr_mod, only: seq_timemgr_alarm_iacrun_avg
   use seq_timemgr_mod, only: seq_timemgr_alarm_barrier
   use seq_timemgr_mod, only: seq_timemgr_alarm_pause
   use seq_timemgr_mod, only: seq_timemgr_pause_active
@@ -327,6 +328,7 @@ module cime_comp_mod
   logical  :: wavrun_alarm           ! wav run alarm
   logical  :: esprun_alarm           ! esp run alarm
   logical  :: iacrun_alarm           ! iac run alarm
+  logical  :: iacrun_avg_alarm       ! iac averaging alarm
   logical  :: tprof_alarm            ! timing profile alarm
   logical  :: barrier_alarm          ! barrier alarm
   logical  :: t1hr_alarm             ! alarm every hour
@@ -499,7 +501,8 @@ module cime_comp_mod
   logical  :: samegrid_og            ! samegrid glc and ocean
   logical  :: samegrid_ig            ! samegrid glc and ice
   logical  :: samegrid_alo           ! samegrid atm, lnd, ocean
-  logical  :: samegrid_zl            ! samegrid iac and land
+  logical  :: samegrid_lz            ! samegrid iac and land
+  logical  :: samegrid_az            ! samegrid iac and atm
 
   logical       :: read_restart      ! local read restart flag
   character(CL) :: rest_file         ! restart file path + filename
@@ -528,6 +531,7 @@ module cime_comp_mod
   logical :: do_hist_a2x3hr          ! create aux files: a2x 3hr states
   logical :: do_hist_a2x1hri         ! create aux files: a2x 1hr instantaneous
   logical :: do_hist_a2x1hr          ! create aux files: a2x 1hr
+  logical :: do_hist_z2x             ! create aux files: z2x
   integer :: budget_inst             ! instantaneous budget flag
   integer :: budget_daily            ! daily budget flag
   integer :: budget_month            ! monthly budget flag
@@ -1203,6 +1207,7 @@ contains
          histaux_l2x=do_hist_l2x                   , &
          histaux_l2x1yrg=do_hist_l2x1yrg           , &
          histaux_r2x=do_hist_r2x                   , &
+         histaux_z2x=do_hist_z2x                   , &
          run_barriers=run_barriers                 , &
          mct_usealltoall=mct_usealltoall           , &
          mct_usevector=mct_usevector               , &
@@ -1412,7 +1417,8 @@ contains
             ice_present=ice_present,              &
             rof_present=rof_present,              &
             flood_present=flood_present,          &
-            rofice_present=rofice_present)
+            rofice_present=rofice_present,        &
+            iac_present=iac_present)
 
        call seq_infodata_putData(infodata,  &
             lnd_present=lnd_present,        &
@@ -1420,7 +1426,8 @@ contains
             ice_present=ice_present,        &
             rof_present=rof_present,        &
             flood_present=flood_present,    &
-            rofice_present=rofice_present)
+            rofice_present=rofice_present,  &
+            iac_present=iac_present)
     endif
     if(PIO_FILE_IS_OPEN(pioid)) then
        call pio_closefile(pioid)
@@ -1482,6 +1489,8 @@ contains
     endif
 
     call t_startf('CPL:comp_init_pre_all')
+    call component_init_pre(iac, IACID, CPLIACID, CPLALLIACID, infodata, &
+       ntype='iac')
     call component_init_pre(atm, ATMID, CPLATMID, CPLALLATMID, infodata, ntype='atm')
     call component_init_pre(lnd, LNDID, CPLLNDID, CPLALLLNDID, infodata, ntype='lnd')
     call component_init_pre(rof, ROFID, CPLROFID, CPLALLROFID, infodata, ntype='rof')
@@ -1493,6 +1502,14 @@ contains
     call component_init_pre(iac, IACID, CPLIACID, CPLALLIACID, infodata, ntype='iac')
 
     call t_stopf('CPL:comp_init_pre_all')
+
+    ! we need to initialize iac first so atm and lnd know it's
+    ! there, via gcam_active -> iac_present
+    call t_startf('comp_init_cc_iac')
+    call t_adj_detailf(+2)
+    call component_init_cc(Eclock_z, iac, iac_init, infodata, NLFilename)
+    call t_adj_detailf(-2)
+    call t_stopf('comp_init_cc_iac')
 
     call t_startf('CPL:comp_init_cc_atm')
     call t_adj_detailf(+2)
@@ -1543,14 +1560,9 @@ contains
     call t_adj_detailf(-2)
     call t_stopf('CPL:comp_init_cc_esp')
 
-    call t_startf('CPL:comp_init_cc_iac')
-    call t_adj_detailf(+2)
-    call component_init_cc(Eclock_z, iac, iac_init, infodata, NLFilename)
-    call t_adj_detailf(-2)
-    call t_stopf('CPL:comp_init_cc_iac')
-
     call t_startf('CPL:comp_init_cx_all')
     call t_adj_detailf(+2)
+    call component_init_cx(iac, infodata)
     call component_init_cx(atm, infodata)
     call component_init_cx(lnd, infodata)
     call component_init_cx(rof, infodata)
@@ -1558,7 +1570,7 @@ contains
     call component_init_cx(ice, infodata)
     call component_init_cx(glc, infodata)
     call component_init_cx(wav, infodata)
-    call component_init_cx(iac, infodata)
+
     call t_adj_detailf(-2)
     call t_stopf('CPL:comp_init_cx_all')
 
@@ -1717,6 +1729,8 @@ contains
     samegrid_lg  = .true.
     samegrid_og  = .true.
     samegrid_ig  = .true.
+    samegrid_lz  = .true.
+    samegrid_az  = .true.
     samegrid_alo = .true.
 
     ! set samegrid to true for single column
@@ -1731,6 +1745,8 @@ contains
        if (trim(lnd_gnam) /= trim(glc_gnam)) samegrid_lg = .false.
        if (trim(ocn_gnam) /= trim(glc_gnam)) samegrid_og = .false.
        if (trim(ice_gnam) /= trim(glc_gnam)) samegrid_ig = .false.
+       if (trim(iac_gnam) /= trim(lnd_gnam)) samegrid_lz = .false.
+       if (trim(iac_gnam) /= trim(atm_gnam)) samegrid_az = .false.
        samegrid_alo = (samegrid_al .and. samegrid_ao)
     endif
 
@@ -1881,6 +1897,7 @@ contains
        write(logunit,F0L)'lnd_c2_atm            = ',lnd_c2_atm
        write(logunit,F0L)'lnd_c2_rof            = ',lnd_c2_rof
        write(logunit,F0L)'lnd_c2_glc            = ',lnd_c2_glc
+       write(logunit,F0L)'lnd_c2_iac            = ',lnd_c2_iac
        write(logunit,F0L)'ocn_c2_atm            = ',ocn_c2_atm
        write(logunit,F0L)'ocn_c2_glcshelf       = ',ocn_c2_glcshelf
        write(logunit,F0L)'ocn_c2_glctf          = ',ocn_c2_glctf
@@ -1917,6 +1934,7 @@ contains
        write(logunit,F0L)'samegrid_ro           = ',samegrid_ro
        write(logunit,F0L)'samegrid_aw           = ',samegrid_aw
        write(logunit,F0L)'samegrid_ow           = ',samegrid_ow
+       write(logunit,F0L)'samegrid_az           = ',samegrid_az
        write(logunit,F0L)'skip init ocean run   = ',skip_ocean_run
        write(logunit,F00)'cpl sequence option   = ',trim(cpl_seq_option)
        write(logunit,F0L)'do_histavg            = ',do_histavg
@@ -2028,7 +2046,7 @@ contains
        call t_adj_detailf(+2)
        if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
-       call prep_atm_init(infodata, ocn_c2_atm, ice_c2_atm, lnd_c2_atm, iac_c2_lnd)
+       call prep_atm_init(infodata, ocn_c2_atm, ice_c2_atm, lnd_c2_atm, iac_c2_atm)
 
        call prep_lnd_init(infodata, atm_c2_lnd, rof_c2_lnd, glc_c2_lnd, iac_c2_lnd)
 
@@ -2061,7 +2079,7 @@ contains
        if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
        call component_init_aream(infodata, rof_c2_ocn, samegrid_ao, samegrid_al, &
-            samegrid_ro, samegrid_lg)
+            samegrid_ro, samegrid_lg, samegrid_az)
 
        if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
 
@@ -2088,8 +2106,8 @@ contains
           endif
 
           call seq_domain_check( infodata,                                             &
-               atm(ens1), ice(ens1), lnd(ens1), ocn(ens1), rof(ens1), glc(ens1),       &
-               samegrid_al, samegrid_ao, samegrid_ro, samegrid_lg)
+               atm(ens1), ice(ens1), lnd(ens1), ocn(ens1), rof(ens1), glc(ens1), iac(ens1), &
+               samegrid_al, samegrid_ao, samegrid_ro, samegrid_lg, samegrid_az)
 
        endif
        if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
@@ -2330,6 +2348,11 @@ contains
              call prep_atm_calc_l2x_ax(fractions_lx, timer='CPL:init_atminit')
           endif
 
+          if (iac_present) then
+             ! Get iac output on atm grid
+             call prep_atm_calc_z2x_ax(fractions_zx, timer='CPL:init_atminit')
+          endif
+
           if (ice_present) then
              ! Get ice output on atm grid
              call prep_atm_calc_i2x_ax(fractions_ix, timer='CPL:init_atminit')
@@ -2481,6 +2504,12 @@ contains
        if (glc_c2_lnd) then
           call prep_lnd_calc_g2x_lx(timer='CPL:init_gllndnd')
        endif
+       if (iac_c2_lnd) then
+          call prep_lnd_calc_z2x_lx(timer='CPL:init_iac2lnd')
+       endif
+       if (lnd_c2_iac) then
+          call prep_iac_calc_l2x_zx(timer='CPL:init_lnd2iac')
+       endif
     endif
 
     !----------------------------------------------------------
@@ -2569,7 +2598,8 @@ contains
     hashint = 0
     drv_resume=.FALSE.
 
-    call seq_infodata_putData(infodata,atm_phase=1,lnd_phase=1,ocn_phase=1,ice_phase=1)
+    call seq_infodata_putData(infodata,atm_phase=1,lnd_phase=1,ocn_phase=1, &
+       ice_phase=1, iac_phase=1)
     call seq_timemgr_EClockGetData( EClock_d, stepno=begstep)
     call seq_timemgr_EClockGetData( EClock_d, dtime=dtime)
     call seq_timemgr_EClockGetData( EClock_d, calendar=calendar)
@@ -2784,6 +2814,11 @@ contains
        barrier_alarm = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_barrier)
        pause_alarm   = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_pause)
 
+       ! Not sure if this will cause a problem if iac isn't present,
+       ! but whatever
+       iacrun_avg_alarm = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_iacrun_avg)
+
+
        ! Does the driver need to pause?
        drv_pause = pause_alarm .and. seq_timemgr_pause_component_active(drv_index)
 
@@ -2893,6 +2928,30 @@ contains
        endif
 
        !----------------------------------------------------------
+       !| RUN IAC MODEL
+       !----------------------------------------------------------
+       if (iac_present .and. iacrun_alarm) then
+
+          !write(logunit,*) '(cime_run) calling iac_run',ymd, tod
+
+          call component_run(Eclock_z, iac, iac_run, infodata, &
+               seq_flds_x2c_fluxes=seq_flds_x2z_fluxes, &
+               seq_flds_c2x_fluxes=seq_flds_z2x_fluxes, &
+               comp_prognostic=iac_prognostic, comp_num=comp_num_iac, &
+               timer_barrier= 'CPL:IAC_RUN_BARRIER', &
+                  timer_comp_run='CPL:IAC_RUN', &
+                  run_barriers=run_barriers, ymd=ymd, &
+                  tod=tod,comp_layout=iac_layout)
+       endif
+
+       !----------------------------------------------------------
+       !| IAC RECV-POST
+       !----------------------------------------------------------
+       if (iac_present .and. iacrun_alarm) then
+          call cime_run_iac_recv_post()
+       endif
+
+       !----------------------------------------------------------
        !| MAP ATM to OCN
        !  Set a2x_ox as a module variable in prep_ocn_mod
        !  This will be used later in the ice prep and in the
@@ -2960,18 +3019,6 @@ contains
        endif
 
        !----------------------------------------------------------
-       !| RUN IAC MODEL
-       !----------------------------------------------------------
-       if (iac_present .and. iacrun_alarm) then
-          call component_run(Eclock_z, iac, iac_run, infodata, &
-               seq_flds_x2c_fluxes=seq_flds_x2z_fluxes, &
-               seq_flds_c2x_fluxes=seq_flds_z2x_fluxes, &
-               comp_prognostic=iac_prognostic, comp_num=comp_num_iac, &
-               timer_barrier= 'CPL:IAC_RUN_BARRIER', timer_comp_run='CPL:IAC_RUN', &
-               run_barriers=run_barriers, ymd=ymd, tod=tod,comp_layout=iac_layout)
-       endif
-
-       !----------------------------------------------------------
        !| RUN ICE MODEL
        !----------------------------------------------------------
        if (ice_present .and. icerun_alarm) then
@@ -3032,13 +3079,6 @@ contains
                   run_barriers=run_barriers, ymd=ymd, tod=tod,comp_layout=ocn_layout)
           endif
        end if
-
-       !----------------------------------------------------------
-       !| IAC RECV-POST
-       !----------------------------------------------------------
-       if (iac_present .and. iacrun_alarm) then
-          call cime_run_iac_recv_post()
-       endif
 
        !----------------------------------------------------------
        !| OCN RECV-POST (cesm1_mod_tight)
@@ -3611,7 +3651,7 @@ contains
     call seq_timemgr_EClockGetData( EClock_d, stepno=endstep)
     call shr_mem_getusage(msize,mrss)
 
-    call component_final(EClock_w, iac, iac_final)
+    call component_final(EClock_z, iac, iac_final)
     call component_final(EClock_w, wav, wav_final)
     call component_final(EClock_g, glc, glc_final)
     call component_final(EClock_o, ocn, ocn_final)
@@ -4085,8 +4125,17 @@ contains
        call t_drvstartf ('CPL:IACPREP', cplrun=.true., barrier=mpicom_CPLID)
        if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
-       ! Average our accumulators
-       call prep_iac_accum_avg(timer='CPL:iacprep_l2xavg')
+       ! Average our accumulators - now handled right before running the iac,
+       !    at tod=1800 at beginning of each year
+       ! these are annual average values
+       ! needs to be done here to have proper restarts
+       if (iac_present .and. iacrun_avg_alarm) then
+
+          write(logunit,*) '(cime_run_iac_setup_send) accum_avg',&
+                           ymd, tod
+
+          call prep_iac_accum_avg(timer='CPL:iacprep_l2xavg')
+       endif
 
        ! Setup lnd inputs on iac grid.  Right now I think they will be the same
        ! thing, but I'm trying to code for the general case
@@ -4094,8 +4143,7 @@ contains
           call prep_iac_calc_l2x_zx(timer='CPL:iacprep_lnd2iac')
        endif
 
-
-       call prep_iac_mrg(infodata, fractions_zx, timer_mrg='CPL:iacprep_mrgx2z')
+       call prep_iac_mrg(infodata, timer_mrg='CPL:iacprep_mrgx2z')
 
        call component_diag(infodata, iac, flow='x2c', comment= 'send iac', &
             info_debug=info_debug, timer_diag='CPL:iacprep_diagav')
@@ -4126,7 +4174,7 @@ contains
     !----------------------------------------------------------
 
     if (iamin_CPLALLIACID) then
-       call component_exch(rof, flow='c2x', &
+       call component_exch(iac, flow='c2x', &
             infodata=infodata, infodata_string='iac2cpl_run', &
             mpicom_barrier=mpicom_CPLALLIACID, run_barriers=run_barriers, &
             timer_barrier='CPL:Z2C_BARRIER', timer_comp_exch='CPL:Z2C', &
@@ -4145,13 +4193,9 @@ contains
        call component_diag(infodata, iac, flow='c2x', comment= 'recv iac', &
             info_debug=info_debug, timer_diag='CPL:iacpost_diagav')
 
-       ! TRS I think this is wrong - review these prep functions.  I think it's more likely
-       if (iac_c2_lnd) then
-          call prep_lnd_calc_z2x_lx(timer='CPL:iacpost_iac2lnd')
-       endif
-
-       if (iac_c2_atm) then
-          call prep_atm_calc_z2x_ax(fractions_zx, timer='CPL:iacpost_iac2atm')
+       ! Need to reset our max vector to zero for the following year
+       if (lnd_present) then 
+          call prep_iac_zero_max()
        endif
 
        call t_drvstopf  ('CPL:IACPOST', cplrun=.true.)
@@ -4328,6 +4372,9 @@ contains
        if (lnd_c2_rof) call prep_rof_accum_lnd(timer='CPL:lndpost_accl2r')
        if (lnd_c2_glc .or. do_hist_l2x1yrg) call prep_glc_accum_lnd(timer='CPL:lndpost_accl2g' )
        if (lnd_c2_iac) call prep_iac_accum(timer='CPL:lndpost_accl2z')
+
+       ! the iacrun_avg alarm is now called at tod=1800 of the first day of each
+       ! year, y cime_run_iac_setup_send
 
        if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
        call t_drvstopf  ('CPL:LNDPOST',cplrun=.true.)
@@ -4759,7 +4806,7 @@ contains
              call seq_diagBGC_rof_mct(rof(ens1), fractions_rx(ens1), infodata)
           endif
        endif
-       call t_drvstopf  ('CPL:BUDGET1',cplrun=lcplrun,budget=.true.)
+       call t_drvstopf  ('CPL:BUDGET1',cplrun=.true.,budget=.true.)
     end if
   end subroutine cime_run_calc_budgets1
 
@@ -4811,7 +4858,7 @@ contains
                   do_o2x=.true., do_x2o=.true., do_xao=.true.)
           endif
        endif
-       call t_drvstopf  ('CPL:BUDGET2',cplrun=lcplrun,budget=.true.)
+       call t_drvstopf  ('CPL:BUDGET2',cplrun=.true.,budget=.true.)
 
        call t_drvstartf ('CPL:BUDGET3',cplrun=lcplrun,budget=.true.,barrier=mpicom_CPLID)
        call seq_diag_accum_mct()
@@ -5093,6 +5140,18 @@ contains
                   nx=lnd_nx, ny=lnd_ny, nt=ncpl)
           enddo
           call t_stopf('CPL:seq_hist_writeaux-l2x')
+
+       endif
+       if (do_hist_z2x) then
+
+          call t_startf('CPL:seq_hist_writeaux-z2x')
+          do ezi = 1,num_inst_iac
+             inst_suffix =  component_get_suffix(iac(ezi))
+             call seq_hist_writeaux(infodata, EClock_d, iac(ezi), flow='c2x', &
+                  aname='z2x',dname='domz',inst_suffix=trim(inst_suffix),  &
+                  nx=iac_nx, ny=iac_ny, nt=ncpl)
+          enddo
+          call t_stopf('CPL:seq_hist_writeaux-z2x')
 
        endif
 
