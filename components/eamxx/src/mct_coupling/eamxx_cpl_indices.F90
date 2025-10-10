@@ -6,7 +6,7 @@ module eamxx_cpl_indices
   private
 
   ! Focus only on the ones that scream imports/exports (subsets of x2a and a2x)
-  integer, parameter, public :: num_scream_imports = 24
+  integer, parameter, public :: num_scream_imports = 25
   integer, parameter, public :: num_scream_exports = 17
   integer, public :: num_cpl_imports, num_cpl_exports, import_field_size, export_field_size
 
@@ -97,6 +97,7 @@ module eamxx_cpl_indices
     import_field_names(22) = 'dstflx'
     import_field_names(23) = 'dstflx'
     import_field_names(24) = 'dstflx'
+    import_field_names(25) = 'h2otemp'  ! correction for air sea surface water thermo fixer
 
     ! CPL indices
     import_cpl_indices(1)  = mct_avect_indexra(x2a,'Sx_avsdr')
@@ -125,6 +126,8 @@ module eamxx_cpl_indices
     import_cpl_indices(22) = mct_avect_indexra(x2a,'Fall_flxdst2')
     import_cpl_indices(23) = mct_avect_indexra(x2a,'Fall_flxdst3')
     import_cpl_indices(24) = mct_avect_indexra(x2a,'Fall_flxdst4')
+    ! h2otemp comes from ocean, and it is for air sea surface water thermo fixer
+    import_cpl_indices(25) = mct_avect_indexra(x2a,'Faoo_h2otemp',perrWith='quiet')
 
     ! Vector components
     !(Faxx_taux and Faxx_tauy)
