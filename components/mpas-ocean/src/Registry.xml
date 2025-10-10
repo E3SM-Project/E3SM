@@ -1787,6 +1787,14 @@
 					description="Level of refinement to evaluate subgrid bathymety"
 					possible_values="Any positive integer number"
 	    />	
+		<nml_option name="config_subgrid_ssh_table_min" type="real" default_value="-8.0" units="meters"
+					description="value to be used in the minimum sea surface height in the subgrid lookup table"
+					possible_values="any real number"
+		/>
+		<nml_option name="config_subgrid_ssh_table_max" type="real" default_value="8.0" units="meters"
+					description="value to be used in the maximum sea surface height in the subgrid lookup table"
+					possible_values="any real number"
+		/>
 		<nml_option name="config_subgrid_topography_source" type="character" default_value="xy_file" units="unitless"
 					description="If 'latlon_file/xy_file', reads in topography from file specified in config_subgrid_topography_file"
 					possible_values="'latlon_file' or 'xy_file'"
