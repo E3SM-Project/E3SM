@@ -43,30 +43,38 @@ void Functions<S,D>::gw_heating_depth(
   // cleaner version that addresses bug in original where heating max and
   // depth were too low whenever heating <=0 occurred in the middle of
   // the heating profile (ex. at the melting level)
-  Kokkos::parallel_reduce(
-    Kokkos::TeamVectorRange(team, pver), [&] (const int k, ResultType& update) {
+  Kokkos::single(Kokkos::PerTeam(team), [&] {
+    mini = 0;
+    maxi = 0;
+    for (Int k = pver-1; k >= 0; --k) {
       if ( zm(k) < heating_altitude_max ) {
         if ( netdt(k) > 0 ) {
           // Set mini as first spot where heating rate is positive
-          if (k < update.min_val) update.min_val = k;
-          if (k > update.max_val) update.max_val = k;
+          if (mini == 0) mini = k;
+          maxi = k;
         }
       }
-    }, Kokkos::MinMax<Int>(min_max_result));
+      else {
+        if (mini == 0) mini = k;
+        if (maxi == 0) maxi = k;
+      }
+    }
+  });
 
   team.team_barrier();
 
-  mini = min_max_result.max_val; // Yes, I know this looks backwards..
-  maxi = min_max_result.min_val;
-
-  // Heating depth in km.
-  hdepth = (zm(maxi) -zm(mini))/1000;
-
-  // Confine depth to table range.
-  hdepth = ekat::impl::min(hdepth, static_cast<Real>(init.maxh));
-
   // apply tunable scaling factor for the heating depth
-  hdepth *= hdepth_scaling_factor;
+  Kokkos::single(Kokkos::PerTeam(team), [&] {
+    // Heating depth in km.
+    hdepth = (zm(maxi) -zm(mini))/1000;
+
+    // Confine depth to table range.
+    hdepth = ekat::impl::min(hdepth, static_cast<Real>(init.maxh));
+
+    hdepth *= hdepth_scaling_factor;
+  });
+
+  team.team_barrier();
 
   // Maximum heating rate.
   Kokkos::parallel_reduce(
@@ -78,11 +86,13 @@ void Functions<S,D>::gw_heating_depth(
 
   team.team_barrier();
 
-  //output max heating rate in K/day
-  maxq0_out = maxq0 * 24 * 3600;
+  Kokkos::single(Kokkos::PerTeam(team), [&] {
+    //output max heating rate in K/day
+    maxq0_out = maxq0 * 24 * 3600;
 
-  // Multipy by conversion factor
-  maxq0 *= maxq0_conversion_factor;
+    // Multipy by conversion factor
+    maxq0 *= maxq0_conversion_factor;
+  });
 }
 
 } // namespace gw
