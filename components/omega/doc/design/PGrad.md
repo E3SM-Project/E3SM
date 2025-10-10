@@ -46,7 +46,7 @@ The details of the barotropic pressure gradient will be added in a future design
 In the layered non-Boussinesq  {ref}`momentum equation <omega-v1-momentum-eq>` solved in Omega, the pressure gradient tendency term for edge $e$ and layer $k$, $T^p_{e,k}$, includes the gradient of the geopotential, the gradient of a term involving pressure, and two terms evaluated at the cell interface:
 
 $$
-T^p_{e,k} = - \left(\nabla \Phi \right)_{e,k} - \frac{1}{\left[\tilde{h}_k\right]_e} \nabla \left( \tilde{h}_k \alpha_k p_k \right) + \frac{1}{\left[\tilde{h}_k\right]_e} \left\{ \left[ \alpha p \nabla \tilde{z}\right]_{e,k}^\text{top} -  \left[ \alpha p \nabla \tilde{z}\right]_{e,k+1}^\text{top} \right\}.
+T^p_{e,k} = - \left(\nabla \Phi \right)_{e,k} - \frac{1}{\left[\tilde{h}_k\right]_e} \nabla \left( \tilde{h}_k \alpha_k p_k \right) - \frac{1}{\left[\tilde{h}_k\right]_e} \left\{ \left[ \alpha p \nabla \tilde{z}\right]_{e,k}^\text{top} -  \left[ \alpha p \nabla \tilde{z}\right]_{e,k+1}^\text{top} \right\}.
 $$
 
 The geopotential and interface terms are necessary to account for tilted layers that occur when using a general vertical coordinate, where the gradient operator is taken along layers.
