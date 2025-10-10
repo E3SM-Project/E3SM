@@ -25,7 +25,7 @@
 <history_aerosol    >.true.</history_aerosol>
 <history_aero_optics>.true.</history_aero_optics>
 
-<!-- External forcing for BAM or MAM.  CMIP6 input4mips data -->
+<!-- External forcing for BAM or MAM.  CMIP7 input4mips data -->
 <ext_frc_type         >CYCLICAL</ext_frc_type>
 <ext_frc_cycle_yr     >2010</ext_frc_cycle_yr>
 <no2_ext_file         >atm/cam/chem/emis/CMIP7_1850_2023_2deg/F2010/cmip7_NO2_elev_2010_clim_1.9x2.5_c20250627.nc </no2_ext_file>
@@ -70,7 +70,7 @@
 <!-- <tracer_cnst_filelist>this_field_is_not_used</tracer_cnst_filelist> -->
 <tracer_cnst_type    >CYCLICAL</tracer_cnst_type>
 <tracer_cnst_cycle_yr>2015</tracer_cnst_cycle_yr>
-<tracer_cnst_file    >oxid_1.9x2.5_L26_1850-2015_c20181106.nc</tracer_cnst_file>
+<tracer_cnst_file    >oxid_1.9x2.5_L26_1850-2025_c20251005.nc</tracer_cnst_file>
 <tracer_cnst_filelist>''</tracer_cnst_filelist>
 <tracer_cnst_datapath>atm/cam/chem/trop_mozart_aero/oxid</tracer_cnst_datapath>
 <tracer_cnst_specifier>'prsd_O3:O3','prsd_NO3:NO3','prsd_OH:OH'</tracer_cnst_specifier>
@@ -106,11 +106,11 @@
 <mam_mom_specifier >'chla:CHL1','mpoly:TRUEPOLYC','mprot:TRUEPROTC','mlip:TRUELIPC'			 </mam_mom_specifier >
 
 <!-- Stratospheric ozone (Linoz) updated using CMIP6 input4MIPS GHG concentrations -->
-<chlorine_loading_file      >atm/cam/chem/trop_mozart/ub/Linoz_Chlorine_Loading_CMIP6_0003-2017_c20171114.nc</chlorine_loading_file>
+<chlorine_loading_file      >atm/cam/chem/trop_mozart/ub/Linoz_Chlorine_Loading_CMIP6_Hist_SSP245_0003-2503_c20200808.nc</chlorine_loading_file>
 <chlorine_loading_fixed_ymd >20100101</chlorine_loading_fixed_ymd>
 <chlorine_loading_type      >FIXED</chlorine_loading_type>
 <linoz_data_cycle_yr        >2010</linoz_data_cycle_yr>
-<linoz_data_file            >linv3_1849-2017_CMIP6_Hist_10deg_58km_c20230705.nc</linoz_data_file>
+<linoz_data_file            >linv3_1849-2101_CMIP6_Hist_SSP245_10deg_58km_c20231207.nc</linoz_data_file>
 <linoz_data_path            >atm/cam/chem/trop_mozart/ub</linoz_data_path>
 <linoz_data_type            >CYCLICAL</linoz_data_type>
 
