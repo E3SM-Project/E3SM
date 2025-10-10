@@ -34,11 +34,17 @@ type :: zm_microp_st
    real(r8), allocatable, dimension(:,:) :: sprd         ! snow production rate
    real(r8), allocatable, dimension(:,:) :: mudpcu       ! width parameter of droplet size distr
    real(r8), allocatable, dimension(:,:) :: lambdadpcu   ! slope of cloud liquid size distr
-   real(r8), allocatable, dimension(:,:) :: dif          ! detrainment of cloud ice water mixing ratio
-   real(r8), allocatable, dimension(:,:) :: dsf          ! detrained convective snow mixing ratio
+   real(r8), allocatable, dimension(:,:) :: qcde         ! tmp for detrainment - cld liq mixing ratio       [kg/kg]
+   real(r8), allocatable, dimension(:,:) :: qide         ! tmp for detrainment - cld ice mixing ratio       [kg/kg]
+   real(r8), allocatable, dimension(:,:) :: qsde         ! tmp for detrainment - snow mixing ratio          [kg/kg]
+   real(r8), allocatable, dimension(:,:) :: ncde         ! tmp for detrainment - cld liq number conc        [1/kg]
+   real(r8), allocatable, dimension(:,:) :: nide         ! tmp for detrainment - cld ice number conc        [1/kg]
+   real(r8), allocatable, dimension(:,:) :: nsde         ! tmp for detrainment - snow number conc           [1/kg]
+   real(r8), allocatable, dimension(:,:) :: dif          ! detrainment of conv cld ice water mixing ratio
+   real(r8), allocatable, dimension(:,:) :: dsf          ! detrainment of conv snow mixing ratio
    real(r8), allocatable, dimension(:,:) :: dnlf         ! detrainment of conv cld liq water num concen
    real(r8), allocatable, dimension(:,:) :: dnif         ! detrainment of conv cld ice num concen
-   real(r8), allocatable, dimension(:,:) :: dnsf         ! detrained snow num concen
+   real(r8), allocatable, dimension(:,:) :: dnsf         ! detrainment of snow num concen
    real(r8), allocatable, dimension(:,:) :: frz          ! heating rate due to freezing
    real(r8), allocatable, dimension(:,:) :: autolm       ! mass tendency due to autoconversion of droplets to rain
    real(r8), allocatable, dimension(:,:) :: accrlm       ! mass tendency due to accretion of droplets by rain
@@ -131,6 +137,12 @@ subroutine zm_microp_st_alloc(microp_st_in,ncol_in,nlev_in)
       microp_st_in%sprd       (ncol_in,nlev_in), &
       microp_st_in%mudpcu     (ncol_in,nlev_in), &
       microp_st_in%lambdadpcu (ncol_in,nlev_in), &
+      microp_st_in%qcde       (ncol_in,nlev_in), &
+      microp_st_in%qide       (ncol_in,nlev_in), &
+      microp_st_in%qsde       (ncol_in,nlev_in), &
+      microp_st_in%ncde       (ncol_in,nlev_in), &
+      microp_st_in%nide       (ncol_in,nlev_in), &
+      microp_st_in%nsde       (ncol_in,nlev_in), &
       microp_st_in%dif        (ncol_in,nlev_in), &
       microp_st_in%dsf        (ncol_in,nlev_in), &
       microp_st_in%dnlf       (ncol_in,nlev_in), &
@@ -225,6 +237,12 @@ subroutine zm_microp_st_dealloc(microp_st_in)
       microp_st_in%sprd,      &
       microp_st_in%mudpcu,    &
       microp_st_in%lambdadpcu,&
+      microp_st_in%qcde,      &
+      microp_st_in%qide,      &
+      microp_st_in%qsde,      &
+      microp_st_in%ncde,      &
+      microp_st_in%nide,      &
+      microp_st_in%nsde,      &
       microp_st_in%dif,       &
       microp_st_in%dsf,       &
       microp_st_in%dnlf,      &
@@ -296,100 +314,6 @@ end subroutine zm_microp_st_dealloc
 
 !===================================================================================================
 
-subroutine zm_microp_st_ini(microp_st_in,ncol_in,nlev_in)
-   !----------------------------------------------------------------------------
-   ! Purpose: initialize zm_microp_st variables
-   !----------------------------------------------------------------------------
-   ! Arguments
-   type(zm_microp_st), intent(inout) :: microp_st_in  ! state and tendency of convective microphysics
-   integer,            intent(in   ) :: ncol_in       ! number of atmospheric columns to initialize
-   integer,            intent(in   ) :: nlev_in       ! number of atmospheric levels to initialize
-   !----------------------------------------------------------------------------
-   microp_st_in%wu        (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%qliq      (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%qice      (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%qrain     (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%qsnow     (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%qgraupel  (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%qnl       (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%qni       (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%qnr       (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%qns       (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%qng       (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%rice      (1:ncol_in) = 0._r8
-   microp_st_in%sprd      (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%mudpcu    (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%lambdadpcu(1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%dif       (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%dsf       (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%dnlf      (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%dnif      (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%dnsf      (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%frz       (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%autolm    (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%accrlm    (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%bergnm    (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%fhtimm    (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%fhtctm    (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%fhmlm     (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%hmpim     (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%accslm    (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%dlfm      (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%autoln    (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%accrln    (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%bergnn    (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%fhtimn    (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%fhtctn    (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%fhmln     (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%accsln    (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%activn    (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%dlfn      (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%cmel      (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%autoim    (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%accsim    (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%difm      (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%cmei      (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%nuclin    (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%autoin    (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%accsin    (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%hmpin     (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%difn      (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%trspcm    (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%trspcn    (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%trspim    (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%trspin    (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%accgrm    (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%accglm    (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%accgslm   (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%accgsrm   (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%accgirm   (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%accgrim   (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%accgrsm   (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%accgsln   (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%accgsrn   (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%accgirn   (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%accsrim   (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%acciglm   (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%accigrm   (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%accsirm   (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%accigln   (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%accigrn   (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%accsirn   (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%accgln    (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%accgrn    (1:ncol_in,1:nlev_in) = 0._r8 
-   microp_st_in%accilm    (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%acciln    (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%fallrm    (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%fallsm    (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%fallgm    (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%fallrn    (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%fallsn    (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%fallgn    (1:ncol_in,1:nlev_in) = 0._r8
-   microp_st_in%fhmrm     (1:ncol_in,1:nlev_in) = 0._r8
-end subroutine zm_microp_st_ini
-
-!===================================================================================================
-
 subroutine zm_microp_st_zero(microp_st_in,icol_in,nlev_in)
    !----------------------------------------------------------------------------
    ! Purpose: zero out zm_microp_st variables for a single column
@@ -414,6 +338,12 @@ subroutine zm_microp_st_zero(microp_st_in,icol_in,nlev_in)
    microp_st_in%sprd      (icol_in,1:nlev_in) = 0._r8
    microp_st_in%mudpcu    (icol_in,1:nlev_in) = 0._r8
    microp_st_in%lambdadpcu(icol_in,1:nlev_in) = 0._r8
+   microp_st_in%qcde      (icol_in,1:nlev_in) = 0._r8
+   microp_st_in%qide      (icol_in,1:nlev_in) = 0._r8
+   microp_st_in%qsde      (icol_in,1:nlev_in) = 0._r8
+   microp_st_in%ncde      (icol_in,1:nlev_in) = 0._r8
+   microp_st_in%nide      (icol_in,1:nlev_in) = 0._r8
+   microp_st_in%nsde      (icol_in,1:nlev_in) = 0._r8
    microp_st_in%dif       (icol_in,1:nlev_in) = 0._r8
    microp_st_in%dsf       (icol_in,1:nlev_in) = 0._r8
    microp_st_in%dnlf      (icol_in,1:nlev_in) = 0._r8
@@ -484,6 +414,24 @@ end subroutine zm_microp_st_zero
 
 !===================================================================================================
 
+subroutine zm_microp_st_ini(microp_st_in,ncol_in,nlev_in)
+   !----------------------------------------------------------------------------
+   ! Purpose: initialize zm_microp_st variables
+   !----------------------------------------------------------------------------
+   ! Arguments
+   type(zm_microp_st), intent(inout) :: microp_st_in  ! state and tendency of convective microphysics
+   integer,            intent(in   ) :: ncol_in       ! number of atmospheric columns to initialize
+   integer,            intent(in   ) :: nlev_in       ! number of atmospheric levels to initialize
+   !----------------------------------------------------------------------------
+   integer :: i
+   !----------------------------------------------------------------------------
+   do i = 1,ncol_in
+      call zm_microp_st_zero(microp_st_in,i,nlev_in)
+   end do
+end subroutine zm_microp_st_ini
+
+!===================================================================================================
+
 subroutine zm_microp_st_scatter(microp_st_gth,microp_st_out,pcols,lengath,nlev_in,ideep)
    !----------------------------------------------------------------------------
    ! Purpose: gather microphysic arrays from microp_st to microp_st_in
@@ -515,6 +463,12 @@ subroutine zm_microp_st_scatter(microp_st_gth,microp_st_out,pcols,lengath,nlev_i
          microp_st_out%sprd      (ideep(i),k) = microp_st_gth%sprd      (i,k)
          microp_st_out%mudpcu    (ideep(i),k) = microp_st_gth%mudpcu    (i,k)
          microp_st_out%lambdadpcu(ideep(i),k) = microp_st_gth%lambdadpcu(i,k)
+         microp_st_out%qcde      (ideep(i),k) = microp_st_gth%qcde      (i,k)
+         microp_st_out%qide      (ideep(i),k) = microp_st_gth%qide      (i,k)
+         microp_st_out%qsde      (ideep(i),k) = microp_st_gth%qsde      (i,k)
+         microp_st_out%ncde      (ideep(i),k) = microp_st_gth%ncde      (i,k)
+         microp_st_out%nide      (ideep(i),k) = microp_st_gth%nide      (i,k)
+         microp_st_out%nsde      (ideep(i),k) = microp_st_gth%nsde      (i,k)
          microp_st_out%dif       (ideep(i),k) = microp_st_gth%dif       (i,k)
          microp_st_out%dsf       (ideep(i),k) = microp_st_gth%dsf       (i,k)
          microp_st_out%dnlf      (ideep(i),k) = microp_st_gth%dnlf      (i,k)
