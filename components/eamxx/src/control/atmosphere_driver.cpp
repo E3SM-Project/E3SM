@@ -428,7 +428,7 @@ void AtmosphereDriver::setup_column_conservation_checks ()
   auto phys_grid = m_grids_manager->get_grid("physics");
   const auto phys_grid_name = phys_grid->name();
   // Get fields needed to run the mass and energy conservation checks. Require that
-  // all fields exist.
+  // all fields exist (except h2otemp which is optional).
   EKAT_REQUIRE_MSG (
     m_field_mgr->has_field("pseudo_density", phys_grid_name) and
     m_field_mgr->has_field("ps",             phys_grid_name) and
@@ -465,6 +465,12 @@ void AtmosphereDriver::setup_column_conservation_checks ()
   const auto water_flux     = m_field_mgr->get_field("water_flux",     phys_grid_name);
   const auto ice_flux       = m_field_mgr->get_field("ice_flux",       phys_grid_name);
   const auto heat_flux      = m_field_mgr->get_field("heat_flux",      phys_grid_name);
+  
+  // h2otemp is optional - only available when SurfaceCouplingImporter is active
+  Field h2otemp;
+  if (m_field_mgr->has_field("h2otemp", phys_grid_name)) {
+    h2otemp = m_field_mgr->get_field("h2otemp", phys_grid_name);
+  }
 
   auto conservation_check =
     std::make_shared<MassAndEnergyConservationCheck>(m_atm_comm,phys_grid,
@@ -473,7 +479,8 @@ void AtmosphereDriver::setup_column_conservation_checks ()
                                                            horiz_winds, T_mid, qv,
                                                            qc, qr, qi,
                                                            vapor_flux, water_flux,
-                                                           ice_flux, heat_flux);
+                                                           ice_flux, heat_flux,
+                                                           h2otemp);
 
   //Get fail handling type from driver_option parameters.
   const std::string fail_handling_type_str =

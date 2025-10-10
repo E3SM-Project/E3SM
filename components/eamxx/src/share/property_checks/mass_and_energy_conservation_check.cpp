@@ -27,7 +27,8 @@ MassAndEnergyConservationCheck (const ekat::Comm& comm,
                                 const Field&        vapor_flux,
                                 const Field&        water_flux,
                                 const Field&        ice_flux,
-                                const Field&        heat_flux)
+                                const Field&        heat_flux,
+                                const Field&        h2otemp)
   : m_comm (comm)
   , m_grid (grid)
   , m_dt (std::nan(""))
@@ -55,6 +56,10 @@ MassAndEnergyConservationCheck (const ekat::Comm& comm,
   m_fields["water_flux"]     = water_flux;
   m_fields["ice_flux"]       = ice_flux;
   m_fields["heat_flux"]      = heat_flux;
+  // h2otemp is optional - only store if provided (i.e., when SurfaceCouplingImporter is active)
+  if (h2otemp.is_allocated()) {
+    m_fields["h2otemp"]      = h2otemp;
+  }
 
   //allocate Fields for fixer reductions
   using namespace ekat::units;
@@ -302,7 +307,7 @@ PropertyCheck::ResultAndMsg MassAndEnergyConservationCheck::check() const
   return res_and_msg;
 }
 
-void MassAndEnergyConservationCheck::global_fixer(const bool & print_debug_info)
+void MassAndEnergyConservationCheck::global_fixer(const bool air_sea_surface_water_thermo_fixer, const bool print_debug_info)
 {
   using TPF = ekat::TeamPolicyFactory<DefaultDevice::execution_space>;
   const auto ncols = m_num_cols;
@@ -367,6 +372,18 @@ void MassAndEnergyConservationCheck::global_fixer(const bool & print_debug_info)
 //for pg2 grids (if on np4 grids, it would require much more work?)  
   auto energy_change = m_energy_change;
   auto current_energy = m_current_energy;
+  
+  // Get h2otemp view outside lambda if air sea surface water thermo fixer is enabled
+  // and h2otemp field is available (only present when SurfaceCouplingImporter is active)
+  const Real* h2otemp_ptr = nullptr;
+  if (air_sea_surface_water_thermo_fixer) {
+    auto it = m_fields.find("h2otemp");
+    if (it != m_fields.end() && it->second.is_allocated()) {
+      const auto h2otemp = it->second.get_view<const Real*>();
+      h2otemp_ptr = h2otemp.data();
+    }
+  }
+  
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
 
     const int i = team.league_rank();
@@ -383,6 +400,13 @@ void MassAndEnergyConservationCheck::global_fixer(const bool & print_debug_info)
                                                    qv_i, qc_i, qr_i, ps(i), phis(i));
     Kokkos::single(Kokkos::PerTeam(team),[&]() {
       energy_change(i) = compute_energy_boundary_flux_on_column(vapor_flux(i), water_flux(i), ice_flux(i), heat_flux(i))*dt;
+      
+      // Add h2otemp contribution to energy change if air sea surface water thermo fixer is enabled
+      // NOTE: careful, operating on ptr, probably a good idea to move this to a view...
+      if (air_sea_surface_water_thermo_fixer && h2otemp_ptr != nullptr) {
+        energy_change(i) += h2otemp_ptr[i] * dt;
+      }
+      
       field_view_s1(i) = (current_energy(i)-new_energy_for_fixer-energy_change(i)) * area_view(i);
     });
   });

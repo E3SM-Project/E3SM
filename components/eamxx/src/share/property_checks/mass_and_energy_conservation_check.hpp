@@ -48,7 +48,8 @@ public:
                                   const Field&  vapor_flux_ptr,
                                   const Field&  water_flux_ptr,
                                   const Field&  ice_flux_ptr,
-                                  const Field&  heat_flux_ptr);
+                                  const Field&  heat_flux_ptr,
+                                  const Field&  h2otemp_ptr);
 
   // The name of the property check
   std::string name () const override { return "Mass and energy column conservation check"; }
@@ -77,7 +78,7 @@ public:
   // in m_fields.
   void compute_current_energy ();
 
-  void global_fixer(const bool &);
+  void global_fixer(const bool air_sea_surface_water_thermo_fixer, const bool print_debug_info);
 
   Real get_echeck() const;
   Real get_total_energy_before() const;
