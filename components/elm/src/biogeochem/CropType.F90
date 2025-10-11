@@ -17,6 +17,7 @@ module CropType
   use ColumnDataType      , only : col_es
   use VegetationDataType  , only : veg_es
   use GridcellType        , only : grc_pp
+  use ColumnType          , only : col_pp
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -331,7 +332,7 @@ contains
           t = veg_pp%topounit(p)
           topi = grc_pp%topi(g)
 
-          if (lun_pp%itype(l) == istcrop) then
+          if (col_pp%is_crop(c)) then
              ti = t - topi + 1
              m  = veg_pp%itype(p)
              this%fertnitro_patch(p) = fert_cft(g,ti,m)

@@ -686,7 +686,7 @@ contains
       
       do p = bounds%begp, bounds%endp
          c = veg_pp%column(p)
-         if (col_pp%itype(c) == istsoil) then
+         if (col_pp%is_soil(c)) then
             diff = abs(veg_pp%wtlunit(p) - pft_wtlunit_before_rest_read(p))
             if (diff > tol) then
                write(iulog,*) 'ERROR: PFT weights are SIGNIFICANTLY different between the restart (finidat) file'

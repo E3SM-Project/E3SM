@@ -790,7 +790,7 @@ contains
        this%o2_decomp_depth_unsat_col(c,:)= spval
 
        l = col_pp%landunit(c)
-       if (col_pp%itype(c) == istsoil .or. lun_pp%itype(l) == istcrop) then
+       if (col_pp%is_soil(c) .or. col_pp%is_crop(c)) then
 
           this%conc_ch4_sat_col   (c,1:nlevsoi) = 0._r8
           this%conc_ch4_unsat_col (c,1:nlevsoi) = 0._r8
@@ -851,7 +851,7 @@ contains
        this%ch4stress_unsat_col        (c,nlevsoi+1:nlevgrnd) = 0._r8
        this%ch4stress_sat_col          (c,nlevsoi+1:nlevgrnd) = 0._r8
 
-       if (col_pp%itype(c) == istsoil .or. lun_pp%itype(l) == istcrop) then
+       if (col_pp%is_soil(c) .or. col_pp%is_crop(c)) then
 
           this%conc_ch4_lake_col       (c,:) = spval
           this%conc_o2_lake_col        (c,:) = spval

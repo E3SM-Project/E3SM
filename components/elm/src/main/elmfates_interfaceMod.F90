@@ -940,7 +940,7 @@ contains
             ! INTERF-TODO: WE HAVE NOT FILTERED OUT FATES SITES ON INACTIVE COLUMNS.. YET
             ! NEED A RUN-TIME ROUTINE THAT CLEARS AND REWRITES THE SITE LIST
 
-            if ( (col_pp%itype(c) == istsoil) .and. (col_pp%active(c)) ) then
+            if ( (col_pp%is_soil(c)) .and. (col_pp%active(c)) ) then
                s = s + 1
                collist(s) = c
                this%f2hmap(nc)%hsites(c) = s
@@ -3463,7 +3463,7 @@ end subroutine wrap_update_hifrq_hist
     num_filter_hydroc = 0
     do s = 1,num_filterc
        l = col_pp%landunit(filterc(s))
-       if (col_pp%itype(c) == istsoil ) then
+       if (col_pp%is_soil(c) ) then
           num_filter_hydroc = num_filter_hydroc + 1
        end if
     end do

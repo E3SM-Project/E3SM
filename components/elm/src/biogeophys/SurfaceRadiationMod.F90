@@ -479,12 +479,14 @@ contains
        do fp = 1,num_nourbanp
           p = filter_nourbanp(fp)
           l = veg_pp%landunit(p)
+          c = veg_pp%column(p)
+
           sabg_soil(p)  = 0._r8
           sabg_snow(p)  = 0._r8
           sabg(p)       = 0._r8
           sabv(p)       = 0._r8
           fsa(p)        = 0._r8
-        if (col_pp%itype(c) == istsoil .or. lun_pp%itype(l) == istcrop) then
+        if (col_pp%is_soil(c) .or. col_pp%is_crop(c)) then
            fsa_r(p) = 0._r8
         end if
           sabg_lyr(p,:) = 0._r8
@@ -521,7 +523,7 @@ contains
              if (ib == 1) then
                 parveg(p) = cad(p,ib) + cai(p,ib)
              end if
-             if (col_pp%itype(c) == istsoil .or. lun_pp%itype(l) == istcrop) then
+             if (col_pp%is_soil(c) .or. col_pp%is_crop(c)) then
                 fsa_r(p)  = fsa_r(p)  + cad(p,ib) + cai(p,ib)
              end if
 
@@ -538,7 +540,7 @@ contains
              absrad  = trd(p,ib)*(1._r8-albgrd(c,ib)) + tri(p,ib)*(1._r8-albgri(c,ib))
              sabg(p) = sabg(p) + absrad
              fsa(p)  = fsa(p)  + absrad
-             if (col_pp%itype(c) == istsoil .or. lun_pp%itype(l) == istcrop) then
+             if (col_pp%is_soil(c) .or. col_pp%is_crop(c)) then
                 fsa_r(p)  = fsa_r(p)  + absrad
              end if
              if (snl(c) == 0) then
@@ -678,7 +680,7 @@ contains
           endif
 
           ! Diagnostic: shortwave penetrating ground (e.g. top layer)
-          if (col_pp%itype(c) == istsoil .or. lun_pp%itype(l) == istcrop) then
+          if (col_pp%is_soil(c) .or. col_pp%is_crop(c)) then
              sabg_pen(p) = sabg(p) - sabg_lyr(p, snl(c)+1)
           end if
 
