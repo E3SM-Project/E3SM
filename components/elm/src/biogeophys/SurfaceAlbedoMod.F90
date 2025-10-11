@@ -116,7 +116,7 @@ contains
     integer  :: i                                                                         ! index for layers [idx]
     integer  :: aer                                                                       ! index for sno_nbr_aer
     real(r8) :: extkn                      ! nitrogen allocation coefficient
-    integer  :: fp,fc,g,c,p,iv             ! indices
+    integer  :: fp,fc,g,c,l,p,iv           ! indices
     integer  :: ib                         ! band index
     integer  :: ic                         ! 0=unit incoming direct; 1=unit incoming diffuse
     real(r8) :: dinc                       ! lai+sai increment for canopy layer
@@ -652,6 +652,7 @@ contains
     do ib = 1, nband
        do fc = 1,num_nourbanc
           c = filter_nourbanc(fc)
+          l = lun_pp%landunit(c)
              if (coszen_col(c) > 0._r8) then
              ! ground albedo was originally computed in SoilAlbedo, but is now computed here
              ! because the order of SoilAlbedo and SNICAR_RT/SNICAR_AD_RT was switched for SNICAR/SNICAR_AD_RT.
@@ -683,7 +684,7 @@ contains
              !  weight snow layer radiative absorption factors based on snow fraction and soil albedo
              !  (NEEDED FOR ENERGY CONSERVATION)
              do i = -nlevsno+1,1,1
-              if (subgridflag == 0 .or. lun_pp%itype(col_pp%landunit(c)) == istdlak) then
+              if (subgridflag == 0 .or. lun_pp%itype(l) == istdlak) then
                 if (ib == 1) then
                    flx_absdv(c,i) = flx_absd_snw(c,i,ib)*frac_sno(c) + &
                         ((1.-frac_sno(c))*(1-albsod(c,ib))*(flx_absd_snw(c,i,ib)/(1.-albsnd(c,ib))))
