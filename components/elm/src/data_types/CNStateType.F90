@@ -1020,7 +1020,7 @@ contains
           end do
        end if
 
-       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+       if (col_pp%itype(c) == istsoil .or. lun_pp%itype(l) == istcrop) then
           this%annsum_counter_col(c) = 0._r8   
           this%annavg_t2m_col(c)     = 280._r8 
 
@@ -1098,7 +1098,8 @@ contains
 
     do p = bounds%begp,bounds%endp
        l = veg_pp%landunit(p)
-       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+       c = veg_pp%column(p)
+       if (col_pp%itype(c) == istsoil .or. lun_pp%itype(l) == istcrop) then
 
           this%rc14_atm_patch(p) = c14ratio
 

@@ -450,7 +450,8 @@ contains
           this%leafcmax_patch(p) = 0._r8
 
           l = veg_pp%landunit(p)
-          if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+          c = veg_pp%column(p)
+          if (col_pp%itype(c) == istsoil .or. lun_pp%itype(l) == istcrop) then
 
              if (veg_pp%itype(p) == noveg) then
                 this%leafc_patch(p)         = 0._r8
@@ -569,7 +570,7 @@ contains
     ! initialize column-level variables
     do c = bounds%begc, bounds%endc
        l = col_pp%landunit(c)
-       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+       if (col_pp%itype(c) == istsoil .or. lun_pp%itype(l) == istcrop) then
 
 
           this%cwdc_col(c)       = 0._r8
