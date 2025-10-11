@@ -32,7 +32,7 @@ module VegetationDataType
   use VegetationPropertiesType  , only : veg_vp
   use LandunitType              , only : lun_pp
   use GridcellType              , only : grc_pp
-  use ColumnDataType            , only : col_es
+  use ColumnDataType            , only : col_es, col_pp
   use ColumnDataType            , only : column_carbon_state, column_carbon_flux
   use ColumnDataType            , only : column_nitrogen_state, column_nitrogen_flux
   use ColumnDataType            , only : column_phosphorus_state, column_phosphorus_flux
@@ -2460,7 +2460,8 @@ module VegetationDataType
           this%leafcmax(p) = 0._r8
 
           l = veg_pp%landunit(p)
-          if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+          c = veg_pp%column(p)
+          if (col_pp%itype(c) == istsoil .or. lun_pp%itype(l) == istcrop) then
 
              if (veg_pp%itype(p) == noveg) then
                 this%leafc(p)         = 0._r8
@@ -3933,7 +3934,7 @@ module VegetationDataType
     do p = begp,endp
 
        l = veg_pp%landunit(p)
-       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+       if (col_pp%itype(c) == istsoil .or. lun_pp%itype(l) == istcrop) then
           if (veg_pp%itype(p) == noveg) then
              this%leafn(p) = 0._r8
              this%leafn_storage(p) = 0._r8
@@ -4414,7 +4415,7 @@ module VegetationDataType
     type(vegetation_carbon_state), intent(in) :: veg_cs
     !
     ! !LOCAL VARIABLES:
-    integer :: fp,l,p                      ! indices
+    integer :: fp,l,c,p                      ! indices
     integer :: num_special_patch           ! number of good values in special_patch filter
     integer :: special_patch (endp-begp+1) ! special landunit filter - patches
     !------------------------------------------------------------------------
@@ -4616,7 +4617,8 @@ module VegetationDataType
 
     do p = begp,endp
        l = veg_pp%landunit(p)
-       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+       c = veg_pp%column(p)
+       if (col_pp%itype(c) == istsoil .or. lun_pp%itype(l) == istcrop) then
 
           if (veg_pp%itype(p) == noveg) then
              this%leafp(p) = 0._r8
@@ -5416,7 +5418,7 @@ module VegetationDataType
     integer, intent(in) :: begp,endp
     !
     ! !LOCAL VARIABLES:
-    integer           :: p,l                        ! indices
+    integer           :: p,l,c                        ! indices
     !------------------------------------------------------------------------
 
     !-----------------------------------------------------------------------
@@ -5582,8 +5584,9 @@ module VegetationDataType
 
     do p = begp, endp
        l = veg_pp%landunit(p)
+       c = veg_pp%column(p)
 
-       if (lun_pp%itype(l) == istsoil) then
+       if (col_pp%itype(c) == istsoil) then
           this%n_irrig_steps_left(p) = 0
           this%irrig_rate(p)         = 0.0_r8
        end if
@@ -7949,7 +7952,7 @@ module VegetationDataType
                 this%xsmrpool_c13ratio(p)  = spval
              endif
           end if
-          if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+          if (col_pp%itype(c) == istsoil .or. lun_pp%itype(l) == istcrop) then
              this%tempsum_npp(p)           = 0._r8
              this%annsum_npp(p)            = 0._r8
              this%availc(p)                = 0._r8
@@ -9497,7 +9500,7 @@ module VegetationDataType
           this%soyfixn(p)       = 0._r8
        end if
 
-       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+       if (col_pp%itype(c) == istsoil .or. lun_pp%itype(l) == istcrop) then
           this%fert_counter(p)  = 0._r8
        end if
 
@@ -9879,7 +9882,7 @@ module VegetationDataType
     integer, intent(in) :: begp,endp
     !
     ! !LOCAL VARIABLES:
-    integer :: p,l                         ! indices
+    integer :: p,c,l                       ! indices
     integer :: fp                          ! filter indices
     integer :: num_special_patch           ! number of good values in special_patch filter
     integer :: special_patch(endp-begp+1)  ! special landunit filter - patches
@@ -10548,6 +10551,7 @@ module VegetationDataType
     end do
     do p = begp,endp
        l = veg_pp%landunit(p)
+       c = veg_pp%landunit(p)
 
        this%prev_leafp_to_litter (p)  = 0._r8
        this%prev_frootp_to_litter(p)  = 0._r8
@@ -10558,7 +10562,7 @@ module VegetationDataType
 
        end if
 
-       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+       if (col_pp%itype(c) == istsoil .or. lun_pp%itype(l) == istcrop) then
           this%fert_p_counter(p)  = 0._r8
        end if
 

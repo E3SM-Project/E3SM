@@ -677,9 +677,9 @@ contains
             if (j == 1) then ! this only needs to be done once
                eflx_fgr12(c) = -cnfac*fn(c,1) - (1._r8-cnfac)*fn1(c,1)
             end if
-            if (j > 0 .and. j < nlevgrnd .and. (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop)) then
+            if (j > 0 .and. j < nlevgrnd .and. (col_pp%itype(c) == istsoil .or. lun_pp%itype(l) == istcrop)) then
                eflx_fgr(c,j) = -cnfac*fn(c,j) - (1._r8-cnfac)*fn1(c,j)
-            else if (j == nlevgrnd .and. (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop)) then
+            else if (j == nlevgrnd .and. (col_pp%itype(c) == istsoil .or. lun_pp%itype(l) == istcrop)) then
                eflx_fgr(c,j) = 0._r8
             end if
 
@@ -1465,7 +1465,7 @@ contains
 
                ! from Zhao (1997) and Koren (1999)
                supercool(c,j) = 0.0_r8
-               if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop .or. col_pp%itype(c) == icol_road_perv) then
+               if (col_pp%itype(c) == istsoil .or. lun_pp%itype(l) == istcrop .or. col_pp%itype(c) == icol_road_perv) then
                   if(t_soisno(c,j) < tfrz) then
                      smp = hfus*(tfrz-t_soisno(c,j))/(grav*t_soisno(c,j)) * 1000._r8  !(mm)
                      supercool(c,j) = watsat(c,j)*(smp/sucsat(c,j))**(-1._r8/bsw(c,j))
@@ -1682,7 +1682,7 @@ contains
          l = col_pp%landunit(c)
          if (lun_pp%urbpoi(l)) then
             eflx_snomelt_u(c) = eflx_snomelt(c)
-         else if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+         else if (col_pp%itype(c) == istsoil .or. lun_pp%itype(l) == istcrop) then
             eflx_snomelt_r(c) = eflx_snomelt(c)
          end if
       end do

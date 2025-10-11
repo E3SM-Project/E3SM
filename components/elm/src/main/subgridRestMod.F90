@@ -676,7 +676,7 @@ contains
       type(bounds_type), intent(in)    :: bounds ! bounds
       !
       ! !LOCAL VARIABLES:
-      integer  :: p, l ! indices
+      integer  :: p, c ! indices
       real(r8) :: diff ! difference in weights
 
       real(r8), parameter :: tol = 5.e-3  ! tolerance for checking weights
@@ -685,8 +685,8 @@ contains
       !-----------------------------------------------------------------------
       
       do p = bounds%begp, bounds%endp
-         l = veg_pp%landunit(p)
-         if (lun_pp%itype(l) == istsoil) then
+         c = veg_pp%column(p)
+         if (col_pp%itype(c) == istsoil) then
             diff = abs(veg_pp%wtlunit(p) - pft_wtlunit_before_rest_read(p))
             if (diff > tol) then
                write(iulog,*) 'ERROR: PFT weights are SIGNIFICANTLY different between the restart (finidat) file'

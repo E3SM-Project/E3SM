@@ -280,7 +280,7 @@ contains
     do l = bounds%begl,bounds%endl
        t = lun_pp%topounit(l)
        lun_pp%active(l) = is_active_l(l)
-       if (lun_pp%active(l) .and. .not. lun_pp%itype(l) == istice_mec .and. .not. lun_pp%itype(l) == istsoil .and. .not. top_pp%active(t)) then
+       if (lun_pp%active(l) .and. .not. lun_pp%itype(l) == istice_mec .and. .not. col_pp%itype(c) == istsoil .and. .not. top_pp%active(t)) then
           write(iulog,*) trim(subname),' ERROR: active landunit found on inactive topounit', &
                          'at l = ', l, ', t = ', t
           call endrun(decomp_index=l, elmlevel=namel, msg=errMsg(__FILE__, __LINE__))
@@ -376,7 +376,7 @@ contains
        ! - in this topounit, due to dynamic landunits. We'll live with the fact that
        ! initialization of the new crop landunit will be initialized in an un-ideal way
        ! in this rare situation.
-       !if (lun_pp%itype(l) == istsoil .and. .not. is_topo_all_ltypeX(t, istice)) then ! make sure no active l for inactive topounit TKT
+       !if (col_pp%itype(c) == istsoil .and. .not. is_topo_all_ltypeX(t, istice)) then ! make sure no active l for inactive topounit TKT
        if (top_pp%active(t) .and. lun_pp%itype(l) == istsoil .and. .not. is_topo_all_ltypeX(t, istice)) then
           is_active_l = .true.
        end if
@@ -936,7 +936,7 @@ contains
     type(bounds_type), intent(in) :: bounds
     !
     ! !LOCAL VARIABLES:
-    integer :: p,l,g,t,ti,topi           ! indices
+    integer :: p,c,l,g,t,ti,topi           ! indices
     integer :: ptype           ! pft itype
     integer :: ptype_1indexing ! pft itype, translated into 1-indexing for the given landunit type
     
@@ -955,10 +955,11 @@ contains
        g = veg_pp%gridcell(p)
        l = veg_pp%landunit(p)
        t = veg_pp%topounit(p)
+       c = veg_pp%column(p)
        !topi = grc_pp%topi(g)
        !ti = t - topi + 1
        ptype = veg_pp%itype(p)
-       if (lun_pp%itype(l) == istsoil) then
+       if (col_pp%itype(c) == istsoil) then
           ptype_1indexing = ptype + (1 - natpft_lb)
           subgrid_weights_diagnostics%pct_nat_pft(t, ptype_1indexing) = veg_pp%wtlunit(p) * 100._r8
        else if (lun_pp%itype(l) == istcrop) then

@@ -264,7 +264,7 @@ contains
        if (.not. col_pp%active(c) .or. col_pp%wtgcell(c) < 1e-6_r8) cycle
 
        g = col_pp%gridcell(c)
-       if (lun_pp%itype(l) == istsoil) then
+       if (col_pp%itype(c) == istsoil) then
           col_nf%manure_n_grz(c) &
                = atm2lnd_vars%forc_ndep_past_grc(g) / col_pp%wtgcell(c) * 1e3_r8 ! kg to g 
           if (col_nf%manure_n_grz(c) > 1e12 .or. isnan(col_nf%manure_n_grz(c))) then
@@ -314,7 +314,7 @@ contains
        c = filter_soilc(fc)
        l = col_pp%landunit(c)
        g = col_pp%gridcell(c)
-       if (.not. (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop)) cycle
+       if (.not. (col_pp%itype(c) == istsoil .or. lun_pp%itype(l) == istcrop)) cycle
        if (.not. col_pp%active(c) .or. col_pp%wtgcell(c) < 1e-15_r8) cycle
 
        ! Find and average the atmospheric resistances Rb and Ra.
@@ -954,7 +954,7 @@ contains
        manure_prod = col_nf%manure_n_barns(c) + col_nf%manure_n_grz(c)
 
        included = (lun_pp%itype(l) == istcrop .and. fan_to_bgc_crop) &
-             .or. (lun_pp%itype(l) == istsoil .and. fan_to_bgc_veg)
+             .or. (col_pp%itype(c) == istsoil .and. fan_to_bgc_veg)
 
        if (included) then
           col_nf%fert_to_sminn(c) = flux_fert + flux_manure

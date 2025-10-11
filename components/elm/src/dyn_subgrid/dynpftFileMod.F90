@@ -21,6 +21,7 @@ module dynpftFileMod
   use VegetationType           , only : veg_pp        
   use topounit_varcon      , only : max_topounits
   use GridcellType         , only : grc_pp 
+  use ColumnType           , only : col_pp
   
   ! !PUBLIC MEMBER FUNCTIONS:
   implicit none
@@ -251,7 +252,7 @@ contains
     type(bounds_type), intent(in) :: bounds  ! proc-level bounds
     
     ! !LOCAL VARIABLES:
-    integer               :: m,p,l,g,t,ti,topi         ! indices   
+    integer               :: m,p,c,l,g,t,ti,topi  ! indices
     real(r8), allocatable :: wtpatch_cur(:,:,:)   ! current pft weights 
     character(len=32) :: subname='dynpft_interp' ! subroutine name
     !-----------------------------------------------------------------------
@@ -276,6 +277,7 @@ contains
        g = veg_pp%gridcell(p)
        l = veg_pp%landunit(p)             
        t = veg_pp%topounit(p)
+       c = veg_pp%column(p)
        topi = grc_pp%topi(g)
        ti = t - topi + 1
 
@@ -283,7 +285,7 @@ contains
        ! (if there is one)
        ! (However, currently [as of 5-9-13] the code won't let you run with transient
        ! Patches combined with create_crop_landunit anyway, so it's a moot point.)
-       if (lun_pp%itype(l) == istsoil) then
+       if (col_pp%itype(c) == istsoil) then
           m = veg_pp%itype(p)
 
           ! Note that the following assignment assumes that all Patches share a single column

@@ -444,7 +444,7 @@ contains
           pc = pc_grid(g)
           
           ! partition moisture fluxes between soil and h2osfc
-          if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+          if (col_pp%itype(c) == istsoil .or. lun_pp%itype(l) == istcrop) then
 
              ! explicitly use frac_sno=0 if snl=0
              if (snl(c) >= 0) then
@@ -1572,7 +1572,7 @@ contains
 
        do fc = 1, num_hydrologyc
           c = filter_hydrologyc(fc)
-          l = lun_pp%landuse(c)
+          l = col_pp%landunit(c)
 
           !scs: watmin addition to fix water balance errors
           xs1(c)          = max(max(h2osoi_liq(c,1)-watmin,0._r8)- &

@@ -490,7 +490,7 @@ contains
                    endif
                 endif
 
-                if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop .or. lun_pp%itype(l) == istwet ) then
+                if (col_pp%itype(c) == istsoil .or. lun_pp%itype(l) == istcrop .or. lun_pp%itype(l) == istwet ) then
                    if (.not. use_firn_percolation_and_compaction) then
                       if (do_capsnow(c)) then
                          snow_sources(c) = frac_sno_eff(c) * (qflx_dew_snow(c) + qflx_dew_grnd(c) ) &

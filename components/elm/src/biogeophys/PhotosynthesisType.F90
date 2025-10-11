@@ -9,6 +9,7 @@ module PhotosynthesisType
   use elm_varctl     , only : use_cn, use_c13, use_c14
   use elm_varcon     , only : spval
   use LandunitType   , only : lun_pp
+  use ColumnType     , only : col_pp
   use VegetationType      , only : veg_pp
   !
   implicit none
@@ -420,11 +421,12 @@ contains
     type(bounds_type) , intent(in)    :: bounds
     !
     ! !LOCAL VARIABLES:
-    integer :: p,l ! indices
+    integer :: p,l,c ! indices
     !-----------------------------------------------------------------------
 
     do p = bounds%begp, bounds%endp
        l = veg_pp%landunit(p)
+       c = veg_pp%column(p)
        if (.not. lun_pp%lakpoi(l)) then
           this%psnsun_patch(p)    = 0._r8
           this%psnsun_wc_patch(p) = 0._r8
@@ -454,7 +456,7 @@ contains
              this%c14_psnsha_patch(p) = 0._r8
           endif
        end if
-       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop &
+       if (col_pp%itype(c) == istsoil .or. lun_pp%itype(l) == istcrop &
             .or. lun_pp%itype(l) == istice .or. lun_pp%itype(l) == istice_mec &
             .or. lun_pp%itype(l) == istwet) then
           if (use_c13) then
@@ -480,11 +482,12 @@ contains
     type(bounds_type) , intent(in)    :: bounds
     !
     ! !LOCAL VARIABLES:
-    integer :: p,l ! indices
+    integer :: p,l,c ! indices
     !-----------------------------------------------------------------------
 
     do p = bounds%begp, bounds%endp
        l = veg_pp%landunit(p)
+       c = veg_pp%column(p)
        if (.not. lun_pp%lakpoi(l)) then
           photosyns_vars%psnsun_patch(p)    = 0._r8
           photosyns_vars%psnsun_wc_patch(p) = 0._r8
@@ -512,7 +515,7 @@ contains
              photosyns_vars%c14_psnsha_patch(p) = 0._r8
           endif
        end if
-       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop &
+       if (col_pp%itype(c) == istsoil .or. lun_pp%itype(l) == istcrop &
             .or. lun_pp%itype(l) == istice .or. lun_pp%itype(l) == istice_mec &
             .or. lun_pp%itype(l) == istwet) then
           if (use_c13) then
