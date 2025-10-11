@@ -5,7 +5,7 @@
 #include "share/physics/eamxx_trcmix.hpp"
 
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
-#include "share/algorithm/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp"
+#include "share/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
 #include "share/physics/eamxx_common_physics_functions.hpp"
 #include "share/util/eamxx_column_ops.hpp"
