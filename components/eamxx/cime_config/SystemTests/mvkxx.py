@@ -1,31 +1,68 @@
 """
-Multivariate test for climate reproducibility using the Kolmogrov-Smirnov (K-S)
-test and based on The CESM/E3SM model's multi-instance capability is used to
-conduct an ensemble of simulations starting from different initial conditions.
+TODO: Add description here.
 
 This class inherits from SystemTestsCommon.
 """
 
 import os
-import glob
 import shutil
-import logging
 
-import CIME.utils
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
 from CIME.case.case_setup import case_setup
 
 
-logger = logging.getLogger(__name__)
+class MVKxx(SystemTestsCommon):
+    """Multivariate K-S test using multi-instance capability"""
 
-num_instances = os.getenv("MVKXX_NINST", "6")
-n_inst = int(num_instances)
+    def setup_phase(
+        self, clean=False, test_mode=False, reset=False, keep=False, disable_git=False
+    ):
+        """setup phase implementation"""
 
-multi_driver = os.getenv("MVKXX_MULTI_DRIVER", "FALSE").upper()
-m_driver = multi_driver == "TRUE"
+        self.setup_indv(
+            clean=clean,
+            test_mode=test_mode,
+            reset=reset,
+            keep=keep,
+            disable_git=disable_git,
+        )
 
-logger.info("MVKxx using n_inst=%d", n_inst)
-logger.info("MVKxx using multi_driver=%s", m_driver)
+        self._case.flush()
+
+        case_setup(self._case, test_mode=False, reset=True)
+        run_dir = self._case.get_value("RUNDIR")
+
+        n_inst = int(self._case.get_value("NINST_ATM"))
+        if n_inst > 1:
+            duplicate_yaml_files(run_dir + "/data/scream_input.yaml", n_inst)
+            duplicate_yaml_files(
+                run_dir + "/data/monthly_average.yaml", n_inst)
+            # Let's update the perturbation seed in the YAML files
+            for i in range(1, n_inst + 1):
+                yaml_file = f"{run_dir}/data/scream_input.yaml_{i:04d}"
+                out_file = f"{run_dir}/data/monthly_average.yaml_{i:04d}"
+                if not os.path.isfile(yaml_file):
+                    raise FileNotFoundError(
+                        f"File {yaml_file} does not exist.")
+                if not os.path.isfile(out_file):
+                    raise FileNotFoundError(f"File {out_file} does not exist.")
+                update_yaml_perturbation_seed(yaml_file, i, "pert")
+                update_yaml_perturbation_seed(out_file, i, "out")
+        else:
+            msg = (
+                f"NINST_ATM = {n_inst}. This test requires NINST_ATM > 1. "
+                "Consider setting NINST_ATM > 1 in your env_run.xml "
+                "or use _C# specifier in test name for a multi-driver "
+                "multi-instance setup (producing # pelayout copies), "
+                "or _N# for a single-driver multi-instance setup "
+                "(dividing specified pelayout among # instances)."
+            )
+            raise ValueError(msg)
+
+
+# TEST UTILITY FUNCTIONS BELOW
+# - duplicate_yaml_files is used in setup
+# - update_yaml_perturbation_seed is used in setup
 
 
 def duplicate_yaml_files(yaml_file, num_copies):
@@ -40,7 +77,7 @@ def duplicate_yaml_files(yaml_file, num_copies):
 
 
 def update_yaml_perturbation_seed(yaml_file, seed, pert_out):
-    """Update the perturbation seed in a YAML file using basic text manipulation."""
+    """Update the perturbation seed."""
 
     # Read the file content
     with open(yaml_file, "r", encoding="utf-8") as file:
@@ -68,8 +105,7 @@ def update_yaml_perturbation_seed(yaml_file, seed, pert_out):
                 #    with "monthly_average.yaml_{seed:04d}"
                 new_lines.append(
                     line.replace(
-                        "monthly_average.yaml",
-                        f"monthly_average.yaml_{seed:04d}"
+                        "monthly_average.yaml", f"monthly_average.yaml_{seed:04d}"
                     )
                 )
                 found_output = True
@@ -106,56 +142,3 @@ def update_yaml_perturbation_seed(yaml_file, seed, pert_out):
         # Write back to file
         with open(yaml_file, "w", encoding="utf-8") as file:
             file.writelines(new_lines)
-
-
-class MVKxx(SystemTestsCommon):
-    """Multivariate K-S test using multi-instance capability"""
-
-    def __init__(self, case, **kwargs):
-        """
-        initialize an object interface to the MVKxx test
-        """
-        SystemTestsCommon.__init__(self, case, **kwargs)
-
-        if self._case.get_value("MODEL") == "e3sm":
-            self.component = "scream"
-        else:
-            self.component = "cam"
-
-    def setup_phase(self, clean=False, test_mode=False, reset=False, keep=False, disable_git=False):
-        """setup phase implementation"""
-
-        self.setup_indv(
-            clean=clean,
-            test_mode=test_mode,
-            reset=reset,
-            keep=keep,
-            disable_git=disable_git,
-        )
-
-        logging.info("Starting to set up multi-instance exe")
-        for comp in self._case.get_values("COMP_CLASSES"):
-            n_tasks = self._case.get_value("NTASKS_{}".format(comp))
-            total_tasks = n_tasks if m_driver else n_tasks * n_inst
-            self._case.set_value(f"NTASKS_{comp}", total_tasks)
-            if comp not in ["CPL", "ESP", "WAV"]:
-                self._case.set_value(f"NINST_{comp}", n_inst)
-            self._case.set_value("MULTI_DRIVER", m_driver)
-
-        self._case.flush()
-
-        case_setup(self._case, test_mode=False, reset=True)
-        run_dir = self._case.get_value("RUNDIR")
-        duplicate_yaml_files(run_dir + "/data/scream_input.yaml", n_inst)
-        duplicate_yaml_files(run_dir + "/data/monthly_average.yaml", n_inst)
-
-        # Let's update the perturbation seed in the YAML files
-        for i in range(1, n_inst + 1):
-            yaml_file = f"{run_dir}/data/scream_input.yaml_{i:04d}"
-            out_file = f"{run_dir}/data/monthly_average.yaml_{i:04d}"
-            if not os.path.isfile(yaml_file):
-                raise FileNotFoundError(f"File {yaml_file} does not exist.")
-            if not os.path.isfile(out_file):
-                raise FileNotFoundError(f"File {out_file} does not exist.")
-            update_yaml_perturbation_seed(yaml_file, i, "pert")
-            update_yaml_perturbation_seed(out_file, i, "out")
