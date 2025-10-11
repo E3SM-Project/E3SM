@@ -1,34 +1,32 @@
-%YAML 1.1
----
-filename_prefix: eamxx_output.decadal.h
+#!/bin/bash
+
+cime_root=$(./xmlquery --value CIMEROOT)
+case_name=$(./xmlquery --value CASE)
+machine=$(./xmlquery --value MACH)
+
+atmchange=$cime_root/../components/eamxx/scripts/atmchange
+
+# On Frontier, set proxy settings
+if [[ $machine == "frontier" ]]; then
+    export all_proxy=socks://proxy.ccs.ornl.gov:3128/
+    export ftp_proxy=ftp://proxy.ccs.ornl.gov:3128/
+    export http_proxy=http://proxy.ccs.ornl.gov:3128/
+    export https_proxy=http://proxy.ccs.ornl.gov:3128/
+    export no_proxy='localhost,127.0.0.0/8,*.ccs.ornl.gov'
+fi
+
+# Change run start
+./xmlchange RUN_STARTDATE="2010-01-01"
+
+# Create an output file on the fly
+cat <<EOF >> monthly_average.yaml
+filename_prefix: ${case_name}.scream.h
 iotype: pnetcdf
 averaging_type: average
-file_max_storage_type: one_month
-horiz_remap_file: ${DIN_LOC_ROOT}/atm/scream/maps/map_ne1024pg2_to_ne30pg2_mono.20230901.nc
+max_snapshots_per_file: 1
 fields:
   physics_pg2:
     field_names:
-    # 3D fields
-    - T_mid
-    - qv
-    - RelativeHumidity
-    - qc
-    - qi
-    - qr
-    - qm
-    - nc
-    - ni
-    - nr
-    - cldfrac_tot_for_analysis
-    - cldfrac_ice_for_analysis
-    - cldfrac_liq
-    - omega
-    - U
-    - V
-    - z_mid
-    - p_mid
-    - tke
-    # 2D fields
     - SW_flux_up_at_model_top
     - SW_flux_dn_at_model_top
     - LW_flux_up_at_model_top
@@ -77,17 +75,15 @@ fields:
     - z_mid_at_1000hPa
     - T_mid_at_850hPa
     - T_mid_at_700hPa
-    # For SST advection
     - U_at_10m_above_surface
     - V_at_10m_above_surface
-    # COSP
-    - isccp_ctptau
-    - modis_ctptau
-    - misr_cthtau
-    - isccp_cldtot
-
 output_control:
   frequency: 1
   frequency_units: nmonths
-restart:
-  force_new_file: true
+EOF
+
+# Set the output file
+$atmchange -b output_yaml_files="./monthly_average.yaml"
+
+# Perturb the initial conditions
+$atmchange -b initial_conditions::perturbed_fields='T_mid'
