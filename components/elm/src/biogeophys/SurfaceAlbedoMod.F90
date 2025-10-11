@@ -652,7 +652,7 @@ contains
     do ib = 1, nband
        do fc = 1,num_nourbanc
           c = filter_nourbanc(fc)
-          l = lun_pp%landunit(c)
+          l = col_pp%landunit(c)
              if (coszen_col(c) > 0._r8) then
              ! ground albedo was originally computed in SoilAlbedo, but is now computed here
              ! because the order of SoilAlbedo and SNICAR_RT/SNICAR_AD_RT was switched for SNICAR/SNICAR_AD_RT.
