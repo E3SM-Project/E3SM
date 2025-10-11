@@ -1572,7 +1572,7 @@ contains
 
        do fc = 1, num_hydrologyc
           c = filter_hydrologyc(fc)
-          l = lun_pp%landuse(c)
+          l = col_pp%landunit(c)
 
           !scs: watmin addition to fix water balance errors
           xs1(c)          = max(max(h2osoi_liq(c,1)-watmin,0._r8)- &
