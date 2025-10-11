@@ -1648,7 +1648,7 @@ contains
             ! as computed in HydrologyDrainageMod.F90.
 
             l = col_pp%landunit(c)
-            if ( lun_pp%itype(l)==istice_mec) then
+            if ( lun_pp%itype(l) == istice_mec) then
                if (j>=1 .and. h2osoi_liq(c,j) > 0._r8) then   ! ice layer with meltwater
                   ! melting corresponds to a negative ice flux
                   qflx_glcice_melt(c) = qflx_glcice_melt(c) + h2osoi_liq(c,j)/dtime
@@ -1662,7 +1662,7 @@ contains
             endif     ! istice_mec
             ! for diagnostic QICE SMB output only - 
             ! these are to calculate SMB even without MECs 
-            if ( lun_pp%itype(l)==istice) then
+            if ( lun_pp%itype(l) == istice) then
                if (j>=1 .and. h2osoi_liq(c,j) > 0._r8) then   ! ice layer with meltwater
                   ! melting corresponds to a negative ice flux
                   qflx_glcice_melt_diag(c) = qflx_glcice_melt_diag(c) + h2osoi_liq(c,j)/dtime

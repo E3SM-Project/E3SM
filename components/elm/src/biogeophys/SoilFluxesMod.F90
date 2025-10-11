@@ -377,7 +377,7 @@ contains
          errsoi_patch(p) =  errsoi_patch(p)+eflx_h2osfc_to_snow_col(c)
          ! For urban sunwall, shadewall, and roof columns, the "soil" energy balance check
          ! must include the heat flux from the interior of the building.
-         if (col_pp%itype(c)==icol_sunwall .or. col_pp%itype(c)==icol_shadewall .or. col_pp%itype(c)==icol_roof) then
+         if (col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) == icol_shadewall .or. col_pp%itype(c) == icol_roof) then
             errsoi_patch(p) = errsoi_patch(p) + eflx_building_heat(c)
          end if
       end do

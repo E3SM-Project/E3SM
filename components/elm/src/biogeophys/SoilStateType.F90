@@ -588,7 +588,7 @@ contains
        topi = grc_pp%topi(g)
        ti = t - topi + 1
 
-       if (lun_pp%itype(l)==istwet .or. lun_pp%itype(l)==istice .or. lun_pp%itype(l)==istice_mec) then
+       if (lun_pp%itype(l) == istwet .or. lun_pp%itype(l) == istice .or. lun_pp%itype(l) == istice_mec) then
 
           do lev = 1,nlevgrnd
              this%bsw_col(c,lev)    = spval
@@ -613,7 +613,7 @@ contains
              this%tkmg_col(c,lev)   = spval
              this%tksatu_col(c,lev) = spval
              this%tkdry_col(c,lev)  = spval
-             if (lun_pp%itype(l)==istwet .and. lev > nlevbed) then
+             if (lun_pp%itype(l) == istwet .and. lev > nlevbed) then
                 this%csol_col(c,lev) = csol_bedrock
              else
                 this%csol_col(c,lev)= spval
@@ -810,7 +810,7 @@ contains
        g = col_pp%gridcell(c)
        l = col_pp%landunit(c)
 
-       if (lun_pp%itype(l)==istdlak) then
+       if (lun_pp%itype(l) == istdlak) then
 
           do lev = 1,nlevgrnd
              if ( lev <= nlevsoi )then

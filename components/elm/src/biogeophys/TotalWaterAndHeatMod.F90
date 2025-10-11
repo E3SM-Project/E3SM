@@ -564,7 +564,7 @@ contains
           c = filter_nolakec(fc)
           l = col_pp%landunit(c)
 
-          if (col_pp%itype(c)==icol_sunwall .or. col_pp%itype(c)==icol_shadewall) then
+          if (col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) == icol_shadewall) then
              has_h2o = .false.
              if (j <= nlevurb) then
                 heat_dry_mass(c) = heat_dry_mass(c) + &

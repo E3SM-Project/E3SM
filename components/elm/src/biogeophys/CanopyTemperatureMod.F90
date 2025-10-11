@@ -354,7 +354,7 @@ contains
          ! Urban emissivities are currently read in from data file
 
          if (.not. urbpoi(l)) then
-            if (lun_pp%itype(l)==istice .or. lun_pp%itype(l)==istice_mec) then
+            if (lun_pp%itype(l) == istice .or. lun_pp%itype(l) == istice_mec) then
                emg(c) = 0.97_r8
             else
                emg(c) = (1._r8-frac_sno(c))*0.96_r8 + frac_sno(c)*0.97_r8

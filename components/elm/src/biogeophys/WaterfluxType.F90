@@ -383,7 +383,7 @@ contains
     do p = bounds%begp, bounds%endp
        l = veg_pp%landunit(p)
        
-       if (lun_pp%itype(l)==istsoil) then
+       if (lun_pp%itype(l) == istsoil) then
           this%n_irrig_steps_left_patch(p) = 0
           this%irrig_rate_patch(p)         = 0.0_r8
        end if
