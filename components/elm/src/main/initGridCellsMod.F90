@@ -391,7 +391,7 @@ contains
        call add_landunit(li=li, ti=ti, ltype=ltype, wttopounit=wtlunit2topounit)
        
        ! Assume one column on the landunit
-       call add_column(ci=ci, li=li, ctype=1, wtlunit=1.0_r8)
+       call add_column(ci=ci, li=li, ctype=1, wtlunit=1.0_r8, is_soil=.true.)
        do m = natpft_lb,natpft_ub
           if(use_fates .and. .not.use_fates_sp)then
              p_wt = 1.0_r8/real(natpft_size,r8)
@@ -409,7 +409,7 @@ contains
            ! get new weight for wttopounit:
            wtpoly2lndunit = wt_lunit(gi, topo_ind, z) 
            call add_polygon_landunit(li=li, ti=ti, ltype=ltype, wttopounit=wtpoly2lndunit, polytype = z - max_non_poly_lunit)
-           call add_column(ci=ci, li=li, ctype=1, wtlunit=1.0_r8)
+           call add_column(ci=ci, li=li, ctype=1, wtlunit=1.0_r8, is_soil=.true.)
            ! add patch:
            do m = natpft_lb,natpft_ub
              if(use_fates .and. .not.use_fates_sp) then
@@ -591,7 +591,7 @@ contains
 
        if (create_crop_landunit) then
           do m = cft_lb, cft_ub
-             call add_column(ci=ci, li=li, ctype=((istcrop*100) + m), wtlunit=wt_cft(gi,topo_ind,m))
+             call add_column(ci=ci, li=li, ctype=((istcrop*100) + m), wtlunit=wt_cft(gi,topo_ind,m), is_crop=.true.)
              call add_patch(pi=pi, ci=ci, ptype=m, wtcol=1.0_r8)
           end do
        end if
