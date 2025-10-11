@@ -650,7 +650,7 @@ contains
                 if (.not. use_firn_percolation_and_compaction) then
                    ! I don't think the next 5 lines are necessary (removed in CLMv5)
                    l = col_pp%landunit(c)
-                   if (ltype(l)==istice_mec .and. void < 0._r8) then
+                   if (ltype(l) == istice_mec .and. void < 0._r8) then
                       dz(c,j) = h2osoi_ice(c,j)/denice + h2osoi_liq(c,j)/denh2o
                       void = 0._r8
                    endif
@@ -1014,7 +1014,7 @@ contains
                 if (ltype(l) == istwet) then
                    h2osoi_liq(c,0) = 0.0_r8
                 endif
-                if (ltype(l) == istice .or. ltype(l)==istice_mec) then
+                if (ltype(l) == istice .or. ltype(l) == istice_mec) then
                    h2osoi_liq(c,0) = 0.0_r8
                 endif
              endif

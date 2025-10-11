@@ -1236,7 +1236,7 @@ contains
        ! Below snow temperatures - nonlake points (lake points are set below)
        if (.not. lun_pp%lakpoi(l)) then
 
-          if (lun_pp%itype(l)==istice .or. lun_pp%itype(l)==istice_mec) then
+          if (lun_pp%itype(l) == istice .or. lun_pp%itype(l) == istice_mec) then
              this%t_soisno(c,1:nlevgrnd) = 250._r8
 
           else if (lun_pp%itype(l) == istwet) then
