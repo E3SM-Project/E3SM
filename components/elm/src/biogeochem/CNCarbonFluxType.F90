@@ -1018,6 +1018,7 @@ contains
 
        do p = bounds%begp,bounds%endp
           l = veg_pp%landunit(p)
+          c = veg_pp%column(p)
 
           this%gpp_patch(p)                      = 0._r8
           this%gpp_before_downreg_patch(p)       = 0._r8
@@ -1035,7 +1036,7 @@ contains
                 this%xsmrpool_c13ratio_patch(p)  = spval
              endif
           end if
-          if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+          if (col_pp%itype(c) == istsoil .or. lun_pp%itype(l) == istcrop) then
              this%tempsum_npp_patch(p)           = 0._r8
              this%annsum_npp_patch(p)            = 0._r8
              this%availc_patch(p)                = 0._r8
@@ -1057,7 +1058,7 @@ contains
        end if
 
        this%fphr_col(c,nlevdecomp+1:nlevgrnd) = 0._r8 !used to be in CH4Mod
-       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+       if (col_pp%itype(c) == istsoil .or. lun_pp%itype(l) == istcrop) then
           this%fphr_col(c,nlevdecomp+1:nlevgrnd) = 0._r8 
        else if (lun_pp%itype(l) == istdlak .and. allowlakeprod) then
           this%fphr_col(c,:) = spval
@@ -1067,7 +1068,7 @@ contains
 
        ! also initialize dynamic landcover fluxes so that they have
        ! real values on first timestep, prior to calling pftdyn_cnbal
-       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+       if (col_pp%itype(c) == istsoil .or. lun_pp%itype(l) == istcrop) then
           this%dwt_conv_cflux_col(c)        = 0._r8
           this%dwt_prod10c_gain_col(c)      = 0._r8
           this%dwt_prod100c_gain_col(c)     = 0._r8

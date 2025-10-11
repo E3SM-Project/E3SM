@@ -314,7 +314,7 @@ contains
        c = filter_soilc(fc)
        l = col_pp%landunit(c)
        g = col_pp%gridcell(c)
-       if (.not. (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop)) cycle
+       if (.not. (col_pp%itype(c) == istsoil .or. lun_pp%itype(l) == istcrop)) cycle
        if (.not. col_pp%active(c) .or. col_pp%wtgcell(c) < 1e-15_r8) cycle
 
        ! Find and average the atmospheric resistances Rb and Ra.
