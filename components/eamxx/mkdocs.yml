@@ -13,7 +13,7 @@ nav:
     - 'Doubly Periodic EAMxx': 'user/dp_eamxx.md'
     - 'Python support': 'user/python.md'
     - 'IO Metadata': 'user/io_metadata.md'
-    - 'Multi-Instance and NBFB': 'user/multi-instance-mvk.md'
+    - 'Multi-Instance and NBFB': 'user/multi-instance-est.md'
     - 'EAMxx runtime parameters': 'user/eamxx_params.md'
     - 'Diagnostics':
       - 'Overview': 'user/diags/index.md'
