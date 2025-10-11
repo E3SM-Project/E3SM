@@ -278,8 +278,8 @@ contains
           ! Canopy interception and precipitation onto ground surface
           ! Add precipitation to leaf water
 
-          if (ltype(l)==istsoil .or. ltype(l)==istwet .or. urbpoi(l) .or. &
-               ltype(l)==istcrop) then
+          if (ltype(l) == istsoil .or. ltype(l) == istwet .or. urbpoi(l) .or. &
+               ltype(l) == istcrop) then
 
              qflx_candrip(p) = 0._r8      ! rate of canopy runoff
              qflx_through_snow(p) = 0._r8 ! snow precipitation direct through canopy
@@ -334,7 +334,7 @@ contains
                 end if
              end if
 
-          else if (ltype(l)==istice .or. ltype(l)==istice_mec) then
+          else if (ltype(l) == istice .or. ltype(l) == istice_mec) then
 
              h2ocan(p)            = 0._r8
              qflx_candrip(p)      = 0._r8
@@ -652,7 +652,7 @@ contains
              frac_sno_eff(c) = 1._r8
           endif
 
-          if (ltype(l)==istwet .and. t_grnd(c)>tfrz) then
+          if (ltype(l) == istwet .and. t_grnd(c)>tfrz) then
              h2osno(c)=0._r8
              snow_depth(c)=0._r8
           end if

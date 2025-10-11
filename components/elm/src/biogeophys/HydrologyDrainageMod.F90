@@ -225,7 +225,7 @@ contains
          qflx_glcice_frz(c) = 0._r8
          qflx_glcice_frz_diag(c) = 0._r8
 
-         if (lun_pp%itype(l)==istice .and. qflx_snwcp_ice(c) > 0.0_r8) then
+         if (lun_pp%itype(l) == istice .and. qflx_snwcp_ice(c) > 0.0_r8) then
                qflx_glcice_frz_diag(c) = qflx_snwcp_ice(c)
                qflx_glcice_diag(c) = qflx_glcice_diag(c) + qflx_glcice_frz_diag(c)
          endif
@@ -242,7 +242,7 @@ contains
            if (glc_dyn_runoff_routing(g)) qflx_snwcp_ice(c) = 0._r8
          end if
 
-         !if (lun_pp%itype(l)==istice) then
+         !if (lun_pp%itype(l) == istice) then
          !      qflx_glcice_frz_diag(c) = qflx_snwcp_ice(c)
          !      qflx_glcice_diag(c) = qflx_glcice_diag(c) + qflx_glcice_frz_diag(c)
          !endif
@@ -262,8 +262,8 @@ contains
          tpu_ind = top_pp%topo_grc_ind(t)  !Get topounit index on the grid
          g = col_pp%gridcell(c)
 
-         if (lun_pp%itype(l)==istwet .or. lun_pp%itype(l)==istice      &
-                                  .or. lun_pp%itype(l)==istice_mec) then
+         if (lun_pp%itype(l) == istwet .or. lun_pp%itype(l) == istice      &
+                                  .or. lun_pp%itype(l) == istice_mec) then
 
             qflx_drain(c)         = 0._r8
             qflx_drain_perched(c) = 0._r8
@@ -280,7 +280,7 @@ contains
             ! glc_dyn_runoff_routing = true: in this case, melting ice runs off, and excess
             ! snow is sent to CISM, where it is converted to ice. These corrections are
             ! done here:
-            if (glc_dyn_runoff_routing(g) .and. lun_pp%itype(l)==istice_mec) then
+            if (glc_dyn_runoff_routing(g) .and. lun_pp%itype(l) == istice_mec) then
             ! this allows GLC melt to runoff to qflx_qrgwl! 
 
                ! If glc_dyn_runoff_routing=T, add meltwater from istice_mec ice columns to the runoff.
@@ -337,12 +337,12 @@ contains
 
          qflx_runoff(c) = qflx_drain(c) + qflx_surf(c)  + qflx_h2osfc_surf(c) + qflx_qrgwl(c) + qflx_drain_perched(c)
 
-         if ((lun_pp%itype(l)==istsoil .or. lun_pp%itype(l)==istcrop) .and. col_pp%active(c)) then
+         if ((lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) .and. col_pp%active(c)) then
             qflx_irr_demand(c) = -1.0_r8 * f_surf(g,tpu_ind)*qflx_irrig(c) !surface water demand send to MOSART
          end if
          if (lun_pp%urbpoi(l)) then
             qflx_runoff_u(c) = qflx_runoff(c)
-         else if (lun_pp%itype(l)==istsoil .or. lun_pp%itype(l)==istcrop) then
+         else if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
             qflx_runoff_r(c) = qflx_runoff(c)
          end if
 

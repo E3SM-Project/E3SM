@@ -358,7 +358,7 @@ contains
        l = col_pp%landunit(c)
 
        if (lun_pp%urbpoi(l)) then
-          if (col_pp%itype(c)==icol_sunwall .or. col_pp%itype(c)==icol_shadewall) then
+          if (col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) == icol_shadewall) then
              col_pp%z(c,1:nlevurb)  = zurb_wall(l,1:nlevurb)
              col_pp%zi(c,0:nlevurb) = ziurb_wall(l,0:nlevurb)
              col_pp%dz(c,1:nlevurb) = dzurb_wall(l,1:nlevurb)
@@ -367,7 +367,7 @@ contains
                 col_pp%zi(c,nlevurb+1:nlevgrnd) = spval
                 col_pp%dz(c,nlevurb+1:nlevgrnd) = spval
              end if
-          else if (col_pp%itype(c)==icol_roof) then
+          else if (col_pp%itype(c) == icol_roof) then
              col_pp%z(c,1:nlevurb)  = zurb_roof(l,1:nlevurb)
              col_pp%zi(c,0:nlevurb) = ziurb_roof(l,0:nlevurb)
              col_pp%dz(c,1:nlevurb) = dzurb_roof(l,1:nlevurb)
@@ -745,7 +745,7 @@ contains
       do c = begc,endc
          l = col_pp%landunit(c)
 
-         if (lun_pp%itype(l)==istice_mec) then
+         if (lun_pp%itype(l) == istice_mec) then
             ! ice_mec columns already account for subgrid topographic variability through
             ! their use of multiple elevation classes; thus, to avoid double-accounting for
             ! topographic variability in these columns, we ignore topo_std and use a value

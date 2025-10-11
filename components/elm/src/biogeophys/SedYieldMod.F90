@@ -157,7 +157,7 @@ contains
             flx_sed_yld(c)        = 0._r8
 
             ! check landunit type and ground covered by snow/ice
-            if ( lun_pp%itype(l)/=istsoil .and. lun_pp%itype(l)/=istcrop ) then
+            if ( lun_pp%itype(l) /= istsoil .and. lun_pp%itype(l) /= istcrop ) then
                cycle
             end if
 
