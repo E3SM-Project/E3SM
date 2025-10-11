@@ -1165,10 +1165,11 @@ contains
     grid_count(:) = 0.d0
     last_lun_type   = -1
     do c = bounds_proc%begc_all, bounds_proc%endc_all
-       g             = col_pp%gridcell(c)
-       if (last_lun_type /= lun_pp%itype(col_pp%landunit(c))) then
+       g = col_pp%gridcell(c)
+       l = col_pp%landunit(c)
+       if (last_lun_type /= lun_pp%itype(l)) then
           grid_count(:) = 0.d0
-          last_lun_type = lun_pp%itype(col_pp%landunit(c))
+          last_lun_type = lun_pp%itype(l)
        endif
        grid_count(g) = grid_count(g) + 1.d0
        col_rank(c)   = grid_count(g)

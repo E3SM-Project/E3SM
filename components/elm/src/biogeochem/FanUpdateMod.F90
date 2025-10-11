@@ -319,7 +319,7 @@ contains
 
        ! Find and average the atmospheric resistances Rb and Ra.
        ! 
-       if (lun_pp%itype(col_pp%landunit(c)) == istcrop) then
+       if (lun_pp%itype(l) == istcrop) then
           ! Crop column, only one patch
           p = col_pp%pfti(c)
           if (p /= col_pp%pftf(c)) call endrun(msg='Strange patch for crop')
@@ -885,11 +885,12 @@ contains
     integer, intent(in)    :: num_soilc       ! number of soil columns in filter
     integer, intent(in)    :: filter_soilc(:) ! filter for soil columns
 
-    integer :: c, fc
+    integer :: c, l, fc
     real(r8) :: total, fluxout, fluxin, flux_loss    
 
     do fc = 1, num_soilc
        c = filter_soilc(fc)
+       l = col_pp%landunit(c)
        if (.not. col_pp%active(c) .or. col_pp%wtgcell(c) < 1.e-15_r8) cycle
        total = col_ns%tan_g1(c) + col_ns%tan_g2(c) + col_ns%tan_g3(c)
        total = total + col_ns%manure_u_grz(c) + col_ns%manure_a_grz(c) + col_ns%manure_r_grz(c)
@@ -900,7 +901,7 @@ contains
        total = total + col_ns%manure_n_stored(c)
        col_ns%fan_totn(c) = total
 
-       if (lun_pp%itype(col_pp%landunit(c)) == istcrop) then
+       if (lun_pp%itype(l) == istcrop) then
           ! no grazing, manure_n_appl is from the same column and not counted as input
           fluxin = col_nf%manure_n_mix(c) + col_nf%fert_n_appl(c)
        else
@@ -939,7 +940,7 @@ contains
     ! patch level fertilizer application + manure production 
     real(r8), intent(inout) :: nfertilization(bounds%begp:) 
 
-    integer :: c, fc, p
+    integer :: c, l, fc, p
     real(r8) :: flux_manure, flux_fert, manure_prod
     logical :: included
 
@@ -947,12 +948,13 @@ contains
 
     do fc = 1, num_soilc
        c = filter_soilc(fc)
+       l = col_pp%landunit(c)
        flux_manure = col_nf%manure_no3_to_soil(c) + col_nf%manure_nh4_to_soil(c)
        flux_fert = col_nf%fert_no3_to_soil(c) + col_nf%fert_nh4_to_soil(c)
        manure_prod = col_nf%manure_n_barns(c) + col_nf%manure_n_grz(c)
 
-       included = (lun_pp%itype(col_pp%landunit(c)) == istcrop .and. fan_to_bgc_crop) &
-             .or. (lun_pp%itype(col_pp%landunit(c)) == istsoil .and. fan_to_bgc_veg)
+       included = (lun_pp%itype(l) == istcrop .and. fan_to_bgc_crop) &
+             .or. (lun_pp%itype(l) == istsoil .and. fan_to_bgc_veg)
 
        if (included) then
           col_nf%fert_to_sminn(c) = flux_fert + flux_manure

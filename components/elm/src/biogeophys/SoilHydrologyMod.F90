@@ -440,10 +440,11 @@ contains
        do fc = 1, num_hydrologyc
           c  = filter_hydrologyc(fc)
           g  = cgridcell(c)
+          l = col_pp%landunit(c)
           pc = pc_grid(g)
           
           ! partition moisture fluxes between soil and h2osfc
-          if (lun_pp%itype(col_pp%landunit(c)) == istsoil .or. lun_pp%itype(col_pp%landunit(c))==istcrop) then
+          if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l)==istcrop) then
 
              ! explicitly use frac_sno=0 if snl=0
              if (snl(c) >= 0) then
@@ -1068,7 +1069,7 @@ contains
      !
      ! !LOCAL VARIABLES:
      !character(len=32) :: subname = 'Drainage'           ! subroutine name
-     integer  :: c,j,fc,i                                ! indices
+     integer  :: c,l,j,fc,i                              ! indices
      integer  :: nlevbed                                 ! # layers to bedrock
      real(r8) :: xs(bounds%begc:bounds%endc)             ! water needed to bring soil moisture to watmin (mm)
      real(r8) :: dzmm(bounds%begc:bounds%endc,1:nlevgrnd) ! layer thickness (mm)
@@ -1571,6 +1572,7 @@ contains
 
        do fc = 1, num_hydrologyc
           c = filter_hydrologyc(fc)
+          l = lun_pp%landuse(c)
 
           !scs: watmin addition to fix water balance errors
           xs1(c)          = max(max(h2osoi_liq(c,1)-watmin,0._r8)- &
@@ -1578,7 +1580,7 @@ contains
           if (use_vsfm) xs1(c) = 0._r8
           h2osoi_liq(c,1) = h2osoi_liq(c,1) - xs1(c)
 
-          if (lun_pp%urbpoi(col_pp%landunit(c))) then
+          if (lun_pp%urbpoi(l)) then
              qflx_rsub_sat(c)     = xs1(c) / dtime
           else
              if(h2osfcflag == 1) then
@@ -1596,7 +1598,7 @@ contains
           ! add in ice check
           xs1(c)          = max(max(h2osoi_ice(c,1),0._r8)-max(0._r8,(pondmx+watsat(c,1)*dzmm(c,1)-h2osoi_liq(c,1))),0._r8)
           h2osoi_ice(c,1) = min(max(0._r8,pondmx+watsat(c,1)*dzmm(c,1)-h2osoi_liq(c,1)), h2osoi_ice(c,1))
-          if ( (lun_pp%itype(col_pp%landunit(c)) == istice .or. lun_pp%itype(col_pp%landunit(c)) == istice_mec) .or. (.not. use_firn_percolation_and_compaction)) then      
+          if ( (lun_pp%itype(l) == istice .or. lun_pp%itype(l) == istice_mec) .or. (.not. use_firn_percolation_and_compaction)) then
                 qflx_snwcp_ice(c) = qflx_snwcp_ice(c) + xs1(c) / dtime
           else
                 qflx_ice_runoff_xs(c) = qflx_ice_runoff_xs(c) + xs1(c) / dtime
