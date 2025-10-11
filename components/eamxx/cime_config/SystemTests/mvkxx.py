@@ -21,7 +21,11 @@ logger = logging.getLogger(__name__)
 num_instances = os.getenv("MVKXX_NINST", "6")
 n_inst = int(num_instances)
 
+multi_driver = os.getenv("MVKXX_MULTI_DRIVER", "FALSE").upper()
+m_driver = multi_driver == "TRUE"
+
 logger.info("MVKxx using n_inst=%d", n_inst)
+logger.info("MVKxx using multi_driver=%s", m_driver)
 
 
 def duplicate_yaml_files(yaml_file, num_copies):
@@ -132,9 +136,11 @@ class MVKxx(SystemTestsCommon):
         logging.info("Starting to set up multi-instance exe")
         for comp in self._case.get_values("COMP_CLASSES"):
             n_tasks = self._case.get_value("NTASKS_{}".format(comp))
-            self._case.set_value(f"NTASKS_{comp}", n_tasks * n_inst)
-            if comp != "CPL":
+            total_tasks = n_tasks if m_driver else n_tasks * n_inst
+            self._case.set_value(f"NTASKS_{comp}", total_tasks)
+            if comp not in ["CPL", "ESP", "WAV"]:
                 self._case.set_value(f"NINST_{comp}", n_inst)
+            self._case.set_value("MULTI_DRIVER", m_driver)
 
         self._case.flush()
 
@@ -153,48 +159,3 @@ class MVKxx(SystemTestsCommon):
                 raise FileNotFoundError(f"File {out_file} does not exist.")
             update_yaml_perturbation_seed(yaml_file, i, "pert")
             update_yaml_perturbation_seed(out_file, i, "out")
-
-    def run_phase(self):
-        """override run phase ?"""
-        self.run_indv()
-
-    def _generate_baseline(self):
-        """generate a new baseline case based on the current test"""
-        super()._generate_baseline()
-
-        with CIME.utils.SharedArea():
-            base_gen_dir = os.path.join(
-                self._case.get_value("BASELINE_ROOT"),
-                self._case.get_value("BASEGEN_CASE"),
-            )
-
-            run_dir = self._case.get_value("RUNDIR")
-            ref_case = self._case.get_value("RUN_REFCASE")
-
-            env_archive = self._case.get_env("archive")
-            hists = env_archive.get_all_hist_files(
-                self._case.get_value("CASE"), self.component, run_dir, ref_case=ref_case
-            )
-            # for eamxx, we need to get all files that have
-            # *scream_????.h.*.nc added to this list
-            more_hists = glob.glob(os.path.join(
-                run_dir, "*scream_????.h.AVERAGE.*.nc"))
-            # before copying, let's also rename some files
-            # current pattern is scream_????.h.AVERAGE.nmonths_x1.????-??.nc
-            # desired pattern is scream_????.h.????-??.nc
-            for hist in more_hists:
-                if "scream" in hist:
-                    # get rid of the AVERAGE.nmonths_x1.
-                    new_hist = hist.replace("AVERAGE.nmonths_x1.", "")
-                    os.rename(hist, new_hist)
-                    # add it to hists
-                    hists.append(new_hist)
-            logger.debug("MVKxx additional baseline files: %s", hists)
-            hists = [os.path.join(run_dir, hist) for hist in hists]
-            for hist in hists:
-                base_name = hist[hist.rfind(self.component):]
-                baseline = os.path.join(base_gen_dir, base_name)
-                if os.path.exists(baseline):
-                    os.remove(baseline)
-
-                CIME.utils.safe_copy(hist, baseline, preserve_meta=False)
