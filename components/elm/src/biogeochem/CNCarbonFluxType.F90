@@ -1036,7 +1036,7 @@ contains
                 this%xsmrpool_c13ratio_patch(p)  = spval
              endif
           end if
-          if (col_pp%is_soil(c) .or. col_pp%is_crop(c)) then
+          if (veg_pp%is_on_soil_col(p) .or. veg_pp%is_on_crop_col(p)) then
              this%tempsum_npp_patch(p)           = 0._r8
              this%annsum_npp_patch(p)            = 0._r8
              this%availc_patch(p)                = 0._r8
