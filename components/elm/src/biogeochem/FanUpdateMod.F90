@@ -264,7 +264,7 @@ contains
        if (.not. col_pp%active(c) .or. col_pp%wtgcell(c) < 1e-6_r8) cycle
 
        g = col_pp%gridcell(c)
-       if (lun_pp%itype(l) == istsoil) then
+       if (col_pp%is_soil(c)) then
           col_nf%manure_n_grz(c) &
                = atm2lnd_vars%forc_ndep_past_grc(g) / col_pp%wtgcell(c) * 1e3_r8 ! kg to g 
           if (col_nf%manure_n_grz(c) > 1e12 .or. isnan(col_nf%manure_n_grz(c))) then
@@ -775,7 +775,7 @@ contains
        col_grass = ispval
        l = grc_pp%landunit_indices(istsoil, g)
        do c = lun_pp%coli(l), lun_pp%colf(l)
-          if (col_pp%itype(c) == istsoil) then
+          if (col_pp%is_soil(c)) then
              col_grass = c
              exit
           end if
@@ -953,8 +953,8 @@ contains
        flux_fert = col_nf%fert_no3_to_soil(c) + col_nf%fert_nh4_to_soil(c)
        manure_prod = col_nf%manure_n_barns(c) + col_nf%manure_n_grz(c)
 
-       included = (lun_pp%itype(l) == istcrop .and. fan_to_bgc_crop) &
-             .or. (lun_pp%itype(l) == istsoil .and. fan_to_bgc_veg)
+       included = (col_pp%is_crop(c) .and. fan_to_bgc_crop) &
+             .or. (col_pp%is_soil(c) .and. fan_to_bgc_veg)
 
        if (included) then
           col_nf%fert_to_sminn(c) = flux_fert + flux_manure

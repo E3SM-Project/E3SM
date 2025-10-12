@@ -734,8 +734,8 @@ contains
     do fp = 1,num_nourbanp
        p = filter_nourbanp(fp)
           if (coszen_patch(p) > 0._r8) then
-             if ((lun_pp%itype(veg_pp%landunit(p)) == istsoil .or.  &
-                  lun_pp%itype(veg_pp%landunit(p)) == istcrop     ) &
+             if ((veg_pp%is_on_soil_col(p) .or.  &
+                  veg_pp%is_on_crop_col(p)     ) &
                  .and. (elai(p) + esai(p)) > 0._r8) then
                     num_vegsol = num_vegsol + 1
                     filter_vegsol(num_vegsol) = p

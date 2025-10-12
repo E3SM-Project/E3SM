@@ -705,7 +705,7 @@ contains
                    ! Compaction occurring during melt
 
                    if (imelt(c,j) == 1) then
-                      if(subgridflag==1 .and. (ltype(col_pp%landunit(c)) == istsoil .or. ltype(col_pp%landunit(c)) == istcrop)) then
+                      if(subgridflag==1 .and. (col_pp%is_soil(c) .or. col_pp%is_crop(c))) then
                          ! first term is delta mass over mass
                          ddz3 = max(0._r8,min(1._r8,(swe_old(c,j) - wx)/wx))
 
@@ -884,7 +884,7 @@ contains
           do j = msn_old(c)+1,0
              ! use 0.01 to avoid runaway ice buildup
              if (h2osoi_ice(c,j) <= .01_r8) then
-                if (ltype(l) == istsoil .or. urbpoi(l) .or. ltype(l) == istcrop) then
+                if (col_pp%is_soil(c) .or. urbpoi(l) .or. col_pp%is_crop(c)) then
                    h2osoi_liq(c,j+1) = h2osoi_liq(c,j+1) + h2osoi_liq(c,j)
                    h2osoi_ice(c,j+1) = h2osoi_ice(c,j+1) + h2osoi_ice(c,j)
 
@@ -1005,7 +1005,7 @@ contains
 
                 if (h2osno(c) <= 0._r8) snow_depth(c) = 0._r8
                 ! this is where water is transfered from layer 0 (snow) to layer 1 (soil)
-                if (ltype(l) == istsoil .or. urbpoi(l) .or. ltype(l) == istcrop) then
+                if (col_pp%is_soil(c) .or. urbpoi(l) .or. col_pp%is_crop(c)) then
                    h2osoi_liq(c,0) = 0.0_r8
                    h2osoi_liq(c,1) = h2osoi_liq(c,1) + zwliq(c)
                    qflx_snow2topsoi(c) = zwliq(c)/dtime

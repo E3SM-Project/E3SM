@@ -278,7 +278,7 @@ contains
           ! Canopy interception and precipitation onto ground surface
           ! Add precipitation to leaf water
 
-          if (ltype(l) == istsoil .or. ltype(l) == istwet .or. urbpoi(l) .or. &
+          if (veg_pp%is_on_soil_col(p) .or. ltype(l) == istwet .or. urbpoi(l) .or. &
                ltype(l) == istcrop) then
 
              qflx_candrip(p) = 0._r8      ! rate of canopy runoff
@@ -642,7 +642,7 @@ contains
           end if !end of do_capsnow construct
 
           ! set frac_sno_eff variable
-          if (ltype(l) == istsoil .or. ltype(l) == istcrop) then
+          if (col_pp%is_soil(c) .or. col_pp%is_crop(c)) then
              if (subgridflag ==1) then 
                 frac_sno_eff(c) = frac_sno(c)
              else

@@ -393,8 +393,8 @@ contains
        if (top_pp%active(t)) then
           if (col_pp%active(c) .or. include_inactive) then
              l =col_pp%landunit(c)
-             if (lun_pp%itype(l) == istsoil .or. col_pp%itype(c) == icol_road_perv .or. &
-                  lun_pp%itype(l) == istcrop) then
+             if (col_pp%is_soil(c) .or. col_pp%itype(c) == icol_road_perv .or. &
+                  col_pp%is_crop(c)) then
                 f = f + 1
                 this_filter(nc)%hydrologyc(f) = c
 
@@ -530,7 +530,7 @@ contains
              l = col_pp%landunit(c)
              g = col_pp%gridcell(c)
              if ( lun_pp%itype(l) == istice_mec .or. &
-                (lun_pp%itype(l) == istsoil .and. icemask_grc(g) > 0.)) then
+                (col_pp%is_soil(c) .and. icemask_grc(g) > 0.)) then
                 f = f + 1
                 this_filter(nc)%do_smb_c(f) = c
              end if
