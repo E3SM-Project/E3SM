@@ -414,7 +414,7 @@ contains
 
          rh_ref2m(p) = min(100._r8, q_ref2m(p) / qsat_ref2m * 100._r8)
 
-         if (col_pp%is_soil(c) .or. col_pp%is_crop(c)) then
+         if (veg_pp%is_on_soil_col(p) .or. veg_pp%is_on_crop_col(p)) then
             rh_ref2m_r(p) = rh_ref2m(p)
             t_ref2m_r(p) = t_ref2m(p)
          end if

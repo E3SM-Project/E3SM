@@ -515,7 +515,7 @@ contains
        this%dewmx_patch(p)      = 0.1_r8
        this%vegwp_patch(p,:)    = -2.5e4_r8
 
-       if (col_pp%is_soil(c) .or. col_pp%is_crop(c)) then
+       if (veg_pp%is_on_soil_col(p) .or. veg_pp%is_on_crop_col(p)) then
           this%laisun_patch(p) = 0._r8
           this%laisha_patch(p) = 0._r8
        end if

@@ -418,13 +418,13 @@ contains
 
          if (urbpoi(l)) then
             eflx_sh_tot_u(p) = 0._r8
-         else if (col_pp%is_soil(c) .or. col_pp%is_crop(c)) then
+         else if (veg_pp%is_on_soil_col(p) .or. veg_pp%is_on_crop_col(p)) then
             eflx_sh_tot_r(p) = 0._r8
          end if
          eflx_lh_tot(p) = 0._r8
          if (urbpoi(l)) then
             eflx_lh_tot_u(p) = 0._r8
-         else if (col_pp%is_soil(c) .or. col_pp%is_crop(c)) then
+         else if (veg_pp%is_on_soil_col(p) .or. veg_pp%is_on_crop_col(p)) then
             eflx_lh_tot_r(p) = 0._r8
          end if
          eflx_sh_veg(p) = 0._r8
@@ -456,7 +456,7 @@ contains
             t = veg_pp%topounit(p)
             l = veg_pp%landunit(p)
             c = veg_pp%column(p)
-            if (col_pp%is_soil(c) .or. col_pp%is_crop(c)) then
+            if (veg_pp%is_on_soil_col(p) .or. veg_pp%is_on_crop_col(p)) then
                if (frac_veg_nosno(p) == 0) then
                   forc_hgt_u_patch(p) = forc_hgt_u(t) + z0mg(c) + displa(p)
                   forc_hgt_t_patch(p) = forc_hgt_t(t) + z0mg(c) + displa(p)
