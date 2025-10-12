@@ -414,7 +414,6 @@ contains
 
          eflx_sh_tot(p) = 0._r8
          l = veg_pp%landunit(p)
-         c = veg_pp%column(p)
 
          if (urbpoi(l)) then
             eflx_sh_tot_u(p) = 0._r8

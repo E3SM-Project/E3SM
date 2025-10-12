@@ -372,7 +372,6 @@ contains
     fs = 0
     do p = bounds%begp,bounds%endp
        t =veg_pp%topounit(p)
-       c = veg_pp%column(p)
        if (top_pp%active(t)) then
           if (veg_pp%active(p) .or. include_inactive) then
              l =veg_pp%landunit(p)
@@ -419,7 +418,6 @@ contains
     fnc = 0
     do p = bounds%begp,bounds%endp
        t =veg_pp%topounit(p)
-       c = veg_pp%column(p)
        if (top_pp%active(t)) then
           if (veg_pp%active(p) .or. include_inactive) then
              if (.not. iscft(veg_pp%itype(p))) then

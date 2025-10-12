@@ -503,7 +503,6 @@ contains
 
     do p = bounds%begp, bounds%endp
        l = veg_pp%landunit(p)
-       c = veg_pp%column(p)
 
        this%frac_veg_nosno_patch(p) = 0._r8
        this%tlai_patch(p)       = 0._r8

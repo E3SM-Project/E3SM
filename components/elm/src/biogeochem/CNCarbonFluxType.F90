@@ -1018,7 +1018,6 @@ contains
 
        do p = bounds%begp,bounds%endp
           l = veg_pp%landunit(p)
-          c = veg_pp%column(p)
 
           this%gpp_patch(p)                      = 0._r8
           this%gpp_before_downreg_patch(p)       = 0._r8
