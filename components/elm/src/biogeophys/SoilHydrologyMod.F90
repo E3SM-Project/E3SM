@@ -444,7 +444,7 @@ contains
           pc = pc_grid(g)
           
           ! partition moisture fluxes between soil and h2osfc
-          if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+          if (col_pp%itype(c) == istsoil .or. lun_pp%itype(l) == istcrop) then
 
              ! explicitly use frac_sno=0 if snl=0
              if (snl(c) >= 0) then

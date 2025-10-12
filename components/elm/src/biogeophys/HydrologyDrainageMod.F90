@@ -333,12 +333,12 @@ contains
 
          qflx_runoff(c) = qflx_drain(c) + qflx_surf(c)  + qflx_h2osfc_surf(c) + qflx_qrgwl(c) + qflx_drain_perched(c)
 
-         if ((lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) .and. col_pp%active(c)) then
+         if ((col_pp%itype(c) == istsoil .or. lun_pp%itype(l) == istcrop) .and. col_pp%active(c)) then
             qflx_irr_demand(c) = -1.0_r8 * f_surf(g,tpu_ind)*qflx_irrig(c) !surface water demand send to MOSART
          end if
          if (lun_pp%urbpoi(l)) then
             qflx_runoff_u(c) = qflx_runoff(c)
-         else if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+         else if (col_pp%itype(c) == istsoil .or. lun_pp%itype(l) == istcrop) then
             qflx_runoff_r(c) = qflx_runoff(c)
          end if
 
