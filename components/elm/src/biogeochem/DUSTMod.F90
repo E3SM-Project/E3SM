@@ -350,7 +350,7 @@ contains
          ! linearly from 1 to 0 as VAI(=tlai+tsai) increases from 0 to vai_mbl_thr
          ! if ice sheet, wetland, or lake, no dust allowed
 
-         if (col_pp%itype(c) == istsoil .or. lun_pp%itype(l) == istcrop) then
+         if (col_pp%is_soil(c) .or. col_pp%is_crop(c)) then
             if (tlai_lu(l) < vai_mbl_thr) then
                lnd_frc_mbl(p) = 1.0_r8 - (tlai_lu(l))/vai_mbl_thr
             else
