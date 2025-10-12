@@ -1099,7 +1099,7 @@ contains
     do p = bounds%begp,bounds%endp
        l = veg_pp%landunit(p)
        c = veg_pp%column(p)
-       if (col_pp%is_soil(c) .or. col_pp%is_crop(c)) then
+       if (veg_pp%is_on_soil_col(p) .or. veg_pp%is_on_crop_col(p)) then
 
           this%rc14_atm_patch(p) = c14ratio
 

@@ -2462,7 +2462,7 @@ module VegetationDataType
 
           l = veg_pp%landunit(p)
           c = veg_pp%column(p)
-          if (col_pp%is_soil(c) .or. col_pp%is_crop(c)) then
+          if (veg_pp%is_on_soil_col(p) .or. veg_pp%is_on_crop_col(p)) then
 
              if (veg_pp%itype(p) == noveg) then
                 this%leafc(p)         = 0._r8
@@ -3936,7 +3936,7 @@ module VegetationDataType
 
        l = veg_pp%landunit(p)
        c = veg_pp%column(p)
-       if (col_pp%is_soil(c) .or. col_pp%is_crop(c)) then
+       if (veg_pp%is_on_soil_col(p) .or. veg_pp%is_on_crop_col(p)) then
           if (veg_pp%itype(p) == noveg) then
              this%leafn(p) = 0._r8
              this%leafn_storage(p) = 0._r8
@@ -4620,7 +4620,7 @@ module VegetationDataType
     do p = begp,endp
        l = veg_pp%landunit(p)
        c = veg_pp%column(p)
-       if (col_pp%is_soil(c) .or. col_pp%is_crop(c)) then
+       if (veg_pp%is_on_soil_col(p) .or. veg_pp%is_on_crop_col(p)) then
 
           if (veg_pp%itype(p) == noveg) then
              this%leafp(p) = 0._r8
@@ -7954,7 +7954,7 @@ module VegetationDataType
                 this%xsmrpool_c13ratio(p)  = spval
              endif
           end if
-          if (col_pp%is_soil(c) .or. col_pp%is_crop(c)) then
+          if (veg_pp%is_on_soil_col(p) .or. veg_pp%is_on_crop_col(p)) then
              this%tempsum_npp(p)           = 0._r8
              this%annsum_npp(p)            = 0._r8
              this%availc(p)                = 0._r8
@@ -9503,7 +9503,7 @@ module VegetationDataType
           this%soyfixn(p)       = 0._r8
        end if
 
-       if (col_pp%is_soil(c) .or. col_pp%is_crop(c)) then
+       if (veg_pp%is_on_soil_col(p) .or. veg_pp%is_on_crop_col(p)) then
           this%fert_counter(p)  = 0._r8
        end if
 
@@ -10565,7 +10565,7 @@ module VegetationDataType
 
        end if
 
-       if (col_pp%is_soil(c) .or. col_pp%is_crop(c)) then
+       if (veg_pp%is_on_soil_col(p) .or. veg_pp%is_on_crop_col(p)) then
           this%fert_p_counter(p)  = 0._r8
        end if
 
