@@ -10,6 +10,7 @@ module PhotosynthesisType
   use elm_varcon     , only : spval
   use LandunitType   , only : lun_pp
   use VegetationType      , only : veg_pp
+  use ColumnDataType ,only : col_pp
   !
   implicit none
   save
