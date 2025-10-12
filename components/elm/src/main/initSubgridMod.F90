@@ -565,8 +565,8 @@ contains
     col_pp%wtlunit(ci) = wtlunit
     col_pp%itype(ci) = ctype
 
-    if (present(is_soil)) col_pp%is_soil = is_soil
-    if (present(is_crop)) col_pp%is_crop = is_crop
+    if (present(is_soil)) col_pp%is_soil(ci) = is_soil
+    if (present(is_crop)) col_pp%is_crop(ci) = is_crop
 
   end subroutine add_column
 
