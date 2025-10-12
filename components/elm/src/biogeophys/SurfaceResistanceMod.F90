@@ -141,7 +141,7 @@ contains
           l = col_pp%landunit(c)
           if (lun_pp%itype(l)/=istwet .AND. lun_pp%itype(l)/=istice  &
                .AND. lun_pp%itype(l)/=istice_mec) then
-             if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+             if (col_pp%itype(c) == istsoil .or. lun_pp%itype(l) == istcrop) then
                 wx   = (h2osoi_liq(c,1)/denh2o+h2osoi_ice(c,1)/denice)/col_pp%dz(c,1)
                 fac  = min(1._r8, wx/watsat(c,1))
                 fac  = max( fac, 0.01_r8 )

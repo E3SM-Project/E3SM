@@ -244,7 +244,7 @@ contains
          if (lun_pp%itype(l)/=istwet .AND. lun_pp%itype(l)/=istice  &
               .AND. lun_pp%itype(l)/=istice_mec) then
 
-            if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+            if (col_pp%itype(c) == istsoil .or. lun_pp%itype(l) == istcrop) then
                wx   = (h2osoi_liq(c,1)/denh2o+h2osoi_ice(c,1)/denice)/dz(c,1)
                fac  = min(1._r8, wx/watsat(c,1))
                fac  = max( fac, 0.01_r8 )
@@ -297,7 +297,7 @@ contains
          end if
 
          ! compute humidities individually for snow, soil, h2osfc for vegetated landunits
-         if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+         if (col_pp%itype(c) == istsoil .or. lun_pp%itype(l) == istcrop) then
 
             call QSat(t_soisno(c,snl(c)+1), forc_pbot(t), eg, degdT, qsatg, qsatgdT)
             if (qsatg > forc_q(t) .and. forc_q(t) > qsatg) then
@@ -414,15 +414,17 @@ contains
 
          eflx_sh_tot(p) = 0._r8
          l = veg_pp%landunit(p)
+         c = veg_pp%column(p)
+
          if (urbpoi(l)) then
             eflx_sh_tot_u(p) = 0._r8
-         else if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+         else if (col_pp%itype(c) == istsoil .or. lun_pp%itype(l) == istcrop) then
             eflx_sh_tot_r(p) = 0._r8
          end if
          eflx_lh_tot(p) = 0._r8
          if (urbpoi(l)) then
             eflx_lh_tot_u(p) = 0._r8
-         else if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+         else if (col_pp%itype(c) == istsoil .or. lun_pp%itype(l) == istcrop) then
             eflx_lh_tot_r(p) = 0._r8
          end if
          eflx_sh_veg(p) = 0._r8
@@ -454,7 +456,7 @@ contains
             t = veg_pp%topounit(p)
             l = veg_pp%landunit(p)
             c = veg_pp%column(p)
-            if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+            if (col_pp%itype(c) == istsoil .or. lun_pp%itype(l) == istcrop) then
                if (frac_veg_nosno(p) == 0) then
                   forc_hgt_u_patch(p) = forc_hgt_u(t) + z0mg(c) + displa(p)
                   forc_hgt_t_patch(p) = forc_hgt_t(t) + z0mg(c) + displa(p)

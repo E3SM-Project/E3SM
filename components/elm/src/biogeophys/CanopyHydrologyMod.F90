@@ -826,7 +826,7 @@ contains
           l = col_pp%landunit(c)
           qflx_h2osfc2topsoi(c) = 0._r8
           ! h2osfc only calculated for soil vegetated land units
-          if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+          if (col_pp%itype(c) == istsoil .or. lun_pp%itype(l) == istcrop) then
 
              !  Use newton-raphson method to iteratively determine frac_h20sfc
              !  based on amount of surface water storage (h2osfc) and

@@ -1052,7 +1052,7 @@ contains
           pi = ldomain%pftm(g)
           if (coszen(c) > 0._r8) then
              l = col_pp%landunit(c)
-             if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop .and. top_pp%active(t))  then ! soil
+             if (col_pp%itype(c) == istsoil .or. lun_pp%itype(l) == istcrop .and. top_pp%active(t))  then ! soil
                 inc    = max(0.11_r8-0.40_r8*h2osoi_vol(c,1), 0._r8)
                 soilcol = isoicol(c)
                 ! changed from local variable to elm_type:

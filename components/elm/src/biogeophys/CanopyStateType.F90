@@ -503,6 +503,7 @@ contains
 
     do p = bounds%begp, bounds%endp
        l = veg_pp%landunit(p)
+       c = veg_pp%column(p)
 
        this%frac_veg_nosno_patch(p) = 0._r8
        this%tlai_patch(p)       = 0._r8
@@ -514,7 +515,7 @@ contains
        this%dewmx_patch(p)      = 0.1_r8
        this%vegwp_patch(p,:)    = -2.5e4_r8
 
-       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+       if (col_pp%itype(c) == istsoil .or. lun_pp%itype(l) == istcrop) then
           this%laisun_patch(p) = 0._r8
           this%laisha_patch(p) = 0._r8
        end if
@@ -531,7 +532,7 @@ contains
     do c = bounds%begc, bounds%endc
        l = col_pp%landunit(c)
 
-       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+       if (col_pp%itype(c) == istsoil .or. lun_pp%itype(l) == istcrop) then
           this%alt_col(c)                  = 0._r8
           this%altmax_col(c)               = 0._r8
           this%altmax_lastyear_col(c)      = 0._r8
