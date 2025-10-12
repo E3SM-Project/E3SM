@@ -479,7 +479,6 @@ contains
        do fp = 1,num_nourbanp
           p = filter_nourbanp(fp)
           l = veg_pp%landunit(p)
-          c = veg_pp%column(p)
           sabg_soil(p)  = 0._r8
           sabg_snow(p)  = 0._r8
           sabg(p)       = 0._r8

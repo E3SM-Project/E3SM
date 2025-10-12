@@ -450,7 +450,6 @@ contains
           this%leafcmax_patch(p) = 0._r8
 
           l = veg_pp%landunit(p)
-          c = veg_pp%column(p)
           if (veg_pp%is_on_soil_col(p) .or. veg_pp%is_on_crop_col(p)) then
 
              if (veg_pp%itype(p) == noveg) then

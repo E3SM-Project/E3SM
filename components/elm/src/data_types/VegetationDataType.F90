@@ -2461,7 +2461,6 @@ module VegetationDataType
           this%leafcmax(p) = 0._r8
 
           l = veg_pp%landunit(p)
-          c = veg_pp%column(p)
           if (veg_pp%is_on_soil_col(p) .or. veg_pp%is_on_crop_col(p)) then
 
              if (veg_pp%itype(p) == noveg) then
@@ -3935,7 +3934,6 @@ module VegetationDataType
     do p = begp,endp
 
        l = veg_pp%landunit(p)
-       c = veg_pp%column(p)
        if (veg_pp%is_on_soil_col(p) .or. veg_pp%is_on_crop_col(p)) then
           if (veg_pp%itype(p) == noveg) then
              this%leafn(p) = 0._r8
@@ -4619,7 +4617,6 @@ module VegetationDataType
 
     do p = begp,endp
        l = veg_pp%landunit(p)
-       c = veg_pp%column(p)
        if (veg_pp%is_on_soil_col(p) .or. veg_pp%is_on_crop_col(p)) then
 
           if (veg_pp%itype(p) == noveg) then
@@ -7936,7 +7933,6 @@ module VegetationDataType
     if (.not.use_fates) then
        do p = begp,endp
           l = veg_pp%landunit(p)
-          c = veg_pp%column(p)
 
           this%gpp(p)                      = 0._r8
           this%gpp_before_downreg(p)       = 0._r8
@@ -9490,7 +9486,6 @@ module VegetationDataType
 
     do p = begp,endp
        l = veg_pp%landunit(p)
-       c = veg_pp%column(p)
 
        this%prev_leafn_to_litter(p)  = 0._r8
        this%prev_frootn_to_litter(p) = 0._r8
@@ -10554,7 +10549,6 @@ module VegetationDataType
     end do
     do p = begp,endp
        l = veg_pp%landunit(p)
-       c = veg_pp%column(p)
 
        this%prev_leafp_to_litter (p)  = 0._r8
        this%prev_frootp_to_litter(p)  = 0._r8
