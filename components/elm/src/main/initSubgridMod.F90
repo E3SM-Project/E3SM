@@ -571,7 +571,7 @@ contains
   end subroutine add_column
 
   !-----------------------------------------------------------------------
-  subroutine add_patch(pi, ci, ptype, wtcol)
+  subroutine add_patch(pi, ci, ptype, wtcol, is_on_soil_col, is_on_crop_col)
     !
     ! !DESCRIPTION:
     ! Add an entry in the patch-level arrays. pi gives the index of the last patch added; the
@@ -587,6 +587,8 @@ contains
     integer  , intent(in)    :: ci    ! column index on which this patch should be placed (assumes this column has already been created)
     integer  , intent(in)    :: ptype ! patch type
     real(r8) , intent(in)    :: wtcol ! weight of the patch relative to the column
+    logical,   optional      :: is_on_soil_col
+    logical,   optional      :: is_on_crop_col
     !
     ! !LOCAL VARIABLES:
     integer :: li  ! landunit index, for convenience
@@ -612,6 +614,9 @@ contains
     else
        veg_pp%mxy(pi) = ispval
     end if
+
+    if (present(is_on_soil_col)) veg_pp%is_on_soil_col(pi) = is_on_soil_col
+    if (present(is_on_crop_col)) veg_pp%is_on_crop_col(pi) = is_on_crop_col
 
   end subroutine add_patch
 
