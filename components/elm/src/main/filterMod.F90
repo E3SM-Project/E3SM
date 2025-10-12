@@ -358,7 +358,7 @@ contains
        if (top_pp%active(t)) then
           if (col_pp%active(c) .or. include_inactive) then
              l =col_pp%landunit(c)
-             if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+             if (col_pp%itype(c) == istsoil .or. lun_pp%itype(l) == istcrop) then
                 fs = fs + 1
                 this_filter(nc)%soilc(fs) = c
              end if
@@ -372,10 +372,11 @@ contains
     fs = 0
     do p = bounds%begp,bounds%endp
        t =veg_pp%topounit(p)
+       c = veg_pp%column(p)
        if (top_pp%active(t)) then
           if (veg_pp%active(p) .or. include_inactive) then
              l =veg_pp%landunit(p)
-             if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+             if (col_pp%itype(c) == istsoil .or. lun_pp%itype(l) == istcrop) then
                 fs = fs + 1
                 this_filter(nc)%soilp(fs) = p
              end if
@@ -418,11 +419,12 @@ contains
     fnc = 0
     do p = bounds%begp,bounds%endp
        t =veg_pp%topounit(p)
+       c = veg_pp%column(p)
        if (top_pp%active(t)) then
           if (veg_pp%active(p) .or. include_inactive) then
              if (.not. iscft(veg_pp%itype(p))) then
                 l =veg_pp%landunit(p)
-                if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+                if (col_pp%itype(c) == istsoil .or. lun_pp%itype(l) == istcrop) then
                    fnc = fnc + 1
                    this_filter(nc)%soilnopcropp(fnc) = p
                 end if
