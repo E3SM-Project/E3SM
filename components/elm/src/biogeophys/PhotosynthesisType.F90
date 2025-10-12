@@ -456,7 +456,7 @@ contains
              this%c14_psnsha_patch(p) = 0._r8
           endif
        end if
-       if (col_pp%is_soil(c) .or. col_pp%is_crop(c) &
+       if (veg_pp%is_on_soil_col(p) .or. veg_pp%is_on_crop_col(p) &
             .or. lun_pp%itype(l) == istice .or. lun_pp%itype(l) == istice_mec &
             .or. lun_pp%itype(l) == istwet) then
           if (use_c13) then
@@ -515,7 +515,7 @@ contains
              photosyns_vars%c14_psnsha_patch(p) = 0._r8
           endif
        end if
-       if (col_pp%is_soil(c) .or. col_pp%is_crop(c) &
+       if (veg_pp%is_on_soil_col(p) .or. veg_pp%is_on_crop_col(p) &
             .or. lun_pp%itype(l) == istice .or. lun_pp%itype(l) == istice_mec &
             .or. lun_pp%itype(l) == istwet) then
           if (use_c13) then
