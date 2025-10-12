@@ -376,7 +376,7 @@ contains
        if (top_pp%active(t)) then
           if (veg_pp%active(p) .or. include_inactive) then
              l =veg_pp%landunit(p)
-             if (col_pp%is_soil(c) .or. col_pp%is_crop(c)) then
+             if (veg_pp%is_on_soil_col(p) .or. veg_pp%is_on_crop_col(p)) then
                 fs = fs + 1
                 this_filter(nc)%soilp(fs) = p
              end if
@@ -424,7 +424,7 @@ contains
           if (veg_pp%active(p) .or. include_inactive) then
              if (.not. iscft(veg_pp%itype(p))) then
                 l =veg_pp%landunit(p)
-                if (col_pp%is_soil(c) .or. col_pp%is_crop(c)) then
+                if (veg_pp%is_on_soil_col(p) .or. veg_pp%is_on_crop_col(p)) then
                    fnc = fnc + 1
                    this_filter(nc)%soilnopcropp(fnc) = p
                 end if

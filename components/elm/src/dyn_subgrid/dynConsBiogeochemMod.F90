@@ -245,7 +245,7 @@ contains
        p = filter_soilp_with_inactive(fp)
        c = veg_pp%column(p)
        l = veg_pp%landunit(p)
-       if (.not.(col_pp%is_soil(c) .or. col_pp%is_crop(c)) ) Then
+       if (.not.(veg_pp%is_on_soil_col(p) .or. veg_pp%is_on_crop_col(p)) ) Then
          print *, "istsoil,istcrop",istsoil, istcrop
          print *, lun_pp%itype(l)
        end if
