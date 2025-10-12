@@ -911,7 +911,7 @@ contains
                       mss_dst4(c,j+1)  = mss_dst4(c,j+1)   + mss_dst4(c,j)
                    end if
 
-                else if (ltype(l) /= istsoil .and. .not. urbpoi(l) .and. ltype(l) /= istcrop .and. j /= 0) then
+                else if (.not.col_pp%is_soil(c) .and. .not. urbpoi(l) .and. .not.col_pp%is_crop(c) .and. j /= 0) then
 
                    h2osoi_liq(c,j+1) = h2osoi_liq(c,j+1) + h2osoi_liq(c,j)
                    h2osoi_ice(c,j+1) = h2osoi_ice(c,j+1) + h2osoi_ice(c,j)
@@ -935,7 +935,7 @@ contains
                       ! urban, soil or crop, the h2osoi_liq and h2osoi_ice associated with this layer is sent
                       ! to qflx_qrgwl later on in the code.  To keep track of this for the snow balance
                       ! error check, we add this to qflx_sl_top_soil here
-                      if (ltype(l) /= istsoil .and. ltype(l) /= istcrop .and. .not. urbpoi(l) .and. i == 0) then
+                      if (.not.col_pp%is_soil(c) .and. .not.col_pp%is_crop(c) .and. .not. urbpoi(l) .and. i == 0) then
                          qflx_sl_top_soil(c) = (h2osoi_liq(c,i) + h2osoi_ice(c,i))/dtime
                       end if
 
