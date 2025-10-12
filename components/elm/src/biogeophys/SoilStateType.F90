@@ -409,7 +409,7 @@ contains
 
     do c = bounds%begc,bounds%endc
        this%rootfr_col (c,nlevsoi+1:nlevgrnd) = 0._r8
-       if (col_pp%itype(c) == istsoil .or. lun_pp%itype(l) == istcrop) then
+       if (col_pp%is_soil(c) .or. col_pp%is_crop(c)) then
           this%rootfr_col (c,nlevsoi+1:nlevgrnd) = 0._r8
        else if (lun_pp%itype(l) == istdlak .and. allowlakeprod) then
           this%rootfr_col (c,:) = spval
