@@ -398,7 +398,7 @@ contains
           else
              p_wt = wt_nat_patch(gi,topo_ind,m)
           end if
-          call add_patch(pi=pi, ci=ci, ptype=m, wtcol=p_wt)
+          call add_patch(pi=pi, ci=ci, ptype=m, wtcol=p_wt, is_on_soil_col=.true.)
        end do
 
        ! add polygonal landunits and columns if feature turned on
@@ -417,7 +417,7 @@ contains
              else
                p_wt = wt_nat_patch(gi,topo_ind,m)
              end if
-             call add_patch(pi=pi, ci=ci, ptype=m, wtcol=p_wt)
+             call add_patch(pi=pi, ci=ci, ptype=m, wtcol=p_wt, is_on_soil_col=.true.)
            end do
          end do
        end if 
@@ -592,7 +592,7 @@ contains
        if (create_crop_landunit) then
           do m = cft_lb, cft_ub
              call add_column(ci=ci, li=li, ctype=((istcrop*100) + m), wtlunit=wt_cft(gi,topo_ind,m), is_crop=.true.)
-             call add_patch(pi=pi, ci=ci, ptype=m, wtcol=1.0_r8)
+             call add_patch(pi=pi, ci=ci, ptype=m, wtcol=1.0_r8, is_on_crop_col=.true.)
           end do
        end if
 
