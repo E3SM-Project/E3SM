@@ -632,18 +632,19 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
                   lengath, ideep, maxg, jctop, jcbot, jt, &
                   prec, ptend_loc%s, ptend_loc%q(:,:,1), cape, dcape, &
                   mcon,  pflx, zdu, mu, eu, du, md, ed, dp, dsubcld, &
-                  ql, rliq, rprd, dlf, &
-                  mudpcu, lambdadpcu )
+                  ql, rliq, rprd, dlf )
    call t_stopf ('zm_convr')
 
    if (zm_param%zm_microp) then
       ! update ZM micro variables in pbuf
-      qi  (1:ncol,1:pver) = microp_st%qice(1:ncol,1:pver)
-      dif (1:ncol,1:pver) = microp_st%dif (1:ncol,1:pver)
-      dsf (1:ncol,1:pver) = microp_st%dsf (1:ncol,1:pver)
-      dnlf(1:ncol,1:pver) = microp_st%dnlf(1:ncol,1:pver)
-      dnif(1:ncol,1:pver) = microp_st%dnif(1:ncol,1:pver)
-      dnsf(1:ncol,1:pver) = microp_st%dnsf(1:ncol,1:pver)
+      qi        (1:ncol,1:pver) = microp_st%qice      (1:ncol,1:pver)
+      dif       (1:ncol,1:pver) = microp_st%dif       (1:ncol,1:pver)
+      dsf       (1:ncol,1:pver) = microp_st%dsf       (1:ncol,1:pver)
+      dnlf      (1:ncol,1:pver) = microp_st%dnlf      (1:ncol,1:pver)
+      dnif      (1:ncol,1:pver) = microp_st%dnif      (1:ncol,1:pver)
+      dnsf      (1:ncol,1:pver) = microp_st%dnsf      (1:ncol,1:pver)
+      mudpcu    (1:ncol,1:pver) = microp_st%mudpcu    (1:ncol,1:pver)
+      lambdadpcu(1:ncol,1:pver) = microp_st%lambdadpcu(1:ncol,1:pver)
       ! update other micro variables
       rice(1:ncol) = microp_st%rice(1:ncol)
       dlftot(1:ncol,1:pver) = dlf(1:ncol,1:pver) + dif(1:ncol,1:pver) + dsf(1:ncol,1:pver)
