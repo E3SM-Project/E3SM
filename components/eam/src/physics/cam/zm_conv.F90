@@ -74,11 +74,10 @@ end subroutine zm_convi
 subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
                      t, qh, omega, pap, paph, dpp, geos, zm, zi, pblh, &
                      tpert, landfrac, t_star, q_star, &
-                     aero, microp_st, &
                      lengath, ideep, maxg, jctop, jcbot, jt, &
                      prec, heat, qtnd, cape, dcape, &
                      mcon, pflx, zdu, mu, eu, du, md, ed, dp, dsubcld, &
-                     ql, rliq, rprd, dlf )
+                     ql, rliq, rprd, dlf, aero, microp_st )
    !----------------------------------------------------------------------------
    ! Purpose: Main driver for Zhang-Mcfarlane convection scheme
    !----------------------------------------------------------------------------
@@ -103,8 +102,6 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
    real(r8), dimension(pcols),      intent(in   ) :: landfrac        ! land fraction
    real(r8),pointer,dimension(:,:), intent(in   ) :: t_star          ! for DCAPE - prev temperature      [K]
    real(r8),pointer,dimension(:,:), intent(in   ) :: q_star          ! for DCAPE - prev sp. humidity     [kg/kg]
-   type(zm_aero_t),                 intent(inout) :: aero            ! aerosol object
-   type(zm_microp_st),              intent(inout) :: microp_st       ! convective microphysics state and tendencies
    integer,                         intent(  out) :: lengath         ! number of active columns in chunk for gathering
    integer,  dimension(pcols),      intent(  out) :: ideep           ! flag for active columns
    integer,  dimension(pcols),      intent(  out) :: maxg            ! gathered level indices of max MSE (maxi)
@@ -130,6 +127,8 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
    real(r8), dimension(pcols),      intent(  out) :: rliq            ! reserved liquid (not yet in cldliq) for energy integrals
    real(r8), dimension(pcols,pver), intent(  out) :: rprd            ! rain production rate
    real(r8), dimension(pcols,pver), intent(  out) :: dlf             ! detrained cloud liq mixing ratio
+   type(zm_aero_t),                 intent(inout) :: aero            ! aerosol object
+   type(zm_microp_st),              intent(inout) :: microp_st       ! convective microphysics state and tendencies
    !----------------------------------------------------------------------------
    ! Local variables
    real(r8), dimension(pcols,pver) :: q            ! local copy of specific humidity         [kg/kg]
@@ -588,7 +587,7 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
    !----------------------------------------------------------------------------
    ! conservation check and adjusment
 #ifndef SCREAM_CONFIG_IS_CMAKE
-   if (zm_param%zm_microp) call zm_microphysics_adjust(pcols, lengath, pver, jt, msg, delt, &
+   if (zm_param%zm_microp) call zm_microphysics_adjust(pcols, lengath, pver, jt, msg, delt, zm_const, &
                                                        dp, qg, dlg, dsdt, dqdt, rprd, loc_microp_st)
 #endif
 
