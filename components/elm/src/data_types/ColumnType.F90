@@ -79,6 +79,7 @@ module ColumnType
 
      logical, pointer :: is_soil(:) => null()  ! True if the column is a soil
      logical, pointer :: is_crop(:) => null()  ! True if the column is a crop
+     logical, pointer :: is_lake(:) => null()  ! True if the column is a lake
 
    contains
 
@@ -145,6 +146,7 @@ contains
 
     allocate(this%is_soil (begc:endc)); this%is_soil (:) = .false.
     allocate(this%is_crop (begc:endc)); this%is_crop (:) = .false.
+    allocate(this%is_lake (begc:endc)); this%is_lake (:) = .false.
 
   end subroutine col_pp_init
 
@@ -187,6 +189,7 @@ contains
     deallocate(this%is_fates)
     deallocate(this%is_soil)
     deallocate(this%is_crop)
+    deallocate(this%is_lake)
 
   end subroutine col_pp_clean
 
