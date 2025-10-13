@@ -637,7 +637,7 @@ contains
 
              ! If shallow snow depth, all solar radiation absorbed in top or top two snow layers
              ! to prevent unrealistic timestep soil warming
-             if (subgridflag == 0 .or. lun_pp%itype(l) == istdlak) then
+             if (subgridflag == 0 .or. col_pp%is_lake(c)) then
                 if (snow_depth(c) < 0.10_r8) then
                    if (snl(c) == 0) then
                       sabg_lyr(p,-nlevsno+1:0) = 0._r8
