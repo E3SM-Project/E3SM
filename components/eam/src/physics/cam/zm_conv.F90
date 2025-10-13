@@ -211,11 +211,9 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
    real(r8), dimension(pcols,pver) :: dudt         ! gathered u-wind tendency at gathered points
    real(r8), dimension(pcols,pver) :: dvdt         ! gathered v-wind tendency at gathered points
 
-   real(r8), dimension(pcols,pver) :: lambdadpcug  ! gathered slope of cloud liquid size distr
-   real(r8), dimension(pcols,pver) :: mudpcug      ! gathered width parameter of droplet size distr
-   real(r8), dimension(pcols,pver) :: dsfmg        ! mass tendency due to detrainment of snow
-   real(r8), dimension(pcols,pver) :: dsfng        ! num tendency due to detrainment of snow
-   real(r8), dimension(pcols,pver) :: frzg         ! gathered heating rate due to freezing
+   real(r8), dimension(pcols,pver) :: lambdadpcug  ! ZM microphysics - gathered slope of cloud liquid size distr
+   real(r8), dimension(pcols,pver) :: mudpcug      ! ZM microphysics - gathered width parameter of droplet size distr
+   real(r8), dimension(pcols,pver) :: frzg         ! ZM microphysics - gathered heating rate due to freezing
 
    real(r8), dimension(pcols)      :: mb           ! cloud base mass flux
    integer,  dimension(pcols)      :: jlcl         ! updraft lifting cond level
@@ -263,8 +261,6 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
          ! Convective microphysics
          frz(i,k)   = 0._r8
          frzg(i,k)  = 0._r8
-         dsfmg(i,k) = 0._r8
-         dsfng(i,k) = 0._r8
       end do
       prec(i)        = 0._r8
       rliq(i)        = 0._r8
@@ -505,7 +501,7 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
                pflxg   ,evpg    ,cug     ,rprdg   ,zm_param%limcnv  , &
                landfracg, tpertg, &
                aero    ,lambdadpcug,mudpcug,frzg ,  &   ! < added for ZM micro
-               dsfmg   ,dsfng   ,loc_microp_st )        ! < added for ZM micro
+               loc_microp_st )        ! < added for ZM micro
 
 
    !----------------------------------------------------------------------------
@@ -587,8 +583,6 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
             loc_microp_st%sprd(i,k)  = loc_microp_st%sprd(i,k)*mb(i)
             if (mb(i).eq.0._r8) then
                qlg (i,k)  = 0._r8
-               dsfmg(i,k) = 0._r8
-               dsfng(i,k) = 0._r8
                frzg (i,k) = 0._r8
             end if
          end if
@@ -961,7 +955,7 @@ subroutine cldprp(zm_const, pcols, ncol, pver, pverp, &
                   pflx    ,evp     ,cu      ,rprd    ,limcnv  , &
                   landfrac,tpertg  , &
                   aero    ,lambdadpcu ,mudpcu,frz1 , &
-                  dsfm    ,dsfn   ,loc_microp_st )
+                  loc_microp_st )
 
 !-----------------------------------------------------------------------
 !
@@ -1045,10 +1039,6 @@ subroutine cldprp(zm_const, pcols, ncol, pver, pverp, &
    type(zm_microp_st)  :: loc_microp_st ! state and tendency of convective microphysics
 
    ! tendency for output
-
-   real(r8), intent(out) :: dsfm  (pcols,pver)   !mass tendency due to detrainment of snow
-   real(r8), intent(out) :: dsfn  (pcols,pver)   !num tendency due to detrainment of snow
-
    real(r8), intent(inout) :: lambdadpcu(pcols,pver) ! slope of cloud liquid size distr
    real(r8), intent(inout) :: mudpcu(pcols,pver)     ! width parameter of droplet size distr
 
@@ -1129,8 +1119,6 @@ subroutine cldprp(zm_const, pcols, ncol, pver, pverp, &
 
 !
 !------------------------------------------------------------------------------
-   dsfm  (:il2g,:) = 0._r8
-   dsfn  (:il2g,:) = 0._r8
 
    do i = 1,il2g
       ftemp(i) = 0._r8
@@ -1653,7 +1641,7 @@ subroutine cldprp(zm_const, pcols, ncol, pver, pverp, &
                     loc_microp_st%accsirn,loc_microp_st%accgln ,loc_microp_st%accgrn ,loc_microp_st%accilm , &
                     loc_microp_st%acciln ,loc_microp_st%fallrm ,loc_microp_st%fallsm ,loc_microp_st%fallgm , &
                     loc_microp_st%fallrn ,loc_microp_st%fallsn ,loc_microp_st%fallgn ,loc_microp_st%fhmrm  , &
-                    dsfm,   dsfn, zm_param%auto_fac, zm_param%accr_fac, zm_param%micro_dcs)
+                    loc_microp_st%dsfm,   loc_microp_st%dsfn, zm_param%auto_fac, zm_param%accr_fac, zm_param%micro_dcs)
 #endif
 
       do k = pver,msg + 2,-1
