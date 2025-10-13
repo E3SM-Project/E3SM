@@ -59,8 +59,6 @@ module zm_conv_intr
    logical :: convproc_do_aer 
    logical :: convproc_do_gas 
    logical :: clim_modal_aero
-   logical :: old_snow  = .true.   ! flag to use old estimate of snow production in zm_conv_evap
-                                   ! set false to use snow production from zm microphysics
    integer :: nmodes
    integer :: nbulk
    type(zm_aero_t), allocatable :: aero(:) ! object contains aerosol information
@@ -384,7 +382,7 @@ subroutine zm_conv_init(pref_edge)
       call zm_mphyi()
 
       ! use old estimate of snow production in zm_conv_evap
-      old_snow = .false. 
+      zm_param%old_snow = .false.
 
       ! Initialize the aerosol object with data from the modes/species
       ! affecting climate, i.e., the list index is hardcoded to 0
@@ -538,7 +536,6 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
    real(r8), dimension(pcols,pver,2) :: icwd
    real(r8), dimension(pcols,pver)   :: seten
 
-   real(r8), dimension(pcols,pver) :: sprd
    real(r8), dimension(pcols,pver) :: frz
 
    !----------------------------------------------------------------------------
@@ -638,7 +635,7 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
                   prec, ptend_loc%s, ptend_loc%q(:,:,1), cape, dcape, &
                   mcon,  pflx, zdu, mu, eu, du, md, ed, dp, dsubcld, &
                   ql, rliq, rprd, dlf, &
-                  sprd, frz, mudpcu, lambdadpcu )
+                  frz, mudpcu, lambdadpcu )
    call t_stopf ('zm_convr')
 
    if (zm_param%zm_microp) then
@@ -773,10 +770,10 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
    dp_cldice(1:ncol,1:pver) = 0
 
    call t_startf ('zm_conv_evap')
-   call zm_conv_evap(pcols, state1%ncol, pver, pverp, &
-                     state1%t, state1%pmid, state1%pdel, state1%q(1:pcols,1:pver,1), &
-                     ptend_loc%s, tend_s_snwprd, tend_s_snwevmlt, ptend_loc%q(:pcols,:pver,1), &
-                     rprd, cld, ztodt, prec, snow, ntprprd, ntsnprd, flxprec, flxsnow, sprd, old_snow)
+   call zm_conv_evap(pcols, state1%ncol, pver, pverp, ztodt, &
+                     state1%pmid, state1%pdel, state1%t, state1%q(1:pcols,1:pver,1), rprd, cld, &
+                     ptend_loc%s, ptend_loc%q(:pcols,:pver,1), tend_s_snwprd, tend_s_snwevmlt,  &
+                       prec, snow, ntprprd, ntsnprd, flxprec, flxsnow, microp_st)
    call t_stopf ('zm_conv_evap')
 
    evapcdp(1:ncol,1:pver) = ptend_loc%q(1:ncol,1:pver,1)
