@@ -432,6 +432,11 @@ module elm_varctl
   logical          , public :: use_em_stub = .false.
 
   !----------------------------------------------------------
+  ! For dynamic lakes
+  !----------------------------------------------------------
+  logical, public :: create_lakebed_column = .true.
+
+  !----------------------------------------------------------
   ! To retrieve namelist
   !----------------------------------------------------------
   character(len=SHR_KIND_CL), public :: NLFilename_in ! Namelist filename
