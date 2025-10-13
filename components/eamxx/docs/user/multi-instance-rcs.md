@@ -1,10 +1,10 @@
 # Multi-instance and NBFB testing capabilities
 
-For NBFB testing, we utilize a "System Test" called `EST`
-which stands for Ensemble Statistical Test. The premise
-of EST is comparing the statistics of two (potentially differing)
+For NBFB testing, we utilize a "System Test" called `RCS`
+which stands for Reproducible Climate Statistics. The premise
+of RCS is comparing the statistics of two (potentially differing)
 populations to determine if they are statistically identical.
-To enable EST, we utilize CIME's multi-instance capability.
+To enable RCS, we utilize CIME's multi-instance capability.
 
 ## Multi-instance
 
@@ -32,15 +32,16 @@ and can result in out-of-memory errors. Instead, the user can set
 `MULTI_DRIVER` to `TRUE` which will result in a coupler instance
 for each `NINST`.
 
-## EST testing
+## RCS testing
 
-The Ensemble Statistical Test (EST) performs a rigorous statistical comparison
-between two ensembles of one-year runs to verify climate reproducibility and
-bit-for-bit (BFB) equivalence using advanced statistical methods.
+The Reproducible Climate Statistics (RCS) test performs a rigorous
+statistical comparison between two ensembles of one-year runs to
+verify climate reproducibility in not-bit-for-bit (NBFB) cases
+using advanced statistical methods.
 
 ### Available Statistical Tests
 
-EST provides a comprehensive suite of 11 two-sample statistical tests organized
+RCS provides a comprehensive suite of 11 two-sample statistical tests organized
 into three categories; all tests are implemented in SciPy's stats module
 ([SciPy stats](https://docs.scipy.org/doc/scipy/reference/stats.html)).
 
@@ -129,7 +130,7 @@ These tests focus on differences in variability:
 
 ### Statistical Test Methodology
 
-EST supports two complementary analysis modes for comprehensive climate validation:
+RCS supports two complementary analysis modes for comprehensive climate validation:
 
 #### Spatiotemporal Analysis (Default, Recommended)
 
@@ -179,7 +180,7 @@ per-column statistical tests comparing the distributions across instances.
 ### Configuration Parameters
 
 All configuration parameters can be adjusted via command-line arguments when
-running `est_stats.py` standalone, or programmatically when calling
+running `rcs_stats.py` standalone, or programmatically when calling
 `run_stats_comparison()`. Parameters control test sensitivity, multiple testing
 corrections, and failure thresholds.
 
@@ -337,32 +338,32 @@ It also offers detailed statistics for failed variables including:
 
 ##### passed_variables: List of variable names that passed
 
-### Running EST Tests
+### Running RCS Tests
 
 #### Within CIME System Test Framework
 
-In order to run EST as a CIME system test, you must request multiple instances.
+In order to run RCS as a CIME system test, you must request multiple instances.
 This can be achieved by adjusting runtime settings as discussed above.
-Or if using the `EST` "System Test", you can simply append the name
+Or if using the `RCS` "System Test", you can simply append the name
 of the test with `_N#` (same driver) or `_C#` (multiple drivers).
 
 The user must also enable a perturbation across instances.
 A simple addition to `scream` configuration to perturb the initial
 condition file (e.g., initial_conditions::perturbed_fields="T_mid")
-should suffice. The EST test will then ensure each instance has a
+should suffice. The RCS test will then ensure each instance has a
 different seed, and thus follow a different trajectory.
-EST is designed such that it returns identical seeds and thus identical results,
+RCS is designed such that it returns identical seeds and thus identical results,
 unless code or configuration changes introduce numerical or climate differences.
 
 For convenience, there exists a "testmod" that can enable the perturbation for
-the user and can set a monthly average output stream that the EST test will
+the user and can set a monthly average output stream that the RCS test will
 copy across instances. With CIME's create_test, the following is recommended:
 
 ```shell
-./cime/scripts/create_test EST_P4_C4.$RES.$COMPSET.$MACH.eamxx-perturb
+./cime/scripts/create_test RCS_P4_C4.$RES.$COMPSET.$MACH.eamxx-perturb
 ```
 
-where `EST_P4_C4` will result in 4 multi-driver instances all using a pelayout
+where `RCS_P4_C4` will result in 4 multi-driver instances all using a pelayout
 of 4, and will use the eamxx-perturb testmod as a helper in the setup phase.
 The rest of the options ($RES, $COMPSET, $MACH) should be familiar to users.
 
@@ -380,39 +381,37 @@ for custom analysis or debugging. This is useful for:
 
 ```text
 # Default: Kolmogorov-Smirnov test with spatiotemporal analysis
-est_stats.py /run/dir /base/dir
+rcs_stats.py /run/dir /base/dir
 ```
 
 ```text
 # Specify different statistical test
-est_stats.py /run/dir /base/dir \
+rcs_stats.py /run/dir /base/dir \
     --test_type ad
 ```
 
 ```text
 # Use temporal analysis instead of spatiotemporal
-est_stats.py /run/dir /base/dir \
+rcs_stats.py /run/dir /base/dir \
     --analysis_type temporal
 ```
 
 ```text
 # Custom significance level
-est_stats.py /run/dir /base/dir \
+rcs_stats.py /run/dir /base/dir \
     --test_type ks --alpha 0.001
 ```
 
 ```text
 # Combine options
-est_stats.py /run/dir /base/dir \
+rcs_stats.py /run/dir /base/dir \
     --test_type mw --analysis_type temporal --alpha 0.005
 ```
 
 **Available Options:**
 
 - `run_dir`: Directory containing current run ensemble output files
-  (pattern: `*.scream_????.h.AVERAGE.*.nc`)
 - `base_dir`: Directory containing baseline ensemble output files
-  (pattern: `*.scream_????.h.AVERAGE.*.nc`)
 
 **Statistical Test Selection:**
 
@@ -427,7 +426,7 @@ est_stats.py /run/dir /base/dir \
 - `spatiotemporal`: Area-weighted global means
 - `temporal`: Per-column temporal means
 
-- `--alpha`: Significance level (default: 0.01, or 0.001 for AD)
+`--alpha`: Significance level (default: 0.01, or 0.001 for AD)
 
 **Multiple Testing Correction:**
 
@@ -444,30 +443,44 @@ est_stats.py /run/dir /base/dir \
 `--max_failed_vars`: Maximum variables allowed to fail (default: 0)
 `--magnitude_threshold`: Minimum relative difference threshold (default: None)
 
+**File Pattern Customization:**
+
+`--run_file_pattern`: File pattern for run ensemble files
+(default: `*.scream_????.h.AVERAGE.*.nc`)
+
+- Use `????` as placeholder for 4-digit instance number
+- Supports wildcards (`*`) for flexible matching
+
+`--base_file_pattern`: File pattern for baseline ensemble files
+(default: `*.scream_????.h.AVERAGE.*.nc`)
+
+- Use `????` as placeholder for 4-digit instance number
+- Supports wildcards (`*`) for flexible matching
+
 **Complete Examples:**
 
 ```text
 # Basic usage with defaults
-est_stats.py /run/dir /base/dir
+rcs_stats.py /run/dir /base/dir
 ```
 
 ```text
 # High-sensitivity Anderson-Darling test
-est_stats.py /run/dir /base/dir \
+rcs_stats.py /run/dir /base/dir \
     --test_type ad
 ```
 
 ```text
 # Use FDR correction for better power
-est_stats.py /run/dir /base/dir \
-    --test_type ks
-    --correction_method fdr
+rcs_stats.py /run/dir /base/dir \
+    --test_type ks \
+    --correction_method fdr \
     --alpha 0.05
 ```
 
 ```text
 # Combine multiple options for custom analysis
-est_stats.py /run/dir /base/dir \
+rcs_stats.py /run/dir /base/dir \
     --test_type mw \
     --analysis_type temporal \
     --correction_method fdr \
@@ -477,24 +490,39 @@ est_stats.py /run/dir /base/dir \
 
 ```text
 # Require practical significance (>1% difference)
-est_stats.py /run/dir /base/dir \
+rcs_stats.py /run/dir /base/dir \
     --test_type ks \
     --magnitude_threshold 0.01 \
     --correction_method none
+```
 
 ```text
 # Exploratory analysis with relaxed thresholds
-est_stats.py /run/dir /base/dir \
+rcs_stats.py /run/dir /base/dir \
     --test_type energy \
     --alpha 0.05 \
     --correction_method fdr \
     --max_failed_vars 10
 ```
 
+```text
+# Compare ensembles with different output formats
+rcs_stats.py /run/dir /base/dir \
+    --run_file_pattern "*.eam_????.h0.*.nc" \
+    --base_file_pattern "*.scream_????.h.AVERAGE.*.nc"
+```
+
+```text
+# Custom instance number patterns
+rcs_stats.py /run/dir /base/dir \
+    --run_file_pattern "output.????.nc" \
+    --base_file_pattern "baseline.????.nc"
+```
+
 **Getting Help:**
 
 ```text
-python est_stats.py --help
+python rcs_stats.py --help
 ```
 
 This displays complete documentation including all available tests with

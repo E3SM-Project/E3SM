@@ -67,8 +67,8 @@ fields:
     - T_mid_at_2m_above_surface
     - T_mid_at_20m_above_surface
     - qv_2m
-    - qv_mid_at_2m_above_surface
-    - qv_mid_at_20m_above_surface
+    - qv_at_2m_above_surface
+    - qv_at_20m_above_surface
     - surf_radiative_T
     - VapWaterPath
     - IceWaterPath

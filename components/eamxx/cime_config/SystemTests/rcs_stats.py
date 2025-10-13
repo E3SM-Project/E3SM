@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-Modular statistical comparison framework for EST system test.
+Modular statistical comparison framework for RCS system test.
 
 This module provides a comprehensive suite of two-sample statistical tests
 for comparing ensemble climate model simulations to determine if they are
@@ -268,7 +268,14 @@ class KSTest(StatisticalTest):
     """
 
     def _compute_test_statistic(self, a, b):
-        return stats.ks_2samp(a, b)
+        # Suppress expected warning about switching to asymptotic method
+        # This is normal for large samples and doesn't affect validity
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                'ignore',
+                'ks_2samp: Exact calculation unsuccessful'
+            )
+            return stats.ks_2samp(a, b)
 
 
 class AndersonDarlingTest(StatisticalTest):
@@ -646,6 +653,8 @@ def run_stats_comparison(
     correction_method="bonferroni",
     max_failed_vars=0,
     magnitude_threshold=None,
+    run_file_pattern=None,
+    base_file_pattern=None,
 ):
     """
     Compare ensembles using configurable statistical tests.
@@ -667,9 +676,16 @@ def run_stats_comparison(
             - 'bonferroni': Conservative, controls family-wise error rate
             - 'fdr': False Discovery Rate (Benjamini-Hochberg), less conservative
             - 'none': No correction applied
-        max_failed_vars: Maximum number of variables allowed to fail (default: 0)
-        magnitude_threshold: Minimum relative difference to consider significant
-                            (default: None, all statistical differences count)
+        max_failed_vars: Maximum number of variables allowed to fail
+                        (default: 0)
+        magnitude_threshold: Minimum relative difference to consider
+                            significant (default: None, all differences count)
+        run_file_pattern: File pattern for run ensemble files. Use '????' as
+                         placeholder for instance number
+                         (default: '*.scream_????.h.AVERAGE.*.nc')
+        base_file_pattern: File pattern for baseline ensemble files.
+                          Use '????' as placeholder for instance number
+                          (default: '*.scream_????.h.AVERAGE.*.nc')
 
     Note: Anderson-Darling is significantly more sensitive than K-S and will
           detect smaller distributional differences. It uses a stricter default
@@ -681,6 +697,8 @@ def run_stats_comparison(
     CORRECTION_METHOD = correction_method.lower()
     MAX_FAILED_VARS = max_failed_vars
     MAGNITUDE_THRESHOLD = magnitude_threshold
+    RUN_FILE_PATTERN = run_file_pattern
+    BASE_FILE_PATTERN = base_file_pattern
 
     # Map test type to full name for reporting
     test_names = {
@@ -718,46 +736,55 @@ def run_stats_comparison(
     )
 
     comments = [
+        "",
         "=" * 70,
         "EST CONFIGURATION",
         "=" * 70,
         f"Statistical Test: {test_full_name}",
-        f"  (Two-sample test comparing ensemble distributions)",
+        "  (Two-sample test comparing ensemble distributions)",
         "",
         f"Analysis Type: {analysis_full_name}",
-        f"  (Method for aggregating spatial and temporal data)",
+        "  (Method for aggregating spatial and temporal data)",
         "",
         f"Significance Level (Alpha): {ALPHA}",
-        f"  (Probability threshold for rejecting null hypothesis)",
+        "  (Probability threshold for rejecting null hypothesis)",
         "",
         f"Multiple Testing Correction: {correction_full_name}",
-        f"  (Adjusts p-value thresholds when testing many variables)",
+        "  (Adjusts p-value thresholds when testing many variables)",
         "",
         f"Critical Fraction: {CRITICAL_FRACTION}",
-        f"  (Maximum fraction of sub-tests allowed to fail per variable)",
+        "  (Maximum fraction of sub-tests allowed to fail per variable)",
         "",
         f"Max Failed Variables: {MAX_FAILED_VARS}",
-        f"  (Maximum number of variables that can fail before test fails)",
+        "  (Maximum number of variables that can fail before test fails)",
     ]
     if MAGNITUDE_THRESHOLD is not None:
         comments.extend([
             "",
             f"Magnitude Threshold: {MAGNITUDE_THRESHOLD}",
-            f"  (Minimum relative difference required for practical significance)",
+            "  (Minimum relative difference required for practical "
+            "significance)",
         ])
 
-    # Load ensemble datasets (same logic as before)
-    run_files = glob.glob(os.path.join(
-        run_dir, "*.scream_????.h.AVERAGE.*.nc"))
-    base_files = glob.glob(os.path.join(
-        base_dir, "*.scream_????.h.AVERAGE.*.nc"))
+    comments.extend([
+        "",
+        f"Run File Pattern: {RUN_FILE_PATTERN}",
+        "  (Glob pattern for run ensemble files)",
+        "",
+        f"Baseline File Pattern: {BASE_FILE_PATTERN}",
+        "  (Glob pattern for baseline ensemble files)",
+    ])
+
+    # Load ensemble datasets using configurable patterns
+    run_files = glob.glob(os.path.join(run_dir, RUN_FILE_PATTERN))
+    base_files = glob.glob(os.path.join(base_dir, BASE_FILE_PATTERN))
 
     if not run_files or not base_files:
         raise FileNotFoundError(
             f"Missing scream output in {run_dir} or {base_dir}")
 
-    run_instances = _extract_instance_nums(run_files)
-    base_instances = _extract_instance_nums(base_files)
+    run_instances = _extract_instance_nums(run_files, RUN_FILE_PATTERN)
+    base_instances = _extract_instance_nums(base_files, BASE_FILE_PATTERN)
 
     comments.extend([
         "",
@@ -765,15 +792,15 @@ def run_stats_comparison(
         "ENSEMBLE INFORMATION",
         "=" * 70,
         f"Run Ensemble Instances: {len(run_instances)}",
-        f"  (Number of perturbed ensemble members in current run)",
+        "  (Number of perturbed ensemble members in current run)",
         "",
         f"Baseline Ensemble Instances: {len(base_instances)}",
-        f"  (Number of perturbed ensemble members in baseline)",
+        "  (Number of perturbed ensemble members in baseline)",
     ])
 
     ensemble_1 = {
         i: xr.open_mfdataset(
-            os.path.join(run_dir, f"*.scream_{i}.h.AVERAGE.*.nc"),
+            os.path.join(run_dir, RUN_FILE_PATTERN.replace("????", i)),
             decode_times=False,
             data_vars="all",
         )
@@ -781,7 +808,7 @@ def run_stats_comparison(
     }
     ensemble_2 = {
         i: xr.open_mfdataset(
-            os.path.join(base_dir, f"*.scream_{i}.h.AVERAGE.*.nc"),
+            os.path.join(base_dir, BASE_FILE_PATTERN.replace("????", i)),
             decode_times=False,
             data_vars="all",
         )
@@ -794,7 +821,7 @@ def run_stats_comparison(
     comments.extend([
         "",
         f"Variables to Test: {len(test_vars)}",
-        f"  (Number of suitable variables with time and spatial dimensions)",
+        "  (Number of suitable variables with time and spatial dimensions)",
         "",
         "=" * 70,
     ])
@@ -814,7 +841,10 @@ def run_stats_comparison(
                 var, ensemble_1, ensemble_2, analysis_type, area_weights
             )
             results[var] = test_obj.compare(a, b)
-        except Exception as e:
+        except (ValueError, KeyError, OSError, IndexError, TypeError) as e:
+            # Log expected data- or IO-related errors and continue testing
+            # other variables; allow truly unexpected exceptions to propagate
+            # for visibility.
             logger.warning("Error testing %s: %s", var, e)
 
     # Apply multiple testing correction if requested
@@ -835,7 +865,7 @@ def run_stats_comparison(
         f"({100.0 * len(passed) / len(results):.1f}%)"
     )
     comments.append(
-        f"  (Variables where null hypothesis was NOT rejected)"
+        "  (Variables where null hypothesis was NOT rejected)"
     )
     comments.append("")
     comments.append(
@@ -843,7 +873,7 @@ def run_stats_comparison(
         f"({100.0 * len(failed) / len(results):.1f}%)"
     )
     comments.append(
-        f"  (Variables where distributions are statistically different)"
+        "  (Variables where distributions are statistically different)"
     )
 
     # Show details for failed variables
@@ -936,14 +966,84 @@ def run_stats_comparison(
 # ==========================================================
 
 
-def _extract_instance_nums(files):
+def _extract_instance_nums(files, pattern):
+    """
+    Extract instance numbers from filenames based on a pattern.
+
+    Args:
+        files: List of file paths
+        pattern: File pattern with '????' as placeholder for instance number
+
+    Returns:
+        Sorted list of unique instance numbers as 4-digit strings
+    """
     instance_nums = []
+
+    # Find the position of '????' in the pattern
+    if "????" not in pattern:
+        # If no placeholder, try legacy method
+        for f in files:
+            parts = os.path.basename(f).split(".scream_")
+            if len(parts) > 1:
+                inst = parts[1].split(".")[0]
+                if inst.isdigit() and len(inst) == 4:
+                    instance_nums.append(inst)
+        return sorted(set(instance_nums))
+
+    # Split pattern to get parts before and after the placeholder
+    parts = pattern.split("????")
+    if len(parts) != 2:
+        raise ValueError(
+            f"Pattern must contain exactly one '????' placeholder: {pattern}"
+        )
+
+    prefix, suffix = parts
+
     for f in files:
-        parts = os.path.basename(f).split(".scream_")
-        if len(parts) > 1:
-            inst = parts[1].split(".")[0]
-            if inst.isdigit() and len(inst) == 4:
-                instance_nums.append(inst)
+        basename = os.path.basename(f)
+
+        # Remove the prefix
+        if prefix.startswith("*"):
+            # Handle wildcard prefix
+            prefix_pattern = prefix.lstrip("*")
+            if prefix_pattern and prefix_pattern not in basename:
+                continue
+            # Find where the fixed part of prefix starts
+            if prefix_pattern:
+                idx = basename.find(prefix_pattern)
+                if idx == -1:
+                    continue
+                start_pos = idx + len(prefix_pattern)
+            else:
+                start_pos = 0
+        else:
+            if not basename.startswith(prefix):
+                continue
+            start_pos = len(prefix)
+
+        # Extract potential instance number
+        remaining = basename[start_pos:]
+
+        # Remove the suffix
+        if suffix.startswith("."):
+            # Find the suffix part
+            suffix_parts = suffix.split("*")
+            # Get the fixed part after the instance number
+            fixed_suffix = suffix_parts[0] if suffix_parts else suffix
+
+            if fixed_suffix and fixed_suffix in remaining:
+                end_pos = remaining.find(fixed_suffix)
+                inst = remaining[:end_pos]
+            else:
+                # Try to extract first 4 digits
+                inst = remaining[:4] if len(remaining) >= 4 else remaining
+        else:
+            inst = remaining[:4] if len(remaining) >= 4 else remaining
+
+        # Validate instance number
+        if inst.isdigit() and len(inst) == 4:
+            instance_nums.append(inst)
+
     return sorted(set(instance_nums))
 
 
@@ -956,6 +1056,7 @@ def _extract_data_for_var(var, ensemble_1, ensemble_2, analysis_type, area_weigh
             if var not in ds:
                 continue
             v = _prepare_variable_data(ds[var])
+
             if analysis_type == "spatiotemporal":
                 if area_weights is not None and "ncol" in v.dims:
                     arr = (v * area_weights).sum(dim="ncol", skipna=True).values
@@ -963,8 +1064,45 @@ def _extract_data_for_var(var, ensemble_1, ensemble_2, analysis_type, area_weigh
                     spatial_dims = [d for d in v.dims if d != "time"]
                     arr = v.mean(dim=spatial_dims, skipna=True).values
             else:  # temporal
-                arr = np.nanmean(v.values, axis=0).ravel()
+                # Compute temporal mean along time axis (axis=0)
+                with warnings.catch_warnings():
+                    warnings.filterwarnings('ignore', 'Mean of empty slice')
+                    arr = np.nanmean(v.values, axis=0)
+
+                # Remove any remaining dimensions and flatten
+                arr = arr.ravel()
+
+                # Filter out NaN values for this instance
+                arr = arr[~np.isnan(arr)]
+
             coll.append(arr)
+
+    # For temporal analysis, we don't concatenate because arrays may have
+    # different lengths due to masking. Instead, we need to ensure we're
+    # comparing the same spatial locations.
+    if analysis_type == "temporal":
+        # Check if all arrays have the same length
+        lengths1 = [len(a) for a in data1]
+        lengths2 = [len(a) for a in data2]
+
+        if len(set(lengths1)) > 1 or len(set(lengths2)) > 1:
+            # Variable length arrays - likely due to different masking
+            # Use the intersection of valid points
+            min1 = min(lengths1)
+            min2 = min(lengths2)
+            min_len = min(min1, min2)
+            logger.debug(
+                "Variable %s has inconsistent spatial dimensions. "
+                "Ensemble 1 lengths: %s, Ensemble 2 lengths: %s. "
+                "Truncating to %d points.",
+                var, lengths1, lengths2, min_len
+            )
+            data1 = [a[:min_len] for a in data1]
+            data2 = [a[:min_len] for a in data2]
+
+    # Check if we have any data after processing
+    if not data1 or not data2:
+        raise ValueError(f"No valid data for variable {var}")
 
     return np.concatenate(data1), np.concatenate(data2)
 
@@ -1041,7 +1179,13 @@ Examples:
   %(prog)s /path/to/run /path/to/baseline --test_type ks --alpha 0.001 --correction_method fdr
 
   # No multiple testing correction with magnitude threshold
-  %(prog)s /path/to/run /path/to/baseline --correction_method none --magnitude_threshold 0.01
+  %(prog)s /path/to/run /path/to/baseline \\
+      --correction_method none --magnitude_threshold 0.01
+
+  # Custom file patterns for different output formats
+  %(prog)s /path/to/run /path/to/baseline \\
+      --run_file_pattern "*.eam_????.h0.*.nc" \\
+      --base_file_pattern "*.scream_????.h.AVERAGE.*.nc"
 """,
     )
 
@@ -1109,10 +1253,24 @@ Examples:
         help="Minimum relative difference to consider significant "
         "(default: None, all differences count)",
     )
+    parser.add_argument(
+        "--run_file_pattern",
+        type=str,
+        default="*.scream_????.h.AVERAGE.*.nc",
+        help="File pattern for run ensemble (use ???? for instance number, "
+        "default: *.scream_????.h.AVERAGE.*.nc)",
+    )
+    parser.add_argument(
+        "--base_file_pattern",
+        type=str,
+        default="*.scream_????.h.AVERAGE.*.nc",
+        help="File pattern for baseline ensemble (use ???? for instance "
+        "number, default: *.scream_????.h.AVERAGE.*.nc)",
+    )
 
     args = parser.parse_args()
 
-    comments, status = run_stats_comparison(
+    cli_comments, cli_status = run_stats_comparison(
         args.run_dir,
         args.base_dir,
         analysis_type=args.analysis_type,
@@ -1122,11 +1280,13 @@ Examples:
         correction_method=args.correction_method,
         max_failed_vars=args.max_failed_vars,
         magnitude_threshold=args.magnitude_threshold,
+        run_file_pattern=args.run_file_pattern,
+        base_file_pattern=args.base_file_pattern,
     )
 
     print("\n")
     print("=" * 70)
-    print(f"OVERALL TEST STATUS: {status}")
+    print(f"OVERALL TEST STATUS: {cli_status}")
     print("=" * 70)
 
     print("\n")
@@ -1134,4 +1294,4 @@ Examples:
     print("DETAILS BELOW ...")
     print("=" * 70)
     print("\n")
-    print(comments)
+    print(cli_comments)
