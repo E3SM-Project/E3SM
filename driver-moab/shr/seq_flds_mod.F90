@@ -190,8 +190,6 @@ module seq_flds_mod
 
   character(CXX) :: seq_flds_a2x_states
   character(CXX) :: seq_flds_a2x_fluxes
-  character(CXX) :: seq_flds_a2x_ext_states
-  character(CXX) :: seq_flds_a2x_ext_fluxes
   character(CXX) :: seq_flds_a2x_states_to_rof
   character(CXX) :: seq_flds_a2x_fluxes_to_rof
   character(CXX) :: seq_flds_x2a_states
@@ -260,7 +258,6 @@ module seq_flds_mod
 
   character(CXX) :: seq_flds_dom_fields
   character(CXX) :: seq_flds_a2x_fields
-  character(CXX) :: seq_flds_a2x_ext_fields
   character(CXX) :: seq_flds_a2x_fields_to_rof
   character(CXX) :: seq_flds_x2a_fields
   character(CXX) :: seq_flds_i2x_fields
@@ -390,7 +387,7 @@ contains
 
     !------ namelist -----
     character(len=CSS)  :: fldname, fldflow
-    character(len=CSS)  :: fldname_ext  ! use for moab extensions 
+
     type(mct_string)    :: mctOStr  ! mct string for output outfield
     logical :: is_state, is_flux
     integer :: i,n
@@ -422,9 +419,6 @@ contains
          cplflds_custom
 
     character(len=*),parameter :: subname = '(seq_flds_set) '
-
-    type(mct_list) :: temp_list
-    integer :: size_list, index_list
 
     !-------------------------------------------------------------------------------
 
@@ -4098,47 +4092,9 @@ contains
     call catFields(seq_flds_w2x_fields, seq_flds_w2x_states, seq_flds_w2x_fluxes)
     call catFields(seq_flds_x2w_fields, seq_flds_x2w_states, seq_flds_x2w_fluxes)
     call catFields(seq_flds_o2x_fields_to_rof, seq_flds_o2x_states_to_rof, seq_flds_o2x_fluxes_to_rof)
-    ! form character(CXX) :: seq_flds_a2x_ext_states from seq_flds_a2x_states by adding _ext in each field
-    ! first form a list 
-    call mct_list_init(temp_list ,seq_flds_a2x_fields)
-    size_list=mct_list_nitem (temp_list)
-    seq_flds_a2x_ext_fields=''
-    do index_list = 1, size_list
-      call mct_list_get(mctOStr,index_list,temp_list)
-      fldname = mct_string_toChar(mctOStr)
-      fldname_ext = trim(fldname)//'_ext'
-      call seq_flds_add(seq_flds_a2x_ext_fields,trim(fldname_ext))
-    enddo
-    seq_flds_a2x_ext_fluxes=''
-    call mct_list_clean(temp_list)
-    ! seq_flds_a2x_fluxes
-    call mct_list_init(temp_list ,seq_flds_a2x_fluxes)
-    size_list=mct_list_nitem (temp_list)
-    do index_list = 1, size_list
-      call mct_list_get(mctOStr,index_list,temp_list)
-      fldname = mct_string_toChar(mctOStr)
-      fldname_ext = trim(fldname)//'_ext'
-      call seq_flds_add(seq_flds_a2x_ext_fluxes,trim(fldname_ext))
-    enddo
-    call mct_list_clean(temp_list)
-    call mct_list_init(temp_list ,seq_flds_a2x_states)
-    size_list=mct_list_nitem (temp_list)
-    seq_flds_a2x_ext_states=''
-    do index_list = 1, size_list
-      call mct_list_get(mctOStr,index_list,temp_list)
-      fldname = mct_string_toChar(mctOStr)
-      fldname_ext = trim(fldname)//'_ext'
-      call seq_flds_add(seq_flds_a2x_ext_states,trim(fldname_ext))
-    enddo
-    call mct_list_clean(temp_list)
-
-
-   
+ 
     if (seq_comm_iamroot(ID)) then
       write(logunit,*) subname//': seq_flds_dom_fields= ',trim(seq_flds_dom_fields)
-      write(logunit,*) subname//': seq_flds_a2x_ext_states= ',trim(seq_flds_a2x_ext_states)
-      write(logunit,*) subname//': seq_flds_a2x_ext_fluxes= ',trim(seq_flds_a2x_ext_fluxes)
-      write(logunit,*) subname//': seq_flds_a2x_ext_fields= ',trim(seq_flds_a2x_ext_fields)
       write(logunit,*) subname//': seq_flds_xao_fields= ',trim(seq_flds_xao_fields)
     endif
 

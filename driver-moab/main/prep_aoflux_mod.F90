@@ -12,6 +12,7 @@ module prep_aoflux_mod
   use seq_comm_mct,     only : mbox2id ! used only for debugging ocn and mct
 #endif
   use seq_comm_mct,     only : mbaxid ! iMOAB app id for atm on cpl pes
+  use seq_comm_mct,     only: atm_pg_active  ! whether the atm uses FV mesh or not ; made true if fv_nphys > 0
   use seq_comm_mct,     only: seq_comm_getData=>seq_comm_setptrs
   use seq_comm_mct, only : num_moab_exports
   use seq_infodata_mod, only: seq_infodata_getdata, seq_infodata_type
@@ -227,9 +228,15 @@ contains
        ! find out the number of local elements in moab mesh
        ierr  = iMOAB_GetMeshInfo ( mbaxid, nvert, nvise, nbl, nsurf, nvisBC ); ! could be different of lsize_o
       ! local size of vertices is different from lsize_o
-       arrSize = nvise(1) * size_list ! there are size_list tags that need to be zeroed out
+       if(atm_pg_active) then
+          arrSize = nvise(1) * size_list ! there are size_list tags that need to be zeroed out
+          ent_type = 1 ! cell type now, not a point cloud anymore
+       else
+          arrSize = nvert(1) * size_list
+          ent_type = 0 ! vertex type now, point cloud 
+       endif
        allocate(tagValues(arrSize) )
-       ent_type = 1 ! cell type now, not a point cloud anymore
+       
        tagValues = 0._r8
        ierr = iMOAB_SetDoubleTagStorage ( mbaxid, tagname, arrSize , ent_type, tagValues)
        deallocate(tagValues)
