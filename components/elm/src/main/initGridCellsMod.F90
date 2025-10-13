@@ -435,9 +435,10 @@ contains
     ! !USES
     use elm_varpar      , only : maxpatch_glcmec
     use elm_varsur      , only : wt_lunit, wt_glc_mec
-    use landunit_varcon , only : istwet, istdlak, istice, istice_mec
+    use landunit_varcon , only : istwet, istdlak, istice, istice_mec, istsoil
     use column_varcon   , only : icemec_class_to_col_itype
     use subgridMod      , only : subgrid_get_topounitinfo
+    use elm_varctl      , only : create_lakebed_column
     use pftvarcon       , only : noveg
 
     !
@@ -488,7 +489,7 @@ contains
 
     if (npfts > 0) then
 
-       if (npfts /=1 .and. ltype /= istice_mec) then
+       if (npfts /=1 .and. ltype /= istice_mec .and. (.not. create_lakebed_column)) then
           write(iulog,*)' set_landunit_wet_ice_lake: landunit must'// &
                ' have one pft '
           write(iulog,*)' current value of npfts=',npfts
@@ -521,12 +522,30 @@ contains
 
        else
 
-          ! Currently assume that each landunit only has only one column 
-          ! and that each column has its own pft
-       
           call add_landunit(li=li, ti=ti, ltype=ltype, wttopounit=wtlunit2topounit)
-          call add_column(ci=ci, li=li, ctype=ltype, wtlunit=1.0_r8, is_lake=is_lake_col)
-          call add_patch(pi=pi, ci=ci, ptype=noveg, wtcol=1.0_r8)
+
+          if (create_lakebed_column .and. ltype == istdlak) then
+
+             ! If this is a lake landunit and creation of a lakebed soil column
+             ! is enabled, add TWO columns
+
+             ! Add a lake column
+             call add_column(ci=ci, li=li, ctype=ltype, wtlunit=0.5_r8, is_lake=is_lake_col)
+             call add_patch(pi=pi, ci=ci, ptype=noveg, wtcol=1.0_r8)
+
+             ! Add a lakebed column
+             call add_column(ci=ci, li=li, ctype=istsoil, wtlunit=0.5_r8, is_soil=.true.)
+             call add_patch(pi=pi, ci=ci, ptype=noveg, wtcol=1.0_r8, is_on_soil_col=.true.)
+          else
+             ! Currently assume that each landunit only has only one column
+             ! and that each column has its own pft
+
+            call add_column(ci=ci, li=li, ctype=ltype, wtlunit=1.0_r8, is_lake=is_lake_col)
+            call add_patch(pi=pi, ci=ci, ptype=noveg, wtcol=1.0_r8)
+
+             call add_column(ci=ci, li=li, ctype=ltype, wtlunit=1.0_r8)
+             call add_patch(pi=pi, ci=ci, ptype=noveg, wtcol=1.0_r8)
+          endif
 
        end if   ! ltype = istice_mec
     endif       ! npfts > 0       
