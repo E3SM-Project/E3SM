@@ -79,7 +79,7 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
                      prec, heat, qtnd, cape, dcape, &
                      mcon, pflx, zdu, mu, eu, du, md, ed, dp, dsubcld, &
                      ql, rliq, rprd, dlf, &
-                     frz, mudpcu, lambdadpcu )
+                     mudpcu, lambdadpcu )
    !----------------------------------------------------------------------------
    ! Purpose: Main driver for Zhang-Mcfarlane convection scheme
    !----------------------------------------------------------------------------
@@ -131,7 +131,6 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
    real(r8), dimension(pcols),      intent(  out) :: rliq            ! reserved liquid (not yet in cldliq) for energy integrals
    real(r8), dimension(pcols,pver), intent(  out) :: rprd            ! rain production rate
    real(r8), dimension(pcols,pver), intent(  out) :: dlf             ! detrained cloud liq mixing ratio
-   real(r8), dimension(pcols,pver), intent(  out) :: frz             ! ZM microphysics - heating rate due to freezing
    real(r8), dimension(pcols,pver), intent(  out) :: mudpcu          ! ZM microphysics - width parameter of droplet size distr
    real(r8), dimension(pcols,pver), intent(  out) :: lambdadpcu      ! ZM microphysics - slope of cloud liquid size distr
    !----------------------------------------------------------------------------
@@ -213,7 +212,6 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
 
    real(r8), dimension(pcols,pver) :: lambdadpcug  ! ZM microphysics - gathered slope of cloud liquid size distr
    real(r8), dimension(pcols,pver) :: mudpcug      ! ZM microphysics - gathered width parameter of droplet size distr
-   real(r8), dimension(pcols,pver) :: frzg         ! ZM microphysics - gathered heating rate due to freezing
 
    real(r8), dimension(pcols)      :: mb           ! cloud base mass flux
    integer,  dimension(pcols)      :: jlcl         ! updraft lifting cond level
@@ -258,9 +256,6 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
          qlg(i,k)   = 0._r8
          dlf(i,k)   = 0._r8
          dlg(i,k)   = 0._r8
-         ! Convective microphysics
-         frz(i,k)   = 0._r8
-         frzg(i,k)  = 0._r8
       end do
       prec(i)        = 0._r8
       rliq(i)        = 0._r8
@@ -500,7 +495,7 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
                maxg    ,j0      ,jd      ,lengath ,msg     , &
                pflxg   ,evpg    ,cug     ,rprdg   ,zm_param%limcnv  , &
                landfracg, tpertg, &
-               aero    ,lambdadpcug,mudpcug,frzg ,  &   ! < added for ZM micro
+               aero    ,lambdadpcug,mudpcug,  &   ! < added for ZM micro
                loc_microp_st )        ! < added for ZM micro
 
 
@@ -514,10 +509,10 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
          ed   (i,k) = ed   (i,k)* (zfg(i,k)-zfg(i,k+1))/dp(i,k)
          cug  (i,k) = cug  (i,k)* (zfg(i,k)-zfg(i,k+1))/dp(i,k)
          rprdg(i,k) = rprdg(i,k)* (zfg(i,k)-zfg(i,k+1))/dp(i,k)
-         frzg (i,k) = frzg (i,k)* (zfg(i,k)-zfg(i,k+1))/dp(i,k)
          evpg (i,k) = evpg (i,k)* (zfg(i,k)-zfg(i,k+1))/dp(i,k)
          if (zm_param%zm_microp) then
-            loc_microp_st%sprd(i,k) = loc_microp_st%sprd(i,k)* (zfg(i,k)-zfg(i,k+1))/dp(i,k)
+            loc_microp_st%frz (i,k) = loc_microp_st%frz (i,k) * (zfg(i,k)-zfg(i,k+1))/dp(i,k)
+            loc_microp_st%sprd(i,k) = loc_microp_st%sprd(i,k) * (zfg(i,k)-zfg(i,k+1))/dp(i,k)
          end if
       end do
    end do
@@ -577,13 +572,12 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
          cug  (i,k)  = cug  (i,k)*mb(i)
          evpg (i,k)  = evpg (i,k)*mb(i)
          pflxg(i,k+1)= pflxg(i,k+1)*mb(i)*100._r8/zm_const%grav
-         frzg(i,k)   = frzg(i,k)*mb(i)
 
          if (zm_param%zm_microp) then
             loc_microp_st%sprd(i,k)  = loc_microp_st%sprd(i,k)*mb(i)
+            loc_microp_st%frz (i,k)  = loc_microp_st%frz (i,k)*mb(i)
             if (mb(i).eq.0._r8) then
                qlg (i,k)  = 0._r8
-               frzg (i,k) = 0._r8
             end if
          end if
 
@@ -599,7 +593,6 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
                  mu      ,md      ,sd      ,qd      ,qlg     , &
                  dsubcld ,jt      ,maxg    ,1       ,lengath , msg, &
                  dlg     ,evpg    ,cug     ,&
-                 frzg    , &
                  loc_microp_st)
 
    !----------------------------------------------------------------------------
@@ -630,7 +623,6 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
 
          lambdadpcu(ideep(i),k) = lambdadpcug(i,k)
          mudpcu(ideep(i),k)     = mudpcug(i,k)
-         frz(ideep(i),k)  = frzg(i,k)*zm_const%latice/zm_const%cpair
       end do
    end do
 
@@ -639,12 +631,15 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
 
    if (zm_param%zm_microp) then
       call zm_microp_st_scatter(loc_microp_st,microp_st,pcols,lengath,pver,ideep)
-      ! we also need to interpolate the wu variable from interface to mid-point
+      ! we also need to do a few miscellaneous things to the micro variables
       do i = 1,ncol
          do k = msg + 1,pver
             if(k.lt.pver) then
+               ! interpolate from interface to mid-point
                microp_st%wu(i,k) = 0.5_r8 * ( microp_st%wu(i,k) + microp_st%wu(i,k+1) )
             end if
+            ! convert freezing rate to a heating rate due to freezing => [K/s]
+            microp_st%frz(i,k) = microp_st%frz(i,k) * zm_const%latice/zm_const%cpair
          end do
       end do
    end if
@@ -954,7 +949,7 @@ subroutine cldprp(zm_const, pcols, ncol, pver, pverp, &
                   mx      ,j0      ,jd      ,il2g    ,msg     , &
                   pflx    ,evp     ,cu      ,rprd    ,limcnv  , &
                   landfrac,tpertg  , &
-                  aero    ,lambdadpcu ,mudpcu,frz1 , &
+                  aero    ,lambdadpcu ,mudpcu, &
                   loc_microp_st )
 
 !-----------------------------------------------------------------------
@@ -1089,19 +1084,17 @@ subroutine cldprp(zm_const, pcols, ncol, pver, pverp, &
    real(r8) mdt
 
    ! Convective microphysics
-   real(r8) fice(pcols,pver)        ! ice fraction in precip production
-   real(r8) tug(pcols,pver)
-
-   real(r8) totfrz(pcols)
-   real(r8) frz1(pcols,pver)        ! rate of freezing
-   real(r8) frz (pcols,pver)        ! rate of freezing
-   real(r8) pflxs(pcols,pverp)      ! frozen precipitation flux thru layer
+   real(r8), dimension(pcols,pver) :: fice       ! ice fraction in precip production
+   real(r8), dimension(pcols,pver) :: tug        ! temporary updraft temperature
+   real(r8), dimension(pcols,pver) :: tmp_frz    ! temporary rate of freezing
+   real(r8), dimension(pcols)      :: tot_frz    ! total column freezing rate
+   real(r8), dimension(pcols,pverp):: pflxs      ! frozen precipitation flux thru layer
    real(r8) dum, sdum
 
-   real(r8), parameter :: omsm=0.99999_r8       ! to prevent problems due to round off error
-   real(r8), parameter :: mu_min = 0.02_r8      ! minimum value of mu
-   real(r8), parameter :: t_homofrz = 233.15_r8 ! homogeneous freezing temperature
-   real(r8), parameter :: t_mphase  = 40._r8    ! mixed phase temperature = tfreez-t_homofrz = 273.15K - 233.15K
+   real(r8), parameter :: omsm      = 0.99999_r8   ! to prevent problems due to round off error
+   real(r8), parameter :: mu_min    = 0.02_r8      ! minimum value of mu
+   real(r8), parameter :: t_homofrz = 233.15_r8    ! homogeneous freezing temperature
+   real(r8), parameter :: t_mphase  = 40._r8       ! mixed phase temperature = tfreez-t_homofrz = 273.15K - 233.15K
 
    integer  jto(pcols)              ! updraft plume old top
    integer  tmplel(pcols)
@@ -1177,8 +1170,6 @@ subroutine cldprp(zm_const, pcols, ncol, pver, pverp, &
          ! Convective microphysics
          fice(i,k) = 0._r8
          tug(i,k)  = 0._r8
-         frz(i,k)  = 0._r8
-         frz1(i,k) = 0._r8
          if (zm_param%zm_microp) then
             loc_microp_st%qcde(i,k)     = 0._r8
             loc_microp_st%qide(i,k)     = 0._r8
@@ -1199,7 +1190,9 @@ subroutine cldprp(zm_const, pcols, ncol, pver, pverp, &
             loc_microp_st%qnr(i,k)      = 0._r8
             loc_microp_st%qns(i,k)      = 0._r8
             loc_microp_st%qng(i,k)      = 0._r8
-            loc_microp_st%sprd(i,k) = 0._r8
+            loc_microp_st%sprd(i,k)     = 0._r8
+            loc_microp_st%frz(i,k)      = 0._r8
+            tmp_frz(i,k)                = 0._r8
          end if
       end do
    end do
@@ -1396,314 +1389,316 @@ subroutine cldprp(zm_const, pcols, ncol, pver, pverp, &
    itnum = 1
    if (zm_param%zm_microp) itnum = 2
 
-   do iter=1, itnum
+   do iter = 1,itnum
 
       do k = pver,msg + 1,-1
-        do i = 1,il2g
-           cu(i,k) = 0._r8
-           if (zm_param%zm_microp) loc_microp_st%qliq(i,k) = 0._r8
-           if (zm_param%zm_microp) loc_microp_st%qice(i,k) = 0._r8
-           ql(i,k) = 0._r8
-           frz1(i,k) = 0._r8
-        end do
+         do i = 1,il2g
+            cu(i,k) = 0._r8
+            ql(i,k) = 0._r8
+            if (zm_param%zm_microp) then
+               loc_microp_st%qliq(i,k) = 0._r8
+               loc_microp_st%qice(i,k) = 0._r8
+               loc_microp_st%frz(i,k)  = 0._r8
+            end if
+         end do
       end do
       do i = 1,il2g
           totpcp(i) = 0._r8
           if (zm_param%zm_microp) hu(i,jb(i)) = hmn(i,jb(i)) + zm_const%cpair*zm_param%tiedke_add
       end do
 
-!
-! specify the updraft mass flux mu, entrainment eu, detrainment du
-! and moist static energy hu.
-! here and below mu, eu,du, md and ed are all normalized by mb
-!
-   do i = 1,il2g
-      if (eps0(i) > 0._r8) then
-         mu(i,jb(i)) = 1._r8
-         eu(i,jb(i)) = mu(i,jb(i))/dz(i,jb(i))
-      end if
-      if (zm_param%zm_microp) then
-        tmplel(i) = lel(i)
-      else
-        tmplel(i) = jt(i)
-      end if
-   end do
-   do k = pver,msg + 1,-1
-      do i = 1,il2g
-          if (eps0(i) > 0._r8 .and. (k >= tmplel(i) .and. k < jb(i))) then
-            zuef(i) = zf(i,k) - zf(i,jb(i))
-            rmue(i) = (1._r8/eps0(i))* (exp(eps(i,k+1)*zuef(i))-1._r8)/zuef(i)
-            mu(i,k) = (1._r8/eps0(i))* (exp(eps(i,k  )*zuef(i))-1._r8)/zuef(i)
-            eu(i,k) = (rmue(i)-mu(i,k+1))/dz(i,k)
-            du(i,k) = (rmue(i)-mu(i,k))/dz(i,k)
-         end if
-      end do
-   end do
-!
-   khighest = pverp
-   klowest = 1
-   do i=1,il2g
-      khighest = min(khighest,lel(i))
-      klowest = max(klowest,jb(i))
-   end do
 
-   do k = klowest-1,khighest,-1
+      ! specify the updraft mass flux mu, entrainment eu, detrainment du and moist static energy hu.
+      ! here and below mu, eu,du, md and ed are all normalized by mb
       do i = 1,il2g
-         if (k <= jb(i)-1 .and. k >= lel(i) .and. eps0(i) > 0._r8) then
-            if (mu(i,k) < 0.02_r8) then
-               hu(i,k) = hmn(i,k)
-               mu(i,k) = 0._r8
-               eu(i,k) = 0._r8
-               du(i,k) = mu(i,k+1)/dz(i,k)
-            else
-              if (zm_param%zm_microp) then
-                hu(i,k) = (mu(i,k+1)*hu(i,k+1) + dz(i,k)*(eu(i,k)*hmn(i,k) +   &
-                            zm_const%latice*frz(i,k)))/(mu(i,k)+ dz(i,k)*du(i,k))
-              else
-                hu(i,k) = mu(i,k+1)/mu(i,k)*hu(i,k+1) + &
-                         dz(i,k)/mu(i,k)* (eu(i,k)*hmn(i,k)- du(i,k)*hsat(i,k))
-              end if
-            end if
+         if (eps0(i) > 0._r8) then
+            mu(i,jb(i)) = 1._r8
+            eu(i,jb(i)) = mu(i,jb(i))/dz(i,jb(i))
+         end if
+         if (zm_param%zm_microp) then
+           tmplel(i) = lel(i)
+         else
+           tmplel(i) = jt(i)
          end if
       end do
-   end do
-!
-!
-! reset cloud top index beginning from two layers above the
-! cloud base (i.e. if cloud is only one layer thick, top is not reset
-!
-   do i=1,il2g
-      doit(i) = .true.
-      totfrz(i)= 0._r8
       do k = pver,msg + 1,-1
-         totfrz(i)= totfrz(i)+ frz(i,k)*dz(i,k)
+         do i = 1,il2g
+             if (eps0(i) > 0._r8 .and. (k >= tmplel(i) .and. k < jb(i))) then
+               zuef(i) = zf(i,k) - zf(i,jb(i))
+               rmue(i) = (1._r8/eps0(i))* (exp(eps(i,k+1)*zuef(i))-1._r8)/zuef(i)
+               mu(i,k) = (1._r8/eps0(i))* (exp(eps(i,k  )*zuef(i))-1._r8)/zuef(i)
+               eu(i,k) = (rmue(i)-mu(i,k+1))/dz(i,k)
+               du(i,k) = (rmue(i)-mu(i,k))/dz(i,k)
+            end if
+         end do
       end do
-   end do
-   do k=klowest-2,khighest-1,-1
+
+      khighest = pverp
+      klowest = 1
       do i=1,il2g
-         if (doit(i) .and. k <= jb(i)-2 .and. k >= lel(i)-1) then
-            if (hu(i,k) <= hsthat(i,k) .and. hu(i,k+1) > hsthat(i,k+1) .and. mu(i,k) >= mu_min) then
-               if (hu(i,k)-hsthat(i,k) < -2000._r8) then
+         khighest = min(khighest,lel(i))
+         klowest = max(klowest,jb(i))
+      end do
+
+      do k = klowest-1,khighest,-1
+         do i = 1,il2g
+            if (k <= jb(i)-1 .and. k >= lel(i) .and. eps0(i) > 0._r8) then
+               if (mu(i,k) < 0.02_r8) then
+                  hu(i,k) = hmn(i,k)
+                  mu(i,k) = 0._r8
+                  eu(i,k) = 0._r8
+                  du(i,k) = mu(i,k+1)/dz(i,k)
+               else
+                 if (zm_param%zm_microp) then
+                   hu(i,k) = ( mu(i,k+1)*hu(i,k+1) &
+                              +dz(i,k)*( eu(i,k)*hmn(i,k) &
+                                        +zm_const%latice*tmp_frz(i,k) ) &
+                             ) / ( mu(i,k) + dz(i,k)*du(i,k) )
+                 else
+                   hu(i,k) = mu(i,k+1)/mu(i,k)*hu(i,k+1) + &
+                            dz(i,k)/mu(i,k)* (eu(i,k)*hmn(i,k)- du(i,k)*hsat(i,k))
+                 end if
+               end if
+            end if
+         end do
+      end do
+
+      ! reset cloud top index beginning from two layers above the
+      ! cloud base (i.e. if cloud is only one layer thick, top is not reset
+      do i=1,il2g
+         doit(i) = .true.
+         tot_frz(i)= 0._r8
+         do k = pver,msg + 1,-1
+            tot_frz(i)= tot_frz(i) + tmp_frz(i,k)*dz(i,k)
+         end do
+      end do
+
+      do k=klowest-2,khighest-1,-1
+         do i=1,il2g
+            if (doit(i) .and. k <= jb(i)-2 .and. k >= lel(i)-1) then
+               if (hu(i,k) <= hsthat(i,k) .and. hu(i,k+1) > hsthat(i,k+1) .and. mu(i,k) >= mu_min) then
+                  if (hu(i,k)-hsthat(i,k) < -2000._r8) then
+                     jt(i) = k + 1
+                     doit(i) = .false.
+                  else
+                     jt(i) = k
+                     doit(i) = .false.
+                  end if
+                else if ( (hu(i,k) > hu(i,jb(i)) .and. tot_frz(i)<=0._r8) .or. mu(i,k) < mu_min) then
                   jt(i) = k + 1
                   doit(i) = .false.
-               else
-                  jt(i) = k
-                  doit(i) = .false.
                end if
-             else if ( (hu(i,k) > hu(i,jb(i)) .and. totfrz(i)<=0._r8) .or. mu(i,k) < mu_min) then
-               jt(i) = k + 1
-               doit(i) = .false.
-            end if
-         end if
-      end do
-   end do
-
-   do i = 1,il2g
-      if (iter == 1)  jto(i) = jt(i)
-   end do
-
-   do k = pver,msg + 1,-1
-      do i = 1,il2g
-         if (k >= lel(i) .and. k <= jt(i) .and. eps0(i) > 0._r8) then
-            mu(i,k) = 0._r8
-            eu(i,k) = 0._r8
-            du(i,k) = 0._r8
-            hu(i,k) = hmn(i,k)
-         end if
-         if (k == jt(i) .and. eps0(i) > 0._r8) then
-            du(i,k) = mu(i,k+1)/dz(i,k)
-            eu(i,k) = 0._r8
-            mu(i,k) = 0._r8
-         end if
-      end do
-   end do
-!
-   do i = 1,il2g
-      done(i) = .false.
-   end do
-   kount = 0
-   do k = pver,msg + 2,-1
-      do i = 1,il2g
-         if (k == jb(i) .and. eps0(i) > 0._r8) then
-            qu(i,k) = q(i,mx(i))
-            su(i,k) = (hu(i,k)-zm_const%latvap*qu(i,k))/zm_const%cpair
-         end if
-         if (( .not. done(i) .and. k > jt(i) .and. k < jb(i)) .and. eps0(i) > 0._r8) then
-            su(i,k) = mu(i,k+1)/mu(i,k)*su(i,k+1) + &
-                      dz(i,k)/mu(i,k)* (eu(i,k)-du(i,k))*s(i,k)
-            qu(i,k) = mu(i,k+1)/mu(i,k)*qu(i,k+1) + dz(i,k)/mu(i,k)* (eu(i,k)*q(i,k)- &
-                            du(i,k)*qst(i,k))
-            tu = su(i,k) - zm_const%grav/zm_const%cpair*zf(i,k)
-            call qsat_hPa(tu, (p(i,k)+p(i,k-1))/2._r8, estu, qstu)
-            if (qu(i,k) >= qstu) then
-               jlcl(i) = k
-               kount = kount + 1
-               done(i) = .true.
-            end if
-         end if
-      end do
-      if (kount >= il2g) goto 690
-   end do
-690 continue
-   do k = msg + 2,pver
-      do i = 1,il2g
-         if ((k > jt(i) .and. k <= jlcl(i)) .and. eps0(i) > 0._r8) then
-            su(i,k) = shat(i,k) + (hu(i,k)-hsthat(i,k))/(zm_const%cpair* (1._r8+gamhat(i,k)))
-            qu(i,k) = qsthat(i,k) + gamhat(i,k)*(hu(i,k)-hsthat(i,k))/ &
-                     (zm_const%latvap* (1._r8+gamhat(i,k)))
-         end if
-      end do
-   end do
-
-   do i = 1,il2g
-     if (zm_param%zm_microp) then
-        tmplel(i) = jlcl(i)+1
-     else
-        tmplel(i) = jb(i)
-     end if
-   end do
-
-! compute condensation in updraft
-   do k = pver,msg + 2,-1
-      do i = 1,il2g
-        if (k >= jt(i) .and. k < tmplel(i) .and. eps0(i) > 0._r8) then
-          if (zm_param%zm_microp) then
-             cu(i,k) = ((mu(i,k)*su(i,k)-mu(i,k+1)*su(i,k+1))/ &
-                     dz(i,k)- eu(i,k)*s(i,k)+du(i,k)*su(i,k))/(zm_const%latvap/zm_const%cpair)  &
-                       - zm_const%latice*frz(i,k)/zm_const%latvap
-          else
-
-            cu(i,k) = ((mu(i,k)*su(i,k)-mu(i,k+1)*su(i,k+1))/ &
-                      dz(i,k)- (eu(i,k)-du(i,k))*s(i,k))/(zm_const%latvap/zm_const%cpair)
-          end if
-            if (k == jt(i)) cu(i,k) = 0._r8
-            cu(i,k) = max(0._r8,cu(i,k))
-         end if
-      end do
-   end do
-
-   if (zm_param%zm_microp) then
-
-      tug(:il2g,:) = t(:il2g,:)
-      fice(:,:)    = 0._r8
-
-      do k = pver, msg+2, -1
-         do i = 1, il2g
-            tug(i,k) = su(i,k) - zm_const%grav/zm_const%cpair*zf(i,k)
-         end do
-      end do
-      do k = 1, pver-1
-         do i = 1, il2g
-
-            if (tug(i,k+1) > zm_const%tfreez) then
-               ! If warmer than zm_const%tfreez then water phase
-               fice(i,k) = 0._r8
-
-            else if (tug(i,k+1) < t_homofrz) then
-               ! If colder than t_homofrz then ice phase
-               fice(i,k) = 1._r8
-
-            else
-               ! Otherwise mixed phase, with ice fraction decreasing linearly
-               ! from t_homofrz to zm_const%tfreez
-               fice(i,k) =(zm_const%tfreez - tug(i,k+1)) / t_mphase
             end if
          end do
       end do
 
-      do k = 1, pver
+      do i = 1,il2g
+         if (iter == 1)  jto(i) = jt(i)
+      end do
+
+      do k = pver,msg + 1,-1
          do i = 1,il2g
-            loc_microp_st%cmei(i,k) = cu(i,k)* fice(i,k)
-            loc_microp_st%cmel(i,k) = cu(i,k) * (1._r8-fice(i,k))
+            if (k >= lel(i) .and. k <= jt(i) .and. eps0(i) > 0._r8) then
+               mu(i,k) = 0._r8
+               eu(i,k) = 0._r8
+               du(i,k) = 0._r8
+               hu(i,k) = hmn(i,k)
+            end if
+            if (k == jt(i) .and. eps0(i) > 0._r8) then
+               du(i,k) = mu(i,k+1)/dz(i,k)
+               eu(i,k) = 0._r8
+               mu(i,k) = 0._r8
+            end if
          end do
       end do
 
-#ifndef SCREAM_CONFIG_IS_CMAKE
-      call  zm_mphy(su,   qu,    mu,    du,   eu,  loc_microp_st%cmel,  loc_microp_st%cmei,   zf,    p,   &
-                     t,    q,  eps0,  jb,  jt,  jlcl,  msg,   il2g,  zm_const%grav,   zm_const%cpair,    zm_const%rdair,   aero, gamhat,   &
-                    loc_microp_st%qliq,   loc_microp_st%qice,   loc_microp_st%qnl,    loc_microp_st%qni,  &
-                    loc_microp_st%qcde,   loc_microp_st%qide,   loc_microp_st%ncde,   &
-                    loc_microp_st%nide,  rprd, loc_microp_st%sprd, frz,       loc_microp_st%wu,     loc_microp_st%qrain,  &
-                    loc_microp_st%qsnow,  loc_microp_st%qnr,    loc_microp_st%qns,    loc_microp_st%qgraupel,  &
-                    loc_microp_st%qng,    loc_microp_st%qsde,   loc_microp_st%nsde,   loc_microp_st%autolm,  loc_microp_st%accrlm,  &
-                    loc_microp_st%bergnm, loc_microp_st%fhtimm, loc_microp_st%fhtctm, loc_microp_st%fhmlm,   &
-                    loc_microp_st%hmpim,  loc_microp_st%accslm, loc_microp_st%dlfm,   loc_microp_st%autoln,   &
-                    loc_microp_st%accrln, loc_microp_st%bergnn, loc_microp_st%fhtimn, loc_microp_st%fhtctn,  &
-                    loc_microp_st%fhmln,  loc_microp_st%accsln, loc_microp_st%activn, loc_microp_st%dlfn,    &
-                    loc_microp_st%autoim, loc_microp_st%accsim, loc_microp_st%difm,   loc_microp_st%nuclin,  &
-                    loc_microp_st%autoin, loc_microp_st%accsin, loc_microp_st%hmpin,  loc_microp_st%difn,    &
-                    loc_microp_st%trspcm, loc_microp_st%trspcn, loc_microp_st%trspim, loc_microp_st%trspin,  &
-                    lambdadpcu, mudpcu,   &
-                    loc_microp_st%accgrm, loc_microp_st%accglm, loc_microp_st%accgslm,loc_microp_st%accgsrm, &
-                    loc_microp_st%accgirm,loc_microp_st%accgrim,loc_microp_st%accgrsm,loc_microp_st%accgsln, &
-                    loc_microp_st%accgsrn,loc_microp_st%accgirn,loc_microp_st%accsrim,loc_microp_st%acciglm, &
-                    loc_microp_st%accigrm,loc_microp_st%accsirm,loc_microp_st%accigln,loc_microp_st%accigrn, &
-                    loc_microp_st%accsirn,loc_microp_st%accgln ,loc_microp_st%accgrn ,loc_microp_st%accilm , &
-                    loc_microp_st%acciln ,loc_microp_st%fallrm ,loc_microp_st%fallsm ,loc_microp_st%fallgm , &
-                    loc_microp_st%fallrn ,loc_microp_st%fallsn ,loc_microp_st%fallgn ,loc_microp_st%fhmrm  , &
-                    loc_microp_st%dsfm,   loc_microp_st%dsfn, zm_param%auto_fac, zm_param%accr_fac, zm_param%micro_dcs)
-#endif
-
+      do i = 1,il2g
+         done(i) = .false.
+      end do
+      kount = 0
       do k = pver,msg + 2,-1
          do i = 1,il2g
-            ! In the original ZM scheme, which does not consider ice phase, ql actually represents total cloud
-            ! water. With convective microphysics, loc_microp_st%qliq and loc_microp_st%qice represent cloud
-            ! liquid water and cloud ice, respectively. Since ql is still used in other subroutines as total
-            ! cloud water, here ql is calculated as total cloud water for consistency.
-            ql(i,k) = loc_microp_st%qliq(i,k)+ loc_microp_st%qice(i,k)
-            frz1(i,k) = frz(i,k)
+            if (k == jb(i) .and. eps0(i) > 0._r8) then
+               qu(i,k) = q(i,mx(i))
+               su(i,k) = (hu(i,k)-zm_const%latvap*qu(i,k))/zm_const%cpair
+            end if
+            if (( .not. done(i) .and. k > jt(i) .and. k < jb(i)) .and. eps0(i) > 0._r8) then
+               su(i,k) = mu(i,k+1)/mu(i,k)*su(i,k+1) + &
+                         dz(i,k)/mu(i,k)* (eu(i,k)-du(i,k))*s(i,k)
+               qu(i,k) = mu(i,k+1)/mu(i,k)*qu(i,k+1) + dz(i,k)/mu(i,k)* (eu(i,k)*q(i,k)- &
+                               du(i,k)*qst(i,k))
+               tu = su(i,k) - zm_const%grav/zm_const%cpair*zf(i,k)
+               call qsat_hPa(tu, (p(i,k)+p(i,k-1))/2._r8, estu, qstu)
+               if (qu(i,k) >= qstu) then
+                  jlcl(i) = k
+                  kount = kount + 1
+                  done(i) = .true.
+               end if
+            end if
+         end do
+         if (kount >= il2g) goto 690
+      end do
+
+690 continue
+
+      do k = msg + 2,pver
+         do i = 1,il2g
+            if ((k > jt(i) .and. k <= jlcl(i)) .and. eps0(i) > 0._r8) then
+               su(i,k) = shat(i,k) + (hu(i,k)-hsthat(i,k))/(zm_const%cpair* (1._r8+gamhat(i,k)))
+               qu(i,k) = qsthat(i,k) + gamhat(i,k)*(hu(i,k)-hsthat(i,k))/ &
+                        (zm_const%latvap* (1._r8+gamhat(i,k)))
+            end if
          end do
       end do
 
       do i = 1,il2g
-        if (iter == 2 .and. jt(i)> jto(i)) then
-          do k = jt(i), jto(i), -1
-             frz1(i,k) = 0.0_r8
-             cu(i,k)=0.0_r8
-          end do
+        if (zm_param%zm_microp) then
+           tmplel(i) = jlcl(i)+1
+        else
+           tmplel(i) = jb(i)
         end if
       end do
 
+      ! compute condensation in updraft
       do k = pver,msg + 2,-1
          do i = 1,il2g
-            if (k >= jt(i) .and. k < jb(i) .and. eps0(i) > 0._r8 .and. mu(i,k) >= 0.0_r8) then
-               totpcp(i) = totpcp(i) + dz(i,k)*(cu(i,k)-du(i,k)*( loc_microp_st%qcde(i,k+1) &
-                                                                 +loc_microp_st%qide(i,k+1) &
-                                                                 +loc_microp_st%qsde(i,k+1) ))
+           if (k >= jt(i) .and. k < tmplel(i) .and. eps0(i) > 0._r8) then
+             if (zm_param%zm_microp) then
+                cu(i,k) = ((mu(i,k)*su(i,k)-mu(i,k+1)*su(i,k+1))/ &
+                        dz(i,k)- eu(i,k)*s(i,k)+du(i,k)*su(i,k))/(zm_const%latvap/zm_const%cpair)  &
+                          - zm_const%latice*tmp_frz(i,k)/zm_const%latvap
+             else
+
+               cu(i,k) = ((mu(i,k)*su(i,k)-mu(i,k+1)*su(i,k+1))/ &
+                         dz(i,k)- (eu(i,k)-du(i,k))*s(i,k))/(zm_const%latvap/zm_const%cpair)
+             end if
+               if (k == jt(i)) cu(i,k) = 0._r8
+               cu(i,k) = max(0._r8,cu(i,k))
             end if
          end do
       end do
 
-   else  ! no microphysics
+      if (zm_param%zm_microp) then
 
-! compute condensed liquid, rain production rate
-! accumulate total precipitation (condensation - detrainment of liquid)
-! Note ql1 = ql(k) + rprd(k)*dz(k)/mu(k)
-! The differencing is somewhat strange (e.g. du(i,k)*ql(i,k+1)) but is
-! consistently applied.
-!    mu, ql are interface quantities
-!    cu, du, eu, rprd are midpoint quantites
-     do k = pver,msg + 2,-1
-       do i = 1,il2g
-         rprd(i,k) = 0._r8
-         if (k >= jt(i) .and. k < jb(i) .and. eps0(i) > 0._r8 .and. mu(i,k) >= 0.0_r8) then
-            if (mu(i,k) > 0._r8) then
-               ql1 = 1._r8/mu(i,k)* (mu(i,k+1)*ql(i,k+1)- &
-                     dz(i,k)*du(i,k)*ql(i,k+1)+dz(i,k)*cu(i,k))
-               ql(i,k) = ql1/ (1._r8+dz(i,k)*c0mask(i))
-            else
-               ql(i,k) = 0._r8
-            end if
-            totpcp(i) = totpcp(i) + dz(i,k)*(cu(i,k)-du(i,k)*ql(i,k+1))
-            rprd(i,k) = c0mask(i)*mu(i,k)*ql(i,k)
-            ! reset convective microphysics variables
-            frz1(i,k) = 0._r8
-         end if
-       end do
-     end do
-   end if  ! zm_param%zm_microp
+         tug(:il2g,:) = t(:il2g,:)
+         fice(:,:)    = 0._r8
 
- end do   !iter
+         do k = pver, msg+2, -1
+            do i = 1, il2g
+               tug(i,k) = su(i,k) - zm_const%grav/zm_const%cpair*zf(i,k)
+            end do
+         end do
+
+         do k = 1, pver-1
+            do i = 1, il2g
+               if (tug(i,k+1) > zm_const%tfreez) then
+                  ! If warmer than zm_const%tfreez then water phase
+                  fice(i,k) = 0._r8
+               else if (tug(i,k+1) < t_homofrz) then
+                  ! If colder than t_homofrz then ice phase
+                  fice(i,k) = 1._r8
+               else
+                  ! mixed phase - ice frac decreasing linearly from t_homofrz to zm_const%tfreez
+                  fice(i,k) =(zm_const%tfreez - tug(i,k+1)) / t_mphase
+               end if
+            end do
+         end do
+
+         do k = 1, pver
+            do i = 1,il2g
+               loc_microp_st%cmei(i,k) = cu(i,k)* fice(i,k)
+               loc_microp_st%cmel(i,k) = cu(i,k) * (1._r8-fice(i,k))
+            end do
+         end do
+
+#ifndef SCREAM_CONFIG_IS_CMAKE
+         call  zm_mphy( su,   qu,    mu,    du,   eu,  loc_microp_st%cmel,  loc_microp_st%cmei,   &
+                        zf,    p,   t,    q,  eps0,  jb,  jt,  jlcl,  msg,   il2g,  &
+                        zm_const%grav,   zm_const%cpair,    zm_const%rdair,   aero, gamhat,   &
+                        loc_microp_st%qliq,     loc_microp_st%qice,     loc_microp_st%qnl,      loc_microp_st%qni,     &
+                        loc_microp_st%qcde,     loc_microp_st%qide,     loc_microp_st%ncde,     loc_microp_st%nide,    &
+                        rprd,                   loc_microp_st%sprd,     tmp_frz,                loc_microp_st%wu,      &
+                        loc_microp_st%qrain,    loc_microp_st%qsnow,    loc_microp_st%qnr,      loc_microp_st%qns,     &
+                        loc_microp_st%qgraupel, loc_microp_st%qng,      loc_microp_st%qsde,     loc_microp_st%nsde,    &
+                        loc_microp_st%autolm,   loc_microp_st%accrlm,   &
+                        loc_microp_st%bergnm,   loc_microp_st%fhtimm,   loc_microp_st%fhtctm,   loc_microp_st%fhmlm,   &
+                        loc_microp_st%hmpim,    loc_microp_st%accslm,   loc_microp_st%dlfm,     loc_microp_st%autoln,  &
+                        loc_microp_st%accrln,   loc_microp_st%bergnn,   loc_microp_st%fhtimn,   loc_microp_st%fhtctn,  &
+                        loc_microp_st%fhmln,    loc_microp_st%accsln,   loc_microp_st%activn,   loc_microp_st%dlfn,    &
+                        loc_microp_st%autoim,   loc_microp_st%accsim,   loc_microp_st%difm,     loc_microp_st%nuclin,  &
+                        loc_microp_st%autoin,   loc_microp_st%accsin,   loc_microp_st%hmpin,    loc_microp_st%difn,    &
+                        loc_microp_st%trspcm,   loc_microp_st%trspcn,   loc_microp_st%trspim,   loc_microp_st%trspin,  &
+                        lambdadpcu, mudpcu,     &
+                        loc_microp_st%accgrm,   loc_microp_st%accglm,   loc_microp_st%accgslm,  loc_microp_st%accgsrm, &
+                        loc_microp_st%accgirm,  loc_microp_st%accgrim,  loc_microp_st%accgrsm,  loc_microp_st%accgsln, &
+                        loc_microp_st%accgsrn,  loc_microp_st%accgirn,  loc_microp_st%accsrim,  loc_microp_st%acciglm, &
+                        loc_microp_st%accigrm,  loc_microp_st%accsirm,  loc_microp_st%accigln,  loc_microp_st%accigrn, &
+                        loc_microp_st%accsirn,  loc_microp_st%accgln,   loc_microp_st%accgrn,   loc_microp_st%accilm,  &
+                        loc_microp_st%acciln,   loc_microp_st%fallrm,   loc_microp_st%fallsm,   loc_microp_st%fallgm,  &
+                        loc_microp_st%fallrn,   loc_microp_st%fallsn,   loc_microp_st%fallgn,   loc_microp_st%fhmrm,   &
+                        loc_microp_st%dsfm,     loc_microp_st%dsfn, &
+                        zm_param%auto_fac, zm_param%accr_fac, zm_param%micro_dcs)
+#endif
+
+         do k = pver,msg + 2,-1
+            do i = 1,il2g
+               ! In the original ZM scheme, which does not consider ice phase, ql actually represents total cloud
+               ! water. With convective microphysics, loc_microp_st%qliq and loc_microp_st%qice represent cloud
+               ! liquid water and cloud ice, respectively. Since ql is still used in other subroutines as total
+               ! cloud water, here ql is calculated as total cloud water for consistency.
+               ql(i,k) = loc_microp_st%qliq(i,k)+ loc_microp_st%qice(i,k)
+               loc_microp_st%frz(i,k) = tmp_frz(i,k)
+            end do
+         end do
+
+         do i = 1,il2g
+           if (iter == 2 .and. jt(i)> jto(i)) then
+             do k = jt(i), jto(i), -1
+                loc_microp_st%frz(i,k) = 0.0_r8
+                cu(i,k)=0.0_r8
+             end do
+           end if
+         end do
+
+         do k = pver,msg + 2,-1
+            do i = 1,il2g
+               if (k >= jt(i) .and. k < jb(i) .and. eps0(i) > 0._r8 .and. mu(i,k) >= 0.0_r8) then
+                  totpcp(i) = totpcp(i) + dz(i,k)*(cu(i,k)-du(i,k)*( loc_microp_st%qcde(i,k+1) &
+                                                                    +loc_microp_st%qide(i,k+1) &
+                                                                    +loc_microp_st%qsde(i,k+1) ))
+               end if
+            end do
+         end do
+
+      else  ! no microphysics
+
+         ! compute condensed liquid, rain production rate
+         ! accumulate total precipitation (condensation - detrainment of liquid)
+         ! Note ql1 = ql(k) + rprd(k)*dz(k)/mu(k)
+         ! The differencing is somewhat strange (e.g. du(i,k)*ql(i,k+1)) but is
+         ! consistently applied.
+         !    mu, ql are interface quantities
+         !    cu, du, eu, rprd are midpoint quantites
+         do k = pver,msg + 2,-1
+            do i = 1,il2g
+               rprd(i,k) = 0._r8
+               if (k >= jt(i) .and. k < jb(i) .and. eps0(i) > 0._r8 .and. mu(i,k) >= 0.0_r8) then
+                  if (mu(i,k) > 0._r8) then
+                     ql1 = 1._r8/mu(i,k)* (mu(i,k+1)*ql(i,k+1)- &
+                           dz(i,k)*du(i,k)*ql(i,k+1)+dz(i,k)*cu(i,k))
+                     ql(i,k) = ql1/ (1._r8+dz(i,k)*c0mask(i))
+                  else
+                     ql(i,k) = 0._r8
+                  end if
+                  totpcp(i) = totpcp(i) + dz(i,k)*(cu(i,k)-du(i,k)*ql(i,k+1))
+                  rprd(i,k) = c0mask(i)*mu(i,k)*ql(i,k)
+               end if
+            end do
+         end do
+
+      end if  ! zm_param%zm_microp
+
+   end do ! iter = 1,itnum
 
 ! specify downdraft properties (no downdrafts if jd.ge.jb).
 ! scale down downward mass flux profile so that net flux
@@ -1811,10 +1806,10 @@ subroutine cldprp(zm_const, pcols, ncol, pver, pverp, &
             ed(i,k) = 0._r8
             evp(i,k) = 0._r8
          end if
-! rprd is the cloud water converted to rain - (rain evaporated)
+         ! rprd is the cloud water converted to rain - (rain evaporated)
          if (zm_param%zm_microp) then
            if (rprd(i,k)> 0._r8)  then
-              frz1(i,k) = frz1(i,k)- evp(i,k)*min(1._r8,loc_microp_st%sprd(i,k)/rprd(i,k))
+              loc_microp_st%frz(i,k)  = loc_microp_st%frz(i,k) - evp(i,k)*min(1._r8,loc_microp_st%sprd(i,k)/rprd(i,k))
               loc_microp_st%sprd(i,k) = loc_microp_st%sprd(i,k)- evp(i,k)*min(1._r8,loc_microp_st%sprd(i,k)/rprd(i,k))
            end if
          end if
@@ -1831,22 +1826,22 @@ subroutine cldprp(zm_const, pcols, ncol, pver, pverp, &
          if (zm_param%zm_microp) pflxs(i,k) = pflxs(i,k-1) + loc_microp_st%sprd(i,k-1)*dz(i,k-1)
       end do
    end do
-! protect against rounding error
+   ! protect against rounding error
    if (zm_param%zm_microp) then
-     do i = 1,il2g
-       if(pflxs(i,pverp).gt.pflx(i,pverp)) then
-         dum = (pflxs(i,pverp)-pflx(i,pverp))/omsm
-         do k = pver, msg+2, -1
-           if (loc_microp_st%sprd(i,k) > 0._r8 .and. dum > 0._r8) then
-             sdum = min(loc_microp_st%sprd(i,k),dum/dz(i,k))
-             loc_microp_st%sprd(i,k) = loc_microp_st%sprd(i,k)- sdum
-             frz1(i,k) = frz1(i,k)- sdum
-             dum = dum - sdum*dz(i,k)
-           end if
-         end do
-       end if
-     end do
-   end if
+      do i = 1,il2g
+         if(pflxs(i,pverp).gt.pflx(i,pverp)) then
+            dum = (pflxs(i,pverp)-pflx(i,pverp))/omsm
+            do k = pver, msg+2, -1
+               if (loc_microp_st%sprd(i,k) > 0._r8 .and. dum > 0._r8) then
+                  sdum = min(loc_microp_st%sprd(i,k),dum/dz(i,k))
+                  loc_microp_st%sprd(i,k) = loc_microp_st%sprd(i,k)- sdum
+                  loc_microp_st%frz(i,k)  = loc_microp_st%frz(i,k) - sdum
+                  dum = dum - sdum*dz(i,k)
+               end if
+            end do ! k
+         end if
+      end do ! i
+   end if ! zm_param%zm_microp
 
    do k = msg + 1,pver
       do i = 1,il2g
@@ -1876,8 +1871,7 @@ subroutine cldprp(zm_const, pcols, ncol, pver, pverp, &
                loc_microp_st%ncde(i,k) = 0._r8
                loc_microp_st%nide(i,k) = 0._r8
                loc_microp_st%nsde(i,k) = 0._r8
-               frz(i,k)  = 0._r8
-               frz1(i,k) = 0._r8
+               loc_microp_st%frz(i,k)  = 0._r8
                loc_microp_st%wu(i,k)   = 0._r8
                loc_microp_st%cmel(i,k) = 0._r8
                loc_microp_st%cmei(i,k) = 0._r8
@@ -2122,7 +2116,6 @@ subroutine q1q2_pjr(zm_const, pcols, ncol, pver, pverp, &
                     mu      ,md      ,sd      ,qd      ,ql      , &
                     dsubcld ,jt      ,mx      ,il1g    ,il2g    , msg, &
                     dl      ,evp     ,cu      ,&
-                    frz     , &
                     loc_microp_st)
    !----------------------------------------------------------------------------
    ! Purpose: initialize quantities for ZM convection scheme
@@ -2155,9 +2148,6 @@ subroutine q1q2_pjr(zm_const, pcols, ncol, pver, pverp, &
    real(r8), intent(in) :: evp(pcols,pver)
    real(r8), intent(in) :: cu(pcols,pver)
    real(r8), intent(in) :: dsubcld(pcols)
-
-   ! Convective microphysics
-   real(r8), intent(in) :: frz(pcols,pver)
 
    real(r8),intent(out) :: dqdt(pcols,pver),dsdt(pcols,pver)
    real(r8),intent(out) :: dl(pcols,pver)
@@ -2205,7 +2195,7 @@ subroutine q1q2_pjr(zm_const, pcols, ncol, pver, pverp, &
                         -md(i,k)*   (sd(i,k)-shat(i,k)) &
                        )/dp(i,k)
 
-         if (zm_param%zm_microp) dsdt(i,k) = dsdt(i,k) + zm_const%latice/zm_const%cpair*frz(i,k)
+         if (zm_param%zm_microp) dsdt(i,k) = dsdt(i,k) + zm_const%latice/zm_const%cpair*loc_microp_st%frz(i,k)
 
          dqdt(i,k) = emc + &
                     (+mu(i,k+1)* (qu(i,k+1)-qhat(i,k+1)) &
