@@ -459,6 +459,7 @@ contains
     integer  :: npfts                            ! number of pfts in landunit
     real(r8) :: wtlunit2topounit                 ! landunit weight in topounit
     real(r8) :: wtcol2lunit                      ! col weight in landunit
+    logical  :: is_lake_col
     !------------------------------------------------------------------------
 
     ! Set decomposition properties
@@ -467,9 +468,11 @@ contains
     ! gridcell as the new landunit weights on each topounit.
     ! Later, this information will come from new surface datasat.
 
+    is_lake_col = .false.
     if (ltype == istwet) then
        call subgrid_get_topounitinfo(ti, gi,tgi=topo_ind, nwetland=npfts)
     else if (ltype == istdlak) then
+       is_lake_col = .true.
        call subgrid_get_topounitinfo(ti, gi,tgi=topo_ind, nlake=npfts)
     else if (ltype == istice) then 
        call subgrid_get_topounitinfo(ti, gi,tgi=topo_ind, nglacier=npfts)
@@ -522,7 +525,7 @@ contains
           ! and that each column has its own pft
        
           call add_landunit(li=li, ti=ti, ltype=ltype, wttopounit=wtlunit2topounit)
-          call add_column(ci=ci, li=li, ctype=ltype, wtlunit=1.0_r8)
+          call add_column(ci=ci, li=li, ctype=ltype, wtlunit=1.0_r8, is_lake=is_lake_col)
           call add_patch(pi=pi, ci=ci, ptype=noveg, wtcol=1.0_r8)
 
        end if   ! ltype = istice_mec

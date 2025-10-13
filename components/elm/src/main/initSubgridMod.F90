@@ -537,7 +537,7 @@ contains
 
 
   !-----------------------------------------------------------------------
-  subroutine add_column(ci, li, ctype, wtlunit, is_soil, is_crop)
+  subroutine add_column(ci, li, ctype, wtlunit, is_soil, is_crop, is_lake)
     !
     ! !DESCRIPTION:
     ! Add an entry in the column-level arrays. ci gives the index of the last column
@@ -551,6 +551,7 @@ contains
     real(r8) , intent(in)    :: wtlunit ! weight of the column relative to the landunit
     logical  , optional      :: is_soil ! true for a soil column
     logical  , optional      :: is_crop ! true for a crop column
+    logical  , optional      :: is_lake ! true for a lake column
     !
     ! !LOCAL VARIABLES:
     character(len=*), parameter :: subname = 'add_column'
@@ -567,6 +568,7 @@ contains
 
     if (present(is_soil)) col_pp%is_soil(ci) = is_soil
     if (present(is_crop)) col_pp%is_crop(ci) = is_crop
+    if (present(is_lake)) col_pp%is_lake(ci) = is_lake
 
   end subroutine add_column
 
