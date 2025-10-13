@@ -72,6 +72,7 @@ type :: zm_param_t
    logical  :: no_deep_pbl     = .false.     ! flag to eliminate deep convection within PBL
    ! ZM micro parameters
    logical  :: zm_microp       = .false.     ! switch for convective microphysics
+   logical  :: old_snow        = .true.      ! switch to revert snow production in zm_conv_evap (i.e. before zm_micro additions)
    real(r8) :: auto_fac        = unset_r8    ! ZM microphysics enhancement factor for droplet-rain autoconversion
    real(r8) :: accr_fac        = unset_r8    ! ZM microphysics enhancement factor for droplet-rain accretion
    real(r8) :: micro_dcs       = unset_r8    ! ZM microphysics size threshold for cloud ice to snow autoconversion [m]
@@ -207,6 +208,7 @@ subroutine zm_param_set_for_testing(zm_param)
    zm_param%no_deep_pbl     = .false.
    ! ZM micro parameters
    zm_param%zm_microp       = .true.
+   zm_param%old_snow        = .false.
    zm_param%auto_fac        = 7.0D0
    zm_param%accr_fac        = 1.5D0
    zm_param%micro_dcs       = 150.E-6
