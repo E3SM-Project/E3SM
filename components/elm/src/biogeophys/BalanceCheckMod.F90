@@ -462,7 +462,7 @@ contains
                 snow_sinks(c)  = qflx_sub_snow(c) + qflx_evap_grnd(c) + qflx_snow_melt(c) &
                      + qflx_snwcp_ice(c) + qflx_snwcp_liq(c) + qflx_sl_top_soil(c)
 
-                if (lun_pp%itype(l) == istdlak) then 
+                if (col_pp%is_lake(c)) then 
                    if (.not. use_firn_percolation_and_compaction) then
                       if ( do_capsnow(c)) then
                          snow_sources(c) = qflx_snow_grnd_col(c) &

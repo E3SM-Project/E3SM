@@ -7191,7 +7191,7 @@ contains
        this%fphr(c,nlevdecomp+1:nlevgrnd) = 0._r8 !used to be in ch4Mod
        if (col_pp%is_soil(c) .or. col_pp%is_crop(c)) then
           this%fphr(c,nlevdecomp+1:nlevgrnd) = 0._r8
-       else if (lun_pp%itype(l) == istdlak .and. allowlakeprod) then
+       else if (col_pp%is_lake(c) .and. allowlakeprod) then
           this%fphr(c,:) = spval
        else  ! Inactive CH4 columns
           this%fphr(c,:) = spval

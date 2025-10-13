@@ -858,7 +858,7 @@ contains
        if (num_snowc > 0) then
           c = filter_snowc(1)
           l = col_pp%landunit(c)
-          if (ltype(l) == istdlak) then ! Called from LakeHydrology
+          if (col_pp%is_lake(c)) then ! Called from LakeHydrology
             if (.not. use_extrasnowlayers) then
                dzminloc(:) = dzmin(:) + lsadz
             else
@@ -987,7 +987,7 @@ contains
           c = filter_snowc(fc)
           l = col_pp%landunit(c)
           if (snow_depth(c) > 0._r8) then
-             if ((ltype(l) == istdlak .and. snow_depth(c) < 0.01_r8 + lsadz ) .or. &
+             if ((col_pp%is_lake(c) .and. snow_depth(c) < 0.01_r8 + lsadz ) .or. &
                   ((ltype(l) /= istdlak) .and. ((frac_sno_eff(c)*snow_depth(c) < 0.01_r8)  &
                   .or. (h2osno(c)/(frac_sno_eff(c)*snow_depth(c)) < 50._r8)))) then
 

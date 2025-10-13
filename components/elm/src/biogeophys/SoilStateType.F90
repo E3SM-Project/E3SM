@@ -409,7 +409,7 @@ contains
        this%rootfr_col (c,nlevsoi+1:nlevgrnd) = 0._r8
        if (col_pp%is_soil(c) .or. col_pp%is_crop(c)) then
           this%rootfr_col (c,nlevsoi+1:nlevgrnd) = 0._r8
-       else if (lun_pp%itype(l) == istdlak .and. allowlakeprod) then
+       else if (col_pp%is_lake(c) .and. allowlakeprod) then
           this%rootfr_col (c,:) = spval
        else  ! Inactive CH4 columns
           this%rootfr_col (c,:) = spval
@@ -690,7 +690,7 @@ contains
                 endif
              end if
 
-             if (lun_pp%itype(l) == istdlak) then
+             if (col_pp%is_lake(c)) then
 
                 if (lev <= nlevsoi) then
                    this%cellsand_col(c,lev) = sand
@@ -810,7 +810,7 @@ contains
        g = col_pp%gridcell(c)
        l = col_pp%landunit(c)
 
-       if (lun_pp%itype(l) == istdlak) then
+       if (col_pp%is_lake(c)) then
 
           do lev = 1,nlevgrnd
              if ( lev <= nlevsoi )then
