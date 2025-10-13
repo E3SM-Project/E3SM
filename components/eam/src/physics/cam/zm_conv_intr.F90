@@ -536,8 +536,6 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
    real(r8), dimension(pcols,pver,2) :: icwd
    real(r8), dimension(pcols,pver)   :: seten
 
-   real(r8), dimension(pcols,pver) :: frz
-
    !----------------------------------------------------------------------------
 
    if (zm_param%zm_microp) call zm_microp_st_alloc(microp_st, pcols, pver)
@@ -635,7 +633,7 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
                   prec, ptend_loc%s, ptend_loc%q(:,:,1), cape, dcape, &
                   mcon,  pflx, zdu, mu, eu, du, md, ed, dp, dsubcld, &
                   ql, rliq, rprd, dlf, &
-                  frz, mudpcu, lambdadpcu )
+                  mudpcu, lambdadpcu )
    call t_stopf ('zm_convr')
 
    if (zm_param%zm_microp) then
@@ -648,7 +646,6 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
       dnsf(1:ncol,1:pver) = microp_st%dnsf(1:ncol,1:pver)
       ! update other micro variables
       rice(1:ncol) = microp_st%rice(1:ncol)
-      microp_st%frz (1:ncol,1:pver) = frz (1:ncol,1:pver)
       dlftot(1:ncol,1:pver) = dlf(1:ncol,1:pver) + dif(1:ncol,1:pver) + dsf(1:ncol,1:pver)
       wuc(1:pcols,1:pver) = microp_st%wu(1:pcols,1:pver)
    else
