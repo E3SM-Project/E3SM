@@ -140,7 +140,7 @@ subroutine zm_microphysics_history_convert( ncol, microp_st, pmid, temperature )
    use zm_conv,         only: zm_const
    !----------------------------------------------------------------------------
    ! Arguments
-   integer,                         intent(in   ) :: ncol      ! number of columns in chunk
+   integer,                         intent(in   ) :: ncol         ! number of columns in chunk
    type(zm_microp_st),              intent(inout) :: microp_st    ! ZM microphysics data structure
    real(r8), dimension(pcols,pver), intent(in   ) :: pmid         ! pressure at mid-points   [Pa]
    real(r8), dimension(pcols,pver), intent(in   ) :: temperature  ! ambient temperature      [K]
