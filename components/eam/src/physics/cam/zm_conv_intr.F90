@@ -628,11 +628,10 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
                   state%pmid, state%pint, state%pdel, &
                   state%phis, state%zm, state%zi, pblh, &
                   tpert, landfrac, t_star, q_star, &
-                  aero(lchnk), microp_st, &
                   lengath, ideep, maxg, jctop, jcbot, jt, &
                   prec, ptend_loc%s, ptend_loc%q(:,:,1), cape, dcape, &
                   mcon,  pflx, zdu, mu, eu, du, md, ed, dp, dsubcld, &
-                  ql, rliq, rprd, dlf )
+                  ql, rliq, rprd, dlf, aero(lchnk), microp_st )
    call t_stopf ('zm_convr')
 
    if (zm_param%zm_microp) then
