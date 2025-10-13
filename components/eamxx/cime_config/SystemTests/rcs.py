@@ -1,18 +1,18 @@
 """
-Ensemble Statistical Test using multi-instance capability.
+Reproducible Climate Statistics testing using multi-instance capability.
 
 This test runs multiple EAMxx instances with different perturbation seeds
 and uses statistical tests to verify that the climate state is identical
 between different runs.
 
-EST inherits from SystemTestsCommon and only overrides:
+RCS inherits from SystemTestsCommon and only overrides:
 - setup_phase (to setup multi-instance with per-instance perturbed seeds)
 - _generate_baseline (move needed hist files to baseline directory)
 - _compare_baseline methods (to run the statistical tests)
 
-EST relies on two util files:
-- est_perts.py: functions to duplicate and modify yaml files
-- est_stats.py: functions to conduct statistical testing
+RCS relies on two util files:
+- rcs_perts.py: functions to duplicate and modify yaml files
+- rcs_stats.py: functions to conduct statistical testing
 """
 
 import os
@@ -30,8 +30,12 @@ logger = logging.getLogger(__name__)
 
 
 # pylint: disable=too-few-public-methods
-class EST(SystemTestsCommon):
-    """Ensemble Statistical Test using multi-instance capability"""
+class RCS(SystemTestsCommon):
+    """Reproducible Climate Statistics Test using multi-instance capability"""
+
+    # File pattern for multi-instance ensemble output files
+    # Use ???? as placeholder for 4-digit instance number
+    ENSEMBLE_FILE_PATTERN = "*.scream_????.h.AVERAGE.*.nc"
 
     # pylint: disable=too-many-arguments, too-many-positional-arguments
     def setup_phase(
@@ -72,19 +76,19 @@ class EST(SystemTestsCommon):
             )
             raise ValueError(msg)
 
-        # get est_perts functions
+        # get rcs_perts functions
         # but first add the directory to sys.path if not already there
-        est_perts_path = os.path.join(
-            os.path.dirname(__file__), 'est_perts.py'
+        rcs_perts_path = os.path.join(
+            os.path.dirname(__file__), 'rcs_perts.py'
         )
-        if not os.path.exists(est_perts_path):
+        if not os.path.exists(rcs_perts_path):
             raise ImportError(
-                f"Cannot find est_perts.py at {est_perts_path}"
+                f"Cannot find rcs_perts.py at {rcs_perts_path}"
             )
         if os.path.dirname(__file__) not in sys.path:
             sys.path.insert(0, os.path.dirname(__file__))
         # pylint: disable=import-outside-toplevel
-        from est_perts import duplicate_yaml_file, update_yaml_file
+        from rcs_perts import duplicate_yaml_file, update_yaml_file
 
         # duplicate the yaml files n_inst times
         duplicate_yaml_file(f"{run_dir}/data/scream_input.yaml", n_inst)
@@ -115,10 +119,9 @@ class EST(SystemTestsCommon):
             )
             run_dir = self._case.get_value("RUNDIR")
 
-            # for eamxx, we need to get all files that have
-            # *scream_????.h.*.nc added to this list
+            # Get all files that match the ensemble pattern
             hists = glob.glob(
-                os.path.join(run_dir, "*scream_????.h.AVERAGE.*.nc")
+                os.path.join(run_dir, self.ENSEMBLE_FILE_PATTERN)
             )
             hist_files = [os.path.basename(h) for h in hists]
 
@@ -162,13 +165,13 @@ class EST(SystemTestsCommon):
             )
 
             # launch the statistics tests
-            # first, import est_stats funcs from the other file
-            est_stats_path = os.path.join(
-                os.path.dirname(__file__), 'est_stats.py'
+            # first, import rcs_stats funcs from the other file
+            rcs_stats_path = os.path.join(
+                os.path.dirname(__file__), 'rcs_stats.py'
             )
-            if not os.path.exists(est_stats_path):
+            if not os.path.exists(rcs_stats_path):
                 raise ImportError(
-                    f"Cannot find est_stats.py at {est_stats_path}"
+                    f"Cannot find rcs_stats.py at {rcs_stats_path}"
                 )
             # Add the directory to sys.path if not already there
             if os.path.dirname(__file__) not in sys.path:
@@ -176,14 +179,16 @@ class EST(SystemTestsCommon):
             # note be extra safe and import whole file
             # because we want to avoid import errors of needed pkgs
             # pylint: disable=import-outside-toplevel
-            import est_stats as est
+            import rcs_stats as rcss
             # now, launch
-            comments, new_ts = est.run_stats_comparison(
+            comments, new_ts = rcss.run_stats_comparison(
                 run_dir,
                 base_dir,
                 analysis_type="spatiotemporal",
                 test_type="ks",
                 alpha=0.01,
+                run_file_pattern=self.ENSEMBLE_FILE_PATTERN,
+                base_file_pattern=self.ENSEMBLE_FILE_PATTERN,
             )
 
             if new_ts == "PASS":

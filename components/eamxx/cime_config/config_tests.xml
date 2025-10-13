@@ -6,8 +6,8 @@ This defines any EAMxx specific CIME tests
 
 <config_test>
 
-  <test NAME="EST">
-    <DESC>Ensemble Statistical Test for climate reproducibility</DESC>
+  <test NAME="RCS">
+    <DESC>Reproducible Climate Statistics test for NBFB testing</DESC>
     <INFO_DBUG>1</INFO_DBUG>
     <DOUT_S>FALSE</DOUT_S>
     <CONTINUE_RUN>FALSE</CONTINUE_RUN>
