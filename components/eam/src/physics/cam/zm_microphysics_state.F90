@@ -55,6 +55,7 @@ type :: zm_microp_st
    real(r8), allocatable, dimension(:,:) :: hmpim        ! mass tendency due to HM process
    real(r8), allocatable, dimension(:,:) :: accslm       ! mass tendency due to accretion of droplets by snow
    real(r8), allocatable, dimension(:,:) :: dlfm         ! mass tendency due to detrainment of droplet
+   real(r8), allocatable, dimension(:,:) :: dsfm         ! mass tendency due to detrainment of snow
    real(r8), allocatable, dimension(:,:) :: autoln       ! num tendency due to autoconversion of droplets to rain
    real(r8), allocatable, dimension(:,:) :: accrln       ! num tendency due to accretion of droplets by rain
    real(r8), allocatable, dimension(:,:) :: bergnn       ! num tendency due to Bergeron process
@@ -64,6 +65,7 @@ type :: zm_microp_st
    real(r8), allocatable, dimension(:,:) :: accsln       ! num tendency due to accretion of droplets by snow
    real(r8), allocatable, dimension(:,:) :: activn       ! num tendency due to droplets activation
    real(r8), allocatable, dimension(:,:) :: dlfn         ! num tendency due to detrainment of droplet
+   real(r8), allocatable, dimension(:,:) :: dsfn         ! num tendency due to detrainment of snow
    real(r8), allocatable, dimension(:,:) :: autoim       ! mass tendency due to autoconversion of cloud ice to snow
    real(r8), allocatable, dimension(:,:) :: accsim       ! mass tendency due to accretion of cloud ice by snow
    real(r8), allocatable, dimension(:,:) :: difm         ! mass tendency due to detrainment of cloud ice
@@ -158,6 +160,7 @@ subroutine zm_microp_st_alloc(microp_st_in,ncol_in,nlev_in)
       microp_st_in%hmpim      (ncol_in,nlev_in), &
       microp_st_in%accslm     (ncol_in,nlev_in), &
       microp_st_in%dlfm       (ncol_in,nlev_in), &
+      microp_st_in%dsfm       (ncol_in,nlev_in), &
       microp_st_in%autoln     (ncol_in,nlev_in), &
       microp_st_in%accrln     (ncol_in,nlev_in), &
       microp_st_in%bergnn     (ncol_in,nlev_in), &
@@ -167,6 +170,7 @@ subroutine zm_microp_st_alloc(microp_st_in,ncol_in,nlev_in)
       microp_st_in%accsln     (ncol_in,nlev_in), &
       microp_st_in%activn     (ncol_in,nlev_in), &
       microp_st_in%dlfn       (ncol_in,nlev_in), &
+      microp_st_in%dsfn       (ncol_in,nlev_in), &
       microp_st_in%autoim     (ncol_in,nlev_in), &
       microp_st_in%accsim     (ncol_in,nlev_in), &
       microp_st_in%difm       (ncol_in,nlev_in), &
@@ -258,6 +262,7 @@ subroutine zm_microp_st_dealloc(microp_st_in)
       microp_st_in%hmpim ,    &
       microp_st_in%accslm,    &
       microp_st_in%dlfm  ,    &
+      microp_st_in%dsfm  ,    &
       microp_st_in%autoln,    &
       microp_st_in%accrln,    &
       microp_st_in%bergnn,    &
@@ -267,6 +272,7 @@ subroutine zm_microp_st_dealloc(microp_st_in)
       microp_st_in%accsln,    &
       microp_st_in%activn,    &
       microp_st_in%dlfn  ,    &
+      microp_st_in%dsfn  ,    &
       microp_st_in%autoim,    &
       microp_st_in%accsim,    &
       microp_st_in%difm  ,    &
@@ -359,6 +365,7 @@ subroutine zm_microp_st_zero(microp_st_in,icol_in,nlev_in)
    microp_st_in%hmpim     (icol_in,1:nlev_in) = 0._r8
    microp_st_in%accslm    (icol_in,1:nlev_in) = 0._r8
    microp_st_in%dlfm      (icol_in,1:nlev_in) = 0._r8
+   microp_st_in%dsfm      (icol_in,1:nlev_in) = 0._r8
    microp_st_in%autoln    (icol_in,1:nlev_in) = 0._r8
    microp_st_in%accrln    (icol_in,1:nlev_in) = 0._r8
    microp_st_in%bergnn    (icol_in,1:nlev_in) = 0._r8
@@ -368,6 +375,7 @@ subroutine zm_microp_st_zero(microp_st_in,icol_in,nlev_in)
    microp_st_in%accsln    (icol_in,1:nlev_in) = 0._r8
    microp_st_in%activn    (icol_in,1:nlev_in) = 0._r8
    microp_st_in%dlfn      (icol_in,1:nlev_in) = 0._r8
+   microp_st_in%dsfn      (icol_in,1:nlev_in) = 0._r8
    microp_st_in%cmel      (icol_in,1:nlev_in) = 0._r8
    microp_st_in%autoim    (icol_in,1:nlev_in) = 0._r8
    microp_st_in%accsim    (icol_in,1:nlev_in) = 0._r8
@@ -484,6 +492,7 @@ subroutine zm_microp_st_scatter(microp_st_gth,microp_st_out,pcols,lengath,nlev_i
          microp_st_out%hmpim     (ideep(i),k) = microp_st_gth%hmpim     (i,k)
          microp_st_out%accslm    (ideep(i),k) = microp_st_gth%accslm    (i,k)
          microp_st_out%dlfm      (ideep(i),k) = microp_st_gth%dlfm      (i,k)
+         microp_st_out%dsfm      (ideep(i),k) = microp_st_gth%dsfm      (i,k)
          microp_st_out%autoln    (ideep(i),k) = microp_st_gth%autoln    (i,k)
          microp_st_out%accrln    (ideep(i),k) = microp_st_gth%accrln    (i,k)
          microp_st_out%bergnn    (ideep(i),k) = microp_st_gth%bergnn    (i,k)
@@ -493,6 +502,7 @@ subroutine zm_microp_st_scatter(microp_st_gth,microp_st_out,pcols,lengath,nlev_i
          microp_st_out%accsln    (ideep(i),k) = microp_st_gth%accsln    (i,k)
          microp_st_out%activn    (ideep(i),k) = microp_st_gth%activn    (i,k)
          microp_st_out%dlfn      (ideep(i),k) = microp_st_gth%dlfn      (i,k)
+         microp_st_out%dsfn      (ideep(i),k) = microp_st_gth%dsfn      (i,k)
          microp_st_out%cmel      (ideep(i),k) = microp_st_gth%cmel      (i,k)
          microp_st_out%autoim    (ideep(i),k) = microp_st_gth%autoim    (i,k)
          microp_st_out%accsim    (ideep(i),k) = microp_st_gth%accsim    (i,k)
