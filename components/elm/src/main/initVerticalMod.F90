@@ -476,13 +476,12 @@ contains
         associate(snl => col_pp%snl) ! Output: [integer (:)    ]  number of snow layers   
 
           do c = bounds%begc,bounds%endc
-             l = col_pp%landunit(c)
 
              col_pp%dz(c,-nlevsno+1: 0) = spval
              col_pp%z (c,-nlevsno+1: 0) = spval
              col_pp%zi(c,-nlevsno  :-1) = spval
 
-             if (.not. lun_pp%lakpoi(l)) then
+             if (.not. col_pp%is_lake(c)) then
                 if (snow_depth(c) < 0.01_r8) then
                    snl(c)             = 0
                    col_pp%dz(c,-nlevsno+1:0) = 0._r8

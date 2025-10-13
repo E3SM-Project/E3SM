@@ -2148,7 +2148,7 @@ contains
     real(r8)               , intent(in)    :: snow_depth(bounds%begc:)
     !
     ! LOCAL VARAIBLES:
-    integer               :: c,l,j              ! indices
+    integer               :: c,j                ! indices
     real(r8)              :: minbound, maxbound ! helper variables
    
     !SHR_ASSERT_ALL((ubound(snow_depth)  == (/bounds%endc/)), errMsg(sourcefile, __LINE__))
@@ -2160,14 +2160,13 @@ contains
          zi  => col_pp%zi     & ! Output: [real(r8) (:,:) ]  interface level below a "z" level (m) (-nlevsno+0:nlevgrnd)
     )
     loop_columns: do c = bounds%begc,bounds%endc
-       l = col_pp%landunit(c)
 
        dz(c,-nlevsno+1: 0) = spval
        z (c,-nlevsno+1: 0) = spval
        zi(c,-nlevsno  :-1) = spval
     
        ! Special case: lake
-       if (lun_pp%lakpoi(l)) then
+       if (col_pp%is_lake(c)) then
           snl(c)              = 0
           dz(c,-nlevsno+1:0)  = 0._r8
           z(c,-nlevsno+1:0)   = 0._r8

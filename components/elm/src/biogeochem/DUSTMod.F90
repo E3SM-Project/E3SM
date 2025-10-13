@@ -184,15 +184,13 @@ contains
     type(bounds_type), intent(in) :: bounds
     !
     ! !LOCAL VARIABLES:
-    integer :: c,l
+    integer :: c
     !-----------------------------------------------------------------------
 
     ! Set basin factor to 1 for now
 
     do c = bounds%begc, bounds%endc
-       l = col_pp%landunit(c)
-
-       if (.not.lun_pp%lakpoi(l)) then
+       if (.not.col_pp%is_lake(c)) then
           this%mbl_bsn_fct_col(c) = 1.0_r8
        end if
     end do

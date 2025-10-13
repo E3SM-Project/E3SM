@@ -1234,7 +1234,7 @@ contains
        end if
 
        ! Below snow temperatures - nonlake points (lake points are set below)
-       if (.not. lun_pp%lakpoi(l)) then
+       if (.not. col_pp%is_lake(c)) then
 
           if (lun_pp%itype(l) == istice .or. lun_pp%itype(l) == istice_mec) then
              this%t_soisno(c,1:nlevgrnd) = 250._r8
@@ -1292,7 +1292,7 @@ contains
           this%t_grnd(c) = this%t_soisno(c,snl(c)+1)
        endif
 
-       if (lun_pp%lakpoi(l)) then ! special handling for lake points
+       if (col_pp%is_lake(c)) then ! special handling for lake points
           this%t_soisno(c,1:nlevgrnd) = 277._r8
           this%t_lake(c,1:nlevlak) = 277._r8
           this%t_grnd(c) = 277._r8
@@ -1733,7 +1733,7 @@ contains
        this%h2osoi_liq(c,-nlevsno+1:) = spval
        this%h2osoi_ice(c,-nlevsno+1:) = spval
 
-       if (.not. lun_pp%lakpoi(l)) then  !not lake
+       if (.not. col_pp%is_lake(c)) then  !not lake
 	       nlevbed = col_pp%nlevbed(c)
           ! volumetric water
           if (col_pp%is_soil(c) .or. col_pp%is_crop(c)) then
@@ -1823,7 +1823,7 @@ contains
        !--------------------------------------------
        ! Set Lake water
        !--------------------------------------------
-       if (lun_pp%lakpoi(l)) then
+       if (col_pp%is_lake(c)) then
           do j = -nlevsno+1, 0
              if (j > col_pp%snl(c)) then
                 this%h2osoi_ice(c,j) = col_pp%dz(c,j)*bdsno

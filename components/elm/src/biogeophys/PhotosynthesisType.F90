@@ -426,7 +426,8 @@ contains
 
     do p = bounds%begp, bounds%endp
        l = veg_pp%landunit(p)
-       if (.not. lun_pp%lakpoi(l)) then
+       c = veg_pp%column(p)
+       if (.not. col_pp%is_lake(c)) then
           this%psnsun_patch(p)    = 0._r8
           this%psnsun_wc_patch(p) = 0._r8
           this%psnsun_wj_patch(p) = 0._r8
@@ -486,7 +487,8 @@ contains
 
     do p = bounds%begp, bounds%endp
        l = veg_pp%landunit(p)
-       if (.not. lun_pp%lakpoi(l)) then
+       c = veg_pp%column(p)
+       if (.not. col_pp%is_lake(c)) then
           photosyns_vars%psnsun_patch(p)    = 0._r8
           photosyns_vars%psnsun_wc_patch(p) = 0._r8
           photosyns_vars%psnsun_wj_patch(p) = 0._r8
