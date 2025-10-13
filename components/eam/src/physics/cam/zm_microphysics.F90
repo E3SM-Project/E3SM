@@ -3211,20 +3211,21 @@ end subroutine zm_mphy
 
 !===================================================================================================
 
-subroutine zm_microphysics_adjust(pcols, ncol, pver, jt, msg, delt, &
+subroutine zm_microphysics_adjust(pcols, ncol, pver, jt, msg, delt, zm_const, &
                                  dp, qv, dl, dsdt, dqdt, rprd, microp_st)
    !----------------------------------------------------------------------------
    ! Purpose: adjust ZM microphysics variables to avoid negative water
    !----------------------------------------------------------------------------
-   use zm_conv, only: zm_const
+   use zm_conv_types, only: zm_const_t
    !----------------------------------------------------------------------------
    ! Arguments
    integer,                         intent(in   ) :: pcols           ! maximum number of columns
    integer,                         intent(in   ) :: ncol            ! actual number of columns
    integer,                         intent(in   ) :: pver            ! number of mid-point levels
-   integer,                         intent(in   ) :: msg             ! number of levels to skip at model top
    integer,  dimension(pcols),      intent(in   ) :: jt              ! top index of deep convection
+   integer,                         intent(in   ) :: msg             ! number of levels to skip at model top
    real(r8),                        intent(in   ) :: delt            ! model time-step                   [s]
+   type(zm_const_t),                intent(in   ) :: zm_const        ! derived type to hold ZM constants
    real(r8), dimension(pcols,pver), intent(in   ) :: dp              ! pressure thickness                [Pa]
    real(r8), dimension(pcols,pver), intent(in   ) :: qv              ! specific humidity                 [kg/kg]
    real(r8), dimension(pcols,pver), intent(inout) :: dl              ! detraining cld h2o tend
