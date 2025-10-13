@@ -1764,13 +1764,13 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#est-testing" class="md-nav__link">
+  <a href="#rcs-testing" class="md-nav__link">
     <span class="md-ellipsis">
-      EST testing
+      RCS testing
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="EST testing">
+    <nav class="md-nav" aria-label="RCS testing">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -2254,13 +2254,13 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#running-est-tests" class="md-nav__link">
+  <a href="#running-rcs-tests" class="md-nav__link">
     <span class="md-ellipsis">
-      Running EST Tests
+      Running RCS Tests
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Running EST Tests">
+    <nav class="md-nav" aria-label="Running RCS Tests">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -4293,13 +4293,13 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#est-testing" class="md-nav__link">
+  <a href="#rcs-testing" class="md-nav__link">
     <span class="md-ellipsis">
-      EST testing
+      RCS testing
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="EST testing">
+    <nav class="md-nav" aria-label="RCS testing">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -4783,13 +4783,13 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#running-est-tests" class="md-nav__link">
+  <a href="#running-rcs-tests" class="md-nav__link">
     <span class="md-ellipsis">
-      Running EST Tests
+      Running RCS Tests
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Running EST Tests">
+    <nav class="md-nav" aria-label="Running RCS Tests">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -4840,7 +4840,7 @@
     
       
     
-    <a href="https://github.com/E3SM-Project/screamuser/multi-instance-est.md" title="View source of this page" class="md-content__button md-icon">
+    <a href="https://github.com/E3SM-Project/screamuser/multi-instance-rcs.md" title="View source of this page" class="md-content__button md-icon">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 18c.56 0 1 .44 1 1s-.44 1-1 1-1-.44-1-1 .44-1 1-1m0-3c-2.73 0-5.06 1.66-6 4 .94 2.34 3.27 4 6 4s5.06-1.66 6-4c-.94-2.34-3.27-4-6-4m0 6.5a2.5 2.5 0 0 1-2.5-2.5 2.5 2.5 0 0 1 2.5-2.5 2.5 2.5 0 0 1 2.5 2.5 2.5 2.5 0 0 1-2.5 2.5M9.27 20H6V4h7v5h5v4.07c.7.08 1.36.25 2 .49V8l-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h4.5a8.2 8.2 0 0 1-1.23-2"/></svg>
     </a>
@@ -4848,11 +4848,11 @@
 
 
 <h1 id="multi-instance-and-nbfb-testing-capabilities">Multi-instance and NBFB testing capabilities</h1>
-<p>For NBFB testing, we utilize a "System Test" called <code>EST</code>
-which stands for Ensemble Statistical Test. The premise
-of EST is comparing the statistics of two (potentially differing)
+<p>For NBFB testing, we utilize a "System Test" called <code>RCS</code>
+which stands for Reproducible Climate Statistics. The premise
+of RCS is comparing the statistics of two (potentially differing)
 populations to determine if they are statistically identical.
-To enable EST, we utilize CIME's multi-instance capability.</p>
+To enable RCS, we utilize CIME's multi-instance capability.</p>
 <h2 id="multi-instance">Multi-instance</h2>
 <p>A given case can be made to house a number of instances
 by modifying the <code>NINST</code> variable. For a given component <code>CMP</code>,
@@ -4875,12 +4875,13 @@ will be launched from the same coupler instance, which can be problematic
 and can result in out-of-memory errors. Instead, the user can set
 <code>MULTI_DRIVER</code> to <code>TRUE</code> which will result in a coupler instance
 for each <code>NINST</code>.</p>
-<h2 id="est-testing">EST testing</h2>
-<p>The Ensemble Statistical Test (EST) performs a rigorous statistical comparison
-between two ensembles of one-year runs to verify climate reproducibility and
-bit-for-bit (BFB) equivalence using advanced statistical methods.</p>
+<h2 id="rcs-testing">RCS testing</h2>
+<p>The Reproducible Climate Statistics (RCS) test performs a rigorous
+statistical comparison between two ensembles of one-year runs to
+verify climate reproducibility in not-bit-for-bit (NBFB) cases
+using advanced statistical methods.</p>
 <h3 id="available-statistical-tests">Available Statistical Tests</h3>
-<p>EST provides a comprehensive suite of 11 two-sample statistical tests organized
+<p>RCS provides a comprehensive suite of 11 two-sample statistical tests organized
 into three categories; all tests are implemented in SciPy's stats module
 (<a href="https://docs.scipy.org/doc/scipy/reference/stats.html">SciPy stats</a>).</p>
 <h4 id="distribution-tests-compare-entire-distributions">Distribution Tests (Compare Entire Distributions)</h4>
@@ -4961,7 +4962,7 @@ into three categories; all tests are implemented in SciPy's stats module
 <li>Assumption: None (distribution-free)</li>
 </ul>
 <h3 id="statistical-test-methodology">Statistical Test Methodology</h3>
-<p>EST supports two complementary analysis modes for comprehensive climate validation:</p>
+<p>RCS supports two complementary analysis modes for comprehensive climate validation:</p>
 <h4 id="spatiotemporal-analysis-default-recommended">Spatiotemporal Analysis (Default, Recommended)</h4>
 <p>This mode computes area-weighted global spatial means at each timestep, then
 performs a single statistical test per variable comparing the distributions of
@@ -5005,7 +5006,7 @@ per-column statistical tests comparing the distributions across instances.</p>
 </ul>
 <h3 id="configuration-parameters">Configuration Parameters</h3>
 <p>All configuration parameters can be adjusted via command-line arguments when
-running <code>est_stats.py</code> standalone, or programmatically when calling
+running <code>rcs_stats.py</code> standalone, or programmatically when calling
 <code>run_stats_comparison()</code>. Parameters control test sensitivity, multiple testing
 corrections, and failure thresholds.</p>
 <h4 id="core-statistical-parameters">Core Statistical Parameters</h4>
@@ -5146,25 +5147,25 @@ are tested without manual specification.</p>
 </ul>
 <h5 id="failed_variables-list-of-variable-names-that-failed">failed_variables: List of variable names that failed</h5>
 <h5 id="passed_variables-list-of-variable-names-that-passed">passed_variables: List of variable names that passed</h5>
-<h3 id="running-est-tests">Running EST Tests</h3>
+<h3 id="running-rcs-tests">Running RCS Tests</h3>
 <h4 id="within-cime-system-test-framework">Within CIME System Test Framework</h4>
-<p>In order to run EST as a CIME system test, you must request multiple instances.
+<p>In order to run RCS as a CIME system test, you must request multiple instances.
 This can be achieved by adjusting runtime settings as discussed above.
-Or if using the <code>EST</code> "System Test", you can simply append the name
+Or if using the <code>RCS</code> "System Test", you can simply append the name
 of the test with <code>_N#</code> (same driver) or <code>_C#</code> (multiple drivers).</p>
 <p>The user must also enable a perturbation across instances.
 A simple addition to <code>scream</code> configuration to perturb the initial
 condition file (e.g., initial_conditions::perturbed_fields="T_mid")
-should suffice. The EST test will then ensure each instance has a
+should suffice. The RCS test will then ensure each instance has a
 different seed, and thus follow a different trajectory.
-EST is designed such that it returns identical seeds and thus identical results,
+RCS is designed such that it returns identical seeds and thus identical results,
 unless code or configuration changes introduce numerical or climate differences.</p>
 <p>For convenience, there exists a "testmod" that can enable the perturbation for
-the user and can set a monthly average output stream that the EST test will
+the user and can set a monthly average output stream that the RCS test will
 copy across instances. With CIME's create_test, the following is recommended:</p>
-<div class="highlight"><pre><span></span><code>./cime/scripts/create_test<span class="w"> </span>EST_P4_C4.<span class="nv">$RES</span>.<span class="nv">$COMPSET</span>.<span class="nv">$MACH</span>.eamxx-perturb
+<div class="highlight"><pre><span></span><code>./cime/scripts/create_test<span class="w"> </span>RCS_P4_C4.<span class="nv">$RES</span>.<span class="nv">$COMPSET</span>.<span class="nv">$MACH</span>.eamxx-perturb
 </code></pre></div>
-<p>where <code>EST_P4_C4</code> will result in 4 multi-driver instances all using a pelayout
+<p>where <code>RCS_P4_C4</code> will result in 4 multi-driver instances all using a pelayout
 of 4, and will use the eamxx-perturb testmod as a helper in the setup phase.
 The rest of the options ($RES, $COMPSET, $MACH) should be familiar to users.</p>
 <h4 id="standalone-command-line-usage">Standalone Command-Line Usage</h4>
@@ -5178,30 +5179,28 @@ for custom analysis or debugging. This is useful for:</p>
 </ul>
 <p><strong>Basic Usage:</strong></p>
 <div class="highlight"><pre><span></span><code># Default: Kolmogorov-Smirnov test with spatiotemporal analysis
-est_stats.py /run/dir /base/dir
+rcs_stats.py /run/dir /base/dir
 </code></pre></div>
 <div class="highlight"><pre><span></span><code># Specify different statistical test
-est_stats.py /run/dir /base/dir \
+rcs_stats.py /run/dir /base/dir \
     --test_type ad
 </code></pre></div>
 <div class="highlight"><pre><span></span><code># Use temporal analysis instead of spatiotemporal
-est_stats.py /run/dir /base/dir \
+rcs_stats.py /run/dir /base/dir \
     --analysis_type temporal
 </code></pre></div>
 <div class="highlight"><pre><span></span><code># Custom significance level
-est_stats.py /run/dir /base/dir \
+rcs_stats.py /run/dir /base/dir \
     --test_type ks --alpha 0.001
 </code></pre></div>
 <div class="highlight"><pre><span></span><code># Combine options
-est_stats.py /run/dir /base/dir \
+rcs_stats.py /run/dir /base/dir \
     --test_type mw --analysis_type temporal --alpha 0.005
 </code></pre></div>
 <p><strong>Available Options:</strong></p>
 <ul>
-<li><code>run_dir</code>: Directory containing current run ensemble output files
-  (pattern: <code>*.scream_????.h.AVERAGE.*.nc</code>)</li>
-<li><code>base_dir</code>: Directory containing baseline ensemble output files
-  (pattern: <code>*.scream_????.h.AVERAGE.*.nc</code>)</li>
+<li><code>run_dir</code>: Directory containing current run ensemble output files</li>
+<li><code>base_dir</code>: Directory containing baseline ensemble output files</li>
 </ul>
 <p><strong>Statistical Test Selection:</strong></p>
 <p><code>--test_type</code>: Statistical test identifier (default: <code>ks</code>)</p>
@@ -5213,13 +5212,9 @@ est_stats.py /run/dir /base/dir \
 <p><code>--analysis_type</code>: Analysis mode (default: <code>spatiotemporal</code>)</p>
 <ul>
 <li><code>spatiotemporal</code>: Area-weighted global means</li>
-<li>
-<p><code>temporal</code>: Per-column temporal means</p>
-</li>
-<li>
-<p><code>--alpha</code>: Significance level (default: 0.01, or 0.001 for AD)</p>
-</li>
+<li><code>temporal</code>: Per-column temporal means</li>
 </ul>
+<p><code>--alpha</code>: Significance level (default: 0.01, or 0.001 for AD)</p>
 <p><strong>Multiple Testing Correction:</strong></p>
 <p><code>--correction_method</code>: Correction method (default: <code>bonferroni</code>)</p>
 <ul>
@@ -5231,22 +5226,35 @@ est_stats.py /run/dir /base/dir \
 <p><strong>Failure Thresholds:</strong></p>
 <p><code>--max_failed_vars</code>: Maximum variables allowed to fail (default: 0)
 <code>--magnitude_threshold</code>: Minimum relative difference threshold (default: None)</p>
+<p><strong>File Pattern Customization:</strong></p>
+<p><code>--run_file_pattern</code>: File pattern for run ensemble files
+(default: <code>*.scream_????.h.AVERAGE.*.nc</code>)</p>
+<ul>
+<li>Use <code>????</code> as placeholder for 4-digit instance number</li>
+<li>Supports wildcards (<code>*</code>) for flexible matching</li>
+</ul>
+<p><code>--base_file_pattern</code>: File pattern for baseline ensemble files
+(default: <code>*.scream_????.h.AVERAGE.*.nc</code>)</p>
+<ul>
+<li>Use <code>????</code> as placeholder for 4-digit instance number</li>
+<li>Supports wildcards (<code>*</code>) for flexible matching</li>
+</ul>
 <p><strong>Complete Examples:</strong></p>
 <div class="highlight"><pre><span></span><code># Basic usage with defaults
-est_stats.py /run/dir /base/dir
+rcs_stats.py /run/dir /base/dir
 </code></pre></div>
 <div class="highlight"><pre><span></span><code># High-sensitivity Anderson-Darling test
-est_stats.py /run/dir /base/dir \
+rcs_stats.py /run/dir /base/dir \
     --test_type ad
 </code></pre></div>
 <div class="highlight"><pre><span></span><code># Use FDR correction for better power
-est_stats.py /run/dir /base/dir \
-    --test_type ks
-    --correction_method fdr
+rcs_stats.py /run/dir /base/dir \
+    --test_type ks \
+    --correction_method fdr \
     --alpha 0.05
 </code></pre></div>
 <div class="highlight"><pre><span></span><code># Combine multiple options for custom analysis
-est_stats.py /run/dir /base/dir \
+rcs_stats.py /run/dir /base/dir \
     --test_type mw \
     --analysis_type temporal \
     --correction_method fdr \
@@ -5254,21 +5262,30 @@ est_stats.py /run/dir /base/dir \
     --max_failed_vars 3
 </code></pre></div>
 <div class="highlight"><pre><span></span><code># Require practical significance (&gt;1% difference)
-est_stats.py /run/dir /base/dir \
+rcs_stats.py /run/dir /base/dir \
     --test_type ks \
     --magnitude_threshold 0.01 \
     --correction_method none
-
-```text
-# Exploratory analysis with relaxed thresholds
-est_stats.py /run/dir /base/dir \
+</code></pre></div>
+<div class="highlight"><pre><span></span><code># Exploratory analysis with relaxed thresholds
+rcs_stats.py /run/dir /base/dir \
     --test_type energy \
     --alpha 0.05 \
     --correction_method fdr \
     --max_failed_vars 10
 </code></pre></div>
+<div class="highlight"><pre><span></span><code># Compare ensembles with different output formats
+rcs_stats.py /run/dir /base/dir \
+    --run_file_pattern &quot;*.eam_????.h0.*.nc&quot; \
+    --base_file_pattern &quot;*.scream_????.h.AVERAGE.*.nc&quot;
+</code></pre></div>
+<div class="highlight"><pre><span></span><code># Custom instance number patterns
+rcs_stats.py /run/dir /base/dir \
+    --run_file_pattern &quot;output.????.nc&quot; \
+    --base_file_pattern &quot;baseline.????.nc&quot;
+</code></pre></div>
 <p><strong>Getting Help:</strong></p>
-<div class="highlight"><pre><span></span><code>python est_stats.py --help
+<div class="highlight"><pre><span></span><code>python rcs_stats.py --help
 </code></pre></div>
 <p>This displays complete documentation including all available tests with
 descriptions, usage examples, and parameter explanations.</p>
