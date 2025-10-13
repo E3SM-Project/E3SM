@@ -78,8 +78,7 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
                      lengath, ideep, maxg, jctop, jcbot, jt, &
                      prec, heat, qtnd, cape, dcape, &
                      mcon, pflx, zdu, mu, eu, du, md, ed, dp, dsubcld, &
-                     ql, rliq, rprd, dlf, &
-                     mudpcu, lambdadpcu )
+                     ql, rliq, rprd, dlf )
    !----------------------------------------------------------------------------
    ! Purpose: Main driver for Zhang-Mcfarlane convection scheme
    !----------------------------------------------------------------------------
@@ -131,8 +130,6 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
    real(r8), dimension(pcols),      intent(  out) :: rliq            ! reserved liquid (not yet in cldliq) for energy integrals
    real(r8), dimension(pcols,pver), intent(  out) :: rprd            ! rain production rate
    real(r8), dimension(pcols,pver), intent(  out) :: dlf             ! detrained cloud liq mixing ratio
-   real(r8), dimension(pcols,pver), intent(  out) :: mudpcu          ! ZM microphysics - width parameter of droplet size distr
-   real(r8), dimension(pcols,pver), intent(  out) :: lambdadpcu      ! ZM microphysics - slope of cloud liquid size distr
    !----------------------------------------------------------------------------
    ! Local variables
    real(r8), dimension(pcols,pver) :: q            ! local copy of specific humidity         [kg/kg]
@@ -210,9 +207,6 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
    real(r8), dimension(pcols,pver) :: dudt         ! gathered u-wind tendency at gathered points
    real(r8), dimension(pcols,pver) :: dvdt         ! gathered v-wind tendency at gathered points
 
-   real(r8), dimension(pcols,pver) :: lambdadpcug  ! ZM microphysics - gathered slope of cloud liquid size distr
-   real(r8), dimension(pcols,pver) :: mudpcug      ! ZM microphysics - gathered width parameter of droplet size distr
-
    real(r8), dimension(pcols)      :: mb           ! cloud base mass flux
    integer,  dimension(pcols)      :: jlcl         ! updraft lifting cond level
    integer,  dimension(pcols)      :: j0           ! detrainment initiation level index
@@ -267,17 +261,14 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
       jcbot(i)       = 1
    end do
 
-   lambdadpcu  = (mucon + 1._r8)/dcon
-   mudpcu      = mucon
-   lambdadpcug = lambdadpcu
-   mudpcug     = mudpcu
-
    !----------------------------------------------------------------------------
    ! Allocate and/or Initialize microphysics state/tend derived types
    if (zm_param%zm_microp) then
       call zm_microp_st_alloc(loc_microp_st, ncol, pver)
       call zm_microp_st_ini(loc_microp_st, ncol, pver)
       call zm_microp_st_ini(microp_st, ncol, pver)
+      loc_microp_st%lambdadpcu  = (mucon + 1._r8)/dcon
+      loc_microp_st%mudpcu      = mucon
    end if
 
    !----------------------------------------------------------------------------
@@ -495,8 +486,7 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
                maxg    ,j0      ,jd      ,lengath ,msg     , &
                pflxg   ,evpg    ,cug     ,rprdg   ,zm_param%limcnv  , &
                landfracg, tpertg, &
-               aero    ,lambdadpcug,mudpcug,  &   ! < added for ZM micro
-               loc_microp_st )        ! < added for ZM micro
+               aero    ,loc_microp_st ) ! < added for ZM micro
 
 
    !----------------------------------------------------------------------------
@@ -620,9 +610,6 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
          dlf (ideep(i),k) = dlg  (i,k)
          pflx(ideep(i),k) = pflxg(i,k)
          ql  (ideep(i),k) = qlg  (i,k)
-
-         lambdadpcu(ideep(i),k) = lambdadpcug(i,k)
-         mudpcu(ideep(i),k)     = mudpcug(i,k)
       end do
    end do
 
@@ -949,8 +936,7 @@ subroutine cldprp(zm_const, pcols, ncol, pver, pverp, &
                   mx      ,j0      ,jd      ,il2g    ,msg     , &
                   pflx    ,evp     ,cu      ,rprd    ,limcnv  , &
                   landfrac,tpertg  , &
-                  aero    ,lambdadpcu ,mudpcu, &
-                  loc_microp_st )
+                  aero    ,loc_microp_st )
 
 !-----------------------------------------------------------------------
 !
@@ -1032,10 +1018,6 @@ subroutine cldprp(zm_const, pcols, ncol, pver, pverp, &
 
    ! Convective microphysics
    type(zm_microp_st)  :: loc_microp_st ! state and tendency of convective microphysics
-
-   ! tendency for output
-   real(r8), intent(inout) :: lambdadpcu(pcols,pver) ! slope of cloud liquid size distr
-   real(r8), intent(inout) :: mudpcu(pcols,pver)     ! width parameter of droplet size distr
 
 !
 ! Local workspace
@@ -1628,7 +1610,7 @@ subroutine cldprp(zm_const, pcols, ncol, pver, pverp, &
                         loc_microp_st%autoim,   loc_microp_st%accsim,   loc_microp_st%difm,     loc_microp_st%nuclin,  &
                         loc_microp_st%autoin,   loc_microp_st%accsin,   loc_microp_st%hmpin,    loc_microp_st%difn,    &
                         loc_microp_st%trspcm,   loc_microp_st%trspcn,   loc_microp_st%trspim,   loc_microp_st%trspin,  &
-                        lambdadpcu, mudpcu,     &
+                        loc_microp_st%lambdadpcu,loc_microp_st%mudpcu,  &
                         loc_microp_st%accgrm,   loc_microp_st%accglm,   loc_microp_st%accgslm,  loc_microp_st%accgsrm, &
                         loc_microp_st%accgirm,  loc_microp_st%accgrim,  loc_microp_st%accgrsm,  loc_microp_st%accgsln, &
                         loc_microp_st%accgsrn,  loc_microp_st%accgirn,  loc_microp_st%accsrim,  loc_microp_st%acciglm, &
