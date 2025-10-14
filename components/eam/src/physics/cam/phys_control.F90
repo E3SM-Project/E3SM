@@ -623,6 +623,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
                         cld_macmic_num_steps_out, micro_do_icesupersat_out, &
                         fix_g1_err_ndrop_out, ssalt_tuning_out,resus_fix_out,convproc_do_aer_out,  &
                         convproc_do_gas_out, convproc_method_activate_out, mam_amicphys_optaa_out, n_so4_monolayers_pcage_out, &
+                        dp_cut_accum_rename_out, dp_xferall_thresh_accum_rename_out, &
                         micro_mg_accre_enhan_fac_out, liqcf_fix_out, regen_fix_out,demott_ice_nuc_out, pergro_mods_out, pergro_test_active_out &
                        ,cflx_cpl_opt_out &
                        ,l_tracer_aero_out, l_vdiff_out, l_rayleigh_out, l_gw_drag_out, l_ac_energy_chk_out  &
@@ -715,6 +716,8 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    integer,           intent(out), optional :: convproc_method_activate_out 
    integer,           intent(out), optional :: mam_amicphys_optaa_out
    real(r8),          intent(out), optional :: n_so4_monolayers_pcage_out
+   real(r8),          intent(out), optional :: dp_cut_accum_rename_out
+   real(r8),          intent(out), optional :: dp_xferall_thresh_accum_rename_out
    real(r8),          intent(out), optional :: micro_mg_accre_enhan_fac_out
    logical,           intent(out), optional :: liqcf_fix_out       
    logical,           intent(out), optional :: regen_fix_out       
@@ -821,6 +824,8 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    if ( present(convproc_method_activate_out ) ) convproc_method_activate_out = convproc_method_activate
    if ( present(mam_amicphys_optaa_out  ) ) mam_amicphys_optaa_out  = mam_amicphys_optaa
    if ( present(n_so4_monolayers_pcage_out  ) ) n_so4_monolayers_pcage_out = n_so4_monolayers_pcage
+   if ( present(dp_cut_accum_rename_out ) ) dp_cut_accum_rename_out  = dp_cut_accum_rename
+   if ( present(dp_xferall_thresh_accum_rename_out ) ) dp_xferall_thresh_accum_rename_out = dp_xferall_thresh_accum_rename
    if ( present(micro_mg_accre_enhan_fac_out)) micro_mg_accre_enhan_fac_out = micro_mg_accre_enhan_fac
    if ( present(liqcf_fix_out           ) ) liqcf_fix_out            = liqcf_fix      
    if ( present(regen_fix_out           ) ) regen_fix_out            = regen_fix      
