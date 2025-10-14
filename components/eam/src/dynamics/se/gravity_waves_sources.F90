@@ -186,7 +186,7 @@ CONTAINS
         do component=1,3
           dum_grad(:,:,:) = gradient_sphere(dum_cart(:,:,component,k),deriv1,elem(ie)%Dinv)
           do i=1,2
-            dum_grad(:,:,i) = dum_grad(:,:,2) - ddp_dum_cart(:,:,component,k) * gradp_gll(:,:,component)
+            dum_grad(:,:,i) = dum_grad(:,:,i) - ddp_dum_cart(:,:,component,k) * gradp_gll(:,:,i)
           end do
           dum_cart(:,:,component,k) = sum( gradth_gll(:,:,:,k,ie) * dum_grad ,3)
         enddo
