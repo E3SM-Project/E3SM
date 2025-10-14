@@ -335,7 +335,7 @@ contains
              col_pp%zi(c,0:nlevgrnd) = zisoi(0:nlevgrnd)
              col_pp%dz(c,1:nlevgrnd) = dzsoi(1:nlevgrnd)
           end if
-       else if (lun_pp%itype(l) /= istdlak) then
+       else if (.not.col_pp%is_lake(c)) then
           col_pp%z(c,1:nlevgrnd)  = zsoi(1:nlevgrnd)
           col_pp%zi(c,0:nlevgrnd) = zisoi(0:nlevgrnd)
           col_pp%dz(c,1:nlevgrnd) = dzsoi(1:nlevgrnd)

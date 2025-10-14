@@ -289,7 +289,7 @@ contains
        do c = bounds%begc,bounds%endc
           l = col_pp%landunit(c)
           nlevbed = col_pp%nlevbed(c)
-          if (.not. lun_pp%lakpoi(l)) then  !not lake
+          if (.not. col_pp%is_lake(c)) then  !not lake
              if (lun_pp%urbpoi(l)) then
                 if (col_pp%itype(c) == icol_road_perv) then
                    this%wa_col(c)  = 0._r8
@@ -314,7 +314,7 @@ contains
        do c = bounds%begc,bounds%endc
           l = col_pp%landunit(c)
           nlevbed = col_pp%nlevbed(c)
-          if (.not. lun_pp%lakpoi(l)) then  !not lake
+          if (.not. col_pp%is_lake(c)) then  !not lake
              if (lun_pp%urbpoi(l)) then
                 if (col_pp%itype(c) == icol_road_perv) then
                    this%wa_col(c)  = 4800._r8

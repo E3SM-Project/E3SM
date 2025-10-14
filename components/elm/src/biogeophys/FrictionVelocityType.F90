@@ -314,7 +314,7 @@ contains
     type(bounds_type), intent(in) :: bounds
     !
     ! !LOCAL VARIABLES:
-    integer :: p, c, l                         ! indices
+    integer :: p, c                         ! indices
     !-----------------------------------------------------------------------
 
     ! Added 5/4/04, PET: initialize forc_hgt_u (gridcell-level),
@@ -331,8 +331,7 @@ contains
     end if
 
     do c = bounds%begc, bounds%endc
-       l = col_pp%landunit(c)
-       if (lun_pp%lakpoi(l)) then !lake
+       if (col_pp%is_lake(c)) then !lake
           this%z0mg_col(c) = 0.0004_r8
        end if
     end do
