@@ -38,7 +38,7 @@ CONTAINS
 
   end subroutine gws_init
   !-------------------------------------------------------------------------------------------------
-  subroutine gws_src_fnct(elem, tl, nphys, frontgf, frontga)
+  subroutine gws_src_fnct(elem, tl, nphys, use_fgf_pgrad_correction, frontgf, frontga)
     use dimensions_mod, only  : npsq, nelemd
     use dof_mod, only         : UniquePoints
     use dyn_comp, only        : dom_mt
@@ -51,6 +51,7 @@ CONTAINS
     type (element_t),      intent(inout), dimension(:) :: elem
     integer,               intent(in   ) :: tl
     integer,               intent(in   ) :: nphys
+    logical,               intent(in   ) :: use_fgf_pgrad_correction
     real (kind=real_kind), intent(out  ) :: frontgf(nphys*nphys,pver,nelemd)
     real (kind=real_kind), intent(out  ) :: frontga(nphys*nphys,pver,nelemd)
     
@@ -67,7 +68,7 @@ CONTAINS
     hybrid = hybrid_create(par,ithr,hthreads)
     allocate(frontgf_thr(nphys,nphys,nlev,nets:nete))
     allocate(frontga_thr(nphys,nphys,nlev,nets:nete))
-    call compute_frontogenesis(frontgf_thr,frontga_thr,tl,elem,hybrid,nets,nete,nphys)
+    call compute_frontogenesis(frontgf_thr,frontga_thr,tl,use_fgf_pgrad_correction,elem,hybrid,nets,nete,nphys)
     if (fv_nphys>0) then
       do ie = nets,nete
         do k = 1,nlev
@@ -88,7 +89,7 @@ CONTAINS
 
   end subroutine gws_src_fnct
   !-------------------------------------------------------------------------------------------------
-  subroutine compute_frontogenesis(frontgf,frontga,tl,elem,hybrid,nets,nete,nphys)
+  subroutine compute_frontogenesis(frontgf,frontga,tl,use_fgf_pgrad_correction,elem,hybrid,nets,nete,nphys)
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   ! compute frontogenesis function F
   !   F =  -gradth dot C
@@ -108,21 +109,22 @@ CONTAINS
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     use physical_constants, only: kappa
     use derivative_mod,     only: gradient_sphere, ugradv_sphere
-    use edge_mod,           only : edge_g, edgevpack_nlyr, edgevunpack_nlyr
+    use edge_mod,           only: edge_g, edgevpack_nlyr, edgevunpack_nlyr
     use bndry_mod,          only: bndry_exchangev
     use dyn_comp,           only: hvcoord
     use spmd_utils,         only: iam 
     use parallel_mod,       only: par 
-    use element_ops,        only : get_temperature
+    use element_ops,        only: get_temperature
     use dyn_grid,           only: fv_nphys
-    use prim_driver_mod, only     : deriv1
-    use element_ops,        only : get_temperature
-    use gllfvremap_mod, only  : gfr_g2f_scalar, gfr_g2f_vector
+    use prim_driver_mod,    only: deriv1
+    use element_ops,        only: get_temperature
+    use gllfvremap_mod,     only: gfr_g2f_scalar, gfr_g2f_vector
     implicit none
     type(hybrid_t),        intent(in   ) :: hybrid
     type(element_t),target,intent(inout) :: elem(:)
     integer,               intent(in   ) :: nets,nete,nphys
     integer,               intent(in   ) :: tl ! timelevel to use
+    logical,               intent(in   ) :: use_fgf_pgrad_correction
     real(kind=real_kind),  intent(out  ) :: frontgf(nphys,nphys,nlev,nets:nete)
     real(kind=real_kind),  intent(out  ) :: frontga(nphys,nphys,nlev,nets:nete)
   
@@ -133,109 +135,124 @@ CONTAINS
     real(kind=real_kind) :: p(np,np)        ! pressure at mid points
     real(kind=real_kind) :: temperature(np,np,nlev)  ! Temperature
     real(kind=real_kind) :: C(np,np,2), wf1(nphys*nphys,nlev), wf2(nphys*nphys,nlev)
-#ifdef USE_FGF_CORRECTION
+
     ! variables needed for eta to pressure surface correction
     real(kind=real_kind) :: gradp_gll(np,np,2)          ! grad(pressure)
     real(kind=real_kind) :: theta(np,np,nlev)           ! potential temperature at mid points
-    real(kind=real_kind) :: dtheta_dp(np,np,nlev)       ! d(theta)/dp    for eta to pressure surface correction
-    real(kind=real_kind) :: dum_grad(np,np,2)           ! ?
-    real(kind=real_kind) :: dum_cart(np,np,3,nlev)      ! d/dp of ?
-    real(kind=real_kind) :: ddp_dum_cart(np,np,3,nlev)  ! ?
-#else
-    real(kind=real_kind) :: theta(np,np)    ! potential temperature at mid points
-#endif
+    real(kind=real_kind) :: dtheta_dp(np,np,nlev)       ! d(theta)/dp for eta to pressure surface correction
+    real(kind=real_kind) :: dum_grad(np,np,2)           ! temporary variable for spherical gradient calcualtions
+    real(kind=real_kind) :: dum_cart(np,np,3,nlev)      ! temporary variable for cartesian gradient calcualtions
+    real(kind=real_kind) :: ddp_dum_cart(np,np,3,nlev)  ! vertical pressure derivative of dum_cart
 
     !---------------------------------------------------------------------------
     !
-    !  For a vector velocity "v", a tensor "grad(v)", and a vector "grad(theta)",
-    !  this loop computes the vector "grad(theta)*grad(v)"
+    ! For a vector velocity "v", a tensor "grad(v)", and a vector "grad(theta)",
+    ! this loop computes the vector "grad(theta)*grad(v)"
     !
-    !  Representing the tensor "grad(v)" in spherical coordinates is difficult.  This routine
-    !  avoids this by computing a mathematically equivalent form using a mixture of
-    !  Cartesian and spherical coordinates
+    ! Representing the tensor "grad(v)" in spherical coordinates is difficult.
+    ! This routine avoids this by computing a mathematically equivalent form 
+    ! using a mixture of Cartesian and spherical coordinates
     !
-    !  This routine is a modified version of derivative_mod.F90:ugradv_sphere() in that the
-    !  grad(v) term is modified to compute grad_p(v) - the gradient on p-surfaces expressed
-    !  in terms of the gradient on model surfaces and a vertical pressure gradient.  
+    ! This routine is a modified version of derivative_mod.F90:ugradv_sphere()
+    ! in that the grad(v) term is modified to compute grad_p(v) - the gradient
+    ! on p-surfaces expressed in terms of the gradient on model surfaces and a
+    ! vertical pressure gradient.
     !
-    !  First, v is represented in cartesian coordinates  v(c) for c=1,2,3
-    !  For each v(c), we compute its gradient on p-surfaces via:
-    !     grad(v(c)) - d(v(c))/dz grad(p)
-    !  Each of these gradients is represented in *spherical* coordinates (i=1,2)
+    ! The old version only computed gradients on model surfaces, which creates
+    ! issues around topograpy. This is address with use_fgf_pgrad_correction=.true.
     !
-    !  We then dot each of these vectors with grad(theta).  This dot product is computed
-    !  in spherical coordinates.  The end result is dum_cart(c), for c=1,2,3
-    !  These three scalars are the three Cartesian coefficients of
-    !  the vector "grad(theta)*grad(v)"
+    ! First, v is represented in cartesian coordinates  v(c) for c=1,2,3
+    ! For each v(c), we compute its gradient on p-surfaces via:
+    !    grad(v(c)) - d(v(c))/dz grad(p)
+    ! Each of these gradients is represented in *spherical* coordinates (i=1,2)
     !
-    !  This Cartesian vector is then transformed back to spherical coordinates
+    ! We then dot each of these vectors with grad(theta).  This dot product is
+    ! computed in spherical coordinates.  The end result is dum_cart(c),
+    ! for c=1,2,3 These three scalars are the three Cartesian coefficients of
+    ! the vector "grad(theta)*grad(v)"
     !
+    ! This Cartesian vector is then transformed back to spherical coordinates
+    !
+    !---------------------------------------------------------------------------
+
     do ie = nets,nete
 
-#ifdef USE_FGF_CORRECTION
-      call get_temperature(elem(ie),temperature,hvcoord,tl)
-      do k = 1,nlev
-        ! pressure at mid points
-        p(:,:) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem(ie)%state%ps_v(:,:,tl)
-        ! potential temperature: theta = T (p/p0)^kappa
-        theta(:,:,k) = temperature(:,:,k)*(psurf_ref / p(:,:))**kappa
-      end do
-      call compute_vertical_derivative(tl,ie,elem,theta,dtheta_dp)
+      if (use_fgf_pgrad_correction) then
 
-      do k = 1,nlev
-        gradth_gll(:,:,:,k,ie) = gradient_sphere(theta(:,:,k),deriv1,elem(ie)%Dinv)
-        ! calculate and apply correction so that gradient is effectively on a pressure surface
-        p(:,:) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem(ie)%state%ps_v(:,:,tl)
-        gradp_gll(:,:,:) = gradient_sphere(p,deriv1,elem(ie)%Dinv)
-        do component=1,2
-          gradth_gll(:,:,component,k,ie) = gradth_gll(:,:,component,k,ie) - dtheta_dp(:,:,k) * gradp_gll(:,:,component)
-        end do
-      end do
-
-      do k = 1,nlev
-        ! latlon -> cartesian - Summing along the third dimension is a sum over components for each point
-        do component=1,3
-          dum_cart(:,:,component,k)=sum( elem(ie)%vec_sphere2cart(:,:,component,:) * elem(ie)%state%v(:,:,:,k,tl) ,3)
-        end do
-      end do
-
-      do component=1,3
-        call compute_vertical_derivative(tl,ie,elem,dum_cart(:,:,component,:),ddp_dum_cart(:,:,component,:))
-      end do
-
-      do k = 1,nlev
-        p(:,:) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem(ie)%state%ps_v(:,:,tl)
-        gradp_gll(:,:,:) = gradient_sphere(p,deriv1,elem(ie)%Dinv)
-        ! Do ugradv on the cartesian components - Dot u with the gradient of each component
-        do component=1,3
-          dum_grad(:,:,:) = gradient_sphere(dum_cart(:,:,component,k),deriv1,elem(ie)%Dinv)
-          do i=1,2
-            dum_grad(:,:,i) = dum_grad(:,:,i) - ddp_dum_cart(:,:,component,k) * gradp_gll(:,:,i)
-          end do
-          dum_cart(:,:,component,k) = sum( gradth_gll(:,:,:,k,ie) * dum_grad ,3)
-        enddo
-        ! cartesian -> latlon - vec_sphere2cart is its own pseudoinverse.
-        do component=1,2
-          C(:,:,component) = sum(dum_cart(:,:,:,k)*elem(ie)%vec_sphere2cart(:,:,:,component), 3)
-        end do
-#else
-      do k = 1,nlev
-        ! pressure at mid points
-        p(:,:) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem(ie)%state%ps_v(:,:,tl)
-        ! potential temperature: theta = T (p/p0)^kappa
         call get_temperature(elem(ie),temperature,hvcoord,tl)
-        theta(:,:) = temperature(:,:,k)*(psurf_ref / p(:,:))**kappa
-        gradth_gll(:,:,:,k,ie) = gradient_sphere(theta,deriv1,elem(ie)%Dinv)
-        ! compute C = (grad(theta) dot grad ) u
-        C(:,:,:) = ugradv_sphere(gradth_gll(:,:,:,k,ie), elem(ie)%state%v(:,:,:,k,tl),deriv1,elem(ie))
-#endif
-        ! gradth_gll dot C
-        frontgf_gll(:,:,k,ie) = -( C(:,:,1)*gradth_gll(:,:,1,k,ie) + C(:,:,2)*gradth_gll(:,:,2,k,ie)  )
-        ! apply mass matrix
-        gradth_gll(:,:,1,k,ie) = gradth_gll(:,:,1,k,ie)*elem(ie)%spheremp(:,:)
-        gradth_gll(:,:,2,k,ie) = gradth_gll(:,:,2,k,ie)*elem(ie)%spheremp(:,:)
-        frontgf_gll(:,:,k,ie)  = frontgf_gll(:,:,k,ie)*elem(ie)%spheremp(:,:)
-      end do ! k
+        do k = 1,nlev
+          ! pressure at mid points
+          p(:,:) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem(ie)%state%ps_v(:,:,tl)
+          ! potential temperature: theta = T (p/p0)^kappa
+          theta(:,:,k) = temperature(:,:,k)*(psurf_ref / p(:,:))**kappa
+        end do
+        call compute_vertical_derivative(tl,ie,elem,theta,dtheta_dp)
+
+        do k = 1,nlev
+          gradth_gll(:,:,:,k,ie) = gradient_sphere(theta(:,:,k),deriv1,elem(ie)%Dinv)
+          ! calculate and apply correction so that gradient is effectively on a pressure surface
+          p(:,:) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem(ie)%state%ps_v(:,:,tl)
+          gradp_gll(:,:,:) = gradient_sphere(p,deriv1,elem(ie)%Dinv)
+          do component=1,2
+            gradth_gll(:,:,component,k,ie) = gradth_gll(:,:,component,k,ie) - dtheta_dp(:,:,k) * gradp_gll(:,:,component)
+          end do
+        end do
+
+        do k = 1,nlev
+          ! latlon -> cartesian - Summing along the third dimension is a sum over components for each point
+          do component=1,3
+            dum_cart(:,:,component,k)=sum( elem(ie)%vec_sphere2cart(:,:,component,:) * elem(ie)%state%v(:,:,:,k,tl) ,3)
+          end do
+        end do
+
+        do component=1,3
+          call compute_vertical_derivative(tl,ie,elem,dum_cart(:,:,component,:),ddp_dum_cart(:,:,component,:))
+        end do
+
+        do k = 1,nlev
+          p(:,:) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem(ie)%state%ps_v(:,:,tl)
+          gradp_gll(:,:,:) = gradient_sphere(p,deriv1,elem(ie)%Dinv)
+          ! Do ugradv on the cartesian components - Dot u with the gradient of each component
+          do component=1,3
+            dum_grad(:,:,:) = gradient_sphere(dum_cart(:,:,component,k),deriv1,elem(ie)%Dinv)
+            do i=1,2
+              dum_grad(:,:,i) = dum_grad(:,:,i) - ddp_dum_cart(:,:,component,k) * gradp_gll(:,:,i)
+            end do
+            dum_cart(:,:,component,k) = sum( gradth_gll(:,:,:,k,ie) * dum_grad ,3)
+          enddo
+          ! cartesian -> latlon - vec_sphere2cart is its own pseudoinverse.
+          do component=1,2
+            C(:,:,component) = sum(dum_cart(:,:,:,k)*elem(ie)%vec_sphere2cart(:,:,:,component), 3)
+          end do
+          ! gradth_gll dot C
+          frontgf_gll(:,:,k,ie) = -( C(:,:,1)*gradth_gll(:,:,1,k,ie) + C(:,:,2)*gradth_gll(:,:,2,k,ie)  )
+          ! apply mass matrix
+          gradth_gll(:,:,1,k,ie) = gradth_gll(:,:,1,k,ie)*elem(ie)%spheremp(:,:)
+          gradth_gll(:,:,2,k,ie) = gradth_gll(:,:,2,k,ie)*elem(ie)%spheremp(:,:)
+          frontgf_gll(:,:,k,ie)  = frontgf_gll(:,:,k,ie)*elem(ie)%spheremp(:,:)
+        end do ! k
+
+      else ! .not. use_fgf_pgrad_correction
+
+        do k = 1,nlev
+          ! pressure at mid points
+          p(:,:) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem(ie)%state%ps_v(:,:,tl)
+          ! potential temperature: theta = T (p/p0)^kappa
+          call get_temperature(elem(ie),temperature,hvcoord,tl)
+          theta(:,:,k) = temperature(:,:,k)*(psurf_ref / p(:,:))**kappa
+          gradth_gll(:,:,:,k,ie) = gradient_sphere(theta(:,:,k),deriv1,elem(ie)%Dinv)
+          ! compute C = (grad(theta) dot grad ) u
+          C(:,:,:) = ugradv_sphere(gradth_gll(:,:,:,k,ie), elem(ie)%state%v(:,:,:,k,tl),deriv1,elem(ie))
+          ! gradth_gll dot C
+          frontgf_gll(:,:,k,ie) = -( C(:,:,1)*gradth_gll(:,:,1,k,ie) + C(:,:,2)*gradth_gll(:,:,2,k,ie)  )
+          ! apply mass matrix
+          gradth_gll(:,:,1,k,ie) = gradth_gll(:,:,1,k,ie)*elem(ie)%spheremp(:,:)
+          gradth_gll(:,:,2,k,ie) = gradth_gll(:,:,2,k,ie)*elem(ie)%spheremp(:,:)
+          frontgf_gll(:,:,k,ie)  = frontgf_gll(:,:,k,ie)*elem(ie)%spheremp(:,:)
+        end do ! k
+
+      end if ! use_fgf_pgrad_correction
+
       ! pack
       call edgeVpack_nlyr(edge_g, elem(ie)%desc, frontgf_gll(:,:,:,ie),nlev,0,3*nlev)
       call edgeVpack_nlyr(edge_g, elem(ie)%desc, gradth_gll(:,:,:,:,ie),2*nlev,nlev,3*nlev)
