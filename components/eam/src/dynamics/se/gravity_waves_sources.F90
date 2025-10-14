@@ -221,8 +221,8 @@ CONTAINS
             dum_cart(:,:,component,k) = sum( gradth_gll(:,:,:,k,ie) * dum_grad ,3)
           enddo
           ! cartesian -> latlon - vec_sphere2cart is its own pseudoinverse.
-          do component=1,2
-            C(:,:,component) = sum(dum_cart(:,:,:,k)*elem(ie)%vec_sphere2cart(:,:,:,component), 3)
+          do i=1,2
+            C(:,:,i) = sum(dum_cart(:,:,:,k)*elem(ie)%vec_sphere2cart(:,:,:,i), 3)
           end do
           ! gradth_gll dot C
           frontgf_gll(:,:,k,ie) = -( C(:,:,1)*gradth_gll(:,:,1,k,ie) + C(:,:,2)*gradth_gll(:,:,2,k,ie)  )
