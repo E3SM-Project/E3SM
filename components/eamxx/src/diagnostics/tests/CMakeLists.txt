@@ -92,3 +92,8 @@ CreateDiagTest(binary_ops "binary_ops_test.cpp")
 
 # Test histogram
 CreateDiagTest(histogram "histogram_test.cpp" MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
+
+# Test PBL entrainment diags
+GetInputFile(cam/scam/iop/DYCOMSrf02_iopfile_4scam.nc)
+CreateDiagTest(pbl_entrainment_budget "pbl_entrainment_budget_test.cpp"
+  EXE_ARGS "--args --iop_file=${SCREAM_INPUT_ROOT}/atm/cam/scam/iop/DYCOMSrf02_iopfile_4scam.nc")
