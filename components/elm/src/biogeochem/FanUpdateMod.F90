@@ -319,7 +319,7 @@ contains
 
        ! Find and average the atmospheric resistances Rb and Ra.
        ! 
-       if (lun_pp%itype(l) == istcrop) then
+       if (veg_pp%is_on_crop_col(p)) then
           ! Crop column, only one patch
           p = col_pp%pfti(c)
           if (p /= col_pp%pftf(c)) call endrun(msg='Strange patch for crop')
@@ -901,7 +901,7 @@ contains
        total = total + col_ns%manure_n_stored(c)
        col_ns%fan_totn(c) = total
 
-       if (lun_pp%itype(l) == istcrop) then
+       if (col_pp%is_crop(c)) then
           ! no grazing, manure_n_appl is from the same column and not counted as input
           fluxin = col_nf%manure_n_mix(c) + col_nf%fert_n_appl(c)
        else

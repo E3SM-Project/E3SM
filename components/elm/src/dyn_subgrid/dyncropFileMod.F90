@@ -194,7 +194,7 @@ contains
        topi = grc_pp%topi(g)
        ti = t - topi + 1
 
-       if (lun_pp%itype(l) == istcrop) then
+       if (veg_pp%is_on_crop_col(p)) then
           m = veg_pp%itype(p)
 
           ! The following assumes there is a single CFT on each crop column. The

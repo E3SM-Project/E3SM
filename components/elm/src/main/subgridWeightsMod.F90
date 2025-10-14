@@ -961,7 +961,7 @@ contains
        if (veg_pp%is_on_soil_col(p)) then
           ptype_1indexing = ptype + (1 - natpft_lb)
           subgrid_weights_diagnostics%pct_nat_pft(t, ptype_1indexing) = veg_pp%wtlunit(p) * 100._r8
-       else if (lun_pp%itype(l) == istcrop) then
+       else if (veg_pp%is_on_crop_col(p)) then
           ptype_1indexing = ptype + (1 - cft_lb)
           subgrid_weights_diagnostics%pct_cft(t, ptype_1indexing) = veg_pp%wtlunit(p) * 100._r8
        end if
