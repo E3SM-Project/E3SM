@@ -435,7 +435,7 @@
       <queue walltimemax="00:45:00" nodemax="1792" strict="true">preempt</queue>
       <queue walltimemax="00:45:00" nodemax="1792" strict="true">shared</queue>
       <queue walltimemax="00:45:00" nodemax="1792" strict="true">overrun</queue>
-      <queue walltimemax="00:15:00" nodemax="8" strict="true">debug</queue>
+      <queue walltimemax="00:30:00" nodemax="8" strict="true">debug</queue>
     </queues>
   </batch_system>
 
@@ -480,7 +480,7 @@
       <queue walltimemax="00:45:00" nodemax="150" strict="true">preempt</queue>
       <queue walltimemax="00:30:00" nodemax="150" strict="true">shared</queue>
       <queue walltimemax="00:30:00" nodemax="150" strict="true">overrun</queue>
-      <queue walltimemax="00:15:00" nodemax="8" strict="true">debug</queue>
+      <queue walltimemax="00:30:00" nodemax="8" strict="true">debug</queue>
     </queues>
   </batch_system>
 
@@ -525,7 +525,7 @@
       <queue walltimemax="00:45:00" nodemax="150" strict="true">preempt</queue>
       <queue walltimemax="00:30:00" nodemax="150" strict="true">shared</queue>
       <queue walltimemax="00:30:00" nodemax="150" strict="true">overrun</queue>
-      <queue walltimemax="00:15:00" nodemax="8" strict="true">debug</queue>
+      <queue walltimemax="00:30:00" nodemax="8" strict="true">debug</queue>
     </queues>
   </batch_system>
 
