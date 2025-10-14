@@ -28,7 +28,7 @@ module zm_conv_mcsp
    !
    !----------------------------------------------------------------------------
 #ifdef SCREAM_CONFIG_IS_CMAKE
-   use zm_eamxx_bridge_params, only: r8, pcols, pver, pverp
+   use zm_eamxx_bridge_params, only: r8
 #else
    use shr_kind_mod,     only: r8=>shr_kind_r8
    use cam_abortutils,   only: endrun

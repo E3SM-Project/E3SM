@@ -2149,11 +2149,13 @@ subroutine q1q2_pjr(zm_const, pcols, ncol, pver, pverp, &
          dqdt(i,k) = 0._r8
          dl(i,k) = 0._r8
          ! Convective microphysics
-         loc_microp_st%dif(i,k)   = 0._r8
-         loc_microp_st%dsf(i,k)   = 0._r8
-         loc_microp_st%dnlf(i,k)  = 0._r8
-         loc_microp_st%dnif(i,k)  = 0._r8
-         loc_microp_st%dnsf(i,k)  = 0._r8
+         if (zm_param%zm_microp) then
+            loc_microp_st%dif(i,k)   = 0._r8
+            loc_microp_st%dsf(i,k)   = 0._r8
+            loc_microp_st%dnlf(i,k)  = 0._r8
+            loc_microp_st%dnif(i,k)  = 0._r8
+            loc_microp_st%dnsf(i,k)  = 0._r8
+         end if
       end do
    end do
 

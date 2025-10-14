@@ -6,8 +6,7 @@ using scream::Int;
 // A C++ interface to ZM fortran calls and vice versa
 
 extern "C" {
-  void zm_eamxx_bridge_init_c(Int  pcol_in,
-                              Int  pver_in );
+  void zm_eamxx_bridge_init_c( Int  pver_in );
 
   void zm_eamxx_bridge_run_c( Int  ncol,                // 01
                               Real dtime,               // 02
@@ -46,8 +45,8 @@ extern "C" {
 namespace scream {
 namespace zm {
 
-void zm_eamxx_bridge_init( Int pcol, Int pver ){
-  zm_eamxx_bridge_init_c( pcol, pver );
+void zm_eamxx_bridge_init( Int pver ){
+  zm_eamxx_bridge_init_c( pver );
 }
 
 void zm_eamxx_bridge_run( Int ncol, Int pver,

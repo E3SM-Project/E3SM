@@ -827,7 +827,7 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
    winds(1:ncol,1:pver,2) = state1%v(1:ncol,1:pver)
 
    call t_startf ('zm_transport_momentum')
-   call zm_transport_momentum( ncol, winds, 2, &
+   call zm_transport_momentum( pcols, ncol, pver, pverp, winds, 2, &
                                mu, md, du, eu, ed, dp, &
                                jt, maxg, ideep, 1, lengath, &
                                wind_tends, pguall, pgdall, icwu, icwd, ztodt, seten )
@@ -874,7 +874,8 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
    fake_dpdry(1:ncol,1:pver) = 0
 
    call t_startf ('zm_transport_tracer_1')
-   call zm_transport_tracer( ptend_loc%lq, state1%q, pcnst, &
+   call zm_transport_tracer( pcols, ncol, pver, &
+                             ptend_loc%lq, state1%q, pcnst, &
                              mu, md, du, eu, ed, dp, &
                              jt, maxg, ideep, 1, lengath, &
                              fracis, ptend_loc%q, fake_dpdry, ztodt)  
@@ -970,7 +971,8 @@ subroutine zm_conv_tend_2( state,  ptend,  ztodt, pbuf, mu, eu, du, md, ed, dp, 
          dpdry(i,1:pver) = state%pdeldry(ideep(i),1:pver)/100_r8
       end do
       call t_startf ('zm_transport_tracer_2')
-      call zm_transport_tracer( ptend%lq, state%q, pcnst,  &
+      call zm_transport_tracer( pcols, ncol, pver, &
+                                ptend%lq, state%q, pcnst,  &
                                 mu, md, du, eu, ed, dp,  &
                                 jt, maxg, ideep, 1, lengath, &
                                 fracis, ptend%q, dpdry, ztodt)

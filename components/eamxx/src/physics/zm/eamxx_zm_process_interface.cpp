@@ -47,10 +47,6 @@ void ZMDeepConvection::set_grids (const std::shared_ptr<const GridsManager> grid
   m_ncol = m_grid->get_num_local_dofs();
   m_nlev = m_grid->get_num_vertical_levels();
 
-  // get max ncol value across ranks to mimic how pcols is used on the fortran side
-  m_pcol = m_ncol;
-  comm.all_reduce(&m_pcol, 1, MPI_MAX);
-
   const auto nondim = Units::nondimensional();
   const auto m2     = pow(m,2);
   const auto s2     = pow(s,2);
@@ -106,7 +102,7 @@ void ZMDeepConvection::initialize_impl (const RunType)
   add_postcondition_check<FieldLowerBoundCheck>(get_field_out("precip_ice_surf_mass"),m_grid,0.0,false);
 
   // initialize variables on the fortran side
-  zm::zm_eamxx_bridge_init(m_pcol, m_nlev);
+  zm::zm_eamxx_bridge_init(m_nlev);
 }
 
 /*------------------------------------------------------------------------------------------------*/
@@ -173,7 +169,7 @@ void ZMDeepConvection::run_impl (const double dt)
   zm_input.landfrac       = landfrac;
 
   // initialize output buffer variables
-  zm_output.init(m_pcol, m_nlev);
+  zm_output.init(m_ncol, m_nlev);
 
   //----------------------------------------------------------------------------
   // calculate altitude on interfaces (z_int) and mid-points (z_mid)
@@ -261,7 +257,6 @@ void ZMDeepConvection::run_impl (const double dt)
   // Update output fields
 
   // NOTE - in the future we might want to clean this up using Kokkos::deep_copy(),
-  // but this is currently not possible due to the pcol/ncol thing for the fortran bridge
 
   // 2D output (no vertical dimension)
   const auto& zm_prec       = get_field_out("zm_prec")        .get_view<Real*>();
@@ -306,21 +301,21 @@ size_t ZMDeepConvection::requested_buffer_size_in_bytes() const
   const int nlevi_packs = ekat::npack<Spack>(m_nlev+1);
   size_t zm_buffer_size = 0;
 
-  zm_buffer_size+= ZMF::zm_input_state::num_1d_intgr_views   * sizeof(Int)   * m_pcol;
-  zm_buffer_size+= ZMF::zm_input_state::num_1d_scalr_views   * sizeof(Scalar)* m_pcol;
+  zm_buffer_size+= ZMF::zm_input_state::num_1d_intgr_views   * sizeof(Int)   * m_ncol;
+  zm_buffer_size+= ZMF::zm_input_state::num_1d_scalr_views   * sizeof(Scalar)* m_ncol;
 
-  zm_buffer_size+= ZMF::zm_input_state::num_2d_midlv_c_views * sizeof(Spack) * m_pcol * nlevm_packs;
-  zm_buffer_size+= ZMF::zm_input_state::num_2d_intfc_c_views * sizeof(Spack) * m_pcol * nlevi_packs;
-  zm_buffer_size+= ZMF::zm_input_state::num_2d_midlv_f_views * sizeof(Real)  * m_pcol * m_nlev;
-  zm_buffer_size+= ZMF::zm_input_state::num_2d_intfc_f_views * sizeof(Real)  * m_pcol * (m_nlev+1);
+  zm_buffer_size+= ZMF::zm_input_state::num_2d_midlv_c_views * sizeof(Spack) * m_ncol * nlevm_packs;
+  zm_buffer_size+= ZMF::zm_input_state::num_2d_intfc_c_views * sizeof(Spack) * m_ncol * nlevi_packs;
+  zm_buffer_size+= ZMF::zm_input_state::num_2d_midlv_f_views * sizeof(Real)  * m_ncol * m_nlev;
+  zm_buffer_size+= ZMF::zm_input_state::num_2d_intfc_f_views * sizeof(Real)  * m_ncol * (m_nlev+1);
 
-  zm_buffer_size+= ZMF::zm_output_tend::num_1d_scalr_views   * sizeof(Scalar)* m_pcol;
-  zm_buffer_size+= ZMF::zm_output_tend::num_1d_intgr_views   * sizeof(Int)   * m_pcol;
+  zm_buffer_size+= ZMF::zm_output_tend::num_1d_scalr_views   * sizeof(Scalar)* m_ncol;
+  zm_buffer_size+= ZMF::zm_output_tend::num_1d_intgr_views   * sizeof(Int)   * m_ncol;
 
-  zm_buffer_size+= ZMF::zm_output_tend::num_2d_midlv_c_views * sizeof(Spack) * m_pcol * nlevm_packs;
-  zm_buffer_size+= ZMF::zm_output_tend::num_2d_intfc_c_views * sizeof(Spack) * m_pcol * nlevi_packs;
-  zm_buffer_size+= ZMF::zm_output_tend::num_2d_midlv_f_views * sizeof(Real)  * m_pcol * m_nlev;
-  zm_buffer_size+= ZMF::zm_output_tend::num_2d_intfc_f_views * sizeof(Real)  * m_pcol * (m_nlev+1);
+  zm_buffer_size+= ZMF::zm_output_tend::num_2d_midlv_c_views * sizeof(Spack) * m_ncol * nlevm_packs;
+  zm_buffer_size+= ZMF::zm_output_tend::num_2d_intfc_c_views * sizeof(Spack) * m_ncol * nlevi_packs;
+  zm_buffer_size+= ZMF::zm_output_tend::num_2d_midlv_f_views * sizeof(Real)  * m_ncol * m_nlev;
+  zm_buffer_size+= ZMF::zm_output_tend::num_2d_intfc_f_views * sizeof(Real)  * m_ncol * (m_nlev+1);
 
   return zm_buffer_size;
 }
@@ -349,7 +344,7 @@ void ZMDeepConvection::init_buffers(const ATMBufferManager &buffer_manager)
   ZMF::uview_1d<Int>* int_ptrs[num_1d_intgr_views]    = { &zm_output.activity
                                                         };
   for (int i=0; i<num_1d_intgr_views; ++i) {
-    *int_ptrs[i] = ZMF::uview_1d<Int>(i_mem, m_pcol);
+    *int_ptrs[i] = ZMF::uview_1d<Int>(i_mem, m_ncol);
     i_mem += int_ptrs[i]->size();
   }
   //----------------------------------------------------------------------------
@@ -362,7 +357,7 @@ void ZMDeepConvection::init_buffers(const ATMBufferManager &buffer_manager)
                                                           &zm_output.cape
                                                         };
   for (int i=0; i<num_1d_scalr_views; ++i) {
-    *scl_ptrs[i] = ZMF::uview_1d<Scalar>(scl_mem, m_pcol);
+    *scl_ptrs[i] = ZMF::uview_1d<Scalar>(scl_mem, m_ncol);
     scl_mem += scl_ptrs[i]->size();
   }
   //----------------------------------------------------------------------------
@@ -386,7 +381,7 @@ void ZMDeepConvection::init_buffers(const ATMBufferManager &buffer_manager)
                                                                 &zm_output.f_snow_prod
                                                               };
   for (int i=0; i<num_2d_midlv_f_views; ++i) {
-    *midlv_f_ptrs[i] = ZMF::uview_2dl<Real>(r_mem, m_pcol, m_nlev);
+    *midlv_f_ptrs[i] = ZMF::uview_2dl<Real>(r_mem, m_ncol, m_nlev);
     r_mem += midlv_f_ptrs[i]->size();
   }
   //----------------------------------------------------------------------------
@@ -398,7 +393,7 @@ void ZMDeepConvection::init_buffers(const ATMBufferManager &buffer_manager)
                                                                 &zm_output.f_mass_flux
                                                               };
   for (int i=0; i<num_2d_intfc_f_views; ++i) {
-    *intfc_f_ptrs[i] = ZMF::uview_2dl<Real>(r_mem, m_pcol, (m_nlev+1));
+    *intfc_f_ptrs[i] = ZMF::uview_2dl<Real>(r_mem, m_ncol, (m_nlev+1));
     r_mem += intfc_f_ptrs[i]->size();
   }
   //----------------------------------------------------------------------------
@@ -415,7 +410,7 @@ void ZMDeepConvection::init_buffers(const ATMBufferManager &buffer_manager)
                                                                 &zm_output.snow_prod
                                                               };
   for (int i=0; i<num_2d_midlv_c_views; ++i) {
-    *midlv_c_ptrs[i] = ZMF::uview_2d<Spack>(spk_mem, m_pcol, nlevm_packs);
+    *midlv_c_ptrs[i] = ZMF::uview_2d<Spack>(spk_mem, m_ncol, nlevm_packs);
     spk_mem += midlv_c_ptrs[i]->size();
   }
   //----------------------------------------------------------------------------
@@ -426,7 +421,7 @@ void ZMDeepConvection::init_buffers(const ATMBufferManager &buffer_manager)
                                                                 &zm_output.mass_flux
                                                               };
   for (int i=0; i<num_2d_intfc_c_views; ++i) {
-    *intfc_c_ptrs[i] = ZMF::uview_2d<Spack>(spk_mem, m_pcol, nlevi_packs);
+    *intfc_c_ptrs[i] = ZMF::uview_2d<Spack>(spk_mem, m_ncol, nlevi_packs);
     spk_mem += intfc_c_ptrs[i]->size();
   }
   //----------------------------------------------------------------------------
