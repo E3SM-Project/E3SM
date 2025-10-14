@@ -4137,6 +4137,9 @@ if ($nl->get_value('use_gw_convect') =~ /$TRUE/io) {
     add_default($nl, 'gw_drag_file');
 }
 
+# this correction is disabled in the released version E3SMv3 and prior versions
+add_default($nl, 'use_fgf_pgrad_correction', 'val'=>'.false.');
+
 add_default($nl, 'use_gw_energy_fix'    , 'val'=>'.true.');
 
 
