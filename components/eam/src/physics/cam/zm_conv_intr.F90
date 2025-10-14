@@ -424,7 +424,7 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
    use time_manager,            only: get_curr_date
    use interpolate_data,        only: vertinterp
    use zm_conv,                 only: zm_const, zm_param
-   use zm_conv_mcsp,            only: zm_conv_mcsp_tend
+   use zm_conv_mcsp,            only: zm_conv_mcsp_tend, zm_conv_mcsp_hist
    use zm_microphysics,         only: dnlfzm_idx, dnifzm_idx, dsfzm_idx, dnsfzm_idx, wuc_idx
    use zm_microphysics_state,   only: zm_microp_st_alloc, zm_microp_st_dealloc
    use zm_microphysics_history, only: zm_microphysics_history_convert, zm_microphysics_history_out
@@ -485,6 +485,15 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
    logical :: do_mcsp_q(pcnst) = .false.
    logical :: do_mcsp_u        = .false.
    logical :: do_mcsp_v        = .false.
+
+   ! MCSP history output variables
+   real(r8), dimension(pcols,pver) :: mcsp_dt_out     ! MCSP tendency for DSE
+   real(r8), dimension(pcols,pver) :: mcsp_dq_out     ! MCSP tendency for qv
+   real(r8), dimension(pcols,pver) :: mcsp_du_out     ! MCSP tendency for u wind
+   real(r8), dimension(pcols,pver) :: mcsp_dv_out     ! MCSP tendency for v wind
+   real(r8), dimension(pcols)      :: mcsp_freq       ! MSCP frequency for output
+   real(r8), dimension(pcols)      :: mcsp_shear      ! shear used to check against threshold
+   real(r8), dimension(pcols)      :: zm_depth        ! pressure depth of ZM heating
 
    ! physics buffer fields
    real(r8), pointer, dimension(:)     :: prec        ! total precipitation
@@ -669,13 +678,19 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
       call physics_ptend_init( ptend_mcsp, state%psetcols, 'zm_conv_mcsp_tend', &
                                ls=do_mcsp_t, lq=do_mcsp_q, lu=do_mcsp_u, lv=do_mcsp_v)
 
-      call zm_conv_mcsp_tend( lchnk, pcols, ncol, pver, pverp, &
+      call zm_conv_mcsp_tend( pcols, ncol, pver, pverp, &
                               ztodt, jctop, zm_const, zm_param, &
                               state%pmid, state%pint, state%pdel, &
                               state%s, state%q, state%u, state%v, &
                               ptend_loc%s, ptend_loc%q(:,:,1), &
                               ptend_mcsp%s(:,:), ptend_mcsp%q(:,:,1), &
-                              ptend_mcsp%u(:,:), ptend_mcsp%v(:,:) )
+                              ptend_mcsp%u(:,:), ptend_mcsp%v(:,:), &
+                              mcsp_dt_out, mcsp_dq_out, mcsp_du_out, mcsp_dv_out, &
+                              mcsp_freq, mcsp_shear, zm_depth )
+
+      call zm_conv_mcsp_hist( lchnk, pcols, pver, &
+                              mcsp_dt_out, mcsp_dq_out, mcsp_du_out, mcsp_dv_out, &
+                              mcsp_freq, mcsp_shear, zm_depth )
 
       ! add MCSP tendencies to ZM convective tendencies
       call physics_ptend_sum( ptend_mcsp, ptend_loc, ncol)
