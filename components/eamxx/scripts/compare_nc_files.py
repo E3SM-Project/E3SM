@@ -1,6 +1,5 @@
-from utils import expect, ensure_netcdf4
-
-ensure_netcdf4()
+from utils import expect, _ensure_pylib_impl
+_ensure_pylib_impl("xarray")
 
 import xarray as xr
 import numpy as np
@@ -67,7 +66,7 @@ class CompareNcFiles(object):
         ds_tgt = xr.open_dataset(self._tgt_file)
 
         success = True
-        if self._compare == None or self._compare == []:
+        if self._compare is None or self._compare == []:
             self._compare = []
             # If compare is an empty list, compare all variables
             print(f"Specific comparison variables not provided,\n"
