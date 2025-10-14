@@ -146,6 +146,30 @@ CONTAINS
 #endif
 
     !---------------------------------------------------------------------------
+    !
+    !  For a vector velocity "v", a tensor "grad(v)", and a vector "grad(theta)",
+    !  this loop computes the vector "grad(theta)*grad(v)"
+    !
+    !  Representing the tensor "grad(v)" in spherical coordinates is difficult.  This routine
+    !  avoids this by computing a mathematically equivalent form using a mixture of
+    !  Cartesian and spherical coordinates
+    !
+    !  This routine is a modified version of derivative_mod.F90:ugradv_sphere() in that the
+    !  grad(v) term is modified to compute grad_p(v) - the gradient on p-surfaces expressed
+    !  in terms of the gradient on model surfaces and a vertical pressure gradient.  
+    !
+    !  First, v is represented in cartesian coordinates  v(c) for c=1,2,3
+    !  For each v(c), we compute its gradient on p-surfaces via:
+    !     grad(v(c)) - d(v(c))/dz grad(p)
+    !  Each of these gradients is represented in *spherical* coordinates (i=1,2)
+    !
+    !  We then dot each of these vectors with grad(theta).  This dot product is computed
+    !  in spherical coordinates.  The end result is dum_cart(c), for c=1,2,3
+    !  These three scalars are the three Cartesian coefficients of
+    !  the vector "grad(theta)*grad(v)"
+    !
+    !  This Cartesian vector is then transformed back to spherical coordinates
+    !
     do ie = nets,nete
 
 #ifdef USE_FGF_CORRECTION
