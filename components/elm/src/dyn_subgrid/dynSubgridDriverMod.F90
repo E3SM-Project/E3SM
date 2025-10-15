@@ -12,7 +12,7 @@ module dynSubgridDriverMod
   use shr_kind_mod           , only : r8 => shr_kind_r8
   use dynSubgridControlMod, only : get_flanduse_timeseries
   use dynSubgridControlMod, only : get_do_transient_pfts, get_do_transient_crops
-  use dynSubgridControlMod, only : get_do_harvest
+  use dynSubgridControlMod, only : get_do_harvest, get_do_transient_urban
   use dynPriorWeightsMod  , only : prior_weights_type
   use dynPatchStateUpdaterMod      , only : patch_state_updater_type
   use dynColumnStateUpdaterMod     , only : column_state_updater_type
@@ -75,7 +75,9 @@ contains
     use decompMod                , only : get_proc_clumps, get_clump_bounds
     use dynpftFileMod            , only : dynpft_init
     use dynHarvestMod            , only : dynHarvest_init
+    use dynurbanFileMod          , only : dynurban_init
     use dynpftFileMod            , only : dynpft_interp
+    use dynurbanFileMod          , only : dynurban_interp
     use elm_varctl               , only : fates_harvest_mode
     use dynFATESLandUseChangeMod , only : fates_harvest_hlmlanduse
     !
@@ -114,6 +116,10 @@ contains
        call dyncrop_init(bounds, dyncrop_filename=get_flanduse_timeseries())
     end if
 
+    ! Initialize stuff for prescribed transient urban
+    if (get_do_transient_urban()) then
+        call dynurban_init(bounds, dynurban_filename=get_flanduse_timeseries())
+    end if
     ! ------------------------------------------------------------------------
     ! Set initial subgrid weights for aspects that are read from file. This is relevant
     ! for cold start and use_init_interp-based initialization.
@@ -125,6 +131,10 @@ contains
 
     if (get_do_transient_crops()) then
        call dyncrop_interp(bounds, crop_vars)
+    end if
+
+    if (get_do_transient_urban()) then
+       call dynurban_interp(bounds)
     end if
 
     !$OMP PARALLEL DO PRIVATE (nc, bounds_clump)
@@ -164,6 +174,7 @@ contains
     use dynConsBiogeophysMod , only : dyn_hwcontent_init, dyn_hwcontent_final
     use dynConsBiogeochemMod , only : dyn_cnbal_patch, dyn_cnbal_column
     use dynpftFileMod        , only : dynpft_interp
+    use dynurbanFileMod      , only : dynurban_interp
     use dynHarvestMod        , only : dynHarvest_interp_harvest_types
 
     use dynFATESLandUseChangeMod, only : dynFatesLandUseInterp
@@ -246,6 +257,10 @@ contains
 
     if (get_do_transient_crops()) then
        call dyncrop_interp(bounds_proc,crop_vars)
+    end if
+
+    if (get_do_transient_urban()) then
+       call dynurban_interp(bounds_proc)
     end if
 
     if (get_do_harvest() .or. fates_harvest_mode == fates_harvest_hlmlanduse) then
