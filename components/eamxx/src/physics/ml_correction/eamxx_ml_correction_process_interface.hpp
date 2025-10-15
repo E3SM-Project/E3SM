@@ -1,21 +1,13 @@
 #ifndef SCREAM_ML_CORRECTION_HPP
 #define SCREAM_ML_CORRECTION_HPP
 
+#include "share/atm_process/atmosphere_process.hpp"
+
 #include <pybind11/embed.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <array>
 #include <string>
-#include "share/atm_process/atmosphere_process.hpp"
-#include <ekat_parameter_list.hpp>
-#include <ekat_lin_interp.hpp>
-#include "share/io/eamxx_output_manager.hpp"
-#include "share/io/scorpio_output.hpp"
-#include "share/io/scorpio_input.hpp"
-#include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
-#include "share/grid/mesh_free_grids_manager.hpp"
-#include "share/grid/point_grid.hpp"
-#include "share/util/eamxx_time_stamp.hpp"
 
 namespace scream {
 

@@ -1,6 +1,6 @@
 #include <catch2/catch.hpp>
 
-#include "share/grid/mesh_free_grids_manager.hpp"
+#include "share/data_managers/mesh_free_grids_manager.hpp"
 
 #include "share/field/field_utils.hpp"
 #include "share/field/field.hpp"
