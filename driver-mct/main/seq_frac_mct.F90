@@ -289,8 +289,8 @@ contains
     logical :: iac_present   ! .true. => iac is present
     logical :: dead_comps    ! .true. => dead models present
 
-!avd
-logical :: iamroot
+
+    logical :: iamroot
 
     integer :: n            ! indices
     integer :: ka, ki, kl, ko ! indices
@@ -299,8 +299,7 @@ logical :: iamroot
     integer :: lsize          ! local size of ice av
     integer :: debug_old      ! old debug value
 
-    character(*),parameter :: fraclist_a = &
-                 'afrac:ifrac:ofrac:lfrac:lfrin'!:zfrac'
+    character(*),parameter :: temp_fraclist_a = 'afrac:ifrac:ofrac:lfrac:lfrin'
     character(*),parameter :: fraclist_o = 'afrac:ifrac:ofrac:ifrad:ofrad'
     character(*),parameter :: fraclist_i = 'afrac:ifrac:ofrac'
     character(*),parameter :: fraclist_l = 'afrac:lfrac:lfrin'
@@ -308,6 +307,7 @@ logical :: iamroot
     character(*),parameter :: fraclist_r = 'lfrac:lfrin:rfrac'
     character(*),parameter :: fraclist_w = 'wfrac'
     character(*),parameter :: fraclist_z = 'afrac:zfrac:lfrac:lfrin'
+    character(len=35) :: fraclist_a
 
 
     !----- formats -----
@@ -346,6 +346,11 @@ iamroot = seq_comm_iamroot(CPLID)
 
     if (atm_present) then
        lSize = mct_aVect_lSize(dom_a%data)
+       if(iac_present) then
+         fraclist_a = trim(temp_fraclist_a//':zfrac')
+       else
+         fraclist_a = temp_fraclist_a
+       endif
        call mct_aVect_init(fractions_a,rList=fraclist_a,lsize=lsize)
        call mct_aVect_zero(fractions_a)
 
@@ -431,12 +436,12 @@ iamroot = seq_comm_iamroot(CPLID)
        if (atm_present) then
           mapper_z2a => prep_atm_get_mapper_Fz2a()
           mapper_a2z => prep_iac_get_mapper_Sa2z()
-          !call seq_map_map(mapper_z2a, fractions_z, fractions_a, &
-          !                 fldlist='zfrac', norm=.false.)
+          call seq_map_map(mapper_z2a, fractions_z, fractions_a, &
+                           fldlist='zfrac', norm=.false.)
           ! use the a2z mapper to get the atm fracs into fractions_z
           if (associated(mapper_a2z)) then
-             !call seq_map_map(mapper_a2z, fractions_a, fractions_z, &
-             !     fldlist='afrac', norm=.false.)
+             call seq_map_map(mapper_a2z, fractions_a, fractions_z, &
+                  fldlist='afrac', norm=.false.)
           endif
        endif
 
