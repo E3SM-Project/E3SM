@@ -331,7 +331,7 @@ contains
           t = veg_pp%topounit(p)
           topi = grc_pp%topi(g)
 
-          if (lun_pp%itype(l) == istcrop) then
+          if (veg_pp%is_on_crop_col(p)) then
              ti = t - topi + 1
              m  = veg_pp%itype(p)
              this%fertnitro_patch(p) = fert_cft(g,ti,m)
