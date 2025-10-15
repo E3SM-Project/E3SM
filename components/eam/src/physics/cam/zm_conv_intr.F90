@@ -971,7 +971,8 @@ subroutine zm_conv_tend_2( state,  ptend,  ztodt, pbuf, mu, eu, du, md, ed, dp, 
          dpdry(i,1:pver) = state%pdeldry(ideep(i),1:pver)/100_r8
       end do
       call t_startf ('zm_transport_tracer_2')
-      call zm_transport_tracer( ptend%lq, state%q, pcnst,  &
+      call zm_transport_tracer( pcols, ncol, pver, &
+                                ptend%lq, state%q, pcnst,  &
                                 mu, md, du, eu, ed, dp,  &
                                 jt, maxg, ideep, 1, lengath, &
                                 fracis, ptend%q, dpdry, ztodt)
