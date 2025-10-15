@@ -163,7 +163,7 @@ contains
     use seq_drydep_mod , only: drydep_fields_token, lnd_drydep
     use shr_megan_mod  , only: shr_megan_fields_token, shr_megan_mechcomps_n
     use shr_fan_mod    , only: shr_fan_fields_token, shr_fan_to_atm
-    use elm_varctl     , only: use_voc
+    use elm_varctl     , only: use_voc, iac_present
     use elm_varpar     , only: iac_npft, iac_nharvest
     !
     ! !ARGUMENTS:
@@ -364,27 +364,27 @@ contains
     !---------------------------------
     ! IAC coupling
     !---------------------------------
-
-    do p = 0,iac_npft-1
-       write(cpft,'(I0)') p
-       cpft=trim(cpft)
-       !index_l2x_Sl_hr(p) = mct_avect_indexra(l2x,trim('Sl_hr_pft' // cpft))
-       !index_l2x_Sl_npp(p) = mct_avect_indexra(l2x,trim('Sl_npp_pft' // cpft))
-       !index_l2x_Sl_pftwgt(p) = mct_avect_indexra(l2x,trim('Sl_pftwgt_pft' // cpft))
+    if (iac_present) then
+      do p = 0,iac_npft-1
+          write(cpft,'(I0)') p
+         cpft=trim(cpft)
+         index_l2x_Sl_hr(p) = mct_avect_indexra(l2x,trim('Sl_hr_pft' // cpft))
+         index_l2x_Sl_npp(p) = mct_avect_indexra(l2x,trim('Sl_npp_pft' // cpft))
+         index_l2x_Sl_pftwgt(p) = mct_avect_indexra(l2x,trim('Sl_pftwgt_pft' // cpft))
        
-       ! iac pfts to land
-       name = 'Sz_pct_pft' // cpft
-       !index_x2l_Sz_pct_pft(p) = mct_avect_indexra(x2l,trim(name))
-       name = 'Sz_pct_pft_prev' // cpft
-       !index_x2l_Sz_pct_pft_prev(p) = mct_avect_indexra(x2l,trim(name))
+         ! iac pfts to land
+         name = 'Sz_pct_pft' // cpft
+         index_x2l_Sz_pct_pft(p) = mct_avect_indexra(x2l,trim(name))
+         name = 'Sz_pct_pft_prev' // cpft
+         index_x2l_Sz_pct_pft_prev(p) = mct_avect_indexra(x2l,trim(name))
 
-       ! iac harvest to land
-       if (p < iac_nharvest) then
-         name = 'Sz_harvest_frac' // cpft
-         !index_x2l_Sz_harvest_frac(p) = mct_avect_indexra(x2l,trim(name))
-       end if
-
-    enddo
+         ! iac harvest to land
+         if (p < iac_nharvest) then
+            name = 'Sz_harvest_frac' // cpft
+            index_x2l_Sz_harvest_frac(p) = mct_avect_indexra(x2l,trim(name))
+         end if
+      enddo 
+    endif
 
     call mct_aVect_clean(x2l)
     call mct_aVect_clean(l2x)

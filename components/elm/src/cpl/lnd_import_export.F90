@@ -1378,10 +1378,10 @@ contains
        if (iac_present) then
 
           do num = 0,numpft
-             !iac2lnd_vars%frac_pft(g,num) = x2l(index_x2l_Sz_pct_pft(num),i)
-             !iac2lnd_vars%frac_pft_prev(g,num) = x2l(index_x2l_Sz_pct_pft_prev(num),i)
+             iac2lnd_vars%frac_pft(g,num) = x2l(index_x2l_Sz_pct_pft(num),i)
+             iac2lnd_vars%frac_pft_prev(g,num) = x2l(index_x2l_Sz_pct_pft_prev(num),i)
              if (num < numharvest) then
-                !iac2lnd_vars%harvest_frac(g,num) = x2l(index_x2l_Sz_harvest_frac(num),i)
+                iac2lnd_vars%harvest_frac(g,num) = x2l(index_x2l_Sz_harvest_frac(num),i)
              end if
           end do
         endif
@@ -1528,9 +1528,9 @@ contains
 
        if (iac_present) then
           do p = 0,numpft
-             !l2x(index_l2x_Sl_hr(p),i) = lnd2iac_vars%hr(g,p)
-             !l2x(index_l2x_Sl_npp(p),i) = lnd2iac_vars%npp(g,p)
-             !l2x(index_l2x_Sl_pftwgt(p),i) = lnd2iac_vars%pftwgt(g,p)
+             l2x(index_l2x_Sl_hr(p),i) = lnd2iac_vars%hr(g,p)
+             l2x(index_l2x_Sl_npp(p),i) = lnd2iac_vars%npp(g,p)
+             l2x(index_l2x_Sl_pftwgt(p),i) = lnd2iac_vars%pftwgt(g,p)
           end do
        end if
     end do
