@@ -53,9 +53,13 @@
 !    sulfuric acid, bisulfate, ammonium sulfate
 
   real(r8), public, protected :: dp_cut_accum_rename = huge(1.0_r8)
+! accum mode cutoff diameter for renaming the excessive tail to strat coarse mode
+
   real(r8), public, protected :: dp_xferall_thresh_accum_rename = huge(1.0_r8)
-! two accum mode aerosol diameter thresholds for renaming to strat coarse mode
-! have to also change dgnumlo and dgnumhi in physprop accordingly to take effect
+! accum mode full-transfer threshold diameter. When exceeded, the entire aerosol
+! mass and number in the mode will be transferred to the strat coarse mode
+
+  real(r8), public, protected :: micro_mg_accre_enhan_fac = huge(1.0_r8)
 
 #if ( defined( CAMBOX_ACTIVATE_THIS ) )
   integer, public :: cldy_rh_sameas_clear = 0
