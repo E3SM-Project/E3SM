@@ -55,12 +55,8 @@ void Functions<S,D>::gw_heating_depth(
         if (maxi == 0) maxi = k;
       }
     }
-  });
 
-  team.team_barrier();
-
-  // apply tunable scaling factor for the heating depth
-  Kokkos::single(Kokkos::PerTeam(team), [&] {
+    // apply tunable scaling factor for the heating depth
     // Heating depth in km.
     hdepth = (zm(maxi) -zm(mini))/1000;
 
