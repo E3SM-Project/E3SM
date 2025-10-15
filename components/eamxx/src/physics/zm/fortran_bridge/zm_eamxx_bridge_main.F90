@@ -56,6 +56,7 @@ subroutine zm_eamxx_bridge_init_c( pver_in ) bind(C)
   !-----------------------------------------------------------------------------
   ! make sure we are turning off the extra stuff
   zm_param%zm_microp       = .false.
+  zm_param%old_snow        = .true.
   zm_param%trig_dcape      = .false.
   zm_param%trig_ull        = .true.
   zm_param%clos_dyn_adj    = .true.
@@ -130,15 +131,9 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
 
   integer,  dimension(ncol)      :: jctop          ! output top-of-deep-convection indices
   integer,  dimension(ncol)      :: jcbot          ! output bot-of-deep-convection indices
-  ! real(r8), dimension(ncol,pverp):: mcon           ! convective mass flux--m sub c
   real(r8), dimension(ncol,pver) :: cme            ! condensation - evaporation
-  ! real(r8), dimension(ncol)      :: cape           ! convective available potential energy
-  ! real(r8), dimension(ncol)      :: tpert          ! thermal temperature excess
   real(r8), dimension(ncol,pver) :: dlf            ! detrained convective cloud water mixing ratio
-  ! real(r8), dimension(ncol,pverp):: pflx           ! precip flux at each level
   real(r8), dimension(ncol,pver) :: zdu            ! detraining mass flux
-  ! real(r8), dimension(ncol,pver) :: rprd           ! rain production rate
-  ! real(r8), dimension(ncol,pver) :: sprd           ! snow production rate
   real(r8), dimension(ncol,pver) :: mu             ! upward cloud mass flux
   real(r8), dimension(ncol,pver) :: md             ! entrainment in updraft
   real(r8), dimension(ncol,pver) :: du             ! detrainment in updraft
@@ -157,8 +152,8 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
   type(zm_aero_t)                :: aero           ! derived type for aerosol information
   type(zm_microp_st)             :: microp_st      ! ZM microphysics data structure
 
-  real(r8), dimension(ncol,pver) :: state_s
-  real(r8), dimension(ncol,pver) :: zm_qc          ! ZM in-cloud liquid water
+  real(r8), dimension(ncol,pver) :: state_s        ! dry static energy
+  real(r8), dimension(ncol,pver) :: zm_qc          ! convective in-cloud liquid water
 
   ! local copy of state variables for calling zm_conv_evap()
   real(r8), dimension(ncol,pver) :: local_state_t
@@ -174,11 +169,8 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
 
   real(r8), dimension(ncol,pver) :: tend_s_snwprd       ! DSE tend from snow production
   real(r8), dimension(ncol,pver) :: tend_s_snwevmlt     ! DSE tend from snow evap/melt
-  ! real(r8), dimension(ncol,pver) :: snow
   real(r8), dimension(ncol,pver) :: ntprprd             ! net precip production in layer
   real(r8), dimension(ncol,pver) :: ntsnprd             ! net snow production in layer
-  ! real(r8), dimension(ncol,pverp):: flxprec
-  ! real(r8), dimension(ncol,pverp):: flxsnow
 
   ! used in momentum transport calculations
   real(r8), dimension(ncol,pver,2) :: tx_winds
@@ -202,24 +194,24 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
 
   loc_is_first_step = is_first_step
 
-  if (zm_param%zm_microp) then
-    zm_param%old_snow  = .false.
-  else
-    zm_param%old_snow  = .true.
-  end if
-
   !-----------------------------------------------------------------------------
   ! initialize output tendencies - normally done by physics_ptend_init()
 
   do i = 1,ncol
-    output_prec(i) = -1
-    output_cape(i) = -1
+    output_prec(i) = 0
+    output_snow(i) = 0
+    output_cape(i) = 0
     output_activity(i) = 0
     do k = 1,pver
       output_tend_s(i,k) = 0
       output_tend_q(i,k) = 0
       output_tend_u(i,k) = 0
       output_tend_v(i,k) = 0
+      output_rain_prod(i,k) = 0
+      output_snow_prod(i,k) = 0
+      output_prec_flux(i,k) = 0
+      output_snow_flux(i,k) = 0
+      output_mass_flux(i,k) = 0
     end do
   end do
 
@@ -246,7 +238,7 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
                  lengath, ideep, maxg, jctop, jcbot, jt, &
                  output_prec, output_tend_s, output_tend_q, &
                  output_cape, dcape, output_mass_flux, output_prec_flux, &
-                 zdu, mu, md, du, eu, ed, dp, dsubcld, &
+                 zdu, mu, eu, du, md, ed, dp, dsubcld, &
                  zm_qc, rliq, output_rain_prod, dlf, &
                  aero, microp_st )
 

@@ -41,7 +41,6 @@ void ZMDeepConvection::set_grids (const std::shared_ptr<const GridsManager> grid
 
   const auto& grid_name = m_grid->name();
   const auto layout     = m_grid->get_3d_scalar_layout(true);
-  const auto comm       = m_grid->get_comm();
 
   // retrieve local grid parameters
   m_ncol = m_grid->get_num_local_dofs();
