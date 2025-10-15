@@ -4151,8 +4151,15 @@ end subroutine wrap_update_hifrq_hist
 
       ! Register and initialize the boundary condition variables
       ! Global variables
+      call this%fates(nc)%register(r)%Register(key=hlm_fates_decomp, &
+                                               data=nlevdecomp, hlm_flag=.true.)
       call this%fates(nc)%register(r)%Register(key=hlm_fates_decomp_max, &
                                                data=nlevdecomp_full, hlm_flag=.true.)
+      call this%fates(nc)%register(r)%Register(key=hlm_fates_decomp_thickness, &
+                                               data=dzsoi_decomp, hlm_flag=.true.)
+      call this%fates(nc)%register(r)%Register(key=hlm_fates_decomp_id, &
+                                               data=decomp_id, hlm_flag=.true.)
+                     
       ! Column level variables
       c = this%fates(nc)%register(r)%GetColumnIndex()
       call this%fates(nc)%register(r)%Register(key=hlm_fates_soil_level, &
@@ -4161,6 +4168,8 @@ end subroutine wrap_update_hifrq_hist
                                                data=col_cf%w_scalar(c,:), hlm_flag=.true.)
       call this%fates(nc)%register(r)%Register(key=hlm_fates_decomp_frac_temperature, &
                                                data=col_cf%t_scalar(c,:), hlm_flag=.true.)
+      call this%fates(nc)%register(r)%Register(key=hlm_fates_litter_carbon_total, &
+                                               data=col_cf%litfall(c), hlm_flag=.true.)
 
       ! Variables that need to accumulate                                               
       call this%fates(nc)%register(r)%Register(key=hlm_fates_litter_carbon_cellulose, &
