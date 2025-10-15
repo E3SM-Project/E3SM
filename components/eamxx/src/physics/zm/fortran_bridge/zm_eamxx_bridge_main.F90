@@ -56,6 +56,7 @@ subroutine zm_eamxx_bridge_init_c( pver_in ) bind(C)
   !-----------------------------------------------------------------------------
   ! make sure we are turning off the extra stuff
   zm_param%zm_microp       = .false.
+  zm_param%old_snow        = .true.
   zm_param%trig_dcape      = .false.
   zm_param%trig_ull        = .true.
   zm_param%clos_dyn_adj    = .true.
@@ -202,24 +203,25 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
 
   loc_is_first_step = is_first_step
 
-  if (zm_param%zm_microp) then
-    zm_param%old_snow  = .false.
-  else
-    zm_param%old_snow  = .true.
-  end if
-
   !-----------------------------------------------------------------------------
   ! initialize output tendencies - normally done by physics_ptend_init()
 
   do i = 1,ncol
-    output_prec(i) = -1
-    output_cape(i) = -1
+    output_prec(i) = 0
+    output_snow(i) = 0
+    output_cape(i) = 0
+    output_activity(i) = 0
     output_activity(i) = 0
     do k = 1,pver
       output_tend_s(i,k) = 0
       output_tend_q(i,k) = 0
       output_tend_u(i,k) = 0
       output_tend_v(i,k) = 0
+      output_rain_prod(i,k) = 0
+      output_snow_prod(i,k) = 0
+      output_prec_flux(i,k) = 0
+      output_snow_flux(i,k) = 0
+      output_mass_flux(i,k) = 0
     end do
   end do
 
