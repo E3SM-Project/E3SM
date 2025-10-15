@@ -78,6 +78,17 @@ if (EAMXX_ENABLE_PYTHON)
 
   # Used in eamxx_pysession.hpp to get current path
   target_link_libraries(eamxx_core PUBLIC stdc++fs)
+
+  execute_process(
+    COMMAND "${Python_EXECUTABLE}" -c "import torch; print(torch.utils.cmake_prefix_path)"
+    OUTPUT_STRIP_TRAILING_WHITESPACE OUTPUT_VARIABLE torch_ROOT
+    RESULT_VARIABLE ret_code)
+
+  if ("${ret_code}" STREQUAL "0")
+    find_package(Torch REQUIRED HINTS ${torch_ROOT})
+    target_compile_definitions(eamxx_core PUBLIC EAMXX_HAS_PYTORCH)
+    target_link_libraries(eamxx_core PUBLIC Torch)
+  endif()
 endif()
 
 if (NOT SCREAM_LIB_ONLY)
