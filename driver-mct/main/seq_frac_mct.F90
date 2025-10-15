@@ -549,8 +549,8 @@ iamroot = seq_comm_iamroot(CPLID)
           fractions_l%rAttr(kl,:) = fractions_l%rAttr(kk,:)
        end if
 
-! avd - hold this line in case it is needed for debugging
-! avd if (iamroot) write(logunit,*) subName,'checking fractions_z'
+       ! hold this line in case it is needed for debugging
+       ! if (iamroot) write(logunit,*) subName,'checking fractions_z'
 
        ! just set the lnd info in fractions_z
        ! but these are not used

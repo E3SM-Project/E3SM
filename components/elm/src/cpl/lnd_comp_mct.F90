@@ -367,6 +367,10 @@ contains
     ! Note that lnd2iac_vars is not set yet for restart
     if (atm_present .or. iac_present) then 
       call lnd_export(bounds, lnd2atm_vars, lnd2glc_vars, lnd2iac_vars, l2x_l%rattr)
+#ifdef HAVE_MOAB
+!     Also send data through the MOAB path in driver-moab
+      call lnd_export_moab(EClock, bounds, lnd2atm_vars, lnd2glc_vars) ! it is private here
+#endif
     endif
 
     ! Fill in infodata settings
@@ -629,6 +633,9 @@ contains
 #ifndef CPL_BYPASS       
        call t_startf ('lc_lnd_export')
        call lnd_export(bounds, lnd2atm_vars, lnd2glc_vars, lnd2iac_vars, l2x_l%rattr)
+#ifdef HAVE_MOAB
+       call lnd_export_moab(EClock, bounds, lnd2atm_vars, lnd2glc_vars) ! it is private here
+#endif
        call t_stopf ('lc_lnd_export')
 #endif
 

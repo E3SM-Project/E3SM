@@ -304,8 +304,8 @@ contains
           call seq_io_read(rest_file, wav, 'c2x', 'w2x_wx')
        endif
        if (iac_present) then
-          ! avd: not sure these are needed; they are from the previous year
-          !    and get updated at the beginning of the run
+          !not sure these are needed; they are from the previous year
+          !and get updated at the beginning of the run
           gsmap => component_get_gsmap_cx(iac(1))
           call seq_io_read(rest_file, gsmap, fractions_zx, 'fractions_zx')
           call seq_io_read(rest_file, iac, 'c2x', 'z2x_zx')
@@ -668,8 +668,8 @@ contains
              gsmap  => component_get_gsmap_cx(iac(1))
              call seq_io_write(rest_file, gsmap, fractions_zx, 'fractions_zx', &
                   whead=whead, wdata=wdata)
-             ! avd: not sure these are needed; they are from the previous year
-             !    and get updated at the beginning of the run
+             !not sure these are needed; they are from the previous year
+             !and get updated at the beginning of the run
              call seq_io_write(rest_file, iac, 'c2x', 'z2x_zx', &
                   whead=whead, wdata=wdata)
           endif
