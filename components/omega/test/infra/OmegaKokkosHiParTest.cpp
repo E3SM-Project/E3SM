@@ -713,7 +713,11 @@ int main(int argc, char **argv) {
             Err += testHiparFor1DFor1D(N1);
             Err += testHiparFor1DReduce1D(N1);
             Err += testHiparFor1DScan1D(N1);
+// outer reduce tests fail with SYCL and old Kokkos
+// remove this check once E3SM starts using Kokkos 4.7.1
+#if !defined(KOKKOS_ENABLE_SYCL) || KOKKOS_VERSION_GREATER_EQUAL(4, 7, 1)
             Err += testHiparReduce1DReduce1D(N1);
+#endif
 
             Err += testHiparFor1DMultiple1D(1, N1);
             Err += testHiparFor1DMultiple1D((N1 + 1) / 2, N1);
@@ -725,8 +729,11 @@ int main(int argc, char **argv) {
                Err += testHiparFor2DFor1D(N1, N2);
                Err += testHiparFor2DReduce1D(N1, N2);
                Err += testHiparFor2DScan1D(N1, N2);
+// outer reduce tests fail with SYCL and old Kokkos
+// remove this check once E3SM starts using Kokkos 4.7.1
+#if !defined(KOKKOS_ENABLE_SYCL) || KOKKOS_VERSION_GREATER_EQUAL(4, 7, 1)
                Err += testHiparReduce2DReduce1D(N1, N2);
-
+#endif
                Err += testHiparFor2DMultiple1D(1, N1, N2);
                Err += testHiparFor2DMultiple1D((N1 + 1) / 2, N1, N2);
                Err += testHiparFor2DMultiple1D(2 * N1, N1, N2);
