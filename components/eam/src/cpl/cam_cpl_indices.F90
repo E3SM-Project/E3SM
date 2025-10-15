@@ -135,7 +135,7 @@ contains
     index_x2a_Sf_ifrac      = mct_avect_indexra(x2a,'Sf_ifrac')
     index_x2a_Sf_ofrac      = mct_avect_indexra(x2a,'Sf_ofrac')
     index_x2a_Sf_lfrac      = mct_avect_indexra(x2a,'Sf_lfrac')
-    index_x2a_Sf_zfrac      = mct_avect_indexra(x2a,'Sf_zfrac')
+    !index_x2a_Sf_zfrac      = mct_avect_indexra(x2a,'Sf_zfrac')
 
     index_x2a_Sx_u10        = mct_avect_indexra(x2a,'Sx_u10')
     index_x2a_Sx_u10withgusts = mct_avect_indexra(x2a,'Sx_u10withgusts')

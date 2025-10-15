@@ -368,20 +368,20 @@ contains
     do p = 0,iac_npft-1
        write(cpft,'(I0)') p
        cpft=trim(cpft)
-       index_l2x_Sl_hr(p) = mct_avect_indexra(l2x,trim('Sl_hr_pft' // cpft))
-       index_l2x_Sl_npp(p) = mct_avect_indexra(l2x,trim('Sl_npp_pft' // cpft))
-       index_l2x_Sl_pftwgt(p) = mct_avect_indexra(l2x,trim('Sl_pftwgt_pft' // cpft))
+       !index_l2x_Sl_hr(p) = mct_avect_indexra(l2x,trim('Sl_hr_pft' // cpft))
+       !index_l2x_Sl_npp(p) = mct_avect_indexra(l2x,trim('Sl_npp_pft' // cpft))
+       !index_l2x_Sl_pftwgt(p) = mct_avect_indexra(l2x,trim('Sl_pftwgt_pft' // cpft))
        
        ! iac pfts to land
        name = 'Sz_pct_pft' // cpft
-       index_x2l_Sz_pct_pft(p) = mct_avect_indexra(x2l,trim(name))
+       !index_x2l_Sz_pct_pft(p) = mct_avect_indexra(x2l,trim(name))
        name = 'Sz_pct_pft_prev' // cpft
-       index_x2l_Sz_pct_pft_prev(p) = mct_avect_indexra(x2l,trim(name))
+       !index_x2l_Sz_pct_pft_prev(p) = mct_avect_indexra(x2l,trim(name))
 
        ! iac harvest to land
        if (p < iac_nharvest) then
          name = 'Sz_harvest_frac' // cpft
-         index_x2l_Sz_harvest_frac(p) = mct_avect_indexra(x2l,trim(name))
+         !index_x2l_Sz_harvest_frac(p) = mct_avect_indexra(x2l,trim(name))
        end if
 
     enddo

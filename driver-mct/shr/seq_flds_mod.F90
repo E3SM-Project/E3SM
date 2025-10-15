@@ -586,11 +586,11 @@ contains
              if (is_state) call seq_flds_add(x2g_states,trim(fldname))
              if (is_flux ) call seq_flds_add(x2g_fluxes,trim(fldname))
           case('z2x')
-             if (is_state) call seq_flds_add(z2x_states,trim(fldname))
-             if (is_flux ) call seq_flds_add(z2x_fluxes,trim(fldname))
+             !if (is_state) call seq_flds_add(z2x_states,trim(fldname))
+             !if (is_flux ) call seq_flds_add(z2x_fluxes,trim(fldname))
           case('x2z')
-             if (is_state) call seq_flds_add(x2z_states,trim(fldname))
-             if (is_flux ) call seq_flds_add(x2z_fluxes,trim(fldname))
+             !if (is_state) call seq_flds_add(x2z_states,trim(fldname))
+             !if (is_flux ) call seq_flds_add(x2z_fluxes,trim(fldname))
           case default
              write(logunit,*) subname//'ERROR: ',trim(cplflds_custom(n)),&
                   ' not a recognized value'
@@ -1121,7 +1121,7 @@ contains
     call seq_flds_add(x2a_states,'Sf_lfrac')
     call seq_flds_add(x2a_states,'Sf_ifrac')
     call seq_flds_add(x2a_states,'Sf_ofrac')
-    call seq_flds_add(x2a_states,'Sf_zfrac')
+    !call seq_flds_add(x2a_states,'Sf_zfrac')
     longname = 'Surface land fraction'
     stdname  = 'land_area_fraction'
     units    = '1'
@@ -2685,7 +2685,7 @@ contains
        pftstr=trim(pftstr)
 
        ! Only hr and npp matter, for now
-       call seq_flds_add(l2x_states,trim('Sl_hr_pft' // pftstr))
+       !call seq_flds_add(l2x_states,trim('Sl_hr_pft' // pftstr))
        call seq_flds_add(x2z_states,trim('Sl_hr_pft' // pftstr))
        longname = 'Total heterotrophic respiration' // pftstr
        stdname  = 'lnd_total_heterotrophic_respiration' // pftstr
@@ -2694,7 +2694,7 @@ contains
        attname  = trim(attname)
        call metadata_set(attname, longname, stdname, units)
        
-       call seq_flds_add(l2x_states,'Sl_npp_pft' // pftstr)
+       !call seq_flds_add(l2x_states,'Sl_npp_pft' // pftstr)
        call seq_flds_add(x2z_states,'Sl_npp_pft' // pftstr)
        longname = 'Net primary production for pft ' // pftstr
        stdname  = 'lnd_net_primary_production_pft' // pftstr
@@ -2703,7 +2703,7 @@ contains
        call metadata_set(attname, longname, stdname, units)
     
        ! Review
-       call seq_flds_add(l2x_states,'Sl_pftwgt_pft' //pftstr)
+       !call seq_flds_add(l2x_states,'Sl_pftwgt_pft' //pftstr)
        call seq_flds_add(x2z_states,'Sl_pftwgt_pft' //pftstr)
        longname = 'PFT weight relative to gridcell for pft ' //pftstr
        stdname  = 'lnd_pft_weight_pft' //pftstr
@@ -2716,8 +2716,8 @@ contains
        ! This is pft for beginning of model year + 1
        ! ts wonders if landfrac should go as well - just to
        ! verify that we are all using the same values.
-       call seq_flds_add(z2x_states,trim('Sz_pct_pft' //pftstr))
-       call seq_flds_add(x2l_states,trim('Sz_pct_pft' //pftstr))
+       !call seq_flds_add(z2x_states,trim('Sz_pct_pft' //pftstr))
+       !call seq_flds_add(x2l_states,trim('Sz_pct_pft' //pftstr))
        longname = 'Percent pft of vegetated land unit for pft ' //pftstr
        stdname  = 'iac_pct_pft' //pftstr
        stdname  = trim(stdname)
@@ -2727,8 +2727,8 @@ contains
        call metadata_set(attname, longname, stdname, units)
 
        ! Need to send the beginning model year pft data as well
-       call seq_flds_add(z2x_states,trim('Sz_pct_pft_prev' //pftstr))
-       call seq_flds_add(x2l_states,trim('Sz_pct_pft_prev' //pftstr))
+       !call seq_flds_add(z2x_states,trim('Sz_pct_pft_prev' //pftstr))
+       !call seq_flds_add(x2l_states,trim('Sz_pct_pft_prev' //pftstr))
        longname = 'Previous percent pft of vegetated land unit for pft ' //pftstr
        stdname  = 'iac_pct_pft_prev' //pftstr
        stdname  = trim(stdname)
@@ -2740,7 +2740,7 @@ contains
        ! send the harvest data also, these are for model year
        if (i <= iac_nharvest) then
           call seq_flds_add(z2x_states,trim('Sz_harvest_frac' //pftstr))
-          call seq_flds_add(x2l_states,trim('Sz_harvest_frac' //pftstr))
+          !call seq_flds_add(x2l_states,trim('Sz_harvest_frac' //pftstr))
           longname = 'Harvest fraction of vegetated land unit for category ' //pftstr
           stdname  = 'iac_harvest_frac' //pftstr
           stdname  = trim(stdname)
@@ -2759,24 +2759,24 @@ contains
        write(monstr,'(I0)') m
        monstr=trim(monstr)
 
-       call seq_flds_add(z2x_fluxes,trim("Fazz_co2sfc_mon" //monstr))
-       call seq_flds_add(x2a_fluxes,trim("Fazz_co2sfc_mon" //monstr))
+       !call seq_flds_add(z2x_fluxes,trim("Fazz_co2sfc_mon" //monstr))
+       !call seq_flds_add(x2a_fluxes,trim("Fazz_co2sfc_mon" //monstr))
        longname = trim('Surface flux of CO2 from iac for month' //monstr)
        stdname  = trim('surface_upward_flux_of_carbon_dioxide_from_iac_mon' //monstr)
        units    = 'moles m-2 s-1'
        attname  = trim('Fazz_co2sfc_mon' //monstr)
        call metadata_set(attname, longname, stdname, units)
 
-       call seq_flds_add(z2x_fluxes,trim("Fazz_co2airlo_mon" //monstr))
-       call seq_flds_add(x2a_fluxes,trim("Fazz_co2airlo_mon" //monstr))
+       !call seq_flds_add(z2x_fluxes,trim("Fazz_co2airlo_mon" //monstr))
+       !call seq_flds_add(x2a_fluxes,trim("Fazz_co2airlo_mon" //monstr))
        longname = trim('Low altitude flux of CO2 from iac for month' //monstr)
        stdname  = trim('low_alt_upward_flux_of_carbon_dioxide_from_iac_mon' //monstr)
        units    = 'moles m-2 s-1'
        attname  = trim('Fazz_co2airlo_mon' //monstr)
        call metadata_set(attname, longname, stdname, units)
 
-       call seq_flds_add(z2x_fluxes,trim("Fazz_co2airhi_mon" //monstr))
-       call seq_flds_add(x2a_fluxes,trim("Fazz_co2airhi_mon" //monstr))
+       !call seq_flds_add(z2x_fluxes,trim("Fazz_co2airhi_mon" //monstr))
+       !call seq_flds_add(x2a_fluxes,trim("Fazz_co2airhi_mon" //monstr))
        longname = trim('High altitude flux of CO2 from iac for month' //monstr)
        stdname  = trim('high_alt_upward_flux_of_carbon_dioxide_from_iac_mon' //monstr)
        units    = 'moles m-2 s-1'
@@ -4277,7 +4277,7 @@ contains
        write(logunit,*)'fields length = ',len_trim(outfld)
        call shr_sys_abort(subname//'ERROR: maximum length of xxx_states or xxx_fluxes has been exceeded')
     end if
-
+    write(103,*)' In seq_flds_add: outfld = ',trim(outfld),' str = ',trim(str)
   end subroutine seq_flds_add
 
   !===============================================================================
