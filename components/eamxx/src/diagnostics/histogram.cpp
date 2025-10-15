@@ -67,7 +67,7 @@ void HistogramDiag::initialize_impl(const RunType /*run_type*/) {
   // copy bin values into field
   auto bin_values_view = m_bin_values.get_view<Real *>();
   auto bin_values_view_host = Kokkos::create_mirror_view(bin_values_view);
-  for (long unsigned int i=0; i < bin_values_layout.dim(0); i++)
+  for (auto i=0; i < bin_values_layout.dim(0); i++)
     bin_values_view_host(i) = m_bin_reals[i];
   Kokkos::deep_copy(bin_values_view,bin_values_view_host);
 }

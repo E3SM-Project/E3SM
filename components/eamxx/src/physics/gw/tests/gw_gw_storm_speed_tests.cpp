@@ -49,7 +49,7 @@ struct UnitWrap::UnitTest<D>::TestGwStormSpeed : public UnitWrap::UnitTest<D>::B
     // Generate random input data
     // Alternatively, you can use the baseline_data construtors/initializer lists to hardcode data
     for (auto& d : baseline_data) {
-      d.randomize(engine, { {d.mini, {10, 20}}, {d.maxi, {40, 50}}, {d.ubm, {5., 20.}} });
+      d.randomize(engine, { {d.maxi, {10, 20}}, {d.mini, {40, 50}}, {d.ubm, {5., 20.}} });
     }
 
     // Create copies of data for use by test. Needs to happen before read calls so that
@@ -70,25 +70,35 @@ struct UnitWrap::UnitTest<D>::TestGwStormSpeed : public UnitWrap::UnitTest<D>::B
 
     // Get data from test
     for (auto& d : test_data) {
-      gw_storm_speed(d);
+      if (this->m_baseline_action == GENERATE) {
+        gw_storm_speed_f(d);
+      }
+      else {
+        gw_storm_speed(d);
+      }
     }
+
+    // We need a tolerance since the order of operations is different from f90.
+    // This tol can be removed once we are no longer using
+    // fortran to generate baselines.
+    const auto margin = std::numeric_limits<Real>::epsilon() *
+      (ekat::is_single_precision<Real>::value ? 1000 : 1);
 
     // Verify BFB results, all data should be in C layout
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < num_runs; ++i) {
         GwStormSpeedData& d_baseline = baseline_data[i];
         GwStormSpeedData& d_test = test_data[i];
+        REQUIRE(d_baseline.total(d_baseline.uh) == d_test.total(d_test.uh));
+        REQUIRE(d_baseline.total(d_baseline.uh) == d_test.total(d_test.umin));
+        REQUIRE(d_baseline.total(d_baseline.uh) == d_test.total(d_test.umax));
+        REQUIRE(d_baseline.total(d_baseline.uh) == d_test.total(d_test.storm_speed));
         for (Int k = 0; k < d_baseline.total(d_baseline.uh); ++k) {
-          REQUIRE(d_baseline.total(d_baseline.uh) == d_test.total(d_test.uh));
-          REQUIRE(d_baseline.uh[k] == d_test.uh[k]);
-          REQUIRE(d_baseline.total(d_baseline.uh) == d_test.total(d_test.umin));
+          REQUIRE(d_baseline.uh[k] == Approx(d_test.uh[k]).margin(margin));
           REQUIRE(d_baseline.umin[k] == d_test.umin[k]);
-          REQUIRE(d_baseline.total(d_baseline.uh) == d_test.total(d_test.umax));
           REQUIRE(d_baseline.umax[k] == d_test.umax[k]);
-          REQUIRE(d_baseline.total(d_baseline.uh) == d_test.total(d_test.storm_speed));
           REQUIRE(d_baseline.storm_speed[k] == d_test.storm_speed[k]);
         }
-
       }
     }
     else if (this->m_baseline_action == GENERATE) {
