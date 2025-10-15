@@ -14,12 +14,11 @@ namespace gw {
 template<typename S, typename D>
 void Functions<S,D>::gw_convect_init(
   // Inputs
-  const GwCommonInit& init,
   const Real& plev_src_wind,
   const uview_3d<const Real>& mfcc_in)
 {
   // Just set k_src_wind to pver. We don't have access to pref_edge
-  s_convect_init.k_src_wind = init.pver - 1;
+  s_convect_init.k_src_wind = s_common_init.pver - 1;
 
   // First dimension is maxh.
   s_convect_init.maxh   = mfcc_in.extent(0);

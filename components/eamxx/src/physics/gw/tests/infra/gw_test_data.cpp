@@ -128,10 +128,7 @@ void gw_convect_init(GwConvectInitData& d)
   const auto mfcc_in  = three_d_ints_in[0];
 
   gw_common_init(d.init);
-  GWF::gw_convect_init(
-    GWF::s_common_init,
-    d.plev_src_wind,
-    mfcc_in);
+  GWF::gw_convect_init(d.plev_src_wind, mfcc_in);
 }
 
 void gw_finalize_cxx()
@@ -964,14 +961,15 @@ void gw_drag_prof(GwDragProfData& d)
 
 void gw_front_init_f(GwFrontInitData& d)
 {
+  // Expects d has already been transitioned to f90
   gw_common_init_f(d.init);
   gw_front_init_bridge_f(d.taubgnd, d.frontgfc_in, d.kfront_in);
 }
 
 void gw_front_init(GwFrontInitData& d)
 {
-  // For now just call f90
-  gw_front_init_f(d);
+  gw_common_init(d.init);
+  GWF::gw_front_init(d.taubgnd, d.frontgfc_in, d.kfront_in);
 }
 
 void gw_front_project_winds_f(GwFrontProjectWindsData& d)

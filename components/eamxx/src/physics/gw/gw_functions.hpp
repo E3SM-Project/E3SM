@@ -162,6 +162,24 @@ struct Functions
     view_3d<Real> mfcc;
   };
 
+  struct GwFrontInit {
+    GwFrontInit() : initialized(false) {}
+
+    // Tell us if initialize has been called
+    bool initialized;
+
+    // Frontogenesis function critical threshold.
+    Real frontgfc;
+
+    // Level at which to check the frontogenesis function to determine when
+    // waves will be launched.
+    Int kfront;
+
+    // Average value of gaussian over gravity wave spectrum bins, multiplied by
+    // background source strength (taubgnd).
+    view_1d<Real> fav;
+  };
+
   //
   // --------- Util Functions ---------
   //
@@ -228,15 +246,21 @@ struct Functions
 
   static void gw_convect_init(
     // Inputs
-    const GwCommonInit& init,
     const Real& plev_src_wind,
     const uview_3d<const Real>& mfcc_in);
+
+  static void gw_front_init(
+    // Inputs
+    const Real& taubgnd,
+    const Real& frontgfc_in,
+    const Int& kfront_in);
 
   static void gw_finalize()
   {
     s_common_init.cref  = decltype(s_common_init.cref)();
     s_common_init.alpha = decltype(s_common_init.alpha)();
     s_convect_init.mfcc = decltype(s_convect_init.mfcc)();
+    s_front_init.fav    = decltype(s_front_init.fav)();
   }
 
   //
@@ -678,6 +702,7 @@ struct Functions
   //
   inline static GwCommonInit s_common_init;
   inline static GwConvectInit s_convect_init;
+  inline static GwFrontInit s_front_init;
 
 }; // struct Functions
 
@@ -710,5 +735,6 @@ struct Functions
 # include "impl/gw_vd_lu_decomp_impl.hpp"
 # include "impl/gw_vd_lu_solve_impl.hpp"
 # include "impl/gw_gw_convect_init_impl.hpp"
+# include "impl/gw_gw_front_init_impl.hpp"
 #endif // GPU && !KOKKOS_ENABLE_*_RELOCATABLE_DEVICE_CODE
 #endif // P3_FUNCTIONS_HPP
