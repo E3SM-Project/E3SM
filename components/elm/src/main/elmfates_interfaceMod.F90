@@ -2046,8 +2046,7 @@ contains
                   ! output boundary condition structures. Note: this is called
                   ! internally in fates dynamics as well.
 
-                  call FluxIntoLitterPools(this%fates(nc)%sites(s), &
-                       this%fates(nc)%bc_in(s), this%fates(nc)%bc_out(s))
+                  call FluxIntoLitterPools(this%fates(nc)%sites(s))
                        
                end do
 
@@ -2305,9 +2304,8 @@ contains
               ! output boundary condition structures. Note: this is called
               ! internally in fates dynamics as well.
 
-              call FluxIntoLitterPools(this%fates(nc)%sites(s), &
-                   this%fates(nc)%bc_in(s), &
-                   this%fates(nc)%bc_out(s))
+              call FluxIntoLitterPools(this%fates(nc)%sites(s))
+
            end do
 
            ! ------------------------------------------------------------------------
