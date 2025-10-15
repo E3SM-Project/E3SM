@@ -170,7 +170,7 @@ void PBLEntrainmentBudget::compute_diagnostic_impl() {
   const auto &pm_v = get_field_in("p_mid").get_view<Real **>();
   const auto &pd_v = get_field_in("pseudo_density").get_view<Real **>();
   const auto &sd_v = get_field_in("SW_flux_dn").get_view<Real **>();
-  const auto &su_v = get_field_in("SW_flux_dn").get_view<Real **>();
+  const auto &su_v = get_field_in("SW_flux_up").get_view<Real **>();
   const auto &ld_v = get_field_in("LW_flux_dn").get_view<Real **>();
   const auto &lu_v = get_field_in("LW_flux_up").get_view<Real **>();
 
