@@ -390,15 +390,15 @@ add_omega_test(
     "-n;2"
 )
 
-##################
-# Kokkos test
-##################
+#######################
+# Kokkos wrappers tests
+#######################
 
 add_omega_test(
-    KOKKOS_TEST
-    testKokkos.exe
-    infra/OmegaKokkosTest.cpp
-    "-n;1"
+  KOKKOS_FLATPAR_TEST
+    testKokkosFlatPar.exe
+    infra/OmegaKokkosFlatParTest.cpp
+    "-n;1;"
 )
 
 add_omega_test(
