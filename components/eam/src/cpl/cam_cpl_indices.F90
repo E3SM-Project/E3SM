@@ -135,7 +135,7 @@ contains
     index_x2a_Sf_ifrac      = mct_avect_indexra(x2a,'Sf_ifrac')
     index_x2a_Sf_ofrac      = mct_avect_indexra(x2a,'Sf_ofrac')
     index_x2a_Sf_lfrac      = mct_avect_indexra(x2a,'Sf_lfrac')
-    index_x2a_Sf_zfrac      = mct_avect_indexra(x2a,'Sf_zfrac')
+    if (iac_present)index_x2a_Sf_zfrac      = mct_avect_indexra(x2a,'Sf_zfrac')
 
     index_x2a_Sx_u10        = mct_avect_indexra(x2a,'Sx_u10')
     index_x2a_Sx_u10withgusts = mct_avect_indexra(x2a,'Sx_u10withgusts')
@@ -168,14 +168,14 @@ contains
          !if IAC is active, associate monthly index for fetching values for each month
          do imon = 1, tot_mon_in_year
             write(monstr,'(I0)') imon
-       monstr=trim(monstr)
+            monstr=trim(monstr)
             index_x2a_Fazz_co2sfc_iac(imon) = &
             mct_avect_indexra(x2a,trim('Fazz_co2sfc_mon' // monstr))
             index_x2a_Fazz_co2airlo_iac(imon) = &
             mct_avect_indexra(x2a,trim('Fazz_co2airlo_mon' // monstr))
             index_x2a_Fazz_co2airhi_iac(imon) = &
             mct_avect_indexra(x2a,trim('Fazz_co2airhi_mon' // monstr))
-    end do
+         end do
       else
          !if IAC is not active, assign zeros for the indices
          index_x2a_Fazz_co2sfc_iac(:)   = 0

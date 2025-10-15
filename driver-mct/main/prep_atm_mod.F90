@@ -548,7 +548,7 @@ contains
     kif=mct_aVect_indexRA(fractions_a,"ifrac")
     kof=mct_aVect_indexRA(fractions_a,"ofrac")
     klf_st = mct_aVect_indexRA(fractions_a,"lfrac")
-    kzf=mct_aVect_indexRA(fractions_a,"zfrac")
+    kzf=mct_aVect_indexRA(fractions_a,"zfrac", perrWith="quiet")
     fracstr_st = 'lfrac'
     if (samegrid_al) then
     klf=mct_aVect_indexRA(fractions_a,"lfrac")
@@ -563,12 +563,12 @@ contains
     index_x2a_Sf_lfrac = mct_aVect_indexRA(x2a_a,'Sf_lfrac')
     index_x2a_Sf_ifrac = mct_aVect_indexRA(x2a_a,'Sf_ifrac')
     index_x2a_Sf_ofrac = mct_aVect_indexRA(x2a_a,'Sf_ofrac')
-    index_x2a_Sf_zfrac = mct_aVect_indexRA(x2a_a,'Sf_zfrac')
+    index_x2a_Sf_zfrac = mct_aVect_indexRA(x2a_a,'Sf_zfrac', perrWith="quiet")
     do n = 1,lsize
        x2a_a%rAttr(index_x2a_Sf_lfrac,n) = fractions_a%Rattr(klf,n)
        x2a_a%rAttr(index_x2a_Sf_ifrac,n) = fractions_a%Rattr(kif,n)
        x2a_a%rAttr(index_x2a_Sf_ofrac,n) = fractions_a%Rattr(kof,n)
-       x2a_a%rAttr(index_x2a_Sf_zfrac,n) = fractions_a%Rattr(kzf,n)
+       if (index_x2a_Sf_zfrac > 0)x2a_a%rAttr(index_x2a_Sf_zfrac,n) = fractions_a%Rattr(kzf,n)
     end do
 
     !--- document fraction operations ---
@@ -576,7 +576,7 @@ contains
        mrgstr(index_x2a_sf_lfrac) = trim(mrgstr(index_x2a_sf_lfrac))//' = fractions_a%'//trim(fracstr)
        mrgstr(index_x2a_sf_ifrac) = trim(mrgstr(index_x2a_sf_ifrac))//' = fractions_a%ifrac'
        mrgstr(index_x2a_sf_ofrac) = trim(mrgstr(index_x2a_sf_ofrac))//' = fractions_a%ofrac'
-       mrgstr(index_x2a_sf_zfrac) = trim(mrgstr(index_x2a_sf_zfrac))//' = fractions_a%zfrac'
+       if (index_x2a_Sf_zfrac > 0)mrgstr(index_x2a_sf_zfrac) = trim(mrgstr(index_x2a_sf_zfrac))//' = fractions_a%zfrac'
     endif
 
     ! Copy attributes that do not need to be merged
@@ -689,7 +689,7 @@ contains
           fracl_st = fractions_a%Rattr(klf_st,n)
           fraci = fractions_a%Rattr(kif,n)
           fraco = fractions_a%Rattr(kof,n)
-          fracz = fractions_a%Rattr(kzf,n)
+          if(kzf > 0)fracz = fractions_a%Rattr(kzf,n)
           if (lindx(ka) > 0 .and. fracl > 0._r8) then
              if (lstate(ka)) then
                 if (lmerge(ka)) then
@@ -705,13 +705,15 @@ contains
                 end if
              end if
           end if
-          if (zindx(ka) > 0 .and. fracz > 0._r8) then
-             if (zmerge(ka)) then
-                x2a_a%rAttr(ka,n) = x2a_a%rAttr(ka,n) + z2x_a%rAttr(zindx(ka),n) * fracz
-             else
-                x2a_a%rAttr(ka,n) = z2x_a%rAttr(zindx(ka),n) * fracz
-             end if
-          end if
+          if(kzf > 0) then
+            if (zindx(ka) > 0 .and. fracz > 0._r8) then
+               if (zmerge(ka)) then
+                  x2a_a%rAttr(ka,n) = x2a_a%rAttr(ka,n) + z2x_a%rAttr(zindx(ka),n) * fracz
+               else
+                  x2a_a%rAttr(ka,n) = z2x_a%rAttr(zindx(ka),n) * fracz
+               end if
+            end if
+          endif
           if (iindx(ka) > 0 .and. fraci > 0._r8) then
              if (imerge(ka)) then
                 x2a_a%rAttr(ka,n) = x2a_a%rAttr(ka,n) + i2x_a%rAttr(iindx(ka),n) * fraci
