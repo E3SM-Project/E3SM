@@ -4163,11 +4163,13 @@ end subroutine wrap_update_hifrq_hist
                                                data=dzsoi_decomp, hlm_flag=.true.)
       call this%fates(nc)%register(r)%Register(key=hlm_fates_decomp_id, &
                                                data=decomp_id, hlm_flag=.true.)
-                     
+ 
       ! Column level variables
       c = this%fates(nc)%register(r)%GetColumnIndex()
       call this%fates(nc)%register(r)%Register(key=hlm_fates_soil_level, &
                                                data=col_pp%nlevbed(c), hlm_flag=.true.)
+      call this%fates(nc)%register(r)%Register(key=hlm_fates_rooting_max_depth, &
+                                               data=canopystate_inst%altmax_lastyear_indx_col(c), hlm_flag=.true.)
       call this%fates(nc)%register(r)%Register(key=hlm_fates_decomp_frac_moisture, &
                                                data=col_cf%w_scalar(c,:), hlm_flag=.true.)
       call this%fates(nc)%register(r)%Register(key=hlm_fates_decomp_frac_temperature, &
