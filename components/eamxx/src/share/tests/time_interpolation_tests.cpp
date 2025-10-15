@@ -6,7 +6,7 @@
 #include "share/field/field.hpp"
 #include "share/data_managers/field_manager.hpp"
 
-#include "share/util/eamxx_time_interpolation.hpp"
+#include "share/algorithm/eamxx_time_interpolation.hpp"
 #include "share/core/eamxx_setup_random_test.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
 
@@ -63,7 +63,7 @@ public:
   std::vector<std::string> get_list_of_files() { return m_list_of_files; }
 private:
   void update_file_list() {
-    if (std::find(m_list_of_files.begin(),m_list_of_files.end(), m_output_file_specs.filename) == m_list_of_files.end()) {
+    if (m_output_file_specs.is_open and std::find(m_list_of_files.begin(),m_list_of_files.end(), m_output_file_specs.filename) == m_list_of_files.end()) {
       m_list_of_files.push_back(m_output_file_specs.filename);
     }
   }
@@ -89,8 +89,8 @@ TEST_CASE ("eamxx_time_interpolation_simple") {
   // Construct a time interpolation object and add all of the fields to it.
   printf(  "Constructing a time interpolation object ...\n");
   util::TimeInterpolation time_interpolator(grid);
-  for (auto ff_pair = fields_man_t0->begin(); ff_pair != fields_man_t0->end(); ff_pair++) {
-    const auto ff   = ff_pair->second;
+  for (auto ff_pair : fields_man_t0->get_repo()) {
+    const auto ff   = ff_pair.second;
     time_interpolator.add_field(*ff);
     time_interpolator.initialize_data_from_field(*ff);
   }
@@ -103,9 +103,8 @@ TEST_CASE ("eamxx_time_interpolation_simple") {
   auto slope = my_pdf(engine);
   auto fields_man_tf = get_fm(grid, t0, seed);
   auto t1 = t0 + 10*dt;
-  for (auto ff_pair = fields_man_tf->begin(); ff_pair != fields_man_tf->end(); ff_pair++)
-  {
-    auto  ff = ff_pair->second;
+  for (auto ff_pair : fields_man_tf->get_repo()) {
+    auto  ff = ff_pair.second;
     update_field_data(slope, t1.seconds_from(t0), *ff);
     time_interpolator.update_data_from_field(*ff);
   }
@@ -122,10 +121,7 @@ TEST_CASE ("eamxx_time_interpolation_simple") {
     t1 += dt;
     printf("                        ... t = %s\n",t1.to_string().c_str());
     time_interpolator.perform_time_interpolation(t1);
-    for (auto ff_pair = fields_man_test->begin(); ff_pair != fields_man_test->end(); ff_pair++)
-    {
-      const auto name = ff_pair->first;
-      auto ff = ff_pair->second;
+    for (const auto& [name,ff] : fields_man_test->get_repo()) {
       update_field_data(slope, dt, *ff);
       REQUIRE(views_are_approx_equal(*ff,time_interpolator.get_field(name),tol));
     }
@@ -158,7 +154,7 @@ TEST_CASE ("eamxx_time_interpolation_data_from_file") {
   auto fields_man_t0 = get_fm(grid, t0, seed);
   auto fields_man_deep = get_fm(grid, t0, seed);  // A field manager for checking deep copies.
   std::vector<std::string> fnames;
-  for (auto it : *fields_man_t0) {
+  for (auto it : fields_man_t0->get_repo()) {
     fnames.push_back(it.second->name());
   }
   printf("   - Fields Manager...DONE\n");
@@ -378,7 +374,7 @@ std::vector<std::string> create_test_data_files(
   const int max_steps      = snap_freq*total_snaps;
   // Gather the set of fields from the field manager
   std::vector<std::string> fnames;
-  for (auto it : *fm) {
+  for (auto it : fm->get_repo()) {
     fnames.push_back(it.second->name());
   }
   // Create the output parameters
@@ -395,7 +391,7 @@ std::vector<std::string> create_test_data_files(
   // the list of files created by the output manager.
   OutputManager4Test om;
   om.initialize(comm,om_pl,t0,false);
-  om.setup(fm,gm);
+  om.setup(fm,gm->get_grid_names());
 
   // Time loop to create and write data
   auto tw = t0;
