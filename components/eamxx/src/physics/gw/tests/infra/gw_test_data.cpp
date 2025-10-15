@@ -982,8 +982,66 @@ void gw_front_project_winds_f(GwFrontProjectWindsData& d)
 
 void gw_front_project_winds(GwFrontProjectWindsData& d)
 {
-  // For now just call f90
-  gw_front_project_winds_f(d);
+  gw_front_init(d.init); // Might need more specific init
+
+  const Int pver = d.init.init.pver;
+
+  // create device views and copy
+  std::vector<view1dr_d> vec1dr_in(2);
+  ekat::host_to_device({d.xv, d.yv}, d.ncol, vec1dr_in);
+
+  std::vector<view2dr_d> vec2dr_in(4);
+  std::vector<int> vec2dr_in_0_sizes = {d.ncol, d.ncol, d.ncol, d.ncol};
+  std::vector<int> vec2dr_in_1_sizes = {pver, pver + 1, pver, pver};
+  ekat::host_to_device({d.u, d.ubi, d.ubm, d.v}, vec2dr_in_0_sizes, vec2dr_in_1_sizes, vec2dr_in);
+
+  view1dr_d
+    xv_d(vec1dr_in[0]),
+    yv_d(vec1dr_in[1]);
+
+  view2dr_d
+    u_d(vec2dr_in[0]),
+    ubi_d(vec2dr_in[1]),
+    ubm_d(vec2dr_in[2]),
+    v_d(vec2dr_in[3]);
+
+  const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.ncol, pver);
+
+  // unpack data scalars because we do not want the lambda to capture d
+  const Int kbot = d.kbot;
+
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    const Int i = team.league_rank();
+
+    // Get single-column subviews of all inputs, shouldn't need any i-indexing
+    // after this.
+    const auto u_c = ekat::subview(u_d, i);
+    const auto v_c = ekat::subview(v_d, i);
+    const auto ubm_c = ekat::subview(ubm_d, i);
+    const auto ubi_c = ekat::subview(ubi_d, i);
+
+    GWF::gw_front_project_winds(
+      team,
+      pver,
+      kbot,
+      u_c,
+      v_c,
+      xv_d(i),
+      yv_d(i),
+      ubm_c,
+      ubi_c);
+  });
+
+  // Now get arrays
+  std::vector<view1dr_d> vec1dr_out = {xv_d, yv_d};
+  ekat::device_to_host({d.xv, d.yv}, d.ncol, vec1dr_out);
+
+  std::vector<view2dr_d> vec2dr_out = {ubi_d, ubm_d};
+  std::vector<int> vec2dr_out_0_sizes = {d.ncol, d.ncol};
+  std::vector<int> vec2dr_out_1_sizes = {pver + 1, pver};
+  ekat::device_to_host({d.ubi, d.ubm}, vec2dr_out_0_sizes, vec2dr_out_1_sizes, vec2dr_out);
+
+  gw_finalize_cxx();
 }
 
 void gw_front_gw_sources_f(GwFrontGwSourcesData& d)
