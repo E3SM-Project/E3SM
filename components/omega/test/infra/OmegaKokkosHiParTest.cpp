@@ -30,8 +30,6 @@ template <class Array> bool hostArraysEqual(const Array &A, const Array &B) {
    return Equal;
 }
 
-static KOKKOS_FUNCTION int f1(int J1, int N1) { return -N1 / 4 + J1; }
-
 static KOKKOS_FUNCTION int f2(int J1, int J2, int N1, int N2) {
    return -(N1 * N2) / 4 + J1 + N1 * J2;
 }
