@@ -249,6 +249,7 @@ subroutine zm_param_mpi_broadcast(zm_param)
    call mpibcast(zm_param%clos_dyn_adj,      1, mpilog, 0, mpicom)
    call mpibcast(zm_param%no_deep_pbl,       1, mpilog, 0, mpicom)
    call mpibcast(zm_param%zm_microp,         1, mpilog, 0, mpicom) ! ZM micro parameters
+   call mpibcast(zm_param%old_snow,          1, mpilog, 0, mpicom)
    call mpibcast(zm_param%auto_fac,          1, mpir8,  0, mpicom)
    call mpibcast(zm_param%accr_fac,          1, mpir8,  0, mpicom)
    call mpibcast(zm_param%micro_dcs,         1, mpir8,  0, mpicom)
@@ -291,6 +292,7 @@ subroutine zm_param_print(zm_param)
       write(iulog,*) indent,'no_deep_pbl     : ',zm_param%no_deep_pbl
       ! ZM micro parameters
       write(iulog,*) indent,'zm_microp       : ',zm_param%zm_microp
+      write(iulog,*) indent,'old_snow        : ',zm_param%old_snow
       write(iulog,*) indent,'auto_fac        : ',zm_param%auto_fac
       write(iulog,*) indent,'accr_fac        : ',zm_param%accr_fac
       write(iulog,*) indent,'micro_dcs       : ',zm_param%micro_dcs
