@@ -319,6 +319,8 @@ module ELMFatesInterfaceMod
 
    integer, parameter :: num_landuse_pft_vars = 4
 
+   real(r8), allocatable :: decomp_id(:)  ! array to hold the idea of the decomp layer
+
    public  :: ELMFatesGlobals1
    public  :: ELMFatesGlobals2
    public  :: ELMFatesTimesteps
@@ -3577,10 +3579,13 @@ end subroutine wrap_update_hifrq_hist
        this%fates(nc)%bc_in(s)%z_sisl(1:nlevsoil)     = col_pp%z(c,1:nlevsoil)
        this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp) = &
             dzsoi_decomp(1:nlevdecomp)
+            
+       allocate(decomp_id(nlevsoil))
 
        if (use_vertsoilc) then
           do j=1,nlevsoil
              this%fates(nc)%bc_in(s)%decomp_id(j) = j
+             decomp_id(j) = j
              ! Check to make sure that dz = dz_decomp_sisl when vertical soil dynamics
              ! are active
              if(abs(this%fates(nc)%bc_in(s)%dz_decomp_sisl(j)-this%fates(nc)%bc_in(s)%dz_sisl(j))>1.e-10_r8)then
@@ -3595,6 +3600,7 @@ end subroutine wrap_update_hifrq_hist
        else
           do j=1,nlevsoil
              this%fates(nc)%bc_in(s)%decomp_id(j) = 1
+             decomp_id(j) = 1
           end do
        end if
 
