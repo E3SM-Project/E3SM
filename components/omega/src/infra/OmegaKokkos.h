@@ -88,6 +88,7 @@ constexpr int OMEGA_TEAMSIZE = 1;
 // Takes a functor that uses multidimensional indexing
 // and converts it into one that also accepts linear index
 template <class F, int Rank> struct LinearIdxWrapper : F {
+   static_assert(Rank >= 1 && Rank <= 5, "LinearIdxWrapper supports ranks 1-5");
    using F::operator();
 
    LinearIdxWrapper(F &&Functor, const int (&Bounds)[Rank])
@@ -156,7 +157,13 @@ template <class F, int Rank> struct LinearIdxWrapper : F {
       (*this)(I1, I2, I3, I4, I5, std::forward<Args>(OtherArgs)...);
    }
 
+// SYCL doesn't allow 0-length arrays so add one extra element even though
+// it is not needed
+#ifdef KOKKOS_ENABLE_SYCL
+   int Strides[Rank];
+#else
    int Strides[Rank - 1];
+#endif
 };
 
 template <typename V>
