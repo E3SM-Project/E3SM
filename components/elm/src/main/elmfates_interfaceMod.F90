@@ -1516,28 +1516,26 @@ contains
 
       dtime = real(get_step_size(),r8)
       nc = bounds_clump%clump_index
+      
+      call this%fates(nc)%UpdateLitterFluxes(dtime)
 
       do s = 1, this%fates(nc)%nsites
          c = this%f2hmap(nc)%fcolumn(s)
 
-         call FluxIntoLitterPools(this%fates(nc)%sites(s), &
-                                  this%fates(nc)%bc_in(s), &
-                                  this%fates(nc)%bc_out(s))
-         
-         col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_met_lit) = &
-              col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_met_lit) + &
-              this%fates(nc)%bc_out(s)%litt_flux_lab_c_si(1:nlevdecomp) * dtime
-         col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_cel_lit) = &
-              col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_cel_lit) + &
-              this%fates(nc)%bc_out(s)%litt_flux_cel_c_si(1:nlevdecomp)* dtime
-         col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_lig_lit) = &
-              col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_lig_lit) + &
-              this%fates(nc)%bc_out(s)%litt_flux_lig_c_si(1:nlevdecomp) * dtime
+         ! col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_met_lit) = &
+         !      col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_met_lit) + &
+         !      this%fates(nc)%bc_out(s)%litt_flux_lab_c_si(1:nlevdecomp) * dtime
+         ! col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_cel_lit) = &
+         !      col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_cel_lit) + &
+         !      this%fates(nc)%bc_out(s)%litt_flux_cel_c_si(1:nlevdecomp)* dtime
+         ! col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_lig_lit) = &
+         !      col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_lig_lit) + &
+         !      this%fates(nc)%bc_out(s)%litt_flux_lig_c_si(1:nlevdecomp) * dtime
 
-         col_cf%litfall(c) = &
-               sum(this%fates(nc)%bc_out(s)%litt_flux_lab_c_si(1:nlevdecomp) * this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp)) + &
-               sum(this%fates(nc)%bc_out(s)%litt_flux_cel_c_si(1:nlevdecomp) * this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp)) + &
-               sum(this%fates(nc)%bc_out(s)%litt_flux_lig_c_si(1:nlevdecomp) * this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp))
+         ! col_cf%litfall(c) = &
+         !       sum(this%fates(nc)%bc_out(s)%litt_flux_lab_c_si(1:nlevdecomp) * this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp)) + &
+         !       sum(this%fates(nc)%bc_out(s)%litt_flux_cel_c_si(1:nlevdecomp) * this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp)) + &
+         !       sum(this%fates(nc)%bc_out(s)%litt_flux_lig_c_si(1:nlevdecomp) * this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp))
 
 
          ! Since N and P are always allocated in ELM, AND, since on the FATES
