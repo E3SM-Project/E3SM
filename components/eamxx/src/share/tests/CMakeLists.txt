@@ -12,4 +12,9 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
     LIBS scream_share
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
     FIXTURES_REQUIRED data_interpolation_setup)
+
+  # Time interpolation
+  CreateUnitTest(time_interpolation "time_interpolation_tests.cpp"
+    LIBS scream_share
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
 endif()
