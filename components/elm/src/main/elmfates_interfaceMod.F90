@@ -4105,6 +4105,10 @@ end subroutine wrap_update_hifrq_hist
          call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_phosphorus_labile, &
                                                   data=col_cf%decomp_ppools_sourcesink(c,:,i_lab_lit), &
                                                   hlm_flag=.true., accumulate=.true.)
+         call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_phosphorus_all, &
+                                                  data=col_pf%plant_to_litter_pflux(c), &
+                                                  hlm_flag=.true., accumulate=.true.)
+
          ! Nitrogen
          call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_nitrogen_cellulose, &
                                                   data=col_cf%decomp_npools_sourcesink(c,:,i_cel_lit), &
@@ -4114,6 +4118,9 @@ end subroutine wrap_update_hifrq_hist
                                                   hlm_flag=.true., accumulate=.true.)
          call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_nitrogen_labile, &
                                                   data=col_cf%decomp_npools_sourcesink(c,:,i_lab_lit), &
+                                                  hlm_flag=.true., accumulate=.true.)
+         call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_nitrogen_all, &
+                                                  data=col_pf%plant_to_litter_nflux(c), &
                                                   hlm_flag=.true., accumulate=.true.)
       end select
    end do
