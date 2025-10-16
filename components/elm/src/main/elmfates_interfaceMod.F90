@@ -254,15 +254,6 @@ module ELMFatesInterfaceMod
       ! Type structure that holds allocatable arrays for mpi-based seed dispersal
       type(dispersal_type) :: fates_seed
       
-      ! This is the array of pointer to the host land model data and its associated
-      ! common variable name
-      ! type(hlm_fates_api_var_type), allocatable :: bc_in(:)
-      ! type(hlm_fates_api_var_type), allocatable :: bc_out(:)
-
-      ! This is the number of HLM variables that are being passed in and out of FATES
-      integer, public :: num_hlmvar_in, num_hlmvar_out
-
-      
    contains
 
       procedure, public :: init
@@ -892,7 +883,6 @@ contains
       integer                                        :: p         ! patch index
       integer, allocatable                           :: collist (:)
       integer, allocatable                           :: patchlist(:)
-      integer, allocatable                           :: sitelist(:)
       type(bounds_type)                              :: bounds_clump
       integer                                        :: nmaxcol
       integer                                        :: ndecomp
@@ -963,10 +953,6 @@ contains
          num_landunits_veg = 0
          do c = bounds_clump%begc,bounds_clump%endc
             l = col_pp%landunit(c)
-         ! do l = bounds_clump%begl,bounds_clump%endl
-         !    if (lun_pp%itype(l) == istsoil) then
-
-               ! num_landunits_veg = num_landunits_veg + 1
 
                ! To be deprecated/refactored
             if ( (lun_pp%itype(l) == istsoil) .and. (col_pp%active(c)) ) then
@@ -976,7 +962,7 @@ contains
                col_pp%is_fates(c) = .true. 
 
                if(debug)then
-                  ! write(iulog,*) 'alm_fates%init(): thread',nc,': found column',c,'with lu',l
+                  write(iulog,*) 'alm_fates%init(): thread',nc,': found column',c,'with lu',l
                   write(iulog,*) 'LU type:', lun_pp%itype(l)
                end if
             endif
@@ -1043,16 +1029,9 @@ contains
             c2 = this%fates(nc)%register(p)%GetColumnIndex()
             if (c1 /= c2 ) then
                write(iulog,*) ' columns do not match: p, s, c1, c2: ', p, s, c1, c2
-               write(iulog,*) ' max sites: ', maxval(sitelist)
                call endrun(msg=errMsg(sourcefile, __LINE__))
             end if
          end do
-
-         ! Set the number of FATES sites
-         ! this%fates(nc)%nsites = s
-
-         ! Allocate the FATES sites
-         ! allocate(this%fates(nc)%sites(this%fates(nc)%nsites))
 
          ! Allocate the FATES boundary arrays (in)
          allocate(this%fates(nc)%bc_in(this%fates(nc)%nsites))
