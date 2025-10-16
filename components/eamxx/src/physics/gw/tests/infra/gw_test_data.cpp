@@ -982,7 +982,7 @@ void gw_front_project_winds_f(GwFrontProjectWindsData& d)
 
 void gw_front_project_winds(GwFrontProjectWindsData& d)
 {
-  gw_front_init(d.init); // Might need more specific init
+  gw_front_init(d.init);
 
   const Int pver = d.init.init.pver;
 
@@ -1054,8 +1054,54 @@ void gw_front_gw_sources_f(GwFrontGwSourcesData& d)
 
 void gw_front_gw_sources(GwFrontGwSourcesData& d)
 {
-  // For now just call f90
-  gw_front_gw_sources_f(d);
+  gw_front_init(d.init);
+
+  const Int pgwv = d.init.init.pgwv;
+  const Int pver = d.init.init.pver;
+
+  // create device views and copy
+  std::vector<view2dr_d> vec2dr_in(1);
+  ekat::host_to_device({d.frontgf}, d.ncol, pver, vec2dr_in);
+
+  std::vector<view3dr_d> vec3dr_in(1);
+  ekat::host_to_device({d.tau}, d.ncol, pgwv*2 + 1, pver + 1, vec3dr_in);
+
+  view2dr_d
+    frontgf_d(vec2dr_in[0]);
+
+  view3dr_d
+    tau_d(vec3dr_in[0]);
+
+  const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.ncol, pver);
+
+  GWF::GwFrontInit init_cp = GWF::s_front_init;
+
+  // unpack data scalars because we do not want the lambda to capture d
+  const Int kbot = d.kbot;
+
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    const Int i = team.league_rank();
+
+    // Get single-column subviews of all inputs, shouldn't need any i-indexing
+    // after this.
+    const auto tau_c = ekat::subview(tau_d, i);
+    const auto frontgf_c = ekat::subview(frontgf_d, i);
+
+    GWF::gw_front_gw_sources(
+      team,
+      init_cp,
+      pgwv,
+      pver,
+      kbot,
+      frontgf_c,
+      tau_c);
+  });
+
+  // Now get arrays
+  std::vector<view3dr_d> vec3dr_out = {tau_d};
+  ekat::device_to_host({d.tau}, d.ncol, pgwv*2 + 1, pver + 1, vec3dr_out);
+
+  gw_finalize_cxx();
 }
 
 void gw_cm_src_f(GwCmSrcData& d)

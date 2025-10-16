@@ -465,13 +465,14 @@ struct Functions
   KOKKOS_FUNCTION
   static void gw_front_gw_sources(
     // Inputs
-    const Int& pver,
+    const MemberType& team,
+    const GwFrontInit& finit,
     const Int& pgwv,
-    const Int& ncol,
+    const Int& pver,
     const Int& kbot,
-    const uview_1d<const Spack>& frontgf,
+    const uview_1d<const Real>& frontgf,
     // Outputs
-    const uview_1d<Spack>& tau);
+    const uview_2d<Real>& tau);
 
   KOKKOS_FUNCTION
   static void gw_cm_src(

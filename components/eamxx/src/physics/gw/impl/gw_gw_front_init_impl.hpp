@@ -52,11 +52,11 @@ void Functions<S,D>::gw_front_init(
         s_front_init.fav(l) = s_front_init.fav(l) + dca * std::exp(-(temp*temp));
       }
       // Multiply by source strength.
-      s_front_init.fav(l) = taubgnd * s_front_init.fav(l)/s_common_init.dc;
+      s_front_init.fav(l) = taubgnd * (s_front_init.fav(l)/s_common_init.dc);
     }
 
     // Prohibit wavenumber 0.
-    s_front_init.fav(0) = 0;
+    s_front_init.fav(s_common_init.pgwv) = 0;
   });
 }
 
