@@ -3791,64 +3791,6 @@ end subroutine wrap_update_hifrq_hist
    return
  end subroutine wrap_hydraulics_drive
 
-! ======================================================================================
-
-!  subroutine WrapTransferBCIn(this, nc)
-
-!    ! !DESCRIPTION:
-!    ! ---------------------------------------------------------------------------------
-!    ! This call passes the HLM inputs to FATES patch-level boundary conditions
-!    ! ---------------------------------------------------------------------------------
-
-!    ! !USES:
-!    !
-!    ! !ARGUMENTS:
-!    class(hlm_fates_interface_type), intent(inout) :: this
-!    integer, intent(in) :: nc 
-   
-!    ! !LOCAL:
-!    integer :: s, ivar  ! indices and loop counters
-   
-!    do s = 1, this%fates(nc)%nsites
-!       do ivar = 1,this%num_hlmvar_in
-!          call this%fates(nc)%sites(s)%TransferBCIn(this%bc_in(ivar)%api_str, &
-!                                                    this%bc_in(ivar)%hlm_var)
-!       end do
-!    end do
-
-!  end subroutine WrapTransferBCIn
-
-! ! ======================================================================================
-
-!  subroutine WrapTransferBCOut(this, nc)
-
-!    ! !DESCRIPTION:
-!    ! ---------------------------------------------------------------------------------
-!    ! This call passes the HLM inputs to FATES patch-level boundary conditions
-!    ! ---------------------------------------------------------------------------------
-
-!    ! !USES:
-!    !
-!    ! !ARGUMENTS:
-!    class(hlm_fates_interface_type), intent(inout) :: this
-!    integer, intent(in) :: nc 
-   
-!    ! !LOCAL:
-!    integer :: s, ivar  ! indices and loop counters
-!    real(r8) :: dtime   ! step size to pass to FATES to handle timestep conversions
-
-!    ! Get the step size in seconds
-!    dtime = real(get_step_size(),r8)
-
-!    do s = 1, this%fates(nc)%nsites
-!       do ivar = 1,this%num_hlmvar_out
-!          call this%fates(nc)%sites(s)%TransferBCOut(this%bc_out(ivar)%api_str, &
-!                                                    this%bc_out(ivar)%hlm_var, dtime)
-!       end do
-!    end do
-
-!  end subroutine WrapTransferBCOut
-
  ! ======================================================================================
 
  subroutine hlm_bounds_to_fates_bounds(hlm, fates)
@@ -4183,6 +4125,29 @@ end subroutine wrap_update_hifrq_hist
                                                data=col_cf%decomp_cpools_sourcesink(c,:,i_lab_lit), &
                                                hlm_flag=.true., accumulate=.true.)
 
+      select case(fates_parteh_mode)
+      case (prt_cnp_flex_allom_hyp)
+         ! Phosphorus
+         call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_phosphorus_cellulose, &
+                                                  data=col_cf%decomp_ppools_sourcesink(c,:,i_cel_lit), &
+                                                  hlm_flag=.true., accumulate=.true.)
+         call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_phosphorus_lignin, &
+                                                  data=col_cf%decomp_ppools_sourcesink(c,:,i_lig_lit), &
+                                                  hlm_flag=.true., accumulate=.true.)
+         call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_phosphorus_labile, &
+                                                  data=col_cf%decomp_ppools_sourcesink(c,:,i_lab_lit), &
+                                                  hlm_flag=.true., accumulate=.true.)
+         ! Nitrogen
+         call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_nitrogen_cellulose, &
+                                                  data=col_cf%decomp_npools_sourcesink(c,:,i_cel_lit), &
+                                                  hlm_flag=.true., accumulate=.true.)
+         call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_nitrogen_lignin, &
+                                                  data=col_cf%decomp_npools_sourcesink(c,:,i_lig_lit), &
+                                                  hlm_flag=.true., accumulate=.true.)
+         call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_nitrogen_labile, &
+                                                  data=col_cf%decomp_npools_sourcesink(c,:,i_lab_lit), &
+                                                  hlm_flag=.true., accumulate=.true.)
+      end select
    end do
   
  end subroutine RegisterHLMInterfaceVariables
