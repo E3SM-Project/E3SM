@@ -129,6 +129,9 @@ struct Functions
     // Effective horizontal wave number.
     Real kwv; // = huge(1._r8)
 
+    // 1/2 * horizontal wavenumber (for oro)
+    Real oroko2;
+
     // Interface levels for gravity wave sources.
     int ktop; // = huge(1)
     int kbotbg; // = huge(1)
@@ -477,22 +480,24 @@ struct Functions
   KOKKOS_FUNCTION
   static void gw_cm_src(
     // Inputs
+    const MemberType& team,
+    const GwCommonInit& init,
+    const GwFrontInit& finit,
     const Int& pver,
     const Int& pgwv,
-    const Int& ncol,
     const Int& kbot,
-    const uview_1d<const Spack>& u,
-    const uview_1d<const Spack>& v,
-    const uview_1d<const Spack>& frontgf,
+    const uview_1d<const Real>& u,
+    const uview_1d<const Real>& v,
+    const uview_1d<const Real>& frontgf,
     // Outputs
-    const uview_1d<Int>& src_level,
-    const uview_1d<Int>& tend_level,
-    const uview_1d<Spack>& tau,
-    const uview_1d<Spack>& ubm,
-    const uview_1d<Spack>& ubi,
-    const uview_1d<Spack>& xv,
-    const uview_1d<Spack>& yv,
-    const uview_1d<Spack>& c);
+    Int& src_level,
+    Int& tend_level,
+    const uview_2d<Real>& tau,
+    const uview_1d<Real>& ubm,
+    const uview_1d<Real>& ubi,
+    Real& xv,
+    Real& yv,
+    const uview_1d<Real>& c);
 
   KOKKOS_FUNCTION
   static void gw_convect_project_winds(
