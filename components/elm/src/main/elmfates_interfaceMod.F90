@@ -296,8 +296,6 @@ module ELMFatesInterfaceMod
       procedure, public  :: WrapUpdateFatesRmean
       procedure, public  :: WrapGlobalSeedDispersal
       procedure, public  :: WrapUpdateFatesSeedInOut
-      ! procedure, public  :: WrapTransferBCIn
-      ! procedure, public  :: WrapTransferBCOut
 
    end type hlm_fates_interface_type
    
@@ -1078,10 +1076,6 @@ contains
 
          do s = 1, this%fates(nc)%nsites
 
-            ! TODO: Assign column_map and patch_map values
-            ! this%fates(nc)%sites(s)%column_map(:) = this%f2hmap(nc)%GetColumnIndex(1,s)
-            ! this%fates(nc)%sites(s)%patch_map(:)  = this%f2hmap(nc)%hlm_patch_index(:,s)
-
             c = this%f2hmap(nc)%fcolumn(s)
             this%fates(nc)%sites(s)%h_gid = c
 
@@ -1309,9 +1303,6 @@ contains
          gdp_lf_col = this%fates_fire_data_method%GetGDP()
       end if
       
-      ! Transfer decomposition fluxes to the FATES patch data structure
-      ! call this%WrapTransferBCIn(nc)
-
       do s=1,this%fates(nc)%nsites
 
          c = this%f2hmap(nc)%fcolumn(s)
@@ -2063,8 +2054,6 @@ contains
                   call FluxIntoLitterPools(this%fates(nc)%sites(s))
                        
                end do
-
-               ! call this%WrapTransferBCOut(nc, dtime)
 
                if(use_fates_sp)then
                   do s = 1,this%fates(nc)%nsites
