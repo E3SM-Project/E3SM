@@ -21,7 +21,6 @@ from atm_manip import apply_atm_procs_list_changes_from_buffer, apply_non_atm_pr
 from utils import ensure_yaml # pylint: disable=no-name-in-module
 ensure_yaml()
 import yaml
-from yaml_utils import Bools,Ints,Floats,Strings,array_representer,array_constructor
 
 _CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..","cime")
 sys.path.append(os.path.join(_CIMEROOT, "CIME", "Tools"))
@@ -235,12 +234,6 @@ def ordered_dump(data, item, Dumper=yaml.SafeDumper, **kwds):
             yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
             data.items())
     OrderedDumper.add_representer(dict, _dict_representer)
-
-    # These allow to dump arrays with a tag specifying the type
-    OrderedDumper.add_representer(Bools,    array_representer)
-    OrderedDumper.add_representer(Ints,     array_representer)
-    OrderedDumper.add_representer(Floats,   array_representer)
-    OrderedDumper.add_representer(Strings,  array_representer)
 
     if isinstance(item, str) and item.endswith(".yaml"):
         # Item is a filepath
@@ -1008,13 +1001,6 @@ def create_input_data_list_file(case,caseroot):
     """
     files_to_download = get_file_parameters(caseroot)
 
-    # Add array parsing knowledge to yaml loader
-    loader = yaml.SafeLoader
-    loader.add_constructor("!bools",array_constructor)
-    loader.add_constructor("!ints",array_constructor)
-    loader.add_constructor("!floats",array_constructor)
-    loader.add_constructor("!strings",array_constructor)
-
     # Grab all the output yaml files, open them, and check if horiz_remap_file or vertical_remap_file is used
     rundir   = case.get_value("RUNDIR")
     eamxx_xml_file = os.path.join(caseroot, "namelist_scream.xml")
@@ -1032,7 +1018,7 @@ def create_input_data_list_file(case,caseroot):
                 dst_yaml = os.path.expanduser(os.path.join(rundir,'data',os.path.basename(src_yaml)))
 
                 # Load file, and look for the remap file entries
-                content = yaml.load(open(dst_yaml,"r"),Loader=loader)
+                content = yaml.load(open(dst_yaml,"r"),Loader=yaml.SafeLoader)
                 if 'horiz_remap_file' in content.keys():
                     files_to_download += [content['horiz_remap_file']]
                 if 'vertical_remap_file' in content.keys():
@@ -1094,18 +1080,11 @@ def do_cime_vars_on_yaml_output_files(case, caseroot):
     out_files_xml = get_child(scorpio,"output_yaml_files",must_exist=False)
     out_files = out_files_xml.text.split(",") if (out_files_xml is not None and out_files_xml.text is not None) else []
 
-    # Add array parsing knowledge to yaml loader
-    loader = yaml.SafeLoader
-    loader.add_constructor("!bools",array_constructor)
-    loader.add_constructor("!ints",array_constructor)
-    loader.add_constructor("!floats",array_constructor)
-    loader.add_constructor("!strings",array_constructor)
-
     # We will also change the 'output_yaml_files' entry in scream_input.yaml,
     # to point to the copied files in $rundir/data
     output_yaml_files = []
     scream_input_file = os.path.join(rundir,'data','scream_input.yaml')
-    scream_input = yaml.load(open(scream_input_file,"r"),Loader=loader)
+    scream_input = yaml.load(open(scream_input_file,"r"),Loader=yaml.SafeLoader)
 
     # Determine the physics grid type for use in CIME-var substitution.
     pgt = 'gll'
@@ -1125,7 +1104,7 @@ def do_cime_vars_on_yaml_output_files(case, caseroot):
             safe_copy(src_yaml,dst_yaml)
 
         # Now load dst file, and process any CIME var present (if any)
-        content = yaml.load(open(dst_yaml,"r"),Loader=loader)
+        content = yaml.load(open(dst_yaml,"r"),Loader=yaml.SafeLoader)
         do_cime_vars(content,case,refine=True,
                      extra={'PHYSICS_GRID_TYPE': pgt})
 

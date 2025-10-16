@@ -62,8 +62,8 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
   // Will be useful if multiple grids are defined (see below).
   bool pg2_grid_in_io_streams = false;
   const auto& fields_pl = m_params.sublist("fields");
-  for (auto it=fields_pl.sublists_names_cbegin(); it!=fields_pl.sublists_names_cend(); ++it) {
-    if (*it == "physics_pg2") pg2_grid_in_io_streams = true;
+  for (const auto& sname : fields_pl.sublist_names()) {
+    if (sname == "physics_pg2") pg2_grid_in_io_streams = true;
   }
 
   if (m_params.isParameter("field_names")) {
@@ -83,21 +83,21 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
     m_output_streams.push_back(output);
   } else {
     // Loop over all grids, creating an output stream for each
-    for (auto it=fields_pl.sublists_names_cbegin(); it!=fields_pl.sublists_names_cend(); ++it) {
+    for (const auto& sname : fields_pl.sublist_names()) {
       // Verify this grid exists in FM
-      EKAT_REQUIRE_MSG (field_mgr->get_grids_manager()->has_grid(*it),
-          "Error! Output requested on grid '" + *it + "', but the field manager does not store such grid.\n");
+      EKAT_REQUIRE_MSG (field_mgr->get_grids_manager()->has_grid(sname),
+          "Error! Output requested on grid '" + sname + "', but the field manager does not store such grid.\n");
 
       // This grid could be an alias. Get the grid name from the grid itself
       // as this is what the FieldManager expects.
-      const auto grid = field_mgr->get_grids_manager()->get_grid_nonconst(*it);
+      const auto grid = field_mgr->get_grids_manager()->get_grid_nonconst(sname);
       const auto& gname = grid->name();
 
       // If this is a GLL grid (or Dyn Grid, with GLL grid set as aux_io_grid)
       // and PG2 fields were found above, we must reset the grid COL tag name to
       // be "ncol_d" to avoid conflicting lengths with ncol on the PG2 grid.
       if (pg2_grid_in_io_streams) {
-        const auto& grid_pl = fields_pl.sublist(*it);
+        const auto& grid_pl = fields_pl.sublist(sname);
         auto io_grid = grid;
 
         std::string output_data_layout = "default";

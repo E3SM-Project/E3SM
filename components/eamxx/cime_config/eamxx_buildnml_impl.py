@@ -5,7 +5,6 @@ _CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","
 sys.path.append(_CIMEROOT)
 
 from CIME.utils import expect
-from yaml_utils import make_array
 
 ###############################################################################
 class MockCase(object):
@@ -196,7 +195,7 @@ def refine_type(entry, force_type=None):
         else:
             result = []
 
-        return make_array(result, elem_type)
+        return result
 
     # Not an array (or no force type passed)
     elem_type = force_type
