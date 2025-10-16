@@ -171,6 +171,10 @@ contains
     call shr_mpi_commrank( mpicom_lnd_moab, rank2 ) ! this will be used for differences between mct and moab tags
 #endif 
 
+    ! Determine if iac is active, and set flag
+    call seq_infodata_GetData(infodata, iac_present=iac_flag)
+    call elm_varctl_set_iac_flag(iac_flag)
+
     call elm_cpl_indices_set()
 
     ! Initialize elm MPI communicator 
@@ -285,10 +289,6 @@ contains
                         hostname_in=hostname, username_in=username)
 
     use_lnd_rof_two_way = lnd_rof_two_way
-    
-    ! Determine if iac is active, and set flag
-    call seq_infodata_GetData(infodata, iac_present=iac_flag)
-    call elm_varctl_set_iac_flag(iac_flag)
 
     ! Read namelist, grid and surface data
 
