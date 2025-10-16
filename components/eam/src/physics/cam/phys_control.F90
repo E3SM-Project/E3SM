@@ -123,8 +123,8 @@ integer           :: mam_amicphys_optaa   = 0          ! <= 0 -- use old microph
                                                        !                                    newnuc, and coag routines) 
                                                        !  > 0 -- use new microphysics code (single call to amicphys routine)
 real(r8)          :: n_so4_monolayers_pcage = huge(1.0_r8) ! number of so4(+nh4) monolayers needed to "age" a carbon particle
-real(r8)          :: dp_cut_accum_rename = huge(1.0_r8) ! accum mode cutoff diameter for renaming the excessive tail to strat coarse mode
-real(r8)          :: dp_xferall_thresh_accum_rename = huge(1.0_r8) ! accum mode full-transfer threshold diameter
+real(r8)          :: dp_cut_accum_rename = huge(1.0_r8) ! cutoff diameter for larger accum mode particles renamed to the strat coarse mode
+real(r8)          :: dp_xferall_thresh_accum_rename = huge(1.0_r8) ! threshold diameter for all accum mode particles transferred to the strat coarse mode 
 real(r8)          :: micro_mg_accre_enhan_fac = huge(1.0_r8) !!Accretion enhancement factor
 logical           :: liqcf_fix            = .false.    ! liq cld fraction fix calc.                     
 logical           :: regen_fix            = .false.    ! aerosol regeneration bug fix for ndrop.F90 

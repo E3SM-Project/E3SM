@@ -4203,15 +4203,13 @@ Default: Set by namelist
 
 <entry id="dp_cut_accum_rename" type="real"  category="scavenging"
        group="phys_ctl_nl" valid_values="" >
-accum mode cutoff diameter for renaming the excessive tail 
-to strat coarse mode
+cutoff diameter for larger accum mode particles renamed to the strat coarse mode
 Default: Set by namelist
 </entry>
 
 <entry id="dp_xferall_thresh_accum_rename" type="real"  category="scavenging"
        group="phys_ctl_nl" valid_values="" >
-accum mode full-transfer threshold diameter. When exceeded, the entire aerosol 
-mass and number in the mode will be transferred to the strat coarse mode
+threshold diameter for all accum mode particles transferred to the strat coarse mode
 Default: Set by namelist
 </entry>
 
