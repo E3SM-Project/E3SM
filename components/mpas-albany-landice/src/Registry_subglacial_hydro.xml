@@ -129,6 +129,10 @@
 					 description="number of iterations to smooth waterPressure over when calculating waterPressureSlopeNormal. Used only to keep channelPressureFreeze stable and will not affect other aspects of the model that rely on waterPressure." 	
 					 possible_values="positive integer or zero"
 		/>
+		<nml_option name="config_SGH_allow_terrestrial_outflow" type="logical" default_value=".true." units="none"
+                            description="whether to allow discharge out at terrestrial margins"
+		            possible_values=".true. or .false."
+		/>
 	</nml_record>
 
 <!-- ======================================================================= -->

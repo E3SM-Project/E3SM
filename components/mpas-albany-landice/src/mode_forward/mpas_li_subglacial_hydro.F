@@ -879,6 +879,7 @@ module li_subglacial_hydro
       real (kind=RKIND), pointer :: bedRoughMax
       real (kind=RKIND) :: conduc_coeff_wtd
       character (len=StrKIND), pointer :: config_SGH_tangent_slope_calculation
+      logical, pointer :: config_SGH_allow_terrestrial_outflow
       real (kind=RKIND), pointer :: config_sea_level
       real (kind=RKIND), pointer :: rhoo
       integer, pointer :: nEdges
@@ -909,6 +910,7 @@ module li_subglacial_hydro
       call mpas_pool_get_config(liConfigs, 'config_SGH_conduc_coeff_drowned', conduc_coeff_drowned)
       call mpas_pool_get_config(liConfigs, 'config_SGH_bed_roughness_max', bedRoughMax)
       call mpas_pool_get_config(liConfigs, 'config_SGH_tangent_slope_calculation', config_SGH_tangent_slope_calculation)
+      call mpas_pool_get_config(liConfigs, 'config_SGH_allow_terrestrial_outflow', config_SGH_allow_terrestrial_outflow)
       call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
       call mpas_pool_get_config(liConfigs, 'config_ocean_density', rhoo)
       
@@ -972,19 +974,21 @@ module li_subglacial_hydro
       ! This one-sided implementation also creates outflowing conditions at terrestrial boundary
       do iEdge = 1, nEdges
          if (hydroTerrestrialMarginMask(iEdge) == 1) then
-            cell1 = cellsOnEdge(1, iEdge)
-            cell2 = cellsOnEdge(2, iEdge)
-            if (li_mask_is_grounded_ice(cellMask(cell1))) then ! cell2 is the icefree cell - replace phi there with cell1 Phig
-               
-               hydropotentialBaseSlopeNormal(iEdge) = - waterPressure(cell1) / dcEdge(iEdge)
-               hydropotentialSlopeNormal(iEdge) = - (rho_water * gravity * waterThickness(cell1) + waterPressure(cell1)) / dcEdge(iEdge)
-
-            else ! cell1 is the icefree cell - replace phi there with cell2 Phig
-                  
-               hydropotentialBaseSlopeNormal(iEdge) = waterPressure(cell2) / dcEdge(iEdge) 
-               hydropotentialSlopeNormal(iEdge) = (rho_water * gravity * waterThickness(cell2) + waterPressure(cell2)) / dcEdge(iEdge)
-
-            endif ! which cell is icefree
+            if (config_SGH_allow_terrestrial_outflow) then
+               cell1 = cellsOnEdge(1, iEdge)
+               cell2 = cellsOnEdge(2, iEdge)
+               if (li_mask_is_grounded_ice(cellMask(cell1))) then ! cell2 is the icefree cell - replace phi there with cell1 Phig
+                  hydropotentialBaseSlopeNormal(iEdge) = - waterPressure(cell1) / dcEdge(iEdge)
+                  hydropotentialSlopeNormal(iEdge) = - (rho_water * gravity * waterThickness(cell1) + waterPressure(cell1)) / dcEdge(iEdge)
+               else ! cell1 is the icefree cell - replace phi there with cell2 Phig
+                  hydropotentialBaseSlopeNormal(iEdge) = waterPressure(cell2) / dcEdge(iEdge)
+                  hydropotentialSlopeNormal(iEdge) = (rho_water * gravity * waterThickness(cell2) + waterPressure(cell2)) / dcEdge(iEdge)
+               endif ! which cell is icefree
+            else
+               hydropotentialBaseSlopeNormal(iEdge) = 0.0_RKIND
+               hydropotentialSlopeNormal(iEdge) = 0.0_RKIND
+               waterPressureSlopeNormal(iEdge) = 0.0_RKIND
+            endif ! if allow terrestrial outflow
          endif ! if edge of grounded ice
       end do
 
