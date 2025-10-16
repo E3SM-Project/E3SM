@@ -1037,7 +1037,7 @@ contains
          call this%RegisterHLMInterfaceVariables(nc)
          
          ! Initialize the FATES sites
-         call this%fates(nc)%InitializeFatesSites()
+         call this%fates(nc)%InitializeFatesSites(natpft_size)
          
          do p = 1, num_veg_patches
             s = this%fates(nc)%register(p)%GetSiteIndex()
