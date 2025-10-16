@@ -1080,6 +1080,16 @@
       <mask>oQU480</mask>
     </model_grid>
 
+    <model_grid alias="ne4pg2_oQU480_rx1" compset="_DROF">
+      <grid name="atm">ne4np4.pg2</grid>
+      <grid name="lnd">rx1</grid>
+      <grid name="ocnice">oQU480</grid>
+      <grid name="rof">rx1</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>oQU480</mask>
+    </model_grid>
+
     <model_grid alias="ne8_ne8" compset="(DOCN|XOCN|SOCN|AQP1)">
       <grid name="atm">ne8np4</grid>
       <grid name="lnd">ne8np4</grid>
