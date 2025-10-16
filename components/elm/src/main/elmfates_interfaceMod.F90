@@ -1491,73 +1491,6 @@ contains
       
       call this%fates(nc)%UpdateLitterFluxes(dtime)
 
-      do s = 1, this%fates(nc)%nsites
-         c = this%f2hmap(nc)%fcolumn(s)
-
-         ! col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_met_lit) = &
-         !      col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_met_lit) + &
-         !      this%fates(nc)%bc_out(s)%litt_flux_lab_c_si(1:nlevdecomp) * dtime
-         ! col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_cel_lit) = &
-         !      col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_cel_lit) + &
-         !      this%fates(nc)%bc_out(s)%litt_flux_cel_c_si(1:nlevdecomp)* dtime
-         ! col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_lig_lit) = &
-         !      col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_lig_lit) + &
-         !      this%fates(nc)%bc_out(s)%litt_flux_lig_c_si(1:nlevdecomp) * dtime
-
-         ! col_cf%litfall(c) = &
-         !       sum(this%fates(nc)%bc_out(s)%litt_flux_lab_c_si(1:nlevdecomp) * this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp)) + &
-         !       sum(this%fates(nc)%bc_out(s)%litt_flux_cel_c_si(1:nlevdecomp) * this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp)) + &
-         !       sum(this%fates(nc)%bc_out(s)%litt_flux_lig_c_si(1:nlevdecomp) * this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp))
-
-
-         ! Since N and P are always allocated in ELM, AND, since on the FATES
-         ! side we have prepped these arrays, which may be zero fluxes in the case of
-         ! prescribed FATES nutrient mode, we can send the fluxes into the source pools
-
-         select case(fates_parteh_mode)
-         case (prt_cnp_flex_allom_hyp )
-
-            col_pf%decomp_ppools_sourcesink(c,1:nlevdecomp,i_met_lit) = &
-                 col_pf%decomp_ppools_sourcesink(c,1:nlevdecomp,i_met_lit) + &
-                 this%fates(nc)%bc_out(s)%litt_flux_lab_p_si(1:nlevdecomp) * dtime
-
-            col_pf%decomp_ppools_sourcesink(c,1:nlevdecomp,i_cel_lit) = &
-                 col_pf%decomp_ppools_sourcesink(c,1:nlevdecomp,i_cel_lit) + &
-                 this%fates(nc)%bc_out(s)%litt_flux_cel_p_si(1:nlevdecomp)* dtime
-
-            col_pf%decomp_ppools_sourcesink(c,1:nlevdecomp,i_lig_lit) = &
-                 col_pf%decomp_ppools_sourcesink(c,1:nlevdecomp,i_lig_lit) + &
-                 this%fates(nc)%bc_out(s)%litt_flux_lig_p_si(1:nlevdecomp) * dtime
-
-            ! Diagnostic for mass balancing (gP/m2/s)
-            col_pf%plant_to_litter_pflux(c) = &
-                 sum(this%fates(nc)%bc_out(s)%litt_flux_lab_p_si(1:nlevdecomp)*this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp)) + &
-                 sum(this%fates(nc)%bc_out(s)%litt_flux_cel_p_si(1:nlevdecomp)*this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp)) + &
-                 sum(this%fates(nc)%bc_out(s)%litt_flux_lig_p_si(1:nlevdecomp)*this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp))
-
-            ! Transfer Nitrogen
-            col_nf%decomp_npools_sourcesink(c,1:nlevdecomp,i_met_lit) = &
-                 col_nf%decomp_npools_sourcesink(c,1:nlevdecomp,i_met_lit) + &
-                 this%fates(nc)%bc_out(s)%litt_flux_lab_n_si(1:nlevdecomp) * dtime
-
-            col_nf%decomp_npools_sourcesink(c,1:nlevdecomp,i_cel_lit) = &
-                 col_nf%decomp_npools_sourcesink(c,1:nlevdecomp,i_cel_lit) + &
-                 this%fates(nc)%bc_out(s)%litt_flux_cel_n_si(1:nlevdecomp)* dtime
-
-            col_nf%decomp_npools_sourcesink(c,1:nlevdecomp,i_lig_lit) = &
-                 col_nf%decomp_npools_sourcesink(c,1:nlevdecomp,i_lig_lit) + &
-                 this%fates(nc)%bc_out(s)%litt_flux_lig_n_si(1:nlevdecomp) * dtime
-
-            ! Diagnostic for mass balancing  (gN/m2/s)
-            col_nf%plant_to_litter_nflux(c) = &
-                 sum(this%fates(nc)%bc_out(s)%litt_flux_lab_n_si(1:nlevdecomp)*this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp)) + &
-                 sum(this%fates(nc)%bc_out(s)%litt_flux_cel_n_si(1:nlevdecomp)*this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp)) + &
-                 sum(this%fates(nc)%bc_out(s)%litt_flux_lig_n_si(1:nlevdecomp)*this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp))
-
-         end select
-
-      end do
-
    end subroutine UpdateLitterFluxes
 
    !--------------------------------------------------------------------------------------
@@ -4092,9 +4025,12 @@ end subroutine wrap_update_hifrq_hist
       call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_carbon_labile, &
                                                data=col_cf%decomp_cpools_sourcesink(c,:,i_lab_lit), &
                                                hlm_flag=.true., accumulate=.true.)
+      call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_carbon_all, &
+                                               data=col_cf%litfall(c), &
+                                               hlm_flag=.true., accumulate=.true.)
 
-      select case(fates_parteh_mode)
-      case (prt_cnp_flex_allom_hyp)
+      ! Register nitrogen and phosphorus litter fluxes if necessary
+      if (fates_parteh_mode == prt_cnp_flex_allom_hyp) then
          ! Phosphorus
          call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_phosphorus_cellulose, &
                                                   data=col_cf%decomp_ppools_sourcesink(c,:,i_cel_lit), &
@@ -4122,7 +4058,7 @@ end subroutine wrap_update_hifrq_hist
          call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_nitrogen_all, &
                                                   data=col_pf%plant_to_litter_nflux(c), &
                                                   hlm_flag=.true., accumulate=.true.)
-      end select
+      end if
    end do
   
  end subroutine RegisterHLMInterfaceVariables
