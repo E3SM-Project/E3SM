@@ -4136,11 +4136,6 @@ end subroutine wrap_update_hifrq_hist
    integer :: r   ! register index
    integer :: p   ! hlm patch index
    integer :: c   ! column index
-   integer :: s   ! fates site index
-   integer :: ifp ! fates patch index
-   
-   ! initialize the fates patch index counter
-   ifp = 0
    
    ! Iterate over the number of vegetated patches
    do r = 1, this%fates(nc)%npatches
@@ -4187,7 +4182,6 @@ end subroutine wrap_update_hifrq_hist
       call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_carbon_labile, &
                                                data=col_cf%decomp_cpools_sourcesink(c,:,i_lab_lit), &
                                                hlm_flag=.true., accumulate=.true.)
-
 
    end do
   
