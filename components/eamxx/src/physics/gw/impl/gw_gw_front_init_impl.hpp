@@ -37,26 +37,31 @@ void Functions<S,D>::gw_front_init(
   const Int num_pgwv = s_common_init.pgwv*2 + 1;
   s_front_init.fav = view_1d<Real>("front.fav", num_pgwv);
 
+  auto cref = s_common_init.cref;
+  auto fav  = s_front_init.fav;
+  auto dc   = s_common_init.dc;
+  auto pgwv = s_common_init.pgwv;
+
   Kokkos::parallel_for(Kokkos::RangePolicy<exe_space_t>(0, num_pgwv), KOKKOS_LAMBDA(const Int l) {
     if (num_pgwv > 1) {
       //! Lower bound of bin.
-      const Real cmn = s_common_init.cref(l) - half*s_common_init.dc;
-      const Real cmx = s_common_init.cref(l) + half*s_common_init.dc;
+      const Real cmn = cref(l) - half*dc;
+      const Real cmx = cref(l) + half*dc;
       const Real cmnc0 = cmn/c0;
       const Real cmxc0 = cmx/c0;
       // Loop over integration intervals in bin.
-      s_front_init.fav(l) = half * dca * (std::exp(-(cmnc0 * cmnc0)) + std::exp(-(cmxc0 * cmxc0)));
-      const Int loop = static_cast<Int>(std::round(s_common_init.dc/dca));
+      fav(l) = half * dca * (std::exp(-(cmnc0 * cmnc0)) + std::exp(-(cmxc0 * cmxc0)));
+      const Int loop = static_cast<Int>(std::round(dc/dca));
       for (Int n = 1; n < loop; ++n) {
         const Real temp = (cmn+n*dca)/c0;
-        s_front_init.fav(l) = s_front_init.fav(l) + dca * std::exp(-(temp*temp));
+        fav(l) = fav(l) + dca * std::exp(-(temp*temp));
       }
       // Multiply by source strength.
-      s_front_init.fav(l) = taubgnd * (s_front_init.fav(l)/s_common_init.dc);
+      fav(l) = taubgnd * (fav(l)/dc);
     }
 
     // Prohibit wavenumber 0.
-    s_front_init.fav(s_common_init.pgwv) = 0;
+    fav(pgwv) = 0;
   });
 }
 
