@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <namelist_defaults>
 
-<!-- Set default output options for CMIP6 simulations -->
+<!-- Set default output options for CMIP7 simulations -->
 <cosp_lite>.true.</cosp_lite>
 
 <!-- For comprehensive history -->

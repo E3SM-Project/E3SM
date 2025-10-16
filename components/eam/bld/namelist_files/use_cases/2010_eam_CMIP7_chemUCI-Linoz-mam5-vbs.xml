@@ -1,12 +1,8 @@
 <?xml version="1.0"?>
 <namelist_defaults>
 
-<!-- Set default output options for CMIP6 simulations -->
+<!-- Set default output options for CMIP7 simulations -->
 <cosp_lite>.true.</cosp_lite>
-
-<!-- Atmosphere initial condition -->
-<ncdata dyn="se" hgrid="ne30np4" nlev="72" >atm/cam/inic/homme/NGD_v3atm.ne30pg2.eam.i.0001-01-01-00000.c20230106.nc</ncdata>
-<!--ncdata dyn="se" hgrid="ne0np4_northamericax4v1" nlev="72" >atm/cam/inic/homme/cami_0001-01-01_northamericax4v1_c190709.nc</ncdata -->
 
 <!-- Solar constant from CMIP6 input4MIPS -->
 <solar_data_file>atm/cam/solar/Solar_2010control_input4MIPS_c20181017.nc</solar_data_file>
@@ -39,7 +35,7 @@
 <so4_a1_ext_file      >atm/cam/chem/emis/CMIP7_1850_2023_2deg/F2010/cmip7_mam5_so4_a1_elev_2010_clim_1.9x2.5_c20250627.nc </so4_a1_ext_file>
 <so4_a2_ext_file      >atm/cam/chem/emis/CMIP7_1850_2023_2deg/F2010/cmip7_mam5_so4_a2_elev_2010_clim_1.9x2.5_c20250627.nc </so4_a2_ext_file>
 
-<!-- Surface emissions for chemUCI-Linoz, MAM5, VBS SOA.  CMIP6 input4mips data -->
+<!-- Surface emissions for chemUCI-Linoz, MAM5, VBS SOA.  CMIP7 input4mips data -->
 <srf_emis_type        >CYCLICAL</srf_emis_type>
 <srf_emis_cycle_yr    >2010</srf_emis_cycle_yr>
 <c2h4_emis_file       >atm/cam/chem/emis/CMIP7_1850_2023_2deg/F2010/cmip7_C2H4_surf_2010_clim_1.9x2.5_c20250627.nc </c2h4_emis_file>
@@ -127,7 +123,7 @@
 <sim_year>2015</sim_year>
 
 <!-- land datasets -->
-<!-- Set in components/clm/bld/namelist_files/use_cases/1850_CMIP6_control.xml -->
+<!-- Set in components/clm/bld/namelist_files/use_cases/2010_CMIP7_control.xml -->
 
 
 </namelist_defaults>

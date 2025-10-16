@@ -3,11 +3,8 @@
 <?xml version="1.0"?>
 <namelist_defaults>
 
-<!-- Set default output options for CMIP6 simulations -->
+<!-- Set default output options for CMIP7 simulations -->
 <cosp_lite>.true.</cosp_lite>
-
-<!-- Atmosphere initial condition -->
-<ncdata dyn="se" hgrid="ne30np4" nlev="72" >atm/cam/inic/homme/NGD_v3atm.ne30pg2.eam.i.0001-01-01-00000.c20230106.nc</ncdata>
 
 <!-- Solar constant from CMIP7 input4MIPS -->
 <solar_data_file>atm/cam/solar/multiple_input4MIPs_solar_CMIP_SOLARIS-HEPPA-CMIP-4-6_gn_bluetip.nc</solar_data_file>
@@ -133,7 +130,7 @@
 <sim_year>1850</sim_year>
 
 <!-- land datasets -->
-<!-- Set in components/clm/bld/namelist_files/use_cases/1850_CMIP6_control.xml -->
+<!-- Set in components/clm/bld/namelist_files/use_cases/1850_CMIP7_control.xml -->
 
 
 </namelist_defaults>

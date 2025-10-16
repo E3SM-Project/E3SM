@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <namelist_defaults>
 
-<!-- Set default output options for CMIP6 simulations -->
+<!-- Set default output options for CMIP7 simulations -->
 <cosp_lite>.true.</cosp_lite>
 
 <!-- For comprehensive history -->
@@ -17,7 +17,7 @@
 <bndtvghg>atm/cam/ggas/CMIP7/GHG_CMIP7_Annual_Global_0001-2023_c20250616.nc</bndtvghg>
 <scenario_ghg>RAMPED</scenario_ghg>
 
-<!-- External forcing for BAM or MAM.  CMIP6 input4mips data -->
+<!-- External forcing for BAM or MAM.  CMIP7 input4mips data -->
 <ext_frc_type>INTERP_MISSING_MONTHS</ext_frc_type>
 <no2_ext_file         >atm/cam/chem/emis/CMIP7_1850_2023_0p5deg/cmip7_NO2_elev_1850-2023_0.5x0.63_c20250506.nc </no2_ext_file>
 <so2_ext_file         >atm/cam/chem/emis/CMIP7_1850_2023_0p5deg/cmip7_so2_elev_1850-2023_0.5x0.63_c20250506.nc </so2_ext_file>
@@ -30,7 +30,7 @@
 <so4_a1_ext_file      >atm/cam/chem/emis/CMIP7_1850_2023_0p5deg/cmip7_mam5_so4_a1_elev_1850-2023_0.5x0.63_c20250506.nc </so4_a1_ext_file>
 <so4_a2_ext_file      >atm/cam/chem/emis/CMIP7_1850_2023_0p5deg/cmip7_mam5_so4_a2_elev_1850-2023_0.5x0.63_c20250506.nc </so4_a2_ext_file>
 
-<!-- Surface emissions for chemUCI-Linoz, MAM5, VBS SOA.  CMIP6 input4mips data -->
+<!-- Surface emissions for chemUCI-Linoz, MAM5, VBS SOA.  CMIP7 input4mips data -->
 <srf_emis_type>INTERP_MISSING_MONTHS</srf_emis_type>
 <c10h16_emis_file     >atm/cam/chem/emis/CMIP7_1850_2023_0p5deg/cmip7_MTERP_surf_1850-2023_0.5x0.63_c20250506.nc </c10h16_emis_file>
 <c2h4_emis_file       >atm/cam/chem/emis/CMIP7_1850_2023_0p5deg/cmip7_C2H4_surf_1850-2023_0.5x0.63_c20250506.nc </c2h4_emis_file>

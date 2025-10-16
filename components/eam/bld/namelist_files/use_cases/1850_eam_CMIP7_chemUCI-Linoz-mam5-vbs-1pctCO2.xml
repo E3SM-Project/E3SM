@@ -3,13 +3,10 @@
 <?xml version="1.0"?>
 <namelist_defaults>
 
-<!-- Set default output options for CMIP6 simulations -->
+<!-- Set default output options for CMIP7 simulations -->
 <cosp_lite>.true.</cosp_lite>
 
-<!-- Atmosphere initial condition -->
-<ncdata dyn="se" hgrid="ne30np4" nlev="72" >atm/cam/inic/homme/NGD_v3atm.ne30pg2.eam.i.0001-01-01-00000.c20230106.nc</ncdata>
-
-<!-- Solar constant from CMIP6 input4MIPS -->
+<!-- Solar constant from CMIP7 input4MIPS -->
 <solar_data_file>atm/cam/solar/multiple_input4MIPs_solar_CMIP_SOLARIS-HEPPA-CMIP-4-6_gn_bluetip.nc</solar_data_file>
 <solar_data_ymd>18500101</solar_data_ymd>
 <solar_data_type>FIXED</solar_data_type>
@@ -30,7 +27,7 @@
 <history_aerosol    >.true.</history_aerosol>
 <history_aero_optics>.true.</history_aero_optics>
 
-<!-- External forcing for BAM or MAM.  CMIP6 input4mips data -->
+<!-- External forcing for BAM or MAM.  CMIP7 input4mips data -->
 <ext_frc_type         >CYCLICAL</ext_frc_type>
 <ext_frc_cycle_yr     >1850</ext_frc_cycle_yr>
 <no2_ext_file         >atm/cam/chem/emis/CMIP7_1850_2023_2deg/cmip7_NO2_elev_1850-2023_1.9x2.5_c20250506.nc </no2_ext_file>
@@ -45,7 +42,7 @@
 <so4_a1_ext_file      >atm/cam/chem/emis/CMIP7_1850_2023_2deg/cmip7_mam5_so4_a1_elev_1850-2023_1.9x2.5_c20250506.nc </so4_a1_ext_file>
 <so4_a2_ext_file      >atm/cam/chem/emis/CMIP7_1850_2023_2deg/cmip7_mam5_so4_a2_elev_1850-2023_1.9x2.5_c20250506.nc </so4_a2_ext_file>
 
-<!-- Surface emissions for chemUCI-Linoz, MAM5, VBS SOA.  CMIP6 input4mips data -->
+<!-- Surface emissions for chemUCI-Linoz, MAM5, VBS SOA.  CMIP7 input4mips data -->
 <srf_emis_type        >CYCLICAL</srf_emis_type>
 <srf_emis_cycle_yr    >1850</srf_emis_cycle_yr>
 <c10h16_emis_file     >atm/cam/chem/emis/CMIP7_1850_2023_2deg/cmip7_MTERP_surf_1850-2023_1.9x2.5_c20250506.nc </c10h16_emis_file>
@@ -133,7 +130,7 @@
 <sim_year>1850</sim_year>
 
 <!-- land datasets -->
-<!-- Set in components/clm/bld/namelist_files/use_cases/1850_CMIP6_control.xml -->
+<!-- Set in components/clm/bld/namelist_files/use_cases/1850_CMIP7_control.xml -->
 
 
 </namelist_defaults>
