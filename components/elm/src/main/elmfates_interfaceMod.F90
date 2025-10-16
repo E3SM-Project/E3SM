@@ -4144,10 +4144,10 @@ end subroutine wrap_update_hifrq_hist
    
    ! Iterate over the number of vegetated patches
    do r = 1, this%fates(nc)%npatches
-      p = this%fates(nc)%register(r)%GetHLMPatchIndex()
+      p = this%fates(nc)%registry(r)%GetHLMPatchIndex()
       
       ! Get the subgrid indices and assign them to the register metadata
-      call this%fates(nc)%register(r)%SetSubgridIndices(gridcell = veg_pp%gridcell(p), &
+      call this%fates(nc)%registry(r)%SetSubgridIndices(gridcell = veg_pp%gridcell(p), &
                                                         topounit = veg_pp%topounit(p), &
                                                         landunit = veg_pp%landunit(p), &
                                                         column = veg_pp%column(p))
@@ -4155,36 +4155,36 @@ end subroutine wrap_update_hifrq_hist
 
       ! Register and initialize the boundary condition variables
       ! Global variables
-      call this%fates(nc)%register(r)%Register(key=hlm_fates_decomp, &
+      call this%fates(nc)%registry(r)%Register(key=hlm_fates_decomp, &
                                                data=nlevdecomp, hlm_flag=.true.)
-      call this%fates(nc)%register(r)%Register(key=hlm_fates_decomp_max, &
+      call this%fates(nc)%registry(r)%Register(key=hlm_fates_decomp_max, &
                                                data=nlevdecomp_full, hlm_flag=.true.)
-      call this%fates(nc)%register(r)%Register(key=hlm_fates_decomp_thickness, &
+      call this%fates(nc)%registry(r)%Register(key=hlm_fates_decomp_thickness, &
                                                data=dzsoi_decomp, hlm_flag=.true.)
-      call this%fates(nc)%register(r)%Register(key=hlm_fates_decomp_id, &
+      call this%fates(nc)%registry(r)%Register(key=hlm_fates_decomp_id, &
                                                data=decomp_id, hlm_flag=.true.)
  
       ! Column level variables
-      c = this%fates(nc)%register(r)%GetColumnIndex()
-      call this%fates(nc)%register(r)%Register(key=hlm_fates_soil_level, &
+      c = this%fates(nc)%registry(r)%GetColumnIndex()
+      call this%fates(nc)%registry(r)%Register(key=hlm_fates_soil_level, &
                                                data=col_pp%nlevbed(c), hlm_flag=.true.)
-      call this%fates(nc)%register(r)%Register(key=hlm_fates_thaw_max_depth_index, &
+      call this%fates(nc)%registry(r)%Register(key=hlm_fates_thaw_max_depth_index, &
                                                data=canopystate_inst%altmax_lastyear_indx_col(c), hlm_flag=.true.)
-      call this%fates(nc)%register(r)%Register(key=hlm_fates_decomp_frac_moisture, &
+      call this%fates(nc)%registry(r)%Register(key=hlm_fates_decomp_frac_moisture, &
                                                data=col_cf%w_scalar(c,:), hlm_flag=.true.)
-      call this%fates(nc)%register(r)%Register(key=hlm_fates_decomp_frac_temperature, &
+      call this%fates(nc)%registry(r)%Register(key=hlm_fates_decomp_frac_temperature, &
                                                data=col_cf%t_scalar(c,:), hlm_flag=.true.)
-      call this%fates(nc)%register(r)%Register(key=hlm_fates_litter_carbon_total, &
+      call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_carbon_total, &
                                                data=col_cf%litfall(c), hlm_flag=.true.)
 
       ! Variables that need to accumulate                                               
-      call this%fates(nc)%register(r)%Register(key=hlm_fates_litter_carbon_cellulose, &
+      call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_carbon_cellulose, &
                                                data=col_cf%decomp_cpools_sourcesink(c,:,i_cel_lit), &
                                                hlm_flag=.true., accumulate=.true.)
-      call this%fates(nc)%register(r)%Register(key=hlm_fates_litter_carbon_lignin, &
+      call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_carbon_lignin, &
                                                data=col_cf%decomp_cpools_sourcesink(c,:,i_lig_lit), &
                                                hlm_flag=.true., accumulate=.true.)
-      call this%fates(nc)%register(r)%Register(key=hlm_fates_litter_carbon_labile, &
+      call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_carbon_labile, &
                                                data=col_cf%decomp_cpools_sourcesink(c,:,i_lab_lit), &
                                                hlm_flag=.true., accumulate=.true.)
 
