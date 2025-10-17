@@ -61,7 +61,7 @@ void Functions<S,D>::gw_oro_src(
   src_level = k;
 
   // Averages over source region.
-  Real rsrc = pmid(k+1)/(C::Rair*t(k)) * dpm(k); // Density.
+  Real rsrc = pmid(k)/(C::Rair*t(k)) * dpm(k); // Density.
   Real usrc = u(k) * dpm(k); // Zonal wind.
   Real vsrc = v(k) * dpm(k); // Meridional wind.
   Real nsrc = nm(k)* dpm(k); // B-V frequency.
@@ -69,7 +69,7 @@ void Functions<S,D>::gw_oro_src(
   for (k = pver - 2; k >= pver/2 -1; --k) {
     if (hdsp > std::sqrt(zm(k)*zm(k+1))) {
       src_level = k;
-      rsrc = rsrc + pmid(k+1) / (C::Rair*t(k))* dpm(k);
+      rsrc = rsrc + pmid(k) / (C::Rair*t(k))* dpm(k);
       usrc = usrc + u(k) * dpm(k);
       vsrc = vsrc + v(k) * dpm(k);
       nsrc = nsrc + nm(k)* dpm(k);
@@ -116,7 +116,7 @@ void Functions<S,D>::gw_oro_src(
   // wind. Set the source stress magnitude (positive only, note that the
   // sign of the stress is the same as (c-u).
   for (k = pver; k >= src_level; --k) {
-    tau(0, k) = tauoro;
+    tau(pgwv, k) = tauoro;
   }
 
   // Allow wind tendencies all the way to the model bottom.
