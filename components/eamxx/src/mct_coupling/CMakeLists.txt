@@ -40,9 +40,8 @@ set (SCREAM_LIBS
      spa
      iop_forcing
      nudging
-     diagnostics
      tms
-     )
+)
 
 # ZM is not always on yet
 if (TARGET zm)
