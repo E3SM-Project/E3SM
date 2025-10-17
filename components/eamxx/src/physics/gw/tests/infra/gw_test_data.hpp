@@ -430,6 +430,8 @@ struct GwFrontProjectWindsData : public PhysicsTestData {
     PhysicsTestData::transition<D>();
 
     init.transition<D>();
+
+    shift_int_scalar<D>(kbot);
   }
 };
 
@@ -462,6 +464,8 @@ struct GwFrontGwSourcesData : public PhysicsTestData {
     PhysicsTestData::transition<D>();
 
     init.transition<D>();
+
+    shift_int_scalar<D>(kbot);
   }
 };
 

@@ -12,6 +12,14 @@ namespace scream {
 namespace gw {
 namespace unit_test {
 
+KOKKOS_INLINE_FUNCTION
+void unflatten_idx_right(const int idx, const Kokkos::Array<int, 3>& dims, int& i, int& j, int& k)
+{
+  i = idx / (dims[2] * dims[1]);
+  j = (idx / dims[2]) % dims[1];
+  k =  idx % dims[2];
+}
+
 template <typename D>
 struct UnitWrap::UnitTest<D>::TestGwFrontGwSources : public UnitWrap::UnitTest<D>::Base {
 
@@ -49,7 +57,7 @@ struct UnitWrap::UnitTest<D>::TestGwFrontGwSources : public UnitWrap::UnitTest<D
     // Generate random input data
     // Alternatively, you can use the baseline_data construtors/initializer lists to hardcode data
     for (auto& d : baseline_data) {
-      d.randomize(engine);
+      d.randomize(engine, { {d.frontgf, {.3, .9}} });
     }
 
     // Create copies of data for use by test. Needs to happen before read calls so that
@@ -70,7 +78,12 @@ struct UnitWrap::UnitTest<D>::TestGwFrontGwSources : public UnitWrap::UnitTest<D
 
     // Get data from test
     for (auto& d : test_data) {
-      gw_front_gw_sources(d);
+      if (this->m_baseline_action == GENERATE) {
+        gw_front_gw_sources_f(d);
+      }
+      else {
+        gw_front_gw_sources(d);
+      }
     }
 
     // Verify BFB results, all data should be in C layout
@@ -78,11 +91,10 @@ struct UnitWrap::UnitTest<D>::TestGwFrontGwSources : public UnitWrap::UnitTest<D
       for (Int i = 0; i < num_runs; ++i) {
         GwFrontGwSourcesData& d_baseline = baseline_data[i];
         GwFrontGwSourcesData& d_test = test_data[i];
+        REQUIRE(d_baseline.total(d_baseline.tau) == d_test.total(d_test.tau));
         for (Int k = 0; k < d_baseline.total(d_baseline.tau); ++k) {
-          REQUIRE(d_baseline.total(d_baseline.tau) == d_test.total(d_test.tau));
           REQUIRE(d_baseline.tau[k] == d_test.tau[k]);
         }
-
       }
     }
     else if (this->m_baseline_action == GENERATE) {

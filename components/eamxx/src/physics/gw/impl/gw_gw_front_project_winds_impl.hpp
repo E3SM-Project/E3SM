@@ -3,6 +3,8 @@
 
 #include "gw_functions.hpp" // for ETI only but harmless for GPU
 
+#include <ekat_subview_utils.hpp>
+
 namespace scream {
 namespace gw {
 
@@ -14,20 +16,42 @@ namespace gw {
 template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>::gw_front_project_winds(
-// Inputs
-const Int& pver,
-const Int& ncol,
-const Int& kbot,
-const uview_1d<const Spack>& u,
-const uview_1d<const Spack>& v,
-// Outputs
-const uview_1d<Spack>& xv,
-const uview_1d<Spack>& yv,
-const uview_1d<Spack>& ubm,
-const uview_1d<Spack>& ubi)
+  // Inputs
+  const MemberType& team,
+  const Int& pver,
+  const Int& kbot,
+  const uview_1d<const Real>& u,
+  const uview_1d<const Real>& v,
+  // Outputs
+  Real& xv,
+  Real& yv,
+  const uview_1d<Real>& ubm,
+  const uview_1d<Real>& ubi)
 {
-  // TODO
-  // Note, argument types may need tweaking. Generator is not always able to tell what needs to be packed
+  static constexpr Real half = 0.5;
+
+  // Just use the source level interface values for the source wind speed
+  // and direction (unit vector).
+  const Real usrc = half*(u(kbot+1)+u(kbot));
+  const Real vsrc = half*(v(kbot+1)+v(kbot));
+
+  // Get the unit vector components and magnitude at the surface.
+  get_unit_vector(usrc, vsrc, xv, yv, ubi(kbot+1));
+
+  // Project the local wind at midpoints onto the source wind.
+  Kokkos::parallel_for(
+    Kokkos::TeamVectorRange(team, kbot+1), [&] (const int k) {
+      ubm(k) = dot_2d(u(k), v(k), xv, yv);
+    });
+  team.team_barrier();
+
+  // Compute the interface wind projection by averaging the midpoint winds.
+  // Use the top level wind at the top interface.
+  ubi(0) = ubm(0);
+
+  midpoint_interp(team,
+                  ekat::subview(ubm, Kokkos::pair<int, int>{0, kbot+1}),
+                  ekat::subview(ubi, Kokkos::pair<int, int>{1, kbot+1}));
 }
 
 } // namespace gw
