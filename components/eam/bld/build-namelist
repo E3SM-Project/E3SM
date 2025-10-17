@@ -3735,8 +3735,11 @@ add_default($nl, 'modal_strat_sulfate_aod_treatment');
 add_default($nl, 'is_output_interactive_volc');
 add_default($nl, 'mam_amicphys_optaa'); #for enabling amicphys code in eam
 add_default($nl, 'n_so4_monolayers_pcage'); #number of so4(+nh4) monolayers needed to "age" a carbon particle
-add_default($nl, 'dp_cut_accum_rename'); #cutoff diameter for larger accum mode particles renamed to the strat coarse mode 
-add_default($nl, 'dp_xferall_thresh_accum_rename'); #threshold diameter for all accum mode particles transferred to the strat coarse mode
+
+#cutoff diameter for larger accum mode particles renamed to the strat coarse mode 
+add_default($nl, 'dp_cut_accum_rename') if (get_default_value('dp_cut_accum_rename')); 
+#threshold diameter for all accum mode particles transferred to the strat coarse mode
+add_default($nl, 'dp_xferall_thresh_accum_rename') if (get_default_value('dp_xferall_thresh_accum_rename')); 
 
 # Microphysics scheme
 add_default($nl, 'use_subcol_microp');
