@@ -646,27 +646,28 @@ struct Functions
   KOKKOS_FUNCTION
   static void gw_oro_src(
     // Inputs
+    const MemberType& team,
+    const GwCommonInit& init,
     const Int& pver,
     const Int& pgwv,
-    const Int& ncol,
-    const uview_1d<const Spack>& u,
-    const uview_1d<const Spack>& v,
-    const uview_1d<const Spack>& t,
-    const uview_1d<const Spack>& sgh,
-    const uview_1d<const Spack>& pmid,
-    const uview_1d<const Spack>& pint,
-    const uview_1d<const Spack>& dpm,
-    const uview_1d<const Spack>& zm,
-    const uview_1d<const Spack>& nm,
+    const uview_1d<const Real>& u,
+    const uview_1d<const Real>& v,
+    const uview_1d<const Real>& t,
+    const Real& sgh,
+    const uview_1d<const Real>& pmid,
+    const uview_1d<const Real>& pint,
+    const uview_1d<const Real>& dpm,
+    const uview_1d<const Real>& zm,
+    const uview_1d<const Real>& nm,
     // Outputs
-    const uview_1d<Int>& src_level,
-    const uview_1d<Int>& tend_level,
-    const uview_1d<Spack>& tau,
-    const uview_1d<Spack>& ubm,
-    const uview_1d<Spack>& ubi,
-    const uview_1d<Spack>& xv,
-    const uview_1d<Spack>& yv,
-    const uview_1d<Spack>& c);
+    Int& src_level,
+    Int& tend_level,
+    const uview_2d<Real>& tau,
+    const uview_1d<Real>& ubm,
+    const uview_1d<Real>& ubi,
+    Real& xv,
+    Real& yv,
+    const uview_1d<Real>& c);
 
   KOKKOS_FUNCTION
   static void vd_lu_decomp(
