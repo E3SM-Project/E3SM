@@ -1,0 +1,11 @@
+./xmlchange DATM_MODE=uELM_NA
+./xmlchange DATM_CLMNCEP_YR_END=1948
+./xmlchange DATM_CLMNCEP_YR_START=2014
+./xmlchange DATM_CLMNCEP_YR_END=2014
+./xmlchange ATM_NCPL=24
+
+./xmlchange ATM_DOMAIN_PATH='$DIN_LOC_ROOT/share/domains/domain.clm'
+./xmlchange LND_DOMAIN_PATH='$DIN_LOC_ROOT/share/domains/domain.clm'
+./xmlchange ATM_DOMAIN_FILE="MOF21_domain.lnd.Daymet_NA.1km.1d.c240524.nc"
+./xmlchange LND_DOMAIN_FILE="MOF21_domain.lnd.Daymet_NA.1km.1d.c240524.nc"
+./xmlchange NTASKS=1
