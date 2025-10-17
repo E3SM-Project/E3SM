@@ -146,7 +146,9 @@ void Functions<S,D>::gw_oro_src(
   tend_level = pver - 1;
 
   // adjust to c indexing. Up to this point, src_level was used to index into 0:pver arrays
-  --src_level;
+  Kokkos::single(Kokkos::PerTeam(team), [&] {
+    --src_level;
+  });
 
   // No spectrum; phase speed is just 0.
   Kokkos::parallel_for(
