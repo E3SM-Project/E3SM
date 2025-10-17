@@ -7,6 +7,10 @@ module lnd_import_export
   use lnd2glcMod   , only: lnd2glc_type
   use atm2lndType  , only: atm2lnd_type
   use glc2lndMod   , only: glc2lnd_type
+  use lnd2iacMod   , only: lnd2iac_type
+  use iac2lndMod   , only: iac2lnd_type
+  use elm_varctl   , only: iac_present, iulog
+  use elm_varpar   , only: numpft, numharvest
   use GridcellType , only: grc_pp          ! for access to gridcell topology
   use TopounitDataType , only: top_as, top_af  ! atmospheric state and flux variables  
   use elm_cpl_indices
@@ -19,7 +23,7 @@ module lnd_import_export
 contains
 
   !===============================================================================
-  subroutine lnd_import( bounds, x2l, atm2lnd_vars, glc2lnd_vars, lnd2atm_vars)
+  subroutine lnd_import( bounds, x2l, atm2lnd_vars, glc2lnd_vars, lnd2atm_vars, iac2lnd_vars)
 
     !---------------------------------------------------------------------------
     ! !DESCRIPTION:
@@ -50,6 +54,7 @@ contains
     type(atm2lnd_type) , intent(inout) :: atm2lnd_vars      ! elm internal input data type
     type(glc2lnd_type) , intent(inout) :: glc2lnd_vars      ! elm internal input data type
     type(lnd2atm_type) , intent(in)    :: lnd2atm_vars
+    type(iac2lnd_type) , intent(inout) :: iac2lnd_vars ! elm iac to land   
     !
     ! !LOCAL VARIABLES:
     integer  :: g,topo,i,m,thism,nstep,ier  ! indices, number of steps, and error code
@@ -1366,7 +1371,22 @@ contains
           glc2lnd_vars%icemask_coupled_fluxes_grc(g)  = x2l(index_x2l_Sg_icemask_coupled_fluxes,i)
        end if
 
-    end do     
+       ! iac coupling
+       ! the passed values are fraction of actual grid cell (not fraction of
+       ! land), even though the coupler pct labels are still present
+
+       if (iac_present) then
+
+          do num = 0,numpft
+             iac2lnd_vars%frac_pft(g,num) = x2l(index_x2l_Sz_pct_pft(num),i)
+             iac2lnd_vars%frac_pft_prev(g,num) = x2l(index_x2l_Sz_pct_pft_prev(num),i)
+             if (num < numharvest) then
+                iac2lnd_vars%harvest_frac(g,num) = x2l(index_x2l_Sz_harvest_frac(num),i)
+             end if
+          end do
+        endif
+
+     end do
 #ifdef CPL_BYPASS
     atm2lnd_vars%loaded_bypassdata = 1
 #endif
@@ -1375,7 +1395,7 @@ contains
 
   !===============================================================================
 
-  subroutine lnd_export( bounds, lnd2atm_vars, lnd2glc_vars, l2x)
+	  subroutine lnd_export( bounds, lnd2atm_vars, lnd2glc_vars, lnd2iac_vars, l2x)
 
     !---------------------------------------------------------------------------
     ! !DESCRIPTION:
@@ -1383,7 +1403,7 @@ contains
     ! 
     ! !USES:
     use shr_kind_mod       , only : r8 => shr_kind_r8
-    use elm_varctl         , only : iulog, create_glacier_mec_landunit
+    use elm_varctl         , only : iulog, create_glacier_mec_landunit, iac_present
     use elm_time_manager   , only : get_nstep, get_step_size  
     use domainMod          , only : ldomain
     use seq_drydep_mod     , only : n_drydep
@@ -1394,10 +1414,12 @@ contains
     type(bounds_type) , intent(in)    :: bounds  ! bounds
     type(lnd2atm_type), intent(inout) :: lnd2atm_vars ! elm land to atmosphere exchange data type
     type(lnd2glc_type), intent(inout) :: lnd2glc_vars ! elm land to atmosphere exchange data type
+    type(lnd2iac_type), intent(inout) :: lnd2iac_vars ! elm lnd to gcam exchange vars
+
     real(r8)          , intent(out)   :: l2x(:,:)! land to coupler export state on land grid
     !
     ! !LOCAL VARIABLES:
-    integer  :: g,i   ! indices
+    integer  :: g,i,p ! indices
     integer  :: ier   ! error status
     integer  :: nstep ! time step index
     integer  :: dtime ! time step   
@@ -1504,6 +1526,13 @@ contains
           end do
        end if
 
+       if (iac_present) then
+          do p = 0,numpft
+             l2x(index_l2x_Sl_hr(p),i) = lnd2iac_vars%hr(g,p)
+             l2x(index_l2x_Sl_npp(p),i) = lnd2iac_vars%npp(g,p)
+             l2x(index_l2x_Sl_pftwgt(p),i) = lnd2iac_vars%pftwgt(g,p)
+          end do
+       end if
     end do
 
   end subroutine lnd_export

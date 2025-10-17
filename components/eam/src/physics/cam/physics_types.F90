@@ -120,6 +120,9 @@ module physics_types
           tc_prev,    &! vertically integrated total carbon of previous time step
           c_flux_sfc, &! current surface fossil fuel carbon flux
           c_flux_air, &! current aircraft fossil fuel carbon emissions
+          c_flux_sff, &! current surface surface fossil fuel carbon flux
+          c_flux_lnd, &! current surface surface land carbon flux
+          c_flux_ocn, &! current surface surface ocean carbon flux
           c_mflx_sfc, &! monthly accumulated surface carbon flux
           c_mflx_air, &! monthly accumulated aircraft fossil fuel carbon emissions
           c_mflx_sff, &! monthly accumulated surface fossil fuel carbon flux
@@ -564,6 +567,12 @@ contains
          varname="state%c_flux_sfc",    msg=msg)
     call shr_assert_in_domain(state%c_flux_air(:ncol),      is_nan=.false., &
          varname="state%c_flux_air",    msg=msg)
+    call shr_assert_in_domain(state%c_flux_sff(:ncol),      is_nan=.false., &
+         varname="state%c_flux_sff",    msg=msg)
+    call shr_assert_in_domain(state%c_flux_lnd(:ncol),      is_nan=.false., &
+         varname="state%c_flux_lnd",    msg=msg)
+    call shr_assert_in_domain(state%c_flux_ocn(:ncol),      is_nan=.false., &
+         varname="state%c_flux_ocn",    msg=msg)
     call shr_assert_in_domain(state%c_mflx_sfc(:ncol),      is_nan=.false., &
          varname="state%c_mflx_sfc",    msg=msg)
     call shr_assert_in_domain(state%c_mflx_air(:ncol),      is_nan=.false., &
@@ -696,6 +705,12 @@ contains
          varname="state%c_flux_sfc",  msg=msg)
     call shr_assert_in_domain(state%c_flux_air(:ncol),  lt=posinf_r8, gt=neginf_r8, &
          varname="state%c_flux_air",  msg=msg)
+    call shr_assert_in_domain(state%c_flux_sff(:ncol),  lt=posinf_r8, gt=neginf_r8, &
+         varname="state%c_flux_sff",  msg=msg)
+    call shr_assert_in_domain(state%c_flux_lnd(:ncol),  lt=posinf_r8, gt=neginf_r8, &
+         varname="state%c_flux_lnd",  msg=msg)
+    call shr_assert_in_domain(state%c_flux_ocn(:ncol),  lt=posinf_r8, gt=neginf_r8, &
+         varname="state%c_flux_ocn",  msg=msg)
     call shr_assert_in_domain(state%c_mflx_sfc(:ncol),  lt=posinf_r8, gt=neginf_r8, &
          varname="state%c_mflx_sfc",  msg=msg)
     call shr_assert_in_domain(state%c_mflx_air(:ncol),  lt=posinf_r8, gt=neginf_r8, &
@@ -1399,6 +1414,9 @@ end subroutine physics_ptend_copy
        state_out%tc_prev(i)    = state_in%tc_prev(i)
        state_out%c_flux_sfc(i) = state_in%c_flux_sfc(i)
        state_out%c_flux_air(i) = state_in%c_flux_air(i)
+       state_out%c_flux_sff(i) = state_in%c_flux_sff(i)
+       state_out%c_flux_lnd(i) = state_in%c_flux_lnd(i)
+       state_out%c_flux_ocn(i) = state_in%c_flux_ocn(i)
        state_out%c_mflx_sfc(i) = state_in%c_mflx_sfc(i)
        state_out%c_mflx_air(i) = state_in%c_mflx_air(i)
        state_out%c_mflx_sff(i) = state_in%c_mflx_sff(i)
@@ -1792,6 +1810,15 @@ subroutine physics_state_alloc(state,lchnk,psetcols)
   allocate(state%c_flux_air(psetcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%c_flux_air')
 
+  allocate(state%c_flux_sff(psetcols), stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%c_flux_sff')
+
+  allocate(state%c_flux_lnd(psetcols), stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%c_flux_lnd')
+
+  allocate(state%c_flux_ocn(psetcols), stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%c_flux_ocn')
+
   allocate(state%c_mflx_sfc(psetcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%c_mflx_sfc')
 
@@ -1888,6 +1915,9 @@ subroutine physics_state_alloc(state,lchnk,psetcols)
   state%tc_prev(:)    = inf
   state%c_flux_sfc(:) = inf
   state%c_flux_air(:) = inf
+  state%c_flux_sff(:) = inf
+  state%c_flux_lnd(:) = inf
+  state%c_flux_ocn(:) = inf
   state%c_mflx_sfc(:) = inf
   state%c_mflx_air(:) = inf
   state%c_mflx_sff(:) = inf
@@ -2055,6 +2085,15 @@ subroutine physics_state_dealloc(state)
 
   deallocate(state%c_flux_air, stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%c_flux_air')
+
+  deallocate(state%c_flux_sff, stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%c_flux_sff')
+
+  deallocate(state%c_flux_lnd, stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%c_flux_lnd')
+
+  deallocate(state%c_flux_ocn, stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%c_flux_ocn')
 
   deallocate(state%c_mflx_sfc, stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%c_mflx_sfc')

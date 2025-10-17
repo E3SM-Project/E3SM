@@ -508,7 +508,7 @@ contains
                    errMsg(__FILE__, __LINE__))
           end if
 
-       end if
+       end if !use_fates
 
 
        if (use_crop .and. (use_c13 .or. use_c14)) then
@@ -520,7 +520,7 @@ contains
           call endrun(msg=' ERROR: prognostic crop Patches require create_crop_landunit=.true.'//&
             errMsg(__FILE__, __LINE__))
        end if
-
+       
        if (.not. use_erosion .and. ero_ccycle) then
           call endrun(msg=' ERROR: ero_ccycle = .true. requires erosion model active.'//&
             errMsg(__FILE__, __LINE__))
@@ -1165,7 +1165,10 @@ contains
        write(iulog, *) '   pftspecific_rootingprofile                            : ', pftspecific_rootingprofile
        write(iulog, *) '   dynamic roots                                         : ', use_dynroot
     end if
-
+    if (use_cn) then
+       write(iulog, *) '   no_frozen_nitrif_denitrif                             : ', no_frozen_nitrif_denitrif
+    end if
+       
     if (use_cn) then
        write(iulog, *) '  use_c13                                                : ', use_c13
        write(iulog, *) '  use_c14                                                : ', use_c14
@@ -1332,6 +1335,7 @@ contains
 
     ! NGEE Arctic options
     if (use_polygonal_tundra) write(iulog, *) '    use_polygonal_tundra    =', use_polygonal_tundra
+    write(iulog, *) '    use_polygonal_tundra    =', use_polygonal_tundra
     if (use_arctic_init) write(iulog, *)      '    use_arctic_init    ='     , use_arctic_init
 
   end subroutine control_print
