@@ -216,7 +216,7 @@ struct Functions {
       }
     };
     // -------------------------------------------------------------------------
-    void init(int ncol_in,int pver_in) {
+    void init(int ncol_in, int pver_in) {
       Real init_fill_value = -999;
       // 1D scalar variables
       for (int i=0; i<ncol_in; ++i) {
