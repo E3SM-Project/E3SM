@@ -396,18 +396,6 @@ module li_subglacial_hydro
          block => block % next
       end do
 
-
-      ! =============
-      ! =============
-      ! =============
-      ! subcycle hydro model until master dt is reached
-      ! =============
-      ! =============
-      ! =============
-      timecycling: do while (timeLeft > 0.0_RKIND)
-      numSubCycles = numSubCycles + 1
-
-
       ! =============
       ! Calculate time-varying forcing, as needed
       ! =============
@@ -436,10 +424,6 @@ module li_subglacial_hydro
             err = ior(err, 1)
          endif
 
-         ! SHMIP forcing will override basalMeltInput.
-         call shmip_timevarying_forcing(block, err_tmp)
-         err = ior(err, err_tmp)
-
          block => block % next
       end do
 
@@ -451,6 +435,29 @@ module li_subglacial_hydro
          call mpas_dmpar_field_halo_exch(domain, 'basalMeltInput')
          call mpas_timer_stop("halo updates")
       endif
+
+
+
+      ! =============
+      ! =============
+      ! =============
+      ! subcycle hydro model until master dt is reached
+      ! =============
+      ! =============
+      ! =============
+      timecycling: do while (timeLeft > 0.0_RKIND)
+      numSubCycles = numSubCycles + 1
+
+
+      ! apply shmip forcing if needed
+      block => domain % blocklist
+      do while (associated(block))
+         ! SHMIP forcing will override basalMeltInput from above
+         call shmip_timevarying_forcing(block, err_tmp)
+         err = ior(err, err_tmp)
+
+         block => block % next
+      end do
 
 
       ! =============
