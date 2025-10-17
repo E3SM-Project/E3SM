@@ -102,6 +102,45 @@ void ZMDeepConvection::initialize_impl (const RunType)
 
   // initialize variables on the fortran side
   zm::zm_eamxx_bridge_init(m_nlev);
+
+  //----------------------------------------------------------------------------
+  // initialize host mirror variables
+  zm_input.h_z_mid      = Kokkos::create_mirror_view(zm_input.f_z_mid);
+  zm_input.h_p_mid      = Kokkos::create_mirror_view(zm_input.f_p_mid);
+  zm_input.h_p_del      = Kokkos::create_mirror_view(zm_input.f_p_del);
+  zm_input.h_T_mid      = Kokkos::create_mirror_view(zm_input.f_T_mid);
+  zm_input.h_qv         = Kokkos::create_mirror_view(zm_input.f_qv);
+  zm_input.h_uwind      = Kokkos::create_mirror_view(zm_input.f_uwind);
+  zm_input.h_vwind      = Kokkos::create_mirror_view(zm_input.f_vwind);
+  zm_input.h_omega      = Kokkos::create_mirror_view(zm_input.f_omega);
+  zm_input.h_cldfrac    = Kokkos::create_mirror_view(zm_input.f_cldfrac);
+  zm_input.h_z_int      = Kokkos::create_mirror_view(zm_input.f_z_int);
+  zm_input.h_p_int      = Kokkos::create_mirror_view(zm_input.f_p_int);
+  zm_input.h_tpert      = Kokkos::create_mirror_view(zm_input.tpert);
+
+  zm_output.h_tend_s    = Kokkos::create_mirror_view(zm_output.f_tend_s);
+  zm_output.h_tend_qv   = Kokkos::create_mirror_view(zm_output.f_tend_qv);
+  zm_output.h_tend_u    = Kokkos::create_mirror_view(zm_output.f_tend_u);
+  zm_output.h_tend_v    = Kokkos::create_mirror_view(zm_output.f_tend_v);
+  zm_output.h_rain_prod = Kokkos::create_mirror_view(zm_output.f_rain_prod);
+  zm_output.h_snow_prod = Kokkos::create_mirror_view(zm_output.f_snow_prod);
+  zm_output.h_prec_flux = Kokkos::create_mirror_view(zm_output.f_prec_flux);
+  zm_output.h_snow_flux = Kokkos::create_mirror_view(zm_output.f_snow_flux);
+  zm_output.h_mass_flux = Kokkos::create_mirror_view(zm_output.f_mass_flux);
+  zm_output.h_prec      = Kokkos::create_mirror_view(zm_output.prec);
+  zm_output.h_snow      = Kokkos::create_mirror_view(zm_output.snow);
+  zm_output.h_cape      = Kokkos::create_mirror_view(zm_output.cape);
+  zm_output.h_activity  = Kokkos::create_mirror_view(zm_output.activity);
+
+  //----------------------------------------------------------------------------
+  // initialize host mirror variables for managed views
+  const auto& phis        = get_field_in("phis")          .get_view<const Real*>();
+  const auto& pblh        = get_field_in("pbl_height")    .get_view<const Real*>();
+  const auto& landfrac    = get_field_in("landfrac")      .get_view<const Real*>();
+  zm_input.h_phis       = Kokkos::create_mirror_view(phis);
+  zm_input.h_pblh       = Kokkos::create_mirror_view(pblh);
+  zm_input.h_landfrac   = Kokkos::create_mirror_view(landfrac);
+
 }
 
 /*------------------------------------------------------------------------------------------------*/
@@ -428,6 +467,7 @@ void ZMDeepConvection::init_buffers(const ATMBufferManager &buffer_manager)
   size_t used_mem = (reinterpret_cast<Real*>(total_mem) - buffer_manager.get_memory())*sizeof(Real);
   auto mem_chk = ( used_mem == requested_buffer_size_in_bytes() );
   EKAT_REQUIRE_MSG(mem_chk,"Error! Used memory != requested memory for ZMDeepConvection.");
+  //----------------------------------------------------------------------------
 }
 
 /*------------------------------------------------------------------------------------------------*/
