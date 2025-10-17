@@ -76,11 +76,6 @@ void Functions<S,D>::gw_oro_src(
       }
     }, rsrc_sum, usrc_sum, vsrc_sum, nsrc_sum);
 
-  rsrc += rsrc_sum;
-  usrc += usrc_sum;
-  vsrc += vsrc_sum;
-  nsrc += nsrc_sum;
-
   Kokkos::parallel_reduce(
     Kokkos::TeamVectorRange(team, pver/2 - 1, pver-1), [&] (const int k, Int& lmin) {
       if (lmin > pver - 1) {
@@ -92,6 +87,11 @@ void Functions<S,D>::gw_oro_src(
     }, Kokkos::Min<Int>(src_level));
 
   team.team_barrier();
+
+  rsrc += rsrc_sum;
+  usrc += usrc_sum;
+  vsrc += vsrc_sum;
+  nsrc += nsrc_sum;
 
   // Difference in interface pressure across source region.
   const Real dpsrc = pint(pver) - pint(src_level);
