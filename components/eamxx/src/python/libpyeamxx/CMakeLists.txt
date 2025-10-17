@@ -10,8 +10,8 @@ nanobind_add_module(pyeamxx_ext pyeamxx_ext.cpp)
 target_link_libraries(pyeamxx_ext PUBLIC
   mpi4py
   scream_share
-  scream_io
-  diagnostics
+  eamxx_io
+  eamxx_diagnostics
   eamxx_physics
   eamxx_test_support
 )

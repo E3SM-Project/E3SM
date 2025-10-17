@@ -5,7 +5,7 @@
 
 // Physcis/dynamics/diagnostic includes
 #include "physics/register_physics.hpp"
-#include "diagnostics/register_diagnostics.hpp"
+#include "share/diagnostics/register_diagnostics.hpp"
 #include "dynamics/register_dynamics.hpp"
 #include "share/data_managers/mesh_free_grids_manager.hpp"
 
