@@ -31,7 +31,6 @@ MACRO(THETAL_KOKKOS_SETUP)
   # TODO: share files among different theta folders
   SET (TARGET_F90
     ${THETA_SHARE_DIR}/bndry_mod.F90
-    ${THETA_SHARE_DIR}/edge_mod.F90
     ${THETA_SHARE_DIR}/element_ops.F90
     ${THETA_SHARE_DIR}/eos.F90
     ${THETA_SHARE_DIR}/model_init_mod.F90
@@ -60,7 +59,7 @@ MACRO(THETAL_KOKKOS_SETUP)
     ${SRC_SHARE_DIR}/dof_mod.F90
     ${SRC_SHARE_DIR}/domain_mod.F90
     ${SRC_SHARE_DIR}/edgetype_mod.F90
-    ${SRC_SHARE_DIR}/edge_mod_base.F90
+    ${SRC_SHARE_DIR}/edge_mod.F90
     ${SRC_SHARE_DIR}/element_mod.F90
     ${SRC_SHARE_DIR}/gllfvremap_mod.F90
     ${SRC_SHARE_DIR}/gllfvremap_util_mod.F90

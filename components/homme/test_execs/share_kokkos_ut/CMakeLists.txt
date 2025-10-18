@@ -59,7 +59,7 @@ SET (BOUNDARY_EXCHANGE_UT_F90_SRCS
   ${SRC_SHARE_DIR}/planar_mod.F90
   ${SRC_SHARE_DIR}/derivative_mod.F90
   ${SRC_SHARE_DIR}/dimensions_mod.F90
-  ${SRC_SHARE_DIR}/edge_mod_base.F90
+  ${SRC_SHARE_DIR}/edge_mod.F90
   ${SRC_SHARE_DIR}/edgetype_mod.F90
   ${SRC_SHARE_DIR}/element_mod.F90
   ${SRC_SHARE_DIR}/gridgraph_mod.F90
