@@ -1,0 +1,112 @@
+#!/bin/bash
+
+cime_root=$(./xmlquery --value CIMEROOT)
+case_name=$(./xmlquery --value CASE)
+machine=$(./xmlquery --value MACH)
+
+atmchange=$cime_root/../components/eamxx/scripts/atmchange
+
+# On Frontier, set proxy settings
+if [[ $machine == "frontier" ]]; then
+    export all_proxy=socks://proxy.ccs.ornl.gov:3128/
+    export ftp_proxy=ftp://proxy.ccs.ornl.gov:3128/
+    export http_proxy=http://proxy.ccs.ornl.gov:3128/
+    export https_proxy=http://proxy.ccs.ornl.gov:3128/
+    export no_proxy='localhost,127.0.0.0/8,*.ccs.ornl.gov'
+fi
+
+# Change run start
+./xmlchange RUN_STARTDATE="2010-01-01"
+
+# Create an output file on the fly
+cat <<EOF >> monthly_average.yaml
+filename_prefix: ${case_name}.scream.h
+iotype: pnetcdf
+averaging_type: average
+max_snapshots_per_file: 1
+fields:
+  physics_pg2:
+    field_names:
+    - T_mid_vert_avg_dp_weighted
+    - qv_vert_avg_dp_weighted
+    - RelativeHumidity_vert_avg_dp_weighted
+    - qc_vert_avg_dp_weighted
+    - qi_vert_avg_dp_weighted
+    - qr_vert_avg_dp_weighted
+    - qm_vert_avg_dp_weighted
+    - nc_vert_avg_dp_weighted
+    - ni_vert_avg_dp_weighted
+    - nr_vert_avg_dp_weighted
+    - cldfrac_tot_for_analysis_vert_avg_dp_weighted
+    - cldfrac_ice_for_analysis_vert_avg_dp_weighted
+    - cldfrac_liq_vert_avg_dp_weighted
+    - omega_vert_avg_dp_weighted
+    - U_vert_avg_dp_weighted
+    - V_vert_avg_dp_weighted
+    - z_mid_vert_avg_dp_weighted
+    - p_mid_vert_avg_dp_weighted
+    - tke_vert_avg_dp_weighted
+    - SW_flux_up_at_model_top
+    - SW_flux_dn_at_model_top
+    - LW_flux_up_at_model_top
+    - SW_clrsky_flux_up_at_model_top
+    - SW_clrsky_flux_dn_at_model_top
+    - LW_clrsky_flux_up_at_model_top
+    - SW_flux_up_at_model_bot
+    - SW_flux_dn_at_model_bot
+    - LW_flux_up_at_model_bot
+    - LW_flux_dn_at_model_bot
+    - SW_clrsky_flux_up_at_model_bot
+    - SW_clrsky_flux_dn_at_model_bot
+    - LW_clrsky_flux_dn_at_model_bot
+    - ShortwaveCloudForcing
+    - LongwaveCloudForcing
+    - ps
+    - SeaLevelPressure
+    - T_2m
+    - T_mid_at_2m_above_surface
+    - T_mid_at_20m_above_surface
+    - qv_2m
+    - qv_at_2m_above_surface
+    - qv_at_20m_above_surface
+    - surf_radiative_T
+    - VapWaterPath
+    - IceWaterPath
+    - LiqWaterPath
+    - RainWaterPath
+    - ZonalVapFlux
+    - MeridionalVapFlux
+    - surf_evap
+    - surf_sens_flux
+    - surface_upward_latent_heat_flux
+    - precip_liq_surf_mass_flux
+    - precip_ice_surf_mass_flux
+    - landfrac
+    - ocnfrac
+    - PotentialTemperature_at_700hPa
+    - PotentialTemperature_at_850hPa
+    - PotentialTemperature_at_1000hPa
+    - PotentialTemperature_at_2m_above_surface
+    - omega_at_500hPa
+    - omega_at_700hPa
+    - omega_at_850hPa
+    - RelativeHumidity_at_700hPa
+    - RelativeHumidity_at_1000hPa
+    - RelativeHumidity_at_2m_above_surface
+    - wind_speed_10m
+    - z_mid_at_700hPa
+    - z_mid_at_1000hPa
+    - T_mid_at_850hPa
+    - T_mid_at_700hPa
+    - U_at_10m_above_surface
+    - V_at_10m_above_surface
+output_control:
+  frequency: 1
+  frequency_units: nmonths
+EOF
+
+# Set the output file
+$atmchange -b output_yaml_files="./monthly_average.yaml"
+
+# Perturb the initial conditions
+$atmchange -b initial_conditions::perturbed_fields='T_mid'
