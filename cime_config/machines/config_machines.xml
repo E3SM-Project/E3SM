@@ -3759,10 +3759,10 @@ commented out until "*** No rule to make target '.../libadios2pio-nm-lib.a'" iss
        </arguments>
     </mpirun>
     <module_system type="module" allow_error="true">
-      <init_path lang="python">/usr/share/lmod/lmod/init/python</init_path>
-      <init_path lang="sh">/usr/share/lmod/lmod/init/sh</init_path>
-      <init_path lang="csh">/usr/share/lmod/lmod/init/csh</init_path>
-      <cmd_path lang="python">/usr/share/lmod/lmod/libexec/lmod python</cmd_path>
+      <init_path lang="python">/opt/cray/pe/lmod/lmod/init/env_modules_python.py</init_path>
+      <init_path lang="sh">/opt/cray/pe/lmod/lmod/init/sh</init_path>
+      <init_path lang="csh">/opt/cray/pe/lmod/lmod/init/csh</init_path>
+      <cmd_path lang="python">/opt/cray/pe/lmod/lmod/libexec/lmod python</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
       <modules>
@@ -3785,6 +3785,7 @@ commented out until "*** No rule to make target '.../libadios2pio-nm-lib.a'" iss
       <env name="PERL5LIB">/grand/E3SMinput/soft/perl5/lib/perl5</env>
       <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
       <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
+      <env name="LD_LIBRARY_PATH">$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env>
       <env name="FI_CXI_RX_MATCH_MODE">hybrid</env>
     </environment_variables>
     <environment_variables BUILD_THREADED="TRUE">

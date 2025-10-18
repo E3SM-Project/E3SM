@@ -2171,6 +2171,24 @@
       </pes>
     </mach>
   </grid>
+  <grid name="a%ne0np4_northamericax4v1.pg2_l%.+_oi%IcoswISC30E3r5">
+    <mach name="improv|crux">
+      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV.+" pesize="S">
+        <comment>improv|crux+allactive: RRM-WCYCL on 10 nodes</comment>
+        <ntasks>
+          <ntasks_atm>-8</ntasks_atm>
+          <ntasks_cpl>-8</ntasks_cpl>
+          <ntasks_lnd>-8</ntasks_lnd>
+          <ntasks_rof>-8</ntasks_rof>
+          <ntasks_ice>-8</ntasks_ice>
+          <ntasks_ocn>-2</ntasks_ocn>
+        </ntasks>
+        <rootpe>
+          <rootpe_ocn>-8</rootpe_ocn>
+        </rootpe>
+      </pes>
+    </mach>
+  </grid>
   <grid name="a%ne30np4_l%.+oi%oEC60to30.+w%wQU225EC60to30">
     <mach name="anvil|chrysalis">
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+WW3" pesize="any">
