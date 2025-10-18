@@ -52,7 +52,7 @@ endif()
 if (HOMMEXX_BFB_TESTING)
 SET (BOUNDARY_EXCHANGE_UT_F90_SRCS
   ${SRC_DIR}/repro_sum_mod.F90
-  ${SRC_SHARE_DIR}/bndry_mod_base.F90
+  ${SRC_SHARE_DIR}/bndry_mod.F90
   ${SRC_SHARE_DIR}/control_mod.F90
   ${SRC_SHARE_DIR}/coordinate_systems_mod.F90
   ${SRC_SHARE_DIR}/cube_mod.F90
@@ -76,7 +76,6 @@ SET (BOUNDARY_EXCHANGE_UT_F90_SRCS
   ${SRC_SHARE_DIR}/spacecurve_mod.F90
   ${SRC_SHARE_DIR}/thread_mod.F90
   ${SRC_SHARE_DIR}/viscosity_base.F90
-  ${SRC_PREQX_DIR}/bndry_mod.F90
   ${SRC_PREQX_DIR}/derivative_mod.F90
   ${SRC_PREQX_DIR}/edge_mod.F90
   ${SRC_PREQX_DIR}/element_state.F90

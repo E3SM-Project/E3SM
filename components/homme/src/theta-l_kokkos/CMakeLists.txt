@@ -30,7 +30,6 @@ MACRO(THETAL_KOKKOS_SETUP)
   # Find F90 files in share and test directories
   # TODO: share files among different theta folders
   SET (TARGET_F90
-    ${THETA_SHARE_DIR}/bndry_mod.F90
     ${THETA_SHARE_DIR}/element_ops.F90
     ${THETA_SHARE_DIR}/eos.F90
     ${THETA_SHARE_DIR}/model_init_mod.F90
@@ -47,7 +46,7 @@ MACRO(THETAL_KOKKOS_SETUP)
   )
 
   SET (SRC_SHARE_F90
-    ${SRC_SHARE_DIR}/bndry_mod_base.F90
+    ${SRC_SHARE_DIR}/bndry_mod.F90
     ${SRC_SHARE_DIR}/cg_mod.F90
     ${SRC_SHARE_DIR}/compose_mod.F90
     ${SRC_SHARE_DIR}/compose_test_mod.F90

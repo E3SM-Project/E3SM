@@ -3,7 +3,7 @@
 #endif
 
 
-module bndry_mod_base
+module bndry_mod
 !
 ! Revisions
 !   2018/3 Mark Taylor: update to only communicate data data packed in an edge buffer, instead
@@ -1094,7 +1094,4 @@ contains
   if (par%masterproc) write(iulog,*) 'passed.'
 end subroutine
 
-
-
-
-end module bndry_mod_base
+end module bndry_mod
