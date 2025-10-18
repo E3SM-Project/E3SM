@@ -2,7 +2,7 @@ module sphere_op_interface_mod
 
   use dimensions_mod,       only : np
   use kinds,                only : real_kind
-  use derivative_mod_base,  only : derivative_t
+  use derivative_mod,  only : derivative_t
   use element_mod,          only : element_t
   use physical_constants,   only : scale_factor, scale_factor_inv, laplacian_rigid_factor, rearth, rrearth
 
@@ -27,7 +27,7 @@ module sphere_op_interface_mod
 contains
 
   subroutine gradient_sphere_c_callable(s, dvv, dinv, grad) bind(c)
-    use derivative_mod_base, only : gradient_sphere
+    use derivative_mod, only : gradient_sphere
 
     !
     ! Inputs
@@ -51,7 +51,7 @@ contains
 
 
   subroutine curl_sphere_wk_testcov_c_callable(s,dvv,D,mp,ds) bind(c)
-    use derivative_mod_base, only : curl_sphere_wk_testcov
+    use derivative_mod, only : curl_sphere_wk_testcov
 
     !
     ! Inputs
@@ -78,7 +78,7 @@ contains
   end subroutine curl_sphere_wk_testcov_c_callable
 
   subroutine gradient_sphere_wk_testcov_c_callable(s,dvv,metinv,metdet,D,mp,ds) bind(c)
-    use derivative_mod_base, only : gradient_sphere_wk_testcov
+    use derivative_mod, only : gradient_sphere_wk_testcov
 
     !
     ! Inputs
@@ -109,7 +109,7 @@ contains
   end subroutine gradient_sphere_wk_testcov_c_callable
 
   subroutine divergence_sphere_wk_c_callable(v, dvv, spheremp, Dinv, div) bind(c)
-    use derivative_mod_base, only : divergence_sphere_wk
+    use derivative_mod, only : divergence_sphere_wk
 
     !
     ! Inputs
@@ -136,7 +136,7 @@ contains
   end subroutine divergence_sphere_wk_c_callable
 
   subroutine vorticity_sphere_c_callable(v, dvv, rmetdet, d, vort) bind(c)
-    use derivative_mod_base, only : vorticity_sphere
+    use derivative_mod, only : vorticity_sphere
 
     !
     ! Inputs
@@ -163,7 +163,7 @@ contains
   end subroutine vorticity_sphere_c_callable
 
   subroutine divergence_sphere_c_callable(v, dvv, metdet, dinv, div) bind(c)
-    use derivative_mod_base, only : divergence_sphere
+    use derivative_mod, only : divergence_sphere
 
     !
     ! Inputs
@@ -201,7 +201,7 @@ contains
 
   subroutine laplace_sphere_wk_c_callable(s,dvv,dinv,spheremp,tensorVisc,&
              hvpower, hvscaling, var_coef,laplace) bind(c)
-    use derivative_mod_base, only : laplace_sphere_wk
+    use derivative_mod, only : laplace_sphere_wk
 
     !
     ! Inputs
@@ -237,7 +237,7 @@ contains
 
 ! not a homme function, for debugging cxx
   subroutine laplace_simple_c_callable(s,dvv,dinv,spheremp,laplace) bind(c)
-    use derivative_mod_base, only : gradient_sphere, divergence_sphere_wk
+    use derivative_mod, only : gradient_sphere, divergence_sphere_wk
 
     !
     ! Inputs
@@ -269,7 +269,7 @@ contains
 !would mean a different *nl for F and C, so, keeping these vars for now.
   subroutine vlaplace_sphere_wk_cartesian_c_callable(v, dvv, dinv, spheremp, &
              tensorVisc, vec_sph2cart, hvpower, hvscaling, var_coef, laplace) bind(c)
-    use derivative_mod_base, only : vlaplace_sphere_wk_cartesian
+    use derivative_mod, only : vlaplace_sphere_wk_cartesian
     use control_mod,         only : hypervis_scaling
 
     !
@@ -312,7 +312,7 @@ contains
 !for var_coef hyperviscosity.
   subroutine vlaplace_sphere_wk_contra_c_callable(v, dvv, d, dinv, mp, spheremp, metinv,&
                                                   metdet, rmetdet, nu_ratio, laplace) bind(c)
-    use derivative_mod_base, only : vlaplace_sphere_wk_contra
+    use derivative_mod, only : vlaplace_sphere_wk_contra
 
     !
     ! Inputs

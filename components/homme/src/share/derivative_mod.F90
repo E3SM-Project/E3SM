@@ -3,7 +3,7 @@
 #endif
 
 
-module derivative_mod_base
+module derivative_mod
 
   use kinds,          only : real_kind, longdouble_kind
   use dimensions_mod, only : np, nelemd, nlev
@@ -1832,4 +1832,4 @@ contains
     enddo
   end subroutine limiter_clip_and_sum
 
-end module derivative_mod_base
+end module derivative_mod
