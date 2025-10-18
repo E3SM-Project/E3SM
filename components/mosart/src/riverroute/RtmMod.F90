@@ -2959,13 +2959,12 @@ contains
 
    if (redirect_negative_qgwl_flag) then ! Check the main flag first
       ! Determine amount to redistribute:
-      ! Scenario A (net >= 0): redistribute abs(negative_sum) to balance negatives
-      ! Scenario B (net < 0): redistribute net_global_qgwl (entire net amount)
+      ! Scenario A (net >= 0): Original qgwl flows to direct (no outlet correction needed)
+      ! Scenario B (net < 0): All qgwl zeroed, redistribute net amount to outlets
       if (net_global_qgwl >= 0.0_r8) then
-         qgwl_to_redistribute = abs(global_negative_qgwl_sum) ! Scenario A
+         qgwl_to_redistribute = 0.0_r8 ! Scenario A: negatives already in direct discharge
          if (masterproc) then
-            write(iulog, *) trim(subname), 'Using Scenario A: redistributing negative qgwl (', &
-                                       qgwl_to_redistribute, ' m3/s) to outlets'
+            write(iulog, *) trim(subname), 'Using Scenario A: original qgwl flows to direct (no outlet correction)'
          endif
       else
          qgwl_to_redistribute = net_global_qgwl ! Scenario B (negative value)
@@ -3216,10 +3215,12 @@ contains
          endif
 
          ! Apply the distributed global qgwl correction ONLY to liquid tracer at target outlets
+         ! Apply to rtmCTL%runoff (not runoffocn) since runoff is what gets sent to coupler
          if (redirect_negative_qgwl_flag .and. nt == nt_nliq) then
-            rtmCTL%runoffocn(nr,nt) = rtmCTL%runoffocn(nr,nt) + qgwl_correction_local(nr)
+            rtmCTL%runoff(nr,nt) = rtmCTL%runoff(nr,nt) + qgwl_correction_local(nr)
+            rtmCTL%runoffocn(nr,nt) = rtmCTL%runoff(nr,nt) ! Keep runoffocn in sync
          endif
-         rtmCTL%runofftot(nr,nt) = rtmCTL%runofftot(nr,nt) + rtmCTL%runoffocn(nr,nt) ! Add potentially corrected routed flow
+         rtmCTL%runofftot(nr,nt) = rtmCTL%runofftot(nr,nt) + rtmCTL%runoffocn(nr,nt) ! Add corrected routed flow
          rtmCTL%dvolrdtocn(nr,nt)= rtmCTL%dvolrdt(nr,nt)
       endif
    enddo ! nr
@@ -3235,7 +3236,7 @@ contains
            local_total_liquid_after = 0.0_r8
            do nr = rtmCTL%begr, rtmCTL%endr
                ! Sum what actually gets sent to coupler: rtmCTL%direct + rtmCTL%runoff
-               ! This matches exactly what rof_comp_mct.F90 sends to ocean
+               ! rtmCTL%runoff includes the qgwl correction applied at line 3221
                local_total_liquid_after = local_total_liquid_after + &
                    rtmCTL%direct(nr, nt_nliq) + rtmCTL%runoff(nr, nt_nliq)
            enddo
@@ -3301,7 +3302,7 @@ contains
 
           if (rtmCTL%mask(nr) >= 2) then    ! (2 -- Ocean; 3 -- Outlet. --Inund.)
 
-             budget_terms(br_ocnout,nt) = budget_terms(br_ocnout,nt) + rtmCTL%runoff(nr,nt)*delt_coupling  ! (Volume of outflows to oceans. Note that rtmCTL%runoff is averge value of sub-steps used by MOSART. --Inund.)
+             budget_terms(br_ocnout,nt) = budget_terms(br_ocnout,nt) + rtmCTL%runoff(nr,nt)*delt_coupling  ! (Volume of outflows to oceans. runoff includes qgwl corrections from line 3221. --Inund.)
              budget_terms(br_erolpo,nt) = budget_terms(br_erolpo,nt) + eroup_lagi(nr,nt)*delt_coupling     ! (Volume of outflows to oceans in the previous MOSART sub-step. 
                                                                                                            ! Also eroup_lagi is averge value of several previous MOSART sub-steps. --Inund.)
              budget_terms(br_erolco,nt) = budget_terms(br_erolco,nt) + eroup_lagf(nr,nt)*delt_coupling     ! (Volume of outflows to oceans. Actually eroup_lagf is same as the above rtmCTL%runoff. --Inund.)
