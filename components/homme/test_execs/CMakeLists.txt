@@ -249,11 +249,6 @@ IF (${BUILD_HOMME_THETA_KOKKOS})
 
 ENDIF()
 
-# Add the test exec subdirs for the swim executable
-IF(${BUILD_HOMME_SWIM})
-  ADD_SUBDIRECTORY(swim5)
-ENDIF()
-
 # Test some stuff in the shared folder
 ADD_SUBDIRECTORY (share_kokkos_ut)
 
