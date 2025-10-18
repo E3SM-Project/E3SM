@@ -2242,7 +2242,7 @@ contains
     ! Variables for negative runoff redirection
    
     real(r8) :: local_positive_qgwl_sum, local_negative_qgwl_sum
-    real(r8) :: net_global_qgwl, original_cell_qgwl, reduction
+    real(r8) :: net_global_qgwl, original_cell_qgwl, reduction, scaling_factor
 
     integer, allocatable :: outlet_gindices_local(:) ! Local array of global indices of outlets on this task
     real(r8), allocatable :: outlet_discharges_local(:) ! Local array of discharges for these outlets
@@ -2440,14 +2440,28 @@ contains
         endif
 
         ! Decide how to set TRunoff%qgwl for local routing
-        ! For BOTH scenarios, we let original qgwl flow to direct discharge,
-        ! and then add corrections at outlets to balance negative values
         if (net_global_qgwl >= 0.0_r8) then
             ! --- SCENARIO A: Net global QGWL is non-negative. ---
-            ! Let original qgwl flow to rtmCTL%direct (no modification here)
-            ! The negative qgwl will be balanced by adding to outlets later
+            ! Proportionally reduce positive qgwl to offset negatives, zero out negative cells
+            ! This ensures NO negative qgwl enters the ocean at any grid cell
+
+            if (global_positive_qgwl_sum > 0.0_r8) then
+               ! Calculate scaling factor: (positive - |negative|) / positive = net / positive
+               scaling_factor = net_global_qgwl / global_positive_qgwl_sum
+            else
+               scaling_factor = 1.0_r8  ! No positive qgwl, keep as is
+            endif
+
             do nr = rtmCTL%begr, rtmCTL%endr
-               TRunoff%qgwl(nr, :) = rtmCTL%qgwl(nr, :)
+               do nt = 1, nt_rtm
+                  if (rtmCTL%qgwl(nr, nt) > 0.0_r8) then
+                     ! Positive cell: scale down proportionally
+                     TRunoff%qgwl(nr, nt) = rtmCTL%qgwl(nr, nt) * scaling_factor
+                  else
+                     ! Negative or zero cell: set to zero
+                     TRunoff%qgwl(nr, nt) = 0.0_r8
+                  endif
+               enddo
             enddo
         else
             ! --- SCENARIO B: Net global QGWL is negative. Redistribute ALL qgwl mass to outlets.---
