@@ -1025,9 +1025,9 @@ contains
          call this%fates(nc)%InitializeFatesSites(natpft_size)
          
          do p = 1, num_veg_patches
-            s = this%fates(nc)%register(p)%GetSiteIndex()
+            s = this%fates(nc)%registry(p)%GetSiteIndex()
             c1 = this%f2hmap(nc)%fcolumn(s)
-            c2 = this%fates(nc)%register(p)%GetColumnIndex()
+            c2 = this%fates(nc)%registry(p)%GetColumnIndex()
             if (c1 /= c2 ) then
                write(iulog,*) ' columns do not match: p, s, c1, c2: ', p, s, c1, c2
                call endrun(msg=errMsg(sourcefile, __LINE__))
