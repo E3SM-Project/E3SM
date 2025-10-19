@@ -3971,6 +3971,10 @@ end subroutine wrap_update_hifrq_hist
    
    use FatesInterfaceParametersMod
 
+   use elm_varpar,  only : i_met_lit
+   use elm_varpar,  only : i_cel_lit
+   use elm_varpar,  only : i_lig_lit
+
    ! Arguments
    class(hlm_fates_interface_type), intent(inout) :: this
    integer, intent(in)                            :: nc              ! clump number
