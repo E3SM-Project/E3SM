@@ -276,7 +276,8 @@ module ELMFatesInterfaceMod
       procedure, public :: Init2  ! Initialization after determining subgrid weights
       procedure, public :: InitAccBuffer ! Initialize any accumulation buffers
       procedure, public :: InitAccVars   ! Initialize any accumulation variables
-      procedure, public :: RegisterHLMInterfaceVariables
+      procedure, public :: RegisterInterfaceVariablesInit
+      procedure, public :: RegisterInterfaceVariablesColdStart
       procedure, public :: UpdateAccVars ! Update any accumulation variables
       procedure, public :: UpdateLitterFluxes
       procedure, private :: init_history_io
@@ -1018,7 +1019,7 @@ contains
          deallocate(patchlist)
          
          ! Register the HLM interface variables that we be used to populate the FATES boundary conditions
-         call this%RegisterHLMInterfaceVariables(nc)
+         call this%RegisterInterfaceVariablesInitialization(nc)
          
          ! Initialize the FATES sites
          call this%fates(nc)%InitializeFatesSites(natpft_size)
@@ -2103,6 +2104,9 @@ contains
      do nc = 1, nclumps
 
         if ( this%fates(nc)%nsites>0 ) then
+
+           ! Register interface variables
+           call this%RegisterInterfaceVariablesColdStart(nc, canopystate_inst)
 
            call get_clump_bounds(nc, bounds_clump)
 
@@ -3967,7 +3971,7 @@ end subroutine wrap_update_hifrq_hist
 
 ! ======================================================================================
  
- subroutine RegisterHLMInterfaceVariables(this, nc)
+ subroutine RegisterInterfaceVariablesInit(this, nc)
    
    use FatesInterfaceParametersMod
 
@@ -4010,8 +4014,6 @@ end subroutine wrap_update_hifrq_hist
       c = this%fates(nc)%registry(r)%GetColumnIndex()
       call this%fates(nc)%registry(r)%Register(key=hlm_fates_soil_level, &
                                                data=col_pp%nlevbed(c), hlm_flag=.true.)
-      call this%fates(nc)%registry(r)%Register(key=hlm_fates_thaw_max_depth_index, &
-                                               data=canopystate_inst%altmax_lastyear_indx_col(c), hlm_flag=.true.)
       call this%fates(nc)%registry(r)%Register(key=hlm_fates_decomp_frac_moisture, &
                                                data=col_cf%w_scalar(c,:), hlm_flag=.true.)
       call this%fates(nc)%registry(r)%Register(key=hlm_fates_decomp_frac_temperature, &
@@ -4064,7 +4066,33 @@ end subroutine wrap_update_hifrq_hist
                                                   hlm_flag=.true., accumulate=.true.)
       end if
    end do
-  
- end subroutine RegisterHLMInterfaceVariables
- 
+
+end subroutine RegisterInterfaceVariablesInit
+
+! ======================================================================================
+
+subroutine RegisterInterfaceVariablesColdStart(this, nc, canopystate_inst)
+
+   use FatesInterfaceParametersMod, only : hlm_fates_thaw_max_depth_index
+
+   class(hlm_fates_interface_type), intent(inout) :: this
+   integer, intent(in)                            :: nc              
+   type(canopystate_type), intent(inout)          :: canopystate_inst
+
+   ! Locals
+   integer :: r   ! register index
+   integer :: c   ! column index
+
+   ! Iterate over the number of vegetated patches
+   do r = 1, this%fates(nc)%npatches
+
+      ! Column variables
+      c = this%fates(nc)%registry(r)%GetColumnIndex()
+
+      call this%fates(nc)%registry(r)%Register(key=hlm_fates_thaw_max_depth_index, &
+                                               data=canopystate_inst%altmax_lastyear_indx_col(c), hlm_flag=.true.)
+   end do
+
+end subroutine RegisterInterfaceVariablesColdStart
+
 end module ELMFatesInterfaceMod
