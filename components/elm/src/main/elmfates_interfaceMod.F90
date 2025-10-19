@@ -4023,9 +4023,9 @@ end subroutine wrap_update_hifrq_hist
                                                data=col_cf%decomp_cpools_sourcesink(c,:,i_lig_lit), &
                                                hlm_flag=.true., accumulate=.true.)
       call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_carbon_labile, &
-                                               data=col_cf%decomp_cpools_sourcesink(c,:,i_lab_lit), &
+                                               data=col_cf%decomp_cpools_sourcesink(c,:,i_met_lit), &
                                                hlm_flag=.true., accumulate=.true.)
-      call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_carbon_all, &
+      call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_carbon_total, &
                                                data=col_cf%litfall(c), &
                                                hlm_flag=.true., accumulate=.true.)
 
@@ -4033,30 +4033,30 @@ end subroutine wrap_update_hifrq_hist
       if (fates_parteh_mode == prt_cnp_flex_allom_hyp) then
          ! Phosphorus
          call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_phosphorus_cellulose, &
-                                                  data=col_cf%decomp_ppools_sourcesink(c,:,i_cel_lit), &
+                                                  data=col_pf%decomp_ppools_sourcesink(c,:,i_cel_lit), &
                                                   hlm_flag=.true., accumulate=.true.)
          call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_phosphorus_lignin, &
-                                                  data=col_cf%decomp_ppools_sourcesink(c,:,i_lig_lit), &
+                                                  data=col_pf%decomp_ppools_sourcesink(c,:,i_lig_lit), &
                                                   hlm_flag=.true., accumulate=.true.)
          call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_phosphorus_labile, &
-                                                  data=col_cf%decomp_ppools_sourcesink(c,:,i_lab_lit), &
+                                                  data=col_pf%decomp_ppools_sourcesink(c,:,i_met_lit), &
                                                   hlm_flag=.true., accumulate=.true.)
-         call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_phosphorus_all, &
+         call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_phosphorus_total, &
                                                   data=col_pf%plant_to_litter_pflux(c), &
                                                   hlm_flag=.true., accumulate=.true.)
 
          ! Nitrogen
          call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_nitrogen_cellulose, &
-                                                  data=col_cf%decomp_npools_sourcesink(c,:,i_cel_lit), &
+                                                  data=col_nf%decomp_npools_sourcesink(c,:,i_cel_lit), &
                                                   hlm_flag=.true., accumulate=.true.)
          call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_nitrogen_lignin, &
-                                                  data=col_cf%decomp_npools_sourcesink(c,:,i_lig_lit), &
+                                                  data=col_nf%decomp_npools_sourcesink(c,:,i_lig_lit), &
                                                   hlm_flag=.true., accumulate=.true.)
          call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_nitrogen_labile, &
-                                                  data=col_cf%decomp_npools_sourcesink(c,:,i_lab_lit), &
+                                                  data=col_nf%decomp_npools_sourcesink(c,:,i_met_lit), &
                                                   hlm_flag=.true., accumulate=.true.)
-         call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_nitrogen_all, &
-                                                  data=col_pf%plant_to_litter_nflux(c), &
+         call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_nitrogen_total, &
+                                                  data=col_nf%plant_to_litter_nflux(c), &
                                                   hlm_flag=.true., accumulate=.true.)
       end if
    end do
