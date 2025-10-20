@@ -67,9 +67,6 @@ function (CreateBaselineTest TEST_BASE_NAME GEN_TEST_NRANKS OUT_FILE FIXTURES_BA
 
 endfunction()
 
-# Some tests for checking that certain testing infrastructures work
-add_subdirectory(generic)
-
 if (NOT DEFINED ENV{SCREAM_FAKE_ONLY})
   # memcheck builds (and also coverage ones) can just run the max ranks, since they
   # do only need to perform checks on the code itself, rather than the model it represents
