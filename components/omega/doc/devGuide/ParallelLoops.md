@@ -62,7 +62,7 @@ As an example, the following snippet finds the maximum of `A`.
 To perform reductions that are not sums, in addition to modifying the lambda body,
 the final reduction variable needs to be cast to the appropriate type. In the above example,
 `MaxA` is cast to `Kokkos::Max<Real>` to perform a max reduction.
-The `parallelReduce` wrapper supports performing multiple reduction at the same time.
+The `parallelReduce` wrapper supports performing multiple reductions at the same time.
 You can compute `SumA` and `MaxA` in one pass over the data:
 ```c++
    parallelReduce(
@@ -73,6 +73,9 @@ You can compute `SumA` and `MaxA` in one pass over the data:
        },
        SumA, Kokkos::Max<Real>(MaxA));
 ```
+There is no limit to how many reductions can be done at the same time.
+It is usually beneficial for performance to group a small number (2-8) of simple
+reductions together.
 Similarly to `parallelFor`, `parallelReduce` supports labels and up to five dimensions.
 
 ## Hierarchical parallelism
@@ -194,6 +197,17 @@ a 3D array in parallel using hierarchical parallelism.
     });
 ```
 Labels are not supported by `parallelForInner` and only one-dimensional index range can be used.
+The inner loop range can depend on the outer loop index. For example, to set the elements below the main
+diagonal of a square matrix one can do:
+```c++
+   Array2DReal M("M", N, N);
+   parallelForOuter(
+       {N}, KOKKOS_LAMBDA(int J1, const TeamMember &Team) {
+        parallelForInner(Team, J1, INNER_LAMBDA(Int J2) {
+          M(J1, J2) = J1 + J2;
+        });
+    });
+```
 
 ### parallelReduceInner
 To launch inner parallel reductions Omega provides the `parallelReduceInner` wrapper.
@@ -248,8 +262,8 @@ be done as follows.
        });
 ```
 This example computes partial sums up to and including `A(J1, J2, J3)` because the accumulator is updated
-before the if statement. That is, it performs an inclusive scan. To compute an exclusive scan
-simply move the addition after the if statement.
+before the `if` statement. That is, it performs an inclusive scan. To compute an exclusive scan
+simply move the addition after the `if` statement.
 ```c++
   Real FinalScanValue;
   parallelScanInner(Team, N1, INNER_LAMBDA(Int J3, Real &Accum, bool IsFinal) {
