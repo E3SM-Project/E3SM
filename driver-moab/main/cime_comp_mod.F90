@@ -1395,7 +1395,8 @@ contains
             ice_present=ice_present,              &
             rof_present=rof_present,              &
             flood_present=flood_present,          &
-            rofice_present=rofice_present)
+            rofice_present=rofice_present,        &
+            iac_present=iac_present)
 
        call seq_infodata_putData(infodata,  &
             lnd_present=lnd_present,        &
@@ -1403,7 +1404,8 @@ contains
             ice_present=ice_present,        &
             rof_present=rof_present,        &
             flood_present=flood_present,    &
-            rofice_present=rofice_present)
+            rofice_present=rofice_present,  &
+            iac_present=iac_present)
     endif
     if(PIO_FILE_IS_OPEN(pioid)) then
        call pio_closefile(pioid)
@@ -1505,6 +1507,12 @@ contains
     call t_startf('CPL:comp_init_cc_atm')
     call t_adj_detailf(+2)
 
+    call t_startf('CPL:comp_init_cc_iac')
+    call t_adj_detailf(+2)
+    call component_init_cc(Eclock_z, iac, iac_init, infodata, NLFilename)
+    call t_adj_detailf(-2)
+    call t_stopf('CPL:comp_init_cc_iac')
+
     call component_init_cc(Eclock_a, atm, atm_init, infodata, NLFilename)
     call t_adj_detailf(-2)
     call t_stopf('CPL:comp_init_cc_atm')
@@ -1551,12 +1559,6 @@ contains
     call t_adj_detailf(-2)
     call t_stopf('CPL:comp_init_cc_esp')
 
-    call t_startf('CPL:comp_init_cc_iac')
-    call t_adj_detailf(+2)
-    call component_init_cc(Eclock_z, iac, iac_init, infodata, NLFilename)
-    call t_adj_detailf(-2)
-    call t_stopf('CPL:comp_init_cc_iac')
-
 
    !---------------------------------------------------------------------------------------
    ! Initialize coupler-component data
@@ -1579,6 +1581,7 @@ contains
    !---------------------------------------------------------------------------------------
     call t_startf('CPL:comp_init_cx_all')
     call t_adj_detailf(+2)
+    call component_init_cx(iac, infodata)
     call component_init_cx(atm, infodata)
     call component_init_cx(lnd, infodata)
     call component_init_cx(rof, infodata)
@@ -1586,7 +1589,6 @@ contains
     call component_init_cx(ice, infodata)
     call component_init_cx(glc, infodata)
     call component_init_cx(wav, infodata)
-    call component_init_cx(iac, infodata)
     call t_adj_detailf(-2)
     call t_stopf('CPL:comp_init_cx_all')
 
