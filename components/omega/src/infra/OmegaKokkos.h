@@ -10,6 +10,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "DataTypes.h"
+#include "Error.h"
 #include <functional>
 #include <type_traits>
 #include <utility>
@@ -186,6 +187,29 @@ template <typename D, typename S> void deepCopy(D &&Dst, S &&Src) {
 template <typename E, typename D, typename S>
 void deepCopy(E &Space, D &Dst, const S &Src) {
    Kokkos::deep_copy(Space, Dst, Src);
+}
+
+// Check if two arrays are identical
+template <class ArrayTypeA, class ArrayTypeB>
+bool arraysEqual(const ArrayTypeA &A, const ArrayTypeB &B) {
+   OMEGA_REQUIRE(A.span_is_contiguous() && B.span_is_contiguous(),
+                 "arraysEqual works only for contiguous arrays");
+   OMEGA_REQUIRE(A.size() == B.size(),
+                 "arrayEqual can only compare arrays of equal size");
+
+   // This is a debug utility and not performance critical
+   // so just copy to the host and compare there
+   const auto AH = createHostMirrorCopy(A);
+   const auto BH = createHostMirrorCopy(B);
+
+   bool Equal = true;
+   for (size_t I = 0; I < AH.size(); I++) {
+      if (AH.data()[I] != BH.data()[I]) {
+         Equal = false;
+         break;
+      }
+   }
+   return Equal;
 }
 
 using Bounds1D = Kokkos::RangePolicy<ExecSpace, Kokkos::IndexType<int>>;

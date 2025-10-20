@@ -19,17 +19,6 @@
 
 using namespace OMEGA;
 
-template <class Array> bool hostArraysEqual(const Array &A, const Array &B) {
-   bool Equal = true;
-   for (size_t I = 0; I < A.span(); I++) {
-      if (A.data()[I] != B.data()[I]) {
-         Equal = false;
-         break;
-      }
-   }
-   return Equal;
-}
-
 static KOKKOS_FUNCTION int f2(int J1, int J2, int N1, int N2) {
    return -(N1 * N2) / 4 + J1 + N1 * J2;
 }
@@ -77,9 +66,7 @@ Error testHiparFor1DFor1D(int N1) {
               INNER_LAMBDA(int J2) { A(J1, J2) = f2(J1, J2, N1, N2); });
        });
 
-   auto AH = createHostMirrorCopy(A);
-
-   if (!hostArraysEqual(AH, RefAH)) {
+   if (!arraysEqual(A, RefAH)) {
       Err += Error(ErrorCode::Fail, errorMsg("parallelFor1DFor1D FAIL", N1));
    }
 
@@ -125,14 +112,12 @@ Error testHiparFor1DReduce1D(int N1) {
           Max1(J1) = Max;
        });
 
-   auto Sum1H = createHostMirrorCopy(Sum1);
-   if (!hostArraysEqual(Sum1H, RefSumH)) {
+   if (!arraysEqual(Sum1, RefSumH)) {
       Err += Error(ErrorCode::Fail,
                    errorMsg("parallelFor1DReduce1D Sum FAIL", N1));
    }
 
-   auto Max1H = createHostMirrorCopy(Max1);
-   if (!hostArraysEqual(Max1H, RefMaxH)) {
+   if (!arraysEqual(Max1, RefMaxH)) {
       Err += Error(ErrorCode::Fail,
                    errorMsg("parallelFor1DReduce1D Max FAIL", N1));
    }
@@ -153,9 +138,7 @@ Error testHiparFor1DReduce1D(int N1) {
           Max2(J1) = Max;
        });
 
-   auto Sum2H = createHostMirrorCopy(Sum2);
-   auto Max2H = createHostMirrorCopy(Max2);
-   if (!hostArraysEqual(Sum2H, RefSumH) || !hostArraysEqual(Max2H, RefMaxH)) {
+   if (!arraysEqual(Sum2, RefSumH) || !arraysEqual(Max2, RefMaxH)) {
       Err += Error(ErrorCode::Fail,
                    errorMsg("parallelFor1DReduce1D Sum+Max FAIL", N1));
    }
@@ -189,8 +172,7 @@ Error testHiparFor1DScan1D(int N1) {
               });
        });
 
-   auto RSumH = createHostMirrorCopy(RSum);
-   if (!hostArraysEqual(RSumH, RefRSumH)) {
+   if (!arraysEqual(RSum, RefRSumH)) {
       Err +=
           Error(ErrorCode::Fail, errorMsg("parallelFor1DScan1D Sum FAIL", N1));
    }
@@ -358,9 +340,7 @@ Error testHiparFor1DMultiple1D(int N1, int N2) {
               D(J1));
        });
 
-   auto DH = createHostMirrorCopy(D);
-
-   if (!hostArraysEqual(DH, RefDH)) {
+   if (!arraysEqual(D, RefDH)) {
       Err += Error(ErrorCode::Fail, errorMsg("multiple patterns FAIL", N1, N2));
    }
 
@@ -390,9 +370,7 @@ Error testHiparFor2DFor1D(int N1, int N2) {
               });
        });
 
-   auto AH = createHostMirrorCopy(A);
-
-   if (!hostArraysEqual(AH, RefAH)) {
+   if (!arraysEqual(A, RefAH)) {
       Err +=
           Error(ErrorCode::Fail, errorMsg("parallelFor2DFor1D FAIL", N1, N2));
    }
@@ -443,14 +421,12 @@ Error testHiparFor2DReduce1D(int N1, int N2) {
           Max1(J1, J2) = Max;
        });
 
-   auto Sum1H = createHostMirrorCopy(Sum1);
-   if (!hostArraysEqual(Sum1H, RefSumH)) {
+   if (!arraysEqual(Sum1, RefSumH)) {
       Err += Error(ErrorCode::Fail,
                    errorMsg("parallelFor2DReduce1D Sum FAIL", N1, N2));
    }
 
-   auto Max1H = createHostMirrorCopy(Max1);
-   if (!hostArraysEqual(Max1H, RefMaxH)) {
+   if (!arraysEqual(Max1, RefMaxH)) {
       Err += Error(ErrorCode::Fail,
                    errorMsg("parallelFor2DReduce1D Max FAIL", N1, N2));
    }
@@ -471,9 +447,7 @@ Error testHiparFor2DReduce1D(int N1, int N2) {
           Max2(J1, J2) = Max;
        });
 
-   auto Sum2H = createHostMirrorCopy(Sum2);
-   auto Max2H = createHostMirrorCopy(Max2);
-   if (!hostArraysEqual(Sum2H, RefSumH) || !hostArraysEqual(Max2H, RefMaxH)) {
+   if (!arraysEqual(Sum2, RefSumH) || !arraysEqual(Max2, RefMaxH)) {
       Err += Error(ErrorCode::Fail,
                    errorMsg("parallelFor2DReduce1D Sum+Max FAIL", N1, N2));
    }
@@ -509,8 +483,7 @@ Error testHiparFor2DScan1D(int N1, int N2) {
               });
        });
 
-   auto RSumH = createHostMirrorCopy(RSum);
-   if (!hostArraysEqual(RSumH, RefRSumH)) {
+   if (!arraysEqual(RSum, RefRSumH)) {
       Err += Error(ErrorCode::Fail,
                    errorMsg("parallelFor2DScan1D Sum FAIL", N1, N2));
    }
@@ -686,9 +659,7 @@ Error testHiparFor2DMultiple1D(int N1, int N2, int N3) {
               D(J1, J2));
        });
 
-   auto DH = createHostMirrorCopy(D);
-
-   if (!hostArraysEqual(DH, RefDH)) {
+   if (!arraysEqual(D, RefDH)) {
       Err += Error(ErrorCode::Fail,
                    errorMsg("multiple patterns FAIL", N1, N2, N3));
    }
