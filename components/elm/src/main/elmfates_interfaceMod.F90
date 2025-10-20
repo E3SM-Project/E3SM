@@ -4010,8 +4010,6 @@ end subroutine wrap_update_hifrq_hist
                                                data=col_cf%w_scalar(c,:), hlm_flag=.true.)
       call this%fates(nc)%registry(r)%Register(key=hlm_fates_decomp_frac_temperature, &
                                                data=col_cf%t_scalar(c,:), hlm_flag=.true.)
-      call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_carbon_total, &
-                                               data=col_cf%litfall(c), hlm_flag=.true.)
 
       ! Variables that need to accumulate                                               
       call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_carbon_cellulose, &
