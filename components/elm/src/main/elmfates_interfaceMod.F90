@@ -1017,7 +1017,7 @@ contains
          deallocate(patchlist)
          
          ! Register the HLM interface variables that we be used to populate the FATES boundary conditions
-         call this%RegisterInterfaceVariablesInitialization(nc)
+         call this%RegisterInterfaceVariablesInit(nc)
          
          ! Initialize the FATES sites
          call this%fates(nc)%InitializeFatesSites(natpft_size)
