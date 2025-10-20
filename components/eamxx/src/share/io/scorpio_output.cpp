@@ -347,11 +347,11 @@ void AtmosphereOutput::init()
     // Initialize a helper_field for each unique layout.  This can be used for operations
     // such as writing transposed output.
     if (m_transpose) {
+      const auto helper_layout = layout.transpose();
       const std::string helper_name   = "transposed_"+helper_layout.to_string();
-      if (m_helper_fields.find(helper_name == m_helper_fields.end()) {
+      if (m_helper_fields.find(helper_name) == m_helper_fields.end()) {
         // We can add a new helper field for this layout
         using namespace ekat::units;
-        const auto helper_layout = layout.transpose();
         FieldIdentifier fid_helper(helper_name,helper_layout,Units::invalid(),fid.get_grid_name());
         Field helper(fid_helper);
         helper.get_header().get_alloc_properties().request_allocation();
