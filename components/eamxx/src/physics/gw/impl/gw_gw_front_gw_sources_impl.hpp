@@ -14,17 +14,36 @@ namespace gw {
 template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>::gw_front_gw_sources(
-// Inputs
-const Int& pver,
-const Int& pgwv,
-const Int& ncol,
-const Int& kbot,
-const uview_1d<const Spack>& frontgf,
-// Outputs
-const uview_1d<Spack>& tau)
+  // Inputs
+  const MemberType& team,
+  const GwFrontInit& finit,
+  const Int& pgwv,
+  const Int& pver,
+  const Int& kbot,
+  const uview_1d<const Real>& frontgf,
+  // Outputs
+  const uview_2d<Real>& tau)
 {
-  // TODO
-  // Note, argument types may need tweaking. Generator is not always able to tell what needs to be packed
+  Kokkos::parallel_for(
+    Kokkos::TeamVectorRange(team, tau.size()), [&] (const int k) {
+      tau.data()[k] = 0;
+    });
+
+  team.team_barrier();
+
+  // GW generation depends on frontogenesis at specified level (may be below
+  // actual source level).
+  const bool launch_wave = frontgf(finit.kfront) > finit.frontgfc;
+
+  if (launch_wave) {
+    Kokkos::parallel_for(
+      Kokkos::TeamVectorRange(team, pgwv+1), [&] (const int l) {
+        const Int negl_idx = pgwv - l;
+        const Int posl_idx  = pgwv + l;
+        tau(posl_idx, kbot+1)  = finit.fav(posl_idx);
+        tau(negl_idx, kbot+1)  = finit.fav(posl_idx); // negative for tau only (not fav?)
+      });
+  }
 }
 
 } // namespace gw

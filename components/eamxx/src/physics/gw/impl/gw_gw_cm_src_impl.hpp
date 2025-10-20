@@ -14,26 +14,45 @@ namespace gw {
 template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>::gw_cm_src(
-// Inputs
-const Int& pver,
-const Int& pgwv,
-const Int& ncol,
-const Int& kbot,
-const uview_1d<const Spack>& u,
-const uview_1d<const Spack>& v,
-const uview_1d<const Spack>& frontgf,
-// Outputs
-const uview_1d<Int>& src_level,
-const uview_1d<Int>& tend_level,
-const uview_1d<Spack>& tau,
-const uview_1d<Spack>& ubm,
-const uview_1d<Spack>& ubi,
-const uview_1d<Spack>& xv,
-const uview_1d<Spack>& yv,
-const uview_1d<Spack>& c)
+  // Inputs
+  const MemberType& team,
+  const GwCommonInit& init,
+  const GwFrontInit& finit,
+  const Int& pver,
+  const Int& pgwv,
+  const Int& kbot,
+  const uview_1d<const Real>& u,
+  const uview_1d<const Real>& v,
+  const uview_1d<const Real>& frontgf,
+  // Outputs
+  Int& src_level,
+  Int& tend_level,
+  const uview_2d<Real>& tau,
+  const uview_1d<Real>& ubm,
+  const uview_1d<Real>& ubi,
+  Real& xv,
+  Real& yv,
+  const uview_1d<Real>& c)
 {
-  // TODO
-  // Note, argument types may need tweaking. Generator is not always able to tell what needs to be packed
+  //------------------------------------------------------------------------
+  // Determine the source layer wind and unit vectors, then project winds.
+  //------------------------------------------------------------------------
+  gw_front_project_winds(team, pver, kbot, u, v, xv, yv, ubm, ubi);
+
+  //-----------------------------------------------------------------------
+  // Gravity wave sources
+  //-----------------------------------------------------------------------
+  gw_front_gw_sources(team, finit, pgwv, pver, kbot, frontgf, tau);
+
+  src_level = kbot;
+  tend_level = kbot;
+
+  // Set phase speeds as reference speeds plus the wind speed at the source
+  // level.
+  Kokkos::parallel_for(
+    Kokkos::TeamVectorRange(team, init.cref.size()), [&] (const int l) {
+      c(l) = init.cref(l) + std::abs(ubi(kbot+1));
+    });
 }
 
 } // namespace gw
