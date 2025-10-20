@@ -129,6 +129,9 @@ struct Functions
     // Effective horizontal wave number.
     Real kwv; // = huge(1._r8)
 
+    // 1/2 * horizontal wavenumber (for oro)
+    Real oroko2;
+
     // Interface levels for gravity wave sources.
     int ktop; // = huge(1)
     int kbotbg; // = huge(1)
@@ -160,6 +163,24 @@ struct Functions
 
     // Table of source spectra.
     view_3d<Real> mfcc;
+  };
+
+  struct GwFrontInit {
+    GwFrontInit() : initialized(false) {}
+
+    // Tell us if initialize has been called
+    bool initialized;
+
+    // Frontogenesis function critical threshold.
+    Real frontgfc;
+
+    // Level at which to check the frontogenesis function to determine when
+    // waves will be launched.
+    Int kfront;
+
+    // Average value of gaussian over gravity wave spectrum bins, multiplied by
+    // background source strength (taubgnd).
+    view_1d<Real> fav;
   };
 
   //
@@ -228,15 +249,21 @@ struct Functions
 
   static void gw_convect_init(
     // Inputs
-    const GwCommonInit& init,
     const Real& plev_src_wind,
     const uview_3d<const Real>& mfcc_in);
+
+  static void gw_front_init(
+    // Inputs
+    const Real& taubgnd,
+    const Real& frontgfc_in,
+    const Int& kfront_in);
 
   static void gw_finalize()
   {
     s_common_init.cref  = decltype(s_common_init.cref)();
     s_common_init.alpha = decltype(s_common_init.alpha)();
     s_convect_init.mfcc = decltype(s_convect_init.mfcc)();
+    s_front_init.fav    = decltype(s_front_init.fav)();
   }
 
   //
@@ -427,47 +454,50 @@ struct Functions
   KOKKOS_FUNCTION
   static void gw_front_project_winds(
     // Inputs
+    const MemberType& team,
     const Int& pver,
-    const Int& ncol,
     const Int& kbot,
-    const uview_1d<const Spack>& u,
-    const uview_1d<const Spack>& v,
+    const uview_1d<const Real>& u,
+    const uview_1d<const Real>& v,
     // Outputs
-    const uview_1d<Spack>& xv,
-    const uview_1d<Spack>& yv,
-    const uview_1d<Spack>& ubm,
-    const uview_1d<Spack>& ubi);
+    Real& xv,
+    Real& yv,
+    const uview_1d<Real>& ubm,
+    const uview_1d<Real>& ubi);
 
   KOKKOS_FUNCTION
   static void gw_front_gw_sources(
     // Inputs
-    const Int& pver,
+    const MemberType& team,
+    const GwFrontInit& finit,
     const Int& pgwv,
-    const Int& ncol,
+    const Int& pver,
     const Int& kbot,
-    const uview_1d<const Spack>& frontgf,
+    const uview_1d<const Real>& frontgf,
     // Outputs
-    const uview_1d<Spack>& tau);
+    const uview_2d<Real>& tau);
 
   KOKKOS_FUNCTION
   static void gw_cm_src(
     // Inputs
+    const MemberType& team,
+    const GwCommonInit& init,
+    const GwFrontInit& finit,
     const Int& pver,
     const Int& pgwv,
-    const Int& ncol,
     const Int& kbot,
-    const uview_1d<const Spack>& u,
-    const uview_1d<const Spack>& v,
-    const uview_1d<const Spack>& frontgf,
+    const uview_1d<const Real>& u,
+    const uview_1d<const Real>& v,
+    const uview_1d<const Real>& frontgf,
     // Outputs
-    const uview_1d<Int>& src_level,
-    const uview_1d<Int>& tend_level,
-    const uview_1d<Spack>& tau,
-    const uview_1d<Spack>& ubm,
-    const uview_1d<Spack>& ubi,
-    const uview_1d<Spack>& xv,
-    const uview_1d<Spack>& yv,
-    const uview_1d<Spack>& c);
+    Int& src_level,
+    Int& tend_level,
+    const uview_2d<Real>& tau,
+    const uview_1d<Real>& ubm,
+    const uview_1d<Real>& ubi,
+    Real& xv,
+    Real& yv,
+    const uview_1d<Real>& c);
 
   KOKKOS_FUNCTION
   static void gw_convect_project_winds(
@@ -616,27 +646,28 @@ struct Functions
   KOKKOS_FUNCTION
   static void gw_oro_src(
     // Inputs
+    const MemberType& team,
+    const GwCommonInit& init,
     const Int& pver,
     const Int& pgwv,
-    const Int& ncol,
-    const uview_1d<const Spack>& u,
-    const uview_1d<const Spack>& v,
-    const uview_1d<const Spack>& t,
-    const uview_1d<const Spack>& sgh,
-    const uview_1d<const Spack>& pmid,
-    const uview_1d<const Spack>& pint,
-    const uview_1d<const Spack>& dpm,
-    const uview_1d<const Spack>& zm,
-    const uview_1d<const Spack>& nm,
+    const uview_1d<const Real>& u,
+    const uview_1d<const Real>& v,
+    const uview_1d<const Real>& t,
+    const Real& sgh,
+    const uview_1d<const Real>& pmid,
+    const uview_1d<const Real>& pint,
+    const uview_1d<const Real>& dpm,
+    const uview_1d<const Real>& zm,
+    const uview_1d<const Real>& nm,
     // Outputs
-    const uview_1d<Int>& src_level,
-    const uview_1d<Int>& tend_level,
-    const uview_1d<Spack>& tau,
-    const uview_1d<Spack>& ubm,
-    const uview_1d<Spack>& ubi,
-    const uview_1d<Spack>& xv,
-    const uview_1d<Spack>& yv,
-    const uview_1d<Spack>& c);
+    Int& src_level,
+    Int& tend_level,
+    const uview_2d<Real>& tau,
+    const uview_1d<Real>& ubm,
+    const uview_1d<Real>& ubi,
+    Real& xv,
+    Real& yv,
+    const uview_1d<Real>& c);
 
   KOKKOS_FUNCTION
   static void vd_lu_decomp(
@@ -678,6 +709,7 @@ struct Functions
   //
   inline static GwCommonInit s_common_init;
   inline static GwConvectInit s_convect_init;
+  inline static GwFrontInit s_front_init;
 
 }; // struct Functions
 
@@ -710,5 +742,6 @@ struct Functions
 # include "impl/gw_vd_lu_decomp_impl.hpp"
 # include "impl/gw_vd_lu_solve_impl.hpp"
 # include "impl/gw_gw_convect_init_impl.hpp"
+# include "impl/gw_gw_front_init_impl.hpp"
 #endif // GPU && !KOKKOS_ENABLE_*_RELOCATABLE_DEVICE_CODE
 #endif // P3_FUNCTIONS_HPP

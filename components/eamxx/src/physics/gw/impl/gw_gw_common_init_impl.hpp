@@ -28,6 +28,8 @@ void Functions<S,D>::gw_common_init(
   const Real& kwv_in,
   const uview_1d<const Real>& alpha_in)
 {
+  constexpr Real temp1 = 86400;
+  constexpr Real half = 0.5;
   s_common_init.initialized = true;
   s_common_init.pver = pver_in;
   s_common_init.pgwv = pgwv_in;
@@ -42,10 +44,11 @@ void Functions<S,D>::gw_common_init(
   s_common_init.kbotbg = kbotbg_in;
   s_common_init.fcrit2 = fcrit2_in;
   s_common_init.kwv = kwv_in;
+  s_common_init.oroko2 = half * kwv_in;
   s_common_init.alpha = view_1d<Real>("alpha", alpha_in.size());
   Kokkos::deep_copy(s_common_init.alpha, alpha_in);
   s_common_init.effkwv = kwv_in * fcrit2_in;
-  s_common_init.tndmax = orographic_only_in ? 500. / 86400. : 400. / 86400.;
+  s_common_init.tndmax = orographic_only_in ? 500 / temp1 : 400 / temp1;
 }
 
 } // namespace gw
