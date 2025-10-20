@@ -5359,13 +5359,13 @@ contains
 
        endif
        if (do_hist_z2x) then
-             do ezi = 1,num_inst_iac
-                suffix =  component_get_suffix(iac(ezi))
-                call seq_hist_writeaux(infodata, EClock_d, iac(ezi), flow='c2x', &
-                     aname='z2x'//trim(suffix), dname='domz', &
-                     nx=iac_nx, ny=iac_ny, nt=ncpl)
-             enddo
-          endif
+          do ezi = 1,num_inst_iac
+             inst_suffix =  component_get_suffix(iac(ezi))
+             call seq_hist_writeaux(infodata, EClock_d, iac(ezi), flow='c2x', &
+                  aname='z2x',dname='domz',inst_suffix=trim(inst_suffix), &
+                  nx=iac_nx, ny=iac_ny, nt=ncpl)
+          enddo
+       endif
 
        call t_stopf('CPL:cime_run_write_history')
        call t_drvstopf  ('CPL:HISTORY',cplrun=.true.)
