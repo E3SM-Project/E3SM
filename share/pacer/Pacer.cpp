@@ -241,6 +241,11 @@ bool addParentPrefix()
 {
     PACER_CHECK_INIT();
 
+    // return early if there is no enclosing timer
+    if (OpenTimers.empty()) {
+      return true;
+    }
+
     const std::string NewPrefix = CurrentPrefix + OpenTimers.back() + ":";
     
     PACER_CHECK_ERROR(GPTLprefix_set(NewPrefix.c_str()));
@@ -254,6 +259,11 @@ bool addParentPrefix()
 bool removeParentPrefix()
 {
     PACER_CHECK_INIT();
+    
+    // return early if there is no enclosing timer
+    if (OpenTimers.empty()) {
+      return true;
+    }
     
     std::string NewPrefix = CurrentPrefix;
     const int NCharsToErase = OpenTimers.back().length() + 1;
