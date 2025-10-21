@@ -7,16 +7,7 @@ using a finite‐difference implicit solver. The formulation includes
 variable transmissivity, slope‐driven gradients, variable drainable
 porosity, and recharge coupling.
 
-$$
-\frac{\partial h}{\partial t}
-= \frac{1}{f_{\text{drain}}}
-\frac{\partial}{\partial x}
-\left[
-T(x,h)
-\left(
-\frac{\partial h}{\partial x}\cos\theta + \sin\theta
-\right)
-\right]
-+ \frac{R}{f_{\text{drain}}}
+>$$
+\frac{\partial h}{\partial t} = \frac{1}{f_{\text{drain}}} \frac{\partial}{\partial x} \left[ T(x,h)\left(\frac{\partial h}{\partial }\cos\theta + \sin\theta\right)\right]+ \frac{R}{f_{\text{drain}}}
 $$
 
