@@ -1,5 +1,38 @@
 # Hybrid-3D hillslope hydrological model
 
+
+Area-Weighted Parameter Averaging
+Before calling the lateral response solver, the code calculates area-weighted averages:
+
+$$\text{rsub_top_default} = \sum_{c=c_0}^{c_0+N-1} \text{tmp_rsub_top}(c) \times \text{hs_dA}(l,c-c_0+1)
+
+
+$$\text{zwt\_h3d\_avg} = \frac{1}{\text{hs\_area}(l)} \sum_{c=c_0}^{c_0+N-1} \text{zwt\_h3d}(c) \times \text{hs\_dA}(l,c-c_0+1)$$
+\text{h3d_rsub_top_max_avg} = \frac{1}{\text{hs_area}(l)} \sum_{c=c_0}^{c_0+N-1} \text{h3d_rsub_top_max}(c) \times \text{hs_dA}(l,c-c_0+1)
+
+
+$$\text{fff\_avg} = \frac{1}{\text{hs\_area}(l)} \sum_{c=c_0}^{c_0+N-1} \text{fff}(c) \times \text{hs\_dA}(l,c-c_0+1)$$
+
+### 2. **Default Subsurface Runoff Calculation**
+\text{rsub_top_default} = \text{h3d_rsub_top_max_avg} \times \exp(-\text{fff_avg} \times \text{zwt_h3d_avg}) \times \text{hs_area}(l)
+
+
+### 3. **Area-Weighted Storage Change**
+\text{hs_dS_sat_tot} = \sum_{c=c_0}^{c_0+N-1} \text{hs_dS_sat}(c) \times \text{hs_dA}(l,c-c_0+1)
+
+
+### 4. **Area-Weighted Drainage Sum**
+\text{tmp_sum_drain} = \sum_{c=c_0}^{c_0+N-1} \text{qflx_drain}(c) \times \text{hs_dA}(l,c-c_0+1)$$
+
+Variable Definitions
+Where:
+
+hs_dA(l,i) = surface area of h3d soil column i in land unit l [m²]
+hs_area(l) = total surface area of hillslope in land unit l [m²]
+l = land unit index
+c_0 = first column index in land unit l
+N = nh3dc_per_lunit = number of columns per land unit
+
 The model represents subsurface flow and groundwater discharge along an
 idealized hillslope within each grid cell. It solves the Dupuit–Boussinesq
 form of the lateral flow equation for the saturated thickness $h(x,t)$,
@@ -142,59 +175,3 @@ $$
 
 
 
-flowchart TD
-    A[Start H3D_DRI Solver] --> B[Initialize Variables]
-    B --> C[Set sub_timestep = timestep<br/>accumulated_time = 0<br/>h_sat_begin = current state]
-    
-    C --> D[Loop: For each land unit]
-    D --> E{accumulated_time < timestep?}
-    
-    E -->|Yes| F[accumulated_time += sub_timestep<br/>Store h_sat_old]
-    E -->|No| S[Calculate Runoff Rates]
-    
-    F --> G{Any h_sat_old == 0?<br/>Dry conditions?}
-    G -->|Yes| H[Set h_sat_new = h_sat_old<br/>f_drain = 0.2<br/>Continue]
-    G -->|No| I[Call LATERAL_RESPONSE_SOLVER]
-    
-    H --> E
-    
-    I --> J[Start Newton-Raphson Loop<br/>iteration = 0<br/>h_previous = h_old]
-    
-    J --> K{iteration < max_iter AND<br/>NOT converged?}
-    K -->|No| M{Converged?}
-    K -->|Yes| L[iteration++<br/>Update Soil Properties]
-    
-    L --> N[Calculate drainable_porosity<br/>using Brooks-Corey model]
-    N --> O[Calculate transmissivity<br/>T = K_aniso × K_sat × h × w]
-    
-    O --> P[Setup Tridiagonal Matrix<br/>a[i], b[i], c[i], r[i]]
-    P --> Q[Solve using Thomas Algorithm<br/>Forward elimination<br/>Back substitution]
-    
-    Q --> R{Solution error OR<br/>max_change < tolerance?}
-    R -->|Error| M
-    R -->|Converged| T[converged = TRUE]
-    R -->|Continue| U[h_previous = h_new]
-    
-    T --> M
-    U --> K
-    
-    M -->|Yes| V[Accept Solution<br/>h_sat_new = MAX(0, h_new)<br/>Update water_table_depth]
-    M -->|No| W[Reject Solution<br/>accumulated_time -= sub_timestep<br/>sub_timestep = 0.5 × sub_timestep]
-    
-    V --> E
-    W --> X{sub_timestep < 10 sec?}
-    X -->|Yes| Y[Print Warning:<br/>Very small timestep]
-    X -->|No| E
-    Y --> E
-    
-    S --> Z[storage_change = f_drain × Δh_sat<br/>runoff = -storage_change/dt × 1000]
-    Z --> AA[Next Land Unit]
-    AA --> BB{More land units?}
-    BB -->|Yes| D
-    BB -->|No| CC[End]
-
-    style A fill:#e1f5fe
-    style CC fill:#e8f5e8
-    style I fill:#fff3e0
-    style M fill:#fce4ec
-    style Y fill:#ffebee
