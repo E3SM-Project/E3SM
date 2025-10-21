@@ -4,69 +4,69 @@
 ### Area-Weighted Parameter Averaging
 
 $$
-\text{rsub\_top\_default}
+r_{sub,\,top}^{default}
 = \sum_{c=c_0}^{c_0+N-1}
-  \text{tmp\_rsub\_top}(c)
+  tmp_{rsub,\,top}(c)
   \times
-  \text{hs\_dA}(l,\,c-c_0+1)
+  hs_{dA}(l,\,c-c_0+1)
 $$
 
 $$
-\text{zwt\_h3d\_avg}
-= \frac{1}{\text{hs\_area}(l)}
+zwt_{h3d}^{avg}
+= \frac{1}{hs_{area}(l)}
   \sum_{c=c_0}^{c_0+N-1}
-  \text{zwt\_h3d}(c)
+  zwt_{h3d}(c)
   \times
-  \text{hs\_dA}(l,\,c-c_0+1)
+  hs_{dA}(l,\,c-c_0+1)
 $$
 
 $$
-\text{h3d\_rsub\_top\_max\_avg}
-= \frac{1}{\text{hs\_area}(l)}
+r_{sub,\,top,\,h3d}^{max,\,avg}
+= \frac{1}{hs_{area}(l)}
   \sum_{c=c_0}^{c_0+N-1}
-  \text{h3d\_rsub\_top\_max}(c)
+  r_{sub,\,top,\,h3d}^{max}(c)
   \times
-  \text{hs\_dA}(l,\,c-c_0+1)
+  hs_{dA}(l,\,c-c_0+1)
 $$
 
 $$
-\text{fff\_avg}
-= \frac{1}{\text{hs\_area}(l)}
+fff^{avg}
+= \frac{1}{hs_{area}(l)}
   \sum_{c=c_0}^{c_0+N-1}
-  \text{fff}(c)
+  fff(c)
   \times
-  \text{hs\_dA}(l,\,c-c_0+1)
+  hs_{dA}(l,\,c-c_0+1)
 $$
 
 ### Default Subsurface Runoff Calculation
 
 $$
-\text{rsub\_top\_default}
-= \text{h3d\_rsub\_top\_max\_avg}
+r_{sub,\,top}^{default}
+= r_{sub,\,top,\,h3d}^{max,\,avg}
   \times
-  \exp(-\text{fff\_avg} \times \text{zwt\_h3d\_avg})
+  \exp\!\left(-fff^{avg} \times zwt_{h3d}^{avg}\right)
   \times
-  \text{hs\_area}(l)
+  hs_{area}(l)
 $$
 
 ### Area-Weighted Storage Change
 
 $$
-\text{hs\_dS\_sat\_tot}
+\Delta S_{sat}^{tot}
 = \sum_{c=c_0}^{c_0+N-1}
-  \text{hs\_dS\_sat}(c)
+  \Delta S_{sat}(c)
   \times
-  \text{hs\_dA}(l,\,c-c_0+1)
+  hs_{dA}(l,\,c-c_0+1)
 $$
 
 ### Area-Weighted Drainage Sum
 
 $$
-\text{tmp\_sum\_drain}
+Q_{drain}^{tot}
 = \sum_{c=c_0}^{c_0+N-1}
-  \text{qflx\_drain}(c)
+  q_{drain}(c)
   \times
-  \text{hs\_dA}(l,\,c-c_0+1)
+  hs_{dA}(l,\,c-c_0+1)
 $$
 
 Variable Definitions
