@@ -17,10 +17,10 @@ $T(x,h)$ is the transmissivity [m² s⁻¹],
 $\theta$ is the hillslope angle [rad],
 and $R$ is the recharge rate [m s⁻¹].
 
-Transmissivity
+## Transmissivity
+
 $$
-T(x,h)
-= \frac{K_{\text{aniso}}\,K_{\text{sat}}(z_{wt})\,h\,w(x)}{1000}
+T(x,h)= \frac{K_{\text{aniso}}\,K_{\text{sat}}(z_{wt})\,h\,w(x)}{1000}
 $$
 
 where $K_{\text{aniso}}=100$ is the horizontal/vertical anisotropy factor,
