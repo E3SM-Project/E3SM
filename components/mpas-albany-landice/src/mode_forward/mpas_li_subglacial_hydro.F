@@ -117,6 +117,8 @@ module li_subglacial_hydro
       logical, pointer :: config_do_restart
       real (kind=RKIND), pointer :: config_sea_level
       integer, pointer :: config_num_halos
+      integer, pointer :: nCells
+      integer :: iCell
       integer :: err_tmp
 
 
@@ -202,6 +204,7 @@ module li_subglacial_hydro
          call mpas_pool_get_subpool(block % structs, 'hydro', hydroPool)
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
 
+         call mpas_pool_get_dimension(hydroPool, 'nCells', nCells)
          call mpas_pool_get_array(hydroPool, 'waterPressure', waterPressure)
          call mpas_pool_get_array(hydroPool, 'hydropotential', hydropotential)
          call mpas_pool_get_array(hydroPool, 'iceThicknessHydro', iceThicknessHydro) 
@@ -209,18 +212,20 @@ module li_subglacial_hydro
          call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
          
          waterPressure = max(0.0_RKIND, waterPressure)
-         where (li_mask_is_grounded_ice(cellMask))
-            waterPressure = min(waterPressure, rhoi * gravity * iceThicknessHydro)
-         end where
-         
-         ! set pressure and hydropotential correctly on ice-free land and in ocean
-         where ((.not. (li_mask_is_grounded_ice(cellMask))) .and. (bedTopography > config_sea_level))
-            waterPressure = 0.0_RKIND
-            hydropotential = rho_water * gravity * bedTopography
-         elsewhere ((.not. (li_mask_is_grounded_ice(cellMask))) .and. (bedTopography <= config_sea_level))
-            waterPressure = gravity * rhoo * (config_sea_level - bedTopography)
-            hydropotential = 0.0_RKIND
-         end where
+         do iCell = 1, nCells
+            if (li_mask_is_grounded_ice(cellMask(iCell))) then
+               waterPressure(iCell) = min(waterPressure(iCell), rhoi * gravity * iceThicknessHydro(iCell))
+            else
+               ! set pressure and hydropotential correctly on ice-free land and in ocean
+               if (bedTopography(iCell) > config_sea_level) then
+                  waterPressure(iCell) = 0.0_RKIND
+                  hydropotential(iCell) = rho_water * gravity * bedTopography(iCell)
+               else
+                  waterPressure(iCell) = gravity * rhoo * (config_sea_level - bedTopography(iCell))
+                  hydropotential(iCell) = 0.0_RKIND
+               endif
+            endif
+         enddo
         
          ! Initialize diagnostic pressure variables
          call calc_pressure_diag_vars(block, err_tmp)
@@ -1762,6 +1767,8 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:), pointer :: iceThicknessHydro
       integer, dimension(:), pointer :: cellMask
       real (kind=RKIND), pointer :: config_sea_level
+      integer, pointer :: nCells
+      integer :: iCell
 
       err = 0
 
@@ -1773,6 +1780,7 @@ module li_subglacial_hydro
       call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
       call mpas_pool_get_config(liConfigs, 'config_ocean_density', rhoo)
 
+      call mpas_pool_get_dimension(hydroPool, 'nCells', nCells)
       call mpas_pool_get_array(hydroPool, 'effectivePressureSGH', effectivePressureSGH)
       call mpas_pool_get_array(hydroPool, 'waterPressure', waterPressure)
       call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
@@ -1789,11 +1797,16 @@ module li_subglacial_hydro
       end where
     
       hydropotentialBase = rho_water * gravity * bedTopography + waterPressure
-      where ((.not. li_mask_is_grounded_ice(cellMask)) .and. (bedTopography <= config_sea_level)) 
-         hydropotentialBase = 0.0_RKIND !zero hydropotential in ocean
-      elsewhere ((.not. li_mask_is_grounded_ice(cellMask)) .and. (bedTopography > config_sea_level))
-         hydropotentialBase = rho_water * gravity * bedTopography ! for completeness, but won't matter with one-side slope calculations on terrestrial boundaries
-      end where      
+      do iCell = 1, nCells
+         if (.not. li_mask_is_grounded_ice(cellMask(iCell))) then
+            if (bedTopography(iCell) <= config_sea_level) then
+               hydropotentialBase(iCell) = 0.0_RKIND !zero hydropotential in ocean
+            else
+               hydropotentialBase(iCell) = rho_water * gravity * bedTopography(iCell)
+               ! for completeness, but won't matter with one-side slope calculations on terrestrial boundaries
+            endif
+         endif
+      enddo
 
       ! hydropotential with water thickness
       hydropotential = hydropotentialBase + rho_water * gravity * waterThickness
