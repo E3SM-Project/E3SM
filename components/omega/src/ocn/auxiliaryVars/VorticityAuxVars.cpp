@@ -7,17 +7,18 @@
 namespace OMEGA {
 
 VorticityAuxVars::VorticityAuxVars(const std::string &AuxStateSuffix,
-                                   const HorzMesh *Mesh, int NVertLayers)
+                                   const HorzMesh *Mesh,
+                                   const VertCoord *VCoord)
     : RelVortVertex("RelVortVertex" + AuxStateSuffix, Mesh->NVerticesSize,
-                    NVertLayers),
+                    VCoord->NVertLayers),
       NormRelVortVertex("NormRelVortVertex" + AuxStateSuffix,
-                        Mesh->NVerticesSize, NVertLayers),
+                        Mesh->NVerticesSize, VCoord->NVertLayers),
       NormPlanetVortVertex("NormPlanetVortVertex" + AuxStateSuffix,
-                           Mesh->NVerticesSize, NVertLayers),
+                           Mesh->NVerticesSize, VCoord->NVertLayers),
       NormRelVortEdge("NormRelVortEdge" + AuxStateSuffix, Mesh->NEdgesSize,
-                      NVertLayers),
+                      VCoord->NVertLayers),
       NormPlanetVortEdge("NormPlanetVortEdge" + AuxStateSuffix,
-                         Mesh->NEdgesSize, NVertLayers),
+                         Mesh->NEdgesSize, VCoord->NVertLayers),
       VertexDegree(Mesh->VertexDegree), CellsOnVertex(Mesh->CellsOnVertex),
       EdgesOnVertex(Mesh->EdgesOnVertex),
       EdgeSignOnVertex(Mesh->EdgeSignOnVertex), DcEdge(Mesh->DcEdge),

@@ -5,6 +5,7 @@
 #include "HorzMesh.h"
 #include "HorzOperators.h"
 #include "OmegaKokkos.h"
+#include "VertCoord.h"
 
 #include <string>
 

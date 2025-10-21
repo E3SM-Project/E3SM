@@ -204,8 +204,8 @@ int initTimeStepperTest(const std::string &mesh) {
       LOG_ERROR("TimeStepperTest: error creating test state");
    }
 
-   auto *TestAuxState = AuxiliaryState::create(
-       "TestAuxState", DefMesh, DefVertCoord, DefHalo, NVertLayers, NTracers);
+   auto *TestAuxState = AuxiliaryState::create("TestAuxState", DefMesh, DefHalo,
+                                               DefVertCoord, NTracers);
 
    Config *OmegaConfig = Config::getOmegaConfig();
    TestAuxState->readConfigOptions(OmegaConfig);

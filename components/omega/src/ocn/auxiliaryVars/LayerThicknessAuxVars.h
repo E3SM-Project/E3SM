@@ -4,6 +4,7 @@
 #include "DataTypes.h"
 #include "HorzMesh.h"
 #include "OmegaKokkos.h"
+#include "VertCoord.h"
 
 #include <string>
 
@@ -20,7 +21,7 @@ class LayerThicknessAuxVars {
    FluxThickEdgeOption FluxThickEdgeChoice;
 
    LayerThicknessAuxVars(const std::string &AuxStateSuffix,
-                         const HorzMesh *Mesh, int NVertLayers);
+                         const HorzMesh *Mesh, const VertCoord *VCoord);
 
    KOKKOS_FUNCTION void
    computeVarsOnEdge(int IEdge, int KChunk, const Array2DReal &LayerThickCell,

@@ -4,6 +4,7 @@
 #include "DataTypes.h"
 #include "HorzMesh.h"
 #include "OmegaKokkos.h"
+#include "VertCoord.h"
 
 #include <string>
 
@@ -15,7 +16,7 @@ class KineticAuxVars {
    Array2DReal VelocityDivCell;
 
    KineticAuxVars(const std::string &AuxStateSuffix, const HorzMesh *Mesh,
-                  int NVertLayers);
+                  const VertCoord *VCoord);
 
    KOKKOS_FUNCTION void
    computeVarsOnCell(int ICell, int KChunk,
