@@ -75,7 +75,7 @@ class PPShearMix {
                                    const Array2DReal &TangentialVelocity,
                                    const Array2DReal &BruntVaisalaFreq) const {
       for (int K = 0; K <= NVertLayers; ++K) {
-         if (K == 0) {
+         if (K == 0 || K == NVertLayers) {
             VertVisc(ICell, K) = VertVisc(ICell, K) + 0.0_Real;
             VertDiff(ICell, K) = VertDiff(ICell, K) + 0.0_Real;
          } else {
@@ -83,19 +83,20 @@ class PPShearMix {
             Real InvAreaCell  = 1.0_Real / AreaCell(ICell);
             Real ShearSquared = 0.0_Real;
             for (int J = 0; J < NEdgesOnCell(ICell); ++J) {
-               I4 JEdge    = EdgesOnCell(ICell, J);
-               Real Factor = 0.5 * DcEdge(JEdge) * DvEdge(JEdge) * InvAreaCell;
-               Real DelU2  = Kokkos::pow(NormalVelocity(JEdge, K - 1) -
-                                             NormalVelocity(JEdge, K),
-                                         2.0) +
+               I4 JEdge = EdgesOnCell(ICell, J);
+               Real Factor =
+                   0.5_Real * DcEdge(JEdge) * DvEdge(JEdge) * InvAreaCell;
+               Real DelU2 = Kokkos::pow(NormalVelocity(JEdge, K - 1) -
+                                            NormalVelocity(JEdge, K),
+                                        2.0_Real) +
                             Kokkos::pow(TangentialVelocity(JEdge, K - 1) -
                                             TangentialVelocity(JEdge, K),
-                                        2.0);
+                                        2.0_Real);
                ShearSquared = ShearSquared + Factor * DelU2;
             }
             ShearSquared =
                 ShearSquared /
-                Kokkos::pow(ZMid(ICell, K - 1) - ZMid(ICell, K), 2.0);
+                Kokkos::pow(ZMid(ICell, K - 1) - ZMid(ICell, K), 2.0_Real);
 
             Real RichardsonNum = BruntVaisalaFreq(ICell, K) /
                                  Kokkos::max(1.0e-12_Real, ShearSquared);

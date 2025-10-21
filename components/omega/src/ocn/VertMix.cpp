@@ -19,7 +19,7 @@ namespace OMEGA {
 PPShearMix::PPShearMix(const HorzMesh *Mesh, const VertCoord *VCoord)
     : NVertLayers(VCoord->NVertLayers), ZMid(VCoord->ZMid),
       NEdgesOnCell(Mesh->NEdgesOnCell), EdgesOnCell(Mesh->EdgesOnCell),
-      DvEdge(Mesh->DvEdge), DcEdge(Mesh->DvEdge), AreaCell(Mesh->AreaCell) {}
+      DvEdge(Mesh->DvEdge), DcEdge(Mesh->DcEdge), AreaCell(Mesh->AreaCell) {}
 
 ConvectiveMix::ConvectiveMix(const VertCoord *VCoord)
     : NVertLayers(VCoord->NVertLayers) {}
@@ -30,8 +30,8 @@ VertMix::VertMix(const std::string &Name_, ///< [in] Name for VertMix object
                  const VertCoord *VCoord   ///< [in] Vertical coordinate
                  )
     : ComputeVertMixConv(VCoord), ComputeVertMixShear(Mesh, VCoord) {
-   VertDiff  = Array2DReal("VertDiff", Mesh->NCellsAll, VCoord->NVertLayers);
-   VertVisc  = Array2DReal("VertVisc", Mesh->NCellsAll, VCoord->NVertLayers);
+   VertDiff = Array2DReal("VertDiff", Mesh->NCellsAll, VCoord->NVertLayers + 1);
+   VertVisc = Array2DReal("VertVisc", Mesh->NCellsAll, VCoord->NVertLayers + 1);
    NCellsAll = Mesh->NCellsAll;
    NChunks   = VCoord->NVertLayers / VecLength;
    Name      = Name_;
