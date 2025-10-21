@@ -1,4 +1,4 @@
-#Hybrid-3D hillslope hydrological model
+# Hybrid-3D hillslope hydrological model
 
 The model represents subsurface flow and groundwater discharge along an
 idealized hillslope within each grid cell. It solves the Dupuit–Boussinesq
