@@ -18,6 +18,20 @@ Each land unit is subdivided into several h3D columns positioned along an ideali
 - Upper boundary represents the local topographic divide.
 - Intermediate nodes represent soil columns along the slope.
 
+![Image title](../figures/h3d_schematic.jpg)
+
+Figure 1. The hybrid-3D hillslope hydrological model represents subsurface and surface flow along an idealized hillslope. Left panel (plan view):
+A hillslope of total length $L$ is divided into $N$ vertical soil columns, each with an equal horizontal length $\Delta x$, underlain by bedrock with a topographic slope $\alpha$.
+The width of the hillslope at a given position is denoted by $W(x)$, measured from the lower boundary of the lowest column (column 0).
+The column index $j$ refers to the center of each hillslope column.
+Land-surface properties such as bedrock depth, vegetation cover, and atmospheric forcing are assumed to be identical for all columns.
+The variable $d$ represents the depth of overland flow above the surface. Right panel (vertical section):
+Each hillslope column consists of multiple soil layers of variable thickness $\Delta z_i$.
+Vertical flow through the unsaturated and saturated zones occurs across these layers with corresponding soil water potentials $\psi_i$.
+The flow domain extends down to an impermeable bedrock boundary, which imposes a zero-flux condition at the bottom.
+Vertical flow is solved using the $\theta$-based form of the Richards equation (Zeng & Decker, 2009).
+The layer index $i$ denotes vertical soil layers, $h$ is the height of the saturation zone, and $\nabla$ marks the position of the water table.
+
 For each node, the state variable is the saturated thickness, $h_{sat}(x,t)$, measured from the bedrock to the water table. 
 The model tracks how $h_{sat}(x,t)$ evolves in time due to:
 
