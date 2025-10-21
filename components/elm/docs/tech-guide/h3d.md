@@ -49,7 +49,7 @@ $z_{\text{bed}}$ is bedrock depth [m],
 $\psi_{\text{sat}}$ is air-entry suction [mm],
 and $b$ is the Brooks–Corey pore-size index [–].
 
-##Finite-Difference Discretization
+## Finite-Difference Discretization
 
 The PDE is solved implicitly in space and time using a tridiagonal
 system for $h_i^{n+1}$ at each node $i$:
@@ -89,7 +89,7 @@ r_N &= f_{\text{drain},N} h_N^n
 \end{aligned}
 $$
 
-Subsurface Runoff and Storage Change
+## Subsurface Runoff and Storage Change
 
 $$
 \Delta S_{\text{sat},i}
