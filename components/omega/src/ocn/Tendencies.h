@@ -167,9 +167,10 @@ class Tendencies {
    Tendencies(const Tendencies &) = delete;
    Tendencies(Tendencies &&)      = delete;
 
-   const HorzMesh *Mesh; ///< Pointer to horizontal mesh
-   I4 NTracers;          ///< Number of tracers
-   I4 NChunks;           ///< Number of vertical layer chunks
+   const HorzMesh *Mesh;    ///< Pointer to horizontal mesh
+   const VertCoord *VCoord; ///< Pointer to vertical coordinate
+   I4 NTracers;             ///< Number of tracers
+   I4 NChunks;              ///< Number of vertical layer chunks
 
    // Pointer to default tendencies
    static Tendencies *DefaultTendencies;

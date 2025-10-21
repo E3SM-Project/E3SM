@@ -29,7 +29,7 @@ class ThicknessFluxDivOnCell {
    bool Enabled;
 
    /// constructor declaration
-   ThicknessFluxDivOnCell(const HorzMesh *Mesh);
+   ThicknessFluxDivOnCell(const HorzMesh *Mesh, const VertCoord *VCoord);
 
    /// The functor takes cell index, vertical chunk index, and thickness flux
    /// array as inputs, outputs the tendency array

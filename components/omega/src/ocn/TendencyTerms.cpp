@@ -14,11 +14,11 @@
 #include "HorzMesh.h"
 #include "OceanState.h"
 #include "Tracers.h"
-#include "VertCoord.h"
 
 namespace OMEGA {
 
-ThicknessFluxDivOnCell::ThicknessFluxDivOnCell(const HorzMesh *Mesh)
+ThicknessFluxDivOnCell::ThicknessFluxDivOnCell(const HorzMesh *Mesh,
+                                               const VertCoord *VCoord)
     : NEdgesOnCell(Mesh->NEdgesOnCell), EdgesOnCell(Mesh->EdgesOnCell),
       DvEdge(Mesh->DvEdge), AreaCell(Mesh->AreaCell),
       EdgeSignOnCell(Mesh->EdgeSignOnCell) {}
