@@ -677,9 +677,9 @@ contains
             if (j == 1) then ! this only needs to be done once
                eflx_fgr12(c) = -cnfac*fn(c,1) - (1._r8-cnfac)*fn1(c,1)
             end if
-            if (j > 0 .and. j < nlevgrnd .and. (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop)) then
+            if (j > 0 .and. j < nlevgrnd .and. (col_pp%is_soil(c) .or. col_pp%is_crop(c))) then
                eflx_fgr(c,j) = -cnfac*fn(c,j) - (1._r8-cnfac)*fn1(c,j)
-            else if (j == nlevgrnd .and. (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop)) then
+            else if (j == nlevgrnd .and. (col_pp%is_soil(c) .or. col_pp%is_crop(c))) then
                eflx_fgr(c,j) = 0._r8
             end if
 
@@ -1465,7 +1465,7 @@ contains
 
                ! from Zhao (1997) and Koren (1999)
                supercool(c,j) = 0.0_r8
-               if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop .or. col_pp%itype(c) == icol_road_perv) then
+               if (col_pp%is_soil(c) .or. col_pp%is_crop(c) .or. col_pp%itype(c) == icol_road_perv) then
                   if(t_soisno(c,j) < tfrz) then
                      smp = hfus*(tfrz-t_soisno(c,j))/(grav*t_soisno(c,j)) * 1000._r8  !(mm)
                      supercool(c,j) = watsat(c,j)*(smp/sucsat(c,j))**(-1._r8/bsw(c,j))
@@ -1648,7 +1648,7 @@ contains
             ! as computed in HydrologyDrainageMod.F90.
 
             l = col_pp%landunit(c)
-            if ( lun_pp%itype(l)==istice_mec) then
+            if ( lun_pp%itype(l) == istice_mec) then
                if (j>=1 .and. h2osoi_liq(c,j) > 0._r8) then   ! ice layer with meltwater
                   ! melting corresponds to a negative ice flux
                   qflx_glcice_melt(c) = qflx_glcice_melt(c) + h2osoi_liq(c,j)/dtime
@@ -1662,7 +1662,7 @@ contains
             endif     ! istice_mec
             ! for diagnostic QICE SMB output only - 
             ! these are to calculate SMB even without MECs 
-            if ( lun_pp%itype(l)==istice) then
+            if ( lun_pp%itype(l) == istice) then
                if (j>=1 .and. h2osoi_liq(c,j) > 0._r8) then   ! ice layer with meltwater
                   ! melting corresponds to a negative ice flux
                   qflx_glcice_melt_diag(c) = qflx_glcice_melt_diag(c) + h2osoi_liq(c,j)/dtime
@@ -1682,7 +1682,7 @@ contains
          l = col_pp%landunit(c)
          if (lun_pp%urbpoi(l)) then
             eflx_snomelt_u(c) = eflx_snomelt(c)
-         else if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+         else if (col_pp%is_soil(c) .or. col_pp%is_crop(c)) then
             eflx_snomelt_r(c) = eflx_snomelt(c)
          end if
       end do
