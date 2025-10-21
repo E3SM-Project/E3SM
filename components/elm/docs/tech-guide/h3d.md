@@ -48,3 +48,31 @@ where $\theta_{\text{sat}}$ is porosity [–],
 $z_{\text{bed}}$ is bedrock depth [m],
 $\psi_{\text{sat}}$ is air-entry suction [mm],
 and $b$ is the Brooks–Corey pore-size index [–].
+
+##Finite-Difference Discretization
+
+The PDE is solved implicitly in space and time using a tridiagonal
+system for $h_i^{n+1}$ at each node $i$:
+
+$$
+a_i h_{i-1}^{n+1} + b_i h_i^{n+1} + c_i h_{i+1}^{n+1} = r_i
+$$
+
+
+Interior nodes ($i=2,\dots,N-1$)
+
+$$
+\begin{aligned}
+a_i &= -\frac{T_{i-\frac12}^n \cos\theta \,\Delta t}
+           {\Delta x_{i-\frac12}\,\Delta x_i\,w_i}, \\
+c_i &= -\frac{T_{i+\frac12}^n \cos\theta \,\Delta t}
+           {\Delta x_{i+\frac12}\,\Delta x_i\,w_i}, \\
+b_i &= f_{\text{drain},i} - (a_i + c_i), \\
+r_i &= f_{\text{drain},i} h_i^n
+      + \frac{\Delta t\sin\theta}{w_i\Delta x_i}
+        (T_{i+\frac12}^n - T_{i-\frac12}^n)
+      + \Delta t R_i.
+\end{aligned}
+$$
+
+
