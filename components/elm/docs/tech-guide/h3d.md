@@ -142,4 +142,59 @@ $$
 
 
 
+flowchart TD
+    A[Start H3D_DRI Solver] --> B[Initialize Variables]
+    B --> C[Set sub_timestep = timestep<br/>accumulated_time = 0<br/>h_sat_begin = current state]
+    
+    C --> D[Loop: For each land unit]
+    D --> E{accumulated_time < timestep?}
+    
+    E -->|Yes| F[accumulated_time += sub_timestep<br/>Store h_sat_old]
+    E -->|No| S[Calculate Runoff Rates]
+    
+    F --> G{Any h_sat_old == 0?<br/>Dry conditions?}
+    G -->|Yes| H[Set h_sat_new = h_sat_old<br/>f_drain = 0.2<br/>Continue]
+    G -->|No| I[Call LATERAL_RESPONSE_SOLVER]
+    
+    H --> E
+    
+    I --> J[Start Newton-Raphson Loop<br/>iteration = 0<br/>h_previous = h_old]
+    
+    J --> K{iteration < max_iter AND<br/>NOT converged?}
+    K -->|No| M{Converged?}
+    K -->|Yes| L[iteration++<br/>Update Soil Properties]
+    
+    L --> N[Calculate drainable_porosity<br/>using Brooks-Corey model]
+    N --> O[Calculate transmissivity<br/>T = K_aniso × K_sat × h × w]
+    
+    O --> P[Setup Tridiagonal Matrix<br/>a[i], b[i], c[i], r[i]]
+    P --> Q[Solve using Thomas Algorithm<br/>Forward elimination<br/>Back substitution]
+    
+    Q --> R{Solution error OR<br/>max_change < tolerance?}
+    R -->|Error| M
+    R -->|Converged| T[converged = TRUE]
+    R -->|Continue| U[h_previous = h_new]
+    
+    T --> M
+    U --> K
+    
+    M -->|Yes| V[Accept Solution<br/>h_sat_new = MAX(0, h_new)<br/>Update water_table_depth]
+    M -->|No| W[Reject Solution<br/>accumulated_time -= sub_timestep<br/>sub_timestep = 0.5 × sub_timestep]
+    
+    V --> E
+    W --> X{sub_timestep < 10 sec?}
+    X -->|Yes| Y[Print Warning:<br/>Very small timestep]
+    X -->|No| E
+    Y --> E
+    
+    S --> Z[storage_change = f_drain × Δh_sat<br/>runoff = -storage_change/dt × 1000]
+    Z --> AA[Next Land Unit]
+    AA --> BB{More land units?}
+    BB -->|Yes| D
+    BB -->|No| CC[End]
 
+    style A fill:#e1f5fe
+    style CC fill:#e8f5e8
+    style I fill:#fff3e0
+    style M fill:#fce4ec
+    style Y fill:#ffebee
