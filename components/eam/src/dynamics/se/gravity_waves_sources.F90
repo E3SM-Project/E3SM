@@ -133,8 +133,7 @@ CONTAINS
     integer :: k,kptr,i,j,ie,component
     real(kind=real_kind) :: frontgf_gll(np,np,nlev,nets:nete)
     real(kind=real_kind) :: gradth_gll(np,np,2,nlev,nets:nete)  ! grad(theta)
-    real(kind=real_kind) :: pmid(np,np,nlev)            ! old version of pressure at mid points
-    real(kind=real_kind) :: pmid_hydro(np,np,nlev)      ! hydrostatic pressure at mid points
+    real(kind=real_kind) :: pmid(np,np,nlev)            ! hydrostatic pressure at mid points
     real(kind=real_kind) :: temperature(np,np,nlev)     ! Temperature
     real(kind=real_kind) :: C(np,np,2), wf1(nphys*nphys,nlev), wf2(nphys*nphys,nlev)
 
@@ -182,18 +181,18 @@ CONTAINS
       if (use_fgf_pgrad_correction) then
 
         ! compute pressure at mid points
-        call get_hydro_pressure(pmid_hydro,elem(ie)%state%dp3d(:,:,:,tl),hvcoord)
+        call get_hydro_pressure(pmid,elem(ie)%state%dp3d(:,:,:,tl),hvcoord)
 
         call get_temperature(elem(ie),temperature,hvcoord,tl)
         do k = 1,nlev
           ! potential temperature: theta = T (p/p0)^kappa
-          theta(:,:,k) = temperature(:,:,k)*(psurf_ref / pmid_hydro(:,:,k))**kappa
+          theta(:,:,k) = temperature(:,:,k)*(psurf_ref / pmid(:,:,k))**kappa
         end do
         call compute_vertical_derivative(tl,ie,elem,theta,dtheta_dp)
 
         do k = 1,nlev
           gradth_gll(:,:,:,k,ie) = gradient_sphere(theta(:,:,k),deriv1,elem(ie)%Dinv)
-          gradp_gll(:,:,:) = gradient_sphere(pmid_hydro(:,:,k),deriv1,elem(ie)%Dinv)
+          gradp_gll(:,:,:) = gradient_sphere(pmid(:,:,k),deriv1,elem(ie)%Dinv)
           do component=1,2
             gradth_gll(:,:,component,k,ie) = gradth_gll(:,:,component,k,ie) - dtheta_dp(:,:,k) * gradp_gll(:,:,component)
           end do
@@ -211,7 +210,7 @@ CONTAINS
         end do
 
         do k = 1,nlev
-          gradp_gll(:,:,:) = gradient_sphere(pmid_hydro(:,:,k),deriv1,elem(ie)%Dinv)
+          gradp_gll(:,:,:) = gradient_sphere(pmid(:,:,k),deriv1,elem(ie)%Dinv)
           ! Do ugradv on the cartesian components - Dot u with the gradient of each component
           do component=1,3
             dum_grad(:,:,:) = gradient_sphere(dum_cart(:,:,component,k),deriv1,elem(ie)%Dinv)
