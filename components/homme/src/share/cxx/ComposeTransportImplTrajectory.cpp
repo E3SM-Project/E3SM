@@ -425,7 +425,7 @@ static int test_approx_derivative () {
     const auto f = KOKKOS_LAMBDA (const cti::MT& team) {
       KernelVariables kv(team);
       const auto f = [&] (const int i, const int j, const int k) {
-        const Real x = 1.7*(k + 1e-1*i*k + 1e-2*j*k*k)/cti::num_phys_lev;
+        const Real x = 1.7*(k + 1e-1*i*k + 1e-2*j*k*k)/(int)cti::num_phys_lev;
         xs(i,j,k) = x;
         ys(i,j,k) = (a*x + b)*x + c;
       };

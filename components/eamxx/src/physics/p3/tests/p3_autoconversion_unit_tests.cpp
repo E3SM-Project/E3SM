@@ -128,7 +128,7 @@ void cloud_water_autoconversion_unit_bfb_tests() {
     const Spack rho(1.0), inv_qc_relvar(1.0);
     Spack qc_incld, nc_incld(1e7), qc2qr_autoconv_tend(0.0), nc2nr_autoconv_tend(0.0), ncautr(0.0);
     for(int si=0; si<Spack::n; ++si){
-        qc_incld[si] = 1e-6 * i * Spack::n + si;
+        qc_incld[si] = 1e-6 * i * (int)Spack::n + si;
     }
     Functions::cloud_water_autoconversion(
         rho, qc_incld, nc_incld, inv_qc_relvar, qc2qr_autoconv_tend,

@@ -39,7 +39,7 @@ struct ComposeTransportImpl {
   enum : int { np2 = NP*NP };
   enum : int { num_lev_pack = NUM_LEV };
   enum : int { max_num_lev_pack = NUM_LEV_P };
-  enum : int { max_num_lev_aligned = max_num_lev_pack*packn };
+  enum : int { max_num_lev_aligned = (int)max_num_lev_pack*(int)packn };
   enum : int { num_phys_lev = NUM_PHYSICAL_LEV };
 
   static_assert(max_num_lev_aligned >= 3,
