@@ -27,3 +27,24 @@ where $K_{\text{aniso}}=100$ is the horizontal/vertical anisotropy factor,
 $K_{\text{sat}}(z_{wt})$ is the saturated hydraulic conductivity at the
 water-table depth [mm s⁻¹], and $w(x)$ is the hillslope width [m].
 Division by 1000 converts from mm s⁻¹ to m s⁻¹.
+
+## Variable Drainable Porosity
+
+$$
+f_{\text{drain}}
+= \theta_{\text{sat}}
+\left[
+1 -
+\left(
+1 +
+\frac{1000\,\max(0,\,z_{\text{bed}}-h)}{\psi_{\text{sat}}}
+\right)^{-1/b}
+\right],
+\qquad
+f_{\text{drain}}\ge0.02
+$$
+
+where $\theta_{\text{sat}}$ is porosity [–],
+$z_{\text{bed}}$ is bedrock depth [m],
+$\psi_{\text{sat}}$ is air-entry suction [mm],
+and $b$ is the Brooks–Corey pore-size index [–].
