@@ -28,7 +28,7 @@ module dynSubgridAdjustmentsMod
   use SpeciesMod             , only : CN_SPECIES_N, CN_SPECIES_P
   use abortutils             , only : endrun
   use shr_log_mod            , only : errMsg => shr_log_errMsg
-
+  use shr_infnan_mod         , only : isnan => shr_infnan_isnan
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   implicit none
