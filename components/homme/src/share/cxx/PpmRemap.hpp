@@ -221,6 +221,7 @@ struct PpmVertRemap : public VertRemapAlg {
       boundaries::fill_cell_means_gs(kv, Homme::subview(m_dpo, kv.ie, igp, jgp),
                                      Homme::subview(m_ao, kv.team_idx, igp, jgp));
 
+      auto mass_o = m_mass_o;
       Dispatch<ExecSpace>::parallel_scan(
           kv.team, NUM_PHYSICAL_LEV,
           [=](const int &k, Real &accumulator, const bool last) {
@@ -232,7 +233,7 @@ struct PpmVertRemap : public VertRemapAlg {
             const int ivector = k % VECTOR_SIZE;
             accumulator += remap_var(igp, jgp, ilevel)[ivector];
             if (last) {
-              m_mass_o(kv.team_idx, igp, jgp, k + 1) = accumulator;
+              mass_o(kv.team_idx, igp, jgp, k + 1) = accumulator;
             }
       });
 
