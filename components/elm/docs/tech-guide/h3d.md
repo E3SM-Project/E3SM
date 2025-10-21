@@ -1,37 +1,84 @@
 # Hybrid-3D hillslope hydrological model
 
 
-Area-Weighted Parameter Averaging
-Before calling the lateral response solver, the code calculates area-weighted averages:
+### Area-Weighted Parameter Averaging
 
-$$\text{rsub_top_default} = \sum_{c=c_0}^{c_0+N-1} \text{tmp_rsub_top}(c) \times \text{hs_dA}(l,c-c_0+1)
+$$
+\text{rsub\_top\_default}
+= \sum_{c=c_0}^{c_0+N-1}
+  \text{tmp\_rsub\_top}(c)
+  \times
+  \text{hs\_dA}(l,\,c-c_0+1)
+$$
 
+$$
+\text{zwt\_h3d\_avg}
+= \frac{1}{\text{hs\_area}(l)}
+  \sum_{c=c_0}^{c_0+N-1}
+  \text{zwt\_h3d}(c)
+  \times
+  \text{hs\_dA}(l,\,c-c_0+1)
+$$
 
-$$\text{zwt\_h3d\_avg} = \frac{1}{\text{hs\_area}(l)} \sum_{c=c_0}^{c_0+N-1} \text{zwt\_h3d}(c) \times \text{hs\_dA}(l,c-c_0+1)$$
-\text{h3d_rsub_top_max_avg} = \frac{1}{\text{hs_area}(l)} \sum_{c=c_0}^{c_0+N-1} \text{h3d_rsub_top_max}(c) \times \text{hs_dA}(l,c-c_0+1)
+$$
+\text{h3d\_rsub\_top\_max\_avg}
+= \frac{1}{\text{hs\_area}(l)}
+  \sum_{c=c_0}^{c_0+N-1}
+  \text{h3d\_rsub\_top\_max}(c)
+  \times
+  \text{hs\_dA}(l,\,c-c_0+1)
+$$
 
+$$
+\text{fff\_avg}
+= \frac{1}{\text{hs\_area}(l)}
+  \sum_{c=c_0}^{c_0+N-1}
+  \text{fff}(c)
+  \times
+  \text{hs\_dA}(l,\,c-c_0+1)
+$$
 
-$$\text{fff\_avg} = \frac{1}{\text{hs\_area}(l)} \sum_{c=c_0}^{c_0+N-1} \text{fff}(c) \times \text{hs\_dA}(l,c-c_0+1)$$
+### Default Subsurface Runoff Calculation
 
-### 2. **Default Subsurface Runoff Calculation**
-\text{rsub_top_default} = \text{h3d_rsub_top_max_avg} \times \exp(-\text{fff_avg} \times \text{zwt_h3d_avg}) \times \text{hs_area}(l)
+$$
+\text{rsub\_top\_default}
+= \text{h3d\_rsub\_top\_max\_avg}
+  \times
+  \exp(-\text{fff\_avg} \times \text{zwt\_h3d\_avg})
+  \times
+  \text{hs\_area}(l)
+$$
 
+### Area-Weighted Storage Change
 
-### 3. **Area-Weighted Storage Change**
-\text{hs_dS_sat_tot} = \sum_{c=c_0}^{c_0+N-1} \text{hs_dS_sat}(c) \times \text{hs_dA}(l,c-c_0+1)
+$$
+\text{hs\_dS\_sat\_tot}
+= \sum_{c=c_0}^{c_0+N-1}
+  \text{hs\_dS\_sat}(c)
+  \times
+  \text{hs\_dA}(l,\,c-c_0+1)
+$$
 
+### Area-Weighted Drainage Sum
 
-### 4. **Area-Weighted Drainage Sum**
-\text{tmp_sum_drain} = \sum_{c=c_0}^{c_0+N-1} \text{qflx_drain}(c) \times \text{hs_dA}(l,c-c_0+1)$$
+$$
+\text{tmp\_sum\_drain}
+= \sum_{c=c_0}^{c_0+N-1}
+  \text{qflx\_drain}(c)
+  \times
+  \text{hs\_dA}(l,\,c-c_0+1)
+$$
 
 Variable Definitions
-Where:
 
-hs_dA(l,i) = surface area of h3d soil column i in land unit l [m²]
-hs_area(l) = total surface area of hillslope in land unit l [m²]
-l = land unit index
-c_0 = first column index in land unit l
-N = nh3dc_per_lunit = number of columns per land unit
+| Variable              | Description                                          | Units |
+| :-------------------- | :--------------------------------------------------- | :---- |
+| `hs_dA(l,i)`          | Surface area of h3D soil column *i* in land unit *l* | m²    |
+| `hs_area(l)`          | Total surface area of hillslope in land unit *l*     | m²    |
+| `l`                   | Land unit index                                      | –     |
+| `c₀`                  | First column index in land unit *l*                  | –     |
+| `N = nh3dc_per_lunit` | Number of columns per land unit                      | –     |
+
 
 The model represents subsurface flow and groundwater discharge along an
 idealized hillslope within each grid cell. It solves the Dupuit–Boussinesq
