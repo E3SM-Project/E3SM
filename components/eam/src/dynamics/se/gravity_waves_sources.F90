@@ -100,11 +100,13 @@ CONTAINS
   ! 
   ! Original by Mark Taylor, July 2011
   ! Change by Santos, 10 Aug 2011:
-  ! Integrated into gravity_waves_sources module, several arguments made global
-  !  to prevent repeated allocation/initialization
+  !   Integrated into gravity_waves_sources module, several arguments made global
+  !   to prevent repeated allocation/initialization
   ! Change by Aaron Donahue, April 2017:
   !   Fixed bug where boundary information was called for processors not associated
   !   with dynamics when dyn_npes<npes
+  ! Change by Walter Hannah, Oct 2025:
+  !   added pressure gradient correction
   ! 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     use physical_constants, only: kappa
