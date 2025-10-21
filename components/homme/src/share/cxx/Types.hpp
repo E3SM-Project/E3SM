@@ -153,7 +153,7 @@ using Unmanaged =
                  Impl::MemoryTraitsMask<View>::value |
                  // ... |ed with the one we want, whether or not it's
                  // already there.
-                 Kokkos::Unmanaged> >;
+                 unsigned(Kokkos::Unmanaged)> >;
 
 
 // To view the fully expanded name of a complicated template type T,
