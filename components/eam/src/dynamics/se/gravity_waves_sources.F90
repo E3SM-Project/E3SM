@@ -116,10 +116,9 @@ CONTAINS
     use dyn_comp,           only: hvcoord
     use spmd_utils,         only: iam 
     use parallel_mod,       only: par 
-    use element_ops,        only: get_temperature
+    use element_ops,        only: get_temperature, get_hydro_pressure
     use dyn_grid,           only: fv_nphys
     use prim_driver_mod,    only: deriv1
-    use element_ops,        only: get_temperature
     use gllfvremap_mod,     only: gfr_g2f_scalar, gfr_g2f_vector
     implicit none
     type(hybrid_t),        intent(in   ) :: hybrid
@@ -134,8 +133,8 @@ CONTAINS
     integer :: k,kptr,i,j,ie,component
     real(kind=real_kind) :: frontgf_gll(np,np,nlev,nets:nete)
     real(kind=real_kind) :: gradth_gll(np,np,2,nlev,nets:nete)  ! grad(theta)
-    real(kind=real_kind) :: p(np,np)        ! pressure at mid points
-    real(kind=real_kind) :: temperature(np,np,nlev)  ! Temperature
+    real(kind=real_kind) :: pmid(np,np,nlev)            ! hydrostatic pressure at mid points
+    real(kind=real_kind) :: temperature(np,np,nlev)     ! Temperature
     real(kind=real_kind) :: C(np,np,2), wf1(nphys*nphys,nlev), wf2(nphys*nphys,nlev)
 
     ! variables needed for eta to pressure surface correction
@@ -181,20 +180,19 @@ CONTAINS
 
       if (use_fgf_pgrad_correction) then
 
+        ! compute pressure at mid points
+        call get_hydro_pressure(pmid,elem(ie)%state%dp3d(:,:,:,tl),hvcoord)
+
         call get_temperature(elem(ie),temperature,hvcoord,tl)
         do k = 1,nlev
-          ! pressure at mid points
-          p(:,:) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem(ie)%state%ps_v(:,:,tl)
           ! potential temperature: theta = T (p/p0)^kappa
-          theta(:,:,k) = temperature(:,:,k)*(psurf_ref / p(:,:))**kappa
+          theta(:,:,k) = temperature(:,:,k)*(psurf_ref / pmid(:,:,k))**kappa
         end do
         call compute_vertical_derivative(tl,ie,elem,theta,dtheta_dp)
 
         do k = 1,nlev
           gradth_gll(:,:,:,k,ie) = gradient_sphere(theta(:,:,k),deriv1,elem(ie)%Dinv)
-          ! calculate and apply correction so that gradient is effectively on a pressure surface
-          p(:,:) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem(ie)%state%ps_v(:,:,tl)
-          gradp_gll(:,:,:) = gradient_sphere(p,deriv1,elem(ie)%Dinv)
+          gradp_gll(:,:,:) = gradient_sphere(pmid(:,:,k),deriv1,elem(ie)%Dinv)
           do component=1,2
             gradth_gll(:,:,component,k,ie) = gradth_gll(:,:,component,k,ie) - dtheta_dp(:,:,k) * gradp_gll(:,:,component)
           end do
@@ -212,8 +210,7 @@ CONTAINS
         end do
 
         do k = 1,nlev
-          p(:,:) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem(ie)%state%ps_v(:,:,tl)
-          gradp_gll(:,:,:) = gradient_sphere(p,deriv1,elem(ie)%Dinv)
+          gradp_gll(:,:,:) = gradient_sphere(pmid(:,:,k),deriv1,elem(ie)%Dinv)
           ! Do ugradv on the cartesian components - Dot u with the gradient of each component
           do component=1,3
             dum_grad(:,:,:) = gradient_sphere(dum_cart(:,:,component,k),deriv1,elem(ie)%Dinv)
@@ -237,11 +234,11 @@ CONTAINS
       else ! .not. use_fgf_pgrad_correction
 
         do k = 1,nlev
-          ! pressure at mid points
-          p(:,:) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem(ie)%state%ps_v(:,:,tl)
+          ! pressure at mid points - this pressure preserves the old behavior of E3SMv3 and prior
+          pmid(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem(ie)%state%ps_v(:,:,tl)
           ! potential temperature: theta = T (p/p0)^kappa
           call get_temperature(elem(ie),temperature,hvcoord,tl)
-          theta(:,:,k) = temperature(:,:,k)*(psurf_ref / p(:,:))**kappa
+          theta(:,:,k) = temperature(:,:,k)*(psurf_ref / pmid(:,:,k))**kappa
           gradth_gll(:,:,:,k,ie) = gradient_sphere(theta(:,:,k),deriv1,elem(ie)%Dinv)
           ! compute C = (grad(theta) dot grad ) u
           C(:,:,:) = ugradv_sphere(gradth_gll(:,:,:,k,ie), elem(ie)%state%v(:,:,:,k,tl),deriv1,elem(ie))
