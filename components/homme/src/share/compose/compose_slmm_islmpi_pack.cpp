@@ -19,7 +19,7 @@ struct Accum {
   Int mos, sendcount, xos, qos;
   SLMM_KIF Accum () : mos(0), sendcount(0), xos(0), qos(0) {}
   SLMM_KIF void operator+= (const volatile Accum& o) volatile {
-    mos += o.mos; sendcount += o.sendcount; xos += o.xos; qos += o.qos;
+    mos = mos + o.mos; sendcount = sendcount + o.sendcount; xos = xos + o.xos; qos = qos + o.qos;
   }
 };
 
