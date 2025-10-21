@@ -7,7 +7,12 @@ using a finite‐difference implicit solver. The formulation includes
 variable transmissivity, slope‐driven gradients, variable drainable
 porosity, and recharge coupling.
 
->$$
+$$
 \frac{\partial h}{\partial t} = \frac{1}{f_{\text{drain}}} \frac{\partial}{\partial x} \left[ T(x,h)\left(\frac{\partial h}{\partial }\cos\theta + \sin\theta\right)\right]+ \frac{R}{f_{\text{drain}}}
 $$
 
+where $h(x,t)$ is the saturated thickness [m],
+$f_{\text{drain}}$ is the drainable porosity [–],
+$T(x,h)$ is the transmissivity [m² s⁻¹],
+$\theta$ is the hillslope angle [rad],
+and $R$ is the recharge rate [m s⁻¹].
