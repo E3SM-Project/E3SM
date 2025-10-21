@@ -9,4 +9,4 @@ Parameterization of sub-grid topographical effects on solar radiation.
 - [Longwave Radiation](longwave_radiation.md): Longwave radiation model
 - [Hydrology](hydrology.md): Hydrology model
 - [Plant Hydraulics](phs.md): Plant Hydraulics model
-- [Hybrid-3D hillslope hydrological model](h3d.md): Hybrid-3D hillslope hydrological model
+- [Hybrid-3D hillslope hydrology](h3d.md): Hybrid-3D hillslope hydrological model
