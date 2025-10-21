@@ -489,6 +489,7 @@ module li_subglacial_hydro
       ! =============
       ! Calculate edge quantities and advective fluxes
       ! =============
+      call mpas_timer_start("calc edge quantities")
       block => domain % blocklist
       do while (associated(block))
 
@@ -525,12 +526,14 @@ module li_subglacial_hydro
 
          block => block % next
       end do
+      call mpas_timer_stop("calc edge quantities")
 
 
       ! =============
       ! Update Channel fields
       ! =============
       if (config_SGH_chnl_active) then
+         call mpas_timer_start("update channel")
          block => domain % blocklist
          do while (associated(block))
 
@@ -546,13 +549,16 @@ module li_subglacial_hydro
          call mpas_dmpar_field_halo_exch(domain, 'channelMelt')
          call mpas_dmpar_field_halo_exch(domain, 'channelPressureFreeze')
          call mpas_timer_stop("halo updates")
+         call mpas_timer_stop("update channel")
       endif
 
 
       ! =============
       ! Calculate adaptive time step
       ! =============
+      call mpas_timer_start("calc SGH dt")
       call check_timestep(domain, timeLeft, numSubCycles, err_tmp)
+      call mpas_timer_stop("calc SGH dt")
       err = ior(err, err_tmp)
       if (err > 0) then
          exit timecycling
@@ -562,6 +568,7 @@ module li_subglacial_hydro
       ! =============
       ! Compute flux divergence
       ! =============
+      call mpas_timer_start("compute flux div")
       block => domain % blocklist
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
@@ -598,12 +605,14 @@ module li_subglacial_hydro
       call mpas_timer_start("halo updates")
       call mpas_dmpar_field_halo_exch(domain, 'divergence')
       call mpas_timer_stop("halo updates")
+      call mpas_timer_stop("compute flux div")
 
 
       ! =============
       ! Update channel area now that we have time step
       ! =============
       if (config_SGH_chnl_active) then
+         call mpas_timer_start("evolve channel")
          block => domain % blocklist
          do while (associated(block))
 
@@ -618,11 +627,13 @@ module li_subglacial_hydro
          call mpas_dmpar_field_halo_exch(domain, 'channelMeltInputCell')
          call mpas_dmpar_field_halo_exch(domain, 'channelArea')
          call mpas_timer_stop("halo updates")
+         call mpas_timer_stop("evolve channel")
       endif
 
       ! =============
       ! Calculate total grounding line discharges
       ! =============
+      call mpas_timer_start("calc SGH GL flux")
       block => domain % blocklist
       do while (associated(block))
 
@@ -631,10 +642,12 @@ module li_subglacial_hydro
 
          block => block % next
       end do
+      call mpas_timer_stop("calc SGH GL flux")
 
       ! =============
       ! Update water layer thickness
       ! =============
+      call mpas_timer_start("update water layer thickness")
       block => domain % blocklist
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
@@ -667,6 +680,7 @@ module li_subglacial_hydro
 
          block => block % next
       end do
+      call mpas_timer_stop("update water layer thickness")
 
       ! =============
       ! Calculate pressure field
@@ -686,6 +700,7 @@ module li_subglacial_hydro
       ! ordering choice is only needed to support channels.  Without it, runs with
       ! channels would use an out of date waterThickness in the hydropotential and
       ! do not restart correctly due to the order of operations mismatch.
+      call mpas_timer_start("calc pressure")
       block => domain % blocklist
       do while (associated(block))
 
@@ -716,6 +731,7 @@ module li_subglacial_hydro
    
          block => block % next
       end do
+      call mpas_timer_stop("calc pressure")
 
       deltatSGHaccumulated = deltatSGHaccumulated + deltatSGH
       
