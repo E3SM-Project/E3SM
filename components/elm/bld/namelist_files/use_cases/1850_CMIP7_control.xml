@@ -23,11 +23,8 @@
 <stream_fldfilename_popdens phys="elm" use_cn=".true." >lnd/clm2/firedata/elmforc.popden_cmip7_gr_0.5x0.5_simyr1850-2025_c250822.nc</stream_fldfilename_popdens>
 
 
-<!-- CMIP6 DECK compsets -->
+<!-- CMIP7 DECK compsets -->
       
-<flanduse_timeseries hgrid="ne30np4">lnd/clm2/surfdata_map/landuse.timeseries_ne30np4_hist_simyr1850_c20171102.nc </flanduse_timeseries>
-<fsurdat hgrid="ne30np4" mask="oEC60to30v3" >lnd/clm2/surfdata_map/surfdata_ne30np4_simyr1850_2015_c171018.nc </fsurdat>
-<fsurdat hgrid="ne30np4" mask="oEC60to30v3wLI" >lnd/clm2/surfdata_map/surfdata_ne30np4_simyr1850_c180306.nc </fsurdat>
-<finidat hgrid="ne30np4" mask="oEC60to30v3wLI" >lnd/clm2/initdata_map/clmi.I1850CLM45.ne30_oECv3wLI.b58d55680.clm2.r.0331-01-01-00000.nc </finidat>
+<fsurdat hgrid="r025" >lnd/clm2/surfdata_map/surfdata_r025_CMIP7_HIST_simyr1850_c250523.nc </fsurdat>
 
 </namelist_defaults>
