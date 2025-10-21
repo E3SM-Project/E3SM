@@ -75,4 +75,71 @@ r_i &= f_{\text{drain},i} h_i^n
 \end{aligned}
 $$
 
+Upper boundary ($i=N$, divide)
+
+$$
+\begin{aligned}
+a_N &= -\frac{T_{N-\frac12}^n \cos\theta \,\Delta t}
+            {\Delta x_{N-\frac12}\,\Delta x_N\,w_N}, \\
+c_N &= 0, \\
+b_N &= f_{\text{drain},N} - a_N, \\
+r_N &= f_{\text{drain},N} h_N^n
+      - \frac{\Delta t\sin\theta}{w_N\Delta x_N} T_{N-\frac12}^n
+      + \Delta t R_N.
+\end{aligned}
+$$
+
+Subsurface Runoff and Storage Change
+
+$$
+\Delta S_{\text{sat},i}
+= f_{\text{drain},i}(h_i^{n+1}-h_i^n),
+\qquad
+R_{\text{sub},i} = -\Delta S_{\text{sat},i},
+\qquad
+Q_{\text{sub},i} = \frac{R_{\text{sub},i}}{\Delta t}\times1000
+$$
+
+Water-Table Depth
+
+$$
+z_{wt,i} = z_{\text{bed},i} - h_i
+$$
+
+Adaptive time-stepping:
+
+$$
+\Delta t_{\text{new}} = 0.5\,\Delta t_{\text{old}}
+$$
+
+
+## Tridiagonal Matrix Solution
+
+Forward elimination:
+
+$$
+\begin{aligned}
+\beta_1 &= b_1, \quad \tilde{r}_1 = \frac{r_1}{\beta_1}, \\
+\gamma_i &= \frac{c_{i-1}}{\beta_{i-1}}, \\
+\beta_i &= b_i - a_i\gamma_i, \\
+\tilde{r}_i &= \frac{r_i - a_i\tilde{r}_{i-1}}{\beta_i}, \quad (i=2,\dots,N)
+\end{aligned}
+$$
+
+Back substitution:
+
+$$
+h_N = \tilde{r}_N, \qquad
+h_i = \tilde{r}_i - \gamma_{i+1} h_{i+1}, \quad (i=N-1,\dots,1)
+$$
+
+## Boundary Conditions
+
+| Boundary       | Condition                             | Implementation           |
+| :------------- | :------------------------------------ | :----------------------- |
+| Lower (stream) | Head-dependent outflow                | Robin-type term in $r_1$ |
+| Upper (divide) | No-flow ($\partial h/\partial x = 0$) | Set $c_N = 0$            |
+
+
+
 
