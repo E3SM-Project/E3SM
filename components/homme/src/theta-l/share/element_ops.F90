@@ -43,7 +43,7 @@
 !  get_pottemp()
 !  get_dpnh_dp()
 !  get_hydro_pressure()
-!  get_hydro_pressure_interface()
+!  get_hydro_pressure_i()
 !  get_nonhydro_pressure()
 !  get_phi()
 !  get_cp_star()
@@ -69,7 +69,7 @@ module element_ops
   type(elem_state_t), dimension(:), allocatable :: state0 ! storage for save_initial_state routine
 
   public get_field, get_field_i, get_state, get_pottemp
-  public get_temperature, get_phi, get_R_star, get_hydro_pressure, get_hydro_pressure_interface
+  public get_temperature, get_phi, get_R_star, get_hydro_pressure, get_hydro_pressure_i
   public set_thermostate, set_state, set_state_i, set_elem_state
   public set_forcing_rayleigh_friction
   public initialize_reference_states, set_theta_ref
@@ -309,11 +309,11 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   end subroutine get_hydro_pressure
 
   !_____________________________________________________________________
-  subroutine get_hydro_pressure_interface(p_i,dp,hvcoord)
+  subroutine get_hydro_pressure_i(p_i,dp,hvcoord)
   !
   implicit none
 
-  real (kind=real_kind), intent(out)  :: p_i(np,np,nlev)
+  real (kind=real_kind), intent(out)  :: p_i(np,np,nlevp)
   real (kind=real_kind), intent(in)   :: dp(np,np,nlev)
   type (hvcoord_t),     intent(in)    :: hvcoord                      ! hybrid vertical coordinate struct
 
@@ -324,7 +324,7 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
      p_i(:,:,k+1)=p_i(:,:,k) + dp(:,:,k)
   enddo
 
-  end subroutine get_hydro_pressure_interface
+  end subroutine get_hydro_pressure_i
 
 
   !_____________________________________________________________________

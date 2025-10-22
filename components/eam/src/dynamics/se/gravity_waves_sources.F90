@@ -1,6 +1,6 @@
 module gravity_waves_sources
   use derivative_mod, only : derivative_t
-  use dimensions_mod, only : np,nlev
+  use dimensions_mod, only : np,nlev,nlevp
   use edgetype_mod, only       : EdgeBuffer_t
   use element_mod, only    : element_t
   use hybrid_mod, only     : hybrid_t
@@ -38,7 +38,7 @@ CONTAINS
 
   end subroutine gws_init
   !-------------------------------------------------------------------------------------------------
-  subroutine gws_src_fnct(elem, tl, nphys, use_fgf_pgrad_correction, frontgf, frontga)
+  subroutine gws_src_fnct(elem, tl, nphys, use_fgf_pgrad_correction, use_fgf_zgrad_correction, frontgf, frontga)
     use dimensions_mod, only  : npsq, nelemd
     use dof_mod, only         : UniquePoints
     use dyn_comp, only        : dom_mt
@@ -52,6 +52,7 @@ CONTAINS
     integer,               intent(in   ) :: tl
     integer,               intent(in   ) :: nphys
     logical,               intent(in   ) :: use_fgf_pgrad_correction
+    logical,               intent(in   ) :: use_fgf_zgrad_correction
     real (kind=real_kind), intent(out  ) :: frontgf(nphys*nphys,pver,nelemd)
     real (kind=real_kind), intent(out  ) :: frontga(nphys*nphys,pver,nelemd)
     
@@ -68,7 +69,10 @@ CONTAINS
     hybrid = hybrid_create(par,ithr,hthreads)
     allocate(frontgf_thr(nphys,nphys,nlev,nets:nete))
     allocate(frontga_thr(nphys,nphys,nlev,nets:nete))
-    call compute_frontogenesis(frontgf_thr,frontga_thr,tl,use_fgf_pgrad_correction,elem,hybrid,nets,nete,nphys)
+    call compute_frontogenesis( frontgf_thr, frontga_thr, tl, &
+                                use_fgf_pgrad_correction, &
+                                use_fgf_zgrad_correction, &
+                                elem, hybrid, nets, nete, nphys )
     if (fv_nphys>0) then
       do ie = nets,nete
         do k = 1,nlev
@@ -89,7 +93,10 @@ CONTAINS
 
   end subroutine gws_src_fnct
   !-------------------------------------------------------------------------------------------------
-  subroutine compute_frontogenesis(frontgf,frontga,tl,use_fgf_pgrad_correction,elem,hybrid,nets,nete,nphys)
+  subroutine compute_frontogenesis( frontgf, frontga, tl, &
+                                    use_fgf_pgrad_correction, &
+                                    use_fgf_zgrad_correction, &
+                                    elem, hybrid, nets, nete, nphys )
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   ! compute frontogenesis function F
   !   F =  -gradth dot C
@@ -109,14 +116,14 @@ CONTAINS
   !   added pressure gradient correction
   ! 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    use physical_constants, only: kappa
+    use physical_constants, only: kappa, g
     use derivative_mod,     only: gradient_sphere, ugradv_sphere
     use edge_mod,           only: edge_g, edgevpack_nlyr, edgevunpack_nlyr
     use bndry_mod,          only: bndry_exchangev
     use dyn_comp,           only: hvcoord
     use spmd_utils,         only: iam 
     use parallel_mod,       only: par 
-    use element_ops,        only: get_temperature, get_hydro_pressure
+    use element_ops,        only: get_temperature, get_hydro_pressure_i, get_phi
     use dyn_grid,           only: fv_nphys
     use prim_driver_mod,    only: deriv1
     use gllfvremap_mod,     only: gfr_g2f_scalar, gfr_g2f_vector
@@ -126,6 +133,7 @@ CONTAINS
     integer,               intent(in   ) :: nets,nete,nphys
     integer,               intent(in   ) :: tl ! timelevel to use
     logical,               intent(in   ) :: use_fgf_pgrad_correction
+    logical,               intent(in   ) :: use_fgf_zgrad_correction
     real(kind=real_kind),  intent(out  ) :: frontgf(nphys,nphys,nlev,nets:nete)
     real(kind=real_kind),  intent(out  ) :: frontga(nphys,nphys,nlev,nets:nete)
   
@@ -133,17 +141,21 @@ CONTAINS
     integer :: k,kptr,i,j,ie,component
     real(kind=real_kind) :: frontgf_gll(np,np,nlev,nets:nete)
     real(kind=real_kind) :: gradth_gll(np,np,2,nlev,nets:nete)  ! grad(theta)
-    real(kind=real_kind) :: pmid(np,np,nlev)            ! hydrostatic pressure at mid points
+    real(kind=real_kind) :: zint(np,np,nlevp)           ! interface altitude
+    real(kind=real_kind) :: zmid(np,np,nlev)            ! mid-point altitude
+    real(kind=real_kind) :: pint(np,np,nlevp)           ! interface hydrostatic pressure
+    real(kind=real_kind) :: pmid(np,np,nlev)            ! mid-point hydrostatic pressure
     real(kind=real_kind) :: temperature(np,np,nlev)     ! Temperature
     real(kind=real_kind) :: C(np,np,2), wf1(nphys*nphys,nlev), wf2(nphys*nphys,nlev)
 
-    ! variables needed for eta to pressure surface correction
-    real(kind=real_kind) :: gradp_gll(np,np,2)          ! grad(pressure)
     real(kind=real_kind) :: theta(np,np,nlev)           ! potential temperature at mid points
-    real(kind=real_kind) :: dtheta_dp(np,np,nlev)       ! d(theta)/dp for eta to pressure surface correction
     real(kind=real_kind) :: dum_grad(np,np,2)           ! temporary variable for spherical gradient calcualtions
     real(kind=real_kind) :: dum_cart(np,np,3,nlev)      ! temporary variable for cartesian gradient calcualtions
-    real(kind=real_kind) :: ddp_dum_cart(np,np,3,nlev)  ! vertical pressure derivative of dum_cart
+
+    ! variables needed for eta to pressure surface correction
+    real(kind=real_kind) :: grad_vert_gll(np,np,2,nlev) ! grad(vertical coordinate) - either pressure or geopotential
+    real(kind=real_kind) :: theta_dvert(np,np,nlev)     ! d(theta)/dp for eta to pressure surface correction
+    real(kind=real_kind) :: dum_cart_dvert(np,np,3,nlev)! vertical pressure derivative of dum_cart
 
     !---------------------------------------------------------------------------
     !
@@ -178,23 +190,37 @@ CONTAINS
 
     do ie = nets,nete
 
-      if (use_fgf_pgrad_correction) then
+      if (use_fgf_pgrad_correction .or. use_fgf_zgrad_correction) then
 
-        ! compute pressure at mid points
-        call get_hydro_pressure(pmid,elem(ie)%state%dp3d(:,:,:,tl),hvcoord)
+        ! compute pressure at interfaces and mid-points
+        call get_hydro_pressure_i(pint,elem(ie)%state%dp3d(:,:,:,tl),hvcoord)
 
         call get_temperature(elem(ie),temperature,hvcoord,tl)
+
+        ! calculate pmid and potential temperature: theta = T (p/p0)^kappa
         do k = 1,nlev
-          ! potential temperature: theta = T (p/p0)^kappa
+          pmid(:,:,k) = pint(:,:,k) + elem(ie)%state%dp3d(:,:,k,tl)/2
           theta(:,:,k) = temperature(:,:,k)*(psurf_ref / pmid(:,:,k))**kappa
         end do
-        call compute_vertical_derivative(tl,ie,elem,theta,dtheta_dp)
+
+        if (use_fgf_pgrad_correction) then
+          ! compute d(theta)/dp
+          call compute_vertical_derivative(pint,theta,theta_dvert)
+        end if
+
+        if (use_fgf_zgrad_correction) then
+          ! compute geopotential
+          call get_phi(elem(ie), zmid, zint, hvcoord, tl)
+          ! compute d(theta)/dz
+          call compute_vertical_derivative(zint,theta,theta_dvert)
+        end if
 
         do k = 1,nlev
           gradth_gll(:,:,:,k,ie) = gradient_sphere(theta(:,:,k),deriv1,elem(ie)%Dinv)
-          gradp_gll(:,:,:) = gradient_sphere(pmid(:,:,k),deriv1,elem(ie)%Dinv)
+          if (use_fgf_pgrad_correction) grad_vert_gll(:,:,:,k) = gradient_sphere(pmid(:,:,k),deriv1,elem(ie)%Dinv)
+          if (use_fgf_zgrad_correction) grad_vert_gll(:,:,:,k) = gradient_sphere(zmid(:,:,k),deriv1,elem(ie)%Dinv)
           do component=1,2
-            gradth_gll(:,:,component,k,ie) = gradth_gll(:,:,component,k,ie) - dtheta_dp(:,:,k) * gradp_gll(:,:,component)
+            gradth_gll(:,:,component,k,ie) = gradth_gll(:,:,component,k,ie) - theta_dvert(:,:,k) * grad_vert_gll(:,:,component,k)
           end do
         end do
 
@@ -206,16 +232,16 @@ CONTAINS
         end do
 
         do component=1,3
-          call compute_vertical_derivative(tl,ie,elem,dum_cart(:,:,component,:),ddp_dum_cart(:,:,component,:))
+          if (use_fgf_pgrad_correction) call compute_vertical_derivative(pint,dum_cart(:,:,component,:),dum_cart_dvert(:,:,component,:))
+          if (use_fgf_zgrad_correction) call compute_vertical_derivative(zint,dum_cart(:,:,component,:),dum_cart_dvert(:,:,component,:))
         end do
 
         do k = 1,nlev
-          gradp_gll(:,:,:) = gradient_sphere(pmid(:,:,k),deriv1,elem(ie)%Dinv)
           ! Do ugradv on the cartesian components - Dot u with the gradient of each component
           do component=1,3
             dum_grad(:,:,:) = gradient_sphere(dum_cart(:,:,component,k),deriv1,elem(ie)%Dinv)
             do i=1,2
-              dum_grad(:,:,i) = dum_grad(:,:,i) - ddp_dum_cart(:,:,component,k) * gradp_gll(:,:,i)
+              dum_grad(:,:,i) = dum_grad(:,:,i) - dum_cart_dvert(:,:,component,k) * grad_vert_gll(:,:,i,k)
             end do
             dum_cart(:,:,component,k) = sum( gradth_gll(:,:,:,k,ie) * dum_grad ,3)
           enddo
@@ -291,39 +317,36 @@ CONTAINS
 
   end subroutine compute_frontogenesis
   !-------------------------------------------------------------------------------------------------
-  subroutine compute_vertical_derivative(tl,ie,elem,data,ddata_dp)
-    use dyn_comp, only: hvcoord
+  subroutine compute_vertical_derivative(vert_int, data_mid, ddata_dvert)
     !---------------------------------------------------------------------------
-    integer,                intent(in ) :: tl ! timelevel to use
-    integer,                intent(in ) :: ie ! current element index
-    type(element_t),target, intent(inout) :: elem(:)
-    real(kind=real_kind),   intent(in ) :: data(np,np,nlev)
-    real(kind=real_kind),   intent(out) :: ddata_dp(np,np,nlev)
+    real(kind=real_kind),   intent(in ) :: vert_int(np,np,nlev) ! vertical coord on interfaces (i.e. pint or zint)
+    real(kind=real_kind),   intent(in ) :: data_mid(np,np,nlev) ! input data in mid-points
+    real(kind=real_kind),   intent(out) :: ddata_dvert(np,np,nlev) ! vertical derivative of data
     !---------------------------------------------------------------------------
     integer :: k
-    real(kind=real_kind) :: pint_above(np,np) ! pressure interpolated to interface above the current k mid-point
-    real(kind=real_kind) :: pint_below(np,np) ! pressure interpolated to interface below the current k mid-point
-    real(kind=real_kind) :: dint_above(np,np) ! data interpolated to interface above the current k mid-point
-    real(kind=real_kind) :: dint_below(np,np) ! data interpolated to interface below the current k mid-point
+    real(kind=real_kind) :: vert_above(np,np) ! pressure interpolated to interface above the current k mid-point
+    real(kind=real_kind) :: vert_below(np,np) ! pressure interpolated to interface below the current k mid-point
+    real(kind=real_kind) :: data_above(np,np) ! data interpolated to interface above the current k mid-point
+    real(kind=real_kind) :: data_below(np,np) ! data interpolated to interface below the current k mid-point
     !---------------------------------------------------------------------------
     do k = 1,nlev
       if (k==1) then
-        pint_above = hvcoord%hyam(k+0)*hvcoord%ps0 + hvcoord%hybm(k+0)*elem(ie)%state%ps_v(:,:,tl)
-        pint_below = hvcoord%hyai(k+1)*hvcoord%ps0 + hvcoord%hybi(k+1)*elem(ie)%state%ps_v(:,:,tl)
-        dint_above = data(:,:,k)
-        dint_below = ( data(:,:,k+1) + data(:,:,k) ) / 2.0
+        data_above = data_mid(:,:,k)
+        data_below = ( data_mid(:,:,k+1) + data_mid(:,:,k) ) / 2.0 ! interpolate to interface k+1
+        vert_above = ( vert_int(:,:,k+1) + vert_int(:,:,k) ) / 2.0 ! interpolate to mid-point k
+        vert_below = vert_int(:,:,k+1)
       elseif (k==nlev) then
-        pint_above = hvcoord%hyai(k+0)*hvcoord%ps0 + hvcoord%hybi(k+0)*elem(ie)%state%ps_v(:,:,tl)
-        pint_below = hvcoord%hyam(k+0)*hvcoord%ps0 + hvcoord%hybm(k+0)*elem(ie)%state%ps_v(:,:,tl)
-        dint_above = ( data(:,:,k-1) + data(:,:,k) ) / 2.0
-        dint_below = data(:,:,k)
+        data_above = ( data_mid(:,:,k-1) + data_mid(:,:,k) ) / 2.0 ! interpolate to interface
+        data_below = data_mid(:,:,k)
+        vert_above = vert_int(:,:,k)
+        vert_below = ( vert_int(:,:,k+1) + vert_int(:,:,k) ) / 2.0 ! interpolate to mid-point k
       else
-        pint_above = hvcoord%hyai(k+0)*hvcoord%ps0 + hvcoord%hybi(k+0)*elem(ie)%state%ps_v(:,:,tl)
-        pint_below = hvcoord%hyai(k+1)*hvcoord%ps0 + hvcoord%hybi(k+1)*elem(ie)%state%ps_v(:,:,tl)
-        dint_above = ( data(:,:,k-1) + data(:,:,k) ) / 2.0
-        dint_below = ( data(:,:,k+1) + data(:,:,k) ) / 2.0
+        data_above = ( data_mid(:,:,k-1) + data_mid(:,:,k) ) / 2.0 ! interpolate to interface k
+        data_below = ( data_mid(:,:,k+1) + data_mid(:,:,k) ) / 2.0 ! interpolate to interface k+1
+        vert_above = vert_int(:,:,k)
+        vert_below = vert_int(:,:,k+1)
       end if
-      ddata_dp(:,:,k) = ( dint_above - dint_below ) / ( pint_above - pint_below )
+      ddata_dvert(:,:,k) = ( data_above - data_below ) / ( vert_above - vert_below )
     end do
   end subroutine compute_vertical_derivative
   !-------------------------------------------------------------------------------------------------

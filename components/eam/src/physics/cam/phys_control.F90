@@ -434,6 +434,12 @@ subroutine phys_ctl_readnl(nlfile)
    ! Defaults for PBL and microphysics are set in build-namelist.  Check here that
    ! values have been set to guard against problems with hand edited namelists.
 
+   ! check frontal gwd gradient correction options
+   if (use_fgf_pgrad_correction .and. use_fgf_zgrad_correction) then
+      write(iulog,*)'phys_setopts: use_fgf_pgrad_correction and use_fgf_zgrad_correction cannot both be true'
+      call endrun('phys_setopts: use_fgf_pgrad_correction and use_fgf_zgrad_correction cannot both be true')
+   end if
+
    ! WACCM-X run option set in build-namelist. Check for valid values
    if (.not. (waccmx_opt == 'ionosphere' .or. waccmx_opt == 'neutral' .or. waccmx_opt == 'off')) then
       write(iulog,*)'waccm: illegal value of waccmx_opt:', waccmx_opt
