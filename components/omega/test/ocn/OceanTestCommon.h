@@ -67,11 +67,23 @@ enum class EdgeComponent { Normal, Tangential };
 enum class Geometry { Planar, Spherical };
 enum class ExchangeHalos { Yes, No };
 
+// helper to get vertical iteration bounds that can be provided
+// either as an integer or an array
+template <class T> int getVertBound(const T &VertBound, int I) {
+   if constexpr (std::is_integral_v<T>) {
+      return VertBound;
+   } else {
+      static_assert(Kokkos::is_view_v<T>);
+      return VertBound(I);
+   }
+}
+
 // set scalar field on chosen elements (cells/vertices/edges) based on
 // analytical formula and optionally exchange halos
-template <class Functor, class Array>
+template <class Functor, class Array, class VertMin, class VertMax>
 int setScalar(const Functor &Fun, const Array &ScalarElement, Geometry Geom,
-              const HorzMesh *Mesh, MeshElement Element,
+              const HorzMesh *Mesh, MeshElement Element, const VertMin &VMin,
+              const VertMax &VMax,
               ExchangeHalos ExchangeHalosOpt = ExchangeHalos::Yes) {
 
    int Err = 0;
@@ -126,35 +138,49 @@ int setScalar(const Functor &Fun, const Array &ScalarElement, Geometry Geom,
    if constexpr (Array::rank == 2) {
       const int NVertLayers = ScalarElement.extent_int(1);
 
-      parallelFor(
-          {NElementsOwned, NVertLayers}, KOKKOS_LAMBDA(int IElement, int K) {
-             if (Geom == Geometry::Planar) {
-                const Real X               = XElement(IElement);
-                const Real Y               = YElement(IElement);
-                ScalarElement(IElement, K) = Fun(X, Y);
-             } else {
-                const Real Lon             = LonElement(IElement);
-                const Real Lat             = LatElement(IElement);
-                ScalarElement(IElement, K) = Fun(Lon, Lat);
-             }
+      parallelForOuter(
+          {NElementsOwned},
+          KOKKOS_LAMBDA(int IElement, const TeamMember &Team) {
+             const int KMin   = getVertBound(VMin, IElement);
+             const int KMax   = getVertBound(VMax, IElement);
+             const int KRange = KMax - KMin + 1;
+             parallelForInner(
+                 Team, KRange, INNER_LAMBDA(int KOff) {
+                    const int K = KMin + KOff;
+                    if (Geom == Geometry::Planar) {
+                       const Real X               = XElement(IElement);
+                       const Real Y               = YElement(IElement);
+                       ScalarElement(IElement, K) = Fun(X, Y);
+                    } else {
+                       const Real Lon             = LonElement(IElement);
+                       const Real Lat             = LatElement(IElement);
+                       ScalarElement(IElement, K) = Fun(Lon, Lat);
+                    }
+                 });
           });
    }
 
    if constexpr (Array::rank == 3) {
-      const int NTracers    = ScalarElement.extent_int(0);
-      const int NVertLayers = ScalarElement.extent_int(2);
-      parallelFor(
-          {NTracers, NElementsOwned, NVertLayers},
-          KOKKOS_LAMBDA(int L, int IElement, int K) {
-             if (Geom == Geometry::Planar) {
-                const Real X                  = XElement(IElement);
-                const Real Y                  = YElement(IElement);
-                ScalarElement(L, IElement, K) = Fun(X, Y);
-             } else {
-                const Real Lon                = LonElement(IElement);
-                const Real Lat                = LatElement(IElement);
-                ScalarElement(L, IElement, K) = Fun(Lon, Lat);
-             }
+      const int NTracers = ScalarElement.extent_int(0);
+      parallelForOuter(
+          {NTracers, NElementsOwned},
+          KOKKOS_LAMBDA(int L, int IElement, const TeamMember &Team) {
+             const int KMin   = getVertBound(VMin, IElement);
+             const int KMax   = getVertBound(VMax, IElement);
+             const int KRange = KMax - KMin + 1;
+             parallelForInner(
+                 Team, KRange, INNER_LAMBDA(int KOff) {
+                    const int K = KMin + KOff;
+                    if (Geom == Geometry::Planar) {
+                       const Real X                  = XElement(IElement);
+                       const Real Y                  = YElement(IElement);
+                       ScalarElement(L, IElement, K) = Fun(X, Y);
+                    } else {
+                       const Real Lon                = LonElement(IElement);
+                       const Real Lat                = LatElement(IElement);
+                       ScalarElement(L, IElement, K) = Fun(Lon, Lat);
+                    }
+                 });
           });
    }
 
@@ -167,13 +193,25 @@ int setScalar(const Functor &Fun, const Array &ScalarElement, Geometry Geom,
    return Err;
 }
 
+// This overload calls setScalar with vertical bounds based on the array size
+template <class Functor, class Array>
+int setScalar(const Functor &Fun, const Array &ScalarElement, Geometry Geom,
+              const HorzMesh *Mesh, MeshElement Element,
+              ExchangeHalos ExchangeHalosOpt = ExchangeHalos::Yes) {
+   const int VMin = 0;
+   const int VMax = ScalarElement.extent_int(Array::rank - 1) - 1;
+   return setScalar(Fun, ScalarElement, Geom, Mesh, Element, VMin, VMax,
+                    ExchangeHalosOpt);
+}
+
 enum class CartProjection { Yes, No };
 
 // set vector field on edges based on analytical formula and optionally
 // exchange halos
-template <class Functor, class Array>
+template <class Functor, class Array, class VertMin, class VertMax>
 int setVectorEdge(const Functor &Fun, const Array &VectorFieldEdge,
                   EdgeComponent EdgeComp, Geometry Geom, const HorzMesh *Mesh,
+                  const VertMin &VMin, const VertMax &VMax,
                   ExchangeHalos ExchangeHalosOpt   = ExchangeHalos::Yes,
                   CartProjection CartProjectionOpt = CartProjection::Yes) {
 
@@ -284,10 +322,17 @@ int setVectorEdge(const Functor &Fun, const Array &VectorFieldEdge,
    }
 
    if constexpr (Array::rank == 2) {
-      const int NVertLayers = VectorFieldEdge.extent_int(1);
-      parallelFor(
-          {Mesh->NEdgesOwned, NVertLayers}, KOKKOS_LAMBDA(int IEdge, int K) {
-             VectorFieldEdge(IEdge, K) = ProjectVector(IEdge);
+      parallelForOuter(
+          {Mesh->NEdgesOwned},
+          KOKKOS_LAMBDA(int IEdge, const TeamMember &Team) {
+             const int KMin   = getVertBound(VMin, IEdge);
+             const int KMax   = getVertBound(VMax, IEdge);
+             const int KRange = KMax - KMin + 1;
+             parallelForInner(
+                 Team, KRange, INNER_LAMBDA(int KOff) {
+                    const int K               = KMin + KOff;
+                    VectorFieldEdge(IEdge, K) = ProjectVector(IEdge);
+                 });
           });
    }
 
@@ -298,6 +343,20 @@ int setVectorEdge(const Functor &Fun, const Array &VectorFieldEdge,
          LOG_ERROR("setVectorEdge: error in halo exchange");
    }
    return Err;
+}
+
+// This overload calls setVectorEdge with vertical bounds based on the array
+// size
+template <class Functor, class Array>
+int setVectorEdge(const Functor &Fun, const Array &VectorFieldEdge,
+                  EdgeComponent EdgeComp, Geometry Geom, const HorzMesh *Mesh,
+                  ExchangeHalos ExchangeHalosOpt   = ExchangeHalos::Yes,
+                  CartProjection CartProjectionOpt = CartProjection::Yes) {
+
+   const int VMin = 0;
+   const int VMax = VectorFieldEdge.extent_int(Array::rank - 1) - 1;
+   return setVectorEdge(Fun, VectorFieldEdge, EdgeComp, Geom, Mesh, VMin, VMax,
+                        ExchangeHalosOpt, CartProjectionOpt);
 }
 
 inline Real maxVal(const Array1DReal &Arr) {
