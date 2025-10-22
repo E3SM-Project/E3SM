@@ -38,7 +38,7 @@ The variable $d$ represents the depth of overland flow above the surface. Right 
 Each hillslope column consists of multiple soil layers of variable thickness $\Delta z_i$.
 Vertical flow through the unsaturated and saturated zones occurs across these layers with corresponding soil water potentials $\psi_i$.
 The flow domain extends down to an impermeable bedrock boundary, which imposes a zero-flux condition at the bottom.
-Vertical flow is solved using the $\theta$-based form of the Richards equation (Zeng & Decker, 2009).
+Vertical flow is solved using the $\alpha$-based form of the Richards equation (Zeng & Decker, 2009).
 The layer index $i$ denotes vertical soil layers, $h$ is the height of the saturation zone, and $\nabla$ marks the position of the water table.
 
 For each node, the state variable is the saturated thickness, $h_{sat}(x,t)$, measured from the bedrock to the water table. 
@@ -50,7 +50,7 @@ The model tracks how $h_{sat}(x,t)$ evolves in time due to:
 
 
 Each land unit represents a single hillslope, which has consistent topographic and geometric properties:
-- **Overall slope angle:** $\theta$ — mean hillslope angle (rad)
+- **Overall slope angle:** $\alpha$ — mean hillslope angle (rad)
 - **Width function:** $w(x)$ — lateral width distribution along the hillslope (m)
 - **Distance function:** $x(i)$ — distance from the stream outlet to node $i$ (m)
 - **Total hillslope area:** $A_{hs} = \displaystyle \int_0^L w(x)\ dx$ (m²)
@@ -68,14 +68,13 @@ Land unit captures the hillsclope-scale connectivity, while columns capture spat
 The fundamental PDE is a Dupuit-style Boussinesq groundwater flow equation for saturated flow along the slope:
 
 $$
-\frac{\partial h}{\partial t} = \frac{1}{f_{\text{drain}}} \frac{\partial}{\partial x} \left[ T(x,h)\left(\frac{\partial h}{\partial x}\cos\theta + \sin\theta\right)\right]+ \frac{R}{f_{\text{drain}}}
+f\frac{\partial h}{\partial t} = \frac{1}{w}\frac{\partial}{\partial x}\left(w\ k_{l}(h)\ h\left(\sin(\alpha) + \frac{\partial h}{\partial x}\cos(\alpha)\right)\right) + \cos(\alpha)\ R}
 $$
 
 where $h(x,t)$ is the saturated thickness [m],
 $f_{\text{drain}}$ is the drainable porosity [–],
-$T(x,h)$ is the transmissivity [m² s⁻¹],
-$\theta$ is the hillslope angle [rad],
-and $R$ is the recharge rate [m s⁻¹].  Note - recharge rate was not in the code.
+$\alpha$ is the hillslope angle [rad],
+w (m) is the width of the hillslope at a given distance x (m) from the outflow point, kl(h) (m/s) is the lateral saturated hydraulic conductivity at height h. $R$ is the recharge rate between the unsaturated and saturated zones (m/s). Note - recharge rate was not in the code.
 
 ## Boundary Conditions
 
@@ -84,7 +83,7 @@ and $R$ is the recharge rate [m s⁻¹].  Note - recharge rate was not in the co
 | Lower (stream) | $\partial h/\partial x = 0$           |
 | Upper (divide) | zero lateral flow                     |
 
-## Constitutive Relationships
+## Constitutive Relationships (from the code)
 
 ### Transmissivity
 
@@ -105,7 +104,7 @@ The specific yield varies with depth following a Brooks–Corey relation:
 
 $$
 f_{\text{drain}}
-= \theta_{\text{sat}}
+= \alpha_{\text{sat}}
 \left[
 1 -
 \left(
@@ -117,7 +116,7 @@ f_{\text{drain}}
 f_{\text{drain}}\ge0.02
 $$
 
-where $\theta_{\text{sat}}$ is porosity [–],
+where $\alpha_{\text{sat}}$ is porosity [–],
 $z_{\text{bed}}$ is bedrock depth [m],
 $\psi_{\text{sat}}$ is air-entry suction [mm],
 and $b$ is the Brooks–Corey pore-size index [–].
@@ -160,9 +159,9 @@ $$
 a_1 h_0^{t,s+1} + b_1 h_1^{t,s+1} + c_1 h_2^{t,s+1} = r_1
 $$
 
-where 
 $$
 \begin{aligned}
+&\text{where:} \\
 &a_1 = 0 \\
 &b_1 = f + \frac{\Delta T\ \cos(\alpha)}{w_1\ \Delta x_1} \cdot \frac{w_{\frac{3}{2}}\ k_{l_{\frac{3}{2}}}^{t,s}\ h_{\frac{3}{2}}^{t,s}}{\Delta x_{U_1}} \\
 &c_1 = -\frac{\Delta T\ \cos(\alpha)}{w_1\ \Delta x_1} \cdot \frac{w_{\frac{3}{2}}\ k_{l_{\frac{3}{2}}}^{t,s}\ h_{\frac{3}{2}}^{t,s}}{\Delta x_{U_1}} \\
@@ -245,21 +244,21 @@ and lower i − 1 node. {w_i} is the width on the center of node i. i − {\frac
 
 ## IMPLEMENTATION FROM THE CODE
 
-Lower boundary ($i=1$, stream)
+Lower boundary ($i=1$, stream)  (NOT SURE HOW THE LAST TERM IN $r_1$ WAS DERIVED)
 
 $$
 \begin{aligned}
 a_1 &= 0, \\
-c_1 &= -\frac{T_{3/2}^n \cos\theta \ \Delta t}
-           {\Delta x_{3/2}\ \Delta x_1\ w_1}, \\
+c_1 &= -\frac{T_{3/2}^{s-1} \cos\alpha \ \Delta t}
+           {\Delta x_{U_i}\ \Delta x_1\ w_1}, \\
 b_1 &= f_{\text{drain},1} - c_1, \\
-r_1 &= f_{\text{drain},1} h_1^n
+r_1 &= f_{\text{drain},1} h_1^{s-1}
       + \frac{\Delta t}{w_1\Delta x_1}
         \left[
-          \sin\theta\ T_{3/2}^n
-          - \frac{\cos\theta}{\Delta x_1}
+          \sin\alpha\ T_{3/2}^{s-1}
+          - \frac{\cos\alpha}{\Delta x_1}
             w_1 K_{\text{aniso}}
-            \frac{K_{\text{sat},1}}{1000}(h_1^n)^2
+            \frac{K_{\text{sat},1}}{1000}(h_1^{s-1})^2
         \right]
 \end{aligned}
 $$
@@ -268,14 +267,14 @@ Interior nodes ($i=2,\dots,N-1$)
 
 $$
 \begin{aligned}
-a_i &= -\frac{T_{i-\frac12}^n \cos\theta \ \Delta t}
-           {\Delta x_{i-\frac12}\ \Delta x_i\ w_i}, \\
-c_i &= -\frac{T_{i+\frac12}^n \cos\theta \ \Delta t}
-           {\Delta x_{i+\frac12}\ \Delta x_i\ w_i}, \\
+a_i &= -\frac{T_{i-\frac12}^{s-1} \cos\alpha \ \Delta t}
+           {\Delta x_{L_i}\ \Delta x_i\ w_i}, \\
+c_i &= -\frac{T_{i+\frac12}^{s-1} \cos\alpha \ \Delta t}
+           {\Delta x_{U_i}\ \Delta x_i\ w_i}, \\
 b_i &= f_{\text{drain},i} - (a_i + c_i), \\
-r_i &= f_{\text{drain},i} h_i^n
-      + \frac{\Delta t\sin\theta}{w_i\Delta x_i}
-        (T_{i+\frac12}^n - T_{i-\frac12}^n)
+r_i &= f_{\text{drain},i} h_i^{s-1}
+      + \frac{\Delta t\sin\alpha}{w_i\Delta x_i}
+        (T_{i+\frac12}^{s-1} - T_{i-\frac12}^{s-1})
 \end{aligned}
 $$
 
@@ -283,12 +282,12 @@ Upper boundary ($i=N$, divide)
 
 $$
 \begin{aligned}
-a_N &= -\frac{T_{N-\frac12}^n \cos\theta \ \Delta t}
-            {\Delta x_{N-\frac12}\ \Delta x_N\ w_N}, \\
+a_N &= -\frac{T_{N-\frac12}^{s-1} \cos\alpha \ \Delta t}
+            {\Delta x_{L_N}\ \Delta x_N\ w_N}, \\
 c_N &= 0, \\
 b_N &= f_{\text{drain},N} - a_N, \\
-r_N &= f_{\text{drain},N} h_N^n
-      - \frac{\Delta t\sin\theta}{w_N\Delta x_N} T_{N-\frac12}^n
+r_N &= f_{\text{drain},N} h_N^{s-1}
+      - \frac{\Delta t\sin\alpha}{w_N\Delta x_N} T_{N-\frac12}^{s-1}
 \end{aligned}
 $$
 
