@@ -191,17 +191,17 @@ $$
 
 
 $$
-a_j h_{j-1}^{t,s+1} + b_j h_j^{t,s+1} + c_j h_{j+1}^{t,s+1} = r_j 
+a_i h_{i-1}^{t,s+1} + b_i h_i^{t,s+1} + c_i h_{i+1}^{t,s+1} = r_i 
 $$
 
 $$
 \begin{aligned}
 &\text{where:} \\
-&a_j = \frac{\Delta t\ \cos(\alpha)}{w_j\ \Delta x_j} \cdot \frac{w_{j-\frac{1}{2}}\ k_{l_{j-\frac{1}{2}}}^{t,s}\ h_{j-\frac{1}{2}}^{t,s}}{\Delta x_{L_j}} \\
-&b_j = f + \frac{\Delta t\ \cos(\alpha)}{w_j\ \Delta x_j} \left( \frac{w_{j+\frac{1}{2}}\ k_{l_{j+\frac{1}{2}}}^{t,s}\ h_{j+\frac{1}{2}}^{t,s}}{\Delta x_{U_j}} + \frac{w_{j-\frac{1}{2}}\ k_{l_{j-\frac{1}{2}}}^{t,s}\ h_{j-\frac{1}{2}}^{t,s}}{\Delta x_{L_j}} \right) \\
-&c_j = -\frac{\Delta t\ \cos(\alpha)}{w_j\ \Delta x_j} \cdot \frac{w_{j+\frac{1}{2}}\ k_{l_{j+\frac{1}{2}}}^{t,s}\ h_{j+\frac{1}{2}}^{t,s}}{\Delta x_{U_j}} \\
-&r_j = f h_j^{t-1} + \frac{\Delta t\ \sin(\alpha)}{w_j\ \Delta x_j} \left(w_{j+\frac{1}{2}}\ k_{l_{j+\frac{1}{2}}}^{t,s}\ h_{j+\frac{1}{2}}^{t,s} - w_{j-\frac{1}{2}}\ k_{l_{j-\frac{1}{2}}}^{t,s}\ h_{j-\frac{1}{2}}^{t,s}\right) \\
-&\quad + \Delta t\ \cos(\alpha)\ R_{\mathrm{sat},j}^{t}
+&a_i = \frac{\Delta t\ \cos(\alpha)}{w_i\ \Delta x_i} \cdot \frac{w_{i-\frac{1}{2}}\ k_{l_{i-\frac{1}{2}}}^{t,s}\ h_{i-\frac{1}{2}}^{t,s}}{\Delta x_{L_i}} \\
+&b_i = f + \frac{\Delta t\ \cos(\alpha)}{w_i\ \Delta x_i} \left( \frac{w_{i+\frac{1}{2}}\ k_{l_{i+\frac{1}{2}}}^{t,s}\ h_{i+\frac{1}{2}}^{t,s}}{\Delta x_{U_i}} + \frac{w_{i-\frac{1}{2}}\ k_{l_{i-\frac{1}{2}}}^{t,s}\ h_{i-\frac{1}{2}}^{t,s}}{\Delta x_{L_i}} \right) \\
+&c_i = -\frac{\Delta t\ \cos(\alpha)}{w_i\ \Delta x_i} \cdot \frac{w_{i+\frac{1}{2}}\ k_{l_{i+\frac{1}{2}}}^{t,s}\ h_{i+\frac{1}{2}}^{t,s}}{\Delta x_{U_i}} \\
+&r_i = f h_i^{t-1} + \frac{\Delta t\ \sin(\alpha)}{w_i\ \Delta x_i} \left(w_{i+\frac{1}{2}}\ k_{l_{i+\frac{1}{2}}}^{t,s}\ h_{i+\frac{1}{2}}^{t,s} - w_{i-\frac{1}{2}}\ k_{l_{i-\frac{1}{2}}}^{t,s}\ h_{i-\frac{1}{2}}^{t,s}\right) \\
+&\quad + \Delta t\ \cos(\alpha)\ R_{\mathrm{sat},i}^{t}
 \end{aligned}
 $$
 
