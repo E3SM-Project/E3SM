@@ -30,7 +30,7 @@ extern "C" {
                               Real *output_snow,        // 20
                               Real *output_cape,        // 21
                               Int  *output_activity,    // 22
-                              Real *output_tend_s,      // 23
+                              Real *output_tend_t,      // 23
                               Real *output_tend_q,      // 24
                               Real *output_tend_u,      // 25
                               Real *output_tend_v,      // 26
@@ -80,7 +80,7 @@ void zm_eamxx_bridge_run( Int ncol, Int pver,
                          zm_output.h_snow       .data(),  // 20
                          zm_output.h_cape       .data(),  // 21
                          zm_output.h_activity   .data(),  // 22
-                         zm_output.h_tend_s     .data(),  // 23
+                         zm_output.h_tend_t     .data(),  // 23
                          zm_output.h_tend_qv    .data(),  // 24
                          zm_output.h_tend_u     .data(),  // 25
                          zm_output.h_tend_v     .data(),  // 26
