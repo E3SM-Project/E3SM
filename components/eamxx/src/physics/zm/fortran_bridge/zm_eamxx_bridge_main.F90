@@ -75,7 +75,7 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
                                   state_t, state_qv, state_u, state_v, &
                                   state_omega, state_cldfrac, state_pblh, tpert, landfrac, &
                                   output_prec, output_snow, output_cape, output_activity, &
-                                  output_tend_s, output_tend_q, output_tend_u, output_tend_v, &
+                                  output_tend_t, output_tend_q, output_tend_u, output_tend_v, &
                                   output_rain_prod, output_snow_prod, &
                                   output_prec_flux, output_snow_flux, output_mass_flux ) bind(C)
   use zm_conv,                  only: zm_const, zm_param
@@ -111,7 +111,7 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
   real(kind=c_real),  dimension(ncol),      intent(  out) :: output_snow        ! 20 output frozen precipitation             (snow)
   real(kind=c_real),  dimension(ncol),      intent(  out) :: output_cape        ! 21 output convective avail. pot. energy    (cape)
   integer(kind=c_int),dimension(ncol),      intent(  out) :: output_activity    ! 22 integer deep convection activity flag   (ideep)
-  real(kind=c_real),  dimension(ncol,pver), intent(  out) :: output_tend_s      ! 23 output tendency of dry static energy    (ptend_loc_s)
+  real(kind=c_real),  dimension(ncol,pver), intent(  out) :: output_tend_t      ! 23 output tendency of temperature          (ptend_loc_s)
   real(kind=c_real),  dimension(ncol,pver), intent(  out) :: output_tend_q      ! 24 output tendency of water vapor          (ptend_loc_q)
   real(kind=c_real),  dimension(ncol,pver), intent(  out) :: output_tend_u      ! 25 output tendency of zonal wind           (ptend_loc_u)
   real(kind=c_real),  dimension(ncol,pver), intent(  out) :: output_tend_v      ! 26 output tendency of meridional wind      (ptend_loc_v)
@@ -161,11 +161,13 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
   real(r8), dimension(ncol,pver) :: local_state_zm
   real(r8), dimension(ncol,pverp):: local_state_zi
 
+  real(r8), dimension(ncol,pver) :: output_tend_s       ! dry static energy tendency used to set output_tend_t
+
   ! temporary local tendencies for calling zm_conv_evap()
-  real(r8), dimension(ncol,pver) :: local_tend_s        ! output tendency of dry static energy   (ptend_loc_s)
-  real(r8), dimension(ncol,pver) :: local_tend_q        ! output tendency of water vapor         (ptend_loc_q)
-  real(r8), dimension(ncol,pver) :: local_tend_u        ! output tendency of zonal wind
-  real(r8), dimension(ncol,pver) :: local_tend_v        ! output tendency of meridional wind
+  real(r8), dimension(ncol,pver) :: local_tend_s        ! temporary tendency of dry static energy   (ptend_loc_s)
+  real(r8), dimension(ncol,pver) :: local_tend_q        ! temporary tendency of water vapor         (ptend_loc_q)
+  real(r8), dimension(ncol,pver) :: local_tend_u        ! temporary tendency of zonal wind
+  real(r8), dimension(ncol,pver) :: local_tend_v        ! temporary tendency of meridional wind
 
   real(r8), dimension(ncol,pver) :: tend_s_snwprd       ! DSE tend from snow production
   real(r8), dimension(ncol,pver) :: tend_s_snwevmlt     ! DSE tend from snow evap/melt
@@ -203,7 +205,7 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
     output_cape(i) = 0
     output_activity(i) = 0
     do k = 1,pver
-      output_tend_s(i,k) = 0
+      output_tend_t(i,k) = 0
       output_tend_q(i,k) = 0
       output_tend_u(i,k) = 0
       output_tend_v(i,k) = 0
@@ -362,6 +364,15 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
       output_activity(ideep(i)) = 1
     end do
   end if
+
+  !-----------------------------------------------------------------------------
+  ! convert dry static energy tendency to temperature tendency
+
+  do i = 1,ncol
+    do k = 1,pver
+      output_tend_t(i,k) = output_tend_s(i,k)/zm_const%cpair
+    end do
+  end do
 
   !-----------------------------------------------------------------------------
   return
