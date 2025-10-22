@@ -44,12 +44,13 @@ void Functions<S,D>::gw_prof(
   // Interior points use centered differences.
   midpoint_interp(team, t, ekat::subview(ti, Kokkos::pair<int, int>{1, pver}));
   team.team_barrier();
+  static constexpr Real n2min = GWC::n2min;
   Kokkos::parallel_for(
     Kokkos::TeamVectorRange(team, 1, pver), [&] (const int k) {
     rhoi(k) = pint(k) / (C::Rair*ti(k));
     const Real dtdp = (t(k)-t(k-1)) / (pmid(k)-pmid(k-1));
     const Real n2 = C::gravit*C::gravit/ti(k) * (1/cpair - rhoi(k)*dtdp);
-    ni(k) = std::sqrt(ekat::impl::max(GWC::n2min, n2));
+    ni(k) = std::sqrt(ekat::impl::max(n2min, n2));
   });
 
   // Bottom interface uses bottom level temperature, density; next interface
