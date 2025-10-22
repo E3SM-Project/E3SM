@@ -1,6 +1,6 @@
 module gravity_waves_sources
   use derivative_mod, only : derivative_t
-  use dimensions_mod, only : np,nlev
+  use dimensions_mod, only : np,nlev,nlevp
   use edgetype_mod, only       : EdgeBuffer_t
   use element_mod, only    : element_t
   use hybrid_mod, only     : hybrid_t
@@ -123,7 +123,7 @@ CONTAINS
     use dyn_comp,           only: hvcoord
     use spmd_utils,         only: iam 
     use parallel_mod,       only: par 
-    use element_ops,        only: get_temperature, get_hydro_pressure, get_phi
+    use element_ops,        only: get_temperature, get_hydro_pressure_i, get_phi
     use dyn_grid,           only: fv_nphys
     use prim_driver_mod,    only: deriv1
     use gllfvremap_mod,     only: gfr_g2f_scalar, gfr_g2f_vector
@@ -141,9 +141,9 @@ CONTAINS
     integer :: k,kptr,i,j,ie,component
     real(kind=real_kind) :: frontgf_gll(np,np,nlev,nets:nete)
     real(kind=real_kind) :: gradth_gll(np,np,2,nlev,nets:nete)  ! grad(theta)
-    real(kind=real_kind) :: zint(np,np,nlev)            ! interface altitude
+    real(kind=real_kind) :: zint(np,np,nlevp)           ! interface altitude
     real(kind=real_kind) :: zmid(np,np,nlev)            ! mid-point altitude
-    real(kind=real_kind) :: pint(np,np,nlev)            ! interface hydrostatic pressure
+    real(kind=real_kind) :: pint(np,np,nlevp)           ! interface hydrostatic pressure
     real(kind=real_kind) :: pmid(np,np,nlev)            ! mid-point hydrostatic pressure
     real(kind=real_kind) :: temperature(np,np,nlev)     ! Temperature
     real(kind=real_kind) :: C(np,np,2), wf1(nphys*nphys,nlev), wf2(nphys*nphys,nlev)
@@ -193,7 +193,7 @@ CONTAINS
       if (use_fgf_pgrad_correction .or. use_fgf_zgrad_correction) then
 
         ! compute pressure at interfaces and mid-points
-        call get_hydro_pressure_interface(pint,elem(ie)%state%dp3d(:,:,:,tl),hvcoord)
+        call get_hydro_pressure_i(pint,elem(ie)%state%dp3d(:,:,:,tl),hvcoord)
 
         call get_temperature(elem(ie),temperature,hvcoord,tl)
 
@@ -343,8 +343,8 @@ CONTAINS
       else
         data_above = ( data_mid(:,:,k-1) + data_mid(:,:,k) ) / 2.0 ! interpolate to interface k
         data_below = ( data_mid(:,:,k+1) + data_mid(:,:,k) ) / 2.0 ! interpolate to interface k+1
-        vert_above = pint(:,:,k)
-        vert_below = pint(:,:,k+1)
+        vert_above = vert_int(:,:,k)
+        vert_below = vert_int(:,:,k+1)
       end if
       ddata_dvert(:,:,k) = ( data_above - data_below ) / ( vert_above - vert_below )
     end do
