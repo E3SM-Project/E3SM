@@ -762,10 +762,10 @@ _TESTS = {
             "PEM_Ln90.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-spa_remap",
             "ERS_Ln90.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-small_kernels--eamxx-output-preset-5",
             "ERP_Ln22.conusx4v1pg2_r05_oECv3.F2010-SCREAMv1-noAero.eamxx-bfbhash--eamxx-L72",
-            "ERS_Ln22.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-output-preset-4",
-            "REP_Ld5.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-output-preset-6",
+            "ERS_Ln22.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-L128--eamxx-output-preset-4",
+            "REP_Ld5.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-L128--eamxx-output-preset-6",
             "SMS.ne30pg2_EC30to60E2r2.WCYCLXX2010",
-            "ERS_Ln90.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-sl_nsubstep2",
+            "ERS_Ln90.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-L128--eamxx-sl_nsubstep2",
             "ERS.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-prod",
             "SMS.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-hremap_nudged",
             )
@@ -865,9 +865,9 @@ _TESTS = {
     "e3sm_eamxx_large" : {
         "time"  : "01:00:00",
         "tests" : (
-            "SMS.ne120pg2_ne120pg2.F2010-SCREAMv1",
-            #"PEM_Ld1.ne120pg2_ne120pg2.F2010-SCREAMv1", # second test hits OOM, need either P2048 or change def pelayout
-            "ERS_Lh6.ne120pg2_ne120pg2.F2010-SCREAMv1.eamxx-prod",
+            "SMS.ne120pg2_ne120pg2.F2010-SCREAMv1.eamxx-L128",
+            #"PEM_Ld1.ne120pg2_ne120pg2.F2010-SCREAMv1.eamxx-L128", # second test hits OOM, need either P2048 or change def pelayout
+            "ERS_Lh6.ne120pg2_ne120pg2.F2010-SCREAMv1.eamxx-L128--eamxx-prod",
             "SMS_D_Lh6.ne120pg2_ne120pg2.F2010-SCREAMv1.eamxx-prod",
             "SMS.ne256pg2_ne256pg2.F2010-SCREAMv1",
             "ERS_Lh6.ne256pg2_ne256pg2.F2010-SCREAMv1.eamxx-prod"
