@@ -52,6 +52,14 @@
 ! aging criterion is approximate so do not try to distinguish
 !    sulfuric acid, bisulfate, ammonium sulfate
 
+  real(r8), public, protected :: dp_cut_accum_rename = huge(1.0_r8)
+! cutoff diameter for larger accum mode particles renamed to the strat coarse mode
+
+  real(r8), public, protected :: dp_xferall_thresh_accum_rename = huge(1.0_r8)
+! threshold diameter for all accum mode particles transferred to the strat coarse mode
+
+  real(r8), public, protected :: micro_mg_accre_enhan_fac = huge(1.0_r8)
+
 #if ( defined( CAMBOX_ACTIVATE_THIS ) )
   integer, public :: cldy_rh_sameas_clear = 0
 ! this is only used for some specific box model tests
@@ -4550,11 +4558,11 @@ mainloop1_ipair:  do n = 1, ntot_amode
          shrinkaa(n) = .false. 
          shrinkbb = .false. ! set initial value shrink switch: if calculate shrink fraction
          if ( mtoo == ncrsf ) then ! stratosphere renaming
-              dp_cut(mfrm) = 4.0e-7_r8
+              dp_cut(mfrm) = dp_cut_accum_rename
               lndp_cut(mfrm) = log( dp_cut(mfrm) )
               dp_belowcut(mfrm) = 0.99*dp_cut(mfrm)
               dp_xfernone_thresh(mfrm) = 1.0e-7_r8
-              dp_xferall_thresh(mfrm)    = 4.0e-7_r8
+              dp_xferall_thresh(mfrm)    = dp_xferall_thresh_accum_rename
          end if
          if (1>2) then ! turn off the shrink path for now
          if ((mfrm == ncrsf .and. ncrsf > 0)) then
@@ -5994,7 +6002,8 @@ agepair_loop1: &
 
 !--------------------------------------------------------------------------------
 !--------------------------------------------------------------------------------
-      subroutine modal_aero_amicphys_init( imozart, species_class,n_so4_monolayers_pcage_in)
+      subroutine modal_aero_amicphys_init( imozart, species_class,n_so4_monolayers_pcage_in, &
+                                           dp_cut_accum_rename_in, dp_xferall_thresh_accum_rename_in)
 
 !-----------------------------------------------------------------------
 !
@@ -6034,6 +6043,8 @@ implicit none
    integer, intent(in)  :: imozart
    integer, intent(in)  :: species_class(:)
    real(r8), intent(in) :: n_so4_monolayers_pcage_in
+   real(r8), intent(in) :: dp_cut_accum_rename_in
+   real(r8), intent(in) :: dp_xferall_thresh_accum_rename_in
 
 !-----------------------------------------------------------------------
 ! local
@@ -6059,6 +6070,8 @@ implicit none
 n_so4_monolayers_pcage  = n_so4_monolayers_pcage_in
 dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
 
+dp_cut_accum_rename = dp_cut_accum_rename_in
+dp_xferall_thresh_accum_rename = dp_xferall_thresh_accum_rename_in
 
 #if ( defined( CAMBOX_ACTIVATE_THIS ) )
       ldiag82  = .true.  ; lun82  = 82
