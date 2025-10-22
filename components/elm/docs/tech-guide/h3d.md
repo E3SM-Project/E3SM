@@ -129,7 +129,7 @@ This function allows for a smooth transition between unsaturated and fully satur
 ### Spatial Discretization
 
 The PDE is solved implicitly in space and time using a tridiagonal
-system for $h_i^{n+1}$ at each node $i$. Node is ordered from 1 to N:
+system for $h_i^{t}$ at each node $i$ at time t. Node is ordered from 1 to N:
 
 $$
 a_i h_{i-1}^{t,s+1} + b_i h_i^{t,s+1} + c_i h_{i+1}^{t,s+1} = r_i^{t,s}
