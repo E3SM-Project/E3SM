@@ -91,7 +91,7 @@ and $R$ is the recharge rate [m s⁻¹].
 The local transmissivity depends on saturated thickness and anisotropy:
 
 $$
-T(x,h)= \frac{K_{\text{aniso}}K_{\text{sat}}(z_{wt})h w(x)}{1000}
+T(x,h)= \frac{K_{\text{aniso}}K_{\text{sat}}(z_{wt}) \ h \ w(x)}{1000}
 $$
 
 where $K_{\text{aniso}}=100$ is the horizontal/vertical anisotropy factor,
@@ -110,7 +110,7 @@ f_{\text{drain}}
 1 -
 \left(
 1 +
-\frac{1000\,\max(0,\,z_{\text{bed}}-h)}{\psi_{\text{sat}}}
+\frac{1000\,\max(0,z_{\text{bed}}-h)}{\psi_{\text{sat}}}
 \right)^{-1/b}
 \right],
 \qquad
@@ -141,13 +141,13 @@ Lower boundary ($i=1$, stream)
 $$
 \begin{aligned}
 a_1 &= 0, \\
-c_1 &= -\frac{T_{3/2}^n \cos\theta \Delta t}
-           {\Delta x_{3/2}\Delta x_1 w_1}, \\
+c_1 &= -\frac{T_{3/2}^n \cos\theta \ \Delta t}
+           {\Delta x_{3/2}\,\Delta x_1\ w_1}, \\
 b_1 &= f_{\text{drain},1} - c_1, \\
 r_1 &= f_{\text{drain},1} h_1^n
       + \frac{\Delta t}{w_1\Delta x_1}
         \left[
-          \sin\theta T_{3/2}^n
+          \sin\theta\,T_{3/2}^n
           - \frac{\cos\theta}{\Delta x_1}
             w_1 K_{\text{aniso}}
             \frac{K_{\text{sat},1}}{1000}(h_1^n)^2
@@ -159,14 +159,14 @@ Interior nodes ($i=2,\dots,N-1$)
 
 $$
 \begin{aligned}
-a_i &= -\frac{T_{i}^n \cos\theta \Delta t}
-           {\Delta x_{i}\Delta x_i w_i}, \\
-c_i &= -\frac{T_{i+1}^n \cos\theta \Delta t}
-           {\Delta x_{i+1}\,\Delta x_i w_i}, \\
+a_i &= -\frac{T_{i-\frac12}^n \cos\theta \ \Delta t}
+           {\Delta x_{i-\frac12}\ \Delta x_i\ w_i}, \\
+c_i &= -\frac{T_{i+\frac12}^n \cos\theta \ \Delta t}
+           {\Delta x_{i+\frac12}\ \Delta x_i\ w_i}, \\
 b_i &= f_{\text{drain},i} - (a_i + c_i), \\
 r_i &= f_{\text{drain},i} h_i^n
       + \frac{\Delta t\sin\theta}{w_i\Delta x_i}
-        (T_{i+1}^n - T_{i}^n)
+        (T_{i+\frac12}^n - T_{i-\frac12}^n)
 \end{aligned}
 $$
 
@@ -174,12 +174,12 @@ Upper boundary ($i=N$, divide)
 
 $$
 \begin{aligned}
-a_N &= -\frac{T_{N}^n \cos\theta \Delta t}
-            {\Delta x_{N} \Delta x_N w_N}, \\
+a_N &= -\frac{T_{N-\frac12}^n \cos\theta \ \Delta t}
+            {\Delta x_{N-\frac12}\ \Delta x_N\ w_N}, \\
 c_N &= 0, \\
 b_N &= f_{\text{drain},N} - a_N, \\
 r_N &= f_{\text{drain},N} h_N^n
-      - \frac{\Delta t\sin\theta}{w_N\Delta x_N} T_{N}^n
+      - \frac{\Delta t\sin\theta}{w_N\Delta x_N} T_{N-\frac12}^n
 \end{aligned}
 $$
 
