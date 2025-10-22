@@ -780,6 +780,9 @@
       <value compset="^20TR.*BGC%BDRC"                          >284.317</value>
       <value compset="^20TR.*BGC%BDRD"                          >284.317</value>
       <value compset="^SSP585.*BGC%B"                           >284.317</value>  
+      <value compset="^1850.*CMIP7"                             >284.297</value>
+      <value compset="^1850.*CMIP7.+4xCO2"                      >1137.188</value>
+      <value compset="^2010.+CMIP7"                             >388.901</value>
       <!-- Override values based on EAM (WACCM) chemistry -->
       <value compset="EAM%W"				>0.000001</value>
       <value compset="EAM%SSOA"				>0.000001</value>
@@ -924,6 +927,7 @@
     <default_value>1</default_value>
     <values match="last">
       <value compset=".+EAM%CMIP6"				>2</value>
+      <value compset=".+CMIP7_EAM"				>2</value>
       <value compset=".+EAM%MMF"				>2</value>
     </values>
     <group>shr_dust_nl</group>
