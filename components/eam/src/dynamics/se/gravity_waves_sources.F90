@@ -337,7 +337,7 @@ CONTAINS
       else
         data_above = ( data_mid(:,:,k-1) + data_mid(:,:,k) ) / 2.0 ! interpolate to interface k
         data_below = ( data_mid(:,:,k+1) + data_mid(:,:,k) ) / 2.0 ! interpolate to interface k+1
-        vert_above = pint(:,:,k) 
+        vert_above = pint(:,:,k)
         vert_below = pint(:,:,k+1)
       end if
       ddata_dvert(:,:,k) = ( data_above - data_below ) / ( vert_above - vert_below )
