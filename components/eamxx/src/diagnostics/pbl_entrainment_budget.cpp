@@ -18,7 +18,7 @@ void PBLEntrainmentBudget::set_grids(
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
 
-  auto grid             = grids_manager->get_grid("Physics");
+  auto grid             = grids_manager->get_grid("physics");
   const auto &grid_name = grid->name();
 
   const auto nondim = Units::nondimensional();
