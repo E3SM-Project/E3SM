@@ -7,7 +7,7 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
     THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC})
 
   # Test common physics functions
-  CreateUnitTest(common_physics "common_physics_functions_tests.cpp" eamxx_physics_share)
+  CreateUnitTest(common_physics "common_physics_functions_tests.cpp" LIBS eamxx_physics_share)
 endif()
 
 if (SCREAM_ENABLE_BASELINE_TESTS)

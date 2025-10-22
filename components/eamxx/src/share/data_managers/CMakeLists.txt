@@ -12,10 +12,9 @@ target_link_libraries(eamxx_data_managers PUBLIC
 )
 
 if (NOT SCREAM_LIB_ONLY)
-  # Add mesh free grids manager to the test support lib
-  target_sources(eamxx_test_support PRIVATE mesh_free_grids_manager.cpp)
-  target_link_libraries(eamxx_test_support PUBLIC
-    eamxx_data_managers
+  # Add mesh free grids manager to the data managers lib (requires linking prop checks too)
+  target_sources(eamxx_data_managers PRIVATE mesh_free_grids_manager.cpp)
+  target_link_libraries(eamxx_data_managers PUBLIC
     eamxx_property_checks)
 
   add_subdirectory(tests)
