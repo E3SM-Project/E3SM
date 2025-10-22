@@ -68,7 +68,7 @@ Land unit captures the hillsclope-scale connectivity, while columns capture spat
 The fundamental PDE is a Dupuit-style Boussinesq groundwater flow equation for saturated flow along the slope:
 
 $$
-f\frac{\partial h}{\partial t} = \frac{1}{w}\frac{\partial}{\partial x}\left(w\ k_{l}(h)\ h\left(\sin(\alpha) + \frac{\partial h}{\partial x}\cos(\alpha)\right)\right) + \cos(\alpha)\ R}
+f\frac{\partial h}{\partial t} = \frac{1}{w}\frac{\partial}{\partial x}\left(w\ k_{l}(h)\ h\left(\sin(\alpha) + \frac{\partial h}{\partial x}\cos(\alpha)\right)\right) + \cos(\alpha)\ R
 $$
 
 where $h(x,t)$ is the saturated thickness [m],
@@ -144,14 +144,14 @@ where t and t-1 are current and previous time step, s+1 and s are current and pr
 $$
 \begin{aligned}
 f\left(h_{1}^{t,s+1}-h_{1}^{t-1}\right)
-&= \frac{\Delta T\ \sin(\alpha)}{w_{1}\ \Delta x_{1}}
+&= \frac{\Delta t\ \sin(\alpha)}{w_{1}\ \Delta x_{1}}
 \left(w_{\frac{3}{2}}\ k_{l_{\frac{3}{2}}}^{t,s}\ h_{\frac{3}{2}}^{t,s}\right) \\
-&\quad + \frac{\Delta T\ \cos(\alpha)}{w_{1}\ \Delta x_{1}}
+&\quad + \frac{\Delta t\ \cos(\alpha)}{w_{1}\ \Delta x_{1}}
 \left(
 \frac{w_{\frac{3}{2}}\ k_{l_{\frac{3}{2}}}^{t,s}\ h_{\frac{3}{2}}^{t,s}}{\Delta x_{U_{1}}}
 \left(h_{2}^{t,s+1}-h_{1}^{t,s+1}\right)
 \right) \\
-&\quad + \Delta T\ \cos(\alpha)\ R_{\mathrm{sat},1}^{t}\ .
+&\quad + \Delta t\ \cos(\alpha)\ R_{\mathrm{sat},1}^{t}\ .
 \end{aligned}
 $$
 
@@ -163,9 +163,9 @@ $$
 \begin{aligned}
 &\text{where:} \\
 &a_1 = 0 \\
-&b_1 = f + \frac{\Delta T\ \cos(\alpha)}{w_1\ \Delta x_1} \cdot \frac{w_{\frac{3}{2}}\ k_{l_{\frac{3}{2}}}^{t,s}\ h_{\frac{3}{2}}^{t,s}}{\Delta x_{U_1}} \\
-&c_1 = -\frac{\Delta T\ \cos(\alpha)}{w_1\ \Delta x_1} \cdot \frac{w_{\frac{3}{2}}\ k_{l_{\frac{3}{2}}}^{t,s}\ h_{\frac{3}{2}}^{t,s}}{\Delta x_{U_1}} \\
-&r_1 = f h_1^{t-1} + \frac{\Delta T\ \sin(\alpha)}{w_1\ \Delta x_1}\left(w_{\frac{3}{2}}\ k_{l_{\frac{3}{2}}}^{t,s}\ h_{\frac{3}{2}}^{t,s}\right) + \Delta T\ \cos(\alpha)\ R_{\mathrm{sat},1}^{t}
+&b_1 = f + \frac{\Delta t\ \cos(\alpha)}{w_1\ \Delta x_1} \cdot \frac{w_{\frac{3}{2}}\ k_{l_{\frac{3}{2}}}^{t,s}\ h_{\frac{3}{2}}^{t,s}}{\Delta x_{U_1}} \\
+&c_1 = -\frac{\Delta t\ \cos(\alpha)}{w_1\ \Delta x_1} \cdot \frac{w_{\frac{3}{2}}\ k_{l_{\frac{3}{2}}}^{t,s}\ h_{\frac{3}{2}}^{t,s}}{\Delta x_{U_1}} \\
+&r_1 = f h_1^{t-1} + \frac{\Delta t\ \sin(\alpha)}{w_1\ \Delta x_1}\left(w_{\frac{3}{2}}\ k_{l_{\frac{3}{2}}}^{t,s}\ h_{\frac{3}{2}}^{t,s}\right) + \Delta t\ \cos(\alpha)\ R_{\mathrm{sat},1}^{t}
 \end{aligned}
 $$
 
@@ -175,17 +175,17 @@ $$
 $$
 \begin{aligned}
 f\left(h_{i}^{t,s+1}-h_{i}^{t-1}\right)
-&= \frac{\Delta T\ \sin(\alpha)}{w_{i}\ \Delta x_{i}}
+&= \frac{\Delta t\ \sin(\alpha)}{w_{i}\ \Delta x_{i}}
 \left(w_{i+\frac{1}{2}}\ k_{l_{i+\frac{1}{2}}}^{t,s}\ h_{i+\frac{1}{2}}^{t,s}
      - w_{i-\frac{1}{2}}\ k_{l_{i-\frac{1}{2}}}^{t,s}\ h_{i-\frac{1}{2}}^{t,s}\right) \\
-&\quad + \frac{\Delta T\ \cos(\alpha)}{w_{i}\ \Delta x_{i}}
+&\quad + \frac{\Delta t\ \cos(\alpha)}{w_{i}\ \Delta x_{i}}
 \left(
 \frac{w_{i+\frac{1}{2}}\ k_{l_{i+\frac{1}{2}}}^{t,s}\ h_{i+\frac{1}{2}}^{t,s}}{\Delta x_{U_{i}}}
 \left(h_{i+1}^{t,s+1}-h_{i}^{t,s+1}\right) \right. \\
 &\qquad \left. - \frac{w_{i-\frac{1}{2}}\ k_{l_{i-\frac{1}{2}}}^{t,s}\ h_{i-\frac{1}{2}}^{t,s}}{\Delta x_{L_{i}}}
 \left(h_{i}^{t,s+1}-h_{i-1}^{t,s+1}\right)
 \right) \\
-&\quad + \Delta T\ \cos(\alpha)\ R_{\mathrm{sat},i}^{t}\ .
+&\quad + \Delta t\ \cos(\alpha)\ R_{\mathrm{sat},i}^{t}\ .
 \end{aligned}
 $$
 
@@ -197,11 +197,11 @@ $$
 $$
 \begin{aligned}
 &\text{where:} \\
-&a_j = \frac{\Delta T\ \cos(\alpha)}{w_j\ \Delta x_j} \cdot \frac{w_{j-\frac{1}{2}}\ k_{l_{j-\frac{1}{2}}}^{t,s}\ h_{j-\frac{1}{2}}^{t,s}}{\Delta x_{L_j}} \\
-&b_j = f + \frac{\Delta T\ \cos(\alpha)}{w_j\ \Delta x_j} \left( \frac{w_{j+\frac{1}{2}}\ k_{l_{j+\frac{1}{2}}}^{t,s}\ h_{j+\frac{1}{2}}^{t,s}}{\Delta x_{U_j}} + \frac{w_{j-\frac{1}{2}}\ k_{l_{j-\frac{1}{2}}}^{t,s}\ h_{j-\frac{1}{2}}^{t,s}}{\Delta x_{L_j}} \right) \\
-&c_j = -\frac{\Delta T\ \cos(\alpha)}{w_j\ \Delta x_j} \cdot \frac{w_{j+\frac{1}{2}}\ k_{l_{j+\frac{1}{2}}}^{t,s}\ h_{j+\frac{1}{2}}^{t,s}}{\Delta x_{U_j}} \\
-&r_j = f h_j^{t-1} + \frac{\Delta T\ \sin(\alpha)}{w_j\ \Delta x_j} \left(w_{j+\frac{1}{2}}\ k_{l_{j+\frac{1}{2}}}^{t,s}\ h_{j+\frac{1}{2}}^{t,s} - w_{j-\frac{1}{2}}\ k_{l_{j-\frac{1}{2}}}^{t,s}\ h_{j-\frac{1}{2}}^{t,s}\right) \\
-&\quad + \Delta T\ \cos(\alpha)\ R_{\mathrm{sat},j}^{t}
+&a_j = \frac{\Delta t\ \cos(\alpha)}{w_j\ \Delta x_j} \cdot \frac{w_{j-\frac{1}{2}}\ k_{l_{j-\frac{1}{2}}}^{t,s}\ h_{j-\frac{1}{2}}^{t,s}}{\Delta x_{L_j}} \\
+&b_j = f + \frac{\Delta t\ \cos(\alpha)}{w_j\ \Delta x_j} \left( \frac{w_{j+\frac{1}{2}}\ k_{l_{j+\frac{1}{2}}}^{t,s}\ h_{j+\frac{1}{2}}^{t,s}}{\Delta x_{U_j}} + \frac{w_{j-\frac{1}{2}}\ k_{l_{j-\frac{1}{2}}}^{t,s}\ h_{j-\frac{1}{2}}^{t,s}}{\Delta x_{L_j}} \right) \\
+&c_j = -\frac{\Delta t\ \cos(\alpha)}{w_j\ \Delta x_j} \cdot \frac{w_{j+\frac{1}{2}}\ k_{l_{j+\frac{1}{2}}}^{t,s}\ h_{j+\frac{1}{2}}^{t,s}}{\Delta x_{U_j}} \\
+&r_j = f h_j^{t-1} + \frac{\Delta t\ \sin(\alpha)}{w_j\ \Delta x_j} \left(w_{j+\frac{1}{2}}\ k_{l_{j+\frac{1}{2}}}^{t,s}\ h_{j+\frac{1}{2}}^{t,s} - w_{j-\frac{1}{2}}\ k_{l_{j-\frac{1}{2}}}^{t,s}\ h_{j-\frac{1}{2}}^{t,s}\right) \\
+&\quad + \Delta t\ \cos(\alpha)\ R_{\mathrm{sat},j}^{t}
 \end{aligned}
 $$
 
@@ -210,14 +210,14 @@ $$
 $$
 \begin{aligned}
 f\left(h_{N}^{t,s+1}-h_{N}^{t-1}\right)
-&= -\frac{\Delta T\ \sin(\alpha)}{w_{N}\ \Delta x_{N}}
+&= -\frac{\Delta t\ \sin(\alpha)}{w_{N}\ \Delta x_{N}}
 \left(w_{N-\frac{1}{2}}\ k_{l_{N-\frac{1}{2}}}^{t,s}\ h_{N-\frac{1}{2}}^{t,s}\right) \\
-&\quad -\frac{\Delta T\ \cos(\alpha)}{w_{N}\ \Delta x_{N}}
+&\quad -\frac{\Delta t\ \cos(\alpha)}{w_{N}\ \Delta x_{N}}
 \left(
 \frac{w_{N-\frac{1}{2}}\ k_{l_{N-\frac{1}{2}}}^{t,s}\ h_{N-\frac{1}{2}}^{t,s}}{\Delta x_{L_{N}}}
 \left(h_{N}^{t,s+1}-h_{N-1}^{t,s+1}\right)
 \right) \\
-&\quad + \Delta T\ \cos(\alpha)\ R_{\mathrm{sat},N}^{t}\ .
+&\quad + \Delta t\ \cos(\alpha)\ R_{\mathrm{sat},N}^{t}\ .
 \end{aligned}
 $$
 
@@ -229,17 +229,16 @@ $$
 $$
 \begin{aligned}
 &\text{where:} \\
-&a_N = -\frac{\Delta T\ \cos(\alpha)}{w_N\ \Delta x_N} \cdot \frac{w_{N-\frac{1}{2}}\ k_{l_{N-\frac{1}{2}}}^{t,s}\ h_{N-\frac{1}{2}}^{t,s}}{\Delta x_{L_N}} \\
-&b_N = f + \frac{\Delta T\ \cos(\alpha)}{w_N\ \Delta x_N} \cdot \frac{w_{N-\frac{1}{2}}\ k_{l_{N-\frac{1}{2}}}^{t,s}\ h_{N-\frac{1}{2}}^{t,s}}{\Delta x_{L_N}} \\
+&a_N = -\frac{\Delta t\ \cos(\alpha)}{w_N\ \Delta x_N} \cdot \frac{w_{N-\frac{1}{2}}\ k_{l_{N-\frac{1}{2}}}^{t,s}\ h_{N-\frac{1}{2}}^{t,s}}{\Delta x_{L_N}} \\
+&b_N = f + \frac{\Delta t\ \cos(\alpha)}{w_N\ \Delta x_N} \cdot \frac{w_{N-\frac{1}{2}}\ k_{l_{N-\frac{1}{2}}}^{t,s}\ h_{N-\frac{1}{2}}^{t,s}}{\Delta x_{L_N}} \\
 &c_N = 0 \\
-&r_N = f h_N^{t-1} - \frac{\Delta T\ \sin(\alpha)}{w_N\ \Delta x_N}\left(w_{N-\frac{1}{2}}\ k_{l_{N-\frac{1}{2}}}^{t,s}\ h_{N-\frac{1}{2}}^{t,s}\right) + \Delta T\ \cos(\alpha)\ R_{\mathrm{sat},N}^{t}
+&r_N = f h_N^{t-1} - \frac{\Delta t\ \sin(\alpha)}{w_N\ \Delta x_N}\left(w_{N-\frac{1}{2}}\ k_{l_{N-\frac{1}{2}}}^{t,s}\ h_{N-\frac{1}{2}}^{t,s}\right) + \Delta t\ \cos(\alpha)\ R_{\mathrm{sat},N}^{t}
 \end{aligned}
 $$
 
 
-Where \Delta x_{U_{1} is 
-where {\Delta T} (seconds) is the h3d time step, i is the lateral node number.  {\Delta x_{U_i}} and {\Delta x_{L_i}} are the distance (m) relative to the center of upper i + 1 
-and lower i − 1 node. {w_i} is the width on the center of node i. i − {\frac{1}{2}} and i + {\frac{1}{2}} represent the lower and upper bounds of node i.
+Where $\Delta t$ (seconds) is the h3d time step, i is the lateral node number.  $\Delta x_{U_i}$ and ${\Delta x_{L_i}}$ are the distance (m) relative to the center of upper i + 1 
+and lower i − 1 node. ${w_i}$ is the width on the center of node i. $i − {\frac{1}{2}}$ and $i + {\frac{1}{2}}$ represent the lower and upper bounds of node i.
 
 
 ## IMPLEMENTATION FROM THE CODE
@@ -293,7 +292,7 @@ $$
 
 ### Temporal Discretization
 
-A backward-Euler time step is used for stability. Nonlinear terms in transmissivity and porosity are treated by Picard iteration, updating T and $f_{drain} until:
+A backward-Euler time step is used for stability. Nonlinear terms in transmissivity and porosity are treated by Picard iteration, updating T and $f_{drain}$ until:
 
 $$
 \max_i |h_i^{k+1} - h_i^{k}| < 10^{-4}\ \mathrm{m}
@@ -315,7 +314,7 @@ $$
 
 $$
 \Delta S_{\text{sat},i}
-= f_{\text{drain},i}(h_i^{n+1}-h_i^n),
+= f_{\text{drain},i}(h_i^{t}-h_i^{t-1}),
 \qquad
 R_{\text{sub},i} = -\Delta S_{\text{sat},i},
 \qquad
@@ -348,7 +347,8 @@ Performs the iterative time stepping of the hillslope system:
 
 - Converts changes in saturated storage to drainage flux:
 
-_{sat} = f_{drain}\ (h^{n+1} - h^{n}),
+$$
+\Delta S_{sat} = f_{drain}\ (h^{t} - h^{t-1}),
 \qquad
 Q_{sub} = -\frac{\Delta S_{sat}}{\Delta t}
 $$
@@ -361,7 +361,7 @@ Solves the implicit Dupuit–Boussinesq system for all h3D nodes in a landunit.
 Constructs a tridiagonal matrix from the finite-difference discretization:
 
 $$
-a_i h_{i-1}^{n+1} + b_i h_i^{n+1} + c_i h_{i+1}^{n+1} = r_i
+a_i h_{i-1}^{t,s+1} + b_i h_i^{t,s+1} + c_i h_{i+1}^{t,s+1} = r_i^{t,s}
 $$
 
 Steps:
@@ -369,9 +369,9 @@ Steps:
 
 - Applies slope-dependent flux terms and boundary conditions.
 
-- Solves using the Thomas algorithm (Tridiagonal_h3D).
+- Solves using the equation (Tridiagonal_h3D).
 
-- Iterates until the solution converges (see § 5.2).
+- Iterates until the solution converges.
 
 ## Outputs
 
@@ -387,5 +387,4 @@ After the h3D solve, the model provides:
 
 - ΔS_sat — change in saturated storage [m]
 
-These outputs replace or augment SIMTOP drainage for h3D-active columns and are fed into the land surface,
- biogeochemical, and river-routing components of ELM.
+These outputs replace or augment SIMTOP drainage for h3D-active columns and are fed into the land surface river-routing components of ELM.
