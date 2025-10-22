@@ -105,6 +105,11 @@ CONTAINS
   !   gradth = grad(theta)
   !   C = ( gradth dot grad ) U
   ! 
+  ! For more details on the frontal GW scheme and fronotogenesis source calculation:
+  !   Charron, M., and E. Manzini, 2002: Gravity Waves from Fronts:
+  !   Parameterization and Middle Atmosphere Response in a General
+  !   Circulation Model. J. Atmos. Sci., 59, 923–941
+  !
   ! Original by Mark Taylor, July 2011
   ! Change by Santos, 10 Aug 2011:
   !   Integrated into gravity_waves_sources module, several arguments made global
@@ -112,8 +117,8 @@ CONTAINS
   ! Change by Aaron Donahue, April 2017:
   !   Fixed bug where boundary information was called for processors not associated
   !   with dynamics when dyn_npes<npes
-  ! Change by Walter Hannah, Oct 2025:
-  !   added pressure gradient correction
+  ! Change by Walter Hannah and Wandi Yu, Oct 2025:
+  !   added pressure gradient correction options for consistency with original C&M paper
   ! 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     use physical_constants, only: kappa, g
@@ -167,16 +172,16 @@ CONTAINS
     ! using a mixture of Cartesian and spherical coordinates
     !
     ! This routine is a modified version of derivative_mod.F90:ugradv_sphere()
-    ! in that the grad(v) term is modified to compute grad_p(v) - the gradient
-    ! on p-surfaces expressed in terms of the gradient on model surfaces and a
-    ! vertical pressure gradient.
+    ! in that the grad(v) term is modified to compute grad_z(v) (or grad_p(v))
+    ! - the gradient on z-surfaces expressed in terms of the gradient on model
+    ! surfaces and a vertical geopotential gradient.
     !
     ! The old version only computed gradients on model surfaces, which creates
     ! issues around topograpy. This is address with use_fgf_pgrad_correction=.true.
     !
     ! First, v is represented in cartesian coordinates  v(c) for c=1,2,3
-    ! For each v(c), we compute its gradient on p-surfaces via:
-    !    grad(v(c)) - d(v(c))/dz grad(p)
+    ! For each v(c), we compute its gradient on z (or p) surfaces via:
+    !    grad(v(c)) - d(v(c))/dz grad(z)
     ! Each of these gradients is represented in *spherical* coordinates (i=1,2)
     !
     ! We then dot each of these vectors with grad(theta).  This dot product is

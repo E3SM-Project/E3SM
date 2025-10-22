@@ -1080,7 +1080,7 @@ Default: set by build-namelist.
 
 <entry id="use_fgf_zgrad_correction" type="logical" category="gw_drag"
        group="phys_ctl_nl" valid_values="" >
-Flag to enable frontogenesis geopotential height gradient correction for frontal GWD
+Flag to enable frontogenesis geopotential gradient correction for frontal GWD
 Default: set by build-namelist.
 </entry>
 
