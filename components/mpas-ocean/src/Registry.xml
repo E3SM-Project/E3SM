@@ -3895,7 +3895,7 @@
 			 description="Heat flux associated with Evaporation at cell centers sent to coupler. Positive into the ocean."
 		/>
 		<var name="seaIceTemperatureFlux" type="real" dimensions="nCells Time" units="C m s^-1"
-			 description="Heat flux associated with sea ice melt water at cell centers sent to coupler. Positive into the ocean."
+			 description="Heat flux associated with sea ice melt water at cell centers sent to coupler. Positive into the ocean. Currently always assigned a value of 0 because it is included in seaIceHeatFlux as assigned by Icepack"
 		/>
 		<var name="icebergTemperatureFlux" type="real" dimensions="nCells Time" units="C m s^-1"
 			 description="Heat flux associated with iceberg melt at cell centers sent to coupler. Positive into the ocean."
