@@ -225,14 +225,14 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   // NOTE: 'true' is for 'dynamic' subfield; the idx of the subfield slice will move
   //       during execution (this class will take care of moving it, by calling
   //       reset_subview_idx on each field).
-  add_internal_field (m_helper_fields.at("v_dyn").subfield(1,tl.n0,true));
-  add_internal_field (m_helper_fields.at("vtheta_dp_dyn").subfield(1,tl.n0,true));
-  add_internal_field (m_helper_fields.at("dp3d_dyn").subfield(1,tl.n0,true));
-  add_internal_field (m_helper_fields.at("phi_int_dyn").subfield(1,tl.n0,true));
-  add_internal_field (m_helper_fields.at("ps_dyn").subfield(1,tl.n0,true));
-  add_internal_field (m_helper_fields.at("Qdp_dyn").subfield(1,tl.n0_qdp,true));
+  add_internal_field (m_helper_fields.at("v_dyn").subfield(1,tl.n0,true),{"RESTART"});
+  add_internal_field (m_helper_fields.at("vtheta_dp_dyn").subfield(1,tl.n0,true),{"RESTART"});
+  add_internal_field (m_helper_fields.at("dp3d_dyn").subfield(1,tl.n0,true),{"RESTART"});
+  add_internal_field (m_helper_fields.at("phi_int_dyn").subfield(1,tl.n0,true),{"RESTART"});
+  add_internal_field (m_helper_fields.at("ps_dyn").subfield(1,tl.n0,true),{"RESTART"});
+  add_internal_field (m_helper_fields.at("Qdp_dyn").subfield(1,tl.n0_qdp,true),{"RESTART"});
   if (not params.theta_hydrostatic_mode) {
-    add_internal_field (m_helper_fields.at("w_int_dyn").subfield(1,tl.n0,true));
+    add_internal_field (m_helper_fields.at("w_int_dyn").subfield(1,tl.n0,true),{"RESTART"});
   }
 
   // The output manager pulls from the atm process fields. Add

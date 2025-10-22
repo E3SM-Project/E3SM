@@ -622,8 +622,11 @@ void AtmosphereDriver::create_fields()
     }
   }
   for (const auto& f : m_atm_process_group->get_internal_fields()) {
-    const auto& fid = f.get_header().get_identifier();
-    m_field_mgr->add_to_group(fid, "RESTART");
+    const auto& ftrack = f.get_header().get_tracking();
+    const auto& fid    = f.get_header().get_identifier();
+    for (const auto& gn : ftrack.get_groups_names()) {
+      m_field_mgr->add_to_group(fid, gn);
+    }
   }
 
   auto& driver_options_pl = m_atm_params.sublist("driver_options");
@@ -944,10 +947,16 @@ void AtmosphereDriver::restart_model ()
       // No field needs to be restarted on this grid.
       continue;
     }
-    const auto& restart_group = m_field_mgr->get_group_info("RESTART", gn);
+    const auto& restart_fnames = m_field_mgr->get_group_info("RESTART", gn).m_fields_names;
     std::vector<Field> fields;
-    for (const auto& fn : restart_group.m_fields_names) {
-      fields.push_back(m_field_mgr->get_field(fn,gn));
+    for (const auto& fn : restart_fnames) {
+      // If the field has a parent, and the parent is also in the RESTART group,
+      // then skip it (restarting the parent will restart the child too)
+      auto f = m_field_mgr->get_field(fn,gn);
+      auto p = f.get_header().get_parent();
+      if (p and ekat::contains(restart_fnames,p->get_identifier().name())) {
+        fields.push_back(m_field_mgr->get_field(fn,gn));
+      }
     }
     read_fields_from_file (fields,m_grids_manager->get_grid(gn),filename);
     for (auto& f : fields) {

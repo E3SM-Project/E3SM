@@ -472,8 +472,8 @@ protected:
   virtual void set_required_group_impl (const FieldGroup& /* group */) {}
   virtual void set_computed_group_impl (const FieldGroup& /* group */) {}
 
-  // Adds a field to the list of internal fields
-  void add_internal_field (const Field& f);
+  // Adds a field to the list of internal fields, possibly adding it to the given groups
+  void add_internal_field (const Field& f, const std::vector<std::string>& groups = {});
 
   // These methods set up an extra pointer in the m_[fields|groups]_[in|out]_pointers,
   // for convenience of use (e.g., use a short name for a field/group).

@@ -710,8 +710,11 @@ void AtmosphereProcess::add_me_as_customer (const Field& f) {
   f.get_header_ptr()->get_tracking().add_customer(weak_from_this());
 }
 
-void AtmosphereProcess::add_internal_field (const Field& f) {
-  m_internal_fields.push_back(f);
+void AtmosphereProcess::add_internal_field (const Field& f, const std::vector<std::string>& groups) {
+  auto& fi = m_internal_fields.emplace_back(f);
+  for (const auto& gn : groups) {
+    fi.get_header().get_tracking().add_group(gn);
+  }
   add_py_fields(f);
 }
 
