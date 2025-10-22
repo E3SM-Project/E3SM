@@ -53,7 +53,7 @@ Each land unit represents a single hillslope, which has consistent topographic a
 - **Overall slope angle:** $\theta$ — mean hillslope angle (rad)
 - **Width function:** $w(x)$ — lateral width distribution along the hillslope (m)
 - **Distance function:** $x(i)$ — distance from the stream outlet to node $i$ (m)
-- **Total hillslope area:** $A_{hs} = \displaystyle \int_0^L w(x)\,dx$ (m²)
+- **Total hillslope area:** $A_{hs} = \displaystyle \int_0^L w(x)\ dx$ (m²)
 
 Each column is a point along hillslope, representing a cross-section at distance x along the hillslope. Each has local properties, connected by lateral flow to adjacent columns:
 - Soil hydraulic properties (K_sat, porosity, etc.)
@@ -75,14 +75,14 @@ where $h(x,t)$ is the saturated thickness [m],
 $f_{\text{drain}}$ is the drainable porosity [–],
 $T(x,h)$ is the transmissivity [m² s⁻¹],
 $\theta$ is the hillslope angle [rad],
-and $R$ is the recharge rate [m s⁻¹].
+and $R$ is the recharge rate [m s⁻¹].  Note - recharge rate was not in the code.
 
 ## Boundary Conditions
 
-| Boundary       | Condition                             | Implementation           |
-| :------------- | :------------------------------------ | :----------------------- |
-| Lower (stream) | Head-dependent outflow                | Robin-type term in $r_1$ |
-| Upper (divide) | No-flow ($\partial h/\partial x = 0$) | Set $c_N = 0$            |
+| Boundary       | Condition                             |
+| :------------- | :------------------------------------ |
+| Lower (stream) | $\partial h/\partial x = 0$           |
+| Upper (divide) | zero lateral flow                     |
 
 ## Constitutive Relationships
 
@@ -110,7 +110,7 @@ f_{\text{drain}}
 1 -
 \left(
 1 +
-\frac{1000\,\max(0,z_{\text{bed}}-h)}{\psi_{\text{sat}}}
+\frac{1000\ \max(0,z_{\text{bed}}-h)}{\psi_{\text{sat}}}
 \right)^{-1/b}
 \right],
 \qquad
@@ -130,11 +130,97 @@ This function allows for a smooth transition between unsaturated and fully satur
 ### Spatial Discretization
 
 The PDE is solved implicitly in space and time using a tridiagonal
-system for $h_i^{n+1}$ at each node $i$:
+system for $h_i^{n+1}$ at each node $i$. Node is ordered from 1 to N:
 
 $$
 a_i h_{i-1}^{n+1} + b_i h_i^{n+1} + c_i h_{i+1}^{n+1} = r_i
 $$
+
+#### Derivation
+
+- Lower boundary ($i=1$, stream)
+
+$$
+\begin{aligned}
+f\left(h_{1}^{t,s+1}-h_{1}^{t-1}\right)
+&= \frac{\Delta T\,\sin(\alpha)}{w_{1}\,\Delta x_{1}}
+\left(w_{\frac{3}{2}}\,k_{l_{\frac{3}{2}}}^{t,s}\,h_{\frac{3}{2}}^{t,s}\right) \\
+&\quad + \frac{\Delta T\,\cos(\alpha)}{w_{1}\,\Delta x_{1}}
+\left(
+\frac{w_{\frac{3}{2}}\,k_{l_{\frac{3}{2}}}^{t,s}\,h_{\frac{3}{2}}^{t,s}}{\Delta x_{U_{1}}}
+\left(h_{2}^{t,s+1}-h_{1}^{t,s+1}\right)
+\right) \\
+&\quad + \Delta T\,\cos(\alpha)\,R_{\mathrm{sat},1}^{t}\,.
+\end{aligned}
+$$
+$$
+\begin{aligned}
+&a_1 h_0^{t,s+1} + b_1 h_1^{t,s+1} + c_1 h_2^{t,s+1} = r_1 \\[0.5em]
+&\text{where:} \\
+&a_1 = 0 \\
+&b_1 = f + \frac{\Delta T\,\cos(\alpha)}{w_1\,\Delta x_1} \cdot \frac{w_{\frac{3}{2}}\,k_{l_{\frac{3}{2}}}^{t,s}\,h_{\frac{3}{2}}^{t,s}}{\Delta x_{U_1}} \\
+&c_1 = -\frac{\Delta T\,\cos(\alpha)}{w_1\,\Delta x_1} \cdot \frac{w_{\frac{3}{2}}\,k_{l_{\frac{3}{2}}}^{t,s}\,h_{\frac{3}{2}}^{t,s}}{\Delta x_{U_1}} \\
+&r_1 = f h_1^{t-1} + \frac{\Delta T\,\sin(\alpha)}{w_1\,\Delta x_1}\left(w_{\frac{3}{2}}\,k_{l_{\frac{3}{2}}}^{t,s}\,h_{\frac{3}{2}}^{t,s}\right) + \Delta T\,\cos(\alpha)\,R_{\mathrm{sat},1}^{t}
+\end{aligned}
+$$
+
+- Interior nodes ($i=2,\dots,N-1$)
+
+$$
+\begin{aligned}
+f\left(h_{i}^{t,s+1}-h_{i}^{t-1}\right)
+&= \frac{\Delta T\,\sin(\alpha)}{w_{i}\,\Delta x_{i}}
+\left(w_{i+\frac{1}{2}}\,k_{l_{i+\frac{1}{2}}}^{t,s}\,h_{i+\frac{1}{2}}^{t,s}
+     - w_{i-\frac{1}{2}}\,k_{l_{i-\frac{1}{2}}}^{t,s}\,h_{i-\frac{1}{2}}^{t,s}\right) \\
+&\quad + \frac{\Delta T\,\cos(\alpha)}{w_{i}\,\Delta x_{i}}
+\left(
+\frac{w_{i+\frac{1}{2}}\,k_{l_{i+\frac{1}{2}}}^{t,s}\,h_{i+\frac{1}{2}}^{t,s}}{\Delta x_{U_{i}}}
+\left(h_{i+1}^{t,s+1}-h_{i}^{t,s+1}\right) \right. \\
+&\qquad \left. - \frac{w_{i-\frac{1}{2}}\,k_{l_{i-\frac{1}{2}}}^{t,s}\,h_{i-\frac{1}{2}}^{t,s}}{\Delta x_{L_{i}}}
+\left(h_{i}^{t,s+1}-h_{i-1}^{t,s+1}\right)
+\right) \\
+&\quad + \Delta T\,\cos(\alpha)\,R_{\mathrm{sat},i}^{t}\,.
+\end{aligned}
+$$
+$$
+\begin{aligned}
+&a_i h_{i-1}^{t,s+1} + b_i h_i^{t,s+1} + c_i h_{i+1}^{t,s+1} = r_i \\[0.5em]
+&\text{where:} \\
+&a_i = \frac{\Delta T\,\cos(\alpha)}{w_i\,\Delta x_i} \cdot \frac{w_{i-\frac{1}{2}}\,k_{l_{i-\frac{1}{2}}}^{t,s}\,h_{i-\frac{1}{2}}^{t,s}}{\Delta x_{L_i}} \\
+&b_i = f + \frac{\Delta T\,\cos(\alpha)}{w_i\,\Delta x_i} \left( \frac{w_{i+\frac{1}{2}}\,k_{l_{i+\frac{1}{2}}}^{t,s}\,h_{i+\frac{1}{2}}^{t,s}}{\Delta x_{U_i}} + \frac{w_{i-\frac{1}{2}}\,k_{l_{i-\frac{1}{2}}}^{t,s}\,h_{i-\frac{1}{2}}^{t,s}}{\Delta x_{L_i}} \right) \\
+&c_i = -\frac{\Delta T\,\cos(\alpha)}{w_i\,\Delta x_i} \cdot \frac{w_{i+\frac{1}{2}}\,k_{l_{i+\frac{1}{2}}}^{t,s}\,h_{i+\frac{1}{2}}^{t,s}}{\Delta x_{U_i}} \\
+&r_i = f h_i^{t-1} + \frac{\Delta T\,\sin(\alpha)}{w_i\,\Delta x_i} \left(w_{i+\frac{1}{2}}\,k_{l_{i+\frac{1}{2}}}^{t,s}\,h_{i+\frac{1}{2}}^{t,s} - w_{i-\frac{1}{2}}\,k_{l_{i-\frac{1}{2}}}^{t,s}\,h_{i-\frac{1}{2}}^{t,s}\right) \\
+&\quad + \Delta T\,\cos(\alpha)\,R_{\mathrm{sat},i}^{t}
+\end{aligned}
+$$
+
+- Upper boundary ($i=N$, divide)
+
+$$
+\begin{aligned}
+f\left(h_{N}^{t,s+1}-h_{N}^{t-1}\right)
+&= -\frac{\Delta T\,\sin(\alpha)}{w_{N}\,\Delta x_{N}}
+\left(w_{N-\frac{1}{2}}\,k_{l_{N-\frac{1}{2}}}^{t,s}\,h_{N-\frac{1}{2}}^{t,s}\right) \\
+&\quad -\frac{\Delta T\,\cos(\alpha)}{w_{N}\,\Delta x_{N}}
+\left(
+\frac{w_{N-\frac{1}{2}}\,k_{l_{N-\frac{1}{2}}}^{t,s}\,h_{N-\frac{1}{2}}^{t,s}}{\Delta x_{L_{N}}}
+\left(h_{N}^{t,s+1}-h_{N-1}^{t,s+1}\right)
+\right) \\
+&\quad + \Delta T\,\cos(\alpha)\,R_{\mathrm{sat},N}^{t}\,.
+\end{aligned}
+$$
+$$
+\begin{aligned}
+&a_N h_{N-1}^{t,s+1} + b_N h_N^{t,s+1} + c_N h_{N+1}^{t,s+1} = r_N \\[0.5em]
+&\text{where:} \\
+&a_N = -\frac{\Delta T\,\cos(\alpha)}{w_N\,\Delta x_N} \cdot \frac{w_{N-\frac{1}{2}}\,k_{l_{N-\frac{1}{2}}}^{t,s}\,h_{N-\frac{1}{2}}^{t,s}}{\Delta x_{L_N}} \\
+&b_N = f + \frac{\Delta T\,\cos(\alpha)}{w_N\,\Delta x_N} \cdot \frac{w_{N-\frac{1}{2}}\,k_{l_{N-\frac{1}{2}}}^{t,s}\,h_{N-\frac{1}{2}}^{t,s}}{\Delta x_{L_N}} \\
+&c_N = 0 \\
+&r_N = f h_N^{t-1} - \frac{\Delta T\,\sin(\alpha)}{w_N\,\Delta x_N}\left(w_{N-\frac{1}{2}}\,k_{l_{N-\frac{1}{2}}}^{t,s}\,h_{N-\frac{1}{2}}^{t,s}\right) + \Delta T\,\cos(\alpha)\,R_{\mathrm{sat},N}^{t}
+\end{aligned}
+$$
+
+## IMPLEMENTATION FROM THE CODE
 
 Lower boundary ($i=1$, stream)
 
@@ -142,12 +228,12 @@ $$
 \begin{aligned}
 a_1 &= 0, \\
 c_1 &= -\frac{T_{3/2}^n \cos\theta \ \Delta t}
-           {\Delta x_{3/2}\,\Delta x_1\ w_1}, \\
+           {\Delta x_{3/2}\ \Delta x_1\ w_1}, \\
 b_1 &= f_{\text{drain},1} - c_1, \\
 r_1 &= f_{\text{drain},1} h_1^n
       + \frac{\Delta t}{w_1\Delta x_1}
         \left[
-          \sin\theta\,T_{3/2}^n
+          \sin\theta\ T_{3/2}^n
           - \frac{\cos\theta}{\Delta x_1}
             w_1 K_{\text{aniso}}
             \frac{K_{\text{sat},1}}{1000}(h_1^n)^2
@@ -194,7 +280,7 @@ $$
 If convergence fails, the time step is halved adaptively. 
 
 $$
-\Delta t_{h3d}^{new} = 0.5\,\Delta t_{h3d}^{old}
+\Delta t_{h3d}^{new} = 0.5\ \Delta t_{h3d}^{old}
 $$
 
 Sub-steps are accumulated until the total integration time equals the parent ELM time step:
@@ -240,7 +326,7 @@ Performs the iterative time stepping of the hillslope system:
 
 - Converts changes in saturated storage to drainage flux:
 
-_{sat} = f_{drain}\,(h^{n+1} - h^{n}),
+_{sat} = f_{drain}\ (h^{n+1} - h^{n}),
 \qquad
 Q_{sub} = -\frac{\Delta S_{sat}}{\Delta t}
 $$
