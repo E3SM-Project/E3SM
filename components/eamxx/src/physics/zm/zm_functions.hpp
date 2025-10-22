@@ -346,11 +346,11 @@ struct Functions {
         // std::vector<uview_1dh<Scalar>> tmp_vector_d = {h_prec};
         // std::vector< view_1d <Scalar>> tmp_vector_h = {prec.data()};
 
-        // std::vector<view_1d<Scalar>> tmp(1);
+        // std::vector<uview_1d<Scalar>> tmp(1);
         // ekat::host_to_device({h_prec.data()}, ncol, tmp);
         // Kokkos::deep_copy(prec,tmp[0]);
 
-        ekat::host_to_device({h_prec.data()}, ncol, std::vector<view_1d<Scalar>> {prec});
+        ekat::host_to_device({h_prec.data()}, ncol, std::vector<uview_1d<Scalar>> {prec});
 
 
         // prec = tmp_vector[0];
