@@ -901,6 +901,12 @@ contains
 
                   rmat = 100.0_r8 * (onset_gdd(p)/gddmaturity(p))
 
+                  ! Aerial(p) ranges from 0 to 1 and is the allocation
+                  ! coefficient for aboveground carbon components, including
+                  ! stems and leaves
+
+                  ! Aboveground sugarcane plant growth decreases by 0.6 in the
+                  ! year when sugarcane is planted and by 1 in the following years
                   if (nyrs_crop_active(p) == 0) then ! Year 1
                      aerial(p) = (1.0_r8 - arootf(ivt)) * min(1.0_r8, (1 - exp(-(rootd * 0.6 * rmat))))
                   else
@@ -909,9 +915,16 @@ contains
 
                   aroot(p) = 1.0_r8 - aerial(p)
 
+                  ! Carbon allocation to stems is nearly linear at the start of
+                  ! the sugarcane growth cycle and then follows a logarithmic
+                  ! pattern until the cycle's end
+                  ! af1 - fraction of the aboveground carbon initially allocated to the stem
+                  ! af2 - fraction of the aboveground carbon allocated to the
+                  ! stem over most of the plant's lifespan
                   af1 = max(0._r8, (rmat * sf1) - (ipf1 * sf1))
                   af2 = max(0._r8, (1.0_r8 - exp(-((rmat * ecf2) - (ipf2 * ecf2)))) )
 
+                  ! Allocation coeff for aboveground carbon is split between stem and leaves
                   astem(p) = min( (1.0_r8 - aleaff(ivt) - arootf(ivt)), (aerial(p) * max(af1, af2)) )
                   aleaf(p) = max(1.e-5_r8, (aerial(p) - astem(p)))
 
@@ -922,6 +935,8 @@ contains
                   af3 = max(0._r8, (rmat * sf3) - (sipf3 * sf3))
                   af4 = max(0._r8, (1.0_r8 - exp(-((rmat * ecf4) - (sipf4 * ecf4)))) )
 
+                  ! Carbon allocated to the stem is then divided between
+                  ! stem sucrose or reporductive part and stem structural components
                   arepr(p) = astem(p) * max(0._r8, af3, af4)
                   astem(p) = astem(p) - arepr(p)
 
