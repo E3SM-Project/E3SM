@@ -28,7 +28,6 @@ module dynSubgridAdjustmentsMod
   use SpeciesMod             , only : CN_SPECIES_N, CN_SPECIES_P
   use abortutils             , only : endrun
   use shr_log_mod            , only : errMsg => shr_log_errMsg
-  use shr_infnan_mod         , only : isnan => shr_infnan_isnan
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   implicit none
@@ -876,12 +875,6 @@ contains
                var         = decomp_npools_vr(begc:endc, j, l),     &
                adjustment  = adjustment_one_level(begc:endc))
 
-          ! Exit if the first element of col_ns%dyn_nbal_adjustments is NaN
-          if (isnan(col_ns%dyn_nbal_adjustments(begc))) then
-               call endrun(msg='dyn_col_ns_Adjustments: col_ns%dyn_nbal_adjustments is NaN: '//&
-               errMsg(__FILE__, __LINE__))
-          endif
-
           col_ns%dyn_nbal_adjustments(begc:endc) = &
                col_ns%dyn_nbal_adjustments(begc:endc) + &
                adjustment_one_level(begc:endc) * dzsoi_decomp(j)
@@ -897,15 +890,9 @@ contains
             var         = ntrunc_vr(begc:endc,j),     &
             adjustment  = adjustment_one_level(begc:endc))
 
-       ! Exit if the first element of col_ns%dyn_nbal_adjustments is NaN
-       if (isnan(col_ns%dyn_nbal_adjustments(begc))) then
-          call endrun(msg='dyn_col_ns_Adjustments: col_ns%dyn_nbal_adjustments is NaN: '//&
-               errMsg(__FILE__, __LINE__))
-       endif
        col_ns%dyn_nbal_adjustments(begc:endc) = &
             col_ns%dyn_nbal_adjustments(begc:endc) + &
             adjustment_one_level(begc:endc) * dzsoi_decomp(j)
-
 
        call update_column_state_no_special_handling(column_state_updater, &
            bounds      = bounds                          , &
@@ -1571,9 +1558,6 @@ contains
                var         = decomp_ppools_vr(begc:endc, j, l),     &
                adjustment  = adjustment_one_level(begc:endc) )
 
-          if (isnan(col_ps%dyn_pbal_adjustments(begc))) then
-               call endrun(msg='dyn_col_ps_Adjustments: col_ps%dyn_pbal_adjustments(begc) is NaN: '//errMsg(__FILE__, __LINE__))
-          endif
           col_ps%dyn_pbal_adjustments(begc:endc) =      &
                col_ps%dyn_pbal_adjustments(begc:endc) + &
                adjustment_one_level(begc:endc) * dzsoi_decomp(j)
@@ -1588,9 +1572,6 @@ contains
             var         = ptrunc_vr(begc:endc,j),                &
             adjustment  = adjustment_one_level(begc:endc))
 
-       if (isnan(col_ps%dyn_pbal_adjustments(begc))) then
-           call endrun(msg='dyn_col_ps_Adjustments: col_ps%dyn_pbal_adjustments(begc) is NaN: '//errMsg(__FILE__, __LINE__))
-       endif
        col_ps%dyn_pbal_adjustments(begc:endc) =      &
            col_ps%dyn_pbal_adjustments(begc:endc) + &
            adjustment_one_level(begc:endc) * dzsoi_decomp(j)
