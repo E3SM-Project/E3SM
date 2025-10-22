@@ -1,6 +1,7 @@
 # Hybrid-3D hillslope hydrological model
 
 ## Overview
+
 H3D represents subsurface lateral flow and groundwater dynamics within an idealized hillslope unit inside each land 
 grid cell. Rather than treating each soil column as an isolated vertical profile, 
 h3D connects multiple columns along a topographic gradient to explicitly simulate downslope drainage, 
