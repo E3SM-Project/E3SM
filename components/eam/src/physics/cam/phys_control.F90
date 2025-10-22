@@ -174,8 +174,9 @@ logical, public, protected :: use_gw_front = .false.
 ! Convective
 logical, public, protected :: use_gw_convect = .false.
 
-! Frontogenesis pressure gradient correction
+! Frontogenesis gradient correction options
 logical, public, protected :: use_fgf_pgrad_correction = .false.
+logical, public, protected :: use_fgf_zgrad_correction = .false.
 !GW energy fix
 logical, public, protected :: use_gw_energy_fix = .false.
 
@@ -260,7 +261,7 @@ subroutine phys_ctl_readnl(nlfile)
       use_qqflx_fixer, & 
       print_fixer_message, & 
       use_hetfrz_classnuc, use_gw_oro, use_gw_front, use_gw_convect, &
-      use_fgf_pgrad_correction, use_gw_energy_fix, &
+      use_fgf_pgrad_correction,use_fgf_zgrad_correction, use_gw_energy_fix, &
       use_od_ls,use_od_bl,use_od_ss,use_od_fd,&
       cld_macmic_num_steps, micro_do_icesupersat, &
       fix_g1_err_ndrop, ssalt_tuning, resus_fix, convproc_do_aer, &
@@ -381,6 +382,7 @@ subroutine phys_ctl_readnl(nlfile)
    call mpibcast(use_gw_oro,                      1 , mpilog,  0, mpicom)
    call mpibcast(use_gw_front,                    1 , mpilog,  0, mpicom)
    call mpibcast(use_fgf_pgrad_correction,        1 , mpilog,  0, mpicom)
+   call mpibcast(use_fgf_zgrad_correction,        1 , mpilog,  0, mpicom)
    call mpibcast(use_gw_convect,                  1 , mpilog,  0, mpicom)
    call mpibcast(use_gw_energy_fix,               1 , mpilog,  0, mpicom)
    call mpibcast(use_od_ls,                       1 , mpilog,  0, mpicom)
