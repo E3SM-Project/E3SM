@@ -50,8 +50,9 @@ module seaice_constants
        seaiceLatentHeatVaporization    = SHR_CONST_LATVAP ,&! latent heat, vaporization freshwater (J/kg)
        seaiceLatentHeatMelting         = SHR_CONST_LATICE ,&! latent heat of melting of fresh ice (J/kg)
        seaiceReferenceSalinity         = SHR_CONST_ICE_REF_SAL,&! ice reference salinity (ppt)
-       seaiceSnowPatchiness            = 0.005_RKIND        ! parameter for fractional snow area (m)
+       seaiceSnowPatchiness            = 0.005_RKIND      ,&! parameter for fractional snow area (m)
 
+       gramsIronPerMolIron             = SHR_CONST_MWFE     ! molecular weight of Iron
 !         R_gC2molC = SHR_CONST_MWC    ,&! molar mass of carbon
 
 #else
@@ -87,8 +88,9 @@ module seaice_constants
 !                                       - seaiceLatentHeatVaporization, &
        seaiceLatentHeatMelting         = 3.34e5_RKIND  ,&! latent heat of melting of fresh ice (J/kg)
        seaiceReferenceSalinity         = 4._RKIND      ,&! ice reference salinity (ppt)
-       seaiceSnowPatchiness            = 0.02_RKIND      ! parameter for fractional snow area (m)
+       seaiceSnowPatchiness            = 0.02_RKIND    ,&! parameter for fractional snow area (m)
 
+       gramsIronPerMolIron             = 55.845_RKIND    ! molecular weight of Iron
 !         R_gC2molC = 12.0107_RKIND, & ! molar mass of carbon
 #endif
 
@@ -184,8 +186,7 @@ module seaice_constants
   real(kind=RKIND), public :: &
        skeletalLayerThickness             = 0.03_RKIND    , & ! (m) skeletal layer thickness
        gramsCarbonPerMolCarbon            = 12.0107_RKIND , & ! g carbon per mol carbon
-       microgramsPerKilograms             = 1.0e9_RKIND   , & ! kg to ug conversion
-       gramsIronPerMolIron                = 55.845_RKIND      ! g iron per mol iron
+       microgramsPerKilograms             = 1.0e9_RKIND       ! kg to ug conversion
 
   ! ocean biogeochemistry ISPOL values
   real(kind=RKIND), parameter, public :: &
