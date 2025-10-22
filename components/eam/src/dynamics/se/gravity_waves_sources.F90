@@ -141,6 +141,8 @@ CONTAINS
     integer :: k,kptr,i,j,ie,component
     real(kind=real_kind) :: frontgf_gll(np,np,nlev,nets:nete)
     real(kind=real_kind) :: gradth_gll(np,np,2,nlev,nets:nete)  ! grad(theta)
+    real(kind=real_kind) :: zint(np,np,nlev)            ! interface altitude
+    real(kind=real_kind) :: zmid(np,np,nlev)            ! mid-point altitude
     real(kind=real_kind) :: pint(np,np,nlev)            ! interface hydrostatic pressure
     real(kind=real_kind) :: pmid(np,np,nlev)            ! mid-point hydrostatic pressure
     real(kind=real_kind) :: temperature(np,np,nlev)     ! Temperature
@@ -201,12 +203,15 @@ CONTAINS
           theta(:,:,k) = temperature(:,:,k)*(psurf_ref / pmid(:,:,k))**kappa
         end do
 
-        if (use_fgf_pgrad_correction) call compute_vertical_derivative(pint,theta,theta_dvert)
+        if (use_fgf_pgrad_correction) then
+          ! compute d(theta)/dp
+          call compute_vertical_derivative(pint,theta,theta_dvert)
+        end if
 
         if (use_fgf_zgrad_correction) then
-          call get_phi(elem(ie),phi_mid,phi_int,hvcoord,tl)
-          zmid(:,:,:) = phi_mid(:,:,:)/g
-          zint(:,:,:) = phi_int(:,:,:)/g
+          ! compute geopotential
+          call get_phi(elem(ie), zmid, zint, hvcoord, tl)
+          ! compute d(theta)/dz
           call compute_vertical_derivative(zint,theta,theta_dvert)
         end if
 
@@ -227,7 +232,8 @@ CONTAINS
         end do
 
         do component=1,3
-          call compute_vertical_derivative(tl,ie,elem,dum_cart(:,:,component,:),dum_cart_dvert(:,:,component,:))
+          if (use_fgf_pgrad_correction) call compute_vertical_derivative(pint,dum_cart(:,:,component,:),dum_cart_dvert(:,:,component,:))
+          if (use_fgf_zgrad_correction) call compute_vertical_derivative(zint,dum_cart(:,:,component,:),dum_cart_dvert(:,:,component,:))
         end do
 
         do k = 1,nlev
