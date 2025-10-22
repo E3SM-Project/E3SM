@@ -1,5 +1,5 @@
 module elm_initializeMod
-
+#define MOABDEBUG
   !-----------------------------------------------------------------------
   ! Performs land model initialization
   !
@@ -24,6 +24,7 @@ module elm_initializeMod
   use ELMFatesParamInterfaceMod, only: FatesReadPFTs
   use BeTRSimulationELM, only : create_betr_simulation_elm
   use SoilLittVertTranspMod, only : CreateLitterTransportList
+  use iso_c_binding
   !
   !-----------------------------------------
   ! Definition of component types
@@ -48,6 +49,13 @@ module elm_initializeMod
   public :: initialize1  ! Phase one initialization
   public :: initialize2  ! Phase two initialization
   !-----------------------------------------------------------------------
+#ifdef HAVE_MOAB
+  private :: elm_moab_interface_init   ! create the full MOAB mesh representation of ELM domain
+
+  real (r8) , allocatable, private :: l2x_lm(:,:) ! for tags to be set in MOAB
+  real (r8) , allocatable, private :: x2l_lm(:,:) ! for tags from MOAB
+#endif
+  !-----------------------------------------------------------------------
 
 contains
 
@@ -70,6 +78,9 @@ contains
     use pftvarcon                 , only: pftconrd
     use soilorder_varcon          , only: soilorder_conrd
     use decompInitMod             , only: decompInit_lnd, decompInit_clumps, decompInit_gtlcp
+#ifdef HAVE_MOAB
+    use decompInitMod             , only: decompInit_moab
+#endif
     use domainMod                 , only: domain_check, ldomain, domain_init
     use surfrdMod                 , only: surfrd_get_globmask, surfrd_get_grid, surfrd_get_topo, surfrd_get_data,surfrd_get_topo_for_solar_rad
     use controlMod                , only: control_init, control_print, NLFilename
@@ -143,8 +154,8 @@ contains
        ! in the following call) for FATES runs
        call ELMFatesGlobals1()
        call update_pft_array_bounds()
-    end if    
-    
+    end if
+
     call elm_petsc_init()
     call init_soil_temperature()
 
@@ -187,10 +198,24 @@ contains
     endif
 
     ! ------------------------------------------------------------------------
+    ! Copy ELM mesh data to MOAB so that we can compute optimal partitions
+    ! and enable ghost halo-layers for each task to describe shared entities.
+    ! Now let us create that MOAB app that represents the full ELM mesh
+    ! ------------------------------------------------------------------------
+#ifdef HAVE_MOAB
+    call elm_moab_interface_init()
+#endif
+
+    ! ------------------------------------------------------------------------
     ! Determine clm gridcell decomposition and processor bounds for gridcells
     ! ------------------------------------------------------------------------
 
     select case (trim(domain_decomp_type))
+#ifdef HAVE_MOAB
+    case ("moab")
+      call decompInit_moab(ni, nj, amask)
+      deallocate(amask)
+#endif
     case ("round_robin")
        call decompInit_lnd(ni, nj, amask)
        deallocate(amask)
@@ -243,15 +268,15 @@ contains
           call shr_sys_flush(iulog)
        endif
 
-       call surfrd_get_topo(ldomain, flndtopo)  
-    endif    
-    
+       call surfrd_get_topo(ldomain, flndtopo)
+    endif
+
     if (fsurdat /= " " .and. use_top_solar_rad) then
        if (masterproc) then
           write(iulog,*) 'Attempting to read topo parameters for TOP solar radiation parameterization from ',trim(fsurdat)
           call shr_sys_flush(iulog)
        endif
-       call surfrd_get_topo_for_solar_rad(ldomain, fsurdat)  
+       call surfrd_get_topo_for_solar_rad(ldomain, fsurdat)
 
     endif    
     !-------------------------------------------------------------------------
@@ -268,7 +293,7 @@ contains
     endif
 
     !-------------------------------------------------------------------------
-    
+
     !-------------------------------------------------------------------------
     ! Initialize urban model input (initialize urbinp data structure)
     ! This needs to be called BEFORE the call to surfrd_get_data since
@@ -326,7 +351,7 @@ contains
     if (use_fates) then
        call FatesReadPFTs()
     end if
-    
+
     ! Read surface dataset and set up subgrid weight arrays
     call surfrd_get_data(begg, endg, ldomain, fsurdat)
 
@@ -340,7 +365,7 @@ contains
 
     end if
 
-    
+
     ! ------------------------------------------------------------------------
     ! Determine decomposition of subgrid scale topounits, landunits, topounits, columns, patches
     ! ------------------------------------------------------------------------
@@ -364,12 +389,12 @@ contains
 
     ! Initialize the gridcell data types
     call grc_pp%Init (bounds_proc%begg_all, bounds_proc%endg_all)
-    
+
     ! Read topounit information from fsurdat
     if (has_topounit) then
-         call surfrd_topounit_data(begg, endg, fsurdat)         
+         call surfrd_topounit_data(begg, endg, fsurdat)
     end if
-    
+
     ! Initialize the topographic unit data types
     call top_pp%Init (bounds_proc%begt_all, bounds_proc%endt_all) ! topology and physical properties
     call top_as%Init (bounds_proc%begt_all, bounds_proc%endt_all) ! atmospheric state variables (forcings)
@@ -398,7 +423,7 @@ contains
     call initGridCells()
 
     ! Set global seg maps for gridcells, topounits, landlunits, columns and patches
-    !if(max_topounits > 1) then 
+    !if(max_topounits > 1) then
     !   if (create_glacier_mec_landunit) then
     !      call decompInit_gtlcp(ns, ni, nj, ldomain%glcmask,ldomain%num_tunits_per_grd)
     !   else
@@ -417,7 +442,7 @@ contains
     call t_startf('init_filters')
     call allocFilters()
     call t_stopf('init_filters')
-    
+
     nclumps = get_proc_clumps()
     !$OMP PARALLEL DO PRIVATE (nc, bounds_clump)
     do nc = 1, nclumps
@@ -599,7 +624,7 @@ contains
     ! ------------------------------------------------------------------------
     ! Initialize time manager
     ! ------------------------------------------------------------------------
-    if (nsrest == nsrStartup) then  
+    if (nsrest == nsrStartup) then
        call timemgr_init()
     else
        call restFile_getfile(file=fnamer, path=pnamer)
@@ -608,14 +633,14 @@ contains
        call restFile_close( ncid=ncid )
        call timemgr_restart()
     end if
-    
+
     ! ------------------------------------------------------------------------
     ! Pass model timestep info to FATES
     ! ------------------------------------------------------------------------
     if(use_fates) then
        call ELMFatesTimesteps()
     end if
-    
+
     ! ------------------------------------------------------------------------
     ! Initialize daylength from the previous time step (needed so prev_dayl can be set correctly)
     ! ------------------------------------------------------------------------
@@ -744,7 +769,7 @@ contains
     end if
 
     call cnstate_vars%initAccBuffer(bounds_proc)
-    
+
     if (use_fates) then
       call alm_fates%InitAccBuffer(bounds_proc)
    end if
@@ -1237,5 +1262,19 @@ contains
 
   end subroutine elm_petsc_init
 
+#ifdef HAVE_MOAB
+  subroutine elm_moab_interface_init()!(bounds)
+    use elm_varctl  ,  only : fatmlndfrc  ! for messages and domain file name
+    use MOABGridType, only : elm_moab_initialize, elm_moab_load_grid_file
 
+    ! initialize the MOAB structures as needed for ELM
+    call elm_moab_initialize()
+
+    ! load the mesh file for ELM
+    call elm_moab_load_grid_file(fatmlndfrc)
+
+  end subroutine elm_moab_interface_init
+#endif
+
+#undef MOABDEBUG
 end module elm_initializeMod
