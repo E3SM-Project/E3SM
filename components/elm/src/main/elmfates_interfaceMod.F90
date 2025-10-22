@@ -2106,6 +2106,9 @@ contains
            ! Register interface variables
            call this%RegisterInterfaceVariablesColdStart(nc, canopystate_inst)
 
+           ! Update the interface variables
+           call this%fates(nc)%UpdateInterfaceVariables(initialize=.true.)
+
            call get_clump_bounds(nc, bounds_clump)
 
            do s = 1,this%fates(nc)%nsites
