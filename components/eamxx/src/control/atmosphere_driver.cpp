@@ -310,10 +310,6 @@ void AtmosphereDriver::create_grids()
   // Each process will grab what they need
   m_atm_process_group->set_grids(m_grids_manager);
 
-
-  // Also make each atm proc build requests for tendency fields, if needed
-  m_atm_process_group->setup_tendencies_requests();
-
   m_ad_status |= s_grids_created;
 
   stop_timer("EAMxx::create_grids");
@@ -591,6 +587,9 @@ void AtmosphereDriver::create_fields()
     const auto& fid = req.fid;
     m_atm_process_group->set_required_field(m_field_mgr->get_field(fid).get_const());
   }
+
+  // Make atm procs create the proc-level tendency fields (if requested)
+  m_atm_process_group->setup_step_tendencies();
 
   // Now that all processes have all the required/computed fields/groups, they
   // have also created any possible internal field (if needed). Notice that some

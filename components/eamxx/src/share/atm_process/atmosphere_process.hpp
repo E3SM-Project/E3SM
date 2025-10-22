@@ -127,7 +127,8 @@ public:
 
   // This method prepares the atm proc for computing the tendency of
   // output fields, as prescribed via parameter list
-  virtual void setup_tendencies_requests ();
+  // NOTE: virtual, as AtmProcGroup will override and just call it on stored procs
+  virtual void setup_step_tendencies ();
 
   // Note: if we are being subcycled from the outside, the host will set
   //       do_update=false, and we will not update the timestamp of the AP
@@ -177,7 +178,7 @@ public:
 
 
   void init_step_tendencies ();
-  void compute_step_tendencies (const double dt);
+  void compute_step_tendencies ();
 
   // These methods allow the AD to figure out what each process needs, with very fine
   // grain detail. See field_request.hpp for more info on what FieldRequest and GroupRequest
@@ -567,9 +568,8 @@ private:
   std::list<Field>        m_internal_fields;
 
   // Data structures necessary to compute tendencies of updated fields
-  strmap_t<std::string>    m_tend_to_field;
-  strmap_t<Field>          m_proc_tendencies;
-  strmap_t<Field>          m_start_of_step_fields;
+  strmap_t<Field>    m_proc_tendencies;
+  strmap_t<Field>    m_start_of_step_fields;
 
   // These maps help to retrieve a field/group stored in the lists above. E.g.,
   //   auto ptr = m_field_in_pointers[field_name][grid_name];
@@ -616,9 +616,6 @@ private:
 
   // Whether we need to update time stamps at the end of the run method
   bool m_update_time_stamps = true;
-
-  // Whether this atm proc should compute tendencies for any of its updated fields
-  bool m_compute_proc_tendencies = false;
 
   // Log level for when property checks perform a repair
   ekat::logger::LogLevel  m_repair_log_level;

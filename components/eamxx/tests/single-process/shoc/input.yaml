@@ -12,7 +12,15 @@ eamxx:
   atm_procs_list: [shoc]
   shoc:
     number_of_subcycles: ${NUM_SUBCYCLES}
-    compute_tendencies: [all]
+    compute_tendencies:
+      - qc
+      - qv
+      - T_mid
+      - tke
+      - horiz_winds
+      - sgs_buoy_flux
+      - eddy_diff_mom
+      - cldfrac_liq
     lambda_low: 0.001
     lambda_high: 0.08
     lambda_slope: 2.65
