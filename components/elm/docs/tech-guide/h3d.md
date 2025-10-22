@@ -143,24 +143,24 @@ $$
 $$
 \begin{aligned}
 f\left(h_{1}^{t,s+1}-h_{1}^{t-1}\right)
-&= \frac{\Delta T\,\sin(\alpha)}{w_{1}\,\Delta x_{1}}
-\left(w_{\frac{3}{2}}\,k_{l_{\frac{3}{2}}}^{t,s}\,h_{\frac{3}{2}}^{t,s}\right) \\
-&\quad + \frac{\Delta T\,\cos(\alpha)}{w_{1}\,\Delta x_{1}}
+&= \frac{\Delta T\ \sin(\alpha)}{w_{1}\ \Delta x_{1}}
+\left(w_{\frac{3}{2}}\ k_{l_{\frac{3}{2}}}^{t,s}\ h_{\frac{3}{2}}^{t,s}\right) \\
+&\quad + \frac{\Delta T\ \cos(\alpha)}{w_{1}\ \Delta x_{1}}
 \left(
-\frac{w_{\frac{3}{2}}\,k_{l_{\frac{3}{2}}}^{t,s}\,h_{\frac{3}{2}}^{t,s}}{\Delta x_{U_{1}}}
+\frac{w_{\frac{3}{2}}\ k_{l_{\frac{3}{2}}}^{t,s}\ h_{\frac{3}{2}}^{t,s}}{\Delta x_{U_{1}}}
 \left(h_{2}^{t,s+1}-h_{1}^{t,s+1}\right)
 \right) \\
-&\quad + \Delta T\,\cos(\alpha)\,R_{\mathrm{sat},1}^{t}\,.
+&\quad + \Delta T\ \cos(\alpha)\ R_{\mathrm{sat},1}^{t}\ .
 \end{aligned}
 $$
 $$
 \begin{aligned}
-&a_1 h_0^{t,s+1} + b_1 h_1^{t,s+1} + c_1 h_2^{t,s+1} = r_1 \\[0.5em]
+&a_1 h_0^{t,s+1} + b_1 h_1^{t,s+1} + c_1 h_2^{t,s+1} = r_1 \\
 &\text{where:} \\
 &a_1 = 0 \\
-&b_1 = f + \frac{\Delta T\,\cos(\alpha)}{w_1\,\Delta x_1} \cdot \frac{w_{\frac{3}{2}}\,k_{l_{\frac{3}{2}}}^{t,s}\,h_{\frac{3}{2}}^{t,s}}{\Delta x_{U_1}} \\
-&c_1 = -\frac{\Delta T\,\cos(\alpha)}{w_1\,\Delta x_1} \cdot \frac{w_{\frac{3}{2}}\,k_{l_{\frac{3}{2}}}^{t,s}\,h_{\frac{3}{2}}^{t,s}}{\Delta x_{U_1}} \\
-&r_1 = f h_1^{t-1} + \frac{\Delta T\,\sin(\alpha)}{w_1\,\Delta x_1}\left(w_{\frac{3}{2}}\,k_{l_{\frac{3}{2}}}^{t,s}\,h_{\frac{3}{2}}^{t,s}\right) + \Delta T\,\cos(\alpha)\,R_{\mathrm{sat},1}^{t}
+&b_1 = f + \frac{\Delta T\ \cos(\alpha)}{w_1\ \Delta x_1} \cdot \frac{w_{\frac{3}{2}}\ k_{l_{\frac{3}{2}}}^{t,s}\ h_{\frac{3}{2}}^{t,s}}{\Delta x_{U_1}} \\
+&c_1 = -\frac{\Delta T\ \cos(\alpha)}{w_1\ \Delta x_1} \cdot \frac{w_{\frac{3}{2}}\ k_{l_{\frac{3}{2}}}^{t,s}\ h_{\frac{3}{2}}^{t,s}}{\Delta x_{U_1}} \\
+&r_1 = f h_1^{t-1} + \frac{\Delta T\ \sin(\alpha)}{w_1\ \Delta x_1}\left(w_{\frac{3}{2}}\ k_{l_{\frac{3}{2}}}^{t,s}\ h_{\frac{3}{2}}^{t,s}\right) + \Delta T\ \cos(\alpha)\ R_{\mathrm{sat},1}^{t}
 \end{aligned}
 $$
 
@@ -169,28 +169,29 @@ $$
 $$
 \begin{aligned}
 f\left(h_{i}^{t,s+1}-h_{i}^{t-1}\right)
-&= \frac{\Delta T\,\sin(\alpha)}{w_{i}\,\Delta x_{i}}
-\left(w_{i+\frac{1}{2}}\,k_{l_{i+\frac{1}{2}}}^{t,s}\,h_{i+\frac{1}{2}}^{t,s}
-     - w_{i-\frac{1}{2}}\,k_{l_{i-\frac{1}{2}}}^{t,s}\,h_{i-\frac{1}{2}}^{t,s}\right) \\
-&\quad + \frac{\Delta T\,\cos(\alpha)}{w_{i}\,\Delta x_{i}}
+&= \frac{\Delta T\ \sin(\alpha)}{w_{i}\ \Delta x_{i}}
+\left(w_{i+\frac{1}{2}}\ k_{l_{i+\frac{1}{2}}}^{t,s}\ h_{i+\frac{1}{2}}^{t,s}
+     - w_{i-\frac{1}{2}}\ k_{l_{i-\frac{1}{2}}}^{t,s}\ h_{i-\frac{1}{2}}^{t,s}\right) \\
+&\quad + \frac{\Delta T\ \cos(\alpha)}{w_{i}\ \Delta x_{i}}
 \left(
-\frac{w_{i+\frac{1}{2}}\,k_{l_{i+\frac{1}{2}}}^{t,s}\,h_{i+\frac{1}{2}}^{t,s}}{\Delta x_{U_{i}}}
+\frac{w_{i+\frac{1}{2}}\ k_{l_{i+\frac{1}{2}}}^{t,s}\ h_{i+\frac{1}{2}}^{t,s}}{\Delta x_{U_{i}}}
 \left(h_{i+1}^{t,s+1}-h_{i}^{t,s+1}\right) \right. \\
-&\qquad \left. - \frac{w_{i-\frac{1}{2}}\,k_{l_{i-\frac{1}{2}}}^{t,s}\,h_{i-\frac{1}{2}}^{t,s}}{\Delta x_{L_{i}}}
+&\qquad \left. - \frac{w_{i-\frac{1}{2}}\ k_{l_{i-\frac{1}{2}}}^{t,s}\ h_{i-\frac{1}{2}}^{t,s}}{\Delta x_{L_{i}}}
 \left(h_{i}^{t,s+1}-h_{i-1}^{t,s+1}\right)
 \right) \\
-&\quad + \Delta T\,\cos(\alpha)\,R_{\mathrm{sat},i}^{t}\,.
+&\quad + \Delta T\ \cos(\alpha)\ R_{\mathrm{sat},i}^{t}\ .
 \end{aligned}
 $$
+
 $$
 \begin{aligned}
-&a_i h_{i-1}^{t,s+1} + b_i h_i^{t,s+1} + c_i h_{i+1}^{t,s+1} = r_i \\[0.5em]
+&a_j h_{j-1}^{t,s+1} + b_j h_j^{t,s+1} + c_j h_{j+1}^{t,s+1} = r_j \\
 &\text{where:} \\
-&a_i = \frac{\Delta T\,\cos(\alpha)}{w_i\,\Delta x_i} \cdot \frac{w_{i-\frac{1}{2}}\,k_{l_{i-\frac{1}{2}}}^{t,s}\,h_{i-\frac{1}{2}}^{t,s}}{\Delta x_{L_i}} \\
-&b_i = f + \frac{\Delta T\,\cos(\alpha)}{w_i\,\Delta x_i} \left( \frac{w_{i+\frac{1}{2}}\,k_{l_{i+\frac{1}{2}}}^{t,s}\,h_{i+\frac{1}{2}}^{t,s}}{\Delta x_{U_i}} + \frac{w_{i-\frac{1}{2}}\,k_{l_{i-\frac{1}{2}}}^{t,s}\,h_{i-\frac{1}{2}}^{t,s}}{\Delta x_{L_i}} \right) \\
-&c_i = -\frac{\Delta T\,\cos(\alpha)}{w_i\,\Delta x_i} \cdot \frac{w_{i+\frac{1}{2}}\,k_{l_{i+\frac{1}{2}}}^{t,s}\,h_{i+\frac{1}{2}}^{t,s}}{\Delta x_{U_i}} \\
-&r_i = f h_i^{t-1} + \frac{\Delta T\,\sin(\alpha)}{w_i\,\Delta x_i} \left(w_{i+\frac{1}{2}}\,k_{l_{i+\frac{1}{2}}}^{t,s}\,h_{i+\frac{1}{2}}^{t,s} - w_{i-\frac{1}{2}}\,k_{l_{i-\frac{1}{2}}}^{t,s}\,h_{i-\frac{1}{2}}^{t,s}\right) \\
-&\quad + \Delta T\,\cos(\alpha)\,R_{\mathrm{sat},i}^{t}
+&a_j = \frac{\Delta T\ \cos(\alpha)}{w_j\ \Delta x_j} \cdot \frac{w_{j-\frac{1}{2}}\ k_{l_{j-\frac{1}{2}}}^{t,s}\ h_{j-\frac{1}{2}}^{t,s}}{\Delta x_{L_j}} \\
+&b_j = f + \frac{\Delta T\ \cos(\alpha)}{w_j\ \Delta x_j} \left( \frac{w_{j+\frac{1}{2}}\ k_{l_{j+\frac{1}{2}}}^{t,s}\ h_{j+\frac{1}{2}}^{t,s}}{\Delta x_{U_j}} + \frac{w_{j-\frac{1}{2}}\ k_{l_{j-\frac{1}{2}}}^{t,s}\ h_{j-\frac{1}{2}}^{t,s}}{\Delta x_{L_j}} \right) \\
+&c_j = -\frac{\Delta T\ \cos(\alpha)}{w_j\ \Delta x_j} \cdot \frac{w_{j+\frac{1}{2}}\ k_{l_{j+\frac{1}{2}}}^{t,s}\ h_{j+\frac{1}{2}}^{t,s}}{\Delta x_{U_j}} \\
+&r_j = f h_j^{t-1} + \frac{\Delta T\ \sin(\alpha)}{w_j\ \Delta x_j} \left(w_{j+\frac{1}{2}}\ k_{l_{j+\frac{1}{2}}}^{t,s}\ h_{j+\frac{1}{2}}^{t,s} - w_{j-\frac{1}{2}}\ k_{l_{j-\frac{1}{2}}}^{t,s}\ h_{j-\frac{1}{2}}^{t,s}\right) \\
+&\quad + \Delta T\ \cos(\alpha)\ R_{\mathrm{sat},j}^{t}
 \end{aligned}
 $$
 
@@ -199,24 +200,24 @@ $$
 $$
 \begin{aligned}
 f\left(h_{N}^{t,s+1}-h_{N}^{t-1}\right)
-&= -\frac{\Delta T\,\sin(\alpha)}{w_{N}\,\Delta x_{N}}
-\left(w_{N-\frac{1}{2}}\,k_{l_{N-\frac{1}{2}}}^{t,s}\,h_{N-\frac{1}{2}}^{t,s}\right) \\
-&\quad -\frac{\Delta T\,\cos(\alpha)}{w_{N}\,\Delta x_{N}}
+&= -\frac{\Delta T\ \sin(\alpha)}{w_{N}\ \Delta x_{N}}
+\left(w_{N-\frac{1}{2}}\ k_{l_{N-\frac{1}{2}}}^{t,s}\ h_{N-\frac{1}{2}}^{t,s}\right) \\
+&\quad -\frac{\Delta T\ \cos(\alpha)}{w_{N}\ \Delta x_{N}}
 \left(
-\frac{w_{N-\frac{1}{2}}\,k_{l_{N-\frac{1}{2}}}^{t,s}\,h_{N-\frac{1}{2}}^{t,s}}{\Delta x_{L_{N}}}
+\frac{w_{N-\frac{1}{2}}\ k_{l_{N-\frac{1}{2}}}^{t,s}\ h_{N-\frac{1}{2}}^{t,s}}{\Delta x_{L_{N}}}
 \left(h_{N}^{t,s+1}-h_{N-1}^{t,s+1}\right)
 \right) \\
-&\quad + \Delta T\,\cos(\alpha)\,R_{\mathrm{sat},N}^{t}\,.
+&\quad + \Delta T\ \cos(\alpha)\ R_{\mathrm{sat},N}^{t}\ .
 \end{aligned}
 $$
 $$
 \begin{aligned}
-&a_N h_{N-1}^{t,s+1} + b_N h_N^{t,s+1} + c_N h_{N+1}^{t,s+1} = r_N \\[0.5em]
+&a_N h_{N-1}^{t,s+1} + b_N h_N^{t,s+1} + c_N h_{N+1}^{t,s+1} = r_N \\
 &\text{where:} \\
-&a_N = -\frac{\Delta T\,\cos(\alpha)}{w_N\,\Delta x_N} \cdot \frac{w_{N-\frac{1}{2}}\,k_{l_{N-\frac{1}{2}}}^{t,s}\,h_{N-\frac{1}{2}}^{t,s}}{\Delta x_{L_N}} \\
-&b_N = f + \frac{\Delta T\,\cos(\alpha)}{w_N\,\Delta x_N} \cdot \frac{w_{N-\frac{1}{2}}\,k_{l_{N-\frac{1}{2}}}^{t,s}\,h_{N-\frac{1}{2}}^{t,s}}{\Delta x_{L_N}} \\
+&a_N = -\frac{\Delta T\ \cos(\alpha)}{w_N\ \Delta x_N} \cdot \frac{w_{N-\frac{1}{2}}\ k_{l_{N-\frac{1}{2}}}^{t,s}\ h_{N-\frac{1}{2}}^{t,s}}{\Delta x_{L_N}} \\
+&b_N = f + \frac{\Delta T\ \cos(\alpha)}{w_N\ \Delta x_N} \cdot \frac{w_{N-\frac{1}{2}}\ k_{l_{N-\frac{1}{2}}}^{t,s}\ h_{N-\frac{1}{2}}^{t,s}}{\Delta x_{L_N}} \\
 &c_N = 0 \\
-&r_N = f h_N^{t-1} - \frac{\Delta T\,\sin(\alpha)}{w_N\,\Delta x_N}\left(w_{N-\frac{1}{2}}\,k_{l_{N-\frac{1}{2}}}^{t,s}\,h_{N-\frac{1}{2}}^{t,s}\right) + \Delta T\,\cos(\alpha)\,R_{\mathrm{sat},N}^{t}
+&r_N = f h_N^{t-1} - \frac{\Delta T\ \sin(\alpha)}{w_N\ \Delta x_N}\left(w_{N-\frac{1}{2}}\ k_{l_{N-\frac{1}{2}}}^{t,s}\ h_{N-\frac{1}{2}}^{t,s}\right) + \Delta T\ \cos(\alpha)\ R_{\mathrm{sat},N}^{t}
 \end{aligned}
 $$
 
