@@ -63,6 +63,10 @@ module TopounitDataType
     real(r8), pointer :: solai     (:,:) => null() ! diffuse radiation (numrad) (vis=forc_solsd, nir=forc_solld) (W/m**2)
     real(r8), pointer :: solar     (:)   => null() ! incident solar radiation (W/m**2)
     real(r8), pointer :: lwrad     (:)   => null() ! atm downwrd IR longwave radiation (W/m**2)
+    real(r8), pointer :: solad_pp  (:,:) => null() ! direct beam radiation under PP (numrad)(vis=forc_sols , nir=forc_soll) (W/m**2)
+    real(r8), pointer :: solai_pp  (:,:) => null() ! diffuse radiation under PP (numrad) (vis=forc_solsd, nir=forc_solld) (W/m**2)
+    real(r8), pointer :: solar_pp  (:)   => null() ! incident solar radiation under PP (W/m**2)
+    real(r8), pointer :: lwrad_pp  (:)   => null() ! atm downwrd IR longwave radiation under PP (W/m**2)
     ! Accumulated fields
     real(r8), pointer :: prec24h   (:)   => null() ! 24-hour mean precip rate (kg H2O/m**2/s, equivalent to mm liquid H2O/s)
     real(r8), pointer :: prec10d   (:)   => null() ! 10-day mean precip rate (kg H2O/m**2/s, equivalent to mm liquid H2O/s)
@@ -367,6 +371,10 @@ module TopounitDataType
     allocate(this%solai    (begt:endt, numrad))  ; this%solai     (:,:) = spval
     allocate(this%solar    (begt:endt))          ; this%solar     (:) = spval
     allocate(this%lwrad    (begt:endt))          ; this%lwrad     (:) = spval
+    allocate(this%solad_pp (begt:endt, numrad))  ; this%solad_pp  (:,:) = spval
+    allocate(this%solai_pp (begt:endt, numrad))  ; this%solai_pp  (:,:) = spval
+    allocate(this%solar_pp (begt:endt))          ; this%solar_pp  (:) = spval
+    allocate(this%lwrad_pp (begt:endt))          ; this%lwrad_pp  (:) = spval
     if (use_fates) then
       allocate(this%prec24h  (begt:endt)) ; this%prec24h   (:) = spval
     end if
@@ -416,6 +424,10 @@ module TopounitDataType
     deallocate(this%solai)
     deallocate(this%solar)
     deallocate(this%lwrad)
+    deallocate(this%solad_pp)
+    deallocate(this%solai_pp)
+    deallocate(this%solar_pp)
+    deallocate(this%lwrad_pp)
     if (use_fates) then
       deallocate(this%prec24h)
     end if

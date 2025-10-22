@@ -13,7 +13,7 @@ module lnd2atmType
   use abortutils    , only : endrun
   use elm_varpar    , only : numrad, ndst, nlevsno, nlevgrnd !ndst = number of dust bins.
   use elm_varcon    , only : rair, grav, cpair, hfus, tfrz, spval
-  use elm_varctl    , only : iulog, use_c13, use_cn, use_lch4, use_fan
+  use elm_varctl    , only : iulog, use_c13, use_cn, use_lch4, use_fan, use_finetop_rad
   use seq_drydep_mod, only : n_drydep, drydep_method, DD_XLND
   use decompMod     , only : bounds_type
   !
@@ -37,6 +37,8 @@ module lnd2atmType
      real(r8), pointer :: h2osoi_vol_grc     (:,:) => null() ! volumetric soil water (0~watsat, m3/m3, nlevgrnd) (for dust model)
      real(r8), pointer :: albd_grc           (:,:) => null() ! (numrad) surface albedo (direct)
      real(r8), pointer :: albi_grc           (:,:) => null() ! (numrad) surface albedo (diffuse)
+     real(r8), pointer :: apparent_albd_grc  (:,:) => null() ! (numrad) apparent surface albedo (direct)
+     real(r8), pointer :: apparent_albi_grc  (:,:) => null() ! (numrad) apparent surface albedo (diffuse)
      real(r8), pointer :: taux_grc           (:)   => null() ! wind stress: e-w (kg/m/s**2)
      real(r8), pointer :: tauy_grc           (:)   => null() ! wind stress: n-s (kg/m/s**2)
      real(r8), pointer :: eflx_lh_tot_grc    (:)   => null() ! total latent HF (W/m**2)  [+ to atm]
@@ -44,6 +46,10 @@ module lnd2atmType
      real(r8), pointer :: eflx_lwrad_out_grc (:)   => null() ! IR (longwave) radiation (W/m**2)
      real(r8), pointer :: qflx_evap_tot_grc  (:)   => null() ! qflx_evap_soi + qflx_evap_can + qflx_tran_veg
      real(r8), pointer :: fsa_grc            (:)   => null() ! solar rad absorbed (total) (W/m**2)
+     real(r8), pointer :: fsr_vis_d_grc      (:)   => null() ! reflected direct beam vis solar radiation (W/m**2)
+     real(r8), pointer :: fsr_vis_i_grc      (:)   => null() ! reflected diffuse vis solar radiation (W/m**2)
+     real(r8), pointer :: fsr_nir_d_grc      (:)   => null() ! reflected direct beam nir solar radiation (W/m**2)
+     real(r8), pointer :: fsr_nir_i_grc      (:)   => null() ! reflected diffuse nir solar radiation (W/m**2)
      real(r8), pointer :: nee_grc            (:)   => null() ! net CO2 flux (kg CO2/m**2/s) [+ to atm]
      real(r8), pointer :: nem_grc            (:)   => null() ! gridcell average net methane correction to CO2 flux (g C/m^2/s)
      real(r8), pointer :: ram1_grc           (:)   => null() ! aerodynamical resistance (s/m)
@@ -127,6 +133,8 @@ contains
     allocate(this%h2osoi_vol_grc       (begg:endg,1:nlevgrnd)) ; this%h2osoi_vol_grc     (:,:) =ival
     allocate(this%albd_grc             (begg:endg,1:numrad))   ; this%albd_grc           (:,:) =ival
     allocate(this%albi_grc             (begg:endg,1:numrad))   ; this%albi_grc           (:,:) =ival
+    allocate(this%apparent_albd_grc    (begg:endg,1:numrad))   ; this%apparent_albd_grc  (:,:) =ival
+    allocate(this%apparent_albi_grc    (begg:endg,1:numrad))   ; this%apparent_albi_grc  (:,:) =ival
     allocate(this%taux_grc             (begg:endg))            ; this%taux_grc             (:) =ival
     allocate(this%tauy_grc             (begg:endg))            ; this%tauy_grc             (:) =ival
     allocate(this%eflx_lwrad_out_grc   (begg:endg))            ; this%eflx_lwrad_out_grc   (:) =ival
@@ -134,6 +142,10 @@ contains
     allocate(this%eflx_lh_tot_grc      (begg:endg))            ; this%eflx_lh_tot_grc      (:) =ival
     allocate(this%qflx_evap_tot_grc    (begg:endg))            ; this%qflx_evap_tot_grc    (:) =ival
     allocate(this%fsa_grc              (begg:endg))            ; this%fsa_grc              (:) =ival
+    allocate(this%fsr_vis_d_grc        (begg:endg))            ; this%fsr_vis_d_grc        (:) =ival
+    allocate(this%fsr_vis_i_grc        (begg:endg))            ; this%fsr_vis_i_grc        (:) =ival
+    allocate(this%fsr_nir_d_grc        (begg:endg))            ; this%fsr_nir_d_grc        (:) =ival
+    allocate(this%fsr_nir_i_grc        (begg:endg))            ; this%fsr_nir_i_grc        (:) =ival
     allocate(this%nee_grc              (begg:endg))            ; this%nee_grc              (:) =ival
     allocate(this%nem_grc              (begg:endg))            ; this%nem_grc              (:) =ival
     allocate(this%ram1_grc             (begg:endg))            ; this%ram1_grc             (:) =ival
@@ -185,7 +197,7 @@ contains
   subroutine InitHistory(this, bounds)
     !
     ! !USES:
-    use histFileMod, only : hist_addfld1d
+    use histFileMod, only : hist_addfld1d, hist_addfld2d
     !
     ! !ARGUMENTS:
     class(lnd2atm_type) :: this
@@ -229,6 +241,18 @@ contains
        call hist_addfld1d (fname='NH3_TO_COUPLER', units='gN/m2/s', &
             avgflag='A', long_name='Gridcell gross NH3 emission passed to coupler', &
             ptr_lnd=this%flux_nh3_grc)
+    end if
+
+    if (use_finetop_rad) then
+       this%apparent_albd_grc(begg:endg,:) = spval
+       call hist_addfld2d (fname='APPARENT_ALBD', units='proportion', type2d='numrad', &
+            avgflag='A', long_name='apparent surface albedo (direct)', &
+            ptr_gcell=this%apparent_albd_grc, default='inactive', c2l_scale_type='urbanf')
+
+       this%apparent_albi_grc(begg:endg,:) = spval
+       call hist_addfld2d (fname='APPARENT_ALBI', units='proportion', type2d='numrad', &
+            avgflag='A', long_name='apparent surface albedo (indirect)', &
+            ptr_gcell=this%apparent_albi_grc, default='inactive', c2l_scale_type='urbanf')
     end if
 
   end subroutine InitHistory
