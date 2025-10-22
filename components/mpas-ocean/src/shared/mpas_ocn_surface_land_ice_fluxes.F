@@ -498,6 +498,7 @@ contains
       real (kind=RKIND), dimension(:), pointer :: landIcePressure, landIceFloatingFraction, &
                                                   landIceSurfaceTemperature, &
                                                   landIceFreshwaterFlux, &
+                                                  landIceConductiveHeatFlux, &
                                                   landIceHeatFlux, heatFluxToLandIce
 
       real (kind=RKIND), dimension(:), pointer :: frazilIceFreshwaterFlux, landIceFreshwaterFluxTotal
@@ -531,6 +532,7 @@ contains
       call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
 
       call mpas_pool_get_array(forcingPool, 'landIceFreshwaterFlux', landIceFreshwaterFlux)
+      call mpas_pool_get_array(forcingPool, 'landIceConductiveHeatFlux', landIceConductiveHeatFlux)
       call mpas_pool_get_array(forcingPool, 'frazilIceFreshwaterFlux', frazilIceFreshwaterFlux)
       call mpas_pool_get_array(forcingPool, 'landIceFreshwaterFluxTotal', landIceFreshwaterFluxTotal)
       call mpas_pool_get_array(forcingPool, 'landIceFloatingMask', landIceFloatingMask)
@@ -606,6 +608,7 @@ contains
                ! melting solution
                call compute_HJ99_melt_fluxes( &
                   landIceFloatingMask, &
+                  landIceConductiveHeatFlux, &
                   landIceBoundaryLayerTracers(indexBLT,:), &
                   landIceBoundaryLayerTracers(indexBLS,:), &
                   landIceTracerTransferVelocities(indexHeatTrans,:), &
@@ -628,6 +631,7 @@ contains
                ! freezing solution
                call compute_melt_fluxes( &
                   landIceFloatingMask, &
+                  landIceConductiveHeatFlux, &
                   landIceBoundaryLayerTracers(indexBLT,:), &
                   landIceBoundaryLayerTracers(indexBLS,:), &
                   landIceTracerTransferVelocities(indexHeatTrans,:), &
@@ -658,6 +662,7 @@ contains
             else ! not using Holland and Jenkins advection/diffusion
                call compute_melt_fluxes( &
                   landIceFloatingMask, &
+                  landIceConductiveHeatFlux, &
                   landIceBoundaryLayerTracers(indexBLT,:), &
                   landIceBoundaryLayerTracers(indexBLS,:), &
                   landIceTracerTransferVelocities(indexHeatTrans,:), &

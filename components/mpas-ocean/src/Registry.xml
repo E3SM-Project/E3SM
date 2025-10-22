@@ -4210,6 +4210,10 @@
 			description="Total flux of mass through the ocean surface that includes interface melt freeze and column averaged frazil freeze rate. Positive into ocean."
 			packages="landIceFluxesPKG;dataLandIceFluxesPKG"
 		/>
+		<var name="landIceConductiveHeatFlux"  type="real" dimensions="nCells Time" units="W m^-2"
+			description="Conductive flux of heat into the ocean at land ice-ocean interface. Positive into ocean; always <=0 as a result of temperature gradients in ice."
+			packages="landIceFluxesPKG;dataLandIceFluxesPKG"
+		/>
 		<var name="landIceHeatFlux"  type="real" dimensions="nCells Time" units="W m^-2"
 			description="Flux of heat into the ocean at land ice-ocean interface. Positive into ocean."
 			packages="landIceFluxesPKG;dataLandIceFluxesPKG"
