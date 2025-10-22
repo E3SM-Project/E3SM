@@ -192,9 +192,6 @@ IF(${BUILD_HOMME_PREQX})
 #  ADD_SUBDIRECTORY(preqx-nlev100-native)
 #  ADD_SUBDIRECTORY(preqx-nlev140-native)
 #  ADD_SUBDIRECTORY(preqx-nlev200-native)
-  IF(${BUILD_HOMME_PREQX_ACC})
-    ADD_SUBDIRECTORY(baroCam-acc)
-  ENDIF()
 ENDIF()
 
 # Add the test exec subdirs for the prim executable
@@ -252,16 +249,6 @@ IF (${BUILD_HOMME_THETA_KOKKOS})
 
 ENDIF()
 
-# Add the test exec subdirs for the prim executable
-IF(${BUILD_HOMME_PRIM})
-  ADD_SUBDIRECTORY(primA)
-ENDIF()
-
-# Add the test exec subdirs for the swim executable
-IF(${BUILD_HOMME_SWIM})
-  ADD_SUBDIRECTORY(swim5)
-ENDIF()
-
 # Test some stuff in the shared folder
 ADD_SUBDIRECTORY (share_kokkos_ut)
 
@@ -307,11 +294,6 @@ IF (${BUILD_HOMME_THETA_KOKKOS})
     createTestsWithProfile(HOMME_THETA_TESTS_WITH_PROFILE ${p})
     CREATE_CXX_VS_F90_TESTS_WITH_PROFILE(THETA_COMPARE_F_C_TEST ${p})
   ENDFOREACH ()
-ENDIF()
-
-IF(${BUILD_HOMME_PREQX} AND ${BUILD_HOMME_PREQX_ACC})
-  # add a test dependency here:
-  set_property(TEST baroCamMoist-acc APPEND PROPERTY DEPENDS baroCamMoist)
 ENDIF()
 
 # End the file with the total number of test files

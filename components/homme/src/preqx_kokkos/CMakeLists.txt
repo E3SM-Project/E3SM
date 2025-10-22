@@ -28,9 +28,6 @@ MACRO(PREQX_KOKKOS_SETUP)
   )
 
   SET (TARGET_F90
-    ${TARGET_DIR}/bndry_mod.F90
-    ${TARGET_DIR}/derivative_mod.F90
-    ${TARGET_DIR}/edge_mod.F90
     ${TARGET_DIR}/element_state.F90
     ${TARGET_DIR}/model_init_mod.F90
     ${TARGET_DIR}/prim_advection_mod.F90
@@ -45,16 +42,16 @@ MACRO(PREQX_KOKKOS_SETUP)
   )
 
   SET (SRC_SHARE_F90
-    ${SRC_SHARE_DIR}/bndry_mod_base.F90
+    ${SRC_SHARE_DIR}/bndry_mod.F90
     ${SRC_SHARE_DIR}/cg_mod.F90
     ${SRC_SHARE_DIR}/control_mod.F90
     ${SRC_SHARE_DIR}/coordinate_systems_mod.F90
     ${SRC_SHARE_DIR}/cube_mod.F90
-    ${SRC_SHARE_DIR}/derivative_mod_base.F90
+    ${SRC_SHARE_DIR}/derivative_mod.F90
     ${SRC_SHARE_DIR}/dimensions_mod.F90
     ${SRC_SHARE_DIR}/dof_mod.F90
     ${SRC_SHARE_DIR}/domain_mod.F90
-    ${SRC_SHARE_DIR}/edge_mod_base.F90
+    ${SRC_SHARE_DIR}/edge_mod.F90
     ${SRC_SHARE_DIR}/edgetype_mod.F90
     ${SRC_SHARE_DIR}/element_mod.F90
     ${SRC_SHARE_DIR}/gllfvremap_mod.F90

@@ -119,10 +119,7 @@ OPTION(BUILD_HOMME_SWEQX "Shallow water equations FEM" ON)
 OPTION(BUILD_HOMME_PREQX "Primitive equations FEM" ON)
 OPTION(BUILD_HOMME_THETA "SB81 NH model with theta and Exner pressure" ON)
 OPTION(BUILD_HOMME_THETA_KOKKOS "SB81 NH model with theta and Exner pressure, Kokkos target" OFF)
-OPTION(BUILD_HOMME_PREQX_ACC "Primitive equations FEM with OpenACC" ON)
 OPTION(BUILD_HOMME_PREQX_KOKKOS "Primitive equations FEM with Kokkos" OFF)
-OPTION(BUILD_HOMME_SWIM  "Shallow water equations implicit" OFF)
-OPTION(BUILD_HOMME_PRIM  "Primitive equations implicit" OFF)
 OPTION(BUILD_HOMME_TOOL  "Offline tool" ON)
 OPTION(HOMME_ENABLE_COMPOSE "Build COMPOSE semi-Lagrangian tracer transport code" ON)
 OPTION(HOMME_USE_SCORPIO  "Use Scorpio as the I/O library (Disable to use Scorpio classic)" ON)
@@ -131,11 +128,6 @@ OPTION(HOMME_USE_SCORPIO  "Use Scorpio as the I/O library (Disable to use Scorpi
 SET(HOMME_USE_CXX FALSE)
 SET(HOMME_USE_KOKKOS FALSE)
 
-# swim and prim executables require C++ compiler
-IF(${BUILD_HOMME_SWIM} OR ${BUILD_HOMME_PRIM})
-  SET (HOMME_USE_CXX TRUE)
-  SET (HOMME_USE_TRILINOS TRUE)
-ENDIF ()
 #if trilinos is needed, we need cxx
 IF (HOMME_USE_TRILINOS)
   SET (HOMME_USE_CXX TRUE)
@@ -176,7 +168,7 @@ IF (HOMME_BUILD_KOKKOS_DYCORE)
   ENDIF ()
 ENDIF ()
 
-IF (BUILD_HOMME_PREQX OR BUILD_HOMME_THETA OR BUILD_HOMME_PREQX_ACC)
+IF (BUILD_HOMME_PREQX OR BUILD_HOMME_THETA)
   SET (HOMME_BUILD_FORTRAN_DYCORE TRUE)
 ENDIF()
 
@@ -552,10 +544,6 @@ IF(${BUILD_HOMME_THETA_KOKKOS})
 ENDIF()
 IF(${BUILD_HOMME_SWIM})
   ADD_SUBDIRECTORY(src/swim)
-ENDIF()
-
-IF(${BUILD_HOMME_PRIM})
-  ADD_SUBDIRECTORY(src/prim)
 ENDIF()
 
 IF(${BUILD_HOMME_TOOL})
