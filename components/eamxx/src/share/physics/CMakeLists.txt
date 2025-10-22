@@ -27,6 +27,9 @@ if (NOT SCREAM_LIB_ONLY)
     physics_share.cpp
   )
 
+  # This file does not add any other dependency to eamxx_test_support,
+  # so it makes sense to add it to that lib (unlike mesh_free_grids_manager.cpp,
+  # which require linking against lots of other eamxx libs)
   target_sources(eamxx_test_support PRIVATE
     physics_test_data.cpp
   )
