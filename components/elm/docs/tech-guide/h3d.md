@@ -133,8 +133,10 @@ The PDE is solved implicitly in space and time using a tridiagonal
 system for $h_i^{n+1}$ at each node $i$. Node is ordered from 1 to N:
 
 $$
-a_i h_{i-1}^{n+1} + b_i h_i^{n+1} + c_i h_{i+1}^{n+1} = r_i
+a_i h_{i-1}^{t,s+1} + b_i h_i^{t,s+1} + c_i h_{i+1}^{t,s+1} = r_i^{t,s}
 $$
+
+where t and t-1 are current and previous time step, s+1 and s are current and previous iteration.
 
 #### Derivation
 
@@ -153,6 +155,10 @@ f\left(h_{1}^{t,s+1}-h_{1}^{t-1}\right)
 &\quad + \Delta T\ \cos(\alpha)\ R_{\mathrm{sat},1}^{t}\ .
 \end{aligned}
 $$
+
+\\
+\\
+
 $$
 \begin{aligned}
 &a_1 h_0^{t,s+1} + b_1 h_1^{t,s+1} + c_1 h_2^{t,s+1} = r_1 \\
@@ -163,6 +169,7 @@ $$
 &r_1 = f h_1^{t-1} + \frac{\Delta T\ \sin(\alpha)}{w_1\ \Delta x_1}\left(w_{\frac{3}{2}}\ k_{l_{\frac{3}{2}}}^{t,s}\ h_{\frac{3}{2}}^{t,s}\right) + \Delta T\ \cos(\alpha)\ R_{\mathrm{sat},1}^{t}
 \end{aligned}
 $$
+
 
 - Interior nodes ($i=2,\dots,N-1$)
 
@@ -182,6 +189,9 @@ f\left(h_{i}^{t,s+1}-h_{i}^{t-1}\right)
 &\quad + \Delta T\ \cos(\alpha)\ R_{\mathrm{sat},i}^{t}\ .
 \end{aligned}
 $$
+
+\\
+\\
 
 $$
 \begin{aligned}
@@ -210,6 +220,10 @@ f\left(h_{N}^{t,s+1}-h_{N}^{t-1}\right)
 &\quad + \Delta T\ \cos(\alpha)\ R_{\mathrm{sat},N}^{t}\ .
 \end{aligned}
 $$
+
+\\
+\\
+
 $$
 \begin{aligned}
 &a_N h_{N-1}^{t,s+1} + b_N h_N^{t,s+1} + c_N h_{N+1}^{t,s+1} = r_N \\
@@ -220,6 +234,12 @@ $$
 &r_N = f h_N^{t-1} - \frac{\Delta T\ \sin(\alpha)}{w_N\ \Delta x_N}\left(w_{N-\frac{1}{2}}\ k_{l_{N-\frac{1}{2}}}^{t,s}\ h_{N-\frac{1}{2}}^{t,s}\right) + \Delta T\ \cos(\alpha)\ R_{\mathrm{sat},N}^{t}
 \end{aligned}
 $$
+
+
+Where \Delta x_{U_{1} is 
+where {\Delta T} (seconds) is the h3d time step, i is the lateral node number.  {\Delta x_{U_i}} and {\Delta x_{L_i}} are the distance (m) relative to the center of upper i + 1 
+and lower i − 1 node. {w_i} is the width on the center of node i. i − {\frac{1}{2}} and i + {\frac{1}{2}} represent the lower and upper bounds of node i.
+
 
 ## IMPLEMENTATION FROM THE CODE
 
