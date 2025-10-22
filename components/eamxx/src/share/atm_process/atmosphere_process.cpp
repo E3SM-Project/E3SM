@@ -912,10 +912,24 @@ void AtmosphereProcess::set_fields_and_groups_pointers () {
   for (auto& g : m_groups_in) {
     const auto& group_name = g.m_info->m_group_name;
     m_groups_in_pointers[group_name][g.grid_name()] = &g;
+    // Also add pointers for individual fields in the group and monolithic field (if present)
+    for (const auto& [fn,fp] : g.m_individual_fields) {
+      m_fields_in_pointers[fn][g.grid_name()] = fp.get();
+    }
+    if (g.m_monolithic_field) {
+      m_fields_in_pointers[group_name][g.grid_name()] = g.m_monolithic_field.get();
+    }
   }
   for (auto& g : m_groups_out) {
     const auto& group_name = g.m_info->m_group_name;
     m_groups_out_pointers[group_name][g.grid_name()] = &g;
+    // Also add pointers for individual fields in the group and monolithic field (if present)
+    for (const auto& [fn,fp] : g.m_individual_fields) {
+      m_fields_out_pointers[fn][g.grid_name()] = fp.get();
+    }
+    if (g.m_monolithic_field) {
+      m_fields_in_pointers[group_name][g.grid_name()] = g.m_monolithic_field.get();
+    }
   }
   for (auto& f : m_internal_fields) {
     const auto& fid = f.get_header().get_identifier();
