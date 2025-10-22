@@ -10,6 +10,15 @@ This approach is conceptually one-dimensional along the hillslope,
 but retains three-dimensional realism by including slope, width, and drainage area variation.
 The model solves the Dupuit–Boussinesq groundwater flow equation for saturated thickness using an implicit finite-difference method.
 
+In order to use this model, the following variables need to be added in the surface dataset:
+
+hs_x(begg:endg, 1:nh3dc_per_lunit+1): x‐coordinates (m) of the node/edge positions along the hillslope for each grid cell g. There are N+1 nodes for N columns.
+
+hs_w(begg:endg, 1:nh3dc_per_lunit+1): width function values (m) at those nodes (planform width vs. distance).
+
+hs_area(1:nh3dc_per_lunit): Planform area between nodes k and k+1 is calculated using a trapezoid, area each column are then normalized to the total area and used later for area-weighted averages/sums across the set of hillslope columns 
+within a land unit (e.g., to compute landunit-level means of fluxes or states).
+
 ## Conceptual Representation
 
 Each land unit is subdivided into several h3D columns positioned along an idealized hillslope:
@@ -59,7 +68,7 @@ Land unit captures the hillsclope-scale connectivity, while columns capture spat
 The fundamental PDE is a Dupuit-style Boussinesq groundwater flow equation for saturated flow along the slope:
 
 $$
-\frac{\partial h}{\partial t} = \frac{1}{f_{\text{drain}}} \frac{\partial}{\partial x} \left[ T(x,h)\left(\frac{\partial h}{\partial }\cos\theta + \sin\theta\right)\right]+ \frac{R}{f_{\text{drain}}}
+\frac{\partial h}{\partial t} = \frac{1}{f_{\text{drain}}} \frac{\partial}{\partial x} \left[ T(x,h)\left(\frac{\partial h}{\partial x}\cos\theta + \sin\theta\right)\right]+ \frac{R}{f_{\text{drain}}}
 $$
 
 where $h(x,t)$ is the saturated thickness [m],
@@ -82,7 +91,7 @@ and $R$ is the recharge rate [m s⁻¹].
 The local transmissivity depends on saturated thickness and anisotropy:
 
 $$
-T(x,h)= \frac{K_{\text{aniso}}\,K_{\text{sat}}(z_{wt})\,h\,w(x)}{1000}
+T(x,h)= \frac{K_{\text{aniso}}K_{\text{sat}}(z_{wt})h w(x)}{1000}
 $$
 
 where $K_{\text{aniso}}=100$ is the horizontal/vertical anisotropy factor,
@@ -127,20 +136,37 @@ $$
 a_i h_{i-1}^{n+1} + b_i h_i^{n+1} + c_i h_{i+1}^{n+1} = r_i
 $$
 
+Lower boundary ($i=1$, stream)
+
+$$
+\begin{aligned}
+a_1 &= 0, \\
+c_1 &= -\frac{T_{3/2}^n \cos\theta \Delta t}
+           {\Delta x_{3/2}\Delta x_1 w_1}, \\
+b_1 &= f_{\text{drain},1} - c_1, \\
+r_1 &= f_{\text{drain},1} h_1^n
+      + \frac{\Delta t}{w_1\Delta x_1}
+        \left[
+          \sin\theta T_{3/2}^n
+          - \frac{\cos\theta}{\Delta x_1}
+            w_1 K_{\text{aniso}}
+            \frac{K_{\text{sat},1}}{1000}(h_1^n)^2
+        \right]
+\end{aligned}
+$$
 
 Interior nodes ($i=2,\dots,N-1$)
 
 $$
 \begin{aligned}
-a_i &= -\frac{T_{i-\frac12}^n \cos\theta \,\Delta t}
-           {\Delta x_{i-\frac12}\,\Delta x_i\,w_i}, \\
-c_i &= -\frac{T_{i+\frac12}^n \cos\theta \,\Delta t}
-           {\Delta x_{i+\frac12}\,\Delta x_i\,w_i}, \\
+a_i &= -\frac{T_{i}^n \cos\theta \Delta t}
+           {\Delta x_{i}\Delta x_i w_i}, \\
+c_i &= -\frac{T_{i+1}^n \cos\theta \Delta t}
+           {\Delta x_{i+1}\,\Delta x_i w_i}, \\
 b_i &= f_{\text{drain},i} - (a_i + c_i), \\
 r_i &= f_{\text{drain},i} h_i^n
       + \frac{\Delta t\sin\theta}{w_i\Delta x_i}
-        (T_{i+\frac12}^n - T_{i-\frac12}^n)
-      + \Delta t R_i.
+        (T_{i+1}^n - T_{i}^n)
 \end{aligned}
 $$
 
@@ -148,13 +174,12 @@ Upper boundary ($i=N$, divide)
 
 $$
 \begin{aligned}
-a_N &= -\frac{T_{N-\frac12}^n \cos\theta \,\Delta t}
-            {\Delta x_{N-\frac12}\,\Delta x_N\,w_N}, \\
+a_N &= -\frac{T_{N}^n \cos\theta \Delta t}
+            {\Delta x_{N} \Delta x_N w_N}, \\
 c_N &= 0, \\
 b_N &= f_{\text{drain},N} - a_N, \\
 r_N &= f_{\text{drain},N} h_N^n
-      - \frac{\Delta t\sin\theta}{w_N\Delta x_N} T_{N-\frac12}^n
-      + \Delta t R_N.
+      - \frac{\Delta t\sin\theta}{w_N\Delta x_N} T_{N}^n
 \end{aligned}
 $$
 
