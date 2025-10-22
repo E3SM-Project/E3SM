@@ -1,4 +1,4 @@
-#include "impl/gw_gwd_compute_tendencies_from_stress_divergence_impl.hpp"
+#include "impl/gw_compute_tendencies_from_stress_divergence_impl.hpp"
 
 namespace scream {
 namespace gw {

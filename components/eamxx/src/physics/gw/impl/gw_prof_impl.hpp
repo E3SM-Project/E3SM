@@ -29,9 +29,6 @@ void Functions<S,D>::gw_prof(
   const uview_1d<Real>& nm,
   const uview_1d<Real>& ni)
 {
-  // Minimum value of Brunt-Vaisalla frequency squared.
-  static constexpr Real n2min = 1.e-8;
-
   //-----------------------------------------------------------------------
   // Determine the interface densities and Brunt-Vaisala frequencies.
   //-----------------------------------------------------------------------
@@ -52,7 +49,7 @@ void Functions<S,D>::gw_prof(
     rhoi(k) = pint(k) / (C::Rair*ti(k));
     const Real dtdp = (t(k)-t(k-1)) / (pmid(k)-pmid(k-1));
     const Real n2 = C::gravit*C::gravit/ti(k) * (1/cpair - rhoi(k)*dtdp);
-    ni(k) = std::sqrt(ekat::impl::max(n2min, n2));
+    ni(k) = std::sqrt(ekat::impl::max(GWC::n2min, n2));
   });
 
   // Bottom interface uses bottom level temperature, density; next interface

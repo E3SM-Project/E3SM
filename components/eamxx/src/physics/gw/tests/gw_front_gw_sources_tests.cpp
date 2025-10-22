@@ -12,14 +12,6 @@ namespace scream {
 namespace gw {
 namespace unit_test {
 
-KOKKOS_INLINE_FUNCTION
-void unflatten_idx_right(const int idx, const Kokkos::Array<int, 3>& dims, int& i, int& j, int& k)
-{
-  i = idx / (dims[2] * dims[1]);
-  j = (idx / dims[2]) % dims[1];
-  k =  idx % dims[2];
-}
-
 template <typename D>
 struct UnitWrap::UnitTest<D>::TestGwFrontGwSources : public UnitWrap::UnitTest<D>::Base {
 

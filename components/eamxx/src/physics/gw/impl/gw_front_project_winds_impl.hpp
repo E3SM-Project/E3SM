@@ -28,12 +28,10 @@ void Functions<S,D>::gw_front_project_winds(
   const uview_1d<Real>& ubm,
   const uview_1d<Real>& ubi)
 {
-  static constexpr Real half = 0.5;
-
   // Just use the source level interface values for the source wind speed
   // and direction (unit vector).
-  const Real usrc = half*(u(kbot+1)+u(kbot));
-  const Real vsrc = half*(v(kbot+1)+v(kbot));
+  const Real usrc = GWC::half*(u(kbot+1)+u(kbot));
+  const Real vsrc = GWC::half*(v(kbot+1)+v(kbot));
 
   // Get the unit vector components and magnitude at the surface.
   get_unit_vector(usrc, vsrc, xv, yv, ubi(kbot+1));
