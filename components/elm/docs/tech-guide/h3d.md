@@ -156,13 +156,13 @@ f\left(h_{1}^{t,s+1}-h_{1}^{t-1}\right)
 \end{aligned}
 $$
 
-\\
-\\
+$$
+a_1 h_0^{t,s+1} + b_1 h_1^{t,s+1} + c_1 h_2^{t,s+1} = r_1
+$$
 
+where 
 $$
 \begin{aligned}
-&a_1 h_0^{t,s+1} + b_1 h_1^{t,s+1} + c_1 h_2^{t,s+1} = r_1 \\
-&\text{where:} \\
 &a_1 = 0 \\
 &b_1 = f + \frac{\Delta T\ \cos(\alpha)}{w_1\ \Delta x_1} \cdot \frac{w_{\frac{3}{2}}\ k_{l_{\frac{3}{2}}}^{t,s}\ h_{\frac{3}{2}}^{t,s}}{\Delta x_{U_1}} \\
 &c_1 = -\frac{\Delta T\ \cos(\alpha)}{w_1\ \Delta x_1} \cdot \frac{w_{\frac{3}{2}}\ k_{l_{\frac{3}{2}}}^{t,s}\ h_{\frac{3}{2}}^{t,s}}{\Delta x_{U_1}} \\
@@ -190,12 +190,13 @@ f\left(h_{i}^{t,s+1}-h_{i}^{t-1}\right)
 \end{aligned}
 $$
 
-\\
+
+$$
+a_j h_{j-1}^{t,s+1} + b_j h_j^{t,s+1} + c_j h_{j+1}^{t,s+1} = r_j 
+$$
 
 $$
 \begin{aligned}
-&a_j h_{j-1}^{t,s+1} + b_j h_j^{t,s+1} + c_j h_{j+1}^{t,s+1} = r_j \\
-\\
 &\text{where:} \\
 &a_j = \frac{\Delta T\ \cos(\alpha)}{w_j\ \Delta x_j} \cdot \frac{w_{j-\frac{1}{2}}\ k_{l_{j-\frac{1}{2}}}^{t,s}\ h_{j-\frac{1}{2}}^{t,s}}{\Delta x_{L_j}} \\
 &b_j = f + \frac{\Delta T\ \cos(\alpha)}{w_j\ \Delta x_j} \left( \frac{w_{j+\frac{1}{2}}\ k_{l_{j+\frac{1}{2}}}^{t,s}\ h_{j+\frac{1}{2}}^{t,s}}{\Delta x_{U_j}} + \frac{w_{j-\frac{1}{2}}\ k_{l_{j-\frac{1}{2}}}^{t,s}\ h_{j-\frac{1}{2}}^{t,s}}{\Delta x_{L_j}} \right) \\
@@ -221,7 +222,6 @@ f\left(h_{N}^{t,s+1}-h_{N}^{t-1}\right)
 \end{aligned}
 $$
 
-\\
 
 $$
 a_N h_{N-1}^{t,s+1} + b_N h_N^{t,s+1} + c_N h_{N+1}^{t,s+1} = r_N 
