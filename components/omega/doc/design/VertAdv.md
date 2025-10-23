@@ -17,7 +17,7 @@ scheme configuration.
 
 Compute the transport pseudo-velocity through vertical layer interfaces based on
 the divergence of the horizontal velocity field. Allow for possible movement of
-layer interfaces and tilt of layer interfaces 
+layer interfaces and tilt of layer interfaces
 
 ### 2.2 Requirement: Advection scheme flexibility
 
@@ -95,7 +95,7 @@ The momentum equation governs the evolution of the horizontal velocity field
 (`NormalVelocity`),
 
 $$
-u^{n+1}_{e,k} = u^{n}_{e,k} + 
+u^{n+1}_{e,k} = u^{n}_{e,k} +
 \frac{\Delta t}{\left[\tilde{h}_{i,k} \right]_{e}} \left( \left[U \tilde{W}_{tr} \right]_{e,k+1/2} -
 \left[U \tilde{W}_{tr} \right]_{e,k-1/2} \right),
 $$
@@ -129,7 +129,7 @@ fluxes at layer interfaces:
 
 ```c++
 enum class VertFluxOption {
-    Second, /// 2nd-order centered 
+    Second, /// 2nd-order centered
     Third,  /// 3rd-order upwind
     Fourth  /// 4th-order centered
 };
@@ -220,7 +220,7 @@ class VertAdv{
    // Arrays from HorzMesh
    Array2DI4 CellsOnEdge;
    Array2DI4 EdgesOnCell;
-   Array1DI4 NEdgesOnCell; 
+   Array1DI4 NEdgesOnCell;
    Array1DReal AreaCell;
    Array1DReal DvEdge;
    Array2DReal EdgeSignOnCell;
@@ -254,7 +254,7 @@ void VertAdv::init();
 #### 4.2.2 Pseudo-velocity computation
 
 The quantities required by this method are either stored locally in the
-`VertAdv` object, or are passed in through the `State` and `AuxState` objects. 
+`VertAdv` object, or are passed in through the `State` and `AuxState` objects.
 
 This method computes the vertical pseudo-velocity based on the divergence of
 the horizontal velocity field. A `parallelForOuter` construct iterates over the
@@ -274,11 +274,11 @@ void VertAdv::computeVerticalTransport(const OceanState *State,
 
 #### 4.2.3 Tendency computations
 
-The `computeThicknessVAdvTend`, `computeVelocityVadvTend`, and 
+The `computeThicknessVAdvTend`, `computeVelocityVadvTend`, and
 `computeTracerVadvTend` methods are designed to be called by the
 `Tendencies` class methods.
 
-The `computeThicknessVAdvTend` method computes the vertical advection tendency 
+The `computeThicknessVAdvTend` method computes the vertical advection tendency
 for pseudo-thickness (`LayerThickness`). Because the vertical pseudo-velocity
 field (`VerticalTransport`) is already stored within the `VertAdv` object,
 this method requires only the thickness tendency array as an argument. The
@@ -327,8 +327,8 @@ void VertAdv::computeTracerVadvTend(const Array3DReal &Tend,
 
 The `computeStdVAdvTend` method performs the standard advection update by
 looping over the cells and interfaces using nested `parallelForOuter` and
-`parallelForInner` constructs. The flux functor chosen from the runtime 
-configuration is used to compute interface fluxes, which are then applied to 
+`parallelForInner` constructs. The flux functor chosen from the runtime
+configuration is used to compute interface fluxes, which are then applied to
 update the tracer tendencies.
 
 The `computeFCTVAdvTend` method implements the flux-corrected transport scheme
