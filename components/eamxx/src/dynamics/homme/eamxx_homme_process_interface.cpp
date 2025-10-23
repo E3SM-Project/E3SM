@@ -1320,7 +1320,7 @@ void HommeDynamics::update_pressure(const std::shared_ptr<const AbstractGrid>& g
   const auto p_int_view = get_field_out("p_int",gn).get_view<Pack**>();
   const auto p_mid_view = get_field_out("p_mid",gn).get_view<Pack**>();
 
-  const auto qv_view        = get_field_in("qv").get_view<const Pack**>();
+  const auto qv_view        = get_field_in("qv",gn).get_view<const Pack**>();
   const auto dp_dry_view    = get_field_out("pseudo_density_dry").get_view<Pack**>();
   const auto p_dry_int_view = get_field_out("p_dry_int").get_view<Pack**>();
   const auto p_dry_mid_view = get_field_out("p_dry_mid").get_view<Pack**>();
