@@ -11,7 +11,7 @@ contains
     use hybvcoord_mod,          only: set_layer_locations
     use dimensions_mod,         only: nlev, nlevp, np
     use thetal_test_interface,  only: init_f90
-    use edge_mod_base,          only: initEdgeBuffer, edge_g
+    use edge_mod,          only: initEdgeBuffer, edge_g
     use geometry_interface_mod, only: par, elem
 
     real (kind=real_kind), intent(in) :: hyai(nlevp), hybi(nlevp), hyam(nlev), hybm(nlev)
