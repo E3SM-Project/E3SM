@@ -180,6 +180,7 @@ void AtmosphereProcessGroup::setup_step_tendencies () {
   for (const auto& atm_proc : m_atm_processes) {
     atm_proc->setup_step_tendencies();
   }
+  AtmosphereProcess::setup_step_tendencies();
 }
 
 void AtmosphereProcessGroup::
