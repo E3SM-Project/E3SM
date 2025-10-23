@@ -1,5 +1,5 @@
 #include "vertical_remapper_mam4.hpp"
-#include "share/io/eamxx_scorpio_interface.hpp"
+#include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 #include <mam4xx/mam4.hpp>
 
 namespace scream
