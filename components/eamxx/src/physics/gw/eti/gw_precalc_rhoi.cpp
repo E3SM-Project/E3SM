@@ -1,10 +1,10 @@
-#include "impl/gw_gw_convect_init_impl.hpp"
+#include "impl/gw_precalc_rhoi_impl.hpp"
 
 namespace scream {
 namespace gw {
 
 /*
- * Explicit instantiation for doing gw_convect_init on Reals using the
+ * Explicit instantiation for doing gwd_precalc_rhoi on Reals using the
  * default device.
  */
 

@@ -29,9 +29,6 @@ void Functions<S,D>::gw_prof(
   const uview_1d<Real>& nm,
   const uview_1d<Real>& ni)
 {
-  // Minimum value of Brunt-Vaisalla frequency squared.
-  static constexpr Real n2min = 1.e-8;
-
   //-----------------------------------------------------------------------
   // Determine the interface densities and Brunt-Vaisala frequencies.
   //-----------------------------------------------------------------------
@@ -47,6 +44,7 @@ void Functions<S,D>::gw_prof(
   // Interior points use centered differences.
   midpoint_interp(team, t, ekat::subview(ti, Kokkos::pair<int, int>{1, pver}));
   team.team_barrier();
+  static constexpr Real n2min = GWC::n2min;
   Kokkos::parallel_for(
     Kokkos::TeamVectorRange(team, 1, pver), [&] (const int k) {
     rhoi(k) = pint(k) / (C::Rair*ti(k));

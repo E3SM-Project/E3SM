@@ -1,10 +1,10 @@
-#include "impl/gw_gw_oro_src_impl.hpp"
+#include "impl/gw_diff_tend_impl.hpp"
 
 namespace scream {
 namespace gw {
 
 /*
- * Explicit instantiation for doing gw_oro_src on Reals using the
+ * Explicit instantiation for doing gw_diff_tend on Reals using the
  * default device.
  */
 

@@ -87,6 +87,36 @@ struct Functions
 
     // Minimum value of (u-c)**2.
     static inline constexpr Real ubmc2mn = 0.01;
+
+    // Useful to avoid promoting to 64-bit double in single prec
+    static constexpr Real half=0.5;
+
+    // Minimum value of Brunt-Vaisalla frequency squared.
+    static constexpr Real n2min = 1.e-8;
+
+    // Mysterious hardcoded value used in calculation of tndmax
+    static constexpr Real temp1 = 86400;
+
+    // spectrum averaging length [m]
+    static constexpr Real tau_avg_length = 100e3;
+
+    // Inverse Prandtl number.
+    static constexpr Real prndl=0.25;
+
+    // Integration interval to get bin average.
+    static constexpr Real dca  = 0.1;
+
+    // Width of gaussian in phase speed.
+    static constexpr Real c0   = 30;
+
+    // max altitude [m] to check for max heating
+    static constexpr Real heating_altitude_max = 20e3;
+
+    // min surface displacement height for orographic waves
+    static constexpr Real orohmin = 10;
+
+    // min wind speed for orographic waves
+    static constexpr Real orovmin = 2;
   };
 
   //
@@ -720,28 +750,28 @@ struct Functions
 // to the translation unit; otherwise, ETI is used.
 #if defined(EAMXX_ENABLE_GPU) && !defined(KOKKOS_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE) \
                                 && !defined(KOKKOS_ENABLE_HIP_RELOCATABLE_DEVICE_CODE)
-# include "impl/gw_gwd_compute_tendencies_from_stress_divergence_impl.hpp"
-# include "impl/gw_gw_prof_impl.hpp"
+# include "impl/gw_compute_tendencies_from_stress_divergence_impl.hpp"
+# include "impl/gw_prof_impl.hpp"
 # include "impl/gw_momentum_energy_conservation_impl.hpp"
-# include "impl/gw_gwd_compute_stress_profiles_and_diffusivities_impl.hpp"
-# include "impl/gw_gwd_project_tau_impl.hpp"
-# include "impl/gw_gwd_precalc_rhoi_impl.hpp"
-# include "impl/gw_gw_drag_prof_impl.hpp"
-# include "impl/gw_gw_front_project_winds_impl.hpp"
-# include "impl/gw_gw_front_gw_sources_impl.hpp"
-# include "impl/gw_gw_cm_src_impl.hpp"
-# include "impl/gw_gw_convect_project_winds_impl.hpp"
-# include "impl/gw_gw_heating_depth_impl.hpp"
-# include "impl/gw_gw_storm_speed_impl.hpp"
-# include "impl/gw_gw_convect_gw_sources_impl.hpp"
-# include "impl/gw_gw_beres_src_impl.hpp"
-# include "impl/gw_gw_ediff_impl.hpp"
-# include "impl/gw_gw_diff_tend_impl.hpp"
-# include "impl/gw_gw_oro_src_impl.hpp"
-# include "impl/gw_gw_common_init_impl.hpp"
+# include "impl/gw_compute_stress_profiles_and_diffusivities_impl.hpp"
+# include "impl/gw_project_tau_impl.hpp"
+# include "impl/gw_precalc_rhoi_impl.hpp"
+# include "impl/gw_drag_prof_impl.hpp"
+# include "impl/gw_front_project_winds_impl.hpp"
+# include "impl/gw_front_gw_sources_impl.hpp"
+# include "impl/gw_cm_src_impl.hpp"
+# include "impl/gw_convect_project_winds_impl.hpp"
+# include "impl/gw_heating_depth_impl.hpp"
+# include "impl/gw_storm_speed_impl.hpp"
+# include "impl/gw_convect_gw_sources_impl.hpp"
+# include "impl/gw_beres_src_impl.hpp"
+# include "impl/gw_ediff_impl.hpp"
+# include "impl/gw_diff_tend_impl.hpp"
+# include "impl/gw_oro_src_impl.hpp"
+# include "impl/gw_common_init_impl.hpp"
 # include "impl/gw_vd_lu_decomp_impl.hpp"
 # include "impl/gw_vd_lu_solve_impl.hpp"
-# include "impl/gw_gw_convect_init_impl.hpp"
-# include "impl/gw_gw_front_init_impl.hpp"
+# include "impl/gw_convect_init_impl.hpp"
+# include "impl/gw_front_init_impl.hpp"
 #endif // GPU && !KOKKOS_ENABLE_*_RELOCATABLE_DEVICE_CODE
 #endif // P3_FUNCTIONS_HPP

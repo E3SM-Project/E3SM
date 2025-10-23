@@ -1,4 +1,4 @@
-#include "impl/gw_gwd_compute_stress_profiles_and_diffusivities_impl.hpp"
+#include "impl/gw_compute_stress_profiles_and_diffusivities_impl.hpp"
 
 namespace scream {
 namespace gw {

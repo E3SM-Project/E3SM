@@ -1,10 +1,10 @@
-#include "impl/gw_gw_heating_depth_impl.hpp"
+#include "impl/gw_ediff_impl.hpp"
 
 namespace scream {
 namespace gw {
 
 /*
- * Explicit instantiation for doing gw_heating_depth on Reals using the
+ * Explicit instantiation for doing gw_ediff on Reals using the
  * default device.
  */
 

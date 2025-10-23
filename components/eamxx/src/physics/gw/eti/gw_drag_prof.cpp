@@ -1,10 +1,10 @@
-#include "impl/gw_gw_storm_speed_impl.hpp"
+#include "impl/gw_drag_prof_impl.hpp"
 
 namespace scream {
 namespace gw {
 
 /*
- * Explicit instantiation for doing gw_storm_speed on Reals using the
+ * Explicit instantiation for doing gw_drag_prof on Reals using the
  * default device.
  */
 

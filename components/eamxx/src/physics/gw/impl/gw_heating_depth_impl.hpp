@@ -30,8 +30,6 @@ void Functions<S,D>::gw_heating_depth(
   Real& maxq0_out,
   Real& maxq0)
 {
-  static constexpr Real heating_altitude_max = 20e3; // max altitude [m] to check for max heating
-
   // Find indices for the top and bottom of the heating range.
   EKAT_KERNEL_REQUIRE_MSG(!use_gw_convect_old, "The old gw convect algorithm is not supported");
 
@@ -43,7 +41,7 @@ void Functions<S,D>::gw_heating_depth(
     mini = 0;
     maxi = 0;
     for (Int k = pver-1; k >= 0; --k) {
-      if ( zm(k) < heating_altitude_max ) {
+      if ( zm(k) < GWC::heating_altitude_max ) {
         if ( netdt(k) > 0 ) {
           // Set mini as first spot where heating rate is positive
           if (mini == 0) mini = k;

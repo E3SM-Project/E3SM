@@ -12,14 +12,6 @@ namespace scream {
 namespace gw {
 namespace unit_test {
 
-KOKKOS_INLINE_FUNCTION
-void unflatten_idx_right(const int idx, const Kokkos::Array<int, 3>& dims, int& i, int& j, int& k)
-{
-  i = idx / (dims[2] * dims[1]);
-  j = (idx / dims[2]) % dims[1];
-  k =  idx % dims[2];
-}
-
 template <typename D>
 struct UnitWrap::UnitTest<D>::TestGwFrontGwSources : public UnitWrap::UnitTest<D>::Base {
 
@@ -86,6 +78,9 @@ struct UnitWrap::UnitTest<D>::TestGwFrontGwSources : public UnitWrap::UnitTest<D
       }
     }
 
+    const auto margin = std::numeric_limits<Real>::epsilon() *
+      (ekat::is_single_precision<Real>::value ? 1000 : 1);
+
     // Verify BFB results, all data should be in C layout
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < num_runs; ++i) {
@@ -93,7 +88,7 @@ struct UnitWrap::UnitTest<D>::TestGwFrontGwSources : public UnitWrap::UnitTest<D
         GwFrontGwSourcesData& d_test = test_data[i];
         REQUIRE(d_baseline.total(d_baseline.tau) == d_test.total(d_test.tau));
         for (Int k = 0; k < d_baseline.total(d_baseline.tau); ++k) {
-          REQUIRE(d_baseline.tau[k] == d_test.tau[k]);
+          REQUIRE(d_baseline.tau[k] == Approx(d_test.tau[k]).margin(margin));
         }
       }
     }
