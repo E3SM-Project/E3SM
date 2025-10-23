@@ -12,7 +12,7 @@ contains
   subroutine init_edges_structs_f90 (num_min_max_fields_1d,num_scalar_fields_2d,num_scalar_fields_3d,num_scalar_fields_3d_int,num_vector_fields_3d,vector_dim) bind(c)
     use iso_c_binding,  only : c_int
     use dimensions_mod, only : nlev, nlevp, qsize
-    use edge_mod_base,  only : initEdgeBuffer, initEdgeSBuffer
+    use edge_mod,  only : initEdgeBuffer, initEdgeSBuffer
     use geometry_interface_mod, only: par, elem
     !
     ! Inputs
@@ -32,7 +32,7 @@ contains
                                          idim_2d, idim_3d, idim_4d, minmax_split) bind(c)
     use iso_c_binding,      only : c_ptr, c_f_pointer, c_int
     use dimensions_mod,     only : np, nlev, nlevp, nelemd, qsize
-    use edge_mod_base,      only : edgevpack, edgevunpack
+    use edge_mod,      only : edgevpack, edgevunpack
     use bndry_mod,          only : bndry_exchangev
     use geometry_interface_mod, only: hybrid
     use viscosity_base,     only : neighbor_minmax, neighbor_minmax_start, neighbor_minmax_finish
@@ -103,7 +103,7 @@ contains
   end subroutine boundary_exchange_test_f90
 
   subroutine cleanup_f90 () bind(c)
-    use edge_mod_base, only : FreeEdgeBuffer
+    use edge_mod, only : FreeEdgeBuffer
     use geometry_interface_mod, only: cleanup_geometry_f90
 
     call FreeEdgeBuffer(edge)
