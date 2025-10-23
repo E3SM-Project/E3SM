@@ -535,6 +535,7 @@ contains
       call mpas_pool_get_array(forcingPool, 'frazilIceFreshwaterFlux', frazilIceFreshwaterFlux)
       call mpas_pool_get_array(forcingPool, 'landIceFreshwaterFluxTotal', landIceFreshwaterFluxTotal)
       call mpas_pool_get_array(forcingPool, 'landIceFloatingMask', landIceFloatingMask)
+      call mpas_pool_get_array(forcingPool, 'heatFluxToLandIce', heatFluxToLandIce)
 
       nCells = nCellsArray( size(nCellsArray) )
 
@@ -543,8 +544,6 @@ contains
          call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
          call mpas_pool_get_array(forcingPool, 'landIceFloatingFraction', landIceFloatingFraction)
          call mpas_pool_get_array(forcingPool, 'landIceHeatFlux', landIceHeatFlux)
-         call mpas_pool_get_array(forcingPool, 'heatFluxToLandIce', heatFluxToLandIce)
-
 
          call mpas_pool_get_array(forcingPool, 'landIceInterfaceTracers', landIceInterfaceTracers)
          call mpas_pool_get_dimension(forcingPool, &

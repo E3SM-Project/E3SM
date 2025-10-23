@@ -2130,7 +2130,6 @@ contains
                                   riverFluxALKField,  &
                                   riverFluxFeField,   &
                                   landIceFreshwaterFluxField, &
-                                  landIceHeatFluxField, &
                                   landIceFractionField, &
                                   windSpeed10mField, &
                                   significantWaveHeightField, &
@@ -2190,7 +2189,6 @@ contains
                                                riverFluxALK,  &
                                                riverFluxFe,   &
                                                landIceFreshwaterFlux, &
-                                               landIceHeatFlux, &
                                                landIceFraction, &
                                                areaCell, &
                                                windSpeed10m, &
@@ -2315,7 +2313,6 @@ contains
       call mpas_pool_get_field(forcingPool, 'waveNetOceanMeridionalWindStress', waveNetOceanMeridionalWindStressField)
 
       call mpas_pool_get_field(forcingPool, 'landIceFreshwaterFlux', landIceFreshwaterFluxField)
-      call mpas_pool_get_field(forcingPool, 'landIceHeatFlux', landIceHeatFluxField)
       call mpas_pool_get_field(forcingPool, 'landIceFraction', landIceFractionField)
       call mpas_pool_get_field(forcingPool, 'landIceInterfaceTracers', landIceInterfaceTracersField)
 
@@ -2350,7 +2347,6 @@ contains
       removedRiverRunoffFlux => removedRiverRunoffFluxField % array
       removedIceRunoffFlux => removedIceRunoffFluxField % array
       landIceFreshwaterFlux => landIceFreshwaterFluxField % array
-      landIceHeatFlux => landIceHeatFluxField % array
       landIceInterfaceTracers => landIceInterfaceTracersField % array
       landIceFraction => landIceFractionField % array
       windSpeed10m => windSpeed10mField % array
@@ -2624,9 +2620,6 @@ contains
         if ( landIceFreshwaterFluxField % isActive ) then
            !landIceFreshwaterFlux(i) = x2o_o % rAttr(index_x2o_Fogx_qicelo, n)
         end if
-        if ( landIceHeatFluxField % isActive ) then
-           !landIceHeatFlux(i) = x2o_o % rAttr(index_x2o_Fogx_qiceho, n)
-        end if
         if ( landIceInterfaceTracersField % isActive ) then
            !landIceInterfaceTracers(indexIT, i) = x2o_o % rAttr(index_x2o_Sg_blit, n)
            !landIceInterfaceTracers(indexIS, i) = x2o_o % rAttr(index_x2o_Sg_blis, n)
@@ -2802,7 +2795,6 @@ contains
    call mpas_pool_get_field(forcingPool, 'waveNetOceanMeridionalWindStress', waveNetOceanMeridionalWindStressField)
 
    call mpas_pool_get_field(forcingPool, 'landIceFreshwaterFlux', landIceFreshwaterFluxField)
-   call mpas_pool_get_field(forcingPool, 'landIceHeatFlux', landIceHeatFluxField)
    call mpas_pool_get_field(forcingPool, 'landIceFraction', landIceFractionField)
    call mpas_pool_get_field(forcingPool, 'landIceInterfaceTracers', landIceInterfaceTracersField)
 
@@ -2966,9 +2958,6 @@ contains
 
    if ( landIceFreshwaterFluxField % isActive ) then
       call mpas_dmpar_exch_halo_field(landIceFreshwaterFluxField)
-   end if
-   if ( landIceHeatFluxField % isActive ) then
-      call mpas_dmpar_exch_halo_field(landIceHeatFluxField)
    end if
    if ( landIceInterfaceTracersField % isActive ) then
       call mpas_dmpar_exch_halo_field(landIceInterfaceTracersField)
@@ -3866,7 +3855,6 @@ contains
                                   riverFluxALKField,  &
                                   riverFluxFeField,   &
                                   landIceFreshwaterFluxField, &
-                                  landIceHeatFluxField, &
                                   landIceFractionField, &
                                   windSpeed10mField, &
                                  significantWaveHeightField, &
@@ -3917,7 +3905,6 @@ contains
                                                riverFluxALK,  &
                                                riverFluxFe,   &
                                                landIceFreshwaterFlux, &
-                                               landIceHeatFlux, &
                                                landIceFraction, &
                                                areaCell, &
                                                windSpeed10m, &
@@ -4037,7 +4024,6 @@ contains
       call mpas_pool_get_field(forcingPool, 'peakWaveDirection', peakWaveDirectionField)
 
       call mpas_pool_get_field(forcingPool, 'landIceFreshwaterFlux', landIceFreshwaterFluxField)
-      call mpas_pool_get_field(forcingPool, 'landIceHeatFlux', landIceHeatFluxField)
       call mpas_pool_get_field(forcingPool, 'landIceFraction', landIceFractionField)
       call mpas_pool_get_field(forcingPool, 'landIceInterfaceTracers', landIceInterfaceTracersField)
 
@@ -4072,7 +4058,6 @@ contains
       removedRiverRunoffFlux => removedRiverRunoffFluxField % array
       removedIceRunoffFlux => removedIceRunoffFluxField % array
       landIceFreshwaterFlux => landIceFreshwaterFluxField % array
-      landIceHeatFlux => landIceHeatFluxField % array
       landIceInterfaceTracers => landIceInterfaceTracersField % array
       landIceFraction => landIceFractionField % array
       windSpeed10m => windSpeed10mField % array
@@ -4305,9 +4290,6 @@ contains
         if ( landIceFreshwaterFluxField % isActive ) then
            !landIceFreshwaterFlux(i) = x2o_om(n, index_x2o_Fogx_qicelo)
         end if
-        if ( landIceHeatFluxField % isActive ) then
-           !landIceHeatFlux(i) = x2o_om(n, index_x2o_Fogx_qiceho)
-        end if
         if ( landIceInterfaceTracersField % isActive ) then
            !landIceInterfaceTracers(indexIT, i) = x2o_om(n, index_x2o_Sg_blit)
            !landIceInterfaceTracers(indexIS, i) = x2o_om(n, index_x2o_Sg_blis)
@@ -4474,7 +4456,6 @@ contains
    call mpas_pool_get_field(forcingPool, 'peakWaveDirection', peakWaveDirectionField)
 
    call mpas_pool_get_field(forcingPool, 'landIceFreshwaterFlux', landIceFreshwaterFluxField)
-   call mpas_pool_get_field(forcingPool, 'landIceHeatFlux', landIceHeatFluxField)
    call mpas_pool_get_field(forcingPool, 'landIceFraction', landIceFractionField)
    call mpas_pool_get_field(forcingPool, 'landIceInterfaceTracers', landIceInterfaceTracersField)
 
@@ -4611,9 +4592,6 @@ contains
 
    if ( landIceFreshwaterFluxField % isActive ) then
       call mpas_dmpar_exch_halo_field(landIceFreshwaterFluxField)
-   end if
-   if ( landIceHeatFluxField % isActive ) then
-      call mpas_dmpar_exch_halo_field(landIceHeatFluxField)
    end if
    if ( landIceInterfaceTracersField % isActive ) then
       call mpas_dmpar_exch_halo_field(landIceInterfaceTracersField)
