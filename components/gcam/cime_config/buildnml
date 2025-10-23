@@ -163,17 +163,6 @@ def buildnml(case, caseroot, compname):
         if os.path.exists(rundir):
             safe_copy(os.path.join(iacconf_dir, "gcam_in"), os.path.join(rundir, "gcam_in{}".format(inst_string)))
 
-    # -------------------------------------------------------------------------
-    # GCAM/GLM run-setup previously done in shell run script
-    #   - create symlinks for config, restarts, and static files
-    #   - refresh three copies needed at run time
-    # No-clobber by default; enable overwrite with GCAM_OVERWRITE=1|true|yes
-    # Control whether to COPY or SYMLINK the dynamic surfdata target
-    # --- S. Feng, 2025-08-19
-    # -------------------------------------------------------------------------
-
-    _OVERWRITE = str(os.environ.get("GCAM_OVERWRITE", "")).lower() in ("1", "true", "yes")
-
     def _ensure_symlink(src, dst):
         """Create symlink dst -> src without clobbering by default.
         If dst exists and matches, do nothing. If differs, require _OVERWRITE.
@@ -202,12 +191,10 @@ def buildnml(case, caseroot, compname):
         if os.path.exists(dst):
             try:
                 if filecmp.cmp(src, dst, shallow=False):
-                    # logger.info("Copy target exists and is identical; skipping: {}".format(dst))
                     return
             except Exception:
                 pass
-            if not _OVERWRITE:
-                expect(False, "Refusing to overwrite existing file: {} (set GCAM_OVERWRITE=1 to override)".format(dst))
+            # Always allow overwrite for file copies in rundir
             os.remove(dst)
         shutil.copy2(src, dst)
         # logger.info("Copied file to: {}".format(dst))
@@ -301,11 +288,51 @@ def buildnml(case, caseroot, compname):
     _ensure_symlink(os.path.join(glm_idir, "glm.fut.conf.{}".format(mach)),
                     os.path.join(rundir, "glm.fut.conf"))
 
-    # Copy all restart.* files from gcam_rdir into rundir
-    for src in glob.glob(os.path.join(gcam_rdir, "restart.*")):
-        fname = os.path.basename(src)
-        dst = os.path.join(rundir, fname)
-        _ensure_copy(src, dst)
+    # Handle restart.* files based on gcam_spinup
+
+    # Helper function to parse gcam_spinup from gcam_in
+    def _get_gcam_spinup(path):
+        pat = re.compile(r"^\s*gcam_spinup\s*=\s*\.([Tt][Rr][Uu][Ee]|[Ff][Aa][Ll][Ss][Ee])\." )
+        try:
+            with open(path, 'r') as fh:
+                for line in fh:
+                    m = pat.match(line)
+                    if m:
+                        return m.group(1).lower() == "true"
+        except Exception:
+            pass
+        return False
+
+    gcam_in_path = os.path.join(rundir, "gcam_in")
+    gcam_spinup = False
+    if os.path.isfile(gcam_in_path):
+        gcam_spinup = _get_gcam_spinup(gcam_in_path)
+
+    if gcam_spinup:
+        # Do not read or copy restart.* files; do not overwrite protection for existing
+        logger.info("gcam_spinup = .true.; skipping all restart.* file handling and overwrite protection")
+        # Model will write restart.* files if needed
+    else:
+        # For each restart.* file in gcam_rdir, copy only if not present in rundir
+        for src in glob.glob(os.path.join(gcam_rdir, "restart.*")):
+            fname = os.path.basename(src)
+            dst = os.path.join(rundir, fname)
+            if not os.path.exists(dst):
+                _ensure_copy(src, dst)
+            # else: file exists in rundir, use as is
+
+    # Helper function to parse gcam_spinup from gcam_in
+    def _get_gcam_spinup(path):
+        pat = re.compile(r"^\s*gcam_spinup\s*=\s*\.([Tt][Rr][Uu][Ee]|[Ff][Aa][Ll][Ss][Ee])\." )
+        try:
+            with open(path, 'r') as fh:
+                for line in fh:
+                    m = pat.match(line)
+                    if m:
+                        return m.group(1).lower() == "true"
+        except Exception:
+            pass
+        return False
 
     # Static files into run dir (with target names) - use copies for these files
     _ensure_copy(os.path.join(ldir, "iESM_Ref_CropPast2015_c10142019.nc"),
