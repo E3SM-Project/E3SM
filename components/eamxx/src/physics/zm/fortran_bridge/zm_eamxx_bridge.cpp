@@ -56,7 +56,6 @@ void zm_eamxx_bridge_run( Int ncol, Int pver,
                         ){
   //----------------------------------------------------------------------------
   zm_input.transpose<ekat::TransposeDirection::c2f>(ncol,pver);
-  zm_output.transpose<ekat::TransposeDirection::c2f>(ncol,pver);
 
   zm_eamxx_bridge_run_c( ncol,                            // 01
                          zm_input.dtime,                  // 02
@@ -91,7 +90,6 @@ void zm_eamxx_bridge_run( Int ncol, Int pver,
                          zm_output.h_mass_flux  .data()   // 31
                         );
 
-  zm_input.transpose<ekat::TransposeDirection::f2c>(ncol,pver);
   zm_output.transpose<ekat::TransposeDirection::f2c>(ncol,pver);
 
   //----------------------------------------------------------------------------
