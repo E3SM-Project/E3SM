@@ -10,7 +10,7 @@ module SoilHydrologyMod
   use elm_varctl        , only : iulog, use_vichydro
   use elm_varctl        , only : use_lnd_rof_two_way, lnd_rof_coupling_nstep
   use elm_varctl        , only : use_modified_infil
-  use elm_varcon        , only : e_ice, denh2o, denice, rpi
+  use elm_varcon        , only : denh2o, denice, rpi
   use EnergyFluxType    , only : energyflux_type
   use SoilHydrologyType , only : soilhydrology_type
   use SoilStateType     , only : soilstate_type
@@ -264,7 +264,7 @@ contains
      use shr_const_mod    , only : shr_const_pi
      use elm_varpar       , only : nlayer, nlayert
      use elm_varpar       , only : nlevsoi, nlevgrnd
-     use elm_varcon       , only : denh2o, denice, roverg, wimp, mu, tfrz
+     use elm_varcon       , only : denh2o, denice, roverg, wimp, tfrz
      use elm_varcon       , only : pondmx, watmin
      use column_varcon    , only : icol_roof, icol_road_imperv, icol_sunwall, icol_shadewall, icol_road_perv
      use landunit_varcon  , only : istsoil, istcrop
@@ -321,6 +321,8 @@ contains
      real(r8) :: top_icefrac                                ! temporary, ice fraction in top VIC layers
      real(r8) :: h2osoi_left_vol1                           ! temporary, available volume in the first soil layer
      real(r8) :: pc                                         ! temporary, threhold for surface water storage to outflow
+     real(r8) :: e_ice
+     real(r8) :: mu
      !-----------------------------------------------------------------------
 
      associate(                                                    &
@@ -376,7 +378,9 @@ contains
           i_0                  =>    soilhydrology_vars%i_0_col              , & ! Input:  [real(r8) (:)   ]  column average soil moisture in top VIC layers (mm)
           h2osfcflag           =>    soilhydrology_vars%h2osfcflag           , & ! Input:  logical
           pc_grid              =>    soilhydrology_vars%pc                   , & ! Input:  [real(r8) (:)   ]  threshold for outflow from surface water storage
-          icefrac              =>    soilhydrology_vars%icefrac_col            & ! Output: [real(r8) (:,:) ]  fraction of ice
+          icefrac              =>    soilhydrology_vars%icefrac_col          , & ! Output: [real(r8) (:,:) ]  fraction of ice
+          ice_imped            =>    soilhydrology_vars%ice_imped            , & ! Input:  [real(r8) (:)   ]  ice impedance parameter
+          mu_grid              =>    soilhydrology_vars%mu                     & ! Input:  [real(r8) (:)   ]  scaling exponent
               )
 
 
@@ -396,7 +400,9 @@ contains
           c  = filter_hydrologyc(fc)
           g  = cgridcell(c)
           pc = pc_grid(g)
-          
+
+          e_ice = ice_imped(g)
+          mu    = mu_grid(g)
           ! partition moisture fluxes between soil and h2osfc
           if (lun_pp%itype(col_pp%landunit(c)) == istsoil .or. lun_pp%itype(col_pp%landunit(c))==istcrop) then
 
@@ -1048,6 +1054,7 @@ contains
      real(r8) :: frac                     ! temporary variable for ARNO subsurface runoff calculation
      real(r8) :: rel_moist                ! relative moisture, temporary variable
      real(r8) :: wtsub_vic                ! summation of hk*dzmm for layers in the third VIC layer
+     real(r8) :: e_ice
      !-----------------------------------------------------------------------
 
      associate(                                                            &
@@ -1086,6 +1093,8 @@ contains
           qcharge            =>    soilhydrology_vars%qcharge_col        , & ! Input:  [real(r8) (:)   ] aquifer recharge rate (mm/s)
           origflag           =>    soilhydrology_vars%origflag           , & ! Input:  logical
           h2osfcflag         =>    soilhydrology_vars%h2osfcflag         , & ! Input:  logical
+          max_drain          =>    soilhydrology_vars%max_drain          , & ! Input:  [real(r8) (:)   ]  maximum bottom drainage rate for sensitivity analysis
+          ice_imped          =>    soilhydrology_vars%ice_imped          , & ! Input:  [real(r8) (:)   ]  ice impedance parameter
 
           qflx_snwcp_liq     =>    col_wf%qflx_snwcp_liq     , & ! Output: [real(r8) (:)   ] excess rainfall due to snow capping (mm H2O /s) [+]
           qflx_snwcp_ice     =>    col_wf%qflx_snwcp_ice     , & ! Output: [real(r8) (:)   ] excess snowfall due to snow capping (mm H2O /s) [+]
@@ -1155,6 +1164,7 @@ contains
           c = filter_hydrologyc(fc)
        	  nlevbed = nlev2bed(c)
 
+          e_ice = ice_imped(g)
           !  specify maximum drainage rate
           q_perch_max = 1.e-5_r8 * sin(col_pp%topo_slope(c) * (rpi/180._r8))
 
@@ -1338,8 +1348,10 @@ contains
                    dsmax_tmp(c) = Dsmax(c) * dtime/ secspday !mm/day->mm/dtime
                    rsub_top_max = dsmax_tmp(c)
                 else
-                   imped=10._r8**(-e_ice*(icefracsum/dzsum))
-                   rsub_top_max = min(10._r8 * sin((rpi/180.) * col_pp%topo_slope(c)), rsub_top_globalmax)
+                   !imped=10._r8**(-e_ice*(icefracsum/dzsum))
+                   !rsub_top_max = min(10._r8 * sin((rpi/180.) * col_pp%topo_slope(c)), rsub_top_globalmax)
+                   imped=10._r8**(-ice_imped(g)*(icefracsum/dzsum))
+                   rsub_top_max = max_drain(g)
                 end if
              endif
              if (use_vichydro) then
@@ -1687,6 +1699,7 @@ contains
      real(r8) :: rel_moist                ! relative moisture, temporary variable
      real(r8) :: wtsub_vic                ! summation of hk*dzmm for layers in the third VIC layer
      integer  :: idx                      ! 1D index for VSFM
+     real(r8) :: e_ice
      !-----------------------------------------------------------------------
 
      associate(                                                            &
@@ -1723,6 +1736,8 @@ contains
           qcharge            =>    soilhydrology_vars%qcharge_col        , & ! Input:  [real(r8) (:)   ] aquifer recharge rate (mm/s)
           origflag           =>    soilhydrology_vars%origflag           , & ! Input:  logical
           h2osfcflag         =>    soilhydrology_vars%h2osfcflag         , & ! Input:  logical
+          max_drain          =>    soilhydrology_vars%max_drain          , & ! Input:  [real(r8) (:)   ]  maximum bottom drainage rate for sensitivity analysis
+          ice_imped          =>    soilhydrology_vars%ice_imped          , & ! Input:  [real(r8) (:)   ]  ice impedance parameter
 
           qflx_snwcp_liq     =>    col_wf%qflx_snwcp_liq     , & ! Output: [real(r8) (:)   ] excess rainfall due to snow capping (mm H2O /s) [+]
           qflx_snwcp_ice     =>    col_wf%qflx_snwcp_ice     , & ! Output: [real(r8) (:)   ] excess snowfall due to snow capping (mm H2O /s) [+]
@@ -1788,6 +1803,8 @@ contains
        ! perched water table code
        do fc = 1, num_hydrologyc
           c = filter_hydrologyc(fc)
+
+          e_ice = ice_imped(g)
 
           !  specify maximum drainage rate
           q_perch_max = 1.e-5_r8 * sin(col_pp%topo_slope(c) * (rpi/180._r8))
@@ -1970,7 +1987,8 @@ contains
                    rsub_top_max = dsmax_tmp(c)
                 else
                    imped=10._r8**(-e_ice*(icefracsum/dzsum))
-                   rsub_top_max = min(10._r8 * sin((rpi/180.) * col_pp%topo_slope(c)), rsub_top_globalmax)
+                   !rsub_top_max = min(10._r8 * sin((rpi/180.) * col_pp%topo_slope(c)), rsub_top_globalmax)
+                   rsub_top_max = max_drain(g)
                 end if
              endif
              if (use_vichydro) then
