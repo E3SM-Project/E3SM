@@ -1,7 +1,7 @@
 #ifndef EAMXX_VERTICAL_REMAPPER_MAM4_HPP
 #define EAMXX_VERTICAL_REMAPPER_MAM4_HPP
 
-#include "share/grid/remap/vertical_remapper.hpp"
+#include "share/remap/vertical_remapper.hpp"
 
 namespace scream
 {

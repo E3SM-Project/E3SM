@@ -1,7 +1,7 @@
 #ifndef EAMXX_MAM_TRACER_READER_UTILS
 #define EAMXX_MAM_TRACER_READER_UTILS
 
-#include "share/io/eamxx_scorpio_interface.hpp"
+#include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 #include "share/io/scorpio_input.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
 #include "share/algorithm/eamxx_time_interpolation.hpp"
