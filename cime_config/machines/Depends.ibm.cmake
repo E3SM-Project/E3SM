@@ -11,9 +11,9 @@ endforeach()
 set(PERFOBJS
   homme/src/share/prim_advection_base.F90
   homme/src/share/vertremap_base.F90
-  homme/src/share/edge_mod_base.F90
-  homme/src/share/derivative_mod_base.F90
-  homme/src/share/bndry_mod_base.F90
+  homme/src/share/edge_mod.F90
+  homme/src/share/derivative_mod.F90
+  homme/src/share/bndry_mod.F90
   homme/src/theta-l/share/prim_advance_mod.F90
   homme/src/preqx/share/prim_advance_mod.F90
   eam/src/physics/cam/uwshcu.F90
