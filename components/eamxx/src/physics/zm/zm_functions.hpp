@@ -67,10 +67,11 @@ struct Functions {
     Real dtime;                     // model phsyics time step [s]
     bool is_first_step;             // flag for first call
 
-    static constexpr int num_dvc_1d_intgr = 0;  // number of device 1D integer views
-    static constexpr int num_dvc_1d_scalr = 1;  // number of device 1D scalar views
-    static constexpr int num_dvc_2d_midlv = 2;  // number of device 2D views on mid-point levels
-    static constexpr int num_dvc_2d_intfc = 1;  // number of device 2D views on interface levels
+    // variable counters for device-side only
+    static constexpr int num_1d_intgr = 0;  // number of 1D integer views
+    static constexpr int num_1d_scalr = 1;  // number of 1D scalar views
+    static constexpr int num_2d_midlv = 2;  // number of 2D mid-point views
+    static constexpr int num_2d_intfc = 1;  // number of 2D interface views
 
     uview_1d<     Scalar> tpert;    // PBL top temperature perturb. [K]
     uview_2d<     Spack>  z_mid;    // mid-point level altitude     [m]
@@ -84,14 +85,14 @@ struct Functions {
     view_2d<const Spack>  p_del;    // pressure thickness           [Pa]
     view_2d<      Spack>  T_mid;    // temperature                  [K]
     view_2d<      Spack>  qv;       // water vapor mixing ratio     [kg kg-1]
-    view_2d<const Spack>  qc;       // cloud liquid water
+    view_2d<const Spack>  qc;       // cloud liquid water           [kg kg-1]
     view_2d<      Spack>  uwind;    // zonal wind                   [m/s]
     view_2d<      Spack>  vwind;    // meridional wind              [m/s]
     view_2d<const Spack>  omega;    // vertical pressure velocity   [Pa/s]
     view_2d<const Spack>  cldfrac;  // total cloud fraction         [frac]
     view_1d<const Scalar> pblh;     // PBL height                   [m]
     view_1d<const Scalar> landfrac; // land area fraction           [frac]
-    view_2d<const Spack>  thl_sec;  // thetal variance for PBL temperature perturbation
+    view_2d<const Spack>  thl_sec;  // thetal variance from SHOC    [K^2]
 
     // host mirror versions of ZM interface variables
     view_1dh<Scalar> h_phis;
@@ -181,10 +182,11 @@ struct Functions {
   struct zm_output_tend {
     zm_output_tend() = default;
 
-    static constexpr int num_dvc_1d_intgr = 1;  // number of device 1D integer views
-    static constexpr int num_dvc_1d_scalr = 3;  // number of device 1D scalar views
-    static constexpr int num_dvc_2d_midlv = 6;  // number of device 2D views on mid-point levels
-    static constexpr int num_dvc_2d_intfc = 3;  // number of device 2D views on interface levels
+    // variable counters for device-side only
+    static constexpr int num_1d_intgr = 1;  // number of 1D integer views
+    static constexpr int num_1d_scalr = 3;  // number of 1D scalar views
+    static constexpr int num_2d_midlv = 6;  // number of 2D mid-point views
+    static constexpr int num_2d_intfc = 3;  // number of 2D interface views
 
     uview_1d<Int>    activity;       // integer deep convection activity flag
     uview_1d<Scalar> prec;           // surface precipitation                   [m/s]
