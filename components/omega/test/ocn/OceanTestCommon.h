@@ -359,97 +359,114 @@ int setVectorEdge(const Functor &Fun, const Array &VectorFieldEdge,
                         ExchangeHalosOpt, CartProjectionOpt);
 }
 
-inline Real maxVal(const Array1DReal &Arr) {
-   Real MaxVal;
-
+template <class Reducer> Real reduceArray(const Array1DReal &Arr, int Extent0) {
+   Real Res;
+   Reducer R(Res);
    parallelReduce(
-       {Arr.extent_int(0)},
-       KOKKOS_LAMBDA(int I, Real &Accum) {
-          Accum = Kokkos::max(Arr(I), Accum);
+       {Extent0}, KOKKOS_LAMBDA(int I, Real &Accum) { R.join(Accum, Arr(I)); },
+       R);
+
+   return Res;
+}
+
+template <class Reducer> Real reduceArray(const Array1DReal &Arr) {
+   return reduceArray<Reducer>(Arr, Arr.extent_int(0));
+}
+
+template <class Reducer, class VertMin, class VertMax>
+Real reduceArray(const Array2DReal &Arr, int Extent0, const VertMin &VMin,
+                 const VertMax &VMax) {
+   Real Res;
+   Reducer ROuter(Res);
+
+   parallelReduceOuter(
+       {Extent0},
+       KOKKOS_LAMBDA(int I, const TeamMember &Team, Real &AccumOuter) {
+          Real ResInner;
+          Reducer RInner(ResInner);
+
+          const int KMin   = getVertBound(VMin, I);
+          const int KMax   = getVertBound(VMax, I);
+          const int KRange = KMax - KMin + 1;
+
+          parallelReduceInner(
+              Team, KRange,
+              INNER_LAMBDA(int KOff, Real &AccumInner) {
+                 const int K = KMin + KOff;
+                 RInner.join(AccumInner, Arr(I, K));
+              },
+              RInner);
+
+          Kokkos::single(PerTeam(Team),
+                         [&]() { ROuter.join(AccumOuter, ResInner); });
        },
-       Kokkos::Max<Real>(MaxVal));
+       ROuter);
 
-   return MaxVal;
+   return Res;
 }
 
-inline Real maxVal(const Array2DReal &Arr) {
-   Real MaxVal;
-
-   parallelReduce(
-       {Arr.extent_int(0), Arr.extent_int(1)},
-       KOKKOS_LAMBDA(int I, int J, Real &Accum) {
-          Accum = Kokkos::max(Arr(I, J), Accum);
-       },
-       Kokkos::Max<Real>(MaxVal));
-
-   return MaxVal;
+template <class Reducer> Real reduceArray(const Array2DReal &Arr, int Extent0) {
+   return reduceArray<Reducer>(Arr, Extent0, 0, Arr.extent_int(1) - 1);
 }
 
-inline Real maxVal(const Array3DReal &Arr) {
-   Real MaxVal;
-
-   parallelReduce(
-       {Arr.extent_int(0), Arr.extent_int(1), Arr.extent_int(2)},
-       KOKKOS_LAMBDA(int I, int J, int K, Real &Accum) {
-          Accum = Kokkos::max(Arr(I, J, K), Accum);
-       },
-       Kokkos::Max<Real>(MaxVal));
-
-   return MaxVal;
+template <class Reducer> Real reduceArray(const Array2DReal &Arr) {
+   return reduceArray<Reducer>(Arr, Arr.extent_int(0), 0,
+                               Arr.extent_int(1) - 1);
 }
 
-inline Real sum(const Array1DReal &Arr, int Extent0) {
-   Real Sum;
+template <class Reducer, class VertMin, class VertMax>
+Real reduceArray(const Array3DReal &Arr, int Extent0, int Extent1,
+                 const VertMin &VMin, const VertMax &VMax) {
+   Real Res;
+   Reducer ROuter(Res);
 
-   parallelReduce(
-       {Extent0}, KOKKOS_LAMBDA(int I, Real &Accum) { Accum += Arr(I); }, Sum);
-
-   return Sum;
-}
-
-inline Real sum(const Array1DReal &Arr) { return sum(Arr, Arr.extent_int(0)); }
-
-inline Real sum(const Array2DReal &Arr, int Extent0, int Extent1) {
-   Real Sum;
-
-   parallelReduce(
+   parallelReduceOuter(
        {Extent0, Extent1},
-       KOKKOS_LAMBDA(int I, int J, Real &Accum) { Accum += Arr(I, J); }, Sum);
+       KOKKOS_LAMBDA(int L, int I, const TeamMember &Team, Real &AccumOuter) {
+          Real ResInner;
+          Reducer RInner(ResInner);
 
-   return Sum;
-}
+          const int KMin   = getVertBound(VMin, I);
+          const int KMax   = getVertBound(VMax, I);
+          const int KRange = KMax - KMin + 1;
 
-inline Real sum(const Array2DReal &Arr) {
-   return sum(Arr, Arr.extent_int(0), Arr.extent_int(1));
-}
+          parallelReduceInner(
+              Team, KRange,
+              INNER_LAMBDA(int KOff, Real &AccumInner) {
+                 const int K = KMin + KOff;
+                 RInner.join(AccumInner, Arr(L, I, K));
+              },
+              RInner);
 
-inline Real sum(const Array2DReal &Arr, int Extent0) {
-   return sum(Arr, Extent0, Arr.extent_int(1));
-}
-
-inline Real sum(const Array3DReal &Arr, int Extent0, int Extent1, int Extent2) {
-   Real Sum;
-
-   parallelReduce(
-       {Extent0, Extent1, Extent2},
-       KOKKOS_LAMBDA(int I, int J, int K, Real &Accum) {
-          Accum += Arr(I, J, K);
+          Kokkos::single(PerTeam(Team),
+                         [&]() { ROuter.join(AccumOuter, ResInner); });
        },
-       Sum);
+       ROuter);
 
-   return Sum;
+   return Res;
 }
 
-inline Real sum(const Array3DReal &Arr) {
-   return sum(Arr, Arr.extent_int(0), Arr.extent_int(1), Arr.extent_int(2));
+template <class Reducer>
+Real reduceArray(const Array3DReal &Arr, int Extent0, int Extent1) {
+   return reduceArray<Reducer>(Arr, Extent0, Extent1, 0, Arr.extent_int(2) - 1);
 }
 
-inline Real sum(const Array3DReal &Arr, int Extent0) {
-   return sum(Arr, Extent0, Arr.extent_int(1), Arr.extent_int(2));
+template <class Reducer> Real reduceArray(const Array3DReal &Arr, int Extent0) {
+   return reduceArray<Reducer>(Arr, Extent0, Arr.extent_int(1), 0,
+                               Arr.extent_int(2) - 1);
 }
 
-inline Real sum(const Array3DReal &Arr, int Extent0, int Extent1) {
-   return sum(Arr, Extent0, Extent1, Arr.extent_int(2));
+template <class Reducer> Real reduceArray(const Array3DReal &Arr) {
+   return reduceArray<Reducer>(Arr, Arr.extent_int(0), Arr.extent_int(1), 0,
+                               Arr.extent_int(2) - 1);
+}
+
+template <class... ArgTypes> Real maxVal(ArgTypes &&...Args) {
+   return reduceArray<Kokkos::Max<Real>>(std::forward<ArgTypes>(Args)...);
+}
+
+template <class... ArgTypes> Real sum(ArgTypes &&...Args) {
+   return reduceArray<Kokkos::Sum<Real>>(std::forward<ArgTypes>(Args)...);
 }
 
 struct ErrorMeasures {
