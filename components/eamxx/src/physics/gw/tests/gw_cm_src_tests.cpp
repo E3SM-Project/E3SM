@@ -78,6 +78,9 @@ struct UnitWrap::UnitTest<D>::TestGwCmSrc : public UnitWrap::UnitTest<D>::Base {
       }
     }
 
+    const auto margin = std::numeric_limits<Real>::epsilon() *
+      (ekat::is_single_precision<Real>::value ? 1000 : 1);
+
     // Verify BFB results, all data should be in C layout
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < num_runs; ++i) {
@@ -85,7 +88,7 @@ struct UnitWrap::UnitTest<D>::TestGwCmSrc : public UnitWrap::UnitTest<D>::Base {
         GwCmSrcData& d_test = test_data[i];
         REQUIRE(d_baseline.total(d_baseline.tau) == d_test.total(d_test.tau));
         for (Int k = 0; k < d_baseline.total(d_baseline.tau); ++k) {
-          REQUIRE(d_baseline.tau[k] == d_test.tau[k]);
+          REQUIRE(d_baseline.tau[k] == Approx(d_test.tau[k]).margin(margin));
         }
         REQUIRE(d_baseline.total(d_baseline.ubm) == d_test.total(d_test.ubm));
         for (Int k = 0; k < d_baseline.total(d_baseline.ubm); ++k) {

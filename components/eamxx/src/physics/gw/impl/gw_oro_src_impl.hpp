@@ -40,12 +40,6 @@ void Functions<S,D>::gw_oro_src(
   Real& yv,
   const uview_1d<Real>& c)
 {
-  // Limiters (min/max values)
-  // min surface displacement height for orographic waves
-  static constexpr Real orohmin = 10;
-  // min wind speed for orographic waves
-  static constexpr Real orovmin = 2;
-
   //--------------------------------------------------------------------------
   // Average the basic state variables for the wave source over the depth of
   // the orographic standard deviation. Here we assume that the appropiate
@@ -124,7 +118,7 @@ void Functions<S,D>::gw_oro_src(
   // Set the source top interface index to pver, if the orographic term is
   // zero.
   Real tauoro = 0;
-  if ((ubi(pver) > orovmin) &&  (hdsp > orohmin)) {
+  if ((ubi(pver) > GWC::orovmin) &&  (hdsp > GWC::orohmin)) {
     // Max orographic standard deviation to use.
     const Real sghmax = init.fcrit2 * bfb_square(ubi(pver) / nsrc);
     // c=0 stress from orography.

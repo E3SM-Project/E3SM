@@ -51,11 +51,6 @@ void Functions<S,D>::gw_ediff(
     {"egwdffm", "tmpi2"},
     {&egwdffm, &tmpi2});
 
-  // Inverse Prandtl number.
-  static constexpr Real prndl=0.25;
-  // Density scale height.
-  static constexpr Real half=0.5;
-
   //--------------------------------------------------------------------------
 
   Kokkos::parallel_for(
@@ -72,7 +67,7 @@ void Functions<S,D>::gw_ediff(
   Kokkos::parallel_for(
     Kokkos::TeamVectorRange(team, ktop+1, kbot+1), [&] (const int k) {
       for (int l = 0; l < num_pgwv; ++l) {
-        egwdffm(k) += prndl * half * gwut(k,l) * (c(l)-ubm(k)) / bfb_square(nm(k));
+        egwdffm(k) += GWC::prndl * GWC::half * gwut(k,l) * (c(l)-ubm(k)) / bfb_square(nm(k));
       }
     });
 

@@ -1,10 +1,10 @@
-#include "impl/gw_gw_diff_tend_impl.hpp"
+#include "impl/gw_project_tau_impl.hpp"
 
 namespace scream {
 namespace gw {
 
 /*
- * Explicit instantiation for doing gw_diff_tend on Reals using the
+ * Explicit instantiation for doing gwd_project_tau on Reals using the
  * default device.
  */
 

@@ -34,9 +34,6 @@ void Functions<S,D>::gw_convect_gw_sources(
   // Outputs
   const uview_2d<Real>& tau)
 {
-  // fixed parameters (we may want to expose these in the namelist for tuning)
-  static constexpr Real tau_avg_length = 100e3; // ! spectrum averaging length [m]
-
   const Int num_pgwv = 2*pgwv + 1;
 
   //---------------------------------------------------------------------
@@ -64,7 +61,7 @@ void Functions<S,D>::gw_convect_gw_sources(
         }
         else {
           Int shifted_l = (l + shift + num_pgwv) % num_pgwv;
-          tau(l, maxi+1) = cinit.mfcc(hdepth_i, uh_i, shifted_l) * maxq0 * maxq0 / tau_avg_length;
+          tau(l, maxi+1) = cinit.mfcc(hdepth_i, uh_i, shifted_l) * maxq0 * maxq0 / GWC::tau_avg_length;
         }
       });
   }  // depth >= 2.5

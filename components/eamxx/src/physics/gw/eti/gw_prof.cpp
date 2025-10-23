@@ -1,10 +1,10 @@
-#include "impl/gw_gw_beres_src_impl.hpp"
+#include "impl/gw_prof_impl.hpp"
 
 namespace scream {
 namespace gw {
 
 /*
- * Explicit instantiation for doing gw_beres_src on Reals using the
+ * Explicit instantiation for doing gw_prof on Reals using the
  * default device.
  */
 
