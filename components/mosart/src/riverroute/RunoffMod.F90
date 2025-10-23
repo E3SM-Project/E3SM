@@ -11,7 +11,7 @@ module RunoffMod
 ! !USES:
   use shr_kind_mod, only : r8 => shr_kind_r8
   use mct_mod
-  use RtmVar         , only : iulog, spval, heatflag, data_bgc_fluxes_to_ocean_flag
+  use RtmVar         , only : iulog, spval, heatflag, data_bgc_fluxes_to_ocean_flag, lakeflag, ngeom, nlayers
   use rof_cpl_indices, only : nt_rtm
 
 ! !PUBLIC TYPES:
@@ -175,6 +175,17 @@ module RunoffMod
      real(r8), pointer :: templand_Ttrib_nt2(:)
      real(r8), pointer :: templand_Tchanr_nt2(:)
 
+     real(r8), pointer :: lake_r_evap_nt1(:)
+     real(r8), pointer :: lake_r_prcp_nt1(:)
+     real(r8), pointer :: lake_r_Vtot_nt1(:)
+     real(r8), pointer :: lake_r_Asur_nt1(:)
+     real(r8), pointer :: lake_r_Tsur_nt1(:)     
+     real(r8), pointer :: lake_t_evap_nt1(:)
+     real(r8), pointer :: lake_t_prcp_nt1(:)
+     real(r8), pointer :: lake_t_Vtot_nt1(:)
+     real(r8), pointer :: lake_t_Asur_nt1(:)
+     real(r8), pointer :: lake_t_Tsur_nt1(:)     
+ 
      real(r8), pointer :: ssh(:)
      real(r8), pointer :: yr_nt1(:)
      
@@ -404,6 +415,7 @@ module RunoffMod
      real(r8), pointer :: wr_dstrm(:,:)  ! Downstream-channel water volume  (to constrain large upward flow from downstream channel to current channel ) (m^3 or kg).
      real(r8), pointer :: yr_dstrm(:)  ! Downstream-channel water depth (m).
      real(r8), pointer :: conc_r_dstrm(:,:) ! Downstream-channel concentration of BGC fluxes (kg/m**3).
+     real(r8), pointer :: qin_res(:)   ! reservoir inflow (m**3/s).
 
      !! exchange fluxes
      real(r8), pointer :: erlg(:,:)    ! evaporation, [m/s]
@@ -467,6 +479,8 @@ module RunoffMod
   type TstatusFlux_heat
       ! overall
       real(r8), pointer :: forc_t(:)      ! atmospheric temperature (Kelvin)
+      real(r8), pointer :: forc_rain(:)   ! atmospheric rainfall (mm/s)
+      real(r8), pointer :: forc_snow(:)   ! atmospheric snowfall (mm/s)
       real(r8), pointer :: forc_pbot(:)   ! atmospheric pressure (Pa)
       real(r8), pointer :: forc_vp(:)     ! atmospheric vapor pressure (Pa)
       real(r8), pointer :: forc_wind(:)   ! atmospheric wind speed (m/s)
@@ -513,12 +527,85 @@ module RunoffMod
       real(r8), pointer :: Hc_r(:)        ! conductive heat flux at the streambed, [Watt]
       real(r8), pointer :: deltaH_r(:)    ! net heat exchange with surroundings, [J]
       real(r8), pointer :: deltaM_r(:)    ! net heat change due to inflow, [J]
+      real(r8), pointer :: Tout_res(:)    ! temperature of reservoir outflow, [K]
+      real(r8), pointer :: Tin_res(:)     ! temperature of reservoir inflow, [K]
 
       real(r8), pointer :: Tt_avg(:)      ! average temperature of subnetwork channel water, [K], for output purpose
       real(r8), pointer :: Tr_avg(:)      ! average temperature of main channel water, [K], for output purpose
       
   end type TstatusFlux_heat
 
+  public :: Tspatialunit_lake
+  type Tspatialunit_lake
+     integer , pointer :: lake_flg(:)      ! (nunit) lake flag, 1=lake on tributary channel, 2=lake on main channel, 0=no lake
+     integer , pointer :: one_layer(:)     ! (nunit) layer flag, 1=single layer, 0=multi-layer
+     real(r8), pointer :: geometry(:)      ! (nunit) numeric code assigned for lake  geometry 1=Rectangular_prism; 2=Rectangular_wedge; 3=Rectangular_bowl; 4=Parabolic_wedge;5=Elliptical_bowl
+     real(r8), pointer :: Length(:)        ! (nunit) mean length of lake (can be diffent from Length) (km)
+     real(r8), pointer :: Width(:)         ! (nunit) mean width of lake (km)
+     real(r8), pointer :: V_max(:)         ! (nunit) storage capacity (mcm)
+     real(r8), pointer :: A_max(:)         ! (nunit) surface area corresponding to V_max (km2)
+     real(r8), pointer :: A_local(:)       ! (nunit) local drainage area [km2]
+     real(r8), pointer :: F_local(:)       ! (nunit) fraction of local drainage area within each grid[-]
+     real(r8), pointer :: h_lake(:)        ! (nunit) lake initial depth[m]
+     real(r8), pointer :: elev(:)          ! (nunit) lake surface elevation [m]
+     real(r8), pointer :: para_a(:)        ! (nunit) Stage-Area relationship coefficient a
+     real(r8), pointer :: para_b(:)        ! (nunit) Stage-Area relationship coefficient b
+	 
+     real(r8), pointer :: V_errs(:)        ! (nunit) storage error of assumed geometry (%)
+     real(r8), pointer :: A_errs(:)        ! (nunit) surface area error of assumed geometry (%)
+     real(r8), pointer :: C_as(:)          ! (nunit) correction coefficient for surface area
+     real(r8), pointer :: C_vs(:)          ! (nunit) correction coefficient for storage
+     real(r8), pointer :: V_dfs(:)         ! (nunit) storage difference of assumed geometry (mcm)
+     real(r8), pointer :: A_dfs(:)         ! (nunit) surface area difference of assumed geometry (km2)
+     real(r8), pointer :: h_min(:)         ! (nunit) mininum lake depth, outflow allowed only when exceeding it [m]
+     real(r8), pointer :: v_min(:)         ! (nunit) mininum lake storage, outflow allowed only when exceeding it [m]
+
+  end type Tspatialunit_lake
+
+  public :: TstatusFlux_lake
+  type TstatusFlux_lake
+     !! states    
+     real(r8), pointer :: V_str(:)         ! (nunit) storage geometry  was calculated (m^3)
+     real(r8), pointer :: A_str(:)         ! (nunit) surface area geometry was calculated (m2)
+     integer , pointer :: d_ns(:)          ! (nunit) number of layers for stratification model
+     real(r8), pointer :: dV_str(:)        ! (nunit) storage change per timestep (m3/s)
+     real(r8), pointer :: d_zi(:,:)        ! (nunit,ndesc=500+1) accumulative, yet descritized depth for depth-area-storage relationship
+     real(r8), pointer :: a_di(:,:)        ! (nunit,ndesc) descritized area for depth-area-storage relationship
+     real(r8), pointer :: v_zti(:,:)       ! (nunit,ndesc) accumulative, yet descritized storage for depth-area-storage relationship
+     real(r8), pointer :: d_z(:,:)         ! (nunit,nlayers=30) Depth at z from bottom (m)
+     real(r8), pointer :: d_z0(:,:)        ! (nunit,nlayers=30) Initial depth at z from bottom (m)
+     real(r8), pointer :: d_v(:,:)         ! (nunit,nlayers) lake volume at layer z only (m^3)
+     real(r8), pointer :: a_d(:,:)         ! (nunit,nlayers) Area at depth z (m2)
+     real(r8), pointer :: a_d0(:,:)        ! (nunit,nlayers) Initial area at depth z (m2)
+     real(r8), pointer :: v_zt(:,:)        ! (nunit,nlayers) accumulated lake volume from bottom to depth z (m^3)
+     real(r8), pointer :: v_zt0(:,:)       ! (nunit,nlayers) Initial lake volume at depth z (m^3)
+     real(r8), pointer :: dd_z(:,:)        ! (nunit,nlayers) Layer depth(m)
+     real(r8), pointer :: m_zo(:,:)        ! (nunit,nlayers) lake beginning mass at depth z (kg)
+     real(r8), pointer :: m_zn(:,:)        ! (nunit,nlayers) lake ending mass at depth z (kg)
+     real(r8), pointer :: v_zo(:,:)        ! (nunit,nlayers) lake beginning volume at depth z (m^3)
+     real(r8), pointer :: v_zn(:,:)        ! (nunit,nlayers) lake volume a layer z only (m^3)
+     real(r8), pointer :: dv_nt(:,:)       ! (nunit,nlayers) net change in lake volume a layer z only (m^3)
+     real(r8), pointer :: temp_lake(:,:)   ! (nunit,nlayers) lake temperature with max 30 layers [K]
+     real(r8), pointer :: d_lake(:)        ! (nunit) lake depth updated on each timestep [m]
+     real(r8), pointer :: ddz_local(:)     ! (nunit) initlal layer thickness to be used to calculate layer thickness limit
+     real(r8), pointer :: enr_0(:,:)       ! (nunit,nlayers) Initial inner energy(J/s,W)
+     integer,  pointer :: J_Min(:)         ! (nunit) Index of the lowest layer for outflow (-)
+     !! fluxes    
+     real(r8), pointer :: lake_inflow(:)   ! (nunit) lake inflow (m3/s)
+     real(r8), pointer :: lake_outflow(:)  ! (nunit) lake outflow under normal conditions (m3/s)
+     real(r8), pointer :: lake_spillflow(:)! (nunit) additional lake outflow when storage capacity exceeded (m3/s)
+     real(r8), pointer :: lake_Tsur(:)     ! (nunit) lake surface temperature (kelvin)
+     real(r8), pointer :: lake_Tout(:)     ! (nunit) lake outflow temperature (kelvin)
+     real(r8), pointer :: lake_evap(:)     ! (nunit) lake evaporation (m3/s)
+     real(r8), pointer :: lake_rain(:)     ! (nunit) lake outflow (m3/s)
+     real(r8), pointer :: lake_snow(:)     ! (nunit) lake outflow (m3/s)
+
+     real(r8), pointer :: lake_evap_avg(:) ! (nunit) lake evaporation, average (m3/s)
+     real(r8), pointer :: lake_prcp_avg(:) ! (nunit) lake precipitation, average (m3/s)
+     real(r8), pointer :: lake_Asur_avg(:) ! (nunit) lake surface area, average (m2)
+     real(r8), pointer :: lake_Tsur_avg(:) ! (nunit) lake surface temperature, average (K)
+     
+  end type TstatusFlux_lake
  
   ! parameters to be calibrated. Ideally, these parameters are supposed to be uniform for one region
   public :: Tparameter
@@ -532,13 +619,20 @@ module RunoffMod
      real(r8), pointer :: t_mu(:)       ! mu parameter in air-water temperature relationship (S-curve)
   end type Tparameter 
 
-  !== Hongyi
+  public :: Lake_output
+  type Lake_output
+     real(r8), pointer :: V_lake(:)      ! MOSART lake total storage (m3), for restart and output only, don't use for calculation
+     real(r8), pointer :: T_lake(:)      ! MOSART lake temperature in different layers (Kelvin), for restart and output only, don't use for calculation
+     real(r8), pointer :: H_lake(:)      ! MOSART lake total water depth (m), for restart and output only, don't use for calculation
+  end type Lake_output
   type (Tcontrol)    , public :: Tctl
   type (Tspatialunit), public :: TUnit
   type (TstatusFlux) , public :: TRunoff
   type (TstatusFlux_heat), public :: THeat
+  type (Tspatialunit_lake), public :: TUnit_lake_r, TUnit_lake_t
+  type (TstatusFlux_lake), public :: TLake_r, TLake_t
   type (Tparameter)  , public :: TPara
-  !== Hongyi
+  type (Lake_output), dimension(30), public :: Lake_r_out, Lake_t_out
 
   type (runoff_flow) , public :: rtmCTL
 
@@ -550,7 +644,7 @@ contains
 
     integer, intent(in) :: begr, endr, numr
 
-    integer :: ier
+    integer :: ier, inl
 
     allocate(rtmCTL%runoff(begr:endr,nt_rtm),     &
              rtmCTL%dvolrdt(begr:endr,nt_rtm),    &
@@ -717,7 +811,7 @@ contains
                rtmCTL%templand_Tchanr_nt2(begr:endr),   &
                stat=ier)
       if (ier /= 0) then
-         write(iulog,*)'Rtmini ERROR allocation of runoff local arrays'
+         write(iulog,*)'Rtmini ERROR allocation of water temperature local arrays'
          call shr_sys_abort
       end if
       
@@ -728,6 +822,61 @@ contains
       rtmCTL%templand_Ttrib(:)  = spval
       rtmCTL%templand_Tchanr(:) = spval
       
+    end if
+
+    if(lakeflag) then
+      allocate(rtmCTL%lake_r_evap_nt1(begr:endr),                 &
+               rtmCTL%lake_r_prcp_nt1(begr:endr),                 &
+               rtmCTL%lake_r_Vtot_nt1(begr:endr),                 &
+               rtmCTL%lake_r_Asur_nt1(begr:endr),                 &
+               rtmCTL%lake_r_Tsur_nt1(begr:endr),                 &
+               !rtmCTL%V_lake(begr:endr,nlayers+1),              &
+               !rtmCTL%T_lake(begr:endr,nlayers+1),              &
+               !rtmCTL%H_lake(begr:endr,nlayers+1),              &
+               stat=ier)
+      if (ier /= 0) then
+         write(iulog,*)'Rtmini ERROR allocation of lake output local arrays'
+         call shr_sys_abort
+      end if
+      rtmCTL%lake_r_evap_nt1(:)    = 0._r8
+      rtmCTL%lake_r_prcp_nt1(:)    = 0._r8
+      rtmCTL%lake_r_Vtot_nt1(:)    = 0._r8
+      rtmCTL%lake_r_Asur_nt1(:)    = 0._r8
+      rtmCTL%lake_r_Tsur_nt1(:)    = 273.15_r8
+      
+	  !allocate(Lake_out(nlayers)) 
+	  do inl=1,nlayers
+	      allocate(Lake_r_out(inl)%V_lake(begr:endr))
+	      allocate(Lake_r_out(inl)%T_lake(begr:endr))
+	      allocate(Lake_r_out(inl)%H_lake(begr:endr))
+	  end do
+
+      allocate(rtmCTL%lake_t_evap_nt1(begr:endr),                 &
+               rtmCTL%lake_t_prcp_nt1(begr:endr),                 &
+               rtmCTL%lake_t_Vtot_nt1(begr:endr),                 &
+               rtmCTL%lake_t_Asur_nt1(begr:endr),                 &
+               rtmCTL%lake_t_Tsur_nt1(begr:endr),                 &
+               !rtmCTL%V_lake(begr:endr,nlayers+1),              &
+               !rtmCTL%T_lake(begr:endr,nlayers+1),              &
+               !rtmCTL%H_lake(begr:endr,nlayers+1),              &
+               stat=ier)
+      if (ier /= 0) then
+         write(iulog,*)'Rtmini ERROR allocation of lake output local arrays'
+         call shr_sys_abort
+      end if
+      rtmCTL%lake_t_evap_nt1(:)    = 0._r8
+      rtmCTL%lake_t_prcp_nt1(:)    = 0._r8
+      rtmCTL%lake_t_Vtot_nt1(:)    = 0._r8
+      rtmCTL%lake_t_Asur_nt1(:)    = 0._r8
+      rtmCTL%lake_t_Tsur_nt1(:)    = 273.15_r8
+      
+	  !allocate(Lake_out(nlayers)) 
+	  do inl=1,nlayers
+	      allocate(Lake_t_out(inl)%V_lake(begr:endr))
+	      allocate(Lake_t_out(inl)%T_lake(begr:endr))
+	      allocate(Lake_t_out(inl)%H_lake(begr:endr))
+	  end do
+	  
     end if
 
   end subroutine RunoffInit
