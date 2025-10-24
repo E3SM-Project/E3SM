@@ -35,13 +35,11 @@ void Functions<S,D>::gw_front_gw_sources(
   // actual source level).
   const bool launch_wave = frontgf(finit.kfront) > finit.frontgfc;
 
+  const int num_pgwv = 2*pgwv + 1;
   if (launch_wave) {
     Kokkos::parallel_for(
-      Kokkos::TeamVectorRange(team, pgwv+1), [&] (const int l) {
-        const Int negl_idx = pgwv - l;
-        const Int posl_idx  = pgwv + l;
-        tau(posl_idx, kbot+1)  = finit.fav(posl_idx);
-        tau(negl_idx, kbot+1)  = finit.fav(posl_idx); // negative for tau only (not fav?)
+      Kokkos::TeamVectorRange(team, num_pgwv), [&] (const int l) {
+        tau(l, kbot+1)  = finit.fav(l);
       });
   }
 }
