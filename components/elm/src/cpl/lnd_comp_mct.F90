@@ -1,5 +1,5 @@
 module lnd_comp_mct
-  
+
   !---------------------------------------------------------------------------
   ! !DESCRIPTION:
   !  Interface of the active land model component of CESM the ELM (E3SM Land Model)
@@ -18,7 +18,7 @@ module lnd_comp_mct
 #ifdef HAVE_MOAB
   use seq_comm_mct,       only: mlnid! id of moab land app
   use seq_comm_mct,       only: num_moab_exports
-#ifdef MOABCOMP 
+#ifdef MOABCOMP
   use seq_comm_mct , only: seq_comm_compare_mb_mct
 #endif
 #endif
@@ -41,6 +41,7 @@ module lnd_comp_mct
   private :: init_moab_land   ! create moab mesh (cloud of points)
   private :: lnd_export_moab ! it could be part of lnd_import_export, but we will keep it here
   private :: lnd_import_moab ! it could be part of lnd_import_export, but we will keep it here
+  integer :: mlndghostid     ! id of the moab land app with ghost cell regions
   integer , private :: mblsize, totalmbls
   real (r8) , allocatable, private :: l2x_lm(:,:) ! for tags to be set in MOAB
 
@@ -133,7 +134,7 @@ contains
     character(len=SHR_KIND_CL) :: hostname           ! hostname of machine running on
     character(len=SHR_KIND_CL) :: version            ! Model version
     character(len=SHR_KIND_CL) :: username           ! user running the model
-    character(len=8)           :: c_inst_index       ! instance number           
+    character(len=8)           :: c_inst_index       ! instance number
     character(len=8)           :: c_npes             ! number of pes
     integer :: nsrest                                ! elm restart type
     integer :: ref_ymd                               ! reference date (YYYYMMDD)
@@ -169,7 +170,7 @@ contains
 #ifdef HAVE_MOAB
     mpicom_lnd_moab = mpicom_lnd ! just store it now, for later use
     call shr_mpi_commrank( mpicom_lnd_moab, rank2 ) ! this will be used for differences between mct and moab tags
-#endif 
+#endif
 
     ! Determine if iac is active, and set flag
     call seq_infodata_GetData(infodata, iac_present=iac_flag)
@@ -177,7 +178,7 @@ contains
 
     call elm_cpl_indices_set()
 
-    ! Initialize elm MPI communicator 
+    ! Initialize elm MPI communicator
 
     call spmd_init( mpicom_lnd, LNDID )
 
@@ -186,7 +187,7 @@ contains
        lbnum=1
        call memmon_dump_fort('memmon.out','lnd_init_mct:start::',lbnum)
     endif
-#endif                      
+#endif
 
     inst_name   = seq_comm_name(LNDID)
     inst_index  = seq_comm_inst(LNDID)
@@ -208,7 +209,7 @@ contains
 
     call shr_file_getLogLevel(shrloglev)
     call shr_file_setLogUnit (iulog)
-    
+
     ! Identify SMP nodes and process/SMP mapping for this instance
     ! (Assume that processor names are SMP node names on SMP clusters.)
     write(c_inst_index,'(i8)') inst_index
@@ -244,13 +245,13 @@ contains
     call seq_infodata_GetData( infodata, orb_eccen=eccen, orb_mvelpp=mvelpp, &
          orb_lambm0=lambm0, orb_obliqr=obliqr )
 
-    ! Consistency check on namelist filename	
+    ! Consistency check on namelist filename
 
     call control_setNL("lnd_in"//trim(inst_suffix))
 
     ! Initialize elm
-    ! initialize1 reads namelist, grid and surface data (need this to initialize gsmap) 
-    ! initialize2 performs rest of initialization	
+    ! initialize1 reads namelist, grid and surface data (need this to initialize gsmap)
+    ! initialize2 performs rest of initialization
 
     call seq_timemgr_EClockGetData(EClock,                               &
                                    start_ymd=start_ymd,                  &
@@ -323,7 +324,9 @@ contains
     if (iac_present) then
       call endrun(msg=sub//'ERROR: EHC not supported with MOAB yet: '//errMsg(__FILE__, __LINE__))
     endif
+    ! let us create the point-cloud MOAB mesh that the coupler needs
     call init_moab_land(bounds, LNDID)
+    ! now let us create that MOAB app that represents the full ELM mesh
 #endif
     call mct_aVect_init(x2l_l, rList=seq_flds_x2l_fields, lsize=lsz)
     call mct_aVect_zero(x2l_l)
@@ -387,7 +390,7 @@ contains
     call seq_infodata_GetData(infodata, nextsw_cday=nextsw_cday )
     call set_nextsw_cday(nextsw_cday)
 
-    if (.not. atm_present) then 
+    if (.not. atm_present) then
       !Calculate next radiation calendar day (since atm model did not run to set
       !this)
       !DMR:  NOTE this assumes a no-leap calendar and equal input/model timesteps
@@ -503,7 +506,7 @@ contains
     integer :: size_list, index_list, ent_type
     type(mct_string)    :: mctOStr  !
     character(100) ::tagname, mct_field, modelStr
-#endif 
+#endif
     !---------------------------------------------------------------------------
 
     ! Determine processor bounds
@@ -533,14 +536,14 @@ contains
     dtime = get_step_size()
 
     call seq_infodata_GetData(infodata, atm_present=atm_present)
-    if (.not. atm_present) then 
+    if (.not. atm_present) then
       !Calcualte next radiation calendar day (since atm model did not run to set this)
       !DMR:  NOTE this assumes a no-leap calendar and equal input/model timesteps
       nstep = get_nstep()
-      nextsw_cday = mod((nstep/(86400._r8/dtime))*1.0_r8,365._r8)+1._r8 
+      nextsw_cday = mod((nstep/(86400._r8/dtime))*1.0_r8,365._r8)+1._r8
       call set_nextsw_cday( nextsw_cday )
     end if
- 
+
     write(rdate,'(i4.4,"-",i2.2,"-",i2.2,"-",i5.5)') yr_sync,mon_sync,day_sync,tod_sync
     nlend_sync = seq_timemgr_StopAlarmIsOn( EClock )
     rstwr_sync = seq_timemgr_RestartAlarmIsOn( EClock )
@@ -548,13 +551,16 @@ contains
     ! Map MCT to land data type
     ! Perform downscaling if appropriate
 
-    
+
     ! Map to elm (only when state and/or fluxes need to be updated)
 
     call t_startf ('lc_lnd_import')
     call lnd_import( bounds, x2l_l%rattr, atm2lnd_vars, glc2lnd_vars, lnd2atm_vars, iac2lnd_vars)
-    
 #ifdef HAVE_MOAB
+! calling MOAB's import last means this is what the model will use.
+    call lnd_import_moab( EClock, bounds, atm2lnd_vars, glc2lnd_vars)
+
+    ! first call moab import
 #ifdef MOABCOMP
     ! loop over all fields in seq_flds_x2l_fields
     call mct_list_init(temp_list ,seq_flds_x2l_fields)
@@ -602,10 +608,10 @@ contains
        caldayp1 = get_curr_calday(offset=dtime)
        if (nstep == 0) then
 	        doalb = .false.
-       else if (nstep == 1) then 
-          doalb = (abs(nextsw_cday- caldayp1) < 1.e-10_r8) 
+       else if (nstep == 1) then
+          doalb = (abs(nextsw_cday- caldayp1) < 1.e-10_r8)
        else
-          doalb = (nextsw_cday >= -0.5_r8) 
+          doalb = (nextsw_cday >= -0.5_r8)
        end if
        call update_rad_dtime(doalb)
 
@@ -616,7 +622,7 @@ contains
        nlend = .false.
        if (nlend_sync .and. dosend) nlend = .true.
 
-       ! Run elm 
+       ! Run elm
 
        call t_barrierf('sync_elm_run1', mpicom)
        call t_startf ('elm_run')
@@ -630,7 +636,7 @@ contains
 
        ! Create l2x_l export state - add river runoff input to l2x_l if appropriate
 
-#ifndef CPL_BYPASS       
+#ifndef CPL_BYPASS
        call t_startf ('lc_lnd_export')
        call lnd_export(bounds, lnd2atm_vars, lnd2glc_vars, lnd2iac_vars, l2x_l%rattr)
 #ifdef HAVE_MOAB
@@ -640,7 +646,7 @@ contains
 #endif
 
        ! Advance elm time step
-       
+
        call t_startf ('lc_elm2_adv_timestep')
        call advance_timestep()
        call t_stopf ('lc_elm2_adv_timestep')
@@ -658,12 +664,12 @@ contains
        write(iulog,*)'sync ymd=',ymd_sync,' sync tod= ',tod_sync
        call endrun( sub//":: ELM clock not in sync with Master Sync clock" )
     end if
-    
+
     ! Reset shr logging to my original values
 
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)
-  
+
 #if (defined _MEMTRACE)
     if(masterproc) then
        lbnum=1
@@ -736,7 +742,7 @@ contains
     ! Build the land grid numbering for MCT
     ! NOTE:  Numbering scheme is: West to East and South to North
     ! starting at south pole.  Should be the same as what's used in SCRIP
-    
+
     allocate(gindex(bounds%begg:bounds%endg),stat=ier)
 
     ! number the local grid
@@ -768,7 +774,7 @@ contains
     use mct_mod     , only: mct_gGrid_importRAttr, mct_gGrid_init, mct_gsMap_orderedPoints
     use seq_flds_mod, only: seq_flds_dom_coord, seq_flds_dom_other
     !
-    ! !ARGUMENTS: 
+    ! !ARGUMENTS:
     type(bounds_type), intent(in)  :: bounds  ! bounds
     integer        , intent(in)    :: lsz     ! land model domain data size
     type(mct_gsMap), intent(inout) :: gsMap_l ! Output land model MCT GS map
@@ -783,7 +789,7 @@ contains
     ! Initialize mct domain type
     ! lat/lon in degrees,  area in radians^2, mask is 1 (land), 0 (non-land)
     ! Note that in addition land carries around landfrac for the purposes of domain checking
-    ! 
+    !
     call mct_gGrid_init( GGrid=dom_l, CoordChars=trim(seq_flds_dom_coord), &
        OtherChars=trim(seq_flds_dom_other), lsize=lsz )
     !
@@ -799,12 +805,12 @@ contains
     ! Determine domain (numbering scheme is: West to East and South to North to South pole)
     ! Initialize attribute vector with special value
     !
-    data(:) = -9999.0_R8 
+    data(:) = -9999.0_R8
     call mct_gGrid_importRAttr(dom_l,"lat"  ,data,lsz)
     call mct_gGrid_importRAttr(dom_l,"lon"  ,data,lsz)
     call mct_gGrid_importRAttr(dom_l,"area" ,data,lsz)
     call mct_gGrid_importRAttr(dom_l,"aream",data,lsz)
-    data(:) = 0.0_R8     
+    data(:) = 0.0_R8
     call mct_gGrid_importRAttr(dom_l,"mask" ,data,lsz)
     !
     ! Fill in correct values for domain components
@@ -853,7 +859,7 @@ contains
     use domainMod   , only: ldomain ! ldomain is coming from module, not even passed
     use elm_varcon  , only: re
     use shr_const_mod, only: SHR_CONST_PI
-    use elm_varctl  ,  only : iulog  ! for messages 
+    use elm_varctl  ,  only : iulog  ! for messages
      use spmdmod          , only: masterproc
     use iMOAB        , only: iMOAB_CreateVertices, iMOAB_WriteMesh, iMOAB_RegisterApplication, &
     iMOAB_DefineTagStorage, iMOAB_SetIntTagStorage, iMOAB_SetDoubleTagStorage, &
@@ -903,7 +909,7 @@ contains
     end do
     gsize = ldomain%ni * ldomain%nj ! size of the total grid
 
-    
+
     allocate(moab_vert_coords(lsz*dims))
     do i = 1, lsz
       n = i-1 + bounds%begg
@@ -1012,7 +1018,7 @@ contains
     deallocate(vgids)
 
   ! define all tags from seq_flds_l2x_fields
-  ! define tags according to the seq_flds_l2x_fields 
+  ! define tags according to the seq_flds_l2x_fields
     tagtype = 1  ! dense, double
     numco = 1 !  one value per cell / entity
 
@@ -1030,17 +1036,18 @@ contains
 
   end subroutine init_moab_land
 
+  !---------------------------------------------------------------------------
   subroutine lnd_export_moab(EClock, bounds, lnd2atm_vars, lnd2glc_vars)
 
     !---------------------------------------------------------------------------
     ! !DESCRIPTION:
-    ! Convert the data to be sent from the elm model to the moab coupler 
-    ! 
+    ! Convert the data to be sent from the elm model to the moab coupler
+    !
     ! !USES:
     use shr_kind_mod       , only : r8 => shr_kind_r8
     use shr_kind_mod       , only : CXX => SHR_KIND_CXX
     use elm_varctl         , only : iulog, create_glacier_mec_landunit
-    use elm_time_manager   , only : get_nstep, get_step_size  
+    use elm_time_manager   , only : get_nstep, get_step_size
     use domainMod          , only : ldomain
     use seq_drydep_mod     , only : n_drydep
     use shr_megan_mod      , only : shr_megan_mechcomps_n
@@ -1059,7 +1066,7 @@ contains
     integer  :: g,i   ! indices
     integer  :: ier   ! error status
     integer  :: nstep ! time step index
-    integer  :: dtime ! time step   
+    integer  :: dtime ! time step
     integer  :: num   ! counter
     character(len=*), parameter :: sub = 'lnd_export_moab'
 
@@ -1092,7 +1099,7 @@ contains
        l2x_lm(i,index_l2x_Fall_evap)   = -lnd2atm_vars%qflx_evap_tot_grc(g)
        l2x_lm(i,index_l2x_Fall_swnet)  =  lnd2atm_vars%fsa_grc(g)
        if (index_l2x_Fall_fco2_lnd /= 0) then
-          l2x_lm(i,index_l2x_Fall_fco2_lnd) = -lnd2atm_vars%nee_grc(g)  
+          l2x_lm(i,index_l2x_Fall_fco2_lnd) = -lnd2atm_vars%nee_grc(g)
        end if
 
        ! Additional fields for DUST, PROGSSLT, dry-deposition and VOC
@@ -1119,10 +1126,10 @@ contains
        end if
 
        if (index_l2x_Fall_methane /= 0) then
-          l2x_lm(i,index_l2x_Fall_methane) = -lnd2atm_vars%flux_ch4_grc(g) 
+          l2x_lm(i,index_l2x_Fall_methane) = -lnd2atm_vars%flux_ch4_grc(g)
        endif
 
-       ! sign convention is positive downward with 
+       ! sign convention is positive downward with
        ! hierarchy of atm/glc/lnd/rof/ice/ocn.  so water sent from land to rof is positive
 
        l2x_lm(i,index_l2x_Flrl_rofi) = lnd2atm_vars%qflx_rofice_grc(g)
@@ -1131,7 +1138,7 @@ contains
        l2x_lm(i,index_l2x_Flrl_rofsub) = lnd2atm_vars%qflx_rofliq_qsub_grc(g) &
                                     + lnd2atm_vars%qflx_rofliq_qsubp_grc(g)   !  perched drainiage
        l2x_lm(i,index_l2x_Flrl_rofgwl) = lnd2atm_vars%qflx_rofliq_qgwl_grc(g)
-  
+
        l2x_lm(i,index_l2x_Flrl_demand) =  lnd2atm_vars%qflx_irr_demand_grc(g)   ! needs to be filled in
        if (l2x_lm(i,index_l2x_Flrl_demand) > 0.0_r8) then
            write(iulog,*)'lnd2atm_vars%qflx_irr_demand_grc is',lnd2atm_vars%qflx_irr_demand_grc(g)
@@ -1171,16 +1178,16 @@ contains
   end subroutine lnd_export_moab
 
   ! lnd_import_moab will be a copy of lnd_import
-  ! data will come from moab tags, from mlnid iMOAB app 
+  ! data will come from moab tags, from mlnid iMOAB app
   ! the role of x2l_l AV is taken by the local array x2l_lm, allocated at init stage, with
-  ! the order of tags given by seq_flds_x2l_fields 
+  ! the order of tags given by seq_flds_x2l_fields
 
   !===============================================================================
   subroutine lnd_import_moab(EClock, bounds, atm2lnd_vars, glc2lnd_vars)
 
     !---------------------------------------------------------------------------
     ! !DESCRIPTION:
-    ! Convert the input data from the moab coupler to the land model 
+    ! Convert the input data from the moab coupler to the land model
     use seq_flds_mod     , only :  seq_flds_l2x_fields, seq_flds_x2l_fields
     use iMOAB,  only       : iMOAB_GetDoubleTagStorage, iMOAB_WriteMesh
     use shr_kind_mod     , only : CXX => SHR_KIND_CXX
@@ -1190,7 +1197,7 @@ contains
     use elm_varctl       , only: const_climate_hist, add_temperature, add_co2, use_cn, use_fates
     use elm_varctl       , only: startdate_add_temperature, startdate_add_co2
     use elm_varcon       , only: rair, o2_molar_const, c13ratio
-    use elm_time_manager , only: get_nstep, get_step_size, get_curr_calday, get_curr_date 
+    use elm_time_manager , only: get_nstep, get_step_size, get_curr_calday, get_curr_date
     use controlMod       , only: NLFilename
     use shr_const_mod    , only: SHR_CONST_TKFRZ, SHR_CONST_STEBOL
     use domainMod        , only: ldomain
@@ -1229,7 +1236,7 @@ contains
     real(r8) :: b0,b1,b2,b3,b4,b5,b6 ! coefficients for esat over ice
     real(r8) :: tdc, t               ! Kelvins to Celcius function and its input
     real(r8) :: vp                   ! water vapor pressure (Pa)
-    integer  :: thisng, np, num, nu_nml, nml_error                 
+    integer  :: thisng, np, num, nu_nml, nml_error
     integer  :: ng_all(100000)
     real(r8) :: swndf, swndr, swvdf, swvdr, ratio_rvrf, frac, q
     real(r8) :: thiscosz, avgcosz, szenith
@@ -1256,30 +1263,30 @@ contains
     integer :: sdate_addco2, sy_addco2, sm_addco2, sd_addco2
     character(len=200) metsource_str, thisline
     character(len=*), parameter :: sub = 'lnd_import_moab'
-    integer :: av, v, n, nummetdims, g3, gtoget, ztoget, line, mystart, tod_start, thistimelen  
+    integer :: av, v, n, nummetdims, g3, gtoget, ztoget, line, mystart, tod_start, thistimelen
     character(len=20) aerovars(14), metvars(14)
     character(len=3) zst
     integer :: stream_year_first_lightng, stream_year_last_lightng, model_year_align_lightng
     integer :: stream_year_first_popdens, stream_year_last_popdens, model_year_align_popdens
     integer :: stream_year_first_ndep,    stream_year_last_ndep,    model_year_align_ndep
-    character(len=CL)  :: metdata_fname  
+    character(len=CL)  :: metdata_fname
     character(len=CL)  :: lightngmapalgo = 'bilinear'! Mapping alogrithm
-    character(len=CL)  :: popdensmapalgo = 'bilinear' 
-    character(len=CL)  :: ndepmapalgo    = 'bilinear' 
+    character(len=CL)  :: popdensmapalgo = 'bilinear'
+    character(len=CL)  :: ndepmapalgo    = 'bilinear'
     character(len=CL)  :: stream_fldFileName_lightng ! lightning stream filename to read
     character(len=CL)  :: stream_fldFileName_popdens ! poplulation density stream filename
     character(len=CL)  :: stream_fldFileName_ndep    ! nitrogen deposition stream filename
     logical :: use_sitedata, has_zonefile, use_daymet, use_livneh
 
-! moab extra stuff 
+! moab extra stuff
     character(CXX) ::  tagname ! hold all fields names
-    integer        :: ent_type  ! for setting data 
+    integer        :: ent_type  ! for setting data
     integer        :: cur_lnd_stepno
 #ifdef MOABDEBUG
     character*100 outfile, wopts, lnum
 #endif
 
-    data caldaym / 1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366 /    
+    data caldaym / 1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366 /
 
     ! Constants to compute vapor pressure
     parameter (a0=6.107799961_r8    , a1=4.436518521e-01_r8, &
@@ -1322,7 +1329,7 @@ contains
 
     stream_fldFileName_lightng = ' '
     stream_fldFileName_popdens = ' '
-   
+
     co2_type_idx = 0
     if (co2_type == 'prognostic') then
        co2_type_idx = 1
@@ -1361,12 +1368,12 @@ contains
     thisng = bounds%endg - bounds%begg + 1
     do g = bounds%begg,bounds%endg
        i = 1 + (g - bounds%begg)
-       
+
        ! Determine flooding input, sign convention is positive downward and
        ! hierarchy is atm/glc/lnd/rof/ice/ocn.  so water sent from rof to land is negative,
        ! change the sign to indicate addition of water to system.
 
-       atm2lnd_vars%forc_flood_grc(g)   = -x2l_lm(i,index_x2l_Flrr_flood)  
+       atm2lnd_vars%forc_flood_grc(g)   = -x2l_lm(i,index_x2l_Flrr_flood)
 
        atm2lnd_vars%volr_grc(g)   = x2l_lm(i,index_x2l_Flrr_volr) * (ldomain%area(g) * 1.e6_r8)
        atm2lnd_vars%volrmch_grc(g)= x2l_lm(i,index_x2l_Flrr_volrmch) * (ldomain%area(g) * 1.e6_r8)
@@ -1407,7 +1414,7 @@ contains
        atm2lnd_vars%forc_aer_grc(g,12) =  x2l_lm(i,index_x2l_Faxa_dstdry3)
        atm2lnd_vars%forc_aer_grc(g,13) =  x2l_lm(i,index_x2l_Faxa_dstwet4)
        atm2lnd_vars%forc_aer_grc(g,14) =  x2l_lm(i,index_x2l_Faxa_dstdry4)
-       
+
        !set the topounit-level atmospheric state and flux forcings
        do topo = grc_pp%topi(g), grc_pp%topf(g)
          ! first, all the state forcings
@@ -1434,7 +1441,7 @@ contains
          ! air density (kg/m**3) - uses a temporary calculation of water vapor pressure (Pa)
          vp = top_as%qbot(topo) * top_as%pbot(topo)  / (0.622_r8 + 0.378_r8 * top_as%qbot(topo))
          top_as%rhobot(topo) = (top_as%pbot(topo) - 0.378_r8 * vp) / (rair * top_as%tbot(topo))
-         
+
          ! second, all the flux forcings
          top_af%rain(topo)    = forc_rainc + forc_rainl       ! sum of convective and large-scale rain
          top_af%snow(topo)    = forc_snowc + forc_snowl       ! sum of convective and large-scale snow
@@ -1447,7 +1454,7 @@ contains
          top_af%solar(topo) = top_af%solad(topo,2) + top_af%solad(topo,1) + &
                               top_af%solai(topo,2) + top_af%solai(topo,1)
        end do
-         
+
 
        ! Determine optional receive fields
        ! CO2 (and C13O2) concentration: constant, prognostic, or diagnostic
@@ -1497,7 +1504,7 @@ contains
        forc_t = atm2lnd_vars%forc_t_not_downscaled_grc(g)
        forc_q = atm2lnd_vars%forc_q_not_downscaled_grc(g)
        forc_pbot = atm2lnd_vars%forc_pbot_not_downscaled_grc(g)
-       
+
        atm2lnd_vars%forc_hgt_u_grc(g) = atm2lnd_vars%forc_hgt_grc(g)    !observational height of wind [m]
        atm2lnd_vars%forc_hgt_t_grc(g) = atm2lnd_vars%forc_hgt_grc(g)    !observational height of temperature [m]
        atm2lnd_vars%forc_hgt_q_grc(g) = atm2lnd_vars%forc_hgt_grc(g)    !observational height of humidity [m]
@@ -1508,7 +1515,7 @@ contains
        atm2lnd_vars%forc_wind_grc(g)  = sqrt(atm2lnd_vars%forc_u_grc(g)**2 + atm2lnd_vars%forc_v_grc(g)**2)
        atm2lnd_vars%forc_solar_grc(g) = atm2lnd_vars%forc_solad_grc(g,1) + atm2lnd_vars%forc_solai_grc(g,1) + &
                                         atm2lnd_vars%forc_solad_grc(g,2) + atm2lnd_vars%forc_solai_grc(g,2)
-       
+
        atm2lnd_vars%forc_rain_not_downscaled_grc(g)  = forc_rainc + forc_rainl
        atm2lnd_vars%forc_snow_not_downscaled_grc(g)  = forc_snowc + forc_snowl
        if (forc_t > SHR_CONST_TKFRZ) then
@@ -1530,7 +1537,7 @@ contains
           co2_ppmv_val = co2_ppmv_prog
        else if (co2_type_idx == 2) then
 
-          co2_ppmv_val = co2_ppmv_diag 
+          co2_ppmv_val = co2_ppmv_diag
            if (use_c13) then
              atm2lnd_vars%forc_pc13o2_grc(g) = co2_ppmv_val * c13ratio * 1.e-6_r8 * forc_pbot
            end if
@@ -1540,9 +1547,9 @@ contains
             atm2lnd_vars%forc_pc13o2_grc(g) = co2_ppmv_val * c13ratio * 1.e-6_r8 * forc_pbot
           end if
        end if
-       atm2lnd_vars%forc_pco2_grc(g)   = co2_ppmv_val * 1.e-6_r8 * forc_pbot 
+       atm2lnd_vars%forc_pco2_grc(g)   = co2_ppmv_val * 1.e-6_r8 * forc_pbot
 
-       ! glc coupling 
+       ! glc coupling
 
        if (create_glacier_mec_landunit) then
           do num = 0,glc_nec
@@ -1554,7 +1561,7 @@ contains
           glc2lnd_vars%icemask_coupled_fluxes_grc(g)  = x2l_lm(i,index_x2l_Sg_icemask_coupled_fluxes)
        end if
 
-    end do     
+    end do
   end subroutine lnd_import_moab
 
 ! endif for ifdef HAVE_MOAB
