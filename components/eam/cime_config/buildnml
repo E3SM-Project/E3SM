@@ -46,6 +46,7 @@ def buildnml(case, caseroot, compname):
     ncpl_base_period	= case.get_value("NCPL_BASE_PERIOD")
     nthrds_atm		= case.get_value("NTHRDS_ATM")
     ntasks_atm		= case.get_value("NTASKS_ATM")
+    ntasks          = case.get_value("NTASKS_PER_INST_ATM")
     ninst_atm		= case.get_value("NINST_ATM")
     pts_mode		= case.get_value("PTS_MODE")
     rundir		= case.get_value("RUNDIR")
@@ -181,7 +182,6 @@ def buildnml(case, caseroot, compname):
             logger.warning("WARNING: {} is being used".format(ncpl_base_period))
 
         start_ymd = run_startdate.replace("-", "")
-        ntasks = ntasks_atm / ninst_atm
 
         if atm_flux_method == 'implicit_stress':
             linearize_pbl_winds = True
