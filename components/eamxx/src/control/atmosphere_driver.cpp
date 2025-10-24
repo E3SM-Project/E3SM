@@ -605,8 +605,8 @@ void AtmosphereDriver::create_fields()
     m_field_mgr->add_field(f);
   }
 
-  // Now go through the input fields/groups to the atm proc group, as well as
-  // the internal fields/groups, and mark them as part of the RESTART group.
+  // Now go through the input fields/groups to the atm proc group,
+  // and mark them as part of the RESTART group.
   for (const auto& f : m_atm_process_group->get_fields_in()) {
     const auto& fid = f.get_header().get_identifier();
     m_field_mgr->add_to_group(fid, "RESTART");
@@ -620,6 +620,8 @@ void AtmosphereDriver::create_fields()
       }
     }
   }
+  // Internal fields have their group names set by the processes that create them.
+  // Hence, simply add them to all the groups they are marked as part of
   for (const auto& f : m_atm_process_group->get_internal_fields()) {
     const auto& ftrack = f.get_header().get_tracking();
     const auto& fid    = f.get_header().get_identifier();
@@ -950,12 +952,13 @@ void AtmosphereDriver::restart_model ()
     std::vector<Field> fields;
     for (const auto& fn : restart_fnames) {
       // If the field has a parent, and the parent is also in the RESTART group,
-      // then skip it (restarting the parent will restart the child too)
+      // then skip it, since restarting the parent will restart the child too
       auto f = m_field_mgr->get_field(fn,gn);
       auto p = f.get_header().get_parent();
-      if (p and ekat::contains(restart_fnames,p->get_identifier().name())) {
-        fields.push_back(m_field_mgr->get_field(fn,gn));
+      if (p and ekat::contains(p->get_tracking().get_groups_names(),"RESTART")) {
+        continue;
       }
+      fields.push_back(m_field_mgr->get_field(fn,gn));
     }
     read_fields_from_file (fields,m_grids_manager->get_grid(gn),filename);
     for (auto& f : fields) {
