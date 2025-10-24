@@ -103,34 +103,35 @@ void ZMDeepConvection::initialize_impl (const RunType)
   //----------------------------------------------------------------------------
   // allocate host mirror variables
 
-  zm_input.h_phis       = ZMF::view_1dh<Scalar>("zm_input_h_phis"       ,m_ncol);
-  zm_input.h_pblh       = ZMF::view_1dh<Scalar>("zm_input_h_pblh"       ,m_ncol);
-  zm_input.h_tpert      = ZMF::view_1dh<Scalar>("zm_input_h_tpert"      ,m_ncol);
-  zm_input.h_landfrac   = ZMF::view_1dh<Scalar>("zm_input_h_landfrac"   ,m_ncol);
-  zm_input.h_z_mid      = ZMF::view_2dh<Real>  ("zm_input_h_z_mid"      ,m_ncol, m_nlev);
-  zm_input.h_p_mid      = ZMF::view_2dh<Real>  ("zm_input_h_p_mid"      ,m_ncol, m_nlev);
-  zm_input.h_p_del      = ZMF::view_2dh<Real>  ("zm_input_h_p_del"      ,m_ncol, m_nlev);
-  zm_input.h_T_mid      = ZMF::view_2dh<Real>  ("zm_input_h_T_mid"      ,m_ncol, m_nlev);
-  zm_input.h_qv         = ZMF::view_2dh<Real>  ("zm_input_h_qv"         ,m_ncol, m_nlev);
-  zm_input.h_uwind      = ZMF::view_2dh<Real>  ("zm_input_h_uwind"      ,m_ncol, m_nlev);
-  zm_input.h_vwind      = ZMF::view_2dh<Real>  ("zm_input_h_vwind"      ,m_ncol, m_nlev);
-  zm_input.h_omega      = ZMF::view_2dh<Real>  ("zm_input_h_omega"      ,m_ncol, m_nlev);
-  zm_input.h_cldfrac    = ZMF::view_2dh<Real>  ("zm_input_h_cldfrac"    ,m_ncol, m_nlev);
-  zm_input.h_z_int      = ZMF::view_2dh<Real>  ("zm_input_h_z_int"      ,m_ncol, m_nlev+1);
-  zm_input.h_p_int      = ZMF::view_2dh<Real>  ("zm_input_h_p_int"      ,m_ncol, m_nlev+1);
-  zm_output.h_activity  = ZMF::view_1dh<Int>   ("zm_output_h_activity"  ,m_ncol);
-  zm_output.h_prec      = ZMF::view_1dh<Scalar>("zm_output_h_prec"      ,m_ncol);
-  zm_output.h_snow      = ZMF::view_1dh<Scalar>("zm_output_h_snow"      ,m_ncol);
-  zm_output.h_cape      = ZMF::view_1dh<Scalar>("zm_output_h_cape"      ,m_ncol);
-  zm_output.h_tend_t    = ZMF::view_2dh<Real>  ("zm_output_h_tend_t"    ,m_ncol, m_nlev);
-  zm_output.h_tend_qv   = ZMF::view_2dh<Real>  ("zm_output_h_tend_qv"   ,m_ncol, m_nlev);
-  zm_output.h_tend_u    = ZMF::view_2dh<Real>  ("zm_output_h_tend_u"    ,m_ncol, m_nlev);
-  zm_output.h_tend_v    = ZMF::view_2dh<Real>  ("zm_output_h_tend_v"    ,m_ncol, m_nlev);
-  zm_output.h_rain_prod = ZMF::view_2dh<Real>  ("zm_output_h_rain_prod" ,m_ncol, m_nlev);
-  zm_output.h_snow_prod = ZMF::view_2dh<Real>  ("zm_output_h_snow_prod" ,m_ncol, m_nlev);
-  zm_output.h_prec_flux = ZMF::view_2dh<Real>  ("zm_output_h_prec_flux" ,m_ncol, m_nlev+1);
-  zm_output.h_snow_flux = ZMF::view_2dh<Real>  ("zm_output_h_snow_flux" ,m_ncol, m_nlev+1);
-  zm_output.h_mass_flux = ZMF::view_2dh<Real>  ("zm_output_h_mass_flux" ,m_ncol, m_nlev+1);
+  zm_input.h_phis       = ZMF::view_1dh<Scalar>("zm_input.h_phis",       m_ncol);
+  zm_input.h_pblh       = ZMF::view_1dh<Scalar>("zm_input.h_pblh",       m_ncol);
+  zm_input.h_tpert      = ZMF::view_1dh<Scalar>("zm_input.h_tpert",      m_ncol);
+  zm_input.h_landfrac   = ZMF::view_1dh<Scalar>("zm_input.h_landfrac",   m_ncol);
+  zm_input.h_z_mid      = ZMF::view_2dh<Real>  ("zm_input.h_z_mid",      m_ncol, m_nlev);
+  zm_input.h_p_mid      = ZMF::view_2dh<Real>  ("zm_input.h_p_mid",      m_ncol, m_nlev);
+  zm_input.h_p_del      = ZMF::view_2dh<Real>  ("zm_input.h_p_del",      m_ncol, m_nlev);
+  zm_input.h_T_mid      = ZMF::view_2dh<Real>  ("zm_input.h_T_mid",      m_ncol, m_nlev);
+  zm_input.h_qv         = ZMF::view_2dh<Real>  ("zm_input.h_qv",         m_ncol, m_nlev);
+  zm_input.h_uwind      = ZMF::view_2dh<Real>  ("zm_input.h_uwind",      m_ncol, m_nlev);
+  zm_input.h_vwind      = ZMF::view_2dh<Real>  ("zm_input.h_vwind",      m_ncol, m_nlev);
+  zm_input.h_omega      = ZMF::view_2dh<Real>  ("zm_input.h_omega",      m_ncol, m_nlev);
+  zm_input.h_cldfrac    = ZMF::view_2dh<Real>  ("zm_input.h_cldfrac",    m_ncol, m_nlev);
+  zm_input.h_z_int      = ZMF::view_2dh<Real>  ("zm_input.h_z_int",      m_ncol, m_nlev+1);
+  zm_input.h_p_int      = ZMF::view_2dh<Real>  ("zm_input.h_p_int",      m_ncol, m_nlev+1);
+
+  zm_output.h_activity  = ZMF::view_1dh<Int>   ("zm_output.h_activity",  m_ncol);
+  zm_output.h_prec      = ZMF::view_1dh<Scalar>("zm_output.h_prec",      m_ncol);
+  zm_output.h_snow      = ZMF::view_1dh<Scalar>("zm_output.h_snow",      m_ncol);
+  zm_output.h_cape      = ZMF::view_1dh<Scalar>("zm_output.h_cape",      m_ncol);
+  zm_output.h_tend_t    = ZMF::view_2dh<Real>  ("zm_output.h_tend_t",    m_ncol, m_nlev);
+  zm_output.h_tend_qv   = ZMF::view_2dh<Real>  ("zm_output.h_tend_qv",   m_ncol, m_nlev);
+  zm_output.h_tend_u    = ZMF::view_2dh<Real>  ("zm_output.h_tend_u",    m_ncol, m_nlev);
+  zm_output.h_tend_v    = ZMF::view_2dh<Real>  ("zm_output.h_tend_v",    m_ncol, m_nlev);
+  zm_output.h_rain_prod = ZMF::view_2dh<Real>  ("zm_output.h_rain_prod", m_ncol, m_nlev);
+  zm_output.h_snow_prod = ZMF::view_2dh<Real>  ("zm_output.h_snow_prod", m_ncol, m_nlev);
+  zm_output.h_prec_flux = ZMF::view_2dh<Real>  ("zm_output.h_prec_flux", m_ncol, m_nlev+1);
+  zm_output.h_snow_flux = ZMF::view_2dh<Real>  ("zm_output.h_snow_flux", m_ncol, m_nlev+1);
+  zm_output.h_mass_flux = ZMF::view_2dh<Real>  ("zm_output.h_mass_flux", m_ncol, m_nlev+1);
 
   //----------------------------------------------------------------------------
   // initialize variables on the fortran side
@@ -329,6 +330,11 @@ size_t ZMDeepConvection::requested_buffer_size_in_bytes() const
   zm_buffer_size+= ZMF::zm_output_tend::num_2d_midlv * sizeof(Spack) * m_ncol * nlev_mid_packs;
   zm_buffer_size+= ZMF::zm_output_tend::num_2d_intfc * sizeof(Spack) * m_ncol * nlev_int_packs;
 
+  int num_f_mid  = (9+6);
+  int num_f_int  = (2+3);
+  zm_buffer_size+= num_f_mid * sizeof(Real) * m_ncol * m_nlev;
+  zm_buffer_size+= num_f_int * sizeof(Real) * m_ncol * (m_nlev+1);
+
   return zm_buffer_size;
 }
 
@@ -347,12 +353,14 @@ void ZMDeepConvection::init_buffers(const ATMBufferManager &buffer_manager)
   constexpr auto num_2d_midlv = ZMF::zm_input_state::num_2d_midlv + ZMF::zm_output_tend::num_2d_midlv;
   constexpr auto num_2d_intfc = ZMF::zm_input_state::num_2d_intfc + ZMF::zm_output_tend::num_2d_intfc;
 
+  int num_f_mid  = (9+6);
+  int num_f_int  = (2+3);
+
   //----------------------------------------------------------------------------
   Int* i_mem = reinterpret_cast<Int*>(buffer_manager.get_memory());
   //----------------------------------------------------------------------------
   // device 1D integer variables
-  ZMF::uview_1d<Int>* ptrs_1d_intgr[num_1d_intgr] = { &zm_output.activity
-                                                          };
+  ZMF::uview_1d<Int>* ptrs_1d_intgr[num_1d_intgr]             = { &zm_output.activity };
   for (int i=0; i<num_1d_intgr; ++i) {
     *ptrs_1d_intgr[i] = ZMF::uview_1d<Int>(i_mem, m_ncol);
     i_mem += ptrs_1d_intgr[i]->size();
@@ -361,7 +369,7 @@ void ZMDeepConvection::init_buffers(const ATMBufferManager &buffer_manager)
   Scalar* scl_mem = reinterpret_cast<Scalar*>(i_mem);
   //----------------------------------------------------------------------------
   // device 1D scalar scalars
-  ZMF::uview_1d<Scalar>* ptrs_1d_scalr[num_1d_scalr]  = { &zm_input.tpert,
+  ZMF::uview_1d<Scalar>* ptrs_1d_scalr[num_1d_scalr]          = { &zm_input.tpert,
                                                                   &zm_output.prec,
                                                                   &zm_output.snow,
                                                                   &zm_output.cape,
@@ -371,7 +379,52 @@ void ZMDeepConvection::init_buffers(const ATMBufferManager &buffer_manager)
     scl_mem += ptrs_1d_scalr[i]->size();
   }
   //----------------------------------------------------------------------------
-  Spack* spk_mem = reinterpret_cast<Spack*>(scl_mem);
+
+  // ***************************************************************************
+  // TEMPORARY
+  // ***************************************************************************
+  Real* r_mem = reinterpret_cast<Real*>(scl_mem);
+  //----------------------------------------------------------------------------
+  // device 2D views on mid-point levels
+  ZMF::uview_2dl<Real>* ptrs_f_midlv[num_f_mid]               = { &zm_input.f_z_mid,
+                                                                  &zm_input.f_p_mid,
+                                                                  &zm_input.f_p_del,
+                                                                  &zm_input.f_T_mid,
+                                                                  &zm_input.f_qv,
+                                                                  &zm_input.f_uwind,
+                                                                  &zm_input.f_vwind,
+                                                                  &zm_input.f_omega,
+                                                                  &zm_input.f_cldfrac,
+                                                                  &zm_output.f_tend_t,
+                                                                  &zm_output.f_tend_qv,
+                                                                  &zm_output.f_tend_u,
+                                                                  &zm_output.f_tend_v,
+                                                                  &zm_output.f_rain_prod,
+                                                                  &zm_output.f_snow_prod,
+                                                                };
+  for (int i=0; i<num_f_mid; ++i) {
+    *ptrs_f_midlv[i] = ZMF::uview_2dl<Real>(r_mem, m_ncol, m_nlev);
+    r_mem += ptrs_f_midlv[i]->size();
+  }
+  //----------------------------------------------------------------------------
+  // device 2D views on interface levels
+  ZMF::uview_2dl<Real>* ptrs_f_intfc[num_f_int]               = { &zm_input.f_z_int,
+                                                                  &zm_input.f_p_int,
+                                                                  &zm_output.f_prec_flux,
+                                                                  &zm_output.f_snow_flux,
+                                                                  &zm_output.f_mass_flux,
+                                                                };
+  for (int i=0; i<num_f_int; ++i) {
+    *ptrs_f_intfc[i] = ZMF::uview_2dl<Real>(r_mem, m_ncol, (m_nlev+1));
+    r_mem += ptrs_f_intfc[i]->size();
+  }
+  //----------------------------------------------------------------------------
+  Spack* spk_mem = reinterpret_cast<Spack*>(r_mem);
+  // ***************************************************************************
+  // TEMPORARY
+  // ***************************************************************************
+
+  // Spack* spk_mem = reinterpret_cast<Spack*>(scl_mem);
   //----------------------------------------------------------------------------
   // device 2D views on mid-point levels
   ZMF::uview_2d<Spack>* ptrs_2d_midlv[num_2d_midlv]   = { &zm_input.z_mid,
@@ -381,7 +434,7 @@ void ZMDeepConvection::init_buffers(const ATMBufferManager &buffer_manager)
                                                                   &zm_output.tend_u,
                                                                   &zm_output.tend_v,
                                                                   &zm_output.rain_prod,
-                                                                  &zm_output.snow_prod
+                                                                  &zm_output.snow_prod,
                                                                 };
   for (int i=0; i<num_2d_midlv; ++i) {
     *ptrs_2d_midlv[i] = ZMF::uview_2d<Spack>(spk_mem, m_ncol, nlev_mid_packs);
@@ -392,7 +445,7 @@ void ZMDeepConvection::init_buffers(const ATMBufferManager &buffer_manager)
   ZMF::uview_2d<Spack>* ptrs_2d_intfc[num_2d_intfc]   = { &zm_input.z_int,
                                                                   &zm_output.prec_flux,
                                                                   &zm_output.snow_flux,
-                                                                  &zm_output.mass_flux
+                                                                  &zm_output.mass_flux,
                                                                 };
   for (int i=0; i<num_2d_intfc; ++i) {
     *ptrs_2d_intfc[i] = ZMF::uview_2d<Spack>(spk_mem, m_ncol, nlev_int_packs);

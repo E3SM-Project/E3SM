@@ -44,6 +44,7 @@ struct Functions {
   template <typename S> using view_3d_strided   = typename KT::template sview<S***>;
   template <typename S> using uview_1d          = typename ekat::template Unmanaged<view_1d<S> >;
   template <typename S> using uview_2d          = typename ekat::template Unmanaged<view_2d<S> >;
+  template <typename S> using uview_2dl         = typename ekat::template Unmanaged<view_2dl<S> >;
   template <typename S> using view_2dh          = typename view_2dl<S>::HostMirror;
   template <typename S> using view_1dh          = typename view_1d<S>::HostMirror;
 
@@ -94,6 +95,25 @@ struct Functions {
     view_1d<const Scalar> landfrac; // land area fraction           [frac]
     view_2d<const Spack>  thl_sec;  // thetal variance from SHOC    [K^2]
 
+    // *************************************************************************
+    // TEMPORARY
+    // *************************************************************************
+    // LayoutLeft views for fortran bridging
+    uview_2dl<Real> f_z_mid;
+    uview_2dl<Real> f_p_mid;
+    uview_2dl<Real> f_p_del;
+    uview_2dl<Real> f_T_mid;
+    uview_2dl<Real> f_qv;
+    uview_2dl<Real> f_uwind;
+    uview_2dl<Real> f_vwind;
+    uview_2dl<Real> f_omega;
+    uview_2dl<Real> f_cldfrac;
+    uview_2dl<Real> f_z_int;
+    uview_2dl<Real> f_p_int;
+    // *************************************************************************
+    // TEMPORARY
+    // *************************************************************************
+
     // host mirror versions of ZM interface variables
     view_1dh<Scalar> h_phis;
     view_1dh<Scalar> h_pblh;
@@ -116,23 +136,74 @@ struct Functions {
     template <ekat::TransposeDirection::Enum D>
     void transpose(int ncol, int nlev_mid) {
       auto nlev_int = nlev_mid+1;
+
+      // ***********************************************************************
+      // TEMPORARY
+      // ***********************************************************************
+      auto nlev_mid_packs = ekat::npack<Spack>(nlev_mid);
+      auto nlev_int_packs = ekat::npack<Spack>(nlev_int);
       if (D == ekat::TransposeDirection::c2f) {
-        ekat::device_to_host({h_phis.data()},     ncol,           std::vector< view_1d<const Scalar>>{phis});
-        ekat::device_to_host({h_pblh.data()},     ncol,           std::vector< view_1d<const Scalar>>{pblh});
-        ekat::device_to_host({h_tpert.data()},    ncol,           std::vector<uview_1d<      Scalar>>{tpert});
-        ekat::device_to_host({h_landfrac.data()}, ncol,           std::vector< view_1d<const Scalar>>{landfrac});
-        ekat::device_to_host({h_z_mid.data()},    ncol, nlev_mid, std::vector<uview_2d<const Spack >>{z_mid});
-        ekat::device_to_host({h_p_mid.data()},    ncol, nlev_mid, std::vector< view_2d<const Spack >>{p_mid});
-        ekat::device_to_host({h_p_del.data()},    ncol, nlev_mid, std::vector< view_2d<const Spack >>{p_del});
-        ekat::device_to_host({h_T_mid.data()},    ncol, nlev_mid, std::vector< view_2d<      Spack >>{T_mid});
-        ekat::device_to_host({h_qv.data()},       ncol, nlev_mid, std::vector< view_2d<      Spack >>{qv});
-        ekat::device_to_host({h_uwind.data()},    ncol, nlev_mid, std::vector< view_2d<      Spack >>{uwind});
-        ekat::device_to_host({h_vwind.data()},    ncol, nlev_mid, std::vector< view_2d<      Spack >>{vwind});
-        ekat::device_to_host({h_omega.data()},    ncol, nlev_mid, std::vector< view_2d<const Spack >>{omega});
-        ekat::device_to_host({h_cldfrac.data()},  ncol, nlev_mid, std::vector< view_2d<const Spack >>{cldfrac});
-        ekat::device_to_host({h_z_int.data()},    ncol, nlev_int, std::vector<uview_2d<      Spack >>{z_int});
-        ekat::device_to_host({h_p_int.data()},    ncol, nlev_int, std::vector< view_2d<const Spack >>{p_int});
+        //----------------------------------------------------------------------
+        // mid-point level variables
+        Kokkos::parallel_for("zm_output_tx_mid",KT::RangePolicy(0, ncol*nlev_mid_packs), KOKKOS_LAMBDA (const int i) {
+          const int icol = i/nlev_mid_packs;
+          const int klev = i%nlev_mid_packs;
+          f_z_mid   (icol,klev) = z_mid   (icol,klev/Spack::n)[klev%Spack::n];
+          f_p_mid   (icol,klev) = p_mid   (icol,klev/Spack::n)[klev%Spack::n];
+          f_p_del   (icol,klev) = p_del   (icol,klev/Spack::n)[klev%Spack::n];
+          f_T_mid   (icol,klev) = T_mid   (icol,klev/Spack::n)[klev%Spack::n];
+          f_qv      (icol,klev) = qv      (icol,klev/Spack::n)[klev%Spack::n];
+          f_uwind   (icol,klev) = uwind   (icol,klev/Spack::n)[klev%Spack::n];
+          f_vwind   (icol,klev) = vwind   (icol,klev/Spack::n)[klev%Spack::n];
+          f_omega   (icol,klev) = omega   (icol,klev/Spack::n)[klev%Spack::n];
+          f_cldfrac (icol,klev) = cldfrac (icol,klev/Spack::n)[klev%Spack::n];
+        });
+        // interface level variables
+        Kokkos::parallel_for("zm_output_tx_mid",KT::RangePolicy(0, ncol*nlev_int_packs), KOKKOS_LAMBDA (const int i) {
+          const int icol = i/nlev_int_packs;
+          const int klev = i%nlev_int_packs;
+          f_z_int   (icol,klev) = z_int   (icol,klev/Spack::n)[klev%Spack::n];
+          f_p_int   (icol,klev) = p_int   (icol,klev/Spack::n)[klev%Spack::n];
+        });
+        //----------------------------------------------------------------------
+        // copy to host mirrors
+        Kokkos::deep_copy(h_phis,     phis );
+        Kokkos::deep_copy(h_pblh,     pblh );
+        Kokkos::deep_copy(h_tpert,    tpert );
+        Kokkos::deep_copy(h_landfrac, landfrac );
+        Kokkos::deep_copy(h_z_mid,    f_z_mid );
+        Kokkos::deep_copy(h_p_mid,    f_p_mid );
+        Kokkos::deep_copy(h_p_del,    f_p_del );
+        Kokkos::deep_copy(h_T_mid,    f_T_mid );
+        Kokkos::deep_copy(h_qv,       f_qv );
+        Kokkos::deep_copy(h_uwind,    f_uwind );
+        Kokkos::deep_copy(h_vwind,    f_vwind );
+        Kokkos::deep_copy(h_omega,    f_omega );
+        Kokkos::deep_copy(h_cldfrac,  f_cldfrac );
+        Kokkos::deep_copy(h_z_int,    f_z_int );
+        Kokkos::deep_copy(h_p_int,    f_p_int );
       }
+      // ***********************************************************************
+      // TEMPORARY
+      // ***********************************************************************
+
+      // if (D == ekat::TransposeDirection::c2f) {
+      //   ekat::device_to_host({h_phis.data()},     ncol,           std::vector< view_1d<const Scalar>>{phis});
+      //   ekat::device_to_host({h_pblh.data()},     ncol,           std::vector< view_1d<const Scalar>>{pblh});
+      //   ekat::device_to_host({h_tpert.data()},    ncol,           std::vector<uview_1d<      Scalar>>{tpert});
+      //   ekat::device_to_host({h_landfrac.data()}, ncol,           std::vector< view_1d<const Scalar>>{landfrac});
+      //   ekat::device_to_host({h_z_mid.data()},    ncol, nlev_mid, std::vector<uview_2d<const Spack >>{z_mid});
+      //   ekat::device_to_host({h_p_mid.data()},    ncol, nlev_mid, std::vector< view_2d<const Spack >>{p_mid});
+      //   ekat::device_to_host({h_p_del.data()},    ncol, nlev_mid, std::vector< view_2d<const Spack >>{p_del});
+      //   ekat::device_to_host({h_T_mid.data()},    ncol, nlev_mid, std::vector< view_2d<      Spack >>{T_mid});
+      //   ekat::device_to_host({h_qv.data()},       ncol, nlev_mid, std::vector< view_2d<      Spack >>{qv});
+      //   ekat::device_to_host({h_uwind.data()},    ncol, nlev_mid, std::vector< view_2d<      Spack >>{uwind});
+      //   ekat::device_to_host({h_vwind.data()},    ncol, nlev_mid, std::vector< view_2d<      Spack >>{vwind});
+      //   ekat::device_to_host({h_omega.data()},    ncol, nlev_mid, std::vector< view_2d<const Spack >>{omega});
+      //   ekat::device_to_host({h_cldfrac.data()},  ncol, nlev_mid, std::vector< view_2d<const Spack >>{cldfrac});
+      //   ekat::device_to_host({h_z_int.data()},    ncol, nlev_int, std::vector<uview_2d<      Spack >>{z_int});
+      //   ekat::device_to_host({h_p_int.data()},    ncol, nlev_int, std::vector< view_2d<const Spack >>{p_int});
+      // }
     }
     // -------------------------------------------------------------------------
     void calculate_tpert(int ncol,int nlev,bool is_first_step) {
@@ -202,6 +273,23 @@ struct Functions {
     uview_2d<Spack>  snow_flux;      // output convective precipitation flux    [?]
     uview_2d<Spack>  mass_flux;      // output convective mass flux             [?]
 
+    // *************************************************************************
+    // TEMPORARY
+    // *************************************************************************
+    // LayoutLeft views for fortran bridging
+    uview_2dl<Real>  f_tend_t;
+    uview_2dl<Real>  f_tend_qv;
+    uview_2dl<Real>  f_tend_u;
+    uview_2dl<Real>  f_tend_v;
+    uview_2dl<Real>  f_rain_prod;
+    uview_2dl<Real>  f_snow_prod;
+    uview_2dl<Real>  f_prec_flux;
+    uview_2dl<Real>  f_snow_flux;
+    uview_2dl<Real>  f_mass_flux;
+    // *************************************************************************
+    // TEMPORARY
+    // *************************************************************************
+
     // host versions of ZM interface variables
     view_1dh<Int>    h_activity;
     view_1dh<Scalar> h_prec;
@@ -222,22 +310,68 @@ struct Functions {
     template <ekat::TransposeDirection::Enum D>
     void transpose(int ncol, int nlev_mid) {
       auto nlev_int = nlev_mid+1;
+
+      // ***********************************************************************
+      // TEMPORARY
+      // ***********************************************************************
+      auto nlev_mid_packs = ekat::npack<Spack>(nlev_mid);
+      auto nlev_int_packs = ekat::npack<Spack>(nlev_int);
       if (D == ekat::TransposeDirection::f2c) {
-        ekat::host_to_device({h_prec.data()},     ncol,           std::vector<uview_1d<Scalar>>{prec});
-        ekat::host_to_device({h_activity.data()}, ncol,           std::vector<uview_1d<Int>>   {activity});
-        ekat::host_to_device({h_prec.data()},     ncol,           std::vector<uview_1d<Scalar>>{prec});
-        ekat::host_to_device({h_snow.data()},     ncol,           std::vector<uview_1d<Scalar>>{snow});
-        ekat::host_to_device({h_cape.data()},     ncol,           std::vector<uview_1d<Scalar>>{cape});
-        ekat::host_to_device({h_tend_t.data()},   ncol, nlev_mid, std::vector<uview_2d<Spack>> {tend_t},    true);
-        ekat::host_to_device({h_tend_qv.data()},  ncol, nlev_mid, std::vector<uview_2d<Spack>> {tend_qv},   true);
-        ekat::host_to_device({h_tend_u.data()},   ncol, nlev_mid, std::vector<uview_2d<Spack>> {tend_u},    true);
-        ekat::host_to_device({h_tend_v.data()},   ncol, nlev_mid, std::vector<uview_2d<Spack>> {tend_v},    true);
-        ekat::host_to_device({h_rain_prod.data()},ncol, nlev_mid, std::vector<uview_2d<Spack>> {rain_prod}, true);
-        ekat::host_to_device({h_snow_prod.data()},ncol, nlev_mid, std::vector<uview_2d<Spack>> {snow_prod}, true);
-        ekat::host_to_device({h_prec_flux.data()},ncol, nlev_int, std::vector<uview_2d<Spack>> {prec_flux}, true);
-        ekat::host_to_device({h_snow_flux.data()},ncol, nlev_int, std::vector<uview_2d<Spack>> {snow_flux}, true);
-        ekat::host_to_device({h_mass_flux.data()},ncol, nlev_int, std::vector<uview_2d<Spack>> {mass_flux}, true);
+        // copy back to device
+        Kokkos::deep_copy(f_tend_t,   h_tend_t);
+        Kokkos::deep_copy(f_tend_qv,  h_tend_qv);
+        Kokkos::deep_copy(f_tend_u,   h_tend_u);
+        Kokkos::deep_copy(f_tend_v,   h_tend_v);
+        Kokkos::deep_copy(f_rain_prod,h_rain_prod);
+        Kokkos::deep_copy(f_snow_prod,h_snow_prod);
+        Kokkos::deep_copy(f_prec_flux,h_prec_flux);
+        Kokkos::deep_copy(f_snow_flux,h_snow_flux);
+        Kokkos::deep_copy(f_mass_flux,h_mass_flux);
+        Kokkos::deep_copy(prec,       h_prec);
+        Kokkos::deep_copy(snow,       h_snow);
+        Kokkos::deep_copy(cape,       h_cape);
+        Kokkos::deep_copy(activity,   h_activity);
+        //----------------------------------------------------------------------
+        // mid-point level variables
+        Kokkos::parallel_for("zm_output_tx_mid",KT::RangePolicy(0, ncol*nlev_mid_packs), KOKKOS_LAMBDA (const int i) {
+          const int icol = i/nlev_mid_packs;
+          const int klev = i%nlev_mid_packs;
+          tend_t   (icol,klev/Spack::n)[klev%Spack::n] = f_tend_t   (icol,klev);
+          tend_qv  (icol,klev/Spack::n)[klev%Spack::n] = f_tend_qv  (icol,klev);
+          tend_u   (icol,klev/Spack::n)[klev%Spack::n] = f_tend_u   (icol,klev);
+          tend_v   (icol,klev/Spack::n)[klev%Spack::n] = f_tend_v   (icol,klev);
+          rain_prod(icol,klev/Spack::n)[klev%Spack::n] = f_rain_prod(icol,klev);
+          snow_prod(icol,klev/Spack::n)[klev%Spack::n] = f_snow_prod(icol,klev);
+        });
+        // interface level variables
+        Kokkos::parallel_for("zm_output_tx_mid",KT::RangePolicy(0, ncol*nlev_int_packs), KOKKOS_LAMBDA (const int i) {
+          const int icol = i/nlev_int_packs;
+          const int klev = i%nlev_int_packs;
+          prec_flux(icol,klev/Spack::n)[klev%Spack::n] = f_prec_flux(icol,klev);
+          snow_flux(icol,klev/Spack::n)[klev%Spack::n] = f_snow_flux(icol,klev);
+          mass_flux(icol,klev/Spack::n)[klev%Spack::n] = f_mass_flux(icol,klev);
+        });
       }
+      // ***********************************************************************
+      // TEMPORARY
+      // ***********************************************************************
+
+      // if (D == ekat::TransposeDirection::f2c) {
+      //   ekat::host_to_device({h_prec.data()},     ncol,           std::vector<uview_1d<Scalar>>{prec});
+      //   ekat::host_to_device({h_activity.data()}, ncol,           std::vector<uview_1d<Int>>   {activity});
+      //   ekat::host_to_device({h_prec.data()},     ncol,           std::vector<uview_1d<Scalar>>{prec});
+      //   ekat::host_to_device({h_snow.data()},     ncol,           std::vector<uview_1d<Scalar>>{snow});
+      //   ekat::host_to_device({h_cape.data()},     ncol,           std::vector<uview_1d<Scalar>>{cape});
+      //   ekat::host_to_device({h_tend_t.data()},   ncol, nlev_mid, std::vector<uview_2d<Spack>> {tend_t},    true);
+      //   ekat::host_to_device({h_tend_qv.data()},  ncol, nlev_mid, std::vector<uview_2d<Spack>> {tend_qv},   true);
+      //   ekat::host_to_device({h_tend_u.data()},   ncol, nlev_mid, std::vector<uview_2d<Spack>> {tend_u},    true);
+      //   ekat::host_to_device({h_tend_v.data()},   ncol, nlev_mid, std::vector<uview_2d<Spack>> {tend_v},    true);
+      //   ekat::host_to_device({h_rain_prod.data()},ncol, nlev_mid, std::vector<uview_2d<Spack>> {rain_prod}, true);
+      //   ekat::host_to_device({h_snow_prod.data()},ncol, nlev_mid, std::vector<uview_2d<Spack>> {snow_prod}, true);
+      //   ekat::host_to_device({h_prec_flux.data()},ncol, nlev_int, std::vector<uview_2d<Spack>> {prec_flux}, true);
+      //   ekat::host_to_device({h_snow_flux.data()},ncol, nlev_int, std::vector<uview_2d<Spack>> {snow_flux}, true);
+      //   ekat::host_to_device({h_mass_flux.data()},ncol, nlev_int, std::vector<uview_2d<Spack>> {mass_flux}, true);
+      // }
     };
 
     // -------------------------------------------------------------------------
