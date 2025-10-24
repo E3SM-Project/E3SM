@@ -25,18 +25,18 @@ SET(SWEQX_SRCS
   ${SRC_BASE}/repro_sum_mod.F90
   ${SRC_BASE}/restart_io_mod.F90
   ${SRC_SHARE}/zoltan_mod.F90
-  ${SRC_SHARE}/bndry_mod_base.F90
+  ${SRC_SHARE}/bndry_mod.F90
   ${SRC_SHARE}/cg_mod.F90
   ${SRC_SHARE}/control_mod.F90
   ${SRC_SHARE}/coordinate_systems_mod.F90
   ${SRC_SHARE}/geometry_mod.F90
   ${SRC_SHARE}/cube_mod.F90
   ${SRC_SHARE}/planar_mod.F90
-  ${SRC_SHARE}/derivative_mod_base.F90
+  ${SRC_SHARE}/derivative_mod.F90
   ${SRC_SHARE}/dimensions_mod.F90
   ${SRC_SHARE}/dof_mod.F90
   ${SRC_SHARE}/domain_mod.F90
-  ${SRC_SHARE}/edge_mod_base.F90
+  ${SRC_SHARE}/edge_mod.F90
   ${SRC_SHARE}/element_mod.F90
   ${SRC_SHARE}/global_norms_mod.F90
   ${SRC_SHARE}/gridgraph_mod.F90

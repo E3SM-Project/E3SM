@@ -2,7 +2,7 @@
 #include "config.h"
 #endif
 
-module edge_mod_base
+module edge_mod
 !
 ! Revisions
 !   2018/3 Mark Taylor: update FreeEdgeBuffer to fix memory leak
@@ -2575,5 +2575,5 @@ endif
   end subroutine ghostVunpack3d
 
 
-End module edge_mod_base
+End module edge_mod
 

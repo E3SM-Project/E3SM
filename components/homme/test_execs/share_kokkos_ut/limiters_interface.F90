@@ -1,7 +1,7 @@
 module limiters_interface_mod
   use dimensions_mod,       only : np, nlev
   use kinds,                only : real_kind
-  use derivative_mod_base,  only : limiter_optim_iter_full, limiter_clip_and_sum
+  use derivative_mod,       only : limiter_optim_iter_full, limiter_clip_and_sum
 
   implicit none
   private
