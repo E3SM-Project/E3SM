@@ -238,7 +238,7 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   // The output manager pulls from the atm process fields. Add
   // helper fields for the case that a user request output.
   add_internal_field (m_helper_fields.at("omega_dyn"));
-  add_internal_field (m_helper_fields.at("phis_dyn"));
+  add_internal_field (m_helper_fields.at("phis_dyn"),{"RESTART"});
 
   if (not fv_phys_active()) {
     // Dynamics backs out tendencies from the states, and passes those to Homme.
@@ -937,12 +937,15 @@ void HommeDynamics::init_homme_views () {
 }
 
 void HommeDynamics::restart_homme_state () {
-  // Safety checks: internal fields *should* have been restarted (and therefore have a valid timestamp)
+  // Safety checks: RESTART fields *should* have been restarted (and therefore have a valid timestamp)
   for (auto& f : get_internal_fields()) {
-    auto ts = f.get_header().get_tracking().get_time_stamp();
-    EKAT_REQUIRE_MSG(ts.is_valid(),
-        "Error! Found HommeDynamics internal field not restarted.\n"
-        "  - field name: " + f.get_header().get_identifier().name() + "\n");
+    const auto& track = f.get_header().get_tracking();
+    if (ekat::contains(track.get_groups_names(),"RESTART")) {
+      auto ts = f.get_header().get_tracking().get_time_stamp();
+      EKAT_REQUIRE_MSG(track.get_time_stamp().is_valid(),
+          "Error! Found HommeDynamics internal field not restarted.\n"
+          "  - field name: " + f.get_header().get_identifier().name() + "\n");
+    }
   }
 
   using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
