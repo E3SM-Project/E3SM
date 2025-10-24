@@ -153,7 +153,7 @@ contains
     !
     use elm_varctl  ,  only : iulog  ! for messages and domain file name
     !
-    character(1024), intent(in)   :: meshfile
+    character(len=*), intent(in)  :: meshfile
     !
     integer                 :: tagtype, numco
     integer                 :: num_components
