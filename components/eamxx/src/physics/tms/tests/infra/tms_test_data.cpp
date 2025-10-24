@@ -1,7 +1,5 @@
 #include "tms_test_data.hpp"
 
-#include "share/util/eamxx_deep_copy.hpp"
-
 #include <ekat_team_policy_utils.hpp>
 
 #include <random>
@@ -33,7 +31,7 @@ void compute_tms_f(int ncols, int nlevs,
   // Initialize Kokkos views, sync to device
   std::vector<view_1d> temp_d_1d(2);
   std::vector<view_2d> temp_d_2d(6);
-  ScreamDeepCopy::copy_to_device({sgh, landfrac}, ncols, temp_d_1d);
+  ekat::host_to_device({sgh, landfrac}, ncols, temp_d_1d);
   ekat::host_to_device({u_wind, v_wind, t_mid, p_mid, exner, z_mid},
                         ncols, nlevs, temp_d_2d, true);
 
@@ -85,7 +83,7 @@ void compute_tms_f(int ncols, int nlevs,
 
   // Sync back to host
   std::vector<view_1d> output_data = {ksrf_d, taux_d, tauy_d};
-  ScreamDeepCopy::copy_to_host({ksrf, taux, tauy}, ncols, output_data);
+  ekat::device_to_host({ksrf, taux, tauy}, ncols, output_data);
 }
 
 void compute_tms(ComputeTMSData& d)

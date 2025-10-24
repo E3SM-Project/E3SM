@@ -7,6 +7,7 @@ module elm_instMod
   use abortutils                 , only : endrun
   use decompMod                  , only : bounds_type, get_proc_bounds
   use elm_varctl                 , only : use_cn, use_voc, use_c13, use_c14, use_fates, use_betr
+  use elm_varctl , only : iulog
   !-----------------------------------------
   ! Definition of component types
   !-----------------------------------------
@@ -45,6 +46,8 @@ module elm_instMod
   use lnd2glcMod                 , only : lnd2glc_type
   use glc2lndMod                 , only : glc2lnd_type
   use glcDiagnosticsMod          , only : glc_diagnostics_type
+  use lnd2iacMod                 , only : lnd2iac_type
+  use iac2lndMod                 , only : iac2lnd_type
   use SoilWaterRetentionCurveMod , only : soil_water_retention_curve_type
   use VegetationPropertiesType   , only : veg_vp             ! Ecophysical Constants
   use SoilorderConType           , only : soilordercon         ! Constants
@@ -121,6 +124,8 @@ module elm_instMod
   type(glc2lnd_type)                                  :: glc2lnd_vars
   type(lnd2atm_type)                                  :: lnd2atm_vars
   type(lnd2glc_type)                                  :: lnd2glc_vars
+  type(lnd2iac_type)                                  :: lnd2iac_vars
+  type(iac2lnd_type)                                  :: iac2lnd_vars
   type(glc_diagnostics_type)                          :: glc_diagnostics_vars
   class(soil_water_retention_curve_type), allocatable :: soil_water_retention_curve
   type(phosphorusstate_type)                          :: phosphorusstate_vars
@@ -267,7 +272,7 @@ contains
     use elm_varcon                        , only : h2osno_max, bdsno, bdfirn
     use domainMod                         , only : ldomain
     use elm_varpar                        , only : nlevsno, numpft
-    use elm_varctl                        , only : single_column, fsurdat, scmlat, scmlon, use_extrasnowlayers
+    use elm_varctl                        , only : single_column, fsurdat, scmlat, scmlon, use_extrasnowlayers, iac_present
     use controlMod                        , only : nlfilename
     use SoilWaterRetentionCurveFactoryMod , only : create_soil_water_retention_curve
     use fileutils                         , only : getfil
@@ -393,6 +398,12 @@ contains
     ! is executed even when running without glc_mec.
     call glc2lnd_vars%Init( bounds_proc )
     call lnd2glc_vars%Init( bounds_proc )
+
+    ! Initialize lnd2iac and iac2lnd
+    if (iac_present) then
+      call lnd2iac_vars%Init( bounds_proc )
+      call iac2lnd_vars%Init( bounds_proc )
+    endif
 
     ! If single-column determine closest latitude and longitude
 

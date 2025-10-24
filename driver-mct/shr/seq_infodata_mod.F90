@@ -156,6 +156,7 @@ MODULE seq_infodata_mod
      logical                 :: histaux_l2x1yrg ! cpl writes aux hist files: l2x annual glc forcings
      logical                 :: histaux_l2x     ! cpl writes aux hist files: l2x every c2l comm
      logical                 :: histaux_r2x     ! cpl writes aux hist files: r2x every c2o comm
+     logical                 :: histaux_z2x     ! cpl writes aux hist files: z2x every c2z comm
      logical                 :: histaux_double_precision ! if true, use double-precision for cpl aux hist files
      logical                 :: histavg_atm     ! cpl writes atm fields in average history file
      logical                 :: histavg_lnd     ! cpl writes lnd fields in average history file
@@ -414,6 +415,7 @@ CONTAINS
     logical                :: histaux_l2x1yrg    ! cpl writes aux hist files: l2x annual glc forcings
     logical                :: histaux_l2x        ! cpl writes aux hist files: l2x every c2l comm
     logical                :: histaux_r2x        ! cpl writes aux hist files: r2x every c2o comm
+    logical                :: histaux_z2x        ! cpl writes aux hist files: z2x every c2z comm
     logical                :: histaux_double_precision ! if true, use double-precision for cpl aux hist files
     logical                :: histavg_atm        ! cpl writes atm fields in average history file
     logical                :: histavg_lnd        ! cpl writes lnd fields in average history file
@@ -473,7 +475,7 @@ CONTAINS
          histaux_a2x,histaux_a2x1hri,histaux_a2x1hr,       &
          histaux_a2x3hr,histaux_a2x3hrp,                   &
          histaux_a2x24hr,histaux_l2x   ,histaux_r2x,       &
-         histaux_double_precision,                         &
+         histaux_z2x, histaux_double_precision,            &
          histavg_atm, histavg_lnd, histavg_ocn, histavg_ice, &
          histavg_rof, histavg_glc, histavg_wav, histavg_xao, &
          histavg_iac, &
@@ -579,6 +581,7 @@ CONTAINS
        histaux_l2x1yrg       = .false.
        histaux_l2x           = .false.
        histaux_r2x           = .false.
+       histaux_z2x           = .false.
        histaux_double_precision = .false.
        histavg_atm           = .true.
        histavg_lnd           = .true.
@@ -718,6 +721,7 @@ CONTAINS
        infodata%histaux_l2x1yrg       = histaux_l2x1yrg
        infodata%histaux_l2x           = histaux_l2x
        infodata%histaux_r2x           = histaux_r2x
+       infodata%histaux_z2x           = histaux_z2x
        infodata%histaux_double_precision = histaux_double_precision
        infodata%histavg_atm           = histavg_atm
        infodata%histavg_lnd           = histavg_lnd
@@ -1039,7 +1043,7 @@ CONTAINS
        budget_ann, budget_ltann, budget_ltend , force_stop_at,            &
        histaux_a2x    , histaux_a2x1hri, histaux_a2x1hr,                  &
        histaux_a2x3hr, histaux_a2x3hrp , histaux_l2x1yrg,                 &
-       histaux_a2x24hr, histaux_l2x   , histaux_r2x     , histaux_double_precision, &
+       histaux_a2x24hr, histaux_l2x   , histaux_r2x     , histaux_z2x , histaux_double_precision, &
        orb_obliq, histavg_atm, histavg_lnd, histavg_ocn, histavg_ice,     &
        histavg_rof, histavg_glc, histavg_wav, histavg_xao, histavg_iac,   &
        orb_iyear, orb_iyear_align, orb_mode, orb_mvelp,        &
@@ -1148,6 +1152,7 @@ CONTAINS
     logical,                optional, intent(OUT) :: histaux_l2x1yrg
     logical,                optional, intent(OUT) :: histaux_l2x
     logical,                optional, intent(OUT) :: histaux_r2x
+    logical,                optional, intent(OUT) :: histaux_z2x
     logical,                optional, intent(OUT) :: histaux_double_precision
     logical,                optional, intent(OUT) :: histavg_atm
     logical,                optional, intent(OUT) :: histavg_lnd
@@ -1338,6 +1343,7 @@ CONTAINS
     if ( present(histaux_l2x1yrg)) histaux_l2x1yrg= infodata%histaux_l2x1yrg
     if ( present(histaux_l2x)    ) histaux_l2x    = infodata%histaux_l2x
     if ( present(histaux_r2x)    ) histaux_r2x    = infodata%histaux_r2x
+    if ( present(histaux_z2x)    ) histaux_z2x    = infodata%histaux_z2x
     if ( present(histaux_double_precision)) histaux_double_precision = infodata%histaux_double_precision
     if ( present(histavg_atm)    ) histavg_atm    = infodata%histavg_atm
     if ( present(histavg_lnd)    ) histavg_lnd    = infodata%histavg_lnd
@@ -1603,7 +1609,7 @@ CONTAINS
        budget_ann, budget_ltann, budget_ltend ,                           &
        histaux_a2x    , histaux_a2x1hri, histaux_a2x1hr,                  &
        histaux_a2x3hr, histaux_a2x3hrp , histaux_l2x1yrg,                 &
-       histaux_a2x24hr, histaux_l2x   , histaux_r2x     , histaux_double_precision,  &
+       histaux_a2x24hr, histaux_l2x   , histaux_r2x     , histaux_z2x    , histaux_double_precision,  &
        orb_obliq, histavg_atm, histavg_lnd, histavg_ocn, histavg_ice,     &
        histavg_rof, histavg_glc, histavg_wav, histavg_xao, histavg_iac,   &
        orb_iyear, orb_iyear_align, orb_mode, orb_mvelp,        &
@@ -1712,6 +1718,7 @@ CONTAINS
     logical,                optional, intent(IN)    :: histaux_double_precision
     logical,                optional, intent(IN)    :: histaux_l2x
     logical,                optional, intent(IN)    :: histaux_r2x
+    logical,                optional, intent(IN)    :: histaux_z2x
     logical,                optional, intent(IN)    :: histavg_atm
     logical,                optional, intent(IN)    :: histavg_lnd
     logical,                optional, intent(IN)    :: histavg_ocn
@@ -1900,6 +1907,7 @@ CONTAINS
     if ( present(histaux_l2x1yrg)) infodata%histaux_l2x1yrg= histaux_l2x1yrg
     if ( present(histaux_l2x)    ) infodata%histaux_l2x    = histaux_l2x
     if ( present(histaux_r2x)    ) infodata%histaux_r2x    = histaux_r2x
+    if ( present(histaux_z2x)    ) infodata%histaux_z2x    = histaux_z2x
     if ( present(histaux_double_precision)) infodata%histaux_double_precision = histaux_double_precision
     if ( present(histavg_atm)    ) infodata%histavg_atm    = histavg_atm
     if ( present(histavg_lnd)    ) infodata%histavg_lnd    = histavg_lnd
@@ -2214,6 +2222,7 @@ CONTAINS
     call shr_mpi_bcast(infodata%histaux_l2x1yrg       ,  mpicom)
     call shr_mpi_bcast(infodata%histaux_l2x           ,  mpicom)
     call shr_mpi_bcast(infodata%histaux_r2x           ,  mpicom)
+    call shr_mpi_bcast(infodata%histaux_z2x           ,  mpicom)
     call shr_mpi_bcast(infodata%histaux_double_precision,mpicom)
     call shr_mpi_bcast(infodata%histavg_atm           ,  mpicom)
     call shr_mpi_bcast(infodata%histavg_lnd           ,  mpicom)
@@ -2934,6 +2943,7 @@ CONTAINS
     write(logunit,F0L) subname,'histaux_l2x1yrg          = ', infodata%histaux_l2x1yrg
     write(logunit,F0L) subname,'histaux_l2x              = ', infodata%histaux_l2x
     write(logunit,F0L) subname,'histaux_r2x              = ', infodata%histaux_r2x
+    write(logunit,F0L) subname,'histaux_z2x              = ', infodata%histaux_z2x
     write(logunit,F0L) subname,'histaux_double_precision = ', infodata%histaux_double_precision
     write(logunit,F0L) subname,'histavg_atm              = ', infodata%histavg_atm
     write(logunit,F0L) subname,'histavg_lnd              = ', infodata%histavg_lnd

@@ -11,5 +11,5 @@ if (Kokkos_ENABLE_HIP)
 endif()
 
 add_library(p3_test_infra ${INFRA_SRCS})
-target_link_libraries(p3_test_infra PUBLIC p3 scream_test_support)
+target_link_libraries(p3_test_infra PUBLIC p3 eamxx_test_support)
 target_include_directories(p3_test_infra PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

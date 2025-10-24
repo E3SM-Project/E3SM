@@ -64,6 +64,7 @@ subroutine gw_front_init(taubgnd, frontgfc_in, kfront_in, errstring)
   kfront = kfront_in
 
   ! Allocate and calculate fav.
+  if (allocated(fav)) deallocate(fav)
   allocate(fav(-pgwv:pgwv), stat=ierr, errmsg=errstring)
   if (ierr /= 0) return
 

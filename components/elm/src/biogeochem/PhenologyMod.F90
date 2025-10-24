@@ -381,6 +381,7 @@ contains
     crit_onset_fdd=PhenolParamsInst%crit_onset_fdd
     crit_onset_swi=PhenolParamsInst%crit_onset_swi
     soilpsi_on=PhenolParamsInst%soilpsi_on
+    crit_onset_fdd=PhenolParamsInst%crit_onset_fdd
 
     ! offset parameters
     crit_offset_fdd=PhenolParamsInst%crit_offset_fdd

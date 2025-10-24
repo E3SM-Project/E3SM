@@ -8,7 +8,7 @@
 
 // Physics includes
 #include "physics/register_physics.hpp"
-#include "diagnostics/register_diagnostics.hpp"
+#include "share/diagnostics/register_diagnostics.hpp"
 
 // Surface coupling includes
 #include "control/register_surface_coupling.hpp"

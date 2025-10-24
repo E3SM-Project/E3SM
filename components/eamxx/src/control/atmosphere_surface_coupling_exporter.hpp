@@ -6,7 +6,7 @@
 #include "share/atm_process/atmosphere_process.hpp"
 #include "share/algorithm/eamxx_time_interpolation.hpp"
 #include "share/atm_process/ATMBufferManager.hpp"
-#include "share/atm_process/SCDataManager.hpp"
+#include "share/data_managers/SCDataManager.hpp"
 
 #include <ekat_parameter_list.hpp>
 

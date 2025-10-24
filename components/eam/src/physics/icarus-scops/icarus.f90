@@ -620,7 +620,7 @@
             ! Black body emission at temperature of the layer
 
               bb(j)=1 / ( exp(1307.27/at(j,ilev)) - 1. )
-              !bb(j)= 5.67e-8*at(j,ilev)**4
+              !bb(j)= 5.670374419e-8*at(j,ilev)**4
 
               ! increase TOA flux by flux emitted from layer
               ! times total transmittance in layers above
@@ -655,7 +655,7 @@
         do j=1,npoints 
           !add in surface emission
           bb(j)=1/( exp(1307.27/skt(j)) - 1. )
-          !bb(j)=5.67e-8*skt(j)**4
+          !bb(j)=5.670374419e-8*skt(j)**4
 
           fluxtop_clrsky(j) = fluxtop_clrsky(j) + emsfc_lw * bb(j) 
      &     * trans_layers_above_clrsky(j)
@@ -714,7 +714,7 @@
                 ! Black body emission at temperature of the layer
 
               bb(j)=1 / ( exp(1307.27/at(j,ilev)) - 1. )
-              !bb(j)= 5.67e-8*at(j,ilev)**4
+              !bb(j)= 5.670374419e-8*at(j,ilev)**4
               enddo
 
             do ibox=1,ncol
@@ -784,7 +784,7 @@
           do j=1,npoints 
             !add in surface emission
             bb(j)=1/( exp(1307.27/skt(j)) - 1. )
-            !bb(j)=5.67e-8*skt(j)**4
+            !bb(j)=5.670374419e-8*skt(j)**4
           end do
 
         do ibox=1,ncol

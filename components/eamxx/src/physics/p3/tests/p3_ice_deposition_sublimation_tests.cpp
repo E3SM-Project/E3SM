@@ -4,7 +4,7 @@
 #include "p3_test_data.hpp"
 #include "p3_unit_tests_common.hpp"
 
-#include "physics/share/physics_constants.hpp"
+#include "share/physics/physics_constants.hpp"
 #include "share/core/eamxx_types.hpp"
 
 namespace scream {

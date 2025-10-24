@@ -1,7 +1,7 @@
 #ifndef SCREAM_ZM_TEST_DATA_FUNCTIONS_F90_HPP
 #define SCREAM_ZM_TEST_DATA_FUNCTIONS_F90_HPP
 
-#include "physics/share/physics_test_data.hpp"
+#include "share/physics/physics_test_data.hpp"
 #include "share/core/eamxx_types.hpp"
 
 #include <array>

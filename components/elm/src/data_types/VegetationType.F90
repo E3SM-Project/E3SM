@@ -39,9 +39,10 @@ module VegetationType
   !       the above ilist of default PFTs will be replaced, and arrays of sizes as below will be changed as well.
 
   use shr_kind_mod   , only : r8 => shr_kind_r8
+  use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
   use elm_varcon     , only : ispval, spval
-
-  use elm_varctl     , only : use_fates
+  use elm_varctl     , only : use_fates, iac_present
+  use elm_varctl     , only : use_fates, iulog
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -54,7 +55,9 @@ module VegetationType
   type, public :: vegetation_physical_properties
      ! indices and weights for higher subgrid levels (column, landunit, topounit, gridcell)
      integer , pointer :: gridcell      (:) => null() ! index into gridcell level quantities
-     real(r8), pointer :: wtgcell       (:) => null() ! weight (relative to gridcell)
+     real(r8), pointer :: wtgcell       (:) => null() ! weight (relative to gridcell) 
+     ! weight (relative to gridcell-land) for passing data from the iac
+     real(r8), pointer :: wtgcell_iac   (:) => null()
      integer , pointer :: topounit      (:) => null() ! index into topounit level quantities
      real(r8), pointer :: wttopounit    (:) => null() ! weight (relative to topounit)
      integer , pointer :: landunit      (:) => null() ! index into landunit level quantities
@@ -127,6 +130,9 @@ contains
        allocate(this%sp_pftorder_index      (begp:endp)); this%sp_pftorder_index      (:) = spval
     end if
 
+    if (iac_present) then
+       allocate(this%wtgcell_iac   (begp:endp)); this%wtgcell (:) = nan
+    end if
 	end subroutine veg_pp_init
 
   !------------------------------------------------------------------------
@@ -155,6 +161,10 @@ contains
        deallocate(this%wt_ed)
        deallocate(this%sp_pftorder_index)
     end if
+    if (iac_present) then
+       deallocate(this%wtgcell_iac)
+    end if
+
 
   end subroutine veg_pp_clean
 

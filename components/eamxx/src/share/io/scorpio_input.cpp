@@ -1,7 +1,7 @@
 #include "share/io/scorpio_input.hpp"
 
 #include "share/field/field_utils.hpp"
-#include "share/io/eamxx_scorpio_interface.hpp"
+#include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 
 #include <ekat_string_utils.hpp>
 

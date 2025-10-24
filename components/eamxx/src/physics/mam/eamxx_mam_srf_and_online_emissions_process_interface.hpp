@@ -1,7 +1,7 @@
 #ifndef EAMXX_MAM_SRF_ONLINE_EMISS_HPP
 #define EAMXX_MAM_SRF_ONLINE_EMISS_HPP
 
-#include "share/grid/remap/abstract_remapper.hpp"
+#include "share/remap/abstract_remapper.hpp"
 #include "share/io/scorpio_input.hpp"
 
 // For MAM4 aerosol configuration

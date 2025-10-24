@@ -5,7 +5,7 @@ set (FIXTURES_BASE_NAME ${TEST_BASE_NAME}_generate_output_nc_files)
 
 # Create the test
 CreateADUnitTest(${TEST_BASE_NAME}
-  LIBS shoc nudging cld_fraction spa p3 scream_rrtmgp diagnostics
+  LIBS shoc nudging cld_fraction spa p3 scream_rrtmgp
   LABELS  shoc cld spa p3 rrtmgp physics nudging
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
   FIXTURES_SETUP_INDIVIDUAL ${FIXTURES_BASE_NAME}

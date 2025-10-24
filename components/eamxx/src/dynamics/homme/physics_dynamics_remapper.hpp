@@ -1,7 +1,7 @@
 #ifndef SCREAM_PHYSICS_DYNAMICS_REMAPPER_HPP
 #define SCREAM_PHYSICS_DYNAMICS_REMAPPER_HPP
 
-#include "share/grid/remap/abstract_remapper.hpp"
+#include "share/remap/abstract_remapper.hpp"
 
 #include "share/core/eamxx_config.hpp"
 

@@ -1,8 +1,8 @@
 #ifndef SCREAM_COMMON_PHYSICS_IMPL_HPP
 #define SCREAM_COMMON_PHYSICS_IMPL_HPP
 
-#include "physics/share/physics_constants.hpp"
-#include "share/algorithm/eamxx_column_ops.hpp"
+#include "share/physics/physics_constants.hpp"
+#include "share/util/eamxx_column_ops.hpp"
 
 namespace scream {
 

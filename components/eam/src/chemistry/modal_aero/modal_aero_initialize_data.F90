@@ -425,6 +425,8 @@ contains
        integer  :: numaerosols     ! number of bulk aerosols in climate list
        character(len=20) :: bulkname
        real(r8) :: pi,n_so4_monolayers_pcage_in
+       real(r8) :: dp_cut_accum_rename_in
+       real(r8) :: dp_xferall_thresh_accum_rename_in
        complex(r8), pointer  :: refindex_aer_sw(:), &
             refindex_aer_lw(:)
        real(r8), pointer :: qqcw(:,:)
@@ -441,7 +443,9 @@ contains
        call phys_getopts(convproc_do_gas_out = convproc_do_gas, &
             convproc_do_aer_out = convproc_do_aer, &
             mam_amicphys_optaa_out = mam_amicphys_optaa, &
-            n_so4_monolayers_pcage_out = n_so4_monolayers_pcage_in) 
+            n_so4_monolayers_pcage_out = n_so4_monolayers_pcage_in, &
+            dp_cut_accum_rename_out = dp_cut_accum_rename_in, &
+            dp_xferall_thresh_accum_rename_out = dp_xferall_thresh_accum_rename_in)
        
 
        ! Mode specific properties.
@@ -628,7 +632,9 @@ loop:    do i = icldphy+1, pcnst
        if ( mam_amicphys_optaa > 0 ) then
           call modal_aero_calcsize_init( pbuf2d, species_class )
           call modal_aero_newnuc_init( mam_amicphys_optaa )
-          call modal_aero_amicphys_init( imozart, species_class,n_so4_monolayers_pcage_in )
+          call modal_aero_amicphys_init( imozart, species_class,n_so4_monolayers_pcage_in, &
+                                         dp_cut_accum_rename_in, &
+                                         dp_xferall_thresh_accum_rename_in)
        else
           call modal_aero_rename_init
           !   calcsize call must follow rename call

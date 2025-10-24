@@ -59,7 +59,7 @@ target_include_directories(zm PUBLIC
   ${CMAKE_CURRENT_BINARY_DIR}/modules
   ${PATH_TO_LEGACY_ZM}
 )
-target_link_libraries(zm physics_share scream_share csm_share)
+target_link_libraries(zm eamxx_physics_share scream_share csm_share)
 
 if (NOT SCREAM_LIB_ONLY)
   add_subdirectory(tests)

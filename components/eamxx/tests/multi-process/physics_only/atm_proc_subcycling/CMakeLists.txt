@@ -2,7 +2,7 @@ INCLUDE (ScreamUtils)
 
 # Create the exec
 CreateADUnitTestExec (shoc_p3
-  LIBS shoc p3 diagnostics)
+  LIBS shoc p3)
 
 # Ensure test input files are present in the data dir
 GetInputFile(scream/init/${EAMxx_tests_IC_FILE_72lev})

@@ -12,7 +12,7 @@
 #endif
 
 #include "share/grid/point_grid.hpp"
-#include "share/grid/remap/inverse_remapper.hpp"
+#include "share/remap/inverse_remapper.hpp"
 #include "share/grid/se_grid.hpp"
 #include "share/io/scorpio_input.hpp"
 

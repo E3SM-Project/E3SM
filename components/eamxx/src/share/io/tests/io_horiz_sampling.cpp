@@ -1,13 +1,13 @@
 #include <catch2/catch.hpp>
 #include <memory>
 
-#include "diagnostics/register_diagnostics.hpp"
+#include "share/diagnostics/register_diagnostics.hpp"
 
 #include "share/io/eamxx_output_manager.hpp"
 #include "share/io/scorpio_input.hpp"
-#include "share/io/eamxx_scorpio_interface.hpp"
+#include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 #include "share/field/field_utils.hpp"
-#include "eamxx_setup_random_test.hpp"
+#include "share/core/eamxx_setup_random_test.hpp"
 
 #include "share/grid/point_grid.hpp"
 

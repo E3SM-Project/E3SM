@@ -3256,8 +3256,12 @@ contains
             this%totlitc(c)  + &
             this%totsomc(c)  + &
             this%totprodc(c) + &
-            this%ctrunc(c)   + &
-            this%cropseedc_deficit(c)
+            this%ctrunc(c)
+
+      ! if we are using the crop model, then we need to add the cropseedc deficit
+       if (use_crop) then 
+          this%totcolc(c) = this%totcolc(c) + this%cropseedc_deficit(c)
+       endif
 
        this%totabgc(c) =       &
             this%totprodc(c) + &
@@ -4516,8 +4520,12 @@ contains
             this%totprodn(c) + &
             this%ntrunc(c)+ &
             this%plant_n_buffer(c) + &
-            this%cropseedn_deficit(c) + &
             this%fan_totn(c)
+
+       ! if we are using the crop model, then we need to add the cropseedc deficit
+       if (use_crop) then 
+          this%totcoln(c) = this%totcoln(c) + this%cropseedn_deficit(c)
+       endif
 
        this%totabgn (c) =  &
             this%totpftn(c) + &
@@ -5562,8 +5570,12 @@ contains
            this%solutionp(c) + &
            this%labilep(c) + &
            this%secondp(c) + &
-           this%ptrunc(c) + &
-           this%cropseedp_deficit(c)
+           this%ptrunc(c)
+
+       ! if we are using the crop model, then we need to add the cropseedc deficit
+       if (use_crop) then 
+          this%totcolp(c) = this%totcolp(c) + this%cropseedp_deficit(c)
+       endif 
    end do
 
   end subroutine col_ps_summary
@@ -6317,6 +6329,11 @@ contains
                avgflag='A', long_name='net ecosystem exchange of carbon, includes fire, landuse,'&
                //' harvest, and hrv_xsmrpool flux, positive for source', &
                 ptr_col=this%nee)
+
+          this%product_closs(begc:endc) = spval
+          call hist_addfld1d (fname='PRODUCT_CLOSS', units='gC/m^2/s', &
+               avgflag='A', long_name='total carbon loss from wood product pools', &
+               ptr_col=this%product_closs, default='inactive')
 
        end if
        ! end of use_fates (C12) block

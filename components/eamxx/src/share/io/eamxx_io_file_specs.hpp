@@ -1,7 +1,7 @@
 #ifndef SCREAM_IO_FILE_SPECS_HPP
 #define SCREAM_IO_FILE_SPECS_HPP
 
-#include "share/io/eamxx_scorpio_types.hpp"
+#include "share/scorpio_interface/eamxx_scorpio_types.hpp"
 #include "share/io/eamxx_io_utils.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
 

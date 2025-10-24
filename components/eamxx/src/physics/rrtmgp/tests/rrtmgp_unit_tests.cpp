@@ -1,7 +1,7 @@
 #include "catch2/catch.hpp"
 #include "physics/rrtmgp/rrtmgp_utils.hpp"
 #include "physics/rrtmgp/eamxx_rrtmgp_interface.hpp"
-#include "physics/share/physics_constants.hpp"
+#include "share/physics/physics_constants.hpp"
 #include "physics/rrtmgp/shr_orb_mod_c2f.hpp"
 #include "mo_load_coefficients.h"
 

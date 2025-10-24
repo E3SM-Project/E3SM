@@ -26,6 +26,8 @@ module dynSubgridAdjustmentsMod
   use VegetationDataType     , only : vegetation_carbon_state, vegetation_nitrogen_state
   use VegetationDataType     , only : vegetation_phosphorus_state
   use SpeciesMod             , only : CN_SPECIES_N, CN_SPECIES_P
+  use abortutils             , only : endrun
+  use shr_log_mod            , only : errMsg => shr_log_errMsg
 
   !
   ! !PUBLIC MEMBER FUNCTIONS:
@@ -404,7 +406,7 @@ contains
     type(column_carbon_state)       , intent(inout) :: col_cs
     !
     ! !LOCAL VARIABLES:
-    integer         :: l, j
+    integer         :: l, j, c
     integer         :: begc, endc
     real(r8)        :: adjustment_one_level(bounds%begc:bounds%endc)
     !-----------------------------------------------------------------------
@@ -825,7 +827,7 @@ contains
     type(column_nitrogen_state)     , intent(inout) :: col_ns
     !
     ! !LOCAL VARIABLES:
-    integer                     :: l, j
+    integer                     :: l, j, c
     integer                     :: begc, endc
     real(r8)                    :: adjustment_one_level(bounds%begc:bounds%endc)
     !-----------------------------------------------------------------------
@@ -874,9 +876,16 @@ contains
                var         = decomp_npools_vr(begc:endc, j, l),     &
                adjustment  = adjustment_one_level(begc:endc))
 
+          ! Exit if the first element of col_ns%dyn_nbal_adjustments is NaN
+          if (isnan(col_ns%dyn_nbal_adjustments(begc))) then
+               call endrun(msg='dyn_col_ns_Adjustments: col_ns%dyn_nbal_adjustments is NaN: '//&
+               errMsg(__FILE__, __LINE__))
+          endif
+
           col_ns%dyn_nbal_adjustments(begc:endc) = &
                col_ns%dyn_nbal_adjustments(begc:endc) + &
                adjustment_one_level(begc:endc) * dzsoi_decomp(j)
+     
 
        end do
     end do
@@ -888,6 +897,11 @@ contains
             var         = ntrunc_vr(begc:endc,j),     &
             adjustment  = adjustment_one_level(begc:endc))
 
+       ! Exit if the first element of col_ns%dyn_nbal_adjustments is NaN
+       if (isnan(col_ns%dyn_nbal_adjustments(begc))) then
+          call endrun(msg='dyn_col_ns_Adjustments: col_ns%dyn_nbal_adjustments is NaN: '//&
+               errMsg(__FILE__, __LINE__))
+       endif
        col_ns%dyn_nbal_adjustments(begc:endc) = &
             col_ns%dyn_nbal_adjustments(begc:endc) + &
             adjustment_one_level(begc:endc) * dzsoi_decomp(j)
@@ -921,9 +935,11 @@ contains
          var         = prod1n(begc:endc),     &
          adjustment  = adjustment_one_level(begc:endc))
 
+    
     col_ns%dyn_nbal_adjustments(begc:endc) = &
-         col_ns%dyn_nbal_adjustments(begc:endc) + &
-         adjustment_one_level(begc:endc)
+          col_ns%dyn_nbal_adjustments(begc:endc) + &
+          adjustment_one_level(begc:endc)
+    
 
     call update_column_state_no_special_handling(column_state_updater, &
          bounds      = bounds,                                         &
@@ -932,8 +948,9 @@ contains
          adjustment  = adjustment_one_level(begc:endc))
 
     col_ns%dyn_nbal_adjustments(begc:endc) = &
-         col_ns%dyn_nbal_adjustments(begc:endc) + &
-         adjustment_one_level(begc:endc)
+          col_ns%dyn_nbal_adjustments(begc:endc) + &
+          adjustment_one_level(begc:endc)
+    
 
     call update_column_state_no_special_handling(column_state_updater, &
          bounds      = bounds,                                         &
@@ -941,9 +958,10 @@ contains
          var         = prod100n(begc:endc),     &
          adjustment  = adjustment_one_level(begc:endc))
 
+    
     col_ns%dyn_nbal_adjustments(begc:endc) = &
-         col_ns%dyn_nbal_adjustments(begc:endc) + &
-         adjustment_one_level(begc:endc)
+          col_ns%dyn_nbal_adjustments(begc:endc) + &
+          adjustment_one_level(begc:endc)
 
     call update_column_state_no_special_handling(column_state_updater, &
          bounds      = bounds,                                         &
@@ -1553,6 +1571,9 @@ contains
                var         = decomp_ppools_vr(begc:endc, j, l),     &
                adjustment  = adjustment_one_level(begc:endc) )
 
+          if (isnan(col_ps%dyn_pbal_adjustments(begc))) then
+               call endrun(msg='dyn_col_ps_Adjustments: col_ps%dyn_pbal_adjustments(begc) is NaN: '//errMsg(__FILE__, __LINE__))
+          endif
           col_ps%dyn_pbal_adjustments(begc:endc) =      &
                col_ps%dyn_pbal_adjustments(begc:endc) + &
                adjustment_one_level(begc:endc) * dzsoi_decomp(j)
@@ -1567,9 +1588,13 @@ contains
             var         = ptrunc_vr(begc:endc,j),                &
             adjustment  = adjustment_one_level(begc:endc))
 
+       if (isnan(col_ps%dyn_pbal_adjustments(begc))) then
+           call endrun(msg='dyn_col_ps_Adjustments: col_ps%dyn_pbal_adjustments(begc) is NaN: '//errMsg(__FILE__, __LINE__))
+       endif
        col_ps%dyn_pbal_adjustments(begc:endc) =      &
-            col_ps%dyn_pbal_adjustments(begc:endc) + &
-            adjustment_one_level(begc:endc) * dzsoi_decomp(j)
+           col_ps%dyn_pbal_adjustments(begc:endc) + &
+           adjustment_one_level(begc:endc) * dzsoi_decomp(j)
+
        call update_column_state_no_special_handling( column_state_updater, &
             bounds      = bounds,                                         &
             clump_index = clump_index,                                    &
@@ -1577,8 +1602,8 @@ contains
             adjustment  = adjustment_one_level(begc:endc))
 
        col_ps%dyn_pbal_adjustments(begc:endc) =      &
-            col_ps%dyn_pbal_adjustments(begc:endc) + &
-            adjustment_one_level(begc:endc) * dzsoi_decomp(j)
+           col_ps%dyn_pbal_adjustments(begc:endc) + &
+           adjustment_one_level(begc:endc) * dzsoi_decomp(j)
 
        call update_column_state_no_special_handling( column_state_updater, &
             bounds      = bounds,                                         &
@@ -1587,8 +1612,9 @@ contains
             adjustment  = adjustment_one_level(begc:endc))
 
        col_ps%dyn_pbal_adjustments(begc:endc) =      &
-            col_ps%dyn_pbal_adjustments(begc:endc) + &
-            adjustment_one_level(begc:endc) * dzsoi_decomp(j)
+           col_ps%dyn_pbal_adjustments(begc:endc) + &
+           adjustment_one_level(begc:endc) * dzsoi_decomp(j)
+
        !!
        call update_column_state_no_special_handling( column_state_updater, &
             bounds      = bounds,                                         &
@@ -1619,7 +1645,7 @@ contains
          var         = prod1p(begc:endc),     &
          adjustment  = adjustment_one_level(begc:endc))
 
-    col_ps%dyn_pbal_adjustments(begc:endc) = &
+   col_ps%dyn_pbal_adjustments(begc:endc) = &
          col_ps%dyn_pbal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 

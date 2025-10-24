@@ -7,7 +7,7 @@ module EcosystemDynMod
   use dynSubgridControlMod, only : get_do_harvest
   use shr_kind_mod        , only : r8 => shr_kind_r8
   use shr_sys_mod         , only : shr_sys_flush
-  use elm_varctl          , only : use_c13, use_c14, use_fates, use_dynroot, use_fan
+  use elm_varctl          , only : use_c13, use_c14, use_fates, use_dynroot, iac_present, use_fan
   use decompMod           , only : bounds_type
   use perf_mod            , only : t_startf, t_stopf
   use spmdMod             , only : masterproc
@@ -273,6 +273,11 @@ contains
     call col_ps_Summary(col_ps,bounds, num_soilc, filter_soilc)
 
     call t_stop_lnd(event)
+
+    if (use_fates) then
+       call alm_fates%wrap_FatesAtmosphericCarbonFluxes(bounds, num_soilc, filter_soilc)
+       call alm_fates%wrap_FatesCarbonStocks(bounds, num_soilc, filter_soilc)
+    endif
 
   end subroutine EcosystemDynLeaching
 
@@ -782,7 +787,7 @@ contains
        call PhosphorusStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             dt)
 
-       if (get_do_harvest()) then
+       if (get_do_harvest() .or. iac_present) then
           call CNHarvest(num_soilc, filter_soilc, num_soilp, filter_soilp, &
                cnstate_vars )
        end if

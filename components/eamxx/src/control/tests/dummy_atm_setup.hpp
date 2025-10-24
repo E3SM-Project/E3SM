@@ -2,7 +2,7 @@
 #define SCREAM_DUMMY_ATM_SETUP_HPP
 
 #include "share/atm_process/atmosphere_process.hpp"
-#include "share/grid/mesh_free_grids_manager.hpp"
+#include "share/data_managers/mesh_free_grids_manager.hpp"
 
 #include "dummy_atm_proc.hpp"
 

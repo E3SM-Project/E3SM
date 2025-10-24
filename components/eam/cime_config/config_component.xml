@@ -52,6 +52,7 @@
       <value compset=""                        >-mach $MACH</value>
       <value compset="_EAM"                    >-phys default</value>
       <value compset="_EAM%CMIP6.*"            >&eamv3_phys_defaults; &eamv3_chem_defaults;</value>
+      <value compset="CMIP.*_EAM"              >&eamv3_phys_defaults; &eamv3_chem_defaults;</value>
       <value compset="_ELM%[^_]*BC"            >-bc_dep_to_snow_updates</value>
       <value compset="_EAM.*_BGC%*"            >-co2_cycle</value>
 
@@ -110,18 +111,25 @@
       <value compset="RCP6_EAM"                         >2006-2100_cam5_rcp60</value>
       <value compset="RCP8_EAM"                         >2006-2100_cam5_rcp85</value>
       <value compset="1850(?:SOI)?_EAM.*CMIP6"          >1850_eam_CMIP6_chemUCI-Linoz-mam5-vbs</value>
+      <value compset="1850(?:SOI)?.*CMIP7_EAM"          >1850_eam_CMIP7_chemUCI-Linoz-mam5-vbs</value>
+      <value compset="1850(?:SOI)?.*CMIP7_EAM"  grid="a%ne120np4.pg2">1850_eam_CMIP7-HR_chemUCI-Linoz-mam5-vbs</value>
       <value compset="1850(?:SOI)?_EAM.*CMIP6-1pctCO2"  >1850_eam_CMIP6_chemUCI-Linoz-mam5-vbs-1pctCO2</value>
+      <value compset="1850(?:SOI)?.*CMIP7-1pctCO2_EAM"  >1850_eam_CMIP7_chemUCI-Linoz-mam5-vbs-1pctCO2</value>
+      <value compset="1850(?:SOI)?.*CMIP7-1pctCO2_EAM" grid="a%ne120np4.pg2" >1850_eam_CMIP7-HR_chemUCI-Linoz-mam5-vbs-1pctCO2</value>
       <value compset="1850(?:SOI)?_EAM.*CHEMUCI.*LINOZ"  >1850_eam_chemUCI-Linoz</value>
       <value compset="1850(?:SOI)?_EAM.*CHEMUCI.*LINOZ.*MAM5"  >1850_eam_chemUCI-Linoz-mam5</value>
       <value compset="1950(?:SOI)?_EAM.*CMIP6"          >1950_eam_CMIP6_chemUCI-Linoz-mam5-vbs</value>
+      <value compset="1950(?:SOI)?.*CMIP7_EAM"          >1950_eam_CMIP7_chemUCI-Linoz-mam5-vbs</value>
       <value compset="1850(?:SOI)?_EAM.*CMIP6.*_BGC%*"  >1850_eam_CMIP6_chemUCI-Linoz-mam5-vbs</value>
       <value compset="2010(?:SOI)?_EAM.*CMIP6"          >2010_eam_CMIP6_chemUCI-Linoz-mam5-vbs</value>
+      <value compset="2010(?:SOI)?.*CMIP7_EAM"          >2010_eam_CMIP7_chemUCI-Linoz-mam5-vbs</value>
       <value compset="2010(?:SOI)?_EAM.*CHEMUCI.*LINOZ"  >2010_eam_chemUCI-Linoz</value>
       <value compset="2010(?:SOI)?_EAM.*CHEMUCI.*LINOZ.*MAM5"  >2010_eam_chemUCI-Linoz-mam5</value>
       <value compset="1850(?:SOI)?_EAM.*AR5sf"          >1850_E3SMv1_superfast_ar5-emis</value>
       <value compset="1850S_EAM.*AR5sf"                 >1850S_E3SMv1_superfast_ar5-emis</value>
       <value compset="20TR(?:SOI)?_EAM.*CMIP6"          >20TR_eam_CMIP6_chemUCI-Linoz-mam5-vbs</value>
-      <value compset="20TR(?:SOI)?_EAM.*CMIP6"          >20TR_eam_CMIP6_chemUCI-Linoz-mam5-vbs</value>
+      <value compset="20TR(?:SOI)?.*CMIP7_EAM"          >20TR_eam_CMIP7_chemUCI-Linoz-mam5-vbs</value>
+      <value compset="20TR(?:SOI)?.*CMIP7_EAM" grid="a%ne120np4.pg2">20TR_eam_CMIP7-HR_chemUCI-Linoz-mam5-vbs</value>
       <value compset="20TR(?:SOI)?_EAM.*CMIP6-GHG"      >20TR_eam_CMIP6-GHG_chemUCI-Linoz-mam5-vbs</value>
       <value compset="20TR(?:SOI)?_EAM.*CMIP6-AER"      >20TR_eam_CMIP6-aer_chemUCI-Linoz-mam5-vbs</value>
       <value compset="20TR(?:SOI)?_EAM.*CMIP6-NAT"      >20TR_eam_CMIP6-nat_chemUCI-Linoz-mam5-vbs</value>
@@ -134,6 +142,8 @@
       <value compset="SSP585(?:SOI)?_EAM.*CMIP6"        >SSP585_eam_CMIP6_chemUCI-Linoz-mam5-vbs</value>
       <value compset="SSP370(?:SOI)?_EAM.*CMIP6"        >SSP370_eam_CMIP6_chemUCI-Linoz-mam5-vbs</value>
       <value compset="SSP245(?:SOI)?_EAM.*CMIP6"        >SSP245_eam_CMIP6_chemUCI-Linoz-mam5-vbs</value>
+      <value compset="SSP370(?:SOI)?_EAM.*CMIP6.*_GCAM" >SSP370_eam_EHC</value>
+      <value compset="SSP245(?:SOI)?_EAM.*CMIP6.*_GCAM" >SSP245_eam_EHC</value>
       <value compset="SSP585(?:SOI)?_EAM.*CMIP6.*_BGC%B">SSP585_cam5_CMIP6_bgc</value>
       <value compset="20TR(?:SOI)?_EAM.*AR5sf"          >20TR_E3SMv1_superfast_ar5-emis</value>
       <value compset="20TRS_EAM.*AR5sf"                 >20TRS_E3SMv1_superfast_ar5-emis</value>

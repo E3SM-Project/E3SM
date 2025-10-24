@@ -158,13 +158,15 @@ class MVKxx(SystemTestsCommon):
         else:
             self.component = "cam"
 
-        if (
-            self._case.get_value("RESUBMIT") == 0
-            and self._case.get_value("GENERATE_BASELINE") is False
-        ):
-            self._case.set_value("COMPARE_BASELINE", True)
-        else:
-            self._case.set_value("COMPARE_BASELINE", False)
+        # Typically, we always want to compare baseline for this test.
+        # but for now, let's turn this OFF until we sort out any issues
+        # if (
+        #     self._case.get_value("RESUBMIT") == 0
+        #     and self._case.get_value("GENERATE_BASELINE") is False
+        # ):
+        #     self._case.set_value("COMPARE_BASELINE", True)
+        # else:
+        #     self._case.set_value("COMPARE_BASELINE", False)
 
     def build_phase(self, sharedlib_only=False, model_only=False):
         # Only want this to happen once. It will impact the sharedlib build

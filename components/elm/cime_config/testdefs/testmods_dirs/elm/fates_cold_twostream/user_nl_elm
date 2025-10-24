@@ -1,1 +1,1 @@
-fates_paramfile = '$CASEROOT/fates_params_twostream.nc'
+fates_radiation_model = 'twostream'

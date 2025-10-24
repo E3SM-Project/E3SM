@@ -1,6 +1,6 @@
 #include "catch2/catch.hpp"
 
-#include "diagnostics/register_diagnostics.hpp"
+#include "share/diagnostics/register_diagnostics.hpp"
 
 #include "share/io/eamxx_io_utils.hpp"
 #include "share/grid/point_grid.hpp"
@@ -96,16 +96,6 @@ TEST_CASE("create_diag")
     auto d8 = create_diagnostic("RainNumberPath",grid);
     REQUIRE (std::dynamic_pointer_cast<NumberPathDiagnostic>(d8)!=nullptr);
     REQUIRE (d8->get_params().get<std::string>("number_kind")=="Rain");
-  }
-
-  SECTION ("aerocom_cld") {
-    auto d1 = create_diagnostic("AeroComCldTop",grid);
-    REQUIRE (std::dynamic_pointer_cast<AeroComCld>(d1)!=nullptr);
-    REQUIRE (d1->get_params().get<std::string>("aero_com_cld_kind")=="Top");
-
-    auto d2 = create_diagnostic("AeroComCldBot",grid);
-    REQUIRE (std::dynamic_pointer_cast<AeroComCld>(d2)!=nullptr);
-    REQUIRE (d2->get_params().get<std::string>("aero_com_cld_kind")=="Bot");
   }
 
   SECTION ("vapor_flux") {

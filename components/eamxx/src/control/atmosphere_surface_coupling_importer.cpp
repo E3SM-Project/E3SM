@@ -1,7 +1,7 @@
 #include "atmosphere_surface_coupling_importer.hpp"
 
 #include "share/property_checks/field_within_interval_check.hpp"
-#include "physics/share/physics_constants.hpp"
+#include "share/physics/physics_constants.hpp"
 
 #include <ekat_assert.hpp>
 #include <ekat_units.hpp>
@@ -62,6 +62,8 @@ void SurfaceCouplingImporter::set_grids(const std::shared_ptr<const GridsManager
   add_field<Computed>("sst",              scalar2d, K,       grid_name);
   //dust fluxes [kg/m^2/s]: Four flux values for eacch column
   add_field<Computed>("dstflx",           vector4d, kg/m2/s, grid_name);
+  // the correction term for air sea surface water thermo fixer
+  add_field<Computed>("h2otemp",          scalar2d, W/m2,    grid_name);
 
 }
 // =========================================================================================

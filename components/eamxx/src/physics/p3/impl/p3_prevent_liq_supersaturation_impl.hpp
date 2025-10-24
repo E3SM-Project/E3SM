@@ -2,8 +2,8 @@
 #define P3_PREVENT_LIQ_SUPERSATURATION_IMPL_HPP
 
 #include "p3_functions.hpp" // for ETI only but harmless for GPU
-#include "physics/share/physics_functions.hpp" // also for ETI not on GPUs
-#include "physics/share/physics_saturation_impl.hpp"
+#include "share/physics/physics_functions.hpp" // also for ETI not on GPUs
+#include "share/physics/physics_saturation_impl.hpp"
 
 namespace scream {
 namespace p3 {

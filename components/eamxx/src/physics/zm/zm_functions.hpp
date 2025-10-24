@@ -1,7 +1,7 @@
 #ifndef ZM_FUNCTIONS_HPP
 #define ZM_FUNCTIONS_HPP
 
-#include "physics/share/physics_constants.hpp"
+#include "share/physics/physics_constants.hpp"
 #include "share/core/eamxx_types.hpp"
 
 #include <ekat_pack_kokkos.hpp>

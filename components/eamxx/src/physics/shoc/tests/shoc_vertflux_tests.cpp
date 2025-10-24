@@ -1,7 +1,7 @@
 #include "catch2/catch.hpp"
 
 #include "shoc_unit_tests_common.hpp"
-#include "physics/share/physics_constants.hpp"
+#include "share/physics/physics_constants.hpp"
 #include "shoc_functions.hpp"
 #include "shoc_test_data.hpp"
 #include "share/core/eamxx_types.hpp"

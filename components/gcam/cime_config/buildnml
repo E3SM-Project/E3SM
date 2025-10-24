@@ -1,0 +1,142 @@
+#!/usr/bin/env python
+
+"""
+Namelist creator for E3SM's GCAM component
+"""
+
+import os, sys
+
+_CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..","cime")
+sys.path.append(os.path.join(_CIMEROOT, "scripts", "Tools"))
+
+from standard_script_setup import *
+from CIME.case import Case
+from CIME.utils import expect, run_cmd_no_fail, safe_copy
+from CIME.buildnml import create_namelist_infile, parse_input
+
+logger = logging.getLogger(__name__)
+
+###############################################################################
+def buildnml(case, caseroot, compname):
+###############################################################################
+    expect(compname == "gcam", compname)
+
+    os.chdir(caseroot)
+
+    casebuild            = case.get_value("CASEBUILD")
+    caseroot             = case.get_value("CASEROOT")
+    srcroot              = case.get_value("SRCROOT")
+    din_loc_root         = case.get_value("DIN_LOC_ROOT")
+    ninst_iac            = case.get_value("NINST_IAC")
+    get_refcase          = case.get_value("GET_REFCASE")
+    iac_grid             = case.get_value("IAC_GRID")
+    #glm_grid             = case.get_value("GLM_GRID") # 
+    gcam_bldnml_opts   = case.get_value("GCAM_BLDNML_OPTS")
+    gcam_namelist_opts = case.get_value("GCAM_NAMELIST_OPTS")
+    rundir               = case.get_value("RUNDIR")
+    run_type             = case.get_value("RUN_TYPE")
+    run_refcase          = case.get_value("RUN_REFCASE")
+    run_refdate          = case.get_value("RUN_REFDATE")
+    run_refdir           = case.get_value("RUN_REFDIR")
+    run_reftod           = case.get_value("RUN_REFTOD")
+    scriptsroot          = case.get_value("SCRIPTSROOT")
+
+    iacconf_dir = os.path.join(casebuild, "gcamconf")
+
+    if not os.path.isdir(iacconf_dir): os.mkdir(iacconf_dir)
+
+    # Null string defaults
+    if not gcam_bldnml_opts: gcam_bldnml_opts=""
+    if not gcam_namelist_opts: gcam_namelist_opts=""
+
+    #--------------------------------------------------------------------
+    # Verify iac grid is supported
+    #--------------------------------------------------------------------
+
+    # Have to update this when we build grids more
+    iac_grid_supported = ("0.9x1.25", "1.9x2.5", "null")
+    expect(iac_grid in iac_grid_supported, "IAC_GRID '{}' is not supported in GCAM. Choose from: {}".format(iac_grid,iac_grid_supported))
+
+    #--------------------------------------------------------------------
+    # Invoke gcam build-namelist - output will go in $CASEBUILD/gcamconf
+    #--------------------------------------------------------------------
+
+    inst_string = ""
+    for inst_counter in range(1, ninst_iac + 1):
+
+        # -----------------------------------------------------
+        # determine instance string
+        # This is moot because gcam runs with only ninst=1
+        # But we'll keep it anyway just in case that changes
+        # -----------------------------------------------------
+
+        inst_string = ""
+        if ninst_iac > 1:
+            inst_string = "_{0:04d}".format(inst_counter)
+
+            # If multi-instance case does not have restart file, use single-case restart
+            # for each instance
+            if not os.path.exists(os.path.join(rundir, "rpointer.iac{}".format(inst_string))) and \
+                   os.path.exists(os.path.join(rundir, "rpointer.iac")):
+                safe_copy(os.path.join(rundir, "rpointer.iac"),
+                          os.path.join(rundir, "rpointer.iac{}".format(inst_string)))
+
+        # -----------------------------------------------------
+        # create gcamconf/namelist
+        # -----------------------------------------------------
+
+        if os.path.exists(os.path.join(casebuild, "gcam.input_data_list")):
+            os.remove(os.path.join(casebuild, "gcam.input_data_list"))
+
+        gcamicfile = ""
+        gcam_startfile = ""
+
+#### iac/gcam restart isn't controlled by this type of file
+#### there are several pieces to restart and they are not working yet
+#### to get a proper starting date with hybrid we need to override this
+#### this is because the iac is notrestarted at 2015, it is run for the first time
+#### to do: check this later
+
+#        if run_type == "hybrid" or run_type == "branch":
+#            gcam_startfile = "{}.gcam{}.r.{}-{}.nc".format(run_refcase, inst_string, run_refdate, run_reftod)
+#            if not os.path.exists(os.path.join(rundir, gcam_startfile)):
+#                gcam_startfile = "{}.gcam.r.{}-{}.nc".format(run_refcase, run_refdate, run_reftod)
+
+#            gcamicfile = " {} = '{}'".format(startfiletype, gcam_startfile)
+
+        infile_text = ""
+        if gcamicfile: infile_text = "{} = '{}' \n".format(startfiletype, gcam_startfile)
+
+        create_namelist_infile(case,
+                               "{}/user_nl_gcam{}".format(caseroot, inst_string),
+                               "{}/namelist".format(iacconf_dir),
+                               infile_text=infile_text)
+
+        # -----------------------------------------------------
+        # call build-namelist
+        # -----------------------------------------------------
+
+        sysmod  = os.path.join(srcroot, "components/gcam/bld/build-namelist")
+        sysmod += " -infile {}/namelist".format(iacconf_dir)
+        sysmod += " -caseroot {}".format(caseroot)
+        sysmod += " -scriptsroot {}".format(scriptsroot)
+        sysmod += ' -namelist " &gcamexp {} /" '.format(gcam_namelist_opts)
+        sysmod += ' -inst_string "{}" {}'.format(inst_string, gcam_bldnml_opts)
+
+        run_cmd_no_fail(sysmod, from_dir=iacconf_dir)
+
+        # -----------------------------------------------------
+        # move gcam_in to $RUNDIR
+        # -----------------------------------------------------
+        if os.path.exists(rundir):
+            safe_copy(os.path.join(iacconf_dir, "gcam_in"), os.path.join(rundir, "gcam_in{}".format(inst_string)))
+
+###############################################################################
+def _main_func():
+###############################################################################
+    caseroot = parse_input(sys.argv)
+    with Case(caseroot) as case:
+        buildnml(case, caseroot, "gcam")
+
+if __name__ == "__main__":
+    _main_func()

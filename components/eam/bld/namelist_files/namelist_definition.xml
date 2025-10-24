@@ -4201,6 +4201,18 @@ number of so4(+nh4) monolayers needed to "age" a carbon particle
 Default: Set by namelist
 </entry>
 
+<entry id="dp_cut_accum_rename" type="real"  category="scavenging"
+       group="phys_ctl_nl" valid_values="" >
+cutoff diameter for larger accum mode particles renamed to the strat coarse mode
+Default: Set by namelist
+</entry>
+
+<entry id="dp_xferall_thresh_accum_rename" type="real"  category="scavenging"
+       group="phys_ctl_nl" valid_values="" >
+threshold diameter for all accum mode particles transferred to the strat coarse mode
+Default: Set by namelist
+</entry>
+
 
 <!-- Diagnostics -->
 

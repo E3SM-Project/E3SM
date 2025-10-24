@@ -86,7 +86,7 @@ foreach (P3_LIB IN LISTS P3_LIBS)
     ${CMAKE_CURRENT_SOURCE_DIR}/impl
     ${SCREAM_BASE_DIR}/../eam/src/physics/cam
   )
-  target_link_libraries(${P3_LIB} physics_share scream_share)
+  target_link_libraries(${P3_LIB} eamxx_physics_share scream_share)
 endforeach()
 
 # Ensure tables are present in the data dir

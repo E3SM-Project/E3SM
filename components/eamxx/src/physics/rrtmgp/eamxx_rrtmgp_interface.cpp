@@ -1,5 +1,5 @@
 #include "eamxx_rrtmgp_interface.hpp"
-#include "physics/share/physics_constants.hpp"
+#include "share/physics/physics_constants.hpp"
 
 namespace scream {
 

@@ -1,0 +1,37 @@
+add_library (eamxx_diagnostics
+  aerocom_cld.cpp
+  aodvis.cpp
+  atm_backtend.cpp
+  atm_density.cpp
+  binary_ops.cpp
+  dry_static_energy.cpp
+  exner.cpp
+  field_at_height.cpp
+  field_at_level.cpp
+  field_at_pressure_level.cpp
+  histogram.cpp
+  horiz_avg.cpp
+  longwave_cloud_forcing.cpp
+  number_path.cpp
+  potential_temperature.cpp
+  precip_surf_mass_flux.cpp
+  relative_humidity.cpp
+  sea_level_pressure.cpp
+  shortwave_cloud_forcing.cpp
+  surf_upward_latent_heat_flux.cpp
+  vapor_flux.cpp
+  vertical_layer.cpp
+  virtual_temperature.cpp
+  water_path.cpp
+  wind_speed.cpp
+  vert_contract.cpp
+  vert_derivative.cpp
+  zonal_avg.cpp
+  conditional_sampling.cpp
+)
+
+target_link_libraries(eamxx_diagnostics PUBLIC eamxx_atm_process)
+
+if (NOT SCREAM_LIB_ONLY AND NOT SCREAM_ONLY_GENERATE_BASELINES)
+  add_subdirectory(tests)
+endif()

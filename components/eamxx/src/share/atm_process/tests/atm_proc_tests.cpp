@@ -1,0 +1,349 @@
+#include <catch2/catch.hpp>
+
+#include "share/atm_process/atmosphere_process.hpp"
+#include "share/atm_process/atmosphere_process_group.hpp"
+#include "share/atm_process/atmosphere_process_dag.hpp"
+
+#include "share/property_checks/field_lower_bound_check.hpp"
+
+#include "share/grid/point_grid.hpp"
+#include "share/data_managers/library_grids_manager.hpp"
+#include "share/util/eamxx_time_stamp.hpp"
+
+#include <ekat_parameter_list.hpp>
+
+namespace scream {
+
+ekat::ParameterList create_test_params ()
+{
+  using strvec_t = std::vector<std::string>;
+
+  // Create a parameter list for inputs
+  ekat::ParameterList params ("Atmosphere Processes");
+
+  params.set<std::string>("schedule_type","sequential");
+  params.set<strvec_t>("atm_procs_list",{"MyFoo","BarBaz"});
+
+  auto& p0 = params.sublist("MyFoo");
+  p0.set<std::string>("type", "Foo");
+  p0.set<std::string>("grid_name", "point_grid");
+
+  auto& p1 = params.sublist("BarBaz");
+  p1.set<strvec_t>("atm_procs_list",{"MyBar","MyBaz"});
+  p1.set<std::string>("type", "group");
+  p1.set<std::string>("schedule_type","sequential");
+
+  auto& p1_0 = p1.sublist("MyBar");
+  p1_0.set<std::string>("type", "Bar");
+  p1_0.set<std::string>("grid_name", "point_grid");
+
+  auto& p1_1 = p1.sublist("MyBaz");
+  p1_1.set<std::string>("type", "Baz");
+  p1_1.set<std::string>("grid_name", "point_grid");
+
+  return params;
+}
+
+// =============================== Processes ========================== //
+// A dummy atm proc
+class DummyProcess : public scream::AtmosphereProcess {
+public:
+
+  DummyProcess (const ekat::Comm& comm,const ekat::ParameterList& params)
+    : AtmosphereProcess(comm, params)
+  {
+    m_name = params.name();
+    m_grid_name = params.get<std::string> ("grid_name");
+  }
+
+  // Return some sort of name, linked to PType
+  std::string name () const { return m_name; }
+
+protected:
+
+  // The initialization method should prepare all stuff needed to import/export from/to
+  // f90 structures.
+  void initialize_impl (const RunType /* run_type */ ) {}
+
+  // The run method is responsible for exporting atm states to the e3sm coupler, and
+  // import surface states from the e3sm coupler.
+  void run_impl (const double /* dt */) {}
+
+  // Clean up
+  void finalize_impl ( /* inputs */ ) {}
+
+  std::string m_name;
+  std::string m_grid_name;
+};
+
+class Foo : public DummyProcess
+{
+public:
+
+  Foo (const ekat::Comm& comm,const ekat::ParameterList& params)
+   : DummyProcess(comm,params)
+  {
+    // Nothing to do here
+  }
+
+  // The type of the atm proc
+  AtmosphereProcessType type () const { return AtmosphereProcessType::Dynamics; }
+
+  void set_grids (const std::shared_ptr<const GridsManager> gm) {
+    using namespace ekat::units;
+
+    const auto grid = gm->get_grid(m_grid_name);
+    const auto lt = grid->get_3d_scalar_layout(true);
+
+    add_field<Required>("Temperature tendency",lt,K/s,m_grid_name);
+    add_field<Computed>("Temperature",lt,K,m_grid_name);
+  }
+};
+
+class Bar : public DummyProcess
+{
+public:
+  Bar (const ekat::Comm& comm,const ekat::ParameterList& params)
+   : DummyProcess(comm,params)
+  {
+    // Nothing to do here
+  }
+
+  // The type of the atm proc
+  AtmosphereProcessType type () const { return AtmosphereProcessType::Physics; }
+
+  void set_grids (const std::shared_ptr<const GridsManager> gm) {
+    using namespace ekat::units;
+
+    const auto grid = gm->get_grid(m_grid_name);
+    const auto lt = grid->get_3d_scalar_layout (true);
+
+    add_field<Required>("Temperature",lt,K,m_grid_name);
+    add_field<Computed>("Concentration A",lt,kg/pow(m,3),m_grid_name);
+  }
+};
+
+class Baz : public DummyProcess
+{
+public:
+  Baz (const ekat::Comm& comm,const ekat::ParameterList& params)
+   : DummyProcess(comm,params)
+  {
+    // Nothing to do here
+  }
+
+  // The type of the atm proc
+  AtmosphereProcessType type () const { return AtmosphereProcessType::Physics; }
+
+  void set_grids (const std::shared_ptr<const GridsManager> gm) {
+    using namespace ekat::units;
+
+    const auto grid = gm->get_grid(m_grid_name);
+    const auto phys_lt = grid->get_3d_scalar_layout (true);
+
+    add_field<Required>("Temperature",phys_lt,K,m_grid_name);
+    add_field<Required>("Concentration A",phys_lt,kg/pow(m,3),m_grid_name);
+
+    add_field<Computed>("Temperature tendency",phys_lt,K/s,m_grid_name);
+  }
+};
+
+class AddOne : public DummyProcess
+{
+public:
+  AddOne (const ekat::Comm& comm,const ekat::ParameterList& params)
+   : DummyProcess(comm,params)
+  {
+    // Nothing to do here
+  }
+
+  // The type of the atm proc
+  AtmosphereProcessType type () const { return AtmosphereProcessType::Physics; }
+
+  void set_grids (const std::shared_ptr<const GridsManager> gm) {
+    using namespace ekat::units;
+
+    const auto grid = gm->get_grid(m_grid_name);
+    const auto lt = grid->get_2d_scalar_layout ();
+
+    add_field<Updated>("Field A",lt,K,m_grid_name);
+  }
+protected:
+    void run_impl (const double /* dt */) {
+    auto v = get_field_out("Field A", m_grid_name).get_view<Real*,Host>();
+
+    for (int i=0; i<v.extent_int(0); ++i) {
+      v[i] += Real(1.0);
+    }
+  }
+};
+
+// ================================ TESTS ============================== //
+
+TEST_CASE("process_factory", "") {
+  using namespace scream;
+
+  // A world comm
+  ekat::Comm comm(MPI_COMM_WORLD);
+
+  // Create then factory, and register constructors
+  auto& factory = AtmosphereProcessFactory::instance();
+  factory.register_product("Foo",&create_atmosphere_process<Foo>);
+  factory.register_product("Bar",&create_atmosphere_process<Bar>);
+  factory.register_product("Baz",&create_atmosphere_process<Baz>);
+  factory.register_product("grouP",&create_atmosphere_process<AtmosphereProcessGroup>);
+
+  // Load ad parameter list
+  std::string fname = "atm_process_tests_named_procs.yaml";
+  auto params = create_test_params();
+
+  // Create the processes
+  std::shared_ptr<AtmosphereProcess> atm_process (factory.create("group",comm,params));
+
+  // CHECKS
+  auto group = std::dynamic_pointer_cast<AtmosphereProcessGroup>(atm_process);
+
+  // 1) Must be a group
+  REQUIRE (static_cast<bool>(group));
+
+  // 2) Must store 2 processes: a Physics and a Group
+  REQUIRE (group->get_num_processes()==2);
+  REQUIRE (group->get_process(0)->type()==AtmosphereProcessType::Dynamics);
+  REQUIRE (group->get_process(1)->type()==AtmosphereProcessType::Group);
+
+  // 3) The group must store two physics
+  auto group_2 = std::dynamic_pointer_cast<const AtmosphereProcessGroup>(group->get_process(1));
+  REQUIRE (static_cast<bool>(group_2));
+  REQUIRE (group_2->get_num_processes()==2);
+  REQUIRE (group_2->get_process(0)->type()==AtmosphereProcessType::Physics);
+  REQUIRE (group_2->get_process(1)->type()==AtmosphereProcessType::Physics);
+}
+
+TEST_CASE("field_checks", "") {
+  using namespace scream;
+  using namespace ekat::units;
+
+  // A world comm
+  ekat::Comm comm(MPI_COMM_WORLD);
+
+  // Create a grids manager
+  const int nlcols = 3;
+  const int nlevs = 10;
+  auto grid = create_point_grid ("point_grid",nlcols*comm.size(),nlevs,comm);
+  auto gm = std::make_shared<LibraryGridsManager>(grid);
+
+  // Create a parameter list
+  ekat::ParameterList params ("Atmosphere Processes");
+  params.set<std::string>("grid_name", "point_grid");
+
+  const auto lt = grid->get_3d_scalar_layout(true);
+  FieldIdentifier fid_T_tend("Temperature tendency",lt,K/s,"point_grid");
+  FieldIdentifier fid_T("Temperature",lt,K,"point_grid");
+  Field T(fid_T), T_tend(fid_T_tend);
+  T.allocate_view();
+  T_tend.allocate_view();
+  T_tend.deep_copy(-1.0);
+  T.deep_copy(-1.0);
+  util::TimeStamp t0(1,1,1,1,1,1);
+
+  constexpr auto Warning = CheckFailHandling::Warning;
+  auto pos_check_pre = std::make_shared<FieldLowerBoundCheck>(T_tend,grid,0,false);
+  auto pos_check_post = std::make_shared<FieldLowerBoundCheck>(T,grid,0,false);
+  for (bool allow_failure : {true,false}) {
+    for (bool check_pre : {true, false}) {
+      for (bool check_post : {true, false}) {
+
+        params.set("enable_precondition_checks",check_pre);
+        params.set("enable_postcondition_checks",check_post);
+
+        // Create the process
+        auto foo = create_atmosphere_process<Foo>(comm,params);
+        foo->set_grids(gm);
+
+        foo->set_required_field(T_tend);
+        foo->set_computed_field(T);
+        foo->initialize(t0,RunType::Initial);
+
+        if (allow_failure) {
+          foo->add_precondition_check(pos_check_pre,Warning);
+          foo->add_postcondition_check(pos_check_post,Warning);
+        } else {
+          // Default CheckFailHandling is Fatal
+          foo->add_precondition_check(pos_check_pre);
+          foo->add_postcondition_check(pos_check_post);
+        }
+
+        if (not allow_failure && (check_pre || check_post)) {
+          REQUIRE_THROWS (foo->run(1));
+        } else {
+          foo->run(1);
+        }
+      }
+    }
+  }
+}
+
+TEST_CASE ("subcycling") {
+  using namespace scream;
+
+  // A world comm
+  ekat::Comm comm(MPI_COMM_WORLD);
+
+  // A time stamp
+  util::TimeStamp t0 ({2022,1,1},{0,0,0});
+
+  // Create a grids manager
+  const int nlcols = 3;
+  const int nlevs = 10;
+  auto grid = create_point_grid ("point_grid",nlcols*comm.size(),nlevs,comm);
+  auto gm = std::make_shared<LibraryGridsManager>(grid);
+
+  ekat::ParameterList params, params_sub;
+  params.set<std::string>("grid_name", "point_grid");
+  params_sub.set<std::string>("grid_name", "point_grid");
+  params_sub.set<int>("number_of_subcycles", 5);
+
+  // Create and init two atm procs, one subcycled and one not subcycled
+  auto ap     = std::make_shared<AddOne>(comm,params);
+  auto ap_sub = std::make_shared<AddOne>(comm,params_sub);
+
+  ap->set_grids(gm);
+  ap_sub->set_grids(gm);
+
+  // Create fields (should be just one) and set it in the atm procs
+  for(const auto& req : ap->get_required_field_requests()) {
+    Field f(req.fid);
+    f.allocate_view();
+    f.deep_copy(0);
+    f.get_header().get_tracking().update_time_stamp(t0);
+    ap->set_required_field(f.get_const());
+    ap->set_computed_field(f);
+
+    Field f_sub(req.fid);
+    f_sub.allocate_view();
+    f_sub.deep_copy(0);
+    f_sub.get_header().get_tracking().update_time_stamp(t0);
+    ap_sub->set_required_field(f_sub.get_const());
+    ap_sub->set_computed_field(f_sub);
+  }
+
+  ap->initialize(t0,RunType::Initial);
+  ap_sub->initialize(t0,RunType::Initial);
+
+  // Now run both procs for dt=5.
+  const int dt = 5;
+  ap->run(dt);
+  ap_sub->run(dt);
+
+  // Now, ap_sub should have added one 5 times, while ap only once
+  auto v = ap->get_fields_in().front().get_view<const Real*,Host>();
+  auto v_sub = ap_sub->get_fields_in().front().get_view<const Real*,Host>();
+
+  // Safety check
+  REQUIRE (v.size()==v_sub.size());
+  for (size_t i=0; i<v.size(); ++i) {
+    REQUIRE (v_sub[i]==5*v[i]);
+  }
+}
+
+} // empty namespace

@@ -546,6 +546,7 @@ module cime_comp_mod
   logical :: do_hist_a2x3hr          ! create aux files: a2x 3hr states
   logical :: do_hist_a2x1hri         ! create aux files: a2x 1hr instantaneous
   logical :: do_hist_a2x1hr          ! create aux files: a2x 1hr
+  logical :: do_hist_z2x             ! create aux files: z2x
   integer :: budget_inst             ! instantaneous budget flag
   integer :: budget_daily            ! daily budget flag
   integer :: budget_month            ! monthly budget flag
@@ -1183,6 +1184,7 @@ contains
          histaux_l2x=do_hist_l2x                   , &
          histaux_l2x1yrg=do_hist_l2x1yrg           , &
          histaux_r2x=do_hist_r2x                   , &
+         histaux_z2x=do_hist_z2x                   , &
          run_barriers=run_barriers                 , &
          mct_usealltoall=mct_usealltoall           , &
          mct_usevector=mct_usevector               , &
@@ -1393,7 +1395,8 @@ contains
             ice_present=ice_present,              &
             rof_present=rof_present,              &
             flood_present=flood_present,          &
-            rofice_present=rofice_present)
+            rofice_present=rofice_present,        &
+            iac_present=iac_present)
 
        call seq_infodata_putData(infodata,  &
             lnd_present=lnd_present,        &
@@ -1401,7 +1404,8 @@ contains
             ice_present=ice_present,        &
             rof_present=rof_present,        &
             flood_present=flood_present,    &
-            rofice_present=rofice_present)
+            rofice_present=rofice_present,  &
+            iac_present=iac_present)
     endif
     if(PIO_FILE_IS_OPEN(pioid)) then
        call pio_closefile(pioid)
@@ -1503,6 +1507,12 @@ contains
     call t_startf('CPL:comp_init_cc_atm')
     call t_adj_detailf(+2)
 
+    call t_startf('CPL:comp_init_cc_iac')
+    call t_adj_detailf(+2)
+    call component_init_cc(Eclock_z, iac, iac_init, infodata, NLFilename)
+    call t_adj_detailf(-2)
+    call t_stopf('CPL:comp_init_cc_iac')
+
     call component_init_cc(Eclock_a, atm, atm_init, infodata, NLFilename)
     call t_adj_detailf(-2)
     call t_stopf('CPL:comp_init_cc_atm')
@@ -1549,12 +1559,6 @@ contains
     call t_adj_detailf(-2)
     call t_stopf('CPL:comp_init_cc_esp')
 
-    call t_startf('CPL:comp_init_cc_iac')
-    call t_adj_detailf(+2)
-    call component_init_cc(Eclock_z, iac, iac_init, infodata, NLFilename)
-    call t_adj_detailf(-2)
-    call t_stopf('CPL:comp_init_cc_iac')
-
 
    !---------------------------------------------------------------------------------------
    ! Initialize coupler-component data
@@ -1577,6 +1581,7 @@ contains
    !---------------------------------------------------------------------------------------
     call t_startf('CPL:comp_init_cx_all')
     call t_adj_detailf(+2)
+    call component_init_cx(iac, infodata)
     call component_init_cx(atm, infodata)
     call component_init_cx(lnd, infodata)
     call component_init_cx(rof, infodata)
@@ -1584,7 +1589,6 @@ contains
     call component_init_cx(ice, infodata)
     call component_init_cx(glc, infodata)
     call component_init_cx(wav, infodata)
-    call component_init_cx(iac, infodata)
     call t_adj_detailf(-2)
     call t_stopf('CPL:comp_init_cx_all')
 
@@ -5355,6 +5359,14 @@ contains
           enddo
           call t_stopf('CPL:seq_hist_writeaux-l2x')
 
+       endif
+       if (do_hist_z2x) then
+          do ezi = 1,num_inst_iac
+             inst_suffix =  component_get_suffix(iac(ezi))
+             call seq_hist_writeaux(infodata, EClock_d, iac(ezi), flow='c2x', &
+                  aname='z2x',dname='domz',inst_suffix=trim(inst_suffix), &
+                  nx=iac_nx, ny=iac_ny, nt=ncpl)
+          enddo
        endif
 
        call t_stopf('CPL:cime_run_write_history')
