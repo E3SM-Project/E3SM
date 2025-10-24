@@ -1219,12 +1219,17 @@ void RRTMGPRadiation::run_impl (const double dt) {
 // =========================================================================================
 
 void RRTMGPRadiation::finalize_impl  () {
-  m_gas_concs_k.reset();
-  // Finalize the interface, passing a bool for rank 0
-  // to print info about memory stats on that rank
-  interface_t::rrtmgp_finalize(m_comm.am_i_root());
+  // Guard the finalization, since it would throw if initialize was not called.
+  // This can happen if an atm proc that is inited before RRTMGP throws during init,
+  // and the stack gets destroyed. The driver calls the 'finalize' method on all atm procs
+  if (is_initialized()) {
+    m_gas_concs_k.reset();
+    // Finalize the interface, passing a bool for rank 0
+    // to print info about memory stats on that rank
+    interface_t::rrtmgp_finalize(m_comm.am_i_root());
 
-  finalize_kls();
+    finalize_kls();
+  }
 }
 // =========================================================================================
 
