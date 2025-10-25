@@ -46,7 +46,7 @@ public:
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
 
   // Setup the tendencies requests for this group, as well as for all procs in the group
-  void setup_tendencies_requests ();
+  void setup_step_tendencies ();
 
   // --- Methods specific to AtmosphereProcessGroup --- //
   int get_num_processes () const { return m_atm_processes.size(); }

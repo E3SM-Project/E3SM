@@ -780,8 +780,8 @@ void FieldManager::add_field (const Field& f) {
     "  - Field name: " + f.name() + "\n"
     "  - Grid:       " + grid_name + "\n"
     "  - Grids stored by FM: " + m_grids_mgr->print_available_grids() + "\n");
-  EKAT_REQUIRE_MSG (not (m_repo_state==RepoState::Open),
-      "Error! The method 'add_field' can only be called on a closed repo.\n");
+  EKAT_REQUIRE_MSG (m_repo_state!=RepoState::Open,
+      "Error! The method 'add_field' can only be called on a closed or clean repo (if clean, will immediately be closed).\n");
   EKAT_REQUIRE_MSG (f.is_allocated(),
       "Error! The method 'add_field' requires the input field to be already allocated.\n");
   EKAT_REQUIRE_MSG (m_grids_mgr->get_grid(grid_name)->is_valid_layout(f.get_header().get_identifier().get_layout()),
@@ -792,18 +792,35 @@ void FieldManager::add_field (const Field& f) {
   EKAT_REQUIRE_MSG (not has_field(f.name(), grid_name),
       "Error! The method 'add_field' requires the input field to not be already existing.\n"
       "  - field name: " + f.get_header().get_identifier().name() + "\n");
-  EKAT_REQUIRE_MSG (f.get_header().get_tracking().get_groups_names().size()==0 ||
-                    m_group_requests.at(grid_name).size()==0,
-      "Error! When calling 'add_field', one of the following must be true:\n"
-      "  - the input field is not be part of any group,\n"
-      "  - there were no group requests for this field manager.\n"
-      "The reason for this is that otherwise we *might* have missed some inclusion dependency\n"
-      "when we allocated the fields for one of those groups.\n");
+
+  const auto& groups = f.get_header().get_tracking().get_groups_names();
+  for (const auto& group_name : groups) {
+    auto& group_info = m_field_group_info[group_name];
+    if (group_info) {
+
+      EKAT_REQUIRE_MSG (not group_info->m_monolithic_allocation,
+        "Error! When calling 'add_field', one of the following must be true:\n"
+        "  - the input field is not be part of any group,\n"
+        "  - there were no group requests for any of the field groups.\n"
+        "  - the groups that the field belongs to do NOT have a monolithic field.\n"
+        "The reason for this is that otherwise we *might* have missed some inclusion dependency\n"
+        "when we allocated the fields for one of those groups.\n");
+    } else {
+      // This group was not initially requested, so create a new group info
+      group_info = std::make_shared<FieldGroupInfo>(group_name);
+    }
+
+    // Add this field to the group info
+    if (not ekat::contains(group_info->m_fields_names,f.name())) {
+      group_info->m_fields_names.emplace_back(f.name());
+    }
+  }
 
   // All good, add the field to the repo
   m_fields[grid_name][f.get_header().get_identifier().name()] = std::make_shared<Field>(f);
 
-  if (m_repo_state==RepoState::Clean) m_repo_state = RepoState::Closed;
+  // If it was not closed before, it is now
+  m_repo_state = RepoState::Closed;
 }
 
 void FieldManager::pre_process_monolithic_group_requests () {
