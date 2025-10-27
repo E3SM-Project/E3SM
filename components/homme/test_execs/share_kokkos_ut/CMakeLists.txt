@@ -76,7 +76,6 @@ SET (BOUNDARY_EXCHANGE_UT_F90_SRCS
   ${SRC_SHARE_DIR}/spacecurve_mod.F90
   ${SRC_SHARE_DIR}/thread_mod.F90
   ${SRC_SHARE_DIR}/viscosity_base.F90
-  ${SRC_PREQX_DIR}/edge_mod.F90
   ${SRC_PREQX_DIR}/element_state.F90
   ${SHARE_UT_DIR}/boundary_exchange_ut.F90
   ${SHARE_UT_DIR}/geometry_interface.F90
