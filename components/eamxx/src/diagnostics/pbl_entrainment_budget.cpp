@@ -58,6 +58,7 @@ void PBLEntrainmentBudget::set_grids(
 
   // Define layouts we need (both inputs and outputs)
   FieldLayout scalar2d_layout{{COL, LEV}, {m_ncols, m_nlevs}};
+  FieldLayout scalar1d_layout{{COL}, {m_ncols}};
   FieldLayout vector1d_layout{{COL, CMP}, {m_ncols, m_ndiag}};
 
   // The fields required for this diagnostic to be computed
@@ -74,6 +75,16 @@ void PBLEntrainmentBudget::set_grids(
   add_field<Required>("SW_flux_up", scalar2d_layout, W / m * m, grid_name);
   add_field<Required>("LW_flux_dn", scalar2d_layout, W / m * m, grid_name);
   add_field<Required>("LW_flux_up", scalar2d_layout, W / m * m, grid_name);
+  // Get some homme stuff
+  // first qt
+  add_field<Required>("homme_qc_tend", scalar2d_layout, kg / kg / s, grid_name);
+  add_field<Required>("homme_qv_tend", scalar2d_layout, kg / kg / s, grid_name);
+  // then thetal
+  add_field<Required>("homme_T_mid_tend", scalar2d_layout, K / s, grid_name);
+  // some fluxes
+  add_field<Required>("surface_upward_latent_heat_flux", scalar1d_layout, W / m * m, grid_name);
+  add_field<Required>("precip_liq_surf_mass_flux", scalar1d_layout, m / s, grid_name);
+  add_field<Required>("surf_sens_flux", scalar1d_layout, W / m * m, grid_name);
 
   // Construct and allocate the output field
   FieldIdentifier fid("PBLEntrainmentBudget", vector1d_layout, nondim,
@@ -109,6 +120,18 @@ void PBLEntrainmentBudget::initialize_impl(const RunType /*run_type*/) {
   FieldIdentifier tf_prev("tliq_prev", tmlo.clone(), tmid.get_units(), tmgn);
   m_prev_tl = Field(tf_prev);
   m_prev_tl.allocate_view();
+  FieldIdentifier qv_prev("qv_prev", qvlo.clone(), qvid.get_units(), qvgn);
+  m_prev_qv = Field(qv_prev);
+  m_prev_qv.allocate_view();
+  FieldIdentifier qc_prev("qc_prev", qvlo.clone(), qvid.get_units(), qvgn);
+  m_prev_qc = Field(qc_prev);
+  m_prev_qc.allocate_view();
+  FieldIdentifier T_mid_prev("T_mid_prev", tmlo.clone(), tmid.get_units(), tmgn);
+  m_prev_T_mid = Field(T_mid_prev);
+  m_prev_T_mid.allocate_view();
+  FieldIdentifier p_mid_prev("p_mid_prev", tmlo.clone(), tmid.get_units(), tmgn);
+  m_prev_p_mid = Field(p_mid_prev);
+  m_prev_p_mid.allocate_view();
 }
 
 void PBLEntrainmentBudget::calc_tl_qt(const view_2d &tm_v, const view_2d &pm_v,
@@ -136,6 +159,11 @@ void PBLEntrainmentBudget::init_timestep(const util::TimeStamp &start_of_step) {
   const auto &qv_v = get_field_in("qv").get_view<Real **>();
   const auto &qc_v = get_field_in("qc").get_view<Real **>();
 
+  m_prev_qv.deep_copy(get_field_in("qv"));
+  m_prev_qc.deep_copy(get_field_in("qc"));
+  m_prev_T_mid.deep_copy(get_field_in("T_mid"));
+  m_prev_p_mid.deep_copy(get_field_in("p_mid"));
+
   const auto &m_prev_qt_v = m_prev_qt.get_view<Real **>();
   const auto &m_prev_tl_v = m_prev_tl.get_view<Real **>();
 
@@ -149,6 +177,9 @@ void PBLEntrainmentBudget::compute_diagnostic_impl() {
   using TPF = ekat::TeamPolicyFactory<typename KT::ExeSpace>;
 
   constexpr Real g = PC::gravit;
+  constexpr Real cpair = PC::Cpair;
+  constexpr Real latvap = PC::LatVap;
+  constexpr Real rhoh2o = PC::RHO_H2O;
   Real fill_value  = constants::fill_value<Real>;
 
   // Before doing anything, subview the out field for each variable
@@ -162,6 +193,12 @@ void PBLEntrainmentBudget::compute_diagnostic_impl() {
   auto o_qt_caret = ekat::subview_1(out, m_index_map["qt^"]);
   auto o_qt_ttend = ekat::subview_1(out, m_index_map["qt_ttend"]);
   auto o_df_inpbl = ekat::subview_1(out, m_index_map["dF"]);
+  auto o_qt_homme_tend = ekat::subview_1(out, m_index_map["qt_homme_tend"]);
+  auto o_tl_homme_tend = ekat::subview_1(out, m_index_map["tl_homme_tend"]);
+  auto eq3 = ekat::subview_1(out, m_index_map["eq3"]);
+  auto eq4 = ekat::subview_1(out, m_index_map["eq4"]);
+  auto etl = ekat::subview_1(out, m_index_map["etl"]);
+  auto eqt = ekat::subview_1(out, m_index_map["eqt"]);
 
   // Get the input views
   const auto &qc_v = get_field_in("qc").get_view<Real **>();
@@ -173,14 +210,32 @@ void PBLEntrainmentBudget::compute_diagnostic_impl() {
   const auto &su_v = get_field_in("SW_flux_up").get_view<Real **>();
   const auto &ld_v = get_field_in("LW_flux_dn").get_view<Real **>();
   const auto &lu_v = get_field_in("LW_flux_up").get_view<Real **>();
+  const auto &ll_v = get_field_in("surface_upward_latent_heat_flux").get_view<Real *>();
+  const auto &pp_v = get_field_in("precip_liq_surf_mass_flux").get_view<Real *>();
+  const auto &ss_v = get_field_in("surf_sens_flux").get_view<Real *>();
+  const auto &htmv = get_field_in("homme_T_mid_tend").get_view<Real **>();
+  const auto &hqcv = get_field_in("homme_qc_tend").get_view<Real **>();
+  const auto &hqvv = get_field_in("homme_qv_tend").get_view<Real **>();
 
   // tracked stuff
   const auto &prev_qtot_v = m_prev_qt.get_view<Real **>();
   const auto &prev_tliq_v = m_prev_tl.get_view<Real **>();
+  const auto &prev_T_mid_v = m_prev_T_mid.get_view<Real **>();
+  const auto &prev_p_mid_v = m_prev_p_mid.get_view<Real **>();
+  const auto &prev_qc_v = m_prev_qc.get_view<Real **>();
+  const auto &prev_qv_v = m_prev_qv.get_view<Real **>();
 
   view_2d qt_v("qt_v", m_ncols, m_nlevs);
   view_2d tl_v("tl_v", m_ncols, m_nlevs);
   calc_tl_qt(tm_v, pm_v, qv_v, qc_v, tl_v, qt_v);
+
+  view_2d xtm_v("xtm_v", m_ncols, m_nlevs);
+  view_2d xpm_v("xpm_v", m_ncols, m_nlevs);
+  view_2d xqc_v("xqc_v", m_ncols, m_nlevs);
+  view_2d xqv_v("xqv_v", m_ncols, m_nlevs);
+
+  view_2d out_tl("out_tl", m_ncols, m_nlevs);
+  view_2d out_qt("out_qt", m_ncols, m_nlevs);
 
   const auto &curr_ts =
       get_field_in("qc").get_header().get_tracking().get_time_stamp();
@@ -190,6 +245,34 @@ void PBLEntrainmentBudget::compute_diagnostic_impl() {
   const int num_levs  = m_nlevs;
   const int pblinvalg = m_pblinvalg;
   const auto policy   = TPF::get_default_team_policy(m_ncols, m_nlevs);
+
+  Kokkos::parallel_for(
+    "Update fields but only with homme tendencies in " + name(), policy, KOKKOS_LAMBDA(const MT &team) {
+      const int icol = team.league_rank();
+      Kokkos::parallel_for(
+        Kokkos::TeamVectorRange(team, 0, num_levs), [&](int k) {
+          // updating T_mid
+          xtm_v(icol, k) = prev_T_mid_v(icol, k) + htmv(icol, k) * dt;
+          // updating p_mid (homme is the only place pmid is updated)
+          xpm_v(icol, k) = pm_v(icol, k);
+          // updating qc
+          xqc_v(icol, k) = prev_qc_v(icol, k) + hqcv(icol, k) * dt;
+          // updating qv
+          xqv_v(icol, k) = prev_qv_v(icol, k) + hqvv(icol, k) * dt;
+        });
+    }
+  );
+  calc_tl_qt(xtm_v, xpm_v, xqv_v, xqc_v, out_tl, out_qt);
+  Kokkos::parallel_for(
+    "Calculate homme tendencies of certain new fields in " + name(), policy, KOKKOS_LAMBDA(const MT &team) {
+      const int icol = team.league_rank();
+      Kokkos::parallel_for(
+        Kokkos::TeamVectorRange(team, 0, num_levs), [&](int k) {
+          out_tl(icol, k) = (out_tl(icol, k) - prev_tliq_v(icol, k)) / dt;
+          out_qt(icol, k) = (out_qt(icol, k) - prev_qtot_v(icol, k)) / dt;
+        });
+    }
+  );
 
   constexpr int wsms = 1;
   using WSMgr        = ekat::WorkspaceManager<Real, DefaultDevice>;
@@ -208,6 +291,11 @@ void PBLEntrainmentBudget::compute_diagnostic_impl() {
         const auto su_icol = ekat::subview(su_v, icol);
         const auto ld_icol = ekat::subview(ld_v, icol);
         const auto lu_icol = ekat::subview(lu_v, icol);
+        const auto ll_icol = ll_v(icol);
+        const auto pp_icol = pp_v(icol);
+        const auto ss_icol = ss_v(icol);
+        const auto out_tl_icol = ekat::subview(out_tl, icol);
+        const auto out_qt_icol = ekat::subview(out_qt, icol);
 
         // tracked
         const auto qt_icol = ekat::subview(qt_v, icol);
@@ -280,6 +368,12 @@ void PBLEntrainmentBudget::compute_diagnostic_impl() {
           o_qt_caret(icol) = fill_value;
           o_tl_ttend(icol) = fill_value;
           o_qt_ttend(icol) = fill_value;
+          o_qt_homme_tend(icol) = fill_value;
+          o_tl_homme_tend(icol) = fill_value;
+          eq3(icol) = fill_value;
+          eq4(icol) = fill_value;
+          etl(icol) = fill_value;
+          eqt(icol) = fill_value;
         } else {
           // Save some outputs just above the "mixed" PBL
           o_pm_hplus(icol) = pm_icol(opt_tm_grad_lev - 1);
@@ -299,23 +393,35 @@ void PBLEntrainmentBudget::compute_diagnostic_impl() {
           Real qt_caret_result = 0.0;
           Real tl_ttend_result = 0.0;
           Real qt_ttend_result = 0.0;
-          
+          Real qt_homme_tend_result = 0.0;
+          Real tl_homme_tend_result = 0.0;
+
           Kokkos::parallel_reduce(
               Kokkos::TeamVectorRange(team, opt_tm_grad_lev, num_levs),
               [&](const int &k, Real &tl_caret, Real &qt_caret, 
-                  Real &tl_ttend, Real &qt_ttend) {
+                  Real &tl_ttend, Real &qt_ttend, Real &tl_homme_tend, Real &qt_homme_tend) {
                 const Real pd_over_g = pd_icol(k) / g;
                 tl_caret += tl_icol(k) * pd_over_g;
                 qt_caret += qt_icol(k) * pd_over_g;
                 tl_ttend += (tl_icol(k) - prev_tliq_icol(k)) / dt * pd_over_g;
                 qt_ttend += (qt_icol(k) - prev_qtot_icol(k)) / dt * pd_over_g;
+                qt_homme_tend += out_qt_icol(k) * pd_over_g;
+                tl_homme_tend += out_tl_icol(k) * pd_over_g;
               },
-              tl_caret_result, qt_caret_result, tl_ttend_result, qt_ttend_result);
+              tl_caret_result, qt_caret_result, tl_ttend_result, qt_ttend_result, tl_homme_tend_result, qt_homme_tend_result);
           
           o_tl_caret(icol) = tl_caret_result;
           o_qt_caret(icol) = qt_caret_result;
           o_tl_ttend(icol) = tl_ttend_result;
           o_qt_ttend(icol) = qt_ttend_result;
+          o_qt_homme_tend(icol) = qt_homme_tend_result;
+          o_tl_homme_tend(icol) = tl_homme_tend_result;
+
+          // eq3 and eq4
+          eq3(icol) = o_tl_ttend(icol) + o_tl_homme_tend(icol) + o_df_inpbl(icol) / cpair - latvap*pp_icol*rhoh2o/cpair - ss_icol/cpair;
+          eq4(icol) = o_qt_ttend(icol) + o_qt_homme_tend(icol) + pp_icol*rhoh2o - ll_icol/latvap;
+          etl(icol) = eq3(icol) / (o_tl_hplus(icol) - o_tl_caret(icol));
+          eqt(icol) = eq4(icol) / (o_qt_hplus(icol) - o_qt_caret(icol));
         }
         // release stuff from wsm
         ws.release_many_contiguous<wsms>({&tm_grad});

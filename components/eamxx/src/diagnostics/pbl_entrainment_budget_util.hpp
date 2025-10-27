@@ -42,6 +42,24 @@ public:
     // dF
     index_map["dF"] = size++;
     units_map["dF"] = "W/m^2";
+    // qt_homme_tend
+    index_map["qt_homme_tend"] = size++;
+    units_map["qt_homme_tend"] = "kg/kg/s";
+    // tl_homme_tend
+    index_map["tl_homme_tend"] = size++;
+    units_map["tl_homme_tend"] = "K/s";
+    // eq3
+    index_map["eq3"] = size++;
+    units_map["eq3"] = "nondim";
+    // eq4
+    index_map["eq4"] = size++;
+    units_map["eq4"] = "nondim";
+    // etl
+    index_map["etl"] = size++;
+    units_map["etl"] = "nondim";
+    // eqt
+    index_map["eqt"] = size++;
+    units_map["eqt"] = "nondim";
     // pblinvalg
     pblinvalg = "temperature-inversion";
   }

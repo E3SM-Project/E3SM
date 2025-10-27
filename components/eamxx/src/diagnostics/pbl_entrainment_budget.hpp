@@ -49,6 +49,12 @@ class PBLEntrainmentBudget : public AtmosphereDiagnostic {
   // That is before anything takes place in atm
   Field m_prev_qt;
   Field m_prev_tl;
+  // store some more fields
+  Field m_prev_qc;
+  Field m_prev_qv;
+  Field m_prev_T_mid;
+  Field m_prev_p_mid;
+
   util::TimeStamp m_start_t;
 
   // Grid info
