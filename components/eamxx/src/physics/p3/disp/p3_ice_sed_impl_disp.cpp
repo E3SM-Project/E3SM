@@ -24,6 +24,7 @@ void Functions<Real,DefaultDevice>
   const uview_2d<Spack>& qm_incld,
   const uview_2d<Spack>& bm,
   const uview_2d<Spack>& bm_incld,
+  const uview_2d<Spack>& precip_ice_flux,
   const uview_2d<Spack>& qi_tend,
   const uview_2d<Spack>& ni_tend,
   const view_ice_table& ice_table_vals,
@@ -52,7 +53,7 @@ void Functions<Real,DefaultDevice>
       ekat::subview(rho, i), ekat::subview(inv_rho, i), ekat::subview(rhofaci, i), ekat::subview(cld_frac_i, i),
       ekat::subview(inv_dz, i), team, workspace, nk, ktop, kbot, kdir, dt, inv_dt,
       ekat::subview(qi, i), ekat::subview(qi_incld, i), ekat::subview(ni, i), ekat::subview(ni_incld, i),
-      ekat::subview(qm, i), ekat::subview(qm_incld, i), ekat::subview(bm, i), ekat::subview(bm_incld, i), ekat::subview(qi_tend, i), ekat::subview(ni_tend, i),
+      ekat::subview(qm, i), ekat::subview(qm_incld, i), ekat::subview(bm, i), ekat::subview(bm_incld, i), ekat::subview(precip_ice_flux, i), ekat::subview(qi_tend, i), ekat::subview(ni_tend, i),
       ice_table_vals, precip_ice_surf(i), runtime_options);
 
  });

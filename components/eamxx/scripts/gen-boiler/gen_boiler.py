@@ -245,21 +245,23 @@ PIECES = dict([
 
 # physics map. maps the name of a physics packages containing the original fortran subroutines to:
 #   (path-to-origin, path-to-cxx-src, init-code)
-ORIGIN_FILES, CXX_ROOT, INIT_CODE, FINALIZE_CODE, COLS_DIMNAME = range(5)
+ORIGIN_FILES, CXX_ROOT, INIT_CODE, FINALIZE_CODE, COLS_DIMNAME, UNPACKED = range(6)
 PHYSICS = {
     "p3"   : (
         ("components/eam/src/physics/cam/micro_p3.F90",),
         "components/eamxx/src/physics/p3",
         "p3_init();",
         "",
-        "its:ite"
+        "its:ite",
+        False
     ),
     "shoc" : (
         ("components/eam/src/physics/cam/shoc.F90",),
         "components/eamxx/src/physics/shoc",
         "shoc_init(d.nlev, true);",
         "",
-        "shcol"
+        "shcol",
+        False
     ),
     "dp" : (
         (
@@ -271,7 +273,8 @@ PHYSICS = {
         "components/eamxx/src/physics/dp",
         "dp_init(d.plev, true);",
         ""
-        ""
+        "",
+        False
     ),
     "gw" : (
         (
@@ -285,7 +288,8 @@ PHYSICS = {
         "components/eamxx/src/physics/gw",
         "gw_common_init(); // Might need more specific init",
         "gw_finalize_cxx();",
-        "ncol"
+        "ncol",
+        True
     ),
 }
 
@@ -715,9 +719,8 @@ def get_cxx_type(arg_datum):
     arg_cxx_type = get_cxx_scalar_type(arg_type)
     return f"{arg_cxx_type}{'*' if is_ptr else ''}"
 
-KOKKOS_TYPE_MAP = {"real" : "Spack", "integer" : "Int", "logical" : "bool"}
 ###############################################################################
-def get_kokkos_type(arg_datum):
+def get_kokkos_type(arg_datum, col_dim, unpacked=False):
 ###############################################################################
     """
     Based on arg datum, give c++ kokkos type
@@ -725,50 +728,73 @@ def get_kokkos_type(arg_datum):
     Note: We can only guess at the correct types, especially whether an argument
     should be packed data or not!
     """
+    expect(col_dim is not None, "Kokkos must know col_dim name")
+
     is_const  = arg_datum[ARG_INTENT] == "in"
-    is_view   = arg_datum[ARG_DIMS] is not None
+    dims      = arg_datum[ARG_DIMS]
+    # Remove the cols dim, we parallelize over cols
+    if dims is not None and col_dim in dims:
+        dims = list(dims)
+        dims.remove(col_dim)
+
+    is_view   = bool(dims)
     arg_type  = arg_datum[ARG_TYPE]
     if is_custom_type(arg_type):
         kokkos_type = arg_type.split("::")[-1]
     else:
-        kokkos_type = KOKKOS_TYPE_MAP[arg_type]
+        kokkos_type = CXX_TYPE_MAP[arg_type]
+        if kokkos_type == "Real" and not unpacked:
+            kokkos_type = "Spack"
 
     base_type = f"{'const ' if is_const else ''}{kokkos_type}"
 
-    # We assume 1d even if the f90 array is 2d since we assume c++ will spawn a kernel
-    # over one of the dimensions
-    return f"const uview_1d<{base_type}>&" if is_view else f"{base_type}&"
+    return f"const uview_{len(dims)}d<{base_type}>&" if is_view else f"{base_type}&"
 
 ###############################################################################
-def gen_arg_cxx_decls(arg_data, kokkos=False):
+def gen_arg_cxx_decls(arg_data, kokkos=False, unpacked=False, col_dim=None):
 ###############################################################################
     """
     Get all arg decls for a set of arg data. kokkos flag tells us to use C++/Kokkos
     types instead of C types.
     """
     arg_names    = [item[ARG_NAME] for item in arg_data]
-    get_type     = get_kokkos_type if kokkos else get_cxx_type
-    arg_types    = [get_type(item) for item in arg_data]
-    arg_sig_list = [f"{arg_type} {arg_name}" for arg_name, arg_type in zip(arg_names, arg_types)]
+    if kokkos:
+        arg_types = [get_kokkos_type(item, col_dim, unpacked=unpacked) for item in arg_data]
+    else:
+        arg_types = [get_cxx_type(item) for item in arg_data]
+
+    arg_sig_list = [(f"{arg_type} {arg_name}", arg_datum[ARG_INTENT])
+                    for arg_name, arg_type, arg_datum in zip(arg_names, arg_types, arg_data)]
+
+    # For kokkos functions, we will almost always want the team and we don't want
+    # the col_dim
+    if kokkos:
+        arg_sig_list.insert(0, ("const MemberType& team", "in"))
+        for arg_sig, arg_intent in arg_sig_list:
+            if arg_sig.split()[-1] == col_dim:
+                expect(arg_intent == "in", f"col_dim {col_dim} wasn't an input, {arg_intent}?")
+                arg_sig_list.remove((arg_sig, arg_intent))
+                break
+
+    result = []
 
     # For permanent sigs, we want them to look nice. We may want to order these
     # by intent and scalar vs array, but for now, just mimic the fortran order.
     if kokkos:
-        list_with_comments = []
         intent_map = {"in" : "Inputs", "inout" : "Inputs/Outputs", "out" : "Outputs"}
         curr = None
-        for arg_sig, arg_datum in zip(arg_sig_list, arg_data):
-            intent = arg_datum[ARG_INTENT]
-            if intent != curr:
-                fullname = intent_map[intent]
-                list_with_comments.append(f"// {fullname}")
-                curr = intent
+        for arg_sig, arg_intent in arg_sig_list:
+            if arg_intent != curr:
+                fullname = intent_map[arg_intent]
+                result.append(f"// {fullname}")
+                curr = arg_intent
 
-            list_with_comments.append(arg_sig)
+            result.append(arg_sig)
 
-        arg_sig_list = list_with_comments
+    else:
+        result = [arg_sig for arg_sig, _ in arg_sig_list]
 
-    return arg_sig_list
+    return result
 
 ###############################################################################
 def split_by_intent(arg_data):
@@ -983,8 +1009,12 @@ def convert_to_cxx_dim(dim, add_underscore=False, from_d=False):
     uns = "_" if add_underscore else ""
     obj = "d." if from_d else ""
 
+    # null case, could not determine anything
+    if not tokens:
+        return ""
+
     # case 1, single token
-    if len(tokens) == 1:
+    elif len(tokens) == 1:
         expect(not tokens[0].startswith("-"), f"Received weird negative fortran dim: '{dim}'")
         return obj + tokens[0] + uns
 
@@ -1032,7 +1062,7 @@ def convert_to_cxx_dim(dim, add_underscore=False, from_d=False):
             return f"{obj}{second_token}{uns} - {obj}{first_token}{uns}"
 
     else:
-        expect(False, f"Received weird fortran range with more than 2 tokens: '{dim}'")
+        expect(False, f"Received weird fortran range with more than 2 tokens: '{tokens}'")
 
 ###############################################################################
 def gen_struct_api(struct_name, arg_data):
@@ -1204,7 +1234,7 @@ def get_htd_dth_call(arg_data, rank, arg_list, typename, is_output=False, f2c=Fa
     return result
 
 ###############################################################################
-def gen_glue_impl(phys, sub, arg_data, arg_names, col_dim, f2c=False, unpack=False):
+def gen_glue_impl(phys, sub, arg_data, arg_names, col_dim, f2c=False, unpacked=False):
 ###############################################################################
     """
     Generate code that takes a TestData struct and unpacks it to call the CXX
@@ -1303,7 +1333,7 @@ def gen_glue_impl(phys, sub, arg_data, arg_names, col_dim, f2c=False, unpack=Fal
         #
         # 4) Get nk_pack and policy, unpack scalars, and launch kernel
         #
-        if unpack:
+        if unpacked:
             impl += f"  const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy({obj}{col_dim}, {obj}nlev);\n\n"
         else:
             impl += f"  const Int nk_pack = ekat::npack<Spack>({obj}nlev);\n"
@@ -1419,7 +1449,7 @@ class GenBoiler(object):
                  source_repo = get_git_toplevel_dir(),
                  target_repo = get_git_toplevel_dir(),
                  f2c         = False,
-                 unpack      = False,
+                 unpacked    = False,
                  col_dim     = None,
                  dry_run     = False,
                  verbose     = False):
@@ -1443,7 +1473,7 @@ class GenBoiler(object):
         self._kernel      = kernel
         self._source_repo = Path(source_repo).resolve()
         self._target_repo = Path(target_repo).resolve()
-        self._unpack      = unpack
+        self._unpacked    = unpacked if unpacked else get_physics_data(physics, UNPACKED)
         self._col_dim     = get_physics_data(physics, COLS_DIMNAME) if col_dim is None else col_dim
         self._dry_run     = dry_run
         self._verbose     = verbose
@@ -1510,7 +1540,7 @@ class GenBoiler(object):
         In C, generate the C to F90 brige declaration. The definition will be in fortran
         """
         arg_data = force_arg_data if force_arg_data else self._get_arg_data(phys, sub)
-        arg_decls = gen_arg_cxx_decls(arg_data)
+        arg_decls = gen_arg_cxx_decls(arg_data, unpacked=self._unpacked)
         result = f"void {sub}_bridge_f({', '.join(arg_decls)});\n"
         return result
 
@@ -1612,7 +1642,7 @@ f"""void {sub}_f({data_struct}& d)
         arg_names = [item[ARG_NAME] for item in arg_data]
         decl      = self.gen_cxx_t2cxx_glue_decl(phys, sub, force_arg_data=force_arg_data).rstrip(";")
 
-        impl = gen_glue_impl(phys, sub, arg_data, arg_names, self._col_dim, unpack=self._unpack)
+        impl = gen_glue_impl(phys, sub, arg_data, arg_names, self._col_dim, unpacked=self._unpacked)
 
         result = \
 f"""{decl}
@@ -1655,7 +1685,7 @@ f"""struct {struct_name}{inheritance} {{
         """
         arg_data  = force_arg_data if force_arg_data else self._get_arg_data(phys, sub)
         arg_names = [item[ARG_NAME] for item in arg_data]
-        arg_decls = gen_arg_cxx_decls(arg_data)
+        arg_decls = gen_arg_cxx_decls(arg_data, unpacked=self._unpacked)
         decl      = f"void {sub}_bridge_c({', '.join(arg_decls)})"
 
         impl = gen_glue_impl(phys, sub, arg_data, arg_names, self._col_dim, f2c=True)
@@ -1675,7 +1705,7 @@ f"""{decl}
         In CXX, generate the function declaration in the main physics header
         """
         arg_data = force_arg_data if force_arg_data else self._get_arg_data(phys, sub)
-        arg_decls = gen_arg_cxx_decls(arg_data, kokkos=True)
+        arg_decls = gen_arg_cxx_decls(arg_data, kokkos=True, unpacked=self._unpacked, col_dim=self._col_dim)
 
         arg_decls_str = ("\n    ".join([item if item.startswith("//") else f"{item}," for item in arg_decls])).rstrip(",")
 

@@ -11,6 +11,16 @@
 
 namespace scream {
 
+// Enum for different vertical contraction operations
+enum class VertContractionType {
+  SUM = 0,      // weighted sum
+  AVG = 1,      // weighted average
+  MIN = 2,      // minimum value (ignoring weights for comparison, but using weights for masking)
+  MAX = 3,      // maximum value (ignoring weights for comparison, but using weights for masking)
+  VAR = 4,      // weighted variance
+  STD = 5       // weighted standard deviation
+};
+
 // Check that two fields store the same entries.
 // NOTE: if the field is padded, padding entries are NOT checked.
 namespace impl {
@@ -606,6 +616,539 @@ void vert_contraction(const Field &f_out, const Field &f_in, const Field &weight
   }
 }
 
+// New implementation with VertContractionType support
+template <typename ST>
+void vert_contraction(const Field &f_out, const Field &f_in, const Field &weight, VertContractionType operation) {
+  using RangePolicy = Kokkos::RangePolicy<Field::device_t::execution_space>;
+  using TeamPolicy  = Kokkos::TeamPolicy<Field::device_t::execution_space>;
+  using TeamMember  = typename TeamPolicy::member_type;
+  using TPF         = ekat::TeamPolicyFactory<DefaultDevice::execution_space>;
+
+  auto l_out = f_out.get_header().get_identifier().get_layout();
+  auto l_in  = f_in.get_header().get_identifier().get_layout();
+  auto l_w   = weight.get_header().get_identifier().get_layout();
+
+  bool is_masked = f_in.get_header().has_extra_data("mask_data");
+  bool needs_avg_mask = (operation == VertContractionType::AVG || operation == VertContractionType::VAR || 
+                         operation == VertContractionType::STD) && is_masked && 
+                         f_out.get_header().has_extra_data("mask_data");
+
+  const auto fill_value = is_masked ? f_in.get_header().get_extra_data<Real>("mask_value") : 0;
+
+  const int nlevs = l_in.dim(l_in.rank() - 1);
+
+  // To avoid duplicating code for the 1d and 2d weight cases,
+  // we use a view to access the weight ahead of time
+  typename Field::get_view_type<const ST *, Device> w1d;
+  typename Field::get_view_type<const ST **, Device> w2d;
+  auto w_is_1d = l_w.rank() == 1;
+  if(w_is_1d) {
+    w1d = weight.get_view<const ST *>();
+  } else {
+    w2d = weight.get_view<const ST **>();
+  }
+
+  switch(l_in.rank()) {
+    case 1: {
+      auto v_in  = f_in.get_view<const ST *>();
+      auto v_m   = is_masked ? f_in.get_header().get_extra_data<Field>("mask_data").get_view<const ST *>() : v_in;
+      auto v_out = f_out.get_view<ST>();
+      auto v_m_out = needs_avg_mask ? f_out.get_header().get_extra_data<Field>("mask_data").get_view<ST>() : v_out;
+      
+      if (operation == VertContractionType::SUM) {
+        ST n = 0, d = 0;
+        Kokkos::parallel_reduce(
+            f_out.name(), RangePolicy(0, nlevs),
+            KOKKOS_LAMBDA(const int i, ST &n_acc, ST &d_acc) {
+              auto mask = is_masked ? v_m(i) : ST(1.0);
+              auto w = w1d(i);
+              n_acc += w * v_in(i) * mask;
+              d_acc += w * mask;
+            },
+            Kokkos::Sum<ST>(n), Kokkos::Sum<ST>(d));
+        Kokkos::deep_copy(v_out, n);
+      } else if (operation == VertContractionType::AVG) {
+        ST n = 0, d = 0;
+        Kokkos::parallel_reduce(
+            f_out.name(), RangePolicy(0, nlevs),
+            KOKKOS_LAMBDA(const int i, ST &n_acc, ST &d_acc) {
+              auto mask = is_masked ? v_m(i) : ST(1.0);
+              auto w = w1d(i);
+              n_acc += w * v_in(i) * mask;
+              d_acc += w * mask;
+            },
+            Kokkos::Sum<ST>(n), Kokkos::Sum<ST>(d));
+        if (needs_avg_mask) {
+          ST tmp = d != 0 ? n / d : fill_value;
+          Kokkos::deep_copy(v_out, tmp);
+          ST mask_val = d != 0 ? 1 : 0;
+          Kokkos::deep_copy(v_m_out, mask_val);
+        } else {
+          ST result = d != 0 ? n / d : fill_value;
+          Kokkos::deep_copy(v_out, result);
+        }
+      } else if (operation == VertContractionType::MIN) {
+        ST result = Kokkos::Experimental::finite_max_v<ST>;  // Maximum finite value
+        ST valid_count = 0;
+        Kokkos::parallel_reduce(
+            f_out.name(), RangePolicy(0, nlevs),
+            KOKKOS_LAMBDA(const int i, ST &min_val, ST &count) {
+              auto mask = is_masked ? v_m(i) : ST(1.0);
+              auto w = w1d(i);
+              if (mask > 0 && w > 0) {  // Only consider valid/weighted points
+                if (count == 0 || v_in(i) < min_val) {
+                  min_val = v_in(i);
+                }
+                count += 1;
+              }
+            },
+            Kokkos::Min<ST>(result), Kokkos::Sum<ST>(valid_count));
+        if (valid_count == 0) result = fill_value;
+        Kokkos::deep_copy(v_out, result);
+      } else if (operation == VertContractionType::MAX) {
+        ST result = Kokkos::Experimental::finite_min_v<ST>;  // Minimum finite value
+        ST valid_count = 0;
+        Kokkos::parallel_reduce(
+            f_out.name(), RangePolicy(0, nlevs),
+            KOKKOS_LAMBDA(const int i, ST &max_val, ST &count) {
+              auto mask = is_masked ? v_m(i) : ST(1.0);
+              auto w = w1d(i);
+              if (mask > 0 && w > 0) {  // Only consider valid/weighted points
+                if (count == 0 || v_in(i) > max_val) {
+                  max_val = v_in(i);
+                }
+                count += 1;
+              }
+            },
+            Kokkos::Max<ST>(result), Kokkos::Sum<ST>(valid_count));
+        if (valid_count == 0) result = fill_value;
+        Kokkos::deep_copy(v_out, result);
+      } else if (operation == VertContractionType::VAR) {
+        // Two-pass algorithm: first compute weighted mean, then variance
+        ST mean = 0, d = 0;
+        Kokkos::parallel_reduce(
+            f_out.name() + "_mean", RangePolicy(0, nlevs),
+            KOKKOS_LAMBDA(const int i, ST &n_acc, ST &d_acc) {
+              auto mask = is_masked ? v_m(i) : ST(1.0);
+              auto w = w1d(i);
+              n_acc += w * v_in(i) * mask;
+              d_acc += w * mask;
+            },
+            Kokkos::Sum<ST>(mean), Kokkos::Sum<ST>(d));
+        if (d != 0) mean /= d;
+        
+        ST var_num = 0, weight_sum = 0;
+        Kokkos::parallel_reduce(
+            f_out.name() + "_var", RangePolicy(0, nlevs),
+            KOKKOS_LAMBDA(const int i, ST &var_acc, ST &w_acc) {
+              auto mask = is_masked ? v_m(i) : ST(1.0);
+              auto w = w1d(i);
+              if (mask > 0) {
+                ST diff = v_in(i) - mean;
+                var_acc += w * diff * diff * mask;
+                w_acc += w * mask;
+              }
+            },
+            Kokkos::Sum<ST>(var_num), Kokkos::Sum<ST>(weight_sum));
+        
+        ST result = (weight_sum != 0) ? var_num / weight_sum : fill_value;
+        if (needs_avg_mask) {
+          Kokkos::deep_copy(v_out, result);
+          ST mask_val = (weight_sum != 0) ? 1 : 0;
+          Kokkos::deep_copy(v_m_out, mask_val);
+        } else {
+          Kokkos::deep_copy(v_out, result);
+        }
+      } else if (operation == VertContractionType::STD) {
+        // Compute variance first, then take square root
+        ST mean = 0, d = 0;
+        Kokkos::parallel_reduce(
+            f_out.name() + "_mean", RangePolicy(0, nlevs),
+            KOKKOS_LAMBDA(const int i, ST &n_acc, ST &d_acc) {
+              auto mask = is_masked ? v_m(i) : ST(1.0);
+              auto w = w1d(i);
+              n_acc += w * v_in(i) * mask;
+              d_acc += w * mask;
+            },
+            Kokkos::Sum<ST>(mean), Kokkos::Sum<ST>(d));
+        if (d != 0) mean /= d;
+        
+        ST var_num = 0, weight_sum = 0;
+        Kokkos::parallel_reduce(
+            f_out.name() + "_var", RangePolicy(0, nlevs),
+            KOKKOS_LAMBDA(const int i, ST &var_acc, ST &w_acc) {
+              auto mask = is_masked ? v_m(i) : ST(1.0);
+              auto w = w1d(i);
+              if (mask > 0) {
+                ST diff = v_in(i) - mean;
+                var_acc += w * diff * diff * mask;
+                w_acc += w * mask;
+              }
+            },
+            Kokkos::Sum<ST>(var_num), Kokkos::Sum<ST>(weight_sum));
+        
+        ST result = (weight_sum != 0) ? Kokkos::sqrt(var_num / weight_sum) : fill_value;
+        if (needs_avg_mask) {
+          Kokkos::deep_copy(v_out, result);
+          ST mask_val = (weight_sum != 0) ? 1 : 0;
+          Kokkos::deep_copy(v_m_out, mask_val);
+        } else {
+          Kokkos::deep_copy(v_out, result);
+        }
+      }
+    } break;
+    case 2: {
+      auto v_in    = f_in.get_view<const ST **>();
+      auto v_m     = is_masked ? f_in.get_header().get_extra_data<Field>("mask_data").get_view<const ST **>() : v_in;
+      auto v_out   = f_out.get_view<ST *>();
+      auto v_m_out = needs_avg_mask ? f_out.get_header().get_extra_data<Field>("mask_data").get_view<ST *>() : v_out;
+      const int d0 = l_in.dim(0);
+      auto p       = TPF::get_default_team_policy(d0, nlevs);
+      
+      if (operation == VertContractionType::SUM) {
+        Kokkos::parallel_for(
+            f_out.name(), p, KOKKOS_LAMBDA(const TeamMember &tm) {
+              const int i = tm.league_rank();
+              ST n = 0, d = 0;
+              Kokkos::parallel_reduce(
+                  Kokkos::TeamVectorRange(tm, nlevs),
+                  [&](int j, ST &n_acc, ST &d_acc) {
+                    auto mask = is_masked ? v_m(i, j) : ST(1.0);
+                    auto w = w_is_1d ? w1d(j) : w2d(i, j); 
+                    n_acc += w * v_in(i, j) * mask;
+                    d_acc += w * mask;
+                  },
+                  Kokkos::Sum<ST>(n), Kokkos::Sum<ST>(d));
+              v_out(i) = n;
+            });
+      } else if (operation == VertContractionType::AVG) {
+        Kokkos::parallel_for(
+            f_out.name(), p, KOKKOS_LAMBDA(const TeamMember &tm) {
+              const int i = tm.league_rank();
+              ST n = 0, d = 0;
+              Kokkos::parallel_reduce(
+                  Kokkos::TeamVectorRange(tm, nlevs),
+                  [&](int j, ST &n_acc, ST &d_acc) {
+                    auto mask = is_masked ? v_m(i, j) : ST(1.0);
+                    auto w = w_is_1d ? w1d(j) : w2d(i, j); 
+                    n_acc += w * v_in(i, j) * mask;
+                    d_acc += w * mask;
+                  },
+                  Kokkos::Sum<ST>(n), Kokkos::Sum<ST>(d));
+              if (needs_avg_mask) {
+                v_out(i) = d != 0 ? n / d : fill_value;
+                v_m_out(i) = d != 0 ? 1 : 0;
+              } else {
+                v_out(i) = d != 0 ? n / d : fill_value;
+              }
+            });
+      } else if (operation == VertContractionType::MIN) {
+        Kokkos::parallel_for(
+            f_out.name(), p, KOKKOS_LAMBDA(const TeamMember &tm) {
+              const int i = tm.league_rank();
+              ST min_val = Kokkos::Experimental::finite_max_v<ST>;  // Maximum finite value
+              ST valid_count = 0;
+              Kokkos::parallel_reduce(
+                  Kokkos::TeamVectorRange(tm, nlevs),
+                  [&](int j, ST &min_acc, ST &count) {
+                    auto mask = is_masked ? v_m(i, j) : ST(1.0);
+                    auto w = w_is_1d ? w1d(j) : w2d(i, j);
+                    if (mask > 0 && w > 0) {
+                      if (count == 0 || v_in(i, j) < min_acc) {
+                        min_acc = v_in(i, j);
+                      }
+                      count += 1;
+                    }
+                  },
+                  Kokkos::Min<ST>(min_val), Kokkos::Sum<ST>(valid_count));
+              v_out(i) = (valid_count > 0) ? min_val : fill_value;
+            });
+      } else if (operation == VertContractionType::MAX) {
+        Kokkos::parallel_for(
+            f_out.name(), p, KOKKOS_LAMBDA(const TeamMember &tm) {
+              const int i = tm.league_rank();
+              ST max_val = Kokkos::Experimental::finite_min_v<ST>;  // Minimum finite value
+              ST valid_count = 0;
+              Kokkos::parallel_reduce(
+                  Kokkos::TeamVectorRange(tm, nlevs),
+                  [&](int j, ST &max_acc, ST &count) {
+                    auto mask = is_masked ? v_m(i, j) : ST(1.0);
+                    auto w = w_is_1d ? w1d(j) : w2d(i, j);
+                    if (mask > 0 && w > 0) {
+                      if (count == 0 || v_in(i, j) > max_acc) {
+                        max_acc = v_in(i, j);
+                      }
+                      count += 1;
+                    }
+                  },
+                  Kokkos::Max<ST>(max_val), Kokkos::Sum<ST>(valid_count));
+              v_out(i) = (valid_count > 0) ? max_val : fill_value;
+            });
+      } else if (operation == VertContractionType::VAR) {
+        Kokkos::parallel_for(
+            f_out.name(), p, KOKKOS_LAMBDA(const TeamMember &tm) {
+              const int i = tm.league_rank();
+              // First pass: compute weighted mean
+              ST mean = 0, d = 0;
+              Kokkos::parallel_reduce(
+                  Kokkos::TeamVectorRange(tm, nlevs),
+                  [&](int j, ST &n_acc, ST &d_acc) {
+                    auto mask = is_masked ? v_m(i, j) : ST(1.0);
+                    auto w = w_is_1d ? w1d(j) : w2d(i, j); 
+                    n_acc += w * v_in(i, j) * mask;
+                    d_acc += w * mask;
+                  },
+                  Kokkos::Sum<ST>(mean), Kokkos::Sum<ST>(d));
+              if (d != 0) mean /= d;
+              
+              // Second pass: compute variance
+              ST var_num = 0, weight_sum = 0;
+              Kokkos::parallel_reduce(
+                  Kokkos::TeamVectorRange(tm, nlevs),
+                  [&](int j, ST &var_acc, ST &w_acc) {
+                    auto mask = is_masked ? v_m(i, j) : ST(1.0);
+                    auto w = w_is_1d ? w1d(j) : w2d(i, j);
+                    if (mask > 0) {
+                      ST diff = v_in(i, j) - mean;
+                      var_acc += w * diff * diff * mask;
+                      w_acc += w * mask;
+                    }
+                  },
+                  Kokkos::Sum<ST>(var_num), Kokkos::Sum<ST>(weight_sum));
+              
+              if (needs_avg_mask) {
+                v_out(i) = (weight_sum != 0) ? var_num / weight_sum : fill_value;
+                v_m_out(i) = (weight_sum != 0) ? 1 : 0;
+              } else {
+                v_out(i) = (weight_sum != 0) ? var_num / weight_sum : fill_value;
+              }
+            });
+      } else if (operation == VertContractionType::STD) {
+        Kokkos::parallel_for(
+            f_out.name(), p, KOKKOS_LAMBDA(const TeamMember &tm) {
+              const int i = tm.league_rank();
+              // First pass: compute weighted mean
+              ST mean = 0, d = 0;
+              Kokkos::parallel_reduce(
+                  Kokkos::TeamVectorRange(tm, nlevs),
+                  [&](int j, ST &n_acc, ST &d_acc) {
+                    auto mask = is_masked ? v_m(i, j) : ST(1.0);
+                    auto w = w_is_1d ? w1d(j) : w2d(i, j); 
+                    n_acc += w * v_in(i, j) * mask;
+                    d_acc += w * mask;
+                  },
+                  Kokkos::Sum<ST>(mean), Kokkos::Sum<ST>(d));
+              if (d != 0) mean /= d;
+              
+              // Second pass: compute variance
+              ST var_num = 0, weight_sum = 0;
+              Kokkos::parallel_reduce(
+                  Kokkos::TeamVectorRange(tm, nlevs),
+                  [&](int j, ST &var_acc, ST &w_acc) {
+                    auto mask = is_masked ? v_m(i, j) : ST(1.0);
+                    auto w = w_is_1d ? w1d(j) : w2d(i, j);
+                    if (mask > 0) {
+                      ST diff = v_in(i, j) - mean;
+                      var_acc += w * diff * diff * mask;
+                      w_acc += w * mask;
+                    }
+                  },
+                  Kokkos::Sum<ST>(var_num), Kokkos::Sum<ST>(weight_sum));
+              
+              if (needs_avg_mask) {
+                v_out(i) = (weight_sum != 0) ? Kokkos::sqrt(var_num / weight_sum) : fill_value;
+                v_m_out(i) = (weight_sum != 0) ? 1 : 0;
+              } else {
+                v_out(i) = (weight_sum != 0) ? Kokkos::sqrt(var_num / weight_sum) : fill_value;
+              }
+            });
+      }
+    } break;
+    case 3: {
+      auto v_in    = f_in.get_view<const ST ***>();
+      auto v_m     = is_masked ? f_in.get_header().get_extra_data<Field>("mask_data").get_view<const ST ***>() : v_in;
+      auto v_out   = f_out.get_view<ST **>();
+      auto v_m_out = needs_avg_mask ? f_out.get_header().get_extra_data<Field>("mask_data").get_view<ST **>() : v_out;
+      const int d0 = l_in.dim(0);
+      const int d1 = l_in.dim(1);
+      auto p       = TPF::get_default_team_policy(d0 * d1, nlevs);
+      
+      if (operation == VertContractionType::SUM) {
+        Kokkos::parallel_for(
+            f_out.name(), p, KOKKOS_LAMBDA(const TeamMember &tm) {
+              const int idx = tm.league_rank();
+              const int i   = idx / d1;
+              const int j   = idx % d1;
+              ST n = 0, d = 0;
+              Kokkos::parallel_reduce(
+                  Kokkos::TeamVectorRange(tm, nlevs),
+                  [&](int k, ST &n_acc, ST &d_acc) {
+                    auto mask = is_masked ? v_m(i, j, k) : ST(1.0);
+                    auto w = w_is_1d ? w1d(k) : w2d(i, k); 
+                    n_acc += w * v_in(i, j, k) * mask;
+                    d_acc += w * mask;
+                  },
+                  Kokkos::Sum<ST>(n), Kokkos::Sum<ST>(d));
+              v_out(i, j) = n;
+            });
+      } else if (operation == VertContractionType::AVG) {
+        Kokkos::parallel_for(
+            f_out.name(), p, KOKKOS_LAMBDA(const TeamMember &tm) {
+              const int idx = tm.league_rank();
+              const int i   = idx / d1;
+              const int j   = idx % d1;
+              ST n = 0, d = 0;
+              Kokkos::parallel_reduce(
+                  Kokkos::TeamVectorRange(tm, nlevs),
+                  [&](int k, ST &n_acc, ST &d_acc) {
+                    auto mask = is_masked ? v_m(i, j, k) : ST(1.0);
+                    auto w = w_is_1d ? w1d(k) : w2d(i, k); 
+                    n_acc += w * v_in(i, j, k) * mask;
+                    d_acc += w * mask;
+                  },
+                  Kokkos::Sum<ST>(n), Kokkos::Sum<ST>(d));
+              if (needs_avg_mask) {
+                v_out(i, j) = d != 0 ? n / d : fill_value;
+                v_m_out(i, j) = d != 0 ? 1 : 0;
+              } else {
+                v_out(i, j) = d != 0 ? n / d : fill_value;
+              }
+            });
+      } else if (operation == VertContractionType::MIN) {
+        Kokkos::parallel_for(
+            f_out.name(), p, KOKKOS_LAMBDA(const TeamMember &tm) {
+              const int idx = tm.league_rank();
+              const int i   = idx / d1;
+              const int j   = idx % d1;
+              ST min_val = Kokkos::Experimental::finite_max_v<ST>;  // Maximum finite value
+              ST valid_count = 0;
+              Kokkos::parallel_reduce(
+                  Kokkos::TeamVectorRange(tm, nlevs),
+                  [&](int k, ST &min_acc, ST &count) {
+                    auto mask = is_masked ? v_m(i, j, k) : ST(1.0);
+                    auto w = w_is_1d ? w1d(k) : w2d(i, k);
+                    if (mask > 0 && w > 0) {
+                      if (count == 0 || v_in(i, j, k) < min_acc) {
+                        min_acc = v_in(i, j, k);
+                      }
+                      count += 1;
+                    }
+                  },
+                  Kokkos::Min<ST>(min_val), Kokkos::Sum<ST>(valid_count));
+              v_out(i, j) = (valid_count > 0) ? min_val : fill_value;
+            });
+      } else if (operation == VertContractionType::MAX) {
+        Kokkos::parallel_for(
+            f_out.name(), p, KOKKOS_LAMBDA(const TeamMember &tm) {
+              const int idx = tm.league_rank();
+              const int i   = idx / d1;
+              const int j   = idx % d1;
+              ST max_val = Kokkos::Experimental::finite_min_v<ST>;  // Minimum finite value
+              ST valid_count = 0;
+              Kokkos::parallel_reduce(
+                  Kokkos::TeamVectorRange(tm, nlevs),
+                  [&](int k, ST &max_acc, ST &count) {
+                    auto mask = is_masked ? v_m(i, j, k) : ST(1.0);
+                    auto w = w_is_1d ? w1d(k) : w2d(i, k);
+                    if (mask > 0 && w > 0) {
+                      if (count == 0 || v_in(i, j, k) > max_acc) {
+                        max_acc = v_in(i, j, k);
+                      }
+                      count += 1;
+                    }
+                  },
+                  Kokkos::Max<ST>(max_val), Kokkos::Sum<ST>(valid_count));
+              v_out(i, j) = (valid_count > 0) ? max_val : fill_value;
+            });
+      } else if (operation == VertContractionType::VAR) {
+        Kokkos::parallel_for(
+            f_out.name(), p, KOKKOS_LAMBDA(const TeamMember &tm) {
+              const int idx = tm.league_rank();
+              const int i   = idx / d1;
+              const int j   = idx % d1;
+              // First pass: compute weighted mean
+              ST mean = 0, d = 0;
+              Kokkos::parallel_reduce(
+                  Kokkos::TeamVectorRange(tm, nlevs),
+                  [&](int k, ST &n_acc, ST &d_acc) {
+                    auto mask = is_masked ? v_m(i, j, k) : ST(1.0);
+                    auto w = w_is_1d ? w1d(k) : w2d(i, k); 
+                    n_acc += w * v_in(i, j, k) * mask;
+                    d_acc += w * mask;
+                  },
+                  Kokkos::Sum<ST>(mean), Kokkos::Sum<ST>(d));
+              if (d != 0) mean /= d;
+              
+              // Second pass: compute variance
+              ST var_num = 0, weight_sum = 0;
+              Kokkos::parallel_reduce(
+                  Kokkos::TeamVectorRange(tm, nlevs),
+                  [&](int k, ST &var_acc, ST &w_acc) {
+                    auto mask = is_masked ? v_m(i, j, k) : ST(1.0);
+                    auto w = w_is_1d ? w1d(k) : w2d(i, k);
+                    if (mask > 0) {
+                      ST diff = v_in(i, j, k) - mean;
+                      var_acc += w * diff * diff * mask;
+                      w_acc += w * mask;
+                    }
+                  },
+                  Kokkos::Sum<ST>(var_num), Kokkos::Sum<ST>(weight_sum));
+              
+              if (needs_avg_mask) {
+                v_out(i, j) = (weight_sum != 0) ? var_num / weight_sum : fill_value;
+                v_m_out(i, j) = (weight_sum != 0) ? 1 : 0;
+              } else {
+                v_out(i, j) = (weight_sum != 0) ? var_num / weight_sum : fill_value;
+              }
+            });
+      } else if (operation == VertContractionType::STD) {
+        Kokkos::parallel_for(
+            f_out.name(), p, KOKKOS_LAMBDA(const TeamMember &tm) {
+              const int idx = tm.league_rank();
+              const int i   = idx / d1;
+              const int j   = idx % d1;
+              // First pass: compute weighted mean
+              ST mean = 0, d = 0;
+              Kokkos::parallel_reduce(
+                  Kokkos::TeamVectorRange(tm, nlevs),
+                  [&](int k, ST &n_acc, ST &d_acc) {
+                    auto mask = is_masked ? v_m(i, j, k) : ST(1.0);
+                    auto w = w_is_1d ? w1d(k) : w2d(i, k); 
+                    n_acc += w * v_in(i, j, k) * mask;
+                    d_acc += w * mask;
+                  },
+                  Kokkos::Sum<ST>(mean), Kokkos::Sum<ST>(d));
+              if (d != 0) mean /= d;
+              
+              // Second pass: compute variance, then take square root
+              ST var_num = 0, weight_sum = 0;
+              Kokkos::parallel_reduce(
+                  Kokkos::TeamVectorRange(tm, nlevs),
+                  [&](int k, ST &var_acc, ST &w_acc) {
+                    auto mask = is_masked ? v_m(i, j, k) : ST(1.0);
+                    auto w = w_is_1d ? w1d(k) : w2d(i, k);
+                    if (mask > 0) {
+                      ST diff = v_in(i, j, k) - mean;
+                      var_acc += w * diff * diff * mask;
+                      w_acc += w * mask;
+                    }
+                  },
+                  Kokkos::Sum<ST>(var_num), Kokkos::Sum<ST>(weight_sum));
+              
+              if (needs_avg_mask) {
+                v_out(i, j) = (weight_sum != 0) ? Kokkos::sqrt(var_num / weight_sum) : fill_value;
+                v_m_out(i, j) = (weight_sum != 0) ? 1 : 0;
+              } else {
+                v_out(i, j) = (weight_sum != 0) ? Kokkos::sqrt(var_num / weight_sum) : fill_value;
+              }
+            });
+      }
+    } break;
+    default:
+      EKAT_ERROR_MSG("Error! Unsupported field rank in vert_contraction.\n");
+  }
+}
+
 template<typename ST>
 ST frobenius_norm(const Field& f, const ekat::Comm* comm)
 {
@@ -828,7 +1371,7 @@ ST field_max(const Field& f, const ekat::Comm* comm)
   // TODO: compute directly on device
   f.sync_to_host();
 
-  ST max = std::numeric_limits<ST>::lowest();
+  ST max = Kokkos::Experimental::finite_min_v<ST>;  // Minimum finite value
   switch (fl.rank()) {
     case 1:
       {
@@ -914,7 +1457,7 @@ ST field_min(const Field& f, const ekat::Comm* comm)
   // TODO: compute directly on device
   f.sync_to_host();
 
-  ST min = std::numeric_limits<ST>::max();
+  ST min = Kokkos::Experimental::finite_max_v<ST>;  // Maximum finite value
   switch (fl.rank()) {
     case 1:
       {

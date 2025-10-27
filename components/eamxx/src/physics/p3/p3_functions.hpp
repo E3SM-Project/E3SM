@@ -579,7 +579,7 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       const Scalar &inv_dt, const uview_1d<Spack> &qi, const uview_1d<Spack> &qi_incld,
       const uview_1d<Spack> &ni, const uview_1d<Spack> &ni_incld, const uview_1d<Spack> &qm,
       const uview_1d<Spack> &qm_incld, const uview_1d<Spack> &bm, const uview_1d<Spack> &bm_incld,
-      const uview_1d<Spack> &qi_tend, const uview_1d<Spack> &ni_tend,
+      const uview_1d<Spack> &precip_ice_flux, const uview_1d<Spack> &qi_tend, const uview_1d<Spack> &ni_tend,
       const view_ice_table &ice_table_vals, Scalar &precip_ice_surf,
       const P3Runtime &runtime_options);
 
@@ -591,7 +591,7 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       const Int &nk, const Int &ktop, const Int &kbot, const Int &kdir, const Scalar &dt,
       const Scalar &inv_dt, const uview_2d<Spack> &qi, const uview_2d<Spack> &qi_incld,
       const uview_2d<Spack> &ni, const uview_2d<Spack> &ni_incld, const uview_2d<Spack> &qm,
-      const uview_2d<Spack> &qm_incld, const uview_2d<Spack> &bm, const uview_2d<Spack> &bm_incld,
+      const uview_2d<Spack> &qm_incld, const uview_2d<Spack> &bm, const uview_2d<Spack> &bm_incld,const uview_2d<Spack> &precip_ice_flux,
       const uview_2d<Spack> &qi_tend, const uview_2d<Spack> &ni_tend,
       const view_ice_table &ice_table_vals, const uview_1d<Scalar> &precip_ice_surf,
       const uview_1d<bool> &is_nucleat_possible, const uview_1d<bool> &is_hydromet_present,

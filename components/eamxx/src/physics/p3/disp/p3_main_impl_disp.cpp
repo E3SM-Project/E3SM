@@ -319,7 +319,7 @@ Int Functions<Real,DefaultDevice>
   ice_sedimentation_disp(
       rho, inv_rho, rhofaci, cld_frac_i, inv_dz, workspace_mgr, nj, nk, ktop, kbot,
       kdir, infrastructure.dt, inv_dt, qi, qi_incld, ni, ni_incld,
-      qm, qm_incld, bm, bm_incld, qi_sed, ntend_ignore,
+      qm, qm_incld, bm, bm_incld, precip_ice_flux, qi_sed, ntend_ignore,
       lookup_tables.ice_table_vals, diagnostic_outputs.precip_ice_surf, nucleationPossible, hydrometeorsPresent, runtime_options);
 
   // homogeneous freezing f cloud and rain

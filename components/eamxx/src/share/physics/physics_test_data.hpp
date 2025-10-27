@@ -70,6 +70,10 @@ struct SHOCGridData : public PhysicsTestData {
 
 #define PTD_ONES(a) PTD_ONES##a
 
+// We want these to be deep copies. The impl sets all scalars to 1
+// and then calls assignment operator. The assignment operator will
+// set all the scalars to the correct value. We cannot use default-contstructed
+// PTDs, because the list of member pointers for array members must be registered.
 #define PTD_DATA_COPY_CTOR(name, num_args) \
   name(const name& rhs) : name(PTD_ONES(num_args)) { *this = rhs; }
 
@@ -98,6 +102,7 @@ struct SHOCGridData : public PhysicsTestData {
 #define PTD_ASS19(first, ...) first = rhs.first; PTD_ASS18(__VA_ARGS__)
 #define PTD_ASS20(first, ...) first = rhs.first; PTD_ASS19(__VA_ARGS__)
 
+// Assign scalars and call assignment_impl, which will handle the array data
 #define PTD_ASSIGN_OP(name, num_scalars, ...)                                  \
   name& operator=(const name& rhs) { PTD_ASS##num_scalars(__VA_ARGS__); assignment_impl(rhs); return *this; }
 
@@ -152,65 +157,90 @@ struct SHOCGridData : public PhysicsTestData {
 
 namespace scream {
 
+template <ekat::TransposeDirection::Enum D>
+void shift_int_scalar(int& scalar)
+{
+  const int shift = (D == ekat::TransposeDirection::c2f ? 1 : -1);
+  scalar += shift;
+
+  // Since f90 allows for negative index ranges (-foo:foo), we may
+  // have to remove this check.
+  EKAT_ASSERT_MSG(scalar >= 0, "Bad index: " << scalar);
+}
+
 // Fully Generic Data struct for multi-dimensions reals and ints
 class PhysicsTestData
 {
+
+  // PTDImpl handles all arrays of data of a certain type. The data within a
+  // a single PTDImpl object may belong to several different arrays.
   template <typename T>
   struct PTDImpl
   {
+
+    // Constructor, takes iterators that contain dimension data for members.
     template <typename Iterator>
     PTDImpl( Iterator dims_begin, Iterator dims_end,
-             const std::vector<std::vector<T**> >& members_list) :
-      m_dims_list(dims_begin, dims_end),
-      m_members_list(members_list),
-      m_totals(m_dims_list.size(), 0)
+             const std::vector<std::vector<T**> >& members_list_by_common_dims) :
+      m_dims_list(),
+      m_members_list(),
+      m_totals(),
+      m_data()
     {
-      EKAT_REQUIRE_MSG(m_dims_list.size() == m_members_list.size(),
-                       "Length of member lists did not match length of dimensions");
+      std::vector<std::vector<Int> > dims_slice(dims_begin, dims_end);
+      EKAT_REQUIRE_MSG(dims_slice.size() == members_list_by_common_dims.size(),
+                       "Length of member lists did not match length of dimensions slice");
 
       // Compute totals
-      Int total_total = 0;
-      for (size_t i = 0; i < m_dims_list.size(); ++i) {
-        const auto& dims    = m_dims_list[i];
-        const auto& members = m_members_list[i];
+      Int total_data = 0;
+      for (size_t i = 0; i < dims_slice.size(); ++i) {
+        const auto& dims    = dims_slice[i];
+        const auto& members = members_list_by_common_dims[i];
 
         Int total = 1;
         for (const auto& dim : dims) {
           total *= dim;
         }
-        m_totals[i] = total;
+
         const Int num_members = members.size();
-        total_total += (total * num_members);
+        total_data += (total * num_members);
+
+        for (auto member : members) {
+          m_dims_list.push_back(dims);
+          m_members_list.push_back(member);
+          m_totals.push_back(total);
+        }
       }
 
-      m_data.resize(total_total, T());
+      m_data.resize(total_data, T());
 
       init_ptrs();
     }
 
-    std::pair<size_t, size_t> get_index(const T* member) const
+    // Get the location of a member within members_list
+    size_t get_index(const T* member) const
     {
       for (size_t i = 0; i < m_members_list.size(); ++i) {
-        for (size_t j = 0; j < m_members_list[i].size(); ++j) {
-          if (*(m_members_list[i][j]) == member) {
-            return std::make_pair(i, j);
-          }
+        if (*(m_members_list[i]) == member) {
+          return i;
         }
       }
-      return std::make_pair(std::string::npos, std::string::npos);
+      return std::string::npos;
     }
 
-    Int get_dim(const size_t& dims_index, const size_t& dim_index) const
+    Int get_dim(const T* member, const size_t& dim_idx) const
     {
-      EKAT_ASSERT(dims_index < m_dims_list.size());
-      EKAT_ASSERT(dim_index  < m_dims_list[dims_index].size());
-      return m_dims_list[dims_index][dim_index];
+      const auto idx = get_index(member);
+      EKAT_ASSERT(idx < m_dims_list.size());
+      EKAT_ASSERT(dim_idx  < m_dims_list[idx].size());
+      return m_dims_list[idx][dim_idx];
     }
 
-    Int get_total(const size_t& index) const
+    Int get_total(const T* member) const
     {
-      EKAT_ASSERT(index < m_totals.size());
-      return m_totals[index];
+      const auto idx = get_index(member);
+      EKAT_ASSERT(idx < m_totals.size());
+      return m_totals[idx];
     }
 
     template <typename Gen, typename Dist>
@@ -222,33 +252,33 @@ class PhysicsTestData
     }
 
     template <typename Gen, typename Dist>
-    void randomize(Gen& generator, Dist& dist, const std::pair<size_t, size_t>& index)
+    void randomize(Gen& generator, Dist& dist, size_t idx)
     {
-      const Int total = get_total(index.first);
-      T* member = *(m_members_list[index.first][index.second]);
+      T** member = m_members_list[idx];
+      const Int total = m_totals[idx];
       for (Int i = 0; i < total; ++i) {
-        member[i] = static_cast<T>(dist(generator));
+        (*member)[i] = static_cast<T>(dist(generator));
       }
     }
 
     void init_ptrs()
     {
       Int offset = 0;
-      for (size_t i = 0; i < m_members_list.size(); ++i) {
-        const Int total     = m_totals[i];
-        const auto& members = m_members_list[i];
+      for (size_t i = 0; i < m_totals.size(); ++i) {
+        const Int total = m_totals[i];
+        T**     member  = m_members_list[i];
 
-        for (auto member : members) {
-          *member = m_data.data() + offset;
-          offset += total;
-        }
+        T* data = m_data.data() + offset;
+        *member = data; // This sets the pointer member of the PTD child struct!
+
+        offset += total;
       }
     }
 
     void assignment_impl(const PTDImpl<T>& rhs)
     {
       EKAT_REQUIRE_MSG(m_members_list.size() == rhs.m_members_list.size(),
-                       "Assignment between incompatible PhysicsTestData");
+                       "Assignment between incompatible PhysicsTestData?");
 
       m_dims_list = rhs.m_dims_list;
       m_data      = rhs.m_data;
@@ -265,68 +295,79 @@ class PhysicsTestData
 
       for (size_t i = 0; i < m_dims_list.size(); ++i) {
         const auto& dims      = m_dims_list[i];
-        const auto& members   = m_members_list[i];
-        const Int num_members = members.size();
+        const auto& member    = m_members_list[i];
         const Int total       = m_totals[i];
 
         if (dims.size() > 1) { // no need to transpose 1d data
           if (dims.size() == 2) {
-            for (auto member : members) {
-              ekat::transpose<D>(*member, new_data.data() + offset, dims[0], dims[1]);
-              offset += total;
-            }
+            ekat::transpose<D>(*member, new_data.data() + offset, dims[0], dims[1]);
           }
           else if (dims.size() == 3) {
-            for (auto member : members) {
-              ekat::transpose<D>(*member, new_data.data() + offset, dims[0], dims[1], dims[2]);
-              offset += total;
-            }
+            ekat::transpose<D>(*member, new_data.data() + offset, dims[0], dims[1], dims[2]);
           }
           else {
             EKAT_REQUIRE_MSG(false, "Data dimension > 3 not currently supported");
           }
         }
-        else {
-          offset += (total * num_members);
-        }
+        offset += total;
       }
 
       m_data = new_data;
     }
 
+    template <ekat::TransposeDirection::Enum D>
+    void shift_int(const std::vector<int*>& to_skip = {})
+    {
+      for (size_t i = 0; i < m_members_list.size(); ++i) {
+        auto member = m_members_list[i];
+        auto it = std::find(to_skip.begin(), to_skip.end(), *member);
+        if (it == to_skip.end()) {
+          const Int total = m_totals[i];
+          for (Int j = 0; j < total; ++j) {
+            shift_int_scalar<D>((*member)[j]);
+          }
+        }
+      }
+    }
+
     void read(std::ifstream& ifile)
     {
-      impl::read_scalars(ifile,m_data);
+      impl::read_scalars(ifile, m_data);
     }
 
     void write(std::ofstream& ofile) const
     {
-      impl::write_scalars(ofile,m_data);
+      impl::write_scalars(ofile, m_data);
     }
 
-    std::vector<std::vector<Int> > m_dims_list;    // list of dims, one per unique set of dims
-    std::vector<std::vector<T**> > m_members_list; // list of member pointers, same outer index space as m_dims_list
+    std::vector<std::vector<Int> > m_dims_list;    // list of dims, one vector per array
+    std::vector<T**>               m_members_list; // list of member pointers, one item per array
+    std::vector<Int>               m_totals;       // total sizes of each set of data, one item per array
     std::vector<T>                 m_data;         // the member data in a flat vector
-    std::vector<Int>               m_totals;       // total sizes of each set of data, same index space as m_dims_list
   };
 
  public:
 
   // dims -> the dimensions of real data should come before dimensions of int data
   //         and the dims of int data should come before bool data
+  //
+  // We use pointers to pointers because we want to set the pointers to the allocated
+  // data.
   PhysicsTestData(
     const std::vector<std::vector<Int> >& dims, // vector of dimensions, each set of dimensions is a vector of Int
     const std::vector<std::vector<Real**> >& reals, // vector of pointers to real* members
     const std::vector<std::vector<Int**> >& ints = {},  // vector of pointers to int* members
     const std::vector<std::vector<bool**> >& bools = {}); // vector of pointers to bool* members
 
-  Int total(const Real* member) const { return m_reals.get_total(get_index(member).first); }
-  Int total(const Int* member) const  { return m_ints.get_total(get_index(member).first); }
-  Int total(const bool* member) const { return m_bools.get_total(get_index(member).first); }
+  Int total(const Real* member) const { return m_reals.get_total(member); }
+  Int total(const Int* member) const  { return m_ints.get_total(member); }
+  Int total(const bool* member) const
+  { return m_bools.get_total(reinterpret_cast<const char*>(member)); }
 
-  Int dim(const Real* member, const size_t& dim_idx) const { return m_reals.get_dim(get_index(member).first, dim_idx); }
-  Int dim(const Int * member, const size_t& dim_idx) const { return m_ints.get_dim(get_index(member).first, dim_idx); }
-  Int dim(const bool* member, const size_t& dim_idx) const { return m_bools.get_dim(get_index(member).first, dim_idx); }
+  Int dim(const Real* member, const size_t& dim_idx) const { return m_reals.get_dim(member, dim_idx); }
+  Int dim(const Int * member, const size_t& dim_idx) const { return m_ints.get_dim(member, dim_idx); }
+  Int dim(const bool* member, const size_t& dim_idx) const
+  { return m_bools.get_dim(reinterpret_cast<const char*>(member), dim_idx); }
 
   // Delete this to block subclasses getting the default impls, which would be incorrect
   PhysicsTestData(const PhysicsTestData &rhs) = delete;
@@ -357,14 +398,14 @@ class PhysicsTestData
       EKAT_REQUIRE_MSG(bottom_range <= top_range, "Expect bottom of range <= top of range");
       void* member = p.first;
 
-      const auto real_search = get_index(reinterpret_cast<Real*>(member));
-      if (real_search.first != std::string::npos) {
+      const auto real_search = m_reals.get_index(reinterpret_cast<Real*>(member));
+      if (real_search != std::string::npos) {
         std::uniform_real_distribution<Real> real_dist(range.first, range.second);
         m_reals.randomize(engine, real_dist, real_search);
       }
       else {
-        const auto int_search = get_index(reinterpret_cast<Int*>(member));
-        if (int_search.first != std::string::npos) {
+        const auto int_search = m_ints.get_index(reinterpret_cast<Int*>(member));
+        if (int_search != std::string::npos) {
           EKAT_REQUIRE_MSG(std::ceil(bottom_range) == bottom_range, "Use of non-round float for integer random range:" << bottom_range);
           EKAT_REQUIRE_MSG(std::ceil(top_range) == top_range, "Use of non-round float for integer random range:" << top_range);
           std::uniform_int_distribution<Int> data_dist(std::lround(bottom_range), std::lround(top_range));
@@ -372,8 +413,8 @@ class PhysicsTestData
           m_ints.randomize(engine, data_dist, int_search);
         }
         else {
-          const auto bool_search = get_index(reinterpret_cast<bool*>(member));
-          EKAT_REQUIRE_MSG(bool_search.first != std::string::npos, "Failed to find member for randomization");
+          const auto bool_search = m_bools.get_index(reinterpret_cast<char*>(member));
+          EKAT_REQUIRE_MSG(bool_search != std::string::npos, "Failed to find member for randomization");
           EKAT_REQUIRE_MSG(bottom_range == 0.0 || bottom_range == 1.0, "Use 0 or 1 for bool ranges, not:" << bottom_range);
           EKAT_REQUIRE_MSG(top_range == 0.0 || top_range == 1.0, "Use 0 or 1 for bool ranges, not:" << top_range);
           std::uniform_int_distribution<Int> data_dist(std::lround(bottom_range), std::lround(top_range));
@@ -381,17 +422,6 @@ class PhysicsTestData
         }
       }
     }
-  }
-
-  template <ekat::TransposeDirection::Enum D>
-  void shift_int_scalar(int& scalar)
-  {
-    const int shift = (D == ekat::TransposeDirection::c2f ? 1 : -1);
-    scalar += shift;
-
-    // Since f90 allows for negative index ranges (-foo:foo), we may
-    // have to remove this check.
-    EKAT_ASSERT_MSG(scalar >= 0, "Bad index: " << scalar);
   }
 
   // Since we are also preparing index data, this function is doing more than transposing. It's shifting the
@@ -402,7 +432,7 @@ class PhysicsTestData
   // transition method which will call this one and then adjust their int scalars
   // that represent indices.
   template <ekat::TransposeDirection::Enum D>
-  void transition()
+  void transition(const std::vector<Int*>& ints_to_skip = {})
   {
     m_reals.transpose<D>();
     m_ints.transpose<D>();
@@ -410,9 +440,7 @@ class PhysicsTestData
 
     // Shift the indices. We might not be able to make the assumption that int data represented indices.
     // NOTE! This will not shift scalar integers. It is up the children structs to do that
-    for (size_t i = 0; i < m_ints.m_data.size(); ++i) {
-      shift_int_scalar<D>(m_ints.m_data[i]);
-    }
+    m_ints.shift_int<D>(ints_to_skip);
   }
 
   void read(std::ifstream& ifile);
@@ -424,10 +452,6 @@ class PhysicsTestData
   PhysicsTestData& assignment_impl(const PhysicsTestData& rhs);
 
  private:
-
-  std::pair<size_t, size_t> get_index(const Real* member) const { return m_reals.get_index(member); }
-  std::pair<size_t, size_t> get_index(const Int* member)  const { return m_ints.get_index(member); }
-  std::pair<size_t, size_t> get_index(const bool* member) const { return m_bools.get_index(reinterpret_cast<const char*>(member)); }
 
   PTDImpl<Real> m_reals; // manage real data with this member
   PTDImpl<Int>  m_ints;  // manage int data with this member

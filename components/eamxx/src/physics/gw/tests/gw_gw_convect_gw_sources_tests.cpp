@@ -38,10 +38,10 @@ struct UnitWrap::UnitTest<D>::TestGwConvectGwSources : public UnitWrap::UnitTest
     // Set up inputs
     GwConvectGwSourcesData baseline_data[] = {
       //                   ncol, hdepth_min
-      GwConvectGwSourcesData(10,     2000., front_init_data[0]),
-      GwConvectGwSourcesData(11,     3000., front_init_data[1]),
-      GwConvectGwSourcesData(12,     4000., front_init_data[2]),
-      GwConvectGwSourcesData(13,     5000., front_init_data[3]),
+      GwConvectGwSourcesData(10,     0, front_init_data[0]),
+      GwConvectGwSourcesData(11,     0, front_init_data[1]),
+      GwConvectGwSourcesData(12,     0, front_init_data[2]),
+      GwConvectGwSourcesData(13,     0, front_init_data[3]),
     };
 
     static constexpr Int num_runs = sizeof(baseline_data) / sizeof(GwConvectGwSourcesData);
@@ -49,7 +49,7 @@ struct UnitWrap::UnitTest<D>::TestGwConvectGwSources : public UnitWrap::UnitTest
     // Generate random input data
     // Alternatively, you can use the baseline_data construtors/initializer lists to hardcode data
     for (auto& d : baseline_data) {
-      d.randomize(engine);
+      d.randomize(engine, { {d.maxi, {10, 20}}, {d.mini, {40, 50}}, {d.hdepth, {1., 9.}} });
     }
 
     // Create copies of data for use by test. Needs to happen before read calls so that
@@ -70,7 +70,12 @@ struct UnitWrap::UnitTest<D>::TestGwConvectGwSources : public UnitWrap::UnitTest
 
     // Get data from test
     for (auto& d : test_data) {
-      gw_convect_gw_sources(d);
+      if (this->m_baseline_action == GENERATE) {
+        gw_convect_gw_sources_f(d);
+      }
+      else {
+        gw_convect_gw_sources(d);
+      }
     }
 
     // Verify BFB results, all data should be in C layout
@@ -78,8 +83,8 @@ struct UnitWrap::UnitTest<D>::TestGwConvectGwSources : public UnitWrap::UnitTest
       for (Int i = 0; i < num_runs; ++i) {
         GwConvectGwSourcesData& d_baseline = baseline_data[i];
         GwConvectGwSourcesData& d_test = test_data[i];
+        REQUIRE(d_baseline.total(d_baseline.tau) == d_test.total(d_test.tau));
         for (Int k = 0; k < d_baseline.total(d_baseline.tau); ++k) {
-          REQUIRE(d_baseline.total(d_baseline.tau) == d_test.total(d_test.tau));
           REQUIRE(d_baseline.tau[k] == d_test.tau[k]);
         }
 

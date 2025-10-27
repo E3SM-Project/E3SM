@@ -32,6 +32,8 @@
 #include "diagnostics/binary_ops.hpp"
 #include "diagnostics/histogram.hpp"
 #include "diagnostics/pbl_entrainment_budget.hpp"
+#include "diagnostics/below_or_above_interface.hpp"
+#include "diagnostics/unary_ops.hpp"
 
 namespace scream {
 
@@ -67,6 +69,8 @@ inline void register_diagnostics () {
   diag_factory.register_product("BinaryOpsDiag", &create_atmosphere_diagnostic<BinaryOpsDiag>);
   diag_factory.register_product("HistogramDiag",&create_atmosphere_diagnostic<HistogramDiag>);
   diag_factory.register_product("PBLEntrainmentBudget",&create_atmosphere_diagnostic<PBLEntrainmentBudget>);
+  diag_factory.register_product("BelowOrAboveInterface",&create_atmosphere_diagnostic<BelowOrAboveInterface>);
+  diag_factory.register_product("UnaryOpsDiag",&create_atmosphere_diagnostic<UnaryOpsDiag>);
 }
 
 } // namespace scream
