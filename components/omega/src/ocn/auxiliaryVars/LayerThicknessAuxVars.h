@@ -26,11 +26,14 @@ class LayerThicknessAuxVars {
    KOKKOS_FUNCTION void
    computeVarsOnEdge(int IEdge, int KChunk, const Array2DReal &LayerThickCell,
                      const Array2DReal &NormalVelEdge) const {
-      const int KStart = KChunk * VecLength;
+      const int KStart = MinLayerEdgeBot(IEdge) + KChunk * VecLength;
+      const int KLen =
+          Kokkos::min(MaxLayerEdgeTop(IEdge) - KStart + 1, VecLength);
+
       const int JCell0 = CellsOnEdge(IEdge, 0);
       const int JCell1 = CellsOnEdge(IEdge, 1);
 
-      for (int KVec = 0; KVec < VecLength; ++KVec) {
+      for (int KVec = 0; KVec < KLen; ++KVec) {
          const int K = KStart + KVec;
          MeanLayerThickEdge(IEdge, K) =
              0.5_Real * (LayerThickCell(JCell0, K) + LayerThickCell(JCell1, K));
@@ -38,7 +41,7 @@ class LayerThicknessAuxVars {
 
       switch (FluxThickEdgeChoice) {
       case FluxThickEdgeOption::Center:
-         for (int KVec = 0; KVec < VecLength; ++KVec) {
+         for (int KVec = 0; KVec < KLen; ++KVec) {
             const int K = KStart + KVec;
             FluxLayerThickEdge(IEdge, K) =
                 0.5_Real *
@@ -46,7 +49,7 @@ class LayerThicknessAuxVars {
          }
          break;
       case FluxThickEdgeOption::Upwind:
-         for (int KVec = 0; KVec < VecLength; ++KVec) {
+         for (int KVec = 0; KVec < KLen; ++KVec) {
             const int K = KStart + KVec;
             if (NormalVelEdge(IEdge, K) > 0) {
                FluxLayerThickEdge(IEdge, K) = LayerThickCell(JCell0, K);
@@ -66,8 +69,10 @@ class LayerThicknessAuxVars {
                       const Array2DReal &LayerThickCell) const {
 
       // Temporary for stacked shallow water
-      const int KStart = KChunk * VecLength;
-      for (int KVec = 0; KVec < VecLength; ++KVec) {
+      const int KStart = MinLayerCell(ICell) + KChunk * VecLength;
+      const int KLen = Kokkos::min(MaxLayerCell(ICell) - KStart + 1, VecLength);
+
+      for (int KVec = 0; KVec < KLen; ++KVec) {
          const int K       = KStart + KVec;
          SshCell(ICell, K) = LayerThickCell(ICell, K) - BottomDepth(ICell);
       }
@@ -89,6 +94,10 @@ class LayerThicknessAuxVars {
  private:
    Array2DI4 CellsOnEdge;
    Array1DReal BottomDepth;
+   Array1DI4 MinLayerEdgeBot;
+   Array1DI4 MaxLayerEdgeTop;
+   Array1DI4 MinLayerCell;
+   Array1DI4 MaxLayerCell;
 };
 
 } // namespace OMEGA

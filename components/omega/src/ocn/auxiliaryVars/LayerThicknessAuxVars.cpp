@@ -14,7 +14,10 @@ LayerThicknessAuxVars::LayerThicknessAuxVars(const std::string &AuxStateSuffix,
                          Mesh->NEdgesSize, VCoord->NVertLayers),
       SshCell("SshCell" + AuxStateSuffix, Mesh->NCellsSize,
               VCoord->NVertLayers),
-      CellsOnEdge(Mesh->CellsOnEdge), BottomDepth(Mesh->BottomDepth) {}
+      CellsOnEdge(Mesh->CellsOnEdge), BottomDepth(Mesh->BottomDepth),
+      MinLayerEdgeBot(VCoord->MinLayerEdgeBot),
+      MaxLayerEdgeTop(VCoord->MaxLayerEdgeTop),
+      MinLayerCell(VCoord->MinLayerCell), MaxLayerCell(VCoord->MaxLayerCell) {}
 
 void LayerThicknessAuxVars::registerFields(const std::string &AuxGroupName,
                                            const std::string &MeshName) const {

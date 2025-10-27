@@ -24,7 +24,12 @@ VorticityAuxVars::VorticityAuxVars(const std::string &AuxStateSuffix,
       EdgeSignOnVertex(Mesh->EdgeSignOnVertex), DcEdge(Mesh->DcEdge),
       KiteAreasOnVertex(Mesh->KiteAreasOnVertex),
       AreaTriangle(Mesh->AreaTriangle), FVertex(Mesh->FVertex),
-      VerticesOnEdge(Mesh->VerticesOnEdge) {}
+      VerticesOnEdge(Mesh->VerticesOnEdge),
+      MinLayerVertexTop(VCoord->MinLayerVertexTop),
+      MaxLayerVertexBot(VCoord->MaxLayerVertexBot),
+      MinLayerCell(VCoord->MinLayerCell), MaxLayerCell(VCoord->MaxLayerCell),
+      MinLayerEdgeTop(VCoord->MinLayerEdgeTop),
+      MaxLayerEdgeBot(VCoord->MaxLayerEdgeBot) {}
 
 void VorticityAuxVars::registerFields(const std::string &AuxGroupName,
                                       const std::string &MeshName) const {

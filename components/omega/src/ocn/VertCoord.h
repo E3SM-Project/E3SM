@@ -31,6 +31,14 @@ enum class MovementWeightType {
    Uniform /// Uniform stretching
 };
 
+KOKKOS_INLINE_FUNCTION int vertRange(int KMin, int KMax) {
+   return KMax - KMin + 1;
+}
+
+KOKKOS_INLINE_FUNCTION int vertRangeChunked(int KMin, int KMax) {
+   return (vertRange(KMin, KMax) + VecLength - 1) / VecLength;
+}
+
 class VertCoord {
 
  private:

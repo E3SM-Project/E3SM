@@ -22,7 +22,9 @@ class VelocityDel2AuxVars {
    KOKKOS_FUNCTION void
    computeVarsOnEdge(int IEdge, int KChunk, const Array2DReal &VelocityDivCell,
                      const Array2DReal &RelVortVertex) const {
-      const int KStart = KChunk * VecLength;
+      const int KStart = MinLayerEdgeBot(IEdge) + KChunk * VecLength;
+      const int KLen =
+          Kokkos::min(MaxLayerEdgeTop(IEdge) - KStart + 1, VecLength);
 
       const int JCell0   = CellsOnEdge(IEdge, 0);
       const int JCell1   = CellsOnEdge(IEdge, 1);
@@ -47,35 +49,39 @@ class VelocityDel2AuxVars {
 
    KOKKOS_FUNCTION void computeVarsOnCell(int ICell, int KChunk) const {
       const Real InvAreaCell = 1._Real / AreaCell(ICell);
-      const int KStart       = KChunk * VecLength;
+      const int KStart       = MinLayerCell(ICell) + KChunk * VecLength;
+      const int KLen = Kokkos::min(MaxLayerCell(ICell) - KStart + 1, VecLength);
 
       Real Del2DivCellTmp[VecLength] = {0};
 
       for (int J = 0; J < NEdgesOnCell(ICell); ++J) {
          const int JEdge     = EdgesOnCell(ICell, J);
          const Real AreaEdge = 0.5_Real * DvEdge(JEdge) * DcEdge(JEdge);
-         for (int KVec = 0; KVec < VecLength; ++KVec) {
+         for (int KVec = 0; KVec < KLen; ++KVec) {
             const int K = KStart + KVec;
             Del2DivCellTmp[KVec] -= DvEdge(JEdge) * InvAreaCell *
                                     EdgeSignOnCell(ICell, J) *
                                     Del2Edge(JEdge, K);
          }
       }
-      for (int KVec = 0; KVec < VecLength; ++KVec) {
+      for (int KVec = 0; KVec < KLen; ++KVec) {
          const int K           = KStart + KVec;
          Del2DivCell(ICell, K) = Del2DivCellTmp[KVec];
       }
    }
 
    KOKKOS_FUNCTION void computeVarsOnVertex(int IVertex, int KChunk) const {
-      const int KStart           = KChunk * VecLength;
+      const int KStart = MinLayerVertexBot(IVertex) + KChunk * VecLength;
+      const int KLen =
+          Kokkos::min(MaxLayerVertexTop(IVertex) - KStart + 1, VecLength);
+
       const Real InvAreaTriangle = 1._Real / AreaTriangle(IVertex);
 
       Real Del2RelVortVertexTmp[VecLength] = {0};
 
       for (int J = 0; J < VertexDegree; ++J) {
          const int JEdge = EdgesOnVertex(IVertex, J);
-         for (int KVec = 0; KVec < VecLength; ++KVec) {
+         for (int KVec = 0; KVec < KLen; ++KVec) {
             const int K = KStart + KVec;
             Del2RelVortVertexTmp[KVec] += InvAreaTriangle * DcEdge(JEdge) *
                                           EdgeSignOnVertex(IVertex, J) *
@@ -83,7 +89,7 @@ class VelocityDel2AuxVars {
          }
       }
 
-      for (int KVec = 0; KVec < VecLength; ++KVec) {
+      for (int KVec = 0; KVec < KLen; ++KVec) {
          const int K                   = KStart + KVec;
          Del2RelVortVertex(IVertex, K) = Del2RelVortVertexTmp[KVec];
       }
@@ -107,6 +113,12 @@ class VelocityDel2AuxVars {
    Array1DReal AreaTriangle;
    Array2DReal EdgeMask;
    I4 VertexDegree;
+   Array1DI4 MinLayerEdgeBot;
+   Array1DI4 MaxLayerEdgeTop;
+   Array1DI4 MinLayerVertexBot;
+   Array1DI4 MaxLayerVertexTop;
+   Array1DI4 MinLayerCell;
+   Array1DI4 MaxLayerCell;
 };
 
 } // namespace OMEGA
