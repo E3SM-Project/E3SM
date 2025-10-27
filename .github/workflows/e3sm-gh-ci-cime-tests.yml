@@ -7,7 +7,6 @@ on:
       - maint-3.0
     paths:
       # first, yes to these
-      - '.github/workflows/e3sm-gh-ci-cime-tests.yml'
       - 'cime_config/**'
       - 'components/eam/**'
       - 'components/eamxx/**'
@@ -15,12 +14,11 @@ on:
       - 'driver-moab/**'
       - 'driver-mct/**'
       # second, no to these
-      - '!components/eam/docs/**'
-      - '!components/eam/mkdocs.yml'
-      - '!components/eamxx/docs/**'
-      - '!components/eamxx/mkdocs.yml'
-      - '!components/elm/docs/**'
-      - '!components/elm/mkdocs.yml'
+      - '!**/docs/**'
+      - '!**/mkdocs.yml'
+      - '!.github/workflows/**'
+      # Third, DO run if THIS workflow file changes
+      - '.github/workflows/e3sm-gh-ci-cime-tests.yml'
 
   workflow_dispatch:
 
