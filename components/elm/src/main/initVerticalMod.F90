@@ -14,7 +14,8 @@ module initVerticalMod
   use spmdMod        , only : masterproc
   use elm_varpar     , only : more_vertlayers, nlevsno, nlevgrnd, nlevlak
   use elm_varpar     , only : toplev_equalspace, nlev_equalspace
-  use elm_varpar     , only : nlevsoi, nlevsoifl, nlevurb, nlevslp 
+  use elm_varpar     , only : nlevsoi, nlevsoifl, nlevurb, nlevslp
+  use elm_varpar     , only : nlevdecomp, scalez, zecoeff
   use elm_varctl     , only : fsurdat, iulog, use_var_soil_thick
   use elm_varctl     , only : use_vancouver, use_mexicocity, use_vertsoilc, use_extralakelayers, use_extrasnowlayers
   use elm_varctl     , only : use_erosion, use_polygonal_tundra
@@ -26,7 +27,7 @@ module initVerticalMod
   use ColumnType     , only : col_pp
   use ColumnDataType , only : col_ws
   use SnowHydrologyMod, only : InitSnowLayers
-  use ncdio_pio
+  use ncdio_pio       , only : file_desc_t, ncd_io, ncd_pio_openfile, ncd_pio_closefile , ncd_inqdlen
   use topounit_varcon  , only : max_topounits
   use GridcellType     , only : grc_pp
   !
@@ -50,12 +51,16 @@ contains
     real(r8)            , intent(in)    :: thick_wall(bounds%begl:)
     real(r8)            , intent(in)    :: thick_roof(bounds%begl:)
     !
-    ! LOCAL VARAIBLES:
-    integer               :: c,l,t,ti,topi,g,i,j,lev     ! indices 
+    ! LOCAL PARAMETERS
+    integer, parameter :: ndtbname = 2 ! Number of names to try for depth to bedrock
+    !
+    ! LOCAL VARIABLES:
+    integer               :: c,l,t,ti,topi,g,i,j,lev,n     ! indices 
     type(file_desc_t)     :: ncid              ! netcdf id
-    logical               :: readvar 
+    logical               :: readvar           ! Flag: variable was successfully read
     integer               :: dimid             ! dimension id
     character(len=256)    :: locfn             ! local filename
+    real(r8) ,pointer     :: zsoi_in(:)        ! read in - soil information
     real(r8) ,pointer     :: std (:)           ! read in - topo_std
     real(r8) ,pointer     :: tslope (:)        ! read in - topo_slope
     real(r8) ,pointer     :: gradz(:)          ! read in - gradz (polygonal tundra only)
@@ -68,7 +73,6 @@ contains
     real(r8)              :: slopebeta         ! temporary
     real(r8)              :: slopemax          ! temporary
     integer               :: ier               ! error status
-    real(r8)              :: scalez = 0.025_r8 ! Soil layer thickness discretization (m)
     real(r8)              :: thick_equal = 0.2
     real(r8) ,pointer     :: lakedepth_in(:,:)   ! read in - lakedepth 
     real(r8), allocatable :: zurb_wall(:,:)    ! wall (layer node depth)
@@ -80,6 +84,7 @@ contains
     real(r8)              :: depthratio        ! ratio of lake depth to standard deep lake depth 
     integer               :: begc, endc
     integer               :: begl, endl
+    character(len=256), dimension(ndtbname) :: dtbname ! List of possible names for depth to bedrock
     !------------------------------------------------------------------------
 
     begc = bounds%begc; endc= bounds%endc
@@ -95,24 +100,54 @@ contains
     call ncd_pio_openfile (ncid, locfn, 0)
 
     call ncd_inqdlen(ncid, dimid, nlevsoifl, name='nlevsoi')
-    if ( .not. more_vertlayers )then
-       if ( nlevsoifl /= nlevsoi )then
-          call shr_sys_abort(' ERROR: Number of soil layers on file does NOT match the number being used'//&
+
+
+    if ( .not. more_vertlayers ) then
+       !    Removed the requirement for nlevsoifl to match nlevsoi, but we make sure the
+       ! number of input layers do not exceed the maximum allocated, to avoid segmentation
+       ! violation errors.
+       if ( nlevsoifl > nlevgrnd ) then
+          call shr_sys_abort(' ERROR: Number of soil layers on file exceeds the maximum number of layers allowed (nlevgrnd)'//&
                errMsg(__FILE__, __LINE__))
+       elseif ( nlevsoifl /= nlevsoi ) then
+          !   Surface file has a different number of soil levels, update the simulation to
+          ! match the surface file.
+          nlevsoi    = nlevsoifl
+          if (use_vertsoilc) nlevdecomp = nlevsoifl
        end if
     else
        ! read in layers, interpolate to high resolution grid later
     end if
 
     ! --------------------------------------------------------------------
-    ! Define layer structure for soil, lakes, urban walls and roof 
-    ! Vertical profile of snow is not initialized here - but below
-    ! --------------------------------------------------------------------
-    
-    ! Soil layers and interfaces (assumed same for all non-lake patches)
+    !    Define layer structure for soil, lakes, urban walls and roof. We first check
+    ! whether or not soil layers exist in the surfacefile. If so, we use the layers from
+    ! the file. Otherwise, we define the layers using the default parameters, but
+    ! further checking if the run should include intermediate layers with equal 
+    ! thicknesses.
+    !     In soil layers and interfaces (assumed same for all non-lake patches),
     ! "0" refers to soil surface and "nlevsoi" refers to the bottom of model soil
-    
-    if ( more_vertlayers )then
+    ! 
+    ! Note: vertical profile of snow is not initialized here - but below
+    ! --------------------------------------------------------------------
+    ! Try to read soil information from the file.
+    allocate (zsoi_in(nlevsoi))
+    call ncd_io(ncid=ncid, varname='ZSOI', flag='read', data=zsoi_in, dim1name=grlnd, readvar=readvar)
+    if ( readvar ) then
+       ! -----------------------------------------------------------------
+       !    File contains soil information. We must complete the soil depth information for
+       ! layers beneath nlevsoi, using the original scaling parameters for increasing the
+       ! depth of the layers, but acknowledging that the layer must be beneath the deepest
+       ! input soil layer.
+       ! -----------------------------------------------------------------
+       zsoi(1:nlevsoi) = zsoi_in(1:nlevsoi)
+       do j = nlevsoi+1, nlevgrnd
+          zsoi(j) = zsoi(nlevsoi) + &
+             scalez*(exp(zecoeff*(j -0.5_r8))-exp(zecoeff*(nlevsoi-0.5_r8)))
+       end do
+
+
+    elseif ( more_vertlayers )then
        ! replace standard exponential grid with a grid that starts out exponential, 
        ! then has several evenly spaced layers, then finishes off exponential. 
        ! this allows the upper soil to behave as standard, but then continues 
@@ -120,7 +155,7 @@ contains
        ! dynamics are not lost due to an inability to resolve temperature, moisture, 
        ! and biogeochemical dynamics at the base of the active layer
        do j = 1, toplev_equalspace
-          zsoi(j) = scalez*(exp(0.5_r8*(j-0.5_r8))-1._r8)    !node depths
+          zsoi(j) = scalez*(exp(zecoeff*(j-0.5_r8))-1._r8)    !node depths
        enddo
 
        do j = toplev_equalspace+1,toplev_equalspace + nlev_equalspace
@@ -128,14 +163,18 @@ contains
        enddo
 
        do j = toplev_equalspace + nlev_equalspace +1, nlevgrnd
-          zsoi(j) = scalez*(exp(0.5_r8*((j - nlev_equalspace)-0.5_r8))-1._r8) + nlev_equalspace * thick_equal
+          zsoi(j) = scalez*(exp(zecoeff*((j - nlev_equalspace)-0.5_r8))-1._r8) + nlev_equalspace * thick_equal
        enddo
     else
-
+       ! -----------------------------------------------------------------
+       !    Soil layers not available from the input, and no additional layers needed. Use the
+       ! default soil thickness settings.
+       ! -----------------------------------------------------------------
        do j = 1, nlevgrnd
-          zsoi(j) = scalez*(exp(0.5_r8*(j-0.5_r8))-1._r8)    !node depths
+          zsoi(j) = scalez*(exp(zecoeff*(j-0.5_r8))-1._r8)    !node depths
        enddo
     end if
+    deallocate(zsoi_in)
 
     dzsoi(1) = 0.5_r8*(zsoi(1)+zsoi(2))             !thickness b/n two interfaces
     do j = 2,nlevgrnd-1
@@ -629,9 +668,22 @@ contains
 
       if (use_var_soil_thick) then
          allocate(dtb(bounds%begg:bounds%endg,1:max_topounits))
-         call ncd_io(ncid=ncid, varname='aveDTB', flag='read', data=dtb, dim1name=grlnd, readvar=readvar)
+
+         !    ELM and CLM use different names for depth to bedrock in the surface file
+         ! ('aveDTB' and 'zbedrock', respectively).  To keep cross-model compatibility, we 
+         ! test both names before falling back to the default number of layers. 
+         dtbname(1) = 'aveDTB'
+         dtbname(2) = 'zbedrock'
+         readvar = .false.
+         do n=1,ndtbname
+            if (.not. readvar) then
+               call ncd_io(ncid=ncid, varname=dtbname(n), flag='read', data=dtb, dim1name=grlnd, readvar=readvar)
+            end if
+         end do
+
+
          if (.not. readvar) then
-            write(iulog,*) 'aveDTB not in surfdata: reverting to default 10 layers.'
+            write(iulog,fmt='(a,i5,a)') 'aveDTB not in surfdata: reverting to default ',nlevsoi,' layers.'
             do c = begc,endc
                col_pp%nlevbed(c) = nlevsoi
 	       col_pp%zibed(c) = zisoi(nlevsoi)

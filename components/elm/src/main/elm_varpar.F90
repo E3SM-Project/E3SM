@@ -72,6 +72,17 @@ module elm_varpar
 
   integer, parameter :: nlevslp = 11          ! number of slope percentile levels
 
+  !   Parameters that define the thickness of the soil layers. By default, we define the 
+  ! mid-point of the soil layers as:
+  !
+  !    zsoi(j) = scalez * ( exp( zecoeff * (j - 0.5_r8) ) - 1.0_r8 )
+  !
+  !   The default values scalez = 0.025_r8 and zecoeff = 0.50_r8 trace back to the original
+  ! ELM configuration, but depending on the specific needs by the user, these can be
+  ! modified.
+  real(r8), parameter :: scalez  = 0.025_r8
+  real(r8), parameter :: zecoeff = 0.50_r8
+
   ! constants for decomposition cascade
 
   integer :: i_met_lit 
