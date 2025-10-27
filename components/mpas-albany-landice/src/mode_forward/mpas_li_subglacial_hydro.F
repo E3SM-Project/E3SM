@@ -1001,13 +1001,27 @@ module li_subglacial_hydro
                cell1 = cellsOnEdge(1, iEdge)
                cell2 = cellsOnEdge(2, iEdge)
                if (li_mask_is_grounded_ice(cellMask(cell1))) then ! cell2 is the icefree cell - replace phi there with cell1 Phig
-                  hydropotentialBaseSlopeNormal(iEdge) = - waterPressure(cell1) / dcEdge(iEdge)
-                  hydropotentialSlopeNormal(iEdge) = - (rho_water * gravity * waterThickness(cell1) + waterPressure(cell1)) / dcEdge(iEdge)
+                  if (bedTopography(cell2) < bedTopography(cell1)) then
+                     hydropotentialBaseSlopeNormal(iEdge) = - waterPressure(cell1) / dcEdge(iEdge)
+                     hydropotentialSlopeNormal(iEdge) = - (rho_water * gravity * waterThickness(cell1) + waterPressure(cell1)) / dcEdge(iEdge)
+                  else
+                     ! If bare ground elevation is higher than elevation beneath the ice, no flux
+                     hydropotentialBaseSlopeNormal(iEdge) = 0.0_RKIND
+                     hydropotentialSlopeNormal(iEdge) = 0.0_RKIND
+                     waterPressureSlopeNormal(iEdge) = 0.0_RKIND
+                  endif
                else ! cell1 is the icefree cell - replace phi there with cell2 Phig
-                  hydropotentialBaseSlopeNormal(iEdge) = waterPressure(cell2) / dcEdge(iEdge)
-                  hydropotentialSlopeNormal(iEdge) = (rho_water * gravity * waterThickness(cell2) + waterPressure(cell2)) / dcEdge(iEdge)
+                  if (bedTopography(cell1) < bedTopography(cell2)) then
+                     hydropotentialBaseSlopeNormal(iEdge) = waterPressure(cell2) / dcEdge(iEdge)
+                     hydropotentialSlopeNormal(iEdge) = (rho_water * gravity * waterThickness(cell2) + waterPressure(cell2)) / dcEdge(iEdge)
+                  else
+                     ! If bare ground elevation is higher than elevation beneath the ice, no flux
+                     hydropotentialBaseSlopeNormal(iEdge) = 0.0_RKIND
+                     hydropotentialSlopeNormal(iEdge) = 0.0_RKIND
+                     waterPressureSlopeNormal(iEdge) = 0.0_RKIND
+                  endif
                endif ! which cell is icefree
-            else
+            else ! if disallow terrestrial outflow
                hydropotentialBaseSlopeNormal(iEdge) = 0.0_RKIND
                hydropotentialSlopeNormal(iEdge) = 0.0_RKIND
                waterPressureSlopeNormal(iEdge) = 0.0_RKIND
