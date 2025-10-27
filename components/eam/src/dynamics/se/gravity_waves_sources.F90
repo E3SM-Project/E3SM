@@ -151,8 +151,8 @@ CONTAINS
     integer :: k,kptr,i,j,ie,component
     real(kind=real_kind) :: frontgf_gll(np,np,nlev,nets:nete)
     real(kind=real_kind) :: gradth_gll(np,np,2,nlev,nets:nete)  ! grad(theta)
-    real(kind=real_kind) :: zint(np,np,nlevp)           ! interface altitude
-    real(kind=real_kind) :: zmid(np,np,nlev)            ! mid-point altitude
+    real(kind=real_kind) :: zint(np,np,nlevp)           ! interface geopotential
+    real(kind=real_kind) :: zmid(np,np,nlev)            ! mid-point geopotential
     real(kind=real_kind) :: pint(np,np,nlevp)           ! interface hydrostatic pressure
     real(kind=real_kind) :: pmid(np,np,nlev)            ! mid-point hydrostatic pressure
     real(kind=real_kind) :: temperature(np,np,nlev)     ! Temperature
