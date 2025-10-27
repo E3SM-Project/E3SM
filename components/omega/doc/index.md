@@ -61,6 +61,7 @@ devGuide/CondaEnv
 devGuide/Linting
 devGuide/Docs
 devGuide/BuildDocs
+devGuide/Testing
 devGuide/DataTypes
 devGuide/MachEnv
 devGuide/Config
