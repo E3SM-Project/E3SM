@@ -5,11 +5,12 @@ on:
     branches: 
       - master
       - maint-3.0
-    paths-ignore:
-      - 'mkdocs.yaml'
-      - 'docs/**'
-      - 'components/*/docs/**'
-      - 'components/*/mkdocs.yml'
+    paths:
+      - '!**/docs/**'
+      - '!**/mkdocs.yml'
+      - '!.github/workflows/**'
+      - '.github/workflows/e3sm-gh-ci-w-cime-tests.yml'
+
 
   workflow_dispatch:
 
