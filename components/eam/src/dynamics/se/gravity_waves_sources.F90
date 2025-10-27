@@ -128,7 +128,12 @@ CONTAINS
     use dyn_comp,           only: hvcoord
     use spmd_utils,         only: iam 
     use parallel_mod,       only: par 
-    use element_ops,        only: get_temperature, get_hydro_pressure_i, get_phi
+    use element_ops,        only: get_temperature, get_hydro_pressure_i
+#ifdef MODEL_THETA_L
+    use element_ops,        only: get_phi
+#else
+    use element_ops,        only: get_phi, get_phi_i
+#endif
     use dyn_grid,           only: fv_nphys
     use prim_driver_mod,    only: deriv1
     use gllfvremap_mod,     only: gfr_g2f_scalar, gfr_g2f_vector
@@ -215,7 +220,12 @@ CONTAINS
 
         if (use_fgf_zgrad_correction) then
           ! compute geopotential
+#ifdef MODEL_THETA_L
           call get_phi(elem(ie), zmid, zint, hvcoord, tl)
+#else
+          call get_phi(elem(ie), zmid, hvcoord, tl, -1)
+          call get_phi_i(elem(ie), zint, hvcoord, tl, -1)
+#endif
           ! compute d(theta)/dz
           call compute_vertical_derivative(zint,theta,theta_dvert)
         end if
