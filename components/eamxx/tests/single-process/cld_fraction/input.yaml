@@ -15,6 +15,7 @@ eamxx:
     ice_cloud_for_analysis_threshold: 1e-5
     py_module_name: ${PY_MODULE_NAME}
     py_module_path: ${PY_MODULE_PATH}
+    py_backend: ${PY_BACKEND}
 
 grids_manager:
   type: mesh_free
