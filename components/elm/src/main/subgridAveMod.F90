@@ -1012,12 +1012,6 @@ contains
     garr(bounds%begg : bounds%endg) = spval
     sumwt(bounds%begg : bounds%endg) = 0._r8
     do c = bounds%begc,bounds%endc
-       !Check for NaN values in carr
-       !FIXME: iac_present if condition is used as the NaN check fails for the default E3SM
-       !(without IAC). Someone should investigate this further.
-       if (iac_present) then 
-         if (isnan(carr(c))) call endrun(msg='carr(c) is NaN '//errMsg(__FILE__, __LINE__))
-       endif
        if (col_pp%active(c) .and. col_pp%wtgcell(c) /= 0._r8) then
           l = col_pp%landunit(c)
           if (carr(c) /= spval .and. scale_c2l(c) /= spval .and. scale_l2g(l) /= spval) then
