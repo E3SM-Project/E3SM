@@ -12,7 +12,7 @@ on:
       - ./tools/docs/**
       - components/*/mkdocs.yaml
       - components/*/docs/**
-      - components/eamxx/cime_config/namelist_defaults_scream.xml
+      - components/eamxx/cime_config/namelist_defaults_eamxx.xml
   # Runs every time a PR is open against master
   pull_request:
     branches: ["master"]
@@ -24,7 +24,7 @@ on:
       - ./tools/docs/**
       - components/*/mkdocs.yaml
       - components/*/docs/**
-      - components/eamxx/cime_config/namelist_defaults_scream.xml
+      - components/eamxx/cime_config/namelist_defaults_eamxx.xml
   workflow_dispatch:
 
 concurrency:
