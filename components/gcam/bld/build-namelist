@@ -474,7 +474,7 @@ add_default($nl, 'fdyndat_ehc');
 
 # runtime options
 add_default($nl, 'read_scalars');
-add_default($nl, 'scalar_source_dir', 'nofail'=>1);
+add_default($nl, 'scalar_source_dir', 'val'=>'');
 add_default($nl, 'write_scalars');
 add_default($nl, 'write_co2');
 add_default($nl, 'elm_ehc_agyield_scaling');
