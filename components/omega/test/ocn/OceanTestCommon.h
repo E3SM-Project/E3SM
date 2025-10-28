@@ -66,6 +66,7 @@ KOKKOS_INLINE_FUNCTION void tangentVector(Real (&TanVec)[3],
 enum class EdgeComponent { Normal, Tangential };
 enum class Geometry { Planar, Spherical };
 enum class ExchangeHalos { Yes, No };
+enum class SetBoundary { Yes = 1, No = 0 };
 
 // helper to get vertical iteration bounds that can be provided
 // either as an integer or an array
@@ -84,17 +85,20 @@ template <class Functor, class Array, class VertMin, class VertMax>
 int setScalar(const Functor &Fun, const Array &ScalarElement, Geometry Geom,
               const HorzMesh *Mesh, MeshElement Element, const VertMin &VMin,
               const VertMax &VMax,
-              ExchangeHalos ExchangeHalosOpt = ExchangeHalos::Yes) {
+              ExchangeHalos ExchangeHalosOpt = ExchangeHalos::Yes,
+              SetBoundary SetBndOpt          = SetBoundary::No) {
 
    int Err = 0;
 
    int NElementsOwned;
+   int NElementsSize;
    Array1DReal XElement, YElement;
    Array1DReal LonElement, LatElement;
 
    switch (Element) {
    case OnCell:
       NElementsOwned = Mesh->NCellsOwned;
+      NElementsSize  = Mesh->NCellsSize;
       XElement       = createDeviceMirrorCopy(Mesh->XCellH);
       YElement       = createDeviceMirrorCopy(Mesh->YCellH);
       LonElement     = createDeviceMirrorCopy(Mesh->LonCellH);
@@ -102,6 +106,7 @@ int setScalar(const Functor &Fun, const Array &ScalarElement, Geometry Geom,
       break;
    case OnVertex:
       NElementsOwned = Mesh->NVerticesOwned;
+      NElementsSize  = Mesh->NVerticesSize;
       XElement       = createDeviceMirrorCopy(Mesh->XVertexH);
       YElement       = createDeviceMirrorCopy(Mesh->YVertexH);
       LonElement     = createDeviceMirrorCopy(Mesh->LonVertexH);
@@ -109,6 +114,7 @@ int setScalar(const Functor &Fun, const Array &ScalarElement, Geometry Geom,
       break;
    case OnEdge:
       NElementsOwned = Mesh->NEdgesOwned;
+      NElementsSize  = Mesh->NEdgesSize;
       XElement       = createDeviceMirrorCopy(Mesh->XEdgeH);
       YElement       = createDeviceMirrorCopy(Mesh->YEdgeH);
       LonElement     = createDeviceMirrorCopy(Mesh->LonEdgeH);
@@ -120,9 +126,14 @@ int setScalar(const Functor &Fun, const Array &ScalarElement, Geometry Geom,
       return 1;
    }
 
+   const int NElementsSet = NElementsOwned + static_cast<int>(SetBndOpt);
+
    if constexpr (Array::rank == 1) {
       parallelFor(
-          {NElementsOwned}, KOKKOS_LAMBDA(int IElement) {
+          {NElementsSet}, KOKKOS_LAMBDA(int IElement) {
+             if (SetBndOpt == SetBoundary::Yes) {
+                IElement = IElement == 0 ? (NElementsSize - 1) : (IElement - 1);
+             }
              if (Geom == Geometry::Planar) {
                 const Real X            = XElement(IElement);
                 const Real Y            = YElement(IElement);
@@ -139,8 +150,10 @@ int setScalar(const Functor &Fun, const Array &ScalarElement, Geometry Geom,
       const int NVertLayers = ScalarElement.extent_int(1);
 
       parallelForOuter(
-          {NElementsOwned},
-          KOKKOS_LAMBDA(int IElement, const TeamMember &Team) {
+          {NElementsSet}, KOKKOS_LAMBDA(int IElement, const TeamMember &Team) {
+             if (SetBndOpt == SetBoundary::Yes) {
+                IElement = IElement == 0 ? (NElementsSize - 1) : (IElement - 1);
+             }
              const int KMin   = getVertBound(VMin, IElement);
              const int KMax   = getVertBound(VMax, IElement);
              const int KRange = KMax - KMin + 1;
@@ -163,8 +176,11 @@ int setScalar(const Functor &Fun, const Array &ScalarElement, Geometry Geom,
    if constexpr (Array::rank == 3) {
       const int NTracers = ScalarElement.extent_int(0);
       parallelForOuter(
-          {NTracers, NElementsOwned},
+          {NTracers, NElementsSet},
           KOKKOS_LAMBDA(int L, int IElement, const TeamMember &Team) {
+             if (SetBndOpt == SetBoundary::Yes) {
+                IElement = IElement == 0 ? (NElementsSize - 1) : (IElement - 1);
+             }
              const int KMin   = getVertBound(VMin, IElement);
              const int KMax   = getVertBound(VMax, IElement);
              const int KRange = KMax - KMin + 1;
@@ -213,7 +229,8 @@ int setVectorEdge(const Functor &Fun, const Array &VectorFieldEdge,
                   EdgeComponent EdgeComp, Geometry Geom, const HorzMesh *Mesh,
                   const VertMin &VMin, const VertMax &VMax,
                   ExchangeHalos ExchangeHalosOpt   = ExchangeHalos::Yes,
-                  CartProjection CartProjectionOpt = CartProjection::Yes) {
+                  CartProjection CartProjectionOpt = CartProjection::Yes,
+                  SetBoundary SetBndOpt            = SetBoundary::No) {
 
    int Err = 0;
 
@@ -235,6 +252,8 @@ int setVectorEdge(const Functor &Fun, const Array &VectorFieldEdge,
    auto &AngleEdge      = Mesh->AngleEdge;
    auto &CellsOnEdge    = Mesh->CellsOnEdge;
    auto &VerticesOnEdge = Mesh->VerticesOnEdge;
+   const int NEdgesSize = Mesh->NEdgesSize;
+   const int NEdgesSet  = Mesh->NEdgesOwned + static_cast<int>(SetBndOpt);
 
    auto ProjectVector = KOKKOS_LAMBDA(int IEdge) {
       Real VecFieldEdge;
@@ -316,15 +335,20 @@ int setVectorEdge(const Functor &Fun, const Array &VectorFieldEdge,
 
    if constexpr (Array::rank == 1) {
       parallelFor(
-          {Mesh->NEdgesOwned}, KOKKOS_LAMBDA(int IEdge) {
+          {NEdgesSet}, KOKKOS_LAMBDA(int IEdge) {
+             if (SetBndOpt == SetBoundary::Yes) {
+                IEdge = IEdge == 0 ? (NEdgesSize - 1) : (IEdge - 1);
+             }
              VectorFieldEdge(IEdge) = ProjectVector(IEdge);
           });
    }
 
    if constexpr (Array::rank == 2) {
       parallelForOuter(
-          {Mesh->NEdgesOwned},
-          KOKKOS_LAMBDA(int IEdge, const TeamMember &Team) {
+          {NEdgesSet}, KOKKOS_LAMBDA(int IEdge, const TeamMember &Team) {
+             if (SetBndOpt == SetBoundary::Yes) {
+                IEdge = IEdge == 0 ? (NEdgesSize - 1) : (IEdge - 1);
+             }
              const int KMin   = getVertBound(VMin, IEdge);
              const int KMax   = getVertBound(VMax, IEdge);
              const int KRange = KMax - KMin + 1;
