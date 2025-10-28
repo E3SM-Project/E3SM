@@ -105,6 +105,11 @@ CONTAINS
   !   gradth = grad(theta)
   !   C = ( gradth dot grad ) U
   ! 
+  ! For more details on the frontal GW scheme and fronotogenesis source calculation:
+  !   Charron, M., and E. Manzini, 2002: Gravity Waves from Fronts:
+  !   Parameterization and Middle Atmosphere Response in a General
+  !   Circulation Model. J. Atmos. Sci., 59, 923–941
+  !
   ! Original by Mark Taylor, July 2011
   ! Change by Santos, 10 Aug 2011:
   !   Integrated into gravity_waves_sources module, several arguments made global
@@ -112,8 +117,8 @@ CONTAINS
   ! Change by Aaron Donahue, April 2017:
   !   Fixed bug where boundary information was called for processors not associated
   !   with dynamics when dyn_npes<npes
-  ! Change by Walter Hannah, Oct 2025:
-  !   added pressure gradient correction
+  ! Change by Walter Hannah and Wandi Yu, Oct 2025:
+  !   added pressure gradient correction options for consistency with original C&M paper
   ! 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     use physical_constants, only: kappa, g
@@ -123,7 +128,12 @@ CONTAINS
     use dyn_comp,           only: hvcoord
     use spmd_utils,         only: iam 
     use parallel_mod,       only: par 
-    use element_ops,        only: get_temperature, get_hydro_pressure_i, get_phi
+    use element_ops,        only: get_temperature, get_hydro_pressure_i
+#ifdef MODEL_THETA_L
+    use element_ops,        only: get_phi
+#else
+    use element_ops,        only: get_phi, get_phi_i
+#endif
     use dyn_grid,           only: fv_nphys
     use prim_driver_mod,    only: deriv1
     use gllfvremap_mod,     only: gfr_g2f_scalar, gfr_g2f_vector
@@ -141,8 +151,8 @@ CONTAINS
     integer :: k,kptr,i,j,ie,component
     real(kind=real_kind) :: frontgf_gll(np,np,nlev,nets:nete)
     real(kind=real_kind) :: gradth_gll(np,np,2,nlev,nets:nete)  ! grad(theta)
-    real(kind=real_kind) :: zint(np,np,nlevp)           ! interface altitude
-    real(kind=real_kind) :: zmid(np,np,nlev)            ! mid-point altitude
+    real(kind=real_kind) :: zint(np,np,nlevp)           ! interface geopotential
+    real(kind=real_kind) :: zmid(np,np,nlev)            ! mid-point geopotential
     real(kind=real_kind) :: pint(np,np,nlevp)           ! interface hydrostatic pressure
     real(kind=real_kind) :: pmid(np,np,nlev)            ! mid-point hydrostatic pressure
     real(kind=real_kind) :: temperature(np,np,nlev)     ! Temperature
@@ -210,7 +220,12 @@ CONTAINS
 
         if (use_fgf_zgrad_correction) then
           ! compute geopotential
+#ifdef MODEL_THETA_L
           call get_phi(elem(ie), zmid, zint, hvcoord, tl)
+#else
+          call get_phi(elem(ie), zmid, hvcoord, tl, -1)
+          call get_phi_i(elem(ie), zint, hvcoord, tl, -1)
+#endif
           ! compute d(theta)/dz
           call compute_vertical_derivative(zint,theta,theta_dvert)
         end if
