@@ -131,7 +131,7 @@ contains
     integer       :: ierr
 
     topodim = 2      ! topological dimension = 2: manifold mesh on the sphere
-    bridgedim = 1    ! use vertices = 0 as the bridge (other options: edges = 1)
+    bridgedim = 0    ! use vertices = 0 as the bridge (other options: edges = 1)
     nghostlayers = 1 ! initialize to zero (default)
 
     ! next define MOAB app for the ghosted one
