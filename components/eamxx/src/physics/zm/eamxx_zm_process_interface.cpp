@@ -259,7 +259,7 @@ void ZMDeepConvection::run_impl (const double dt)
   if (zm_opts.apply_tendencies) {
     // accumulate surface precipitation fluxes
     Kokkos::parallel_for("zm_update_precip",KT::RangePolicy(0, m_ncol), KOKKOS_LAMBDA (const int i) {
-      Real prec_liq = loc_zm_output_prec(i) - loc_zm_output_snow(i);
+      auto prec_liq = loc_zm_output_prec(i) - loc_zm_output_snow(i);
       precip_liq_surf_mass(i) += ekat::impl::max(0.0,prec_liq) * PC::RHO_H2O * dt;
       precip_ice_surf_mass(i) += loc_zm_output_snow(i) * PC::RHO_H2O * dt;
     });
@@ -361,9 +361,9 @@ void ZMDeepConvection::init_buffers(const ATMBufferManager &buffer_manager)
   //----------------------------------------------------------------------------
   // device 1D integer variables
   ZMF::uview_1d<Int>* ptrs_1d_intgr[num_1d_intgr]             = { &zm_output.activity };
-  for (int i=0; i<num_1d_intgr; ++i) {
-    *ptrs_1d_intgr[i] = ZMF::uview_1d<Int>(i_mem, m_ncol);
-    i_mem += ptrs_1d_intgr[i]->size();
+  for (auto& v : ptrs_1d_intgr) {
+    *v[i] = ZMF::uview_1d<Int>(i_mem, m_ncol);
+    i_mem += v[i]->size();
   }
   //----------------------------------------------------------------------------
   Scalar* scl_mem = reinterpret_cast<Scalar*>(i_mem);
@@ -374,9 +374,9 @@ void ZMDeepConvection::init_buffers(const ATMBufferManager &buffer_manager)
                                                                   &zm_output.snow,
                                                                   &zm_output.cape,
                                                                 };
-  for (int i=0; i<num_1d_scalr; ++i) {
-    *ptrs_1d_scalr[i] = ZMF::uview_1d<Scalar>(scl_mem, m_ncol);
-    scl_mem += ptrs_1d_scalr[i]->size();
+  for (auto& v : ptrs_1d_scalr) {
+    *v[i] = ZMF::uview_1d<Scalar>(scl_mem, m_ncol);
+    scl_mem += v[i]->size();
   }
   //----------------------------------------------------------------------------
 
@@ -402,9 +402,9 @@ void ZMDeepConvection::init_buffers(const ATMBufferManager &buffer_manager)
                                                                   &zm_output.f_rain_prod,
                                                                   &zm_output.f_snow_prod,
                                                                 };
-  for (int i=0; i<num_f_mid; ++i) {
-    *ptrs_f_midlv[i] = ZMF::uview_2dl<Real>(r_mem, m_ncol, m_nlev);
-    r_mem += ptrs_f_midlv[i]->size();
+  for (auto& v : ptrs_f_midlv) {
+    *v[i] = ZMF::uview_2dl<Real>(r_mem, m_ncol, m_nlev);
+    r_mem += v[i]->size();
   }
   //----------------------------------------------------------------------------
   // device 2D views on interface levels
@@ -414,9 +414,9 @@ void ZMDeepConvection::init_buffers(const ATMBufferManager &buffer_manager)
                                                                   &zm_output.f_snow_flux,
                                                                   &zm_output.f_mass_flux,
                                                                 };
-  for (int i=0; i<num_f_int; ++i) {
-    *ptrs_f_intfc[i] = ZMF::uview_2dl<Real>(r_mem, m_ncol, (m_nlev+1));
-    r_mem += ptrs_f_intfc[i]->size();
+  for (auto& v : ptrs_f_intfc) {
+    *v[i] = ZMF::uview_2dl<Real>(r_mem, m_ncol, (m_nlev+1));
+    r_mem += v[i]->size();
   }
   //----------------------------------------------------------------------------
   Spack* spk_mem = reinterpret_cast<Spack*>(r_mem);
@@ -427,7 +427,7 @@ void ZMDeepConvection::init_buffers(const ATMBufferManager &buffer_manager)
   // Spack* spk_mem = reinterpret_cast<Spack*>(scl_mem);
   //----------------------------------------------------------------------------
   // device 2D views on mid-point levels
-  ZMF::uview_2d<Spack>* ptrs_2d_midlv[num_2d_midlv]   = { &zm_input.z_mid,
+  ZMF::uview_2d<Spack>* ptrs_2d_midlv[num_2d_midlv]           = { &zm_input.z_mid,
                                                                   &zm_input.z_del,
                                                                   &zm_output.tend_t,
                                                                   &zm_output.tend_qv,
@@ -436,20 +436,20 @@ void ZMDeepConvection::init_buffers(const ATMBufferManager &buffer_manager)
                                                                   &zm_output.rain_prod,
                                                                   &zm_output.snow_prod,
                                                                 };
-  for (int i=0; i<num_2d_midlv; ++i) {
-    *ptrs_2d_midlv[i] = ZMF::uview_2d<Spack>(spk_mem, m_ncol, nlev_mid_packs);
-    spk_mem += ptrs_2d_midlv[i]->size();
+  for (auto& v : ptrs_2d_midlv) {
+    *v[i] = ZMF::uview_2d<Spack>(spk_mem, m_ncol, nlev_mid_packs);
+    spk_mem += v[i]->size();
   }
   //----------------------------------------------------------------------------
   // device 2D views on interface levels
-  ZMF::uview_2d<Spack>* ptrs_2d_intfc[num_2d_intfc]   = { &zm_input.z_int,
+  ZMF::uview_2d<Spack>* ptrs_2d_intfc[num_2d_intfc]           = { &zm_input.z_int,
                                                                   &zm_output.prec_flux,
                                                                   &zm_output.snow_flux,
                                                                   &zm_output.mass_flux,
                                                                 };
-  for (int i=0; i<num_2d_intfc; ++i) {
-    *ptrs_2d_intfc[i] = ZMF::uview_2d<Spack>(spk_mem, m_ncol, nlev_int_packs);
-    spk_mem += ptrs_2d_intfc[i]->size();
+  for (auto& v : ptrs_2d_intfc) {
+    *v[i] = ZMF::uview_2d<Spack>(spk_mem, m_ncol, nlev_int_packs);
+    spk_mem += v[i]->size();
   }
   //----------------------------------------------------------------------------
   Real* total_mem = reinterpret_cast<Real*>(spk_mem);
