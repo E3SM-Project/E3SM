@@ -183,10 +183,14 @@ Copy-paste template you can use in your PR comment:
 ## Testing
 
 CTest unit tests
-- Machine(s): <machine>[, <partition>]
-- Compiler(s): <compiler>[, ...]
-- Build type(s): <Debug|Release>[, ...]
-- Result: All tests passed | Failures: <name> (<one-line note>), ...
+- Machine: <machine>[, <partition>]
+- Compiler: <compiler>
+- Build type: <Debug|Release>
+- Result: All tests passed | Failures (X of Y): <name> (<one-line note>), ...
+
+- Machine: <machine>[, <partition>]
+- Compiler: <compiler>
+- ...
 
 Polaris omega_pr regression suite
 - Baseline build (-p): <path/to/develop/build>
@@ -208,6 +212,11 @@ Performance (if applicable)
 - After: <metric(s)>
 - Delta: <summary>
 ```
+
+The [Omega CTest Utility](https://github.com/E3SM-Project/polaris/blob/main/utils/omega/ctest/README.md)
+will also produce output in a format you can copy/paste into the PR description.
+In the future, we hope to make this easier to do from the output of the `omega_pr`
+suite as well.
 
 (omega-dev-testing-update-polaris)=
 
