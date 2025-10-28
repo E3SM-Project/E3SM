@@ -11,16 +11,16 @@ Checklist
   * [ ] Design document has been generated and [added to the docs](https://github.com/E3SM-Project/Omega/tree/develop/components/omega/doc/design)
   * [ ] [User's Guide](https://github.com/E3SM-Project/Omega/tree/develop/components/omega/doc/userGuide) has been updated
   * [ ] [Developer's Guide](https://github.com/E3SM-Project/Omega/tree/develop/components/omega/doc/devGuide) has been updated
-  * [ ] Documentation has been [built locally](https://docs.e3sm.org/Omega/omega/develop/devGuide/BuildDocs.html) and changes look as expected
+  * [ ] Documentation has been [built locally](https://docs.e3sm.org/Omega/Omega/devGuide/BuildDocs.html) and changes look as expected
 * [ ] Linting
-  * [ ] [Pre-commit](https://docs.e3sm.org/Omega/omega/develop/devGuide/Linting.html) run locally
+  * [ ] [Pre-commit](https://docs.e3sm.org/Omega/Omega/devGuide/Linting.html) run locally
 * [ ] Building
   * [ ] CMake build does not produce any new warnings from changes in this PR
 * [ ] Testing
   * [ ] Add a comment to the PR titled `Testing` with the following:
-    * [ ] Which machines [CTest unit tests](https://docs.e3sm.org/Omega/omega/develop/devGuide/QuickStart.html#running-ctests)
+    * [ ] Which machines [CTest unit tests](https://docs.e3sm.org/Omega/Omega/devGuide/QuickStart.html#running-ctests)
           have been run on and indicate that are all passing.
-    * [ ] The [Polaris omega_pr test suite](https://docs.e3sm.org/Omega/omega/develop/devGuide/Testing.html)
+    * [ ] The [Polaris omega_pr test suite](https://docs.e3sm.org/Omega/Omega/devGuide/Testing.html)
           has passed, using `develop` as a baseline
     * [ ] Document machine(s), compiler(s) and test path(s) (`-p` in `polaris suite`) used
     * [ ] Indicate "All tests passed" or document failing tests
