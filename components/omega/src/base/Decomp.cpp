@@ -195,10 +195,10 @@ void readMesh(const int MeshFileID, // file ID for open mesh file
    DimName    = "MaxCellsOnEdge";
    DimNameOld = "TWO";
    I4 MaxCellsOnEdgeID;
-   Err = IO::getDimFromFile(MeshFileID, DimNameOld, MaxCellsOnEdgeID,
+   Err = IO::getDimFromFile(MeshFileID, DimName, MaxCellsOnEdgeID,
                             MaxCellsOnEdge);
    if (Err.isFail()) { // dim not found, try again with older MPAS name
-      Err = IO::getDimFromFile(MeshFileID, DimName, MaxCellsOnEdgeID,
+      Err = IO::getDimFromFile(MeshFileID, DimNameOld, MaxCellsOnEdgeID,
                                MaxCellsOnEdge);
       CHECK_ERROR_ABORT(Err, "Decomp: error reading MaxCellsOnEdge");
       if (MaxCellsOnEdge <= 0)
