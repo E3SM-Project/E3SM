@@ -12,7 +12,7 @@ contains
     use hybvcoord_mod, only: set_layer_locations
     use thetal_test_interface, only: init_f90
     use theta_f2c_mod, only: init_elements_c
-    use edge_mod_base, only: initEdgeBuffer, edge_g
+    use edge_mod, only: initEdgeBuffer, edge_g
     use control_mod, only: transport_alg, semi_lagrange_cdr_alg, semi_lagrange_cdr_check, &
          semi_lagrange_hv_q, limiter_option, nu_q, hypervis_subcycle_q, hypervis_order, &
          vert_remap_q_alg, qsplit, rsplit, dt_remap_factor, dt_tracer_factor, &

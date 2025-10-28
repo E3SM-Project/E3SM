@@ -13,7 +13,7 @@ contains
     use hybvcoord_mod, only: set_layer_locations
     use thetal_test_interface, only: init_f90, init_planar_f90
     use theta_f2c_mod, only: init_elements_c
-    use edge_mod_base, only: initEdgeBuffer, edge_g, initEdgeSBuffer
+    use edge_mod, only: initEdgeBuffer, edge_g, initEdgeSBuffer
     use prim_advection_base, only: edgeAdvQminmax
     use bndry_mod, only: sort_neighbor_buffer_mapping
     use reduction_mod, only: initreductionbuffer, red_sum, red_min, red_max

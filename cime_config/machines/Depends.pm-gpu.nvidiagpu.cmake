@@ -1,5 +1,5 @@
 list(APPEND REDUCE_OPT_LIST
-  homme/src/share/derivative_mod_base.F90
+  homme/src/share/derivative_mod.F90
 )
 
 # Can use this flag to avoid internal compiler error for this file (with nvidia/21.11)
