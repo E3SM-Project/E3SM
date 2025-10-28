@@ -119,6 +119,12 @@
 
 <fstrat_list         >''</fstrat_list>
 
+<!-- Tuning parameters for low-res config using CMIP7 forcing to work with mode1 and mode5 physprop specified here -->
+<!-- This is to distinguish from the values specified in namelist_defaults.xml for LR with CMIP6 or HR with CMIP7 -->
+
+<dp_cut_accum_rename>  1.0D-6   </dp_cut_accum_rename>
+<dp_xferall_thresh_accum_rename>  1.0D-6  </dp_xferall_thresh_accum_rename>
+
 <!-- sim_year used for CLM datasets -->
 <sim_year>2015</sim_year>
 
