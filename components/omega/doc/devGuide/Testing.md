@@ -98,23 +98,38 @@ documentation for equivalent commands.
 
 What should you do if you see test failures?
 
-First, if you see test execution failures in the baseline run from `develop`,
+#### Test execution errors for `develop` baseline
+
+If you see test execution failures in the baseline run from `develop`,
 these need to be reported as [issues](https://github.com/E3SM-Project/Omega/issues)
 on the Omega repo, preferably mentioning a relevant Omega developer who may
 be able to investigate the cause of the failure.  Please provide the contents
 of the relevant log file for the failing test(s) and optionally the location of
 the tests (and log files) if other Omega developers will have access.
 
+#### Test execution errors for your branch
+
 If you see execution failures on the tests for your development branch, please
 take a look at the log files and attempt to debug the issues yourself first,
-then reach out to the Omega team if you need help.
+then reach out to the Omega team if you need help.  In many cases, the test
+failures may related to changes that are required in Polaris, see
+{ref}`omega-dev-testing-update-polaris` below.
+
+#### Diffs between your branch and baseline
+
+If diffs are expected:
+- Document the diffs (PR comment)
+- Update `e3sm_submodules/Omega` in Polaris (after merge)
+
+If *not* expected:
+- Debug and eliminate
 
 If you see errors related to comparisons with the baseline, you will need to
 determine if these are expected based on the code changes or not.  If they
-are expected, you will need to document how large the differences are in the
-tests that show differences.  In addition, you will need to make a pull
-request to the Polaris repository to update the Omega submodule in
-`e3sm_submodules/Omega` once your branch has been merged so that the changes
+are expected, you will need to document (in a PR comment) how large the
+differences are in the tests that show differences.  In addition, you will need
+to make a pull request to the Polaris repository to update the Omega submodule
+in `e3sm_submodules/Omega` once your branch has been merged so that the changes
 become the new baseline in Polaris.
 
 ```{note}
@@ -133,6 +148,11 @@ Please add a PR comment titled "Testing" that summarizes what you ran and the
 outcomes. Include the following so reviewers can validate apples-to-apples
 runs.
 
+```{note}
+At a minimum, you need to run both CTests and the `omega_pr` suite on one
+machine and compiler.
+```
+
 - CTest unit tests
     - Machine(s) and partition/queue (if applicable)
     - Compiler(s), and build type(s) (Debug/Release)
@@ -148,7 +168,8 @@ runs.
         - Work directory used for -w
     - Machine/partition, compiler, and build type (should match between baseline and PR)
     - Result: "All tests passed" or a concise list of diffs/failures with a brief note
-    - If there are issues, add the path to the relevant log(s) (e.g., polaris_omega_pr.o$JOBID) and a short excerpt if helpful
+    - If there are issues, add the path to the relevant log(s) (e.g.,
+      polaris_omega_pr.o$JOBID) and a short excerpt if helpful
 
 - Tests added/modified/impacted
     - Briefly list any new or updated CTest or Polaris tests and what they cover
@@ -187,3 +208,106 @@ Performance (if applicable)
 - After: <metric(s)>
 - Delta: <summary>
 ```
+
+(omega-dev-testing-update-polaris)=
+
+### Updating Polaris
+
+Many Omega changes are likely to also require Polaris changes.  In such cases,
+it makes sense to co-develop your Omega branch and a Polaris branch.  The
+Omega branch will need to be merged first, then the `e3sm_submodules/Omega`
+submodule will need to be updated to include the Omega changes as part of
+the Polaris pull request.
+
+Here are some examples of Omega changes that will require corresponding
+Polaris changes.
+
+#### Adding new Omega dimensions or variables
+
+If you add new Omega variables that have a corresponding MPAS-Ocean name,
+you need to add the mapping between the names to
+[mpaso_to_omega.yaml](https://github.com/E3SM-Project/polaris/blob/main/polaris/ocean/model/mpaso_to_omega.yaml).
+For more details, see the Polaris
+[Ocean Framework documentation](https://docs.e3sm.org/polaris/main/developers_guide/ocean/framework.html).
+
+For example:
+```yaml
+dimensions:
+  Time: time
+  nVertLevels: NVertLayers
+
+variables:
+  temperature: Temperature
+  salinity: Salinity
+  ssh: SshCell
+```
+In each case, the keys are the MPAS-Ocean names and the values are the
+corresponding Omega names.
+
+#### Updates to Default.yml
+
+If you add or remove sections, config options, streams, etc. in
+[Default.yml](https://github.com/E3SM-Project/Omega/blob/develop/components/omega/configs/Default.yml),
+you may need to make corresponding changes to the YAML files for Polaris
+test cases for them to continue to work as expected.
+
+Whenever possible, we try to use a mapping between MPAS-Ocean namelist options
+and Omega config options within
+[mpaso_to_omega.yaml](https://github.com/E3SM-Project/polaris/blob/main/polaris/ocean/model/mpaso_to_omega.yaml).
+For example:
+```yaml
+config:
+- section:
+    time_management: TimeIntegration
+  options:
+    config_start_time: StartTime
+    config_stop_time: StopTime
+    config_run_duration: RunDuration
+    config_calendar_type: CalendarType
+```
+
+If you have added new Omega config sections or options that have corresponding
+MPAS-Ocean namelist sections or options, please add them to the map. In each
+case, the keys are the MPAS-Ocean names and the values are the corresponding
+Omega names.
+
+Frequently, there is no MPAS-Ocean equivalent to an Omega config option, and
+we currently do not try to map streams from MPAS-Ocean to Omega (their
+syntax is too different).  In such cases, we have do define Omega YAML config
+options and streams in each test case, and you may need to update each one
+with your changes.  Here is an example exerpt from the
+[manufactured_solution](https://github.com/E3SM-Project/polaris/blob/main/polaris/tasks/ocean/manufactured_solution/forward.yaml)
+test:
+```yaml
+Omega:
+  Tendencies:
+    VelDiffTendencyEnable: false
+    VelHyperDiffTendencyEnable: false
+    UseCustomTendency: true
+    ManufacturedSolutionTendency: true
+  IOStreams:
+    InitialVertCoord:
+      Filename: init.nc
+    InitialState:
+      UsePointerFile: false
+      Filename: init.nc
+      Contents:
+      - NormalVelocity
+      - LayerThickness
+    RestartRead: {}
+    History:
+      Filename: output.nc
+      Freq: {{ output_freq }}
+      FreqUnits: Seconds
+      IfExists: append
+      # effectively never
+      FileFreq: 9999
+      FileFreqUnits: years
+      Contents:
+      - NormalVelocity
+      - LayerThickness
+      - SshCell
+```
+For more details on updating either the map or the YAML files for individual
+tests, see the Polaris
+[Ocean Framework documentation](https://docs.e3sm.org/polaris/main/developers_guide/ocean/framework.html).
