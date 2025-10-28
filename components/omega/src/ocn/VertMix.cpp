@@ -188,8 +188,7 @@ void VertMix::computeVertMix(const Array2DReal &NormalVelocity,
                ComputeVertMixShear); /// Local view for PP VertMix computation
 
    /// Initialize VertDiff and VertVisc to background values
-   deepCopy(LocVertDiff, BackDiff); /// incorrectly assigns BackDiff to first
-                                    /// layer, should be zero...
+   deepCopy(LocVertDiff, BackDiff);
    deepCopy(LocVertVisc, BackVisc);
 
    /// Dispatch to the correct VertMix calculation
@@ -198,7 +197,7 @@ void VertMix::computeVertMix(const Array2DReal &NormalVelocity,
       if (LocComputeVertMixShear.Enabled && LocComputeVertMixConv.Enabled) {
          LOG_INFO("VertMix:: into both shear and conv computeVertMix");
          parallelFor(
-             "VertMix-PP", {NCellsAll}, KOKKOS_LAMBDA(I4 ICell) {
+             "VertMix-PPAll", {NCellsAll}, KOKKOS_LAMBDA(I4 ICell) {
                 LocComputeVertMixConv(LocVertDiff, LocVertVisc, ICell,
                                       BruntVaisalaFreq);
                 LocComputeVertMixShear(LocVertDiff, LocVertVisc, ICell,
@@ -208,7 +207,7 @@ void VertMix::computeVertMix(const Array2DReal &NormalVelocity,
       } else if (LocComputeVertMixShear.Enabled) {
          LOG_INFO("VertMix:: into shear only computeVertMix");
          parallelFor(
-             "VertMix-PP", {NCellsAll}, KOKKOS_LAMBDA(I4 ICell) {
+             "VertMix-PPShear", {NCellsAll}, KOKKOS_LAMBDA(I4 ICell) {
                 LocComputeVertMixShear(LocVertDiff, LocVertVisc, ICell,
                                        NormalVelocity, TangentialVelocity,
                                        BruntVaisalaFreq);
@@ -216,14 +215,22 @@ void VertMix::computeVertMix(const Array2DReal &NormalVelocity,
       } else if (LocComputeVertMixConv.Enabled) {
          LOG_INFO("VertMix:: into convective only computeVertMix");
          parallelFor(
-             "VertMix-PP", {NCellsAll}, KOKKOS_LAMBDA(I4 ICell) {
+             "VertMix-PPConv", {NCellsAll}, KOKKOS_LAMBDA(I4 ICell) {
                 LocComputeVertMixConv(LocVertDiff, LocVertVisc, ICell,
                                       BruntVaisalaFreq);
+             });
+      } else {
+         LOG_INFO("VertMix:: just background mixing computeVertMix");
+         parallelFor(
+             "VertMix-PPBack", {NCellsAll}, KOKKOS_LAMBDA(I4 ICell) {
+                LocVertDiff(ICell, 0) = 0.0_Real;
+                LocVertVisc(ICell, 0) = 0.0_Real;
              });
       }
    } else if (VertMixChoice == VertMixType::KPP) {
       LOG_ERROR("VertMix: VertMixType = KPP is not supported yet.");
    }
+   Kokkos::fence();
 }
 
 /// Define IO fields and metadata for output

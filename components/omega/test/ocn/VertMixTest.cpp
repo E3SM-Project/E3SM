@@ -36,29 +36,29 @@ constexpr int NVertLayers = 60;
 
 /// Values to test against
 const Real VertDiffExpValueN =
-    1.1650682538996415; // Expected value for diffusivity for positive BVF
+    1.0391936989129011; // Expected value for diffusivity for positive BVF
 const Real VertViscExpValueN =
-    1.0515534893999001; // Expected value for viscosity for positive BVF
+    1.0198269656595984; // Expected value for viscosity for positive BVF
 const Real VertDiffExpValueP =
-    0.0010490674327851117; // Expected value for diffusivity for negative BVF
+    0.0015017457509864886; // Expected value for diffusivity for negative BVF
 const Real VertViscExpValueP =
-    0.0018542271307222758; // Expected value for viscosity for negative BVF
+    0.002332474675614262; // Expected value for viscosity for negative BVF
 const Real VertDiffBackExp =
     1.0e-5; // Expected value for background diffusivity
 const Real VertViscBackExp = 1.0e-4; // Expected value for background viscosity
 const Real VertDiffConvExp =
     1.0; // Expected value for convective diffusivity/viscosity
 const Real VertDiffShearExp =
-    0.1650582538996415; // Expected value for shear diffusivity
-const Real VertViscShearExp = 0.020001256411320566;
-// 0.0514534893999002; // Expected value for shear viscosity
+    0.039183698912901; // Expected value for shear diffusivity
+const Real VertViscShearExp =
+    0.01972696565959843; // Expected value for shear viscosity
 
 /// Test input values
-const Real BVFP = 0.1;   // Positive Brunt-Vaisala frequency in s^-2
-const Real BVFN = -0.1;  // Negative Brunt-Vaisala frequency in s^-2
-const Real NV   = 1.0;   // Normal velocity in m/s
-const Real TV   = 1.0;   // Tangential velocity in m/s
-const Real RTol = 1e-10; // Relative tolerance for isApprox checks
+const Real BVFP = 0.1;  // Positive Brunt-Vaisala frequency in s^-2
+const Real BVFN = -0.1; // Negative Brunt-Vaisala frequency in s^-2
+const Real NV   = 1.0;  // Normal velocity in m/s
+const Real TV   = 1.0;  // Tangential velocity in m/s
+const Real RTol = 1e-8; // Relative tolerance for isApprox checks
 
 /// The initialization routine for VertMix testing. It calls various
 /// init routines, including the creation of the default decomposition.
@@ -88,8 +88,6 @@ I4 initVertMixTest(const std::string &mesh) {
 
    // Initialize the vertical coordinate (phase 1)
    VertCoord::init1();
-   auto VCoord         = VertCoord::getDefault();
-   VCoord->NVertLayers = NVertLayers;
 
    /// Initialize mesh
    HorzMesh::init();
@@ -111,25 +109,25 @@ I4 initVertMixTest(const std::string &mesh) {
 }
 
 int testPPBackVertMix() {
-   int Err           = 0;
-   const auto Mesh   = HorzMesh::getDefault();
-   const auto VCoord = VertCoord::getDefault();
-   // VCoord->NVertLayers = NVertLayers;
+   int Err             = 0;
+   const auto Mesh     = HorzMesh::getDefault();
+   const auto VCoord   = VertCoord::getDefault();
+   VCoord->NVertLayers = NVertLayers;
    /// Get VertMix instance to test
    VertMix *TestVertMix       = VertMix::getInstance();
    TestVertMix->VertMixChoice = VertMixType::PP;
 
    /// Create and fill ocean state arrays
-   Array2DReal NVArray =
-       Array2DReal("NVArray", Mesh->NEdgesAll, VCoord->NVertLayers);
-   Array2DReal TVArray =
-       Array2DReal("TVArray", Mesh->NEdgesAll, VCoord->NVertLayers);
-   Array2DReal BVFArray =
-       Array2DReal("BVFArray", Mesh->NCellsAll, VCoord->NVertLayers);
+   Array2DReal NormalVelEdge =
+       Array2DReal("NormalVelEdge", Mesh->NEdgesSize, VCoord->NVertLayers);
+   Array2DReal TangVelEdge =
+       Array2DReal("TangVelEdge", Mesh->NEdgesSize, VCoord->NVertLayers);
+   Array2DReal BruntVaisalaFreqCell = Array2DReal(
+       "BruntVaisalaFreqCell", Mesh->NCellsSize, VCoord->NVertLayers);
    /// Use Kokkos::deep_copy to fill the entire view with the ref value
-   deepCopy(NVArray, NV);
-   deepCopy(TVArray, TV);
-   deepCopy(BVFArray, BVFN);
+   deepCopy(NormalVelEdge, NV);
+   deepCopy(TangVelEdge, TV);
+   deepCopy(BruntVaisalaFreqCell, BVFN);
    deepCopy(TestVertMix->VertDiff, 0.0);
    deepCopy(TestVertMix->VertVisc, 0.0);
 
@@ -140,8 +138,8 @@ int testPPBackVertMix() {
    parallelFor(
        "populateArrays", {Mesh->NEdgesAll, VCoord->NVertLayers},
        KOKKOS_LAMBDA(I4 IEdge, I4 K) {
-          NVArray(IEdge, K) = NVArray(IEdge, K) + 0.5 * K;
-          TVArray(IEdge, K) = TVArray(IEdge, K) + 0.5 * K;
+          NormalVelEdge(IEdge, K) = NormalVelEdge(IEdge, K) + 0.5 * K;
+          TangVelEdge(IEdge, K)   = TangVelEdge(IEdge, K) + 0.5 * K;
        });
 
    /// Compute only background vertical viscosity and diffusivity
@@ -149,41 +147,66 @@ int testPPBackVertMix() {
    TestVertMix->BackVisc                    = 1.0e-4;
    TestVertMix->ComputeVertMixConv.Enabled  = false;
    TestVertMix->ComputeVertMixShear.Enabled = false;
-   TestVertMix->computeVertMix(NVArray, TVArray, BVFArray);
+   TestVertMix->computeVertMix(NormalVelEdge, TangVelEdge,
+                               BruntVaisalaFreqCell);
    Array2DReal BackVertVisc = TestVertMix->VertVisc;
    Array2DReal BackVertDiff = TestVertMix->VertDiff;
 
    /// Check total Visc against linear addition of components
-   int numMismatches  = 0;
-   auto BackVertViscH = createHostMirrorCopy(BackVertVisc);
-   if (!isApprox(BackVertViscH(1, 1), VertViscBackExp, RTol)) {
-      numMismatches = 1;
-   } else {
-      numMismatches = 0;
-   }
+   int numMismatches = 0;
+   parallelReduce(
+       "CheckVertMixMatrix-BackgroundVisc",
+       {Mesh->NCellsAll, VCoord->NVertLayers + 1},
+       KOKKOS_LAMBDA(int i, int j, int &localCount) {
+          if (j == 0) {
+             // Surface layer should be zero
+             if (!isApprox(BackVertVisc(i, j), 0.0_Real, RTol)) {
+                localCount++;
+             }
+          } else {
+             if (!isApprox(BackVertVisc(i, j), VertViscBackExp, RTol)) {
+                localCount++;
+             }
+          }
+          return;
+       },
+       numMismatches);
+
    if (numMismatches != 0) {
       Err++;
       LOG_ERROR("TestVertMixBack: VertVisc isApprox FAIL, "
-                "expected {}, got {} with {} mismatches",
-                VertViscBackExp, BackVertViscH(1, 1), numMismatches);
+                "expected {}, got {} mismatches",
+                VertViscBackExp, numMismatches);
    }
    if (Err == 0) {
       LOG_INFO("VertMixTest TestVertMixBack-Visc: PASS");
    }
 
    /// Check total Diff against linear addition of components
-   numMismatches      = 0;
-   auto BackVertDiffH = createHostMirrorCopy(BackVertDiff);
-   if (!isApprox(BackVertDiffH(1, 1), VertDiffBackExp, RTol)) {
-      numMismatches = 1;
-   } else {
-      numMismatches = 0;
-   }
+   numMismatches = 0;
+   parallelReduce(
+       "CheckVertMixMatrix-BackgroundDiff",
+       {Mesh->NCellsAll, VCoord->NVertLayers + 1},
+       KOKKOS_LAMBDA(int i, int j, int &localCount) {
+          if (j == 0) {
+             // Surface layer should be zero
+             if (!isApprox(BackVertDiff(i, j), 0.0_Real, RTol)) {
+                localCount++;
+             }
+          } else {
+             if (!isApprox(BackVertDiff(i, j), VertDiffBackExp, RTol)) {
+                localCount++;
+             }
+          }
+          return;
+       },
+       numMismatches);
+
    if (numMismatches != 0) {
       Err++;
       LOG_ERROR("TestVertMixBack: VertDiff isApprox FAIL, "
-                "expected {}, got {} with {} mismatches",
-                VertDiffBackExp, BackVertDiffH(1, 1), numMismatches);
+                "expected {}, got {} mismatches",
+                VertDiffBackExp, numMismatches);
    }
    if (Err == 0) {
       LOG_INFO("VertMixTest TestVertMixBack-Diff: PASS");
@@ -193,25 +216,25 @@ int testPPBackVertMix() {
 }
 
 int testPPConvVertMix() {
-   int Err           = 0;
-   const auto Mesh   = HorzMesh::getDefault();
-   const auto VCoord = VertCoord::getDefault();
-   // VCoord->NVertLayers = NVertLayers;
+   int Err             = 0;
+   const auto Mesh     = HorzMesh::getDefault();
+   const auto VCoord   = VertCoord::getDefault();
+   VCoord->NVertLayers = NVertLayers;
    /// Get VertMix instance to test
    VertMix *TestVertMix       = VertMix::getInstance();
    TestVertMix->VertMixChoice = VertMixType::PP;
 
    /// Create and fill ocean state arrays
-   Array2DReal NVArray =
-       Array2DReal("NVArray", Mesh->NEdgesAll, VCoord->NVertLayers);
-   Array2DReal TVArray =
-       Array2DReal("TVArray", Mesh->NEdgesAll, VCoord->NVertLayers);
-   Array2DReal BVFArray =
-       Array2DReal("BVFArray", Mesh->NCellsAll, VCoord->NVertLayers);
+   Array2DReal NormalVelEdge =
+       Array2DReal("NormalVelEdge", Mesh->NEdgesAll, VCoord->NVertLayers);
+   Array2DReal TangVelEdge =
+       Array2DReal("TangVelEdge", Mesh->NEdgesAll, VCoord->NVertLayers);
+   Array2DReal BruntVaisalaFreqCell = Array2DReal(
+       "BruntVaisalaFreqCell", Mesh->NCellsAll, VCoord->NVertLayers);
    /// Use Kokkos::deep_copy to fill the entire view with the ref value
-   deepCopy(NVArray, NV);
-   deepCopy(TVArray, TV);
-   deepCopy(BVFArray, BVFN);
+   deepCopy(NormalVelEdge, NV);
+   deepCopy(TangVelEdge, TV);
+   deepCopy(BruntVaisalaFreqCell, BVFN);
    deepCopy(TestVertMix->VertDiff, 0.0);
    deepCopy(TestVertMix->VertVisc, 0.0);
 
@@ -222,8 +245,8 @@ int testPPConvVertMix() {
    parallelFor(
        "populateArrays", {Mesh->NEdgesAll, VCoord->NVertLayers},
        KOKKOS_LAMBDA(I4 IEdge, I4 K) {
-          NVArray(IEdge, K) = NVArray(IEdge, K) + 0.5 * K;
-          TVArray(IEdge, K) = TVArray(IEdge, K) + 0.5 * K;
+          NormalVelEdge(IEdge, K) = NormalVelEdge(IEdge, K) + 0.5 * K;
+          TangVelEdge(IEdge, K)   = TangVelEdge(IEdge, K) + 0.5 * K;
        });
 
    /// Compute only convective vertical viscosity and diffusivity
@@ -231,41 +254,66 @@ int testPPConvVertMix() {
    TestVertMix->BackVisc                    = 0.0;
    TestVertMix->ComputeVertMixConv.Enabled  = true;
    TestVertMix->ComputeVertMixShear.Enabled = false;
-   TestVertMix->computeVertMix(NVArray, TVArray, BVFArray);
+   TestVertMix->computeVertMix(NormalVelEdge, TangVelEdge,
+                               BruntVaisalaFreqCell);
    Array2DReal ConvVertVisc = TestVertMix->VertVisc;
    Array2DReal ConvVertDiff = TestVertMix->VertDiff;
 
    /// Check total Visc against linear addition of components
-   int numMismatches  = 0;
-   auto ConvVertViscH = createHostMirrorCopy(ConvVertVisc);
-   if (!isApprox(ConvVertViscH(1, 1), VertDiffConvExp, RTol)) {
-      numMismatches = 1;
-   } else {
-      numMismatches = 0;
-   }
+   int numMismatches = 0;
+   parallelReduce(
+       "CheckVertMixMatrix-ConvectiveVisc",
+       {Mesh->NCellsAll, VCoord->NVertLayers + 1},
+       KOKKOS_LAMBDA(int i, int j, int &localCount) {
+          if (j == 0) {
+             // Surface layer should be zero
+             if (!isApprox(ConvVertVisc(i, j), 0.0_Real, RTol)) {
+                localCount++;
+             }
+          } else {
+             if (!isApprox(ConvVertVisc(i, j), VertDiffConvExp, RTol)) {
+                localCount++;
+             }
+          }
+          return;
+       },
+       numMismatches);
+
    if (numMismatches != 0) {
       Err++;
       LOG_ERROR("TestVertMixConv: VertVisc isApprox FAIL, "
-                "expected {}, got {} with {} mismatches",
-                VertDiffConvExp, ConvVertViscH(1, 1), numMismatches);
+                "expected {}, got {} mismatches",
+                VertDiffConvExp, numMismatches);
    }
    if (Err == 0) {
       LOG_INFO("VertMixTest TestVertMixConv-Visc: PASS");
    }
 
    /// Check total Diff against linear addition of components
-   numMismatches      = 0;
-   auto ConvVertDiffH = createHostMirrorCopy(ConvVertDiff);
-   if (!isApprox(ConvVertDiffH(1, 1), VertDiffConvExp, RTol)) {
-      numMismatches = 1;
-   } else {
-      numMismatches = 0;
-   }
+   numMismatches = 0;
+   parallelReduce(
+       "CheckVertMixMatrix-ConvectiveDiff",
+       {Mesh->NCellsAll, VCoord->NVertLayers + 1},
+       KOKKOS_LAMBDA(int i, int j, int &localCount) {
+          if (j == 0) {
+             // Surface layer should be zero
+             if (!isApprox(ConvVertDiff(i, j), 0.0_Real, RTol)) {
+                localCount++;
+             }
+          } else {
+             if (!isApprox(ConvVertDiff(i, j), VertDiffConvExp, RTol)) {
+                localCount++;
+             }
+          }
+          return;
+       },
+       numMismatches);
+
    if (numMismatches != 0) {
       Err++;
       LOG_ERROR("TestVertMixConv: VertDiff isApprox FAIL, "
-                "expected {}, got {} with {} mismatches",
-                VertDiffConvExp, ConvVertDiffH(1, 1), numMismatches);
+                "expected {}, got {} mismatches",
+                VertDiffConvExp, numMismatches);
    }
    if (Err == 0) {
       LOG_INFO("VertMixTest TestVertMixConv-Diff: PASS");
@@ -275,37 +323,43 @@ int testPPConvVertMix() {
 }
 
 int testPPShearVertMix() {
-   int Err           = 0;
-   const auto Mesh   = HorzMesh::getDefault();
-   const auto VCoord = VertCoord::getDefault();
-   // VCoord->NVertLayers = NVertLayers;
+   int Err             = 0;
+   const auto Mesh     = HorzMesh::getDefault();
+   const auto VCoord   = VertCoord::getDefault();
+   VCoord->NVertLayers = NVertLayers;
    /// Get VertMix instance to test
    VertMix *TestVertMix       = VertMix::getInstance();
    TestVertMix->VertMixChoice = VertMixType::PP;
 
    /// Create and fill ocean state arrays
-   Array2DReal NVArray =
-       Array2DReal("NVArray", Mesh->NEdgesAll, VCoord->NVertLayers);
-   Array2DReal TVArray =
-       Array2DReal("TVArray", Mesh->NEdgesAll, VCoord->NVertLayers);
-   Array2DReal BVFArray =
-       Array2DReal("BVFArray", Mesh->NCellsAll, VCoord->NVertLayers);
+   Array2DReal NormalVelEdge =
+       Array2DReal("NormalVelEdge", Mesh->NEdgesAll, VCoord->NVertLayers);
+   Array2DReal TangVelEdge =
+       Array2DReal("TangVelEdge", Mesh->NEdgesAll, VCoord->NVertLayers);
+   Array2DReal BruntVaisalaFreqCell = Array2DReal(
+       "BruntVaisalaFreqCell", Mesh->NCellsAll, VCoord->NVertLayers);
    /// Use Kokkos::deep_copy to fill the entire view with the ref value
-   deepCopy(NVArray, NV);
-   deepCopy(TVArray, TV);
-   deepCopy(BVFArray, BVFN);
+   deepCopy(NormalVelEdge, NV);
+   deepCopy(TangVelEdge, TV);
+   deepCopy(BruntVaisalaFreqCell, BVFN);
    deepCopy(TestVertMix->VertDiff, 0.0);
    deepCopy(TestVertMix->VertVisc, 0.0);
 
    parallelFor(
        "populateArrays", {Mesh->NCellsAll, VCoord->NVertLayers},
-       KOKKOS_LAMBDA(I4 ICell, I4 K) { VCoord->ZMid(ICell, K) = -K; });
+       KOKKOS_LAMBDA(I4 ICell, I4 K) {
+          VCoord->ZMid(ICell, K)    = -K;
+          Mesh->NEdgesOnCell(ICell) = 5;
+          Mesh->AreaCell(ICell)     = 3.6e10_Real;
+       });
 
    parallelFor(
        "populateArrays", {Mesh->NEdgesAll, VCoord->NVertLayers},
        KOKKOS_LAMBDA(I4 IEdge, I4 K) {
-          NVArray(IEdge, K) = NVArray(IEdge, K) + 0.5 * K;
-          TVArray(IEdge, K) = TVArray(IEdge, K) + 0.5 * K;
+          NormalVelEdge(IEdge, K) = NormalVelEdge(IEdge, K) + 0.5 * K;
+          TangVelEdge(IEdge, K)   = TangVelEdge(IEdge, K) + 0.5 * K;
+          Mesh->DcEdge(IEdge)     = 2.0e5_Real;
+          Mesh->DvEdge(IEdge)     = 1.45e5_Real;
        });
 
    /// Compute only shear vertical viscosity and diffusivity
@@ -313,18 +367,28 @@ int testPPShearVertMix() {
    TestVertMix->BackVisc                    = 0.0;
    TestVertMix->ComputeVertMixConv.Enabled  = false;
    TestVertMix->ComputeVertMixShear.Enabled = true;
-   TestVertMix->computeVertMix(NVArray, TVArray, BVFArray);
+   TestVertMix->computeVertMix(NormalVelEdge, TangVelEdge,
+                               BruntVaisalaFreqCell);
    Array2DReal ShearVertVisc = TestVertMix->VertVisc;
    Array2DReal ShearVertDiff = TestVertMix->VertDiff;
 
    /// Check total Visc against linear addition of components
-   int numMismatches   = 0;
+   int numMismatches = 0;
+   Kokkos::fence();
    auto ShearVertViscH = createHostMirrorCopy(ShearVertVisc);
-   if (!isApprox(ShearVertViscH(1, 1), VertViscShearExp, RTol)) {
-      numMismatches = 1;
-   } else {
-      numMismatches = 0;
-   }
+   parallelReduce(
+       "CheckVertMixMatrix-ShearVisc", {Mesh->NCellsAll},
+       KOKKOS_LAMBDA(int i, int &localCount) {
+          // Surface layer should be zero
+          if (!isApprox(ShearVertVisc(i, 0), 0.0_Real, RTol)) {
+             localCount++;
+          }
+          if (!isApprox(ShearVertVisc(i, 1), VertViscShearExp, RTol)) {
+             localCount++;
+          }
+       },
+       numMismatches);
+
    if (numMismatches != 0) {
       Err++;
       LOG_ERROR("TestVertMixShear: VertVisc isApprox FAIL, "
@@ -338,75 +402,73 @@ int testPPShearVertMix() {
    /// Check total Diff against linear addition of components
    numMismatches       = 0;
    auto ShearVertDiffH = createHostMirrorCopy(ShearVertDiff);
-   if (!isApprox(ShearVertDiffH(1, 1), VertDiffShearExp, RTol)) {
-      numMismatches = 1;
-   } else {
-      numMismatches = 0;
+   parallelReduce(
+       "CheckVertMixMatrix-ShearDiff", {Mesh->NCellsAll},
+       KOKKOS_LAMBDA(int i, int &localCount) {
+          // Surface layer should be zero
+          if (!isApprox(ShearVertDiff(i, 0), 0.0_Real, RTol)) {
+             localCount++;
+          }
+          if (!isApprox(ShearVertDiff(i, 1), VertDiffShearExp, RTol)) {
+             localCount++;
+          }
+       },
+       numMismatches);
+
+   if (numMismatches != 0) {
+      Err++;
+      LOG_ERROR("TestVertMixShear: VertDiff isApprox FAIL, "
+                "expected {}, got {} with {} mismatches",
+                VertDiffShearExp, ShearVertDiffH(1, 1), numMismatches);
    }
-   // if (numMismatches != 0) {
-   //    Err++;
-   //    LOG_ERROR("TestVertMixShear: VertDiff isApprox FAIL, "
-   //              "expected {}, got {} with {} mismatches",
-   //              VertDiffShearExp, ShearVertDiffH(1, 1), numMismatches);
-   // }
-   // if (Err == 0) {
-   //    LOG_INFO("VertMixTest TestVertMixShear-Diff: PASS");
-   // }
+   if (Err == 0) {
+      LOG_INFO("VertMixTest TestVertMixShear-Diff: PASS");
+   }
 
    return Err;
 }
 
 /// Test vertical mixing coefficients calculation for all cells/layers
 int testPPTotalVertMix() {
-   int Err           = 0;
-   const auto Mesh   = HorzMesh::getDefault();
-   const auto VCoord = VertCoord::getDefault();
-   // VCoord->NVertLayers = NVertLayers;
+   int Err             = 0;
+   const auto Mesh     = HorzMesh::getDefault();
+   const auto VCoord   = VertCoord::getDefault();
+   VCoord->NVertLayers = NVertLayers;
    /// Get VertMix instance to test
    VertMix *TestVertMix       = VertMix::getInstance();
    TestVertMix->VertMixChoice = VertMixType::PP;
 
-   // insert at start of each test (e.g., testPPBackVertMix) after obtaining
-   // Mesh/VCoord
-   LOG_INFO("testPPBackVertMix pre-check: NCellsAll={}, NEdgesAll={}, "
-            "NVertLayers={}",
-            Mesh->NCellsAll, Mesh->NEdgesAll, VCoord->NVertLayers);
-   assert(Mesh != nullptr);
-   assert(Mesh->NCellsAll > 1);
-   assert(Mesh->NEdgesAll > 1);
-   assert(VCoord->NVertLayers > 1);
-
-   // optional: log intended view sizes before allocation
-   LOG_INFO("Allocating NVArray size = ({}, {})", Mesh->NEdgesAll,
-            VCoord->NVertLayers);
-   LOG_INFO("Allocating BVFArray size = ({}, {})", Mesh->NCellsAll,
-            VCoord->NVertLayers);
-
    /// Create and fill ocean state arrays
-   Array2DReal NVArray =
-       Array2DReal("NVArray", Mesh->NEdgesAll, VCoord->NVertLayers);
-   Array2DReal TVArray =
-       Array2DReal("TVArray", Mesh->NEdgesAll, VCoord->NVertLayers);
-   Array2DReal BVFArray =
-       Array2DReal("BVFArray", Mesh->NCellsAll, VCoord->NVertLayers);
+   Array2DReal NormalVelEdge =
+       Array2DReal("NormalVelEdge", Mesh->NEdgesAll, VCoord->NVertLayers);
+   Array2DReal TangVelEdge =
+       Array2DReal("TangVelEdge", Mesh->NEdgesAll, VCoord->NVertLayers);
+   Array2DReal BruntVaisalaFreqCell = Array2DReal(
+       "BruntVaisalaFreqCell", Mesh->NCellsAll, VCoord->NVertLayers);
    /// Use Kokkos::deep_copy to fill the entire view with the ref value
-   deepCopy(NVArray, NV);
-   deepCopy(TVArray, TV);
+   deepCopy(NormalVelEdge, NV);
+   deepCopy(TangVelEdge, TV);
 
    // Test with positive BVF first
-   deepCopy(BVFArray, BVFP);
+   deepCopy(BruntVaisalaFreqCell, BVFP);
    deepCopy(TestVertMix->VertDiff, 0.0);
    deepCopy(TestVertMix->VertVisc, 0.0);
 
    parallelFor(
        "populateArrays", {Mesh->NCellsAll, VCoord->NVertLayers},
-       KOKKOS_LAMBDA(I4 ICell, I4 K) { VCoord->ZMid(ICell, K) = -K; });
+       KOKKOS_LAMBDA(I4 ICell, I4 K) {
+          VCoord->ZMid(ICell, K)    = -K;
+          Mesh->NEdgesOnCell(ICell) = 5;
+          Mesh->AreaCell(ICell)     = 3.6e10_Real;
+       });
 
    parallelFor(
        "populateArrays", {Mesh->NEdgesAll, VCoord->NVertLayers},
        KOKKOS_LAMBDA(I4 IEdge, I4 K) {
-          NVArray(IEdge, K) = NVArray(IEdge, K) + 0.5 * K;
-          TVArray(IEdge, K) = TVArray(IEdge, K) + 0.5 * K;
+          NormalVelEdge(IEdge, K) = NormalVelEdge(IEdge, K) + 0.5 * K;
+          TangVelEdge(IEdge, K)   = TangVelEdge(IEdge, K) + 0.5 * K;
+          Mesh->DcEdge(IEdge)     = 2.0e5_Real;
+          Mesh->DvEdge(IEdge)     = 1.45e5_Real;
        });
 
    /// Compute vertical viscosity and diffusivity
@@ -414,18 +476,27 @@ int testPPTotalVertMix() {
    TestVertMix->BackVisc                    = 1.0e-4;
    TestVertMix->ComputeVertMixConv.Enabled  = true;
    TestVertMix->ComputeVertMixShear.Enabled = true;
-   TestVertMix->computeVertMix(NVArray, TVArray, BVFArray);
+   TestVertMix->computeVertMix(NormalVelEdge, TangVelEdge,
+                               BruntVaisalaFreqCell);
    Array2DReal VertDiffP = TestVertMix->VertDiff;
    Array2DReal VertViscP = TestVertMix->VertVisc;
 
    /// Check all VertDiff array values against expected value
    int numMismatches = 0;
    auto VertDiffPH   = createHostMirrorCopy(VertDiffP);
-   if (!isApprox(VertDiffPH(1, 1), VertDiffExpValueP, RTol)) {
-      numMismatches = 1;
-   } else {
-      numMismatches = 0;
-   }
+   parallelReduce(
+       "CheckVertMixMatrix-TotalPosDiff", {Mesh->NCellsAll},
+       KOKKOS_LAMBDA(int i, int &localCount) {
+          // Surface layer should be zero
+          if (!isApprox(VertDiffP(i, 0), 0.0_Real, RTol)) {
+             localCount++;
+          }
+          if (!isApprox(VertDiffP(i, 1), VertDiffExpValueP, RTol)) {
+             localCount++;
+          }
+       },
+       numMismatches);
+
    if (numMismatches != 0) {
       Err++;
       LOG_ERROR("TestVertMixTotal: VertDiffPositive isApprox FAIL, "
@@ -439,11 +510,19 @@ int testPPTotalVertMix() {
    /// Check all VertVisc array values against expected value
    numMismatches   = 0;
    auto VertViscPH = createHostMirrorCopy(VertViscP);
-   if (!isApprox(VertViscPH(1, 1), VertViscExpValueP, RTol)) {
-      numMismatches = 1;
-   } else {
-      numMismatches = 0;
-   }
+   parallelReduce(
+       "CheckVertMixMatrix-TotalPosVisc", {Mesh->NCellsAll},
+       KOKKOS_LAMBDA(int i, int &localCount) {
+          // Surface layer should be zero
+          if (!isApprox(VertViscP(i, 0), 0.0_Real, RTol)) {
+             localCount++;
+          }
+          if (!isApprox(VertViscP(i, 1), VertViscExpValueP, RTol)) {
+             localCount++;
+          }
+       },
+       numMismatches);
+
    if (numMismatches != 0) {
       Err++;
       LOG_ERROR("TestVertMixTotal: VertViscPositive isApprox FAIL, "
@@ -455,23 +534,32 @@ int testPPTotalVertMix() {
    }
 
    // Now test with negative BVF
-   deepCopy(BVFArray, BVFN);
+   deepCopy(BruntVaisalaFreqCell, BVFN);
    deepCopy(TestVertMix->VertDiff, 0.0);
    deepCopy(TestVertMix->VertVisc, 0.0);
 
    /// Compute vertical viscosity and diffusivity
-   TestVertMix->computeVertMix(NVArray, TVArray, BVFArray);
+   TestVertMix->computeVertMix(NormalVelEdge, TangVelEdge,
+                               BruntVaisalaFreqCell);
    Array2DReal VertDiffN = TestVertMix->VertDiff;
    Array2DReal VertViscN = TestVertMix->VertVisc;
 
    /// Check all VertDiff array values against expected value
    numMismatches   = 0;
    auto VertDiffNH = createHostMirrorCopy(VertDiffN);
-   if (!isApprox(VertDiffNH(1, 1), VertDiffExpValueN, RTol)) {
-      numMismatches = 1;
-   } else {
-      numMismatches = 0;
-   }
+   parallelReduce(
+       "CheckVertMixMatrix-TotalNegDiff", {Mesh->NCellsAll},
+       KOKKOS_LAMBDA(int i, int &localCount) {
+          // Surface layer should be zero
+          if (!isApprox(VertDiffN(i, 0), 0.0_Real, RTol)) {
+             localCount++;
+          }
+          if (!isApprox(VertDiffN(i, 1), VertDiffExpValueN, RTol)) {
+             localCount++;
+          }
+       },
+       numMismatches);
+
    if (numMismatches != 0) {
       Err++;
       LOG_ERROR("TestVertMix: VertDiffNegative isApprox FAIL, "
@@ -485,11 +573,19 @@ int testPPTotalVertMix() {
    /// Check all VertVisc array values against expected value
    numMismatches   = 0;
    auto VertViscNH = createHostMirrorCopy(VertViscN);
-   if (!isApprox(VertViscNH(1, 1), VertViscExpValueN, RTol)) {
-      numMismatches = 1;
-   } else {
-      numMismatches = 0;
-   }
+   parallelReduce(
+       "CheckVertMixMatrix-TotalNegVisc", {Mesh->NCellsAll},
+       KOKKOS_LAMBDA(int i, int &localCount) {
+          // Surface layer should be zero
+          if (!isApprox(VertViscN(i, 0), 0.0_Real, RTol)) {
+             localCount++;
+          }
+          if (!isApprox(VertViscN(i, 1), VertViscExpValueN, RTol)) {
+             localCount++;
+          }
+       },
+       numMismatches);
+
    if (numMismatches != 0) {
       Err++;
       LOG_ERROR("TestVertMix: VertViscNegative isApprox FAIL, "
@@ -532,7 +628,7 @@ int vertMixTest(const std::string &MeshFile = "OmegaMesh.nc") {
    Err += testPPBackVertMix();
    Err += testPPConvVertMix();
    Err += testPPShearVertMix();
-   // Err += testPPTotalVertMix();
+   Err += testPPTotalVertMix();
 
    if (Err == 0) {
       LOG_INFO("VertMix: Successful completion");
@@ -564,3 +660,33 @@ int main(int argc, char *argv[]) {
 
 } // end of main
 //===-----------------------------------------------------------------------===/
+
+// Err += initState(LayerThickCell, NormalVelEdge, TangVelEdge,
+//    BruntVaisalaFreqCell, Mesh);
+
+// int initState(const Array2DReal &LayerThickCell,
+//               const Array2DReal &NormalVelEdge,
+//               const Array2DReal &TangVelEdge,
+//               const Array2DReal &BruntVaisalaFreqCell,
+//               const HorzMesh *Mesh) {
+//    int Err = 0;
+
+//   TestSetup Setup;
+
+//   Err += setScalar(
+//      KOKKOS_LAMBDA(Real X, Real Y, I4 K) { return Setup.layerThickness(X, Y);
+//      }, LayerThickCell, Geom, Mesh, OnCell);
+
+//   Err += setVectorEdge(
+//      KOKKOS_LAMBDA(Real(&VecField)[2], Real X, Real Y) {
+//         VecField[0] = Setup.velocityX(X, Y);
+//         VecField[1] = Setup.velocityY(X, Y);
+//      },
+//      NormalVelEdge, EdgeComponent::Normal, Geom, Mesh);
+
+// Err += setVectorEdge(
+//     KOKKOS_LAMBDA(Real(&VecField)[2], Real X, Real Y, I4 K) {
+//        VecField[0] = NV + 0.5 * K;
+//        VecField[1] = 0.0;
+//     },
+//     NormalVelEdge, EdgeComponent::Normal, Geom, Mesh);

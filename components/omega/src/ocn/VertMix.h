@@ -43,10 +43,15 @@ class ConvectiveMix {
    KOKKOS_FUNCTION void operator()(Array2DReal VertDiff, Array2DReal VertVisc,
                                    I4 ICell,
                                    const Array2DReal &BruntVaisalaFreq) const {
-      for (int K = 0; K <= NVertLayers; ++K) {
-         if (BruntVaisalaFreq(ICell, K) < ConvTriggerBVF) {
-            VertDiff(ICell, K) = VertDiff(ICell, K) + ConvDiff;
-            VertVisc(ICell, K) = VertVisc(ICell, K) + ConvDiff;
+      for (int K = 1; K <= NVertLayers; ++K) {
+         if (K == 0) {
+            VertVisc(ICell, K) = 0.0_Real;
+            VertDiff(ICell, K) = 0.0_Real;
+         } else {
+            if (BruntVaisalaFreq(ICell, K) < ConvTriggerBVF) {
+               VertDiff(ICell, K) = VertDiff(ICell, K) + ConvDiff;
+               VertVisc(ICell, K) = VertVisc(ICell, K) + ConvDiff;
+            }
          }
       }
    }
@@ -74,14 +79,15 @@ class PPShearMix {
                                    I4 ICell, const Array2DReal &NormalVelocity,
                                    const Array2DReal &TangentialVelocity,
                                    const Array2DReal &BruntVaisalaFreq) const {
+
       for (int K = 0; K <= NVertLayers; ++K) {
-         if (K == 0 || K == NVertLayers) {
-            VertVisc(ICell, K) = VertVisc(ICell, K) + 0.0_Real;
-            VertDiff(ICell, K) = VertDiff(ICell, K) + 0.0_Real;
+         if (K == 0) {
+            VertVisc(ICell, K) = 0.0_Real;
+            VertDiff(ICell, K) = 0.0_Real;
          } else {
-            Real ShearViscVal = 0.0_Real;
-            Real InvAreaCell  = 1.0_Real / AreaCell(ICell);
-            Real ShearSquared = 0.0_Real;
+            Real ShearViscVal = 0.0;
+            Real InvAreaCell  = 1.0 / AreaCell(ICell);
+            Real ShearSquared = 0.0;
             for (int J = 0; J < NEdgesOnCell(ICell); ++J) {
                I4 JEdge = EdgesOnCell(ICell, J);
                Real Factor =
