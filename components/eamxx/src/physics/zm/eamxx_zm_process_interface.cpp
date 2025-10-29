@@ -147,7 +147,6 @@ void ZMDeepConvection::run_impl (const double dt)
   // calculate_z_int() contains a team-level parallel_scan, which requires a special policy
   using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
   const auto scan_policy = TPF::get_thread_range_parallel_scan_team_policy(m_ncol, nlev_mid_packs);
-  const auto team_policy = TPF::get_default_team_policy(m_ncol, nlev_mid_packs);
 
   auto ts_start      = start_of_step_ts();
   bool is_first_step = (ts_start.get_num_steps()==0);
