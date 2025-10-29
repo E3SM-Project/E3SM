@@ -797,7 +797,7 @@ contains
         call mpas_pool_get_array(statePool, 'accumulatedLandIceHeat', accumulatedLandIceHeatOld, 1)
         ! accumulate land-ice heat
         do iCell = 1, nCells
-          accumulatedLandIceHeatNew(iCell) = accumulatedLandIceHeatOld(iCell) + dt*heatFluxToLandIce(iCell)
+          accumulatedLandIceHeatNew(iCell) = accumulatedLandIceHeatOld(iCell) - dt*heatFluxToLandIce(iCell)
         end do
       end if
 
@@ -1043,7 +1043,12 @@ contains
       !   2. the diffusion (if any) of heat into the ice, based on temperature difference between
       !      the reference point in the ice (either the surface or the middle of the bottom layer)
       !      and the interface
-      outIceHeatFlux(iCell) = -cpLandIce*outFreshwaterFlux(iCell)*outInterfaceTemperature(iCell)
+      ! NB: sign convention is the same as outOceanHeatFlux, positive into the ocean
+      if (outFreshwaterFlux(iCell) > 0) then ! melting
+         outIceHeatFlux(iCell) = cpLandIce*outInterfaceTemperature(iCell)*outFreshwaterFlux(iCell)
+      else
+         outIceHeatFlux(iCell) = cp_sw*outInterfaceTemperature(iCell)*outFreshwaterFlux(iCell)
+      endif
     end do
     !$omp end do
     !$omp end parallel
@@ -1170,6 +1175,7 @@ contains
       !   2. the diffusion (if any) of heat into the ice, based on temperature difference between
       !      the reference point in the ice (either the surface or the middle of the bottom layer)
       !      and the interface
+      ! NB: sign convention is the same as outOceanHeatFlux, positive into the ocean
       outIceHeatFlux(iCell) = outAdvectiveHeatFlux(iCell) + landIceConductiveHeatFlux(iCell)
     end do
     !$omp end do
@@ -1316,7 +1322,8 @@ contains
       ! Since we're considering only melting and ignoring diffusion,
       ! the ice loses heat simply by the loss of ice mass at the data
       ! (surface?) ice temperature
-      outIceHeatFlux(iCell) = -cpLandIce*outFreshwaterFlux(iCell)*iceTemperature(iCell)
+      ! NB: sign convention is the same as outOceanHeatFlux, positive into the ocean
+      outIceHeatFlux(iCell) = cpLandIce*outFreshwaterFlux(iCell)*iceTemperature(iCell)
     end do
     !$omp end do
     !$omp end parallel
