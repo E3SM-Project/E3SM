@@ -612,33 +612,20 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
       end do
    end do
 
-   !----------------------------------------------------------------------------
-   ! Scatter microphysics data (i.e. undo the gathering)
-
-   if (zm_param%zm_microp) then
-      call zm_microp_st_scatter(loc_microp_st,microp_st,pcols,lengath,pver,ideep)
-      ! we also need to do a few miscellaneous things to the micro variables
-      do i = 1,ncol
-         do k = msg + 1,pver
-            if(k.lt.pver) then
-               ! interpolate from interface to mid-point
-               microp_st%wu(i,k) = 0.5_r8 * ( microp_st%wu(i,k) + microp_st%wu(i,k+1) )
-            end if
-            ! convert freezing rate to a heating rate due to freezing => [K/s]
-            microp_st%frz(i,k) = microp_st%frz(i,k) * zm_const%latice/zm_const%cpair
-         end do
-      end do
-   end if
-
-#ifdef CPRCRAY
-!DIR$ CONCURRENT
-#endif
-
    do i = 1,lengath
       jctop(ideep(i)) = jt(i)
       jcbot(ideep(i)) = maxg(i)
       pflx(ideep(i),pverp) = pflxg(i,pverp)
    end do
+
+   !----------------------------------------------------------------------------
+   ! scatter microphysics data (i.e. undo the gathering)
+
+   if (zm_param%zm_microp) call zm_microp_st_scatter(loc_microp_st,microp_st,pcols,lengath,pver,ideep)
+
+#ifdef CPRCRAY
+!DIR$ CONCURRENT
+#endif
 
    !----------------------------------------------------------------------------
    ! Compute precip by integrating change in water vapor minus detrained cloud water
