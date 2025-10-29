@@ -62,6 +62,7 @@ devGuide/Linting
 devGuide/Docs
 devGuide/BuildDocs
 devGuide/DataTypes
+devGuide/ParallelLoops
 devGuide/MachEnv
 devGuide/Config
 devGuide/Driver
