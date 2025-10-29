@@ -644,6 +644,8 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
    call t_stopf ('zm_convr')
 
    if (zm_param%zm_microp) then
+      ! perform some miscellaneous conversions on the ZM microphysics data
+      call zm_microphysics_history_convert(ncol, microp_st, state%pmid, state%t)
       ! update ZM micro variables in pbuf
       qi        (1:ncol,1:pver) = microp_st%qice      (1:ncol,1:pver)
       dif       (1:ncol,1:pver) = microp_st%dif       (1:ncol,1:pver)
@@ -807,10 +809,7 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
    call outfld('PRECCDZM', prec,               pcols, lchnk )
    call outfld('PRECZ   ', prec,               pcols, lchnk )
 
-   if (zm_param%zm_microp) then
-      call zm_microphysics_history_convert(ncol, microp_st, state%pmid, state%t)
-      call zm_microphysics_history_out(lchnk, ncol, microp_st, prec, dlf)
-   end if
+   if (zm_param%zm_microp) call zm_microphysics_history_out(lchnk, ncol, microp_st, prec, dlf)
 
    ! add tendency from this process to tend from other processes here
    call physics_ptend_sum(ptend_loc,ptend_all, ncol)
