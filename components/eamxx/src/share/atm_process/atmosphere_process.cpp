@@ -264,11 +264,13 @@ void AtmosphereProcess::setup_step_tendencies () {
 
     auto f = gn=="UNSET" ? get_field_out(fn) : get_field_out(fn,gn);
 
-    const auto& tname = this->name() + "_" + tn + "_tend";
+    const auto& tname = this->name() + "_" + fn + "_tend";
+
+    const auto fn_gn = fn + "@" + f.get_header().get_identifier().get_grid_name();
 
     // Create tend and start-of-step fields
-    auto& tend = m_proc_tendencies[fn] = f.clone(tname);
-    m_start_of_step_fields[fn] = f.clone();
+    auto& tend = m_proc_tendencies[fn_gn] = f.clone(tname);
+    m_start_of_step_fields[fn_gn] = f.clone();
     add_internal_field(tend,{"ACCUMULATED","DIVIDE_BY_DT"});
   }
 }
@@ -515,10 +517,10 @@ void AtmosphereProcess::init_step_tendencies () {
   }
 
   start_timer(m_timer_prefix + this->name() + "::compute_tendencies");
-  for (auto& it : m_start_of_step_fields) {
-    const auto& fname = it.first;
-    const auto& f     = get_field_out(fname);
-          auto& f_beg = it.second;
+  for (auto& [fn_gn,f_beg] : m_start_of_step_fields) {
+    const auto fname = ekat::split(fn_gn,"@")[0];
+    const auto gname = ekat::split(fn_gn,"@")[1];
+    const auto& f     = get_field_out(fname,gname);
     f_beg.deep_copy(f);
   }
   stop_timer(m_timer_prefix + this->name() + "::compute_tendencies");
@@ -531,10 +533,12 @@ void AtmosphereProcess::compute_step_tendencies () {
 
   m_atm_logger->debug("[" + this->name() + "] computing tendencies...");
   start_timer(m_timer_prefix + this->name() + "::compute_tendencies");
-  for (auto& [fname,tend] : m_proc_tendencies) {
+  for (auto& [fn_gn,tend] : m_proc_tendencies) {
+    const auto fname = ekat::split(fn_gn,"@")[0];
+    const auto gname = ekat::split(fn_gn,"@")[1];
     // Note: f_beg is nonconst, so we can store step tendency in it
-          auto& f_beg = m_start_of_step_fields.at(fname);
-    const auto& f_end = get_field_out(fname);
+          auto& f_beg = m_start_of_step_fields.at(fn_gn);
+    const auto& f_end = get_field_out(fname,gname);
 
     // Compute tend from this atm proc step, then sum into overall atm timestep tendency
     // Note: don't add -f_beg to tend during init_step_tendencies, b/c the field magnitude
