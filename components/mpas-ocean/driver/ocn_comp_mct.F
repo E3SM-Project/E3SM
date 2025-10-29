@@ -930,10 +930,9 @@ contains
     if ( trim(config_land_ice_flux_mode) == 'off' .or. &
          trim(config_land_ice_flux_mode) == 'pressure_only' .or. &
          trim(config_land_ice_flux_mode) == 'data' .or. &
-         trim(config_land_ice_flux_mode) == 'standalone' ) then
+         trim(config_land_ice_flux_mode) == 'standalone' .or. &
+         trim(config_land_ice_flux_mode) .eq. 'coupled' ) then
        ocn_c2_glcshelf = .false.
-    else if ( trim(config_land_ice_flux_mode) .eq. 'coupled' ) then
-       ocn_c2_glcshelf = .true.
     else
        call mpas_log_write('ERROR: unknown land_ice_flux_mode: ' // trim(config_land_ice_flux_mode), MPAS_LOG_CRIT)
     end if
