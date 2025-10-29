@@ -68,24 +68,9 @@ int haloExchangeTest(
       return RetErr;
    }
 
-   auto TestArrayH = createHostMirrorCopy(TestArray);
-   auto InitArrayH = createHostMirrorCopy(InitArray);
-
-   // Collapse arrays to 1D for easy iteration
-   Kokkos::View<typename T::value_type *, typename T::array_layout,
-                HostMemSpace>
-       CollapsedInit(InitArrayH.data(), InitArrayH.size());
-   Kokkos::View<typename T::value_type *, typename T::array_layout,
-                HostMemSpace>
-       CollapsedTest(TestArrayH.data(), TestArrayH.size());
-
    // Confirm all elements are identical, if not set error code
-   // and break out of loop
-   for (int N = 0; N < NTot; ++N) {
-      if (CollapsedInit(N) != CollapsedTest(N)) {
-         IErr = -1;
-         break;
-      }
+   if (!arraysEqual(TestArray, InitArray)) {
+      IErr = -1;
    }
 
    if (IErr == 0) {

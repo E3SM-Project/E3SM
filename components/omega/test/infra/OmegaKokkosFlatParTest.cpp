@@ -8,26 +8,15 @@
 //
 //===-----------------------------------------------------------------------===/
 
-#include "OmegaKokkos.h"
 #include "Error.h"
 #include "Logging.h"
 #include "MachEnv.h"
+#include "OmegaKokkos.h"
 
 #include "mpi.h"
 #include <limits>
 
 using namespace OMEGA;
-
-template <class Array> bool hostArraysEqual(const Array &A, const Array &B) {
-   bool Equal = true;
-   for (size_t I = 0; I < A.span(); I++) {
-      if (A.data()[I] != B.data()[I]) {
-         Equal = false;
-         break;
-      }
-   }
-   return Equal;
-}
 
 static KOKKOS_FUNCTION int f1(int J1, int N1) { return -N1 / 4 + J1; }
 
@@ -63,9 +52,7 @@ Error testParallelFor1D() {
    Array1DI4 A("A1", N1);
    parallelFor({N1}, KOKKOS_LAMBDA(int J1) { A(J1) = f1(J1, N1); });
 
-   auto AH = createHostMirrorCopy(A);
-
-   if (!hostArraysEqual(AH, RefAH)) {
+   if (!arraysEqual(A, RefAH)) {
       Err += Error(ErrorCode::Fail, "parallelFor 1D FAIL");
    }
 
@@ -142,9 +129,7 @@ Error testParallelFor2D() {
        {N1, N2},
        KOKKOS_LAMBDA(int J1, int J2) { A(J1, J2) = f2(J1, J2, N1, N2); });
 
-   auto AH = createHostMirrorCopy(A);
-
-   if (!hostArraysEqual(AH, RefAH)) {
+   if (!arraysEqual(A, RefAH)) {
       Err += Error(ErrorCode::Fail, "parallelFor 2D FAIL");
    }
 
@@ -232,9 +217,7 @@ Error testParallelFor3D() {
           A(J1, J2, J3) = f3(J1, J2, J3, N1, N2, N3);
        });
 
-   auto AH = createHostMirrorCopy(A);
-
-   if (!hostArraysEqual(AH, RefAH)) {
+   if (!arraysEqual(A, RefAH)) {
       Err += Error(ErrorCode::Fail, "parallelFor 3D FAIL");
    }
 
@@ -328,9 +311,7 @@ Error testParallelFor4D() {
           A(J1, J2, J3, J4) = f4(J1, J2, J3, J4, N1, N2, N3, N4);
        });
 
-   auto AH = createHostMirrorCopy(A);
-
-   if (!hostArraysEqual(AH, RefAH)) {
+   if (!arraysEqual(A, RefAH)) {
       Err += Error(ErrorCode::Fail, "parallelFor 4D FAIL");
    }
 
@@ -433,9 +414,7 @@ Error testParallelFor5D() {
           A(J1, J2, J3, J4, J5) = f5(J1, J2, J3, J4, J5, N1, N2, N3, N4, N5);
        });
 
-   auto AH = createHostMirrorCopy(A);
-
-   if (!hostArraysEqual(AH, RefAH)) {
+   if (!arraysEqual(A, RefAH)) {
       Err += Error(ErrorCode::Fail, "parallelFor 5D FAIL");
    }
 
