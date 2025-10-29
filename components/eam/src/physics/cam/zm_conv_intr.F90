@@ -644,8 +644,6 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
    call t_stopf ('zm_convr')
 
    if (zm_param%zm_microp) then
-      ! perform some miscellaneous conversions on the ZM microphysics data
-      call zm_microphysics_history_convert(ncol, microp_st, state%pmid, state%t)
       ! update ZM micro variables in pbuf
       qi        (1:ncol,1:pver) = microp_st%qice      (1:ncol,1:pver)
       dif       (1:ncol,1:pver) = microp_st%dif       (1:ncol,1:pver)
@@ -655,10 +653,12 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
       dnsf      (1:ncol,1:pver) = microp_st%dnsf      (1:ncol,1:pver)
       mudpcu    (1:ncol,1:pver) = microp_st%mudpcu    (1:ncol,1:pver)
       lambdadpcu(1:ncol,1:pver) = microp_st%lambdadpcu(1:ncol,1:pver)
+      ! perform some miscellaneous conversions on the ZM microphysics data
+      call zm_microphysics_history_convert(ncol, microp_st, state%pmid, state%t)
       ! update other micro variables
-      rice(1:ncol) = microp_st%rice(1:ncol)
-      dlftot(1:ncol,1:pver) = dlf(1:ncol,1:pver) + dif(1:ncol,1:pver) + dsf(1:ncol,1:pver)
-      wuc(1:pcols,1:pver) = microp_st%wu(1:pcols,1:pver)
+      wuc       (1:ncol,1:pver) = microp_st%wu        (1:ncol,1:pver)
+      rice      (1:ncol)        = microp_st%rice      (1:ncol)
+      dlftot    (1:ncol,1:pver) = dlf(1:ncol,1:pver) + dif(1:ncol,1:pver) + dsf(1:ncol,1:pver)
    else
       dlftot(1:ncol,1:pver) = dlf(1:ncol,1:pver)
    end if
