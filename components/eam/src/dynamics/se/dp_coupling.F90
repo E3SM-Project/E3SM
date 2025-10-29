@@ -38,7 +38,7 @@ CONTAINS
     use cam_abortutils,          only: endrun
     use gravity_waves_sources,   only: gws_src_fnct
     use dyn_comp,                only: frontgf_idx, frontga_idx, hvcoord
-    use phys_control,            only: use_gw_front
+    use phys_control,            only: use_gw_front, use_fgf_pgrad_correction, use_fgf_zgrad_correction
     use dyn_comp,                only: dom_mt
     use gllfvremap_mod,          only: gfr_dyn_to_fv_phys
 
@@ -107,7 +107,10 @@ CONTAINS
       elem => dyn_out%elem
       tl_f = TimeLevel%n0  ! time split physics (with forward-in-time RK)
 
-      if (use_gw_front) call gws_src_fnct(elem, tl_f, nphys, frontgf, frontga)
+      if (use_gw_front) call gws_src_fnct(elem, tl_f, nphys, &
+                                          use_fgf_pgrad_correction, &
+                                          use_fgf_zgrad_correction, &
+                                          frontgf, frontga)
 
       if (fv_nphys > 0) then
         !-----------------------------------------------------------------------
