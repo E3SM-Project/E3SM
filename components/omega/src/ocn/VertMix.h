@@ -43,7 +43,7 @@ class ConvectiveMix {
    KOKKOS_FUNCTION void operator()(Array2DReal VertDiff, Array2DReal VertVisc,
                                    I4 ICell,
                                    const Array2DReal &BruntVaisalaFreq) const {
-      for (int K = 1; K <= NVertLayers; ++K) {
+      for (int K = 1; K < NVertLayers; ++K) {
          if (K == 0) {
             VertVisc(ICell, K) = 0.0_Real;
             VertDiff(ICell, K) = 0.0_Real;
@@ -80,7 +80,7 @@ class PPShearMix {
                                    const Array2DReal &TangentialVelocity,
                                    const Array2DReal &BruntVaisalaFreq) const {
 
-      for (int K = 0; K <= NVertLayers; ++K) {
+      for (int K = 0; K < NVertLayers; ++K) {
          if (K == 0) {
             VertVisc(ICell, K) = 0.0_Real;
             VertDiff(ICell, K) = 0.0_Real;
