@@ -847,7 +847,7 @@ void AtmosphereProcess::set_fields_and_groups_pointers () {
       m_fields_out_pointers[fn][g.grid_name()] = fp.get();
     }
     if (g.m_monolithic_field) {
-      m_fields_in_pointers[group_name][g.grid_name()] = g.m_monolithic_field.get();
+      m_fields_out_pointers[group_name][g.grid_name()] = g.m_monolithic_field.get();
     }
   }
   for (auto& f : m_internal_fields) {
