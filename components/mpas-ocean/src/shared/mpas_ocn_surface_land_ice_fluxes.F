@@ -1153,9 +1153,9 @@ contains
         * (oceanSalinity(iCell)/outInterfaceSalinity(iCell) - 1.0_RKIND)
 
       if (outFreshwaterFlux(iCell) > 0) then ! melting
-         outAdvectiveHeatFlux(iCell) = cp_sw*outInterfaceTemperature(iCell)*outFreshwaterFlux(iCell)
-      else
          outAdvectiveHeatFlux(iCell) = cpLandIce*outInterfaceTemperature(iCell)*outFreshwaterFlux(iCell)
+      else
+         outAdvectiveHeatFlux(iCell) = cp_sw*outInterfaceTemperature(iCell)*outFreshwaterFlux(iCell)
       endif
       ! The heat fluxes that determine the temperature tendency:
       !   1. the advection of meltwater into the top layer (or removal for freezing)
