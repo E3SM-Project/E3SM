@@ -1,3 +1,4 @@
+(omega-design-submesoscale-eddies)=
 # Submesoscale Eddy Parameterization
 
 ## 1. Overview
@@ -11,7 +12,7 @@ The foundational parameterization for submesoscale eddies was developed by [Fox-
 The core of the FK08 scheme is the introduction of an eddy-induced velocity, $\vec{v}_e$, which advects buoyancy. The vertical component of the eddy-induced overturning streamfunction, $\Psi_e$, is parameterized as:
 
 $$
-\Psi_e = C_e \frac{H^2}{|\vec{f}|} |\nabla_h b| \cdot S(z)
+\Psi_e = C_e \frac{H^2}{|\vec{f}|} |\nabla_h b| \cdot \mu(z)
 $$
 
 Where:
@@ -31,8 +32,9 @@ The implementation of the submesoscale eddy parameterization in coarse-resolutio
 
 The parameterization is centered on an eddy-induced overturning streamfunction, $\Psi$. For coarse-resolution models, this is formulated as (based on Eq. 6 of [Fox-Kemper et al., 2011](https://doi.org/10.1016/j.ocemod.2010.09.002)):
 
+
 $$
-\Psi = C_e \frac{\Delta_s}{L_f} \frac{H^2 \nabla_h \overline{b}^z}{\sqrt{f^2 + \tau^{-2}}} \mu(z)
+\Psi(z) = C_e \frac{\Delta_s}{L_f} \frac{H^2 \nabla_h \overline{b_{ml}\times \hat{z}}}{\sqrt{f^2 + \tau^{-2}}} \mu(z)
 $$ (submeso-definition)
 
 The key parameters and variables are:
@@ -47,15 +49,11 @@ The key parameters and variables are:
 - $\tau$: A timescale for momentum mixing across the mixed layer, often calculated from the surface friction velocity $u_*$.
 - $\mu(z)$: A vertical shape function that is zero at the surface and the base of the mixed layer.
 
-In practice, the upscaling factor $\frac{\Delta_s}{l_f}$ can be absorbed into a single tunable parameter, `FOX_KEMPER_ML_RESTRAT` in MOM6, simplifying the equation. The term $\sqrt{f^2 + \tau^{-2}}$ in the denominator provides a continuous and well-behaved formulation near the equator.
-
 ### Modifications by Bodner et al.
 
 Subsequent studies revealed that the original FK08 parameterization could produce excessive and unrealistic restratification in certain regimes, particularly in regions of deep winter mixed layers and weak horizontal buoyancy gradients, such as the Southern Ocean.
 
-[Bodner et al. (2023)](https://doi.org/10.1175/JPO-D-21-0297.1) (hereafter B23) proposed modifications to address this issue. Their primary change was to make the efficiency coefficient, $C_e$, a dynamic variable dependent on the local dynamical state of the mixed layer. The goal was to activate the parameterization only when the conditions are favorable for the growth of MLIs.
-
-The modified coefficient, $C_e'$, is scaled by a factor that depends on the ratio of the mixed-layer Rossby number ($Ro = U/fL$) to a critical Rossby number. This effectively dampens the parameterization's strength when the vertical shear is weak compared to the planetary vorticity and stratification, preventing spurious restratification in dynamically quiescent regions.
+[Bodner et al. (2023)](https://doi.org/10.1175/JPO-D-21-0297.1) (hereafter B23) proposed modifications to address this issue. Their primary change was to make the parameters above dynamic. The secondary goal was to activate the parameterization only when the conditions are favorable for the growth of MLIs.  Further details are discussed in Section 3 below.
 
 ### Impacts of Modifications (Uchida et al., 2024 Preprint)
 
@@ -67,26 +65,6 @@ A recent preprint by [Uchida et al. (2024)](https://essopenarchive.org/users/846
 4.  **Teleconnections:** The changes in the Southern Ocean have far-reaching impacts, including a strengthening of the Atlantic Meridional Overturning Circulation (AMOC) due to modified water mass pathways.
 
 Overall, the Uchida et al. study demonstrates that the physically-based constraints introduced by Bodner et al. lead to a more realistic and stable climate simulation.
-
-### Eddy-Induced Velocity Shape Function
-
-The parameterization assumes a specific vertical structure for the eddy-induced overturning, encapsulated in the shape function $S(z)$. This function dictates the profile of the eddy-induced vertical velocity, $w_e$, within the mixed layer (from the surface at $z=0$ to the base at $z=-H$). A common choice is a parabolic profile, which is zero at the boundaries and maximal in the middle of the mixed layer. This profile creates convergence of the eddy flow in the upper mixed layer and divergence in the lower mixed layer, driving restratification.
-
-The schematic below illustrates the vertical profile of the eddy-induced streamfunction $\Psi_e$ and the resulting vertical velocity $w_e$.
-
-```text
-+----------------------------------------+
-|              Mixed Layer               |
-|                                        |
-| z = 0 (Surface)                        |
-|   |- w_e = 0 ---------> max Ψ_e        |
-|   |               at z = -H/2          |
-|   |- w_e > 0 (Upwelling ⇑)             |
-|   v                                    |
-| z = -H (ML Base)                       |
-|   L- w_e < 0 (Downwelling ⇓)           |
-+----------------------------------------+
-```
 
 ## 2. Requirements
 
@@ -134,4 +112,78 @@ The parameterization of submesoscale eddies must accept fixed parameters from th
 
 ## 3. Algorithmic Formulation
 
-MAYBE move the FK stuff and B23 here?  Need to update B23 as it's too terse.
+In Omega two forms of the submesoscale eddy parameterization will be included: FK11 and B23.
+
+### 3.1 The original FK11 formulation
+
+The basic definition of the submesoscale parameterization is given in [](#submeso-definition).  In this equation, $L_f$, $C_e$, and $\tau$ are parameters.  Some models, such as MOM6 merge $\frac{\Delta_s}{L_f}$ into a single parameter.  This is not done in Omega to allow for variations in the grid size ($\Delta_s$) common to many target unstructured meshes.  As in MPAS-Ocean, the characteristic frontal width ($L_f$) is given by
+
+$$
+L_f = \text{max}\left(L_f^{min}, \frac{NH}{\tau}, \frac{\nabla b_{ml} H}{\tau^2} \right)
+$$
+
+where $L_f^{min}$ is a chosen minimum width, typically taken between 1 and 5 km and $\tau$ is an inverse timescale, which is defined as
+
+$$
+\tau = \sqrt{f^2 + \tau_{min}^{-2}}
+$$
+
+Here, $f$ is the Coriolis parameter and $\tau_{min}$ is a chosen minimum frontal slumping timescale to prevent excessive values of $\tau$ near the equator.
+
+In the frontal width definition, the second length scale is the mixed layer deformation length scale.  Given prevalent model biases in simulations of $N$, especially in the mixed layer, the third length scale estimate was introduced.
+
+### 3.2 B23 updates
+
+Leveraging turbulent thermal wind balance [McWilliams et al, 2015](https://journals.ametsoc.org/view/journals/phoc/45/8/jpo-d-14-0211.1.xml) and leveraging the ePBL mixing closure [Reichl and Hallberg, 2018](https://www.sciencedirect.com/science/article/pii/S1463500318301069), [](#submeso-definition) can be rewritten as
+
+$$
+\Psi(z) = C_r \frac{\Delta_s \left|f\right| h H^2 \nabla b_{ml} \times \hat{z} }{(m_* u_u^3 + n_* w_*^3)^{2/3}}\mu(z)
+$$ (bodner23-definition)
+
+While this formula introduces new parameters ($m_*$ and $n_*$) it has a number of important advantages over the FK11 formulation.  First, the ad-hoc $\tau_{min}$ factor to prevent infinite timescale values at the equator does not appear. Second, this form automatically tapers to zero at the equator ($f \rightarrow 0$), which is physically expected.  Finally, the need to compute an uncertain $N$ in the mixed layer is no longer necessary.  The two new parameters can be thought of as tunable parameters to match any parameterization of the turbulent momentum flux or can be determined through spatically dependent formulas such as those in [Reichl and Hallberg, 2018](https://www.sciencedirect.com/science/article/pii/S1463500318301069), their (25)-(28).  The parameters in [](#bodner23-definition) are defined in the following table
+
+| Parameter | Definition |
+|---|:---:|
+| $h$ | boundary layer depth |
+| $H$ | mixed layer depth |
+| $u_*$ | surface friction velocity ($u_* = \sqrt{\tau/\rho}$) |
+| $w_*$ | convective velocity scale ($w_* = \left(B_o h\right)^{1/3}$) |
+| $\Delta_s$ | grid length limiter ($\Delta_s = \text{min}(dcEdge,100km)) |
+| $b_{ml}$ | buoyancy averaged over the mixed layer depth |
+| $m_*$, $n_*$ | tunable parameters to match turbulent momentum flux |
+
+
+### 3.3 Eddy-Induced Velocity Shape Function
+
+Both the FK11 and B23 parameterizations assume the same vertical structure for the eddy-induced overturning, encapsulated in the shape function $\mu(z)$. This function dictates the profile of the eddy-induced vertical velocity, $w_e$, within the mixed layer (from the surface at $z=0$ to the base at $z=-H$). A common choice is a parabolic profile, which is zero at the boundaries and maximal in the middle of the mixed layer. This profile creates convergence of the eddy flow in the upper mixed layer and divergence in the lower mixed layer, driving restratification.
+
+The schematic below illustrates the vertical profile of the eddy-induced streamfunction $\Psi_e$ and the resulting vertical velocity $w_e$.
+
+```text
++----------------------------------------+
+|              Mixed Layer               |
+|                                        |
+| z = 0 (Surface)                        |
+|   |- w_e = 0 ---------> max Ψ_e        |
+|   |               at z = -H/2          |
+|   |- w_e > 0 (Upwelling ⇑)             |
+|   v                                    |
+| z = -H (ML Base)                       |
+|   L- w_e < 0 (Downwelling ⇓)           |
++----------------------------------------+
+```
+
+The function is given as
+
+$$
+\mu(z) = \text{max}\left\{0,\left[1-\left(\frac{2z}{H}+1\right)^2\right]\left[1+\frac{5}{21}\left(\frac{2z}{H}+1\right)^2\right]\right\}
+$$
+
+## 4. Design
+
+The most complex part of this design is the spatial dependence implicit in the averaging of the buoyancy.  The necessary `parallelReduce` calculation requires reduction over a spatially variable inner range.  This will be accomplished with the hierarchical parallelism wrappers described in CITE HP design doc.  In the initial implementation, only the FK11 form will be included.  The B23 formulation requires the boundary layer depth, which can not be included until KPP [Large et al, 1994](https://agupubs.onlinelibrary.wiley.com/doi/10.1029/94RG01872) is implemented for vertical mixing.
+
+### 4.1 Data types and parameters
+
+
+### 4.2 Methods
