@@ -167,6 +167,8 @@ int initOmegaModules(MPI_Comm Comm) {
    // One of the above two streams must be successful to initialize the
    // state and other fields used in the model
    if (Err1.isFail() and Err2.isFail()) {
+      CHECK_ERROR(Err1, "Errors encountered reading InitialState");
+      CHECK_ERROR(Err2, "Errors encountered reading RestartRead");
       ABORT_ERROR("Error initializing ocean variables from input streams");
    }
 
