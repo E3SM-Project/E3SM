@@ -156,7 +156,7 @@ int testPPBackVertMix() {
    int numMismatches = 0;
    parallelReduce(
        "CheckVertMixMatrix-BackgroundVisc",
-       {Mesh->NCellsAll, VCoord->NVertLayers + 1},
+       {Mesh->NCellsAll, VCoord->NVertLayers},
        KOKKOS_LAMBDA(int i, int j, int &localCount) {
           if (j == 0) {
              // Surface layer should be zero
@@ -186,7 +186,7 @@ int testPPBackVertMix() {
    numMismatches = 0;
    parallelReduce(
        "CheckVertMixMatrix-BackgroundDiff",
-       {Mesh->NCellsAll, VCoord->NVertLayers + 1},
+       {Mesh->NCellsAll, VCoord->NVertLayers},
        KOKKOS_LAMBDA(int i, int j, int &localCount) {
           if (j == 0) {
              // Surface layer should be zero
@@ -263,7 +263,7 @@ int testPPConvVertMix() {
    int numMismatches = 0;
    parallelReduce(
        "CheckVertMixMatrix-ConvectiveVisc",
-       {Mesh->NCellsAll, VCoord->NVertLayers + 1},
+       {Mesh->NCellsAll, VCoord->NVertLayers},
        KOKKOS_LAMBDA(int i, int j, int &localCount) {
           if (j == 0) {
              // Surface layer should be zero
@@ -293,7 +293,7 @@ int testPPConvVertMix() {
    numMismatches = 0;
    parallelReduce(
        "CheckVertMixMatrix-ConvectiveDiff",
-       {Mesh->NCellsAll, VCoord->NVertLayers + 1},
+       {Mesh->NCellsAll, VCoord->NVertLayers},
        KOKKOS_LAMBDA(int i, int j, int &localCount) {
           if (j == 0) {
              // Surface layer should be zero

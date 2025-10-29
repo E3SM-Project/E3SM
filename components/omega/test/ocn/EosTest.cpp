@@ -49,10 +49,6 @@ const Real GswBVFExpValue =
     0.02081197958166906; // Expected value from GSW-C library
 
 /// Test input values
-// double Sa       = 30.0;   // Absolute Salinity in g/kg
-// double Ct       = 10.0;   // Conservative Temperature in degC
-// double P        = 1000.0; // Pressure in dbar
-
 const Real Sa = 30.0;   // Absolute Salinity in g/kg
 const Real Ct = 10.0;   // Conservative Temperature in degC
 const Real P  = 1000.0; // Pressure in dbar
