@@ -125,7 +125,8 @@ module ocn_time_average_coupled
         end if
 
         ! Set up polar fields if necessary
-        if(trim(config_land_ice_flux_mode)=='standalone' .or. trim(config_land_ice_flux_mode) == 'data') then
+        if(trim(config_land_ice_flux_mode) == 'standalone' .or. trim(config_land_ice_flux_mode) == 'data' .or. &
+           trim(config_land_ice_flux_mode) == 'coupled') then
            call mpas_pool_get_array(forcingPool, 'avgLandIceFreshwaterFlux', avgLandIceFreshwaterFlux)
            call mpas_pool_get_array(forcingPool, 'avgLandIceHeatFlux', avgLandIceHeatFlux)
 
@@ -384,7 +385,8 @@ module ocn_time_average_coupled
         end if
 
         ! Accumulate polar fields if necessary
-        if(trim(config_land_ice_flux_mode) == 'standalone' .or. trim(config_land_ice_flux_mode) == 'data') then
+        if(trim(config_land_ice_flux_mode) == 'standalone' .or. trim(config_land_ice_flux_mode) == 'data' .or. &
+           trim(config_land_ice_flux_mode) == 'coupled') then
            call mpas_pool_get_array(forcingPool, 'avgLandIceFreshwaterFlux', avgLandIceFreshwaterFlux)
            call mpas_pool_get_array(forcingPool, 'landIceFreshwaterFlux', landIceFreshwaterFlux)
            call mpas_pool_get_array(forcingPool, 'avgLandIceHeatFlux', avgLandIceHeatFlux)
