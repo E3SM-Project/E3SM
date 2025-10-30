@@ -2243,7 +2243,6 @@ contains
 
     real(r8) :: local_positive_qgwl_sum, local_negative_qgwl_sum
     real(r8) :: net_global_qgwl, original_cell_qgwl, reduction, scaling_factor
-    integer :: local_neg_count, global_neg_count
 
     integer, allocatable :: outlet_gindices_local(:) ! Local array of global indices of outlets on this task
     real(r8), allocatable :: outlet_discharges_local(:) ! Local array of discharges for these outlets
@@ -2406,19 +2405,14 @@ contains
      if (redirect_negative_qgwl_flag) then
         local_negative_qgwl_sum = 0.0_r8 ! This will sum local NEGATIVE qgwl
         local_positive_qgwl_sum = 0.0_r8 ! This will sum local POSITIVE qgwl
-        local_neg_count = 0
 
         do nr = rtmCTL%begr, rtmCTL%endr
             if (rtmCTL%qgwl(nr, nt_nliq) > 0.0_r8) then
                 local_positive_qgwl_sum = local_positive_qgwl_sum + rtmCTL%qgwl(nr, nt_nliq)
             elseif (rtmCTL%qgwl(nr, nt_nliq) < 0.0_r8) then
                 local_negative_qgwl_sum = local_negative_qgwl_sum + rtmCTL%qgwl(nr, nt_nliq)
-                local_neg_count = local_neg_count + 1
             endif
         enddo
-
-        ! Count total negative cells globally
-        call MPI_Reduce(local_neg_count, global_neg_count, 1, MPI_INTEGER, MPI_SUM, 0, mpicom_rof, ier)
 
         ! Use combined reproducible sum for bit-for-bit reproducibility across PE layouts
         ! This sums both positive and negative qgwl in a single call for efficiency
@@ -2435,7 +2429,6 @@ contains
 
             ! Diagnostic output only when do_budget == 3
             if (masterproc .and. do_budget == 3) then
-                write(iulog, '(A,I10)')      trim(subname)//' Global count of negative qgwl cells = ', global_neg_count
                 write(iulog, '(A,ES24.16)') trim(subname)//' Global Positive qgwl Sum = ', global_positive_qgwl_sum
                 write(iulog, '(A,ES24.16)') trim(subname)//' Global Negative qgwl Sum = ', global_negative_qgwl_sum
                 write(iulog, '(A,ES24.16)') trim(subname)//' Global Net qgwl Sum = ', global_positive_qgwl_sum + global_negative_qgwl_sum
