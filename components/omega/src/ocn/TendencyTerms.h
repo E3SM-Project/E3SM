@@ -37,10 +37,9 @@ class ThicknessFluxDivOnCell {
                                    const Array2DReal &ThicknessFlux,
                                    const Array2DReal &NormalVelEdge) const {
 
-      const I4 KStartCell = MinLayerCell(ICell) + KChunk * VecLength;
-      const I4 KLenCell =
-          Kokkos::min(MaxLayerCell(ICell) - KStartCell + 1, VecLength);
-      const I4 KEndCell      = KStartCell + KLenCell - 1;
+      const I4 KStartCell = chunkStart(KChunk, MinLayerCell(ICell));
+      const I4 KLenCell = chunkLength(KChunk, KStartCell, MaxLayerCell(ICell));
+      const I4 KEndCell = KStartCell + KLenCell - 1;
       const Real InvAreaCell = 1._Real / AreaCell(ICell);
 
       Real DivTmp[VecLength] = {0};
@@ -96,9 +95,8 @@ class PotentialVortHAdvOnEdge {
                                    const Array2DReal &FluxLayerThickEdge,
                                    const Array2DReal &NormVelEdge) const {
 
-      const I4 KStart = MinLayerEdgeBot(IEdge) + KChunk * VecLength;
-      const I4 KLen =
-          Kokkos::min(MaxLayerEdgeTop(IEdge) - KStart + 1, VecLength);
+      const I4 KStart = chunkStart(KChunk, MinLayerEdgeBot(IEdge));
+      const I4 KLen   = chunkLength(KChunk, KStart, MaxLayerEdgeTop(IEdge));
       Real VortTmp[VecLength] = {0};
 
       for (int J = 0; J < NEdgesOnEdge(IEdge); ++J) {
@@ -143,11 +141,10 @@ class KEGradOnEdge {
    KOKKOS_FUNCTION void operator()(const Array2DReal &Tend, I4 IEdge, I4 KChunk,
                                    const Array2DReal &KECell) const {
 
-      const I4 KStart = MinLayerEdgeBot(IEdge) + KChunk * VecLength;
-      const I4 KLen =
-          Kokkos::min(MaxLayerEdgeTop(IEdge) - KStart + 1, VecLength);
-      const I4 JCell0      = CellsOnEdge(IEdge, 0);
-      const I4 JCell1      = CellsOnEdge(IEdge, 1);
+      const I4 KStart = chunkStart(KChunk, MinLayerEdgeBot(IEdge));
+      const I4 KLen   = chunkLength(KChunk, KStart, MaxLayerEdgeTop(IEdge));
+      const I4 JCell0 = CellsOnEdge(IEdge, 0);
+      const I4 JCell1 = CellsOnEdge(IEdge, 1);
       const Real InvDcEdge = 1._Real / DcEdge(IEdge);
 
       for (int KVec = 0; KVec < KLen; ++KVec) {
@@ -179,11 +176,10 @@ class SSHGradOnEdge {
    KOKKOS_FUNCTION void operator()(const Array2DReal &Tend, I4 IEdge, I4 KChunk,
                                    const Array2DReal &SshCell) const {
 
-      const I4 KStart = MinLayerEdgeBot(IEdge) + KChunk * VecLength;
-      const I4 KLen =
-          Kokkos::min(MaxLayerEdgeTop(IEdge) - KStart + 1, VecLength);
-      const I4 ICell0      = CellsOnEdge(IEdge, 0);
-      const I4 ICell1      = CellsOnEdge(IEdge, 1);
+      const I4 KStart = chunkStart(KChunk, MinLayerEdgeBot(IEdge));
+      const I4 KLen   = chunkLength(KChunk, KStart, MaxLayerEdgeTop(IEdge));
+      const I4 ICell0 = CellsOnEdge(IEdge, 0);
+      const I4 ICell1 = CellsOnEdge(IEdge, 1);
       const Real InvDcEdge = 1._Real / DcEdge(IEdge);
 
       for (int KVec = 0; KVec < KLen; ++KVec) {
@@ -219,9 +215,8 @@ class VelocityDiffusionOnEdge {
                                    const Array2DReal &DivCell,
                                    const Array2DReal &RVortVertex) const {
 
-      const I4 KStart = MinLayerEdgeBot(IEdge) + KChunk * VecLength;
-      const I4 KLen =
-          Kokkos::min(MaxLayerEdgeTop(IEdge) - KStart + 1, VecLength);
+      const I4 KStart = chunkStart(KChunk, MinLayerEdgeBot(IEdge));
+      const I4 KLen   = chunkLength(KChunk, KStart, MaxLayerEdgeTop(IEdge));
       const I4 ICell0 = CellsOnEdge(IEdge, 0);
       const I4 ICell1 = CellsOnEdge(IEdge, 1);
 
@@ -272,9 +267,8 @@ class VelocityHyperDiffOnEdge {
                                    const Array2DReal &Del2DivCell,
                                    const Array2DReal &Del2RVortVertex) const {
 
-      const I4 KStart = MinLayerEdgeBot(IEdge) + KChunk * VecLength;
-      const I4 KLen =
-          Kokkos::min(MaxLayerEdgeTop(IEdge) - KStart + 1, VecLength);
+      const I4 KStart = chunkStart(KChunk, MinLayerEdgeBot(IEdge));
+      const I4 KLen   = chunkLength(KChunk, KStart, MaxLayerEdgeTop(IEdge));
       const I4 ICell0 = CellsOnEdge(IEdge, 0);
       const I4 ICell1 = CellsOnEdge(IEdge, 1);
 
@@ -383,10 +377,9 @@ class TracerHorzAdvOnCell {
                                    I4 KChunk, const Array2DReal &NormVelEdge,
                                    const Array3DReal &HTracersOnEdge) const {
 
-      const I4 KStartCell = MinLayerCell(ICell) + KChunk * VecLength;
-      const I4 KLenCell =
-          Kokkos::min(MaxLayerCell(ICell) - KStartCell + 1, VecLength);
-      const I4 KEndCell      = KStartCell + KLenCell - 1;
+      const I4 KStartCell = chunkStart(KChunk, MinLayerCell(ICell));
+      const I4 KLenCell = chunkLength(KChunk, KStartCell, MaxLayerCell(ICell));
+      const I4 KEndCell = KStartCell + KLenCell - 1;
       const Real InvAreaCell = 1._Real / AreaCell(ICell);
 
       Real HAdvTmp[VecLength] = {0};
@@ -438,10 +431,9 @@ class TracerDiffOnCell {
               const Array3DReal &TracerCell,
               const Array2DReal &MeanLayerThickEdge) const {
 
-      const I4 KStartCell = MinLayerCell(ICell) + KChunk * VecLength;
-      const I4 KLenCell =
-          Kokkos::min(MaxLayerCell(ICell) - KStartCell + 1, VecLength);
-      const I4 KEndCell      = KStartCell + KLenCell - 1;
+      const I4 KStartCell = chunkStart(KChunk, MinLayerCell(ICell));
+      const I4 KLenCell = chunkLength(KChunk, KStartCell, MaxLayerCell(ICell));
+      const I4 KEndCell = KStartCell + KLenCell - 1;
       const Real InvAreaCell = 1._Real / AreaCell(ICell);
 
       Real DiffTmp[VecLength] = {0};
@@ -501,10 +493,9 @@ class TracerHyperDiffOnCell {
                                    I4 KChunk,
                                    const Array3DReal &TrDel2Cell) const {
 
-      const I4 KStartCell = MinLayerCell(ICell) + KChunk * VecLength;
-      const I4 KLenCell =
-          Kokkos::min(MaxLayerCell(ICell) - KStartCell + 1, VecLength);
-      const I4 KEndCell      = KStartCell + KLenCell - 1;
+      const I4 KStartCell = chunkStart(KChunk, MinLayerCell(ICell));
+      const I4 KLenCell = chunkLength(KChunk, KStartCell, MaxLayerCell(ICell));
+      const I4 KEndCell = KStartCell + KLenCell - 1;
       const Real InvAreaCell = 1._Real / AreaCell(ICell);
 
       Real HypTmp[VecLength] = {0};

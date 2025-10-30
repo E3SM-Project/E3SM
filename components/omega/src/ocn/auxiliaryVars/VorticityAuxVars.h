@@ -27,9 +27,9 @@ class VorticityAuxVars {
                        const Array2DReal &LayerThickCell,
                        const Array2DReal &NormalVelEdge) const {
 
-      const int KStartVertex = MinLayerVertexTop(IVertex) + KChunk * VecLength;
+      const int KStartVertex = chunkStart(KChunk, MinLayerVertexTop(IVertex));
       const int KLenVertex =
-          Kokkos::min(MaxLayerVertexBot(IVertex) - KStartVertex + 1, VecLength);
+          chunkLength(KChunk, KStartVertex, MaxLayerVertexBot(IVertex));
       const int KEndVertex = KStartVertex + KLenVertex - 1;
 
       const Real InvAreaTriangle = 1._Real / AreaTriangle(IVertex);

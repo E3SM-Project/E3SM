@@ -26,9 +26,8 @@ class LayerThicknessAuxVars {
    KOKKOS_FUNCTION void
    computeVarsOnEdge(int IEdge, int KChunk, const Array2DReal &LayerThickCell,
                      const Array2DReal &NormalVelEdge) const {
-      const int KStart = MinLayerEdgeBot(IEdge) + KChunk * VecLength;
-      const int KLen =
-          Kokkos::min(MaxLayerEdgeTop(IEdge) - KStart + 1, VecLength);
+      const int KStart = chunkStart(KChunk, MinLayerEdgeBot(IEdge));
+      const int KLen   = chunkLength(KChunk, KStart, MaxLayerEdgeTop(IEdge));
 
       const int JCell0 = CellsOnEdge(IEdge, 0);
       const int JCell1 = CellsOnEdge(IEdge, 1);
@@ -69,8 +68,8 @@ class LayerThicknessAuxVars {
                       const Array2DReal &LayerThickCell) const {
 
       // Temporary for stacked shallow water
-      const int KStart = MinLayerCell(ICell) + KChunk * VecLength;
-      const int KLen = Kokkos::min(MaxLayerCell(ICell) - KStart + 1, VecLength);
+      const int KStart = chunkStart(KChunk, MinLayerCell(ICell));
+      const int KLen   = chunkLength(KChunk, KStart, MaxLayerCell(ICell));
 
       for (int KVec = 0; KVec < KLen; ++KVec) {
          const int K       = KStart + KVec;
