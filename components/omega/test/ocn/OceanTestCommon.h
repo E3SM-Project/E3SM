@@ -70,7 +70,7 @@ enum class SetBoundary { Yes = 1, No = 0 };
 
 // helper to get vertical iteration bounds that can be provided
 // either as an integer or an array
-template <class T> int getVertBound(const T &VertBound, int I) {
+template <class T> KOKKOS_FUNCTION int getVertBound(const T &VertBound, int I) {
    if constexpr (std::is_integral_v<T>) {
       return VertBound;
    } else {
