@@ -740,7 +740,7 @@ contains
 
   end subroutine component_init_areacor
 
-subroutine component_init_areacor_moab (comp, mbccid, mbcxid, seq_flds_c2x_fluxes, seq_flds_c2x_fields)
+subroutine component_init_areacor_moab (comp, samegrid, mbccid, mbcxid, seq_flds_c2x_fluxes, seq_flds_c2x_fields)
   !---------------------------------------------------------------
    ! COMPONENT PES and CPL/COMPONENT (for exchange only)
    !
@@ -754,6 +754,7 @@ subroutine component_init_areacor_moab (comp, mbccid, mbcxid, seq_flds_c2x_fluxe
    !
    ! Arguments
    type(component_type) , intent(inout) :: comp(:)
+   logical              , intent(in)    :: samegrid
    integer              , intent(in)    :: mbccid  ! comp side
    integer              , intent(in)    :: mbcxid  ! coupler side
    ! point cloud or FV type, to use vertices or cells for setting/getting the area tags and corrections
@@ -790,32 +791,35 @@ subroutine component_init_areacor_moab (comp, mbccid, mbcxid, seq_flds_c2x_fluxe
          lsize = comp(1)%mblsize
          allocate(areas (lsize, 3)) ! lsize is along grid; read mask too
          allocate(factors (lsize, 2))
-         factors = 1.0 ! initialize with 1.0 all factors; then maybe correct them
-         ! get areas
-         tagname='area:aream:mask'//C_NULL_CHAR
-         arrsize = 3 * lsize
-         ierr = iMOAB_GetDoubleTagStorage ( mbccid, tagname, arrsize , comp(1)%mbGridType, areas(1,1) )
-         if (ierr .ne. 0) then
-           call shr_sys_abort(subname//' cannot get areas  ')
-         endif
-         ! now compute the factors
-         do i=1,lsize
-            rmask = areas(i,3)
 
-            rarea  = areas(i, 1)
-            raream = areas(i, 2)
-            if ( abs(rmask) >= 1.0e-06) then
-               if (rarea * raream /= 0.0_R8) then
-                  factors(i,1) = rarea/raream
-                  factors(i,2)= 1.0_R8/factors(i,1)
-               else
-                  write(logunit,*) trim(subname),' ERROR area,aream= ', &
-                        rarea,raream,' in ',i,lsize
-                  call shr_sys_flush(logunit)
-                  call shr_sys_abort()
-               endif
-            endif
-         enddo
+         factors = 1.0_r8 ! initialize with 1.0 all factors;
+         if (.not.samegrid) then  ! only correct if not monogrid (SCM case)
+           ! get areas
+           tagname='area:aream:mask'//C_NULL_CHAR
+           arrsize = 3 * lsize
+           ierr = iMOAB_GetDoubleTagStorage ( mbccid, tagname, arrsize , comp(1)%mbGridType, areas(1,1) )
+           if (ierr .ne. 0) then
+             call shr_sys_abort(subname//' cannot get areas  ')
+           endif
+           ! now compute the factors
+           do i=1,lsize
+              rmask = areas(i,3)
+
+              rarea  = areas(i, 1)
+              raream = areas(i, 2)
+              if ( abs(rmask) >= 1.0e-06) then
+                 if (rarea * raream /= 0.0_R8) then
+                    factors(i,1) = rarea/raream
+                    factors(i,2)= 1.0_R8/factors(i,1)
+                 else
+                    write(logunit,*) trim(subname),' ERROR area,aream= ', &
+                          rarea,raream,' in ',i,lsize
+                    call shr_sys_flush(logunit)
+                    call shr_sys_abort()
+                 endif
+              endif
+           enddo
+         endif
          ! set factors as tags
          ! define the tags mdl2drv and drv2mdl on component sides, and compute them based on area and aream
          tagname = 'mdl2drv:drv2mdl'//C_NULL_CHAR
