@@ -240,6 +240,18 @@
     </desc>
   </entry>
 
+  <entry id="nlmaps_atm2srf_conserve">
+    <type>logical</type>
+    <valid_values>.true.,.false.</valid_values>
+    <default_value>.false.</default_value>
+    <values match="last">
+      <value grid="a%ne120np4">.true.</value>
+    </values>
+    <group>seq_infodata_inparm</group>
+    <file>env_run.xml</file>
+    <desc>Conservative nlmaps from atm to surface</desc>
+  </entry>
+
   <!-- ===================================================================== -->
   <!-- component coupling options and frequencies -->
   <!-- ===================================================================== -->
