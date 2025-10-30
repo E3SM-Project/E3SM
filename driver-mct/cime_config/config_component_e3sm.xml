@@ -241,7 +241,7 @@
   </entry>
 
   <entry id="nlmaps_atm2srf_conserve">
-    <type>logical</type>
+    <type>char</type>
     <valid_values>.true.,.false.</valid_values>
     <default_value>.false.</default_value>
     <values match="last">
