@@ -132,6 +132,11 @@ module RtmMod
   logical :: do_rtmflood
   logical :: do_rtm
 
+  type :: outlet_discharge_info_type
+      integer :: gidx         
+      real(r8) :: discharge
+  end type outlet_discharge_info_type
+
   ! Namelist variable and flag for TNR redirection
   logical, public :: redirect_negative_qgwl = .false.  ! Namelist control
   logical, save   :: redirect_negative_qgwl_flag = .false.  ! Module flag
@@ -2239,6 +2244,17 @@ contains
     real(r8) :: local_positive_qgwl_sum, local_negative_qgwl_sum
     real(r8) :: net_global_qgwl, original_cell_qgwl, reduction, scaling_factor
 
+    integer, allocatable :: outlet_gindices_local(:) ! Local array of global indices of outlets on this task
+    real(r8), allocatable :: outlet_discharges_local(:) ! Local array of discharges for these outlets
+    integer :: local_outlet_count
+    integer, allocatable :: all_outlet_gindices(:)    ! Gathered on master
+    real(r8), allocatable :: all_outlet_discharges(:)  ! Gathered on master
+    integer, allocatable :: recvcounts(:), displs(:)   ! For MPI_Gatherv
+    type(outlet_discharge_info_type), allocatable :: sorted_outlets(:)
+    integer :: num_all_outlets_global, current_top_n_count, target_gidx
+    real(r8) :: sum_discharge_top_n
+    real(r8), allocatable :: qgwl_correction_values(:) ! Values to apply
+    integer, allocatable :: qgwl_correction_gindices(:) ! Global indices for these corrections
     real(r8), allocatable :: qgwl_correction_local(:) ! Local portion of correction array
     real(r8) :: qgwl_to_redistribute ! Amount to redistribute (Scenario A or B)
     real(r8) :: local_total_outlet_discharge, global_total_outlet_discharge
@@ -2248,7 +2264,6 @@ contains
     real(r8) :: global_total_liquid_before, global_total_liquid_after
     real(r8) :: local_correction_sum, global_correction_sum
     real(r8) :: correction_local(1,1), correction_global(1)
-    real(r8) :: correction_ratio ! Ratio to apply: qgwl_to_redistribute / global_total_outlet_discharge
     character(len=*),parameter :: subname = '(Rtmrun) '
 !-----------------------------------------------------------------------
 
@@ -2399,21 +2414,21 @@ contains
         enddo
 
         ! Use reproducible sum for bit-for-bit reproducibility across PE layouts
-        ! Combine both positive and negative sums in one call for efficiency
         block
-            real(r8) :: local_sums(2,1), global_sums(2)
+            real(r8) :: pos_local(1,1), pos_global(1)
+            real(r8) :: neg_local(1,1), neg_global(1)
 
-            ! Pack both positive and negative sums
-            local_sums(1,1) = local_positive_qgwl_sum
-            local_sums(2,1) = local_negative_qgwl_sum
-
-            ! Single reproducible sum call for both fields
-            call shr_reprosum_calc(local_sums, global_sums, 2, 1, 1, &
+            ! Reproducible sum for positive qgwl
+            pos_local(1,1) = local_positive_qgwl_sum
+            call shr_reprosum_calc(pos_local, pos_global, 1, 1, 1, &
                                    commid=mpicom_rof)
+            global_positive_qgwl_sum = pos_global(1)
 
-            ! Unpack results
-            global_positive_qgwl_sum = global_sums(1)
-            global_negative_qgwl_sum = global_sums(2)
+            ! Reproducible sum for negative qgwl
+            neg_local(1,1) = local_negative_qgwl_sum
+            call shr_reprosum_calc(neg_local, neg_global, 1, 1, 1, &
+                                   commid=mpicom_rof)
+            global_negative_qgwl_sum = neg_global(1)
 
             ! Diagnostic output only when do_budget == 3
             if (masterproc .and. do_budget == 3) then
@@ -2437,18 +2452,12 @@ contains
             ! Proportionally reduce positive qgwl to offset negatives, zero out negative cells
             ! This ensures NO negative qgwl enters the ocean at any grid cell
 
-            ! Master PE calculates scaling factor, then broadcasts for bit-for-bit reproducibility
-            if (masterproc) then
-               if (global_positive_qgwl_sum > 0.0_r8) then
-                  ! Calculate scaling factor: (positive - |negative|) / positive = net / positive
-                  scaling_factor = net_global_qgwl / global_positive_qgwl_sum
-               else
-                  scaling_factor = 1.0_r8  ! No positive qgwl, keep as is
-               endif
+            if (global_positive_qgwl_sum > 0.0_r8) then
+               ! Calculate scaling factor: (positive - |negative|) / positive = net / positive
+               scaling_factor = net_global_qgwl / global_positive_qgwl_sum
+            else
+               scaling_factor = 1.0_r8  ! No positive qgwl, keep as is
             endif
-
-            ! Broadcast scaling factor from master to all PEs
-            call MPI_Bcast(scaling_factor, 1, MPI_REAL8, 0, mpicom_rof, ier)
 
             do nr = rtmCTL%begr, rtmCTL%endr
                do nt = 1, nt_rtm
@@ -2989,11 +2998,10 @@ contains
       if (abs(qgwl_to_redistribute) > 1.0e-15_r8) then ! Only proceed if there's something to redistribute
          call t_startf('mosartr_qgwl_redir_dist')
 
-         ! Calculate total discharge from outlets with discharge > 1.0 m3/s
-         ! This threshold filters out small outlets and ensures numerical stability
+         ! Calculate total discharge from all outlets globally using reprosum
          local_total_outlet_discharge = 0.0_r8
          do nr = rtmCTL%begr, rtmCTL%endr
-            if (rtmCTL%mask(nr) == 3 .and. rtmCTL%runoffocn(nr, nt_nliq) > 1.0_r8) then
+            if (rtmCTL%mask(nr) == 3) then ! Outlet cell
                local_total_outlet_discharge = local_total_outlet_discharge + rtmCTL%runoffocn(nr, nt_nliq)
             endif
          enddo
@@ -3030,28 +3038,19 @@ contains
             endif
          endif
 
-         ! Master PE calculates the correction ratio, then broadcast to all PEs
-         ! This ensures bit-for-bit reproducibility across different PE layouts (PEM test)
+         ! Each PE calculates corrections for its local outlets proportionally
          if (abs(global_total_outlet_discharge) > 1.0e-9_r8) then
-            if (masterproc) then
-               correction_ratio = qgwl_to_redistribute / global_total_outlet_discharge
-            endif
-
-            ! Broadcast the correction ratio from master to all PEs
-            call MPI_Bcast(correction_ratio, 1, MPI_REAL8, 0, mpicom_rof, ier)
-
-            ! All PEs apply the same ratio to their local outlets > 1.0 m3/s
             do nr = rtmCTL%begr, rtmCTL%endr
-               if (rtmCTL%mask(nr) == 3 .and. rtmCTL%runoffocn(nr, nt_nliq) > 1.0_r8) then
-                  ! Apply the correction ratio
-                  qgwl_correction_local(nr) = rtmCTL%runoffocn(nr, nt_nliq) * correction_ratio
+               if (rtmCTL%mask(nr) == 3) then ! Outlet cell
+                  ! Proportional correction based on this outlet's discharge
+                  qgwl_correction_local(nr) = (rtmCTL%runoffocn(nr, nt_nliq) / global_total_outlet_discharge) * qgwl_to_redistribute
                endif
             enddo
          else
             ! If total discharge is zero, no redistribution (corrections remain 0)
             if (masterproc) then
                write(iulog, *) trim(subname), &
-                  'Warning: Cannot redistribute qgwl - total outlet discharge (>1 m3/s) is zero'
+                  'Warning: Cannot redistribute qgwl - total outlet discharge is zero'
             endif
          endif
 
@@ -5348,5 +5347,24 @@ contains
   end subroutine SubTimestep
 
 !-----------------------------------------------------------------------
+
+subroutine sort_outlets_by_discharge_desc(outlets_array, count) !TZ negative runoff
+   implicit none
+   integer, intent(in) :: count
+   type(outlet_discharge_info_type), intent(inout) :: outlets_array(:) ! Assumed-shape
+   integer :: i, j
+   type(outlet_discharge_info_type) :: temp_outlet_info
+   ! Bubble sort 
+   if (count < 2) return
+   do i = 1, count - 1
+       do j = 1, count - i
+           if (outlets_array(j)%discharge < outlets_array(j+1)%discharge) then
+               temp_outlet_info = outlets_array(j)
+               outlets_array(j) = outlets_array(j+1)
+               outlets_array(j+1) = temp_outlet_info
+           endif
+       enddo
+   enddo
+end subroutine sort_outlets_by_discharge_desc
 
 end module RtmMod
