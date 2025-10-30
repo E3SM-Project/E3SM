@@ -75,6 +75,11 @@
   </compset>
 
   <compset>
+      <alias>F20TR-SCREAMv1-MPASSI</alias> <!-- SCREAMv1 AMIP -->
+      <lname>20TR_SCREAM_ELM%SPBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
       <alias>FIOP-SCREAMv1-DP</alias> <!-- DP-EAMxx General compset; to be interfaced with official scripts forced from IOPs for all cases other than RCE. -->
       <lname>2010_SCREAM_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_SIAC_SESP%DP-EAMxx%IOP</lname>
       <support_level>Experimental, under development</support_level>
