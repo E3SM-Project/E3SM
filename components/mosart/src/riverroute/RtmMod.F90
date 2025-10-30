@@ -2240,9 +2240,10 @@ contains
 !scs
 
     ! Variables for negative runoff redirection
-   
+
     real(r8) :: local_positive_qgwl_sum, local_negative_qgwl_sum
     real(r8) :: net_global_qgwl, original_cell_qgwl, reduction, scaling_factor
+    integer :: local_neg_count, global_neg_count
 
     integer, allocatable :: outlet_gindices_local(:) ! Local array of global indices of outlets on this task
     real(r8), allocatable :: outlet_discharges_local(:) ! Local array of discharges for these outlets
@@ -2264,6 +2265,7 @@ contains
     real(r8) :: global_total_liquid_before, global_total_liquid_after
     real(r8) :: local_correction_sum, global_correction_sum
     real(r8) :: correction_local(1,1), correction_global(1)
+    real(r8) :: correction_ratio ! Ratio to apply: qgwl_to_redistribute / global_total_outlet_discharge
     character(len=*),parameter :: subname = '(Rtmrun) '
 !-----------------------------------------------------------------------
 
@@ -2404,47 +2406,43 @@ contains
      if (redirect_negative_qgwl_flag) then
         local_negative_qgwl_sum = 0.0_r8 ! This will sum local NEGATIVE qgwl
         local_positive_qgwl_sum = 0.0_r8 ! This will sum local POSITIVE qgwl
+        local_neg_count = 0
 
         do nr = rtmCTL%begr, rtmCTL%endr
             if (rtmCTL%qgwl(nr, nt_nliq) > 0.0_r8) then
                 local_positive_qgwl_sum = local_positive_qgwl_sum + rtmCTL%qgwl(nr, nt_nliq)
             elseif (rtmCTL%qgwl(nr, nt_nliq) < 0.0_r8) then
                 local_negative_qgwl_sum = local_negative_qgwl_sum + rtmCTL%qgwl(nr, nt_nliq)
+                local_neg_count = local_neg_count + 1
             endif
         enddo
 
-        ! Use reproducible sum for bit-for-bit reproducibility across PE layouts
+        ! Count total negative cells globally
+        call MPI_Reduce(local_neg_count, global_neg_count, 1, MPI_INTEGER, MPI_SUM, 0, mpicom_rof, ier)
+
+        ! Use combined reproducible sum for bit-for-bit reproducibility across PE layouts
+        ! This sums both positive and negative qgwl in a single call for efficiency
         block
-            real(r8) :: pos_local(1,1), pos_global(1)
-            real(r8) :: neg_local(1,1), neg_global(1)
+            real(r8) :: local_sums(1,2), global_sums(2)
 
-            ! Reproducible sum for positive qgwl
-            pos_local(1,1) = local_positive_qgwl_sum
-            call shr_reprosum_calc(pos_local, pos_global, 1, 1, 1, &
+            ! Combined reprosum: arr(dsummands, nflds) where nflds=2
+            local_sums(1,1) = local_positive_qgwl_sum
+            local_sums(1,2) = local_negative_qgwl_sum
+            call shr_reprosum_calc(local_sums, global_sums, 1, 1, 2, &
                                    commid=mpicom_rof)
-            global_positive_qgwl_sum = pos_global(1)
-
-            ! Reproducible sum for negative qgwl
-            neg_local(1,1) = local_negative_qgwl_sum
-            call shr_reprosum_calc(neg_local, neg_global, 1, 1, 1, &
-                                   commid=mpicom_rof)
-            global_negative_qgwl_sum = neg_global(1)
+            global_positive_qgwl_sum = global_sums(1)
+            global_negative_qgwl_sum = global_sums(2)
 
             ! Diagnostic output only when do_budget == 3
             if (masterproc .and. do_budget == 3) then
-                write(iulog, '(A,ES24.16)') trim(subname)//' REPROSUM Positive Sum = ', global_positive_qgwl_sum
-                write(iulog, '(A,ES24.16)') trim(subname)//' REPROSUM Negative Sum = ', global_negative_qgwl_sum
-                write(iulog, '(A,ES24.16)') trim(subname)//' REPROSUM Net Sum = ', global_positive_qgwl_sum + global_negative_qgwl_sum
+                write(iulog, '(A,I10)')      trim(subname)//' Global count of negative qgwl cells = ', global_neg_count
+                write(iulog, '(A,ES24.16)') trim(subname)//' Global Positive qgwl Sum = ', global_positive_qgwl_sum
+                write(iulog, '(A,ES24.16)') trim(subname)//' Global Negative qgwl Sum = ', global_negative_qgwl_sum
+                write(iulog, '(A,ES24.16)') trim(subname)//' Global Net qgwl Sum = ', global_positive_qgwl_sum + global_negative_qgwl_sum
             endif
         end block
 
         net_global_qgwl = global_positive_qgwl_sum + global_negative_qgwl_sum
-
-        if (masterproc .and. do_budget == 3) then
-            write(iulog, *) trim(subname), 'Debug QGWL Balancing: Global Positive Sum =', global_positive_qgwl_sum
-            write(iulog, *) trim(subname), 'Debug QGWL Balancing: Global Negative Sum =', global_negative_qgwl_sum
-            write(iulog, *) trim(subname), 'Debug QGWL Balancing: Global Net Sum =', net_global_qgwl
-        endif
 
         ! Decide how to set TRunoff%qgwl for local routing
         if (net_global_qgwl >= 0.0_r8) then
@@ -2452,12 +2450,18 @@ contains
             ! Proportionally reduce positive qgwl to offset negatives, zero out negative cells
             ! This ensures NO negative qgwl enters the ocean at any grid cell
 
-            if (global_positive_qgwl_sum > 0.0_r8) then
-               ! Calculate scaling factor: (positive - |negative|) / positive = net / positive
-               scaling_factor = net_global_qgwl / global_positive_qgwl_sum
-            else
-               scaling_factor = 1.0_r8  ! No positive qgwl, keep as is
+            ! Master PE calculates scaling factor, then broadcasts for bit-for-bit reproducibility
+            if (masterproc) then
+               if (global_positive_qgwl_sum > 0.0_r8) then
+                  ! Calculate scaling factor: (positive - |negative|) / positive = net / positive
+                  scaling_factor = net_global_qgwl / global_positive_qgwl_sum
+               else
+                  scaling_factor = 1.0_r8  ! No positive qgwl, keep as is
+               endif
             endif
+
+            ! Broadcast scaling factor from master to all PEs
+            call MPI_Bcast(scaling_factor, 1, MPI_REAL8, 0, mpicom_rof, ier)
 
             do nr = rtmCTL%begr, rtmCTL%endr
                do nt = 1, nt_rtm
@@ -3038,12 +3042,33 @@ contains
             endif
          endif
 
-         ! Each PE calculates corrections for its local outlets proportionally
+         ! Master PE calculates the correction ratio, then broadcast to all PEs
+         ! This ensures bit-for-bit reproducibility across different PE layouts (PEM test)
          if (abs(global_total_outlet_discharge) > 1.0e-9_r8) then
+            if (masterproc) then
+               correction_ratio = qgwl_to_redistribute / global_total_outlet_discharge
+
+               ! Check if correction ratio magnitude exceeds 100%
+               if (correction_ratio < -1.0_r8) then
+                  call shr_sys_flush(iulog)
+                  write(iulog, *) trim(subname), &
+                     'WARNING: Correction ratio < -100% (', correction_ratio, ').'
+                  write(iulog, *) trim(subname), &
+                     'Negative runoff to ocean is unavoidable as negative qgwl magnitude (', &
+                     abs(qgwl_to_redistribute), ' m3/s) exceeds total outlet discharge (', &
+                     global_total_outlet_discharge, ' m3/s).'
+                  call shr_sys_flush(iulog)
+               endif
+            endif
+
+            ! Broadcast the correction ratio from master to all PEs
+            call MPI_Bcast(correction_ratio, 1, MPI_REAL8, 0, mpicom_rof, ier)
+
+            ! All PEs apply the same ratio to their local outlets
             do nr = rtmCTL%begr, rtmCTL%endr
                if (rtmCTL%mask(nr) == 3) then ! Outlet cell
-                  ! Proportional correction based on this outlet's discharge
-                  qgwl_correction_local(nr) = (rtmCTL%runoffocn(nr, nt_nliq) / global_total_outlet_discharge) * qgwl_to_redistribute
+                  ! Apply the correction ratio
+                  qgwl_correction_local(nr) = rtmCTL%runoffocn(nr, nt_nliq) * correction_ratio
                endif
             enddo
          else
