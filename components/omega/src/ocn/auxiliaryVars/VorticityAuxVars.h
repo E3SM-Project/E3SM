@@ -76,11 +76,12 @@ class VorticityAuxVars {
    }
 
    KOKKOS_FUNCTION void computeVarsOnEdge(int IEdge, int KChunk) const {
-      const int KStart   = KChunk * VecLength;
+      const int KStart   = chunkStart(KChunk, MinLayerEdgeTop(IEdge));
+      const int KLen     = chunkLength(KChunk, KStart, MaxLayerEdgeBot(IEdge));
       const int JVertex0 = VerticesOnEdge(IEdge, 0);
       const int JVertex1 = VerticesOnEdge(IEdge, 1);
 
-      for (int KVec = 0; KVec < VecLength; ++KVec) {
+      for (int KVec = 0; KVec < KLen; ++KVec) {
          const int K = KStart + KVec;
          NormRelVortEdge(IEdge, K) =
              0.5_Real *
