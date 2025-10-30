@@ -13,6 +13,9 @@ add_subdirectory(physics)
 # Field structures
 add_subdirectory(field)
 
+# Field expressions
+add_subdirectory(expressions)
+
 # Grid structures
 add_subdirectory(grid)
 
