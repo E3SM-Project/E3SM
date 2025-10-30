@@ -1474,12 +1474,17 @@ contains
 
    subroutine UpdateLitterFluxes(this,bounds_clump)
 
+      use elm_varpar,  only : i_met_lit
+      use elm_varpar,  only : i_cel_lit
+      use elm_varpar,  only : i_lig_lit
+
       implicit none
       class(hlm_fates_interface_type), intent(inout) :: this
       type(bounds_type)              , intent(in)    :: bounds_clump
 
       ! !LOCAL VARIABLES:
       integer  :: s                        ! site index
+      integer  :: r                        ! site index
       integer  :: c                        ! column index (HLM)
       integer  :: nc                       ! clump index
       integer  :: nld_si
@@ -1487,8 +1492,27 @@ contains
 
       dtime = real(get_step_size(),r8)
       nc = bounds_clump%clump_index
+
+      do s = 1, this%fates(nc)%nsites
+         write(iulog,*) 'Updating litter fluxes for site: ', s
+         call FluxIntoLitterPools(this%fates(nc)%sites(s))
+      end do
       
       call this%fates(nc)%UpdateLitterFluxes(dtime)
+      write(iulog,*) 'After UpdateLitterFluxes call'
+
+      do r=1,this%fates(nc)%npatches
+         c = this%fates(nc)%registry(r)%GetColumnIndex()
+
+         write(iulog,*) 'r,c,litfall: ',r,c,col_cf%litfall(c)
+         write(iulog,*) 'r,c,sumcel: ',r,c,sum(col_cf%decomp_cpools_sourcesink(c,:,i_cel_lit))
+         write(iulog,*) 'r,c,sumlab: ',r,c,sum(col_cf%decomp_cpools_sourcesink(c,:,i_met_lit))
+         write(iulog,*) 'r,c,sumlig: ',r,c,sum(col_cf%decomp_cpools_sourcesink(c,:,i_lig_lit))
+
+      end do
+
+      write(iulog,*) 'Completed elmfates UpdateLitterFluxes subroutine'
+
 
    end subroutine UpdateLitterFluxes
 
