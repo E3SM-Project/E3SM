@@ -941,7 +941,7 @@ void HommeDynamics::restart_homme_state () {
   for (auto& f : get_internal_fields()) {
     const auto& track = f.get_header().get_tracking();
     if (ekat::contains(track.get_groups_names(),"RESTART")) {
-      auto ts = f.get_header().get_tracking().get_time_stamp();
+      auto ts = track.get_time_stamp();
       EKAT_REQUIRE_MSG(track.get_time_stamp().is_valid(),
           "Error! Found HommeDynamics internal field not restarted.\n"
           "  - field name: " + f.get_header().get_identifier().name() + "\n");
