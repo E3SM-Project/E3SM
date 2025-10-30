@@ -171,7 +171,7 @@ subroutine gw_front_gw_sources(ncol, ngwv, kbot, frontgf, tau)
   do l = 0, ngwv
      where (launch_wave)
         tau(:,l,kbot) = fav(l)
-        tau(:,-l,kbot) = fav(l)
+        tau(:,-l,kbot) = fav(-l)
      end where
   end do
 
