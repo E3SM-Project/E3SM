@@ -49,18 +49,6 @@ $$
            &=  a^2 + 2ab + b^2
 $$
 
-You can add in an image like this:
-
-``{image} images/ocean.jpg
-:name: ocean-figure
-:align: center
-:width: 500 px
-
-Caption.
-```
-
-and can be referenced as {numref}`ocean-figure`.
-
 ## 4 Design
 
 You can include code blocks like this:
