@@ -247,12 +247,12 @@ void AtmosphereProcess::setup_step_tendencies () {
   set_fields_and_groups_pointers ();
 
   // Allow to request tendency of a field on a particular grid
-  // by using the syntax 'field_name#grid_name'
+  // by using the syntax 'field_name@grid_name'
   auto field_grid = [&] (const std::string& tn) -> std::pair<std::string,std::string>{
-    auto tokens = ekat::split(tn,'#');
+    auto tokens = ekat::split(tn,'@');
     EKAT_REQUIRE_MSG (tokens.size()==1 || tokens.size()==2,
         "Error! Invalid format for tendency calculation request: " + tn + "\n"
-        "  To request tendencies for F, use 'F' or 'F#grid_name' format.\n");
+        "  To request tendencies for F, use 'F' or 'F@grid_name' format.\n");
     return std::make_pair(tokens[0],tokens.size()==2 ? tokens[1] : "UNSET");
   };
 
