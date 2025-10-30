@@ -350,8 +350,8 @@
     <BATCH_SYSTEM>nersc_slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>e3sm</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
-    <MAX_TASKS_PER_NODE compiler="gnu">256</MAX_TASKS_PER_NODE>
-    <MAX_TASKS_PER_NODE compiler="nvidia">256</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE compiler="gnu">128</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE compiler="nvidia">128</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>4</MAX_MPITASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE compiler="gnu">64</MAX_MPITASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE compiler="nvidia">64</MAX_MPITASKS_PER_NODE>
@@ -362,8 +362,9 @@
         <arg name="label"> --label</arg>
         <arg name="num_tasks"> -n {{ total_tasks }} -N {{ num_nodes }}</arg>
         <arg name="thread_count">-c $SHELL{echo 128/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
-        <arg name="binding"> $SHELL{if [ 64 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu_bind=cores"; else echo "--cpu_bind=threads";fi;} </arg>
+        <arg name="binding"> $SHELL{if [ 64 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu-bind=cores"; else echo "--cpu-bind=threads";fi;} </arg>
         <arg name="placement"> -m plane=$SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
+        <arg name="gpu-bind"> /global/cfs/cdirs/e3sm/tools/set_affinity_npergpu.sh $SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
     </arguments>
     </mpirun>
     <module_system type="module" allow_error="true">
@@ -453,15 +454,17 @@
       <env name="MPICH_ENV_DISPLAY">1</env>
       <env name="MPICH_VERSION_DISPLAY">1</env>
       <env name="MPICH_MPIIO_DVS_MAXNODES">1</env>
-      <env name="OMP_STACKSIZE">128M</env>
-      <env name="OMP_PROC_BIND">spread</env>
-      <env name="OMP_PLACES">threads</env>
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
       <env name="PERL5LIB">/global/cfs/cdirs/e3sm/perl/lib/perl5-only-switch</env>
       <env name="FI_MR_CACHE_MONITOR">kdreg2</env>
       <env name="MPICH_COLL_SYNC">MPI_Bcast</env>
       <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
       <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
+    </environment_variables>
+    <environment_variables BUILD_THREADED="TRUE">
+      <env name="OMP_STACKSIZE">128M</env>
+      <env name="OMP_PROC_BIND">spread</env>
+      <env name="OMP_PLACES">threads</env>
     </environment_variables>
     <environment_variables compiler="gnugpu">
       <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
