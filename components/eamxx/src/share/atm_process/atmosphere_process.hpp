@@ -128,7 +128,7 @@ public:
   // This method prepares the atm proc for computing the tendency of
   // output fields, as prescribed via parameter list
   // NOTE: virtual, as AtmProcGroup will override and just call it on stored procs
-  virtual void setup_step_tendencies ();
+  virtual void setup_step_tendencies (const std::string& default_grid);
 
   // Note: if we are being subcycled from the outside, the host will set
   //       do_update=false, and we will not update the timestamp of the AP

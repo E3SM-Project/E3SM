@@ -589,7 +589,7 @@ void AtmosphereDriver::create_fields()
   }
 
   // Make atm procs create the proc-level tendency fields (if requested)
-  m_atm_process_group->setup_step_tendencies();
+  m_atm_process_group->setup_step_tendencies(m_grids_manager->get_grid("physics")->name());
 
   // Now that all processes have all the required/computed fields/groups, they
   // have also created any possible internal field (if needed). Notice that some

@@ -176,11 +176,12 @@ void AtmosphereProcessGroup::set_grids (const std::shared_ptr<const GridsManager
   m_grids_mgr = grids_manager;
 }
 
-void AtmosphereProcessGroup::setup_step_tendencies () {
+void AtmosphereProcessGroup::
+setup_step_tendencies (const std::string& default_grid) {
   for (const auto& atm_proc : m_atm_processes) {
-    atm_proc->setup_step_tendencies();
+    atm_proc->setup_step_tendencies(default_grid);
   }
-  AtmosphereProcess::setup_step_tendencies();
+  AtmosphereProcess::setup_step_tendencies(default_grid);
 }
 
 void AtmosphereProcessGroup::

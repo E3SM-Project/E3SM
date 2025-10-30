@@ -235,7 +235,7 @@ void AtmosphereProcess::finalize () {
 #endif
 }
 
-void AtmosphereProcess::setup_step_tendencies () {
+void AtmosphereProcess::setup_step_tendencies (const std::string& default_grid) {
   using strvec_t = std::vector<std::string>;
   auto tend_vec = m_params.get<strvec_t>("compute_tendencies",{});
   if (tend_vec.size()==0) {
@@ -253,7 +253,7 @@ void AtmosphereProcess::setup_step_tendencies () {
     EKAT_REQUIRE_MSG (tokens.size()==1 || tokens.size()==2,
         "Error! Invalid format for tendency calculation request: " + tn + "\n"
         "  To request tendencies for F, use 'F' or 'F@grid_name' format.\n");
-    return std::make_pair(tokens[0],tokens.size()==2 ? tokens[1] : "UNSET");
+    return std::make_pair(tokens[0],tokens.size()==2 ? tokens[1] : default_grid);
   };
 
 
@@ -262,7 +262,7 @@ void AtmosphereProcess::setup_step_tendencies () {
     auto fn = tokens.first;
     auto gn = tokens.second;
 
-    auto f = gn=="UNSET" ? get_field_out(fn) : get_field_out(fn,gn);
+    auto f = get_field_out(fn,gn);
 
     const auto& tname = this->name() + "_" + fn + "_tend";
 
