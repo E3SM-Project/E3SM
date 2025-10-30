@@ -153,7 +153,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       >0</internal_diagnostics_level>
       <compute_tendencies
         type="array(string)"
-        doc="list of computed fields for which this process will back out tendencies"
+        doc="list of computed fields/groups for which this process will back out tendencies"
         />
     </atm_proc_base>
 

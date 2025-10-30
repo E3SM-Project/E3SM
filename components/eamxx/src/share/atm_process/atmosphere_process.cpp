@@ -128,13 +128,6 @@ void AtmosphereProcess::initialize (const TimeStamp& t0, const RunType run_type)
   m_start_of_step_ts = m_end_of_step_ts = t0;
   initialize_impl(run_type);
 
-  // Create all start-of-step fields needed for tendencies calculation
-  for (const auto& it : m_proc_tendencies) {
-    const auto& tname = it.first;
-    const auto& fname = m_tend_to_field.at(tname);
-    m_start_of_step_fields[fname] = get_field_out(fname).clone();
-  }
-
   // Avoid logging and flushing if ap type is diag ...
   // ... because we could have 100+ of those in production runs
   if (this->type()!=AtmosphereProcessType::Diagnostic) {
@@ -211,7 +204,7 @@ void AtmosphereProcess::run (const double dt) {
   }
 
   // Complete tendency calculations (if any)
-  compute_step_tendencies(dt);
+  compute_step_tendencies();
 
   if (m_params.get("enable_postcondition_checks", true)) {
     // Run 'post-condition' property checks stored in this AP
@@ -242,118 +235,44 @@ void AtmosphereProcess::finalize () {
 #endif
 }
 
-void AtmosphereProcess::setup_tendencies_requests () {
-  using vos_t = std::vector<std::string>;
-  auto tend_vec = m_params.get<vos_t>("compute_tendencies",{});
+void AtmosphereProcess::setup_step_tendencies (const std::string& default_grid) {
+  using strvec_t = std::vector<std::string>;
+  auto tend_vec = m_params.get<strvec_t>("compute_tendencies",{});
   if (tend_vec.size()==0) {
     return;
   }
 
-  // Will convert to list, since lists insert/erase are safe inside loops
-  std::list<std::string> tend_list;
-
-  // Allow user to specify [all] as a shortcut for all updated fields
-  if (tend_vec.size()==1 && tend_vec[0]==ci_string("all")) {
-    for (const auto& r_out : get_computed_field_requests()) {
-      for (const auto& r_in : get_required_field_requests()) {
-        if (r_in.fid==r_out.fid) {
-          tend_list.push_back(r_out.fid.name());
-          break;
-        }
-      }
-    }
-  } else {
-    for (const auto& n : tend_vec) {
-      // We don't have grid name info here, so we'll check that n
-      // is indeed an updated field a few lines below
-      tend_list.push_back(n);
-    }
-  }
+  // This method will be called again during initialize (it's ok, it's cheap)
+  // But we need to have it called now, so we can use "get_field_out" below.
+  set_fields_and_groups_pointers ();
 
   // Allow to request tendency of a field on a particular grid
-  // by using the syntax 'field_name#grid_name'
+  // by using the syntax 'field_name@grid_name'
   auto field_grid = [&] (const std::string& tn) -> std::pair<std::string,std::string>{
-    auto tokens = ekat::split(tn,'#');
+    auto tokens = ekat::split(tn,'@');
     EKAT_REQUIRE_MSG (tokens.size()==1 || tokens.size()==2,
         "Error! Invalid format for tendency calculation request: " + tn + "\n"
-        "  To request tendencies for F, use 'F' or 'F#grid_name' format.\n");
-    return std::make_pair(tokens[0],tokens.size()==2 ? tokens[1] : "");
+        "  To request tendencies for F, use 'F' or 'F@grid_name' format.\n");
+    return std::make_pair(tokens[0],tokens.size()==2 ? tokens[1] : default_grid);
   };
 
-  auto multiple_matches_error = [&] (const std::string& tn) {
+
+  for (const auto& tn : tend_vec) {
     auto tokens = field_grid(tn);
     auto fn = tokens.first;
     auto gn = tokens.second;
 
-    std::set<std::pair<std::string,std::string>> matches_set;
-    std::vector<std::string> matches_vec;
-    for (auto it : get_computed_field_requests()) {
-      if (it.fid.name()==fn && (gn=="" || gn==it.fid.get_grid_name())) {
-        auto it_bool = matches_set.insert(std::make_pair(fn,it.fid.get_grid_name()));
-        if (it_bool.second) {
-          auto gname = it_bool.first->second;
-          matches_vec.push_back(fn + "(grid=" + gname + ")");
-        }
-      }
-    }
-    EKAT_ERROR_MSG(
-        "Error! Could not uniquely determine field for tendency calculation.\n"
-        " - atm proc name: " + this->name() + "\n"
-        " - tend requested: " + tn + "\n"
-        " - all matches: " + ekat::join(matches_vec,", ") + "\n"
-        "If atm process computes " + fn + " on multiple grids, use " + fn + "#grid_name\n");
-  };
+    auto f = get_field_out(fn,gn);
 
-  // Parse all the tendencies requested, looking for a corresponding
-  // field with the requested name. If more than one is found (must be
-  // that we have same field on multiple grids), error out.
-  using namespace ekat::units;
-  using strlist_t = std::list<std::string>;
-  for (const auto& tn : tend_list) {
-    std::string grid_found = "";
-    auto tokens = field_grid(tn);
-    auto fn = tokens.first;
-    auto gn = tokens.second;
-    const auto& tname = this->name() + "_" + tn + "_tend";
-    for (auto it : get_computed_field_requests()) {
-      const auto& fid = it.fid;
-      if (fid.name()==fn && (gn=="" || gn==fid.get_grid_name())) {
-        // Get fid specs
-        const auto& layout = fid.get_layout();
-        const auto  units  = fid.get_units() / s;
-        const auto& gname  = fid.get_grid_name();
-        const auto& dtype  = fid.data_type();
+    const auto& tname = this->name() + "_" + fn + "_tend";
 
-        // Check we did not process another field with same name
-        if (grid_found!="" && gname!=grid_found) {
-          multiple_matches_error(tn);
-        }
+    const auto fn_gn = fn + "@" + f.get_header().get_identifier().get_grid_name();
 
-        // Check this computed field is also required (hence, updated)
-        EKAT_REQUIRE_MSG (has_required_field(fn,gname),
-            "Error! Tendency calculation available only for updated fields.\n"
-            " - atm proc name: " + this->name() + "\n"
-            " - field name   : " + fn + "\n"
-            " - grid name    : " + gn + "\n");
-
-        // Create tend FID and request field
-        FieldIdentifier t_fid(tname,layout,units,gname,dtype);
-        add_field<Computed>(t_fid,strlist_t{"ACCUMULATED","DIVIDE_BY_DT"});
-        grid_found = gname;
-      }
-    }
-
-    EKAT_REQUIRE_MSG (grid_found!="",
-        "Error! Could not locate field for tendency request.\n"
-        " - atm proc name: " + this->name() + "\n"
-        " - tendency request: " + tn + "\n");
-
-    // Add an empty field, to be reset when we set the computed field
-    m_proc_tendencies[tname] = {};
-    m_tend_to_field[tname] = fn;
+    // Create tend and start-of-step fields
+    auto& tend = m_proc_tendencies[fn_gn] = f.clone(tname);
+    m_start_of_step_fields[fn_gn] = f.clone();
+    add_internal_field(tend,{"ACCUMULATED","DIVIDE_BY_DT"});
   }
-
-  m_compute_proc_tendencies = m_proc_tendencies.size()>0;
 }
 
 void AtmosphereProcess::set_required_field (const Field& f) {
@@ -400,10 +319,6 @@ void AtmosphereProcess::set_computed_field (const Field& f) {
   }
 
   set_computed_field_impl (f);
-
-  if (m_compute_proc_tendencies && m_proc_tendencies.count(f.name())==1) {
-    m_proc_tendencies[f.name()] = f;
-  }
 
   add_py_fields(f);
 }
@@ -597,37 +512,41 @@ void AtmosphereProcess::run_column_conservation_check () const {
 }
 
 void AtmosphereProcess::init_step_tendencies () {
-  if (m_compute_proc_tendencies) {
-    start_timer(m_timer_prefix + this->name() + "::compute_tendencies");
-    for (auto& it : m_start_of_step_fields) {
-      const auto& fname = it.first;
-      const auto& f     = get_field_out(fname);
-            auto& f_beg = it.second;
-      f_beg.deep_copy(f);
-    }
-    stop_timer(m_timer_prefix + this->name() + "::compute_tendencies");
+  if (m_start_of_step_fields.size()==0) {
+    return;
   }
+
+  start_timer(m_timer_prefix + this->name() + "::compute_tendencies");
+  for (auto& [fn_gn,f_beg] : m_start_of_step_fields) {
+    const auto fname = ekat::split(fn_gn,"@")[0];
+    const auto gname = ekat::split(fn_gn,"@")[1];
+    const auto& f     = get_field_out(fname,gname);
+    f_beg.deep_copy(f);
+  }
+  stop_timer(m_timer_prefix + this->name() + "::compute_tendencies");
 }
 
-void AtmosphereProcess::compute_step_tendencies (const double dt) {
-  using namespace ShortFieldTagsNames;
-  if (m_compute_proc_tendencies) {
-    m_atm_logger->debug("[" + this->name() + "] computing tendencies...");
-    start_timer(m_timer_prefix + this->name() + "::compute_tendencies");
-    for (auto it : m_proc_tendencies) {
-      // Note: f_beg is nonconst, so we can store step tendency in it
-      const auto& tname = it.first;
-      const auto& fname = m_tend_to_field.at(tname);
-      const auto& f     = get_field_out(fname);
-            auto& f_beg = m_start_of_step_fields.at(fname);
-            auto& tend  = it.second;
-
-      // Compute tend from this atm proc step, then sum into overall atm timestep tendency
-      f_beg.update(f,1,-1);
-      tend.update(f_beg,1,1);
-    }
-    stop_timer(m_timer_prefix + this->name() + "::compute_tendencies");
+void AtmosphereProcess::compute_step_tendencies () {
+  if (m_start_of_step_fields.size()==0) {
+    return;
   }
+
+  m_atm_logger->debug("[" + this->name() + "] computing tendencies...");
+  start_timer(m_timer_prefix + this->name() + "::compute_tendencies");
+  for (auto& [fn_gn,tend] : m_proc_tendencies) {
+    const auto fname = ekat::split(fn_gn,"@")[0];
+    const auto gname = ekat::split(fn_gn,"@")[1];
+    // Note: f_beg is nonconst, so we can store step tendency in it
+          auto& f_beg = m_start_of_step_fields.at(fn_gn);
+    const auto& f_end = get_field_out(fname,gname);
+
+    // Compute tend from this atm proc step, then sum into overall atm timestep tendency
+    // Note: don't add -f_beg to tend during init_step_tendencies, b/c the field magnitude
+    // may be MUCH larger than the tend. Instead, compute step tend, and THEN add into tend
+    f_beg.update(f_end,1,-1);
+    tend.update(f_beg,1,1);
+  }
+  stop_timer(m_timer_prefix + this->name() + "::compute_tendencies");
 }
 
 bool AtmosphereProcess::has_required_field (const FieldIdentifier& id) const {
@@ -710,8 +629,11 @@ void AtmosphereProcess::add_me_as_customer (const Field& f) {
   f.get_header_ptr()->get_tracking().add_customer(weak_from_this());
 }
 
-void AtmosphereProcess::add_internal_field (const Field& f) {
-  m_internal_fields.push_back(f);
+void AtmosphereProcess::add_internal_field (const Field& f, const std::vector<std::string>& groups) {
+  auto& fi = m_internal_fields.emplace_back(f);
+  for (const auto& gn : groups) {
+    fi.get_header().get_tracking().add_group(gn);
+  }
   add_py_fields(f);
 }
 
@@ -909,10 +831,24 @@ void AtmosphereProcess::set_fields_and_groups_pointers () {
   for (auto& g : m_groups_in) {
     const auto& group_name = g.m_info->m_group_name;
     m_groups_in_pointers[group_name][g.grid_name()] = &g;
+    // Also add pointers for individual fields in the group and monolithic field (if present)
+    for (const auto& [fn,fp] : g.m_individual_fields) {
+      m_fields_in_pointers[fn][g.grid_name()] = fp.get();
+    }
+    if (g.m_monolithic_field) {
+      m_fields_in_pointers[group_name][g.grid_name()] = g.m_monolithic_field.get();
+    }
   }
   for (auto& g : m_groups_out) {
     const auto& group_name = g.m_info->m_group_name;
     m_groups_out_pointers[group_name][g.grid_name()] = &g;
+    // Also add pointers for individual fields in the group and monolithic field (if present)
+    for (const auto& [fn,fp] : g.m_individual_fields) {
+      m_fields_out_pointers[fn][g.grid_name()] = fp.get();
+    }
+    if (g.m_monolithic_field) {
+      m_fields_out_pointers[group_name][g.grid_name()] = g.m_monolithic_field.get();
+    }
   }
   for (auto& f : m_internal_fields) {
     const auto& fid = f.get_header().get_identifier();
