@@ -4,8 +4,7 @@ module zm_eamxx_bridge_physconst
 
    ! Physical constants.  Use CCSM shared values whenever available.
 
-   use zm_eamxx_bridge_params, only: r8, pcols, pver, pverp
-   ! use shr_kind_mod,  only: r8 => shr_kind_r8
+   use zm_eamxx_bridge_params, only: r8, pver, pverp
    use shr_const_mod, only: shr_const_g,      shr_const_stebol, shr_const_tkfrz,  &
                             shr_const_mwdair, shr_const_rdair,  shr_const_mwwv,   &
                             shr_const_latice, shr_const_latvap, shr_const_cpdair, &
@@ -16,7 +15,6 @@ module zm_eamxx_bridge_physconst
                             shr_const_rearth, shr_const_sday,   shr_const_cday,   &
                             shr_const_spval,  shr_const_omega,  shr_const_cpvir,  &
                             shr_const_tktrip
-   ! use ppgrid,        only: pcols, pver, pverp, begchunk, endchunk   ! Dimensions and chunk bounds
 
    implicit none
 
