@@ -250,7 +250,8 @@ Error IOStream::read(
    // Retrieve stream by name and make sure it exists
    auto StreamItr = AllStreams.find(StreamName);
    if (StreamItr == AllStreams.end())
-      ABORT_ERROR("IOStream::Read: Stream {} not found", StreamName);
+      RETURN_ERROR(Err, ErrorCode::Fail, "IOStream::Read: Stream {} not found",
+                   StreamName);
 
    // Stream found, call the read function
    std::shared_ptr<IOStream> ThisStream = StreamItr->second;
