@@ -1,6 +1,7 @@
 #ifndef SCREAM_FIELD_UTILS_HPP
 #define SCREAM_FIELD_UTILS_HPP
 
+#include "share/util/eamxx_scalar_wrapper.hpp"
 #include "share/field/field_utils_impl.hpp"
 
 namespace scream {
@@ -324,49 +325,22 @@ void print_field_hyperslab (const Field& f,
                             const std::vector<int>& indices = {},
                             std::ostream& out = std::cout);
 
-template<Comparison CMP, typename ST>
-void compute_mask (const Field& x, const ST value, Field& mask)
-{
-  // Sanity checks
-  EKAT_REQUIRE_MSG (x.is_allocated(),
-      "Error! Input field was not yet allocated.\n");
-  EKAT_REQUIRE_MSG (mask.is_allocated(),
-      "Error! Mask field was not yet allocated.\n");
-  EKAT_REQUIRE_MSG (not mask.is_read_only(),
-      "Error! Cannot update mask field, as it is read-only.\n"
-      " - mask name: " + mask.name() + "\n");
-  EKAT_REQUIRE_MSG (mask.data_type()==DataType::IntType,
-      "Error! The data type of the mask field must be 'int'.\n"
-      " - mask field name: " << mask.name() << "\n"
-      " - mask field data type: " << etoi(mask.data_type()) << "\n");
+void compute_mask (const Field& x, const ScalarWrapper value, Comparison CMP, Field& mask);
 
-  const auto& x_layout = x.get_header().get_identifier().get_layout();
-  const auto& m_layout = mask.get_header().get_identifier().get_layout();
+template<typename ST>
+void compute_mask (const Field& x, const ST value, Comparison CMP, Field& mask) {
+  compute_mask(x,ScalarWrapper(value),CMP,mask);
+}
 
-  EKAT_REQUIRE_MSG (m_layout.congruent(x_layout),
-      "Error! Mask field layout is incompatible with this field.\n"
-      " - field name  : " + x.name() + "\n"
-      " - mask name   : " + mask.name() + "\n"
-      " - field layout: " + x_layout.to_string() + "\n"
-      " - mask layout : " + m_layout.to_string() + "\n");
+template<typename ST>
+Field compute_mask (const Field& x, const ST value, Comparison CMP) {
+  const auto& fid_x = x.get_header().get_identifier();
+  const auto nondim = ekat::units::Units::nondimensional();
+  FieldIdentifier fid(x.name()+"_mask",fid_x.get_layout(),nondim,fid_x.get_grid_name(),DataType::IntType);
+  Field mask(fid,true);
 
-  const auto x_dt   = x.data_type();
-  const auto val_dt = get_data_type<ST>();
-  EKAT_REQUIRE_MSG (not is_narrowing_conversion(val_dt,x_dt),
-      "Error! Target value may be narrowed when converted to field data type.\n"
-      " - field data type: " + e2str(x_dt) + "\n"
-      " - value data type: " + e2str(val_dt) + "\n");
-
-  switch (x_dt) {
-    case DataType::IntType:
-      impl::compute_mask<CMP>(x,static_cast<int>(value),mask); break;
-    case DataType::FloatType:
-      impl::compute_mask<CMP>(x,static_cast<float>(value),mask); break;
-    case DataType::DoubleType:
-      impl::compute_mask<CMP>(x,static_cast<double>(value),mask); break;
-    default:
-      EKAT_ERROR_MSG ("Error! Unexpected/unsupported data type.\n");
-  }
+  compute_mask(x,value,CMP,mask);
+  return mask;
 }
 
 void transpose (const Field& src, Field& tgt);

@@ -81,7 +81,7 @@ TEST_CASE ("update") {
 
     // Compute mask where f1>0 (should be all even cols)
     auto mask = f_int.clone("mask");
-    compute_mask<Comparison::GT>(f1,0,mask);
+    compute_mask(f1,0,Comparison::GT,mask);
 
     // Set f3=1 where mask=1
     f3.deep_copy(1,mask);

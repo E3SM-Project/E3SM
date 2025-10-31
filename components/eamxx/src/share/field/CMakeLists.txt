@@ -34,12 +34,7 @@ add_library(eamxx_field
   eti/field_eti_update_max_min_impl_float_device.cpp
   eti/field_eti_update_max_min_impl_int_device.cpp
   eti/field_eti_update_max_min_int_device.cpp
-  eti/field_utils_eti_compute_mask_le_int.cpp
-  eti/field_utils_eti_compute_mask_le_float.cpp
-  eti/field_utils_eti_compute_mask_le_double.cpp
-  eti/field_utils_eti_compute_mask_ne_int.cpp
-  eti/field_utils_eti_compute_mask_ne_float.cpp
-  eti/field_utils_eti_compute_mask_ne_double.cpp
+  utils/compute_mask.cpp
   utils/print_hyperslab.cpp
   utils/transpose.cpp
   utils/views_are_equal.cpp

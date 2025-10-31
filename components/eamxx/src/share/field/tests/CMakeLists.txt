@@ -17,6 +17,9 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
   # Test subfields
   CreateUnitTest(subfield "subfield_tests.cpp" LIBS eamxx_field)
 
+  # Test compute mask
+  CreateUnitTest(compute_mask "compute_mask.cpp" LIBS eamxx_field)
+
   # Test field utils
   CreateUnitTest(field_utils "field_utils.cpp" LIBS eamxx_field
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
