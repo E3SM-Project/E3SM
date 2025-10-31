@@ -2249,7 +2249,6 @@ contains
 
                 ! for debugging only
                 l_idx     = col_pp%landunit(c_idx)
-                g_idx     = col_pp%gridcell(c_idx)
                 sfctype   = lun_pp%itype(l_idx)
                 lat_coord = grc_pp%latdeg(g_idx)
                 lon_coord = grc_pp%londeg(g_idx)
@@ -2271,8 +2270,15 @@ contains
 
              if (use_finetop_rad) then
                 slope_rad = grc_pp%slope_deg(g_idx) * deg2rad
-                h2osno_liq_lcl = h2osno_liq_lcl * cos(slope_rad)
-                h2osno_ice_lcl = h2osno_ice_lcl * cos(slope_rad)
+                
+                if ((flg_snw_ice == 1) .and. (snl(c_idx) > -1)) then
+                   h2osno_liq_lcl(0) = h2osno_liq_lcl(0) * cos(slope_rad)
+                   h2osno_ice_lcl(0) = h2osno_ice_lcl(0) * cos(slope_rad)
+                else
+                   h2osno_liq_lcl(:) = h2osno_liq_lcl(:) * cos(slope_rad)
+                   h2osno_ice_lcl(:) = h2osno_ice_lcl(:) * cos(slope_rad)
+                endif
+
                 h2osno_lcl = h2osno_lcl * cos(slope_rad)
              endif
 

@@ -331,14 +331,14 @@ contains
     allocate(this%forc_uovern                   (begg:endg))        ; this%forc_uovern                        (:)   = ival
     
     if ( use_finetop_rad ) then
-       allocate(this%f_short_dir                (begg:endg))        ; this%f_short_dir                   (:)   = nan
-       allocate(this%f_short_dif                (begg:endg))        ; this%f_short_dif                   (:)   = nan
-       allocate(this%f_short_refl               (begg:endg,numrad)) ; this%f_short_refl                  (:,:) = nan
-       allocate(this%f_long_dif                 (begg:endg))        ; this%f_long_dif                    (:)   = nan
-       allocate(this%f_long_refl                (begg:endg))        ; this%f_long_refl                   (:)   = nan
-       allocate(this%sza                        (begg:endg))        ; this%sza                           (:)   = nan
-       allocate(this%saa                        (begg:endg))        ; this%saa                           (:)   = nan
-       allocate(this%cosinc                     (begg:endg))        ; this%cosinc                        (:)   = nan
+       allocate(this%f_short_dir                (begg:endg))        ; this%f_short_dir                   (:)   = spval
+       allocate(this%f_short_dif                (begg:endg))        ; this%f_short_dif                   (:)   = spval
+       allocate(this%f_short_refl               (begg:endg,numrad)) ; this%f_short_refl                  (:,:) = spval
+       allocate(this%f_long_dif                 (begg:endg))        ; this%f_long_dif                    (:)   = spval
+       allocate(this%f_long_refl                (begg:endg))        ; this%f_long_refl                   (:)   = spval
+       allocate(this%sza                        (begg:endg))        ; this%sza                           (:)   = spval
+       allocate(this%saa                        (begg:endg))        ; this%saa                           (:)   = spval
+       allocate(this%cosinc                     (begg:endg))        ; this%cosinc                        (:)   = spval
        allocate(this%forc_solad_pp_grc          (begg:endg,numrad)) ; this%forc_solad_pp_grc             (:,:) = ival
        allocate(this%forc_solai_pp_grc          (begg:endg,numrad)) ; this%forc_solai_pp_grc             (:,:) = ival
        allocate(this%forc_solar_pp_grc          (begg:endg))        ; this%forc_solar_pp_grc             (:)   = ival
@@ -578,11 +578,9 @@ contains
        call hist_addfld1d (fname='LWdown_PP', units='W/m^2',  &
             avgflag='A', long_name='atmospheric longwave radiation (PP)', &
             ptr_gcell=this%forc_lwrad_not_downscaled_pp_grc, default='inactive')
-    endif
 
-    if ( use_finetop_rad ) then
-        this%forc_solad_pp_grc(begg:endg, :) = 0._r8
-        this%forc_solai_pp_grc(begg:endg, :) = 0._r8
+       this%forc_solad_pp_grc(begg:endg, :) = 0._r8
+       this%forc_solai_pp_grc(begg:endg, :) = 0._r8
     endif
 
   end subroutine InitHistory

@@ -1123,13 +1123,17 @@ contains
     if (use_top_solar_rad) then
         write(iulog,*) '  use TOP solar radiation parameterization instead of PP'
     else
-        write(iulog,*) '   use_top_solar_rad is False, so do not run TOP solar radiation parameterization'
+        write(iulog,*) '  use_top_solar_rad is False, so do not run TOP solar radiation parameterization'
     end if
 
-    if (use_finetop_rad) then
+    if (use_finetop_rad .and. use_top_solar_rad) then
+        write(iulog,*) '  cannot use both TOP and fineTOP radiation parameterizations simultaneously'
+        call endrun(msg=' ERROR: use_finetop_rad and use_top_solar_rad cannot both be set to true.'//&
+             errMsg(__FILE__, __LINE__))
+    else if (use_finetop_rad .and. (.not. use_top_solar_rad)) then
         write(iulog,*) '  use fineTOP radiation parameterization instead of PP'
     else
-        write(iulog,*) '   use_finetop_rad is False, so do not run fineTOP radiation parameterization'
+        write(iulog,*) '  use_finetop_rad is False, so do not run fineTOP radiation parameterization'
     end if
 
     if (use_cn) then
