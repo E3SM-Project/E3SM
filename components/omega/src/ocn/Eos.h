@@ -278,7 +278,7 @@ class LinearEos {
 class Teos10BruntVaisalaFreq {
  public:
    /// Constructor for BruntVaisalaFreq
-   Teos10BruntVaisalaFreq(const HorzMesh *Mesh, const VertCoord *VCoord);
+   Teos10BruntVaisalaFreq(const VertCoord *VCoord);
 
    //   The functor takes the full arrays of Brunt-Vaisala frequency (inout),
    //   the indix ICell, and the ocean tracers (conservative) temperature,
@@ -290,15 +290,14 @@ class Teos10BruntVaisalaFreq {
                                    const Array2DReal &Pressure,
                                    const Array2DReal &SpecVol) const {
 
-      Real PGrav = calcGrav(LatCell(ICell), ZMid(ICell, 0));
-      Real Db2Pa = 1.0e4;
+      Real Gravity = 9.80616;
+      Real Db2Pa   = 1.0e4;
       for (int K = 0; K < NVertLayers; ++K) {
          if (K == 0) {
             // No Brunt-Vaisala frequency at surface
             BruntVaisalaFreq(ICell, K) = 0.0_Real;
          } else {
             // Calculate Brunt-Vaisala frequency
-            Real NGrav = calcGrav(LatCell(ICell), ZMid(ICell, K));
             Real CtInt =
                 0.5_Real * (ConservTemp(ICell, K) + ConservTemp(ICell, K - 1));
             Real SaInt =
@@ -306,29 +305,17 @@ class Teos10BruntVaisalaFreq {
             Real PInt =
                 0.5_Real * (Pressure(ICell, K) + Pressure(ICell, K - 1));
             Real SpInt = 0.5_Real * (SpecVol(ICell, K) + SpecVol(ICell, K - 1));
-            Real AlphaInt   = calcAlpha(SaInt, CtInt, PInt, SpInt);
-            Real BetaInt    = calcBeta(SaInt, CtInt, PInt, SpInt);
-            Real DSa        = AbsSalinity(ICell, K) - AbsSalinity(ICell, K - 1);
-            Real DCt        = ConservTemp(ICell, K) - ConservTemp(ICell, K - 1);
-            Real DP         = Pressure(ICell, K) - Pressure(ICell, K - 1);
-            Real GravityInt = 0.5_Real * (PGrav + NGrav);
+            Real AlphaInt = calcAlpha(SaInt, CtInt, PInt, SpInt);
+            Real BetaInt  = calcBeta(SaInt, CtInt, PInt, SpInt);
+            Real DSa      = AbsSalinity(ICell, K) - AbsSalinity(ICell, K - 1);
+            Real DCt      = ConservTemp(ICell, K) - ConservTemp(ICell, K - 1);
+            Real DP       = Pressure(ICell, K) - Pressure(ICell, K - 1);
 
-            BruntVaisalaFreq(ICell, K) = GravityInt * GravityInt *
+            BruntVaisalaFreq(ICell, K) = Gravity * Gravity *
                                          ((1.0_Real / SpInt) / (Db2Pa * DP)) *
                                          (BetaInt * DSa - AlphaInt * DCt);
          }
       }
-   }
-
-   KOKKOS_FUNCTION Real calcGrav(Real Lat, Real Z) const {
-      // Calculate gravity as a function of latitude and depth
-      constexpr Real Gamma = 2.26e-7;
-      Real SinLat          = Kokkos::sin(Lat);
-      Real Sin2            = SinLat * SinLat;
-      Real Gs              = 9.780327_Real *
-                (1.0_Real + (5.2792e-3_Real + (2.32e-5_Real * Sin2)) * Sin2);
-      Real Grav = Gs * (1.0_Real - Gamma * Z);
-      return Grav;
    }
 
    /// Calculate alpha values for the Brunt-Vaisala frequency
@@ -490,8 +477,6 @@ class Teos10BruntVaisalaFreq {
    }
 
  private:
-   Array2DReal ZMid;
-   Array1DReal LatCell;
    I4 NVertLayers;
 };
 

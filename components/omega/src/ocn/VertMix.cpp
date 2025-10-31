@@ -16,7 +16,7 @@
 
 namespace OMEGA {
 
-PPShearMix::PPShearMix(const HorzMesh *Mesh, const VertCoord *VCoord)
+ShearMix::ShearMix(const HorzMesh *Mesh, const VertCoord *VCoord)
     : NVertLayers(VCoord->NVertLayers), ZMid(VCoord->ZMid),
       NEdgesOnCell(Mesh->NEdgesOnCell), EdgesOnCell(Mesh->EdgesOnCell),
       DvEdge(Mesh->DvEdge), DcEdge(Mesh->DcEdge), AreaCell(Mesh->AreaCell) {}
@@ -77,27 +77,6 @@ void VertMix::init() {
    Config VertMixConfig("VertMix");
    Err += OmegaConfig->get(VertMixConfig);
    CHECK_ERROR_ABORT(Err, "VertMix::init: VertMix group not found in Config");
-
-   /// Get VertMixType from VertMixConfig
-   /// and set the VertMixChoice accordingly
-   std::string VertMixTypeStr;
-   Err += VertMixConfig.get("VertMixType", VertMixTypeStr);
-   CHECK_ERROR_ABORT(
-       Err, "VertMix::init: VertMixType subgroup not found in VertMixConfig");
-
-   if (VertMixTypeStr == "PP" or VertMixTypeStr == "pp") {
-      vertmix->VertMixChoice = VertMixType::PP;
-      LOG_INFO("VertMix::init: Using Pacanowski and Philander (1981) vertical "
-               "mixing.");
-   } else if (VertMixTypeStr == "KPP" or VertMixTypeStr == "kpp") {
-      vertmix->VertMixChoice = VertMixType::KPP;
-      LOG_INFO("VertMix::init: Using K-Profile Parameterization (Large et al., "
-               "1994) vertical mixing.");
-   } else {
-      LOG_ERROR(
-          "VertMix::init: Invalid VertMixType specified in configuration: " +
-          VertMixTypeStr);
-   }
 
    /// Get Background from VertMixConfig
    /// and set associated parameters
@@ -182,53 +161,46 @@ void VertMix::computeVertMix(const Array2DReal &NormalVelocity,
                              const Array2DReal &BruntVaisalaFreq) {
    OMEGA_SCOPE(LocVertDiff, VertDiff); /// Create a local view for computation
    OMEGA_SCOPE(LocVertVisc, VertVisc); /// Create a local view for computation
-   OMEGA_SCOPE(LocComputeVertMixConv,
-               ComputeVertMixConv); /// Local view for PP VertMix computation
-   OMEGA_SCOPE(LocComputeVertMixShear,
-               ComputeVertMixShear); /// Local view for PP VertMix computation
+   OMEGA_SCOPE(
+       LocComputeVertMixConv,
+       ComputeVertMixConv); /// Local view for Convective VertMix computation
+   OMEGA_SCOPE(
+       LocComputeVertMixShear,
+       ComputeVertMixShear); /// Local view for Shear VertMix computation
 
    /// Initialize VertDiff and VertVisc to background values
    deepCopy(LocVertDiff, BackDiff);
    deepCopy(LocVertVisc, BackVisc);
 
    /// Dispatch to the correct VertMix calculation
-   if (VertMixChoice == VertMixType::PP) {
-      LOG_INFO("VertMix:: into PP computeVertMix");
-      if (LocComputeVertMixShear.Enabled && LocComputeVertMixConv.Enabled) {
-         LOG_INFO("VertMix:: into both shear and conv computeVertMix");
-         parallelFor(
-             "VertMix-PPAll", {NCellsAll}, KOKKOS_LAMBDA(I4 ICell) {
-                LocComputeVertMixConv(LocVertDiff, LocVertVisc, ICell,
-                                      BruntVaisalaFreq);
-                LocComputeVertMixShear(LocVertDiff, LocVertVisc, ICell,
-                                       NormalVelocity, TangentialVelocity,
-                                       BruntVaisalaFreq);
-             });
-      } else if (LocComputeVertMixShear.Enabled) {
-         LOG_INFO("VertMix:: into shear only computeVertMix");
-         parallelFor(
-             "VertMix-PPShear", {NCellsAll}, KOKKOS_LAMBDA(I4 ICell) {
-                LocComputeVertMixShear(LocVertDiff, LocVertVisc, ICell,
-                                       NormalVelocity, TangentialVelocity,
-                                       BruntVaisalaFreq);
-             });
-      } else if (LocComputeVertMixConv.Enabled) {
-         LOG_INFO("VertMix:: into convective only computeVertMix");
-         parallelFor(
-             "VertMix-PPConv", {NCellsAll}, KOKKOS_LAMBDA(I4 ICell) {
-                LocComputeVertMixConv(LocVertDiff, LocVertVisc, ICell,
-                                      BruntVaisalaFreq);
-             });
-      } else {
-         LOG_INFO("VertMix:: just background mixing computeVertMix");
-         parallelFor(
-             "VertMix-PPBack", {NCellsAll}, KOKKOS_LAMBDA(I4 ICell) {
-                LocVertDiff(ICell, 0) = 0.0_Real;
-                LocVertVisc(ICell, 0) = 0.0_Real;
-             });
-      }
-   } else if (VertMixChoice == VertMixType::KPP) {
-      LOG_ERROR("VertMix: VertMixType = KPP is not supported yet.");
+   if (LocComputeVertMixShear.Enabled && LocComputeVertMixConv.Enabled) {
+      parallelFor(
+          "VertMix-ConvPlusShear", {NCellsAll}, KOKKOS_LAMBDA(I4 ICell) {
+             LocComputeVertMixConv(LocVertDiff, LocVertVisc, ICell,
+                                   BruntVaisalaFreq);
+             LocComputeVertMixShear(LocVertDiff, LocVertVisc, ICell,
+                                    NormalVelocity, TangentialVelocity,
+                                    BruntVaisalaFreq);
+          });
+   } else if (LocComputeVertMixShear.Enabled) {
+      parallelFor(
+          "VertMix-ShearOnly", {NCellsAll}, KOKKOS_LAMBDA(I4 ICell) {
+             LocComputeVertMixShear(LocVertDiff, LocVertVisc, ICell,
+                                    NormalVelocity, TangentialVelocity,
+                                    BruntVaisalaFreq);
+          });
+   } else if (LocComputeVertMixConv.Enabled) {
+      parallelFor(
+          "VertMix-ConvOnly", {NCellsAll}, KOKKOS_LAMBDA(I4 ICell) {
+             LocComputeVertMixConv(LocVertDiff, LocVertVisc, ICell,
+                                   BruntVaisalaFreq);
+          });
+   } else {
+      parallelFor(
+          "VertMix-Background", {NCellsAll}, KOKKOS_LAMBDA(I4 ICell) {
+             LocVertDiff(ICell, 0) = 0.0_Real;
+             LocVertVisc(ICell, 0) = 0.0_Real;
+          });
    }
    Kokkos::fence();
 }
@@ -245,7 +217,8 @@ void VertMix::defineFields() {
    }
 
    /// Create fields for state variables
-   int NDims = 2;
+   const Real FillValue = -9.99e30;
+   int NDims            = 2;
    std::vector<std::string> DimNames(NDims);
    DimNames[0] = "NCells";
    DimNames[1] = "NVertLayers";
@@ -254,12 +227,12 @@ void VertMix::defineFields() {
    auto VertDiffField =
        Field::create(VertDiffFldName, // Field name
                      "Vertical diffusivity at center and"
-                     " top of cell",         // Long Name
-                     "m2 s-1",               // Units
-                     "vertical_diffusivity", // CF-ish Name
-                     0.0,                    // Min valid value
-                     9.99E+30,               // Max valid value
-                     -9.99E+30, // Scalar used for undefined entries
+                     " top of cell",                   // Long Name
+                     "m2 s-1",                         // Units
+                     "vertical_diffusivity",           // CF-ish Name
+                     0.0,                              // Min valid value
+                     std::numeric_limits<Real>::max(), // Max valid value
+                     FillValue, // Scalar used for undefined entries
                      NDims,     // Number of dimensions
                      DimNames   // Dimension names
        );
@@ -267,14 +240,14 @@ void VertMix::defineFields() {
    auto VertViscField =
        Field::create(VertViscFldName, // Field name
                      "Vertical viscosity at center and"
-                     " top of cell",       // Long Name
-                     "m2 s-1",             // Units
-                     "vertical_viscosity", // CF-ish Name
-                     0.0,                  // Min valid value
-                     9.99E+30,             // Max valid value
-                     -9.99E+30,            // Scalar used for undefined entried
-                     NDims,                // Number of dimensions
-                     DimNames              // Dimension names
+                     " top of cell",                   // Long Name
+                     "m2 s-1",                         // Units
+                     "vertical_viscosity",             // CF-ish Name
+                     0.0,                              // Min valid value
+                     std::numeric_limits<Real>::max(), // Max valid value
+                     FillValue, // Scalar used for undefined entried
+                     NDims,     // Number of dimensions
+                     DimNames   // Dimension names
        );
 
    // Create a field group for the vertmix-specific state fields

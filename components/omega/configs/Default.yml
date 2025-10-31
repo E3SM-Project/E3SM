@@ -60,7 +60,6 @@ Omega:
       DRhoDS: 0.8
       RhoT0S0: 1000.0
   VertMix:
-    VertMixType: PP
     Background:
       Diffusivity: 1.0e-5
       Viscosity: 1.0e-4

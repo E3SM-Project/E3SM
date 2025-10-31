@@ -42,7 +42,7 @@ const Real TeosSVExpValue =
 const Real LinearExpValue =
     0.0009784735812133072; // Expected value for Linear specific volume
 const Real TeosBVFExpValue =
-    0.020855053182884893; // Expected value for TEOS-10 Brunt-Vaisala frequency
+    0.020911744281268286; // Expected value for TEOS-10 Brunt-Vaisala frequency
 const Real LinearBVFExpValue =
     0.017833905406889013; // Expected value for Linear Brunt-Vaisala frequency
 const Real GswBVFExpValue =

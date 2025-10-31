@@ -108,14 +108,13 @@ I4 initVertMixTest(const std::string &mesh) {
    return Err;
 }
 
-int testPPBackVertMix() {
+int testBackVertMix() {
    int Err             = 0;
    const auto Mesh     = HorzMesh::getDefault();
    const auto VCoord   = VertCoord::getDefault();
    VCoord->NVertLayers = NVertLayers;
    /// Get VertMix instance to test
-   VertMix *TestVertMix       = VertMix::getInstance();
-   TestVertMix->VertMixChoice = VertMixType::PP;
+   VertMix *TestVertMix = VertMix::getInstance();
 
    /// Create and fill ocean state arrays
    Array2DReal NormalVelEdge =
@@ -215,14 +214,13 @@ int testPPBackVertMix() {
    return Err;
 }
 
-int testPPConvVertMix() {
+int testConvVertMix() {
    int Err             = 0;
    const auto Mesh     = HorzMesh::getDefault();
    const auto VCoord   = VertCoord::getDefault();
    VCoord->NVertLayers = NVertLayers;
    /// Get VertMix instance to test
-   VertMix *TestVertMix       = VertMix::getInstance();
-   TestVertMix->VertMixChoice = VertMixType::PP;
+   VertMix *TestVertMix = VertMix::getInstance();
 
    /// Create and fill ocean state arrays
    Array2DReal NormalVelEdge =
@@ -322,14 +320,13 @@ int testPPConvVertMix() {
    return Err;
 }
 
-int testPPShearVertMix() {
+int testShearVertMix() {
    int Err             = 0;
    const auto Mesh     = HorzMesh::getDefault();
    const auto VCoord   = VertCoord::getDefault();
    VCoord->NVertLayers = NVertLayers;
    /// Get VertMix instance to test
-   VertMix *TestVertMix       = VertMix::getInstance();
-   TestVertMix->VertMixChoice = VertMixType::PP;
+   VertMix *TestVertMix = VertMix::getInstance();
 
    /// Create and fill ocean state arrays
    Array2DReal NormalVelEdge =
@@ -429,14 +426,13 @@ int testPPShearVertMix() {
 }
 
 /// Test vertical mixing coefficients calculation for all cells/layers
-int testPPTotalVertMix() {
+int testTotalVertMix() {
    int Err             = 0;
    const auto Mesh     = HorzMesh::getDefault();
    const auto VCoord   = VertCoord::getDefault();
    VCoord->NVertLayers = NVertLayers;
    /// Get VertMix instance to test
-   VertMix *TestVertMix       = VertMix::getInstance();
-   TestVertMix->VertMixChoice = VertMixType::PP;
+   VertMix *TestVertMix = VertMix::getInstance();
 
    /// Create and fill ocean state arrays
    Array2DReal NormalVelEdge =
@@ -625,10 +621,10 @@ int vertMixTest(const std::string &MeshFile = "OmegaMesh.nc") {
    }
    const auto &Mesh = HorzMesh::getDefault();
 
-   Err += testPPBackVertMix();
-   Err += testPPConvVertMix();
-   Err += testPPShearVertMix();
-   Err += testPPTotalVertMix();
+   Err += testBackVertMix();
+   Err += testConvVertMix();
+   Err += testShearVertMix();
+   Err += testTotalVertMix();
 
    if (Err == 0) {
       LOG_INFO("VertMix: Successful completion");
@@ -660,33 +656,3 @@ int main(int argc, char *argv[]) {
 
 } // end of main
 //===-----------------------------------------------------------------------===/
-
-// Err += initState(LayerThickCell, NormalVelEdge, TangVelEdge,
-//    BruntVaisalaFreqCell, Mesh);
-
-// int initState(const Array2DReal &LayerThickCell,
-//               const Array2DReal &NormalVelEdge,
-//               const Array2DReal &TangVelEdge,
-//               const Array2DReal &BruntVaisalaFreqCell,
-//               const HorzMesh *Mesh) {
-//    int Err = 0;
-
-//   TestSetup Setup;
-
-//   Err += setScalar(
-//      KOKKOS_LAMBDA(Real X, Real Y, I4 K) { return Setup.layerThickness(X, Y);
-//      }, LayerThickCell, Geom, Mesh, OnCell);
-
-//   Err += setVectorEdge(
-//      KOKKOS_LAMBDA(Real(&VecField)[2], Real X, Real Y) {
-//         VecField[0] = Setup.velocityX(X, Y);
-//         VecField[1] = Setup.velocityY(X, Y);
-//      },
-//      NormalVelEdge, EdgeComponent::Normal, Geom, Mesh);
-
-// Err += setVectorEdge(
-//     KOKKOS_LAMBDA(Real(&VecField)[2], Real X, Real Y, I4 K) {
-//        VecField[0] = NV + 0.5 * K;
-//        VecField[1] = 0.0;
-//     },
-//     NormalVelEdge, EdgeComponent::Normal, Geom, Mesh);

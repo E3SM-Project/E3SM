@@ -4,20 +4,11 @@
 
 Omega includes a `VertMix` class that provides functions that compute `VertDiff` and `VertVisc`, the
 vertical diffusivity and viscosity, where both are defined at the top of cell centers. Currently the
-values of `VertDiff` and `VertVisc` are calculated using the combination of three options: (1) a
+values of `VertDiff` and `VertVisc` are calculated using the linear combination of three options: (1) a
 constant background mixing value, (2) a convective instability mixing value, and (3) a Richardson
-number dependent shear mixing value based upon Pacanowski and Philander (1981). These options are
-additive. For both the convective and shear mixing values `BruntVaisalaFreq` is needed, which
-is calculated by the `EOS` class. Currently, the `VertMix` class is set up to have two enumerations,
-`PP` and `KPP`, where the first only uses the three options listed above and the second uses the K Profile Parameterization [(KPP; Large et al., 1994)](https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/94rg01872). The `KPP` option is not yet functional (it will throw an error if used), but the framework for its development have been added here.
-
-## VertMix Type
-
-An enumeration listing of the schemes is provided (`KPP` is not yet functional). It needs to be extended every time a `VertMix` type is added. It is used to identify which VertMix method is to be used at run time.
-
-```c++
-enum class VertMixType { PP, KPP };
-```
+number dependent shear mixing value from the [Pacanowski and Philander (1981)](https://journals.ametsoc.org/view/journals/phoc/11/11/1520-0485_1981_011_1443_povmin_2_0_co_2.xml) parameterization. These options are linearly
+additive. In the future, additional additive options will be implemented, such as the K Profile Parameterization [(KPP; Large et al., 1994)](https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/94rg01872). For both the convective and shear mixing values `BruntVaisalaFreq` is needed, which
+is calculated by the `EOS` class.
 
 ## Initialization and Usage
 
@@ -39,7 +30,6 @@ default values:
 
 ```yaml
 VertMix:
-  VertMixType: PP
   Background:
     Viscosity: 1e-4
     Diffusivity: 1e-5
@@ -93,4 +83,4 @@ void computeVertMix(Array2DReal VertDiff,
 This method combines the effects of:
 - Background mixing (constant coefficients)
 - Convective mixing (triggered by static instability)
-- Shear mixing (Pacanowski-Philander scheme)
+- Shear instability driven mixing (Pacanowski-Philander scheme)

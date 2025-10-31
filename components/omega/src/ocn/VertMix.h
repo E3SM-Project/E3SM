@@ -22,12 +22,6 @@
 
 namespace OMEGA {
 
-enum class VertMixType {
-   PP, /// Pacanowski and Philander (1981)
-   KPP /// K-Profile Parameterization (Large et al., 1994) *** not implemented
-       /// yet ***
-};
-
 class ConvectiveMix {
  public:
    bool Enabled = true; ///< Enable convective mixing flag
@@ -60,7 +54,7 @@ class ConvectiveMix {
    I4 NVertLayers;
 };
 
-class PPShearMix {
+class ShearMix {
  public:
    bool Enabled = true; ///< Enable shear mixing flag
 
@@ -72,8 +66,8 @@ class PPShearMix {
    Real ShearExponent =
        2.0; /// Exponent value used in Pacanowski and Philander (1981) Eqs (1).
 
-   /// Constructor for PPShearMix
-   PPShearMix(const HorzMesh *Mesh, const VertCoord *VCoord);
+   /// Constructor for ShearMix
+   ShearMix(const HorzMesh *Mesh, const VertCoord *VCoord);
 
    KOKKOS_FUNCTION void operator()(Array2DReal VertDiff, Array2DReal VertVisc,
                                    I4 ICell, const Array2DReal &NormalVelocity,
@@ -92,17 +86,15 @@ class PPShearMix {
                I4 JEdge = EdgesOnCell(ICell, J);
                Real Factor =
                    0.5_Real * DcEdge(JEdge) * DvEdge(JEdge) * InvAreaCell;
-               Real DelU2 = Kokkos::pow(NormalVelocity(JEdge, K - 1) -
-                                            NormalVelocity(JEdge, K),
-                                        2.0_Real) +
-                            Kokkos::pow(TangentialVelocity(JEdge, K - 1) -
-                                            TangentialVelocity(JEdge, K),
-                                        2.0_Real);
-               ShearSquared = ShearSquared + Factor * DelU2;
+               Real DelNormVel =
+                   NormalVelocity(JEdge, K - 1) - NormalVelocity(JEdge, K);
+               Real DelTangVel = TangentialVelocity(JEdge, K - 1) -
+                                 TangentialVelocity(JEdge, K);
+               ShearSquared = ShearSquared + Factor * (DelNormVel * DelNormVel +
+                                                       DelTangVel * DelTangVel);
             }
-            ShearSquared =
-                ShearSquared /
-                Kokkos::pow(ZMid(ICell, K - 1) - ZMid(ICell, K), 2.0_Real);
+            Real DelZMid = ZMid(ICell, K - 1) - ZMid(ICell, K);
+            ShearSquared = ShearSquared / (DelZMid * DelZMid);
 
             Real RichardsonNum = BruntVaisalaFreq(ICell, K) /
                                  Kokkos::max(1.0e-12_Real, ShearSquared);
@@ -128,25 +120,6 @@ class PPShearMix {
    I4 NVertLayers;
 };
 
-// class KPP {
-//    public:
-
-/// Constructor for KPP
-//      KPP();
-
-//      KOKKOS_FUNCTION void operator()(Array2DReal VertDiff, Array2DReal
-//      VertVisc,
-//                                      I4 ICell, I4 K,
-//                                      const Array2DReal &NormalVelocity,
-//                                      const Array2DReal &TangentialVelocity,
-//                                      const Array2DReal &BruntVaisalaFreq)
-//                                      const {
-
-//         VertDiff(ICell, K) = 0.0;
-//         VertVisc(ICell, K) = 0.0;
-//      }
-//};
-
 /// Class for Vertical Mixing Coefficient (VertMix) calculations
 class VertMix {
  public:
@@ -156,9 +129,8 @@ class VertMix {
    /// Destroy instance (frees Kokkos views)
    static void destroyInstance();
 
-   VertMixType VertMixChoice; ///< Current VertMix type in use
-   Array2DReal VertDiff;      ///< Vertical diffusivity field (m^2 s^-1)
-   Array2DReal VertVisc;      ///< Vertical viscosity field (m^2 s^-1)
+   Array2DReal VertDiff; ///< Vertical diffusivity field (m^2 s^-1)
+   Array2DReal VertVisc; ///< Vertical viscosity field (m^2 s^-1)
 
    std::string VertDiffFldName;  ///< Field name for vertical diffusivity
    std::string VertViscFldName;  ///< Field name for vertical viscosity
@@ -169,8 +141,9 @@ class VertMix {
    Real BackDiff = 1.0e-5; ///< Background vertical diffusivity (m^2 s^-1)
    Real BackVisc = 1.0e-4; ///< Background vertical viscosity (m^2 s^-1)
 
-   ConvectiveMix ComputeVertMixConv; ///< Functor for PP VertMix calculation
-   PPShearMix ComputeVertMixShear;   ///< Functor for PP VertMix calculation
+   ConvectiveMix
+       ComputeVertMixConv;       ///< Functor for Convective VertMix calculation
+   ShearMix ComputeVertMixShear; ///< Functor for Shear VertMix calculation
 
    /// Compute vertical diffusivity and viscosity for all cells/layers
    void computeVertMix(const Array2DReal &NormalVelocity,
