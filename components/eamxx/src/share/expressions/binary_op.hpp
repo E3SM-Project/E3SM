@@ -1,5 +1,5 @@
-#ifndef EAMXX_BIN_EXPRESSION_HPP
-#define EAMXX_BIN_EXPRESSION_HPP
+#ifndef EAMXX_BIN_OP_EXPRESSION_HPP
+#define EAMXX_BIN_OP_EXPRESSION_HPP
 
 #include "share/expressions/base_expr.hpp"
 
@@ -16,7 +16,9 @@ enum class BinOp {
   Plus,
   Minus,
   Mult,
-  Div
+  Div,
+  Max,
+  Min
 };
 
 template<typename ELeft, typename ERight, BinOp OP>
@@ -42,7 +44,7 @@ public:
       return static_cast<ret_t>(m_left(i) - m_right(i));
     } else if constexpr (OP==BinOp::Mult) {
       return static_cast<ret_t>(m_left(i) * m_right(i));
-    } else {
+    } else if constexpr (OP==BinOp::Div) {
       return static_cast<ret_t>(m_left(i) / m_right(i));
     }
   }
@@ -54,7 +56,7 @@ public:
       return static_cast<ret_t>(m_left(i,j) - m_right(i,j));
     } else if constexpr (OP==BinOp::Mult) {
       return static_cast<ret_t>(m_left(i,j) * m_right(i,j));
-    } else {
+    } else if constexpr (OP==BinOp::Div) {
       return static_cast<ret_t>(m_left(i,j) / m_right(i,j));
     }
   }
@@ -66,7 +68,7 @@ public:
       return static_cast<ret_t>(m_left(i,j,k) - m_right(i,j,k));
     } else if constexpr (OP==BinOp::Mult) {
       return static_cast<ret_t>(m_left(i,j,k) * m_right(i,j,k));
-    } else {
+    } else if constexpr (OP==BinOp::Div) {
       return static_cast<ret_t>(m_left(i,j,k) / m_right(i,j,k));
     }
   }
@@ -107,4 +109,4 @@ operator/ (const Expression<ELeft,RetL>& l, const Expression<ERight,RetR>& r)
 
 } // namespace scream
 
-#endif // EAMXX_BIN_EXPRESSION_HPP
+#endif // EAMXX_BIN_OP_EXPRESSION_HPP

@@ -1,7 +1,7 @@
-#ifndef EAMXX_FIELD_EVALUATE_HPP
-#define EAMXX_FIELD_EVALUATE_HPP
+#ifndef EAMXX_SCALAR_EXPRESSION_HPP
+#define EAMXX_SCALAR_EXPRESSION_HPP
 
-#include "share/expressions/base_expr.hpp"
+#include "share/expressions/base.hpp"
 
 namespace scream {
 
@@ -38,4 +38,4 @@ protected:
 
 } // namespace scream
 
-#endif // EAMXX_FIELD_EVALUATE_HPP
+#endif // EAMXX_SCALAR_EXPRESSION_HPP

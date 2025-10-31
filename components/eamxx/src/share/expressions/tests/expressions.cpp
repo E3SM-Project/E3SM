@@ -3,8 +3,9 @@
 
 #include "share/expressions/base.hpp"
 #include "share/expressions/sum.hpp"
-#include "share/expressions/cmp.hpp"
-#include "share/expressions/field_expression.hpp"
+#include "share/expressions/compare.hpp"
+#include "share/expressions/field.hpp"
+#include "share/expressions/helpers.hpp"
 
 #include "share/field/field.hpp"
 #include "share/field/field_utils.hpp"
