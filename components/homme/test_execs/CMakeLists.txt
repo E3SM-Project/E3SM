@@ -210,7 +210,7 @@ IF(${BUILD_HOMME_THETA})
 #  ADD_SUBDIRECTORY(theta-l-nlev30-native)
 #  ADD_SUBDIRECTORY(theta-l-nlev64-native)
 #  ADD_SUBDIRECTORY(theta-l-nlev100-native)
-#  ADD_SUBDIRECTORY(theta-l-nlev128-native)
+  ADD_SUBDIRECTORY(theta-l-nlev128-native)
 #  ADD_SUBDIRECTORY(theta-l-nlev140-native)
 #  ADD_SUBDIRECTORY(theta-l-nlev150-native)
 #  ADD_SUBDIRECTORY(theta-l-nlev200-native)
@@ -237,6 +237,7 @@ IF (${BUILD_HOMME_THETA_KOKKOS})
     # For doubly periodic tests.
     ADD_SUBDIRECTORY(theta-l-nlev20-native-kokkos)
     ADD_SUBDIRECTORY(theta-l-nlev10-native-kokkos)
+    ADD_SUBDIRECTORY(theta-l-nlev128-native-kokkos)
 
     # This one we build it only if both theta and theta_kokkos are requested,
     # since it's just needed for perf/correctness comparisons
@@ -271,7 +272,7 @@ INCLUDE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/test-list.cmake)
 SET(TEST_DIR_LIST "")
 createTests(HOMME_TESTS)
 
-IF (${BUILD_HOMME_PREQX_KOKKOS})
+IF (HOMMEXX_BFB_TESTING AND BUILD_HOMME_PREQX_KOKKOS)
   MESSAGE("-- Generating preqx tests no more intensive than profile ${HOMME_TESTING_PROFILE}.\n"
     "   Example ctest lines:\n"
     "     ctest -LE \"nightly\": All tests except nightly.\n"
@@ -283,7 +284,7 @@ IF (${BUILD_HOMME_PREQX_KOKKOS})
     CREATE_CXX_VS_F90_TESTS_WITH_PROFILE(PREQX_COMPARE_F_C_TEST ${p})
   ENDFOREACH ()
 ENDIF()
-IF (${BUILD_HOMME_THETA_KOKKOS})
+IF (HOMMEXX_BFB_TESTING AND BUILD_HOMME_THETA_KOKKOS)
   MESSAGE("-- Generating theta tests no more intensive than profile ${HOMME_TESTING_PROFILE}.\n"
     "   Example ctest lines:\n"
     "     ctest -LE \"nightly\": All tests except nightly.\n"
