@@ -37,6 +37,7 @@ add_library(eamxx_field
   utils/compute_mask.cpp
   utils/horiz_contraction.cpp
   utils/print_hyperslab.cpp
+  utils/randomize.cpp
   utils/reductions.cpp
   utils/transpose.cpp
   utils/vert_contraction.cpp

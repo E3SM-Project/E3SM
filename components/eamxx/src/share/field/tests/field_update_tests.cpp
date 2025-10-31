@@ -14,14 +14,10 @@ TEST_CASE ("update") {
   using namespace ekat::units;
 
   using namespace ShortFieldTagsNames;
-  using RPDF = std::uniform_real_distribution<Real>;
-  using IPDF = std::uniform_int_distribution<int>;
 
   // Setup random number generation
   ekat::Comm comm(MPI_COMM_WORLD);
-  auto engine = setup_random_test ();
-  RPDF rpdf(0,1);
-  IPDF ipdf(0,100);
+  int seed = get_random_test_seed();
 
   const int ncol = 2;
   const int ncmp = 3;
@@ -37,8 +33,8 @@ TEST_CASE ("update") {
   Field f_int  (fid_i);
   f_real.allocate_view();
   f_int.allocate_view();
-  randomize (f_real,engine,rpdf);
-  randomize (f_int, engine,ipdf);
+  randomize_uniform (f_real,seed++);
+  randomize_uniform (f_int, seed++, 0, 100);
 
   SECTION ("data_type_checks") {
     Field f2 = f_int.clone();

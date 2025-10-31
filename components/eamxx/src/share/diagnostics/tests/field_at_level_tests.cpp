@@ -27,7 +27,8 @@ TEST_CASE("field_at_level")
 
   ekat::Comm comm(MPI_COMM_WORLD);
 
-  auto engine = scream::setup_random_test(&comm);
+  int seed = get_random_test_seed(&comm);
+  std::mt19937_64 engine(seed);
 
   // Create a grids manager
   const int ncols = 3;
@@ -57,11 +58,8 @@ TEST_CASE("field_at_level")
   f_int.get_header().get_tracking().update_time_stamp(t0);
 
   // Construct random input data
-  using RPDF = std::uniform_real_distribution<Real>;
-  RPDF pdf(-1.0,1.0);
-
-  randomize(f_mid,engine,pdf);
-  randomize(f_int,engine,pdf);
+  randomize_uniform(f_mid,seed++,-1,1);
+  randomize_uniform(f_int,seed++,-1,1);
 
   auto f_mid_1 = f_mid.get_component(1);
 

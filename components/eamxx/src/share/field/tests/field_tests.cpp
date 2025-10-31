@@ -20,9 +20,7 @@ TEST_CASE("field", "") {
   using P8 = ekat::Pack<Real,8>;
   using P16 = ekat::Pack<Real,16>;
 
-  auto engine = setup_random_test ();
-  using RPDF = std::uniform_real_distribution<Real>;
-  RPDF pdf(0.01,0.99);
+  auto seed = get_random_test_seed();
 
   std::vector<FieldTag> tags = {COL,LEV};
   std::vector<int> dims = {3,24};
@@ -104,7 +102,7 @@ TEST_CASE("field", "") {
     REQUIRE (views_are_equal(f1,f2));
 
     // Modify one field, and check again
-    randomize(f2,engine,pdf);
+    randomize_uniform(f2,seed++,0.01,0.99);
     REQUIRE (views_are_equal(f1,f2));
   }
 
@@ -230,7 +228,7 @@ TEST_CASE("field", "") {
     REQUIRE_THROWS(f.sync_to_dev());
 
     f.allocate_view();
-    randomize(f,engine,pdf);
+    randomize_uniform(f,seed++,0.01,0.99);
 
     // Get reshaped view on device, and manually create Host mirror
     auto v2d = f.get_view<Real**>();
@@ -260,7 +258,7 @@ TEST_CASE("field", "") {
     f1.allocate_view();
 
     // Randomize 1d field
-    randomize(f1,engine,pdf);
+    randomize_uniform(f1,seed++,0.01,0.99);
 
     auto v0 = f0.get_view<Real, Host>();
     auto v1 = f1.get_view<Real*, Host>();
@@ -272,7 +270,7 @@ TEST_CASE("field", "") {
     }
 
     // Randomize 0d field
-    randomize(f0,engine,pdf);
+    randomize_uniform(f0,seed++,0.01,0.99);
 
     // Deep copy 0d field -> subfield of 1d field and check result
     for (size_t i=0; i<v1.extent(0); ++i) {

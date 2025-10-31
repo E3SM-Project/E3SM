@@ -74,14 +74,14 @@ void root_print (const std::string& msg, const ekat::Comm& comm) {
 
 // Create a source grid given number of global dofs.
 // Dofs are scattered around randomly
-template<typename Engine>
 std::shared_ptr<AbstractGrid>
-build_src_grid(const ekat::Comm& comm, const int ngdofs, Engine& engine) 
+build_src_grid(const ekat::Comm& comm, const int ngdofs, int seed)
 {
   using gid_type = AbstractGrid::gid_type;
   const int nlevs = 20;
 
   std::vector<gid_type> all_dofs (ngdofs);
+  std::mt19937_64 engine(seed);
   if (comm.am_i_root()) {
     std::iota(all_dofs.data(),all_dofs.data()+all_dofs.size(),0);
     std::shuffle(all_dofs.data(),all_dofs.data()+ngdofs,engine);
@@ -141,19 +141,14 @@ Field create_field (const std::string& name, const LayoutType lt, const Abstract
   return f;
 }
 
-template<typename Engine>
-Field create_field (const std::string& name, const LayoutType lt, const AbstractGrid& grid, const bool midpoints, Engine& engine) {
+Field create_field (const std::string& name, const LayoutType lt, const AbstractGrid& grid, const bool midpoints, int seed) {
   auto f = create_field(name,lt,grid,midpoints);
 
   // Use discrete_distribution to get an integer, then use that as exponent for 2^-n.
   // This guarantees numbers that are exactly represented as FP numbers, which ensures
   // the test will produce the expected answer, regardless of how math ops are performed.
-  using IPDF = std::discrete_distribution<int>;
-  IPDF ipdf ({1,1,1,1,1,1,1,1,1,1});
-  auto pdf = [&](Engine& e) {
-    return Real(std::pow(2,ipdf(e)));
-  };
-  randomize(f,engine,pdf);
+  std::vector<Real> values = {1,2,4,8,16,32,64,128,256,512};
+  randomize_discrete(f,seed++,values);
 
   return f;
 }
@@ -273,7 +268,7 @@ TEST_CASE("coarsening_remap")
   auto& catch_capture = Catch::getResultCapture();
 
   // This is a simple test to just make sure the coarsening remapper works
-  // when the map itself has more remap triplets than the size of the 
+  // when the map itself has more remap triplets than the size of the
   // source and target grid.  This is typical in monotone remappers from
   // fine to coarse meshes.
 
@@ -288,7 +283,7 @@ TEST_CASE("coarsening_remap")
   root_print (" +---------------------------------+\n\n",comm);
 
   scorpio::init_subsystem(comm);
-  auto engine = setup_random_test (&comm);
+  int seed = get_random_test_seed(&comm);
 
   // -------------------------------------- //
   //           Create a map file            //
@@ -305,7 +300,7 @@ TEST_CASE("coarsening_remap")
   // -------------------------------------- //
 
   const int ngdofs_src = ngdofs_tgt+1;
-  auto src_grid = build_src_grid(comm, ngdofs_src, engine);
+  auto src_grid = build_src_grid(comm, ngdofs_src, seed);
   auto remap = std::make_shared<CoarseningRemapperTester>(src_grid,filename);
 
   // -------------------------------------- //
@@ -316,16 +311,16 @@ TEST_CASE("coarsening_remap")
   // Here we will simplify and just remap a simple 2D horizontal field.
   auto tgt_grid = remap->get_coarse_grid();
 
-  auto src_s1d   = create_field("s1d",  LayoutType::Scalar1D, *src_grid, true, engine);
-  auto src_s2d   = create_field("s2d",  LayoutType::Scalar2D, *src_grid, false, engine);
-  auto src_v2d   = create_field("v2d",  LayoutType::Vector2D, *src_grid, false, engine);
-  auto src_t2d   = create_field("t2d",  LayoutType::Tensor2D, *src_grid, false, engine);
-  auto src_s3d_m = create_field("s3d_m",LayoutType::Scalar3D, *src_grid, true,  engine);
-  auto src_s3d_i = create_field("s3d_i",LayoutType::Scalar3D, *src_grid, false, engine);
-  auto src_v3d_m = create_field("v3d_m",LayoutType::Vector3D, *src_grid, true,  engine);
-  auto src_v3d_i = create_field("v3d_i",LayoutType::Vector3D, *src_grid, false, engine);
-  auto src_t3d_m = create_field("t3d_m",LayoutType::Tensor3D, *src_grid, true,  engine);
-  auto src_t3d_i = create_field("t3d_i",LayoutType::Tensor3D, *src_grid, false, engine);
+  auto src_s1d   = create_field("s1d",  LayoutType::Scalar1D, *src_grid, true,  seed+1);
+  auto src_s2d   = create_field("s2d",  LayoutType::Scalar2D, *src_grid, false, seed+2);
+  auto src_v2d   = create_field("v2d",  LayoutType::Vector2D, *src_grid, false, seed+3);
+  auto src_t2d   = create_field("t2d",  LayoutType::Tensor2D, *src_grid, false, seed+4);
+  auto src_s3d_m = create_field("s3d_m",LayoutType::Scalar3D, *src_grid, true,  seed+5);
+  auto src_s3d_i = create_field("s3d_i",LayoutType::Scalar3D, *src_grid, false, seed+6);
+  auto src_v3d_m = create_field("v3d_m",LayoutType::Vector3D, *src_grid, true,  seed+7);
+  auto src_v3d_i = create_field("v3d_i",LayoutType::Vector3D, *src_grid, false, seed+8);
+  auto src_t3d_m = create_field("t3d_m",LayoutType::Tensor3D, *src_grid, true,  seed+9);
+  auto src_t3d_i = create_field("t3d_i",LayoutType::Tensor3D, *src_grid, false, seed+10);
 
   auto tgt_s1d   = create_field("s1d",  LayoutType::Scalar1D, *tgt_grid, true);
   auto tgt_s2d   = create_field("s2d",  LayoutType::Scalar2D, *tgt_grid, false);

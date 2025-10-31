@@ -45,20 +45,14 @@ Field create_field (const std::string& name, const LayoutType lt, const Abstract
   return f;
 }
 
-template<typename Engine>
-Field create_field (const std::string& name, const LayoutType lt, const AbstractGrid& grid, Engine& engine) {
+Field create_field (const std::string& name, const LayoutType lt, const AbstractGrid& grid, int seed) {
   auto f = create_field(name,lt,grid);
 
   // Use discrete_distribution to get an integer, then use that as exponent for 2^-n.
   // This guarantees numbers that are exactly represented as FP numbers, which ensures
   // the test will produce the expected answer, regardless of how math ops are performed.
-  using IPDF = std::discrete_distribution<int>;
-  IPDF ipdf ({1,1,1,1,1,1,1,1,1,1});
-  auto pdf = [&](Engine& e) {
-    return Real(std::pow(2,ipdf(e)));
-  };
-  randomize(f,engine,pdf);
-
+  std::vector<Real> values = {1,2,4,8,16,32,64,128,256,512};
+  randomize_discrete(f,seed,values);
   return f;
 }
 
@@ -170,7 +164,7 @@ TEST_CASE ("refining_remapper") {
 
   ekat::Comm comm(MPI_COMM_WORLD);
 
-  auto engine = setup_random_test (&comm);
+  int seed = get_random_test_seed(&comm);
 
   scorpio::init_subsystem(comm);
 
@@ -210,12 +204,12 @@ TEST_CASE ("refining_remapper") {
   auto r = std::make_shared<RefiningRemapperP2PTester>(tgt_grid,filename);
   auto src_grid = r->get_src_grid();
 
-  auto bundle_src = create_field("bundle3d_src",LayoutType::Vector3D,*src_grid,engine);
-  auto s1d_src   = create_field("s1d_src",LayoutType::Scalar1D,*src_grid,engine);
-  auto s2d_src   = create_field("s2d_src",LayoutType::Scalar2D,*src_grid,engine);
-  auto v2d_src   = create_field("v2d_src",LayoutType::Vector2D,*src_grid,engine);
-  auto s3d_src   = create_field("s3d_src",LayoutType::Scalar3D,*src_grid,engine);
-  auto v3d_src   = create_field("v3d_src",LayoutType::Vector3D,*src_grid,engine);
+  auto bundle_src = create_field("bundle3d_src",LayoutType::Vector3D,*src_grid,seed);
+  auto s1d_src   = create_field("s1d_src",LayoutType::Scalar1D,*src_grid,seed++);
+  auto s2d_src   = create_field("s2d_src",LayoutType::Scalar2D,*src_grid,seed++);
+  auto v2d_src   = create_field("v2d_src",LayoutType::Vector2D,*src_grid,seed++);
+  auto s3d_src   = create_field("s3d_src",LayoutType::Scalar3D,*src_grid,seed++);
+  auto v3d_src   = create_field("v3d_src",LayoutType::Vector3D,*src_grid,seed++);
 
   auto bundle_tgt = create_field("bundle3d_tgt",LayoutType::Vector3D,*tgt_grid);
   auto s1d_tgt   = create_field("s1d_tgt",LayoutType::Scalar1D,*tgt_grid);
