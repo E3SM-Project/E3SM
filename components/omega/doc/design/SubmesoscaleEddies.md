@@ -20,9 +20,9 @@ Where:
 - $H$ is the mixed-layer depth.
 - $\vec{f}$ is the Coriolis parameter.
 - $\nabla_h b$ is the horizontal buoyancy gradient.
-- $S(z)$ is a shape function that defines the vertical structure of the overturning.
+- $\mu(z)$ is a shape function that defines the vertical structure of the overturning.
 
-This streamfunction produces an eddy-induced vertical velocity, $w_e$, that restratifies the mixed layer by slumping the horizontal density fronts. The shape function $S(z)$ is typically chosen to be zero at the surface and the base of the mixed layer, with a maximum in between, ensuring conservation of mass.
+This streamfunction produces an eddy-induced vertical velocity, $w_e$, that restratifies the mixed layer by slumping the horizontal density fronts. The shape function $\mu(z)$ is typically chosen to be zero at the surface and the base of the mixed layer, with a maximum in between, ensuring conservation of mass.  It's form is discussed in Section [](#33-eddy-induced-velocity-shape-function).
 
 ### Implementation in Ocean Models
 
@@ -39,14 +39,11 @@ $$ (submeso-definition)
 
 The key parameters and variables are:
 - $\Psi$: The eddy-induced overturning streamfunction.
-- $C_e$: A non-dimensional efficiency coefficient, typically hard-coded to a value like 0.0625.
-- $\Gamma_{\Delta}$: An additional tuning factor, often combined with other terms into a single coefficient.
-- $\Delta_s$: The minimum of the local grid scale and the deformation radius.
+- $C_e$: A non-dimensional efficiency coefficient, typically hard-coded to a value like 0.06.
+- $\Delta_s$: The model grid length parameter, defined in Section [](#31-the-original-fk11-formulation).
 - $L_f$: The characteristic width of submesoscale fronts, often treated as a constant or parameterized.
 - $H$: The mixed-layer depth, often time-filtered to represent the memory of the instabilities.
-- $|\nabla_h \bar{b}|$: The magnitude of the horizontal buoyancy gradient, averaged over the mixed layer.
-- $f$: The Coriolis parameter.
-- $\tau$: A timescale for momentum mixing across the mixed layer, often calculated from the surface friction velocity $u_*$.
+- $|\nabla_h \bar{b}|$: The magnitude of the horizontal buoyancy gradient, averaged over the mixed layer..
 - $\mu(z)$: A vertical shape function that is zero at the surface and the base of the mixed layer.
 
 ### Modifications by Bodner et al.
@@ -70,7 +67,7 @@ Overall, the Uchida et al. study demonstrates that the physically-based constrai
 
 ### 2.1 Requirement: Buoyancy calculation must be modular
 
-To allow for easier addition of a future mesoscale eddy closure ([e.g. Mak et al 2018](https://journals.ametsoc.org/view/journals/phoc/48/10/jpo-d-18-0017.1.xml) and/or [Korn et al 2018](https://www.sciencedirect.com/science/article/pii/S1463500318301859)) the horizontal buoyancy calculation is required for the submesoscale eddy parameterization ([](#submeso-definition)) and for mesoscale eddy closures.  The implementation herein should be easily interfaced with each parameterization.  The key difference is that the mesoscale eddy parameterization is based on buoyancy gradients at every level, whereas the submesoscale parameterization considers the mixed layer average buoyancy.  For a non-boussinesq model, the buoyancy is defined as
+To allow for easier addition of a future mesoscale eddy closure ([e.g. Mak et al 2018](https://journals.ametsoc.org/view/journals/phoc/48/10/jpo-d-18-0017.1.xml) and/or [Korn et al 2018](https://www.sciencedirect.com/science/article/pii/S1463500318301859)) the horizontal buoyancy calculation is required for the submesoscale eddy parameterization ([](#submeso-definition)) and for mesoscale eddy closures.  The implementation herein should be easily interfaced with each parameterization.  For a non-boussinesq model, the buoyancy is defined as
 
 $$
 b \equiv g \frac{\rho - \rho_0}{\rho}
@@ -132,6 +129,8 @@ Here, $f$ is the Coriolis parameter and $\tau_{min}$ is a chosen minimum frontal
 
 In the frontal width definition, the second length scale is the mixed layer deformation length scale.  Given prevalent model biases in simulations of $N$, especially in the mixed layer, the third length scale estimate was introduced.
 
+Finally, the $\Delta_s$ parameter is taken as the minimum of `dcEdge` and `dsMax` where dsMax is a parameter usually set to 100km.
+
 ### 3.2 B23 updates
 
 Leveraging turbulent thermal wind balance [McWilliams et al, 2015](https://journals.ametsoc.org/view/journals/phoc/45/8/jpo-d-14-0211.1.xml) and leveraging the ePBL mixing closure [Reichl and Hallberg, 2018](https://www.sciencedirect.com/science/article/pii/S1463500318301069), [](#submeso-definition) can be rewritten as
@@ -151,6 +150,8 @@ While this formula introduces new parameters ($m_*$ and $n_*$) it has a number o
 | $\Delta_s$ | grid length limiter ($\Delta_s = \text{min}(dcEdge,100km)) |
 | $b_{ml}$ | buoyancy averaged over the mixed layer depth |
 | $m_*$, $n_*$ | tunable parameters to match turbulent momentum flux |
+| $C_r$ | efficiency parameter $C_r \equiv C_e / Ri_{crit}$ |
+| $Ri_{crit}$ | critical Richardson number, commonly set to 0.25 |
 
 
 ### 3.3 Eddy-Induced Velocity Shape Function
@@ -179,11 +180,32 @@ $$
 \mu(z) = \text{max}\left\{0,\left[1-\left(\frac{2z}{H}+1\right)^2\right]\left[1+\frac{5}{21}\left(\frac{2z}{H}+1\right)^2\right]\right\}
 $$
 
+### 3.4 Mixed layer depth calculation
+
+Both the FK11 and B23 formulations are critically dependent on determination of the mixed layer depth. For this parameterization, the mixed layer depth will use the density threshold criterion ([Holte and Talley, 2009](https://journals.ametsoc.org/view/journals/atot/26/9/2009jtecho543_1.xml), their option 1).  The mixed layer depth is defined as the pressure where
+
+$$
+\left|\rho(p) - \rho(p_0)\right| \geq \Delta \rho_t
+$$ (mld-definition)
+
+In [](#mld-definition), $p_0$ is a reference pressure, which is set to $10^5$ Pa ($\approx 10$m), and $\Delta \rho_t$ is a density threshold criterion, which is typically set to 0.03 kg m$^{-3}$.  When the density threshold occurs between layers, the mixed layer depth is found via a linear fit between the bounding layers.
+
+In future versions of Omega, ice shelf cavities slightly complicate the determination of the mixed layer depth.  The pressure must be referenced to the land ice pressure.  This document will be updated once ice shelf cavities are implemented in Omega.
+
 ## 4. Design
 
 The most complex part of this design is the spatial dependence implicit in the averaging of the buoyancy.  The necessary `parallelReduce` calculation requires reduction over a spatially variable inner range.  This will be accomplished with the hierarchical parallelism wrappers described in CITE HP design doc.  In the initial implementation, only the FK11 form will be included.  The B23 formulation requires the boundary layer depth, which can not be included until KPP [Large et al, 1994](https://agupubs.onlinelibrary.wiley.com/doi/10.1029/94RG01872) is implemented for vertical mixing.
 
 ### 4.1 Data types and parameters
 
+The following options are necessary for the submesoscale eddy parameterization:
+- `EnableBodner23` if true, the modifications from Bodner et al. (2023) are utilized, if false, the original FK11 form is used.
+- `LfMin` controls the lower limit for the diagnosed frontal width (500m to 5km)
+- `TauMin` minimum timescale for spindown
+- `Mstar` nondimensional parameter controlling the contribution of surface friction velocity in the B23 form
+- `Nstar` nondimensional parameter controlling the contribution of convective velocity scale in the B23 form
+- `Ce` submesoscale eddy efficiency (0.06-0.08)
+- `RiCrit` critical Richardson number for the B23 form (~0.25)
+- `DsMax` maximum grid length to include in the submesoscale calculation (~100 km)
 
 ### 4.2 Methods
