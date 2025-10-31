@@ -7,7 +7,6 @@ add_library(eamxx_field
   field.cpp
   field_group.cpp
   field_sync.cpp
-  field_utils.cpp
   eti/field_eti_deep_copy_double_device.cpp
   eti/field_eti_deep_copy_float_device.cpp
   eti/field_eti_deep_copy_int_device.cpp
@@ -41,6 +40,9 @@ add_library(eamxx_field
   eti/field_utils_eti_compute_mask_ne_int.cpp
   eti/field_utils_eti_compute_mask_ne_float.cpp
   eti/field_utils_eti_compute_mask_ne_double.cpp
+  utils/print_hyperslab.cpp
+  utils/transpose.cpp
+  utils/views_are_equal.cpp
 )
 
 if (EAMXX_ENABLE_GPU)
