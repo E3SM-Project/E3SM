@@ -1,7 +1,7 @@
 #ifndef EAMXX_CMP_EXPRESSION_HPP
 #define EAMXX_CMP_EXPRESSION_HPP
 
-#include "share/field_math/expression.hpp"
+#include "share/expressions/base.hpp"
 
 #include "share/core/eamxx_types.hpp" // For Comparison
 
@@ -67,8 +67,8 @@ public:
 
 protected:
 
-  std::conditional_t<ELeft::is_leaf, const ELeft&, const ELeft>   m_left;
-  std::conditional_t<ERight::is_leaf,const ERight&,const ERight>  m_right;
+  const ELeft    m_left;
+  const ERight   m_right;
 
   Comparison m_cmp;
 };

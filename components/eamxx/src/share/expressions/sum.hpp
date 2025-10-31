@@ -1,7 +1,7 @@
 #ifndef EAMXX_SUM_EXPRESSION_HPP
 #define EAMXX_SUM_EXPRESSION_HPP
 
-#include "share/field_math/expression.hpp"
+#include "share/expressions/base.hpp"
 
 namespace scream {
 
@@ -41,8 +41,8 @@ public:
 
 protected:
 
-  std::conditional_t<ELeft::is_leaf, const ELeft&, const ELeft>   m_left;
-  std::conditional_t<ERight::is_leaf,const ERight&,const ERight>  m_right;
+  const ELeft    m_left;
+  const ERight   m_right;
 };
 
 template<typename ELeft, typename RetL, typename ERight, typename RetR>

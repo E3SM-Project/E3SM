@@ -1,10 +1,10 @@
 #include <catch2/catch.hpp>
 #include <numeric>
 
-#include "share/field_math/expression.hpp"
-#include "share/field_math/sum_expression.hpp"
-#include "share/field_math/cmp_expression.hpp"
-#include "share/field_math/field_evaluate.hpp"
+#include "share/expressions/base.hpp"
+#include "share/expressions/sum.hpp"
+#include "share/expressions/cmp.hpp"
+#include "share/expressions/field_expression.hpp"
 
 #include "share/field/field.hpp"
 #include "share/field/field_utils.hpp"
@@ -29,12 +29,8 @@ TEST_CASE("expressions", "") {
   randomize(f1, engine, pdf);
   randomize(f2, engine, pdf);
 
-  // Setup the evaluation of f1+f2
-  auto f1e = RealFieldEvaluate(f1);
-  auto f2e = RealFieldEvaluate(f2);
-
   SECTION ("sum") {
-    auto sum = f1e + f2e;
+    auto sum = f1 + f2;
 
     // Evaluate
     Field f3(fid.alias("f3"),true);
@@ -54,6 +50,8 @@ TEST_CASE("expressions", "") {
     }
   }
   SECTION ("cmp") {
+    auto f1e = RealFieldExpression(f1);
+    auto f2e = RealFieldExpression(f2);
     auto cmp = f1e>=f2e;
 
     // Evaluate
