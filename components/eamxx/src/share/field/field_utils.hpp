@@ -2,7 +2,7 @@
 #define SCREAM_FIELD_UTILS_HPP
 
 #include "share/util/eamxx_scalar_wrapper.hpp"
-#include "share/field/field_utils_impl.hpp"
+#include "share/field/field.hpp"
 
 namespace scream {
 
@@ -10,59 +10,56 @@ namespace scream {
 // NOTE: if the field is padded, padding entries are NOT checked.
 bool views_are_equal(const Field& f1, const Field& f2, const ekat::Comm* comm = nullptr);
 
-template<typename Engine, typename PDF>
-void randomize (const Field& f, Engine& engine, PDF&& pdf)
+// Uniform or normal randomization utils
+void randomize_uniform (const Field& f, int seed,
+                        const ScalarWrapper lb = ScalarWrapper::zero(),
+                        const ScalarWrapper ub = ScalarWrapper::one());
+template<typename ST>
+void randomize_uniform (const Field& f, int seed, const ST& lb, const ST& ub)
 {
-  EKAT_REQUIRE_MSG(f.is_allocated(),
-      "Error! Cannot randomize the values of a field not yet allocated.\n");
-
-  // Deduce scalar type from pdf
-  using ST = decltype(pdf(engine));
-
-  // Check compatibility between PDF and field data type
-  const auto data_type = f.data_type();
-  EKAT_REQUIRE_MSG (
-      (std::is_same<ST,int>::value && data_type==DataType::IntType) ||
-      (std::is_same<ST,float>::value && data_type==DataType::FloatType) ||
-      (std::is_same<ST,double>::value && data_type==DataType::DoubleType),
-      "Error! Field data type incompatible with input PDF.\n");
-
-  impl::randomize<ST>(f,engine,pdf);
+  return randomize_uniform(f,seed,ScalarWrapper(lb),ScalarWrapper(ub));
+}
+void randomize_normal (const Field& f, int seed,
+                       const ScalarWrapper mean = ScalarWrapper::zero(),
+                       const ScalarWrapper sigma = ScalarWrapper::one());
+template<typename ST>
+void randomize_normal (const Field& f, int seed, const ST& mean, const ST& sigma = 1)
+{
+  return randomize_normal(f,seed,ScalarWrapper(mean),ScalarWrapper(sigma));
+}
+void randomize_discrete (const Field& f, int seed,
+                         const std::vector<ScalarWrapper>& values);
+template<typename ST>
+void randomize_discrete (const Field& f, int seed,
+                         const std::vector<ST>& values)
+{
+  std::vector<ScalarWrapper> op_values;
+  for (auto v : values)
+    op_values.push_back(ScalarWrapper(v));
+  return randomize_discrete(f,seed,op_values);
 }
 
 // Compute a random perturbation of a field for all view entries whose
 // level index satisfies the mask.
 // Input:
-//   - f:                  Field to perturbed. Required to have level midpoint
-//                         tag as last dimension.
-//   - engine:             Random number engine.
-//   - pdf:                Random number distribution where a random value (say,
-//                         pertval) is taken s.t.
-//                           field_view(i0,...,iN) *= (1 + pertval)
-//   - base_seed:          Seed used for creating the engine input.
-//   - level_mask:         Mask (size of the level dimension of f) where f(i0,...,k) is
-//                         perturbed if level_mask(k)=true
-//   - dof_gids:           Field containing global DoF IDs for columns of f (if applicable)
-template<typename Engine, typename PDF, typename MaskType>
+//   - f:             Field to perturbed. Required to have level midpoint
+//                    tag as last dimension.
+//   - lb/ub:         Lower/upper bound for the uniform distribution used
+//                    to generate the RELATIVE field perturbation. That is,
+//                    field_view(i0,...,iN) *= (1 + U(lb,ub))
+//   - base_seed:     Seed used for creating the engine input.
+//   - level_mask:    Mask (size of the level dimension of f) where f(i0,...,k) is
+//                    perturbed if level_mask(k)=true
+//   - dof_gids:      Field containing global DoF IDs for columns of f (if applicable)
+template<typename MaskType>
 void perturb (Field& f,
-              Engine& engine,
-              PDF&& pdf,
+              const ScalarWrapper lb, const ScalarWrapper ub,
               const int base_seed,
               const MaskType& level_mask,
               const Field& dof_gids = Field())
 {
   EKAT_REQUIRE_MSG(f.is_allocated(),
        	           "Error! Cannot perturb the values of a field not yet allocated.\n");
-
-  // Deduce scalar type from pdf
-  using ST = decltype(pdf(engine));
-
-  // Check compatibility between PDF and field data type
-  const auto data_type = f.data_type();
-  EKAT_REQUIRE_MSG((std::is_same_v<ST,int> && data_type==DataType::IntType) or
-                   (std::is_same_v<ST,float> && data_type==DataType::FloatType) or
-                   (std::is_same_v<ST,double> && data_type==DataType::DoubleType),
-                   "Error! Field data type incompatible with input PDF.\n");
 
   using namespace ShortFieldTagsNames;
   const auto& fl = f.get_header().get_identifier().get_layout();
@@ -95,7 +92,67 @@ void perturb (Field& f,
                      "Error! DoF GIDs field must have \"int\" as data type.\n");
   }
 
-  impl::perturb<ST>(f, engine, pdf, base_seed, level_mask, dof_gids);
+  // Check to see if field has a column dimension
+  using namespace ShortFieldTagsNames;
+  const bool has_column_dim = fl.has_tag(COL);
+  const bool has_lev_dim = fl.has_tag(LEV);
+
+  if (has_column_dim) {
+    // Because Column is the partitioned dimension, we must reset the
+    // RNG seed to be the same on every column so that a column will
+    // have the same value no matter where it exists in an MPI rank's
+    // set of local columns.
+    const auto gids = dof_gids.get_strided_view<const int*, Host>();
+
+    // Create a field to store perturbation values with layout
+    // the same as f, but stripped of column and level dimension.
+    auto perturb_fl = fl.clone().strip_dims({COL,LEV});
+    FieldIdentifier perturb_fid("perturb_field", perturb_fl, ekat::units::Units::nondimensional(), "");
+    Field perturb_f(perturb_fid);
+    perturb_f.allocate_view();
+
+    // Loop through columns as reset RNG seed based on GID of column
+    for (auto icol=0; icol<fl.dims().front(); ++icol) {
+      const auto new_seed = base_seed+gids(icol);
+
+      if (has_lev_dim) {
+        // Loop through levels. For each that satisfy the level_mask,
+        // apply a random perturbation to f.
+        for (auto ilev=0; ilev<fl.dims().back(); ++ilev) {
+          if (level_mask(ilev)) {
+            randomize_uniform(perturb_f, new_seed+ilev, lb, ub);
+            f.subfield(COL, icol).subfield(LEV, ilev).scale(perturb_f);
+          }
+        }
+      } else {
+        randomize_uniform(perturb_f, new_seed, lb, ub);
+        f.subfield(COL, icol).scale(perturb_f);
+      }
+    }
+  } else {
+    // If no Column tag exists, this field is not partitioned.
+
+    // Create a field to store perturbation values with layout
+    // the same as f, but stripped of level dimension.
+    auto perturb_fl = fl.clone().strip_dim(LEV);
+    FieldIdentifier perturb_fid("perturb_field", perturb_fl, ekat::units::Units::nondimensional(), "");
+    Field perturb_f(perturb_fid);
+    perturb_f.allocate_view();
+
+    if (has_lev_dim) {
+      // Loop through levels. For each that satisfy the level_mask,
+      // apply a random perturbation to f.
+      for (auto ilev=0; ilev<fl.dims().back(); ++ilev) {
+        if (level_mask(ilev)) {
+          randomize_uniform(perturb_f, base_seed+ilev, lb, ub);
+          f.subfield(LEV, ilev).scale(perturb_f);
+        }
+      }
+    } else {
+      randomize_uniform(perturb_f, base_seed, lb, ub);
+      f.scale(perturb_f);
+    }
+  }
 }
 
 // Vertical/horizontal contractions of field (possibly averaging)

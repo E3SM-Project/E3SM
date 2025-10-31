@@ -19,9 +19,7 @@ TEST_CASE("field_contractions") {
   auto sum_n    = [](int n) { return n * (n + 1) / 2; };
   auto sum_n_sq = [](int n) { return n * (n + 1) * (2 * n + 1) / 6; };
 
-  using RPDF  = std::uniform_real_distribution<Real>;
-  auto engine = setup_random_test();
-  RPDF pdf(0, 1);
+  auto seed = get_random_test_seed();
 
   SECTION("horiz_contraction") {
     // A numerical tolerance
@@ -59,10 +57,10 @@ TEST_CASE("field_contractions") {
     field10.allocate_view();
     field11.allocate_view();
     field20.allocate_view();
-    randomize(fieldsc, engine, pdf);
-    randomize(field10, engine, pdf);
-    randomize(field11, engine, pdf);
-    randomize(field20, engine, pdf);
+    randomize_uniform(fieldsc, seed++);
+    randomize_uniform(field10, seed++);
+    randomize_uniform(field11, seed++);
+    randomize_uniform(field20, seed++);
 
     FieldIdentifier F_x("fx", {{COL}, {dim0}}, m / s, "g");
     FieldIdentifier F_y("fy", {{LEV}, {dim2}}, m / s, "g");
@@ -231,10 +229,10 @@ TEST_CASE("field_contractions") {
       field10.allocate_view();
       field11.allocate_view();
       field20.allocate_view();
-      randomize(fieldsc, engine, pdf);
-      randomize(field10, engine, pdf);
-      randomize(field11, engine, pdf);
-      randomize(field20, engine, pdf);
+      randomize_uniform(fieldsc, seed++);
+      randomize_uniform(field10, seed++);
+      randomize_uniform(field11, seed++);
+      randomize_uniform(field20, seed++);
 
       FieldIdentifier F_x("fx", {{COL}, {dim0}}, m / s, "g");
       FieldIdentifier F_y("fy", {{CMP}, {dim1}}, m / s, "g");

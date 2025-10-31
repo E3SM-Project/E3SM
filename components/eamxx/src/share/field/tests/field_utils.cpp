@@ -102,9 +102,10 @@ TEST_CASE("field_utils") {
 
   SECTION ("perturb") {
     using namespace ShortFieldTagsNames;
-    using RPDF = std::uniform_real_distribution<Real>;
     using IPDF = std::uniform_int_distribution<int>;
-    auto engine = setup_random_test ();
+
+    int seed = get_random_test_seed();
+    std::mt19937_64 engine(seed);
 
     const int ncols = 6;
     const int ncmps = 2;
@@ -139,12 +140,11 @@ TEST_CASE("field_utils") {
     }
 
     // Compute random perturbation between [2, 3]
-    RPDF pdf(2, 3);
     int base_seed = 0;
-    perturb(f1,  engine, pdf, base_seed, mask_lambda);
-    perturb(f2a, engine, pdf, base_seed, mask_lambda);
-    perturb(f2b, engine, pdf, base_seed, mask_lambda, gids);
-    perturb(f3,  engine, pdf, base_seed, mask_view,   gids);
+    perturb(f1,  2, 3, base_seed, mask_lambda);
+    perturb(f2a, 2, 3, base_seed, mask_lambda);
+    perturb(f2b, 2, 3, base_seed, mask_lambda, gids);
+    perturb(f3,  2, 3, base_seed, mask_view,   gids);
 
     // Sync to host for checks
     f1.sync_to_host(), f2a.sync_to_host(), f2b.sync_to_host(), f3.sync_to_host();
@@ -171,8 +171,8 @@ TEST_CASE("field_utils") {
     auto f1_alt = f1.clone(); f1_alt.deep_copy(1.0);
     auto f3_alt = f3.clone(); f3_alt.deep_copy(1.0);
     int base_seed_alt = 100;
-    perturb(f1_alt, engine, pdf, base_seed_alt, mask_lambda);
-    perturb(f3_alt, engine, pdf, base_seed_alt, mask_lambda, gids);
+    perturb(f1_alt, 2, 3, base_seed_alt, mask_lambda);
+    perturb(f3_alt, 2, 3, base_seed_alt, mask_lambda, gids);
     f1_alt.sync_to_host(), f3_alt.sync_to_host();
 
     const auto v1_alt = f1_alt.get_strided_view<Real*,   Host>();
@@ -191,8 +191,8 @@ TEST_CASE("field_utils") {
 
     // Finally check that the original seed gives same result
     f1_alt.deep_copy(1.0), f3_alt.deep_copy(1.0);
-    perturb(f1_alt, engine, pdf, base_seed, mask_lambda);
-    perturb(f3_alt, engine, pdf, base_seed, mask_lambda, gids);
+    perturb(f1_alt, 2, 3, base_seed, mask_lambda);
+    perturb(f3_alt, 2, 3, base_seed, mask_lambda, gids);
     REQUIRE(views_are_equal(f1, f1_alt));
     REQUIRE(views_are_equal(f3, f3_alt));
   }
@@ -203,13 +203,13 @@ TEST_CASE ("print_field_hyperslab") {
   using namespace ekat::units;
 
   using namespace ShortFieldTagsNames;
-  using RPDF = std::uniform_real_distribution<Real>;
   using IPDF = std::uniform_int_distribution<int>;
 
   // Setup random number generation
   ekat::Comm comm(MPI_COMM_WORLD);
-  auto engine = setup_random_test ();
-  RPDF pdf(0,1);
+  int seed = get_random_test_seed();
+
+  std::mt19937_64 engine(seed);
 
   const int nel = 2;
   const int ncmp = 2;
@@ -233,7 +233,7 @@ TEST_CASE ("print_field_hyperslab") {
   Field f (fid);
   f.get_header().get_alloc_properties().request_allocation(pack_size);
   f.allocate_view();
-  randomize (f,engine,pdf);
+  randomize_uniform (f, seed++);
 
   auto v = f.get_strided_view<const Real*****,Host>();
 
@@ -306,6 +306,7 @@ TEST_CASE ("transpose") {
 
   // Setup random number generation
   ekat::Comm comm(MPI_COMM_WORLD);
+  int seed = get_random_test_seed();
 
   const int ncols = 3;
   const int nlevs = 10;
@@ -349,14 +350,10 @@ TEST_CASE ("transpose") {
     REQUIRE_THROWS(transpose(f3di,f3d));;  // different data type
   }
 
-  using RPDF  = std::uniform_real_distribution<Real>;
-  auto engine = setup_random_test();
-  RPDF pdf(0, 1);
-
   SECTION ("1d") {
     Field f1d (fid1d);
     f1d.allocate_view();
-    randomize(f1d, engine, pdf);
+    randomize_uniform(f1d, seed++);
 
     auto f1d_t = transpose(f1d);
     REQUIRE(views_are_equal(f1d,f1d_t));
@@ -365,7 +362,7 @@ TEST_CASE ("transpose") {
   SECTION ("2d") {
     Field f2d (fid2d);
     f2d.allocate_view();
-    randomize(f2d, engine, pdf);
+    randomize_uniform(f2d, seed++);
     auto f2d_t = transpose(f2d);
 
     f2d.sync_to_host();
@@ -383,7 +380,7 @@ TEST_CASE ("transpose") {
   SECTION ("3d") {
     Field f3d (fid3d);
     f3d.allocate_view();
-    randomize(f3d, engine, pdf);
+    randomize_uniform(f3d, seed++);
     auto f3d_t = transpose(f3d);
 
     f3d.sync_to_host();
@@ -403,7 +400,7 @@ TEST_CASE ("transpose") {
   SECTION ("4d") {
     Field f4d (fid4d);
     f4d.allocate_view();
-    randomize(f4d, engine, pdf);
+    randomize_uniform(f4d, seed++);
     auto f4d_t = transpose(f4d);
 
     f4d.sync_to_host();

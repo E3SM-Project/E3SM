@@ -48,25 +48,17 @@ get_gm (const ekat::Comm& comm)
 
 std::shared_ptr<FieldManager>
 get_fm (const std::shared_ptr<const AbstractGrid>& grid,
-        const util::TimeStamp& t0, const int seed, const int ps)
+        const util::TimeStamp& t0, int seed, const int ps)
 {
   using FL  = FieldLayout;
   using FID = FieldIdentifier;
   using namespace ShortFieldTagsNames;
 
-  // Random number generation stuff
-  // NOTES
-  //  - Use integers, so we can check answers without risk of
-  //    non bfb diffs due to different order of sums.
-  //  - Uniform_int_distribution returns an int, and the randomize
-  //    util checks that return type matches the Field data type.
-  //    So wrap the int pdf in a lambda, that does the cast.
-  std::mt19937_64 engine(seed);
-  auto my_pdf = [&](std::mt19937_64& engine) -> Real {
-    std::uniform_int_distribution<int> pdf (0,100);
-    Real v = pdf(engine);
-    return v;
-  };
+  // Note: we use a discrete set of random values, so we can
+  // check answers without risk of non-bfb diffs due to ops order
+  std::vector<Real> values;
+  for (int i=0; i<=100; ++i)
+    values.push_back(static_cast<Real>(i));
 
   const int nlcols = grid->get_num_local_dofs();
   const int nlevs  = grid->get_num_vertical_levels();
@@ -85,7 +77,7 @@ get_fm (const std::shared_ptr<const AbstractGrid>& grid,
     Field f(fid);
     f.get_header().get_alloc_properties().request_allocation(ps);
     f.allocate_view();
-    randomize (f,engine,my_pdf);
+    randomize_discrete (f,seed++,values);
     f.get_header().get_tracking().update_time_stamp(t0);
     fm->add_field(f);
   }

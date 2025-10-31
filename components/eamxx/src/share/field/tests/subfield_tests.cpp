@@ -13,9 +13,7 @@ TEST_CASE("field", "") {
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
 
-  auto engine = setup_random_test();
-  using RPDF = std::uniform_real_distribution<Real>;
-  RPDF pdf(0.01, 0.99);
+  auto seed = get_random_test_seed();
 
   // Subfields
   SECTION("subfield") {
@@ -26,7 +24,7 @@ TEST_CASE("field", "") {
 
     Field f1(fid1);
     f1.allocate_view();
-    randomize(f1, engine, pdf);
+    randomize_uniform(f1, seed++, 0.01, 0.99);
 
     const int idim = 1;
     const int ivar = 2;
@@ -56,7 +54,7 @@ TEST_CASE("field", "") {
 
       Field f1(fid1);
       f1.allocate_view();
-      randomize(f1, engine, pdf);
+      randomize_uniform(f1, seed++, 0.01, 0.99);
 
       const int idim = {0};
       const int sl_beg = {3};
@@ -80,7 +78,7 @@ TEST_CASE("field", "") {
 
       Field f2(fid2);
       f2.allocate_view();
-      randomize(f2, engine, pdf);
+      randomize_uniform(f2, seed++, 0.01, 0.99);
 
       const int idim[2] = {0, 1};
       const int sl_beg[2] = {0, 3};
@@ -113,7 +111,7 @@ TEST_CASE("field", "") {
 
       Field f3(fid3);
       f3.allocate_view();
-      randomize(f3, engine, pdf);
+      randomize_uniform(f3, seed++, 0.01, 0.99);
 
       const int idim[3] = {0, 1, 2};
       const int sl_beg[3] = {2, 3, 0};
@@ -163,7 +161,7 @@ TEST_CASE("field", "") {
 
       Field f4(fid4);
       f4.allocate_view();
-      randomize(f4, engine, pdf);
+      randomize_uniform(f4, seed++, 0.01, 0.99);
 
       const int idim[4] = {0, 1, 2, 3};
       const int sl_beg[4] = {2, 3, 0, 9};
@@ -205,7 +203,7 @@ TEST_CASE("field", "") {
 
       Field f5(fid5);
       f5.allocate_view();
-      randomize(f5, engine, pdf);
+      randomize_uniform(f5, seed++, 0.01, 0.99);
 
       const int idim[5] = {0, 1, 2, 3, 4};
       const int sl_beg[5] = {2, 3, 1, 0, 9};
@@ -251,7 +249,7 @@ TEST_CASE("field", "") {
 
       Field f6(fid6);
       f6.allocate_view();
-      randomize(f6, engine, pdf);
+      randomize_uniform(f6, seed++, 0.01, 0.99);
 
       const int idim[6] = {0, 1, 2, 3, 4, 5};
       const int sl_beg[6] = {2, 3, 1, 0, 5, 9};
@@ -309,11 +307,11 @@ TEST_CASE("field", "") {
 
       Field f3a(fid3);
       f3a.allocate_view();
-      randomize(f3a, engine, pdf);
+      randomize_uniform(f3a, seed++, 0.01, 0.99);
 
       Field f3b(fid3);
       f3b.allocate_view();
-      randomize(f3b, engine, pdf);
+      randomize_uniform(f3b, seed++, 0.01, 0.99);
 
       const int idim = 1;
       const int sl_beg = 3;
@@ -346,7 +344,7 @@ TEST_CASE("field", "") {
 
     Field f1(fid1);
     f1.allocate_view();
-    randomize(f1, engine, pdf);
+    randomize_uniform(f1, seed++, 0.01, 0.99);
 
     const int idim = 1;
     const int ivar = 0;
@@ -363,7 +361,7 @@ TEST_CASE("field", "") {
 
     // Fill f1 with random numbers, and verify corresponding subviews get same
     // values
-    randomize(f1, engine, pdf);
+    randomize_uniform(f1, seed++, 0.01, 0.99);
 
     for (int ivar_dyn = 0; ivar_dyn < vec_dim; ++ivar_dyn) {
       // Reset slice idx
