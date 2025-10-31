@@ -17,6 +17,7 @@ module zm_eamxx_bridge_params
   integer, public, parameter :: btype = c_bool
   logical, public :: masterproc
 
+  integer, public :: pcols
   integer, public :: pver
   integer, public :: pverp
   integer, public :: top_lev
