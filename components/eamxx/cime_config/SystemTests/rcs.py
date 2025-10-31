@@ -15,16 +15,16 @@ RCS relies on two util files:
 - rcs_stats.py: functions to conduct statistical testing
 """
 
-import os
 import glob
 import logging
 import sys
+from pathlib import Path
 
 import CIME.test_status
 import CIME.utils
 from CIME.status import append_testlog
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
-from CIME.case.case_setup import case_setup
+from CIME.utils import expect
 
 logger = logging.getLogger(__name__)
 
@@ -56,8 +56,6 @@ class RCS(SystemTestsCommon):
             disable_git=disable_git,
         )
         self._case.flush()
-        # and again...?
-        case_setup(self._case, test_mode=False, reset=True)
 
         # get run directory
         run_dir = self._case.get_value("RUNDIR")
@@ -65,28 +63,26 @@ class RCS(SystemTestsCommon):
         n_inst = int(self._case.get_value("NINST_ATM"))
         # return early if n_inst <= 1
         # we really don't want people to run this test with n_inst=1
-        if n_inst <= 1:
-            msg = (
-                f"NINST_ATM = {n_inst}. This test requires NINST_ATM > 1. "
-                "Consider setting NINST_ATM > 1 in your env_run.xml "
-                "or use _C# specifier in test name for a multi-driver "
-                "multi-instance setup (producing # pelayout copies), "
-                "or _N# for a single-driver multi-instance setup "
-                "(dividing specified pelayout among # instances)."
-            )
-            raise ValueError(msg)
+        expect(
+            n_inst > 1,
+            f"NINST_ATM = {n_inst}. This test requires NINST_ATM > 1. "
+            "Consider setting NINST_ATM > 1 in your env_run.xml "
+            "or use _C# specifier in test name for a multi-driver "
+            "multi-instance setup (producing # pelayout copies), "
+            "or _N# for a single-driver multi-instance setup "
+            "(dividing specified pelayout among # instances)."
+        )
 
         # get rcs_perts functions
         # but first add the directory to sys.path if not already there
-        rcs_perts_path = os.path.join(
-            os.path.dirname(__file__), 'rcs_perts.py'
+        rcs_perts_path = Path(__file__).parent / 'rcs_perts.py'
+        expect(
+            rcs_perts_path.exists(),
+            f"Cannot find rcs_perts.py at {rcs_perts_path}"
         )
-        if not os.path.exists(rcs_perts_path):
-            raise ImportError(
-                f"Cannot find rcs_perts.py at {rcs_perts_path}"
-            )
-        if os.path.dirname(__file__) not in sys.path:
-            sys.path.insert(0, os.path.dirname(__file__))
+        script_dir = str(Path(__file__).parent)
+        if script_dir not in sys.path:
+            sys.path.insert(0, script_dir)
         # pylint: disable=import-outside-toplevel
         from rcs_perts import duplicate_yaml_file, update_yaml_file
 
@@ -98,11 +94,14 @@ class RCS(SystemTestsCommon):
         for i in range(1, n_inst + 1):
             yaml_file = f"{run_dir}/data/scream_input.yaml_{i:04d}"
             out_file = f"{run_dir}/data/monthly_average.yaml_{i:04d}"
-            if not os.path.isfile(yaml_file):
-                raise FileNotFoundError(
-                    f"File {yaml_file} does not exist.")
-            if not os.path.isfile(out_file):
-                raise FileNotFoundError(f"File {out_file} does not exist.")
+            expect(
+                Path(yaml_file).is_file(),
+                f"File {yaml_file} does not exist."
+            )
+            expect(
+                Path(out_file).is_file(),
+                f"File {out_file} does not exist."
+            )
             update_yaml_file(yaml_file, i, "pert")
             update_yaml_file(out_file, i, "out")
 
@@ -113,32 +112,29 @@ class RCS(SystemTestsCommon):
 
         with CIME.utils.SharedArea():
             # get the baseline and run directories
-            base_gen_dir = os.path.join(
-                self._case.get_value("BASELINE_ROOT"),
-                self._case.get_value("BASEGEN_CASE"),
-            )
-            run_dir = self._case.get_value("RUNDIR")
+            baseline_root = Path(self._case.get_value("BASELINE_ROOT"))
+            basegen_case = self._case.get_value("BASEGEN_CASE")
+            base_gen_dir = baseline_root / basegen_case
+            run_dir = Path(self._case.get_value("RUNDIR"))
 
             # Get all files that match the ensemble pattern
-            hists = glob.glob(
-                os.path.join(run_dir, self.ENSEMBLE_FILE_PATTERN)
-            )
-            hist_files = [os.path.basename(h) for h in hists]
+            hists = glob.glob(str(run_dir / self.ENSEMBLE_FILE_PATTERN))
+            hist_files = [Path(h).name for h in hists]
 
             for hist in hist_files:
-                src = os.path.join(run_dir, hist)
-                tgt = os.path.join(base_gen_dir, hist)
+                src = run_dir / hist
+                tgt = base_gen_dir / hist
                 # remove baselines if they exist
                 # this is safe because cime forces users to use -o
-                if os.path.exists(tgt):
-                    os.remove(tgt)
+                if tgt.exists():
+                    tgt.unlink()
 
                 # log and copy
                 logger.info(
                     "Copying ... \n \t %s \n ... to ... \n \t %s \n\n",
                     src, tgt
                 )
-                CIME.utils.safe_copy(src, tgt, preserve_meta=False)
+                CIME.utils.safe_copy(str(src), str(tgt), preserve_meta=False)
 
     def _compare_baseline(self):
         """compare phase implementation"""
@@ -159,23 +155,21 @@ class RCS(SystemTestsCommon):
 
             # get the run and baseline directories
             run_dir = self._case.get_value("RUNDIR")
-            base_dir = os.path.join(
-                self._case.get_value("BASELINE_ROOT"),
-                self._case.get_value("BASECMP_CASE"),
-            )
+            baseline_root = Path(self._case.get_value("BASELINE_ROOT"))
+            basecmp_case = self._case.get_value("BASECMP_CASE")
+            base_dir = baseline_root / basecmp_case
 
             # launch the statistics tests
             # first, import rcs_stats funcs from the other file
-            rcs_stats_path = os.path.join(
-                os.path.dirname(__file__), 'rcs_stats.py'
+            rcs_stats_path = Path(__file__).parent / 'rcs_stats.py'
+            expect(
+                rcs_stats_path.exists(),
+                f"Cannot find rcs_stats.py at {rcs_stats_path}"
             )
-            if not os.path.exists(rcs_stats_path):
-                raise ImportError(
-                    f"Cannot find rcs_stats.py at {rcs_stats_path}"
-                )
             # Add the directory to sys.path if not already there
-            if os.path.dirname(__file__) not in sys.path:
-                sys.path.insert(0, os.path.dirname(__file__))
+            script_dir = str(Path(__file__).parent)
+            if script_dir not in sys.path:
+                sys.path.insert(0, script_dir)
             # note be extra safe and import whole file
             # because we want to avoid import errors of needed pkgs
             # pylint: disable=import-outside-toplevel
@@ -183,7 +177,7 @@ class RCS(SystemTestsCommon):
             # now, launch
             comments, new_ts = rcss.run_stats_comparison(
                 run_dir,
-                base_dir,
+                str(base_dir),
                 analysis_type="spatiotemporal",
                 test_type="ks",
                 alpha=0.01,

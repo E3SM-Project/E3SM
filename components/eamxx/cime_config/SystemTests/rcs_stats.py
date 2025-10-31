@@ -738,7 +738,7 @@ def run_stats_comparison(
     comments = [
         "",
         "=" * 70,
-        "EST CONFIGURATION",
+        "TEST CONFIGURATION",
         "=" * 70,
         f"Statistical Test: {test_full_name}",
         "  (Two-sample test comparing ensemble distributions)",
@@ -762,7 +762,7 @@ def run_stats_comparison(
         comments.extend([
             "",
             f"Magnitude Threshold: {MAGNITUDE_THRESHOLD}",
-            "  (Minimum relative difference required for practical "
+            "  (Minimum relative difference required for practical ",
             "significance)",
         ])
 
@@ -1142,50 +1142,59 @@ def _prepare_variable_data(var):
     return var
 
 
-if __name__ == "__main__":
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
     import argparse
+    from pathlib import Path
 
     parser = argparse.ArgumentParser(
-        description="Statistical comparison of two ensemble simulations.",
+        usage="""\n{0} run_dir base_dir [options]
+OR
+{0} --help
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Default: KS test with Bonferroni correction\033[0m
+    > {0} /path/to/run /path/to/baseline
+
+    \033[1;32m# Anderson-Darling with temporal analysis\033[0m
+    > {0} /path/to/run /path/to/baseline --test_type ad \\
+          --analysis_type temporal
+
+    \033[1;32m# Custom significance level with FDR correction\033[0m
+    > {0} /path/to/run /path/to/baseline --test_type ks \\
+          --alpha 0.001 --correction_method fdr
+
+    \033[1;32m# No multiple testing correction\033[0m
+    > {0} /path/to/run /path/to/baseline \\
+          --correction_method none --magnitude_threshold 0.01
+
+    \033[1;32m# Custom file patterns\033[0m
+    > {0} /path/to/run /path/to/baseline \\
+          --run_file_pattern "*.eam_????.h0.*.nc" \\
+          --base_file_pattern "*.scream_????.h.AVERAGE.*.nc"
+""".format(Path(args[0]).name),
+        description=description,
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
-Available Statistical Tests:
+\033[1mAVAILABLE STATISTICAL TESTS:\033[0m
 
-  DISTRIBUTION TESTS (compare entire distributions):
+  \033[1mDISTRIBUTION TESTS\033[0m (compare entire distributions):
     ks          Kolmogorov-Smirnov (recommended default)
     ad          Anderson-Darling (high sensitivity, especially tails)
     cvm         Cramér-von Mises (moderate-high sensitivity)
     epps        Epps-Singleton (location + scale)
     energy      Energy distance (powerful, any difference)
 
-  LOCATION TESTS (compare means/medians):
+  \033[1mLOCATION TESTS\033[0m (compare means/medians):
     mw          Mann-Whitney U (non-parametric median test)
     ttest       Welch's t-test (parametric mean test)
     brunner     Brunner-Munzel (robust alternative to t-test)
 
-  SCALE TESTS (compare variances/spread):
+  \033[1mSCALE TESTS\033[0m (compare variances/spread):
     levene      Levene's test (variance equality)
     ansari      Ansari-Bradley (non-parametric scale)
     mood        Mood's test (non-parametric dispersion)
-
-Examples:
-  # Default: KS test with spatiotemporal analysis and Bonferroni correction
-  %(prog)s /path/to/run /path/to/baseline
-
-  # Anderson-Darling with temporal analysis
-  %(prog)s /path/to/run /path/to/baseline --test_type ad --analysis_type temporal
-
-  # Custom significance level with FDR correction
-  %(prog)s /path/to/run /path/to/baseline --test_type ks --alpha 0.001 --correction_method fdr
-
-  # No multiple testing correction with magnitude threshold
-  %(prog)s /path/to/run /path/to/baseline \\
-      --correction_method none --magnitude_threshold 0.01
-
-  # Custom file patterns for different output formats
-  %(prog)s /path/to/run /path/to/baseline \\
-      --run_file_pattern "*.eam_????.h0.*.nc" \\
-      --base_file_pattern "*.scream_????.h.AVERAGE.*.nc"
 """,
     )
 
@@ -1268,20 +1277,26 @@ Examples:
         "number, default: *.scream_????.h.AVERAGE.*.nc)",
     )
 
-    args = parser.parse_args()
+    return parser.parse_args(args[1:])
+
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    cli_args = parse_command_line(sys.argv, description)
 
     cli_comments, cli_status = run_stats_comparison(
-        args.run_dir,
-        args.base_dir,
-        analysis_type=args.analysis_type,
-        test_type=args.test_type,
-        alpha=args.alpha,
-        critical_fraction=args.critical_fraction,
-        correction_method=args.correction_method,
-        max_failed_vars=args.max_failed_vars,
-        magnitude_threshold=args.magnitude_threshold,
-        run_file_pattern=args.run_file_pattern,
-        base_file_pattern=args.base_file_pattern,
+        cli_args.run_dir,
+        cli_args.base_dir,
+        analysis_type=cli_args.analysis_type,
+        test_type=cli_args.test_type,
+        alpha=cli_args.alpha,
+        critical_fraction=cli_args.critical_fraction,
+        correction_method=cli_args.correction_method,
+        max_failed_vars=cli_args.max_failed_vars,
+        magnitude_threshold=cli_args.magnitude_threshold,
+        run_file_pattern=cli_args.run_file_pattern,
+        base_file_pattern=cli_args.base_file_pattern,
     )
 
     print("\n")
@@ -1295,3 +1310,9 @@ Examples:
     print("=" * 70)
     print("\n")
     print(cli_comments)
+
+
+###############################################################################
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)

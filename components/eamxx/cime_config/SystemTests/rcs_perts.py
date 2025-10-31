@@ -1,5 +1,5 @@
 """
-Perturbation functions for EST system test.
+Perturbation functions for RCS system test.
 """
 
 import os
