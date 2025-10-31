@@ -44,7 +44,7 @@ module RtmMod
   use MOSART_physics_mod, only : Euler
   use MOSART_physics_mod, only : updatestate_hillslope, updatestate_subnetwork, &
                                  updatestate_mainchannel
-  use MOSART_BGC_type,  only : TSedi, TSedi_para, MOSART_sediment_init
+  use MOSART_BGC_type,  only : TSedi, TSedi_para, MOSART_sediment_init, TINYVALUE_s
   use MOSART_RES_type,  only : Tres, MOSART_reservoir_sed_init, Tres_para
 !#ifdef INCLUDE_WRM
   use WRM_type_mod    , only : ctlSubwWRM, WRMUnit, StorWater
@@ -2241,7 +2241,7 @@ contains
 
     ! Variables for negative runoff redirection
 
-    real(r8) :: local_positive_qgwl_sum, local_negative_qgwl_sum
+    real(r8) :: local_positive_qgwl_sum, local_negative_qgwl_sum, local_total_qgwl_sum
     real(r8) :: net_global_qgwl, original_cell_qgwl, reduction, scaling_factor
 
     integer, allocatable :: outlet_gindices_local(:) ! Local array of global indices of outlets on this task
@@ -2405,39 +2405,44 @@ contains
      if (redirect_negative_qgwl_flag) then
         local_negative_qgwl_sum = 0.0_r8 ! This will sum local NEGATIVE qgwl
         local_positive_qgwl_sum = 0.0_r8 ! This will sum local POSITIVE qgwl
+        local_total_qgwl_sum = 0.0_r8    ! This will sum ALL qgwl (for verification)
 
+        ! Use TINYVALUE_s threshold to avoid non-reproducibility from near-zero values
+        ! that can flip sign across different PE layouts due to floating-point noise
         do nr = rtmCTL%begr, rtmCTL%endr
-            if (rtmCTL%qgwl(nr, nt_nliq) > 0.0_r8) then
+            if (rtmCTL%qgwl(nr, nt_nliq) > TINYVALUE_s) then
                 local_positive_qgwl_sum = local_positive_qgwl_sum + rtmCTL%qgwl(nr, nt_nliq)
-            elseif (rtmCTL%qgwl(nr, nt_nliq) < 0.0_r8) then
+            elseif (rtmCTL%qgwl(nr, nt_nliq) < -TINYVALUE_s) then
                 local_negative_qgwl_sum = local_negative_qgwl_sum + rtmCTL%qgwl(nr, nt_nliq)
             endif
+            ! Sum ALL qgwl values without threshold for verification
+            local_total_qgwl_sum = local_total_qgwl_sum + rtmCTL%qgwl(nr, nt_nliq)
         enddo
 
-        ! Use separate reproducible sum calls for bit-for-bit reproducibility across PE layouts
-        ! NOTE: Combined reprosum (nflds=2) was found to be non-reproducible for positive field
-        ! while negative field was reproducible, suggesting a bug in multi-field reprosum
+        ! Use combined reproducible sum for efficiency (3 fields: positive, negative, total)
         block
-            real(r8) :: pos_local(1,1), pos_global(1)
-            real(r8) :: neg_local(1,1), neg_global(1)
+            real(r8) :: local_sums(1,3), global_sums(3)
+            real(r8) :: global_total_qgwl_sum
 
-            ! Separate reprosum for positive qgwl
-            pos_local(1,1) = local_positive_qgwl_sum
-            call shr_reprosum_calc(pos_local, pos_global, 1, 1, 1, &
-                                   commid=mpicom_rof)
-            global_positive_qgwl_sum = pos_global(1)
+            ! Pack all three sums into combined array
+            local_sums(1,1) = local_positive_qgwl_sum
+            local_sums(1,2) = local_negative_qgwl_sum
+            local_sums(1,3) = local_total_qgwl_sum
 
-            ! Separate reprosum for negative qgwl
-            neg_local(1,1) = local_negative_qgwl_sum
-            call shr_reprosum_calc(neg_local, neg_global, 1, 1, 1, &
+            ! Single combined reprosum call for all three fields
+            call shr_reprosum_calc(local_sums, global_sums, 1, 1, 3, &
                                    commid=mpicom_rof)
-            global_negative_qgwl_sum = neg_global(1)
+            global_positive_qgwl_sum = global_sums(1)
+            global_negative_qgwl_sum = global_sums(2)
+            global_total_qgwl_sum = global_sums(3)
 
             ! Diagnostic output only when do_budget == 3
             if (masterproc .and. do_budget == 3) then
-                write(iulog, '(A,ES24.16)') trim(subname)//' REPROSUM Positive Sum = ', global_positive_qgwl_sum
-                write(iulog, '(A,ES24.16)') trim(subname)//' REPROSUM Negative Sum = ', global_negative_qgwl_sum
-                write(iulog, '(A,ES24.16)') trim(subname)//' Global Net qgwl Sum = ', global_positive_qgwl_sum + global_negative_qgwl_sum
+                write(iulog, '(A,ES24.16)') trim(subname)//' REPROSUM Positive Sum (with threshold) = ', global_positive_qgwl_sum
+                write(iulog, '(A,ES24.16)') trim(subname)//' REPROSUM Negative Sum (with threshold) = ', global_negative_qgwl_sum
+                write(iulog, '(A,ES24.16)') trim(subname)//' REPROSUM Total Sum (all values) = ', global_total_qgwl_sum
+                write(iulog, '(A,ES24.16)') trim(subname)//' Net from pos+neg = ', global_positive_qgwl_sum + global_negative_qgwl_sum
+                write(iulog, '(A,ES24.16)') trim(subname)//' Difference (Total - Net) = ', global_total_qgwl_sum - (global_positive_qgwl_sum + global_negative_qgwl_sum)
             endif
         end block
 
