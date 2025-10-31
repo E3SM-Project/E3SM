@@ -1703,15 +1703,19 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
        ! (name of the fields)
        ! need these always, not only the first time
       l2x_r => l2r_rx(1)
-      a2x_r => a2r_rx(1)
 
       x2r_r => component_get_x2c_cx(rof(1))
       nflds = mct_aVect_nRattr(x2r_r) ! these are saved after first time
-      naflds = mct_aVect_nRattr(a2x_r)
+
+      if (rof_heat) then
+         a2x_r => a2r_rx(1)
+         naflds = mct_aVect_nRattr(a2x_r)
+         allocate(a2x_rm (lsize, naflds))
+      endif
+
       nlflds = mct_aVect_nRattr(l2x_r)
 
       allocate(x2r_rm (lsize, nflds))
-      allocate(a2x_rm (lsize, naflds))
       allocate(l2x_rm (lsize, nlflds))
       ! allocate fractions too
       ! use the fraclist fraclist_r = 'lfrac:lfrin:rfrac'
@@ -1867,11 +1871,13 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
     endif
     ! a2x_rm (lsize, naflds))
 
-    tagname = trim(seq_flds_a2x_fields_to_rof)//C_NULL_CHAR
-    arrsize = naflds * lsize !        allocate (a2x_rm (lsize, naflds))
-    ierr = iMOAB_GetDoubleTagStorage ( mbrxid, tagname, arrsize , ent_type, a2x_rm)
-    if (ierr .ne. 0) then
-      call shr_sys_abort(subname//' error in getting a2x_rm array ')
+    if (rof_heat) then
+       tagname = trim(seq_flds_a2x_fields_to_rof)//C_NULL_CHAR
+       arrsize = naflds * lsize !        allocate (a2x_rm (lsize, naflds))
+       ierr = iMOAB_GetDoubleTagStorage ( mbrxid, tagname, arrsize , ent_type, a2x_rm)
+       if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting a2x_rm array ')
+       endif
     endif
     !  l2x_rm
     tagname = trim(seq_flds_l2x_fluxes_to_rof)//C_NULL_CHAR
