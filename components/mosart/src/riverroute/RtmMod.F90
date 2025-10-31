@@ -2418,19 +2418,35 @@ contains
         ! This sums both positive and negative qgwl in a single call for efficiency
         block
             real(r8) :: local_sums(1,2), global_sums(2)
+            real(r8) :: check_pos_mpi, check_neg_mpi  ! For debugging PEM
 
             ! Combined reprosum: arr(dsummands, nflds) where nflds=2
             local_sums(1,1) = local_positive_qgwl_sum
             local_sums(1,2) = local_negative_qgwl_sum
+
+            ! DEBUG: Check what reprosum receives on master PE
+            if (masterproc .and. do_budget == 3) then
+                write(iulog, '(A,ES24.16)') trim(subname)//' [PE0] LOCAL Positive input = ', local_sums(1,1)
+                write(iulog, '(A,ES24.16)') trim(subname)//' [PE0] LOCAL Negative input = ', local_sums(1,2)
+            endif
+
             call shr_reprosum_calc(local_sums, global_sums, 1, 1, 2, &
                                    commid=mpicom_rof)
             global_positive_qgwl_sum = global_sums(1)
             global_negative_qgwl_sum = global_sums(2)
 
+            ! DEBUG: Compare reprosum with MPI_Allreduce for PEM debugging
+            call MPI_Allreduce(local_positive_qgwl_sum, check_pos_mpi, 1, MPI_REAL8, MPI_SUM, mpicom_rof, ier)
+            call MPI_Allreduce(local_negative_qgwl_sum, check_neg_mpi, 1, MPI_REAL8, MPI_SUM, mpicom_rof, ier)
+
             ! Diagnostic output only when do_budget == 3
             if (masterproc .and. do_budget == 3) then
-                write(iulog, '(A,ES24.16)') trim(subname)//' Global Positive qgwl Sum = ', global_positive_qgwl_sum
-                write(iulog, '(A,ES24.16)') trim(subname)//' Global Negative qgwl Sum = ', global_negative_qgwl_sum
+                write(iulog, '(A,ES24.16)') trim(subname)//' REPROSUM Positive Sum = ', global_positive_qgwl_sum
+                write(iulog, '(A,ES24.16)') trim(subname)//' REPROSUM Negative Sum = ', global_negative_qgwl_sum
+                write(iulog, '(A,ES24.16)') trim(subname)//' MPI_ALLREDUCE Positive Sum = ', check_pos_mpi
+                write(iulog, '(A,ES24.16)') trim(subname)//' MPI_ALLREDUCE Negative Sum = ', check_neg_mpi
+                write(iulog, '(A,ES24.16)') trim(subname)//' Diff (REPROSUM - MPI) Positive = ', global_positive_qgwl_sum - check_pos_mpi
+                write(iulog, '(A,ES24.16)') trim(subname)//' Diff (REPROSUM - MPI) Negative = ', global_negative_qgwl_sum - check_neg_mpi
                 write(iulog, '(A,ES24.16)') trim(subname)//' Global Net qgwl Sum = ', global_positive_qgwl_sum + global_negative_qgwl_sum
             endif
         end block
@@ -2451,10 +2467,21 @@ contains
                else
                   scaling_factor = 1.0_r8  ! No positive qgwl, keep as is
                endif
+               ! DEBUG: Show scaling factor calculation
+               if (do_budget == 3) then
+                  write(iulog, '(A,ES24.16)') trim(subname)//' [Scenario A] net_global_qgwl = ', net_global_qgwl
+                  write(iulog, '(A,ES24.16)') trim(subname)//' [Scenario A] global_positive_qgwl_sum = ', global_positive_qgwl_sum
+                  write(iulog, '(A,ES24.16)') trim(subname)//' [Scenario A] scaling_factor (before bcast) = ', scaling_factor
+               endif
             endif
 
             ! Broadcast scaling factor from master to all PEs
             call MPI_Bcast(scaling_factor, 1, MPI_REAL8, 0, mpicom_rof, ier)
+
+            ! DEBUG: Verify broadcast on all PEs
+            if (do_budget == 3) then
+               write(iulog, '(A,I5,A,ES24.16)') trim(subname)//' [PE ', iam, '] scaling_factor (after bcast) = ', scaling_factor
+            endif
 
             do nr = rtmCTL%begr, rtmCTL%endr
                do nt = 1, nt_rtm
@@ -3041,6 +3068,13 @@ contains
             if (masterproc) then
                correction_ratio = qgwl_to_redistribute / global_total_outlet_discharge
 
+               ! DEBUG: Show correction ratio calculation
+               if (do_budget == 3) then
+                  write(iulog, '(A,ES24.16)') trim(subname)//' [Scenario B] qgwl_to_redistribute = ', qgwl_to_redistribute
+                  write(iulog, '(A,ES24.16)') trim(subname)//' [Scenario B] global_total_outlet_discharge = ', global_total_outlet_discharge
+                  write(iulog, '(A,ES24.16)') trim(subname)//' [Scenario B] correction_ratio (before bcast) = ', correction_ratio
+               endif
+
                ! Check if correction ratio magnitude exceeds 100%
                if (correction_ratio < -1.0_r8) then
                   call shr_sys_flush(iulog)
@@ -3056,6 +3090,11 @@ contains
 
             ! Broadcast the correction ratio from master to all PEs
             call MPI_Bcast(correction_ratio, 1, MPI_REAL8, 0, mpicom_rof, ier)
+
+            ! DEBUG: Verify broadcast on all PEs
+            if (do_budget == 3) then
+               write(iulog, '(A,I5,A,ES24.16)') trim(subname)//' [PE ', iam, '] correction_ratio (after bcast) = ', correction_ratio
+            endif
 
             ! All PEs apply the same ratio to their local outlets
             do nr = rtmCTL%begr, rtmCTL%endr
