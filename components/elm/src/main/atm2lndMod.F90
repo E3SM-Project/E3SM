@@ -540,9 +540,9 @@ contains
          f_short_dir(g) = 1._r8
          f_short_dif(g) = 1._r8
          f_short_refl(g,:) = 0._r8
-         sza(g) = nan
-         saa(g) = nan
-         cosinc(g) = nan
+         sza(g) = spval
+         saa(g) = spval
+         cosinc(g) = spval
          ! scale shortwave radiation
          if (cossza > 0.0872_r8) then ! just modify when SZA > 85 degree 0.0872_r8
 

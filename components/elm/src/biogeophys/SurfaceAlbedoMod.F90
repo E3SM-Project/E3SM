@@ -242,27 +242,27 @@ contains
     ! Cosine solar zenith angle for next time step
 
     deg2rad = SHR_CONST_PI/180._r8
-    do g = bounds%begg,bounds%endg
-       coszen_gcell(g) = shr_orb_cosz (nextsw_cday, grc_pp%lat(g), grc_pp%lon(g), declinp1)
+    if (.not. use_finetop_rad) then
+       do g = bounds%begg,bounds%endg
+          coszen_gcell(g) = shr_orb_cosz (nextsw_cday, grc_pp%lat(g), grc_pp%lon(g), declinp1)
+          cosinc_gcell(g) = coszen_gcell(g)
+       end do
+    else
+       do g = bounds%begg,bounds%endg
+          coszen_gcell(g) = shr_orb_cosz (nextsw_cday, grc_pp%lat(g), grc_pp%lon(g), declinp1)
+          sza = acos(coszen_gcell(g)) ! solar zenith angle
+          saa = shr_orb_azimuth(nextsw_cday, grc_pp%lat(g), grc_pp%lon(g), declinp1, sza) ! solar azimuth angle
 
-       if (use_finetop_rad) then
-         ! solar zenith angle
-         sza = acos(coszen_gcell(g))
-         ! solar azimuth angle
-         saa = shr_orb_azimuth(nextsw_cday, grc_pp%lat(g), grc_pp%lon(g), declinp1, sza)
+          slope_rad = grc_pp%slope_deg(g) * deg2rad
+          aspect_rad = grc_pp%aspect_deg(g) * deg2rad
 
-         slope_rad = grc_pp%slope_deg(g) * deg2rad
-         aspect_rad = grc_pp%aspect_deg(g) * deg2rad
+          cosinc_gcell(g) = cos(slope_rad) * coszen_gcell(g) + sin(slope_rad) * sin(sza) * cos(aspect_rad - saa)
+          cosinc_gcell(g) = max(-1._r8, min(cosinc_gcell(g), 1._r8))
+         
+          if (cosinc_gcell(g) <= 0._r8) cosinc_gcell(g) = 0.1_r8 ! although direct solar radiation is zero, we need to calculate diffuse albedo in this case
+       end do
+    endif
 
-         cosinc_gcell(g) = cos(slope_rad) * coszen_gcell(g) + sin(slope_rad) * sin(sza) * cos(aspect_rad - saa)
-         cosinc_gcell(g) = max(-1._r8, min(cosinc_gcell(g), 1._r8))
-         !write(iulog,*) 'cosinc_gcell',cosinc_gcell(g)
-         !write(iulog,*) 'coszen_gcell',coszen_gcell(g)
-         if (cosinc_gcell(g) <= 0._r8) cosinc_gcell(g) = 0.1_r8 ! although direct solar radiation is zero, we need to calculate diffuse albedo in this case
-       else
-         cosinc_gcell(g) = coszen_gcell(g)
-       endif
-    end do
     do c = bounds%begc,bounds%endc
        g = col_pp%gridcell(c)
        coszen_col(c) = coszen_gcell(g)
