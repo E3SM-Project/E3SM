@@ -122,7 +122,7 @@ These tests focus on differences in variability:
 - Best for: Non-parametric scale comparison
 - Assumption: Samples differ primarily in scale, not location
 
-###### `mood` - Mood's Test
+##### `mood` - Mood's Test
 
 - Sensitivity: Moderate
 - Best for: Non-parametric dispersion comparison
