@@ -21,6 +21,9 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
   CreateUnitTest(field_utils "field_utils.cpp" LIBS eamxx_field
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
 
+  # Test field contraction utils
+  CreateUnitTest(contractions "contractions.cpp" LIBS eamxx_field)
+
   if (EAMXX_ENABLE_PYTHON)
     CreateUnitTest(pyfield "pyfield.cpp" LIBS eamxx_field)
   endif()
