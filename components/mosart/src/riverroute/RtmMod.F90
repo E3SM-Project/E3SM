@@ -2414,39 +2414,29 @@ contains
             endif
         enddo
 
-        ! Use combined reproducible sum for bit-for-bit reproducibility across PE layouts
-        ! This sums both positive and negative qgwl in a single call for efficiency
+        ! Use separate reproducible sum calls for bit-for-bit reproducibility across PE layouts
+        ! NOTE: Combined reprosum (nflds=2) was found to be non-reproducible for positive field
+        ! while negative field was reproducible, suggesting a bug in multi-field reprosum
         block
-            real(r8) :: local_sums(1,2), global_sums(2)
-            real(r8) :: check_pos_mpi, check_neg_mpi  ! For debugging PEM
+            real(r8) :: pos_local(1,1), pos_global(1)
+            real(r8) :: neg_local(1,1), neg_global(1)
 
-            ! Combined reprosum: arr(dsummands, nflds) where nflds=2
-            local_sums(1,1) = local_positive_qgwl_sum
-            local_sums(1,2) = local_negative_qgwl_sum
-
-            ! DEBUG: Check what reprosum receives on master PE
-            if (masterproc .and. do_budget == 3) then
-                write(iulog, '(A,ES24.16)') trim(subname)//' [PE0] LOCAL Positive input = ', local_sums(1,1)
-                write(iulog, '(A,ES24.16)') trim(subname)//' [PE0] LOCAL Negative input = ', local_sums(1,2)
-            endif
-
-            call shr_reprosum_calc(local_sums, global_sums, 1, 1, 2, &
+            ! Separate reprosum for positive qgwl
+            pos_local(1,1) = local_positive_qgwl_sum
+            call shr_reprosum_calc(pos_local, pos_global, 1, 1, 1, &
                                    commid=mpicom_rof)
-            global_positive_qgwl_sum = global_sums(1)
-            global_negative_qgwl_sum = global_sums(2)
+            global_positive_qgwl_sum = pos_global(1)
 
-            ! DEBUG: Compare reprosum with MPI_Allreduce for PEM debugging
-            call MPI_Allreduce(local_positive_qgwl_sum, check_pos_mpi, 1, MPI_REAL8, MPI_SUM, mpicom_rof, ier)
-            call MPI_Allreduce(local_negative_qgwl_sum, check_neg_mpi, 1, MPI_REAL8, MPI_SUM, mpicom_rof, ier)
+            ! Separate reprosum for negative qgwl
+            neg_local(1,1) = local_negative_qgwl_sum
+            call shr_reprosum_calc(neg_local, neg_global, 1, 1, 1, &
+                                   commid=mpicom_rof)
+            global_negative_qgwl_sum = neg_global(1)
 
             ! Diagnostic output only when do_budget == 3
             if (masterproc .and. do_budget == 3) then
                 write(iulog, '(A,ES24.16)') trim(subname)//' REPROSUM Positive Sum = ', global_positive_qgwl_sum
                 write(iulog, '(A,ES24.16)') trim(subname)//' REPROSUM Negative Sum = ', global_negative_qgwl_sum
-                write(iulog, '(A,ES24.16)') trim(subname)//' MPI_ALLREDUCE Positive Sum = ', check_pos_mpi
-                write(iulog, '(A,ES24.16)') trim(subname)//' MPI_ALLREDUCE Negative Sum = ', check_neg_mpi
-                write(iulog, '(A,ES24.16)') trim(subname)//' Diff (REPROSUM - MPI) Positive = ', global_positive_qgwl_sum - check_pos_mpi
-                write(iulog, '(A,ES24.16)') trim(subname)//' Diff (REPROSUM - MPI) Negative = ', global_negative_qgwl_sum - check_neg_mpi
                 write(iulog, '(A,ES24.16)') trim(subname)//' Global Net qgwl Sum = ', global_positive_qgwl_sum + global_negative_qgwl_sum
             endif
         end block
