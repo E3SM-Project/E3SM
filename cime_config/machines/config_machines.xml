@@ -305,6 +305,9 @@
       <env name="LAPACK_ROOT">$SHELL{if [ -z "$LAPACK_ROOT" ]; then echo $NVIDIA_PATH/compilers; else echo "$LAPACK_ROOT"; fi}</env>
       <env name="BLA_VENDOR">NVHPC</env>
     </environment_variables>
+    <environment_variables compiler="nvidia" DEBUG="TRUE">
+      <env name="NVCOMPILER_TERM">trace</env>
+    </environment_variables>
     <environment_variables compiler="intel">
       <env name="BLA_VENDOR">Intel10_64_dyn</env>
     </environment_variables>
@@ -657,6 +660,9 @@
       <env name="LAPACK_ROOT">$SHELL{if [ -z "$LAPACK_ROOT" ]; then echo $NVIDIA_PATH/compilers; else echo "$LAPACK_ROOT"; fi}</env>
       <env name="BLA_VENDOR">NVHPC</env>
     </environment_variables>
+    <environment_variables compiler="nvidia" DEBUG="TRUE">
+      <env name="NVCOMPILER_TERM">trace</env>
+    </environment_variables>
     <environment_variables compiler="intel">
       <env name="BLA_VENDOR">Intel10_64_dyn</env>
     </environment_variables>
@@ -1008,6 +1014,9 @@
       <env name="BLAS_ROOT">$SHELL{if [ -z "$BLAS_ROOT" ]; then echo $NVIDIA_PATH/compilers; else echo "$BLAS_ROOT"; fi}</env>
       <env name="LAPACK_ROOT">$SHELL{if [ -z "$LAPACK_ROOT" ]; then echo $NVIDIA_PATH/compilers; else echo "$LAPACK_ROOT"; fi}</env>
       <env name="BLA_VENDOR">NVHPC</env>
+    </environment_variables>
+    <environment_variables compiler="nvidia" DEBUG="TRUE">
+      <env name="NVCOMPILER_TERM">trace</env>
     </environment_variables>
     <environment_variables compiler="intel">
       <env name="BLA_VENDOR">Intel10_64_dyn</env>
