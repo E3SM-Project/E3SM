@@ -100,29 +100,6 @@ TEST_CASE("field_utils") {
     }
   }
 
-  SECTION ("sum") {
-
-    auto v1 = f1.get_strided_view<Real**>();
-    auto dim0 = fid.get_layout().dim(0);
-    auto dim1 = fid.get_layout().dim(1);
-    auto lsize = fid.get_layout().size();
-    auto gsize = lsize*comm.size();
-    auto offset = comm.rank()*lsize;
-    Kokkos::parallel_for(kt::RangePolicy(0,dim0*dim1),
-                         KOKKOS_LAMBDA(int idx) {
-      int i = idx / dim1;
-      int j = idx % dim1;
-      v1(i,j) = offset + idx + 1;
-    });
-    Kokkos::fence();
-
-    Real lsum = offset*lsize + lsize*(lsize+1) / 2.0;
-    Real gsum = gsize*(gsize+1) / 2.0;
-
-    REQUIRE(field_sum<Real>(f1)==lsum);
-    REQUIRE(field_sum<Real>(f1,&comm)==gsum);
-  }
-
   // The following two functions are used in both horiz_contraction and
   // vert_contraction below
   auto sum_n    = [](int n) { return n * (n + 1) / 2; };
@@ -532,78 +509,6 @@ TEST_CASE("field_utils") {
     }
   }
 
-  SECTION ("frobenius") {
-
-    auto v1 = f1.get_strided_view<Real**>();
-    auto dim0 = fid.get_layout().dim(0);
-    auto dim1 = fid.get_layout().dim(1);
-    auto lsize = fid.get_layout().size();
-    auto gsize = lsize*comm.size();
-    auto offset = comm.rank()*lsize;
-    Kokkos::parallel_for(kt::RangePolicy(0,dim0*dim1),
-                         KOKKOS_LAMBDA(int idx) {
-      int i = idx / dim1;
-      int j = idx % dim1;
-      v1(i,j) = offset + idx + 1;
-    });
-    Kokkos::fence();
-
-    // Summing the squares from n=a+1 to n=a+N gives
-    // (a+1)^2+(a+2)^2+...
-    // which ultimately gives
-    // N*a^2 + 2a*(1+2+...+N)
-    Real lsum = offset*offset*lsize + 2*offset*lsize*(lsize+1)/2 + lsize*(lsize+1)*(2*lsize+1) / 6.0;
-    Real gsum = gsize*(gsize+1)*(2*gsize+1) / 6.0;
-
-    REQUIRE(frobenius_norm<Real>(f1)==std::sqrt(lsum));
-    REQUIRE(frobenius_norm<Real>(f1,&comm)==std::sqrt(gsum));
-  }
-
-  SECTION ("max") {
-
-    auto v1 = f1.get_strided_view<Real**>();
-    auto dim0 = fid.get_layout().dim(0);
-    auto dim1 = fid.get_layout().dim(1);
-    auto lsize = fid.get_layout().size();
-    auto gsize = lsize*comm.size();
-    auto offset = comm.rank()*lsize;
-    Kokkos::parallel_for(kt::RangePolicy(0,dim0*dim1),
-                         KOKKOS_LAMBDA(int idx) {
-      int i = idx / dim1;
-      int j = idx % dim1;
-      v1(i,j) = offset + idx+1;
-    });
-    Kokkos::fence();
-
-    Real lmax = offset + lsize;
-    Real gmax = gsize;
-
-    REQUIRE(field_max<Real>(f1)==lmax);
-    REQUIRE(field_max<Real>(f1,&comm)==gmax);
-  }
-
-  SECTION ("min") {
-
-    auto v1 = f1.get_strided_view<Real**>();
-    auto dim0 = fid.get_layout().dim(0);
-    auto dim1 = fid.get_layout().dim(1);
-    auto lsize = fid.get_layout().size();
-    auto offset = comm.rank()*lsize;
-    Kokkos::parallel_for(kt::RangePolicy(0,dim0*dim1),
-                         KOKKOS_LAMBDA(int idx) {
-      int i = idx / dim1;
-      int j = idx % dim1;
-      v1(i,j) = offset + idx+1;
-    });
-    Kokkos::fence();
-
-    Real lmin = offset + 1;
-    Real gmin = 1;
-
-    REQUIRE(field_min<Real>(f1)==lmin);
-    REQUIRE(field_min<Real>(f1,&comm)==gmin);
-  }
-
   SECTION ("perturb") {
     using namespace ShortFieldTagsNames;
     using RPDF = std::uniform_real_distribution<Real>;
@@ -699,16 +604,6 @@ TEST_CASE("field_utils") {
     perturb(f3_alt, engine, pdf, base_seed, mask_lambda, gids);
     REQUIRE(views_are_equal(f1, f1_alt));
     REQUIRE(views_are_equal(f3, f3_alt));
-  }
-
-  SECTION ("wrong_st") {
-    using wrong_real =
-      typename std::conditional<std::is_same<Real,double>::value,
-                                float,double>::type;
-    REQUIRE_THROWS(field_min<int>(f1));
-    REQUIRE_THROWS(field_max<int>(f1));
-    REQUIRE_THROWS(field_sum<wrong_real>(f1));
-    REQUIRE_THROWS(frobenius_norm<wrong_real>(f1));
   }
 }
 

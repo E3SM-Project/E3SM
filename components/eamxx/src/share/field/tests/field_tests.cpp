@@ -124,10 +124,10 @@ TEST_CASE("field", "") {
 
     // Changing f2 should leave f1 unchanged
     f2.deep_copy(0);
-    REQUIRE (field_max<Real>(f2)==0.0);
-    REQUIRE (field_min<Real>(f2)==0.0);
-    REQUIRE (field_max<Real>(f1)==3.0);
-    REQUIRE (field_min<Real>(f1)==3.0);
+    REQUIRE (field_max(f2).as<Real>()==0.0);
+    REQUIRE (field_min(f2).as<Real>()==0.0);
+    REQUIRE (field_max(f1).as<Real>()==3.0);
+    REQUIRE (field_min(f1).as<Real>()==3.0);
   }
 
   SECTION ("alias") {

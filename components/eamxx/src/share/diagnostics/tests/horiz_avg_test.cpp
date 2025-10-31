@@ -115,7 +115,7 @@ TEST_CASE("horiz_avg") {
   diag0.allocate_view();
 
   // calculate total area
-  Real atot = field_sum<Real>(area, &comm);
+  Real atot = field_sum(area, &comm).as<Real>();
   // scale the area field
   area.scale(1 / atot);
 

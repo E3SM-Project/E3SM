@@ -255,66 +255,12 @@ void vert_contraction(const Field &f_out, const Field &f_in, const Field &weight
   impl::vert_contraction<ST, AVG>(f_out, f_in, weight);
 }
 
-template<typename ST>
-ST frobenius_norm(const Field& f, const ekat::Comm* comm = nullptr)
-{
-  // Check compatibility between ST and field data type
-  const auto data_type = f.data_type();
-  EKAT_REQUIRE_MSG (data_type==DataType::FloatType || data_type==DataType::DoubleType,
-      "Error! Frobenius norm only allowed for floating-point field value types.\n");
-
-  EKAT_REQUIRE_MSG (
-      (std::is_same<ST,float>::value && data_type==DataType::FloatType) ||
-      (std::is_same<ST,double>::value && data_type==DataType::DoubleType),
-      "Error! Field data type incompatible with template argument.\n");
-
-  return impl::frobenius_norm<ST>(f,comm);
-}
-
-template<typename ST>
-ST field_sum(const Field& f, const ekat::Comm* comm = nullptr)
-{
-  // Check compatibility between ST and field data type
-  const auto data_type = f.get_header().get_identifier().data_type();
-
-  EKAT_REQUIRE_MSG (
-      (std::is_same<ST,int>::value && data_type==DataType::IntType) ||
-      (std::is_same<ST,float>::value && data_type==DataType::FloatType) ||
-      (std::is_same<ST,double>::value && data_type==DataType::DoubleType),
-      "Error! Field data type incompatible with template argument.\n");
-
-  return impl::field_sum<ST>(f,comm);
-}
-
-template<typename ST>
-ST field_max(const Field& f, const ekat::Comm* comm = nullptr)
-{
-  // Check compatibility between ST and field data type
-  const auto data_type = f.data_type();
-
-  EKAT_REQUIRE_MSG (
-      (std::is_same<ST,int>::value && data_type==DataType::IntType) ||
-      (std::is_same<ST,float>::value && data_type==DataType::FloatType) ||
-      (std::is_same<ST,double>::value && data_type==DataType::DoubleType),
-      "Error! Field data type incompatible with template argument.\n");
-
-  return impl::field_max<ST>(f,comm);
-}
-
-template<typename ST>
-ST field_min(const Field& f, const ekat::Comm* comm = nullptr)
-{
-  // Check compatibility between ST and field data type
-  const auto data_type = f.data_type();
-
-  EKAT_REQUIRE_MSG (
-      (std::is_same<ST,int>::value && data_type==DataType::IntType) ||
-      (std::is_same<ST,float>::value && data_type==DataType::FloatType) ||
-      (std::is_same<ST,double>::value && data_type==DataType::DoubleType),
-      "Error! Field data type incompatible with template argument.\n");
-
-  return impl::field_min<ST>(f,comm);
-}
+// Reduce field to a single scalar, and return an opaque type, to allow hiding impl in cpp file.
+// NOTE: all calculations are done serially HOST
+ScalarWrapper frobenius_norm(const Field& f, const ekat::Comm* comm = nullptr);
+ScalarWrapper field_sum(const Field& f, const ekat::Comm* comm = nullptr);
+ScalarWrapper field_max(const Field& f, const ekat::Comm* comm = nullptr);
+ScalarWrapper field_min(const Field& f, const ekat::Comm* comm = nullptr);
 
 // Prints the value of a field at a certain location, specified by tags and indices.
 // If the field layout contains all the location tags, we will slice the field along
