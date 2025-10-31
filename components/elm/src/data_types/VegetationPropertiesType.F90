@@ -78,7 +78,7 @@ module VegetationPropertiesType
      real(r8), pointer :: fm_root       (:) => null()  ! fire-related mortality factor for fine roots (0 to 1)
      real(r8), pointer :: fm_lroot      (:) => null()  ! fire-related mortality factor for live roots (0 to 1)
      real(r8), pointer :: fm_droot      (:) => null()  ! fire-related mortality factor for dead roots (0 to 1)
-     real(r8), pointer :: manunitro     (:) => null()  ! fertilizer applied (crop)
+     real(r8), pointer :: manunitro     (:) => null()  ! manure nitrogen applied (crop)
      real(r8), pointer :: fleafcn       (:) => null()  ! C:N during grain fill; leaf (crop)
      real(r8), pointer :: ffrootcn      (:) => null()  ! C:N during grain fill; froot (crop)
      real(r8), pointer :: fstemcn       (:) => null()  ! C:N during grain fill; stem (crop)
