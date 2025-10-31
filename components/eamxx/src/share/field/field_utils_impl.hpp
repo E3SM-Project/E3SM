@@ -5,6 +5,7 @@
 
 #include <ekat_comm.hpp>
 #include <ekat_team_policy_utils.hpp>
+#include <ekat_view_broadcast.hpp>
 
 #include <limits>
 #include <type_traits>
@@ -506,15 +507,11 @@ void vert_contraction(const Field &f_out, const Field &f_in, const Field &weight
 
   const int nlevs = l_in.dim(l_in.rank() - 1);
 
-  // To avoid duplicating code for the 1d and 2d weight cases,
-  // we use a view to access the weight ahead of time
-  typename Field::get_view_type<const ST *, Device> w1d;
-  typename Field::get_view_type<const ST **, Device> w2d;
-  auto w_is_1d = l_w.rank() == 1;
-  if(w_is_1d) {
-    w1d = weight.get_view<const ST *>();
-  } else {
-    w2d = weight.get_view<const ST **>();
+  auto bcast_dims = l_in.dims();
+  for (auto t : l_w.tags()) {
+    if (l_in.has_tag(t)) {
+      bcast_dims[l_in.dim_idx(t)] = -1;
+    }
   }
 
   switch(l_in.rank()) {
@@ -524,13 +521,13 @@ void vert_contraction(const Field &f_out, const Field &f_in, const Field &weight
       auto v_out = f_out.get_view<ST>();
       auto v_m_out = is_avg_masked ? f_out.get_header().get_extra_data<Field>("mask_data").get_view<ST>() : v_out;
       ST n = 0, d = 0;
+      auto w_view = weight.get_view<const ST*>();
       Kokkos::parallel_reduce(
           f_out.name(), RangePolicy(0, nlevs),
           KOKKOS_LAMBDA(const int i, ST &n_acc, ST &d_acc) {
             auto mask = is_masked ? v_m(i) : ST(1.0);
-            auto w = w1d(i);
-            n_acc += w * v_in(i) * mask;
-            d_acc += w * mask;
+            n_acc += w_view(i)* v_in(i) * mask;
+            d_acc += w_view(i)* mask;
           },
           Kokkos::Sum<ST>(n), Kokkos::Sum<ST>(d));
       if (is_avg_masked) {
@@ -549,6 +546,12 @@ void vert_contraction(const Field &f_out, const Field &f_in, const Field &weight
       auto v_m_out = is_avg_masked ? f_out.get_header().get_extra_data<Field>("mask_data").get_view<ST *>() : v_out;
       const int d0 = l_in.dim(0);
       auto p       = TPF::get_default_team_policy(d0, nlevs);
+      ekat::ViewBroadcast<decltype(v_in)> w_view;
+      if (weight.rank()==1) {
+        w_view.setup(weight.get_view<const ST*>(),bcast_dims);
+      } else {
+        w_view.setup(weight.get_view<const ST**>(),bcast_dims);
+      }
       Kokkos::parallel_for(
           f_out.name(), p, KOKKOS_LAMBDA(const TeamMember &tm) {
             const int i = tm.league_rank();
@@ -557,7 +560,7 @@ void vert_contraction(const Field &f_out, const Field &f_in, const Field &weight
                 Kokkos::TeamVectorRange(tm, nlevs),
                 [&](int j, ST &n_acc, ST &d_acc) {
                   auto mask = is_masked ? v_m(i, j) : ST(1.0);
-                  auto w = w_is_1d ? w1d(j) : w2d(i, j); 
+                  auto w = w_view(i,j);
                   n_acc += w * v_in(i, j) * mask;
                   d_acc += w * mask;
                 },
@@ -578,6 +581,12 @@ void vert_contraction(const Field &f_out, const Field &f_in, const Field &weight
       const int d0 = l_in.dim(0);
       const int d1 = l_in.dim(1);
       auto p       = TPF::get_default_team_policy(d0 * d1, nlevs);
+      ekat::ViewBroadcast<decltype(v_in)> w_view;
+      if (weight.rank()==1) {
+        w_view.setup(weight.get_view<const ST*>(),bcast_dims);
+      } else {
+        w_view.setup(weight.get_view<const ST**>(),bcast_dims);
+      }
       Kokkos::parallel_for(
           f_out.name(), p, KOKKOS_LAMBDA(const TeamMember &tm) {
             const int idx = tm.league_rank();
@@ -588,9 +597,9 @@ void vert_contraction(const Field &f_out, const Field &f_in, const Field &weight
                 Kokkos::TeamVectorRange(tm, nlevs),
                 [&](int k, ST &n_acc, ST &d_acc) {
                   auto mask = is_masked ? v_m(i, j, k) : ST(1.0);
-                  auto w = w_is_1d ? w1d(k) : w2d(i, k); 
-                  n_acc += w * v_in(i, j, k) * mask;
-                  d_acc += w * mask;
+                  auto w = w_view(i,j,k);
+                  n_acc += w* v_in(i, j, k) * mask;
+                  d_acc += w* mask;
                 },
                 Kokkos::Sum<ST>(n), Kokkos::Sum<ST>(d));
             if (is_avg_masked) {
