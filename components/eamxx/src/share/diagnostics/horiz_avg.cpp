@@ -65,11 +65,7 @@ void HorizAvgDiag::compute_diagnostic_impl() {
   const auto &f = get_fields_in().front();
   const auto &d = m_diagnostic_output;
   // Call the horiz_contraction impl that will take care of everything
-  if (f.get_header().has_extra_data("mask_data")) {
-    horiz_contraction<Real>(d, f, m_scaled_area, &m_comm, m_dummy_field);
-  } else {
-    horiz_contraction<Real>(d, f, m_scaled_area, &m_comm);
-  }
+  horiz_contraction(d, f, m_scaled_area, true, &m_comm, m_dummy_field);
 }
 
 }  // namespace scream

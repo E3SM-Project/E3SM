@@ -111,7 +111,7 @@ void VertContractDiag::initialize_impl(const RunType /*run_type*/) {
     m_weighting_sum.allocate_view();
     m_weighting_one = m_weighting.clone("vert_contract_wts_one");
     m_weighting_one.deep_copy(sp(1));
-    vert_contraction<Real>(m_weighting_sum, m_weighting, m_weighting_one);
+    vert_contraction(m_weighting_sum, m_weighting, m_weighting_one);
     VertContractDiag::scale_wts(m_weighting, m_weighting_sum);
   }
 
@@ -218,17 +218,14 @@ void VertContractDiag::compute_diagnostic_impl() {
 
   // if dp|dz_weighted and avg, we need to scale the weighting by its 1/sum
   if ((m_weighting_method == "dp" || m_weighting_method == "dz") && m_contract_method == "avg") {
-    vert_contraction<Real>(m_weighting_sum, m_weighting, m_weighting_one);
+    vert_contraction(m_weighting_sum, m_weighting, m_weighting_one);
     VertContractDiag::scale_wts(m_weighting, m_weighting_sum);
   }
 
   // call the vert_contraction impl that will take care of everything
   // if f has a mask and we are averaging, need to call the avg specialization
-  if (m_contract_method == "avg" && f.get_header().has_extra_data("mask_data")) {
-    vert_contraction<Real,1>(d, f, m_weighting);
-  } else {
-    vert_contraction<Real,0>(d, f, m_weighting);
-  }
+  bool avg = m_contract_method == "avg" && f.get_header().has_extra_data("mask_data");
+  vert_contraction(d, f, m_weighting, avg);
 }
 
 } // namespace scream

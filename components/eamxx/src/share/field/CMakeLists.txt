@@ -35,9 +35,11 @@ add_library(eamxx_field
   eti/field_eti_update_max_min_impl_int_device.cpp
   eti/field_eti_update_max_min_int_device.cpp
   utils/compute_mask.cpp
+  utils/horiz_contraction.cpp
   utils/print_hyperslab.cpp
   utils/reductions.cpp
   utils/transpose.cpp
+  utils/vert_contraction.cpp
   utils/views_are_equal.cpp
 )
 

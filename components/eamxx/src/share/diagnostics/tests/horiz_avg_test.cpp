@@ -120,7 +120,7 @@ TEST_CASE("horiz_avg") {
   area.scale(1 / atot);
 
   // calculate weighted avg
-  horiz_contraction<Real>(diag0, qc1, area, &comm);
+  horiz_contraction(diag0, qc1, area, true, &comm);
   // Compare
   REQUIRE(views_are_equal(diag1_f, diag0));
 
@@ -161,7 +161,7 @@ TEST_CASE("horiz_avg") {
                                    kg / kg, grid->name());
   Field diag3_manual(diag3_manual_fid);
   diag3_manual.allocate_view();
-  horiz_contraction<Real>(diag3_manual, qc3, area, &comm);
+  horiz_contraction(diag3_manual, qc3, area, true, &comm);
   diag3->set_required_field(qc3);
   diag3->initialize(t0, RunType::Initial);
   diag3->compute_diagnostic();

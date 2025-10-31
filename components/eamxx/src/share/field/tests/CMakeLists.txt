@@ -24,6 +24,9 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
   CreateUnitTest(reductions "reductions.cpp" LIBS eamxx_field
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
 
+  # Test field contractions
+  CreateUnitTest(contractions "contractions.cpp" LIBS eamxx_field)
+
   # Test field utils
   CreateUnitTest(field_utils "field_utils.cpp" LIBS eamxx_field
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
