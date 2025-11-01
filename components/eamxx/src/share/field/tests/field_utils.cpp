@@ -19,7 +19,6 @@ TEST_CASE("field_utils") {
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
   using kt = KokkosTypes<DefaultDevice>;
-  using kt_host = KokkosTypes<HostDevice>;
 
   using P8 = ekat::Pack<Real,8>;
 
@@ -104,6 +103,7 @@ TEST_CASE("field_utils") {
     using namespace ShortFieldTagsNames;
     using IPDF = std::uniform_int_distribution<int>;
 
+    auto nondim = Units::nondimensional();
     int seed = get_random_test_seed();
     std::mt19937_64 engine(seed);
 
@@ -112,10 +112,10 @@ TEST_CASE("field_utils") {
     const int nlevs = IPDF(3,9)(engine); // between 3-9 levels
 
     // Create 1d, 2d, 3d fields with a level dimension, and set all to 1
-    FieldIdentifier fid1 ("f_1d",   FieldLayout({LEV},           {nlevs}),               Units::nondimensional(), "");
-    FieldIdentifier fid2a("f_2d_a", FieldLayout({CMP, LEV},      {ncmps, nlevs}),        Units::nondimensional(), "");
-    FieldIdentifier fid2b("f_2d_b", FieldLayout({COL, LEV},      {ncols, nlevs}),        Units::nondimensional(), "");
-    FieldIdentifier fid3 ("f_3d",   FieldLayout({COL, CMP, LEV}, {ncols, ncmps, nlevs}), Units::nondimensional(), "");
+    FieldIdentifier fid1 ("f_1d",   FieldLayout({LEV},           {nlevs}),               nondim, "");
+    FieldIdentifier fid2a("f_2d_a", FieldLayout({CMP, LEV},      {ncmps, nlevs}),        nondim, "");
+    FieldIdentifier fid2b("f_2d_b", FieldLayout({COL, LEV},      {ncols, nlevs}),        nondim, "");
+    FieldIdentifier fid3 ("f_3d",   FieldLayout({COL, CMP, LEV}, {ncols, ncmps, nlevs}), nondim, "");
     Field f1(fid1), f2a(fid2a), f2b(fid2b), f3(fid3);
     f1.allocate_view(), f2a.allocate_view(), f2b.allocate_view(), f3.allocate_view();
     f1.deep_copy(1), f2a.deep_copy(1), f2b.deep_copy(1), f3.deep_copy(1);
@@ -130,21 +130,20 @@ TEST_CASE("field_utils") {
 
     // Create masks s.t. only last 3 levels are perturbed. For variety,
     // 1d and 2d fields will use lambda mask and 3 field will use a view.
-    auto mask_lambda = [&nlevs] (const int& i0) {
-      return i0 >= nlevs-3;
-    };
-    kt_host::view_1d<bool> mask_view("mask_view", nlevs);
-    Kokkos::deep_copy(mask_view, false);
-    for (int ilev=0; ilev<nlevs; ++ilev) {
-      if (ilev >= nlevs-3) mask_view(ilev) = true;
+    FieldIdentifier pmask_fid("pmask",fid1.get_layout(),nondim,"",DataType::IntType);
+    Field pmask(pmask_fid,true);
+    auto pmask_h = pmask.get_view<int*,Host>();
+    for (int i=0; i<nlevs; ++i) {
+      pmask_h(i) = static_cast<int>(i>=nlevs-3);
     }
+    pmask.sync_to_dev();
 
-    // Compute random perturbation between [2, 3]
+    // Compute random perturbation of magnitude 0.1
     int base_seed = 0;
-    perturb(f1,  2, 3, base_seed, mask_lambda);
-    perturb(f2a, 2, 3, base_seed, mask_lambda);
-    perturb(f2b, 2, 3, base_seed, mask_lambda, gids);
-    perturb(f3,  2, 3, base_seed, mask_view,   gids);
+    perturb(f1,  0.1, base_seed, pmask);
+    perturb(f2a, 0.1, base_seed, pmask);
+    perturb(f2b, 0.1, base_seed, pmask, gids);
+    perturb(f3,  0.1, base_seed, pmask, gids);
 
     // Sync to host for checks
     f1.sync_to_host(), f2a.sync_to_host(), f2b.sync_to_host(), f3.sync_to_host();
@@ -153,10 +152,16 @@ TEST_CASE("field_utils") {
     const auto v2b = f2b.get_strided_view<Real**,  Host>();
     const auto v3  = f3.get_strided_view <Real***, Host>();
 
-    // Check that all field values are 1 for all but last 3 levels and between [2,3] otherwise.
+    // Check that all field values are 1 for all but last 3 levels and between [0.9,1.1] otherwise.
+    int num_perturbed = 0;
     auto check_level = [&] (const int ilev, const Real val) {
-      if (ilev < nlevs-3) REQUIRE(val == 1);
-      else REQUIRE((2 <= val && val <= 3));
+      if (ilev < nlevs-3) {
+        REQUIRE(val == 1);
+      } else {
+        REQUIRE((0.9 <= val && val <= 1.1));
+        if (val!=1)
+          ++num_perturbed;
+      }
     };
     for (int icol=0; icol<ncols; ++icol) {
       for (int icmp=0; icmp<ncmps; ++icmp) {
@@ -167,12 +172,16 @@ TEST_CASE("field_utils") {
           check_level(ilev, v3(icol,icmp,ilev));
     }}}
 
+    // While it is technically possible that a uniform pdf(-0.1,0.1) returns 0,
+    // we DEFINITELY don't expect it to happen more than once. So num_perturb should be AT LEAST >0
+    REQUIRE (num_perturbed>0);
+
     // Check that using a different seed gives different values
     auto f1_alt = f1.clone(); f1_alt.deep_copy(1.0);
     auto f3_alt = f3.clone(); f3_alt.deep_copy(1.0);
     int base_seed_alt = 100;
-    perturb(f1_alt, 2, 3, base_seed_alt, mask_lambda);
-    perturb(f3_alt, 2, 3, base_seed_alt, mask_lambda, gids);
+    perturb(f1_alt, 0.1, base_seed_alt, pmask);
+    perturb(f3_alt, 0.1, base_seed_alt, pmask, gids);
     f1_alt.sync_to_host(), f3_alt.sync_to_host();
 
     const auto v1_alt = f1_alt.get_strided_view<Real*,   Host>();
@@ -191,8 +200,8 @@ TEST_CASE("field_utils") {
 
     // Finally check that the original seed gives same result
     f1_alt.deep_copy(1.0), f3_alt.deep_copy(1.0);
-    perturb(f1_alt, 2, 3, base_seed, mask_lambda);
-    perturb(f3_alt, 2, 3, base_seed, mask_lambda, gids);
+    perturb(f1_alt, 0.1, base_seed, pmask);
+    perturb(f3_alt, 0.1, base_seed, pmask, gids);
     REQUIRE(views_are_equal(f1, f1_alt));
     REQUIRE(views_are_equal(f3, f3_alt));
   }
