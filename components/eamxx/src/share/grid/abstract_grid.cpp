@@ -281,7 +281,7 @@ get_global_min_dof_gid () const ->gid_type
   std::lock_guard<std::mutex> lock(m_mutex); // Lock the mutex
   // Lazy calculation
   if (m_global_min_dof_gid==std::numeric_limits<gid_type>::max()) {
-    m_global_min_dof_gid = field_min<gid_type>(m_dofs_gids,&get_comm());
+    m_global_min_dof_gid = field_min(m_dofs_gids,&get_comm()).as<gid_type>();
   }
   return m_global_min_dof_gid;
 }
@@ -292,7 +292,7 @@ get_global_max_dof_gid () const ->gid_type
   std::lock_guard<std::mutex> lock(m_mutex); // Lock the mutex
   // Lazy calculation
   if (m_global_max_dof_gid==-std::numeric_limits<gid_type>::max()) {
-    m_global_max_dof_gid = field_max<gid_type>(m_dofs_gids,&get_comm());
+    m_global_max_dof_gid = field_max(m_dofs_gids,&get_comm()).as<gid_type>();
   }
   return m_global_max_dof_gid;
 }
@@ -303,7 +303,7 @@ get_global_min_partitioned_dim_gid () const ->gid_type
   std::lock_guard<std::mutex> lock(m_mutex); // Lock the mutex
   // Lazy calculation
   if (m_global_min_partitioned_dim_gid==std::numeric_limits<gid_type>::max()) {
-    m_global_min_partitioned_dim_gid = field_min<gid_type>(m_partitioned_dim_gids,&get_comm());
+    m_global_min_partitioned_dim_gid = field_min(m_partitioned_dim_gids,&get_comm()).as<gid_type>();
   }
   return m_global_min_partitioned_dim_gid;
 }
@@ -314,7 +314,7 @@ get_global_max_partitioned_dim_gid () const ->gid_type
   std::lock_guard<std::mutex> lock(m_mutex); // Lock the mutex
   // Lazy calculation
   if (m_global_max_partitioned_dim_gid==-std::numeric_limits<gid_type>::max()) {
-    m_global_max_partitioned_dim_gid = field_max<gid_type>(m_partitioned_dim_gids,&get_comm());
+    m_global_max_partitioned_dim_gid = field_max(m_partitioned_dim_gids,&get_comm()).as<gid_type>();
   }
   return m_global_max_partitioned_dim_gid;
 }

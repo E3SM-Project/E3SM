@@ -11,9 +11,7 @@ namespace scream {
 TEST_CASE("field_within_interval_check") {
   using namespace ShortFieldTagsNames;
 
-  auto engine = setup_random_test();
-  std::uniform_real_distribution<Real> pos_pdf(0.01,0.99);
-  std::uniform_real_distribution<Real> neg_pdf(-0.99,-0.01);
+  auto seed = get_random_test_seed();
 
   ekat::Comm comm(MPI_COMM_WORLD);
 
@@ -37,7 +35,7 @@ TEST_CASE("field_within_interval_check") {
     interval_check->set_additional_data_field(data);
 
     // Assign in-bound values to the field and make sure it passes the check
-    randomize(f,engine,pos_pdf);
+    randomize_uniform(f,seed++,0.01,0.99);
     auto res_and_msg = interval_check->check();
     REQUIRE(res_and_msg.result==CheckResult::Pass);
 
@@ -81,7 +79,7 @@ TEST_CASE("field_within_interval_check") {
     REQUIRE(interval_check->can_repair());
 
     // Assign slightly out-of-bound values to the field
-    randomize(f,engine,pos_pdf);
+    randomize_uniform(f,seed++,0.01,0.99);
     auto f_beg = f.subfield(COL,0).subfield(CMP,0).subfield(LEV,0);
     auto f_end = f.subfield(COL,num_lcols-1).subfield(CMP,2).subfield(LEV,nlevs-1);
     f_beg.deep_copy(-0.5);

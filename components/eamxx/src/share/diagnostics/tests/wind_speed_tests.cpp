@@ -51,10 +51,8 @@ TEST_CASE("wind_speed")
   uv.allocate_view();
   uv.get_header().get_tracking().update_time_stamp(t0);
 
-  // Construct random number generator stuff
-  using RPDF = std::uniform_real_distribution<Real>;
-  RPDF pdf(-1,1);
-  auto engine = scream::setup_random_test();
+  // Random number generator seed
+  int seed = get_random_test_seed(&comm);
 
   // Construct the Diagnostics
   std::map<std::string,std::shared_ptr<AtmosphereDiagnostic>> diags;
@@ -69,7 +67,7 @@ TEST_CASE("wind_speed")
 #endif
   for (int itest=0; itest<ntests; ++itest) {
     // Randomize wind
-    randomize(uv,engine,pdf);
+    randomize_uniform(uv,seed++);
 
     // Create and set up the diagnostic
     ekat::ParameterList params;

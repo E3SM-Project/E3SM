@@ -64,10 +64,8 @@ TEST_CASE("conditional_sampling") {
   qc12.allocate_view();
   qc21.allocate_view();
 
-  // Construct random number generator stuff
-  using RPDF = std::uniform_real_distribution<Real>;
-  RPDF pdf(sp(0.0), sp(200.0));
-  auto engine = scream::setup_random_test();
+  // Random number generator seed
+  int seed = get_random_test_seed();
 
   // Construct the Diagnostics
   std::map<std::string, std::shared_ptr<AtmosphereDiagnostic>> diags;
@@ -97,9 +95,9 @@ TEST_CASE("conditional_sampling") {
     qc11.get_header().get_tracking().update_time_stamp(t0);
     qc12.get_header().get_tracking().update_time_stamp(t0);
     qc21.get_header().get_tracking().update_time_stamp(t0);
-    randomize(qc11, engine, pdf);
-    randomize(qc12, engine, pdf);
-    randomize(qc21, engine, pdf);
+    randomize_uniform(qc11, seed++, 0, 200);
+    randomize_uniform(qc12, seed++, 0, 200);
+    randomize_uniform(qc21, seed++, 0, 200);
 
     // Create and set up the diagnostic
     auto diag11 = diag_factory.create("ConditionalSampling", comm, params);
@@ -187,9 +185,9 @@ TEST_CASE("conditional_sampling") {
     qc11.get_header().get_tracking().update_time_stamp(t0);
     qc12.get_header().get_tracking().update_time_stamp(t0);
     qc21.get_header().get_tracking().update_time_stamp(t0);
-    randomize(qc11, engine, pdf);
-    randomize(qc12, engine, pdf);
-    randomize(qc21, engine, pdf);
+    randomize_uniform(qc11, seed++, 0, 200);
+    randomize_uniform(qc12, seed++, 0, 200);
+    randomize_uniform(qc21, seed++, 0, 200);
 
     // Create and set up the diagnostic
     auto diag11 = diag_factory.create("ConditionalSampling", comm, params);
@@ -260,9 +258,9 @@ TEST_CASE("conditional_sampling") {
     qc11.get_header().get_tracking().update_time_stamp(t0);
     qc12.get_header().get_tracking().update_time_stamp(t0);
     qc21.get_header().get_tracking().update_time_stamp(t0);
-    randomize(qc11, engine, pdf);
-    randomize(qc12, engine, pdf);
-    randomize(qc21, engine, pdf);
+    randomize_uniform(qc11, seed++, 0, 200);
+    randomize_uniform(qc12, seed++, 0, 200);
+    randomize_uniform(qc21, seed++, 0, 200);
 
     // Create and set up the diagnostic for count
     auto count_diag11 = diag_factory.create("ConditionalSampling", comm, params);
