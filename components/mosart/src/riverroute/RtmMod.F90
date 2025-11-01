@@ -44,7 +44,7 @@ module RtmMod
   use MOSART_physics_mod, only : Euler
   use MOSART_physics_mod, only : updatestate_hillslope, updatestate_subnetwork, &
                                  updatestate_mainchannel
-  use MOSART_BGC_type,  only : TSedi, TSedi_para, MOSART_sediment_init, TINYVALUE_s
+  use MOSART_BGC_type,  only : TSedi, TSedi_para, MOSART_sediment_init
   use MOSART_RES_type,  only : Tres, MOSART_reservoir_sed_init, Tres_para
 !#ifdef INCLUDE_WRM
   use WRM_type_mod    , only : ctlSubwWRM, WRMUnit, StorWater
@@ -143,7 +143,8 @@ module RtmMod
 
   ! Variables for TNR redirection
   integer, parameter :: num_top_outlets_for_qgwl = 500   ! Number of top outlets to use
-  real(r8), save   :: global_positive_qgwl_sum = 0.0_r8    ! Sum of all positive qgwl 
+  real(r8), parameter :: TINYVALUE_s = 1.0e-14_r8  ! Threshold for near-zero qgwl values
+  real(r8), save   :: global_positive_qgwl_sum = 0.0_r8    ! Sum of all positive qgwl
   real(r8), save   :: global_negative_qgwl_sum = 0.0_r8    ! Sum of all negative qgwl 
 
   real(r8), save :: delt_save             ! previous delt 
@@ -2403,47 +2404,62 @@ contains
     global_negative_qgwl_sum = 0.0_r8 ! Reset global sum each step
 
      if (redirect_negative_qgwl_flag) then
-        local_negative_qgwl_sum = 0.0_r8 ! This will sum local NEGATIVE qgwl
-        local_positive_qgwl_sum = 0.0_r8 ! This will sum local POSITIVE qgwl
-        local_total_qgwl_sum = 0.0_r8    ! This will sum ALL qgwl (for verification)
-
-        ! Use TINYVALUE_s threshold to avoid non-reproducibility from near-zero values
-        ! that can flip sign across different PE layouts due to floating-point noise
-        do nr = rtmCTL%begr, rtmCTL%endr
-            if (rtmCTL%qgwl(nr, nt_nliq) > TINYVALUE_s) then
-                local_positive_qgwl_sum = local_positive_qgwl_sum + rtmCTL%qgwl(nr, nt_nliq)
-            elseif (rtmCTL%qgwl(nr, nt_nliq) < -TINYVALUE_s) then
-                local_negative_qgwl_sum = local_negative_qgwl_sum + rtmCTL%qgwl(nr, nt_nliq)
-            endif
-            ! Sum ALL qgwl values without threshold for verification
-            local_total_qgwl_sum = local_total_qgwl_sum + rtmCTL%qgwl(nr, nt_nliq)
-        enddo
-
-        ! Use combined reproducible sum for efficiency (3 fields: positive, negative, total)
+        ! Use sparse packing approach: only include values exceeding threshold in reprosum
+        ! This avoids near-zero values that can flip sign across PE layouts
         block
-            real(r8) :: local_sums(1,3), global_sums(3)
+            real(r8), allocatable :: local_qgwl_array(:,:)
+            real(r8) :: global_sums(2)
             real(r8) :: global_total_qgwl_sum
+            integer :: num_positive, num_negative, num_total
+            integer :: idx_pos, idx_neg, idx_tot
+            integer :: local_count
+            integer :: nstep, yr, mon, day, tod
 
-            ! Pack all three sums into combined array
-            local_sums(1,1) = local_positive_qgwl_sum
-            local_sums(1,2) = local_negative_qgwl_sum
-            local_sums(1,3) = local_total_qgwl_sum
+            ! First pass: count how many values exceed threshold
+            num_positive = 0
+            num_negative = 0
+            do nr = rtmCTL%begr, rtmCTL%endr
+                if (rtmCTL%qgwl(nr, nt_nliq) > TINYVALUE_s) then
+                    num_positive = num_positive + 1
+                elseif (rtmCTL%qgwl(nr, nt_nliq) < -TINYVALUE_s) then
+                    num_negative = num_negative + 1
+                endif
+            enddo
 
-            ! Single combined reprosum call for all three fields
-            call shr_reprosum_calc(local_sums, global_sums, 1, 1, 3, &
+            ! Total entries to pack
+            local_count = num_positive + num_negative
+
+            ! Allocate sparse array for reprosum (2 fields: positive and negative)
+            allocate(local_qgwl_array(local_count, 2))
+            local_qgwl_array(:,:) = 0.0_r8
+
+            ! Second pass: pack only values exceeding threshold
+            idx_pos = 0
+            idx_neg = 0
+            do nr = rtmCTL%begr, rtmCTL%endr
+                if (rtmCTL%qgwl(nr, nt_nliq) > TINYVALUE_s) then
+                    idx_pos = idx_pos + 1
+                    local_qgwl_array(idx_pos, 1) = rtmCTL%qgwl(nr, nt_nliq)
+                elseif (rtmCTL%qgwl(nr, nt_nliq) < -TINYVALUE_s) then
+                    idx_neg = idx_neg + 1
+                    local_qgwl_array(num_positive + idx_neg, 2) = rtmCTL%qgwl(nr, nt_nliq)
+                endif
+            enddo
+
+            ! Reproducible sum with sparse packing
+            call shr_reprosum_calc(local_qgwl_array, global_sums, local_count, local_count, 2, &
                                    commid=mpicom_rof)
             global_positive_qgwl_sum = global_sums(1)
             global_negative_qgwl_sum = global_sums(2)
-            global_total_qgwl_sum = global_sums(3)
 
-            ! Diagnostic output only when do_budget == 3
+            ! Diagnostic output - total positive, negative, and net sums
             if (masterproc .and. do_budget == 3) then
-                write(iulog, '(A,ES24.16)') trim(subname)//' REPROSUM Positive Sum (with threshold) = ', global_positive_qgwl_sum
-                write(iulog, '(A,ES24.16)') trim(subname)//' REPROSUM Negative Sum (with threshold) = ', global_negative_qgwl_sum
-                write(iulog, '(A,ES24.16)') trim(subname)//' REPROSUM Total Sum (all values) = ', global_total_qgwl_sum
-                write(iulog, '(A,ES24.16)') trim(subname)//' Net from pos+neg = ', global_positive_qgwl_sum + global_negative_qgwl_sum
-                write(iulog, '(A,ES24.16)') trim(subname)//' Difference (Total - Net) = ', global_total_qgwl_sum - (global_positive_qgwl_sum + global_negative_qgwl_sum)
+                write(iulog, '(A,ES24.16)') trim(subname)//'   Global positive qgwl (threshold)=', global_positive_qgwl_sum
+                write(iulog, '(A,ES24.16)') trim(subname)//'   Global negative qgwl (threshold)=', global_negative_qgwl_sum
+                write(iulog, '(A,ES24.16)') trim(subname)//'   Net global qgwl (pos+neg)       =', global_positive_qgwl_sum + global_negative_qgwl_sum
             endif
+
+            deallocate(local_qgwl_array)
         end block
 
         net_global_qgwl = global_positive_qgwl_sum + global_negative_qgwl_sum
@@ -2473,18 +2489,14 @@ contains
             ! Broadcast scaling factor from master to all PEs
             call MPI_Bcast(scaling_factor, 1, MPI_REAL8, 0, mpicom_rof, ier)
 
-            ! DEBUG: Verify broadcast on all PEs
-            if (do_budget == 3) then
-               write(iulog, '(A,I5,A,ES24.16)') trim(subname)//' [PE ', iam, '] scaling_factor (after bcast) = ', scaling_factor
-            endif
-
+            ! Apply scaling with TINYVALUE_s threshold to ensure reproducibility
             do nr = rtmCTL%begr, rtmCTL%endr
                do nt = 1, nt_rtm
-                  if (rtmCTL%qgwl(nr, nt) > 0.0_r8) then
+                  if (rtmCTL%qgwl(nr, nt) > TINYVALUE_s) then
                      ! Positive cell: scale down proportionally
                      TRunoff%qgwl(nr, nt) = rtmCTL%qgwl(nr, nt) * scaling_factor
                   else
-                     ! Negative or zero cell: set to zero
+                     ! Negative, zero, or near-zero cell: set to zero
                      TRunoff%qgwl(nr, nt) = 0.0_r8
                   endif
                enddo
@@ -3085,11 +3097,6 @@ contains
 
             ! Broadcast the correction ratio from master to all PEs
             call MPI_Bcast(correction_ratio, 1, MPI_REAL8, 0, mpicom_rof, ier)
-
-            ! DEBUG: Verify broadcast on all PEs
-            if (do_budget == 3) then
-               write(iulog, '(A,I5,A,ES24.16)') trim(subname)//' [PE ', iam, '] correction_ratio (after bcast) = ', correction_ratio
-            endif
 
             ! All PEs apply the same ratio to their local outlets
             do nr = rtmCTL%begr, rtmCTL%endr
