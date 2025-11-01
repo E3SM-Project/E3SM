@@ -132,17 +132,9 @@ module RtmMod
   logical :: do_rtmflood
   logical :: do_rtm
 
-  type :: outlet_discharge_info_type
-      integer :: gidx         
-      real(r8) :: discharge
-  end type outlet_discharge_info_type
-
-  ! Namelist variable and flag for TNR redirection
+  ! Namelist variable and flag for negative qgwl redirection
   logical, public :: redirect_negative_qgwl = .false.  ! Namelist control
   logical, save   :: redirect_negative_qgwl_flag = .false.  ! Module flag
-
-  ! Variables for TNR redirection
-  integer, parameter :: num_top_outlets_for_qgwl = 500   ! Number of top outlets to use
   real(r8), parameter :: TINYVALUE_s = 1.0e-14_r8  ! Threshold for near-zero qgwl values
   real(r8), save   :: global_positive_qgwl_sum = 0.0_r8    ! Sum of all positive qgwl
   real(r8), save   :: global_negative_qgwl_sum = 0.0_r8    ! Sum of all negative qgwl 
@@ -2241,31 +2233,16 @@ contains
 !scs
 
     ! Variables for negative runoff redirection
-
-    real(r8) :: local_positive_qgwl_sum, local_negative_qgwl_sum, local_total_qgwl_sum
-    real(r8) :: net_global_qgwl, original_cell_qgwl, reduction, scaling_factor
-
-    integer, allocatable :: outlet_gindices_local(:) ! Local array of global indices of outlets on this task
-    real(r8), allocatable :: outlet_discharges_local(:) ! Local array of discharges for these outlets
-    integer :: local_outlet_count
-    integer, allocatable :: all_outlet_gindices(:)    ! Gathered on master
-    real(r8), allocatable :: all_outlet_discharges(:)  ! Gathered on master
-    integer, allocatable :: recvcounts(:), displs(:)   ! For MPI_Gatherv
-    type(outlet_discharge_info_type), allocatable :: sorted_outlets(:)
-    integer :: num_all_outlets_global, current_top_n_count, target_gidx
-    real(r8) :: sum_discharge_top_n
-    real(r8), allocatable :: qgwl_correction_values(:) ! Values to apply
-    integer, allocatable :: qgwl_correction_gindices(:) ! Global indices for these corrections
-    real(r8), allocatable :: qgwl_correction_local(:) ! Local portion of correction array
-    real(r8) :: qgwl_to_redistribute ! Amount to redistribute (Scenario A or B)
+    real(r8) :: net_global_qgwl, scaling_factor
+    real(r8), allocatable :: qgwl_correction_local(:)
+    real(r8) :: qgwl_to_redistribute
     real(r8) :: local_total_outlet_discharge, global_total_outlet_discharge
     real(r8) :: outlet_discharge_local(1,1), outlet_discharge_global(1)
     real(r8) :: qgwl_to_discharge_ratio_percent
     real(r8) :: conservation_error
-    real(r8) :: global_total_liquid_before, global_total_liquid_after
     real(r8) :: local_correction_sum, global_correction_sum
     real(r8) :: correction_local(1,1), correction_global(1)
-    real(r8) :: correction_ratio ! Ratio to apply: qgwl_to_redistribute / global_total_outlet_discharge
+    real(r8) :: correction_ratio
     character(len=*),parameter :: subname = '(Rtmrun) '
 !-----------------------------------------------------------------------
 
@@ -2405,7 +2382,6 @@ contains
 
      if (redirect_negative_qgwl_flag) then
         ! Use sparse packing approach: only include values exceeding threshold in reprosum
-        ! This avoids near-zero values that can flip sign across PE layouts
         block
             real(r8), allocatable :: local_qgwl_array(:,:)
             real(r8) :: global_sums(2)
@@ -5404,26 +5380,5 @@ contains
     
     end do
   end subroutine SubTimestep
-
-!-----------------------------------------------------------------------
-
-subroutine sort_outlets_by_discharge_desc(outlets_array, count) !TZ negative runoff
-   implicit none
-   integer, intent(in) :: count
-   type(outlet_discharge_info_type), intent(inout) :: outlets_array(:) ! Assumed-shape
-   integer :: i, j
-   type(outlet_discharge_info_type) :: temp_outlet_info
-   ! Bubble sort 
-   if (count < 2) return
-   do i = 1, count - 1
-       do j = 1, count - i
-           if (outlets_array(j)%discharge < outlets_array(j+1)%discharge) then
-               temp_outlet_info = outlets_array(j)
-               outlets_array(j) = outlets_array(j+1)
-               outlets_array(j+1) = temp_outlet_info
-           endif
-       enddo
-   enddo
-end subroutine sort_outlets_by_discharge_desc
 
 end module RtmMod
