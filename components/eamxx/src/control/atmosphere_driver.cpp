@@ -1421,13 +1421,21 @@ void AtmosphereDriver::set_initial_conditions ()
     const auto hybm_h = gll_grid->get_geometry_data("hybm").get_view<const Real*, Host>();
     constexpr auto ps0 = physics::Constants<Real>::P0;
     const auto min_pressure = ic_pl.get<Real>("perturbation_minimum_pressure", 1050.0);
-    auto pressure_mask = [&] (const int ilev) {
+
+    const auto& pmask_lt = gll_grid->get_vertical_layout(true);
+    const auto nondim = ekat::units::Units::nondimensional();
+    FieldIdentifier pmask_fid("lev_mask",pmask_lt,nondim,gll_grid->name(),DataType::IntType);
+    Field pressure_mask(pmask_fid,true);
+    auto pmask_h = pressure_mask.get_view<int*,Host>();
+    for (int ilev=0; ilev<pmask_lt.dim(0); ++ilev) {
       const auto pref = (hyam_h(ilev)*ps0 + hybm_h(ilev)*ps0)/100; // Reference pressure ps0 is in Pa, convert to millibar
-      return pref > min_pressure;
-    };
+      pmask_h(ilev) = static_cast<int>(pref > min_pressure);
+    }
+    pressure_mask.sync_to_dev();
 
     // Loop through fields and apply perturbation.
     const std::string gll_grid_name = gll_grid->name();
+    auto dofs_gids = gll_grid->get_dofs_gids();
     for (size_t f=0; f<perturbed_fields.size(); ++f) {
       const auto fname = perturbed_fields[f];
       EKAT_REQUIRE_MSG(ekat::contains(m_fields_inited[gll_grid_name], fname),
@@ -1436,8 +1444,7 @@ void AtmosphereDriver::set_initial_conditions ()
                        "  - Grid:  "+gll_grid_name+"\n");
 
       auto field = m_field_mgr->get_field(fname, gll_grid_name);
-      perturb(field, 1-perturbation_limit,1+perturbation_limit,
-              seed, pressure_mask, gll_grid->get_dofs_gids());
+      perturb(field, perturbation_limit, seed, pressure_mask, dofs_gids);
     }
 
     m_atm_logger->info("    [EAMxx] Adding random perturbation to ICs ... done!");
