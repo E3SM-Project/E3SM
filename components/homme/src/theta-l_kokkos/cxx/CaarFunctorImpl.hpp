@@ -343,8 +343,6 @@ struct CaarFunctorImpl {
 
     set_rk_stage_data(data);
 
-    profiling_resume();
-
     GPTLstart("caar compute");
     int nerr;
     Kokkos::parallel_reduce("caar loop pre-boundary exchange", m_policy_pre, *this, nerr);
@@ -367,7 +365,6 @@ struct CaarFunctorImpl {
 
     limiter.run(data.np1);
 
-    profiling_pause();
   }
 
   KOKKOS_INLINE_FUNCTION
