@@ -1885,6 +1885,7 @@ module li_subglacial_hydro
       real (kind=RKIND), pointer :: creep_coeff
       real (kind=RKIND), pointer :: rhoi
       real (kind=RKIND), pointer :: config_SGH_incipient_channel_width
+      real (kind=RKIND), pointer :: bedRoughMax
       logical, pointer :: config_SGH_include_pressure_melt
       real (kind=RKIND), dimension(:), pointer :: channelArea
       real (kind=RKIND), dimension(:), pointer :: channelMelt
@@ -1903,6 +1904,7 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:), pointer :: effectivePressureSGH
       real (kind=RKIND), dimension(:), pointer :: channelDiffusivity
       real (kind=RKIND), dimension(:), pointer :: waterThicknessEdgeUpwind
+      real (kind=RKIND), dimension(:), pointer :: waterThickness
       integer, dimension(:), pointer :: waterFluxMask
       integer, dimension(:), pointer :: hydroMarineMarginMask
       integer, dimension(:), pointer :: edgeMask
@@ -1926,6 +1928,7 @@ module li_subglacial_hydro
       call mpas_pool_get_config(liConfigs, 'config_SGH_chnl_creep_coefficient', creep_coeff)
       call mpas_pool_get_config(liConfigs, 'config_SGH_incipient_channel_width', config_SGH_incipient_channel_width)
       call mpas_pool_get_config(liConfigs, 'config_SGH_include_pressure_melt', config_SGH_include_pressure_melt)
+      call mpas_pool_get_config(liConfigs, 'config_SGH_bed_roughness_max', bedRoughMax)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
       call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
       call mpas_pool_get_array(hydroPool, 'channelArea', channelArea)
@@ -1949,6 +1952,7 @@ module li_subglacial_hydro
       call mpas_pool_get_array(hydroPool, 'hydroMarineMarginMask', hydroMarineMarginMask)
       call mpas_pool_get_array(hydroPool, 'channelDiffusivity', channelDiffusivity)
       call mpas_pool_get_array(hydroPool, 'waterThicknessEdgeUpwind', waterThicknessEdgeUpwind)
+      call mpas_pool_get_array(hydroPool, 'waterThickness', waterThickness)
       call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
       ! Calculate terms needed for opening (melt) rate
 
@@ -1993,6 +1997,16 @@ module li_subglacial_hydro
       channelPressureFreeze = -1.0_RKIND * iceMeltingPointPressureDependence * cp_freshwater * rho_water * &
          (channelDischarge + waterFlux * config_SGH_incipient_channel_width) &
          * waterPressureSlopeNormal / latent_heat_ice
+
+      ! disable channel melt into/out of lakes
+      do iEdge = 1, nEdgesSolve
+         cell1 = cellsOnEdge(1, iEdge)
+         cell2 = cellsOnEdge(2, iEdge)
+         if ((waterThickness(cell1) > bedRoughMax) .or. (waterThickness(cell2) > bedRoughMax)) then
+            channelMelt(iEdge) = 0.0_RKIND
+            channelPressureFreeze(iEdge) = 0.0_RKIND
+         endif
+      enddo
 
       if (config_SGH_include_pressure_melt) then
          channelOpeningRate = (channelMelt - channelPressureFreeze) / rhoi
