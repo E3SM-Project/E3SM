@@ -998,8 +998,8 @@ subroutine  copy_aream_from_area(mbappid)
       ! copy aream from area
       if (mbappid >= 0) then  ! coupler procs
          ierr  = iMOAB_GetMeshInfo ( mbappid, nvert, nvise, nbl, nsurf, nvisBC )
-         if ( (mbappid .eq. mbaxid) .and. (.not. atm_pg_active)) then 
-            ! this is the spectral case, for atm only
+         if (.not.atm_pg_active) then
+            ! this is the spectral monogrid case
             arrSize  = nvert(1) ! cells
             ent_type = 0 ! vertices
          else
@@ -1662,11 +1662,16 @@ subroutine  copy_aream_from_area(mbappid)
                nfields=mct_list_nitem (temp_list)
                if (nfields > 0) then
                  ierr  = iMOAB_GetMeshInfo ( mblxid, nvert, nvise, nbl, nsurf, nvisBC )
-                 arrsize = nvise(1)*nfields
+		 if (mb_scm_land) then
+                   arrsize = nvert(1)*nfields
+                   ent_type = 0 ! cell
+                 else
+                   arrsize = nvise(1)*nfields
+                   ent_type = 1 ! cell
+		 endif
                  allocate(tagValues(arrsize))
                  tagname = trim(newlist)//C_NULL_CHAR
                  tagValues = 0.0_r8
-                 ent_type = 1 ! cells
                  ierr = iMOAB_SetDoubleTagStorage ( mblxid, tagname, arrsize , ent_type, tagValues)
                  if (ierr .ne. 0) then
                     write(logunit,*) subname,' error in zeroing Flrr tags on land', ierr
@@ -1691,6 +1696,8 @@ subroutine  copy_aream_from_area(mbappid)
          if (mlnid >= 0) then
             ierr  = iMOAB_GetMeshInfo ( mlnid, nvert, nvise, nbl, nsurf, nvisBC )
             comp%mbApCCid = mlnid ! land
+	    ! MOAB TODO:  check this logic.  Seems to assume typeA might be
+	    ! 3 or 2 but only typeB has that possibility.
             comp%mbGridType = typeA - 2 ! 0 or 1, pc or cells 
             comp%mblsize = nvert(1) ! vertices
          endif
@@ -1707,6 +1714,9 @@ subroutine  copy_aream_from_area(mbappid)
          endif
          tagname = 'lat:lon:area:frac:mask'//C_NULL_CHAR
          call component_exch_moab(comp, mlnid, mblxid, 0, tagname, context_exch='doml')
+         if (mblxid > 0) then ! on coupler pes only
+            call copy_aream_from_area(mblxid)
+         endif
 
 #ifdef MOABDEBUG
             outfile = 'recMeshLand.h5m'//C_NULL_CHAR
