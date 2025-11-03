@@ -4,7 +4,7 @@ module elm_initializeMod
   ! Performs land model initialization
   !
   use shr_kind_mod     , only : r8 => shr_kind_r8
-  use spmdMod          , only : masterproc, iam
+  use spmdMod          , only : masterproc, iam, npes, mpicom, MPI_INTEGER, MPI_STATUS_SIZE
   use shr_sys_mod      , only : shr_sys_flush
   use shr_log_mod      , only : errMsg => shr_log_errMsg
   use decompMod        , only : bounds_type, get_proc_bounds, get_proc_clumps, get_clump_bounds
@@ -13,6 +13,7 @@ module elm_initializeMod
   use elm_varctl       , only : create_glacier_mec_landunit, iulog, iac_present
   use elm_varctl       , only : use_lch4, use_cn, use_voc, use_c13, use_c14
   use elm_varctl       , only : use_fates, use_betr, use_fates_sp, use_fan, use_fates_luh
+  use elm_varctl       , only : use_fates_inventory_init
   use elm_varsur       , only : wt_lunit, urban_valid, wt_nat_patch, wt_cft, wt_glc_mec, topo_glc_mec,firrig,f_surf,f_grd
   use elm_varsur       , only : fert_cft, fert_p_cft, wt_polygon
   use elm_varsur       , only : wt_tunit, elv_tunit, slp_tunit,asp_tunit,num_tunit_per_grd
@@ -573,6 +574,7 @@ contains
     integer               :: ncsec        ! current time of day [seconds]
     integer               :: nc           ! clump index
     integer               :: nclumps      ! number of clumps on this processor
+    integer               :: ierr         ! Error flag
     character(len=256)    :: fnamer       ! name of netcdf restart file
     character(len=256)    :: pnamer       ! full pathname of netcdf restart file
     character(len=256)    :: locfn        ! local file name
@@ -588,6 +590,7 @@ contains
     type(bounds_type)     :: bounds_clump ! clump bounds
     logical               :: lexist
     integer               :: closelatidx,closelonidx
+    integer               :: status(MPI_STATUS_SIZE)
     real(r8)              :: closelat,closelon
     real(r8), allocatable :: h2osno_col(:)
     real(r8), allocatable :: snow_depth_col(:)
@@ -597,6 +600,8 @@ contains
     integer               :: begl, endl
     real(r8), pointer     :: data2dptr(:,:) ! temp. pointers for slicing larger arrays
     character(len=32)     :: subname = 'initialize2'
+    integer               :: ping        ! temporary, for asynchronous call of init_coldstart
+    integer               :: ping_id     ! temporary, for asynchronous call of init_coldstart
     !----------------------------------------------------------------------
 
     call t_startf('elm_init2')
@@ -1083,7 +1088,19 @@ contains
           end do
           !$OMP END PARALLEL DO
        end if
+
+       !   The FATES initialisation with inventories require reading text files, and they
+       ! cannot be accessed simultaneously by multiple nodes. To avoid crashes, processors
+       ! must go through init_coldstart asynchronously
+       ping    = 0      ! Any number
+       ping_id = 866877 ! Any number, preferably unique to this mpi_recv/mpi_send pair
+       if (use_fates_inventory_init .and. (iam > 0)) then
+          call mpi_recv(ping,1,MPI_INTEGER,iam-1,ping_id,mpicom,status,ierr)
+       end if
        call alm_fates%init_coldstart(canopystate_vars, soilstate_vars, frictionvel_vars)
+       if (use_fates_inventory_init .and. (iam < npes-1)) then
+          call mpi_send(ping,1,MPI_INTEGER,iam+1,ping_id,mpicom,ierr)
+       end if
     end if
 
     ! topo_glc_mec was allocated in initialize1, but needed to be kept around through
