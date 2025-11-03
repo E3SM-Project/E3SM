@@ -33,7 +33,7 @@ module seq_io_mod
   use shr_sys_mod,  only: shr_sys_abort
   use seq_comm_mct, only: logunit, CPLID, seq_comm_setptrs
   use seq_comm_mct, only: seq_comm_namelen, seq_comm_name
-  use seq_comm_mct, only: mbaxid, atm_pg_active
+  use seq_comm_mct, only: mbaxid, atm_pg_active,mblxid,mb_scm_land
   use seq_flds_mod, only : seq_flds_lookup
   use mct_mod           ! mct wrappers
   use pio
@@ -1719,7 +1719,8 @@ contains
 
     ! get the local size ns
     ierr = iMOAB_GetMeshInfo ( mbxid, nvert, nvise, nbl, nsurf, nvisBC )
-    if (mbxid .eq. mbaxid .and. .not. atm_pg_active) then
+    if ((.not. atm_pg_active .and. (mbaxid .eq. mbxid)) .or. &
+       (mb_scm_land .and. (mblxid .eq. mbxid))) then
       ent_type = 0
       ns = nvert(1) ! local vertices 
       lnx = ngv ! number of global vertices
@@ -2729,7 +2730,8 @@ contains
     ierr = iMOAB_GetGlobalInfo( mbxid, ngv, ng)
     lny = 1 ! do we need 2 var, or just 1 
     ierr = iMOAB_GetMeshInfo ( mbxid, nvert, nvise, nbl, nsurf, nvisBC )
-    if (mbxid .eq. mbaxid .and. .not. atm_pg_active) then
+    if ((.not. atm_pg_active .and. (mbaxid .eq. mbxid)) .or. &
+       (mb_scm_land .and. (mblxid .eq. mbxid))) then
       ent_type = 0
       ns = nvert(1) ! local vertices 
       lnx = ngv ! number of global vertices
