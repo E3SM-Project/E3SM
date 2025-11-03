@@ -22,6 +22,7 @@ module prep_lnd_mod
 
   use seq_comm_mct,     only: mbaxid   ! iMOAB id for atm migrated mesh to coupler pes
   use seq_comm_mct,     only: atm_pg_active  ! whether the atm uses FV mesh or not ; made true if fv_nphys > 0
+  use seq_comm_mct,     only: mb_scm_land
   ! use dimensions_mod,   only: np     ! for atmosphere
   use seq_comm_mct,     only: seq_comm_getinfo => seq_comm_setptrs
   use seq_map_type_mod
@@ -400,9 +401,15 @@ contains
                write(logunit,*) subname,' cant get size of land mesh'
                call shr_sys_abort(subname//' ERROR in getting size of land mesh')
             endif
-            ! land is now cell mesh on coupler side
-            mlsize = nvise(1)
-            ent_type = 1 ! cell
+	    ! land is usually cell on coupler but could be point
+            if(mb_scm_land) then
+              mlsize = nvert(1)
+              ent_type = 0 ! point cloud
+	    else
+              mlsize = nvise(1)
+              ent_type = 1 ! cell
+            endif
+
             ! set to 0 all fields that are projected from river
             nrflds = mct_aVect_nRattr(r2x_lx(1)) !  these are the numbers of fields in seq_flds_r2x_fields
             arrsize = nrflds*mlsize
