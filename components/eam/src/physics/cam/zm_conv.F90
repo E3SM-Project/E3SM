@@ -263,9 +263,9 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
    !----------------------------------------------------------------------------
    ! Allocate and/or Initialize microphysics state/tend derived types
    if (zm_param%zm_microp) then
-      call zm_microp_st_alloc(loc_microp_st, ncol, pver)
-      call zm_microp_st_ini(loc_microp_st, ncol, pver)
-      call zm_microp_st_ini(microp_st, ncol, pver)
+      call zm_microp_st_alloc(loc_microp_st, pcols, pver)
+      call zm_microp_st_ini(loc_microp_st, pcols, pver)
+      call zm_microp_st_ini(microp_st, pcols, pver)
       loc_microp_st%lambdadpcu  = (mucon + 1._r8)/dcon
       loc_microp_st%mudpcu      = mucon
    end if
@@ -378,7 +378,11 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
      end if
    end do
 
-   if (lengath.eq.0) return
+   if (lengath.eq.0) then
+      ! Deallocate local microphysics arrays before returning
+      if (zm_param%zm_microp) call zm_microp_st_dealloc(loc_microp_st)
+      return
+   end if
 
    do ii=1,lengath
       ideep(ii)=gather_index(ii)
@@ -475,7 +479,7 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
    !----------------------------------------------------------------------------
    ! obtain cloud properties.
 
-   call cldprp(zm_const, pcols, ncol, pver, pverp, &
+   call cldprp(pcols, ncol, pver, pverp, &
                qg      ,tg      ,ug      ,vg      ,pg      , &
                zg      ,sg      ,mu      ,eu      ,du      , &
                md      ,ed      ,sd      ,qd      ,mc      , &
@@ -486,7 +490,6 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
                pflxg   ,evpg    ,cug     ,rprdg   ,zm_param%limcnv  , &
                landfracg, tpertg, &
                aero    ,loc_microp_st ) ! < added for ZM micro
-
 
    !----------------------------------------------------------------------------
    ! convert detrainment from units of "1/m" to "1/mb".
@@ -508,7 +511,7 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
 
    !----------------------------------------------------------------------------
 
-   call closure(zm_const, pcols, ncol, pver, pverp, &
+   call closure(pcols, ncol, pver, pverp, &
                 qg      ,tg      ,pg      ,zg      ,sg      , &
                 tpg     ,qs      ,qu      ,su      ,mc      , &
                 du      ,mu      ,md      ,qd      ,sd      , &
@@ -576,7 +579,7 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
    !----------------------------------------------------------------------------
    ! compute temperature and moisture changes due to convection.
 
-   call q1q2_pjr(zm_const, pcols, ncol, pver, pverp, &
+   call q1q2_pjr(pcols, ncol, pver, pverp, &
                  dqdt    ,dsdt    ,qg      ,qs      ,qu      , &
                  su      ,du      ,qhat    ,shat    ,dp      , &
                  mu      ,md      ,sd      ,qd      ,qlg     , &
@@ -912,7 +915,7 @@ subroutine zm_conv_evap(pcols, ncol, pver, pverp, deltat, &
 
 !===================================================================================================
 
-subroutine cldprp(zm_const, pcols, ncol, pver, pverp, &
+subroutine cldprp(pcols, ncol, pver, pverp, &
                   q       ,t       ,u       ,v       ,p       , &
                   z       ,s       ,mu      ,eu      ,du      , &
                   md      ,ed      ,sd      ,qd      ,mc      , &
@@ -951,7 +954,6 @@ subroutine cldprp(zm_const, pcols, ncol, pver, pverp, &
 !
 ! Input arguments
 !
-   type(zm_const_t), intent(in) :: zm_const      ! derived type to hold ZM constants
    integer,          intent(in) :: pcols         ! maximum number of columns
    integer,          intent(in) :: ncol          ! actual number of columns
    integer,          intent(in) :: pver          ! number of mid-point vertical levels
@@ -1580,9 +1582,11 @@ subroutine cldprp(zm_const, pcols, ncol, pver, pverp, &
          end do
 
 #ifndef SCREAM_CONFIG_IS_CMAKE
-         call  zm_mphy( su,   qu,    mu,    du,   eu,  loc_microp_st%cmel,  loc_microp_st%cmei,   &
-                        zf,    p,   t,    q,  eps0,  jb,  jt,  jlcl,  msg,   il2g,  &
-                        zm_const%grav,   zm_const%cpair,    zm_const%rdair,   aero, gamhat,   &
+         call  zm_mphy( pcols, il2g, msg, &
+                        zm_const%grav, zm_const%cpair, zm_const%rdair, &
+                        zm_param%auto_fac, zm_param%accr_fac, zm_param%micro_dcs, &
+                        jb, jt, jlcl, su, qu, mu, du, eu, zf, p, t, q, gamhat, eps0, &
+                        loc_microp_st%cmel,  loc_microp_st%cmei, aero, &
                         loc_microp_st%qliq,     loc_microp_st%qice,     loc_microp_st%qnl,      loc_microp_st%qni,     &
                         loc_microp_st%qcde,     loc_microp_st%qide,     loc_microp_st%ncde,     loc_microp_st%nide,    &
                         rprd,                   loc_microp_st%sprd,     tmp_frz,                loc_microp_st%wu,      &
@@ -1604,8 +1608,7 @@ subroutine cldprp(zm_const, pcols, ncol, pver, pverp, &
                         loc_microp_st%accsirn,  loc_microp_st%accgln,   loc_microp_st%accgrn,   loc_microp_st%accilm,  &
                         loc_microp_st%acciln,   loc_microp_st%fallrm,   loc_microp_st%fallsm,   loc_microp_st%fallgm,  &
                         loc_microp_st%fallrn,   loc_microp_st%fallsn,   loc_microp_st%fallgn,   loc_microp_st%fhmrm,   &
-                        loc_microp_st%dsfm,     loc_microp_st%dsfn, &
-                        zm_param%auto_fac, zm_param%accr_fac, zm_param%micro_dcs)
+                        loc_microp_st%dsfm,     loc_microp_st%dsfn )
 #endif
 
          do k = pver,msg + 2,-1
@@ -1863,7 +1866,7 @@ end subroutine cldprp
 
 !===================================================================================================
 
-subroutine closure(zm_const, pcols, ncol, pver, pverp, &
+subroutine closure(pcols, ncol, pver, pverp, &
                    q       ,t       ,p       ,z       ,s       , &
                    tp      ,qs      ,qu      ,su      ,mc      , &
                    du      ,mu      ,md      ,qd      ,sd      , &
@@ -1895,7 +1898,6 @@ subroutine closure(zm_const, pcols, ncol, pver, pverp, &
 !
 !-----------------------------Arguments---------------------------------
 !
-   type(zm_const_t), intent(in) :: zm_const     ! derived type to hold ZM constants
    integer,          intent(in) :: pcols        ! maximum number of columns
    integer,          intent(in) :: ncol         ! actual number of columns
    integer,          intent(in) :: pver         ! number of mid-point vertical levels
@@ -2078,7 +2080,7 @@ end subroutine closure
 
 !===================================================================================================
 
-subroutine q1q2_pjr(zm_const, pcols, ncol, pver, pverp, &
+subroutine q1q2_pjr(pcols, ncol, pver, pverp, &
                     dqdt    ,dsdt    ,q       ,qs      ,qu      , &
                     su      ,du      ,qhat    ,shat    ,dp      , &
                     mu      ,md      ,sd      ,qd      ,ql      , &
@@ -2091,7 +2093,6 @@ subroutine q1q2_pjr(zm_const, pcols, ncol, pver, pverp, &
    implicit none
    !----------------------------------------------------------------------------
    ! Arguments
-   type(zm_const_t), intent(in) :: zm_const ! derived type to hold ZM constants
    integer, intent(in) :: pcols                   ! maximum number of columns
    integer, intent(in) :: ncol                    ! actual number of columns
    integer, intent(in) :: pver                    ! number of mid-point vertical levels

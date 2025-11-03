@@ -7,7 +7,7 @@ module  zm_microphysics
    !----------------------------------------------------------------------------
    use shr_kind_mod,           only: r8=>shr_kind_r8
    use spmd_utils,             only: masterproc
-   use ppgrid,                 only: pcols, pver, pverp
+   use ppgrid,                 only: pver, pverp
    use physconst,              only: gravit, rair, tmelt, cpair, rh2o, r_universal, mwh2o, rhoh2o
    use physconst,              only: latvap, latice
    use activate_drop_mam,      only: actdrop_mam_calc
@@ -112,6 +112,7 @@ subroutine zm_microphysics_register()
    ! Purpose: register pbuf variables for convective microphysics
    !----------------------------------------------------------------------------
    use physics_buffer, only : pbuf_add_field, dtype_r8
+   use ppgrid,         only: pcols
    !----------------------------------------------------------------------------
    
    ! detrained convective cloud water num concen.
@@ -197,8 +198,8 @@ end subroutine zm_mphyi
 
 !===================================================================================================
 
-subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,   qe,        &
-                   eps0,  jb,   jt,   jlcl, msg,   il2g,  grav,  cp,   rd,   aero, gamhat,    &
+subroutine zm_mphy(pcols, il2g, msg, grav, cp, rd, auto_fac, accr_fac, dcs, jb, jt, jlcl, &
+                   su, qu, mu, du, eu, zf, pm, te, qe, gamhat, eps0, cmel, cmei, aero, &
                    qc,    qi,   nc,   ni,   qcde,  qide,  ncde,  nide, rprd, sprd, frz,       &
                    wu,    qr,   qni,  nr,   ns,    qg,    ng,    qnide,nsde,                  &
                    autolm, accrlm, bergnm, fhtimm, fhtctm,    &
@@ -208,7 +209,7 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
                    accgrm, accglm, accgslm,accgsrm,accgirm,accgrim,accgrsm,accgsln,accgsrn,   &
                    accgirn,accsrim,acciglm,accigrm,accsirm,accigln,accigrn,accsirn,accgln,    &
                    accgrn ,accilm, acciln ,fallrm ,fallsm ,fallgm ,fallrn ,fallsn ,fallgn,    &
-                   fhmrm  ,dsfm, dsfn, auto_fac, accr_fac, dcs)
+                   fhmrm  ,dsfm, dsfn)
    
 
 ! Purpose:
@@ -224,34 +225,32 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
   implicit none
 
 ! input variables
+  integer,  intent(in) :: pcols                 ! declared column dimension size
+  integer,  intent(in) :: il2g                  ! number of columns in gathered arrays
+  integer,  intent(in) :: msg                   ! missing moisture vals
+  real(r8), intent(in) :: grav                  ! gravity
+  real(r8), intent(in) :: cp                    ! heat capacity of dry air
+  real(r8), intent(in) :: rd                    ! gas constant for dry air
+  integer,  intent(in) :: jb(pcols)             ! updraft base level
+  real(r8), intent(in) :: auto_fac              ! droplet-rain autoconversion enhancement factor
+  real(r8), intent(in) :: accr_fac              ! droplet-rain accretion enhancement factor
+  real(r8), intent(in) :: dcs                   ! autoconversion size threshold for cloud ice to snow (m)
+  integer,  intent(in) :: jt(pcols)             ! updraft plume top
+  integer,  intent(in) :: jlcl(pcols)           ! updraft lifting cond level
   real(r8), intent(in) :: su(pcols,pver)        ! normalized dry stat energy of updraft
   real(r8), intent(in) :: qu(pcols,pver)        ! spec hum of updraft
   real(r8), intent(in) :: mu(pcols,pver)        ! updraft mass flux
   real(r8), intent(in) :: du(pcols,pver)        ! detrainement rate of updraft
   real(r8), intent(in) :: eu(pcols,pver)        ! entrainment rate of updraft
-  real(r8), intent(in) :: cmel(pcols,pver)      ! condensation rate of updraft
-  real(r8), intent(in) :: cmei(pcols,pver)      ! condensation rate of updraft
   real(r8), intent(in) :: zf(pcols,pverp)       ! height of interfaces
   real(r8), intent(in) :: pm(pcols,pver)        ! pressure of env
   real(r8), intent(in) :: te(pcols,pver)        ! temp of env
   real(r8), intent(in) :: qe(pcols,pver)        ! spec. humidity of env
-  real(r8), intent(in) :: eps0(pcols)
   real(r8), intent(in) :: gamhat(pcols,pver)    ! gamma=L/cp(dq*/dT) at interface
-
-  integer, intent(in) :: jb(pcols)              ! updraft base level
-  integer, intent(in) :: jt(pcols)              ! updraft plume top
-  integer, intent(in) :: jlcl(pcols)            ! updraft lifting cond level
-  integer, intent(in) :: msg                    ! missing moisture vals
-  integer, intent(in) :: il2g                   ! number of columns in gathered arrays
-
+  real(r8), intent(in) :: eps0(pcols)           ! ???
+  real(r8), intent(in) :: cmel(pcols,pver)      ! condensation rate of updraft
+  real(r8), intent(in) :: cmei(pcols,pver)      ! condensation rate of updraft
   type(zm_aero_t), intent(in) :: aero           ! aerosol object
-
-  real(r8) grav                                 ! gravity
-  real(r8) cp                                   ! heat capacity of dry air
-  real(r8) rd                                   ! gas constant for dry air
-  real(r8) auto_fac                             ! droplet-rain autoconversion enhancement factor  
-  real(r8) accr_fac                             ! droplet-rain accretion enhancement factor
-  real(r8) dcs                                  ! autoconversion size threshold for cloud ice to snow (m)
 
 ! output variables
   real(r8), intent(out) :: qc(pcols,pver)       ! cloud water mixing ratio (kg/kg)
@@ -650,11 +649,12 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
   cwifrac = 0.5_r8
   retv    = 0.608_r8
   bergtsf = 1800._r8
+
  
   ! initialize multi-level fields
   do i=1,il2g
      do k=1,pver
-        q(i,k) = qu(i,k)         
+        q(i,k) = qu(i,k)
         tu(i,k)= su(i,k) - grav/cp*zf(i,k)
         t(i,k) = su(i,k) - grav/cp*zf(i,k)
         p(i,k) = 100._r8*pm(i,k)
@@ -678,7 +678,7 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
         qcic(i,k)  = 0._r8
         qiic(i,k)  = 0._r8
         ncic(i,k)  = 0._r8
-        niic(i,k)  = 0._r8 
+        niic(i,k)  = 0._r8
         qr(i,k)    = 0._r8
         qni(i,k)   = 0._r8
         qg(i,k)    = 0._r8
