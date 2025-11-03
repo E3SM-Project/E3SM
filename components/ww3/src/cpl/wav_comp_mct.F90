@@ -198,6 +198,8 @@
       use shr_nl_mod       , only : shr_nl_find_group_name
       use shr_mpi_mod      , only : shr_mpi_bcast
 
+      use shr_const_mod    , only : shr_const_rhofw
+
 !
       implicit none
 !
@@ -1193,10 +1195,12 @@ CONTAINS
                w2x_w%rattr(index_w2x_Sw_Fp,jsea) = FP0(jsea)
                w2x_w%rattr(index_w2x_Sw_Dp,jsea) = THP0(jsea)
 
-               w2x_w%rattr(index_w2x_Faww_Tawx,jsea) = 1000*TAUWIX(jsea) !Conversion to N m^{-2} by multiplying by density of water (See eqn 2.99 WW3 Manual)
-               w2x_w%rattr(index_w2x_Faww_Tawy,jsea) = 1000*TAUWIY(jsea)
-               w2x_w%rattr(index_w2x_Fwow_Twox,jsea) = 1000*TAUOX(jsea)
-               w2x_w%rattr(index_w2x_Fwow_Twoy,jsea) = 1000*TAUOY(jsea)
+               ! Conversion to N m^{-2} by multiplying by density of water (See eqn 2.99 WW3 Manual)
+               ! N.B. WW3 makes a freshwater assumption rather than using the density of sea water.
+               w2x_w%rattr(index_w2x_Faww_Tawx,jsea) = shr_const_rhofw*TAUWIX(jsea) 
+               w2x_w%rattr(index_w2x_Faww_Tawy,jsea) = shr_const_rhofw*TAUWIY(jsea)
+               w2x_w%rattr(index_w2x_Fwow_Twox,jsea) = shr_const_rhofw*TAUOX(jsea)
+               w2x_w%rattr(index_w2x_Fwow_Twoy,jsea) = shr_const_rhofw*TAUOY(jsea)
                w2x_w%rattr(index_w2x_Faow_Tocx,jsea) = TAUOCX(jsea)
                w2x_w%rattr(index_w2x_Faow_Tocy,jsea) = TAUOCY(jsea)
                

@@ -164,7 +164,7 @@ module seq_flds_mod
   logical            :: rof_sed             ! .true. if river model includes sediment
   logical            :: add_iac_to_cplstate  ! .true. if iac fields are added to coupler history files
   character(len=CS)  :: wav_ocn_coup     ! 'twoway' if wave-ocean two-way coupling turned on
-  character(len=CS)  :: wav_atm_coup     ! 'twoway' if wave-ocean two-way coupling turned on
+  character(len=CS)  :: wav_atm_coup     ! 'twoway' if wave-atm two-way coupling turned on
   character(len=CS)  :: wav_ice_coup     ! 'twoway' if wave-ice two-way coupling turned on
   !----------------------------------------------------------------------------
   ! metadata
