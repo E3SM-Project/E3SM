@@ -605,6 +605,7 @@
       <value compset="_EAM.*_ELM.*MPASO" grid="a%ne4np4">6</value>
       <value compset="_EAM.*_ELM.*MPASO" grid="a%ne11np4">4</value>
       <value compset="_EAM.*_ELM.*MPASO" grid="a%ne120np4">24</value>
+      <value compset=".*_ELM.*MPASO" grid="oi%RRSwISC6to18E3r5_r%r025">24</value>
       <value compset="20TR_" grid="a%ne4np4">$ATM_NCPL</value>
     </values>
     <group>run_coupling</group>
