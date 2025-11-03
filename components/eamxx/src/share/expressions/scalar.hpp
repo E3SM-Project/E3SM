@@ -7,7 +7,7 @@ namespace scream {
 
 // TODO: support 4+ dim. Also 0d?
 template<typename ST>
-class ScalarExpression : public Expression<ScalarExpression<ST>,ST> {
+class ScalarExpression : public Expression<ScalarExpression<ST>> {
 public:
   static constexpr bool is_leaf = true;
 
@@ -18,18 +18,25 @@ public:
     m_value = value;
   }
 
+  int num_indices () override { return 0; }
+
+  template<typename T>
   KOKKOS_INLINE_FUNCTION
-  ret_t operator() (int) const {
-    return m_value;
+  T eval(int) const {
+    return static_cast<T>(m_value);
   }
+  template<typename T>
   KOKKOS_INLINE_FUNCTION
-  ret_t operator() (int, int) const {
-    return m_value;
+  T eval(int,int) const {
+    return static_cast<T>(m_value);
   }
+  template<typename T>
   KOKKOS_INLINE_FUNCTION
-  ret_t operator() (int, int, int) const {
-    return m_value;
+  T eval(int,int,int) const {
+    return static_cast<T>(m_value);
   }
+
+  // void set_eval_layout (const FieldLayout& fl) {}
 
 protected:
 

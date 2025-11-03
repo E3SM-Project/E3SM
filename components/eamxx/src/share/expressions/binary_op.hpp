@@ -1,16 +1,9 @@
 #ifndef EAMXX_BIN_OP_EXPRESSION_HPP
 #define EAMXX_BIN_OP_EXPRESSION_HPP
 
-#include "share/expressions/base_expr.hpp"
+#include "share/expressions/base.hpp"
 
 namespace scream {
-
-namespace impl {
-
-template<typename ELeft, typename ERight>
-using bin_op_ret_t = decltype(std::declval<typename ELeft::ret_t>() + 
-                              std::declval<typename ERight::ret_t>());
-}
 
 enum class BinOp {
   Plus,
@@ -22,11 +15,8 @@ enum class BinOp {
 };
 
 template<typename ELeft, typename ERight, BinOp OP>
-class BinaryExpression : public Expression<BinaryExpression<ELeft,ERight,OP>,impl::bin_op_ret_t<ELeft,ERight>>{
+class BinaryExpression : public Expression<BinaryExpression<ELeft,ERight,OP>>{
 public:
-  using ret_left  = typename ELeft::ret_t;
-  using ret_right = typename ERight::ret_t;
-  using ret_t     = impl::bin_op_ret_t<ELeft,ERight>;
   static constexpr bool is_leaf = false;
 
   BinaryExpression (const ELeft& left, const ERight& right)
@@ -36,40 +26,59 @@ public:
     // Nothing to do here
   }
 
+  int num_indices () const { return std::max(m_left.num_indices(),m_right.num_indices()); }
+
+  // void set_eval_layout (const FieldLayout& fl) {}
+
+  template<typename T>
   KOKKOS_INLINE_FUNCTION
-  ret_t operator() (int i) const {
+  T eval (int i) const {
     if constexpr (OP==BinOp::Plus) {
-      return static_cast<ret_t>(m_left(i) + m_right(i));
+      return static_cast<T>(m_left.template eval<T>(i) + m_right.template eval<T>(i));
     } else if constexpr (OP==BinOp::Minus) {
-      return static_cast<ret_t>(m_left(i) - m_right(i));
+      return static_cast<T>(m_left.template eval<T>(i) - m_right.template eval<T>(i));
     } else if constexpr (OP==BinOp::Mult) {
-      return static_cast<ret_t>(m_left(i) * m_right(i));
+      return static_cast<T>(m_left.template eval<T>(i) * m_right.template eval<T>(i));
     } else if constexpr (OP==BinOp::Div) {
-      return static_cast<ret_t>(m_left(i) / m_right(i));
+      return static_cast<T>(m_left.template eval<T>(i) / m_right.template eval<T>(i));
+    } else if constexpr (OP==BinOp::Max) {
+      return static_cast<T>(Kokkos::max(m_left.template eval<T>(i),m_right.template eval<T>(i)));
+    } else if constexpr (OP==BinOp::Div) {
+      return static_cast<T>(Kokkos::min(m_left.template eval<T>(i),m_right.template eval<T>(i)));
     }
   }
+  template<typename T>
   KOKKOS_INLINE_FUNCTION
-  ret_t operator() (int i, int j) const {
+  T eval (int i, int j) const {
     if constexpr (OP==BinOp::Plus) {
-      return static_cast<ret_t>(m_left(i,j) + m_right(i,j));
+      return static_cast<T>(m_left.template eval<T>(i,j) + m_right.template eval<T>(i,j));
     } else if constexpr (OP==BinOp::Minus) {
-      return static_cast<ret_t>(m_left(i,j) - m_right(i,j));
+      return static_cast<T>(m_left.template eval<T>(i,j) - m_right.template eval<T>(i,j));
     } else if constexpr (OP==BinOp::Mult) {
-      return static_cast<ret_t>(m_left(i,j) * m_right(i,j));
+      return static_cast<T>(m_left.template eval<T>(i,j) * m_right.template eval<T>(i,j));
     } else if constexpr (OP==BinOp::Div) {
-      return static_cast<ret_t>(m_left(i,j) / m_right(i,j));
+      return static_cast<T>(m_left.template eval<T>(i,j) / m_right.template eval<T>(i,j));
+    } else if constexpr (OP==BinOp::Max) {
+      return static_cast<T>(Kokkos::max(m_left.template eval<T>(i,j),m_right.template eval<T>(i,j)));
+    } else if constexpr (OP==BinOp::Div) {
+      return static_cast<T>(Kokkos::min(m_left.template eval<T>(i,j),m_right.template eval<T>(i,j)));
     }
   }
+  template<typename T>
   KOKKOS_INLINE_FUNCTION
-  ret_t operator() (int i, int j, int k) const {
+  T eval (int i, int j, int k) const {
     if constexpr (OP==BinOp::Plus) {
-      return static_cast<ret_t>(m_left(i,j,k) + m_right(i,j,k));
+      return static_cast<T>(m_left.template eval<T>(i,j,k) + m_right.template eval<T>(i,j,k));
     } else if constexpr (OP==BinOp::Minus) {
-      return static_cast<ret_t>(m_left(i,j,k) - m_right(i,j,k));
+      return static_cast<T>(m_left.template eval<T>(i,j,k) - m_right.template eval<T>(i,j,k));
     } else if constexpr (OP==BinOp::Mult) {
-      return static_cast<ret_t>(m_left(i,j,k) * m_right(i,j,k));
+      return static_cast<T>(m_left.template eval<T>(i,j,k) * m_right.template eval<T>(i,j,k));
     } else if constexpr (OP==BinOp::Div) {
-      return static_cast<ret_t>(m_left(i,j,k) / m_right(i,j,k));
+      return static_cast<T>(m_left.template eval<T>(i,j,k) / m_right.template eval<T>(i,j,k));
+    } else if constexpr (OP==BinOp::Max) {
+      return static_cast<T>(Kokkos::max(m_left.template eval<T>(i,j,k),m_right.template eval<T>(i,j,k)));
+    } else if constexpr (OP==BinOp::Div) {
+      return static_cast<T>(Kokkos::min(m_left.template eval<T>(i,j,k),m_right.template eval<T>(i,j,k)));
     }
   }
 
@@ -79,30 +88,30 @@ protected:
   const ERight   m_right;
 };
 
-template<typename ELeft, typename RetL, typename ERight, typename RetR>
+template<typename ELeft, typename ERight>
 BinaryExpression<ELeft,ERight,BinOp::Plus>
-operator+ (const Expression<ELeft,RetL>& l, const Expression<ERight,RetR>& r)
+operator+ (const Expression<ELeft>& l, const Expression<ERight>& r)
 {
   return BinaryExpression<ELeft,ERight,BinOp::Plus>(l.cast(),r.cast());
 }
 
-template<typename ELeft, typename RetL, typename ERight, typename RetR>
+template<typename ELeft, typename ERight>
 BinaryExpression<ELeft,ERight,BinOp::Minus>
-operator- (const Expression<ELeft,RetL>& l, const Expression<ERight,RetR>& r)
+operator- (const Expression<ELeft>& l, const Expression<ERight>& r)
 {
   return BinaryExpression<ELeft,ERight,BinOp::Minus>(l.cast(),r.cast());
 }
 
-template<typename ELeft, typename RetL, typename ERight, typename RetR>
+template<typename ELeft, typename ERight>
 BinaryExpression<ELeft,ERight,BinOp::Mult>
-operator* (const Expression<ELeft,RetL>& l, const Expression<ERight,RetR>& r)
+operator* (const Expression<ELeft>& l, const Expression<ERight>& r)
 {
   return BinaryExpression<ELeft,ERight,BinOp::Mult>(l.cast(),r.cast());
 }
 
-template<typename ELeft, typename RetL, typename ERight, typename RetR>
+template<typename ELeft, typename ERight>
 BinaryExpression<ELeft,ERight,BinOp::Div>
-operator/ (const Expression<ELeft,RetL>& l, const Expression<ERight,RetR>& r)
+operator/ (const Expression<ELeft>& l, const Expression<ERight>& r)
 {
   return BinaryExpression<ELeft,ERight,BinOp::Div>(l.cast(),r.cast());
 }

@@ -26,106 +26,106 @@ inline void check_real (const Field& f)
 
 // ---------------- Plus ----------------- //
 
-template<typename ERight, typename RetR>
+template<typename ERight>
 BinaryExpression<RealFieldExpression,ERight,BinOp::Plus>
-operator+ (const Field& fl, const Expression<ERight,RetR>& r)
+operator+ (const Field& left, const Expression<ERight>& right)
 {
-  check_real(fl);
-  return RealFieldExpression(fl)+r;
+  check_real(left);
+  return RealFieldExpression(left)+right;
 }
 
-template<typename ELeft, typename RetL>
-BinaryExpression<ERight,RealFieldExpression,BinOp::Plus>
-operator+ (const Expression<ELeft,RetL>& l, const Field& fr)
+template<typename ELeft>
+BinaryExpression<ELeft,RealFieldExpression,BinOp::Plus>
+operator+ (const Expression<ELeft>& left, const Field& right)
 {
-  check_real(fr);
-  return l+RealFieldExpression(fr);
+  check_real(right);
+  return left+RealFieldExpression(right);
 }
 
 BinaryExpression<RealFieldExpression,RealFieldExpression,BinOp::Plus>
-operator+ (const Field& fl, const Field& fr)
+operator+ (const Field& left, const Field& right)
 {
-  check_real(fr);
-  check_real(fl);
-  return RealFieldExpression(fl)+RealFieldExpression(fr);
+  check_real(right);
+  check_real(left);
+  return RealFieldExpression(left)+RealFieldExpression(right);
 }
 
 // ---------------- Minus ----------------- //
 
-template<typename ERight, typename RetR>
+template<typename ERight>
 BinaryExpression<RealFieldExpression,ERight,BinOp::Minus>
-operator- (const Field& fl, const Expression<ERight,RetR>& r)
+operator- (const Field& left, const Expression<ERight>& right)
 {
-  check_real(fl);
-  return RealFieldExpression(fl)+r;
+  check_real(left);
+  return RealFieldExpression(left)+right;
 }
 
-template<typename ELeft, typename RetL>
-BinaryExpression<ERight,RealFieldExpression,BinOp::Minus>
-operator- (const Expression<ELeft,RetL>& l, const Field& fr)
+template<typename ELeft>
+BinaryExpression<ELeft,RealFieldExpression,BinOp::Minus>
+operator- (const Expression<ELeft>& left, const Field& right)
 {
-  check_real(fr);
-  return l+RealFieldExpression(fr);
+  check_real(right);
+  return left+RealFieldExpression(right);
 }
 
 BinaryExpression<RealFieldExpression,RealFieldExpression,BinOp::Minus>
-operator- (const Field& fl, const Field& fr)
+operator- (const Field& left, const Field& right)
 {
-  check_real(fr);
-  check_real(fl);
-  return RealFieldExpression(fl)+RealFieldExpression(fr);
+  check_real(right);
+  check_real(left);
+  return RealFieldExpression(left)-RealFieldExpression(right);
 }
 
 // ---------------- Mult ----------------- //
 
-template<typename ERight, typename RetR>
+template<typename ERight>
 BinaryExpression<RealFieldExpression,ERight,BinOp::Mult>
-operator* (const Field& fl, const Expression<ERight,RetR>& r)
+operator* (const Field& left, const Expression<ERight>& right)
 {
-  check_real(fl);
-  return RealFieldExpression(fl)+r;
+  check_real(left);
+  return RealFieldExpression(left)*right;
 }
 
-template<typename ELeft, typename RetL>
-BinaryExpression<ERight,RealFieldExpression,BinOp::Mult>
-operator* (const Expression<ELeft,RetL>& l, const Field& fr)
+template<typename ELeft>
+BinaryExpression<ELeft,RealFieldExpression,BinOp::Mult>
+operator* (const Expression<ELeft>& left, const Field& right)
 {
-  check_real(fr);
-  return l+RealFieldExpression(fr);
+  check_real(right);
+  return left*RealFieldExpression(right);
 }
 
 BinaryExpression<RealFieldExpression,RealFieldExpression,BinOp::Mult>
-operator* (const Field& fl, const Field& fr)
+operator* (const Field& left, const Field& right)
 {
-  check_real(fr);
-  check_real(fl);
-  return RealFieldExpression(fl)+RealFieldExpression(fr);
+  check_real(right);
+  check_real(left);
+  return RealFieldExpression(left)*RealFieldExpression(right);
 }
 
 // ---------------- Div ----------------- //
 
-template<typename ERight, typename RetR>
+template<typename ERight>
 BinaryExpression<RealFieldExpression,ERight,BinOp::Div>
-operator/ (const Field& fl, const Expression<ERight,RetR>& r)
+operator/ (const Field& left, const Expression<ERight>& right)
 {
-  check_real(fl);
-  return RealFieldExpression(fl)+r;
+  check_real(left);
+  return RealFieldExpression(left)/right;
 }
 
-template<typename ELeft, typename RetL>
-BinaryExpression<ERight,RealFieldExpression,BinOp::Div>
-operator/ (const Expression<ELeft,RetL>& l, const Field& fr)
+template<typename ELeft>
+BinaryExpression<ELeft,RealFieldExpression,BinOp::Div>
+operator/ (const Expression<ELeft>& left, const Field& right)
 {
-  check_real(fr);
-  return l+RealFieldExpression(fr);
+  check_real(right);
+  return left/RealFieldExpression(right);
 }
 
 BinaryExpression<RealFieldExpression,RealFieldExpression,BinOp::Div>
-operator/ (const Field& fl, const Field& fr)
+operator/ (const Field& left, const Field& right)
 {
-  check_real(fr);
-  check_real(fl);
-  return RealFieldExpression(fl)+RealFieldExpression(fr);
+  check_real(right);
+  check_real(left);
+  return RealFieldExpression(left)/RealFieldExpression(right);
 }
 
 } // namespace scream

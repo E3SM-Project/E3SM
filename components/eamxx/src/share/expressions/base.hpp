@@ -5,27 +5,33 @@
 
 namespace scream {
 
-template<typename Derived, typename RT>
+template<typename Derived>
 class Expression {
 public:
   static constexpr bool is_leaf = false;
-  using ret_t = RT;
 
+  int num_indices () const { return cast().num_indices(); }
+
+  template<typename T>
   KOKKOS_INLINE_FUNCTION
-  ret_t operator()(int i) const {
+  T eval(int i) const {
     cast()(i);
   }
+  template<typename T>
   KOKKOS_INLINE_FUNCTION
-  ret_t operator()(int i, int j) const {
+  T eval(int i, int j) const {
     cast()(i,j);
   }
+  template<typename T>
   KOKKOS_INLINE_FUNCTION
-  ret_t operator()(int i,int j,int k) const {
+  T eval(int i,int j,int k) const {
     cast()(i,j,k);
   }
 
   KOKKOS_INLINE_FUNCTION
   const Derived& cast () const { return static_cast<const Derived&>(*this); }
+
+  // void set_eval_layout (const FieldLayout& fl) { cast().set_eval_layout(fl); }
 };
 
 } // namespace scream

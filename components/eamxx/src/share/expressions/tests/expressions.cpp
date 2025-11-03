@@ -2,7 +2,7 @@
 #include <numeric>
 
 #include "share/expressions/base.hpp"
-#include "share/expressions/sum.hpp"
+#include "share/expressions/binary_op.hpp"
 #include "share/expressions/compare.hpp"
 #include "share/expressions/field.hpp"
 #include "share/expressions/helpers.hpp"
@@ -37,7 +37,7 @@ TEST_CASE("expressions", "") {
     Field f3(fid.alias("f3"),true);
     auto v3 = f3.get_view<Real*>();
     auto lambda = KOKKOS_LAMBDA(int i) {
-      v3(i) = sum(i);
+      v3(i) = sum.eval<Real>(i);
     };
     auto policy = KT::RangePolicy(0,fl.size());
     Kokkos::parallel_for(policy,lambda);
@@ -59,7 +59,7 @@ TEST_CASE("expressions", "") {
     Field f3(fid.alias("f3"),true);
     auto v3 = f3.get_view<Real*>();
     auto lambda = KOKKOS_LAMBDA(int i) {
-      v3(i) = cmp(i) ? f1e(i) : f2e(i);
+      v3(i) = cmp.eval<Real>(i) ? f1e.eval<Real>(i) : f2e.eval<Real>(i);
     };
     auto policy = KT::RangePolicy(0,fl.size());
     Kokkos::parallel_for(policy,lambda);
