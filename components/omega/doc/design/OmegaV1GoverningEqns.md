@@ -16,7 +16,7 @@ Add later, if it seems necessary. There is a toc on the left bar.
 
 This design document describes the governing equations for Omega, the Ocean Model for E3SM Global Applications. Overall, Omega is an unstructured-mesh ocean model based on TRiSK numerical methods ([Thuburn et al. 2009](https://www.sciencedirect.com/science/article/pii/S0021999109004434)) that is specifically designed for modern exascale computing architectures. The algorithms in Omega will be mostly identical to those in MPAS-Ocean, but it will be written in c++ rather than Fortran in order to take advantage of the Kokkos performance portability library to run on GPUs ([Trott et al. 2022](https://ieeexplore.ieee.org/document/9485033)). Significant differences between MPAS-Ocean and Omega are:
 
-1. Omega is non-Boussinesq. This means that the full 3D density is used everywhere, and results in a mass-conserving model. MPAS-Ocean and POP were Boussinesq, so that a reference density $\rho_0$ is used in the pressure gradient term, and were therefore volume-conserving models. In Omega the layered mass-conservation equation is in terms of pressure-thickness ($h=\rho g \Delta z$). In MPAS-Ocean the simple thickness ($h=\Delta z$) is the prognostic volume variable (normalized by horizontal cell area).
+1. Omega is non-Boussinesq. This means that the full 3D density is used everywhere, and results in a mass-conserving model. MPAS-Ocean and POP were Boussinesq, so that a reference density $\rho_0$ is used in the pressure gradient term, and were therefore volume-conserving models. In Omega the layered mass-conservation equation is in terms of pseudo-thickness ($\tilde{h}=-\Delta p / \rho_0 g$). In MPAS-Ocean the simple thickness ($h=\Delta z$) is the prognostic volume variable (normalized by horizontal cell area).
 1. Omega will use the updated equation of state TEOS10, while MPAS-Ocean used the Jackett-McDougall equation of state.
 
 The planned versions of Omega are:
@@ -173,7 +173,7 @@ $$
 was chosen for its practical advantages:
 - It ensures that $\tilde{z}$ varies identically to pressure.
 - Units of $\tilde{z}$, $\tilde{h}$, and $\tilde{w}$ are intuitive.
-- It aligns layer thickness with pressure thickness: $\tilde{h} = \Delta \tilde{z} \propto \Delta p$
+- It aligns layer thickness with pseudo-thickness: $\tilde{h} = \Delta \tilde{z} \propto \Delta p$
 - $\tilde{z}^{\text{floor}} \propto p^{\text{bot}}$, which aids barotropic pressure gradient calculation.
 
 This makes $\tilde{z}$ a natural coordinate for a mass-conserving hydrostatic model.
@@ -322,8 +322,7 @@ $$
 &= \frac{1}{\rho_0 g} \left( p_{k}^{\text{bot}} - p_k^{\text{top}} \right)
 $$ (def-pseudo-thickness)
 
-which is the mass per unit area in the layer, normalized by $\rho_0$. This pseudo-thickness and layer-averaging will be used to express conservation laws in a mass-weighted coordinate system.  Pseudo-thickness, rather than geometric
-thickness will be the prognostic variable in Omega.
+which is the mass per unit area in the layer, normalized by $\rho_0$. This pseudo-thickness and layer-averaging will be used to express conservation laws in a mass-weighted coordinate system.  Pseudo-thickness, rather than geometric thickness will be the prognostic variable in Omega.
 
 The density-weighted average of any variable $\varphi({\bf x},t)$ in layer $k$ is
 
@@ -732,7 +731,7 @@ $$
 & + \left[ {\bf k} \cdot \nabla \times u_{e,k} +f_v\right]_e\left(u_{e,k}^{\perp}\right) + \left[\nabla K\right]_e  \\
 & + \frac{\rho_0}{\left[\tilde{h}_{i,k}\right]_e} \left\{ \left[\left(u - u_k\right) \left\{\tilde{W}_{tr} \right\} \right]_{e,k}^\text{top} - \left[  \left(u - u_k\right) \left\{\tilde{W}_{tr} \right\} \right]_{e,k+1}^\text{top} \right\} \\
 & = - \left(\nabla \Phi \right)_{e,k} - \frac{1}{\left[\tilde{h}_k\right]_e} \nabla \left( \tilde{h}_k \alpha_k p_k \right) - \frac{1}{\left[\tilde{h}_k\right]_e} \left\{ \left[ \alpha p \nabla \tilde{z}^{\text{top}}\right]_{e,k}^\text{top} -  \left[ \alpha p \nabla \tilde{z}^{\text{bot}}\right]_{e,k+1}^\text{top} \right\} \\
-&  - \frac{1}{\left[\tilde{h}_{i,k}\right]_e} \nabla \cdot \left( \tilde{h}_k \left< {\bf u}^\prime \otimes {\bf u}^\prime \right>_k \right) - \frac{\rho_0}{\left[\tilde{h}_{i,k}\right]_e^\text{top}}  \left\{ \left[ \left<\mathbf{u}^\prime \tilde{w}_{tr}^\prime \right> - \left< \mathbf{u}^\prime \tilde{ u}^\prime \right> \right]_{e,k}^\text{top} - \left[ \left<\mathbf{u}^\prime \tilde{w}_{tr}^\prime \right> - \left< \mathbf{u}^\prime \tilde{ u}^\prime \right> \right]_{e,k+1} \right\}.
+&  - \frac{1}{\left[\tilde{h}_{i,k}\right]_e} \nabla \cdot \left( \tilde{h}_k \left< {\bf u}^\prime \otimes {\bf u}^\prime \right>_k \right) - \frac{\rho_0}{\left[\tilde{h}_{i,k}\right]_e^\text{top}}  \left\{ \left[ \left<\mathbf{u}^\prime \tilde{w}_{tr}^\prime \right> - \left< \mathbf{u}^\prime \tilde{ u}^\prime \right> \right]_{e,k}^\text{top} - \left[ \left<\mathbf{u}^\prime \tilde{w}_{tr}^\prime \right> - \left< \mathbf{u}^\prime \tilde{ u}^\prime \right> \right]_{e,k+1}^\text{top} \right\}.
 $$ (discrete-momentum)
 
 **Diagnostic Relations:**
@@ -746,7 +745,7 @@ $$
 $$ (discrete-eos)
 
 $$
-z_{i,k}^{top} = z_{i}^{floor} + \sum_{k'=k}^{K_{max}} \alpha_{i,k'}h_{i,k'}
+z_{i,k}^{top} = z_{i}^{floor} + \rho_0 \sum_{k'=k}^{K_{max}} \alpha_{i,k'} \tilde{h}_{i,k'}
 $$ (discrete-z)
 
 We refer to these as the discrete equations, but time derivatives remain continuous. The time discretization is described in the [time stepping design document](TimeStepping.md). The velocity, mass-thickness, and tracers are solved prognostically using [](discrete-momentum), [](discrete-mass), [](discrete-tracer). At the new time, these variables are used to compute pressure [](discrete-pressure), specific volume [](discrete-eos), and z-locations [](discrete-z). Additional variables are computed diagnostically at the new time: $\mathbf{u}^{\perp}$, $K$, $\zeta_a$, $z^{mid}$, $\Phi$, etc. The initial geopotential is simply $\Phi=gz$, but additional gravitational terms may be added later.
@@ -1025,7 +1024,7 @@ Table 1. Definition of variables. Geometric variables may be found in the {ref}`
 |$f_v$       | Coriolis parameter| 1/s      | vertex   | FVertex  |  $f = 2\Omega sin(\phi)$, $\Omega$ rotation rate, $\phi$ latitude|
 |$f_{eos}$ | equation of state | -  | any | function call | |
 |$g$ | gravitational acceleration | m/s$^2$ | constant  | Gravity |
-|$\tilde{h}_{i,k}$ | layer mass-thickness | kg/m$^2$  | cell | LayerThickness |  |
+|$\tilde{h}_{i,k}$ | pseudo-thickness | m | cell | PseudoThickness |  |
 |$k$ | vertical index |  |
 |${\bf k}$ | vertical unit vector |  |
 |$K_{min}$ | shallowest active layer |  |
