@@ -1046,6 +1046,7 @@ contains
     integer  :: n,ka,ki,kl,ko,kx,kof,kif,klf,klf_st,i,i1,o1
     integer, save :: lsize
     integer, save  :: index_x2a_Sf_lfrac, index_x2a_Sf_ifrac, index_x2a_Sf_ofrac
+    integer, save  :: index_x2a_Si_snowh
     character(CL) :: atm_gnam, lnd_gnam
     character(CL) :: fracstr, fracstr_st
 
@@ -1076,6 +1077,7 @@ contains
     integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3) ! for moab info
     character(CXX) ::tagname, mct_field
     integer :: ent_type, ierr, arrsize
+    logical :: single_column
 #ifdef MOABDEBUG
     character*32             :: outfile, wopts, lnum
 #endif
@@ -1090,6 +1092,7 @@ contains
     !-----------------------------------------------------------------------
     !
     call seq_comm_getdata(CPLID, iamroot=iamroot)
+    call seq_infodata_getdata(infodata,single_column=single_column)
 
     if (first_time) then
 
@@ -1122,6 +1125,7 @@ contains
        index_x2a_Sf_lfrac = mct_aVect_indexRA(x2a_a,'Sf_lfrac')
        index_x2a_Sf_ifrac = mct_aVect_indexRA(x2a_a,'Sf_ifrac')
        index_x2a_Sf_ofrac = mct_aVect_indexRA(x2a_a,'Sf_ofrac')
+       index_x2a_Si_snowh = mct_aVect_indexRA(x2a_a,'Si_snowh')
 
        !ngflds = mct_aVect_nRattr(g2x_o)
        allocate(fractions_am(lsize,5)) ! there are 5 fractions 'afrac:ifrac:ofrac:lfrac:lfrin'
@@ -1396,6 +1400,8 @@ contains
        x2a_am(n, index_x2a_Sf_lfrac) = fractions_am(n, klf) ! x2a_a%rAttr(index_x2a_Sf_lfrac,n) = fractions_a%Rattr(klf,n)
        x2a_am(n, index_x2a_Sf_ifrac) = fractions_am(n, kif) ! x2a_a%rAttr(index_x2a_Sf_ifrac,n) = fractions_a%Rattr(kif,n)
        x2a_am(n, index_x2a_Sf_ofrac) = fractions_am(n, kof) ! x2a_a%rAttr(index_x2a_Sf_ofrac,n) = fractions_a%Rattr(kof,n)
+       ! zero out Si_snowh for single column to match MCT
+       if(single_column) x2a_am(n, index_x2a_Si_snowh) = 0.0_r8
     end do
 
     !--- document fraction operations ---
