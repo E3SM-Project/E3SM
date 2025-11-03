@@ -30,55 +30,52 @@ public:
 
   // void set_eval_layout (const FieldLayout& fl) {}
 
-  template<typename T>
   KOKKOS_INLINE_FUNCTION
-  T eval (int i) const {
+  Real eval (int i) const {
     if constexpr (OP==BinOp::Plus) {
-      return static_cast<T>(m_left.template eval<T>(i) + m_right.template eval<T>(i));
+      return m_left.eval(i) + m_right.eval(i);
     } else if constexpr (OP==BinOp::Minus) {
-      return static_cast<T>(m_left.template eval<T>(i) - m_right.template eval<T>(i));
+      return m_left.eval(i) - m_right.eval(i);
     } else if constexpr (OP==BinOp::Mult) {
-      return static_cast<T>(m_left.template eval<T>(i) * m_right.template eval<T>(i));
+      return m_left.eval(i) * m_right.eval(i);
     } else if constexpr (OP==BinOp::Div) {
-      return static_cast<T>(m_left.template eval<T>(i) / m_right.template eval<T>(i));
+      return m_left.eval(i) / m_right.eval(i);
     } else if constexpr (OP==BinOp::Max) {
-      return static_cast<T>(Kokkos::max(m_left.template eval<T>(i),m_right.template eval<T>(i)));
+      return Kokkos::max(m_left.eval(i),m_right.eval(i));
     } else if constexpr (OP==BinOp::Div) {
-      return static_cast<T>(Kokkos::min(m_left.template eval<T>(i),m_right.template eval<T>(i)));
+      return Kokkos::min(m_left.eval(i),m_right.eval(i));
     }
   }
-  template<typename T>
   KOKKOS_INLINE_FUNCTION
-  T eval (int i, int j) const {
+  Real eval (int i, int j) const {
     if constexpr (OP==BinOp::Plus) {
-      return static_cast<T>(m_left.template eval<T>(i,j) + m_right.template eval<T>(i,j));
+      return m_left.eval(i,j) + m_right.eval(i,j);
     } else if constexpr (OP==BinOp::Minus) {
-      return static_cast<T>(m_left.template eval<T>(i,j) - m_right.template eval<T>(i,j));
+      return m_left.eval(i,j) - m_right.eval(i,j);
     } else if constexpr (OP==BinOp::Mult) {
-      return static_cast<T>(m_left.template eval<T>(i,j) * m_right.template eval<T>(i,j));
+      return m_left.eval(i,j) * m_right.eval(i,j);
     } else if constexpr (OP==BinOp::Div) {
-      return static_cast<T>(m_left.template eval<T>(i,j) / m_right.template eval<T>(i,j));
+      return m_left.eval(i,j) / m_right.eval(i,j);
     } else if constexpr (OP==BinOp::Max) {
-      return static_cast<T>(Kokkos::max(m_left.template eval<T>(i,j),m_right.template eval<T>(i,j)));
+      return Kokkos::max(m_left.eval(i,j),m_right.eval(i,j));
     } else if constexpr (OP==BinOp::Div) {
-      return static_cast<T>(Kokkos::min(m_left.template eval<T>(i,j),m_right.template eval<T>(i,j)));
+      return Kokkos::min(m_left.eval(i,j),m_right.eval(i,j));
     }
   }
-  template<typename T>
   KOKKOS_INLINE_FUNCTION
-  T eval (int i, int j, int k) const {
+  Real eval (int i, int j, int k) const {
     if constexpr (OP==BinOp::Plus) {
-      return static_cast<T>(m_left.template eval<T>(i,j,k) + m_right.template eval<T>(i,j,k));
+      return m_left.eval(i,j,k) + m_right.eval(i,j,k);
     } else if constexpr (OP==BinOp::Minus) {
-      return static_cast<T>(m_left.template eval<T>(i,j,k) - m_right.template eval<T>(i,j,k));
+      return m_left.eval(i,j,k) - m_right.eval(i,j,k);
     } else if constexpr (OP==BinOp::Mult) {
-      return static_cast<T>(m_left.template eval<T>(i,j,k) * m_right.template eval<T>(i,j,k));
+      return m_left.eval(i,j,k) * m_right.eval(i,j,k);
     } else if constexpr (OP==BinOp::Div) {
-      return static_cast<T>(m_left.template eval<T>(i,j,k) / m_right.template eval<T>(i,j,k));
+      return m_left.eval(i,j,k) / m_right.eval(i,j,k);
     } else if constexpr (OP==BinOp::Max) {
-      return static_cast<T>(Kokkos::max(m_left.template eval<T>(i,j,k),m_right.template eval<T>(i,j,k)));
+      return Kokkos::max(m_left.eval(i,j,k),m_right.eval(i,j,k));
     } else if constexpr (OP==BinOp::Div) {
-      return static_cast<T>(Kokkos::min(m_left.template eval<T>(i,j,k),m_right.template eval<T>(i,j,k)));
+      return Kokkos::min(m_left.eval(i,j,k),m_right.eval(i,j,k));
     }
   }
 

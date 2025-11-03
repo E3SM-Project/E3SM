@@ -22,44 +22,41 @@ public:
     // Nothing to do here
   }
 
-  template<typename T>
   KOKKOS_INLINE_FUNCTION
   int eval (int i) const {
     switch (m_cmp) {
-      case Comparison::EQ: return m_left.template eval<T>(i) == m_right.template eval<T>(i);
-      case Comparison::NE: return m_left.template eval<T>(i) != m_right.template eval<T>(i);
-      case Comparison::GT: return m_left.template eval<T>(i) >  m_right.template eval<T>(i);
-      case Comparison::GE: return m_left.template eval<T>(i) >= m_right.template eval<T>(i);
-      case Comparison::LT: return m_left.template eval<T>(i) <  m_right.template eval<T>(i);
-      case Comparison::LE: return m_left.template eval<T>(i) <= m_right.template eval<T>(i);
+      case Comparison::EQ: return m_left.eval(i) == m_right.eval(i);
+      case Comparison::NE: return m_left.eval(i) != m_right.eval(i);
+      case Comparison::GT: return m_left.eval(i) >  m_right.eval(i);
+      case Comparison::GE: return m_left.eval(i) >= m_right.eval(i);
+      case Comparison::LT: return m_left.eval(i) <  m_right.eval(i);
+      case Comparison::LE: return m_left.eval(i) <= m_right.eval(i);
       default:
         EKAT_KERNEL_ERROR_MSG ("Unsupported cmp operator.\n");
     }
   }
-  template<typename T>
   KOKKOS_INLINE_FUNCTION
   int eval (int i, int j) const {
     switch (m_cmp) {
-      case Comparison::EQ: return m_left.template eval<T>(i,j) == m_right.template eval<T>(i,j);
-      case Comparison::NE: return m_left.template eval<T>(i,j) != m_right.template eval<T>(i,j);
-      case Comparison::GT: return m_left.template eval<T>(i,j) >  m_right.template eval<T>(i,j);
-      case Comparison::GE: return m_left.template eval<T>(i,j) >= m_right.template eval<T>(i,j);
-      case Comparison::LT: return m_left.template eval<T>(i,j) <  m_right.template eval<T>(i,j);
-      case Comparison::LE: return m_left.template eval<T>(i,j) <= m_right.template eval<T>(i,j);
+      case Comparison::EQ: return m_left.eval(i,j) == m_right.eval(i,j);
+      case Comparison::NE: return m_left.eval(i,j) != m_right.eval(i,j);
+      case Comparison::GT: return m_left.eval(i,j) >  m_right.eval(i,j);
+      case Comparison::GE: return m_left.eval(i,j) >= m_right.eval(i,j);
+      case Comparison::LT: return m_left.eval(i,j) <  m_right.eval(i,j);
+      case Comparison::LE: return m_left.eval(i,j) <= m_right.eval(i,j);
       default:
         EKAT_KERNEL_ERROR_MSG ("Unsupported cmp operator.\n");
     }
   }
-  template<typename T>
   KOKKOS_INLINE_FUNCTION
   int eval (int i, int j, int k) const {
     switch (m_cmp) {
-      case Comparison::EQ: return m_left.template eval<T>(i,j,k) == m_right.template eval<T>(i,j,k);
-      case Comparison::NE: return m_left.template eval<T>(i,j,k) != m_right.template eval<T>(i,j,k);
-      case Comparison::GT: return m_left.template eval<T>(i,j,k) >  m_right.template eval<T>(i,j,k);
-      case Comparison::GE: return m_left.template eval<T>(i,j,k) >= m_right.template eval<T>(i,j,k);
-      case Comparison::LT: return m_left.template eval<T>(i,j,k) <  m_right.template eval<T>(i,j,k);
-      case Comparison::LE: return m_left.template eval<T>(i,j,k) <= m_right.template eval<T>(i,j,k);
+      case Comparison::EQ: return m_left.eval(i,j,k) == m_right.eval(i,j,k);
+      case Comparison::NE: return m_left.eval(i,j,k) != m_right.eval(i,j,k);
+      case Comparison::GT: return m_left.eval(i,j,k) >  m_right.eval(i,j,k);
+      case Comparison::GE: return m_left.eval(i,j,k) >= m_right.eval(i,j,k);
+      case Comparison::LT: return m_left.eval(i,j,k) <  m_right.eval(i,j,k);
+      case Comparison::LE: return m_left.eval(i,j,k) <= m_right.eval(i,j,k);
       default:
         EKAT_KERNEL_ERROR_MSG ("Unsupported cmp operator.\n");
     }

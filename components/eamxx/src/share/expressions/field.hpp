@@ -30,20 +30,17 @@ public:
 
   int num_indices () const { return m_rank; }
 
-  template<typename T>
   KOKKOS_INLINE_FUNCTION
-  T eval(int i) const {
-    return static_cast<T>(m_view_1d(i));
+  Real eval(int i) const {
+    return static_cast<Real>(m_view_1d(i));
   }
-  template<typename T>
   KOKKOS_INLINE_FUNCTION
-  T eval(int i, int j) const {
-    return static_cast<T>(m_view_2d(i,j));
+  Real eval(int i, int j) const {
+    return static_cast<Real>(m_view_2d(i,j));
   }
-  template<typename T>
   KOKKOS_INLINE_FUNCTION
-  T eval(int i,int j,int k) const {
-    return static_cast<T>(m_view_3d(i,j,k));
+  Real eval(int i,int j,int k) const {
+    return static_cast<Real>(m_view_3d(i,j,k));
   }
 
   // void set_eval_layout (const FieldLayout& fl) {}

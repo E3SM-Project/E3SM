@@ -3,6 +3,8 @@
 
 #include <Kokkos_Core.hpp>
 
+#include <share/core/eamxx_types.hpp>
+
 namespace scream {
 
 template<typename Derived>
@@ -12,20 +14,17 @@ public:
 
   int num_indices () const { return cast().num_indices(); }
 
-  template<typename T>
   KOKKOS_INLINE_FUNCTION
-  T eval(int i) const {
-    cast()(i);
+  Real eval(int i) const {
+    return cast().eval(i);
   }
-  template<typename T>
   KOKKOS_INLINE_FUNCTION
-  T eval(int i, int j) const {
-    cast()(i,j);
+  Real eval(int i, int j) const {
+    return cast().eval(i,j);
   }
-  template<typename T>
   KOKKOS_INLINE_FUNCTION
-  T eval(int i,int j,int k) const {
-    cast()(i,j,k);
+  Real eval(int i,int j,int k) const {
+    return cast().eval(i,j,k);
   }
 
   KOKKOS_INLINE_FUNCTION

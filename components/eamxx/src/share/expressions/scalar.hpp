@@ -20,20 +20,17 @@ public:
 
   int num_indices () override { return 0; }
 
-  template<typename T>
   KOKKOS_INLINE_FUNCTION
-  T eval(int) const {
-    return static_cast<T>(m_value);
+  Real eval(int) const {
+    return m_value;
   }
-  template<typename T>
   KOKKOS_INLINE_FUNCTION
-  T eval(int,int) const {
-    return static_cast<T>(m_value);
+  Real eval(int,int) const {
+    return m_value;
   }
-  template<typename T>
   KOKKOS_INLINE_FUNCTION
-  T eval(int,int,int) const {
-    return static_cast<T>(m_value);
+  Real eval(int,int,int) const {
+    return m_value;
   }
 
   // void set_eval_layout (const FieldLayout& fl) {}
