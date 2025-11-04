@@ -1283,20 +1283,8 @@ OR
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    cli_args = parse_command_line(sys.argv, description)
-
     cli_comments, cli_status = run_stats_comparison(
-        cli_args.run_dir,
-        cli_args.base_dir,
-        analysis_type=cli_args.analysis_type,
-        test_type=cli_args.test_type,
-        alpha=cli_args.alpha,
-        critical_fraction=cli_args.critical_fraction,
-        correction_method=cli_args.correction_method,
-        max_failed_vars=cli_args.max_failed_vars,
-        magnitude_threshold=cli_args.magnitude_threshold,
-        run_file_pattern=cli_args.run_file_pattern,
-        base_file_pattern=cli_args.base_file_pattern,
+        **vars(parse_command_line(sys.argv, description))
     )
 
     print("\n")
