@@ -25,7 +25,7 @@ $atmchange -b physics::cosp::cosp_frequency=1
 $atmchange -b physics::mac_aero_mic::shoc::compute_tendencies=T_mid,qv
 $atmchange -b physics::mac_aero_mic::p3::compute_tendencies=T_mid,qv
 $atmchange -b physics::rrtmgp::compute_tendencies=T_mid
-$atmchange -b homme::compute_tendencies=T_mid,qv
+$atmchange -b homme::compute_tendencies=T_mid,qv,qc
 
 # Set temperature cut off in dycore threshold to 180K
 $atmchange -b vtheta_thresh=180

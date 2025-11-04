@@ -27,10 +27,10 @@ inline auto get_common_init_data(Engine& engine)
     // it represents an index
 
     //           pver, pgwv,   dc, orog_only, molec_diff, tau_0_ubc, nbot_molec, ktop, kbotbg, fcrit2, kwv
-    GwCommonInit(  72,   20, 0.75,     false,      false,     false,         16,   8,     66,    .67, 6.28e-5),
-    GwCommonInit(  72,   20, 0.75,     true ,      false,     true ,         16,   6,     68,    .67, 6.28e-5),
-    GwCommonInit(  72,   20, 0.75,     false,      true ,     true ,         16,   3,     70,    .67, 6.28e-5),
-    GwCommonInit(  72,   20, 0.75,     true ,      true ,     false,         16,   0,     70,    .67, 6.28e-5),
+    GwCommonInit(  72,   20, 2.5,     false,      false,     false,         16,   8,     66,    .67, 6.28e-5),
+    GwCommonInit(  72,   20, 2.5,     true ,      false,     true ,         16,   6,     68,    .67, 6.28e-5),
+    GwCommonInit(  72,   20, 2.5,     false,      true ,     true ,         16,   3,     70,    .67, 6.28e-5),
+    GwCommonInit(  72,   20, 2.5,     true ,      true ,     false,         16,   0,     70,    .67, 6.28e-5),
   };
 
   for (auto& d : rv) {

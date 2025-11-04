@@ -40,7 +40,6 @@ void Functions<S,D>::gw_convect_gw_sources(
   // Look up spectrum only if depth >= 2.5 km, else set tau0 = 0.
   //---------------------------------------------------------------------
   if ((hdepth >= hdepth_min) && (std::abs(lat) < (C::Pi/2))) {
-
     //------------------------------------------------------------------
     // Look up the spectrum using depth and uh.
     //------------------------------------------------------------------
@@ -54,6 +53,8 @@ void Functions<S,D>::gw_convect_gw_sources(
 
     const Int hdepth_i = static_cast<Int>(std::round(hdepth)) - 1;
     const Int uh_i = static_cast<Int>(std::round(uh)) + cinit.maxuh;
+    EKAT_KERNEL_ASSERT_MSG(hdepth_i >= 0 && hdepth_i < cinit.maxh, "Bad hdepth");
+    EKAT_KERNEL_ASSERT_MSG(uh_i >= 0 && uh_i < 2*cinit.maxuh + 1, "Bad uh");
     Kokkos::parallel_for(
       Kokkos::TeamVectorRange(team, num_pgwv), [&] (const int l) {
         if (Umaxi > Umini && (l >= Umini && l <= Umaxi)) {

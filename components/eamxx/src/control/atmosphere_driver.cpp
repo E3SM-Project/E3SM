@@ -310,10 +310,6 @@ void AtmosphereDriver::create_grids()
   // Each process will grab what they need
   m_atm_process_group->set_grids(m_grids_manager);
 
-
-  // Also make each atm proc build requests for tendency fields, if needed
-  m_atm_process_group->setup_tendencies_requests();
-
   m_ad_status |= s_grids_created;
 
   stop_timer("EAMxx::create_grids");
@@ -592,6 +588,9 @@ void AtmosphereDriver::create_fields()
     m_atm_process_group->set_required_field(m_field_mgr->get_field(fid).get_const());
   }
 
+  // Make atm procs create the proc-level tendency fields (if requested)
+  m_atm_process_group->setup_step_tendencies(m_grids_manager->get_grid("physics")->name());
+
   // Now that all processes have all the required/computed fields/groups, they
   // have also created any possible internal field (if needed). Notice that some
   // atm proc might have created internal fields already during the set_grids
@@ -606,8 +605,8 @@ void AtmosphereDriver::create_fields()
     m_field_mgr->add_field(f);
   }
 
-  // Now go through the input fields/groups to the atm proc group, as well as
-  // the internal fields/groups, and mark them as part of the RESTART group.
+  // Now go through the input fields/groups to the atm proc group,
+  // and mark them as part of the RESTART group.
   for (const auto& f : m_atm_process_group->get_fields_in()) {
     const auto& fid = f.get_header().get_identifier();
     m_field_mgr->add_to_group(fid, "RESTART");
@@ -621,9 +620,14 @@ void AtmosphereDriver::create_fields()
       }
     }
   }
+  // Internal fields have their group names set by the processes that create them.
+  // Hence, simply add them to all the groups they are marked as part of
   for (const auto& f : m_atm_process_group->get_internal_fields()) {
-    const auto& fid = f.get_header().get_identifier();
-    m_field_mgr->add_to_group(fid, "RESTART");
+    const auto& ftrack = f.get_header().get_tracking();
+    const auto& fid    = f.get_header().get_identifier();
+    for (const auto& gn : ftrack.get_groups_names()) {
+      m_field_mgr->add_to_group(fid, gn);
+    }
   }
 
   auto& driver_options_pl = m_atm_params.sublist("driver_options");
@@ -944,9 +948,16 @@ void AtmosphereDriver::restart_model ()
       // No field needs to be restarted on this grid.
       continue;
     }
-    const auto& restart_group = m_field_mgr->get_group_info("RESTART", gn);
+    const auto& restart_fnames = m_field_mgr->get_group_info("RESTART", gn).m_fields_names;
     std::vector<Field> fields;
-    for (const auto& fn : restart_group.m_fields_names) {
+    for (const auto& fn : restart_fnames) {
+      // If the field has a parent, and the parent is also in the RESTART group,
+      // then skip it, since restarting the parent will restart the child too
+      auto f = m_field_mgr->get_field(fn,gn);
+      auto p = f.get_header().get_parent();
+      if (p and ekat::contains(p->get_tracking().get_groups_names(),"RESTART")) {
+        continue;
+      }
       fields.push_back(m_field_mgr->get_field(fn,gn));
     }
     read_fields_from_file (fields,m_grids_manager->get_grid(gn),filename);
