@@ -7,8 +7,9 @@ module  zm_microphysics_history
    use ppgrid,                only: pcols, pver, pverp
    use zm_microphysics_state, only: zm_microp_st
 
-   public :: zm_microphysics_history_init ! add fields for history output
-   public :: zm_microphysics_history_out  ! write history output related to ZM microphysics
+   public :: zm_microphysics_history_init    ! add fields for history output
+   public :: zm_microphysics_history_convert ! convert ZM microphysics prior to output
+   public :: zm_microphysics_history_out     ! write history output related to ZM microphysics
   
 !===================================================================================================
 contains
@@ -132,7 +133,79 @@ end subroutine zm_microphysics_history_init
 
 !===================================================================================================
 
-subroutine zm_microphysics_history_out( lchnk, ncol, microp_st, prec, dlf, dif, dnlf, dnif, frz )
+subroutine zm_microphysics_history_convert( ncol, microp_st, pmid, temperature )
+   !----------------------------------------------------------------------------
+   ! Purpose: convert ZM microphysics prior to output
+   !----------------------------------------------------------------------------
+   use zm_conv, only: zm_const, zm_param
+   !----------------------------------------------------------------------------
+   ! Arguments
+   integer,                         intent(in   ) :: ncol         ! number of columns in chunk
+   type(zm_microp_st),              intent(inout) :: microp_st    ! ZM microphysics data structure
+   real(r8), dimension(pcols,pver), intent(in   ) :: pmid         ! pressure at mid-points   [Pa]
+   real(r8), dimension(pcols,pver), intent(in   ) :: temperature  ! ambient temperature      [K]
+   !----------------------------------------------------------------------------
+   ! Local variables
+   integer  :: i,k
+   integer  :: msg ! number of missing moisture levels at the top of model
+   real(r8) :: rho
+   !----------------------------------------------------------------------------
+   msg = zm_param%limcnv - 1 ! set this to match zm_convr()
+
+   do i = 1,ncol
+      do k = msg + 1,pver
+         ! Interpolate variable from interface to mid-layer.
+         if (k<pver) then
+            microp_st%qice    (i,k) = 0.5_r8*(microp_st%qice    (i,k)+microp_st%qice    (i,k+1))
+            microp_st%qliq    (i,k) = 0.5_r8*(microp_st%qliq    (i,k)+microp_st%qliq    (i,k+1))
+            microp_st%qrain   (i,k) = 0.5_r8*(microp_st%qrain   (i,k)+microp_st%qrain   (i,k+1))
+            microp_st%qsnow   (i,k) = 0.5_r8*(microp_st%qsnow   (i,k)+microp_st%qsnow   (i,k+1))
+            microp_st%qgraupel(i,k) = 0.5_r8*(microp_st%qgraupel(i,k)+microp_st%qgraupel(i,k+1))
+            microp_st%qni     (i,k) = 0.5_r8*(microp_st%qni     (i,k)+microp_st%qni     (i,k+1))
+            microp_st%qnl     (i,k) = 0.5_r8*(microp_st%qnl     (i,k)+microp_st%qnl     (i,k+1))
+            microp_st%qnr     (i,k) = 0.5_r8*(microp_st%qnr     (i,k)+microp_st%qnr     (i,k+1))
+            microp_st%qns     (i,k) = 0.5_r8*(microp_st%qns     (i,k)+microp_st%qns     (i,k+1))
+            microp_st%qng     (i,k) = 0.5_r8*(microp_st%qng     (i,k)+microp_st%qng     (i,k+1))
+            microp_st%wu      (i,k) = 0.5_r8*(microp_st%wu      (i,k)+microp_st%wu      (i,k+1))
+         end if
+         ! for levels at the freezing level move ice upward
+         if ( temperature(i,k).gt.zm_const%tfreez .and. temperature(i,k-1).le.zm_const%tfreez ) then
+            microp_st%qice    (i,k-1) = microp_st%qice    (i,k-1) + microp_st%qice    (i,k)
+            microp_st%qni     (i,k-1) = microp_st%qni     (i,k-1) + microp_st%qni     (i,k)
+            microp_st%qsnow   (i,k-1) = microp_st%qsnow   (i,k-1) + microp_st%qsnow   (i,k)
+            microp_st%qns     (i,k-1) = microp_st%qns     (i,k-1) + microp_st%qns     (i,k)
+            microp_st%qgraupel(i,k-1) = microp_st%qgraupel(i,k-1) + microp_st%qgraupel(i,k)
+            microp_st%qng     (i,k-1) = microp_st%qng     (i,k-1) + microp_st%qng     (i,k)
+            microp_st%qice    (i,k)   = 0._r8
+            microp_st%qni     (i,k)   = 0._r8
+            microp_st%qsnow   (i,k)   = 0._r8
+            microp_st%qns     (i,k)   = 0._r8
+            microp_st%qgraupel(i,k)   = 0._r8
+            microp_st%qng     (i,k)   = 0._r8
+         end if
+      end do ! k
+      ! Convert units
+      do k = msg + 1,pver
+         microp_st%qice    (i,k) = microp_st%qice(i,k)     * pmid(i,k)/temperature(i,k)/zm_const%rdair *1000._r8
+         microp_st%qliq    (i,k) = microp_st%qliq(i,k)     * pmid(i,k)/temperature(i,k)/zm_const%rdair *1000._r8
+         microp_st%qrain   (i,k) = microp_st%qrain(i,k)    * pmid(i,k)/temperature(i,k)/zm_const%rdair *1000._r8
+         microp_st%qsnow   (i,k) = microp_st%qsnow(i,k)    * pmid(i,k)/temperature(i,k)/zm_const%rdair *1000._r8
+         microp_st%qgraupel(i,k) = microp_st%qgraupel(i,k) * pmid(i,k)/temperature(i,k)/zm_const%rdair *1000._r8
+         microp_st%qni     (i,k) = microp_st%qni(i,k)      * pmid(i,k)/temperature(i,k)/zm_const%rdair
+         microp_st%qnl     (i,k) = microp_st%qnl(i,k)      * pmid(i,k)/temperature(i,k)/zm_const%rdair
+         microp_st%qnr     (i,k) = microp_st%qnr(i,k)      * pmid(i,k)/temperature(i,k)/zm_const%rdair
+         microp_st%qns     (i,k) = microp_st%qns(i,k)      * pmid(i,k)/temperature(i,k)/zm_const%rdair
+         microp_st%qng     (i,k) = microp_st%qng(i,k)      * pmid(i,k)/temperature(i,k)/zm_const%rdair
+         ! convert freezing rate to a heating rate due to freezing => [K/s]
+         microp_st%frz     (i,k) = microp_st%frz(i,k) * zm_const%latice/zm_const%cpair
+      end do ! k
+   end do ! i
+
+end subroutine zm_microphysics_history_convert
+
+!===================================================================================================
+
+subroutine zm_microphysics_history_out( lchnk, ncol, microp_st, prec, dlf )
    !----------------------------------------------------------------------------
    ! Purpose: write out history variables for convective microphysics
    !----------------------------------------------------------------------------
@@ -144,10 +217,6 @@ subroutine zm_microphysics_history_out( lchnk, ncol, microp_st, prec, dlf, dif, 
    type(zm_microp_st),              intent(in) :: microp_st ! ZM microphysics data structure
    real(r8), dimension(pcols),      intent(in) :: prec      ! convective precip rate
    real(r8), dimension(pcols,pver), intent(in) :: dlf       ! detrainment of conv cld liq water mixing ratio
-   real(r8), dimension(pcols,pver), intent(in) :: dif       ! detrainment of conv cld ice mixing ratio
-   real(r8), dimension(pcols,pver), intent(in) :: dnlf      ! detrainment of conv cld liq water num concen
-   real(r8), dimension(pcols,pver), intent(in) :: dnif      ! detrainment of conv cld ice num concen
-   real(r8), dimension(pcols,pver), intent(in) :: frz       ! heating rate due to freezing
    !----------------------------------------------------------------------------
    ! Local variables
    integer  :: i,k
@@ -159,20 +228,21 @@ subroutine zm_microphysics_history_out( lchnk, ncol, microp_st, prec, dlf, dif, 
    real(r8), dimension(pcols,pver) :: cgraupel_snum   ! convective graupel sample number
    real(r8), dimension(pcols,pver) :: wu_snum         ! vertical velocity sample number
    !----------------------------------------------------------------------------
+   cice_snum    (1:ncol,1:pver) = 0
+   cliq_snum    (1:ncol,1:pver) = 0
+   csnow_snum   (1:ncol,1:pver) = 0
+   crain_snum   (1:ncol,1:pver) = 0
+   cgraupel_snum(1:ncol,1:pver) = 0
+   wu_snum      (1:ncol,1:pver) = 0
+
    do k = 1,pver
       do i = 1,ncol
          if (microp_st%qice(i,k)     >  0) cice_snum(i,k)     = 1
-         if (microp_st%qice(i,k)     <= 0) cice_snum(i,k)     = 0
          if (microp_st%qliq(i,k)     >  0) cliq_snum(i,k)     = 1
-         if (microp_st%qliq(i,k)     <= 0) cliq_snum(i,k)     = 0
          if (microp_st%qsnow(i,k)    >  0) csnow_snum(i,k)    = 1
-         if (microp_st%qsnow(i,k)    <= 0) csnow_snum(i,k)    = 0
          if (microp_st%qrain(i,k)    >  0) crain_snum(i,k)    = 1
-         if (microp_st%qrain(i,k)    <= 0) crain_snum(i,k)    = 0
          if (microp_st%qgraupel(i,k) >  0) cgraupel_snum(i,k) = 1
-         if (microp_st%qgraupel(i,k) <= 0) cgraupel_snum(i,k) = 0
          if (microp_st%wu(i,k)       >  0) wu_snum(i,k)       = 1
-         if (microp_st%wu(i,k)       <= 0) wu_snum(i,k)       = 0
       end do
    end do
 
@@ -183,11 +253,11 @@ subroutine zm_microphysics_history_out( lchnk, ncol, microp_st, prec, dlf, dif, 
    call outfld('CGRAPNUM',cgraupel_snum      , pcols, lchnk )
    call outfld('WUZMSNUM',wu_snum            , pcols, lchnk )
 
-   call outfld('DIFZM'   ,dif                , pcols, lchnk )
    call outfld('DLFZM'   ,dlf                , pcols, lchnk )
-   call outfld('DNIFZM'  ,dnif               , pcols, lchnk )
-   call outfld('DNLFZM'  ,dnlf               , pcols, lchnk )
-   call outfld('FRZZM'   ,frz                , pcols, lchnk )
+   call outfld('DIFZM'   ,microp_st%dif      , pcols, lchnk )
+   call outfld('DNIFZM'  ,microp_st%dnif     , pcols, lchnk )
+   call outfld('DNLFZM'  ,microp_st%dnlf     , pcols, lchnk )
+   call outfld('FRZZM'   ,microp_st%frz      , pcols, lchnk )
 
    call outfld('WUZM'    ,microp_st%wu       , pcols, lchnk )
 
