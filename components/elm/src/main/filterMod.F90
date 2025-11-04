@@ -66,6 +66,9 @@ module filterMod
      integer, pointer :: hydrononsoic(:) ! non-soil hydrology filter (columns)
      integer :: num_hydrononsoic         ! number of columns in non-soil hydrology filter
 
+     integer, pointer :: h3dc(:)         ! h3d filter (columns)
+     integer :: num_h3dc                 ! number of columns in h3d filter
+
      integer, pointer :: urbanl(:)       ! urban filter (landunits)
      integer :: num_urbanl               ! number of landunits in urban filter 
      integer, pointer :: nourbanl(:)     ! non-urban filter (landunits)
@@ -202,6 +205,8 @@ contains
 
        allocate(this_filter(nc)%hydrologyc(bounds%endc-bounds%begc+1))
        allocate(this_filter(nc)%hydrononsoic(bounds%endc-bounds%begc+1))
+
+       allocate(this_filter(nc)%h3dc(bounds%endc-bounds%begc+1))
 
        allocate(this_filter(nc)%urbanp(bounds%endp-bounds%begp+1))
        allocate(this_filter(nc)%nourbanp(bounds%endp-bounds%begp+1))
@@ -409,6 +414,21 @@ contains
     end do
     this_filter(nc)%num_hydrologyc = f
     this_filter(nc)%num_hydrononsoic = fn
+
+    ! Create column-level h3d filter (only soil cols)
+
+    f = 0
+    do c = bounds%begc,bounds%endc
+       if (col_pp%active(c) .or. include_inactive) then
+          l = col_pp%landunit(c)
+          if (lun_pp%itype(l) == istsoil) then
+             f = f + 1
+             this_filter(nc)%h3dc(f) = c
+             col_pp%h3d_active(c) = .true.
+          end if
+       end if
+    end do
+    this_filter(nc)%num_h3dc = f
 
     ! Create prognostic crop and soil w/o prog. crop filters at pft-level
     ! according to where the crop model should be used
