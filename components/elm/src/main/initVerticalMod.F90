@@ -14,10 +14,11 @@ module initVerticalMod
   use spmdMod        , only : masterproc
   use elm_varpar     , only : more_vertlayers, nlevsno, nlevgrnd, nlevlak
   use elm_varpar     , only : toplev_equalspace, nlev_equalspace
-  use elm_varpar     , only : nlevsoi, nlevsoifl, nlevurb, nlevslp 
+  use elm_varpar     , only : nlevsoi, nlevsoifl, nlevurb, nlevslp
+  use elm_varpar     , only : nh3dc_per_lunit, h3d_hs_length 
   use elm_varctl     , only : fsurdat, iulog, use_var_soil_thick
   use elm_varctl     , only : use_vancouver, use_mexicocity, use_vertsoilc, use_extralakelayers, use_extrasnowlayers
-  use elm_varctl     , only : use_erosion, use_polygonal_tundra
+  use elm_varctl     , only : use_erosion, use_polygonal_tundra, use_h3d
   use elm_varcon     , only : zlak, dzlak, zsoi, dzsoi, zisoi, dzsoi_decomp, spval, grlnd
   use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv
   use landunit_varcon, only : istdlak, istice_mec
@@ -28,6 +29,8 @@ module initVerticalMod
   use SnowHydrologyMod, only : InitSnowLayers
   use ncdio_pio
   use topounit_varcon  , only : max_topounits
+  use landunit_varcon  , only : istsoil
+  use domainMod        , only : ldomain
   use GridcellType     , only : grc_pp
   !
   ! !PUBLIC TYPES:
@@ -51,7 +54,7 @@ contains
     real(r8)            , intent(in)    :: thick_roof(bounds%begl:)
     !
     ! LOCAL VARAIBLES:
-    integer               :: c,l,t,ti,topi,g,i,j,lev     ! indices 
+    integer               :: c,l,t,ti,topi,g,i,j,k,lev     ! indices 
     type(file_desc_t)     :: ncid              ! netcdf id
     logical               :: readvar 
     integer               :: dimid             ! dimension id
@@ -60,6 +63,8 @@ contains
     real(r8) ,pointer     :: tslope (:)        ! read in - topo_slope
     real(r8) ,pointer     :: gradz(:)          ! read in - gradz (polygonal tundra only)
     real(r8) ,pointer     :: hslp_p10 (:,:,:)    ! read in - hillslope slope percentiles
+    real(r8) ,pointer     :: hs_w (:,:)          ! read in - hillslope width function defined at soil column interface (N+1 values for N soil columns) (m)
+    real(r8) ,pointer     :: hs_x (:,:)          ! read in - hillslope width function defined at soil column interface (N+1 values for N soil columns) (m)
     real(r8) ,pointer     :: dtb (:,:)           ! read in - DTB
     real(r8)              :: beddep            ! temporary
     integer               :: nlevbed           ! temporary
@@ -78,6 +83,8 @@ contains
     real(r8), allocatable :: ziurb_wall(:,:)   ! wall (layer interface)
     real(r8), allocatable :: ziurb_roof(:,:)   ! roof (layer interface)
     real(r8)              :: depthratio        ! ratio of lake depth to standard deep lake depth 
+    real(r8), pointer     :: tmp_hs_x(:)       ! local 1D array
+    real(r8), pointer     :: tmp_hs_w(:)       ! local 1D array
     integer               :: begc, endc
     integer               :: begl, endl
     !------------------------------------------------------------------------
@@ -557,6 +564,102 @@ contains
       
       end if
 
+      !--------------------------------------------------------
+      ! Read in hillslope width function for vegetated landunit
+      !--------------------------------------------------------
+
+      if (use_h3d) then
+        allocate(hs_x(bounds%begg:bounds%endg,1:nh3dc_per_lunit+1))
+        allocate(hs_w(bounds%begg:bounds%endg,1:nh3dc_per_lunit+1))
+
+        allocate(tmp_hs_x   (1:nh3dc_per_lunit+1))
+        allocate(tmp_hs_w   (1:nh3dc_per_lunit+1))
+
+        sum_tmp_hs_w = 0._r8
+        do i=1,nh3dc_per_lunit+1
+          tmp_hs_x(i) = h3d_hs_length / float(nh3dc_per_lunit) * float(i-1)
+          tmp_hs_w(i) = exp( tmp_hs_x(i))   !convergent
+          !tmp_hs_w(i) = exp(-tmp_hs_x(i))   !divergent
+          !tmp_hs_w(i) = 1._r8           !uniform
+          sum_tmp_hs_w = sum_tmp_hs_w + tmp_hs_w(i)
+        end do
+
+        do j=1,nh3dc_per_lunit+1
+          hs_x(bounds%begg:bounds%endg,j) = tmp_hs_x(j) * 1.e3_r8
+          hs_w(bounds%begg:bounds%endg,j) = tmp_hs_w(j) / sum_tmp_hs_w
+        end do
+
+       hs_x(bounds%begg:bounds%endg,2) = 0.5_r8 *
+hs_x(bounds%begg:bounds%endg,2)
+
+        call ncd_io(ncid=ncid, varname='hs_w', flag='read', data=hs_w,
+dim1name=grlnd, readvar=readvar)
+        if (.not. readvar) then
+           call shr_sys_abort(' ERROR: HILLSLOPE WIDTH FUNCTION NOT on surfdata
+file'//&
+                errMsg(__FILE__, __LINE__)) 
+        end if
+
+        call ncd_io(ncid=ncid, varname='hs_x', flag='read', data=hs_x,
+dim1name=grlnd, readvar=readvar)
+        if (.not. readvar) then
+           call shr_sys_abort(' ERROR: HILLSLOPE WIDTH FUNCTION NOT on surfdata
+file'//&
+                errMsg(__FILE__, __LINE__)) 
+        end if
+
+        !need test here
+        do l = begl,endl
+          if (lun_pp%itype(l) == istsoil) then !in current implementation
+hillslope only exist in vegetated land unit 
+             g = lun_pp%gridcell(l)
+             lun_pp%hs_w_itf(l,:) = hs_w(g,:) 
+             lun_pp%hs_x_itf(l,:) = hs_x(g,:) 
+
+             lun_pp%hs_area(l) = 0._r8
+             do k=1,nh3dc_per_lunit
+               lun_pp%hs_dx(l,k)    = hs_x(g,k+1) - hs_x(g,k) 
+               lun_pp%hs_x_nod(l,k) = 0.5_r8*(hs_x(g,k+1) + hs_x(g,k))
+               lun_pp%hs_w_nod(l,k) = 0.5_r8*(hs_w(g,k+1) + hs_w(g,k))
+               lun_pp%hs_dA(l,k)    = lun_pp%hs_w_nod(l,k) * lun_pp%hs_dx(l,k)
+               lun_pp%hs_area(l)    = lun_pp%hs_area(l) + lun_pp%hs_dA(l,k)
+             end do
+
+             hs_w_scale = ldomain%area(g) * lun_pp%wtgcell(l) * 1.e6_r8 /
+lun_pp%hs_area(l)
+             lun_pp%hs_w_itf(l,:) = hs_w_scale * lun_pp%hs_w_itf(l,:)
+             lun_pp%hs_w_nod(l,:) = hs_w_scale * lun_pp%hs_w_nod(l,:)
+ 
+
+             write(*,*) 'read hs width function...'
+             write(*,*) l,ldomain%area(g),lun_pp%wtgcell(l),lun_pp%hs_area(l)
+
+
+             lun_pp%hs_area(l) = 0._r8
+             do k=1,nh3dc_per_lunit
+               lun_pp%hs_dA(l,k)    = lun_pp%hs_w_nod(l,k) * lun_pp%hs_dx(l,k)
+               lun_pp%hs_area(l)    = lun_pp%hs_area(l) + lun_pp%hs_dA(l,k)
+             end do
+
+             lun_pp%hs_dx_node(l,1) = 0.5*lun_pp%hs_dx(l,1)
+             do k=2,nh3dc_per_lunit
+               lun_pp%hs_dx_node(l,k) = lun_pp%hs_x_nod(l,k) -
+lun_pp%hs_x_nod(l,k-1)
+             end do
+
+             if (abs(lun_pp%hs_area(l) - 1.e6_r8*ldomain%area(g) *
+lun_pp%wtgcell(l))>1.e-1) then
+                call shr_sys_abort(' ERROR: INCONSISTANCE AREA OF H3D
+HILLSLOPE'//&
+                   errMsg(__FILE__, __LINE__)) 
+             end if
+          end if
+        enddo
+
+        deallocate(hs_x,hs_w)
+        deallocate(tmp_hs_x,tmp_hs_w)
+      endif
+
       !-----------------------------------------------
       ! Read in topographic index and slope
       !-----------------------------------------------
@@ -622,6 +725,41 @@ contains
             col_pp%hslp_p10(c,:) = 0._r8
          end do
       end if
+
+      !----------------------------------------------------------
+      ! Read h3D slope map if available; use default slope if not
+      !----------------------------------------------------------
+
+      allocate(tslope(bounds%begg:bounds%endg))
+      call ncd_io(ncid=ncid, varname='H3D_SLOPE', flag='read', data=tslope, dim1name=grlnd, readvar=readvar)
+      if (.not. readvar) then
+        do c = begc,endc
+           col_pp%h3d_slope(c) = col_pp%topo_slope(c)
+        end do
+      else
+        write(iulog,*) '-----------use h3d slope---------------'
+        do c = begc,endc
+           g = col_pp%gridcell(c)
+           ! check for near zero slopes, set minimum value
+           col_pp%h3d_slope(c) = max(tslope(g), 0.2_r8)
+        end do
+      endif
+      deallocate(tslope)
+
+      allocate(std(bounds%begg:bounds%endg))
+      call ncd_io(ncid=ncid, varname='STD_ELEV', flag='read', data=std,
+dim1name=grlnd, readvar=readvar)
+      if (.not. readvar) then
+         call shr_sys_abort(' ERROR: TOPOGRAPHIC STDdev (STD_ELEV) NOT on
+surfdata file'//&
+              errMsg(__FILE__, __LINE__)) 
+      end if
+      do c = begc,endc
+         g = col_pp%gridcell(c)
+         ! Topographic variables
+         col_pp%topo_std(c) = std(g)
+      end do
+      deallocate(std)
 
       !-----------------------------------------------
       ! Read in depth to bedrock
