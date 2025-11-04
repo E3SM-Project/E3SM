@@ -941,6 +941,7 @@
     <values match="last">
       <value compset=".+EAM%CMIP6"				>2</value>
       <value compset=".+CMIP7_EAM"				>2</value>
+      <value compset=".+CMIP7_DATM%CPLHIST"			>2</value>
       <value compset=".+EAM%MMF"				>2</value>
     </values>
     <group>shr_dust_nl</group>
