@@ -1998,11 +1998,21 @@ module li_subglacial_hydro
          (channelDischarge + waterFlux * config_SGH_incipient_channel_width) &
          * waterPressureSlopeNormal / latent_heat_ice
 
-      ! disable channel melt into/out of lakes
+      ! disable channel melt into and in lakes
       do iEdge = 1, nEdgesSolve
          cell1 = cellsOnEdge(1, iEdge)
          cell2 = cellsOnEdge(2, iEdge)
-         if ((waterThickness(cell1) > bedRoughMax) .or. (waterThickness(cell2) > bedRoughMax)) then
+         if ((waterThickness(cell1) > bedRoughMax) .and. (waterThickness(cell2) > bedRoughMax)) then
+            ! no melt in a lake
+            channelMelt(iEdge) = 0.0_RKIND
+            channelPressureFreeze(iEdge) = 0.0_RKIND
+         elseif ((channelDischarge(iEdge) > 0.0_RKIND) .and. (waterThickness(cell2) <= bedRoughMax) .and. (waterThickness(cell1) > bedRoughMax)) then
+            ! no melt for channel feeding into lake (channel flowing from cell2 to cell1)
+            ! channelDischarge defined as positive for flow from cell2 to cell1
+            channelMelt(iEdge) = 0.0_RKIND
+            channelPressureFreeze(iEdge) = 0.0_RKIND
+         elseif ((channelDischarge(iEdge) < 0.0_RKIND) .and. (waterThickness(cell2) > bedRoughMax) .and. (waterThickness(cell1) <= bedRoughMax)) then
+            ! no melt for channel feeding into lake (channel flowing from cell1 to cell2)
             channelMelt(iEdge) = 0.0_RKIND
             channelPressureFreeze(iEdge) = 0.0_RKIND
          endif
