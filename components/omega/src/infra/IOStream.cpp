@@ -1593,7 +1593,7 @@ Error IOStream::readFieldData(
    // get the relevant size information
    int DecompID;
    int LocSize;
-   int NDimsTmp = std::min(NDims, 1);
+   int NDimsTmp = std::max(NDims, 1);
    std::vector<int> DimLengths(NDimsTmp);
    if (IsDistributed) {
       computeDecomp(FieldPtr, DecompID, LocSize, DimLengths);
