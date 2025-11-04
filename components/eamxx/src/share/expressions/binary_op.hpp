@@ -28,61 +28,36 @@ public:
 
   int num_indices () const { return std::max(m_left.num_indices(),m_right.num_indices()); }
 
-  // void set_eval_layout (const FieldLayout& fl) {}
-
-  KOKKOS_INLINE_FUNCTION
-  Real eval (int i) const {
-    if constexpr (OP==BinOp::Plus) {
-      return m_left.eval(i) + m_right.eval(i);
-    } else if constexpr (OP==BinOp::Minus) {
-      return m_left.eval(i) - m_right.eval(i);
-    } else if constexpr (OP==BinOp::Mult) {
-      return m_left.eval(i) * m_right.eval(i);
-    } else if constexpr (OP==BinOp::Div) {
-      return m_left.eval(i) / m_right.eval(i);
-    } else if constexpr (OP==BinOp::Max) {
-      return Kokkos::max(m_left.eval(i),m_right.eval(i));
-    } else if constexpr (OP==BinOp::Div) {
-      return Kokkos::min(m_left.eval(i),m_right.eval(i));
-    }
-  }
-  KOKKOS_INLINE_FUNCTION
-  Real eval (int i, int j) const {
-    if constexpr (OP==BinOp::Plus) {
-      return m_left.eval(i,j) + m_right.eval(i,j);
-    } else if constexpr (OP==BinOp::Minus) {
-      return m_left.eval(i,j) - m_right.eval(i,j);
-    } else if constexpr (OP==BinOp::Mult) {
-      return m_left.eval(i,j) * m_right.eval(i,j);
-    } else if constexpr (OP==BinOp::Div) {
-      return m_left.eval(i,j) / m_right.eval(i,j);
-    } else if constexpr (OP==BinOp::Max) {
-      return Kokkos::max(m_left.eval(i,j),m_right.eval(i,j));
-    } else if constexpr (OP==BinOp::Div) {
-      return Kokkos::min(m_left.eval(i,j),m_right.eval(i,j));
-    }
-  }
-  KOKKOS_INLINE_FUNCTION
-  Real eval (int i, int j, int k) const {
-    if constexpr (OP==BinOp::Plus) {
-      return m_left.eval(i,j,k) + m_right.eval(i,j,k);
-    } else if constexpr (OP==BinOp::Minus) {
-      return m_left.eval(i,j,k) - m_right.eval(i,j,k);
-    } else if constexpr (OP==BinOp::Mult) {
-      return m_left.eval(i,j,k) * m_right.eval(i,j,k);
-    } else if constexpr (OP==BinOp::Div) {
-      return m_left.eval(i,j,k) / m_right.eval(i,j,k);
-    } else if constexpr (OP==BinOp::Max) {
-      return Kokkos::max(m_left.eval(i,j,k),m_right.eval(i,j,k));
-    } else if constexpr (OP==BinOp::Div) {
-      return Kokkos::min(m_left.eval(i,j,k),m_right.eval(i,j,k));
-    }
+  void set_eval_layout (const FieldLayout& fl) {
+    m_left.set_eval_layout(fl);
+    m_right.set_eval_layout(fl);
   }
 
+  KOKKOS_INLINE_FUNCTION
+  Real eval () const {
+    if constexpr (OP==BinOp::Plus) {
+      return m_left.eval() + m_right.eval();
+    } else if constexpr (OP==BinOp::Minus) {
+      return m_left.eval() - m_right.eval();
+    } else if constexpr (OP==BinOp::Mult) {
+      return m_left.eval() * m_right.eval();
+    } else if constexpr (OP==BinOp::Div) {
+      return m_left.eval() / m_right.eval();
+    } else if constexpr (OP==BinOp::Max) {
+      return Kokkos::max(m_left.eval(),m_right.eval());
+    } else if constexpr (OP==BinOp::Div) {
+      return Kokkos::min(m_left.eval(),m_right.eval());
+    }
+  }
+  KOKKOS_INLINE_FUNCTION
+  void set_eval_data (const EvalData& data) const {
+    m_left.set_eval_data(data);
+    m_right.set_eval_data(data);
+  }
 protected:
 
-  const ELeft    m_left;
-  const ERight   m_right;
+  ELeft    m_left;
+  ERight   m_right;
 };
 
 template<typename ELeft, typename ERight>

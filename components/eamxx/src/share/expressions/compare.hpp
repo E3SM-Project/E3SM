@@ -22,50 +22,37 @@ public:
     // Nothing to do here
   }
 
-  KOKKOS_INLINE_FUNCTION
-  int eval (int i) const {
-    switch (m_cmp) {
-      case Comparison::EQ: return m_left.eval(i) == m_right.eval(i);
-      case Comparison::NE: return m_left.eval(i) != m_right.eval(i);
-      case Comparison::GT: return m_left.eval(i) >  m_right.eval(i);
-      case Comparison::GE: return m_left.eval(i) >= m_right.eval(i);
-      case Comparison::LT: return m_left.eval(i) <  m_right.eval(i);
-      case Comparison::LE: return m_left.eval(i) <= m_right.eval(i);
-      default:
-        EKAT_KERNEL_ERROR_MSG ("Unsupported cmp operator.\n");
-    }
-  }
-  KOKKOS_INLINE_FUNCTION
-  int eval (int i, int j) const {
-    switch (m_cmp) {
-      case Comparison::EQ: return m_left.eval(i,j) == m_right.eval(i,j);
-      case Comparison::NE: return m_left.eval(i,j) != m_right.eval(i,j);
-      case Comparison::GT: return m_left.eval(i,j) >  m_right.eval(i,j);
-      case Comparison::GE: return m_left.eval(i,j) >= m_right.eval(i,j);
-      case Comparison::LT: return m_left.eval(i,j) <  m_right.eval(i,j);
-      case Comparison::LE: return m_left.eval(i,j) <= m_right.eval(i,j);
-      default:
-        EKAT_KERNEL_ERROR_MSG ("Unsupported cmp operator.\n");
-    }
-  }
-  KOKKOS_INLINE_FUNCTION
-  int eval (int i, int j, int k) const {
-    switch (m_cmp) {
-      case Comparison::EQ: return m_left.eval(i,j,k) == m_right.eval(i,j,k);
-      case Comparison::NE: return m_left.eval(i,j,k) != m_right.eval(i,j,k);
-      case Comparison::GT: return m_left.eval(i,j,k) >  m_right.eval(i,j,k);
-      case Comparison::GE: return m_left.eval(i,j,k) >= m_right.eval(i,j,k);
-      case Comparison::LT: return m_left.eval(i,j,k) <  m_right.eval(i,j,k);
-      case Comparison::LE: return m_left.eval(i,j,k) <= m_right.eval(i,j,k);
-      default:
-        EKAT_KERNEL_ERROR_MSG ("Unsupported cmp operator.\n");
-    }
+  int num_indices () const { return std::max(m_left.num_indices(),m_right.num_indices()); }
+
+  void set_eval_layout (const FieldLayout& fl) {
+    m_left.set_eval_layout(fl);
+    m_right.set_eval_layout(fl);
   }
 
+  KOKKOS_INLINE_FUNCTION
+  void set_eval_data (const EvalData& data) const {
+    m_left.set_eval_data(data);
+    m_right.set_eval_data(data);
+  }
+
+
+  KOKKOS_INLINE_FUNCTION
+  Real eval () const {
+    switch (m_cmp) {
+      case Comparison::EQ: return m_left.eval() == m_right.eval();
+      case Comparison::NE: return m_left.eval() != m_right.eval();
+      case Comparison::GT: return m_left.eval() >  m_right.eval();
+      case Comparison::GE: return m_left.eval() >= m_right.eval();
+      case Comparison::LT: return m_left.eval() <  m_right.eval();
+      case Comparison::LE: return m_left.eval() <= m_right.eval();
+      default:
+        EKAT_KERNEL_ERROR_MSG ("Unsupported cmp operator.\n");
+    }
+  }
 protected:
 
-  const ELeft    m_left;
-  const ERight   m_right;
+  ELeft    m_left;
+  ERight   m_right;
 
   Comparison m_cmp;
 };

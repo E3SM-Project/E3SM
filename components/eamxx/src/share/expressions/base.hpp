@@ -3,9 +3,16 @@
 
 #include <Kokkos_Core.hpp>
 
+#include <share/field/field_layout.hpp>
 #include <share/core/eamxx_types.hpp>
 
 namespace scream {
+
+struct EvalData {
+  int i = -1;
+  int j = -1;
+  int k = -1;
+};
 
 template<typename Derived>
 class Expression {
@@ -15,22 +22,17 @@ public:
   int num_indices () const { return cast().num_indices(); }
 
   KOKKOS_INLINE_FUNCTION
-  Real eval(int i) const {
-    return cast().eval(i);
-  }
-  KOKKOS_INLINE_FUNCTION
-  Real eval(int i, int j) const {
-    return cast().eval(i,j);
-  }
-  KOKKOS_INLINE_FUNCTION
-  Real eval(int i,int j,int k) const {
-    return cast().eval(i,j,k);
+  Real eval() const {
+    return cast().eval();
   }
 
   KOKKOS_INLINE_FUNCTION
   const Derived& cast () const { return static_cast<const Derived&>(*this); }
+        Derived& cast ()       { return static_cast<      Derived&>(*this); }
 
-  // void set_eval_layout (const FieldLayout& fl) { cast().set_eval_layout(fl); }
+  KOKKOS_INLINE_FUNCTION
+  void set_eval_data (const EvalData& data) const { cast().set_eval_data(data); }
+  void set_eval_layout (const FieldLayout& fl) { cast().set_eval_layout(fl); }
 };
 
 } // namespace scream

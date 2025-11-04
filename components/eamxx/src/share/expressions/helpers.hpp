@@ -57,7 +57,7 @@ BinaryExpression<RealFieldExpression,ERight,BinOp::Minus>
 operator- (const Field& left, const Expression<ERight>& right)
 {
   check_real(left);
-  return RealFieldExpression(left)+right;
+  return RealFieldExpression(left)-right;
 }
 
 template<typename ELeft>
@@ -65,7 +65,7 @@ BinaryExpression<ELeft,RealFieldExpression,BinOp::Minus>
 operator- (const Expression<ELeft>& left, const Field& right)
 {
   check_real(right);
-  return left+RealFieldExpression(right);
+  return left-RealFieldExpression(right);
 }
 
 BinaryExpression<RealFieldExpression,RealFieldExpression,BinOp::Minus>
