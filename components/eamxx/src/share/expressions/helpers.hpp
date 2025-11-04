@@ -5,6 +5,7 @@
 #include "share/expressions/field.hpp"
 #include "share/expressions/scalar.hpp"
 #include "share/expressions/binary_op.hpp"
+#include "share/expressions/math_fcns.hpp"
 
 #include "share/field/field.hpp"
 
@@ -127,6 +128,24 @@ operator/ (const Field& left, const Field& right)
   check_real(left);
   return RealFieldExpression(left)/RealFieldExpression(right);
 }
+
+// ------------------- Unary math fcns --------------------- //
+
+#define UNARY_MATH_EXPRESSION_FROM_FIELD(impl,name) \
+  name##Expression<RealFieldExpression>                \
+  impl (const Field& f)                                \
+  {                                                    \
+    using RFE = RealFieldExpression;                   \
+    return name##Expression<RFE>(RFE(f));              \
+  }
+
+UNARY_MATH_EXPRESSION_FROM_FIELD (sqrt,Sqrt)
+UNARY_MATH_EXPRESSION_FROM_FIELD (exp,Exp)
+UNARY_MATH_EXPRESSION_FROM_FIELD (log,Log)
+UNARY_MATH_EXPRESSION_FROM_FIELD (sin,Sin)
+UNARY_MATH_EXPRESSION_FROM_FIELD (cos,Cos)
+
+#undef UNARY_MATH_EXPRESSION_FROM_FIELD_OR_SCALAR
 
 } // namespace scream
 

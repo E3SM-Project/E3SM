@@ -17,7 +17,7 @@
 
 namespace scream {
 
-TEST_CASE("expressions", "") {
+TEST_CASE("core_expressions", "") {
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
 
@@ -143,6 +143,37 @@ TEST_CASE("expressions", "") {
     for (int i=0; i<fl.size(); ++i) {
       auto tgt = v1h(i)>=v2h(i) ? v1h(i)+v2h(i) : v1h(i)-v2h(i);
       REQUIRE (v3h(i)==tgt);
+    }
+  }
+}
+
+TEST_CASE("math_expressions", "") {
+  using namespace ekat::units;
+  using namespace ShortFieldTagsNames;
+
+  std::uniform_real_distribution<Real> pdf(0, 1);
+  auto engine = setup_random_test();
+
+  FieldLayout fl ({COL},{10});
+
+  FieldIdentifier fid ("", fl, kg, "some_grid");
+  Field f1 (fid.alias("f1"),true);
+  Field f2 (fid.alias("f2"),true);
+  randomize(f1, engine, pdf);
+  randomize(f2, engine, pdf);
+
+  SECTION ("exp") {
+    auto expression = exp(f1);
+    // Evaluate
+    Field f3(fid.alias("f3"),true);
+    f3.deep_copy(-1);
+    evaluate(expression,f3);
+
+    f3.sync_to_host();
+    auto v1h = f1.get_view<const Real*,Host>();
+    auto v3h = f3.get_view<const Real*,Host>();
+    for (int i=0; i<fl.size(); ++i) {
+      REQUIRE (v3h(i)==std::exp(v1h(i)));
     }
   }
 }

@@ -159,7 +159,7 @@ pow (const Expression<EBase>& b, const Real e)
                                                                         \
   template<typename EArg>                                               \
   name##Expression<EArg>                                                \
-  impl (const name##Expression<EArg>& arg)                              \
+  impl (const Expression<EArg>& arg)                                    \
   {                                                                     \
     return name##Expression<EArg>(arg.cast());                          \
   }
@@ -169,6 +169,7 @@ UNARY_MATH_EXPRESSION (exp,Exp)
 UNARY_MATH_EXPRESSION (log,Log)
 UNARY_MATH_EXPRESSION (sin,Sin)
 UNARY_MATH_EXPRESSION (cos,Cos)
+#undef UNARY_MATH_EXPRESSION
 
 } // namespace scream
 
