@@ -58,6 +58,10 @@ module elm_varpar
   integer, parameter :: nlayer      =   3     ! number of VIC soil layer --Added by AWang
   integer            :: nlayert               ! number of VIC soil layer + 3 lower thermal layers
 
+  integer            :: nh3dc_per_lunit=1     ! number of soil columns in landunit for h3d
+  integer            :: nnode_per_nh3dc=1     ! number of lateral nodes in h3dc for solving hsb
+  integer            :: h3d_hs_length=0.5_r8  ! h3d hillslope length
+
   integer :: numpft      =  50     ! actual # of patches (without bare), a total that spans LUs
   integer :: numcft      =  36     ! actual # of crops
   logical :: crop_prog   = .true.  ! If prognostic crops is turned on

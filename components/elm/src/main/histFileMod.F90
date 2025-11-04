@@ -13,8 +13,10 @@ module histFileMod
   use spmdMod        , only : masterproc
   use abortutils     , only : endrun
   use elm_varctl     , only : iulog, use_vertsoilc, use_fates, use_extrasnowlayers
+  use elm_varctl     , only : use_h3d
   use elm_varcon     , only : spval, ispval, dzsoi_decomp 
   use elm_varcon     , only : grlnd, nameg, namet, namel, namec, namep
+  use elm_varpar     , only : nh3dc_per_lunit
   use decompMod      , only : get_proc_bounds, get_proc_global, bounds_type
   use GridcellType   , only : grc_pp                
   use LandunitType   , only : lun_pp                
@@ -1961,6 +1963,10 @@ contains
        call ncd_defdim(lnfid, 'fates_levlupft', n_landuse_cats * numpft_fates, dimid)
     end if
 
+    if (use_h3d) then
+       call ncd_defdim(lnfid, 'h3dc', nh3dc_per_lunit, dimid)
+    end if
+
     if ( .not. lhistrest )then
        call ncd_defdim(lnfid, 'hist_interval', 2, hist_interval_dimid)
        call ncd_defdim(lnfid, 'time', ncd_unlimited, time_dimid)
@@ -2545,6 +2551,11 @@ contains
              
           end if
 
+          if (use_h3d) then
+             call ncd_defvar(varname='h3dc', xtype=ncd_int, dim1name='h3dc', &
+                  long_name='soil column index of h3d hillslope', ncid=nfid(t))
+          end if
+
        elseif (mode == 'write') then
           if ( masterproc ) write(iulog, *) ' zsoi:',zsoi
           call ncd_io(varname='levgrnd', data=zsoi, ncid=nfid(t), flag='write')
@@ -2598,6 +2609,10 @@ contains
              call ncd_io(varname='fates_scmap_levcdpf',data=fates_hdim_scmap_levcdpf, ncid=nfid(t), flag='write')
              call ncd_io(varname='fates_cdmap_levcdpf',data=fates_hdim_cdmap_levcdpf, ncid=nfid(t), flag='write')
              call ncd_io(varname='fates_pftmap_levcdpf',data=fates_hdim_pftmap_levcdpf, ncid=nfid(t), flag='write')
+          end if
+
+          if (use_h3d) then
+             call ncd_io(varname='h3dc',data=nh3dc_per_lunit, ncid=nfid(t), flag='write')
           end if
 
        endif
@@ -4815,6 +4830,8 @@ contains
        num2d = nelements_fates*nlevage_fates
     case ('fates_levagefuel')
        num2d = nlevage_fates*nfc_fates
+    case ('h3dc')
+       num2d = nh3dc_per_lunit
     case('cft')
        if (cft_size > 0) then
           num2d = cft_size

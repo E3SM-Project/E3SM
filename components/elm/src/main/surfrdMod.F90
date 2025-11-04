@@ -1067,9 +1067,12 @@ contains
     ! !USES:
     use elm_varctl      , only : create_crop_landunit, use_fates, use_polygonal_tundra
     use elm_varctl      , only : irrigate
+    use elm_varctl      , only : use_h3d
     use elm_varpar      , only : surfpft_lb, surfpft_ub, surfpft_size, cft_lb, cft_ub, cft_size
     use elm_varpar      , only : crop_prog
+    use elm_varpar      , only : nh3dc_per_lunit, h3d_hs_length
     use elm_varsur      , only : wt_lunit, wt_nat_patch, wt_cft, fert_cft, fert_p_cft, wt_polygon
+    use elm_varsur      , only : wt_h3dc
     use landunit_varcon , only : istsoil, istcrop
     use landunit_varcon , only : istlowcenpoly, ilowcenpoly, istflatcenpoly, iflatcenpoly, isthighcenpoly, ihighcenpoly
     use pftvarcon       , only : nc3crop, nc3irrig, npcropmin
@@ -1088,6 +1091,7 @@ contains
     integer          ,intent(in)    :: ntpu(:)
     !
     ! !LOCAL VARIABLES:
+    integer  :: g, k, i                        ! indices
     integer  :: nl, t                             ! index
     integer  :: dimid,varid                    ! netCDF id's
     integer  :: ier                            ! error status	
@@ -1098,6 +1102,13 @@ contains
     real(r8),pointer :: array2D(:,:,:)                 ! local 2D array
     real(r8),pointer :: arrayNF(:,:,:)
     real(r8),pointer :: arrayPF(:,:,:)
+    real(r8)         :: hs_area_tot
+    real(r8),pointer :: hs_x(:,:)              ! local 2D array
+    real(r8),pointer :: hs_w(:,:)              ! local 2D array
+    real(r8),pointer :: hs_area(:)             ! local 1D array
+    real(r8),pointer :: tmp_hs_x(:)            ! local 1D array
+    real(r8),pointer :: tmp_hs_w(:)            ! local 1D array
+    real(r8)         :: sum_tmp_hs_w
     character(len=32) :: subname = 'surfrd_veg_all'  ! subroutine name
 !-----------------------------------------------------------------------
 
@@ -1140,6 +1151,59 @@ contains
 
     deallocate(arrayl)
     
+    !determin area weight of h3d soil column
+    if (.not. use_h3d) then 
+        wt_h3dc(begg:endg,1:nh3dc_per_lunit) = 1._r8/nh3dc_per_lunit
+    else
+        allocate(hs_x   (begg:endg,1:nh3dc_per_lunit+1))
+        allocate(hs_w   (begg:endg,1:nh3dc_per_lunit+1))
+        allocate(hs_area(          1:nh3dc_per_lunit+1))
+
+        allocate(tmp_hs_x   (1:nh3dc_per_lunit+1))
+        allocate(tmp_hs_w   (1:nh3dc_per_lunit+1))
+
+        call ncd_io(ncid=ncid, varname='hs_w', flag='read',
+data=hs_w,dim1name=grlnd, readvar=readvar)
+        if (.not. readvar) then
+           call endrun(' ERROR: HILLSLOPE WIDTH FUNCTION NOT on surfdata
+file'//&
+                errMsg(__FILE__, __LINE__)) 
+        end if
+
+        call ncd_io(ncid=ncid, varname='hs_x', flag='read',
+data=hs_x,dim1name=grlnd, readvar=readvar)
+        if (.not. readvar) then
+           call endrun(' ERROR: HILLSLOPE WIDTH FUNCTION NOT on surfdatafile'//&
+                errMsg(__FILE__, __LINE__)) 
+        end if
+
+        sum_tmp_hs_w = 0._r8
+        do i=1,nh3dc_per_lunit+1
+          tmp_hs_x(i) = h3d_hs_length / float(nh3dc_per_lunit) * float(i-1)
+          tmp_hs_w(i) = exp( tmp_hs_x(i))   !convergent
+          !tmp_hs_w(i) = exp(-tmp_hs_x(i))   !divergent
+          !tmp_hs_w(i) = 1._r8           !uniform
+          sum_tmp_hs_w = sum_tmp_hs_w + tmp_hs_w(i)
+        end do
+
+        do g=begg,endg
+          hs_area_tot = 0._r8
+          do k=1,nh3dc_per_lunit
+            hs_area(k) = (hs_x(g,k+1) - hs_x(g,k)) * &
+                         (0.5_r8*(hs_w(g,k+1) + hs_w(g,k)))
+            hs_area_tot = hs_area_tot + hs_area(k)
+          end do
+        
+          do k=1,nh3dc_per_lunit
+            wt_h3dc(g,k) = hs_area(k) / hs_area_tot
+          end do
+        end do
+         
+        call check_sums_equal_1(wt_h3dc, begg, 'wt_h3dc', subname)
+        deallocate(hs_x,hs_w,hs_area)
+        deallocate(tmp_hs_x,tmp_hs_w)
+     end if
+
     ! Check the file format for CFT's and handle accordingly
     call ncd_inqdid(ncid, 'cft', dimid, cft_dim_exists)
     if ( cft_dim_exists .and. create_crop_landunit ) then

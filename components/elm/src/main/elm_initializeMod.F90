@@ -37,6 +37,7 @@ module elm_initializeMod
   use ColumnDataType         , only : col_es
   use VegetationType         , only : veg_pp
   use VegetationDataType     , only : veg_es
+  use h3dType                , only : h3d_vars
 
   use elm_instMod
   use WaterBudgetMod         , only : WaterBudget_Reset
@@ -67,6 +68,7 @@ contains
     !
     ! !USES:
     use elm_varpar                , only: elm_varpar_init, natpft_lb, natpft_ub
+    use elm_varpar                , only: nh3dc_per_lunit
     use elm_varpar                , only: cft_lb, cft_ub, maxpatch_glcmec
     use elm_varpar                , only: mxpft, numveg, mxpft_nc, numpft
     use elm_varpar                , only: update_pft_array_bounds
@@ -75,6 +77,7 @@ contains
     use landunit_varcon           , only: landunit_varcon_init, max_lunit, istice_mec, max_polygon, max_non_poly_lunit
     use column_varcon             , only: col_itype_to_icemec_class
     use elm_varctl                , only: fsurdat, fatmlndfrc, flndtopo, fglcmask, noland, version
+    use elm_varctl                , only: use_h3d
     use pftvarcon                 , only: pftconrd
     use soilorder_varcon          , only: soilorder_conrd
     use decompInitMod             , only: decompInit_lnd, decompInit_clumps, decompInit_gtlcp
@@ -320,6 +323,7 @@ contains
        allocate (wt_glc_mec  (1,1,1))
        allocate (topo_glc_mec(1,1,1))
     endif
+    allocate (wt_h3dc    (begg:endg,1:nh3dc_per_lunit ))
     allocate (wt_polygon (begg:endg,1:max_topounits, max_polygon))
     allocate (wt_tunit  (begg:endg,1:max_topounits  ))
     allocate (elv_tunit (begg:endg,1:max_topounits  ))
@@ -411,6 +415,10 @@ contains
     ! Initialize the vegetation (PFT) data types
     call veg_pp%Init (bounds_proc%begp_all, bounds_proc%endp_all)
 
+    ! Initialize h3d_vars
+    call h3d_vars%Init (bounds_proc%begl_all, bounds_proc%endl_all, &
+         bounds_proc%begc_all, bounds_proc%endc_all)
+
     ! Initialize the cohort data types (nothing here yet)
     ! ...to be added later...
 
@@ -472,6 +480,8 @@ contains
     deallocate (wt_cft, wt_glc_mec)    !wt_lunit not deallocated because it is being used in CanopyHydrologyMod.F90
     deallocate (wt_tunit, elv_tunit, slp_tunit, asp_tunit,num_tunit_per_grd)
     deallocate (wt_polygon) ! RF - might be used elsewhere, not sure if we want to deallocate here.
+   !deallocate wt_h3dc
+    deallocate (wt_h3dc)
     call t_stopf('elm_init1')
 
     ! initialize glc_topo

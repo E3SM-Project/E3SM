@@ -18,6 +18,7 @@ module LandunitType
   !
   use shr_kind_mod   , only : r8 => shr_kind_r8
   use elm_varcon     , only : ispval, spval
+  use elm_varpar     , only : nh3dc_per_lunit
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -57,6 +58,16 @@ module LandunitType
      real(r8), pointer :: ht_roof      (:) => null() ! height of urban roof (m)
      real(r8), pointer :: z_0_town     (:) => null() ! urban landunit momentum roughness length (m)
      real(r8), pointer :: z_d_town     (:) => null() ! urban landunit displacement height (m)
+
+     real(r8), pointer :: hs_w_itf     (:,:) => null() ! hillslope width function defined at h3D soil column interface (N+1 values for N soil columns) (m)
+     real(r8), pointer :: hs_x_itf     (:,:) => null() ! hillslope width function defined at h3D soil column interface (N+1 values for N soil columns) (m)
+     real(r8), pointer :: hs_w_nod     (:,:) => null() ! hillslope width function defined at h3D soil column node (N+1 values for N soil columns) (m)
+     real(r8), pointer :: hs_x_nod     (:,:) => null() ! hillslope width function defined at h3D soil column node (N+1 values for N soil columns) (m)
+
+     real(r8), pointer :: hs_dx        (:,:) => null() ! dx of h3D soil column (m)
+     real(r8), pointer :: hs_dx_node   (:,:) => null() ! dx between 2 adjunct h3D nodes (m)
+     real(r8), pointer :: hs_dA        (:,:) => null() ! area of h3D soil column (m)
+     real(r8), pointer :: hs_area      (:) => null() ! area of h3D hillslope (m)
 
    contains
 
@@ -109,6 +120,16 @@ contains
     allocate(this%z_0_town     (begl:endl)); this%z_0_town     (:) = spval
     allocate(this%z_d_town     (begl:endl)); this%z_d_town     (:) = spval
 
+    ! The following is set in initVerticalMod
+    allocate(this%hs_x_itf     (begl:endl,1:nh3dc_per_lunit+1)); this%hs_x_itf(:,:) = spval
+    allocate(this%hs_w_itf     (begl:endl,1:nh3dc_per_lunit+1)); this%hs_w_itf(:,:) = spval
+    allocate(this%hs_x_nod     (begl:endl,1:nh3dc_per_lunit  )); this%hs_x_nod(:,:) = spval
+    allocate(this%hs_w_nod     (begl:endl,1:nh3dc_per_lunit  )); this%hs_w_nod(:,:) = spval
+    allocate(this%hs_dx        (begl:endl,1:nh3dc_per_lunit  )); this%hs_dx   (:,:) = spval
+    allocate(this%hs_dx_node   (begl:endl,1:nh3dc_per_lunit  )); this%hs_dx_node(:,:) = spval
+    allocate(this%hs_dA        (begl:endl,1:nh3dc_per_lunit  )); this%hs_dA   (:,:) = spval
+    allocate(this%hs_area      (begl:endl                    )); this%hs_area (:) = spval
+
   end subroutine lun_pp_init
 
   !------------------------------------------------------------------------
@@ -142,6 +163,13 @@ contains
     deallocate(this%wtlunit_roof )
     deallocate(this%z_0_town     )
     deallocate(this%z_d_town     )
+    deallocate(this%hs_x_itf     )
+    deallocate(this%hs_w_itf     )
+    deallocate(this%hs_x_nod     )
+    deallocate(this%hs_dx        )
+    deallocate(this%hs_dx_node   )
+    deallocate(this%hs_dA        )
+    deallocate(this%hs_area      )
 
   end subroutine lun_pp_clean
 

@@ -760,6 +760,7 @@ contains
                s_node = max(h2osoi_vol(c,jwt(c)+1)/watsat(c,jwt(c)+1), 0.01_r8)
                s1 = min(1._r8, s_node)
 
+               if(isnan(imped(c,jwt(c)+1))) imped(c,jwt(c)+1)=1._r8
                !scs: this is the expression for unsaturated hk
                ka = imped(c,jwt(c)+1)*hksat(c,jwt(c)+1) &
                  *s1**(2._r8*bsw(c,jwt(c)+1)+3._r8)

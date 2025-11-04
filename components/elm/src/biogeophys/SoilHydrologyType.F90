@@ -45,6 +45,8 @@ Module SoilHydrologyType
      real(r8), pointer :: fcov_col          (:)    => null() ! col fractional impermeable area
      real(r8), pointer :: fsat_col          (:)    => null() ! col fractional area with water table at surface
      real(r8), pointer :: h2osfc_thresh_col (:)    => null() ! col level at which h2osfc "percolates"   (time constant)
+     real(r8), pointer :: zwt_h3d_col       (:)    => null() ! col water table depth from h3d
+     real(r8), pointer :: zwtbed_h3d_col    (:)    => null() ! col max. zwt allowed zibed if var_soil_thickness, 25 otherwise
 
      ! VIC
      real(r8), pointer :: hkdepth_col       (:)     => null()! col VIC decay factor (m) (time constant)
@@ -68,6 +70,10 @@ Module SoilHydrologyType
      real(r8), pointer :: fover             (:)     => null()! decay factor for surface runoff
      real(r8), pointer :: pc                (:)     => null()! surface water threshold probability
      
+     !h3D
+     real(r8), pointer :: h3d_zwt_lun       (:,:)   => null()! lun water table depth defined at landunit
+     real(r8), pointer :: imped_h3d_col     (:)     => null()! scaling factor due to frozen soil
+
    contains
 
      procedure, public  :: Init
@@ -106,6 +112,7 @@ contains
     ! !USES:
     !use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
     use elm_varpar     , only : nlevsno, nlevgrnd
+    use elm_varpar     , only : nh3dc_per_lunit
     !
     ! !ARGUMENTS:
     class(soilhydrology_type) :: this
@@ -115,11 +122,13 @@ contains
     integer :: begp, endp
     integer :: begc, endc
     integer :: begg, endg
+    integer :: begl, endl
     !------------------------------------------------------------------------
 
     begp = bounds%begp; endp= bounds%endp
     begc = bounds%begc; endc= bounds%endc
     begg = bounds%begg; endg= bounds%endg
+    begl = bounds%begl; endl= bounds%endl
 
 
     allocate(this%frost_table_col   (begc:endc))                 ; this%frost_table_col   (:)     = spval
@@ -160,6 +169,10 @@ contains
     allocate(this%fover             (begg:endg))                 ; this%fover             (:)     = spval
     allocate(this%pc                (begg:endg))                 ; this%pc                (:)     = spval
 
+    allocate(this%h3d_zwt_lun       (begl:endl,nh3dc_per_lunit)) ; this%h3d_zwt_lun       (:,:)   = spval
+    allocate(this%imped_h3d_col     (begc:endc))                 ; this%imped_h3d_col     (:)     = spval
+    allocate(this%zwtbed_h3d_col    (begc:endc))                 ; this%zwtbed_h3d_col    (:)     = spval
+
   end subroutine InitAllocate
 
   !------------------------------------------------------------------------
@@ -168,7 +181,8 @@ contains
     ! !USES:
     use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
     use elm_varctl     , only : create_glacier_mec_landunit, use_cn, use_lch4
-    use elm_varpar     , only : nlevsno, crop_prog
+    use elm_varctl     , only : use_h3d
+    use elm_varpar     , only : nlevsno, crop_prog, nh3dc_per_lunit
     use histFileMod    , only : hist_addfld1d, hist_addfld2d, no_snow_normal
     !
     ! !ARGUMENTS:
@@ -179,11 +193,13 @@ contains
     integer           :: begp, endp
     integer           :: begc, endc
     integer           :: begg, endg
+    integer           :: begl, endl
     !------------------------------------------------------------------------
 
     begp = bounds%begp; endp= bounds%endp
     begc = bounds%begc; endc= bounds%endc
     begg = bounds%begg; endg= bounds%endg
+    begl = bounds%begl; endl= bounds%endl
 
     this%wa_col(begc:endc) = spval
     call hist_addfld1d (fname='WA',  units='mm',  &
@@ -219,6 +235,13 @@ contains
     call hist_addfld1d (fname='ZWT_PERCH',  units='m',  &
          avgflag='A', long_name='perched water table depth (vegetated landunits only)', &
          ptr_col=this%zwt_perched_col, l2g_scale_type='veg')
+
+    if (use_h3d) then
+       this%h3d_zwt_lun(begl:endl,1:nh3dc_per_lunit) = spval
+       call hist_addfld2d (fname='ZWT_h3D', units='m', type2d='h3dc', &
+            avgflag='A', long_name='water table depth (vegetated landunits only)', &
+            ptr_lunit=this%h3d_zwt_lun, l2g_scale_type='veg')
+    end if
 
   end subroutine InitHistory
 

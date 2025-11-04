@@ -2121,6 +2121,11 @@ Runtime flag to turn on/off PETSc based thermal model.
 Runtime flag to turn on/off variable soil thickness.
 </entry>
 
+<entry id="use_h3d" type="logical" category="default_settings"
+	group="elm_inparm" valid_values="">
+Runtime flag to turn on/off h3D.
+</entry>
+
 <!-- ======================================================================================== -->
 <!-- Namelist options for lake water storage                                                  -->
 <!-- ======================================================================================== -->

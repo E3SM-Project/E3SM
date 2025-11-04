@@ -113,6 +113,9 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <!-- Do variable soil thickness -->
 <use_var_soil_thick>.false.</use_var_soil_thick>
 
+<!-- Use h3D -->
+<use_h3d>.false.</use_h3d>
+
 <!-- Do downscaling to topounit -->
 <precip_downscaling_method>ERMM</precip_downscaling_method>
 <!-- Do lake water storage -->

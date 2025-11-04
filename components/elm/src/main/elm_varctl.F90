@@ -427,6 +427,11 @@ module elm_varctl
   character(len=32), public :: vsfm_lateral_model_type     = 'none'
 
   !----------------------------------------------------------
+  ! h3D subsurface lateral flow
+  !----------------------------------------------------------
+  logical          , public :: use_h3d                     = .false.
+
+  !----------------------------------------------------------
   ! PETSc-based thermal model switches
   !----------------------------------------------------------
   logical, public :: use_petsc_thermal_model = .false.

@@ -44,7 +44,7 @@ module controlMod
   use FanMod                  , only: nh4_ads_coef
   use AllocationMod         , only: nu_com_phosphatase,nu_com_nfix
   use elm_varctl              , only: nu_com, use_var_soil_thick
-  use elm_varctl              , only: use_lake_wat_storage
+  use elm_varctl              , only: use_lake_wat_storage, use_h3d
   use seq_drydep_mod          , only: drydep_method, DD_XLND, n_drydep
   use elm_varctl              , only: forest_fert_exp
   use elm_varctl              , only: ECA_Pconst_RGspin
@@ -586,6 +586,12 @@ contains
           endif
        endif
 
+       ! h3D only works with use_var_soil_thick on
+       if (use_h3d .and. use_vichydro) then
+          call endrun(msg=' ERROR: use_h3d = .true. requires use_vichydro = .false.'//&
+               errMsg(__FILE__, __LINE__))
+       end if
+
     endif   ! end of if-masterproc if-block
 
     ! ----------------------------------------------------------------------
@@ -763,6 +769,7 @@ contains
     call mpi_bcast (use_vancouver, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_mexicocity, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_noio, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (use_h3d, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_fan, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (fan_mode, len(fan_mode), MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (fan_to_bgc_veg, 1, MPI_LOGICAL, 0, mpicom, ier)
