@@ -4051,7 +4051,7 @@ or that it will not bog down your system.</li>
 <p>As a first step, you are likely to only be concerned with testing your
 specific modifications, so there is no need to run the full suite of EAMxx tests.
 So, we may restrict the tests that will be run by using an appropriate
-<a href="https://en.wikipedia.org/wiki/Regular_expression">regular expression</a> ("regex").<sup id="fnref:regex-tool"><a class="footnote-ref" href="#fn:regex-tool">7</a></sup></p>
+<a href="https://en.wikipedia.org/wiki/Regular_expression">regular expression</a> ("regex").<sup id="fnref:regex-tool"><a class="footnote-ref" href="#fn:regex-tool">6</a></sup></p>
 <div class="copy highlight"><pre><span></span><code><span class="c1"># This example regex will match the exact substring &quot;ash_injection&quot;.</span>
 <span class="c1"># That is, it will match &quot;ash_injection_validate_test&quot;,</span>
 <span class="c1"># &quot;test_suite_ash_injection&quot;, and &quot;test_ash_injection_quick&quot; but not</span>
@@ -4184,7 +4184,7 @@ set the proper "machine ID" flag that indicates the machine name and potentially
 the desired device to run with (CPU, GPU).
 This is because <code>test-all-eamxx</code> configures the run according to a
 "machine file" that sets an environment known to build and test successfully
-and efficiently<sup id="fnref:mach-file"><a class="footnote-ref" href="#fn:mach-file">6</a></sup>.</p>
+and efficiently<sup id="fnref:mach-file"><a class="footnote-ref" href="#fn:mach-file">7</a></sup>.</p>
 <details class="example">
 <summary>Example: Running on Perlmutter</summary>
 <div class="copy highlight"><pre><span></span><code><span class="c1"># run tests on cpu</span>
@@ -4360,12 +4360,12 @@ to be triggered by the admonition environment -->
 <li id="fn:smoke-test-def">
 <p><strong><em>Smoke Test</em></strong> is a term used by software developers to describe a type of test that initially indicates whether something is working properly--as in, "flip the switch and see if anything starts smoking." <img alt="🤞" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/1f91e.svg" title=":fingers_crossed:" />&#160;<a class="footnote-backref" href="#fnref:smoke-test-def" title="Jump back to footnote 5 in the text">&#8617;</a></p>
 </li>
+<li id="fn:regex-tool">
+<p>For those that are not regex ninjas (yet), there are useful tools only to construct or decode regex strings--e.g., <a href="https://regexr.com">RegExr</a>.&#160;<a class="footnote-backref" href="#fnref:regex-tool" title="Jump back to footnote 6 in the text">&#8617;</a></p>
+</li>
 <li id="fn:mach-file">
 <p>If you discover that a supported machine does not successfully build and test, please file an <a href="https://github.com/E3SM-Project/E3SM/issues">Issue</a> with the tag <strong><em>Machine Files</em></strong>.
-Also, no promises the standard configuration is perfectly efficient.&#160;<a class="footnote-backref" href="#fnref:mach-file" title="Jump back to footnote 6 in the text">&#8617;</a></p>
-</li>
-<li id="fn:regex-tool">
-<p>For those that are not regex ninjas (yet), there are useful tools only to construct or decode regex strings--e.g., <a href="https://regexr.com">RegExr</a>.&#160;<a class="footnote-backref" href="#fnref:regex-tool" title="Jump back to footnote 7 in the text">&#8617;</a></p>
+Also, no promises the standard configuration is perfectly efficient.&#160;<a class="footnote-backref" href="#fnref:mach-file" title="Jump back to footnote 7 in the text">&#8617;</a></p>
 </li>
 <li id="fn:tas-compute-node">
 <p>While probably not time-efficient, there is no reason <code>test-all-eamxx</code> cannot also be run by submitting to the batch scheduler.
