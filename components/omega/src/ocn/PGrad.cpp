@@ -1,7 +1,7 @@
 //===-- ocn/PGrad.cpp - Pressure Gradient Term -----------------*- C++ -*-===//
 //
 // Implements the PGrad manager and two discretizations: Centered and
-// HighOrder. 
+// HighOrder.
 //
 //===----------------------------------------------------------------------===//
 
@@ -22,7 +22,7 @@ std::map<std::string, std::unique_ptr<PressureGrad>> PressureGrad::AllPGrads;
 void PressureGrad::init() {
 
    // Retrieve default mesh and vertical coordinate
-   HorzMesh *DefMesh = HorzMesh::getDefault();
+   HorzMesh *DefMesh    = HorzMesh::getDefault();
    VertCoord *DefVCoord = VertCoord::getDefault();
 
    // Retrieve PressureGrad config group
@@ -30,20 +30,22 @@ void PressureGrad::init() {
    Config PGradConfig("PressureGrad");
    Error Err;
    Err += OmegaConfig->get(PGradConfig);
-   CHECK_ERROR_ABORT(Err, "PressureGrad: PressureGrad group not found in Config");
+   CHECK_ERROR_ABORT(Err,
+                     "PressureGrad: PressureGrad group not found in Config");
 
    // Create the default PressureGrad and set pointer to it
-   PressureGrad::DefaultPGrad = PressureGrad::create(
-       "Default", DefMesh, DefVCoord, &PGradConfig);
+   PressureGrad::DefaultPGrad =
+       PressureGrad::create("Default", DefMesh, DefVCoord, &PGradConfig);
 
-} // end init 
+} // end init
 
 //------------------------------------------------------------------------------
 // Create a new PressureGrad object and add it to the map
-PressureGrad *PressureGrad::create(const std::string &Name,  /// [in] Name for PressureGrad
-                                   const HorzMesh *Mesh,     ///< [in] Horizontal mesh
-                                   const VertCoord *VCoord,  ///< [in] Vertical coordinate
-                                   Config *Options) {        ///< [in] Configuration options
+PressureGrad *
+PressureGrad::create(const std::string &Name, /// [in] Name for PressureGrad
+                     const HorzMesh *Mesh,    ///< [in] Horizontal mesh
+                     const VertCoord *VCoord, ///< [in] Vertical coordinate
+                     Config *Options) {       ///< [in] Configuration options
 
    // Check to see if a PressureGrad of the same name already exists and
    // if so, exit with an error
@@ -64,7 +66,7 @@ PressureGrad *PressureGrad::create(const std::string &Name,  /// [in] Name for P
 } // end create
 
 //------------------------------------------------------------------------------
-// Get the default pressure gradient instance 
+// Get the default pressure gradient instance
 PressureGrad *PressureGrad::getDefault() {
 
    return DefaultPGrad;
@@ -73,37 +75,39 @@ PressureGrad *PressureGrad::getDefault() {
 
 //------------------------------------------------------------------------------
 // Constructor for PressureGrad
-PressureGrad::PressureGrad(const HorzMesh *Mesh,    ///< [in] Horizontal mesh
-                           const VertCoord *VCoord, ///< [in] Vertical coordinate
-                           Config *Options)         ///< [in] Configuration options
-    : CellsOnEdge(Mesh->CellsOnEdge),
-      DvEdge(Mesh->DvEdge),
-      EdgeSignOnCell(Mesh->EdgeSignOnCell),
-      CenteredPGrad(Mesh), HighOrderPGrad(Mesh) {
+PressureGrad::PressureGrad(
+    const HorzMesh *Mesh,    ///< [in] Horizontal mesh
+    const VertCoord *VCoord, ///< [in] Vertical coordinate
+    Config *Options)         ///< [in] Configuration options
+    : CellsOnEdge(Mesh->CellsOnEdge), DvEdge(Mesh->DvEdge),
+      EdgeSignOnCell(Mesh->EdgeSignOnCell), CenteredPGrad(Mesh),
+      HighOrderPGrad(Mesh) {
 
-  // store mesh sizes
-  NEdgesAll = Mesh->NEdgesAll;
-  NVertLayers = VCoord->NVertLayers;
-  NChunks = NVertLayers / VecLength;
+   // store mesh sizes
+   NEdgesAll   = Mesh->NEdgesAll;
+   NVertLayers = VCoord->NVertLayers;
+   NChunks     = NVertLayers / VecLength;
 
-  // Read config options for PressureGrad type
-  // and enable the appropriate functor
-  Config PGradConfig("PressureGrad");
-  Error Err;
-  Err += Options->get(PGradConfig);
-  CHECK_ERROR_ABORT(Err, "PressureGrad: PressureGrad group not found in Config");
-  std::string PGradTypeStr;
-  Err += PGradConfig.get("PressureGradType", PGradTypeStr);
+   // Read config options for PressureGrad type
+   // and enable the appropriate functor
+   Config PGradConfig("PressureGrad");
+   Error Err;
+   Err += Options->get(PGradConfig);
+   CHECK_ERROR_ABORT(Err,
+                     "PressureGrad: PressureGrad group not found in Config");
+   std::string PGradTypeStr;
+   Err += PGradConfig.get("PressureGradType", PGradTypeStr);
 
-  if (PGradTypeStr == "centered" || PGradTypeStr == "Centered") {
-    PressureGradChoice = PressureGradType::Centered;
-    this->CenteredPGrad.Enabled = true;
-  } else if (PGradTypeStr == "HighOrder1") {
-    PressureGradChoice = PressureGradType::HighOrder1;
-    this->HighOrderPGrad.Enabled = true;
-  } else {
-    LOG_INFO("PGrad: Unknown PressureGradType in config, defaulting to centered");
-  }
+   if (PGradTypeStr == "centered" || PGradTypeStr == "Centered") {
+      PressureGradChoice          = PressureGradType::Centered;
+      this->CenteredPGrad.Enabled = true;
+   } else if (PGradTypeStr == "HighOrder1") {
+      PressureGradChoice           = PressureGradType::HighOrder1;
+      this->HighOrderPGrad.Enabled = true;
+   } else {
+      LOG_INFO(
+          "PGrad: Unknown PressureGradType in config, defaulting to centered");
+   }
 
 } // end constructor
 
@@ -117,11 +121,7 @@ PressureGrad::~PressureGrad() {
 
 //------------------------------------------------------------------------------
 // Remove PressureGrad instances before exit
-void PressureGrad::clear() {
-
-    AllPGrads.clear();
-   
- } // end clear
+void PressureGrad::clear() { AllPGrads.clear(); } // end clear
 
 //------------------------------------------------------------------------------
 // Remove PressureGrad from list by name
@@ -157,31 +157,46 @@ void PressureGrad::computePressureGrad(Array2DReal Tend,
                                        const Eos *EqState,
                                        const int TimeLevel) {
 
-  OMEGA_SCOPE(LocCenteredPGrad, CenteredPGrad);
-  OMEGA_SCOPE(LocHighOrderPGrad, HighOrderPGrad);
+   OMEGA_SCOPE(LocCenteredPGrad, CenteredPGrad);
+   OMEGA_SCOPE(LocHighOrderPGrad, HighOrderPGrad);
 
-  const Array2DReal &PressureMid     = VCoord->PressureMid;
-  const Array2DReal &PressureInterface = VCoord->PressureInterface;
-  const Array2DReal &Geopotential = VCoord->GeopotentialMid;
-  const Array2DReal &SpecVol      = EqState->SpecVol;
-  const Array2DReal &SpecVolInterface = EqState->SpecVolInterface;
-  const Array2DReal &ZInterface   = VCoord->ZInterface;
-  Array2DReal LayerThick;
-  State->getLayerThickness(LayerThick, TimeLevel);
+   const Array2DReal &PressureMid       = VCoord->PressureMid;
+   const Array2DReal &PressureInterface = VCoord->PressureInterface;
+   const Array2DReal &Geopotential      = VCoord->GeopotentialMid;
+   const Array2DReal &SpecVol           = EqState->SpecVol;
+   const Array2DReal &SpecVolInterface  = EqState->SpecVolInterface;
+   const Array2DReal &ZInterface        = VCoord->ZInterface;
+   Array2DReal LayerThick;
+   State->getLayerThickness(LayerThick, TimeLevel);
 
-  if (PressureGradChoice == PressureGradType::Centered) {
-    parallelFor("pgrad-centered", {NEdgesAll, NChunks},
-                KOKKOS_LAMBDA(I4 IEdge, I4 KChunk) {
-                  LocCenteredPGrad(Tend, IEdge, KChunk, PressureMid, PressureInterface, Geopotential,
-                                   LayerThick, ZInterface, SpecVol, SpecVolInterface);
-                });
-  } else {
-    parallelFor("pgrad-highorder", {NEdgesAll, NChunks},
-                KOKKOS_LAMBDA(I4 IEdge, I4 KChunk) {
-                  LocHighOrderPGrad(Tend, IEdge, KChunk, PressureMid, Geopotential,
-                                    SpecVol);
-                });
-  }
+   if (PressureGradChoice == PressureGradType::Centered) {
+      parallelFor(
+          "pgrad-centered", {NEdgesAll, NChunks},
+          KOKKOS_LAMBDA(I4 IEdge, I4 KChunk) {
+             LocCenteredPGrad(Tend, IEdge, KChunk, PressureMid,
+                              PressureInterface, Geopotential, LayerThick,
+                              ZInterface, SpecVol, SpecVolInterface);
+          });
+   } else {
+      parallelFor(
+          "pgrad-highorder", {NEdgesAll, NChunks},
+          KOKKOS_LAMBDA(I4 IEdge, I4 KChunk) {
+             LocHighOrderPGrad(Tend, IEdge, KChunk, PressureMid, Geopotential,
+                               SpecVol);
+          });
+   }
 } // end compute pressure gradient
+
+//------------------------------------------------------------------------------
+// Constructor for centered pressure gradient functor
+PressureGradCentered::PressureGradCentered(const HorzMesh *Mesh)
+    : CellsOnEdge(Mesh->CellsOnEdge), DcEdge(Mesh->DcEdge),
+      EdgeMask(Mesh->EdgeMask) {}
+
+//------------------------------------------------------------------------------
+// Constructor for high order pressure gradient functor
+PressureGradHighOrder::PressureGradHighOrder(const HorzMesh *Mesh)
+    : CellsOnEdge(Mesh->CellsOnEdge), DcEdge(Mesh->DcEdge),
+      EdgeMask(Mesh->EdgeMask) {}
 
 } // namespace OMEGA
