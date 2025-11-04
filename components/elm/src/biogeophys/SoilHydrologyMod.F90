@@ -1006,7 +1006,7 @@ contains
      !
      ! !LOCAL VARIABLES:
      !character(len=32) :: subname = 'Drainage'           ! subroutine name
-     integer  :: c,j,fc,i                                ! indices
+     integer  :: c,j,fc,i,g                               ! indices
      integer  :: nlevbed                                 ! # layers to bedrock
      real(r8) :: xs(bounds%begc:bounds%endc)             ! water needed to bring soil moisture to watmin (mm)
      real(r8) :: dzmm(bounds%begc:bounds%endc,1:nlevgrnd) ! layer thickness (mm)
@@ -1164,6 +1164,7 @@ contains
           c = filter_hydrologyc(fc)
        	  nlevbed = nlev2bed(c)
 
+          g = col_pp%gridCell(c)
           e_ice = ice_imped(g)
           !  specify maximum drainage rate
           q_perch_max = 1.e-5_r8 * sin(col_pp%topo_slope(c) * (rpi/180._r8))
@@ -1651,7 +1652,7 @@ contains
      !
      ! !LOCAL VARIABLES:
      character(len=32) :: subname = 'Drainage'           ! subroutine name
-     integer  :: c,j,fc,i                                ! indices
+     integer  :: c,j,fc,i,g                              ! indices
      real(r8) :: xs(bounds%begc:bounds%endc)             ! water needed to bring soil moisture to watmin (mm)
      real(r8) :: dzmm(bounds%begc:bounds%endc,1:nlevgrnd) ! layer thickness (mm)
      integer  :: jwt(bounds%begc:bounds%endc)            ! index of the soil layer right above the water table (-)
@@ -1804,6 +1805,7 @@ contains
        do fc = 1, num_hydrologyc
           c = filter_hydrologyc(fc)
 
+          g = col_pp%gridCell(c)
           e_ice = ice_imped(g)
 
           !  specify maximum drainage rate
