@@ -417,7 +417,7 @@ contains
 
     call grc_es%Init(bounds_proc%begg_all, bounds_proc%endg_all)
     call lun_es%Init(bounds_proc%begl_all, bounds_proc%endl_all)
-    call col_es%Init(bounds_proc%begc_all, bounds_proc%endc_all)
+    call col_es%Init(bounds_proc%begc_all, bounds_proc%endc_all, bounds_proc%endc)
     call veg_es%Init(bounds_proc%begp_all, bounds_proc%endp_all)
 
     call canopystate_vars%init(bounds_proc)
@@ -432,7 +432,7 @@ contains
 
     call grc_ws%Init(bounds_proc%begg_all, bounds_proc%endg_all)
     call lun_ws%Init(bounds_proc%begl_all, bounds_proc%endl_all)
-    call col_ws%Init(bounds_proc%begc_all, bounds_proc%endc_all, &
+    call col_ws%Init(bounds_proc%begc_all, bounds_proc%endc_all, bounds_proc%endc, &
          h2osno_col(begc:endc),                    &
          snow_depth_col(begc:endc),                &
          soilstate_vars%watsat_col(begc:endc, 1:))
@@ -441,7 +441,7 @@ contains
     call waterflux_vars%init(bounds_proc)
 
     call grc_wf%Init(bounds_proc%begg_all, bounds_proc%endg_all, bounds_proc)
-    call col_wf%Init(bounds_proc%begc_all, bounds_proc%endc_all)
+    call col_wf%Init(bounds_proc%begc_all, bounds_proc%endc_all, bounds_proc%endc)
     call veg_wf%Init(bounds_proc%begp_all, bounds_proc%endp_all)
 
     call chemstate_vars%Init(bounds_proc)
