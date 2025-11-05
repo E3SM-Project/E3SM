@@ -76,6 +76,7 @@ module ELMFatesInterfaceMod
    use elm_varctl        , only : fates_history_dimlevel
    use elm_varctl        , only : use_lch4
    use elm_varctl        , only : use_century_decomp
+   use elm_varctl        , only : carbon_only,carbonnitrogen_only,carbonphosphorus_only
    use elm_varcon        , only : tfrz
    use elm_varcon        , only : spval
    use elm_varcon        , only : denice
@@ -501,17 +502,6 @@ contains
            call set_fates_ctrlparms('decomp_method',cval='CTC')
         end if
 
-        ! ELM ALWAYS has nitrogen and phosphorus "on"
-        ! These may be in a non-limiting status (ie when supplements)
-        ! are added, but they are always allocated and cycled non-the less
-        ! FATES may want to interact differently with other models
-        ! that don't even have these arrays allocated.
-        ! FATES also checks that if NO3 is cycled in ELM, then
-        ! any plant affinity parameters are checked.
-
-        call set_fates_ctrlparms('nitrogen_spec',ival=1)
-        call set_fates_ctrlparms('phosphorus_spec',ival=1)
-        
         if(is_restart() .or. nsrest == nsrBranch) then
            pass_is_restart = 1
         else
@@ -1176,7 +1166,7 @@ contains
       integer  :: nlevsoil                 ! number of soil layers at the site
       integer  :: ier                      ! allocate status code
       real(r8) :: s_node, smp_node         ! local for relative water content and potential
-      
+      logical  :: nitr_suppl,phos_suppl    ! Is ELM currently supplementing N or P?
       real(r8), pointer :: lnfm24(:)       ! 24-hour averaged lightning data
       real(r8), pointer :: gdp_lf_col(:)          ! gdp data
 
@@ -1341,8 +1331,26 @@ contains
 
       ! Nutrient uptake fluxes have been accumulating with each short
       ! timestep, here, we unload them from the boundary condition
-      ! structures into the cohort structures.
-      call UnPackNutrientAquisitionBCs(this%fates(nc)%sites, this%fates(nc)%bc_in)
+      ! structures into the cohort structures.  We also tell
+      ! fates the current supplementation status (used for dynamic rooting)
+
+      if(carbon_only)then
+         nitr_suppl = .true.
+         phos_suppl = .true.
+      else
+         if(carbonnitrogen_only)then
+            phos_suppl = .true.
+         else
+            phos_suppl = .false.
+         end if
+         if(carbonphosphorus_only)then
+            nitr_suppl = .true.
+         else
+            nitr_suppl = .false.
+         end if
+      end if
+      
+      call UnPackNutrientAquisitionBCs(this%fates(nc)%sites, this%fates(nc)%bc_in, nitr_suppl, phos_suppl)
       
       ! Distribute any seeds from neighboring gridcells into the current gridcell
       ! Global seed availability array populated by WrapGlobalSeedDispersal call
