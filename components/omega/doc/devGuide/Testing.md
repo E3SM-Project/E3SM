@@ -16,21 +16,28 @@ test suite from Polaris.  The tests in the suite are defined in
 [omega_pr.txt](https://github.com/E3SM-Project/polaris/blob/main/polaris/suites/ocean/omega_pr.txt)
 in the Polaris repository.
 
-You will need to run `omega_pr` once on the Omega
-[develop branch](https://github.com/E3SM-Project/Omega)
-and once on your development branch.  This means you will need to
-{ref}`build Omega <omega-dev-quick-start-build>` for each branch before running
-the suite.  You may wish to use the {ref}`omega-dev-quick-start-ctest-util` to
-automate the build and run the CTests for each branch.
+You will run the suite twice: once using the Omega version vendored in Polaris
+under `e3sm_submodules/Omega` (the official baseline) and once using your
+development branch. This means you will need to
+{ref}`build Omega <omega-dev-quick-start-build>` from both sources before
+running the suite. You may wish to use the {ref}`omega-dev-quick-start-ctest-util`
+to automate the build and run the CTests for each.
 
-### Prerequisites: build Omega on both branches
+```{note}
+While the Omega `develop` branch often matches the Polaris submodule
+bit-for-bit (b4b), the submodule at `e3sm_submodules/Omega` is the
+authoritative baseline for regression comparison.
+```
+
+### Prerequisites: build Omega for baseline and PR
 
 Before setting up and running the `omega_pr` suite, you must build Omega twice:
 
-- Build from the `develop` branch. Record the CMake build directory path as
-  `DEVELOP_BUILD` (used below with `polaris suite -p`).
-- Build from your development (test) branch. Record the CMake build directory
-  path as `TEST_BRANCH_BUILD` (also used with `-p`).
+- Build the baseline from the Omega sources vendored by Polaris at
+  `<path-to-polaris-repo>/e3sm_submodules/Omega`. Record the CMake build
+  directory path as `BASELINE_BUILD` (used below with `polaris suite -p`).
+- Build from your development (PR) branch. Record the CMake build directory
+  path as `PR_BUILD` (also used with `-p`).
 
 The `-p` option passed to `polaris suite` should point to the CMake build
 directory for the corresponding branch (the directory where you ran CMake and
@@ -53,31 +60,31 @@ and [activating the environment](https://docs.e3sm.org/polaris/main/developers_g
 Then, with the Polaris environment active, you can set up the baseline
 `omega_pr` suite as follows:
 ``` bash
-DEVELOP_BUILD=/path/to/omega/develop/build
+BASELINE_BUILD=/path/to/build/from/polaris/e3sm_submodules/Omega
 POLARIS_SCRATCH=/path/to/scratch/polaris_testing/
 polaris suite -c ocean -t omega_pr --model omega \
-    -w $POLARIS_SCRATCH/baseline_omega_pr \
-    -p $DEVELOP_BUILD
+  -w $POLARIS_SCRATCH/baseline_omega_pr \
+  -p $BASELINE_BUILD
 ```
 where `$POLARIS_SCRATCH` is a directory within your scratch space that is
 useful for setting up and running the Polaris test suites and
-`$DEVELOP_BUILD` is the directory where you built Omega from the `develop`
-branch, or where the Polaris CTest utility built if for you (e.g.
-`build_omega/build_chrysalis_intel`).
+`$BASELINE_BUILD` is the directory where you built Omega from the Omega
+sources located at `<polaris-repo>/e3sm_submodules/Omega`, or where the
+Polaris CTest utility built it for you (e.g. `build_omega/build_chrysalis_intel`).
 
 Next, you can set up the `omega_pr` for your development branch, using the
-baseline from the `develop` branch:
+baseline set up above:
 
 ``` bash
-TEST_BRANCH_BUILD=/path/to/omega/test/branch/build
+PR_BUILD=/path/to/omega/pr/branch/build
 POLARIS_SCRATCH=/path/to/scratch/polaris_testing/
 polaris suite -c ocean -t omega_pr --model omega \
     -b $POLARIS_SCRATCH/baseline_omega_pr \
     -w $POLARIS_SCRATCH/my_branch_omega_pr \
-    -p $TEST_BRANCH_BUILD
+  -p $PR_BUILD
 ```
 Here, `$POLARIS_SCRATCH` is the same scratch directory as above,
-`$TEST_BRANCH_BUILD` is the directory where you build Omega from your
+`$PR_BUILD` is the directory where you build Omega from your
 development branch (or where the CTest utility built for you), and
 `my_branch_omega_pr` can be any name that helps you keep track of what you
 were testing.
@@ -111,9 +118,10 @@ documentation for equivalent commands.
 
 What should you do if you see test failures?
 
-#### Test execution errors for `develop` baseline
+#### Test execution errors for baseline (Polaris `e3sm_submodules/Omega`)
 
-If you see test execution failures in the baseline run from `develop`,
+If you see test execution failures in the baseline run from Polaris
+`e3sm_submodules/Omega`,
 these need to be reported as [issues](https://github.com/E3SM-Project/Omega/issues)
 on the Omega repo, preferably mentioning a relevant Omega developer who may
 be able to investigate the cause of the failure.  Please provide the contents
@@ -151,7 +159,7 @@ We do not update `e3sm_submodules/Omega` after every branch is merged into
 ```
 
 If you see unexpected differences between the results for your development
-branch and those from `develop`, you should attempt to debug the cause yourself
+branch and those from the baseline, you should attempt to debug the cause yourself
 and then reach out to the Omega team if you need help.
 
 
@@ -173,8 +181,8 @@ machine and compiler.
       a one-line note each
 
 - Polaris `omega_pr` regression suite
-    - Baseline run (develop)
-        - Build directory used for -p
+  - Baseline run (Polaris `e3sm_submodules/Omega`)
+    - Build path used for -p (from Polaris `e3sm_submodules/Omega`)
         - Work directory used for -w
     - PR branch run
         - Build directory used for -p
@@ -201,12 +209,8 @@ CTest unit tests
 - Build type: <Debug|Release>
 - Result: All tests passed | Failures (X of Y): <name> (<one-line note>), ...
 
-- Machine: <machine>[, <partition>]
-- Compiler: <compiler>
-- ...
-
 Polaris omega_pr regression suite
-- Baseline build (-p): <path/to/develop/build>
+- Baseline build (-p): <path/to/build of Polaris e3sm_submodules/Omega>
 - Baseline workdir (-w): <path/to/baseline_omega_pr>
 - PR build (-p): <path/to/pr/build>
 - PR workdir (-w): <path/to/my_branch_omega_pr>
