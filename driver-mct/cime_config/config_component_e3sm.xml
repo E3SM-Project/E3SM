@@ -240,6 +240,18 @@
     </desc>
   </entry>
 
+  <entry id="nlmaps_atm2srf_conserve">
+    <type>char</type>
+    <valid_values>.true.,.false.</valid_values>
+    <default_value>.false.</default_value>
+    <values match="last">
+      <value grid="a%ne120np4">.true.</value>
+    </values>
+    <group>seq_infodata_inparm</group>
+    <file>env_run.xml</file>
+    <desc>Conservative nlmaps from atm to surface</desc>
+  </entry>
+
   <!-- ===================================================================== -->
   <!-- component coupling options and frequencies -->
   <!-- ===================================================================== -->
@@ -592,7 +604,8 @@
       <value compset="_EAM.*_ELM.*MPASO">8</value>
       <value compset="_EAM.*_ELM.*MPASO" grid="a%ne4np4">6</value>
       <value compset="_EAM.*_ELM.*MPASO" grid="a%ne11np4">4</value>
-      <value compset="_EAM.*_ELM.*MPASO" grid="a%ne120np4">8</value>
+      <value compset="_EAM.*_ELM.*MPASO" grid="a%ne120np4">24</value>
+      <value compset=".*_ELM.*MPASO" grid="oi%RRSwISC6to18E3r5_r%r025">24</value>
       <value compset="20TR_" grid="a%ne4np4">$ATM_NCPL</value>
     </values>
     <group>run_coupling</group>
@@ -928,6 +941,7 @@
     <values match="last">
       <value compset=".+EAM%CMIP6"				>2</value>
       <value compset=".+CMIP7_EAM"				>2</value>
+      <value compset=".+CMIP7_DATM%CPLHIST"			>2</value>
       <value compset=".+EAM%MMF"				>2</value>
     </values>
     <group>shr_dust_nl</group>

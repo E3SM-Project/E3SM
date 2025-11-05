@@ -30,7 +30,7 @@
 <stream_year_last_popdens  phys="elm" use_cn=".true."   >2100</stream_year_last_popdens>
 <model_year_align_popdens  phys="elm" use_cn=".true."   >1850</model_year_align_popdens>
 
-<stream_fldfilename_popdens phys="elm" use_cn=".true." >lnd/clm2/firedata/elmforc.popden_cmip7_gr_0.5x0.5_simyr1850-2025_c250822.nc</stream_fldfilename_popdens>
+<stream_fldfilename_popdens phys="elm" use_cn=".true." >lnd/clm2/firedata/elmforc.popden_cmip7_gr_0.5x0.5_simyr1850-2025_c251024.nc</stream_fldfilename_popdens>
 
 <!-- CMIP7 DECK compsets -->
 
