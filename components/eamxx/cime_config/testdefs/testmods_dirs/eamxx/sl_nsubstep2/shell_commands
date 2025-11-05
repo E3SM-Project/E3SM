@@ -1,3 +1,4 @@
 ATMCHANGE=$CIMEROOT/../components/eamxx/scripts/atmchange
 
 $ATMCHANGE semi_lagrange_trajectory_nsubstep=2 -b
+$ATMCHANGE semi_lagrange_trajectory_nvelocity=3 -b

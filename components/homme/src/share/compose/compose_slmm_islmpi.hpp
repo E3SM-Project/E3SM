@@ -579,10 +579,10 @@ struct IslMpi {
   const typename Advecter::ConstPtr advecter;
   const Int np, np2, nlev, qsize, qsized, nelemd, halo;
   const bool traj_3d;
-  const Int traj_nsubstep, dep_points_ndim;
+  const Int traj_nsubstep, dep_points_ndim, traj_msg_sz;
 
   Real etai_beg, etai_end;
-  ArrayD<Real*> etam;
+  ArrayD<Real*> etai, etam;
 
   ElemDataListH ed_h; // this rank's owned cells, indexed by LID
   ElemDataListD ed_d;
@@ -637,8 +637,10 @@ struct IslMpi {
           Int itraj_3d, Int itraj_nsubstep)
     : p(ip), advecter(advecter),
       np(inp), np2(np*np), nlev(inlev), qsize(iqsize), qsized(iqsized), nelemd(inelemd),
-      halo(ihalo), traj_3d(itraj_3d), traj_nsubstep(itraj_nsubstep),
-      dep_points_ndim(traj_3d && traj_nsubstep > 0 ? 4 : 3),
+      halo(ihalo), traj_3d(itraj_3d),
+      traj_nsubstep(itraj_nsubstep),
+      dep_points_ndim(traj_3d and traj_nsubstep > 0 ? 4 : 3),
+      traj_msg_sz(traj_3d ? 5 : dep_points_ndim),
       tracer_arrays(itracer_arrays)
   {}
 
@@ -768,11 +770,10 @@ void step(
   Real* q_min_r, Real* q_max_r);
 
 template <typename MT = ko::MachineTraits>
-void set_hvcoord(IslMpi<MT>& cm, const Real etai_beg, const Real etai_end,
-                 const Real* etam);
+void set_hvcoord(IslMpi<MT>& cm, const Real* etai, const Real* etam);
 
 template <typename MT = ko::MachineTraits>
-void calc_v_departure(
+void interp_v_update(
   IslMpi<MT>& cm, const Int nets, const Int nete, const Int step, const Real dtsub,
   Real* dep_points_r, const Real* vnode, Real* vdep);
 

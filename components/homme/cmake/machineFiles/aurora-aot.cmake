@@ -44,7 +44,8 @@ SET(CMAKE_Fortran_COMPILER "mpifort" CACHE STRING "")
 SET(CMAKE_CXX_COMPILER "mpicxx" CACHE STRING "")
 
 #AOT flags
-SET(SYCL_COMPILE_FLAGS "-std=c++17 -fsycl -fsycl-device-code-split=per_kernel -fno-sycl-id-queries-fit-in-int -fsycl-unnamed-lambda -Xclang -fsycl-allow-virtual-functions")
+#SET(SYCL_COMPILE_FLAGS "-std=c++17 -fsycl -fsycl-device-code-split=per_kernel -fno-sycl-id-queries-fit-in-int -fsycl-unnamed-lambda -Xclang -fsycl-allow-virtual-functions")
+SET(SYCL_COMPILE_FLAGS "-std=c++17 -fsycl -fsycl-device-code-split=per_kernel -fno-sycl-id-queries-fit-in-int -fsycl-unnamed-lambda")
 SET(SYCL_LINK_FLAGS "-Wl,--no-relax -flink-huge-device-code -fsycl-max-parallel-link-jobs=32 -fsycl -fsycl-device-code-split=per_kernel -fsycl-targets=intel_gpu_pvc")
 
 SET(ADD_Fortran_FLAGS "-fc=ifx -fpscomp logicals -O3 -DNDEBUG -DCPRINTEL -g" CACHE STRING "")
