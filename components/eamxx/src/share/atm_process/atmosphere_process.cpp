@@ -545,6 +545,7 @@ void AtmosphereProcess::compute_step_tendencies () {
     // may be MUCH larger than the tend. Instead, compute step tend, and THEN add into tend
     f_beg.update(f_end,1,-1);
     tend.update(f_beg,1,1);
+    tend.get_header().get_tracking().update_time_stamp(m_end_of_step_ts);
   }
   stop_timer(m_timer_prefix + this->name() + "::compute_tendencies");
 }
