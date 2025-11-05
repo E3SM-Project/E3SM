@@ -58,6 +58,7 @@ class ZMDeepConvection : public AtmosphereProcess
 
     // define ZM process variables
     std::shared_ptr<const AbstractGrid> m_grid;
+    int m_pcol;
     int m_ncol;
     int m_nlev;
 
