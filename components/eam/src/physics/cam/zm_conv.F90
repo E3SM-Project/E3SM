@@ -591,7 +591,7 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
    ! conservation check and adjusment
 #ifndef SCREAM_CONFIG_IS_CMAKE
    if (zm_param%zm_microp) call zm_microphysics_adjust(pcols, lengath, pver, jt, msg, delt, zm_const, &
-                                                       dp, qg, dlg, dsdt, dqdt, rprd, loc_microp_st)
+                                                       dp, qg, dlg, dsdt, dqdt, rprdg, loc_microp_st)
 #endif
 
    !----------------------------------------------------------------------------
