@@ -32,31 +32,6 @@ public:
     m_field_rank = f.rank();
   }
 
-  // // FieldExpressionBase (const FieldExpressionBase& src) {
-  // //   *this = src;
-  // // }
-  // FieldExpressionBase& operator= (const FieldExpressionBase&) = default;
-  // FieldExpressionBase& operator= (const FieldExpressionBase& src) {
-  //   m_view_1d = src.m_view_1d;
-  //   m_view_2d = src.m_view_2d;
-  //   m_view_3d = src.m_view_3d;
-
-  //   m_eval_view_1d = src.m_eval_view_1d;
-  //   m_eval_view_2d = src.m_eval_view_2d;
-  //   m_eval_view_3d = src.m_eval_view_3d;
-
-  //   m_data = src.m_data;
-
-  //   // Cannot store FieldLayout, as it is not device friendly and would cause many warnings
-  //   for (int i=0; i<src.m_field_rank; ++i)
-  //     m_field_tags[i] = src.m_field_tags[i];
-
-  //   m_field_rank = src.m_field_rank;
-  //   m_eval_rank  = src.m_eval_rank;
-
-  //   return *this;
-  // }
-
   int num_indices () const { return m_field_rank; }
 
   KOKKOS_INLINE_FUNCTION
@@ -68,18 +43,6 @@ public:
     else
       return m_eval_view_3d(m_data.i,m_data.j,m_data.k);
   }
-  // KOKKOS_INLINE_FUNCTION
-  // Real eval(int i) const {
-  //   return static_cast<Real>(m_view_1d(i));
-  // }
-  // KOKKOS_INLINE_FUNCTION
-  // Real eval(int i, int j) const {
-  //   return static_cast<Real>(m_view_2d(i,j));
-  // }
-  // KOKKOS_INLINE_FUNCTION
-  // Real eval(int i,int j,int k) const {
-  //   return static_cast<Real>(m_view_3d(i,j,k));
-  // }
 
   void set_eval_layout (const FieldLayout& fl) {
     m_eval_rank = fl.rank();

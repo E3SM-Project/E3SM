@@ -6,11 +6,16 @@
 namespace scream {
 
 // ----------------- POW ------------------- //
+struct ScalarBase {};
+struct ScalarExp  {};
 
 template<typename EBase, typename EExp>
-class PowExpression : public Expression<PowExpression<EBase,EExp>> {
+class PowExpression : public Expression<PowExpression<EBase,EExp,ScalarBase,ScalarExp>> {
 public:
-  static constexpr bool is_leaf = false;
+  static constexpr scalar_base = std::is_arithmetic_v<EBase>;
+  static constexpr scalar_exp  = std::is_arithmetic_v<EExp>;
+  static_assert(not scalar_base or not scalar_exp,
+      "[PowExpression] One between EBase and EExp must be non-arithmetic.\n");
 
   PowExpression (const EBase& base, const EExp& exp)
     : m_base(base)
@@ -19,90 +24,50 @@ public:
     // Nothing to do here
   }
 
-  int num_indices () const { return std::max(m_base.num_indices(),m_exp.num_indices()); }
-
-  void set_eval_layout (const FieldLayout& fl) {
-    m_base.set_eval_layout(fl);
-    m_exp.set_eval_layout(fl);
+  int num_indices () const {
+    if constexpr (scalar_base) {
+      return m_exp.num_indices();
+    } else if constexpr (scalar_exp) {
+      return m_base.num_indices();
+    } else {
+      return std::max(m_base.num_indices(),m_exp.num_indices());
+    }
   }
 
   KOKKOS_INLINE_FUNCTION
-  Real eval () const {
-    return Kokkos::pow(m_base.eval(),m_exp.eval());
+  Real eval (int i) const {
+    if constexpr (scalar_base) {
+      return Kokkos::pow(m_base,m_exp.eval(i));
+    } else if constexpr (scalar_exp) {
+      return Kokkos::pow(m_base.eval(i),m_exp);
+    } else {
+      return Kokkos::pow(m_base.eval(i),m_exp.eval(i));
+    }
   }
   KOKKOS_INLINE_FUNCTION
-  void set_eval_data (const EvalData& data) const {
-    m_base.set_eval_data(data);
-    m_exp.set_eval_data(data);
+  Real eval (int i, int j) const {
+    if constexpr (scalar_base) {
+      return Kokkos::pow(m_base,m_exp.eval(i,j));
+    } else if constexpr (scalar_exp) {
+      return Kokkos::pow(m_base.eval(i,j),m_exp);
+    } else {
+      return Kokkos::pow(m_base.eval(i,j),m_exp.eval(i,j));
+    }
+  }
+  KOKKOS_INLINE_FUNCTION
+  Real eval (int i, int j, int k) const {
+    if constexpr (scalar_base) {
+      return Kokkos::pow(m_base,m_exp.eval(i,j,k));
+    } else if constexpr (scalar_exp) {
+      return Kokkos::pow(m_base.eval(i,j,k),m_exp);
+    } else {
+      return Kokkos::pow(m_base.eval(i,j,k),m_exp.eval(i,j,k));
+    }
   }
 protected:
 
-  EBase    m_base;
+  EBase  m_base;
   EExp   m_exp;
-};
-
-template<typename EBase>
-class PowExpression<EBase,Real> : public Expression<PowExpression<EBase,Real>> {
-public:
-  static constexpr bool is_leaf = false;
-
-  PowExpression (const EBase& base, const Real exp)
-    : m_base(base)
-    , m_exp(exp)
-  {
-    // Nothing to do here
-  }
-
-  int num_indices () const { return m_base.num_indices(); }
-
-  void set_eval_layout (const FieldLayout& fl) {
-    m_base.set_eval_layout(fl);
-  }
-
-  KOKKOS_INLINE_FUNCTION
-  Real eval () const {
-    return Kokkos::pow(m_base.eval(),m_exp);
-  }
-  KOKKOS_INLINE_FUNCTION
-  void set_eval_data (const EvalData& data) const {
-    m_base.set_eval_data(data);
-  }
-protected:
-
-  EBase    m_base;
-  Real      m_exp;
-};
-
-template<typename EBase>
-class PowExpression<EBase,int> : public Expression<PowExpression<EBase,int>> {
-public:
-  static constexpr bool is_leaf = false;
-
-  PowExpression (const EBase& base, const int exp)
-    : m_base(base)
-    , m_exp(exp)
-  {
-    // Nothing to do here
-  }
-
-  int num_indices () const { return m_base.num_indices(); }
-
-  void set_eval_layout (const FieldLayout& fl) {
-    m_base.set_eval_layout(fl);
-  }
-
-  KOKKOS_INLINE_FUNCTION
-  Real eval () const {
-    return Kokkos::pow(m_base.eval(),m_exp);
-  }
-  KOKKOS_INLINE_FUNCTION
-  void set_eval_data (const EvalData& data) const {
-    m_base.set_eval_data(data);
-  }
-protected:
-
-  EBase    m_base;
-  int      m_exp;
 };
 
 template<typename EBase, typename EExp>
@@ -112,18 +77,11 @@ pow (const Expression<EBase>& b, const Expression<EExp>& e)
   return PowExpression<EBase,EExp>(b.cast(),e.cast());
 }
 
-template<typename EBase>
-PowExpression<EBase,int>
-pow (const Expression<EBase>& b, const int e)
+template<typename EBase,typename ST>
+std::enable_if_t<std::is_arithmetic_v<ST>,PowExpression<EBase,ST>>
+pow (const Expression<EBase>& b, const ST e)
 {
-  return PowExpression<EBase,int>(b.cast(),e);
-}
-
-template<typename EBase>
-PowExpression<EBase,Real>
-pow (const Expression<EBase>& b, const Real e)
-{
-  return PowExpression<EBase,Real>(b.cast(),e);
+  return PowExpression<EBase,ST>(b.cast(),e);
 }
 
 // ----------------- Unary math fcns ------------------- //

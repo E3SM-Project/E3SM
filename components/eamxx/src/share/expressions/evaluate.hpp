@@ -59,20 +59,20 @@ void evaluate (Expression<Derived>& e, Field& result)
 } // namespace impl
 
 template<typename Derived>
-void evaluate (Expression<Derived>& e, Field& result)
+void Expression<Derived>::evaluate (Field& result)
 {
-  EKAT_REQUIRE_MSG (result.rank()==e.num_indices(),
+  EKAT_REQUIRE_MSG (result.rank()==num_indices(),
     "[evaluate] Error! Input expression and result field have different ranks.\n"
     " - field name: " + result.name() + "\n"
     " - field rank: " << result.rank() << "\n"
-    " - expression rank: " << e.num_indices() + "\n");
+    " - expression rank: " << num_indices() + "\n");
 
   EKAT_REQUIRE_MSG (result.data_type()==DataType::RealType,
     "[evaluate_1d] Error! We currently only support expression templates for real-valued fields.\n"
     " - field name: " + result.name() + "\n"
     " - data type : " + e2str(result.data_type()) + "\n");
 
-  if (e.num_indices()==1) {
+  if (num_indices()==1) {
     impl::evaluate<1>(e,result);
   } else if (e.num_indices()==2) {
     impl::evaluate<2>(e,result);
