@@ -281,7 +281,7 @@ class VelocityHyperDiffOnEdge {
 class WindForcingOnEdge {
  public:
    bool Enabled;
-   Real SaltWaterDensity;
+   Real LocRhoSw;
 
    /// constructor declaration
    WindForcingOnEdge(const HorzMesh *Mesh);
@@ -296,7 +296,7 @@ class WindForcingOnEdge {
 
          const Real InvThickEdge = 1._Real / LayerThickEdge(IEdge, K);
          Tend(IEdge, K) += EdgeMask(IEdge, K) * InvThickEdge *
-                           NormalStressEdge(IEdge) / SaltWaterDensity;
+                           NormalStressEdge(IEdge) / LocRhoSw;
       }
    }
 

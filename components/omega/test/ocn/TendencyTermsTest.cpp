@@ -734,7 +734,7 @@ int testWindForcing(int NVertLayers) {
    Array2DReal NumWindForcing("NumWindForcing", Mesh->NEdgesOwned, NVertLayers);
 
    WindForcingOnEdge WindForcingOnE(Mesh);
-   WindForcingOnE.SaltWaterDensity = SaltWaterDensity;
+   WindForcingOnE.LocRhoSw = SaltWaterDensity;
 
    parallelFor(
        {Mesh->NEdgesOwned, NVertLayers}, KOKKOS_LAMBDA(int IEdge, int KLayer) {
