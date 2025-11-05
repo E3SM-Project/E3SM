@@ -6226,6 +6226,21 @@
 </ul>
 </li>
 <li>ctl_nl::semi_lagrange_trajectory_nsubstep:<ul>
+<li>description: Controls trajectory method. 0: original method. 1: New method. 2 or more: New method with this many trajectory substeps per tracer time step.</li>
+<li>type: <strong>MISSING</strong></li>
+</ul>
+</li>
+<li>ctl_nl::semi_lagrange_trajectory_nvelocity:<ul>
+<li>description: Number of velocity slices to use in new method. 2 or less maps to 2</li>
+<li>type: <strong>MISSING</strong></li>
+</ul>
+</li>
+<li>ctl_nl::semi_lagrange_halo:<ul>
+<li>description: Max number of element halos available in communication. -1 triggers an automatic estimate.</li>
+<li>type: <strong>MISSING</strong></li>
+</ul>
+</li>
+<li>ctl_nl::semi_lagrange_diagnostics:<ul>
 <li>description: <strong>MISSING</strong></li>
 <li>type: <strong>MISSING</strong></li>
 </ul>
