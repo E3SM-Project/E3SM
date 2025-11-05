@@ -21,8 +21,8 @@ Checklist
     * [ ] Which machines [CTest unit tests](https://docs.e3sm.org/Omega/Omega/devGuide/QuickStart.html#running-ctests)
           have been run on and indicate that are all passing.
     * [ ] The [Polaris omega_pr test suite](https://docs.e3sm.org/Omega/Omega/devGuide/Testing.html)
-          has passed, using `develop` as a baseline
-    * [ ] Document machine(s), compiler(s) and test path(s) (`-p` in `polaris suite`) used
+       has passed, using the Polaris `e3sm_submodules/Omega` baseline
+    * [ ] Document machine(s), compiler(s), and the build path(s) used for `-p` for both the baseline (Polaris `e3sm_submodules/Omega`) and the PR build
     * [ ] Indicate "All tests passed" or document failing tests
     * [ ] Document testing used to verify the changes including any tests that are added/modified/impacted.
     * [ ] Performance related PRs: Please include a relevant PACE experiment link documenting performance before and after.
