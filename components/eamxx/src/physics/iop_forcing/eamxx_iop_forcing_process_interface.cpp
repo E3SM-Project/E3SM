@@ -462,16 +462,16 @@ void IOPForcing::run_impl (const double dt)
     view_2d<Pack> horiz_winds_mean;
     if (iop_nudge_tq){
       horiz_contraction(m_helper_fields.at("qv_mean"), get_field_out("qv"),
-                        m_helper_fields.at("horiz_mean_weights"), &m_comm);
+                        m_helper_fields.at("horiz_mean_weights"), true, &m_comm);
       qv_mean = m_helper_fields.at("qv_mean").get_view<Pack*>();
 
       horiz_contraction(m_helper_fields.at("t_mean"), get_field_out("T_mid"),
-                        m_helper_fields.at("horiz_mean_weights"), &m_comm);
+                        m_helper_fields.at("horiz_mean_weights"), true, &m_comm);
       t_mean = m_helper_fields.at("t_mean").get_view<Pack*>();
     }
     if (iop_nudge_uv){
       horiz_contraction(m_helper_fields.at("horiz_winds_mean"), get_field_out("horiz_winds"),
-                        m_helper_fields.at("horiz_mean_weights"), &m_comm);
+                        m_helper_fields.at("horiz_mean_weights"), true, &m_comm);
       horiz_winds_mean = m_helper_fields.at("horiz_winds_mean").get_view<Pack**>();
     }
 
