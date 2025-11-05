@@ -1960,11 +1960,12 @@ contains
                call this%fates_restart%get_restart_vectors(nc, this%fates(nc)%nsites, &
                     this%fates(nc)%sites )
 
+
                ! Register interface variables handled normally during cold start
                call this%RegisterInterfaceVariablesColdStart(nc, canopystate_inst)
 
                ! Update the interface variables
-               call this%fates(nc)%UpdateInterfaceVariables(initialize=.true.)
+               call this%fates(nc)%UpdateInterfaceVariables(restarting=.true.)
 
 
                ! I think ed_update_site and update_hlmfates_dyn are doing some similar
