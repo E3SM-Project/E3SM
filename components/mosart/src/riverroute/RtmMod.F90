@@ -2458,7 +2458,7 @@ contains
                if (do_budget == 3) then
                   write(iulog, '(A,ES24.16)') trim(subname)//' [Scenario A] net_global_qgwl = ', net_global_qgwl
                   write(iulog, '(A,ES24.16)') trim(subname)//' [Scenario A] global_positive_qgwl_sum = ', global_positive_qgwl_sum
-                  write(iulog, '(A,ES24.16)') trim(subname)//' [Scenario A] scaling_factor (before bcast) = ', scaling_factor
+                  write(iulog, '(A,ES24.16)') trim(subname)//' [Scenario A] scaling_factor = ', scaling_factor
                endif
             endif
 
@@ -3029,7 +3029,19 @@ contains
                      qgwl_to_discharge_ratio_percent, '% (', qgwl_to_redistribute, ' m3/s)'
                endif
 
-               ! Always check and warn if magnitude is > 5% (regardless of do_budget)
+               ! Check for concerning redistribution ratios
+               if (abs(qgwl_to_discharge_ratio_percent) > 100.0_r8) then
+                  call shr_sys_flush(iulog)
+                  write(iulog, *) trim(subname), &
+                     'WARNING: QGWL_Redist_Ratio magnitude > 100% (', &
+                     qgwl_to_discharge_ratio_percent, '%).'
+                  write(iulog, *) trim(subname), &
+                     'Negative runoff to ocean is unavoidable as negative qgwl magnitude (', &
+                     abs(qgwl_to_redistribute), ' m3/s) exceeds total outlet discharge (', &
+                     global_total_outlet_discharge, ' m3/s).'
+                  call shr_sys_flush(iulog)
+               endif
+
                if (abs(qgwl_to_discharge_ratio_percent) > 5.0_r8) then
                   call shr_sys_flush(iulog)
                   write(iulog, *) trim(subname), &
@@ -3056,18 +3068,6 @@ contains
                   write(iulog, '(A,ES24.16)') trim(subname)//' [Scenario B] qgwl_to_redistribute = ', qgwl_to_redistribute
                   write(iulog, '(A,ES24.16)') trim(subname)//' [Scenario B] global_total_outlet_discharge = ', global_total_outlet_discharge
                   write(iulog, '(A,ES24.16)') trim(subname)//' [Scenario B] correction_ratio (before bcast) = ', correction_ratio
-               endif
-
-               ! Check if correction ratio magnitude exceeds 100%
-               if (correction_ratio < -1.0_r8) then
-                  call shr_sys_flush(iulog)
-                  write(iulog, *) trim(subname), &
-                     'WARNING: Correction ratio < -100% (', correction_ratio, ').'
-                  write(iulog, *) trim(subname), &
-                     'Negative runoff to ocean is unavoidable as negative qgwl magnitude (', &
-                     abs(qgwl_to_redistribute), ' m3/s) exceeds total outlet discharge (', &
-                     global_total_outlet_discharge, ' m3/s).'
-                  call shr_sys_flush(iulog)
                endif
             endif
 
