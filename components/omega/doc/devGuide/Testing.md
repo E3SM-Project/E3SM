@@ -23,6 +23,19 @@ and once on your development branch.  This means you will need to
 the suite.  You may wish to use the {ref}`omega-dev-quick-start-ctest-util` to
 automate the build and run the CTests for each branch.
 
+### Prerequisites: build Omega on both branches
+
+Before setting up and running the `omega_pr` suite, you must build Omega twice:
+
+- Build from the `develop` branch. Record the CMake build directory path as
+  `DEVELOP_BUILD` (used below with `polaris suite -p`).
+- Build from your development (test) branch. Record the CMake build directory
+  path as `TEST_BRANCH_BUILD` (also used with `-p`).
+
+The `-p` option passed to `polaris suite` should point to the CMake build
+directory for the corresponding branch (the directory where you ran CMake and
+invoked `./omega_build.sh`).
+
 ```{note}
 Run both baseline and PR suite on the same machine, CPU/GPU partition,
 compiler, and Omega build type (Debug/Release) to avoid false positive/negative
