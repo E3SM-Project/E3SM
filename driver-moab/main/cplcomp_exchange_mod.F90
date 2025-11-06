@@ -1066,8 +1066,7 @@ subroutine  copy_aream_from_area(mbappid)
       character(CXX)           :: tagname
       character(CXX)           :: newlist
       integer                  nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
-      logical                  :: rof_present, lnd_prognostic
-      integer                  :: land_nx, land_ny ! try to identify if scm case; then land mesh will be migrated, not read 
+      logical                  :: rof_present, lnd_prognostic, single_column, scm_multcols
       real(r8),    allocatable    :: tagValues(:) ! used for setting aream tags for atm domain read case
       integer                     :: arrsize ! for the size of tagValues
       type(mct_list)             :: temp_list
@@ -1559,9 +1558,9 @@ subroutine  copy_aream_from_area(mbappid)
          call seq_comm_getinfo(cplid ,mpigrp=mpigrp_cplid)  ! receiver group
          call seq_comm_getinfo(id_old,mpigrp=mpigrp_old)   !  component group pes
          call seq_infodata_GetData(infodata,rof_present=rof_present, lnd_prognostic=lnd_prognostic)
-         call seq_infodata_GetData(infodata,lnd_nx=land_nx, lnd_ny=land_ny)
-
-         if (land_nx .eq. 1 .and. land_ny .eq.1 ) then
+         call seq_infodata_GetData(infodata,single_column=single_column, &
+	 scm_multcols=scm_multcols)
+         if (single_column .or. scm_multcols) then
             ! turn on mb_scm_land
             mb_scm_land = .true. ! we identified a scm case for land, we will migrate mesh, not read 
                                    ! the domain file anymore
