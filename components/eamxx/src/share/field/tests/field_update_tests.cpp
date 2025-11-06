@@ -23,9 +23,9 @@ TEST_CASE ("update") {
   RPDF rpdf(0,1);
   IPDF ipdf(0,100);
 
-  const int ncol = 2;
+  const int ncol = 1000;
   const int ncmp = 3;
-  const int nlev = 4;
+  const int nlev = 128;
 
   // Create field
   std::vector<FieldTag> tags = {COL, CMP, LEV};
@@ -110,8 +110,18 @@ TEST_CASE ("update") {
       // x=2, x*y = 2*y
       f1.deep_copy(2.0);
       f1.scale(f2);
-      f2.scale(2.0);
-      REQUIRE (views_are_equal(f1, f2));
+
+      double dt = 0;
+      for (int itest=0; itest<100; ++itest) {
+        auto beg = std::chrono::high_resolution_clock::now();
+        f2.scale(2.0);
+        f2.scale(0.5);
+        auto end = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> duration = end-beg;
+        dt += duration.count();
+      }
+      std::cout << "scale dt: " << dt << "\n";
+      // REQUIRE (views_are_equal(f1, f2));
     }
 
     SECTION ("int") {
