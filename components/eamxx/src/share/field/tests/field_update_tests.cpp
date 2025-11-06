@@ -114,14 +114,22 @@ TEST_CASE ("update") {
       double dt = 0;
       for (int itest=0; itest<100; ++itest) {
         auto beg = std::chrono::high_resolution_clock::now();
-        f2.scale(2.0);
-        f2.scale(0.5);
+        f1.scale(f2);
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> duration = end-beg;
         dt += duration.count();
       }
-      std::cout << "scale dt: " << dt << "\n";
-      // REQUIRE (views_are_equal(f1, f2));
+      std::cout << "field scale dt: " << dt << "\n";
+
+      dt = 0;
+      for (int itest=0; itest<100; ++itest) {
+        auto beg = std::chrono::high_resolution_clock::now();
+        f2.scale(2.0);
+        auto end = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> duration = end-beg;
+        dt += duration.count();
+      }   
+      std::cout << "scalar scale dt: " << dt << "\n";
     }
 
     SECTION ("int") {
