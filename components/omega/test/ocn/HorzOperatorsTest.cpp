@@ -28,7 +28,7 @@ struct TestSetupPlane {
    // TODO: get this from the horizontal mesh once it supports periodic planar
    // meshes
    Real Lx = 1;
-   Real Ly = std::sqrt(3) / 2;
+   Real Ly = SqrtThree / 2;
 
    ErrorMeasures ExpectedDivErrors         = {0.00124886886594427027,
                                               0.00124886886590974385};
@@ -79,12 +79,12 @@ struct TestSetupSphere1 {
    // TODO: get this from the mesh
    Real Radius = REarth;
 
-   ErrorMeasures ExpectedDivErrors         = {0.013659577398978353,
-                                              0.00367052484586382743};
-   ErrorMeasures ExpectedGradErrors        = {0.00187912292540628936,
-                                              0.00149841802817334306};
-   ErrorMeasures ExpectedCurlErrors        = {0.0271404735181308317,
-                                              0.025202316610921989};
+   ErrorMeasures ExpectedDivErrors         = {0.013652414501664885,
+                                              0.0036904315983599676};
+   ErrorMeasures ExpectedGradErrors        = {0.0019094381714837498,
+                                              0.0015218320661105687};
+   ErrorMeasures ExpectedCurlErrors        = {0.02713957370128636,
+                                              0.025202095212756463};
    ErrorMeasures ExpectedReconErrors       = {0.0206375134079833517,
                                               0.00692590524910695858};
    ErrorMeasures ExpectedAnisoInterpErrors = {0.0024015775047603197,

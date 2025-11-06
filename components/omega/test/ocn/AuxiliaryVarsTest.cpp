@@ -29,7 +29,7 @@ using namespace OMEGA;
 struct TestSetupPlane {
 
    Real Lx = 1;
-   Real Ly = std::sqrt(3) / 2;
+   Real Ly = SqrtThree / 2;
 
    ErrorMeasures ExpectedKineticEnergyErrors = {0.00994439065100057897,
                                                 0.00703403756741667954};
@@ -161,8 +161,8 @@ struct TestSetupSphere {
 
    ErrorMeasures ExpectedKineticEnergyErrors = {0.0143579382532765844,
                                                 0.00681096618897046764};
-   ErrorMeasures ExpectedVelocityDivErrors   = {0.0136595773989793799,
-                                                0.00367052484586382699};
+   ErrorMeasures ExpectedVelocityDivErrors   = {0.013652414501663887,
+                                                0.00369043159835992};
 
    ErrorMeasures ExpectedFluxThickErrors = {0.0159821090867812224,
                                             0.010364511516135164};
@@ -176,22 +176,22 @@ struct TestSetupSphere {
    ErrorMeasures ExpectedNormPlanetVortVertexErrors = {0.00451268952953497778,
                                                        0.00101771171197261793};
 
-   ErrorMeasures ExpectedNormRelVortEdgeErrors    = {0.0125376497261775952,
-                                                     0.00307521304930552519};
+   ErrorMeasures ExpectedNormRelVortEdgeErrors    = {0.01255832726488633,
+                                                     0.003093726580373857};
    ErrorMeasures ExpectedNormPlanetVortEdgeErrors = {0.00495174534686814403,
                                                      0.000855432390947949515};
 
-   ErrorMeasures ExpectedDel2Errors        = {0.00360406641962622652,
-                                              0.00313406628499444213};
+   ErrorMeasures ExpectedDel2Errors        = {0.0036327578533323366,
+                                              0.003161584491352198};
    ErrorMeasures ExpectedDel2DivErrors     = {0.0177782108439020134,
-                                              0.00751922684420262138};
-   ErrorMeasures ExpectedDel2RelVortErrors = {0.0915578492503972413,
+                                              0.0075764886471247385};
+   ErrorMeasures ExpectedDel2RelVortErrors = {0.09148975765556343,
                                               0.0246736311927726465};
 
    ErrorMeasures ExpectedHTracerErrors    = {0.01603249913425972,
                                              0.00546762028673672059};
    ErrorMeasures ExpectedDel2TracerErrors = {0.0081206665417422382,
-                                             0.004917863312407276};
+                                             0.004969575978774801};
 
    ErrorMeasures ExpectedNormalStressErrors = {0.0038588958862868362,
                                                0.003813760171030077};
