@@ -207,5 +207,157 @@ The following options are necessary for the submesoscale eddy parameterization:
 - `Ce` submesoscale eddy efficiency (0.06-0.08)
 - `RiCrit` critical Richardson number for the B23 form (~0.25)
 - `DsMax` maximum grid length to include in the submesoscale calculation (~100 km)
+- `DrhoCrit` critical threshold for the density MLD calculation (0.03 kg m$^-2$)
+
+The `SubmesoEddy` class provides the main funcationality for this parameterization.  It contains data structure definitions, configuration parameters, and the compute methods necessary for computing the buoyancy flux associated with submesoscale eddies and the buoyancy gradient necessary for this parameterization and a future implementation of a mesoscale eddy parameterization.
+
+```c++
+class SubmesoEddy{
+    public:
+        bool EnableBodner23;
+        Real LfMin;
+        Real TauMin;
+        Real Mstar;
+        Real Nstar;
+        Real Ce;
+        Real RiCrit;
+        Real DsMax;
+
+        // Variables for the submesoscale eddy parameterization
+        Array2DReal BuoyGrad;
+        Array1DReal DenMLD;
+
+        // Compute methods for the submesoscale eddy parameterization
+        void computeDenMLD(...);
+        void computeSubmesoEddyVelocity(...);
+        void computeBuoyGrad(...);
+        SubmesoEddy(const HorzMesh *Mesh, const VertCoord *VCoord, Config *Options); // Class constructor
+
+    private:
+        // Mesh dimensions
+        I4 NVertLayers;
+        I4 NVertLayersP1;
+        I4 NEdgesOwned;
+        I4 NEdgesAll;
+        I4 NEdgesSize;
+
+        // Vertical loop bounds from VertCoord
+        Array1DI4 MinLayerEdgeBot;
+        Array1DI4 MaxLayerEdgeTop;
+
+        // Arrays from HorzMesh
+        Array2DI4 CellsOnEdge;
+        Array2DReal EdgeSignOnCell;
+
+        Array2DReal SubmesoStreamFunc;
+        Array1DReal BuoyGradML;
+        Array1DReal TimeScale;
+}
+```
 
 ### 4.2 Methods
+
+#### 4.2.1 Class Constructor
+
+The constructor will store necessary static mesh information as private variables, handle config options, and compute fixed quantities like the spatially varying $\tau$ variable.
+```c++
+SubmesoEddy::SubmesoEddy(const HorzMesh *Mesh, const VertCoord *VCoord, Config *Options)
+```
+
+would probably also need to register fields (buoy, buoygrad, etc..)
+
+
+#### 4.2.2 Density MLD calculation
+
+The public `computeDenMLD` mthod will utilize the specific volume frmo the TEOS-10 calculation to compute a mixed layer depthy based on the threshold criterion. Given Omega has easy access to `SpecVol` and not density, we rearrange the standard density threshold calculation
+$$
+\rho(x,y,z,t) - \rho(x,y,10,t) \geq 0.03
+$$
+
+as
+
+$$
+\frac{1}{\alpha(x,y,z,t)} - \frac{1}{\alpha(x,y,10,t)} \geq 0.03.
+$$
+
+This can be rearranged to
+
+$$
+\frac{\alpha(x,y,10,t) - \alpha(x,y,z,t)}{\alpha(x,y,z,t)} = \frac{\alpha(x,y,10,t)}{\alpha(x,y,z,t)} - 1 \geq 0.03 \alpha(x,y,10,t)
+$$
+
+This form allows for easier use of the `SpecVol` variable in Omega  with minimal conversions in the calculation.
+
+```c++
+void SubmesoEddy:computeDenMLD(const Array2DReal )
+{
+   compute reference level in pressure
+   compute specvol at every level referenced to the reference pressure
+   compute specVolChange at all depths
+   find minimum in column and interpolate around it
+   verify that the threshold is increasing
+   set to bottom if not found
+}
+```
+
+#### 4.2.3 buoyancy gradient calculation
+
+For Omega, we will define the buoyancy as
+
+$$
+b = g \frac{\rho - \rho_0}{\rho}
+$$
+
+where $\rho_0$ is the reference density used in the pseudo height coordinate definition.  This can be easily rearranged to
+
+$$
+b = g \left(1 - \alpha \rho_0 \right)$
+$$
+
+This form is preferred since Omega calculates `SpecVol` and not density itself.  Since the buoyancy is only used for a horizontal gradient the reference pressure is not a consideration.
+
+The calculation without the Kokkos declarations would be similar to
+
+```c++
+void SubmesoEddy::computeBuoyGrad( )
+{
+    // Compute buoyancy
+    for (int J = 0; J < NCellsAll; ++J) {
+        for (int K = 0; K < VecLength; ++K) {
+            Buoy(J,K) = Gravity * (1 - Rho_0 * SpecVol(J,K))
+        }
+    }
+
+    for (int iEdge = 0; IEdge < NEdgesOwned; ++IEdge){
+    // compute gradient of buoyancy, only the second term will be non zero
+      const I4 KStart      = KChunk * VecLength;
+      const I4 JCell0      = CellsOnEdge(IEdge, 0);
+      const I4 JCell1      = CellsOnEdge(IEdge, 1);
+      const Real InvDcEdge = 1._Real / DcEdge(IEdge);
+
+      for (int KVec = 0; KVec < VecLength; ++KVec) {
+         const I4 K = KStart + KVec;
+         BuoyGrad(IEdge, K) = - Gravity * Rho_0 * (Buoy(JCell1, K) - Buoy(JCell0, K)) * InvDcEdge;
+      }
+    }
+}
+```
+
+Both of these loops would be wrapped in the necessary Kokkos templates.
+
+#### 4.2.4 submesoscale eddy velocity
+
+needs -
+average buoygrad over MLD
+get struct funct
+create normalVelMLE
+
+## 5. Testing
+
+### Test: Convergence to an exact solution
+
+Given a specified mixed layer depth, buoyancy gradient, and default parameters, an expected submesoscale induced velocity can be calculated for a given distribution of thicknesses in the vertical.  This can be compared exactly to a precomputed reference solution.  This is true for the FK11 and B23 options.
+
+### Test: Modified Baroclinic Gyre
+
+The baroclinc gyre test case will be modified to be similar to that described in [Fox Kemper et al., 2008](https://journals.ametsoc.org/view/journals/phoc/38/6/2007jpo3792.1.xml) but for a frontal spin down (no surface forcing).  One test will be run with fully resolved submesoscale eddies and then stored for validation of the parameterization.  Over a few geostrophic adjustment timescales, fields like Richardson number, reduction of surface buoyancy gradient, and domain potential energy will be compared.
