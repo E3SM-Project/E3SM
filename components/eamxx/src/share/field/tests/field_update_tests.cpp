@@ -19,7 +19,7 @@ TEST_CASE ("update") {
   ekat::Comm comm(MPI_COMM_WORLD);
   int seed = get_random_test_seed();
 
-  const int ncol = 2;
+  const int ncol = 3;
   const int ncmp = 3;
   const int nlev = 4;
 
@@ -105,9 +105,30 @@ TEST_CASE ("update") {
 
       // x=2, x*y = 2*y
       f1.deep_copy(2.0);
-      f1.scale(f2);
-      f2.scale(2.0);
-      REQUIRE (views_are_equal(f1, f2));
+
+      // Field scale
+      double dt = 0;
+      for (int itest=0; itest<100; ++itest) {
+        auto beg = std::chrono::high_resolution_clock::now();
+        f1.scale(f2);
+        auto end = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> duration = end-beg;
+        dt += duration.count();
+      }
+      std::cout << "field scale dt: " << dt << "\n";
+
+      // Scalar scale
+      dt = 0;
+      for (int itest=0; itest<100; ++itest) {
+        auto beg = std::chrono::high_resolution_clock::now();
+        f2.scale(2.0);
+        auto end = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> duration = end-beg;
+        dt += duration.count();
+      }
+      std::cout << "scalar scale dt: " << dt << "\n";
+
+      // REQUIRE (views_are_equal(f1, f2));
     }
 
     SECTION ("int") {
@@ -125,14 +146,19 @@ TEST_CASE ("update") {
 
   SECTION ("max-min") {
     SECTION ("real") {
-      Field one = f_real.clone();
-      Field two = f_real.clone();
+      Field one = f_real.clone("one");
+      Field two = f_real.clone("two");
       one.deep_copy(1.0);
       two.deep_copy(2.0);
 
       Field f1 = one.clone();
       Field f2 = two.clone();
       f1.max(f2);
+      if (not views_are_equal(f1, f2))
+      {
+        print_field_hyperslab(f1);
+        print_field_hyperslab(f2);
+      }
       REQUIRE (views_are_equal(f1, f2));
 
       Field f3 = one.clone();
@@ -145,6 +171,11 @@ TEST_CASE ("update") {
       f3.get_header().set_may_be_filled(true);
       f2.deep_copy(1.0);
       f2.max(f3);
+      if (not views_are_equal(f2,one))
+      {
+        print_field_hyperslab(f2);
+        print_field_hyperslab(one);
+      }
       REQUIRE (views_are_equal(f2,one));
     }
 

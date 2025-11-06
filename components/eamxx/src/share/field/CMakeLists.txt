@@ -63,7 +63,8 @@ endif()
 
 target_link_libraries (eamxx_field PUBLIC
   eamxx_core
-  eamxx_utils)
+  eamxx_utils
+  ekat::Expression)
 
 if (NOT SCREAM_LIB_ONLY)
   add_subdirectory(tests)

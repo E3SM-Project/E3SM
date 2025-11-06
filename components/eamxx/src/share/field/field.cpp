@@ -1,5 +1,10 @@
 #include "share/field/field.hpp"
 #include "share/util/eamxx_utils.hpp"
+#include "share/field/eamxx_fill_aware_binary_op_expression.hpp"
+
+#include <ekat_expression_eval.hpp>
+#include <ekat_expression_binary_op.hpp>
+#include <ekat_expression_view.hpp>
 
 namespace scream
 {
@@ -241,5 +246,321 @@ void Field::allocate_view ()
   m_data.d_view = decltype(m_data.d_view)(id.name(),view_dim);
   m_data.h_view = Kokkos::create_mirror_view(m_data.d_view);
 }
+
+template<HostOrDevice HD>
+void Field::scale (const ScalarWrapper& beta)
+{
+  EKAT_REQUIRE_MSG (not is_narrowing_conversion(beta.type,data_type()),
+      "[Field::scale] Error! Coefficient beta may be narrowed when converted to the field data type.\n"
+      " - field name     : " + name() + "\n"
+      " - field data type: " + e2str(data_type()) + "\n"
+      " - beta data type : " + e2str(beta.type) + "\n");
+
+  auto run = [&] (auto coeff) {
+    using ST = decltype(coeff);
+    auto do_scale = [&](auto view) {
+      auto ve = ekat::view_expression(view);
+      auto expr = ve*coeff;
+      ekat::evaluate(expr,view);
+    };
+    switch(rank()) {
+      case 0: do_scale(get_view<ST>()); break;
+      case 1: do_scale(get_view<ST*>()); break;
+      case 2: do_scale(get_view<ST**>()); break;
+      case 3: do_scale(get_view<ST***>()); break;
+      case 4: do_scale(get_view<ST****>()); break;
+      case 5: do_scale(get_view<ST*****>()); break;
+      case 6: do_scale(get_view<ST******>()); break;
+      default:
+        EKAT_ERROR_MSG (
+          "[Field::scale] Error! Unsupported field rank.\n"
+          " - field name: " + name() + "\n"
+          " - field rank: " + std::to_string(rank()) + "\n");
+    };
+  };
+
+  switch (data_type()) {
+    case DataType::IntType:
+      run (beta.as<int>());
+      break;
+    case DataType::FloatType:
+      run (beta.as<float>());
+      break;
+    case DataType::DoubleType:
+      run (beta.as<double>());
+      break;
+    default:
+      EKAT_ERROR_MSG (
+          "[Field::scale] Error! Unrecognized field data type.\n"
+          " - field name: " + name() + "\n");
+  }
+}
+
+template<HostOrDevice HD>
+void Field::scale (const Field& x)
+{
+  EKAT_REQUIRE_MSG (not is_narrowing_conversion(x.data_type(),data_type()),
+      "[Field::scale] Error! Coefficient field scalars may be narrowed when converted to the field data type.\n"
+      " - field name           : " + name() + "\n"
+      " - coeff field name     : " + x.name() + "\n"
+      " - field data type      : " + e2str(data_type()) + "\n"
+      " - coeff field data type: " + e2str(x.data_type()) + "\n");
+
+  auto run = [&] (auto y_scalar, auto x_scalar) {
+    using YST = decltype(y_scalar);
+    using XST = decltype(x_scalar);
+    auto do_scale = [&](auto yview, auto xview) {
+      auto ye = ekat::view_expression(yview);
+      auto xe = ekat::view_expression(xview);
+      auto expr = ye*xe;
+      ekat::evaluate(expr,yview);
+    };
+    switch(rank()) {
+      case 0: do_scale(get_view<YST>(),       x.get_view<const XST>()      ); break;
+      case 1: do_scale(get_view<YST*>(),      x.get_view<const XST*>()     ); break;
+      case 2: do_scale(get_view<YST**>(),     x.get_view<const XST**>()    ); break;
+      case 3: do_scale(get_view<YST***>(),    x.get_view<const XST***>()   ); break;
+      case 4: do_scale(get_view<YST****>(),   x.get_view<const XST****>()  ); break;
+      case 5: do_scale(get_view<YST*****>(),  x.get_view<const XST*****>() ); break;
+      case 6: do_scale(get_view<YST******>(), x.get_view<const XST******>()); break;
+      default:
+        EKAT_ERROR_MSG (
+          "[Field::scale] Error! Unsupported field rank.\n"
+          " - field name: " + name() + "\n"
+          " - field rank: " + std::to_string(rank()) + "\n");
+    };
+  };
+
+  switch (data_type()) {
+    case DataType::IntType:
+      run(int(0),int(0));
+      break;
+    case DataType::FloatType:
+      if (x.data_type()==DataType::FloatType)
+        run(float(0),float(0));
+      else
+        run(float(0),int(0));
+      break;
+    case DataType::DoubleType:
+      if (x.data_type()==DataType::DoubleType)
+        run(double(0),double(0));
+      else if (x.data_type()==DataType::FloatType)
+        run(double(0),float(0));
+      else
+        run(double(0),int(0));
+      break;
+    default:
+      EKAT_ERROR_MSG (
+          "[Field::scale] Error! Unrecognized field data type.\n"
+          " - field name: " + name() + "\n");
+  }
+}
+
+template<HostOrDevice HD>
+void Field::scale_inv (const Field& x)
+{
+  EKAT_REQUIRE_MSG (not is_narrowing_conversion(x.data_type(),data_type()),
+      "[Field::scale_inv] Error! Coefficient field scalars may be narrowed when converted to the field data type.\n"
+      " - field name           : " + name() + "\n"
+      " - coeff field name     : " + x.name() + "\n"
+      " - field data type      : " + e2str(data_type()) + "\n"
+      " - coeff field data type: " + e2str(x.data_type()) + "\n");
+
+  auto run = [&] (auto y_scalar, auto x_scalar) {
+    using YST = decltype(y_scalar);
+    using XST = decltype(x_scalar);
+    auto do_scale = [&](auto yview, auto xview) {
+      auto ye = ekat::view_expression(yview);
+      auto xe = ekat::view_expression(xview);
+      auto expr = ye/xe;
+      ekat::evaluate(expr,yview);
+    };
+    switch(rank()) {
+      case 0: do_scale(get_view<YST>(),       x.get_view<const XST>()      ); break;
+      case 1: do_scale(get_view<YST*>(),      x.get_view<const XST*>()     ); break;
+      case 2: do_scale(get_view<YST**>(),     x.get_view<const XST**>()    ); break;
+      case 3: do_scale(get_view<YST***>(),    x.get_view<const XST***>()   ); break;
+      case 4: do_scale(get_view<YST****>(),   x.get_view<const XST****>()  ); break;
+      case 5: do_scale(get_view<YST*****>(),  x.get_view<const XST*****>() ); break;
+      case 6: do_scale(get_view<YST******>(), x.get_view<const XST******>()); break;
+      default:
+        EKAT_ERROR_MSG (
+          "[Field::scale] Error! Unsupported field rank.\n"
+          " - field name: " + name() + "\n"
+          " - field rank: " + std::to_string(rank()) + "\n");
+    };
+  };
+
+  switch (data_type()) {
+    case DataType::IntType:
+      run(int(0),int(0));
+      break;
+    case DataType::FloatType:
+      if (x.data_type()==DataType::FloatType)
+        run(float(0),float(0));
+      else
+        run(float(0),int(0));
+      break;
+    case DataType::DoubleType:
+      if (x.data_type()==DataType::DoubleType)
+        run(double(0),double(0));
+      else if (x.data_type()==DataType::FloatType)
+        run(double(0),float(0));
+      else
+        run(double(0),int(0));
+      break;
+    default:
+      EKAT_ERROR_MSG (
+          "[Field::scale] Error! Unrecognized field data type.\n"
+          " - field name: " + name() + "\n");
+  }
+}
+
+template<HostOrDevice HD>
+void Field::max (const Field& x)
+{
+  EKAT_REQUIRE_MSG (not is_narrowing_conversion(x.data_type(),data_type()),
+      "[Field::max] Error! RHS field scalars may be narrowed when converted to the field data type.\n"
+      " - field name           : " + name() + "\n"
+      " - coeff field name     : " + x.name() + "\n"
+      " - field data type      : " + e2str(data_type()) + "\n"
+      " - coeff field data type: " + e2str(x.data_type()) + "\n");
+
+  bool fill_aware = get_header().may_be_filled() or x.get_header().may_be_filled();
+
+  auto run = [&] (auto y_scalar, auto x_scalar) {
+    using YST = decltype(y_scalar);
+    using XST = decltype(x_scalar);
+    auto do_scale = [&](auto yview, auto xview) {
+      auto ye = ekat::view_expression(yview);
+      auto xe = ekat::view_expression(xview);
+      if (fill_aware) {
+        auto expr = ekat::fa_max(ye,xe);
+        ekat::evaluate(expr,yview);
+      } else {
+        auto expr = ekat::max(ye,xe);
+        ekat::evaluate(expr,yview);
+      }
+    };
+    switch(rank()) {
+      case 0: do_scale(get_view<YST>(),       x.get_view<const XST>()      ); break;
+      case 1: do_scale(get_view<YST*>(),      x.get_view<const XST*>()     ); break;
+      case 2: do_scale(get_view<YST**>(),     x.get_view<const XST**>()    ); break;
+      case 3: do_scale(get_view<YST***>(),    x.get_view<const XST***>()   ); break;
+      case 4: do_scale(get_view<YST****>(),   x.get_view<const XST****>()  ); break;
+      case 5: do_scale(get_view<YST*****>(),  x.get_view<const XST*****>() ); break;
+      case 6: do_scale(get_view<YST******>(), x.get_view<const XST******>()); break;
+      default:
+        EKAT_ERROR_MSG (
+          "[Field::max] Error! Unsupported field rank.\n"
+          " - field name: " + name() + "\n"
+          " - field rank: " + std::to_string(rank()) + "\n");
+    };
+  };
+
+  switch (data_type()) {
+    case DataType::IntType:
+      run(int(0),int(0));
+      break;
+    case DataType::FloatType:
+      if (x.data_type()==DataType::FloatType)
+        run(float(0),float(0));
+      else
+        run(float(0),int(0));
+      break;
+    case DataType::DoubleType:
+      if (x.data_type()==DataType::DoubleType)
+        run(double(0),double(0));
+      else if (x.data_type()==DataType::FloatType)
+        run(double(0),float(0));
+      else
+        run(double(0),int(0));
+      break;
+    default:
+      EKAT_ERROR_MSG (
+          "[Field::max] Error! Unrecognized field data type.\n"
+          " - field name: " + name() + "\n");
+  }
+}
+
+template<HostOrDevice HD>
+void Field::min (const Field& x)
+{
+  EKAT_REQUIRE_MSG (not is_narrowing_conversion(x.data_type(),data_type()),
+      "[Field::min] Error! RHS field scalars may be narrowed when converted to the field data type.\n"
+      " - field name           : " + name() + "\n"
+      " - coeff field name     : " + x.name() + "\n"
+      " - field data type      : " + e2str(data_type()) + "\n"
+      " - coeff field data type: " + e2str(x.data_type()) + "\n");
+
+  bool fill_aware = get_header().may_be_filled() or x.get_header().may_be_filled();
+
+  auto run = [&] (auto y_scalar, auto x_scalar) {
+    using YST = decltype(y_scalar);
+    using XST = decltype(x_scalar);
+    auto do_scale = [&](auto yview, auto xview) {
+      auto ye = ekat::view_expression(yview);
+      auto xe = ekat::view_expression(xview);
+      if (fill_aware) {
+        auto expr = ekat::fa_min(ye,xe);
+        ekat::evaluate(expr,yview);
+      } else {
+        auto expr = ekat::min(ye,xe);
+        ekat::evaluate(expr,yview);
+      }
+    };
+    switch(rank()) {
+      case 0: do_scale(get_view<YST>(),       x.get_view<const XST>()      ); break;
+      case 1: do_scale(get_view<YST*>(),      x.get_view<const XST*>()     ); break;
+      case 2: do_scale(get_view<YST**>(),     x.get_view<const XST**>()    ); break;
+      case 3: do_scale(get_view<YST***>(),    x.get_view<const XST***>()   ); break;
+      case 4: do_scale(get_view<YST****>(),   x.get_view<const XST****>()  ); break;
+      case 5: do_scale(get_view<YST*****>(),  x.get_view<const XST*****>() ); break;
+      case 6: do_scale(get_view<YST******>(), x.get_view<const XST******>()); break;
+      default:
+        EKAT_ERROR_MSG (
+          "[Field::min] Error! Unsupported field rank.\n"
+          " - field name: " + name() + "\n"
+          " - field rank: " + std::to_string(rank()) + "\n");
+    };
+  };
+
+  switch (data_type()) {
+    case DataType::IntType:
+      run(int(0),int(0));
+      break;
+    case DataType::FloatType:
+      if (x.data_type()==DataType::FloatType)
+        run(float(0),float(0));
+      else
+        run(float(0),int(0));
+      break;
+    case DataType::DoubleType:
+      if (x.data_type()==DataType::DoubleType)
+        run(double(0),double(0));
+      else if (x.data_type()==DataType::FloatType)
+        run(double(0),float(0));
+      else
+        run(double(0),int(0));
+      break;
+    default:
+      EKAT_ERROR_MSG (
+          "[Field::min] Error! Unrecognized field data type.\n"
+          " - field name: " + name() + "\n");
+  }
+}
+
+template void Field::scale<Device> (const ScalarWrapper&);
+template void Field::scale<Device> (const Field&);
+template void Field::scale_inv<Device> (const Field&);
+template void Field::max<Device> (const Field&);
+template void Field::min<Device> (const Field&);
+#ifdef EAMXX_ENABLE_GPU
+template void Field::scale<Host>   (const ScalarWrapper&);
+template void Field::scale<Host> (const Field&);
+template void Field::scale_inv<Host> (const Field&);
+template void Field::max<Host> (const Field&);
+template void Field::min<Host> (const Field&);
+#endif
 
 } // namespace scream

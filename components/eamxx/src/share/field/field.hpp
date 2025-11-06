@@ -3,6 +3,7 @@
 
 #include "share/field/field_header.hpp"
 #include "share/util/eamxx_combine_ops.hpp"
+#include "share/util/eamxx_scalar_wrapper.hpp"
 #include "share/core/eamxx_types.hpp"
 
 #include <ekat_std_type_traits.hpp>
@@ -209,16 +210,13 @@ public:
   void sync_to_dev (const bool fence = true) const;
 
   // Set the field to a constant value (on host or device)
-  // Note: as done below in 'update', the default for ST is only to allow
-  //       giving a default for HD. In practice, ST will ALWAYS be
-  //       deduced from the type of 'value'
-  template<HostOrDevice HD = Device, typename ST = void>
+  template<HostOrDevice HD = Device, typename ST>
   void deep_copy (const ST value);
 
   // Like the above one, but only sets the value where the mask is active
   // NOTE: mask field must have data type IntType, and hold the extra data
   // "true_value", to specify where the mask is active
-  template<HostOrDevice HD = Device, typename ST = void>
+  template<HostOrDevice HD = Device, typename ST>
   void deep_copy (const ST value, const Field& mask);
 
   // Copy the data from one field to this field (recycle update method)
@@ -227,8 +225,6 @@ public:
 
   // Updates this field y as y=combine(x,y,alpha,beta)
   // See share/util/eamxx_combine_ops.hpp for more details on CombineMode options
-  // NOTE: ST=void is just so we can give a default to HD,
-  //       but ST will *always* be deduced from input arguments.
   // NOTE: the type ST  must be such that no narrowing happens when
   //       casting the values to whatever the data type of this field is.
   //       E.g., if data_type()=IntType, you can't pass double's.
@@ -236,24 +232,26 @@ public:
   void update (const Field& x, const ST alpha, const ST beta);
 
   // Special case of update for particular choices of the combine mode
-  template<HostOrDevice HD = Device, typename ST = void>
-  void scale (const ST beta) { update<CombineMode::Update,HD>(*this,ST(0),beta); }
+  template<HostOrDevice HD = Device>
+  void scale (const ScalarWrapper& beta);
+  template<HostOrDevice HD = Device, typename ST>
+  void scale (const ST beta) { scale(ScalarWrapper(beta)); }
 
   // Scale a field y as y=y*x where x is also a field
   template<HostOrDevice HD = Device>
-  void scale (const Field& x) { update<CombineMode::Multiply,HD>(x,1,1); }
+  void scale (const Field& x);
 
   // Scale a field y as y=y/x where x is also a field
   template<HostOrDevice HD = Device>
-  void scale_inv (const Field& x) { update<CombineMode::Divide,HD>(x,1,1); }
+  void scale_inv (const Field& x);
 
   // Replace *this with max(*this, x)
   template<HostOrDevice HD = Device>
-  void max (const Field& x) { update<CombineMode::Max,HD>(x,1,1); }
+  void max (const Field& x);
 
   // Replace *this with min(*this, x)
   template<HostOrDevice HD = Device>
-  void min (const Field& x) { update<CombineMode::Min,HD>(x,1,1); }
+  void min (const Field& x);
 
   // Returns a subview of this field, slicing at entry k along dimension idim
   // NOTES:
