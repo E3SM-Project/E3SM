@@ -217,14 +217,14 @@ void VertCoord::completeSetup(Config *Options //< [in] configuration options
    MinLayerCellH = createHostMirrorCopy(MinLayerCell);
    BottomDepthH  = createHostMirrorCopy(BottomDepth);
 
-   // Fetch reference desnity from Config
-   Config TendConfig("Tendencies");
+   // Fetch reference density from Config
+   Config VCoordConfig("VertCoord");
    Err.reset();
-   Err += Options->get(TendConfig);
-   CHECK_ERROR_ABORT(Err, "VertCoord: Tendencies group not found in Config");
+   Err += Options->get(VCoordConfig);
+   CHECK_ERROR_ABORT(Err, "VertCoord: VertCoord group not found in Config");
 
-   Err += TendConfig.get("Density0", Rho0);
-   CHECK_ERROR_ABORT(Err, "VertCoord: Density0 not found in TendConfig");
+   Err += VCoordConfig.get("Density0", Rho0);
+   CHECK_ERROR_ABORT(Err, "VertCoord: Density0 not found in VertCoord");
 
 } // end completeSetup
 
