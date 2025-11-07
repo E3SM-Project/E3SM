@@ -69,9 +69,10 @@ pure character(len=cs) function i4ToString(input, format_string)
      ! For most compilers, these two statements are equivalent to a format of
      ! '(I0)', but that's not technically in the standard.
      write(i4ToString, '(I11)') input
+     i4ToString = adjustl(i4ToString)
   end if
 
-  i4ToString = trim(adjustl(i4ToString))
+  i4ToString = trim(i4ToString)
 
 end function i4ToString
 
@@ -85,9 +86,10 @@ pure character(len=cs) function i8ToString(input, format_string)
      ! For most compilers, these two statements are equivalent to a format of
      ! '(I0)', but that's not technically in the standard.
      write(i8ToString, '(I20)') input
+     i8ToString = adjustl(i8ToString)
   end if
 
-  i8ToString = trim(adjustl(i8ToString))
+  i8ToString = trim(i8ToString)
 
 end function i8ToString
 
@@ -109,7 +111,7 @@ pure character(len=cs) function r4ToString(input, format_string)
      end if
   end if
 
-  r4ToString = trim(adjustl(r4ToString))
+  r4ToString = trim(r4ToString)
 
 end function r4ToString
 
@@ -131,7 +133,7 @@ pure character(len=cs) function r8ToString(input, format_string)
      end if
   end if
 
-  r8ToString = trim(adjustl(r8ToString))
+  r8ToString = trim(r8ToString)
 
 end function r8ToString
 
