@@ -1,10 +1,10 @@
 #include "share/field/field.hpp"
 #include "share/util/eamxx_utils.hpp"
 #include "share/field/eamxx_fill_aware_binary_op_expression.hpp"
+#include "share/field/eamxx_fill_aware_math_expression.hpp"
 
 #include <ekat_expression_eval.hpp>
-#include <ekat_expression_binary_op.hpp>
-#include <ekat_expression_view.hpp>
+#include <ekat_expression_helpers.hpp>
 
 namespace scream
 {
@@ -260,8 +260,8 @@ void Field::scale (const ScalarWrapper& beta)
     using ST = decltype(coeff);
     auto do_scale = [&](auto view) {
       auto ve = ekat::view_expression(view);
-      auto expr = ve*=coeff;
-      ekat::evaluate(expr);
+      auto expr = ve*coeff;
+      ekat::evaluate(expr,view);
     };
     switch(rank()) {
       case 0: do_scale(get_view<ST>()); break;
@@ -312,8 +312,8 @@ void Field::scale (const Field& x)
     auto do_scale = [&](auto yview, auto xview) {
       auto ye = ekat::view_expression(yview);
       auto xe = ekat::view_expression(xview);
-      auto expr = ye*=xe;
-      ekat::evaluate(expr);
+      auto expr = ye*xe;
+      ekat::evaluate(expr,yview);
     };
     switch(rank()) {
       case 0: do_scale(get_view<YST>(),       x.get_view<const XST>()      ); break;
@@ -372,8 +372,8 @@ void Field::scale_inv (const Field& x)
     auto do_scale = [&](auto yview, auto xview) {
       auto ye = ekat::view_expression(yview);
       auto xe = ekat::view_expression(xview);
-      auto expr = ye/=xe;
-      ekat::evaluate(expr);
+      auto expr = ye/xe;
+      ekat::evaluate(expr,yview);
     };
     switch(rank()) {
       case 0: do_scale(get_view<YST>(),       x.get_view<const XST>()      ); break;
