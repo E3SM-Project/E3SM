@@ -1695,9 +1695,7 @@ subroutine  copy_aream_from_area(mbappid)
          if (mlnid >= 0) then
             ierr  = iMOAB_GetMeshInfo ( mlnid, nvert, nvise, nbl, nsurf, nvisBC )
             comp%mbApCCid = mlnid ! land
-	    ! MOAB TODO:  check this logic.  Seems to assume typeA might be
-	    ! 3 or 2 but only typeB has that possibility.
-            comp%mbGridType = typeA - 2 ! 0 or 1, pc or cells 
+            comp%mbGridType = 0 ! 0 or 1, pc or cells
             comp%mblsize = nvert(1) ! vertices
          endif
          if ( .not. mb_scm_land ) then
