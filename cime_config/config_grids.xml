@@ -74,6 +74,16 @@
       <mask>reg</mask>
     </model_grid>
 
+    <model_grid alias="RDY_USRDAT" compset="(DATM|SATM).+DLND.+RDYCORE">
+      <grid name="atm">ELM_USRDAT</grid>
+      <grid name="lnd">ELM_USRDAT</grid>
+      <grid name="ocnice">ELM_USRDAT</grid>
+      <grid name="rof">ELM_USRDAT</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>reg</mask>
+    </model_grid>
+
     <model_grid alias="MOS_USRDAT" compset="(DATM|SATM).+DLND.+MOSART">
       <grid name="atm">ELM_USRDAT</grid>
       <grid name="lnd">ELM_USRDAT</grid>
