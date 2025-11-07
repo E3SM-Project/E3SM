@@ -134,10 +134,10 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
   real(r8), dimension(ncol,pver) :: cme            ! condensation - evaporation
   real(r8), dimension(ncol,pver) :: dlf            ! detrained convective cloud water mixing ratio
   real(r8), dimension(ncol,pver) :: zdu            ! detraining mass flux
-  real(r8), dimension(ncol,pver) :: mu             ! upward cloud mass flux
-  real(r8), dimension(ncol,pver) :: md             ! entrainment in updraft
+  real(r8), dimension(ncol,pver) :: mu             ! updraft cloud mass flux
+  real(r8), dimension(ncol,pver) :: md             ! downdraft cloud mass flux
   real(r8), dimension(ncol,pver) :: du             ! detrainment in updraft
-  real(r8), dimension(ncol,pver) :: eu             ! downward cloud mass flux
+  real(r8), dimension(ncol,pver) :: eu             ! entrainment in updraft
   real(r8), dimension(ncol,pver) :: ed             ! entrainment in downdraft
   real(r8), dimension(ncol,pver) :: dp             ! layer thickness [mb]
   real(r8), dimension(ncol)      :: dsubcld        ! sub-cloud layer thickness
