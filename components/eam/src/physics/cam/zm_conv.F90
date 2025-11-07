@@ -697,7 +697,7 @@ subroutine zm_conv_evap(pcols, ncol, pver, pverp, deltat, &
    real(r8), dimension(pcols,pver), intent(in   ) :: pdel               ! layer thickness                         [Pa]
    real(r8), dimension(pcols,pver), intent(in   ) :: t                  ! temperature                             [K]
    real(r8), dimension(pcols,pver), intent(in   ) :: q                  ! water vapor                             [kg/kg]
-   real(r8), dimension(pcols,pver), intent(in   ) :: prdprec            ! precipitation production                [kg/ks/s]
+   real(r8), dimension(pcols,pver), intent(in   ) :: prdprec            ! precipitation production                [kg/kg/s]
    real(r8), dimension(pcols,pver), intent(in   ) :: cldfrc             ! cloud fraction
    real(r8), dimension(pcols,pver), intent(inout) :: tend_s             ! heating rate                            [J/kg/s]
    real(r8), dimension(pcols,pver), intent(inout) :: tend_q             ! water vapor tendency                    [kg/kg/s]
