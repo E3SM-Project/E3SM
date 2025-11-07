@@ -171,8 +171,10 @@ contains
        !    Soil layers not available from the input, and no additional layers needed. Use the
        ! default soil thickness settings.
        ! -----------------------------------------------------------------
-       call ieee_set_flag(ieee_all,.false.)
-       call ieee_set_halting_mode(ieee_inexact, .false.)
+       if (ieee_support_halting(ieee_inexact)) then
+          call ieee_set_flag(ieee_all,.false.)
+          call ieee_set_halting_mode(ieee_inexact, .false.)
+       end if 
 
        do j = 1, nlevgrnd
           zsoi(j) = scalez*(exp(zecoeff*(dble(j)-0.5_r8))-1._r8)    !node depths
