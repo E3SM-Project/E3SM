@@ -67,6 +67,7 @@ try:
     from utils import _ensure_pylib_impl
 
     _ensure_pylib_impl("xarray")
+    _ensure_pylib_impl("dask")
     _ensure_pylib_impl("scipy")
     _ensure_pylib_impl("statsmodels", min_version="0.14.0")
 
