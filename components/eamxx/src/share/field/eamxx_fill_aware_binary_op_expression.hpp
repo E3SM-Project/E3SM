@@ -29,14 +29,9 @@ public:
     // Nothing to do here
   }
 
-  int num_indices () const {
-    if constexpr (not expr_l) {
-      return m_right.num_indices();
-    } else if constexpr (not expr_r) {
-      return m_left.num_indices();
-    } else {
-      return std::max(m_left.num_indices(),m_right.num_indices());
-    }
+  static constexpr int rank () { return BinaryExpression<ELeft,ERight,OP>::rank(); }
+  int extent (int i) const {
+    return BinaryExpression<ELeft,ERight,OP>(m_left,m_right).extent(i);
   }
 
   template<typename... Args>

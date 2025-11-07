@@ -260,8 +260,8 @@ void Field::scale (const ScalarWrapper& beta)
     using ST = decltype(coeff);
     auto do_scale = [&](auto view) {
       auto ve = ekat::view_expression(view);
-      auto expr = ve*coeff;
-      ekat::evaluate(expr,view);
+      auto expr = ve*=coeff;
+      ekat::evaluate(expr);
     };
     switch(rank()) {
       case 0: do_scale(get_view<ST>()); break;
@@ -312,8 +312,8 @@ void Field::scale (const Field& x)
     auto do_scale = [&](auto yview, auto xview) {
       auto ye = ekat::view_expression(yview);
       auto xe = ekat::view_expression(xview);
-      auto expr = ye*xe;
-      ekat::evaluate(expr,yview);
+      auto expr = ye*=xe;
+      ekat::evaluate(expr);
     };
     switch(rank()) {
       case 0: do_scale(get_view<YST>(),       x.get_view<const XST>()      ); break;
@@ -372,8 +372,8 @@ void Field::scale_inv (const Field& x)
     auto do_scale = [&](auto yview, auto xview) {
       auto ye = ekat::view_expression(yview);
       auto xe = ekat::view_expression(xview);
-      auto expr = ye/xe;
-      ekat::evaluate(expr,yview);
+      auto expr = ye/=xe;
+      ekat::evaluate(expr);
     };
     switch(rank()) {
       case 0: do_scale(get_view<YST>(),       x.get_view<const XST>()      ); break;

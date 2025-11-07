@@ -19,9 +19,9 @@ TEST_CASE ("update") {
   ekat::Comm comm(MPI_COMM_WORLD);
   int seed = get_random_test_seed();
 
-  const int ncol = 3;
+  const int ncol = 1000;
   const int ncmp = 3;
-  const int nlev = 4;
+  const int nlev = 128;
 
   // Create field
   std::vector<FieldTag> tags = {COL, CMP, LEV};
