@@ -508,7 +508,18 @@ void Tendencies::computeTracerTendenciesOnly(
 
    Pacer::start("Tend:computeTracerTendenciesOnly", 1);
 
-   deepCopy(LocTracerTend, 0);
+   parallelForOuter(
+       {NTracers, Mesh->NCellsAll},
+       KOKKOS_LAMBDA(int L, int ICell, const TeamMember &Team) {
+          const int KMin   = MinLayerCell(ICell);
+          const int KMax   = MaxLayerCell(ICell);
+          const int KRange = vertRange(KMin, KMax);
+          parallelForInner(
+              Team, KRange, INNER_LAMBDA(int KChunk) {
+                 const int K                = KMin + KChunk;
+                 LocTracerTend(L, ICell, K) = 0;
+              });
+       });
 
    // compute tracer horizotal advection
    const Array2DReal &NormalVelEdge = State->NormalVelocity[VelTimeLevel];
