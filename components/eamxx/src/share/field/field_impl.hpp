@@ -442,7 +442,7 @@ void Field::deep_copy_impl (const ST value, const Field& mask)
   }
 }
 
-template<CombineMode CM, HostOrDevice HD, typename ST>
+template<CombineMode CM, typename ST>
 void Field::
 update (const Field& x, const ST alpha, const ST beta)
 {
@@ -492,44 +492,44 @@ update (const Field& x, const ST alpha, const ST beta)
 
   if (dt==DataType::IntType) {
     if (fill_aware) {
-      return update_impl<CM,HD,true,int,int>(x,alpha,beta);
+      return update_impl<CM,true,int,int>(x,alpha,beta);
     } else {
-      return update_impl<CM,HD,false,int,int>(x,alpha,beta);
+      return update_impl<CM,false,int,int>(x,alpha,beta);
     }
   } else if (dt==DataType::FloatType) {
     if (fill_aware) {
       if (rhs_dt==DataType::FloatType)
-        return update_impl<CM,HD,true,float,float>(x,alpha,beta);
+        return update_impl<CM,true,float,float>(x,alpha,beta);
       else
-        return update_impl<CM,HD,true,float,int>(x,alpha,beta);
+        return update_impl<CM,true,float,int>(x,alpha,beta);
     } else {
       if (rhs_dt==DataType::FloatType)
-        return update_impl<CM,HD,false,float,float>(x,alpha,beta);
+        return update_impl<CM,false,float,float>(x,alpha,beta);
       else
-        return update_impl<CM,HD,false,float,int>(x,alpha,beta);
+        return update_impl<CM,false,float,int>(x,alpha,beta);
     }
   } else if (dt==DataType::DoubleType) {
     if (fill_aware) {
       if (rhs_dt==DataType::DoubleType)
-        return update_impl<CM,HD,true,double,double>(x,alpha,beta);
+        return update_impl<CM,true,double,double>(x,alpha,beta);
       else if (rhs_dt==DataType::FloatType)
-        return update_impl<CM,HD,true,double,float>(x,alpha,beta);
+        return update_impl<CM,true,double,float>(x,alpha,beta);
       else
-        return update_impl<CM,HD,true,double,int>(x,alpha,beta);
+        return update_impl<CM,true,double,int>(x,alpha,beta);
     } else {
       if (rhs_dt==DataType::DoubleType)
-        return update_impl<CM,HD,false,double,double>(x,alpha,beta);
+        return update_impl<CM,false,double,double>(x,alpha,beta);
       else if (rhs_dt==DataType::FloatType)
-        return update_impl<CM,HD,false,double,float>(x,alpha,beta);
+        return update_impl<CM,false,double,float>(x,alpha,beta);
       else
-        return update_impl<CM,HD,false,double,int>(x,alpha,beta);
+        return update_impl<CM,false,double,int>(x,alpha,beta);
     }
   } else {
     EKAT_ERROR_MSG ("Error! Unrecognized/unsupported field data type in Field::update.\n");
   }
 }
 
-template<CombineMode CM, HostOrDevice HD, bool FillAware, typename ST, typename XST>
+template<CombineMode CM, bool FillAware, typename ST, typename XST>
 void Field::
 update_impl (const Field& x, const ST alpha, const ST beta)
 {
@@ -542,128 +542,128 @@ update_impl (const Field& x, const ST alpha, const ST beta)
   switch (layout.rank()) {
     case 0:
       if (x_contig and y_contig)
-        details::cvh<CM,FillAware>(get_view<ST,HD>(),
-                               x.get_view<const XST,HD>(),
+        details::cvh<CM,FillAware>(get_view<ST>(),
+                               x.get_view<const XST>(),
                                alpha,beta,dims);
       else if (x_contig)
-        details::cvh<CM,FillAware>(get_strided_view<ST,HD>(),
-                               x.get_view<const XST,HD>(),
+        details::cvh<CM,FillAware>(get_strided_view<ST>(),
+                               x.get_view<const XST>(),
                                alpha,beta,dims);
       else if (y_contig)
-        details::cvh<CM,FillAware>(get_view<ST,HD>(),
-                               x.get_strided_view<const XST,HD>(),
+        details::cvh<CM,FillAware>(get_view<ST>(),
+                               x.get_strided_view<const XST>(),
                                alpha,beta,dims);
       else
-        details::cvh<CM,FillAware>(get_strided_view<ST,HD>(),
-                               x.get_strided_view<const XST,HD>(),
+        details::cvh<CM,FillAware>(get_strided_view<ST>(),
+                               x.get_strided_view<const XST>(),
                                alpha,beta,dims);
       break;
     case 1:
       if (x_contig and y_contig)
-        details::cvh<CM,FillAware>(get_view<ST*,HD>(),
-                               x.get_view<const XST*,HD>(),
+        details::cvh<CM,FillAware>(get_view<ST*>(),
+                               x.get_view<const XST*>(),
                                alpha,beta,dims);
       else if (x_contig)
-        details::cvh<CM,FillAware>(get_strided_view<ST*,HD>(),
-                               x.get_view<const XST*,HD>(),
+        details::cvh<CM,FillAware>(get_strided_view<ST*>(),
+                               x.get_view<const XST*>(),
                                alpha,beta,dims);
       else if (y_contig)
-        details::cvh<CM,FillAware>(get_view<ST*,HD>(),
-                               x.get_strided_view<const XST*,HD>(),
+        details::cvh<CM,FillAware>(get_view<ST*>(),
+                               x.get_strided_view<const XST*>(),
                                alpha,beta,dims);
       else
-        details::cvh<CM,FillAware>(get_strided_view<ST*,HD>(),
-                               x.get_strided_view<const XST*,HD>(),
+        details::cvh<CM,FillAware>(get_strided_view<ST*>(),
+                               x.get_strided_view<const XST*>(),
                                alpha,beta,dims);
       break;
     case 2:
       if (x_contig and y_contig)
-        details::cvh<CM,FillAware>(get_view<ST**,HD>(),
-                               x.get_view<const XST**,HD>(),
+        details::cvh<CM,FillAware>(get_view<ST**>(),
+                               x.get_view<const XST**>(),
                                alpha,beta,dims);
       else if (x_contig)
-        details::cvh<CM,FillAware>(get_strided_view<ST**,HD>(),
-                               x.get_view<const XST**,HD>(),
+        details::cvh<CM,FillAware>(get_strided_view<ST**>(),
+                               x.get_view<const XST**>(),
                                alpha,beta,dims);
       else if (y_contig)
-        details::cvh<CM,FillAware>(get_view<ST**,HD>(),
-                               x.get_strided_view<const XST**,HD>(),
+        details::cvh<CM,FillAware>(get_view<ST**>(),
+                               x.get_strided_view<const XST**>(),
                                alpha,beta,dims);
       else
-        details::cvh<CM,FillAware>(get_strided_view<ST**,HD>(),
-                               x.get_strided_view<const XST**,HD>(),
+        details::cvh<CM,FillAware>(get_strided_view<ST**>(),
+                               x.get_strided_view<const XST**>(),
                                alpha,beta,dims);
       break;
     case 3:
       if (x_contig and y_contig)
-        details::cvh<CM,FillAware>(get_view<ST***,HD>(),
-                               x.get_view<const XST***,HD>(),
+        details::cvh<CM,FillAware>(get_view<ST***>(),
+                               x.get_view<const XST***>(),
                                alpha,beta,dims);
       else if (x_contig)
-        details::cvh<CM,FillAware>(get_strided_view<ST***,HD>(),
-                               x.get_view<const XST***,HD>(),
+        details::cvh<CM,FillAware>(get_strided_view<ST***>(),
+                               x.get_view<const XST***>(),
                                alpha,beta,dims);
       else if (y_contig)
-        details::cvh<CM,FillAware>(get_view<ST***,HD>(),
-                               x.get_strided_view<const XST***,HD>(),
+        details::cvh<CM,FillAware>(get_view<ST***>(),
+                               x.get_strided_view<const XST***>(),
                                alpha,beta,dims);
       else
-        details::cvh<CM,FillAware>(get_strided_view<ST***,HD>(),
-                               x.get_strided_view<const XST***,HD>(),
+        details::cvh<CM,FillAware>(get_strided_view<ST***>(),
+                               x.get_strided_view<const XST***>(),
                                alpha,beta,dims);
       break;
     case 4:
       if (x_contig and y_contig)
-        details::cvh<CM,FillAware>(get_view<ST****,HD>(),
-                               x.get_view<const XST****,HD>(),
+        details::cvh<CM,FillAware>(get_view<ST****>(),
+                               x.get_view<const XST****>(),
                                alpha,beta,dims);
       else if (x_contig)
-        details::cvh<CM,FillAware>(get_strided_view<ST****,HD>(),
-                               x.get_view<const XST****,HD>(),
+        details::cvh<CM,FillAware>(get_strided_view<ST****>(),
+                               x.get_view<const XST****>(),
                                alpha,beta,dims);
       else if (y_contig)
-        details::cvh<CM,FillAware>(get_view<ST****,HD>(),
-                               x.get_strided_view<const XST****,HD>(),
+        details::cvh<CM,FillAware>(get_view<ST****>(),
+                               x.get_strided_view<const XST****>(),
                                alpha,beta,dims);
       else
-        details::cvh<CM,FillAware>(get_strided_view<ST****,HD>(),
-                               x.get_strided_view<const XST****,HD>(),
+        details::cvh<CM,FillAware>(get_strided_view<ST****>(),
+                               x.get_strided_view<const XST****>(),
                                alpha,beta,dims);
       break;
     case 5:
       if (x_contig and y_contig)
-        details::cvh<CM,FillAware>(get_view<ST*****,HD>(),
-                               x.get_view<const XST*****,HD>(),
+        details::cvh<CM,FillAware>(get_view<ST*****>(),
+                               x.get_view<const XST*****>(),
                                alpha,beta,dims);
       else if (x_contig)
-        details::cvh<CM,FillAware>(get_strided_view<ST*****,HD>(),
-                               x.get_view<const XST*****,HD>(),
+        details::cvh<CM,FillAware>(get_strided_view<ST*****>(),
+                               x.get_view<const XST*****>(),
                                alpha,beta,dims);
       else if (y_contig)
-        details::cvh<CM,FillAware>(get_view<ST*****,HD>(),
-                               x.get_strided_view<const XST*****,HD>(),
+        details::cvh<CM,FillAware>(get_view<ST*****>(),
+                               x.get_strided_view<const XST*****>(),
                                alpha,beta,dims);
       else
-        details::cvh<CM,FillAware>(get_strided_view<ST*****,HD>(),
-                               x.get_strided_view<const XST*****,HD>(),
+        details::cvh<CM,FillAware>(get_strided_view<ST*****>(),
+                               x.get_strided_view<const XST*****>(),
                                alpha,beta,dims);
       break;
     case 6:
       if (x_contig and y_contig)
-        details::cvh<CM,FillAware>(get_view<ST******,HD>(),
-                               x.get_view<const XST******,HD>(),
+        details::cvh<CM,FillAware>(get_view<ST******>(),
+                               x.get_view<const XST******>(),
                                alpha,beta,dims);
       else if (x_contig)
-        details::cvh<CM,FillAware>(get_strided_view<ST******,HD>(),
-                               x.get_view<const XST******,HD>(),
+        details::cvh<CM,FillAware>(get_strided_view<ST******>(),
+                               x.get_view<const XST******>(),
                                alpha,beta,dims);
       else if (y_contig)
-        details::cvh<CM,FillAware>(get_view<ST******,HD>(),
-                               x.get_strided_view<const XST******,HD>(),
+        details::cvh<CM,FillAware>(get_view<ST******>(),
+                               x.get_strided_view<const XST******>(),
                                alpha,beta,dims);
       else
-        details::cvh<CM,FillAware>(get_strided_view<ST******,HD>(),
-                               x.get_strided_view<const XST******,HD>(),
+        details::cvh<CM,FillAware>(get_strided_view<ST******>(),
+                               x.get_strided_view<const XST******>(),
                                alpha,beta,dims);
       break;
     default:
