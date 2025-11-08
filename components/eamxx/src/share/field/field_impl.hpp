@@ -616,7 +616,7 @@ update_impl (const Field& x, const ST alpha, const ST beta)
 
 template<HostOrDevice HD, typename T, int N>
 auto Field::get_ND_view () const
-  -> if_t<(N < MaxRank), get_view_type<data_nd_t<T, N>, HD>>
+  -> std::enable_if_t<(N < MaxRank), get_view_type<data_nd_t<T, N>, HD>>
 {
   const auto& fl = m_header->get_identifier().get_layout();
   EKAT_REQUIRE_MSG (N==1 || N==fl.rank(),
@@ -677,7 +677,7 @@ auto Field::get_ND_view () const
 
 template<HostOrDevice HD,typename T,int N>
 auto Field::get_ND_view () const
-  -> if_t<N==MaxRank,get_view_type<data_nd_t<T,N>,HD>>
+  -> std::enable_if_t<N==MaxRank,get_view_type<data_nd_t<T,N>,HD>>
 {
   static_assert(HD==Host or HD==Device,
       "Invalid value for non-type template argument HD.\n");
@@ -709,7 +709,7 @@ auto Field::get_ND_view () const
 // subview slicing in get_strided_view()
 template<HostOrDevice HD,typename T,int N>
 auto Field::get_ND_view () const
-  -> if_t<(N >= MaxRank + 1),get_view_type<data_nd_t<T,N>,HD>>
+  -> std::enable_if_t<(N >= MaxRank + 1),get_view_type<data_nd_t<T,N>,HD>>
 {
   EKAT_ERROR_MSG("Error! Cannot call get_ND_view for rank greater than "
                  "MaxRank = 6.\n"

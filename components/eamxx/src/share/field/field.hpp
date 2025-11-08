@@ -33,13 +33,6 @@ enum HostOrDevice {
 class Field {
 public:
 
-  // The syntax of std::enable_if is way too long...
-  template<bool c, typename T, typename F>
-  using cond_t = typename std::conditional<c,T,F>::type;
-
-  template<bool c, typename T = void>
-  using if_t = typename std::enable_if<c,T>::type;
-
   // Various kokkos-related types
   using device_t      = DefaultDevice;
   using host_device_t = HostDevice;
@@ -47,7 +40,7 @@ public:
   using kt_host       = KokkosTypes<host_device_t>;
 
   template<HostOrDevice HD>
-  using get_device = cond_t<HD==Device, device_t,host_device_t>;
+  using get_device = std::conditional_t<HD==Device, device_t,host_device_t>;
 
   // The data type of an N-dimensional array of T, with all dynamic extents
   template<typename T, int N>
@@ -74,11 +67,11 @@ private:
     view_host_t<DT,MT>  h_view;
 
     template<typename Device>
-    const if_t<std::is_same_v<Device,device_t>,view_dev_t<DT,MT>>& get_view() const {
+    const std::enable_if_t<std::is_same_v<Device,device_t>,view_dev_t<DT,MT>>& get_view() const {
       return d_view;
     }
     template<typename Device>
-    const if_t<not std::is_same_v<Device,device_t>,view_host_t<DT,MT>>& get_view() const {
+    const std::enable_if_t<not std::is_same_v<Device,device_t>,view_host_t<DT,MT>>& get_view() const {
       return h_view;
     }
   };
@@ -86,10 +79,10 @@ public:
 
   // Type of a view given data type, HostOrDevice enum, and memory traits
   template<typename DT, HostOrDevice HD, typename MT = Kokkos::MemoryManaged>
-  using get_view_type = cond_t<HD==Device,view_dev_t<DT,MT>,view_host_t<DT,MT>>;
+  using get_view_type = std::conditional_t<HD==Device,view_dev_t<DT,MT>,view_host_t<DT,MT>>;
 
   template<typename DT, HostOrDevice HD, typename MT = Kokkos::MemoryManaged>
-  using get_strided_view_type = cond_t<HD==Device,strided_view_dev_t<DT,MT>,strided_view_host_t<DT,MT>>;
+  using get_strided_view_type = std::conditional_t<HD==Device,strided_view_dev_t<DT,MT>,strided_view_host_t<DT,MT>>;
 
   // Field stack classes types
   using header_type          = FieldHeader;
@@ -356,14 +349,14 @@ protected:
   // These SFINAE impl of get_subview are needed since subview_1 does not
   // exist for rank2 (or less) views.
   template<HostOrDevice HD, typename T, int N>
-  if_t<(N>2),
+  std::enable_if_t<(N>2),
        get_view_type<data_nd_t<T,N-1>,HD>>
   get_subview_1 (const get_view_type<data_nd_t<T,N>,HD>& v, const int k) const {
     return ekat::subview_1(v,k);
   }
 
   template<HostOrDevice HD, typename T, int N>
-  if_t<(N<=2),
+  std::enable_if_t<(N<=2),
        get_view_type<data_nd_t<T,N-1>,HD>>
   get_subview_1 (const get_view_type<data_nd_t<T,N>,HD>&, const int) const {
     EKAT_ERROR_MSG ("Error! Cannot subview a rank2 view along the second "
@@ -373,17 +366,17 @@ protected:
 
   template<HostOrDevice HD,typename T,int N>
   auto get_ND_view () const
-    -> if_t<(N < MaxRank), get_view_type<data_nd_t<T,N>,HD>>;
+    -> std::enable_if_t<(N < MaxRank), get_view_type<data_nd_t<T,N>,HD>>;
 
   template<HostOrDevice HD,typename T,int N>
   auto get_ND_view () const
-    -> if_t<N == MaxRank, get_view_type<data_nd_t<T,N>,HD>>;
+    -> std::enable_if_t<N == MaxRank, get_view_type<data_nd_t<T,N>,HD>>;
 
   // NOTE: DO NOT USE--it only returns an error and is here to protect
   // against compiler errors related to sliced subviews in get_strided_view()
   template<HostOrDevice HD,typename T,int N>
   auto get_ND_view () const
-    -> if_t<(N >= MaxRank + 1), get_view_type<data_nd_t<T,N>,HD>>;
+    -> std::enable_if_t<(N >= MaxRank + 1), get_view_type<data_nd_t<T,N>,HD>>;
 
   // Metadata (name, rank, dims, customer/providers, time stamp, ...)
   std::shared_ptr<header_type> m_header;
