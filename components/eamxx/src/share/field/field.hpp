@@ -3,6 +3,7 @@
 
 #include "share/field/field_header.hpp"
 #include "share/util/eamxx_combine_ops.hpp"
+#include "share/util/eamxx_scalar_wrapper.hpp"
 #include "share/core/eamxx_types.hpp"
 
 #include <ekat_std_type_traits.hpp>
@@ -209,13 +210,11 @@ public:
   void sync_to_dev (const bool fence = true) const;
 
   // Set the field to a constant value (on device view ONLY)
-  template<typename ST>
-  void deep_copy (const ST value);
+  void deep_copy (const ScalarWrapper value);
 
   // Like the above one, but only sets the value where the mask is active
   // NOTE: mask field must have data type IntType. Runs on device ONLY
-  template<typename ST>
-  void deep_copy (const ST value, const Field& mask);
+  void deep_copy (const ScalarWrapper value, const Field& mask);
 
   // Copy the data from one field to this field (on device ONLY)
   void deep_copy (const Field& src);
@@ -227,24 +226,23 @@ public:
   // NOTE: the type ST  must be such that no narrowing happens when
   //       casting the values to whatever the data type of this field is.
   //       E.g., if data_type()=IntType, you can't pass double's.
-  template<CombineMode CM = CombineMode::Update, typename ST = void>
-  void update (const Field& x, const ST alpha, const ST beta);
+  template<CombineMode CM = CombineMode::Update>
+  void update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta);
 
   // Special case of update for particular choices of the combine mode
-  template<typename ST>
-  void scale (const ST beta) { update<CombineMode::Update>(*this,ST(0),beta); }
+  void scale (const ScalarWrapper beta);
 
   // Scale a field y as y=y*x where x is also a field
-  void scale (const Field& x) { update<CombineMode::Multiply>(x,1,1); }
+  void scale (const Field& x);
 
   // Scale a field y as y=y/x where x is also a field
-  void scale_inv (const Field& x) { update<CombineMode::Divide>(x,1,1); }
+  void scale_inv (const Field& x);
 
   // Replace *this with max(*this, x)
-  void max (const Field& x) { update<CombineMode::Max>(x,1,1); }
+  void max (const Field& x);
 
   // Replace *this with min(*this, x)
-  void min (const Field& x) { update<CombineMode::Min>(x,1,1); }
+  void min (const Field& x);
 
   // Returns a subview of this field, slicing at entry k along dimension idim
   // NOTES:
@@ -416,13 +414,11 @@ inline bool operator== (const Field& lhs, const Field& rhs) {
 //       so it helps to do ETI for those.
 // NOTE: for update, we only specialize for CM being Update, Multiply, and Divide,
 #define EAMXX_FIELD_ETI_DECL_UPDATE(T) \
-extern template void Field::update<CombineMode::Update, T>(const Field&, const T, const T);              \
-extern template void Field::update<CombineMode::Multiply, T>(const Field&, const T, const T);            \
-extern template void Field::update<CombineMode::Divide, T>(const Field&, const T, const T)
-
-#define EAMXX_FIELD_ETI_DECL_UPDATE_MAX_MIN(T) \
-extern template void Field::update<CombineMode::Max, T>(const Field&, const T, const T);            \
-extern template void Field::update<CombineMode::Min, T>(const Field&, const T, const T)
+extern template void Field::update<CombineMode::Update>(const Field&, const ScalarWrapper, const ScalarWrapper);   \
+extern template void Field::update<CombineMode::Multiply>(const Field&, const ScalarWrapper, const ScalarWrapper); \
+extern template void Field::update<CombineMode::Divide>(const Field&, const ScalarWrapper, const ScalarWrapper);   \
+extern template void Field::update<CombineMode::Max>(const Field&, const ScalarWrapper, const ScalarWrapper);      \
+extern template void Field::update<CombineMode::Min>(const Field&, const ScalarWrapper, const ScalarWrapper)
 
 #define EAMXX_FIELD_ETI_DECL_UPDATE_IMPL(T1,T2) \
 extern template void Field::update_impl<CombineMode::Update,  true, T1, T2>(const Field&, const T1, const T1);  \
@@ -430,12 +426,10 @@ extern template void Field::update_impl<CombineMode::Multiply,true, T1, T2>(cons
 extern template void Field::update_impl<CombineMode::Divide,  true, T1, T2>(const Field&, const T1, const T1);  \
 extern template void Field::update_impl<CombineMode::Update,  false, T1, T2>(const Field&, const T1, const T1); \
 extern template void Field::update_impl<CombineMode::Multiply,false, T1, T2>(const Field&, const T1, const T1); \
-extern template void Field::update_impl<CombineMode::Divide,  false, T1, T2>(const Field&, const T1, const T1)
-
-#define EAMXX_FIELD_ETI_DECL_UPDATE_MAX_MIN_IMPL(T1,T2) \
-extern template void Field::update_impl<CombineMode::Max, true, T1, T2>(const Field&, const T1, const T1);  \
-extern template void Field::update_impl<CombineMode::Min, true, T1, T2>(const Field&, const T1, const T1);  \
-extern template void Field::update_impl<CombineMode::Max, false, T1, T2>(const Field&, const T1, const T1); \
+extern template void Field::update_impl<CombineMode::Divide,  false, T1, T2>(const Field&, const T1, const T1); \
+extern template void Field::update_impl<CombineMode::Max, true, T1, T2>(const Field&, const T1, const T1);      \
+extern template void Field::update_impl<CombineMode::Min, true, T1, T2>(const Field&, const T1, const T1);      \
+extern template void Field::update_impl<CombineMode::Max, false, T1, T2>(const Field&, const T1, const T1);     \
 extern template void Field::update_impl<CombineMode::Min, false, T1, T2>(const Field&, const T1, const T1)
 
 #define EAMXX_FIELD_ETI_DECL_DEEP_COPY(T) \
@@ -460,7 +454,6 @@ extern template Field::get_strided_view_type<T******,S> Field::get_strided_view<
 
 #define EAMXX_FIELD_ETI_DECL_FOR_ONE_TYPE(T) \
 EAMXX_FIELD_ETI_DECL_UPDATE(T);                 \
-EAMXX_FIELD_ETI_DECL_UPDATE_MAX_MIN(T);         \
 EAMXX_FIELD_ETI_DECL_DEEP_COPY(T);              \
 EAMXX_FIELD_ETI_DECL_GET_VIEW(Device,T);        \
 EAMXX_FIELD_ETI_DECL_GET_VIEW(Host,T);          \
@@ -468,8 +461,7 @@ EAMXX_FIELD_ETI_DECL_GET_VIEW(Device,const T);  \
 EAMXX_FIELD_ETI_DECL_GET_VIEW(Host,const T)
 
 #define EAMXX_FIELD_ETI_DECL_FOR_TWO_TYPES(T1,T2) \
-EAMXX_FIELD_ETI_DECL_UPDATE_IMPL(T1,T2);           \
-EAMXX_FIELD_ETI_DECL_UPDATE_MAX_MIN_IMPL(T1,T2);   \
+EAMXX_FIELD_ETI_DECL_UPDATE_IMPL(T1,T2)
 
 // TODO: should we ETI other scalar types too? E.g. Pack<Real,SCREAM_PACK_SIZE??
 //       Real is by far the most common, so it'd be nice to just to that. But

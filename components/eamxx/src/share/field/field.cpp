@@ -242,9 +242,81 @@ void Field::allocate_view ()
   m_data.h_view = Kokkos::create_mirror_view(m_data.d_view);
 }
 
+
 void Field::deep_copy (const Field& src)
 {
   update<CombineMode::Replace>(src,1,0);
+}
+
+void Field::deep_copy (const ScalarWrapper value) {
+  EKAT_REQUIRE_MSG (not m_is_read_only,
+      "Error! Cannot call deep_copy on read-only fields.\n");
+
+  const auto my_data_type = data_type();
+  switch (my_data_type) {
+    case DataType::IntType:
+      deep_copy_impl<false>(value.as<int>(),*this); // 2nd arg unused
+      break;
+    case DataType::FloatType:
+      deep_copy_impl<false>(value.as<float>(),*this); // 2nd arg unused
+      break;
+    case DataType::DoubleType:
+      deep_copy_impl<false>(value.as<double>(),*this); // 2nd arg unused
+      break;
+    default:
+      EKAT_ERROR_MSG ("Error! Unrecognized field data type in Field::deep_copy.\n");
+  }
+}
+
+void Field::deep_copy (const ScalarWrapper value, const Field& mask)
+{
+  EKAT_REQUIRE_MSG (not m_is_read_only,
+      "Error! Cannot call deep_copy on read-only fields.\n");
+
+  const auto my_data_type = data_type();
+  switch (my_data_type) {
+    case DataType::IntType:
+      deep_copy_impl<true>(value.as<int>(),mask);
+      break;
+    case DataType::FloatType:
+      deep_copy_impl<true>(value.as<float>(),mask);
+      break;
+    case DataType::DoubleType:
+      deep_copy_impl<true>(value.as<double>(),mask);
+      break;
+    default:
+      EKAT_ERROR_MSG ("Error! Unrecognized field data type in Field::deep_copy.\n");
+  }
+}
+
+void Field::scale (const ScalarWrapper beta)
+{
+  auto zero = ScalarWrapper::zero();
+  update<CombineMode::Update>(*this,zero,beta);
+}
+
+void Field::scale (const Field& x)
+{
+  auto one = ScalarWrapper::one();
+  update<CombineMode::Multiply>(x,one,one);
+}
+
+void Field::scale_inv (const Field& x)
+{
+  auto one = ScalarWrapper::one();
+  update<CombineMode::Divide>(x,one,one);
+}
+
+void Field::max (const Field& x)
+{
+  auto one = ScalarWrapper::one();
+  update<CombineMode::Max>(x,one,one);
+}
+
+void Field::min (const Field& x)
+{
+  auto one = ScalarWrapper::one();
+  update<CombineMode::Min>(x,one,one);
 }
 
 } // namespace scream

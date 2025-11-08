@@ -254,75 +254,6 @@ void Field::sync_views_impl () const {
   }
 }
 
-template<typename ST>
-void Field::
-deep_copy (const ST value) {
-  EKAT_REQUIRE_MSG (not m_is_read_only,
-      "Error! Cannot call deep_copy on read-only fields.\n");
-
-  const auto my_data_type = data_type();
-  switch (my_data_type) {
-    case DataType::IntType:
-      EKAT_REQUIRE_MSG( (std::is_convertible<ST,int>::value),
-          "Error! Input value type is not convertible to field data type.\n"
-          "   - Input value type: " + std::string(typeid(ST).name()) + "\n"
-          "   - Field data type : " + e2str(my_data_type) + "\n");
-      deep_copy_impl<false,int>(value,*this); // 2nd arg unused
-      break;
-    case DataType::FloatType:
-      EKAT_REQUIRE_MSG( (std::is_convertible<ST,float>::value),
-          "Error! Input value type is not convertible to field data type.\n"
-          "   - Input value type: " + std::string(typeid(ST).name()) + "\n"
-          "   - Field data type : " + e2str(my_data_type) + "\n");
-      deep_copy_impl<false,float>(value,*this); // 2nd arg unused
-      break;
-    case DataType::DoubleType:
-      EKAT_REQUIRE_MSG( (std::is_convertible<ST,double>::value),
-          "Error! Input value type is not convertible to field data type.\n"
-          "   - Input value type: " + std::string(typeid(ST).name()) + "\n"
-          "   - Field data type : " + e2str(my_data_type) + "\n");
-      deep_copy_impl<false,double>(value,*this); // 2nd arg unused
-      break;
-    default:
-      EKAT_ERROR_MSG ("Error! Unrecognized field data type in Field::deep_copy.\n");
-  }
-}
-
-template<typename ST>
-void Field::
-deep_copy (const ST value, const Field& mask)
-{
-  EKAT_REQUIRE_MSG (not m_is_read_only,
-      "Error! Cannot call deep_copy on read-only fields.\n");
-
-  const auto my_data_type = data_type();
-  switch (my_data_type) {
-    case DataType::IntType:
-      EKAT_REQUIRE_MSG( (std::is_convertible<ST,int>::value),
-          "Error! Input value type is not convertible to field data type.\n"
-          "   - Input value type: " + std::string(typeid(ST).name()) + "\n"
-          "   - Field data type : " + e2str(my_data_type) + "\n");
-      deep_copy_impl<true,int>(value,mask);
-      break;
-    case DataType::FloatType:
-      EKAT_REQUIRE_MSG( (std::is_convertible<ST,float>::value),
-          "Error! Input value type is not convertible to field data type.\n"
-          "   - Input value type: " + std::string(typeid(ST).name()) + "\n"
-          "   - Field data type : " + e2str(my_data_type) + "\n");
-      deep_copy_impl<true,float>(value,mask);
-      break;
-    case DataType::DoubleType:
-      EKAT_REQUIRE_MSG( (std::is_convertible<ST,double>::value),
-          "Error! Input value type is not convertible to field data type.\n"
-          "   - Input value type: " + std::string(typeid(ST).name()) + "\n"
-          "   - Field data type : " + e2str(my_data_type) + "\n");
-      deep_copy_impl<true,double>(value,mask);
-      break;
-    default:
-      EKAT_ERROR_MSG ("Error! Unrecognized field data type in Field::deep_copy.\n");
-  }
-}
-
 template<bool use_mask, typename ST>
 void Field::deep_copy_impl (const ST value, const Field& mask)
 {
@@ -442,9 +373,9 @@ void Field::deep_copy_impl (const ST value, const Field& mask)
   }
 }
 
-template<CombineMode CM, typename ST>
+template<CombineMode CM>
 void Field::
-update (const Field& x, const ST alpha, const ST beta)
+update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta)
 {
   // Check this field is writable
   EKAT_REQUIRE_MSG (not is_read_only(),
@@ -453,7 +384,6 @@ update (const Field& x, const ST alpha, const ST beta)
 
   const auto& dt = data_type();
   const auto& rhs_dt = x.data_type();
-  const auto  dt_st = get_data_type<ST>();
 
   // If user passes, say, double alpha/beta for an int field, we should error out, warning about
   // a potential narrowing rounding. The other way around, otoh, is allowed (even though
@@ -461,10 +391,14 @@ update (const Field& x, const ST alpha, const ST beta)
   // will use such large factors).
   // Similarly, we allow updating a field Y with another X as long as converting the data type of X
   // to the data type of Y does not require narrowing
-  EKAT_REQUIRE_MSG (not is_narrowing_conversion(dt_st,dt),
-      "Error! Coefficients alpha/beta may be narrowed when converted to x/y data type.\n"
+  EKAT_REQUIRE_MSG (not is_narrowing_conversion(alpha.type,dt),
+      "Error! Coefficient alpha may be narrowed when converted to x/y data type.\n"
       " - x/y data type  : " + e2str(dt) + "\n"
-      " - coeff data type: " + e2str(dt_st) + "\n");
+      " - alpha data type: " + e2str(alpha.type) + "\n");
+  EKAT_REQUIRE_MSG (not is_narrowing_conversion(beta.type,dt),
+      "Error! Coefficient beta may be narrowed when converted to x/y data type.\n"
+      " - x/y data type  : " + e2str(dt) + "\n"
+      " - beta data type: " + e2str(beta.type) + "\n");
   EKAT_REQUIRE_MSG (not is_narrowing_conversion(rhs_dt,dt),
       "Error! Right hand side data type may be narrowed when converted to x data type.\n"
       " - rhs data type: " + e2str(rhs_dt) + "\n"
@@ -491,38 +425,44 @@ update (const Field& x, const ST alpha, const ST beta)
   bool fill_aware = x.get_header().may_be_filled();
 
   if (dt==DataType::IntType) {
+    auto a = alpha.as<int>();
+    auto b = beta.as<int>();
     if (fill_aware) {
-      return update_impl<CM,true,int,int>(x,alpha,beta);
+      return update_impl<CM,true,int,int>(x,a,b);
     } else {
-      return update_impl<CM,false,int,int>(x,alpha,beta);
+      return update_impl<CM,false,int,int>(x,a,b);
     }
   } else if (dt==DataType::FloatType) {
+    auto a = alpha.as<float>();
+    auto b = beta.as<float>();
     if (fill_aware) {
       if (rhs_dt==DataType::FloatType)
-        return update_impl<CM,true,float,float>(x,alpha,beta);
+        return update_impl<CM,true,float,float>(x,a,b);
       else
-        return update_impl<CM,true,float,int>(x,alpha,beta);
+        return update_impl<CM,true,float,int>(x,a,b);
     } else {
       if (rhs_dt==DataType::FloatType)
-        return update_impl<CM,false,float,float>(x,alpha,beta);
+        return update_impl<CM,false,float,float>(x,a,b);
       else
-        return update_impl<CM,false,float,int>(x,alpha,beta);
+        return update_impl<CM,false,float,int>(x,a,b);
     }
   } else if (dt==DataType::DoubleType) {
+    auto a = alpha.as<double>();
+    auto b = beta.as<double>();
     if (fill_aware) {
       if (rhs_dt==DataType::DoubleType)
-        return update_impl<CM,true,double,double>(x,alpha,beta);
+        return update_impl<CM,true,double,double>(x,a,b);
       else if (rhs_dt==DataType::FloatType)
-        return update_impl<CM,true,double,float>(x,alpha,beta);
+        return update_impl<CM,true,double,float>(x,a,b);
       else
-        return update_impl<CM,true,double,int>(x,alpha,beta);
+        return update_impl<CM,true,double,int>(x,a,b);
     } else {
       if (rhs_dt==DataType::DoubleType)
-        return update_impl<CM,false,double,double>(x,alpha,beta);
+        return update_impl<CM,false,double,double>(x,a,b);
       else if (rhs_dt==DataType::FloatType)
-        return update_impl<CM,false,double,float>(x,alpha,beta);
+        return update_impl<CM,false,double,float>(x,a,b);
       else
-        return update_impl<CM,false,double,int>(x,alpha,beta);
+        return update_impl<CM,false,double,int>(x,a,b);
     }
   } else {
     EKAT_ERROR_MSG ("Error! Unrecognized/unsupported field data type in Field::update.\n");
