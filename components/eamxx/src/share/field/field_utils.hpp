@@ -14,19 +14,9 @@ bool views_are_equal(const Field& f1, const Field& f2, const ekat::Comm* comm = 
 void randomize_uniform (const Field& f, int seed,
                         const ScalarWrapper lb = ScalarWrapper::zero(),
                         const ScalarWrapper ub = ScalarWrapper::one());
-template<typename ST>
-void randomize_uniform (const Field& f, int seed, const ST& lb, const ST& ub)
-{
-  return randomize_uniform(f,seed,ScalarWrapper(lb),ScalarWrapper(ub));
-}
 void randomize_normal (const Field& f, int seed,
                        const ScalarWrapper mean = ScalarWrapper::zero(),
                        const ScalarWrapper sigma = ScalarWrapper::one());
-template<typename ST>
-void randomize_normal (const Field& f, int seed, const ST& mean, const ST& sigma = 1)
-{
-  return randomize_normal(f,seed,ScalarWrapper(mean),ScalarWrapper(sigma));
-}
 void randomize_discrete (const Field& f, int seed,
                          const std::vector<ScalarWrapper>& values);
 template<typename ST>
@@ -55,15 +45,6 @@ void perturb (Field& f,
               const int base_seed,
               const Field& level_mask,
               const Field& dof_gids = Field());
-template<typename ST>
-void perturb (Field& f,
-              const ST perturb_level,
-              const int base_seed,
-              const Field& level_mask,
-              const Field& dof_gids = Field())
-{
-  perturb(f,ScalarWrapper(perturb_level),base_seed,level_mask,dof_gids);
-}
 
 // Vertical/horizontal contractions of field (possibly averaging)
 void vert_contraction (const Field& f_out, const Field& f_in, const Field& weight, bool AVG = false);
@@ -86,24 +67,11 @@ void print_field_hyperslab (const Field& f,
                             const std::vector<int>& indices = {},
                             std::ostream& out = std::cout);
 
+// Compute where input field comparese correctly to given value
 void compute_mask (const Field& x, const ScalarWrapper value, Comparison CMP, Field& mask);
+Field compute_mask (const Field& x, const ScalarWrapper value, Comparison CMP);
 
-template<typename ST>
-void compute_mask (const Field& x, const ST value, Comparison CMP, Field& mask) {
-  compute_mask(x,ScalarWrapper(value),CMP,mask);
-}
-
-template<typename ST>
-Field compute_mask (const Field& x, const ST value, Comparison CMP) {
-  const auto& fid_x = x.get_header().get_identifier();
-  const auto nondim = ekat::units::Units::nondimensional();
-  FieldIdentifier fid(x.name()+"_mask",fid_x.get_layout(),nondim,fid_x.get_grid_name(),DataType::IntType);
-  Field mask(fid,true);
-
-  compute_mask(x,value,CMP,mask);
-  return mask;
-}
-
+// Transpose a field layout
 void transpose (const Field& src, Field& tgt);
 Field transpose (const Field& src);
 
