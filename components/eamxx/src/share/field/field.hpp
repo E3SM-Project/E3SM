@@ -208,22 +208,17 @@ public:
   void sync_to_host (const bool fence = true) const;
   void sync_to_dev (const bool fence = true) const;
 
-  // Set the field to a constant value (on host or device)
-  // Note: as done below in 'update', the default for ST is only to allow
-  //       giving a default for HD. In practice, ST will ALWAYS be
-  //       deduced from the type of 'value'
-  template<HostOrDevice HD = Device, typename ST = void>
+  // Set the field to a constant value (on device view ONLY)
+  template<typename ST>
   void deep_copy (const ST value);
 
   // Like the above one, but only sets the value where the mask is active
-  // NOTE: mask field must have data type IntType, and hold the extra data
-  // "true_value", to specify where the mask is active
-  template<HostOrDevice HD = Device, typename ST = void>
+  // NOTE: mask field must have data type IntType. Runs on device ONLY
+  template<typename ST>
   void deep_copy (const ST value, const Field& mask);
 
-  // Copy the data from one field to this field (recycle update method)
-  template<HostOrDevice HD = Device>
-  void deep_copy (const Field& src) { update<CombineMode::Replace,HD>(src,1,0); }
+  // Copy the data from one field to this field (on device ONLY)
+  void deep_copy (const Field& src) { update<CombineMode::Replace,Device>(src,1,0); }
 
   // Updates this field y as y=combine(x,y,alpha,beta)
   // See share/util/eamxx_combine_ops.hpp for more details on CombineMode options
@@ -342,7 +337,7 @@ protected:
   template<typename ST, HostOrDevice From, HostOrDevice To>
   void sync_views_impl () const;
 
-  template<HostOrDevice HD, bool use_mask, typename ST>
+  template<bool use_mask, typename ST>
   void deep_copy_impl (const ST value, const Field& mask);
 
   // The update method calls this, with ST matching this field data type.
@@ -447,9 +442,9 @@ extern template void Field::update_impl<CombineMode::Min, S, true, T1, T2>(const
 extern template void Field::update_impl<CombineMode::Max, S, false, T1, T2>(const Field&, const T1, const T1); \
 extern template void Field::update_impl<CombineMode::Min, S, false, T1, T2>(const Field&, const T1, const T1)
 
-#define EAMXX_FIELD_ETI_DECL_DEEP_COPY(S,T) \
-extern template void Field::deep_copy_impl<S,true,T>(const T, const Field&); \
-extern template void Field::deep_copy_impl<S,false,T>(const T, const Field&)
+#define EAMXX_FIELD_ETI_DECL_DEEP_COPY(T) \
+extern template void Field::deep_copy_impl<true,T>(const T, const Field&); \
+extern template void Field::deep_copy_impl<false,T>(const T, const Field&)
 
 #define EAMXX_FIELD_ETI_DECL_GET_VIEW(S,T) \
 extern template Field::get_view_type<T,S> Field::get_view<T,S> () const; \
@@ -470,7 +465,7 @@ extern template Field::get_strided_view_type<T******,S> Field::get_strided_view<
 #define EAMXX_FIELD_ETI_DECL_FOR_ONE_TYPE(T) \
 EAMXX_FIELD_ETI_DECL_UPDATE(Device,T);          \
 EAMXX_FIELD_ETI_DECL_UPDATE_MAX_MIN(Device,T);  \
-EAMXX_FIELD_ETI_DECL_DEEP_COPY(Device,T);       \
+EAMXX_FIELD_ETI_DECL_DEEP_COPY(T);       \
 EAMXX_FIELD_ETI_DECL_GET_VIEW(Device,T);        \
 EAMXX_FIELD_ETI_DECL_GET_VIEW(Host,T);          \
 EAMXX_FIELD_ETI_DECL_GET_VIEW(Device,const T);  \

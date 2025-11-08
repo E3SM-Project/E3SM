@@ -60,8 +60,8 @@ Field::clone(const std::string& name, const std::string& grid_name) const {
   f.get_header().get_tracking().update_time_stamp(ts);
 
   // Deep copy
-  f.deep_copy<Device>(*this);
-  f.deep_copy<Host>(*this);
+  f.deep_copy(*this);
+  f.sync_to_host();
 
   return f;
 }

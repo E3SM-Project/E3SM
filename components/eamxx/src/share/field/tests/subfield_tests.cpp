@@ -323,7 +323,8 @@ TEST_CASE("field", "") {
       auto sfb = f3b.subfield(idim, sl_beg, sl_end);
       auto sv_b = sfb.get_strided_view<Real***, Host>();
 
-      sfb.deep_copy<Host>(sfa);
+      sfb.deep_copy(sfa);
+      sfb.sync_to_host();
 
       for (int i = 0; i < d3[0]; i++) {
         for (int j = sl_beg; j < sl_end; j++) {
@@ -457,30 +458,6 @@ TEST_CASE ("sync_subfields") {
       if (shared_mem_space) REQUIRE(host_subview(icol, ilev) == c);
       else                  REQUIRE(host_subview(icol, ilev) == ndims);
     }
-  }
-
-  // Deep copy all values to ndims on device and host
-  f.deep_copy(ndims);
-  f.sync_to_host();
-
-  // Set subfield values to their index on host
-  for (int c=0; c<ndims; ++c) {
-    f.get_component(c).deep_copy<Host>(c);
-  }
-
-  // Sync only component 0 to device
-  f.get_component(0).sync_to_dev();
-
-  // For components 1,...,ndims-1, if device and host do not share a
-  // memory space, device values should be equal to ndims, else device
-  // values should be equal to component index
-  for (int c=1; c<ndims; ++c) {
-    auto device_subview = f.get_component(c).get_view<int**, Device>();
-    Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0,0}, {ncols,nlevs}),
-                         KOKKOS_LAMBDA (const int icol, const int ilev) {
-      if (shared_mem_space) EKAT_KERNEL_ASSERT(device_subview(icol, ilev) == c);
-      else                  EKAT_KERNEL_ASSERT(device_subview(icol, ilev) == ndims);
-    });
   }
 }
 

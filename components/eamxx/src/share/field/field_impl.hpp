@@ -254,7 +254,7 @@ void Field::sync_views_impl () const {
   }
 }
 
-template<HostOrDevice HD, typename ST>
+template<typename ST>
 void Field::
 deep_copy (const ST value) {
   EKAT_REQUIRE_MSG (not m_is_read_only,
@@ -267,28 +267,28 @@ deep_copy (const ST value) {
           "Error! Input value type is not convertible to field data type.\n"
           "   - Input value type: " + std::string(typeid(ST).name()) + "\n"
           "   - Field data type : " + e2str(my_data_type) + "\n");
-      deep_copy_impl<HD,false,int>(value,*this); // 2nd arg unused
+      deep_copy_impl<false,int>(value,*this); // 2nd arg unused
       break;
     case DataType::FloatType:
       EKAT_REQUIRE_MSG( (std::is_convertible<ST,float>::value),
           "Error! Input value type is not convertible to field data type.\n"
           "   - Input value type: " + std::string(typeid(ST).name()) + "\n"
           "   - Field data type : " + e2str(my_data_type) + "\n");
-      deep_copy_impl<HD,false,float>(value,*this); // 2nd arg unused
+      deep_copy_impl<false,float>(value,*this); // 2nd arg unused
       break;
     case DataType::DoubleType:
       EKAT_REQUIRE_MSG( (std::is_convertible<ST,double>::value),
           "Error! Input value type is not convertible to field data type.\n"
           "   - Input value type: " + std::string(typeid(ST).name()) + "\n"
           "   - Field data type : " + e2str(my_data_type) + "\n");
-      deep_copy_impl<HD,false,double>(value,*this); // 2nd arg unused
+      deep_copy_impl<false,double>(value,*this); // 2nd arg unused
       break;
     default:
       EKAT_ERROR_MSG ("Error! Unrecognized field data type in Field::deep_copy.\n");
   }
 }
 
-template<HostOrDevice HD, typename ST>
+template<typename ST>
 void Field::
 deep_copy (const ST value, const Field& mask)
 {
@@ -302,28 +302,28 @@ deep_copy (const ST value, const Field& mask)
           "Error! Input value type is not convertible to field data type.\n"
           "   - Input value type: " + std::string(typeid(ST).name()) + "\n"
           "   - Field data type : " + e2str(my_data_type) + "\n");
-      deep_copy_impl<HD,true,int>(value,mask);
+      deep_copy_impl<true,int>(value,mask);
       break;
     case DataType::FloatType:
       EKAT_REQUIRE_MSG( (std::is_convertible<ST,float>::value),
           "Error! Input value type is not convertible to field data type.\n"
           "   - Input value type: " + std::string(typeid(ST).name()) + "\n"
           "   - Field data type : " + e2str(my_data_type) + "\n");
-      deep_copy_impl<HD,true,float>(value,mask);
+      deep_copy_impl<true,float>(value,mask);
       break;
     case DataType::DoubleType:
       EKAT_REQUIRE_MSG( (std::is_convertible<ST,double>::value),
           "Error! Input value type is not convertible to field data type.\n"
           "   - Input value type: " + std::string(typeid(ST).name()) + "\n"
           "   - Field data type : " + e2str(my_data_type) + "\n");
-      deep_copy_impl<HD,true,double>(value,mask);
+      deep_copy_impl<true,double>(value,mask);
       break;
     default:
       EKAT_ERROR_MSG ("Error! Unrecognized field data type in Field::deep_copy.\n");
   }
 }
 
-template<HostOrDevice HD, bool use_mask, typename ST>
+template<bool use_mask, typename ST>
 void Field::deep_copy_impl (const ST value, const Field& mask)
 {
   const auto& layout = get_header().get_identifier().get_layout();
@@ -335,106 +335,106 @@ void Field::deep_copy_impl (const ST value, const Field& mask)
     case 0:
       if constexpr (use_mask) {
         if (contig)
-          details::svm<use_mask>(get_view<ST,HD>(),value,dims,
-                                 mask.get_view<const int,HD>());
+          details::svm<use_mask>(get_view<ST>(),value,dims,
+                                 mask.get_view<const int>());
         else
-          details::svm<use_mask>(get_strided_view<ST,HD>(),value,dims,
-                                 mask.get_view<const int,HD>());
+          details::svm<use_mask>(get_strided_view<ST>(),value,dims,
+                                 mask.get_view<const int>());
       } else {
         if (contig)
-          details::svm<use_mask>(get_view<ST,HD>(),value,dims);
+          details::svm<use_mask>(get_view<ST>(),value,dims);
         else
-          details::svm<use_mask>(get_strided_view<ST,HD>(),value,dims);
+          details::svm<use_mask>(get_strided_view<ST>(),value,dims);
       }
       break;
     case 1:
       if constexpr (use_mask) {
         if (contig)
-          details::svm<use_mask>(get_view<ST*,HD>(),value,dims,
-                                 mask.get_view<const int*,HD>());
+          details::svm<use_mask>(get_view<ST*>(),value,dims,
+                                 mask.get_view<const int*>());
         else
-          details::svm<use_mask>(get_strided_view<ST*,HD>(),value,dims,
-                                 mask.get_view<const int*,HD>());
+          details::svm<use_mask>(get_strided_view<ST*>(),value,dims,
+                                 mask.get_view<const int*>());
       } else {
         if (contig)
-          details::svm<use_mask>(get_view<ST*,HD>(),value,dims);
+          details::svm<use_mask>(get_view<ST*>(),value,dims);
         else
-          details::svm<use_mask>(get_strided_view<ST*,HD>(),value,dims);
+          details::svm<use_mask>(get_strided_view<ST*>(),value,dims);
       }
       break;
     case 2:
       if constexpr (use_mask) {
         if (contig)
-          details::svm<use_mask>(get_view<ST**,HD>(),value,dims,
-                                 mask.get_view<const int**,HD>());
+          details::svm<use_mask>(get_view<ST**>(),value,dims,
+                                 mask.get_view<const int**>());
         else
-          details::svm<use_mask>(get_strided_view<ST**,HD>(),value,dims,
-                                 mask.get_view<const int**,HD>());
+          details::svm<use_mask>(get_strided_view<ST**>(),value,dims,
+                                 mask.get_view<const int**>());
       } else {
         if (contig)
-          details::svm<use_mask>(get_view<ST**,HD>(),value,dims);
+          details::svm<use_mask>(get_view<ST**>(),value,dims);
         else
-          details::svm<use_mask>(get_strided_view<ST**,HD>(),value,dims);
+          details::svm<use_mask>(get_strided_view<ST**>(),value,dims);
       }
       break;
     case 3:
       if constexpr (use_mask) {
         if (contig)
-          details::svm<use_mask>(get_view<ST***,HD>(),value,dims,
-                                 mask.get_view<const int***,HD>());
+          details::svm<use_mask>(get_view<ST***>(),value,dims,
+                                 mask.get_view<const int***>());
         else
-          details::svm<use_mask>(get_strided_view<ST***,HD>(),value,dims,
-                                 mask.get_view<const int***,HD>());
+          details::svm<use_mask>(get_strided_view<ST***>(),value,dims,
+                                 mask.get_view<const int***>());
       } else {
         if (contig)
-          details::svm<use_mask>(get_view<ST***,HD>(),value,dims);
+          details::svm<use_mask>(get_view<ST***>(),value,dims);
         else
-          details::svm<use_mask>(get_strided_view<ST***,HD>(),value,dims);
+          details::svm<use_mask>(get_strided_view<ST***>(),value,dims);
       }
       break;
     case 4:
       if constexpr (use_mask) {
         if (contig)
-          details::svm<use_mask>(get_view<ST****,HD>(),value,dims,
-                                 mask.get_view<const int****,HD>());
+          details::svm<use_mask>(get_view<ST****>(),value,dims,
+                                 mask.get_view<const int****>());
         else
-          details::svm<use_mask>(get_strided_view<ST****,HD>(),value,dims,
-                                 mask.get_view<const int****,HD>());
+          details::svm<use_mask>(get_strided_view<ST****>(),value,dims,
+                                 mask.get_view<const int****>());
       } else {
         if (contig)
-          details::svm<use_mask>(get_view<ST****,HD>(),value,dims);
+          details::svm<use_mask>(get_view<ST****>(),value,dims);
         else
-          details::svm<use_mask>(get_strided_view<ST****,HD>(),value,dims);
+          details::svm<use_mask>(get_strided_view<ST****>(),value,dims);
       }
       break;
     case 5:
       if constexpr (use_mask) {
         if (contig)
-          details::svm<use_mask>(get_view<ST*****,HD>(),value,dims,
-                                 mask.get_view<const int*****,HD>());
+          details::svm<use_mask>(get_view<ST*****>(),value,dims,
+                                 mask.get_view<const int*****>());
         else
-          details::svm<use_mask>(get_strided_view<ST*****,HD>(),value,dims,
-                                 mask.get_view<const int*****,HD>());
+          details::svm<use_mask>(get_strided_view<ST*****>(),value,dims,
+                                 mask.get_view<const int*****>());
       } else {
         if (contig)
-          details::svm<use_mask>(get_view<ST*****,HD>(),value,dims);
+          details::svm<use_mask>(get_view<ST*****>(),value,dims);
         else
-          details::svm<use_mask>(get_strided_view<ST*****,HD>(),value,dims);
+          details::svm<use_mask>(get_strided_view<ST*****>(),value,dims);
       }
       break;
     case 6:
       if constexpr (use_mask) {
         if (contig)
-          details::svm<use_mask>(get_view<ST******,HD>(),value,dims,
-                                 mask.get_view<const int******,HD>());
+          details::svm<use_mask>(get_view<ST******>(),value,dims,
+                                 mask.get_view<const int******>());
         else
-          details::svm<use_mask>(get_strided_view<ST******,HD>(),value,dims,
-                                 mask.get_view<const int******,HD>());
+          details::svm<use_mask>(get_strided_view<ST******>(),value,dims,
+                                 mask.get_view<const int******>());
       } else {
         if (contig)
-          details::svm<use_mask>(get_view<ST******,HD>(),value,dims);
+          details::svm<use_mask>(get_view<ST******>(),value,dims);
         else
-          details::svm<use_mask>(get_strided_view<ST******,HD>(),value,dims);
+          details::svm<use_mask>(get_strided_view<ST******>(),value,dims);
       }
       break;
     default:
