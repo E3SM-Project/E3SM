@@ -22,8 +22,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "HorzMesh.h"
-#include "TendencyTerms.h"
+#include "AuxiliaryState.h"
+#include "OceanState.h"
 #include "TimeMgr.h"
 
 namespace OMEGA {

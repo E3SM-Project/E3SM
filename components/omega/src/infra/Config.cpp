@@ -33,17 +33,7 @@ int Config::NumReadGroups       = 0;
 MPI_Comm Config::ConfigComm;
 Config Config::ConfigAll;
 
-//------------------------------------------------------------------------------
-// Constructor that creates configuration with a given name and an emtpy
-// YAML node that will be filled later with either a readAll or get call.
-Config::Config(const std::string &InName // [in] name of config, node
-) {
-
-   // If this is the first Config created, set variables for reading the
-   // input configuration file. In particular, to avoid too many MPI tasks
-   // reading the same input stream, we divide the tasks into groups and
-   // only one group at a time loads the full configuration from a stream
-
+void Config::Initialize() {
    if (NotInitialized) {
       // Determine MPI variables
       MachEnv *DefEnv = MachEnv::getDefault();
@@ -58,6 +48,18 @@ Config::Config(const std::string &InName // [in] name of config, node
 
       NotInitialized = false; // now initialized for future calls
    }
+}
+//------------------------------------------------------------------------------
+// Constructor that creates configuration with a given name and an emtpy
+// YAML node that will be filled later with either a readAll or get call.
+Config::Config(const std::string &InName // [in] name of config, node
+) {
+
+   // If this is the first Config created, set variables for reading the
+   // input configuration file. In particular, to avoid too many MPI tasks
+   // reading the same input stream, we divide the tasks into groups and
+   // only one group at a time loads the full configuration from a stream
+   Initialize();
 
    // Set the name - this is also used as the name of the root YAML node
    // (a map node) in this configuration.

@@ -59,6 +59,8 @@ class Config {
  public:
    // Methods
 
+   static void Initialize();
+
    /// Constructor that creates a Configuration with a given name and an
    /// empty YAML::Node. The node will be filled later with either a read
    /// or get operation.

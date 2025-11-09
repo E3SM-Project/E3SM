@@ -17,8 +17,7 @@
 #include "OceanState.h"
 #include "VertCoord.h"
 
-#include <functional>
-#include <memory>
+#include <cmath> // for std::copysign
 
 namespace OMEGA {
 
@@ -373,17 +372,16 @@ class TracerHorzAdvOnCell {
 
    TracerHorzAdvOnCell(const HorzMesh *Mesh, const VertCoord *VCoord);
 
-   KOKKOS_FUNCTION void operator()(const Array3DReal &Tend, I4 L, I4 ICell,
-                                   I4 KChunk, const Array2DReal &NormVelEdge,
+   KOKKOS_FUNCTION void operator()(const Array3DReal &Tend, const I4 L,
+                                  const I4 ICell, const I4 KChunk,
+                                  const Array2DReal &NormVelEdge,
                                    const Array3DReal &HTracersOnEdge) const {
 
       const I4 KStartCell = chunkStart(KChunk, MinLayerCell(ICell));
       const I4 KLenCell = chunkLength(KChunk, KStartCell, MaxLayerCell(ICell));
       const I4 KEndCell = KStartCell + KLenCell - 1;
       const Real InvAreaCell = 1._Real / AreaCell(ICell);
-
       Real HAdvTmp[VecLength] = {0};
-
       for (int J = 0; J < NEdgesOnCell(ICell); ++J) {
          const I4 JEdge      = EdgesOnCell(ICell, J);
          const I4 KStartEdge = Kokkos::max(KStartCell, MinLayerEdgeBot(JEdge));
@@ -395,7 +393,7 @@ class TracerHorzAdvOnCell {
                              EdgeSignOnCell(ICell, J) *
                              HTracersOnEdge(L, JEdge, K) *
                              NormVelEdge(JEdge, K) * InvAreaCell;
-         }
+        }
       }
       for (int KVec = 0; KVec < KLenCell; ++KVec) {
          const I4 K = KStartCell + KVec;
@@ -415,6 +413,76 @@ class TracerHorzAdvOnCell {
    Array1DI4 MaxLayerCell;
    Array1DI4 MinLayerEdgeBot;
    Array1DI4 MaxLayerEdgeTop;
+};
+
+// Tracer high order horizontal advection term
+class TracerHighOrderHorzAdvOnCell {
+ public:
+   bool Enabled = false;
+   // coefficient for blending high-order terms
+   Real coef3rdOrder = 0.25;
+
+   TracerHighOrderHorzAdvOnCell(const HorzMesh *Mesh);
+   void init();
+
+   KOKKOS_FUNCTION void operator()(const I4 L, const I4 IEdge, const I4 KChunk,
+                                   const Array3DReal &TracerCell,
+                                   const Array2DReal &FluxLayerThickEdge,
+                                   const Array2DReal &NormVelEdge) const {
+      const I4 KStart        = KChunk * VecLength;
+      const I4 KEnd          = KStart + VecLength;
+      for (int K = KStart; K < KEnd; ++K)
+         HighOrderFlxHorz(L, IEdge, K) = 0;
+      if (AdvMaskHighOrder(IEdge)) {
+         for (int I = 0; I < NAdvCellsForEdge(IEdge); ++I) {
+            const I4 ICell = AdvCellsForEdge(IEdge, I);
+            for (int K = KStart; K < KEnd; ++K) {
+               const Real normalThicknessFlux = FluxLayerThickEdge(IEdge, K) * NormVelEdge(IEdge, K);
+               const Real tracerWgt = (AdvCoefs(I, IEdge) + coef3rdOrder *
+                         std::copysign(1._Real, normalThicknessFlux) *
+                               AdvCoefs3rd(I, IEdge)) * normalThicknessFlux;
+               HighOrderFlxHorz(L, IEdge, K) += tracerWgt * TracerCell(L, ICell, K);
+            }
+         }
+      } else {
+         for (int K = KStart; K < KEnd; ++K) {
+            const I4 JCell0      = CellsOnEdge(IEdge, 0);
+            const I4 JCell1      = CellsOnEdge(IEdge, 1);
+            const Real normalThicknessFlux = FluxLayerThickEdge(IEdge, K) * NormVelEdge(IEdge, K);
+            const Real tracerWgt = DvEdge(IEdge) * 0.5_Real * normalThicknessFlux;
+            HighOrderFlxHorz(L, IEdge, K) += tracerWgt * (TracerCell(L, JCell1, K) + TracerCell(L, JCell0, K));
+         }
+      }
+   }
+
+   KOKKOS_FUNCTION void operator()(const Array3DReal &Tend,
+                                  const I4 L, const I4 ICell, const I4 KChunk) const {
+      const I4 KStart        = KChunk * VecLength;
+      const I4 KEnd          = KStart + VecLength;
+      const Real InvAreaCell = 1._Real / AreaCell(ICell);
+      for (int I=0; I < NEdgesOnCell(ICell); ++I) {
+         const I4 IEdge = EdgesOnCell(ICell, I);
+         for (int K = KStart; K < KEnd; ++K) {
+            Tend(L, ICell, K) +=  EdgeSignOnCell(ICell, I) * HighOrderFlxHorz(L, IEdge, K) * InvAreaCell;
+         }
+      }
+   }
+
+ private:
+   const HorzMesh *HorzontalMesh;
+   Array1DI4 NAdvCellsForEdge;
+   Array2DI4 AdvCellsForEdge;
+   Array1DI4 AdvMaskHighOrder;
+   Array2DReal AdvCoefs;
+   Array2DReal AdvCoefs3rd;
+   Array3DReal HighOrderFlxHorz;
+
+   Array1DI4 NEdgesOnCell;
+   Array2DI4 EdgesOnCell;
+   Array2DI4 CellsOnEdge;
+   Array2DReal EdgeSignOnCell;
+   Array1DReal DvEdge;
+   Array1DReal AreaCell;
 };
 
 // Tracer horizontal diffusion term
