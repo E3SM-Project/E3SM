@@ -793,14 +793,14 @@ subroutine component_init_areacor_moab (comp, samegrid, mbccid, mbcxid, seq_flds
          allocate(factors (lsize, 2))
 
          factors = 1.0_r8 ! initialize with 1.0 all factors;
+         ! get areas
+         tagname='area:aream:mask'//C_NULL_CHAR
+         arrsize = 3 * lsize
+         ierr = iMOAB_GetDoubleTagStorage ( mbccid, tagname, arrsize , comp(1)%mbGridType, areas(1,1) )
+         if (ierr .ne. 0) then
+           call shr_sys_abort(subname//' cannot get areas  ')
+         endif
          if (.not.samegrid) then  ! only correct if not monogrid (SCM case)
-           ! get areas
-           tagname='area:aream:mask'//C_NULL_CHAR
-           arrsize = 3 * lsize
-           ierr = iMOAB_GetDoubleTagStorage ( mbccid, tagname, arrsize , comp(1)%mbGridType, areas(1,1) )
-           if (ierr .ne. 0) then
-             call shr_sys_abort(subname//' cannot get areas  ')
-           endif
            ! now compute the factors
            do i=1,lsize
               rmask = areas(i,3)
@@ -819,7 +819,7 @@ subroutine component_init_areacor_moab (comp, samegrid, mbccid, mbcxid, seq_flds
                  endif
               endif
            enddo
-         endif
+         endif ! if .not.samegrid
          ! set factors as tags
          ! define the tags mdl2drv and drv2mdl on component sides, and compute them based on area and aream
          tagname = 'mdl2drv:drv2mdl'//C_NULL_CHAR
