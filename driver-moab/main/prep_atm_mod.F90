@@ -1360,40 +1360,48 @@ contains
     endif
 
     if (mboxid > 0) then ! retrieve projection only when ox is active ?
-    tagname = trim(seq_flds_o2x_fields)//C_NULL_CHAR
-    arrsize = noflds * lsize !        allocate (o2x_am (lsize, noflds))
-    ierr = iMOAB_GetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, o2x_am)
-    if (ierr .ne. 0) then
-      call shr_sys_abort(subname//' error in getting o2x_am array ')
-    endif
+       tagname = trim(seq_flds_o2x_fields)//C_NULL_CHAR
+       arrsize = noflds * lsize !        allocate (o2x_am (lsize, noflds))
+       ierr = iMOAB_GetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, o2x_am)
+       if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting o2x_am array ')
+       endif
+    else
+       o2x_am(:,:)=0.0_r8
     endif
     
     if (mbixid > 0) then
-    tagname = trim(seq_flds_i2x_fields)//C_NULL_CHAR
-    arrsize = niflds * lsize !        allocate (i2x_am (lsize, niflds))
-    ierr = iMOAB_GetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, i2x_am)
-    if (ierr .ne. 0) then
-      call shr_sys_abort(subname//' error in getting i2x_am array ')
+       tagname = trim(seq_flds_i2x_fields)//C_NULL_CHAR
+       arrsize = niflds * lsize !        allocate (i2x_am (lsize, niflds))
+       ierr = iMOAB_GetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, i2x_am)
+       if (ierr .ne. 0) then
+          call shr_sys_abort(subname//' error in getting i2x_am array ')
+       endif
+    else
+       i2x_am(:,:)=0.0_r8
     endif
-    endif 
 
     if (mblxid > 0) then !
-    tagname = trim(seq_flds_l2x_fields)//C_NULL_CHAR
-    arrsize = nlflds * lsize !        allocate (l2x_am (lsize, nlflds))
-    ierr = iMOAB_GetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, l2x_am)
-    if (ierr .ne. 0) then
-      call shr_sys_abort(subname//' error in getting l2x_am array ')
+       tagname = trim(seq_flds_l2x_fields)//C_NULL_CHAR
+       arrsize = nlflds * lsize !        allocate (l2x_am (lsize, nlflds))
+       ierr = iMOAB_GetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, l2x_am)
+       if (ierr .ne. 0) then
+          call shr_sys_abort(subname//' error in getting l2x_am array ')
+       endif
+    else
+       l2x_am(:,:)=0.0_r8
     endif
-    endif 
 
     if (mboxid > 0) then
-    tagname = trim(seq_flds_xao_fields)//C_NULL_CHAR
-    arrsize = nxflds * lsize !        allocate (xao_am (lsize, nxflds))
-    ierr = iMOAB_GetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, xao_am)
-    if (ierr .ne. 0) then
-      call shr_sys_abort(subname//' error in getting xao_om array ')
+       tagname = trim(seq_flds_xao_fields)//C_NULL_CHAR
+       arrsize = nxflds * lsize !        allocate (xao_am (lsize, nxflds))
+       ierr = iMOAB_GetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, xao_am)
+       if (ierr .ne. 0) then
+          call shr_sys_abort(subname//' error in getting xao_om array ')
+       endif
+    else
+       xao_am(:,:)=0.0_r8
     endif
-    endif 
 
 
     do n = 1,lsize
@@ -1455,12 +1463,6 @@ contains
 #endif
        enddo
     endif  ! first time
-
-    ! we need to do something equivalent, to copy in a2x_am the tags from those shared indices
-    ! call mct_aVect_copy(aVin=l2x_a, aVout=x2a_a, vector=mct_usevector, sharedIndices=l2x_SharedIndices)
-    !call mct_aVect_copy(aVin=o2x_a, aVout=x2a_a, vector=mct_usevector, sharedIndices=o2x_SharedIndices)
-    !call mct_aVect_copy(aVin=i2x_a, aVout=x2a_a, vector=mct_usevector, sharedIndices=i2x_SharedIndices)
-    !call mct_aVect_copy(aVin=xao_a, aVout=x2a_a, vector=mct_usevector, sharedIndices=xao_SharedIndices)
 
     ! If flux to atm is coming only from the ocean (based on field being in o2x_a) -
     ! -- then scale by both ocean and ice fraction
