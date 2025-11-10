@@ -236,7 +236,6 @@ Tendencies::Tendencies(const std::string &Name, ///< [in] Name for tendencies
                             VCoord->NVertLayers);
 
    NTracers = NTracersIn;
-   NChunks  = VCoord->NVertLayers / VecLength;
 
 } // end constructor
 
