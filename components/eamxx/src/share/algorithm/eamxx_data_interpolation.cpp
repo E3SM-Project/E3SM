@@ -190,7 +190,9 @@ init_data_interval (const util::TimeStamp& t0)
     fnames.push_back(f.name());
   }
 
-  m_reader = std::make_shared<AtmosphereInput>(fnames,m_horiz_remapper_beg->get_src_grid());
+  auto data_grid = m_horiz_remapper_beg->get_src_grid()->clone("data_grid",true);
+  data_grid->reset_field_tag_name(m_input_files_dimnames);
+  m_reader = std::make_shared<AtmosphereInput>(fnames,data_grid);
 
   // Loop over all stored time slices to find an interval that contains t0
   auto t0_interval = m_time_database.find_interval(t0);
@@ -403,6 +405,7 @@ create_horiz_remappers (const std::string& map_file)
   int ncols_data = get_input_files_dimlen (m_input_files_dimnames[COL]);
   m_grid_after_hremap = m_model_grid->clone("after_hremap",true);
   m_grid_after_hremap->reset_num_vertical_lev(nlevs_data);
+  m_grid_after_hremap->reset_field_tag_name(m_input_files_dimnames);
 
   int ncols_model = m_model_grid->get_num_global_dofs();
   if (map_file!="") {
@@ -464,6 +467,7 @@ create_horiz_remappers (const Real iop_lat, const Real iop_lon)
   // Create iop remap tgt grid
   m_grid_after_hremap = m_model_grid->clone("after_hremap",true);
   m_grid_after_hremap->reset_num_vertical_lev(nlevs_data);
+  m_grid_after_hremap->reset_field_tag_name(m_input_files_dimnames);
 
   // Create IOP remappers
   m_horiz_remapper_beg = std::make_shared<IOPRemapper>(data_grid,m_grid_after_hremap,iop_lat,iop_lon);
