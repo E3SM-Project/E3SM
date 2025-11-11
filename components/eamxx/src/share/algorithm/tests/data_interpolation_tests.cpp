@@ -215,12 +215,8 @@ void run_tests (const std::shared_ptr<const AbstractGrid>& grid,
       // Compute the rel error
       diff[i].update(fields[i],1,1);
       diff[i].update(expected[i],-1,1);
-      diff[i].scale(1.0 / frobenius_norm<Real>(expected[i]));
-      if (frobenius_norm<Real>(diff[i])>=tol) {
-        print_field_hyperslab(expected[i]);
-        print_field_hyperslab(fields[i]);
-      }
-      REQUIRE (frobenius_norm<Real>(diff[i])<tol);
+      diff[i].scale(1.0 / frobenius_norm(expected[i]).as<Real>());
+      REQUIRE (frobenius_norm(diff[i]).as<Real>()<tol);
     }
   }
 }

@@ -257,12 +257,10 @@ TEST_CASE("tracers_group", "") {
   REQUIRE ((0<=sub_idx_c1 and sub_idx_c1<=1));
 
   // Now fill tracer field with random values
-  auto engine = setup_random_test(&comm);
-  using RPDF = std::uniform_real_distribution<Real>;
-  RPDF pdf(0.0,1.0);
+  int seed = get_random_test_seed(&comm);
 
-  randomize(T1,engine,pdf);
-  randomize(T2,engine,pdf);
+  randomize_uniform(T1,seed++);
+  randomize_uniform(T2,seed++);
 
   // Check that the same values are in all individual tracers
   T1.sync_to_host();
@@ -300,7 +298,7 @@ TEST_CASE("tracers_group", "") {
   // Check that changing sub tracers change tracers group and individual tracers
   T1.deep_copy(0.0);
   auto& sub_T1 = subtracers.m_monolithic_field;
-  randomize(*sub_T1,engine,pdf);
+  randomize_uniform(*sub_T1,seed++);
   sub_T1->sync_to_host();
   auto sub_T1_h = sub_T1->get_strided_view<Real***,Host>();
 

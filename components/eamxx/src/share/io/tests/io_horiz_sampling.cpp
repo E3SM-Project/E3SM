@@ -57,10 +57,8 @@ TEST_CASE("io_remap_test","io_remap_test")
 
   util::TimeStamp t0 ({2000,1,1},{0,0,0});
 
-  // Random number generation
-  using RPDF  = std::uniform_real_distribution<Real>;
-  auto engine = setup_random_test(&comm);
-  RPDF pdf(0, 1);
+  // Random number generator seed
+  auto seed = get_random_test_seed(&comm);
 
   // Create src grid
   const std::string& gname = "point_grid";
@@ -111,8 +109,8 @@ TEST_CASE("io_remap_test","io_remap_test")
   // Create the fields and randomize
   auto s2d_src = create_f("s2d",src_grid->get_2d_scalar_layout(),gname);
   auto s3d_src = create_f("s3d",src_grid->get_3d_scalar_layout(true),gname);
-  randomize(s2d_src,engine,pdf);
-  randomize(s3d_src,engine,pdf);
+  randomize_uniform(s2d_src,seed++);
+  randomize_uniform(s3d_src,seed++);
 
   // Stuff fields in a FieldManager, since that's what OuputManager wants
   auto fm = std::make_shared<FieldManager> (src_grid,RepoState::Closed);

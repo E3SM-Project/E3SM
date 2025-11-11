@@ -67,18 +67,17 @@ TEST_CASE("histogram") {
   qc2.allocate_view();
   qc3.allocate_view();
 
+  // Random number generator seed
+  int seed = get_random_test_seed();
   // Construct random number generator stuff
-  using RPDF = std::uniform_real_distribution<Real>;
-  RPDF pdf(sp(0.0), sp(200.0));
-  auto engine = scream::setup_random_test();
 
   // Set time for qc and randomize its values
   qc1.get_header().get_tracking().update_time_stamp(t0);
   qc2.get_header().get_tracking().update_time_stamp(t0);
   qc3.get_header().get_tracking().update_time_stamp(t0);
-  randomize(qc1, engine, pdf);
-  randomize(qc2, engine, pdf);
-  randomize(qc3, engine, pdf);
+  randomize_uniform(qc1, seed++, 0, 200);
+  randomize_uniform(qc2, seed++, 0, 200);
+  randomize_uniform(qc3, seed++, 0, 200);
 
   // Construct the Diagnostics
   std::map<std::string, std::shared_ptr<AtmosphereDiagnostic>> diags;

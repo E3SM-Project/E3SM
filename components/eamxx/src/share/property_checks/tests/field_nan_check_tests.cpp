@@ -36,8 +36,7 @@ TEST_CASE("exceptions") {
 TEST_CASE("nan_check") {
   using namespace ShortFieldTagsNames;
 
-  auto engine = setup_random_test();
-  std::uniform_real_distribution<Real> pdf(0.01,0.99);
+  auto seed = get_random_test_seed();
 
   ekat::Comm comm(MPI_COMM_WORLD);
 
@@ -49,7 +48,7 @@ TEST_CASE("nan_check") {
 
   // Create field to test, and extra data field
   auto f = create_test_field(grid);
-  randomize(f,engine,pdf);
+  randomize_uniform(f,seed,0.01,0.99);
   auto data = create_data_field(grid);
 
   // Create the check

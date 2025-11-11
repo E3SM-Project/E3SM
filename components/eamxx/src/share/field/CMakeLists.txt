@@ -7,7 +7,6 @@ add_library(eamxx_field
   field.cpp
   field_group.cpp
   field_sync.cpp
-  field_utils.cpp
   eti/field_eti_deep_copy_double_device.cpp
   eti/field_eti_deep_copy_float_device.cpp
   eti/field_eti_deep_copy_int_device.cpp
@@ -35,12 +34,15 @@ add_library(eamxx_field
   eti/field_eti_update_max_min_impl_float_device.cpp
   eti/field_eti_update_max_min_impl_int_device.cpp
   eti/field_eti_update_max_min_int_device.cpp
-  eti/field_utils_eti_compute_mask_le_int.cpp
-  eti/field_utils_eti_compute_mask_le_float.cpp
-  eti/field_utils_eti_compute_mask_le_double.cpp
-  eti/field_utils_eti_compute_mask_ne_int.cpp
-  eti/field_utils_eti_compute_mask_ne_float.cpp
-  eti/field_utils_eti_compute_mask_ne_double.cpp
+  utils/compute_mask.cpp
+  utils/horiz_contraction.cpp
+  utils/perturb.cpp
+  utils/print_hyperslab.cpp
+  utils/randomize.cpp
+  utils/reductions.cpp
+  utils/transpose.cpp
+  utils/vert_contraction.cpp
+  utils/views_are_equal.cpp
 )
 
 if (EAMXX_ENABLE_GPU)

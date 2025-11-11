@@ -5,9 +5,12 @@ namespace scream
 {
 
 Field::
-Field (const identifier_type& id)
+Field (const identifier_type& id, bool allocate)
 {
   m_header = std::make_shared<FieldHeader>(id);
+  if (allocate) {
+    allocate_view();
+  }
 }
 
 Field

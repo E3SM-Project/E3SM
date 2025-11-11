@@ -9,8 +9,7 @@
 namespace scream {
 
 TEST_CASE("upper_bound") {
-  auto engine = setup_random_test();
-  std::uniform_real_distribution<Real> pdf(0.01,0.99);
+  auto seed = get_random_test_seed();
 
   ekat::Comm comm(MPI_COMM_WORLD);
 
@@ -31,7 +30,7 @@ TEST_CASE("upper_bound") {
   REQUIRE(upper_bound_check->can_repair());
 
   // Assign in-bound values to the field and make sure it passes the check
-  randomize(f,engine,pdf);
+  randomize_uniform(f,seed,0.01,0.99);
   auto res_and_msg = upper_bound_check->check();
   REQUIRE(res_and_msg.result==CheckResult::Pass);
 

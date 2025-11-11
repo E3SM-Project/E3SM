@@ -116,14 +116,13 @@ TEST_CASE("dyn_grid_io")
   std::vector<std::string> fnames = {"field_1", "field_2", "field_3"};
 
   // Randomize dyn fields, then remap to ctrl fields
-  std::uniform_real_distribution<Real> pdf(0.01,100.0);
-  auto engine = setup_random_test(&comm);
+  auto seed = get_random_test_seed(&comm);
   auto dyn2ctrl = gm->create_remapper(dyn_grid,phys_grid);
   for (const auto& fn : fnames) {
     auto fd = fm->get_field(fn,dyn_grid->name());
     auto fc = fm_ctrl->get_field(fn,phys_grid->name());
     dyn2ctrl->register_field(fd,fc);
-    randomize(fd,engine,pdf);
+    randomize_uniform(fd,seed++);
 
     // Init phys field to something obviously wrong
     auto fp = fm->get_field(fn,phys_grid->name());

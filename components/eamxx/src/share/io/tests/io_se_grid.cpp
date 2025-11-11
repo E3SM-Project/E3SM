@@ -132,13 +132,11 @@ get_test_fm(const std::shared_ptr<const AbstractGrid>& grid,
   // Randomize fields
   const auto fnames = {"field_1", "field_2", "field_3", "field_packed"};
   if (do_randomize) {
-    auto engine = setup_random_test (&comm);
-    using RPDF = std::uniform_real_distribution<Real>;
-    RPDF pdf(0.01,0.99);
+    auto seed = get_random_test_seed(&comm);
 
     for (const auto& fname : fnames) {
       auto f = fm->get_field(fname);
-      randomize(f,engine,pdf);
+      randomize_uniform(f,seed++);
       f.get_header().get_tracking().update_time_stamp(t0);
     }
   } else {
