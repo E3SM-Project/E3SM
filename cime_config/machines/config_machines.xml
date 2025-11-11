@@ -219,7 +219,7 @@
 
       <modules compiler="gnu">
         <command name="load">PrgEnv-gnu/8.5.0</command>
-        <command name="load">gcc-native/13.2</command>
+        <command name="load">gcc-native/12.3</command>
         <command name="load">cray-libsci/24.07.0</command>
       </modules>
 
@@ -409,7 +409,7 @@
 
       <modules compiler="gnu.*">
         <command name="load">PrgEnv-gnu/8.5.0</command>
-        <command name="load">gcc-native/13.2</command>
+        <command name="load">gcc-native/12.3</command>
       </modules>
 
       <modules compiler="nvidia.*">
@@ -425,7 +425,7 @@
       <modules compiler="nvidiagpu">
         <command name="load">cudatoolkit/12.9</command>
         <command name="load">craype-accel-nvidia80</command>
-        <command name="load">gcc-native-mixed/13.2</command>
+        <command name="load">gcc-native-mixed/12.3</command>
       </modules>
 
       <modules compiler="gnu">
