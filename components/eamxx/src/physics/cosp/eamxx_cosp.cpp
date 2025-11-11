@@ -6,6 +6,7 @@
 #include "share/property_checks/field_within_interval_check.hpp"
 #include "share/field/field_utils.hpp"
 
+#include <ekat_team_policy_utils.hpp>
 #include <ekat_assert.hpp>
 #include <ekat_units.hpp>
 

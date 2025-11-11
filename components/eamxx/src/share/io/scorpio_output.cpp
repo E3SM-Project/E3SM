@@ -484,7 +484,7 @@ run (const std::string& filename,
       auto mask  = count.get_header().get_extra_data<Field>("mask");
 
       // Find where the field is NOT equal to fill_value
-      compute_mask<Comparison::NE>(field,constants::fill_value<Real>,mask);
+      compute_mask(field,constants::fill_value<Real>,Comparison::NE,mask);
 
       // mask=1 for "good" entries, and mask=0 otherwise.
       count.update(mask,1,1);
@@ -507,7 +507,7 @@ run (const std::string& filename,
           int min_count = static_cast<int>(std::floor(m_avg_coeff_threshold*nsteps_since_last_output));
 
           // Recycle mask to find where count<thresh
-          compute_mask<Comparison::LE>(count,min_count,mask);
+          compute_mask(count,min_count,Comparison::LE,mask);
 
           // Later, we divide fields by count. By setting count=1 where count<thresholt,
           // we can later do

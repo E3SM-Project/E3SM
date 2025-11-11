@@ -104,10 +104,8 @@ TEST_CASE("aerocom_cld") {
   ni.allocate_view();
   ni.get_header().get_tracking().update_time_stamp(t0);
 
-  // Construct random number generator stuff
-  using RPDF = std::uniform_real_distribution<Real>;
-  RPDF pdf(0, 0.05);
-  auto engine = scream::setup_random_test();
+  // Random number generator seed
+  int seed = get_random_test_seed();
 
   // Construct the Diagnostics
   std::map<std::string, std::shared_ptr<AtmosphereDiagnostic>> diags;
@@ -125,17 +123,17 @@ TEST_CASE("aerocom_cld") {
   constexpr int ntests = 3;
   for(int itest = 0; itest < ntests; ++itest) {
     // Randomize everything to add ensure resiliency
-    randomize(tm, engine, pdf);
-    randomize(pd, engine, pdf);
-    randomize(pm, engine, pdf);
-    randomize(qv, engine, pdf);
-    randomize(qc, engine, pdf);
-    randomize(qi, engine, pdf);
-    randomize(ec, engine, pdf);
-    randomize(ei, engine, pdf);
-    randomize(cd, engine, pdf);
-    randomize(nc, engine, pdf);
-    randomize(ni, engine, pdf);
+    randomize_uniform(tm, seed++, 0, 0.05);
+    randomize_uniform(pd, seed++, 0, 0.05);
+    randomize_uniform(pm, seed++, 0, 0.05);
+    randomize_uniform(qv, seed++, 0, 0.05);
+    randomize_uniform(qc, seed++, 0, 0.05);
+    randomize_uniform(qi, seed++, 0, 0.05);
+    randomize_uniform(ec, seed++, 0, 0.05);
+    randomize_uniform(ei, seed++, 0, 0.05);
+    randomize_uniform(cd, seed++, 0, 0.05);
+    randomize_uniform(nc, seed++, 0, 0.05);
+    randomize_uniform(ni, seed++, 0, 0.05);
 
     // Create and set up the diagnostic
     params.set<std::string>("aero_com_cld_kind", "Top");
