@@ -1774,6 +1774,34 @@ end subroutine micro_p3_readnl
    call outfld ('LS_FLXSNW',              flxsnw(:,:), pcols, lchnk)
    call outfld ('LS_REFFRAIN',            reffrain(:,:), pcols, lchnk)
 
+   !++ Warm Rain TAU Stochastic Collection Diagnostics
+
+   call outfld ('P3_mu_c',            sc_tau_out(:,:,1), pcols, lchnk)
+   call outfld ('P3_lamc',            sc_tau_out(:,:,2), pcols, lchnk)
+   call outfld ('P3_nr',              sc_tau_out(:,:,3), pcols, lchnk)
+   call outfld ('P3_lamr',            sc_tau_out(:,:,4), pcols, lchnk)
+   call outfld ('P3_qc_in_TAU',       sc_tau_out(:,:,5), pcols, lchnk)
+   call outfld ('P3_nc_in_TAU',       sc_tau_out(:,:,6), pcols, lchnk)
+   call outfld ('P3_qr_in_TAU',       sc_tau_out(:,:,7), pcols, lchnk)
+   call outfld ('P3_nr_in_TAU',       sc_tau_out(:,:,8), pcols, lchnk)
+   call outfld ('P3_qctend_TAU',      sc_tau_out(:,:,9), pcols, lchnk)
+   call outfld ('P3_nctend_TAU',      sc_tau_out(:,:,10), pcols, lchnk)
+   call outfld ('P3_qrtend_TAU',      sc_tau_out(:,:,11), pcols, lchnk)
+   call outfld ('P3_nrtend_TAU',      sc_tau_out(:,:,12), pcols, lchnk)
+   call outfld ('P3_qc_out_TAU',      sc_tau_out(:,:,13), pcols, lchnk)
+   call outfld ('P3_nc_out_TAU',      sc_tau_out(:,:,14), pcols, lchnk)
+   call outfld ('P3_qr_out_TAU',      sc_tau_out(:,:,15), pcols, lchnk)
+   call outfld ('P3_nr_out_TAU',      sc_tau_out(:,:,16), pcols, lchnk)
+   call outfld ('P3_qctend_TAU_raw',  sc_tau_out(:,:,17), pcols, lchnk)
+   call outfld ('P3_nctend_TAU_raw',  sc_tau_out(:,:,18), pcols, lchnk)
+   call outfld ('P3_qrtend_TAU_raw',  sc_tau_out(:,:,19), pcols, lchnk)
+   call outfld ('P3_nrtend_TAU_raw',  sc_tau_out(:,:,20), pcols, lchnk)
+   call outfld ('P3_ML_fixer',        sc_tau_out(:,:,21), pcols, lchnk)
+   call outfld ('P3_qc_fixer',        sc_tau_out(:,:,22), pcols, lchnk)
+   call outfld ('P3_nc_fixer',        sc_tau_out(:,:,23), pcols, lchnk)
+   call outfld ('P3_qr_fixer',        sc_tau_out(:,:,24), pcols, lchnk)
+   call outfld ('P3_nr_fixer',        sc_tau_out(:,:,25), pcols, lchnk)
+
 
    call t_stopf('micro_p3_tend_finish')
   end subroutine micro_p3_tend
