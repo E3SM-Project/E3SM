@@ -22,18 +22,17 @@ Teos10Eos::Teos10Eos(int NVertLayers) : NVertLayers(NVertLayers) {
 LinearEos::LinearEos() {}
 
 /// Constructor for Eos
-Eos::Eos(const std::string &Name_, ///< [in] Name for eos object
-         const HorzMesh *Mesh,     ///< [in] Horizontal mesh
-         int NVertLayers           ///< [in] Number of vertical layers
+Eos::Eos(const std::string &Name, ///< [in] Name for eos object
+         const HorzMesh *Mesh,    ///< [in] Horizontal mesh
+         const VertCoord *VCoord  ///< [in] Vertical coordinate
          )
-    : ComputeSpecVolTeos10(NVertLayers) {
-   SpecVol = Array2DReal("SpecVol", Mesh->NCellsAll, NVertLayers);
+    : ComputeSpecVolTeos10(VCoord->NVertLayers), Name(Name), Mesh(Mesh),
+      VCoord(VCoord) {
+   SpecVol = Array2DReal("SpecVol", Mesh->NCellsAll, VCoord->NVertLayers);
    SpecVolDisplaced =
-       Array2DReal("SpecVolDisplaced", Mesh->NCellsAll, NVertLayers);
+       Array2DReal("SpecVolDisplaced", Mesh->NCellsAll, VCoord->NVertLayers);
    // Array dimension lengths
-   NCellsAll = Mesh->NCellsAll;
-   NChunks   = NVertLayers / VecLength;
-   Name      = Name_;
+   NChunks = VCoord->NVertLayers / VecLength;
 
    defineFields();
 }
@@ -60,8 +59,8 @@ void Eos::destroyInstance() {
 void Eos::init() {
 
    if (!Instance) {
-      Instance = new Eos("Default", HorzMesh::getDefault(),
-                         VertCoord::getDefault()->NVertLayers);
+      Instance =
+          new Eos("Default", HorzMesh::getDefault(), VertCoord::getDefault());
    }
 
    Error Err; // error code
@@ -125,14 +124,14 @@ void Eos::computeSpecVol(const Array2DReal &ConservTemp,
    /// Dispatch to the correct EOS calculation
    if (EosChoice == EosType::LinearEos) {
       parallelFor(
-          "eos-linear", {NCellsAll, NChunks},
+          "eos-linear", {Mesh->NCellsAll, NChunks},
           KOKKOS_LAMBDA(I4 ICell, I4 KChunk) {
              LocComputeSpecVolLinear(LocSpecVol, ICell, KChunk, ConservTemp,
                                      AbsSalinity);
           });
    } else if (EosChoice == EosType::Teos10Eos) {
       parallelFor(
-          "eos-teos10", {NCellsAll, NChunks},
+          "eos-teos10", {Mesh->NCellsAll, NChunks},
           KOKKOS_LAMBDA(I4 ICell, I4 KChunk) {
              LocComputeSpecVolTeos10(LocSpecVol, ICell, KChunk, ConservTemp,
                                      AbsSalinity, Pressure, KDisp);
@@ -161,14 +160,14 @@ void Eos::computeSpecVolDisp(const Array2DReal &ConservTemp,
                "SpecVol is independent of pressure/depth, so the "
                "displaced value will be the same as SpecVol.");
       parallelFor(
-          "eos-linear", {NCellsAll, NChunks},
+          "eos-linear", {Mesh->NCellsAll, NChunks},
           KOKKOS_LAMBDA(I4 ICell, I4 KChunk) {
              LocComputeSpecVolLinear(LocSpecVolDisplaced, ICell, KChunk,
                                      ConservTemp, AbsSalinity);
           });
    } else if (EosChoice == EosType::Teos10Eos) {
       parallelFor(
-          "eos-teos10", {NCellsAll, NChunks},
+          "eos-teos10", {Mesh->NCellsAll, NChunks},
           KOKKOS_LAMBDA(I4 ICell, I4 KChunk) {
              LocComputeSpecVolTeos10(LocSpecVolDisplaced, ICell, KChunk,
                                      ConservTemp, AbsSalinity, Pressure, KDisp);

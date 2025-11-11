@@ -301,7 +301,7 @@ class Eos {
 
  private:
    /// Private constructor
-   Eos(const std::string &Name, const HorzMesh *Mesh, int NVertLayers);
+   Eos(const std::string &Name, const HorzMesh *Mesh, const VertCoord *VCoord);
 
    /// Private destructor
    ~Eos();
@@ -315,8 +315,10 @@ class Eos {
    Eos(Eos &&)                 = delete;
    Eos &operator=(Eos &&)      = delete;
 
-   I4 NCellsAll; ///< Number of horizontal cells
-   I4 NChunks;   ///< Number of vertical chunks (for vectorization)
+   const HorzMesh *Mesh;    ///< Horizontal mesh
+   const VertCoord *VCoord; ///< Vertical coordinate
+
+   I4 NChunks; ///< Number of vertical chunks (for vectorization)
 
    Teos10Eos ComputeSpecVolTeos10; ///< TEOS-10 specific volume calculator
    LinearEos ComputeSpecVolLinear; ///< Linear specific volume calculator
