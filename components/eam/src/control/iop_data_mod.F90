@@ -1447,7 +1447,8 @@ endif !scm_observed_aero
        call wrap_get_vara_realx (ncid,varid,strt4,cnt4,tground)
        have_tg = .true.
      endif
-     
+
+     wfld = 0.0_r8 ! Initialize
      call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, &
        'omega', .true., ptend, fill_ends, dplevs, nlev,psobs, hyam, hybm, wfld, status )
      if ( status .ne. nf90_noerr ) then
