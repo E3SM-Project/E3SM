@@ -1172,7 +1172,7 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
 
                   nerr_dopaer = nerr_dopaer + 1
                   if (dopaer(i) < -1.e-10_r8) then
-                     write(error_str, *) 'ERROR: dopaer(', i, ')=', dopaer(i) ,' which is < -1.e-10_r8 (negative aerosol optical depth) in ',&
+                     write(error_str, *) 'dopaer(', i, ')=', dopaer(i) ,' which is < -1.e-10_r8 (negative aerosol optical depth) in ',&
                                           trim(subname),' [',trim(errmsg(__FILE__, __LINE__)),']'
                      call endrun(trim(error_str))
                   end if
