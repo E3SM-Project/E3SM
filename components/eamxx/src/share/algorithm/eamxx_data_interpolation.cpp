@@ -36,6 +36,7 @@ DataInterpolation (const std::shared_ptr<const AbstractGrid>& model_grid,
   using namespace ShortFieldTagsNames;
   m_input_files_dimnames[COL] = "ncol";
   m_input_files_dimnames[LEV] = "lev";
+  m_input_files_dimnames[ILEV] = "ilev";
   e2str(LEV);
 
   // Initialize logger with a console logger for warnings (logs on all ranks)
@@ -190,7 +191,17 @@ init_data_interval (const util::TimeStamp& t0)
     fnames.push_back(f.name());
   }
 
-  m_reader = std::make_shared<AtmosphereInput>(fnames,m_horiz_remapper_beg->get_src_grid());
+  // NOTE: Sometimes the original data does not use the same field tags as eamxx.
+  // For these cases, we need to perform a shallow clone of
+  // io_grid because the tags are constant in this object.
+  using namespace ShortFieldTagsNames;
+  auto horiz_interp_src_grid =
+        m_horiz_remapper_beg->get_src_grid()->clone(m_horiz_remapper_beg->get_src_grid()->name(), true);
+  horiz_interp_src_grid->reset_field_tag_name(COL, m_input_files_dimnames[COL]);
+  horiz_interp_src_grid->reset_field_tag_name(LEV, m_input_files_dimnames[LEV]);
+  horiz_interp_src_grid->reset_field_tag_name(ILEV, m_input_files_dimnames[ILEV]);
+
+  m_reader = std::make_shared<AtmosphereInput>(fnames,horiz_interp_src_grid);
 
   // Loop over all stored time slices to find an interval that contains t0
   auto t0_interval = m_time_database.find_interval(t0);
@@ -411,6 +422,8 @@ create_horiz_remappers (const std::string& map_file)
 
     int map_ncols_src = m_horiz_remapper_beg->get_src_grid()->get_num_global_dofs();
     int map_ncols_tgt = m_horiz_remapper_beg->get_tgt_grid()->get_num_global_dofs();
+
+
 
     // Ensure that the map file was compatible with data/model grids
     EKAT_REQUIRE_MSG (map_ncols_src==ncols_data,
