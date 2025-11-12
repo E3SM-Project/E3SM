@@ -33,7 +33,7 @@ class Teos10Eos {
    Array2DReal SpecVolPCoeffs;
 
    /// constructor declaration
-   Teos10Eos(int NVertLayers);
+   Teos10Eos(const VertCoord *VCoord);
 
    //   The functor takes the full arrays of specific volume (inout),
    //   the indices ICell and KChunk, and the ocean tracers (conservative)
@@ -46,8 +46,9 @@ class Teos10Eos {
                                    I4 KDisp) const {
 
       OMEGA_SCOPE(LocSpecVolPCoeffs, SpecVolPCoeffs);
-      const I4 KStart = KChunk * VecLength;
-      for (int KVec = 0; KVec < VecLength; ++KVec) {
+      const I4 KStart = chunkStart(KChunk, MinLayerCell(ICell));
+      const I4 KLen   = chunkLength(KChunk, KStart, MaxLayerCell(ICell));
+      for (int KVec = 0; KVec < KLen; ++KVec) {
          const I4 K = KStart + KVec;
 
          /// Calculate the local specific volume polynomial pressure
@@ -67,8 +68,8 @@ class Teos10Eos {
                 calcDelta(LocSpecVolPCoeffs, KVec, Pressure(ICell, K));
          } else {
             // Displacement, use the displaced pressure
-            I4 KTmp = Kokkos::min(K + KDisp, NVertLayers - 1);
-            KTmp    = Kokkos::max(0, KTmp);
+            I4 KTmp = Kokkos::min(K + KDisp, MaxLayerCell(ICell));
+            KTmp    = Kokkos::max(MinLayerCell(ICell), KTmp);
             SpecVol(ICell, K) =
                 calcRefProfile(Pressure(ICell, KTmp)) +
                 calcDelta(LocSpecVolPCoeffs, KVec, Pressure(ICell, KTmp));
@@ -236,7 +237,8 @@ class Teos10Eos {
    }
 
  private:
-   const int NVertLayers;
+   Array1DI4 MinLayerCell;
+   Array1DI4 MaxLayerCell;
 };
 
 /// Linear Equation of State
@@ -248,7 +250,7 @@ class LinearEos {
    Real RhoT0S0 = RhoFw; ///< Reference density (kg m^-3) at (T,S)=(0,0)
 
    /// constructor declaration
-   LinearEos();
+   LinearEos(const VertCoord *VCoord);
 
    //   The functor takes the full arrays of specific volume (inout),
    //   the indices ICell and KChunk, and the ocean tracers (conservative)
@@ -257,14 +259,21 @@ class LinearEos {
    KOKKOS_FUNCTION void operator()(Array2DReal SpecVol, I4 ICell, I4 KChunk,
                                    const Array2DReal &ConservTemp,
                                    const Array2DReal &AbsSalinity) const {
-      const I4 KStart = KChunk * VecLength;
-      for (int KVec = 0; KVec < VecLength; ++KVec) {
+
+      const I4 KStart = chunkStart(KChunk, MinLayerCell(ICell));
+      const I4 KLen   = chunkLength(KChunk, KStart, MaxLayerCell(ICell));
+
+      for (int KVec = 0; KVec < KLen; ++KVec) {
          const I4 K = KStart + KVec;
          SpecVol(ICell, K) =
              1.0_Real / (RhoT0S0 + (DRhodT * ConservTemp(ICell, K) +
                                     DRhodS * AbsSalinity(ICell, K)));
       }
    }
+
+ private:
+   Array1DI4 MinLayerCell;
+   Array1DI4 MaxLayerCell;
 };
 
 /// Class for Equation of State (EOS) calculations
@@ -317,8 +326,6 @@ class Eos {
 
    const HorzMesh *Mesh;    ///< Horizontal mesh
    const VertCoord *VCoord; ///< Vertical coordinate
-
-   I4 NChunks; ///< Number of vertical chunks (for vectorization)
 
    Teos10Eos ComputeSpecVolTeos10; ///< TEOS-10 specific volume calculator
    LinearEos ComputeSpecVolLinear; ///< Linear specific volume calculator
