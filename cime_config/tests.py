@@ -716,6 +716,7 @@ _TESTS = {
         "time"  : "01:00:00",
         "inherit" : (
             "e3sm_eamxx_mam4xx_lowres",
+            "e3sm_eamxx_v1_dp-eamxx",
         ),
         "tests" : (
             "ERS_Ln9.ne4_ne4.F2000-SCREAMv1-AQP1.eamxx-output-preset-2--eamxx-L72",
