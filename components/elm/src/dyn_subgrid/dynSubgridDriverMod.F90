@@ -75,9 +75,8 @@ contains
     use decompMod                , only : get_proc_clumps, get_clump_bounds
     use dynpftFileMod            , only : dynpft_init
     use dynHarvestMod            , only : dynHarvest_init
-    use dynurbanFileMod          , only : dynurban_init
+    use dynurbanFileMod          , only : dynurban_init, dynurban_interp
     use dynpftFileMod            , only : dynpft_interp
-    use dynurbanFileMod          , only : dynurban_interp
     use elm_varctl               , only : fates_harvest_mode
     use dynFATESLandUseChangeMod , only : fates_harvest_hlmlanduse
     !

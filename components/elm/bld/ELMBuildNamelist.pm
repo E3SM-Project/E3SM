@@ -2689,6 +2689,7 @@ sub setup_logic_dynamic_subgrid {
    setup_logic_do_transient_pfts($test_files, $nl_flags, $definition, $defaults, $nl, $physv);
    setup_logic_do_transient_crops($test_files, $nl_flags, $definition, $defaults, $nl, $physv);
    setup_logic_do_harvest($test_files, $nl_flags, $definition, $defaults, $nl, $physv);
+   setup_logic_do_transient_urban($test_files, $nl_flags, $definition, $defaults, $nl, $physv);
 
 }
 
@@ -2864,6 +2865,56 @@ sub setup_logic_do_harvest {
   if (value_is_true($nl->get_value($var)) && $cannot_be_true) {
     fatal_error($cannot_be_true);
   }
+
+}
+
+#-------------------------------------------------------------------------------
+sub setup_logic_do_transient_urban {
+   #
+   # Set do_transient_urban default value, and perform error checking on do_transient_urban
+   #
+   # Assumes the following are already set in the namelist (although it's okay
+   # for them to be unset if that will be their final state):
+   # - flanduse_timeseries
+   #
+   my ($test_files, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
+
+   my $var = 'do_transient_urban';
+
+   # Start by assuming a default value of '.true.'. Then check a number of
+   # conditions under which do_transient_urban cannot be true. Under these
+   # conditions: (1) set default value to '.false.'; (2) make sure that the
+   # value is indeed false (e.g., that the user didn't try to set it to true).
+
+   my $default_val = ".true.";
+
+   # cannot_be_true will be set to a non-empty string in any case where
+   # do_transient_urban should not be true; if it turns out that
+   # do_transient_urban IS true in any of these cases, a fatal error will be
+   # generated
+   my $cannot_be_true = "";
+
+   if (string_is_undef_or_empty($nl->get_value('flanduse_timeseries'))) {
+     $cannot_be_true = "$var can only be set to true when running a transient case (flanduse_timeseries non-blank)";
+   }
+
+   if ($cannot_be_true) {
+     $default_val = ".false.";
+   }
+
+   if (!$cannot_be_true) {
+     # Note that, if the variable cannot be true, we don't call add_default
+     # - so that we don't clutter up the namelist with variables that don't
+     # matter for this case
+     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, $var, val=>$default_val);
+   }
+
+   # Make sure the value is false when it needs to be false - i.e., that the
+   # user hasn't tried to set a true value at an inappropriate time.
+
+   if (value_is_true($nl->get_value($var)) && $cannot_be_true) {
+     fatal_error($cannot_be_true);
+   }
 
 }
 

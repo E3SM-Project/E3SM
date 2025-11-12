@@ -1914,6 +1914,13 @@ If TRUE, apply harvest from flanduse_timeseries file.
 (Also, only valid for use_cn = true.)
 </entry>
 
+<entry id="do_transient_urban" type="logical" category="physics"
+       group="dynamic_subgrid" valid_values="" >
+If TRUE, apply transient urban from flanduse_timeseries file.
+(Only valid for transient runs, where there is a flanduse_timeseries file.)
+(Also, only valid for use_urban = true.)
+</entry>
+
 <!-- ========================================================================================  -->
 <!-- Namelist options related to finidat consistency checks                                    -->
 <!-- ========================================================================================  -->
