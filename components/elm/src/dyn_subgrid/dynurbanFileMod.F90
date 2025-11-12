@@ -1,12 +1,13 @@
 module dynurbanFileMod
 
+#include "shr_assert.h"
+
   !---------------------------------------------------------------------------
   ! !DESCRIPTION:
   ! Handle reading of the dataset that specifies transient areas the urban landunit as
   ! well as the breakdown of each urban.
   
   ! !USES:
-#include "shr_assert.h"
   use shr_log_mod           , only : errMsg => shr_log_errMsg
   use shr_kind_mod          , only : r8 => shr_kind_r8
   use decompMod             , only : bounds_type, BOUNDS_LEVEL_PROC
