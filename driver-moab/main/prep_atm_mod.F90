@@ -1077,7 +1077,7 @@ contains
     integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3) ! for moab info
     character(CXX) ::tagname, mct_field
     integer :: ent_type, ierr, arrsize
-    logical :: single_column
+    logical :: single_column,lnd_present
 #ifdef MOABDEBUG
     character*32             :: outfile, wopts, lnum
 #endif
@@ -1092,7 +1092,7 @@ contains
     !-----------------------------------------------------------------------
     !
     call seq_comm_getdata(CPLID, iamroot=iamroot)
-    call seq_infodata_getdata(infodata,single_column=single_column)
+    call seq_infodata_getdata(infodata,single_column=single_column,lnd_present=lnd_present)
 
     if (first_time) then
 
@@ -1530,6 +1530,13 @@ contains
                    x2a_am(n, ka) = l2x_am(n, lindx(ka)) * fracl
                 end if
              end if
+          endif
+          ! if no land, make sure any 'Fall' fluxes that are not merged are 0.
+          ! e.g. dust fluxes
+          if(.not.lnd_present) then
+            if((lindx(ka)>0) .and. .not.lstate(ka) .and. .not.lmerge(ka)) then
+               x2a_am(n,ka) = 0.0_r8
+            endif
           endif
           if (iindx(ka) > 0 .and. fraci > 0._r8) then
              if (imerge(ka)) then
