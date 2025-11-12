@@ -716,6 +716,7 @@ _TESTS = {
         "time"  : "01:00:00",
         "inherit" : (
             "e3sm_eamxx_mam4xx_lowres",
+            "e3sm_eamxx_v1_dp-eamxx",
         ),
         "tests" : (
             "ERS_Ln9.ne4_ne4.F2000-SCREAMv1-AQP1.eamxx-output-preset-2--eamxx-L72",
@@ -745,15 +746,11 @@ _TESTS = {
             )
     },
 
-    # Tests run on exclusively on mappy for eamxx AT testing. These tests
-    # should be fast, so we limit it to low res and add some thread tests
-    # specifically for mappy.
-    "e3sm_eamxx_v1_at" : {
-        "inherit" : ("e3sm_eamxx_v1_lowres", "e3sm_eamxx_v1_dp-eamxx"),
-        "tests"   : ("PET_Ln9_P32x2.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-output-preset-1")
-    },
-
     "e3sm_eamxx_v1_medres" : {
+        "inherit" : (
+            # DPxx is (very) lowres, but we only run medres nightly, so add it here
+            "e3sm_eamxx_v1_dp-eamxx",
+        ),
         "time"  : "02:00:00",
         "tests" : (
             #  "SMS_D_Ln2.ne30_ne30.F2000-SCREAMv1-AQP1", # Uncomment once IC file for ne30 is ready
