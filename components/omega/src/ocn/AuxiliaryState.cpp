@@ -65,9 +65,6 @@ void AuxiliaryState::computeMomAux(const OceanState *State, int ThickTimeLevel,
    State->getLayerThickness(LayerThickCell, ThickTimeLevel);
    State->getNormalVelocity(NormalVelEdge, VelTimeLevel);
 
-   const int NVertLayers = LayerThickCell.extent_int(1);
-   const int NChunks     = NVertLayers / VecLength;
-
    OMEGA_SCOPE(LocKineticAux, KineticAux);
    OMEGA_SCOPE(LocLayerThicknessAux, LayerThicknessAux);
    OMEGA_SCOPE(LocVorticityAux, VorticityAux);
@@ -217,9 +214,7 @@ void AuxiliaryState::computeAll(const OceanState *State,
    State->getLayerThickness(LayerThickCell, ThickTimeLevel);
    State->getNormalVelocity(NormalVelEdge, VelTimeLevel);
 
-   const int NVertLayers = LayerThickCell.extent_int(1);
-   const int NChunks     = NVertLayers / VecLength;
-   const int NTracers    = TracerArray.extent_int(0);
+   const int NTracers = TracerArray.extent_int(0);
 
    OMEGA_SCOPE(LocTracerAux, TracerAux);
    OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
@@ -300,8 +295,7 @@ void AuxiliaryState::init() {
    Halo *DefHalo              = Halo::getDefault();
    const VertCoord *DefVCoord = VertCoord::getDefault();
 
-   int NVertLayers = VertCoord::getDefault()->NVertLayers;
-   int NTracers    = Tracers::getNumTracers();
+   int NTracers = Tracers::getNumTracers();
 
    AuxiliaryState::DefaultAuxState =
        AuxiliaryState::create("Default", DefMesh, DefHalo, DefVCoord, NTracers);
