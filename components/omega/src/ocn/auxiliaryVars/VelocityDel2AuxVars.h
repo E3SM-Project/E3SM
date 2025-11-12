@@ -48,23 +48,28 @@ class VelocityDel2AuxVars {
 
    KOKKOS_FUNCTION void computeVarsOnCell(int ICell, int KChunk) const {
       const Real InvAreaCell = 1._Real / AreaCell(ICell);
-      const int KStart       = chunkStart(KChunk, MinLayerCell(ICell));
-      const int KLen         = chunkLength(KChunk, KStart, MaxLayerCell(ICell));
+      const int KStartCell   = chunkStart(KChunk, MinLayerCell(ICell));
+      const int KLenCell = chunkLength(KChunk, KStartCell, MaxLayerCell(ICell));
+      const int KEndCell = KStartCell + KLenCell - 1;
 
       Real Del2DivCellTmp[VecLength] = {0};
 
       for (int J = 0; J < NEdgesOnCell(ICell); ++J) {
          const int JEdge     = EdgesOnCell(ICell, J);
          const Real AreaEdge = 0.5_Real * DvEdge(JEdge) * DcEdge(JEdge);
-         for (int KVec = 0; KVec < KLen; ++KVec) {
-            const int K = KStart + KVec;
+
+         const int KStartEdge = Kokkos::max(KStartCell, MinLayerEdgeBot(JEdge));
+         const int KEndEdge   = Kokkos::min(KEndCell, MaxLayerEdgeTop(JEdge));
+
+         for (int K = KStartEdge; K <= KEndEdge; ++K) {
+            const int KVec = K - KStartCell;
             Del2DivCellTmp[KVec] -= DvEdge(JEdge) * InvAreaCell *
                                     EdgeSignOnCell(ICell, J) *
                                     Del2Edge(JEdge, K);
          }
       }
-      for (int KVec = 0; KVec < KLen; ++KVec) {
-         const int K           = KStart + KVec;
+      for (int KVec = 0; KVec < KLenCell; ++KVec) {
+         const int K           = KStartCell + KVec;
          Del2DivCell(ICell, K) = Del2DivCellTmp[KVec];
       }
    }
