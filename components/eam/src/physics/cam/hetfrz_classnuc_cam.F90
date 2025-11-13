@@ -69,9 +69,8 @@ integer :: &
 integer, parameter :: MAM3_nmodes = 3
 integer, parameter :: MAM7_nmodes = 7
 integer, parameter :: MAM4_nmodes = 4
-! ++MW
 integer, parameter :: MAM5_nmodes = 5
-! --MW
+integer, parameter :: MAM6_nmodes = 6
 integer :: nmodes = -1             ! number of aerosol modes
 
 ! mode indices
@@ -80,9 +79,8 @@ integer :: mode_coarse_idx = -1    ! coarse mode
 integer :: mode_finedust_idx = -1  ! fine dust mode
 integer :: mode_coardust_idx = -1  ! coarse dust mode
 integer :: mode_pcarbon_idx = -1   ! primary carbon mode
-! ++MW
 integer :: mode_acarbon_idx = -1   ! aged carbon mode
-! --MW
+integer :: mode_pbb_idx = -1       ! primary biomass burning mode
 
 ! mode properties
 real(r8) :: alnsg_mode_accum
@@ -90,9 +88,8 @@ real(r8) :: alnsg_mode_coarse
 real(r8) :: alnsg_mode_finedust
 real(r8) :: alnsg_mode_coardust
 real(r8) :: alnsg_mode_pcarbon
-! ++MW
 real(r8) :: alnsg_mode_acarbon
-! --MW
+real(r8) :: alnsg_mode_pbb
 
 ! specie properties
 real(r8) :: specdens_dust
@@ -115,7 +112,6 @@ integer :: ncl_accum     ! seasalt in accumulation mode
 integer :: mom_accum     ! marine-organic in accumulation mode
 integer :: num_accum     ! number in accumulation mode
 
-! ++MW
 integer :: so4_acarbon   ! sulfate in aged carbon mode
 integer :: bc_acarbon    ! black-c in aged carbon mode
 integer :: pom_acarbon   ! p-organic in aged carbon mode
@@ -123,7 +119,6 @@ integer :: soa_acarbon   ! s-organic in aged carbon mode
 integer :: ncl_acarbon   ! seasalt in aged carbon mode
 integer :: mom_acarbon   ! marine-organic in aged carbon mode
 integer :: num_acarbon   ! number in aged carbon mode
-! --MW
 
 integer :: dst_coarse    ! dust in coarse mode
 integer :: ncl_coarse    ! seasalt in coarse mode
@@ -146,6 +141,10 @@ integer :: bc_pcarbon    ! black-c in primary carbon mode
 integer :: pom_pcarbon   ! p-organic in primary carbon mode
 integer :: mom_pcarbon   ! marine-organic in primary carbon mode
 integer :: num_pcarbon   ! number in primary carbon mode
+
+integer :: bc_pbb        ! black-c in primary biomass burning mode
+integer :: pom_pbb       ! p-organic in primary biomass burning mode  
+integer :: num_pbb       ! number in primary biomass burning mode
 
 ! Index arrays for looping over all constituents
 integer, allocatable :: mode_idx(:)
@@ -387,9 +386,8 @@ subroutine hetfrz_classnuc_cam_init(mincld_in)
    mode_finedust_idx = rad_cnst_get_mode_idx(0, 'fine_dust')
    mode_coardust_idx = rad_cnst_get_mode_idx(0, 'coarse_dust')
    mode_pcarbon_idx  = rad_cnst_get_mode_idx(0, 'primary_carbon')
-! ++MW
    mode_acarbon_idx  = rad_cnst_get_mode_idx(0, 'aged_carbon')
-! --MW
+   mode_pbb_idx      = rad_cnst_get_mode_idx(0, 'primary_bb')
 
    ! Check that required mode types were found
    if (nmodes == MAM3_nmodes) then
@@ -412,7 +410,6 @@ subroutine hetfrz_classnuc_cam_init(mincld_in)
             mode_accum_idx, mode_coarse_idx, mode_pcarbon_idx
          call endrun(routine//': ERROR required mode type not found')
       end if
-! ++MW
    else if (nmodes == MAM5_nmodes) then
       if (mode_accum_idx == -1 .or. mode_coarse_idx == -1 .or. mode_pcarbon_idx == -1 .or. &
           mode_acarbon_idx == -1) then
@@ -420,7 +417,13 @@ subroutine hetfrz_classnuc_cam_init(mincld_in)
             mode_accum_idx, mode_coarse_idx, mode_pcarbon_idx, mode_acarbon_idx
          call endrun(routine//': ERROR required mode type not found')
       end if
-! --MW
+   else if (nmodes == MAM6_nmodes) then
+      if (mode_accum_idx == -1 .or. mode_coarse_idx == -1 .or. mode_pcarbon_idx == -1 .or. &
+          mode_acarbon_idx == -1 .or. mode_pbb_idx == -1) then
+         write(iulog,*) routine//': ERROR required mode type not found - mode idx:', &
+            mode_accum_idx, mode_coarse_idx, mode_pcarbon_idx, mode_acarbon_idx, mode_pbb_idx
+         call endrun(routine//': ERROR required mode type not found')
+      end if
    end if
 
    ! Set some mode properties
@@ -448,14 +451,24 @@ subroutine hetfrz_classnuc_cam_init(mincld_in)
 
       call rad_cnst_get_mode_props(0, mode_pcarbon_idx, sigmag=sigma_logr_aer)
       alnsg_mode_pcarbon = log(sigma_logr_aer)
-! ++MW
+
    else if (nmodes == MAM5_nmodes) then
       call rad_cnst_get_mode_props(0, mode_coarse_idx, sigmag=sigma_logr_aer)
       alnsg_mode_coarse = log(sigma_logr_aer)
 
       call rad_cnst_get_mode_props(0, mode_pcarbon_idx, sigmag=sigma_logr_aer)
       alnsg_mode_pcarbon = log(sigma_logr_aer)
-! --MW
+
+   else if (nmodes == MAM6_nmodes) then
+      call rad_cnst_get_mode_props(0, mode_coarse_idx, sigmag=sigma_logr_aer)
+      alnsg_mode_coarse = log(sigma_logr_aer)
+
+      call rad_cnst_get_mode_props(0, mode_pcarbon_idx, sigmag=sigma_logr_aer)
+      alnsg_mode_pcarbon = log(sigma_logr_aer)
+
+      call rad_cnst_get_mode_props(0, mode_pbb_idx, sigmag=sigma_logr_aer)
+      alnsg_mode_pbb = log(sigma_logr_aer)
+
    end if
 
    ! Set list indices for all constituents (mass and number) used in this module.
@@ -587,7 +600,6 @@ subroutine hetfrz_classnuc_cam_init(mincld_in)
       pom_pcarbon  = 16
       num_pcarbon  = 17
 #endif
-! ++MW
    else if (nmodes == MAM5_nmodes) then
 #if ( defined MODAL_AERO_5MODE_AGEDCARBON && defined RAIN_EVAP_TO_COARSE_AERO )
       ncnst = 27
@@ -619,7 +631,40 @@ subroutine hetfrz_classnuc_cam_init(mincld_in)
       mom_acarbon  = 26
       num_acarbon  = 27
 #endif      
-! --MW
+   else if (nmodes == MAM6_nmodes) then
+#if ( defined MODAL_AERO_6MODE_BB_ACARBON && defined RAIN_EVAP_TO_COARSE_AERO )
+      ncnst = 30
+      so4_accum  =  1
+      bc_accum   =  2
+      pom_accum  =  3
+      soa_accum  =  4
+      dst_accum  =  5
+      ncl_accum  =  6
+      mom_accum  =  7
+      num_accum  =  8
+      dst_coarse =  9
+      ncl_coarse =  10
+      so4_coarse =  11
+      bc_coarse  =  12
+      pom_coarse =  13
+      soa_coarse =  14
+      mom_coarse =  15
+      num_coarse =  16
+      bc_pcarbon   = 17
+      pom_pcarbon  = 18
+      mom_pcarbon  = 19
+      num_pcarbon  = 20
+      so4_acarbon  = 21
+      bc_acarbon   = 22
+      pom_acarbon  = 23
+      soa_acarbon  = 24
+      ncl_acarbon  = 25
+      mom_acarbon  = 26
+      num_acarbon  = 27
+      bc_pbb       = 28
+      pom_pbb      = 29
+      num_pbb      = 30
+#endif      
    end if
 
    ! Allocate arrays to hold specie and mode indices for all constitutents (mass and number) 
@@ -657,14 +702,13 @@ subroutine hetfrz_classnuc_cam_init(mincld_in)
    mode_idx(soa_accum) = mode_accum_idx
    spec_idx(ncl_accum) = rad_cnst_get_spec_idx(0, mode_accum_idx, 'seasalt')
    mode_idx(ncl_accum) = mode_accum_idx
-! ++MW
-   if (nmodes == MAM3_nmodes .or. nmodes == MAM4_nmodes .or. nmodes == MAM5_nmodes) then
-! --MW
+
+   if (nmodes == MAM3_nmodes .or. nmodes == MAM4_nmodes .or. nmodes == MAM5_nmodes .or. nmodes == MAM6_nmodes) then
       spec_idx(dst_accum) = rad_cnst_get_spec_idx(0, mode_accum_idx, 'dust')
       mode_idx(dst_accum) = mode_accum_idx
    end if
 
-#if (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_AGEDCARBON)
+#if (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_AGEDCARBON || defined MODAL_AERO_6MODE_BB_ACARBON)
    spec_idx(mom_accum) = rad_cnst_get_spec_idx(0, mode_accum_idx, 'm-organic')
    mode_idx(mom_accum) = mode_accum_idx
 #endif
@@ -680,7 +724,7 @@ subroutine hetfrz_classnuc_cam_init(mincld_in)
       spec_idx(so4_coarse) = rad_cnst_get_spec_idx(0, mode_coarse_idx, 'sulfate')
       mode_idx(so4_coarse) = mode_coarse_idx
 
-#if (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_AGEDCARBON)
+#if (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_AGEDCARBON || defined MODAL_AERO_6MODE_BB_ACARBON)
       spec_idx(mom_coarse) = rad_cnst_get_spec_idx(0, mode_coarse_idx, 'm-organic')
       mode_idx(mom_coarse) = mode_coarse_idx
 #endif
@@ -725,13 +769,13 @@ subroutine hetfrz_classnuc_cam_init(mincld_in)
       spec_idx(pom_pcarbon) = rad_cnst_get_spec_idx(0, mode_pcarbon_idx, 'p-organic')
       mode_idx(pom_pcarbon) = mode_pcarbon_idx
 
-#if (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_AGEDCARBON)
+#if (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_AGEDCARBON || defined MODAL_AERO_6MODE_BB_ACARBON)
       spec_idx(mom_pcarbon) = rad_cnst_get_spec_idx(0, mode_pcarbon_idx, 'm-organic')
       mode_idx(mom_pcarbon) = mode_pcarbon_idx
 #endif
 
    end if
-! ++MW
+
    if (mode_acarbon_idx > 0) then
       spec_idx(num_acarbon) = 0
       mode_idx(num_acarbon) = mode_acarbon_idx
@@ -747,8 +791,17 @@ subroutine hetfrz_classnuc_cam_init(mincld_in)
       mode_idx(ncl_acarbon) = mode_acarbon_idx
       spec_idx(mom_acarbon) = rad_cnst_get_spec_idx(0, mode_acarbon_idx, 'm-organic')
       mode_idx(mom_acarbon) = mode_acarbon_idx
-   endif   
-! --MW
+   endif 
+   
+   ! Indices for species in primary biomass burning mode
+   if (mode_pbb_idx > 0) then
+      spec_idx(num_pbb) = 0
+      mode_idx(num_pbb) = mode_pbb_idx
+      spec_idx(bc_pbb)  = rad_cnst_get_spec_idx(0, mode_pbb_idx, 'black-c')
+      mode_idx(bc_pbb)  = mode_pbb_idx
+      spec_idx(pom_pbb) = rad_cnst_get_spec_idx(0, mode_pbb_idx, 'p-organic')
+      mode_idx(pom_pbb) = mode_pbb_idx
+   endif
  
    ! Check that all required specie types were found
    if (any(spec_idx == -1)) then
@@ -757,9 +810,7 @@ subroutine hetfrz_classnuc_cam_init(mincld_in)
    end if
 
    ! Get some specie specific properties.
-! ++MW
-   if (nmodes == MAM3_nmodes .or. nmodes == MAM4_nmodes .or. nmodes == MAM5_nmodes) then
-! --MW
+   if (nmodes == MAM3_nmodes .or. nmodes == MAM4_nmodes .or. nmodes == MAM5_nmodes .or. nmodes == MAM6_nmodes) then
       call rad_cnst_get_aer_props(0, mode_idx(dst_accum), spec_idx(dst_accum), density_aer=specdens_dust)
    else if (nmodes == MAM7_nmodes) then
       call rad_cnst_get_aer_props(0, mode_idx(dst_finedust), spec_idx(dst_finedust), density_aer=specdens_dust)
@@ -769,7 +820,7 @@ subroutine hetfrz_classnuc_cam_init(mincld_in)
    call rad_cnst_get_aer_props(0, mode_idx(soa_accum), spec_idx(soa_accum), density_aer=specdens_soa)
    call rad_cnst_get_aer_props(0, mode_idx(pom_accum), spec_idx(pom_accum), density_aer=specdens_pom)
 
-#if (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_AGEDCARBON)
+#if (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_AGEDCARBON || defined MODAL_AERO_6MODE_BB_ACARBON)
    call rad_cnst_get_aer_props(0, mode_idx(mom_accum), spec_idx(mom_accum), density_aer=specdens_mom)
 #endif
 
@@ -930,14 +981,13 @@ subroutine hetfrz_classnuc_cam_calc( &
             total_interstitial_aer_num(i,k,:), total_cloudborne_aer_num(i,k,:),         &
             hetraer(i,k,:), awcam(i,k,:), awfacm(i,k,:), dstcoat(i,k,:),                &
             na500(i,k), tot_na500(i,k))
-#if ( defined MODAL_AERO_5MODE_AGEDCARBON )
+#if ( defined MODAL_AERO_5MODE_AGEDCARBON || defined MODAL_AERO_6MODE_BB_ACARBON)
          fn_cloudborne_aer_num(i,k,1) = total_aer_num(i,k,1)*factnum(i,k,mode_acarbon_idx)  ! bc
 #else
          fn_cloudborne_aer_num(i,k,1) = total_aer_num(i,k,1)*factnum(i,k,mode_accum_idx)  ! bc
 #endif
-! ++MW
-         if (nmodes == MAM3_nmodes .or. nmodes == MAM4_nmodes .or. nmodes == MAM5_nmodes) then
-! --MW
+
+         if (nmodes == MAM3_nmodes .or. nmodes == MAM4_nmodes .or. nmodes == MAM5_nmodes .or. nmodes == MAM6_nmodes) then
             fn_cloudborne_aer_num(i,k,2) = total_aer_num(i,k,2)*factnum(i,k,mode_accum_idx)  ! dst_a1
             fn_cloudborne_aer_num(i,k,3) = total_aer_num(i,k,3)*factnum(i,k,mode_coarse_idx) ! dst_a3
          else if (nmodes == MAM7_nmodes) then
@@ -1011,14 +1061,13 @@ subroutine hetfrz_classnuc_cam_calc( &
             r3lx = max(4.e-6_r8, r3lx)
             supersatice = svp_water(t(i,k))/svp_ice(t(i,k))
 
-#if ( defined MODAL_AERO_5MODE_AGEDCARBON )
+#if ( defined MODAL_AERO_5MODE_AGEDCARBON || defined MODAL_AERO_6MODE_BB_ACARBON )
             fn(1) = factnum(i,k,mode_acarbon_idx)  ! bc aged carbon mode
 #else
             fn(1) = factnum(i,k,mode_accum_idx)  ! bc accumulation mode
 #endif
-! ++MW
-            if (nmodes == MAM3_nmodes .or. nmodes == MAM4_nmodes .or. nmodes == MAM5_nmodes) then
-! --MW
+
+            if (nmodes == MAM3_nmodes .or. nmodes == MAM4_nmodes .or. nmodes == MAM5_nmodes .or. nmodes == MAM6_nmodes) then
                 fn(2) = factnum(i,k,mode_accum_idx)  ! dust_a1 accumulation mode
                 fn(3) = factnum(i,k,mode_coarse_idx) ! dust_a3 coarse mode
             else if (nmodes == MAM7_nmodes) then
@@ -1319,7 +1368,6 @@ subroutine get_aer_num(ii, kk, ncnst, aer, aer_cb, rhoair,&
       if (nmodes == MAM4_nmodes) then
         bc_num = bc_num+(aer(ii,kk,bc_pcarbon)) * bc_num_to_mass*1.0e-6_r8 ! #/cm^3
       end if
-! ++MW
    else if (nmodes == MAM5_nmodes) then
 #if ( defined MODAL_AERO_5MODE_AGEDCARBON )
       if (.not. num_to_mass_in) then
@@ -1384,7 +1432,70 @@ subroutine get_aer_num(ii, kk, ncnst, aer, aer_cb, rhoair,&
       
       bc_num = bc_num+(aer(ii,kk,bc_pcarbon)) * bc_num_to_mass*1.0e-6_r8 ! #/cm^3
 #endif
-! --MW
+   else if (nmodes == MAM6_nmodes) then
+#if ( defined MODAL_AERO_6MODE_BB_ACARBON )
+      if (.not. num_to_mass_in) then
+
+         as_so4 = aer(ii,kk,so4_accum)
+         as_bc  = aer(ii,kk,bc_accum)
+         as_pom = aer(ii,kk,pom_accum)
+         as_soa = aer(ii,kk,soa_accum)
+         as_ss  = aer(ii,kk,ncl_accum)
+         as_du  = aer(ii,kk,dst_accum)
+         as_mom  = aer(ii,kk,mom_accum)
+
+         if (as_du > 0._r8) then
+            dst1_num = as_du/(as_so4+as_bc+as_pom+as_soa+as_ss+as_du+as_mom)  &
+                       * aer(ii,kk,num_accum)*1.0e-6_r8 ! #/cm^3
+         else
+            dst1_num = 0.0_r8
+         end if
+
+         if (as_bc > 0._r8) then
+            bc_num = as_bc/(as_so4+as_bc+as_pom+as_soa+as_ss+as_du+as_mom)  &
+                     * aer(ii,kk,num_accum)*1.0e-6_r8 ! #/cm^3
+         else
+            bc_num = 0.0_r8
+         end if
+
+         as_so4 = aer(ii,kk,so4_acarbon)
+         as_bc  = aer(ii,kk,bc_acarbon)
+         as_pom = aer(ii,kk,pom_acarbon)
+         as_soa = aer(ii,kk,soa_acarbon)
+         as_ss  = aer(ii,kk,ncl_acarbon)
+         as_mom  = aer(ii,kk,mom_acarbon)
+
+         if (as_bc > 0._r8) then
+            bc_num = bc_num + as_bc/(as_so4+as_bc+as_pom+as_soa+as_ss+as_mom)  &
+                     * aer(ii,kk,num_acarbon)*1.0e-6_r8 ! #/cm^3
+         end if
+
+      else   
+         dst1_num = aer(ii,kk,dst_accum) * dst1_num_to_mass*1.0e-6_r8 ! #/cm^3, dust # in accumulation mode
+         bc_num = (aer(ii,kk,bc_acarbon)+aer(ii,kk,bc_accum))* bc_num_to_mass*1.0e-6_r8      ! #/cm^3
+      end if 
+
+      dmc = aer(ii,kk,dst_coarse)
+      ssmc = aer(ii,kk,ncl_coarse)
+      mommc = aer(ii,kk,mom_coarse)
+#if (defined RAIN_EVAP_TO_COARSE_AERO)
+      bcmc = aer(ii,kk,bc_coarse)
+      pommc = aer(ii,kk,pom_coarse)
+      soamc = aer(ii,kk,soa_coarse)
+#endif
+      
+      if (dmc > 0._r8 ) then
+#if (defined RAIN_EVAP_TO_COARSE_AERO)
+         dst3_num = dmc/(ssmc+dmc+bcmc+pommc+soamc+mommc) * aer(ii,kk,num_coarse)*1.0e-6_r8 ! #/cm^3
+#else
+         dst3_num = dmc/(ssmc+dmc+mommc) * aer(ii,kk,num_coarse)*1.0e-6_r8 ! #/cm^3
+#endif
+      else
+         dst3_num = 0.0_r8
+      end if
+      
+      bc_num = bc_num+(aer(ii,kk,bc_pcarbon)+aer(ii,kk,bc_pbb)) * bc_num_to_mass*1.0e-6_r8 ! #/cm^3
+#endif
    else if (nmodes == MAM7_nmodes) then
       bc_num = (aer(ii,kk,bc_accum)+aer(ii,kk,bc_pcarbon)) * bc_num_to_mass*1.0e-6_r8 ! #/cm^3
       dst1_num = aer(ii,kk,num_finedust)*1.0e-6_r8  ! #/cm^3
@@ -1462,7 +1573,6 @@ subroutine get_aer_num(ii, kk, ncnst, aer, aer_cb, rhoair,&
       else
          dst3_num_imm = 0.0_r8
       end if
-! ++MW
    else if (nmodes == MAM5_nmodes) then
 #if ( defined MODAL_AERO_5MODE_AGEDCARBON )
       as_so4 = aer_cb(ii,kk,so4_accum)
@@ -1520,8 +1630,73 @@ subroutine get_aer_num(ii, kk, ncnst, aer, aer_cb, rhoair,&
       else
          dst3_num_imm = 0.0_r8
       end if
-#endif      
-! --MW
+#endif   
+   else if (nmodes == MAM6_nmodes) then   
+#if ( defined MODAL_AERO_6MODE_BB_ACARBON )
+      as_so4 = aer_cb(ii,kk,so4_accum)
+      as_bc  = aer_cb(ii,kk,bc_accum)
+      as_pom = aer_cb(ii,kk,pom_accum)
+      as_soa = aer_cb(ii,kk,soa_accum)
+      as_ss  = aer_cb(ii,kk,ncl_accum)
+      as_du  = aer_cb(ii,kk,dst_accum)
+      as_mom = aer_cb(ii,kk,mom_accum)
+
+      if (as_du > 0._r8) then
+         dst1_num_imm = as_du/(as_so4+as_bc+as_pom+as_soa+as_ss+as_du+as_mom)  &
+                       * aer_cb(ii,kk,num_accum)*1.0e-6_r8 ! #/cm^3
+      else
+         dst1_num_imm = 0.0_r8
+      end if
+
+      if (as_bc > 0._r8) then
+         bc_num_imm = as_bc/(as_so4+as_bc+as_pom+as_soa+as_ss+as_du+as_mom)  &
+                    * aer_cb(ii,kk,num_accum)*1.0e-6_r8 ! #/cm^3
+      else
+         bc_num_imm = 0.0_r8
+      end if
+
+      as_so4 = aer_cb(ii,kk,so4_acarbon)
+      as_bc  = aer_cb(ii,kk,bc_acarbon)
+      as_pom = aer_cb(ii,kk,pom_acarbon)
+      as_soa = aer_cb(ii,kk,soa_acarbon)
+      as_ss  = aer_cb(ii,kk,ncl_acarbon)
+      as_mom = aer_cb(ii,kk,mom_acarbon)
+
+      if (as_bc > 0._r8) then
+         bc_num_imm = bc_num_imm + as_bc/(as_so4+as_bc+as_pom+as_soa+as_ss+as_mom)  &
+                    * aer_cb(ii,kk,num_acarbon)*1.0e-6_r8 ! #/cm^3 
+      end if
+
+      as_bc  = aer_cb(ii,kk,bc_pbb)
+      as_pom = aer_cb(ii,kk,pom_pbb)
+
+      if (as_bc > 0._r8) then
+         bc_num_imm = bc_num_imm + as_bc/(as_bc+as_pom)  &
+                    * aer_cb(ii,kk,num_pbb)*1.0e-6_r8 ! #/cm^3 
+      end if
+
+      dmc_imm = aer_cb(ii,kk,dst_coarse)
+      ssmc_imm = aer_cb(ii,kk,ncl_coarse)
+      mommc_imm = aer_cb(ii,kk,mom_coarse)
+
+#if (defined RAIN_EVAP_TO_COARSE_AERO) 
+      bcmc_imm = aer_cb(ii,kk,bc_coarse)
+      pommc_imm = aer_cb(ii,kk,pom_coarse)
+      soamc_imm = aer_cb(ii,kk,soa_coarse)
+#endif
+
+      if (dmc_imm > 0._r8) then
+#if ( defined RAIN_EVAP_TO_COARSE_AERO )
+         dst3_num_imm = dmc_imm/(ssmc_imm+dmc_imm+bcmc_imm+pommc_imm+soamc_imm+mommc_imm) &
+                        * aer_cb(ii,kk,num_coarse)*1.0e-6_r8 ! #/cm^3
+#else
+         dst3_num_imm = dmc_imm/(ssmc_imm+dmc_imm+mommc_imm) &
+                        * aer_cb(ii,kk,num_coarse)*1.0e-6_r8 ! #/cm^3
+#endif
+      else
+         dst3_num_imm = 0.0_r8
+      end if
+#endif
    else if (nmodes == MAM7_nmodes) then
       ! primary carbon mode is insoluble and thus don't consider its cloud-borne state
       as_so4 = aer_cb(ii,kk,so4_accum)
@@ -1584,7 +1759,6 @@ subroutine get_aer_num(ii, kk, ncnst, aer, aer_cb, rhoair,&
          r_dust_a3 = 1.576e-6_r8
       end if
 
-! ++MW
    else if (nmodes == MAM5_nmodes) then
 #if ( defined MODAL_AERO_5MODE_AGEDCARBON )
 
@@ -1609,7 +1783,30 @@ subroutine get_aer_num(ii, kk, ncnst, aer, aer_cb, rhoair,&
       end if
 
 #endif
-! --MW
+   else if (nmodes == MAM6_nmodes) then
+#if ( defined MODAL_AERO_6MODE_BB_ACARBON )
+
+      if ((aer(ii,kk,bc_accum)+aer(ii,kk,bc_pcarbon)+aer(ii,kk,bc_acarbon)+aer(ii,kk,bc_pbb))*1.0e-3_r8 > 1.0e-30_r8 &
+          .and. bc_num > 1.0e-3_r8) then
+         r_bc = ( 3._r8/(4*pi*specdens_bc)*(aer(ii,kk,bc_accum)+aer(ii,kk,bc_pcarbon)+aer(ii,kk,bc_acarbon)+aer(ii,kk,bc_pbb))/ &
+                (bc_num*1.0e6_r8) )**(1._r8/3._r8)
+      else
+         r_bc = 0.067e-6_r8 ! from emission size
+      end if
+    
+      if (aer(ii,kk,dst_accum)*1.0e-3_r8 > 1.0e-30_r8 .and. dst1_num > 1.0e-3_r8) then
+         r_dust_a1 = ( 3._r8/(4*pi*specdens_dust)*aer(ii,kk,dst_accum)/(dst1_num*1.0e6_r8) )**(1._r8/3._r8)
+      else
+         r_dust_a1 = 0.258e-6_r8
+      end if
+
+      if (aer(ii,kk,dst_coarse)*1.0e-3_r8 > 1.0e-30_r8 .and. dst3_num > 1.0e-3_r8) then
+         r_dust_a3 = ( 3._r8/(4*pi*specdens_dust)*aer(ii,kk,dst_coarse)/(dst3_num*1.0e6_r8) )**(1._r8/3._r8)
+      else
+         r_dust_a3 = 1.576e-6_r8
+      end if
+
+#endif
    else if (nmodes == MAM7_nmodes) then
 
       if ((aer(ii,kk,bc_accum)+aer(ii,kk,bc_pcarbon))*1.0e-3_r8 > 1.0e-30_r8 &
@@ -1725,7 +1922,6 @@ subroutine get_aer_num(ii, kk, ncnst, aer, aer_cb, rhoair,&
       tmp2 = max(6.0_r8*dr_so4_monolayers_dust*vol_core(3), 0.0_r8)
       dstcoat(3) = tmp1/tmp2
 
-! ++MW
    else if (nmodes == MAM5_nmodes) then
 #if ( defined MODAL_AERO_5MODE_AGEDCARBON )
       fac_volsfc_bc      = exp(2.5_r8*alnsg_mode_pcarbon**2)
@@ -1765,7 +1961,49 @@ subroutine get_aer_num(ii, kk, ncnst, aer, aer_cb, rhoair,&
       tmp2 = max(6.0_r8*dr_so4_monolayers_dust*vol_core(3), 0.0_r8)
       dstcoat(3) = tmp1/tmp2
 #endif
-! --MW
+
+   else if (nmodes == MAM6_nmodes) then
+#if ( defined MODAL_AERO_6MODE_BB_ACARBON )
+      fac_volsfc_bc      = exp(2.5_r8*alnsg_mode_pcarbon**2)
+      fac_volsfc_dust_a1 = exp(2.5_r8*alnsg_mode_accum**2)
+      fac_volsfc_dust_a3 = exp(2.5_r8*alnsg_mode_coarse**2)
+
+      ! dust_a1
+      vol_shell(2) = ( aer(ii,kk,so4_accum)/specdens_so4 + &
+                       aer(ii,kk,mom_accum)*mom_equivso4_factor/specdens_mom + &
+                       aer(ii,kk,soa_accum)*soa_equivso4_factor/specdens_soa )/rhoair
+      vol_core(2) = aer(ii,kk,dst_accum)/(specdens_dust*rhoair)
+    
+      tmp1 = vol_shell(2)*(r_dust_a1*2._r8)*fac_volsfc_dust_a1
+      tmp2 = max(6.0_r8*dr_so4_monolayers_dust*vol_core(2), 0.0_r8)
+      dstcoat(2) = tmp1/tmp2
+      
+      ! bc
+      vol_shell(1) = ( aer(ii,kk,pom_pcarbon)*pom_equivso4_factor/specdens_pom + &
+                       aer(ii,kk,mom_pcarbon)*mom_equivso4_factor/specdens_mom + &
+                       aer(ii,kk,pom_pbb)*pom_equivso4_factor/specdens_pom )/rhoair
+      vol_core(1)  = aer(ii,kk,bc_pcarbon)/(specdens_bc*rhoair) + &
+                     aer(ii,kk,bc_pbb)/(specdens_bc*rhoair)
+      
+      tmp1 = vol_shell(1)*(r_bc*2._r8)*fac_volsfc_bc
+      tmp2 = max(6.0_r8*dr_so4_monolayers_dust*vol_core(1), 0.0_r8)
+      dstcoat(1) = tmp1/tmp2
+
+
+      ! dust_a3
+#if ( defined RAIN_EVAP_TO_COARSE_AERO )
+      vol_shell(3) = aer(ii,kk,so4_coarse)/(specdens_so4*rhoair) + &
+                     aer(ii,kk,pom_coarse)/(specdens_pom*rhoair) + &
+                     aer(ii,kk,soa_coarse)/(specdens_soa*rhoair) + &
+                     aer(ii,kk,mom_coarse)/(specdens_mom*rhoair)
+#endif
+      vol_core(3)  = aer(ii,kk,dst_coarse)/(specdens_dust*rhoair)
+      
+      tmp1 = vol_shell(3)*(r_dust_a3*2._r8)*fac_volsfc_dust_a3
+      tmp2 = max(6.0_r8*dr_so4_monolayers_dust*vol_core(3), 0.0_r8)
+      dstcoat(3) = tmp1/tmp2
+#endif
+
    else if (nmodes == MAM7_nmodes) then
 
       ! for BC, only consider primary carbon mode,
@@ -1816,7 +2054,6 @@ subroutine get_aer_num(ii, kk, ncnst, aer, aer_cb, rhoair,&
       uncoated_aer_num(1) = (aer(ii,kk,bc_pcarbon)*bc_num_to_mass*1.0e-6_r8)*(1._r8-dstcoat(1))
    end if
 
-! ++MW
    if (nmodes == MAM5_nmodes) then
 #if ( defined MODAL_AERO_5MODE_AGEDCARBON )
       coated_aer_num(1)   = (aer(ii,kk,bc_pcarbon)*bc_num_to_mass*1.0e-6_r8)*dstcoat(1)+ &
@@ -1825,11 +2062,17 @@ subroutine get_aer_num(ii, kk, ncnst, aer, aer_cb, rhoair,&
       uncoated_aer_num(1) = (aer(ii,kk,bc_pcarbon)*bc_num_to_mass*1.0e-6_r8)*(1._r8-dstcoat(1))
 #endif
    end if
-! --MW
 
-! ++MW
-   if (nmodes == MAM3_nmodes .or. nmodes == MAM4_nmodes .or. nmodes == MAM5_nmodes) then
-! --MW
+   if (nmodes == MAM6_nmodes) then
+#if ( defined MODAL_AERO_6MODE_BB_ACARBON )
+      coated_aer_num(1)   = ((aer(ii,kk,bc_pcarbon)+aer(ii,kk,bc_pbb))*bc_num_to_mass*1.0e-6_r8)*dstcoat(1)+ &
+                            (aer(ii,kk,bc_accum)*bc_num_to_mass*1.0e-6_r8) + &
+                            (aer(ii,kk,bc_acarbon)*bc_num_to_mass*1.0e-6_r8)
+      uncoated_aer_num(1) = ( (aer(ii,kk,bc_pcarbon)+aer(ii,kk,bc_pbb))*bc_num_to_mass*1.0e-6_r8)*(1._r8-dstcoat(1))
+#endif
+   end if
+
+   if (nmodes == MAM3_nmodes .or. nmodes == MAM4_nmodes .or. nmodes == MAM5_nmodes .or. nmodes == MAM6_nmodes) then
       dst1_scale = 0.488_r8    ! scaled for D>0.5-1 um from 0.1-1 um
    else if (nmodes == MAM7_nmodes) then
       dst1_scale = 0.566_r8    ! scaled for D>0.5-2 um from 0.1-2 um
@@ -1928,7 +2171,6 @@ subroutine get_aer_num(ii, kk, ncnst, aer, aer_cb, rhoair,&
          awfacm(3) = 0._r8
    end if 
 
-! ++MW
    else if (nmodes == MAM5_nmodes) then
 #if ( defined MODAL_AERO_5MODE_AGEDCARBON )
       ! accumulation mode for dust_a1 
@@ -1985,7 +2227,62 @@ subroutine get_aer_num(ii, kk, ncnst, aer, aer_cb, rhoair,&
          awfacm(3) = 0._r8
       end if
 #endif
-! --MW
+   else if (nmodes == MAM6_nmodes) then
+#if ( defined MODAL_AERO_6MODE_BB_ACARBON )
+      ! accumulation mode for dust_a1 
+      if (aer(ii,kk,num_accum) > 0._r8) then
+         awcam(2) = (dst1_num*1.0e6_r8)/aer(ii,kk,num_accum)* &
+            ( aer(ii,kk,so4_accum) + aer(ii,kk,soa_accum) + aer(ii,kk,mom_accum) )*1.0e9_r8 ! [mug m-3]
+      else
+         awcam(2) = 0._r8
+      end if
+
+      if (awcam(2) > 0._r8) then
+         awfacm(2) = ( aer(ii,kk,mom_accum) + aer(ii,kk,soa_accum) )/ &
+            ( aer(ii,kk,so4_accum) + aer(ii,kk,soa_accum) + aer(ii,kk,mom_accum) )
+      else
+         awfacm(2) = 0._r8
+      end if
+
+
+      ! aged carbon mode for bc (primary carbon mode is insoluble)
+      if (aer(ii,kk,num_acarbon) > 0._r8) then
+         awcam(1) = (bc_num*1.0e6_r8)/aer(ii,kk,num_acarbon)* &
+            ( aer(ii,kk,so4_acarbon) + aer(ii,kk,soa_acarbon) + aer(ii,kk,pom_acarbon) + aer(ii,kk,bc_acarbon) + &
+              aer(ii,kk,mom_acarbon) )*1.0e9_r8 ! [mug m-3]
+      else
+         awcam(1) = 0._r8
+      end if
+
+      if (awcam(1) > 0._r8) then
+         awfacm(1) = ( aer(ii,kk,bc_acarbon) + aer(ii,kk,soa_acarbon) + aer(ii,kk,pom_acarbon) + aer(ii,kk,mom_acarbon) )/ &
+            ( aer(ii,kk,soa_acarbon) + aer(ii,kk,pom_acarbon) + aer(ii,kk,so4_acarbon) + aer(ii,kk,bc_acarbon) + aer(ii,kk,mom_acarbon) )
+      else
+         awfacm(1) = 0._r8
+      end if   
+
+
+      ! coarse mode for dust_a3
+      if (aer(ii,kk,num_coarse) > 0._r8) then
+#if ( defined RAIN_EVAP_TO_COARSE_AERO )
+         awcam(3) = (dst3_num*1.0e6_r8)/aer(ii,kk,num_coarse)* ( aer(ii,kk,so4_coarse) + &
+                     aer(ii,kk,mom_coarse) + aer(ii,kk,bc_coarse) + aer(ii,kk,pom_coarse) + aer(ii,kk,soa_coarse) ) *1.0e9_r8
+#endif
+      else
+         awcam(3) = 0._r8
+      end if
+
+      if (awcam(3) > 0._r8) then
+#if ( defined RAIN_EVAP_TO_COARSE_AERO )
+         awfacm(3) = ( aer(ii,kk,bc_coarse) + aer(ii,kk,soa_coarse) + &
+                       aer(ii,kk,pom_coarse) + aer(ii,kk,mom_coarse) )/ &
+                     ( aer(ii,kk,soa_coarse) + aer(ii,kk,pom_coarse) + &
+                       aer(ii,kk,so4_coarse) + aer(ii,kk,bc_coarse) + aer(ii,kk,mom_coarse) )
+#endif
+      else
+         awfacm(3) = 0._r8
+      end if
+#endif
    else if (nmodes == MAM7_nmodes) then
 
       ! accumulation mode for bc (primary carbon mode is insoluble)

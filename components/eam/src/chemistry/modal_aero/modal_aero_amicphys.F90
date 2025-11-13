@@ -96,7 +96,7 @@
   integer, parameter :: max_gas = nsoa + 1
   ! the +3 in max_aer are dst, ncl, so4
   integer, parameter :: max_aer = nsoa + npoa + nbc + 3
-#elif ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_AGEDCARBON )
+#elif ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_AGEDCARBON || defined MODAL_AERO_6MODE_BB_ACARBON )
   integer, parameter :: max_gas = nsoa + 1
   ! the +4 in max_aer are dst, ncl, so4, mom
   integer, parameter :: max_aer = nsoa + npoa + nbc + 4
@@ -118,7 +118,7 @@
   integer, parameter :: max_aer = nsoa + npoa + nbc + 4 + 5
 #endif
 
-#if (( defined MODAL_AERO_8MODE ) || ( defined MODAL_AERO_4MODE ) || ( defined MODAL_AERO_4MODE_MOM ) || ( defined MODAL_AERO_5MODE_AGEDCARBON ))
+#if (( defined MODAL_AERO_8MODE ) || ( defined MODAL_AERO_4MODE ) || ( defined MODAL_AERO_4MODE_MOM ) || ( defined MODAL_AERO_5MODE_AGEDCARBON ) || ( defined MODAL_AERO_6MODE_BB_ACARBON ))
   integer, parameter :: ntot_amode_extd = ntot_amode
 #else
   integer, parameter :: ntot_amode_extd = ntot_amode + 1
@@ -134,6 +134,8 @@
 
 #if ( defined MODAL_AERO_9MODE )
   integer, parameter :: max_agepair = 3
+#elif ( defined MODAL_AERO_6MODE_BB_ACARBON )
+  integer, parameter :: max_agepair = 2
 #else
   integer, parameter :: max_agepair = 1
 #endif
@@ -163,7 +165,7 @@
   integer :: iaer_bc, iaer_dst, iaer_ncl, iaer_nh4, iaer_pom, iaer_soa, iaer_so4, &
              iaer_mpoly, iaer_mprot, iaer_mlip, iaer_mhum, iaer_mproc, iaer_mom, &
              iaer_no3, iaer_cl, iaer_ca, iaer_co3
-  integer :: i_agepair_pca, i_agepair_macc, i_agepair_mait
+  integer :: i_agepair_pca, i_agepair_pbb, i_agepair_macc, i_agepair_mait
   integer :: lmap_gas(max_gas)
   integer :: lmap_aer(max_aer,max_mode), lmapbb_aer(max_aer,max_mode), &
              lmap_aercw(max_aer,max_mode)
@@ -171,9 +173,7 @@
   integer :: lmapcc_all(gas_pcnst)
   integer, parameter :: lmapcc_val_gas = 1, lmapcc_val_aer = 2, lmapcc_val_num = 3
   integer :: ngas, naer
-! ++MW
-  integer :: nacc, nait, npca, naca, nufi, nmacc, nmait
-! --MW
+  integer :: nacc, nait, npca, naca, npbb, nufi, nmacc, nmait
 
   integer :: n_agepair, n_coagpair
   integer :: modefrm_agepair(max_agepair), modetoo_agepair(max_agepair)
@@ -4490,7 +4490,7 @@ mainloop1_ipair:  do n = 1, ntot_amode
          ( 1.0_r8 + ybetajj0(1)*deltat*qnum_tmpa(nacc) ) 
       qnum_tmpc(nacc) = (qnum_tmpa(nacc) + qnum_tmpb(nacc))*0.5_r8
 
-#if ( defined MODAL_AERO_5MODE_AGEDCARBON )
+#if ( defined MODAL_AERO_5MODE_AGEDCARBON || defined MODAL_AERO_6MODE_BB_ACARBON )
 ! a-carbon mode number loss - approximate analytical solution
 !    using average number conc. for accum mode
       if (naca > 0) then
@@ -4510,11 +4510,15 @@ mainloop1_ipair:  do n = 1, ntot_amode
 #endif
 
 ! pcarbon mode number loss - approximate analytical solution
-!    using average number conc. for accum mode
+!    using average number conc. for accum and acarbon mode
       if (npca > 0) then
 #if ( defined MODAL_AERO_5MODE_AGEDCARBON )
          tmpa = ybetaij0(2)*qnum_tmpc(nacc) + &
                 ybetaij0(6)*qnum_tmpc(naca)
+         tmpa = max( 0.0_r8, deltat*tmpa )
+#elif ( defined MODAL_AERO_6MODE_BB_ACARBON )
+         tmpa = ybetaij0(2)*qnum_tmpc(nacc) + &
+                ybetaij0(8)*qnum_tmpc(naca)
          tmpa = max( 0.0_r8, deltat*tmpa )
 #else
          tmpa = max( 0.0_r8, deltat*ybetaij0(2)*qnum_tmpc(nacc) )
@@ -4531,6 +4535,27 @@ mainloop1_ipair:  do n = 1, ntot_amode
          end if
          qnum_tmpc(npca) = (qnum_tmpa(npca) + qnum_tmpb(npca))*0.5_r8
       end if
+
+! primary biomass burning mode number loss - approximate analytical solution
+!    using average number conc. for accum and acarbon mode
+#if ( defined MODAL_AERO_6MODE_BB_ACARBON )
+      if (npbb > 0) then
+         tmpa = ybetaij0(4)*qnum_tmpc(nacc) + &
+                ybetaij0(9)*qnum_tmpc(naca)
+         tmpa = max( 0.0_r8, deltat*tmpa )
+         tmpb = max( 0.0_r8, deltat*ybetaii0(4) )
+         tmpn = qnum_tmpa(npbb)
+         if (tmpa < 1.0e-5_r8) then
+            qnum_tmpb(npbb) = tmpn / &
+               ( 1.0_r8 + (tmpa+tmpb*tmpn)*(1.0_r8 + 0.5_r8*tmpa) )
+         else
+            tmpc = exp(-tmpa)
+            qnum_tmpb(npbb) = tmpn*tmpc / &
+               ( 1.0_r8 + (tmpb*tmpn/tmpa)*(1.0_r8-tmpc) )
+         end if
+         qnum_tmpc(npbb) = (qnum_tmpa(npbb) + qnum_tmpb(npbb))*0.5_r8
+      end if
+#endif
 
 ! marine-organics accum mode number loss - approximate analytical solution
 !    using average number conc. for accum and pcarbon modes
@@ -4557,6 +4582,10 @@ mainloop1_ipair:  do n = 1, ntot_amode
 #if ( defined MODAL_AERO_5MODE_AGEDCARBON )
       if (npca  > 0 .and. naca > 0) tmpa = tmpa + ybetaij0(4)*qnum_tmpc(npca) + &
                                                 + ybetaij0(5)*qnum_tmpc(naca)
+#elif ( defined MODAL_AERO_6MODE_BB_ACARBON )
+      if (npca  > 0 .and. naca > 0 .and. npbb > 0) tmpa = tmpa + ybetaij0(5)*qnum_tmpc(npca) + &
+                                                               + ybetaij0(6)*qnum_tmpc(npbb) + &
+                                                               + ybetaij0(7)*qnum_tmpc(naca) 
 #else
       if (npca  > 0) tmpa = tmpa + ybetaij0(3)*qnum_tmpc(npca)
       if (nmacc > 0) tmpa = tmpa + ybetaij0(4)*qnum_tmpc(nmacc)
@@ -4656,8 +4685,13 @@ mainloop1_ipair:  do n = 1, ntot_amode
 #if ( defined MODAL_AERO_5MODE_AGEDCARBON )
       else if (npca > 0 .and. naca > 0) then
          tmp2 = max( 0.0_r8, ybetaij3(4)*qnum_tmpc(npca) )
-         tmp3 = max( 0.0_r8, ybetaij3(5)*qnum_tmpc(naca) )   
-#else
+         tmp3 = max( 0.0_r8, ybetaij3(5)*qnum_tmpc(naca) )
+#elif ( defined MODAL_AERO_6MODE_BB_ACARBON )
+      else if (npca > 0 .and. naca > 0 .and. npbb > 0) then
+         tmp2 = max( 0.0_r8, ybetaij3(5)*qnum_tmpc(npca) )
+         tmp3 = max( 0.0_r8, ybetaij3(6)*qnum_tmpc(npbb) ) 
+         tmp4 = max( 0.0_r8, ybetaij3(7)*qnum_tmpc(naca) ) 
+#else   
       else if (npca > 0) then
          tmp2 = max( 0.0_r8, ybetaij3(3)*qnum_tmpc(npca) )
          tmp3 = 0.0_r8
@@ -4666,7 +4700,11 @@ mainloop1_ipair:  do n = 1, ntot_amode
          tmp2 = 0.0_r8
          tmp3 = 0.0_r8
       end if
+#if ( defined MODAL_AERO_6MODE_BB_ACARBON )
+      tmpa = tmp1 + tmp2 + tmp3 + tmp4
+#else
       tmpa = tmp1 + tmp2 + tmp3
+#endif
       tmpc = deltat*tmpa
       if (tmpc > epsilonx2) then
          ! calc coag change only when it is not ~= zero
@@ -4699,6 +4737,24 @@ mainloop1_ipair:  do n = 1, ntot_amode
                qaer_tmpb(iaer,naca) = qaer_tmpb(iaer,naca) + tmp_dq*tmp3
                qaer_del_coag_in(iaer,i_agepair_pca) &
                                     = qaer_del_coag_in(iaer,i_agepair_pca) + tmp_dq*tmp2
+            end do
+#elif ( defined MODAL_AERO_6MODE_BB_ACARBON )
+         else if (npca > 0 .and. naca > 0 .and. npbb > 0) then
+            tmp2 = tmp2/tmpa
+            tmp3 = tmp3/tmpa
+            tmp4 = tmp4/tmpa
+            tmp1 = 1.0_r8 - (tmp2 + tmp3 + tmp4)
+            do iaer = 1, naer
+               tmp_dq = tmp_xf*qaer_tmpa(iaer,nait)
+               qaer_tmpb(iaer,nait)  = qaer_tmpb(iaer,nait)  - tmp_dq
+               qaer_tmpb(iaer,nacc)  = qaer_tmpb(iaer,nacc)  + tmp_dq*tmp1
+               qaer_tmpb(iaer,npca)  = qaer_tmpb(iaer,npca)  + tmp_dq*tmp2
+               qaer_tmpb(iaer,npbb)  = qaer_tmpb(iaer,npbb)  + tmp_dq*tmp3
+               qaer_tmpb(iaer,naca)  = qaer_tmpb(iaer,naca)  + tmp_dq*tmp4
+               qaer_del_coag_in(iaer,i_agepair_pca) &
+                                    = qaer_del_coag_in(iaer,i_agepair_pca) + tmp_dq*tmp2
+               qaer_del_coag_in(iaer,i_agepair_pbb) &
+                                    = qaer_del_coag_in(iaer,i_agepair_pbb) + tmp_dq*tmp3
             end do
 #else
          else if (npca > 0) then
@@ -4799,6 +4855,24 @@ mainloop1_ipair:  do n = 1, ntot_amode
             end do
          end if
       end if
+#elif ( defined MODAL_AERO_6MODE_BB_ACARBON )
+      if (npca > 0 .and. naca > 0) then
+         tmp1 = max( 0.0_r8, ybetaij3(2)*qnum_tmpc(nacc) )
+         tmp2 = max( 0.0_r8, ybetaij3(8)*qnum_tmpc(naca) )
+         tmpa = tmp1 + tmp2
+         tmpc = deltat*tmpa
+         if (tmpc > epsilonx2) then
+            tmp_xf = 1.0_r8 - exp(-tmpc)
+            tmp2 = tmp2/tmpa
+            tmp1 = 1.0_r8 - tmp2
+            do iaer = 1, naer
+               tmp_dq = tmp_xf*qaer_tmpa(iaer,npca)
+               qaer_tmpb(iaer,npca) = qaer_tmpb(iaer,npca) - tmp_dq
+               qaer_tmpb(iaer,nacc) = qaer_tmpb(iaer,nacc) + tmp_dq*tmp1
+               qaer_tmpb(iaer,naca) = qaer_tmpb(iaer,naca) + tmp_dq*tmp2
+            end do
+         end if
+      end if
 #else
       if (npca > 0) then
          tmpc = max( 0.0_r8, ybetaij3(2)*qnum_tmpc(nacc) )
@@ -4815,7 +4889,7 @@ mainloop1_ipair:  do n = 1, ntot_amode
 #endif
 
 ! mass transfer out of a-carbon mode
-#if ( defined MODAL_AERO_5MODE_AGEDCARBON )
+#if ( defined MODAL_AERO_5MODE_AGEDCARBON || defined MODAL_AERO_6MODE_BB_ACARBON )
       if (naca > 0) then
          tmpc = max( 0.0_r8, ybetaij3(3)*qnum_tmpc(nacc) )
          tmpc = deltat*tmpc
@@ -4825,6 +4899,27 @@ mainloop1_ipair:  do n = 1, ntot_amode
                tmp_dq = tmp_xf*qaer_tmpa(iaer,naca)
                qaer_tmpb(iaer,naca) = qaer_tmpb(iaer,naca) - tmp_dq
                qaer_tmpb(iaer,nacc) = qaer_tmpb(iaer,nacc) + tmp_dq
+            end do
+         end if
+      end if
+#endif
+
+! mass transfer out of pbb mode
+#if ( defined MODAL_AERO_6MODE_BB_ACARBON )
+      if (npbb > 0) then
+         tmp1 = max( 0.0_r8, ybetaij3(4)*qnum_tmpc(nacc) )
+         tmp2 = max( 0.0_r8, ybetaij3(9)*qnum_tmpc(naca) )
+         tmpa = tmp1 + tmp2
+         tmpc = deltat*tmpa
+         if (tmpc > epsilonx2) then
+            tmp_xf = 1.0_r8 - exp(-tmpc)
+            tmp2 = tmp2/tmpa
+            tmp1 = 1.0_r8 - tmp2
+            do iaer = 1, naer
+               tmp_dq = tmp_xf*qaer_tmpa(iaer,npbb)
+               qaer_tmpb(iaer,npbb) = qaer_tmpb(iaer,npbb) - tmp_dq
+               qaer_tmpb(iaer,nacc) = qaer_tmpb(iaer,nacc) + tmp_dq*tmp1
+               qaer_tmpb(iaer,naca) = qaer_tmpb(iaer,naca) + tmp_dq*tmp2
             end do
          end if
       end if
@@ -5206,10 +5301,7 @@ use modal_aero_data, only : &
     dgnum_amode, dgnumlo_amode, dgnumhi_amode, &
     lmassptr_amode, lmassptrcw_amode, &
     modeptr_accum, modeptr_aitken, modeptr_pcarbon, modeptr_ufine, &
-! ++MW
-    modeptr_acarbon, &
-! --MW
-    modeptr_maccum, modeptr_maitken, &
+    modeptr_acarbon, modeptr_pbb, modeptr_maccum, modeptr_maitken, &
     nspec_amode, &
     numptr_amode, numptrcw_amode, sigmag_amode
 
@@ -5386,7 +5478,7 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
       iaer_co3 = naer
 #endif
 
-#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_AGEDCARBON )
+#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_AGEDCARBON || defined MODAL_AERO_6MODE_BB_ACARBON )
       naer = naer + 1
       name_aerpfx(naer) = 'mom'
       iaer_mom = naer
@@ -5590,9 +5682,8 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
       nacc = modeptr_accum
       nait = modeptr_aitken
       npca = modeptr_pcarbon
-! ++MW
       naca = modeptr_acarbon
-! --MW
+      npbb = modeptr_pbb
       nufi = modeptr_ufine
 #if ( defined MODAL_AERO_9MODE )
       nmacc = modeptr_maccum
@@ -5609,8 +5700,7 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
       modefrm_agepair(:) = big_neg_int
       modetoo_agepair(:) = big_neg_int
       mode_aging_optaa(:) = 0
-      i_agepair_pca = big_neg_int ; i_agepair_macc = big_neg_int ; i_agepair_mait = big_neg_int ;
-
+      i_agepair_pca = big_neg_int ; i_agepair_pbb = big_neg_int ; i_agepair_macc = big_neg_int ; i_agepair_mait = big_neg_int ;
 #if ( defined MODAL_AERO_5MODE_AGEDCARBON )
       if (npca > 0 .and. naca > 0) then
          ipair = ipair + 1
@@ -5618,6 +5708,21 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
          modetoo_agepair(ipair) = naca
          i_agepair_pca = ipair
          mode_aging_optaa(npca) = 1
+      end if
+#elif ( defined MODAL_AERO_6MODE_BB_ACARBON )
+      if (npca > 0 .and. naca > 0) then
+         ipair = ipair + 1
+         modefrm_agepair(ipair) = npca
+         modetoo_agepair(ipair) = naca
+         i_agepair_pca = ipair
+         mode_aging_optaa(npca) = 1
+      end if
+      if (npbb > 0 .and. naca > 0) then
+         ipair = ipair + 1
+         modefrm_agepair(ipair) = npbb
+         modetoo_agepair(ipair) = naca
+         i_agepair_pbb = ipair
+         mode_aging_optaa(npbb) = 1
       end if
 #else
       if (npca > 0 .and. nacc > 0) then
@@ -5692,6 +5797,28 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
             na = nait ; nb = naca
          else if (ip == 6) then
             na = npca ; nb = naca
+         end if
+#elif ( defined MODAL_AERO_6MODE_BB_ACARBON )
+         if (ip == 1) then
+            na = nait ; nb = nacc
+         else if (ip == 2) then
+            na = npca ; nb = nacc
+         else if (ip == 3) then
+            na = naca ; nb = nacc
+         else if (ip == 4) then
+            na = npbb ; nb = nacc
+         else if (ip == 5) then
+            na = nait ; nb = npca
+            nc = naca
+         else if (ip == 6) then
+            na = nait ; nb = npbb
+            nc = naca
+         else if (ip == 7) then
+            na = nait ; nb = naca
+         else if (ip == 8) then
+            na = npca ; nb = naca
+         else if (ip == 9) then
+            na = npbb ; nb = naca
          end if
 #else
          if (ip == 1) then

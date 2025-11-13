@@ -161,7 +161,7 @@ contains
             + qcw(:ncol,:,id_nh4_5a) &
             + qcw(:ncol,:,id_nh4_6a) 
     else
-#if ( defined MODAL_AERO_5MODE_AGEDCARBON )
+#if ( defined MODAL_AERO_5MODE_AGEDCARBON || defined MODAL_AERO_6MODE_BB_ACARBON )
        id_so4_1a = lptr_so4_cw_amode(1) - loffset
        id_so4_2a = lptr_so4_cw_amode(2) - loffset
        id_so4_3a = lptr_so4_cw_amode(3) - loffset

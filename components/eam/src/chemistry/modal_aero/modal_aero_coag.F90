@@ -27,7 +27,7 @@
 
 #if ( defined MODAL_AERO_9MODE || defined MODAL_AERO_7MODE || defined MODAL_AERO_4MODE || defined MODAL_AERO_4MODE_MOM )
   integer, parameter, public :: pair_option_acoag = 3
-#elif ( defined MODAL_AERO_5MODE_AGEDCARBON )
+#elif ( defined MODAL_AERO_5MODE_AGEDCARBON || defined MODAL_AERO_6MODE_BB_ACARBON )
   integer, parameter, public :: pair_option_acoag = 3
 #elif ( defined MODAL_AERO_3MODE )
   integer, parameter, public :: pair_option_acoag = 1
