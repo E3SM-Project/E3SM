@@ -603,7 +603,7 @@ run (const std::string& filename,
       // Write to file
       auto func_start = std::chrono::steady_clock::now();
       if (m_transpose) {
-        const auto& fl = f_out.get_header().get_identifier().get_layout().to_string();
+        const auto& fl = f_out.get_header().get_identifier().get_layout().transpose().to_string();
         const std::string helper_name   = "transposed_"+fl;
         auto& temp = m_helper_fields.at(helper_name);
         transpose(f_out,temp);
