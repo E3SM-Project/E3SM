@@ -383,6 +383,7 @@ contains
     integer            :: begc, endc
     integer            :: begg, endg
     real(r8), parameter :: min_liquid_pressure = -10132500._r8 ! Minimum soil liquid water pressure [mm]
+    real(r8) :: exponent_arg
     !-----------------------------------------------------------------------
     begc = bounds%begc; endc= bounds%endc
     begg = bounds%begg; endg= bounds%endg
@@ -470,7 +471,8 @@ contains
     if (.not. readvar ) then
        !    Variable ZSOI not found, use the ELM parameters.
        do j = 1, nlevsoifl
-          zsoifl(j) = scalez*(exp(zecoeff*(j-0.5_r8))-1._r8)    !node depths
+          exponent_arg = zecoeff * (j-0.5_r8)
+          zsoifl(j) = scalez*(exp(exponent_arg)-1._r8)    !node depths
        end do
     end if
 

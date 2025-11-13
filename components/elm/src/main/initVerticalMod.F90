@@ -85,6 +85,7 @@ contains
     integer               :: begc, endc
     integer               :: begl, endl
     character(len=256), dimension(ndtbname) :: dtbname ! List of possible names for depth to bedrock
+    real(r8) :: exponent_arg, exponent_arg2
     !------------------------------------------------------------------------
 
     begc = bounds%begc; endc= bounds%endc
@@ -142,8 +143,10 @@ contains
        ! -----------------------------------------------------------------
        zsoi(1:nlevsoi) = zsoi_in(1:nlevsoi)
        do j = nlevsoi+1, nlevgrnd
+          exponent_arg = zecoeff*(j -0.5_r8)
+          exponent_arg2 = zecoeff*(nlevsoi-0.5_r8)
           zsoi(j) = zsoi(nlevsoi) + &
-             scalez*(exp(zecoeff*(j -0.5_r8))-exp(zecoeff*(nlevsoi-0.5_r8)))
+             scalez*(exp(exponent_arg)-exp(exponent_arg2))
        end do
 
 
@@ -155,7 +158,8 @@ contains
        ! dynamics are not lost due to an inability to resolve temperature, moisture, 
        ! and biogeochemical dynamics at the base of the active layer
        do j = 1, toplev_equalspace
-          zsoi(j) = scalez*(exp(zecoeff*(j-0.5_r8))-1._r8)    !node depths
+          exponent_arg = zecoeff*(j-0.5_r8)
+          zsoi(j) = scalez*(exp(exponent_arg)-1._r8)    !node depths
        enddo
 
        do j = toplev_equalspace+1,toplev_equalspace + nlev_equalspace
@@ -163,7 +167,8 @@ contains
        enddo
 
        do j = toplev_equalspace + nlev_equalspace +1, nlevgrnd
-          zsoi(j) = scalez*(exp(zecoeff*((j - nlev_equalspace)-0.5_r8))-1._r8) + nlev_equalspace * thick_equal
+          exponent_arg = zecoeff*((j - nlev_equalspace)-0.5_r8)
+          zsoi(j) = scalez*(exp(exponent_arg)-1._r8) + nlev_equalspace * thick_equal
        enddo
     else
        ! -----------------------------------------------------------------
@@ -171,7 +176,8 @@ contains
        ! default soil thickness settings.
        ! -----------------------------------------------------------------
        do j = 1, nlevgrnd
-          zsoi(j) = scalez*(exp(zecoeff*(j-0.5_r8))-1._r8)    !node depths
+          exponent_arg = zecoeff * (j-0.5_r8)
+          zsoi(j) = scalez*(exp(exponent_arg)-1._r8)    !node depths
        enddo
     end if
     deallocate(zsoi_in)
