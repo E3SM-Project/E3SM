@@ -299,39 +299,22 @@ contains
      real(r8) :: eff_por_top
      integer  :: c, l, fc     !indices
      
-     SHR_ASSERT_ALL((ubound(dsl)    == (/bounds%endc/)), errMsg(sourcefile,
-__LINE__))
-     SHR_ASSERT_ALL((ubound(soilresis)    == (/bounds%endc/)),
-errMsg(sourcefile, __LINE__))
+     SHR_ASSERT_ALL((ubound(dsl)    == (/bounds%endc/)), errMsg(sourcefile, __LINE__))
+     SHR_ASSERT_ALL((ubound(soilresis)    == (/bounds%endc/)), errMsg(sourcefile, __LINE__))
 
      associate(                                              &
-          dz                =>    col_pp%dz                             , & !
-Input:  [real(r8) (:,:) ]  layer thickness (m)                             
-          watsat            =>    soilstate_inst%watsat_col      , & ! Input:
-[real(r8) (:,:)] volumetric soil water at saturation (porosity)
-          bsw               =>    soilstate_inst%bsw_col             , & !
-Input:  [real(r8) (:,:) ]  Clapp and Hornberger "b"                        
-          sucsat            =>    soilstate_inst%sucsat_col          , & !
-Input:  [real(r8) (:,:) ]  minimum soil suction (mm)                       
+          dz                =>    col_pp%dz                             , & ! Input:  [real(r8) (:,:) ]  layer thickness (m)                             
+          watsat            =>    soilstate_inst%watsat_col      , & ! Input: [real(r8) (:,:)] volumetric soil water at saturation (porosity)
+          bsw               =>    soilstate_inst%bsw_col             , & ! Input:  [real(r8) (:,:) ]  Clapp and Hornberger "b"                        
+          sucsat            =>    soilstate_inst%sucsat_col          , & ! Input:  [real(r8) (:,:) ]  minimum soil suction (mm)                       
 !          eff_porosity      =>    soilstate_inst%eff_porosity_col    , & !
 !          Input:  [real(r8) (:,:) ]  effective porosity = porosity - vol_ice         
-          t_soisno          =>    temperature_inst%t_soisno_col      ,  & !
-Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)                       
+          t_soisno          =>    temperature_inst%t_soisno_col      ,  & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)                       
          
-          h2osoi_ice        =>    waterstate_inst%h2osoi_ice_col , & ! Input:
-[real(r8) (:,:)] ice lens (kg/m2)                       
-          h2osoi_liq        =>    waterstate_inst%h2osoi_liq_col  & ! Input:
-[real(r8) (:,:)] liquid water (kg/m2)                   
+          h2osoi_ice        =>    waterstate_inst%h2osoi_ice_col , & ! Input: [real(r8) (:,:)] ice lens (kg/m2)                       
+          h2osoi_liq        =>    waterstate_inst%h2osoi_liq_col  & ! Input: [real(r8) (:,:)] liquid water (kg/m2)                   
           )
 
-!xueyanz
-!open(12,file='t.txt')
-!open(13,file='eff_por_top.txt')
-!open(14,file='vwc_liq.txt')
-!open(15,file='aird.txt')
-!open(16,file='sucsat.txt')
-!open(17,file='bsw.txt')
-!open(18,file='watsat.txt')
    do fc = 1,num_nolakec
       c = filter_nolakec(fc)
       l = col_pp%landunit(c)  
@@ -339,8 +322,7 @@ Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)
          if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
             vwc_liq = max(h2osoi_liq(c,1),1.0e-6_r8)/(dz(c,1)*denh2o)
 ! eff_porosity not calculated til SoilHydrology
-             eff_por_top = max(0.01_r8,watsat(c,1)-min(watsat(c,1),
-h2osoi_ice(c,1)/(dz(c,1)*denice)))
+             eff_por_top = max(0.01_r8,watsat(c,1)-min(watsat(c,1), h2osoi_ice(c,1)/(dz(c,1)*denice)))
 
 ! calculate diffusivity and air free pore space
             aird = watsat(c,1)*(sucsat(c,1)/1.e7_r8)**(1./bsw(c,1))
@@ -360,20 +342,11 @@ h2osoi_ice(c,1)/(dz(c,1)*denice)))
             
             soilresis(c) = dsl(c)/(dg*eps*1.e3) + 20._r8
             soilresis(c) = min(1.e6_r8,soilresis(c))
-!            write(12,*) dg*eps/d0 !xueyanz
-!            write(13,*) eff_por_top
-!            write(14,*) vwc_liq
-!            write(15,*) aird
-!            write(16,*) sucsat(c,1)
-!            write(17,*) bsw(c,1)
-!            write(18,*) watsat(c,1)
          else if (col_pp%itype(c) == icol_road_perv) then
             soilresis(c) = 1.e6_r8
-         else if (col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) ==
-icol_shadewall) then
+         else if (col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) == icol_shadewall) then
             soilresis(c) = 1.e6_r8          
-         else if (col_pp%itype(c) == icol_roof .or. col_pp%itype(c) ==
-icol_road_imperv) then
+         else if (col_pp%itype(c) == icol_roof .or. col_pp%itype(c) == icol_road_imperv) then
             soilresis(c) = 1.e6_r8
          endif   
       else
@@ -437,31 +410,18 @@ icol_road_imperv) then
      real(r8) :: dg, vwc_liq
      integer  :: c, l, fc     !indices
      
-     SHR_ASSERT_ALL((ubound(dsl)    == (/bounds%endc/)), errMsg(sourcefile,
-__LINE__))
-     SHR_ASSERT_ALL((ubound(soilresis)    == (/bounds%endc/)),
-errMsg(sourcefile, __LINE__))
+     SHR_ASSERT_ALL((ubound(dsl)    == (/bounds%endc/)), errMsg(sourcefile, __LINE__))
+     SHR_ASSERT_ALL((ubound(soilresis)    == (/bounds%endc/)), errMsg(sourcefile, __LINE__))
 
      associate(                                              &
-          dz                =>    col_pp%dz                             , & !
-Input:  [real(r8) (:,:) ]  layer thickness (m)                             
-          watsat            =>    soilstate_inst%watsat_col      , & ! Input:
-[real(r8) (:,:)] volumetric soil water at saturation (porosity)
-          watmin            =>    soilstate_inst%watmin_col      , & ! col
-minimum volumetric soil water (nlevsoi)
-          bsw               =>    soilstate_inst%bsw_col             , & !
-Input:  [real(r8) (:,:) ]  Clapp and Hornberger "b"                        
-          h2osoi_ice        =>    waterstate_inst%h2osoi_ice_col , & ! Input:
-[real(r8) (:,:)] ice lens (kg/m2)                       
-          h2osoi_liq        =>    waterstate_inst%h2osoi_liq_col  & ! Input:
-[real(r8) (:,:)] liquid water (kg/m2)                   
+          dz                =>    col_pp%dz                             , & ! Input:  [real(r8) (:,:) ]  layer thickness (m)                             
+          watsat            =>    soilstate_inst%watsat_col      , & ! Input: [real(r8) (:,:)] volumetric soil water at saturation (porosity)
+          watmin            =>    soilstate_inst%watmin_col      , & ! col minimum volumetric soil water (nlevsoi)
+          bsw               =>    soilstate_inst%bsw_col             , & ! Input:  [real(r8) (:,:) ]  Clapp and Hornberger "b"                        
+          h2osoi_ice        =>    waterstate_inst%h2osoi_ice_col , & ! Input: [real(r8) (:,:)] ice lens (kg/m2)                       
+          h2osoi_liq        =>    waterstate_inst%h2osoi_liq_col  & ! Input: [real(r8) (:,:)] liquid water (kg/m2)                   
           )
 
-!xueyanz
-!open(14,file='vwc_liq.txt')
-!open(17,file='bsw.txt')
-!open(18,file='watsat.txt')
-!open(19,file='watmin.txt')
    do fc = 1,num_nolakec
       c = filter_nolakec(fc)
       l = col_pp%landunit(c)  
@@ -471,25 +431,19 @@ Input:  [real(r8) (:,:) ]  Clapp and Hornberger "b"
 
 ! calculate diffusivity and air free pore space
 
-            dg =
-2.2e-5*((watsat(c,1))**2.)*((1.-watmin(c,1)/watsat(c,1))**(2.+3*bsw(c,1)))
+            dg = 2.2e-5*((watsat(c,1))**2.)*((1.-watmin(c,1)/watsat(c,1))**(2.+3*bsw(c,1)))
             
 !      dsl(c) = dzmm(c,1)*max(0.001_r8,(0.8*eff_porosity(c,1) - vwc_liq)) &
 ! try arbitrary scaling (not top layer thickness)
 !            dsl(c) = 15._r8* (exp((1-min(1.,vwc_liq/watsat(c,1)))**5._r8)-1.) &
 !                 /(2.71828-1.)
-             dsl(c) = 50._r8* (exp((1-min(1.,vwc_liq/watsat(c,1)))**2.5_r8)-1.)
-&
+             dsl(c) = 50._r8* (exp((1-min(1.,vwc_liq/watsat(c,1)))**2.5_r8)-1.)&
                       /(2.71828-1.)          !xueyanz 
             dsl(c)=max(dsl(c),0._r8)
             dsl(c)=min(dsl(c),200._r8)
             
             soilresis(c) = dsl(c)/(dg*1.e3)
             soilresis(c) = min(1.e6_r8,soilresis(c))
-!            write(14,*) vwc_liq
-!            write(17,*) bsw(c,1)
-!            write(18,*) watsat(c,1)
-!            write(19,*) watmin(c,1)
          else if (col_pp%itype(c) == icol_road_perv) then
             soilresis(c) = 1.e6_r8
          else if (col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) ==

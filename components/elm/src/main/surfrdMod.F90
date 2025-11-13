@@ -1164,16 +1164,14 @@ contains
         allocate(tmp_hs_x   (1:nh3dc_per_lunit+1))
         allocate(tmp_hs_w   (1:nh3dc_per_lunit+1))
 
-        call ncd_io(ncid=ncid, varname='hs_w', flag='read',
-data=hs_w,dim1name=grlnd, readvar=readvar)
+        call ncd_io(ncid=ncid, varname='hs_w', flag='read', data=hs_w,dim1name=grlnd, readvar=readvar)
         if (.not. readvar) then
            call endrun(' ERROR: HILLSLOPE WIDTH FUNCTION NOT on surfdata
 file'//&
                 errMsg(__FILE__, __LINE__)) 
         end if
 
-        call ncd_io(ncid=ncid, varname='hs_x', flag='read',
-data=hs_x,dim1name=grlnd, readvar=readvar)
+        call ncd_io(ncid=ncid, varname='hs_x', flag='read', data=hs_x,dim1name=grlnd, readvar=readvar)
         if (.not. readvar) then
            call endrun(' ERROR: HILLSLOPE WIDTH FUNCTION NOT on surfdatafile'//&
                 errMsg(__FILE__, __LINE__)) 

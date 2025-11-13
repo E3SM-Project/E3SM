@@ -589,19 +589,16 @@ contains
           hs_w(bounds%begg:bounds%endg,j) = tmp_hs_w(j) / sum_tmp_hs_w
         end do
 
-       hs_x(bounds%begg:bounds%endg,2) = 0.5_r8 *
-hs_x(bounds%begg:bounds%endg,2)
+       hs_x(bounds%begg:bounds%endg,2) = 0.5_r8 * hs_x(bounds%begg:bounds%endg,2)
 
-        call ncd_io(ncid=ncid, varname='hs_w', flag='read', data=hs_w,
-dim1name=grlnd, readvar=readvar)
+        call ncd_io(ncid=ncid, varname='hs_w', flag='read', data=hs_w, dim1name=grlnd, readvar=readvar)
         if (.not. readvar) then
            call shr_sys_abort(' ERROR: HILLSLOPE WIDTH FUNCTION NOT on surfdata
 file'//&
                 errMsg(__FILE__, __LINE__)) 
         end if
 
-        call ncd_io(ncid=ncid, varname='hs_x', flag='read', data=hs_x,
-dim1name=grlnd, readvar=readvar)
+        call ncd_io(ncid=ncid, varname='hs_x', flag='read', data=hs_x, dim1name=grlnd, readvar=readvar)
         if (.not. readvar) then
            call shr_sys_abort(' ERROR: HILLSLOPE WIDTH FUNCTION NOT on surfdata
 file'//&
@@ -625,8 +622,7 @@ hillslope only exist in vegetated land unit
                lun_pp%hs_area(l)    = lun_pp%hs_area(l) + lun_pp%hs_dA(l,k)
              end do
 
-             hs_w_scale = ldomain%area(g) * lun_pp%wtgcell(l) * 1.e6_r8 /
-lun_pp%hs_area(l)
+             hs_w_scale = ldomain%area(g) * lun_pp%wtgcell(l) * 1.e6_r8 / lun_pp%hs_area(l)
              lun_pp%hs_w_itf(l,:) = hs_w_scale * lun_pp%hs_w_itf(l,:)
              lun_pp%hs_w_nod(l,:) = hs_w_scale * lun_pp%hs_w_nod(l,:)
  
@@ -643,14 +639,11 @@ lun_pp%hs_area(l)
 
              lun_pp%hs_dx_node(l,1) = 0.5*lun_pp%hs_dx(l,1)
              do k=2,nh3dc_per_lunit
-               lun_pp%hs_dx_node(l,k) = lun_pp%hs_x_nod(l,k) -
-lun_pp%hs_x_nod(l,k-1)
+               lun_pp%hs_dx_node(l,k) = lun_pp%hs_x_nod(l,k) - lun_pp%hs_x_nod(l,k-1)
              end do
 
-             if (abs(lun_pp%hs_area(l) - 1.e6_r8*ldomain%area(g) *
-lun_pp%wtgcell(l))>1.e-1) then
-                call shr_sys_abort(' ERROR: INCONSISTANCE AREA OF H3D
-HILLSLOPE'//&
+             if (abs(lun_pp%hs_area(l) - 1.e6_r8*ldomain%area(g) * lun_pp%wtgcell(l))>1.e-1) then
+                call shr_sys_abort(' ERROR: INCONSISTANCE AREA OF H3D HILLSLOPE'//&
                    errMsg(__FILE__, __LINE__)) 
              end if
           end if
@@ -747,11 +740,9 @@ HILLSLOPE'//&
       deallocate(tslope)
 
       allocate(std(bounds%begg:bounds%endg))
-      call ncd_io(ncid=ncid, varname='STD_ELEV', flag='read', data=std,
-dim1name=grlnd, readvar=readvar)
+      call ncd_io(ncid=ncid, varname='STD_ELEV', flag='read', data=std, dim1name=grlnd, readvar=readvar)
       if (.not. readvar) then
-         call shr_sys_abort(' ERROR: TOPOGRAPHIC STDdev (STD_ELEV) NOT on
-surfdata file'//&
+         call shr_sys_abort(' ERROR: TOPOGRAPHIC STDdev (STD_ELEV) NOT on surfdata file'//&
               errMsg(__FILE__, __LINE__)) 
       end if
       do c = begc,endc

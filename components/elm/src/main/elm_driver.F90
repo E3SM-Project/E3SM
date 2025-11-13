@@ -1990,47 +1990,27 @@ h3d points
     integer                                :: c0,c,l,k,fc,j
 
     associate(                                             &
-             qflx_evap_tot_col     =>   waterflux_vars%qflx_evap_tot_col ,&!
-Input(:)
-             qflx_tran_veg_col     =>   waterflux_vars%qflx_tran_veg_col ,&!
-Input(:)
-             qflx_rsub_sat_col     =>   waterflux_vars%qflx_rsub_sat_col ,&!
-Input:  [real(r8) (:)  ]  soil saturation excess [mm h2o/s]
-             qflx_drain_col        =>   waterflux_vars%qflx_drain_col    ,&!
-Input:  [real(r8) (:)  ]  sub-surface runoff (mm H2O /s)
-             qflx_surf_col         =>   waterflux_vars%qflx_surf_col     ,&!
-Input:  [real(r8) (:)  ]  surface runoff (mm H2O /s)
-             h2osfc_col            =>   waterstate_vars%h2osfc_col       ,&!
-Input:  [real(r8) (:)  ]  surface water (mm)
-             h2osoi_liq_col        =>   waterstate_vars%h2osoi_liq_col   ,&!
-Input:  [real(r8) (:,:)]  liquid water (kg/m2)
-             eflx_lh_tot_col       =>   energyflux_vars%eflx_lh_tot_col  ,&!
-Input:  [real(r8) (:)  ]  total latent heat flux (W/m**2) [+ to atm]
-             eflx_sh_tot_col       =>   energyflux_vars%eflx_sh_tot_col  ,&!
-Input:  [real(r8) (:)  ]  total sensible heat flux (W/m**2) [+ to atm]
-             qcharge_col           =>   soilhydrology_vars%qcharge_col   ,&!
-Input:  [real(r8) (:)  ]  aquifer recharge rate (mm h2o/s)        
+             qflx_evap_tot_col     =>   waterflux_vars%qflx_evap_tot_col ,&! Input(:)
+             qflx_tran_veg_col     =>   waterflux_vars%qflx_tran_veg_col ,&! Input(:)
+             qflx_rsub_sat_col     =>   waterflux_vars%qflx_rsub_sat_col ,&! Input:  [real(r8) (:)  ]  soil saturation excess [mm h2o/s]
+             qflx_drain_col        =>   waterflux_vars%qflx_drain_col    ,&! Input:  [real(r8) (:)  ]  sub-surface runoff (mm H2O /s)
+             qflx_surf_col         =>   waterflux_vars%qflx_surf_col     ,&! Input:  [real(r8) (:)  ]  surface runoff (mm H2O /s)
+             h2osfc_col            =>   waterstate_vars%h2osfc_col       ,&! Input:  [real(r8) (:)  ]  surface water (mm)
+             h2osoi_liq_col        =>   waterstate_vars%h2osoi_liq_col   ,&! Input:  [real(r8) (:,:)]  liquid water (kg/m2)
+             eflx_lh_tot_col       =>   energyflux_vars%eflx_lh_tot_col  ,&! Input:  [real(r8) (:)  ]  total latent heat flux (W/m**2) [+ to atm]
+             eflx_sh_tot_col       =>   energyflux_vars%eflx_sh_tot_col  ,&! Input:  [real(r8) (:)  ]  total sensible heat flux (W/m**2) [+ to atm]
+             qcharge_col           =>   soilhydrology_vars%qcharge_col   ,&! Input:  [real(r8) (:)  ]  aquifer recharge rate (mm h2o/s)        
 
-             qflx_evap_tot_lun     =>   h3d_vars%qflx_evap_tot_lun  ,&! output
-(:,:)
-             qflx_tran_veg_lun     =>   h3d_vars%qflx_tran_veg_lun  ,&! output
-(:,:)
-             qflx_rsub_sat_lun     =>   h3d_vars%qflx_rsub_sat_lun  ,&! output:
-[real(r8) (:,:) ]  soil saturation excess [mm h2o/s]
-             qflx_drain_lun        =>   h3d_vars%qflx_drain_lun    ,&! output:
-[real(r8) (:,:) ]  sub-surface runoff [mm h2o/s]
-             qflx_surf_lun         =>   h3d_vars%qflx_surf_lun      ,&! output:
-[real(r8) (:,:) ]  surface runoff [mm h2o/s]
-             h2osfc_lun            =>   h3d_vars%h2osfc_lun         ,&! Output:
-[real(r8) (:,:) ]  surface water (mm)
-             h2osoi_liq_lun        =>   h3d_vars%h2osoi_liq_lun     ,&! Output:
-[real(r8) (:,:) ]  liquid water (kg/m2)
-             eflx_lh_tot_lun       =>   h3d_vars%eflx_lh_tot_lun    ,&! Output:
-[real(r8) (:,:  ]  total latent heat flux (W/m**2) [+ to atm]
-             eflx_sh_tot_lun       =>   h3d_vars%eflx_sh_tot_lun    ,&! Output:
-[real(r8) (:,:  ]  total sensible heat flux (W/m**2) [+ to atm]
-             qflx_charge_lun       =>   h3d_vars%qflx_charge_lun    &! output:
-[real(r8) (:,:) ]  aquifer recharge rate (mm h2o/s)       
+             qflx_evap_tot_lun     =>   h3d_vars%qflx_evap_tot_lun  ,&! output (:,:)
+             qflx_tran_veg_lun     =>   h3d_vars%qflx_tran_veg_lun  ,&! output (:,:)
+             qflx_rsub_sat_lun     =>   h3d_vars%qflx_rsub_sat_lun  ,&! output: [real(r8) (:,:) ]  soil saturation excess [mm h2o/s]
+             qflx_drain_lun        =>   h3d_vars%qflx_drain_lun    ,&! output: [real(r8) (:,:) ]  sub-surface runoff [mm h2o/s]
+             qflx_surf_lun         =>   h3d_vars%qflx_surf_lun      ,&! output: [real(r8) (:,:) ]  surface runoff [mm h2o/s]
+             h2osfc_lun            =>   h3d_vars%h2osfc_lun         ,&! Output: [real(r8) (:,:) ]  surface water (mm)
+             h2osoi_liq_lun        =>   h3d_vars%h2osoi_liq_lun     ,&! Output: [real(r8) (:,:) ]  liquid water (kg/m2)
+             eflx_lh_tot_lun       =>   h3d_vars%eflx_lh_tot_lun    ,&! Output: [real(r8) (:,:  ]  total latent heat flux (W/m**2) [+ to atm]
+             eflx_sh_tot_lun       =>   h3d_vars%eflx_sh_tot_lun    ,&! Output: [real(r8) (:,:  ]  total sensible heat flux (W/m**2) [+ to atm]
+             qflx_charge_lun       =>   h3d_vars%qflx_charge_lun    &! output: [real(r8) (:,:) ]  aquifer recharge rate (mm h2o/s)       
              )
              
 
@@ -2039,10 +2019,6 @@ Input:  [real(r8) (:)  ]  aquifer recharge rate (mm h2o/s)
 
        c0 = filter_h3dc(fc)
        l  = col_pp%landunit(c0)
-
-       !write(iulog,*) '=====elm column => h3d column======='
-       !write(iulog,*) fc,num_h3dc,nh3dc_per_lunit
-       !write(iulog,*) c0,l
 
        if (lun_pp%hs_area(l) == 0._r8) cycle
 
@@ -2067,10 +2043,7 @@ Input:  [real(r8) (:)  ]  aquifer recharge rate (mm h2o/s)
           eflx_lh_tot_lun(l,k)   = eflx_lh_tot_col(c)
           eflx_sh_tot_lun(l,k)   = eflx_sh_tot_col(c)
 
-          !write(iulog,*) eflx_lh_tot_lun(l,k),eflx_lh_tot_col(c)
        end do
-
-       !write(iulog,*) eflx_lh_tot_lun(l,:)
 
      end do
      end associate
