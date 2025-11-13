@@ -3668,7 +3668,6 @@ commented out until "*** No rule to make target '.../libadios2pio-nm-lib.a'" iss
         <command name="load">oneapi/release/2025.2.0</command>
         <command name="load">netcdf/4.9.3c-4.6.2f</command>
         <command name="load">pnetcdf/1.14.0</command>
-        <command name="load">adios2/2.10.2</command>
         </modules>
       <modules mpilib="mpich1024">
         <command name="load">mpich-config/collective-tuning/1024</command>
@@ -3678,7 +3677,6 @@ commented out until "*** No rule to make target '.../libadios2pio-nm-lib.a'" iss
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <MAX_GB_OLD_TEST_DATA>0</MAX_GB_OLD_TEST_DATA>
     <environment_variables>
-        <env name="MPIR_CVAR_CH4_OFI_EAGER_THRESHOLD"></env>
         <env name="FI_CXI_DEFAULT_CQ_SIZE">131072</env>
         <env name="FI_CXI_CQ_FILL_PERCENT">20</env>
         <env name="RLIMITS"> </env>
