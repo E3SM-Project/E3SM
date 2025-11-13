@@ -7,7 +7,7 @@ module  zm_microphysics
    !----------------------------------------------------------------------------
    use shr_kind_mod,           only: r8=>shr_kind_r8
    use spmd_utils,             only: masterproc
-   use ppgrid,                 only: pcols, pver, pverp
+   use ppgrid,                 only: pver, pverp
    use physconst,              only: gravit, rair, tmelt, cpair, rh2o, r_universal, mwh2o, rhoh2o
    use physconst,              only: latvap, latice
    use activate_drop_mam,      only: actdrop_mam_calc
@@ -28,6 +28,7 @@ module  zm_microphysics
    save
 
    public :: zm_microphysics_register
+   public :: zm_microphysics_adjust
    public :: zm_mphyi
    public :: zm_mphy
 
@@ -111,6 +112,7 @@ subroutine zm_microphysics_register()
    ! Purpose: register pbuf variables for convective microphysics
    !----------------------------------------------------------------------------
    use physics_buffer, only : pbuf_add_field, dtype_r8
+   use ppgrid,         only: pcols
    !----------------------------------------------------------------------------
    
    ! detrained convective cloud water num concen.
@@ -196,8 +198,8 @@ end subroutine zm_mphyi
 
 !===================================================================================================
 
-subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,   qe,        &
-                   eps0,  jb,   jt,   jlcl, msg,   il2g,  grav,  cp,   rd,   aero, gamhat,    &
+subroutine zm_mphy(pcols, il2g, msg, grav, cp, rd, auto_fac, accr_fac, dcs, jb, jt, jlcl, &
+                   su, qu, mu, du, eu, zf, pm, te, qe, gamhat, eps0, cmel, cmei, aero, &
                    qc,    qi,   nc,   ni,   qcde,  qide,  ncde,  nide, rprd, sprd, frz,       &
                    wu,    qr,   qni,  nr,   ns,    qg,    ng,    qnide,nsde,                  &
                    autolm, accrlm, bergnm, fhtimm, fhtctm,    &
@@ -207,7 +209,7 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
                    accgrm, accglm, accgslm,accgsrm,accgirm,accgrim,accgrsm,accgsln,accgsrn,   &
                    accgirn,accsrim,acciglm,accigrm,accsirm,accigln,accigrn,accsirn,accgln,    &
                    accgrn ,accilm, acciln ,fallrm ,fallsm ,fallgm ,fallrn ,fallsn ,fallgn,    &
-                   fhmrm  ,dsfm, dsfn, auto_fac, accr_fac, dcs)
+                   fhmrm  ,dsfm, dsfn)
    
 
 ! Purpose:
@@ -223,34 +225,32 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
   implicit none
 
 ! input variables
+  integer,  intent(in) :: pcols                 ! declared column dimension size
+  integer,  intent(in) :: il2g                  ! number of columns in gathered arrays
+  integer,  intent(in) :: msg                   ! missing moisture vals
+  real(r8), intent(in) :: grav                  ! gravity
+  real(r8), intent(in) :: cp                    ! heat capacity of dry air
+  real(r8), intent(in) :: rd                    ! gas constant for dry air
+  integer,  intent(in) :: jb(pcols)             ! updraft base level
+  real(r8), intent(in) :: auto_fac              ! droplet-rain autoconversion enhancement factor
+  real(r8), intent(in) :: accr_fac              ! droplet-rain accretion enhancement factor
+  real(r8), intent(in) :: dcs                   ! autoconversion size threshold for cloud ice to snow (m)
+  integer,  intent(in) :: jt(pcols)             ! updraft plume top
+  integer,  intent(in) :: jlcl(pcols)           ! updraft lifting cond level
   real(r8), intent(in) :: su(pcols,pver)        ! normalized dry stat energy of updraft
   real(r8), intent(in) :: qu(pcols,pver)        ! spec hum of updraft
   real(r8), intent(in) :: mu(pcols,pver)        ! updraft mass flux
   real(r8), intent(in) :: du(pcols,pver)        ! detrainement rate of updraft
   real(r8), intent(in) :: eu(pcols,pver)        ! entrainment rate of updraft
-  real(r8), intent(in) :: cmel(pcols,pver)      ! condensation rate of updraft
-  real(r8), intent(in) :: cmei(pcols,pver)      ! condensation rate of updraft
   real(r8), intent(in) :: zf(pcols,pverp)       ! height of interfaces
   real(r8), intent(in) :: pm(pcols,pver)        ! pressure of env
   real(r8), intent(in) :: te(pcols,pver)        ! temp of env
   real(r8), intent(in) :: qe(pcols,pver)        ! spec. humidity of env
-  real(r8), intent(in) :: eps0(pcols)
   real(r8), intent(in) :: gamhat(pcols,pver)    ! gamma=L/cp(dq*/dT) at interface
-
-  integer, intent(in) :: jb(pcols)              ! updraft base level
-  integer, intent(in) :: jt(pcols)              ! updraft plume top
-  integer, intent(in) :: jlcl(pcols)            ! updraft lifting cond level
-  integer, intent(in) :: msg                    ! missing moisture vals
-  integer, intent(in) :: il2g                   ! number of columns in gathered arrays
-
+  real(r8), intent(in) :: eps0(pcols)           ! ???
+  real(r8), intent(in) :: cmel(pcols,pver)      ! condensation rate of updraft
+  real(r8), intent(in) :: cmei(pcols,pver)      ! condensation rate of updraft
   type(zm_aero_t), intent(in) :: aero           ! aerosol object
-
-  real(r8) grav                                 ! gravity
-  real(r8) cp                                   ! heat capacity of dry air
-  real(r8) rd                                   ! gas constant for dry air
-  real(r8) auto_fac                             ! droplet-rain autoconversion enhancement factor  
-  real(r8) accr_fac                             ! droplet-rain accretion enhancement factor
-  real(r8) dcs                                  ! autoconversion size threshold for cloud ice to snow (m)
 
 ! output variables
   real(r8), intent(out) :: qc(pcols,pver)       ! cloud water mixing ratio (kg/kg)
@@ -649,11 +649,12 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
   cwifrac = 0.5_r8
   retv    = 0.608_r8
   bergtsf = 1800._r8
+
  
   ! initialize multi-level fields
   do i=1,il2g
      do k=1,pver
-        q(i,k) = qu(i,k)         
+        q(i,k) = qu(i,k)
         tu(i,k)= su(i,k) - grav/cp*zf(i,k)
         t(i,k) = su(i,k) - grav/cp*zf(i,k)
         p(i,k) = 100._r8*pm(i,k)
@@ -677,7 +678,7 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
         qcic(i,k)  = 0._r8
         qiic(i,k)  = 0._r8
         ncic(i,k)  = 0._r8
-        niic(i,k)  = 0._r8 
+        niic(i,k)  = 0._r8
         qr(i,k)    = 0._r8
         qni(i,k)   = 0._r8
         qg(i,k)    = 0._r8
@@ -3207,6 +3208,126 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
   end if
 
 end subroutine zm_mphy
+
+!===================================================================================================
+
+subroutine zm_microphysics_adjust(pcols, ncol, pver, jt, msg, delt, zm_const, &
+                                 dp, qv, dl, dsdt, dqdt, rprd, microp_st)
+   !----------------------------------------------------------------------------
+   ! Purpose: adjust ZM microphysics variables to avoid negative water
+   !----------------------------------------------------------------------------
+   use zm_conv_types, only: zm_const_t
+   !----------------------------------------------------------------------------
+   ! Arguments
+   integer,                         intent(in   ) :: pcols           ! maximum number of columns
+   integer,                         intent(in   ) :: ncol            ! actual number of columns
+   integer,                         intent(in   ) :: pver            ! number of mid-point levels
+   integer,  dimension(pcols),      intent(in   ) :: jt              ! top index of deep convection
+   integer,                         intent(in   ) :: msg             ! number of levels to skip at model top
+   real(r8),                        intent(in   ) :: delt            ! model time-step                   [s]
+   type(zm_const_t),                intent(in   ) :: zm_const        ! derived type to hold ZM constants
+   real(r8), dimension(pcols,pver), intent(in   ) :: dp              ! pressure thickness                [Pa]
+   real(r8), dimension(pcols,pver), intent(in   ) :: qv              ! specific humidity                 [kg/kg]
+   real(r8), dimension(pcols,pver), intent(inout) :: dl              ! detraining cld h2o tend
+   real(r8), dimension(pcols,pver), intent(inout) :: dsdt            ! DSE tendency                      [K/s]
+   real(r8), dimension(pcols,pver), intent(inout) :: dqdt            ! specific humidity tendency        [kg/kg/s]
+   real(r8), dimension(pcols,pver), intent(inout) :: rprd            ! rain production rate              [?]
+   type(zm_microp_st),              intent(inout) :: microp_st       ! ZM microphysics data structure
+   !----------------------------------------------------------------------------
+   ! Local variables
+   real(r8) negadq
+   integer :: i,k,kk
+   !----------------------------------------------------------------------------
+   do k = msg + 1,pver
+#ifdef CPRCRAY
+!DIR$ CONCURRENT
+#endif
+         do i = 1,ncol
+            if (dqdt(i,k)*2._r8*delt+qv(i,k)<0._r8) then
+               negadq = dqdt(i,k)+0.5_r8*qv(i,k)/delt
+               dqdt(i,k) = dqdt(i,k)-negadq
+               !----------------------------------------------------------------
+               ! First evaporate precipitation from k layer to cloud top assuming that the preciptation
+               ! above will fall down and evaporate at k layer. So dsdt will be applied at k layer.
+               do kk=k,jt(i),-1
+                  if (negadq<0._r8) then
+                     !----------------------------------------------------------
+                     if (rprd(i,kk)> -negadq*dp(i,k)/dp(i,kk)) then
+                        ! precipitation is enough
+                        dsdt(i,k) = dsdt(i,k) + negadq*zm_const%latvap/zm_const%cpair
+                        if (rprd(i,kk)>microp_st%sprd(i,kk)) then
+                           ! if there is rain, evaporate it first
+                           if(rprd(i,kk)-microp_st%sprd(i,kk)<-negadq*dp(i,k)/dp(i,kk)) then
+                              ! if rain is not enough, evaporate snow and graupel
+                              dsdt(i,k) = dsdt(i,k) + (negadq+ (rprd(i,kk)-microp_st%sprd(i,kk))*dp(i,kk)/dp(i,k))*zm_const%latice/zm_const%cpair
+                              microp_st%sprd(i,kk) = negadq*dp(i,k)/dp(i,kk)+rprd(i,kk)
+                           end if
+                        else
+                           ! if there is not rain, evaporate snow and graupel
+                           microp_st%sprd(i,kk) = microp_st%sprd(i,kk) + negadq*dp(i,k)/dp(i,kk)
+                           dsdt(i,k)           = dsdt(i,k)           + negadq*zm_const%latice/zm_const%cpair
+                        end if
+                        rprd(i,kk) = rprd(i,kk)+negadq*dp(i,k)/dp(i,kk)
+                        negadq = 0._r8
+                     else
+                        ! precipitation is not enough. calculate the residue and evaporate next layer
+                        negadq = rprd(i,kk)*dp(i,kk)/dp(i,k)+negadq
+                        dsdt(i,k) = dsdt(i,k) - rprd(i,kk)         *zm_const%latvap/zm_const%cpair*dp(i,kk)/dp(i,k)
+                        dsdt(i,k) = dsdt(i,k) - microp_st%sprd(i,kk)*zm_const%latice/zm_const%cpair*dp(i,kk)/dp(i,k)
+                        microp_st%sprd(i,kk) = 0._r8
+                        rprd(i,kk) = 0._r8
+                     end if
+                     !----------------------------------------------------------
+                     if (negadq<0._r8) then
+                        if (dl(i,kk)> -negadq*dp(i,k)/dp(i,kk)) then
+                           ! first evaporate (detrained) cloud liquid water
+                           dsdt(i,k) = dsdt(i,k) + negadq*zm_const%latvap/zm_const%cpair
+                           microp_st%dnlf(i,kk) = microp_st%dnlf(i,kk)*(1._r8+negadq*dp(i,k)/dp(i,kk)/dl(i,kk))
+                           dl(i,kk)  = dl(i,kk)+negadq*dp(i,k)/dp(i,kk)
+                           negadq = 0._r8
+                        else
+                           ! if cloud liquid water is not enough then calculate the residual and evaporate the detrained cloud ice
+                           negadq = negadq + dl(i,kk)*dp(i,kk)/dp(i,k)
+                           dsdt(i,k) = dsdt(i,k) - dl(i,kk)*dp(i,kk)/dp(i,k)*zm_const%latvap/zm_const%cpair
+                           dl(i,kk) = 0._r8
+                           microp_st%dnlf(i,kk) = 0._r8 ! dnlg(i,kk) = 0._r8
+                           if (microp_st%dif(i,kk)> -negadq*dp(i,k)/dp(i,kk)) then
+                              dsdt(i,k) = dsdt(i,k) + negadq*(zm_const%latvap+zm_const%latice)/zm_const%cpair
+                              microp_st%dnif(i,kk) = microp_st%dnif(i,kk)*(1._r8+negadq*dp(i,k)/dp(i,kk)/microp_st%dif(i,kk))
+                              microp_st%dif(i,kk)  = microp_st%dif(i,kk)+negadq*dp(i,k)/dp(i,kk)
+                              negadq = 0._r8
+                           else
+                              ! if cloud ice is not enough, then calculate the residual and evaporate the detrained snow
+                              negadq = negadq + microp_st%dif(i,kk)*dp(i,kk)/dp(i,k)
+                              dsdt(i,k) = dsdt(i,k) - microp_st%dif(i,kk)*dp(i,kk)/dp(i,k)*(zm_const%latvap+zm_const%latice)/zm_const%cpair
+                              microp_st%dif(i,kk) = 0._r8
+                              microp_st%dnif(i,kk) = 0._r8
+                              if (microp_st%dsf(i,kk)> -negadq*dp(i,k)/dp(i,kk)) then
+                                 dsdt(i,k) = dsdt(i,k) + negadq*(zm_const%latvap+zm_const%latice)/zm_const%cpair
+                                 microp_st%dnsf(i,kk) = microp_st%dnsf(i,kk)*(1._r8+negadq*dp(i,k)/dp(i,kk)/microp_st%dsf(i,kk))
+                                 microp_st%dsf(i,kk)  = microp_st%dsf(i,kk)+negadq*dp(i,k)/dp(i,kk)
+                                 negadq = 0._r8
+                              else
+                                 ! if cloud ice is not enough, then calculate the residual and evaporate next layer
+                                 negadq = negadq + microp_st%dsf(i,kk)*dp(i,kk)/dp(i,k)
+                                 dsdt(i,k) = dsdt(i,k) - microp_st%dsf(i,kk)*dp(i,kk)/dp(i,k)*(zm_const%latvap+zm_const%latice)/zm_const%cpair
+                                 microp_st%dsf(i,kk) = 0._r8
+                                 microp_st%dnsf(i,kk) = 0._r8
+                              end if
+                           end if
+                        end if
+                     end if ! negadq<0._r8
+                     !----------------------------------------------------------
+                  end if ! negadq<0._r8
+               end do ! kk
+
+               if (negadq<0._r8) dqdt(i,k) = dqdt(i,k) - negadq
+
+            end if
+         end do ! i = 1,ncol
+      end do ! k = msg + 1,pver
+
+end subroutine zm_microphysics_adjust
 
 !===================================================================================================
 

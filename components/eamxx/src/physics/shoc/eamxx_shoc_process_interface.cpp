@@ -75,7 +75,7 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   add_field<Required>("p_mid",          scalar3d_mid, Pa,    grid_name, ps);
   add_field<Required>("p_int",          scalar3d_int, Pa,    grid_name, ps);
   add_field<Required>("pseudo_density", scalar3d_mid, Pa,    grid_name, ps);
-  add_field<Required>("phis",           scalar2d    , m2/s2, grid_name, ps);
+  add_field<Required>("phis",           scalar2d    , m2/s2, grid_name);
 
   // Input/Output variables
   add_field<Updated>("horiz_winds",   vector3d_mid,   m/s,     grid_name, ps);
