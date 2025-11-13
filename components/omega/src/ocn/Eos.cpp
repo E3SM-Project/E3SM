@@ -113,7 +113,7 @@ void Eos::init() {
               (EosTypeStr == "TEOS-10")) {
       eos->EosChoice = EosType::Teos10Eos;
    } else {
-      LOG_ERROR("Eos::init: Unknown EosType requested");
+      ABORT_ERROR("Eos::init: Unknown EosType requested");
    }
 } // end init
 
