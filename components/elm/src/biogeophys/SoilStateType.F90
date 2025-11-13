@@ -105,6 +105,12 @@ module SoilStateType
 
   end type soilstate_type
   !------------------------------------------------------------------------
+#ifdef CPRNVIDIA
+  logical, parameter :: using_nvhpc = .true.
+#else
+  logical, parameter :: using_nvhpc = .false.
+#endif
+
 contains
 
   !------------------------------------------------------------------------
@@ -469,7 +475,8 @@ contains
     ! Try to read soil information from the file.
     call ncd_io(ncid=ncid, varname='ZSOI', flag='read', data=zsoifl, dim1name=grlnd, readvar=readvar)
     if (.not. readvar ) then
-       if (ieee_support_halting(ieee_inexact)) then
+       !NOTE:  Workaround due to compiler issue with nvhpc 25.x when using -Ktrap=fp
+       if (using_nvhpc .and. ieee_support_halting(ieee_inexact)) then
           call ieee_set_flag(ieee_all,.false.)
           call ieee_set_halting_mode(ieee_inexact, .false.)
        end if 
