@@ -112,8 +112,8 @@
                             description="width of sheet beneath/around channel that contributes to melt within the channel"
 		            possible_values="positive real number"
 		/>
-		<nml_option name="config_SGH_chnl_max_area" type="real" default_value="500.0" units="m^2"
-                            description="max value for channel area.  If channel evolution leads to an area larger than this, it gets set back to this value.  Note this will violate mass conservation, but we also do not remove channel melt mass from the ice above, so that is already a mass conservation issue."
+		<nml_option name="config_SGH_chnl_area_shutoff" type="real" default_value="500.0" units="m^2"
+                            description="channel area above which channel melting is disabled for stability reasons."
 		            possible_values="positive real number"
 		/>
 		<nml_option name="config_SGH_include_pressure_melt" type="logical" default_value=".false." units="none"

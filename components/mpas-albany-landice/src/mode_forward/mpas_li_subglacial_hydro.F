@@ -1887,6 +1887,7 @@ module li_subglacial_hydro
       real (kind=RKIND), pointer :: config_SGH_incipient_channel_width
       real (kind=RKIND), pointer :: bedRoughMax
       logical, pointer :: config_SGH_include_pressure_melt
+      real (kind=RKIND), pointer :: config_SGH_chnl_area_shutoff
       real (kind=RKIND), dimension(:), pointer :: channelArea
       real (kind=RKIND), dimension(:), pointer :: channelMelt
       real (kind=RKIND), dimension(:), pointer :: channelPressureFreeze
@@ -1929,6 +1930,7 @@ module li_subglacial_hydro
       call mpas_pool_get_config(liConfigs, 'config_SGH_incipient_channel_width', config_SGH_incipient_channel_width)
       call mpas_pool_get_config(liConfigs, 'config_SGH_include_pressure_melt', config_SGH_include_pressure_melt)
       call mpas_pool_get_config(liConfigs, 'config_SGH_bed_roughness_max', bedRoughMax)
+      call mpas_pool_get_config(liConfigs, 'config_SGH_chnl_area_shutoff', config_SGH_chnl_area_shutoff)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
       call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
       call mpas_pool_get_array(hydroPool, 'channelArea', channelArea)
@@ -1994,6 +1996,12 @@ module li_subglacial_hydro
       channelMelt = (abs(channelDischarge * hydropotentialSlopeNormal) &  ! channel dissipation
                   +  abs(waterFlux * hydropotentialSlopeNormal * config_SGH_incipient_channel_width) & !some sheet dissipation
                   ) / latent_heat_ice
+      ! disable channel melting above area limit
+      do iEdge = 1, nEdgesSolve
+         if (channelArea(iEdge) > config_SGH_chnl_area_shutoff) then
+            channelMelt(iEdge) = 0.0_RKIND
+         endif
+      enddo
       channelPressureFreeze = -1.0_RKIND * iceMeltingPointPressureDependence * cp_freshwater * rho_water * &
          (channelDischarge + waterFlux * config_SGH_incipient_channel_width) &
          * waterPressureSlopeNormal / latent_heat_ice
@@ -2074,11 +2082,9 @@ module li_subglacial_hydro
       integer, dimension(:,:), pointer :: edgeSignOnCell
       real (kind=RKIND), dimension(:), pointer :: areaCell
       real (kind=RKIND), dimension(:), pointer :: dcEdge
-      real (kind=RKIND), pointer :: config_SGH_chnl_max_area
       integer, pointer :: nCellsSolve
       integer :: iCell, iEdgeOnCell, iEdge
 
-      call mpas_pool_get_config(liConfigs, 'config_SGH_chnl_max_area', config_SGH_chnl_max_area)
       call mpas_pool_get_subpool(block % structs, 'hydro', hydroPool)
       call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
       call mpas_pool_get_array(hydroPool, 'deltatSGH', deltatSGH)
@@ -2124,7 +2130,6 @@ module li_subglacial_hydro
       channelArea = channelChangeRate * deltatSGH + channelArea
       ! If sheet dissipation contributes to channel, there should be no need for a minimum channel size
       channelArea = max(1.0e-8_RKIND, channelArea)  ! make some tiny value when it goes negative
-      channelArea = min(config_SGH_chnl_max_area, channelArea) ! limit channel area to config-specified max value
 
    !--------------------------------------------------------------------
    end subroutine evolve_channel
