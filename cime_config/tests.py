@@ -144,10 +144,10 @@ _TESTS = {
 
     "e3sm_landice_developer" : {
         "tests"   : (
-            "SMS.ne30pg2_r05_IcoswISC30E3r5_gis20.IGELM_MLI.mali-gis20km",
-            "ERS.ne30pg2_r05_IcoswISC30E3r5_gis20.IGELM_MLI.mali-gis20km",
-            "SMS.ne30pg2_r05_IcoswISC30E3r5_gis20.BGWCYCL1850.allactive-gis20km",
-            "SMS.ne30pg2_r05_IcoswISC30E3r5_gis4to40.BGWCYCL1850.allactive-gis20km",
+            "SMS.ne30pg2_r05_IcoswISC30E3r5_gis4to40.IGELM_MLI.mali-gis",
+            "ERS.ne30pg2_r05_IcoswISC30E3r5_gis4to40.IGELM_MLI.mali-gis",
+            "SMS.ne30pg2_r05_IcoswISC30E3r5_gis4to40.BGWCYCL1850.allactive-gis",
+            "ERS.ne30pg2_r05_IcoswISC30E3r5_gis4to40.BGWCYCL1850.allactive-gis",
             "SMS.ne30_oECv3_gis.IGELM_MLI.elm-extrasnowlayers",
             "ERS_Ld5.TL319_oQU240wLI_gis4to40.MPAS_FOLISIO_JRA1p5.mpaso-jra_1958",
             "ERS_Ld5.TL319_oQU240wLI_ais8to30.MPAS_FOLISIO_JRA1p5.mpaso-jra_1958",
