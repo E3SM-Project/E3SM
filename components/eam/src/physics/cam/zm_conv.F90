@@ -651,7 +651,7 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
       do i = 1, ncol
          if (zm_param%zm_microp) then
             rliq(i) = rliq(i) + (dlf(i,k)+microp_st%dif(i,k)+microp_st%dsf(i,k))*dpp(i,k)/zm_const%grav
-            microp_st%rice(i) = microp_st%rice(i) \
+            microp_st%rice(i) = microp_st%rice(i) &
                               + (microp_st%dif(i,k)+microp_st%dsf(i,k))*dpp(i,k)/zm_const%grav
          else
             rliq(i) = rliq(i) + dlf(i,k)*dpp(i,k)/zm_const%grav
