@@ -623,6 +623,7 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
    ! stratosphere output
    integer  :: ihuge ! a huge integer
    real(r8) :: saodvis(pcols)               ! stratosphere extinction optical depth
+   character(len=256) :: error_str
    !----------------------------------------------------------------------------
 
    lchnk = state%lchnk
@@ -1170,10 +1171,10 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
                   end do
 
                   nerr_dopaer = nerr_dopaer + 1
-!                  if (nerr_dopaer >= nerrmax_dopaer) then
                   if (dopaer(i) < -1.e-10_r8) then
-                     write(iulog,*) '*** halting in '//subname//' after nerr_dopaer =', nerr_dopaer
-                     call endrun('exit from '//subname)
+                     write(error_str, *) 'ERROR: dopaer(', i, ')=', dopaer(i) ,' which is < -1.e-10_r8 (negative aerosol optical depth) in ',&
+                                          trim(subname),' [',trim(errmsg(__FILE__, __LINE__)),']'
+                     call endrun(trim(error_str))
                   end if
 
                end if
@@ -1423,6 +1424,7 @@ subroutine modal_aero_lw(list_idx, dt, state, pbuf, tauxar, clear_rh)
    real(r8) :: volf             ! volume fraction of insoluble aerosol
 
    character(len=*), parameter :: subname = 'modal_aero_lw'
+   character(len=256) :: error_str
    !----------------------------------------------------------------------------
 
    lchnk = state%lchnk
@@ -1578,8 +1580,12 @@ subroutine modal_aero_lw(list_idx, dt, state, pbuf, tauxar, clear_rh)
 
                   nerr_dopaer = nerr_dopaer + 1
                   if (nerr_dopaer >= nerrmax_dopaer .or. dopaer(i) < -1.e-10_r8) then
-                     write(iulog,*) '*** halting in '//subname//' after nerr_dopaer =', nerr_dopaer
-                     call endrun()
+                     write(error_str,*) &
+                        'ERROR: Maximum number of aerosol optical depth errors exceeded (nerrmax_dopaer = ', &
+                        nerrmax_dopaer, ') - OR - dopaer(', i, ') = ', dopaer(i), ' which is < -1.e-10_r8 in ', &
+                        trim(subname), ' [', trim(errmsg(__FILE__, __LINE__)),']'
+
+                     call endrun(trim(error_str))
                   end if
 
                end if
