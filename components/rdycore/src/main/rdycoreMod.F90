@@ -79,12 +79,12 @@ contains
     PetscCallA(RDySetup(rdy_, ierr))
  
     ! allocate memory for grid-level runoff dataset
-    PetscCallA(RDyGetNumLocalCells(rdy_, num_cells_owned, ierr))
+    PetscCallA(RDyGetNumOwnedCells(rdy_, num_cells_owned, ierr))
     allocate(total_runoff_data(num_cells_owned))
 
     ! get natural ID of owned cells
     allocate(natural_id_cells_owned(num_cells_owned))
-    PetscCallA(RDyGetLocalCellNaturalIDs(rdy_, num_cells_owned, natural_id_cells_owned, ierr))
+    PetscCallA(RDyGetOwnedCellNaturalIDs(rdy_, num_cells_owned, natural_id_cells_owned, ierr))
 
     ! get number of global cell
     PetscCallA(RDyGetNumGlobalCells(rdy_, num_cells_global, ierr))
