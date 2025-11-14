@@ -521,6 +521,7 @@ run (const std::string& filename,
           const std::string helper_name   = "transposed_"+fl;
           auto& temp = m_helper_fields.at(helper_name);
           transpose(count,temp);
+          temp.sync_to_host();
           scorpio::write_var(filename,count.name(),temp.get_internal_view_data<int,Host>());
         } else {
           scorpio::write_var(filename,count.name(),count.get_internal_view_data<int,Host>());
@@ -607,6 +608,7 @@ run (const std::string& filename,
         const std::string helper_name   = "transposed_"+fl;
         auto& temp = m_helper_fields.at(helper_name);
         transpose(f_out,temp);
+        temp.sync_to_host();
         scorpio::write_var(filename,field_name,temp.get_internal_view_data<Real,Host>());
       } else {
         scorpio::write_var(filename,field_name,f_out.get_internal_view_data<Real,Host>());
