@@ -1,0 +1,10 @@
+#!/bin/bash
+./xmlchange RUN_STARTDATE=2017-12-27
+./xmlchange CCSM_CO2_PPMV=407.0
+./atmchange initial_conditions::filename="/lus/flare/projects/E3SMinput/data/atm/scream/HICCUP/HICCUP.atm_era5.2017-12-27.ne256np4.L128.nc"
+./xmlchange SSTICE_DATA_FILENAME="/lus/flare/projects/E3SMinput/data/atm/scream/HICCUP/HICCUP.sst_noaa.2017-2018.nc"
+./xmlchange SSTICE_GRID_FILENAME="/lus/flare/projects/E3SMinput/data/ocn/docn7/domain.ocn.0.25x0.25.c20190221.nc"
+./xmlchange SSTICE_YEAR_ALIGN=2017
+./xmlchange SSTICE_YEAR_START=2017
+./xmlchange SSTICE_YEAR_END=2018
+
