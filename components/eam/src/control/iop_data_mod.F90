@@ -1147,7 +1147,6 @@ endif !scm_observed_aero
        have_srf, srf(1), fill_ends, dplevs, nlev,psobs, hyam, hybm, cldliqobs, status )
      if ( status .ne. nf90_noerr ) then
        have_cldliq = .false.
-       cldliqobs = 0.0_r8
      else
        have_cldliq = .true.
      endif
