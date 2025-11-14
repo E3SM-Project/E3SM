@@ -182,7 +182,7 @@ $$
 
 ### 3.4 Mixed layer depth calculation
 
-Both the FK11 and B23 formulations are critically dependent on determination of the mixed layer depth. For this parameterization, the mixed layer depth will use the density threshold criterion ([Holte and Talley, 2009](https://journals.ametsoc.org/view/journals/atot/26/9/2009jtecho543_1.xml), their option 1).  The mixed layer depth is defined as the pressure where
+Both the FK11 and B23 formulations are critically dependent on determination of the mixed layer depth (MLD). For this parameterization, the mixed layer depth will use the density threshold criterion ([Holte and Talley, 2009](https://journals.ametsoc.org/view/journals/atot/26/9/2009jtecho543_1.xml), their option 1).  The mixed layer depth is defined as the pressure where
 
 $$
 \left|\rho(p) - \rho(p_0)\right| \geq \Delta \rho_t
@@ -230,7 +230,7 @@ class SubmesoEddy{
         // Compute methods for the submesoscale eddy parameterization
         void computeDenMLD(...);
         void computeSubmesoEddyVelocity(...);
-        void computeBuoyGrad(...);
+        void computeBuoyGrad(const Array2DReal &SpecVol, array2DReal &BuoyGrad);
         SubmesoEddy(const HorzMesh *Mesh, const VertCoord *VCoord, Config *Options); // Class constructor
 
     private:
@@ -264,8 +264,12 @@ The constructor will store necessary static mesh information as private variable
 SubmesoEddy::SubmesoEddy(const HorzMesh *Mesh, const VertCoord *VCoord, Config *Options)
 ```
 
-would probably also need to register fields (buoy, buoygrad, etc..)
+#### 4.2.1 Initialization
 
+The initialization method will read the config parameters and register necessary fields for the calculation and diagnostic output.
+```c++
+int SubmesoEddy::init(Config *Options)
+```
 
 #### 4.2.2 Density MLD calculation
 
@@ -284,23 +288,23 @@ This can be rearranged to
 
 $$
 \frac{\alpha(x,y,10,t) - \alpha(x,y,z,t)}{\alpha(x,y,z,t)} = \frac{\alpha(x,y,10,t)}{\alpha(x,y,z,t)} - 1 \geq 0.03 \alpha(x,y,10,t)
-$$
+$$ (mld-defn)
 
-This form allows for easier use of the `SpecVol` variable in Omega  with minimal conversions in the calculation.
+This form allows for easier use of the `SpecVol` variable in Omega  with minimal conversions in the calculation.  The specific volumes in the calculation are referenced to pressure at 10m.  The fundamental `SpecVol` calculation in Omega is
 
 ```c++
-void SubmesoEddy:computeDenMLD(const Array2DReal )
-{
-   compute reference level in pressure
-   compute specvol at every level referenced to the reference pressure
-   compute specVolChange at all depths
-   find minimum in column and interpolate around it
-   verify that the threshold is increasing
-   set to bottom if not found
-}
+SpecVol(ICell, K) =
+    calcRefProfile(Pressure(ICell, K)) +
+    calcDelta(LocSpecVolPCoeffs, KVec, Pressure(ICell, K));
 ```
 
-#### 4.2.3 buoyancy gradient calculation
+Here, the computation of `LocSpecVolPCoeffs` is the most computationally expensive (the 75-term polynomial).  This calculation is only dependent on $\Theta$ and $S$ and can thus be reused for any displacement case.  With calculation of a `SpecVol10mDisplaced` variable, calculation of the mixed layer depth follows from [](#mld-defn).  If the MLD falls between two model layers, linear interpolation will be used to find the final MLD.
+
+```c++
+void computeDenMLD(Array1DReal &DenMLD, const Array2DReal &SpecVol, const Array2DReal &ZInterface)
+```
+
+#### 4.2.3 Buoyancy gradient calculation
 
 For Omega, we will define the buoyancy as
 
@@ -316,42 +320,20 @@ $$
 
 This form is preferred since Omega calculates `SpecVol` and not density itself.  Since the buoyancy is only used for a horizontal gradient the reference pressure is not a consideration.
 
-The calculation without the Kokkos declarations would be similar to
+The function will take `SpecVol` as an input and return the buoyancy gradient for use in the submesoscale eddy velocity computation.
 
 ```c++
-void SubmesoEddy::computeBuoyGrad( )
-{
-    // Compute buoyancy
-    for (int J = 0; J < NCellsAll; ++J) {
-        for (int K = 0; K < VecLength; ++K) {
-            Buoy(J,K) = Gravity * (1 - Rho_0 * SpecVol(J,K))
-        }
-    }
-
-    for (int iEdge = 0; IEdge < NEdgesOwned; ++IEdge){
-    // compute gradient of buoyancy, only the second term will be non zero
-      const I4 KStart      = KChunk * VecLength;
-      const I4 JCell0      = CellsOnEdge(IEdge, 0);
-      const I4 JCell1      = CellsOnEdge(IEdge, 1);
-      const Real InvDcEdge = 1._Real / DcEdge(IEdge);
-
-      for (int KVec = 0; KVec < VecLength; ++KVec) {
-         const I4 K = KStart + KVec;
-         BuoyGrad(IEdge, K) = - Gravity * Rho_0 * (Buoy(JCell1, K) - Buoy(JCell0, K)) * InvDcEdge;
-      }
-    }
-}
+void SubmesoEddy::computeBuoyGrad(const Array2DReal &SpecVol, array2DReal &BuoyGrad)
+{}
 ```
 
-Both of these loops would be wrapped in the necessary Kokkos templates.
+#### 4.2.4 Submesoscale eddy velocity
 
-#### 4.2.4 submesoscale eddy velocity
+The horizontal buoyancy gradient averaged over the mixed layer is then used in [](#submeso-definition) to compute the submesoscale eddy stream function.  The vertical divergence of the stream function is then used to create a `NormalVelocityMLE`.  This term will be added to the `NormalVelocity` for use in the advection tendencies.
 
-needs -
-average buoygrad over MLD
-get struct funct
-create normalVelMLE
-
+```c++
+void SubmesoEddy::computeMLIVel(Array2DReal NormalMLIVelocity, const Array2DReal BuoyGrad, const Array1DReal DenMLD, const Array2DReal ZInterface)
+```
 ## 5. Testing
 
 ### Test: Convergence to an exact solution
