@@ -1132,7 +1132,7 @@ contains
     ! !USES:
     use decompMod,  only : get_proc_global
     use elm_varpar, only : nlevsno, nlevlak, nlevgrnd, nlevurb
-    use elm_varctl, only : single_column, nsrest, nsrStartup
+    use elm_varctl, only : single_column, scm_multcols, nsrest, nsrStartup
     !
     ! !ARGUMENTS:
     type(file_desc_t), intent(inout) :: ncid
@@ -1149,7 +1149,7 @@ contains
 
     ! Get relevant sizes
 
-    if ( .not. single_column .or. nsrest /= nsrStartup )then
+    if ( (.not. single_column .and. .not. scm_multcols) .or. nsrest /= nsrStartup )then
        call get_proc_global(ng=numg, nt=numt, nl=numl, nc=numc, np=nump, nCohorts=numCohort)
        call check_dim(ncid, nameg, numg)
        call check_dim(ncid, namet, numt)
