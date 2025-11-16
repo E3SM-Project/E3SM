@@ -301,7 +301,7 @@ contains
         fEdge(:) = config_isomip_plus_coriolis_parameter
         fVertex(:) = config_isomip_plus_coriolis_parameter
 
-        if(config_land_ice_flux_mode == 'coupled') then
+        if(config_land_ice_draft_mode == 'pressure-dependent') then
           call mpas_pool_get_array(statePool, 'effectiveDensityInLandIce', effectiveDensityInLandIce, 1)
           effectiveDensityInLandIce(:) = config_isomip_plus_effective_density
         end if
@@ -684,9 +684,9 @@ contains
 
 
       call mpas_pool_get_config(configPool, 'config_land_ice_flux_mode', config_land_ice_flux_mode)
-      if(config_land_ice_flux_mode .ne. 'standalone' .and. config_land_ice_flux_mode .ne. 'coupled') then
-         call mpas_log_write( 'Validation failed for isomip_plus. config_land_ice_flux_mode must either'// &
-            ' be standalone or coupled.', MPAS_LOG_CRIT)
+      if(config_land_ice_flux_mode .ne. 'prognostic') then
+         call mpas_log_write( 'Validation failed for isomip_plus. config_land_ice_flux_mode must be'// &
+            ' prognostic.', MPAS_LOG_CRIT)
          iErr = 1
          return
       end if
