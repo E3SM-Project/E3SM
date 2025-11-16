@@ -127,7 +127,7 @@ contains
 
       ! Set default return code and exit if not needed
       ierr = 0
-      if ( (trim(config_land_ice_flux_mode) /= 'coupled') ) return
+      if ( .not. config_use_land_ice_pressure ) return
 
       ! Retrieve forcing and state variables
       call mpas_pool_get_array(forcingPool, 'landIceFloatingMask', &
