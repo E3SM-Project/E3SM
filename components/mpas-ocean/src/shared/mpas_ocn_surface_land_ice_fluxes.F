@@ -837,43 +837,26 @@ contains
       isomipOn         = .false.
       jenkinsOn        = .false.
       hollandJenkinsOn = .false.
+      landIcePressureOn = .false.
       cpLandIce        = 0.0_RKIND
       rhoLandIce       = 0.0_RKIND
       ISOMIPgammaT     = 0.0_RKIND
 
       !*** Determine whether land ice fluxes are on
 
+      if ( config_use_land_ice_pressure ) &
+         landIcePressureOn = .true.
+
       select case (trim(config_land_ice_flux_mode))
       case ('data','Data','DATA')
-         landIcePressureOn = .true.
          landIceFluxesOn = .true.
          landIceDataOn = .true.
-         landIceStandaloneOn = .false.
-         landIceCoupledOn = .false.
-      case ('standalone','Standalone','STANDALONE')
-         landIcePressureOn = .true.
+      case ('prognostic','Prognostic','PROGNOSTIC')
          landIceFluxesOn = .true.
          landIceDataOn = .false.
-         landIceStandaloneOn = .true.
-         landIceCoupledOn = .false.
-      case ('coupled','Coupled','COUPLED')
-         landIcePressureOn = .true.
-         landIceFluxesOn = .true.
-         landIceDataOn = .false.
-         landIceStandaloneOn = .false.
-         landIceCoupledOn = .true.
-      case ('pressure_only','Pressure_Only','PRESSURE_ONLY')
-         landIcePressureOn = .true.
-         landIceFluxesOn = .false.
-         landIceDataOn = .false.
-         landIceStandaloneOn = .false.
-         landIceCoupledOn = .false.
       case ('off','Off','OFF')
-         landIcePressureOn = .false.
          landIceFluxesOn = .false.
          landIceDataOn = .false.
-         landIceStandaloneOn = .false.
-         landIceCoupledOn = .false.
       case default
          call mpas_log_write( ' Error: Incorrect choice of config_land_ice_flux_mode: '// config_land_ice_flux_mode)
          err = 1

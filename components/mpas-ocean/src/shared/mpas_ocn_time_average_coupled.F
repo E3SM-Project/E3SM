@@ -108,7 +108,7 @@ module ocn_time_average_coupled
         !$omp end do
         !$omp end parallel
 
-        if(trim(config_land_ice_flux_mode) == 'coupled') then
+        if(trim(config_land_ice_flux_mode) == 'prognostic') then
            call mpas_pool_get_array(forcingPool, 'avgLandIceBoundaryLayerTracers', avgLandIceBoundaryLayerTracers)
            call mpas_pool_get_array(forcingPool, 'avgLandIceTracerTransferVelocities', avgLandIceTracerTransferVelocities)
            call mpas_pool_get_array(forcingPool, 'avgEffectiveDensityInLandIce', avgEffectiveDensityInLandIce)
@@ -125,8 +125,7 @@ module ocn_time_average_coupled
         end if
 
         ! Set up polar fields if necessary
-        if(trim(config_land_ice_flux_mode) == 'standalone' .or. trim(config_land_ice_flux_mode) == 'data' .or. &
-           trim(config_land_ice_flux_mode) == 'coupled') then
+        if(trim(config_land_ice_flux_mode) == 'prognostic' .or. trim(config_land_ice_flux_mode) == 'data') then
            call mpas_pool_get_array(forcingPool, 'avgLandIceFreshwaterFlux', avgLandIceFreshwaterFlux)
            call mpas_pool_get_array(forcingPool, 'avgLandIceHeatFlux', avgLandIceHeatFlux)
 
@@ -362,13 +361,23 @@ module ocn_time_average_coupled
         !$omp end do
         !$omp end parallel
 
-        if(trim(config_land_ice_flux_mode) == 'coupled') then
+        if(trim(config_land_ice_draft_mode) == 'pressure-dependent') then
            call mpas_pool_get_array(statePool, 'effectiveDensityInLandIce', effectiveDensityInLandIce, timeLevel)
+           call mpas_pool_get_array(forcingPool, 'avgEffectiveDensityInLandIce', avgEffectiveDensityInLandIce)
+           !$omp parallel
+           !$omp do schedule(runtime)
+           do iCell = 1, nCells
+              avgEffectiveDensityInLandIce(iCell) = ( avgEffectiveDensityInLandIce(iCell) * nAccumulatedCoupled &
+                 + effectiveDensityInLandIce(iCell) ) / ( nAccumulatedCoupled + 1)
+           end do
+           !$omp end do
+           !$omp end parallel
+        endif
+
+        if(trim(config_land_ice_flux_mode) == 'prognostic') then
 
            call mpas_pool_get_array(forcingPool, 'avgLandIceBoundaryLayerTracers', avgLandIceBoundaryLayerTracers)
            call mpas_pool_get_array(forcingPool, 'avgLandIceTracerTransferVelocities', avgLandIceTracerTransferVelocities)
-           call mpas_pool_get_array(forcingPool, 'avgEffectiveDensityInLandIce', avgEffectiveDensityInLandIce)
-
 
            !$omp parallel
            !$omp do schedule(runtime)
@@ -377,16 +386,13 @@ module ocn_time_average_coupled
                  + landIceBoundaryLayerTracers(:, iCell) ) / ( nAccumulatedCoupled + 1 )
               avgLandIceTracerTransferVelocities(:, iCell) = ( avgLandIceTracerTransferVelocities(:, iCell) * nAccumulatedCoupled &
                  + landIceTracerTransferVelocities(:, iCell) ) / ( nAccumulatedCoupled + 1)
-              avgEffectiveDensityInLandIce(iCell) = ( avgEffectiveDensityInLandIce(iCell) * nAccumulatedCoupled &
-                 + effectiveDensityInLandIce(iCell) ) / ( nAccumulatedCoupled + 1)
            end do
            !$omp end do
            !$omp end parallel
         end if
 
         ! Accumulate polar fields if necessary
-        if(trim(config_land_ice_flux_mode) == 'standalone' .or. trim(config_land_ice_flux_mode) == 'data' .or. &
-           trim(config_land_ice_flux_mode) == 'coupled') then
+        if(trim(config_land_ice_flux_mode) == 'prognostic' .or. trim(config_land_ice_flux_mode) == 'data') then
            call mpas_pool_get_array(forcingPool, 'avgLandIceFreshwaterFlux', avgLandIceFreshwaterFlux)
            call mpas_pool_get_array(forcingPool, 'landIceFreshwaterFlux', landIceFreshwaterFlux)
            call mpas_pool_get_array(forcingPool, 'avgLandIceHeatFlux', avgLandIceHeatFlux)

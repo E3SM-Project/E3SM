@@ -143,7 +143,8 @@ module ocn_time_integration_rk4
       logical, pointer :: config_verify_not_dry
       logical, pointer :: config_prevent_drying
       logical, pointer :: config_zero_drying_velocity
-      character (len=StrKIND), pointer :: config_land_ice_flux_mode
+      logical, pointer :: config_use_land_ice_pressure
+      character (len=StrKIND), pointer :: config_land_ice_draft_mode
 
       ! Diagnostics Indices
 
@@ -211,7 +212,8 @@ module ocn_time_integration_rk4
       call mpas_pool_get_config(domain % configs, 'config_use_freq_filtered_thickness', config_use_freq_filtered_thickness)
       call mpas_pool_get_config(domain % configs, 'config_use_GM', config_use_GM)
       call mpas_pool_get_config(domain % configs, 'config_use_cvmix_kpp', config_use_cvmix_kpp)
-      call mpas_pool_get_config(domain % configs, 'config_land_ice_flux_mode', config_land_ice_flux_mode)
+      call mpas_pool_get_config(domain % configs, 'config_use_land_ice_pressure', config_use_land_ice_pressure)
+      call mpas_pool_get_config(domain % configs, 'config_land_ice_draft_mode', config_land_ice_draft_mode)
       call mpas_pool_get_config(domain % configs, 'config_disable_vel_all_tend', config_disable_vel_all_tend)
       call mpas_pool_get_config(domain % configs, 'config_disable_thick_all_tend', config_disable_thick_all_tend)
       call mpas_pool_get_config(domain % configs, 'config_disable_tr_all_tend', config_disable_tr_all_tend)
@@ -856,7 +858,8 @@ module ocn_time_integration_rk4
          block => block % next
       end do
 
-      if (trim(config_land_ice_flux_mode) == 'coupled') then
+      if ( config_use_land_ice_pressure .and. &
+           config_land_ice_draft_mode == 'pressure-dependent') then
          call mpas_timer_start("RK4-effective density halo")
          call mpas_pool_get_subpool(domain % blocklist % structs, 'state', statePool)
          call mpas_pool_get_field(statePool, 'effectiveDensityInLandIce', effectiveDensityField, 2)
