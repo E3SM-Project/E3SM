@@ -122,7 +122,6 @@ module ocn_core_interface
       logical, pointer :: landIcePressurePKGActive
       logical, pointer :: dataLandIceFluxesPKGActive
       logical, pointer :: landIceFluxesPKGActive
-      logical, pointer :: landIceCouplingPKGActive
       logical, pointer :: landIceThermalForcing3DPKGActive
       logical, pointer :: dataSubglacialRunoffFluxPKGActive
       logical, pointer :: thicknessBulkPKGActive
@@ -193,6 +192,7 @@ module ocn_core_interface
       logical, pointer :: config_use_bulk_wind_stress
       logical, pointer :: config_use_bulk_thickness_flux
       logical, pointer :: config_compute_active_tracer_budgets
+      logical, pointer :: config_use_land_ice_pressure
       character (len=StrKIND), pointer :: config_land_ice_flux_mode
       character (len=StrKIND), pointer :: config_glc_thermal_forcing_coupling_mode
       character (len=StrKIND), pointer :: config_subglacial_runoff_mode
@@ -307,26 +307,20 @@ module ocn_core_interface
       !
       ! test for land ice pressure, landIcePressurePKG
       ! test for land ice fluxes, landIceFluxesPKG
-      ! test for land ice coupling, landIceCouplingPKG
       !
       call mpas_pool_get_package(packagePool, 'landIcePressurePKGActive', landIcePressurePKGActive)
       call mpas_pool_get_package(packagePool, 'dataLandIceFluxesPKGActive', &
                                  dataLandIceFluxesPKGActive)
       call mpas_pool_get_package(packagePool, 'landIceFluxesPKGActive', landIceFluxesPKGActive)
-      call mpas_pool_get_package(packagePool, 'landIceCouplingPKGActive', landIceCouplingPKGActive)
+      call mpas_pool_get_config(configPool, 'config_use_land_ice_pressure', config_use_land_ice_pressure)
       call mpas_pool_get_config(configPool, 'config_land_ice_flux_mode', config_land_ice_flux_mode)
-      if ( trim(config_land_ice_flux_mode) == 'pressure_only' ) then
+      if ( config_use_land_ice_pressure ) then
          landIcePressurePKGActive = .true.
-      else if ( trim(config_land_ice_flux_mode) == 'data' ) then
-         landIcePressurePKGActive = .true.
+      end if
+      if ( trim(config_land_ice_flux_mode) == 'data' ) then
          dataLandIceFluxesPKGActive = .true.
-      else if ( trim(config_land_ice_flux_mode) == 'standalone' ) then
-         landIcePressurePKGActive = .true.
+      else if ( trim(config_land_ice_flux_mode) == 'prognostic' ) then
          landIceFluxesPKGActive = .true.
-      else if ( trim(config_land_ice_flux_mode) == 'coupled' ) then
-         landIcePressurePKGActive = .true.
-         landIceFluxesPKGActive = .true.
-         landIceCouplingPKGActive = .true.
       end if
 
 
