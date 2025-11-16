@@ -447,6 +447,7 @@
 <config_frazil_use_surface_pressure>.false.</config_frazil_use_surface_pressure>
 
 <!-- land_ice -->
+<config_use_land_ice_pressure>.true.</config_use_land_ice_pressure>
 <config_land_ice_draft_mode>'pressure-dependent'</config_land_ice_draft_mode>
 <config_land_ice_draft_mode ocn_grid="oQU240wLI">'data'</config_land_ice_draft_mode>
 <config_land_ice_draft_mode ocn_grid="ECwISC30to60E1r2">'data'</config_land_ice_draft_mode>
@@ -462,21 +463,6 @@
 
 <!-- land_ice_fluxes -->
 <config_land_ice_flux_mode>'off'</config_land_ice_flux_mode>
-<config_land_ice_flux_mode ocn_grid="oQU240wLI">'pressure_only'</config_land_ice_flux_mode>
-<config_land_ice_flux_mode ocn_grid="oEC60to30v3wLI">'pressure_only'</config_land_ice_flux_mode>
-<config_land_ice_flux_mode ocn_grid="ECwISC30to60E1r2">'pressure_only'</config_land_ice_flux_mode>
-<config_land_ice_flux_mode ocn_grid="oRRS30to10v3wLI">'pressure_only'</config_land_ice_flux_mode>
-<config_land_ice_flux_mode ocn_grid="SOwISC12to60E2r4">'pressure_only'</config_land_ice_flux_mode>
-<config_land_ice_flux_mode ocn_grid="ECwISC30to60E2r1">'pressure_only'</config_land_ice_flux_mode>
-<config_land_ice_flux_mode ocn_grid="IcoswISC30E3r5">'pressure_only'</config_land_ice_flux_mode>
-<config_land_ice_flux_mode ocn_grid="IcosXISC30E3r7">'pressure_only'</config_land_ice_flux_mode>
-<config_land_ice_flux_mode ocn_grid="FRISwISC08to60E3r1">'pressure_only'</config_land_ice_flux_mode>
-<config_land_ice_flux_mode ocn_grid="FRISwISC04to60E3r1">'pressure_only'</config_land_ice_flux_mode>
-<config_land_ice_flux_mode ocn_grid="FRISwISC02to60E3r1">'pressure_only'</config_land_ice_flux_mode>
-<config_land_ice_flux_mode ocn_grid="FRISwISC01to60E3r1">'pressure_only'</config_land_ice_flux_mode>
-<config_land_ice_flux_mode ocn_grid="RRSwISC6to18E3r5">'pressure_only'</config_land_ice_flux_mode>
-<config_land_ice_flux_mode ocn_grid="SOwISC12to30E3r3">'pressure_only'</config_land_ice_flux_mode>
-<config_land_ice_flux_mode ocn_grid="SOwISC12to30E3r4">'pressure_only'</config_land_ice_flux_mode>
 <config_land_ice_flux_formulation>'Jenkins'</config_land_ice_flux_formulation>
 <config_land_ice_flux_useHollandJenkinsAdvDiff>.false.</config_land_ice_flux_useHollandJenkinsAdvDiff>
 <config_land_ice_flux_attenuation_coefficient>10.0</config_land_ice_flux_attenuation_coefficient>

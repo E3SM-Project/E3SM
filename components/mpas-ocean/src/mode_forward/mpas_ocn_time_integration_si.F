@@ -3141,7 +3141,8 @@ module ocn_time_integration_si
          call ocn_reconstruct_eddy_vectors(meshPool)
       end if
 
-      if (trim(config_land_ice_flux_mode) == 'coupled') then
+      if ( config_use_land_ice_pressure .and. &
+           config_land_ice_draft_mode == 'pressure-dependent') then
          call mpas_timer_start("si effective density halo")
          call mpas_pool_get_field(statePool, &
                                  'effectiveDensityInLandIce', &

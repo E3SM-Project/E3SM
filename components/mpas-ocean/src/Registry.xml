@@ -1095,6 +1095,10 @@
 		/>
 	</nml_record>
 	<nml_record name="land_ice" mode="init;forward">
+		<nml_option name="config_use_land_ice_pressure" type="logical" default_value=".false."
+					description="If .true. then applies landIcePressure field"
+					possible_values=".true. and .false."
+		/>
 		<nml_option name="config_land_ice_draft_mode" type="character" default_value="pressure-dependent"
 					description="Selects the mode in which land-ice draft is computed."
 					possible_values="'data', 'pressure-dependent'"
@@ -1107,7 +1111,7 @@
 	<nml_record name="land_ice_fluxes" mode="init;forward">
 		<nml_option name="config_land_ice_flux_mode" type="character" default_value="off"
 					description="Selects the mode in which land-ice fluxes are computed."
-					possible_values="'off','pressure_only', 'data', 'standalone','coupled'"
+					possible_values="'off', 'data', 'prognostic'"
 		/>
 		<nml_option name="config_land_ice_flux_formulation" type="character" default_value="Jenkins"
 					description="Name of land-ice flux formulation."

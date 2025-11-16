@@ -1732,6 +1732,14 @@ Default: Defined in namelist_defaults.xml
 
 <!-- land_ice -->
 
+<entry id="config_use_land_ice_pressure" type="logical"
+	category="land_ice" group="land_ice">
+If .true. then applies landIcePressure field
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_land_ice_draft_mode" type="char*1024"
 	category="land_ice" group="land_ice">
 Selects the mode in which land-ice draft is computed.
@@ -1755,7 +1763,7 @@ Default: Defined in namelist_defaults.xml
 	category="land_ice_fluxes" group="land_ice_fluxes">
 Selects the mode in which land-ice fluxes are computed.
 
-Valid values: 'off','pressure_only', 'data', 'standalone','coupled'
+Valid values: 'off', 'data', 'prognostic'
 Default: Defined in namelist_defaults.xml
 </entry>
 
