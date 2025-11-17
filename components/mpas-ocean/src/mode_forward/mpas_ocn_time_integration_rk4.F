@@ -40,7 +40,6 @@ module ocn_time_integration_rk4
    use ocn_time_average_coupled
    use ocn_wetting_drying
 
-   use ocn_effective_density_in_land_ice
    use ocn_surface_land_ice_fluxes
    use ocn_transport_tests
    use ocn_time_varying_forcing
@@ -173,7 +172,7 @@ module ocn_time_integration_rk4
       real (kind=RKIND), dimension(:,:,:), pointer :: tracerGroup, tracersCur, tracersNew
 
       ! Diagnostics Field Pointers
-      type (field1DReal), pointer :: boundaryLayerDepthField, effectiveDensityField
+      type (field1DReal), pointer :: boundaryLayerDepthField
       type (field2DReal), pointer :: normalizedRelativeVorticityEdgeField, divergenceField, relativeVorticityField
 
       ! State/Tend Field Pointers
@@ -759,10 +758,6 @@ module ocn_time_integration_rk4
 #endif
          call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, verticalMeshPool, scratchPool, tracersPool, 2)
 
-         ! Update the effective density in land ice if we're coupling to land ice
-         call ocn_effective_density_in_land_ice_update(forcingPool, &
-                                                       statePool, err)
-
 #ifdef MPAS_OPENACC
          !$acc update host(layerThickEdgeFlux, layerThickEdgeMean)
          !$acc update host(relativeVorticity, circulation)
@@ -857,15 +852,6 @@ module ocn_time_integration_rk4
 
          block => block % next
       end do
-
-      if ( config_use_land_ice_pressure .and. &
-           config_land_ice_draft_mode == 'pressure-dependent') then
-         call mpas_timer_start("RK4-effective density halo")
-         call mpas_pool_get_subpool(domain % blocklist % structs, 'state', statePool)
-         call mpas_pool_get_field(statePool, 'effectiveDensityInLandIce', effectiveDensityField, 2)
-         call mpas_dmpar_exch_halo_field(effectiveDensityField)
-         call mpas_timer_stop("RK4-effective density halo")
-      end if
 
       call mpas_timer_stop("RK4-cleanup phase")
 
