@@ -1487,6 +1487,10 @@ contains
 
       dtime = real(get_step_size(),r8)
       nc = bounds_clump%clump_index
+
+      do s = 1, this%fates(nc)%nsites
+         call FluxIntoLitterPools(this%fates(nc)%sites(s))
+      end do
       
       call this%fates(nc)%UpdateLitterFluxes(dtime)
 
