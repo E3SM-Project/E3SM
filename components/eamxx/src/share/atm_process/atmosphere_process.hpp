@@ -286,7 +286,7 @@ public:
   // Note: (mem, nmem) describe an arbitrary device array. If mem!=nullptr,
   // the array will be hashed and reported as an additional entry
   void print_global_state_hash(const std::string& label, const TimeStamp& t,
-                               const bool in = true, const bool out = true, const bool internal = true,
+                               const bool pre_run,
                                const Real* mem = nullptr, const int nmem = 0) const;
 
   // For BFB tracking in production simulations.

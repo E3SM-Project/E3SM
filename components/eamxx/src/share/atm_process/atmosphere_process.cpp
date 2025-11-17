@@ -179,8 +179,7 @@ void AtmosphereProcess::run (const double dt) {
     if (m_internal_diagnostics_level > 0)
       // Print hash of INPUTS before run
       print_global_state_hash(name() + "-pre-sc-" + std::to_string(m_subcycle_iter),
-                              m_start_of_step_ts,
-                              true, false, true);
+                              m_start_of_step_ts, true);
 
     // Run derived class implementation
     run_impl(dt_sub);
@@ -188,8 +187,7 @@ void AtmosphereProcess::run (const double dt) {
     if (m_internal_diagnostics_level > 0)
       // Print hash of OUTPUTS/INTERNALS after run
       print_global_state_hash(name() + "-pst-sc-" + std::to_string(m_subcycle_iter),
-                              m_end_of_step_ts,
-                              false, true, true);
+                              m_end_of_step_ts, false);
 
     if (has_energy_fixer()){
       const bool water_thermo_fixer = has_air_sea_surface_water_thermo_fixer();
@@ -630,7 +628,8 @@ void AtmosphereProcess::add_me_as_customer (const Field& f) {
   f.get_header_ptr()->get_tracking().add_customer(weak_from_this());
 }
 
-void AtmosphereProcess::add_internal_field (const Field& f, const std::vector<std::string>& groups) {
+void AtmosphereProcess::
+add_internal_field (const Field& f, const std::vector<std::string>& groups) {
   auto& fi = m_internal_fields.emplace_back(f);
   for (const auto& gn : groups) {
     fi.get_header().get_tracking().add_group(gn);
