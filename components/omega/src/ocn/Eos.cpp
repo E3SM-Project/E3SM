@@ -238,17 +238,19 @@ void Eos::computeBruntVaisalaFreq(const Array2DReal &ConservTemp,
    if (EosChoice == EosType::LinearEos) {
       /// If Linear EOS, use linear Brunt-Vaisala frequency calculation
       parallelFor(
-          "bvf-linear", {NCellsAll}, KOKKOS_LAMBDA(I4 ICell) {
+          "bvf-linear", {NCellsAll, NChunks},
+          KOKKOS_LAMBDA(I4 ICell, I4 KChunk) {
              LocComputeBruntVaisalaFreqLinear(LocBruntVaisalaFreq, ICell,
-                                              SpecVol);
+                                              KChunk, SpecVol);
           });
    } else if (EosChoice == EosType::Teos10Eos) {
       /// If TEOS-10 EOS, use TEOS-10 Brunt-Vaisala frequency calculation
       parallelFor(
-          "bvf-teos10", {NCellsAll}, KOKKOS_LAMBDA(I4 ICell) {
+          "bvf-teos10", {NCellsAll, NChunks},
+          KOKKOS_LAMBDA(I4 ICell, I4 KChunk) {
              /// Compute Brunt-Vaisala frequency
              LocComputeBruntVaisalaFreqTeos10(LocBruntVaisalaFreq, ICell,
-                                              ConservTemp, AbsSalinity,
+                                              KChunk, ConservTemp, AbsSalinity,
                                               Pressure, SpecVol);
           });
    }

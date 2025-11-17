@@ -77,7 +77,7 @@ class Teos10Eos {
    /// TEOS-10 helpers
    /// Calculate pressure polynomial coefficients for TEOS-10
    KOKKOS_FUNCTION void calcPCoeffs(Real (&SpecVolPCoeffs)[6 * VecLength],
-                                    const I4 K, const Real Ct,
+                                    const I4 KVec, const Real Ct,
                                     const Real Sa) const {
       constexpr Real SAu    = 40.0 * 35.16504 / 35.0;
       constexpr Real CTu    = 40.0;
@@ -161,18 +161,18 @@ class Teos10Eos {
       constexpr Real V014 = 3.1454099902e-07;
       constexpr Real V005 = 4.2369007180e-09;
 
-      SpecVolPCoeffs[5 + 6 * K] = V005;
-      SpecVolPCoeffs[4 + 6 * K] = V014 * Tt + V104 * Ss + V004;
-      SpecVolPCoeffs[3 + 6 * K] =
+      SpecVolPCoeffs[5 + 6 * KVec] = V005;
+      SpecVolPCoeffs[4 + 6 * KVec] = V014 * Tt + V104 * Ss + V004;
+      SpecVolPCoeffs[3 + 6 * KVec] =
           (V023 * Tt + V113 * Ss + V013) * Tt + (V203 * Ss + V103) * Ss + V003;
-      SpecVolPCoeffs[2 + 6 * K] =
+      SpecVolPCoeffs[2 + 6 * KVec] =
           (((V042 * Tt + V132 * Ss + V032) * Tt + (V222 * Ss + V122) * Ss +
             V022) *
                Tt +
            ((V312 * Ss + V212) * Ss + V112) * Ss + V012) *
               Tt +
           (((V402 * Ss + V302) * Ss + V202) * Ss + V102) * Ss + V002;
-      SpecVolPCoeffs[1 + 6 * K] =
+      SpecVolPCoeffs[1 + 6 * KVec] =
           ((((V051 * Tt + V141 * Ss + V041) * Tt + (V231 * Ss + V131) * Ss +
              V031) *
                 Tt +
@@ -182,7 +182,7 @@ class Teos10Eos {
               Tt +
           ((((V501 * Ss + V401) * Ss + V301) * Ss + V201) * Ss + V101) * Ss +
           V001;
-      SpecVolPCoeffs[0 + 6 * K] =
+      SpecVolPCoeffs[0 + 6 * KVec] =
           (((((V060 * Tt + V150 * Ss + V050) * Tt + (V240 * Ss + V140) * Ss +
               V040) *
                  Tt +
@@ -201,19 +201,20 @@ class Teos10Eos {
 
    /// Evaluate pressure polynomial delta for TEOS-10
    KOKKOS_FUNCTION Real calcDelta(const Real (&SpecVolPCoeffs)[6 * VecLength],
-                                  const I4 K, const Real P) const {
+                                  const I4 KVec, const Real P) const {
 
       Real Pp = P * Pa2Db;
 
-      Real Delta =
-          ((((SpecVolPCoeffs[5 + 6 * K] * Pp + SpecVolPCoeffs[4 + 6 * K]) * Pp +
-             SpecVolPCoeffs[3 + 6 * K]) *
-                Pp +
-            SpecVolPCoeffs[2 + 6 * K]) *
-               Pp +
-           SpecVolPCoeffs[1 + 6 * K]) *
-              Pp +
-          SpecVolPCoeffs[0 + 6 * K];
+      Real Delta = ((((SpecVolPCoeffs[5 + 6 * KVec] * Pp +
+                       SpecVolPCoeffs[4 + 6 * KVec]) *
+                          Pp +
+                      SpecVolPCoeffs[3 + 6 * KVec]) *
+                         Pp +
+                     SpecVolPCoeffs[2 + 6 * KVec]) *
+                        Pp +
+                    SpecVolPCoeffs[1 + 6 * KVec]) *
+                       Pp +
+                   SpecVolPCoeffs[0 + 6 * KVec];
 
       return Delta;
    }
@@ -285,15 +286,18 @@ class Teos10BruntVaisalaFreq {
    //   (absolute) salinity, pressure, specific volume as inputs, and outputs
    //   the Brunt-Vaisala frequency.
    KOKKOS_FUNCTION void operator()(Array2DReal BruntVaisalaFreq, I4 ICell,
-                                   const Array2DReal &ConservTemp,
+                                   I4 KChunk, const Array2DReal &ConservTemp,
                                    const Array2DReal &AbsSalinity,
                                    const Array2DReal &Pressure,
                                    const Array2DReal &SpecVol) const {
-
-      Real Gravity = 9.80616;
-      Real Db2Pa   = 1.0e4;
-      for (int K = 0; K < NVertLayers; ++K) {
-         if (K == 0) {
+      Real Gravity    = 9.80616;
+      Real Db2Pa      = 1.0e4;
+      const I4 KStart = KChunk * VecLength;
+      for (int KVec = 0; KVec < VecLength; ++KVec) {
+         const I4 K = KStart + KVec;
+         if (K >= NVertLayers)
+            continue;
+         else if (K == 0) {
             // No Brunt-Vaisala frequency at surface
             BruntVaisalaFreq(ICell, K) = 0.0_Real;
          } else {
@@ -493,10 +497,15 @@ class LinearBruntVaisalaFreq {
    //   the index ICell, and the specific volume and layer thickness as inputs,
    //   and outputs the Brunt-Vaisala frequency.
    KOKKOS_FUNCTION void operator()(Array2DReal BruntVaisalaFreq, I4 ICell,
+                                   I4 KChunk,
                                    const Array2DReal &SpecVol) const {
-      Real Gravity = 9.80616; // gravitational acceleration
-      for (int K = 0; K < NVertLayers; ++K) {
-         if (K == 0) {
+      Real Gravity    = 9.80616; // gravitational acceleration
+      const I4 KStart = KChunk * VecLength;
+      for (int KVec = 0; KVec < VecLength; ++KVec) {
+         const I4 K = KStart + KVec;
+         if (K >= NVertLayers)
+            continue;
+         else if (K == 0) {
             /// No Brunt-Vaisala frequency at the top level
             BruntVaisalaFreq(ICell, K) = 0.0_Real;
          } else {

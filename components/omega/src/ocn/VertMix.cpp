@@ -30,8 +30,8 @@ VertMix::VertMix(const std::string &Name_, ///< [in] Name for VertMix object
                  const VertCoord *VCoord   ///< [in] Vertical coordinate
                  )
     : ComputeVertMixConv(VCoord), ComputeVertMixShear(Mesh, VCoord) {
-   VertDiff = Array2DReal("VertDiff", Mesh->NCellsAll, VCoord->NVertLayers + 1);
-   VertVisc = Array2DReal("VertVisc", Mesh->NCellsAll, VCoord->NVertLayers + 1);
+   VertDiff  = Array2DReal("VertDiff", Mesh->NCellsAll, VCoord->NVertLayers);
+   VertVisc  = Array2DReal("VertVisc", Mesh->NCellsAll, VCoord->NVertLayers);
    NCellsAll = Mesh->NCellsAll;
    NChunks   = VCoord->NVertLayers / VecLength;
    Name      = Name_;
@@ -70,7 +70,7 @@ void VertMix::init() {
    Error Err; // error code
 
    /// Retrieve default VertMix
-   VertMix *vertmix = VertMix::getInstance();
+   VertMix *DefVertMix = VertMix::getInstance();
 
    /// Get VertMixConfig group from Omega config
    Config *OmegaConfig = Config::getOmegaConfig();
@@ -86,12 +86,12 @@ void VertMix::init() {
        Err, "VertMix::init: Background subgroup not found in VertMixConfig");
 
    /// Get diffusivity and viscosity parameters
-   Err += BackConfig.get("Viscosity", vertmix->BackVisc);
+   Err += BackConfig.get("Viscosity", DefVertMix->BackVisc);
    CHECK_ERROR_ABORT(
        Err,
        "VertMix::init: Parameter Background:Viscosity not found in BackConfig");
 
-   Err += BackConfig.get("Diffusivity", vertmix->BackDiff);
+   Err += BackConfig.get("Diffusivity", DefVertMix->BackDiff);
    CHECK_ERROR_ABORT(Err, "VertMix::init: Parameter Background:Diffusivity not "
                           "found in BackConfig");
 
@@ -102,22 +102,22 @@ void VertMix::init() {
        Err, "VertMix::init: Convective subgroup not found in VertMixConfig");
 
    /// Get convective diffusivity and viscosity parameters
-   Err += ConvConfig.get("Enable", vertmix->ComputeVertMixConv.Enabled);
+   Err += ConvConfig.get("Enable", DefVertMix->ComputeVertMixConv.Enabled);
    CHECK_ERROR_ABORT(
        Err,
        "VertMix::init: Parameter Convective:Enable not found in ConvConfig");
 
-   if (!vertmix->ComputeVertMixConv.Enabled) {
+   if (!DefVertMix->ComputeVertMixConv.Enabled) {
       LOG_INFO("VertMix::init: Convective mixing is disabled.");
    } else {
       LOG_INFO("VertMix::init: Convective mixing is enabled.");
-      Err +=
-          ConvConfig.get("Diffusivity", vertmix->ComputeVertMixConv.ConvDiff);
+      Err += ConvConfig.get("Diffusivity",
+                            DefVertMix->ComputeVertMixConv.ConvDiff);
       CHECK_ERROR_ABORT(Err, "VertMix::init: Parameter Convective:Diffusivity "
                              "not found in ConvConfig");
 
       Err += ConvConfig.get("TriggerBVF",
-                            vertmix->ComputeVertMixConv.ConvTriggerBVF);
+                            DefVertMix->ComputeVertMixConv.ConvTriggerBVF);
       CHECK_ERROR_ABORT(Err, "VertMix::init: Parameter Convective:TriggerBVF "
                              "not found in ConvConfig");
    }
@@ -129,26 +129,27 @@ void VertMix::init() {
        Err, "VertMix::init: Shear subgroup not found in VertMixConfig");
 
    /// Get shear diffusivity and viscosity parameters
-   Err += ShearConfig.get("Enable", vertmix->ComputeVertMixShear.Enabled);
+   Err += ShearConfig.get("Enable", DefVertMix->ComputeVertMixShear.Enabled);
    CHECK_ERROR_ABORT(
        Err, "VertMix::init: Parameter Shear:Enable not found in ShearConfig");
 
-   if (!vertmix->ComputeVertMixShear.Enabled) {
+   if (!DefVertMix->ComputeVertMixShear.Enabled) {
       LOG_INFO("VertMix::init: Shear mixing is disabled.");
    } else {
       LOG_INFO("VertMix::init: Shear mixing is enabled.");
-      Err +=
-          ShearConfig.get("NuZero", vertmix->ComputeVertMixShear.ShearNuZero);
+      Err += ShearConfig.get("NuZero",
+                             DefVertMix->ComputeVertMixShear.ShearNuZero);
       CHECK_ERROR_ABORT(
           Err,
           "VertMix::init: Parameter Shear:NuZero not found in ShearConfig");
 
-      Err += ShearConfig.get("Alpha", vertmix->ComputeVertMixShear.ShearAlpha);
+      Err +=
+          ShearConfig.get("Alpha", DefVertMix->ComputeVertMixShear.ShearAlpha);
       CHECK_ERROR_ABORT(
           Err, "VertMix::init: Parameter Shear:Alpha not found in ShearConfig");
 
       Err += ShearConfig.get("Exponent",
-                             vertmix->ComputeVertMixShear.ShearExponent);
+                             DefVertMix->ComputeVertMixShear.ShearExponent);
       CHECK_ERROR_ABORT(
           Err,
           "VertMix::init: Parameter Shear:Exponent not found in ShearConfig");
@@ -175,24 +176,27 @@ void VertMix::computeVertMix(const Array2DReal &NormalVelocity,
    /// Dispatch to the correct VertMix calculation
    if (LocComputeVertMixShear.Enabled && LocComputeVertMixConv.Enabled) {
       parallelFor(
-          "VertMix-ConvPlusShear", {NCellsAll}, KOKKOS_LAMBDA(I4 ICell) {
-             LocComputeVertMixConv(LocVertDiff, LocVertVisc, ICell,
+          "VertMix-ConvPlusShear", {NCellsAll, NChunks},
+          KOKKOS_LAMBDA(I4 ICell, I4 KChunk) {
+             LocComputeVertMixConv(LocVertDiff, LocVertVisc, ICell, KChunk,
                                    BruntVaisalaFreq);
-             LocComputeVertMixShear(LocVertDiff, LocVertVisc, ICell,
+             LocComputeVertMixShear(LocVertDiff, LocVertVisc, ICell, KChunk,
                                     NormalVelocity, TangentialVelocity,
                                     BruntVaisalaFreq);
           });
    } else if (LocComputeVertMixShear.Enabled) {
       parallelFor(
-          "VertMix-ShearOnly", {NCellsAll}, KOKKOS_LAMBDA(I4 ICell) {
-             LocComputeVertMixShear(LocVertDiff, LocVertVisc, ICell,
+          "VertMix-ShearOnly", {NCellsAll, NChunks},
+          KOKKOS_LAMBDA(I4 ICell, I4 KChunk) {
+             LocComputeVertMixShear(LocVertDiff, LocVertVisc, ICell, KChunk,
                                     NormalVelocity, TangentialVelocity,
                                     BruntVaisalaFreq);
           });
    } else if (LocComputeVertMixConv.Enabled) {
       parallelFor(
-          "VertMix-ConvOnly", {NCellsAll}, KOKKOS_LAMBDA(I4 ICell) {
-             LocComputeVertMixConv(LocVertDiff, LocVertVisc, ICell,
+          "VertMix-ConvOnly", {NCellsAll, NChunks},
+          KOKKOS_LAMBDA(I4 ICell, I4 KChunk) {
+             LocComputeVertMixConv(LocVertDiff, LocVertVisc, ICell, KChunk,
                                    BruntVaisalaFreq);
           });
    } else {
@@ -202,7 +206,6 @@ void VertMix::computeVertMix(const Array2DReal &NormalVelocity,
              LocVertVisc(ICell, 0) = 0.0_Real;
           });
    }
-   Kokkos::fence();
 }
 
 /// Define IO fields and metadata for output
@@ -226,8 +229,8 @@ void VertMix::defineFields() {
    /// Create and register the Diffusivity field
    auto VertDiffField =
        Field::create(VertDiffFldName, // Field name
-                     "Vertical diffusivity at center and"
-                     " top of cell",                   // Long Name
+                     "Vertical diffusivity at center of"
+                     " cell and top of layer",         // Long Name
                      "m2 s-1",                         // Units
                      "vertical_diffusivity",           // CF-ish Name
                      0.0,                              // Min valid value
@@ -239,8 +242,8 @@ void VertMix::defineFields() {
    /// Create and register the VertVisc field
    auto VertViscField =
        Field::create(VertViscFldName, // Field name
-                     "Vertical viscosity at center and"
-                     " top of cell",                   // Long Name
+                     "Vertical viscosity at center of"
+                     " cell and top of layer",         // Long Name
                      "m2 s-1",                         // Units
                      "vertical_viscosity",             // CF-ish Name
                      0.0,                              // Min valid value
