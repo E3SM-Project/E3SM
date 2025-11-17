@@ -32,7 +32,6 @@ module convect_shallow
              convect_shallow_use_shfrc	       ! 
 
    ! The following namelist variable controls which shallow convection package is used.
-   !        'Hack'   = Hack shallow convection (default)
    !        'UW'     = UW shallow convection by Sungsu Park and Christopher S. Bretherton
    !        'off'    = No shallow convection
 
@@ -134,7 +133,6 @@ module convect_shallow
 
   use cam_history,       only : addfld, horiz_only, add_default
   use ppgrid,            only : pcols, pver
-  use hk_conv,           only : mfinti
   use uwshcu,            only : init_uwshcu
   use physconst,         only : rair, gravit, latvap, rhoh2o, zvir, &
                                 cappa, latice, mwdry, mwh2o
@@ -196,14 +194,6 @@ module convect_shallow
        'Cloud ice tendency - shallow convection'                    )
   call addfld( 'CMFDQR'     ,  (/ 'lev' /) ,  'A' , 'kg/kg/s', &
        'Q tendency - shallow convection rainout'                    )
-  call addfld( 'EVAPTCM'     ,  (/ 'lev' /) ,  'A' , 'K/s', &
-       'T tendency - Evaporation/snow prod from Hack convection'    )
-  call addfld( 'FZSNTCM'     ,  (/ 'lev' /) ,  'A' , 'K/s', &
-       'T tendency - Rain to snow conversion from Hack convection'  )
-  call addfld( 'EVSNTCM'     ,  (/ 'lev' /) ,  'A' , 'K/s', &
-       'T tendency - Snow to rain prod from Hack convection'        )
-  call addfld( 'EVAPQCM'     ,  (/ 'lev' /) ,  'A' , 'kg/kg/s', &
-       'Q tendency - Evaporation from Hack convection'              )
   call addfld( 'QC'     ,  (/ 'lev' /) ,  'A' , 'kg/kg/s', &
        'Q tendency - shallow convection LW export'                  )
   call addfld( 'PRECSH'     ,  horiz_only,      'A' , 'm/s', &
@@ -229,17 +219,6 @@ module convect_shallow
 
   call addfld( 'FREQSH'      ,  horiz_only    ,  'A' , 'fraction', &
        'Fractional occurance of shallow convection'                 )
-                                                                                                                    
-  call addfld( 'HKFLXPRC'     ,  (/ 'ilev' /),  'A' , 'kg/m2/s', &
-       'Flux of precipitation from HK convection'                   )
-  call addfld( 'HKFLXSNW'     ,  (/ 'ilev' /),  'A' , 'kg/m2/s', &
-       'Flux of snow from HK convection'                            )
-  call addfld( 'HKNTPRPD'     ,  (/ 'lev' /) ,  'A' , 'kg/kg/s', &
-       'Net precipitation production from HK convection'            )
-  call addfld( 'HKNTSNPD'     ,  (/ 'lev' /) ,  'A' , 'kg/kg/s', &
-       'Net snow production from HK convection'                     )
-  call addfld( 'HKEIHEAT'     ,  (/ 'lev' /) ,  'A' , 'W/kg'    , &
-       'Heating by ice and evaporation in HK convection'            )
 
   call addfld ('ICWMRSH'    ,  (/ 'lev' /),   'A' , 'kg/kg', &
        'Shallow Convection in-cloud water mixing ratio '            )
@@ -278,32 +257,6 @@ module convect_shallow
 
      if( masterproc ) write(iulog,*) 'convect_shallow_init: shallow convection OFF'
      continue
-
-  case('Hack') ! Hack scheme
-
-     qpert_idx = pbuf_get_index('qpert')
-
-     if( masterproc ) write(iulog,*) 'convect_shallow_init: Hack shallow convection'
-   ! Limit shallow convection to regions below 40 mb
-   ! Note this calculation is repeated in the deep convection interface
-     if( pref_edge(1) >= 4.e3_r8 ) then
-         limcnv = 1
-     else
-         do k = 1, plev
-            if( pref_edge(k) < 4.e3_r8 .and. pref_edge(k+1) >= 4.e3_r8 ) then
-                limcnv = k
-                goto 10
-            end if
-         end do
-         limcnv = plevp
-     end if
-10   continue
-
-     if( masterproc ) then
-         write(iulog,*) 'MFINTI: Convection will be capped at intfc ', limcnv, ' which is ', pref_edge(limcnv), ' pascals'
-     end if
-     
-     call mfinti( rair, cpair, gravit, latvap, rhoh2o, limcnv) ! Get args from inti.F90
 
   case('UW') ! Park and Bretherton shallow convection scheme
 
@@ -413,7 +366,6 @@ end subroutine convect_shallow_init_cnst
    use camsrfexch,      only : cam_in_t
    
    use constituents,    only : pcnst, cnst_get_ind, cnst_get_type_byind
-   use hk_conv,         only : cmfmca
    use uwshcu,          only : compute_uwshcu_inv
 
    use time_manager,    only : get_nstep, is_first_step
@@ -607,22 +559,6 @@ end subroutine convect_shallow_init_cnst
 
       flxprec(:ncol,:) = 0._r8
       flxsnow(:ncol,:) = 0._r8
-
-   case('Hack') ! Hack scheme
-                                   
-      lq(:) = .TRUE.
-      call physics_ptend_init( ptend_loc, state%psetcols, 'cmfmca', ls=.true., lq=lq  ) ! Initialize local ptend type
-
-      call pbuf_get_field(pbuf, qpert_idx, qpert)
-      qpert(:ncol,2:pcnst) = 0._r8
-
-      call cmfmca( lchnk        ,  ncol         ,                                               &
-                   nstep        ,  ztodt        ,  state%pmid ,  state%pdel  ,                  &
-                   state%rpdel  ,  state%zm     ,  tpert      ,  qpert       ,  state%phis  ,   &
-                   pblh         ,  state%t      ,  state%q    ,  ptend_loc%s ,  ptend_loc%q ,   &
-                   cmfmc2       ,  rprdsh       ,  cmfsl      ,  cmflq       ,  precc       ,   &
-                   qc2          ,  cnt2         ,  cnb2       ,  icwmr       ,  rliq2       ,   & 
-                   state%pmiddry,  state%pdeldry,  state%rpdeldry )
 
    case('UW')   ! UW shallow convection scheme
 
@@ -882,74 +818,6 @@ end subroutine convect_shallow_init_cnst
    ! evaporation physics inside in it. So when 'shallow_scheme = UW', we must !
    ! NOT perform below 'zm_conv_evap'.                                        !
    ! ------------------------------------------------------------------------ !
-
-   if( shallow_scheme .eq. 'Hack' ) then
-
-   ! ------------------------------------------------------------------------------- !
-   ! Determine the phase of the precipitation produced and add latent heat of fusion !
-   ! Evaporate some of the precip directly into the environment (Sundqvist)          !
-   ! Allow this to use the updated state1 and a fresh ptend_loc type                 !
-   ! Heating and specific humidity tendencies produced                               !
-   ! ------------------------------------------------------------------------------- !
-
-   ! --------------------------------- !
-   ! initialize ptend for next process !
-   ! --------------------------------- !
-
-    lq(1) = .TRUE.
-    lq(2:) = .FALSE.
-    call physics_ptend_init(ptend_loc, state1%psetcols, 'shallow_hack', ls=.true., lq=lq)
-
-    call pbuf_get_field(pbuf, sh_flxprc_idx, flxprec    )
-    call pbuf_get_field(pbuf, sh_flxsnw_idx, flxsnow    )
-    call pbuf_get_field(pbuf, sh_cldliq_idx, sh_cldliq  )
-    call pbuf_get_field(pbuf, sh_cldice_idx, sh_cldice  )
-
-    sprd = 0._r8
-
-    !! clouds have no water... :)
-    sh_cldliq(:ncol,:) = 0._r8
-    sh_cldice(:ncol,:) = 0._r8
-
-    call zm_conv_evap( state1%ncol, state1%lchnk,                                    &
-                       state1%t, state1%pmid, state1%pdel, state1%q(:pcols,:pver,1), &
-                       ptend_loc%s, tend_s_snwprd, tend_s_snwevmlt,                  & 
-                       ptend_loc%q(:pcols,:pver,1),                                  &
-                       rprdsh, cld, ztodt,                                           &
-                       precc, snow, ntprprd, ntsnprd , flxprec, flxsnow, sprd, .true.)
-
-   ! ------------------------------------------ !
-   ! record history variables from zm_conv_evap !
-   ! ------------------------------------------ !
-
-   evapcsh(:ncol,:pver) = ptend_loc%q(:ncol,:pver,1)
-
-   ftem(:ncol,:pver) = ptend_loc%s(:ncol,:pver) / cpair
-   call outfld( 'EVAPTCM '       , ftem                           , pcols, lchnk )
-   ftem(:ncol,:pver) = tend_s_snwprd(:ncol,:pver) / cpair
-   call outfld( 'FZSNTCM '       , ftem                           , pcols, lchnk )
-   ftem(:ncol,:pver) = tend_s_snwevmlt(:ncol,:pver) / cpair
-   call outfld( 'EVSNTCM '       , ftem                           , pcols, lchnk )
-   call outfld( 'EVAPQCM '       , ptend_loc%q(1,1,1)             , pcols, lchnk )
-   call outfld( 'PRECSH  '       , precc                          , pcols, lchnk )
-   call outfld( 'HKFLXPRC'       , flxprec                        , pcols, lchnk )
-   call outfld( 'HKFLXSNW'       , flxsnow                        , pcols, lchnk )
-   call outfld( 'HKNTPRPD'       , ntprprd                        , pcols, lchnk )
-   call outfld( 'HKNTSNPD'       , ntsnprd                        , pcols, lchnk )
-   call outfld( 'HKEIHEAT'       , ptend_loc%s                    , pcols, lchnk )
-
-   ! ---------------------------------------------------------------- !      
-   ! Add tendency from this process to tend from other processes here !
-   ! ---------------------------------------------------------------- !
-
-   call physics_ptend_sum( ptend_loc, ptend_all, ncol )
-   call physics_ptend_dealloc(ptend_loc)
-
-   ! -------------------------------------------- !
-   ! Do not perform evaporation process for UW-Cu !
-   ! -------------------------------------------- !
-
-   end if
 
    ! ------------------------------------------------------------- !
    ! Update name of parameterization tendencies to send to tphysbc !

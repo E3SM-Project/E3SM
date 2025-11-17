@@ -59,8 +59,6 @@ module zm_conv_intr
    logical :: convproc_do_aer 
    logical :: convproc_do_gas 
    logical :: clim_modal_aero
-   logical :: old_snow  = .true.   ! flag to use old estimate of snow production in zm_conv_evap
-                                   ! set false to use snow production from zm microphysics
    integer :: nmodes
    integer :: nbulk
    type(zm_aero_t), allocatable :: aero(:) ! object contains aerosol information
@@ -384,7 +382,7 @@ subroutine zm_conv_init(pref_edge)
       call zm_mphyi()
 
       ! use old estimate of snow production in zm_conv_evap
-      old_snow = .false. 
+      zm_param%old_snow = .false.
 
       ! Initialize the aerosol object with data from the modes/species
       ! affecting climate, i.e., the list index is hardcoded to 0
@@ -426,10 +424,10 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
    use time_manager,            only: get_curr_date
    use interpolate_data,        only: vertinterp
    use zm_conv,                 only: zm_const, zm_param
-   use zm_conv_mcsp,            only: zm_conv_mcsp_tend
+   use zm_conv_mcsp,            only: zm_conv_mcsp_tend, zm_conv_mcsp_hist
    use zm_microphysics,         only: dnlfzm_idx, dnifzm_idx, dsfzm_idx, dnsfzm_idx, wuc_idx
    use zm_microphysics_state,   only: zm_microp_st_alloc, zm_microp_st_dealloc
-   use zm_microphysics_history, only: zm_microphysics_history_out
+   use zm_microphysics_history, only: zm_microphysics_history_convert, zm_microphysics_history_out
    !----------------------------------------------------------------------------
    ! Arguments
    type(physics_state),target,       intent(in)  :: state      ! Physics state variables
@@ -488,6 +486,15 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
    logical :: do_mcsp_u        = .false.
    logical :: do_mcsp_v        = .false.
 
+   ! MCSP history output variables
+   real(r8), dimension(pcols,pver) :: mcsp_dt_out     ! MCSP tendency for DSE
+   real(r8), dimension(pcols,pver) :: mcsp_dq_out     ! MCSP tendency for qv
+   real(r8), dimension(pcols,pver) :: mcsp_du_out     ! MCSP tendency for u wind
+   real(r8), dimension(pcols,pver) :: mcsp_dv_out     ! MCSP tendency for v wind
+   real(r8), dimension(pcols)      :: mcsp_freq       ! MSCP frequency for output
+   real(r8), dimension(pcols)      :: mcsp_shear      ! shear used to check against threshold
+   real(r8), dimension(pcols)      :: zm_depth        ! pressure depth of ZM heating
+
    ! physics buffer fields
    real(r8), pointer, dimension(:)     :: prec        ! total precipitation
    real(r8), pointer, dimension(:)     :: snow        ! snow from ZM convection 
@@ -500,7 +507,7 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
    real(r8), pointer, dimension(:,:)   :: flxsnow     ! convective-scale flux of snow   at interfaces (kg/m2/s)
    real(r8), pointer, dimension(:,:)   :: dp_cldliq   ! cloud liq water
    real(r8), pointer, dimension(:,:)   :: dp_cldice   ! cloud ice water
-   real(r8), pointer, dimension(:,:)   :: wuc         ! vertical velocity
+   real(r8), pointer, dimension(:,:)   :: wuc         ! vertical velocity from ZM microphysics
 
    ! DCAPE-ULL
    real(r8), pointer, dimension(:,:) :: t_star        ! DCAPE T from time step n-1
@@ -538,12 +545,9 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
    real(r8), dimension(pcols,pver,2) :: icwd
    real(r8), dimension(pcols,pver)   :: seten
 
-   real(r8), dimension(pcols,pver) :: sprd
-   real(r8), dimension(pcols,pver) :: frz
-
    !----------------------------------------------------------------------------
 
-   if (zm_param%zm_microp) call zm_microp_st_alloc(microp_st)
+   if (zm_param%zm_microp) call zm_microp_st_alloc(microp_st, pcols, pver)
 
    !----------------------------------------------------------------------------
    ! Initialize stuff
@@ -596,14 +600,8 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
       call pbuf_get_field(pbuf, dsfzm_idx,  dsf)
       call pbuf_get_field(pbuf, dnsfzm_idx, dnsf)
       call pbuf_get_field(pbuf, wuc_idx,    wuc)
-   else
-      allocate(dnlf(pcols,pver), &
-               dnif(pcols,pver), &
-               dsf(pcols,pver),  &
-               dnsf(pcols,pver), &
-               wuc(pcols,pver)   )
+      wuc(1:pcols,1:pver) = 0
    end if
-   wuc(1:pcols,1:pver) = 0
 
    call pbuf_get_field(pbuf, lambdadpcu_idx, lambdadpcu)
    call pbuf_get_field(pbuf, mudpcu_idx,     mudpcu)
@@ -634,19 +632,33 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
 
    ! Call the primary Zhang-McFarlane convection parameterization
    call t_startf ('zm_convr')
-   call zm_convr( lchnk, ncol, is_first_step_loc, &
-                  state%t, state%q(:,:,1), prec, jctop, jcbot, &
-                  pblh, state%zm, state%phis, state%zi, ptend_loc%q(:,:,1), &
-                  ptend_loc%s, state%pmid, state%pint, state%pdel, state%omega, &
-                  0.5*ztodt, mcon, cme, cape, tpert, dlf, pflx, zdu, rprd, mu, md, du, eu, ed, &
-                  dp, dsubcld, jt, maxg, ideep, lengath, ql, rliq, landfrac, &
-                  t_star, q_star, dcape, &  
-                  aero(lchnk), qi, dif, dnlf, dnif, dsf, dnsf, sprd, rice, frz, mudpcu, &
-                  lambdadpcu, microp_st, wuc )
+   call zm_convr( pcols, ncol, pver, pverp, is_first_step_loc, 0.5*ztodt, &
+                  state%t, state%q(:,:,1), state%omega, &
+                  state%pmid, state%pint, state%pdel, &
+                  state%phis, state%zm, state%zi, pblh, &
+                  tpert, landfrac, t_star, q_star, &
+                  lengath, ideep, maxg, jctop, jcbot, jt, &
+                  prec, ptend_loc%s, ptend_loc%q(:,:,1), cape, dcape, &
+                  mcon,  pflx, zdu, mu, eu, du, md, ed, dp, dsubcld, &
+                  ql, rliq, rprd, dlf, aero(lchnk), microp_st )
    call t_stopf ('zm_convr')
 
    if (zm_param%zm_microp) then
-      dlftot(1:ncol,1:pver) = dlf(1:ncol,1:pver) + dif(1:ncol,1:pver) + dsf(1:ncol,1:pver)
+      ! update ZM micro variables in pbuf
+      qi        (1:ncol,1:pver) = microp_st%qice      (1:ncol,1:pver)
+      dif       (1:ncol,1:pver) = microp_st%dif       (1:ncol,1:pver)
+      dsf       (1:ncol,1:pver) = microp_st%dsf       (1:ncol,1:pver)
+      dnlf      (1:ncol,1:pver) = microp_st%dnlf      (1:ncol,1:pver)
+      dnif      (1:ncol,1:pver) = microp_st%dnif      (1:ncol,1:pver)
+      dnsf      (1:ncol,1:pver) = microp_st%dnsf      (1:ncol,1:pver)
+      mudpcu    (1:ncol,1:pver) = microp_st%mudpcu    (1:ncol,1:pver)
+      lambdadpcu(1:ncol,1:pver) = microp_st%lambdadpcu(1:ncol,1:pver)
+      ! perform some miscellaneous conversions on the ZM microphysics data
+      call zm_microphysics_history_convert(ncol, microp_st, state%pmid, state%t)
+      ! update other micro variables
+      wuc       (1:ncol,1:pver) = microp_st%wu        (1:ncol,1:pver)
+      rice      (1:ncol)        = microp_st%rice      (1:ncol)
+      dlftot    (1:ncol,1:pver) = dlf(1:ncol,1:pver) + dif(1:ncol,1:pver) + dsf(1:ncol,1:pver)
    else
       dlftot(1:ncol,1:pver) = dlf(1:ncol,1:pver)
    end if
@@ -668,13 +680,19 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
       call physics_ptend_init( ptend_mcsp, state%psetcols, 'zm_conv_mcsp_tend', &
                                ls=do_mcsp_t, lq=do_mcsp_q, lu=do_mcsp_u, lv=do_mcsp_v)
 
-      call zm_conv_mcsp_tend( lchnk, pcols, ncol, pver, pverp, &
+      call zm_conv_mcsp_tend( pcols, ncol, pver, pverp, &
                               ztodt, jctop, zm_const, zm_param, &
                               state%pmid, state%pint, state%pdel, &
                               state%s, state%q, state%u, state%v, &
                               ptend_loc%s, ptend_loc%q(:,:,1), &
                               ptend_mcsp%s(:,:), ptend_mcsp%q(:,:,1), &
-                              ptend_mcsp%u(:,:), ptend_mcsp%v(:,:) )
+                              ptend_mcsp%u(:,:), ptend_mcsp%v(:,:), &
+                              mcsp_dt_out, mcsp_dq_out, mcsp_du_out, mcsp_dv_out, &
+                              mcsp_freq, mcsp_shear, zm_depth )
+
+      call zm_conv_mcsp_hist( lchnk, pcols, pver, &
+                              mcsp_dt_out, mcsp_dq_out, mcsp_du_out, mcsp_dv_out, &
+                              mcsp_freq, mcsp_shear, zm_depth )
 
       ! add MCSP tendencies to ZM convective tendencies
       call physics_ptend_sum( ptend_mcsp, ptend_loc, ncol)
@@ -766,10 +784,10 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
    dp_cldice(1:ncol,1:pver) = 0
 
    call t_startf ('zm_conv_evap')
-   call zm_conv_evap(state1%ncol, state1%lchnk, &
-                     state1%t, state1%pmid, state1%pdel, state1%q(1:pcols,1:pver,1), &
-                     ptend_loc%s, tend_s_snwprd, tend_s_snwevmlt, ptend_loc%q(:pcols,:pver,1), &
-                     rprd, cld, ztodt, prec, snow, ntprprd, ntsnprd, flxprec, flxsnow, sprd, old_snow)
+   call zm_conv_evap(pcols, state1%ncol, pver, pverp, ztodt, &
+                     state1%pmid, state1%pdel, state1%t, state1%q(1:pcols,1:pver,1), rprd, cld, &
+                     ptend_loc%s, ptend_loc%q(:pcols,:pver,1), tend_s_snwprd, tend_s_snwevmlt,  &
+                       prec, snow, ntprprd, ntsnprd, flxprec, flxsnow, microp_st)
    call t_stopf ('zm_conv_evap')
 
    evapcdp(1:ncol,1:pver) = ptend_loc%q(1:ncol,1:pver,1)
@@ -791,7 +809,7 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
    call outfld('PRECCDZM', prec,               pcols, lchnk )
    call outfld('PRECZ   ', prec,               pcols, lchnk )
 
-   if (zm_param%zm_microp) call zm_microphysics_history_out( lchnk, ncol, microp_st, prec, dlf, dif, dnlf, dnif, frz )
+   if (zm_param%zm_microp) call zm_microphysics_history_out(lchnk, ncol, microp_st, prec, dlf)
 
    ! add tendency from this process to tend from other processes here
    call physics_ptend_sum(ptend_loc,ptend_all, ncol)
@@ -808,7 +826,7 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
    winds(1:ncol,1:pver,2) = state1%v(1:ncol,1:pver)
 
    call t_startf ('zm_transport_momentum')
-   call zm_transport_momentum( ncol, winds, 2, &
+   call zm_transport_momentum( pcols, ncol, pver, pverp, winds, 2, &
                                mu, md, du, eu, ed, dp, &
                                jt, maxg, ideep, 1, lengath, &
                                wind_tends, pguall, pgdall, icwu, icwd, ztodt, seten )
@@ -855,7 +873,8 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
    fake_dpdry(1:ncol,1:pver) = 0
 
    call t_startf ('zm_transport_tracer_1')
-   call zm_transport_tracer( ptend_loc%lq, state1%q, pcnst, &
+   call zm_transport_tracer( pcols, ncol, pver, &
+                             ptend_loc%lq, state1%q, pcnst, &
                              mu, md, du, eu, ed, dp, &
                              jt, maxg, ideep, 1, lengath, &
                              fracis, ptend_loc%q, fake_dpdry, ztodt)  
@@ -873,11 +892,7 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
    call physics_state_dealloc(state1)
    call physics_ptend_dealloc(ptend_loc)
 
-   if (zm_param%zm_microp) then
-      call zm_microp_st_dealloc(microp_st)
-   else
-      deallocate(dnlf, dnif, dsf, dnsf)
-   end if
+   if (zm_param%zm_microp) call zm_microp_st_dealloc(microp_st)
 
 end subroutine zm_conv_tend
 
@@ -955,7 +970,8 @@ subroutine zm_conv_tend_2( state,  ptend,  ztodt, pbuf, mu, eu, du, md, ed, dp, 
          dpdry(i,1:pver) = state%pdeldry(ideep(i),1:pver)/100_r8
       end do
       call t_startf ('zm_transport_tracer_2')
-      call zm_transport_tracer( ptend%lq, state%q, pcnst,  &
+      call zm_transport_tracer( pcols, ncol, pver, &
+                                ptend%lq, state%q, pcnst,  &
                                 mu, md, du, eu, ed, dp,  &
                                 jt, maxg, ideep, 1, lengath, &
                                 fracis, ptend%q, dpdry, ztodt)
