@@ -107,7 +107,7 @@ contains
       integer, dimension(:), pointer :: minLevelCell, maxLevelCell
 
       real(kind=RKIND), dimension(:), pointer :: refBottomDepth, &
-                                                 fCell, fEdge, fVertex, effectiveDensityInLandIce, xCell, &
+                                                 fCell, fEdge, fVertex, xCell, &
                                                  refZMid, refLayerThickness
 
       real(kind=RKIND), dimension(:,:), pointer :: layerThickness
@@ -300,11 +300,6 @@ contains
         fCell(:) = config_isomip_plus_coriolis_parameter
         fEdge(:) = config_isomip_plus_coriolis_parameter
         fVertex(:) = config_isomip_plus_coriolis_parameter
-
-        if(config_land_ice_draft_mode == 'pressure-dependent') then
-          call mpas_pool_get_array(statePool, 'effectiveDensityInLandIce', effectiveDensityInLandIce, 1)
-          effectiveDensityInLandIce(:) = config_isomip_plus_effective_density
-        end if
 
         block_ptr => block_ptr % next
       end do

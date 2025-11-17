@@ -1104,7 +1104,7 @@
 					possible_values="'data', 'pressure-dependent'"
 		/>
 		<nml_option name="config_land_ice_rho_ocean" type="real" default_value="1028.0" units="kg m^-3"
-					description="ocean density used to calculate landIceDraft at floatation (assumed constant and uniform). Should be consistent with MALI's config_ocean_density when used to determine grounding line location. This is an alternative to the coupler variable effectiveDensityInLandIce which is not currently used."
+					description="ocean density used to calculate landIceDraft at floatation (assumed constant and uniform). Should be consistent with MALI's config_ocean_density when used to determine grounding line location."
 					possible_values="Any positive real number"
 		/>
 	</nml_record>
@@ -1903,7 +1903,6 @@
 			<var name="vertCoordMovementWeights"/>
 			<var name="edgeMask"/>
 			<var name="cullCell"/>
-			<var name="effectiveDensityInLandIce"/>
 			<var_struct name="ecosysAuxiliary"/>
 			<var name="landIceMask"/>
 			<var name="landIcePressure"/>
@@ -2016,7 +2015,6 @@
 			<var name="layerThickness"/>
 			<var name="highFreqThickness"/>
 			<var name="lowFreqDivergence"/>
-			<var name="effectiveDensityInLandIce"/>
 			<var_struct name="ecosysAuxiliary"/>
 			<var name="landIceMask"/>
 			<var name="landIcePressure"/>
@@ -2135,7 +2133,6 @@
 			<var_array name="SSHGradient"/>
 			<var_array name="vertNonLocalFlux"/>
 			<var name="boundaryLayerDepth"/>
-			<var name="effectiveDensityInLandIce"/>
 			<var_struct name="ecosysAuxiliary"/>
 			<var name="accumulatedFrazilIceMass"/>
 			<var name="accumulatedFrazilIceSalinity"/>
@@ -2551,11 +2548,6 @@
 			 packages="splitTimeIntegrator"
 		/>
 
-		<!-- FIELD FOR LAND-ICE COUPLING -->
-		<var name="effectiveDensityInLandIce" type="real" dimensions="nCells Time" units="kg m^-3"
-			description="The effective ocean density within ice shelves based on Archimedes' principle."
-			packages="landIcePressurePKG"
-		/>
 		<!-- FIELDS FOR GOTM -->
 		<var name="gotmVertViscTopOfCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^-1"
 			 description="GOTM: vertical viscosity defined at the cell center (horizontally) and top (vertically)"
@@ -4243,10 +4235,6 @@
 				description="time-averaged friction velocity times nondimensional salt transfer coefficient"
 			/>
 		</var_array>
-		<var name="avgEffectiveDensityInLandIce" type="real" dimensions="nCells Time" units="kg m^-3"
-			description="The time-averaged effective ocean density within ice shelves based on Archimedes' principle."
-			packages="landIcePressurePKG"
-		/>
 		<var name="avgThermalForcingAtZLevels" type="real" dimensions="nGlcZLevels nCells Time" units="C" packages="landIceThermalForcing3DPKG"
 			description="The time-averaged thermal forcing at predefined z-levels used for indirect OCN-GLC coupling in E3SM"
 		/>

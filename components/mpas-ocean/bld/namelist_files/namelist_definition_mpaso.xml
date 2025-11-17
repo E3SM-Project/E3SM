@@ -1750,7 +1750,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_land_ice_rho_ocean" type="real"
 	category="land_ice" group="land_ice">
-ocean density used to calculate landIceDraft at floatation (assumed constant and uniform). Should be consistent with MALI's config_ocean_density when used to determine grounding line location. This is an alternative to the coupler variable effectiveDensityInLandIce which is not currently used.
+ocean density used to calculate landIceDraft at floatation (assumed constant and uniform). Should be consistent with MALI's config_ocean_density when used to determine grounding line location.
 
 Valid values: Any positive real number
 Default: Defined in namelist_defaults.xml
