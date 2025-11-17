@@ -55,7 +55,7 @@ module ocn_time_average_coupled
         real (kind=RKIND), dimension(:,:), pointer :: avgTracersSurfaceValue, avgSurfaceVelocity, avgSSHGradient, &
                                                       avgLandIceBoundaryLayerTracers, avgLandIceTracerTransferVelocities
 
-        real (kind=RKIND), dimension(:), pointer :: avgEffectiveDensityInLandIce, avgTotalFreshWaterTemperatureFlux, &
+        real (kind=RKIND), dimension(:), pointer :: avgTotalFreshWaterTemperatureFlux, &
                                                     avgLandIceFreshwaterFlux, &
                                                     avgRemovedRiverRunoffFlux, avgRemovedIceRunoffFlux, &
                                                     avgLandIceHeatFlux, avgRemovedIceRunoffHeatFlux
@@ -111,14 +111,12 @@ module ocn_time_average_coupled
         if(trim(config_land_ice_flux_mode) == 'prognostic') then
            call mpas_pool_get_array(forcingPool, 'avgLandIceBoundaryLayerTracers', avgLandIceBoundaryLayerTracers)
            call mpas_pool_get_array(forcingPool, 'avgLandIceTracerTransferVelocities', avgLandIceTracerTransferVelocities)
-           call mpas_pool_get_array(forcingPool, 'avgEffectiveDensityInLandIce', avgEffectiveDensityInLandIce)
 
            !$omp parallel
            !$omp do schedule(runtime)
            do iCell = 1, nCells
               avgLandIceBoundaryLayerTracers(:, iCell) = 0.0_RKIND
               avgLandIceTracerTransferVelocities(:, iCell) = 0.0_RKIND
-              avgEffectiveDensityInLandIce(iCell) = 0.0_RKIND
            end do
            !$omp end do
            !$omp end parallel
@@ -280,8 +278,7 @@ module ocn_time_average_coupled
         integer :: index_temperature, index_SSHzonal, index_SSHmeridional
         real (kind=RKIND), dimension(:,:), pointer :: &
                                                       avgLandIceBoundaryLayerTracers, avgLandIceTracerTransferVelocities
-        real (kind=RKIND), dimension(:), pointer :: effectiveDensityInLandIce, avgEffectiveDensityInLandIce, &
-                                                    totalFreshWaterTemperatureFlux, avgTotalFreshWaterTemperatureFlux, &
+        real (kind=RKIND), dimension(:), pointer :: totalFreshWaterTemperatureFlux, avgTotalFreshWaterTemperatureFlux, &
                                                     landIceFreshwaterFlux, avgLandIceFreshwaterFlux, &
                                                     landIceHeatFlux, avgLandIceHeatFlux, &
                                                     removedRiverRunoffFlux, avgRemovedRiverRunoffFlux, &
@@ -360,19 +357,6 @@ module ocn_time_average_coupled
         end do
         !$omp end do
         !$omp end parallel
-
-        if(trim(config_land_ice_draft_mode) == 'pressure-dependent') then
-           call mpas_pool_get_array(statePool, 'effectiveDensityInLandIce', effectiveDensityInLandIce, timeLevel)
-           call mpas_pool_get_array(forcingPool, 'avgEffectiveDensityInLandIce', avgEffectiveDensityInLandIce)
-           !$omp parallel
-           !$omp do schedule(runtime)
-           do iCell = 1, nCells
-              avgEffectiveDensityInLandIce(iCell) = ( avgEffectiveDensityInLandIce(iCell) * nAccumulatedCoupled &
-                 + effectiveDensityInLandIce(iCell) ) / ( nAccumulatedCoupled + 1)
-           end do
-           !$omp end do
-           !$omp end parallel
-        endif
 
         if(trim(config_land_ice_flux_mode) == 'prognostic') then
 
