@@ -2,6 +2,57 @@
 
 #include <ekat_std_utils.hpp>
 
+namespace {
+std::vector<std::int64_t> get_strides (const scream::FieldHeader& fh)
+{
+  const auto& fid = fh.get_identifier();
+  const auto& fl  = fid.get_layout();
+  const int rank = fl.rank();
+
+  std::vector<std::int64_t> strides(rank);
+  if (rank==0) {
+    return strides;
+  }
+
+  const auto& fap = fh.get_alloc_properties ();
+  auto p = fh.get_parent();
+  if (p) {
+    strides = get_strides(*p);
+    const auto& sv_info = fap.get_subview_info();
+    strides.erase(strides.begin()+sv_info.dim_idx);
+  } else {
+    auto dims = fl.dims();
+    dims.back() = fap.get_last_extent();
+    strides.back() = 1;
+    for (int i=rank-1; i>=1; --i) {
+      strides[i-1] = strides[i]*dims[i];
+    }
+  }
+
+  return strides;
+}
+
+// Get offset of field actual data from the start of the internal data pointer
+std::uint64_t get_offset (const scream::FieldHeader& fh)
+{
+  auto p = fh.get_parent();
+  if (not p) {
+    return 0;
+  }
+
+  std::uint64_t p_offset = get_offset(*p);
+
+  const auto& fap = fh.get_alloc_properties ();
+  const auto& sv_info = fap.get_subview_info();
+  if (sv_info.dim_idx>0) {
+    return p_offset;
+  }
+
+  return p_offset*get_strides(fh)[0]*sv_info.slice_idx;
+}
+
+} // anonymous namespace
+
 namespace scream {
 
 FieldHeader::FieldHeader (const identifier_type& id)
@@ -64,6 +115,82 @@ bool FieldHeader::is_aliasing (const FieldHeader& rhs) const
   return false;
 }
 
+#ifdef EAMXX_HAS_PYTHON
+void FieldHeader::create_dldensor ()
+{
+  // FieldHeader is non-const, as we may add extra data
+  if (has_extra_data("dltensor")) {
+    return;
+  }
+
+  EKAT_REQUIRE_MSG (m_alloc_prop.is_committed(),
+      "Error! Cannot crate dlpack data until field alloc props are committed.\n"
+      " - field name: " + get_identifier().name() + "\n");
+  EKAT_REQUIRE_MSG (not m_alloc_prop.get_subview_info().dynamic,
+      "Error! We cannot create dlpack data for a field that is a dynamic subfield of another.\n"
+      " - field name: " + get_identifier().name() + "\n");
+  
+  DLTensor tensor;
+  tensor.ndim = f.rank();
+
+  const auto& fid = get_identifier();
+  const auto& fl  = fid.get_layout();
+
+  // We don't have strides, and even shape cannot be taken from the layout dims,
+  // since DLTensor expects int64_t*, while layout stores int* (inside a vector)
+  if (not has_extra_data("dlpack_shape")) {
+    std::vector<std::int64_t> shape;
+    for (auto d : fl.dims()) {
+      shape.push_back(d);
+    }
+    set_extra_data("dlpack_shape",shape);
+  }
+  if (not has_extra_data("dlpack_strides")) {
+    std::vector<std::int64_t> strides = get_strides(*this);
+    set_extra_data("dlpack_strides",strides);
+  }
+
+  tensor.shape   = get_extra_data<std::vector<std::int64_t>>("dlpack_shape").data();
+  tensor.strides = get_extra_data<std::vector<std::int64_t>>("dlpack_strides").data();
+  tensor.byte_offset = get_offset(*this);
+
+  switch (fid.data_type()) {
+    case DataType::IntType:
+      tensor.dtype.code = kDLInt;
+      tensor.dtype.bits = 8*sizeof(int);
+      tensor.data = f.get_internal_view_data<int,HD>();
+      break;
+    case DataType::FloatType:
+      tensor.dtype.code = kDLFloat;
+      tensor.dtype.bits = 8*sizeof(float);
+      tensor.data = f.get_internal_view_data<float,HD>();
+      break;
+    case DataType::DoubleType:
+      tensor.dtype.code = kDLFloat;
+      tensor.dtype.bits = 8*sizeof(double);
+      tensor.data = f.get_internal_view_data<double,HD>();
+      break;
+    default:
+      EKAT_ERROR_MSG ("Unrecognized/unsupported data type.\n");
+  }
+
+  return tensor;
+
+}
+void FieldHeader::create_dldevice ()
+{
+  if (has_extra_data("dldevice"))
+    return;
+
+  DLDevice device;
+  device.device_type = PySession::dl_device_type();
+  if constexpr (ekat::OnGpu<typename DefaultDevice::execution_space>::value) {
+    device.device_id = Kokkos::device_id();
+  } else {
+    device.device_id = 0;
+  }
+}
+#endif
 // ---------------- Free function -------------------- //
 
 std::shared_ptr<FieldHeader>

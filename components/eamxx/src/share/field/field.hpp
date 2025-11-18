@@ -11,6 +11,10 @@
 #include <memory>   // For std::shared_ptr
 #include <string>
 
+#ifdef EAMXX_HAS_PYTHON
+#include <dlpack/dlpack.h>
+#endif
+
 namespace scream
 {
 
@@ -354,6 +358,11 @@ protected:
   // the combine<CM> utility or combine_and_fill<CM>
   template<CombineMode CM, HostOrDevice HD, bool use_fill, typename ST, typename STX>
   void update_impl (const Field& x, const ST alpha, const ST beta);
+
+#ifdef EAMXX_HAS_PYTHON
+  DLTensor __dlpack__ ();
+  DLDevice __dlpack_device__ () const;
+#endif
 
 protected:
 

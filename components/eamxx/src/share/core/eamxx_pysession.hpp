@@ -3,6 +3,7 @@
 
 #include <pybind11/pybind11.h>
 #include <pybind11/embed.h>
+#include <dlpack/dlpack.h>
 
 #include <ekat_assert.hpp>
 #include <ekat_fpe.hpp>
@@ -60,6 +61,8 @@ public:
   // Imports a python module preventing spurious FPEs.All FPEs are DISABLED
   // during the import operation, and re-enabled afterwards.
   pybind11::module safe_import (const std::string& module_name) const;
+
+  static DLDeviceType dl_device_type ();
 
 private:
 
@@ -144,6 +147,19 @@ inline pybind11::module PySession::safe_import (const std::string& module_name) 
       "Error! Could not import module '" + module_name + "'.\n");
 
   return m;
+}
+
+DLDeviceType PySession::dl_device_type ()
+{
+#if defined(KOKKOS_ENABLE_SYCL)
+  return kDLOneAPI;
+#elif defined(KOKKOS_ENABLE_HIP)
+  return kDLROCM;
+#elif defined(KOKKOS_ENABLE_CUDA)
+  return kDLCUDA;
+#else
+  return kDLCPU;
+#endif
 }
 
 } // namespace scream

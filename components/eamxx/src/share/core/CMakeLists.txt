@@ -1,3 +1,22 @@
+function(dump_cmake_variables)
+  set (opts)
+  set (args1v REGEX)
+  set (argsMv)
+  cmake_parse_arguments (dcv "${opts}" "${args1v}" "${argsMv}" ${ARGN})
+
+  get_cmake_property(dcv_var_names VARIABLES)
+
+  foreach (var_name IN LISTS dcv_var_names)
+    if (dcv_REGEX)
+      string(REGEX MATCH ${dcv_REGEX} MATCHES ${var_name})
+      if (MATCHES)
+        message(STATUS "${var_name}=${${var_name}}")
+      endif()
+    else ()
+      message(STATUS "${var_name}=${${var_name}}")
+    endif ()
+  endforeach()
+endfunction()
 # Generate eamxx_config.h and eamxx_config.f
 include (EkatUtils)
 EkatConfigFile(${CMAKE_CURRENT_SOURCE_DIR}/eamxx_config.h.in
@@ -66,14 +85,19 @@ if (EAMXX_ENABLE_PYTHON)
       message(FATAL_ERROR "Python version check failed: ${python_version_check_error}")
   endif()
 
-  # Need pybind11
+  # For Python interoperability we rely two libs:
+  #  - pybind11 for interfacing with py modules
+  #  - dlpack for passing device tensor objects without copy overheads
   execute_process(
     COMMAND "${Python_EXECUTABLE}" -c "import pybind11; print(pybind11.get_cmake_dir())"
     OUTPUT_STRIP_TRAILING_WHITESPACE OUTPUT_VARIABLE pybind11_ROOT)
-
   find_package(pybind11 REQUIRED HINTS ${pybind11_ROOT})
-
   target_link_libraries(eamxx_core PUBLIC pybind11::embed)
+
+  set (DLPACK_ROOT "" CACHE STRING "Path to the root installation folder of DLPack")
+  find_package(dlpack REQUIRED HINTS ${DLPACK_ROOT})
+  target_link_libraries(eamxx_core PUBLIC dlpack::dlpack)
+
   target_compile_definitions (eamxx_core PUBLIC EAMXX_HAS_PYTHON)
 
   # Used in eamxx_pysession.hpp to get current path

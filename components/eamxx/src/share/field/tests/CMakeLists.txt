@@ -33,5 +33,7 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
 
   if (EAMXX_ENABLE_PYTHON)
     CreateUnitTest(pyfield "pyfield.cpp" LIBS eamxx_field)
+
+    CreateUnitTest(dlpack "dlpack.cpp" LIBS eamxx_field)
   endif()
 endif()

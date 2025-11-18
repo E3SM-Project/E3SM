@@ -8,6 +8,10 @@
 #include "share/core/eamxx_types.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
 
+#ifdef EAMXX_HAS_PYTHON
+#include "share/core/eamxx_pysession.hpp"
+#endif
+
 #include <vector>
 #include <any>
 #include <map>
@@ -90,6 +94,11 @@ public:
 
   bool may_be_filled () const { return has_extra_data("may_be_filled") and get_extra_data<bool>("may_be_filled"); }
   void set_may_be_filled (const bool value) { set_extra_data("may_be_filled",value); }
+
+#ifdef EAMXX_HAS_PYTHON
+  void create_dltensor ();
+  void create_dldevice ();
+#endif
 protected:
 
   // Friend this function, so it can set up a subfield header
