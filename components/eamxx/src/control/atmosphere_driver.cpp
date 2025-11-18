@@ -603,6 +603,14 @@ void AtmosphereDriver::create_fields()
   m_atm_process_group->gather_internal_fields();
   for (const auto& f : m_atm_process_group->get_internal_fields()) {
     m_field_mgr->add_field(f);
+
+    // Internal fields have their group names set by the processes that create them.
+    // Hence, simply add them to all the groups they are marked as part of
+    const auto& ftrack = f.get_header().get_tracking();
+    const auto& fid    = f.get_header().get_identifier();
+    for (const auto& gn : ftrack.get_groups_names()) {
+      m_field_mgr->add_to_group(fid, gn);
+    }
   }
 
   // Now go through the input fields/groups to the atm proc group,
@@ -618,15 +626,6 @@ void AtmosphereDriver::create_fields()
       for (const auto& fn : g.m_info->m_fields_names) {
         m_field_mgr->add_to_group(fn, g.grid_name(), "RESTART");
       }
-    }
-  }
-  // Internal fields have their group names set by the processes that create them.
-  // Hence, simply add them to all the groups they are marked as part of
-  for (const auto& f : m_atm_process_group->get_internal_fields()) {
-    const auto& ftrack = f.get_header().get_tracking();
-    const auto& fid    = f.get_header().get_identifier();
-    for (const auto& gn : ftrack.get_groups_names()) {
-      m_field_mgr->add_to_group(fid, gn);
     }
   }
 
