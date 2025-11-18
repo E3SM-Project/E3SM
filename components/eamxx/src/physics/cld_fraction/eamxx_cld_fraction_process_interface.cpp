@@ -77,15 +77,7 @@ void CldFraction::initialize_impl (const RunType /* run_type */)
   add_postcondition_check<Interval>(get_field_out("cldfrac_tot_for_analysis"),m_grid,0.0,1.0,false);
 #ifdef EAMXX_HAS_PYTHON
   if (has_py_module()) {
-    try {
-      py_module_call("init");
-    } catch (const pybind11::error_already_set& e) {
-      std::cout << "[CldFraction::initialize_impl] Error! Something went wrong while calling the python module's function 'init'.\n"
-                   " - module name: " + m_params.get<std::string>("py_module_name") + "\n"
-                   " - pybind11 error: " + std::string(e.what()) + "\n";
-      throw e;
-    }
-
+    py_module_call("init");
   }
 #endif
 }
@@ -103,36 +95,46 @@ void CldFraction::run_impl (const double /* dt */)
   auto tot_cld_frac_4out = get_field_out("cldfrac_tot_for_analysis");
 #ifdef EAMXX_HAS_PYTHON
   if (has_py_module()) {
-    // For now, we run Python code only on CPU
-    const auto& py_qi                = get_py_field_host("qi");
-    const auto& py_liq_cld_frac      = get_py_field_host("cldfrac_liq");
-    const auto& py_ice_cld_frac      = get_py_field_host("cldfrac_ice");
-    const auto& py_tot_cld_frac      = get_py_field_host("cldfrac_tot");
-    const auto& py_ice_cld_frac_4out = get_py_field_host("cldfrac_ice_for_analysis");
-    const auto& py_tot_cld_frac_4out = get_py_field_host("cldfrac_tot_for_analysis");
+    pybind11::array py_qi,
+                    py_liq_cld_frac,
+                    py_ice_cld_frac,
+                    py_tot_cld_frac,
+                    py_ice_cld_frac_4out,
+                    py_tot_cld_frac_4out;
 
-    // Sync input to host
-    liq_cld_frac.sync_to_host();
+    if (m_params.get<std::string>("py_backend")=="device") {
+      py_qi                = get_py_field_dev("qi");
+      py_liq_cld_frac      = get_py_field_dev("cldfrac_liq");
+      py_ice_cld_frac      = get_py_field_dev("cldfrac_ice");
+      py_tot_cld_frac      = get_py_field_dev("cldfrac_tot");
+      py_ice_cld_frac_4out = get_py_field_dev("cldfrac_ice_for_analysis");
+      py_tot_cld_frac_4out = get_py_field_dev("cldfrac_tot_for_analysis");
+    } else {
+      qi.sync_to_host();
+      liq_cld_frac.sync_to_host();
+      py_qi                = get_py_field_host("qi");
+      py_liq_cld_frac      = get_py_field_host("cldfrac_liq");
+      py_ice_cld_frac      = get_py_field_host("cldfrac_ice");
+      py_tot_cld_frac      = get_py_field_host("cldfrac_tot");
+      py_ice_cld_frac_4out = get_py_field_host("cldfrac_ice_for_analysis");
+      py_tot_cld_frac_4out = get_py_field_host("cldfrac_tot_for_analysis");
+    }
 
     double ice_threshold      = m_params.get<double>("ice_cloud_threshold");
     double ice_4out_threshold = m_params.get<double>("ice_cloud_for_analysis_threshold");
 
-    try {
-      py_module_call("main",ice_threshold,ice_4out_threshold,py_qi,py_liq_cld_frac,py_ice_cld_frac,py_tot_cld_frac,py_ice_cld_frac_4out,py_tot_cld_frac_4out);
-    } catch (const pybind11::error_already_set& e) {
-      std::cout << "[CldFraction::run_impl] Error! Something went wrong while calling the python module's function 'main'.\n"
-                   " - module name: " + m_params.get<std::string>("py_module_name") + "\n"
-                   " - pybind11 error: " + std::string(e.what()) + "\n";
-      throw e;
-    }
+    py_module_call("main",
+                   ice_threshold,ice_4out_threshold,
+                   py_qi,py_liq_cld_frac,
+                   py_ice_cld_frac,py_tot_cld_frac,
+                   py_ice_cld_frac_4out,py_tot_cld_frac_4out);
 
-    // Sync outputs to dev
-    qi.sync_to_dev();
-    liq_cld_frac.sync_to_dev();
-    ice_cld_frac.sync_to_dev();
-    tot_cld_frac.sync_to_dev();
-    ice_cld_frac_4out.sync_to_dev();
-    tot_cld_frac_4out.sync_to_dev();
+    if (m_params.get<std::string>("py_backend")=="host") {
+      ice_cld_frac.sync_to_dev();
+      tot_cld_frac.sync_to_dev();
+      ice_cld_frac_4out.sync_to_dev();
+      tot_cld_frac_4out.sync_to_dev();
+    }
   } else
 #endif
   {
