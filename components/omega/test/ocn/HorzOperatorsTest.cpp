@@ -175,7 +175,7 @@ constexpr char DefaultMeshFile[] = "OmegaSphereMesh.nc";
 #if defined HORZOPERATORS_TEST_PLANE
 using TestSetup = TestSetupPlane;
 #elif defined HORZOPERATORS_TEST_SPHERE_1
-using TestSetup                  = TestSetupSphere1;
+using TestSetup = TestSetupSphere1;
 #elif defined HORZOPERATORS_TEST_SPHERE_2
 using TestSetup = TestSetupSphere2;
 #endif

@@ -573,28 +573,28 @@ class MasksAndCoefficients {
          // from cell1
          Array1DI4 keys_edge = Kokkos::subview(
              keys, Kokkos::make_pair(0, NAdvCellsForEdge(IEdge)));
-         if (const I4 I = search(keys_edge, CellID(Cell1)); - 1 != I) {
+         if (const I4 I = search(keys_edge, CellID(Cell1)); -1 != I) {
             AdvCoefs(I, IEdge) += DerivTwo(0, 0, IEdge);
             AdvCoefs3rd(I, IEdge) += DerivTwo(0, 0, IEdge);
          }
          for (int ICell = 0; ICell < NEdgesOnCell(Cell1); ++ICell) {
             if (const I4 I =
                     search(keys_edge, CellID(CellsOnCell(Cell1, ICell)));
-                - 1 != I) {
+                -1 != I) {
                AdvCoefs(I, IEdge) += DerivTwo(ICell + 1, 0, IEdge);
                AdvCoefs3rd(I, IEdge) += DerivTwo(ICell + 1, 0, IEdge);
             }
          }
          // pull together third and fourth order contributions to the flux first
          // from cell2
-         if (const I4 I = search(keys_edge, CellID(Cell2)); - 1 != I) {
+         if (const I4 I = search(keys_edge, CellID(Cell2)); -1 != I) {
             AdvCoefs(I, IEdge) += DerivTwo(0, 1, IEdge);
             AdvCoefs3rd(I, IEdge) -= DerivTwo(0, 1, IEdge);
          }
          for (int ICell = 0; ICell < NEdgesOnCell(Cell2); ++ICell) {
             if (const I4 I =
                     search(keys_edge, CellID(CellsOnCell(Cell2, ICell)));
-                - 1 != I) {
+                -1 != I) {
                AdvCoefs(I, IEdge) += DerivTwo(ICell + 1, 1, IEdge);
                AdvCoefs3rd(I, IEdge) -= DerivTwo(ICell + 1, 1, IEdge);
             }
@@ -605,10 +605,10 @@ class MasksAndCoefficients {
                 -DcEdge(IEdge) * DcEdge(IEdge) / 12._Real;
          }
          // 2nd order centered contribution place this in the main flux weights
-         if (const I4 I = search(keys_edge, CellID(Cell1)); - 1 != I) {
+         if (const I4 I = search(keys_edge, CellID(Cell1)); -1 != I) {
             AdvCoefs(I, IEdge) += 0.5_Real;
          }
-         if (const I4 I = search(keys_edge, CellID(Cell2)); - 1 != I) {
+         if (const I4 I = search(keys_edge, CellID(Cell2)); -1 != I) {
             AdvCoefs(I, IEdge) += 0.5_Real;
          }
          // multiply by edge length - thus the flux is just dt*ru times the
