@@ -54,6 +54,7 @@ TEST_CASE("pyfield", "") {
 
     auto f_py = create_py_field<Host>(f1);
     py_mod.attr("set_iota")(f_py);
+    f1.sync_to_dev();
   }
   REQUIRE (views_are_equal(f1,f2));
 
