@@ -60,7 +60,7 @@ VertMix:
 2. Convective Mixing:
    - `EnableConvMix`: Flag to enable/disable convective mixing (Default: True)
    - `ConvDiff`: Convective mixing coefficient (m²/s; Default: 1.0)
-   - `ConvTriggerBVF`: Trigger threshold for convective mixing (Default: < 0.0)
+   - `ConvTriggerBVF`: Trigger threshold for convective mixing (Default: 0.0)
 
 3. Shear Mixing:
    - `EnableShearMix`: Flag to enable/disable shear mixing (Default: True)

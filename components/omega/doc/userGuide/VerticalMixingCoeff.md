@@ -20,7 +20,7 @@ VertMix:
   Convective:
     Enable: true         # Enables the convective-induced mixing option
     Diffusivity: 1.0     # Convective mixing coefficient (m²/s)
-    TriggerBVF: -1e-4    # Brunt-Vaisala frequency threshold
+    TriggerBVF: 0.0      # Brunt-Vaisala frequency threshold
   Shear:
     Enable: true         # Enables the shear-instability driven mixing option
     NuZero: 1.0e-2       # Base viscosity coefficient
