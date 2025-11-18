@@ -43,7 +43,7 @@ Omega:
     WindForcingTendencyEnable: false
     BottomDragTendencyEnable: false
     BottomDragCoeff: 0.0
-    TracerHorzAdvTendencyEnable: false
+    TracerHorzAdvTendencyEnable: true
     TracerHorzAdvTendencyOrder: 1
     TracerDiffTendencyEnable: true
     EddyDiff2: 10.0
