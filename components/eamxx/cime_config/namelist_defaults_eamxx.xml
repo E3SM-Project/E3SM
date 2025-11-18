@@ -538,6 +538,9 @@ be lost if SCREAM_HACK_XML is not enabled.
 
       <rad_frequency hgrid="ne4np4">1</rad_frequency>
       <rad_frequency hgrid="ne30np4">2</rad_frequency>
+      <rad_frequency hgrid="ne32np4">2</rad_frequency>
+      <rad_frequency hgrid="ne64np4">2</rad_frequency>
+      <rad_frequency hgrid="ne128np4">2</rad_frequency>
       <rad_frequency hgrid="ne120np4">4</rad_frequency>
       <rad_frequency hgrid="ne256np4">3</rad_frequency>
       <rad_frequency hgrid="ne512np4">3</rad_frequency>
@@ -625,6 +628,9 @@ be lost if SCREAM_HACK_XML is not enabled.
     <filename hgrid="ne30np4" nlev="72">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L72_20220823.nc</filename>
     <filename hgrid="ne30np4" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L128_20221004.nc</filename>
     <filename hgrid="ne30np4" nlev="72" COMPSET=".*SCREAM%MAM4xx.*">${DIN_LOC_ROOT}/atm/scream/init/screami_mam_ne30np4L72_c20240623.nc</filename>
+    <filename hgrid="ne32np4"  nlev="128">${DIN_LOC_ROOT}/atm/scream/init/eamxxi_ne32np4L128.v3.LR.amip_0101.eam.i.2000-01-01-00000.20251001.nc</filename>
+    <filename hgrid="ne64np4"  nlev="128">${DIN_LOC_ROOT}/atm/scream/init/eamxxi_ne64np4L128.v3.LR.amip_0101.eam.i.2000-01-01-00000.20251001.nc</filename>
+    <filename hgrid="ne128np4" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/eamxxi_ne128np4L128.v3.LR.amip_0101.eam.i.2000-01-01-00000.20251001.nc</filename>
     <filename hgrid="ne120np4" nlev="72">${DIN_LOC_ROOT}/atm/scream/init/screami_ne120np4L72_20220823.nc</filename>
     <filename hgrid="ne120np4" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_ne120np4L128_20230215.nc</filename>
     <filename hgrid="ne256np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne256np4L128_ifs-20200120_20220914.nc</filename>
@@ -873,6 +879,9 @@ be lost if SCREAM_HACK_XML is not enabled.
     <se_tstep type="real">UNSET</se_tstep>
     <se_tstep hgrid="ne4np4" constraints="gt 0">600</se_tstep>
     <se_tstep hgrid="ne30np4" constraints="gt 0">300</se_tstep>
+    <se_tstep hgrid="ne32np4" constraints="gt 0">300</se_tstep>
+    <se_tstep hgrid="ne64np4" constraints="gt 0">150</se_tstep>
+    <se_tstep hgrid="ne128np4" constraints="gt 0">75</se_tstep>
     <se_tstep hgrid="ne120np4" constraints="gt 0">75</se_tstep>
     <se_tstep hgrid="ne256np4" constraints="gt 0">33.33333333333</se_tstep>
     <se_tstep hgrid="ne512np4" constraints="gt 0">16.6666666666666</se_tstep>

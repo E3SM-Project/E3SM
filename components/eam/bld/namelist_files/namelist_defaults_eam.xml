@@ -62,6 +62,10 @@
 <ncdata dyn="se" hgrid="ne4np4"   nlev="80"  ic_ymd="101" >atm/cam/inic/homme/eami_mam4_Linoz_ne4np4_L80_c20231010.nc</ncdata>
 <ncdata dyn="se" hgrid="ne30np4"  nlev="80"  ic_ymd="101" >atm/cam/inic/homme/eami_mam4_Linoz_ne30np4_L80_c20231010.nc</ncdata>
 
+<ncdata dyn="se" hgrid="ne32np4"  nlev="80"  ic_ymd="101" >atm/cam/inic/homme/v3.LR.amip_0101.eam.i.2000-01-01-00000.ne32np4.20251001.nc</ncdata>
+<ncdata dyn="se" hgrid="ne64np4"  nlev="80"  ic_ymd="101" >atm/cam/inic/homme/v3.LR.amip_0101.eam.i.2000-01-01-00000.ne64np4.20251001.nc</ncdata>
+<ncdata dyn="se" hgrid="ne128np4" nlev="80"  ic_ymd="101" >atm/cam/inic/homme/v3.LR.amip_0101.eam.i.2000-01-01-00000.ne128np4.20251001.nc</ncdata>
+
 <!-- Initial conditions for DYAMOND1 (2016-08-01) and DYAMOND2 (2020-01-20) hindcast campaign -->
 <!-- Spun-up F-case initial conditions do not exist for these grids -->
 <ncdata hgrid="ne1024np4" nlev="128" ic_ymd="20160801">atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne1024np4_topoadj_L128_v20191116.nc</ncdata>
