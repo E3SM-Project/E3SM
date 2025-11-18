@@ -167,19 +167,21 @@ public:
   //   - The field is a subfield of another field. In this case, this class
   //     actually stores the "parent" field view. So when calling this method,
   //     you will actually get the raw pointer of the parent field view.
-  template<typename ST, HostOrDevice HD = Device>
+  template<typename ST = void, HostOrDevice HD = Device>
   ST* get_internal_view_data () const {
-    // Check that the scalar type is correct
-    using nonconst_ST = typename std::remove_const<ST>::type;
-    EKAT_REQUIRE_MSG ((field_valid_data_types().at<nonconst_ST>()==m_header->get_identifier().data_type()
-                       or std::is_same<nonconst_ST,char>::value),
-        "Error! Attempt to access raw field pointer with the wrong scalar type.\n"
-        " - field name: " + name() + "\n"
-        " - field data type: " + e2str(data_type()) + "\n"
-        " - requested type : " + e2str(field_valid_data_types().at<nonconst_ST>()) + "\n");
-    EKAT_REQUIRE_MSG (not m_is_read_only || std::is_const<ST>::value,
-        "Error! Cannot get a non-const raw pointer to the field data if the field is read-only.\n"
-        " - field name: " + name() + "\n");
+    if constexpr (not std::is_same_v<ST,void>) {
+      // Check that the scalar type is correct
+      using nonconst_ST = typename std::remove_const<ST>::type;
+      EKAT_REQUIRE_MSG ((field_valid_data_types().at<nonconst_ST>()==m_header->get_identifier().data_type()
+                         or std::is_same<nonconst_ST,char>::value),
+          "Error! Attempt to access raw field pointer with the wrong scalar type.\n"
+          " - field name: " + name() + "\n"
+          " - field data type: " + e2str(data_type()) + "\n"
+          " - requested type : " + e2str(field_valid_data_types().at<nonconst_ST>()) + "\n");
+      EKAT_REQUIRE_MSG (not m_is_read_only || std::is_const<ST>::value,
+          "Error! Cannot get a non-const raw pointer to the field data if the field is read-only.\n"
+          " - field name: " + name() + "\n");
+    }
 
     return reinterpret_cast<ST*>(get_view_impl<HD>().data());
   }
@@ -360,8 +362,8 @@ protected:
   void update_impl (const Field& x, const ST alpha, const ST beta);
 
 #ifdef EAMXX_HAS_PYTHON
-  DLTensor __dlpack__ ();
-  DLDevice __dlpack_device__ () const;
+  // DLManagedTensor get_dltensor ();
+  // DLDevice __dlpack_device__ () const;
 #endif
 
 protected:

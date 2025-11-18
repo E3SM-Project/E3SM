@@ -96,8 +96,8 @@ public:
   void set_may_be_filled (const bool value) { set_extra_data("may_be_filled",value); }
 
 #ifdef EAMXX_HAS_PYTHON
-  void create_dltensor ();
-  void create_dldevice ();
+  DLTensor& get_dltensor ();
+  DLDevice& get_dldevice ();
 #endif
 protected:
 

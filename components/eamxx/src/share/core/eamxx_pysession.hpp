@@ -149,7 +149,7 @@ inline pybind11::module PySession::safe_import (const std::string& module_name) 
   return m;
 }
 
-DLDeviceType PySession::dl_device_type ()
+inline DLDeviceType PySession::dl_device_type ()
 {
 #if defined(KOKKOS_ENABLE_SYCL)
   return kDLOneAPI;

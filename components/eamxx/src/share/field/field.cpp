@@ -242,27 +242,4 @@ void Field::allocate_view ()
   m_data.h_view = Kokkos::create_mirror_view(m_data.d_view);
 }
 
-#ifdef EAMXX_HAS_PYTHON
-DLTensor Field::__dlpack__ ()
-{
-  // FieldHeader is non-const, as we may add extra data
-  auto& fh  = f.get_header();
-  fh.create_dltensor();
-  auto& dltens = fh.get_extra_data("dltensor");
-
-  // The FieldHeader does not have access to the view data,
-  // so we must set the data ptr here.
-  dltens.data = m_data.d_view.data();
-
-  return dltens;
-}
-DLDevice Field::__dlpack_device__ () const
-{
-  auto& fh  = f.get_header();
-  fh.create_dldevice();
-  auto& dltens = fh.get_extra_data("dldevice");
-
-}
-#endif
-
 } // namespace scream

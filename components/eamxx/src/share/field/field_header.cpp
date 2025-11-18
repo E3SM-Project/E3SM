@@ -116,79 +116,80 @@ bool FieldHeader::is_aliasing (const FieldHeader& rhs) const
 }
 
 #ifdef EAMXX_HAS_PYTHON
-void FieldHeader::create_dldensor ()
+DLTensor& FieldHeader::get_dltensor ()
 {
   // FieldHeader is non-const, as we may add extra data
-  if (has_extra_data("dltensor")) {
-    return;
-  }
+  if (not has_extra_data("dltensor")) {
+    EKAT_REQUIRE_MSG (m_alloc_prop->is_committed(),
+        "Error! Cannot crate dlpack data until field alloc props are committed.\n"
+        " - field name: " + get_identifier().name() + "\n");
+    EKAT_REQUIRE_MSG (not m_alloc_prop->get_subview_info().dynamic,
+        "Error! We cannot create dlpack data for a field that is a dynamic subfield of another.\n"
+        " - field name: " + get_identifier().name() + "\n");
+    
+    const auto& fid = get_identifier();
+    const auto& fl  = fid.get_layout();
 
-  EKAT_REQUIRE_MSG (m_alloc_prop.is_committed(),
-      "Error! Cannot crate dlpack data until field alloc props are committed.\n"
-      " - field name: " + get_identifier().name() + "\n");
-  EKAT_REQUIRE_MSG (not m_alloc_prop.get_subview_info().dynamic,
-      "Error! We cannot create dlpack data for a field that is a dynamic subfield of another.\n"
-      " - field name: " + get_identifier().name() + "\n");
-  
-  DLTensor tensor;
-  tensor.ndim = f.rank();
+    DLTensor tensor;
+    tensor.ndim = fl.rank();
 
-  const auto& fid = get_identifier();
-  const auto& fl  = fid.get_layout();
-
-  // We don't have strides, and even shape cannot be taken from the layout dims,
-  // since DLTensor expects int64_t*, while layout stores int* (inside a vector)
-  if (not has_extra_data("dlpack_shape")) {
-    std::vector<std::int64_t> shape;
-    for (auto d : fl.dims()) {
-      shape.push_back(d);
+    // We don't have strides, and even shape cannot be taken from the layout dims,
+    // since DLTensor expects int64_t*, while layout stores int* (inside a vector)
+    if (not has_extra_data("dlpack_shape")) {
+      std::vector<std::int64_t> shape;
+      for (auto d : fl.dims()) {
+        shape.push_back(d);
+      }
+      set_extra_data("dlpack_shape",shape);
     }
-    set_extra_data("dlpack_shape",shape);
+    if (not has_extra_data("dlpack_strides")) {
+      std::vector<std::int64_t> strides = get_strides(*this);
+      set_extra_data("dlpack_strides",strides);
+    }
+
+    tensor.shape   = get_extra_data<std::vector<std::int64_t>>("dlpack_shape").data();
+    tensor.strides = get_extra_data<std::vector<std::int64_t>>("dlpack_strides").data();
+    tensor.byte_offset = get_offset(*this);
+    tensor.dtype.lanes = 1;
+
+    switch (fid.data_type()) {
+      case DataType::IntType:
+        tensor.dtype.code = kDLInt;
+        tensor.dtype.bits = 8*sizeof(int);
+        break;
+      case DataType::FloatType:
+        tensor.dtype.code = kDLFloat;
+        tensor.dtype.bits = 8*sizeof(float);
+        break;
+      case DataType::DoubleType:
+        tensor.dtype.code = kDLFloat;
+        tensor.dtype.bits = 8*sizeof(double);
+        break;
+      default:
+        EKAT_ERROR_MSG ("Unrecognized/unsupported data type.\n");
+    }
+    tensor.device = get_dldevice();
+
+    set_extra_data("dltensor",tensor);
   }
-  if (not has_extra_data("dlpack_strides")) {
-    std::vector<std::int64_t> strides = get_strides(*this);
-    set_extra_data("dlpack_strides",strides);
-  }
 
-  tensor.shape   = get_extra_data<std::vector<std::int64_t>>("dlpack_shape").data();
-  tensor.strides = get_extra_data<std::vector<std::int64_t>>("dlpack_strides").data();
-  tensor.byte_offset = get_offset(*this);
-
-  switch (fid.data_type()) {
-    case DataType::IntType:
-      tensor.dtype.code = kDLInt;
-      tensor.dtype.bits = 8*sizeof(int);
-      tensor.data = f.get_internal_view_data<int,HD>();
-      break;
-    case DataType::FloatType:
-      tensor.dtype.code = kDLFloat;
-      tensor.dtype.bits = 8*sizeof(float);
-      tensor.data = f.get_internal_view_data<float,HD>();
-      break;
-    case DataType::DoubleType:
-      tensor.dtype.code = kDLFloat;
-      tensor.dtype.bits = 8*sizeof(double);
-      tensor.data = f.get_internal_view_data<double,HD>();
-      break;
-    default:
-      EKAT_ERROR_MSG ("Unrecognized/unsupported data type.\n");
-  }
-
-  return tensor;
-
+  return get_extra_data<DLTensor>("dltensor");
 }
-void FieldHeader::create_dldevice ()
-{
-  if (has_extra_data("dldevice"))
-    return;
 
-  DLDevice device;
-  device.device_type = PySession::dl_device_type();
-  if constexpr (ekat::OnGpu<typename DefaultDevice::execution_space>::value) {
-    device.device_id = Kokkos::device_id();
-  } else {
-    device.device_id = 0;
+DLDevice& FieldHeader::get_dldevice ()
+{
+  if (not has_extra_data("dldevice")) {
+    DLDevice device;
+    device.device_type = PySession::dl_device_type();
+    if constexpr (ekat::OnGpu<typename DefaultDevice::execution_space>::value) {
+      device.device_id = Kokkos::device_id();
+    } else {
+      device.device_id = 0;
+    }
+    set_extra_data("dldevice",device);
   }
+
+  return get_extra_data<DLDevice>("dldevice");
 }
 #endif
 // ---------------- Free function -------------------- //

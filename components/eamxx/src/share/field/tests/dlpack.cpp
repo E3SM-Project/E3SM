@@ -2,8 +2,8 @@
 #include <numeric>
 
 #include "share/field/field.hpp"
-#include "share/field/field_pyutils.hpp"
 #include "share/field/field_utils.hpp"
+#include "share/field/field_dlpack.hpp"
 
 #include <dlpack/dlpack.h>
 
@@ -47,16 +47,24 @@ TEST_CASE("dl_tensor", "") {
 
   // Use scope, so all py structures are destroyed BEFORE py.finalize()
   {
-    using CapsuleDestructor = void (*)(void*);
+    // auto py_mod = ps.safe_import("dlpack_numpy");
+    // auto py_tens = create_dl_tensor<Host>(f1);
+    // py_mod.attr("set_iota")(py_tens);
+    PyObject* pModule = PyImport_ImportModule("dlpack_numpy");
+    if (pModule==nullptr) {
+      printf("error module!\n");
+    }
+    PyObject* pFunc = PyObject_GetAttrString(pModule, "set_iota");
 
-    auto py_mod = ps.safe_import("dlpack_numpy");
-    
-    // auto tens = create_dl_tensor<Host>(f1);
-    // DLManagedTensor tens_mgr;
-    // tens_mgr.dl_tensor = tens;
-    // auto caps = pybind11::capsule(&tens_mgr,"dltensor",static_cast<CapsuleDestructor>(nullptr));
-    auto caps = pybind11::capsule(&f1,"dltensor",static_cast<CapsuleDestructor>(nullptr));
-    py_mod.attr("set_iota")(caps);
+    if (pFunc==nullptr) {
+      printf("error func!\n");
+    }
+    auto dl_tens = create_dl_tensor(f1);
+    // auto capsule = PyCapsule_New(&dl_tens,"dltensor",nullptr);
+    auto ret = PyObject_CallFunctionObjArgs(pFunc, dl_tens, NULL);
+    if (ret==nullptr) {
+      PyErr_Print(); // Print the error
+    }
   }
   REQUIRE (views_are_equal(f1,f2));
 
