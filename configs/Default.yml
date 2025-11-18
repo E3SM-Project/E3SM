@@ -26,7 +26,8 @@ Omega:
     VelHyperDiffTendencyEnable: true
     ViscDel4: 1.2e11
     DivFactor: 1.0
-    TracerHorzAdvTendencyEnable: true
+    TracerHorzAdvTendencyEnable: false
+    TracerHorzAdvTendencyOrder: 2
     TracerDiffTendencyEnable: true
     EddyDiff2: 10.0
     TracerHyperDiffTendencyEnable: true
