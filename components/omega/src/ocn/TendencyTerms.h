@@ -373,8 +373,8 @@ class TracerHorzAdvOnCell {
    TracerHorzAdvOnCell(const HorzMesh *Mesh, const VertCoord *VCoord);
 
    KOKKOS_FUNCTION void operator()(const Array3DReal &Tend, const I4 L,
-                                  const I4 ICell, const I4 KChunk,
-                                  const Array2DReal &NormVelEdge,
+                                   const I4 ICell, const I4 KChunk,
+                                   const Array2DReal &NormVelEdge,
                                    const Array3DReal &HTracersOnEdge) const {
 
       const I4 KStartCell = chunkStart(KChunk, MinLayerCell(ICell));
@@ -393,7 +393,7 @@ class TracerHorzAdvOnCell {
                              EdgeSignOnCell(ICell, J) *
                              HTracersOnEdge(L, JEdge, K) *
                              NormVelEdge(JEdge, K) * InvAreaCell;
-        }
+         }
       }
       for (int KVec = 0; KVec < KLenCell; ++KVec) {
          const I4 K = KStartCell + KVec;
@@ -429,41 +429,50 @@ class TracerHighOrderHorzAdvOnCell {
                                    const Array3DReal &TracerCell,
                                    const Array2DReal &FluxLayerThickEdge,
                                    const Array2DReal &NormVelEdge) const {
-      const I4 KStart        = KChunk * VecLength;
-      const I4 KEnd          = KStart + VecLength;
+      const I4 KStart = KChunk * VecLength;
+      const I4 KEnd   = KStart + VecLength;
       for (int K = KStart; K < KEnd; ++K)
          HighOrderFlxHorz(L, IEdge, K) = 0;
       if (AdvMaskHighOrder(IEdge)) {
          for (int I = 0; I < NAdvCellsForEdge(IEdge); ++I) {
             const I4 ICell = AdvCellsForEdge(IEdge, I);
             for (int K = KStart; K < KEnd; ++K) {
-               const Real normalThicknessFlux = FluxLayerThickEdge(IEdge, K) * NormVelEdge(IEdge, K);
-               const Real tracerWgt = (AdvCoefs(I, IEdge) + coef3rdOrder *
-                         std::copysign(1._Real, normalThicknessFlux) *
-                               AdvCoefs3rd(I, IEdge)) * normalThicknessFlux;
-               HighOrderFlxHorz(L, IEdge, K) += tracerWgt * TracerCell(L, ICell, K);
+               const Real normalThicknessFlux =
+                   FluxLayerThickEdge(IEdge, K) * NormVelEdge(IEdge, K);
+               const Real tracerWgt =
+                   (AdvCoefs(I, IEdge) +
+                    coef3rdOrder * std::copysign(1._Real, normalThicknessFlux) *
+                        AdvCoefs3rd(I, IEdge)) *
+                   normalThicknessFlux;
+               HighOrderFlxHorz(L, IEdge, K) +=
+                   tracerWgt * TracerCell(L, ICell, K);
             }
          }
       } else {
          for (int K = KStart; K < KEnd; ++K) {
-            const I4 JCell0      = CellsOnEdge(IEdge, 0);
-            const I4 JCell1      = CellsOnEdge(IEdge, 1);
-            const Real normalThicknessFlux = FluxLayerThickEdge(IEdge, K) * NormVelEdge(IEdge, K);
-            const Real tracerWgt = DvEdge(IEdge) * 0.5_Real * normalThicknessFlux;
-            HighOrderFlxHorz(L, IEdge, K) += tracerWgt * (TracerCell(L, JCell1, K) + TracerCell(L, JCell0, K));
+            const I4 JCell0 = CellsOnEdge(IEdge, 0);
+            const I4 JCell1 = CellsOnEdge(IEdge, 1);
+            const Real normalThicknessFlux =
+                FluxLayerThickEdge(IEdge, K) * NormVelEdge(IEdge, K);
+            const Real tracerWgt =
+                DvEdge(IEdge) * 0.5_Real * normalThicknessFlux;
+            HighOrderFlxHorz(L, IEdge, K) +=
+                tracerWgt *
+                (TracerCell(L, JCell1, K) + TracerCell(L, JCell0, K));
          }
       }
    }
 
-   KOKKOS_FUNCTION void operator()(const Array3DReal &Tend,
-                                  const I4 L, const I4 ICell, const I4 KChunk) const {
+   KOKKOS_FUNCTION void operator()(const Array3DReal &Tend, const I4 L,
+                                   const I4 ICell, const I4 KChunk) const {
       const I4 KStart        = KChunk * VecLength;
       const I4 KEnd          = KStart + VecLength;
       const Real InvAreaCell = 1._Real / AreaCell(ICell);
-      for (int I=0; I < NEdgesOnCell(ICell); ++I) {
+      for (int I = 0; I < NEdgesOnCell(ICell); ++I) {
          const I4 IEdge = EdgesOnCell(ICell, I);
          for (int K = KStart; K < KEnd; ++K) {
-            Tend(L, ICell, K) +=  EdgeSignOnCell(ICell, I) * HighOrderFlxHorz(L, IEdge, K) * InvAreaCell;
+            Tend(L, ICell, K) += EdgeSignOnCell(ICell, I) *
+                                 HighOrderFlxHorz(L, IEdge, K) * InvAreaCell;
          }
       }
    }
