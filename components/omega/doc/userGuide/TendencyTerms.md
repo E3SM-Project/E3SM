@@ -43,7 +43,7 @@ the currently available tendency terms:
 | | ViscDel4 | horizontal biharmonic mixing coefficient for normal velocity
 | | DivFactor | scale factor for the divergence term
 | TracerHorzAdvOnCell | TracerHorzAdvTendencyEnable
-| | TracerHighOrderHorzAdvTendencyEnable | enable/disable term
+| | TracerHorzAdvTendencyOrder | enable/disable term
 | TracerDiffOnCell | TracerDiffTendencyEnable | enable/disable term
 | | EddyDiff2 | horizontal diffusion coefficient
 | TracerHyperDiffOnCell | TracerHyperDiffTendencyEnable | enable/disable term

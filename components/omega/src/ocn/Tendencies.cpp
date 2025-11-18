@@ -13,6 +13,7 @@
 #include "Error.h"
 #include "Pacer.h"
 #include "Tracers.h"
+#include <string>
 
 namespace OMEGA {
 
@@ -166,23 +167,19 @@ void Tendencies::readTendConfig(
    }
 
    if (TendConfig->existsVar("TracerHorzAdvTendencyEnable")) {
-      TendConfig->get("TracerHorzAdvTendencyEnable",
-                      this->TracerHorzAdv.Enabled);
+      I4 Order = 1;
+      if (TendConfig->existsVar("TracerHorzAdvTendencyOrder")) 
+         TendConfig->get("TracerHorzAdvTendencyOrder", Order);
+      if (Order == 1)
+         this->TracerHorzAdv.Enabled = true;
+      else if (Order == 2)
+         this->TracerHighOrderHorzAdv.Enabled = true;
+      else  {
+         const std::string msg = 
+            "TracerHorzAdvTendencyOrder: Only values are 1 and 2, found "+std::to_string(Order);
+         ABORT_ERROR(msg);
+     }
    }
-   if (TendConfig->existsVar("TracerHighOrderHorzAdvTendencyEnable")) {
-      TendConfig->get("TracerHighOrderHorzAdvTendencyEnable",
-                      this->TracerHighOrderHorzAdv.Enabled);
-   }
-   if (!TendConfig->existsVar("TracerHorzAdvTendencyEnable") && !TendConfig->existsVar("TracerHighOrderHorzAdvTendencyEnable")) {
-      Err += TendConfig->get("TracerHorzAdvTendencyEnable",
-                             this->TracerHorzAdv.Enabled);
-      Err += TendConfig->get("TracerHighOrderHorzAdvTendencyEnable",
-                             this->TracerHighOrderHorzAdv.Enabled);
-      CHECK_ERROR_ABORT(
-          Err, "Tendencies: Neither TracerHorzAdvTendencyEnable nor "
-               "TracerHighOrderHorzAdvTendencyEnable found in TendConfig");
-   }
-
    Err += TendConfig->get("TracerDiffTendencyEnable",
                           this->TracerDiffusion.Enabled);
    CHECK_ERROR_ABORT(
