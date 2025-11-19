@@ -3,7 +3,6 @@
 #include "share/diagnostics/aerocom_cld_util.hpp"
 #include "share/diagnostics/register_diagnostics.hpp"
 #include "share/field/field_utils.hpp"
-#include "share/field/field_impl.hpp"
 #include "share/data_managers/mesh_free_grids_manager.hpp"
 #include "share/core/eamxx_setup_random_test.hpp"
 
