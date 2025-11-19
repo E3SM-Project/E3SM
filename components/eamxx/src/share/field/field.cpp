@@ -6,6 +6,60 @@
 namespace scream
 {
 
+namespace
+{
+void update_checks (const Field& y, const Field* x = nullptr,
+                    const ScalarWrapper* alpha = nullptr,
+                    const ScalarWrapper* beta = nullptr)
+{
+  // Check output field is writable
+  EKAT_REQUIRE_MSG (not y.is_read_only(),
+      "Error! Cannot update field, as it is read-only.\n"
+      " - field name: " + y.name() + "\n");
+
+  const auto& y_dt = y.data_type();
+  const auto& x_dt = x==nullptr ? y_dt : x->data_type();
+  const auto& a_dt = alpha==nullptr ? y_dt : alpha->type;
+  const auto& b_dt = beta==nullptr ? y_dt : beta->type;
+
+  // If user passes, say, double alpha/beta for an int field, we should error out, warning about
+  // a potential narrowing rounding. The other way around, otoh, is allowed (even though
+  // there's an upper limit to the int values that a double can store, it is unlikely the user
+  // will use such large factors).
+  // Similarly, we allow updating a field Y with another X as long as converting the data type of X
+  // to the data type of Y does not require narrowing
+  EKAT_REQUIRE_MSG (not is_narrowing_conversion(x_dt,y_dt),
+      "Error! Right hand side data type may be narrowed when converted to x data type.\n"
+      " - rhs data type: " + e2str(x_dt) + "\n"
+      " - lhs data type: " + e2str(y_dt) + "\n");
+  EKAT_REQUIRE_MSG (not is_narrowing_conversion(a_dt,y_dt),
+      "Error! Coefficient alpha may be narrowed when converted to x/y data type.\n"
+      " - lhs data type  : " + e2str(y_dt) + "\n"
+      " - alpha data type: " + e2str(a_dt) + "\n");
+  EKAT_REQUIRE_MSG (not is_narrowing_conversion(b_dt,y_dt),
+      "Error! Coefficient beta may be narrowed when converted to x/y data type.\n"
+      " - lhs data type  : " + e2str(y_dt) + "\n"
+      " - beta data type: " + e2str(b_dt) + "\n");
+
+  // Check x/y are allocated
+  EKAT_REQUIRE_MSG (y.is_allocated(),
+      "Error! Cannot update field, since it is not allocated.\n"
+      " - field name: " + y.name() + "\n");
+  EKAT_REQUIRE_MSG (x==nullptr or x->is_allocated(),
+      "Error! Cannot update field, since rhs field is not allocated.\n"
+      " - field name: " + x->name() + "\n");
+
+  const auto& y_l = y.get_header().get_identifier().get_layout();
+  const auto& x_l = x==nullptr ? y_l : x->get_header().get_identifier().get_layout();
+  EKAT_REQUIRE_MSG (y_l==x_l,
+      "Error! Incompatible layouts for update_field.\n"
+      " - x name: " + x->name() + "\n"
+      " - y name: " + y.name() + "\n"
+      " - x layout: " + x_l.to_string() + "\n"
+      " - y layout: " + y_l.to_string() + "\n");
+}
+} // anonymous namespace
+
 Field::
 Field (const identifier_type& id, bool allocate)
 {
@@ -325,54 +379,13 @@ template<CombineMode CM>
 void Field::
 update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta)
 {
-  // Check this field is writable
-  EKAT_REQUIRE_MSG (not is_read_only(),
-      "Error! Cannot update field, as it is read-only.\n"
-      " - field name: " + name() + "\n");
-
-  const auto& dt = data_type();
-  const auto& rhs_dt = x.data_type();
-
-  // If user passes, say, double alpha/beta for an int field, we should error out, warning about
-  // a potential narrowing rounding. The other way around, otoh, is allowed (even though
-  // there's an upper limit to the int values that a double can store, it is unlikely the user
-  // will use such large factors).
-  // Similarly, we allow updating a field Y with another X as long as converting the data type of X
-  // to the data type of Y does not require narrowing
-  EKAT_REQUIRE_MSG (not is_narrowing_conversion(alpha.type,dt),
-      "Error! Coefficient alpha may be narrowed when converted to x/y data type.\n"
-      " - x/y data type  : " + e2str(dt) + "\n"
-      " - alpha data type: " + e2str(alpha.type) + "\n");
-  EKAT_REQUIRE_MSG (not is_narrowing_conversion(beta.type,dt),
-      "Error! Coefficient beta may be narrowed when converted to x/y data type.\n"
-      " - x/y data type  : " + e2str(dt) + "\n"
-      " - beta data type: " + e2str(beta.type) + "\n");
-  EKAT_REQUIRE_MSG (not is_narrowing_conversion(rhs_dt,dt),
-      "Error! Right hand side data type may be narrowed when converted to x data type.\n"
-      " - rhs data type: " + e2str(rhs_dt) + "\n"
-      " - lhs data type: " + e2str(dt) + "\n");
-
-  // Check x/y are allocated
-  EKAT_REQUIRE_MSG (is_allocated(),
-      "Error! Cannot update field, since it is not allocated.\n"
-      " - field name: " + name() + "\n");
-  EKAT_REQUIRE_MSG (x.is_allocated(),
-      "Error! Cannot update field, since source field is not allocated.\n"
-      " - field name: " + x.name() + "\n");
-
-  const auto& y_l = get_header().get_identifier().get_layout();
-  const auto& x_l = x.get_header().get_identifier().get_layout();
-  EKAT_REQUIRE_MSG (y_l==x_l,
-      "Error! Incompatible layouts for update_field.\n"
-      " - x name: " + x.name() + "\n"
-      " - y name: " + name() + "\n"
-      " - x layout: " + x_l.to_string() + "\n"
-      " - y layout: " + y_l.to_string() + "\n");
+  // Check consistency of inputs
+  update_checks(*this,&x,&alpha,&beta);
 
   // Determine if the RHS can contain fill_value entries
   bool fill_aware = x.get_header().may_be_filled();
 
-  if (dt==DataType::IntType) {
+  if (data_type()==DataType::IntType) {
     auto a = alpha.as<int>();
     auto b = beta.as<int>();
     if (fill_aware) {
@@ -380,34 +393,34 @@ update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta)
     } else {
       return update_impl<CM,false,int,int>(x,a,b);
     }
-  } else if (dt==DataType::FloatType) {
+  } else if (data_type()==DataType::FloatType) {
     auto a = alpha.as<float>();
     auto b = beta.as<float>();
     if (fill_aware) {
-      if (rhs_dt==DataType::FloatType)
+      if (x.data_type()==DataType::FloatType)
         return update_impl<CM,true,float,float>(x,a,b);
       else
         return update_impl<CM,true,float,int>(x,a,b);
     } else {
-      if (rhs_dt==DataType::FloatType)
+      if (x.data_type()==DataType::FloatType)
         return update_impl<CM,false,float,float>(x,a,b);
       else
         return update_impl<CM,false,float,int>(x,a,b);
     }
-  } else if (dt==DataType::DoubleType) {
+  } else if (data_type()==DataType::DoubleType) {
     auto a = alpha.as<double>();
     auto b = beta.as<double>();
     if (fill_aware) {
-      if (rhs_dt==DataType::DoubleType)
+      if (x.data_type()==DataType::DoubleType)
         return update_impl<CM,true,double,double>(x,a,b);
-      else if (rhs_dt==DataType::FloatType)
+      else if (x.data_type()==DataType::FloatType)
         return update_impl<CM,true,double,float>(x,a,b);
       else
         return update_impl<CM,true,double,int>(x,a,b);
     } else {
-      if (rhs_dt==DataType::DoubleType)
+      if (x.data_type()==DataType::DoubleType)
         return update_impl<CM,false,double,double>(x,a,b);
-      else if (rhs_dt==DataType::FloatType)
+      else if (x.data_type()==DataType::FloatType)
         return update_impl<CM,false,double,float>(x,a,b);
       else
         return update_impl<CM,false,double,int>(x,a,b);
