@@ -99,10 +99,6 @@ public:
   // Constructor(s)
   Field () = default;
   explicit Field (const identifier_type& id, bool allocate = false);
-  template<typename ViewT,
-           typename = typename std::enable_if<Kokkos::is_view<ViewT>::value>::type>
-  Field (const identifier_type& id,
-         const ViewT& view_d);
   Field (const Field& src) = default;
   ~Field () = default;
 
@@ -212,22 +208,17 @@ public:
   void sync_to_host (const bool fence = true) const;
   void sync_to_dev (const bool fence = true) const;
 
-  // Set the field to a constant value (on host or device)
-  // Note: as done below in 'update', the default for ST is only to allow
-  //       giving a default for HD. In practice, ST will ALWAYS be
-  //       deduced from the type of 'value'
-  template<HostOrDevice HD = Device, typename ST = void>
+  // Set the field to a constant value (on device view ONLY)
+  template<typename ST>
   void deep_copy (const ST value);
 
   // Like the above one, but only sets the value where the mask is active
-  // NOTE: mask field must have data type IntType, and hold the extra data
-  // "true_value", to specify where the mask is active
-  template<HostOrDevice HD = Device, typename ST = void>
+  // NOTE: mask field must have data type IntType. Runs on device ONLY
+  template<typename ST>
   void deep_copy (const ST value, const Field& mask);
 
-  // Copy the data from one field to this field (recycle update method)
-  template<HostOrDevice HD = Device>
-  void deep_copy (const Field& src) { update<CombineMode::Replace,HD>(src,1,0); }
+  // Copy the data from one field to this field (on device ONLY)
+  void deep_copy (const Field& src);
 
   // Updates this field y as y=combine(x,y,alpha,beta)
   // See share/util/eamxx_combine_ops.hpp for more details on CombineMode options
@@ -236,28 +227,24 @@ public:
   // NOTE: the type ST  must be such that no narrowing happens when
   //       casting the values to whatever the data type of this field is.
   //       E.g., if data_type()=IntType, you can't pass double's.
-  template<CombineMode CM = CombineMode::Update, HostOrDevice HD = Device, typename ST = void>
+  template<CombineMode CM = CombineMode::Update, typename ST = void>
   void update (const Field& x, const ST alpha, const ST beta);
 
   // Special case of update for particular choices of the combine mode
-  template<HostOrDevice HD = Device, typename ST = void>
-  void scale (const ST beta) { update<CombineMode::Update,HD>(*this,ST(0),beta); }
+  template<typename ST>
+  void scale (const ST beta) { update<CombineMode::Update>(*this,ST(0),beta); }
 
   // Scale a field y as y=y*x where x is also a field
-  template<HostOrDevice HD = Device>
-  void scale (const Field& x) { update<CombineMode::Multiply,HD>(x,1,1); }
+  void scale (const Field& x) { update<CombineMode::Multiply>(x,1,1); }
 
   // Scale a field y as y=y/x where x is also a field
-  template<HostOrDevice HD = Device>
-  void scale_inv (const Field& x) { update<CombineMode::Divide,HD>(x,1,1); }
+  void scale_inv (const Field& x) { update<CombineMode::Divide>(x,1,1); }
 
   // Replace *this with max(*this, x)
-  template<HostOrDevice HD = Device>
-  void max (const Field& x) { update<CombineMode::Max,HD>(x,1,1); }
+  void max (const Field& x) { update<CombineMode::Max>(x,1,1); }
 
   // Replace *this with min(*this, x)
-  template<HostOrDevice HD = Device>
-  void min (const Field& x) { update<CombineMode::Min,HD>(x,1,1); }
+  void min (const Field& x) { update<CombineMode::Min>(x,1,1); }
 
   // Returns a subview of this field, slicing at entry k along dimension idim
   // NOTES:
@@ -346,13 +333,13 @@ protected:
   template<typename ST, HostOrDevice From, HostOrDevice To>
   void sync_views_impl () const;
 
-  template<HostOrDevice HD, bool use_mask, typename ST>
+  template<bool use_mask, typename ST>
   void deep_copy_impl (const ST value, const Field& mask);
 
   // The update method calls this, with ST matching this field data type.
   // Note: use_fill is used to determine *at compile time* whether to use
   // the combine<CM> utility or combine_and_fill<CM>
-  template<CombineMode CM, HostOrDevice HD, bool use_fill, typename ST, typename STX>
+  template<CombineMode CM, bool use_fill, typename ST, typename STX>
   void update_impl (const Field& x, const ST alpha, const ST beta);
 
 protected:
@@ -428,32 +415,32 @@ inline bool operator== (const Field& lhs, const Field& rhs) {
 //       and the compiler will implicitly instantiate. However, these are the most common use cases,
 //       so it helps to do ETI for those.
 // NOTE: for update, we only specialize for CM being Update, Multiply, and Divide,
-#define EAMXX_FIELD_ETI_DECL_UPDATE(S,T) \
-extern template void Field::update<CombineMode::Update, S, T>(const Field&, const T, const T);              \
-extern template void Field::update<CombineMode::Multiply, S, T>(const Field&, const T, const T);            \
-extern template void Field::update<CombineMode::Divide, S, T>(const Field&, const T, const T)
+#define EAMXX_FIELD_ETI_DECL_UPDATE(T) \
+extern template void Field::update<CombineMode::Update, T>(const Field&, const T, const T);              \
+extern template void Field::update<CombineMode::Multiply, T>(const Field&, const T, const T);            \
+extern template void Field::update<CombineMode::Divide, T>(const Field&, const T, const T)
 
-#define EAMXX_FIELD_ETI_DECL_UPDATE_MAX_MIN(S,T) \
-extern template void Field::update<CombineMode::Max, S, T>(const Field&, const T, const T);            \
-extern template void Field::update<CombineMode::Min, S, T>(const Field&, const T, const T)
+#define EAMXX_FIELD_ETI_DECL_UPDATE_MAX_MIN(T) \
+extern template void Field::update<CombineMode::Max, T>(const Field&, const T, const T);            \
+extern template void Field::update<CombineMode::Min, T>(const Field&, const T, const T)
 
-#define EAMXX_FIELD_ETI_DECL_UPDATE_IMPL(S,T1,T2) \
-extern template void Field::update_impl<CombineMode::Update,  S, true, T1, T2>(const Field&, const T1, const T1);  \
-extern template void Field::update_impl<CombineMode::Multiply,S, true, T1, T2>(const Field&, const T1, const T1);  \
-extern template void Field::update_impl<CombineMode::Divide,  S, true, T1, T2>(const Field&, const T1, const T1);  \
-extern template void Field::update_impl<CombineMode::Update,  S, false, T1, T2>(const Field&, const T1, const T1); \
-extern template void Field::update_impl<CombineMode::Multiply,S, false, T1, T2>(const Field&, const T1, const T1); \
-extern template void Field::update_impl<CombineMode::Divide,  S, false, T1, T2>(const Field&, const T1, const T1)
+#define EAMXX_FIELD_ETI_DECL_UPDATE_IMPL(T1,T2) \
+extern template void Field::update_impl<CombineMode::Update,  true, T1, T2>(const Field&, const T1, const T1);  \
+extern template void Field::update_impl<CombineMode::Multiply,true, T1, T2>(const Field&, const T1, const T1);  \
+extern template void Field::update_impl<CombineMode::Divide,  true, T1, T2>(const Field&, const T1, const T1);  \
+extern template void Field::update_impl<CombineMode::Update,  false, T1, T2>(const Field&, const T1, const T1); \
+extern template void Field::update_impl<CombineMode::Multiply,false, T1, T2>(const Field&, const T1, const T1); \
+extern template void Field::update_impl<CombineMode::Divide,  false, T1, T2>(const Field&, const T1, const T1)
 
-#define EAMXX_FIELD_ETI_DECL_UPDATE_MAX_MIN_IMPL(S,T1,T2) \
-extern template void Field::update_impl<CombineMode::Max, S, true, T1, T2>(const Field&, const T1, const T1);  \
-extern template void Field::update_impl<CombineMode::Min, S, true, T1, T2>(const Field&, const T1, const T1);  \
-extern template void Field::update_impl<CombineMode::Max, S, false, T1, T2>(const Field&, const T1, const T1); \
-extern template void Field::update_impl<CombineMode::Min, S, false, T1, T2>(const Field&, const T1, const T1)
+#define EAMXX_FIELD_ETI_DECL_UPDATE_MAX_MIN_IMPL(T1,T2) \
+extern template void Field::update_impl<CombineMode::Max, true, T1, T2>(const Field&, const T1, const T1);  \
+extern template void Field::update_impl<CombineMode::Min, true, T1, T2>(const Field&, const T1, const T1);  \
+extern template void Field::update_impl<CombineMode::Max, false, T1, T2>(const Field&, const T1, const T1); \
+extern template void Field::update_impl<CombineMode::Min, false, T1, T2>(const Field&, const T1, const T1)
 
-#define EAMXX_FIELD_ETI_DECL_DEEP_COPY(S,T) \
-extern template void Field::deep_copy_impl<S,true,T>(const T, const Field&); \
-extern template void Field::deep_copy_impl<S,false,T>(const T, const Field&)
+#define EAMXX_FIELD_ETI_DECL_DEEP_COPY(T) \
+extern template void Field::deep_copy_impl<true,T>(const T, const Field&); \
+extern template void Field::deep_copy_impl<false,T>(const T, const Field&)
 
 #define EAMXX_FIELD_ETI_DECL_GET_VIEW(S,T) \
 extern template Field::get_view_type<T,S> Field::get_view<T,S> () const; \
@@ -472,17 +459,17 @@ extern template Field::get_strided_view_type<T*****,S> Field::get_strided_view<T
 extern template Field::get_strided_view_type<T******,S> Field::get_strided_view<T******,S> () const
 
 #define EAMXX_FIELD_ETI_DECL_FOR_ONE_TYPE(T) \
-EAMXX_FIELD_ETI_DECL_UPDATE(Device,T);          \
-EAMXX_FIELD_ETI_DECL_UPDATE_MAX_MIN(Device,T);  \
-EAMXX_FIELD_ETI_DECL_DEEP_COPY(Device,T);       \
+EAMXX_FIELD_ETI_DECL_UPDATE(T);                 \
+EAMXX_FIELD_ETI_DECL_UPDATE_MAX_MIN(T);         \
+EAMXX_FIELD_ETI_DECL_DEEP_COPY(T);              \
 EAMXX_FIELD_ETI_DECL_GET_VIEW(Device,T);        \
 EAMXX_FIELD_ETI_DECL_GET_VIEW(Host,T);          \
 EAMXX_FIELD_ETI_DECL_GET_VIEW(Device,const T);  \
 EAMXX_FIELD_ETI_DECL_GET_VIEW(Host,const T)
 
 #define EAMXX_FIELD_ETI_DECL_FOR_TWO_TYPES(T1,T2) \
-EAMXX_FIELD_ETI_DECL_UPDATE_IMPL(Device,T1,T2);           \
-EAMXX_FIELD_ETI_DECL_UPDATE_MAX_MIN_IMPL(Device,T1,T2);   \
+EAMXX_FIELD_ETI_DECL_UPDATE_IMPL(T1,T2);           \
+EAMXX_FIELD_ETI_DECL_UPDATE_MAX_MIN_IMPL(T1,T2);   \
 
 // TODO: should we ETI other scalar types too? E.g. Pack<Real,SCREAM_PACK_SIZE??
 //       Real is by far the most common, so it'd be nice to just to that. But

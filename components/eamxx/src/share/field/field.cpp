@@ -60,8 +60,8 @@ Field::clone(const std::string& name, const std::string& grid_name) const {
   f.get_header().get_tracking().update_time_stamp(ts);
 
   // Deep copy
-  f.deep_copy<Device>(*this);
-  f.deep_copy<Host>(*this);
+  f.deep_copy(*this);
+  f.sync_to_host();
 
   return f;
 }
@@ -240,6 +240,11 @@ void Field::allocate_view ()
 
   m_data.d_view = decltype(m_data.d_view)(id.name(),view_dim);
   m_data.h_view = Kokkos::create_mirror_view(m_data.d_view);
+}
+
+void Field::deep_copy (const Field& src)
+{
+  update<CombineMode::Replace>(src,1,0);
 }
 
 } // namespace scream
