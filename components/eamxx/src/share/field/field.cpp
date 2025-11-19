@@ -582,7 +582,6 @@ void Field::min (const Field& x)
   }
 }
 
-template<CombineMode CM>
 void Field::
 update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta)
 {
@@ -592,6 +591,7 @@ update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta)
   // Determine if the RHS can contain fill_value entries
   bool fill_aware = x.get_header().may_be_filled();
 
+  constexpr auto CM = CombineMode::Update;
   if (data_type()==DataType::IntType) {
     auto a = alpha.as<int>();
     auto b = beta.as<int>();

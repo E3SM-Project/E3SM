@@ -16,7 +16,6 @@ add_library(eamxx_field
   eti/field_get_view_double_device.cpp
   eti/field_get_view_float_device.cpp
   eti/field_get_view_int_device.cpp
-  eti/field_update.cpp
   eti/field_update_impl_double.cpp
   eti/field_update_impl_fill_double.cpp
   eti/field_update_impl_fill_float.cpp

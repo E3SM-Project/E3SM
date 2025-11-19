@@ -212,14 +212,8 @@ public:
   // Copy the data from one field to this field (on device ONLY)
   void deep_copy (const Field& src);
 
-  // Updates this field y as y=combine(x,y,alpha,beta)
+  // Updates this field y as y=beta*y + alpha*x
   // See share/util/eamxx_combine_ops.hpp for more details on CombineMode options
-  // NOTE: ST=void is just so we can give a default to HD,
-  //       but ST will *always* be deduced from input arguments.
-  // NOTE: the type ST  must be such that no narrowing happens when
-  //       casting the values to whatever the data type of this field is.
-  //       E.g., if data_type()=IntType, you can't pass double's.
-  template<CombineMode CM = CombineMode::Update>
   void update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta);
 
   // Special case of update for particular choices of the combine mode
@@ -402,8 +396,6 @@ inline bool operator== (const Field& lhs, const Field& rhs) {
 
 // Inform the compiler that we will instantiate some template methods in some translation unit (TU).
 // This prevents the decl in field_impl.hpp from being compiled for every TU.
-#define EAMXX_FIELD_ETI_DECL_UPDATE(T) \
-extern template void Field::update<CombineMode::Update>(const Field&, const ScalarWrapper, const ScalarWrapper);
 
 #define EAMXX_FIELD_ETI_DECL_UPDATE_IMPL(T1,T2) \
 extern template void Field::update_impl<CombineMode::Update,  true, T1, T2>(const Field&, const T1, const T1);  \
@@ -438,7 +430,6 @@ extern template Field::get_strided_view_type<T*****,S> Field::get_strided_view<T
 extern template Field::get_strided_view_type<T******,S> Field::get_strided_view<T******,S> () const
 
 #define EAMXX_FIELD_ETI_DECL_FOR_ONE_TYPE(T) \
-EAMXX_FIELD_ETI_DECL_UPDATE(T);                 \
 EAMXX_FIELD_ETI_DECL_DEEP_COPY(T);              \
 EAMXX_FIELD_ETI_DECL_GET_VIEW(Device,T);        \
 EAMXX_FIELD_ETI_DECL_GET_VIEW(Host,T);          \
