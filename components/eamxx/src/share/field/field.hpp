@@ -218,7 +218,7 @@ public:
   void deep_copy (const ST value, const Field& mask);
 
   // Copy the data from one field to this field (on device ONLY)
-  void deep_copy (const Field& src) { update<CombineMode::Replace>(src,1,0); }
+  void deep_copy (const Field& src);
 
   // Updates this field y as y=combine(x,y,alpha,beta)
   // See share/util/eamxx_combine_ops.hpp for more details on CombineMode options

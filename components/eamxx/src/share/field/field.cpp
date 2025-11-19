@@ -242,4 +242,9 @@ void Field::allocate_view ()
   m_data.h_view = Kokkos::create_mirror_view(m_data.d_view);
 }
 
+void Field::deep_copy (const Field& src)
+{
+  update<CombineMode::Replace>(src,1,0);
+}
+
 } // namespace scream
