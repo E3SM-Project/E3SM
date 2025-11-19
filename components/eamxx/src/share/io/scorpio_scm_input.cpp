@@ -163,7 +163,9 @@ void SCMInput::read_variables (const int time_index)
     auto& f = m_fields[i];
     if (m_comm.rank() == m_closest_col_info.mpi_rank) {
       // This rank read the column we need, so copy it in the output field
-      f.deep_copy<Host>(f_io.subfield(0,m_closest_col_info.col_lid));
+      f_io.sync_to_dev();
+      f.deep_copy(f_io.subfield(0,m_closest_col_info.col_lid));
+      f.sync_to_host();
     }
 
     // Broadcast column data to all other ranks

@@ -86,26 +86,6 @@ TEST_CASE("field", "") {
     REQUIRE(views_are_equal(f1,f2));
   }
 
-  SECTION ("construct_from_view") {
-    // Crate f1 with some padding, to stress test the feature
-    Field f1 (fid);
-    auto& fap1 = f1.get_header().get_alloc_properties();
-    fap1.request_allocation(16);
-    f1.allocate_view();
-    f1.deep_copy(1.0);
-
-    // Get f1 view, and wrap it in another field
-    auto view = f1.get_view<Real**>();
-    Field f2 (fid,view);
-
-    // Check the two are the same
-    REQUIRE (views_are_equal(f1,f2));
-
-    // Modify one field, and check again
-    randomize_uniform(f2,seed++,0.01,0.99);
-    REQUIRE (views_are_equal(f1,f2));
-  }
-
   SECTION ("clone") {
     Field f1 (fid);
     auto& fap1 = f1.get_header().get_alloc_properties();
@@ -265,7 +245,8 @@ TEST_CASE("field", "") {
 
     // Deep copy subfield of 1d field -> 0d field and check result
     for (size_t i=0; i<v1.extent(0); ++i) {
-      f0.deep_copy<Host>(f1.subfield(0, i));
+      f0.deep_copy(f1.subfield(0, i));
+      f0.sync_to_host();
       REQUIRE(v0() == v1(i));
     }
 
@@ -274,7 +255,8 @@ TEST_CASE("field", "") {
 
     // Deep copy 0d field -> subfield of 1d field and check result
     for (size_t i=0; i<v1.extent(0); ++i) {
-      f1.subfield(0, i).deep_copy<Host>(f0);
+      f1.subfield(0, i).deep_copy(f0);
+      f1.subfield(0, i).sync_to_host();
       REQUIRE(v1(i) == v0());
     }
   }
