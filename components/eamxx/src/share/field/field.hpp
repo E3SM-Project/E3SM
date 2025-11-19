@@ -402,16 +402,8 @@ inline bool operator== (const Field& lhs, const Field& rhs) {
 
 // Inform the compiler that we will instantiate some template methods in some translation unit (TU).
 // This prevents the decl in field_impl.hpp from being compiled for every TU.
-// NOTE: field_impl.hpp is still included, so you can call other specializations (e.g., update for CM=Max)
-//       and the compiler will implicitly instantiate. However, these are the most common use cases,
-//       so it helps to do ETI for those.
-// NOTE: for update, we only specialize for CM being Update, Multiply, and Divide,
 #define EAMXX_FIELD_ETI_DECL_UPDATE(T) \
-extern template void Field::update<CombineMode::Update>(const Field&, const ScalarWrapper, const ScalarWrapper);   \
-extern template void Field::update<CombineMode::Multiply>(const Field&, const ScalarWrapper, const ScalarWrapper); \
-extern template void Field::update<CombineMode::Divide>(const Field&, const ScalarWrapper, const ScalarWrapper);   \
-extern template void Field::update<CombineMode::Max>(const Field&, const ScalarWrapper, const ScalarWrapper);      \
-extern template void Field::update<CombineMode::Min>(const Field&, const ScalarWrapper, const ScalarWrapper)
+extern template void Field::update<CombineMode::Update>(const Field&, const ScalarWrapper, const ScalarWrapper);
 
 #define EAMXX_FIELD_ETI_DECL_UPDATE_IMPL(T1,T2) \
 extern template void Field::update_impl<CombineMode::Update,  true, T1, T2>(const Field&, const T1, const T1);  \

@@ -299,11 +299,6 @@ void Field::allocate_view ()
 }
 
 
-void Field::deep_copy (const Field& src)
-{
-  update<CombineMode::Replace>(src,1,0);
-}
-
 void Field::deep_copy (const ScalarWrapper value) {
   EKAT_REQUIRE_MSG (not m_is_read_only,
       "Error! Cannot call deep_copy on read-only fields.\n");
@@ -324,10 +319,36 @@ void Field::deep_copy (const ScalarWrapper value) {
   }
 }
 
+void Field::deep_copy (const Field& x)
+{
+  // Check consistency of inputs
+  update_checks(*this,&x,nullptr,nullptr);
+
+  // We do an update with y = 0*y + 1*x
+  // NOTE: we do NOT use fill_aware, so we end up with y=x REGARDLESS of x's content
+  constexpr auto CM = CombineMode::Replace;
+  if (data_type()==DataType::IntType) {
+    update_impl<CM,false,int,int>(x,1,0);
+  } else if (data_type()==DataType::FloatType) {
+    if (x.data_type()==DataType::FloatType)
+      update_impl<CM,false,float,float>(x,1,0);
+    else
+      update_impl<CM,false,float,int>(x,1,0);
+  } else if (data_type()==DataType::DoubleType) {
+    if (x.data_type()==DataType::DoubleType)
+      update_impl<CM,false,double,double>(x,1,0);
+    else if (x.data_type()==DataType::FloatType)
+      update_impl<CM,false,double,float>(x,1,0);
+    else
+      update_impl<CM,false,double,int>(x,1,0);
+  } else {
+    EKAT_ERROR_MSG ("Error! Unrecognized/unsupported field data type in Field::update.\n");
+  }
+}
+
 void Field::deep_copy (const ScalarWrapper value, const Field& mask)
 {
-  EKAT_REQUIRE_MSG (not m_is_read_only,
-      "Error! Cannot call deep_copy on read-only fields.\n");
+  update_checks(*this,nullptr,&value,nullptr);
 
   const auto my_data_type = data_type();
   switch (my_data_type) {
@@ -347,32 +368,218 @@ void Field::deep_copy (const ScalarWrapper value, const Field& mask)
 
 void Field::scale (const ScalarWrapper beta)
 {
-  auto zero = ScalarWrapper::zero();
-  update<CombineMode::Update>(*this,zero,beta);
+  // Check consistency of inputs
+  update_checks(*this,nullptr,nullptr,&beta);
+
+  // update_impl expects an input field, even if it's not really used
+  const auto& x = *this;
+
+  // We do an update with y = beta*y + 0*x (with x=y)
+  constexpr auto CM = CombineMode::Update;
+  if (data_type()==DataType::IntType) {
+    auto b = beta.as<int>();
+    update_impl<CM,false,int,int>(x,0,b);
+  } else if (data_type()==DataType::FloatType) {
+    auto b = beta.as<float>();
+    update_impl<CM,false,float,float>(x,0,b);
+  } else if (data_type()==DataType::DoubleType) {
+    auto b = beta.as<double>();
+    update_impl<CM,false,double,double>(x,0,b);
+  } else {
+    EKAT_ERROR_MSG ("Error! Unrecognized/unsupported field data type in Field::update.\n");
+  }
 }
 
 void Field::scale (const Field& x)
 {
-  auto one = ScalarWrapper::one();
-  update<CombineMode::Multiply>(x,one,one);
+  // Check consistency of inputs
+  update_checks(*this,&x,nullptr,nullptr);
+
+  // Determine if the RHS can contain fill_value entries
+  bool fill_aware = x.get_header().may_be_filled();
+
+  constexpr auto CM = CombineMode::Multiply;
+  if (data_type()==DataType::IntType) {
+    if (fill_aware) {
+      return update_impl<CM,true,int,int>(x,1,1);
+    } else {
+      return update_impl<CM,false,int,int>(x,1,1);
+    }
+  } else if (data_type()==DataType::FloatType) {
+    if (fill_aware) {
+      if (x.data_type()==DataType::FloatType)
+        return update_impl<CM,true,float,float>(x,1,1);
+      else
+        return update_impl<CM,true,float,int>(x,1,1);
+    } else {
+      if (x.data_type()==DataType::FloatType)
+        return update_impl<CM,false,float,float>(x,1,1);
+      else
+        return update_impl<CM,false,float,int>(x,1,1);
+    }
+  } else if (data_type()==DataType::DoubleType) {
+    if (fill_aware) {
+      if (x.data_type()==DataType::DoubleType)
+        return update_impl<CM,true,double,double>(x,1,1);
+      else if (x.data_type()==DataType::FloatType)
+        return update_impl<CM,true,double,float>(x,1,1);
+      else
+        return update_impl<CM,true,double,int>(x,1,1);
+    } else {
+      if (x.data_type()==DataType::DoubleType)
+        return update_impl<CM,false,double,double>(x,1,1);
+      else if (x.data_type()==DataType::FloatType)
+        return update_impl<CM,false,double,float>(x,1,1);
+      else
+        return update_impl<CM,false,double,int>(x,1,1);
+    }
+  } else {
+    EKAT_ERROR_MSG ("Error! Unrecognized/unsupported field data type in Field::update.\n");
+  }
 }
 
 void Field::scale_inv (const Field& x)
 {
-  auto one = ScalarWrapper::one();
-  update<CombineMode::Divide>(x,one,one);
+  // Check consistency of inputs
+  update_checks(*this,&x,nullptr,nullptr);
+
+  // Determine if the RHS can contain fill_value entries
+  bool fill_aware = x.get_header().may_be_filled();
+
+  constexpr auto CM = CombineMode::Divide;
+  if (data_type()==DataType::IntType) {
+    if (fill_aware) {
+      return update_impl<CM,true,int,int>(x,1,1);
+    } else {
+      return update_impl<CM,false,int,int>(x,1,1);
+    }
+  } else if (data_type()==DataType::FloatType) {
+    if (fill_aware) {
+      if (x.data_type()==DataType::FloatType)
+        return update_impl<CM,true,float,float>(x,1,1);
+      else
+        return update_impl<CM,true,float,int>(x,1,1);
+    } else {
+      if (x.data_type()==DataType::FloatType)
+        return update_impl<CM,false,float,float>(x,1,1);
+      else
+        return update_impl<CM,false,float,int>(x,1,1);
+    }
+  } else if (data_type()==DataType::DoubleType) {
+    if (fill_aware) {
+      if (x.data_type()==DataType::DoubleType)
+        return update_impl<CM,true,double,double>(x,1,1);
+      else if (x.data_type()==DataType::FloatType)
+        return update_impl<CM,true,double,float>(x,1,1);
+      else
+        return update_impl<CM,true,double,int>(x,1,1);
+    } else {
+      if (x.data_type()==DataType::DoubleType)
+        return update_impl<CM,false,double,double>(x,1,1);
+      else if (x.data_type()==DataType::FloatType)
+        return update_impl<CM,false,double,float>(x,1,1);
+      else
+        return update_impl<CM,false,double,int>(x,1,1);
+    }
+  } else {
+    EKAT_ERROR_MSG ("Error! Unrecognized/unsupported field data type in Field::update.\n");
+  }
 }
 
 void Field::max (const Field& x)
 {
-  auto one = ScalarWrapper::one();
-  update<CombineMode::Max>(x,one,one);
+  // Check consistency of inputs
+  update_checks(*this,&x,nullptr,nullptr);
+
+  // Determine if the RHS can contain fill_value entries
+  bool fill_aware = x.get_header().may_be_filled();
+
+  constexpr auto CM = CombineMode::Max;
+  if (data_type()==DataType::IntType) {
+    if (fill_aware) {
+      return update_impl<CM,true,int,int>(x,1,1);
+    } else {
+      return update_impl<CM,false,int,int>(x,1,1);
+    }
+  } else if (data_type()==DataType::FloatType) {
+    if (fill_aware) {
+      if (x.data_type()==DataType::FloatType)
+        return update_impl<CM,true,float,float>(x,1,1);
+      else
+        return update_impl<CM,true,float,int>(x,1,1);
+    } else {
+      if (x.data_type()==DataType::FloatType)
+        return update_impl<CM,false,float,float>(x,1,1);
+      else
+        return update_impl<CM,false,float,int>(x,1,1);
+    }
+  } else if (data_type()==DataType::DoubleType) {
+    if (fill_aware) {
+      if (x.data_type()==DataType::DoubleType)
+        return update_impl<CM,true,double,double>(x,1,1);
+      else if (x.data_type()==DataType::FloatType)
+        return update_impl<CM,true,double,float>(x,1,1);
+      else
+        return update_impl<CM,true,double,int>(x,1,1);
+    } else {
+      if (x.data_type()==DataType::DoubleType)
+        return update_impl<CM,false,double,double>(x,1,1);
+      else if (x.data_type()==DataType::FloatType)
+        return update_impl<CM,false,double,float>(x,1,1);
+      else
+        return update_impl<CM,false,double,int>(x,1,1);
+    }
+  } else {
+    EKAT_ERROR_MSG ("Error! Unrecognized/unsupported field data type in Field::update.\n");
+  }
 }
 
 void Field::min (const Field& x)
 {
-  auto one = ScalarWrapper::one();
-  update<CombineMode::Min>(x,one,one);
+  // Check consistency of inputs
+  update_checks(*this,&x,nullptr,nullptr);
+
+  // Determine if the RHS can contain fill_value entries
+  bool fill_aware = x.get_header().may_be_filled();
+
+  constexpr auto CM = CombineMode::Min;
+  if (data_type()==DataType::IntType) {
+    if (fill_aware) {
+      return update_impl<CM,true,int,int>(x,1,1);
+    } else {
+      return update_impl<CM,false,int,int>(x,1,1);
+    }
+  } else if (data_type()==DataType::FloatType) {
+    if (fill_aware) {
+      if (x.data_type()==DataType::FloatType)
+        return update_impl<CM,true,float,float>(x,1,1);
+      else
+        return update_impl<CM,true,float,int>(x,1,1);
+    } else {
+      if (x.data_type()==DataType::FloatType)
+        return update_impl<CM,false,float,float>(x,1,1);
+      else
+        return update_impl<CM,false,float,int>(x,1,1);
+    }
+  } else if (data_type()==DataType::DoubleType) {
+    if (fill_aware) {
+      if (x.data_type()==DataType::DoubleType)
+        return update_impl<CM,true,double,double>(x,1,1);
+      else if (x.data_type()==DataType::FloatType)
+        return update_impl<CM,true,double,float>(x,1,1);
+      else
+        return update_impl<CM,true,double,int>(x,1,1);
+    } else {
+      if (x.data_type()==DataType::DoubleType)
+        return update_impl<CM,false,double,double>(x,1,1);
+      else if (x.data_type()==DataType::FloatType)
+        return update_impl<CM,false,double,float>(x,1,1);
+      else
+        return update_impl<CM,false,double,int>(x,1,1);
+    }
+  } else {
+    EKAT_ERROR_MSG ("Error! Unrecognized/unsupported field data type in Field::update.\n");
+  }
 }
 
 template<CombineMode CM>
