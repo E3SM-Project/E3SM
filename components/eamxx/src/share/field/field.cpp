@@ -1,6 +1,8 @@
 #include "share/field/field.hpp"
 #include "share/util/eamxx_utils.hpp"
 
+#include "share/field/field_impl_details.hpp"
+
 namespace scream
 {
 
@@ -317,6 +319,125 @@ void Field::min (const Field& x)
 {
   auto one = ScalarWrapper::one();
   update<CombineMode::Min>(x,one,one);
+}
+
+template<bool use_mask, typename ST>
+void Field::deep_copy_impl (const ST value, const Field& mask)
+{
+  const auto& layout = get_header().get_identifier().get_layout();
+  const auto  rank   = layout.rank();
+  const auto& dims   = layout.dims();
+  const auto contig = get_header().get_alloc_properties().contiguous();
+
+  switch (rank) {
+    case 0:
+      if constexpr (use_mask) {
+        if (contig)
+          details::svm<use_mask>(get_view<ST>(),value,dims,
+                                 mask.get_view<const int>());
+        else
+          details::svm<use_mask>(get_strided_view<ST>(),value,dims,
+                                 mask.get_view<const int>());
+      } else {
+        if (contig)
+          details::svm<use_mask>(get_view<ST>(),value,dims);
+        else
+          details::svm<use_mask>(get_strided_view<ST>(),value,dims);
+      }
+      break;
+    case 1:
+      if constexpr (use_mask) {
+        if (contig)
+          details::svm<use_mask>(get_view<ST*>(),value,dims,
+                                 mask.get_view<const int*>());
+        else
+          details::svm<use_mask>(get_strided_view<ST*>(),value,dims,
+                                 mask.get_view<const int*>());
+      } else {
+        if (contig)
+          details::svm<use_mask>(get_view<ST*>(),value,dims);
+        else
+          details::svm<use_mask>(get_strided_view<ST*>(),value,dims);
+      }
+      break;
+    case 2:
+      if constexpr (use_mask) {
+        if (contig)
+          details::svm<use_mask>(get_view<ST**>(),value,dims,
+                                 mask.get_view<const int**>());
+        else
+          details::svm<use_mask>(get_strided_view<ST**>(),value,dims,
+                                 mask.get_view<const int**>());
+      } else {
+        if (contig)
+          details::svm<use_mask>(get_view<ST**>(),value,dims);
+        else
+          details::svm<use_mask>(get_strided_view<ST**>(),value,dims);
+      }
+      break;
+    case 3:
+      if constexpr (use_mask) {
+        if (contig)
+          details::svm<use_mask>(get_view<ST***>(),value,dims,
+                                 mask.get_view<const int***>());
+        else
+          details::svm<use_mask>(get_strided_view<ST***>(),value,dims,
+                                 mask.get_view<const int***>());
+      } else {
+        if (contig)
+          details::svm<use_mask>(get_view<ST***>(),value,dims);
+        else
+          details::svm<use_mask>(get_strided_view<ST***>(),value,dims);
+      }
+      break;
+    case 4:
+      if constexpr (use_mask) {
+        if (contig)
+          details::svm<use_mask>(get_view<ST****>(),value,dims,
+                                 mask.get_view<const int****>());
+        else
+          details::svm<use_mask>(get_strided_view<ST****>(),value,dims,
+                                 mask.get_view<const int****>());
+      } else {
+        if (contig)
+          details::svm<use_mask>(get_view<ST****>(),value,dims);
+        else
+          details::svm<use_mask>(get_strided_view<ST****>(),value,dims);
+      }
+      break;
+    case 5:
+      if constexpr (use_mask) {
+        if (contig)
+          details::svm<use_mask>(get_view<ST*****>(),value,dims,
+                                 mask.get_view<const int*****>());
+        else
+          details::svm<use_mask>(get_strided_view<ST*****>(),value,dims,
+                                 mask.get_view<const int*****>());
+      } else {
+        if (contig)
+          details::svm<use_mask>(get_view<ST*****>(),value,dims);
+        else
+          details::svm<use_mask>(get_strided_view<ST*****>(),value,dims);
+      }
+      break;
+    case 6:
+      if constexpr (use_mask) {
+        if (contig)
+          details::svm<use_mask>(get_view<ST******>(),value,dims,
+                                 mask.get_view<const int******>());
+        else
+          details::svm<use_mask>(get_strided_view<ST******>(),value,dims,
+                                 mask.get_view<const int******>());
+      } else {
+        if (contig)
+          details::svm<use_mask>(get_view<ST******>(),value,dims);
+        else
+          details::svm<use_mask>(get_strided_view<ST******>(),value,dims);
+      }
+      break;
+    default:
+      EKAT_ERROR_MSG ("Error! Unsupported field rank in 'deep_copy'.\n");
+  }
 }
 
 } // namespace scream
