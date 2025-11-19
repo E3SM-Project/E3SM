@@ -391,7 +391,7 @@ inline bool operator== (const Field& lhs, const Field& rhs) {
 
 } // namespace scream
 
-// Include template methods implementation
-#include "share/field/field_impl.hpp"
-
 #endif // SCREAM_FIELD_HPP
+
+// Include template methods implementation
+#include "share/field/field_get_view_impl.hpp"
