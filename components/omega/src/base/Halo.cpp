@@ -624,10 +624,10 @@ int Halo::exchangeVectorInt(
    std::vector<MPI_Request> SendReqs(NNghbr);
 
    for (int INghbr = 0; INghbr < NNghbr; ++INghbr) {
-      I4 DimLen = RecvVec[INghbr].size();
-      RecvErr[INghbr] =
-          MPI_Irecv(&RecvVec[INghbr][0], DimLen, MPI_INT, NeighborList[INghbr],
-                    MPI_ANY_TAG, MyComm, &RecvReqs[INghbr]);
+      I4 DimLen       = RecvVec[INghbr].size();
+      RecvErr[INghbr] = MPI_Irecv(RecvVec[INghbr].data(), DimLen, MPI_INT,
+                                  NeighborList[INghbr], MPI_ANY_TAG, MyComm,
+                                  &RecvReqs[INghbr]);
       if (RecvErr[INghbr] != 0) {
          LOG_ERROR("MPI error {} on task {} receive from task {}",
                    RecvErr[INghbr], MyTask, NeighborList[INghbr]);
@@ -638,8 +638,8 @@ int Halo::exchangeVectorInt(
    for (int INghbr = 0; INghbr < NNghbr; ++INghbr) {
       I4 DimLen = SendVec[INghbr].size();
       SendErr[INghbr] =
-          MPI_Isend(&SendVec[INghbr][0], DimLen, MPI_INT, NeighborList[INghbr],
-                    0, MyComm, &SendReqs[INghbr]);
+          MPI_Isend(SendVec[INghbr].data(), DimLen, MPI_INT,
+                    NeighborList[INghbr], 0, MyComm, &SendReqs[INghbr]);
       if (SendErr[INghbr] != 0) {
          LOG_ERROR("MPI error {} on task {} send to task {}", SendErr[INghbr],
                    MyTask, NeighborList[INghbr]);
