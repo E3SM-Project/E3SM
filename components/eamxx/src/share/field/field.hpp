@@ -311,23 +311,18 @@ public:
     return m_data.h_view.data() == m_data.d_view.data();
   }
 
-#ifndef KOKKOS_ENABLE_CUDA
-  // Cuda requires methods enclosing __device__ lambda's to be public
 protected:
-#endif
+
   template<typename ST, HostOrDevice From, HostOrDevice To>
   void sync_views_impl () const;
 
+  // The field manipulation methods call these two, with ST matching this field data type.
+  // Note: use_fill/use_mask are used to resolve some if statements in the impl at compile time
   template<bool use_mask, typename ST>
   void deep_copy_impl (const ST value, const Field& mask);
 
-  // The update method calls this, with ST matching this field data type.
-  // Note: use_fill is used to determine *at compile time* whether to use
-  // the combine<CM> utility or combine_and_fill<CM>
   template<CombineMode CM, bool use_fill, typename ST, typename STX>
   void update_impl (const Field& x, const ST alpha, const ST beta);
-
-protected:
 
   template<HostOrDevice HD>
   const get_view_type<char*,HD>&
