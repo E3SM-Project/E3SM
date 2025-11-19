@@ -139,8 +139,8 @@ failures may related to changes that are required in Polaris, see
 #### Diffs between your branch and baseline
 
 If diffs are expected:
-- Document the diffs (PR comment)
-- Update `e3sm_submodules/Omega` in Polaris (after merge)
+- Document the diffs (in Omega PR comment)
+- Update `e3sm_submodules/Omega` in Polaris (after merge of Omega PR)
 
 If *not* expected:
 - Debug and eliminate
@@ -161,6 +161,10 @@ We do not update `e3sm_submodules/Omega` after every branch is merged into
 If you see unexpected differences between the results for your development
 branch and those from the baseline, you should attempt to debug the cause yourself
 and then reach out to the Omega team if you need help.
+
+You may want to look at Polaris'
+[bisect](https://github.com/E3SM-Project/polaris/blob/main/utils/bisect/README.md)
+utility to help debug which commit introduced the unexpected differences.
 
 
 ### What to include in your PR Testing comment
@@ -198,7 +202,10 @@ machine and compiler.
 - Performance PRs
     - Link to the relevant PACE experiment and summarize before/after metrics
 
-Copy-paste template you can use in your PR comment:
+The [Omega CTest Utility](https://github.com/E3SM-Project/polaris/blob/main/utils/omega/ctest/README.md)
+and the `omega_pr` suite will produce output in a format you can copy/paste into the PR
+description. These outputs follow roughly the template below.  If you want to add the
+information manually, you can copy-paste template you can use in your PR comment:
 
 ```text
 ## Testing
@@ -229,11 +236,6 @@ Performance (if applicable)
 - After: <metric(s)>
 - Delta: <summary>
 ```
-
-The [Omega CTest Utility](https://github.com/E3SM-Project/polaris/blob/main/utils/omega/ctest/README.md)
-will also produce output in a format you can copy/paste into the PR description.
-In the future, we hope to make this easier to do from the output of the `omega_pr`
-suite as well.
 
 (omega-dev-testing-update-polaris)=
 
