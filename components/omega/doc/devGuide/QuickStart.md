@@ -12,10 +12,10 @@ branches.  To do this, go to the page for the
 click on the `fork` button near the upper right corner.  Set "owner" to your
 GitHub username (this should be the default) and click "Create fork".
 
-There is no need to have a separate for for Omega, since the Omega repository
-is also a fork of E3SM.  Your E3SM fork will server for both E3SM and Omega
+There is no need to have a separate fork for Omega, since the Omega repository
+is also a fork of E3SM.  Your E3SM fork will serve for both E3SM and Omega
 development.  In fact, GitHub will not let you make an Omega fork if you
-already have an E3SM fork (or visa versa).
+already have an E3SM fork (or vice versa).
 
 ### Check out the code
 
@@ -52,7 +52,7 @@ If you do not have conda set up in your own space yet, follow
 
 
 Activate the `base` conda environment.  Go to the base of the Omega branch you
-plan to develop and create conda environment for
+plan to develop and create a conda environment for
 linting your code and building the documentation:
 ```sh
 cd components/omega/
@@ -74,13 +74,19 @@ that `pre-commit` and the associated linting utilities are available and that
 they check your code as it is committed (rather than requiring fix-up commits
 later on).
 
+(omega-dev-quick-start-build-test)=
+
 ## Building and testing Omega
+
+(omega-dev-quick-start-ctest-util)=
 
 ### Polaris CTest Utility
 
 If you are using Polaris, you may wish to use its
 [Omega CTest utility](https://github.com/E3SM-Project/polaris/tree/main/utils/omega/ctest)
-to buid and test Omega. The utility automates many of the steps below.
+to build and test Omega. The utility automates many of the steps below.
+
+(omega-dev-quick-start-build)=
 
 ### Building Omega
 
@@ -96,7 +102,7 @@ git submodule update --init --recursive \
     cime
 ```
 
-Since some systems require tests to be run on in a scratch space, it is a good
+Since some systems require tests to be run in a scratch space, it is a good
 idea to build the code somewhere in your scratch space.  We will simply refer
 to the build directory as `$BUILD_DIR` and leave it up to you to decide where
 it is best to put it.  If you have previously built in `$BUILD_DIR`, you
@@ -109,8 +115,8 @@ cd $BUILD_DIR
 
 Set `$PARMETIS_ROOT` to the appropriate location for Metis and Parmetis
 libraries built for your machine and compiler (see
-{ref}`omega-dev-parmetis-libs` below for some shared locations on some
-supported machines):
+{ref}`omega-dev-parmetis-libs` below for shared locations on supported
+machines):
 ```sh
 export PARMETIS_ROOT=<parmetis_root>
 ```
@@ -204,8 +210,8 @@ Total Test time (real) =   8.91 sec
 
 If Omega CTests are failing or simulations are crashing, setting
 `OMEGA_BUILD_TYPE` to `Debug` can be helpful for debugging purposes. If you
-need to identify which test has failed, it may be useful to examine the CMake
-ctest log file located at `$BUILD_DIR/Testing/Temporary/LastTest.log`.
+need to identify which test has failed, it may be useful to examine the CTest
+log file located at `$BUILD_DIR/Testing/Temporary/LastTest.log`.
 
 (omega-dev-parmetis-libs)=
 
@@ -264,16 +270,16 @@ used to but the hope is that it leads to a coherent code style in Omega.
 You may wish to consider using an integrated development environment (IDE) to
 develop your code.  A convenient option for developing on HPC is
 [Visual Studio Code (VS Code)](https://code.visualstudio.com/).  It has plugins
-for [c++](https://marketplace.visualstudio.com/items?itemName=ms-vscode.cpptools),
+for [C++](https://marketplace.visualstudio.com/items?itemName=ms-vscode.cpptools),
 [CMake](https://marketplace.visualstudio.com/items?itemName=ms-vscode.cmake-tools),
 [Python](https://marketplace.visualstudio.com/items?itemName=ms-python.python),
 and so on.  If configured correctly, it should help to enforce the
 [code formatting style](https://code.visualstudio.com/docs/cpp/cpp-ide#_code-formatting)
 by recognizing Omega's `.clang-format` file.
 
-A convenient feature is the ability to connect to edit code directly on HPC
+A convenient feature is the ability to connect and edit code directly on HPC
 systems from your laptop or desktop
-[using a n SSH connection](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh).
+[using an SSH connection](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh).
 
 VS Code also provides a convenient way to preview the Markdown files used in
 the Omega documentation as you are writing them.
