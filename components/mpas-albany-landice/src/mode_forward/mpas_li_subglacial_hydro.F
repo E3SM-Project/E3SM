@@ -396,18 +396,6 @@ module li_subglacial_hydro
          block => block % next
       end do
 
-
-      ! =============
-      ! =============
-      ! =============
-      ! subcycle hydro model until master dt is reached
-      ! =============
-      ! =============
-      ! =============
-      timecycling: do while (timeLeft > 0.0_RKIND)
-      numSubCycles = numSubCycles + 1
-
-
       ! =============
       ! Calculate time-varying forcing, as needed
       ! =============
@@ -436,10 +424,6 @@ module li_subglacial_hydro
             err = ior(err, 1)
          endif
 
-         ! SHMIP forcing will override basalMeltInput.
-         call shmip_timevarying_forcing(block, err_tmp)
-         err = ior(err, err_tmp)
-
          block => block % next
       end do
 
@@ -451,6 +435,29 @@ module li_subglacial_hydro
          call mpas_dmpar_field_halo_exch(domain, 'basalMeltInput')
          call mpas_timer_stop("halo updates")
       endif
+
+
+
+      ! =============
+      ! =============
+      ! =============
+      ! subcycle hydro model until master dt is reached
+      ! =============
+      ! =============
+      ! =============
+      timecycling: do while (timeLeft > 0.0_RKIND)
+      numSubCycles = numSubCycles + 1
+
+
+      ! apply shmip forcing if needed
+      block => domain % blocklist
+      do while (associated(block))
+         ! SHMIP forcing will override basalMeltInput from above
+         call shmip_timevarying_forcing(block, err_tmp)
+         err = ior(err, err_tmp)
+
+         block => block % next
+      end do
 
 
       ! =============
@@ -482,6 +489,7 @@ module li_subglacial_hydro
       ! =============
       ! Calculate edge quantities and advective fluxes
       ! =============
+      call mpas_timer_start("calc edge quantities")
       block => domain % blocklist
       do while (associated(block))
 
@@ -518,12 +526,14 @@ module li_subglacial_hydro
 
          block => block % next
       end do
+      call mpas_timer_stop("calc edge quantities")
 
 
       ! =============
       ! Update Channel fields
       ! =============
       if (config_SGH_chnl_active) then
+         call mpas_timer_start("update channel")
          block => domain % blocklist
          do while (associated(block))
 
@@ -539,13 +549,16 @@ module li_subglacial_hydro
          call mpas_dmpar_field_halo_exch(domain, 'channelMelt')
          call mpas_dmpar_field_halo_exch(domain, 'channelPressureFreeze')
          call mpas_timer_stop("halo updates")
+         call mpas_timer_stop("update channel")
       endif
 
 
       ! =============
       ! Calculate adaptive time step
       ! =============
+      call mpas_timer_start("calc SGH dt")
       call check_timestep(domain, timeLeft, numSubCycles, err_tmp)
+      call mpas_timer_stop("calc SGH dt")
       err = ior(err, err_tmp)
       if (err > 0) then
          exit timecycling
@@ -555,6 +568,7 @@ module li_subglacial_hydro
       ! =============
       ! Compute flux divergence
       ! =============
+      call mpas_timer_start("compute flux div")
       block => domain % blocklist
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
@@ -591,12 +605,14 @@ module li_subglacial_hydro
       call mpas_timer_start("halo updates")
       call mpas_dmpar_field_halo_exch(domain, 'divergence')
       call mpas_timer_stop("halo updates")
+      call mpas_timer_stop("compute flux div")
 
 
       ! =============
       ! Update channel area now that we have time step
       ! =============
       if (config_SGH_chnl_active) then
+         call mpas_timer_start("evolve channel")
          block => domain % blocklist
          do while (associated(block))
 
@@ -611,11 +627,13 @@ module li_subglacial_hydro
          call mpas_dmpar_field_halo_exch(domain, 'channelMeltInputCell')
          call mpas_dmpar_field_halo_exch(domain, 'channelArea')
          call mpas_timer_stop("halo updates")
+         call mpas_timer_stop("evolve channel")
       endif
 
       ! =============
       ! Calculate total grounding line discharges
       ! =============
+      call mpas_timer_start("calc SGH GL flux")
       block => domain % blocklist
       do while (associated(block))
 
@@ -624,10 +642,12 @@ module li_subglacial_hydro
 
          block => block % next
       end do
+      call mpas_timer_stop("calc SGH GL flux")
 
       ! =============
       ! Update water layer thickness
       ! =============
+      call mpas_timer_start("update water layer thickness")
       block => domain % blocklist
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
@@ -660,6 +680,7 @@ module li_subglacial_hydro
 
          block => block % next
       end do
+      call mpas_timer_stop("update water layer thickness")
 
       ! =============
       ! Calculate pressure field
@@ -679,6 +700,7 @@ module li_subglacial_hydro
       ! ordering choice is only needed to support channels.  Without it, runs with
       ! channels would use an out of date waterThickness in the hydropotential and
       ! do not restart correctly due to the order of operations mismatch.
+      call mpas_timer_start("calc pressure")
       block => domain % blocklist
       do while (associated(block))
 
@@ -709,6 +731,7 @@ module li_subglacial_hydro
    
          block => block % next
       end do
+      call mpas_timer_stop("calc pressure")
 
       deltatSGHaccumulated = deltatSGHaccumulated + deltatSGH
       
@@ -879,6 +902,7 @@ module li_subglacial_hydro
       real (kind=RKIND), pointer :: bedRoughMax
       real (kind=RKIND) :: conduc_coeff_wtd
       character (len=StrKIND), pointer :: config_SGH_tangent_slope_calculation
+      logical, pointer :: config_SGH_allow_terrestrial_outflow
       real (kind=RKIND), pointer :: config_sea_level
       real (kind=RKIND), pointer :: rhoo
       integer, pointer :: nEdges
@@ -909,6 +933,7 @@ module li_subglacial_hydro
       call mpas_pool_get_config(liConfigs, 'config_SGH_conduc_coeff_drowned', conduc_coeff_drowned)
       call mpas_pool_get_config(liConfigs, 'config_SGH_bed_roughness_max', bedRoughMax)
       call mpas_pool_get_config(liConfigs, 'config_SGH_tangent_slope_calculation', config_SGH_tangent_slope_calculation)
+      call mpas_pool_get_config(liConfigs, 'config_SGH_allow_terrestrial_outflow', config_SGH_allow_terrestrial_outflow)
       call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
       call mpas_pool_get_config(liConfigs, 'config_ocean_density', rhoo)
       
@@ -972,19 +997,35 @@ module li_subglacial_hydro
       ! This one-sided implementation also creates outflowing conditions at terrestrial boundary
       do iEdge = 1, nEdges
          if (hydroTerrestrialMarginMask(iEdge) == 1) then
-            cell1 = cellsOnEdge(1, iEdge)
-            cell2 = cellsOnEdge(2, iEdge)
-            if (li_mask_is_grounded_ice(cellMask(cell1))) then ! cell2 is the icefree cell - replace phi there with cell1 Phig
-               
-               hydropotentialBaseSlopeNormal(iEdge) = - waterPressure(cell1) / dcEdge(iEdge)
-               hydropotentialSlopeNormal(iEdge) = - (rho_water * gravity * waterThickness(cell1) + waterPressure(cell1)) / dcEdge(iEdge)
-
-            else ! cell1 is the icefree cell - replace phi there with cell2 Phig
-                  
-               hydropotentialBaseSlopeNormal(iEdge) = waterPressure(cell2) / dcEdge(iEdge) 
-               hydropotentialSlopeNormal(iEdge) = (rho_water * gravity * waterThickness(cell2) + waterPressure(cell2)) / dcEdge(iEdge)
-
-            endif ! which cell is icefree
+            if (config_SGH_allow_terrestrial_outflow) then
+               cell1 = cellsOnEdge(1, iEdge)
+               cell2 = cellsOnEdge(2, iEdge)
+               if (li_mask_is_grounded_ice(cellMask(cell1))) then ! cell2 is the icefree cell - replace phi there with cell1 Phig
+                  if (bedTopography(cell2) < bedTopography(cell1)) then
+                     hydropotentialBaseSlopeNormal(iEdge) = - waterPressure(cell1) / dcEdge(iEdge)
+                     hydropotentialSlopeNormal(iEdge) = - (rho_water * gravity * waterThickness(cell1) + waterPressure(cell1)) / dcEdge(iEdge)
+                  else
+                     ! If bare ground elevation is higher than elevation beneath the ice, no flux
+                     hydropotentialBaseSlopeNormal(iEdge) = 0.0_RKIND
+                     hydropotentialSlopeNormal(iEdge) = 0.0_RKIND
+                     waterPressureSlopeNormal(iEdge) = 0.0_RKIND
+                  endif
+               else ! cell1 is the icefree cell - replace phi there with cell2 Phig
+                  if (bedTopography(cell1) < bedTopography(cell2)) then
+                     hydropotentialBaseSlopeNormal(iEdge) = waterPressure(cell2) / dcEdge(iEdge)
+                     hydropotentialSlopeNormal(iEdge) = (rho_water * gravity * waterThickness(cell2) + waterPressure(cell2)) / dcEdge(iEdge)
+                  else
+                     ! If bare ground elevation is higher than elevation beneath the ice, no flux
+                     hydropotentialBaseSlopeNormal(iEdge) = 0.0_RKIND
+                     hydropotentialSlopeNormal(iEdge) = 0.0_RKIND
+                     waterPressureSlopeNormal(iEdge) = 0.0_RKIND
+                  endif
+               endif ! which cell is icefree
+            else ! if disallow terrestrial outflow
+               hydropotentialBaseSlopeNormal(iEdge) = 0.0_RKIND
+               hydropotentialSlopeNormal(iEdge) = 0.0_RKIND
+               waterPressureSlopeNormal(iEdge) = 0.0_RKIND
+            endif ! if allow terrestrial outflow
          endif ! if edge of grounded ice
       end do
 
@@ -1844,7 +1885,9 @@ module li_subglacial_hydro
       real (kind=RKIND), pointer :: creep_coeff
       real (kind=RKIND), pointer :: rhoi
       real (kind=RKIND), pointer :: config_SGH_incipient_channel_width
+      real (kind=RKIND), pointer :: bedRoughMax
       logical, pointer :: config_SGH_include_pressure_melt
+      real (kind=RKIND), pointer :: config_SGH_chnl_area_shutoff
       real (kind=RKIND), dimension(:), pointer :: channelArea
       real (kind=RKIND), dimension(:), pointer :: channelMelt
       real (kind=RKIND), dimension(:), pointer :: channelPressureFreeze
@@ -1862,6 +1905,7 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:), pointer :: effectivePressureSGH
       real (kind=RKIND), dimension(:), pointer :: channelDiffusivity
       real (kind=RKIND), dimension(:), pointer :: waterThicknessEdgeUpwind
+      real (kind=RKIND), dimension(:), pointer :: waterThickness
       integer, dimension(:), pointer :: waterFluxMask
       integer, dimension(:), pointer :: hydroMarineMarginMask
       integer, dimension(:), pointer :: edgeMask
@@ -1885,6 +1929,8 @@ module li_subglacial_hydro
       call mpas_pool_get_config(liConfigs, 'config_SGH_chnl_creep_coefficient', creep_coeff)
       call mpas_pool_get_config(liConfigs, 'config_SGH_incipient_channel_width', config_SGH_incipient_channel_width)
       call mpas_pool_get_config(liConfigs, 'config_SGH_include_pressure_melt', config_SGH_include_pressure_melt)
+      call mpas_pool_get_config(liConfigs, 'config_SGH_bed_roughness_max', bedRoughMax)
+      call mpas_pool_get_config(liConfigs, 'config_SGH_chnl_area_shutoff', config_SGH_chnl_area_shutoff)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
       call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
       call mpas_pool_get_array(hydroPool, 'channelArea', channelArea)
@@ -1908,6 +1954,7 @@ module li_subglacial_hydro
       call mpas_pool_get_array(hydroPool, 'hydroMarineMarginMask', hydroMarineMarginMask)
       call mpas_pool_get_array(hydroPool, 'channelDiffusivity', channelDiffusivity)
       call mpas_pool_get_array(hydroPool, 'waterThicknessEdgeUpwind', waterThicknessEdgeUpwind)
+      call mpas_pool_get_array(hydroPool, 'waterThickness', waterThickness)
       call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
       ! Calculate terms needed for opening (melt) rate
 
@@ -1949,6 +1996,12 @@ module li_subglacial_hydro
       channelMelt = (abs(channelDischarge * hydropotentialSlopeNormal) &  ! channel dissipation
                   +  abs(waterFlux * hydropotentialSlopeNormal * config_SGH_incipient_channel_width) & !some sheet dissipation
                   ) / latent_heat_ice
+      ! disable channel melting above area limit
+      do iEdge = 1, nEdgesSolve
+         if (channelArea(iEdge) > config_SGH_chnl_area_shutoff) then
+            channelMelt(iEdge) = 0.0_RKIND
+         endif
+      enddo
       channelPressureFreeze = -1.0_RKIND * iceMeltingPointPressureDependence * cp_freshwater * rho_water * &
          (channelDischarge + waterFlux * config_SGH_incipient_channel_width) &
          * waterPressureSlopeNormal / latent_heat_ice
