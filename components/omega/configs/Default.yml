@@ -34,6 +34,8 @@ Omega:
   VertCoord:
     Density0: 1026.0
     MovementWeightType: Uniform
+  PressureGrad:
+    PressureGradType: Centered
   Tendencies:
     ThicknessFluxTendencyEnable: true
     PVTendencyEnable: true
