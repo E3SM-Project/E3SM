@@ -27,7 +27,7 @@ module rof_comp_mct
                                 inst_index, inst_suffix, inst_name, RtmVarSet, &
                                 wrmflag, heatflag, data_bgc_fluxes_to_ocean_flag, &
                                 inundflag, use_lnd_rof_two_way, use_ocn_rof_two_way, &
-                                sediflag
+                                sediflag, redirect_negative_qgwl
   use RtmSpmd          , only : masterproc, mpicom_rof, npes, iam, RtmSpmdInit, ROFID
   use RtmMod           , only : Rtmini, Rtmrun
   use RtmTimeManager   , only : timemgr_setup, get_curr_date, get_step_size
