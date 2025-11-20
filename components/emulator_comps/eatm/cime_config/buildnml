@@ -1,0 +1,132 @@
+#!/usr/bin/env python3
+
+"""
+Namelist creator for E3SM's EATM component
+"""
+
+import os, sys
+
+_CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..","cime")
+sys.path.append(os.path.join(_CIMEROOT, "scripts", "Tools"))
+
+from standard_script_setup import *
+from CIME.case import Case
+from CIME.utils import expect, run_cmd_no_fail, safe_copy
+from CIME.buildnml import create_namelist_infile, parse_input
+
+logger = logging.getLogger(__name__)
+
+###############################################################################
+def buildnml(case, caseroot, compname):
+###############################################################################
+    expect(compname == "eatm", compname)
+
+    os.chdir(caseroot)
+
+    casebuild             = case.get_value("CASEBUILD")
+    caseroot              = case.get_value("CASEROOT")
+    srcroot               = case.get_value("SRCROOT")
+    din_loc_root          = case.get_value("DIN_LOC_ROOT")
+    ninst_atm             = case.get_value("NINST_ATM")
+    atm_grid              = case.get_value("ATM_GRID")
+    eatm_bldnml_opts      = case.get_value("EATM_BLDNML_OPTS")
+    eatm_namelist_opts    = case.get_value("EATM_NAMELIST_OPTS")
+    rundir                = case.get_value("RUNDIR")
+    run_type              = case.get_value("RUN_TYPE")
+    run_refcase           = case.get_value("RUN_REFCASE")
+    run_refdate           = case.get_value("RUN_REFDATE")
+    run_reftod            = case.get_value("RUN_REFTOD")
+    scriptsroot           = case.get_value("SCRIPTSROOT")
+    
+    atmconf_dir = os.path.join(casebuild, "eatmconf")
+    
+    compset = case.get_value("COMPSET") 
+
+    if not os.path.isdir(atmconf_dir): os.mkdir(atmconf_dir)
+
+    #--------------------------------------------------------------------
+    # Verify atm grid is supported
+    #--------------------------------------------------------------------
+
+    atm_grid_supported = ("null", "gauss180x360")
+    expect(atm_grid in atm_grid_supported, "ATM_GRID '{}' is not supported in eatm. Choose from: null, gauss180x360".format(atm_grid))
+
+    #--------------------------------------------------------------------
+    # Invoke eatm build-namelist - output will go in $CASEBUILD/eatmconf
+    #--------------------------------------------------------------------
+
+    inst_string = ""
+    for inst_counter in range(1, ninst_atm + 1):
+
+        # -----------------------------------------------------
+        # determine instance string
+        # -----------------------------------------------------
+
+        inst_string = ""
+        if ninst_atm > 1:
+            inst_string = "_{0:04d}".format(inst_counter)
+
+            # If multi-instance case does not have restart file, use single-case restart
+            # for each instance
+            if not os.path.exists(os.path.join(rundir, "rpointer.atm{}".format(inst_string))) and \
+                   os.path.exists(os.path.join(rundir, "rpointer.atm")):
+                safe_copy(os.path.join(rundir, "rpointer.atm"),
+                          os.path.join(rundir, "rpointer.atm{}".format(inst_string)))
+
+        # -----------------------------------------------------
+        # create eatmconf/e3sm_namelist
+        # -----------------------------------------------------
+
+        if os.path.exists(os.path.join(casebuild, "eatm.input_data_list")):
+            os.remove(os.path.join(casebuild, "eatm.input_data_list"))
+
+        infile_text = ""
+        if atm_grid != "null":
+
+            fncheck = ""
+            if run_type == 'hybrid' or run_type == "branch":
+
+                fncheck = "{}/{}.eatm{}.r.{}-{}.nc".format(rundir, run_refcase, inst_string, run_refdate, run_reftod)
+                if not os.path.exists(fncheck):
+                    fncheck = "{}/{}.eatm.r.{}-{}.nc".format(rundir, run_refcase, run_refdate, run_reftod)
+                    expect(os.path.exists(fncheck), "ERROR eatm.buildnml: could not find restart file for branch or hybrid start")
+
+            if run_type == "hybrid": infile_text += "finidat_rtm = '{}'\n".format(fncheck)
+            if run_type == "branch": infile_text += "nrevsn_rtm  = '{}'\n".format(fncheck)
+
+        
+        print("EATM::buildnml compset ", compset)
+
+        print("EATM::buildnml final infile_text is:",infile_text)     
+        create_namelist_infile(case,
+                               "{}/user_nl_eatm{}".format(caseroot, inst_string),
+                               "{}/cesm_namelist".format(atmconf_dir),
+                               infile_text=infile_text)
+
+        # -----------------------------------------------------
+        # call build-namelist
+        # -----------------------------------------------------
+
+        sysmod  = os.path.join(srcroot, "components/emulator_comps/eatm/bld/build-namelist")
+        sysmod += " -infile {}/cesm_namelist".format(atmconf_dir)
+        sysmod += " -caseroot {}".format(caseroot)
+        sysmod += " -scriptsroot {}".format(scriptsroot)
+        sysmod += ' -namelist " &eatmexp {} /" '.format(eatm_namelist_opts)
+        sysmod += ' -inst_string "{}" {}'.format(inst_string, eatm_bldnml_opts)
+        run_cmd_no_fail(sysmod, from_dir=atmconf_dir)
+
+        # -----------------------------------------------------
+        # move eatm_in to $RUNDIR
+        # -----------------------------------------------------
+        if os.path.exists(rundir):
+            safe_copy(os.path.join(atmconf_dir, "eatm_in"), os.path.join(rundir, "eatm_in{}".format(inst_string)))
+
+###############################################################################
+def _main_func():
+###############################################################################
+    caseroot = parse_input(sys.argv)
+    with Case(caseroot) as case:
+        buildnml(case, caseroot, "eatm")
+
+if __name__ == "__main__":
+    _main_func()
