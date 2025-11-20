@@ -589,6 +589,14 @@ Valid values: small positive numbers
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_GM_geometric_alpha" type="real"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+scaling factor on the GEOMETRIC diffusivity parameterization
+
+Valid values: small positive numbers
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_GM_Visbeck_alpha" type="real"
 	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
 scaling factor on the Visbeck diffusivity parameterization
