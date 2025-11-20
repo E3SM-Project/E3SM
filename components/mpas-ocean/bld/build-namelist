@@ -641,6 +641,7 @@ add_default($nl, 'config_use_cvmix');
 add_default($nl, 'config_cvmix_prandtl_number');
 add_default($nl, 'config_cvmix_background_scheme');
 add_default($nl, 'config_cvmix_background_diffusion');
+add_default($nl, 'config_cvmix_background_diffusion_max_latitude');
 add_default($nl, 'config_cvmix_background_diffusion_passive');
 add_default($nl, 'config_cvmix_background_diffusion_passive_enable');
 add_default($nl, 'config_cvmix_background_viscosity');

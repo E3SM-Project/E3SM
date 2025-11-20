@@ -760,7 +760,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_cvmix_background_scheme" type="char*1024"
 	category="cvmix" group="cvmix">
-Scheme for background diffusivity, 'constant' for constant with depth and space, 'BryanLewis' for vertically variable, 'none' for no background diffusivity
+Scheme for background diffusivity, 'constant' for constant with depth and space, 'latitude-dependent' for latitude dependence and constant in depth, 'BryanLewis' for vertically variable, 'none' for no background diffusivity
 
 Valid values: 'constant', 'BryanLewis', and 'none'
 Default: Defined in namelist_defaults.xml
@@ -768,7 +768,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_cvmix_background_diffusion" type="real"
 	category="cvmix" group="cvmix">
-Background vertical diffusion applied to tracer quantities
+Background vertical diffusion applied to tracer quantities. For 'latitude-dependent' this is the maximum value
 
 Valid values: Any positive real value.
 Default: Defined in namelist_defaults.xml
@@ -779,6 +779,14 @@ Default: Defined in namelist_defaults.xml
 Background vertical diffusion applied to passive tracer quantities
 
 Valid values: Any positive real value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_cvmix_background_diffusion_max_latitude" type="real"
+	category="cvmix" group="cvmix">
+For 'latitude-dependent' this is the maximum latitude at which background diffusivity is non-zero"
+
+Valid values: Any real value between -90 and 90.
 Default: Defined in namelist_defaults.xml
 </entry>
 
