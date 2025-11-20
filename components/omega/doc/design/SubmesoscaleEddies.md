@@ -12,14 +12,14 @@ The foundational parameterization for submesoscale eddies was developed by [Fox-
 The core of the FK08 scheme is the introduction of an eddy-induced velocity, $\vec{v}_e$, which advects buoyancy. The vertical component of the eddy-induced overturning streamfunction, $\Psi_e$, is parameterized as:
 
 $$
-\Psi_e = C_e \frac{H^2}{|\vec{f}|} |\nabla_h b| \cdot \mu(z)
+\Psi_e = C_e \frac{H^2}{|f|} |\nabla_h b| \cdot \mu(z)
 $$
 
 Where:
 - $C_e$ is a non-dimensional tuning coefficient, typically O(0.1).
 - $H$ is the mixed-layer depth.
-- $\vec{f}$ is the Coriolis parameter.
-- $\nabla_h b$ is the horizontal buoyancy gradient.
+- $f$ is the Coriolis parameter.
+- $\nabla_h b_{ml}$ is the horizontal buoyancy gradient averaged over the mixed layer depth.
 - $\mu(z)$ is a shape function that defines the vertical structure of the overturning.
 
 This streamfunction produces an eddy-induced vertical velocity, $w_e$, that restratifies the mixed layer by slumping the horizontal density fronts. The shape function $\mu(z)$ is typically chosen to be zero at the surface and the base of the mixed layer, with a maximum in between, ensuring conservation of mass.  It's form is discussed in Section [](#33-eddy-induced-velocity-shape-function).
@@ -43,7 +43,7 @@ The key parameters and variables are:
 - $\Delta_s$: The model grid length parameter, defined in Section [](#31-the-original-fk11-formulation).
 - $L_f$: The characteristic width of submesoscale fronts, often treated as a constant or parameterized.
 - $H$: The mixed-layer depth, often time-filtered to represent the memory of the instabilities.
-- $|\nabla_h \bar{b}|$: The magnitude of the horizontal buoyancy gradient, averaged over the mixed layer..
+- $|\nabla_h b_{ml}|$: The magnitude of the horizontal buoyancy gradient, averaged over the mixed layer..
 - $\mu(z)$: A vertical shape function that is zero at the surface and the base of the mixed layer.
 
 ### Modifications by Bodner et al.
@@ -67,13 +67,13 @@ Overall, the Uchida et al. study demonstrates that the physically-based constrai
 
 ### 2.1 Requirement: Buoyancy calculation must be modular
 
-To allow for easier addition of a future mesoscale eddy closure ([e.g. Mak et al 2018](https://journals.ametsoc.org/view/journals/phoc/48/10/jpo-d-18-0017.1.xml) and/or [Korn et al 2018](https://www.sciencedirect.com/science/article/pii/S1463500318301859)) the horizontal buoyancy calculation is required for the submesoscale eddy parameterization ([](#submeso-definition)) and for mesoscale eddy closures.  The implementation herein should be easily interfaced with each parameterization.  For a non-boussinesq model, the buoyancy is defined as
+To allow for easier addition of a future mesoscale eddy closure ([e.g. Mak et al 2018](https://journals.ametsoc.org/view/journals/phoc/48/10/jpo-d-18-0017.1.xml) and/or [Korn et al 2018](https://www.sciencedirect.com/science/article/pii/S1463500318301859)) the buoyancy calculation and horizontal gradient that is required for the submesoscale eddy parameterization ([](#submeso-definition)) should be usable for mesoscale eddy closures.  For a non-boussinesq model, the buoyancy is defined as
 
 $$
 b \equiv g \frac{\rho - \rho_0}{\rho}
 $$
 
-where $\rho_0$ is a constant reference density.  The vertical mixed layer average ($H$) in pseudo-height coordinates is given by
+where $\rho_0$ is a constant reference density.  The vertical mixed layer average, where $H$ is the mixed layer depth, in pseudo-height coordinates is given by
 
 $$
 b_{ml} = \frac{1}{H} \int_{-H}^0 g\frac{\rho - \rho_0}{\rho} d \tilde{z}
@@ -101,11 +101,11 @@ $$
 \nabla b = \nabla_h b + \frac{\partial b}{\partial \tilde{z}} \nabla_h \tilde{z}
 $$
 
-where $\nabla_h$ is a gradient along a fixed model layer in Omega.
+where $\nabla_h$ is a gradient along a fixed model layer in Omega.  The vertical derivative of buoyancy will utilize the Brunt Vaisala Frequency variable from the vertical mixing calculation.
 
 ### 2.3 Requirement: The parameterization must be configurable in the traditiona FK11 form and the B23 update
 
-The parameterization of submesoscale eddies must accept fixed parameters from the input Yaml file for things like the efficiency ($C_e$), the frontal width ($L_f$) and the inverse timescale ($\tau$) to be consistent with FK.  Via a configuration flag the parameterization should use the B23 form with dynamic predictions of these key variables.
+The parameterization of submesoscale eddies must accept fixed parameters from the input Yaml file for things like the efficiency ($C_e$), the frontal width ($L_f$) and the inverse timescale ($\tau$) to be consistent with FK.  Via a configuration flag the parameterization should use the B23 form with dynamic predictions of these key variables.  The B23 update requires an estimate of boundary layer depth and thus will be implemented after the K-Profile Parameterization of vertical mixing is implemented in Omega.
 
 ## 3. Algorithmic Formulation
 
@@ -315,7 +315,7 @@ $$
 where $\rho_0$ is the reference density used in the pseudo height coordinate definition.  This can be easily rearranged to
 
 $$
-b = g \left(1 - \alpha \rho_0 \right)$
+b = g \left(1 - \alpha \rho_0 \right)
 $$
 
 This form is preferred since Omega calculates `SpecVol` and not density itself.  Since the buoyancy is only used for a horizontal gradient the reference pressure is not a consideration.
