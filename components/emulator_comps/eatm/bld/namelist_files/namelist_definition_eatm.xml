@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="namelist_definition.xsl"?>
+
+<namelist_definition>
+
+<!-- ========================================================================================  -->
+<!-- EATM Namelist -->
+<!-- ========================================================================================  -->
+
+<entry id="do_eatm" 
+       type="logical" 
+       category="eatm"
+       group="eatm_inparm" >
+Default: .true.
+If .true., eatm will run
+</entry>
+
+<entry id="filename_eatm" 
+       type="char*256"
+       category="eatm"
+       input_pathname="abs"
+       group="eatm_inparm" 
+       valid_values="" >
+Default: ' '
+Full pathname of eatm domain file
+</entry>
+
+</namelist_definition>
