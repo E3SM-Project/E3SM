@@ -384,10 +384,13 @@
 		/>
 		<nml_option name="config_GM_closure" type="character" default_value="EdenGreatbatch"
 					description="Control what method used to compute GM $\kappa$. Both 'constant' and 'N2_dependent' use the method in Ferrari et al. 2010 (https://doi.org/10.1016/j.ocemod.2010.01.004). 'constant' uses a constant kappa in eqn 16a, while 'N2_dependent' varies kappa in the vertical according to Danabasoglu and Marshall 2007 (https://doi.org/10.1016/j.ocemod.2007.03.006). 'Visbeck' implements a horizontally varying diffusivity of Visbeck et al 1997. EdenGreatbatch implements a simplified form of the EKE scheme in Eden and Greatbatch (2008) Ocean modeling"
-					possible_values="'constant', 'N2_dependent', 'Visbeck', 'EdenGreatbatch'"
+					possible_values="'constant', 'N2_dependent', 'Visbeck', 'EdenGreatbatch', 'geometric'"
 		/>
 		<nml_option name="config_GM_constant_kappa" type="real" default_value="600.0" units="m^2 s^-1"
 					description="Coefficient of standard GM parametrization of eddy transport (Bolus component), $\kappa$. Only used when config_GM_closure is set to constant."
+		/>
+		<nml_option name="config_GM_geometric_alpha" type="real" default_value="1.0" units="constant"
+					description="Configured GEOMETRIC efficiency"
 		/>
 		<nml_option name="config_GM_constant_bclModeSpeed" type="real" default_value="0.3" units="m s^-1"
 					description="The parameter setting for the first baroclinic mode speed for the vertical stream function boundary value problem. This appears as $c$ in eqn 16a of Ferrari et al. 2010 (https://doi.org/10.1016/j.ocemod.2010.01.004)."
@@ -1809,6 +1812,7 @@
 		<package name="cullCells" description="This package controls variables that provide information on what cells should be culled."/>
 		<package name="tracerBudget" description="This package controls variables that record the tracer budget."/>
 		<package name="gm" description="This package is for GM variables, which are only needed at lower resolutions."/>
+		<package name="geometric" description="This package is for GEOMETRIC GM parameterization variables, which are only needed at lower resolutions."/>
 		<package name="submeso" description="This package is for submesoscale eddy (MLE) variables, needed at resolutions greater than O(1km)"/>
 		<package name="tidalPotentialForcingPKG" description="This package controls variables required for tidal potential forcing"/>
 		<package name="topographicWaveDragPKG" description="This package controls variables required for topographic wave drag"/>
@@ -2110,6 +2114,7 @@
 			<var name="lowFreqDivergence"/>
 			<var name="normalBarotropicVelocity"/>
 			<var name="vertCoordMovementWeights"/>
+			<var name="totalParamEddyEnergy" packages="geometric" />
 			<var name="xtime"/>
 			<var_array name="nonLocalSurfaceTracerFlux"/>
 			<var name="simulationStartTime"/>
@@ -2123,6 +2128,7 @@
 			<var name="atmosphericPressure"/>
 			<var name="normalVelocityTendOld" packages="splitAB2TimeIntegrator" />
 			<var name="CoriolisTermOld" packages="splitAB2TimeIntegrator" />
+			<var name="totalParamEddyEnergyTendOld" packages="geometric" />
 			<var_array name="tracersSurfaceValue"/>
 			<var_array name="surfaceVelocity"/>
 			<var_array name="SSHGradient"/>
@@ -2160,7 +2166,7 @@
 			<var name="SSHinitial" packages="scaledSFWFPKG"/>
 			<var name="SSHfinal" packages="scaledSFWFPKG"/>
 			<var name="nValidTotalfwFluxHistory" packages="scaledSFWFPKG"/>
-			<var name="SFWFScalingFactor" packages="scaledSFWFPKG"/> 
+			<var name="SFWFScalingFactor" packages="scaledSFWFPKG"/>
 		</stream>
 
 		<stream name="output"
@@ -2583,6 +2589,12 @@
 			 description="The layerThickness after the Lagrangian step, prior to remapping."
 			 packages="verticalRemapPKG"
 		/>
+                <!-- FIELDS FOR GEOMETRIC GM parameterization -->
+		<var name="totalParamEddyEnergy" type="real" dimensions="nCells Time" units="m^3 s^-2"
+			 description="The vertically integrated total parameterized eddy energy used in the GEOMETRIC GM parameterization option."
+			 missing_value="FILLVAL" missing_value_mask="cellMask"
+			 packages="geometric"
+		/>
 	</var_struct>
 	<var_struct name="mesh" time_levs="1">
 		<var name="latCell" type="real" dimensions="nCells" units="radians"
@@ -2915,6 +2927,10 @@
 			 description="time tendency of low frequency-filtered divergence"
 			 missing_value="FILLVAL" missing_value_mask="cellMask"
 			 packages="thicknessFilter"
+		/>
+		<var name="tendTotalParamEddyEnergy" type="real" dimensions="nCells Time" units="m^3 s^-3" name_in_code="totalParamEddyEnergy"
+			 description="time tendency of the vertically integrated total parameterized eddy energy"
+			 packages="geometric"
 		/>
 	</var_struct>
 	<var_struct name="diagnostics" time_levs="1">
@@ -3502,6 +3518,10 @@
 		<var name="RossbyRadius" type="real" dimensions="nEdges Time" units="m"
 			 description="Rossby Radius, computed in GM routine for some settings"
 			 packages="gm"
+		/>
+		<var name="totalParamEddyEnergyTendOld" type="real" dimensions="nCells Time" units="m^3 s^-3"
+              	        description="time tendency of the vertically integrated total parameterized eddy energy in GEOMETRIC GM paramterization"
+			packages="geometric"
 		/>
 		<var name="surfaceFluxAttenuationCoefficient" type="real" dimensions="nCells Time" units="m"
 			description="The spatially-dependent length scale of exponential decay of surface fluxes. Fluxes are multiplied by $e^{z/\gamma}$, where this coefficient is $\gamma$."

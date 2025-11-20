@@ -75,9 +75,9 @@ module ocn_diagnostics_variables
    real (kind=RKIND), dimension(:), pointer :: pressureAdjustedSSH
    real (kind=RKIND), dimension(:), pointer :: pgf_sal
    real (kind=RKIND), dimension(:), pointer :: temp_twd
-   real (kind=RKIND), dimension(:), pointer :: normalCoeffTWD 
-   real (kind=RKIND), dimension(:), pointer :: tangentialCoeffTWD 
-   real (kind=RKIND), dimension(:), pointer :: topographicWaveDrag 
+   real (kind=RKIND), dimension(:), pointer :: normalCoeffTWD
+   real (kind=RKIND), dimension(:), pointer :: tangentialCoeffTWD
+   real (kind=RKIND), dimension(:), pointer :: topographicWaveDrag
 
    real (kind=RKIND), dimension(:,:), pointer :: tracersSurfaceValue
    real (kind=RKIND), dimension(:,:), pointer :: tracersSurfaceLayerValue
@@ -140,6 +140,7 @@ module ocn_diagnostics_variables
    real(kind=RKIND), dimension(:,:), pointer :: k33
    real(kind=RKIND), dimension(:,:), pointer :: gradDensityEddy
    real(kind=RKIND), dimension(:), pointer   :: gmBolusKappa
+   real(kind=RKIND), dimension(:), pointer   :: totalParamEddyEnergyTendOld
    real(kind=RKIND), dimension(:), pointer   :: cGMphaseSpeed
    real(kind=RKIND), dimension(:,:,:), pointer :: limiterUp, limiterDown, slopeTriadUp, slopeTriadDown
 
@@ -315,6 +316,11 @@ contains
                    gmHorizontalTaper)
          call mpas_pool_get_array(diagnosticsPool, 'RossbyRadius', &
                    RossbyRadius)
+      end if
+
+      if (config_use_GM .and. config_GM_closure == "geometric" ) then
+         call mpas_pool_get_array(diagnosticsPool, 'totalParamEddyEnergyTendOld', &
+                                                    totalParamEddyEnergyTendOld)
       end if
 
       if (config_use_GM .or. config_submesoscale_enable) then
@@ -895,6 +901,9 @@ contains
          !$acc                   gmHorizontalTaper,  &
          !$acc                   RossbyRadius  &
          !$acc                   )
+         if ( config_GM_closure == "geometric" ) then
+         !$acc enter data create(totalParamEddyEnergyTendOld)
+         end if
       end if
       if (config_use_GM.or.config_submesoscale_enable) then
          !$acc enter data create(gradDensityEddy)
@@ -951,7 +960,7 @@ contains
       end if
       if ( trim(config_time_integrator) == 'split_explicit_ab2' ) then
          !$acc enter data create(normalVelocityTendOld, &
-         !$acc                   CoriolisTermOld)
+         !$acc                   CoriolisTermOld,totalParamEddyEnergyTendOld)
       end if
 
       !$acc enter data create(                                         &
@@ -1157,6 +1166,9 @@ contains
          !$acc                   gmHorizontalTaper,  &
          !$acc                   RossbyRadius  &
          !$acc                   )
+         if ( config_GM_closure == "geometric" ) then
+         !$acc exit data delete(totalParamEddyEnergyTendOld)
+         end if
       end if
       if (config_use_GM.or.config_submesoscale_enable) then
          !$acc exit data delete(gradDensityEddy)
@@ -1213,7 +1225,7 @@ contains
       end if
       if ( trim(config_time_integrator) == 'split_explicit_ab2' ) then
          !$acc exit data delete(normalVelocityTendOld, &
-         !$acc                  CoriolisTermOld)
+         !$acc                  CoriolisTermOld,totalParamEddyEnergyTendOld)
       end if
 
       !$acc exit data delete(                                          &
@@ -1364,6 +1376,9 @@ contains
                  RediHorizontalTaper, &
                  gmHorizontalTaper, &
                  RossbyRadius)
+         if ( config_GM_closure == "geometric" ) then
+            nullify(totalParamEddyEnergyTendOld)
+         end if
       end if
       if (config_use_GM.or.config_submesoscale_enable) then
          nullify(gradDensityEddy)
