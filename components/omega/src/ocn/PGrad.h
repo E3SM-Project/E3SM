@@ -134,7 +134,7 @@ class PressureGrad {
    ~PressureGrad();
 
    /// Compute pressure gradient tendencies and add into Tend array
-   void computePressureGrad(Array2DReal Tend, const OceanState *State,
+   void computePressureGrad(Array2DReal &Tend, const OceanState *State,
                             const VertCoord *VCoord, const Eos *EqState,
                             const int TimeLevel);
 

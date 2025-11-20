@@ -16,12 +16,14 @@
 #include "Halo.h"
 #include "HorzMesh.h"
 #include "IO.h"
+#include "IOStream.h"
 #include "Logging.h"
 #include "MachEnv.h"
 #include "OceanState.h"
 #include "OmegaKokkos.h"
 #include "Pacer.h"
 #include "PGrad.h"
+#include "Tracers.h"
 #include "TimeStepper.h"
 #include "VertCoord.h"
 #include "mpi.h"
@@ -53,6 +55,9 @@ void initPGradTest() {
    // Create the default decomposition (initializes the decomposition)
    Decomp::init();
 
+   // Initialize streams
+   IOStream::init();
+
    // Initialize the default halo
    Err1 = Halo::init();
    if (Err1 != 0) {
@@ -76,6 +81,8 @@ void initPGradTest() {
    // Initialize ocean state
    OceanState::init();
 
+   // Initialize tracers
+   Tracers::init();
 
    CHECK_ERROR_ABORT(Err, "PGrad: error during initialization");
 }
@@ -88,85 +95,248 @@ int main(int argc, char *argv[]) {
    Kokkos::initialize();
    Pacer::initialize(MPI_COMM_WORLD);
    Pacer::setPrefix("Omega:");
+   
    {
       initPGradTest();
-
       // Initialize PressureGrad manager
       PressureGrad::init();
 
+      
       MachEnv *DefEnv = MachEnv::getDefault();
       HorzMesh *DefMesh = HorzMesh::getDefault();
-      VertCoord *DefVCoord = VertCoord::getDefault();
+      //VertCoord *DefVCoord = VertCoord::getDefault();
+      VertCoord *VCoord = VertCoord::getDefault();
       OceanState *DefState = OceanState::getDefault();
+      Decomp *DefDecomp = Decomp::getDefault();
       Eos *DefEos = Eos::getInstance();
       Config *Options = Config::getOmegaConfig();
 
-      I4 NEdgesOwned = DefMesh->NEdgesOwned;
-      I4 NVertLayers = VertCoord::getDefault()->NVertLayers;
+
+      I4 NVertLayers =VCoord->NVertLayers;
       I4 NChunks = NVertLayers / VecLength;
 
-      // create arrays: Tend on edges, Pressure/Geopotential/SpecVol on cells
-      Array2DReal Tend("Tend", DefMesh->NEdgesAll, NVertLayers);
-      Array2DReal Pressure("Pressure", DefMesh->NCellsAll, NVertLayers);
-      Array2DReal Geopotential("Geopotential", DefMesh->NCellsAll, NVertLayers);
-      Array2DReal SpecVol("SpecVol", DefMesh->NCellsAll, NVertLayers);
+      // // set two column mesh
+      //DefMesh->NCellsAll = 2;
+      //DefMesh->NCellsOwned = 2;
+      //DefMesh->NEdgesAll = 1;
+      //DefMesh->NEdgesOwned = 1;
+      //DefDecomp->NCellsAll = 2;
+      //DefDecomp->NCellsSize = 2;
+      //DefDecomp->NCellsOwned = 2;
+      //DefDecomp->NEdgesAll = 1;
+      //DefDecomp->NEdgesOwned = 1;
 
-      // initialize arrays to zero
-      parallelFor({DefMesh->NEdgesAll, NVertLayers}, KOKKOS_LAMBDA(int i, int k) {
-         Tend(i,k) = 0.0_Real;
+      auto &MinLayerCell = VCoord->MinLayerCell;
+      auto &MaxLayerCell = VCoord->MaxLayerCell;
+      parallelFor({DefMesh->NCellsAll}, KOKKOS_LAMBDA(int i) {
+         MinLayerCell(i) = 0;
+         MaxLayerCell(i) = NVertLayers - 1;
       });
-      parallelFor({DefMesh->NCellsAll, NVertLayers}, KOKKOS_LAMBDA(int i, int k) {
-         Pressure(i,k) = 0.0_Real;
-         Geopotential(i,k) = 0.0_Real;
-         SpecVol(i,k) = 1.0_Real; // unit specific volume
-      });
 
-      // set a simple pressure difference between two neighboring cells
-      if (DefMesh->NCellsAll >= 2) {
-         Pressure(0,0) = 1.0_Real;
-         Pressure(1,0) = 2.0_Real;
-      }
-
-      // call computePressureGrad
-      PressureGrad *Pg = PressureGrad::getDefault();
-      if (!Pg) {
-         LOG_INFO("PGrad: default instance not present, creating via create");
-         Pg = PressureGrad::create("default", DefMesh, DefVCoord, Options);
-      }
-
-      int TimeLevel = 0;
-      if (Pg) {
-         Pg->computePressureGrad(Tend, DefState, DefVCoord, DefEos, TimeLevel);
-
-         // simple check: ensure Tend contains some finite values (not all zero)
-         I4 CountNonZero = 0;
-         parallelReduce("countNonZero", {NEdgesOwned, NVertLayers},
-                        KOKKOS_LAMBDA(int e, int k, I4 &acc) {
-                           if (Tend(e,k) != 0.0_Real) acc++;
-                        }, CountNonZero);
-
-         if (CountNonZero > 0) {
-            LOG_INFO("PGrad: computePressureGrad produced non-zero tendencies PASS");
-         } else {
-            RetVal += 1;
-            LOG_ERROR("PGrad: computePressureGrad produced all-zero tendencies FAIL");
+      auto &CellsOnEdge = DefMesh->CellsOnEdge;
+      auto &DcEdge = DefMesh->DcEdge;
+      auto &EdgeMask = DefMesh->EdgeMask;
+      parallelFor({DefMesh->NEdgesAll}, KOKKOS_LAMBDA(int e) {
+         CellsOnEdge(e, 0)= 0;
+         CellsOnEdge(e, 1)= 1;
+         DcEdge(e) = 100.0_Real;
+         for (int k = 0; k < NVertLayers; ++k) {
+            EdgeMask(e, k) = 1.0_Real;
          }
-      } else {
-         RetVal += 1;
-         LOG_ERROR("PGrad: failed to obtain PressureGrad instance FAIL");
+      });     
+
+      // Fetch reference desnity from Config
+      Real Density0;
+      Error ErrorCode;
+      Config TendConfig("Tendencies");
+      ErrorCode.reset();
+      ErrorCode += Options->get(TendConfig);
+      CHECK_ERROR_ABORT(ErrorCode, "VertCoord: Tendencies group not found in Config");
+      ErrorCode += TendConfig.get("Density0", Density0);
+      CHECK_ERROR_ABORT(ErrorCode, "VertCoord: Density0 not found in TendConfig");
+      
+      I4 TimeLevel = 0;
+
+      // create arrays: Tend on edges, Pressure/Geopotential/SpecVol on cells
+      Array2DReal Tend("Tend", DefMesh->NEdgesSize, NVertLayers);
+      Array2DReal SpecVolOld("SpecVolOld", DefMesh->NCellsSize, NVertLayers);
+      Array2DReal PressureMidOld("PressureMidOld", DefMesh->NCellsSize, NVertLayers);
+      Array2DReal LayerThick;
+      DefState->getLayerThickness(LayerThick, TimeLevel);
+      Array1DReal SurfacePressure("SurfacePressure", DefMesh->NCellsSize);
+      Array2DReal Temp;
+      Array2DReal Salinity;
+      Err = Tracers::getByName(Temp, TimeLevel, "Temperature");
+      Err = Tracers::getByName(Salinity, TimeLevel, "Salinity");
+
+
+
+      // set Z interface and mid-point locations
+      Real ZBottom = -1000.0_Real;
+      Real dZ = -ZBottom / (NVertLayers + NVertLayers / 2);
+      auto &BottomDepth = VCoord->BottomDepth;
+      auto &ZInterface = VCoord->ZInterface;
+      auto &ZMid = VCoord->ZMid;
+      parallelFor({DefMesh->NCellsAll}, KOKKOS_LAMBDA(int i) {
+         ZInterface(i, NVertLayers) = ZBottom;
+         SurfacePressure(i) = 0.0_Real;
+         BottomDepth(i) = 0.0_Real;
+         for (int k = NVertLayers - 1; k >= 0; --k) {
+            Real dz = (((k + i) % 2) + 1.0_Real) * dZ; // staggered layer thickness
+            ZInterface(i, k) = ZInterface(i, k + 1) + dz;
+            LayerThick(i, k) = ZInterface(i, k) - ZInterface(i, k + 1);
+            ZMid(i, k) = 0.5_Real * (ZInterface(i, k) + ZInterface(i, k + 1));
+            BottomDepth(i) += dz;
+         }
+      });
+
+      LOG_INFO("NVertLayers = {}", NVertLayers);
+      for (int i = 0; i < 2; ++i) {
+         for (int k = 0; k <= NVertLayers; ++k) {
+            LOG_INFO("ZInterface({}, {}) = {}", i, k, ZInterface(i, k));
+         }
       }
+      LOG_INFO("NVertLayers = {}", NVertLayers);
+      for (int i = 0; i < 2; ++i) {
+         for (int k = 0; k <= NVertLayers; ++k) {
+            LOG_INFO("LayerThick({}, {}) = {}", i, k, LayerThick(i, k));
+         }
+      }
+      LOG_INFO("NVertLayers = {}", NVertLayers);
+      for (int i = 0; i < 2; ++i) {
+         for (int k = 0; k <= NVertLayers; ++k) {
+            LOG_INFO("ZMid({}, {}) = {}", i, k, ZMid(i, k));
+         }
+      }
+
+      // set simple temperature and salinity profiles
+      auto &SpecVol = DefEos->SpecVol;
+      parallelFor({DefMesh->NCellsAll, NVertLayers}, KOKKOS_LAMBDA(int i, int k) {
+         Real T0 = 30.0;
+         Real TB = 1.0;
+         Real S0 = 30.0;
+         Real SB = 40.0;
+
+
+         Real phi0  = (ZMid(i, k) - ZBottom) / (-ZBottom);
+         Real phiB  = 1.0_Real - phi0;
+
+         Temp(i, k) =  T0 * phi0 + TB * phiB;
+         Salinity(i, k) = S0 * phi0 + SB * phiB;
+         SpecVol(i, k) = 1.0_Real / Density0;
+         SpecVolOld(i, k) = SpecVol(i, k);
+      });
+
+      //for (int i = 0; i < 2; ++i) {
+      //   for (int k = 0; k < NVertLayers; ++k) {
+      //      LOG_INFO("Temp({}, {}) = {}", i, k, Temp(i, k));
+      //   }
+      //}
+      //for (int i = 0; i < 2; ++i) {
+      //   for (int k = 0; k < NVertLayers; ++k) {
+      //      LOG_INFO("Salinity({}, {}) = {}", i, k, Salinity(i, k));
+      //   }
+      //}
+
+      // iterate to converge SpecVol
+      auto &PressureMid = VCoord->PressureMid;
+      VCoord->computePressure(LayerThick, SurfacePressure);
+      deepCopy(PressureMidOld, PressureMid);
+      //for (int i = 0; i < 2; ++i) {
+      //   for (int k = 0; k < NVertLayers; ++k) {
+      //      LOG_INFO("PressureMid({}, {}) = {}, PressureMidOld({}, {}) = {}", i, k, PressureMid(i, k), i, k, PressureMidOld(i, k));
+      //   }
+      //}
+      for (int iteration = 0; iteration < 5; ++iteration) {
+
+         // compute specific volume from EOS
+         VCoord->computePressure(LayerThick, SurfacePressure);
+         DefEos->computeSpecVol(Temp, Salinity, PressureMid);
+
+         for (int i = 0; i < 2; ++i) {
+            for (int k = 0; k < NVertLayers; ++k) {
+               LOG_INFO("PressureMid({}, {}) = {}, PressureMidOld({}, {}) = {}", i, k, PressureMid(i, k), i, k, PressureMidOld(i, k));
+            }
+         }
+         for (int i = 0; i < 2; ++i) {
+            for (int k = 0; k < NVertLayers; ++k) {
+               LOG_INFO(" Density({}, {}) = {}", i, k, 1.0_Real / SpecVol(i, k));
+            }
+         }
+
+         // Compute psuedo thickness
+         parallelFor({DefMesh->NCellsAll, NVertLayers}, KOKKOS_LAMBDA(int i, int k) {
+            LayerThick(i, k) = 1.0_Real / (SpecVol(i, k) * Density0) * (ZInterface(i, k) - ZInterface(i, k + 1));
+         });
+
+         // check for convergence
+         Real max_value = 0.0_Real;
+         parallelReduce({DefMesh->NCellsAll, NVertLayers},
+                        KOKKOS_LAMBDA(int i, int k, Real &max) {
+                           Real diff = Kokkos::abs(SpecVol(i, k) - SpecVolOld(i, k));
+                           if (diff > max) max = diff;
+                        }, Kokkos::Max<Real>(max_value)  );
+
+         if (max_value < 1e-12_Real) {
+            LOG_INFO("converged: max diff = {}", max_value);
+            break;
+         } else {
+            LOG_INFO("max diff = {}", max_value);
+            parallelFor({DefMesh->NCellsAll, NVertLayers}, KOKKOS_LAMBDA(int i, int k) {
+               SpecVolOld(i, k) = SpecVol(i, k);
+            });
+         }
+
+      }
+      //for (int i = 0; i < 2; ++i) {
+      //   for (int k = 0; k < NVertLayers; ++k) {
+      //      LOG_INFO("SpecVol({}, {}) = {}", i, k, SpecVol(i, k));
+      //   }
+      //}
+
+
+      VCoord->computeZHeight(LayerThick, SpecVol);
+      Array1DReal SelfAttractionLoading("SelfAttractionLoading", DefMesh->NCellsAll);
+      Array1DReal TidalPotential("TidalPotential", DefMesh->NCellsAll);
+      deepCopy(TidalPotential, 0.0_Real);
+      deepCopy(SelfAttractionLoading, 0.0_Real);
+      VCoord->computeGeopotential(TidalPotential, SelfAttractionLoading);
+
+      // create PressureGrad instance 
+      PressureGrad *DefPGrad = PressureGrad::getDefault();
+      if (!DefPGrad) {
+         LOG_INFO("PGrad: default instance not created by init");
+      }
+      auto PGradTest = PressureGrad::create("Test", DefMesh, VCoord, Options);
+
+      for (int i = 0; i < 2; ++i) {
+        for (int k = 0; k < NVertLayers; ++k) {
+           Tend(i, k) = 0.0_Real;
+           LOG_INFO("Tend({}, {}) = {}", i, k, Tend(i, k));
+        }
+      } 
+      PGradTest->computePressureGrad(Tend, DefState, VCoord, DefEos, TimeLevel);
+      for (int i = 0; i < 2; ++i) {
+         for (int k = 0; k < NVertLayers; ++k) {
+            LOG_INFO("Tend({}, {}) = {}", i, k, Tend(i, k));
+         }
+      }
+
 
       // cleanup
       PressureGrad::clear();
-      VertCoord::clear();
+      IOStream::finalize();
+      TimeStepper::clear();
+      Tracers::clear();
+      Eos::destroyInstance();
       OceanState::clear();
+      VertCoord::clear();
+      Field::clear();
+      Dimension::clear();
       HorzMesh::clear();
       Halo::clear();
       Decomp::clear();
       MachEnv::removeAll();
-      FieldGroup::clear();
-      Field::clear();
-      Dimension::clear();
    }
    Pacer::finalize();
    Kokkos::finalize();

@@ -25,17 +25,12 @@ void PressureGrad::init() {
    HorzMesh *DefMesh    = HorzMesh::getDefault();
    VertCoord *DefVCoord = VertCoord::getDefault();
 
-   // Retrieve PressureGrad config group
+   // Retrieve omega config
    Config *OmegaConfig = Config::getOmegaConfig();
-   Config PGradConfig("PressureGrad");
-   Error Err;
-   Err += OmegaConfig->get(PGradConfig);
-   CHECK_ERROR_ABORT(Err,
-                     "PressureGrad: PressureGrad group not found in Config");
 
    // Create the default PressureGrad and set pointer to it
    PressureGrad::DefaultPGrad =
-       PressureGrad::create("Default", DefMesh, DefVCoord, &PGradConfig);
+       PressureGrad::create("Default", DefMesh, DefVCoord, OmegaConfig);
 
 } // end init
 
@@ -151,7 +146,7 @@ PressureGrad *PressureGrad::get(const std::string &Name ///< [in] Name of
 
 //------------------------------------------------------------------------------
 // Compute pressure gradient tendencies and add into Tend array
-void PressureGrad::computePressureGrad(Array2DReal Tend,
+void PressureGrad::computePressureGrad(Array2DReal &Tend,
                                        const OceanState *State,
                                        const VertCoord *VCoord,
                                        const Eos *EqState,
