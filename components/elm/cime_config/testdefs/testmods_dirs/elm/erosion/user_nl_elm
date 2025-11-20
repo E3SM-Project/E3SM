@@ -1,7 +1,7 @@
  fsurdat = '$DIN_LOC_ROOT/lnd/clm2/surfdata_map/surfdata_360x720cru_50pfts_simyr2000_c210422.nc'
  flanduse_timeseries = ''
  finidat = ''
- paramfile = '$DIN_LOC_ROOT/lnd/clm2/paramdata/clm_params.ctc.erosion.c220120.nc'
+ paramfile = '$DIN_LOC_ROOT/lnd/clm2/paramdata/clm_params_c251006.nc'
  use_crop = .true.
  irrigate = .true.
  use_erosion = .true.
