@@ -15,6 +15,9 @@
 namespace scream
 {
 
+// Fwd declare for masked updates
+class FieldMask;
+
 // Enum used when quering Field for a view on a specific mem space
 enum HostOrDevice {
   Host = 0,
@@ -215,6 +218,8 @@ public:
   // Updates this field y as y=beta*y + alpha*x
   // See share/util/eamxx_combine_ops.hpp for more details on CombineMode options
   void update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta);
+
+  // void update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const FieldMask& mask);
 
   // Special case of update for particular choices of the combine mode
   void scale (const ScalarWrapper beta);

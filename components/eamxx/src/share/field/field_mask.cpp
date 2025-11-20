@@ -188,4 +188,42 @@ FieldMask FieldMask::clone(const std::string& name)
   return FieldMask(Field::clone(name));
 }
 
+template<int N>
+ekat::ViewBroadcast<get_view_type<typename ekat::DataND<int,N>::type,Device>>
+FieldMask::get_view (const FieldLayout& lt) const {
+  using data_t = typename ekat::DataND<int,N>::type;
+  using ret_t = ekat::ViewBroadcast<get_view_type<data_t,Device>>;
+
+  const auto& my_lt = get_header().get_identifier().get_layout();
+
+  EKAT_REQUIRE_MSG (lt.rank()>=my_lt.rank(),
+      "[FieldMask::get_view] Error! Input layout has a rank lower than this mask.\n"
+      " - mask name: " + name() + "\n"
+      " - mask layout: " + my_lt.to_string() + "\n"
+      " - input layout: " + lt.to_string() + "\n");
+
+  const auto& dims = my_lt.dims();
+  const auto& tags = my_lt.tags();
+  auto bdims = lt.dims();
+  auto btags = lt.tags();
+
+  for (int i=0,j=0; i<my_lt.rank() && j<lt.rank();) {
+    if (btags[i]==tags[i] and ) {
+
+    }
+  }
+  switch (m_src_field.rank()) {
+    case 1:
+    {
+      auto v = m_src_field.get_view<int*,HD>();
+      return broadcast(v,m_extents);
+    }
+    case 2:
+    {
+      auto v = m_src_field.get_view<int**,HD>();
+      return broadcast(v,m_extents);
+    }
+  }
+}
+
 } // namespace scream

@@ -48,6 +48,12 @@ public:
   // NOTE: this method is HIDING Field::clone
   FieldMask clone() { clone(name()): }
   FieldMask clone(const std::string& name);
+
+  // Return a broadcasted view with the desired outfacing rank
+  // Note: we only instantiate this for N=0,..,8
+  template<int N>
+  ekat::ViewBroadcast<get_view_type<typename ekat::DataND<int,N>::type,Device>>
+  get_view (const FieldLayout& fl) const;
 };
 
 // Returns a lightweight copy of f as a FieldMask. Throws if f.data_type()!=IntType
