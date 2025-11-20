@@ -35,6 +35,7 @@ module ocn_forward_mode
    use ocn_analysis_driver
    use ocn_init_routines
 
+   use ocn_redi
    use ocn_time_integration
    use ocn_time_integration_split
    use ocn_time_integration_split_ab2
@@ -475,6 +476,8 @@ module ocn_forward_mode
       ierr = ior(ierr,err_tmp)
       call ocn_gm_init(domain, err_tmp)
       ierr = ior(ierr,err_tmp)
+      call ocn_redi_init(err_tmp)
+      ierr = ior(ierr,err_tmp)
       call ocn_submesoscale_init(err_tmp)
       ierr = ior(ierr,err_tmp)
       call ocn_tracer_nonlocalflux_init(err_tmp)
@@ -665,6 +668,14 @@ module ocn_forward_mode
         call mpas_timer_stop('io_monthly_surface_salinity')
       endif
 
+      ! ---  update halos for diagnostic ocean boundary layer depth
+      if (config_use_cvmix_kpp) then
+         call mpas_timer_start("se halo diag obd")
+         call mpas_dmpar_field_halo_exch(domain,'boundaryLayerDepth')
+         call mpas_dmpar_field_halo_exch(domain,'dThreshMLD')
+         call mpas_timer_stop("se halo diag obd")
+      end if
+
       ! initialize time-varying forcing
       call ocn_time_varying_forcing_init(domain)
 
@@ -740,7 +751,7 @@ module ocn_forward_mode
            end if
 
            if (config_use_Redi.or.config_use_GM) then
-               call ocn_gm_compute_Bolus_velocity(statePool, meshPool, scratchPool, timeLevelIn=1)
+               call ocn_gm_compute_Bolus_velocity(statePool, meshPool, timeLevelIn=1)
            end if
 
            block_ptr => block_ptr % next
