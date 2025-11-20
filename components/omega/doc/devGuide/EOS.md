@@ -8,7 +8,13 @@ and `BruntVaisalaFreq`. Current EOS options are a linear EOS or an EOS computed 
 If `SpecVolDisplaced` is calculated with the linear EOS option, it will be equal to `SpecVol` as there
 is no pressure/depth dependence for the linear EOS. `SpecVolDisplaced` computes specific volume
 adiabatically displaced to `K + KDisp`. Note: `SpecVol` must be calculated before `BruntVaisalaFreq`, as
-`SpecVol` is an input for the `BruntVaisalaFreq` calculation.
+`SpecVol` is an input for the `BruntVaisalaFreq` calculation. If the linear EOS option is used, then the `BruntVaisalaFreq`
+is calculated using linear coefficients. If the TEOS-10 option is used, the `BruntVaisalaFreq` is calculated with non-linear
+coefficients according to the [TEOS-10 toolbox](https://www.teos-10.org/software.htm). Note: two assumption for ease of computation and efficiency have been made
+for the `BruntVaisalaFreq` TEOS-10 option that differ from how it is calculated in the TEOS-10 toolbox:
+(1) gravity is assumed to be constant and not a function of depth and latitude, and (2) the interface value of the specific volume is
+calculated as the average between two layer values, rather than being recalculated using the interface values of temperature,
+salinity, and pressure. Both of these assumptions incur less than a 1% error.
 
 ## Eos type
 

@@ -3,11 +3,10 @@
 # Vertical Mixing Coefficients
 
 Omega includes a `VertMix` class that provides functions that compute `VertDiff` and `VertVisc`, the
-vertical diffusivity and viscosity, where both are defined at the top of cell centers. Currently the
-values of `VertDiff` and `VertVisc` are calculated using the linear combination of three options: (1) a
+vertical diffusivity and viscosity, where both are defined at the center of the cell and top of the layer.
+Currently the values of `VertDiff` and `VertVisc` are calculated using the linear combination of three options: (1) a
 constant background mixing value, (2) a convective instability mixing value, and (3) a Richardson
-number dependent shear mixing value from the [Pacanowski and Philander (1981)](https://journals.ametsoc.org/view/journals/phoc/11/11/1520-0485_1981_011_1443_povmin_2_0_co_2.xml) parameterization. These options are linearly
-additive. In the future, additional additive options will be implemented, such as the K Profile Parameterization [(KPP; Large et al., 1994)](https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/94rg01872). For both the convective and shear mixing values `BruntVaisalaFreq` is needed, which
+number dependent shear mixing value from the [Pacanowski and Philander (1981)](https://journals.ametsoc.org/view/journals/phoc/11/11/1520-0485_1981_011_1443_povmin_2_0_co_2.xml) parameterization. These options are linearly additive. In the future, additional additive options will be implemented, such as the K Profile Parameterization [(KPP; Large et al., 1994)](https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/94rg01872). For both the convective and shear mixing values `BruntVaisalaFreq` is needed, which
 is calculated by the `EOS` class.
 
 ## Initialization and Usage
@@ -16,11 +15,10 @@ The primary class `VertMix` is implemented using the Singleton pattern to ensure
 
 ```c++
 // Initialize VertMix
-VertMix* vertMix = VertMix::getInstance("Default", mesh, nLevels);
+VertMix* VMix = VertMix::getInstance();
 
 // Compute mixing coefficients
-vertMix->computeVertMix(VertDiff, VertVisc, NormalVelocity,
-                       TangentialVelocity, BruntVaisalaFreq);
+VMix->computeVertMix(NormalVelocity, TangentialVelocity, BruntVaisalaFreq);
 ```
 
 ## Configuration
@@ -73,9 +71,7 @@ VertMix:
 The main computation is handled by:
 
 ```cpp
-void computeVertMix(Array2DReal VertDiff,
-                   Array2DReal VertVisc,
-                   const Array2DReal &NormalVelocity,
+void computeVertMix(const Array2DReal &NormalVelocity,
                    const Array2DReal &TangentialVelocity,
                    const Array2DReal &BruntVaisalaFreq);
 ```
