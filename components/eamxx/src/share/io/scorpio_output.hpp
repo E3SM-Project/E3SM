@@ -172,6 +172,7 @@ protected:
 
   // --- Internal variables --- //
   ekat::Comm m_comm;
+  bool m_transpose = false;
 
   // We store separate shared pointers for field mgrs at different stages of IO:
   // More specifically, the order of operations is as follows:
@@ -201,6 +202,7 @@ protected:
     Scorpio // Output fields to pass to scorpio (may differ from the above in case of packing)
   };
   std::map<Phase, std::shared_ptr<fm_type>> m_field_mgrs;
+  std::map<std::string, Field> m_helper_fields;
 
   std::shared_ptr<const grid_type> m_io_grid;
   std::shared_ptr<remapper_type> m_horiz_remapper;
