@@ -189,6 +189,7 @@ module ocn_core_interface
       character (len=StrKIND), pointer :: config_pressure_gradient_type
       character (len=StrKIND), pointer :: config_sw_absorption_type
       character (len=StrKIND), pointer :: config_vert_advection_method
+      character (len=StrKIND), pointer :: config_GM_closure
 
       logical, pointer :: config_use_variable_drag
       logical, pointer :: config_use_bulk_wind_stress
