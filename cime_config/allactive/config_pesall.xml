@@ -2518,8 +2518,8 @@
     <mach name="chrysalis">
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+MALI.+SWAV.+" pesize="any">
         <comment>GIS 20km (low-res) testing config</comment>
-        <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>
-        <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
+        <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
+        <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
         <ntasks>
           <ntasks_atm>512</ntasks_atm>
           <ntasks_lnd>512</ntasks_lnd>
@@ -2536,6 +2536,8 @@
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+MALI.+SWAV.+" pesize="any">
         <comment>pm-cpu: GIS 20 or 40km (low-res) testing config, 2 nodes, 128x1</comment>
         <ntasks>
+        <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>
+        <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
           <ntasks_atm>256</ntasks_atm>
           <ntasks_lnd>256</ntasks_lnd>
           <ntasks_rof>256</ntasks_rof>
