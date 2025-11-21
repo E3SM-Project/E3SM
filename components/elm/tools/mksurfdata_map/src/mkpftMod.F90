@@ -664,7 +664,7 @@ subroutine mkpft_normalize( pctpft_full, pctspecial, pctnatveg, pctcrop, pctnatp
   ! Error checking
   ! -----------------------------------------------------------------
 
-  if (pctspecial > 100._r8) then
+  if (pctspecial > 100._r8 + 1.e-10) then
      write(6,*) subname//' ERROR: pctspecial > 100: ', pctspecial
      call abort()
   end if
