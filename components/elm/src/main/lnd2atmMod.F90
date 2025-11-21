@@ -13,7 +13,7 @@ module lnd2atmMod
   use elm_varpar           , only : numrad, ndst, nlevgrnd, nlevsno, nlevsoi !ndst = number of dust bins.
   use elm_varcon           , only : rair, grav, cpair, hfus, tfrz, spval
   use elm_varctl           , only : iulog, use_c13, use_cn, use_lch4, use_voc, use_fates, use_atm_downscaling_to_topunit, use_fan
-  use elm_varctl           , only : use_lnd_rof_two_way
+  use elm_varctl           , only : use_lnd_rof_two_way, use_finetop_rad
   use tracer_varcon        , only : is_active_betr_bgc
   use seq_drydep_mod   , only : n_drydep, drydep_method, DD_XLND
   use decompMod            , only : bounds_type
@@ -55,7 +55,7 @@ contains
 
   !------------------------------------------------------------------------
   subroutine lnd2atm_minimal(bounds, &
-      surfalb_vars, energyflux_vars, lnd2atm_vars)
+      surfalb_vars, solarabs_vars, energyflux_vars, atm2lnd_vars, lnd2atm_vars)
     !
     ! !DESCRIPTION:
     ! Compute elm_l2a_vars component of gridcell derived type. This routine computes
@@ -70,11 +70,13 @@ contains
     ! !ARGUMENTS:
     type(bounds_type)     , intent(in)    :: bounds
     type(surfalb_type)    , intent(in)    :: surfalb_vars
+    type(solarabs_type)   , intent(in)    :: solarabs_vars
     type(energyflux_type) , intent(in)    :: energyflux_vars
+    type(atm2lnd_type)    , intent(in)    :: atm2lnd_vars
     type(lnd2atm_type)    , intent(inout) :: lnd2atm_vars
     !
     ! !LOCAL VARIABLES:
-    integer :: g, t                                    ! index
+    integer :: g, t, ib                                  ! index
     !------------------------------------------------------------------------
     associate( &
       h2osno => col_ws%h2osno  , &
@@ -83,10 +85,23 @@ contains
       h2osoi_vol_grc => lnd2atm_vars%h2osoi_vol_grc , &
       albd_patch => surfalb_vars%albd_patch , &
       albd_grc   => lnd2atm_vars%albd_grc   , &
+      apparent_albd_grc   => lnd2atm_vars%apparent_albd_grc   , &
       albi_patch => surfalb_vars%albi_patch , &
       albi_grc   => lnd2atm_vars%albi_grc   , &
+      apparent_albi_grc   => lnd2atm_vars%apparent_albi_grc   , &
       eflx_lwrad_out => veg_ef%eflx_lwrad_out , &
-      eflx_lwrad_out_grc => lnd2atm_vars%eflx_lwrad_out_grc   &
+      eflx_lwrad_out_grc => lnd2atm_vars%eflx_lwrad_out_grc   , &
+      forc_solad_pp_grc  => atm2lnd_vars%forc_solad_pp_grc    , &
+      forc_solai_pp_grc  => atm2lnd_vars%forc_solai_pp_grc    , &
+      fsr_vis_d_patch    => solarabs_vars%fsr_vis_d_patch     , &
+      fsr_vis_i_patch    => solarabs_vars%fsr_vis_i_patch     , &
+      fsr_nir_d_patch    => solarabs_vars%fsr_nir_d_patch     , &
+      fsr_nir_i_patch    => solarabs_vars%fsr_nir_i_patch     , &
+      fsr_vis_d_grc      => lnd2atm_vars%fsr_vis_d_grc        , &
+      fsr_vis_i_grc      => lnd2atm_vars%fsr_vis_i_grc        , &
+      fsr_nir_d_grc      => lnd2atm_vars%fsr_nir_d_grc        , &
+      fsr_nir_i_grc      => lnd2atm_vars%fsr_nir_i_grc        , &
+      sky_view_factor    => grc_pp%sky_view_factor              &
       )
 
     call c2g(bounds, &
@@ -118,10 +133,16 @@ contains
          eflx_lwrad_out_grc (bounds%begg:bounds%endg), &
          p2c_scale_type=unity, c2l_scale_type= urbanf, l2g_scale_type=unity)
 
+    if (use_finetop_rad) then
+         do g = bounds%begg,bounds%endg
+            eflx_lwrad_out_grc(g) = eflx_lwrad_out_grc(g)*sky_view_factor(g)
+         end do
+    end if
+
     do g = bounds%begg,bounds%endg
        lnd2atm_vars%t_rad_grc(g) = sqrt(sqrt(eflx_lwrad_out_grc(g)/sb))
     end do
-    
+
     ! Calculate topounit level eflx_lwrad_out_topo for downscaling purpose
     if (use_atm_downscaling_to_topunit) then
        call p2t(bounds, &
@@ -134,6 +155,68 @@ contains
        end do
     end if
     
+    if (use_finetop_rad) then
+       ! calculate gridcell level reflected radiation
+       call p2g(bounds, &
+            fsr_vis_d_patch(bounds%begp:bounds%endp) , &
+            fsr_vis_d_grc  (bounds%begg:bounds%endg) , &
+            p2c_scale_type=unity, c2l_scale_type= urbanf, l2g_scale_type=unity)
+
+       call p2g(bounds, &
+            fsr_vis_i_patch(bounds%begp:bounds%endp) , &
+            fsr_vis_i_grc  (bounds%begg:bounds%endg) , &
+            p2c_scale_type=unity, c2l_scale_type= urbanf, l2g_scale_type=unity)
+
+       call p2g(bounds, &
+            fsr_nir_d_patch(bounds%begp:bounds%endp) , &
+            fsr_nir_d_grc  (bounds%begg:bounds%endg) , &
+            p2c_scale_type=unity, c2l_scale_type= urbanf, l2g_scale_type=unity)
+
+       call p2g(bounds, &
+            fsr_nir_i_patch(bounds%begp:bounds%endp) , &
+            fsr_nir_i_grc  (bounds%begg:bounds%endg) , &
+            p2c_scale_type=unity, c2l_scale_type= urbanf, l2g_scale_type=unity)
+
+       ! calculate gridcell level apparent albedo 
+       do g = bounds%begg,bounds%endg 
+           do ib = 1, numrad
+               apparent_albd_grc(g,ib) = 1._r8
+               apparent_albi_grc(g,ib) = 1._r8
+           end do
+
+           ! calculate direct albedo
+           ib = 1
+           if (forc_solad_pp_grc(g,ib) > 0._r8) then
+               apparent_albd_grc(g,ib) = fsr_vis_d_grc(g)/forc_solad_pp_grc(g,ib)*sky_view_factor(g)
+           end if
+           ib = 2
+           if (forc_solad_pp_grc(g,ib) > 0._r8) then
+               apparent_albd_grc(g,ib) = fsr_nir_d_grc(g)/forc_solad_pp_grc(g,ib)*sky_view_factor(g)
+           end if
+
+           ! calculate diffuse albedo
+           ib = 1
+           if (forc_solai_pp_grc(g,ib) > 0._r8) then
+               apparent_albi_grc(g,ib) = fsr_vis_i_grc(g)/forc_solai_pp_grc(g,ib)*sky_view_factor(g)
+           end if
+           ib = 2
+           if (forc_solai_pp_grc(g,ib) > 0._r8) then
+               apparent_albi_grc(g,ib) = fsr_nir_i_grc(g)/forc_solai_pp_grc(g,ib)*sky_view_factor(g)
+           end if
+
+           ! limit albedo to be <= 1
+           do ib = 1, numrad
+               if (apparent_albd_grc(g,ib) > 1._r8) then
+                   apparent_albd_grc(g,ib) = 1._r8
+               end if
+
+               if (apparent_albi_grc(g,ib) > 1._r8) then
+                   apparent_albi_grc(g,ib) = 1._r8
+               end if
+           end do
+        end do
+     end if
+
     end associate
 
   end subroutine lnd2atm_minimal
@@ -246,7 +329,7 @@ contains
 
     ! First, compute the "minimal" set of fields.
     call lnd2atm_minimal(bounds, &
-         surfalb_vars, energyflux_vars, lnd2atm_vars)
+         surfalb_vars, solarabs_vars, energyflux_vars, atm2lnd_vars, lnd2atm_vars)
 
     call p2g(bounds, &
          t_ref2m    (bounds%begp:bounds%endp), &
