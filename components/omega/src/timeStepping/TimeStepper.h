@@ -45,6 +45,7 @@
 #include "Tendencies.h"
 #include "TimeMgr.h"
 #include "Tracers.h"
+#include "VertCoord.h"
 
 #include <map>
 #include <memory>
@@ -99,6 +100,7 @@ class TimeStepper {
           Tendencies *InTend,             ///< [in] ptr to tendencies
           AuxiliaryState *InAuxState,     ///< [in] ptr to aux state variables
           HorzMesh *InMesh,               ///< [in] ptr to mesh information
+          VertCoord *InVCoord,            ///< [in] ptr to vertical coordinate
           Halo *InMeshHalo                ///< [in] ptr to halos
    );
 
@@ -119,6 +121,7 @@ class TimeStepper {
        Tendencies *InTend,         ///< [in] ptr to tendencies
        AuxiliaryState *InAuxState, ///< [in] ptr to needed aux state variables
        HorzMesh *InMesh,           ///< [in] ptr to mesh information
+       VertCoord *InVCoord,        ///< [in] ptr to vertical coordinate
        Halo *InMeshHalo            ///< [in] ptr to halos
    );
 
@@ -266,6 +269,7 @@ class TimeStepper {
    Tendencies *Tend;         /// Ptr to tendency terms
    AuxiliaryState *AuxState; /// Ptr to auxiliary state data
    HorzMesh *Mesh;           /// Ptr to horizontal mesh info
+   VertCoord *VCoord;        /// Ptr to vertical coordinate
    Halo *MeshHalo;           /// Ptr to defined halos
 
    /// Function for any method-specific modifications for the default stepper

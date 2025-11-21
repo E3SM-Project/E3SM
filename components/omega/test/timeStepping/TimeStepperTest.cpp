@@ -293,6 +293,7 @@ int testTimeStepper(const std::string &Name, TimeStepperType Type,
 
    // Set pointers to data
    auto *DefMesh        = HorzMesh::getDefault();
+   auto *DefVCoord      = VertCoord::getDefault();
    auto *DefHalo        = Halo::getDefault();
    auto *TestAuxState   = AuxiliaryState::get("TestAuxState");
    auto *TestTendencies = Tendencies::get("TestTendencies");
@@ -308,7 +309,7 @@ int testTimeStepper(const std::string &Name, TimeStepperType Type,
 
    auto *TestTimeStepper = TimeStepper::create(
        "TestTimeStepper", Type, TimeStart, TimeEndTI, TimeStepTI,
-       TestTendencies, TestAuxState, DefMesh, DefHalo);
+       TestTendencies, TestAuxState, DefMesh, DefVCoord, DefHalo);
 
    if (!TestTimeStepper) {
       Err++;
