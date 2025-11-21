@@ -408,9 +408,9 @@ contains
 
     do c = bounds%begc,bounds%endc
        this%rootfr_col (c,nlevsoi+1:nlevgrnd) = 0._r8
-       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+       if (col_pp%is_soil(c) .or. col_pp%is_crop(c)) then
           this%rootfr_col (c,nlevsoi+1:nlevgrnd) = 0._r8
-       else if (lun_pp%itype(l) == istdlak .and. allowlakeprod) then
+       else if (col_pp%is_lake(c) .and. allowlakeprod) then
           this%rootfr_col (c,:) = spval
        else  ! Inactive CH4 columns
           this%rootfr_col (c,:) = spval
@@ -605,7 +605,7 @@ contains
        topi = grc_pp%topi(g)
        ti = t - topi + 1
 
-       if (lun_pp%itype(l)==istwet .or. lun_pp%itype(l)==istice .or. lun_pp%itype(l)==istice_mec) then
+       if (lun_pp%itype(l) == istwet .or. lun_pp%itype(l) == istice .or. lun_pp%itype(l) == istice_mec) then
 
           do lev = 1,nlevgrnd
              this%bsw_col(c,lev)    = spval
@@ -630,7 +630,7 @@ contains
              this%tkmg_col(c,lev)   = spval
              this%tksatu_col(c,lev) = spval
              this%tkdry_col(c,lev)  = spval
-             if (lun_pp%itype(l)==istwet .and. lev > nlevbed) then
+             if (lun_pp%itype(l) == istwet .and. lev > nlevbed) then
                 this%csol_col(c,lev) = csol_bedrock
              else
                 this%csol_col(c,lev)= spval
@@ -707,7 +707,7 @@ contains
                 endif
              end if
 
-             if (lun_pp%itype(l) == istdlak) then
+             if (col_pp%is_lake(c)) then
 
                 if (lev <= nlevsoi) then
                    this%cellsand_col(c,lev) = sand
@@ -716,7 +716,7 @@ contains
                    this%cellorg_col(c,lev)  = om_frac*organic_max
                 end if
 
-             else if (lun_pp%itype(l) /= istdlak) then  ! soil columns of both urban and non-urban types
+             else ! soil columns of both urban and non-urban types
 
                 if (lun_pp%urbpoi(l)) then
                    om_frac = 0._r8 ! No organic matter for urban
@@ -827,7 +827,7 @@ contains
        g = col_pp%gridcell(c)
        l = col_pp%landunit(c)
 
-       if (lun_pp%itype(l)==istdlak) then
+       if (col_pp%is_lake(c)) then
 
           do lev = 1,nlevgrnd
              if ( lev <= nlevsoi )then
