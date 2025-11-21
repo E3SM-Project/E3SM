@@ -134,6 +134,7 @@ module ocn_core_interface
       logical, pointer :: inSituEOSActive
       logical, pointer :: variableShortwaveActive
       logical, pointer :: gmActive
+      logical, pointer :: geometricActive
       logical, pointer :: submesoActive
       logical, pointer :: timeVaryingAtmosphericForcingPKGActive
       logical, pointer :: timeVaryingLandIceForcingPKGActive
@@ -180,7 +181,7 @@ module ocn_core_interface
       logical, pointer :: config_use_subgrid_wetting_drying
       logical, pointer :: config_scale_dismf_by_removed_ice_runoff
 
-      ! flag to turn on freshwater balance adjustment 
+      ! flag to turn on freshwater balance adjustment
       logical, pointer :: config_use_precip_scaling
 
       character (len=StrKIND), pointer :: config_time_integrator
@@ -403,6 +404,15 @@ module ocn_core_interface
       call mpas_pool_get_config(configPool, 'config_use_Redi', config_use_Redi)
       if (config_use_GM.or.config_use_Redi) then
          gmActive = .true.
+      end if
+
+      !
+      ! test for use of GEOMETRIC GM parameterization
+      !
+      call mpas_pool_get_package(packagePool, 'geometricActive', geometricActive)
+      call mpas_pool_get_config(configPool, 'config_GM_closure', config_GM_closure)
+      if (config_use_GM.and.config_GM_closure==trim("geometric")) then
+         geometricActive = .true.
       end if
 
       !
