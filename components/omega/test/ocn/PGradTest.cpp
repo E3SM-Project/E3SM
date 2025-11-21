@@ -104,30 +104,19 @@ int main(int argc, char *argv[]) {
       
       MachEnv *DefEnv = MachEnv::getDefault();
       HorzMesh *DefMesh = HorzMesh::getDefault();
-      //VertCoord *DefVCoord = VertCoord::getDefault();
-      VertCoord *VCoord = VertCoord::getDefault();
+      //VertCoord *DefDefVCoord = VertCoord::getDefault();
+      VertCoord *DefVCoord = VertCoord::getDefault();
       OceanState *DefState = OceanState::getDefault();
       Decomp *DefDecomp = Decomp::getDefault();
       Eos *DefEos = Eos::getInstance();
       Config *Options = Config::getOmegaConfig();
 
 
-      I4 NVertLayers =VCoord->NVertLayers;
+      I4 NVertLayers =DefVCoord->NVertLayers;
       I4 NChunks = NVertLayers / VecLength;
 
-      // // set two column mesh
-      //DefMesh->NCellsAll = 2;
-      //DefMesh->NCellsOwned = 2;
-      //DefMesh->NEdgesAll = 1;
-      //DefMesh->NEdgesOwned = 1;
-      //DefDecomp->NCellsAll = 2;
-      //DefDecomp->NCellsSize = 2;
-      //DefDecomp->NCellsOwned = 2;
-      //DefDecomp->NEdgesAll = 1;
-      //DefDecomp->NEdgesOwned = 1;
-
-      auto &MinLayerCell = VCoord->MinLayerCell;
-      auto &MaxLayerCell = VCoord->MaxLayerCell;
+      auto &MinLayerCell = DefVCoord->MinLayerCell;
+      auto &MaxLayerCell = DefVCoord->MaxLayerCell;
       parallelFor({DefMesh->NCellsAll}, KOKKOS_LAMBDA(int i) {
          MinLayerCell(i) = 0;
          MaxLayerCell(i) = NVertLayers - 1;
@@ -139,10 +128,10 @@ int main(int argc, char *argv[]) {
       parallelFor({DefMesh->NEdgesAll}, KOKKOS_LAMBDA(int e) {
          CellsOnEdge(e, 0)= 0;
          CellsOnEdge(e, 1)= 1;
-         DcEdge(e) = 100.0_Real;
-         for (int k = 0; k < NVertLayers; ++k) {
-            EdgeMask(e, k) = 1.0_Real;
-         }
+         //DcEdge(e) = 100.0_Real;
+         //for (int k = 0; k < NVertLayers; ++k) {
+         //   EdgeMask(e, k) = 1.0_Real;
+         //}
       });     
 
       // Fetch reference desnity from Config
@@ -173,16 +162,18 @@ int main(int argc, char *argv[]) {
 
       // set Z interface and mid-point locations
       Real ZBottom = -1000.0_Real;
-      Real dZ = -ZBottom / (NVertLayers + NVertLayers / 2);
-      auto &BottomDepth = VCoord->BottomDepth;
-      auto &ZInterface = VCoord->ZInterface;
-      auto &ZMid = VCoord->ZMid;
+      Real dZ = 2.0_Real * (-ZBottom / NVertLayers);
+      auto &BottomDepth = DefVCoord->BottomDepth;
+      auto &ZInterface = DefVCoord->ZInterface;
+      auto &ZMid = DefVCoord->ZMid;
+      Real tilt_factor = 0.495_Real;
       parallelFor({DefMesh->NCellsAll}, KOKKOS_LAMBDA(int i) {
          ZInterface(i, NVertLayers) = ZBottom;
          SurfacePressure(i) = 0.0_Real;
          BottomDepth(i) = 0.0_Real;
          for (int k = NVertLayers - 1; k >= 0; --k) {
-            Real dz = (((k + i) % 2) + 1.0_Real) * dZ; // staggered layer thickness
+            Real x = (k + i) % 2;
+            Real dz = ( 2.0_Real * tilt_factor - 1.0_Real ) * x * dZ + (1.0_Real - tilt_factor) * dZ; // staggered layer thickness
             ZInterface(i, k) = ZInterface(i, k + 1) + dz;
             LayerThick(i, k) = ZInterface(i, k) - ZInterface(i, k + 1);
             ZMid(i, k) = 0.5_Real * (ZInterface(i, k) + ZInterface(i, k + 1));
@@ -202,12 +193,12 @@ int main(int argc, char *argv[]) {
             LOG_INFO("LayerThick({}, {}) = {}", i, k, LayerThick(i, k));
          }
       }
-      LOG_INFO("NVertLayers = {}", NVertLayers);
-      for (int i = 0; i < 2; ++i) {
-         for (int k = 0; k <= NVertLayers; ++k) {
-            LOG_INFO("ZMid({}, {}) = {}", i, k, ZMid(i, k));
-         }
-      }
+      //LOG_INFO("NVertLayers = {}", NVertLayers);
+      //for (int i = 0; i < 2; ++i) {
+      //   for (int k = 0; k <= NVertLayers; ++k) {
+      //      LOG_INFO("ZMid({}, {}) = {}", i, k, ZMid(i, k));
+      //   }
+      //}
 
       // set simple temperature and salinity profiles
       auto &SpecVol = DefEos->SpecVol;
@@ -239,37 +230,26 @@ int main(int argc, char *argv[]) {
       //}
 
       // iterate to converge SpecVol
-      auto &PressureMid = VCoord->PressureMid;
-      VCoord->computePressure(LayerThick, SurfacePressure);
+      auto &PressureMid = DefVCoord->PressureMid;
+      DefVCoord->computePressure(LayerThick, SurfacePressure);
       deepCopy(PressureMidOld, PressureMid);
       //for (int i = 0; i < 2; ++i) {
       //   for (int k = 0; k < NVertLayers; ++k) {
       //      LOG_INFO("PressureMid({}, {}) = {}, PressureMidOld({}, {}) = {}", i, k, PressureMid(i, k), i, k, PressureMidOld(i, k));
       //   }
       //}
-      for (int iteration = 0; iteration < 5; ++iteration) {
+      for (int iteration = 0; iteration < 15; ++iteration) {
 
          // compute specific volume from EOS
-         VCoord->computePressure(LayerThick, SurfacePressure);
+         DefVCoord->computePressure(LayerThick, SurfacePressure);
          DefEos->computeSpecVol(Temp, Salinity, PressureMid);
 
-         for (int i = 0; i < 2; ++i) {
-            for (int k = 0; k < NVertLayers; ++k) {
-               LOG_INFO("PressureMid({}, {}) = {}, PressureMidOld({}, {}) = {}", i, k, PressureMid(i, k), i, k, PressureMidOld(i, k));
-            }
-         }
-         for (int i = 0; i < 2; ++i) {
-            for (int k = 0; k < NVertLayers; ++k) {
-               LOG_INFO(" Density({}, {}) = {}", i, k, 1.0_Real / SpecVol(i, k));
-            }
-         }
-
-         // Compute psuedo thickness
+         // compute psuedo thickness from specific volume
          parallelFor({DefMesh->NCellsAll, NVertLayers}, KOKKOS_LAMBDA(int i, int k) {
             LayerThick(i, k) = 1.0_Real / (SpecVol(i, k) * Density0) * (ZInterface(i, k) - ZInterface(i, k + 1));
          });
 
-         // check for convergence
+         // compute difference from previous iteration
          Real max_value = 0.0_Real;
          parallelReduce({DefMesh->NCellsAll, NVertLayers},
                         KOKKOS_LAMBDA(int i, int k, Real &max) {
@@ -277,6 +257,7 @@ int main(int argc, char *argv[]) {
                            if (diff > max) max = diff;
                         }, Kokkos::Max<Real>(max_value)  );
 
+         // check convergence               
          if (max_value < 1e-12_Real) {
             LOG_INFO("converged: max diff = {}", max_value);
             break;
@@ -294,28 +275,30 @@ int main(int argc, char *argv[]) {
       //   }
       //}
 
-
-      VCoord->computeZHeight(LayerThick, SpecVol);
+      // compute geopotential
+      //DefVCoord->computeZHeight(LayerThick, SpecVol);
       Array1DReal SelfAttractionLoading("SelfAttractionLoading", DefMesh->NCellsAll);
       Array1DReal TidalPotential("TidalPotential", DefMesh->NCellsAll);
       deepCopy(TidalPotential, 0.0_Real);
       deepCopy(SelfAttractionLoading, 0.0_Real);
-      VCoord->computeGeopotential(TidalPotential, SelfAttractionLoading);
+      DefVCoord->computeGeopotential(TidalPotential, SelfAttractionLoading);
 
       // create PressureGrad instance 
       PressureGrad *DefPGrad = PressureGrad::getDefault();
       if (!DefPGrad) {
          LOG_INFO("PGrad: default instance not created by init");
       }
-      auto PGradTest = PressureGrad::create("Test", DefMesh, VCoord, Options);
+      auto PGradTest = PressureGrad::create("Test", DefMesh, DefVCoord, Options);
 
-      for (int i = 0; i < 2; ++i) {
-        for (int k = 0; k < NVertLayers; ++k) {
-           Tend(i, k) = 0.0_Real;
-           LOG_INFO("Tend({}, {}) = {}", i, k, Tend(i, k));
-        }
-      } 
-      PGradTest->computePressureGrad(Tend, DefState, VCoord, DefEos, TimeLevel);
+      //for (int i = 0; i < 2; ++i) {
+      //  for (int k = 0; k < NVertLayers; ++k) {
+      //     Tend(i, k) = 0.0_Real;
+      //     LOG_INFO("Tend({}, {}) = {}", i, k, Tend(i, k));
+      //  }
+      //} 
+
+      // compute pressure gradient
+      PGradTest->computePressureGrad(Tend, DefState, DefVCoord, DefEos, TimeLevel);
       for (int i = 0; i < 2; ++i) {
          for (int k = 0; k < NVertLayers; ++k) {
             LOG_INFO("Tend({}, {}) = {}", i, k, Tend(i, k));
