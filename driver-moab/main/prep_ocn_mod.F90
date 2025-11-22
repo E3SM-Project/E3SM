@@ -586,7 +586,7 @@ contains
               if (atm_pg_active) then
                   type1 = 3; ! FV for ATM; CGLL does not work correctly in parallel at the moment
               else
-                  type1 = 1 ! This projection works (CGLL to FV), but reverse does not (FV - CGLL)
+                  type1 = 2 ! in the spectral case, the type on coupler will be point cloud
               endif
 
               type2 = 3;  ! FV mesh on coupler OCN

@@ -515,12 +515,15 @@ CONTAINS
           call atm_export_moab(Eclock, cam_out)
 #endif
        else ! if (StepNo != 0) then
+          
+#ifdef HAVE_MOAB
+          call t_startf('atm_read_srfrest_moab')
+          call atm_read_srfrest_moab ( EClock )
+          call t_stopf('atm_read_srfrest_moab')
+#else
           call t_startf('atm_read_srfrest_mct')
           call atm_read_srfrest_mct( EClock, x2a_a, a2x_a )
           call t_stopf('atm_read_srfrest_mct')
-#ifdef HAVE_MOAB
-          call atm_read_srfrest_moab ( EClock )
-         
 #endif
 
           ! Sent .true. as an optional argument so that restart_init is set to .true.  in atm_import
