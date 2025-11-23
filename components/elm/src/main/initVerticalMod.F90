@@ -39,11 +39,6 @@ module initVerticalMod
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: initVertical
   !------------------------------------------------------------------------
-#ifdef CPRNVIDIA
-  logical, parameter :: using_nvhpc = .true.
-#else
-  logical, parameter :: using_nvhpc = .false.
-#endif
 
 contains
 
@@ -172,19 +167,20 @@ contains
           zsoi(j) = scalez*(exp(zecoeff*((j - nlev_equalspace)-0.5_r8))-1._r8) + nlev_equalspace * thick_equal
        enddo
     else
-       !NOTE:  Workaround due to compiler issue with nvhpc 25.x when using -Ktrap=fp
-       if (using_nvhpc .and. ieee_support_halting(ieee_inexact)) then
-          call ieee_set_flag(ieee_all,.false.)
-          call ieee_set_halting_mode(ieee_inexact, .false.)
-       end if 
 
        ! -----------------------------------------------------------------
        !    Soil layers not available from the input, and no additional layers needed. Use the
        ! default soil thickness settings.
        ! -----------------------------------------------------------------
+       !NOTE:  Workaround due to compiler issue with nvhpc 25.x when using -Ktrap=fp
+#ifdef CPRNVIDIA
+          call ieee_set_flag(ieee_all,.false.)
+          call ieee_set_halting_mode(ieee_inexact, .false.)
+#endif
        do j = 1, nlevgrnd
           zsoi(j) = scalez*(exp(zecoeff*(dble(j)-0.5_r8))-1._r8)    !node depths
        enddo
+       print *, "done with init vertical"
     end if
     deallocate(zsoi_in)
 
