@@ -1326,7 +1326,8 @@
         <command name="load">Core/25.03</command>
         <command name="load">PrgEnv-gnu</command>
         <command name="load">cpe/24.11</command>
-        <command name="load">libunwind/1.8.1</command>
+        <command name="load">gcc-native/12.3</command>
+        <command name="load">libunwind</command>
         <command name="load">cray-python/3.11.7</command>
         <command name="load">subversion</command>
         <command name="load">git</command>
