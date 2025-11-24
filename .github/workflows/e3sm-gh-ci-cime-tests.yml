@@ -58,7 +58,7 @@ jobs:
           ./create_test ${{ matrix.test }} --wait --debug
       -
         name: Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: ${{ always() }}
         with:
           name: ${{ matrix.test }}
