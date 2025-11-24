@@ -3994,16 +3994,24 @@ end subroutine wrap_update_hifrq_hist
    integer :: r   ! register index
    integer :: p   ! hlm patch index
    integer :: c   ! column index
+   logical :: is_bareground
    
    ! Iterate over the number of vegetated patches
    do r = 1, this%fates(nc)%npatches
       p = this%fates(nc)%registry(r)%GetHLMPatchIndex()
       
+      ! Determine if the HLM patch is the initial (i.e. bareground patch) on the column
+      is_bareground = .false.
+      if (col_pp%pfti(veg_pp%column(p)) == p) then
+         is_bareground = .true.
+      end if
+      
       ! Get the subgrid indices and assign them to the register metadata
       call this%fates(nc)%registry(r)%SetSubgridIndices(gridcell = veg_pp%gridcell(p), &
                                                         topounit = veg_pp%topounit(p), &
                                                         landunit = veg_pp%landunit(p), &
-                                                        column = veg_pp%column(p))
+                                                        column = veg_pp%column(p), &
+                                                        bareground = is_bareground)
                                                         
 
       ! Register and initialize the boundary condition variables
