@@ -138,7 +138,7 @@ jobs:
         fi
     - name: upload diff patch
       if: ${{ env.status_fail == 'true' }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: ${{ env.fname }}
         path: "components/eamxx/${{ env.fname }}"
