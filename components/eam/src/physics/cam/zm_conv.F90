@@ -22,12 +22,12 @@ module zm_conv
    !----------------------------------------------------------------------------
    implicit none
    save
-   private                         ! Make default type private
+   private
    !----------------------------------------------------------------------------
    ! public methods
    public zm_convi                 ! ZM scheme initialization
    public zm_convr                 ! ZM scheme calculations
-   public zm_conv_evap             ! evaporation of precip from ZM schemea
+   public zm_conv_evap             ! ZM scheme evaporation of precip
    !----------------------------------------------------------------------------
    ! public variables
    type(zm_const_t), public :: zm_const ! derived type to hold ZM constants
