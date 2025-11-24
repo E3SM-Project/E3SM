@@ -682,9 +682,9 @@ subroutine zm_conv_evap(pcols, ncol, pver, pverp, deltat, &
    !          - evaporate some precip directly into the environment using a Sundqvist type algorithm
    !----------------------------------------------------------------------------
 #ifdef SCREAM_CONFIG_IS_CMAKE
-    use zm_eamxx_bridge_wv_saturation, only: qsat
+   use zm_eamxx_bridge_wv_saturation, only: qsat
 #else
-    use wv_saturation,  only: qsat
+   use wv_saturation,  only: qsat
 #endif
    !----------------------------------------------------------------------------
    ! Arguments
@@ -736,182 +736,169 @@ subroutine zm_conv_evap(pcols, ncol, pver, pverp, deltat, &
       prdsnow(1:ncol,1:pver) = 0._r8
    end if
 
-! convert input precip to kg/m2/s
-    prec(:ncol) = prec(:ncol)*1000._r8
+   ! convert input precip to kg/m2/s
+   prec(:ncol) = prec(:ncol)*1000._r8
 
-! determine saturation vapor pressure
-    call qsat(t(1:ncol, 1:pver), pmid(1:ncol, 1:pver), &
-         es(1:ncol, 1:pver), qs(1:ncol, 1:pver))
+   ! determine saturation vapor pressure
+   call qsat(t(1:ncol, 1:pver), pmid(1:ncol, 1:pver), es(1:ncol, 1:pver), qs(1:ncol, 1:pver))
 
-! determine ice fraction in rain production (use cloud water parameterization fraction at present)
-    call cldfrc_fice(ncol, t, fice, fsnow_conv)
+   ! determine ice fraction in rain production (use cloud water parameterization fraction at present)
+   call cldfrc_fice(ncol, t, fice, fsnow_conv)
 
-! zero the flux integrals on the top boundary
-    flxprec(:ncol,1) = 0._r8
-    flxsnow(:ncol,1) = 0._r8
-    evpvint(:ncol)   = 0._r8
-    omsm=0.99999_r8          ! to prevent problems due to round off error
+   ! zero the flux integrals on the top boundary
+   flxprec(:ncol,1) = 0._r8
+   flxsnow(:ncol,1) = 0._r8
+   evpvint(:ncol)   = 0._r8
+   
+   omsm=0.99999_r8 ! to prevent problems due to round off error
 
-    do k = 1, pver
-       do i = 1, ncol
+   do k = 1, pver
+      do i = 1, ncol
 
-! Melt snow falling into layer, if necessary.
-        if( zm_param%old_snow ) then
-          if (t(i,k) > zm_const%tfreez) then
-             flxsntm(i) = 0._r8
-             snowmlt(i) = flxsnow(i,k) * zm_const%grav/ pdel(i,k)
-          else
-             flxsntm(i) = flxsnow(i,k)
-             snowmlt(i) = 0._r8
-          end if
-        else
-        ! make sure melting snow doesn't reduce temperature below threshold
-          if (t(i,k) > zm_const%tfreez) then
-              dum = -zm_const%latice/zm_const%cpair*flxsnow(i,k)*zm_const%grav/pdel(i,k)*deltat
-              if (t(i,k) + dum .le. zm_const%tfreez) then
-                dum = (t(i,k)-zm_const%tfreez)*zm_const%cpair/zm_const%latice/deltat
-                dum = dum/(flxsnow(i,k)*zm_const%grav/pdel(i,k))
-                dum = max(0._r8,dum)
-                dum = min(1._r8,dum)
-              else
-                dum = 1._r8
-              end if
-              dum = dum*omsm
-              flxsntm(i) = flxsnow(i,k)*(1.0_r8-dum)
-              snowmlt(i) = dum*flxsnow(i,k)*zm_const%grav/ pdel(i,k)
-           else
-             flxsntm(i) = flxsnow(i,k)
-             snowmlt(i) = 0._r8
-           end if
+         ! Melt snow falling into layer, if necessary.
+         if( zm_param%old_snow ) then
+            if (t(i,k) > zm_const%tfreez) then
+               flxsntm(i) = 0._r8
+               snowmlt(i) = flxsnow(i,k) * zm_const%grav/ pdel(i,k)
+            else
+               flxsntm(i) = flxsnow(i,k)
+               snowmlt(i) = 0._r8
+            end if
+         else
+            ! make sure melting snow doesn't reduce temperature below threshold
+            if (t(i,k) > zm_const%tfreez) then
+               dum = -zm_const%latice/zm_const%cpair*flxsnow(i,k)*zm_const%grav/pdel(i,k)*deltat
+               if (t(i,k) + dum .le. zm_const%tfreez) then
+                  dum = (t(i,k)-zm_const%tfreez)*zm_const%cpair/zm_const%latice/deltat
+                  dum = dum/(flxsnow(i,k)*zm_const%grav/pdel(i,k))
+                  dum = max(0._r8,dum)
+                  dum = min(1._r8,dum)
+               else
+                  dum = 1._r8
+               end if
+               dum = dum*omsm
+               flxsntm(i) = flxsnow(i,k)*(1.0_r8-dum)
+               snowmlt(i) = dum*flxsnow(i,k)*zm_const%grav/ pdel(i,k)
+            else
+               flxsntm(i) = flxsnow(i,k)
+               snowmlt(i) = 0._r8
+            end if
          end if
 
+         ! relative humidity depression must be > 0 for evaporation
+         evplimit = max(1._r8 - q(i,k)/qs(i,k), 0._r8)
 
-! relative humidity depression must be > 0 for evaporation
-          evplimit = max(1._r8 - q(i,k)/qs(i,k), 0._r8)
+         ! total evaporation depends on flux in the top of the layer
+         ! flux prec is the net production above layer minus evaporation into environmet
+         evpprec(i) = zm_param%ke * (1._r8 - cldfrc(i,k)) * evplimit * sqrt(flxprec(i,k))
 
-! total evaporation depends on flux in the top of the layer
-! flux prec is the net production above layer minus evaporation into environmet
-          evpprec(i) = zm_param%ke * (1._r8 - cldfrc(i,k)) * evplimit * sqrt(flxprec(i,k))
-!**********************************************************
-!!          evpprec(i) = 0.    ! turn off evaporation for now
-!**********************************************************
+         ! Don't let evaporation supersaturate layer (approx). Layer may already be saturated.
+         ! Currently does not include heating/cooling change to qs
+         evplimit = max(0._r8, (qs(i,k)-q(i,k)) / deltat)
 
-! Don't let evaporation supersaturate layer (approx). Layer may already be saturated.
-! Currently does not include heating/cooling change to qs
-          evplimit   = max(0._r8, (qs(i,k)-q(i,k)) / deltat)
+         ! Don't evaporate more than is falling into the layer from above.
+         ! Don't evaporate rain formed in this layer, but if precip production
+         ! is negative, remove from the available precip. Negative precip
+         ! production occurs because of evaporation in downdrafts.
+         evplimit = min(evplimit, flxprec(i,k) * zm_const%grav / pdel(i,k))
 
-! Don't evaporate more than is falling into the layer - do not evaporate rain formed
-! in this layer but if precip production is negative, remove from the available precip
-! Negative precip production occurs because of evaporation in downdrafts.
-!!$          evplimit   = flxprec(i,k) * gravit / pdel(i,k) + min(prdprec(i,k), 0.)
-          evplimit   = min(evplimit, flxprec(i,k) * zm_const%grav / pdel(i,k))
+         ! Total evaporation cannot exceed input precipitation
+         evplimit = min(evplimit, (prec(i) - evpvint(i)) * zm_const%grav / pdel(i,k))
 
-! Total evaporation cannot exceed input precipitation
-          evplimit   = min(evplimit, (prec(i) - evpvint(i)) * zm_const%grav / pdel(i,k))
+         evpprec(i) = min(evplimit, evpprec(i))
 
-          evpprec(i) = min(evplimit, evpprec(i))
-
-          if( .not.zm_param%old_snow ) then
+         if( .not.zm_param%old_snow ) then
             evpprec(i) = max(0._r8, evpprec(i))
             evpprec(i) = evpprec(i)*omsm
-          end if
+         end if
 
-! evaporation of snow depends on snow fraction of total precipitation in the top after melting
-          if (flxprec(i,k) > 0._r8) then
-!            evpsnow(i) = evpprec(i) * flxsntm(i) / flxprec(i,k)
-!            prevent roundoff problems
-             work1 = min(max(0._r8,flxsntm(i)/flxprec(i,k)),1._r8)
-             if (.not.zm_param%old_snow .and. prdsnow(i,k)>prdprec(i,k)) work1 = 1._r8
-             evpsnow(i) = evpprec(i) * work1
-          else
-             evpsnow(i) = 0._r8
-          end if
+         ! evaporation of snow depends on snow fraction of total precipitation in the top after melting
+         if (flxprec(i,k) > 0._r8) then
+            ! use limiters to prevent roundoff problems
+            work1 = min( max(0._r8, flxsntm(i)/flxprec(i,k) ), 1._r8)
+            if (.not.zm_param%old_snow .and. prdsnow(i,k)>prdprec(i,k)) work1 = 1._r8
+            evpsnow(i) = evpprec(i) * work1
+         else
+            evpsnow(i) = 0._r8
+         end if
 
-! vertically integrated evaporation
-          evpvint(i) = evpvint(i) + evpprec(i) * pdel(i,k)/zm_const%grav
+         ! vertically integrated evaporation
+         evpvint(i) = evpvint(i) + evpprec(i) * pdel(i,k)/zm_const%grav
 
-! net precip production is production - evaporation
-          ntprprd(i,k) = prdprec(i,k) - evpprec(i)
-! net snow production is precip production * ice fraction - evaporation - melting
-!pjrworks ntsnprd(i,k) = prdprec(i,k)*fice(i,k) - evpsnow(i) - snowmlt(i)
-!pjrwrks2 ntsnprd(i,k) = prdprec(i,k)*fsnow_conv(i,k) - evpsnow(i) - snowmlt(i)
-! the small amount added to flxprec in the work1 expression has been increased from
-! 1e-36 to 8.64e-11 (1e-5 mm/day).  This causes the temperature based partitioning
-! scheme to be used for small flxprec amounts.  This is to address error growth problems.
+         ! net precip production => production - evaporation
+         ntprprd(i,k) = prdprec(i,k) - evpprec(i)
 
-      if( zm_param%old_snow ) then
+         ! net snow production => precip production * ice fraction - evaporation - melting
+
+         ! the small amount added to flxprec in the work1 expression was increased
+         ! from 1e-36 to 8.64e-11 (1e-5 mm/day) to address error growth problems.
+         ! This causes temperature partitioning to be used for small flxprec amounts.
+
+         if( zm_param%old_snow ) then
 #ifdef PERGRO
-          work1 = min(max(0._r8,flxsnow(i,k)/(flxprec(i,k)+8.64e-11_r8)),1._r8)
+            work1 = min(max(0._r8,flxsnow(i,k)/(flxprec(i,k)+8.64e-11_r8)),1._r8)
 #else
-          if (flxprec(i,k).gt.0._r8) then
-             work1 = min(max(0._r8,flxsnow(i,k)/flxprec(i,k)),1._r8)
-          else
-             work1 = 0._r8
-          endif
+            if (flxprec(i,k).gt.0._r8) then
+               work1 = min(max(0._r8,flxsnow(i,k)/flxprec(i,k)),1._r8)
+            else
+               work1 = 0._r8
+            endif
 #endif
-          work2 = max(fsnow_conv(i,k), work1)
-          if (snowmlt(i).gt.0._r8) work2 = 0._r8
-!         work2 = fsnow_conv(i,k)
-          ntsnprd(i,k) = prdprec(i,k)*work2 - evpsnow(i) - snowmlt(i)
-          tend_s_snwprd  (i,k) = prdprec(i,k)*work2*zm_const%latice
-          tend_s_snwevmlt(i,k) = - ( evpsnow(i) + snowmlt(i) )*zm_const%latice
-       else
-          ntsnprd(i,k) = prdsnow(i,k) - min(flxsnow(i,k)*zm_const%grav/pdel(i,k), evpsnow(i)+snowmlt(i))
-          tend_s_snwprd  (i,k) = prdsnow(i,k)*zm_const%latice
-          tend_s_snwevmlt(i,k) = -min(flxsnow(i,k)*zm_const%grav/pdel(i,k), evpsnow(i)+snowmlt(i) )*zm_const%latice
-       end if
+            work2 = max(fsnow_conv(i,k), work1)
+            if (snowmlt(i).gt.0._r8) work2 = 0._r8
+            ntsnprd(i,k) = prdprec(i,k)*work2 - evpsnow(i) - snowmlt(i)
+            tend_s_snwprd  (i,k) = prdprec(i,k)*work2*zm_const%latice
+            tend_s_snwevmlt(i,k) = - ( evpsnow(i) + snowmlt(i) )*zm_const%latice
+         else
+            ntsnprd(i,k) = prdsnow(i,k) - min(flxsnow(i,k)*zm_const%grav/pdel(i,k), evpsnow(i)+snowmlt(i))
+            tend_s_snwprd  (i,k) = prdsnow(i,k)*zm_const%latice
+            tend_s_snwevmlt(i,k) = -min(flxsnow(i,k)*zm_const%grav/pdel(i,k), evpsnow(i)+snowmlt(i) )*zm_const%latice
+         end if
 
-! precipitation fluxes
-          flxprec(i,k+1) = flxprec(i,k) + ntprprd(i,k) * pdel(i,k)/zm_const%grav
-          flxsnow(i,k+1) = flxsnow(i,k) + ntsnprd(i,k) * pdel(i,k)/zm_const%grav
+         ! precipitation fluxes
+         flxprec(i,k+1) = flxprec(i,k) + ntprprd(i,k) * pdel(i,k)/zm_const%grav
+         flxsnow(i,k+1) = flxsnow(i,k) + ntsnprd(i,k) * pdel(i,k)/zm_const%grav
 
-! protect against rounding error
-          flxprec(i,k+1) = max(flxprec(i,k+1), 0._r8)
-          flxsnow(i,k+1) = max(flxsnow(i,k+1), 0._r8)
-! more protection (pjr)
-!         flxsnow(i,k+1) = min(flxsnow(i,k+1), flxprec(i,k+1))
+         ! protect against rounding error
+         flxprec(i,k+1) = max(flxprec(i,k+1), 0._r8)
+         flxsnow(i,k+1) = max(flxsnow(i,k+1), 0._r8)
 
-! heating (cooling) and moistening due to evaporation
-! - latent heat of vaporization for precip production has already been accounted for
-! - snow is contained in prec
-          if( zm_param%old_snow ) then
-             tend_s(i,k)   =-evpprec(i)*zm_const%latvap + ntsnprd(i,k)*zm_const%latice
-          else
-             tend_s(i,k)   =-evpprec(i)*zm_const%latvap + tend_s_snwevmlt(i,k)
-          end if
+         ! heating (cooling) and moistening due to evaporation
+         ! - latent heat of vaporization for precip production has already been accounted for
+         ! - snow is contained in prec
+         if( zm_param%old_snow ) then
+            tend_s(i,k) =-evpprec(i)*zm_const%latvap + ntsnprd(i,k)*zm_const%latice
+         else
+            tend_s(i,k) =-evpprec(i)*zm_const%latvap + tend_s_snwevmlt(i,k)
+         end if
 
-          tend_q(i,k) = evpprec(i)
-       end do
-    end do
+         tend_q(i,k) = evpprec(i)
+      end do ! i
+   end do ! k
 
-! protect against rounding error
-    if( .not.zm_param%old_snow ) then
+   ! protect against rounding error
+   if( .not.zm_param%old_snow ) then
       do i = 1, ncol
-        if(flxsnow(i,pverp).gt.flxprec(i,pverp)) then
-           dum = (flxsnow(i,pverp)-flxprec(i,pverp))*zm_const%grav
-           do k = pver, 1, -1
-             if (ntsnprd(i,k)>ntprprd(i,k).and. dum > 0._r8) then
-                ntsnprd(i,k) = ntsnprd(i,k) - dum/pdel(i,k)
-                tend_s_snwevmlt(i,k) = tend_s_snwevmlt(i,k) - dum/pdel(i,k)*zm_const%latice
-                tend_s(i,k)  = tend_s(i,k) - dum/pdel(i,k)*zm_const%latice
-                dum = 0._r8
-             end if
-           end do
-           flxsnow(i,pverp) = flxprec(i,pverp)
-        end if
+         if(flxsnow(i,pverp).gt.flxprec(i,pverp)) then
+            dum = (flxsnow(i,pverp)-flxprec(i,pverp))*zm_const%grav
+            do k = pver, 1, -1
+               if (ntsnprd(i,k)>ntprprd(i,k).and. dum > 0._r8) then
+                  ntsnprd(i,k) = ntsnprd(i,k) - dum/pdel(i,k)
+                  tend_s_snwevmlt(i,k) = tend_s_snwevmlt(i,k) - dum/pdel(i,k)*zm_const%latice
+                  tend_s(i,k)  = tend_s(i,k) - dum/pdel(i,k)*zm_const%latice
+                  dum = 0._r8
+               end if
+            end do
+            flxsnow(i,pverp) = flxprec(i,pverp)
+         end if
       end do
-    end if
+   end if
 
+   ! set output precipitation rates (m/s)
+   prec(:ncol) = flxprec(:ncol,pver+1) / 1000._r8
+   snow(:ncol) = flxsnow(:ncol,pver+1) / 1000._r8
 
-! set output precipitation rates (m/s)
-    prec(:ncol) = flxprec(:ncol,pver+1) / 1000._r8
-    snow(:ncol) = flxsnow(:ncol,pver+1) / 1000._r8
-
-!**********************************************************
-!!$    tend_s(:ncol,:)   = 0.      ! turn heating off
-!**********************************************************
-
-  end subroutine zm_conv_evap
+end subroutine zm_conv_evap
 
 !===================================================================================================
 
