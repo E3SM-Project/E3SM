@@ -86,7 +86,7 @@ jobs:
     name: gcc-openmp / ${{ matrix.build_type }}
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           persist-credentials: false
           show-progress: false
@@ -126,7 +126,7 @@ jobs:
     name: gcc-cuda / ${{ matrix.test.build_type }}
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           persist-credentials: false
           show-progress: false
