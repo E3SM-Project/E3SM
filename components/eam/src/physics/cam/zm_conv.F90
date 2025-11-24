@@ -34,8 +34,9 @@ module zm_conv
    type(zm_param_t), public :: zm_param ! derived type to hold ZM tunable parameters
    !----------------------------------------------------------------------------
    ! private variables
-   real(r8), parameter :: capelmt      = 70._r8  ! threshold value for cape for deep convection
-   real(r8), parameter :: trigdcapelmt = 0._r8   ! threshold value of dcape for deep convection
+   real(r8), parameter :: capelmt      = 70._r8       ! threshold value for cape for deep convection
+   real(r8), parameter :: trigdcapelmt = 0._r8        ! threshold value of dcape for deep convection
+   real(r8), parameter :: omsm         = 0.99999_r8   ! to prevent problems due to round off error
 !===================================================================================================
 contains
 !===================================================================================================
@@ -727,8 +728,6 @@ subroutine zm_conv_evap(pcols, ncol, pver, pverp, deltat, &
    real(r8) :: work2    ! temporary work variable
    real(r8) :: evplimit ! temporary work variable for evaporation limits
    real(r8) :: dum      ! temporary work variable
-   real(r8) :: omsm     ! to prevent problems due to round off error
-
    !----------------------------------------------------------------------------
    if (zm_param%zm_microp) then
       prdsnow(1:ncol,1:pver) = microp_st%sprd(1:ncol,1:pver)
@@ -749,8 +748,6 @@ subroutine zm_conv_evap(pcols, ncol, pver, pverp, deltat, &
    flxprec(:ncol,1) = 0._r8
    flxsnow(:ncol,1) = 0._r8
    evpvint(:ncol)   = 0._r8
-   
-   omsm=0.99999_r8 ! to prevent problems due to round off error
 
    do k = 1, pver
       do i = 1, ncol
@@ -1048,7 +1045,6 @@ subroutine cldprp(pcols, ncol, pver, pverp, &
    real(r8), dimension(pcols,pverp):: pflxs      ! frozen precipitation flux thru layer
    real(r8) dum, sdum
 
-   real(r8), parameter :: omsm      = 0.99999_r8   ! to prevent problems due to round off error
    real(r8), parameter :: mu_min    = 0.02_r8      ! minimum value of mu
    real(r8), parameter :: t_homofrz = 233.15_r8    ! homogeneous freezing temperature
    real(r8), parameter :: t_mphase  = 40._r8       ! mixed phase temperature = tfreez-t_homofrz = 273.15K - 233.15K
