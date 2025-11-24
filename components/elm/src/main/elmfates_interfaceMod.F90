@@ -4026,13 +4026,13 @@ end subroutine wrap_update_hifrq_hist
 
       ! Variables that need to accumulate                                               
       call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_carbon_cellulose, &
-                                               data=col_cf%decomp_cpools_sourcesink(c,:,i_cel_lit), &
+                                               data=col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_cel_lit), &
                                                hlm_flag=.true., accumulate=.true.)
       call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_carbon_lignin, &
-                                               data=col_cf%decomp_cpools_sourcesink(c,:,i_lig_lit), &
+                                               data=col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_lig_lit), &
                                                hlm_flag=.true., accumulate=.true.)
       call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_carbon_labile, &
-                                               data=col_cf%decomp_cpools_sourcesink(c,:,i_met_lit), &
+                                               data=col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_met_lit), &
                                                hlm_flag=.true., accumulate=.true.)
       call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_carbon_total, &
                                                data=col_cf%litfall(c), &
