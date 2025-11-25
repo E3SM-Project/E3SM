@@ -4,7 +4,7 @@
 ./xmlchange ATM_DOMAIN_PATH="\$DIN_LOC_ROOT/share/domains/domain.clm"
 ./xmlchange DATM_MODE=CLM1PT
 ./xmlchange DATM_CLMNCEP_YR_START=1980
-./xmlchange DATM_CLMNCEP_YR_END=2015
+./xmlchange DATM_CLMNCEP_YR_END=1980
 ./xmlchange ELM_USRDAT_NAME=42_FLUXNETSITES
 ./xmlchange NTASKS=6
 echo "
