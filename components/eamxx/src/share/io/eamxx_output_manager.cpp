@@ -429,11 +429,11 @@ void OutputManager::run(const util::TimeStamp& timestamp)
       
       // Check if file already exists (duplicate yaml file)
       if (not m_resume_output_file && file_exists(filespecs.filename)) {
-        EKAT_REQUIRE_MSG(
+        EKAT_ERROR_MSG(
             "Error! Output file already exists: \n"
             "  - filename: " + filespecs.filename + "\n"
             "  - timestamp: " + timestamp.to_string() + "\n"
-            "This likely indicates that two yaml files were specified with identical interval,"
+            "This likely indicates that two yaml files were specified with identical interval, "
             "average type, and prefix.");
       }    
 
@@ -975,7 +975,7 @@ file_exists(const std::string& filename) const
   }
   // Broadcast to other processes
   m_io_comm.broadcast(&exists, 1, m_io_comm.root_rank());
-  return exists
+  return exists;
 }
 
 void OutputManager::
