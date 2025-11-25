@@ -108,19 +108,19 @@ module ocn_time_average_coupled
         !$omp end do
         !$omp end parallel
 
-        if(trim(config_land_ice_flux_mode) == 'active') then
-           call mpas_pool_get_array(forcingPool, 'avgLandIceBoundaryLayerTracers', avgLandIceBoundaryLayerTracers)
-           call mpas_pool_get_array(forcingPool, 'avgLandIceTracerTransferVelocities', avgLandIceTracerTransferVelocities)
+        !if(trim(config_land_ice_flux_mode) == 'active') then
+        !   call mpas_pool_get_array(forcingPool, 'avgLandIceBoundaryLayerTracers', avgLandIceBoundaryLayerTracers)
+        !   call mpas_pool_get_array(forcingPool, 'avgLandIceTracerTransferVelocities', avgLandIceTracerTransferVelocities)
 
-           !$omp parallel
-           !$omp do schedule(runtime)
-           do iCell = 1, nCells
-              avgLandIceBoundaryLayerTracers(:, iCell) = 0.0_RKIND
-              avgLandIceTracerTransferVelocities(:, iCell) = 0.0_RKIND
-           end do
-           !$omp end do
-           !$omp end parallel
-        end if
+        !   !$omp parallel
+        !   !$omp do schedule(runtime)
+        !   do iCell = 1, nCells
+        !      avgLandIceBoundaryLayerTracers(:, iCell) = 0.0_RKIND
+        !      avgLandIceTracerTransferVelocities(:, iCell) = 0.0_RKIND
+        !   end do
+        !   !$omp end do
+        !   !$omp end parallel
+        !end if
 
         ! Set up polar fields if necessary
         if(trim(config_land_ice_flux_mode) == 'active' .or. trim(config_land_ice_flux_mode) == 'data') then
@@ -358,22 +358,21 @@ module ocn_time_average_coupled
         !$omp end do
         !$omp end parallel
 
-        if(trim(config_land_ice_flux_mode) == 'active') then
+        !if(trim(config_land_ice_flux_mode) == 'active') then
+        !   call mpas_pool_get_array(forcingPool, 'avgLandIceBoundaryLayerTracers', avgLandIceBoundaryLayerTracers)
+        !   call mpas_pool_get_array(forcingPool, 'avgLandIceTracerTransferVelocities', avgLandIceTracerTransferVelocities)
 
-           call mpas_pool_get_array(forcingPool, 'avgLandIceBoundaryLayerTracers', avgLandIceBoundaryLayerTracers)
-           call mpas_pool_get_array(forcingPool, 'avgLandIceTracerTransferVelocities', avgLandIceTracerTransferVelocities)
-
-           !$omp parallel
-           !$omp do schedule(runtime)
-           do iCell = 1, nCells
-              avgLandIceBoundaryLayerTracers(:, iCell) = ( avgLandIceBoundaryLayerTracers(:, iCell) * nAccumulatedCoupled &
-                 + landIceBoundaryLayerTracers(:, iCell) ) / ( nAccumulatedCoupled + 1 )
-              avgLandIceTracerTransferVelocities(:, iCell) = ( avgLandIceTracerTransferVelocities(:, iCell) * nAccumulatedCoupled &
-                 + landIceTracerTransferVelocities(:, iCell) ) / ( nAccumulatedCoupled + 1)
-           end do
-           !$omp end do
-           !$omp end parallel
-        end if
+        !   !$omp parallel
+        !   !$omp do schedule(runtime)
+        !   do iCell = 1, nCells
+        !      avgLandIceBoundaryLayerTracers(:, iCell) = ( avgLandIceBoundaryLayerTracers(:, iCell) * nAccumulatedCoupled &
+        !         + landIceBoundaryLayerTracers(:, iCell) ) / ( nAccumulatedCoupled + 1 )
+        !      avgLandIceTracerTransferVelocities(:, iCell) = ( avgLandIceTracerTransferVelocities(:, iCell) * nAccumulatedCoupled &
+        !         + landIceTracerTransferVelocities(:, iCell) ) / ( nAccumulatedCoupled + 1)
+        !   end do
+        !   !$omp end do
+        !   !$omp end parallel
+        !end if
 
         ! Accumulate polar fields if necessary
         if(trim(config_land_ice_flux_mode) == 'active' .or. trim(config_land_ice_flux_mode) == 'data') then

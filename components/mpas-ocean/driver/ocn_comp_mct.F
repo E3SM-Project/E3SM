@@ -934,14 +934,7 @@ contains
 
     call t_stopf ('mpaso_mct_init')
 
-    call mpas_pool_get_config(domain % configs, 'config_land_ice_flux_mode', config_land_ice_flux_mode)
-    if ( trim(config_land_ice_flux_mode) == 'off' .or. &
-         trim(config_land_ice_flux_mode) == 'data' .or. &
-         trim(config_land_ice_flux_mode) == 'prognostic' ) then
-       ocn_c2_glcshelf = .false.
-    else
-       call mpas_log_write('ERROR: unknown land_ice_flux_mode: ' // trim(config_land_ice_flux_mode), MPAS_LOG_CRIT)
-    end if
+    ocn_c2_glcshelf = .false.
     call seq_infodata_PutData(infodata, ocn_prognostic=.true., ocnrof_prognostic=.true., &
                               ocn_c2_glcshelf=ocn_c2_glcshelf)
 
@@ -3473,12 +3466,12 @@ contains
 !JW       o2x_o(index_o2x_So_htv, n) = landIceHeatTransferVelocity(i)
 !JW       o2x_o(index_o2x_So_stv, n) = landIceSaltTransferVelocity(i)
 
-       if ( trim(config_land_ice_flux_mode) .eq. 'active' ) then
-          o2x_o(index_o2x_So_blt, n) = landIceBoundaryLayerTracers(indexBLT,i)
-          o2x_o(index_o2x_So_bls, n) = landIceBoundaryLayerTracers(indexBLS,i)
-          o2x_o(index_o2x_So_htv, n) = landIceTracerTransferVelocities(indexHeatTrans,i)
-          o2x_o(index_o2x_So_stv, n) = landIceTracerTransferVelocities(indexSaltTrans,i)
-       endif
+!       if ( trim(config_land_ice_flux_mode) .eq. 'active' ) then
+!          o2x_o(index_o2x_So_blt, n) = landIceBoundaryLayerTracers(indexBLT,i)
+!          o2x_o(index_o2x_So_bls, n) = landIceBoundaryLayerTracers(indexBLS,i)
+!          o2x_o(index_o2x_So_htv, n) = landIceTracerTransferVelocities(indexHeatTrans,i)
+!          o2x_o(index_o2x_So_stv, n) = landIceTracerTransferVelocities(indexSaltTrans,i)
+!       endif
 
        if (trim(config_glc_thermal_forcing_coupling_mode) == '3d') then
           do iLevel = 1, nGlcZLevels
