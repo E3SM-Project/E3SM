@@ -862,10 +862,10 @@ add_default($nl, 'config_land_ice_rho_ocean');
 ###################################
 
 if ($OCN_GLC_ISMF_COUPLING eq 'coupler') {
-	add_default($nl, 'config_land_ice_flux_mode', 'val'=>"prognostic");
+	add_default($nl, 'config_land_ice_flux_mode', 'val'=>"active");
 	add_default($nl, 'config_frazil_under_land_ice', 'val'=>".true.");
 } elsif ($OCN_GLC_ISMF_COUPLING eq 'internal_mpaso') {
-	add_default($nl, 'config_land_ice_flux_mode', 'val'=>"prognostic");
+	add_default($nl, 'config_land_ice_flux_mode', 'val'=>"active");
 	add_default($nl, 'config_frazil_under_land_ice', 'val'=>".true.");
 } elsif ($OCN_GLC_ISMF_COUPLING eq 'data_mpaso') {
 	add_default($nl, 'config_land_ice_flux_mode', 'val'=>"data");

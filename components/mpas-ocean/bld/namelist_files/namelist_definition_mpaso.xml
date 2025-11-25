@@ -1763,7 +1763,7 @@ Default: Defined in namelist_defaults.xml
 	category="land_ice_fluxes" group="land_ice_fluxes">
 Selects the mode in which land-ice fluxes are computed.
 
-Valid values: 'off', 'data', 'prognostic'
+Valid values: 'off', 'data', 'active'
 Default: Defined in namelist_defaults.xml
 </entry>
 

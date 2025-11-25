@@ -2503,7 +2503,7 @@ end if
 
       err = 0
 
-      if ( trim(config_land_ice_flux_mode) == 'prognostic' .or. &
+      if ( trim(config_land_ice_flux_mode) == 'active' .or. &
            trim(config_land_ice_flux_mode) == 'data' ) then
          landIceFreshwaterFluxesOn = .true.
       end if

@@ -319,7 +319,7 @@ module ocn_core_interface
       end if
       if ( trim(config_land_ice_flux_mode) == 'data' ) then
          dataLandIceFluxesPKGActive = .true.
-      else if ( trim(config_land_ice_flux_mode) == 'prognostic' ) then
+      else if ( trim(config_land_ice_flux_mode) == 'active' ) then
          landIceFluxesPKGActive = .true.
       end if
 

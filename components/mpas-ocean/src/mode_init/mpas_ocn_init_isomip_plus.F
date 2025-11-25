@@ -679,9 +679,9 @@ contains
 
 
       call mpas_pool_get_config(configPool, 'config_land_ice_flux_mode', config_land_ice_flux_mode)
-      if(config_land_ice_flux_mode .ne. 'prognostic') then
+      if(config_land_ice_flux_mode .ne. 'active') then
          call mpas_log_write( 'Validation failed for isomip_plus. config_land_ice_flux_mode must be'// &
-            ' prognostic.', MPAS_LOG_CRIT)
+            ' active.', MPAS_LOG_CRIT)
          iErr = 1
          return
       end if

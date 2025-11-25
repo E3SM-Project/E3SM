@@ -108,7 +108,7 @@ module ocn_time_average_coupled
         !$omp end do
         !$omp end parallel
 
-        if(trim(config_land_ice_flux_mode) == 'prognostic') then
+        if(trim(config_land_ice_flux_mode) == 'active') then
            call mpas_pool_get_array(forcingPool, 'avgLandIceBoundaryLayerTracers', avgLandIceBoundaryLayerTracers)
            call mpas_pool_get_array(forcingPool, 'avgLandIceTracerTransferVelocities', avgLandIceTracerTransferVelocities)
 
@@ -123,7 +123,7 @@ module ocn_time_average_coupled
         end if
 
         ! Set up polar fields if necessary
-        if(trim(config_land_ice_flux_mode) == 'prognostic' .or. trim(config_land_ice_flux_mode) == 'data') then
+        if(trim(config_land_ice_flux_mode) == 'active' .or. trim(config_land_ice_flux_mode) == 'data') then
            call mpas_pool_get_array(forcingPool, 'avgLandIceFreshwaterFlux', avgLandIceFreshwaterFlux)
            call mpas_pool_get_array(forcingPool, 'avgLandIceHeatFlux', avgLandIceHeatFlux)
 
@@ -358,7 +358,7 @@ module ocn_time_average_coupled
         !$omp end do
         !$omp end parallel
 
-        if(trim(config_land_ice_flux_mode) == 'prognostic') then
+        if(trim(config_land_ice_flux_mode) == 'active') then
 
            call mpas_pool_get_array(forcingPool, 'avgLandIceBoundaryLayerTracers', avgLandIceBoundaryLayerTracers)
            call mpas_pool_get_array(forcingPool, 'avgLandIceTracerTransferVelocities', avgLandIceTracerTransferVelocities)
@@ -376,7 +376,7 @@ module ocn_time_average_coupled
         end if
 
         ! Accumulate polar fields if necessary
-        if(trim(config_land_ice_flux_mode) == 'prognostic' .or. trim(config_land_ice_flux_mode) == 'data') then
+        if(trim(config_land_ice_flux_mode) == 'active' .or. trim(config_land_ice_flux_mode) == 'data') then
            call mpas_pool_get_array(forcingPool, 'avgLandIceFreshwaterFlux', avgLandIceFreshwaterFlux)
            call mpas_pool_get_array(forcingPool, 'landIceFreshwaterFlux', landIceFreshwaterFlux)
            call mpas_pool_get_array(forcingPool, 'avgLandIceHeatFlux', avgLandIceHeatFlux)

@@ -1110,8 +1110,8 @@
 	</nml_record>
 	<nml_record name="land_ice_fluxes" mode="init;forward">
 		<nml_option name="config_land_ice_flux_mode" type="character" default_value="off"
-					description="Selects the mode in which land-ice fluxes are computed."
-					possible_values="'off', 'data', 'prognostic'"
+					description="Selects the mode in which land-ice fluxes are computed. 'active' means that MPAS-Ocean will use the approach specified in 'config_land_ice_flux_formulation'."
+					possible_values="'off', 'data', 'active'"
 		/>
 		<nml_option name="config_land_ice_flux_formulation" type="character" default_value="Jenkins"
 					description="Name of land-ice flux formulation."
