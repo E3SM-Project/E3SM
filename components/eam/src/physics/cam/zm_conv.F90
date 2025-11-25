@@ -480,17 +480,13 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
    !----------------------------------------------------------------------------
    ! obtain cloud properties.
 
-   call cldprp(pcols, ncol, pver, pverp, &
-               qg      ,tg      ,ug      ,vg      ,pg      , &
-               zg      ,sg      ,mu      ,eu      ,du      , &
-               md      ,ed      ,sd      ,qd      ,mc      , &
-               qu      ,su      ,zfg     ,qs      ,hmn     , &
-               hsat    ,shat    ,qlg     , &
-               maxg    ,lelg    ,jt      ,jlcl    , &
-               maxg    ,j0      ,jd      ,lengath ,msg     , &
-               pflxg   ,evpg    ,cug     ,rprdg   ,zm_param%limcnv  , &
-               landfracg, tpertg, &
-               aero    ,loc_microp_st ) ! < added for ZM micro
+   call cldprp(pcols, ncol, pver, pverp, lengath, msg, zm_param%limcnv, &
+               pg, zg, zfg, tg, sg, shat, qg, ug, vg, landfracg, tpertg, &
+               maxg, maxg, lelg, jt, jlcl, j0, jd, &
+               mu, eu, du, md, ed, mc, &
+               su, qu, qlg, sd, qd,  &
+               hmn, hsat, qs, cug, evpg, pflxg, rprdg, &
+               aero, loc_microp_st )
 
    !----------------------------------------------------------------------------
    ! convert detrainment from units of "1/m" to "1/mb".
@@ -899,136 +895,98 @@ end subroutine zm_conv_evap
 
 !===================================================================================================
 
-subroutine cldprp(pcols, ncol, pver, pverp, &
-                  q       ,t       ,u       ,v       ,p       , &
-                  z       ,s       ,mu      ,eu      ,du      , &
-                  md      ,ed      ,sd      ,qd      ,mc      , &
-                  qu      ,su      ,zf      ,qst     ,hmn     , &
-                  hsat    ,shat    ,ql      , &
-                  jb      ,lel     ,jt      ,jlcl    , &
-                  mx      ,j0      ,jd      ,il2g    ,msg     , &
-                  pflx    ,evp     ,cu      ,rprd    ,limcnv  , &
-                  landfrac,tpertg  , &
-                  aero    ,loc_microp_st )
-
-!-----------------------------------------------------------------------
-!
-! Purpose:
-! <Say what the routine does>
-!
-! Method:
-! may 09/91 - guang jun zhang, m.lazare, n.mcfarlane.
-!             original version cldprop.
-!
-! Author: See above, modified by P. Rasch
-! This is contributed code not fully standardized by the CCM core group.
-!
-! this code is very much rougher than virtually anything else in the CCM
-! there are debug statements left strewn about and code segments disabled
-! these are to facilitate future development. We expect to release a
-! cleaner code in a future release
-!
-! the documentation has been enhanced to the degree that we are able
-!
-!-----------------------------------------------------------------------
-
+subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
+                  p, z, zf, t, s, shat, q, u, v, landfrac, tpertg, &
+                  jb, mx, lel, jt, jlcl, j0, jd, &
+                  mu, eu, du, md, ed, mc, &
+                  su, qu, ql, sd, qd,  &
+                  hmn, hsat, qst, cu, evp, pflx, rprd, &
+                  aero, loc_microp_st )
+   !----------------------------------------------------------------------------
+   ! Purpose:
+   !----------------------------------------------------------------------------
    implicit none
+   !----------------------------------------------------------------------------
+   ! Arguments
+   integer,                         intent(in ) :: pcols          ! maximum number of columns
+   integer,                         intent(in ) :: ncol           ! actual number of columns
+   integer,                         intent(in ) :: pver           ! number of mid-point vertical levels
+   integer,                         intent(in ) :: pverp          ! number of interface vertical levels
+   integer,                         intent(in ) :: il2g           ! number of gathered columns (lengath)
+   integer,                         intent(in ) :: msg            ! missing moisture vals
+   integer,                         intent(in ) :: limcnv         ! convection limiting level
+   real(r8), dimension(pcols,pver), intent(in ) :: p              ! env pressure at mid-point
+   real(r8), dimension(pcols,pver), intent(in ) :: z              ! env altitude at mid-point
+   real(r8), dimension(pcols,pverp),intent(in ) :: zf             ! env altitude at interface
+   real(r8), dimension(pcols,pver), intent(in ) :: t              ! env temperature
+   real(r8), dimension(pcols,pver), intent(in ) :: s              ! env dry static energy of env [K] (normalized)
+   real(r8), dimension(pcols,pver), intent(in ) :: shat           ! interface values of dry stat energy
+   real(r8), dimension(pcols,pver), intent(in ) :: q              ! env specific humidity
+   real(r8), dimension(pcols,pver), intent(in ) :: u              ! env zonal wind
+   real(r8), dimension(pcols,pver), intent(in ) :: v              ! env meridional wind
+   real(r8), dimension(pcols),      intent(in ) :: landfrac       ! Land fraction
+   real(r8), dimension(pcols),      intent(in ) :: tpertg         ! PBL temperature perturbation
+   integer,  dimension(pcols),      intent(in ) :: jb             ! updraft base level
+   integer,  dimension(pcols),      intent(in ) :: mx             ! updraft base level (same is jb)
+   integer,  dimension(pcols),      intent(in ) :: lel            ! updraft launch level
+   integer,  dimension(pcols),      intent(out) :: jt             ! updraft plume top
+   integer,  dimension(pcols),      intent(out) :: jlcl           ! updraft lifting cond level
+   integer,  dimension(pcols),      intent(out) :: j0             ! level where updraft begins detraining
+   integer,  dimension(pcols),      intent(out) :: jd             ! level of downdraft
+   real(r8), dimension(pcols,pver), intent(out) :: mu             ! updraft mass flux
+   real(r8), dimension(pcols,pver), intent(out) :: eu             ! entrainment rate of updraft
+   real(r8), dimension(pcols,pver), intent(out) :: du             ! detrainement rate of updraft
+   real(r8), dimension(pcols,pver), intent(out) :: md             ! downdraft mass flux
+   real(r8), dimension(pcols,pver), intent(out) :: ed             ! entrainment rate of downdraft
+   real(r8), dimension(pcols,pver), intent(out) :: mc             ! net mass flux
+   real(r8), dimension(pcols,pver), intent(out) :: su             ! updraft dry static energy [K] (normalized)
+   real(r8), dimension(pcols,pver), intent(out) :: qu             ! updraft specific humidity [kg/kg]
+   real(r8), dimension(pcols,pver), intent(out) :: ql             ! updraft liq water
+   real(r8), dimension(pcols,pver), intent(out) :: sd             ! dndraft dry static energy [K] (normalized)
+   real(r8), dimension(pcols,pver), intent(out) :: qd             ! dndraft specific humidity [kg/kg]
+   real(r8), dimension(pcols,pver), intent(out) :: hmn            ! env moist stat energy
+   real(r8), dimension(pcols,pver), intent(out) :: hsat           ! env saturated moist stat energy
+   real(r8), dimension(pcols,pver), intent(out) :: qst            ! env saturation mixing ratio
+   real(r8), dimension(pcols,pver), intent(out) :: cu             ! condensation rate
+   real(r8), dimension(pcols,pver), intent(out) :: evp            ! evaporation rate
+   real(r8), dimension(pcols,pverp),intent(out) :: pflx           ! precipitation flux thru layer
+   real(r8), dimension(pcols,pver), intent(out) :: rprd           ! rate of production of precip at that layer
+   type(zm_aero_t),                 intent(in ) :: aero           ! aerosol object
+   type(zm_microp_st)                           :: loc_microp_st  ! state and tendency of convective microphysics
+   !----------------------------------------------------------------------------
+   ! Local variables
+   real(r8), dimension(pcols,pver) :: gamma
+   real(r8), dimension(pcols,pver) :: dz
+   real(r8), dimension(pcols,pver) :: iprm
+   real(r8), dimension(pcols,pver) :: hu
+   real(r8), dimension(pcols,pver) :: hd
+   real(r8), dimension(pcols,pver) :: eps
+   real(r8), dimension(pcols,pver) :: f
+   real(r8), dimension(pcols,pver) :: k1
+   real(r8), dimension(pcols,pver) :: i2
+   real(r8), dimension(pcols,pver) :: ihat
+   real(r8), dimension(pcols,pver) :: i3
+   real(r8), dimension(pcols,pver) :: idag
+   real(r8), dimension(pcols,pver) :: i4
+   real(r8), dimension(pcols,pver) :: qsthat
+   real(r8), dimension(pcols,pver) :: hsthat
+   real(r8), dimension(pcols,pver) :: gamhat
+   real(r8), dimension(pcols,pver) :: qds
+   real(r8), dimension(pcols)      :: c0mask
+   real(r8), dimension(pcols)      :: hmin
+   real(r8), dimension(pcols)      :: expdif
+   real(r8), dimension(pcols)      :: expnum
+   real(r8), dimension(pcols)      :: ftemp
+   real(r8), dimension(pcols)      :: eps0
+   real(r8), dimension(pcols)      :: rmue
+   real(r8), dimension(pcols)      :: zuef
+   real(r8), dimension(pcols)      :: zdef
+   real(r8), dimension(pcols)      :: epsm
+   real(r8), dimension(pcols)      :: ratmjb
+   real(r8), dimension(pcols)      :: est
+   real(r8), dimension(pcols)      :: totpcp
+   real(r8), dimension(pcols)      :: totevp
 
-!------------------------------------------------------------------------------
-!
-! Input arguments
-!
-   integer,          intent(in) :: pcols         ! maximum number of columns
-   integer,          intent(in) :: ncol          ! actual number of columns
-   integer,          intent(in) :: pver          ! number of mid-point vertical levels
-   integer,          intent(in) :: pverp         ! number of interface vertical levels
-   real(r8), intent(in) :: q(pcols,pver)         ! spec. humidity of env
-   real(r8), intent(in) :: t(pcols,pver)         ! temp of env
-   real(r8), intent(in) :: p(pcols,pver)         ! pressure of env
-   real(r8), intent(in) :: z(pcols,pver)         ! height of env
-   real(r8), intent(in) :: s(pcols,pver)         ! normalized dry static energy of env
-   real(r8), intent(in) :: zf(pcols,pverp)       ! height of interfaces
-   real(r8), intent(in) :: u(pcols,pver)         ! zonal velocity of env
-   real(r8), intent(in) :: v(pcols,pver)         ! merid. velocity of env
-
-   real(r8), intent(in) :: landfrac(pcols) ! RBN Landfrac
-
-   integer, intent(in) :: jb(pcols)              ! updraft base level
-   integer, intent(in) :: lel(pcols)             ! updraft launch level
-   integer, intent(out) :: jt(pcols)              ! updraft plume top
-   integer, intent(out) :: jlcl(pcols)            ! updraft lifting cond level
-   integer, intent(in) :: mx(pcols)              ! updraft base level (same is jb)
-   integer, intent(out) :: j0(pcols)              ! level where updraft begins detraining
-   integer, intent(out) :: jd(pcols)              ! level of downdraft
-   integer, intent(in) :: limcnv                 ! convection limiting level
-   integer, intent(in) :: il2g                   !CORE GROUP REMOVE
-   integer, intent(in) :: msg                    ! missing moisture vals (always 0)
-   real(r8), intent(in) :: shat(pcols,pver)      ! interface values of dry stat energy
-   real(r8), intent(in) :: tpertg(pcols)
-
-   type(zm_aero_t), intent(in) :: aero           ! aerosol object
-
-!
-! output
-!
-   real(r8), intent(out) :: rprd(pcols,pver)     ! rate of production of precip at that layer
-   real(r8), intent(out) :: du(pcols,pver)       ! detrainement rate of updraft
-   real(r8), intent(out) :: ed(pcols,pver)       ! entrainment rate of downdraft
-   real(r8), intent(out) :: eu(pcols,pver)       ! entrainment rate of updraft
-   real(r8), intent(out) :: hmn(pcols,pver)      ! moist stat energy of env
-   real(r8), intent(out) :: hsat(pcols,pver)     ! sat moist stat energy of env
-   real(r8), intent(out) :: mc(pcols,pver)       ! net mass flux
-   real(r8), intent(out) :: md(pcols,pver)       ! downdraft mass flux
-   real(r8), intent(out) :: mu(pcols,pver)       ! updraft mass flux
-   real(r8), intent(out) :: pflx(pcols,pverp)    ! precipitation flux thru layer
-   real(r8), intent(out) :: qd(pcols,pver)       ! spec humidity of downdraft
-   real(r8), intent(out) :: ql(pcols,pver)       ! liq water of updraft
-   real(r8), intent(out) :: qst(pcols,pver)      ! saturation mixing ratio of env.
-   real(r8), intent(out) :: qu(pcols,pver)       ! spec hum of updraft
-   real(r8), intent(out) :: sd(pcols,pver)       ! normalized dry stat energy of downdraft
-   real(r8), intent(out) :: su(pcols,pver)       ! normalized dry stat energy of updraft
-
-   ! Convective microphysics
-   type(zm_microp_st)  :: loc_microp_st ! state and tendency of convective microphysics
-
-!
-! Local workspace
-!
-   real(r8) gamma(pcols,pver)
-   real(r8) dz(pcols,pver)
-   real(r8) iprm(pcols,pver)
-   real(r8) hu(pcols,pver)
-   real(r8) hd(pcols,pver)
-   real(r8) eps(pcols,pver)
-   real(r8) f(pcols,pver)
-   real(r8) k1(pcols,pver)
-   real(r8) i2(pcols,pver)
-   real(r8) ihat(pcols,pver)
-   real(r8) i3(pcols,pver)
-   real(r8) idag(pcols,pver)
-   real(r8) i4(pcols,pver)
-   real(r8) qsthat(pcols,pver)
-   real(r8) hsthat(pcols,pver)
-   real(r8) gamhat(pcols,pver)
-   real(r8) cu(pcols,pver)
-   real(r8) evp(pcols,pver)
-   real(r8) qds(pcols,pver)
-! RBN For c0mask
-   real(r8) c0mask(pcols)
-
-   real(r8) hmin(pcols)
-   real(r8) expdif(pcols)
-   real(r8) expnum(pcols)
-   real(r8) ftemp(pcols)
-   real(r8) eps0(pcols)
-   real(r8) rmue(pcols)
-   real(r8) zuef(pcols)
-   real(r8) zdef(pcols)
-   real(r8) epsm(pcols)
-   real(r8) ratmjb(pcols)
-   real(r8) est(pcols)
-   real(r8) totpcp(pcols)
-   real(r8) totevp(pcols)
    real(r8) ql1
    real(r8) tu
    real(r8) estu
@@ -1049,8 +1007,8 @@ subroutine cldprp(pcols, ncol, pver, pverp, &
    real(r8), parameter :: t_homofrz = 233.15_r8    ! homogeneous freezing temperature
    real(r8), parameter :: t_mphase  = 40._r8       ! mixed phase temperature = tfreez-t_homofrz = 273.15K - 233.15K
 
-   integer  jto(pcols)              ! updraft plume old top
-   integer  tmplel(pcols)
+   integer, dimension(pcols) :: jto              ! updraft plume old top
+   integer, dimension(pcols) :: tmplel
 
    integer  iter, itnum
    integer  m
@@ -1060,8 +1018,8 @@ subroutine cldprp(pcols, ncol, pver, pverp, &
    integer kount
    integer i,k
 
-   logical doit(pcols)
-   logical done(pcols)
+   logical, dimension(pcols) :: doit
+   logical, dimension(pcols) :: done
 
 !
 !------------------------------------------------------------------------------
