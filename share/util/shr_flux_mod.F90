@@ -388,7 +388,7 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
         !--- ustar, tstar, qstar ---
         if (wav_atm_coup .eq. 'twoway') then
            if (ustarwav(n) .lt. tiny) then 
-              ustar = ustarwav(n)+tiny 
+              ustar = tiny ! set to tiny to avoid a divide by zero error  
            else
               ustar = ustarwav(n)
            endif
@@ -464,7 +464,13 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
               end if
               vmag = max(seq_flux_atmocn_minwind, vmag)
            end if
+
         enddo
+        
+        if (wav_atm_coup .eq. 'twoway') then
+           u10n = vmag * rd / rdn 
+        endif
+        
         if (iter < 1) then
            write(s_logunit,*) ustar,ustar_prev,flux_con_tol,flux_con_max_iter
            call shr_sys_abort('No iterations performed ' // errMsg(sourcefile, __LINE__))
