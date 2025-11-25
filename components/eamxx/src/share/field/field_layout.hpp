@@ -88,6 +88,7 @@ public:
   const std::string& name (const int idim) const;
   bool has_tag (const FieldTag t) const { return ekat::contains(m_tags,t); }
   bool has_tags (const std::vector<FieldTag>& tags) const;
+  bool has_tag (const std::string& n) const { return ekat::contains(m_names,n); }
 
   // The rank is the number of tags associated to this field.
   int rank () const  { return m_rank; }
@@ -95,6 +96,7 @@ public:
   // If throw_if_multiple_matches=false, simply return the idx of the
   // first match, otherwise throws an exception if 2+ matches are found
   int dim_idx (const FieldTag t, bool throw_if_multiple_matches = true) const;
+  int dim_idx (const std::string& n, bool throw_if_multiple_matches = true) const;
 
   int dim (const std::string& name, bool throw_if_multiple_matches = true) const;
   int dim (const FieldTag tag, bool throw_if_multiple_matches = true) const;
@@ -188,6 +190,21 @@ inline int FieldLayout::dim_idx (const FieldTag t, bool throw_if_multiple_matche
       "  - field layout: " + this->to_string() + "\n");
 
   return std::distance(m_tags.begin(),it);
+}
+
+inline int FieldLayout::dim_idx (const std::string& n, bool throw_if_multiple_matches) const {
+  EKAT_REQUIRE_MSG( (not throw_if_multiple_matches) or ekat::count(m_names,n)<=1,
+      "[FieldTag::dim_idx] Error! Multiple matches found for the requested dim name.\n"
+      "  - dim name : " + n + "\n"
+      "  - layout: " + this->to_string() + "\n");
+
+  auto it = ekat::find(m_names,n);
+  EKAT_REQUIRE_MSG (it!=m_names.end(),
+      "[FieldTag::dim_idx] Error! Requested tag not found.\n"
+      "  - dim name: " + n + "\n"
+      "  - layout: " + this->to_string() + "\n");
+
+  return std::distance(m_names.begin(),it);
 }
 
 // returns extent
