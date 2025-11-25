@@ -69,7 +69,6 @@ module ocn_surface_land_ice_fluxes
 
    logical :: &
       landIceDataOn ,         &! flag to determine if using data (prescribed) fluxes
-      landIceStandaloneOn,    &! flag to determine if using standalone fluxes
       landIceCoupledOn,       &! flag to determine if using fluxes from the coupler
       useHollandJenkinsAdvDiff ! use Holland-Jenkins advection-diffusion
 
@@ -525,7 +524,7 @@ contains
 
       err = 0
 
-      if (.not. (landIceStandaloneOn .or. landIceDataOn)) return
+      if (.not. (landIceFluxesOn .or. landIceDataOn)) return
 
       call mpas_timer_start("land_ice_build_arrays")
 
@@ -539,7 +538,7 @@ contains
 
       nCells = nCellsArray( size(nCellsArray) )
 
-      if (landIceStandaloneOn) then
+      if (landIceFluxesOn .and. .not. landIceDataOn) then
 
          call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
          call mpas_pool_get_array(forcingPool, 'landIceFloatingFraction', landIceFloatingFraction)
@@ -698,7 +697,7 @@ contains
                      freezeIceHeatFlux)
          end if
 
-      end if ! landIceStandaloneOn
+      end if ! landIceFluxesOn
 
       ! Add frazil and interface melt/freeze to get total fresh water flux
       if ( associated(frazilIceFreshwaterFlux) ) then
@@ -781,7 +780,7 @@ contains
       call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
       nCells = nCellsArray( size(nCellsArray) )
 
-      if (landIceStandaloneOn .or. landIceDataOn) then
+      if (landIceFluxesOn .or. landIceDataOn) then
         call mpas_pool_get_array(statePool, 'accumulatedLandIceMass', accumulatedLandIceMassNew, 2)
         call mpas_pool_get_array(statePool, 'accumulatedLandIceMass', accumulatedLandIceMassOld, 1)
         call mpas_pool_get_array(forcingPool, 'landIceFreshwaterFlux', landIceFreshwaterFlux)
@@ -791,7 +790,7 @@ contains
         end do
       end if
 
-      if (landIceStandaloneOn) then
+      if (landIceFluxesOn .and. .not. landIceDataOn) then
         call mpas_pool_get_array(forcingPool, 'heatFluxToLandIce', heatFluxToLandIce)
         call mpas_pool_get_array(statePool, 'accumulatedLandIceHeat', accumulatedLandIceHeatNew, 2)
         call mpas_pool_get_array(statePool, 'accumulatedLandIceHeat', accumulatedLandIceHeatOld, 1)
@@ -851,7 +850,7 @@ contains
       case ('data','Data','DATA')
          landIceFluxesOn = .true.
          landIceDataOn = .true.
-      case ('prognostic','Prognostic','PROGNOSTIC')
+      case ('active','Active','ACTIVE')
          landIceFluxesOn = .true.
          landIceDataOn = .false.
       case ('off','Off','OFF')
@@ -862,6 +861,7 @@ contains
          err = 1
          return
       end select
+      call mpas_log_write( ' Choice of config_land_ice_flux_mode: '// config_land_ice_flux_mode)
 
       !*** Determine which flux formulation to use
 
