@@ -32,12 +32,10 @@ class PressureGradCentered {
    // vertical chunk. This appends results into the Tend array (in-place).
    KOKKOS_FUNCTION void operator()(const Array2DReal &Tend, I4 IEdge, I4 KChunk,
                                    const Array2DReal &PressureMid,
-                                   const Array2DReal &PressureInterface,
                                    const Array2DReal &Geopotential,
                                    const Array2DReal &LayerThick,
-                                   const Array2DReal &ZInterface,
-                                   const Array2DReal &SpecVol,
-                                   const Array2DReal &SpecVolInterface) const {
+                                   const Array2DReal &InterfaceProduct,
+                                   const Array2DReal &SpecVol) const {
       const I4 KStart = KChunk * VecLength;
 
       const I4 ICell0      = CellsOnEdge(IEdge, 0);
@@ -46,17 +44,6 @@ class PressureGradCentered {
 
       for (int KVec = 0; KVec < VecLength; ++KVec) {
          const I4 K = KStart + KVec;
-
-         // Average quantities to edge
-         const Real PAlphaEdgeK =
-             0.5_Real *
-             (PressureInterface(ICell1, K) * SpecVolInterface(ICell1, K) +
-              PressureInterface(ICell0, K) * SpecVolInterface(ICell0, K));
-         const Real PAlphaEdgeKP1 =
-             0.5_Real * (PressureInterface(ICell1, K + 1) *
-                             SpecVolInterface(ICell1, K + 1) +
-                         PressureInterface(ICell0, K + 1) *
-                             SpecVolInterface(ICell0, K + 1));
          const Real InvLayerThickEdge =
              2.0_Real / (LayerThick(ICell1, K) + LayerThick(ICell0, K));
 
@@ -67,11 +54,8 @@ class PressureGradCentered {
                           LayerThick(ICell0, K) * SpecVol(ICell0, K) *
                               PressureMid(ICell0, K)) *
                          InvDcEdge * InvLayerThickEdge;
-         Real InterfaceTerm =
-             (PAlphaEdgeK * (ZInterface(ICell1, K) - ZInterface(ICell0, K)) -
-              PAlphaEdgeKP1 *
-                  (ZInterface(ICell1, K + 1) - ZInterface(ICell0, K + 1))) *
-             InvDcEdge * InvLayerThickEdge;
+         Real InterfaceTerm = (InterfaceProduct(IEdge, K) - InterfaceProduct(IEdge, K+1)) *
+                              InvLayerThickEdge;
 
          Tend(IEdge, K) +=
              EdgeMask(IEdge, K) * (-GeoTerm - PresTerm + InterfaceTerm);
@@ -133,11 +117,19 @@ class PressureGrad {
    // Destructor
    ~PressureGrad();
 
+   Array2DReal InterfaceProduct;
+
    /// Compute pressure gradient tendencies and add into Tend array
    void computePressureGrad(Array2DReal &Tend, const OceanState *State,
                             const VertCoord *VCoord, const Eos *EqState,
                             const int TimeLevel);
 
+  void computeInterfaceProduct(const Array2DReal &PressureMid,
+                              const Array2DReal &SpecVol,
+                              const Array2DReal &LayerThick,
+                              const Array2DReal &ZInterface);
+
+   /// Create a new pressure gradient object and add to map
    static PressureGrad *create(const std::string &Name, const HorzMesh *Mesh,
                                const VertCoord *VCoord, Config *Options);
 
@@ -156,10 +148,11 @@ class PressureGrad {
    I4 NEdgesAll   = 0;
    I4 NChunks     = 0;
    I4 NVertLayers = 0;
+   I4 NVertLayersP1 = 0;
 
    // Data required for computation (stored copies of mesh/VCoord arrays)
    Array2DI4 CellsOnEdge;      ///< cells surrounding each edge
-   Array1DReal DvEdge;         ///< distance between cell centers across edge
+   Array1DReal DcEdge;         ///< distance between cell centers across edge
    Array2DReal EdgeSignOnCell; ///< orientation of edge relative to cell
 
    // Instances of functors

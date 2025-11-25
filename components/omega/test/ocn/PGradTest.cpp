@@ -111,15 +111,15 @@ int main(int argc, char *argv[]) {
       Eos *DefEos = Eos::getInstance();
       Config *Options = Config::getOmegaConfig();
 
-      I4 NVertLayers = 60;
-      Real dC = 30000.0_Real;
 
       // create arrays: Tend on edges, Pressure/Geopotential/SpecVol on cells
-      Array2DReal Tend("Tend", DefMesh->NEdgesSize, NVertLayers);
-      Array2DReal SpecVolOld("SpecVolOld", DefMesh->NCellsSize, NVertLayers);
-      Array2DReal PressureMidOld("PressureMidOld", DefMesh->NCellsSize, NVertLayers);
+      Array2DReal Tend("Tend", DefMesh->NEdgesSize, VCoord->NVertLayers);
+      Array2DReal SpecVolOld("SpecVolOld", DefMesh->NCellsSize, VCoord->NVertLayers);
+      Array2DReal PressureMidOld("PressureMidOld", DefMesh->NCellsSize, VCoord->NVertLayers);
       Array1DReal SurfacePressure("SurfacePressure", DefMesh->NCellsSize);
 
+      I4 NVertLayers = 60;
+      Real dC = 30000.0_Real;
       for (int refinement = 0; refinement < 3; ++refinement) {
 
          LOG_INFO("PGradTest: Starting refinement level {}", refinement);
@@ -174,6 +174,7 @@ int main(int argc, char *argv[]) {
          auto &ZInterface = VCoord->ZInterface;
          auto &ZMid = VCoord->ZMid;
          Real tilt_factor = 0.495_Real;
+         //Real tilt_factor = 0.45_Real;
          parallelFor({DefMesh->NCellsAll}, KOKKOS_LAMBDA(int i) {
             ZInterface(i, NVertLayers) = ZBottom;
             SurfacePressure(i) = 0.0_Real;
@@ -308,6 +309,7 @@ int main(int argc, char *argv[]) {
 
          // compute pressure gradient
          //PGradTest->computePressureGrad(Tend, DefState, VCoord, DefEos, TimeLevel);
+         deepCopy(Tend, 0.0_Real);
          DefPGrad->computePressureGrad(Tend, DefState, VCoord, DefEos, TimeLevel);
          //for (int i = 0; i < 2; ++i) {
          //   for (int k = 0; k < NVertLayers; ++k) {
@@ -315,17 +317,17 @@ int main(int argc, char *argv[]) {
          //   }
          //}
          Real max_value = 0.0_Real;
-         parallelReduce({DefMesh->NEdgesAll, NVertLayers},
+         parallelReduce({DefMesh->NEdgesAll, NVertLayers - 1},
                         KOKKOS_LAMBDA(int i, int k, Real &max) {
-                           Real val = Kokkos::abs(Tend(i, k));
+                           Real val = Kokkos::abs(Tend(i + 1, k));
                            if (val > max) max = val;
                         }, Kokkos::Max<Real>(max_value)  );
          Real sum_value = 0.0_Real;
-         parallelReduce({DefMesh->NEdgesAll, NVertLayers},
+         parallelReduce({DefMesh->NEdgesAll, NVertLayers - 1},
                         KOKKOS_LAMBDA(int i, int k, Real &lsum) {
-                           lsum += Tend(i,k) * Tend(i, k);
+                           lsum += Tend(i + 1, k) * Tend(i + 1, k);
                         }, Kokkos::Sum<Real>(sum_value)  );
-         LOG_INFO("refinement level {}: max |Tend| = {}, average Tend = {}", refinement, max_value, std::sqrt(sum_value) / (DefMesh->NCellsAll * NVertLayers));
+         LOG_INFO("refinement level {}: max |Tend| = {}, average Tend = {}", refinement, max_value, std::sqrt(sum_value) / (DefMesh->NEdgesAll * (NVertLayers - 1)));
 
          dC = dC * 2.0_Real;
          NVertLayers = NVertLayers / 2;
