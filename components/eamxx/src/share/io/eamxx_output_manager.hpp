@@ -135,6 +135,9 @@ protected:
   // If a file can be closed (next snap won't fit) or needs flushing, do so
   void close_or_flush_if_needed (      IOFileSpecs& file_specs,
                                  const IOControl&   control) const;
+  
+  // Check if an output file with the same name already exists
+  bool file_exists(const std::string& filename) const;
 
   // Manage logging of info to atm.log
   void push_to_logger();

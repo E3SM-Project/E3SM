@@ -426,6 +426,17 @@ void OutputManager::run(const util::TimeStamp& timestamp)
     // Check if we need to open a new file
     if (not filespecs.is_open) {
       filespecs.filename = compute_filename (filespecs,timestamp);
+      
+      // Check if file already exists (duplicate yaml file)
+      if (not m_resume_output_file && file_exists(filespecs.filename)) {
+        EKAT_ERROR_MSG(
+            "Error! Output file already exists: \n"
+            "  - filename: " + filespecs.filename + "\n"
+            "  - timestamp: " + timestamp.to_string() + "\n"
+            "This likely indicates that two yaml files were specified with identical interval, "
+            "average type, and prefix.");
+      }    
+
       // Register all dims/vars, write geometry data (e.g. lat/lon/hyam/hybm/hyai/hybi)
       setup_file(filespecs,control);
     }
@@ -951,6 +962,20 @@ close_or_flush_if_needed (      IOFileSpecs& file_specs,
   } else if (file_specs.file_needs_flush()) {
     scorpio::flush_file (file_specs.filename);
   }
+}
+
+bool OutputManager::
+file_exists(const std::string& filename) const
+{
+  bool exists = false;
+  // Ask root process to check for file existence
+  if (m_io_comm.am_i_root()) {
+    std::ifstream file(filename);
+    exists = file.good();
+  }
+  // Broadcast to other processes
+  m_io_comm.broadcast(&exists, 1, m_io_comm.root_rank());
+  return exists;
 }
 
 void OutputManager::
