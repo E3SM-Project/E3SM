@@ -552,7 +552,7 @@ contains
     use seq_comm_mct,      only: MHID, MHFID  ! id of homme moab coarse and fine applications
     use seq_comm_mct,      only: ATMID
     use seq_comm_mct,      only: mhpgid       ! id of pgx moab application
-    use semoab_mod,        only: create_moab_pg_mesh
+    use semoab_mod,        only: create_moab_meshes
     use iMOAB, only : iMOAB_RegisterApplication
     use iso_c_binding
 #endif
@@ -662,7 +662,7 @@ contains
 !    1 ) spectral coarse mesh
 !    2 ) GLL fine quad mesh (used mostly for visualization)
 !    3 ) pgN FV type mesh, (most of the time pg2 mesh), used for coupling with other components;
-        call create_moab_pg_mesh(par, elem, pgN)
+        call create_moab_meshes(par, elem, pgN)
     endif
 #endif
   end subroutine phys_grid_init
