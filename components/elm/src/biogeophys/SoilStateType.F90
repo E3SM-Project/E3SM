@@ -331,6 +331,7 @@ contains
     use SharedParamsMod   , only : ParamsShareInst
     use FuncPedotransferMod , only : pedotransf, get_ipedof
     use RootBiophysMod      , only : init_vegrootfr
+    use, intrinsic :: ieee_exceptions
     !
     ! !ARGUMENTS:
     class(soilstate_type) :: this
@@ -468,10 +469,15 @@ contains
     ! Try to read soil information from the file.
     call ncd_io(ncid=ncid, varname='ZSOI', flag='read', data=zsoifl, dim1name=grlnd, readvar=readvar)
     if (.not. readvar ) then
-       !    Variable ZSOI not found, use the ELM parameters.
+ 
+#ifdef CPRNVIDIA
+       !NOTE:  Workaround due to compiler issue with nvhpc 25.x when using -Ktrap=fp
+       call ieee_set_flag(ieee_all,.false.)
+       call ieee_set_halting_mode(ieee_inexact, .false.)
+#endif
        do j = 1, nlevsoifl
-          zsoifl(j) = scalez*(exp(zecoeff*(j-0.5_r8))-1._r8)    !node depths
-       end do
+          zsoifl(j) = scalez*(exp(zecoeff*(dble(j)-0.5_r8))-1._r8)    !node depths
+       enddo
     end if
 
     dzsoifl(1) = 0.5_r8*(zsoifl(1)+zsoifl(2))             !thickness b/n two interfaces
