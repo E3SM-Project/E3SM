@@ -603,7 +603,7 @@ contains
     ! mark vertices that are duplicate
     do g = 1, moab_gcell%num_ghosted
        do v1 = 1, moab_gcell%nv - 1
-          do v2 = 2, moab_gcell%nv
+          do v2 = v1 + 1, moab_gcell%nv
              dist = (moab_gcell%lonv(g, v1) - moab_gcell%lonv(g, v2))**2._r8 + &
                   (moab_gcell%latv(g, v1) - moab_gcell%latv(g, v2))**2._r8
              if (dist < dist_threshold) then
@@ -636,6 +636,7 @@ contains
        gdn = moab_edge_internal%cell_ids(e, 2)
 
        vertex_count = 0
+       min_dist = 1.e10_r8
 
        do v1 = 1, moab_gcell%nv
           ! if the vertex is duplicate, skip it
@@ -651,11 +652,8 @@ contains
              latv_dn = moab_gcell%latv(gdn, v2)
              lonv_dn = moab_gcell%lonv(gdn, v2)
 
-             dist = (latv_dn - latv_up)**2._r8 + (lonv_dn - lonv_up)**2._r8
-             if (v2 == 1) then
-                min_dist = dist;
-                min_v2   = v2;
-             else if (dist < min_dist) then
+             dist = ((latv_dn - latv_up)**2._r8 + (lonv_dn - lonv_up)**2._r8)**0.5_r8
+             if (dist < min_dist) then
                 min_dist = dist;
                 min_v2   = v2;
              end if
