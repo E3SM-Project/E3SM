@@ -44,6 +44,8 @@ OR
             help="Name of the source netcdf file")
     parser.add_argument("-t","--tgt-file", type=str,
             help="Name of the target netcdf file")
+    parser.add_argument("-tol","--tolerance", type=float, default=0,
+            help="Tolerance for the comparisons (used for both rel and abs)")
 
     # Variables comparison
     parser.add_argument("-c","--compare",nargs='+', default=[],
