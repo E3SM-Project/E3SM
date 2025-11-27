@@ -11,8 +11,19 @@ set(CLDFRAC_HEADERS
 
 add_library(cld_fraction ${CLDFRAC_SRCS})
 target_compile_definitions(cld_fraction PUBLIC EAMXX_HAS_CLD_FRACTION)
-target_link_libraries(cld_fraction eamxx_physics_share scream_share)
+target_link_libraries(cld_fraction PUBLIC eamxx_physics_share scream_share)
 target_compile_options(cld_fraction PUBLIC)
+
+option (EAMXX_ENABLE_CLDFRAC_LAPIS_SUPPORT "Whether CldFraction should support a LAPIS-generated ML emulator" ON)
+if (EAMXX_ENABLE_CLDFRAC_LAPIS_SUPPORT)
+  target_compile_definitions(cld_fraction PRIVATE EAMXX_ENABLE_CLDFRAC_LAPIS_SUPPORT)
+
+  # Build LAPIS-generated cpp file
+  add_library(cldfrac_ml_lapis cldfrac_ml_lapis.cpp)
+  target_link_libraries (cldfrac_ml_lapis PUBLIC Kokkos::kokkos)
+
+  target_link_libraries(cld_fraction PRIVATE cldfrac_ml_lapis)
+endif()
 
 if (TARGET eamxx_physics)
   # Add this library to eamxx_physics

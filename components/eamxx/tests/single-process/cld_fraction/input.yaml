@@ -16,6 +16,7 @@ eamxx:
     py_module_name: ${PY_MODULE_NAME}
     py_module_path: ${PY_MODULE_PATH}
     py_backend: ${PY_BACKEND}
+    use_lapis_emulator: ${USE_LAPIS_EMULATOR}
 
 grids_manager:
   type: mesh_free

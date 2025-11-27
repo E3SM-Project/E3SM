@@ -1,10 +1,11 @@
 #include "eamxx_cld_fraction_process_interface.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
 
-#include <ekat_assert.hpp>
-#include <ekat_units.hpp>
-
 #include <array>
+
+#ifdef EAMXX_ENABLE_CLDFRAC_LAPIS_SUPPORT
+#include "cldfrac_ml_lapis.hpp"
+#endif
 
 #ifdef EAMXX_HAS_PYTHON
 #include "share/atm_process/atmosphere_process_pyhelpers.hpp"
@@ -80,6 +81,11 @@ void CldFraction::initialize_impl (const RunType /* run_type */)
     py_module_call("init");
   }
 #endif
+#ifdef EAMXX_ENABLE_CLDFRAC_LAPIS_SUPPORT
+  if (m_params.get<bool>("use_lapis_emulator")) {
+    lapis_initialize();
+  }
+#endif
 }
 
 // =========================================================================================
@@ -93,6 +99,53 @@ void CldFraction::run_impl (const double /* dt */)
   auto tot_cld_frac = get_field_out("cldfrac_tot");
   auto ice_cld_frac_4out = get_field_out("cldfrac_ice_for_analysis");
   auto tot_cld_frac_4out = get_field_out("cldfrac_tot_for_analysis");
+
+#ifdef EAMXX_ENABLE_CLDFRAC_LAPIS_SUPPORT
+  if (m_params.get<bool>("use_lapis_emulator")) {
+    printf("Running lapis code...\n");
+    // LAPIS-generated emulator is compiled in and was requested. Use it
+    using KT = KokkosTypes<DefaultDevice>;
+    using ExeSpace = typename KT::ExeSpace;
+    using TPF = ekat::TeamPolicyFactory<ExeSpace>;
+    using MemberType = typename KT::MemberType;
+
+    auto policy = TPF::get_default_team_policy(m_num_cols, m_num_levs);
+
+    auto qi_v                = qi.get_view<const Real**>();
+    auto liq_cld_frac_v      = liq_cld_frac.get_view<const Real**>();
+    auto ice_cld_frac_v      = ice_cld_frac.get_view<Real**>();
+    auto tot_cld_frac_v      = tot_cld_frac.get_view<Real**>();
+    auto ice_cld_frac_4out_v = ice_cld_frac_4out.get_view<Pack**>();
+    auto tot_cld_frac_4out_v = tot_cld_frac_4out.get_view<Pack**>();
+
+    constexpr int max_shared = 4096;
+    // This is a number that fits within all modern
+    // Determine L0 and L1 per-team scratch size
+    constexpr int scratch0_required = forward_L0_scratch_required(max_shared);
+    constexpr int scratch1_required = forward_L1_scratch_required(max_shared);
+    GlobalViews_forward globalViews;
+    policy.set_scratch_size(0, Kokkos::PerTeam(scratch0_required));
+    policy.set_scratch_size(1, Kokkos::PerTeam(scratch1_required));
+
+    // Execute the appropriate specialization based on shared amount
+    auto lambda = KOKKOS_LAMBDA (const MemberType& team) {
+      int icol = team.league_rank();
+      auto qi_col = ekat::subview(qi_v,icol);
+      auto liq_col = ekat::subview(liq_cld_frac_v,icol);
+      auto ice_col = ekat::subview(ice_cld_frac_v,icol);
+      auto tot_col = ekat::subview(tot_cld_frac_v,icol);
+
+      char* scratch0 = (char*)(team.team_scratch(0).get_shmem(scratch0_required));
+      char* scratch1 = (char*)(team.team_scratch(1).get_shmem(scratch1_required));
+
+      forward<ExeSpace, max_shared>(team, globalViews, ice_col, tot_col, qi_col, liq_col, scratch0, scratch1);
+    };
+
+    Kokkos::parallel_for(policy,lambda);
+    return;
+  }
+#endif
+
 #ifdef EAMXX_HAS_PYTHON
   if (has_py_module()) {
     pybind11::array py_qi,
@@ -123,6 +176,7 @@ void CldFraction::run_impl (const double /* dt */)
     double ice_threshold      = m_params.get<double>("ice_cloud_threshold");
     double ice_4out_threshold = m_params.get<double>("ice_cloud_for_analysis_threshold");
 
+    printf("Running py module code...\n");
     py_module_call("main",
                    ice_threshold,ice_4out_threshold,
                    py_qi,py_liq_cld_frac,
@@ -135,25 +189,51 @@ void CldFraction::run_impl (const double /* dt */)
       ice_cld_frac_4out.sync_to_dev();
       tot_cld_frac_4out.sync_to_dev();
     }
-  } else
-#endif
-  {
-    auto qi_v                = qi.get_view<const Pack**>();
-    auto liq_cld_frac_v      = liq_cld_frac.get_view<const Pack**>();
-    auto ice_cld_frac_v      = ice_cld_frac.get_view<Pack**>();
-    auto tot_cld_frac_v      = tot_cld_frac.get_view<Pack**>();
-    auto ice_cld_frac_4out_v = ice_cld_frac_4out.get_view<Pack**>();
-    auto tot_cld_frac_4out_v = tot_cld_frac_4out.get_view<Pack**>();
-
-    CldFractionFunc::main(m_num_cols,m_num_levs,m_icecloud_threshold,m_icecloud_for_analysis_threshold,
-      qi_v,liq_cld_frac_v,ice_cld_frac_v,tot_cld_frac_v,ice_cld_frac_4out_v,tot_cld_frac_4out_v);
+    return;
+  } else {
+    printf("does not have a py module");
   }
+#else
+  printf("No py support compiled in...\n");
+#endif
+#ifdef EAMXX_ENABLE_CLDFRAC_LAPIS_SUPPORT
+  if (m_params.get<bool>("use_lapis_emulator")) {
+    using KT = KokkosTypes<DefaultDevice>;
+    using ExeSpace = typename KT::ExeSpace;
+    using TPF = ekat::TeamPolicyFactory<ExeSpace>;
+    using MemberType = typename KT::MemberType;
+
+    return;
+  } else {
+    std::cout << "lapis not reuqested\n";
+  }
+#else
+  std::cout << "LAPIS support not compiled in...\n";
+#endif
+
+  printf("Running regular c++ code...\n");
+
+  // Either we don't have python/LAPIS support, or it was not requested. Run the regular C++ impl
+  auto qi_v                = qi.get_view<const Pack**>();
+  auto liq_cld_frac_v      = liq_cld_frac.get_view<const Pack**>();
+  auto ice_cld_frac_v      = ice_cld_frac.get_view<Pack**>();
+  auto tot_cld_frac_v      = tot_cld_frac.get_view<Pack**>();
+  auto ice_cld_frac_4out_v = ice_cld_frac_4out.get_view<Pack**>();
+  auto tot_cld_frac_4out_v = tot_cld_frac_4out.get_view<Pack**>();
+
+  CldFractionFunc::main(m_num_cols,m_num_levs,m_icecloud_threshold,m_icecloud_for_analysis_threshold,
+    qi_v,liq_cld_frac_v,ice_cld_frac_v,tot_cld_frac_v,ice_cld_frac_4out_v,tot_cld_frac_4out_v);
 }
 
 // =========================================================================================
 void CldFraction::finalize_impl()
 {
-  // Do nothing
+#ifdef EAMXX_ENABLE_CLDFRAC_LAPIS_SUPPORT
+  if (m_params.get<bool>("use_lapis_emulator")) {
+    printf("finalizing lapis...\n");
+    lapis_finalize();
+  }
+#endif
 }
 // =========================================================================================
 

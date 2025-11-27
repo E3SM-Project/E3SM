@@ -1,7 +1,12 @@
+#!/usr/bin/env python3
 import os
 
 import torch
 import torch.nn as nn
+import torch_mlir
+from torch_mlir.compiler_utils import TensorPlaceholder
+from torch_mlir import torchscript
+from lapis import KokkosBackend
 
 class CldFracNet(nn.Module):
   def __init__(self, input_size, output_size, neuron_count=64):
@@ -36,15 +41,12 @@ class CldFracNet(nn.Module):
         y13_categorical = (y13_probabilities > 0.5).float()
 
     # Now compute cld_tot from cld_ice and cld_liq
-    y21 = self.tot1(torch.cat((liq, y13_categorical), dim=1))
+    y21 = self.tot1(torch.cat((liq, y13_categorical), dim=0))
     y22 = self.relu(y21)
     y23 = self.tot2(y22)
     return y13_categorical, y23
 
-model = None
-
-def init ():
-    global model
+def main ():
 
     # For this test, hard code nlevs, as well as pth file name/path
     nlevs = 72
@@ -54,26 +56,12 @@ def init ():
     model = CldFracNet(nlevs,nlevs)
     model.load_state_dict(torch.load(model_file,map_location=torch.device('cpu')))
 
-def main (ice_threshold, ice_4out_threshold,
-          qi, liq_cld_frac,
-          ice_cld_frac, tot_cld_frac,
-          ice_cld_frac_4out, tot_cld_frac_4out):
-    global model
+    qi = torch.ones((nlevs))
+    liq = torch.ones((nlevs))
+    mlir_module = torchscript.compile(model, (qi, liq), output_type='linalg-on-tensors')
+    with open("cldfrac.mlir",'w') as fd:
+        fd.write(str(mlir_module))
 
-    # Convert numpy inputs to torch arrays
-    # Note: our pth model expects float32 arrays, so make sure we get the right dtype
-    liq_pt = torch.tensor(liq_cld_frac, dtype=torch.float32)
-    qi_pt  = torch.tensor(qi, dtype=torch.float32)
+if __name__ == "__main__":
+    main()
 
-    # Set model in evaluation mode
-    model.eval()
-
-    with torch.no_grad(): # Disable gradient for inference
-        # Run the emulator
-        ice_out, tot_out = model(qi_pt,liq_pt)
-
-        # Update inout numpy arrays inplace
-        print("out ice")
-        print (ice_out.cpu())
-        ice_cld_frac[:] = ice_out.cpu().numpy()
-        tot_cld_frac[:] = tot_out.cpu().numpy()
