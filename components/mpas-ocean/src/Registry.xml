@@ -677,6 +677,10 @@
 					description="Flag for using prognostic waves. Controls the allocation of wave arrays and computation of Stokes drift profiles."
 					possible_values=".true. or .false."
 		/>
+		<nml_option name="config_momentum_use_active_wave" type="logical" default_value=".false."
+					description="Flag for correcting momentum coupling in ocean due to waves. Requires config_use_active_wave = .true."
+					possible_values=".true. or .false."
+		/>
 		<nml_option name="config_n_stokes_drift_wavenumber_partitions" type="integer" default_value="6"
 					description="Number of wavenumber partitions to be used in reconstructing wave-induced Stokes drift profile"
 					possible_values="3,4,6"
@@ -4062,6 +4066,42 @@
 		<var name="peakWaveDirection" type="real" dimensions="nCells Time" units="degree"
 			 description="Direction of peak of wave spectrum"
 			 packages="activeWavePKG"
+	        />
+		 <var name="charnockSeaState" type="real" dimensions="nCells Time" units=""
+                         description="Charnock coeff accounting for the wave stress (Janssen 1989, 1991)"
+                         packages="activeWavePKG"
+                />
+		 <var name="z0wav" type="real" dimensions="nCells Time" units="m"
+                         description="surface Roughness length accounting for the wave state"
+                         packages="activeWavePKG"
+                />
+		 <var name="ustarwav" type="real" dimensions="nCells Time" units=""
+                         description="Friction Velocity from Wave model "
+                         packages="activeWavePKG"
+                />
+                <var name="waveSupportedZonalWindStress" type="real" dimensions="nCells Time" units="N m^{-2}"
+                         description="Zonal Wave supported stress (Stress from atmosphere to waves)"
+                         packages="activeWavePKG"
+                />
+                <var name="waveSupportedMeridionalWindStress" type="real" dimensions="nCells Time" units="N m^{-2}"
+                         description="Meridional Wave supported stress (Stress from atmosphere to waves)"
+                         packages="activeWavePKG"
+                />
+                <var name="waveToOceanZonalWindStress" type="real" dimensions="nCells Time" units="N m^{-2}"
+                         description="Zonal Wave to ocean stress"
+                         packages="activeWavePKG"
+                />
+                <var name="waveToOceanMeridionalWindStress" type="real" dimensions="nCells Time" units="N m^{-2}"
+                         description="Meridional Wave to ocean stress"
+                         packages="activeWavePKG"
+                />
+                <var name="waveNetOceanZonalWindStress" type="real" dimensions="nCells Time" units="N m^{-2}"
+                         description="Zonal Net ocean wind stress by wave model"
+                         packages="activeWavePKG"
+                />
+                <var name="waveNetOceanMeridionalWindStress" type="real" dimensions="nCells Time" units="N m^{-2}"
+                         description="Meridional Net ocean wind stress by wave model"
+                         packages="activeWavePKG"
 		/>
 		<var name="langmuirNumber" type="real" dimensions="nCells Time" units="m"
 			 description="Projected surface layer averaged Langmuir number from Van Roekel et al. 2012."

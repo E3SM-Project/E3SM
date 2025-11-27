@@ -75,16 +75,25 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
     # ---------------------------------------------------
     if case.get_value('COMP_WAV') == 'ww3':
         config['WAVSPEC'] = case.get_value('WAV_SPEC')
+        if case.get_value('COMP_ATM') == 'eam':
+            config['WAV_ATM_COUP'] = 'twoway'
+        else:
+            config['WAV_ATM_COUP'] = 'oneway'
+
         if case.get_value('COMP_OCN') == 'mpaso':
             config['WAV_OCN_COUP'] = 'twoway'
+            config['ocn_surface_flux_scheme'] = 0
         elif case.get_value('COMP_OCN') == 'docn': 
             config['WAV_OCN_COUP'] = 'oneway'
-    elif case.get_value('COMP_WAV') == 'dwav':
-        config['WAVSPEC'] = 'sp36x36'
-    else:
-        config['WAVSPEC'] = 'none'
 
-    #----------------------------------------------------
+        if case.get_value('COMP_ICE') == 'mpassi': 
+            config['WAV_ICE_COUP'] = 'oneway' 
+    elif case.get_value('COMP_WAV') == 'dwav':
+         config['WAVSPEC'] = 'sp36x36'
+    else:
+         config['WAVSPEC'] = 'none'
+
+   #----------------------------------------------------
     # Initialize namelist defaults
     #----------------------------------------------------
     nmlgen.init_defaults(infile, config)
