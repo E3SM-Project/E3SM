@@ -49,6 +49,9 @@ void Functions<S,D>
   const uview_1d<const Spack>& cld_frac_r,
   const uview_1d<const Spack>& qv_prev,
   const uview_1d<const Spack>& t_prev,
+//[shanyp 20251120
+  const uview_1d<const Spack>& omega_mp,
+//shanyp 20251120]
   const uview_1d<Spack>& T_atm,
   const uview_1d<Spack>& rho,
   const uview_1d<Spack>& inv_rho,
@@ -221,7 +224,9 @@ void Functions<S,D>
       epsr(0),        // TODO(doc)
       epsc(0),        // TODO(doc)
       epsi_tot (0);   // inverse supersaturation relaxation timescale for combined ice categories
-
+//[shanyp 20251120
+    Spack xx(0),oxx(0),aaa(0),odt(0),ocp(0),dum(0),dumss(0),pcc(0),e0d(0),w0d(0);
+//shanyp 20251120]
     Smask wetgrowth(false);
 
     // skip micro process calculations except nucleation/acvtivation if there no hydrometeors are present
@@ -245,7 +250,9 @@ void Functions<S,D>
       impose_max_total_ni(ni_incld(k), max_total_ni, inv_rho(k), not_skip_micro);
 
       const auto qi_gt_small = qi_incld(k) >= qsmall && not_skip_micro;
-
+//[shanyp 20251120
+      const auto qc_gt_small = qc_incld(k) >= qsmall && not_skip_micro;
+//shanyp 20251120]
       if (qi_gt_small.any()) {
         // impose lower limits to prevent taking log of # < 0
         ni_incld(k).set(qi_gt_small, max(ni_incld(k), nsmall));
@@ -379,7 +386,30 @@ void Functions<S,D>
       calc_liq_relaxation_timescale(
         revap_table_vals, rho(k), f1r, f2r, dv, mu, sc, mu_r(k), lamr(k), cdistr(k), cdist(k), qr_incld(k), qc_incld(k),
         epsr, epsc, not_skip_micro);
-
+//[shanyp 20251120
+      if(qc_gt_small.any()){
+       w0d = omega_mp(k)*(-1)/(rho(k)*9.81);
+       xx=epsc;
+       e0d=pres(k)*qv(k)/(qv(k)+0.622);
+       dum=qv_sat_l(k)*rho(k)*9.81*w0d/(pres(k)-e0d);
+       aaa=(-1)*dum-dqsdt*((-1)*w0d*9.81*inv_cp);
+       xx=ekat::max(1.e-8,xx);
+       oxx=1/xx;
+       pcc=(aaa*epsc*oxx+((qv(k)-qv_sat_l(k))-aaa*oxx)*inv_dt*epsc*oxx*(1.-ekat::exp(-xx*dt)))/ab;
+       pcc=ekat::max((-1)*qc_incld(k)/dt, pcc);
+//Updates
+       qc_incld(k)=qc_incld(k)+pcc*dt;
+       qv(k) = qv(k) - pcc*cld_frac_l(k)*dt;
+       th_atm(k) = th_atm(k) + exner(k)*pcc*cld_frac_l(k)*latvap*inv_cp;
+//Adjust other cloud droplet parameters.
+       get_cloud_dsd2(qc_incld(k), nc_incld(k), mu_c(k), rho(k), nu(k), dnu,
+                      lamc(k), cdist(k), cdist1(k), not_skip_micro);
+       nc(k).set(not_skip_micro, nc_incld(k) * cld_frac_l(k));
+       calc_liq_relaxation_timescale(
+         revap_table_vals, rho(k), f1r, f2r, dv, mu, sc, mu_r(k), lamr(k), cdistr(k), cdist(k), qr_incld(k), qc_incld(k),
+         epsr, epsc, not_skip_micro);
+      }
+//shanyp 20251120]
       evaporate_rain(qr_incld(k),qc_incld(k),nr_incld(k),qi_incld(k),
 		     cld_frac_l(k),cld_frac_r(k),qv(k),qv_prev(k),qv_sat_l(k),qv_sat_i(k),
 		     ab,abi,epsr,epsi_tot,T_atm(k),t_prev(k),dqsdt,dt,
