@@ -35,7 +35,6 @@ module cplcomp_exchange_mod
   implicit none
   private  ! except
 #include <mpif.h>
-#include "moab/MOABConfig.h"
   save
 
   !--------------------------------------------------------------------------
@@ -1086,12 +1085,10 @@ subroutine  copy_aream_from_area(mbappid)
       mpicom_old  = comp%mpicom_compid
       mpicom_join = comp%mpicom_cplcompid
 
-      partMethod = 0 ! trivial partitioning
+      ! partMethod = 0 ! trivial partitioning
+      partMethod = 2 ! it is better to use RCB for atmosphere and ocean (needs MOAB_HAVE_ZOLTAN)
       context_id = -1 ! original sends/receives, so the context is -1
                      ! needed only to free send buffers
-#ifdef MOAB_HAVE_ZOLTAN
-      partMethod = 2 ! it is better to use RCB for atmosphere and ocean too
-#endif
 
       call seq_comm_getinfo(ID_old ,mpicom=mpicom_old)
       call seq_comm_getinfo(ID_new ,mpicom=mpicom_new)
@@ -1114,7 +1111,6 @@ subroutine  copy_aream_from_area(mbappid)
 
          ! find atm mesh/domain file if it exists; it would be for data atm model (atm_prognostic false)
          call seq_infodata_GetData(infodata,atm_mesh = atm_mesh)
-
 
 !!!!!!!! ON ATM COMPONENT
          if (mphaid >= 0) then  ! component atm procs
