@@ -749,28 +749,34 @@ void reset_time_dim_len (const std::string& filename, const int new_length)
 void set_var_decomp (PIOVar& var,
                      const std::string& filename)
 {
-  for (size_t i=1; i<var.dims.size(); ++i) {
-    EKAT_REQUIRE_MSG (var.dims[i]->offsets==nullptr,
-        "Error! We currently only allow decomposition on slowest-striding dimension.\n"
-        "       Generalizing is not complicated, but it was not a priority.\n"
+  std::shared_ptr<const PIODim> decomp_dim;
+  for (size_t i=0; i<var.dims.size(); ++i) {
+    if (var.dims[i]->offsets) {
+      EKAT_REQUIRE_MSG (decomp_dim==nullptr,
+        "Error! Call set_var_decomp, more than one dimension set as decomposition dimension.\n"
         " - filename: " + filename + "\n"
-        " - varname : " + var.name + "\n"
-        " - var dims: " + ekat::join(var.dims,get_entity_name,",") + "\n"
-        " - bad dim : " + var.dims[i]->name + "\n");
+        " - varname : " + var.name + "\n");
+      decomp_dim = var.dims[i];
+    }
   }
-  EKAT_REQUIRE_MSG (var.dims[0]->offsets!=nullptr,
-      "Error! Calling set_var_decomp, but the var first dimension does not appear to be decomposed.\n"
-      " - filename: " + filename + "\n"
-      " - varname : " + var.name  + "\n"
-      " - var dims: " + ekat::join(var.dims,get_entity_name,",") + "\n");
+  EKAT_REQUIRE_MSG(decomp_dim!=nullptr,
+    "Error! Calling set_var_decomp, none of the dimensions have been set as the decomposition dimension.\n"
+    " - filename: " + filename + "\n"
+    " - varname : " + var.name + "\n");
   EKAT_REQUIRE_MSG (var.decomp==nullptr,
       "Error! You should have invalidated var.decomp before attempting to reset it.\n"
       " - filename  : " + filename + "\n"
       " - varname   : " + var.name  + "\n"
       " - var decomp: " + var.decomp->name  + "\n");
+  EKAT_REQUIRE_MSG (decomp_dim==var.dims[0] or decomp_dim==var.dims.back(),
+      "Error! Variable decomposition only supports decompostion over the first or last dimension.\n"
+      " - filename  : " + filename + "\n"
+      " - varname   : " + var.name  + "\n"
+      " - var decomp: " + var.decomp->name  + "\n");
+  bool decomp_first_dim = var.dims[0]->offsets ? true : false;
+
 
   // Create decomp name: dtype-dim1<len1>_dim2<len2>_..._dimk<lenN>
-  std::shared_ptr<const PIODim> decomp_dim;
   std::string decomp_tag = var.dtype + "-";
   for (auto d : var.dims) {
     decomp_tag += d->name + "<" + std::to_string(d->length) + ">_";
@@ -800,28 +806,42 @@ void set_var_decomp (PIOVar& var,
     // We haven't create this decomp yet. Go ahead and create one
     decomp = std::make_shared<PIODecomp>();
     decomp->name = decomp_tag;
-    decomp->dim = var.dims[0];
+    decomp->dim = decomp_dim;
 
     int ndims = var.dims.size();
 
     // Get ALL dims global lengths, and compute prod of *non-decomposed* dims
-    std::vector<int> gdimlen = {decomp->dim->length};
+    // Note, if the offsets for the dimension are null then this is by definition
+    // a non-decomposed dimension.
+    std::vector<int> gdimlen = {};
     int non_decomp_dim_prod = 1;
-    for (int idim=1; idim<ndims; ++idim) {
+    for (int idim=0; idim<ndims; ++idim) {
       auto d = var.dims[idim];
       gdimlen.push_back(d->length);
-      non_decomp_dim_prod *= d->length;
+      if (d->offsets==nullptr) {
+        non_decomp_dim_prod *= d->length;
+      }
     }
 
     // Create offsets list
     const auto& dim_offsets = *decomp->dim->offsets;
     int dim_loc_len = dim_offsets.size();
     decomp->offsets.resize (non_decomp_dim_prod*dim_loc_len);
-    for (int idof=0; idof<dim_loc_len; ++idof) {
-      auto dof_offset = dim_offsets[idof];
-      auto beg = decomp->offsets.begin()+ idof*non_decomp_dim_prod;
-      auto end = beg + non_decomp_dim_prod;
-      std::iota (beg,end,non_decomp_dim_prod*dof_offset);
+    if (decomp_first_dim) {
+      for (int idof=0; idof<dim_loc_len; ++idof) {
+        auto dof_offset = dim_offsets[idof];
+        auto beg = decomp->offsets.begin()+ idof*non_decomp_dim_prod;
+        auto end = beg + non_decomp_dim_prod;
+        std::iota (beg,end,non_decomp_dim_prod*dof_offset);
+      }
+    } else {
+      for (int ii = 0; ii<non_decomp_dim_prod; ++ii) {
+        for (int idof=0; idof<dim_loc_len; ++idof) {
+          auto dof_offset = dim_offsets[idof];
+          decomp->offsets[ii * dim_loc_len + idof] =
+              ii * decomp_dim->length + dof_offset;
+        }
+      }
     }
 
     // Create PIO decomp
