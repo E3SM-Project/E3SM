@@ -127,7 +127,6 @@ CONTAINS
     use pio        , only : iosystem_desc_t
     use shr_pio_mod, only : shr_pio_getiosys, shr_pio_getiotype
 #ifdef HAVE_MOAB
-#include "moab/MOABConfig.h"
     use iMOAB, only: iMOAB_DefineTagStorage, iMOAB_GetDoubleTagStorage, &
                      iMOAB_SetIntTagStorage, iMOAB_SetDoubleTagStorage, &
                      iMOAB_ResolveSharedEntities, iMOAB_CreateVertices, &

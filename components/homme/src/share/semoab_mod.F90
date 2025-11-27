@@ -401,9 +401,11 @@ contains
 !     allocate(moab_vert_coords(3*idx) )
      if ( nelemd > 0 ) then 
        allocate(vdone_c(nverts_c))
-       vdone_c = 0;
-       currentval = gdofv( indx(1)) ! start over to identify coordinates of the vertices
+     else
+       allocate(vdone_c(1)) ! will be passed to iMOAB_ResolveSharedEnts, and compilers are complaining about non-allocated arrays
      endif
+     vdone_c = 0
+     if ( nelemd > 0 ) currentval = gdofv( indx(1)) ! start over to identify coordinates of the vertices
 
      do ix=1,moab_dim_cquads
         i = indx(ix)   ! index in initial array
@@ -530,6 +532,7 @@ contains
        ! first count the number of edges in the coarse mesh;
        ! use euler: v-m+f = 2 => m = v + f - 2
        nedges_c = nverts_c + nelemd - 1 ! could be more, if unconnected regions ?
+       nedges_c = nedges_c + 3 ! assume more than one connected region
        if ( nedges_c < 0 ) nedges_c = 0 ! it cannot be negative
        internal_edges = 0
        boundary_edges = 0

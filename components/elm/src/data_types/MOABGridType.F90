@@ -47,31 +47,32 @@ module MOABGridType
   integer, parameter      :: max_num_neighbor = 10
 
   type, public :: grid_cell
-     integer           :: num_owned        ! number of owned "active" grid cells
-     integer           :: num_ghost        ! number of ghost "active" grid cells
-     integer           :: num_ghosted      ! number of owned + ghost "active" grid cells
-     integer           :: num_global       ! number of global "active" grid cells     
+     integer           :: num_owned              ! number of owned "active" grid cells
+     integer           :: num_ghost              ! number of ghost "active" grid cells
+     integer           :: num_ghosted            ! number of owned + ghost "active" grid cells
+     integer           :: num_global             ! number of global "active" grid cells     
 
-     integer, pointer  :: natural_id(:)    ! [num_ghosted] ID of cell in the full mesh, while accounting for active and inactive cells
-     logical, pointer  :: is_owned(:)      ! [num_ghosted] true if the grid cell locally owned
-     integer, pointer  :: owner_rank(:)    ! [num_ghosted] MPI rank that owns the cell
+     integer, pointer  :: natural_id(:)          ! [num_ghosted] ID of cell in the full mesh, while accounting for active and inactive cells
+     logical, pointer  :: is_owned(:)            ! [num_ghosted] true if the grid cell locally owned
+     integer, pointer  :: owner_rank(:)          ! [num_ghosted] MPI rank that owns the cell
 
-     integer, pointer  :: num_neighbor (:) ! [num_ghosted] number of neighboring grid cells
-     integer, pointer  :: neighbor_id(:,:) ! [num_ghosted, max_num_neighbor] ghosted ID of neighboring grid cells
+     integer, pointer  :: num_neighbor (:)       ! [num_ghosted] number of neighboring grid cells
+     integer, pointer  :: neighbor_id(:,:)       ! [num_ghosted, max_num_neighbor] ghosted ID of neighboring grid cells
 
-     integer, pointer  :: num_vertex(:)    ! [num_ghosted] number of vertices
-     integer, pointer  :: vertex_id(:,:)   ! [num_ghosted, max_num_neigbor] IDs of vertices
+     integer, pointer  :: num_vertex(:)          ! [num_ghosted] number of vertices
+     integer, pointer  :: vertex_id(:,:)         ! [num_ghosted, max_num_neigbor] IDs of vertices
 
-     real(r8), pointer :: lat(:)           ! [num_ghosted] latitude of the cell
-     real(r8), pointer :: lon(:)           ! [num_ghosted] longitude of the cell
+     real(r8), pointer :: lat(:)                 ! [num_ghosted] latitude of the cell
+     real(r8), pointer :: lon(:)                 ! [num_ghosted] longitude of the cell
 
-     integer           :: nv               ! length of 'nv' dimension in the mesh
-     real(r8), pointer :: latv(:,:)        ! [num_ghosted, nv] latitude of cell vertices
-     real(r8), pointer :: lonv(:,:)        ! [num_ghosted, nv] longitude of cell vertices
+     integer           :: nv                     ! length of 'nv' dimension in the mesh
+     real(r8), pointer :: latv(:,:)              ! [num_ghosted, nv] latitude of cell vertices
+     real(r8), pointer :: lonv(:,:)              ! [num_ghosted, nv] longitude of cell vertices
+     logical,  pointer :: is_vert_duplicate(:,:) ! [num_ghosted, nv] is a duplicate vertex
 
-     integer, pointer  :: elm2moab(:)      ! [num_ghosted] for ELM's grid cell given by g (where begg <= g <= endg),
-                                           !               return the correponding MOAB grid cell 'i' (where 1 <= i <= num_ghosted)
-     integer, pointer  :: moab2elm(:)      ! [num_ghosted] vice-versa of elm2moab
+     integer, pointer  :: elm2moab(:)            ! [num_ghosted] for ELM's grid cell given by g (where begg <= g <= endg),
+                                                 !               return the correponding MOAB grid cell 'i' (where 1 <= i <= num_ghosted)
+     integer, pointer  :: moab2elm(:)            ! [num_ghosted] vice-versa of elm2moab
   end type grid_cell
   
   type, public :: grid_vertex
@@ -429,6 +430,9 @@ contains
     integer           :: ierr
     integer           :: ni, nj, dimid, count
     real(r8), pointer :: data2d(:,:)
+    integer           :: v1, v2
+    real(r8)          :: dist
+    real(r8), parameter :: dist_threshold = 1.e-10
 
     ierr = pio_openfile(pio_subsystem, ncid, io_type, trim(fatmlndfrc), PIO_NOWRITE)
     if (ierr /= pio_noerr) then
@@ -528,6 +532,9 @@ contains
     allocate(moab_gcell%lonv(moab_gcell%num_ghosted, moab_gcell%nv))
     allocate(data2d(moab_gcell%nv, moab_gcell%num_ghosted))
 
+    allocate(moab_gcell%is_vert_duplicate(moab_gcell%num_ghosted, moab_gcell%nv))
+    moab_gcell%is_vert_duplicate(:,:) = .false.
+
     varname = 'xv'
     ierr = pio_inq_varid(ncid, trim(varname), varid)
     if (ierr /= pio_noerr) then
@@ -593,6 +600,19 @@ contains
     call pio_closefile(ncid)
     deallocate(compdof)
 
+    ! mark vertices that are duplicate
+    do g = 1, moab_gcell%num_ghosted
+       do v1 = 1, moab_gcell%nv - 1
+          do v2 = 2, moab_gcell%nv
+             dist = (moab_gcell%lonv(g, v1) - moab_gcell%lonv(g, v2))**2._r8 + &
+                  (moab_gcell%latv(g, v1) - moab_gcell%latv(g, v2))**2._r8
+             if (dist < dist_threshold) then
+                moab_gcell%is_vert_duplicate(g, v2) = .true.
+             endif
+          end do
+       end do
+    end do
+
   end subroutine read_grid_cell_lat_lon
 
   !------------------------------------------------------------------------------
@@ -618,10 +638,16 @@ contains
        vertex_count = 0
 
        do v1 = 1, moab_gcell%nv
+          ! if the vertex is duplicate, skip it
+          if (moab_gcell%is_vert_duplicate(gup, v1)) cycle
+
           latv_up = moab_gcell%latv(gup, v1)
           lonv_up = moab_gcell%lonv(gup, v1)
 
           do v2 = 1, moab_gcell%nv
+             ! if the vertex is duplicate, skip it
+             if (moab_gcell%is_vert_duplicate(gdn, v2)) cycle
+
              latv_dn = moab_gcell%latv(gdn, v2)
              lonv_dn = moab_gcell%lonv(gdn, v2)
 
