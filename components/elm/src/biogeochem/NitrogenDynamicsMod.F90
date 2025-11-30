@@ -179,8 +179,7 @@ contains
     integer  :: s                     ! site index (fates only)
     real(r8) :: t                     ! temporary
     real(r8) :: secspyr               ! seconds per yr
-    real(r8) :: total_weight
-    logical  :: do_et_bnf = .false.
+    logical, parameter  :: do_et_bnf = .false.
 
     ! Test mutliplier of fixation rate, leave as 1 to use base rates
     real(r8),parameter  :: test_mult = 1.0_r8  
@@ -188,112 +187,111 @@ contains
     !-----------------------------------------------------------------------
 
     associate(&
-         cannsum_npp    => col_cf%annsum_npp      , & ! Input:  [real(r8) (:)]  nitrogen deposition rate (gN/m2/s)
+         cannsum_npp    => col_cf%annsum_npp      , & ! Input:  [real(r8) (:)]  nitrogen deposition rate (gC/m2/year)
          col_lag_npp    => col_cf%lag_npp         , & ! Input: [real(r8) (:)]  (gC/m2/s) lagged net primary production
          qflx_tran_veg  => col_wf%qflx_tran_veg    , & ! col vegetation transpiration (mm H2O/s) (+ = to atm)
          qflx_evap_veg  => col_wf%qflx_evap_veg    , & ! col vegetation evaporation (mm H2O/s) (+ = to atm)
-         nfix_to_sminn  => col_nf%nfix_to_sminn    , & ! Output: [real(r8) (:)]  symbiotic/asymbiotic N fixation to soil mineral N (gN/m2/s)
-
-         Nfix_NPP_c1    => veg_vp%Nfix_NPP_c1     , & ! Pre-exponential parameter for NPP_based N fixation
-         Nfix_NPP_c2    => veg_vp%Nfix_NPP_c2       & ! Exponential parameter for NPP_based N fixation
+         nfix_to_sminn  => col_nf%nfix_to_sminn     & ! Output: [real(r8) (:)]  symbiotic/asymbiotic N fixation to soil mineral N (gN/m2/s)
          )
 
 
       if (do_et_bnf) then
          secspyr = dayspyr * 86400._r8
-
          do fc = 1, num_soilc
             c =filter_soilc(fc)
             !use the cleveland equation
             t = test_mult*(0.00102_r8*(qflx_evap_veg(c)+qflx_tran_veg(c))+0.0524_r8/secspyr)
             nfix_to_sminn(c) = max(0._r8, t)
          enddo
+      return
+      end if 
+
+      if(use_fates)then
+         ic = bounds%clump_index
+         do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            s = alm_fates%f2hmap(ic)%hsites(c)
+            if ( alm_fates%fates(ic)%bc_out(s)%ema_npp > 0._r8) then
+               ! ema_npp is units: [gC/m^2/year] 
+               nfix_to_sminn(c) = simple_nfix(alm_fates%fates(ic)%bc_out(s)%ema_npp)
+            else
+               nfix_to_sminn(c) = 0._r8
+            endif
+         end do
       else
-         if(use_fates)then
-            ic = bounds%clump_index
-            do fc = 1,num_soilc
-               c = filter_soilc(fc)
-               s = alm_fates%f2hmap(ic)%hsites(c)
-               if ( alm_fates%fates(ic)%bc_out(s)%ema_npp > 0._r8) then
-                  ! ema_npp is units: [gC/m^2/year] 
-                  t = test_mult*(1.8_r8 * (1._r8 - exp(-0.003_r8 * alm_fates%fates(ic)%bc_out(s)%ema_npp )))/(secspday * dayspyr)
-                  nfix_to_sminn(c) = max(0._r8,t)
-               else
-                  nfix_to_sminn(c) = 0._r8
-               endif
-            end do
-         else
-         if ( nfix_timeconst > 0._r8 .and. nfix_timeconst < 500._r8 ) then
-            ! use exponential relaxation with time constant nfix_timeconst for NPP - NFIX relation
-            ! Loop through columns
-            do fc = 1,num_soilc
-               c = filter_soilc(fc)         
-               if (col_lag_npp(c) /= spval) then
-                 if (nfix_npp_patch) then
-                   ! B. Sulman: Loop through patches. Nfix is weighted average of value for each PFT's parameters
-                   t = 0.0_r8
-                   total_weight = 0.0_r8  ! To correct for inactive and unveg cells
-                   do p = col_pp%pfti(c), col_pp%pftf(c)
-                      ! need to put npp in units of gC/m^2/year here first
-                      ! B. Sulman: calculate Nfix value for each patch's parameters, and add to weighted average
-                      if (veg_pp%active(p) .and. (veg_pp%itype(p) .ne. noveg)) then
-                          t = t + max(0._r8,veg_pp%wtcol(p)*(Nfix_NPP_c1(veg_pp%itype(p)) * &
-                                 (1._r8 - exp(-Nfix_NPP_c2(veg_pp%itype(p)) * col_lag_npp(c)*(secspday * dayspyr))))/(secspday * dayspyr))  
-                          total_weight = total_weight + veg_pp%wtcol(p)
-                      endif
-                   enddo
-                   if(total_weight>0) then
-                       nfix_to_sminn(c) = max(0._r8,t/total_weight)
-                   else
-                       nfix_to_sminn(c) = 0._r8
-                   endif
+        if ( nfix_timeconst > 0._r8 .and. nfix_timeconst < 500._r8 ) then
+         ! use exponential relaxation with time constant nfix_timeconst for NPP - NFIX relation
+         ! Loop through columns
+         do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            if (col_lag_npp(c) /= spval) then
+              if (nfix_npp_patch) then
+                 nfix_to_sminn(c) = weighted_nfix_sum(c,col_lag_npp(c)*(secspday * dayspyr))
+              else
+                 nfix_to_sminn(c) = simple_nfix(col_lag_npp(c)*(secspday * dayspyr))
+              endif
 
-                 else
+            else
+                nfix_to_sminn(c) = 0._r8
+            endif
+         end do
+      else
+         ! use annual-mean values for NPP-NFIX relation
+         do fc = 1,num_soilc
+            c = filter_soilc(fc)
 
-                  ! need to put npp in units of gC/m^2/year here first
-                  t = test_mult*(1.8_r8 * (1._r8 - exp(-0.003_r8 * col_lag_npp(c)*(secspday * dayspyr))))/(secspday * dayspyr)
-                  nfix_to_sminn(c) = max(0._r8,t)
+            if (nfix_npp_patch) then
+              nfix_to_sminn(c) = weighted_nfix_sum(c,cannsum_npp(c))
+            else
+              nfix_to_sminn(c) = simple_nfix(cannsum_npp(c))
+            end if 
 
-                 endif
-
-               else
-                   nfix_to_sminn(c) = 0._r8
-               endif
-            end do
-         else
-            ! use annual-mean values for NPP-NFIX relation
-            do fc = 1,num_soilc
-               c = filter_soilc(fc)
-
-             if (nfix_npp_patch) then
-               ! B. Sulman: Loop through patches. Nfix is weighted average of value for each PFT's parameters
-               t = 0.0_r8
-               total_weight = 0.0_r8
-               do p = col_pp%pfti(c), col_pp%pftf(c)
-                  if (veg_pp%active(p) .and. (veg_pp%itype(p) .ne. noveg)) then
-                       t = t + max(0._r8,veg_pp%wtcol(p)*(Nfix_NPP_c1(veg_pp%itype(p)) * &
-                             (1._r8 - exp(-Nfix_NPP_c2(veg_pp%itype(p)) * cannsum_npp(c))))/(secspday * dayspyr))
-                       total_weight = total_weight + veg_pp%wtcol(p)
-                  endif
-               enddo
-               if (total_weight>0) then
-                   nfix_to_sminn(c) = max(0._r8,t/total_weight)
-               else
-                   nfix_to_sminn(c) = 0.0_r8
-               endif
-
-             else
-
-               t = test_mult*(1.8_r8 * (1._r8 - exp(-0.003_r8 * cannsum_npp(c))))/(secspday * dayspyr)
-               nfix_to_sminn(c) = max(0._r8,t)
-              
-             end if 
-            end do
-         endif
-         end if
+         end do
       endif
+    end if
 
     end associate
+
+    contains
+
+       pure function weighted_nfix_sum(c, npp_val) result(nfix)
+          ! Computes NFix via a weighted average of NPP
+          ! npp_val is in units of gC/m^2/yr
+          integer, intent(in) :: c 
+          real(r8), intent(in) :: npp_val
+          real(r8) :: nfix
+          !! Locals
+          real(r8) :: t, total_weight
+          integer :: p
+
+          t = 0._r8 
+          total_weight = 0._r8
+
+          do p = col_pp%pfti(c), col_pp%pftf(c)
+            if (veg_pp%active(p) .and. (veg_pp%itype(p) .ne. noveg)) then
+
+               t = t + max(0._r8,veg_pp%wtcol(p)*(veg_vp%Nfix_NPP_c1(veg_pp%itype(p)) * &
+                       (1._r8 - exp(-veg_vp%Nfix_NPP_c2(veg_pp%itype(p)) * npp_val)))/(secspday * dayspyr))
+
+               total_weight = total_weight + veg_pp%wtcol(p)
+            endif
+          enddo
+          if (total_weight > 0._r8) then
+              nfix = t/total_weight
+          else
+              nfix = 0.0_r8
+          endif
+       end function weighted_nfix_sum
+
+       pure function simple_nfix(npp_val) result(nfix)
+         !  npp_val is in units of gC/m^2/yr
+          real(r8), intent(in) :: npp_val
+          real(r8) :: nfix
+
+         nfix = max( 0._r8,&
+            test_mult*(1.8_r8 * (1._r8 - exp(-0.003_r8 * npp_val)))/(secspday * dayspyr) &
+            )
+       end function simple_nfix
 
   end subroutine NitrogenFixation
 
