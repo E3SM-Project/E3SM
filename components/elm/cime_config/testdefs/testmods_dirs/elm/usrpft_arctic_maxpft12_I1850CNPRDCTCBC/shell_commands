@@ -1,0 +1,14 @@
+./xmlchange LND_DOMAIN_FILE=domain.lnd.1x1pt_kougarok-NGEE_AS_navy.nc
+./xmlchange ATM_DOMAIN_FILE=domain.lnd.1x1pt_kougarok-NGEE_AS_navy.nc
+./xmlchange LND_DOMAIN_PATH="\$DIN_LOC_ROOT/share/domains/domain.clm"
+./xmlchange ATM_DOMAIN_PATH="\$DIN_LOC_ROOT/share/domains/domain.clm"
+./xmlchange ELM_USRDAT_NAME=1x1pt_US-K64
+./xmlchange ELM_BLDNML_OPTS=" -maxpft 12 -bgc bgc -nutrient cnp -nutrient_comp_pathway rd  -soil_decomp ctc -methane "
+./xmlchange DATM_MODE=CLM1PT
+./xmlchange DATM_CLMNCEP_YR_START=1970
+./xmlchange DATM_CLMNCEP_YR_END=1990
+./xmlchange NTASKS=1
+./xmlchange NTHRDS=1
+echo "
+ taxmode = 'cycle','extend','extend'
+">>user_nl_datm

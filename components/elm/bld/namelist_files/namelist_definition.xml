@@ -2066,6 +2066,15 @@ topounit level. Based on the IM2 implementation from NGEE Arctic project.
 </entry>
 
 <!-- ========================================================================================  -->
+<!-- Namelist options related to plant phenology                                               -->
+<!-- ========================================================================================  -->
+
+<entry id="onset_gdd_extension" type="logical" category="default_settings"
+    group="elm_inparm" valid_values="">
+    Runtime flag to turn on/off stress_deciduous PFT's onset gdd summation end from summer solstice to offset starting.
+</entry>
+
+<!-- ========================================================================================  -->
 <!-- Namelist options related to Variably Saturated Flow Model (VSFM)                          -->
 <!-- ========================================================================================  -->
 
