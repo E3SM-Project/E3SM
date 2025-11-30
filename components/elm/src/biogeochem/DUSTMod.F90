@@ -184,15 +184,13 @@ contains
     type(bounds_type), intent(in) :: bounds
     !
     ! !LOCAL VARIABLES:
-    integer :: c,l
+    integer :: c
     !-----------------------------------------------------------------------
 
     ! Set basin factor to 1 for now
 
     do c = bounds%begc, bounds%endc
-       l = col_pp%landunit(c)
-
-       if (.not.lun_pp%lakpoi(l)) then
+       if (.not.col_pp%is_lake(c)) then
           this%mbl_bsn_fct_col(c) = 1.0_r8
        end if
     end do
@@ -350,7 +348,7 @@ contains
          ! linearly from 1 to 0 as VAI(=tlai+tsai) increases from 0 to vai_mbl_thr
          ! if ice sheet, wetland, or lake, no dust allowed
 
-         if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+         if (veg_pp%is_on_soil_col(p) .or. veg_pp%is_on_crop_col(p)) then
             if (tlai_lu(l) < vai_mbl_thr) then
                lnd_frc_mbl(p) = 1.0_r8 - (tlai_lu(l))/vai_mbl_thr
             else
