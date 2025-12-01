@@ -962,44 +962,46 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
    type(zm_microp_st)                           :: loc_microp_st  ! state and tendency of convective microphysics
    !----------------------------------------------------------------------------
    ! Local variables
-   real(r8), dimension(pcols,pver) :: gamma ! used for pseudo-adiabatic lapse rate
-   real(r8), dimension(pcols,pver) :: dz
-   real(r8), dimension(pcols,pver) :: iprm
-   real(r8), dimension(pcols,pver) :: hu
-   real(r8), dimension(pcols,pver) :: hd
-   real(r8), dimension(pcols,pver) :: eps
-   real(r8), dimension(pcols,pver) :: f
-   real(r8), dimension(pcols,pver) :: k1
-   real(r8), dimension(pcols,pver) :: i2
-   real(r8), dimension(pcols,pver) :: ihat
-   real(r8), dimension(pcols,pver) :: i3
-   real(r8), dimension(pcols,pver) :: idag
-   real(r8), dimension(pcols,pver) :: i4
-   real(r8), dimension(pcols,pver) :: qsthat
-   real(r8), dimension(pcols,pver) :: hsthat
-   real(r8), dimension(pcols,pver) :: gamhat
-   real(r8), dimension(pcols,pver) :: qds
-   real(r8), dimension(pcols)      :: c0mask
-   real(r8), dimension(pcols)      :: hmin
-   real(r8), dimension(pcols)      :: expdif
-   real(r8), dimension(pcols)      :: expnum
-   real(r8), dimension(pcols)      :: ftemp
-   real(r8), dimension(pcols)      :: eps0
-   real(r8), dimension(pcols)      :: rmue
-   real(r8), dimension(pcols)      :: zuef
-   real(r8), dimension(pcols)      :: zdef
-   real(r8), dimension(pcols)      :: epsm
-   real(r8), dimension(pcols)      :: ratmjb
-   real(r8), dimension(pcols)      :: est
-   real(r8), dimension(pcols)      :: totpcp
-   real(r8), dimension(pcols)      :: totevp
+   real(r8), dimension(pcols,pver) :: gamma     ! latent-heating correction for pseudo-adiabatic parcel lifting
+   real(r8), dimension(pcols,pver) :: dz        ! layer thickness
+   real(r8), dimension(pcols,pver) :: hu        ! updraft moist static energy
+   real(r8), dimension(pcols,pver) :: hd        ! dndraft moist static energy
+   real(r8), dimension(pcols,pver) :: qsthat    ! interface interpolated qst
+   real(r8), dimension(pcols,pver) :: hsthat    ! interface interpolated hst
+   real(r8), dimension(pcols,pver) :: gamhat    ! interface interpolated gamma
+   real(r8), dimension(pcols,pver) :: qds       ! dndraft saturation specific humdity
+   real(r8), dimension(pcols)      :: c0mask    ! land/ocean modification
+   real(r8), dimension(pcols)      :: hmin      ! mid-tropospheric MSE minimum
 
-   real(r8) ql1
-   real(r8) tu
-   real(r8) estu
-   real(r8) qstu
+   real(r8), dimension(pcols)      :: rmue      !
+   real(r8), dimension(pcols)      :: zuef      !
+   real(r8), dimension(pcols)      :: zdef      !
+   real(r8), dimension(pcols)      :: epsm      !
+   real(r8), dimension(pcols)      :: ratmjb    !
+   real(r8), dimension(pcols)      :: est       !
+   real(r8), dimension(pcols)      :: totpcp    ! total precip for dndraft proportionality factor - see eq (4.106)
+   real(r8), dimension(pcols)      :: totevp    ! total evap   for dndraft proportionality factor - see eq (4.106)
 
-   real(r8) mdt
+   ! variables used for Taylor series expansion when solving eq (4.78) for lamda_D
+   real(r8), dimension(pcols,pver) :: eps       ! ?
+   real(r8), dimension(pcols,pver) :: f         ! ?
+   real(r8), dimension(pcols)      :: ftemp     ! temporary value of f
+   real(r8), dimension(pcols)      :: eps0      ! ?
+   real(r8), dimension(pcols)      :: expdif    ! diff between env MSE low-level max and mid-level min
+   real(r8), dimension(pcols)      :: expnum    ! ?
+   real(r8), dimension(pcols,pver) :: k1        ! term for Taylor series
+   real(r8), dimension(pcols,pver) :: i2        ! term for Taylor series
+   real(r8), dimension(pcols,pver) :: i3        ! term for Taylor series
+   real(r8), dimension(pcols,pver) :: i4        ! term for Taylor series
+   real(r8), dimension(pcols,pver) :: iprm      ! term for Taylor series
+   real(r8), dimension(pcols,pver) :: ihat      ! term for Taylor series
+   real(r8), dimension(pcols,pver) :: idag      ! term for Taylor series
+
+   real(r8) ql1   ! ?
+   real(r8) tu    ! ?
+   real(r8) estu  ! ?
+   real(r8) qstu  ! ?
+   real(r8) mdt   ! ?
 
    ! Convective microphysics
    real(r8), dimension(pcols,pver) :: fice       ! ice fraction in precip production
@@ -1294,6 +1296,8 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
            tmplel(i) = jt(i)
          end if
       end do
+
+      ! compute updraft mass fluxes - see eq (4.79) - (4.81)
       do k = pver,msg + 1,-1
          do i = 1,il2g
              if (eps0(i) > 0._r8 .and. (k >= tmplel(i) .and. k < jb(i))) then
@@ -1621,8 +1625,7 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
    do k = msg + 2,pver
       do i = 1,il2g
          if ((k >= jd(i) .and. k <= jb(i)) .and. eps0(i) > 0._r8 .and. jd(i) < jb(i)) then
-            qds(i,k) = qsthat(i,k) + gamhat(i,k)*(hd(i,k)-hsthat(i,k))/ &
-               (zm_const%latvap*(1._r8 + gamhat(i,k)))
+            qds(i,k) = qsthat(i,k) + gamhat(i,k)*(hd(i,k)-hsthat(i,k)) / (zm_const%latvap*(1._r8+gamhat(i,k)))
          end if
       end do
    end do
@@ -1656,13 +1659,14 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
 
    do k = msg + 2,pver
       do i = 1,il2g
+         ! ensure that downdraft strength is consistent with precipitation availability - see eq (4.106)
          if (totevp(i) > 0._r8 .and. totpcp(i) > 0._r8) then
             md(i,k)  = md (i,k)*min(1._r8, totpcp(i)/(totevp(i)+totpcp(i)))
             ed(i,k)  = ed (i,k)*min(1._r8, totpcp(i)/(totevp(i)+totpcp(i)))
             evp(i,k) = evp(i,k)*min(1._r8, totpcp(i)/(totevp(i)+totpcp(i)))
          else
-            md(i,k) = 0._r8
-            ed(i,k) = 0._r8
+            md(i,k)  = 0._r8
+            ed(i,k)  = 0._r8
             evp(i,k) = 0._r8
          end if
          ! rprd is the cloud water converted to rain - (rain evaporated)
@@ -1684,9 +1688,16 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
       end do
    end do
 
-   ! protect against rounding error
+   ! calculate net mass flux
+   do k = msg + 1,pver
+      do i = 1,il2g
+         mc(i,k) = mu(i,k) + md(i,k)
+      end do
+   end do
+
    if (zm_param%zm_microp) then
       do i = 1,il2g
+         ! protect against rounding error
          if(pflxs(i,pverp).gt.pflx(i,pverp)) then
             dum = (pflxs(i,pverp)-pflx(i,pverp))/omsm
             do k = pver, msg+2, -1
@@ -1698,19 +1709,7 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
                end if
             end do ! k
          end if
-      end do ! i
-   end if ! zm_param%zm_microp
-
-   ! calculate net mass flux
-   do k = msg + 1,pver
-      do i = 1,il2g
-         mc(i,k) = mu(i,k) + md(i,k)
-      end do
-   end do
-
-   ! disable columns if top is at or below LCL if using ZM microphysics
-   if (zm_param%zm_microp) then
-      do i = 1,il2g
+         ! disable columns if top is at or below LCL if using ZM microphysics
          if ( jt(i)>=jlcl(i) ) then
             do k = msg + 1,pver
                mu(i,k)   = 0._r8
@@ -1724,10 +1723,10 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
                mc(i,k)   = 0._r8
                rprd(i,k) = 0._r8
                fice(i,k) = 0._r8
-            end do
+            end do ! k
             call zm_microp_st_zero(loc_microp_st,i,pver)
          end if
-      end do
+      end do ! i
    end if
 
    return
