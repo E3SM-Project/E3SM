@@ -1366,7 +1366,7 @@ contains
        if (ierr .ne. 0) then
          call shr_sys_abort(subname//' error in getting o2x_am array ')
        endif
-    else
+    else ! o2x_am will still be used in merge so make sure its 0 when no ocean
        o2x_am(:,:)=0.0_r8
     endif
     
@@ -1377,7 +1377,7 @@ contains
        if (ierr .ne. 0) then
           call shr_sys_abort(subname//' error in getting i2x_am array ')
        endif
-    else
+    else ! i2x_am will still be used in merge so make sure its 0 when no sea ice
        i2x_am(:,:)=0.0_r8
     endif
 
@@ -1388,7 +1388,7 @@ contains
        if (ierr .ne. 0) then
           call shr_sys_abort(subname//' error in getting l2x_am array ')
        endif
-    else
+    else ! l2x_am will still be used in merge so make sure its 0 when no land
        l2x_am(:,:)=0.0_r8
     endif
 
@@ -1399,7 +1399,7 @@ contains
        if (ierr .ne. 0) then
           call shr_sys_abort(subname//' error in getting xao_om array ')
        endif
-    else
+    else ! xao_am will still be used in merge so make sure its 0 when no ocean
        xao_am(:,:)=0.0_r8
     endif
 

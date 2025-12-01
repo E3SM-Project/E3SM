@@ -1657,13 +1657,13 @@ subroutine  copy_aream_from_area(mbappid)
                nfields=mct_list_nitem (temp_list)
                if (nfields > 0) then
                  ierr  = iMOAB_GetMeshInfo ( mblxid, nvert, nvise, nbl, nsurf, nvisBC )
-		 if (mb_scm_land) then
-                   arrsize = nvert(1)*nfields
-                   ent_type = 0 ! cell
+                 if (mb_scm_land) then
+                    arrsize = nvert(1)*nfields
+                    ent_type = 0 ! cell
                  else
-                   arrsize = nvise(1)*nfields
-                   ent_type = 1 ! cell
-		 endif
+                    arrsize = nvise(1)*nfields
+                    ent_type = 1 ! cell
+                 endif
                  allocate(tagValues(arrsize))
                  tagname = trim(newlist)//C_NULL_CHAR
                  tagValues = 0.0_r8

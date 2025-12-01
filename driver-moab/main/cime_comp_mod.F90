@@ -3091,9 +3091,9 @@ contains
 
        !----------------------------------------------------------
        !| ATM/OCN SETUP (rasm_option1)
+       ! map i,w to ocean, calc atmocn fluxes, do merge, accum,
+       !    calc ocn albedos
        !----------------------------------------------------------
-       ! The following maps to the ocean, computes atm/ocn fluxes, merges to the ocean,
-       ! accumulates ocn input and computes ocean albedos
        if (ocn_present) then
           if (trim(cpl_seq_option) == 'RASM_OPTION1') then
              call cime_run_atmocn_setup(hashint)
@@ -3102,6 +3102,7 @@ contains
 
        !----------------------------------------------------------
        !| OCN SETUP-SEND (cesm1_mod, cesm1_mod_tight, or rasm_option1)
+       ! make ocean time average, send.
        !----------------------------------------------------------
        if (ocn_present .and. ocnrun_alarm) then
           if (trim(cpl_seq_option) == 'CESM1_MOD'       .or. &
@@ -3113,9 +3114,11 @@ contains
 
        !----------------------------------------------------------
        !| MAP ATM to OCN
-       !  update mboxid with latest atm data
-       !  This will be used later in the ice prep and in the
-       !  atm/ocn flux calculation
+       !  map a 2 o again only for CESM1_MOD and CESM1_MOD_TIGHT where
+       !  the a2o map above was undone.
+       !  This will be used later in the atm/ocn flux calculation
+       !  form a2i by mapping the output of a2o to i.
+       !  This will be used later in the ice prep
        !----------------------------------------------------------
        if (trim(cpl_seq_option) == 'CESM1_MOD'       .or. &
            trim(cpl_seq_option) == 'CESM1_MOD_TIGHT') then
@@ -3140,6 +3143,7 @@ contains
 
        !----------------------------------------------------------
        !| LND SETUP-SEND
+       ! map a2l, merge land, diag, send
        !----------------------------------------------------------
        if (lnd_present .and. lndrun_alarm) then
           call cime_run_lnd_setup_send()
@@ -3147,6 +3151,9 @@ contains
 
        !----------------------------------------------------------
        !| ICE SETUP-SEND
+       !  map o2i (o2x_ox to o2x_ix)
+       !  MCT ONLY:  map a2x_ox to a2x_i
+       !  mrg ice, diag, send
        !----------------------------------------------------------
        if (ice_present .and. icerun_alarm) then
           call cime_run_ice_setup_send()
@@ -3161,6 +3168,7 @@ contains
 
        !----------------------------------------------------------
        !| ROF SETUP-SEND
+       !  avg rof, map l2r, a2r, o2r, mrg, diag send
        !----------------------------------------------------------
        if (rof_present .and. rofrun_alarm) then
           call cime_run_rof_setup_send()
