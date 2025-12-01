@@ -44,7 +44,7 @@ class Teos10Eos {
                                    I4 KDisp) const {
 
       Real SpecVolPCoeffs[6 * VecLength];
-
+      Real PaToDBar = 1.0e-4_Real; // Conversion factor from Pa to dbar
       const I4 KStart = chunkStart(KChunk, MinLayerCell(ICell));
       const I4 KLen   = chunkLength(KChunk, KStart, MaxLayerCell(ICell));
 
@@ -63,15 +63,15 @@ class Teos10Eos {
          if (KDisp == 0) {
             // No displacement
             SpecVol(ICell, K) =
-                calcRefProfile(Pressure(ICell, K)) +
-                calcDelta(SpecVolPCoeffs, KVec, Pressure(ICell, K));
+                calcRefProfile(Pressure(ICell, K) * PaToDBar) +
+                calcDelta(SpecVolPCoeffs, KVec, Pressure(ICell, K) * PaToDBar);
          } else {
             // Displacement, use the displaced pressure
             I4 KTmp = Kokkos::min(K + KDisp, MaxLayerCell(ICell));
             KTmp    = Kokkos::max(MinLayerCell(ICell), KTmp);
             SpecVol(ICell, K) =
-                calcRefProfile(Pressure(ICell, KTmp)) +
-                calcDelta(SpecVolPCoeffs, KVec, Pressure(ICell, KTmp));
+                calcRefProfile(Pressure(ICell, KTmp) * PaToDBar) +
+                calcDelta(SpecVolPCoeffs, KVec, Pressure(ICell, KTmp) * PaToDBar);
          }
       }
    }
