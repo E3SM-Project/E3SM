@@ -5,6 +5,13 @@ module zm_conv
    ! Contributors: Guang Zhang, Norman McFarlane, Michael Lazare, Phil Rasch,
    !               Rich Neale, Byron Boville, Xiaoliang Song, Walter Hannah
    !----------------------------------------------------------------------------
+   ! for equations and technical details the best reference is:
+   !   Neale, R., Gettelman, A., Park, S., Chen, C.-C., Lauritzen, P. H., et al.
+   !   (2012). Description of the NCAR Community Atmosphere Model (CAM 5.0).
+   !    https://doi.org/10.5065/wgtk-4g06
+   ! which can also be found here:
+   !   https://opensky.ucar.edu/islandora/object/technotes%3A594?search_api_fulltext=CAM5
+   !----------------------------------------------------------------------------
 #ifdef SCREAM_CONFIG_IS_CMAKE
    use zm_eamxx_bridge_params, only: r8
    use zm_eamxx_bridge_methods,only: cldfrc_fice
@@ -955,7 +962,7 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
    type(zm_microp_st)                           :: loc_microp_st  ! state and tendency of convective microphysics
    !----------------------------------------------------------------------------
    ! Local variables
-   real(r8), dimension(pcols,pver) :: gamma
+   real(r8), dimension(pcols,pver) :: gamma ! used for pseudo-adiabatic lapse rate
    real(r8), dimension(pcols,pver) :: dz
    real(r8), dimension(pcols,pver) :: iprm
    real(r8), dimension(pcols,pver) :: hu
@@ -1031,54 +1038,53 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
       c0mask(i) = zm_param%c0_ocn*(1._r8-landfrac(i)) + zm_param%c0_lnd*landfrac(i)
    end do
 
-   ! calculate layer thickness
+   ! initialize variables
    do k = 1,pver
       do i = 1,il2g
-         dz(i,k) = zf(i,k) - zf(i,k+1)
-      end do
-   end do
-
-   ! initialize many output and work variables to zero
-   pflx(:il2g,1) = 0
-
-   do k = 1,pver
-      do i = 1,il2g
-         k1(i,k) = 0._r8
-         i2(i,k) = 0._r8
-         i3(i,k) = 0._r8
-         i4(i,k) = 0._r8
-         mu(i,k) = 0._r8
-         f(i,k) = 0._r8
-         eps(i,k) = 0._r8
-         eu(i,k) = 0._r8
-         du(i,k) = 0._r8
-         ql(i,k) = 0._r8
-         cu(i,k) = 0._r8
-         evp(i,k) = 0._r8
-         qds(i,k) = q(i,k)
-         md(i,k) = 0._r8
-         ed(i,k) = 0._r8
-         sd(i,k) = s(i,k)
-         qd(i,k) = q(i,k)
-         mc(i,k) = 0._r8
-         qu(i,k) = q(i,k)
-         su(i,k) = s(i,k)
-
+         ! misc work variables
+         k1(i,k)     = 0._r8
+         i2(i,k)     = 0._r8
+         i3(i,k)     = 0._r8
+         i4(i,k)     = 0._r8
+         f(i,k)      = 0._r8
+         eps(i,k)    = 0._r8
+         ! mass fluxes & mixing variables
+         mu(i,k)     = 0._r8
+         eu(i,k)     = 0._r8
+         du(i,k)     = 0._r8
+         mc(i,k)     = 0._r8
+         md(i,k)     = 0._r8
+         ed(i,k)     = 0._r8
+         ! cloud process variables
+         ql(i,k)     = 0._r8
+         evp(i,k)    = 0._r8
+         cu(i,k)     = 0._r8
+         rprd(i,k)   = 0._r8
+         pflx(i,k)   = 0._r8
+         ! calculate layer thickness
+         dz(i,k)     = zf(i,k) - zf(i,k+1)
          ! calculate saturation specific humidity
          call qsat_hPa(t(i,k), p(i,k), est(i), qst(i,k))
          if ( p(i,k)-est(i) <= 0._r8 ) qst(i,k) = 1.0_r8
-
-         gamma(i,k) = qst(i,k)*(1._r8 + qst(i,k)/zm_const%epsilo)*zm_const%epsilo*zm_const%latvap/(zm_const%rdair*t(i,k)**2)*zm_const%latvap/zm_const%cpair
-         hmn(i,k) = zm_const%cpair*t(i,k) + zm_const%grav*z(i,k) + zm_const%latvap*q(i,k)
-         hsat(i,k) = zm_const%cpair*t(i,k) + zm_const%grav*z(i,k) + zm_const%latvap*qst(i,k)
-         hu(i,k) = hmn(i,k)
-         hd(i,k) = hmn(i,k)
-         rprd(i,k) = 0._r8
-         ! Convective microphysics
-         fice(i,k) = 0._r8
-         tug(i,k)  = 0._r8
-         tmp_frz(i,k) = 0._r8
-
+         ! compute gamma - see eq. (4.117)
+         gamma(i,k)  = qst(i,k)*(1._r8 + qst(i,k)/zm_const%epsilo) &
+                       * zm_const%epsilo*zm_const%latvap/(zm_const%rdair*t(i,k)**2) &
+                       * zm_const%latvap/zm_const%cpair
+         ! cloud thermodynamic variables
+         su(i,k)     = s(i,k)
+         sd(i,k)     = s(i,k)
+         qd(i,k)     = q(i,k)
+         qds(i,k)    = q(i,k)
+         qu(i,k)     = q(i,k)
+         hmn(i,k)    = zm_const%cpair*t(i,k) + zm_const%grav*z(i,k) + zm_const%latvap*q(i,k)
+         hsat(i,k)   = zm_const%cpair*t(i,k) + zm_const%grav*z(i,k) + zm_const%latvap*qst(i,k)
+         hu(i,k)     = hmn(i,k)
+         hd(i,k)     = hmn(i,k)
+         ! convective microphysics
+         pflxs(i,k)  = 0._r8
+         fice(i,k)   = 0._r8
+         tug(i,k)    = 0._r8
+         tmp_frz(i,k)= 0._r8
       end do
    end do
 
@@ -1110,16 +1116,15 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
          end if
          hsthat(i,k) = zm_const%cpair*shat(i,k) + zm_const%latvap*qsthat(i,k)
          if (abs(gamma(i,k-1)-gamma(i,k)) > 1.E-6_r8) then
-            gamhat(i,k) = log(gamma(i,k-1)/gamma(i,k))*gamma(i,k-1)*gamma(i,k)/ &
-                                (gamma(i,k-1)-gamma(i,k))
+            gamhat(i,k) = log(gamma(i,k-1)/gamma(i,k))*gamma(i,k-1)*gamma(i,k)/ (gamma(i,k-1)-gamma(i,k))
          else
             gamhat(i,k) = gamma(i,k)
          end if
       end do
    end do
 
-   ! initialize cloud top to highest plume top.
-   ! changed hard-wired 4 to limcnv+1 (not to exceed pver)
+   !----------------------------------------------------------------------------
+   ! initialize cloud top to highest plume top (upper/lower limit => pver / limcnv+1)
    jt(:) = pver
    jto(:)= pver
    do i = 1,il2g
@@ -1130,7 +1135,8 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
       hmin(i) = 1.E6_r8
    end do
 
-   ! find the level of minimum hsat, where detrainment starts
+   !----------------------------------------------------------------------------
+   ! find the level of minimum saturated MSE (hsat), where detrainment starts
    do k = msg + 1,pver
       do i = 1,il2g
          if (hsat(i,k) <= hmin(i) .and. k >= jt(i) .and. k <= jb(i)) then
@@ -1142,36 +1148,34 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
    do i = 1,il2g
       j0(i) = min(j0(i),jb(i)-2)
       j0(i) = max(j0(i),jt(i)+2)
-
-      ! this prevents out of bounds array reference
+      ! use limiter to prevent out of bounds array reference
       j0(i) = min(j0(i),pver)
    end do
 
-   ! Initialize certain arrays inside cloud
+   !----------------------------------------------------------------------------
+   ! Initialize cloud moist and dry static energies (hu=MSE & su=DSE)
    do k = msg + 1,pver
       do i = 1,il2g
          if (k >= jt(i) .and. k <= jb(i)) then
-           ! Tunable temperature perturbation (tiedke_add) was already added to parcel hu/su to
-           ! represent subgrid temperature perturbation. If PBL temperature perturbation (tpert)
-           ! is used to represent subgrid temperature perturbation, tiedke_add may need to be
-           ! removed. In addition, current calculation of PBL temperature perturbation is not
-           ! accurate enough so that a new tunable parameter tpert_fac was introduced. This introduced
-           ! new uncertainties into the ZM scheme. The original code of ZM scheme will be used
-           ! when tpert_fix=.true.
-           if(zm_param%tpert_fix) then
-             hu(i,k) = hmn(i,mx(i)) + zm_const%cpair*zm_param%tiedke_add
-             su(i,k) = s(i,mx(i))   +                zm_param%tiedke_add
-           else
-             hu(i,k) = hmn(i,mx(i)) + zm_const%cpair*(zm_param%tiedke_add+zm_param%tpert_fac*tpertg(i))
-             su(i,k) = s(i,mx(i))   +                 zm_param%tiedke_add+zm_param%tpert_fac*tpertg(i)
-           end if
+            ! Tunable temperature perturbation (tiedke_add) was already added to parcel hu/su to
+            ! represent subgrid temperature perturbation. If PBL temperature pert (tpert) also
+            ! represents subgrid temperature pert, tiedke_add may need to be removed. Additionally,
+            ! current calculation of PBL temperature perturbation is not accurate enough so that a
+            ! new tunable parameter tpert_fac was introduced. This introduced new uncertainties into
+            ! the ZM scheme. The original code of ZM scheme will be used when tpert_fix=.true.
+            if(zm_param%tpert_fix) then
+               hu(i,k) = hmn(i,mx(i)) + zm_const%cpair*zm_param%tiedke_add
+               su(i,k) = s(i,mx(i))   +                zm_param%tiedke_add
+            else
+               hu(i,k) = hmn(i,mx(i)) + zm_const%cpair*(zm_param%tiedke_add+zm_param%tpert_fac*tpertg(i))
+               su(i,k) = s(i,mx(i))   +                 zm_param%tiedke_add+zm_param%tpert_fac*tpertg(i)
+            end if
          end if
       end do
    end do
 
-   ! *********************************************************
+   !----------------------------------------------------------------------------
    ! compute taylor series for approximate eps(z) below
-   ! *********************************************************
    do k = pver - 1,msg + 1,-1
       do i = 1,il2g
          if (k < jb(i) .and. k >= jt(i)) then
@@ -1186,10 +1190,9 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
       end do
    end do
 
-   ! re-initialize hmin array for ensuing calculation.
-   do i = 1,il2g
-      hmin(i) = 1.E6_r8
-   end do
+   !----------------------------------------------------------------------------
+   ! re-initialize hmin array for ensuing calculation
+   hmin(1:il2g) = 1.E6_r8
    do k = msg + 1,pver
       do i = 1,il2g
          if (k >= j0(i) .and. k <= jb(i) .and. hmn(i,k) <= hmin(i)) then
@@ -1199,27 +1202,25 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
       end do
    end do
 
-   ! *********************************************************
+   !----------------------------------------------------------------------------
    ! compute approximate eps(z) using above taylor series
-   ! *********************************************************
    do k = msg + 2,pver
       do i = 1,il2g
-         expnum(i) = 0._r8
-         ftemp(i) = 0._r8
+         expnum(i)   = 0._r8
+         ftemp(i)    = 0._r8
          if (k < jt(i) .or. k >= jb(i)) then
-            k1(i,k) = 0._r8
-            expnum(i) = 0._r8
+            k1(i,k)  = 0._r8
+            expnum(i)= 0._r8
          else
             expnum(i) = hmn(i,mx(i)) - (hsat(i,k-1)*(zf(i,k)-z(i,k)) + &
                         hsat(i,k)* (z(i,k-1)-zf(i,k)))/(z(i,k-1)-z(i,k))
          end if
          if ((expdif(i) > 100._r8 .and. expnum(i) > 0._r8) .and. k1(i,k) > expnum(i)*dz(i,k)) then
             ftemp(i) = expnum(i)/k1(i,k)
-            f(i,k) = ftemp(i) + i2(i,k)/k1(i,k)*ftemp(i)**2 + &
-                     (2._r8*i2(i,k)**2-k1(i,k)*i3(i,k))/k1(i,k)**2* &
-                     ftemp(i)**3 + (-5._r8*k1(i,k)*i2(i,k)*i3(i,k)+ &
-                     5._r8*i2(i,k)**3+k1(i,k)**2*i4(i,k))/ &
-                     k1(i,k)**3*ftemp(i)**4
+            f(i,k) = ftemp(i) + &
+                     i2(i,k)/k1(i,k) * ftemp(i)**2 + &
+                     (2._r8*i2(i,k)**2-k1(i,k)*i3(i,k))/k1(i,k)**2 * ftemp(i)**3 + &
+                     (-5._r8*k1(i,k)*i2(i,k)*i3(i,k)+ 5._r8*i2(i,k)**3+k1(i,k)**2*i4(i,k))/ k1(i,k)**3*ftemp(i)**4
             f(i,k) = max(f(i,k),0._r8)
             f(i,k) = min(f(i,k),0.0002_r8)
          end if
@@ -1227,7 +1228,9 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
    end do
    do i = 1,il2g
       if (j0(i) < jb(i)) then
-         if (f(i,j0(i)) < 1.E-6_r8 .and. f(i,j0(i)+1) > f(i,j0(i))) j0(i) = j0(i) + 1
+         if ( f(i,j0(i))<1.E-6_r8 .and. f(i,j0(i)+1)>f(i,j0(i)) ) then
+            j0(i) = j0(i) + 1
+         end if
       end if
    end do
    do k = msg + 2,pver
@@ -1248,17 +1251,13 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
 
    do k = pver,msg + 1,-1
       do i = 1,il2g
-         if (k >= j0(i) .and. k <= jb(i)) then
-            eps(i,k) = f(i,j0(i))
-         end if
-      end do
-   end do
-   do k = pver,msg + 1,-1
-      do i = 1,il2g
-         if (k < j0(i) .and. k >= jt(i)) eps(i,k) = f(i,k)
+         if ( k >=j0(i) .and. k<=jb(i) ) eps(i,k) = f(i,j0(i))
+         if ( k  <j0(i) .and. k>=jt(i) ) eps(i,k) = f(i,k)
       end do
    end do
 
+   !----------------------------------------------------------------------------
+   ! iteration to set cloud properties
 
    itnum = 1
    if (zm_param%zm_microp) itnum = 2
@@ -1282,8 +1281,8 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
       end do
 
 
-      ! specify the updraft mass flux mu, entrainment eu, detrainment du and moist static energy hu.
-      ! here and below mu, eu,du, md and ed are all normalized by mb
+      ! specify the updraft mass flux (mu), entrainment (eu), detrainment (du), and MSE (hu)
+      ! here and below mu,eu,du,md,ed are all normalized by cloud base mass flux (mb)
       do i = 1,il2g
          if (eps0(i) > 0._r8) then
             mu(i,jb(i)) = 1._r8
@@ -1577,14 +1576,11 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
 
    end do ! iter = 1,itnum
 
-! specify downdraft properties (no downdrafts if jd.ge.jb).
-! scale down downward mass flux profile so that net flux
-! (up-down) at cloud base in not negative.
-!
+   !----------------------------------------------------------------------------
+   ! specify downdraft properties (note - no downdrafts if jd>=jb)
+   ! downward mass flux profile is scaled so that net flux (up-down) at cloud base in not negative
    do i = 1,il2g
-!
-! in normal downdraft strength run alfa=0.2.  In test4 alfa=0.1
-!
+      ! in normal downdraft strength run alfa=0.2.  In test4 alfa=0.1
       jt(i) = min(jt(i),jb(i)-1)
       jd(i) = max(j0(i),jt(i)+1)
       jd(i) = min(jd(i),jb(i))
@@ -1620,9 +1616,8 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
          end if
       end do
    end do
-!
-! calculate updraft and downdraft properties.
-!
+
+   ! calculate updraft and downdraft properties
    do k = msg + 2,pver
       do i = 1,il2g
          if ((k >= jd(i) .and. k <= jb(i)) .and. eps0(i) > 0._r8 .and. jd(i) < jb(i)) then
@@ -1631,12 +1626,12 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
          end if
       end do
    end do
-!
+
    do i = 1,il2g
       qd(i,jd(i)) = qds(i,jd(i))
       sd(i,jd(i)) = (hd(i,jd(i)) - zm_const%latvap*qd(i,jd(i)))/zm_const%cpair
    end do
-!
+
    do k = msg + 2,pver
       do i = 1,il2g
          if (k >= jd(i) .and. k < jb(i) .and. eps0(i) > 0._r8) then
@@ -1651,26 +1646,14 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
       end do
    end do
    do i = 1,il2g
-!*guang         totevp(i) = totevp(i) + md(i,jd(i))*q(i,jd(i)-1) -
       totevp(i) = totevp(i) + md(i,jd(i))*qd(i,jd(i)) - md(i,jb(i))*qd(i,jb(i))
    end do
-!!$   if (.true.) then
-   if (.false.) then
-      do i = 1,il2g
-         k = jb(i)
-         if (eps0(i) > 0._r8) then
-            evp(i,k) = -ed(i,k)*q(i,k) + (md(i,k)*qd(i,k))/dz(i,k)
-            evp(i,k) = max(evp(i,k),0._r8)
-            totevp(i) = totevp(i) - dz(i,k)*ed(i,k)*q(i,k)
-         end if
-      end do
-   endif
 
    do i = 1,il2g
       totpcp(i) = max(totpcp(i),0._r8)
       totevp(i) = max(totevp(i),0._r8)
    end do
-!
+
    do k = msg + 2,pver
       do i = 1,il2g
          if (totevp(i) > 0._r8 .and. totpcp(i) > 0._r8) then
@@ -1693,15 +1676,14 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
       end do
    end do
 
-! compute the net precipitation flux across interfaces
-   pflx(:il2g,1) = 0._r8
-   if (zm_param%zm_microp)   pflxs(:,:) = 0._r8
+   ! compute the net precipitation flux across interfaces
    do k = 2,pverp
       do i = 1,il2g
          pflx(i,k) = pflx(i,k-1) + rprd(i,k-1)*dz(i,k-1)
          if (zm_param%zm_microp) pflxs(i,k) = pflxs(i,k-1) + loc_microp_st%sprd(i,k-1)*dz(i,k-1)
       end do
    end do
+
    ! protect against rounding error
    if (zm_param%zm_microp) then
       do i = 1,il2g
@@ -1719,12 +1701,14 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
       end do ! i
    end if ! zm_param%zm_microp
 
+   ! calculate net mass flux
    do k = msg + 1,pver
       do i = 1,il2g
          mc(i,k) = mu(i,k) + md(i,k)
       end do
    end do
 
+   ! disable columns if top is at or below LCL if using ZM microphysics
    if (zm_param%zm_microp) then
       do i = 1,il2g
          if ( jt(i)>=jlcl(i) ) then
@@ -1739,29 +1723,9 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
                ed(i,k)   = 0._r8
                mc(i,k)   = 0._r8
                rprd(i,k) = 0._r8
-               loc_microp_st%sprd(i,k) = 0._r8
                fice(i,k) = 0._r8
-               loc_microp_st%qcde(i,k) = 0._r8
-               loc_microp_st%qide(i,k) = 0._r8
-               loc_microp_st%qsde(i,k) = 0._r8
-               loc_microp_st%ncde(i,k) = 0._r8
-               loc_microp_st%nide(i,k) = 0._r8
-               loc_microp_st%nsde(i,k) = 0._r8
-               loc_microp_st%frz(i,k)  = 0._r8
-               loc_microp_st%wu(i,k)   = 0._r8
-               loc_microp_st%cmel(i,k) = 0._r8
-               loc_microp_st%cmei(i,k) = 0._r8
-               loc_microp_st%qliq(i,k) = 0._r8
-               loc_microp_st%qice(i,k) = 0._r8
-               loc_microp_st%qrain(i,k)= 0._r8
-               loc_microp_st%qsnow(i,k)= 0._r8
-               loc_microp_st%qgraupel(i,k) = 0._r8
-               loc_microp_st%qnl(i,k)  = 0._r8
-               loc_microp_st%qni(i,k)  = 0._r8
-               loc_microp_st%qnr(i,k)  = 0._r8
-               loc_microp_st%qns(i,k)  = 0._r8
-               loc_microp_st%qng(i,k)  = 0._r8
             end do
+            call zm_microp_st_zero(loc_microp_st,i,pver)
          end if
       end do
    end if
