@@ -490,7 +490,7 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
 
    call cldprp(pcols, ncol, pver, pverp, lengath, msg, zm_param%limcnv, &
                pg, zg, zfg, tg, sg, shat, qg, ug, vg, landfracg, tpertg, &
-               maxg, maxg, lelg, jt, jlcl, j0, jd, &
+               maxg, lelg, jt, jlcl, j0, jd, &
                mu, eu, du, md, ed, mc, &
                su, qu, qlg, sd, qd,  &
                hmn, hsat, qs, cug, evpg, pflxg, rprdg, &
@@ -1068,7 +1068,7 @@ end subroutine calculate_fractional_entrainment
 
 subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
                   p, z, zf, t, s, shat, q, u, v, landfrac, tpertg, &
-                  jb, mx, lel, jt, jlcl, j0, jd, &
+                  jb, lel, jt, jlcl, j0, jd, &
                   mu, eu, du, md, ed, mc, &
                   su, qu, ql, sd, qd,  &
                   hmn, hsat, qst, cu, evp, pflx, rprd, &
@@ -1098,8 +1098,7 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
    real(r8), dimension(pcols),      intent(in ) :: landfrac       ! Land fraction
    real(r8), dimension(pcols),      intent(in ) :: tpertg         ! PBL temperature perturbation
    integer,  dimension(pcols),      intent(in ) :: jb             ! updraft base level
-   integer,  dimension(pcols),      intent(in ) :: mx             ! updraft base level (same is jb) <<<<<< REMOVE REDUNDANCY
-   integer,  dimension(pcols),      intent(in ) :: lel            ! updraft launch level
+   integer,  dimension(pcols),      intent(in ) :: lel            ! updraft parcel launch level
    integer,  dimension(pcols),      intent(out) :: jt             ! updraft plume top
    integer,  dimension(pcols),      intent(out) :: jlcl           ! updraft lifting cond level
    integer,  dimension(pcols),      intent(out) :: j0             ! level where updraft begins detraining
@@ -1311,11 +1310,11 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
             ! new tunable parameter tpert_fac was introduced. This introduced new uncertainties into
             ! the ZM scheme. The original code of ZM scheme will be used when tpert_fix=.true.
             if(zm_param%tpert_fix) then
-               hu(i,k) = hmn(i,mx(i)) + zm_const%cpair*zm_param%tiedke_add
-               su(i,k) = s(i,mx(i))   +                zm_param%tiedke_add
+               hu(i,k) = hmn(i,jb(i)) + zm_const%cpair*zm_param%tiedke_add
+               su(i,k) = s(i,jb(i))   +                zm_param%tiedke_add
             else
-               hu(i,k) = hmn(i,mx(i)) + zm_const%cpair*(zm_param%tiedke_add+zm_param%tpert_fac*tpertg(i))
-               su(i,k) = s(i,mx(i))   +                 zm_param%tiedke_add+zm_param%tpert_fac*tpertg(i)
+               hu(i,k) = hmn(i,jb(i)) + zm_const%cpair*(zm_param%tiedke_add+zm_param%tpert_fac*tpertg(i))
+               su(i,k) = s(i,jb(i))   +                 zm_param%tiedke_add+zm_param%tpert_fac*tpertg(i)
             end if
          end if
       end do
@@ -1458,7 +1457,7 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
       do k = pver,msg + 2,-1
          do i = 1,il2g
             if (k == jb(i) .and. eps0(i) > 0._r8) then
-               qu(i,k) = q(i,mx(i))
+               qu(i,k) = q(i,jb(i))
                su(i,k) = (hu(i,k)-zm_const%latvap*qu(i,k))/zm_const%cpair
             end if
             if (( .not. done(i) .and. k > jt(i) .and. k < jb(i)) .and. eps0(i) > 0._r8) then
