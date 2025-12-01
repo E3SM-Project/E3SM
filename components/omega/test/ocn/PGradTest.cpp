@@ -120,7 +120,7 @@ int main(int argc, char *argv[]) {
 
       I4 NVertLayers = 60;
       Real dC = 30000.0_Real;
-      for (int refinement = 0; refinement < 3; ++refinement) {
+      for (int refinement = 0; refinement < 4; ++refinement) {
 
          LOG_INFO("PGradTest: Starting refinement level {}", refinement);
          VCoord->NVertLayers = NVertLayers;
