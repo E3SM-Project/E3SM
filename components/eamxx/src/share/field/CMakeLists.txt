@@ -7,40 +7,36 @@ add_library(eamxx_field
   field.cpp
   field_group.cpp
   field_sync.cpp
-  field_utils.cpp
-  eti/field_eti_deep_copy_double_device.cpp
-  eti/field_eti_deep_copy_float_device.cpp
-  eti/field_eti_deep_copy_int_device.cpp
-  eti/field_eti_get_strided_view_double_device.cpp
-  eti/field_eti_get_strided_view_float_device.cpp
-  eti/field_eti_get_strided_view_int_device.cpp
-  eti/field_eti_get_view_double_device.cpp
-  eti/field_eti_get_view_float_device.cpp
-  eti/field_eti_get_view_int_device.cpp
-  eti/field_eti_update_double_device.cpp
-  eti/field_eti_update_float_device.cpp
-  eti/field_eti_update_impl_double_device.cpp
-  eti/field_eti_update_impl_fill_double_device.cpp
-  eti/field_eti_update_impl_fill_float_device.cpp
-  eti/field_eti_update_impl_fill_int_device.cpp
-  eti/field_eti_update_impl_float_device.cpp
-  eti/field_eti_update_impl_int_device.cpp
-  eti/field_eti_update_int_device.cpp
-  eti/field_eti_update_max_min_double_device.cpp
-  eti/field_eti_update_max_min_float_device.cpp
-  eti/field_eti_update_max_min_impl_double_device.cpp
-  eti/field_eti_update_max_min_impl_fill_double_device.cpp
-  eti/field_eti_update_max_min_impl_fill_float_device.cpp
-  eti/field_eti_update_max_min_impl_fill_int_device.cpp
-  eti/field_eti_update_max_min_impl_float_device.cpp
-  eti/field_eti_update_max_min_impl_int_device.cpp
-  eti/field_eti_update_max_min_int_device.cpp
-  eti/field_utils_eti_compute_mask_le_int.cpp
-  eti/field_utils_eti_compute_mask_le_float.cpp
-  eti/field_utils_eti_compute_mask_le_double.cpp
-  eti/field_utils_eti_compute_mask_ne_int.cpp
-  eti/field_utils_eti_compute_mask_ne_float.cpp
-  eti/field_utils_eti_compute_mask_ne_double.cpp
+  eti/field_deep_copy_double.cpp
+  eti/field_deep_copy_float.cpp
+  eti/field_deep_copy_int.cpp
+  eti/field_get_strided_view_double_device.cpp
+  eti/field_get_strided_view_float_device.cpp
+  eti/field_get_strided_view_int_device.cpp
+  eti/field_get_view_double_device.cpp
+  eti/field_get_view_float_device.cpp
+  eti/field_get_view_int_device.cpp
+  eti/field_update_impl_double_double.cpp
+  eti/field_update_impl_double_float.cpp
+  eti/field_update_impl_double_int.cpp
+  eti/field_update_impl_float_float.cpp
+  eti/field_update_impl_float_int.cpp
+  eti/field_update_impl_int_int.cpp
+  eti/field_update_impl_double_double_fill_aware.cpp
+  eti/field_update_impl_double_float_fill_aware.cpp
+  eti/field_update_impl_double_int_fill_aware.cpp
+  eti/field_update_impl_float_float_fill_aware.cpp
+  eti/field_update_impl_float_int_fill_aware.cpp
+  eti/field_update_impl_int_int_fill_aware.cpp
+  utils/compute_mask.cpp
+  utils/horiz_contraction.cpp
+  utils/perturb.cpp
+  utils/print_hyperslab.cpp
+  utils/randomize.cpp
+  utils/reductions.cpp
+  utils/transpose.cpp
+  utils/vert_contraction.cpp
+  utils/views_are_equal.cpp
 )
 
 if (EAMXX_ENABLE_GPU)
@@ -50,12 +46,12 @@ if (EAMXX_ENABLE_GPU)
   #       only used on device (at least for now). OTOH, the methods
   #       to extract views are used in a few places
   target_sources (eamxx_field PRIVATE
-    eti/field_eti_get_strided_view_double_host.cpp
-    eti/field_eti_get_strided_view_float_host.cpp
-    eti/field_eti_get_strided_view_int_host.cpp
-    eti/field_eti_get_view_double_host.cpp
-    eti/field_eti_get_view_float_host.cpp
-    eti/field_eti_get_view_int_host.cpp
+    eti/field_get_strided_view_double_host.cpp
+    eti/field_get_strided_view_float_host.cpp
+    eti/field_get_strided_view_int_host.cpp
+    eti/field_get_view_double_host.cpp
+    eti/field_get_view_float_host.cpp
+    eti/field_get_view_int_host.cpp
   )
 endif()
 

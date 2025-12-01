@@ -16,6 +16,7 @@ fields:
     - p3_qv_tend
     - shoc_qv_tend
     - homme_qv_tend
+    - homme_qc_tend
     - SW_flux_dn
     - SW_flux_up
     - LW_flux_dn

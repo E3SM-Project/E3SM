@@ -1,13 +1,13 @@
 #include <catch2/catch.hpp>
-#include <numeric>
 
 #include "share/field/field_identifier.hpp"
 #include "share/field/field.hpp"
 #include "share/field/field_utils.hpp"
-#include "share/field/field_impl.hpp"
 #include "share/core/eamxx_setup_random_test.hpp"
 
 #include <ekat_pack.hpp>
+
+#include <numeric>
 
 namespace {
 
@@ -20,9 +20,7 @@ TEST_CASE("field", "") {
   using P8 = ekat::Pack<Real,8>;
   using P16 = ekat::Pack<Real,16>;
 
-  auto engine = setup_random_test ();
-  using RPDF = std::uniform_real_distribution<Real>;
-  RPDF pdf(0.01,0.99);
+  auto seed = get_random_test_seed();
 
   std::vector<FieldTag> tags = {COL,LEV};
   std::vector<int> dims = {3,24};
@@ -88,26 +86,6 @@ TEST_CASE("field", "") {
     REQUIRE(views_are_equal(f1,f2));
   }
 
-  SECTION ("construct_from_view") {
-    // Crate f1 with some padding, to stress test the feature
-    Field f1 (fid);
-    auto& fap1 = f1.get_header().get_alloc_properties();
-    fap1.request_allocation(16);
-    f1.allocate_view();
-    f1.deep_copy(1.0);
-
-    // Get f1 view, and wrap it in another field
-    auto view = f1.get_view<Real**>();
-    Field f2 (fid,view);
-
-    // Check the two are the same
-    REQUIRE (views_are_equal(f1,f2));
-
-    // Modify one field, and check again
-    randomize(f2,engine,pdf);
-    REQUIRE (views_are_equal(f1,f2));
-  }
-
   SECTION ("clone") {
     Field f1 (fid);
     auto& fap1 = f1.get_header().get_alloc_properties();
@@ -124,10 +102,10 @@ TEST_CASE("field", "") {
 
     // Changing f2 should leave f1 unchanged
     f2.deep_copy(0);
-    REQUIRE (field_max<Real>(f2)==0.0);
-    REQUIRE (field_min<Real>(f2)==0.0);
-    REQUIRE (field_max<Real>(f1)==3.0);
-    REQUIRE (field_min<Real>(f1)==3.0);
+    REQUIRE (field_max(f2).as<Real>()==0.0);
+    REQUIRE (field_min(f2).as<Real>()==0.0);
+    REQUIRE (field_max(f1).as<Real>()==3.0);
+    REQUIRE (field_min(f1).as<Real>()==3.0);
   }
 
   SECTION ("alias") {
@@ -230,7 +208,7 @@ TEST_CASE("field", "") {
     REQUIRE_THROWS(f.sync_to_dev());
 
     f.allocate_view();
-    randomize(f,engine,pdf);
+    randomize_uniform(f,seed++,0.01,0.99);
 
     // Get reshaped view on device, and manually create Host mirror
     auto v2d = f.get_view<Real**>();
@@ -260,23 +238,25 @@ TEST_CASE("field", "") {
     f1.allocate_view();
 
     // Randomize 1d field
-    randomize(f1,engine,pdf);
+    randomize_uniform(f1,seed++,0.01,0.99);
 
     auto v0 = f0.get_view<Real, Host>();
     auto v1 = f1.get_view<Real*, Host>();
 
     // Deep copy subfield of 1d field -> 0d field and check result
     for (size_t i=0; i<v1.extent(0); ++i) {
-      f0.deep_copy<Host>(f1.subfield(0, i));
+      f0.deep_copy(f1.subfield(0, i));
+      f0.sync_to_host();
       REQUIRE(v0() == v1(i));
     }
 
     // Randomize 0d field
-    randomize(f0,engine,pdf);
+    randomize_uniform(f0,seed++,0.01,0.99);
 
     // Deep copy 0d field -> subfield of 1d field and check result
     for (size_t i=0; i<v1.extent(0); ++i) {
-      f1.subfield(0, i).deep_copy<Host>(f0);
+      f1.subfield(0, i).deep_copy(f0);
+      f1.subfield(0, i).sync_to_host();
       REQUIRE(v1(i) == v0());
     }
   }

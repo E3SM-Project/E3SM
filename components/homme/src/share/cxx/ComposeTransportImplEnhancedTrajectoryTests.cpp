@@ -75,6 +75,33 @@ struct ElData {
 
 const Real TestData::eps = std::numeric_limits<Real>::epsilon();
 
+int test_deriv (const TestData& td) {
+  int ne = 0;
+  { // The two impls are equivalent in infinite precision.
+    const int n = 3;
+    const Real x[n] = {-0.3, 0.1, 1.1};
+    Real y[n] = {-0.1, 0.1, 0};
+    for (int t = 0; t < 10; ++t) {
+      y[2] = 0.2*(t - 9.5);
+      Real g1, g2;
+      g1 = cti::approx_derivative1(x[0], x[1], x[2], y[0], y[1], y[2]);
+      g2 = cti::approx_derivative (x[0], x[1], x[2], y[0], y[1], y[2]);
+      if (std::abs(g1 - g2) > 100*td.eps) ++ne;
+    }
+  }
+  { // Exactly recovers quadratic.
+    const int n = 3;
+    const Real x[n] = {-0.3, 0.1, 1.1};
+    Real y[n];
+    for (int i = 0; i < n; ++i)
+      y[i] = 0.7*x[i]*x[i] - 1.2*x[i] + 0.7;
+    const Real g_true = 1.4*x[1] - 1.2;
+    const Real g_est = cti::approx_derivative(x[0], x[1], x[2], y[0], y[1], y[2]);
+    if (std::abs(g_est - g_true) > 100*td.eps) ++ne;
+  }
+  return ne;
+}
+
 int test_find_support (TestData&) {
   int ne = 0;
   const int n = 97;
@@ -233,6 +260,23 @@ int make_random_deta (TestData& td, const Real deta_tol, const RelnV& deta) {
   return nerr;
 }
 
+// Wrapper to main deta_caas routine; this wrapper is used in the unit test of
+// the main routine.
+KOKKOS_FUNCTION void
+deta_caas (const KernelVariables& kv, const int nlevp, const CRnV& deta_ref,
+           const Real low, const RelnV& wrk, const RelnV& deta) {
+  assert(deta_ref.extent_int(0) >= nlevp);
+  assert_eln(wrk, nlevp);
+  assert_eln(deta, nlevp);
+  const auto ttr = Kokkos::TeamThreadRange(kv.team, NP*NP);
+  const auto tvr = Kokkos::ThreadVectorRange(kv.team, nlevp);
+  const auto f = [&] (const int idx) {
+    const int i = idx / NP, j = idx % NP;
+    deta_caas(kv, tvr, deta_ref, low, getcol(wrk,i,j), getcol(deta,i,j));
+  };
+  Kokkos::parallel_for(ttr, f);
+}
+
 int test_deta_caas (TestData& td) {
   int nerr = 0;
   const Real tol = 100*td.eps;
@@ -371,7 +415,7 @@ int test_deta_caas (TestData& td) {
 
 struct HybridLevels {
   Real ps0, a_eta, b_eta;
-  std::vector<Real> ai, dai, bi, dbi, am, bm, etai, detai, etam, detam;
+  std::vector<Real> ai, dai, bi, dbi, am, bm, etai, etam, detai, detam;
 };
 
 // Follow DCMIP2012 3D tracer transport specification for a, b, eta.
@@ -431,64 +475,67 @@ void fill (HybridLevels& h, const int n) {
   h.detam[n] = h.etai[n] - h.etam[n-1];
 }
 
-int test_limit_etam (TestData& td) {
+int test_limit_etai (TestData& td) {
   int nerr = 0;
   const Real tol = 100*td.eps;
 
   for (const int nlev : {143, 128, 81}) {
     const Real deta_tol = 1e5*td.eps/nlev;
 
-    ExecView<Real*> hy_etai("hy_etai",nlev+1), detam("detam",nlev+1);
-    ExecView<Real***> wrk1("wrk1",NP,NP,nlev+1), wrk2("wrk2",NP,NP,nlev+1);
-    ExecView<Real***> etam("etam",NP,NP,nlev);
+    ExecView<Real*> hy_etai("hy_etai",nlev+1), detai("detai",nlev);
+    ExecView<Real***> wrk1("wrk1",NP,NP,nlev), wrk2("wrk2",NP,NP,nlev);
+    ExecView<Real***> etai("etai",NP,NP,nlev);
 
     HybridLevels h;
     fill(h, nlev);
     todev(h.etai, hy_etai);
-    todev(h.detam, detam);
+    todev(h.detai, detai);
 
-    const auto he = Kokkos::create_mirror_view(etam);
+    const auto he = Kokkos::create_mirror_view(etai);
 
     const auto policy = get_test_team_policy(1, nlev);
     const auto run = [&] () {
-      Kokkos::deep_copy(etam, he);
+      Kokkos::deep_copy(etai, he);
       const auto f = KOKKOS_LAMBDA(const cti::MT& team) {
         KernelVariables kv(team);
-        limit_etam(kv, nlev, hy_etai, detam, deta_tol, wrk1, wrk2, etam);
+        limit_etai(kv, nlev, hy_etai, detai, deta_tol, wrk1, wrk2, etai);
       };
       Kokkos::parallel_for(policy, f);
       Kokkos::fence();
-      Kokkos::deep_copy(he, etam);
+      Kokkos::deep_copy(he, etai);
     };
 
-    fillcols(h.etam.size(), h.etam.data(), he);
-    // Col 0 should be untouched. Cols 1 and 2 should have very specific changes.
-    const int col1_idx = static_cast<int>(0.25*nlev);
+    fillcols(h.etai.size()-1, h.etai.data(), he);
+    // Col 0 should be untouched. Cols 1 and 2 should have very specific
+    // changes. etai[0] is intended to be constant, so don't perturb that entry.
+    const int col1_idx = std::max(1, static_cast<int>(0.25*nlev));
     he(0,1,col1_idx) += 0.3;
-    const int col2_idx = static_cast<int>(0.8*nlev);
+    const int col2_idx = std::max(1, static_cast<int>(0.8*nlev));
     he(0,2,col2_idx) -= 5.3;
     // The rest of the columns get wild changes.
     for (int idx = 3; idx < NP*NP; ++idx) {
       const int i = idx / NP, j = idx % NP;
-      for (int k = 0; k < nlev; ++k)
-        he(i,j,k) += td.urand(-1, 1)*(h.etai[k+1] - h.etai[k]);
+      for (int k = 1; k < nlev; ++k)
+        he(i,j,k) += td.urand(-1, 1)*(h.etam[k] - h.etam[k-1]);
     }
     run();
     bool ok = true;
     for (int k = 0; k < nlev; ++k)
-      if (he(0,0,k) != h.etam[k]) ok = false;
+      if (he(0,0,k) != h.etai[k]) ok = false;
+    if (he(0,1,0) != h.etai[0]) ok = false;
     for (int k = 0; k < nlev; ++k) {
       if (k == col1_idx) continue;
-      if (std::abs(he(0,1,k) - h.etam[k]) > tol) ok = false;
+      if (std::abs(he(0,1,k) - h.etai[k]) > tol) ok = false;
     }
+    if (he(0,2,0) != h.etai[0]) ok = false;
     for (int k = 0; k < nlev; ++k) {
       if (k == col2_idx) continue;
-      if (std::abs(he(0,2,k) - h.etam[k]) > tol) ok = false;
+      if (std::abs(he(0,2,k) - h.etai[k]) > tol) ok = false;
     }
     Real mingap = 1;
     for (int i = 0; i < NP; ++i)
       for (int j = 0; j < NP; ++j) {
-        mingap = std::min(mingap, he(i,j,0) - h.etai[0]);
+        if (he(i,j,0) != h.etai[0]) ok = false;
         for (int k = 1; k < nlev; ++k)
           mingap = std::min(mingap, he(i,j,k) - he(i,j,k-1));
         mingap = std::min(mingap, h.etai[nlev] - he(i,j,nlev-1));
@@ -528,9 +575,9 @@ int test_eta_interp (TestData& td) {
       const auto f = KOKKOS_LAMBDA(const cti::MT& team) {
         KernelVariables kv(team);
         eta_interp_eta(kv, nlev, hy_etai,
-                       x, getcolc(y,0,0),
+                       nlev, 0, x, getcolc(y,0,0),
                        xwrk, getcol(ywrk,0,0),
-                       ni, getcolc(xi,0,0), yi);
+                       ni, 0, getcolc(xi,0,0), yi);
       };
       Kokkos::parallel_for(policy, f);
       Kokkos::fence();
@@ -695,6 +742,36 @@ int test_eta_to_dp (TestData& td) {
   return nerr;
 }
 
+struct Snapshots {
+  const Real alpha[2];
+  const ExecViewUnmanaged<Scalar***> dps[2];
+
+  struct Element {
+    const ExecViewUnmanaged<Scalar***> dps[2];
+
+    KOKKOS_INLINE_FUNCTION
+    Element (const Snapshots& s, const int ie)
+      : dps{s.dps[0], s.dps[1]}
+    {}
+
+    KOKKOS_INLINE_FUNCTION
+    Real get_dp_real(const int t, const int i, const int j, const int k) const {
+      return dps[t](i,j, k / VECTOR_SIZE)[k % VECTOR_SIZE];
+    }
+  };
+
+  Snapshots (const Real as[2], const ExecViewUnmanaged<Scalar***>& dp1,
+             const ExecViewUnmanaged<Scalar***>& dp2)
+    : alpha{as[0], as[1]}, dps{dp1, dp2}
+  {}
+
+  KOKKOS_INLINE_FUNCTION Real get_alpha (const int t) const { return alpha[t]; }
+
+  KOKKOS_INLINE_FUNCTION Element get_element (const int ie) const {
+    return Element(*this, ie);
+  }
+};
+
 int test_calc_ps (TestData& td) {
   int nerr = 0;
   const Real tol = 100*td.eps;
@@ -719,9 +796,10 @@ int test_calc_ps (TestData& td) {
     ExecView<Real[NP][NP]> ps("ps");
     ExecView<Real[2][NP][NP]> ps2("ps2");
     const auto policy = get_test_team_policy(1, nlev);
+    Snapshots snaps(alpha, dp1.d, dp2.d);
     const auto f = KOKKOS_LAMBDA(const cti::MT& team) {
       KernelVariables kv(team);
-      calc_ps(kv, nlev, ps0, hyai0, alpha, dp1.d, dp2.d, ps2);
+      calc_ps(kv, nlev, ps0, hyai0, snaps, ps2);
       calc_ps(kv, nlev, ps0, hyai0, dp1.d, ps);
     };
     Kokkos::parallel_for(policy, f);
@@ -749,7 +827,46 @@ int test_calc_ps (TestData& td) {
   return nerr;
 }
 
-int test_calc_etadotmid_from_etadotdpdnint (TestData& td) {
+// Transform eta_dot_dpdn at interfaces to eta_dot at midpoints using the
+// formula
+//     eta_dot = eta_dot_dpdn/(A_eta p0 + B_eta ps)
+//            a= eta_dot_dpdn diff(eta)/(diff(A) p0 + diff(B) ps).
+// I'm keeping this because it's unit tested and might be used in the future.
+// But it's not currently used, so it's in this unit-test file.
+KOKKOS_FUNCTION void calc_etadotmid_from_etadotdpdnint (
+  const KernelVariables& kv, const int nlev,
+  const Real& ps0, const CSnV& hydai, const CSnV& hydbi,
+  const CSnV& hydetai, const CRelV& ps, const SelnV& wrk,
+  //  in: eta_dot_dpdn at interfaces
+  // out: eta_dot at midpoints, final slot unused
+  const SelnV& ed)
+{
+  assert(calc_nscal(hydai.extent_int(0)) >= nlev);
+  assert(calc_nscal(hydbi.extent_int(0)) >= nlev);
+  assert(calc_nscal(hydetai.extent_int(0)) >= nlev);
+  assert_eln(wrk, nlev+1);
+  assert_eln(ed, nlev+1);
+  const auto& edd_mid = wrk;
+  {
+    const CRelnV edd(elp2r(ed));
+    const RelnV tmp(elp2r(wrk));
+    const auto f = [&] (const int i, const int j, const int k) {
+      tmp(i,j,k) = (edd(i,j,k) + edd(i,j,k+1))/2;
+    };
+    cti::loop_ijk(nlev, kv, f);
+  }
+  kv.team_barrier();
+  {
+    const auto f = [&] (const int i, const int j, const int kp) {
+      ed(i,j,kp) = (edd_mid(i,j,kp)
+                    * hydetai(kp)
+                    / (hydai(kp)*ps0 + hydbi(kp)*ps(i,j)));
+    };
+    cti::loop_ijk(calc_npack(nlev), kv, f);
+  }
+}
+
+int test_calc_etadot_from_etadotdpdnint (TestData& td) {
   int nerr = 0;
   const Real tol = 100*td.eps;
 
@@ -770,44 +887,205 @@ int test_calc_etadotmid_from_etadotdpdnint (TestData& td) {
     ElData wrk("wrk",nlev+1), ed("ed",nlev+1);
     ExecView<Real[NP][NP]> ps("ps");
     const Real ps0 = h.ps0;
+    ExecView<Scalar*> db_deta_i("db_deta_i", calc_npack(nlev+1));
+    Kokkos::deep_copy(db_deta_i, h.b_eta);
 
-    const auto ps_m = Kokkos::create_mirror_view(ps);
-    for (int i = 0; i < NP; ++i)
-      for (int j = 0; j < NP; ++j) {
-        ps_m(i,j) = td.urand(0.5, 1.2)*ps0;
-        for (int k = 0; k < nlev; ++k) {
-          hydai.r[k] = h.dai[k];
-          hydbi.r[k] = h.dbi[k];
-          hydetai.r[k] = h.detai[k];
+    for (int trial = 0; trial < 2; ++trial) {
+      const auto ps_m = Kokkos::create_mirror_view(ps);
+      for (int i = 0; i < NP; ++i)
+        for (int j = 0; j < NP; ++j) {
+          ps_m(i,j) = td.urand(0.5, 1.2)*ps0;
+          for (int k = 0; k < nlev; ++k) {
+            hydai.r[k] = h.dai[k];
+            hydbi.r[k] = h.dbi[k];
+            hydetai.r[k] = h.detai[k];
+          }
+          for (int k = 0; k <= nlev; ++k)
+            ed.r(i,j,k) = (i-j)*h.etai[k] + 0.3;
+          if (trial == 1) {
+            ed.r(i,j,0) = 0;
+            ed.r(i,j,nlev) = 0;
+          }
         }
-        for (int k = 0; k <= nlev; ++k)
-          ed.r(i,j,k) = (i-j)*h.etai[k] + 0.3;
-      }
-    Kokkos::deep_copy(ps, ps_m);
-    hydai.h2d(); hydbi.h2d(); hydetai.h2d();
-    ed.h2d();
+      Kokkos::deep_copy(ps, ps_m);
+      hydai.h2d(); hydbi.h2d(); hydetai.h2d();
+      ed.h2d();
 
-    const auto policy = get_test_team_policy(1, nlev);
-    const auto f = KOKKOS_LAMBDA(const cti::MT& team) {
-      KernelVariables kv(team);
-      calc_etadotmid_from_etadotdpdnint(
-        kv, nlev, ps0, hydai.d, hydbi.d, hydetai.d, ps, wrk.d, ed.d);
-    };
-    Kokkos::parallel_for(policy, f);
-    Kokkos::fence();
-    ed.d2h();
+      const auto policy = get_test_team_policy(1, nlev);
+      const auto fmid = KOKKOS_LAMBDA(const cti::MT& team) {
+        KernelVariables kv(team);
+        calc_etadotmid_from_etadotdpdnint(
+          kv, nlev, ps0, hydai.d, hydbi.d, hydetai.d, ps, wrk.d, ed.d);
+      };
+      const auto fint = KOKKOS_LAMBDA(const cti::MT& team) {
+        KernelVariables kv(team);
+        calc_etadotint_from_etadotdpdnint(
+          kv, nlev, ps0, db_deta_i, ps, ed.d);
+      };
+      if (trial == 0)
+        Kokkos::parallel_for(policy, fmid);
+      else
+        Kokkos::parallel_for(policy, fint);
+      Kokkos::fence();
+      ed.d2h();
 
-    for (int i = 0; i < NP; ++i)
-      for (int j = 0; j < NP; ++j) {
-        const auto den = h.a_eta*h.ps0 + h.b_eta*ps_m(i,j);
-        for (int k = 0; k < nlev; ++k) {
-          const auto ed_true = ((i-j)*h.etam[k] + 0.3)/den;
-          if (std::abs(ed.r(i,j,k) - ed_true) > tol*(10/den)) ++nerr;
+      for (int i = 0; i < NP; ++i)
+        for (int j = 0; j < NP; ++j) {
+          const auto den = h.a_eta*h.ps0 + h.b_eta*ps_m(i,j);
+          for (int k = 0; k <= nlev; ++k) {
+            if (trial == 0 and k == nlev) continue;
+            if (trial == 1 and (k == 0 or k == nlev)) {
+              if (ed.r(i,j,k) != 0) ++nerr;
+              continue;
+            }
+            const auto eta = trial == 0 ? h.etam[k] : h.etai[k];
+            const auto ed_true = ((i-j)*eta + 0.3)/den;
+            if (std::abs(ed.r(i,j,k) - ed_true) > tol*(10/den)) ++nerr;
+          }
         }
-      }
+    }
   }
 
   return nerr;
+}
+
+int test1_init_velocity_record (
+  const int dtf, const int drf, const int nsub, const int nvel)
+{
+  const auto eps = std::numeric_limits<Real>::epsilon();
+  int e = 0;
+
+  if (dtf % drf != 0) {
+    printf("Testing erro: dtf %% drf == 0 is required: %d %d\n", dtf, drf);
+    ++e; 
+  }
+
+  const CTI::VelocityRecord v(dtf, drf, nsub, nvel);
+  if (v.dtf() != dtf) ++e;
+  if (v.nsub() != nsub) ++e;
+
+  // Check that t_vel is monotonically increasing.
+  for (int n = 1; n < v.nvel(); ++n)
+    if (v.t_vel(n) <= v.t_vel(n-1))
+      ++e;
+
+  // Check that obs_slots does not reference end points. This should not happen
+  // b/c nvel <= navail and observations are uniformly spaced.
+  for (int n = 0; n < dtf; ++n)
+    for (int i = 0; i < 2; ++i)
+      if (v.obs_slots(n,i) == 0 or v.obs_slots(n,i) == dtf)
+        ++e;
+
+  // Check that weights sum to 1.
+  std::vector<Real> ys(dtf);
+  for (int n = 0; n < dtf; ++n)
+    for (int i = 0; i < 2; ++i)
+      if (v.obs_slots(n,i) >= 0)
+        ys[v.obs_slots(n,i)] += v.obs_wts(n,i);
+  for (int i = 1; i < v.nvel()-1; ++i)
+    if (std::abs(ys[i] - 1) > 1e3*eps)
+      ++e;
+
+  // Test for exact interp of an affine function.
+  const auto tfn = [] (const Real x) { return 7.1*x - 11.5; };
+  //   Observe data forward in time.
+  Real endslots[2];
+  endslots[0] = tfn(0);
+  endslots[1] = tfn(dtf);
+  ys[0] = -1000; // unused
+  for (int i = 1; i < dtf; ++i) ys[i] = 0;
+  for (int n = 0; n < dtf; ++n) {
+    if ((n+1) % drf != 0) continue;
+    const Real y = tfn(n+1);
+    for (int i = 0; i < 2; ++i) {
+      if (v.obs_slots(n,i) < 0) continue;
+      ys[v.obs_slots(n,i)] += v.obs_wts(n,i)*y;
+    }
+  }
+  //   Use the data backward in time.
+  for (int n = 0; n < nsub; ++n) {
+    // Each segment orders the data forward in time. Thus, data are always
+    // ordered forward in time but used backward.
+    Real xsup[2], ysup[2];
+    for (int i = 0; i < 2; ++i) {
+      int k = nsub - (n+1) + i;
+      xsup[i] = (k*v.t_vel(v.nvel()-1))/nsub;
+      k = v.run_step(n);
+      const Real
+        y0 = k == 1 ? endslots[0] : ys[k-1],
+        y1 = k == v.nvel()-1 ? endslots[1] : ys[k];
+      ysup[i] = (((v.t_vel(k) - xsup[i])*y0 + (xsup[i] - v.t_vel(k-1))*y1) /
+                 (v.t_vel(k) - v.t_vel(k-1)));
+    }
+    for (int i = 0; i <= 10; ++i) {
+      const Real
+        a = Real(i)/10,
+        x = (1-a)*xsup[0] + a*xsup[1],
+        y = (1-a)*ysup[0] + a*ysup[1];
+      if (std::abs(y - tfn(x)) > 1e3*eps) {
+        printf("n %d i %2d x %7.3f y %7.3f t %7.3f\n", n, i, x, y, tfn(x));
+        ++e;
+      }
+    }
+  }
+  
+  if (e) {
+    printf("ERROR e %d\n", e);
+    printf("dtf %d drf %d nsub %d nvel %d v.nvel %d\n",
+           dtf, drf, nsub, nvel, v.nvel());
+    printf("  t_vel:");
+    for (int i = 0; i < v.nvel(); ++i) printf(" %1.3f", v.t_vel(i));
+    printf("\n  obs:\n");
+    for (int n = 0; n <= dtf; ++n)
+      printf("    %2d %2d %2d %1.3f %1.3f\n",
+             n, v.obs_slots(n,0), v.obs_slots(n,1), v.obs_wts(n,0),
+             v.obs_wts(n,1));
+    printf("  run_step:\n");
+    for (int n = 0; n <= nsub; ++n) printf("    %2d %2d\n", n, v.run_step(n));
+  }
+
+  return e;
+}
+
+int test_init_velocity_record (TestData& td) {
+  int dtf, drf, nsub, nvel, error;
+
+  error = 0;
+
+  const auto f = [&] () {
+    const int e = test1_init_velocity_record(dtf, drf, nsub, nvel);
+    if (e > 0) error = 1;
+  };
+
+  error = 0;
+  dtf = 6;
+  drf = 2;
+  nsub = 3;
+  nvel = 4;
+  f();
+  nvel = 3;
+  f();
+  drf = 3;
+  nvel = 6;
+  f();
+  drf = 1;
+  nsub = 5;
+  f();
+  dtf = 12;
+  drf = 2;
+  nsub = 3;
+  nvel = -1;
+  f();
+  nsub = 5;
+  nvel = 5;
+  f();
+  dtf = 27;
+  drf = 3;
+  nsub = 51;
+  nvel = 99;
+  f();
+
+  return error;
 }
 
 } // namespace anon
@@ -821,14 +1099,16 @@ int test_calc_etadotmid_from_etadotdpdnint (TestData& td) {
 int ComposeTransportImpl::run_enhanced_trajectory_unit_tests () {
   int nerr = 0, ne;
   TestData td(*this);
+  comunittest(test_deriv);
   comunittest(test_find_support);
   comunittest(test_linterp);
   comunittest(test_eta_interp);
   comunittest(test_eta_to_dp);
   comunittest(test_deta_caas);
-  comunittest(test_limit_etam);
+  comunittest(test_limit_etai);
   comunittest(test_calc_ps);
-  comunittest(test_calc_etadotmid_from_etadotdpdnint);
+  comunittest(test_calc_etadot_from_etadotdpdnint);
+  comunittest(test_init_velocity_record);
   return nerr;
 }
 

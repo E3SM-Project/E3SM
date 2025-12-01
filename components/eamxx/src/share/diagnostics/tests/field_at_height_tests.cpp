@@ -331,8 +331,8 @@ bool views_are_approx_equal(const Field& f0, const Field& f1, const Real tol, co
   // simply.
   auto ft = f0.clone();
   ft.update(f1,1.0,-1.0);
-  auto d_min = field_min<Real>(ft);
-  auto d_max = field_max<Real>(ft);
+  auto d_min = field_min(ft).as<Real>();
+  auto d_max = field_max(ft).as<Real>();
   if (std::abs(d_min) > tol or std::abs(d_max) > tol) {
     if (msg) {
       printf("The two copies of (%16s) are NOT approx equal within a tolerance of %e.\n     The min and max errors are %e and %e respectively.\n",f0.name().c_str(),tol,d_min,d_max);

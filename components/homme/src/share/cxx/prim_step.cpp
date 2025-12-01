@@ -17,6 +17,7 @@ namespace Homme
 {
 
 void prim_advance_exp (TimeLevel& tl, const Real dt, const bool compute_diagnostics);
+void prim_advec_tracers_observe_velocity (const int step);
 void prim_advec_tracers_remap (const Real);
 void vertical_remap (const Real);
 
@@ -169,10 +170,12 @@ void prim_step_flexible (const Real dt, const bool compute_diagnostics) {
     prim_advance_exp(tl, dt, compute_diagnostics);
     tl.tevolve += dt;
 
+    bool observe = false;
     if (params.dt_remap_factor == 0) {
       // Since dt_remap == 0, the only part of vertical_remap that is active is
       // the updates to ps_v(:,:,np1) and dp3d(:,:,:,np1).
       vertical_remap(dt_remap);
+      observe = true;
     } else if ((n+1) % params.dt_remap_factor == 0) {
       if (compute_diagnostics)
         context.get<Diagnostics>().run_diagnostics(false, 3);
@@ -187,7 +190,10 @@ void prim_step_flexible (const Real dt, const bool compute_diagnostics) {
         vertical_remap(dt_remap);
         GPTLstop("tl-sc vertical_remap");
       }
+      observe = true;
     }
+    if (observe)
+      prim_advec_tracers_observe_velocity(n);
   }
 
   if (params.qsize > 0)

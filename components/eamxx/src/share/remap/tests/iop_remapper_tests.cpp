@@ -18,12 +18,11 @@ constexpr int vec_dim = 2;
 constexpr int tens_dim1 = 3;
 constexpr int tens_dim2 = 4;
 
-template<typename Engine, typename PDF>
 Field create_field (const std::string& name,
                     const LayoutType lt,
                     const AbstractGrid& grid,
                     const bool midpoints,
-                    Engine& engine, PDF& pdf)
+                    const int seed)
 {
   const auto u = ekat::units::Units::nondimensional();
   const auto& gn = grid.name();
@@ -52,7 +51,7 @@ Field create_field (const std::string& name,
   }
   f.allocate_view();
 
-  randomize(f,engine,pdf);
+  randomize_uniform(f,seed);
 
   return f;
 }
@@ -66,11 +65,10 @@ TEST_CASE("iop_remap")
   root_print (" +---------------------------------+\n\n",comm);
 
   using IPDF = std::uniform_int_distribution<int>;
-  using RPDF = std::uniform_real_distribution<Real>;
 
-  auto engine = setup_random_test (&comm);
+  int seed = get_random_test_seed(&comm);
+  std::mt19937_64 engine(seed);
   IPDF ipdf (2*comm.size(),10*comm.size());
-  RPDF rpdf (0,1);
 
   // -------------------------------------- //
   //      Build src grid and remapper       //
@@ -95,8 +93,8 @@ TEST_CASE("iop_remap")
 
   auto src_lat = src_grid->create_geometry_data("lat",src_grid->get_2d_scalar_layout());
   auto src_lon = src_grid->create_geometry_data("lon",src_grid->get_2d_scalar_layout());
-  randomize(src_lat,engine,rpdf);
-  randomize(src_lon,engine,rpdf);
+  randomize_uniform(src_lat,seed++);
+  randomize_uniform(src_lon,seed++);
 
   auto se_grid = std::make_shared<SEGrid>("se",5,4,10,comm);
   se_grid->create_geometry_data("lat",se_grid->get_2d_scalar_layout());
@@ -144,8 +142,8 @@ TEST_CASE("iop_remap")
   bool midpoints = false; // midpoints is unused for 2d layouts
   for (auto l : layouts) {
     auto n = e2str(l);
-    auto src = create_field(n+"_src",l,*src_grid,midpoints,engine,rpdf);
-    auto tgt = create_field(n+"_tgt",l,*tgt_grid,midpoints,engine,rpdf);
+    auto src = create_field(n+"_src",l,*src_grid,midpoints,seed++);
+    auto tgt = create_field(n+"_tgt",l,*tgt_grid,midpoints,seed++);
     remap->register_field(src,tgt);
 
     midpoints = not midpoints; // ensure we create both mid and int fields

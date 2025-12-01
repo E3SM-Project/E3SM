@@ -19,7 +19,6 @@ SET(HOMME_TESTS
   baro2c.cmake
   baro2d.cmake
   baroCamMoist.cmake
-  baroCamMoist-acc.cmake
   baro2d-imp.cmake
   thetah-test22.cmake
   thetanh-test22.cmake
@@ -44,10 +43,13 @@ SET(HOMME_TESTS
 
 IF (HOMME_ENABLE_COMPOSE)
   LIST(APPEND HOMME_TESTS
+    thetanh-moist-bubble-sl.cmake
+    thetanh-moist-bubble-sl-pg2.cmake
     thetah-sl-test11conv-r1t2-cdr20.cmake
     thetah-sl-test11conv-r0t1-cdr30-rrm.cmake
     thetah-sl-dcmip16_test1pg2.cmake
-    thetah-sl-testconv-3e.cmake)
+    thetah-sl-testconv-3e.cmake
+    planar-transport-a-etm.cmake)
 ENDIF()
 
 SET(HOMME_RUN_TESTS_DIR ${HOMME_SOURCE_DIR}/test/reg_test/run_tests)
@@ -93,34 +95,34 @@ IF (BUILD_HOMME_THETA_KOKKOS)
   # Various one-off tests.
   IF (HOMME_ENABLE_COMPOSE)
     LIST(APPEND HOMME_TESTS
-      thetah-sl-test11conv-r0t1-cdr30-rrm-kokkos.cmake
-      thetah-sl-testconv-3e-kokkos.cmake)
+      thetah-sl-testconv-3e-kokkos.cmake
+      planar-transport-a-etm-kokkos.cmake)
     IF (HOMMEXX_BFB_TESTING)
+      LIST(APPEND HOMME_TESTS
+        thetah-sl-test11conv-r0t1-cdr30-rrm-kokkos.cmake
+        thetanh-moist-bubble-sl-kokkos.cmake
+        thetanh-moist-bubble-sl-pg2-kokkos.cmake)
       LIST(APPEND HOMME_ONEOFF_CVF_TESTS
-        thetah-sl-test11conv-r0t1-cdr30-rrm)
+        thetah-sl-test11conv-r0t1-cdr30-rrm
+        thetanh-moist-bubble-sl
+        thetanh-moist-bubble-sl-pg2)
     ENDIF()
   ENDIF()
-  LIST(APPEND HOMME_TESTS
-    thetanh-moist-bubble-kokkos.cmake
-    thetanh-dry-bubble-kokkos.cmake
-    thetah-nhgw-kokkos.cmake
-    thetanh-nhgw-kokkos.cmake
-    thetah-nhgw-slice-kokkos.cmake
-    thetanh-nhgw-slice-kokkos.cmake
-    thetanh-moist-bubble-sl.cmake
-    thetanh-moist-bubble-sl-kokkos.cmake
-    thetanh-moist-bubble-sl-pg2.cmake
-    thetanh-moist-bubble-sl-pg2-kokkos.cmake)
   IF (HOMMEXX_BFB_TESTING)
+    LIST(APPEND HOMME_TESTS
+      thetanh-moist-bubble-kokkos.cmake
+      thetanh-dry-bubble-kokkos.cmake
+      thetah-nhgw-kokkos.cmake
+      thetanh-nhgw-kokkos.cmake
+      thetah-nhgw-slice-kokkos.cmake
+      thetanh-nhgw-slice-kokkos.cmake)
     LIST(APPEND HOMME_ONEOFF_CVF_TESTS
       thetanh-moist-bubble
       thetanh-dry-bubble
       thetah-nhgw
       thetanh-nhgw
       thetah-nhgw-slice
-      thetanh-nhgw-slice
-      thetanh-moist-bubble-sl
-      thetanh-moist-bubble-sl-pg2)
+      thetanh-nhgw-slice)
   ENDIF()
 
   #cmake/namelist will be built with create-... script

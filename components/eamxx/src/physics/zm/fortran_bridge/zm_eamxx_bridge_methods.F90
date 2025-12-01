@@ -1,6 +1,6 @@
 module zm_eamxx_bridge_methods
   !-----------------------------------------------------------------------------
-  use zm_eamxx_bridge_params, only: r8, pcols, pver, pverp, top_lev
+  use zm_eamxx_bridge_params, only: r8, pver, pverp, top_lev
   !-----------------------------------------------------------------------------
   implicit none
   private
@@ -29,10 +29,10 @@ subroutine cldfrc_fice(ncol, t, fice, fsnow)
 
   ! Arguments
   integer,  intent(in)  :: ncol                 ! number of active columns
-  real(r8), intent(in)  :: t(pcols,pver)        ! temperature
+  real(r8), intent(in)  :: t(ncol,pver)         ! temperature
 
-  real(r8), intent(out) :: fice(pcols,pver)     ! Fractional ice content within cloud
-  real(r8), intent(out) :: fsnow(pcols,pver)    ! Fractional snow content for convection
+  real(r8), intent(out) :: fice(ncol,pver)      ! Fractional ice content within cloud
+  real(r8), intent(out) :: fsnow(ncol,pver)     ! Fractional snow content for convection
 
   ! Local variables
   real(r8) :: tmax_fice                         ! max temperature for cloud ice formation
@@ -82,16 +82,15 @@ end subroutine cldfrc_fice
 !===================================================================================================
 
 ! This mimics the functionality of physics_ptend_init()
-subroutine zm_tend_init( ncol, pcols, pver, tend_s, tend_q, tend_u, tend_v )
+subroutine zm_tend_init( ncol, pver, tend_s, tend_q, tend_u, tend_v )
   !-----------------------------------------------------------------------------
   ! Arguments
-  integer,                         intent(in   ) :: ncol    ! number of local columns
-  integer,                         intent(in   ) :: pcols   ! max number of columns for variable dimensions
-  integer,                         intent(in   ) :: pver    ! number of local columns
-  real(r8), dimension(pcols,pver), intent(inout) :: tend_s  ! tendency of dry static energy
-  real(r8), dimension(pcols,pver), intent(inout) :: tend_q  ! tendency of water vapor
-  real(r8), dimension(pcols,pver), intent(inout) :: tend_u  ! tendency of zonal wind
-  real(r8), dimension(pcols,pver), intent(inout) :: tend_v  ! tendency of meridional wind
+  integer,                        intent(in   ) :: ncol     ! number of local columns
+  integer,                        intent(in   ) :: pver     ! number of local columns
+  real(r8), dimension(ncol,pver), intent(inout) :: tend_s   ! tendency of dry static energy
+  real(r8), dimension(ncol,pver), intent(inout) :: tend_q   ! tendency of water vapor
+  real(r8), dimension(ncol,pver), intent(inout) :: tend_u   ! tendency of zonal wind
+  real(r8), dimension(ncol,pver), intent(inout) :: tend_v   ! tendency of meridional wind
   !-----------------------------------------------------------------------------
   ! Local variables
   integer :: i,k
@@ -112,26 +111,25 @@ end subroutine
 ! This combines functionality of:
 ! - physics_update()      [see physics_update_mod.F90]
 ! - physics_update_main() [see physics_types.F90]
-subroutine zm_physics_update( ncol, pcols, dt, state_phis, state_zm, state_zi, &
+subroutine zm_physics_update( ncol, dt, state_phis, state_zm, state_zi, &
                               state_p_mid, state_p_int, state_p_del, &
                               state_t, state_qv, ptend_s, ptend_q)
   use zm_eamxx_bridge_physconst, only: cpair
   !-----------------------------------------------------------------------------
   ! Arguments
-  integer,                         intent(in   ) :: ncol            ! number of local columns
-  integer,                         intent(in   ) :: pcols           ! max number of columns for variable dimensions
-  real(r8),                        intent(in   ) :: dt              ! time step
-  real(r8), dimension(pcols),      intent(in   ) :: state_phis      ! input state surface geopotential height
-  real(r8), dimension(pcols,pver), intent(inout) :: state_zm        ! input state altitude at mid-levels
-  real(r8), dimension(pcols,pverp),intent(inout) :: state_zi        ! input state altitude at interfaces
-  real(r8), dimension(pcols,pver), intent(in   ) :: state_p_mid     ! input state mid-point pressure
-  real(r8), dimension(pcols,pverp),intent(in   ) :: state_p_int     ! input state interface pressure
-  real(r8), dimension(pcols,pver), intent(in   ) :: state_p_del     ! input state pressure thickness
-  ! real(r8), dimension(pcols,pver), intent(inout) :: state_dse       ! input state dry static energy
-  real(r8), dimension(pcols,pver), intent(inout) :: state_t         ! input state temperature
-  real(r8), dimension(pcols,pver), intent(inout) :: state_qv        ! input state water vapor
-  real(r8), dimension(pcols,pver), intent(in   ) :: ptend_s         ! tendency of dry static energy
-  real(r8), dimension(pcols,pver), intent(in   ) :: ptend_q         ! tendency of water vapor
+  integer,                        intent(in   ) :: ncol             ! number of local columns
+  real(r8),                       intent(in   ) :: dt               ! time step
+  real(r8), dimension(ncol),      intent(in   ) :: state_phis       ! input state surface geopotential height
+  real(r8), dimension(ncol,pver), intent(inout) :: state_zm         ! input state altitude at mid-levels
+  real(r8), dimension(ncol,pverp),intent(inout) :: state_zi         ! input state altitude at interfaces
+  real(r8), dimension(ncol,pver), intent(in   ) :: state_p_mid      ! input state mid-point pressure
+  real(r8), dimension(ncol,pverp),intent(in   ) :: state_p_int      ! input state interface pressure
+  real(r8), dimension(ncol,pver), intent(in   ) :: state_p_del      ! input state pressure thickness
+  ! real(r8), dimension(ncol,pver), intent(inout) :: state_dse        ! input state dry static energy
+  real(r8), dimension(ncol,pver), intent(inout) :: state_t          ! input state temperature
+  real(r8), dimension(ncol,pver), intent(inout) :: state_qv         ! input state water vapor
+  real(r8), dimension(ncol,pver), intent(in   ) :: ptend_s          ! tendency of dry static energy
+  real(r8), dimension(ncol,pver), intent(in   ) :: ptend_q          ! tendency of water vapor
   !-----------------------------------------------------------------------------
   ! Local variables
   integer :: i,k
@@ -145,7 +143,7 @@ subroutine zm_physics_update( ncol, pcols, dt, state_phis, state_zm, state_zi, &
     end do
   end do
     
-  call zm_geopotential_t( ncol, pcols, state_p_int, state_p_mid, state_p_del, state_t, state_qv, state_zi, state_zm )
+  call zm_geopotential_t( ncol, state_p_int, state_p_mid, state_p_del, state_t, state_qv, state_zi, state_zm )
 
   ! skip DSE update for EAMxx
   ! do i = 1,ncol
@@ -160,22 +158,21 @@ end subroutine zm_physics_update
 !===================================================================================================
 
 ! copied and modified from geopotential.F90
-subroutine zm_geopotential_t( ncol, pcols, pint, pmid, pdel, t, q, zi, zm )
+subroutine zm_geopotential_t( ncol, pint, pmid, pdel, t, q, zi, zm )
   use zm_eamxx_bridge_physconst, only: zvir, rair, gravit
   !----------------------------------------------------------------------- 
   ! Purpose: Compute the geopotential height (above the surface) at the
   ! midpoints and interfaces using the input temperatures and pressures
   !-----------------------------------------------------------------------------
   ! Arguments
-  integer,                         intent(in   ) :: ncol    ! Number of columns
-  integer,                         intent(in   ) :: pcols
-  real(r8), dimension(pcols,pverp),intent(in   ) :: pint    ! Interface pressures
-  real(r8), dimension(pcols,pver), intent(in   ) :: pmid    ! Midpoint pressures
-  real(r8), dimension(pcols,pver), intent(in   ) :: pdel    ! layer thickness
-  real(r8), dimension(pcols,pver), intent(in   ) :: t       ! temperature
-  real(r8), dimension(pcols,pver), intent(in   ) :: q       ! specific humidity 
-  real(r8), dimension(pcols,pverp),intent(inout) :: zi      ! Height above surface at interfaces
-  real(r8), dimension(pcols,pver), intent(inout) :: zm      ! Geopotential height at mid level
+  integer,                        intent(in   ) :: ncol    ! Number of columns
+  real(r8), dimension(ncol,pverp),intent(in   ) :: pint    ! Interface pressures
+  real(r8), dimension(ncol,pver), intent(in   ) :: pmid    ! Midpoint pressures
+  real(r8), dimension(ncol,pver), intent(in   ) :: pdel    ! layer thickness
+  real(r8), dimension(ncol,pver), intent(in   ) :: t       ! temperature
+  real(r8), dimension(ncol,pver), intent(in   ) :: q       ! specific humidity
+  real(r8), dimension(ncol,pverp),intent(inout) :: zi      ! Height above surface at interfaces
+  real(r8), dimension(ncol,pver), intent(inout) :: zm      ! Geopotential height at mid level
   !-----------------------------------------------------------------------------
   ! Local variables
   integer  :: i,k                     ! Lon, level indices

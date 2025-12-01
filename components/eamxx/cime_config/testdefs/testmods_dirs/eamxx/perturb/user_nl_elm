@@ -1,0 +1,7 @@
+! Override consistency checks since we know our surface data is inconsistent
+check_finidat_fsurdat_consistency = .false.
+check_finidat_year_consistency = .false.
+check_finidat_pct_consistency = .false.
+check_dynpft_consistency = .false.
+
+hist_empty_htapes = .true.

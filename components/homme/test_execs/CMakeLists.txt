@@ -192,9 +192,6 @@ IF(${BUILD_HOMME_PREQX})
 #  ADD_SUBDIRECTORY(preqx-nlev100-native)
 #  ADD_SUBDIRECTORY(preqx-nlev140-native)
 #  ADD_SUBDIRECTORY(preqx-nlev200-native)
-  IF(${BUILD_HOMME_PREQX_ACC})
-    ADD_SUBDIRECTORY(baroCam-acc)
-  ENDIF()
 ENDIF()
 
 # Add the test exec subdirs for the prim executable
@@ -213,7 +210,7 @@ IF(${BUILD_HOMME_THETA})
 #  ADD_SUBDIRECTORY(theta-l-nlev30-native)
 #  ADD_SUBDIRECTORY(theta-l-nlev64-native)
 #  ADD_SUBDIRECTORY(theta-l-nlev100-native)
-#  ADD_SUBDIRECTORY(theta-l-nlev128-native)
+  ADD_SUBDIRECTORY(theta-l-nlev128-native)
 #  ADD_SUBDIRECTORY(theta-l-nlev140-native)
 #  ADD_SUBDIRECTORY(theta-l-nlev150-native)
 #  ADD_SUBDIRECTORY(theta-l-nlev200-native)
@@ -240,6 +237,7 @@ IF (${BUILD_HOMME_THETA_KOKKOS})
     # For doubly periodic tests.
     ADD_SUBDIRECTORY(theta-l-nlev20-native-kokkos)
     ADD_SUBDIRECTORY(theta-l-nlev10-native-kokkos)
+    ADD_SUBDIRECTORY(theta-l-nlev128-native-kokkos)
 
     # This one we build it only if both theta and theta_kokkos are requested,
     # since it's just needed for perf/correctness comparisons
@@ -250,16 +248,6 @@ IF (${BUILD_HOMME_THETA_KOKKOS})
     ADD_SUBDIRECTORY(thetal_kokkos_ut)
   endif()
 
-ENDIF()
-
-# Add the test exec subdirs for the prim executable
-IF(${BUILD_HOMME_PRIM})
-  ADD_SUBDIRECTORY(primA)
-ENDIF()
-
-# Add the test exec subdirs for the swim executable
-IF(${BUILD_HOMME_SWIM})
-  ADD_SUBDIRECTORY(swim5)
 ENDIF()
 
 # Test some stuff in the shared folder
@@ -284,7 +272,7 @@ INCLUDE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/test-list.cmake)
 SET(TEST_DIR_LIST "")
 createTests(HOMME_TESTS)
 
-IF (${BUILD_HOMME_PREQX_KOKKOS})
+IF (HOMMEXX_BFB_TESTING AND BUILD_HOMME_PREQX_KOKKOS)
   MESSAGE("-- Generating preqx tests no more intensive than profile ${HOMME_TESTING_PROFILE}.\n"
     "   Example ctest lines:\n"
     "     ctest -LE \"nightly\": All tests except nightly.\n"
@@ -296,7 +284,7 @@ IF (${BUILD_HOMME_PREQX_KOKKOS})
     CREATE_CXX_VS_F90_TESTS_WITH_PROFILE(PREQX_COMPARE_F_C_TEST ${p})
   ENDFOREACH ()
 ENDIF()
-IF (${BUILD_HOMME_THETA_KOKKOS})
+IF (HOMMEXX_BFB_TESTING AND BUILD_HOMME_THETA_KOKKOS)
   MESSAGE("-- Generating theta tests no more intensive than profile ${HOMME_TESTING_PROFILE}.\n"
     "   Example ctest lines:\n"
     "     ctest -LE \"nightly\": All tests except nightly.\n"
@@ -307,11 +295,6 @@ IF (${BUILD_HOMME_THETA_KOKKOS})
     createTestsWithProfile(HOMME_THETA_TESTS_WITH_PROFILE ${p})
     CREATE_CXX_VS_F90_TESTS_WITH_PROFILE(THETA_COMPARE_F_C_TEST ${p})
   ENDFOREACH ()
-ENDIF()
-
-IF(${BUILD_HOMME_PREQX} AND ${BUILD_HOMME_PREQX_ACC})
-  # add a test dependency here:
-  set_property(TEST baroCamMoist-acc APPEND PROPERTY DEPENDS baroCamMoist)
 ENDIF()
 
 # End the file with the total number of test files

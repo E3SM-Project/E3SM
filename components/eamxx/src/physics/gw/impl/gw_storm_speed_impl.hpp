@@ -48,23 +48,25 @@ void Functions<S,D>::gw_storm_speed(
   });
 
   // Speeds for critical level filtering.
-  umin =  init.pgwv*init.dc;
-  umax = -init.pgwv*init.dc;
+  if (maxi > mini) {
+    umin =  init.pgwv*init.dc;
+    umax = -init.pgwv*init.dc;
+  }
+  else {
+    using ResultType = Kokkos::MinMax<Real>::value_type;
+    ResultType min_max_result;
 
-  // The type that holds both min and max results
-  using ResultType = Kokkos::MinMax<Real>::value_type;
-  ResultType min_max_result;
+    Kokkos::parallel_reduce(
+      Kokkos::TeamVectorRange(team, maxi, mini+1), [&] (const int k, ResultType& update) {
+        if (ubm(k) < update.min_val) update.min_val = ubm(k);
+        if (ubm(k) > update.max_val) update.max_val = ubm(k);
+      }, Kokkos::MinMax<Real>(min_max_result));
 
-  Kokkos::parallel_reduce(
-    Kokkos::TeamVectorRange(team, maxi, mini+1), [&] (const int k, ResultType& update) {
-      if (ubm(k) < update.min_val) update.min_val = ubm(k);
-      if (ubm(k) > update.max_val) update.max_val = ubm(k);
-    }, Kokkos::MinMax<Real>(min_max_result));
+    team.team_barrier();
 
-  team.team_barrier();
-
-  umin = min_max_result.min_val;
-  umax = min_max_result.max_val;
+    umin = min_max_result.min_val;
+    umax = min_max_result.max_val;
+  }
 }
 
 } // namespace gw

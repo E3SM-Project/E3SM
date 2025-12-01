@@ -110,7 +110,7 @@ Field create_field (const std::string& name, const LayoutType lt, const Abstract
   auto pdf = [&](Engine& e) {
     return std::pow(2,ipdf(e));
   };
-  randomize(f,engine,pdf);
+  randomize_uniform(f,engine,pdf);
 
   return f;
 }

@@ -51,11 +51,8 @@ TEST_CASE("atm_backtend") {
   Field qc(qc_fid);
   qc.allocate_view();
 
-  // Construct random number generator stuff
-  using RPDF = std::uniform_real_distribution<Real>;
-  RPDF pdf(0.0, 200.0);
-
-  auto engine = scream::setup_random_test();
+  // Random number generator seed
+  int seed = get_random_test_seed(&comm);
 
   // Construct the Diagnostics
   std::map<std::string, std::shared_ptr<AtmosphereDiagnostic>> diags;
@@ -68,7 +65,7 @@ TEST_CASE("atm_backtend") {
 
   // Set time for qc and randomize its values
   qc.get_header().get_tracking().update_time_stamp(t0);
-  randomize(qc, engine, pdf);
+  randomize_uniform(qc, seed++, 0, 200);
 
   // Create and set up the diagnostic
   params.set("grid_name", grid->name());
@@ -99,7 +96,7 @@ TEST_CASE("atm_backtend") {
 
     util::TimeStamp t1({2024, 1, itest}, {0, 0, 0});  // a day later
     qc.get_header().get_tracking().update_time_stamp(t1);
-    randomize(qc, engine, pdf);
+    randomize_uniform(qc, seed++, 0, 200);
 
     diag->compute_diagnostic();
     some_field.update(qc, 1.0 / a_day, -1.0 / a_day);

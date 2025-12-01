@@ -329,12 +329,14 @@ end subroutine macrop_driver_readnl
     CC_ni_idx   = pbuf_get_index('CC_ni')
     CC_qlst_idx = pbuf_get_index('CC_qlst')
 
-    dlfzm_idx = pbuf_get_index('DLFZM')
-    difzm_idx = pbuf_get_index('DIFZM')
-    dsfzm_idx = pbuf_get_index('DSFZM', err)
-    dnlfzm_idx = pbuf_get_index('DNLFZM', err)
-    dnifzm_idx = pbuf_get_index('DNIFZM', err)
-    dnsfzm_idx = pbuf_get_index('DNSFZM', err)
+    if (zm_param%zm_microp) then
+      dlfzm_idx = pbuf_get_index('DLFZM')
+      difzm_idx = pbuf_get_index('DIFZM')
+      dsfzm_idx = pbuf_get_index('DSFZM', err)
+      dnlfzm_idx = pbuf_get_index('DNLFZM', err)
+      dnifzm_idx = pbuf_get_index('DNIFZM', err)
+      dnsfzm_idx = pbuf_get_index('DNSFZM', err)
+    end if
 
     if (micro_do_icesupersat) then 
        naai_idx      = pbuf_get_index('NAAI')

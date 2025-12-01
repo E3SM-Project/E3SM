@@ -13,7 +13,7 @@ contains
     use iso_c_binding,          only: c_int
     use thetal_test_interface,  only: init_f90
     use dimensions_mod,         only: nlev, nlevp, np
-    use edge_mod_base,          only: initEdgeBuffer, edge_g
+    use edge_mod,          only: initEdgeBuffer, edge_g
     use geometry_interface_mod, only: par, elem
     !
     ! Inputs

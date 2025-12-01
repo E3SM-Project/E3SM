@@ -54,11 +54,8 @@ TEST_CASE("binary_ops") {
   qc.allocate_view();
   qv.allocate_view();
 
-  // Construct random number generator stuff
-  using RPDF = std::uniform_real_distribution<Real>;
-  RPDF pdf(0.0, 200.0);
-
-  auto engine = scream::setup_random_test();
+  // Random number generator seed
+  int seed = get_random_test_seed();
 
   // Construct the Diagnostics
   std::map<std::string, std::shared_ptr<AtmosphereDiagnostic>> diags;
@@ -72,8 +69,8 @@ TEST_CASE("binary_ops") {
   // Set time for qc and randomize its values
   qc.get_header().get_tracking().update_time_stamp(t0);
   qv.get_header().get_tracking().update_time_stamp(t0);
-  randomize(qc, engine, pdf); qc.sync_to_dev();
-  randomize(qv, engine, pdf); qv.sync_to_dev();
+  randomize_uniform(qc, seed++, 0, 200); qc.sync_to_dev();
+  randomize_uniform(qv, seed++, 0, 200); qv.sync_to_dev();
 
   // Create and set up the diagnostic
   params.set("grid_name", grid->name());

@@ -41,7 +41,7 @@ extern "C" {
                         bool nearest_point, int halo, int traj_nsubstep);
   void init_geometry_f90();
   void cleanup_compose_f90();
-  void run_compose_standalone_test_f90(int* nmax, Real* eval);
+  void run_compose_standalone_test_f90(int* nmax, Real* eval, int* nerr);
   void run_trajectory_f90(Real t0, Real t1, bool independent_time_steps, Real* dep,
                           Real* dprecon);
   void run_sl_vertical_remap_bfb_f90(Real* diagnostic);
@@ -136,8 +136,8 @@ struct Session {
     p.remap_alg = RemapAlg::PPM_LIMITED_EXTRAP;
     p.qsplit = 1;
     p.rsplit = 1;
-    p.dt_tracer_factor = -1;
-    p.dt_remap_factor = -1;
+    p.dt_tracer_factor = 1;
+    p.dt_remap_factor = 1;
     p.params_set = true;
     p.theta_hydrostatic_mode = true;
     p.scale_factor = is_sphere ? PhysicalConstants::rearth0 : 1;
@@ -394,9 +394,10 @@ TEST_CASE ("compose_transport_testing") {
   do { // breakable
 
   if (s.run_only_advection_test) {
-    int nmax = s.nmax;
+    int nmax = s.nmax, nerr;
     std::vector<Real> eval_f((s.nlev+1)*s.qsize);
-    run_compose_standalone_test_f90(&nmax, eval_f.data());
+    run_compose_standalone_test_f90(&nmax, eval_f.data(), &nerr);
+    REQUIRE(nerr == 0);
     break;
   }
 
@@ -451,9 +452,10 @@ TEST_CASE ("compose_transport_testing") {
   }
 
   { // 2D SL BFB
-    int nmax = s.nmax;
+    int nmax = s.nmax, nerr;
     std::vector<Real> eval_f((s.nlev+1)*s.qsize), eval_c(eval_f.size());
-    run_compose_standalone_test_f90(&nmax, eval_f.data());
+    run_compose_standalone_test_f90(&nmax, eval_f.data(), &nerr);
+    REQUIRE(nerr == 0);
     for (const bool bfb : {false, true}) {
 #if ! defined HOMMEXX_BFB_TESTING
       if (bfb) continue;

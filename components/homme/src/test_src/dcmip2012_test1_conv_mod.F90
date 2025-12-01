@@ -312,12 +312,17 @@ contains
           tau_topo = tau_h
        end if
        u_topo_fac = -u0_topo/two
+       ! The mountain center moves with velocity
+       !    u(time) = cos(pi time/tau_topo) u_topo_fac
+       ! Then the position is
+       !    p(time) = int_0^time u(t) dt
+       !            = sin(pi time/tau_topo) (tau_topo/pi) u_topo_fac
        lambdam_t = lambdam_t + &
-            &      sin(pi*time/tau_topo)*(tau_topo/pi)*u_topo_fac & ! integral of u at lat = 0
+            &      sin(pi*time/tau_topo)*(tau_topo/pi)*u_topo_fac &
             &      /a ! to radians
     end if
     r = great_circle_dist(lambdam_t, phim, lon, lat)
-    if (r .lt. Rm) then
+    if (r < Rm) then
        zs = (h0/2.d0)*(one+cos(pi*r/Rm))*cos(pi*r/zetam)**2.d0
     else
        zs = zero
@@ -381,8 +386,9 @@ contains
           fz_z = -3*sin(gz)**2*cos(gz)*gz_z
        end if
        c0 = w0_h*(rho0/rho)*cos(pi*time/tau_h)
-       w =    c0*(cos(lat)*fl_lat - 2*sin(lat)*fl)*fz
-       v = -a*c0*(cos(lat)*fl                    )*fz_z
+       ! Don't use this because !use_w:
+       !   w = c0*(cos(lat)*fl_lat - 2*sin(lat)*fl)*fz
+       v = -a*c0*(cos(lat)*fl)*fz_z
     case default
        call abortmp('test1_conv_advection_orography: invalid case')
     end select
@@ -470,6 +476,7 @@ contains
     use parallel_mod, only: global_shared_buf, global_shared_sum
     use global_norms_mod, only: wrap_repro_sum
     use physical_constants, only: Rd => Rgas, p0
+    use kinds, only: iulog
 
     character(len=*), intent(in) :: test_case
     type(element_t), intent(in) :: elem(:)
@@ -534,13 +541,14 @@ contains
     end do
     
     if (par%masterproc) then
-       print '(a)', 'test1_conv>                          l2                    linf'
+       write(iulog, '(a)') &
+            'test1_conv>                          l2                    linf'
        do iq = 1,qsize
           a = global_shared_sum(2*iq-1)
           b = global_shared_sum(2*iq)
           reldif = sqrt(a/b)
-          print '(a,i2,es24.16,es24.16)', 'test1_conv> Q', &
-               iq, reldif, linf_num(iq)/linf_den(iq)
+          write(iulog, '(a,i2,es24.16,es24.16)') &
+               'test1_conv> Q', iq, reldif, linf_num(iq)/linf_den(iq)
        end do
     end if
   end subroutine test1_conv_print_results

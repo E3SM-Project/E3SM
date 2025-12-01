@@ -234,7 +234,7 @@ contains
   end subroutine init_geo_views_f90
 
   subroutine cleanup_f90 () bind(c)
-    use edge_mod_base, only : FreeEdgeBuffer, edge_g
+    use edge_mod, only : FreeEdgeBuffer, edge_g
     use element_state, only : deallocate_element_arrays
     use geometry_interface_mod, only: cleanup_geometry_f90
     use parallel_mod, only: rrequest, srequest, status

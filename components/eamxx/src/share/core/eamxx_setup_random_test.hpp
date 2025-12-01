@@ -52,8 +52,15 @@ Engine setup_random_test(const ekat::Comm* comm=nullptr, int* return_seed=nullpt
 }
 
 template <typename Engine=std::mt19937_64>
-Engine setup_random_test(const int seed)
+Engine setup_random_test(const int seed, const ekat::Comm* comm=nullptr)
 {
+  const auto& test_name = Catch::getResultCapture().getCurrentTestName();
+
+  if (comm == nullptr || comm->am_i_root()) {
+    // Print seed to screen to trace tests that fail.
+    std::cout << " For test " << test_name << ", using stored seed: " << seed << "\n";
+  }
+
   return Engine (seed);
 }
 

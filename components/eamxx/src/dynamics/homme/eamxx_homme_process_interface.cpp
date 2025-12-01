@@ -225,20 +225,20 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   // NOTE: 'true' is for 'dynamic' subfield; the idx of the subfield slice will move
   //       during execution (this class will take care of moving it, by calling
   //       reset_subview_idx on each field).
-  add_internal_field (m_helper_fields.at("v_dyn").subfield(1,tl.n0,true));
-  add_internal_field (m_helper_fields.at("vtheta_dp_dyn").subfield(1,tl.n0,true));
-  add_internal_field (m_helper_fields.at("dp3d_dyn").subfield(1,tl.n0,true));
-  add_internal_field (m_helper_fields.at("phi_int_dyn").subfield(1,tl.n0,true));
-  add_internal_field (m_helper_fields.at("ps_dyn").subfield(1,tl.n0,true));
-  add_internal_field (m_helper_fields.at("Qdp_dyn").subfield(1,tl.n0_qdp,true));
+  add_internal_field (m_helper_fields.at("v_dyn").subfield(1,tl.n0,true),{"RESTART"});
+  add_internal_field (m_helper_fields.at("vtheta_dp_dyn").subfield(1,tl.n0,true),{"RESTART"});
+  add_internal_field (m_helper_fields.at("dp3d_dyn").subfield(1,tl.n0,true),{"RESTART"});
+  add_internal_field (m_helper_fields.at("phi_int_dyn").subfield(1,tl.n0,true),{"RESTART"});
+  add_internal_field (m_helper_fields.at("ps_dyn").subfield(1,tl.n0,true),{"RESTART"});
+  add_internal_field (m_helper_fields.at("Qdp_dyn").subfield(1,tl.n0_qdp,true),{"RESTART"});
   if (not params.theta_hydrostatic_mode) {
-    add_internal_field (m_helper_fields.at("w_int_dyn").subfield(1,tl.n0,true));
+    add_internal_field (m_helper_fields.at("w_int_dyn").subfield(1,tl.n0,true),{"RESTART"});
   }
 
   // The output manager pulls from the atm process fields. Add
   // helper fields for the case that a user request output.
   add_internal_field (m_helper_fields.at("omega_dyn"));
-  add_internal_field (m_helper_fields.at("phis_dyn"));
+  add_internal_field (m_helper_fields.at("phis_dyn"),{"RESTART"});
 
   if (not fv_phys_active()) {
     // Dynamics backs out tendencies from the states, and passes those to Homme.
@@ -937,12 +937,15 @@ void HommeDynamics::init_homme_views () {
 }
 
 void HommeDynamics::restart_homme_state () {
-  // Safety checks: internal fields *should* have been restarted (and therefore have a valid timestamp)
+  // Safety checks: RESTART fields *should* have been restarted (and therefore have a valid timestamp)
   for (auto& f : get_internal_fields()) {
-    auto ts = f.get_header().get_tracking().get_time_stamp();
-    EKAT_REQUIRE_MSG(ts.is_valid(),
-        "Error! Found HommeDynamics internal field not restarted.\n"
-        "  - field name: " + f.get_header().get_identifier().name() + "\n");
+    const auto& track = f.get_header().get_tracking();
+    if (ekat::contains(track.get_groups_names(),"RESTART")) {
+      auto ts = track.get_time_stamp();
+      EKAT_REQUIRE_MSG(track.get_time_stamp().is_valid(),
+          "Error! Found HommeDynamics internal field not restarted.\n"
+          "  - field name: " + f.get_header().get_identifier().name() + "\n");
+    }
   }
 
   using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
@@ -1320,7 +1323,7 @@ void HommeDynamics::update_pressure(const std::shared_ptr<const AbstractGrid>& g
   const auto p_int_view = get_field_out("p_int",gn).get_view<Pack**>();
   const auto p_mid_view = get_field_out("p_mid",gn).get_view<Pack**>();
 
-  const auto qv_view        = get_field_in("qv").get_view<const Pack**>();
+  const auto qv_view        = get_field_in("qv",gn).get_view<const Pack**>();
   const auto dp_dry_view    = get_field_out("pseudo_density_dry").get_view<Pack**>();
   const auto p_dry_int_view = get_field_out("p_dry_int").get_view<Pack**>();
   const auto p_dry_mid_view = get_field_out("p_dry_mid").get_view<Pack**>();

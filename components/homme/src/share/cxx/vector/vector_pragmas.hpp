@@ -13,7 +13,6 @@
 
 #define VECTOR_IVDEP_LOOP _Pragma("ivdep")
 #define ALWAYS_VECTORIZE_LOOP _Pragma("vector always")
-#define VECTOR_SIMD_LOOP _Pragma("omp simd")
 #if HOMMEXX_VECTOR_SIZE == 1
 # define VECTOR_SIMD_LOOP
 #else

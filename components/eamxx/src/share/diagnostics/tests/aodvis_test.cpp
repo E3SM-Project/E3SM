@@ -66,10 +66,8 @@ TEST_CASE("aodvis") {
   sunlit.allocate_view();
   sunlit.get_header().get_tracking().update_time_stamp(t0);
 
-  // Construct random number generator stuff
-  using RPDF = std::uniform_real_distribution<Real>;
-  RPDF pdf(0, 0.005);
-  auto engine = scream::setup_random_test();
+  // Random number generator seed
+  int seed = get_random_test_seed(&comm);
 
   // Construct the Diagnostics
   std::map<std::string, std::shared_ptr<AtmosphereDiagnostic>> diags;
@@ -79,10 +77,10 @@ TEST_CASE("aodvis") {
   constexpr int ntests = 5;
   for(int itest = 0; itest < ntests; ++itest) {
     // Randomize tau
-    randomize(tau, engine, pdf);
+    randomize_uniform(tau, seed++, 0, 0.005);
 
     // Randomize sunlit
-    randomize(sunlit, engine, pdf);
+    randomize_uniform(sunlit, seed++, 0, 0.005);
 
     // Create and set up the diagnostic
     ekat::ParameterList params;

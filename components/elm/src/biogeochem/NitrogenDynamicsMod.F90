@@ -387,7 +387,8 @@ contains
  end subroutine NitrogenLeaching
 
   !-----------------------------------------------------------------------
-  subroutine NitrogenFert(bounds, num_soilc, filter_soilc, num_pcropp, filter_pcropp)
+  subroutine NitrogenFert(bounds, num_soilc, filter_soilc, &
+                          num_pcropp, filter_pcropp, num_ppercropp, filter_ppercropp)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, update the nitrogen fertilizer for crops
@@ -403,6 +404,8 @@ contains
     integer                 , intent(in)    :: filter_soilc(:) ! filter for soil columns
     integer , intent(in) :: num_pcropp       ! number of prog. crop patches in filter
     integer , intent(in) :: filter_pcropp(:) ! filter for prognostic crop patches
+    integer , intent(in) :: num_ppercropp     ! number of prog perennial crop patches in filter
+    integer , intent(in) :: filter_ppercropp(:) ! filter for prognostic perennial crop patches
     !
     ! !LOCAL VARIABLES:
     integer :: c,fc,p,fp                 ! indices
@@ -442,6 +445,10 @@ contains
          !$acc parallel loop independent gang vector default(present)
          do fp = 1, num_pcropp
             p = filter_pcropp(fp)
+            totalfert(p) = synthfert(p) + manure(p)
+         end do
+         do fp = 1, num_ppercropp
+            p = filter_ppercropp(fp)
             totalfert(p) = synthfert(p) + manure(p)
          end do
       end if

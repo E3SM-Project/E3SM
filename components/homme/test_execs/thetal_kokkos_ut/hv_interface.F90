@@ -19,7 +19,7 @@ contains
                           hv_nu, hv_nu_div, hv_nu_top, hv_nu_p, hv_nu_s) bind(c)
     use control_mod,    only: hypervis_subcycle, nu, nu_div, nu_top, nu_p, nu_s
     use thetal_test_interface, only: init_f90
-    use edge_mod_base, only: initEdgeBuffer, edge_g
+    use edge_mod, only: initEdgeBuffer, edge_g
     use element_state, only: nlev_tom, nu_scale_top
     use geometry_interface_mod, only: par, elem
     use physical_constants,     only: scale_factor, scale_factor_inv, laplacian_rigid_factor, rearth, rrearth
@@ -63,7 +63,7 @@ contains
                                      dptens_ptr, ttens_ptr, wtens_ptr, phitens_ptr, vtens_ptr) bind(c)
     use control_mod,            only: hypervis_scaling, theta_hydrostatic_mode
     use dimensions_mod,         only: nelemd
-    use edge_mod_base,          only: edge_g
+    use edge_mod,          only: edge_g
     use element_state,          only: timelevels
     use geometry_interface_mod, only: par,elem,hybrid
     use hybrid_mod,             only: hybrid_t, hybrid_create

@@ -31,6 +31,7 @@ grids_manager:
   grids_names: ["point_grid"]
   point_grid:
     type: point_grid
+    aliases: ["physics"]
     number_of_global_columns: 24
     number_of_vertical_levels: 3
 ...

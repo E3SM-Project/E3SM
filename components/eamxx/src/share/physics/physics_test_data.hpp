@@ -528,7 +528,7 @@ struct UnitBase
       // Read the seed
       int seed;
       impl::read_scalars(m_ifile,seed);
-      return setup_random_test(seed);
+      return setup_random_test(seed, nullptr);
     }
   }
 };

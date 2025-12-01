@@ -716,6 +716,7 @@ _TESTS = {
         "time"  : "01:00:00",
         "inherit" : (
             "e3sm_eamxx_mam4xx_lowres",
+            "e3sm_eamxx_v1_dp-eamxx",
         ),
         "tests" : (
             "ERS_Ln9.ne4_ne4.F2000-SCREAMv1-AQP1.eamxx-output-preset-2--eamxx-L72",
@@ -745,15 +746,11 @@ _TESTS = {
             )
     },
 
-    # Tests run on exclusively on mappy for eamxx AT testing. These tests
-    # should be fast, so we limit it to low res and add some thread tests
-    # specifically for mappy.
-    "e3sm_eamxx_v1_at" : {
-        "inherit" : ("e3sm_eamxx_v1_lowres", "e3sm_eamxx_v1_dp-eamxx"),
-        "tests"   : ("PET_Ln9_P32x2.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-output-preset-1")
-    },
-
     "e3sm_eamxx_v1_medres" : {
+        "inherit" : (
+            # DPxx is (very) lowres, but we only run medres nightly, so add it here
+            "e3sm_eamxx_v1_dp-eamxx",
+        ),
         "time"  : "02:00:00",
         "tests" : (
             #  "SMS_D_Ln2.ne30_ne30.F2000-SCREAMv1-AQP1", # Uncomment once IC file for ne30 is ready
@@ -798,6 +795,8 @@ _TESTS = {
         "inherit" : (
         ),
         "tests" : (
+            "RCS_P8_C4.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-perturb",  # 8 nodes, about 1.9 hours on pm-gpu
+            "RCS_P1_C4.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-perturb",    # 1 node, about 22min on pm-gpu
             "ERP_D_Lh182.ne4pg2_ne4pg2.F2010-SCREAMv1",
             "ERS_Ln362.ne30pg2_ne30pg2.F2010-SCREAMv1"
             )
@@ -820,6 +819,7 @@ _TESTS = {
             "REP_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.eamxx-mam4xx-wetscav--eamxx-L72",
             "REP_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.eamxx-mam4xx-drydep--eamxx-L72",
             "REP_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.eamxx-mam4xx-aero_microphysics--eamxx-L72",
+            "REP_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.eamxx-mam4xx-constituent_fluxes--eamxx-L72",
             "REP_Ln5.ne30pg2_oECv3.F2010-EAMxx-MAM4xx.eamxx-mam4xx-remap_emiss_ne4_ne30--eamxx-L72",
             "REP_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.eamxx-mam4xx-compute_mam4xx_diags--eamxx-L72",
             "REP_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.eamxx-L72",
@@ -840,6 +840,7 @@ _TESTS = {
             "SMS_D_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.eamxx-mam4xx-wetscav--eamxx-L72",
             "SMS_D_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.eamxx-mam4xx-drydep--eamxx-L72",
             "SMS_D_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.eamxx-mam4xx-aero_microphysics--eamxx-L72",
+            "SMS_D_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.eamxx-mam4xx-constituent_fluxes--eamxx-L72",
             "SMS_D_Ln5.ne30pg2_oECv3.F2010-EAMxx-MAM4xx.eamxx-mam4xx-remap_emiss_ne4_ne30--eamxx-L72",
             "SMS_D_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.eamxx-L72"
         )
@@ -848,7 +849,7 @@ _TESTS = {
     "e3sm_eamxx_mam4xx_long_runtime" : {
         "time"  : "03:00:00",
         "tests" : (
-            "SMS_D_Lm2.ne4pg2_oQU480.F2010-EAMxx-MAM4xx-MPASSI.eamxx-L72",
+            "SMS_D_Ld40.ne4pg2_oQU480.F2010-EAMxx-MAM4xx-MPASSI.eamxx-L72",
             "ERS_Ld80.ne4pg2_oQU480.F2010-EAMxx-MAM4xx-MPASSI.eamxx-L72",
             "SMS_Ly1.ne4pg2_oQU480.F2010-EAMxx-MAM4xx-MPASSI.eamxx-L72"
         )

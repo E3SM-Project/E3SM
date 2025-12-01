@@ -110,7 +110,7 @@
 <config_use_mom_del2 ocn_grid="FRISwISC04to60E3r1">.true.</config_use_mom_del2>
 <config_use_mom_del2 ocn_grid="FRISwISC02to60E3r1">.true.</config_use_mom_del2>
 <config_use_mom_del2 ocn_grid="FRISwISC01to60E3r1">.true.</config_use_mom_del2>
-<config_use_mom_del2 ocn_grid="RRSwISC6to18E3r5">.true.</config_use_mom_del2>
+<config_use_mom_del2 ocn_grid="RRSwISC6to18E3r5">.false.</config_use_mom_del2>
 <config_use_mom_del2 ocn_grid="SOwISC12to30E3r3">.true.</config_use_mom_del2>
 <config_use_mom_del2 ocn_grid="SOwISC12to30E3r4">.true.</config_use_mom_del2>
 <config_mom_del2>10.0</config_mom_del2>
@@ -128,7 +128,7 @@
 <config_mom_del2 ocn_grid="FRISwISC04to60E3r1">154.0</config_mom_del2>
 <config_mom_del2 ocn_grid="FRISwISC02to60E3r1">77.0</config_mom_del2>
 <config_mom_del2 ocn_grid="FRISwISC01to60E3r1">38.5</config_mom_del2>
-<config_mom_del2 ocn_grid="RRSwISC6to18E3r5">100.0</config_mom_del2>
+<config_mom_del2 ocn_grid="RRSwISC6to18E3r5">0.0</config_mom_del2>
 <config_mom_del2 ocn_grid="SOwISC12to30E3r3">462.0</config_mom_del2>
 <config_mom_del2 ocn_grid="SOwISC12to30E3r4">462.0</config_mom_del2>
 <config_use_tracer_del2>.false.</config_use_tracer_del2>
@@ -165,6 +165,7 @@
 <config_mom_del4 ocn_grid="SOwISC12to30E3r3">1.18e10</config_mom_del4>
 <config_mom_del4 ocn_grid="SOwISC12to30E3r4">1.18e10</config_mom_del4>
 <config_mom_del4_div_factor>1.0</config_mom_del4_div_factor>
+<config_mom_del4_div_factor ocn_grid="RRSwISC6to18E3r5">10.0</config_mom_del4_div_factor>
 <config_use_tracer_del4>.false.</config_use_tracer_del4>
 <config_tracer_del4>0.0</config_tracer_del4>
 
@@ -346,8 +347,11 @@
 <config_cvmix_kpp_use_enhanced_diff>.true.</config_cvmix_kpp_use_enhanced_diff>
 <config_cvmix_kpp_nonlocal_with_implicit_mix>.false.</config_cvmix_kpp_nonlocal_with_implicit_mix>
 <config_cvmix_kpp_use_theory_wave>.false.</config_cvmix_kpp_use_theory_wave>
+<config_cvmix_kpp_use_theory_wave ocn_grid="RRSwISC6to18E3r5">.true.</config_cvmix_kpp_use_theory_wave>
 <config_cvmix_kpp_langmuir_mixing_opt>'NONE'</config_cvmix_kpp_langmuir_mixing_opt>
+<config_cvmix_kpp_langmuir_mixing_opt ocn_grid="RRSwISC6to18E3r5">'LWF16'</config_cvmix_kpp_langmuir_mixing_opt>
 <config_cvmix_kpp_langmuir_entrainment_opt>'NONE'</config_cvmix_kpp_langmuir_entrainment_opt>
+<config_cvmix_kpp_langmuir_entrainment_opt ocn_grid="RRSwISC6to18E3r5">'LWF16'</config_cvmix_kpp_langmuir_entrainment_opt>
 <config_cvmix_kpp_use_active_wave>.false.</config_cvmix_kpp_use_active_wave>
 
 <!-- wave_coupling -->

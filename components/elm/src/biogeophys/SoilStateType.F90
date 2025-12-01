@@ -11,6 +11,7 @@ module SoilStateType
   use ncdio_pio       , only : ncd_pio_openfile, ncd_inqfdims, ncd_pio_closefile, ncd_inqdid, ncd_inqdlen
   use elm_varpar      , only : more_vertlayers, numpft, numrad
   use elm_varpar      , only : nlevsoi, nlevgrnd, nlevlak, nlevsoifl, nlayer, nlayert, nlevurb, nlevsno
+  use elm_varpar      , only : scalez, zecoeff
   use landunit_varcon , only : istice, istdlak, istwet, istsoil, istcrop, istice_mec
   use column_varcon   , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv 
   use elm_varcon      , only : zsoi, dzsoi, zisoi, spval, namet, grlnd
@@ -330,6 +331,7 @@ contains
     use SharedParamsMod   , only : ParamsShareInst
     use FuncPedotransferMod , only : pedotransf, get_ipedof
     use RootBiophysMod      , only : init_vegrootfr
+    use, intrinsic :: ieee_exceptions
     !
     ! !ARGUMENTS:
     class(soilstate_type) :: this
@@ -440,6 +442,11 @@ contains
     call getfil (fsurdat, locfn, 0)
     call ncd_pio_openfile (ncid, locfn, 0)
 
+    ! --------------------------------------------------------------------
+    !    Make sure nlevsoifl and nlevsoi match.  At this point, we keep this test, but
+    ! initVertical should have taken care of nlevsoi when the  value in the input file
+    ! differs from the default (10 layers).
+    ! --------------------------------------------------------------------
     call ncd_inqdlen(ncid,dimid,nlevsoifl,name='nlevsoi')
     if ( .not. more_vertlayers )then
        if ( nlevsoifl /= nlevsoi )then
@@ -449,6 +456,43 @@ contains
     else
        ! read in layers, interpolate to high resolution grid later
     end if
+
+
+
+    ! --------------------------------------------------------------------
+    !    Define the soil layers from the input file.  We first check if ZSOI is available
+    ! in the file, in which case we read the information directly from the file. Otherwise,
+    ! we assume the original ELM parameters. The input soil depths will be used for 
+    ! interpolating soil properties (e.g., sand and clay).
+    ! --------------------------------------------------------------------
+    allocate(zsoifl(1:nlevsoifl), zisoifl(0:nlevsoifl), dzsoifl(1:nlevsoifl))
+    ! Try to read soil information from the file.
+    call ncd_io(ncid=ncid, varname='ZSOI', flag='read', data=zsoifl, dim1name=grlnd, readvar=readvar)
+    if (.not. readvar ) then
+ 
+#ifdef CPRNVIDIA
+       !NOTE:  Workaround due to compiler issue with nvhpc 25.x when using -Ktrap=fp
+       call ieee_set_flag(ieee_all,.false.)
+       call ieee_set_halting_mode(ieee_inexact, .false.)
+#endif
+       do j = 1, nlevsoifl
+          zsoifl(j) = scalez*(exp(zecoeff*(dble(j)-0.5_r8))-1._r8)    !node depths
+       enddo
+    end if
+
+    dzsoifl(1) = 0.5_r8*(zsoifl(1)+zsoifl(2))             !thickness b/n two interfaces
+    do j = 2,nlevsoifl-1
+       dzsoifl(j)= 0.5_r8*(zsoifl(j+1)-zsoifl(j-1))
+    enddo
+    dzsoifl(nlevsoifl) = zsoifl(nlevsoifl)-zsoifl(nlevsoifl-1)
+
+    zisoifl(0) = 0._r8
+    do j = 1, nlevsoifl-1
+       zisoifl(j) = 0.5_r8*(zsoifl(j)+zsoifl(j+1))         !interface depths
+    enddo
+    zisoifl(nlevsoifl) = zsoifl(nlevsoifl) + 0.5_r8*dzsoifl(nlevsoifl)
+
+
 
     ! Read in organic matter dataset
 
@@ -547,27 +591,6 @@ contains
     ! Close file
 
     call ncd_pio_closefile(ncid)
-
-    ! --------------------------------------------------------------------
-    ! get original soil depths to be used in interpolation of sand and clay
-    ! --------------------------------------------------------------------
-
-    allocate(zsoifl(1:nlevsoifl), zisoifl(0:nlevsoifl), dzsoifl(1:nlevsoifl))
-    do j = 1, nlevsoifl
-       zsoifl(j) = 0.025*(exp(0.5_r8*(j-0.5_r8))-1._r8)    !node depths
-    enddo
-
-    dzsoifl(1) = 0.5_r8*(zsoifl(1)+zsoifl(2))             !thickness b/n two interfaces
-    do j = 2,nlevsoifl-1
-       dzsoifl(j)= 0.5_r8*(zsoifl(j+1)-zsoifl(j-1))
-    enddo
-    dzsoifl(nlevsoifl) = zsoifl(nlevsoifl)-zsoifl(nlevsoifl-1)
-
-    zisoifl(0) = 0._r8
-    do j = 1, nlevsoifl-1
-       zisoifl(j) = 0.5_r8*(zsoifl(j)+zsoifl(j+1))         !interface depths
-    enddo
-    zisoifl(nlevsoifl) = zsoifl(nlevsoifl) + 0.5_r8*dzsoifl(nlevsoifl)
 
     ! --------------------------------------------------------------------
     ! Set soil hydraulic and thermal properties: non-lake

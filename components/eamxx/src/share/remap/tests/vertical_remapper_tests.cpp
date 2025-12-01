@@ -558,8 +558,8 @@ TEST_CASE ("vertical_remapper") {
               // (summing x[i]*x[i] would overflow in SP, causing NaN's)
               auto mask = expected.get_header().get_extra_data<Field>("is_filled");
               expected.deep_copy(0,mask);
-              auto ex_norm = frobenius_norm<Real>(expected);
-              REQUIRE (frobenius_norm<Real>(diff)<tol*ex_norm);
+              auto ex_norm = frobenius_norm(expected).as<Real>();
+              REQUIRE (frobenius_norm(diff).as<Real>()<tol*ex_norm);
             };
 
             print (" -> check tgt fields ...\n",comm);

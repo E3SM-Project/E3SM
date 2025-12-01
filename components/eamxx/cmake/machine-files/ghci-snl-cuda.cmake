@@ -15,3 +15,7 @@ option(SCREAM_MPI_ON_DEVICE "Whether to use device pointers for MPI calls" OFF)
 
 # Currently, we have 2 GPUs/node on Blake, and we run a SINGLE build per node, so we can fit 2 ranks there
 set(SCREAM_TEST_MAX_RANKS 2 CACHE STRING "Upper limit on ranks for mpi tests")
+
+# Enable python tests
+option (EAMXX_ENABLE_PYTHON "Whether to enable python interface from eamxx" ON)
+set (Python_EXECUTABLE "/usr/bin/python3" CACHE STRING "")

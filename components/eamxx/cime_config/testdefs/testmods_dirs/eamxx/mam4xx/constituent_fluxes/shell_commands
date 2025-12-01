@@ -1,0 +1,9 @@
+alias ATMCHANGE='$CIMEROOT/../components/eamxx/scripts/atmchange'
+
+# Add mam4_constituent_fluxes to the list of processes
+ATMCHANGE physics::atm_procs_list="mam4_constituent_fluxes,mac_aero_mic,rrtmgp" -b
+
+#------------------------------------------------------
+# Set rest of the options to default
+#------------------------------------------------------
+$CIMEROOT/../components/eamxx/cime_config/testdefs/testmods_dirs/eamxx/mam4xx/set_default_eamxx_options

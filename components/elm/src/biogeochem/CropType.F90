@@ -727,7 +727,7 @@ contains
   end subroutine UpdateAccVars
 
   !-----------------------------------------------------------------------
-  subroutine CropIncrementYear (this, num_pcropp, filter_pcropp)
+  subroutine CropIncrementYear (this, num_pcropp, filter_pcropp, num_ppercropp, filter_ppercropp)
     !
     ! !DESCRIPTION:
     ! Increment the crop year, if appropriate
@@ -741,6 +741,8 @@ contains
     class(crop_type) :: this
     integer , intent(in) :: num_pcropp       ! number of prog. crop patches in filter
     integer , intent(in) :: filter_pcropp(:) ! filter for prognostic crop patches
+    integer , intent(in) :: num_ppercropp    ! number of prog perennial crop patches in filter
+    integer , intent(in) :: filter_ppercropp(:) ! filter for prognostic perennial crop patches
     !
     ! !LOCAL VARIABLES:
     integer kyr   ! current year
@@ -759,6 +761,12 @@ contains
     if ((kmo == 1 .and. kda == 1 .and. mcsec == 0) .and. .not. is_first_step()) then
        do fp = 1, num_pcropp
           p = filter_pcropp(fp)
+
+          this%nyrs_crop_active_patch(p) = this%nyrs_crop_active_patch(p) + 1
+       end do
+
+       do fp = 1, num_ppercropp
+          p = filter_ppercropp(fp)
 
           this%nyrs_crop_active_patch(p) = this%nyrs_crop_active_patch(p) + 1
        end do

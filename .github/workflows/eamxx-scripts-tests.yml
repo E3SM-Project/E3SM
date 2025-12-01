@@ -40,7 +40,7 @@ jobs:
     runs-on:  [self-hosted, gcc, ghci-snl-cpu]
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           persist-credentials: false
           show-progress: false

@@ -2,7 +2,22 @@
 
 #include "share/util/eamxx_family_tracking.hpp"
 #include "share/util/eamxx_universal_constants.hpp"
+#include "share/util/eamxx_scalar_wrapper.hpp"
 #include "share/util/eamxx_utils.hpp"
+
+TEST_CASE("scalar_wrapper") {
+  using namespace scream;
+
+  ScalarWrapper s1(1.0);
+  REQUIRE_THROWS (s1.as<int>());
+
+  auto s2 = ScalarWrapper::one();
+  REQUIRE (s2.as<Real>()==s1.as<Real>());
+
+  auto z1 = ScalarWrapper::zero();
+  ScalarWrapper z2(0.0);
+  REQUIRE (z2.as<Real>()==z1.as<Real>());
+}
 
 TEST_CASE("fill_value") {
   using namespace scream::constants;

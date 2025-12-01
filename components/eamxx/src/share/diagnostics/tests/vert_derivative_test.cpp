@@ -59,10 +59,8 @@ TEST_CASE("vert_derivative") {
   fin2.allocate_view();
   dp.allocate_view();
 
-  // Construct random number generator stuff
-  using RPDF = std::uniform_real_distribution<Real>;
-  RPDF dp_pdf(10,2000);
-  auto engine = scream::setup_random_test();
+  // Random number generator seed
+  int seed = get_random_test_seed();
 
   // Construct the diagnostics factory
   std::map<std::string, std::shared_ptr<AtmosphereDiagnostic>> diags;
@@ -88,7 +86,7 @@ TEST_CASE("vert_derivative") {
     }
   }
   fin2.sync_to_dev();
-  randomize(dp, engine, dp_pdf);
+  randomize_uniform(dp, seed++, 10, 2000);
 
   // Create and set up the diagnostic
   params.set("grid_name", grid->name());

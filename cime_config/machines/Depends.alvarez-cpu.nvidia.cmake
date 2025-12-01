@@ -1,5 +1,5 @@
 list(APPEND REDUCE_OPT_LIST
-  homme/src/share/derivative_mod_base.F90
+  homme/src/share/derivative_mod.F90
 )
 
 # Can use this flag to avoid internal compiler error for this file (with nvidia/21.11)
@@ -14,8 +14,8 @@ endif()
 set(PERFOBJS
   homme/src/share/prim_advection_base.F90
   homme/src/share/vertremap_base.F90
-  homme/src/share/edge_mod_base.F90
-  homme/src/share/bndry_mod_base.F90
+  homme/src/share/edge_mod.F90
+  homme/src/share/bndry_mod.F90
   homme/src/theta-l/share/prim_advance_mod.F90
   homme/src/preqx/share/prim_advance_mod.F90
   homme/src/preqx/share/viscosity_preqx_base.F90

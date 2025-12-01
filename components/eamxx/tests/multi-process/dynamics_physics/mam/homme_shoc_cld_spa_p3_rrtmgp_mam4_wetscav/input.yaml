@@ -20,6 +20,7 @@ initial_conditions:
   hetfrz_immersion_nucleation_tend: 0.1
   hetfrz_contact_nucleation_tend: 0.1
   hetfrz_deposition_nucleation_tend: 0.1
+  z_mam4_int : 0.0
 
   #variables needed by mam4_wetscav
   #--surface fluxes

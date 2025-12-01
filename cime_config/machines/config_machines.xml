@@ -175,7 +175,7 @@
         <arg name="label"> --label</arg>
         <arg name="num_tasks"> -n {{ total_tasks }} -N {{ num_nodes }}</arg>
         <arg name="thread_count">-c $SHELL{echo 256/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
-        <arg name="binding"> $SHELL{if [ 128 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu_bind=cores"; else echo "--cpu_bind=threads";fi;} </arg>
+        <arg name="binding"> $SHELL{if [ 128 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu-bind=cores"; else echo "--cpu-bind=threads";fi;} </arg>
         <arg name="placement"> -m plane=$SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
     </arguments>
     </mpirun>
@@ -219,7 +219,7 @@
 
       <modules compiler="gnu">
         <command name="load">PrgEnv-gnu/8.5.0</command>
-        <command name="load">gcc-native/13.2</command>
+        <command name="load">gcc-native/12.3</command>
         <command name="load">cray-libsci/24.07.0</command>
       </modules>
 
@@ -305,6 +305,9 @@
       <env name="LAPACK_ROOT">$SHELL{if [ -z "$LAPACK_ROOT" ]; then echo $NVIDIA_PATH/compilers; else echo "$LAPACK_ROOT"; fi}</env>
       <env name="BLA_VENDOR">NVHPC</env>
     </environment_variables>
+    <environment_variables compiler="nvidia" DEBUG="TRUE">
+      <env name="NVCOMPILER_TERM">trace</env>
+    </environment_variables>
     <environment_variables compiler="intel">
       <env name="BLA_VENDOR">Intel10_64_dyn</env>
     </environment_variables>
@@ -362,7 +365,7 @@
         <arg name="label"> --label</arg>
         <arg name="num_tasks"> -n {{ total_tasks }} -N {{ num_nodes }}</arg>
         <arg name="thread_count">-c $SHELL{echo 128/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
-        <arg name="binding"> $SHELL{if [ 64 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu_bind=cores"; else echo "--cpu_bind=threads";fi;} </arg>
+        <arg name="binding"> $SHELL{if [ 64 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu-bind=cores"; else echo "--cpu-bind=threads";fi;} </arg>
         <arg name="placement"> -m plane=$SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
     </arguments>
     </mpirun>
@@ -406,7 +409,7 @@
 
       <modules compiler="gnu.*">
         <command name="load">PrgEnv-gnu/8.5.0</command>
-        <command name="load">gcc-native/13.2</command>
+        <command name="load">gcc-native/12.3</command>
       </modules>
 
       <modules compiler="nvidia.*">
@@ -422,7 +425,7 @@
       <modules compiler="nvidiagpu">
         <command name="load">cudatoolkit/12.9</command>
         <command name="load">craype-accel-nvidia80</command>
-        <command name="load">gcc-native-mixed/13.2</command>
+        <command name="load">gcc-native-mixed/12.3</command>
       </modules>
 
       <modules compiler="gnu">
@@ -524,7 +527,7 @@
         <arg name="label"> --label</arg>
         <arg name="num_tasks"> -n {{ total_tasks }} -N {{ num_nodes }}</arg>
         <arg name="thread_count">-c $SHELL{echo 256/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
-        <arg name="binding"> $SHELL{if [ 128 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu_bind=cores"; else echo "--cpu_bind=threads";fi;} </arg>
+        <arg name="binding"> $SHELL{if [ 128 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu-bind=cores"; else echo "--cpu-bind=threads";fi;} </arg>
         <arg name="placement"> -m plane=$SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
     </arguments>
     </mpirun>
@@ -657,6 +660,9 @@
       <env name="LAPACK_ROOT">$SHELL{if [ -z "$LAPACK_ROOT" ]; then echo $NVIDIA_PATH/compilers; else echo "$LAPACK_ROOT"; fi}</env>
       <env name="BLA_VENDOR">NVHPC</env>
     </environment_variables>
+    <environment_variables compiler="nvidia" DEBUG="TRUE">
+      <env name="NVCOMPILER_TERM">trace</env>
+    </environment_variables>
     <environment_variables compiler="intel">
       <env name="BLA_VENDOR">Intel10_64_dyn</env>
     </environment_variables>
@@ -714,7 +720,7 @@
         <arg name="label"> --label</arg>
         <arg name="num_tasks"> -n {{ total_tasks }} -N {{ num_nodes }}</arg>
         <arg name="thread_count">-c $SHELL{echo 128/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
-        <arg name="binding"> $SHELL{if [ 64 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu_bind=cores"; else echo "--cpu_bind=threads";fi;} </arg>
+        <arg name="binding"> $SHELL{if [ 64 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu-bind=cores"; else echo "--cpu-bind=threads";fi;} </arg>
         <arg name="placement"> -m plane=$SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
     </arguments>
     </mpirun>
@@ -877,7 +883,7 @@
         <arg name="label"> --label</arg>
         <arg name="num_tasks"> -n {{ total_tasks }} -N {{ num_nodes }}</arg>
         <arg name="thread_count">-c $SHELL{echo 256/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
-        <arg name="binding"> $SHELL{if [ 128 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu_bind=cores"; else echo "--cpu_bind=threads";fi;} </arg>
+        <arg name="binding"> $SHELL{if [ 128 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu-bind=cores"; else echo "--cpu-bind=threads";fi;} </arg>
         <arg name="placement"> -m plane=$SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
     </arguments>
     </mpirun>
@@ -1009,6 +1015,9 @@
       <env name="LAPACK_ROOT">$SHELL{if [ -z "$LAPACK_ROOT" ]; then echo $NVIDIA_PATH/compilers; else echo "$LAPACK_ROOT"; fi}</env>
       <env name="BLA_VENDOR">NVHPC</env>
     </environment_variables>
+    <environment_variables compiler="nvidia" DEBUG="TRUE">
+      <env name="NVCOMPILER_TERM">trace</env>
+    </environment_variables>
     <environment_variables compiler="intel">
       <env name="BLA_VENDOR">Intel10_64_dyn</env>
     </environment_variables>
@@ -1066,7 +1075,7 @@
         <arg name="label"> --label</arg>
         <arg name="num_tasks"> -n {{ total_tasks }} -N {{ num_nodes }}</arg>
         <arg name="thread_count">-c $SHELL{echo 128/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
-        <arg name="binding"> $SHELL{if [ 64 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu_bind=cores"; else echo "--cpu_bind=threads";fi;} </arg>
+        <arg name="binding"> $SHELL{if [ 64 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu-bind=cores"; else echo "--cpu-bind=threads";fi;} </arg>
         <arg name="placement"> -m plane=$SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
     </arguments>
     </mpirun>
@@ -1317,7 +1326,8 @@
         <command name="load">Core/25.03</command>
         <command name="load">PrgEnv-gnu</command>
         <command name="load">cpe/24.11</command>
-        <command name="load">libunwind/1.8.1</command>
+        <command name="load">gcc-native/12.3</command>
+        <command name="load">libunwind</command>
         <command name="load">cray-python/3.11.7</command>
         <command name="load">subversion</command>
         <command name="load">git</command>
