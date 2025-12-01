@@ -12,7 +12,9 @@ module eatm_comp_mod
   use shr_cal_mod    , only: shr_cal_date2julian, shr_cal_ymdtod2string
   use shr_mpi_mod    , only: shr_mpi_bcast
   use seq_timemgr_mod, only: seq_timemgr_EClockGetData, seq_timemgr_RestartAlarmIsOn
+  use eatmMod
   use eatmSpmdMod
+  use eatmIO
 
   ! !PUBLIC TYPES:
 
@@ -27,66 +29,6 @@ module eatm_comp_mod
   public :: eatm_comp_run
   public :: eatm_comp_final
 
-  !--------------------------------------------------------------------------
-  ! Public data
-  !--------------------------------------------------------------------------
-  integer, public           :: gsize, lsize, lsize_x, lsize_y
-  character(CL), public     :: restart_file
-  character(CL), public     :: case_name      ! case name
-  character(len=16), public :: inst_name
-  character(len=16), public :: inst_suffix = ""    ! char string associated with instance (ie. "_0001" or "")
-
-     !JW TODO: load up all arrays into a big 3D container? lots of 2D arrays?
-     !         for now, using 2D arrays with EAM naming convention
-     !         and EAM sign conventions
-  ! imported arrays first
-  real(kind=R8), dimension(:,:), allocatable, public :: shf
-  real(kind=R8), dimension(:,:), allocatable, public :: cflx
-  real(kind=R8), dimension(:,:), allocatable, public :: lhf
-  real(kind=R8), dimension(:,:), allocatable, public :: wsx
-  real(kind=R8), dimension(:,:), allocatable, public :: wsy
-  real(kind=R8), dimension(:,:), allocatable, public :: lwup
-  real(kind=R8), dimension(:,:), allocatable, public :: asdir
-  real(kind=R8), dimension(:,:), allocatable, public :: aldir
-  real(kind=R8), dimension(:,:), allocatable, public :: asdif
-  real(kind=R8), dimension(:,:), allocatable, public :: aldif
-  real(kind=R8), dimension(:,:), allocatable, public :: ts
-  real(kind=R8), dimension(:,:), allocatable, public :: sst
-  real(kind=R8), dimension(:,:), allocatable, public :: snowhland
-  real(kind=R8), dimension(:,:), allocatable, public :: snowhice
-  real(kind=R8), dimension(:,:), allocatable, public :: tref
-  real(kind=R8), dimension(:,:), allocatable, public :: qref
-  real(kind=R8), dimension(:,:), allocatable, public :: u10
-  real(kind=R8), dimension(:,:), allocatable, public :: u10withgusts
-  real(kind=R8), dimension(:,:), allocatable, public :: icefrac
-  real(kind=R8), dimension(:,:), allocatable, public :: ocnfrac
-  real(kind=R8), dimension(:,:), allocatable, public :: lndfrac
-
-  ! exported arrays
-  real(kind=R8), dimension(:,:), allocatable, public :: zbot
-  real(kind=R8), dimension(:,:), allocatable, public :: ubot
-  real(kind=R8), dimension(:,:), allocatable, public :: vbot
-  real(kind=R8), dimension(:,:), allocatable, public :: tbot
-  real(kind=R8), dimension(:,:), allocatable, public :: thbot
-  real(kind=R8), dimension(:,:), allocatable, public :: qbot
-  real(kind=R8), dimension(:,:), allocatable, public :: rho
-  real(kind=R8), dimension(:,:), allocatable, public :: pbot
-  real(kind=R8), dimension(:,:), allocatable, public :: psl
-  real(kind=R8), dimension(:,:), allocatable, public :: flwds
-  real(kind=R8), dimension(:,:), allocatable, public :: rainc
-  real(kind=R8), dimension(:,:), allocatable, public :: rainl
-  real(kind=R8), dimension(:,:), allocatable, public :: snowc
-  real(kind=R8), dimension(:,:), allocatable, public :: snowl
-  real(kind=R8), dimension(:,:), allocatable, public :: soll
-  real(kind=R8), dimension(:,:), allocatable, public :: sols
-  real(kind=R8), dimension(:,:), allocatable, public :: solld
-  real(kind=R8), dimension(:,:), allocatable, public :: solsd
-  real(kind=R8), dimension(:,:), allocatable, public :: netsw
-
-  character(CS) :: myModelName = 'atm'   ! user defined model name
-
-  character(len=*),parameter :: rpfile = 'rpointer.atm'
-
   save
 
   !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -96,7 +38,7 @@ CONTAINS
 
   subroutine eatm_comp_init(Eclock, x2a, a2x, &
        seq_flds_x2a_fields, seq_flds_a2x_fields, &
-       gsmap, ggrid, logunit, read_restart)
+       gsmap, ggrid, read_restart)
 
     ! !DESCRIPTION: initialize emulator atm model
     implicit none
@@ -108,12 +50,10 @@ CONTAINS
     character(len=*)       , intent(in)    :: seq_flds_a2x_fields ! fields to mediator
     type(mct_gsMap)        , pointer       :: gsMap               ! model global sep map (output)
     type(mct_gGrid)        , pointer       :: ggrid               ! model ggrid (output)
-    integer(IN)            , intent(in)    :: logunit             ! logging unit number
     logical                , intent(in)    :: read_restart        ! start from restart
 
     !--- local variables ---
     integer(IN)   :: n,k         ! generic counters
-    integer(IN)   :: lsize     ! local size
     integer(IN)   :: kmask       ! field reference
     integer(IN)   :: klat        ! field reference
     integer(IN)   :: kfld        ! fld index
@@ -143,17 +83,9 @@ CONTAINS
 
     call t_startf('EATM_INIT')
 
-       !JW already done?
-       !----------------------------------------------------------------------------
-       ! Initialize MCT attribute vectors
-       !----------------------------------------------------------------------------
-
        call t_startf('eatm_initmctavs')
-       if (masterproc) write(logunit,F00) 'allocate AVs'
-       call shr_sys_flush(logunit)
-
-       call mct_aVect_init(a2x, rList=seq_flds_a2x_fields, lsize=lsize)
-       call mct_aVect_zero(a2x)
+       if (masterproc) write(logunit_atm,F00) 'allocate AVs'
+       call shr_sys_flush(logunit_atm)
 
        allocate(shf(lsize_x,lsize_y))
        allocate(cflx(lsize_x,lsize_y))
@@ -205,11 +137,11 @@ CONTAINS
 
        if (read_restart) then
           if (masterproc) then
-             write(logunit,F00) ' restart filename from rpointer'
-             call shr_sys_flush(logunit)
+             write(logunit_atm,F00) ' restart filename from rpointer'
+             call shr_sys_flush(logunit_atm)
              inquire(file=trim(rpfile)//trim(inst_suffix),exist=exists)
              if (.not.exists) then
-                write(logunit,F00) ' ERROR: rpointer file does not exist'
+                write(logunit_atm,F00) ' ERROR: rpointer file does not exist'
                 call shr_sys_abort(trim(subname)//' ERROR: rpointer file missing')
              endif
              nu = shr_file_getUnit()
@@ -220,7 +152,7 @@ CONTAINS
           endif
           call shr_mpi_bcast(restart_file,mpicom_atm,'restart_file')
 
-          call shr_sys_flush(logunit)
+          call shr_sys_flush(logunit_atm)
        endif
 
        if (read_restart) then
@@ -236,11 +168,12 @@ CONTAINS
 
     call t_stopf('EATM_INIT')
 
+    return
+
   end subroutine eatm_comp_init
 
   !===============================================================================
-  subroutine eatm_comp_run(EClock, x2a, a2x, &
-       gsmap, ggrid, logunit)
+  subroutine eatm_comp_run(EClock, x2a, a2x, gsmap, ggrid)
 
     ! !DESCRIPTION: run method for eatm model
     implicit none
@@ -251,14 +184,12 @@ CONTAINS
     type(mct_aVect)        , intent(inout) :: a2x
     type(mct_gsMap)        , pointer       :: gsMap
     type(mct_gGrid)        , pointer       :: ggrid
-    integer(IN)            , intent(in)    :: logunit          ! logging unit number
 
     !--- local ---
     integer(IN)   :: CurrentYMD        ! model date
     integer(IN)   :: CurrentTOD        ! model sec into model date
     integer(IN)   :: yy,mm,dd          ! year month day
     integer(IN)   :: n                 ! indices
-    integer(IN)   :: lsize             ! size of attr vect
     integer(IN)   :: idt               ! integer timestep
     real(R8)      :: dt                ! timestep
     logical       :: write_restart     ! restart now
@@ -323,7 +254,7 @@ CONTAINS
           call shr_file_freeUnit(nu)
        endif
 
-       call shr_sys_flush(logunit)
+       call shr_sys_flush(logunit_atm)
        call t_stopf('eatm_restart')
     endif
 
@@ -336,24 +267,25 @@ CONTAINS
 
     call t_startf('eatm_run2')
     if (masterproc) then
-       write(logunit,F04) trim(myModelName),': model date ', CurrentYMD,CurrentTOD
-       call shr_sys_flush(logunit)
+       write(logunit_atm,F04) trim(myModelName),': model date ', CurrentYMD,CurrentTOD
+       call shr_sys_flush(logunit_atm)
     end if
 
     call t_stopf('eatm_run2')
 
     call t_stopf('EATM_RUN')
 
+    return
+
   end subroutine eatm_comp_run
 
   !===============================================================================
-  subroutine eatm_comp_final(logunit)
+  subroutine eatm_comp_final()
 
     ! !DESCRIPTION: finalize method for eatm model
     implicit none
 
     ! !INPUT/OUTPUT PARAMETERS:
-    integer(IN) , intent(in) :: logunit     ! logging unit number
 
     !--- formats ---
     character(*), parameter :: F00   = "('(eatm_comp_final) ',8a)"
@@ -407,9 +339,9 @@ CONTAINS
     deallocate(netsw)
 
     if (masterproc) then
-       write(logunit,F91)
-       write(logunit,F00) trim(myModelName),': end of main integration loop'
-       write(logunit,F91)
+       write(logunit_atm,F91)
+       write(logunit_atm,F00) trim(myModelName),': end of main integration loop'
+       write(logunit_atm,F91)
     end if
 
     call t_stopf('EATM_FINAL')

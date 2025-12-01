@@ -10,6 +10,11 @@
   <!---EATM compsets -->
 
   <compset>
+    <alias>GMPAS-EATM</alias>
+    <lname>2000_EATM_SLND_MPASSI_MPASO%DATMFORCED_DROF%JRA-1p5-2023_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
     <alias>GPMPAS-EATM</alias>
     <lname>2000_EATM_ELM%SPBC_MPASSI_MPASO%DATMFORCED_MOSART_SGLC_SWAV</lname>
   </compset>

@@ -13,8 +13,8 @@ module eatmIO
   use shr_sys_mod    , only : shr_sys_flush, shr_sys_abort
   use shr_file_mod   , only : shr_file_getunit, shr_file_freeunit
   use eatmSpmdMod    , only : masterproc, mpicom_atm, iam, npes
-  use eatm_comp_mod  , only : gsize, lsize, inst_name
   use perf_mod       , only : t_startf, t_stopf
+  use eatmMod
   use mct_mod
   use pio
 
@@ -140,7 +140,7 @@ contains
 
 !-----------------------------------------------------------------------
 
-  subroutine ncd_pio_init()
+  subroutine ncd_pio_init(inst_name)
 
     !-----------------------------------------------------------------------
     ! !DESCRIPTION:
@@ -150,6 +150,7 @@ contains
     use shr_pio_mod, only : shr_pio_getiosys, shr_pio_getiotype
     ! !ARGUMENTS:
     implicit none
+    character(len=16), intent(in) :: inst_name
     ! !LOCAL VARIABLES:
     character(len=*),parameter :: subname='ncd_pio_init' ! subroutine name
     !-----------------------------------------------------------------------
@@ -405,14 +406,11 @@ contains
 
 !-----------------------------------------------------------------------
 
-  subroutine ncd_inqfdims(ncid, isgrid2d, ni, nj, ns)
+  subroutine ncd_inqfdims(ncid, ns)
 
     !-----------------------------------------------------------------------
     ! !ARGUMENTS:
     type(file_desc_t), intent(inout):: ncid
-    logical          , intent(out)  :: isgrid2d
-    integer          , intent(out)  :: ni
-    integer          , intent(out)  :: nj
     integer          , intent(out)  :: ns
     ! !LOCAL VARIABLES:
     integer  :: dimid                                ! netCDF id
@@ -420,45 +418,24 @@ contains
     character(len=32) :: subname = 'surfrd_filedims' ! subroutine name
     !-----------------------------------------------------------------------
 
-    ni = 0
-    nj = 0
+    ns = 0
 
+    !JW modified for scrip file
     call pio_seterrorhandling(ncid, PIO_BCAST_ERROR)
-    ier = pio_inq_dimid (ncid, 'lon', dimid)
-    if (ier == PIO_NOERR) ier = pio_inq_dimlen(ncid, dimid, ni)
-    ier = pio_inq_dimid (ncid, 'lat', dimid)
-    if (ier == PIO_NOERR) ier = pio_inq_dimlen(ncid, dimid, nj)
+    ier = pio_inq_dimid (ncid, 'grid_center_lon', dimid)
+    if (ier == PIO_NOERR) ier = pio_inq_dimlen(ncid, dimid, ns)
+    ier = pio_inq_dimid (ncid, 'grid_center_lon', dimid)
+    if (ier == PIO_NOERR) ier = pio_inq_dimlen(ncid, dimid, ns)
 
-    ier = pio_inq_dimid (ncid, 'lsmlon', dimid)
-    if (ier == PIO_NOERR) ier = pio_inq_dimlen(ncid, dimid, ni)
-    ier = pio_inq_dimid (ncid, 'lsmlat', dimid)
-    if (ier == PIO_NOERR) ier = pio_inq_dimlen(ncid, dimid, nj)
-
-    ier = pio_inq_dimid (ncid, 'ni', dimid)
-    if (ier == PIO_NOERR) ier = pio_inq_dimlen(ncid, dimid, ni)
-    ier = pio_inq_dimid (ncid, 'nj', dimid)
-    if (ier == PIO_NOERR) ier = pio_inq_dimlen(ncid, dimid, nj)
-
-    ier = pio_inq_dimid (ncid, 'gridcell', dimid)
-    if (ier == PIO_NOERR) then
-       ier = pio_inq_dimlen(ncid, dimid, ni)
-       if (ier == PIO_NOERR) nj = 1
-    end if
+    ier = pio_inq_dimid (ncid, 'grid_size', dimid)
+    if (ier == PIO_NOERR) ier = pio_inq_dimlen(ncid, dimid, ns)
 
     call pio_seterrorhandling(ncid, PIO_INTERNAL_ERROR)
 
-    if (ni == 0 .or. nj == 0) then
-       write(logunit_atm,*) trim(subname),' ERROR: ni,nj = ',ni,nj,' cannot be zero '
+    if (ns == 0) then
+       write(logunit_atm,*) trim(subname),' ERROR: ns = ',ns,' cannot be zero '
        call shr_sys_abort()
     end if
-
-    if (nj == 1) then
-       isgrid2d = .false.
-    else
-       isgrid2d = .true.
-    end if
-
-    ns = ni*nj
 
   end subroutine ncd_inqfdims
 
