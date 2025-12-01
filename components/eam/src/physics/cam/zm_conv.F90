@@ -1997,7 +1997,7 @@ subroutine zm_calculate_output_tend(pcols, ncol, pver, pverp, &
                                     dl, evp, cu, &
                                     loc_microp_st)
    !----------------------------------------------------------------------------
-   ! Purpose: initialize quantities for ZM convection scheme
+   ! Purpose: calculate final output tendencies for the ZM convection scheme
    !----------------------------------------------------------------------------
    implicit none
    !----------------------------------------------------------------------------
@@ -2070,28 +2070,24 @@ subroutine zm_calculate_output_tend(pcols, ncol, pver, pverp, &
       do i = il1g,il2g
          emc = -cu(i,k) + evp(i,k) ! condensation in updraft and evaporating rain in downdraft
 
-         dsdt(i,k) = -zm_const%latvap/zm_const%cpair*emc &
-                     + (+mu(i,k+1)* (su(i,k+1)-shat(i,k+1)) &
-                        -mu(i,k)*   (su(i,k)-shat(i,k)) &
-                        +md(i,k+1)* (sd(i,k+1)-shat(i,k+1)) &
-                        -md(i,k)*   (sd(i,k)-shat(i,k)) &
-                       )/dp(i,k)
+         dsdt(i,k) = -zm_const%latvap/zm_const%cpair*emc + &
+                     (+mu(i,k+1)*(su(i,k+1)-shat(i,k+1)) - mu(i,k)*(su(i,k)-shat(i,k)) &
+                      +md(i,k+1)*(sd(i,k+1)-shat(i,k+1)) - md(i,k)*(sd(i,k)-shat(i,k)) &
+                     )/dp(i,k)
 
          dqdt(i,k) = emc + &
-                    (+mu(i,k+1)* (qu(i,k+1)-qhat(i,k+1)) &
-                     -mu(i,k)*   (qu(i,k)-qhat(i,k)) &
-                     +md(i,k+1)* (qd(i,k+1)-qhat(i,k+1)) &
-                     -md(i,k)*   (qd(i,k)-qhat(i,k)) &
-                    )/dp(i,k)
+                     (+mu(i,k+1)*(qu(i,k+1)-qhat(i,k+1)) - mu(i,k)*(qu(i,k)-qhat(i,k)) &
+                      +md(i,k+1)*(qd(i,k+1)-qhat(i,k+1)) - md(i,k)*(qd(i,k)-qhat(i,k)) &
+                     )/dp(i,k)
 
          if (zm_param%zm_microp) then
             dsdt(i,k) = dsdt(i,k) + zm_const%latice/zm_const%cpair*loc_microp_st%frz(i,k)
-            dl                (i,k) = du(i,k)*loc_microp_st%qcde(i,k+1)
             loc_microp_st%dif (i,k) = du(i,k)*loc_microp_st%qide(i,k+1)
             loc_microp_st%dnlf(i,k) = du(i,k)*loc_microp_st%ncde(i,k+1)
             loc_microp_st%dnif(i,k) = du(i,k)*loc_microp_st%nide(i,k+1)
             loc_microp_st%dsf (i,k) = du(i,k)*loc_microp_st%qsde(i,k+1)
             loc_microp_st%dnsf(i,k) = du(i,k)*loc_microp_st%nsde(i,k+1)
+            dl(i,k) = du(i,k)*loc_microp_st%qcde(i,k+1)
          else
             dl(i,k) = du(i,k)*ql(i,k+1)
          end if
@@ -2107,14 +2103,10 @@ subroutine zm_calculate_output_tend(pcols, ncol, pver, pverp, &
    do k = kbm,pver
       do i = il1g,il2g
          if (k == mx(i)) then
-            dsdt(i,k) = (1._r8/dsubcld(i))* &
-                        (-mu(i,k)* (su(i,k)-shat(i,k)) &
-                         -md(i,k)* (sd(i,k)-shat(i,k)) &
-                        )
-            dqdt(i,k) = (1._r8/dsubcld(i))* &
-                        (-mu(i,k)*(qu(i,k)-qhat(i,k)) &
-                         -md(i,k)*(qd(i,k)-qhat(i,k)) &
-                        )
+            dsdt(i,k) = (1._r8/dsubcld(i))* (-mu(i,k)*(su(i,k)-shat(i,k)) &
+                                             -md(i,k)*(sd(i,k)-shat(i,k)) )
+            dqdt(i,k) = (1._r8/dsubcld(i))* (-mu(i,k)*(qu(i,k)-qhat(i,k)) &
+                                             -md(i,k)*(qd(i,k)-qhat(i,k)) )
          else if (k > mx(i)) then
             dsdt(i,k) = dsdt(i,k-1)
             dqdt(i,k) = dqdt(i,k-1)
