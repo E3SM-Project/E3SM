@@ -104,7 +104,6 @@ int main(int argc, char *argv[]) {
       
       MachEnv *DefEnv = MachEnv::getDefault();
       HorzMesh *DefMesh = HorzMesh::getDefault();
-      //VertCoord *DefVCoord = VertCoord::getDefault();
       VertCoord *VCoord = VertCoord::getDefault();
       OceanState *DefState = OceanState::getDefault();
       Decomp *DefDecomp = Decomp::getDefault();
@@ -140,9 +139,6 @@ int main(int argc, char *argv[]) {
             CellsOnEdge(e, 0)= 0;
             CellsOnEdge(e, 1)= 1;
             DcEdge(e) = dC;
-            //for (int k = 0; k < NVertLayers; ++k) {
-            //   EdgeMask(e, k) = 1.0_Real;
-            //}
          });     
 
          // Fetch reference desnity from Config
@@ -164,8 +160,6 @@ int main(int argc, char *argv[]) {
          Array2DReal Salinity;
          Err = Tracers::getByName(Temp, TimeLevel, "Temperature");
          Err = Tracers::getByName(Salinity, TimeLevel, "Salinity");
-
-
 
          // set Z interface and mid-point locations
          Real ZBottom = -1000.0_Real;
@@ -191,24 +185,12 @@ int main(int argc, char *argv[]) {
 
          LOG_INFO("NVertLayers = {}", NVertLayers);
          LOG_INFO("dC = {}", dC);
-         //for (int i = 0; i < 2; ++i) {
-         //   for (int k = 0; k <= NVertLayers; ++k) {
-         //      LOG_INFO("ZInterface({}, {}) = {}", i, k, ZInterface(i, k));
-         //   }
-         //}
-         //LOG_INFO("NVertLayers = {}", NVertLayers);
          for (int i = 0; i < 2; ++i) {
             //for (int k = 0; k <= NVertLayers; ++k) {
             for (int k = 0; k < 2; ++k) {
                LOG_INFO("LayerThick({}, {}) = {}", i, k, LayerThick(i, k));
             }
          }
-         //LOG_INFO("NVertLayers = {}", NVertLayers);
-         //for (int i = 0; i < 2; ++i) {
-         //   for (int k = 0; k <= NVertLayers; ++k) {
-         //      LOG_INFO("ZMid({}, {}) = {}", i, k, ZMid(i, k));
-         //   }
-         //}
 
          // set simple temperature and salinity profiles
          auto &SpecVol = DefEos->SpecVol;
@@ -228,26 +210,10 @@ int main(int argc, char *argv[]) {
             SpecVolOld(i, k) = SpecVol(i, k);
          });
 
-         //for (int i = 0; i < 2; ++i) {
-         //   for (int k = 0; k < NVertLayers; ++k) {
-         //      LOG_INFO("Temp({}, {}) = {}", i, k, Temp(i, k));
-         //   }
-         //}
-         //for (int i = 0; i < 2; ++i) {
-         //   for (int k = 0; k < NVertLayers; ++k) {
-         //      LOG_INFO("Salinity({}, {}) = {}", i, k, Salinity(i, k));
-         //   }
-         //}
-
          // iterate to converge SpecVol
          auto &PressureMid = VCoord->PressureMid;
          VCoord->computePressure(LayerThick, SurfacePressure);
          deepCopy(PressureMidOld, PressureMid);
-         //for (int i = 0; i < 2; ++i) {
-         //   for (int k = 0; k < NVertLayers; ++k) {
-         //      LOG_INFO("PressureMid({}, {}) = {}, PressureMidOld({}, {}) = {}", i, k, PressureMid(i, k), i, k, PressureMidOld(i, k));
-         //   }
-         //}
          for (int iteration = 0; iteration < 15; ++iteration) {
 
             // compute specific volume from EOS
@@ -272,18 +238,12 @@ int main(int argc, char *argv[]) {
                LOG_INFO("converged: max diff = {}", max_value);
                break;
             } else {
-               //LOG_INFO("max diff = {}", max_value);
                parallelFor({DefMesh->NCellsAll, NVertLayers}, KOKKOS_LAMBDA(int i, int k) {
                   SpecVolOld(i, k) = SpecVol(i, k);
                });
             }
 
          }
-         //for (int i = 0; i < 2; ++i) {
-         //   for (int k = 0; k < NVertLayers; ++k) {
-         //      LOG_INFO("SpecVol({}, {}) = {}", i, k, SpecVol(i, k));
-         //   }
-         //}
 
          // compute geopotential
          //VCoord->computeZHeight(LayerThick, SpecVol);
@@ -298,24 +258,10 @@ int main(int argc, char *argv[]) {
          if (!DefPGrad) {
             LOG_INFO("PGrad: default instance not created by init");
          }
-         //auto PGradTest = PressureGrad::create("Test", DefMesh, VCoord, Options);
-
-         //for (int i = 0; i < 2; ++i) {
-         //  for (int k = 0; k < NVertLayers; ++k) {
-         //     Tend(i, k) = 0.0_Real;
-         //     LOG_INFO("Tend({}, {}) = {}", i, k, Tend(i, k));
-         //  }
-         //} 
 
          // compute pressure gradient
-         //PGradTest->computePressureGrad(Tend, DefState, VCoord, DefEos, TimeLevel);
          deepCopy(Tend, 0.0_Real);
          DefPGrad->computePressureGrad(Tend, DefState, VCoord, DefEos, TimeLevel);
-         //for (int i = 0; i < 2; ++i) {
-         //   for (int k = 0; k < NVertLayers; ++k) {
-         //      LOG_INFO("Tend({}, {}) = {}", i, k, Tend(i, k));
-         //   }
-         //}
          Real max_value = 0.0_Real;
          parallelReduce({DefMesh->NEdgesAll, NVertLayers - 1},
                         KOKKOS_LAMBDA(int i, int k, Real &max) {
