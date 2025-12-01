@@ -903,6 +903,169 @@ end subroutine zm_conv_evap
 
 !===================================================================================================
 
+subroutine calculate_fractional_entrainment(pcols, ncol, pver, pverp, il2g, msg, &
+                                            jb, jt, j0, z, zf, dz, hmn, hsat, hmin, &
+                                            eps, eps0)
+   !----------------------------------------------------------------------------
+   ! Purpose: Determine properties of ZM updrafts and downdrafts
+   !----------------------------------------------------------------------------
+   implicit none
+   !----------------------------------------------------------------------------
+   ! Arguments
+   integer,                         intent(in   ) :: pcols  ! maximum number of columns
+   integer,                         intent(in   ) :: ncol   ! actual number of columns
+   integer,                         intent(in   ) :: pver   ! number of mid-point vertical levels
+   integer,                         intent(in   ) :: pverp  ! number of interface vertical levels
+   integer,                         intent(in   ) :: il2g   ! number of gathered columns (lengath)
+   integer,                         intent(in   ) :: msg    ! missing moisture levels
+   integer,  dimension(pcols),      intent(in   ) :: jb     ! updraft base level
+   integer,  dimension(pcols),      intent(in   ) :: jt     ! updraft top level
+   integer,  dimension(pcols),      intent(inout) :: j0     ! level where updraft begins detraining
+   real(r8), dimension(pcols,pver), intent(in   ) :: z      ! env altitude at mid-point
+   real(r8), dimension(pcols,pverp),intent(in   ) :: zf     ! env altitude at interface
+   real(r8), dimension(pcols,pver) ,intent(in   ) :: dz     ! layer thickness
+   real(r8), dimension(pcols,pver), intent(in   ) :: hmn    ! env moist stat energy
+   real(r8), dimension(pcols,pver), intent(in   ) :: hsat   ! env saturated moist stat energy
+   real(r8), dimension(pcols)     , intent(inout) :: hmin   ! mid-tropospheric MSE minimum
+   real(r8), dimension(pcols,pver), intent(  out) :: eps    ! fractional entrainment
+   real(r8), dimension(pcols)     , intent(  out) :: eps0   ! fractional entrainment maximum
+   !----------------------------------------------------------------------------
+   ! Local variables
+
+   integer :: i,k ! loop iterators
+
+   ! variables used for Taylor series expansion when solving eq (4.78) for lamda_D (i.e. fractional entrainment)
+   real(r8), dimension(pcols,pver) :: f         ! fractional entrainment work variable
+   real(r8), dimension(pcols)      :: ftemp     ! temporary value of f
+   real(r8), dimension(pcols)      :: expdif    ! diff between env MSE low-level max and mid-level min
+   real(r8), dimension(pcols)      :: expnum    ! ?
+   real(r8), dimension(pcols,pver) :: k1        ! term for Taylor series
+   real(r8), dimension(pcols,pver) :: i2        ! term for Taylor series
+   real(r8), dimension(pcols,pver) :: i3        ! term for Taylor series
+   real(r8), dimension(pcols,pver) :: i4        ! term for Taylor series
+   real(r8), dimension(pcols,pver) :: ihat      ! term for Taylor series
+   real(r8), dimension(pcols,pver) :: idag      ! term for Taylor series
+   real(r8), dimension(pcols,pver) :: iprm      ! term for Taylor series
+
+   real(r8), parameter :: lambda_min = 0._r8     ! limiter
+   real(r8), parameter :: lambda_max = 0.0002_r8 ! limiter
+   real(r8), parameter :: lambda_thrs = 1.E-6_r8 ! threshold
+   !----------------------------------------------------------------------------
+
+   ! initialize 1D variables
+   do i = 1,il2g
+      ftemp(i)  = 0._r8
+      expnum(i) = 0._r8
+      expdif(i) = 0._r8
+   end do
+
+   ! initialize 2D variables
+   do k = 1,pver
+      do i = 1,il2g
+         ! misc work variables
+         k1(i,k)     = 0._r8
+         i2(i,k)     = 0._r8
+         i3(i,k)     = 0._r8
+         i4(i,k)     = 0._r8
+         f(i,k)      = 0._r8
+         eps(i,k)    = 0._r8
+      end do
+   end do
+
+   !----------------------------------------------------------------------------
+   ! compute taylor series for approximate eps(z) below
+   do k = pver - 1,msg + 1,-1
+      do i = 1,il2g
+         if (k < jb(i) .and. k >= jt(i)) then
+            k1(i,k) = k1(i,k+1) + (hmn(i,jb(i))-hmn(i,k))*dz(i,k)
+            ihat(i,k) = 0.5_r8* (k1(i,k+1)+k1(i,k))
+            i2(i,k) = i2(i,k+1) + ihat(i,k)*dz(i,k)
+            idag(i,k) = 0.5_r8* (i2(i,k+1)+i2(i,k))
+            i3(i,k) = i3(i,k+1) + idag(i,k)*dz(i,k)
+            iprm(i,k) = 0.5_r8* (i3(i,k+1)+i3(i,k))
+            i4(i,k) = i4(i,k+1) + iprm(i,k)*dz(i,k)
+         end if
+      end do
+   end do
+
+   !----------------------------------------------------------------------------
+   ! re-initialize hmin array for ensuing calculation
+   hmin(1:il2g) = 1.E6_r8
+   do k = msg + 1,pver
+      do i = 1,il2g
+         if (k >= j0(i) .and. k <= jb(i) .and. hmn(i,k) <= hmin(i)) then
+            hmin(i) = hmn(i,k)
+            expdif(i) = hmn(i,jb(i)) - hmin(i)
+         end if
+      end do
+   end do
+
+   !----------------------------------------------------------------------------
+   ! compute approximate eps(z) using above taylor series
+   do k = msg + 2,pver
+      do i = 1,il2g
+         expnum(i)   = 0._r8
+         ftemp(i)    = 0._r8
+         if (k < jt(i) .or. k >= jb(i)) then
+            k1(i,k)  = 0._r8
+            expnum(i)= 0._r8
+         else
+            expnum(i) = hmn(i,jb(i)) - (hsat(i,k-1)*(zf(i,k)-z(i,k)) + &
+                        hsat(i,k)* (z(i,k-1)-zf(i,k)))/(z(i,k-1)-z(i,k))
+         end if
+         if ((expdif(i) > 100._r8 .and. expnum(i) > 0._r8) .and. k1(i,k) > expnum(i)*dz(i,k)) then
+            ftemp(i) = expnum(i) / k1(i,k)
+            f(i,k) = ftemp(i) + &
+                     i2(i,k)/k1(i,k) * ftemp(i)**2 + &
+                     (2._r8*i2(i,k)**2-k1(i,k)*i3(i,k))/k1(i,k)**2 * ftemp(i)**3 + &
+                     (-5._r8*k1(i,k)*i2(i,k)*i3(i,k)+ 5._r8*i2(i,k)**3+k1(i,k)**2*i4(i,k))/k1(i,k)**3 * ftemp(i)**4
+            f(i,k) = max(f(i,k),lambda_min)
+            f(i,k) = min(f(i,k),lambda_max)
+         end if
+      end do
+   end do
+
+   ! move detrainment level downward if fractional entrainment is too low
+   do i = 1,il2g
+      if (j0(i) < jb(i)) then
+         if ( f(i,j0(i))<1.E-6_r8 .and. f(i,j0(i)+1)>f(i,j0(i)) ) then
+            j0(i) = j0(i) + 1
+         end if
+      end if
+   end do
+
+   ! ensure that entrainment does not increase above the level that detrainment starts
+   do k = msg + 2,pver
+      do i = 1,il2g
+         if (k >= jt(i) .and. k <= j0(i)) then
+            f(i,k) = max(f(i,k),f(i,k-1))
+         end if
+      end do
+   end do
+
+   ! ?
+   do i = 1,il2g
+      eps0(i) = f(i,j0(i))
+      eps(i,jb(i)) = eps0(i)
+   end do
+
+   ! The modification below comes from:
+   !   Rasch, P. J., J. E. Kristjánsson, A comparison of the CCM3 model climate
+   !   using diagnosed and predicted condensate parameterizations, J. Clim., 1997.
+   do k = pver,msg + 1,-1
+      do i = 1,il2g
+         if ( k >=j0(i) .and. k<=jb(i) ) eps(i,k) = f(i,j0(i))
+         if ( k  <j0(i) .and. k>=jt(i) ) eps(i,k) = f(i,k)
+      end do
+   end do
+
+   !----------------------------------------------------------------------------
+   return
+
+end subroutine calculate_fractional_entrainment
+
+!===================================================================================================
+
 subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
                   p, z, zf, t, s, shat, q, u, v, landfrac, tpertg, &
                   jb, mx, lel, jt, jlcl, j0, jd, &
@@ -935,7 +1098,7 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
    real(r8), dimension(pcols),      intent(in ) :: landfrac       ! Land fraction
    real(r8), dimension(pcols),      intent(in ) :: tpertg         ! PBL temperature perturbation
    integer,  dimension(pcols),      intent(in ) :: jb             ! updraft base level
-   integer,  dimension(pcols),      intent(in ) :: mx             ! updraft base level (same is jb)
+   integer,  dimension(pcols),      intent(in ) :: mx             ! updraft base level (same is jb) <<<<<< REMOVE REDUNDANCY
    integer,  dimension(pcols),      intent(in ) :: lel            ! updraft launch level
    integer,  dimension(pcols),      intent(out) :: jt             ! updraft plume top
    integer,  dimension(pcols),      intent(out) :: jlcl           ! updraft lifting cond level
@@ -983,20 +1146,20 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
    real(r8), dimension(pcols)      :: totpcp    ! total precip for dndraft proportionality factor - see eq (4.106)
    real(r8), dimension(pcols)      :: totevp    ! total evap   for dndraft proportionality factor - see eq (4.106)
 
-   ! variables used for Taylor series expansion when solving eq (4.78) for lamda_D
-   real(r8), dimension(pcols,pver) :: eps       ! ?
-   real(r8), dimension(pcols,pver) :: f         ! ?
-   real(r8), dimension(pcols)      :: ftemp     ! temporary value of f
-   real(r8), dimension(pcols)      :: eps0      ! ?
-   real(r8), dimension(pcols)      :: expdif    ! diff between env MSE low-level max and mid-level min
-   real(r8), dimension(pcols)      :: expnum    ! ?
-   real(r8), dimension(pcols,pver) :: k1        ! term for Taylor series
-   real(r8), dimension(pcols,pver) :: i2        ! term for Taylor series
-   real(r8), dimension(pcols,pver) :: i3        ! term for Taylor series
-   real(r8), dimension(pcols,pver) :: i4        ! term for Taylor series
-   real(r8), dimension(pcols,pver) :: iprm      ! term for Taylor series
-   real(r8), dimension(pcols,pver) :: ihat      ! term for Taylor series
-   real(r8), dimension(pcols,pver) :: idag      ! term for Taylor series
+   ! ! variables used for Taylor series expansion when solving eq (4.78) for lamda_D
+   real(r8), dimension(pcols,pver) :: eps       ! fractional entrainment
+   ! real(r8), dimension(pcols,pver) :: f         ! ?
+   ! real(r8), dimension(pcols)      :: ftemp     ! temporary value of f
+   real(r8), dimension(pcols)      :: eps0      ! fractional entrainment max
+   ! real(r8), dimension(pcols)      :: expdif    ! diff between env MSE low-level max and mid-level min
+   ! real(r8), dimension(pcols)      :: expnum    ! ?
+   ! real(r8), dimension(pcols,pver) :: k1        ! term for Taylor series
+   ! real(r8), dimension(pcols,pver) :: i2        ! term for Taylor series
+   ! real(r8), dimension(pcols,pver) :: i3        ! term for Taylor series
+   ! real(r8), dimension(pcols,pver) :: i4        ! term for Taylor series
+   ! real(r8), dimension(pcols,pver) :: iprm      ! term for Taylor series
+   ! real(r8), dimension(pcols,pver) :: ihat      ! term for Taylor series
+   ! real(r8), dimension(pcols,pver) :: idag      ! term for Taylor series
 
    real(r8) ql1   ! ?
    real(r8) tu    ! ?
@@ -1013,10 +1176,11 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
    real(r8) dum, sdum
 
    integer, dimension(pcols) :: jto              ! updraft plume old top
-   integer, dimension(pcols) :: tmplel
 
-   integer  iter, itnum
-   integer  m
+   integer :: tmp_k_limit  ! temporary limit on k index in various contexts
+   integer :: iter         ! ?
+   integer :: itnum        ! ?
+   integer :: m
 
    integer khighest
    integer klowest
@@ -1024,7 +1188,7 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
    integer i,k
 
    logical, dimension(pcols) :: doit ! flag to reset cloud
-   logical, dimension(pcols) :: done
+   logical, dimension(pcols) :: done ! ?
 
    real(r8), parameter :: small        = 1.e-20_r8    ! small number to limit blowup when normalizing by mass flux
    real(r8), parameter :: mu_min       = 0.02_r8      ! minimum value of mu
@@ -1034,25 +1198,16 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
 
    !----------------------------------------------------------------------------
 
+   ! initialize 1D variables
    do i = 1,il2g
-      ftemp(i)  = 0._r8
-      expnum(i) = 0._r8
-      expdif(i) = 0._r8
       totpcp(i) = 0._r8
       totevp(i) = 0._r8
       c0mask(i) = zm_param%c0_ocn*(1._r8-landfrac(i)) + zm_param%c0_lnd*landfrac(i)
    end do
 
-   ! initialize variables
+   ! initialize 2D variables
    do k = 1,pver
       do i = 1,il2g
-         ! misc work variables
-         k1(i,k)     = 0._r8
-         i2(i,k)     = 0._r8
-         i3(i,k)     = 0._r8
-         i4(i,k)     = 0._r8
-         f(i,k)      = 0._r8
-         eps(i,k)    = 0._r8
          ! mass fluxes & mixing variables
          mu(i,k)     = 0._r8
          eu(i,k)     = 0._r8
@@ -1130,20 +1285,19 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
 
    !----------------------------------------------------------------------------
    ! find the level of minimum saturated MSE (hsat), where detrainment starts
-   do k = msg + 1,pver
-      do i = 1,il2g
+   do i = 1,il2g
+      do k = msg + 1,pver
          if (hsat(i,k) <= hmin(i) .and. k >= jt(i) .and. k <= jb(i)) then
             hmin(i) = hsat(i,k)
             j0(i) = k
          end if
-      end do
-   end do
-   do i = 1,il2g
+      end do ! k
+      ! apply limiters to j0
       j0(i) = min(j0(i),jb(i)-2)
       j0(i) = max(j0(i),jt(i)+2)
-      ! use limiter to prevent out of bounds array reference
+      ! don't let j0 be greater than pver
       j0(i) = min(j0(i),pver)
-   end do
+   end do ! i
 
    !----------------------------------------------------------------------------
    ! Initialize cloud moist and dry static energies (hu=MSE & su=DSE)
@@ -1168,86 +1322,10 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
    end do
 
    !----------------------------------------------------------------------------
-   ! compute taylor series for approximate eps(z) below
-   do k = pver - 1,msg + 1,-1
-      do i = 1,il2g
-         if (k < jb(i) .and. k >= jt(i)) then
-            k1(i,k) = k1(i,k+1) + (hmn(i,mx(i))-hmn(i,k))*dz(i,k)
-            ihat(i,k) = 0.5_r8* (k1(i,k+1)+k1(i,k))
-            i2(i,k) = i2(i,k+1) + ihat(i,k)*dz(i,k)
-            idag(i,k) = 0.5_r8* (i2(i,k+1)+i2(i,k))
-            i3(i,k) = i3(i,k+1) + idag(i,k)*dz(i,k)
-            iprm(i,k) = 0.5_r8* (i3(i,k+1)+i3(i,k))
-            i4(i,k) = i4(i,k+1) + iprm(i,k)*dz(i,k)
-         end if
-      end do
-   end do
-
-   !----------------------------------------------------------------------------
-   ! re-initialize hmin array for ensuing calculation
-   hmin(1:il2g) = 1.E6_r8
-   do k = msg + 1,pver
-      do i = 1,il2g
-         if (k >= j0(i) .and. k <= jb(i) .and. hmn(i,k) <= hmin(i)) then
-            hmin(i) = hmn(i,k)
-            expdif(i) = hmn(i,mx(i)) - hmin(i)
-         end if
-      end do
-   end do
-
-   !----------------------------------------------------------------------------
-   ! compute approximate eps(z) using above taylor series
-   do k = msg + 2,pver
-      do i = 1,il2g
-         expnum(i)   = 0._r8
-         ftemp(i)    = 0._r8
-         if (k < jt(i) .or. k >= jb(i)) then
-            k1(i,k)  = 0._r8
-            expnum(i)= 0._r8
-         else
-            expnum(i) = hmn(i,mx(i)) - (hsat(i,k-1)*(zf(i,k)-z(i,k)) + &
-                        hsat(i,k)* (z(i,k-1)-zf(i,k)))/(z(i,k-1)-z(i,k))
-         end if
-         if ((expdif(i) > 100._r8 .and. expnum(i) > 0._r8) .and. k1(i,k) > expnum(i)*dz(i,k)) then
-            ftemp(i) = expnum(i)/k1(i,k)
-            f(i,k) = ftemp(i) + &
-                     i2(i,k)/k1(i,k) * ftemp(i)**2 + &
-                     (2._r8*i2(i,k)**2-k1(i,k)*i3(i,k))/k1(i,k)**2 * ftemp(i)**3 + &
-                     (-5._r8*k1(i,k)*i2(i,k)*i3(i,k)+ 5._r8*i2(i,k)**3+k1(i,k)**2*i4(i,k))/ k1(i,k)**3*ftemp(i)**4
-            f(i,k) = max(f(i,k),0._r8)
-            f(i,k) = min(f(i,k),0.0002_r8)
-         end if
-      end do
-   end do
-   do i = 1,il2g
-      if (j0(i) < jb(i)) then
-         if ( f(i,j0(i))<1.E-6_r8 .and. f(i,j0(i)+1)>f(i,j0(i)) ) then
-            j0(i) = j0(i) + 1
-         end if
-      end if
-   end do
-   do k = msg + 2,pver
-      do i = 1,il2g
-         if (k >= jt(i) .and. k <= j0(i)) then
-            f(i,k) = max(f(i,k),f(i,k-1))
-         end if
-      end do
-   end do
-   do i = 1,il2g
-      eps0(i) = f(i,j0(i))
-      eps(i,jb(i)) = eps0(i)
-   end do
-
-   ! This is set to match:
-   ! Rasch, P. J., J. E. Kristjánsson, A comparison of the CCM3 model climate
-   ! using diagnosed and predicted condensate parameterizations, J. Clim., 1997.
-
-   do k = pver,msg + 1,-1
-      do i = 1,il2g
-         if ( k >=j0(i) .and. k<=jb(i) ) eps(i,k) = f(i,j0(i))
-         if ( k  <j0(i) .and. k>=jt(i) ) eps(i,k) = f(i,k)
-      end do
-   end do
+   ! calculate fractional entrainment (i.e. "lambda D") - see eq (4.78) from Neale et al. (2012)
+   call calculate_fractional_entrainment(pcols, ncol, pver, pverp, il2g, msg, &
+                                         jb, jt, j0, z, zf, dz, hmn, hsat, hmin, &
+                                         eps, eps0)
 
    !----------------------------------------------------------------------------
    ! iteration to set cloud properties
@@ -1279,20 +1357,17 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
             if (eps0(i) > 0._r8) then
                mu(i,jb(i)) = 1._r8
                eu(i,jb(i)) = mu(i,jb(i))/dz(i,jb(i))
-            end if
-            if (zm_param%zm_microp) then
-               tmplel(i) = lel(i)
-            else
-               tmplel(i) = jt(i)
-            end if
-            ! compute profiles of updraft mass fluxes - see eq (4.79) - (4.81)
-            if (eps0(i) > 0._r8 .and. (k >= tmplel(i) .and. k < jb(i))) then
-               zuef(i) = zf(i,k) - zf(i,jb(i))
-               rmue(i) = (1._r8/eps0(i))* (exp(eps(i,k+1)*zuef(i))-1._r8)/zuef(i)
-               mu(i,k) = (1._r8/eps0(i))* (exp(eps(i,k  )*zuef(i))-1._r8)/zuef(i)
-               eu(i,k) = (rmue(i)-mu(i,k+1))/dz(i,k)
-               du(i,k) = (rmue(i)-mu(i,k))/dz(i,k)
-            end if
+               if (     zm_param%zm_microp) tmp_k_limit = lel(i)
+               if (.not.zm_param%zm_microp) tmp_k_limit = jt(i)
+               ! compute profiles of updraft mass fluxes - see eq (4.79) - (4.81)
+               if ( k>=tmp_k_limit .and. k<jb(i) ) then
+                  zuef(i) = zf(i,k) - zf(i,jb(i))
+                  rmue(i) = (1._r8/eps0(i))* (exp(eps(i,k+1)*zuef(i))-1._r8)/zuef(i)
+                  mu(i,k) = (1._r8/eps0(i))* (exp(eps(i,k  )*zuef(i))-1._r8)/zuef(i)
+                  eu(i,k) = (rmue(i)-mu(i,k+1))/dz(i,k)
+                  du(i,k) = (rmue(i)-mu(i,k))/dz(i,k)
+               end if
+            end if ! eps0(i)>0._r8
          end do
       end do
 
@@ -1358,7 +1433,7 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
       end do
 
       do i = 1,il2g
-         if (iter == 1)  jto(i) = jt(i)
+         if (iter == 1) jto(i) = jt(i)
       end do
 
       do k = pver,msg + 1,-1
@@ -1377,9 +1452,8 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
          end do
       end do
 
-      do i = 1,il2g
-         done(i) = .false.
-      end do
+      ! determine LCL - see eq (4.127)- (4.130) of Neale et al. (2012)
+      done(1:il2g) = .false.
       kount = 0
       do k = pver,msg + 2,-1
          do i = 1,il2g
@@ -1388,10 +1462,8 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
                su(i,k) = (hu(i,k)-zm_const%latvap*qu(i,k))/zm_const%cpair
             end if
             if (( .not. done(i) .and. k > jt(i) .and. k < jb(i)) .and. eps0(i) > 0._r8) then
-               su(i,k) = mu(i,k+1)/mu(i,k)*su(i,k+1) + &
-                         dz(i,k)/mu(i,k)* (eu(i,k)-du(i,k))*s(i,k)
-               qu(i,k) = mu(i,k+1)/mu(i,k)*qu(i,k+1) + dz(i,k)/mu(i,k)* (eu(i,k)*q(i,k)- &
-                               du(i,k)*qst(i,k))
+               su(i,k) = mu(i,k+1)/mu(i,k)*su(i,k+1) + dz(i,k)/mu(i,k)* (eu(i,k)-du(i,k))*s(i,k)
+               qu(i,k) = mu(i,k+1)/mu(i,k)*qu(i,k+1) + dz(i,k)/mu(i,k)* (eu(i,k)*q(i,k) - du(i,k)*qst(i,k))
                tu = su(i,k) - zm_const%grav/zm_const%cpair*zf(i,k)
                call qsat_hPa(tu, (p(i,k)+p(i,k-1))/2._r8, estu, qstu)
                if (qu(i,k) >= qstu) then
@@ -1409,39 +1481,33 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
       do k = msg + 2,pver
          do i = 1,il2g
             if ((k > jt(i) .and. k <= jlcl(i)) .and. eps0(i) > 0._r8) then
-               su(i,k) = shat(i,k) + (hu(i,k)-hsthat(i,k))/(zm_const%cpair* (1._r8+gamhat(i,k)))
-               qu(i,k) = qsthat(i,k) + gamhat(i,k)*(hu(i,k)-hsthat(i,k))/ &
-                        (zm_const%latvap* (1._r8+gamhat(i,k)))
+               su(i,k) = shat(i,k)   +             (hu(i,k)-hsthat(i,k)) / (zm_const%cpair* (1._r8+gamhat(i,k)))
+               qu(i,k) = qsthat(i,k) + gamhat(i,k)*(hu(i,k)-hsthat(i,k)) / (zm_const%latvap* (1._r8+gamhat(i,k)))
             end if
          end do
-      end do
-
-      do i = 1,il2g
-        if (zm_param%zm_microp) then
-           tmplel(i) = jlcl(i)+1
-        else
-           tmplel(i) = jb(i)
-        end if
       end do
 
       ! compute condensation in updraft
       do k = pver,msg + 2,-1
          do i = 1,il2g
-           if (k >= jt(i) .and. k < tmplel(i) .and. eps0(i) > 0._r8) then
-             if (zm_param%zm_microp) then
-                cu(i,k) = ((mu(i,k)*su(i,k)-mu(i,k+1)*su(i,k+1))/ &
-                        dz(i,k)- eu(i,k)*s(i,k)+du(i,k)*su(i,k))/(zm_const%latvap/zm_const%cpair)  &
-                          - zm_const%latice*tmp_frz(i,k)/zm_const%latvap
-             else
-
-               cu(i,k) = ((mu(i,k)*su(i,k)-mu(i,k+1)*su(i,k+1))/ &
-                         dz(i,k)- (eu(i,k)-du(i,k))*s(i,k))/(zm_const%latvap/zm_const%cpair)
-             end if
-               if (k == jt(i)) cu(i,k) = 0._r8
-               cu(i,k) = max(0._r8,cu(i,k))
-            end if
-         end do
-      end do
+            if (eps0(i)>0._r8) then
+               if (     zm_param%zm_microp) tmp_k_limit = jlcl(i)+1
+               if (.not.zm_param%zm_microp) tmp_k_limit = jb(i)
+               if ( k>=jt(i) .and. k<tmp_k_limit ) then
+                  if (zm_param%zm_microp) then
+                     cu(i,k) = ( ( mu(i,k)*su(i,k) - mu(i,k+1)*su(i,k+1) )/dz(i,k) - eu(i,k)*s(i,k) + du(i,k)*su(i,k) &
+                               )/(zm_const%latvap/zm_const%cpair) - zm_const%latice*tmp_frz(i,k)/zm_const%latvap
+                  else
+                     cu(i,k) = ( ( mu(i,k)*su(i,k) - mu(i,k+1)*su(i,k+1) )/dz(i,k) - ( eu(i,k) - du(i,k) )*s(i,k) &
+                               )/(zm_const%latvap/zm_const%cpair)
+                  end if
+                  ! apply limiters
+                  if (k == jt(i)) cu(i,k) = 0._r8
+                  cu(i,k) = max(0._r8,cu(i,k))
+               end if
+            end if ! eps0(i)>0._r8
+         end do ! i
+      end do ! k
 
       if (zm_param%zm_microp) then
 
