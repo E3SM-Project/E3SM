@@ -903,7 +903,7 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
                   hmn, hsat, qst, cu, evp, pflx, rprd, &
                   aero, loc_microp_st )
    !----------------------------------------------------------------------------
-   ! Purpose:
+   ! Purpose: Determine properties of ZM updrafts and downdrafts
    !----------------------------------------------------------------------------
    implicit none
    !----------------------------------------------------------------------------
@@ -992,7 +992,6 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
    real(r8) estu
    real(r8) qstu
 
-   real(r8) small
    real(r8) mdt
 
    ! Convective microphysics
@@ -1002,10 +1001,6 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
    real(r8), dimension(pcols)      :: tot_frz    ! total column freezing rate
    real(r8), dimension(pcols,pverp):: pflxs      ! frozen precipitation flux thru layer
    real(r8) dum, sdum
-
-   real(r8), parameter :: mu_min    = 0.02_r8      ! minimum value of mu
-   real(r8), parameter :: t_homofrz = 233.15_r8    ! homogeneous freezing temperature
-   real(r8), parameter :: t_mphase  = 40._r8       ! mixed phase temperature = tfreez-t_homofrz = 273.15K - 233.15K
 
    integer, dimension(pcols) :: jto              ! updraft plume old top
    integer, dimension(pcols) :: tmplel
@@ -1018,11 +1013,16 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
    integer kount
    integer i,k
 
-   logical, dimension(pcols) :: doit
+   logical, dimension(pcols) :: doit ! flag to reset cloud
    logical, dimension(pcols) :: done
 
-!
-!------------------------------------------------------------------------------
+   real(r8), parameter :: small        = 1.e-20_r8    ! small number to limit blowup when normalizing by mass flux
+   real(r8), parameter :: mu_min       = 0.02_r8      ! minimum value of mu
+   real(r8), parameter :: t_homofrz    = 233.15_r8    ! homogeneous freezing temperature
+   real(r8), parameter :: t_mphase     = 40._r8       ! mixed phase temperature = tfreez-t_homofrz = 273.15K - 233.15K
+   real(r8), parameter :: hu_diff_min  = -2000._r8    ! limit on hu(i,k)-hsthat(i,k)
+
+   !----------------------------------------------------------------------------
 
    do i = 1,il2g
       ftemp(i) = 0._r8
@@ -1030,18 +1030,15 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
       expdif(i) = 0._r8
       c0mask(i) = zm_param%c0_ocn*(1._r8-landfrac(i)) + zm_param%c0_lnd*landfrac(i)
    end do
-!
-!jr Change from msg+1 to 1 to prevent blowup
-!
+
+   ! calculate layer thickness
    do k = 1,pver
       do i = 1,il2g
          dz(i,k) = zf(i,k) - zf(i,k+1)
       end do
    end do
 
-!
-! initialize many output and work variables to zero
-!
+   ! initialize many output and work variables to zero
    pflx(:il2g,1) = 0
 
    do k = 1,pver
@@ -1066,12 +1063,11 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
          mc(i,k) = 0._r8
          qu(i,k) = q(i,k)
          su(i,k) = s(i,k)
+
+         ! calculate saturation specific humidity
          call qsat_hPa(t(i,k), p(i,k), est(i), qst(i,k))
-!++bee
-         if ( p(i,k)-est(i) <= 0._r8 ) then
-            qst(i,k) = 1.0_r8
-         end if
-!--bee
+         if ( p(i,k)-est(i) <= 0._r8 ) qst(i,k) = 1.0_r8
+
          gamma(i,k) = qst(i,k)*(1._r8 + qst(i,k)/zm_const%epsilo)*zm_const%epsilo*zm_const%latvap/(zm_const%rdair*t(i,k)**2)*zm_const%latvap/zm_const%cpair
          hmn(i,k) = zm_const%cpair*t(i,k) + zm_const%grav*z(i,k) + zm_const%latvap*q(i,k)
          hsat(i,k) = zm_const%cpair*t(i,k) + zm_const%grav*z(i,k) + zm_const%latvap*qst(i,k)
@@ -1081,44 +1077,19 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
          ! Convective microphysics
          fice(i,k) = 0._r8
          tug(i,k)  = 0._r8
-         if (zm_param%zm_microp) then
-            loc_microp_st%qcde(i,k)     = 0._r8
-            loc_microp_st%qide(i,k)     = 0._r8
-            loc_microp_st%qsde(i,k)     = 0._r8
-            loc_microp_st%ncde(i,k)     = 0._r8
-            loc_microp_st%nide(i,k)     = 0._r8
-            loc_microp_st%nsde(i,k)     = 0._r8
-            loc_microp_st%cmel(i,k)     = 0._r8
-            loc_microp_st%cmei(i,k)     = 0._r8
-            loc_microp_st%wu(i,k)       = 0._r8
-            loc_microp_st%qliq(i,k)     = 0._r8
-            loc_microp_st%qice(i,k)     = 0._r8
-            loc_microp_st%qrain(i,k)    = 0._r8
-            loc_microp_st%qsnow(i,k)    = 0._r8
-            loc_microp_st%qgraupel(i,k) = 0._r8
-            loc_microp_st%qnl(i,k)      = 0._r8
-            loc_microp_st%qni(i,k)      = 0._r8
-            loc_microp_st%qnr(i,k)      = 0._r8
-            loc_microp_st%qns(i,k)      = 0._r8
-            loc_microp_st%qng(i,k)      = 0._r8
-            loc_microp_st%sprd(i,k)     = 0._r8
-            loc_microp_st%frz(i,k)      = 0._r8
-            tmp_frz(i,k)                = 0._r8
-         end if
+         tmp_frz(i,k) = 0._r8
+
       end do
    end do
-!
-!jr Set to zero things which make this routine blow up
-!
+
+   ! Set to zero things which make this routine blow up
    do k=1,msg
       do i=1,il2g
          rprd(i,k) = 0._r8
       end do
    end do
-!
-! interpolate the layer values of qst, hsat and gamma to
-! layer interfaces
-!
+
+   ! interpolate the layer values of qst, hsat and gamma to layer interfaces
    do k = 1, msg+1
       do i = 1,il2g
          hsthat(i,k) = hsat(i,k)
@@ -1146,10 +1117,9 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
          end if
       end do
    end do
-!
-! initialize cloud top to highest plume top.
-!jr changed hard-wired 4 to limcnv+1 (not to exceed pver)
-!
+
+   ! initialize cloud top to highest plume top.
+   ! changed hard-wired 4 to limcnv+1 (not to exceed pver)
    jt(:) = pver
    jto(:)= pver
    do i = 1,il2g
@@ -1159,10 +1129,8 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
       jlcl(i) = lel(i)
       hmin(i) = 1.E6_r8
    end do
-!
-! find the level of minimum hsat, where detrainment starts
-!
 
+   ! find the level of minimum hsat, where detrainment starts
    do k = msg + 1,pver
       do i = 1,il2g
          if (hsat(i,k) <= hmin(i) .and. k >= jt(i) .and. k <= jb(i)) then
@@ -1174,14 +1142,12 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
    do i = 1,il2g
       j0(i) = min(j0(i),jb(i)-2)
       j0(i) = max(j0(i),jt(i)+2)
-!
-! Fix from Guang Zhang to address out of bounds array reference
-!
+
+      ! this prevents out of bounds array reference
       j0(i) = min(j0(i),pver)
    end do
-!
-! Initialize certain arrays inside cloud
-!
+
+   ! Initialize certain arrays inside cloud
    do k = msg + 1,pver
       do i = 1,il2g
          if (k >= jt(i) .and. k <= jb(i)) then
@@ -1202,11 +1168,10 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
          end if
       end do
    end do
-!
-! *********************************************************
-! compute taylor series for approximate eps(z) below
-! *********************************************************
-!
+
+   ! *********************************************************
+   ! compute taylor series for approximate eps(z) below
+   ! *********************************************************
    do k = pver - 1,msg + 1,-1
       do i = 1,il2g
          if (k < jb(i) .and. k >= jt(i)) then
@@ -1220,9 +1185,8 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
          end if
       end do
    end do
-!
-! re-initialize hmin array for ensuing calculation.
-!
+
+   ! re-initialize hmin array for ensuing calculation.
    do i = 1,il2g
       hmin(i) = 1.E6_r8
    end do
@@ -1234,11 +1198,10 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
          end if
       end do
    end do
-!
-! *********************************************************
-! compute approximate eps(z) using above taylor series
-! *********************************************************
-!
+
+   ! *********************************************************
+   ! compute approximate eps(z) using above taylor series
+   ! *********************************************************
    do k = msg + 2,pver
       do i = 1,il2g
          expnum(i) = 0._r8
@@ -1387,8 +1350,10 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
       do k=klowest-2,khighest-1,-1
          do i=1,il2g
             if (doit(i) .and. k <= jb(i)-2 .and. k >= lel(i)-1) then
-               if (hu(i,k) <= hsthat(i,k) .and. hu(i,k+1) > hsthat(i,k+1) .and. mu(i,k) >= mu_min) then
-                  if (hu(i,k)-hsthat(i,k) < -2000._r8) then
+               if (hu(i,k)  <= hsthat(i,k) .and. &
+                   hu(i,k+1) > hsthat(i,k+1) .and. &
+                   mu(i,k)  >= mu_min) then
+                  if ( hu(i,k)-hsthat(i,k) < hu_diff_min) then
                      jt(i) = k + 1
                      doit(i) = .false.
                   else
@@ -1646,7 +1611,6 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
       end do
    end do
 
-   small = 1.e-20_r8
    do k = msg + 1,pver
       do i = 1,il2g
          if ((k >= jt(i) .and. k <= pver) .and. eps0(i) > 0._r8) then
