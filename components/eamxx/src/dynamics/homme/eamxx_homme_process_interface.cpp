@@ -176,6 +176,8 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   add_field<Computed>("p_dry_int",          pg_scalar3d_int, Pa,    pgn,N);
   add_field<Computed>("p_dry_mid",          pg_scalar3d_mid, Pa,    pgn,N);
   add_field<Computed>("omega",              pg_scalar3d_mid, Pa/s,  pgn,N);
+  add_field<Required>("eddy_diff_heat",     pg_scalar3d_mid, m2/s,  pgn,N);
+  add_field<Required>("eddy_diff_mom",      pg_scalar3d_mid, m2/s,  pgn,N);
 
   add_tracer<Updated >("qv", m_phys_grid, kg/kg, N);
   add_group<Updated>("tracers",pgn,N, MonolithicAlloc::Required);
@@ -574,6 +576,9 @@ void HommeDynamics::homme_pre_process (const double dt) {
   auto v  = get_field_in("horiz_winds",pgn).get_view<const Pack***>();
   auto FT = m_helper_fields.at("FT_phys").get_view<Pack**>();
   auto FM = m_helper_fields.at("FM_phys").get_view<Pack***>();
+
+  auto eddy_diff_heat = get_field_in("eddy_diff_heat",pgn).get_view<const Pack**>();
+  auto eddy_diff_mom = get_field_in("eddy_diff_mom",pgn).get_view<const Pack**>();
 
   // If there are other atm procs updating the vertical velocity,
   // then we need to compute forcing for w as well
