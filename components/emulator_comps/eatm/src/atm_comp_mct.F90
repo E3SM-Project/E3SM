@@ -18,6 +18,7 @@ module atm_comp_mct
   use seq_flds_mod    , only: seq_flds_a2x_fields, seq_flds_x2a_fields
 
   use atm_cpl_indices
+  use eatmMod
   use eatm_comp_mod
   use eatmSpmdMod
   use eatmIO
@@ -38,13 +39,7 @@ module atm_comp_mct
   ! Private module data
   !--------------------------------------------------------------------------
 
-  ! temporary for reading eatm file and making dummy domain
-  integer :: nlatg, nlong                ! size of runoff data and number of grid cells
-
-  logical :: isgrid2d                    ! true if the grid is 2D, else false
-
   integer                :: inst_index          ! number of current instance (ie. 1)
-  integer(IN)            :: logunit             ! logging unit number
   integer(IN)            :: compid              ! mct comp id
   integer(IN),parameter  :: master_task=0       ! task number of master task
 
@@ -86,22 +81,23 @@ CONTAINS
     type(seq_infodata_type), pointer :: infodata
     type(mct_gsMap)        , pointer :: gsMap
     type(mct_gGrid)        , pointer :: ggrid
-    integer           :: phase                     ! phase of method
     logical           :: atm_present               ! flag
     logical           :: atm_prognostic            ! flag
     integer(IN)       :: shrlogunit                ! original log unit
     integer(IN)       :: shrloglev                 ! original log level
     logical           :: read_restart              ! start from restart
     logical           :: exists                    ! true if file exists
+    logical           :: first_time = .true.
     integer(IN)       :: ierr                      ! error code
     integer           :: mpicom_loc                ! local mpi communicator
 
     !--- formats ---
-    character(*), parameter :: F00   = "('(eatm_comp_init) ',8a)"
+    character(*), parameter :: F00   = "('(atm_comp_init) ',8a)"
     integer(IN) , parameter :: master_task=0 ! task number of master task
     character(*), parameter :: subName = "(atm_init_mct) "
     !-------------------------------------------------------------------------------
 
+    if (masterproc) write(logunit_atm,*) 'got to atm_init'
     ! Set cdata pointers to derived types (in coupler)
     call seq_cdata_setptrs(cdata, &
          id=compid, &
@@ -110,93 +106,139 @@ CONTAINS
          dom=ggrid, &
          infodata=infodata)
 
-    ! Determine attribute vector indices
-    call atm_cpl_indices_set()
-
-    ! Initialize eatm MPI communicator
-    call eatmSpmdInit(mpicom_loc)
-
     ! Obtain infodata variables
     call seq_infodata_getData(infodata,&
          read_restart=read_restart)
 
-    ! Determine instance information
-    inst_name   = seq_comm_name(compid)
-    inst_index  = seq_comm_inst(compid)
-    inst_suffix = seq_comm_suffix(compid)
+    if (first_time) then
 
-    !--- open log file ---
-    call shr_file_getLogUnit (shrlogunit)
-    if (masterproc) then
-       inquire(file='atm_modelio.nml'//trim(inst_suffix),exist=exists)
-       if (exists) then
-          logUnit = shr_file_getUnit()
-          call shr_file_setIO('atm_modelio.nml'//trim(inst_suffix),logUnit)
-       end if
-       write(logunit,*) "eatm model initialization"
-    else
-       logUnit = shrlogunit
-    endif
+       ! Determine attribute vector indices
+       call atm_cpl_indices_set()
 
-    call shr_file_getLogLevel(shrloglev)
-    call shr_file_setLogUnit (logUnit)
+       ! Initialize eatm MPI communicator
+       call eatmSpmdInit(mpicom_loc)
 
-    !----------------------------------------------------------------------------
-    ! Read input namelists and set present and prognostic flags
-    !----------------------------------------------------------------------------
+       ! Determine instance information
+       inst_name   = seq_comm_name(compid)
+       inst_index  = seq_comm_inst(compid)
+       inst_suffix = seq_comm_suffix(compid)
 
-    call t_startf('eatm_readnml')
-    atm_present=.true.
-    atm_prognostic=.true.
-    call eatm_read_namelist()
+       ! Initialize pio
+       call ncd_pio_init(inst_name)
 
-    call seq_infodata_PutData(infodata, &
-         atm_present=atm_present, &
-         atm_prognostic=atm_prognostic)
-    call t_stopf('eatm_readnml')
+       !--- open log file ---
+       call shr_file_getLogUnit (shrlogunit)
+       if (masterproc) then
+          inquire(file='atm_modelio.nml'//trim(inst_suffix),exist=exists)
+          if (exists) then
+             logunit_atm = shr_file_getUnit()
+             call shr_file_setIO('atm_modelio.nml'//trim(inst_suffix),logunit_atm)
+          end if
+          write(logunit_atm,*) "eatm model initialization"
+       else
+          logunit_atm = shrlogunit
+       endif
 
-    !----------------------------------------------------------------------------
-    ! Initialize eatm
-    !----------------------------------------------------------------------------
+       call shr_file_getLogLevel(shrloglev)
+       call shr_file_setLogUnit (logunit_atm)
 
-    ! Initialize atm gsMap
-    call atm_SetGSMap_mct( mpicom_atm, compid, gsMap)
+       !----------------------------------------------------------------------------
+       ! Read input namelists and set present and prognostic flags
+       !----------------------------------------------------------------------------
 
-    ! Initialize atm domain
-    call atm_domain_mct( lsize, gsMap, ggrid )
+       call t_startf('eatm_readnml')
+       atm_present=.true.
+       atm_prognostic=.true.
+       call eatm_read_namelist()
 
-    ! Initialize cpl -> eatm attribute vector
-    call mct_aVect_init(x2a, rList=seq_flds_x2a_fields, lsize=lsize)
-    call mct_aVect_zero(x2a)
+       call seq_infodata_PutData(infodata, &
+            atm_present=atm_present, &
+            atm_prognostic=atm_prognostic)
+       call t_stopf('eatm_readnml')
 
-    ! Initialize eatm -> cpl attribute vector
-    call mct_aVect_init(a2x, rList=seq_flds_a2x_fields, lsize=lsize)
-    call mct_aVect_zero(a2x)
+       !----------------------------------------------------------------------------
+       ! Initialize eatm
+       !----------------------------------------------------------------------------
 
+       if (masterproc) write(logunit_atm,*) 'got to atm_init 2'
+       ! Initialize atm gsMap
+       call atm_SetGSMap_mct( mpicom_atm, compid, gsMap)
 
-    call eatm_comp_init(Eclock, x2a, a2x, &
-         seq_flds_x2a_fields, seq_flds_a2x_fields, &
-         gsmap, ggrid, logunit, read_restart)
+       ! Initialize atm domain
+       if (masterproc) write(logunit_atm,*) 'got to atm_init 3'
+       call atm_domain_mct( gsMap, ggrid )
 
-    !----------------------------------------------------------------------------
-    ! Fill infodata that needs to be returned from eatm
-    !----------------------------------------------------------------------------
+       ! Initialize cpl -> eatm attribute vector
+       call mct_aVect_init(x2a, rList=seq_flds_x2a_fields, lsize=lsize)
+       call mct_aVect_zero(x2a)
 
-    call seq_infodata_PutData(infodata, &
-         atm_nx=lsize_x, &
-         atm_ny=lsize_y)
+       ! Initialize eatm -> cpl attribute vector
+       call mct_aVect_init(a2x, rList=seq_flds_a2x_fields, lsize=lsize)
+       call mct_aVect_zero(a2x)
+
+       if (masterproc) write(logunit_atm,*) 'got to atm_init 4'
+       call eatm_comp_init(Eclock, x2a, a2x, &
+            seq_flds_x2a_fields, seq_flds_a2x_fields, &
+            gsmap, ggrid, read_restart)
+
+       !----------------------------------------------------------------------------
+       ! Fill infodata that needs to be returned from eatm
+       !----------------------------------------------------------------------------
+
+       if (masterproc) write(logunit_atm,*) 'got to atm_init 5'
+       call seq_infodata_PutData(infodata, &
+            atm_nx=lsize_x, &
+            atm_ny=lsize_y)
   
-    !----------------------------------------------------------------------------
-    ! Reset shr logging to original values
-    !----------------------------------------------------------------------------
+       !----------------------------------------------------------------------------
+       ! Create initial atm export state
+       !----------------------------------------------------------------------------
+       call atm_export_mct(a2x)
 
-    if (masterproc) write(logunit,F00) 'eatm_comp_init done'
-    call shr_sys_flush(logunit)
-    call shr_sys_flush(shrlogunit)
+       !----------------------------------------------------------------------------
+       ! Reset shr logging to original values
+       !----------------------------------------------------------------------------
 
-    call shr_file_setLogUnit (shrlogunit)
-    call shr_file_setLogLevel(shrloglev)
-    call shr_sys_flush(logunit)
+       if (masterproc) write(logunit_atm,F00) 'eatm_comp_init done'
+       call shr_sys_flush(logunit_atm)
+       call shr_sys_flush(shrlogunit)
+
+       call shr_file_setLogUnit (shrlogunit)
+       call shr_file_setLogLevel(shrloglev)
+
+       first_time = .false.
+
+    else ! so here first_time == .false.
+
+       ! Redirect share output to eatm log
+
+       call shr_file_getLogUnit (shrlogunit)
+       call shr_file_getLogLevel(shrloglev)
+       call shr_file_setLogUnit (logunit_atm)
+
+       call atm_import_mct(x2a)
+
+       call t_startf('EATM_run')
+       call eatm_comp_run( &
+         EClock = EClock, &
+         x2a = x2a, &
+         a2x = a2x, &
+         gsmap = gsmap, &
+         ggrid = ggrid)
+       call t_stopf('EATM_run1')
+
+       call atm_export_mct(a2x)
+
+       ! End redirection of share output to eatm log
+
+       call shr_file_setLogUnit (shrlogunit)
+       call shr_file_setLogLevel(shrloglev)
+
+    end if
+
+    call shr_sys_flush(logunit_atm)
+
+    return
 
   end subroutine atm_init_mct
 
@@ -216,15 +258,10 @@ CONTAINS
     type(seq_infodata_type), pointer :: infodata
     type(mct_gsMap)        , pointer :: gsMap
     type(mct_gGrid)        , pointer :: ggrid
-    integer(IN)                      :: shrlogunit     ! original log unit
-    integer(IN)                      :: shrloglev      ! original log level
     character(*), parameter :: subName = "(atm_run_mct) "
     !-------------------------------------------------------------------------------
-
-    ! Reset shr logging to my log file
-    call shr_file_getLogUnit (shrlogunit)
-    call shr_file_getLogLevel(shrloglev)
-    call shr_file_setLogUnit (logUnit)
+    if (masterproc) write(logunit_atm,*) 'got to atm_run'
+    call shr_sys_flush(logunit_atm)
 
     call seq_cdata_setptrs(cdata, &
          gsMap=gsmap, &
@@ -244,17 +281,12 @@ CONTAINS
          x2a = x2a, &
          a2x = a2x, &
          gsmap = gsmap, &
-         ggrid = ggrid, &
-         logunit = logunit)
+         ggrid = ggrid)
 
     ! Map eatm data to MCT datatype
     call t_startf ('lc_eatm_export')
     call atm_export_mct( a2x )
     call t_stopf ('lc_eatm_export')
-
-    call shr_file_setLogUnit (shrlogunit)
-    call shr_file_setLogLevel(shrloglev)
-    call shr_sys_flush(logunit)
 
   end subroutine atm_run_mct
 
@@ -275,7 +307,7 @@ CONTAINS
     character(*), parameter :: subName = "(atm_final_mct) "
     !-------------------------------------------------------------------------------
 
-    call  eatm_comp_final(logunit)
+    call  eatm_comp_final()
 
   end subroutine atm_final_mct
 
@@ -320,17 +352,18 @@ CONTAINS
     ! Init the gsMap with gindex
     ! call mct_gsMap_init( gsMap, gindex, mpicom_atm, compid, lsize, gsize )
 
+    return
+
   end subroutine atm_SetGSMap_mct
 
   !====================================================================================
 
-  subroutine atm_domain_mct( lsize, gsMap, dom_atm )
+  subroutine atm_domain_mct( gsMap, dom_atm )
 
     ! !DESCRIPTION: This routine sets up the MCT domain
  
     ! !INPUT/OUTPUT PARAMETERS:
     implicit none
-    integer        , intent(in)    :: lsize
     type(mct_gsMap), intent(in)    :: gsMap
     type(mct_gGrid), intent(inout) :: dom_atm
       !
@@ -361,36 +394,13 @@ CONTAINS
     data(:) = 0.0_R8
     call mct_gGrid_importRAttr(dom_atm,"mask" ,data,lsize)
 
-    ! TODO - Fill in correct values for domain components
-    if (isgrid2d) then
-       do n = 1, lsize
-          data(n) = lonc_g(n)
-       end do
-       call mct_gGrid_importRattr(dom_atm,"lon",data,lsize)
+    data(:) = lonc_g(:)
+    call mct_gGrid_importRattr(dom_atm,"lon",data,lsize)
+    data(:) = latc_g(:)
+    call mct_gGrid_importRattr(dom_atm,"lat",data,lsize)
 
-       ni = 0
-       do n = 1, lsize
-          data(n) = latc_g(n)
-       end do
-       call mct_gGrid_importRattr(dom_atm,"lat",data,lsize)
-
-       do n = 1, lsize
-          data(n) = areac_g(n)
-       end do
-       call mct_gGrid_importRattr(dom_atm,"area",data,lsize)
-
-    else
-
-       data(:) = lonc_l(:)
-       call mct_gGrid_importRattr(dom_atm,"lon",data,lsize)
-            data(:) = latc_l(:)
-       call mct_gGrid_importRattr(dom_atm,"lat",data,lsize)
-
-       do n = 1, lsize
-          data(n) = areac_l(n)
-       end do
-       call mct_gGrid_importRattr(dom_atm,"area",data,lsize)
-    end if
+    data(:) = areac_g(:)
+    call mct_gGrid_importRattr(dom_atm,"area",data,lsize)
 
     do n = 1, lsize
       data(n) = 1.0_r8
@@ -422,6 +432,7 @@ CONTAINS
     character(len=32), parameter :: sub = 'atm_import_mct'
     !---------------------------------------------------------------------------
 
+    if (masterproc) write(logunit_atm,*) 'got to atm_import'
     n = 0
     do j = 1, lsize_y
        do i = 1, lsize_x
@@ -429,7 +440,7 @@ CONTAINS
           if (index_x2a_Faxx_sen>0) then
              shf(i,j) = -x2a_a%rAttr(index_x2a_Faxx_sen,n)
           end if
-          if (masterproc) write(logunit,*) 'Import shf ',minval(shf),maxval(shf)
+          if (masterproc) write(logunit_atm,*) 'Import shf ',minval(shf),maxval(shf)
           if (index_x2a_Faxx_evap>0) then
              cflx(i,j) = -x2a_a%rAttr(index_x2a_Faxx_evap,n)
           end if
@@ -513,6 +524,11 @@ CONTAINS
     logical,save :: first_time = .true.
     character(len=32), parameter :: sub = 'atm_export_mct'
     !---------------------------------------------------------------------------
+
+    !JW nothing to return yet and sending 0's will wreak havoc, so just stop for now
+    if (masterproc) write(logunit_atm,*) 'got to atm_export, stopping'
+    call shr_sys_flush(logunit_atm)
+    stop
 
     !JW list returned could be different for different emulators
     n = 0
@@ -619,12 +635,9 @@ CONTAINS
     implicit none
     !
     ! LOCAL VARIABLES
-    integer :: i, j, count, ier
     logical :: found
     character(len=*),parameter :: subname = '(atm_read_eatm) '
     integer, parameter :: RKIND = selected_real_kind(13)
-    real(kind=RKIND), dimension(:),   allocatable :: lat1D, lon1D, area1D
-    real(kind=RKIND), dimension(:,:), allocatable :: area
     type(file_desc_t) :: ncid                 ! netcdf file id
 
     !---------------------------------------------------------------------------
@@ -633,78 +646,38 @@ CONTAINS
     filename_eatm = '/lcrc/group/acme/ac.jwolfe/v3-grids/gaussian_180x360/gaussian_180x360_latlon.scrip.nc'
 
     if (masterproc) then
-       write(logunit,*) 'Read in eatm file name: ',trim(filename_eatm)
-       call shr_sys_flush(logunit)
+       write(logunit_atm,*) 'Read in eatm file name: ',trim(filename_eatm)
+       call shr_sys_flush(logunit_atm)
     endif
 
     call ncd_pio_openfile(ncid, trim(filename_eatm), 0)
 
-    call ncd_inqfdims(ncid, isgrid2d, nlong, nlatg, gsize)
+    call ncd_inqfdims(ncid, gsize)
 
     if (masterproc) then
-       write(logunit,*) 'Values for lon/lat: ', nlong, nlatg, gsize
-       write(logunit,*) 'Successfully read eatm dimensions'
-       if (isgrid2d) then
-          write(logunit,*) 'eatm input is 2d'
-       else
-          write(logunit,*) 'eatm input is 1d'
-       endif
-       call shr_sys_flush(logunit)
+       write(logunit_atm,*) 'Values for lon/lat: ', gsize
+       write(logunit_atm,*) 'Successfully read eatm dimensions'
+       call shr_sys_flush(logunit_atm)
     endif
 
-    ! allocate arrays
-    if (isgrid2d) then
+    !JW for now let lsize = gsize (local vs global)
+    lsize   = gsize
+    lsize_x = gsize
+    lsize_y = 1
 
-       allocate(lon1D(nlong))
-       allocate(lat1D(nlatg))
+    allocate(lonc_g(gsize))
+    allocate(latc_g(gsize))
+    allocate(areac_g(gsize))
 
-       allocate(lonc_g(gsize))
-       allocate(latc_g(gsize))
-       allocate(areac_g(gsize))
+    ! read the mesh data
+    call ncd_io(ncid=ncid, varname='grid_center_lon', flag='read', data=lonc_g, dim1name='grid_size', readvar=found)
+    if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read eatm longitudes')
 
-       ! read the mesh data
-       call ncd_io(ncid=ncid, varname='lon', flag='read', data=lon1D, readvar=found)
-       if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read eatm longitudes')
-       if (masterproc) write(logunit,*) 'Read lon ',minval(lon1D),maxval(lon1D)
+    call ncd_io(ncid=ncid, varname='grid_center_lat', flag='read', data=latc_g, dim1name='grid_size', readvar=found)
+    if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read eatm latitudes')
 
-       call ncd_io(ncid=ncid, varname='lat', flag='read', data=lat1D, readvar=found)
-       if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read eatm latitudes')
-       if (masterproc) write(logunit,*) 'Read lat ',minval(lat1D),maxval(lat1D)
-
-       call ncd_io(ncid=ncid, varname='area', flag='read', data=areac_g, readvar=found)
-       if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read eatm area')
-       if (masterproc) write(logunit,*) 'Read area ',minval(areac_g),maxval(areac_g)
-
-       count = 0
-       do j = 1, nlong
-          do i = 1, nlatg
-             count = count + 1
-             latc_g(count)  = lat1D(i)
-             lonc_g(count)  = lon1D(j)
-          end do
-       end do
-
-       ! free up memory
-       deallocate(lat1D)
-       deallocate(lon1D)
-
-    else
-
-       allocate(lonc_g(gsize))
-       allocate(latc_g(gsize))
-       allocate(areac_g(gsize))
-
-       ! read the mesh data
-       call ncd_io(ncid=ncid, varname='grid_center_lon', flag='read', data=lonc_g, dim1name='grid_size', readvar=found)
-       if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read eatm longitudes')
-
-       call ncd_io(ncid=ncid, varname='grid_center_lat', flag='read', data=latc_g, dim1name='grid_size', readvar=found)
-       if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read eatm latitudes')
-
-       call ncd_io(ncid=ncid, varname='grid_area', flag='read', data=areac_g, dim1name='grid_size', readvar=found)
-       if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read eatm area')
-
-    endif
+    call ncd_io(ncid=ncid, varname='grid_area', flag='read', data=areac_g, dim1name='grid_size', readvar=found)
+    if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read eatm area')
 
     return
 
