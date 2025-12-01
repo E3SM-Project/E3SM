@@ -354,7 +354,7 @@ add_omega_test(
   PGRAD_TEST
   testPGrad.exe
   ocn/PGradTest.cpp
-  "-n;8"
+  "-n;1"
 )
 
 ##################
