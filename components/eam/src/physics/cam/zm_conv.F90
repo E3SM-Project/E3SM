@@ -493,7 +493,7 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
    !----------------------------------------------------------------------------
    ! calculate updraft and downdraft properties
 
-   call cldprp(pcols, ncol, pver, pverp, lengath, msg, zm_param%limcnv, &
+   call cldprp(pcols, lengath, pver, pverp, msg, zm_param%limcnv, &
                pg, z_mid_g, z_int_g, tg, sg, shat, qg, ug, vg, landfracg, tpertg, &
                maxg, lelg, jt, jlcl, j0, jd, &
                mu, eu, du, md, ed, mc, &
@@ -908,32 +908,31 @@ end subroutine zm_conv_evap
 
 !===================================================================================================
 
-subroutine calculate_fractional_entrainment(pcols, ncol, pver, pverp, il2g, msg, &
-                                            jb, jt, j0, z_mid, z_int, dz, hmn, hsat, hmin, &
-                                            eps, eps0)
+subroutine calculate_fractional_entrainment(pcols, ncol, pver, pverp, msg, &
+                                            jb, jt, j0, z_mid, z_int, dz, &
+                                            h_env, h_env_sat, h_env_min, eps, eps0)
    !----------------------------------------------------------------------------
    ! Purpose: Determine properties of ZM updrafts and downdrafts
    !----------------------------------------------------------------------------
    implicit none
    !----------------------------------------------------------------------------
    ! Arguments
-   integer,                         intent(in   ) :: pcols  ! maximum number of columns
-   integer,                         intent(in   ) :: ncol   ! actual number of columns
-   integer,                         intent(in   ) :: pver   ! number of mid-point vertical levels
-   integer,                         intent(in   ) :: pverp  ! number of interface vertical levels
-   integer,                         intent(in   ) :: il2g   ! number of gathered columns (lengath)
-   integer,                         intent(in   ) :: msg    ! missing moisture levels
-   integer,  dimension(pcols),      intent(in   ) :: jb     ! updraft base level
-   integer,  dimension(pcols),      intent(in   ) :: jt     ! updraft top level
-   integer,  dimension(pcols),      intent(inout) :: j0     ! level where updraft begins detraining
-   real(r8), dimension(pcols,pver), intent(in   ) :: z_mid  ! env altitude at mid-point
-   real(r8), dimension(pcols,pverp),intent(in   ) :: z_int  ! env altitude at interface
-   real(r8), dimension(pcols,pver) ,intent(in   ) :: dz     ! layer thickness
-   real(r8), dimension(pcols,pver), intent(in   ) :: hmn    ! env moist stat energy
-   real(r8), dimension(pcols,pver), intent(in   ) :: hsat   ! env saturated moist stat energy
-   real(r8), dimension(pcols)     , intent(inout) :: hmin   ! mid-tropospheric MSE minimum
-   real(r8), dimension(pcols,pver), intent(  out) :: eps    ! fractional entrainment
-   real(r8), dimension(pcols)     , intent(  out) :: eps0   ! fractional entrainment maximum
+   integer,                         intent(in   ) :: pcols     ! maximum number of columns
+   integer,                         intent(in   ) :: ncol      ! actual number of columns
+   integer,                         intent(in   ) :: pver      ! number of mid-point vertical levels
+   integer,                         intent(in   ) :: pverp     ! number of interface vertical levels
+   integer,                         intent(in   ) :: msg       ! missing moisture levels
+   integer,  dimension(pcols),      intent(in   ) :: jb        ! updraft base level
+   integer,  dimension(pcols),      intent(in   ) :: jt        ! updraft top level
+   integer,  dimension(pcols),      intent(inout) :: j0        ! level where updraft begins detraining
+   real(r8), dimension(pcols,pver), intent(in   ) :: z_mid     ! env altitude at mid-point
+   real(r8), dimension(pcols,pverp),intent(in   ) :: z_int     ! env altitude at interface
+   real(r8), dimension(pcols,pver) ,intent(in   ) :: dz        ! layer thickness
+   real(r8), dimension(pcols,pver), intent(in   ) :: h_env     ! env moist stat energy
+   real(r8), dimension(pcols,pver), intent(in   ) :: h_env_sat ! env saturated moist stat energy
+   real(r8), dimension(pcols)     , intent(inout) :: h_env_min ! mid-tropospheric MSE minimum
+   real(r8), dimension(pcols,pver), intent(  out) :: eps       ! fractional entrainment
+   real(r8), dimension(pcols)     , intent(  out) :: eps0      ! fractional entrainment maximum
    !----------------------------------------------------------------------------
    ! Local variables
 
@@ -958,7 +957,7 @@ subroutine calculate_fractional_entrainment(pcols, ncol, pver, pverp, il2g, msg,
    !----------------------------------------------------------------------------
 
    ! initialize 1D variables
-   do i = 1,il2g
+   do i = 1,ncol
       ftemp(i)  = 0._r8
       expnum(i) = 0._r8
       expdif(i) = 0._r8
@@ -966,7 +965,7 @@ subroutine calculate_fractional_entrainment(pcols, ncol, pver, pverp, il2g, msg,
 
    ! initialize 2D variables
    do k = 1,pver
-      do i = 1,il2g
+      do i = 1,ncol
          ! misc work variables
          k1(i,k)     = 0._r8
          i2(i,k)     = 0._r8
@@ -980,9 +979,9 @@ subroutine calculate_fractional_entrainment(pcols, ncol, pver, pverp, il2g, msg,
    !----------------------------------------------------------------------------
    ! compute taylor series for approximate eps(z) below
    do k = pver - 1,msg + 1,-1
-      do i = 1,il2g
+      do i = 1,ncol
          if (k < jb(i) .and. k >= jt(i)) then
-            k1(i,k) = k1(i,k+1) + (hmn(i,jb(i))-hmn(i,k))*dz(i,k)
+            k1(i,k) = k1(i,k+1) + (h_env(i,jb(i))-h_env(i,k))*dz(i,k)
             ihat(i,k) = 0.5_r8* (k1(i,k+1)+k1(i,k))
             i2(i,k) = i2(i,k+1) + ihat(i,k)*dz(i,k)
             idag(i,k) = 0.5_r8* (i2(i,k+1)+i2(i,k))
@@ -994,13 +993,13 @@ subroutine calculate_fractional_entrainment(pcols, ncol, pver, pverp, il2g, msg,
    end do
 
    !----------------------------------------------------------------------------
-   ! re-initialize hmin array for ensuing calculation
-   hmin(1:il2g) = 1.E6_r8
+   ! re-initialize minimum MSE for ensuing calculation
+   h_env_min(1:ncol) = 1.E6_r8
    do k = msg + 1,pver
-      do i = 1,il2g
-         if (k >= j0(i) .and. k <= jb(i) .and. hmn(i,k) <= hmin(i)) then
-            hmin(i) = hmn(i,k)
-            expdif(i) = hmn(i,jb(i)) - hmin(i)
+      do i = 1,ncol
+         if (k >= j0(i) .and. k <= jb(i) .and. h_env(i,k) <= h_env_min(i)) then
+            h_env_min(i) = h_env(i,k)
+            expdif(i) = h_env(i,jb(i)) - h_env_min(i)
          end if
       end do
    end do
@@ -1008,15 +1007,15 @@ subroutine calculate_fractional_entrainment(pcols, ncol, pver, pverp, il2g, msg,
    !----------------------------------------------------------------------------
    ! compute approximate eps(z) using above taylor series
    do k = msg + 2,pver
-      do i = 1,il2g
+      do i = 1,ncol
          expnum(i)   = 0._r8
          ftemp(i)    = 0._r8
          if (k < jt(i) .or. k >= jb(i)) then
             k1(i,k)  = 0._r8
             expnum(i)= 0._r8
          else
-            expnum(i) = hmn(i,jb(i)) - (hsat(i,k-1)*(z_int(i,k)-z_mid(i,k)) + &
-                        hsat(i,k)* (z_mid(i,k-1)-z_int(i,k)))/(z_mid(i,k-1)-z_mid(i,k))
+            expnum(i) = h_env(i,jb(i)) - (h_env_sat(i,k-1)*(z_int(i,k)-z_mid(i,k)) + &
+                        h_env_sat(i,k)*(z_mid(i,k-1)-z_int(i,k)))/(z_mid(i,k-1)-z_mid(i,k))
          end if
          if ((expdif(i) > 100._r8 .and. expnum(i) > 0._r8) .and. k1(i,k) > expnum(i)*dz(i,k)) then
             ftemp(i) = expnum(i) / k1(i,k)
@@ -1031,7 +1030,7 @@ subroutine calculate_fractional_entrainment(pcols, ncol, pver, pverp, il2g, msg,
    end do
 
    ! move detrainment level downward if fractional entrainment is too low
-   do i = 1,il2g
+   do i = 1,ncol
       if (j0(i) < jb(i)) then
          if ( f(i,j0(i))<1.E-6_r8 .and. f(i,j0(i)+1)>f(i,j0(i)) ) then
             j0(i) = j0(i) + 1
@@ -1041,15 +1040,15 @@ subroutine calculate_fractional_entrainment(pcols, ncol, pver, pverp, il2g, msg,
 
    ! ensure that entrainment does not increase above the level that detrainment starts
    do k = msg + 2,pver
-      do i = 1,il2g
+      do i = 1,ncol
          if (k >= jt(i) .and. k <= j0(i)) then
             f(i,k) = max(f(i,k),f(i,k-1))
          end if
       end do
    end do
 
-   ! ?
-   do i = 1,il2g
+   ! specify maximum fractional entrainment
+   do i = 1,ncol
       eps0(i) = f(i,j0(i))
       eps(i,jb(i)) = eps0(i)
    end do
@@ -1058,7 +1057,7 @@ subroutine calculate_fractional_entrainment(pcols, ncol, pver, pverp, il2g, msg,
    !   Rasch, P. J., J. E. Kristjánsson, A comparison of the CCM3 model climate
    !   using diagnosed and predicted condensate parameterizations, J. Clim., 1997.
    do k = pver,msg + 1,-1
-      do i = 1,il2g
+      do i = 1,ncol
          if ( k >=j0(i) .and. k<=jb(i) ) eps(i,k) = f(i,j0(i))
          if ( k  <j0(i) .and. k>=jt(i) ) eps(i,k) = f(i,k)
       end do
@@ -1071,7 +1070,7 @@ end subroutine calculate_fractional_entrainment
 
 !===================================================================================================
 
-subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
+subroutine cldprp(pcols, ncol, pver, pverp, msg, limcnv, &
                   p_mid, z_mid, z_int, t_mid, s, shat, q, u, v, landfrac, tpertg, &
                   jb, lel, jt, jlcl, j0, jd, &
                   mu, eu, du, md, ed, mc, &
@@ -1084,11 +1083,10 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
    implicit none
    !----------------------------------------------------------------------------
    ! Arguments
-   integer,                         intent(in ) :: pcols          ! maximum number of columns
-   integer,                         intent(in ) :: ncol           ! actual number of columns
+   integer,                         intent(in ) :: pcols          ! declared number of columns
+   integer,                         intent(in ) :: ncol           ! actual number of columns for iteration
    integer,                         intent(in ) :: pver           ! number of mid-point vertical levels
    integer,                         intent(in ) :: pverp          ! number of interface vertical levels
-   integer,                         intent(in ) :: il2g           ! number of gathered columns (lengath)
    integer,                         intent(in ) :: msg            ! missing moisture levels
    integer,                         intent(in ) :: limcnv         ! convection limiting level
    real(r8), dimension(pcols,pver), intent(in ) :: p_mid          ! env pressure at mid-point
@@ -1106,7 +1104,7 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
    integer,  dimension(pcols),      intent(in ) :: lel            ! updraft parcel launch level
    integer,  dimension(pcols),      intent(out) :: jt             ! updraft plume top
    integer,  dimension(pcols),      intent(out) :: jlcl           ! updraft lifting cond level
-   integer,  dimension(pcols),      intent(out) :: j0             ! level where detrainment begins (starting at hmin)
+   integer,  dimension(pcols),      intent(out) :: j0             ! level where detrainment begins (starting at h_env_min)
    integer,  dimension(pcols),      intent(out) :: jd             ! level of downdraft
    real(r8), dimension(pcols,pver), intent(out) :: mu             ! updraft mass flux
    real(r8), dimension(pcols,pver), intent(out) :: eu             ! entrainment rate of updraft
@@ -1130,8 +1128,9 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
    ! Local variables
    real(r8), dimension(pcols,pver) :: gamma     ! latent-heating correction for pseudo-adiabatic parcel lifting
    real(r8), dimension(pcols,pver) :: dz        ! layer thickness
-   real(r8), dimension(pcols,pver) :: hmn       ! env moist stat energy
-   real(r8), dimension(pcols,pver) :: hsat      ! env saturated moist stat energy
+   real(r8), dimension(pcols,pver) :: h_env     ! ambient env moist stat energy
+   real(r8), dimension(pcols,pver) :: h_env_sat ! ambient env saturated moist stat energy
+   real(r8), dimension(pcols)      :: h_env_min ! mid-tropospheric MSE minimum
    real(r8), dimension(pcols,pver) :: hu        ! updraft moist static energy
    real(r8), dimension(pcols,pver) :: hd        ! dndraft moist static energy
    real(r8), dimension(pcols,pver) :: qsthat    ! interface interpolated qst
@@ -1139,7 +1138,6 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
    real(r8), dimension(pcols,pver) :: gamhat    ! interface interpolated gamma
    real(r8), dimension(pcols,pver) :: qds       ! dndraft saturation specific humdity
    real(r8), dimension(pcols)      :: c0mask    ! land/ocean modification
-   real(r8), dimension(pcols)      :: hmin      ! mid-tropospheric MSE minimum
 
    real(r8), dimension(pcols)      :: rmue      !
    real(r8), dimension(pcols)      :: zuef      !
@@ -1191,7 +1189,7 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
    !----------------------------------------------------------------------------
 
    ! initialize 1D variables
-   do i = 1,il2g
+   do i = 1,ncol
       totpcp(i) = 0._r8
       totevp(i) = 0._r8
       c0mask(i) = zm_param%c0_ocn*(1._r8-landfrac(i)) + zm_param%c0_lnd*landfrac(i)
@@ -1199,7 +1197,7 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
 
    ! initialize 2D variables
    do k = 1,pver
-      do i = 1,il2g
+      do i = 1,ncol
          ! mass fluxes & mixing variables
          mu(i,k)     = 0._r8
          eu(i,k)     = 0._r8
@@ -1223,15 +1221,15 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
                        * zm_const%epsilo*zm_const%latvap/(zm_const%rdair*t_mid(i,k)**2) &
                        * zm_const%latvap/zm_const%cpair
          ! cloud thermodynamic variables
-         su(i,k)     = s(i,k)
-         sd(i,k)     = s(i,k)
-         qd(i,k)     = q(i,k)
-         qds(i,k)    = q(i,k)
-         qu(i,k)     = q(i,k)
-         hmn(i,k)    = zm_const%cpair*t_mid(i,k) + zm_const%grav*z_mid(i,k) + zm_const%latvap*q(i,k)
-         hsat(i,k)   = zm_const%cpair*t_mid(i,k) + zm_const%grav*z_mid(i,k) + zm_const%latvap*qst(i,k)
-         hu(i,k)     = hmn(i,k)
-         hd(i,k)     = hmn(i,k)
+         su(i,k)        = s(i,k)
+         sd(i,k)        = s(i,k)
+         qd(i,k)        = q(i,k)
+         qds(i,k)       = q(i,k)
+         qu(i,k)        = q(i,k)
+         h_env(i,k)     = zm_const%cpair*t_mid(i,k) + zm_const%grav*z_mid(i,k) + zm_const%latvap*q(i,k)
+         h_env_sat(i,k) = zm_const%cpair*t_mid(i,k) + zm_const%grav*z_mid(i,k) + zm_const%latvap*qst(i,k)
+         hu(i,k)        = h_env(i,k)
+         hd(i,k)        = h_env(i,k)
          ! convective microphysics
          pflxs(i,k)  = 0._r8
          fice(i,k)   = 0._r8
@@ -1243,8 +1241,8 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
    !----------------------------------------------------------------------------
    ! interpolate the mid-point values to interfaces
    do k = msg+1,pver
-      do i = 1,il2g
-         hsthat(i,k) = hsat(i,k)
+      do i = 1,ncol
+         hsthat(i,k) = h_env_sat(i,k)
          qsthat(i,k) = qst(i,k)
          gamhat(i,k) = gamma(i,k)
          if (k>msg+1) then
@@ -1267,20 +1265,20 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
    ! initialize cloud top to highest plume top (upper/lower limit => pver / limcnv+1)
    jt(:) = pver
    jto(:)= pver
-   do i = 1,il2g
+   do i = 1,ncol
       jt(i) = max(lel(i),limcnv+1)
       jt(i) = min(jt(i),pver)
       jd(i) = pver
       jlcl(i) = lel(i)
-      hmin(i) = 1.E6_r8
+      h_env_min(i) = 1.E6_r8
    end do
 
    !----------------------------------------------------------------------------
-   ! find the level of minimum saturated MSE (hsat), where detrainment starts
-   do i = 1,il2g
+   ! find the level of minimum saturated MSE (h_env_sat), where detrainment starts
+   do i = 1,ncol
       do k = msg + 1,pver
-         if (hsat(i,k) <= hmin(i) .and. k >= jt(i) .and. k <= jb(i)) then
-            hmin(i) = hsat(i,k)
+         if (h_env_sat(i,k) <= h_env_min(i) .and. k >= jt(i) .and. k <= jb(i)) then
+            h_env_min(i) = h_env_sat(i,k)
             j0(i) = k
          end if
       end do ! k
@@ -1294,7 +1292,7 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
    !----------------------------------------------------------------------------
    ! Initialize cloud moist and dry static energies (hu=MSE & su=DSE)
    do k = msg + 1,pver
-      do i = 1,il2g
+      do i = 1,ncol
          if (k >= jt(i) .and. k <= jb(i)) then
             ! Tunable temperature perturbation (tiedke_add) was already added to parcel hu/su to
             ! represent subgrid temperature perturbation. If PBL temperature pert (tpert) also
@@ -1303,11 +1301,11 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
             ! new tunable parameter tpert_fac was introduced. This introduced new uncertainties into
             ! the ZM scheme. The original code of ZM scheme will be used when tpert_fix=.true.
             if(zm_param%tpert_fix) then
-               hu(i,k) = hmn(i,jb(i)) + zm_const%cpair*zm_param%tiedke_add
-               su(i,k) = s(i,jb(i))   +                zm_param%tiedke_add
+               hu(i,k) = h_env(i,jb(i)) + zm_const%cpair*zm_param%tiedke_add
+               su(i,k) = s(i,jb(i))     +                zm_param%tiedke_add
             else
-               hu(i,k) = hmn(i,jb(i)) + zm_const%cpair*(zm_param%tiedke_add+zm_param%tpert_fac*tpertg(i))
-               su(i,k) = s(i,jb(i))   +                 zm_param%tiedke_add+zm_param%tpert_fac*tpertg(i)
+               hu(i,k) = h_env(i,jb(i)) + zm_const%cpair*(zm_param%tiedke_add+zm_param%tpert_fac*tpertg(i))
+               su(i,k) = s(i,jb(i))     +                 zm_param%tiedke_add+zm_param%tpert_fac*tpertg(i)
             end if
          end if
       end do
@@ -1315,9 +1313,9 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
 
    !----------------------------------------------------------------------------
    ! calculate fractional entrainment (i.e. "lambda D") - see eq (4.78) from Neale et al. (2012)
-   call calculate_fractional_entrainment(pcols, ncol, pver, pverp, il2g, msg, &
-                                         jb, jt, j0, z_mid, z_int, dz, hmn, hsat, hmin, &
-                                         eps, eps0)
+   call calculate_fractional_entrainment(pcols, ncol, pver, pverp, msg, &
+                                         jb, jt, j0, z_mid, z_int, dz, &
+                                         h_env, h_env_sat, h_env_min, eps, eps0)
 
    !----------------------------------------------------------------------------
    ! iteration to set cloud properties
@@ -1328,7 +1326,7 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
    do iter = 1,itnum
 
       do k = pver,msg + 1,-1
-         do i = 1,il2g
+         do i = 1,ncol
             cu(i,k) = 0._r8
             ql(i,k) = 0._r8
             if (zm_param%zm_microp) then
@@ -1338,13 +1336,13 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
             end if
          end do
       end do
-      do i = 1,il2g
+      do i = 1,ncol
          totpcp(i) = 0._r8
-         if (zm_param%zm_microp) hu(i,jb(i)) = hmn(i,jb(i)) + zm_const%cpair*zm_param%tiedke_add
+         if (zm_param%zm_microp) hu(i,jb(i)) = h_env(i,jb(i)) + zm_const%cpair*zm_param%tiedke_add
       end do
 
       do k = pver,msg + 1,-1
-         do i = 1,il2g
+         do i = 1,ncol
             ! intialize updraft mass flux variables - here and below all normalized by cloud base mass flux (mb)
             if (eps0(i) > 0._r8) then
                mu(i,jb(i)) = 1._r8
@@ -1365,28 +1363,28 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
 
       khighest = pverp
       klowest = 1
-      do i=1,il2g
+      do i=1,ncol
          khighest = min(khighest,lel(i))
          klowest = max(klowest,jb(i))
       end do
 
       do k = klowest-1,khighest,-1
-         do i = 1,il2g
+         do i = 1,ncol
             if (k <= jb(i)-1 .and. k >= lel(i) .and. eps0(i) > 0._r8) then
                if (mu(i,k) < 0.02_r8) then
-                  hu(i,k) = hmn(i,k)
+                  hu(i,k) = h_env(i,k)
                   mu(i,k) = 0._r8
                   eu(i,k) = 0._r8
                   du(i,k) = mu(i,k+1)/dz(i,k)
                else
                  if (zm_param%zm_microp) then
                    hu(i,k) = ( mu(i,k+1)*hu(i,k+1) &
-                              +dz(i,k)*( eu(i,k)*hmn(i,k) &
+                              +dz(i,k)*( eu(i,k)*h_env(i,k) &
                                         +zm_const%latice*tmp_frz(i,k) ) &
                              ) / ( mu(i,k) + dz(i,k)*du(i,k) )
                  else
                    hu(i,k) = mu(i,k+1)/mu(i,k)*hu(i,k+1) + &
-                            dz(i,k)/mu(i,k)* (eu(i,k)*hmn(i,k)- du(i,k)*hsat(i,k))
+                            dz(i,k)/mu(i,k)* (eu(i,k)*h_env(i,k)- du(i,k)*h_env_sat(i,k))
                  end if
                end if
             end if
@@ -1395,7 +1393,7 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
 
       ! reset cloud top index beginning from two layers above the
       ! cloud base (i.e. if cloud is only one layer thick, top is not reset
-      do i=1,il2g
+      do i=1,ncol
          doit(i) = .true.
          tot_frz(i)= 0._r8
          do k = pver,msg + 1,-1
@@ -1404,7 +1402,7 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
       end do
 
       do k=klowest-2,khighest-1,-1
-         do i=1,il2g
+         do i=1,ncol
             if (doit(i) .and. k <= jb(i)-2 .and. k >= lel(i)-1) then
                if (hu(i,k)  <= hsthat(i,k) .and. &
                    hu(i,k+1) > hsthat(i,k+1) .and. &
@@ -1424,17 +1422,17 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
          end do
       end do
 
-      do i = 1,il2g
+      do i = 1,ncol
          if (iter == 1) jto(i) = jt(i)
       end do
 
       do k = pver,msg + 1,-1
-         do i = 1,il2g
+         do i = 1,ncol
             if (k >= lel(i) .and. k <= jt(i) .and. eps0(i) > 0._r8) then
                mu(i,k) = 0._r8
                eu(i,k) = 0._r8
                du(i,k) = 0._r8
-               hu(i,k) = hmn(i,k)
+               hu(i,k) = h_env(i,k)
             end if
             if (k == jt(i) .and. eps0(i) > 0._r8) then
                du(i,k) = mu(i,k+1)/dz(i,k)
@@ -1445,10 +1443,10 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
       end do
 
       ! determine LCL - see eq (4.127)- (4.130) of Neale et al. (2012)
-      done(1:il2g) = .false.
+      done(1:ncol) = .false.
       kount = 0
       do k = pver,msg + 2,-1
-         do i = 1,il2g
+         do i = 1,ncol
             if (k == jb(i) .and. eps0(i) > 0._r8) then
                qu(i,k) = q(i,jb(i))
                su(i,k) = (hu(i,k)-zm_const%latvap*qu(i,k))/zm_const%cpair
@@ -1465,13 +1463,13 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
                end if
             end if
          end do
-         if (kount >= il2g) goto 690
+         if (kount >= ncol) goto 690
       end do
 
 690 continue
 
       do k = msg + 2,pver
-         do i = 1,il2g
+         do i = 1,ncol
             if ((k > jt(i) .and. k <= jlcl(i)) .and. eps0(i) > 0._r8) then
                su(i,k) = shat(i,k)   +             (hu(i,k)-hsthat(i,k)) / (zm_const%cpair* (1._r8+gamhat(i,k)))
                qu(i,k) = qsthat(i,k) + gamhat(i,k)*(hu(i,k)-hsthat(i,k)) / (zm_const%latvap* (1._r8+gamhat(i,k)))
@@ -1481,7 +1479,7 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
 
       ! compute condensation in updraft
       do k = pver,msg + 2,-1
-         do i = 1,il2g
+         do i = 1,ncol
             if (eps0(i)>0._r8) then
                if (     zm_param%zm_microp) tmp_k_limit = jlcl(i)+1
                if (.not.zm_param%zm_microp) tmp_k_limit = jb(i)
@@ -1503,17 +1501,17 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
 
       if (zm_param%zm_microp) then
 
-         tug(:il2g,:) = t_mid(:il2g,:)
-         fice(:,:)    = 0._r8
+         tug(1:ncol,:) = t_mid(1:ncol,:)
+         fice(1:ncol,:) = 0._r8
 
          do k = pver, msg+2, -1
-            do i = 1, il2g
+            do i = 1, ncol
                tug(i,k) = su(i,k) - zm_const%grav/zm_const%cpair*z_int(i,k)
             end do
          end do
 
          do k = 1, pver-1
-            do i = 1, il2g
+            do i = 1, ncol
                if (tug(i,k+1) > zm_const%tfreez) then
                   ! If warmer than zm_const%tfreez then water phase
                   fice(i,k) = 0._r8
@@ -1528,14 +1526,14 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
          end do
 
          do k = 1, pver
-            do i = 1,il2g
+            do i = 1,ncol
                loc_microp_st%cmei(i,k) = cu(i,k)* fice(i,k)
                loc_microp_st%cmel(i,k) = cu(i,k) * (1._r8-fice(i,k))
             end do
          end do
 
 #ifndef SCREAM_CONFIG_IS_CMAKE
-         call  zm_mphy( pcols, il2g, msg, &
+         call  zm_mphy( pcols, ncol, msg, &
                         zm_const%grav, zm_const%cpair, zm_const%rdair, &
                         zm_param%auto_fac, zm_param%accr_fac, zm_param%micro_dcs, &
                         jb, jt, jlcl, su, qu, mu, du, eu, z_int, p_mid, t_mid, q, gamhat, eps0, &
@@ -1565,7 +1563,7 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
 #endif
 
          do k = pver,msg + 2,-1
-            do i = 1,il2g
+            do i = 1,ncol
                ! In the original ZM scheme, which does not consider ice phase, ql actually represents total cloud
                ! water. With convective microphysics, loc_microp_st%qliq and loc_microp_st%qice represent cloud
                ! liquid water and cloud ice, respectively. Since ql is still used in other subroutines as total
@@ -1575,7 +1573,7 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
             end do
          end do
 
-         do i = 1,il2g
+         do i = 1,ncol
            if (iter == 2 .and. jt(i)> jto(i)) then
              do k = jt(i), jto(i), -1
                 loc_microp_st%frz(i,k) = 0.0_r8
@@ -1585,7 +1583,7 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
          end do
 
          do k = pver,msg + 2,-1
-            do i = 1,il2g
+            do i = 1,ncol
                if (k >= jt(i) .and. k < jb(i) .and. eps0(i) > 0._r8 .and. mu(i,k) >= 0.0_r8) then
                   totpcp(i) = totpcp(i) + dz(i,k)*(cu(i,k)-du(i,k)*( loc_microp_st%qcde(i,k+1) &
                                                                     +loc_microp_st%qide(i,k+1) &
@@ -1604,7 +1602,7 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
          !    mu, ql are interface quantities
          !    cu, du, eu, rprd are midpoint quantites
          do k = pver,msg + 2,-1
-            do i = 1,il2g
+            do i = 1,ncol
                rprd(i,k) = 0._r8
                if (k >= jt(i) .and. k < jb(i) .and. eps0(i) > 0._r8 .and. mu(i,k) >= 0.0_r8) then
                   if (mu(i,k) > 0._r8) then
@@ -1627,19 +1625,19 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
    !----------------------------------------------------------------------------
    ! specify downdraft properties (note - no downdrafts if jd>=jb)
    ! downward mass flux profile is scaled so that net flux (up-down) at cloud base in not negative
-   do i = 1,il2g
+   do i = 1,ncol
       ! in normal downdraft strength run alfa=0.2.  In test4 alfa=0.1
       jt(i) = min(jt(i),jb(i)-1)
       jd(i) = max(j0(i),jt(i)+1)
       jd(i) = min(jd(i),jb(i))
-      hd(i,jd(i)) = hmn(i,jd(i)-1)
+      hd(i,jd(i)) = h_env(i,jd(i)-1)
       if (jd(i) < jb(i) .and. eps0(i) > 0._r8) then
          epsm(i) = eps0(i)
          md(i,jd(i)) = -zm_param%alfa * epsm(i) / eps0(i)
       end if
    end do
    do k = msg + 1,pver
-      do i = 1,il2g
+      do i = 1,ncol
          if ((k > jd(i) .and. k <= jb(i)) .and. eps0(i) > 0._r8) then
             zdef(i) = z_int(i,jd(i)) - z_int(i,k)
             md(i,k) = -zm_param%alfa / (2._r8*eps0(i))*(exp(2._r8*epsm(i)*zdef(i))-1._r8)/zdef(i)
@@ -1647,7 +1645,7 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
       end do
    end do
    do k = msg + 1,pver
-      do i = 1,il2g
+      do i = 1,ncol
          if ((k >= jt(i) .and. k <= jb(i)) .and. eps0(i) > 0._r8 .and. jd(i) < jb(i)) then
             ratmjb(i) = min(abs(mu(i,jb(i))/md(i,jb(i))),1._r8)
             md(i,k) = md(i,k)*ratmjb(i)
@@ -1656,31 +1654,31 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
    end do
 
    do k = msg + 1,pver
-      do i = 1,il2g
+      do i = 1,ncol
          if ((k >= jt(i) .and. k <= pver) .and. eps0(i) > 0._r8) then
             ed(i,k-1) = (md(i,k-1)-md(i,k))/dz(i,k-1)
             mdt = min(md(i,k),-small)
-            hd(i,k) = (md(i,k-1)*hd(i,k-1) - dz(i,k-1)*ed(i,k-1)*hmn(i,k-1))/mdt
+            hd(i,k) = (md(i,k-1)*hd(i,k-1) - dz(i,k-1)*ed(i,k-1)*h_env(i,k-1))/mdt
          end if
       end do
    end do
 
    ! calculate updraft and downdraft properties
    do k = msg + 2,pver
-      do i = 1,il2g
+      do i = 1,ncol
          if ((k >= jd(i) .and. k <= jb(i)) .and. eps0(i) > 0._r8 .and. jd(i) < jb(i)) then
             qds(i,k) = qsthat(i,k) + gamhat(i,k)*(hd(i,k)-hsthat(i,k)) / (zm_const%latvap*(1._r8+gamhat(i,k)))
          end if
       end do
    end do
 
-   do i = 1,il2g
+   do i = 1,ncol
       qd(i,jd(i)) = qds(i,jd(i))
       sd(i,jd(i)) = (hd(i,jd(i)) - zm_const%latvap*qd(i,jd(i)))/zm_const%cpair
    end do
 
    do k = msg + 2,pver
-      do i = 1,il2g
+      do i = 1,ncol
          if (k >= jd(i) .and. k < jb(i) .and. eps0(i) > 0._r8) then
             qd(i,k+1) = qds(i,k+1)
             evp(i,k) = -ed(i,k)*q(i,k) + (md(i,k)*qd(i,k)-md(i,k+1)*qd(i,k+1))/dz(i,k)
@@ -1692,17 +1690,16 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
          end if
       end do
    end do
-   do i = 1,il2g
-      totevp(i) = totevp(i) + md(i,jd(i))*qd(i,jd(i)) - md(i,jb(i))*qd(i,jb(i))
-   end do
 
-   do i = 1,il2g
+   ! calculate total precip for downdraft scaling
+   do i = 1,ncol
+      totevp(i) = totevp(i) + md(i,jd(i))*qd(i,jd(i)) - md(i,jb(i))*qd(i,jb(i))
       totpcp(i) = max(totpcp(i),0._r8)
       totevp(i) = max(totevp(i),0._r8)
    end do
 
    do k = msg + 2,pver
-      do i = 1,il2g
+      do i = 1,ncol
          ! ensure that downdraft strength is consistent with precipitation availability - see eq (4.106)
          if (totevp(i) > 0._r8 .and. totpcp(i) > 0._r8) then
             md(i,k)  = md (i,k)*min(1._r8, totpcp(i)/(totevp(i)+totpcp(i)))
@@ -1726,7 +1723,7 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
 
    ! compute the net precipitation flux across interfaces
    do k = 2,pverp
-      do i = 1,il2g
+      do i = 1,ncol
          pflx(i,k) = pflx(i,k-1) + rprd(i,k-1)*dz(i,k-1)
          if (zm_param%zm_microp) pflxs(i,k) = pflxs(i,k-1) + loc_microp_st%sprd(i,k-1)*dz(i,k-1)
       end do
@@ -1734,13 +1731,13 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
 
    ! calculate net mass flux
    do k = msg + 1,pver
-      do i = 1,il2g
+      do i = 1,ncol
          mc(i,k) = mu(i,k) + md(i,k)
       end do
    end do
 
    if (zm_param%zm_microp) then
-      do i = 1,il2g
+      do i = 1,ncol
          ! protect against rounding error
          if(pflxs(i,pverp).gt.pflx(i,pverp)) then
             dum = (pflxs(i,pverp)-pflx(i,pverp))/omsm
