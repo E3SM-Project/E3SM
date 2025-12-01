@@ -41,9 +41,10 @@ module zm_conv
    type(zm_param_t), public :: zm_param ! derived type to hold ZM tunable parameters
    !----------------------------------------------------------------------------
    ! private variables
-   real(r8), parameter :: capelmt      = 70._r8       ! threshold value for cape for deep convection
-   real(r8), parameter :: trigdcapelmt = 0._r8        ! threshold value of dcape for deep convection
-   real(r8), parameter :: omsm         = 0.99999_r8   ! to prevent problems due to round off error
+   real(r8), parameter :: capelmt         = 70._r8       ! threshold value for cape for deep convection
+   real(r8), parameter :: trigdcapelmt    = 0._r8        ! threshold value of dcape for deep convection
+   real(r8), parameter :: omsm            = 0.99999_r8   ! to prevent problems due to round off error
+   real(r8), parameter :: interp_diff_min = 1.E-6_r8     ! minimum threshold for interpolation method - see eq (4.109), (4.118), (4.119)
 !===================================================================================================
 contains
 !===================================================================================================
@@ -471,12 +472,12 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
             sdifr = abs((sg(i,k)-sg(i,k-1))/max(sg(i,k-1),sg(i,k)))
          if (qg(i,k) > 0._r8 .or. qg(i,k-1) > 0._r8) &
             qdifr = abs((qg(i,k)-qg(i,k-1))/max(qg(i,k-1),qg(i,k)))
-         if (sdifr > 1.E-6_r8) then
+         if (sdifr > interp_diff_min) then
             shat(i,k) = log(sg(i,k-1)/sg(i,k))*sg(i,k-1)*sg(i,k)/(sg(i,k-1)-sg(i,k))
          else
             shat(i,k) = 0.5_r8* (sg(i,k)+sg(i,k-1))
          end if
-         if (qdifr > 1.E-6_r8) then
+         if (qdifr > interp_diff_min) then
             qhat(i,k) = log(qg(i,k-1)/qg(i,k))*qg(i,k-1)*qg(i,k)/(qg(i,k-1)-qg(i,k))
          else
             qhat(i,k) = 0.5_r8* (qg(i,k)+qg(i,k-1))
@@ -485,7 +486,7 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
    end do
 
    !----------------------------------------------------------------------------
-   ! obtain cloud properties.
+   ! calculate updraft and downdraft properties
 
    call cldprp(pcols, ncol, pver, pverp, lengath, msg, zm_param%limcnv, &
                pg, zg, zfg, tg, sg, shat, qg, ug, vg, landfracg, tpertg, &
@@ -920,7 +921,7 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
    integer,                         intent(in ) :: pver           ! number of mid-point vertical levels
    integer,                         intent(in ) :: pverp          ! number of interface vertical levels
    integer,                         intent(in ) :: il2g           ! number of gathered columns (lengath)
-   integer,                         intent(in ) :: msg            ! missing moisture vals
+   integer,                         intent(in ) :: msg            ! missing moisture levels
    integer,                         intent(in ) :: limcnv         ! convection limiting level
    real(r8), dimension(pcols,pver), intent(in ) :: p              ! env pressure at mid-point
    real(r8), dimension(pcols,pver), intent(in ) :: z              ! env altitude at mid-point
@@ -1034,9 +1035,11 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
    !----------------------------------------------------------------------------
 
    do i = 1,il2g
-      ftemp(i) = 0._r8
+      ftemp(i)  = 0._r8
       expnum(i) = 0._r8
       expdif(i) = 0._r8
+      totpcp(i) = 0._r8
+      totevp(i) = 0._r8
       c0mask(i) = zm_param%c0_ocn*(1._r8-landfrac(i)) + zm_param%c0_lnd*landfrac(i)
    end do
 
@@ -1090,37 +1093,25 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
       end do
    end do
 
-   ! Set to zero things which make this routine blow up
-   do k=1,msg
-      do i=1,il2g
-         rprd(i,k) = 0._r8
-      end do
-   end do
-
-   ! interpolate the layer values of qst, hsat and gamma to layer interfaces
-   do k = 1, msg+1
+   !----------------------------------------------------------------------------
+   ! interpolate the mid-point values to interfaces
+   do k = msg+1,pver
       do i = 1,il2g
          hsthat(i,k) = hsat(i,k)
          qsthat(i,k) = qst(i,k)
          gamhat(i,k) = gamma(i,k)
-      end do
-   end do
-   do i = 1,il2g
-      totpcp(i) = 0._r8
-      totevp(i) = 0._r8
-   end do
-   do k = msg + 2,pver
-      do i = 1,il2g
-         if (abs(qst(i,k-1)-qst(i,k)) > 1.E-6_r8) then
-            qsthat(i,k) = log(qst(i,k-1)/qst(i,k))*qst(i,k-1)*qst(i,k)/ (qst(i,k-1)-qst(i,k))
-         else
-            qsthat(i,k) = qst(i,k)
-         end if
-         hsthat(i,k) = zm_const%cpair*shat(i,k) + zm_const%latvap*qsthat(i,k)
-         if (abs(gamma(i,k-1)-gamma(i,k)) > 1.E-6_r8) then
-            gamhat(i,k) = log(gamma(i,k-1)/gamma(i,k))*gamma(i,k-1)*gamma(i,k)/ (gamma(i,k-1)-gamma(i,k))
-         else
-            gamhat(i,k) = gamma(i,k)
+         if (k>msg+1) then
+            if (abs(qst(i,k-1)-qst(i,k)) > interp_diff_min) then
+               qsthat(i,k) = log(qst(i,k-1)/qst(i,k))*qst(i,k-1)*qst(i,k)/ (qst(i,k-1)-qst(i,k))
+            else
+               qsthat(i,k) = qst(i,k)
+            end if
+            hsthat(i,k) = zm_const%cpair*shat(i,k) + zm_const%latvap*qsthat(i,k)
+            if (abs(gamma(i,k-1)-gamma(i,k)) > interp_diff_min) then
+               gamhat(i,k) = log(gamma(i,k-1)/gamma(i,k))*gamma(i,k-1)*gamma(i,k)/ (gamma(i,k-1)-gamma(i,k))
+            else
+               gamhat(i,k) = gamma(i,k)
+            end if
          end if
       end do
    end do
@@ -1278,29 +1269,24 @@ subroutine cldprp(pcols, ncol, pver, pverp, il2g, msg, limcnv, &
          end do
       end do
       do i = 1,il2g
-          totpcp(i) = 0._r8
-          if (zm_param%zm_microp) hu(i,jb(i)) = hmn(i,jb(i)) + zm_const%cpair*zm_param%tiedke_add
+         totpcp(i) = 0._r8
+         if (zm_param%zm_microp) hu(i,jb(i)) = hmn(i,jb(i)) + zm_const%cpair*zm_param%tiedke_add
       end do
 
-
-      ! specify the updraft mass flux (mu), entrainment (eu), detrainment (du), and MSE (hu)
-      ! here and below mu,eu,du,md,ed are all normalized by cloud base mass flux (mb)
-      do i = 1,il2g
-         if (eps0(i) > 0._r8) then
-            mu(i,jb(i)) = 1._r8
-            eu(i,jb(i)) = mu(i,jb(i))/dz(i,jb(i))
-         end if
-         if (zm_param%zm_microp) then
-           tmplel(i) = lel(i)
-         else
-           tmplel(i) = jt(i)
-         end if
-      end do
-
-      ! compute updraft mass fluxes - see eq (4.79) - (4.81)
       do k = pver,msg + 1,-1
          do i = 1,il2g
-             if (eps0(i) > 0._r8 .and. (k >= tmplel(i) .and. k < jb(i))) then
+            ! intialize updraft mass flux variables - here and below all normalized by cloud base mass flux (mb)
+            if (eps0(i) > 0._r8) then
+               mu(i,jb(i)) = 1._r8
+               eu(i,jb(i)) = mu(i,jb(i))/dz(i,jb(i))
+            end if
+            if (zm_param%zm_microp) then
+               tmplel(i) = lel(i)
+            else
+               tmplel(i) = jt(i)
+            end if
+            ! compute profiles of updraft mass fluxes - see eq (4.79) - (4.81)
+            if (eps0(i) > 0._r8 .and. (k >= tmplel(i) .and. k < jb(i))) then
                zuef(i) = zf(i,k) - zf(i,jb(i))
                rmue(i) = (1._r8/eps0(i))* (exp(eps(i,k+1)*zuef(i))-1._r8)/zuef(i)
                mu(i,k) = (1._r8/eps0(i))* (exp(eps(i,k  )*zuef(i))-1._r8)/zuef(i)
