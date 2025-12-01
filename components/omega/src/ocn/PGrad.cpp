@@ -163,7 +163,6 @@ void PressureGrad::computePressureGrad(Array2DReal &Tend,
    const Array2DReal &PressureInterface = VCoord->PressureInterface;
    const Array2DReal &Geopotential      = VCoord->GeopotentialMid;
    const Array2DReal &SpecVol           = EqState->SpecVol;
-   const Array2DReal &SpecVolInterface  = EqState->SpecVolInterface;
    const Array2DReal &ZInterface        = VCoord->ZInterface;
    Array2DReal LayerThick;
    State->getLayerThickness(LayerThick, TimeLevel);

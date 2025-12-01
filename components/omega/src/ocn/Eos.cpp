@@ -45,6 +45,24 @@ Eos::Eos(const std::string &Name, ///< [in] Name for eos object
    BruntVaisalaFreqSq =
        Array2DReal("BruntVaisalaFreqSq", Mesh->NCellsAll, VCoord->NVertLayers);
 
+   defineFields();
+}
+
+/// Destructor for Eos
+Eos::~Eos() {}
+
+/// Instance management
+Eos *Eos::Instance = nullptr;
+
+/// Get instance of Eos
+Eos *Eos::getInstance() { return Instance; }
+
+/// Destroy instance of Eos
+void Eos::destroyInstance() {
+   delete Instance;
+   Instance = nullptr;
+}
+
 /// Initializes the Eos (Equation of State) class and its options.
 /// it ASSUMES that HorzMesh was initialized and initializes the Eos class by
 /// using the default mesh, reading the config file, and setting parameters
@@ -148,79 +166,6 @@ void Eos::computeSpecVol(const Array2DReal &ConservTemp,
                  });
           });
    }
-}
-
-/// Compute specific volume for all layer interfaces(no displacement)
-void Eos::computeSpecVolInterface(const Array2DReal &ConservTemp,
-                                  const Array2DReal &AbsSalinity,
-                                  const Array2DReal &PressureInterface) {
-   OMEGA_SCOPE(LocSpecVolInterface,
-               SpecVolInterface); /// Create a local view for computation
-   OMEGA_SCOPE(LocComputeSpecVolLinear,
-               ComputeSpecVolLinear); /// Local view for linear EOS computation
-   OMEGA_SCOPE(LocComputeSpecVolTeos10,
-               ComputeSpecVolTeos10); /// Local view for TEOS-10 computation
-   deepCopy(LocSpecVolInterface,
-            0); /// Initialize local specific volume to zero
-
-   I4 KDisp = 0; /// No displacement in this case
-
-   // Array2DReal ConservTempInterface("ConservTempInterface", NCellsAll,
-   //                                  NVertLayers + 1);
-   // Array2DReal AbsSalinityInterface("AbsSalinityInterface", NCellsAll,
-   //                                  NVertLayers + 1);
-
-   // Compute interface values by averaging adjacent layer values
-   parallelFor(
-       "compute-interface-values", {NCellsAll, NVertLayers + 1},
-       KOKKOS_LAMBDA(I4 ICell, I4 KInterface) {
-          if (KInterface == 0) {
-             // ConservTempInterface(ICell, KInterface) =
-             //     ConservTemp(ICell, KInterface);
-             // AbsSalinityInterface(ICell, KInterface) =
-             //     AbsSalinity(ICell, KInterface);
-             SpecVolInterface(ICell, KInterface) = SpecVol(ICell, KInterface);
-          } else if (KInterface == NVertLayers + 1) {
-             // ConservTempInterface(ICell, KInterface) =
-             //     ConservTemp(ICell, KInterface - 1);
-             // AbsSalinityInterface(ICell, KInterface) =
-             //     AbsSalinity(ICell, KInterface - 1);
-             SpecVolInterface(ICell, KInterface) =
-                 SpecVol(ICell, KInterface - 1);
-          } else {
-             // ConservTempInterface(ICell, KInterface) =
-             //     0.5_Real * (ConservTemp(ICell, KInterface - 1) +
-             //                 ConservTemp(ICell, KInterface));
-             // AbsSalinityInterface(ICell, KInterface) =
-             //     0.5_Real * (AbsSalinity(ICell, KInterface - 1) +
-             //                 AbsSalinity(ICell, KInterface));
-             SpecVolInterface(ICell, KInterface) =
-                 0.5_Real *
-                 (SpecVol(ICell, KInterface - 1) + SpecVol(ICell, KInterface));
-          }
-       });
-
-   // int NChunksP1 = (NVertLayers + 1) / VecLength;
-
-   ///// Dispatch to the correct EOS calculation
-   // if (EosChoice == EosType::LinearEos) {
-   //    parallelFor(
-   //        "eos-linear", {NCellsAll, NChunksP1},
-   //        KOKKOS_LAMBDA(I4 ICell, I4 KChunk) {
-   //           LocComputeSpecVolLinear(LocSpecVolInterface, ICell, KChunk,
-   //                                   ConservTempInterface,
-   //                                   AbsSalinityInterface);
-   //        });
-   // } else if (EosChoice == EosType::Teos10Eos) {
-   //    parallelFor(
-   //        "eos-teos10", {NCellsAll, NChunksP1},
-   //        KOKKOS_LAMBDA(I4 ICell, I4 KChunk) {
-   //           LocComputeSpecVolTeos10(LocSpecVolInterface, ICell, KChunk,
-   //                                   ConservTempInterface,
-   //                                   AbsSalinityInterface, PressureInterface,
-   //                                   KDisp);
-   //        });
-   // }
 }
 
 /// Compute displaced specific volume (for vertical displacement)

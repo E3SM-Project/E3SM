@@ -542,7 +542,6 @@ class Eos {
 
    EosType EosChoice;              ///< Current EOS type in use
    Array2DReal SpecVol;            ///< Specific volume field at level centers
-   Array2DReal SpecVolInterface;   ///< Specific volume field at interfaces
    Array2DReal SpecVolDisplaced;   ///< Displaced specific volume field
    Array2DReal BruntVaisalaFreqSq; ///< Squared Brunt-Vaisala frequency field
 
@@ -569,11 +568,6 @@ class Eos {
                                   const Array2DReal &AbsSalinity,
                                   const Array2DReal &Pressure,
                                   const Array2DReal &SpecVol);
-   /// Compute specific volume at interfaces for all cells/layers+1
-   void computeSpecVolInterface(const Array2DReal &ConservTemp,
-                                const Array2DReal &AbsSalinity,
-                                const Array2DReal &PressureInterface);
-
    /// Initialize EOS from config and mesh
    static void init();
 
