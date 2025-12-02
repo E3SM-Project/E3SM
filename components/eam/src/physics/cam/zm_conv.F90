@@ -311,7 +311,7 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
 
    !----------------------------------------------------------------------------
    ! locate PBL top index
-   do k = pver - 1,msg + 1,-1
+   do k = pver-1, msg+1, -1
       do i = 1,ncol
          if (abs(z_mid(i,k)-z_srf(i)-pbl_hgt(i)) < (z_int(i,k)-z_int(i,k+1))*0.5_r8) then
             pbl_top(i) = k
@@ -382,7 +382,7 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
    if ( zm_param%trig_dcape .and. (.not.is_first_step) ) cape_threshold_alt = 0.0_r8
 
    lengath = 0
-   do i=1,ncol
+   do i = 1,ncol
       if (zm_param%trig_dcape) then
          if (is_first_step) then
             if (cape(i) > cape_threshold) then
@@ -410,7 +410,7 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
       return
    end if
 
-   do ii=1,lengath
+   do ii = 1,lengath
       ideep(ii)=gather_index(ii)
    end do
 
@@ -474,7 +474,7 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
    ! calculate sub-cloud layer pressure "thickness" for use in
    ! closure and tendency routines.
 
-   do k = msg + 1,pver
+   do k = msg+1, pver
       do i = 1,lengath
          if (k >= maxg(i)) then
             dsubcld(i) = dsubcld(i) + dp(i,k)
@@ -484,7 +484,7 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
 
    !----------------------------------------------------------------------------
    ! define interfacial values for (q,s) used in subsequent routines.
-   do k = msg + 2,pver
+   do k = msg+2, pver
       do i = 1,lengath
          sdifr = 0._r8
          qdifr = 0._r8
@@ -519,7 +519,7 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
    !---------------------------------------------------------------------------
    ! convert detrainment from units of "per length" [1/m] to "per pressure" [1/mb].
 
-   do k = msg + 1,pver
+   do k = msg+1, pver
       do i = 1,lengath
          du   (i,k) = du   (i,k)* (z_int_g(i,k)-z_int_g(i,k+1))/dp(i,k)
          eu   (i,k) = eu   (i,k)* (z_int_g(i,k)-z_int_g(i,k+1))/dp(i,k)
@@ -546,9 +546,9 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
    !----------------------------------------------------------------------------
    ! limit cloud base mass flux to theoretical upper bound.
 
-   do i=1,lengath
+   do i = 1,lengath
       mumax(i) = 0
-      do k=msg + 2,pver
+      do k = msg+2, pver
         mumax(i) = max(mumax(i), mu(i,k)/dp(i,k))
       end do
       if (mumax(i) > 0._r8) then
@@ -563,7 +563,7 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
    ! don't allow convection within PBL (suggestion of Bjorn Stevens, 8-2000)
 
    if (zm_param%no_deep_pbl) then
-      do i=1,lengath
+      do i = 1,lengath
          if (z_mid_in(ideep(i),jt(i)) < pbl_hgt(ideep(i))) mb(i) = 0
       end do
    end if
@@ -571,12 +571,12 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
    !----------------------------------------------------------------------------
    ! apply cloud base mass flux scaling
 
-   do i=1,lengath
+   do i = 1,lengath
 
       ! zero out micro data for inactive columns
       if ( zm_param%zm_microp .and. mb(i).eq.0._r8) call zm_microp_st_zero(loc_microp_st,i,pver)
 
-      do k=msg+1,pver
+      do k = msg+1,pver
          mu   (i,k)  = mu   (i,k)*mb(i)
          md   (i,k)  = md   (i,k)*mb(i)
          mc   (i,k)  = mc   (i,k)*mb(i)
@@ -620,7 +620,7 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
    !----------------------------------------------------------------------------
    ! scatter data (i.e. undo the gathering)
 
-   do k = msg + 1,pver
+   do k = msg+1, pver
 #ifdef CPRCRAY
 !DIR$ CONCURRENT
 #endif
@@ -656,7 +656,7 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
    !----------------------------------------------------------------------------
    ! Compute precip by integrating change in water vapor minus detrained cloud water
    do i = 1,ncol
-      do k = pver,msg + 1,-1
+      do k = pver, msg+1, -1
          if (zm_param%zm_microp) then
             prec(i) = prec(i) - p_del_in(i,k)*(q(i,k)-qh(i,k)) - p_del_in(i,k)*(dlf(i,k)+microp_st%dif(i,k)+microp_st%dsf(i,k))*2._r8*delt
          else
@@ -991,7 +991,7 @@ subroutine calculate_fractional_entrainment(pcols, ncol, pver, pverp, msg, &
 
    !----------------------------------------------------------------------------
    ! compute taylor series for approximate eps(z) below
-   do k = pver - 1,msg + 1,-1
+   do k = pver-1, msg+1, -1
       do i = 1,ncol
          if (k < jb(i) .and. k >= jt(i)) then
             k1(i,k) = k1(i,k+1) + (h_env(i,jb(i))-h_env(i,k))*dz(i,k)
@@ -1008,7 +1008,7 @@ subroutine calculate_fractional_entrainment(pcols, ncol, pver, pverp, msg, &
    !----------------------------------------------------------------------------
    ! re-initialize minimum MSE for ensuing calculation
    h_env_min(1:ncol) = 1.E6_r8
-   do k = msg + 1,pver
+   do k = msg+1, pver
       do i = 1,ncol
          if (k >= j0(i) .and. k <= jb(i) .and. h_env(i,k) <= h_env_min(i)) then
             h_env_min(i) = h_env(i,k)
@@ -1019,7 +1019,7 @@ subroutine calculate_fractional_entrainment(pcols, ncol, pver, pverp, msg, &
 
    !----------------------------------------------------------------------------
    ! compute approximate eps(z) using above taylor series
-   do k = msg + 2,pver
+   do k = msg+2, pver
       do i = 1,ncol
          expnum(i)   = 0._r8
          ftemp(i)    = 0._r8
@@ -1052,7 +1052,7 @@ subroutine calculate_fractional_entrainment(pcols, ncol, pver, pverp, msg, &
    end do
 
    ! ensure that entrainment does not increase above the level that detrainment starts
-   do k = msg + 2,pver
+   do k = msg+2, pver
       do i = 1,ncol
          if (k >= jt(i) .and. k <= j0(i)) then
             f(i,k) = max(f(i,k),f(i,k-1))
@@ -1069,7 +1069,7 @@ subroutine calculate_fractional_entrainment(pcols, ncol, pver, pverp, msg, &
    ! The modification below comes from:
    !   Rasch, P. J., J. E. Kristjánsson, A comparison of the CCM3 model climate
    !   using diagnosed and predicted condensate parameterizations, J. Clim., 1997.
-   do k = pver,msg + 1,-1
+   do k = pver, msg+1, -1
       do i = 1,ncol
          if ( k >=j0(i) .and. k<=jb(i) ) eps(i,k) = f(i,j0(i))
          if ( k  <j0(i) .and. k>=jt(i) ) eps(i,k) = f(i,k)
@@ -1253,7 +1253,7 @@ subroutine cldprp(pcols, ncol, pver, pverp, msg, limcnv, &
 
    !----------------------------------------------------------------------------
    ! interpolate the mid-point values to interfaces
-   do k = msg+1,pver
+   do k = msg+1, pver
       do i = 1,ncol
          hsthat(i,k) = h_env_sat(i,k)
          qsthat(i,k) = qst(i,k)
@@ -1289,7 +1289,7 @@ subroutine cldprp(pcols, ncol, pver, pverp, msg, limcnv, &
    !----------------------------------------------------------------------------
    ! find the level of minimum saturated MSE (h_env_sat), where detrainment starts
    do i = 1,ncol
-      do k = msg + 1,pver
+      do k = msg+1, pver
          if (h_env_sat(i,k) <= h_env_min(i) .and. k >= jt(i) .and. k <= jb(i)) then
             h_env_min(i) = h_env_sat(i,k)
             j0(i) = k
@@ -1304,7 +1304,7 @@ subroutine cldprp(pcols, ncol, pver, pverp, msg, limcnv, &
 
    !----------------------------------------------------------------------------
    ! Initialize cloud moist and dry static energies (hu=MSE & su=DSE)
-   do k = msg + 1,pver
+   do k = msg+1, pver
       do i = 1,ncol
          if (k >= jt(i) .and. k <= jb(i)) then
             ! Tunable temperature perturbation (tiedke_add) was already added to parcel hu/su to
@@ -1338,7 +1338,7 @@ subroutine cldprp(pcols, ncol, pver, pverp, msg, limcnv, &
 
    do iter = 1,itnum
 
-      do k = pver,msg + 1,-1
+      do k = pver, msg+1, -1
          do i = 1,ncol
             cu(i,k) = 0._r8
             ql(i,k) = 0._r8
@@ -1354,7 +1354,7 @@ subroutine cldprp(pcols, ncol, pver, pverp, msg, limcnv, &
          if (zm_param%zm_microp) hu(i,jb(i)) = h_env(i,jb(i)) + zm_const%cpair*zm_param%tiedke_add
       end do
 
-      do k = pver,msg + 1,-1
+      do k = pver, msg+1, -1
          do i = 1,ncol
             ! intialize updraft mass flux variables - here and below all normalized by cloud base mass flux (mb)
             if (eps0(i) > 0._r8) then
@@ -1376,7 +1376,7 @@ subroutine cldprp(pcols, ncol, pver, pverp, msg, limcnv, &
 
       khighest = pverp
       klowest = 1
-      do i=1,ncol
+      do i = 1,ncol
          khighest = min(khighest,lel(i))
          klowest = max(klowest,jb(i))
       end do
@@ -1406,16 +1406,16 @@ subroutine cldprp(pcols, ncol, pver, pverp, msg, limcnv, &
 
       ! reset cloud top index beginning from two layers above the
       ! cloud base (i.e. if cloud is only one layer thick, top is not reset
-      do i=1,ncol
+      do i = 1,ncol
          doit(i) = .true.
          tot_frz(i)= 0._r8
-         do k = pver,msg + 1,-1
+         do k = pver, msg+1, -1
             tot_frz(i)= tot_frz(i) + tmp_frz(i,k)*dz(i,k)
          end do
       end do
 
-      do k=klowest-2,khighest-1,-1
-         do i=1,ncol
+      do k = klowest-2, khighest-1, -1
+         do i = 1,ncol
             if (doit(i) .and. k <= jb(i)-2 .and. k >= lel(i)-1) then
                if (hu(i,k)  <= hsthat(i,k) .and. &
                    hu(i,k+1) > hsthat(i,k+1) .and. &
@@ -1439,7 +1439,7 @@ subroutine cldprp(pcols, ncol, pver, pverp, msg, limcnv, &
          if (iter == 1) jto(i) = jt(i)
       end do
 
-      do k = pver,msg + 1,-1
+      do k = pver, msg+1, -1
          do i = 1,ncol
             if (k >= lel(i) .and. k <= jt(i) .and. eps0(i) > 0._r8) then
                mu(i,k) = 0._r8
@@ -1458,7 +1458,7 @@ subroutine cldprp(pcols, ncol, pver, pverp, msg, limcnv, &
       ! determine LCL - see eq (4.127)- (4.130) of Neale et al. (2012)
       done(1:ncol) = .false.
       kount = 0
-      do k = pver,msg + 2,-1
+      do k = pver, msg+2, -1
          do i = 1,ncol
             if (k == jb(i) .and. eps0(i) > 0._r8) then
                qu(i,k) = q(i,jb(i))
@@ -1481,7 +1481,7 @@ subroutine cldprp(pcols, ncol, pver, pverp, msg, limcnv, &
 
 690 continue
 
-      do k = msg + 2,pver
+      do k = msg+2, pver
          do i = 1,ncol
             if ((k > jt(i) .and. k <= jlcl(i)) .and. eps0(i) > 0._r8) then
                su(i,k) = shat(i,k)   +             (hu(i,k)-hsthat(i,k)) / (zm_const%cpair* (1._r8+gamhat(i,k)))
@@ -1491,7 +1491,7 @@ subroutine cldprp(pcols, ncol, pver, pverp, msg, limcnv, &
       end do
 
       ! compute condensation in updraft
-      do k = pver,msg + 2,-1
+      do k = pver, msg+2, -1
          do i = 1,ncol
             if (eps0(i)>0._r8) then
                if (     zm_param%zm_microp) tmp_k_limit = jlcl(i)+1
@@ -1575,7 +1575,7 @@ subroutine cldprp(pcols, ncol, pver, pverp, msg, limcnv, &
                         loc_microp_st%dsfm,     loc_microp_st%dsfn )
 #endif
 
-         do k = pver,msg + 2,-1
+         do k = pver, msg+2, -1
             do i = 1,ncol
                ! In the original ZM scheme, which does not consider ice phase, ql actually represents total cloud
                ! water. With convective microphysics, loc_microp_st%qliq and loc_microp_st%qice represent cloud
@@ -1595,7 +1595,7 @@ subroutine cldprp(pcols, ncol, pver, pverp, msg, limcnv, &
            end if
          end do
 
-         do k = pver,msg + 2,-1
+         do k = pver, msg+2, -1
             do i = 1,ncol
                if (k >= jt(i) .and. k < jb(i) .and. eps0(i) > 0._r8 .and. mu(i,k) >= 0.0_r8) then
                   totpcp(i) = totpcp(i) + dz(i,k)*(cu(i,k)-du(i,k)*( loc_microp_st%qcde(i,k+1) &
@@ -1614,7 +1614,7 @@ subroutine cldprp(pcols, ncol, pver, pverp, msg, limcnv, &
          ! consistently applied.
          !    mu, ql are interface quantities
          !    cu, du, eu, rprd are midpoint quantites
-         do k = pver,msg + 2,-1
+         do k = pver, msg+2, -1
             do i = 1,ncol
                rprd(i,k) = 0._r8
                if (k >= jt(i) .and. k < jb(i) .and. eps0(i) > 0._r8 .and. mu(i,k) >= 0.0_r8) then
@@ -1649,7 +1649,7 @@ subroutine cldprp(pcols, ncol, pver, pverp, msg, limcnv, &
          md(i,jd(i)) = -zm_param%alfa * epsm(i) / eps0(i)
       end if
    end do
-   do k = msg + 1,pver
+   do k = msg+1, pver
       do i = 1,ncol
          if ((k > jd(i) .and. k <= jb(i)) .and. eps0(i) > 0._r8) then
             zdef(i) = z_int(i,jd(i)) - z_int(i,k)
@@ -1657,7 +1657,7 @@ subroutine cldprp(pcols, ncol, pver, pverp, msg, limcnv, &
          end if
       end do
    end do
-   do k = msg + 1,pver
+   do k = msg+1, pver
       do i = 1,ncol
          if ((k >= jt(i) .and. k <= jb(i)) .and. eps0(i) > 0._r8 .and. jd(i) < jb(i)) then
             ratmjb(i) = min(abs(mu(i,jb(i))/md(i,jb(i))),1._r8)
@@ -1666,7 +1666,7 @@ subroutine cldprp(pcols, ncol, pver, pverp, msg, limcnv, &
       end do
    end do
 
-   do k = msg + 1,pver
+   do k = msg+1, pver
       do i = 1,ncol
          if ((k >= jt(i) .and. k <= pver) .and. eps0(i) > 0._r8) then
             ed(i,k-1) = (md(i,k-1)-md(i,k))/dz(i,k-1)
@@ -1677,7 +1677,7 @@ subroutine cldprp(pcols, ncol, pver, pverp, msg, limcnv, &
    end do
 
    ! calculate updraft and downdraft properties
-   do k = msg + 2,pver
+   do k = msg+2, pver
       do i = 1,ncol
          if ((k >= jd(i) .and. k <= jb(i)) .and. eps0(i) > 0._r8 .and. jd(i) < jb(i)) then
             qds(i,k) = qsthat(i,k) + gamhat(i,k)*(hd(i,k)-hsthat(i,k)) / (zm_const%latvap*(1._r8+gamhat(i,k)))
@@ -1690,7 +1690,7 @@ subroutine cldprp(pcols, ncol, pver, pverp, msg, limcnv, &
       sd(i,jd(i)) = (hd(i,jd(i)) - zm_const%latvap*qd(i,jd(i)))/zm_const%cpair
    end do
 
-   do k = msg + 2,pver
+   do k = msg+2, pver
       do i = 1,ncol
          if (k >= jd(i) .and. k < jb(i) .and. eps0(i) > 0._r8) then
             qd(i,k+1) = qds(i,k+1)
@@ -1711,7 +1711,7 @@ subroutine cldprp(pcols, ncol, pver, pverp, msg, limcnv, &
       totevp(i) = max(totevp(i),0._r8)
    end do
 
-   do k = msg + 2,pver
+   do k = msg+2, pver
       do i = 1,ncol
          ! ensure that downdraft strength is consistent with precipitation availability - see eq (4.106)
          if (totevp(i) > 0._r8 .and. totpcp(i) > 0._r8) then
@@ -1743,7 +1743,7 @@ subroutine cldprp(pcols, ncol, pver, pverp, msg, limcnv, &
    end do
 
    ! calculate net mass flux
-   do k = msg + 1,pver
+   do k = msg+1, pver
       do i = 1,ncol
          mc(i,k) = mu(i,k) + md(i,k)
       end do
@@ -1765,7 +1765,7 @@ subroutine cldprp(pcols, ncol, pver, pverp, msg, limcnv, &
          end if
          ! disable columns if top is at or below LCL if using ZM microphysics
          if ( jt(i)>=jlcl(i) ) then
-            do k = msg + 1,pver
+            do k = msg+1, pver
                mu(i,k)   = 0._r8
                eu(i,k)   = 0._r8
                du(i,k)   = 0._r8
@@ -1874,7 +1874,7 @@ subroutine closure(pcols, ncol, pver, pverp, msg, cape_threshold_in, &
    ! per unit cloud-base mass flux, and have units of 1/mb instead of 1/sec.
    !----------------------------------------------------------------------------
    ! initialization
-   do k = msg + 1,pver
+   do k = msg+1, pver
       do i = 1,ncol
          dtmdt(i,k) = 0._r8
          dqmdt(i,k) = 0._r8
@@ -1899,7 +1899,7 @@ subroutine closure(pcols, ncol, pver, pverp, msg, cape_threshold_in, &
 
    !----------------------------------------------------------------------------
    ! ?
-   do k = msg + 1,pver - 1
+   do k = msg+1, pver-1
       do i = 1,ncol
          if (k==jt(i)) then
             dtmdt(i,k) = (1._r8/dp(i,k)) &
@@ -1914,7 +1914,7 @@ subroutine closure(pcols, ncol, pver, pverp, msg, cape_threshold_in, &
 
    !----------------------------------------------------------------------------
    ! ?
-   do k = msg + 1,pver - 1
+   do k = msg+1, pver-1
       do i = 1,ncol
          if ( k>jt(i) .and. k<mx(i) ) then
             dtmdt(i,k) = ( mc(i,k  )*(shat(i,k)-s(i,k)     ) &
@@ -1931,7 +1931,7 @@ subroutine closure(pcols, ncol, pver, pverp, msg, cape_threshold_in, &
 
    !----------------------------------------------------------------------------
    ! Calculate dboydt (integrand of cape change)
-   do k = msg + 1,pver
+   do k = msg+1, pver
       do i = 1,ncol
          ! calculate dboydt between LCL and cloud top
          if ( k>=lel(i) .and. k<=lcl(i) ) then
@@ -2036,7 +2036,7 @@ subroutine zm_calculate_output_tend(pcols, ncol, pver, pverp, &
    real(r8) emc
    !----------------------------------------------------------------------------
    ! initialize variables
-   do k = msg + 1,pver
+   do k = msg+1, pver
       do i = il1g,il2g
          dsdt(i,k) = 0._r8
          dqdt(i,k) = 0._r8
