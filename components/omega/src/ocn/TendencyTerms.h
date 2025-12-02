@@ -25,7 +25,7 @@ namespace OMEGA {
 /// arrays
 class ThicknessFluxDivOnCell {
  public:
-   bool Enabled;
+   bool Enabled = false;
 
    /// constructor declaration
    ThicknessFluxDivOnCell(const HorzMesh *Mesh, const VertCoord *VCoord);
@@ -79,7 +79,7 @@ class ThicknessFluxDivOnCell {
 /// momentum equation
 class PotentialVortHAdvOnEdge {
  public:
-   bool Enabled;
+   bool Enabled = false;
 
    /// constructor declaration
    PotentialVortHAdvOnEdge(const HorzMesh *Mesh, const VertCoord *VCoord);
@@ -130,7 +130,7 @@ class PotentialVortHAdvOnEdge {
 /// Gradient of kinetic energy defined on edges, for momentum equation
 class KEGradOnEdge {
  public:
-   bool Enabled;
+   bool Enabled = false;
 
    /// constructor declaration
    KEGradOnEdge(const HorzMesh *Mesh, const VertCoord *VCoord);
@@ -165,7 +165,7 @@ class KEGradOnEdge {
 /// acceleration, for momentum equation
 class SSHGradOnEdge {
  public:
-   bool Enabled;
+   bool Enabled = false;
 
    /// constructor declaration
    SSHGradOnEdge(const HorzMesh *Mesh, const VertCoord *VCoord);
@@ -200,7 +200,7 @@ class SSHGradOnEdge {
 /// Laplacian horizontal mixing, for momentum equation
 class VelocityDiffusionOnEdge {
  public:
-   bool Enabled;
+   bool Enabled = false;
 
    Real ViscDel2;
 
@@ -251,7 +251,7 @@ class VelocityDiffusionOnEdge {
 /// Biharmonic horizontal mixing, for momentum equation
 class VelocityHyperDiffOnEdge {
  public:
-   bool Enabled;
+   bool Enabled = false;
 
    Real ViscDel4;
    Real DivFactor;
@@ -304,7 +304,7 @@ class VelocityHyperDiffOnEdge {
 /// Wind forcing
 class WindForcingOnEdge {
  public:
-   bool Enabled;
+   bool Enabled = false;
    Real LocRhoSw;
 
    /// constructor declaration
@@ -332,7 +332,7 @@ class WindForcingOnEdge {
 /// Bottom drag
 class BottomDragOnEdge {
  public:
-   bool Enabled;
+   bool Enabled = false;
    Real Coeff;
 
    /// constructor declaration
@@ -368,7 +368,7 @@ class BottomDragOnEdge {
 // Tracer horizontal advection term
 class TracerHorzAdvOnCell {
  public:
-   bool Enabled;
+   bool Enabled = false;
 
    TracerHorzAdvOnCell(const HorzMesh *Mesh, const VertCoord *VCoord);
 
@@ -497,7 +497,7 @@ class TracerHighOrderHorzAdvOnCell {
 // Tracer horizontal diffusion term
 class TracerDiffOnCell {
  public:
-   bool Enabled;
+   bool Enabled = false;
 
    Real EddyDiff2;
 
@@ -560,7 +560,7 @@ class TracerDiffOnCell {
 // Tracer biharmonic horizontal mixing term
 class TracerHyperDiffOnCell {
  public:
-   bool Enabled;
+   bool Enabled = false;
 
    Real EddyDiff4;
 
