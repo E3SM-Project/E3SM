@@ -99,5 +99,19 @@ if (EAMXX_ENABLE_PYTHON)
       EXE_ARGS "--args -ifile=input_pyml.yaml"
       LABELS cld_fraction physics
       FIXTURES_SETUP cldfrac_pyml)
+
+    # Create test that runs lapis-generated emulator
+    unset (PY_MODULE_NAME)
+    set (POSTFIX ml_cpp)
+    set (WHICH_EMULATOR lapis)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input_ml.yaml
+                   ${CMAKE_CURRENT_BINARY_DIR}/input_ml_cpp.yaml)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/output.yaml
+                   ${CMAKE_CURRENT_BINARY_DIR}/output_${POSTFIX}.yaml)
+
+    CreateUnitTestFromExec(cld_frac_net_cpp cld_frac_net_standalone
+      EXE_ARGS "--args -ifile=input_cppml.yaml"
+      LABELS cld_fraction
+      FIXTURES_SETUP cldfrac_cppml)
   endif()
 endif()
