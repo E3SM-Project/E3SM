@@ -427,14 +427,12 @@ void OutputManager::run(const util::TimeStamp& timestamp)
     if (not filespecs.is_open) {
       filespecs.filename = compute_filename (filespecs,timestamp);
       
-      // Check if file already exists (duplicate yaml file)
-      if (not m_resume_output_file && file_exists(filespecs.filename)) {
+      // Check if file already exists when not in restart mode (potential duplicate yaml file)
+      if (not m_resume_output_file and file_exists(filespecs.filename)) {
         EKAT_ERROR_MSG(
-            "Error! Output file already exists: \n"
+            "Error! Trying to create an output file already exists: \n"
             "  - filename: " + filespecs.filename + "\n"
-            "  - timestamp: " + timestamp.to_string() + "\n"
-            "This likely indicates that two yaml files were specified with identical interval, "
-            "average type, and prefix.");
+            "  - timestamp: " + timestamp.to_string() );
       }    
 
       // Register all dims/vars, write geometry data (e.g. lat/lon/hyam/hybm/hyai/hybi)
