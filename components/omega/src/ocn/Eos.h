@@ -12,6 +12,7 @@
 
 #include "AuxiliaryState.h"
 #include "Config.h"
+#include "GlobalConstants.h"
 #include "HorzMesh.h"
 #include "MachEnv.h"
 #include "OmegaKokkos.h"
@@ -205,8 +206,7 @@ class Teos10Eos {
    KOKKOS_FUNCTION Real calcDelta(const Array2DReal &SpecVolPCoeffs, const I4 K,
                                   const Real P) const {
 
-      constexpr Real Pu = 1e4;
-      Real Pp           = P / Pu;
+      Real Pp = P * Pa2Db;
 
       Real Delta = ((((SpecVolPCoeffs(5, K) * Pp + SpecVolPCoeffs(4, K)) * Pp +
                       SpecVolPCoeffs(3, K)) *
@@ -221,14 +221,13 @@ class Teos10Eos {
 
    /// Calculate reference profile for TEOS-10
    KOKKOS_FUNCTION Real calcRefProfile(Real P) const {
-      constexpr Real Pu  = 1e4;
       constexpr Real V00 = -4.4015007269e-05;
       constexpr Real V01 = 6.9232335784e-06;
       constexpr Real V02 = -7.5004675975e-07;
       constexpr Real V03 = 1.7009109288e-08;
       constexpr Real V04 = -1.6884162004e-08;
       constexpr Real V05 = 1.9613503930e-09;
-      Real Pp            = P / Pu;
+      Real Pp            = P * Pa2Db;
 
       Real V0 =
           (((((V05 * Pp + V04) * Pp + V03) * Pp + V02) * Pp + V01) * Pp + V00) *
@@ -244,9 +243,9 @@ class Teos10Eos {
 class LinearEos {
  public:
    /// Coefficients for LinearEos (overwritten by config file if set there)
-   Real DRhodT  = -0.2;   ///< Thermal expansion coefficient (kg m^-3 degC^-1)
-   Real DRhodS  = 0.8;    ///< Haline contraction coefficient (kg m^-3)
-   Real RhoT0S0 = 1000.0; ///< Reference density (kg m^-3) at (T,S)=(0,0)
+   Real DRhodT  = -0.2;  ///< Thermal expansion coefficient (kg m^-3 degC^-1)
+   Real DRhodS  = 0.8;   ///< Haline contraction coefficient (kg m^-3)
+   Real RhoT0S0 = RhoFw; ///< Reference density (kg m^-3) at (T,S)=(0,0)
 
    /// constructor declaration
    LinearEos();

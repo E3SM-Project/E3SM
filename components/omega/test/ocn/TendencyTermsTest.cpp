@@ -19,6 +19,7 @@
 #include "Decomp.h"
 #include "Dimension.h"
 #include "Error.h"
+#include "GlobalConstants.h"
 #include "Halo.h"
 #include "HorzMesh.h"
 #include "IO.h"
@@ -35,10 +36,9 @@
 using namespace OMEGA;
 
 struct TestSetupPlane {
-   Real Pi = M_PI;
 
    Real Lx = 1;
-   Real Ly = std::sqrt(3) / 2;
+   Real Ly = SqrtThree / 2;
 
    ErrorMeasures ExpectedDivErrors         = {0.00124886886594453264,
                                               0.00124886886590977139};
@@ -59,52 +59,50 @@ struct TestSetupPlane {
                                               0.01000133508329411};
 
    KOKKOS_FUNCTION Real vectorX(Real X, Real Y) const {
-      return std::sin(2 * Pi * X / Lx) * std::cos(2 * Pi * Y / Ly);
+      return std::sin(TwoPi * X / Lx) * std::cos(TwoPi * Y / Ly);
    }
 
    KOKKOS_FUNCTION Real vectorY(Real X, Real Y) const {
-      return std::cos(2 * Pi * X / Lx) * std::sin(2 * Pi * Y / Ly);
+      return std::cos(TwoPi * X / Lx) * std::sin(TwoPi * Y / Ly);
    }
 
    KOKKOS_FUNCTION Real divergence(Real X, Real Y) const {
-      return 2 * Pi * (1. / Lx + 1. / Ly) * std::cos(2 * Pi * X / Lx) *
-             std::cos(2 * Pi * Y / Ly);
+      return TwoPi * (1. / Lx + 1. / Ly) * std::cos(TwoPi * X / Lx) *
+             std::cos(TwoPi * Y / Ly);
    }
 
    KOKKOS_FUNCTION Real scalar(Real X, Real Y) const {
-      return std::sin(2 * Pi * X / Lx) * std::sin(2 * Pi * Y / Ly);
+      return std::sin(TwoPi * X / Lx) * std::sin(TwoPi * Y / Ly);
    }
 
    KOKKOS_FUNCTION Real gradX(Real X, Real Y) const {
-      return 2 * Pi / Lx * std::cos(2 * Pi * X / Lx) *
-             std::sin(2 * Pi * Y / Ly);
+      return TwoPi / Lx * std::cos(TwoPi * X / Lx) * std::sin(TwoPi * Y / Ly);
    }
    KOKKOS_FUNCTION Real gradY(Real X, Real Y) const {
-      return 2 * Pi / Ly * std::sin(2 * Pi * X / Lx) *
-             std::cos(2 * Pi * Y / Ly);
+      return TwoPi / Ly * std::sin(TwoPi * X / Lx) * std::cos(TwoPi * Y / Ly);
    }
 
    KOKKOS_FUNCTION Real curl(Real X, Real Y) const {
-      return 2 * Pi * (-1. / Lx + 1. / Ly) * std::sin(2 * Pi * X / Lx) *
-             std::sin(2 * Pi * Y / Ly);
+      return TwoPi * (-1. / Lx + 1. / Ly) * std::sin(TwoPi * X / Lx) *
+             std::sin(TwoPi * Y / Ly);
    }
 
    KOKKOS_FUNCTION Real laplaceVecX(Real X, Real Y) const {
-      return -4 * Pi * Pi * (1. / Lx / Lx + 1. / Ly / Ly) *
-             std::sin(2 * Pi * X / Lx) * std::cos(2 * Pi * Y / Ly);
+      return -TwoPi * TwoPi * (1. / Lx / Lx + 1. / Ly / Ly) *
+             std::sin(TwoPi * X / Lx) * std::cos(TwoPi * Y / Ly);
    }
 
    KOKKOS_FUNCTION Real laplaceVecY(Real X, Real Y) const {
-      return -4 * Pi * Pi * (1. / Lx / Lx + 1. / Ly / Ly) *
-             std::cos(2 * Pi * X / Lx) * std::sin(2 * Pi * Y / Ly);
+      return -TwoPi * TwoPi * (1. / Lx / Lx + 1. / Ly / Ly) *
+             std::cos(TwoPi * X / Lx) * std::sin(TwoPi * Y / Ly);
    }
 
    KOKKOS_FUNCTION Real layerThick(Real X, Real Y) const {
-      return 2. + std::sin(2 * Pi * X / Lx) * std::cos(2 * Pi * Y / Ly);
+      return 2. + std::sin(TwoPi * X / Lx) * std::cos(TwoPi * Y / Ly);
    }
 
    KOKKOS_FUNCTION Real planetaryVort(Real X, Real Y) const {
-      return std::cos(2 * Pi * X / Lx) * std::cos(2 * Pi * Y / Ly);
+      return std::cos(TwoPi * X / Lx) * std::cos(TwoPi * Y / Ly);
    }
 
    KOKKOS_FUNCTION Real normRelVort(Real X, Real Y) const {
@@ -116,40 +114,40 @@ struct TestSetupPlane {
    }
 
    KOKKOS_FUNCTION Real tracerFluxDiv(Real X, Real Y) const {
-      return (2 * Pi / (Lx * Ly)) *
-             (std::cos(2 * Pi * X / Lx) *
-              (2 * (Lx + Ly) * std::cos(2 * Pi * Y / Ly) +
-               (Lx + 2 * Ly) * std::sin(2 * Pi * X / Lx) *
-                   std::pow(std::cos(2 * Pi * Y / Ly), 2) -
-               Lx * std::sin(2 * Pi * X / Lx) *
-                   std::pow(std::sin(2 * Pi * Y / Ly), 2)));
+      return (TwoPi / (Lx * Ly)) *
+             (std::cos(TwoPi * X / Lx) *
+              (2 * (Lx + Ly) * std::cos(TwoPi * Y / Ly) +
+               (Lx + 2 * Ly) * std::sin(TwoPi * X / Lx) *
+                   std::pow(std::cos(TwoPi * Y / Ly), 2) -
+               Lx * std::sin(TwoPi * X / Lx) *
+                   std::pow(std::sin(TwoPi * Y / Ly), 2)));
    }
 
    KOKKOS_FUNCTION Real scalarA(Real X, Real Y) const {
-      return std::cos(2 * Pi * X / Lx) * std::sin(2 * Pi * Y / Ly);
+      return std::cos(TwoPi * X / Lx) * std::sin(TwoPi * Y / Ly);
    }
 
    KOKKOS_FUNCTION Real scalarB(Real X, Real Y) const {
-      return 2. + std::cos(2 * Pi * X / Lx) * std::cos(2 * Pi * Y / Ly);
+      return 2. + std::cos(TwoPi * X / Lx) * std::cos(TwoPi * Y / Ly);
    }
 
    KOKKOS_FUNCTION Real tracerDiff(Real X, Real Y) const {
-      return -4 * Pi * Pi * std::sin(2 * Pi * Y / Ly) *
-             (2 * (1 / Lx / Lx + 1 / Ly / Ly) * std::cos(2 * Pi * X / Lx) +
+      return -TwoPi * TwoPi * std::sin(TwoPi * Y / Ly) *
+             (2 * (1 / Lx / Lx + 1 / Ly / Ly) * std::cos(TwoPi * X / Lx) +
               (1 / Ly / Ly +
-               (1 / Lx / Lx + 1 / Ly / Ly) * std::cos(4 * Pi * X / Lx)) *
-                  std::cos(2 * Pi * Y / Ly));
+               (1 / Lx / Lx + 1 / Ly / Ly) * std::cos(2 * TwoPi * X / Lx)) *
+                  std::cos(TwoPi * Y / Ly));
    }
 
    KOKKOS_FUNCTION Real scalarC(Real X, Real Y) const {
-      return std::pow(std::cos(2 * Pi * X / Lx), 2) -
-             std::pow(std::sin(2 * Pi * Y / Ly), 2);
+      return std::pow(std::cos(TwoPi * X / Lx), 2) -
+             std::pow(std::sin(TwoPi * Y / Ly), 2);
    }
 
    KOKKOS_FUNCTION Real tracerHyperDiff(Real X, Real Y) const {
-      return -8 * Pi * Pi *
-             (std::cos(4 * Pi * X / Lx) / Lx / Lx +
-              std::cos(4 * Pi * Y / Ly) / Ly / Ly);
+      return -2 * TwoPi * TwoPi *
+             (std::cos(2 * TwoPi * X / Lx) / Lx / Lx +
+              std::cos(2 * TwoPi * Y / Ly) / Ly / Ly);
    }
 
    KOKKOS_FUNCTION Real windForcingX(Real X, Real Y,
@@ -181,24 +179,22 @@ struct TestSetupPlane {
 struct TestSetupSphere {
    // radius of spherical mesh
    // TODO: get this from the mesh
-   Real Radius = 6371220;
+   Real Radius = REarth;
 
-   Real Pi = M_PI;
-
-   ErrorMeasures ExpectedDivErrors         = {0.0136595773989796766,
-                                              0.00367052484586384131};
+   ErrorMeasures ExpectedDivErrors         = {0.013652414501664885,
+                                              0.0036904315983599676};
    ErrorMeasures ExpectedPVErrors          = {0.0219217796608757037,
                                               0.0122537418367830303};
-   ErrorMeasures ExpectedGradErrors        = {0.00187912292540623471,
-                                              0.00149841802817334935};
-   ErrorMeasures ExpectedLaplaceErrors     = {0.281930203304510130,
-                                              0.270530313560271740};
-   ErrorMeasures ExpectedTrHAdvErrors      = {0.0132310202299444034,
-                                              0.0038523368564029538};
-   ErrorMeasures ExpectedTrDel2Errors      = {0.0486107109846934185,
-                                              0.00507514214194892694};
-   ErrorMeasures ExpectedTrDel4Errors      = {0.000819552466009620408,
-                                              0.00064700084412871962};
+   ErrorMeasures ExpectedGradErrors        = {0.0019094381714837498,
+                                              0.0015218320661105702};
+   ErrorMeasures ExpectedLaplaceErrors     = {0.28193638497826856,
+                                              0.270546491554748};
+   ErrorMeasures ExpectedTrHAdvErrors      = {0.013227657020868148,
+                                              0.0038723934782890863};
+   ErrorMeasures ExpectedTrDel2Errors      = {0.04865718541236144,
+                                              0.005105510870642706};
+   ErrorMeasures ExpectedTrDel4Errors      = {0.0008646345116716073,
+                                              0.0007118574326665881};
    ErrorMeasures ExpectedWindForcingErrors = {0, 0};
    ErrorMeasures ExpectedBottomDragErrors  = {0.0015333449035655053,
                                               0.0014897009917655022};
@@ -524,8 +520,8 @@ int testSSHGrad(int NVertLayers, Real RTol) {
 
    Err += setVectorEdge(
        KOKKOS_LAMBDA(Real(&VecField)[2], Real X, Real Y) {
-          VecField[0] = -9.80665_Real * Setup.gradX(X, Y);
-          VecField[1] = -9.80665_Real * Setup.gradY(X, Y);
+          VecField[0] = -Gravity * Setup.gradX(X, Y);
+          VecField[1] = -Gravity * Setup.gradY(X, Y);
        },
        ExactSSHGrad, EdgeComponent::Normal, Geom, Mesh, ExchangeHalos::No);
 
@@ -738,7 +734,7 @@ int testWindForcing(int NVertLayers) {
    Array2DReal NumWindForcing("NumWindForcing", Mesh->NEdgesOwned, NVertLayers);
 
    WindForcingOnEdge WindForcingOnE(Mesh);
-   WindForcingOnE.SaltWaterDensity = SaltWaterDensity;
+   WindForcingOnE.LocRhoSw = SaltWaterDensity;
 
    parallelFor(
        {Mesh->NEdgesOwned, NVertLayers}, KOKKOS_LAMBDA(int IEdge, int KLayer) {

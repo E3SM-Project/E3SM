@@ -3,6 +3,7 @@
 #include "DataTypes.h"
 #include "Decomp.h"
 #include "Dimension.h"
+#include "GlobalConstants.h"
 #include "Halo.h"
 #include "HorzMesh.h"
 #include "IO.h"
@@ -22,13 +23,12 @@ using namespace OMEGA;
 // operator tests together with exact values of operators for computing errors
 // and expected error values
 struct TestSetupPlane {
-   Real Pi = M_PI;
 
    // lengths of periodic planar mesh
    // TODO: get this from the horizontal mesh once it supports periodic planar
    // meshes
    Real Lx = 1;
-   Real Ly = std::sqrt(3) / 2;
+   Real Ly = SqrtThree / 2;
 
    ErrorMeasures ExpectedDivErrors         = {0.00124886886594427027,
                                               0.00124886886590974385};
@@ -44,49 +44,47 @@ struct TestSetupPlane {
                                               0.004200067675522098};
 
    KOKKOS_FUNCTION Real exactScalar(Real X, Real Y) const {
-      return std::sin(2 * Pi * X / Lx) * std::sin(2 * Pi * Y / Ly);
+      return std::sin(TwoPi * X / Lx) * std::sin(TwoPi * Y / Ly);
    }
 
    KOKKOS_FUNCTION Real exactGradScalarX(Real X, Real Y) const {
-      return 2 * Pi / Lx * std::cos(2 * Pi * X / Lx) *
-             std::sin(2 * Pi * Y / Ly);
+      return TwoPi / Lx * std::cos(TwoPi * X / Lx) * std::sin(TwoPi * Y / Ly);
    }
 
    KOKKOS_FUNCTION Real exactGradScalarY(Real X, Real Y) const {
-      return 2 * Pi / Ly * std::sin(2 * Pi * X / Lx) *
-             std::cos(2 * Pi * Y / Ly);
+      return TwoPi / Ly * std::sin(TwoPi * X / Lx) * std::cos(TwoPi * Y / Ly);
    }
 
    KOKKOS_FUNCTION Real exactVecX(Real X, Real Y) const {
-      return std::sin(2 * Pi * X / Lx) * std::cos(2 * Pi * Y / Ly);
+      return std::sin(TwoPi * X / Lx) * std::cos(TwoPi * Y / Ly);
    }
 
    KOKKOS_FUNCTION Real exactVecY(Real X, Real Y) const {
-      return std::cos(2 * Pi * X / Lx) * std::sin(2 * Pi * Y / Ly);
+      return std::cos(TwoPi * X / Lx) * std::sin(TwoPi * Y / Ly);
    }
 
    KOKKOS_FUNCTION Real exactDivVec(Real X, Real Y) const {
-      return 2 * Pi * (1. / Lx + 1. / Ly) * std::cos(2 * Pi * X / Lx) *
-             std::cos(2 * Pi * Y / Ly);
+      return TwoPi * (1. / Lx + 1. / Ly) * std::cos(TwoPi * X / Lx) *
+             std::cos(TwoPi * Y / Ly);
    }
 
    KOKKOS_FUNCTION Real exactCurlVec(Real X, Real Y) const {
-      return 2 * Pi * (-1. / Lx + 1. / Ly) * std::sin(2 * Pi * X / Lx) *
-             std::sin(2 * Pi * Y / Ly);
+      return TwoPi * (-1. / Lx + 1. / Ly) * std::sin(TwoPi * X / Lx) *
+             std::sin(TwoPi * Y / Ly);
    }
 };
 
 struct TestSetupSphere1 {
    // radius of spherical mesh
    // TODO: get this from the mesh
-   Real Radius = 6371220;
+   Real Radius = REarth;
 
-   ErrorMeasures ExpectedDivErrors         = {0.013659577398978353,
-                                              0.00367052484586382743};
-   ErrorMeasures ExpectedGradErrors        = {0.00187912292540628936,
-                                              0.00149841802817334306};
-   ErrorMeasures ExpectedCurlErrors        = {0.0271404735181308317,
-                                              0.025202316610921989};
+   ErrorMeasures ExpectedDivErrors         = {0.013652414501664885,
+                                              0.0036904315983599676};
+   ErrorMeasures ExpectedGradErrors        = {0.0019094381714837498,
+                                              0.0015218320661105687};
+   ErrorMeasures ExpectedCurlErrors        = {0.02713957370128636,
+                                              0.025202095212756463};
    ErrorMeasures ExpectedReconErrors       = {0.0206375134079833517,
                                               0.00692590524910695858};
    ErrorMeasures ExpectedAnisoInterpErrors = {0.0024015775047603197,
@@ -129,7 +127,7 @@ struct TestSetupSphere1 {
 struct TestSetupSphere2 {
    // radius of spherical mesh
    // TODO: get this from the mesh
-   Real Radius = 6371220;
+   Real Radius = REarth;
 
    ErrorMeasures ExpectedDivErrors         = {1.37734693033362766e-10,
                                               0.000484370621558727582};

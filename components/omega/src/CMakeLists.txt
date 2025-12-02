@@ -12,6 +12,7 @@ target_include_directories(
     ${OMEGA_SOURCE_DIR}/src/timeStepping
     ${E3SM_ROOT}/share/timing
     ${E3SM_ROOT}/share/pacer
+    ${E3SM_ROOT}/share/util_cxx
     ${PIOC_SOURCE_DIR}
     ${PIOC_BINARY_DIR}
     ${Parmetis_INCLUDE_DIRS}

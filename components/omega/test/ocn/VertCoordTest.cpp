@@ -12,6 +12,7 @@
 #include "Decomp.h"
 #include "Dimension.h"
 #include "Error.h"
+#include "GlobalConstants.h"
 #include "Halo.h"
 #include "HorzMesh.h"
 #include "IO.h"
@@ -107,8 +108,7 @@ int main(int argc, char *argv[]) {
 
       /// Initialize layer thickness and surface pressure so that resulting
       /// interface pressure is the number of layers above plus one
-      Real Gravity = 9.80616_Real;
-      Real Rho0    = DefVertCoord->Rho0;
+      Real Rho0 = DefVertCoord->Rho0;
       parallelFor(
           {NCellsAll}, KOKKOS_LAMBDA(int ICell) {
              SurfacePressure(ICell) = 1.0_Real;

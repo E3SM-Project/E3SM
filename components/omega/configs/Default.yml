@@ -28,6 +28,7 @@ Omega:
   WindStress:
     InterpType: Isotropic
   VertCoord:
+    Density0: 1026.0
     MovementWeightType: Uniform
   Tendencies:
     ThicknessFluxTendencyEnable: true
@@ -40,7 +41,6 @@ Omega:
     ViscDel4: 1.2e11
     DivFactor: 1.0
     WindForcingTendencyEnable: false
-    Density0: 1026.0
     BottomDragTendencyEnable: false
     BottomDragCoeff: 0.0
     TracerHorzAdvTendencyEnable: true

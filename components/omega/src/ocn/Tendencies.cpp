@@ -179,9 +179,6 @@ void Tendencies::readTendConfig(
    CHECK_ERROR_ABORT(
        Err, "Tendencies: WindForcingTendencyEnable not found in TendConfig");
 
-   Err += TendConfig->get("Density0", this->WindForcing.SaltWaterDensity);
-   CHECK_ERROR_ABORT(Err, "Tendencies: Density0 not found in TendConfig");
-
    Err += TendConfig->get("BottomDragTendencyEnable", this->BottomDrag.Enabled);
    CHECK_ERROR_ABORT(
        Err, "Tendencies: BottomDragTendencyEnable not found in TendConfig");

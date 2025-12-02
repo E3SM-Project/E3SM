@@ -8,6 +8,7 @@
 
 #include "CustomTendencyTerms.h"
 #include "Config.h"
+#include "GlobalConstants.h"
 #include "TimeStepper.h"
 
 namespace OMEGA {
@@ -79,11 +80,9 @@ void ManufacturedSolution::init() {
    R8 H0                 = DefHorzMesh->BottomDepthH(0);
 
    // Define and compute common constants
-   R8 Grav    = 9.80665_Real;                          // Gravity acceleration
-   R8 Pii     = 3.141592653589793_Real;                // Pi
-   R8 Kx      = 2.0_Real * Pii / WavelengthX;          // Wave in X-dir
-   R8 Ky      = 2.0_Real * Pii / WavelengthY;          // Wave in Y-dir
-   R8 AngFreq = sqrt(H0 * Grav * (Kx * Kx + Ky * Ky)); // Angular frequency
+   R8 Kx      = TwoPi / WavelengthX;                      // Wave in X-dir
+   R8 Ky      = TwoPi / WavelengthY;                      // Wave in Y-dir
+   R8 AngFreq = sqrt(H0 * Gravity * (Kx * Kx + Ky * Ky)); // Angular frequency
 
    // Assign constants for thickness tendency function
    ManufacturedThickTend.H0      = H0;
@@ -93,7 +92,7 @@ void ManufacturedSolution::init() {
    ManufacturedThickTend.AngFreq = AngFreq;
 
    // Assign constants for velocity tendency function
-   ManufacturedVelTend.Grav    = Grav;
+   ManufacturedVelTend.Grav    = Gravity;
    ManufacturedVelTend.Eta0    = Amplitude;
    ManufacturedVelTend.Kx      = Kx;
    ManufacturedVelTend.Ky      = Ky;
@@ -160,7 +159,7 @@ void ManufacturedSolution::ManufacturedVelocityTendency::operator()(
    Array1DReal YEdge     = Mesh->YEdge;
    Array1DReal AngleEdge = Mesh->AngleEdge;
 
-   OMEGA_SCOPE(LocGrav, Grav);
+   OMEGA_SCOPE(LocGrav, Gravity);
    OMEGA_SCOPE(LocEta0, Eta0);
    OMEGA_SCOPE(LocKx, Kx);
    OMEGA_SCOPE(LocKy, Ky);
