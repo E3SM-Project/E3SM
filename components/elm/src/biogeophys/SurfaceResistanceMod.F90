@@ -12,6 +12,7 @@ module SurfaceResistanceMod
   use shr_const_mod , only : SHR_CONST_TKFRZ
   use elm_varctl    , only : iulog
   use SoilStateType , only : soilstate_type
+  use TemperatureType, only : temperature_type
   use WaterStateType, only : waterstate_type
   use ColumnDataType, only : col_ws
   use abortutils        , only : endrun
@@ -21,7 +22,9 @@ module SurfaceResistanceMod
   save
   private
   integer :: soil_stress_method   !choose the method for soil resistance calculation
-  integer, parameter :: leepielke_1992 = 0 !
+  integer, parameter :: leepielke_1992 = 0
+  integer, parameter :: sl_14 = 1
+  integer, parameter :: sz_09 = 2 !
   !$acc declare create(soil_stress_method)
 
   !
@@ -50,7 +53,7 @@ contains
 
    !------------------------------------------------------------------------------
    subroutine calc_soilevap_stress(bounds, num_nolakec, filter_nolakec, &
-        soilstate_vars)
+        soilstate_vars, waterstate_vars, temperature_vars)
      !
      ! DESCRIPTIONS
      ! compute the stress factor for soil evaporation calculation
@@ -68,6 +71,8 @@ contains
      integer               , intent(in)    :: num_nolakec
      integer               , intent(in)    :: filter_nolakec(:)
      type(soilstate_type)  , intent(inout) :: soilstate_vars
+     type(waterstate_type) , intent(in)    :: waterstate_vars
+     type(temperature_type), intent(in)    :: temperature_vars
 
      !character(len=32) :: subname = 'calc_soilevap_stress'  ! subroutine name
      associate(                &
@@ -84,9 +89,9 @@ contains
                soilstate_vars, soilbeta(bounds%begc:bounds%endc))
 
        case (sl_14)
-          call cal_soil_resistance_sl14(bounds, num_nolakec, filter_nolakec, &
+          call calc_soil_resistance_sl14(bounds, num_nolakec, filter_nolakec, &
                soilstate_vars, waterstate_vars, temperature_vars, &
-               dsl(bounds%begc:bounds%endc), soilresis(bounds%begc,bounds%endc))
+               dsl(bounds%begc:bounds%endc), soilresis(bounds%begc:bounds%endc))
 
        case (sz_09)
           call calc_soil_resistance_sz09(bounds, num_nolakec, filter_nolakec, &
@@ -277,7 +282,7 @@ contains
      use shr_log_mod     , only : errMsg => shr_log_errMsg   
      use shr_infnan_mod  , only : nan => shr_infnan_nan, assignment(=)
      use decompMod       , only : bounds_type
-     use clm_varcon      , only : denh2o, denice
+     use elm_varcon      , only : denh2o, denice
      use landunit_varcon , only : istice_mec, istwet, istsoil, istcrop
      use column_varcon   , only : icol_roof, icol_sunwall, icol_shadewall
      use column_varcon   , only : icol_road_imperv, icol_road_perv
@@ -389,7 +394,7 @@ contains
      use shr_log_mod     , only : errMsg => shr_log_errMsg   
      use shr_infnan_mod  , only : nan => shr_infnan_nan, assignment(=)
      use decompMod       , only : bounds_type
-     use clm_varcon      , only : denh2o, denice
+     use elm_varcon      , only : denh2o, denice
      use landunit_varcon , only : istice_mec, istwet, istsoil, istcrop
      use column_varcon   , only : icol_roof, icol_sunwall, icol_shadewall
      use column_varcon   , only : icol_road_imperv, icol_road_perv
@@ -446,11 +451,9 @@ contains
             soilresis(c) = min(1.e6_r8,soilresis(c))
          else if (col_pp%itype(c) == icol_road_perv) then
             soilresis(c) = 1.e6_r8
-         else if (col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) ==
-icol_shadewall) then
+         else if (col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) == icol_shadewall) then
             soilresis(c) = 1.e6_r8          
-         else if (col_pp%itype(c) == icol_roof .or. col_pp%itype(c) ==
-icol_road_imperv) then
+         else if (col_pp%itype(c) == icol_roof .or. col_pp%itype(c) == icol_road_imperv) then
             soilresis(c) = 1.e6_r8
          endif   
       else

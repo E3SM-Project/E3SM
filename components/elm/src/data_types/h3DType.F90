@@ -3,8 +3,8 @@ module h3DType
   !
   use shr_kind_mod   , only : r8 => shr_kind_r8
   use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
-  use clm_varpar     , only : nlevsno, nlevgrnd, nlevlak ,nh3dc_per_lunit
-  use clm_varcon     , only : spval, ispval
+  use elm_varpar     , only : nlevsno, nlevgrnd, nlevlak ,nh3dc_per_lunit
+  use elm_varcon     , only : spval, ispval
   use column_varcon  , only : is_hydrologically_active
   !
   ! !PUBLIC TYPES:

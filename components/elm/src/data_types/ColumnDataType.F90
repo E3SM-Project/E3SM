@@ -518,6 +518,8 @@ module ColumnDataType
     real(r8), pointer :: qflx_drain_vr        (:,:) => null() ! liquid water lost as drainage (m /time step)
     real(r8), pointer :: qflx_h2osfc2topsoi   (:)   => null() ! liquid water coming from surface standing water top soil (mm H2O/s)
     real(r8), pointer :: qflx_snow2topsoi     (:)   => null() ! liquid water coming from residual snow to topsoil (mm H2O/s)
+     real(r8), pointer :: qflx_rsub_sat_h3dcol(:)   => null() ! h3dcol soil saturation excess [mm/s]
+     real(r8), pointer :: qflx_drain_h3dcol   (:)   => null() ! h3dcol sub-surface runoff (mm H2O /s) [mm/s]
     real(r8), pointer :: qflx_lateral         (:)   => null() ! lateral subsurface flux (mm H2O /s)
     real(r8), pointer :: snow_sources         (:)   => null() ! snow sources (mm H2O/s)
     real(r8), pointer :: snow_sinks           (:)   => null() ! snow sinks (mm H2O/s)
@@ -1383,7 +1385,7 @@ contains
   !------------------------------------------------------------------------
   subroutine col_ws_init(this, begc, endc, h2osno_input, snow_depth_input, watsat_input)
     !
-    use elm_varctl  , only : use_lake_wat_storage, use_arctic_init
+    use elm_varctl  , only : use_lake_wat_storage, use_arctic_init, use_h3d
     ! !ARGUMENTS:
     class(column_water_state) :: this
     integer , intent(in)      :: begc,endc
@@ -1748,9 +1750,9 @@ contains
                       this%h2osoi_vol(c,j) = watsat_input(c,j) ! start saturated for arctic
                    else if (use_h3d) then
                       if (j < 5) then
-                         this%h2osoi_vol(c,j) = watsat_col(c,j) * 0.6
+                         this%h2osoi_vol(c,j) = watsat_input(c,j) * 0.6
                       else
-                         this%h2osoi_vol(c,j) = watsat_col(c,j)
+                         this%h2osoi_vol(c,j) = watsat_input(c,j)
                       endif
                    else
                       this%h2osoi_vol(c,j) = 0.15_r8

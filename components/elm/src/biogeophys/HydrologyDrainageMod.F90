@@ -14,6 +14,7 @@ module HydrologyDrainageMod
   use SoilHydrologyType , only : soilhydrology_type
   use SoilStateType     , only : soilstate_type
   use SoilHydrologyMod  , only : WaterTable
+  use TemperatureType   , only : temperature_type
   use TopounitDataType  , only : top_af ! atmospheric flux variables
   use LandunitType      , only : lun_pp
   use ColumnType        , only : col_pp
@@ -42,7 +43,7 @@ contains
        num_urbanc, filter_urbanc,         &
        num_do_smb_c, filter_do_smb_c,     &
        atm2lnd_vars, glc2lnd_vars,    &
-       soilhydrology_vars, soilstate_vars )
+       temperature_vars, soilhydrology_vars, soilstate_vars )
     ! !DESCRIPTION:
     ! Calculates soil/snow hydrology with drainage (subsurface runoff)
     !
@@ -51,7 +52,7 @@ contains
     use landunit_varcon  , only : istice, istwet, istsoil, istice_mec, istcrop, istice
     use column_varcon    , only : icol_roof, icol_road_imperv, icol_road_perv, icol_sunwall, icol_shadewall
     use elm_varcon       , only : denh2o, denice, secspday, frac_to_downhill
-    use elm_varctl       , only : glc_snow_persistence_max_days, use_vichydro, use_betr
+    use elm_varctl       , only : glc_snow_persistence_max_days, use_vichydro, use_betr, use_h3d
     !use domainMod        , only : ldomain
     use elm_varsur         , only : f_surf
     use TopounitType       , only : top_pp
@@ -75,6 +76,7 @@ contains
     integer                  , intent(in)    :: filter_do_smb_c(:)   ! column filter for bare land SMB columns
     type(atm2lnd_type)       , intent(in)    :: atm2lnd_vars
     type(glc2lnd_type)       , intent(in)    :: glc2lnd_vars
+    type(temperature_type)   , intent(inout) :: temperature_vars
     type(soilhydrology_type) , intent(inout) :: soilhydrology_vars
     type(soilstate_type)     , intent(inout) :: soilstate_vars
 
@@ -151,7 +153,7 @@ contains
         if (use_h3d) then
            call DrainageH3D(bounds, num_h3dc, filter_h3dc, num_hydrologyc, &
                 filter_hydrologyc, num_urbanc, filter_urbanc, &
-                soilhydrology_vars, soilstate_vars, dtime)
+                temperature_vars, soilhydrology_vars, soilstate_vars, dtime)
         else
            call Drainage(bounds, num_hydrologyc, filter_hydrologyc, &
                 num_urbanc, filter_urbanc,&

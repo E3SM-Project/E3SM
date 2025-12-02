@@ -43,6 +43,8 @@ module EnergyFluxType
      real(r8), pointer :: eflx_lwrad_out_patch    (:)   ! patch emitted infrared (longwave) radiation (W/m**2)
      real(r8), pointer :: eflx_lwrad_out_r_patch  (:)   ! patch rural emitted infrared (longwave) rad (W/m**2)
      real(r8), pointer :: eflx_lwrad_out_u_patch  (:)   ! patch urban emitted infrared (longwave) rad (W/m**2)
+    real(r8), pointer :: eflx_lh_tot_col         (:)   ! col total latent heat flux (W/m**2) [+ to atm]
+     real(r8), pointer :: eflx_sh_tot_col         (:)   ! col total sensible heat flux (W/m**2) [+ to atm]
      real(r8), pointer :: eflx_snomelt_col        (:)   ! col snow melt heat flux (W/m**2)
      real(r8), pointer :: eflx_snomelt_r_col      (:)   ! col rural snow melt heat flux (W/m**2)
      real(r8), pointer :: eflx_snomelt_u_col      (:)   ! col urban snow melt heat flux (W/m**2)

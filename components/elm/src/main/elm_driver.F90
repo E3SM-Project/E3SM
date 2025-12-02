@@ -152,6 +152,7 @@ module elm_driver
   use VegetationDataType     , only : veg_cs, c13_veg_cs, c14_veg_cs
   use VegetationDataType     , only : veg_ns, veg_nf
   use VegetationDataType     , only : veg_ps, veg_pf
+  use h3DType                , only : h3d_vars
   use FanStreamMod           , only : fanstream_interp
 
   !----------------------------------------------------------------------------
@@ -189,7 +190,7 @@ module elm_driver
   private :: elm_drv_patch2col
   private :: elm_drv_init      ! Initialization of variables needed from previous timestep
   private :: write_diagnostic  ! Write diagnostic information to log file
-  private :: prepare_h3d_vars  ! Prepares h3D variables for output
+  private :: prepare_h3d_var  ! Prepares h3D variables for output
   !-----------------------------------------------------------------------
 
 contains
@@ -755,8 +756,8 @@ contains
        call CanopyTemperature(bounds_clump,                                   &
             filter(nc)%num_nolakec, filter(nc)%nolakec,                       &
             filter(nc)%num_nolakep, filter(nc)%nolakep,                       &
-            atm2lnd_vars, canopystate_vars, soilstate_vars, frictionvel_vars, &
-            energyflux_vars)
+            atm2lnd_vars, canopystate_vars, soilstate_vars, waterstate_vars,  &
+            frictionvel_vars, energyflux_vars, temperature_vars)
        call t_stopf('bgp1')
 
        ! ============================================================================
@@ -1223,7 +1224,7 @@ contains
             filter(nc)%num_urbanc, filter(nc)%urbanc,             &
             filter(nc)%num_do_smb_c, filter(nc)%do_smb_c,         &
             atm2lnd_vars, glc2lnd_vars,        &
-            soilhydrology_vars, soilstate_vars)
+            temperature_vars, soilhydrology_vars, soilstate_vars)
 
        else
 
@@ -1234,7 +1235,7 @@ contains
             filter(nc)%num_urbanc, filter(nc)%urbanc,         &
             filter(nc)%num_do_smb_c, filter(nc)%do_smb_c,     &
             atm2lnd_vars, glc2lnd_vars,      &
-            soilhydrology_vars, soilstate_vars)
+            temperature_vars, soilhydrology_vars, soilstate_vars)
 
        end if
 
@@ -1974,14 +1975,12 @@ contains
     use WaterFluxType      , only : waterflux_type
     use EnergyFluxType     , only : energyflux_type
     use H3dType            , only : h3d_type
-    use clm_varpar         , only : nlevgrnd, nh3dc_per_lunit
+    use elm_varpar         , only : nlevgrnd, nh3dc_per_lunit
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds_clump        
-    integer                , intent(in)    :: num_h3dc       ! number of column
-h3d points in column filter
-    integer                , intent(in)    :: filter_h3dc(:) ! columnfilter for
-h3d points
+    integer                , intent(in)    :: num_h3dc       ! number of column h3d points in column filter
+    integer                , intent(in)    :: filter_h3dc(:) ! columnfilter for h3d points
     type(waterstate_type)  , intent(in)    :: waterstate_vars
     type(waterflux_type)   , intent(in)    :: waterflux_vars
     type(energyflux_type)  , intent(in)    :: energyflux_vars

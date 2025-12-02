@@ -440,7 +440,7 @@ contains
              write(iulog,*)'qflx_h2orof_drain          = ',qflx_h2orof_drain(indexc)
              write(iulog,*)'qflx_ice_runoff_xs          = ',qflx_ice_runoff_xs(indexc)
              l = col_pp%landunit(indexc)
-             write(iulog,*)'h3D soilcolumn             = ',indexc,l,lun_pp%coli(l),lun_pp%colf(i)
+             write(iulog,*)'h3D soilcolumn             = ',indexc,l,lun_pp%coli(l),lun_pp%colf(l)
              write(iulog,*)'elm model is stopping'
              call endrun(decomp_index=indexc, elmlevel=namec, msg=errmsg(__FILE__, __LINE__))
           end if

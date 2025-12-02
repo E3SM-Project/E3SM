@@ -1166,8 +1166,7 @@ contains
 
         call ncd_io(ncid=ncid, varname='hs_w', flag='read', data=hs_w,dim1name=grlnd, readvar=readvar)
         if (.not. readvar) then
-           call endrun(' ERROR: HILLSLOPE WIDTH FUNCTION NOT on surfdata
-file'//&
+           call endrun(' ERROR: HILLSLOPE WIDTH FUNCTION NOT on surfdata file'//&
                 errMsg(__FILE__, __LINE__)) 
         end if
 
@@ -1199,7 +1198,7 @@ file'//&
           end do
         end do
          
-        call check_sums_equal_1(wt_h3dc, begg, 'wt_h3dc', subname)
+        call check_sums_equal_1_2d(wt_h3dc, begg, 'wt_h3dc', subname)
         deallocate(hs_x,hs_w,hs_area)
         deallocate(tmp_hs_x,tmp_hs_w)
      end if

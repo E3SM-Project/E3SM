@@ -23,6 +23,8 @@ module CanopyTemperatureMod
   use EnergyFluxType       , only : energyflux_type
   use FrictionVelocityType , only : frictionvel_type
   use SoilStateType        , only : soilstate_type
+  use TemperatureType      , only : temperature_type
+  use WaterstateType       , only : waterstate_type
   use TopounitDataType     , only : top_as
   use LandunitType         , only : lun_pp
   use ColumnType           , only : col_pp
@@ -43,7 +45,8 @@ contains
   !------------------------------------------------------------------------------
   subroutine CanopyTemperature(bounds, &
        num_nolakec, filter_nolakec, num_nolakep, filter_nolakep, &
-       atm2lnd_vars, canopystate_vars, soilstate_vars, frictionvel_vars, energyflux_vars &
+       atm2lnd_vars, canopystate_vars, soilstate_vars, waterstate_vars, &
+       frictionvel_vars, energyflux_vars, temperature_vars &
        )
     ! !DESCRIPTION:
     ! This is the main subroutine to execute the calculation of leaf temperature
@@ -84,8 +87,10 @@ contains
     type(atm2lnd_type)     , intent(in)    :: atm2lnd_vars
     type(canopystate_type) , intent(inout) :: canopystate_vars
     type(soilstate_type)   , intent(inout) :: soilstate_vars
+    type(waterstate_type)  , intent(inout) :: waterstate_vars
     type(frictionvel_type) , intent(inout) :: frictionvel_vars
     type(energyflux_type)  , intent(inout) :: energyflux_vars
+    type(temperature_type) , intent(inout) :: temperature_vars
     !
     ! !LOCAL VARIABLES:
     integer  :: g,t,l,c,p    ! indices
@@ -215,7 +220,7 @@ contains
       end do
 
       ! calculate moisture stress/resistance for soil evaporation
-      call calc_soilevap_stress(bounds, num_nolakec, filter_nolakec, soilstate_vars)
+      call calc_soilevap_stress(bounds, num_nolakec, filter_nolakec, soilstate_vars, waterstate_vars, temperature_vars)
 
       do fc = 1,num_nolakec
          c = filter_nolakec(fc)

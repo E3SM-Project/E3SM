@@ -122,9 +122,6 @@ module WaterfluxType
      ! For h3D
      real(r8), pointer :: qflx_rsub_sat_h3dcol     (:)   ! h3dcol soil saturation excess [mm/s]
      real(r8), pointer :: qflx_drain_h3dcol        (:)   ! h3dcol sub-surface runoff (mm H2O/s) [mm/s]
-     real(r8), pointer :: qflx_lateral_col         (:)   ! col lateral subsurface flux (mm H2O/s)
-     real(r8), pointer :: snow_sources_col         (:)   ! col snow sources (mm H2O/s)
-     real(r8), pointer :: snow_sinks_col           (:)   ! col snow sinks (mm H2O/s)
 
      ! For VSFM
      real(r8), pointer :: mflx_infl_col_1d         (:)   ! infiltration source in top soil control volume (kg H2O /s)

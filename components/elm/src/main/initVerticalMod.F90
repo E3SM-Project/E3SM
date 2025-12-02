@@ -83,8 +83,10 @@ contains
     real(r8), allocatable :: ziurb_wall(:,:)   ! wall (layer interface)
     real(r8), allocatable :: ziurb_roof(:,:)   ! roof (layer interface)
     real(r8)              :: depthratio        ! ratio of lake depth to standard deep lake depth 
+   real(r8)              :: hs_w_scale        ! scale foctor to match the area between representative h3d  hillslope and vegetated area
     real(r8), pointer     :: tmp_hs_x(:)       ! local 1D array
     real(r8), pointer     :: tmp_hs_w(:)       ! local 1D array
+    real(r8)              :: sum_tmp_hs_w
     integer               :: begc, endc
     integer               :: begl, endl
     !------------------------------------------------------------------------
@@ -593,22 +595,19 @@ contains
 
         call ncd_io(ncid=ncid, varname='hs_w', flag='read', data=hs_w, dim1name=grlnd, readvar=readvar)
         if (.not. readvar) then
-           call shr_sys_abort(' ERROR: HILLSLOPE WIDTH FUNCTION NOT on surfdata
-file'//&
+           call shr_sys_abort(' ERROR: HILLSLOPE WIDTH FUNCTION NOT on surfdata file'//&
                 errMsg(__FILE__, __LINE__)) 
         end if
 
         call ncd_io(ncid=ncid, varname='hs_x', flag='read', data=hs_x, dim1name=grlnd, readvar=readvar)
         if (.not. readvar) then
-           call shr_sys_abort(' ERROR: HILLSLOPE WIDTH FUNCTION NOT on surfdata
-file'//&
+           call shr_sys_abort(' ERROR: HILLSLOPE WIDTH FUNCTION NOT on surfdata file'//&
                 errMsg(__FILE__, __LINE__)) 
         end if
 
         !need test here
         do l = begl,endl
-          if (lun_pp%itype(l) == istsoil) then !in current implementation
-hillslope only exist in vegetated land unit 
+          if (lun_pp%itype(l) == istsoil) then !in current implementation hillslope only exist in vegetated land unit 
              g = lun_pp%gridcell(l)
              lun_pp%hs_w_itf(l,:) = hs_w(g,:) 
              lun_pp%hs_x_itf(l,:) = hs_x(g,:) 

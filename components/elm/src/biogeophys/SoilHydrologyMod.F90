@@ -15,6 +15,8 @@ module SoilHydrologyMod
   use SoilHydrologyType , only : soilhydrology_type
   use SoilStateType     , only : soilstate_type
   use WaterfluxType     , only : waterflux_type
+  use WaterstateType    , only : waterstate_type
+  use TemperatureType   , only : temperature_type
   use TopounitType      , only : top_pp
   use TopounitDataType  , only : top_ws
   use LandunitType      , only : lun_pp
@@ -59,6 +61,7 @@ contains
     use elm_varpar      , only : nlevsoi, nlevgrnd, maxpatch_pft
     use elm_varpar      , only : nlayer, nlayert
     use elm_varctl      , only : use_var_soil_thick, use_IM2_hillslope_hydrology
+    use elm_varctl      , only : use_h3d
     use SoilWaterMovementMod, only : zengdecker_2009_with_var_soil_thick
     !
     ! !ARGUMENTS:
@@ -328,6 +331,7 @@ contains
      ! !USES:
       !$acc routine seq
      use shr_const_mod    , only : shr_const_pi
+     use elm_varctl       , only : use_h3d
      use elm_varpar       , only : nlayer, nlayert
      use elm_varpar       , only : nlevsoi, nlevgrnd
      use elm_varcon       , only : denh2o, denice, roverg, wimp, mu, tfrz
@@ -2216,22 +2220,21 @@ contains
   !-----------------------------------------------------------------------
 
  
-   subroutine DrainageH3D(bounds, num_h3dc,filter_h3dc,num_hydrologyc,
-filter_hydrologyc, num_urbanc, filter_urbanc,  &
-        soilhydrology_vars, soilstate_vars, dtime)
+   subroutine DrainageH3D(bounds, num_h3dc,filter_h3dc,num_hydrologyc, filter_hydrologyc, num_urbanc, filter_urbanc,  &
+        temperature_vars, soilhydrology_vars, soilstate_vars, dtime)
      !
      ! !DESCRIPTION:
      ! Calculate subsurface drainage, h3d approach
      ! !yhfang
      !
      ! !USES:
-     use clm_time_manager , only : get_step_size
-     use clm_varpar       , only : nlevsoi, nlevgrnd, nlayer, nlayert
-     use clm_varpar       , only : nh3dc_per_lunit
-     use clm_varcon       , only : pondmx, tfrz, watmin,rpi, secspday, nlvic
+     use elm_time_manager , only : get_step_size
+     use elm_varpar       , only : nlevsoi, nlevgrnd, nlayer, nlayert
+     use elm_varpar       , only : nh3dc_per_lunit
+     use elm_varcon       , only : pondmx, tfrz, watmin,rpi, secspday, nlvic
      use column_varcon    , only : icol_roof, icol_road_imperv, icol_road_perv
      use abortutils       , only : endrun
-     use clm_varctl       , only : use_vsfm, use_var_soil_thick, use_h3d
+     use elm_varctl       , only : use_vsfm, use_var_soil_thick, use_h3d
      use SoilWaterMovementMod, only : zengdecker_2009_with_var_soil_thick
      use pftvarcon        , only : rsub_top_globalmax
      !
@@ -2320,9 +2323,9 @@ filter_hydrologyc, num_urbanc, filter_urbanc,  &
          nlev2bed            =>    col_pp%nlevbed                           , &
 ! Input:  [integer  (:)   ]  number of layers to bedrock                     
 
-          t_soisno           =>    col_es%t_soisno_col         , & ! Input:  [real(r8) (:,:) ] soil temperature (Kelvin)                       
+          t_soisno           =>    col_es%t_soisno         , & ! Input:  [real(r8) (:,:) ] soil temperature (Kelvin)                       
 
-          h2osfc             =>    col_ws%h2osfc_col            , & ! Input:  [real(r8) (:)   ] surface water (mm)                                
+          h2osfc             =>    col_ws%h2osfc            , & ! Input:  [real(r8) (:)   ] surface water (mm)                                
 
           bsw                =>    soilstate_vars%bsw_col                , & ! Input:  [real(r8) (:,:) ] Clapp and Hornberger "b"                        
           hksat              =>    soilstate_vars%hksat_col              , & ! Input:  [real(r8) (:,:) ] hydraulic conductivity at saturation (mm H2O /s)
@@ -2350,8 +2353,8 @@ filter_hydrologyc, num_urbanc, filter_urbanc,  &
           origflag           =>    soilhydrology_vars%origflag           , & ! Input:  logical
           h2osfcflag         =>    soilhydrology_vars%h2osfcflag         , & ! Input:  logical
           
-          qflx_snwcp_liq     =>    col_wf%qflx_snwcp_liq_col     , & ! Output: [real(r8) (:)   ] excess rainfall due to snow capping (mm H2O /s) [+]
-          qflx_snwcp_ice     =>    col_wf%qflx_snwcp_ice_col     , & ! Output: [real(r8) (:)   ] excess snowfall due to snow capping (mm H2O /s) [+]
+          qflx_snwcp_liq     =>    col_wf%qflx_snwcp_liq     , & ! Output: [real(r8) (:)   ] excess rainfall due to snow capping (mm H2O /s) [+]
+          qflx_snwcp_ice     =>    col_wf%qflx_snwcp_ice     , & ! Output: [real(r8) (:)   ] excess snowfall due to snow capping (mm H2O /s) [+]
           !qflx_dew_grnd      =>    waterflux_vars%qflx_dew_grnd_col      , & !
           !Output: [real(r8) (:)   ] ground surface dew formation (mm H2O /s)
           ![+]
@@ -2361,18 +2364,18 @@ filter_hydrologyc, num_urbanc, filter_urbanc,  &
           !qflx_sub_snow      =>    waterflux_vars%qflx_sub_snow_col      , & !
           !Output: [real(r8) (:)   ] sublimation rate from snow pack (mm H2O /s)
           ![+]
-          qflx_drain         =>    col_wf%qflx_drain_col         , & ! Output: [real(r8) (:)   ] sub-surface runoff (mm H2O /s)                    
-          qflx_qrgwl         =>    col_wf%qflx_qrgwl_col         , & ! Output: [real(r8) (:)   ] qflx_surf at glaciers, wetlands, lakes (mm H2O /s)
-          qflx_rsub_sat      =>    col_wf%qflx_rsub_sat_col      , & ! Output: [real(r8) (:)   ] soil saturation excess [mm h2o/s]                 
-          qflx_drain_perched =>    col_wf%qflx_drain_perched_col , & ! Output: [real(r8) (:)   ] perched wt sub-surface runoff (mm H2O /s)         
+          qflx_drain         =>    col_wf%qflx_drain         , & ! Output: [real(r8) (:)   ] sub-surface runoff (mm H2O /s)                    
+          qflx_qrgwl         =>    col_wf%qflx_qrgwl         , & ! Output: [real(r8) (:)   ] qflx_surf at glaciers, wetlands, lakes (mm H2O /s)
+          qflx_rsub_sat      =>    col_wf%qflx_rsub_sat      , & ! Output: [real(r8) (:)   ] soil saturation excess [mm h2o/s]                 
+          qflx_drain_perched =>    col_wf%qflx_drain_perched , & ! Output: [real(r8) (:)   ] perched wt sub-surface runoff (mm H2O /s)         
 
           qflx_rsub_sat_h3d  =>    col_wf%qflx_rsub_sat_h3dcol   , & ! Output: [real(r8) (:)   ] soil saturation excess from h3d [mm h2o/s]                 
           qflx_drain_h3d     =>    col_wf%qflx_drain_h3dcol      , & ! Output: [real(r8) (:)   ] sub-surface runoff from h3d(mm H2O /s)                    
           h3d_zwt_lun        =>    soilhydrology_vars%h3d_zwt_lun        , & ! Output: [real(r8) (:,:) ] water table depth at h3d column !yhfang                  
           h3d_imped          =>    soilhydrology_vars%imped_h3d_col      , & ! Inout : [real(r8) (:)   ] scaling facfor due to frozen soil
 
-          h2osoi_liq         =>    col_ws%h2osoi_liq_col        , & ! Output: [real(r8) (:,:) ] liquid water (kg/m2)                            
-          h2osoi_ice         =>    col_ws%h2osoi_ice_col          & ! Output: [real(r8) (:,:) ] ice lens (kg/m2)                                
+          h2osoi_liq         =>    col_ws%h2osoi_liq        , & ! Output: [real(r8) (:,:) ] liquid water (kg/m2)                            
+          h2osoi_ice         =>    col_ws%h2osoi_ice          & ! Output: [real(r8) (:,:) ] ice lens (kg/m2)                                
           )
 
        ! Convert layer thicknesses from m to mm
@@ -3168,13 +3171,13 @@ filter_hydrologyc, num_urbanc, filter_urbanc,  &
      ! i.e., center of each soil column  
      !
      ! !USES:
-     use clm_time_manager , only : get_step_size
-     use clm_varpar       , only : nlevsoi, nlevgrnd, nlayer, nlayert
-     use clm_varpar       , only : nh3dc_per_lunit  !yhfang
-     use clm_varcon       , only : pondmx, tfrz, watmin,rpi, secspday, nlvic
+     use elm_time_manager , only : get_step_size
+     use elm_varpar       , only : nlevsoi, nlevgrnd, nlayer, nlayert
+     use elm_varpar       , only : nh3dc_per_lunit
+     use elm_varcon       , only : pondmx, tfrz, watmin,rpi, secspday, nlvic
      use column_varcon    , only : icol_roof, icol_road_imperv, icol_road_perv
      use abortutils       , only : endrun
-     use clm_varctl       , only : use_vsfm, use_var_soil_thick
+     use elm_varctl       , only : use_vsfm, use_var_soil_thick
      use SoilWaterMovementMod, only : zengdecker_2009_with_var_soil_thick
      use pftvarcon        , only : rsub_top_globalmax
      use spmdMod          , only : masterproc, iam, npes, mpicom, comp_id
@@ -3233,7 +3236,7 @@ filter_hydrologyc, num_urbanc, filter_urbanc,  &
 ! otherwise
           qflx_rsub_sat_h3d =>    col_wf%qflx_rsub_sat_h3dcol     ,   & ! Output: [real(r8) (:)   ] soil saturation excess from h3d [mm h2o/s]                 
           qflx_drain_h3d    =>    col_wf%qflx_drain_h3dcol        ,   & ! Output: [real(r8) (:)   ] sub-surface runoff from h3d(mm H2O /s)                    
-          qflx_drain        =>    col_wf%qflx_drain_col               & ! Output: [real(r8) (:)   ] sub-surface runoff (mm H2O /s)                    
+          qflx_drain        =>    col_wf%qflx_drain               & ! Output: [real(r8) (:)   ] sub-surface runoff (mm H2O /s)                    
           )
 
 
@@ -3382,9 +3385,9 @@ filter_hydrologyc, num_urbanc, filter_urbanc,  &
      !
      !
      ! !USES:
-     use clm_time_manager , only : get_step_size
-     use clm_varcon       , only : rpi
-     use clm_varpar       , only : nh3dc_per_lunit
+     use elm_time_manager , only : get_step_size
+     use elm_varcon       , only : rpi
+     use elm_varpar       , only : nh3dc_per_lunit
      !
      ! !ARGUMENTS:
      type(soilstate_type)     , intent(in)    :: soilstate_vars
@@ -3556,14 +3559,10 @@ filter_hydrologyc, num_urbanc, filter_urbanc,  &
     ! !ARGUMENTS:
     !implicit none
     integer           , intent(in)    :: numf     !  dimension
-    real(r8)          , intent(in)    :: a(1:numf)! "a" left off diagonal of
-tridiagonal matrix [j]
-    real(r8)          , intent(in)    :: b(1:numf)! "b" diagonal column for
-tridiagonal matrix [j]
-    real(r8)          , intent(in)    :: c(1:numf)! "c" right off diagonal
-tridiagonal matrix [j]
-    real(r8)          , intent(in)    :: r(1:numf)! "r" forcing term of
-tridiagonal matrix [j]
+    real(r8)          , intent(in)    :: a(1:numf)! "a" left off diagonal of tridiagonal matrix [j]
+    real(r8)          , intent(in)    :: b(1:numf)! "b" diagonal column for tridiagonal matrix [j]
+    real(r8)          , intent(in)    :: c(1:numf)! "c" right off diagonal tridiagonal matrix [j]
+    real(r8)          , intent(in)    :: r(1:numf)! "r" forcing term of tridiagonal matrix [j]
     real(r8)          , intent(inout) :: u(1:numf)! solution [j]                 
     logical           , intent(out)   :: ierror   ! true if error exists
 

@@ -60,6 +60,8 @@ module SoilStateType
      real(r8), pointer :: watmin_col           (:,:) ! col minimum volumetric soil water (nlevsoi)
      real(r8), pointer :: sucsat_col           (:,:) ! col minimum soil suction (mm) (nlevgrnd)
      real(r8), pointer :: sucmin_col           (:,:) ! col minimum allowable soil liquid suction pressure (mm) [Note: sucmin_col is a negative value, while sucsat_col is a positive quantity]
+     real(r8), pointer :: dsl_col              (:)   ! col dry surface layer thickness (mm)
+     real(r8), pointer :: soilresis_col        (:)   ! col soil evaporative resistance S&L14 (s/m)
      real(r8), pointer :: soilbeta_col         (:)   ! col factor that reduces ground evaporation L&P1992(-)
      real(r8), pointer :: soilalpha_col        (:)   ! col factor that reduces ground saturated specific humidity (-)
      real(r8), pointer :: soilalpha_u_col      (:)   ! col urban factor that reduces ground saturated specific humidity (-)
@@ -164,6 +166,9 @@ contains
     allocate(this%watmin_col           (begc:endc,nlevgrnd))            ; this%watmin_col           (:,:) = spval
     allocate(this%sucsat_col           (begc:endc,nlevgrnd))            ; this%sucsat_col           (:,:) = spval
     allocate(this%sucmin_col           (begc:endc,nlevgrnd))            ; this%sucmin_col           (:,:) = spval
+   allocate(this%dsl_col              (begc:endc))                     ; this%dsl_col         (:)   = spval
+    allocate(this%soilresis_col        (begc:endc))                     ;
+this%soilresis_col         (:)   = spval
     allocate(this%soilbeta_col         (begc:endc))                     ; this%soilbeta_col         (:)   = spval
     allocate(this%soilalpha_col        (begc:endc))                     ; this%soilalpha_col        (:)   = spval
     allocate(this%soilalpha_u_col      (begc:endc))                     ; this%soilalpha_u_col      (:)   = spval
@@ -294,6 +299,16 @@ contains
     call hist_addfld1d (fname='SoilAlpha_U',  units='1',  &
          avgflag='A', long_name='urban factor limiting ground evap', &
          ptr_col=this%soilalpha_u_col, set_nourb=spval)
+
+    this%soilresis_col(begc:endc) = spval
+    call hist_addfld1d (fname='SOILRESIS',  units='s/m',  &
+         avgflag='A', long_name='soil resistance to evaporation', &
+         ptr_col=this%soilresis_col)
+
+    this%dsl_col(begc:endc) = spval
+    call hist_addfld1d (fname='DSL',  units='mm',  &
+         avgflag='A', long_name='dry surface layer thickness', &
+         ptr_col=this%dsl_col)
 
     if (use_cn) then
        this%watsat_col(begc:endc,:) = spval
@@ -924,6 +939,16 @@ contains
     logical          :: readvar   ! determine if variable is on initial file
     logical          :: readrootfr = .false.
     !-----------------------------------------------------------------------
+
+    call restartvar(ncid=ncid, flag=flag, varname='DSL', xtype=ncd_double,  &
+         dim1name='column', long_name='dsl thickness', units='mm', &
+         interpinic_flag='interp', readvar=readvar, data=this%dsl_col)
+
+    call restartvar(ncid=ncid, flag=flag, varname='SOILRESIS', &
+         xtype=ncd_double, dim1name='column', long_name='soil resistance', &
+         units='s/m', interpinic_flag='interp', readvar=readvar, &
+         data=this%soilresis_col)
+
     if(use_hydrstress) then
        call restartvar(ncid=ncid, flag=flag, varname='SMP', xtype=ncd_double,  &
             dim1name='column', dim2name='levgrnd', switchdim=.true., &
