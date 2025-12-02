@@ -180,7 +180,6 @@ contains
        do j = 1, nlevgrnd
           zsoi(j) = scalez*(exp(zecoeff*(dble(j)-0.5_r8))-1._r8)    !node depths
        enddo
-       print *, "done with init vertical"
     end if
     deallocate(zsoi_in)
 
