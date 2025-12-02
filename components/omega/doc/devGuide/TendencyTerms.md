@@ -41,5 +41,3 @@ implemented:
 - `TracerHighOrderHorzAdvOnCell`
 - `TracerDiffOnCell`
 - `TracerHyperDiffOnCell`
-
-
