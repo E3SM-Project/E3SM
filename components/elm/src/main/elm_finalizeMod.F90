@@ -42,7 +42,7 @@ contains
     !
 
 #ifdef HAVE_MOAB
-    call elm_moab_finalize()
+    !call elm_moab_finalize()
 #endif
 
 #ifdef USE_PETSC_LIB

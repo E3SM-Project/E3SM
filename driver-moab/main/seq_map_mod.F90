@@ -112,7 +112,7 @@ contains
     if (mct_gsmap_Identical(gsmap_s,gsmap_d)) then
        if(.not.skip_match) call seq_map_mapmatch(mapid,gsmap_s=gsmap_s,gsmap_d=gsmap_d,strategy="copy")
 
-       if (mapid > 0 .and. .not. skip_match) then
+       if (.not. skip_match .and. mapid > 0 ) then
           call seq_map_mappoint(mapid,mapper)
        else
           if(skip_match .and. seq_comm_iamroot(CPLID)) then
@@ -128,7 +128,7 @@ contains
     elseif (samegrid) then
        if(.not.skip_match) call seq_map_mapmatch(mapid,gsmap_s=gsmap_s,gsmap_d=gsmap_d,strategy="rearrange")
 
-       if (mapid > 0 .and. .not. skip_match) then
+       if (.not. skip_match .and. mapid > 0 ) then
           call seq_map_mappoint(mapid,mapper)
        else
           if(skip_match .and. seq_comm_iamroot(CPLID)) then
@@ -151,7 +151,7 @@ contains
 
        if(.not.skip_match) call seq_map_mapmatch(mapid,gsMap_s=gsMap_s,gsMap_d=gsMap_d,mapfile=mapfile,strategy=maptype)
 
-       if (mapid > 0 .and. .not. skip_match) then
+       if (.not. skip_match .and. mapid > 0) then
           call seq_map_mappoint(mapid,mapper)
        else
           if(skip_match .and. seq_comm_iamroot(CPLID)) then
@@ -302,7 +302,7 @@ contains
     if (mct_gsmap_Identical(gsmap_s,gsmap_d)) then
        if(.not.skip_match) call seq_map_mapmatch(mapid,gsmap_s=gsmap_s,gsmap_d=gsmap_d,strategy="copy")
 
-       if (mapid > 0 .and. .not.skip_match) then
+       if (.not.skip_match .and. mapid > 0) then
           call seq_map_mappoint(mapid,mapper)
        else
           if(skip_match .and. seq_comm_iamroot(CPLID)) then
@@ -318,7 +318,7 @@ contains
     else
        if(.not.skip_match) call seq_map_mapmatch(mapid,gsmap_s=gsmap_s,gsmap_d=gsmap_d,strategy="rearrange")
 
-       if (mapid > 0 .and. .not.skip_match) then
+       if (.not.skip_match .and. mapid > 0) then
           call seq_map_mappoint(mapid,mapper)
        else
           if(skip_match .and. seq_comm_iamroot(CPLID)) then

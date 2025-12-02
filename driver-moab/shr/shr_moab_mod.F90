@@ -7,6 +7,7 @@ module shr_moab_mod
 
  use shr_sys_mod,      only: shr_sys_abort
  use seq_comm_mct,     only: logunit
+ use seq_comm_mct,     only: atm_pg_active, mbaxid,mb_scm_land,mblxid
  use shr_kind_mod,     only: CXX => shr_kind_CXX
  use shr_kind_mod    , only: R8 => SHR_KIND_R8
  use iso_c_binding
@@ -53,7 +54,13 @@ contains
        call shr_sys_abort(subname//' error in getting info ')
    endif
 
-   mbGetnCells = nvise(1)
+   ! only case on coupler side that we actually want number of vertices is when we use spectral atm
+   if ((.not. atm_pg_active .and. (mbaxid .eq. moabid)) .or. &
+       (mb_scm_land .and. (mblxid .eq. moabid))) then
+    mbGetnCells = nvert(1)
+   else
+    mbGetnCells = nvise(1)
+   endif
 
   end function mbGetnCells
 
@@ -84,8 +91,13 @@ contains
     character(*), parameter   :: subname = '(mbGetCellTagVals) '
 !-----------------------------------------------------------------------
 !
-
-    ent_type=1
+    if ((.not. atm_pg_active .and. (mbaxid .eq. mbid)) .or. &
+       (mb_scm_land .and. (mblxid .eq. mbid))) then
+      ent_type = 0
+    else
+      ent_type = 1
+    endif
+    
     tagname = trim(intag)//C_NULL_CHAR
     ierr = iMOAB_GetDoubleTagStorage (mbid, tagname, nMax , ent_type, inarray)
     if (ierr .ne. 0) then
@@ -123,7 +135,12 @@ contains
 !-----------------------------------------------------------------------
 !
 
-    ent_type=1
+    if ((.not. atm_pg_active .and. (mbaxid .eq. mbid)) .or. &
+       (mb_scm_land .and. (mblxid .eq. mbid))) then
+      ent_type = 0
+    else
+      ent_type = 1
+    endif
     tagname = trim(intag)//C_NULL_CHAR
     ierr = iMOAB_SetDoubleTagStorage (mbid, tagname, nMax , ent_type, inarray)
     if (ierr .ne. 0) then

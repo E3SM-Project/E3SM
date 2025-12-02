@@ -15,12 +15,14 @@ module prep_lnd_mod
   use seq_comm_mct,     only: mphaid   ! iMOAB id for phys atm on atm pes
   use seq_comm_mct,     only: mhpgid   ! iMOAB id for atm pgx grid, on atm pes; created with se and gll grids
   use seq_comm_mct,     only: mblxid ! iMOAB id for land migrated mesh to coupler pes
+  use seq_comm_mct,     only: mb_scm_land ! flag that identifies PC for land; 
   use seq_comm_mct,     only: mbrxid   !          iMOAB id of moab rof on coupler pes (FV now)
   use seq_comm_mct,     only: mbintxal ! iMOAB id for intx mesh between atm and lnd
   use seq_comm_mct,     only: mbintxrl ! iMOAB id for intx mesh between river and land
 
   use seq_comm_mct,     only: mbaxid   ! iMOAB id for atm migrated mesh to coupler pes
   use seq_comm_mct,     only: atm_pg_active  ! whether the atm uses FV mesh or not ; made true if fv_nphys > 0
+  use seq_comm_mct,     only: mb_scm_land
   ! use dimensions_mod,   only: np     ! for atmosphere
   use seq_comm_mct,     only: seq_comm_getinfo => seq_comm_setptrs
   use seq_map_type_mod
@@ -399,9 +401,15 @@ contains
                write(logunit,*) subname,' cant get size of land mesh'
                call shr_sys_abort(subname//' ERROR in getting size of land mesh')
             endif
-            ! land is now cell mesh on coupler side
-            mlsize = nvise(1)
-            ent_type = 1 ! cell
+	    ! land is usually cell on coupler but could be point
+            if(mb_scm_land) then
+              mlsize = nvert(1)
+              ent_type = 0 ! point cloud
+	    else
+              mlsize = nvise(1)
+              ent_type = 1 ! cell
+            endif
+
             ! set to 0 all fields that are projected from river
             nrflds = mct_aVect_nRattr(r2x_lx(1)) !  these are the numbers of fields in seq_flds_r2x_fields
             arrsize = nrflds*mlsize
@@ -592,9 +600,13 @@ contains
               if (atm_pg_active) then
                   type1 = 3; !  fv for atm; cgll does not work anyway
               else
-                  type1 = 1 ! this projection works (cgll to fv), but reverse does not ( fv - cgll)
+                  type1 = 2 ! in this case, atm is just PC 
               endif
-              type2 = 3;  ! FV mesh on coupler land
+              if (mb_scm_land) then
+                type2 = 2 ! point cloud for land too, on coupler side; just one point, actually
+              else
+                type2 = 3;  ! FV mesh on coupler land
+              endif
               ierr = iMOAB_ComputeCommGraph( mbaxid, mblxid, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
                                       atm(1)%cplcompid, lnd(1)%cplcompid)
               if (ierr .ne. 0) then

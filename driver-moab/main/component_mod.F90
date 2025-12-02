@@ -467,6 +467,7 @@ contains
     use seq_comm_mct,     only: mblxid ! iMOAB id for lnd migrated mesh to coupler pes
     use seq_comm_mct,     only: mbaxid ! iMOAB id for atm migrated mesh to coupler pes
     use seq_comm_mct,     only: mbrxid ! iMOAB id for rof migrated mesh to coupler pes
+    use seq_comm_mct,     only: atm_pg_active ! 
     !
     ! Arguments
     type (seq_infodata_type) , intent(inout) :: infodata
@@ -528,7 +529,12 @@ contains
          nloc = mct_avect_lsize(dom_s%data)
          allocate(data1(nloc))
          data1 = dom_s%data%rAttr(ka,:)
-         ent_type = 1  ! element dense double tags
+         if (atm_pg_active) then
+            ent_type = 1  ! element dense double tags
+         else ! this is true only for spectral atm now
+            ent_type = 0 ! for pure spectral case, the atm is PC on coupler side
+         endif
+          
          allocate(gids(nloc))
          gids = dom_s%data%iAttr(mct_aVect_indexIA(dom_s%data,"GlobGridNum"),:)
          ! ! now set data on the coupler side too
@@ -593,8 +599,8 @@ contains
        if (samegrid_al) then
           dom_s  => component_get_dom_cx(atm(1))   !dom_ax
           dom_d  => component_get_dom_cx(lnd(1))   !dom_lx
-
-          call seq_map_map(mapper_Sa2l, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream')
+          ! it should work for FV and spectral too
+          call seq_map_map(mapper_Sa2l, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream') 
        else
           gsmap_d => component_get_gsmap_cx(lnd(1)) ! gsmap_lx
           dom_d   => component_get_dom_cx(lnd(1))   ! dom_lx
@@ -734,7 +740,7 @@ contains
 
   end subroutine component_init_areacor
 
-subroutine component_init_areacor_moab (comp, mbccid, mbcxid, seq_flds_c2x_fluxes, seq_flds_c2x_fields)
+subroutine component_init_areacor_moab (comp, samegrid, mbccid, mbcxid, seq_flds_c2x_fluxes, seq_flds_c2x_fields)
   !---------------------------------------------------------------
    ! COMPONENT PES and CPL/COMPONENT (for exchange only)
    !
@@ -748,6 +754,7 @@ subroutine component_init_areacor_moab (comp, mbccid, mbcxid, seq_flds_c2x_fluxe
    !
    ! Arguments
    type(component_type) , intent(inout) :: comp(:)
+   logical              , intent(in)    :: samegrid
    integer              , intent(in)    :: mbccid  ! comp side
    integer              , intent(in)    :: mbcxid  ! coupler side
    ! point cloud or FV type, to use vertices or cells for setting/getting the area tags and corrections
@@ -784,7 +791,8 @@ subroutine component_init_areacor_moab (comp, mbccid, mbcxid, seq_flds_c2x_fluxe
          lsize = comp(1)%mblsize
          allocate(areas (lsize, 3)) ! lsize is along grid; read mask too
          allocate(factors (lsize, 2))
-         factors = 1.0 ! initialize with 1.0 all factors; then maybe correct them
+
+         factors = 1.0_r8 ! initialize with 1.0 all factors;
          ! get areas
          tagname='area:aream:mask'//C_NULL_CHAR
          arrsize = 3 * lsize
@@ -792,24 +800,26 @@ subroutine component_init_areacor_moab (comp, mbccid, mbcxid, seq_flds_c2x_fluxe
          if (ierr .ne. 0) then
            call shr_sys_abort(subname//' cannot get areas  ')
          endif
-         ! now compute the factors
-         do i=1,lsize
-            rmask = areas(i,3)
+         if (.not.samegrid) then  ! only correct if not monogrid (SCM case)
+           ! now compute the factors
+           do i=1,lsize
+              rmask = areas(i,3)
 
-            rarea  = areas(i, 1)
-            raream = areas(i, 2)
-            if ( abs(rmask) >= 1.0e-06) then
-               if (rarea * raream /= 0.0_R8) then
-                  factors(i,1) = rarea/raream
-                  factors(i,2)= 1.0_R8/factors(i,1)
-               else
-                  write(logunit,*) trim(subname),' ERROR area,aream= ', &
-                        rarea,raream,' in ',i,lsize
-                  call shr_sys_flush(logunit)
-                  call shr_sys_abort()
-               endif
-            endif
-         enddo
+              rarea  = areas(i, 1)
+              raream = areas(i, 2)
+              if ( abs(rmask) >= 1.0e-06) then
+                 if (rarea * raream /= 0.0_R8) then
+                    factors(i,1) = rarea/raream
+                    factors(i,2)= 1.0_R8/factors(i,1)
+                 else
+                    write(logunit,*) trim(subname),' ERROR area,aream= ', &
+                          rarea,raream,' in ',i,lsize
+                    call shr_sys_flush(logunit)
+                    call shr_sys_abort()
+                 endif
+              endif
+           enddo
+         endif ! if .not.samegrid
          ! set factors as tags
          ! define the tags mdl2drv and drv2mdl on component sides, and compute them based on area and aream
          tagname = 'mdl2drv:drv2mdl'//C_NULL_CHAR

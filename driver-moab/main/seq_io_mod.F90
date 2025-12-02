@@ -33,6 +33,7 @@ module seq_io_mod
   use shr_sys_mod,  only: shr_sys_abort
   use seq_comm_mct, only: logunit, CPLID, seq_comm_setptrs
   use seq_comm_mct, only: seq_comm_namelen, seq_comm_name
+  use seq_comm_mct, only: mbaxid, atm_pg_active,mblxid,mb_scm_land
   use seq_flds_mod, only : seq_flds_lookup
   use mct_mod           ! mct wrappers
   use pio
@@ -1615,7 +1616,8 @@ contains
   !    file_ind   [in, optional] - File index for multi-file support
   !
   ! !NOTES:
-  !    - Only cell-type entities are supported (ent_type=1).
+  !    - Only cell-type entities are supported (ent_type=1). 
+  !            - not anymore: spectral case, atm needs vertices ent_type=0
   !    - Handles reordering of local/global cell IDs for correct output.
   !    - If matrix is not present, data is read from MOAB tags; if present, matrix is written directly.
   !    - Skips writing the field "hgt" as a temporary exclusion.
@@ -1623,6 +1625,7 @@ contains
   !
   ! !REVISION HISTORY:
   !    2025-07-20 - Cursor - initial documentation
+  !    2025-09-24   allow vertex type for entity, for spectral case for atmosphere
   !
   ! !INTERFACE: ------------------------------------------------------------------
   subroutine seq_io_write_moab_tags(filename, mbxid, dname, tag_list, whead,wdata, matrix, nx, ny, nt, file_ind, dims2din, dims2do, mask )
@@ -1670,7 +1673,7 @@ contains
     integer(in),target  :: dimid2(2)
     integer(in),target  :: dimid3(3)
     integer(in),pointer :: dimid(:)
-    integer(in)              :: dummy, ent_type, ierr
+    integer(in)              :: ngv, ent_type, ierr
     real(r8)                 :: lfillvalue
     integer, allocatable         :: indx(:) !  this will be ordered
     integer, allocatable         :: Dof(:)  ! will be filled with global ids from cells
@@ -1691,7 +1694,6 @@ contains
        ! should we write a warning?
        return
     endif
-    ent_type = 1 ! cells type
 
     lfile_ind = 0
     if (present(file_ind)) lfile_ind=file_ind
@@ -1700,7 +1702,6 @@ contains
 
     call mct_list_init(temp_list ,trim(tag_list))
     size_list=mct_list_nitem (temp_list)  ! role of nf, number fields
-    ent_type = 1 ! cell for atm, atm_pg_active
 
     if (size_list < 1) then
        write(logunit,*) subname,' ERROR: size_list = ',size_list,trim(dname)
@@ -1709,10 +1710,25 @@ contains
 
     lpre = trim(dname)
     ! find out the number of global cells, needed for defining the variables length
-    ierr = iMOAB_GetGlobalInfo( mbxid, dummy, ng)
-    lnx = ng
+    ierr = iMOAB_GetGlobalInfo( mbxid, ngv, ng)
     lny = 1
+#ifdef MOABCOMP
+    write(logunit,*) subname, 'lnx, lny, mbxid ',  lnx, lny, mbxid 
+#endif
 
+
+    ! get the local size ns
+    ierr = iMOAB_GetMeshInfo ( mbxid, nvert, nvise, nbl, nsurf, nvisBC )
+    if ((.not. atm_pg_active .and. (mbaxid .eq. mbxid)) .or. &
+       (mb_scm_land .and. (mblxid .eq. mbxid))) then
+      ent_type = 0
+      ns = nvert(1) ! local vertices 
+      lnx = ngv ! number of global vertices
+    else
+      ent_type = 1
+      ns = nvise(1) ! local cells 
+      lnx = ng
+    endif
     ! it is needed to overwrite that for land, ng is too small
     !  ( for ne4pg2 it is 201 instead of 384)
     if (present(nx)) then
@@ -1724,11 +1740,10 @@ contains
     if (present(nt)) then
        frame = nt
     endif
-
-    ! get the local size ns
-    ierr = iMOAB_GetMeshInfo ( mbxid, nvert, nvise, nbl, nsurf, nvisBC )
-    ns = nvise(1) ! local cells 
-
+#ifdef MOABCOMP
+    write(logunit,*) subname, ' ent_type, ns ', ent_type, ns  
+    write(logunit,*) subname, ' tag_list ', trim(tag_list)  
+#endif
     if (lwhead) then
        if (present(dims2din)) then
           dimid2(1)=dims2din(1)
@@ -2623,6 +2638,7 @@ contains
   !
   ! !NOTES:
   !    - Only cell-type entities are supported (ent_type=1).
+  !         - not anymore: spectral case, atm, uses vertices, ent_type = 0
   !    - Handles reordering of local/global cell IDs for correct mapping.
   !    - If matrix is present, data is stored in the matrix; otherwise, data is set as MOAB tags.
   !    - Skips reading the field "hgt" as a temporary exclusion.
@@ -2630,6 +2646,7 @@ contains
   !
   ! !REVISION HISTORY:
   !    2025-07-20 - Cursor - initial documentation
+  !    2025-09-24  spectral case atm
   !
   ! !INTERFACE: ------------------------------------------------------------------
 
@@ -2677,7 +2694,7 @@ contains
     type(mct_string)    :: mctOStr  !
     character(CXX) ::tagname, field
 
-    integer(in)              :: dummy, ent_type, ierr
+    integer(in)              :: ngv, ent_type, ierr
     character(*),parameter :: subName = '(seq_io_read_moab_tags) '
 
     
@@ -2687,7 +2704,6 @@ contains
 
     call mct_list_init(temp_list ,trim(tag_list))
     size_list=mct_list_nitem (temp_list)  ! role of nf, number fields
-    ent_type = 1 ! cell for atm, atm_pg_active
 
     if (size_list < 1) then
        write(logunit,*) subname,' ERROR: size_list = ',size_list,trim(dname)
@@ -2711,8 +2727,19 @@ contains
     endif
 
         ! find out the number of global cells, needed for defining the variables length
-    ierr = iMOAB_GetGlobalInfo( mbxid, dummy, ng)
-    lnx = ng
+    ierr = iMOAB_GetGlobalInfo( mbxid, ngv, ng)
+    lny = 1 ! do we need 2 var, or just 1 
+    ierr = iMOAB_GetMeshInfo ( mbxid, nvert, nvise, nbl, nsurf, nvisBC )
+    if ((.not. atm_pg_active .and. (mbaxid .eq. mbxid)) .or. &
+       (mb_scm_land .and. (mblxid .eq. mbxid))) then
+      ent_type = 0
+      ns = nvert(1) ! local vertices 
+      lnx = ngv ! number of global vertices
+    else
+      ent_type = 1
+      ns = nvise(1) ! local cells 
+      lnx = ng
+    endif
     ! it is needed to overwrite that for land, ng is too small
     !  ( for ne4pg2 it is 201 instead of 384)
     if (present(nx)) then
@@ -2721,9 +2748,6 @@ contains
 #endif
        lnx = nx 
     endif
-    lny = 1 ! do we need 2 var, or just 1 
-    ierr = iMOAB_GetMeshInfo ( mbxid, nvert, nvise, nbl, nsurf, nvisBC )
-    ns = nvise(1) ! local cells 
     allocate(data1(ns))
     allocate(data_reorder(ns))
     allocate(dof(ns))
