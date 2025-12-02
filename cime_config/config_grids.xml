@@ -1122,6 +1122,72 @@
       <mask>oQU240</mask>
     </model_grid>
 
+    <!-- ******************************************************************* -->
+    <!-- 2025 SOHIP -->
+    <!-- ******************************************************************* -->
+    <!-- ne0np4_sohip-256x3-eq-ind -->
+    <!-- ne0np4_sohip-256x3-ptgnia -->
+    <!-- ne0np4_sohip-256x3-sc-ind -->
+    <!-- ne0np4_sohip-256x3-sc-pac -->
+    <!-- ne0np4_sohip-256x3-se-pac -->
+    <!-- ne0np4_sohip-256x3-sw-ind -->
+    <model_grid alias="2025-sohip-256x3-eq-ind-v1">
+      <grid name="atm">ne0np4_sohip-256x3-eq-ind.pg2</grid>
+      <grid name="lnd">r025</grid>
+      <grid name="ocnice">RRSwISC6to18E3r5</grid>
+      <grid name="rof">r025</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>RRSwISC6to18E3r5</mask>
+    </model_grid>
+    <model_grid alias="2025-sohip-256x3-ptgnia-v1">
+      <grid name="atm">ne0np4_sohip-256x3-ptgnia.pg2</grid>
+      <grid name="lnd">r025</grid>
+      <grid name="ocnice">RRSwISC6to18E3r5</grid>
+      <grid name="rof">r025</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>RRSwISC6to18E3r5</mask>
+    </model_grid>
+    <model_grid alias="2025-sohip-256x3-sc-ind-v1">
+      <grid name="atm">ne0np4_sohip-256x3-sc-ind.pg2</grid>
+      <grid name="lnd">r025</grid>
+      <grid name="ocnice">RRSwISC6to18E3r5</grid>
+      <grid name="rof">r025</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>RRSwISC6to18E3r5</mask>
+    </model_grid>
+    <model_grid alias="2025-sohip-256x3-sc-pac-v1">
+      <grid name="atm">ne0np4_sohip-256x3-sc-pac.pg2</grid>
+      <grid name="lnd">r025</grid>
+      <grid name="ocnice">RRSwISC6to18E3r5</grid>
+      <grid name="rof">r025</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>RRSwISC6to18E3r5</mask>
+    </model_grid>
+    <model_grid alias="2025-sohip-256x3-se-pac-v1">
+      <grid name="atm">ne0np4_sohip-256x3-se-pac.pg2</grid>
+      <grid name="lnd">r025</grid>
+      <grid name="ocnice">RRSwISC6to18E3r5</grid>
+      <grid name="rof">r025</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>RRSwISC6to18E3r5</mask>
+    </model_grid>
+    <model_grid alias="2025-sohip-256x3-sw-ind-v1">
+      <grid name="atm">ne0np4_sohip-256x3-sw-ind.pg2</grid>
+      <grid name="lnd">r025</grid>
+      <grid name="ocnice">RRSwISC6to18E3r5</grid>
+      <grid name="rof">r025</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>RRSwISC6to18E3r5</mask>
+    </model_grid>
+    <!-- ******************************************************************* -->
+    <!-- ******************************************************************* -->
+
     <model_grid alias="armx8v3_armx8v3" compset="(DOCN|XOCN|SOCN|AQP1)">
       <grid name="atm">ne0np4_arm_x8v3_lowcon</grid>
       <grid name="lnd">ne0np4_arm_x8v3_lowcon</grid>
@@ -3406,9 +3472,47 @@
       <desc>ne1024np4.pg2 is Spectral Elem 3km grid w/ 2x2 FV physics grid per element:</desc>
     </domain>
 
-
-
-
+    <!-- ******************************************************************* -->
+    <!-- 2025 SOHIP -->
+    <!-- ******************************************************************* -->
+    <domain name="ne0np4_sohip-256x3-ptgnia.pg2">
+      <nx>2540976</nx>
+      <ny>1</ny>
+      <file grid="atm|lnd" mask="RRSwISC6to18E3r5">/global/cfs/cdirs/m4842/whannah/files_domain/domain.lnd.2025-sohip-256x3-ptgnia-v1_RRSwISC6to18E3r5.20251006.nc</file>
+      <file grid="ice|ocn" mask="RRSwISC6to18E3r5">/global/cfs/cdirs/m4842/whannah/files_domain/domain.ocn.2025-sohip-256x3-ptgnia-v1_RRSwISC6to18E3r5.20251006.nc</file>
+    </domain>
+    <domain name="ne0np4_sohip-256x3-sw-ind.pg2">
+      <nx>2670144</nx>
+      <ny>1</ny>
+      <file grid="atm|lnd" mask="RRSwISC6to18E3r5">/global/cfs/cdirs/m4842/whannah/files_domain/domain.lnd.2025-sohip-256x3-sw-ind-v1_RRSwISC6to18E3r5.20251006.nc</file>
+      <file grid="ice|ocn" mask="RRSwISC6to18E3r5">/global/cfs/cdirs/m4842/whannah/files_domain/domain.ocn.2025-sohip-256x3-sw-ind-v1_RRSwISC6to18E3r5.20251006.nc</file>
+    </domain>
+    <domain name="ne0np4_sohip-256x3-se-pac.pg2">
+      <nx>2670144</nx>
+      <ny>1</ny>
+      <file grid="atm|lnd" mask="RRSwISC6to18E3r5">/global/cfs/cdirs/m4842/whannah/files_domain/domain.lnd.2025-sohip-256x3-se-pac-v1_RRSwISC6to18E3r5.20251006.nc</file>
+      <file grid="ice|ocn" mask="RRSwISC6to18E3r5">/global/cfs/cdirs/m4842/whannah/files_domain/domain.ocn.2025-sohip-256x3-se-pac-v1_RRSwISC6to18E3r5.20251006.nc</file>
+    </domain>
+    <domain name="ne0np4_sohip-256x3-sc-pac.pg2">
+      <nx>3011616</nx>
+      <ny>1</ny>
+      <file grid="atm|lnd" mask="RRSwISC6to18E3r5">/global/cfs/cdirs/m4842/whannah/files_domain/domain.lnd.2025-sohip-256x3-sc-pac-v1_RRSwISC6to18E3r5.20251006.nc</file>
+      <file grid="ice|ocn" mask="RRSwISC6to18E3r5">/global/cfs/cdirs/m4842/whannah/files_domain/domain.ocn.2025-sohip-256x3-sc-pac-v1_RRSwISC6to18E3r5.20251006.nc</file>
+    </domain>
+    <domain name="ne0np4_sohip-256x3-eq-ind.pg2">
+      <nx>3205680</nx>
+      <ny>1</ny>
+      <file grid="atm|lnd" mask="RRSwISC6to18E3r5">/global/cfs/cdirs/m4842/whannah/files_domain/domain.lnd.2025-sohip-256x3-eq-ind-v1_RRSwISC6to18E3r5.20251006.nc</file>
+      <file grid="ice|ocn" mask="RRSwISC6to18E3r5">/global/cfs/cdirs/m4842/whannah/files_domain/domain.ocn.2025-sohip-256x3-eq-ind-v1_RRSwISC6to18E3r5.20251006.nc</file>
+    </domain>
+    <domain name="ne0np4_sohip-256x3-sc-ind.pg2">
+      <nx>2670144</nx>
+      <ny>1</ny>
+      <file grid="atm|lnd" mask="RRSwISC6to18E3r5">/global/cfs/cdirs/m4842/whannah/files_domain/domain.lnd.2025-sohip-256x3-sc-ind-v1_RRSwISC6to18E3r5.20251006.nc</file>
+      <file grid="ice|ocn" mask="RRSwISC6to18E3r5">/global/cfs/cdirs/m4842/whannah/files_domain/domain.ocn.2025-sohip-256x3-sc-ind-v1_RRSwISC6to18E3r5.20251006.nc</file>
+    </domain>
+    <!-- ******************************************************************* -->
+    <!-- ******************************************************************* -->
 
     <!--=====================================================================-->
     <!--=====================================================================-->
@@ -4934,6 +5038,147 @@
      <map name="LND2ROF_FMAPNAME">cpl/gridmaps/CAx32v1pg2/map_CAne32x32v1pg2_to_r0125_traave.20220430.nc</map>
      <map name="ROF2LND_FMAPNAME">cpl/gridmaps/CAx32v1pg2/map_r0125_to_CAne32x32v1pg2_traave.20220430.nc</map>
     </gridmap>
+
+
+
+    <!-- ******************************************************************* -->
+    <!-- 2025 SOHIP -->
+    <!-- ******************************************************************* -->
+    <!-- ne0np4_sohip-256x3-eq-ind -->
+    <gridmap atm_grid="ne0np4_sohip-256x3-eq-ind.pg2" ocn_grid="RRSwISC6to18E3r5">
+      <map name="ATM2OCN_FMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-eq-ind-v1-pg2_to_RRSwISC6to18E3r5_traave.20251006.nc</map>
+      <map name="ATM2OCN_VMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-eq-ind-v1-pg2_to_RRSwISC6to18E3r5_trbilin.20251006.nc</map>
+      <map name="ATM2OCN_SMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-eq-ind-v1-pg2_to_RRSwISC6to18E3r5_trbilin.20251006.nc</map>
+      <map name="OCN2ATM_FMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_RRSwISC6to18E3r5_to_2025-sohip-256x3-eq-ind-v1-pg2_traave.20251006.nc</map>
+      <map name="OCN2ATM_SMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_RRSwISC6to18E3r5_to_2025-sohip-256x3-eq-ind-v1-pg2_traave.20251006.nc</map>
+      <!-- <map name="ATM2ICE_FMAPNAME_NONLINEAR">cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-eq-ind-v1-pg2_to_RRSwISC6to18E3r5_trfvnp2.20251006.nc</map> -->
+      <!-- <map name="ATM2OCN_FMAPNAME_NONLINEAR">cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-eq-ind-v1-pg2_to_RRSwISC6to18E3r5_trfvnp2.20251006.nc</map> -->
+    </gridmap>
+    <gridmap atm_grid="ne0np4_sohip-256x3-eq-ind.pg2" lnd_grid="r025">
+      <map name="ATM2LND_FMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-eq-ind-v1-pg2_to_r025_traave.20251006.nc</map>
+      <!-- <map name="ATM2LND_FMAPNAME_NONLINEAR">cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-eq-ind-v1-pg2_to_r025_trfvnp2.20251006.nc</map> -->
+      <map name="ATM2LND_SMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-eq-ind-v1-pg2_to_r025_trbilin.20251006.nc</map>
+      <map name="LND2ATM_FMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_r025_to_2025-sohip-256x3-eq-ind-v1-pg2_traave.20251006.nc</map>
+      <map name="LND2ATM_SMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_r025_to_2025-sohip-256x3-eq-ind-v1-pg2_traave.20251006.nc</map>
+    </gridmap>
+    <gridmap atm_grid="ne0np4_sohip-256x3-eq-ind.pg2" rof_grid="r025">
+      <map name="ATM2ROF_FMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-eq-ind-v1-pg2_to_r025_traave.20251006.nc</map>
+      <map name="ATM2ROF_SMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-eq-ind-v1-pg2_to_r025_trbilin.20251006.nc</map>
+    </gridmap>
+    <!-- ******************************************************************* -->
+    <!-- 2025-sohip-256x3-ptgnia -->
+    <gridmap atm_grid="ne0np4_sohip-256x3-ptgnia.pg2" ocn_grid="RRSwISC6to18E3r5">
+      <map name="ATM2OCN_FMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-ptgnia-v1-pg2_to_RRSwISC6to18E3r5_traave.20251006.nc</map>
+      <map name="ATM2OCN_VMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-ptgnia-v1-pg2_to_RRSwISC6to18E3r5_trbilin.20251006.nc</map>
+      <map name="ATM2OCN_SMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-ptgnia-v1-pg2_to_RRSwISC6to18E3r5_trbilin.20251006.nc</map>
+      <map name="OCN2ATM_FMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_RRSwISC6to18E3r5_to_2025-sohip-256x3-ptgnia-v1-pg2_traave.20251006.nc</map>
+      <map name="OCN2ATM_SMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_RRSwISC6to18E3r5_to_2025-sohip-256x3-ptgnia-v1-pg2_traave.20251006.nc</map>
+      <!-- <map name="ATM2ICE_FMAPNAME_NONLINEAR">cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-ptgnia-v1-pg2_to_RRSwISC6to18E3r5_trfvnp2.20251006.nc</map> -->
+      <!-- <map name="ATM2OCN_FMAPNAME_NONLINEAR">cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-ptgnia-v1-pg2_to_RRSwISC6to18E3r5_trfvnp2.20251006.nc</map> -->
+    </gridmap>
+    <gridmap atm_grid="ne0np4_sohip-256x3-ptgnia.pg2" lnd_grid="r025">
+      <map name="ATM2LND_FMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-ptgnia-v1-pg2_to_r025_traave.20251006.nc</map>
+      <!-- <map name="ATM2LND_FMAPNAME_NONLINEAR">cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-ptgnia-v1-pg2_to_r025_trfvnp2.20251006.nc</map> -->
+      <map name="ATM2LND_SMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-ptgnia-v1-pg2_to_r025_trbilin.20251006.nc</map>
+      <map name="LND2ATM_FMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_r025_to_2025-sohip-256x3-ptgnia-v1-pg2_traave.20251006.nc</map>
+      <map name="LND2ATM_SMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_r025_to_2025-sohip-256x3-ptgnia-v1-pg2_traave.20251006.nc</map>
+    </gridmap>
+    <gridmap atm_grid="ne0np4_sohip-256x3-ptgnia.pg2" rof_grid="r025">
+      <map name="ATM2ROF_FMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-ptgnia-v1-pg2_to_r025_traave.20251006.nc</map>
+      <map name="ATM2ROF_SMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-ptgnia-v1-pg2_to_r025_trbilin.20251006.nc</map>
+    </gridmap>
+    <!-- ******************************************************************* -->
+    <!-- 2025-sohip-256x3-sc-ind -->
+    <gridmap atm_grid="ne0np4_sohip-256x3-sc-ind.pg2" ocn_grid="RRSwISC6to18E3r5">
+      <map name="ATM2OCN_FMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-sc-ind-v1-pg2_to_RRSwISC6to18E3r5_traave.20251006.nc</map>
+      <map name="ATM2OCN_VMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-sc-ind-v1-pg2_to_RRSwISC6to18E3r5_trbilin.20251006.nc</map>
+      <map name="ATM2OCN_SMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-sc-ind-v1-pg2_to_RRSwISC6to18E3r5_trbilin.20251006.nc</map>
+      <map name="OCN2ATM_FMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_RRSwISC6to18E3r5_to_2025-sohip-256x3-sc-ind-v1-pg2_traave.20251006.nc</map>
+      <map name="OCN2ATM_SMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_RRSwISC6to18E3r5_to_2025-sohip-256x3-sc-ind-v1-pg2_traave.20251006.nc</map>
+      <!-- <map name="ATM2ICE_FMAPNAME_NONLINEAR">cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-sc-ind-v1-pg2_to_RRSwISC6to18E3r5_trfvnp2.20251006.nc</map> -->
+      <!-- <map name="ATM2OCN_FMAPNAME_NONLINEAR">cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-sc-ind-v1-pg2_to_RRSwISC6to18E3r5_trfvnp2.20251006.nc</map> -->
+    </gridmap>
+    <gridmap atm_grid="ne0np4_sohip-256x3-sc-ind.pg2" lnd_grid="r025">
+      <map name="ATM2LND_FMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-sc-ind-v1-pg2_to_r025_traave.20251006.nc</map>
+      <!-- <map name="ATM2LND_FMAPNAME_NONLINEAR">cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-sc-ind-v1-pg2_to_r025_trfvnp2.20251006.nc</map> -->
+      <map name="ATM2LND_SMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-sc-ind-v1-pg2_to_r025_trbilin.20251006.nc</map>
+      <map name="LND2ATM_FMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_r025_to_2025-sohip-256x3-sc-ind-v1-pg2_traave.20251006.nc</map>
+      <map name="LND2ATM_SMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_r025_to_2025-sohip-256x3-sc-ind-v1-pg2_traave.20251006.nc</map>
+    </gridmap>
+    <gridmap atm_grid="ne0np4_sohip-256x3-sc-ind.pg2" rof_grid="r025">
+      <map name="ATM2ROF_FMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-sc-ind-v1-pg2_to_r025_traave.20251006.nc</map>
+      <map name="ATM2ROF_SMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-sc-ind-v1-pg2_to_r025_trbilin.20251006.nc</map>
+    </gridmap>
+    <!-- ******************************************************************* -->
+    <!-- 2025-sohip-256x3-sc-pac -->
+    <gridmap atm_grid="ne0np4_sohip-256x3-sc-pac.pg2" ocn_grid="RRSwISC6to18E3r5">
+      <map name="ATM2OCN_FMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-sc-pac-v1-pg2_to_RRSwISC6to18E3r5_traave.20251006.nc</map>
+      <map name="ATM2OCN_VMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-sc-pac-v1-pg2_to_RRSwISC6to18E3r5_trbilin.20251006.nc</map>
+      <map name="ATM2OCN_SMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-sc-pac-v1-pg2_to_RRSwISC6to18E3r5_trbilin.20251006.nc</map>
+      <map name="OCN2ATM_FMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_RRSwISC6to18E3r5_to_2025-sohip-256x3-sc-pac-v1-pg2_traave.20251006.nc</map>
+      <map name="OCN2ATM_SMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_RRSwISC6to18E3r5_to_2025-sohip-256x3-sc-pac-v1-pg2_traave.20251006.nc</map>
+      <!-- <map name="ATM2ICE_FMAPNAME_NONLINEAR">cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-sc-pac-v1-pg2_to_RRSwISC6to18E3r5_trfvnp2.20251006.nc</map> -->
+      <!-- <map name="ATM2OCN_FMAPNAME_NONLINEAR">cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-sc-pac-v1-pg2_to_RRSwISC6to18E3r5_trfvnp2.20251006.nc</map> -->
+    </gridmap>
+    <gridmap atm_grid="ne0np4_sohip-256x3-sc-pac.pg2" lnd_grid="r025">
+      <map name="ATM2LND_FMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-sc-pac-v1-pg2_to_r025_traave.20251006.nc</map>
+      <!-- <map name="ATM2LND_FMAPNAME_NONLINEAR">cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-sc-pac-v1-pg2_to_r025_trfvnp2.20251006.nc</map> -->
+      <map name="ATM2LND_SMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-sc-pac-v1-pg2_to_r025_trbilin.20251006.nc</map>
+      <map name="LND2ATM_FMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_r025_to_2025-sohip-256x3-sc-pac-v1-pg2_traave.20251006.nc</map>
+      <map name="LND2ATM_SMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_r025_to_2025-sohip-256x3-sc-pac-v1-pg2_traave.20251006.nc</map>
+    </gridmap>
+    <gridmap atm_grid="ne0np4_sohip-256x3-sc-pac.pg2" rof_grid="r025">
+      <map name="ATM2ROF_FMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-sc-pac-v1-pg2_to_r025_traave.20251006.nc</map>
+      <map name="ATM2ROF_SMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-sc-pac-v1-pg2_to_r025_trbilin.20251006.nc</map>
+    </gridmap>
+    <!-- ******************************************************************* -->
+    <!-- 2025-sohip-256x3-se-pac -->
+    <gridmap atm_grid="ne0np4_sohip-256x3-se-pac.pg2" ocn_grid="RRSwISC6to18E3r5">
+      <map name="ATM2OCN_FMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-se-pac-v1-pg2_to_RRSwISC6to18E3r5_traave.20251006.nc</map>
+      <map name="ATM2OCN_VMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-se-pac_to_RRSwISC6to18E3r5_trbilin.20251006.nc</map>
+      <map name="ATM2OCN_SMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-se-pac_to_RRSwISC6to18E3r5_trbilin.20251006.nc</map>
+      <map name="OCN2ATM_FMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_RRSwISC6to18E3r5_to_2025-sohip-256x3-se-pac_traave.20251006.nc</map>
+      <map name="OCN2ATM_SMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_RRSwISC6to18E3r5_to_2025-sohip-256x3-se-pac_traave.20251006.nc</map>
+      <!-- <map name="ATM2ICE_FMAPNAME_NONLINEAR">cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-se-pac_to_RRSwISC6to18E3r5_trfvnp2.20251006.nc</map> -->
+      <!-- <map name="ATM2OCN_FMAPNAME_NONLINEAR">cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-se-pac_to_RRSwISC6to18E3r5_trfvnp2.20251006.nc</map> -->
+    </gridmap>
+    <gridmap atm_grid="ne0np4_sohip-256x3-se-pac.pg2" lnd_grid="r025">
+      <map name="ATM2LND_FMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-se-pac_to_r025_traave.20251006.nc</map>
+      <!-- <map name="ATM2LND_FMAPNAME_NONLINEAR">cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-se-pac_to_r025_trfvnp2.20251006.nc</map> -->
+      <map name="ATM2LND_SMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-se-pac_to_r025_trbilin.20251006.nc</map>
+      <map name="LND2ATM_FMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_r025_to_2025-sohip-256x3-se-pac_traave.20251006.nc</map>
+      <map name="LND2ATM_SMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_r025_to_2025-sohip-256x3-se-pac_traave.20251006.nc</map>
+    </gridmap>
+    <gridmap atm_grid="ne0np4_sohip-256x3-se-pac.pg2" rof_grid="r025">
+      <map name="ATM2ROF_FMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-se-pac_to_r025_traave.20251006.nc</map>
+      <map name="ATM2ROF_SMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-se-pac_to_r025_trbilin.20251006.nc</map>
+    </gridmap>
+    <!-- ******************************************************************* -->
+    <!-- 2025-sohip-256x3-sw-ind -->
+    <gridmap atm_grid="ne0np4_sohip-256x3-sw-ind.pg2" ocn_grid="RRSwISC6to18E3r5">
+      <map name="ATM2OCN_FMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-sw-ind-v1-pg2_to_RRSwISC6to18E3r5_traave.20251006.nc</map>
+      <map name="ATM2OCN_VMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-sw-ind-v1-pg2_to_RRSwISC6to18E3r5_trbilin.20251006.nc</map>
+      <map name="ATM2OCN_SMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-sw-ind-v1-pg2_to_RRSwISC6to18E3r5_trbilin.20251006.nc</map>
+      <map name="OCN2ATM_FMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_RRSwISC6to18E3r5_to_2025-sohip-256x3-sw-ind-v1-pg2_traave.20251006.nc</map>
+      <map name="OCN2ATM_SMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_RRSwISC6to18E3r5_to_2025-sohip-256x3-sw-ind-v1-pg2_traave.20251006.nc</map>
+      <!-- <map name="ATM2ICE_FMAPNAME_NONLINEAR">cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-sw-ind-v1-pg2_to_RRSwISC6to18E3r5_trfvnp2.20251006.nc</map> -->
+      <!-- <map name="ATM2OCN_FMAPNAME_NONLINEAR">cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-sw-ind-v1-pg2_to_RRSwISC6to18E3r5_trfvnp2.20251006.nc</map> -->
+    </gridmap>
+    <gridmap atm_grid="ne0np4_sohip-256x3-sw-ind.pg2" lnd_grid="r025">
+      <map name="ATM2LND_FMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-sw-ind-v1-pg2_to_r025_traave.20251006.nc</map>
+      <!-- <map name="ATM2LND_FMAPNAME_NONLINEAR">cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-sw-ind-v1-pg2_to_r025_trfvnp2.20251006.nc</map> -->
+      <map name="ATM2LND_SMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-sw-ind-v1-pg2_to_r025_trbilin.20251006.nc</map>
+      <map name="LND2ATM_FMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_r025_to_2025-sohip-256x3-sw-ind-v1-pg2_traave.20251006.nc</map>
+      <map name="LND2ATM_SMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_r025_to_2025-sohip-256x3-sw-ind-v1-pg2_traave.20251006.nc</map>
+    </gridmap>
+    <gridmap atm_grid="ne0np4_sohip-256x3-sw-ind.pg2" rof_grid="r025">
+      <map name="ATM2ROF_FMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-sw-ind-v1-pg2_to_r025_traave.20251006.nc</map>
+      <map name="ATM2ROF_SMAPNAME"          >cpl/gridmaps/2025-SOHIP/map_2025-sohip-256x3-sw-ind-v1-pg2_to_r025_trbilin.20251006.nc</map>
+    </gridmap>
+    <!-- ******************************************************************* -->
+    <!-- ******************************************************************* -->
+
+
 
     <gridmap atm_grid="T62" ocn_grid="gx3v7">
       <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/T62/map_T62_TO_gx3v7_aave.130322.nc</map>

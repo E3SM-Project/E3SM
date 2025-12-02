@@ -483,6 +483,16 @@ be lost if SCREAM_HACK_XML is not enabled.
       <spa_remap_file hgrid="ne0np4_CAx32v1">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_CAx32v1pg2_intbilin_se2fv_20230420.nc</spa_remap_file>
       <spa_remap_file COMPSET=".*DP-EAMxx">none</spa_remap_file>
 
+      <!-- ******************************************************************* -->
+      <!-- 2025 SOHIP -->
+      <spa_remap_file hgrid="ne0np4_sohip-256x3-eq-ind">/global/cfs/cdirs/m4842/whannah/files_map/map_ne30np4_to_2025-sohip-256x3-ptgnia-v1-pg2_intbilin_se2fv.20251006.nc</spa_remap_file>
+      <spa_remap_file hgrid="ne0np4_sohip-256x3-ptgnia">/global/cfs/cdirs/m4842/whannah/files_map/map_ne30np4_to_2025-sohip-256x3-ptgnia-v1-pg2_intbilin_se2fv.20251006.nc</spa_remap_file>
+      <spa_remap_file hgrid="ne0np4_sohip-256x3-sc-ind">/global/cfs/cdirs/m4842/whannah/files_map/map_ne30np4_to_2025-sohip-256x3-ptgnia-v1-pg2_intbilin_se2fv.20251006.nc</spa_remap_file>
+      <spa_remap_file hgrid="ne0np4_sohip-256x3-sc-pac">/global/cfs/cdirs/m4842/whannah/files_map/map_ne30np4_to_2025-sohip-256x3-ptgnia-v1-pg2_intbilin_se2fv.20251006.nc</spa_remap_file>
+      <spa_remap_file hgrid="ne0np4_sohip-256x3-se-pac">/global/cfs/cdirs/m4842/whannah/files_map/map_ne30np4_to_2025-sohip-256x3-ptgnia-v1-pg2_intbilin_se2fv.20251006.nc</spa_remap_file>
+      <spa_remap_file hgrid="ne0np4_sohip-256x3-sw-ind">/global/cfs/cdirs/m4842/whannah/files_map/map_ne30np4_to_2025-sohip-256x3-ptgnia-v1-pg2_intbilin_se2fv.20251006.nc</spa_remap_file>
+      <!-- ******************************************************************* -->
+
       <spa_data_file type="file" doc="File containing aerosol data. Must be on same grid as the atm, or a coarser one">none</spa_data_file>
       <spa_data_file hgrid="ne.*np4">${DIN_LOC_ROOT}/atm/scream/init/spa_file_unified_and_complete_ne30_20220428.nc</spa_data_file>
       <spa_data_file hgrid="ne.*np4.pg2">${DIN_LOC_ROOT}/atm/scream/init/spa_file_unified_and_complete_ne30pg2_20240111.nc</spa_data_file>
@@ -541,6 +551,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <rad_frequency hgrid="ne0np4_CAx32v1">3</rad_frequency>
       <rad_frequency COMPSET=".*DP-EAMxx">3</rad_frequency>
       <rad_frequency hgrid="ne0np4_conus_x4v1_lowcon">4</rad_frequency>
+      <rad_frequency hgrid="ne0np4_sohip-256x3*">3</rad_frequency>
       <do_aerosol_rad type="logical" doc="Flag to turn on/off considering aerosols in radiation calculations">true</do_aerosol_rad>
       <do_aerosol_rad COMPSET=".*SCREAM.*noAero">false</do_aerosol_rad>
       <enable_column_conservation_checks type="logical">false</enable_column_conservation_checks>
@@ -577,6 +588,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <number_of_subcycles hgrid="ne0np4_CAx32v1">1</number_of_subcycles>
       <number_of_subcycles COMPSET=".*DP-EAMxx">1</number_of_subcycles>
       <number_of_subcycles hgrid="ne0np4_conus_x4v1_lowcon">5</number_of_subcycles>
+      <number_of_subcycles hgrid="ne0np4_sohip-256x3*">1</number_of_subcycles>
     </mac_aero_mic>
 
     <cosp inherit="atm_proc_base">
@@ -650,6 +662,16 @@ be lost if SCREAM_HACK_XML is not enabled.
     <phis COMPSET=".*SCREAM%AQUA.*">0.0</phis>
     <!-- CA RRM grid -->
     <topography_filename hgrid="ne0np4_CAx32v1">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_CA_ne32_x32_v1_pg2_16xdel2.nc</topography_filename>
+
+    <!-- ******************************************************************* -->
+    <!-- 2025 SOHIP -->
+    <topography_filename hgrid="ne0np4_sohip-256x3-eq-ind">/global/cfs/cdirs/m4842/whannah/files_topo/USGS-topo_2025-sohip-256x3-eq-ind-v1-np4_smoothedx6t_20251006.nc</topography_filename>
+    <topography_filename hgrid="ne0np4_sohip-256x3-ptgnia">/global/cfs/cdirs/m4842/whannah/files_topo/USGS-topo_2025-sohip-256x3-ptgnia-v1-np4_smoothedx6t_20251006.nc</topography_filename>
+    <topography_filename hgrid="ne0np4_sohip-256x3-sc-ind">/global/cfs/cdirs/m4842/whannah/files_topo/USGS-topo_2025-sohip-256x3-sc-ind-v1-np4_smoothedx6t_20251006.nc</topography_filename>
+    <topography_filename hgrid="ne0np4_sohip-256x3-sc-pac">/global/cfs/cdirs/m4842/whannah/files_topo/USGS-topo_2025-sohip-256x3-sc-pac-v1-np4_smoothedx6t_20251006.nc</topography_filename>
+    <topography_filename hgrid="ne0np4_sohip-256x3-se-pac">/global/cfs/cdirs/m4842/whannah/files_topo/USGS-topo_2025-sohip-256x3-se-pac-v1-np4_smoothedx6t_20251006.nc</topography_filename>
+    <topography_filename hgrid="ne0np4_sohip-256x3-sw-ind">/global/cfs/cdirs/m4842/whannah/files_topo/USGS-topo_2025-sohip-256x3-sw-ind-v1-np4_smoothedx6t_20251006.nc</topography_filename>
+    <!-- ******************************************************************* -->
 
     <!-- Fields that we need to initialize, but are not in an initial condition file need to be inited here -->
     <surf_evap>0.0</surf_evap> <!-- TODO, Delete this when the IC fixes come in -->
@@ -725,6 +747,8 @@ be lost if SCREAM_HACK_XML is not enabled.
     <qi hgrid="ne256np4|ne512np4|ne1024np4">0.0</qi>
     <nc hgrid="ne256np4|ne512np4|ne1024np4|ne0np4_CAx32v1">0.0</nc>
     <ni hgrid="ne256np4|ne512np4|ne1024np4|ne0np4_CAx32v1">0.0</ni>
+    <nc hgrid="ne0np4_sohip-256x3*">0.0</nc>
+    <ni hgrid="ne0np4_sohip-256x3*">0.0</ni>
     <o3_volume_mix_ratio hgrid="ne0np4_conus_x4v1_lowcon">0.0</o3_volume_mix_ratio>
 
     <!-- Information about perturbed fields-->
@@ -902,6 +926,33 @@ be lost if SCREAM_HACK_XML is not enabled.
     <mesh_file type="file">none</mesh_file>
     <mesh_file hgrid="ne0np4_conus_x4v1_lowcon">${DIN_LOC_ROOT}/atm/cam/inic/homme/conusx4v1.g</mesh_file>
     <mesh_file hgrid="ne0np4_CAx32v1">${DIN_LOC_ROOT}/atm/cam/inic/homme/CA_ne32_x32_v1.g</mesh_file>
+
+    <!-- ******************************************************************* -->
+    <!-- 2025 SOHIP -->
+    <se_ne     hgrid="ne0np4_sohip-256x3*">0</se_ne>
+    <!-- <se_tstep  hgrid="ne0np4_sohip-256x3*" constraints="gt 0">4.1666666666</se_tstep> -->
+    <!-- settings for 60 sec physics time step -->
+    <se_tstep                          hgrid="ne0np4_sohip-256x3*" constraints="gt 0">7.5</se_tstep>
+    <dt_remap_factor                   hgrid="ne0np4_sohip-256x3*">2</dt_remap_factor>
+    <dt_tracer_factor                  hgrid="ne0np4_sohip-256x3*">8</dt_tracer_factor>
+    <hypervis_subcycle_q               hgrid="ne0np4_sohip-256x3*">8</hypervis_subcycle_q>
+    <semi_lagrange_trajectory_nsubstep hgrid="ne0np4_sohip-256x3*">2</semi_lagrange_trajectory_nsubstep>
+    <!-- settings for 30 sec physics time step -->
+    <se_tstep                          hgrid="ne0np4_sohip-256x3*" constraints="gt 0">3.75</se_tstep>
+    <dt_remap_factor                   hgrid="ne0np4_sohip-256x3*">2</dt_remap_factor>
+    <dt_tracer_factor                  hgrid="ne0np4_sohip-256x3*">8</dt_tracer_factor>
+    <hypervis_subcycle_q               hgrid="ne0np4_sohip-256x3*">8</hypervis_subcycle_q>
+    <semi_lagrange_trajectory_nsubstep hgrid="ne0np4_sohip-256x3*">2</semi_lagrange_trajectory_nsubstep>
+    <!-- other stuff -->
+    <nu_top    hgrid="ne0np4_sohip-256x3*">1.0e4</nu_top>
+    <mesh_file hgrid="ne0np4_sohip-256x3-eq-ind">/global/cfs/cdirs/m4842/whannah/files_grid/2025-sohip-256x3-eq-ind-v1.g</mesh_file>
+    <mesh_file hgrid="ne0np4_sohip-256x3-ptgnia">/global/cfs/cdirs/m4842/whannah/files_grid/2025-sohip-256x3-ptgnia-v1.g</mesh_file>
+    <mesh_file hgrid="ne0np4_sohip-256x3-sc-ind">/global/cfs/cdirs/m4842/whannah/files_grid/2025-sohip-256x3-sc-ind-v1.g</mesh_file>
+    <mesh_file hgrid="ne0np4_sohip-256x3-sc-pac">/global/cfs/cdirs/m4842/whannah/files_grid/2025-sohip-256x3-sc-pac-v1.g</mesh_file>
+    <mesh_file hgrid="ne0np4_sohip-256x3-se-pac">/global/cfs/cdirs/m4842/whannah/files_grid/2025-sohip-256x3-se-pac-v1.g</mesh_file>
+    <mesh_file hgrid="ne0np4_sohip-256x3-sw-ind">/global/cfs/cdirs/m4842/whannah/files_grid/2025-sohip-256x3-sw-ind-v1.g</mesh_file>
+    <!-- ******************************************************************* -->
+
   </ctl_nl>
 
 </namelist_defaults>

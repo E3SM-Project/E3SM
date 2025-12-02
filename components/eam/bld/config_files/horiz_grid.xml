@@ -83,4 +83,13 @@
 <horiz_grid dyn="se" hgrid="ne0np4_twpx4v1"                   ncol="81434"  csne="0" csnp="4" npg="0" />
 <horiz_grid dyn="se" hgrid="ne0np4_sooberingoa_x4x8v1_lowcon" ncol="105707" csne="0" csnp="4" npg="0" />
 
+<!-- 2025 SOHIP grids -->
+<horiz_grid dyn="se" hgrid="ne0np4_256x3-eq-ind" ncol="3205680" csne="0" csnp="4" npg="0" />
+<horiz_grid dyn="se" hgrid="ne0np4_256x3-ptgnia" ncol="2540976" csne="0" csnp="4" npg="0" />
+<horiz_grid dyn="se" hgrid="ne0np4_256x3-sc-ind" ncol="2670144" csne="0" csnp="4" npg="0" />
+<horiz_grid dyn="se" hgrid="ne0np4_256x3-sc-pac" ncol="3011616" csne="0" csnp="4" npg="0" />
+<horiz_grid dyn="se" hgrid="ne0np4_256x3-se-pac" ncol="2670144" csne="0" csnp="4" npg="0" />
+<horiz_grid dyn="se" hgrid="ne0np4_256x3-sw-ind" ncol="2670144" csne="0" csnp="4" npg="0" />
+
+
 </config_horiz_grid>
