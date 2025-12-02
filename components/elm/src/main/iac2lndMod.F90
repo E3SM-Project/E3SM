@@ -152,7 +152,7 @@ contains
           ! transient
           ! Patches combined with create_crop_landunit anyway, so it's a moot
           ! point.)
-          if (lun_pp%itype(l) == istsoil) then
+          if (veg_pp%is_on_soil_col(p)) then
              ! interpolate between the yearly data; from dynvartimeinterp
              ! Note that the following assignment assumes that all Patches share a
              ! single column
