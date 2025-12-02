@@ -460,7 +460,7 @@
   <grid name="a%ne30np4.pg2_l%.+_g%mpas.gis1to10kmR2">
     <mach name="pm-cpu|muller-cpu|alvarez-cpu">
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+MALI.+SWAV.+" pesize="M">
-        <comment>pm-cpu: GIS 1-to-10km (high-res) baseline config</comment>
+        <comment>pm-cpu: IG-case testing config. using 1-to-10km (high-res) GIS init. cond.</comment>
         <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
         <ntasks>
@@ -497,7 +497,7 @@
     </mach>
     <mach name="chrysalis">
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+MALI.+SWAV.+" pesize="M">
-        <comment>GIS 1-to-10km (high-res) baseline config</comment>
+        <comment>chrysalis: IG-case testing config. using 1-to-10km (high-res) GIS init. cond.</comment>
         <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
         <ntasks>

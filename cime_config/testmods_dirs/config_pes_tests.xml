@@ -357,7 +357,7 @@
   <grid name="a%ne30np4.pg2_l%r05_oi%IcoswISC30E3r5_r%r05_g%mpas.gis4to40km_w%null_z%null_m%IcoswISC30E3r5">
     <mach name="chrysalis">
       <pes compset="1850_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_MALI_SWAV" pesize="any">
-        <comment>GIS 4to40km (low-res) testing config</comment>
+        <comment>chrysalis: BG-case testing config. using 4-to-40km (low-res) GIS init. cond.</comment>
         <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
         <ntasks>
@@ -366,7 +366,7 @@
           <ntasks_rof>512</ntasks_rof>
           <ntasks_ice>512</ntasks_ice>
           <ntasks_ocn>512</ntasks_ocn>
-          <ntasks_glc>256</ntasks_glc>
+          <ntasks_glc>512</ntasks_glc>
           <ntasks_wav>512</ntasks_wav>
           <ntasks_cpl>512</ntasks_cpl>
         </ntasks>
@@ -393,7 +393,7 @@
     </mach>
     <mach name="pm-cpu|muller-cpu|alvarez-cpu">
       <pes compset="1850_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_MALI_SWAV" pesize="any">
-        <comment>GIS 4to40km (low-res) testing config</comment>
+        <comment>pm-cpu: BG-case testing config. using 4-to-40km (low-res) GIS init. cond.</comment>
         <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
         <ntasks>
@@ -402,7 +402,7 @@
           <ntasks_rof>512</ntasks_rof>
           <ntasks_ice>512</ntasks_ice>
           <ntasks_ocn>512</ntasks_ocn>
-          <ntasks_glc>256</ntasks_glc>
+          <ntasks_glc>512</ntasks_glc>
           <ntasks_wav>512</ntasks_wav>
           <ntasks_cpl>512</ntasks_cpl>
         </ntasks>

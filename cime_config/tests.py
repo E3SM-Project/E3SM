@@ -148,7 +148,7 @@ _TESTS = {
             "ERS_Ld3.ne30pg2_r05_IcoswISC30E3r5_gis4to40.IGELM_MLI.mali-landiceIG",
             "SMS.ne30pg2_r05_IcoswISC30E3r5_gis4to40.BGWCYCL1850.allactive-landiceBG",
             "ERS_Ld3.ne30pg2_r05_IcoswISC30E3r5_gis4to40.BGWCYCL1850.allactive-landiceBG",
-            "SMS.ne30_oECv3_gis.IGELM_MLI.elm-extrasnowlayers",
+            "SMS.ne30pg2_r05_IcoswISC30E3r5_gis4to40.IGELM_MLI.elm-extrasnowlayers",
             "ERS_Ld5.TL319_oQU240wLI_gis4to40.MPAS_FOLISIO_JRA1p5.mpaso-jra_1958",
             "ERS_Ld5.TL319_oQU240wLI_ais8to30.MPAS_FOLISIO_JRA1p5.mpaso-jra_1958",
             )
