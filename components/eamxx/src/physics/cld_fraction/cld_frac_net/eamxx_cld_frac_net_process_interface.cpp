@@ -1,6 +1,9 @@
 #include "eamxx_cld_frac_net_process_interface.hpp"
 
 #include "share/atm_process/atmosphere_process_pyhelpers.hpp"
+#include "cld_frac_net.hpp"
+
+#include <ekat_team_policy_utils.hpp>
 
 namespace scream
 {
@@ -8,9 +11,12 @@ namespace scream
 CldFracNet::CldFracNet (const ekat::Comm& comm, const ekat::ParameterList& params)
   : AtmosphereProcess(comm, params)
 {
-  EKAT_REQUIRE_MSG( has_py_module(),
-      "[CldFracNet] Error! Something went wrong while initializing the python module.\n");
-  // Nothing to do here
+  if (m_params.get<std::string>("emulator")=="lapis") {
+    lapis_initialize();
+  } else {
+    EKAT_REQUIRE_MSG( has_py_module(),
+        "[CldFracNet] Error! Something went wrong while initializing the python module.\n");
+  }
 }
 
 void CldFracNet::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
@@ -33,7 +39,9 @@ void CldFracNet::set_grids(const std::shared_ptr<const GridsManager> grids_manag
 
 void CldFracNet::initialize_impl (const RunType /* run_type */)
 {
-  py_module_call("init");
+  if (m_params.get<std::string>("emulator")!="lapis") {
+    py_module_call("init");
+  }
 }
 
 void CldFracNet::run_impl (const double /* dt */)
@@ -45,21 +53,62 @@ void CldFracNet::run_impl (const double /* dt */)
   auto ice = get_field_out("cldfrac_ice");
   auto tot = get_field_out("cldfrac_tot");
 
+  if (m_params.get<std::string>("emulator")=="lapis") {
+    // LAPIS-generated emulator is compiled in and was requested. Use it
+    using KT = KokkosTypes<DefaultDevice>;
+    using ExeSpace = typename KT::ExeSpace;
+    using TPF = ekat::TeamPolicyFactory<ExeSpace>;
+    using MemberType = typename KT::MemberType;
+
+    const auto dims = qi.get_header().get_identifier().get_layout().dims();
+    auto policy = TPF::get_default_team_policy(dims[0], dims[1]);
+
+    auto qi_v  = qi.get_view<const Real**>();
+    auto liq_v = liq.get_view<const Real**>();
+    auto ice_v = ice.get_view<Real**>();
+    auto tot_v = tot.get_view<Real**>();
+
+    constexpr int max_shared = 4096;
+    // This is a number that fits within all modern
+    // Determine L0 and L1 per-team scratch size
+    constexpr int scratch0_required = forward_L0_scratch_required(max_shared);
+    constexpr int scratch1_required = forward_L1_scratch_required(max_shared);
+    GlobalViews_forward globalViews;
+    policy.set_scratch_size(0, Kokkos::PerTeam(scratch0_required));
+    policy.set_scratch_size(1, Kokkos::PerTeam(scratch1_required));
+
+    // Execute the appropriate specialization based on shared amount
+    auto lambda = KOKKOS_LAMBDA (const MemberType& team) {
+      int icol = team.league_rank();
+      auto qi_col = ekat::subview(qi_v,icol);
+      auto liq_col = ekat::subview(liq_v,icol);
+      auto ice_col = ekat::subview(ice_v,icol);
+      auto tot_col = ekat::subview(tot_v,icol);
+
+      char* scratch0 = (char*)(team.team_scratch(0).get_shmem(scratch0_required));
+      char* scratch1 = (char*)(team.team_scratch(1).get_shmem(scratch1_required));
+
+      forward<ExeSpace, max_shared>(team, globalViews, ice_col, tot_col, qi_col, liq_col, scratch0, scratch1);
+    };
+
+    Kokkos::parallel_for(policy,lambda);
   } else {
-  auto py_qi  = get_py_field_dev("qi");
-  auto py_liq = get_py_field_dev("cldfrac_liq");
-  auto py_ice = get_py_field_dev("cldfrac_ice");
-  auto py_tot = get_py_field_dev("cldfrac_tot");
+    auto py_qi  = get_py_field_dev("qi");
+    auto py_liq = get_py_field_dev("cldfrac_liq");
+    auto py_ice = get_py_field_dev("cldfrac_ice");
+    auto py_tot = get_py_field_dev("cldfrac_tot");
 
-  double ice_threshold = m_params.get<double>("ice_cloud_threshold");
+    double ice_threshold = m_params.get<double>("ice_cloud_threshold");
 
-  py_module_call("forward",ice_threshold,py_qi,py_liq,py_ice,py_tot);
+    py_module_call("forward",ice_threshold,py_qi,py_liq,py_ice,py_tot);
   }
 }
 
 void CldFracNet::finalize_impl()
 {
-  // Nothing to do here
+  if (m_params.get<std::string>("emulator")=="lapis") {
+    lapis_finalize();
+  }
 }
 
 } // namespace scream

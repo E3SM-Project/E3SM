@@ -1,6 +1,7 @@
 if (EAMXX_ENABLE_PYTHON)
-  # Process wrapping ML emulator via python hooks
+  # Process wrapping ML emulator (either via python or LAPIS-generated c++ code)
   add_library(cld_frac_net
+    cld_frac_net.cpp
     eamxx_cld_frac_net_process_interface.cpp
   )
   target_compile_definitions(cld_frac_net PUBLIC EAMXX_HAS_CLD_FRAC_NET)
