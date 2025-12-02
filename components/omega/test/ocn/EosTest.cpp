@@ -57,6 +57,7 @@ const Real P  = 1000.0; // Pressure in dbar
 
 const I4 KDisp  = 1;     // Displate parcel to K=1 for TEOS-10 eos
 const Real RTol = 1e-10; // Relative tolerance for isApprox checks
+double PaToDBar = 1e-4;  // Conversion factor from Pa to dbar
 
 /// The initialization routine for Eos testing. It calls various
 /// init routines, including the creation of the default decomposition.
@@ -119,7 +120,7 @@ void testEosLinear() {
    /// Use Kokkos::deep_copy to fill the entire view with the ref value
    deepCopy(SArray, Sa);
    deepCopy(TArray, Ct);
-   deepCopy(PArray, P);
+   deepCopy(PArray, P / PaToDBar);
    deepCopy(TestEos->SpecVol, 0.0);
 
    /// Compute specific volume
@@ -189,7 +190,7 @@ void testEosLinearDisplaced() {
    /// Use Kokkos::deep_copy to fill the entire view with the ref value
    deepCopy(SArray, Sa);
    deepCopy(TArray, Ct);
-   deepCopy(PArray, P);
+   deepCopy(PArray, P / PaToDBar);
    deepCopy(TestEos->SpecVolDisplaced, 0.0);
 
    /// Compute displaced specific volume
@@ -384,7 +385,7 @@ void testEosTeos10() {
    /// Use Kokkos::deep_copy to fill the entire view with the ref value
    deepCopy(SArray, Sa);
    deepCopy(TArray, Ct);
-   deepCopy(PArray, P);
+   deepCopy(PArray, P / PaToDBar);
    deepCopy(TestEos->SpecVol, 0.0);
 
    /// Compute specific volume
@@ -454,7 +455,7 @@ void testEosTeos10Displaced() {
    /// Use Kokkos::deep_copy to fill the entire view with the ref value
    deepCopy(SArray, Sa);
    deepCopy(TArray, Ct);
-   deepCopy(PArray, P);
+   deepCopy(PArray, P / PaToDBar);
    deepCopy(TestEos->SpecVolDisplaced, 0.0);
 
    /// Compute displaced specific volume
