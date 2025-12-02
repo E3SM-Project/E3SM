@@ -1999,6 +1999,7 @@ contains
                                   atmosphericCO2Field, atmosphericCO2_ALT_CO2Field,  &
                                   dust_FLUX_WETField, &
                                   dust_FLUX_DRYField, &
+                                  dust_FLUX_INField, &
                                   iceFluxDICField, &
                                   iceFluxDONField, &
                                   iceFluxNO3Field, &
@@ -2052,6 +2053,7 @@ contains
                                                windSpeedSquared10mCFC, &
                                                dust_FLUX_WET, &
                                                dust_FLUX_DRY, &
+                                               dust_FLUX_IN, &
                                                iceFluxDIC,       &
                                                iceFluxDON, &
                                                iceFluxNO3, &
@@ -2274,6 +2276,7 @@ contains
             if (config_use_ecosysTracers_atm_dust_from_coupler) then
               call mpas_pool_get_field(ecosysAuxiliary, 'dust_FLUX_WET' , dust_FLUX_WETField)
               call mpas_pool_get_field(ecosysAuxiliary, 'dust_FLUX_DRY' , dust_FLUX_DRYField)
+              call mpas_pool_get_field(ecosysAuxiliary, 'dust_FLUX_IN' , dust_FLUX_INField)
             endif
 
             iceFluxPhytoC => iceFluxPhytoCField % array
@@ -2291,6 +2294,7 @@ contains
             if (config_use_ecosysTracers_atm_dust_from_coupler) then
               dust_FLUX_WET => dust_FLUX_WETField % array
               dust_FLUX_DRY => dust_FLUX_DRYField % array
+              dust_FLUX_IN => dust_FLUX_INField % array
             endif
 
          endif
@@ -2569,6 +2573,10 @@ contains
                                     + x2o_o % rAttr(index_x2o_Faxa_dstdry4, n) ) &
                                   * (1.0_RKIND - landIceFraction(i))
               endif
+
+              if ( config_use_ecosysTracers_atm_dust_from_coupler .and. dust_FLUX_INField % isActive ) then
+                 dust_FLUX_IN(i) = dust_FLUX_WET(i) + dust_FLUX_DRY(i)
+              endif
               if ( iceFluxDOCField % isActive ) then
                  iceFluxDOC(1,i) = x2o_o % rAttr(index_x2o_Fioi_doc1, n)
                  iceFluxDOC(2,i) = x2o_o % rAttr(index_x2o_Fioi_doc2, n)
@@ -2678,6 +2686,7 @@ contains
             if (config_use_ecosysTracers_atm_dust_from_coupler) then
               call mpas_pool_get_field(ecosysAuxiliary, 'dust_FLUX_WET'  , dust_FLUX_WETField)
               call mpas_pool_get_field(ecosysAuxiliary, 'dust_FLUX_DRY'  , dust_FLUX_DRYField)
+              call mpas_pool_get_field(ecosysAuxiliary, 'dust_FLUX_IN'  , dust_FLUX_INField)
             endif
       endif
    endif
@@ -2866,6 +2875,9 @@ contains
          endif
          if ( config_use_ecosysTracers_atm_dust_from_coupler .and. dust_FLUX_DRYField % isActive ) then
             call mpas_dmpar_exch_halo_field(dust_FLUX_DRYField)
+         endif
+         if ( config_use_ecosysTracers_atm_dust_from_coupler .and. dust_FLUX_INField % isActive ) then
+            call mpas_dmpar_exch_halo_field(dust_FLUX_INField)
          endif
          if ( iceFluxDOCField % isActive ) then
             call mpas_dmpar_exch_halo_field(iceFluxDOCField)

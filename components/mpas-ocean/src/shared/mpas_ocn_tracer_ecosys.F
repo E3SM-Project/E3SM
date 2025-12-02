@@ -957,6 +957,7 @@ contains
 
          marbl_instances(1)%domain%kmt = maxLevelCell(iCell)
          marbl_instances(1)%interior_tendency_forcings(dustFlux_indexInMARBL)%field_0d(1)  = dust_FLUX_IN(iCell)
+
 ! NOTE shortwave has a second (subcolumn) index, so use field1d instead of field0d
 !  also we need to define the PAR column fraction (always 1 for now)
          marbl_instances(1)%interior_tendency_forcings(shortwave_indexInMARBL)%field_1d(1,1) = shortWaveHeatFlux(iCell)
@@ -1882,8 +1883,6 @@ contains
          if(config_use_ecosystracers_sea_ice_coupling) then
             IRON_FLUX_IN(iCell) = (1.0_RKIND - iceFraction(iCell))*IRON_FLUX_IN(iCell)  &
                                 + iceFluxFeDissolved(iCell)
-            dust_FLUX_IN(iCell) = (1.0_RKIND - iceFraction(iCell))*dust_FLUX_IN(iCell)  &
-                                + iceFluxDust(iCell)
          endif
 ! NOTE pass in total Fe and mult by parm_Fe_bioavail inside the flux routine
          marbl_instances(1)%surface_flux_forcings(ironFlux_indexInMARBL)%field_0d(iCell) = &
@@ -2733,6 +2732,7 @@ contains
         type (mpas_pool_type), pointer :: meshPool
         type (mpas_pool_type), pointer :: ecosysAuxiliary
         type (mpas_pool_type), pointer :: ecosysMonthlyForcing
+        type (mpas_pool_type), pointer :: ecosysSeaIceCoupling
 
         real (kind=RKIND), dimension(:), pointer :: &
          depositionFluxNO3,    &
@@ -2744,6 +2744,8 @@ contains
          IRON_Solubility_wet,  &
          IRON_Solubility_dry,  &
          IRON_in_dust_fraction,&
+         iceFluxDust,          &
+         iceFraction,          &
          riverFluxNO3,         &
          riverFluxPO4,         &
          riverFluxDON,         &
@@ -2830,6 +2832,11 @@ contains
           call mpas_pool_get_array(ecosysMonthlyForcing, 'dust_FLUZ_WET', dust_FLUZ_WET)
           call mpas_pool_get_array(ecosysMonthlyForcing, 'dust_FLUZ_DRY', dust_FLUZ_DRY)
         endif
+        if (config_use_ecosystracers_sea_ice_coupling) then
+         call mpas_pool_get_subpool(forcingPool, 'ecosysSeaIceCoupling', ecosysSeaIceCoupling)
+         call mpas_pool_get_array(forcingPool, 'iceFraction', iceFraction)
+         call mpas_pool_get_array(ecosysSeaIceCoupling, 'iceFluxDust', iceFluxDust)
+        endif
         if (.not. config_use_ecosysTracers_river_inputs_from_coupler) then
           call mpas_pool_get_array(ecosysMonthlyForcing, 'riverFluzNO3', riverFluzNO3)
           call mpas_pool_get_array(ecosysMonthlyForcing, 'riverFluzPO4', riverFluzPO4)
@@ -2854,15 +2861,18 @@ contains
              IRON_in_dust_fraction(iCell) = IRON_in_duzt_fraction(iCell)
 
 ! only use dust fluxes from file if not coming from the coupler
-             if (.not. config_use_ecosysTracers_atm_dust_from_coupler) then
+             if (.not. config_use_ecosysTracers_atm_dust_from_coupler .or. firstTimeStep) then
                dust_FLUX_WET(iCell) = dust_FLUZ_WET(iCell)
                dust_FLUX_DRY(iCell) = dust_FLUZ_DRY(iCell)
+               dust_FLUX_IN(iCell)  = dust_FLUX_WET(iCell) + dust_FLUX_DRY(iCell)
              endif
-
+             if (config_use_ecosystracers_sea_ice_coupling .and. .not. firstTimeStep) then
+               dust_FLUX_IN(iCell) = (1.0_RKIND - iceFraction(iCell))*dust_FLUX_IN(iCell)  &
+                                + iceFluxDust(iCell)
+             endif
              IRON_FLUX_IN(iCell)  = ( dust_FLUX_WET(iCell)*IRON_Solubility_wet(iCell)    &
                                     + dust_FLUX_DRY(iCell)*IRON_Solubility_dry(iCell) )  &
                                     * IRON_in_dust_fraction(iCell)*1.e6_RKIND/55.845_RKIND
-             dust_FLUX_IN(iCell)  = dust_FLUX_WET(iCell) + dust_FLUX_DRY(iCell)
            else
              IRON_FLUX_IN(iCell)   = IRON_FLUZ_IN(iCell)
              dust_FLUX_IN(iCell)   = dust_FLUZ_IN(iCell)
