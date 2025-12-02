@@ -711,7 +711,7 @@ $$
 = 0.
 $$ (discrete-mass)
 
-In this equation, mass source term ($Q$), such as sources like river runoff, sea ice freshwater fluxes, precipitation, and evaporation are bound up in the surface value of $\tilde{W}_tr^{\text{top}}$.  The mass sources will be normalized by $\rho_0$ to achieve consistent units.
+In this equation, mass source term ($Q$), such as sources like river runoff, sea ice freshwater fluxes, precipitation, and evaporation are bound up in the surface value of $\tilde{W}_{tr}^{\text{top}}$.  The mass sources will be normalized by $\rho_0$ to achieve consistent units.
 
 **Tracer:**
 
@@ -730,7 +730,7 @@ $$
 \frac{\partial u_{e,k}}{\partial t}
 & + \left[ {\bf k} \cdot \nabla \times u_{e,k} +f_v\right]_e\left(u_{e,k}^{\perp}\right) + \left[\nabla K\right]_e  \\
 & + \frac{\rho_0}{\left[\tilde{h}_{i,k}\right]_e} \left\{ \left[\left(u - u_k\right) \left\{\tilde{W}_{tr} \right\} \right]_{e,k}^\text{top} - \left[  \left(u - u_k\right) \left\{\tilde{W}_{tr} \right\} \right]_{e,k+1}^\text{top} \right\} \\
-& = - \left(\nabla \Phi \right)_{e,k} - \frac{1}{\left[\tilde{h}_k\right]_e} \nabla \left( \tilde{h}_k \alpha_k p_k \right) - \frac{1}{\left[\tilde{h}_k\right]_e} \left\{ \left[ \alpha p \nabla \tilde{z}^{\text{top}}\right]_{e,k}^\text{top} -  \left[ \alpha p \nabla \tilde{z}^{\text{bot}}\right]_{e,k+1}^\text{top} \right\} \\
+& = - \left(\nabla \Phi \right)_{e,k} - \frac{1}{\left[\tilde{h}_k\right]_e} \nabla \left( \tilde{h}_k \alpha_k p_k \right) - \frac{1}{\left[\tilde{h}_k\right]_e} \left\{ \left[ \alpha p \nabla \tilde{z}^{\text{top}}\right]_{e,k}^\text{top} -  \left[ \alpha p \nabla \tilde{z}^{\text{top}}\right]_{e,k+1}^\text{top} \right\} \\
 &  - \frac{1}{\left[\tilde{h}_{i,k}\right]_e} \nabla \cdot \left( \tilde{h}_k \left< {\bf u}^\prime \otimes {\bf u}^\prime \right>_k \right) - \frac{\rho_0}{\left[\tilde{h}_{i,k}\right]_e^\text{top}}  \left\{ \left[ \left<\mathbf{u}^\prime \tilde{w}_{tr}^\prime \right> - \left< \mathbf{u}^\prime \tilde{ u}^\prime \right> \right]_{e,k}^\text{top} - \left[ \left<\mathbf{u}^\prime \tilde{w}_{tr}^\prime \right> - \left< \mathbf{u}^\prime \tilde{ u}^\prime \right> \right]_{e,k+1}^\text{top} \right\}.
 $$ (discrete-momentum)
 
@@ -881,20 +881,20 @@ The discretized momentum and tracer forcing appear as the surface value of the v
 The wind forcing is applied as a top boundary condition during implicit vertical mixing as
 
 $$
-\frac{\tau_{e}}{[ \tilde{h}_{i,k}]_e}
+\frac{\tau_{e}}{\rho_0 [ \tilde{h}_{i,k}]_e}
 $$
 
-where $\tau$ is the wind stress in Pa. Since the mass-thickness $\tilde{h}$ is in kg/s/m$^2$, this results in the desired units of m/s$^2$ for a momentum tendency term.
+where $\tau$ is the wind stress in [Pa]. Since the pseudo-thickness $\tilde{h}$ is in [m], this results in the desired units of [m s$^{-2}$] for a momentum tendency term.
 
 #### Bottom Drag
 
 Bottom Drag is applied as a bottom boundary condition during implicit vertical mixing as
 
 $$
-- C_D \frac{u_{e,k}\left|u_{e,k}\right|}{[\alpha_{i,k}\tilde{h}_{i,k}]_e}.
+- C_D \frac{u_{e,k}\left|u_{e,k}\right|}{\rho_0[\alpha_{i,k}\tilde{h}_{i,k}]_e}.
 $$ (discrete-mom-bottom)
 
-The units of specific volume times mass-thickness $\alpha h$ are length (m), so that the full term has units of m/s$^2$.
+The units of the term in the denominator is length [m], so that the full term has units of [m s$^{-2}$].
 
 #### Rayleigh Drag
 
@@ -912,7 +912,7 @@ $$
 \frac{LHF}{C_p \rho_1}
 $$
 
-where $\rho_1$ is the density in the top layer of Omega. This gives units of mK/s.
+where $\rho_1$ is the density in the top layer of Omega. This gives units of [m K s$^-1$].
 
 #### Freshwater forcing
 
@@ -942,9 +942,9 @@ The biharmonic is a Laplacian operator applied twice,
 
 $$
  -  \nabla \cdot \left( \kappa_{4,e} \nabla
-\right[
+\left[
 \nabla \cdot \left( \tilde{h}_{i,k} \nabla \varphi_{i,k} \right)
-\left]
+\right]
  \right).
 $$ (discrete-tracer-del4)
 
@@ -1020,51 +1020,54 @@ Table 1. Definition of variables. Geometric variables may be found in the {ref}`
 
 | symbol  | name   | units    | location | name in code | notes  |
 |---------------------|-----------------------------|----------|-|---------|-------------------------------------------------------|
-|$D_{i,k}$   | divergence | 1/s      | cell | Divergence  |$D=\nabla\cdot\bf u$ |
-|$f_v$       | Coriolis parameter| 1/s      | vertex   | FVertex  |  $f = 2\Omega sin(\phi)$, $\Omega$ rotation rate, $\phi$ latitude|
+|$D_{i,k}$   | divergence | s$^{-1}$      | cell | Divergence  |$D=\nabla\cdot\bf u$ |
+|$f_v$       | Coriolis parameter| s$^{-1}$      | vertex   | FVertex  |  $f = 2\Omega sin(\phi)$, $\Omega$ rotation rate, $\phi$ latitude|
 |$f_{eos}$ | equation of state | -  | any | function call | |
-|$g$ | gravitational acceleration | m/s$^2$ | constant  | Gravity |
-|$\tilde{h}_{i,k}$ | pseudo-thickness | m | cell | PseudoThickness |  |
+|$g$ | gravitational acceleration | m s$^{-2}$ | constant  | Gravity |
+|$\tilde{h}_{i,k}$ | pseudo-thickness | m | cell | PseudoThickness | $\tilde{h} = (\rho/\rho_0) h$ |
+|$h_{i,k}$ | geometric layer thickness | m | cell | LayerThickness | same as LayerThickness in MPAS-Ocean |
 |$k$ | vertical index |  |
 |${\bf k}$ | vertical unit vector |  |
 |$K_{min}$ | shallowest active layer |  |
 |$K_{max}$ | deepest active layer |  |
-|$K_{i,k}$  | kinetic energy    | m$^2$/s$^2$  | cell     | KineticEnergyCell  |$K = \left\| {\bf u} \right\|^2 / 2$ |
+|$K_{i,k}$  | kinetic energy    | m$^2$ s$^{-2}$  | cell     | KineticEnergyCell  |$K = \left\| {\bf u} \right\|^2 / 2$ |
 |$p_{i,k}$ | pressure | Pa | cell | Pressure | see [](discrete-pressure) |
 |$p^{floor}_i$ | bottom pressure | Pa | cell | PFloor | pressure at ocean floor
 |$p^{surf}_i$ | surface pressure | Pa | cell | PSurface | due to atm. pressure, sea ice, ice shelves
-|$q_{v,k}$ | potential vorticity         | 1/m/s    | vertex   | PotentialVorticity  |$q = \left(\zeta+f\right)/h$ |
-|$Ra$      | Rayleigh drag coefficient   | 1/s      | constant |   |  |
+|$q_{v,k}$ | potential vorticity         | m$^{-1}$ s$^{-1}$    | vertex   | PotentialVorticity  |$q = \left(\zeta+f\right)/\tilde{h}$ |
+|$Ra$      | Rayleigh drag coefficient   | s$^{-1}$      | constant |   |  |
 |$S_{i,k}$ | salinity | PSU | cell | Salinity | a tracer $\varphi$  |
 |$t$       | time    | s        | none     |   |  |
-|${\bf u}_k$   | velocity, vector form       | m/s      | - |   |  |
-|$u_{e,k}$   | velocity, normal to edge      | m/s      | edge     | NormalVelocity  | |
-|$u^\perp_{e,k}$   | velocity, tangential to edge      | m/s      | edge     | TangentialVelocity  |${\bf u}^\perp = {\bf k} \times {\bf u}$|
-|$\alpha_{i,k}$ | specific volume | m$^3$/kg | cell  | SpecificVolume | $v = 1/\rho$ |
-|$\tilde{w}_{i,k}$ | vertical velocity across a pseudo height surface | m/s | cell  | VerticalVelocity | volume transport per m$^2$ |
-|$\tilde{u}_{i,k}$ | projection of normal velocity across a pseudo height surface | m/s | cell | | |
-|$\tilde{W}_{i,k}$ | total velocity across a pseudo height surface $\tilde{W}_{i,k} \equiv $\tilde{w}_{i,k} - \tilde{u}_{i,k}$ | m/s | cell | | |
-|$\tilde{z}$ | vertical coordinate | m | - | | positive upward |
-|$\tilde{z}^{top}_{i,k}$ | layer top z-location | m | cell | ZTop | see [](discrete-z) |
-|$\tilde{z}^{mid}_{i,k}$ | layer mid-depth z-location | m | cell | ZMid |
-|$\tilde{z}^{surf}_{i}$ | ocean surface, i.e. sea surface height  | m | cell | ZSurface | same as SSH in MPAS-Ocean |
-|$\tilde{z}^{floor}_{i}$ | ocean floor z-location | m | cell | ZFloor | -bottomDepth from MPAS-Ocean |
-|$\zeta_{v,k}$   | relative vorticity| 1/s      | vertex   |  RelativeVorticity |$\zeta={\bf k} \cdot \left( \nabla \times {\bf u}\right)$ |
-|$\zeta_a$ | absolute vorticity ($\zeta + f$) | 1/s | vertex | |
+|${\bf u}_k$   | velocity, vector form       | m s$^{-1}$      | - |   |  |
+|$u_{e,k}$   | velocity, normal to edge      | m s$^{-1}$      | edge     | NormalVelocity  | |
+|$u^\perp_{e,k}$   | velocity, tangential to edge      | m s$^{-1}$      | edge     | TangentialVelocity  |${\bf u}^\perp = {\bf k} \times {\bf u}$|
+|$\alpha_{i,k}$ | specific volume | m$^3$ kg$^{-1}$ | cell  | SpecificVolume | $v = 1/\rho$ |
+|$\tilde{u}_{i,k}$ | projection of normal velocity across a pseudo height surface | m s$^{-1}$ | cell | | |
+|$\tilde{w}_{i,k}$ | vertical velocity across a pseudo height surface | m s$^{-1}$ | cell  | VerticalVelocity | volume transport per m$^2$ |
+|$\tilde{w}_{tr\ i,k}$ | net vertical transport through a moving surface | m s$^{-1}$ | cell  | NetVertTransportVelocity | volume transport per m$^2$ |
+|$\tilde{W}_{tr\ i,k}$ | total vertical velocity across a pseudo height surface $\tilde{W}_{tr\ i,k} \equiv \tilde{w}_{tr\ i,k} - \tilde{u}_{i,k}$ | m s$^{-1}$ | cell | | |
+|$\tilde{z}$ | vertical coordinate (pseudo-height) | m | - | | positive upward |
+|$\tilde{z}^{top}_{i,k}$ | layer top $\tilde{z}$-location | m | cell | ZTop | see [](discrete-z) |
+|$\tilde{z}^{mid}_{i,k}$ | layer mid-depth $\tilde{z}$-location | m | cell | ZMid |
+|$\tilde{z}^{surf}_{i}$ | ocean surface $\tilde{z}$-location | m | cell | ZSurface |
+|$\tilde{z}^{floor}_{i}$ | ocean floor $\tilde{z}$-location | m | cell | ZFloor |
+|${z}^{floor}_{i}$ | ocean floor geometric z-location | m | cell | GeometricZFloor | -bottomDepth from MPAS-Ocean |
+|$\zeta_{v,k}$   | relative vorticity| s$^{-1}$      | vertex   |  RelativeVorticity |$\zeta={\bf k} \cdot \left( \nabla \times {\bf u}\right)$ |
+|$\zeta_a$ | absolute vorticity ($\zeta + f$) | s$^{-1}$ | vertex | |
 |$\Theta_{i,k}$ | conservative temperature | C | cell  | Temperature  | a tracer $\varphi$ |
-|$\kappa_2$| tracer diffusion  | m$^2$/s    | cell     |   |  |
-|$\kappa_4$| biharmonic tracer diffusion | m$^4$/s    | cell     |   |  |
-|$\kappa_v$| vertical tracer diffusion | m$^2$/s    | cell     |   |  |
+|$\kappa_2$| tracer diffusion  | m$^2$ s$^{-1}$    | cell     |   |  |
+|$\kappa_4$| biharmonic tracer diffusion | m$^4$ s$^{-1}$    | cell     |   |  |
+|$\kappa_v$| vertical tracer diffusion | m$^2$ s$^{-1}$    | cell     |   |  |
 |meshScaling  | variable that holds the scaling factor for biharmonic and laplacian mixing        | unitless   | edge     |   | |
-|$\nu_{2,e}$   | horizontal del2 viscosity scaled by mesh resolution        | m$^2$/s    | edge     |   | |
-|$\nu_{4,e}$   | horizontal biharmonic (del4) viscosity scaled by mesh resolution       | m$^4$/s    | edge     |   |  |
-|$\nu_v$| vertical momentum diffusion | m$^2$/s    | edge       |   |  |
-|$\varphi_{i,k}$ | tracer | kg/m$^3$ or similar | cell | | e.g. $\Theta$, $S$ |
-|$\rho_{i,k}$ | density | kg/m$^3$ | cell  | Density |
-|$\rho_0$ | Reference density | kg/m$^3$ | |  constant |
-|$\tau_i$ | wind stress | Pa=N/m$^2$ | edge |  SurfaceStress |
-|$\Phi_{i,k}$ | geopotential| | cell | Geopotential |$\partial \Phi / \partial z = g$ for gravity |
-|$\omega$   | mass transport | kg/s/m^2      | cell | VerticalTransport |$\omega=\rho_0 w$|
+|$\nu_{2,e}$   | horizontal del2 viscosity scaled by mesh resolution        | m$^2$ s$^{-1}$    | edge     |   | |
+|$\nu_{4,e}$   | horizontal biharmonic (del4) viscosity scaled by mesh resolution       | m$^4$ s$^{-1}$    | edge     |   |  |
+|$\nu_v$| vertical momentum diffusion | m$^2$ s$^{-1}$    | edge       |   |  |
+|$\varphi_{i,k}$ | tracer | kg m$^{-3}$ or similar | cell | | e.g. $\Theta$, $S$ |
+|$\rho_{i,k}$ | density | kg m$^{-3}$ | cell  | Density |
+|$\rho_0$ | Reference density | kg m$^{-3}$ | |  constant |
+|$\tau_i$ | wind stress | Pa=N m$^{-2}$ | edge |  SurfaceStress |
+|$\Phi_{i,k}$ | geopotential| | cell | m$^2$ s$^{-2}$  | Geopotential |$\partial \Phi / \partial z = g$ for gravity |
+|$\omega$   | mass transport | kg s$^{-1}$ m$^{-2}$      | cell | VerticalTransport |$\omega=\rho_0 w$|
 
 
 ## 13. Verification and Testing
