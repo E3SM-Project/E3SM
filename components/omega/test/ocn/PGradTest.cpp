@@ -186,7 +186,6 @@ int main(int argc, char *argv[]) {
          LOG_INFO("NVertLayers = {}", NVertLayers);
          LOG_INFO("dC = {}", dC);
          for (int i = 0; i < 2; ++i) {
-            //for (int k = 0; k <= NVertLayers; ++k) {
             for (int k = 0; k < 2; ++k) {
                LOG_INFO("LayerThick({}, {}) = {}", i, k, LayerThick(i, k));
             }
@@ -263,17 +262,17 @@ int main(int argc, char *argv[]) {
          deepCopy(Tend, 0.0_Real);
          DefPGrad->computePressureGrad(Tend, DefState, VCoord, DefEos, TimeLevel);
          Real max_value = 0.0_Real;
-         parallelReduce({DefMesh->NEdgesAll, NVertLayers - 1},
+         parallelReduce({DefMesh->NEdgesAll, NVertLayers - 2},
                         KOKKOS_LAMBDA(int i, int k, Real &max) {
                            Real val = Kokkos::abs(Tend(i + 1, k));
                            if (val > max) max = val;
                         }, Kokkos::Max<Real>(max_value)  );
          Real sum_value = 0.0_Real;
-         parallelReduce({DefMesh->NEdgesAll, NVertLayers - 1},
+         parallelReduce({DefMesh->NEdgesAll, NVertLayers - 2},
                         KOKKOS_LAMBDA(int i, int k, Real &lsum) {
                            lsum += Tend(i + 1, k) * Tend(i + 1, k);
                         }, Kokkos::Sum<Real>(sum_value)  );
-         LOG_INFO("refinement level {}: max |Tend| = {}, average Tend = {}", refinement, max_value, std::sqrt(sum_value) / (DefMesh->NEdgesAll * (NVertLayers - 1)));
+         LOG_INFO("refinement level {}: max |Tend| = {}, average Tend = {}", refinement, max_value, std::sqrt(sum_value) / (DefMesh->NEdgesAll * (NVertLayers - 2)));
 
          dC = dC * 2.0_Real;
          NVertLayers = NVertLayers / 2;
