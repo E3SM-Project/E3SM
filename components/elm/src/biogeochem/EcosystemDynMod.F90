@@ -576,7 +576,7 @@ contains
     ! Call the main CN routines
 
     event = 'SoilLittDecompAlloc'
-    call t_start_lnd(event)
+    call t_startf(trim(event))
     !----------------------------------------------------------------
     if(.not.use_elm_interface) then
        ! directly run elm-bgc
@@ -588,7 +588,7 @@ contains
                   dt)
     end if !if(.not.use_elm_interface)
 
-    call t_stopf('SoilLittDecompAlloc')
+    call t_stopf(trim(event))
 
     event = 'SoilLittDecompAlloc2'
     call t_start_lnd(event)
