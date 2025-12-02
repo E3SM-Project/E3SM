@@ -47,6 +47,9 @@
 #ifdef EAMXX_HAS_IOP_FORCING
 #include "physics/iop_forcing/eamxx_iop_forcing_process_interface.hpp"
 #endif
+#ifdef EAMXX_HAS_CLD_FRAC_NET
+#include "physics/cld_fraction/cld_frac_net/eamxx_cld_frac_net_process_interface.hpp"
+#endif
 
 namespace scream {
 
@@ -93,6 +96,9 @@ inline void register_physics () {
 #endif
 #ifdef EAMXX_HAS_IOP_FORCING
   proc_factory.register_product("iop_forcing",&create_atmosphere_process<IOPForcing>);
+#endif
+#ifdef EAMXX_HAS_CLD_FRAC_NET
+  proc_factory.register_product("cld_frac_net",&create_atmosphere_process<CldFracNet>);
 #endif
 
   // If no physics was enabled, silence compile warning about unused var
