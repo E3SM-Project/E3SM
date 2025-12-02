@@ -1,14 +1,12 @@
 #include "eamxx_cld_fraction_process_interface.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
-
-#include <ekat_assert.hpp>
-#include <ekat_units.hpp>
-
-#include <array>
+#include "physics/cld_fraction/cld_fraction_functions.hpp"
 
 #ifdef EAMXX_HAS_PYTHON
 #include "share/atm_process/atmosphere_process_pyhelpers.hpp"
 #endif
+
+#include <array>
 
 namespace scream
 {
@@ -24,7 +22,8 @@ CldFraction::CldFraction (const ekat::Comm& comm, const ekat::ParameterList& par
 void CldFraction::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 {
   using namespace ekat::units;
-  using namespace ShortFieldTagsNames;
+  using CldFractionFunc = cld_fraction::CldFractionFunctions<Real, DefaultDevice>;
+  using Spack           = CldFractionFunc::Spack;
 
   // The units of mixing ratio Q are technically non-dimensional.
   // Nevertheless, for output reasons, we like to see 'kg/kg'.
@@ -38,10 +37,10 @@ void CldFraction::set_grids(const std::shared_ptr<const GridsManager> grids_mana
   // Define the different field layouts that will be used for this process
 
   // Layout for 3D (2d horiz X 1d vertical) variable defined at mid-level and interfaces
-  FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols,m_num_levs} };
+  auto scalar3d_layout_mid = m_grid->get_3d_scalar_layout(true);
 
   // Set of fields used strictly as input
-  constexpr int ps = Pack::n;
+  constexpr int ps = Spack::n;
   add_tracer<Required>("qi", m_grid, kg/kg, ps);
   add_field<Required>("cldfrac_liq", scalar3d_layout_mid, nondim, grid_name,ps);
 
@@ -93,6 +92,7 @@ void CldFraction::run_impl (const double /* dt */)
   auto tot_cld_frac = get_field_out("cldfrac_tot");
   auto ice_cld_frac_4out = get_field_out("cldfrac_ice_for_analysis");
   auto tot_cld_frac_4out = get_field_out("cldfrac_tot_for_analysis");
+
 #ifdef EAMXX_HAS_PYTHON
   if (has_py_module()) {
     pybind11::array py_qi,
@@ -135,19 +135,22 @@ void CldFraction::run_impl (const double /* dt */)
       ice_cld_frac_4out.sync_to_dev();
       tot_cld_frac_4out.sync_to_dev();
     }
-  } else
-#endif
-  {
-    auto qi_v                = qi.get_view<const Pack**>();
-    auto liq_cld_frac_v      = liq_cld_frac.get_view<const Pack**>();
-    auto ice_cld_frac_v      = ice_cld_frac.get_view<Pack**>();
-    auto tot_cld_frac_v      = tot_cld_frac.get_view<Pack**>();
-    auto ice_cld_frac_4out_v = ice_cld_frac_4out.get_view<Pack**>();
-    auto tot_cld_frac_4out_v = tot_cld_frac_4out.get_view<Pack**>();
-
-    CldFractionFunc::main(m_num_cols,m_num_levs,m_icecloud_threshold,m_icecloud_for_analysis_threshold,
-      qi_v,liq_cld_frac_v,ice_cld_frac_v,tot_cld_frac_v,ice_cld_frac_4out_v,tot_cld_frac_4out_v);
+    return;
   }
+#endif
+
+  using CldFractionFunc = cld_fraction::CldFractionFunctions<Real, DefaultDevice>;
+  using Spack = CldFractionFunc::Spack;
+
+  auto qi_v                = qi.get_view<const Spack**>();
+  auto liq_cld_frac_v      = liq_cld_frac.get_view<const Spack**>();
+  auto ice_cld_frac_v      = ice_cld_frac.get_view<Spack**>();
+  auto tot_cld_frac_v      = tot_cld_frac.get_view<Spack**>();
+  auto ice_cld_frac_4out_v = ice_cld_frac_4out.get_view<Spack**>();
+  auto tot_cld_frac_4out_v = tot_cld_frac_4out.get_view<Spack**>();
+
+  CldFractionFunc::main(m_num_cols,m_num_levs,m_icecloud_threshold,m_icecloud_for_analysis_threshold,
+    qi_v,liq_cld_frac_v,ice_cld_frac_v,tot_cld_frac_v,ice_cld_frac_4out_v,tot_cld_frac_4out_v);
 }
 
 // =========================================================================================

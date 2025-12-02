@@ -6,6 +6,7 @@ set (ATM_TIME_STEP 1800)
 set (RUN_T0 2021-10-12-45000)
 
 # Configure yaml files to run directory
+set (PROCESS_NAME cld_fraction)
 set (POSTFIX cpp)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/input_cpp.yaml)
@@ -80,17 +81,21 @@ if (EAMXX_ENABLE_PYTHON)
   endif()
 
   if (NOT EAMXX_ENABLE_GPU)
-    # Run an ml emulator for cld-fraction
-    set (PY_MODULE_NAME "cld_fraction_ml")
-    set (PY_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR})
-    set (POSTFIX pyml)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
-                   ${CMAKE_CURRENT_BINARY_DIR}/input_pyml.yaml)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/output.yaml
-                   ${CMAKE_CURRENT_BINARY_DIR}/output_pyml.yaml)
+    # Create executable that runs cld_frac_net emulator
+    CreateADUnitTestExec(cld_frac_net_standalone
+      LIBS cld_frac_net)
 
     # Test the process with python ml emulator
-    CreateUnitTestFromExec(cld_fraction_standalone_pyml cld_fraction_standalone
+    set (PY_MODULE_NAME "cld_frac_net")
+    set (PY_MODULE_PATH ${SCREAM_BASE_DIR}/src/physics/cld_fraction/cld_frac_net)
+    set (POSTFIX ml_py)
+    set (WHICH_EMULATOR python)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input_ml.yaml
+                   ${CMAKE_CURRENT_BINARY_DIR}/input_ml_py.yaml)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/output.yaml
+                   ${CMAKE_CURRENT_BINARY_DIR}/output_${POSTFIX}.yaml)
+
+    CreateUnitTestFromExec(cld_frac_net_py cld_frac_net_standalone
       EXE_ARGS "--args -ifile=input_pyml.yaml"
       LABELS cld_fraction physics
       FIXTURES_SETUP cldfrac_pyml)

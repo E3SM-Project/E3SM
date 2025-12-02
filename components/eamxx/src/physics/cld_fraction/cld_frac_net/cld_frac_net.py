@@ -1,21 +1,22 @@
 import os
-
 import torch
 import torch.nn as nn
 
 class CldFracNet(nn.Module):
-  def __init__(self, input_size, output_size, neuron_count=64):
+  def __init__(self, nlevs, neuron_count=64):
     super(CldFracNet, self).__init__()
     # emulate cld_ice = (qi > 1e-5)
-    self.ice1 = nn.Linear(input_size, neuron_count)
-    self.ice2 = nn.Linear(neuron_count, output_size)
+    self.ice1 = nn.Linear(nlevs, neuron_count)
+    self.ice2 = nn.Linear(neuron_count, nlevs)
     # emulate cld_tot = max(cld_ice, cld_liq)
-    self.tot1 = nn.Linear(input_size*2, neuron_count)
-    self.tot2 = nn.Linear(neuron_count, output_size)
+    self.tot1 = nn.Linear(nlevs*2, neuron_count)
+    self.tot2 = nn.Linear(neuron_count, nlevs)
     # a relu for fun
     self.relu = nn.ReLU()
     # sigmoid for categorical ice output
     self.sigmoid = nn.Sigmoid()
+
+    self.nlevs = nlevs
 
   def forward(self, qi, liq):
     # First, compute cld_ice from qi
@@ -35,29 +36,38 @@ class CldFracNet(nn.Module):
         # During inference, use hard binary values
         y13_categorical = (y13_probabilities > 0.5).float()
 
+    if liq.dim() == 1:  # 1D input (no batch dimension)
+        cat_dim = 0
+    elif liq.dim() == 2:  # 2D input (with batch dimension)
+        cat_dim = 1
+    else:
+        raise ValueError("Input tensors must be either 1D (without batch dim) or 2D (with batch dim).")
+
     # Now compute cld_tot from cld_ice and cld_liq
-    y21 = self.tot1(torch.cat((liq, y13_categorical), dim=1))
+    y21 = self.tot1(torch.cat((liq, y13_categorical), dim=cat_dim))
     y22 = self.relu(y21)
     y23 = self.tot2(y22)
     return y13_categorical, y23
+
+def create_cld_frac_net ():
+
+    # For this test, hard code nlevs, as well as pth file name/path
+    nlevs = 72
+    current_file_directory = os.path.dirname(os.path.abspath(__file__))
+    model_file = f"{current_file_directory}/cld_frac_net_weights.pth"
+
+    cld_frac_net_model = CldFracNet(nlevs)
+    cld_frac_net_model.load_state_dict(torch.load(model_file,map_location=torch.device('cpu'),weights_only=True))
+    return cld_frac_net_model
 
 model = None
 
 def init ():
     global model
 
-    # For this test, hard code nlevs, as well as pth file name/path
-    nlevs = 72
-    current_file_directory = os.path.dirname(os.path.abspath(__file__))
-    model_file = f"{current_file_directory}/cldfrac_net_weights.pth"
+    model = create_cld_frac_net()
 
-    model = CldFracNet(nlevs,nlevs)
-    model.load_state_dict(torch.load(model_file,map_location=torch.device('cpu')))
-
-def main (ice_threshold, ice_4out_threshold,
-          qi, liq_cld_frac,
-          ice_cld_frac, tot_cld_frac,
-          ice_cld_frac_4out, tot_cld_frac_4out):
+def forward (ice_threshold, qi, liq_cld_frac, ice_cld_frac, tot_cld_frac):
     global model
 
     # Convert numpy inputs to torch arrays

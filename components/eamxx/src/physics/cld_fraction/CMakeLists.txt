@@ -26,3 +26,7 @@ endif()
 # The BFB test will require some amount of work, as the specific ice cloud fraction scheme
 # here is just an option in a more involved F90 subroutine.  Furture work would be to
 # include a BFB test with the F90 code, located in /components/eam/src/physics/cam/cldfrc2m.F90
+
+if (NOT SCREAM_LIB_ONLY)
+  add_subdirectory(cld_frac_net)
+endif()
