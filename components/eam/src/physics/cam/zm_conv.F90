@@ -5,10 +5,25 @@ module zm_conv
    ! Contributors: Guang Zhang, Norman McFarlane, Michael Lazare, Phil Rasch,
    !               Rich Neale, Byron Boville, Xiaoliang Song, Walter Hannah
    !----------------------------------------------------------------------------
-   ! for equations and technical details the best reference is:
+   ! Relevant literature:
+   !
+   ! ZM95 => Zhang, G. J., & N. A. McFarlane (1995): Sensitivity of climate
+   !   simulations to the parameterization of cumulus convection in the Canadian
+   !   climate centre general circulation model. Atmosphere-Ocean, 33(3),
+   !   407–446. https://doi.org/10.1080/07055900.1995.9649539
+   !
+   ! Z02 => Zhang, G. J. (2002): Convective quasi-equilibrium in midlatitude
+   !   continental environment and its effect on convective parameterization,
+   !   J. Geophys. Res., 107(D14), doi:10.1029/2001JD001005
+   !
+   ! AS74 => Arakawa, A., and W. H. Schubert (1974): Interaction of a Cumulus
+   !   Cloud Ensemble with the Large-Scale Environment, Part I. J. Atmos. Sci.,
+   !   31, 674–701, https://doi.org/10.1175/1520-0469(1974)031<0674:IOACCE>2.0.CO;2
+   !----------------------------------------------------------------------------
+   ! for equations and details the best reference is the CAM5 tehcnical description:
    !   Neale, R., Gettelman, A., Park, S., Chen, C.-C., Lauritzen, P. H., et al.
-   !   (2012). Description of the NCAR Community Atmosphere Model (CAM 5.0).
-   !    https://doi.org/10.5065/wgtk-4g06
+   !     (2012). Description of the NCAR Community Atmosphere Model (CAM 5.0).
+   !     https://doi.org/10.5065/wgtk-4g06
    ! which can also be found here:
    !   https://opensky.ucar.edu/islandora/object/technotes%3A594?search_api_fulltext=CAM5
    !----------------------------------------------------------------------------
@@ -41,8 +56,8 @@ module zm_conv
    type(zm_param_t), public :: zm_param ! derived type to hold ZM tunable parameters
    !----------------------------------------------------------------------------
    ! private variables
-   real(r8), parameter :: capelmt         = 70._r8       ! threshold value for cape for deep convection
-   real(r8), parameter :: trigdcapelmt    = 0._r8        ! threshold value of dcape for deep convection
+   real(r8), parameter :: cape_threshold  = 70._r8       ! threshold value of cape for deep convection
+   real(r8), parameter :: dcape_threshold = 0._r8        ! threshold value of dcape for deep convection
    real(r8), parameter :: omsm            = 0.99999_r8   ! to prevent problems due to round off error
    real(r8), parameter :: interp_diff_min = 1.E-6_r8     ! minimum threshold for interpolation method - see eq (4.109), (4.118), (4.119)
 !===================================================================================================
@@ -175,7 +190,7 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
    real(r8), dimension(pcols)      :: capem1       ! time n-1 CAPE
 
    logical  iclosure                               ! flag for compute_dilute_cape()
-   real(r8) capelmt_wk                             ! local capelmt to allow exceptions when calling closure() with trigdcape
+   real(r8) cape_threshold_alt                     ! local cape_threshold to allow exceptions when calling closure() with dcape trigger
 
    integer,  dimension(pcols)      :: gather_index ! temporary variable used to set ideep
 
@@ -362,31 +377,31 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
    ! determine whether ZM is active in each column (ideep=1) or not (ideep=0),
    ! based on requirement that cape>0 and lel<lcl
 
-   capelmt_wk = capelmt   ! capelmt_wk default to capelmt for default trigger
+   cape_threshold_alt = cape_threshold ! cape_threshold_alt defaults to cape_threshold for default trigger
 
-   if ( zm_param%trig_dcape .and. (.not.is_first_step) )  capelmt_wk = 0.0_r8
+   if ( zm_param%trig_dcape .and. (.not.is_first_step) ) cape_threshold_alt = 0.0_r8
 
    lengath = 0
    do i=1,ncol
-     if (zm_param%trig_dcape) then
-     ! DCAPE-ULL
-      if (is_first_step) then
-         !Will this cause restart to be non-BFB
-           if (cape(i) > capelmt) then
-              lengath = lengath + 1
-              gather_index(lengath) = i
-           end if
-       else if (cape(i) > 0.0_r8 .and. dcape(i) > trigdcapelmt) then
-           ! use constant 0 or a separate threshold for capt because capelmt is for default trigger
-           lengath = lengath + 1
-           gather_index(lengath) = i
-       endif
-     else
-      if (cape(i) > capelmt) then
-         lengath = lengath + 1
-         gather_index(lengath) = i
+      if (zm_param%trig_dcape) then
+         if (is_first_step) then
+            if (cape(i) > cape_threshold) then
+               lengath = lengath + 1
+               gather_index(lengath) = i
+            end if
+         else
+            if (cape(i) > cape_threshold_alt .and. dcape(i) > dcape_threshold) then
+               ! use constant 0 or a separate threshold for capt because cape_threshold is for default trigger
+               lengath = lengath + 1
+               gather_index(lengath) = i
+            end if
+         endif
+      else
+         if (cape(i) > cape_threshold) then
+            lengath = lengath + 1
+            gather_index(lengath) = i
+         end if
       end if
-     end if
    end do
 
    if (lengath.eq.0) then
@@ -501,8 +516,8 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
                qs, cug, evpg, pflxg, rprdg, &
                aero, loc_microp_st )
 
-   !----------------------------------------------------------------------------
-   ! convert detrainment from units of "1/m" to "1/mb".
+   !---------------------------------------------------------------------------
+   ! convert detrainment from units of "per length" [1/m] to "per pressure" [1/mb].
 
    do k = msg + 1,pver
       do i = 1,lengath
@@ -521,14 +536,12 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
 
    !----------------------------------------------------------------------------
 
-   call closure(pcols, ncol, pver, pverp, &
-                qg      ,tg      ,pg      ,z_mid_g      ,sg      , &
-                tpg     ,qs      ,qu      ,su      ,mc      , &
-                du      ,mu      ,md      ,qd      ,sd      , &
-                qhat    ,shat    ,dp      ,qstpg   ,z_int_g     , &
-                qlg     ,dsubcld ,mb      ,capeg   ,tlg     , &
-                lclg    ,lelg    ,jt      ,maxg    ,1       , &
-                lengath ,msg     ,capelmt_wk )
+   call closure(pcols, ncol, pver, pverp, msg, cape_threshold_alt, &
+                lclg, lelg, jt, maxg, dsubcld, &
+                z_mid_g, z_int_g, pg, dp, tg, &
+                sg, qg, qs, qlg, shat, qhat, &
+                tlg, tpg, qstpg, su, qu, &
+                mc, du, mu, md, qd, sd, capeg, mb )
 
    !----------------------------------------------------------------------------
    ! limit cloud base mass flux to theoretical upper bound.
@@ -1775,96 +1788,92 @@ end subroutine cldprp
 
 !===================================================================================================
 
-! subroutine closure(pcols, ncol, pver, pverp, &
-!                    q, t_mid, p_mid, z_mid, s, &
-!                    tp, qs, qu, su, mc, &
-!                    du, mu, md, qd, sd, &
-!                    qhat, shat, dp, qstp, z_int, &
-!                    ql, dsubcld, mb, cape, tl, &
-!                    lcl, lel, jt, mx, il1g, &
-!                    il2g, msg, capelmt )
-subroutine closure(pcols, ncol, pver, pverp, msg, capelmt, &
-                   lcl, lel, jt, mx,
-                   q, t_mid, p_mid, z_mid, s, &
-                   tp, qs, qu, su, mc, &
-                   du, mu, md, qd, sd, &
-                   qhat, shat, dp, qstp, z_int, &
-                   ql, dsubcld, mb, cape, tl )
+subroutine closure(pcols, ncol, pver, pverp, msg, cape_threshold_in, &
+                   lcl, lel, jt, mx, dsubcld, &
+                   z_mid, z_int, p_mid, dp, t_mid, &
+                   s, q, qs, ql, shat, qhat,  &
+                   tl, tp, qstp, su, qu, &
+                   mc, du, mu, md, qd, sd, cape, mb )
    !----------------------------------------------------------------------------
-   ! Purpose: calculate closure condition for ZM convection scheme
+   ! Purpose: calculate closure condition for ZM convection scheme using the
+   !          revised quasi-equilibrium hypothesis of Z02, in which a
+   !          quasi-equilibrium exists between the convective and large-scale
+   !          modifications of the free-tropospheric CAPE, such that the net
+   !          contribution is negilgible. This differs notably from AS74, where
+   !          they assumed that CAPE changes from free-tropospheric and boundary
+   !          layer changes are in balance. The Z02 revised closure is based on
+   !          the observation that the total CAPE change is comparable to the
+   !          CAPE change due to boundary layer thermodynamic changes.
    !----------------------------------------------------------------------------
    implicit none
    !----------------------------------------------------------------------------
    ! Arguments
-   integer,                         intent(in   ) :: pcols     ! maximum number of columns
-   integer,                         intent(in   ) :: ncol      ! actual number of columns
-   integer,                         intent(in   ) :: pver      ! number of mid-point vertical levels
-   integer,                         intent(in   ) :: pverp     ! number of interface vertical levels
-   integer,                         intent(in   ) :: msg       ! ?
-   real(r8),                        intent(in   ) :: capelmt   ! ?
-   real(r8), dimension(pcols,pver), intent(inout) :: q         ! spec humidity
-   real(r8), dimension(pcols,pver), intent(inout) :: t_mid     ! temperature
-   real(r8), dimension(pcols,pver), intent(inout) :: p_mid     ! pressure (mb)
-   real(r8), dimension(pcols),      intent(inout) :: mb        ! cloud base mass flux
-   real(r8), dimension(pcols,pver), intent(in   ) :: z_mid     ! height (m)
-   real(r8), dimension(pcols,pver), intent(in   ) :: s         ! normalized dry static energy
-   real(r8), dimension(pcols,pver), intent(in   ) :: tp        ! parcel temp
-   real(r8), dimension(pcols,pver), intent(in   ) :: qs        ! sat spec humidity
-   real(r8), dimension(pcols,pver), intent(in   ) :: qu        ! updraft spec. humidity
-   real(r8), dimension(pcols,pver), intent(in   ) :: su        ! normalized dry stat energy of updraft
-   real(r8), dimension(pcols,pver), intent(in   ) :: mc        ! net convective mass flux
-   real(r8), dimension(pcols,pver), intent(in   ) :: du        ! detrainment from updraft
-   real(r8), dimension(pcols,pver), intent(in   ) :: mu        ! mass flux of updraft
-   real(r8), dimension(pcols,pver), intent(in   ) :: md        ! mass flux of downdraft
-   real(r8), dimension(pcols,pver), intent(in   ) :: qd        ! spec. humidity of downdraft
-   real(r8), dimension(pcols,pver), intent(in   ) :: sd        ! dry static energy of downdraft
-   real(r8), dimension(pcols,pver), intent(in   ) :: qhat      ! environment spec humidity at interfaces
-   real(r8), dimension(pcols,pver), intent(in   ) :: shat      ! env. normalized dry static energy at intrfcs
-   real(r8), dimension(pcols,pver), intent(in   ) :: dp        ! pressure thickness of layers
-   real(r8), dimension(pcols,pver), intent(in   ) :: qstp      ! spec humidity of parcel
-   real(r8), dimension(pcols,pverp),intent(in   ) :: z_int     ! height of interface levels
-   real(r8), dimension(pcols,pver), intent(in   ) :: ql        ! liquid water mixing ratio
-   real(r8), dimension(pcols),      intent(in   ) :: cape      ! available pot. energy of column
-   real(r8), dimension(pcols),      intent(in   ) :: tl        ! ?
-   real(r8), dimension(pcols),      intent(in   ) :: dsubcld   ! thickness of subcloud layer
-   integer,  dimension(pcols),      intent(in   ) :: lcl       ! index of lcl
-   integer,  dimension(pcols),      intent(in   ) :: lel       ! index of launch leve
-   integer,  dimension(pcols),      intent(in   ) :: jt        ! top of updraft
-   integer,  dimension(pcols),      intent(in   ) :: mx        ! base of updraft
+   integer,                         intent(in ) :: pcols             ! maximum number of columns
+   integer,                         intent(in ) :: ncol              ! actual number of columns
+   integer,                         intent(in ) :: pver              ! number of mid-point vertical levels
+   integer,                         intent(in ) :: pverp             ! number of interface vertical levels
+   integer,                         intent(in ) :: msg               ! ?
+   real(r8),                        intent(in ) :: cape_threshold_in ! CAPE threshold for "cloud work function" (i.e. A)
+   integer,  dimension(pcols),      intent(in ) :: lcl               ! index of lcl
+   integer,  dimension(pcols),      intent(in ) :: lel               ! index of launch leve
+   integer,  dimension(pcols),      intent(in ) :: jt                ! top of updraft
+   integer,  dimension(pcols),      intent(in ) :: mx                ! base of updraft
+   real(r8), dimension(pcols),      intent(in ) :: dsubcld           ! thickness of subcloud layer
+   real(r8), dimension(pcols,pver), intent(in ) :: z_mid             ! altitude (m)
+   real(r8), dimension(pcols,pverp),intent(in ) :: z_int             ! height of interface levels
+   real(r8), dimension(pcols,pver), intent(in ) :: p_mid             ! ambient pressure (mb)
+   real(r8), dimension(pcols,pver), intent(in ) :: dp                ! pressure thickness of layers
+   real(r8), dimension(pcols,pver), intent(in ) :: t_mid             ! ambient temperature
+   real(r8), dimension(pcols,pver), intent(in ) :: s                 ! ambient dry static energy (normalized)
+   real(r8), dimension(pcols,pver), intent(in ) :: q                 ! ambient spec humidity
+   real(r8), dimension(pcols,pver), intent(in ) :: qs                ! ambient saturation specific humidity
+   real(r8), dimension(pcols,pver), intent(in ) :: ql                ! ambient liquid water mixing ratio
+   real(r8), dimension(pcols,pver), intent(in ) :: shat              ! env. normalized dry static energy at intrfcs
+   real(r8), dimension(pcols,pver), intent(in ) :: qhat              ! environment specific humidity at interfaces
+   real(r8), dimension(pcols),      intent(in ) :: tl                ! parcel temperature at lcl
+   real(r8), dimension(pcols,pver), intent(in ) :: tp                ! parcel temperature
+   real(r8), dimension(pcols,pver), intent(in ) :: qstp              ! parcel spec humidity
+   real(r8), dimension(pcols,pver), intent(in ) :: su                ! updraft dry static energy (normalized)
+   real(r8), dimension(pcols,pver), intent(in ) :: qu                ! updraft specific humidity
+   real(r8), dimension(pcols,pver), intent(in ) :: mc                ! net convective mass flux
+   real(r8), dimension(pcols,pver), intent(in ) :: du                ! detrainment from updraft
+   real(r8), dimension(pcols,pver), intent(in ) :: mu                ! updraft mass flux
+   real(r8), dimension(pcols,pver), intent(in ) :: md                ! dndraft mass flux
+   real(r8), dimension(pcols,pver), intent(in ) :: qd                ! dndraft specific humidity
+   real(r8), dimension(pcols,pver), intent(in ) :: sd                ! dndraft dry static energy
+   real(r8), dimension(pcols),      intent(in ) :: cape              ! convective available potential energy
+   real(r8), dimension(pcols),      intent(out) :: mb                ! cloud base mass flux
    !----------------------------------------------------------------------------
    ! Local variables
-   real(r8), dimension(pcols,pver) :: dtpdt     ! ?
-   real(r8), dimension(pcols,pver) :: dqsdtp    ! ?
    real(r8), dimension(pcols,pver) :: dtmdt     ! convective temperature tendency
    real(r8), dimension(pcols,pver) :: dqmdt     ! convective sp. humidity tendency
    real(r8), dimension(pcols,pver) :: dboydt    ! integrand of cape change
-   real(r8), dimension(pcols,pver) :: thetavp   ! ?
-   real(r8), dimension(pcols,pver) :: thetavm   ! ?
    real(r8), dimension(pcols)      :: dtbdt     ! parcel temperature change due to change of subcloud layer properties during convection
    real(r8), dimension(pcols)      :: dqbdt     ! ?
    real(r8), dimension(pcols)      :: dtldt     ! ?
-   real(r8), dimension(pcols)      :: dadt      ! ?
-   real(r8) beta
-   real(r8) debdt
-   real(r8) dltaa
-   real(r8) eb
-   integer i, k, kmin, kmax
-
-   real(r8), parameter ::
-   real(r8), parameter ::
-   real(r8), parameter ::
-   real(r8), parameter ::
-
+   real(r8), dimension(pcols)      :: dadt      ! CAPE consumption rate per unit cloud base mass flux (i.e. F in ZM95)
+   real(r8) :: dtpdt          ! ?
+   real(r8) :: dqsdtp         ! ?
+   real(r8) :: thetavp        ! cloud virtual potential temperature
+   real(r8) :: thetavm        ! ambient virtual potential temperature
+   real(r8) :: dltaa          ! Analogous to the "cloud work function" described by AS74
+   real(r8) :: beta = 0._r8   ! apparently this does nothing?
+   real(r8) :: eb             !
+   real(r8) :: debdt          !
+   integer  :: i, k           ! loop iterators
+   integer  :: kmin, kmax     ! k iteration limits
    !----------------------------------------------------------------------------
-   ! change of subcloud layer properties due to convection is
-   ! related to cumulus updrafts and downdrafts.
-   ! mc(z)=f(z)*mb, mub=betau*mb, mdb=betad*mb are used
-   ! to define betau, betad and f(z).
-   ! note that this implies all time derivatives are in effect
-   ! time derivatives per unit cloud-base mass flux, i.e. they
-   ! have units of 1/mb instead of 1/sec.
+   ! NOTES:
+   ! The change of subcloud layer properties due to convection is related to
+   ! updrafts and downdrafts. The following formulas are used to define
+   ! betau, betad and f(z):
+   !   mc(z) = f(z)*mb
+   !   mub   = betau*mb
+   !   mdb   = betad*mb
+   ! This implies all time derivatives are effectively time derivatives
+   ! per unit cloud-base mass flux, and have units of 1/mb instead of 1/sec.
    !----------------------------------------------------------------------------
-   ! initialize output tendencies
+   ! initialization
    do k = msg + 1,pver
       do i = 1,ncol
          dtmdt(i,k) = 0._r8
@@ -1905,12 +1914,11 @@ subroutine closure(pcols, ncol, pver, pverp, msg, capelmt, &
 
    !----------------------------------------------------------------------------
    ! ?
-   beta = 0._r8
    do k = msg + 1,pver - 1
       do i = 1,ncol
          if ( k>jt(i) .and. k<mx(i) ) then
-            dtmdt(i,k) = ( mc(i,k)*(shat(i,k)-s(i,k)) &
-                          +mc(i,k+1)*(s(i,k)-shat(i,k+1)) ) / dp(i,k) &
+            dtmdt(i,k) = ( mc(i,k  )*(shat(i,k)-s(i,k)     ) &
+                          +mc(i,k+1)*(s(i,k)   -shat(i,k+1)) ) / dp(i,k) &
                          - zm_const%latvap/zm_const%cpair * du(i,k)*( beta*ql(i,k) + (1-beta)*ql(i,k+1) )
             dqmdt(i,k) = ( mu(i,k+1)*(qu(i,k+1)-qhat(i,k+1)+zm_const%cpair/zm_const%latvap*(su(i,k+1)-s(i,k))) &
                           -mu(i,k  )*(qu(i,k  )-qhat(i,k  )+zm_const%cpair/zm_const%latvap*(su(i,k  )-s(i,k))) &
@@ -1922,39 +1930,33 @@ subroutine closure(pcols, ncol, pver, pverp, msg, capelmt, &
    end do
 
    !----------------------------------------------------------------------------
-   ! ?
+   ! Calculate dboydt (integrand of cape change)
    do k = msg + 1,pver
       do i = 1,ncol
+         ! calculate dboydt between LCL and cloud top
          if ( k>=lel(i) .and. k<=lcl(i) ) then
-            thetavp(i,k) = tp(i,k)   * (1000._r8/p_mid(i,k))**(zm_const%rdair/zm_const%cpair)*(1._r8+1.608_r8*qstp(i,k)-q(i,mx(i)))
-            thetavm(i,k) = t_mid(i,k)* (1000._r8/p_mid(i,k))**(zm_const%rdair/zm_const%cpair)*(1._r8+0.608_r8*q(i,k))
-            dqsdtp(i,k)  = qstp(i,k) * (1._r8+qstp(i,k)/zm_const%epsilo)*zm_const%epsilo*zm_const%latvap/(zm_const%rdair*tp(i,k)**2)
-            dtpdt(i,k)   = tp(i,k)/ (1._r8+zm_const%latvap/zm_const%cpair* (dqsdtp(i,k)-qstp(i,k)/tp(i,k)))* &
-                          (dtbdt(i)/t_mid(i,mx(i))+zm_const%latvap/zm_const%cpair* (dqbdt(i)/tl(i)-q(i,mx(i))/ &
-                           tl(i)**2*dtldt(i)))
-            dboydt(i,k) = ((dtpdt(i,k)/tp(i,k)+1._r8/(1._r8+1.608_r8*qstp(i,k)-q(i,mx(i)))* &
-                          (1.608_r8 * dqsdtp(i,k) * dtpdt(i,k) -dqbdt(i))) - (dtmdt(i,k)/t_mid(i,k)+0.608_r8/ &
-                          (1._r8+0.608_r8*q(i,k))*dqmdt(i,k)))*zm_const%grav*thetavp(i,k)/thetavm(i,k)
+            thetavp = tp(i,k)   * (1000._r8/p_mid(i,k))**(zm_const%rdair/zm_const%cpair)*(1._r8+1.608_r8*qstp(i,k)-q(i,mx(i)))
+            thetavm = t_mid(i,k)* (1000._r8/p_mid(i,k))**(zm_const%rdair/zm_const%cpair)*(1._r8+0.608_r8*q(i,k))
+            dqsdtp  = qstp(i,k) * (1._r8+qstp(i,k)/zm_const%epsilo)*zm_const%epsilo*zm_const%latvap/(zm_const%rdair*tp(i,k)**2)
+            dtpdt   = tp(i,k)/ (1._r8+zm_const%latvap/zm_const%cpair* (dqsdtp-qstp(i,k)/tp(i,k)))* &
+                          (dtbdt(i)/t_mid(i,mx(i))+zm_const%latvap/zm_const%cpair* (dqbdt(i)/tl(i)-q(i,mx(i))/tl(i)**2*dtldt(i)))
+            dboydt(i,k) = ((dtpdt/tp(i,k)+1._r8/(1._r8+1.608_r8*qstp(i,k)-q(i,mx(i)))* &
+                          (1.608_r8 * dqsdtp * dtpdt -dqbdt(i))) - (dtmdt(i,k)/t_mid(i,k)+0.608_r8/ &
+                          (1._r8+0.608_r8*q(i,k))*dqmdt(i,k)))*zm_const%grav*thetavp/thetavm
          end if
-      end do
-   end do
-
-   !----------------------------------------------------------------------------
-   ! ?
-   do k = msg + 1,pver
-      do i = 1,ncol
+         ! calculate dboydt between parcel launch and LCL
          if ( k>lcl(i) .and. k<mx(i) ) then
-            thetavp(i,k) = tp(i,k)   * (1000._r8/p_mid(i,k))**(zm_const%rdair/zm_const%cpair)*(1._r8+0.608_r8*q(i,mx(i)))
-            thetavm(i,k) = t_mid(i,k)* (1000._r8/p_mid(i,k))**(zm_const%rdair/zm_const%cpair)*(1._r8+0.608_r8*q(i,k))
+            thetavp = tp(i,k)   * (1000._r8/p_mid(i,k))**(zm_const%rdair/zm_const%cpair)*(1._r8+0.608_r8*q(i,mx(i)))
+            thetavm = t_mid(i,k)* (1000._r8/p_mid(i,k))**(zm_const%rdair/zm_const%cpair)*(1._r8+0.608_r8*q(i,k))
             dboydt(i,k) = (dtbdt(i)/t_mid(i,mx(i))+0.608_r8/ (1._r8+0.608_r8*q(i,mx(i)))*dqbdt(i)- &
                           dtmdt(i,k)/t_mid(i,k)-0.608_r8/ (1._r8+0.608_r8*q(i,k))*dqmdt(i,k))* &
-                          zm_const%grav*thetavp(i,k)/thetavm(i,k)
+                          zm_const%grav*thetavp/thetavm
          end if
       end do
    end do
 
    !----------------------------------------------------------------------------
-   ! buoyant energy change is set to 2/3*excess cape per 3 hours
+   ! vertically integrate buoyancy change
    dadt(1:ncol) = 0._r8
    kmin = minval(lel(1:ncol))
    kmax = maxval(mx(1:ncol)) - 1
@@ -1967,11 +1969,11 @@ subroutine closure(pcols, ncol, pver, pverp, msg, capelmt, &
    end do
 
    !----------------------------------------------------------------------------
-   ! ?
+   ! Calculate cloud base mass flux - see eq (8) in Z02
    do i = 1,ncol
-      dltaa = -1._r8*( cape(i) - capelmt )
+      dltaa = -1._r8*( cape(i) - cape_threshold_in )
       if (dadt(i) /= 0._r8) then
-         mb(i) = max(dltaa/zm_param%tau/dadt(i),0._r8)
+         mb(i) = max( dltaa/zm_param%tau/dadt(i), 0._r8)
       end if
       if (zm_param%zm_microp .and. mx(i)-jt(i) < 2._r8) then
          mb(i) = 0.0_r8
