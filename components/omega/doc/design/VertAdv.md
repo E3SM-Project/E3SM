@@ -26,13 +26,13 @@ among different orders of accuracy and upwinding at runtime through
 configuration options. Standard and monotonic flux-corrected transport (FCT)
 advection algorithms are available for the tendency calculations.
 
-### 2.3 Requirement: Compute tendencies for mass, momentum, and tracers
+### 2.3 Requirement: Compute tendencies for mass, velocity, and tracers
 
-Separate methods are neededto compute the vertical-advection tendencies
-for mass, momentum, and tracers. Mass (`LayerThickness`) and horizontal
-momentum (`NormalVelocity`) are stored as 2-D arrays. `LayerThickness` is
+Separate methods are needed to compute the vertical-advection tendencies
+for mass, velocity, and tracers. Mass (`LayerThickness`) and horizontal
+velocity (`NormalVelocity`) are stored as 2-D arrays. `LayerThickness` is
 cell-centered, while `NormalVelocity` is defined on edges. These tendencies
-use a first-order flux formulation that ensures strict conservation and energy
+use a second-order flux formulation that ensures strict conservation and energy
 consistency with the continuity equation. `Tracers` is a 3-D, cell-centered
 array. The tracer tendencies are computed using a configurable flux-form scheme
 that supports multiple interface reconstruction options.
@@ -52,7 +52,7 @@ spurious oscillations when using the FCT scheme.
 ## 3 Algorithmic Formulation
 
 The [Omega V1 Governing Equations](omega-design-governing-eqns-omega1) describe
-the evolution of mass, momentum, and tracers, including the contributions
+the evolution of mass, velocity, and tracers, including the contributions
 from vertical advection.
 
 ### 3.1 Pseudo-velocity
@@ -86,12 +86,12 @@ where $\tilde{W}_{tr}$ represents the transport pseudo-velocity and accounts for
 the motion of the interface, contributions from the horizontal velocity through
 tilted interfaces, and surface source terms.
 
-This first-order form ensures exact conservation of total column thickness and
+This second-order form ensures exact conservation of total column thickness and
 numerical stability.
 
-### 3.3 Momentum (Velocity)
+### 3.3 Velocity
 
-The momentum equation governs the evolution of the horizontal velocity field
+The velocity equation governs the evolution of the horizontal velocity field
 (`NormalVelocity`),
 
 $$
@@ -100,7 +100,7 @@ u^{n+1}_{e,k} = u^{n}_{e,k} +
 \left[U \tilde{W}_{tr} \right]_{e,k-1/2} \right),
 $$
 
-where $U = u - u_k$ removes the component of the horizontal velocity normal to
+where $U = u - \tilde{u}$ removes the component of the horizontal velocity normal to
 a tilted interface. Square brackets $[\,]$ denote interpolation of quantities
 from cell centers to edges or from the middle of a layer to an interface.
 
@@ -263,7 +263,7 @@ through the active layers to compute the divergence of horizontal velocity,
 storing the result in scratch space. After the divergence is computed, a
 `parallelScanInner` performs a prefix sum to obtain the vertical pseudo-velocity
 at each layer interface. These pseudo-velocities are stored in the
-`VerticalTransport` member array for later use in mass, momentum, and tracer
+`VerticalTransport` member array for later use in mass, velocity, and tracer
 tendency calculations.
 
 ```c++
@@ -332,12 +332,16 @@ configuration is used to compute interface fluxes, which are then applied to
 update the tracer tendencies.
 
 The `computeFCTVAdvTend` method implements the flux-corrected transport scheme
-following Zalesak 1979. At each interface, both a high-order flux (chosen via
-configuration) and a low-order flux (1st-order upwind) are computed. These
-fluxes are then blended and limited to ensure monotone transport.
+developed by [Zalesak 1979](https://www.sciencedirect.com/science/article/pii/0021999179900512).
+We use by default the FCT formulation of
+[Skamarack & Gassmann 2011](https://journals.ametsoc.org/view/journals/mwre/139/9/mwr-d-10-05056.1.xml).
+At each interface, both a high-order flux (chosen via configuration) and a
+low-order flux (1st-order upwind) are computed. These fluxes are then blended
+and limited to ensure monotone transport.
 
 ## 5 Verification and Testing
 
 Unit tests are required for each compute method to verify correct operation and
-numerical consistency. In addition, convergence tests should confirm the
-expected order of accuracy of the flux functors.
+numerical consistency. In addition, convergence tests with the
+[merry-go-round](https://docs.e3sm.org/polaris/main/users_guide/ocean/tasks/merry_go_round.html)
+test case should confirm the expected order of accuracy of the flux functors.
