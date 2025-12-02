@@ -283,6 +283,10 @@ void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real et
     // Update states
     Kokkos::parallel_for(m_policy_update_states, *this);
     Kokkos::fence();
+
+    // Apply horizontal turbulent diffusion using SGS eddy diffusivities
+    apply_shoc_horizontal_diffusion();
+
   } //subcycle
 
   // Convert theta back to vtheta, and adjust w at surface
@@ -375,6 +379,124 @@ void HyperviscosityFunctorImpl::biharmonic_wk_theta() const
   }
   Kokkos::fence();
 } //biharmonic
+
+void HyperviscosityFunctorImpl::apply_horizontal_turbulent_diffusion () const
+{
+  // If we somehow have no time step, do nothing.
+  if (m_data.dt <= 0) return;
+
+  // Use the same subcycled dt as hypervis if it’s active, otherwise full dt.
+  const Real dt_loc = (m_data.hypervis_subcycle > 0 ? m_data.dt_hvs : m_data.dt);
+
+  auto state   = m_state;
+  auto derived = m_derived;
+  auto sphere_ops = m_sphere_ops;
+
+  // We’ll reuse the existing hv buffers (m_buffers.*) as scratch
+  // to hold the Laplacians, just like lap_s and lap_v in your Fortran.
+  using MidColumn = decltype(Homme::subview(m_buffers.ttens,0,0,0));
+  using IntColumn = decltype(Homme::subview(state.m_w_i,0,0,0,0));
+
+  auto policy = Homme::get_default_team_policy<ExecSpace>(m_geometry.num_elems());
+
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const TeamMember& team) {
+    KernelVariables kv(team, m_tu);
+    const int ie = kv.ie;
+
+    // 1) Compute Laplacians on the current state, like your lap_s / lap_v.
+    //    These fill the hv buffers with Lap(state).
+    sphere_ops.laplace_simple(
+      kv,
+      Homme::subview(state.m_dp3d, ie, m_data.np1),
+      Homme::subview(m_buffers.dptens, ie));
+
+    sphere_ops.laplace_simple(
+      kv,
+      Homme::subview(state.m_vtheta_dp, ie, m_data.np1),
+      Homme::subview(m_buffers.ttens, ie));
+
+    if (m_process_nh_vars) {
+      sphere_ops.laplace_simple<NUM_LEV,NUM_LEV_P>(
+        kv,
+        Homme::subview(state.m_w_i, ie, m_data.np1),
+        Homme::subview(m_buffers.wtens, ie));
+
+      sphere_ops.laplace_simple<NUM_LEV,NUM_LEV_P>(
+        kv,
+        Homme::subview(state.m_phinh_i, ie, m_data.np1),
+        Homme::subview(m_buffers.phitens, ie));
+    }
+
+    // Laplacian of horizontal velocity (u,v) without any nu scaling.
+    sphere_ops.vlaplace_sphere_wk_contra(
+      kv,
+      1.0, // no nu_ratio here, we want plain Lap(v)
+      Homme::subview(state.m_v, ie, m_data.np1),
+      Homme::subview(m_buffers.vtens, ie));
+
+    kv.team_barrier();
+
+    // 2) Apply SHOC’s Km / Kh to those Laplacians and update the state,
+    //    mimicking:
+    //      vtens += turb_diff_mom * lap_v
+    //      stens += turb_diff_heat * lap_s
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, NP*NP),
+                         [&] (const int idx) {
+      const int igp = idx / NP;
+      const int jgp = idx % NP;
+
+      // SHOC diffusivities on dynamics grid
+      auto Km = Homme::subview(derived.m_turb_diff_mom,  ie, igp, jgp);
+      auto Kh = Homme::subview(derived.m_turb_diff_heat, ie, igp, jgp);
+
+      // State variables
+      auto dp     = Homme::subview(state.m_dp3d,     ie, m_data.np1, igp, jgp);
+      auto theta  = Homme::subview(state.m_vtheta_dp,ie, m_data.np1, igp, jgp);
+      auto u      = Homme::subview(state.m_v,        ie, m_data.np1, 0, igp, jgp);
+      auto v      = Homme::subview(state.m_v,        ie, m_data.np1, 1, igp, jgp);
+
+      IntColumn w, phi_i;
+      if (m_process_nh_vars) {
+        w      = Homme::subview(state.m_w_i,     ie, m_data.np1, igp, jgp);
+        phi_i  = Homme::subview(state.m_phinh_i, ie, m_data.np1, igp, jgp);
+      }
+
+      // Laplacians (scratch buffers)
+      auto dp_lap    = Homme::subview(m_buffers.dptens,  ie, igp, jgp);
+      auto theta_lap = Homme::subview(m_buffers.ttens,   ie, igp, jgp);
+      auto u_lap     = Homme::subview(m_buffers.vtens,   ie, 0, igp, jgp);
+      auto v_lap     = Homme::subview(m_buffers.vtens,   ie, 1, igp, jgp);
+
+      MidColumn w_lap, phi_lap;
+      if (m_process_nh_vars) {
+        w_lap   = Homme::subview(m_buffers.wtens,   ie, igp, jgp);
+        phi_lap = Homme::subview(m_buffers.phitens, ie, igp, jgp);
+      }
+
+      // Vertical loop: dp, theta, u, v, (w, phi) all get K * Lapterm * dt_loc
+      Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team, NUM_LEV),
+                           [&] (const int k) {
+        const auto km = Km(k);
+        const auto kh = Kh(k);
+
+        // Scalars (heat-like)
+        dp(k)    += dt_loc * kh * dp_lap(k);
+        theta(k) += dt_loc * kh * theta_lap(k);
+
+        // Momentum (u,v)
+        u(k)     += dt_loc * km * u_lap(k);
+        v(k)     += dt_loc * km * v_lap(k);
+
+        if (m_process_nh_vars) {
+          w(k)     += dt_loc * kh * w_lap(k);
+          phi_i(k) += dt_loc * kh * phi_lap(k);
+        }
+      });
+    }); // TeamThreadRange
+  }); // parallel_for(policy)
+
+  Kokkos::fence();
+}
 
 // Laplace for nu_top
 KOKKOS_INLINE_FUNCTION
