@@ -53,7 +53,13 @@ void compute_mask (const Field& f, const ST value, Comparison CMP, Field& mask)
   auto mv = mask.get_view<int_ND>();
   if (contiguous) {
     auto v = f.get_view<scalar_ND>();
-    if constexpr (N==1) {
+    if constexpr (N==0) {
+      range_t policy(0,1);
+      auto lambda = KOKKOS_LAMBDA (int) {
+        mv() = compare(v(),value,CMP);
+      };
+      Kokkos::parallel_for(policy,lambda);
+    } else if constexpr (N==1) {
       range_t policy(0,end[0]);
       auto lambda = KOKKOS_LAMBDA (int i) {
         mv(i) = compare(v(i),value,CMP);
@@ -138,11 +144,15 @@ void compute_mask (const Field& f, const ScalarWrapper value, Comparison CMP, Fi
 {
   // Sanity checks
   EKAT_REQUIRE_MSG (f.is_allocated(),
-      "Error! Input field was not yet allocated.\n");
-  EKAT_REQUIRE_MSG (f.rank()>0 and f.rank()<=6,
-      "Error! Input field rank not supported.\n");
+      "Error! Input field was not yet allocated.\n"
+      " - field name; " + f.name() + "\n");
+  EKAT_REQUIRE_MSG (f.rank()<=6,
+      "Error! Input field rank not supported.\n"
+      " - field name; " + f.name() + "\n"
+      " - field rank: " + std::to_string(f.rank()) + "\n");
   EKAT_REQUIRE_MSG (mask.is_allocated(),
-      "Error! Mask field was not yet allocated.\n");
+      "Error! Mask field was not yet allocated.\n"
+      " - mask field name; " + mask.name() + "\n");
   EKAT_REQUIRE_MSG (not mask.is_read_only(),
       "Error! Cannot update mask field, as it is read-only.\n"
       " - mask name: " + mask.name() + "\n");
@@ -170,6 +180,7 @@ void compute_mask (const Field& f, const ScalarWrapper value, Comparison CMP, Fi
   switch (f_dt) {
     case DataType::IntType:
       switch(f.rank()) {
+        case 0: impl::compute_mask<0>(f,value.as<int>(),CMP,mask); break;
         case 1: impl::compute_mask<1>(f,value.as<int>(),CMP,mask); break;
         case 2: impl::compute_mask<2>(f,value.as<int>(),CMP,mask); break;
         case 3: impl::compute_mask<3>(f,value.as<int>(),CMP,mask); break;
@@ -179,6 +190,7 @@ void compute_mask (const Field& f, const ScalarWrapper value, Comparison CMP, Fi
       } break;
     case DataType::FloatType:
       switch(f.rank()) {
+        case 0: impl::compute_mask<0>(f,value.as<float>(),CMP,mask); break;
         case 1: impl::compute_mask<1>(f,value.as<float>(),CMP,mask); break;
         case 2: impl::compute_mask<2>(f,value.as<float>(),CMP,mask); break;
         case 3: impl::compute_mask<3>(f,value.as<float>(),CMP,mask); break;
@@ -188,6 +200,7 @@ void compute_mask (const Field& f, const ScalarWrapper value, Comparison CMP, Fi
       } break;
     case DataType::DoubleType:
       switch(f.rank()) {
+        case 0: impl::compute_mask<0>(f,value.as<double>(),CMP,mask); break;
         case 1: impl::compute_mask<1>(f,value.as<double>(),CMP,mask); break;
         case 2: impl::compute_mask<2>(f,value.as<double>(),CMP,mask); break;
         case 3: impl::compute_mask<3>(f,value.as<double>(),CMP,mask); break;

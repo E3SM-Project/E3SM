@@ -18,6 +18,8 @@ TEST_CASE ("compute_mask") {
   std::vector<int>      dims3d = {ncols,2,nlevs};
   std::vector<int>      dims2d = {ncols,nlevs};
 
+  FieldIdentifier fid0d ("foo", {}, units, "some_grid");
+  FieldIdentifier fid0di ("foo", {}, units, "some_grid",DataType::IntType);
   FieldIdentifier fid3d ("foo", {tags3d,dims3d}, units, "some_grid");
   FieldIdentifier fid3di ("foo", {tags3d,dims3d}, units, "some_grid", DataType::IntType);
   FieldIdentifier fid2d ("foo", {tags2d,dims2d}, units, "some_grid");
@@ -39,6 +41,63 @@ TEST_CASE ("compute_mask") {
 
   SECTION ("check") {
     Field x(fid3d), one(fid3di), zero(fid3di), m(fid3di);
+
+    x.allocate_view();
+    one.allocate_view();
+    m.allocate_view();
+    zero.allocate_view();
+
+    one.deep_copy(1);
+    zero.deep_copy(0);
+    x.deep_copy(2);
+
+    // x==1 is false
+    m.deep_copy(-1);
+    compute_mask(x,1,Comparison::EQ,m);
+    REQUIRE(views_are_equal(m,zero));
+
+    // x!=1 is true
+    m.deep_copy(-1);
+    compute_mask(x,1,Comparison::NE,m);
+    REQUIRE(views_are_equal(m,one));
+
+    // x==2 is true
+    m.deep_copy(-1);
+    compute_mask(x,2,Comparison::EQ,m);
+    REQUIRE(views_are_equal(m,one));
+
+    // x>1 is true
+    m.deep_copy(-1);
+    compute_mask(x,1,Comparison::GT,m);
+    REQUIRE(views_are_equal(m,one));
+
+    // x>2 is false
+    m.deep_copy(-1);
+    compute_mask(x,2,Comparison::GT,m);
+    REQUIRE(views_are_equal(m,zero));
+
+    // x>=2 is true
+    m.deep_copy(-1);
+    compute_mask(x,2,Comparison::GE,m);
+    REQUIRE(views_are_equal(m,one));
+
+    // x<3 is true
+    m.deep_copy(-1);
+    compute_mask(x,3,Comparison::LT,m);
+    REQUIRE(views_are_equal(m,one));
+
+    // x<2 is flase
+    m.deep_copy(-1);
+    compute_mask(x,2,Comparison::LT,m);
+    REQUIRE(views_are_equal(m,zero));
+
+    // x<=2 is true
+    m.deep_copy(-1);
+    compute_mask(x,2,Comparison::LE,m);
+    REQUIRE(views_are_equal(m,one));
+  }
+  SECTION ("check 0d") {
+    Field x(fid0d), one(fid0di), zero(fid0di), m(fid0di);
 
     x.allocate_view();
     one.allocate_view();
