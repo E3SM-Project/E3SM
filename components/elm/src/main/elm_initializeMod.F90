@@ -12,7 +12,7 @@ module elm_initializeMod
   use elm_varctl       , only : nsrest, nsrStartup, nsrContinue, nsrBranch
   use elm_varctl       , only : create_glacier_mec_landunit, iulog, iac_present
   use elm_varctl       , only : use_lch4, use_cn, use_voc, use_c13, use_c14
-  use elm_varctl       , only : use_fates, use_betr, use_fates_sp, use_fan, use_fates_luh
+  use elm_varctl       , only : use_fates, use_betr, use_fates_sp, use_fan, use_fates_luh, use_finetop_rad
   use elm_varsur       , only : wt_lunit, urban_valid, wt_nat_patch, wt_cft, wt_glc_mec, topo_glc_mec,firrig,f_surf,f_grd
   use elm_varsur       , only : fert_cft, fert_p_cft, wt_polygon
   use elm_varsur       , only : wt_tunit, elv_tunit, slp_tunit,asp_tunit,num_tunit_per_grd
@@ -82,7 +82,7 @@ contains
     use decompInitMod             , only: decompInit_moab
 #endif
     use domainMod                 , only: domain_check, ldomain, domain_init
-    use surfrdMod                 , only: surfrd_get_globmask, surfrd_get_grid, surfrd_get_topo, surfrd_get_data,surfrd_get_topo_for_solar_rad
+    use surfrdMod                 , only: surfrd_get_globmask, surfrd_get_grid, surfrd_get_topo, surfrd_get_data, surfrd_get_topo_for_solar_rad, surfrd_finetop_data
     use controlMod                , only: control_init, control_print, NLFilename
     use ncdio_pio                 , only: ncd_pio_init
     use initGridCellsMod          , only: initGridCells, initGhostGridCells
@@ -276,9 +276,10 @@ contains
           write(iulog,*) 'Attempting to read topo parameters for TOP solar radiation parameterization from ',trim(fsurdat)
           call shr_sys_flush(iulog)
        endif
-       call surfrd_get_topo_for_solar_rad(ldomain, fsurdat)
 
-    endif    
+       call surfrd_get_topo_for_solar_rad(ldomain, fsurdat)
+    endif
+    
     !-------------------------------------------------------------------------
     ! Topounit
     !-------------------------------------------------------------------------
@@ -421,6 +422,14 @@ contains
     ! This is needed here for the following call to decompInit_glcp
 
     call initGridCells()
+
+    if (fsurdat /= " " .and. use_finetop_rad) then
+       if (masterproc) then
+           write(iulog,*) 'Attempting to read topo parameters for fineTOP parameterization from ',trim(fsurdat)
+           call shr_sys_flush(iulog)
+       endif
+       call surfrd_finetop_data(ldomain, fsurdat)
+    endif
 
     ! Set global seg maps for gridcells, topounits, landlunits, columns and patches
     !if(max_topounits > 1) then
@@ -1035,9 +1044,15 @@ contains
 
     if (nsrest == nsrStartup) then
        call t_startf('init_map2gc')
-       call lnd2atm_minimal(bounds_proc, surfalb_vars, energyflux_vars, lnd2atm_vars)
+       call lnd2atm_minimal(bounds_proc, surfalb_vars, solarabs_vars, energyflux_vars, atm2lnd_vars, lnd2atm_vars)
+       call t_stopf('init_map2gc')
+    else if ( use_finetop_rad .and. ((nsrest == nsrContinue) .or. (nsrest == nsrBranch))) then
+       call t_startf('init_map2gc')
+       call lnd2atm_minimal(bounds_proc, surfalb_vars, solarabs_vars, energyflux_vars, atm2lnd_vars, lnd2atm_vars)
        call t_stopf('init_map2gc')
     end if
+
+
 
     !------------------------------------------------------------
     ! Initialize sno export state to send to glc
