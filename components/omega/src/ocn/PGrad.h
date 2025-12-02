@@ -26,7 +26,9 @@ class PressureGradCentered {
    bool Enabled;
 
    /// constructor declaration
-   PressureGradCentered(const HorzMesh *Mesh);
+   PressureGradCentered(const HorzMesh *Mesh, ///< [in] Horizontal mesh
+                       const VertCoord *VCoord  ///< [in] Vertical coordinate
+                       );
 
    // Compute centered pressure gradient contribution for given edge and
    // vertical chunk. This appends results into the Tend array (in-place).
@@ -36,13 +38,14 @@ class PressureGradCentered {
                                    const Array2DReal &LayerThick,
                                    const Array2DReal &InterfaceProduct,
                                    const Array2DReal &SpecVol) const {
-      const I4 KStart = KChunk * VecLength;
-
+      const I4 KStart = chunkStart(KChunk, MinLayerEdgeBot(IEdge));
+      const I4 KLen   = chunkLength(KChunk, KStart, MaxLayerEdgeTop(IEdge));
+      
       const I4 ICell0      = CellsOnEdge(IEdge, 0);
       const I4 ICell1      = CellsOnEdge(IEdge, 1);
       const Real InvDcEdge = 1.0_Real / DcEdge(IEdge);
 
-      for (int KVec = 0; KVec < VecLength; ++KVec) {
+      for (int KVec = 0; KVec < KLen; ++KVec) {
          const I4 K = KStart + KVec;
          const Real InvLayerThickEdge =
              2.0_Real / (LayerThick(ICell1, K) + LayerThick(ICell0, K));
@@ -66,6 +69,8 @@ class PressureGradCentered {
    Array2DI4 CellsOnEdge;
    Array1DReal DcEdge;
    Array2DReal EdgeMask;
+   Array1DI4 MinLayerEdgeBot;
+   Array1DI4 MaxLayerEdgeTop;
 };
 
 /// High-order pressure gradient functor (placeholder)
@@ -74,15 +79,20 @@ class PressureGradHighOrder {
    bool Enabled;
 
    /// constructor declaration
-   PressureGradHighOrder(const HorzMesh *Mesh);
+   PressureGradHighOrder(const HorzMesh *Mesh, ///< [in] Horizontal mesh
+                        const VertCoord *VCoord ///< [in] Vertical coordinate
+                        );
 
    KOKKOS_FUNCTION void operator()(const Array2DReal &Tend, I4 IEdge, I4 KChunk,
                                    const Array2DReal &Pressure,
                                    const Array2DReal &Geopotential,
                                    const Array2DReal &SpecVol) const {
+
       // Placeholder: for now, no-op (future high-order implementation)
-      const I4 KStart = KChunk * VecLength;
-      for (int KVec = 0; KVec < VecLength; ++KVec) {
+      const I4 KStart = chunkStart(KChunk, MinLayerEdgeBot(IEdge));
+      const I4 KLen   = chunkLength(KChunk, KStart, MaxLayerEdgeTop(IEdge));
+
+      for (int KVec = 0; KVec < KLen; ++KVec) {
          const I4 K = KStart + KVec;
          Tend(IEdge, K) += 0.0_Real;
       }
@@ -92,6 +102,8 @@ class PressureGradHighOrder {
    Array2DI4 CellsOnEdge;
    Array1DReal DcEdge;
    Array2DReal EdgeMask;
+   Array1DI4 MinLayerEdgeBot;
+   Array1DI4 MaxLayerEdgeTop;
 };
 
 /// Pressure gradient manager class
@@ -154,6 +166,8 @@ class PressureGrad {
    Array2DI4 CellsOnEdge;      ///< cells surrounding each edge
    Array1DReal DcEdge;         ///< distance between cell centers across edge
    Array2DReal EdgeSignOnCell; ///< orientation of edge relative to cell
+   Array1DI4 MinLayerEdgeBot;   ///< min vertical layer on each edge
+   Array1DI4 MaxLayerEdgeTop;   ///< max vertical layer on each edge
 
    // Instances of functors
    PressureGradCentered CenteredPGrad;

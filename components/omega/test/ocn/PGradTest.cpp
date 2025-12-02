@@ -127,9 +127,13 @@ int main(int argc, char *argv[]) {
 
          auto &MinLayerCell = VCoord->MinLayerCell;
          auto &MaxLayerCell = VCoord->MaxLayerCell;
+         auto &MinLayerEdgeBot = VCoord->MinLayerEdgeBot;
+         auto &MaxLayerEdgeTop = VCoord->MaxLayerEdgeTop;
          parallelFor({DefMesh->NCellsAll}, KOKKOS_LAMBDA(int i) {
             MinLayerCell(i) = 0;
             MaxLayerCell(i) = NVertLayers - 1;
+            MinLayerEdgeBot(i) = 0;
+            MaxLayerEdgeTop(i) = NVertLayers - 1;
          });
 
          auto &CellsOnEdge = DefMesh->CellsOnEdge;

@@ -10,6 +10,7 @@
 #include "Field.h"
 #include "HorzMesh.h"
 #include "VertCoord.h"
+#include "OmegaKokkos.h"
 
 namespace OMEGA {
 
@@ -75,8 +76,9 @@ PressureGrad::PressureGrad(
     const VertCoord *VCoord, ///< [in] Vertical coordinate
     Config *Options)         ///< [in] Configuration options
     : CellsOnEdge(Mesh->CellsOnEdge), DcEdge(Mesh->DcEdge),
-      EdgeSignOnCell(Mesh->EdgeSignOnCell), CenteredPGrad(Mesh),
-      HighOrderPGrad(Mesh) {
+      EdgeSignOnCell(Mesh->EdgeSignOnCell), MinLayerEdgeBot(VCoord->MinLayerEdgeBot),
+      MaxLayerEdgeTop(VCoord->MaxLayerEdgeTop), CenteredPGrad(Mesh, VCoord),
+      HighOrderPGrad(Mesh, VCoord) {
 
    // store mesh sizes
    NEdgesAll   = Mesh->NEdgesAll;
@@ -158,6 +160,8 @@ void PressureGrad::computePressureGrad(Array2DReal &Tend,
    OMEGA_SCOPE(LocCenteredPGrad, CenteredPGrad);
    OMEGA_SCOPE(LocHighOrderPGrad, HighOrderPGrad);
    OMEGA_SCOPE(LocInterfaceProduct, InterfaceProduct);
+   OMEGA_SCOPE(LocMinLayerEdgeBot, MinLayerEdgeBot);
+   OMEGA_SCOPE(LocMaxLayerEdgeTop, MaxLayerEdgeTop);
 
    const Array2DReal &PressureMid       = VCoord->PressureMid;
    const Array2DReal &PressureInterface = VCoord->PressureInterface;
@@ -172,20 +176,51 @@ void PressureGrad::computePressureGrad(Array2DReal &Tend,
       computeInterfaceProduct(PressureMid, SpecVol,
                               LayerThick, ZInterface);
 
-      parallelFor(
-          "pgrad-centered", {NEdgesAll, NChunks},
-          KOKKOS_LAMBDA(I4 IEdge, I4 KChunk) {
-             LocCenteredPGrad(Tend, IEdge, KChunk, PressureMid,
-                              Geopotential, LayerThick,
-                              LocInterfaceProduct, SpecVol);
+      parallelForOuter(
+          "pgrad-centered", {NEdgesAll},
+          KOKKOS_LAMBDA(I4 IEdge, const TeamMember &Team) {
+             const int KMin = LocMinLayerEdgeBot(IEdge);
+             const int KMax = LocMaxLayerEdgeTop(IEdge);
+             const int KRange = vertRange(KMin, KMax);
+
+             parallelForInner(
+                 Team, KRange,
+                 INNER_LAMBDA(int KChunk) {
+                    LocCenteredPGrad(Tend, IEdge, KChunk, PressureMid,
+                                     Geopotential, LayerThick,
+                                     LocInterfaceProduct, SpecVol);
+                 });
           });
+
+      //parallelFor(
+      //    "pgrad-centered", {NEdgesAll, NChunks},
+      //    KOKKOS_LAMBDA(I4 IEdge, I4 KChunk) {
+      //       LocCenteredPGrad(Tend, IEdge, KChunk, PressureMid,
+      //                        Geopotential, LayerThick,
+      //                        LocInterfaceProduct, SpecVol);
+      //    });
    } else {
-      parallelFor(
-          "pgrad-highorder", {NEdgesAll, NChunks},
-          KOKKOS_LAMBDA(I4 IEdge, I4 KChunk) {
-             LocHighOrderPGrad(Tend, IEdge, KChunk, PressureMid, Geopotential,
-                               SpecVol);
+      parallelForOuter(
+          "pgrad-highorder", {NEdgesAll},
+          KOKKOS_LAMBDA(I4 IEdge, const TeamMember &Team) {
+             const int KMin = MinLayerEdgeBot(IEdge);
+             const int KMax = MaxLayerEdgeTop(IEdge);
+             const int KRange = vertRange(KMin, KMax);
+
+             parallelForInner(
+                 Team, KRange,
+                 INNER_LAMBDA(int KChunk) {
+                    LocHighOrderPGrad(Tend, IEdge, KChunk, PressureMid,
+                                      Geopotential, SpecVol);
+                 });
           });
+
+      //parallelFor(
+      //    "pgrad-highorder", {NEdgesAll, NChunks},
+      //    KOKKOS_LAMBDA(I4 IEdge, I4 KChunk) {
+      //       LocHighOrderPGrad(Tend, IEdge, KChunk, PressureMid, Geopotential,
+      //                         SpecVol);
+      //    });
    }
 } // end compute pressure gradient
 
@@ -201,48 +236,120 @@ void PressureGrad::computeInterfaceProduct(
    OMEGA_SCOPE(LocCellsOnEdge, CellsOnEdge);
    OMEGA_SCOPE(LocDcEdge, DcEdge);
    OMEGA_SCOPE(LocInterfaceProduct, InterfaceProduct);
-   parallelFor(
-       "compute-interface-product", {NEdgesAll, NVertLayersP1},
-       KOKKOS_LAMBDA(I4 IEdge, I4 K) {
+   OMEGA_SCOPE(LocMinLayerEdgeBot, MinLayerEdgeBot);
+   OMEGA_SCOPE(LocMaxLayerEdgeTop, MaxLayerEdgeTop);
+   parallelForOuter(
+       "compute-interface-product", {NEdgesAll},
+       KOKKOS_LAMBDA(I4 IEdge, const TeamMember &Team) {
+          const int KMin = LocMinLayerEdgeBot(IEdge);
+          const int KMax = LocMaxLayerEdgeTop(IEdge);
+          
           const I4 ICell0 = LocCellsOnEdge(IEdge, 0);
           const I4 ICell1 = LocCellsOnEdge(IEdge, 1);
 
-         if (K == 0) {
-            LocInterfaceProduct(IEdge, K) = 
-                 PressureMid(ICell1, K) * SpecVol(ICell1, K) * LayerThick(ICell1, K) +
-                 PressureMid(ICell0, K) * SpecVol(ICell0, K) * LayerThick(ICell0, K);
-            LocInterfaceProduct(IEdge, K) /= (LayerThick(ICell1, K) + LayerThick(ICell0, K));
+          LocInterfaceProduct(IEdge, KMin) =
+              PressureMid(ICell1, KMin) * SpecVol(ICell1, KMin) *
+                  LayerThick(ICell1, KMin) +
+              PressureMid(ICell0, KMin) * SpecVol(ICell0, KMin) *
+                  LayerThick(ICell0, KMin);
+          LocInterfaceProduct(IEdge, KMin) /=
+              (LayerThick(ICell1, KMin) + LayerThick(ICell0, KMin));
 
-         } else if (K == NVertLayers) {
-            LocInterfaceProduct(IEdge, K) = 
-                 PressureMid(ICell1, K-1) * SpecVol(ICell1, K-1) * LayerThick(ICell1, K-1) +
-                 PressureMid(ICell0, K-1) * SpecVol(ICell0, K-1) * LayerThick(ICell0, K-1);
-            LocInterfaceProduct(IEdge, K) /= (LayerThick(ICell1, K-1) + LayerThick(ICell0, K-1));
+          LocInterfaceProduct(IEdge, KMin) *=
+                (ZInterface(ICell1, KMin) - ZInterface(ICell0, KMin)) /
+                LocDcEdge(IEdge);
 
-         } else {
-            LocInterfaceProduct(IEdge, K) = 
-                 PressureMid(ICell1, K) * SpecVol(ICell1, K) * LayerThick(ICell1, K) +
-                 PressureMid(ICell0, K) * SpecVol(ICell0, K) * LayerThick(ICell0, K) + 
-                 PressureMid(ICell1, K-1) * SpecVol(ICell1, K-1) * LayerThick(ICell1, K-1) +
-                 PressureMid(ICell0, K-1) * SpecVol(ICell0, K-1) * LayerThick(ICell0, K-1);
-            LocInterfaceProduct(IEdge, K) /= (LayerThick(ICell1, K) + LayerThick(ICell0, K) +
-                                              LayerThick(ICell1, K-1) + LayerThick(ICell0, K-1));}
+          const int KRange = vertRange(KMin + 1, KMax - 1);
+           parallelForInner(
+              Team, KRange,
+              INNER_LAMBDA(int KChunk) {
+                 const I4 KStart = chunkStart(KChunk, KMin + 1);
+                 const I4 KLen   = chunkLength(KChunk, KStart, KMax - 1);
 
-         LocInterfaceProduct(IEdge, K) *= (ZInterface(ICell1, K) - ZInterface(ICell0, K)) / LocDcEdge(IEdge);
-       });
+
+                 for (int KVec = 0; KVec < KLen; ++KVec) {
+                    const I4 K = KStart + KVec;
+
+                       LocInterfaceProduct(IEdge, K) =
+                           PressureMid(ICell1, K) * SpecVol(ICell1, K) *
+                               LayerThick(ICell1, K) +
+                           PressureMid(ICell0, K) * SpecVol(ICell0, K) *
+                               LayerThick(ICell0, K) +
+                           PressureMid(ICell1, K - 1) * SpecVol(ICell1, K - 1) *
+                               LayerThick(ICell1, K - 1) +
+                           PressureMid(ICell0, K - 1) * SpecVol(ICell0, K - 1) *
+                               LayerThick(ICell0, K - 1);
+                       LocInterfaceProduct(IEdge, K) /=
+                           (LayerThick(ICell1, K) + LayerThick(ICell0, K) +
+                            LayerThick(ICell1, K - 1) +
+                            LayerThick(ICell0, K - 1));
+
+                       LocInterfaceProduct(IEdge, K) *=
+                             (ZInterface(ICell1, K) - ZInterface(ICell0, K)) /
+                             LocDcEdge(IEdge);
+                 }          
+           });
+
+          LocInterfaceProduct(IEdge, KMax) =
+              PressureMid(ICell1, KMax - 1) * SpecVol(ICell1, KMax - 1) *
+                  LayerThick(ICell1, KMax - 1) +
+              PressureMid(ICell0, KMax - 1) * SpecVol(ICell0, KMax - 1) *
+                  LayerThick(ICell0, KMax - 1);
+          LocInterfaceProduct(IEdge, KMax) /=
+              (LayerThick(ICell1, KMax - 1) +
+               LayerThick(ICell0, KMax - 1));
+          LocInterfaceProduct(IEdge, KMax) *=
+                (ZInterface(ICell1, KMax) - ZInterface(ICell0, KMax)) /
+                LocDcEdge(IEdge);
+    });
+   //parallelFor(
+   //    "compute-interface-product", {NEdgesAll, NVertLayersP1},
+   //    KOKKOS_LAMBDA(I4 IEdge, I4 K) {
+   //       const I4 ICell0 = LocCellsOnEdge(IEdge, 0);
+   //       const I4 ICell1 = LocCellsOnEdge(IEdge, 1);
+
+   //      if (K == 0) {
+   //         LocInterfaceProduct(IEdge, K) = 
+   //              PressureMid(ICell1, K) * SpecVol(ICell1, K) * LayerThick(ICell1, K) +
+   //              PressureMid(ICell0, K) * SpecVol(ICell0, K) * LayerThick(ICell0, K);
+   //         LocInterfaceProduct(IEdge, K) /= (LayerThick(ICell1, K) + LayerThick(ICell0, K));
+
+   //      } else if (K == NVertLayers) {
+   //         LocInterfaceProduct(IEdge, K) = 
+   //              PressureMid(ICell1, K-1) * SpecVol(ICell1, K-1) * LayerThick(ICell1, K-1) +
+   //              PressureMid(ICell0, K-1) * SpecVol(ICell0, K-1) * LayerThick(ICell0, K-1);
+   //         LocInterfaceProduct(IEdge, K) /= (LayerThick(ICell1, K-1) + LayerThick(ICell0, K-1));
+
+   //      } else {
+   //         LocInterfaceProduct(IEdge, K) = 
+   //              PressureMid(ICell1, K) * SpecVol(ICell1, K) * LayerThick(ICell1, K) +
+   //              PressureMid(ICell0, K) * SpecVol(ICell0, K) * LayerThick(ICell0, K) + 
+   //              PressureMid(ICell1, K-1) * SpecVol(ICell1, K-1) * LayerThick(ICell1, K-1) +
+   //              PressureMid(ICell0, K-1) * SpecVol(ICell0, K-1) * LayerThick(ICell0, K-1);
+   //         LocInterfaceProduct(IEdge, K) /= (LayerThick(ICell1, K) + LayerThick(ICell0, K) +
+   //                                           LayerThick(ICell1, K-1) + LayerThick(ICell0, K-1));}
+
+   //      LocInterfaceProduct(IEdge, K) *= (ZInterface(ICell1, K) - ZInterface(ICell0, K)) / LocDcEdge(IEdge);
+   //    });
 
 } // end compute interface product
 
 //------------------------------------------------------------------------------
 // Constructor for centered pressure gradient functor
-PressureGradCentered::PressureGradCentered(const HorzMesh *Mesh)
+PressureGradCentered::PressureGradCentered(const HorzMesh *Mesh, ///< [in] Horizontal mesh
+                                           const VertCoord *VCoord  ///< [in] Vertical coordinate
+                                           )
     : CellsOnEdge(Mesh->CellsOnEdge), DcEdge(Mesh->DcEdge),
-      EdgeMask(Mesh->EdgeMask) {}
+      EdgeMask(Mesh->EdgeMask), MinLayerEdgeBot(VCoord->MinLayerEdgeBot),
+      MaxLayerEdgeTop(VCoord->MaxLayerEdgeTop) {}
 
 //------------------------------------------------------------------------------
 // Constructor for high order pressure gradient functor
-PressureGradHighOrder::PressureGradHighOrder(const HorzMesh *Mesh)
+PressureGradHighOrder::PressureGradHighOrder(const HorzMesh *Mesh, ///< [in] Horizontal mesh
+                                             const VertCoord *VCoord  ///< [in] Vertical coordinate
+                                             )
     : CellsOnEdge(Mesh->CellsOnEdge), DcEdge(Mesh->DcEdge),
-      EdgeMask(Mesh->EdgeMask) {}
+      EdgeMask(Mesh->EdgeMask), MinLayerEdgeBot(VCoord->MinLayerEdgeBot),
+      MaxLayerEdgeTop(VCoord->MaxLayerEdgeTop) {}
 
 } // namespace OMEGA
