@@ -189,8 +189,8 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
    integer,  dimension(pcols)      :: maxim1       ! time n-1 index of level with largest moist static energy
    real(r8), dimension(pcols)      :: capem1       ! time n-1 CAPE
 
-   logical  iclosure                               ! flag for compute_dilute_cape()
-   real(r8) cape_threshold_alt                     ! local cape_threshold to allow exceptions when calling closure() with dcape trigger
+   logical  cape_calc_msemax_klev                  ! flag for compute_dilute_cape()
+   real(r8) cape_threshold_alt                     ! local cape_threshold to allow exceptions when calling zm_closure() with dcape trigger
 
    integer,  dimension(pcols)      :: gather_index ! temporary variable used to set ideep
 
@@ -245,7 +245,7 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
    real(r8), parameter :: dcon  = 25.e-6_r8
    real(r8), parameter :: mucon = 5.3_r8
 
-   integer dcapemx(pcols)  ! launching level index saved from 1st call for CAPE calculation;  used in 2nd call when DCAPE-ULL active
+   integer prev_msemax_klev(pcols)  ! launching level index saved from 1st call for CAPE calculation;  used in 2nd call when DCAPE-ULL active
 
    !----------------------------------------------------------------------------
    ! Set upper limit of convection to "limcnv-1"
@@ -344,11 +344,11 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
 
    !----------------------------------------------------------------------------
    ! Evaluate Tparcel, qs(Tparcel), buoyancy, CAPE, lcl, lel, parcel launch level at index maxi()=hmax
-   ! - call #1, iclosure=.true.   standard calculation using state of current step
-   ! - call #2, iclosure=.false.  use state from previous step and launch level from call #1
+   ! - call #1, cape_calc_msemax_klev=.true.   standard calculation using state of current step
+   ! - call #2, cape_calc_msemax_klev=.false.  use launch level (msemax_klev) from previous call
    ! DCAPE is the difference in CAPE between the two calls using the same launch level
 
-   iclosure = .true.
+   cape_calc_msemax_klev = .true.
    call compute_dilute_cape( pcols, ncol, pver, pverp, &
                              zm_param%num_cin, msg, &
                              q, t_mid, z_mid, p_mid, p_int, &
@@ -356,12 +356,12 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
                              tp, qstp, maxi, tl, &
                              lcl, lel, cape, &
                              zm_const, zm_param, &
-                             iclosure )
+                             cape_calc_msemax_klev )
 
    ! Calculate dcape trigger condition
    if ( .not.is_first_step .and. zm_param%trig_dcape ) then
-      iclosure = .false.
-      dcapemx(:ncol) = maxi(:ncol)
+      cape_calc_msemax_klev = .false.
+      prev_msemax_klev(:ncol) = maxi(:ncol)
       call compute_dilute_cape( pcols, ncol, pver, pverp, &
                                 zm_param%num_cin, msg, &
                                 q_star, t_star, z_mid, p_mid, p_int, &
@@ -369,7 +369,7 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
                                 tpm1, qstpm1, maxim1, tlm1, &
                                 lclm1, lelm1, capem1, &
                                 zm_const, zm_param, &
-                                iclosure, dcapemx )
+                                cape_calc_msemax_klev, prev_msemax_klev )
       dcape(:ncol) = (cape(:ncol)-capem1(:ncol))/(delt*2._r8)
    endif
 
@@ -471,9 +471,7 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
    end if
 
    !----------------------------------------------------------------------------
-   ! calculate sub-cloud layer pressure "thickness" for use in
-   ! closure and tendency routines.
-
+   ! calculate sub-cloud layer pressure "thickness" for closure and tendency calculations
    do k = msg+1, pver
       do i = 1,lengath
          if (k >= maxg(i)) then
@@ -483,7 +481,7 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
    end do
 
    !----------------------------------------------------------------------------
-   ! define interfacial values for (q,s) used in subsequent routines.
+   ! define interfacial values for (q,s) used in subsequent routines
    do k = msg+2, pver
       do i = 1,lengath
          sdifr = 0._r8
@@ -536,12 +534,12 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
 
    !----------------------------------------------------------------------------
 
-   call closure(pcols, ncol, pver, pverp, msg, cape_threshold_alt, &
-                lclg, lelg, jt, maxg, dsubcld, &
-                z_mid_g, z_int_g, pg, dp, tg, &
-                sg, qg, qs, qlg, shat, qhat, &
-                tlg, tpg, qstpg, su, qu, &
-                mc, du, mu, md, qd, sd, capeg, mb )
+   call zm_closure(pcols, ncol, pver, pverp, msg, cape_threshold_alt, &
+                   lclg, lelg, jt, maxg, dsubcld, &
+                   z_mid_g, z_int_g, pg, dp, tg, &
+                   sg, qg, qs, qlg, shat, qhat, &
+                   tlg, tpg, qstpg, su, qu, &
+                   mc, du, mu, md, qd, sd, capeg, mb )
 
    !----------------------------------------------------------------------------
    ! limit cloud base mass flux to theoretical upper bound.
@@ -1788,12 +1786,12 @@ end subroutine cldprp
 
 !===================================================================================================
 
-subroutine closure(pcols, ncol, pver, pverp, msg, cape_threshold_in, &
-                   lcl, lel, jt, mx, dsubcld, &
-                   z_mid, z_int, p_mid, dp, t_mid, &
-                   s, q, qs, ql, shat, qhat,  &
-                   tl, tp, qstp, su, qu, &
-                   mc, du, mu, md, qd, sd, cape, mb )
+subroutine zm_closure(pcols, ncol, pver, pverp, msg, cape_threshold_in, &
+                      lcl, lel, jt, mx, dsubcld, &
+                      z_mid, z_int, p_mid, dp, t_mid, &
+                      s, q, qs, ql, shat, qhat,  &
+                      tl, tp, qstp, su, qu, &
+                      mc, du, mu, md, qd, sd, cape, mb )
    !----------------------------------------------------------------------------
    ! Purpose: calculate closure condition for ZM convection scheme using the
    !          revised quasi-equilibrium hypothesis of Z02, in which a
@@ -1965,7 +1963,7 @@ subroutine closure(pcols, ncol, pver, pverp, msg, cape_threshold_in, &
 
    !----------------------------------------------------------------------------
    return
-end subroutine closure
+end subroutine zm_closure
 
 !===================================================================================================
 
