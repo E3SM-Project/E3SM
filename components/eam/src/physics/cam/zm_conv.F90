@@ -919,9 +919,9 @@ end subroutine zm_conv_evap
 
 !===================================================================================================
 
-subroutine calculate_fractional_entrainment(pcols, ncol, pver, pverp, msg, &
-                                            jb, jt, j0, z_mid, z_int, dz, &
-                                            h_env, h_env_sat, h_env_min, eps, eps0)
+subroutine zm_calc_fractional_entrainment(pcols, ncol, pver, pverp, msg, &
+                                          jb, jt, j0, z_mid, z_int, dz, &
+                                          h_env, h_env_sat, h_env_min, eps, eps0)
    !----------------------------------------------------------------------------
    ! Purpose: Determine properties of ZM updrafts and downdrafts
    !----------------------------------------------------------------------------
@@ -1077,7 +1077,7 @@ subroutine calculate_fractional_entrainment(pcols, ncol, pver, pverp, msg, &
    !----------------------------------------------------------------------------
    return
 
-end subroutine calculate_fractional_entrainment
+end subroutine zm_calc_fractional_entrainment
 
 !===================================================================================================
 
@@ -1324,9 +1324,9 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
 
    !----------------------------------------------------------------------------
    ! calculate fractional entrainment (i.e. "lambda D") - see eq (4.78) from Neale et al. (2012)
-   call calculate_fractional_entrainment(pcols, ncol, pver, pverp, msg, &
-                                         jb, jt, j0, z_mid, z_int, dz, &
-                                         h_env, h_env_sat, h_env_min, eps, eps0)
+   call zm_calc_fractional_entrainment(pcols, ncol, pver, pverp, msg, &
+                                       jb, jt, j0, z_mid, z_int, dz, &
+                                       h_env, h_env_sat, h_env_min, eps, eps0)
 
    !----------------------------------------------------------------------------
    ! iteration to set cloud properties
