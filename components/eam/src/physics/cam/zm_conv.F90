@@ -1832,7 +1832,7 @@ subroutine closure(pcols, ncol, pver, pverp, msg, cape_threshold_in, &
    real(r8), dimension(pcols,pver), intent(in ) :: qhat              ! environment specific humidity at interfaces
    real(r8), dimension(pcols),      intent(in ) :: tl                ! parcel temperature at lcl
    real(r8), dimension(pcols,pver), intent(in ) :: tp                ! parcel temperature
-   real(r8), dimension(pcols,pver), intent(in ) :: qstp              ! parcel spec humidity
+   real(r8), dimension(pcols,pver), intent(in ) :: qstp              ! parcel specific humidity
    real(r8), dimension(pcols,pver), intent(in ) :: su                ! updraft dry static energy (normalized)
    real(r8), dimension(pcols,pver), intent(in ) :: qu                ! updraft specific humidity
    real(r8), dimension(pcols,pver), intent(in ) :: mc                ! net convective mass flux
@@ -1845,44 +1845,35 @@ subroutine closure(pcols, ncol, pver, pverp, msg, cape_threshold_in, &
    real(r8), dimension(pcols),      intent(out) :: mb                ! cloud base mass flux
    !----------------------------------------------------------------------------
    ! Local variables
-   real(r8), dimension(pcols,pver) :: dtmdt     ! convective temperature tendency
-   real(r8), dimension(pcols,pver) :: dqmdt     ! convective sp. humidity tendency
    real(r8), dimension(pcols,pver) :: dboydt    ! integrand of cape change
-   real(r8), dimension(pcols)      :: dtbdt     ! parcel temperature change due to change of subcloud layer properties during convection
-   real(r8), dimension(pcols)      :: dqbdt     ! ?
-   real(r8), dimension(pcols)      :: dtldt     ! ?
-   real(r8), dimension(pcols)      :: dadt      ! CAPE consumption rate per unit cloud base mass flux (i.e. F in ZM95)
+   real(r8), dimension(pcols,pver) :: dtmdt     ! free tropospheric tendencies
+   real(r8), dimension(pcols,pver) :: dqmdt     ! free tropospheric tendencies
+   real(r8), dimension(pcols)      :: dtbdt     ! sub-cloud layer tendencies
+   real(r8), dimension(pcols)      :: dqbdt     ! sub-cloud layer tendencies
+   real(r8), dimension(pcols)      :: dtldt     ! sub-cloud layer tendencies
+   real(r8), dimension(pcols)      :: dadt      ! CAPE consumption rate per unit cloud base mass flux (i.e. "F")
    real(r8) :: dtpdt          ! ?
    real(r8) :: dqsdtp         ! ?
    real(r8) :: thetavp        ! cloud virtual potential temperature
    real(r8) :: thetavm        ! ambient virtual potential temperature
-   real(r8) :: dltaa          ! Analogous to the "cloud work function" described by AS74
-   real(r8) :: beta = 0._r8   ! apparently this does nothing?
-   real(r8) :: eb             !
-   real(r8) :: debdt          !
+   real(r8) :: dltaa          ! Analogous to the "cloud work function" described by AS74 (i.e. "A")
+   real(r8) :: eb             ! ?
+   real(r8) :: debdt          ! ?
    integer  :: i, k           ! loop iterators
-   integer  :: kmin, kmax     ! k iteration limits
-   !----------------------------------------------------------------------------
-   ! NOTES:
-   ! The change of subcloud layer properties due to convection is related to
-   ! updrafts and downdrafts. The following formulas are used to define
-   ! betau, betad and f(z):
-   !   mc(z) = f(z)*mb
-   !   mub   = betau*mb
-   !   mdb   = betad*mb
-   ! This implies all time derivatives are effectively time derivatives
-   ! per unit cloud-base mass flux, and have units of 1/mb instead of 1/sec.
+   integer  :: kmin, kmax     ! vertical iteration limits for vertical integration
+
+   real(r8), parameter :: beta = 0._r8   ! proportion to use liquid water from layer below
    !----------------------------------------------------------------------------
    ! initialization
-   do k = msg+1, pver
-      do i = 1,ncol
-         dtmdt(i,k) = 0._r8
-         dqmdt(i,k) = 0._r8
-      end do
-   end do
+   dadt(1:ncol) = 0._r8
+   dtmdt(1:ncol,(msg+1):pver) = 0._r8
+   dqmdt(1:ncol,(msg+1):pver) = 0._r8
+
+   kmin = minval(lel(1:ncol))
+   kmax = maxval( mx(1:ncol)) - 1
 
    !----------------------------------------------------------------------------
-   ! ?
+   ! Calculate sub-cloud tendencies of virtual temperature and humidity
    do i = 1,ncol
       mb(i) = 0._r8
       eb = p_mid(i,mx(i))*q(i,mx(i))/ (zm_const%epsilo+q(i,mx(i)))
@@ -1898,9 +1889,10 @@ subroutine closure(pcols, ncol, pver, pverp, msg, cape_threshold_in, &
    end do
 
    !----------------------------------------------------------------------------
-   ! ?
+   ! Calculate dtmdt & dqmdt
    do k = msg+1, pver-1
       do i = 1,ncol
+         ! cloud top
          if (k==jt(i)) then
             dtmdt(i,k) = (1._r8/dp(i,k)) &
                          *(mu(i,k+1)*(su(i,k+1)-shat(i,k+1)-zm_const%latvap/zm_const%cpair*ql(i,k+1)) &
@@ -1909,13 +1901,7 @@ subroutine closure(pcols, ncol, pver, pverp, msg, cape_threshold_in, &
                          *(mu(i,k+1)*(qu(i,k+1)-qhat(i,k+1)+ql(i,k+1) ) &
                          + md(i,k+1)*(qd(i,k+1)-qhat(i,k+1)))
          end if
-      end do
-   end do
-
-   !----------------------------------------------------------------------------
-   ! ?
-   do k = msg+1, pver-1
-      do i = 1,ncol
+         ! below cloud top
          if ( k>jt(i) .and. k<mx(i) ) then
             dtmdt(i,k) = ( mc(i,k  )*(shat(i,k)-s(i,k)     ) &
                           +mc(i,k+1)*(s(i,k)   -shat(i,k+1)) ) / dp(i,k) &
@@ -1933,7 +1919,15 @@ subroutine closure(pcols, ncol, pver, pverp, msg, cape_threshold_in, &
    ! Calculate dboydt (integrand of cape change)
    do k = msg+1, pver
       do i = 1,ncol
-         ! calculate dboydt between LCL and cloud top
+         ! levels between parcel launch and LCL
+         if ( k>lcl(i) .and. k<mx(i) ) then
+            thetavp = tp(i,k)   * (1000._r8/p_mid(i,k))**(zm_const%rdair/zm_const%cpair)*(1._r8+0.608_r8*q(i,mx(i)))
+            thetavm = t_mid(i,k)* (1000._r8/p_mid(i,k))**(zm_const%rdair/zm_const%cpair)*(1._r8+0.608_r8*q(i,k))
+            dboydt(i,k) = (dtbdt(i)/t_mid(i,mx(i))+0.608_r8/ (1._r8+0.608_r8*q(i,mx(i)))*dqbdt(i)- &
+                          dtmdt(i,k)/t_mid(i,k)-0.608_r8/ (1._r8+0.608_r8*q(i,k))*dqmdt(i,k))* &
+                          zm_const%grav*thetavp/thetavm
+         end if
+         ! levels between LCL and cloud top
          if ( k>=lel(i) .and. k<=lcl(i) ) then
             thetavp = tp(i,k)   * (1000._r8/p_mid(i,k))**(zm_const%rdair/zm_const%cpair)*(1._r8+1.608_r8*qstp(i,k)-q(i,mx(i)))
             thetavm = t_mid(i,k)* (1000._r8/p_mid(i,k))**(zm_const%rdair/zm_const%cpair)*(1._r8+0.608_r8*q(i,k))
@@ -1944,22 +1938,11 @@ subroutine closure(pcols, ncol, pver, pverp, msg, cape_threshold_in, &
                           (1.608_r8 * dqsdtp * dtpdt -dqbdt(i))) - (dtmdt(i,k)/t_mid(i,k)+0.608_r8/ &
                           (1._r8+0.608_r8*q(i,k))*dqmdt(i,k)))*zm_const%grav*thetavp/thetavm
          end if
-         ! calculate dboydt between parcel launch and LCL
-         if ( k>lcl(i) .and. k<mx(i) ) then
-            thetavp = tp(i,k)   * (1000._r8/p_mid(i,k))**(zm_const%rdair/zm_const%cpair)*(1._r8+0.608_r8*q(i,mx(i)))
-            thetavm = t_mid(i,k)* (1000._r8/p_mid(i,k))**(zm_const%rdair/zm_const%cpair)*(1._r8+0.608_r8*q(i,k))
-            dboydt(i,k) = (dtbdt(i)/t_mid(i,mx(i))+0.608_r8/ (1._r8+0.608_r8*q(i,mx(i)))*dqbdt(i)- &
-                          dtmdt(i,k)/t_mid(i,k)-0.608_r8/ (1._r8+0.608_r8*q(i,k))*dqmdt(i,k))* &
-                          zm_const%grav*thetavp/thetavm
-         end if
       end do
    end do
 
    !----------------------------------------------------------------------------
    ! vertically integrate buoyancy change
-   dadt(1:ncol) = 0._r8
-   kmin = minval(lel(1:ncol))
-   kmax = maxval(mx(1:ncol)) - 1
    do k = kmin, kmax
       do i = 1,ncol
          if ( k >= lel(i) .and. k <= mx(i) - 1) then
