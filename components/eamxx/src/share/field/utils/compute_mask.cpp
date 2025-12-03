@@ -145,14 +145,14 @@ void compute_mask (const Field& f, const ScalarWrapper value, Comparison CMP, Fi
   // Sanity checks
   EKAT_REQUIRE_MSG (f.is_allocated(),
       "Error! Input field was not yet allocated.\n"
-      " - field name; " + f.name() + "\n");
+      " - field name: " + f.name() + "\n");
   EKAT_REQUIRE_MSG (f.rank()<=6,
       "Error! Input field rank not supported.\n"
-      " - field name; " + f.name() + "\n"
+      " - field name: " + f.name() + "\n"
       " - field rank: " + std::to_string(f.rank()) + "\n");
   EKAT_REQUIRE_MSG (mask.is_allocated(),
       "Error! Mask field was not yet allocated.\n"
-      " - mask field name; " + mask.name() + "\n");
+      " - mask field name: " + mask.name() + "\n");
   EKAT_REQUIRE_MSG (not mask.is_read_only(),
       "Error! Cannot update mask field, as it is read-only.\n"
       " - mask name: " + mask.name() + "\n");

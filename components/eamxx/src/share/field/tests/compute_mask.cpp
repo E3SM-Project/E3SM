@@ -86,7 +86,7 @@ TEST_CASE ("compute_mask") {
     compute_mask(x,3,Comparison::LT,m);
     REQUIRE(views_are_equal(m,one));
 
-    // x<2 is flase
+    // x<2 is false
     m.deep_copy(-1);
     compute_mask(x,2,Comparison::LT,m);
     REQUIRE(views_are_equal(m,zero));
