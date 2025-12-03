@@ -58,8 +58,9 @@ module zm_conv
    ! private variables
    real(r8), parameter :: cape_threshold  = 70._r8       ! threshold value of cape for deep convection
    real(r8), parameter :: dcape_threshold = 0._r8        ! threshold value of dcape for deep convection
-   real(r8), parameter :: omsm            = 0.99999_r8   ! to prevent problems due to round off error
    real(r8), parameter :: interp_diff_min = 1.E-6_r8     ! minimum threshold for interpolation method - see eq (4.109), (4.118), (4.119)
+   real(r8), parameter :: omsm            = 0.99999_r8   ! to prevent problems due to round off error
+   real(r8), parameter :: small           = 1.e-20_r8    ! small number to limit blowup when normalizing by mass flux
 !===================================================================================================
 contains
 !===================================================================================================
@@ -984,8 +985,8 @@ subroutine zm_calc_fractional_entrainment(pcols, ncol, pver, pverp, msg, &
          i4(i,k)     = 0._r8
          f(i,k)      = 0._r8
          eps(i,k)    = 0._r8
-      end do
-   end do
+      end do ! i
+   end do ! k
 
    !----------------------------------------------------------------------------
    ! compute taylor series for approximate eps(z) below
@@ -1000,8 +1001,8 @@ subroutine zm_calc_fractional_entrainment(pcols, ncol, pver, pverp, msg, &
             iprm(i,k) = 0.5_r8* (i3(i,k+1)+i3(i,k))
             i4(i,k) = i4(i,k+1) + iprm(i,k)*dz(i,k)
          end if
-      end do
-   end do
+      end do ! i
+   end do ! k
 
    !----------------------------------------------------------------------------
    ! re-initialize minimum MSE for ensuing calculation
@@ -1012,8 +1013,8 @@ subroutine zm_calc_fractional_entrainment(pcols, ncol, pver, pverp, msg, &
             h_env_min(i) = h_env(i,k)
             expdif(i) = h_env(i,jb(i)) - h_env_min(i)
          end if
-      end do
-   end do
+      end do ! i
+   end do ! k
 
    !----------------------------------------------------------------------------
    ! compute approximate eps(z) using above taylor series
@@ -1037,8 +1038,8 @@ subroutine zm_calc_fractional_entrainment(pcols, ncol, pver, pverp, msg, &
             f(i,k) = max(f(i,k),lambda_min)
             f(i,k) = min(f(i,k),lambda_max)
          end if
-      end do
-   end do
+      end do ! i
+   end do ! k
 
    ! move detrainment level downward if fractional entrainment is too low
    do i = 1,ncol
@@ -1047,7 +1048,7 @@ subroutine zm_calc_fractional_entrainment(pcols, ncol, pver, pverp, msg, &
             j0(i) = j0(i) + 1
          end if
       end if
-   end do
+   end do ! i
 
    ! ensure that entrainment does not increase above the level that detrainment starts
    do k = msg+2, pver
@@ -1055,8 +1056,8 @@ subroutine zm_calc_fractional_entrainment(pcols, ncol, pver, pverp, msg, &
          if (k >= jt(i) .and. k <= j0(i)) then
             f(i,k) = max(f(i,k),f(i,k-1))
          end if
-      end do
-   end do
+      end do ! i
+   end do ! k
 
    ! specify maximum fractional entrainment
    do i = 1,ncol
@@ -1071,13 +1072,146 @@ subroutine zm_calc_fractional_entrainment(pcols, ncol, pver, pverp, msg, &
       do i = 1,ncol
          if ( k >=j0(i) .and. k<=jb(i) ) eps(i,k) = f(i,j0(i))
          if ( k  <j0(i) .and. k>=jt(i) ) eps(i,k) = f(i,k)
-      end do
-   end do
+      end do ! i
+   end do ! k
 
    !----------------------------------------------------------------------------
    return
 
 end subroutine zm_calc_fractional_entrainment
+
+!===================================================================================================
+
+subroutine zm_downdraft_properties(pcols, ncol, pver, pverp, msg, &
+                                   jb, jt, j0, jd, z_int, dz, s, q, h_env, &
+                                   eps, eps0, qsthat, hsthat, gamhat, rprd, &
+                                   mu, md, ed, sd, qd, hd, qds, evp, totevp )
+   !----------------------------------------------------------------------------
+   ! Purpose: Calculate properties of ZM downdrafts
+   ! Notes:
+   ! - Downward mass flux is scaled so that net flux (up-down) at cloud base in not negative
+   ! - No downdrafts if jd>=jb
+   !----------------------------------------------------------------------------
+   implicit none
+   !----------------------------------------------------------------------------
+   ! Arguments
+   integer,                         intent(in   ) :: pcols     ! maximum number of columns
+   integer,                         intent(in   ) :: ncol      ! actual number of columns
+   integer,                         intent(in   ) :: pver      ! number of mid-point vertical levels
+   integer,                         intent(in   ) :: pverp     ! number of interface vertical levels
+   integer,                         intent(in   ) :: msg       ! missing moisture levels
+   integer,  dimension(pcols),      intent(in   ) :: jb        ! updraft base level
+   integer,  dimension(pcols),      intent(inout) :: jt        ! updraft top level
+   integer,  dimension(pcols),      intent(in   ) :: j0        ! level where updraft begins detraining
+   integer,  dimension(pcols),      intent(inout) :: jd        ! level of downdraft
+   real(r8), dimension(pcols,pverp),intent(in   ) :: z_int     ! env altitude at interface
+   real(r8), dimension(pcols,pver) ,intent(in   ) :: dz        ! layer thickness
+   real(r8), dimension(pcols,pver), intent(in   ) :: s         ! env dry static energy of env [K] (normalized)
+   real(r8), dimension(pcols,pver), intent(in   ) :: q         ! env specific humidity
+   real(r8), dimension(pcols,pver), intent(in   ) :: h_env     ! ambient env moist stat energy
+   real(r8), dimension(pcols,pver), intent(in   ) :: eps       ! fractional entrainment
+   real(r8), dimension(pcols),      intent(in   ) :: eps0      ! fractional entrainment max
+   real(r8), dimension(pcols,pver), intent(in   ) :: qsthat    ! interface interpolated qst
+   real(r8), dimension(pcols,pver), intent(in   ) :: hsthat    ! interface interpolated hst
+   real(r8), dimension(pcols,pver), intent(in   ) :: gamhat    ! interface interpolated gamma
+   real(r8), dimension(pcols,pver), intent(in   ) :: rprd      ! rate of production of precip at that layer
+   real(r8), dimension(pcols,pver), intent(in   ) :: mu        ! updraft mass flux
+   real(r8), dimension(pcols,pver), intent(inout) :: md        ! downdraft mass flux
+   real(r8), dimension(pcols,pver), intent(inout) :: ed        ! downdraft entrainment rate
+   real(r8), dimension(pcols,pver), intent(inout) :: sd        ! dndraft dry static energy [K] (normalized)
+   real(r8), dimension(pcols,pver), intent(inout) :: qd        ! dndraft specific humidity [kg/kg]
+   real(r8), dimension(pcols,pver), intent(inout) :: hd        ! dndraft moist static energy
+   real(r8), dimension(pcols,pver), intent(inout) :: qds       ! dndraft saturation specific humdity
+   real(r8), dimension(pcols,pver), intent(inout) :: evp       ! evaporation rate
+   real(r8), dimension(pcols),      intent(inout) :: totevp    ! total evap   for dndraft proportionality factor - see eq (4.106)
+   !----------------------------------------------------------------------------
+   ! Local variables
+   integer :: i,k ! loop iterators
+   real(r8), dimension(pcols)      :: ratmjb    !
+   real(r8) dz_tmp   ! temporary vertical thickness for downdraft mass flux calculation
+   real(r8) mdt      ! temporary downdraft mass flux for normalization
+   !----------------------------------------------------------------------------
+   ! calculate downdraft mass flux
+   do i = 1,ncol
+      jt(i) = min(jt(i),jb(i)-1)
+      jd(i) = max(j0(i),jt(i)+1)
+      jd(i) = min(jd(i),jb(i))
+      hd(i,jd(i)) = h_env(i,jd(i)-1)
+      if (jd(i) < jb(i) .and. eps0(i) > 0._r8) then
+         ! NOTE - this nonsensical eps0/eps0 factor was retained to preserve BFB results during ZM refactoring
+         md(i,jd(i)) = -zm_param%alfa * eps0(i) / eps0(i)
+      end if
+   end do ! i
+   do k = msg+1, pver
+      do i = 1,ncol
+         if ((k > jd(i) .and. k <= jb(i)) .and. eps0(i) > 0._r8) then
+            dz_tmp = z_int(i,jd(i)) - z_int(i,k)
+            md(i,k) = -zm_param%alfa / (2._r8*eps0(i))*(exp(2._r8*eps0(i)*dz_tmp)-1._r8)/dz_tmp
+         end if
+      end do ! i
+   end do ! k
+   do k = msg+1, pver
+      do i = 1,ncol
+         if ((k >= jt(i) .and. k <= jb(i)) .and. eps0(i) > 0._r8 .and. jd(i) < jb(i)) then
+            ratmjb(i) = min(abs(mu(i,jb(i))/md(i,jb(i))),1._r8)
+            md(i,k) = md(i,k)*ratmjb(i)
+         end if
+      end do ! i
+   end do ! k
+
+   !----------------------------------------------------------------------------
+   ! calculate downdraft entrainment and MSE
+   do k = msg+1, pver
+      do i = 1,ncol
+         if ((k >= jt(i) .and. k <= pver) .and. eps0(i) > 0._r8) then
+            ed(i,k-1) = (md(i,k-1)-md(i,k))/dz(i,k-1)
+            mdt = min(md(i,k),-small)
+            hd(i,k) = (md(i,k-1)*hd(i,k-1) - dz(i,k-1)*ed(i,k-1)*h_env(i,k-1))/mdt
+         end if
+      end do ! i
+   end do ! k
+
+   !----------------------------------------------------------------------------
+   ! calculate downdraft specific humidity
+   do k = msg+2, pver
+      do i = 1,ncol
+         if ((k >= jd(i) .and. k <= jb(i)) .and. eps0(i) > 0._r8 .and. jd(i) < jb(i)) then
+            qds(i,k) = qsthat(i,k) + gamhat(i,k)*(hd(i,k)-hsthat(i,k)) / (zm_const%latvap*(1._r8+gamhat(i,k)))
+         end if
+      end do ! i
+   end do ! k
+
+   !----------------------------------------------------------------------------
+   ! downdraft quantities at source level
+   do i = 1,ncol
+      qd(i,jd(i)) = qds(i,jd(i))
+      sd(i,jd(i)) = (hd(i,jd(i)) - zm_const%latvap*qd(i,jd(i)))/zm_const%cpair
+   end do
+
+   !----------------------------------------------------------------------------
+   ! calculate downdraft evaporation
+   do k = msg+2, pver
+      do i = 1,ncol
+         if (k >= jd(i) .and. k < jb(i) .and. eps0(i) > 0._r8) then
+            qd(i,k+1) = qds(i,k+1)
+            evp(i,k) = -ed(i,k)*q(i,k) + (md(i,k)*qd(i,k)-md(i,k+1)*qd(i,k+1))/dz(i,k)
+            evp(i,k) = max(evp(i,k),0._r8)
+            mdt = min(md(i,k+1),-small)
+            if (zm_param%zm_microp)   evp(i,k) = min(evp(i,k),rprd(i,k))
+            sd(i,k+1) = ((zm_const%latvap/zm_const%cpair*evp(i,k)-ed(i,k)*s(i,k))*dz(i,k) + md(i,k)*sd(i,k))/mdt
+            totevp(i) = totevp(i) - dz(i,k)*ed(i,k)*q(i,k)
+         end if
+      end do ! i
+   end do ! k
+
+   do i = 1,ncol
+      totevp(i) = totevp(i) + md(i,jd(i))*qd(i,jd(i)) - md(i,jb(i))*qd(i,jb(i))
+   end do
+
+   !----------------------------------------------------------------------------
+   return
+
+end subroutine zm_downdraft_properties
 
 !===================================================================================================
 
@@ -1121,7 +1255,7 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
    real(r8), dimension(pcols,pver), intent(out) :: eu             ! entrainment rate of updraft
    real(r8), dimension(pcols,pver), intent(out) :: du             ! detrainement rate of updraft
    real(r8), dimension(pcols,pver), intent(out) :: md             ! downdraft mass flux
-   real(r8), dimension(pcols,pver), intent(out) :: ed             ! entrainment rate of downdraft
+   real(r8), dimension(pcols,pver), intent(out) :: ed             ! downdraft entrainment rate
    real(r8), dimension(pcols,pver), intent(out) :: mc             ! net mass flux
    real(r8), dimension(pcols,pver), intent(out) :: su             ! updraft dry static energy [K] (normalized)
    real(r8), dimension(pcols,pver), intent(out) :: qu             ! updraft specific humidity [kg/kg]
@@ -1149,49 +1283,39 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
    real(r8), dimension(pcols,pver) :: gamhat    ! interface interpolated gamma
    real(r8), dimension(pcols,pver) :: qds       ! dndraft saturation specific humdity
    real(r8), dimension(pcols)      :: c0mask    ! land/ocean modification
-
-   real(r8), dimension(pcols)      :: rmue      !
-   real(r8), dimension(pcols)      :: zuef      !
-   real(r8), dimension(pcols)      :: zdef      !
-   real(r8), dimension(pcols)      :: epsm      !
-   real(r8), dimension(pcols)      :: ratmjb    !
-   real(r8), dimension(pcols)      :: est       !
    real(r8), dimension(pcols)      :: totpcp    ! total precip for dndraft proportionality factor - see eq (4.106)
    real(r8), dimension(pcols)      :: totevp    ! total evap   for dndraft proportionality factor - see eq (4.106)
-
    real(r8), dimension(pcols,pver) :: eps       ! fractional entrainment
    real(r8), dimension(pcols)      :: eps0      ! fractional entrainment max
 
-   real(r8) ql1   ! ?
-   real(r8) tu    ! ?
-   real(r8) estu  ! ?
-   real(r8) qstu  ! ?
-   real(r8) mdt   ! ?
-
    ! Convective microphysics
-   real(r8), dimension(pcols,pver) :: fice       ! ice fraction in precip production
-   real(r8), dimension(pcols,pver) :: tug        ! temporary updraft temperature
-   real(r8), dimension(pcols,pver) :: tmp_frz    ! temporary rate of freezing
-   real(r8), dimension(pcols)      :: tot_frz    ! total column freezing rate
-   real(r8), dimension(pcols,pverp):: pflxs      ! frozen precipitation flux thru layer
-   real(r8) dum, sdum
+   real(r8), dimension(pcols,pver) :: fice      ! ice fraction in precip production
+   real(r8), dimension(pcols,pver) :: tug       ! temporary updraft temperature
+   real(r8), dimension(pcols,pver) :: tmp_frz   ! temporary rate of freezing
+   real(r8), dimension(pcols)      :: tot_frz   ! total column freezing rate
+   real(r8), dimension(pcols,pverp):: pflxs     ! frozen precipitation flux thru layer
+   integer, dimension(pcols)       :: jto       ! updraft plume old top
 
-   integer, dimension(pcols) :: jto              ! updraft plume old top
+   real(r8) :: zuef           ! temporary vertical thickness for updraft calculations
+   real(r8) :: rmue           ! temporary for updraft entrainment calculations
+   real(r8) :: ql1            ! temporary cloud water
+   real(r8) :: tu             ! updraft temperature
+   real(r8) :: est            ! saturation vapor pressure
+   real(r8) :: estu           ! updraft saturation vapor pressure
+   real(r8) :: qstu           ! updraft saturation specific humidity
+   real(r8) :: dum, sdum      ! dummy variables for round-off error protection
 
-   integer :: tmp_k_limit  ! temporary limit on k index in various contexts
-   integer :: iter         ! ?
-   integer :: itnum        ! ?
-   integer :: m
-
-   integer khighest
-   integer klowest
-   integer kount
-   integer i,k
+   integer  :: tmp_k_limit    ! temporary limit on k index in various contexts
+   integer  :: iter           ! iteration counter
+   integer  :: itnum          ! iteration number
+   integer  :: khighest       ! k iteration limit
+   integer  :: klowest        ! k iteration limit
+   integer  :: kount          ! counter for LCL determination
+   integer  :: i,k            ! loop iterator
 
    logical, dimension(pcols) :: doit ! flag to reset cloud
-   logical, dimension(pcols) :: done ! ?
+   logical, dimension(pcols) :: done ! flag for LCL determination
 
-   real(r8), parameter :: small        = 1.e-20_r8    ! small number to limit blowup when normalizing by mass flux
    real(r8), parameter :: mu_min       = 0.02_r8      ! minimum value of mu
    real(r8), parameter :: t_homofrz    = 233.15_r8    ! homogeneous freezing temperature
    real(r8), parameter :: t_mphase     = 40._r8       ! mixed phase temperature = tfreez-t_homofrz = 273.15K - 233.15K
@@ -1225,8 +1349,8 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
          ! calculate layer thickness
          dz(i,k)     = z_int(i,k) - z_int(i,k+1)
          ! calculate saturation specific humidity
-         call qsat_hPa(t_mid(i,k), p_mid(i,k), est(i), qst(i,k))
-         if ( p_mid(i,k)-est(i) <= 0._r8 ) qst(i,k) = 1.0_r8
+         call qsat_hPa(t_mid(i,k), p_mid(i,k), est, qst(i,k))
+         if ( p_mid(i,k)-est <= 0._r8 ) qst(i,k) = 1.0_r8
          ! compute gamma - see eq. (4.117)
          gamma(i,k)  = qst(i,k)*(1._r8 + qst(i,k)/zm_const%epsilo) &
                        * zm_const%epsilo*zm_const%latvap/(zm_const%rdair*t_mid(i,k)**2) &
@@ -1246,8 +1370,8 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
          fice(i,k)   = 0._r8
          tug(i,k)    = 0._r8
          tmp_frz(i,k)= 0._r8
-      end do
-   end do
+      end do ! i
+   end do ! k
 
    !----------------------------------------------------------------------------
    ! interpolate the mid-point values to interfaces
@@ -1269,8 +1393,8 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
                gamhat(i,k) = gamma(i,k)
             end if
          end if
-      end do
-   end do
+      end do ! i
+   end do ! k
 
    !----------------------------------------------------------------------------
    ! initialize cloud top to highest plume top (upper/lower limit => pver / limcnv+1)
@@ -1282,7 +1406,7 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
       jd(i) = pver
       jlcl(i) = lel(i)
       h_env_min(i) = 1.E6_r8
-   end do
+   end do ! i
 
    !----------------------------------------------------------------------------
    ! find the level of minimum saturated MSE (h_env_sat), where detrainment starts
@@ -1319,8 +1443,8 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
                su(i,k) = s(i,jb(i))     +                 zm_param%tiedke_add+zm_param%tpert_fac*tpertg(i)
             end if
          end if
-      end do
-   end do
+      end do ! i
+   end do ! k
 
    !----------------------------------------------------------------------------
    ! calculate fractional entrainment (i.e. "lambda D") - see eq (4.78) from Neale et al. (2012)
@@ -1345,8 +1469,8 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
                loc_microp_st%qice(i,k) = 0._r8
                loc_microp_st%frz(i,k)  = 0._r8
             end if
-         end do
-      end do
+         end do ! i
+      end do ! k
       do i = 1,ncol
          totpcp(i) = 0._r8
          if (zm_param%zm_microp) hu(i,jb(i)) = h_env(i,jb(i)) + zm_const%cpair*zm_param%tiedke_add
@@ -1362,15 +1486,15 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
                if (.not.zm_param%zm_microp) tmp_k_limit = jt(i)
                ! compute profiles of updraft mass fluxes - see eq (4.79) - (4.81)
                if ( k>=tmp_k_limit .and. k<jb(i) ) then
-                  zuef(i) = z_int(i,k) - z_int(i,jb(i))
-                  rmue(i) = (1._r8/eps0(i))* (exp(eps(i,k+1)*zuef(i))-1._r8)/zuef(i)
-                  mu(i,k) = (1._r8/eps0(i))* (exp(eps(i,k  )*zuef(i))-1._r8)/zuef(i)
-                  eu(i,k) = (rmue(i)-mu(i,k+1))/dz(i,k)
-                  du(i,k) = (rmue(i)-mu(i,k))/dz(i,k)
+                  zuef = z_int(i,k) - z_int(i,jb(i))
+                  rmue = (1._r8/eps0(i))* (exp(eps(i,k+1)*zuef)-1._r8)/zuef
+                  mu(i,k) = (1._r8/eps0(i))* (exp(eps(i,k  )*zuef)-1._r8)/zuef
+                  eu(i,k) = (rmue-mu(i,k+1))/dz(i,k)
+                  du(i,k) = (rmue-mu(i,k))/dz(i,k)
                end if
             end if ! eps0(i)>0._r8
-         end do
-      end do
+         end do ! i
+      end do ! k
 
       khighest = pverp
       klowest = 1
@@ -1399,8 +1523,8 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
                  end if
                end if
             end if
-         end do
-      end do
+         end do ! i
+      end do ! k
 
       ! reset cloud top index beginning from two layers above the
       ! cloud base (i.e. if cloud is only one layer thick, top is not reset
@@ -1409,8 +1533,8 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
          tot_frz(i)= 0._r8
          do k = pver, msg+1, -1
             tot_frz(i)= tot_frz(i) + tmp_frz(i,k)*dz(i,k)
-         end do
-      end do
+         end do ! k
+      end do ! i
 
       do k = klowest-2, khighest-1, -1
          do i = 1,ncol
@@ -1430,8 +1554,8 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
                   doit(i) = .false.
                end if
             end if
-         end do
-      end do
+         end do ! i
+      end do ! k
 
       do i = 1,ncol
          if (iter == 1) jto(i) = jt(i)
@@ -1450,8 +1574,8 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
                eu(i,k) = 0._r8
                mu(i,k) = 0._r8
             end if
-         end do
-      end do
+         end do ! i
+      end do ! k
 
       ! determine LCL - see eq (4.127)- (4.130) of Neale et al. (2012)
       done(1:ncol) = .false.
@@ -1473,9 +1597,9 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
                   done(i) = .true.
                end if
             end if
-         end do
+         end do ! i
          if (kount >= ncol) goto 690
-      end do
+      end do ! k
 
 690 continue
 
@@ -1485,8 +1609,8 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
                su(i,k) = shat(i,k)   +             (hu(i,k)-hsthat(i,k)) / (zm_const%cpair* (1._r8+gamhat(i,k)))
                qu(i,k) = qsthat(i,k) + gamhat(i,k)*(hu(i,k)-hsthat(i,k)) / (zm_const%latvap* (1._r8+gamhat(i,k)))
             end if
-         end do
-      end do
+         end do ! i
+      end do ! k
 
       ! compute condensation in updraft
       do k = pver, msg+2, -1
@@ -1510,6 +1634,9 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
          end do ! i
       end do ! k
 
+      !-------------------------------------------------------------------------
+      ! microphysical calculation
+
       if (zm_param%zm_microp) then
 
          tug(1:ncol,:) = t_mid(1:ncol,:)
@@ -1518,8 +1645,8 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
          do k = pver, msg+2, -1
             do i = 1, ncol
                tug(i,k) = su(i,k) - zm_const%grav/zm_const%cpair*z_int(i,k)
-            end do
-         end do
+            end do ! i
+         end do ! k
 
          do k = 1, pver-1
             do i = 1, ncol
@@ -1533,15 +1660,15 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
                   ! mixed phase - ice frac decreasing linearly from t_homofrz to zm_const%tfreez
                   fice(i,k) =(zm_const%tfreez - tug(i,k+1)) / t_mphase
                end if
-            end do
-         end do
+            end do ! i
+         end do ! k
 
          do k = 1, pver
             do i = 1,ncol
                loc_microp_st%cmei(i,k) = cu(i,k)* fice(i,k)
                loc_microp_st%cmel(i,k) = cu(i,k) * (1._r8-fice(i,k))
-            end do
-         end do
+            end do ! i
+         end do ! k
 
 #ifndef SCREAM_CONFIG_IS_CMAKE
          call  zm_mphy( pcols, ncol, msg, &
@@ -1581,17 +1708,17 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
                ! cloud water, here ql is calculated as total cloud water for consistency.
                ql(i,k) = loc_microp_st%qliq(i,k)+ loc_microp_st%qice(i,k)
                loc_microp_st%frz(i,k) = tmp_frz(i,k)
-            end do
-         end do
+            end do ! i
+         end do ! k
 
          do i = 1,ncol
            if (iter == 2 .and. jt(i)> jto(i)) then
              do k = jt(i), jto(i), -1
                 loc_microp_st%frz(i,k) = 0.0_r8
                 cu(i,k)=0.0_r8
-             end do
+             end do ! k
            end if
-         end do
+         end do ! i
 
          do k = pver, msg+2, -1
             do i = 1,ncol
@@ -1600,8 +1727,8 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
                                                                     +loc_microp_st%qide(i,k+1) &
                                                                     +loc_microp_st%qsde(i,k+1) ))
                end if
-            end do
-         end do
+            end do ! i
+         end do ! k
 
       else  ! no microphysics
 
@@ -1626,92 +1753,30 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
                   totpcp(i) = totpcp(i) + dz(i,k)*(cu(i,k)-du(i,k)*ql(i,k+1))
                   rprd(i,k) = c0mask(i)*mu(i,k)*ql(i,k)
                end if
-            end do
-         end do
+            end do ! i
+         end do ! k
 
       end if  ! zm_param%zm_microp
 
    end do ! iter = 1,itnum
 
    !----------------------------------------------------------------------------
-   ! specify downdraft properties (note - no downdrafts if jd>=jb)
-   ! downward mass flux profile is scaled so that net flux (up-down) at cloud base in not negative
+   ! calculate downdraft properties
+   call zm_downdraft_properties(pcols, ncol, pver, pverp, msg, &
+                                jb, jt, j0, jd, z_int, dz, s, q, h_env, &
+                                eps, eps0, qsthat, hsthat, gamhat, rprd, &
+                                mu, md, ed, sd, qd, hd, qds, evp, totevp)
+
+   !----------------------------------------------------------------------------
+   ! ensure totpcp and totevp are non-negative
    do i = 1,ncol
-      ! in normal downdraft strength run alfa=0.2.  In test4 alfa=0.1
-      jt(i) = min(jt(i),jb(i)-1)
-      jd(i) = max(j0(i),jt(i)+1)
-      jd(i) = min(jd(i),jb(i))
-      hd(i,jd(i)) = h_env(i,jd(i)-1)
-      if (jd(i) < jb(i) .and. eps0(i) > 0._r8) then
-         epsm(i) = eps0(i)
-         md(i,jd(i)) = -zm_param%alfa * epsm(i) / eps0(i)
-      end if
-   end do
-   do k = msg+1, pver
-      do i = 1,ncol
-         if ((k > jd(i) .and. k <= jb(i)) .and. eps0(i) > 0._r8) then
-            zdef(i) = z_int(i,jd(i)) - z_int(i,k)
-            md(i,k) = -zm_param%alfa / (2._r8*eps0(i))*(exp(2._r8*epsm(i)*zdef(i))-1._r8)/zdef(i)
-         end if
-      end do
-   end do
-   do k = msg+1, pver
-      do i = 1,ncol
-         if ((k >= jt(i) .and. k <= jb(i)) .and. eps0(i) > 0._r8 .and. jd(i) < jb(i)) then
-            ratmjb(i) = min(abs(mu(i,jb(i))/md(i,jb(i))),1._r8)
-            md(i,k) = md(i,k)*ratmjb(i)
-         end if
-      end do
-   end do
-
-   do k = msg+1, pver
-      do i = 1,ncol
-         if ((k >= jt(i) .and. k <= pver) .and. eps0(i) > 0._r8) then
-            ed(i,k-1) = (md(i,k-1)-md(i,k))/dz(i,k-1)
-            mdt = min(md(i,k),-small)
-            hd(i,k) = (md(i,k-1)*hd(i,k-1) - dz(i,k-1)*ed(i,k-1)*h_env(i,k-1))/mdt
-         end if
-      end do
-   end do
-
-   ! calculate updraft and downdraft properties
-   do k = msg+2, pver
-      do i = 1,ncol
-         if ((k >= jd(i) .and. k <= jb(i)) .and. eps0(i) > 0._r8 .and. jd(i) < jb(i)) then
-            qds(i,k) = qsthat(i,k) + gamhat(i,k)*(hd(i,k)-hsthat(i,k)) / (zm_const%latvap*(1._r8+gamhat(i,k)))
-         end if
-      end do
-   end do
-
-   do i = 1,ncol
-      qd(i,jd(i)) = qds(i,jd(i))
-      sd(i,jd(i)) = (hd(i,jd(i)) - zm_const%latvap*qd(i,jd(i)))/zm_const%cpair
-   end do
-
-   do k = msg+2, pver
-      do i = 1,ncol
-         if (k >= jd(i) .and. k < jb(i) .and. eps0(i) > 0._r8) then
-            qd(i,k+1) = qds(i,k+1)
-            evp(i,k) = -ed(i,k)*q(i,k) + (md(i,k)*qd(i,k)-md(i,k+1)*qd(i,k+1))/dz(i,k)
-            evp(i,k) = max(evp(i,k),0._r8)
-            mdt = min(md(i,k+1),-small)
-            if (zm_param%zm_microp)   evp(i,k) = min(evp(i,k),rprd(i,k))
-            sd(i,k+1) = ((zm_const%latvap/zm_const%cpair*evp(i,k)-ed(i,k)*s(i,k))*dz(i,k) + md(i,k)*sd(i,k))/mdt
-            totevp(i) = totevp(i) - dz(i,k)*ed(i,k)*q(i,k)
-         end if
-      end do
-   end do
-
-   ! calculate total precip for downdraft scaling
-   do i = 1,ncol
-      totevp(i) = totevp(i) + md(i,jd(i))*qd(i,jd(i)) - md(i,jb(i))*qd(i,jb(i))
       totpcp(i) = max(totpcp(i),0._r8)
       totevp(i) = max(totevp(i),0._r8)
    end do
 
    do k = msg+2, pver
       do i = 1,ncol
-         ! ensure that downdraft strength is consistent with precipitation availability - see eq (4.106)
+         ! also ensure that downdraft strength is consistent with precipitation availability - see eq (4.106)
          if (totevp(i) > 0._r8 .and. totpcp(i) > 0._r8) then
             md(i,k)  = md (i,k)*min(1._r8, totpcp(i)/(totevp(i)+totpcp(i)))
             ed(i,k)  = ed (i,k)*min(1._r8, totpcp(i)/(totevp(i)+totpcp(i)))
@@ -1729,23 +1794,23 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
            end if
          end if
          rprd(i,k) = rprd(i,k)-evp(i,k)
-      end do
-   end do
+      end do ! i
+   end do ! k
 
    ! compute the net precipitation flux across interfaces
    do k = 2,pverp
       do i = 1,ncol
          pflx(i,k) = pflx(i,k-1) + rprd(i,k-1)*dz(i,k-1)
          if (zm_param%zm_microp) pflxs(i,k) = pflxs(i,k-1) + loc_microp_st%sprd(i,k-1)*dz(i,k-1)
-      end do
-   end do
+      end do ! i
+   end do ! k
 
    ! calculate net mass flux
    do k = msg+1, pver
       do i = 1,ncol
          mc(i,k) = mu(i,k) + md(i,k)
-      end do
-   end do
+      end do ! i
+   end do ! k
 
    if (zm_param%zm_microp) then
       do i = 1,ncol
@@ -1779,7 +1844,7 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
             call zm_microp_st_zero(loc_microp_st,i,pver)
          end if
       end do ! i
-   end if
+   end if ! zm_microp
 
    return
 end subroutine zm_cloud_properties
