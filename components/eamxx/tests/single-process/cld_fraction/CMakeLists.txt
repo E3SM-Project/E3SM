@@ -143,7 +143,9 @@ if (NOT EAMXX_ENABLE_GPU)
     set (TGT_FILE "cld_frac_net_standalone_output_py.INSTANT.nsteps_x1.np1.${RUN_T0}.nc")
     set (TEST_NAME cld_frac_net_standalone_cpp_vs_py)
     add_test (NAME ${TEST_NAME}
-              COMMAND cmake -P ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake ${SRC_FILE} ${TGT_FILE}
+      COMMAND ${SCREAM_BASE_DIR}/scripts/compare-nc-files
+                -s ${SRC_FILE} -t ${TGT_FILE} --tol 1e-6
+                -c cldfrac_ice=cldfrac_ice cldfrac_tot=cldfrac_tot
               WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
     set_tests_properties(${TEST_NAME} PROPERTIES
           LABELS "cldfrac;infrastructure"
