@@ -643,8 +643,6 @@ CONTAINS
     !---------------------------------------------------------------------------
 
     ! open eatm file
-    filename_eatm = '/lcrc/group/acme/ac.jwolfe/v3-grids/gaussian_180x360/gaussian_180x360_latlon.scrip.nc'
-
     if (masterproc) then
        write(logunit_atm,*) 'Read in eatm file name: ',trim(filename_eatm)
        call shr_sys_flush(logunit_atm)
