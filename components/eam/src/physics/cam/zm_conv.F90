@@ -506,13 +506,13 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
    !----------------------------------------------------------------------------
    ! calculate updraft and downdraft properties
 
-   call cldprp(pcols, lengath, pver, pverp, msg, zm_param%limcnv, &
-               pg, z_mid_g, z_int_g, tg, sg, shat, qg, ug, vg, landfracg, tpertg, &
-               maxg, lelg, jt, jlcl, j0, jd, &
-               mu, eu, du, md, ed, mc, &
-               su, qu, qlg, sd, qd,  &
-               qs, cug, evpg, pflxg, rprdg, &
-               aero, loc_microp_st )
+   call zm_cloud_properties(pcols, lengath, pver, pverp, msg, zm_param%limcnv, &
+                            pg, z_mid_g, z_int_g, tg, sg, shat, qg, ug, vg, landfracg, tpertg, &
+                            maxg, lelg, jt, jlcl, j0, jd, &
+                            mu, eu, du, md, ed, mc, &
+                            su, qu, qlg, sd, qd,  &
+                            qs, cug, evpg, pflxg, rprdg, &
+                            aero, loc_microp_st )
 
    !---------------------------------------------------------------------------
    ! convert detrainment from units of "per length" [1/m] to "per pressure" [1/mb].
@@ -1081,13 +1081,13 @@ end subroutine calculate_fractional_entrainment
 
 !===================================================================================================
 
-subroutine cldprp(pcols, ncol, pver, pverp, msg, limcnv, &
-                  p_mid, z_mid, z_int, t_mid, s, shat, q, u, v, landfrac, tpertg, &
-                  jb, lel, jt, jlcl, j0, jd, &
-                  mu, eu, du, md, ed, mc, &
-                  su, qu, ql, sd, qd,  &
-                  qst, cu, evp, pflx, rprd, &
-                  aero, loc_microp_st )
+subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
+                               p_mid, z_mid, z_int, t_mid, s, shat, q, u, v, landfrac, tpertg, &
+                               jb, lel, jt, jlcl, j0, jd, &
+                               mu, eu, du, md, ed, mc, &
+                               su, qu, ql, sd, qd,  &
+                               qst, cu, evp, pflx, rprd, &
+                               aero, loc_microp_st )
    !----------------------------------------------------------------------------
    ! Purpose: Determine properties of ZM updrafts and downdrafts
    !----------------------------------------------------------------------------
@@ -1782,7 +1782,7 @@ subroutine cldprp(pcols, ncol, pver, pverp, msg, limcnv, &
    end if
 
    return
-end subroutine cldprp
+end subroutine zm_cloud_properties
 
 !===================================================================================================
 
