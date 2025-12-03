@@ -36,7 +36,6 @@ def buildnml(case, caseroot, compname):
     ocn_iceberg       = case.get_value("MPASO_ICEBERG")
     ocn_sgr           = case.get_value("MPASO_SGR")
     ocn_bgc           = case.get_value("MPASO_BGC")
-    ocn_wave          = case.get_value("MPASO_WAVE")
     ocn_tidal_mixing  = case.get_value("MPASO_TIDAL_MIXING")
     glc_nzoc          = case.get_value("GLC_NZOC")
     ocn_glc_ismf_coupling = case.get_value("OCN_GLC_ISMF_COUPLING")
@@ -542,7 +541,6 @@ def buildnml(case, caseroot, compname):
         sysmod += " -ocn_iceberg '{}'".format(ocn_iceberg)
         sysmod += " -ocn_sgr '{}'".format(ocn_sgr)
         sysmod += " -ocn_bgc '{}'".format(ocn_bgc)
-        sysmod += " -ocn_wave '{}'".format(ocn_wave)
         sysmod += " -ocn_tidal_mixing '{}'".format(ocn_tidal_mixing)
         sysmod += " -glc_nzoc '{}'".format(glc_nzoc)
         sysmod += " -ocn_glc_ismf_coupling '{}'".format(ocn_glc_ismf_coupling)
@@ -976,6 +974,12 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var name="landIceFreshwaterFluxTotal"/>')
             lines.append('    <var name="pressureAdjustedSSH"/>')
             lines.append('    <var name="atmosphericPressure"/>')
+            lines.append('    <var name="windStressZonal"/>')
+            lines.append('    <var name="windStressMeridional"/>')
+            if case.get_value('COMP_WAV') == 'ww3' and case.get_value('COMP_OCN') == 'mpaso':
+                lines.append('    <var name="peakWaveFrequency"/>')
+                lines.append('    <var name="peakWaveDirection"/>')
+                lines.append('    <var name="significantWaveHeight"/>')
             if ocn_bgc in ['eco_only', 'eco_and_dms', 'eco_and_macromolecules', 'eco_and_dms_and_macromolecules']:
                 lines.append('    <var name="CO2_gas_flux"/>')
                 lines.append('    <var name="CO2_alt_gas_flux"/>')
@@ -995,27 +999,6 @@ def buildnml(case, caseroot, compname):
                 lines.append('    <var name="ecosys_diag_photoC_TOT_zint"/>')
             lines.append('</stream>')
             lines.append('')
-            if ocn_wave == 'true':
-                lines.append('<stream name="waveOutput"')
-                lines.append('        type="output"')
-                lines.append('        precision="single"')
-                lines.append('        io_type="{}"'.format(io_type_str))
-                lines.append('        filename_template="{}.mpaso{}.waveOutput.$Y-$M-$D_$h.$m.$s.nc"'.format(casename, inst_string))
-                lines.append('        filename_interval="00-01-00_00:00:00"')
-                lines.append('        reference_time="01-01-01_00:00:00"')
-                lines.append('        output_interval="00-00-00_6:00:00"')
-                lines.append('        clobber_mode="truncate"')
-                lines.append('        packages="highFrequencyOutputAMPKG">')
-                lines.append('')
-                lines.append('    <stream name="mesh"/>')
-                lines.append('    <var name="peakWaveFrequency"/>')
-                lines.append('    <var name="peakWaveDirection"/>')
-                lines.append('    <var name="significantWaveHeight"/>')
-                lines.append('    <var name="iceFraction"/>')
-                lines.append('    <var name="stokesDriftSurfaceZonal"/>')
-                lines.append('    <var name="stokesDriftSurfaceMeridional"/>')
-                lines.append('</stream>')
-                lines.append('')
             lines.append('<stream name="mixedLayerDepthsOutput"')
             lines.append('        type="output"')
             lines.append('        precision="single"')
@@ -1282,6 +1265,10 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var_array name="activeTracerVertMixTendency"/>')
             lines.append('    <var_array name="avgValueWithinOceanLayerRegion"/>')
             lines.append('    <var_array name="avgValueWithinOceanVolumeRegion"/>')
+            if case.get_value('COMP_WAV') == 'ww3' and case.get_value('COMP_OCN') == 'mpaso':
+                lines.append('    <var name="peakWaveFrequency"/>')
+                lines.append('    <var name="peakWaveDirection"/>')
+                lines.append('    <var name="significantWaveHeight"/>')
             if ocn_bgc in ['eco_only', 'eco_and_dms', 'eco_and_macromolecules', 'eco_and_dms_and_macromolecules']:
                 lines.append('    <var name="CO2_gas_flux"/>')
                 lines.append('    <var name="CO2_alt_gas_flux"/>')
@@ -1349,6 +1336,13 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var name="atmosphericPressure"/>')
             lines.append('    <var name="normalMLEvelocity"/>')
             lines.append('    <var name="vertMLEBolusVelocityTop"/>')
+            if case.get_value('COMP_WAV') == 'ww3' and case.get_value('COMP_OCN') == 'mpaso':
+                lines.append('    <var name="peakWaveFrequency"/>')
+                lines.append('    <var name="peakWaveDirection"/>')
+                lines.append('    <var name="significantWaveHeight"/>')
+                lines.append('    <var name="stokesDriftSurfaceZonal"/>')
+                lines.append('    <var name="stokesDriftSurfaceMeridional"/>')
+                lines.append('    <var name="langmuirNumber"/>')
             if not (ocn_grid.startswith("oRRS1") or ocn_grid.startswith("RRSwISC6")):
                 lines.append('    <var name="normalGMBolusVelocity"/>')
                 lines.append('    <var name="vertGMBolusVelocityTop"/>')
@@ -1527,11 +1521,6 @@ def buildnml(case, caseroot, compname):
                 lines.append('    <var name="ecosys_diag_CO3"/>')
                 lines.append('    <var name="ecosys_diag_co3_sat_calc"/>')
                 lines.append('    <var name="ecosys_diag_co3_sat_arag"/>')
-            if ocn_wave == 'true':
-                lines.append('    <var name="peakWaveFrequency"/>')
-                lines.append('    <var name="peakWaveDirection"/>')
-                lines.append('    <var name="significantWaveHeight"/>')
-                lines.append('    <var name="langmuirNumber"/>')
 
             lines.append('</stream>')
             lines.append('')
@@ -1562,6 +1551,13 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var name="longWaveHeatFluxUp"/>')
             lines.append('    <var name="longWaveHeatFluxDown"/>')
             lines.append('    <var name="seaIceHeatFlux"/>')
+            if case.get_value('COMP_WAV') == 'ww3' and case.get_value('COMP_OCN') == 'mpaso':
+                lines.append('    <var name="peakWaveFrequency"/>')
+                lines.append('    <var name="peakWaveDirection"/>')
+                lines.append('    <var name="significantWaveHeight"/>')
+                lines.append('    <var name="stokesDriftSurfaceZonal"/>')
+                lines.append('    <var name="stokesDriftSurfaceMeridional"/>')
+                lines.append('    <var name="langmuirNumber"/>')
             if ocn_iceberg == 'true':
                 lines.append('    <var name="icebergHeatFlux"/>')
 
@@ -1624,6 +1620,13 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var name="longWaveHeatFluxUp"/>')
             lines.append('    <var name="longWaveHeatFluxDown"/>')
             lines.append('    <var name="seaIceHeatFlux"/>')
+            if case.get_value('COMP_WAV') == 'ww3' and case.get_value('COMP_OCN') == 'mpaso':
+                lines.append('    <var name="peakWaveFrequency"/>')
+                lines.append('    <var name="peakWaveDirection"/>')
+                lines.append('    <var name="significantWaveHeight"/>')
+                lines.append('    <var name="stokesDriftSurfaceZonal"/>')
+                lines.append('    <var name="stokesDriftSurfaceMeridional"/>')
+                lines.append('    <var name="langmuirNumber"/>')
             if ocn_iceberg == 'true':
                 lines.append('    <var name="icebergHeatFlux"/>')
 

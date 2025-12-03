@@ -211,6 +211,7 @@ add_default($nl, 'config_cvmix_kpp_use_active_wave');
 #################################
 
 add_default($nl, 'config_use_active_wave');
+add_default($nl, 'config_momentum_use_active_wave');
 add_default($nl, 'config_n_stokes_drift_wavenumber_partitions');
 
 ########################

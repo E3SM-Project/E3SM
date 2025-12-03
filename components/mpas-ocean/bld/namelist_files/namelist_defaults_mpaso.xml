@@ -356,6 +356,7 @@
 
 <!-- wave_coupling -->
 <config_use_active_wave>.false.</config_use_active_wave>
+<config_momentum_use_active_wave>.false.</config_momentum_use_active_wave>
 <config_n_stokes_drift_wavenumber_partitions>6</config_n_stokes_drift_wavenumber_partitions>
 
 <!-- gotm -->

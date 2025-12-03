@@ -70,7 +70,7 @@ module cime_comp_mod
   use seq_comm_mct, only: CPLATMID,CPLLNDID,CPLOCNID,CPLICEID,CPLGLCID,CPLROFID,CPLWAVID,CPLESPID
   use seq_comm_mct, only: IACID, ALLIACID, CPLALLIACID, CPLIACID
   use seq_comm_mct, only: num_inst_atm, num_inst_lnd, num_inst_rof
-  use seq_comm_mct, only: num_inst_ocn, num_inst_ice, num_inst_glc
+  use seq_comm_mct, only: num_inst_ocn, num_inst_ice, num_inst_glc, num_inst_wav
   use seq_comm_mct, only: num_inst_wav, num_inst_esp
   use seq_comm_mct, only: num_inst_iac
   use seq_comm_mct, only: num_inst_xao, num_inst_frc, num_inst_phys
@@ -256,11 +256,13 @@ module cime_comp_mod
   !- from prep routines (arrays of instances)
   type(mct_aVect) , pointer :: a2x_ox(:) => null()
   type(mct_aVect) , pointer :: o2x_ax(:) => null()
+  type(mct_aVect) , pointer :: w2x_ax(:) => null()
   type(mct_aVect) , pointer :: xao_ox(:) => null()
   type(mct_aVect) , pointer :: xao_ax(:) => null()
 
   !- from component type (single instance inside array of components)
   type(mct_aVect) , pointer :: o2x_ox => null()
+  type(mct_aVect) , pointer :: w2x_ox(:)  => null()
   type(mct_aVect) , pointer :: a2x_ax => null()
 
   character(len=CL) :: inst_suffix
@@ -436,6 +438,7 @@ module cime_comp_mod
   logical  :: lnd_c2_rof             ! .true.  => lnd to rof coupling on
   logical  :: lnd_c2_glc             ! .true.  => lnd to glc coupling on
   logical  :: ocn_c2_atm             ! .true.  => ocn to atm coupling on
+  logical  :: wav_c2_atm             ! .true.  => wav to atm coupling on
   logical  :: ocn_c2_ice             ! .true.  => ocn to ice coupling on
   logical  :: ocn_c2_glctf           ! .true.  => ocn to glc thermal forcing coupling on
   integer  :: glc_nzoc               ! number of z-levels for ocn/glc TF coupling
@@ -2046,7 +2049,7 @@ contains
        call t_adj_detailf(+2)
        if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
-       call prep_atm_init(infodata, ocn_c2_atm, ice_c2_atm, lnd_c2_atm, iac_c2_atm)
+       call prep_atm_init(infodata, ocn_c2_atm, ice_c2_atm, lnd_c2_atm, iac_c2_lnd, wav_c2_atm)
 
        call prep_lnd_init(infodata, atm_c2_lnd, rof_c2_lnd, glc_c2_lnd, iac_c2_lnd)
 
@@ -3882,11 +3885,13 @@ contains
        do exi = 1,num_inst_xao
           eai = mod((exi-1),num_inst_atm) + 1
           eoi = mod((exi-1),num_inst_ocn) + 1
+          ewi = mod((exi-1),num_inst_wav) + 1
           efi = mod((exi-1),num_inst_frc) + 1
           a2x_ax => component_get_c2x_cx(atm(eai))
           o2x_ax => prep_atm_get_o2x_ax()    ! array over all instances
+          w2x_ax => prep_atm_get_w2x_ax()    ! array over all instances
           xao_ax => prep_aoflux_get_xao_ax() ! array over all instances
-          call seq_flux_atmocn_mct(infodata, tod, dtime, a2x_ax, o2x_ax(eoi), xao_ax(exi))
+          call seq_flux_atmocn_mct(infodata, tod, dtime, a2x_ax, o2x_ax(eoi), xao_ax(exi), w2x_ax(ewi))
        enddo
        call t_drvstopf  ('CPL:atmocna_fluxa',hashint=hashint(6))
 
@@ -3902,10 +3907,12 @@ contains
           eai = mod((exi-1),num_inst_atm) + 1
           eoi = mod((exi-1),num_inst_ocn) + 1
           efi = mod((exi-1),num_inst_frc) + 1
+          ewi = mod((exi-1),num_inst_wav) + 1
           a2x_ox => prep_ocn_get_a2x_ox()
+          w2x_ox => prep_ocn_get_w2x_ox()
           o2x_ox => component_get_c2x_cx(ocn(eoi))
           xao_ox => prep_aoflux_get_xao_ox()
-          call seq_flux_atmocn_mct(infodata, tod, dtime, a2x_ox(eai), o2x_ox, xao_ox(exi))
+          call seq_flux_atmocn_mct(infodata, tod, dtime, a2x_ox(eai), o2x_ox, xao_ox(exi), w2x_ox(ewi))
        enddo
        call t_drvstopf  ('CPL:atmocnp_fluxo',hashint=hashint(6))
     endif  ! aoflux_grid
