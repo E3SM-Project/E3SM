@@ -128,9 +128,8 @@ int initOmegaModules(MPI_Comm Comm) {
       ABORT_ERROR("ocnInit: Error initializing default halo");
    }
 
-   VertCoord::init1();
    HorzMesh::init();
-   VertCoord::init2();
+   VertCoord::init();
    Tracers::init();
    AuxiliaryState::init();
    Tendencies::init();

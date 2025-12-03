@@ -37,27 +37,21 @@ void HorzMesh::init() {
    // Retrieve the default decomposition
    Decomp *DefDecomp = Decomp::getDefault();
 
-   I4 NVertLayers = VertCoord::getDefault()->NVertLayers;
-
    // Create the default mesh and set pointer to it
-   HorzMesh::DefaultHorzMesh = create("Default", DefDecomp, NVertLayers);
+   HorzMesh::DefaultHorzMesh = create("Default", DefDecomp);
 }
 
 //------------------------------------------------------------------------------
 // Construct a new local mesh given a decomposition
 
 HorzMesh::HorzMesh(const std::string &Name, //< [in] Name for new mesh
-                   Decomp *MeshDecomp,      //< [in] Decomp for the new mesh
-                   I4 InNVertLayers         //< [in} num vertical layers
+                   Decomp *MeshDecomp       //< [in] Decomp for the new mesh
 ) {
 
    MeshName = Name;
 
    // Retrieve mesh files name from Decomp
    MeshFileName = MeshDecomp->MeshFileName;
-
-   // Set NVertLayers
-   NVertLayers = InNVertLayers;
 
    // Retrieve mesh cell/edge/vertex totals from Decomp
    NCellsHalo  = MeshDecomp->NCellsHalo;
@@ -141,9 +135,6 @@ HorzMesh::HorzMesh(const std::string &Name, //< [in] Name for new mesh
    // Compute EdgeSignOnCells and EdgeSignOnVertex
    computeEdgeSign();
 
-   // TODO: implement setMasks during Mesh constructor
-   setMasks(NVertLayers);
-
    // set mesh scaling coefficients
    setMeshScaling();
 
@@ -152,8 +143,7 @@ HorzMesh::HorzMesh(const std::string &Name, //< [in] Name for new mesh
 /// Creates a new mesh by calling the constructor and puts it in the
 /// AllHorzMeshes map
 HorzMesh *HorzMesh::create(const std::string &Name, //< [in] Name for new mesh
-                           Decomp *MeshDecomp, //< [in] Decomp for the new mesh
-                           I4 InNVertLayers    //< [in] num vertical layers
+                           Decomp *MeshDecomp //< [in] Decomp for the new mesh
 ) {
    // Check to see if a mesh of the same name already exists and
    // if so, exit with an error
@@ -166,7 +156,7 @@ HorzMesh *HorzMesh::create(const std::string &Name, //< [in] Name for new mesh
 
    // create a new mesh on the heap and put it in a map of
    // unique_ptrs, which will manage its lifetime
-   auto *NewHorzMesh = new HorzMesh(Name, MeshDecomp, InNVertLayers);
+   auto *NewHorzMesh = new HorzMesh(Name, MeshDecomp);
    AllHorzMeshes.emplace(Name, NewHorzMesh);
 
    return NewHorzMesh;
@@ -573,33 +563,6 @@ void HorzMesh::computeEdgeSign() {
 
    EdgeSignOnVertexH = createHostMirrorCopy(EdgeSignOnVertex);
 } // end computeEdgeSign
-
-//------------------------------------------------------------------------------
-// set computational masks for mesh elements
-// TODO: this is just a placeholder, implement actual masks for edges, cells,
-// and vertices
-void HorzMesh::setMasks(int NVertLayers) {
-
-   EdgeMask = Array2DReal("EdgeMask", NEdgesSize, NVertLayers);
-
-   OMEGA_SCOPE(LocEdgeMask, EdgeMask);
-   OMEGA_SCOPE(LocCellsOnEdge, CellsOnEdge);
-   OMEGA_SCOPE(LocNCellsAll, NCellsAll);
-
-   deepCopy(EdgeMask, 1.0);
-   parallelFor(
-       {NEdgesAll, NVertLayers}, KOKKOS_LAMBDA(int Edge, int K) {
-          const I4 Cell1 = LocCellsOnEdge(Edge, 0);
-          const I4 Cell2 = LocCellsOnEdge(Edge, 1);
-          if (!(Cell1 >= 0 and Cell1 < LocNCellsAll) or
-              !(Cell2 >= 0 and Cell2 < LocNCellsAll)) {
-             LocEdgeMask(Edge, K) = 0.0;
-          }
-       });
-
-   EdgeMaskH = createHostMirrorCopy(EdgeMask);
-
-} // end setMasks
 
 //------------------------------------------------------------------------------
 // Set mesh scaling coefficients for mixing terms in momentum and tracer

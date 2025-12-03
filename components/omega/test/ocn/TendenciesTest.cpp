@@ -111,8 +111,8 @@ int initTendenciesTest(const std::string &mesh) {
       LOG_ERROR("TendenciesTest: error initializing default halo");
    }
 
-   VertCoord::init1();
    HorzMesh::init();
+   VertCoord::init(false);
    Tracers::init();
 
    int StateErr = OceanState::init();
@@ -222,11 +222,10 @@ void finalizeTendenciesTest() {
    AuxiliaryState::clear();
    OceanState::clear();
    VertCoord::clear();
+   HorzMesh::clear();
    Field::clear();
    Dimension::clear();
    TimeStepper::clear();
-   HorzMesh::clear();
-   VertCoord::clear();
    Halo::clear();
    Decomp::clear();
    MachEnv::removeAll();

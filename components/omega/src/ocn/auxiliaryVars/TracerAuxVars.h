@@ -5,6 +5,7 @@
 #include "Field.h"
 #include "HorzMesh.h"
 #include "OmegaKokkos.h"
+#include "VertCoord.h"
 
 #include <string>
 
@@ -20,7 +21,8 @@ class TracerAuxVars {
    FluxTracerEdgeOption TracersOnEdgeChoice;
 
    TracerAuxVars(const std::string &AuxStateSuffix, const HorzMesh *Mesh,
-                 const I4 NVertLayers, const I4 NTracers);
+                 const VertCoord *VCoord, const I4 NVertLayers,
+                 const I4 NTracers);
 
    KOKKOS_FUNCTION void computeVarsOnEdge(int L, int IEdge, int KChunk,
                                           const Array2DReal &NormalVelEdge,

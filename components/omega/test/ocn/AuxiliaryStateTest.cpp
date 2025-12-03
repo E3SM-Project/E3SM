@@ -109,8 +109,9 @@ int initAuxStateTest(const std::string &mesh) {
       LOG_ERROR("AuxStateTest: error initializing default halo");
    }
 
-   VertCoord::init1();
    HorzMesh::init();
+
+   VertCoord::init(false);
 
    Tracers::init();
    int StateErr = OceanState::init();
@@ -139,10 +140,11 @@ int testAuxState() {
       return -1;
    }
 
-   const auto *Mesh = HorzMesh::getDefault();
-   auto *MeshHalo   = Halo::getDefault();
+   const auto *Mesh   = HorzMesh::getDefault();
+   const auto *VCoord = VertCoord::getDefault();
+   auto *MeshHalo     = Halo::getDefault();
    // test creation of another auxiliary state
-   AuxiliaryState::create("AnotherAuxState", Mesh, MeshHalo, 12, 3);
+   AuxiliaryState::create("AnotherAuxState", Mesh, VCoord, MeshHalo, 12, 3);
 
    // test retrievel of another
    if (AuxiliaryState::get("AnotherAuxState")) {
@@ -280,11 +282,10 @@ void finalizeAuxStateTest() {
    Tracers::clear();
    OceanState::clear();
    VertCoord::clear();
+   HorzMesh::clear();
    Field::clear();
    Dimension::clear();
    TimeStepper::clear();
-   HorzMesh::clear();
-   VertCoord::clear();
    Halo::clear();
    Decomp::clear();
    MachEnv::removeAll();

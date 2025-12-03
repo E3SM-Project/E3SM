@@ -24,33 +24,69 @@ VertCoord *VertCoord::DefaultVertCoord = nullptr;
 std::map<std::string, std::unique_ptr<VertCoord>> VertCoord::AllVertCoords;
 
 //------------------------------------------------------------------------------
-// Begin initialization of default vertical coordinate, requires prior
-// initialization of Decomp.
-void VertCoord::init1() {
+// Initialize the default vertical coordinate, requires prior initialization
+// of Decomp and Halo. The optional arguments simplify the use of the VertCoord
+// in some unit tests. If ReadStream is false, the InitialVertCoord stream will
+// not be read during construction. If a value for NVertLayers is passed as
+// argument, the dimension will not be read from the mesh file.
+void VertCoord::init(
+    const bool
+        ReadStream, //< [in] optional argument to read stream, true by default
+    const int
+        InNVertLayers //< [in] optional argument to set NVertLayers explicitly
+                      //< instead of reading dimension from mesh file
+) {
 
    Decomp *DefDecomp = Decomp::getDefault();
 
-   VertCoord::DefaultVertCoord = create("Default", DefDecomp);
-
-} // end init1
-
-//------------------------------------------------------------------------------
-// Complete initialization of default vertical coordinate, requires prior
-// initialization of HorzMesh.
-void VertCoord::init2() {
+   Halo *DefHalo = Halo::getDefault();
 
    Config *OmegaConfig = Config::getOmegaConfig();
 
-   DefaultVertCoord->completeSetup(OmegaConfig);
+   VertCoord::DefaultVertCoord = create("Default", DefDecomp, DefHalo,
+                                        OmegaConfig, ReadStream, InNVertLayers);
 
-} // end init2
+} // end init
 
 //------------------------------------------------------------------------------
-// Construct a new VertCoord instance given a Decomp. New object is incomplete
-// and completeSetup must be called afterwards
+// Construct a new VertCoord instance given a Decomp.
 VertCoord::VertCoord(const std::string &Name_, //< [in] Name for new VertCoord
-                     const Decomp *Decomp      //< [in] associated Decomp
+                     const Decomp *Decomp,     //< [in] associated Decomp
+                     Halo *MeshHalo,           //< [in] mesh halo exchanger
+                     Config *Options,          //< [in] configuration options
+                     const bool ReadStream,    //< [in] logical to read stream
+                     const int InNVertLayers   //< [in] int to set vertical dim
 ) {
+   Error Err; // Error code
+
+   // If ReadStream is true, a prescribed value for NVertLayers is not valid
+   if (ReadStream == true and InNVertLayers != 0) {
+      ABORT_ERROR("VertCoord: ReadStream is true but a value for NVertLayers "
+                  "is explicitly provided, which is not a valid combination");
+   }
+
+   // Read Config for movement weight type, store in enum
+   Config VCoordConfig("VertCoord");
+   Err += Options->get(VCoordConfig);
+   CHECK_ERROR_ABORT(Err, "VertCoord: VertCoord group not found in Config");
+
+   std::string MovementWeightStr;
+   Err += VCoordConfig.get("MovementWeightType", MovementWeightStr);
+   CHECK_ERROR_ABORT(Err,
+                     "VertCoord: MovementWeightType not found in VertCoord");
+
+   if (MovementWeightStr == "Fixed") {
+      MvmtWgtChoice = MovementWeightType::Fixed;
+   } else if (MovementWeightStr == "Uniform") {
+      MvmtWgtChoice = MovementWeightType::Uniform;
+   } else {
+      ABORT_ERROR("VertCoord: Unknown MovementWeightType requested");
+   }
+
+   // Fetch reference density from Config
+   Err.reset();
+   Err += VCoordConfig.get("Density0", Rho0);
+   CHECK_ERROR_ABORT(Err, "VertCoord: Density0 not found in VertCoord");
 
    // Store name suffix
    Name = Name_;
@@ -58,19 +94,36 @@ VertCoord::VertCoord(const std::string &Name_, //< [in] Name for new VertCoord
    // Retrieve mesh filename from Decomp
    MeshFileName = Decomp->MeshFileName;
 
-   // Open the mesh file for reading (assume IO has already been initialized)
-   IO::openFile(MeshFileID, MeshFileName, IO::ModeRead);
+   // If InNVertlayers is 0 (default), attempt to read the dimension from the
+   // mesh file. If the mesh file does not define a vertical dimension, use
+   // NVertLayers = 1. If a value for InNVertLayers is explicitly provided,
+   // use that value is instead.
+   if (InNVertLayers == 0) {
 
-   // Set NVertLayers and NVertLayersP1 and create the vertical dimensions
-   Error Err; // Error code
-   I4 NVertLayersID;
-   Err = IO::getDimFromFile(MeshFileID, "nVertLevels", NVertLayersID,
-                            NVertLayers);
-   if (!Err.isSuccess()) {
-      LOG_WARN("VertCoord: error reading nVertLevels from mesh file, "
-               "using NVertLayers = 1");
-      NVertLayers = 1;
+      std::string OmegaDimName = "NVertLayers";
+      std::string MPASDimName  = "nVertLevels";
+
+      // Open the mesh file for reading (assume IO has already been initialized)
+      IO::openFile(MeshFileID, MeshFileName, IO::ModeRead);
+
+      // Set NVertLayers
+      I4 NVertLayersID;
+      Err = IO::getDimFromFile(MeshFileID, OmegaDimName, NVertLayersID,
+                               NVertLayers);
+      if (Err.isFail()) { // dim not found, try again with older MPAS name
+         Err = IO::getDimFromFile(MeshFileID, MPASDimName, NVertLayersID,
+                                  NVertLayers);
+         if (Err.isFail()) {
+            LOG_INFO("VertCoord: vertical dimension not found in mesh file, "
+                     "using NVertLayers = 1");
+            NVertLayers = 1;
+         }
+      }
+   } else {
+      NVertLayers = InNVertLayers;
    }
+
+   // Create the dimensions
    NVertLayersP1 = NVertLayers + 1;
 
    std::string DimName   = "NVertLayers";
@@ -97,7 +150,7 @@ VertCoord::VertCoord(const std::string &Name_, //< [in] Name for new VertCoord
    NVerticesSize  = Decomp->NVerticesSize;
    VertexDegree   = Decomp->VertexDegree;
 
-   // Retrieve connectivity arrays from HorzMesh
+   // Retrieve connectivity arrays from Decomp
    CellsOnEdge   = Decomp->CellsOnEdge;
    CellsOnVertex = Decomp->CellsOnVertex;
 
@@ -125,114 +178,33 @@ VertCoord::VertCoord(const std::string &Name_, //< [in] Name for new VertCoord
    LayerThicknessTargetH = createHostMirrorCopy(LayerThicknessTarget);
    RefLayerThicknessH    = createHostMirrorCopy(RefLayerThickness);
 
-} // end constructor
-
-//------------------------------------------------------------------------------
-// Complete construction of new VertCoord instance
-void VertCoord::completeSetup(Config *Options //< [in] configuration options
-) {
-
    // Define field metadata
    defineFields();
 
-   I4 FillValueI4     = -1;
-   Real FillValueReal = -999._Real;
-
-   deepCopy(MinLayerCell, FillValueI4);
-   deepCopy(MaxLayerCell, FillValueI4);
-   deepCopy(BottomDepth, FillValueReal);
-
-   OMEGA_SCOPE(LocMinLayerCell, MinLayerCell);
-   OMEGA_SCOPE(LocMaxLayerCell, MaxLayerCell);
-   OMEGA_SCOPE(LocBottomDepth, BottomDepth);
-
-   // Fetch input stream and validate
-   std::string StreamName = "InitialVertCoord";
-   if (Name != "Default") {
-      StreamName.append(Name);
-   }
-
-   auto VCoordStream = IOStream::get(StreamName);
-
-   bool IsValidated = VCoordStream->validate();
-
-   // Read InitialVertCoord stream
-   Error Err; // Error code
-   if (IsValidated) {
-      Err = IOStream::read(StreamName);
-      if (!Err.isSuccess()) {
-         LOG_WARN("VertCoord: Error reading {} stream", StreamName);
-         I4 Sum1 = 0;
-         parallelReduce(
-             {MinLayerCell.extent_int(0)},
-             KOKKOS_LAMBDA(int I, int &Accum) { Accum += LocMinLayerCell(I); },
-             Sum1);
-         if (Sum1 < 0) {
-            LOG_WARN("VertCoord: Error reading minLevelCell from {}, "
-                     "using MinLayerCell = 0",
-                     StreamName);
-            deepCopy(MinLayerCell, 1);
-         }
-         I4 Sum2 = 0;
-         parallelReduce(
-             {MaxLayerCell.extent_int(0)},
-             KOKKOS_LAMBDA(int I, int &Accum) { Accum += LocMaxLayerCell(I); },
-             Sum2);
-         if (Sum2 < 0) {
-            LOG_WARN("VertCoord: Error reading maxLevelCell from {}, "
-                     "using MaxLayerCell = NVertLayers - 1",
-                     StreamName);
-            deepCopy(MaxLayerCell, NVertLayers);
-         }
-         Real Sum3 = 0.;
-         parallelReduce(
-             {BottomDepth.extent_int(0)},
-             KOKKOS_LAMBDA(int I, Real &Accum) { Accum += LocBottomDepth(I); },
-             Sum3);
-         if (Sum3 < 0.) {
-            ABORT_ERROR("VertCoord: Error reading bottomDepth from {}",
-                        StreamName);
-         }
-      }
-   } else {
-      ABORT_ERROR("Error validating IO stream {}", StreamName);
-   }
-
-   // Subtract 1 to convert to zero-based indexing
-   parallelFor(
-       {NCellsAll}, KOKKOS_LAMBDA(int ICell) {
-          LocMinLayerCell(ICell) -= 1;
-          LocMaxLayerCell(ICell) -= 1;
-       });
+   // Set MinLayerCell, MaxLayerCell, and BottomDepth arrays
+   setStreamArrays(ReadStream, MeshHalo);
 
    // Compute Edge and Vertex vertical ranges
-   minMaxLayerEdge();
-   minMaxLayerVertex();
+   minMaxLayerEdge(MeshHalo);
+   minMaxLayerVertex(MeshHalo);
+
+   // Set computational masks
+   setMasks();
 
    // Initialize movement weights
-   initMovementWeights(Options);
+   initMovementWeights();
 
-   // Make host copies for device arrays read from mesh file
-   MaxLayerCellH = createHostMirrorCopy(MaxLayerCell);
-   MinLayerCellH = createHostMirrorCopy(MinLayerCell);
-   BottomDepthH  = createHostMirrorCopy(BottomDepth);
-
-   // Fetch reference density from Config
-   Config VCoordConfig("VertCoord");
-   Err.reset();
-   Err += Options->get(VCoordConfig);
-   CHECK_ERROR_ABORT(Err, "VertCoord: VertCoord group not found in Config");
-
-   Err += VCoordConfig.get("Density0", Rho0);
-   CHECK_ERROR_ABORT(Err, "VertCoord: Density0 not found in VertCoord");
-
-} // end completeSetup
+} // end constructor
 
 //------------------------------------------------------------------------------
 // Calls the VertCoord constructor and places it in the AllVertCoords map
-VertCoord *
-VertCoord::create(const std::string &Name, // [in] name for new VertCoord
-                  const Decomp *Decomp     // [in] associated Decomp
+VertCoord *VertCoord::create(
+    const std::string &Name, // [in] name for new VertCoord
+    const Decomp *Decomp,    // [in] associated Decomp
+    Halo *MeshHalo,          // [in] mesh halo exchanger
+    Config *Options,         // [in] configuration options
+    const bool ReadStream,   // [in] optional logical to read stream
+    const int InNVertLayers  // [in] optional int to set vertical dim
 ) {
    // Check to see if a VertCoord of the same name already exists and, if so,
    // exit with an error
@@ -245,7 +217,8 @@ VertCoord::create(const std::string &Name, // [in] name for new VertCoord
 
    // create a new VertCoord on the heap and put it in a map of unique_ptrs,
    // which will manage its lifetime
-   auto *NewVertCoord = new VertCoord(Name, Decomp);
+   auto *NewVertCoord = new VertCoord(Name, Decomp, MeshHalo, Options,
+                                      ReadStream, InNVertLayers);
    AllVertCoords.emplace(Name, NewVertCoord);
 
    return NewVertCoord;
@@ -256,8 +229,8 @@ VertCoord::create(const std::string &Name, // [in] name for new VertCoord
 void VertCoord::defineFields() {
 
    // Set field names (append Name if not default)
-   MinLayerCellFldName   = "MinLevelCell";
-   MaxLayerCellFldName   = "MaxLevelCell";
+   MinLayerCellFldName   = "MinLayerCell";
+   MaxLayerCellFldName   = "MaxLayerCell";
    BottomDepthFldName    = "BottomDepth";
    PressInterfFldName    = "PressureInterface";
    PressMidFldName       = "PressureMid";
@@ -480,9 +453,126 @@ void VertCoord::clear() {
 } // end clear
 
 //------------------------------------------------------------------------------
+// If ReadStream = true, read MinLayerCell, MaxLayerCell, and BottomDepth from
+// the initial stream. If ReadStream = false, default values are used.
+void VertCoord::setStreamArrays(const bool ReadStream, Halo *MeshHalo) {
+
+   Error Err; // Error code
+
+   OMEGA_SCOPE(LocMinLayerCell, MinLayerCell);
+   OMEGA_SCOPE(LocMaxLayerCell, MaxLayerCell);
+   OMEGA_SCOPE(LocBottomDepth, BottomDepth);
+
+   // If ReadStream is true (default) attempt to read values for MinLayerCell,
+   // MaxLayerCell, and BottomDepth from the InitialVertCoord stream. Otherwise,
+   // MinLayerCell and MaxLayerCell will be set to the first and last indices of
+   // the vertical range, BottomDepth will remain uninitialized and will need
+   // to be initialized explicitly if needed.
+   if (ReadStream) {
+
+      I4 FillValueI4     = -1;
+      Real FillValueReal = -999._Real;
+
+      deepCopy(MinLayerCell, FillValueI4);
+      deepCopy(MaxLayerCell, FillValueI4);
+      deepCopy(BottomDepth, FillValueReal);
+
+      // Fetch input stream and validate
+      std::string StreamName = "InitialVertCoord";
+      if (Name != "Default") {
+         StreamName.append(Name);
+      }
+
+      // Validate InitalVertCoord stream
+      auto VCoordStream = IOStream::get(StreamName);
+      bool IsValidated  = VCoordStream->validate();
+
+      // Read InitialVertCoord stream
+      if (IsValidated) {
+         // Attempt to read stream, an error will be raised if any field fails
+         // to be read. Determine which fields may not have been read properly.
+         // If MinLayerCell or MaxLayerCell were not read properly default
+         // values will be used. If BottomDepth was not read properly, abort
+         // with error.
+         Err = IOStream::read(StreamName);
+         if (Err.isFail()) {
+            LOG_INFO("VertCoord: Error while reading {} stream", StreamName);
+            I4 Sum1 = 0;
+            parallelReduce(
+                {MinLayerCell.extent_int(0)},
+                KOKKOS_LAMBDA(int I, int &Accum) {
+                   Accum += LocMinLayerCell(I);
+                },
+                Sum1);
+            if (Sum1 < 0) {
+               LOG_INFO("VertCoord: Error reading MinLayerCell from {}, "
+                        "using MinLayerCell = 0",
+                        StreamName);
+               deepCopy(MinLayerCell, 1);
+            }
+            I4 Sum2 = 0;
+            parallelReduce(
+                {MaxLayerCell.extent_int(0)},
+                KOKKOS_LAMBDA(int I, int &Accum) {
+                   Accum += LocMaxLayerCell(I);
+                },
+                Sum2);
+            if (Sum2 < 0) {
+               LOG_INFO("VertCoord: Error reading MaxLayerCell from {}, "
+                        "using MaxLayerCell = NVertLayers - 1",
+                        StreamName);
+               deepCopy(MaxLayerCell, NVertLayers);
+            }
+            Real Sum3 = 0.;
+            parallelReduce(
+                {BottomDepth.extent_int(0)},
+                KOKKOS_LAMBDA(int I, Real &Accum) {
+                   Accum += LocBottomDepth(I);
+                },
+                Sum3);
+            if (Sum3 < 0.) {
+               ABORT_ERROR("VertCoord: Error reading bottomDepth from {}",
+                           StreamName);
+            }
+         }
+      } else {
+         ABORT_ERROR("Error validating IO stream {}", StreamName);
+      }
+   } else {
+      deepCopy(MinLayerCell, 1);
+      deepCopy(MaxLayerCell, NVertLayers);
+   }
+
+   // Subtract 1 to convert to zero-based indexing
+   parallelFor(
+       {NCellsAll}, KOKKOS_LAMBDA(int ICell) {
+          LocMinLayerCell(ICell) -= 1;
+          LocMaxLayerCell(ICell) -= 1;
+       });
+
+   // Exchange halos since stream only reads owned cells
+   MeshHalo->exchangeFullArrayHalo(MinLayerCell, OnCell);
+   MeshHalo->exchangeFullArrayHalo(MaxLayerCell, OnCell);
+
+   // The index ICell = NCellsAll represents an inactive cell
+   OMEGA_SCOPE(LocNCellsAll, NCellsAll);
+   OMEGA_SCOPE(LocNVertLayersP1, NVertLayersP1);
+   parallelFor(
+       {1}, KOKKOS_LAMBDA(const int &) {
+          LocMinLayerCell(LocNCellsAll) = LocNVertLayersP1;
+          LocMaxLayerCell(LocNCellsAll) = -1;
+       });
+
+   // Make host copies for device arrays read from mesh file
+   MaxLayerCellH = createHostMirrorCopy(MaxLayerCell);
+   MinLayerCellH = createHostMirrorCopy(MinLayerCell);
+   BottomDepthH  = createHostMirrorCopy(BottomDepth);
+}
+
+//------------------------------------------------------------------------------
 // Compute min and max layer indices for edges based on MinLayerCell and
 // MaxLayerCell
-void VertCoord::minMaxLayerEdge() {
+void VertCoord::minMaxLayerEdge(Halo *MeshHalo) {
 
    MinLayerEdgeTop = Array1DI4("MinLayerEdgeTop", NEdgesSize);
    MinLayerEdgeBot = Array1DI4("MinLayerEdgeBot", NEdgesSize);
@@ -498,15 +588,16 @@ void VertCoord::minMaxLayerEdge() {
    OMEGA_SCOPE(LocMaxLayerEdgeTop, MaxLayerEdgeTop);
    OMEGA_SCOPE(LocMaxLayerEdgeBot, MaxLayerEdgeBot);
    parallelFor(
-       {NEdgesAll}, KOKKOS_LAMBDA(int IEdge) {
+       {NEdgesOwned}, KOKKOS_LAMBDA(int IEdge) {
           I4 Lyr1;
           I4 Lyr2;
           const I4 ICell1 = LocCellsOnEdge(IEdge, 0);
           const I4 ICell2 = LocCellsOnEdge(IEdge, 1);
-          Lyr1            = LocMaxLayerCell(ICell1) == -1 ? LocNVertLayersP1
-                                                          : LocMinLayerCell(ICell1);
-          Lyr2            = LocMaxLayerCell(ICell2) == -1 ? LocNVertLayersP1
-                                                          : LocMinLayerCell(ICell2);
+
+          Lyr1 = LocMaxLayerCell(ICell1) == -1 ? LocNVertLayersP1
+                                               : LocMinLayerCell(ICell1);
+          Lyr2 = LocMaxLayerCell(ICell2) == -1 ? LocNVertLayersP1
+                                               : LocMinLayerCell(ICell2);
           LocMinLayerEdgeTop(IEdge) = Kokkos::min(Lyr1, Lyr2);
 
           Lyr1 = LocMaxLayerCell(ICell1) == -1 ? 0 : LocMinLayerCell(ICell1);
@@ -518,6 +609,11 @@ void VertCoord::minMaxLayerEdge() {
           LocMaxLayerEdgeBot(IEdge) =
               Kokkos::max(LocMaxLayerCell(ICell1), LocMaxLayerCell(ICell2));
        });
+
+   MeshHalo->exchangeFullArrayHalo(MinLayerEdgeTop, OnEdge);
+   MeshHalo->exchangeFullArrayHalo(MinLayerEdgeBot, OnEdge);
+   MeshHalo->exchangeFullArrayHalo(MaxLayerEdgeTop, OnEdge);
+   MeshHalo->exchangeFullArrayHalo(MaxLayerEdgeBot, OnEdge);
 
    OMEGA_SCOPE(LocNEdgesAll, NEdgesAll);
    parallelFor(
@@ -537,7 +633,7 @@ void VertCoord::minMaxLayerEdge() {
 //------------------------------------------------------------------------------
 // Compute min and max layer indices for vertices based on MinLayerCell and
 // MaxLayerCell
-void VertCoord::minMaxLayerVertex() {
+void VertCoord::minMaxLayerVertex(Halo *MeshHalo) {
 
    MinLayerVertexTop = Array1DI4("MinLayerVertexTop", NVerticesSize);
    MinLayerVertexBot = Array1DI4("MinLayerVertexBot", NVerticesSize);
@@ -555,7 +651,7 @@ void VertCoord::minMaxLayerVertex() {
    OMEGA_SCOPE(LocMaxLayerVertexBot, MaxLayerVertexBot);
 
    parallelFor(
-       {NVerticesAll}, KOKKOS_LAMBDA(int IVertex) {
+       {NVerticesOwned}, KOKKOS_LAMBDA(int IVertex) {
           I4 Lyr;
           I4 ICell = LocCellsOnVertex(IVertex, 0);
           Lyr      = LocMaxLayerCell(ICell) == -1 ? 0 : LocMinLayerCell(ICell);
@@ -595,6 +691,12 @@ void VertCoord::minMaxLayerVertex() {
                  LocMaxLayerVertexTop(IVertex), LocMaxLayerCell(ICell));
           }
        });
+
+   MeshHalo->exchangeFullArrayHalo(MinLayerVertexTop, OnVertex);
+   MeshHalo->exchangeFullArrayHalo(MinLayerVertexBot, OnVertex);
+   MeshHalo->exchangeFullArrayHalo(MaxLayerVertexTop, OnVertex);
+   MeshHalo->exchangeFullArrayHalo(MaxLayerVertexBot, OnVertex);
+
    OMEGA_SCOPE(LocNVerticesAll, NVerticesAll);
    parallelFor(
        {1}, KOKKOS_LAMBDA(const int &) {
@@ -611,36 +713,99 @@ void VertCoord::minMaxLayerVertex() {
 } // end MinMaxLayerVertex
 
 //------------------------------------------------------------------------------
+// set computational masks for mesh elements
+void VertCoord::setMasks() {
+
+   EdgeMask = Array2DReal("EdgeMask", NEdgesSize, NVertLayers);
+
+   OMEGA_SCOPE(LocEdgeMask, EdgeMask);
+   OMEGA_SCOPE(LocMinLyrEdgeBot, MinLayerEdgeBot);
+   OMEGA_SCOPE(LocMaxLyrEdgeTop, MaxLayerEdgeTop);
+
+   // EdgeMask = 1 if active layers on both sides, 0 otherwise.
+   deepCopy(EdgeMask, 0.);
+   parallelForOuter(
+       {NEdgesAll}, KOKKOS_LAMBDA(int IEdge, const TeamMember &Team) {
+          const I4 KMin = LocMinLyrEdgeBot(IEdge);
+          const I4 KMax = LocMaxLyrEdgeTop(IEdge);
+
+          parallelForInner(
+              Team, KMax - KMin + 1, INNER_LAMBDA(int K) {
+                 I4 KLyr = KMin + K;
+
+                 LocEdgeMask(IEdge, KLyr) = 1._Real;
+              });
+       });
+
+   EdgeMaskH = createHostMirrorCopy(EdgeMask);
+
+   CellMask = Array2DReal("CellMask", NCellsSize, NVertLayers);
+
+   OMEGA_SCOPE(LocCellMask, CellMask);
+   OMEGA_SCOPE(LocMinLyrCell, MinLayerCell);
+   OMEGA_SCOPE(LocMaxLyrCell, MaxLayerCell);
+
+   // CellMask = 1 in active layers, 0 otherwise.
+   deepCopy(CellMask, 0.);
+   parallelForOuter(
+       {NCellsAll}, KOKKOS_LAMBDA(int ICell, const TeamMember &Team) {
+          const I4 KMin = LocMinLyrCell(ICell);
+          const I4 KMax = LocMaxLyrCell(ICell);
+
+          parallelForInner(
+              Team, KMax - KMin + 1, INNER_LAMBDA(int K) {
+                 I4 KLyr = KMin + K;
+
+                 LocCellMask(ICell, KLyr) = 1._Real;
+              });
+       });
+
+   CellMaskH = createHostMirrorCopy(CellMask);
+
+   VertexMask = Array2DReal("VertexMask", NVerticesSize, NVertLayers);
+
+   OMEGA_SCOPE(LocVrtxMask, VertexMask);
+   OMEGA_SCOPE(LocMinLyrVrtxTop, MinLayerVertexTop);
+   OMEGA_SCOPE(LocMaxLyrVrtxBot, MaxLayerVertexBot);
+
+   // VertexMask = 1 if at least 1 surrounding cell layer is active,
+   // 0 otherwise.
+   deepCopy(VertexMask, 0.);
+   parallelForOuter(
+       {NVerticesAll}, KOKKOS_LAMBDA(int IVertex, const TeamMember &Team) {
+          const I4 KMin = LocMinLyrVrtxTop(IVertex);
+          const I4 KMax = LocMaxLyrVrtxBot(IVertex);
+
+          parallelForInner(
+              Team, KMax - KMin + 1, INNER_LAMBDA(int K) {
+                 I4 KLyr = KMin + K;
+
+                 LocVrtxMask(IVertex, KLyr) = 1._Real;
+              });
+       });
+
+   VertexMaskH = createHostMirrorCopy(VertexMask);
+
+} // end setMasks()
+
+//------------------------------------------------------------------------------
 // Store VertCoordMovementWeights based on config choice
-void VertCoord::initMovementWeights(
-    Config *Options // [in] configuration options
-) {
+void VertCoord::initMovementWeights() {
 
    Error Err; // default successful error code
-
-   Config VCoordConfig("VertCoord");
-   Err += Options->get(VCoordConfig);
-   CHECK_ERROR_ABORT(Err, "VertCoord: VertCoord group not found in Config");
-
-   std::string MovementWeightType;
-   Err += VCoordConfig.get("MovementWeightType", MovementWeightType);
-   CHECK_ERROR_ABORT(Err,
-                     "VertCoord: MovementWeightType not found in VertCoord");
 
    VertCoordMovementWeights =
        Array1DReal("VertCoordMovementWeights", NVertLayers);
 
    OMEGA_SCOPE(LocVertCoordMovementWeights, VertCoordMovementWeights);
-   if (MovementWeightType == "Fixed") {
+   if (MvmtWgtChoice == MovementWeightType::Fixed) {
       deepCopy(VertCoordMovementWeights, 0._Real);
       parallelFor(
           {1}, KOKKOS_LAMBDA(const int &) {
              LocVertCoordMovementWeights(0) = 1._Real;
           });
-   } else if (MovementWeightType == "Uniform") {
+   } else if (MvmtWgtChoice == MovementWeightType::Uniform) {
       deepCopy(VertCoordMovementWeights, 1._Real);
-   } else {
-      ABORT_ERROR("VertCoord: Unknown MovementWeightType requested");
    }
 
    VertCoordMovementWeightsH = createHostMirrorCopy(VertCoordMovementWeights);

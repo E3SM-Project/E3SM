@@ -37,7 +37,6 @@
 
 #include <cmath>
 #include <iomanip>
-#include <iostream>
 
 using namespace OMEGA;
 
@@ -170,15 +169,13 @@ int initTimeStepperTest(const std::string &mesh) {
       LOG_ERROR("TimeStepperTest: error initializing default halo");
    }
 
-   // Initialize the vertical coordinate and reset NVertLayers to 1
-   VertCoord::init1();
-   auto *DefVertCoord        = VertCoord::getDefault();
-   DefVertCoord->NVertLayers = 1;
-   Dimension::destroy("NVertLayers");
-   std::shared_ptr<Dimension> VertDim =
-       Dimension::create("NVertLayers", NVertLayers);
-
    HorzMesh::init();
+
+   // initialize vertical coordinate, do not read stream and use local
+   // NVertLayers value
+   VertCoord::init(false, NVertLayers);
+   auto *DefVertCoord = VertCoord::getDefault();
+
    Tracers::init();
    AuxiliaryState::init();
    Tendencies::init();
@@ -207,8 +204,8 @@ int initTimeStepperTest(const std::string &mesh) {
       LOG_ERROR("TimeStepperTest: error creating test state");
    }
 
-   auto *TestAuxState = AuxiliaryState::create("TestAuxState", DefMesh, DefHalo,
-                                               NVertLayers, NTracers);
+   auto *TestAuxState = AuxiliaryState::create(
+       "TestAuxState", DefMesh, DefVertCoord, DefHalo, NVertLayers, NTracers);
 
    Config *OmegaConfig = Config::getOmegaConfig();
    TestAuxState->readConfigOptions(OmegaConfig);
@@ -282,10 +279,9 @@ void finalizeTimeStepperTest() {
    AuxiliaryState::clear();
    OceanState::clear();
    VertCoord::clear();
+   HorzMesh::clear();
    Dimension::clear();
    Field::clear();
-   HorzMesh::clear();
-   VertCoord::clear();
    Halo::clear();
    Decomp::clear();
    MachEnv::removeAll();
