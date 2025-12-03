@@ -1066,7 +1066,7 @@ Table 1. Definition of variables. Geometric variables may be found in the {ref}`
 |$\rho_{i,k}$ | density | kg m$^{-3}$ | cell  | Density |
 |$\rho_0$ | Reference density | kg m$^{-3}$ | |  constant |
 |$\tau_i$ | wind stress | Pa=N m$^{-2}$ | edge |  SurfaceStress |
-|$\Phi_{i,k}$ | geopotential| | cell | m$^2$ s$^{-2}$  | Geopotential |$\partial \Phi / \partial z = g$ for gravity |
+|$\Phi_{i,k}$ | geopotential| m$^2$ s$^{-2}$  | cell | Geopotential |$\partial \Phi / \partial z = g$ for gravity |
 |$\omega$   | mass transport | kg s$^{-1}$ m$^{-2}$      | cell | VerticalTransport |$\omega=\rho_0 w$|
 
 
