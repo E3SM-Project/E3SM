@@ -1045,7 +1045,7 @@ Table 1. Definition of variables. Geometric variables may be found in the {ref}`
 |$\tilde{u}_{i,k}$ | projection of normal velocity across a pseudo height surface | m s$^{-1}$ | cell | | |
 |$\tilde{w}_{i,k}$ | vertical velocity across a pseudo height surface | m s$^{-1}$ | cell  | VerticalVelocity | volume transport per m$^2$ |
 |$\tilde{w}_{tr\ i,k}$ | net vertical transport through a moving surface | m s$^{-1}$ | cell  | NetVertTransportVelocity | volume transport per m$^2$ |
-|$\tilde{W}_{tr\ i,k}$ | total vertical velocity across a pseudo height surface $\tilde{W}_{tr\ i,k} \equiv \tilde{w}_{tr\ i,k} - \tilde{u}_{i,k}$ | m s$^{-1}$ | cell | | |
+|$\tilde{W}_{tr\ i,k}$ | total vertical velocity across a pseudo height surface | m s$^{-1}$ | cell | TotalVertTransportVelocity | $\tilde{W}_{tr} \equiv \tilde{w}_{tr} - \tilde{u}$  |
 |$\tilde{z}$ | vertical coordinate (pseudo-height) | m | - | | positive upward |
 |$\tilde{z}^{top}_{i,k}$ | layer top $\tilde{z}$-location | m | cell | ZTop | see [](discrete-z) |
 |$\tilde{z}^{mid}_{i,k}$ | layer mid-depth $\tilde{z}$-location | m | cell | ZMid |
