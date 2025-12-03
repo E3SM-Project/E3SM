@@ -428,7 +428,10 @@ void OutputManager::run(const util::TimeStamp& timestamp)
       filespecs.filename = compute_filename (filespecs,timestamp);
       
       // Check if file already exists when not in restart mode (potential duplicate yaml file)
-      if (not m_resume_output_file and not m_allow_overwrite and file_exists(filespecs.filename)) {
+      if (not m_resume_output_file and 
+	  not m_allow_overwrite and 
+          not m_is_model_restart_output and
+          file_exists(filespecs.filename)) {
         EKAT_ERROR_MSG(
             "Error! Trying to create an output file that already exists: \n"
             "  - filename: " + filespecs.filename + "\n"
