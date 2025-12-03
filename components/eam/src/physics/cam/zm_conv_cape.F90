@@ -34,7 +34,7 @@ subroutine compute_dilute_cape( pcols, ncol, pver, pverp, &
                                 lcl_temperature, lcl_klev, &
                                 eql_klev, cape, &
                                 zm_const, zm_param, &
-                                iclosure, prev_msemax_klev, &
+                                calc_msemax_klev, prev_msemax_klev, &
                                 use_input_tq_mx, q_mx, t_mx )
    !----------------------------------------------------------------------------
    ! Purpose: calculate convective available potential energy (CAPE), lifting
@@ -159,7 +159,7 @@ subroutine compute_dilute_cape( pcols, ncol, pver, pverp, &
 
    !----------------------------------------------------------------------------
    ! Set level of max moist static energy for parcel initialization
-   if ( zm_param%trig_dcape .and. (.not.iclosure) ) then
+   if ( zm_param%trig_dcape .and. (.not.calc_msemax_klev) ) then
       ! Use max moist static energy level that is passed in
       if (.not.present(prev_msemax_klev)) call endrun('** ZM CONV compute_dilute_cape: prev_msemax_klev not present **')
       msemax_klev(1:ncol) = prev_msemax_klev(1:ncol)
