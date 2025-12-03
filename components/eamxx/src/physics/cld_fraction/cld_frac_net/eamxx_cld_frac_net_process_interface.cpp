@@ -1,6 +1,8 @@
 #include "eamxx_cld_frac_net_process_interface.hpp"
 
+#ifdef EAMXX_HAS_PYTHON
 #include "share/atm_process/atmosphere_process_pyhelpers.hpp"
+#endif
 #include "cld_frac_net.hpp"
 
 #include <ekat_team_policy_utils.hpp>
@@ -13,9 +15,15 @@ CldFracNet::CldFracNet (const ekat::Comm& comm, const ekat::ParameterList& param
 {
   if (m_params.get<std::string>("emulator")=="lapis") {
     lapis_initialize();
-  } else {
+  }
+#ifdef EAMXX_HAS_PYTHON
+  else if (m_params.get<std::string>("emulator")=="pytorch") {
     EKAT_REQUIRE_MSG( has_py_module(),
         "[CldFracNet] Error! Something went wrong while initializing the python module.\n");
+  }
+#endif
+  else {
+    EKAT_ERROR_MSG("[CldFracNet] Error! No valid emulator type requested.\n");
   }
 }
 
@@ -39,9 +47,11 @@ void CldFracNet::set_grids(const std::shared_ptr<const GridsManager> grids_manag
 
 void CldFracNet::initialize_impl (const RunType /* run_type */)
 {
-  if (m_params.get<std::string>("emulator")!="lapis") {
+#ifdef EAMXX_HAS_PYTHON
+  if (m_params.get<std::string>("emulator")=="pytorch") {
     py_module_call("init");
   }
+#endif
 }
 
 void CldFracNet::run_impl (const double /* dt */)
@@ -92,7 +102,9 @@ void CldFracNet::run_impl (const double /* dt */)
     };
 
     Kokkos::parallel_for(policy,lambda);
-  } else {
+  }
+#ifdef EAMXX_HAS_PYTHON
+  else if (m_params.get<std::string>("emulator")=="pytorch") {
     auto py_qi  = get_py_field_dev("qi");
     auto py_liq = get_py_field_dev("cldfrac_liq");
     auto py_ice = get_py_field_dev("cldfrac_ice");
@@ -101,6 +113,10 @@ void CldFracNet::run_impl (const double /* dt */)
     double ice_threshold = m_params.get<double>("ice_cloud_threshold");
 
     py_module_call("forward",ice_threshold,py_qi,py_liq,py_ice,py_tot);
+  }
+#endif
+  else {
+    EKAT_ERROR_MSG("[CldFracNet] Error! No valid emulator type requested.\n");
   }
 }
 
