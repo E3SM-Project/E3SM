@@ -428,11 +428,13 @@ void OutputManager::run(const util::TimeStamp& timestamp)
       filespecs.filename = compute_filename (filespecs,timestamp);
       
       // Check if file already exists when not in restart mode (potential duplicate yaml file)
-      if (not m_resume_output_file and file_exists(filespecs.filename)) {
+      if (not m_resume_output_file and not m_allow_overwrite and file_exists(filespecs.filename)) {
         EKAT_ERROR_MSG(
-            "Error! Trying to create an output file already exists: \n"
+            "Error! Trying to create an output file that already exists: \n"
             "  - filename: " + filespecs.filename + "\n"
-            "  - timestamp: " + timestamp.to_string() );
+            "  - timestamp: " + timestamp.to_string() + "\n"
+ 	    "Check that you do not have a duplicated yaml file,\n"
+            "or if you intend to overwrite, set allow_overwrite_existing_files: true");
       }    
 
       // Register all dims/vars, write geometry data (e.g. lat/lon/hyam/hybm/hyai/hybi)
@@ -754,6 +756,9 @@ setup_internals (const std::shared_ptr<fm_type>& field_mgr,
       "Error! The output control YAML file for " + m_filename_prefix + " is missing the sublist 'output_control'");
   auto& out_control_pl = m_params.sublist("output_control");
   m_output_control.set_frequency_units(out_control_pl.get<std::string>("frequency_units"));
+
+  // Allow overwrite?
+  m_allow_overwrite = m_params.get("allow_overwrite_existing_files", false);  
 
   // In case output is disabled, no point in doing anything else
   if (not m_output_control.output_enabled()) {
