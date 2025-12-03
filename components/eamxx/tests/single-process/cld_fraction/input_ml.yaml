@@ -14,7 +14,7 @@ eamxx:
     ice_cloud_threshold: 1e-12
     py_module_name: ${PY_MODULE_NAME}
     py_module_path: ${PY_MODULE_PATH}
-    emulator: ${WHICH_EMULATOR}
+    emulator: ${EMULATOR}
 
 grids_manager:
   type: mesh_free
@@ -29,5 +29,5 @@ initial_conditions:
   filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
 
 scorpio:
-  output_yaml_files: [output_${POSTFIX}.yaml]
+  output_yaml_files: [output_ml_${POSTFIX}.yaml]
 ...

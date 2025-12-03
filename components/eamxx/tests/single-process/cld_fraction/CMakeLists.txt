@@ -1,26 +1,35 @@
 include (ScreamUtils)
 
-# Set AD configurable options
+# Set common AD configurable options
 set (NUM_STEPS 1)
 set (ATM_TIME_STEP 1800)
 set (RUN_T0 2021-10-12-45000)
 
+# Create executable for CldFraction standalone
+CreateADUnitTestExec(cld_fraction_standalone
+  LIBS cld_fraction)
+
+#####################################
+#        CldFraction (CPP)          #
+#####################################
+
 # Configure yaml files to run directory
-set (PROCESS_NAME cld_fraction)
 set (POSTFIX cpp)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/input_cpp.yaml)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/output.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/output_cpp.yaml)
 
-# Test the process
-CreateADUnitTest(cld_fraction_standalone
+CreateUnitTestFromExec(cld_fraction_standalone_cpp cld_fraction_standalone
   EXE_ARGS "--args -ifile=input_cpp.yaml"
-  LIBS cld_fraction
   LABELS cld_fraction physics
   FIXTURES_SETUP cldfrac_cpp)
 
 if (EAMXX_ENABLE_PYTHON)
+  #####################################
+  #        CldFraction (PY)           #
+  #####################################
+
   include (BuildCprnc)
   BuildCprnc()
 
@@ -77,10 +86,13 @@ if (EAMXX_ENABLE_PYTHON)
     set_tests_properties(${TEST_NAME} PROPERTIES
           LABELS "cldfrac;infrastructure"
           FIXTURES_REQUIRED "cldfrac_cupy;cldfrac_cpp")
-
   endif()
 
   if (NOT EAMXX_ENABLE_GPU)
+    #####################################
+    #         CldFracNet (PY)           #
+    #####################################
+
     # Create executable that runs cld_frac_net emulator
     CreateADUnitTestExec(cld_frac_net_standalone
       LIBS cld_frac_net)
@@ -88,30 +100,53 @@ if (EAMXX_ENABLE_PYTHON)
     # Test the process with python ml emulator
     set (PY_MODULE_NAME "cld_frac_net")
     set (PY_MODULE_PATH ${SCREAM_BASE_DIR}/src/physics/cld_fraction/cld_frac_net)
-    set (POSTFIX ml_py)
-    set (WHICH_EMULATOR python)
+    set (POSTFIX py)
+    set (EMULATOR pytorch)
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input_ml.yaml
-                   ${CMAKE_CURRENT_BINARY_DIR}/input_ml_py.yaml)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/output.yaml
-                   ${CMAKE_CURRENT_BINARY_DIR}/output_${POSTFIX}.yaml)
+                   ${CMAKE_CURRENT_BINARY_DIR}/input_ml_${POSTFIX}.yaml)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/output_ml.yaml
+                   ${CMAKE_CURRENT_BINARY_DIR}/output_ml_${POSTFIX}.yaml)
 
-    CreateUnitTestFromExec(cld_frac_net_py cld_frac_net_standalone
-      EXE_ARGS "--args -ifile=input_pyml.yaml"
+    CreateUnitTestFromExec(cld_frac_net_${POSTFIX} cld_frac_net_standalone
+      EXE_ARGS "--args -ifile=input_ml_${POSTFIX}.yaml"
       LABELS cld_fraction physics
-      FIXTURES_SETUP cldfrac_pyml)
+      FIXTURES_SETUP cld_frac_net_${POSTFIX})
 
-    # Create test that runs lapis-generated emulator
-    unset (PY_MODULE_NAME)
-    set (POSTFIX ml_cpp)
-    set (WHICH_EMULATOR lapis)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input_ml.yaml
-                   ${CMAKE_CURRENT_BINARY_DIR}/input_ml_cpp.yaml)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/output.yaml
-                   ${CMAKE_CURRENT_BINARY_DIR}/output_${POSTFIX}.yaml)
+    # So that we know, below, that we can run cpp-vs-py test for cld_frac_net output
+    set (HAS_CLD_FRAC_NET_PY TRUE)
+  endif()
+endif()
 
-    CreateUnitTestFromExec(cld_frac_net_cpp cld_frac_net_standalone
-      EXE_ARGS "--args -ifile=input_cppml.yaml"
-      LABELS cld_fraction
-      FIXTURES_SETUP cldfrac_cppml)
+
+if (NOT EAMXX_ENABLE_GPU)
+  #####################################
+  #         CldFracNet (CPP)          #
+  #####################################
+
+  # Create test that runs lapis-generated emulator
+  unset (PY_MODULE_NAME)
+  set (POSTFIX cpp)
+  set (EMULATOR lapis)
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input_ml.yaml
+                 ${CMAKE_CURRENT_BINARY_DIR}/input_ml_${POSTFIX}.yaml)
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/output_ml.yaml
+                 ${CMAKE_CURRENT_BINARY_DIR}/output_ml_${POSTFIX}.yaml)
+
+  CreateUnitTestFromExec(cld_frac_net_${POSTFIX} cld_frac_net_standalone
+    EXE_ARGS "--args -ifile=input_ml_${POSTFIX}.yaml"
+    LABELS cld_fraction
+    FIXTURES_SETUP cld_frac_net_${POSTFIX})
+
+  if (HAS_CLD_FRAC_NET_PY)
+    # Compare output of py and cpp tests of cld_frac_net
+    set (SRC_FILE "cld_frac_net_standalone_output_cpp.INSTANT.nsteps_x1.np1.${RUN_T0}.nc")
+    set (TGT_FILE "cld_frac_net_standalone_output_py.INSTANT.nsteps_x1.np1.${RUN_T0}.nc")
+    set (TEST_NAME cld_frac_net_standalone_cpp_vs_py)
+    add_test (NAME ${TEST_NAME}
+              COMMAND cmake -P ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake ${SRC_FILE} ${TGT_FILE}
+              WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+    set_tests_properties(${TEST_NAME} PROPERTIES
+          LABELS "cldfrac;infrastructure"
+          FIXTURES_REQUIRED "cld_frac_net_py;cld_frac_net_cpp")
   endif()
 endif()
