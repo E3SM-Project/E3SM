@@ -2727,7 +2727,8 @@ contains
          snowVolumeCell, &
          snowDensityViaContent, &
          snowDensityViaCompaction, &
-         snowMeltMassCell
+         snowMeltMassCell, &
+         levelSnowVolumeCell
 
     real(kind=RKIND), pointer :: &
          config_dt
@@ -2753,6 +2754,9 @@ contains
          abortMessage, &
          abortLocation
 
+    real (kind=RKIND), dimension(:), allocatable :: &
+         levelSnowVolumeCategory
+
     block => domain % blocklist
     do while (associated(block))
 
@@ -2776,6 +2780,7 @@ contains
 
        call MPAS_pool_get_array(snow, "snowDensityViaContent", snowDensityViaContent)
        call MPAS_pool_get_array(snow, "snowDensityViaCompaction", snowDensityViaCompaction)
+       call MPAS_pool_get_array(snow, "levelSnowVolumeCell", levelSnowVolumeCell)
        call MPAS_pool_get_array(snow, "snowMeltMassCategory", snowMeltMassCategory)
        call MPAS_pool_get_array(snow, "snowMeltMassCell", snowMeltMassCell)
        call MPAS_pool_get_array(snow, "snowLossToLeads", snowLossToLeads)
@@ -2807,6 +2812,11 @@ contains
        setGetPhysicsTracers = .true.
        setGetBGCTracers     = config_use_column_biogeochemistry
 
+       ! levelSnowVolumeCell array
+       allocate(levelSnowVolumeCategory(nCategories))
+       levelSnowVolumeCell(:) = 0.0_RKIND
+       levelSnowVolumeCategory(:) = 0.0_RKIND
+
        do iCell = 1, nCellsSolve
 
           abortFlag = .false.
@@ -2836,8 +2846,8 @@ contains
                fresh=oceanFreshWaterFlux(iCell), &
                fhocn=oceanHeatFlux(iCell), &
                fsloss=snowLossToLeads(iCell), &
-               fsnow=snowfallRate(iCell) &
-               )
+               fsnow=snowfallRate(iCell), &
+               vslvln=levelSnowVolumeCategory(:))
 
           abortFlag = icepack_warnings_aborted()
           call seaice_icepack_write_warnings(abortFlag)
@@ -2855,6 +2865,9 @@ contains
                 endif !snowVolumeCategory
              enddo !iCategory
              if (snowVolumeCell(iCell) .gt.  seaicePuny) then
+                do iCategory = 1, nCategories
+                   levelSnowVolumeCell(iCell) = levelSnowVolumeCell(iCell) + levelSnowVolumeCategory(iCategory) * iceAreaCategory(1,iCategory,iCell)
+                enddo
                 snowDensityViaContent(iCell) = snowDensityViaContent(iCell)/ &
                    (snowVolumeCell(iCell) * real(nSnowLayers,kind=RKIND))  !!!CHECK THIS!!!
              else
@@ -2863,7 +2876,7 @@ contains
           endif
 
        enddo !iCell
-
+       deallocate(levelSnowVolumeCategory)
        block => block % next
     end do
 

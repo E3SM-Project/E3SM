@@ -5163,6 +5163,12 @@
 		     units="kg m-2 s-1"
                      description="Rate of snow loss to leads per unit grid cell area"
 		/>
+		<var name="levelSnowVolumeCell"
+		     type="real"
+		     dimensions="nCells Time"
+		     units="m"
+                     description="Volume of snow on level ice"
+		/>
 		<var name="snowMeltMassCell"
 		     type="real"
 		     dimensions="nCells Time"
