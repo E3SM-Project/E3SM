@@ -1024,8 +1024,8 @@ Table 1. Definition of variables. Geometric variables may be found in the {ref}`
 |$f_v$       | Coriolis parameter| s$^{-1}$      | vertex   | FVertex  |  $f = 2\Omega sin(\phi)$, $\Omega$ rotation rate, $\phi$ latitude|
 |$f_{eos}$ | equation of state | -  | any | function call | |
 |$g$ | gravitational acceleration | m s$^{-2}$ | constant  | Gravity |
-|$\tilde{h}_{i,k}$ | pseudo-thickness | m | cell | PseudoThickness | $\tilde{h} = (\rho/\rho_0) h$ |
-|$h_{i,k}$ | geometric layer thickness | m | cell | LayerThickness | same as LayerThickness in MPAS-Ocean |
+|$\tilde{h}_{i,k}$ | pseudo-thickness | m | cell | LayerThickness | $\tilde{h} = (\rho/\rho_0) h$ |
+|$h_{i,k}$ | geometric layer thickness | m | cell | GeometricLayerThickness | same as LayerThickness in MPAS-Ocean |
 |$k$ | vertical index |  |
 |${\bf k}$ | vertical unit vector |  |
 |$K_{min}$ | shallowest active layer |  |
