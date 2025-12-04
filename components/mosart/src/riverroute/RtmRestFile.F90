@@ -15,7 +15,7 @@ module RtmRestFile
   use RtmVar            , only : rtmlon, rtmlat, iulog, inst_suffix, rpntfil, &
                              caseid, nsrest, brnch_retain_casename, &
                              finidat_rtm, nrevsn_rtm, wrmflag, inundflag, &
-                             nsrContinue, nsrBranch, nsrStartup, &
+                             nsrContinue, nsrBranch, nsrStartup, lakeflag, ngeom, &
                              ctitle, version, username, hostname, conventions, source
   use RtmHistFile       , only : RtmHistRestart
   use RtmFileUtils      , only : relavu, getavu, opnfil, getfil

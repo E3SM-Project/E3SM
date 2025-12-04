@@ -9,9 +9,9 @@ module RtmHistFlds
 !
 ! !USES:
   use shr_kind_mod   , only: r8 => shr_kind_r8
-  use RunoffMod      , only : rtmCTL
+  use RunoffMod      , only : rtmCTL, TUnit_lake_r, Lake_r_out, TUnit_lake_t, Lake_t_out
   use RtmHistFile    , only : RtmHistAddfld, RtmHistPrintflds
-  use RtmVar         , only : wrmflag, inundflag, sediflag, heatflag, rstraflag, use_ocn_rof_two_way
+  use RtmVar         , only : wrmflag, inundflag, sediflag, heatflag, rstraflag, lakeflag, nlayers, spval, use_ocn_rof_two_way
 
   use WRM_type_mod  , only : ctlSubwWRM, WRMUnit, StorWater
 
@@ -41,6 +41,9 @@ contains
     ! ARGUMENTS:
     implicit none
     !-------------------------------------------------------
+    character(len=2) :: strNL
+    integer  :: inl
+    real(r8), pointer :: tmp_array(:)
 
     call RtmHistAddfld (fname='MASK', units='1',  &
          avgflag='A', long_name='MOSART mask 1=land 2=ocean 3=outlet ', &
@@ -256,6 +259,65 @@ contains
            ptr_rof=rtmCTL%ssh, default='active')
     endif
 
+    if (heatflag .and. lakeflag) then
+       call RtmHistAddfld (fname='R_LAKE_EVAP'//'_'//trim(rtm_tracers(1)), units='m3/s',  &
+            avgflag='A', long_name='MOSART mainchannel-lake evaporation: '//trim(rtm_tracers(1)), &
+            ptr_rof=rtmCTL%lake_r_evap_nt1, default='active')
+       call RtmHistAddfld (fname='R_LAKE_PRCP'//'_'//trim(rtm_tracers(1)), units='m3/s',  &
+            avgflag='A', long_name='MOSART mainchannel-lake precipitation: '//trim(rtm_tracers(1)), &
+            ptr_rof=rtmCTL%lake_r_prcp_nt1, default='active')
+       call RtmHistAddfld (fname='R_LAKE_VTOT'//'_'//trim(rtm_tracers(1)), units='m3',  &
+            avgflag='A', long_name='MOSART mainchannel-lake storage: '//trim(rtm_tracers(1)), &
+            ptr_rof=rtmCTL%lake_r_Vtot_nt1, default='active')
+       call RtmHistAddfld (fname='R_LAKE_ASUR', units='m2',  &
+            avgflag='A', long_name='MOSART mainchannel-lake surface area', &
+            ptr_rof=rtmCTL%lake_r_Asur_nt1, default='active')
+       call RtmHistAddfld (fname='R_LAKE_TSUR', units='Kelvin',  &
+            avgflag='A', long_name='MOSART mainchannel-lake surface temperature', &
+            ptr_rof=rtmCTL%lake_r_Tsur_nt1, default='active')
+       
+       allocate(tmp_array(rtmCTL%begr:rtmCTL%endr))      
+       tmp_array = spval       
+       do inl=1, nlayers
+           write(strNL,'(I2.2)') inl
+           call RtmHistAddfld (fname='R_LAKE_depth'//'_'//strNL, units='m',  &
+                avgflag='A', long_name='MOSART mainchannel-lake cumulative depth at layer '//strNL, &
+                ptr_rof=Lake_r_out(inl)%H_lake, default='active')
+           call RtmHistAddfld (fname='R_LAKE_temperature'//'_'//strNL, units='Kelvin',  &
+                avgflag='A', long_name='MOSART mainchannel-lake temperature at layer '//strNL, &
+                ptr_rof=Lake_r_out(inl)%T_lake, default='active')
+       end do
+
+       call RtmHistAddfld (fname='T_LAKE_EVAP'//'_'//trim(rtm_tracers(1)), units='m3/s',  &
+            avgflag='A', long_name='MOSART tributary channel lake evaporation: '//trim(rtm_tracers(1)), &
+            ptr_rof=rtmCTL%lake_t_evap_nt1, default='active')
+       call RtmHistAddfld (fname='T_LAKE_PRCP'//'_'//trim(rtm_tracers(1)), units='m3/s',  &
+            avgflag='A', long_name='MOSART tributary channel lake precipitation: '//trim(rtm_tracers(1)), &
+            ptr_rof=rtmCTL%lake_t_prcp_nt1, default='active')
+       call RtmHistAddfld (fname='T_LAKE_VTOT'//'_'//trim(rtm_tracers(1)), units='m3',  &
+            avgflag='A', long_name='MOSART tributary channel lake storage: '//trim(rtm_tracers(1)), &
+            ptr_rof=rtmCTL%lake_t_Vtot_nt1, default='active')
+       call RtmHistAddfld (fname='T_LAKE_ASUR', units='m2',  &
+            avgflag='A', long_name='MOSART tributary channel lake surface area', &
+            ptr_rof=rtmCTL%lake_t_Asur_nt1, default='active')
+       call RtmHistAddfld (fname='T_LAKE_TSUR', units='Kelvin',  &
+            avgflag='A', long_name='MOSART tributary channel lake surface temperature', &
+            ptr_rof=rtmCTL%lake_t_Tsur_nt1, default='active')
+       
+       allocate(tmp_array(rtmCTL%begr:rtmCTL%endr))      
+       tmp_array = spval       
+       do inl=1, nlayers
+           write(strNL,'(I2.2)') inl
+           call RtmHistAddfld (fname='T_LAKE_depth'//'_'//strNL, units='m',  &
+                avgflag='A', long_name='MOSART tributary channel lake cumulative depth at layer '//strNL, &
+                ptr_rof=lake_t_out(inl)%H_lake, default='active')
+           call RtmHistAddfld (fname='T_LAKE_temperature'//'_'//strNL, units='Kelvin',  &
+                avgflag='A', long_name='MOSART tributary channel lake temperature at layer '//strNL, &
+                ptr_rof=lake_t_out(inl)%T_lake, default='active')
+       end do       
+       
+    end if
+ 
     ! Print masterlist of history fields
 
     call RtmHistPrintflds()

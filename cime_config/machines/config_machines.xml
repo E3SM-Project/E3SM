@@ -3939,6 +3939,18 @@
       <env name="OMP_STACKSIZE">64M</env>
       <env name="OMP_PLACES">cores</env>
     </environment_variables>
+    <environment_variables compiler="intel" mpilib="impi">
+      <env name="ADIOS2_DIR">/qfs/people/liho623/3rdparty/adios2/2.8.3.patch/intelmpi-2019u4/intel-19.0.5</env>
+    </environment_variables>
+    <environment_variables compiler="pgi" mpilib="impi">
+      <env name="ADIOS2_DIR">/qfs/people/liho623/3rdparty/adios2/2.8.3.patch/intelmpi-2019u3/pgi-19.10</env>
+    </environment_variables>
+    <environment_variables compiler="intel" mpilib="mvapich2">
+      <env name="ADIOS2_DIR">/qfs/people/liho623/3rdparty/adios2/2.8.3.patch/mvapich2-2.3.1/intel-19.0.4</env>
+    </environment_variables>
+    <environment_variables compiler="pgi" mpilib="mvapich2">
+      <env name="ADIOS2_DIR">/qfs/people/liho623/3rdparty/adios2/2.8.3.patch/mvapich2-2.3.1/pgi-19.7</env>
+    </environment_variables>
   </machine>
 
   <machine MACH="tahoma">

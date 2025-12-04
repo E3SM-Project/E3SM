@@ -18,7 +18,7 @@ module RtmMod
   use shr_reprosum_mod, only : shr_reprosum_calc
   use mpi
   use RtmVar          , only : re, spval, rtmlon, rtmlat, iulog, ice_runoff, &
-                               frivinp_rtm, frivinp_mesh, finidat_rtm, nrevsn_rtm,rstraflag,ngeom,nlayers,rinittemp, &
+                               frivinp_rtm, frivinp_mesh, finidat_rtm, nrevsn_rtm,rstraflag,lakeflag,ngeom,nlayers,rinittemp, &
                                nsrContinue, nsrBranch, nsrStartup, nsrest, &
                                inst_index, inst_suffix, inst_name, wrmflag, inundflag, &
                                smat_option, decomp_option, barrier_timers, heatflag, sediflag, do_budget, &
@@ -36,7 +36,8 @@ module RtmMod
   use RtmRestFile     , only : RtmRestTimeManager, RtmRestGetFile, RtmRestFileRead, &
                                RtmRestFileWrite, RtmRestFileName
   use RunoffMod       , only : RunoffInit, rtmCTL, Tctl, Tunit, TRunoff, Tpara, Theat, &
-                               gsmap_r, &
+                               gsmap_r, TUnit_lake_r, TUnit_lake_r, TLake_r, Lake_r_out, &
+                               TUnit_lake_t, TUnit_lake_t, TLake_t, Lake_t_out, &
                                SMatP_dnstrm, avsrc_dnstrm, avdst_dnstrm, &
                                SMatP_upstrm, avsrc_upstrm, avdst_upstrm, &
                                SMatP_direct, avsrc_direct, avdst_direct
@@ -51,6 +52,7 @@ module RtmMod
   use WRM_subw_IO_mod , only : WRM_init, WRM_computeRelease
   use MOSARTinund_PreProcs_MOD, only : calc_chnlMannCoe, preprocess_elevProf
   use MOSARTinund_Core_MOD    , only : MOSARTinund_simulate, ManningEq, ChnlFPexchg
+  use MOSART_lake_geometry_mod
   use MOSART_Budgets_mod, only: MOSART_WaterBudget_Extraction, MOSART_WaterBudget_Print, MOSART_WaterBudget_Reset
   use RtmIO
   use mct_mod
@@ -83,6 +85,7 @@ module RtmMod
 ! MOSART constants
   real(r8) :: cfl_scale = 1.0_r8    ! cfl scale factor, must be <= 1.0
   real(r8) :: river_depth_minimum = 1.e-4 ! gridcell average minimum river depth [m]
+  real(r8) :: TINYVALUE = 1.0e-14_r8  ! double precision variable has a significance of about 16 decimal digits
 
 !global (glo)
   real(r8), pointer :: DIN_global(:)  !
@@ -281,7 +284,7 @@ contains
          rtmhist_ndens, rtmhist_mfilt, rtmhist_nhtfrq, &
          rtmhist_fincl1,  rtmhist_fincl2, rtmhist_fincl3, &
          rtmhist_fexcl1,  rtmhist_fexcl2, rtmhist_fexcl3, &
-         rtmhist_avgflag_pertape, decomp_option, wrmflag,rstraflag,ngeom,nlayers,rinittemp, &
+         rtmhist_avgflag_pertape, decomp_option, wrmflag,rstraflag,lakeflag,ngeom,nlayers,rinittemp, &
          inundflag, smat_option, delt_mosart, barrier_timers, do_budget, &
          RoutingMethod, DLevelH2R, DLevelR, sediflag, heatflag, data_bgc_fluxes_to_ocean_flag,redirect_negative_qgwl
 
@@ -297,6 +300,7 @@ contains
     ice_runoff  = .true.
     wrmflag     = .false.
     rstraflag   = .false.
+    lakeflag    = .false.
     rinittemp   = 283.15_r8
     ngeom       = 50  
     nlayers     = 30                  
@@ -373,6 +377,10 @@ contains
            write(iulog,*) 'sediflag can only be effective when rof_sed is set as .true.'
            sediflag = .false.
        end if
+       if(.not.(heatflag) .and. lakeflag) then
+           write(iulog,*) 'lakeflag can only be effective when heatflag is set as .true.'
+           lakeflag = .false.
+       end if
 
     end if
     
@@ -399,6 +407,7 @@ contains
     call mpi_bcast (heatflag,       1, MPI_LOGICAL, 0, mpicom_rof, ier)
     call mpi_bcast (do_budget,      1, MPI_INTEGER, 0, mpicom_rof, ier)
     call mpi_bcast (rstraflag,      1, MPI_LOGICAL, 0, mpicom_rof, ier)
+    call mpi_bcast (lakeflag,        1, MPI_LOGICAL, 0, mpicom_rof, ier)
     call mpi_bcast (rinittemp,      1, MPI_REAL8, 0, mpicom_rof, ier)
     call mpi_bcast (ngeom,          1, MPI_INTEGER, 0, mpicom_rof, ier)
     call mpi_bcast (nlayers,        1, MPI_INTEGER, 0, mpicom_rof, ier)
@@ -1500,7 +1509,7 @@ contains
     rtmCTL%iUp = 0
     rtmCTL%nUp = 0
     do nr = rtmCTL%begr,rtmCTL%endr
-        do n = rtmCTL%begr,rtmCTL%endr
+        do n = rtmCTL%begr,rtmCTL%endr			
             if(rtmCTL%iDown(n) == nr) then
                 rtmCTL%nUp(nr) = rtmCTL%nUp(nr) + 1  ! initial value of rtmCTL%nUp is 0
                 rtmCTL%iUp(nr,rtmCTL%nUp(nr)) = n
@@ -2087,8 +2096,8 @@ contains
 !
 ! !LOCAL VARIABLES:
 !EOP
-    integer  :: i, j, k, n, nr, ns, nt, n2, nf, idam ! indices
-    integer, parameter :: budget_terms_total = 80
+    integer  :: i, j, n, nr, ns, nt, n2, nf, idam ! indices
+    integer, parameter :: budget_terms_total = 100
     real(r8) :: budget_terms (budget_terms_total,nt_rtm)    ! local budget sums
     real(r8) :: budget_global(budget_terms_total,nt_rtm)    ! global budget sums
 
@@ -2182,15 +2191,6 @@ contains
     integer,parameter :: bVelo_upward     = 57 ! Sum of all upward flow velocities (is negative) (m/s).
     integer,parameter :: bVelo_upChnlNo   = 58 ! Total number of channels with upward flow velocities (dimensionless).
 
-    ! Sediment TERMS (rates kg/s or storage kg)
-    integer,parameter :: br_ehexch = 70 ! exchanging fluxes between channel and environments
-    integer,parameter :: br_etexch = 71 ! exchanging fluxes between channel and environments
-    integer,parameter :: br_erexch = 72 ! exchanging fluxes between channel and environments
-    integer,parameter :: bv_t_al_i = 73 ! initial sediment storge in the active layer of sub-network channel
-    integer,parameter :: bv_t_al_f = 74 ! final sediment storge in the active layer of sub-network channel
-    integer,parameter :: bv_r_al_i = 75 ! initial sediment storge in the active layer of main channel
-    integer,parameter :: bv_r_al_f = 76 ! final sediment storge in the active layer of main channel
-
     ! Other Diagnostic TERMS (rates, m3/s)
     integer,parameter :: br_erolpo = 60 ! erout lag ocn previous
     integer,parameter :: br_erolco = 61 ! erout lag ocn current
@@ -2202,9 +2202,23 @@ contains
     integer,parameter :: br_erorpn = 67 ! erout lag non-ocn previous   (for WRM module. --Inund.)
     integer,parameter :: br_erorcn = 68 ! erout lag non-ocn current   (for WRM module. --Inund.)
     integer,parameter :: br_erlat  = 69 ! erlateral 
+    integer,parameter :: br_lake_prcp  = 70 ! erlateral 
+    integer,parameter :: br_lake_evap  = 71 ! erlateral 
+    integer,parameter :: bv_lake_i= 72  ! initial lake storage
+    integer,parameter :: bv_lake_f= 73 ! final   lake storage
+
+    ! Sediment TERMS (rates kg/s or storage kg)
+    integer,parameter :: br_ehexch = 74 ! exchanging fluxes between channel and environments
+    integer,parameter :: br_etexch = 75 ! exchanging fluxes between channel and environments
+    integer,parameter :: br_erexch = 76 ! exchanging fluxes between channel and environments
+    integer,parameter :: bv_t_al_i = 77 ! initial sediment storge in the active layer of sub-network channel
+    integer,parameter :: bv_t_al_f = 78 ! final sediment storge in the active layer of sub-network channel
+    integer,parameter :: bv_r_al_i = 79 ! initial sediment storge in the active layer of main channel
+    integer,parameter :: bv_r_al_f = 80 ! final sediment storge in the active layer of main channel
+
 
     ! Accumuluation TERMS
-    integer,parameter :: bv_naccum = 80 ! accumulated net budget
+    integer,parameter :: bv_naccum = 100 ! accumulated net budget
 
     !   volume = 2 - 1 + bv_dstor_f - bv_dstor_i
     !   input  = br_qsur + br_qsub + br_qgwl + br_qdto + br_qdem + br_etexch + br_ehexch + br_erexch
@@ -2245,6 +2259,8 @@ contains
     real(r8) :: correction_ratio
     character(len=*),parameter :: subname = '(Rtmrun) '
 !-----------------------------------------------------------------------
+    real(r8), pointer :: vlake_i(:), vlake_f(:)    
+    allocate(vlake_i(rtmCTL%begr:rtmCTL%endr), vlake_f(rtmCTL%begr:rtmCTL%endr), stat=ier)
 
     call t_startf('mosartr_tot')
 
@@ -2302,6 +2318,35 @@ contains
               rtmCTL%templand_Tqsub(n) = 0._r8
               rtmCTL%templand_Ttrib(n) = 0._r8
               rtmCTL%templand_Tchanr(n) = 0._r8
+          end if
+      end do
+    end if
+
+    if(lakeflag) then
+      rtmCTL%lake_r_evap_nt1 = 0._r8
+      rtmCTL%lake_r_prcp_nt1 = 0._r8
+      rtmCTL%lake_r_Asur_nt1 = spval
+      rtmCTL%lake_r_Tsur_nt1 = spval
+      rtmCTL%lake_r_Vtot_nt1 = spval
+      rtmCTL%lake_t_evap_nt1 = 0._r8
+      rtmCTL%lake_t_prcp_nt1 = 0._r8
+      rtmCTL%lake_t_Asur_nt1 = spval
+      rtmCTL%lake_t_Tsur_nt1 = spval
+      rtmCTL%lake_t_Vtot_nt1 = spval
+      do n = rtmCTL%begr,rtmCTL%endr
+          if (TUnit_lake_r%lake_flg(n)>=1) then
+              !rtmCTL%lake_evap_nt1 = 0._r8
+              !rtmCTL%lake_prcp_nt1 = 0._r8
+              rtmCTL%lake_r_Asur_nt1 = 0._r8
+              rtmCTL%lake_r_Tsur_nt1 = 0._r8
+              rtmCTL%lake_r_Vtot_nt1 = 0._r8
+          end if
+          if (TUnit_lake_t%lake_flg(n)>=1) then
+              !rtmCTL%lake_evap_nt1 = 0._r8
+              !rtmCTL%lake_prcp_nt1 = 0._r8
+              rtmCTL%lake_t_Asur_nt1 = 0._r8
+              rtmCTL%lake_t_Tsur_nt1 = 0._r8
+              rtmCTL%lake_t_Vtot_nt1 = 0._r8
           end if
       end do
     end if
@@ -2372,6 +2417,21 @@ contains
              enddo
           end if
        endif
+	   
+       if (lakeflag) then
+          nt = 1
+          do nr = rtmCTL%begr,rtmCTL%endr
+              if(TUnit_lake_r%lake_flg(nr) >=1) then
+                 budget_terms(bv_lake_i,nt) = budget_terms(bv_lake_i,nt) + TLake_r%V_str(nr)
+                 vlake_i(nr) = TLake_r%V_str(nr)
+              end if
+              if(TUnit_lake_t%lake_flg(nr) >=1) then
+                 budget_terms(bv_lake_i,nt) = budget_terms(bv_lake_i,nt) + TLake_t%V_str(nr)
+                 vlake_i(nr) = TLake_t%V_str(nr)
+              end if
+          enddo
+       endif
+       
        call t_stopf('mosartr_budget')
     endif ! budget_check
 
@@ -2880,6 +2940,23 @@ contains
              end if
          enddo
        end if
+
+       if(lakeflag) then
+         do n = rtmCTL%begr,rtmCTL%endr
+             if (TUnit_lake_r%lake_flg(n)>=1) then
+                 rtmCTL%lake_r_evap_nt1(n) = rtmCTL%lake_r_evap_nt1(n) - TLake_r%lake_evap_avg(n)
+                 rtmCTL%lake_r_prcp_nt1(n) = rtmCTL%lake_r_prcp_nt1(n) + TLake_r%lake_prcp_avg(n)
+                 rtmCTL%lake_r_Asur_nt1(n) = rtmCTL%lake_r_Asur_nt1(n) + TLake_r%lake_Asur_avg(n)
+                 rtmCTL%lake_r_Tsur_nt1(n) = rtmCTL%lake_r_Tsur_nt1(n) + TLake_r%lake_Tsur_avg(n)
+             end if
+             if (TUnit_lake_t%lake_flg(n)>=1) then
+                 rtmCTL%lake_t_evap_nt1(n) = rtmCTL%lake_t_evap_nt1(n) - TLake_t%lake_evap_avg(n)
+                 rtmCTL%lake_t_prcp_nt1(n) = rtmCTL%lake_t_prcp_nt1(n) + TLake_t%lake_prcp_avg(n)
+                 rtmCTL%lake_t_Asur_nt1(n) = rtmCTL%lake_t_Asur_nt1(n) + TLake_t%lake_Asur_avg(n)
+                 rtmCTL%lake_t_Tsur_nt1(n) = rtmCTL%lake_t_Tsur_nt1(n) + TLake_t%lake_Tsur_avg(n)
+             end if
+         enddo
+       end if
        
     enddo ! nsub
 
@@ -2944,6 +3021,63 @@ contains
             rtmCTL%templand_Tchanr(n) = spval
          end if
       end do
+    end if
+
+    if (lakeflag) then
+      
+      do n = rtmCTL%begr,rtmCTL%endr
+          if (TUnit_lake_r%lake_flg(n)>=1) then
+            rtmCTL%lake_r_evap_nt1(n) = rtmCTL%lake_r_evap_nt1(n) / float(nsub)
+            rtmCTL%lake_r_prcp_nt1(n) = rtmCTL%lake_r_prcp_nt1(n) / float(nsub)
+            rtmCTL%lake_r_Asur_nt1(n) = rtmCTL%lake_r_Asur_nt1(n) / float(nsub)
+            rtmCTL%lake_r_Tsur_nt1(n) = rtmCTL%lake_r_Tsur_nt1(n) / float(nsub)
+            rtmCTL%lake_r_Vtot_nt1(n) = TLake_r%V_str(n)
+            
+            do i=1,nlayers            
+                Lake_r_out(i)%V_lake(n) = TLake_r%v_zt(n,i)
+                Lake_r_out(i)%H_lake(n) = TLake_r%d_z(n,i)
+                Lake_r_out(i)%T_lake(n) = TLake_r%temp_lake(n,i)
+            end do
+         else
+            rtmCTL%lake_r_evap_nt1(n) = 0._r8
+            rtmCTL%lake_r_prcp_nt1(n) = 0._r8
+            rtmCTL%lake_r_Asur_nt1(n) = spval
+            rtmCTL%lake_r_Tsur_nt1(n) = spval
+            rtmCTL%lake_r_Vtot_nt1(n) = spval
+            do i=1,nlayers            
+                Lake_r_out(i)%V_lake(n) = spval
+                Lake_r_out(i)%H_lake(n) = spval
+                Lake_r_out(i)%T_lake(n) = spval
+            end do
+         end if
+      end do    
+      
+      do n = rtmCTL%begr,rtmCTL%endr
+          if (TUnit_lake_t%lake_flg(n)>=1) then
+            rtmCTL%lake_t_evap_nt1(n) = rtmCTL%lake_t_evap_nt1(n) / float(nsub)
+            rtmCTL%lake_t_prcp_nt1(n) = rtmCTL%lake_t_prcp_nt1(n) / float(nsub)
+            rtmCTL%lake_t_Asur_nt1(n) = rtmCTL%lake_t_Asur_nt1(n) / float(nsub)
+            rtmCTL%lake_t_Tsur_nt1(n) = rtmCTL%lake_t_Tsur_nt1(n) / float(nsub)
+            rtmCTL%lake_t_Vtot_nt1(n) = TLake_t%V_str(n)
+            
+            do i=1,nlayers            
+                Lake_t_out(i)%V_lake(n) = TLake_t%v_zt(n,i)
+                Lake_t_out(i)%H_lake(n) = TLake_t%d_z(n,i)
+                Lake_t_out(i)%T_lake(n) = TLake_t%temp_lake(n,i)
+            end do
+         else
+            rtmCTL%lake_t_evap_nt1(n) = 0._r8
+            rtmCTL%lake_t_prcp_nt1(n) = 0._r8
+            rtmCTL%lake_t_Asur_nt1(n) = spval
+            rtmCTL%lake_t_Tsur_nt1(n) = spval
+            rtmCTL%lake_t_Vtot_nt1(n) = spval
+            do i=1,nlayers            
+                Lake_t_out(i)%V_lake(n) = spval
+                Lake_t_out(i)%H_lake(n) = spval
+                Lake_t_out(i)%T_lake(n) = spval
+            end do
+         end if
+      end do    
     end if
 
     do nt = 1,nt_rtm
@@ -3232,6 +3366,24 @@ contains
           end if
        endif
 
+       if (lakeflag) then
+          nt = 1
+          do nr = rtmCTL%begr,rtmCTL%endr
+             if(TUnit_lake_r%lake_flg(nr) >=1) then
+                 budget_terms(bv_lake_f,nt) = budget_terms(bv_lake_f,nt) + TLake_r%V_str(nr)
+                 budget_terms(br_lake_prcp,nt) = budget_terms(br_lake_prcp,nt) + rtmCTL%lake_r_prcp_nt1(nr)*delt_coupling           ! (Sum up lake surface precipitation.)
+                 budget_terms(br_lake_evap,nt) = budget_terms(br_lake_evap,nt) + rtmCTL%lake_r_evap_nt1(nr)*delt_coupling           ! (Sum up lake surface evaporation.)
+                 vlake_f(nr) = TLake_r%V_str(nr)
+             end if
+             if(TUnit_lake_t%lake_flg(nr) >=1) then
+                 budget_terms(bv_lake_f,nt) = budget_terms(bv_lake_f,nt) + TLake_t%V_str(nr)
+                 budget_terms(br_lake_prcp,nt) = budget_terms(br_lake_prcp,nt) + rtmCTL%lake_t_prcp_nt1(nr)*delt_coupling           ! (Sum up lake surface precipitation.)
+                 budget_terms(br_lake_evap,nt) = budget_terms(br_lake_evap,nt) + rtmCTL%lake_t_evap_nt1(nr)*delt_coupling           ! (Sum up lake surface evaporation.)
+                 vlake_f(nr) = TLake_t%V_str(nr)
+             end if
+          enddo
+       endif
+
        if (inundflag) then
           do nt = 1, nt_rtm
              do nr = rtmCTL%begr, rtmCTL%endr
@@ -3357,15 +3509,18 @@ contains
        budget_accum_cnt = budget_accum_cnt + 1
        do nt = 1,nt_rtm
           budget_volume =  budget_terms(bv_volt_f,nt) - budget_terms(bv_volt_i,nt) + &
-                           budget_terms(bv_dstor_f,nt) - budget_terms(bv_dstor_i,nt)             ! (Volume change during a coupling period. --Inund.)
+                           budget_terms(bv_dstor_f,nt) - budget_terms(bv_dstor_i,nt) + &            ! (Volume change during a coupling period. --Inund.)
+                           budget_terms(bv_lake_f,nt) - budget_terms(bv_lake_i,nt)
           budget_input  =  budget_terms(br_qsur,nt) + budget_terms(br_qsub,nt) + &
                            budget_terms(br_qgwl,nt) + budget_terms(br_qdto,nt) + &
+                           budget_terms(br_lake_prcp,nt) + &
                            budget_terms(br_ehexch,nt) + budget_terms(br_etexch,nt) + &
                            budget_terms(br_erexch,nt) !+ &
                            ! budget_terms(br_qdem,nt) commented out by Tian 3/13/2018
           budget_output =  budget_terms(br_ocnout,nt) + budget_terms(br_flood,nt) + &
                            budget_terms(br_direct,nt) + &
-                           budget_terms(bv_dsupp_f,nt) - budget_terms(bv_dsupp_i,nt)
+                           budget_terms(bv_dsupp_f,nt) - budget_terms(bv_dsupp_i,nt) + &
+                           budget_terms(br_lake_evap,nt)
           budget_accum(nt) = budget_accum(nt) + budget_volume - budget_input + budget_output     ! (Accumulate the water balance errors. 
                                                                                                  ! 'budget_volume - budget_input + budget_output' should not be zero. 
                                                                                                  ! Because water is not balanced for grid cells of one computation node. --Inund.)
@@ -3398,15 +3553,18 @@ contains
           endif
           do nt = 1,nt_print
             budget_volume = (budget_global(bv_volt_f,nt) - budget_global(bv_volt_i,nt) + &
-                             budget_global(bv_dstor_f,nt) - budget_global(bv_dstor_i,nt))   !(Global volume change during a coupling period. --Inund.)
+                             budget_global(bv_dstor_f,nt) - budget_global(bv_dstor_i,nt) + &  !(Global volume change during a coupling period. --Inund.)
+                             budget_global(bv_lake_f,nt) - budget_global(bv_lake_i,nt))
             budget_input  = (budget_global(br_qsur,nt) + budget_global(br_qsub,nt) + &
-                             budget_global(br_qgwl,nt) + budget_global(br_qdto,nt)) + &
+                             budget_global(br_qgwl,nt) + budget_global(br_qdto,nt) + &
+                             budget_global(br_lake_prcp,nt) + &
                              budget_global(br_ehexch,nt) + budget_global(br_etexch,nt) + &
-                             budget_global(br_erexch,nt) !+ &
+                             budget_global(br_erexch,nt)) !+ &
                              ! budget_global(br_qdem,nt)) commented out by Tian 3/13/2018
             budget_output = (budget_global(br_ocnout,nt) + budget_global(br_flood,nt) + &
                              budget_global(br_direct,nt) + &
-                             budget_global(bv_dsupp_f,nt) - budget_global(bv_dsupp_i,nt))
+                             budget_global(bv_dsupp_f,nt) - budget_global(bv_dsupp_i,nt) + &
+                             budget_global(br_lake_evap,nt))
             ! erout lag, need to remove current term and add in previous term, current term used in next timestep
             budget_other  = budget_global(br_erolpn,nt) - budget_global(br_erolcn,nt) + &   !('previous MOSART sub-step channel outflow volume'-'current MOSART sub-step channel outflow volume'. --Inund.)
                             budget_global(br_erorpn,nt) - budget_global(br_erorcn,nt)       !(When WRM module is on: 'previous MOSART sub-step channel outflow volume'-'current MOSART sub-step channel outflow volume'. --Inund.)
@@ -3428,7 +3586,8 @@ contains
                end if
              end if
 
-             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   dvolume dstor = ',nt,budget_global(bv_dstor_f,nt)-budget_global(bv_dstor_i,nt)
+             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   dvolume reservoir = ',nt,budget_global(bv_dstor_f,nt)-budget_global(bv_dstor_i,nt)
+             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   dvolume lake = ',nt,budget_global(bv_lake_f,nt)-budget_global(bv_lake_i,nt)
              write(iulog,'(2a,i4,f22.6  )') trim(subname),' * dvolume total = ',nt,budget_volume   !(Global volume change during a coupling period. --Inund.)
             endif
             if (do_budget == 3) then           
@@ -3438,7 +3597,8 @@ contains
                                                                               budget_global(bv_wt_f,nt)-budget_global(bv_wt_i,nt) + &
                                                                               budget_global(bv_wr_f,nt)-budget_global(bv_wr_i,nt) + &
                                                                               budget_global(bv_fp_f,nt)-budget_global(bv_fp_i,nt) + &
-                                                                              budget_global(bv_dstor_f,nt)-budget_global(bv_dstor_i,nt)),&
+                                                                              budget_global(bv_dstor_f,nt)-budget_global(bv_dstor_i,nt) + &
+                                                                              budget_global(bv_lake_f,nt)-budget_global(bv_lake_i,nt)),&
                                                                               ' (should be zero)'
              else
                  write(iulog,'(2a,i4,f22.6,a)') trim(subname),' x dvolume check = ',nt,budget_volume - &
@@ -3460,8 +3620,10 @@ contains
              write(iulog,'(2a,i4,f22.6  )') trim(subname),' x volumestfinal = ',nt,budget_global(bv_t_al_f,nt)
              write(iulog,'(2a,i4,f22.6  )') trim(subname),' x volumesr init = ',nt,budget_global(bv_r_al_i,nt)
              write(iulog,'(2a,i4,f22.6  )') trim(subname),' x volumesrfinal = ',nt,budget_global(bv_r_al_f,nt)
-             write(iulog,'(2a,i4,f22.6  )') trim(subname),' x storage  init = ',nt,budget_global(bv_dstor_i,nt)
-             write(iulog,'(2a,i4,f22.6  )') trim(subname),' x storage final = ',nt,budget_global(bv_dstor_f,nt)
+             write(iulog,'(2a,i4,f22.6  )') trim(subname),' x reservoir storage  init = ',nt,budget_global(bv_dstor_i,nt)
+             write(iulog,'(2a,i4,f22.6  )') trim(subname),' x reservoir storage final = ',nt,budget_global(bv_dstor_f,nt)
+             write(iulog,'(2a,i4,f22.6  )') trim(subname),' x lake storage  init = ',nt,budget_global(bv_lake_i,nt)
+             write(iulog,'(2a,i4,f22.6  )') trim(subname),' x lake storage final = ',nt,budget_global(bv_lake_f,nt)
            endif
 
            if (budget_write) then
@@ -3471,6 +3633,7 @@ contains
             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   input gwl     = ',nt,budget_global(br_qgwl,nt)
             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   input dto     = ',nt,budget_global(br_qdto,nt)
             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   input demand -not included-  = ',nt,budget_global(br_qdem,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),'   input lake precipitation = ',nt,budget_global(br_lake_prcp,nt)
             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   input hillslope erosion = ',nt,budget_global(br_ehexch,nt)
             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   input subnetwork channel bank erosion = ',nt,budget_global(br_etexch,nt)
             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   input main channel bank erosion = ',nt,budget_global(br_erexch,nt)
@@ -3492,6 +3655,7 @@ contains
             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   output direct = ',nt,budget_global(br_direct,nt)   !(Direct flows to oceans. --Inund.)
             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   output flood  = ',nt,budget_global(br_flood,nt)    !(Former flood to land. --Inund.)
             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   output supply = ',nt,budget_global(bv_dsupp_f,nt)-budget_global(bv_dsupp_i,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),'   output lake evaporation = ',nt,budget_global(br_lake_evap,nt)
             write(iulog,'(2a,i4,f22.6  )') trim(subname),' * output total  = ',nt,budget_output
            endif
            if (do_budget == 3) then
@@ -4708,6 +4872,10 @@ contains
      
      if(heatflag) then
         ! initialize heat states and fluxes
+        allocate (THeat%forc_rain(begr:endr))
+        THeat%forc_rain = 0._r8
+        allocate (THeat%forc_snow(begr:endr))
+        THeat%forc_snow = 0._r8
         allocate (THeat%forc_t(begr:endr))
         THeat%forc_t = 273.15_r8
         allocate (THeat%forc_pbot(begr:endr))
@@ -4776,6 +4944,9 @@ contains
         allocate (THeat%deltaM_r(begr:endr))
         THeat%deltaM_r = 0._r8
 
+        allocate (THeat%Tout_res(begr:endr))
+        THeat%Tout_res = 273.15_r8
+
         allocate (THeat%Tt_avg(begr:endr))
         THeat%Tt_avg = 273.15_r8
         allocate (THeat%Tr_avg(begr:endr))
@@ -4797,6 +4968,405 @@ contains
         THeat%coszen = 0._r8
         
      end if
+
+     !! Used in lake module
+     if (heatflag .and. lakeflag) then
+         allocate (TUnit_lake_r%lake_flg(begr:endr))
+         TUnit_lake_r%lake_flg = 0
+         allocate (TUnit_lake_r%one_layer(begr:endr))
+         TUnit_lake_r%one_layer = 0
+         allocate (TUnit_lake_r%Length(begr:endr))
+         TUnit_lake_r%Length = 0._r8
+         allocate (TUnit_lake_r%Width(begr:endr))
+         TUnit_lake_r%Width = 0._r8
+         allocate (TUnit_lake_r%V_max(begr:endr))
+         TUnit_lake_r%V_max = 0._r8
+         allocate (TUnit_lake_r%A_max(begr:endr))
+         TUnit_lake_r%A_max = 0._r8
+         allocate (TLake_r%V_str(begr:endr))
+         TLake_r%V_str = 0._r8
+         allocate (TLake_r%A_str(begr:endr))
+         TLake_r%A_str = 0._r8
+         allocate (TLake_r%d_ns(begr:endr))
+         TLake_r%d_ns = 0
+         allocate (TUnit_lake_r%h_lake(begr:endr))
+         TUnit_lake_r%h_lake = 0._r8
+         allocate (TUnit_lake_r%h_min(begr:endr))
+         TUnit_lake_r%h_min = 0._r8
+         allocate (TUnit_lake_r%v_min(begr:endr))
+         TUnit_lake_r%v_min = 0._r8
+         allocate (TUnit_lake_r%elev(begr:endr))
+         TUnit_lake_r%elev = 0._r8
+         allocate (TUnit_lake_r%para_a(begr:endr))
+         TUnit_lake_r%para_a = 0._r8
+         allocate (TUnit_lake_r%para_b(begr:endr))
+         TUnit_lake_r%para_b = 0._r8
+
+         allocate (TLake_r%dV_str(begr:endr))
+         TLake_r%dV_str = 0._r8
+         allocate (TLake_r%d_zi(begr:endr,ngeom+1))
+         TLake_r%d_zi = 0._r8
+         allocate (TLake_r%a_di(begr:endr,ngeom+1))
+         TLake_r%a_di = 0._r8
+         allocate (TLake_r%v_zti(begr:endr,ngeom+1))
+         TLake_r%v_zti = 0._r8
+         allocate (TLake_r%d_z(begr:endr,nlayers+1))
+         TLake_r%d_z = 0._r8
+         allocate (TLake_r%d_z0(begr:endr,nlayers+1))
+         TLake_r%d_z0 = 0._r8
+         allocate (TLake_r%a_d(begr:endr,nlayers+1))
+         TLake_r%a_d = 0._r8
+         allocate (TLake_r%a_d0(begr:endr,nlayers+1))
+         TLake_r%a_d0 = 0._r8
+         allocate (TLake_r%v_zt(begr:endr,nlayers+1))
+         TLake_r%v_zt = 0._r8
+         allocate (TLake_r%v_zt0(begr:endr,nlayers+1))
+         TLake_r%v_zt0 = 0._r8
+         allocate (TLake_r%d_v(begr:endr,nlayers))
+         TLake_r%d_v = 0._r8
+         allocate (TLake_r%dd_z(begr:endr,nlayers))
+         TLake_r%dd_z = 0._r8
+         allocate (TLake_r%m_zo(begr:endr,nlayers))
+         TLake_r%m_zo = 0._r8
+         allocate (TLake_r%m_zn(begr:endr,nlayers))
+         TLake_r%m_zn = 0._r8
+         allocate (TLake_r%v_zo(begr:endr,nlayers))
+         TLake_r%v_zo = 0._r8
+         allocate (TLake_r%v_zn(begr:endr,nlayers))
+         TLake_r%v_zn = 0._r8
+         allocate (TLake_r%dv_nt(begr:endr,nlayers))
+         TLake_r%dv_nt = 0._r8
+         allocate (TLake_r%temp_lake(begr:endr,nlayers))
+         TLake_r%temp_lake = 275.15 !rinittemp
+         allocate (TLake_r%d_lake(begr:endr))
+         TLake_r%d_lake = 0._r8
+         allocate (TLake_r%ddz_local(begr:endr))
+         TLake_r%ddz_local = 0._r8
+         allocate (TLake_r%enr_0(begr:endr,nlayers))
+         TLake_r%enr_0 = 0._r8
+         allocate (TLake_r%J_Min(begr:endr))
+         TLake_r%J_Min = 0
+
+         allocate (TLake_r%lake_inflow(begr:endr))
+         TLake_r%lake_inflow = 0._r8
+         allocate (TLake_r%lake_outflow(begr:endr))
+         TLake_r%lake_outflow = 0._r8
+         allocate (TLake_r%lake_spillflow(begr:endr))
+         TLake_r%lake_spillflow = 0._r8
+         allocate (TLake_r%lake_Tsur(begr:endr))
+         TLake_r%lake_Tsur = 0._r8
+         allocate (TLake_r%lake_Tout(begr:endr))
+         TLake_r%lake_Tout = 0._r8
+         allocate (TLake_r%lake_evap(begr:endr))
+         TLake_r%lake_evap = 0._r8
+         allocate (TLake_r%lake_rain(begr:endr))
+         TLake_r%lake_rain = 0._r8
+         allocate (TLake_r%lake_snow(begr:endr))
+         TLake_r%lake_snow = 0._r8
+
+         allocate (TLake_r%lake_evap_avg(begr:endr))
+         TLake_r%lake_evap_avg = 0._r8
+         allocate (TLake_r%lake_prcp_avg(begr:endr))
+         TLake_r%lake_prcp_avg = 0._r8
+         allocate (TLake_r%lake_Asur_avg(begr:endr))
+         TLake_r%lake_Asur_avg = 0._r8
+         allocate (TLake_r%lake_Tsur_avg(begr:endr))
+         TLake_r%lake_Tsur_avg = 273.15_r8
+
+         allocate (TUnit_lake_t%lake_flg(begr:endr))
+         TUnit_lake_t%lake_flg = 0
+         allocate (TUnit_lake_t%one_layer(begr:endr))
+         TUnit_lake_t%one_layer = 0
+         allocate (TUnit_lake_t%Length(begr:endr))
+         TUnit_lake_t%Length = 0._r8
+         allocate (TUnit_lake_t%Width(begr:endr))
+         TUnit_lake_t%Width = 0._r8
+         allocate (TUnit_lake_t%V_max(begr:endr))
+         TUnit_lake_t%V_max = 0._r8
+         allocate (TUnit_lake_t%A_max(begr:endr))
+         TUnit_lake_t%A_max = 0._r8
+         allocate (TLake_t%V_str(begr:endr))
+         TLake_t%V_str = 0._r8
+         allocate (TLake_t%A_str(begr:endr))
+         TLake_t%A_str = 0._r8
+         allocate (TLake_t%d_ns(begr:endr))
+         TLake_t%d_ns = 0
+         allocate (TUnit_lake_t%h_lake(begr:endr))
+         TUnit_lake_t%h_lake = 0._r8
+         allocate (TUnit_lake_t%h_min(begr:endr))
+         TUnit_lake_t%h_min = 0._r8
+         allocate (TUnit_lake_t%v_min(begr:endr))
+         TUnit_lake_t%v_min = 0._r8
+         allocate (TUnit_lake_t%elev(begr:endr))
+         TUnit_lake_t%elev = 0._r8
+         allocate (TUnit_lake_t%A_local(begr:endr))
+         TUnit_lake_t%A_local = 0._r8
+         allocate (TUnit_lake_t%F_local(begr:endr))
+         TUnit_lake_t%F_local = 0._r8
+         allocate (TUnit_lake_t%para_a(begr:endr))
+         TUnit_lake_t%para_a = 0._r8
+         allocate (TUnit_lake_t%para_b(begr:endr))
+         TUnit_lake_t%para_b = 0._r8
+
+         allocate (TLake_t%dV_str(begr:endr))
+         TLake_t%dV_str = 0._r8
+         allocate (TLake_t%d_zi(begr:endr,ngeom+1))
+         TLake_t%d_zi = 0._r8
+         allocate (TLake_t%a_di(begr:endr,ngeom+1))
+         TLake_t%a_di = 0._r8
+         allocate (TLake_t%v_zti(begr:endr,ngeom+1))
+         TLake_t%v_zti = 0._r8
+         allocate (TLake_t%d_z(begr:endr,nlayers+1))
+         TLake_t%d_z = 0._r8
+         allocate (TLake_t%d_z0(begr:endr,nlayers+1))
+         TLake_t%d_z0 = 0._r8
+         allocate (TLake_t%a_d(begr:endr,nlayers+1))
+         TLake_t%a_d = 0._r8
+         allocate (TLake_t%a_d0(begr:endr,nlayers+1))
+         TLake_t%a_d0 = 0._r8
+         allocate (TLake_t%v_zt(begr:endr,nlayers+1))
+         TLake_t%v_zt = 0._r8
+         allocate (TLake_t%v_zt0(begr:endr,nlayers+1))
+         TLake_t%v_zt0 = 0._r8
+         allocate (TLake_t%d_v(begr:endr,nlayers))
+         TLake_t%d_v = 0._r8
+         allocate (TLake_t%dd_z(begr:endr,nlayers))
+         TLake_t%dd_z = 0._r8
+         allocate (TLake_t%m_zo(begr:endr,nlayers))
+         TLake_t%m_zo = 0._r8
+         allocate (TLake_t%m_zn(begr:endr,nlayers))
+         TLake_t%m_zn = 0._r8
+         allocate (TLake_t%v_zo(begr:endr,nlayers))
+         TLake_t%v_zo = 0._r8
+         allocate (TLake_t%v_zn(begr:endr,nlayers))
+         TLake_t%v_zn = 0._r8
+         allocate (TLake_t%dv_nt(begr:endr,nlayers))
+         TLake_t%dv_nt = 0._r8
+         allocate (TLake_t%temp_lake(begr:endr,nlayers))
+         TLake_t%temp_lake = 275.15_r8 !rinittemp
+         allocate (TLake_t%d_lake(begr:endr))
+         TLake_t%d_lake = 0._r8
+         allocate (TLake_t%ddz_local(begr:endr))
+         TLake_t%ddz_local = 0._r8
+         allocate (TLake_t%enr_0(begr:endr,nlayers))
+         TLake_t%enr_0 = 0._r8
+         allocate (TLake_t%J_Min(begr:endr))
+         TLake_t%J_Min = 0
+
+         allocate (TLake_t%lake_inflow(begr:endr))
+         TLake_t%lake_inflow = 0._r8
+         allocate (TLake_t%lake_outflow(begr:endr))
+         TLake_t%lake_outflow = 0._r8
+         allocate (TLake_t%lake_spillflow(begr:endr))
+         TLake_t%lake_spillflow = 0._r8
+         allocate (TLake_t%lake_Tsur(begr:endr))
+         TLake_t%lake_Tsur = 0._r8
+         allocate (TLake_t%lake_Tout(begr:endr))
+         TLake_t%lake_Tout = 0._r8
+         allocate (TLake_t%lake_evap(begr:endr))
+         TLake_t%lake_evap = 0._r8
+         allocate (TLake_t%lake_rain(begr:endr))
+         TLake_t%lake_rain = 0._r8
+         allocate (TLake_t%lake_snow(begr:endr))
+         TLake_t%lake_snow = 0._r8
+
+         allocate (TLake_t%lake_evap_avg(begr:endr))
+         TLake_t%lake_evap_avg = 0._r8
+         allocate (TLake_t%lake_prcp_avg(begr:endr))
+         TLake_t%lake_prcp_avg = 0._r8
+         allocate (TLake_t%lake_Asur_avg(begr:endr))
+         TLake_t%lake_Asur_avg = 0._r8
+         allocate (TLake_t%lake_Tsur_avg(begr:endr))
+         TLake_t%lake_Tsur_avg = 273.15_r8
+         
+         ier = pio_inq_varid (ncid, name='mlake_Mean_len'      , vardesc=vardesc)
+         call pio_read_darray(ncid, vardesc, iodesc_dbl , TUnit_lake_r%Length, ier)
+         if (masterproc) write(iulog,FORMR) trim(subname),' read Mean_len in r-lake',minval(TUnit_lake_r%Length),maxval(TUnit_lake_r%Length)
+         call shr_sys_flush(iulog)
+         
+         ier = pio_inq_varid (ncid, name='mlake_Mean_wid'      , vardesc=vardesc)
+         call pio_read_darray(ncid, vardesc, iodesc_dbl , TUnit_lake_r%Width, ier)
+         if (masterproc) write(iulog,FORMR) trim(subname),' read Mean_wid in r-lake',minval(TUnit_lake_r%Width),maxval(TUnit_lake_r%Width)
+         call shr_sys_flush(iulog)
+         
+         ier = pio_inq_varid (ncid, name='mlake_volume_computed'      , vardesc=vardesc)
+         call pio_read_darray(ncid, vardesc, iodesc_dbl , TUnit_lake_r%V_max, ier)
+         if (masterproc) write(iulog,FORMR) trim(subname),' read V_max in r-lake',minval(TUnit_lake_r%V_max),maxval(TUnit_lake_r%V_max)
+         call shr_sys_flush(iulog)
+         
+         ier = pio_inq_varid (ncid, name='mlake_area_computed'      , vardesc=vardesc)
+         call pio_read_darray(ncid, vardesc, iodesc_dbl , TUnit_lake_r%A_max, ier)
+         if (masterproc) write(iulog,FORMR) trim(subname),' read A_max in r-lake',minval(TUnit_lake_r%A_max),maxval(TUnit_lake_r%A_max)
+         call shr_sys_flush(iulog)
+         
+         ier = pio_inq_varid (ncid, name='mlake_depth_m'      , vardesc=vardesc)
+         call pio_read_darray(ncid, vardesc, iodesc_dbl , TUnit_lake_r%h_lake, ier)
+         if (masterproc) write(iulog,FORMR) trim(subname),' read depth_m in r-lake',minval(TUnit_lake_r%h_lake),maxval(TUnit_lake_r%h_lake)
+         call shr_sys_flush(iulog)
+         
+         ier = pio_inq_varid (ncid, name='mlake_Dn'      , vardesc=vardesc)
+         call pio_read_darray(ncid, vardesc, iodesc_int , TLake_r%d_ns, ier)
+         if (masterproc) write(iulog,FORMR) trim(subname),' read d_n in r-lake',minval(TLake_r%d_ns),maxval(TLake_r%d_ns)
+         call shr_sys_flush(iulog)
+         
+         ier = pio_inq_varid (ncid, name='mlake_flag'      , vardesc=vardesc)
+         call pio_read_darray(ncid, vardesc, iodesc_int , TUnit_lake_r%lake_flg, ier)
+         if (masterproc) write(iulog,FORMR) trim(subname),' read lake_flag in r-lake',minval(TUnit_lake_r%lake_flg),maxval(TUnit_lake_r%lake_flg)
+         call shr_sys_flush(iulog)
+                  
+         ier = pio_inq_varid (ncid, name='mlake_Elevation'      , vardesc=vardesc)
+         call pio_read_darray(ncid, vardesc, iodesc_dbl , TUnit_lake_r%elev, ier)
+         if (masterproc) write(iulog,FORMR) trim(subname),' read elev in r-lake',minval(TUnit_lake_r%elev),maxval(TUnit_lake_r%elev)
+         call shr_sys_flush(iulog)
+
+         ier = pio_inq_varid (ncid, name='mlake_fhA_a'      , vardesc=vardesc)
+         call pio_read_darray(ncid, vardesc, iodesc_dbl , TUnit_lake_r%para_a, ier)
+         if (masterproc) write(iulog,FORMR) trim(subname),' read para_a in r-lake',minval(TUnit_lake_r%para_a),maxval(TUnit_lake_r%para_a)
+         call shr_sys_flush(iulog)
+         
+         ier = pio_inq_varid (ncid, name='mlake_fhA_b'      , vardesc=vardesc)
+         call pio_read_darray(ncid, vardesc, iodesc_dbl , TUnit_lake_r%para_b, ier)
+         if (masterproc) write(iulog,FORMR) trim(subname),' read para_a in r-lake',minval(TUnit_lake_r%para_b),maxval(TUnit_lake_r%para_b)
+         call shr_sys_flush(iulog)
+         
+         do iunit = rtmCTL%begr, rtmCTL%endr
+             if(TUnit_lake_r%lake_flg(iunit) >=1) then
+                 if(TUnit_lake_r%V_max(iunit) <= TINYVALUE) then
+                     !! need to revise based on geom type
+                     TUnit_lake_r%V_max(iunit) = TUnit_lake_r%Width(iunit) * TUnit_lake_r%Length(iunit) * TUnit_lake_r%h_lake(iunit)
+                 end if
+                 if(TUnit_lake_r%A_max(iunit)<=TINYVALUE) then
+                     !! need to revise based on geom type
+                     TUnit_lake_r%A_max(iunit) = TUnit_lake_r%Width(iunit) * TUnit_lake_r%Length(iunit)
+                 end if
+                 if(TUnit_lake_r%V_max(iunit) <= TINYVALUE .or. TUnit_lake_r%A_max(iunit)<=TINYVALUE) then
+                     TUnit_lake_r%lake_flg(iunit) = 0
+                 end if
+                 if(TUnit_lake_r%elev(iunit) <TINYVALUE) then
+                     TUnit_lake_r%elev(iunit) = 0._r8
+                 end if
+             else
+                 TUnit_lake_r%V_max(iunit) = 0._r8
+                 TUnit_lake_r%A_max(iunit) = 0._r8
+             end if
+             
+             !if(rtmCTL%latc(iunit)==53.75 .and. rtmCTL%lonc(iunit)==14.75) then
+             !if(rtmCTL%latc(iunit)==-4.25 .and. rtmCTL%lonc(iunit)==-63.25) then 
+             !    write(unit=1000101,fmt="(i10, i4, i4, 5(e14.6))") iunit, TUnit_lake_r%lake_flg(iunit), TLake_r%d_ns(iunit), TUnit_lake_r%h_lake(iunit), TUnit_lake_r%Width(iunit), TUnit_lake_r%Length(iunit), TUnit_lake_r%A_max(iunit), TUnit_lake_r%V_max(iunit)
+             !end if
+             
+         end do
+         TLake_r%V_str = TUnit_lake_r%V_max * 1e6 ! initialize lake storage with a maximum capacity, mcm --> m3
+         TLake_r%A_str = TUnit_lake_r%A_max * 1e6 ! initialize lake surface area with a maximum, km2 --> m2
+         
+         call lakegeom_init_r()
+         
+         ier = pio_inq_varid (ncid, name='tlake_Mean_len'      , vardesc=vardesc)
+         call pio_read_darray(ncid, vardesc, iodesc_dbl , TUnit_lake_t%Length, ier)
+         if (masterproc) write(iulog,FORMR) trim(subname),' read Mean_len in t-lake',minval(TUnit_lake_t%Length),maxval(TUnit_lake_t%Length)
+         call shr_sys_flush(iulog)
+         
+         ier = pio_inq_varid (ncid, name='tlake_Mean_wid'      , vardesc=vardesc)
+         call pio_read_darray(ncid, vardesc, iodesc_dbl , TUnit_lake_t%Width, ier)
+         if (masterproc) write(iulog,FORMR) trim(subname),' read Mean_wid in t-lake',minval(TUnit_lake_t%Width),maxval(TUnit_lake_t%Width)
+         call shr_sys_flush(iulog)
+                  
+         ier = pio_inq_varid (ncid, name='tlake_volume_computed'      , vardesc=vardesc)
+         call pio_read_darray(ncid, vardesc, iodesc_dbl , TUnit_lake_t%V_max, ier)
+         if (masterproc) write(iulog,FORMR) trim(subname),' read V_max in t-lake',minval(TUnit_lake_t%V_max),maxval(TUnit_lake_t%V_max)
+         call shr_sys_flush(iulog)
+         
+         ier = pio_inq_varid (ncid, name='tlake_area_computed'      , vardesc=vardesc)
+         call pio_read_darray(ncid, vardesc, iodesc_dbl , TUnit_lake_t%A_max, ier)
+         if (masterproc) write(iulog,FORMR) trim(subname),' read A_max in t-lake',minval(TUnit_lake_t%A_max),maxval(TUnit_lake_t%A_max)
+         call shr_sys_flush(iulog)
+         
+         ier = pio_inq_varid (ncid, name='tlake_depth_m'      , vardesc=vardesc)
+         call pio_read_darray(ncid, vardesc, iodesc_dbl , TUnit_lake_t%h_lake, ier)
+         if (masterproc) write(iulog,FORMR) trim(subname),' read depth_m in t-lake',minval(TUnit_lake_t%h_lake),maxval(TUnit_lake_t%h_lake)
+         call shr_sys_flush(iulog)
+         
+         ier = pio_inq_varid (ncid, name='tlake_Dn'      , vardesc=vardesc)
+         call pio_read_darray(ncid, vardesc, iodesc_int , TLake_t%d_ns, ier)
+         if (masterproc) write(iulog,FORMR) trim(subname),' read d_n in t-lake',minval(TLake_t%d_ns),maxval(TLake_t%d_ns)
+         call shr_sys_flush(iulog)
+         
+         ier = pio_inq_varid (ncid, name='tlake_flag'      , vardesc=vardesc)
+         call pio_read_darray(ncid, vardesc, iodesc_int , TUnit_lake_t%lake_flg, ier)
+         if (masterproc) write(iulog,FORMR) trim(subname),' read lake_flag in t-lake',minval(TUnit_lake_t%lake_flg),maxval(TUnit_lake_t%lake_flg)
+         call shr_sys_flush(iulog)
+
+         ier = pio_inq_varid (ncid, name='tlake_depth_m'      , vardesc=vardesc)
+         call pio_read_darray(ncid, vardesc, iodesc_dbl , TUnit_lake_t%elev, ier)
+         if (masterproc) write(iulog,FORMR) trim(subname),' read elev in t-lake',minval(TUnit_lake_t%elev),maxval(TUnit_lake_t%elev)
+         call shr_sys_flush(iulog)
+
+         ier = pio_inq_varid (ncid, name='tlake_drainage_area'      , vardesc=vardesc)
+         call pio_read_darray(ncid, vardesc, iodesc_dbl , TUnit_lake_t%A_local, ier)
+         if (masterproc) write(iulog,FORMR) trim(subname),' read tlake_drainage_area in t-lake',minval(TUnit_lake_t%A_local),maxval(TUnit_lake_t%A_local)
+         call shr_sys_flush(iulog)
+
+         ier = pio_inq_varid (ncid, name='tlake_fhA_a'      , vardesc=vardesc)
+         call pio_read_darray(ncid, vardesc, iodesc_dbl , TUnit_lake_t%para_a, ier)
+         if (masterproc) write(iulog,FORMR) trim(subname),' read para_a in t-lake',minval(TUnit_lake_t%para_a),maxval(TUnit_lake_t%para_a)
+         call shr_sys_flush(iulog)
+         
+         ier = pio_inq_varid (ncid, name='tlake_fhA_b'      , vardesc=vardesc)
+         call pio_read_darray(ncid, vardesc, iodesc_dbl , TUnit_lake_t%para_b, ier)
+         if (masterproc) write(iulog,FORMR) trim(subname),' read para_b in t-lake',minval(TUnit_lake_t%para_b),maxval(TUnit_lake_t%para_b)
+         call shr_sys_flush(iulog)
+         
+         do iunit = rtmCTL%begr, rtmCTL%endr
+             if(TUnit_lake_t%lake_flg(iunit) >= 1) then
+                 TUnit_lake_t%F_local(iunit) = TUnit_lake_t%A_local(iunit) * 1e6_r8 / TUnit%area(iunit)  ! the unit of TUnit_lake_t%A_local is km2, and for TUnit%area is m2
+                 if(TUnit_lake_t%F_local(iunit) > 1._r8) then
+                     TUnit_lake_t%F_local(iunit) = 1._r8
+                 end if
+
+             else
+                 TUnit_lake_t%F_local(iunit) = 0._r8
+             end if
+        end do             
+                  
+         do iunit = rtmCTL%begr, rtmCTL%endr
+             if(TUnit_lake_t%lake_flg(iunit) >=1) then
+                 if(TUnit_lake_t%V_max(iunit) <= TINYVALUE) then
+                     !! need to revise based on geom type
+                     TUnit_lake_t%V_max(iunit) = TUnit_lake_t%Width(iunit) * TUnit_lake_t%Length(iunit) * TUnit_lake_t%h_lake(iunit)
+                 end if
+                 if(TUnit_lake_t%A_max(iunit)<=TINYVALUE) then
+                     !! need to revise based on geom type
+                     TUnit_lake_t%A_max(iunit) = TUnit_lake_t%Width(iunit) * TUnit_lake_t%Length(iunit)
+                 end if
+                 if(TUnit_lake_t%V_max(iunit) <= TINYVALUE .or. TUnit_lake_t%A_max(iunit)<=TINYVALUE) then
+                     TUnit_lake_t%lake_flg(iunit) = 0
+                 end if                 
+                 if(TUnit_lake_t%elev(iunit) <TINYVALUE) then
+                     TUnit_lake_t%elev(iunit) = 0._r8
+                 end if
+             else
+                 TUnit_lake_t%V_max(iunit) = 0._r8
+                 TUnit_lake_t%A_max(iunit) = 0._r8
+             end if
+     if(rtmCTL%latc(iunit)==29.75 .and. rtmCTL%lonc(iunit)==-90.25) then
+     !if(rtmCTL%latc(iunit)==-4.25 .and. rtmCTL%lonc(iunit)==-63.25) then 
+         write(unit=1000102,fmt="(i10, i4, i4, 5(e14.6))") iunit, TUnit_lake_t%lake_flg(iunit), TLake_r%d_ns(iunit), TUnit_lake_t%h_lake(iunit), TUnit_lake_t%Width(iunit), TUnit_lake_t%Length(iunit), TUnit_lake_t%A_max(iunit), TUnit_lake_t%V_max(iunit)
+     end if
+
+         end do
+         TLake_t%V_str = TUnit_lake_t%V_max * 1e6 ! initialize lake storage with a maximum capacity, mcm --> m3
+         TLake_t%A_str = TUnit_lake_t%A_max * 1e6 ! initialize lake surface area with a maximum, km2 --> m2
+         
+         call lakegeom_init_t() 
+
+     end if
+	 
+	 if (heatflag .and. rstraflag) then
+        allocate (THeat%Tin_res(begr:endr))
+        THeat%Tin_res = 273.15_r8	     
+		allocate (TRunoff%qin_res(begr:endr))
+		TRunoff%qin_res = 0._r8
+	 end if
 
      call pio_freedecomp(ncid, iodesc_dbl)
      call pio_freedecomp(ncid, iodesc_int)
@@ -5135,7 +5705,7 @@ contains
  real(r8),dimension(ngeom+1) :: d_zi0,v_zti0,a_di0
  real(r8) ::dd_zz(ngeom),a_dd(ngeom+1),a_zi(ngeom+1),C_aa(ngeom+1), ar_f = 1.0e6                 ! Factor to convert area to m^2
  real(r8) :: pi      = 3.141593_r8      ! pi
- real(r8) :: d_s    = 1.0_r8        !0.60_r8                                                   ! Surface layer depth (m)
+ real(r8) :: ddz_top    = 1.0_r8        !0.60_r8                                                   ! Surface layer depth (m)
  real(r8) :: dv,da,dz
  real(r8) :: d_v(nlayers)                           ! Reservoir volume change at layer (m^3)
  real(r8) :: rho_z(nlayers)                           ! Reservoir layer density (kg/m^3), taken constant for furture revision 
@@ -5253,18 +5823,22 @@ contains
           end do
                 
           !Initial reservoir storage 
+          ! TODO: temporary
+          WRMUnit%d_ns(damID) = 1
+          ! TODO: temporary
+          
           do j = WRMUnit%d_ns(damID),1,-1
                if (j == WRMUnit%d_ns(damID) .and. WRMUnit%d_ns(damID) == 1) then
                      WRMUnit%dd_z(damID,j) = WRMUnit%d_resrv(damID)
                elseif (j == WRMUnit%d_ns(damID) .and. WRMUnit%d_ns(damID) > 1) then !top layer depth kept constant
-                     WRMUnit%dd_z(damID,j) = d_s        !0.6_r8
+                     WRMUnit%dd_z(damID,j) = ddz_top        !0.6_r8
                elseif ((WRMUnit%d_ns(damID)>1 .and.j < WRMUnit%d_ns(damID)).and.(WRMUnit%d_resrv(damID) - WRMUnit%dd_z(damID,WRMUnit%d_ns(damID)))>0._r8) then
                      WRMUnit%dd_z(damID,j) = (WRMUnit%d_resrv(damID) - WRMUnit%dd_z(damID,WRMUnit%d_ns(damID))) / (WRMUnit%d_ns(damID) - 1) !bottom layers evenly descritized
                endif
           end do    
             
-          if (WRMUnit%d_ns(damID)>1 .and. WRMUnit%dd_z(damID,WRMUnit%d_ns(damID)-1)<d_s)then !layer thickness too small
-               WRMUnit%d_ns(damID)=int((WRMUnit%d_resrv(damID)/d_s)+1) 
+          if (WRMUnit%d_ns(damID)>1 .and. WRMUnit%dd_z(damID,WRMUnit%d_ns(damID)-1)<ddz_top)then !layer thickness too small
+               WRMUnit%d_ns(damID)=int((WRMUnit%d_resrv(damID)/ddz_top)+1) 
                do j=1,nlayers!WRMUnit%d_ns(damID)
                      WRMUnit%dd_z(damID,j) = 0._r8
                end do
@@ -5272,7 +5846,7 @@ contains
                ! Reinitialize layer thickness
                do j = WRMUnit%d_ns(damID),1,-1
                      if (j == WRMUnit%d_ns(damID)) then
-                         WRMUnit%dd_z(damID,j) = d_s      !top layer depth
+                         WRMUnit%dd_z(damID,j) = ddz_top      !top layer depth
                      else
                          WRMUnit%dd_z(damID,j) = (WRMUnit%d_resrv(damID) - WRMUnit%dd_z(damID,WRMUnit%d_ns(damID)))/(WRMUnit%d_ns(damID) - 1) !bottom layers evenly descritized
                      end if

@@ -35,6 +35,7 @@ module RtmVar
   integer, public :: do_budget = 0                     ! level of budget output, 0 is minimal, 1 is every month, 2 is everyday, 3 is every timestep with additional terms.
   logical, public :: use_ocn_rof_two_way = .false.     ! ocean river two way coupling flag
   logical, public :: rstraflag = .false.               ! reservoir stratification module flag
+  logical, public :: lakeflag  = .false.               ! reservoir stratification module flag
   real,    public :: rinittemp = 283.15_r8             ! initial reservoir temperature
   integer, public :: ngeom   = 50                      ! Reservoir depth layers to calculate depth-area-storage relationship
   integer, public :: nlayers = 30                      ! Maximum number of reservoir layers for stratification
