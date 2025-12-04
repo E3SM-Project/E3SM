@@ -10,9 +10,9 @@ MODULE MOSART_stra_mod
 ! !USES:
     use shr_kind_mod  , only : r8 => shr_kind_r8
     use shr_infnan_mod   , only : isnan => shr_infnan_isnan
-    use RunoffMod , only : Tctl, TUnit, TRunoff, THeat, TPara, rtmCTL
+    use RunoffMod , only : Tctl, TUnit, TRunoff, THeat, TPara, rtmCTL, TUnit_lake_r, TLake_r
     use rof_cpl_indices, only : nt_nliq, nt_nice
-    use RtmVar         , only : iulog, ngeom, nlayers
+    use RtmVar         , only : iulog, ngeom, nlayers, lakeflag
     use WRM_type_mod  , only :  ctlSubwWRM, WRMUnit, StorWater
     use MOSART_heat_mod
     use RtmTimeManager
@@ -26,7 +26,7 @@ MODULE MOSART_stra_mod
 	subroutine stratification(iunit, localDeltaT,nt)
 	! !DESCRIPTION: calculate the water temperature of reservoir.
 	
-		use shr_sys_mod , only : shr_sys_flush
+		use shr_sys_mod , only : shr_sys_flush, shr_sys_abort
 	
 		implicit none
 		integer,  intent(in) :: iunit, nt
@@ -117,9 +117,14 @@ MODULE MOSART_stra_mod
 		!	Calculate sub-time step for numerical stability			
 			s_dtime = 12  			
 			dtime   = localDeltaT/s_dtime		!	Sub-timestep for numerical purpose
-			if(THeat%Tr(iunit)<273.15_r8)THeat%Tr(iunit)=273.15_r8
-			t_in    = THeat%Tr(iunit) 
-			q_in    = TRunoff%erin(iunit,nt)
+			if(THeat%Tr(iunit)<273.15_r8) THeat%Tr(iunit)=273.15_r8
+			if(lakeflag .and. TUnit_lake_r%lake_flg(iunit) >=1) then
+				t_in    = TLake_r%lake_Tout(iunit)
+			else
+				t_in    = THeat%Tr(iunit) 
+				!q_in    = TRunoff%erin(iunit,nt)
+			end if
+			q_in    = TRunoff%qin_res(iunit)
 			q_ou    = -TRunoff%erout(iunit,nt)
 			
 			!	Initialize for sub-timestep	
@@ -616,7 +621,17 @@ MODULE MOSART_stra_mod
 			end if 	
 			
 			WRMUnit%resrv_surf(iunit)= WRMUnit%temp_resrv(damID,WRMUnit%d_ns(damID))
-			THeat%Tr(iunit)= t_out
+			THeat%Ha_rout(iunit) = -cr_advectheat(abs(TRunoff%erout(iunit,nt_nliq)), t_out)
+			!THeat%Tr(iunit)= t_out
+            if(t_out > 350._r8) then
+                write(iulog,*) 'Reservoir temperature too high in r-zone! ', iunit, WRMUnit%d_ns(damID), WRMUnit%d_resrv(damID), t_out, t_in, THeat%forc_t(iunit)
+                call shr_sys_abort('mosart: water temperature: '//subname)
+            end if
+
+     if(iunit == 198841) then
+         write(unit=31002,fmt="(i4, 4(e18.10))") WRMUnit%d_ns(damID), WRMUnit%d_resrv(damID), t_in, THeat%forc_t(iunit), WRMUnit%temp_resrv(damID,WRMUnit%d_ns(damID))
+     !    write(unit=21002,fmt="(i4, i4, 9(e18.10))") dflag, TLake_r%d_ns(iunit), TRunoff%yt(iunit,1), TLake_r%d_lake(iunit), TLake_r%a_d(iunit,TLake_r%d_ns(iunit)+1), TLake_r%lake_inflow(iunit), TLake_r%lake_rain(iunit) + TLake_r%lake_snow(iunit), TRunoff%erlateral(iunit,nt_nliq), TLake_r%lake_outflow(iunit), TLake_r%lake_evap(iunit), TUnit_lake_r%F_local(iunit)
+     end if
 					
 		end if ! stratification
     end subroutine stratification

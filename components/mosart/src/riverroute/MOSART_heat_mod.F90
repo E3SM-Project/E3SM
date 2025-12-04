@@ -97,41 +97,31 @@ MODULE MOSART_heat_mod
         implicit none
         integer, intent(in) :: iunit
         real(r8), intent(in) :: theDeltaT    
-        integer    :: k
-        real(r8) :: Ha_temp, Ha_temp1, Ha_temp2
+        real(r8) :: Ha_temp  ! dummy variable   
+
         THeat%Ha_rin(iunit) = 0._r8
         !if(TUnit%fdir(iunit) >= 0 .and. TUnit%areaTotal(iunit) > TINYVALUE1 .and. TUnit%rlen(iunit) >= TINYVALUE1) then
-                if(TRunoff%yr(iunit,nt_nliq) > TUnit%rdepth(iunit)) then ! TODO: the cases w/o flooding should be treated differently, here treated the same for now
-                    !TRunoff%rarea(iunit,nt_nliq) = WaterAreaRatio*TUnit%rwidth0(iunit) * TUnit%rlen(iunit)
-                    TRunoff%rarea(iunit,nt_nliq) = WaterAreaRatio*TUnit%rwidth(iunit) * TUnit%rlen(iunit)
-                else
-                    TRunoff%rarea(iunit,nt_nliq) = WaterAreaRatio*TUnit%rwidth(iunit) * TUnit%rlen(iunit)
-                end if
-                THeat%Hs_r(iunit) = cr_swrad(THeat%forc_solar(iunit), TRunoff%rarea(iunit,nt_nliq))
-                THeat%Hl_r(iunit) = cr_lwrad(THeat%forc_lwrad(iunit), THeat%Tr(iunit), TRunoff%rarea(iunit,nt_nliq))
-                THeat%He_r(iunit) = cr_latentheat(THeat%forc_t(iunit), THeat%forc_pbot(iunit), THeat%forc_vp(iunit), THeat%forc_wind(iunit), WindSheltering, THeat%Tr(iunit), TRunoff%rarea(iunit,nt_nliq))
-                THeat%Hh_r(iunit) = cr_sensibleheat(THeat%forc_t(iunit), THeat%forc_pbot(iunit), THeat%forc_wind(iunit), WindSheltering, THeat%Tr(iunit), TRunoff%rarea(iunit,nt_nliq))
-                THeat%Hc_r(iunit) = cr_condheat(THeat%Hs_r(iunit),THeat%Hl_r(iunit),TRunoff%rarea(iunit,nt_nliq))
-                
-                !do k=1,TUnit%nUp(iunit)
-                !    THeat%Ha_rin(iunit) = THeat%Ha_rin(iunit) - THeat%Ha_rout(TUnit%iUp(iunit,k))
-                !end do
-                
-                THeat%Ha_rin(iunit) = THeat%Ha_rin(iunit) - THeat%Ha_eroutUp(iunit) 
-                !if(TUnit%indexDown(iunit) > 0) then
-                    THeat%Ha_rout(iunit) = -cr_advectheat(abs(TRunoff%erout(iunit,nt_nliq)+TRunoff%erout(iunit,nt_nice)), THeat%Tr(iunit))
-                !else
-                !    THeat%Ha_rout(iunit) = 0._r8
-                !end if
+        if(TRunoff%yr(iunit,nt_nliq) > TUnit%rdepth(iunit)) then ! TODO: the cases w/o flooding should be treated differently, here treated the same for now
+            !TRunoff%rarea(iunit,nt_nliq) = WaterAreaRatio*TUnit%rwidth0(iunit) * TUnit%rlen(iunit)
+            TRunoff%rarea(iunit,nt_nliq) = WaterAreaRatio*TUnit%rwidth(iunit) * TUnit%rlen(iunit)
+        else
+            TRunoff%rarea(iunit,nt_nliq) = WaterAreaRatio*TUnit%rwidth(iunit) * TUnit%rlen(iunit)
+        end if
+        THeat%Hs_r(iunit) = cr_swrad(THeat%forc_solar(iunit), TRunoff%rarea(iunit,nt_nliq))
+        THeat%Hl_r(iunit) = cr_lwrad(THeat%forc_lwrad(iunit), THeat%Tr(iunit), TRunoff%rarea(iunit,nt_nliq))
+        THeat%He_r(iunit) = cr_latentheat(THeat%forc_t(iunit), THeat%forc_pbot(iunit), THeat%forc_vp(iunit), THeat%forc_wind(iunit), WindSheltering, THeat%Tr(iunit), TRunoff%rarea(iunit,nt_nliq))
+        THeat%Hh_r(iunit) = cr_sensibleheat(THeat%forc_t(iunit), THeat%forc_pbot(iunit), THeat%forc_wind(iunit), WindSheltering, THeat%Tr(iunit), TRunoff%rarea(iunit,nt_nliq))
+        THeat%Hc_r(iunit) = cr_condheat(THeat%Hs_r(iunit),THeat%Hl_r(iunit),TRunoff%rarea(iunit,nt_nliq))
+        
+        THeat%Ha_rin(iunit) = THeat%Ha_rin(iunit) - THeat%Ha_eroutUp(iunit) 
+        THeat%Ha_rout(iunit) = -cr_advectheat(abs(TRunoff%erout(iunit,nt_nliq)+TRunoff%erout(iunit,nt_nice)), THeat%Tr(iunit))
  
-            ! change of energy due to heat exchange with the environment
-            THeat%deltaH_r(iunit) = theDeltaT * (THeat%Hs_r(iunit) + THeat%Hl_r(iunit) + THeat%He_r(iunit) + THeat%Hc_r(iunit) + THeat%Hh_r(iunit))
-            ! change of energy due to advective heat fluxes. Note here the advective heat flux is calculated differently from that by Huan Wu or van Vliet et al.
-            ! Their routing model is based on source-to-sink, while our model is explicitly tracing inflow from each upstream channel.
-            Ha_temp = cr_advectheat(TRunoff%erin(iunit,nt_nliq)+TRunoff%erin(iunit,nt_nice)+TRunoff%erlateral(iunit,nt_nliq)+TRunoff%erlateral(iunit,nt_nice),THeat%Tr(iunit))
-            THeat%deltaM_r(iunit) = theDeltaT * (THeat%Ha_lateral(iunit) + THeat%Ha_rin(iunit) - Ha_temp)
-            
-        !end if
+        ! change of energy due to heat exchange with the environment
+        THeat%deltaH_r(iunit) = theDeltaT * (THeat%Hs_r(iunit) + THeat%Hl_r(iunit) + THeat%He_r(iunit) + THeat%Hc_r(iunit) + THeat%Hh_r(iunit))
+        Ha_temp = cr_advectheat(TRunoff%erin(iunit,nt_nliq)+TRunoff%erin(iunit,nt_nice)+TRunoff%erlateral(iunit,nt_nliq)+TRunoff%erlateral(iunit,nt_nice),THeat%Tr(iunit))
+        THeat%deltaM_r(iunit) = theDeltaT * (THeat%Ha_lateral(iunit) + THeat%Ha_rin(iunit) - Ha_temp)            
+
+
     end subroutine mainchannelHeat
 
     subroutine mainchannelHeat_simple(iunit, theDeltaT)
@@ -215,7 +205,6 @@ MODULE MOSART_heat_mod
         integer, intent(in) :: iunit
         
         real(r8) :: Mr  !mass of water (Kg)
-        real(r8) :: Ttmp1, Ttmp2  !
         
         if((TRunoff%wr(iunit,nt_nliq)+TRunoff%wr(iunit,nt_nice)) > TINYVALUE1 .and. THeat%forc_t(iunit) > 200._r8) then
             Mr = TRunoff%wr(iunit,nt_nliq) * denh2o + TRunoff%wr(iunit,nt_nice) * denice
@@ -226,7 +215,17 @@ MODULE MOSART_heat_mod
         if(THeat%Tr(iunit) < 273.15_r8) then
             THeat%Tr(iunit) = 273.15_r8
         end if
-
+if(0>1) then
+        if(iunit == 198841) then 
+            write(unit=41002,fmt="(i4, 5(e18.10))") 1, THeat%Ha_rin(iunit)/(TRunoff%erin(iunit,nt_nliq)*denh2o * cpliq), THeat%Tr(iunit), TRunoff%erin(iunit,nt_nliq), THeat%Tr(67617), THeat%Tr(69237)
+        end if
+        if(iunit == 67617) then 
+            write(unit=41000,fmt="(i4, 2(e18.10))") 1, THeat%Tr(iunit), -TRunoff%erout(iunit,nt_nliq)
+        end if
+        if(iunit == 69237) then 
+            write(unit=41001,fmt="(i4, 2(e18.10))") 1, THeat%Tr(iunit), -TRunoff%erout(iunit,nt_nliq)
+        end if
+end if        
     end subroutine mainchannelTemp
 
     subroutine mainchannelTemp_simple(iunit)

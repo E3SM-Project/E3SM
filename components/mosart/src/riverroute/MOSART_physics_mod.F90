@@ -10,14 +10,19 @@ MODULE MOSART_physics_mod
 !-----------------------------------------------------------------------
 
 ! !USES:
+    use shr_const_mod , only : cpliq => SHR_CONST_CPFW, denh2o => SHR_CONST_RHOFW, denice => SHR_CONST_RHOICE, sb => SHR_CONST_STEBOL
+
   use shr_kind_mod  , only : r8 => shr_kind_r8, SHR_KIND_CL
   use shr_const_mod , only : SHR_CONST_REARTH, SHR_CONST_PI
   use shr_sys_mod   , only : shr_sys_abort
-  use RtmVar        , only : iulog, barrier_timers, wrmflag, inundflag, sediflag, heatflag, rstraflag, use_ocn_rof_two_way
-  use RunoffMod     , only : Tctl, TUnit, TRunoff, Theat, TPara, rtmCTL, &
+  use RtmVar        , only : iulog, barrier_timers, wrmflag, inundflag, sediflag, heatflag, rstraflag, use_ocn_rof_two_way, lakeflag
+  use RunoffMod     , only : Tctl, TUnit, TRunoff, Theat, TUnit_lake_r, TLake_r, TUnit_lake_t, TLake_t, TPara, rtmCTL, &
                              SMatP_upstrm, avsrc_upstrm, avdst_upstrm, SMatP_dnstrm, avsrc_dnstrm, avdst_dnstrm
   use MOSART_heat_mod
   use MOSART_stra_mod
+  use MOSART_lake_r_mod
+  use MOSART_lake_t_mod
+  use MOSART_lake_hydro_mod
   use RtmSpmd       , only : masterproc, mpicom_rof, iam
   use RtmTimeManager, only : get_curr_date, is_new_month
 
@@ -169,6 +174,18 @@ MODULE MOSART_physics_mod
 
     TRunoff%etexch_avg = 0._r8
     TRunoff%erexch_avg = 0._r8
+
+    if (lakeflag) then
+       TLake_r%lake_evap_avg = 0._r8
+       TLake_r%lake_prcp_avg = 0._r8
+       TLake_r%lake_Asur_avg = 0._r8
+       TLake_r%lake_Tsur_avg = 0._r8
+       TLake_t%lake_evap_avg = 0._r8
+       TLake_t%lake_prcp_avg = 0._r8
+       TLake_t%lake_Asur_avg = 0._r8
+       TLake_t%lake_Tsur_avg = 0._r8
+    end if
+
     negchan = 9999.0_r8
 
     ! subcycling within MOSART begins
@@ -180,6 +197,7 @@ MODULE MOSART_physics_mod
 
        call t_startf('mosartr_subnetwork')    
        TRunoff%erlateral(:,:) = 0._r8
+	   if (heatflag) THeat%ha_lateral(:) = 0._r8
        TRunoff%etexchange = 0._r8
        do nt=nt_nliq,nt_nice ! water transport
        if (TUnit%euler_calc(nt)) then
@@ -205,10 +223,10 @@ MODULE MOSART_physics_mod
                 if (heatflag) then
                 if (nt==nt_nliq) then
                     if(TUnit%tlen(iunit) > myTINYVALUE) then
-                          if(TRunoff%yt(iunit,nt_nliq) >= 0.2_r8) then 
+                          if(TRunoff%yt(iunit,nt_nliq) >= 0.5_r8) then 
                               call subnetworkHeat(iunit,localDeltaT)
                               call subnetworkTemp(iunit)
-                          elseif(TRunoff%yt(iunit,nt_nliq) <= 0.05_r8) then
+                          elseif(TRunoff%yt(iunit,nt_nliq) <= 0.2_r8) then
                               call subnetworkHeat_simple(iunit,localDeltaT)
                               THeat%Tt(iunit) = cr_S_curve(iunit,THeat%forc_t(iunit))
                           else
@@ -243,6 +261,20 @@ MODULE MOSART_physics_mod
                  THeat%Tt_avg(iunit) = THeat%Tt_avg(iunit) + temp_Tt
              end if
              end if
+             
+             if (heatflag .and. lakeflag .and. TUnit_lake_t%lake_flg(iunit) >=1) then ! lake is on the sub-channel
+			 if (iunit == 234096 .and. nt == nt_nliq) then
+                 localDeltaT = Tctl%DeltaT/Tctl%DLevelH2R
+                 call mosart_lake_t(iunit,nt,localDeltaT,temp_Tt) ! here calculate the lake layer change and stratification only
+                 !THeat%ha_lateral(iunit) = cr_advectheat(abs(TRunoff%erlateral(iunit,nt_nliq)+TRunoff%erlateral(iunit,nt_nice)), TLake_t%lake_Tout(iunit))
+                 !TLake_t%lake_evap(iunit) = TLake_t%lake_evap(iunit)/localDeltaT
+                 TLake_t%lake_evap_avg(iunit) = TLake_t%lake_evap_avg(iunit) + TLake_t%lake_evap(iunit)
+                 TLake_t%lake_prcp_avg(iunit) = TLake_t%lake_prcp_avg(iunit) + TLake_t%lake_rain(iunit) + TLake_t%lake_snow(iunit)
+                 TLake_t%lake_Tsur_avg(iunit) = TLake_t%lake_Tsur_avg(iunit) + TLake_t%lake_Tsur(iunit)
+                 TLake_t%lake_Asur_avg(iunit) = TLake_t%lake_Asur_avg(iunit) + TLake_t%a_d(iunit,TLake_t%d_ns(iunit)+1)             
+             endif 
+             end if
+             
           endif
        end do ! iunit
        endif  ! euler_calc
@@ -495,16 +527,17 @@ MODULE MOSART_physics_mod
              if (nt==nt_nliq) then
                  do k=1,TUnit%numDT_r(iunit)                
                     if(TUnit%rlen(iunit) > myTINYVALUE) then
-                        if(TRunoff%yr(iunit,nt_nliq) >= 0.2_r8) then
+
+                        if(TRunoff%yr(iunit,nt_nliq) >= 0.5_r8) then
                             call mainchannelHeat(iunit, localDeltaT)
                             call mainchannelTemp(iunit)
-                        elseif(TRunoff%yr(iunit,nt_nliq) <= 0.05_r8) then
+                        elseif(TRunoff%yr(iunit,nt_nliq) <= 0.2_r8) then
                             call mainchannelHeat_simple(iunit, localDeltaT)
                             THeat%Tr(iunit) = cr_S_curve(iunit,THeat%forc_t(iunit))
                         else
                             temp_T = 0._r8
                             temp_ha = 0._r8
-                            nSubStep = 10
+                            nSubStep = 10 
                             do dd=1,nSubStep
                                 call mainchannelHeat(iunit, localDeltaT/nSubStep)
                                 call mainchannelTemp(iunit)
@@ -516,12 +549,13 @@ MODULE MOSART_physics_mod
                         end if
                         temp_haout = temp_haout + THeat%ha_rout(iunit)
                         temp_Tr = temp_Tr + THeat%Tr(iunit)
+                        
                     else
                         call mainchannelHeat_simple(iunit, localDeltaT)
                         call mainchannelTemp_simple(iunit)
                         temp_haout = temp_haout + THeat%ha_rout(iunit)
                         temp_Tr = temp_Tr + THeat%Tr(iunit)
-                    end if                
+                    end if    
                  end do
                  temp_haout = temp_haout / TUnit%numDT_r(iunit)
                  THeat%ha_rout(iunit) = temp_haout
@@ -529,6 +563,22 @@ MODULE MOSART_physics_mod
                  THeat%Tr_avg(iunit) = THeat%Tr_avg(iunit) + temp_Tr
              end if
              end if
+             
+             if (heatflag .and. lakeflag .and. TUnit_lake_r%lake_flg(iunit) >=1) then ! lake is on the main channel
+			 if (0>1 .and. nt == nt_nliq) then
+             !if(TUnit%rlen(iunit) > myTINYVALUE) then  ! if no mainchannel, no lake modeling. TODO
+                 localDeltaT = Tctl%DeltaT/Tctl%DLevelH2R
+                 call mosart_lake_r(iunit,nt,localDeltaT,temp_Tr) ! here calculate the lake layer change and stratification only
+                 !TLake_r%lake_evap(iunit) = TLake_r%lake_evap(iunit)/localDeltaT
+                 ! if(TRunoff%erout(iunit,nt)==0._r8) TRunoff%erout(iunit,nt) = temp_erout
+                 TLake_r%lake_evap_avg(iunit) = TLake_r%lake_evap_avg(iunit) + TLake_r%lake_evap(iunit)
+                 TLake_r%lake_prcp_avg(iunit) = TLake_r%lake_prcp_avg(iunit) + TLake_r%lake_rain(iunit) + TLake_r%lake_snow(iunit)
+                 TLake_r%lake_Tsur_avg(iunit) = TLake_r%lake_Tsur_avg(iunit) + TLake_r%lake_Tsur(iunit)
+                 TLake_r%lake_Asur_avg(iunit) = TLake_r%lake_Asur_avg(iunit) + TLake_r%a_d(iunit,TLake_r%d_ns(iunit)+1) 
+             !end if
+             end if 
+             end if
+             
 !#ifdef INCLUDE_WRM
              if (wrmflag) then
                 if (nt == nt_nliq) then
@@ -539,19 +589,24 @@ MODULE MOSART_physics_mod
                          call insert_returnflow_channel(iunit, localDeltaT )
                       endif
                       ! update main channel storage as well
-                      temp_erout = temp_erout - TRunoff%erout(iunit,nt) ! change in erout after regulation and extraction
-                      TRunoff%dwr(iunit,nt) =  temp_erout
-                      TRunoff%wr(iunit,nt) = TRunoff%wr(iunit,nt) + TRunoff%dwr(iunit,nt) * localDeltaT
+                      !! commented out by Hongyi Li, 
+                      !! TRunoff%wr has already been directly modified in IrrigationExtractionMainChannel and insert_returnflow_channel
+                      !! so here there is no need to modify it again, only update the state variables
+                      !temp_erout = temp_erout - TRunoff%erout(iunit,nt) ! change in erout after regulation and extraction
+                      !TRunoff%dwr(iunit,nt) =  temp_erout
+                      !TRunoff%wr(iunit,nt) = TRunoff%wr(iunit,nt) + TRunoff%dwr(iunit,nt) * localDeltaT
                       call UpdateState_mainchannel(iunit,nt)
                    endif
                 ! moved out of loop
                    if ( ctlSubwWRM%RegulationFlag>0 ) then
+				      if (heatflag .and. rstraflag) TRunoff%qin_res(iunit) = -TRunoff%erout(iunit,nt_nliq)  ! TRunoff%erout is inflow to reservoir at the beining of regulation, then become reservoir outflow after regulation
                       call Regulation(iunit, localDeltaT)
                       if (heatflag .and. rstraflag) then
                           call stratification(iunit, localDeltaT,nt)
-                          call reservoirHeat(iunit, localDeltaT)
+                          !call reservoirHeat(iunit, localDeltaT)
+						  !THeat%Ha_rout(iunit) = -cr_advectheat(abs(TRunoff%erout(iunit,nt_nliq)), THeat%Tr(iunit))
                       elseif (heatflag .and. (.not.rstraflag)) then
-                          call reservoirHeat(iunit, localDeltaT)
+						  THeat%Ha_rout(iunit) = -cr_advectheat(abs(TRunoff%erout(iunit,nt_nliq)+TRunoff%erout(iunit,nt_nice)), THeat%Tr(iunit))
                       end if
                    endif
                 endif
@@ -680,8 +735,8 @@ MODULE MOSART_physics_mod
 
 ! check for negative channel storage
     if (negchan < -1.e-10) then
-       write(iulog,*) 'Warning: Negative channel storage found! ',negchan
-!       call shr_sys_abort('mosart: negative channel storage')
+       write(iulog,*) 'Error: Negative channel storage found! ',negchan
+       call shr_sys_abort('mosart: negative channel storage')
     endif
     TRunoff%flow = TRunoff%flow / Tctl%DLevelH2R
     TRunoff%erowm_regi(:,nt_nmud:nt_nsan) = TRunoff%erowm_regi(:,nt_nmud:nt_nsan) / Tctl%DLevelH2R
@@ -698,6 +753,16 @@ MODULE MOSART_physics_mod
     end if
     TRunoff%etexch_avg = TRunoff%etexch_avg / Tctl%DLevelH2R
     TRunoff%erexch_avg = TRunoff%erexch_avg / Tctl%DLevelH2R
+    if (lakeflag) then
+       TLake_r%lake_evap_avg = TLake_r%lake_evap_avg / Tctl%DLevelH2R
+       TLake_r%lake_prcp_avg = TLake_r%lake_prcp_avg / Tctl%DLevelH2R
+       TLake_r%lake_Tsur_avg = TLake_r%lake_Tsur_avg / Tctl%DLevelH2R
+       TLake_r%lake_Asur_avg = TLake_r%lake_Asur_avg / Tctl%DLevelH2R
+       TLake_t%lake_evap_avg = TLake_t%lake_evap_avg / Tctl%DLevelH2R
+       TLake_t%lake_prcp_avg = TLake_t%lake_prcp_avg / Tctl%DLevelH2R
+       TLake_t%lake_Tsur_avg = TLake_t%lake_Tsur_avg / Tctl%DLevelH2R
+       TLake_t%lake_Asur_avg = TLake_t%lake_Asur_avg / Tctl%DLevelH2R
+    end if
 
     !------------------
     ! WRM Regulation
@@ -993,7 +1058,7 @@ MODULE MOSART_physics_mod
        TRunoff%erout(iunit,nt) = -TRunoff%erin(iunit,nt)-TRunoff%erlateral(iunit,nt)
     else
        !TODO. If this channel is at basin outlet (downstream is ocean), use the KW method
-	   if(rtmCTL%mask(iunit) .eq. 3) then 
+       if(rtmCTL%mask(iunit) .eq. 3) then 
           call Routing_KW(iunit, nt, theDeltaT)
        else
           if(nt == nt_nliq) then 
@@ -1153,7 +1218,7 @@ MODULE MOSART_physics_mod
                    TRunoff%erout(iunit,nt) = 0._r8
                 elseif(TRunoff%erout(iunit,nt) <= -TINYVALUE .and. TRunoff%wr(iunit,nt) + &
                    (TRunoff%erlateral(iunit,nt) + TRunoff%erin(iunit,nt) + TRunoff%erout(iunit,nt)) * theDeltaT < TINYVALUE) then
-                   TRunoff%erout(iunit,nt) = -(TRunoff%erlateral(iunit,nt) + TRunoff%erin(iunit,nt) + TRunoff%wr(iunit,nt)*0.95_r8 / theDeltaT)
+                   TRunoff%erout(iunit,nt) = -(TRunoff%erlateral(iunit,nt) + TRunoff%erin(iunit,nt) + TRunoff%wr(iunit,nt)*MaxStorageDepleted / theDeltaT)
                    if(TRunoff%mr(iunit,nt) > TINYVALUE) then
                       TRunoff%vr(iunit,nt) = -TRunoff%erout(iunit,nt) / TRunoff%mr(iunit,nt)
                    end if
@@ -1167,7 +1232,7 @@ MODULE MOSART_physics_mod
                          TRunoff%vr(iunit,nt) = 0._r8
                          TRunoff%erout(iunit,nt) = 0._r8
                      elseif( TUnit%ocn_rof_coupling_ID(iunit) .ne. 1 .and. TRunoff%erout(iunit,nt) >= TINYVALUE .and. TRunoff%wr_dstrm(iunit,nt)/rtmCTL%nUp_dstrm(iunit)- TRunoff%erout(iunit,nt) * theDeltaT < TINYVALUE) then
-                         TRunoff%erout(iunit,nt) = TRunoff%wr_dstrm(iunit,nt)*0.95_r8 / theDeltaT / rtmCTL%nUp_dstrm(iunit)
+                         TRunoff%erout(iunit,nt) = TRunoff%wr_dstrm(iunit,nt)*MaxStorageDepleted / theDeltaT / rtmCTL%nUp_dstrm(iunit)
                          if(TRunoff%mr(iunit,nt) > TINYVALUE) then
                             TRunoff%vr(iunit,nt) = -TRunoff%erout(iunit,nt) / TRunoff%mr(iunit,nt)
                          end if
@@ -1178,7 +1243,7 @@ MODULE MOSART_physics_mod
                         TRunoff%erout(iunit,nt) = 0._r8
                      elseif( TUnit%ocn_rof_coupling_ID(iunit) .ne. 1 .and. TRunoff%erout(iunit,nt) >= TINYVALUE .and. TRunoff%wr_dstrm(iunit,nt) &
                        - TRunoff%erout(iunit,nt) * theDeltaT < TINYVALUE) then
-                        TRunoff%erout(iunit,nt) = TRunoff%wr_dstrm(iunit,nt)*0.95_r8 / theDeltaT
+                        TRunoff%erout(iunit,nt) = TRunoff%wr_dstrm(iunit,nt)*MaxStorageDepleted / theDeltaT
                         if(TRunoff%mr(iunit,nt) > TINYVALUE) then
                            TRunoff%vr(iunit,nt) = -TRunoff%erout(iunit,nt) / TRunoff%mr(iunit,nt)
                         end if
@@ -1229,9 +1294,9 @@ MODULE MOSART_physics_mod
 
     if(nt==nt_nliq) then
         TRunoff%yh(iunit,nt) = TRunoff%wh(iunit,nt) !/ TUnit%area(iunit) / TUnit%frac(iunit) 
-	else
-	    TRunoff%yh(iunit,nt) = 0._r8
-	end if
+    else
+        TRunoff%yh(iunit,nt) = 0._r8
+    end if
 
   end subroutine updateState_hillslope
 
