@@ -139,7 +139,8 @@ module li_calving
 
       real (kind=RKIND), dimension(:), pointer :: calvingVelocity
       real (kind=RKIND), dimension(:), pointer :: faceMeltSpeed
-      real (kind=RKIND), dimension(:), pointer :: strainRateEnhancementForCalving
+      real (kind=RKIND), dimension(:), pointer :: strainRateEnhancementForCalving, &
+                                                  calvingStrainRateScaling
 
       real (kind=RKIND), dimension(:), pointer :: areaCell
 
@@ -194,7 +195,8 @@ module li_calving
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
          call mpas_pool_get_array(geometryPool, 'faceMeltSpeed', faceMeltSpeed)
          call mpas_pool_get_array(geometryPool, 'strainRateEnhancementForCalving', strainRateEnhancementForCalving)
-         call calculate_facemelt_strainrate_enhancement(faceMeltSpeed, strainRateEnhancementForCalving)
+         call mpas_pool_get_array(geometryPool, 'calvingStrainRateScaling', calvingStrainRateScaling)
+         call calculate_facemelt_strainrate_enhancement(calvingStrainRateScaling, faceMeltSpeed, strainRateEnhancementForCalving)
 
          block => block % next
       end do
@@ -4744,24 +4746,31 @@ module li_calving
 !> from marine terminating glaciers. Journal of Geophysical Research: Earth Surface
 !-----------------------------------------------------------------------
 
-   subroutine calculate_facemelt_strainrate_enhancement(faceMeltSpeed, strainRateEnhancementForCalving)
+   subroutine calculate_facemelt_strainrate_enhancement(calvingStrainRateScaling, faceMeltSpeed, strainRateEnhancementForCalving)
       real(kind=RKIND), dimension(:), intent(in) :: faceMeltSpeed
       real(kind=RKIND), dimension(:), intent(out) :: strainRateEnhancementForCalving
+      real(kind=RKIND), dimension(:), intent(out) :: calvingStrainRateScaling
 
       ! local variables
       logical, pointer :: config_apply_facemelt_strainrate_enhancement
       real(kind=RKIND), pointer :: config_calving_strainrate_scaling
-
+      character (len=StrKIND), pointer :: config_calving_strainrate_scaling_source
 
       call mpas_pool_get_config(liConfigs, 'config_apply_facemelt_strainrate_enhancement', config_apply_facemelt_strainrate_enhancement)
       call mpas_pool_get_config(liConfigs, 'config_calving_strainrate_scaling', config_calving_strainrate_scaling)
+      call mpas_pool_get_config(liConfigs, 'config_calving_strainrate_scaling_source', config_calving_strainrate_scaling_source)
 
       if (config_apply_facemelt_strainrate_enhancement) then
-         strainRateEnhancementForCalving = 1.0_RKIND + faceMeltSpeed * 86400.0_RKIND * config_calving_strainrate_scaling
+         if (trim(config_calving_strainrate_scaling_source) == 'scalar') then
+            calvingStrainRateScaling(:) = config_calving_strainrate_scaling
+         else
+            ! do nothing
+         endif
+         strainRateEnhancementForCalving(:) = 1.0_RKIND + faceMeltSpeed(:) * 86400.0_RKIND * calvingStrainRateScaling(:)
          ! Don't allow negative multiplier
-         strainRateEnhancementForCalving = max(0.0_RKIND, strainRateEnhancementForCalving)
+         strainRateEnhancementForCalving(:) = max(0.0_RKIND, strainRateEnhancementForCalving(:))
       else
-         strainRateEnhancementForCalving = 1.0_RKIND
+         strainRateEnhancementForCalving(:) = 1.0_RKIND
       endif
 
    end subroutine calculate_facemelt_strainrate_enhancement

@@ -239,6 +239,10 @@
 			description="the slope used to calculate the strain-rate enhancement multiplier from faceMeltSpeed.  Implied values from Ma and Bassis (2018) range from approximately -0.5 to 10.0. 0.0 yields a factor of 1.0"
 			possible_values="any real value"
 		/>
+		<nml_option name="config_calving_strainrate_scaling_source" type="character" default_value="scalar" units="unitless"
+			description="Source of strain-rate multiplier for iceberg calving. Only currently supported for the crevasse-depth calving law."
+			possible_values-"'data' (read from input file), 'scalar' (specified by config_calving_strainrate_scaling)"
+		/>
 		<nml_option name="config_grounded_von_Mises_threshold_stress" type="real" default_value="1.0e6" units="Pa"
 			    description="Threshold von Mises stress value required for calving velocity to exceed ice velocity on grounded ice. sigma_max in Morlighem et al. (2016) eq. 4. 1 MPa default value is from Morlighem et al.'s calibration for Store Glacier."
 			    possible_values="Any positive real value"
@@ -819,6 +823,7 @@
                         <var name="eigencalvingParameter"/>
                         <var name="groundedVonMisesThresholdStress"/>
                         <var name="floatingVonMisesThresholdStress"/>
+                        <var name="calvingStrainRateScaling"/>
                         <var name="stiffnessFactor"/>
                         <var name="calvingMask"/>
                         <var name="upliftRate"/>
@@ -919,6 +924,7 @@
                         <var name="eigencalvingParameter"/>
                         <var name="groundedVonMisesThresholdStress"/>
                         <var name="floatingVonMisesThresholdStress"/>
+                        <var name="calvingStrainRateScaling"/>
                         <var name="stiffnessFactor"/>
                         <var name="calvingMask"/>
                         <!-- calvingCFLdt only needed if calving CFL is being applied, but it is a scalar value so no harm in including it always -->
@@ -1362,6 +1368,9 @@ is the value of that variable from the *previous* time level!
                 />
                 <var name="floatingVonMisesThresholdStress" type="real" dimensions="nCells Time" units="Pa" time_levs="1"
                      description="Threshold stress for von Mises calving from floating ice."
+                />
+                <var name="calvingStrainRateScaling" type="real" dimensions="nCells Time" units="per (m/d)" time_levs="1"
+                     description="Scaling factor on crevasse depth based on face-melting rate."
                 />
                 <var name="calvingVelocity" type="real" dimensions="nCells Time" units="m s^-1" time_levs="1"
                      description="rate of calving front retreat due to calving, represented as a velocity normal to the calving front (in the x-y plane)."
