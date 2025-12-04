@@ -749,6 +749,16 @@ subroutine zm_conv_evap(pcols, ncol, pver, pverp, deltat, &
    real(r8) :: work2    ! temporary work variable
    real(r8) :: evplimit ! temporary work variable for evaporation limits
    real(r8) :: dum      ! temporary work variable
+
+   logical :: pergro_active ! flag for perturbation growth test (pergro)
+   real(r8), parameter :: pergro_perturbation = 8.64e-11_r8 ! value used when pergro_active is true
+   !----------------------------------------------------------------------------
+   ! set flag for perturbation growth test
+#ifdef PERGRO
+   pergro_active = .true.
+#else
+   pergro_active = .false.
+#endif
    !----------------------------------------------------------------------------
    if (zm_param%zm_microp) then
       prdsnow(1:ncol,1:pver) = microp_st%sprd(1:ncol,1:pver)
@@ -853,15 +863,15 @@ subroutine zm_conv_evap(pcols, ncol, pver, pverp, deltat, &
          ! This causes temperature partitioning to be used for small flxprec amounts.
 
          if( zm_param%old_snow ) then
-#ifdef PERGRO
-            work1 = min(max(0._r8,flxsnow(i,k)/(flxprec(i,k)+8.64e-11_r8)),1._r8)
-#else
-            if (flxprec(i,k).gt.0._r8) then
-               work1 = min(max(0._r8,flxsnow(i,k)/flxprec(i,k)),1._r8)
+            if (pergro_active) then
+               work1 = min(max(0._r8,flxsnow(i,k)/(flxprec(i,k)+pergro_perturbation)),1._r8)
             else
-               work1 = 0._r8
-            endif
-#endif
+               if (flxprec(i,k).gt.0._r8) then
+                  work1 = min(max(0._r8,flxsnow(i,k)/flxprec(i,k)),1._r8)
+               else
+                  work1 = 0._r8
+               endif
+            end if
             work2 = max(fsnow_conv(i,k), work1)
             if (snowmlt(i).gt.0._r8) work2 = 0._r8
             ntsnprd(i,k) = prdprec(i,k)*work2 - evpsnow(i) - snowmlt(i)
