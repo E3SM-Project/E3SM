@@ -259,13 +259,13 @@ void PressureGrad::computeInterfaceProduct(
                 (ZInterface(ICell1, KMin) - ZInterface(ICell0, KMin)) /
                 LocDcEdge(IEdge);
 
-          const int KRange = vertRange(KMin + 1, KMax - 1);
+          // Four-point average for interior interface products
+          const int KRange = vertRange(KMin + 1, KMax);
            parallelForInner(
               Team, KRange,
               INNER_LAMBDA(int KChunk) {
                  const I4 KStart = chunkStart(KChunk, KMin + 1);
-                 const I4 KLen   = chunkLength(KChunk, KStart, KMax - 1);
-
+                 const I4 KLen   = chunkLength(KChunk, KStart, KMax);
 
                  for (int KVec = 0; KVec < KLen; ++KVec) {
                     const I4 K = KStart + KVec;
@@ -290,16 +290,17 @@ void PressureGrad::computeInterfaceProduct(
                  }          
            });
 
-          LocInterfaceProduct(IEdge, KMax) =
-              PressureMid(ICell1, KMax - 1) * SpecVol(ICell1, KMax - 1) *
-                  LayerThick(ICell1, KMax - 1) +
-              PressureMid(ICell0, KMax - 1) * SpecVol(ICell0, KMax - 1) *
-                  LayerThick(ICell0, KMax - 1);
-          LocInterfaceProduct(IEdge, KMax) /=
-              (LayerThick(ICell1, KMax - 1) +
-               LayerThick(ICell0, KMax - 1));
-          LocInterfaceProduct(IEdge, KMax) *=
-                (ZInterface(ICell1, KMax) - ZInterface(ICell0, KMax)) /
+          // Two-point average for bottom interface product 
+          LocInterfaceProduct(IEdge, KMax + 1) =
+              PressureMid(ICell1, KMax) * SpecVol(ICell1, KMax) *
+                  LayerThick(ICell1, KMax) +
+              PressureMid(ICell0, KMax) * SpecVol(ICell0, KMax) *
+                  LayerThick(ICell0, KMax);
+          LocInterfaceProduct(IEdge, KMax + 1) /=
+              (LayerThick(ICell1, KMax) +
+               LayerThick(ICell0, KMax));
+          LocInterfaceProduct(IEdge, KMax + 1) *=
+                (ZInterface(ICell1, KMax + 1) - ZInterface(ICell0, KMax + 1)) /
                 LocDcEdge(IEdge);
     });
    //parallelFor(
