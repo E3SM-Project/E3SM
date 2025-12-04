@@ -91,21 +91,12 @@ void initIOStreamTest(Clock *&ModelClock // Model clock
    // Initialize IOStreams
    IOStream::init(ModelClock);
 
-   // Initialize the vertical coordinate (phase 1)
-   VertCoord::init1();
-
-   // Reset vertical layers dimension
-   Dimension::destroy("NVertLayers");
-   I4 NVertLayers = 60;
-   std::shared_ptr<Dimension> VertDim =
-       Dimension::create("NVertLayers", NVertLayers);
-
    // Initialize HorzMesh - this should read Mesh stream
    HorzMesh::init();
    HorzMesh *DefMesh = HorzMesh::getDefault();
 
-   // Initialize the vertical coordinate (phase 2)
-   VertCoord::init2();
+   // Initialize the vertical coordinate
+   VertCoord::init();
 
    // Initialize State
    TmpErr = OceanState::init();

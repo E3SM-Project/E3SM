@@ -4,6 +4,7 @@
 #include "DataTypes.h"
 #include "HorzMesh.h"
 #include "OmegaKokkos.h"
+#include "VertCoord.h"
 
 #include <string>
 
@@ -16,7 +17,7 @@ class VelocityDel2AuxVars {
    Array2DReal Del2RelVortVertex;
 
    VelocityDel2AuxVars(const std::string &AuxStateSuffix, const HorzMesh *Mesh,
-                       int NVertLayers);
+                       const VertCoord *VCoord, int NVertLayers);
 
    KOKKOS_FUNCTION void
    computeVarsOnEdge(int IEdge, int KChunk, const Array2DReal &VelocityDivCell,

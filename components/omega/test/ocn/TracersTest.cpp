@@ -69,11 +69,11 @@ I4 initTracersTest() {
       return Err;
    }
 
-   // Initialize the vertical coordinate (phase 1)
-   VertCoord::init1();
-
    // Initialize the default mesh
    HorzMesh::init();
+
+   // Initialize the vertical coordinate
+   VertCoord::init(false);
 
    return 0;
 }

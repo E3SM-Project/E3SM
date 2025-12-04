@@ -23,53 +23,60 @@ ThicknessFluxDivOnCell::ThicknessFluxDivOnCell(const HorzMesh *Mesh)
       DvEdge(Mesh->DvEdge), AreaCell(Mesh->AreaCell),
       EdgeSignOnCell(Mesh->EdgeSignOnCell) {}
 
-PotentialVortHAdvOnEdge::PotentialVortHAdvOnEdge(const HorzMesh *Mesh)
+PotentialVortHAdvOnEdge::PotentialVortHAdvOnEdge(const HorzMesh *Mesh,
+                                                 const VertCoord *VCoord)
     : NEdgesOnEdge(Mesh->NEdgesOnEdge), EdgesOnEdge(Mesh->EdgesOnEdge),
-      WeightsOnEdge(Mesh->WeightsOnEdge), EdgeMask(Mesh->EdgeMask) {}
+      WeightsOnEdge(Mesh->WeightsOnEdge), EdgeMask(VCoord->EdgeMask) {}
 
-KEGradOnEdge::KEGradOnEdge(const HorzMesh *Mesh)
+KEGradOnEdge::KEGradOnEdge(const HorzMesh *Mesh, const VertCoord *VCoord)
     : CellsOnEdge(Mesh->CellsOnEdge), DcEdge(Mesh->DcEdge),
-      EdgeMask(Mesh->EdgeMask) {}
+      EdgeMask(VCoord->EdgeMask) {}
 
-SSHGradOnEdge::SSHGradOnEdge(const HorzMesh *Mesh)
+SSHGradOnEdge::SSHGradOnEdge(const HorzMesh *Mesh, const VertCoord *VCoord)
     : CellsOnEdge(Mesh->CellsOnEdge), DcEdge(Mesh->DcEdge),
-      EdgeMask(Mesh->EdgeMask) {}
+      EdgeMask(VCoord->EdgeMask) {}
 
-VelocityDiffusionOnEdge::VelocityDiffusionOnEdge(const HorzMesh *Mesh)
+VelocityDiffusionOnEdge::VelocityDiffusionOnEdge(const HorzMesh *Mesh,
+                                                 const VertCoord *VCoord)
     : CellsOnEdge(Mesh->CellsOnEdge), VerticesOnEdge(Mesh->VerticesOnEdge),
       DcEdge(Mesh->DcEdge), DvEdge(Mesh->DvEdge),
-      MeshScalingDel2(Mesh->MeshScalingDel2), EdgeMask(Mesh->EdgeMask) {}
+      MeshScalingDel2(Mesh->MeshScalingDel2), EdgeMask(VCoord->EdgeMask) {}
 
-VelocityHyperDiffOnEdge::VelocityHyperDiffOnEdge(const HorzMesh *Mesh)
+VelocityHyperDiffOnEdge::VelocityHyperDiffOnEdge(const HorzMesh *Mesh,
+                                                 const VertCoord *VCoord)
     : CellsOnEdge(Mesh->CellsOnEdge), VerticesOnEdge(Mesh->VerticesOnEdge),
       DcEdge(Mesh->DcEdge), DvEdge(Mesh->DvEdge),
-      MeshScalingDel4(Mesh->MeshScalingDel4), EdgeMask(Mesh->EdgeMask) {}
+      MeshScalingDel4(Mesh->MeshScalingDel4), EdgeMask(VCoord->EdgeMask) {}
 
-WindForcingOnEdge::WindForcingOnEdge(const HorzMesh *Mesh)
-    : Enabled(false), LocRhoSw(RhoSw), EdgeMask(Mesh->EdgeMask) {}
+WindForcingOnEdge::WindForcingOnEdge(const HorzMesh *Mesh,
+                                     const VertCoord *VCoord)
+    : Enabled(false), LocRhoSw(RhoSw), EdgeMask(VCoord->EdgeMask) {}
 
 BottomDragOnEdge::BottomDragOnEdge(const HorzMesh *Mesh,
                                    const VertCoord *VCoord)
     : Enabled(false), Coeff(0), CellsOnEdge(Mesh->CellsOnEdge),
-      NVertLayers(VCoord->NVertLayers), EdgeMask(Mesh->EdgeMask) {}
+      NVertLayers(VCoord->NVertLayers), EdgeMask(VCoord->EdgeMask) {}
 
-TracerHorzAdvOnCell::TracerHorzAdvOnCell(const HorzMesh *Mesh)
+TracerHorzAdvOnCell::TracerHorzAdvOnCell(const HorzMesh *Mesh,
+                                         const VertCoord *VCoord)
     : NEdgesOnCell(Mesh->NEdgesOnCell), EdgesOnCell(Mesh->EdgesOnCell),
       CellsOnEdge(Mesh->CellsOnEdge), EdgeSignOnCell(Mesh->EdgeSignOnCell),
-      DvEdge(Mesh->DvEdge), AreaCell(Mesh->AreaCell), EdgeMask(Mesh->EdgeMask) {
-}
+      DvEdge(Mesh->DvEdge), AreaCell(Mesh->AreaCell),
+      EdgeMask(VCoord->EdgeMask) {}
 
-TracerDiffOnCell::TracerDiffOnCell(const HorzMesh *Mesh)
-    : NEdgesOnCell(Mesh->NEdgesOnCell), EdgesOnCell(Mesh->EdgesOnCell),
-      CellsOnEdge(Mesh->CellsOnEdge), EdgeSignOnCell(Mesh->EdgeSignOnCell),
-      DvEdge(Mesh->DvEdge), DcEdge(Mesh->DcEdge), AreaCell(Mesh->AreaCell),
-      MeshScalingDel2(Mesh->MeshScalingDel2), EdgeMask(Mesh->EdgeMask) {}
-
-TracerHyperDiffOnCell::TracerHyperDiffOnCell(const HorzMesh *Mesh)
+TracerDiffOnCell::TracerDiffOnCell(const HorzMesh *Mesh,
+                                   const VertCoord *VCoord)
     : NEdgesOnCell(Mesh->NEdgesOnCell), EdgesOnCell(Mesh->EdgesOnCell),
       CellsOnEdge(Mesh->CellsOnEdge), EdgeSignOnCell(Mesh->EdgeSignOnCell),
       DvEdge(Mesh->DvEdge), DcEdge(Mesh->DcEdge), AreaCell(Mesh->AreaCell),
-      MeshScalingDel4(Mesh->MeshScalingDel4), EdgeMask(Mesh->EdgeMask) {}
+      MeshScalingDel2(Mesh->MeshScalingDel2), EdgeMask(VCoord->EdgeMask) {}
+
+TracerHyperDiffOnCell::TracerHyperDiffOnCell(const HorzMesh *Mesh,
+                                             const VertCoord *VCoord)
+    : NEdgesOnCell(Mesh->NEdgesOnCell), EdgesOnCell(Mesh->EdgesOnCell),
+      CellsOnEdge(Mesh->CellsOnEdge), EdgeSignOnCell(Mesh->EdgeSignOnCell),
+      DvEdge(Mesh->DvEdge), DcEdge(Mesh->DcEdge), AreaCell(Mesh->AreaCell),
+      MeshScalingDel4(Mesh->MeshScalingDel4), EdgeMask(VCoord->EdgeMask) {}
 
 } // end namespace OMEGA
 

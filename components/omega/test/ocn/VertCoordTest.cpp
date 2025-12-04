@@ -26,6 +26,7 @@
 #include "mpi.h"
 
 #include <algorithm>
+#include <random>
 
 using namespace OMEGA;
 
@@ -61,14 +62,11 @@ int initVertCoordTest() {
    if (Err != 0)
       LOG_ERROR("VertCoordTest: error initializing default halo");
 
-   // Begin initialization of the default vertical coordinate
-   VertCoord::init1();
-
    // Initialize the default mesh
    HorzMesh::init();
 
-   // Complete initialization of the default vertical coordinate
-   VertCoord::init2();
+   // Initialize the default vertical coordinate
+   VertCoord::init();
 
    return Err;
 } // end initVertCoordTest
@@ -93,13 +91,18 @@ int main(int argc, char *argv[]) {
 
       auto *DefVertCoord = VertCoord::getDefault();
       auto *DefMesh      = HorzMesh::getDefault();
+      auto *DefHalo      = Halo::getDefault();
+      auto *DefDecomp    = Decomp::getDefault();
 
-      I4 NCellsSize   = DefMesh->NCellsSize;
-      I4 NCellsAll    = DefMesh->NCellsAll;
-      I4 NEdgesAll    = DefMesh->NEdgesAll;
-      I4 NVerticesAll = DefMesh->NVerticesAll;
-      I4 VertexDegree = DefMesh->VertexDegree;
-      I4 NVertLayers  = DefVertCoord->NVertLayers;
+      I4 NCellsSize     = DefMesh->NCellsSize;
+      I4 NCellsOwned    = DefMesh->NCellsOwned;
+      I4 NCellsAll      = DefMesh->NCellsAll;
+      I4 NEdgesOwned    = DefMesh->NEdgesOwned;
+      I4 NEdgesAll      = DefMesh->NEdgesAll;
+      I4 NVerticesOwned = DefMesh->NVerticesOwned;
+      I4 NVerticesAll   = DefMesh->NVerticesAll;
+      I4 VertexDegree   = DefMesh->VertexDegree;
+      I4 NVertLayers    = DefVertCoord->NVertLayers;
 
       // Tests for computePressure
 
@@ -449,15 +452,16 @@ int main(int argc, char *argv[]) {
       /// edge
       const auto &LocMinLayerCell = DefVertCoord->MinLayerCell;
       const auto &LocMaxLayerCell = DefVertCoord->MaxLayerCell;
+      const auto &LocCellID       = DefDecomp->CellID;
       parallelFor(
           {NCellsAll}, KOKKOS_LAMBDA(int ICell) {
-             LocMinLayerCell(ICell) = -2 * ICell;
-             LocMaxLayerCell(ICell) = 2 * ICell;
+             LocMinLayerCell(ICell) = -2 * LocCellID(ICell);
+             LocMaxLayerCell(ICell) = 2 * LocCellID(ICell);
           });
       Kokkos::fence();
 
       /// Call function, outputs are member variables of class
-      DefVertCoord->minMaxLayerEdge();
+      DefVertCoord->minMaxLayerEdge(DefHalo);
 
       /// Check results
       Err = 0;
@@ -470,30 +474,28 @@ int main(int argc, char *argv[]) {
             continue;
          }
 
+         I4 CellID1 = DefDecomp->CellIDH(DefMesh->CellsOnEdgeH(IEdge, 0));
+         I4 CellID2 = DefDecomp->CellIDH(DefMesh->CellsOnEdgeH(IEdge, 1));
          /// MinLayerEdgeTop is the min of the min cell values on edge
-         Expected  = std::min(-2 * DefMesh->CellsOnEdgeH(IEdge, 0),
-                              -2 * DefMesh->CellsOnEdgeH(IEdge, 1));
+         Expected  = std::min(-2 * CellID1, -2 * CellID2);
          Real Diff = std::abs(DefVertCoord->MinLayerEdgeTopH(IEdge) - Expected);
          if (Diff > 1e-10) {
             Err += 1;
          }
          /// MinLayerEdgeBot is the max of the min cell values on edge
-         Expected = std::max(-2 * DefMesh->CellsOnEdgeH(IEdge, 0),
-                             -2 * DefMesh->CellsOnEdgeH(IEdge, 1));
+         Expected = std::max(-2 * CellID1, -2 * CellID2);
          Diff     = std::abs(DefVertCoord->MinLayerEdgeBotH(IEdge) - Expected);
          if (Diff > 1e-10) {
             Err += 1;
          }
          /// MaxLayerEdgeTop is the min of the max cell values on edge
-         Expected = std::min(2 * DefMesh->CellsOnEdgeH(IEdge, 0),
-                             2 * DefMesh->CellsOnEdgeH(IEdge, 1));
+         Expected = std::min(2 * CellID1, 2 * CellID2);
          Diff     = std::abs(DefVertCoord->MaxLayerEdgeTopH(IEdge) - Expected);
          if (Diff > 1e-10) {
             Err += 1;
          }
          /// MaxLayerEdgeBot is the max of the max cell values on edge
-         Expected = std::max(2 * DefMesh->CellsOnEdgeH(IEdge, 0),
-                             2 * DefMesh->CellsOnEdgeH(IEdge, 1));
+         Expected = std::max(2 * CellID1, 2 * CellID2);
          Diff     = std::abs(DefVertCoord->MaxLayerEdgeBotH(IEdge) - Expected);
          if (Diff > 1e-10) {
             Err += 1;
@@ -515,7 +517,7 @@ int main(int argc, char *argv[]) {
       /// vertex
 
       /// Call function, outputs are member variables of class
-      DefVertCoord->minMaxLayerVertex();
+      DefVertCoord->minMaxLayerVertex(DefHalo);
 
       /// Check results
       Err = 0;
@@ -532,11 +534,14 @@ int main(int argc, char *argv[]) {
             continue;
          }
 
+         std::vector<I4> CellIDs = {
+             DefDecomp->CellIDH(DefMesh->CellsOnVertexH(IVertex, 0)),
+             DefDecomp->CellIDH(DefMesh->CellsOnVertexH(IVertex, 1)),
+             DefDecomp->CellIDH(DefMesh->CellsOnVertexH(IVertex, 2))};
          /// MinLayerVertexTop is the min of the min cell values on vertex
          I4 Expected = 1e7;
          for (int I = 0; I < VertexDegree; I++) {
-            Expected =
-                std::min(Expected, -2 * DefMesh->CellsOnVertexH(IVertex, I));
+            Expected = std::min(Expected, -2 * CellIDs[I]);
          }
          Real Diff =
              std::abs(DefVertCoord->MinLayerVertexTopH(IVertex) - Expected);
@@ -547,8 +552,7 @@ int main(int argc, char *argv[]) {
          /// MinLayerVertexBot is the max of the min cell values on vertex
          Expected = -1e7;
          for (int I = 0; I < VertexDegree; I++) {
-            Expected =
-                std::max(Expected, -2 * DefMesh->CellsOnVertexH(IVertex, I));
+            Expected = std::max(Expected, -2 * CellIDs[I]);
          }
          Diff = std::abs(DefVertCoord->MinLayerVertexBotH(IVertex) - Expected);
          if (Diff > 1e-10) {
@@ -558,8 +562,7 @@ int main(int argc, char *argv[]) {
          /// MaxLayerVertexTop is the min of the max cell values on vertex
          Expected = 1e7;
          for (int I = 0; I < VertexDegree; I++) {
-            Expected =
-                std::min(Expected, 2 * DefMesh->CellsOnVertexH(IVertex, I));
+            Expected = std::min(Expected, 2 * CellIDs[I]);
          }
          Diff = std::abs(DefVertCoord->MaxLayerVertexTopH(IVertex) - Expected);
          if (Diff > 1e-10) {
@@ -569,8 +572,7 @@ int main(int argc, char *argv[]) {
          /// MaxLayerVertexBot is the max of the max cell values on vertex
          Expected = -1e7;
          for (int I = 0; I < VertexDegree; I++) {
-            Expected =
-                std::max(Expected, 2 * DefMesh->CellsOnVertexH(IVertex, I));
+            Expected = std::max(Expected, 2 * CellIDs[I]);
          }
          Diff = std::abs(DefVertCoord->MaxLayerVertexBotH(IVertex) - Expected);
          if (Diff > 1e-10) {
@@ -584,6 +586,95 @@ int main(int argc, char *argv[]) {
       } else {
          ErrAll +=
              Error(ErrorCode::Fail, "VertCoordTest: minMaxLayerVertex FAIL");
+      }
+
+      // Tests for Masks
+
+      /// Setup random values for MinLayerCell and MaxLayerCell near the top
+      /// and bottom of each column
+      I4 Seed = 12345;
+      std::mt19937 Generator(Seed);
+
+      I4 MinMin = 0;
+      I4 MaxMin = 10;
+      I4 MinMax = NVertLayers - 11;
+      I4 MaxMax = NVertLayers - 1;
+
+      std::uniform_int_distribution<int> MinDist(MinMin, MaxMin);
+      std::uniform_int_distribution<int> MaxDist(MinMax, MaxMax);
+
+      for (int ICell = 0; ICell < NCellsAll; ICell++) {
+         DefVertCoord->MinLayerCellH(ICell) = MinDist(Generator);
+         DefVertCoord->MaxLayerCellH(ICell) = MaxDist(Generator);
+      }
+
+      deepCopy(DefVertCoord->MinLayerCell, DefVertCoord->MinLayerCellH);
+      deepCopy(DefVertCoord->MaxLayerCell, DefVertCoord->MaxLayerCellH);
+      Kokkos::fence();
+
+      /// Reset min/max layer arrays and set masks
+      DefVertCoord->minMaxLayerEdge(DefHalo);
+      DefVertCoord->minMaxLayerVertex(DefHalo);
+      DefVertCoord->setMasks();
+
+      Err = 0;
+      for (int ICell = 0; ICell < NCellsOwned; ++ICell) {
+         /// The sum of the masks in a column is the number of active
+         /// layers in that column
+         Real Expected = DefVertCoord->MaxLayerCellH(ICell) -
+                         DefVertCoord->MinLayerCellH(ICell) + 1._Real;
+         Real Sum = 0.;
+         for (int K = 0; K < NVertLayers; ++K) {
+            Sum += DefVertCoord->CellMaskH(ICell, K);
+         }
+
+         Real Diff = std::abs(Sum - Expected);
+         if (Diff > 1e-10) {
+            Err += 1;
+         }
+      }
+
+      for (int IEdge = 0; IEdge < NEdgesOwned; ++IEdge) {
+         Real Expected;
+
+         /// The sum of the masks along an edge is the number of layers with
+         /// active cells on both sides.
+         if ((DefMesh->CellsOnEdgeH(IEdge, 1) == NCellsAll) ||
+             (DefMesh->CellsOnEdgeH(IEdge, 0) == NCellsAll)) {
+            Expected = 0.;
+         } else {
+            Expected = DefVertCoord->MaxLayerEdgeTopH(IEdge) -
+                       DefVertCoord->MinLayerEdgeBotH(IEdge) + 1._Real;
+         }
+         Real Sum = 0.;
+         for (int K = 0; K < NVertLayers; ++K) {
+            Sum += DefVertCoord->EdgeMaskH(IEdge, K);
+         }
+         Real Diff = std::abs(Sum - Expected);
+         if (Diff > 1e-10) {
+            Err += 1;
+         }
+      }
+
+      for (int IVertex = 0; IVertex < NVerticesOwned; ++IVertex) {
+         Real Expected = DefVertCoord->MaxLayerVertexBotH(IVertex) -
+                         DefVertCoord->MinLayerVertexTopH(IVertex) + 1._Real;
+
+         Real Sum = 0.;
+         for (int K = 0; K < NVertLayers; ++K) {
+            Sum += DefVertCoord->VertexMaskH(IVertex, K);
+         }
+         Real Diff = std::abs(Sum - Expected);
+         if (Diff > 1e-10) {
+            Err += 1;
+         }
+      }
+
+      /// Determine test pass/fail
+      if (Err == 0) {
+         LOG_INFO("VertCoordTest: setMasks PASS");
+      } else {
+         ErrAll += Error(ErrorCode::Fail, "VertCoordTest: setMasks FAIL");
       }
 
       // Finalize Omega objects

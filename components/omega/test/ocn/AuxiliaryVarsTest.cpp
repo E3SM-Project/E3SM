@@ -616,7 +616,8 @@ int testVelocityDel2AuxVars(Real RTol) {
 
    const auto Decomp = Decomp::getDefault();
    const auto Mesh   = HorzMesh::getDefault();
-   VelocityDel2AuxVars VelocityDel2Aux("", Mesh, NVertLayers);
+   const auto VCoord = VertCoord::getDefault();
+   VelocityDel2AuxVars VelocityDel2Aux("", Mesh, VCoord, NVertLayers);
 
    // Use analytical expressions to compute inputs
 
@@ -722,9 +723,10 @@ int testTracerAuxVars(const Array2DReal &LayerThickCell,
    TestSetup Setup;
    int Err = 0;
 
-   const auto Mesh = HorzMesh::getDefault();
+   const auto Mesh   = HorzMesh::getDefault();
+   const auto VCoord = VertCoord::getDefault();
 
-   TracerAuxVars TracerAux("", Mesh, NVertLayers, NTracers);
+   TracerAuxVars TracerAux("", Mesh, VCoord, NVertLayers, NTracers);
    TracerAux.TracersOnEdgeChoice = FluxTracerEdgeOption::Upwind;
 
    // Set input arrays
@@ -824,25 +826,20 @@ int initAuxVarsTest(const std::string &mesh) {
       LOG_ERROR("AuxVarsTest: error initializing default halo");
    }
 
-   VertCoord::init1();
-   // Reset NVertLayers to the test value
-   auto *DefVertCoord        = VertCoord::getDefault();
-   DefVertCoord->NVertLayers = NVertLayers;
-   Dimension::destroy("NVertLayers");
-   std::shared_ptr<Dimension> VertDim =
-       Dimension::create("NVertLayers", NVertLayers);
-
    HorzMesh::init();
+
+   // initialize vertical coordinate, do not read stream and use local
+   // NVertLayers value
+   VertCoord::init(false, NVertLayers);
 
    return Err;
 }
 
 void finalizeAuxVarsTest() {
    VertCoord::clear();
+   HorzMesh::clear();
    Field::clear();
    Dimension::clear();
-   HorzMesh::clear();
-   VertCoord::clear();
    Halo::clear();
    Decomp::clear();
    MachEnv::removeAll();

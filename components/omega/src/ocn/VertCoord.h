@@ -15,6 +15,7 @@
 #include "DataTypes.h"
 #include "Decomp.h"
 #include "Error.h"
+#include "Halo.h"
 #include "HorzMesh.h"
 #include "Logging.h"
 #include "MachEnv.h"
@@ -24,6 +25,11 @@
 #include <string>
 
 namespace OMEGA {
+
+enum class MovementWeightType {
+   Fixed,  /// Distribute perturbations in top level
+   Uniform /// Uniform stretching
+};
 
 class VertCoord {
 
@@ -42,6 +48,9 @@ class VertCoord {
    Array2DI4 CellsOnEdge;
    Array2DI4 CellsOnVertex;
 
+   // Choice of VertCoorMovementWeight type
+   MovementWeightType MvmtWgtChoice;
+
    std::string MeshFileName;
    int MeshFileID;
 
@@ -51,8 +60,12 @@ class VertCoord {
    // methods
 
    /// construct a new vertical coordinate object
-   VertCoord(const std::string &Name, ///< [in] Name for new VertCoord
-             const Decomp *MeshDecomp ///< [in] associated Decomp
+   VertCoord(const std::string &Name,  ///< [in] Name for new VertCoord
+             const Decomp *MeshDecomp, ///< [in] associated Decomp
+             Halo *MeshHalo,           ///< [in] mesh halo exchanger
+             Config *Options,          ///< [in] configuration options
+             const bool ReadStream,    ///< [in] logical to read stream
+             const int NVertLayers     ///< [in] int to set vertical dim
    );
 
    /// define field metadata
@@ -112,6 +125,20 @@ class VertCoord {
    HostArray1DReal VertCoordMovementWeightsH;
    HostArray2DReal RefLayerThicknessH;
 
+   // Masks
+   Array2DReal EdgeMask;        ///< Mask to determine if computations should be
+                                ///  done on edge
+   HostArray2DReal EdgeMaskH;   ///< Mask to determine if computations should be
+                                ///  done on edge
+   Array2DReal CellMask;        ///< Mask to determine if computations should be
+                                ///  done on cell
+   HostArray2DReal CellMaskH;   ///< Mask to determine if computations should be
+                                ///  done on cell
+   Array2DReal VertexMask;      ///< Mask to determine if computations should be
+                                ///  done on vertex
+   HostArray2DReal VertexMaskH; ///< Mask to determine if computations should be
+                                ///  done on vertex
+
    // BottomDepth read from mesh file
    Array1DReal BottomDepth;
 
@@ -137,22 +164,18 @@ class VertCoord {
 
    // methods
 
-   /// 1st phase of initialization for default vertical coordinate
-   static void init1();
-
-   /// 2nd phase of initialization for default vertical coordinate
-   static void init2();
+   /// Initialization of default vertical coordinate
+   static void init(const bool ReadStream = true, const int NVertLayers = 0);
 
    /// Creates a new vertical coordinate object by calling the constructor and
-   /// puts it in the AllVertCoords map. This object is mostly empty and must
-   /// completed by completeSetup.
+   /// puts it in the AllVertCoords map.
    static VertCoord *
-   create(const std::string &Name, /// [in] name for new VertCoord
-          const Decomp *MeshDecomp /// [in] associated Decomp
-   );
-
-   /// Read InitialVertCoord stream and complete initialization
-   void completeSetup(Config *Options /// [in] configuration options
+   create(const std::string &Name,      /// [in] name for new VertCoord
+          const Decomp *MeshDecomp,     /// [in] associated Decomp
+          Halo *MeshHalo,               /// [in] mesh halo exchanger
+          Config *Options,              /// [in] configuration options
+          const bool ReadStream = true, /// [in] optional logical to read stream
+          const int NVertLayers = 0 /// [in] optional int to set vertical dim
    );
 
    /// Copy member arrays from device to host
@@ -176,11 +199,14 @@ class VertCoord {
    /// Retreive a VertCoord by name
    static VertCoord *get(std::string name);
 
-   // Variable initialization methods
-   void minMaxLayerEdge();
-   void minMaxLayerVertex();
-   void initMovementWeights(Config *Options ///< [in] configuration options
-   );
+   // Array initialization methods
+   void setStreamArrays(const bool ReadStream, Halo *MeshHalo);
+   void minMaxLayerEdge(Halo *MeshHalo);
+   void minMaxLayerVertex(Halo *MeshHalo);
+   void initMovementWeights();
+
+   /// Initialize computational masks
+   void setMasks();
 
    /// Sums the mass thickness times g from the top layer down, starting with
    /// the surface pressure

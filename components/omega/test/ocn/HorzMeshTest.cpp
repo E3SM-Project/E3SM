@@ -20,7 +20,6 @@
 #include "MachEnv.h"
 #include "OmegaKokkos.h"
 #include "Pacer.h"
-#include "VertCoord.h"
 #include "mpi.h"
 
 #include <iostream>
@@ -59,9 +58,6 @@ int initHorzMeshTest() {
    Err = Halo::init();
    if (Err != 0)
       LOG_ERROR("HorzMeshTest: error initializing default halo");
-
-   // Initialize the vertical coordinate (phase 1)
-   VertCoord::init1();
 
    // Initialize the default mesh
    HorzMesh::init();
@@ -773,7 +769,6 @@ int main(int argc, char *argv[]) {
       }
       // Finalize Omega objects
       HorzMesh::clear();
-      VertCoord::clear();
       Dimension::clear();
       Halo::clear();
       Decomp::clear();

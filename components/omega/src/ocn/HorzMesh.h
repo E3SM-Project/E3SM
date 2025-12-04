@@ -14,7 +14,6 @@
 #include "Decomp.h"
 #include "MachEnv.h"
 #include "OmegaKokkos.h"
-#include "VertCoord.h"
 
 #include <memory>
 #include <string>
@@ -68,8 +67,7 @@ class HorzMesh {
 
    /// Construct a new local mesh for a given decomposition
    HorzMesh(const std::string &Name, ///< [in] Name for mesh
-            Decomp *Decomp,          ///< [in] Decomposition for mesh
-            I4 InNVertLayers         ///< [in] num vertical layers
+            Decomp *Decomp           ///< [in] Decomposition for mesh
    );
 
    // Forbid copy and move construction
@@ -80,8 +78,6 @@ class HorzMesh {
    // KOKKOS_LAMBDA does not allow to have parallel_* functions inside of a
    // private function.
    void computeEdgeSign();
-
-   void setMasks(int NVertLayers);
 
    void setMeshScaling();
 
@@ -96,8 +92,6 @@ class HorzMesh {
    // Sizes and global IDs
    // Note that all sizes are actual counts (1-based) so that loop extents
    // should always use the 0:NCellsXX-1 form.
-
-   I4 NVertLayers; ///< number of vertical layers
 
    Array1DI4 NCellsHalo;      ///< num cells owned+halo for halo layer
    HostArray1DI4 NCellsHaloH; ///< num cells owned+halo for halo layer
@@ -251,12 +245,6 @@ class HorzMesh {
    Array2DReal EdgeSignOnVertex;      ///< Sign of vector connecting vertices
    HostArray2DReal EdgeSignOnVertexH; ///< Sign of vector connecting vertices
 
-   // Masks
-   Array2DReal EdgeMask;      ///< Mask to determine if computations should be
-                              ///  done on edge
-   HostArray2DReal EdgeMaskH; ///< Mask to determine if computations should be
-                              ///  done on edge
-
    // Mesh scaling
    Array1DReal MeshScalingDel2;      /// Coef to Laplacian mixing terms
    HostArray1DReal MeshScalingDel2H; /// Coef to Laplacian mixing terms
@@ -272,8 +260,7 @@ class HorzMesh {
    /// Creates a new mesh by calling the constructor and puts it in the
    /// AllHorzMeshes map
    static HorzMesh *create(const std::string &Name, ///< [in] Name for mesh
-                           Decomp *Decomp,  ///< [in] Decomposition for mesh
-                           I4 InNVertLayers ///< [in] num vertival layers
+                           Decomp *Decomp ///< [in] Decomposition for mesh
    );
 
    /// Destructor - deallocates all memory and deletes a HorzMesh

@@ -4,11 +4,23 @@
 
 ### Initialization
 
-The default `VertCoord` instance is  created by the `init` method, which assumes that `Decomp` has already been initialized.
+The default `VertCoord` instance is created by the `init` method, which assumes that `Decomp` has already been initialized.
 ```
 Decomp::init();
 VertCoord::init();
 ```
+The `init` method accepts two optional arguments with default values:
+```
+VertCoord::init(const bool ReadStream = true, const int NVertLayers = 0)
+```
+These arguments provide flexibility, particularly for unit testing. When `init(false)` is used, the method skips reading
+the `InitialVertCoord` stream. This is useful for unit tests that rely on meshes lacking the fields required by that stream.
+In this case, the min/max layer arrays are initialized with default values based on the number of vertical layers, and
+`bottomDepth` remains uninitialized. Some tests may utilize a specific number of vertical layers that differs from what is
+defined in the mesh file. To handle this, the `VertCoord` can be initialized with `init(false, LocNVertLayers)` to explicitly
+set the number of vertical layers. An argument for `ReadStream` must be provided in order to explicitly set `NVertLayers`.
+For example, `init(42)` is invalid, `init(false, 42)` must be called instead.
+
 The default instance can be retrieved by:
 ```
 auto *DefVertCoord = VertCoord::getDefault();
@@ -16,9 +28,12 @@ auto *DefVertCoord = VertCoord::getDefault();
 
 Additional instances can be created by calling the `create` method.
 ```
-VertCoord *VertCoord::create(const std::string &Name,  ///< [in] Name for vertical coordinate
-                             const Decomp *MeshDecomp, ///< [in] Decomp for mesh
-                             Config *Options)          ///< [in] Confiuration options
+VertCoord *VertCoord::create(const std::string &Name,      ///< [in] Name for vertical coordinate
+                             const Decomp *MeshDecomp,     ///< [in] Decomp for mesh
+                             Config *Options,              ///< [in] Confiuration options
+                             const bool ReadStream = true, ///< [in] optional logical to read stream
+                             const int NVertLayers = 0     ///< [in] optional int to set vertical dim
+)
 ```
 This calls the constructor and places the instance in a map that can be used to retrieve the instance by name:
 ```
