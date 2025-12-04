@@ -508,7 +508,8 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
    ! calculate updraft and downdraft properties
 
    call zm_cloud_properties(pcols, lengath, pver, pverp, msg, zm_param%limcnv, &
-                            pg, z_mid_g, z_int_g, tg, sg, shat, qg, ug, vg, landfracg, tpertg, &
+                            pg, z_mid_g, z_int_g, tg, sg, shat, qg, &
+                            landfracg, tpertg, &
                             maxg, lelg, jt, jlcl, j0, jd, &
                             mu, eu, du, md, ed, mc, &
                             su, qu, qlg, sd, qd,  &
@@ -535,7 +536,7 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
 
    !----------------------------------------------------------------------------
 
-   call zm_closure(pcols, ncol, pver, pverp, msg, cape_threshold_alt, &
+   call zm_closure(pcols, lengath, pver, pverp, msg, cape_threshold_alt, &
                    lclg, lelg, jt, maxg, dsubcld, &
                    z_mid_g, z_int_g, pg, dp, tg, &
                    sg, qg, qs, qlg, shat, qhat, &
@@ -1216,7 +1217,8 @@ end subroutine zm_downdraft_properties
 !===================================================================================================
 
 subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
-                               p_mid, z_mid, z_int, t_mid, s, shat, q, u, v, landfrac, tpertg, &
+                               p_mid, z_mid, z_int, t_mid, s, shat, q, &
+                               landfrac, tpertg, &
                                jb, lel, jt, jlcl, j0, jd, &
                                mu, eu, du, md, ed, mc, &
                                su, qu, ql, sd, qd,  &
@@ -1241,8 +1243,6 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
    real(r8), dimension(pcols,pver), intent(in ) :: s              ! env dry static energy of env [K] (normalized)
    real(r8), dimension(pcols,pver), intent(in ) :: shat           ! interface values of dry stat energy
    real(r8), dimension(pcols,pver), intent(in ) :: q              ! env specific humidity
-   real(r8), dimension(pcols,pver), intent(in ) :: u              ! env zonal wind
-   real(r8), dimension(pcols,pver), intent(in ) :: v              ! env meridional wind
    real(r8), dimension(pcols),      intent(in ) :: landfrac       ! Land fraction
    real(r8), dimension(pcols),      intent(in ) :: tpertg         ! PBL temperature perturbation
    integer,  dimension(pcols),      intent(in ) :: jb             ! updraft base level
@@ -1889,7 +1889,7 @@ subroutine zm_closure(pcols, ncol, pver, pverp, msg, cape_threshold_in, &
    real(r8), dimension(pcols,pver), intent(in ) :: dp                ! pressure thickness of layers
    real(r8), dimension(pcols,pver), intent(in ) :: t_mid             ! ambient temperature
    real(r8), dimension(pcols,pver), intent(in ) :: s                 ! ambient dry static energy (normalized)
-   real(r8), dimension(pcols,pver), intent(in ) :: q                 ! ambient spec humidity
+   real(r8), dimension(pcols,pver), intent(in ) :: q                 ! ambient specific humidity
    real(r8), dimension(pcols,pver), intent(in ) :: qs                ! ambient saturation specific humidity
    real(r8), dimension(pcols,pver), intent(in ) :: ql                ! ambient liquid water mixing ratio
    real(r8), dimension(pcols,pver), intent(in ) :: shat              ! env. normalized dry static energy at intrfcs
