@@ -173,9 +173,11 @@ void PressureGrad::computePressureGrad(Array2DReal &Tend,
 
    if (PressureGradChoice == PressureGradType::Centered) {
 
+      // computes alpha*p*grad(z) term at edge interfaces
       computeInterfaceProduct(PressureMid, SpecVol,
                               LayerThick, ZInterface);
 
+      // computes centered geopotential and pressure gradient tendency
       parallelForOuter(
           "pgrad-centered", {NEdgesAll},
           KOKKOS_LAMBDA(I4 IEdge, const TeamMember &Team) {
@@ -192,13 +194,6 @@ void PressureGrad::computePressureGrad(Array2DReal &Tend,
                  });
           });
 
-      //parallelFor(
-      //    "pgrad-centered", {NEdgesAll, NChunks},
-      //    KOKKOS_LAMBDA(I4 IEdge, I4 KChunk) {
-      //       LocCenteredPGrad(Tend, IEdge, KChunk, PressureMid,
-      //                        Geopotential, LayerThick,
-      //                        LocInterfaceProduct, SpecVol);
-      //    });
    } else {
       parallelForOuter(
           "pgrad-highorder", {NEdgesAll},
@@ -215,29 +210,24 @@ void PressureGrad::computePressureGrad(Array2DReal &Tend,
                  });
           });
 
-      //parallelFor(
-      //    "pgrad-highorder", {NEdgesAll, NChunks},
-      //    KOKKOS_LAMBDA(I4 IEdge, I4 KChunk) {
-      //       LocHighOrderPGrad(Tend, IEdge, KChunk, PressureMid, Geopotential,
-      //                         SpecVol);
-      //    });
    }
 } // end compute pressure gradient
 
 //------------------------------------------------------------------------------
-// Compute interface product needed for centered pressure gradient
+// Compute the alpha*p*grad(z) product at edge interfaces that is
+// needed for the centered pressure gradient
 void PressureGrad::computeInterfaceProduct(
     const Array2DReal &PressureMid,
     const Array2DReal &SpecVol,
     const Array2DReal &LayerThick,
     const Array2DReal &ZInterface) {
 
-
    OMEGA_SCOPE(LocCellsOnEdge, CellsOnEdge);
    OMEGA_SCOPE(LocDcEdge, DcEdge);
    OMEGA_SCOPE(LocInterfaceProduct, InterfaceProduct);
    OMEGA_SCOPE(LocMinLayerEdgeBot, MinLayerEdgeBot);
    OMEGA_SCOPE(LocMaxLayerEdgeTop, MaxLayerEdgeTop);
+
    parallelForOuter(
        "compute-interface-product", {NEdgesAll},
        KOKKOS_LAMBDA(I4 IEdge, const TeamMember &Team) {
@@ -247,6 +237,7 @@ void PressureGrad::computeInterfaceProduct(
           const I4 ICell0 = LocCellsOnEdge(IEdge, 0);
           const I4 ICell1 = LocCellsOnEdge(IEdge, 1);
 
+          // Two-point average for surface interface product
           LocInterfaceProduct(IEdge, KMin) =
               PressureMid(ICell1, KMin) * SpecVol(ICell1, KMin) *
                   LayerThick(ICell1, KMin) +
@@ -302,36 +293,7 @@ void PressureGrad::computeInterfaceProduct(
           LocInterfaceProduct(IEdge, KMax + 1) *=
                 (ZInterface(ICell1, KMax + 1) - ZInterface(ICell0, KMax + 1)) /
                 LocDcEdge(IEdge);
-    });
-   //parallelFor(
-   //    "compute-interface-product", {NEdgesAll, NVertLayersP1},
-   //    KOKKOS_LAMBDA(I4 IEdge, I4 K) {
-   //       const I4 ICell0 = LocCellsOnEdge(IEdge, 0);
-   //       const I4 ICell1 = LocCellsOnEdge(IEdge, 1);
-
-   //      if (K == 0) {
-   //         LocInterfaceProduct(IEdge, K) = 
-   //              PressureMid(ICell1, K) * SpecVol(ICell1, K) * LayerThick(ICell1, K) +
-   //              PressureMid(ICell0, K) * SpecVol(ICell0, K) * LayerThick(ICell0, K);
-   //         LocInterfaceProduct(IEdge, K) /= (LayerThick(ICell1, K) + LayerThick(ICell0, K));
-
-   //      } else if (K == NVertLayers) {
-   //         LocInterfaceProduct(IEdge, K) = 
-   //              PressureMid(ICell1, K-1) * SpecVol(ICell1, K-1) * LayerThick(ICell1, K-1) +
-   //              PressureMid(ICell0, K-1) * SpecVol(ICell0, K-1) * LayerThick(ICell0, K-1);
-   //         LocInterfaceProduct(IEdge, K) /= (LayerThick(ICell1, K-1) + LayerThick(ICell0, K-1));
-
-   //      } else {
-   //         LocInterfaceProduct(IEdge, K) = 
-   //              PressureMid(ICell1, K) * SpecVol(ICell1, K) * LayerThick(ICell1, K) +
-   //              PressureMid(ICell0, K) * SpecVol(ICell0, K) * LayerThick(ICell0, K) + 
-   //              PressureMid(ICell1, K-1) * SpecVol(ICell1, K-1) * LayerThick(ICell1, K-1) +
-   //              PressureMid(ICell0, K-1) * SpecVol(ICell0, K-1) * LayerThick(ICell0, K-1);
-   //         LocInterfaceProduct(IEdge, K) /= (LayerThick(ICell1, K) + LayerThick(ICell0, K) +
-   //                                           LayerThick(ICell1, K-1) + LayerThick(ICell0, K-1));}
-
-   //      LocInterfaceProduct(IEdge, K) *= (ZInterface(ICell1, K) - ZInterface(ICell0, K)) / LocDcEdge(IEdge);
-   //    });
+   });
 
 } // end compute interface product
 

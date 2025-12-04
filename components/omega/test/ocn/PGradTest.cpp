@@ -117,6 +117,9 @@ int main(int argc, char *argv[]) {
       Array2DReal PressureMidOld("PressureMidOld", DefMesh->NCellsSize, VCoord->NVertLayers);
       Array1DReal SurfacePressure("SurfacePressure", DefMesh->NCellsSize);
 
+      I4 NEdgesAll = DefMesh->NEdgesAll;
+      I4 NCellsAll = DefMesh->NCellsAll;
+
       I4 NVertLayers = 60;
       Real dC = 30000.0_Real;
       for (int refinement = 0; refinement < 4; ++refinement) {
@@ -127,22 +130,26 @@ int main(int argc, char *argv[]) {
 
          auto &MinLayerCell = VCoord->MinLayerCell;
          auto &MaxLayerCell = VCoord->MaxLayerCell;
-         auto &MinLayerEdgeBot = VCoord->MinLayerEdgeBot;
-         auto &MaxLayerEdgeTop = VCoord->MaxLayerEdgeTop;
-         parallelFor({DefMesh->NCellsAll}, KOKKOS_LAMBDA(int i) {
+         parallelFor({NCellsAll}, KOKKOS_LAMBDA(int i) {
             MinLayerCell(i) = 0;
             MaxLayerCell(i) = NVertLayers - 1;
+         });
+
+         auto &MinLayerEdgeBot = VCoord->MinLayerEdgeBot;
+         auto &MaxLayerEdgeTop = VCoord->MaxLayerEdgeTop;
+         parallelFor({NEdgesAll}, KOKKOS_LAMBDA(int i) {
             MinLayerEdgeBot(i) = 0;
-            MaxLayerEdgeTop(i) = NVertLayers - 1;
+            MaxLayerEdgeTop(i) = NVertLayers - 1; 
+            //MaxLayerEdgeTop(i) = 4;
          });
 
          auto &CellsOnEdge = DefMesh->CellsOnEdge;
          auto &DcEdge = DefMesh->DcEdge;
          auto &EdgeMask = DefMesh->EdgeMask;
-         parallelFor({DefMesh->NEdgesAll}, KOKKOS_LAMBDA(int e) {
-            CellsOnEdge(e, 0)= 0;
-            CellsOnEdge(e, 1)= 1;
-            DcEdge(e) = dC;
+         parallelFor({NEdgesAll}, KOKKOS_LAMBDA(int i) {
+            CellsOnEdge(i, 0)= 0;
+            CellsOnEdge(i, 1)= 1;
+            DcEdge(i) = dC;
          });     
 
          // Fetch reference desnity from Config
@@ -173,7 +180,7 @@ int main(int argc, char *argv[]) {
          auto &ZMid = VCoord->ZMid;
          Real tilt_factor = 0.495_Real;
          //Real tilt_factor = 0.45_Real;
-         parallelFor({DefMesh->NCellsAll}, KOKKOS_LAMBDA(int i) {
+         parallelFor({NCellsAll}, KOKKOS_LAMBDA(int i) {
             ZInterface(i, NVertLayers) = ZBottom;
             SurfacePressure(i) = 0.0_Real;
             BottomDepth(i) = 0.0_Real;
@@ -197,7 +204,7 @@ int main(int argc, char *argv[]) {
 
          // set simple temperature and salinity profiles
          auto &SpecVol = DefEos->SpecVol;
-         parallelFor({DefMesh->NCellsAll, NVertLayers}, KOKKOS_LAMBDA(int i, int k) {
+         parallelFor({NCellsAll, NVertLayers}, KOKKOS_LAMBDA(int i, int k) {
             Real T0 = 30.0;
             Real TB = 5.0;
             Real S0 = 30.0;
@@ -213,7 +220,7 @@ int main(int argc, char *argv[]) {
             SpecVolOld(i, k) = SpecVol(i, k);
          });
 
-         // iterate to converge SpecVol
+         // Iterate to converge LayerThick, SpecVol, PressureMid
          auto &PressureMid = VCoord->PressureMid;
          VCoord->computePressure(LayerThick, SurfacePressure);
          deepCopy(PressureMidOld, PressureMid);
@@ -224,13 +231,13 @@ int main(int argc, char *argv[]) {
             DefEos->computeSpecVol(Temp, Salinity, PressureMid);
 
             // compute psuedo thickness from specific volume
-            parallelFor({DefMesh->NCellsAll, NVertLayers}, KOKKOS_LAMBDA(int i, int k) {
+            parallelFor({NCellsAll, NVertLayers}, KOKKOS_LAMBDA(int i, int k) {
                LayerThick(i, k) = 1.0_Real / (SpecVol(i, k) * Density0) * (ZInterface(i, k) - ZInterface(i, k + 1));
             });
 
             // compute difference from previous iteration
             Real max_value = 0.0_Real;
-            parallelReduce({DefMesh->NCellsAll, NVertLayers},
+            parallelReduce({NCellsAll, NVertLayers},
                            KOKKOS_LAMBDA(int i, int k, Real &max) {
                               Real diff = Kokkos::abs(SpecVol(i, k) - SpecVolOld(i, k));
                               if (diff > max) max = diff;
@@ -241,17 +248,20 @@ int main(int argc, char *argv[]) {
                LOG_INFO("converged: max diff = {}", max_value);
                break;
             } else {
-               parallelFor({DefMesh->NCellsAll, NVertLayers}, KOKKOS_LAMBDA(int i, int k) {
+               parallelFor({NCellsAll, NVertLayers}, KOKKOS_LAMBDA(int i, int k) {
                   SpecVolOld(i, k) = SpecVol(i, k);
                });
             }
 
          }
+        
+         // compute pressure once more with converged LayerThick
+         VCoord->computePressure(LayerThick, SurfacePressure);
 
          // compute geopotential
          //VCoord->computeZHeight(LayerThick, SpecVol);
-         Array1DReal SelfAttractionLoading("SelfAttractionLoading", DefMesh->NCellsAll);
-         Array1DReal TidalPotential("TidalPotential", DefMesh->NCellsAll);
+         Array1DReal SelfAttractionLoading("SelfAttractionLoading", NCellsAll);
+         Array1DReal TidalPotential("TidalPotential", NCellsAll);
          deepCopy(TidalPotential, 0.0_Real);
          deepCopy(SelfAttractionLoading, 0.0_Real);
          VCoord->computeGeopotential(TidalPotential, SelfAttractionLoading);
@@ -266,18 +276,19 @@ int main(int argc, char *argv[]) {
          deepCopy(Tend, 0.0_Real);
          DefPGrad->computePressureGrad(Tend, DefState, VCoord, DefEos, TimeLevel);
          Real max_value = 0.0_Real;
-         parallelReduce({DefMesh->NEdgesAll, NVertLayers - 2},
+         parallelReduce({NEdgesAll, NVertLayers - 2},
                         KOKKOS_LAMBDA(int i, int k, Real &max) {
                            Real val = Kokkos::abs(Tend(i + 1, k));
                            if (val > max) max = val;
                         }, Kokkos::Max<Real>(max_value)  );
          Real sum_value = 0.0_Real;
-         parallelReduce({DefMesh->NEdgesAll, NVertLayers - 2},
+         parallelReduce({NEdgesAll, NVertLayers - 2},
                         KOKKOS_LAMBDA(int i, int k, Real &lsum) {
                            lsum += Tend(i + 1, k) * Tend(i + 1, k);
                         }, Kokkos::Sum<Real>(sum_value)  );
-         LOG_INFO("refinement level {}: max |Tend| = {}, average Tend = {}", refinement, max_value, std::sqrt(sum_value) / (DefMesh->NEdgesAll * (NVertLayers - 2)));
+         LOG_INFO("refinement level {}: max |Tend| = {}, average Tend = {}", refinement, max_value, std::sqrt(sum_value) / (NEdgesAll * (NVertLayers - 2)));
 
+         // coarsen for next iteration
          dC = dC * 2.0_Real;
          NVertLayers = NVertLayers / 2;
 
