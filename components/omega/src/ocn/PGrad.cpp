@@ -195,6 +195,8 @@ void PressureGrad::computePressureGrad(Array2DReal &Tend,
           });
 
    } else {
+      
+      // computes high-order geopotential and pressure gradient tendency
       parallelForOuter(
           "pgrad-highorder", {NEdgesAll},
           KOKKOS_LAMBDA(I4 IEdge, const TeamMember &Team) {

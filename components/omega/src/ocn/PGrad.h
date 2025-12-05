@@ -20,12 +20,12 @@ namespace OMEGA {
 
 enum class PressureGradType { Centered, HighOrder1, HighOrder2 };
 
-/// Centered pressure gradient functor
+// Centered pressure gradient functor
 class PressureGradCentered {
  public:
    bool Enabled;
 
-   /// constructor declaration
+   // constructor declaration
    PressureGradCentered(const HorzMesh *Mesh, ///< [in] Horizontal mesh
                        const VertCoord *VCoord  ///< [in] Vertical coordinate
                        );
@@ -73,12 +73,12 @@ class PressureGradCentered {
    Array1DI4 MaxLayerEdgeTop;
 };
 
-/// High-order pressure gradient functor (placeholder)
+// High-order pressure gradient functor (placeholder)
 class PressureGradHighOrder {
  public:
    bool Enabled;
 
-   /// constructor declaration
+   // constructor declaration
    PressureGradHighOrder(const HorzMesh *Mesh, ///< [in] Horizontal mesh
                         const VertCoord *VCoord ///< [in] Vertical coordinate
                         );
@@ -106,44 +106,38 @@ class PressureGradHighOrder {
    Array1DI4 MaxLayerEdgeTop;
 };
 
-/// Pressure gradient manager class
+// Pressure gradient manager class
 class PressureGrad {
  public:
-   /// Initialize the default instance
+   // Initialize the default instance
    static void init();
 
-   /// Deallocates arrays and deletes instance
-   static void clear();
+   // Create a new pressure gradient object and add to map
+   static PressureGrad *create(const std::string &Name, const HorzMesh *Mesh,
+                               const VertCoord *VCoord, Config *Options);
 
-   /// Remove pressure gradient object by name
-   static void erase(const std::string &Name ///< [in]
-   );
-
-   /// Get the default instance
+   // Get the default instance
    static PressureGrad *getDefault();
 
-   /// Get instance by name
+   // Get instance by name
    static PressureGrad *get(const std::string &Name ///< [in]
+   );
+
+   // Deallocates arrays and deletes instance
+   static void clear();
+
+   // Remove pressure gradient object by name
+   static void erase(const std::string &Name ///< [in]
    );
 
    // Destructor
    ~PressureGrad();
 
-   Array2DReal InterfaceProduct;
-
-   /// Compute pressure gradient tendencies and add into Tend array
+   // Compute pressure gradient tendencies and add into Tend array
    void computePressureGrad(Array2DReal &Tend, const OceanState *State,
                             const VertCoord *VCoord, const Eos *EqState,
                             const int TimeLevel);
 
-  void computeInterfaceProduct(const Array2DReal &PressureMid,
-                              const Array2DReal &SpecVol,
-                              const Array2DReal &LayerThick,
-                              const Array2DReal &ZInterface);
-
-   /// Create a new pressure gradient object and add to map
-   static PressureGrad *create(const std::string &Name, const HorzMesh *Mesh,
-                               const VertCoord *VCoord, Config *Options);
 
  private:
    // Construct a new pressure gradient object
@@ -173,11 +167,20 @@ class PressureGrad {
    PressureGradCentered CenteredPGrad;
    PressureGradHighOrder HighOrderPGrad;
 
+   // Array for interface product needed in centered pressure gradient
+   Array2DReal InterfaceProduct;
+
    // Choice from config
    PressureGradType PressureGradChoice = PressureGradType::Centered;
 
    // Map of all pressure gradient objects by name
    static std::map<std::string, std::unique_ptr<PressureGrad>> AllPGrads;
+
+  // Compute interface product needed for centered pressure gradient
+  void computeInterfaceProduct(const Array2DReal &PressureMid,
+                              const Array2DReal &SpecVol,
+                              const Array2DReal &LayerThick,
+                              const Array2DReal &ZInterface);
 
 }; // end class PressureGrad
 
