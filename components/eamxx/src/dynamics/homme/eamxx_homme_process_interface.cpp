@@ -583,9 +583,6 @@ void HommeDynamics::homme_pre_process (const double dt) {
   auto FT = m_helper_fields.at("FT_phys").get_view<Pack**>();
   auto FM = m_helper_fields.at("FM_phys").get_view<Pack***>();
 
-//  auto eddy_diff_heat = get_field_in("eddy_diff_heat",pgn).get_view<const Pack**>();
-//  auto eddy_diff_mom = get_field_in("eddy_diff_mom",pgn).get_view<const Pack**>();
-
   // If there are other atm procs updating the vertical velocity,
   // then we need to compute forcing for w as well
   Kokkos::parallel_for(KT::RangePolicy(0,ncols*npacks),
@@ -947,14 +944,11 @@ void HommeDynamics::init_homme_views () {
   m_helper_fields.at("FM_dyn").get_component(2).deep_copy(0);
 
   using turb_type = std::remove_reference<decltype(derived.m_turb_diff_mom)>::type;
-  auto Km_in = m_helper_fields.at("Km_dyn").get_viewHomme::Scalar*[NP][NP][NVL]();
-  auto Kh_in = m_helper_fields.at("Kh_dyn").get_viewHomme::Scalar*[NP][NP][NVL]();
+  auto Km_in = m_helper_fields.at("Km_dyn").template get_view<Homme::Scalar**[NP][NP][NVL]>();
+  auto Kh_in = m_helper_fields.at("Kh_dyn").template get_view<Homme::Scalar**[NP][NP][NVL]>();
   derived.m_turb_diff_mom = turb_type(Km_in.data(), nelem);
   derived.m_turb_diff_heat = turb_type(Kh_in.data(), nelem);
 
-  // SHOC horizontal turbulent diffusion
-//  auto Km_in = m_helper_fields.at("Km_dyn").get_view<Homme::Scalar*[NP][NP][NVL]>();
-//  auto Kh_in = m_helper_fields.at("kh_dyn").get_view<Homme::Scalar*[NP][NP][NVL]>();
 }
 
 void HommeDynamics::restart_homme_state () {

@@ -285,7 +285,7 @@ void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real et
     Kokkos::fence();
 
     // Apply horizontal turbulent diffusion using SGS eddy diffusivities
-    apply_shoc_horizontal_diffusion();
+    apply_horizontal_turbulent_diffusion();
 
   } //subcycle
 
@@ -392,8 +392,8 @@ void HyperviscosityFunctorImpl::apply_horizontal_turbulent_diffusion () const
   auto derived = m_derived;
   auto sphere_ops = m_sphere_ops;
 
-  // We’ll reuse the existing hv buffers (m_buffers.*) as scratch
-  // to hold the Laplacians, just like lap_s and lap_v in your Fortran.
+  // Reuse the existing hv buffers (m_buffers.*) as scratch to hold the Laplacians,
+  // just like lap_s and lap_v to mirror original Fortran implementation.
   using MidColumn = decltype(Homme::subview(m_buffers.ttens,0,0,0));
   using IntColumn = decltype(Homme::subview(state.m_w_i,0,0,0,0));
 
@@ -403,8 +403,8 @@ void HyperviscosityFunctorImpl::apply_horizontal_turbulent_diffusion () const
     KernelVariables kv(team, m_tu);
     const int ie = kv.ie;
 
-    // 1) Compute Laplacians on the current state, like your lap_s / lap_v.
-    //    These fill the hv buffers with Lap(state).
+    // 1) Compute Laplacians on the current state, like the lap_s / lap_v
+    // in the original F90 implementaiton.  These fill the hv buffers with Lap(state).
     sphere_ops.laplace_simple(
       kv,
       Homme::subview(state.m_dp3d, ie, m_data.np1),
