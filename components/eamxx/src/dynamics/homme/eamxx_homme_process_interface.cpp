@@ -943,11 +943,15 @@ void HommeDynamics::init_homme_views () {
   // by EAMxx, so we set FM(3)=0 right away
   m_helper_fields.at("FM_dyn").get_component(2).deep_copy(0);
 
-  using turb_type = std::remove_reference<decltype(derived.m_turb_diff_mom)>::type;
-  auto Km_in = m_helper_fields.at("Km_dyn").template get_view<Homme::Scalar**[NP][NP][NVL]>();
-  auto Kh_in = m_helper_fields.at("Kh_dyn").template get_view<Homme::Scalar**[NP][NP][NVL]>();
-  derived.m_turb_diff_mom = turb_type(Km_in.data(), nelem);
-  derived.m_turb_diff_heat = turb_type(Kh_in.data(), nelem);
+  // SGS Eddy diffusivity for momentum
+  auto Km_in = m_helper_fields.at("Km_dyn").template get_view<Homme::Scalar*[NP][NP][NVL]>();
+  using turb_type_mom = std::remove_reference<decltype(derived.m_turb_diff_mom)>::type;
+  derived.m_turb_diff_mom = turb_type_mom(Km_in.data(), nelem);
+
+  // SGS Eddy diffusivity for heat
+  auto Kh_in = m_helper_fields.at("Kh_dyn").template get_view<Homme::Scalar*[NP][NP][NVL]>();
+  using turb_type_heat = std::remove_reference<decltype(derived.m_turb_diff_heat)>::type;
+  derived.m_turb_diff_heat = turb_type_heat(Kh_in.data(), nelem);
 
 }
 
