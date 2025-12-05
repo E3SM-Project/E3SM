@@ -148,7 +148,7 @@ end subroutine zm_gather
 
 !===================================================================================================
 
-subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
+subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, time_step, &
                      t_mid, q_mid_in, omega, p_mid_in, p_int_in, p_del_in, &
                      geos, z_mid_in, z_int_in, pbl_hgt, &
                      tpert, landfrac, t_star, q_star, &
@@ -165,7 +165,7 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
    integer,                         intent(in   ) :: pver            ! number of mid-point levels
    integer,                         intent(in   ) :: pverp           ! number of interface levels
    logical,                         intent(in   ) :: is_first_step   ! flag for first step of run
-   real(r8),                        intent(in   ) :: delt            ! model time-step                   [s]
+   real(r8),                        intent(in   ) :: time_step       ! model time-step                   [s]
    real(r8), dimension(pcols,pver), intent(in   ) :: t_mid           ! temperature                       [K]
    real(r8), dimension(pcols,pver), intent(in   ) :: q_mid_in        ! specific humidity                 [kg/kg]
    real(r8), dimension(pcols,pver), intent(in   ) :: omega           ! vertical pressure velocity        [Pa/s]
@@ -414,7 +414,7 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
                                 lcl_m1, lel_m1, cape_m1, &
                                 zm_const, zm_param, &
                                 cape_calc_msemax_klev, prev_msemax_klev )
-      dcape(:ncol) = (cape(:ncol)-cape_m1(:ncol))/(delt*2._r8)
+      dcape(:ncol) = (cape(:ncol)-cape_m1(:ncol))/time_step
    end if
 
    !----------------------------------------------------------------------------
@@ -562,7 +562,7 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
         mumax(i) = max(mumax(i), mu(i,k)/p_del(i,k))
       end do
       if (mumax(i) > 0._r8) then
-         cld_bass_mass_flux(i) = min(cld_bass_mass_flux(i),0.5_r8/(delt*mumax(i)))
+         cld_bass_mass_flux(i) = min(cld_bass_mass_flux(i),1/(time_step*mumax(i)))
       else
          cld_bass_mass_flux(i) = 0._r8
       end if
@@ -626,7 +626,7 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
    ! conservation check and adjusment
 #ifndef SCREAM_CONFIG_IS_CMAKE
    if (zm_param%zm_microp) then
-      call zm_microphysics_adjust(pcols, lengath, pver, jt, msg, delt, zm_const, &
+      call zm_microphysics_adjust(pcols, lengath, pver, jt, msg, time_step, zm_const, &
                                   p_del, q_mid_g, dl_g, dsdt, dqdt, rprd_g, loc_microp_st)
    end if
 #endif
@@ -640,7 +640,7 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
 #endif
       do i = 1,lengath
          ! q is updated to compute net precip.
-         q_mid(gather_index(i),k) = q_mid_in(gather_index(i),k) + 2._r8*delt*dqdt(i,k)
+         q_mid(gather_index(i),k) = q_mid_in(gather_index(i),k) + time_step*dqdt(i,k)
          qtnd(gather_index(i),k)  = dqdt   (i,k)
          rprd(gather_index(i),k)  = rprd_g (i,k)
          zdu (gather_index(i),k)  = du     (i,k)
@@ -672,13 +672,13 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
    do i = 1,ncol
       do k = pver, msg+1, -1
          if (zm_param%zm_microp) then
-            prec(i) = prec(i) - p_del_in(i,k)*(q_mid(i,k)-q_mid_in(i,k)) - p_del_in(i,k)*(dlf(i,k)+microp_st%dif(i,k)+microp_st%dsf(i,k))*2._r8*delt
+            prec(i) = prec(i) - p_del_in(i,k)*(q_mid(i,k)-q_mid_in(i,k)) - p_del_in(i,k)*(dlf(i,k)+microp_st%dif(i,k)+microp_st%dsf(i,k))*time_step
          else
-            prec(i) = prec(i) - p_del_in(i,k)*(q_mid(i,k)-q_mid_in(i,k)) - p_del_in(i,k)*(dlf(i,k))*2._r8*delt
+            prec(i) = prec(i) - p_del_in(i,k)*(q_mid(i,k)-q_mid_in(i,k)) - p_del_in(i,k)*(dlf(i,k))*time_step
          end if
       end do
       ! obtain final precipitation rate in m/s
-      prec(i) = zm_const%rgrav*max(prec(i),0._r8)/ (2._r8*delt)/1000._r8
+      prec(i) = zm_const%rgrav*max(prec(i),0._r8)/ time_step/1000._r8
    end do
 
    !----------------------------------------------------------------------------
@@ -708,7 +708,7 @@ end subroutine zm_convr
 
 !===================================================================================================
 
-subroutine zm_conv_evap(pcols, ncol, pver, pverp, deltat, &
+subroutine zm_conv_evap(pcols, ncol, pver, pverp, time_step, &
                         p_mid, p_del, t_mid, q_mid, prdprec, cldfrc, &
                         tend_s, tend_q, tend_s_snwprd, tend_s_snwevmlt, &
                         prec, snow, ntprprd, ntsnprd, flxprec, flxsnow, microp_st )
@@ -729,7 +729,7 @@ subroutine zm_conv_evap(pcols, ncol, pver, pverp, deltat, &
    integer,                         intent(in   ) :: ncol               ! actual number of columns
    integer,                         intent(in   ) :: pver               ! number of mid-point vertical levels
    integer,                         intent(in   ) :: pverp              ! number of interface vertical levels
-   real(r8),                        intent(in   ) :: deltat             ! time step                               [s]
+   real(r8),                        intent(in   ) :: time_step          ! model time step                         [s]
    real(r8), dimension(pcols,pver), intent(in   ) :: p_mid              ! midpoint pressure                       [Pa]
    real(r8), dimension(pcols,pver), intent(in   ) :: p_del              ! layer thickness                         [Pa]
    real(r8), dimension(pcols,pver), intent(in   ) :: t_mid              ! temperature                             [K]
@@ -810,9 +810,9 @@ subroutine zm_conv_evap(pcols, ncol, pver, pverp, deltat, &
          else
             ! make sure melting snow doesn't reduce temperature below threshold
             if (t_mid(i,k) > zm_const%tfreez) then
-               dum = -zm_const%latice/zm_const%cpair*flxsnow(i,k)*zm_const%grav/p_del(i,k)*deltat
+               dum = -zm_const%latice/zm_const%cpair*flxsnow(i,k)*zm_const%grav/p_del(i,k)*time_step
                if (t_mid(i,k) + dum .le. zm_const%tfreez) then
-                  dum = (t_mid(i,k)-zm_const%tfreez)*zm_const%cpair/zm_const%latice/deltat
+                  dum = (t_mid(i,k)-zm_const%tfreez)*zm_const%cpair/zm_const%latice/time_step
                   dum = dum/(flxsnow(i,k)*zm_const%grav/p_del(i,k))
                   dum = max(0._r8,dum)
                   dum = min(1._r8,dum)
@@ -837,7 +837,7 @@ subroutine zm_conv_evap(pcols, ncol, pver, pverp, deltat, &
 
          ! Don't let evaporation supersaturate layer (approx). Layer may already be saturated.
          ! Currently does not include heating/cooling change to qs
-         evplimit = max(0._r8, (qs(i,k)-q_mid(i,k)) / deltat)
+         evplimit = max(0._r8, (qs(i,k)-q_mid(i,k)) / time_step)
 
          ! Don't evaporate more than is falling into the layer from above.
          ! Don't evaporate rain formed in this layer, but if precip production

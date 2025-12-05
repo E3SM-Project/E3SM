@@ -632,7 +632,7 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
 
    ! Call the primary Zhang-McFarlane convection parameterization
    call t_startf ('zm_convr')
-   call zm_convr( pcols, ncol, pver, pverp, is_first_step_loc, 0.5*ztodt, &
+   call zm_convr( pcols, ncol, pver, pverp, is_first_step_loc, ztodt, &
                   state%t, state%q(:,:,1), state%omega, &
                   state%pmid, state%pint, state%pdel, &
                   state%phis, state%zm, state%zi, pblh, &
