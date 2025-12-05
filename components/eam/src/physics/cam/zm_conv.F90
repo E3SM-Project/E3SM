@@ -617,8 +617,7 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
    ! compute temperature and moisture changes due to convection.
 
    call zm_calc_output_tend(pcols, lengath, pver, pverp, msg, &
-                            jt, maxg, dsubcld, p_del, &
-                            q_mid_g, q_mid_sat_g, s_int_g, q_int_g, su, qu, &
+                            jt, maxg, dsubcld, p_del, s_int_g, q_int_g, su, qu, &
                             mu, du, md, sd, qd, ql_g, evp_g, cu_g, &
                             dsdt, dqdt, dl_g, &
                             loc_microp_st)
@@ -2049,8 +2048,7 @@ end subroutine zm_closure
 !===================================================================================================
 
 subroutine zm_calc_output_tend(pcols, ncol, pver, pverp, msg, &
-                               jt, mx, dsubcld, p_del, &
-                               q, qs, s_int, q_int, su, qu, &
+                               jt, mx, dsubcld, p_del, s_int, q_int, su, qu, &
                                mu, du, md, sd, qd, ql, evp, cu, &
                                dsdt, dqdt, dl, &
                                loc_microp_st)
@@ -2069,8 +2067,6 @@ subroutine zm_calc_output_tend(pcols, ncol, pver, pverp, msg, &
    integer,  dimension(pcols),      intent(in   ) :: mx           ! level index of updraft base
    real(r8), dimension(pcols),      intent(in   ) :: dsubcld      ! sub-cloud layer thickness
    real(r8), dimension(pcols,pver), intent(in   ) :: p_del        ! pressure thickness
-   real(r8), dimension(pcols,pver), intent(in   ) :: q            ! ambient mid-point specific humidity
-   real(r8), dimension(pcols,pver), intent(in   ) :: qs           ! ambient mid-point saturation specific humidity
    real(r8), dimension(pcols,pver), intent(in   ) :: s_int        ! ambient interface dry static energy
    real(r8), dimension(pcols,pver), intent(in   ) :: q_int        ! ambient interface specific humidity
    real(r8), dimension(pcols,pver), intent(in   ) :: su           ! updraft dry static energy
