@@ -343,8 +343,6 @@ struct CaarFunctorImpl {
 
     set_rk_stage_data(data);
 
-    profiling_resume();
-
     GPTLstart("caar compute");
     int nerr;
     Kokkos::parallel_reduce("caar loop pre-boundary exchange", m_policy_pre, *this, nerr);
@@ -367,7 +365,6 @@ struct CaarFunctorImpl {
 
     limiter.run(data.np1);
 
-    profiling_pause();
   }
 
   KOKKOS_INLINE_FUNCTION
@@ -550,20 +547,14 @@ struct CaarFunctorImpl {
       Kokkos::single(Kokkos::PerThread(kv.team),[&]() {
         pi_i(0)[0] = m_hvcoord.ps0*m_hvcoord.hybrid_ai0;
       });
-      kv.team_barrier();
 
       ColumnOps::column_scan_mid_to_int<true>(kv,dp,pi_i);
 
       ColumnOps::compute_midpoint_values(kv,pi_i,pi);
 
-      // Barrier so that the buffer shared by pi_i and omega_i is free for
-      // omega_i to use.
-      kv.team_barrier();
-
       Kokkos::single(Kokkos::PerThread(kv.team),[&]() {
         omega_i(0)[0] = 0.0;
       });
-      kv.team_barrier();
 
       ColumnOps::column_scan_mid_to_int<true>(kv,div_vdp,omega_i);
       // Average omega_i to midpoints, and change sign, since later
@@ -1225,7 +1216,6 @@ struct CaarFunctorImpl {
         ColumnOps::compute_midpoint_values(kv,prod_x,mgrad_x);
         ColumnOps::compute_midpoint_values(kv,prod_y,mgrad_y);
       }
-      kv.team_barrier();
 
       // Apply pgrad_correction: mgrad += cp*T0*(grad(log(exner))-grad(exner)/exner) (if applicable)
       if (m_pgrad_correction) {
@@ -1244,7 +1234,6 @@ struct CaarFunctorImpl {
           mgrad_y(ilev) += cp*T0*(grad_tmp_i_y(ilev) - grad_exner_i_y(ilev)/exner_i(ilev));
         });
       }
-      kv.team_barrier();
 
       // Compute KE. Also, add fcor to vort
       auto u  = Homme::subview(m_state.m_v,kv.ie,m_data.n0,0,igp,jgp);
