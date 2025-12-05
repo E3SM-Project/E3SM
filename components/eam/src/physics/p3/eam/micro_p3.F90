@@ -1380,6 +1380,8 @@ end function bfb_expm1
          vap_liq_exchange(k) = vap_liq_exchange(k) - qr(k)
          qr(k) = 0._rtype
          nr(k) = 0._rtype
+         mu_r(k) = 0._rtype
+         lamr(k) = 0._rtype
       endif
 
       ! ice:
@@ -2294,6 +2296,7 @@ end function bfb_expm1
        lamr   = 0._rtype
        cdistr = 0._rtype
        logn0r = 0._rtype
+       mu_r = 0._rtype
 
     endif
 
