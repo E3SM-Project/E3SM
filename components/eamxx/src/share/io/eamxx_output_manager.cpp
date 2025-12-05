@@ -426,6 +426,20 @@ void OutputManager::run(const util::TimeStamp& timestamp)
     // Check if we need to open a new file
     if (not filespecs.is_open) {
       filespecs.filename = compute_filename (filespecs,timestamp);
+      
+      // Check if file already exists when not in restart mode (potential duplicate yaml file)
+      if (not m_resume_output_file and 
+	  not m_allow_overwrite and 
+          not m_is_model_restart_output and
+          file_exists(filespecs.filename)) {
+        EKAT_ERROR_MSG(
+            "Error! Trying to create an output file that already exists: \n"
+            "  - filename: " + filespecs.filename + "\n"
+            "  - timestamp: " + timestamp.to_string() + "\n"
+ 	    "Check that you do not have a duplicated yaml file,\n"
+            "or if you intend to overwrite, set allow_overwrite_existing_files: true");
+      }    
+
       // Register all dims/vars, write geometry data (e.g. lat/lon/hyam/hybm/hyai/hybi)
       setup_file(filespecs,control);
     }
@@ -746,6 +760,9 @@ setup_internals (const std::shared_ptr<fm_type>& field_mgr,
   auto& out_control_pl = m_params.sublist("output_control");
   m_output_control.set_frequency_units(out_control_pl.get<std::string>("frequency_units"));
 
+  // Allow overwrite?
+  m_allow_overwrite = m_params.get("allow_overwrite_existing_files", false);  
+
   // In case output is disabled, no point in doing anything else
   if (not m_output_control.output_enabled()) {
     return;
@@ -951,6 +968,20 @@ close_or_flush_if_needed (      IOFileSpecs& file_specs,
   } else if (file_specs.file_needs_flush()) {
     scorpio::flush_file (file_specs.filename);
   }
+}
+
+bool OutputManager::
+file_exists(const std::string& filename) const
+{
+  bool exists = false;
+  // Ask root process to check for file existence
+  if (m_io_comm.am_i_root()) {
+    std::ifstream file(filename);
+    exists = file.good();
+  }
+  // Broadcast to other processes
+  m_io_comm.broadcast(&exists, 1, m_io_comm.root_rank());
+  return exists;
 }
 
 void OutputManager::

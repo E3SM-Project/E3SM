@@ -135,6 +135,10 @@ protected:
   // If a file can be closed (next snap won't fit) or needs flushing, do so
   void close_or_flush_if_needed (      IOFileSpecs& file_specs,
                                  const IOControl&   control) const;
+  
+  // Check if an output file with the same name already exists
+  bool file_exists(const std::string& filename) const;
+  bool m_allow_overwrite = false; 
 
   // Manage logging of info to atm.log
   void push_to_logger();
@@ -177,7 +181,7 @@ protected:
 
   // Whether a restarted run can resume filling previous run output file (if not full)
   bool m_resume_output_file = false;
-
+	
   // The initial time stamp of the simulation and run. For initial runs, they coincide,
   // but for restarted runs, run_t0>case_t0, with the former being the time at which the
   // restart happens, and the latter being the start time of the *original* run.
