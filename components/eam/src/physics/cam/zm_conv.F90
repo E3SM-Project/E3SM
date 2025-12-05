@@ -516,7 +516,6 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, time_step, &
 
    !----------------------------------------------------------------------------
    ! calculate updraft and downdraft properties
-
    call zm_cloud_properties(pcols, lengath, pver, pverp, msg, zm_param%limcnv, &
                             p_mid_g, z_mid_g, z_int_g, t_mid_g, s_mid_g, s_int_g, q_mid_g, &
                             landfrac_g, tpert_g, &
@@ -527,8 +526,7 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, time_step, &
                             aero, loc_microp_st )
 
    !---------------------------------------------------------------------------
-   ! convert detrainment from units of "per length" [1/m] to "per pressure" [1/mb].
-
+   ! convert from units of "per length" [1/m] to "per pressure" [1/mb].
    do k = msg+1, pver
       do i = 1,lengath
          du    (i,k) = du    (i,k)* (z_int_g(i,k)-z_int_g(i,k+1))/p_del(i,k)
@@ -545,7 +543,7 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, time_step, &
    end do
 
    !----------------------------------------------------------------------------
-
+   ! apply closure assumption to calculate cloud base mass flux
    call zm_closure(pcols, lengath, pver, pverp, msg, cape_threshold_loc, &
                    lcl_g, lel_g, jt, maxg, dsubcld, &
                    z_mid_g, z_int_g, p_mid_g, p_del, t_mid_g, &
@@ -555,7 +553,6 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, time_step, &
 
    !----------------------------------------------------------------------------
    ! limit cloud base mass flux to theoretical upper bound.
-
    do i = 1,lengath
       mumax(i) = 0
       do k = msg+2, pver
@@ -573,7 +570,6 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, time_step, &
 
    !----------------------------------------------------------------------------
    ! don't allow convection within PBL (suggestion of Bjorn Stevens, 8-2000)
-
    if (zm_param%no_deep_pbl) then
       do i = 1,lengath
          if (z_mid_in(gather_index(i),jt(i)) < pbl_hgt(gather_index(i))) then
@@ -584,12 +580,10 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, time_step, &
 
    !----------------------------------------------------------------------------
    ! apply cloud base mass flux scaling
-
    do i = 1,lengath
-
       ! zero out micro data for inactive columns
       if ( zm_param%zm_microp .and. cld_bass_mass_flux(i).eq.0._r8) call zm_microp_st_zero(loc_microp_st,i,pver)
-
+      ! scale variables
       do k = msg+1,pver
          mu    (i,k)   = mu    (i,k)  *cld_bass_mass_flux(i)
          md    (i,k)   = md    (i,k)  *cld_bass_mass_flux(i)
@@ -601,7 +595,7 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, time_step, &
          cu_g  (i,k)   = cu_g  (i,k)  *cld_bass_mass_flux(i)
          evp_g  (i,k)  = evp_g (i,k)  *cld_bass_mass_flux(i)
          pflx_g(i,k+1) = pflx_g(i,k+1)*cld_bass_mass_flux(i)*100._r8/zm_const%grav
-
+         ! scale microphysics variables
          if (zm_param%zm_microp) then
             loc_microp_st%sprd(i,k)  = loc_microp_st%sprd(i,k)*cld_bass_mass_flux(i)
             loc_microp_st%frz (i,k)  = loc_microp_st%frz (i,k)*cld_bass_mass_flux(i)
@@ -609,13 +603,11 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, time_step, &
                ql_g(i,k) = 0._r8
             end if
          end if
-
-      end do
-   end do
+      end do ! k
+   end do ! i
 
    !----------------------------------------------------------------------------
    ! compute temperature and moisture changes due to convection.
-
    call zm_calc_output_tend(pcols, lengath, pver, pverp, msg, &
                             jt, maxg, dsubcld, p_del, s_int_g, q_int_g, su, qu, &
                             mu, du, md, sd, qd, ql_g, evp_g, cu_g, &
@@ -633,7 +625,6 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, time_step, &
 
    !----------------------------------------------------------------------------
    ! scatter data (i.e. undo the gathering)
-
    do k = msg+1, pver
 #ifdef CPRCRAY
 !DIR$ CONCURRENT
@@ -651,7 +642,7 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, time_step, &
          ql  (gather_index(i),k)  = ql_g   (i,k)
       end do
    end do
-
+   ! scatter 1d variables
    do i = 1,lengath
       jctop(gather_index(i)) = jt(i)
       jcbot(gather_index(i)) = maxg(i)
@@ -660,8 +651,9 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, time_step, &
 
    !----------------------------------------------------------------------------
    ! scatter microphysics data (i.e. undo the gathering)
-
-   if (zm_param%zm_microp) call zm_microp_st_scatter(loc_microp_st,microp_st,pcols,lengath,pver,gather_index)
+   if (zm_param%zm_microp) then
+      call zm_microp_st_scatter(loc_microp_st,microp_st,pcols,lengath,pver,gather_index)
+   end if
 
 #ifdef CPRCRAY
 !DIR$ CONCURRENT
@@ -704,6 +696,7 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, time_step, &
 
    !----------------------------------------------------------------------------
    return
+
 end subroutine zm_convr
 
 !===================================================================================================
@@ -1055,6 +1048,7 @@ subroutine zm_calc_fractional_entrainment(pcols, ncol, pver, pverp, msg, &
       end do ! i
    end do ! k
 
+   !----------------------------------------------------------------------------
    ! move detrainment level downward if fractional entrainment is too low
    do i = 1,ncol
       if (j0(i) < jb(i)) then
@@ -1064,6 +1058,7 @@ subroutine zm_calc_fractional_entrainment(pcols, ncol, pver, pverp, msg, &
       end if
    end do ! i
 
+   !----------------------------------------------------------------------------
    ! ensure that entrainment does not increase above the level that detrainment starts
    do k = msg+2, pver
       do i = 1,ncol
@@ -1073,12 +1068,14 @@ subroutine zm_calc_fractional_entrainment(pcols, ncol, pver, pverp, msg, &
       end do ! i
    end do ! k
 
+   !----------------------------------------------------------------------------
    ! specify maximum fractional entrainment
    do i = 1,ncol
       lambda_max(i) = lambda_tmp(i,j0(i))
       lambda(i,jb(i)) = lambda_max(i)
    end do
 
+   !----------------------------------------------------------------------------
    ! The modification below comes from:
    !   Rasch, P. J., J. E. Kristjánsson, A comparison of the CCM3 model climate
    !   using diagnosed and predicted condensate parameterizations, J. Clim., 1997.
@@ -1258,7 +1255,7 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
    real(r8), dimension(pcols,pver), intent(in ) :: s_int          ! interface values of dry stat energy
    real(r8), dimension(pcols,pver), intent(in ) :: q_mid          ! env specific humidity
    real(r8), dimension(pcols),      intent(in ) :: landfrac       ! Land fraction
-   real(r8), dimension(pcols),      intent(in ) :: tpert_g         ! PBL temperature perturbation
+   real(r8), dimension(pcols),      intent(in ) :: tpert_g        ! PBL temperature perturbation
    integer,  dimension(pcols),      intent(in ) :: jb             ! updraft base level
    integer,  dimension(pcols),      intent(in ) :: lel            ! updraft parcel launch level
    integer,  dimension(pcols),      intent(out) :: jt             ! updraft plume top
@@ -1336,7 +1333,6 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
    real(r8), parameter :: hu_diff_min  = -2000._r8    ! limit on hu(i,k)-hsthat(i,k)
 
    !----------------------------------------------------------------------------
-
    ! initialize 1D variables
    do i = 1,ncol
       totpcp(i) = 0._r8
@@ -1469,7 +1465,6 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
 
    !----------------------------------------------------------------------------
    ! iteration to set cloud properties
-
    itnum = 1
    if (zm_param%zm_microp) itnum = 2
 
@@ -1650,19 +1645,19 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
       end do ! k
 
       !-------------------------------------------------------------------------
-      ! microphysical calculation
-
+      ! microphysical calculations
       if (zm_param%zm_microp) then
 
+         ! calculate updraft temperature
          tug(1:ncol,:) = t_mid(1:ncol,:)
-         fice(1:ncol,:) = 0._r8
-
          do k = pver, msg+2, -1
             do i = 1, ncol
                tug(i,k) = su(i,k) - zm_const%grav/zm_const%cpair*z_int(i,k)
             end do ! i
          end do ! k
 
+         ! specify ice fraction
+         fice(1:ncol,:) = 0._r8
          do k = 1, pver-1
             do i = 1, ncol
                if (tug(i,k+1) > zm_const%tfreez) then
@@ -1680,7 +1675,7 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
 
          do k = 1, pver
             do i = 1,ncol
-               loc_microp_st%cmei(i,k) = cu(i,k)* fice(i,k)
+               loc_microp_st%cmei(i,k) = cu(i,k) * fice(i,k)
                loc_microp_st%cmel(i,k) = cu(i,k) * (1._r8-fice(i,k))
             end do ! i
          end do ! k
@@ -1749,19 +1744,17 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
 
          ! compute condensed liquid, rain production rate
          ! accumulate total precipitation (condensation - detrainment of liquid)
-         ! Note ql1 = ql(k) + rprd(k)*dz(k)/mu(k)
-         ! The differencing is somewhat strange (e.g. du(i,k)*ql(i,k+1)) but is
-         ! consistently applied.
-         !    mu, ql are interface quantities
-         !    cu, du, eu, rprd are midpoint quantites
+         ! Note: ql1 = ql(k) + rprd(k)*dz(k)/mu(k)
+         ! The differencing is somewhat strange (e.g. du(i,k)*ql(i,k+1)) but is consistently applied.
+         !   interface quantities => mu, ql are 
+         !   mid-point quantities => cu, du, eu, rprd
          do k = pver, msg+2, -1
             do i = 1,ncol
                rprd(i,k) = 0._r8
                if (k >= jt(i) .and. k < jb(i) .and. lambda_max(i) > 0._r8 .and. mu(i,k) >= 0.0_r8) then
                   if (mu(i,k) > 0._r8) then
-                     ql1 = 1._r8/mu(i,k)* (mu(i,k+1)*ql(i,k+1)- &
-                           dz(i,k)*du(i,k)*ql(i,k+1)+dz(i,k)*cu(i,k))
-                     ql(i,k) = ql1/ (1._r8+dz(i,k)*c0mask(i))
+                     ql1 = 1._r8/mu(i,k) * ( mu(i,k+1)*ql(i,k+1) - dz(i,k)*du(i,k)*ql(i,k+1) + dz(i,k)*cu(i,k) )
+                     ql(i,k) = ql1 / (1._r8+dz(i,k)*c0mask(i))
                   else
                      ql(i,k) = 0._r8
                   end if
@@ -1816,7 +1809,9 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
    do k = 2,pverp
       do i = 1,ncol
          pflx(i,k) = pflx(i,k-1) + rprd(i,k-1)*dz(i,k-1)
-         if (zm_param%zm_microp) pflxs(i,k) = pflxs(i,k-1) + loc_microp_st%sprd(i,k-1)*dz(i,k-1)
+         if (zm_param%zm_microp) then
+            pflxs(i,k) = pflxs(i,k-1) + loc_microp_st%sprd(i,k-1)*dz(i,k-1)
+         end if
       end do ! i
    end do ! k
 
@@ -1861,7 +1856,9 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
       end do ! i
    end if ! zm_microp
 
+   !----------------------------------------------------------------------------
    return
+
 end subroutine zm_cloud_properties
 
 !===================================================================================================
@@ -2043,6 +2040,7 @@ subroutine zm_closure(pcols, ncol, pver, pverp, msg, cape_threshold_in, &
 
    !----------------------------------------------------------------------------
    return
+
 end subroutine zm_closure
 
 !===================================================================================================
@@ -2165,8 +2163,10 @@ subroutine zm_calc_output_tend(pcols, ncol, pver, pverp, msg, &
          end if
       end do
    end do
+
    !----------------------------------------------------------------------------
    return
+
 end subroutine zm_calc_output_tend
 
 !===================================================================================================
