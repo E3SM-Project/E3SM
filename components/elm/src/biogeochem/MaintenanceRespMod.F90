@@ -34,13 +34,19 @@ module MaintenanceRespMod
   public :: MaintenanceResp
   public :: readMaintenanceRespParams
 
-   type, private :: MaintenanceRespParamsType
-      real(r8):: br_mr        !base rate for maintenance respiration(gC/gN/s)
-   end type MaintenanceRespParamsType
+  type, private :: MaintenanceRespParamsType
+     real(r8):: br_mr        !base rate for maintenance respiration(gC/gN/s)
+     real(r8):: dormant_mr_temp ! Temperature for dormancy (K)
+     real(r8):: dormant_mr_factor ! Dormancy multiplier for maint resp (unitless)
+  end type MaintenanceRespParamsType
 
   !type(MaintenanceRespParamsType),private ::  MaintenanceRespParamsInst
   real(r8), public :: br_mr_Inst
+  real(r8), public :: dormant_mr_temp_Inst
+  real(r8), public :: dormant_mr_factor_Inst
   !$acc declare create(br_mr_Inst)
+  !$acc declare create(dormant_mr_temp_Inst)
+  !$acc declare create(dormant_mr_factor_Inst)
   !-----------------------------------------------------------------------
 
 contains
@@ -71,6 +77,28 @@ contains
      if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
      br_mr_Inst = tempr
 
+     ! Add parameters for dormant maintenance resp
+     ! dormant_mr_factor is multiplied by maintenance respiration at temperatures below dormant_mr_temp
+
+     tString='dormant_mr_temp'
+     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
+     ! Default value: 0 (K), so if it's missing the whole process is turned off
+     if ( .not. readv ) then
+        dormant_mr_temp_Inst=0.0_r8
+     else
+        dormant_mr_temp_Inst=tempr
+     end if
+
+     tString='dormant_mr_factor'
+     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
+     if  ( .not. readv ) then
+        dormant_mr_factor_Inst=1.0_r8
+     else
+        dormant_mr_factor_Inst=tempr
+     end if
+
+
+     
    end subroutine readMaintenanceRespParams
 
   !-----------------------------------------------------------------------
@@ -100,6 +128,8 @@ contains
     integer :: fp    ! soil filter patch index
     integer :: fc    ! soil filter column index
     real(r8):: br_mr ! base rate (gC/gN/s)
+    real(r8):: dormant_mr_temp ! Temperature for dormancy
+    real(r8):: dormant_mr_factor ! Multiplication factor that is applied to Q10 below dormancy temperature
     real(r8):: q10   ! temperature dependence
     real(r8):: tc    ! temperature correction, 2m air temp (unitless)
     real(r8):: tcsoi(bounds%begc:bounds%endc,nlevgrnd) ! temperature correction by soil layer (unitless)
@@ -144,7 +174,11 @@ contains
       ! set constants
       br_mr = br_mr_Inst
 
-      ! Peter Thornton: 3/13/09
+      ! Ben Sulman: Adding dormant maintenance resp
+      dormant_mr_temp = dormant_mr_temp_Inst
+      dormant_mr_factor = dormant_mr_factor_Inst
+
+      ! Peter Thornton: 3/13/09 
       ! Q10 was originally set to 2.0, an arbitrary choice, but reduced to 1.5 as part of the tuning
       ! to improve seasonal cycle of atmospheric CO2 concentration in global
       ! simulatoins
@@ -161,6 +195,12 @@ contains
             ! estimating fine root maintenance respiration with depth
             tcsoi(c,j) = Q10**((t_soisno(c,j)-SHR_CONST_TKFRZ - 20.0_r8)/10.0_r8)
 
+            ! Ben Sulman: Adding lower dormant maintenance resp below a certain
+            ! temperature
+            tcsoi(c,j) = Q10**((t_soisno(c,j)-SHR_CONST_TKFRZ - 20.0_r8)/10.0_r8)
+            if (t_soisno(c,j) < dormant_mr_temp) then
+                tcsoi(c,j) = tcsoi(c,j)*dormant_mr_factor
+            end if
          end do
       end do
 
@@ -172,7 +212,12 @@ contains
          ! gC/m2/s for each of the live plant tissues.
          ! Leaf and live wood MR
 
+         ! Ben Sulman: Add dormant MR level below a certain temperature
          tc = Q10**((t_ref2m(p)-SHR_CONST_TKFRZ - 20.0_r8)/10.0_r8)
+         if(t_ref2m(p) < dormant_mr_temp) then
+             tc = tc*dormant_mr_factor
+         end if
+
          if (frac_veg_nosno(p) == 1) then
             leaf_mr(p) = lmrsun(p) * laisun(p) * 12.011e-6_r8 + &
                          lmrsha(p) * laisha(p) * 12.011e-6_r8
@@ -188,6 +233,8 @@ contains
          else if (iscft(ivt(p)) .and. livestemn(p) .gt. 0._r8) then
             livestem_mr(p) = livestemn(p)*br_mr*tc
             grain_mr(p) = grainn(p)*br_mr*tc
+         else ! Graminoid rhizomes
+            livecroot_mr(p) = livecrootn(p)*br_mr*tc
          end if
          if (br_xr(ivt(p)) .gt. 1e-9_r8) then
             xr(p) = cpool(p) * br_xr(ivt(p)) * tc
