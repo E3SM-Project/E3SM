@@ -1,8 +1,7 @@
-from utils import expect, ensure_netcdf4
+from utils import expect, _ensure_pylib_impl
+_ensure_pylib_impl("xarray")
 
-ensure_netcdf4()
-
-from netCDF4 import Dataset
+import xarray as xr
 import numpy as np
 
 import pathlib
@@ -12,7 +11,7 @@ class CompareNcFiles(object):
 ###############################################################################
 
     ###########################################################################
-    def __init__(self,src_file,tgt_file=None,compare=None):
+    def __init__(self,src_file,tgt_file=None,compare=None,allow_transpose=False):
     ###########################################################################
 
         self._src_file = pathlib.Path(src_file).resolve().absolute()
@@ -20,6 +19,7 @@ class CompareNcFiles(object):
                 "Error! File '{}' does not exist.".format(self._src_file))
 
         self._compare  = compare
+        self._allow_transpose = allow_transpose
 
         if tgt_file is None:
             self._tgt_file = self._src_file
@@ -62,10 +62,27 @@ class CompareNcFiles(object):
     def compare_variables(self):
     ###########################################################################
 
-        ds_src = Dataset(self._src_file,'r')
-        ds_tgt = Dataset(self._tgt_file,'r')
+        ds_src = xr.open_dataset(self._src_file)
+        ds_tgt = xr.open_dataset(self._tgt_file)
 
         success = True
+        if self._compare is None or self._compare == []:
+            self._compare = []
+            # If compare is an empty list, compare all variables
+            print(f"Specific comparison variables not provided,\n"
+                  f"will compare ALL variables in \n"
+                  f"{self._src_file}\n"
+                  f"with\n"
+                  f"{self._tgt_file}\n")
+            for var in ds_src.variables:
+                if var not in ds_tgt.variables:
+                    print (f" Comparison failed! Variable not found.\n"
+                           f"   - var name: {var}\n"
+                           f"   - file name: {self._tgt_file}")
+                    success = False
+                    continue
+                self._compare.append(var+"="+var)
+
         for expr in self._compare:
             # Split the expression, to get the output var name
             tokens = expr.split('=')
@@ -89,11 +106,11 @@ class CompareNcFiles(object):
                        f"   - file name: {self._tgt_file}")
                 success = False
                 continue
-            lvar = ds_src.variables[lname];
-            rvar = ds_tgt.variables[rname];
+            lvar = ds_src[lname];
+            rvar = ds_tgt[rname];
 
-            lvar_rank = len(lvar.dimensions)
-            rvar_rank = len(rvar.dimensions)
+            lvar_rank = len(lvar.dims)
+            rvar_rank = len(rvar.dims)
 
             expect (len(ldims)==0 or len(ldims)==lvar_rank,
                     f"Invalid slice specification for {lname}.\n"
@@ -104,52 +121,32 @@ class CompareNcFiles(object):
                     f"  input request: ({','.join(rdims)})\n"
                     f"  variable rank: {rvar_rank}")
 
+            lslices = {lvar.dims[idim]:int(slice)-1 for idim,slice in enumerate(ldims) if slice!=":"}
+            rslices = {rvar.dims[idim]:int(slice)-1 for idim,slice in enumerate(rdims) if slice!=":"}
+            lvar_sliced = lvar.sel(lslices)
+            rvar_sliced = rvar.sel(rslices)
+            expect (set(lvar_sliced.dims) == set(rvar_sliced.dims),
+                    f"Error, even when sliced these two elements do not share the same dimensionsn\n"
+                    f"   - left var name   : {lname}\n"
+                    f"   - right var name  : {rname}\n"
+                    f"   - left dimensions : {lvar_sliced.dims}\n"
+                    f"   - right dimensions: {rvar_sliced.dims}\n")
 
-            lslices = [[idim,slice] for idim,slice in enumerate(ldims) if slice!=":"]
-            rslices = [[idim,slice] for idim,slice in enumerate(rdims) if slice!=":"]
+            if self._allow_transpose:
+              rvar_sliced = rvar_sliced.transpose(*lvar_sliced.dims)
 
-            lrank = lvar_rank - len(lslices)
-            rrank = rvar_rank - len(rslices)
-
-            if lrank!=rrank:
-                print (f" Comparison failed. Rank mismatch.\n"
-                       f"  - input comparison: {expr}\n"
-                       f"  - upon slicing, rank({lname}) = {lrank}\n"
-                       f"  - upon slicing, rank({rname}) = {rrank}")
-                success = False
-                continue
-
-            lvals = self.slice_variable(lvar,lvar[:],lslices)
-            rvals = self.slice_variable(rvar,rvar[:],rslices)
-
-            if not np.array_equal(lvals,rvals):
-                #  print (f"lvals: {lvals}")
-                #  print (f"rvals: {rvals}")
-                item = np.argwhere(lvals!=rvals)[0]
-                rval = self.slice_variable(rvar,rvals,
-                                           [[idim,slice] for idim,slice in enumerate(item)])
-                lval = self.slice_variable(lvar,lvals,
-                                           [[idim,slice] for idim,slice in enumerate(item)])
-                loc = ",".join([str(i+1) for i in item])
-                print (f" Comparison failed. Values differ.\n"
-                       f"  - input comparison: {expr}\n"
-                       f'  - upon slicing, {lname}({loc}) = {lval}\n'
-                       f'  - upon slicing, {rname}({loc}) = {rval}')
+            equal = (lvar_sliced.data==rvar_sliced.data).all()
+            if not equal:
+                rse = np.sqrt((lvar_sliced.data-rvar_sliced.data)**2)
+                nonmatch_count = np.count_nonzero(rse)
+                print (f" Comparison failed. Values differ at {nonmatch_count} out of {rse.size} locations.\n"
+                      f"  - input comparison: {expr}\n"
+                      f'  - max L2 error, {rse.max()}\n'
+                      f'  - max L2 location, [{",".join(map(str,(np.array(np.unravel_index(rse.argmax(),rse.shape))+1).tolist()))}]\n'
+                      f'  - dimensions, {lvar_sliced.dims}')
                 success = False
 
         return success
-
-    ###########################################################################
-    def slice_variable(self,var,vals,slices):
-    ###########################################################################
-
-        if len(slices)==0:
-            return vals
-
-        idim, slice_idx = slices.pop(-1)
-        vals = vals.take(int(slice_idx)-1,axis=int(idim))
-
-        return self.slice_variable(var,vals,slices)
 
     ###########################################################################
     def run(self):

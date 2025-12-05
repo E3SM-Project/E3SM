@@ -49,6 +49,10 @@ OR
     parser.add_argument("-c","--compare",nargs='+', default=[],
                         help="Compare variables from src file against variables from tgt file")
 
+    # Allow variables to be transposed
+    parser.add_argument("-a","--allow_transpose",action="store_true", default=False,
+                        help="Allow comparison if variables are transposed in dimensions")
+
     return parser.parse_args(args[1:])
 
 ###############################################################################
@@ -60,7 +64,8 @@ def _main_func(description):
     print (f" **** Comparing nc files **** \n"
            f"  src file: {pncf._src_file}\n"
            f"  tgt file: {pncf._tgt_file}\n"
-           f"  comparisons: {cmp_str}")
+           f"  comparisons: {cmp_str}\n"
+           f"  allow transpose: {pncf._allow_transpose}")
     success = pncf.run()
 
     print("Comparisons result: {}".format("SUCCESS" if success else "FAIL"))
