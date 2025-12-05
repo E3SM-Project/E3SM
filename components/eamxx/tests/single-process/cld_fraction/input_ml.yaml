@@ -1,0 +1,33 @@
+%YAML 1.1
+---
+driver_options:
+  atmosphere_dag_verbosity_level: 5
+
+time_stepping:
+  time_step: ${ATM_TIME_STEP}
+  run_t0: ${RUN_T0}  # YYYY-MM-DD-XXXXX
+  number_of_steps: ${NUM_STEPS}
+
+eamxx:
+  atm_procs_list: [cld_frac_net]
+  cld_frac_net:
+    ice_cloud_threshold: 1e-12
+    py_module_name: ${PY_MODULE_NAME}
+    py_module_path: ${PY_MODULE_PATH}
+    emulator: ${EMULATOR}
+
+grids_manager:
+  type: mesh_free
+  grids_names: [point_grid]
+  point_grid:
+    aliases: [physics]
+    type: point_grid
+    number_of_global_columns:   218
+    number_of_vertical_levels:  72
+
+initial_conditions:
+  filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
+
+scorpio:
+  output_yaml_files: [output_ml_${POSTFIX}.yaml]
+...
