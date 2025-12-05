@@ -666,7 +666,7 @@ CONTAINS
        o2x%rAttr(kq   ,n) = 0.0_R8
 ! make sure frazil is 0. MPAS-seaice will still use it.
        o2x%rAttr(kfraz,n) = 0.0_R8
-       if (kh2o /= 0) then
+       if (kssh /= 0) then
          o2x%rAttr(kssh, n) = 0.0_R8
        endif
        if (kh2o /= 0) then
