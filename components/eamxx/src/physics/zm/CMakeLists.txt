@@ -1,4 +1,4 @@
-set(PATH_TO_LEGACY_ZM ${SCREAM_BASE_DIR}/../eam/src/physics/cam/)
+set(PATH_TO_LEGACY_ZM ${SCREAM_BASE_DIR}/../eam/src/physics/cam/zm/)
 
 set(ZM_F90_SRCS
   # ----------------------------------------------------------------------------
