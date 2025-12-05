@@ -157,8 +157,8 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
    type(zm_microp_st),              intent(inout) :: microp_st       ! convective microphysics state and tendencies
    !----------------------------------------------------------------------------
    ! Local variables
-   real(r8), dimension(pcols,pver) :: s            ! scaled dry static energy (t+gz/cp)      [K]
-   real(r8), dimension(pcols,pver) :: q            ! local copy of specific humidity         [kg/kg]
+   real(r8), dimension(pcols,pver) :: s_mid        ! scaled dry static energy (t+gz/cp)      [K]
+   real(r8), dimension(pcols,pver) :: q_mid        ! local copy of specific humidity         [kg/kg]
    real(r8), dimension(pcols,pver) :: p_mid        ! local copy of mid-point pressure        [mb]
    real(r8), dimension(pcols,pverp):: p_int        ! local copy of interface pressure        [mb]
    real(r8), dimension(pcols,pver) :: z_mid        ! local copy of mid-point altitude        [m]
@@ -195,11 +195,13 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
 
    integer,  dimension(pcols)      :: gather_index ! temporary variable used to set ideep
 
-   real(r8), dimension(pcols,pver) :: qg           ! gathered specific humidity
-   real(r8), dimension(pcols,pver) :: tg           ! gathered temperature at interface
+   real(r8), dimension(pcols,pver) :: qg           ! gathered mid-point env specific humidity
+   real(r8), dimension(pcols,pver) :: q_int        ! gathered interface env specific humidity
+   real(r8), dimension(pcols,pver) :: t_mid_g      ! gathered temperature at interface
    real(r8), dimension(pcols,pver) :: pg           ! gathered values of p
    real(r8), dimension(pcols,pver) :: z_mid_g      ! gathered values of z_mid
    real(r8), dimension(pcols,pver) :: sg           ! gathered values of s
+   real(r8), dimension(pcols,pver) :: s_int        ! gathered upper interface dry static energy
    real(r8), dimension(pcols,pver) :: tpg          ! gathered values of tp
    real(r8), dimension(pcols,pverp):: z_int_g      ! gathered values of z_int
    real(r8), dimension(pcols,pver) :: qstpg        ! gathered values of qstp
@@ -220,14 +222,10 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
    real(r8), dimension(pcols,pver) :: sd           ! gathered downdraft dry static energy
    real(r8), dimension(pcols,pver) :: qd           ! gathered downdraft specific humidity
    real(r8), dimension(pcols,pver) :: mc           ! gathered net upward (scaled by mb) cloud mass flux
-   real(r8), dimension(pcols,pver) :: qhat         ! gathered upper interface specific humidity
    real(r8), dimension(pcols,pver) :: qu           ! gathered updraft specific humidity
    real(r8), dimension(pcols,pver) :: su           ! gathered updraft dry static energy
    real(r8), dimension(pcols,pver) :: qs           ! gathered saturation specific humidity
-   real(r8), dimension(pcols,pver) :: shat         ! gathered upper interface dry static energy
    real(r8), dimension(pcols,pver) :: qlg          ! gathered cloud liquid water
-   real(r8), dimension(pcols,pver) :: dudt         ! gathered u-wind tendency at gathered points
-   real(r8), dimension(pcols,pver) :: dvdt         ! gathered v-wind tendency at gathered points
 
    real(r8), dimension(pcols)      :: mb           ! cloud base mass flux
    integer,  dimension(pcols)      :: jlcl         ! updraft lifting cond level
@@ -262,8 +260,6 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
          mcon(i,k)  = 0._r8
          dqdt(i,k)  = 0._r8
          dsdt(i,k)  = 0._r8
-         dudt(i,k)  = 0._r8
-         dvdt(i,k)  = 0._r8
          pflx(i,k)  = 0._r8
          pflxg(i,k) = 0._r8
          rprd(i,k)  = 0._r8
@@ -326,11 +322,11 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
 
    do k = 1,pver
       do i = 1,ncol
-         q(i,k)    = qh(i,k)
-         s(i,k)    = t_mid(i,k) + (zm_const%grav/zm_const%cpair)*z_mid(i,k)
-         tp(i,k)   = 0.0_r8
-         shat(i,k) = s(i,k)
-         qhat(i,k) = q(i,k)
+         q_mid(i,k) = qh(i,k)
+         s_mid(i,k) = t_mid(i,k) + (zm_const%grav/zm_const%cpair)*z_mid(i,k)
+         tp(i,k)    = 0.0_r8
+         s_int(i,k) = s_mid(i,k)
+         q_int(i,k) = q_mid(i,k)
       end do
    end do
 
@@ -352,7 +348,7 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
    cape_calc_msemax_klev = .true.
    call compute_dilute_cape( pcols, ncol, pver, pverp, &
                              zm_param%num_cin, msg, &
-                             q, t_mid, z_mid, p_mid, p_int, &
+                             q_mid, t_mid, z_mid, p_mid, p_int, &
                              pbl_top, tpert, &
                              tp, qstp, maxi, tl, &
                              lcl, lel, cape, &
@@ -421,11 +417,11 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
    do i = 1,lengath
       do k = 1,pver
          dp(i,k)        = 0.01_r8*p_del_in(ideep(i),k)
-         qg(i,k)        = q(ideep(i),k)
-         tg(i,k)        = t_mid(ideep(i),k)
+         qg(i,k)        = q_mid(ideep(i),k)
+         t_mid_g(i,k)   = t_mid(ideep(i),k)
          pg(i,k)        = p_mid(ideep(i),k)
          z_mid_g(i,k)   = z_mid(ideep(i),k)
-         sg(i,k)        = s(ideep(i),k)
+         sg(i,k)        = s_mid(ideep(i),k)
          tpg(i,k)       = tp(ideep(i),k)
          z_int_g(i,k)   = z_int(ideep(i),k)
          qstpg(i,k)     = qstp(ideep(i),k)
@@ -492,14 +488,14 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
          if (qg(i,k) > 0._r8 .or. qg(i,k-1) > 0._r8) &
             qdifr = abs((qg(i,k)-qg(i,k-1))/max(qg(i,k-1),qg(i,k)))
          if (sdifr > interp_diff_min) then
-            shat(i,k) = log(sg(i,k-1)/sg(i,k))*sg(i,k-1)*sg(i,k)/(sg(i,k-1)-sg(i,k))
+            s_int(i,k) = log(sg(i,k-1)/sg(i,k))*sg(i,k-1)*sg(i,k)/(sg(i,k-1)-sg(i,k))
          else
-            shat(i,k) = 0.5_r8* (sg(i,k)+sg(i,k-1))
+            s_int(i,k) = 0.5_r8* (sg(i,k)+sg(i,k-1))
          end if
          if (qdifr > interp_diff_min) then
-            qhat(i,k) = log(qg(i,k-1)/qg(i,k))*qg(i,k-1)*qg(i,k)/(qg(i,k-1)-qg(i,k))
+            q_int(i,k) = log(qg(i,k-1)/qg(i,k))*qg(i,k-1)*qg(i,k)/(qg(i,k-1)-qg(i,k))
          else
-            qhat(i,k) = 0.5_r8* (qg(i,k)+qg(i,k-1))
+            q_int(i,k) = 0.5_r8* (qg(i,k)+qg(i,k-1))
          end if
       end do
    end do
@@ -508,7 +504,7 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
    ! calculate updraft and downdraft properties
 
    call zm_cloud_properties(pcols, lengath, pver, pverp, msg, zm_param%limcnv, &
-                            pg, z_mid_g, z_int_g, tg, sg, shat, qg, &
+                            pg, z_mid_g, z_int_g, t_mid_g, sg, s_int, qg, &
                             landfracg, tpertg, &
                             maxg, lelg, jt, jlcl, j0, jd, &
                             mu, eu, du, md, ed, mc, &
@@ -538,8 +534,8 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
 
    call zm_closure(pcols, lengath, pver, pverp, msg, cape_threshold_alt, &
                    lclg, lelg, jt, maxg, dsubcld, &
-                   z_mid_g, z_int_g, pg, dp, tg, &
-                   sg, qg, qs, qlg, shat, qhat, &
+                   z_mid_g, z_int_g, pg, dp, t_mid_g, &
+                   sg, qg, qs, qlg, s_int, q_int, &
                    tlg, tpg, qstpg, su, qu, &
                    mc, du, mu, md, qd, sd, capeg, mb )
 
@@ -604,7 +600,7 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
 
    call zm_calc_output_tend(pcols, ncol, pver, pverp, &
                                  dqdt, dsdt, qg, qs, qu, &
-                                 su, du, qhat, shat, dp, &
+                                 su, du, q_int, s_int, dp, &
                                  mu, md, sd, qd, qlg, &
                                  dsubcld, jt, maxg, 1, lengath, msg, &
                                  dlg, evpg, cug, &
@@ -626,15 +622,15 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
 #endif
       do i = 1,lengath
          ! q is updated to compute net precip.
-         q(ideep(i),k) = qh(ideep(i),k) + 2._r8*delt*dqdt(i,k)
-         qtnd(ideep(i),k) = dqdt (i,k)
-         rprd(ideep(i),k) = rprdg(i,k)
-         zdu (ideep(i),k) = du   (i,k)
-         mcon(ideep(i),k) = mc   (i,k)
-         heat(ideep(i),k) = dsdt (i,k)*zm_const%cpair
-         dlf (ideep(i),k) = dlg  (i,k)
-         pflx(ideep(i),k) = pflxg(i,k)
-         ql  (ideep(i),k) = qlg  (i,k)
+         q_mid(ideep(i),k) = qh(ideep(i),k) + 2._r8*delt*dqdt(i,k)
+         qtnd(ideep(i),k)  = dqdt (i,k)
+         rprd(ideep(i),k)  = rprdg(i,k)
+         zdu (ideep(i),k)  = du   (i,k)
+         mcon(ideep(i),k)  = mc   (i,k)
+         heat(ideep(i),k)  = dsdt (i,k)*zm_const%cpair
+         dlf (ideep(i),k)  = dlg  (i,k)
+         pflx(ideep(i),k)  = pflxg(i,k)
+         ql  (ideep(i),k)  = qlg  (i,k)
       end do
    end do
 
@@ -658,9 +654,9 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, delt, &
    do i = 1,ncol
       do k = pver, msg+1, -1
          if (zm_param%zm_microp) then
-            prec(i) = prec(i) - p_del_in(i,k)*(q(i,k)-qh(i,k)) - p_del_in(i,k)*(dlf(i,k)+microp_st%dif(i,k)+microp_st%dsf(i,k))*2._r8*delt
+            prec(i) = prec(i) - p_del_in(i,k)*(q_mid(i,k)-qh(i,k)) - p_del_in(i,k)*(dlf(i,k)+microp_st%dif(i,k)+microp_st%dsf(i,k))*2._r8*delt
          else
-            prec(i) = prec(i) - p_del_in(i,k)*(q(i,k)-qh(i,k)) - p_del_in(i,k)*(dlf(i,k))*2._r8*delt
+            prec(i) = prec(i) - p_del_in(i,k)*(q_mid(i,k)-qh(i,k)) - p_del_in(i,k)*(dlf(i,k))*2._r8*delt
          end if
       end do
       ! obtain final precipitation rate in m/s
@@ -695,7 +691,7 @@ end subroutine zm_convr
 !===================================================================================================
 
 subroutine zm_conv_evap(pcols, ncol, pver, pverp, deltat, &
-                        pmid, pdel, t_mid, q, prdprec, cldfrc, &
+                        pmid, pdel, t_mid, q_mid, prdprec, cldfrc, &
                         tend_s, tend_q, tend_s_snwprd, tend_s_snwevmlt, &
                         prec, snow, ntprprd, ntsnprd, flxprec, flxsnow, microp_st )
    !----------------------------------------------------------------------------
@@ -719,7 +715,7 @@ subroutine zm_conv_evap(pcols, ncol, pver, pverp, deltat, &
    real(r8), dimension(pcols,pver), intent(in   ) :: pmid               ! midpoint pressure                       [Pa]
    real(r8), dimension(pcols,pver), intent(in   ) :: pdel               ! layer thickness                         [Pa]
    real(r8), dimension(pcols,pver), intent(in   ) :: t_mid              ! temperature                             [K]
-   real(r8), dimension(pcols,pver), intent(in   ) :: q                  ! water vapor                             [kg/kg]
+   real(r8), dimension(pcols,pver), intent(in   ) :: q_mid              ! water vapor                             [kg/kg]
    real(r8), dimension(pcols,pver), intent(in   ) :: prdprec            ! precipitation production                [kg/kg/s]
    real(r8), dimension(pcols,pver), intent(in   ) :: cldfrc             ! cloud fraction
    real(r8), dimension(pcols,pver), intent(inout) :: tend_s             ! heating rate                            [J/kg/s]
@@ -815,7 +811,7 @@ subroutine zm_conv_evap(pcols, ncol, pver, pverp, deltat, &
          end if
 
          ! relative humidity depression must be > 0 for evaporation
-         evplimit = max(1._r8 - q(i,k)/qs(i,k), 0._r8)
+         evplimit = max(1._r8 - q_mid(i,k)/qs(i,k), 0._r8)
 
          ! total evaporation depends on flux in the top of the layer
          ! flux prec is the net production above layer minus evaporation into environmet
@@ -823,7 +819,7 @@ subroutine zm_conv_evap(pcols, ncol, pver, pverp, deltat, &
 
          ! Don't let evaporation supersaturate layer (approx). Layer may already be saturated.
          ! Currently does not include heating/cooling change to qs
-         evplimit = max(0._r8, (qs(i,k)-q(i,k)) / deltat)
+         evplimit = max(0._r8, (qs(i,k)-q_mid(i,k)) / deltat)
 
          ! Don't evaporate more than is falling into the layer from above.
          ! Don't evaporate rain formed in this layer, but if precip production
@@ -1083,7 +1079,7 @@ end subroutine zm_calc_fractional_entrainment
 !===================================================================================================
 
 subroutine zm_downdraft_properties(pcols, ncol, pver, pverp, msg, &
-                                   jb, jt, j0, jd, z_int, dz, s, q, h_env, &
+                                   jb, jt, j0, jd, z_int, dz, s_mid, q_mid, h_env, &
                                    lambda, lambda_max, qsthat, hsthat, gamhat, rprd, &
                                    mu, md, ed, sd, qd, hd, qds, evp, totevp )
    !----------------------------------------------------------------------------
@@ -1106,8 +1102,8 @@ subroutine zm_downdraft_properties(pcols, ncol, pver, pverp, msg, &
    integer,  dimension(pcols),      intent(inout) :: jd           ! level of downdraft
    real(r8), dimension(pcols,pverp),intent(in   ) :: z_int        ! env altitude at interface
    real(r8), dimension(pcols,pver) ,intent(in   ) :: dz           ! layer thickness
-   real(r8), dimension(pcols,pver), intent(in   ) :: s            ! env dry static energy of env [K] (normalized)
-   real(r8), dimension(pcols,pver), intent(in   ) :: q            ! env specific humidity
+   real(r8), dimension(pcols,pver), intent(in   ) :: s_mid        ! env dry static energy of env [K] (normalized)
+   real(r8), dimension(pcols,pver), intent(in   ) :: q_mid        ! env specific humidity
    real(r8), dimension(pcols,pver), intent(in   ) :: h_env        ! ambient env moist stat energy
    real(r8), dimension(pcols,pver), intent(in   ) :: lambda       ! fractional entrainment
    real(r8), dimension(pcols),      intent(in   ) :: lambda_max   ! fractional entrainment max
@@ -1195,12 +1191,12 @@ subroutine zm_downdraft_properties(pcols, ncol, pver, pverp, msg, &
       do i = 1,ncol
          if (k >= jd(i) .and. k < jb(i) .and. lambda_max(i) > 0._r8) then
             qd(i,k+1) = qds(i,k+1)
-            evp(i,k) = -ed(i,k)*q(i,k) + (md(i,k)*qd(i,k)-md(i,k+1)*qd(i,k+1))/dz(i,k)
+            evp(i,k) = -ed(i,k)*q_mid(i,k) + (md(i,k)*qd(i,k)-md(i,k+1)*qd(i,k+1))/dz(i,k)
             evp(i,k) = max(evp(i,k),0._r8)
             mdt = min(md(i,k+1),-small)
             if (zm_param%zm_microp)   evp(i,k) = min(evp(i,k),rprd(i,k))
-            sd(i,k+1) = ((zm_const%latvap/zm_const%cpair*evp(i,k)-ed(i,k)*s(i,k))*dz(i,k) + md(i,k)*sd(i,k))/mdt
-            totevp(i) = totevp(i) - dz(i,k)*ed(i,k)*q(i,k)
+            sd(i,k+1) = ((zm_const%latvap/zm_const%cpair*evp(i,k)-ed(i,k)*s_mid(i,k))*dz(i,k) + md(i,k)*sd(i,k))/mdt
+            totevp(i) = totevp(i) - dz(i,k)*ed(i,k)*q_mid(i,k)
          end if
       end do ! i
    end do ! k
@@ -1217,7 +1213,7 @@ end subroutine zm_downdraft_properties
 !===================================================================================================
 
 subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
-                               p_mid, z_mid, z_int, t_mid, s, shat, q, &
+                               p_mid, z_mid, z_int, t_mid, s_mid, s_int, q_mid, &
                                landfrac, tpertg, &
                                jb, lel, jt, jlcl, j0, jd, &
                                mu, eu, du, md, ed, mc, &
@@ -1240,9 +1236,9 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
    real(r8), dimension(pcols,pver), intent(in ) :: z_mid          ! env altitude at mid-point
    real(r8), dimension(pcols,pverp),intent(in ) :: z_int          ! env altitude at interface
    real(r8), dimension(pcols,pver), intent(in ) :: t_mid          ! env temperature
-   real(r8), dimension(pcols,pver), intent(in ) :: s              ! env dry static energy of env [K] (normalized)
-   real(r8), dimension(pcols,pver), intent(in ) :: shat           ! interface values of dry stat energy
-   real(r8), dimension(pcols,pver), intent(in ) :: q              ! env specific humidity
+   real(r8), dimension(pcols,pver), intent(in ) :: s_mid          ! env dry static energy of env [K] (normalized)
+   real(r8), dimension(pcols,pver), intent(in ) :: s_int          ! interface values of dry stat energy
+   real(r8), dimension(pcols,pver), intent(in ) :: q_mid          ! env specific humidity
    real(r8), dimension(pcols),      intent(in ) :: landfrac       ! Land fraction
    real(r8), dimension(pcols),      intent(in ) :: tpertg         ! PBL temperature perturbation
    integer,  dimension(pcols),      intent(in ) :: jb             ! updraft base level
@@ -1356,12 +1352,12 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
                        * zm_const%epsilo*zm_const%latvap/(zm_const%rdair*t_mid(i,k)**2) &
                        * zm_const%latvap/zm_const%cpair
          ! cloud thermodynamic variables
-         su(i,k)        = s(i,k)
-         sd(i,k)        = s(i,k)
-         qd(i,k)        = q(i,k)
-         qds(i,k)       = q(i,k)
-         qu(i,k)        = q(i,k)
-         h_env(i,k)     = zm_const%cpair*t_mid(i,k) + zm_const%grav*z_mid(i,k) + zm_const%latvap*q(i,k)
+         su(i,k)        = s_mid(i,k)
+         sd(i,k)        = s_mid(i,k)
+         qd(i,k)        = q_mid(i,k)
+         qds(i,k)       = q_mid(i,k)
+         qu(i,k)        = q_mid(i,k)
+         h_env(i,k)     = zm_const%cpair*t_mid(i,k) + zm_const%grav*z_mid(i,k) + zm_const%latvap*q_mid(i,k)
          h_env_sat(i,k) = zm_const%cpair*t_mid(i,k) + zm_const%grav*z_mid(i,k) + zm_const%latvap*qst(i,k)
          hu(i,k)        = h_env(i,k)
          hd(i,k)        = h_env(i,k)
@@ -1386,7 +1382,7 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
             else
                qsthat(i,k) = qst(i,k)
             end if
-            hsthat(i,k) = zm_const%cpair*shat(i,k) + zm_const%latvap*qsthat(i,k)
+            hsthat(i,k) = zm_const%cpair*s_int(i,k) + zm_const%latvap*qsthat(i,k)
             if (abs(gamma(i,k-1)-gamma(i,k)) > interp_diff_min) then
                gamhat(i,k) = log(gamma(i,k-1)/gamma(i,k))*gamma(i,k-1)*gamma(i,k)/ (gamma(i,k-1)-gamma(i,k))
             else
@@ -1437,10 +1433,10 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
             ! the ZM scheme. The original code of ZM scheme will be used when tpert_fix=.true.
             if (zm_param%tpert_fix) then
                hu(i,k) = h_env(i,jb(i)) + zm_const%cpair*zm_param%tiedke_add
-               su(i,k) = s(i,jb(i))     +                zm_param%tiedke_add
+               su(i,k) = s_mid(i,jb(i)) +                zm_param%tiedke_add
             else
                hu(i,k) = h_env(i,jb(i)) + zm_const%cpair*(zm_param%tiedke_add+zm_param%tpert_fac*tpertg(i))
-               su(i,k) = s(i,jb(i))     +                 zm_param%tiedke_add+zm_param%tpert_fac*tpertg(i)
+               su(i,k) = s_mid(i,jb(i)) +                 zm_param%tiedke_add+zm_param%tpert_fac*tpertg(i)
             end if
          end if
       end do ! i
@@ -1584,12 +1580,12 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
       do k = pver, msg+2, -1
          do i = 1,ncol
             if (k == jb(i) .and. lambda_max(i) > 0._r8) then
-               qu(i,k) = q(i,jb(i))
+               qu(i,k) = q_mid(i,jb(i))
                su(i,k) = (hu(i,k)-zm_const%latvap*qu(i,k))/zm_const%cpair
             end if
             if (( .not. done(i) .and. k > jt(i) .and. k < jb(i)) .and. lambda_max(i) > 0._r8) then
-               su(i,k) = mu(i,k+1)/mu(i,k)*su(i,k+1) + dz(i,k)/mu(i,k)* (eu(i,k)-du(i,k))*s(i,k)
-               qu(i,k) = mu(i,k+1)/mu(i,k)*qu(i,k+1) + dz(i,k)/mu(i,k)* (eu(i,k)*q(i,k) - du(i,k)*qst(i,k))
+               su(i,k) = mu(i,k+1)/mu(i,k)*su(i,k+1) + dz(i,k)/mu(i,k)* (eu(i,k)-du(i,k))*s_mid(i,k)
+               qu(i,k) = mu(i,k+1)/mu(i,k)*qu(i,k+1) + dz(i,k)/mu(i,k)* (eu(i,k)*q_mid(i,k) - du(i,k)*qst(i,k))
                tu = su(i,k) - zm_const%grav/zm_const%cpair*z_int(i,k)
                call qsat_hPa(tu, (p_mid(i,k)+p_mid(i,k-1))/2._r8, estu, qstu)
                if (qu(i,k) >= qstu) then
@@ -1607,7 +1603,7 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
       do k = msg+2, pver
          do i = 1,ncol
             if ((k > jt(i) .and. k <= jlcl(i)) .and. lambda_max(i) > 0._r8) then
-               su(i,k) = shat(i,k)   +             (hu(i,k)-hsthat(i,k)) / (zm_const%cpair* (1._r8+gamhat(i,k)))
+               su(i,k) = s_int(i,k)  +             (hu(i,k)-hsthat(i,k)) / (zm_const%cpair* (1._r8+gamhat(i,k)))
                qu(i,k) = qsthat(i,k) + gamhat(i,k)*(hu(i,k)-hsthat(i,k)) / (zm_const%latvap* (1._r8+gamhat(i,k)))
             end if
          end do ! i
@@ -1621,10 +1617,10 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
                if (.not.zm_param%zm_microp) tmp_k_limit = jb(i)
                if ( k>=jt(i) .and. k<tmp_k_limit ) then
                   if (zm_param%zm_microp) then
-                     cu(i,k) = ( ( mu(i,k)*su(i,k) - mu(i,k+1)*su(i,k+1) )/dz(i,k) - eu(i,k)*s(i,k) + du(i,k)*su(i,k) &
+                     cu(i,k) = ( ( mu(i,k)*su(i,k) - mu(i,k+1)*su(i,k+1) )/dz(i,k) - eu(i,k)*s_mid(i,k) + du(i,k)*su(i,k) &
                                )/(zm_const%latvap/zm_const%cpair) - zm_const%latice*tmp_frz(i,k)/zm_const%latvap
                   else
-                     cu(i,k) = ( ( mu(i,k)*su(i,k) - mu(i,k+1)*su(i,k+1) )/dz(i,k) - ( eu(i,k) - du(i,k) )*s(i,k) &
+                     cu(i,k) = ( ( mu(i,k)*su(i,k) - mu(i,k+1)*su(i,k+1) )/dz(i,k) - ( eu(i,k) - du(i,k) )*s_mid(i,k) &
                                )/(zm_const%latvap/zm_const%cpair)
                   end if
                   ! apply limiters
@@ -1675,7 +1671,7 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
          call  zm_mphy( pcols, ncol, msg, &
                         zm_const%grav, zm_const%cpair, zm_const%rdair, &
                         zm_param%auto_fac, zm_param%accr_fac, zm_param%micro_dcs, &
-                        jb, jt, jlcl, su, qu, mu, du, eu, z_int, p_mid, t_mid, q, gamhat, lambda_max, &
+                        jb, jt, jlcl, su, qu, mu, du, eu, z_int, p_mid, t_mid, q_mid, gamhat, lambda_max, &
                         loc_microp_st%cmel,  loc_microp_st%cmei, aero, &
                         loc_microp_st%qliq,     loc_microp_st%qice,     loc_microp_st%qnl,      loc_microp_st%qni,     &
                         loc_microp_st%qcde,     loc_microp_st%qide,     loc_microp_st%ncde,     loc_microp_st%nide,    &
@@ -1764,7 +1760,7 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
    !----------------------------------------------------------------------------
    ! calculate downdraft properties
    call zm_downdraft_properties(pcols, ncol, pver, pverp, msg, &
-                                jb, jt, j0, jd, z_int, dz, s, q, h_env, &
+                                jb, jt, j0, jd, z_int, dz, s_mid, q_mid, h_env, &
                                 lambda, lambda_max, qsthat, hsthat, gamhat, rprd, &
                                 mu, md, ed, sd, qd, hd, qds, evp, totevp)
 
@@ -1855,7 +1851,7 @@ end subroutine zm_cloud_properties
 subroutine zm_closure(pcols, ncol, pver, pverp, msg, cape_threshold_in, &
                       lcl, lel, jt, mx, dsubcld, &
                       z_mid, z_int, p_mid, dp, t_mid, &
-                      s, q, qs, ql, shat, qhat,  &
+                      s_mid, q_mid, qs, ql, s_int, q_int,  &
                       tl, tp, qstp, su, qu, &
                       mc, du, mu, md, qd, sd, cape, mb )
    !----------------------------------------------------------------------------
@@ -1888,12 +1884,12 @@ subroutine zm_closure(pcols, ncol, pver, pverp, msg, cape_threshold_in, &
    real(r8), dimension(pcols,pver), intent(in ) :: p_mid             ! ambient pressure (mb)
    real(r8), dimension(pcols,pver), intent(in ) :: dp                ! pressure thickness of layers
    real(r8), dimension(pcols,pver), intent(in ) :: t_mid             ! ambient temperature
-   real(r8), dimension(pcols,pver), intent(in ) :: s                 ! ambient dry static energy (normalized)
-   real(r8), dimension(pcols,pver), intent(in ) :: q                 ! ambient specific humidity
+   real(r8), dimension(pcols,pver), intent(in ) :: s_mid             ! ambient dry static energy (normalized)
+   real(r8), dimension(pcols,pver), intent(in ) :: q_mid             ! ambient specific humidity
    real(r8), dimension(pcols,pver), intent(in ) :: qs                ! ambient saturation specific humidity
    real(r8), dimension(pcols,pver), intent(in ) :: ql                ! ambient liquid water mixing ratio
-   real(r8), dimension(pcols,pver), intent(in ) :: shat              ! env. normalized dry static energy at intrfcs
-   real(r8), dimension(pcols,pver), intent(in ) :: qhat              ! environment specific humidity at interfaces
+   real(r8), dimension(pcols,pver), intent(in ) :: s_int             ! env. normalized dry static energy at intrfcs
+   real(r8), dimension(pcols,pver), intent(in ) :: q_int             ! environment specific humidity at interfaces
    real(r8), dimension(pcols),      intent(in ) :: tl                ! parcel temperature at lcl
    real(r8), dimension(pcols,pver), intent(in ) :: tp                ! parcel temperature
    real(r8), dimension(pcols,pver), intent(in ) :: qstp              ! parcel specific humidity
@@ -1940,14 +1936,14 @@ subroutine zm_closure(pcols, ncol, pver, pverp, msg, cape_threshold_in, &
    ! Calculate sub-cloud tendencies of virtual temperature and humidity
    do i = 1,ncol
       mb(i) = 0._r8
-      eb = p_mid(i,mx(i))*q(i,mx(i))/ (zm_const%epsilo+q(i,mx(i)))
+      eb = p_mid(i,mx(i))*q_mid(i,mx(i))/ (zm_const%epsilo+q_mid(i,mx(i)))
       dtbdt(i) = (1._r8/dsubcld(i)) &
-                 *( mu(i,mx(i))*(shat(i,mx(i))-su(i,mx(i))) &
-                   +md(i,mx(i))*(shat(i,mx(i))-sd(i,mx(i))) )
+                 *( mu(i,mx(i))*(s_int(i,mx(i))-su(i,mx(i))) &
+                   +md(i,mx(i))*(s_int(i,mx(i))-sd(i,mx(i))) )
       dqbdt(i) = (1._r8/dsubcld(i)) &
-                 *( mu(i,mx(i))*(qhat(i,mx(i))-qu(i,mx(i))) &
-                   +md(i,mx(i))*(qhat(i,mx(i))-qd(i,mx(i))) )
-      debdt = zm_const%epsilo*p_mid(i,mx(i)) / (zm_const%epsilo+q(i,mx(i)))**2 * dqbdt(i)
+                 *( mu(i,mx(i))*(q_int(i,mx(i))-qu(i,mx(i))) &
+                   +md(i,mx(i))*(q_int(i,mx(i))-qd(i,mx(i))) )
+      debdt = zm_const%epsilo*p_mid(i,mx(i)) / (zm_const%epsilo+q_mid(i,mx(i)))**2 * dqbdt(i)
       dtldt(i) = -2840._r8 * (3.5_r8/t_mid(i,mx(i))*dtbdt(i)-debdt/eb)/ &
                  (3.5_r8*log(t_mid(i,mx(i)))-log(eb)-4.805_r8)**2
    end do
@@ -1959,21 +1955,21 @@ subroutine zm_closure(pcols, ncol, pver, pverp, msg, cape_threshold_in, &
          ! cloud top
          if (k==jt(i)) then
             dtmdt(i,k) = (1._r8/dp(i,k)) &
-                         *(mu(i,k+1)*(su(i,k+1)-shat(i,k+1)-zm_const%latvap/zm_const%cpair*ql(i,k+1)) &
-                         + md(i,k+1)*(sd(i,k+1)-shat(i,k+1)))
+                         *(mu(i,k+1)*(su(i,k+1)-s_int(i,k+1)-zm_const%latvap/zm_const%cpair*ql(i,k+1)) &
+                         + md(i,k+1)*(sd(i,k+1)-s_int(i,k+1)))
             dqmdt(i,k) = (1._r8/dp(i,k)) &
-                         *(mu(i,k+1)*(qu(i,k+1)-qhat(i,k+1)+ql(i,k+1) ) &
-                         + md(i,k+1)*(qd(i,k+1)-qhat(i,k+1)))
+                         *(mu(i,k+1)*(qu(i,k+1)-q_int(i,k+1)+ql(i,k+1) ) &
+                         + md(i,k+1)*(qd(i,k+1)-q_int(i,k+1)))
          end if
          ! below cloud top
          if ( k>jt(i) .and. k<mx(i) ) then
-            dtmdt(i,k) = ( mc(i,k  )*(shat(i,k)-s(i,k)     ) &
-                          +mc(i,k+1)*(s(i,k)   -shat(i,k+1)) ) / dp(i,k) &
+            dtmdt(i,k) = ( mc(i,k  )*(s_int(i,k)-s_mid(i,k)    ) &
+                          +mc(i,k+1)*(s_mid(i,k)-s_int(i,k+1)) ) / dp(i,k) &
                          - zm_const%latvap/zm_const%cpair * du(i,k)*( beta*ql(i,k) + (1-beta)*ql(i,k+1) )
-            dqmdt(i,k) = ( mu(i,k+1)*(qu(i,k+1)-qhat(i,k+1)+zm_const%cpair/zm_const%latvap*(su(i,k+1)-s(i,k))) &
-                          -mu(i,k  )*(qu(i,k  )-qhat(i,k  )+zm_const%cpair/zm_const%latvap*(su(i,k  )-s(i,k))) &
-                          +md(i,k+1)*(qd(i,k+1)-qhat(i,k+1)+zm_const%cpair/zm_const%latvap*(sd(i,k+1)-s(i,k))) &
-                          -md(i,k  )*(qd(i,k  )-qhat(i,k  )+zm_const%cpair/zm_const%latvap*(sd(i,k  )-s(i,k))))/dp(i,k) &
+            dqmdt(i,k) = ( mu(i,k+1)*(qu(i,k+1)-q_int(i,k+1)+zm_const%cpair/zm_const%latvap*(su(i,k+1)-s_mid(i,k))) &
+                          -mu(i,k  )*(qu(i,k  )-q_int(i,k  )+zm_const%cpair/zm_const%latvap*(su(i,k  )-s_mid(i,k))) &
+                          +md(i,k+1)*(qd(i,k+1)-q_int(i,k+1)+zm_const%cpair/zm_const%latvap*(sd(i,k+1)-s_mid(i,k))) &
+                          -md(i,k  )*(qd(i,k  )-q_int(i,k  )+zm_const%cpair/zm_const%latvap*(sd(i,k  )-s_mid(i,k))))/dp(i,k) &
                          + du(i,k)*(beta*ql(i,k)+(1-beta)*ql(i,k+1))
          end if
       end do
@@ -1985,22 +1981,22 @@ subroutine zm_closure(pcols, ncol, pver, pverp, msg, cape_threshold_in, &
       do i = 1,ncol
          ! levels between parcel launch and LCL
          if ( k>lcl(i) .and. k<mx(i) ) then
-            thetavp = tp(i,k)   * (1000._r8/p_mid(i,k))**(zm_const%rdair/zm_const%cpair)*(1._r8+0.608_r8*q(i,mx(i)))
-            thetavm = t_mid(i,k)* (1000._r8/p_mid(i,k))**(zm_const%rdair/zm_const%cpair)*(1._r8+0.608_r8*q(i,k))
-            dboydt(i,k) = (dtbdt(i)/t_mid(i,mx(i))+0.608_r8/ (1._r8+0.608_r8*q(i,mx(i)))*dqbdt(i)- &
-                          dtmdt(i,k)/t_mid(i,k)-0.608_r8/ (1._r8+0.608_r8*q(i,k))*dqmdt(i,k))* &
+            thetavp = tp(i,k)   * (1000._r8/p_mid(i,k))**(zm_const%rdair/zm_const%cpair)*(1._r8+0.608_r8*q_mid(i,mx(i)))
+            thetavm = t_mid(i,k)* (1000._r8/p_mid(i,k))**(zm_const%rdair/zm_const%cpair)*(1._r8+0.608_r8*q_mid(i,k))
+            dboydt(i,k) = (dtbdt(i)/t_mid(i,mx(i))+0.608_r8/ (1._r8+0.608_r8*q_mid(i,mx(i)))*dqbdt(i)- &
+                          dtmdt(i,k)/t_mid(i,k)-0.608_r8/ (1._r8+0.608_r8*q_mid(i,k))*dqmdt(i,k))* &
                           zm_const%grav*thetavp/thetavm
          end if
          ! levels between LCL and cloud top
          if ( k>=lel(i) .and. k<=lcl(i) ) then
-            thetavp = tp(i,k)   * (1000._r8/p_mid(i,k))**(zm_const%rdair/zm_const%cpair)*(1._r8+1.608_r8*qstp(i,k)-q(i,mx(i)))
-            thetavm = t_mid(i,k)* (1000._r8/p_mid(i,k))**(zm_const%rdair/zm_const%cpair)*(1._r8+0.608_r8*q(i,k))
+            thetavp = tp(i,k)   * (1000._r8/p_mid(i,k))**(zm_const%rdair/zm_const%cpair)*(1._r8+1.608_r8*qstp(i,k)-q_mid(i,mx(i)))
+            thetavm = t_mid(i,k)* (1000._r8/p_mid(i,k))**(zm_const%rdair/zm_const%cpair)*(1._r8+0.608_r8*q_mid(i,k))
             dqsdtp  = qstp(i,k) * (1._r8+qstp(i,k)/zm_const%epsilo)*zm_const%epsilo*zm_const%latvap/(zm_const%rdair*tp(i,k)**2)
             dtpdt   = tp(i,k)/ (1._r8+zm_const%latvap/zm_const%cpair* (dqsdtp-qstp(i,k)/tp(i,k)))* &
-                          (dtbdt(i)/t_mid(i,mx(i))+zm_const%latvap/zm_const%cpair* (dqbdt(i)/tl(i)-q(i,mx(i))/tl(i)**2*dtldt(i)))
-            dboydt(i,k) = ((dtpdt/tp(i,k)+1._r8/(1._r8+1.608_r8*qstp(i,k)-q(i,mx(i)))* &
+                          (dtbdt(i)/t_mid(i,mx(i))+zm_const%latvap/zm_const%cpair* (dqbdt(i)/tl(i)-q_mid(i,mx(i))/tl(i)**2*dtldt(i)))
+            dboydt(i,k) = ((dtpdt/tp(i,k)+1._r8/(1._r8+1.608_r8*qstp(i,k)-q_mid(i,mx(i)))* &
                           (1.608_r8 * dqsdtp * dtpdt -dqbdt(i))) - (dtmdt(i,k)/t_mid(i,k)+0.608_r8/ &
-                          (1._r8+0.608_r8*q(i,k))*dqmdt(i,k)))*zm_const%grav*thetavp/thetavm
+                          (1._r8+0.608_r8*q_mid(i,k))*dqmdt(i,k)))*zm_const%grav*thetavp/thetavm
          end if
       end do
    end do
@@ -2035,7 +2031,7 @@ end subroutine zm_closure
 
 subroutine zm_calc_output_tend(pcols, ncol, pver, pverp, &
                                     dqdt, dsdt, q, qs, qu, &
-                                    su, du, qhat, shat, dp, &
+                                    su, du, q_int, s_int, dp, &
                                     mu, md, sd, qd, ql, &
                                     dsubcld, jt, mx, il1g, il2g, msg, &
                                     dl, evp, cu, &
@@ -2058,8 +2054,8 @@ subroutine zm_calc_output_tend(pcols, ncol, pver, pverp, &
    real(r8), dimension(pcols,pver), intent(in   ) :: qu           !
    real(r8), dimension(pcols,pver), intent(in   ) :: su           !
    real(r8), dimension(pcols,pver), intent(in   ) :: du           !
-   real(r8), dimension(pcols,pver), intent(in   ) :: qhat         !
-   real(r8), dimension(pcols,pver), intent(in   ) :: shat         !
+   real(r8), dimension(pcols,pver), intent(in   ) :: q_int        !
+   real(r8), dimension(pcols,pver), intent(in   ) :: s_int        !
    real(r8), dimension(pcols,pver), intent(in   ) :: dp           !
    real(r8), dimension(pcols,pver), intent(in   ) :: mu           !
    real(r8), dimension(pcols,pver), intent(in   ) :: md           !
@@ -2115,13 +2111,13 @@ subroutine zm_calc_output_tend(pcols, ncol, pver, pverp, &
          emc = -cu(i,k) + evp(i,k) ! condensation in updraft and evaporating rain in downdraft
 
          dsdt(i,k) = -zm_const%latvap/zm_const%cpair*emc + &
-                     (+mu(i,k+1)*(su(i,k+1)-shat(i,k+1)) - mu(i,k)*(su(i,k)-shat(i,k)) &
-                      +md(i,k+1)*(sd(i,k+1)-shat(i,k+1)) - md(i,k)*(sd(i,k)-shat(i,k)) &
+                     (+mu(i,k+1)*(su(i,k+1)-s_int(i,k+1)) - mu(i,k)*(su(i,k)-s_int(i,k)) &
+                      +md(i,k+1)*(sd(i,k+1)-s_int(i,k+1)) - md(i,k)*(sd(i,k)-s_int(i,k)) &
                      )/dp(i,k)
 
          dqdt(i,k) = emc + &
-                     (+mu(i,k+1)*(qu(i,k+1)-qhat(i,k+1)) - mu(i,k)*(qu(i,k)-qhat(i,k)) &
-                      +md(i,k+1)*(qd(i,k+1)-qhat(i,k+1)) - md(i,k)*(qd(i,k)-qhat(i,k)) &
+                     (+mu(i,k+1)*(qu(i,k+1)-q_int(i,k+1)) - mu(i,k)*(qu(i,k)-q_int(i,k)) &
+                      +md(i,k+1)*(qd(i,k+1)-q_int(i,k+1)) - md(i,k)*(qd(i,k)-q_int(i,k)) &
                      )/dp(i,k)
 
          if (zm_param%zm_microp) then
@@ -2147,10 +2143,10 @@ subroutine zm_calc_output_tend(pcols, ncol, pver, pverp, &
    do k = kbm,pver
       do i = il1g,il2g
          if (k == mx(i)) then
-            dsdt(i,k) = (1._r8/dsubcld(i))* (-mu(i,k)*(su(i,k)-shat(i,k)) &
-                                             -md(i,k)*(sd(i,k)-shat(i,k)) )
-            dqdt(i,k) = (1._r8/dsubcld(i))* (-mu(i,k)*(qu(i,k)-qhat(i,k)) &
-                                             -md(i,k)*(qd(i,k)-qhat(i,k)) )
+            dsdt(i,k) = (1._r8/dsubcld(i))* (-mu(i,k)*(su(i,k)-s_int(i,k)) &
+                                             -md(i,k)*(sd(i,k)-s_int(i,k)) )
+            dqdt(i,k) = (1._r8/dsubcld(i))* (-mu(i,k)*(qu(i,k)-q_int(i,k)) &
+                                             -md(i,k)*(qd(i,k)-q_int(i,k)) )
          else if (k > mx(i)) then
             dsdt(i,k) = dsdt(i,k-1)
             dqdt(i,k) = dqdt(i,k-1)
