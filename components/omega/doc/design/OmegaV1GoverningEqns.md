@@ -1025,7 +1025,7 @@ Table 1. Definition of variables. Geometric variables may be found in the {ref}`
 |$f_{eos}$ | equation of state | -  | any | function call | |
 |$g$ | gravitational acceleration | m s$^{-2}$ | constant  | Gravity |
 |$\tilde{h}_{i,k}$ | pseudo-thickness | m | cell | LayerThickness | $\tilde{h} = (\rho/\rho_0) h$ |
-|$h_{i,k}$ | geometric layer thickness | m | cell | GeometricThickness | same as LayerThickness in MPAS-Ocean |
+|$h_{i,k}$ | geometric layer thickness | m | cell | GeometricThickness | |
 |$k$ | vertical index |  |
 |${\bf k}$ | vertical unit vector |  |
 |$K_{min}$ | shallowest active layer |  |
