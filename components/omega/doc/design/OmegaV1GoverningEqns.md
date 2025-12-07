@@ -920,7 +920,7 @@ Since Omega is a non-Boussinesq ocean, surface sources of water will be mass flu
 
 ### Horizontal Tracer Diffusion
 
-As with momentum dissipation, the horizontal tracer diffusion arises from the $\left<\mathbf{u}_k^\prime \varphi_k \right>$ and $\left< \tilde{u}^\prime \varphi^\prime \right>$.  As in MPAS-Ocean, the former term can be parameterized either as Laplacian or Biharmonic diffusion,
+As with momentum dissipation, the horizontal tracer diffusion arises from the $\left<\mathbf{u}_k^\prime \varphi_{k}^\prime \right>$ and $\left< \tilde{u}^\prime \varphi^\prime \right>$.  As in MPAS-Ocean, the former term can be parameterized either as Laplacian or Biharmonic diffusion,
 
 $$
 D^\varphi_{i,k} =  \kappa_{2,e} \nabla^2 \varphi_{i,k} - \kappa_{4,e} \nabla^4 \varphi_{i,k}.
@@ -951,7 +951,7 @@ $$ (discrete-tracer-del4)
 Each of these operators are written as horizontal stencils in the {ref}`Omega V0 Operator Formulation Section <33-operator-formulation>`.  Again we note that the variables in these equations are the layer average.
 
 #### Horizontal tracer diffusion across a sloping surface
-As with horizontal momentum dissipation, there is a turbulent flux of tracer across a sloping $\tilde{z}$ interface.  We interpret the $\left< \tilde{z}^\prime \varphi^\prime \right>$ as the projection of the horizontal turbulent flux across the sloping interface.  The form of the diffusion is similar, taking Laplacian diffusion as an example
+As with horizontal momentum dissipation, there is a turbulent flux of tracer across a sloping $\tilde{z}$ interface.  We interpret the $\left< \tilde{u}^\prime \varphi^\prime \right>$ as the projection of the horizontal turbulent flux across the sloping interface.  The form of the diffusion is similar, taking Laplacian diffusion as an example
 
 $$
  \nabla \cdot \left( \tilde{h}_{i} \kappa_{2,e} \nabla \varphi_{i} \right)_k.
@@ -1025,7 +1025,7 @@ Table 1. Definition of variables. Geometric variables may be found in the {ref}`
 |$f_{eos}$ | equation of state | -  | any | function call | |
 |$g$ | gravitational acceleration | m s$^{-2}$ | constant  | Gravity |
 |$\tilde{h}_{i,k}$ | pseudo-thickness | m | cell | LayerThickness | $\tilde{h} = (\rho/\rho_0) h$ |
-|$h_{i,k}$ | geometric layer thickness | m | cell | GeometricLayerThickness | same as LayerThickness in MPAS-Ocean |
+|$h_{i,k}$ | geometric layer thickness | m | cell | GeometricThickness | same as LayerThickness in MPAS-Ocean |
 |$k$ | vertical index |  |
 |${\bf k}$ | vertical unit vector |  |
 |$K_{min}$ | shallowest active layer |  |
