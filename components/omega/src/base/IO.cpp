@@ -269,7 +269,7 @@ void openFile(
       // file exists, we use create and fail with an error
       case IfExists::Fail:
          PIOErr = PIOc_createfile(SysID, &FileID, &Format, Filename.c_str(),
-                                  NC_NOCLOBBER | InMode);
+                                  NC_NOCLOBBER | PIO_64BIT_DATA | InMode);
          if (PIOErr != PIO_NOERR)
             ABORT_ERROR("IO::openFile: PIO error opening file {} for writing",
                         Filename);
@@ -279,7 +279,7 @@ void openFile(
       // we use create with the CLOBBER option
       case IfExists::Replace:
          PIOErr = PIOc_createfile(SysID, &FileID, &Format, Filename.c_str(),
-                                  NC_CLOBBER | InMode);
+                                  NC_CLOBBER | PIO_64BIT_DATA | InMode);
          if (PIOErr != PIO_NOERR)
             ABORT_ERROR("IO::openFile: PIO error opening file {} for writing",
                         Filename);
@@ -294,7 +294,7 @@ void openFile(
                                    InMode);
          } else {
             PIOErr = PIOc_createfile(SysID, &FileID, &Format, Filename.c_str(),
-                                     InMode);
+                                     PIO_64BIT_DATA | InMode);
          }
 
          if (PIOErr != PIO_NOERR)
