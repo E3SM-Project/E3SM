@@ -1,4 +1,4 @@
-if (EAMXX_ENABLE_PYTHON)
+if (EAMXX_ENABLE_PYTHON AND NOT EAMXX_ENABLE_GPU)
   # Process wrapping ML emulator (either via python or LAPIS-generated c++ code)
   add_library(cld_frac_net
     cld_frac_net.cpp
