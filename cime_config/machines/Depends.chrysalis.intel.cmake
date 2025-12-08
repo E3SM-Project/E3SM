@@ -5,7 +5,7 @@ set(O2MODELSRC
   elm/src/data_types/VegetationDataType.F90                       # ~ 930  seconds
   elm/src/external_models/fates/main/FatesHistoryInterfaceMod.F90 # ~ 1685 seconds
   elm/src/data_types/ColumnDataType.F90                           # ~ 556  seconds 
-  eam/src/physics/cam/zm_conv.F90                                 # for machine dependent behavior
+  eam/src/physics/cam/zm/zm_conv.F90                                 # for machine dependent behavior
   eam/src/physics/cam/zm_microphysics.F90                         # for machine dependent behavior
 )
 if (NOT DEBUG)
