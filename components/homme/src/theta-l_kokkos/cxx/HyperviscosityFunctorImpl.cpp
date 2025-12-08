@@ -382,6 +382,7 @@ void HyperviscosityFunctorImpl::biharmonic_wk_theta() const
 
 void HyperviscosityFunctorImpl::apply_horizontal_turbulent_diffusion () const
 {
+
   // If we somehow have no time step, do nothing.
   if (m_data.dt <= 0) return;
 
@@ -466,6 +467,7 @@ void HyperviscosityFunctorImpl::apply_horizontal_turbulent_diffusion () const
       auto theta_lap = Homme::subview(m_buffers.ttens,   ie, igp, jgp);
       auto u_lap     = Homme::subview(m_buffers.vtens,   ie, 0, igp, jgp);
       auto v_lap     = Homme::subview(m_buffers.vtens,   ie, 1, igp, jgp);
+      const auto& rspheremp = m_geometry.m_rspheremp(ie, igp, jgp);
 
       MidColumn w_lap, phi_lap;
       if (m_process_nh_vars) {
@@ -474,22 +476,22 @@ void HyperviscosityFunctorImpl::apply_horizontal_turbulent_diffusion () const
       }
 
       // Vertical loop: dp, theta, u, v, (w, phi) all get K * Lapterm * dt_loc
-      Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team, NUM_LEV),
+      Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                            [&] (const int k) {
         const auto km = Km(k);
         const auto kh = Kh(k);
 
         // Scalars (heat-like)
-        dp(k)    += dt_loc * kh * dp_lap(k);
-        theta(k) += dt_loc * kh * theta_lap(k);
+        dp(k)    += dt_loc * kh * dp_lap(k) * rspheremp;
+        theta(k) += dt_loc * kh * theta_lap(k) * rspheremp;
 
         // Momentum (u,v)
-        u(k)     += dt_loc * km * u_lap(k);
-        v(k)     += dt_loc * km * v_lap(k);
+        u(k)     += dt_loc * km * u_lap(k) * rspheremp;
+        v(k)     += dt_loc * km * v_lap(k) * rspheremp;
 
         if (m_process_nh_vars) {
-          w(k)     += dt_loc * kh * w_lap(k);
-          phi_i(k) += dt_loc * kh * phi_lap(k);
+          w(k)     += dt_loc * kh * w_lap(k) * rspheremp;
+          phi_i(k) += dt_loc * kh * phi_lap(k) * rspheremp;
         }
       });
     }); // TeamThreadRange
