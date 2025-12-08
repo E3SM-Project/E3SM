@@ -82,7 +82,7 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
   use zm_aero_type,             only: zm_aero_t
   use zm_microphysics_state,    only: zm_microp_st
   use zm_eamxx_bridge_methods,  only: zm_tend_init, zm_physics_update
-  use zm_conv,                  only: zm_convr, zm_conv_evap
+  use zm_conv,                  only: zm_conv_main, zm_conv_evap
   use zm_conv_mcsp,             only: zm_conv_mcsp_tend
   use zm_transport,             only: zm_transport_momentum
   ! use zm_transport,             only: zm_transport_tracer
@@ -126,7 +126,7 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
 
   logical :: loc_is_first_step
 
-  ! arguments for zm_convr - order somewhat consistent with current interface
+  ! arguments for zm_conv_main - order somewhat consistent with current interface
   integer :: lchnk = 0
 
   integer,  dimension(ncol)      :: jctop          ! output top-of-deep-convection indices
@@ -232,20 +232,20 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
   !-----------------------------------------------------------------------------
   ! Call the primary Zhang-McFarlane convection parameterization
 
-  call zm_convr( ncol, ncol, pver, pverp, loc_is_first_step, 0.5*dtime, &
-                 state_t, state_qv, state_omega, &
-                 state_p_mid, state_p_int, state_p_del, &
-                 state_phis, state_zm, state_zi, state_pblh, &
-                 tpert, landfrac, t_star, q_star, &
-                 lengath, ideep, maxg, jctop, jcbot, jt, &
-                 output_prec, output_tend_s, output_tend_q, &
-                 output_cape, dcape, output_mass_flux, output_prec_flux, &
-                 zdu, mu, eu, du, md, ed, dp, dsubcld, &
-                 zm_qc, rliq, output_rain_prod, dlf, &
-                 aero, microp_st )
+  call zm_conv_main(ncol, ncol, pver, pverp, loc_is_first_step, 0.5*dtime, &
+                    state_t, state_qv, state_omega, &
+                    state_p_mid, state_p_int, state_p_del, &
+                    state_phis, state_zm, state_zi, state_pblh, &
+                    tpert, landfrac, t_star, q_star, &
+                    lengath, ideep, maxg, jctop, jcbot, jt, &
+                    output_prec, output_tend_s, output_tend_q, &
+                    output_cape, dcape, output_mass_flux, output_prec_flux, &
+                    zdu, mu, eu, du, md, ed, dp, dsubcld, &
+                    zm_qc, rliq, output_rain_prod, dlf, &
+                    aero, microp_st )
 
   !-----------------------------------------------------------------------------
-  ! mesoscale coherent structure parameterization (MCSP)- modifies tendencies from zm_convr() prior to updating the state
+  ! mesoscale coherent structure parameterization (MCSP)- modifies tendencies from zm_conv_main() prior to updating the state
 
   if (zm_param%mcsp_enabled) then
 
@@ -282,7 +282,7 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
   end if
 
   !-----------------------------------------------------------------------------
-  ! apply tendencies from zm_convr() & MCSP to local copy of state variables
+  ! apply tendencies from zm_conv_main() & MCSP to local copy of state variables
 
   call zm_physics_update( ncol, dtime, &
                           state_phis, local_state_zm, local_state_zi, &
@@ -292,7 +292,7 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
 
   !-----------------------------------------------------------------------------
   ! Compute the precipitation, rain evaporation, and snow formation/melting
-  ! Note - this routine expects an updated state following zm_convr() (+MCSP)
+  ! Note - this routine expects an updated state following zm_conv_main() (+MCSP)
 
   ! initialize local output tendencies for zm_conv_evap()
   call zm_tend_init( ncol, pver, local_tend_s, local_tend_q, local_tend_u, local_tend_v )

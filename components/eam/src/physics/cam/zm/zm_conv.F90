@@ -47,8 +47,8 @@ module zm_conv
    private
    !----------------------------------------------------------------------------
    ! public methods
-   public zm_convi                 ! ZM scheme initialization
-   public zm_convr                 ! ZM scheme calculations
+   public zm_conv_init             ! ZM scheme initialization
+   public zm_conv_main             ! ZM scheme calculations
    public zm_conv_evap             ! ZM scheme evaporation of precip
    !----------------------------------------------------------------------------
    ! public variables
@@ -66,7 +66,7 @@ module zm_conv
 contains
 !===================================================================================================
 
-subroutine zm_convi(limcnv_in, no_deep_pbl_in)
+subroutine zm_conv_init(limcnv_in, no_deep_pbl_in)
    !----------------------------------------------------------------------------
    ! Purpose: initialize quantities for ZM convection scheme
    !----------------------------------------------------------------------------
@@ -93,12 +93,12 @@ subroutine zm_convi(limcnv_in, no_deep_pbl_in)
    !----------------------------------------------------------------------------
    return
 
-end subroutine zm_convi
+end subroutine zm_conv_init
 
 !===================================================================================================
 
-subroutine zm_gather(pcols, ncol, pver, pverp, is_first_step, cape, dcape, &
-                     cape_threshold_loc, gather_index, lengath)
+subroutine zm_get_gather_index(pcols, ncol, pver, pverp, is_first_step, cape, dcape, &
+                               cape_threshold_loc, gather_index, lengath)
    !----------------------------------------------------------------------------
    ! Purpose: determine length of gathered arrays
    !----------------------------------------------------------------------------
@@ -144,18 +144,18 @@ subroutine zm_gather(pcols, ncol, pver, pverp, is_first_step, cape, dcape, &
    !----------------------------------------------------------------------------
    return
 
-end subroutine zm_gather
+end subroutine zm_get_gather_index
 
 !===================================================================================================
 
-subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, time_step, &
-                     t_mid, q_mid_in, omega, p_mid_in, p_int_in, p_del_in, &
-                     geos, z_mid_in, z_int_in, pbl_hgt, &
-                     tpert, landfrac, t_star, q_star, &
-                     lengath, gather_index, maxg, jctop, jcbot, jt, &
-                     prec, heat, qtnd, cape, dcape, &
-                     mcon, pflx, zdu, mu, eu, du, md, ed, p_del, dsubcld, &
-                     ql, rliq, rprd, dlf, aero, microp_st )
+subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
+                        t_mid, q_mid_in, omega, p_mid_in, p_int_in, p_del_in, &
+                        geos, z_mid_in, z_int_in, pbl_hgt, &
+                        tpert, landfrac, t_star, q_star, &
+                        lengath, gather_index, maxg, jctop, jcbot, jt, &
+                        prec, heat, qtnd, cape, dcape, &
+                        mcon, pflx, zdu, mu, eu, du, md, ed, p_del, dsubcld, &
+                        ql, rliq, rprd, dlf, aero, microp_st )
    !----------------------------------------------------------------------------
    ! Purpose: Main driver for Zhang-Mcfarlane convection scheme
    !----------------------------------------------------------------------------
@@ -420,8 +420,8 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, time_step, &
    !----------------------------------------------------------------------------
    ! determine whether active columns for gathering
 
-   call zm_gather(pcols, ncol, pver, pverp, is_first_step, cape, dcape, &
-                  cape_threshold_loc, gather_index, lengath)
+   call zm_get_gather_index(pcols, ncol, pver, pverp, is_first_step, cape, dcape, &
+                            cape_threshold_loc, gather_index, lengath)
 
    if (lengath.eq.0) then
       ! Deallocate local microphysics arrays before returning
@@ -676,8 +676,8 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, time_step, &
    !----------------------------------------------------------------------------
    ! Compute reserved liquid (and ice) that is not yet in cldliq for energy integrals
    ! Treat rliq as flux out bottom, to be added back later
-   do k = 1, pver
-      do i = 1, ncol
+   do k = 1,pver
+      do i = 1,ncol
          if (zm_param%zm_microp) then
             rliq(i) = rliq(i) + (dlf(i,k)+microp_st%dif(i,k)+microp_st%dsf(i,k))*p_del_in(i,k)/zm_const%grav
             microp_st%rice(i) = microp_st%rice(i) &
@@ -697,7 +697,7 @@ subroutine zm_convr( pcols, ncol, pver, pverp, is_first_step, time_step, &
    !----------------------------------------------------------------------------
    return
 
-end subroutine zm_convr
+end subroutine zm_conv_main
 
 !===================================================================================================
 
@@ -788,8 +788,8 @@ subroutine zm_conv_evap(pcols, ncol, pver, pverp, time_step, &
    flxsnow(:ncol,1) = 0._r8
    evpvint(:ncol)   = 0._r8
 
-   do k = 1, pver
-      do i = 1, ncol
+   do k = 1,pver
+      do i = 1,ncol
 
          ! Melt snow falling into layer, if necessary.
          if (zm_param%old_snow) then
@@ -914,7 +914,7 @@ subroutine zm_conv_evap(pcols, ncol, pver, pverp, time_step, &
 
    ! protect against rounding error
    if (.not.zm_param%old_snow) then
-      do i = 1, ncol
+      do i = 1,ncol
          if (flxsnow(i,pverp).gt.flxprec(i,pverp)) then
             dum = (flxsnow(i,pverp)-flxprec(i,pverp))*zm_const%grav
             do k = pver, 1, -1
@@ -1651,15 +1651,15 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
          ! calculate updraft temperature
          tug(1:ncol,:) = t_mid(1:ncol,:)
          do k = pver, msg+2, -1
-            do i = 1, ncol
+            do i = 1,ncol
                tug(i,k) = su(i,k) - zm_const%grav/zm_const%cpair*z_int(i,k)
             end do ! i
          end do ! k
 
          ! specify ice fraction
          fice(1:ncol,:) = 0._r8
-         do k = 1, pver-1
-            do i = 1, ncol
+         do k = 1,pver-1
+            do i = 1,ncol
                if (tug(i,k+1) > zm_const%tfreez) then
                   ! If warmer than zm_const%tfreez then water phase
                   fice(i,k) = 0._r8
@@ -1673,7 +1673,7 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
             end do ! i
          end do ! k
 
-         do k = 1, pver
+         do k = 1,pver
             do i = 1,ncol
                loc_microp_st%cmei(i,k) = cu(i,k) * fice(i,k)
                loc_microp_st%cmel(i,k) = cu(i,k) * (1._r8-fice(i,k))

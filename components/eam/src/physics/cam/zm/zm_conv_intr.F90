@@ -18,7 +18,7 @@ module zm_conv_intr
    use rad_constituents,      only: rad_cnst_get_info, rad_cnst_get_mode_num, rad_cnst_get_aer_mmr
    use rad_constituents,      only: rad_cnst_get_aer_props, rad_cnst_get_mode_props
    use ndrop_bam,             only: ndrop_bam_init
-   use zm_conv,               only: zm_conv_evap, zm_convr
+   use zm_conv,               only: zm_conv_evap, zm_conv_main
    use zm_transport,          only: zm_transport_tracer, zm_transport_momentum
    use zm_aero_type,          only: zm_aero_t
    use zm_microphysics_state, only: zm_microp_st
@@ -238,7 +238,7 @@ subroutine zm_conv_init(pref_edge)
    !----------------------------------------------------------------------------
    ! Purpose: declare output fields, initialize variables needed by convection
    !----------------------------------------------------------------------------
-   use zm_conv,                 only: zm_convi
+   use zm_conv,                 only: zm_conv_init
    use pmgrid,                  only: plev,plevp
    use spmd_utils,              only: masterproc
    use error_messages,          only: alloc_err
@@ -348,7 +348,7 @@ subroutine zm_conv_init(pref_edge)
                                  'intfc ',limcnv,' which is ',pref_edge(limcnv),' pascals'
 
    no_deep_pbl = phys_deepconv_pbl()
-   call zm_convi( limcnv, no_deep_pbl_in=no_deep_pbl )
+   call zm_conv_init( limcnv, no_deep_pbl_in=no_deep_pbl )
 
    !----------------------------------------------------------------------------
    ! print information about ZM configuration to the log file
@@ -567,7 +567,7 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
    lq(:) = .FALSE.
    lq(1) = .TRUE.
 
-   call physics_ptend_init(ptend_loc, state%psetcols, 'zm_convr', ls=.true., lq=lq )
+   call physics_ptend_init(ptend_loc, state%psetcols, 'zm_conv_main', ls=.true., lq=lq )
 
    !----------------------------------------------------------------------------
    ! Associate pointers with physics buffer fields
@@ -631,17 +631,17 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
    is_first_step_loc = is_first_step()
 
    ! Call the primary Zhang-McFarlane convection parameterization
-   call t_startf ('zm_convr')
-   call zm_convr( pcols, ncol, pver, pverp, is_first_step_loc, ztodt, &
-                  state%t, state%q(:,:,1), state%omega, &
-                  state%pmid, state%pint, state%pdel, &
-                  state%phis, state%zm, state%zi, pblh, &
-                  tpert, landfrac, t_star, q_star, &
-                  lengath, ideep, maxg, jctop, jcbot, jt, &
-                  prec, ptend_loc%s, ptend_loc%q(:,:,1), cape, dcape, &
-                  mcon,  pflx, zdu, mu, eu, du, md, ed, dp, dsubcld, &
-                  ql, rliq, rprd, dlf, aero(lchnk), microp_st )
-   call t_stopf ('zm_convr')
+   call t_startf ('zm_conv_main')
+   call zm_conv_main(pcols, ncol, pver, pverp, is_first_step_loc, ztodt, &
+                     state%t, state%q(:,:,1), state%omega, &
+                     state%pmid, state%pint, state%pdel, &
+                     state%phis, state%zm, state%zi, pblh, &
+                     tpert, landfrac, t_star, q_star, &
+                     lengath, ideep, maxg, jctop, jcbot, jt, &
+                     prec, ptend_loc%s, ptend_loc%q(:,:,1), cape, dcape, &
+                     mcon,  pflx, zdu, mu, eu, du, md, ed, dp, dsubcld, &
+                     ql, rliq, rprd, dlf, aero(lchnk), microp_st )
+   call t_stopf ('zm_conv_main')
 
    if (zm_param%zm_microp) then
       ! update ZM micro variables in pbuf
@@ -665,7 +665,7 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
 
    !----------------------------------------------------------------------------
    ! mesoscale coherent structure parameterization (MCSP)
-   ! Note that this modifies the tendencies produced by zm_convr(), such that
+   ! Note that this modifies the tendencies produced by zm_conv_main(), such that
    ! history variables like ZMDT will include the effects of MCSP
    if (zm_param%mcsp_enabled) then
 
