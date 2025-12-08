@@ -47,7 +47,7 @@ module zm_conv
    private
    !----------------------------------------------------------------------------
    ! public methods
-   public zm_conv_init             ! ZM scheme initialization
+   public zm_conv_main_init        ! ZM scheme initialization
    public zm_conv_main             ! ZM scheme calculations
    public zm_conv_evap             ! ZM scheme evaporation of precip
    !----------------------------------------------------------------------------
@@ -66,7 +66,7 @@ module zm_conv
 contains
 !===================================================================================================
 
-subroutine zm_conv_init(limcnv_in, no_deep_pbl_in)
+subroutine zm_conv_main_init(limcnv_in, no_deep_pbl_in)
    !----------------------------------------------------------------------------
    ! Purpose: initialize quantities for ZM convection scheme
    !----------------------------------------------------------------------------
@@ -93,7 +93,7 @@ subroutine zm_conv_init(limcnv_in, no_deep_pbl_in)
    !----------------------------------------------------------------------------
    return
 
-end subroutine zm_conv_init
+end subroutine zm_conv_main_init
 
 !===================================================================================================
 

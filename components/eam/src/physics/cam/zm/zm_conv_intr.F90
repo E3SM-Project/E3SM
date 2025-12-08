@@ -238,7 +238,7 @@ subroutine zm_conv_init(pref_edge)
    !----------------------------------------------------------------------------
    ! Purpose: declare output fields, initialize variables needed by convection
    !----------------------------------------------------------------------------
-   use zm_conv,                 only: zm_conv_init
+   use zm_conv,                 only: zm_conv_main_init
    use pmgrid,                  only: plev,plevp
    use spmd_utils,              only: masterproc
    use error_messages,          only: alloc_err
@@ -348,7 +348,7 @@ subroutine zm_conv_init(pref_edge)
                                  'intfc ',limcnv,' which is ',pref_edge(limcnv),' pascals'
 
    no_deep_pbl = phys_deepconv_pbl()
-   call zm_conv_init( limcnv, no_deep_pbl_in=no_deep_pbl )
+   call zm_conv_main_init( limcnv, no_deep_pbl_in=no_deep_pbl )
 
    !----------------------------------------------------------------------------
    ! print information about ZM configuration to the log file
