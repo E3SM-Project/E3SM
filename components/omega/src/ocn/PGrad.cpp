@@ -167,7 +167,6 @@ void PressureGrad::computePressureGrad(Array2DReal &Tend,
    const Array2DReal &PressureInterface = VCoord->PressureInterface;
    const Array2DReal &Geopotential      = VCoord->GeopotentialMid;
    const Array2DReal &SpecVol           = EqState->SpecVol;
-   const Array2DReal &ZInterface        = VCoord->ZInterface;
    Array2DReal LayerThick;
    State->getLayerThickness(LayerThick, TimeLevel);
 
@@ -175,7 +174,7 @@ void PressureGrad::computePressureGrad(Array2DReal &Tend,
 
       // computes alpha*p*grad(z) term at edge interfaces
       computeInterfaceProduct(PressureMid, SpecVol,
-                              LayerThick, ZInterface);
+                              LayerThick, PressureInterface);
 
       // computes centered geopotential and pressure gradient tendency
       parallelForOuter(
@@ -195,7 +194,7 @@ void PressureGrad::computePressureGrad(Array2DReal &Tend,
           });
 
    } else {
-      
+
       // computes high-order geopotential and pressure gradient tendency
       parallelForOuter(
           "pgrad-highorder", {NEdgesAll},
@@ -222,13 +221,16 @@ void PressureGrad::computeInterfaceProduct(
     const Array2DReal &PressureMid,
     const Array2DReal &SpecVol,
     const Array2DReal &LayerThick,
-    const Array2DReal &ZInterface) {
+    const Array2DReal &PInterface) {
 
    OMEGA_SCOPE(LocCellsOnEdge, CellsOnEdge);
    OMEGA_SCOPE(LocDcEdge, DcEdge);
    OMEGA_SCOPE(LocInterfaceProduct, InterfaceProduct);
    OMEGA_SCOPE(LocMinLayerEdgeBot, MinLayerEdgeBot);
    OMEGA_SCOPE(LocMaxLayerEdgeTop, MaxLayerEdgeTop);
+
+   Real Gravity = 9.80616_Real;
+   Real Rho0   = 1026.0_Real;
 
    parallelForOuter(
        "compute-interface-product", {NEdgesAll},
@@ -249,8 +251,8 @@ void PressureGrad::computeInterfaceProduct(
               (LayerThick(ICell1, KMin) + LayerThick(ICell0, KMin));
 
           LocInterfaceProduct(IEdge, KMin) *=
-                (ZInterface(ICell1, KMin) - ZInterface(ICell0, KMin)) /
-                LocDcEdge(IEdge);
+                -(PInterface(ICell1, KMin) - PInterface(ICell0, KMin)) /
+                (LocDcEdge(IEdge) * Gravity * Rho0);
 
           // Four-point average for interior interface products
           const int KRange = vertRange(KMin + 1, KMax);
@@ -278,8 +280,8 @@ void PressureGrad::computeInterfaceProduct(
                             LayerThick(ICell0, K - 1));
 
                        LocInterfaceProduct(IEdge, K) *=
-                             (ZInterface(ICell1, K) - ZInterface(ICell0, K)) /
-                             LocDcEdge(IEdge);
+                             -(PInterface(ICell1, K) - PInterface(ICell0, K)) /
+                             (LocDcEdge(IEdge) * Gravity * Rho0);
                  }          
            });
 
@@ -293,8 +295,8 @@ void PressureGrad::computeInterfaceProduct(
               (LayerThick(ICell1, KMax) +
                LayerThick(ICell0, KMax));
           LocInterfaceProduct(IEdge, KMax + 1) *=
-                (ZInterface(ICell1, KMax + 1) - ZInterface(ICell0, KMax + 1)) /
-                LocDcEdge(IEdge);
+                -(PInterface(ICell1, KMax + 1) - PInterface(ICell0, KMax + 1)) /
+                (LocDcEdge(IEdge) * Gravity * Rho0);
    });
 
 } // end compute interface product

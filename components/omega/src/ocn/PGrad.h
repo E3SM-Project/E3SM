@@ -61,7 +61,9 @@ class PressureGradCentered {
                               InvLayerThickEdge;
 
          Tend(IEdge, K) +=
-             EdgeMask(IEdge, K) * (-GeoTerm - PresTerm + InterfaceTerm);
+             EdgeMask(IEdge, K) * (GeoTerm + PresTerm - InterfaceTerm);
+         if (IEdge == 0)    
+         LOG_INFO("IEdge {}, K {}: GeoTerm {}, PresTerm {}, InterfaceTerm {}, Tend {}", IEdge, K, GeoTerm, PresTerm, InterfaceTerm, Tend(IEdge, K));
       }
    }
 
