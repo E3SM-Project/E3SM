@@ -22,48 +22,50 @@ module eatmMod
      !         for now, using 2D arrays with EAM naming convention
      !         and EAM sign conventions
   ! imported arrays first
-  real(kind=R8), dimension(:,:), allocatable, public :: shf
-  real(kind=R8), dimension(:,:), allocatable, public :: cflx
-  real(kind=R8), dimension(:,:), allocatable, public :: lhf
-  real(kind=R8), dimension(:,:), allocatable, public :: wsx
-  real(kind=R8), dimension(:,:), allocatable, public :: wsy
-  real(kind=R8), dimension(:,:), allocatable, public :: lwup
-  real(kind=R8), dimension(:,:), allocatable, public :: asdir
-  real(kind=R8), dimension(:,:), allocatable, public :: aldir
-  real(kind=R8), dimension(:,:), allocatable, public :: asdif
-  real(kind=R8), dimension(:,:), allocatable, public :: aldif
-  real(kind=R8), dimension(:,:), allocatable, public :: ts
-  real(kind=R8), dimension(:,:), allocatable, public :: sst
-  real(kind=R8), dimension(:,:), allocatable, public :: snowhland
-  real(kind=R8), dimension(:,:), allocatable, public :: snowhice
-  real(kind=R8), dimension(:,:), allocatable, public :: tref
-  real(kind=R8), dimension(:,:), allocatable, public :: qref
-  real(kind=R8), dimension(:,:), allocatable, public :: u10
-  real(kind=R8), dimension(:,:), allocatable, public :: u10withgusts
-  real(kind=R8), dimension(:,:), allocatable, public :: icefrac
-  real(kind=R8), dimension(:,:), allocatable, public :: ocnfrac
-  real(kind=R8), dimension(:,:), allocatable, public :: lndfrac
+  real(kind=R8), dimension(:,:), allocatable, public :: shf          ! sensible heat flux
+  real(kind=R8), dimension(:,:), allocatable, public :: cflx         ! constituent flux (emissions)
+  real(kind=R8), dimension(:,:), allocatable, public :: lhf          ! latent heat flux
+  real(kind=R8), dimension(:,:), allocatable, public :: wsx          ! surface u-stress (N)
+  real(kind=R8), dimension(:,:), allocatable, public :: wsy          ! surface v-stress (N)
+  real(kind=R8), dimension(:,:), allocatable, public :: lwup         ! longwave up radiative flux
+  real(kind=R8), dimension(:,:), allocatable, public :: asdir        ! albedo: shortwave, direct
+  real(kind=R8), dimension(:,:), allocatable, public :: aldir        ! albedo: longwave, direct
+  real(kind=R8), dimension(:,:), allocatable, public :: asdif        ! albedo: shortwave, diffuse
+  real(kind=R8), dimension(:,:), allocatable, public :: aldif        ! albedo: longwave, diffuse
+  real(kind=R8), dimension(:,:), allocatable, public :: ts           ! merged surface temp
+  real(kind=R8), dimension(:,:), allocatable, public :: sst          ! sea surface temp
+  real(kind=R8), dimension(:,:), allocatable, public :: snowhland    ! snow depth (liquid water equivalent) over land
+  real(kind=R8), dimension(:,:), allocatable, public :: snowhice     ! snow depth over ice
+  real(kind=R8), dimension(:,:), allocatable, public :: tref         ! ref height surface air temp
+  real(kind=R8), dimension(:,:), allocatable, public :: qref         ! ref height specific humidity
+  real(kind=R8), dimension(:,:), allocatable, public :: u10          ! 10m wind speed
+  real(kind=R8), dimension(:,:), allocatable, public :: u10withgusts ! 10m wind speed with gustiness
+  real(kind=R8), dimension(:,:), allocatable, public :: icefrac      ! sea-ice areal fraction
+  real(kind=R8), dimension(:,:), allocatable, public :: ocnfrac      ! ocean areal fraction
+  real(kind=R8), dimension(:,:), allocatable, public :: lndfrac      ! land area fraction
 
   ! exported arrays
-  real(kind=R8), dimension(:,:), allocatable, public :: zbot
-  real(kind=R8), dimension(:,:), allocatable, public :: ubot
-  real(kind=R8), dimension(:,:), allocatable, public :: vbot
-  real(kind=R8), dimension(:,:), allocatable, public :: tbot
-  real(kind=R8), dimension(:,:), allocatable, public :: thbot
-  real(kind=R8), dimension(:,:), allocatable, public :: qbot
-  real(kind=R8), dimension(:,:), allocatable, public :: rho
-  real(kind=R8), dimension(:,:), allocatable, public :: pbot
-  real(kind=R8), dimension(:,:), allocatable, public :: psl
-  real(kind=R8), dimension(:,:), allocatable, public :: flwds
-  real(kind=R8), dimension(:,:), allocatable, public :: rainc
-  real(kind=R8), dimension(:,:), allocatable, public :: rainl
-  real(kind=R8), dimension(:,:), allocatable, public :: snowc
-  real(kind=R8), dimension(:,:), allocatable, public :: snowl
-  real(kind=R8), dimension(:,:), allocatable, public :: soll
-  real(kind=R8), dimension(:,:), allocatable, public :: sols
-  real(kind=R8), dimension(:,:), allocatable, public :: solld
-  real(kind=R8), dimension(:,:), allocatable, public :: solsd
-  real(kind=R8), dimension(:,:), allocatable, public :: netsw
+  real(kind=R8), dimension(:,:), allocatable, public :: zbot         ! bot level height above surface
+  real(kind=R8), dimension(:,:), allocatable, public :: ubot         ! bot level u wind
+  real(kind=R8), dimension(:,:), allocatable, public :: vbot         ! bot level v wind
+  real(kind=R8), dimension(:,:), allocatable, public :: tbot         ! bot level temperature
+  real(kind=R8), dimension(:,:), allocatable, public :: thbot        ! bot level potential temperature
+  real(kind=R8), dimension(:,:), allocatable, public :: qbot         ! bot level specific humidity
+  real(kind=R8), dimension(:,:), allocatable, public :: rho          ! bot level density
+  real(kind=R8), dimension(:,:), allocatable, public :: pbot         ! bot level pressure
+  real(kind=R8), dimension(:,:), allocatable, public :: psl          ! sea level atm pressure
+  real(kind=R8), dimension(:,:), allocatable, public :: flwds        ! Down longwave flux at surface
+  !JW EAM uses precc, precsc, precsl, precsl instead of rain/snow below, but has to manipulate them
+  !JW     either is fine with me if someone feels strongly
+  real(kind=R8), dimension(:,:), allocatable, public :: rainc        ! liquid "convective" precip
+  real(kind=R8), dimension(:,:), allocatable, public :: rainl        ! liquid "large scale" precip
+  real(kind=R8), dimension(:,:), allocatable, public :: snowc        ! frozen "convective" precip
+  real(kind=R8), dimension(:,:), allocatable, public :: snowl        ! frozen "large scale" precip
+  real(kind=R8), dimension(:,:), allocatable, public :: soll         ! direct near-infrared incident solar radiation
+  real(kind=R8), dimension(:,:), allocatable, public :: sols         ! direct visible incident solar radiation
+  real(kind=R8), dimension(:,:), allocatable, public :: solld        ! diffuse near-infrared incident solar radiation
+  real(kind=R8), dimension(:,:), allocatable, public :: solsd        ! diffuse visible incident solar radiation
+  real(kind=R8), dimension(:,:), allocatable, public :: netsw        ! net shortwave radiation
 
   character(CS), public :: myModelName = 'atm'   ! user defined model name
 
