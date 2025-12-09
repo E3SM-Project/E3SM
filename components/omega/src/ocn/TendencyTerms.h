@@ -422,7 +422,7 @@ class TracerHighOrderHorzAdvOnCell {
    // coefficient for blending high-order terms
    Real coef3rdOrder = 0.25;
 
-   TracerHighOrderHorzAdvOnCell(const HorzMesh *Mesh);
+   TracerHighOrderHorzAdvOnCell(const HorzMesh *Mesh, const VertCoord *VCoord);
    void init();
 
    KOKKOS_FUNCTION void operator()(const I4 L, const I4 IEdge, const I4 KChunk,
