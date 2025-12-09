@@ -479,7 +479,7 @@ int testsecondderivativeoncellDeterminePlanerPatchGeometry(Real RTol) {
          cellsOnEdge[e].push_back(c);
       }
    }
-   for (int e = 0; e < cellsOnEdge.size(); ++e) {
+   for (unsigned e = 0; e < cellsOnEdge.size(); ++e) {
       if (1 < cellsOnEdge[e].size())
          dcEdge[e] = CtoC;
    }
@@ -492,20 +492,20 @@ int testsecondderivativeoncellDeterminePlanerPatchGeometry(Real RTol) {
 
    Array2DI4 CellsOnEdge("CellsOnEdge", cellsOnEdge.size(), 2);
    auto CellsOnEdgeH = createHostMirrorCopy(CellsOnEdge);
-   for (int e = 0; e < cellsOnEdge.size(); ++e)
-      for (int i = 0; i < cellsOnEdge[e].size(); ++i)
+   for (unsigned e = 0; e < cellsOnEdge.size(); ++e)
+      for (unsigned i = 0; i < cellsOnEdge[e].size(); ++i)
          CellsOnEdgeH(e, i) = cellsOnEdge[e][i];
    OMEGA::deepCopy(CellsOnEdge, CellsOnEdgeH);
 
    Array1DReal AngleEdge("AndleEdge", angleEdge.size());
    auto AngleEdgeH = createHostMirrorCopy(AngleEdge);
-   for (int e = 0; e < angleEdge.size(); ++e)
+   for (unsigned e = 0; e < angleEdge.size(); ++e)
       AngleEdgeH(e) = angleEdge[e];
    OMEGA::deepCopy(AngleEdge, AngleEdgeH);
 
    Array1DReal DcEdge("DcEdge", dcEdge.size());
    auto DcEdgeH = createHostMirrorCopy(DcEdge);
-   for (int e = 0; e < dcEdge.size(); ++e)
+   for (unsigned e = 0; e < dcEdge.size(); ++e)
       DcEdgeH(e) = dcEdge[e];
    OMEGA::deepCopy(DcEdge, DcEdgeH);
 
@@ -711,7 +711,7 @@ int testsecondderivativeoncellDetermineSphericalPatchGeometry(Real RTol) {
          cellsOnEdge[e].push_back(c);
       }
    }
-   for (int e = 0; e < cellsOnEdge.size(); ++e) {
+   for (unsigned e = 0; e < cellsOnEdge.size(); ++e) {
       if (1 < cellsOnEdge[e].size())
          dcEdge[e] = CtoC;
    }
@@ -794,20 +794,20 @@ int testsecondderivativeoncellDetermineSphericalPatchGeometry(Real RTol) {
 
    Array2DI4 CellsOnEdge("CellsOnEdge", cellsOnEdge.size(), 2);
    auto CellsOnEdgeH = createHostMirrorCopy(CellsOnEdge);
-   for (int e = 0; e < cellsOnEdge.size(); ++e)
-      for (int i = 0; i < cellsOnEdge[e].size(); ++i)
+   for (unsigned e = 0; e < cellsOnEdge.size(); ++e)
+      for (unsigned i = 0; i < cellsOnEdge[e].size(); ++i)
          CellsOnEdgeH(e, i) = cellsOnEdge[e][i];
    OMEGA::deepCopy(CellsOnEdge, CellsOnEdgeH);
 
    Array1DReal AngleEdge("AndleEdge", angleEdge.size());
    auto AngleEdgeH = createHostMirrorCopy(AngleEdge);
-   for (int e = 0; e < angleEdge.size(); ++e)
+   for (unsigned e = 0; e < angleEdge.size(); ++e)
       AngleEdgeH(e) = angleEdge[e];
    OMEGA::deepCopy(AngleEdge, AngleEdgeH);
 
    Array1DReal DcEdge("DcEdge", dcEdge.size());
    auto DcEdgeH = createHostMirrorCopy(DcEdge);
-   for (int e = 0; e < dcEdge.size(); ++e)
+   for (unsigned e = 0; e < dcEdge.size(); ++e)
       DcEdgeH(e) = dcEdge[e];
    OMEGA::deepCopy(DcEdge, DcEdgeH);
 

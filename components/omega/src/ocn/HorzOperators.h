@@ -492,8 +492,8 @@ class MasksAndCoefficients {
       Array1DI4 CellIndex     = Kokkos::subview(CellIndx, IEdge, Kokkos::ALL);
       Array2DI4 CellIndexSorted =
           Kokkos::subview(CellIndxSorted, IEdge, Kokkos::ALL, Kokkos::ALL);
-      for (int I = 0; I < CellIndexSorted.extent(0); ++I)
-         for (int K = 0; K < CellIndexSorted.extent(1); ++K)
+      for (unsigned I = 0; I < CellIndexSorted.extent(0); ++I)
+         for (unsigned K = 0; K < CellIndexSorted.extent(1); ++K)
             CellIndexSorted(I, K) = MaxI4;
       const int Cell1 = CellsOnEdge(IEdge, 0);
       const int Cell2 = CellsOnEdge(IEdge, 1);
