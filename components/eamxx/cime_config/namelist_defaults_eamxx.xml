@@ -479,8 +479,11 @@ be lost if SCREAM_HACK_XML is not enabled.
     <!-- Simple Prescribed Aerosols (SPA) -->
     <spa inherit="atm_proc_base">
       <spa_remap_file type="file" doc="File containing mapping data from the grid of spa_data_file to the model grid. Unused if the grid is the same.">none</spa_remap_file>
+      <spa_remap_file hgrid="ne32np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne32pg2_traave.20251124.nc</spa_remap_file>
+      <spa_remap_file hgrid="ne64np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne64pg2_traave.20251124.nc</spa_remap_file>
       <spa_remap_file hgrid="ne120np4">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_ne120np4_mono_20220502.nc</spa_remap_file>
       <spa_remap_file hgrid="ne120np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne120pg2_20231201.nc</spa_remap_file>
+      <spa_remap_file hgrid="ne128np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne128pg2_traave.20251124.nc</spa_remap_file>
       <spa_remap_file hgrid="ne256np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne256pg2_20231201.nc</spa_remap_file>
       <spa_remap_file hgrid="ne512np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne512pg2_20231201.nc</spa_remap_file>
       <spa_remap_file hgrid="ne1024np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne1024pg2_20231201.nc</spa_remap_file>
@@ -577,7 +580,10 @@ be lost if SCREAM_HACK_XML is not enabled.
       <atm_procs_list COMPSET=".*SCREAM.*noAero" hgrid=".*pg2">tms,shoc,cld_fraction,p3</atm_procs_list> <!-- TMS only available for PG2 -->
       <number_of_subcycles hgrid="ne4np4">24</number_of_subcycles>
       <number_of_subcycles hgrid="ne30np4">12</number_of_subcycles>
+      <number_of_subcycles hgrid="ne32np4">12</number_of_subcycles>
+      <number_of_subcycles hgrid="ne64np4">6</number_of_subcycles>
       <number_of_subcycles hgrid="ne120np4">6</number_of_subcycles>
+      <number_of_subcycles hgrid="ne128np4">6</number_of_subcycles>
       <number_of_subcycles hgrid="ne256np4">6</number_of_subcycles>
       <number_of_subcycles hgrid="ne512np4">2</number_of_subcycles>
       <number_of_subcycles hgrid="ne1024np4">1</number_of_subcycles>
@@ -647,7 +653,10 @@ be lost if SCREAM_HACK_XML is not enabled.
     <topography_filename type="file">UNSET</topography_filename>
     <!-- Rough topography available for ne30, ne120, ne256, ne512, and ne1024 -->
     <topography_filename hgrid="ne30np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne30np4pg2_x6t-SGH.c20210614.nc</topography_filename>
+    <topography_filename hgrid="ne32np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-topo_ne32np4_smoothedx6t_20250904_no-oro-shape.nc</topography_filename>
+    <topography_filename hgrid="ne64np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-topo_ne64np4_smoothedx6t_20250904_no-oro-shape.nc</topography_filename>
     <topography_filename hgrid="ne120np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne120np4pg2_x6t_20230404.nc</topography_filename>
+    <topography_filename hgrid="ne128np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-topo_ne128np4_smoothedx6t_20250904_no-oro-shape.nc</topography_filename>
     <topography_filename hgrid="ne256np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne256np4pg2_x6t-SGH.c20210614.nc</topography_filename>
     <topography_filename hgrid="ne512np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne512np4pg2_x6t_20230404.nc</topography_filename>
     <topography_filename hgrid="ne1024np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne1024np4pg2_x6t-SGH.c20210614.nc</topography_filename>
@@ -734,6 +743,8 @@ be lost if SCREAM_HACK_XML is not enabled.
     <qi hgrid="ne256np4|ne512np4|ne1024np4">0.0</qi>
     <nc hgrid="ne256np4|ne512np4|ne1024np4|ne0np4_CAx32v1">0.0</nc>
     <ni hgrid="ne256np4|ne512np4|ne1024np4|ne0np4_CAx32v1">0.0</ni>
+    <nc hgrid="ne32np4|ne64np4|ne128np4">0.0</nc>
+    <ni hgrid="ne32np4|ne64np4|ne128np4">0.0</ni>
     <o3_volume_mix_ratio hgrid="ne0np4_conus_x4v1_lowcon">0.0</o3_volume_mix_ratio>
 
     <!-- Information about perturbed fields-->
@@ -840,9 +851,12 @@ be lost if SCREAM_HACK_XML is not enabled.
     <nu>3.4e-08</nu>
     <nu COMPSET=".*DP-EAMxx">0.216784</nu>
     <nu_top>UNSET</nu_top>
-    <nu_top hgrid="ne4np4">250000.0</nu_top>
-    <nu_top hgrid="ne30np4">250000.0</nu_top>
+    <nu_top hgrid="ne4np4"  >250000.0</nu_top>
+    <nu_top hgrid="ne30np4" >250000.0</nu_top>
+    <nu_top hgrid="ne32np4" >250000.0</nu_top>
+    <nu_top hgrid="ne64np4" >175000.0</nu_top>
     <nu_top hgrid="ne120np4">100000.0</nu_top>
+    <nu_top hgrid="ne128np4">100000.0</nu_top>
     <nu_top hgrid="ne256np4">4.0e4</nu_top>
     <nu_top hgrid="ne512np4">2.0e4</nu_top>
     <nu_top hgrid="ne1024np4">1.0e4</nu_top>
@@ -857,7 +871,10 @@ be lost if SCREAM_HACK_XML is not enabled.
     <se_ne>UNSET</se_ne>
     <se_ne hgrid="ne4np4" constraints="ge 2">4</se_ne>
     <se_ne hgrid="ne30np4" constraints="ge 2">30</se_ne>
+    <se_ne hgrid="ne32np4" constraints="ge 2">32</se_ne>
+    <se_ne hgrid="ne64np4" constraints="ge 2">64</se_ne>
     <se_ne hgrid="ne120np4" constraints="ge 2">120</se_ne>
+    <se_ne hgrid="ne128np4" constraints="ge 2">128</se_ne>
     <se_ne hgrid="ne256np4" constraints="ge 2">256</se_ne>
     <se_ne hgrid="ne512np4" constraints="ge 2">512</se_ne>
     <se_ne hgrid="ne1024np4" constraints="ge 2">1024</se_ne>
