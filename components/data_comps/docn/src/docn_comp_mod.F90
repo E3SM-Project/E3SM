@@ -71,7 +71,7 @@ module docn_comp_mod
 
   integer(IN)   :: kt,ks,ku,kv,kdhdx,kdhdy,kq,kswp,kssh,kh2o ! field indices
   integer(IN)   :: kswnet,klwup,klwdn,ksen,klat,kmelth,ksnow,krofi
-  integer(IN)   :: kh,kqbot,kfraz,kssh,kh2ot
+  integer(IN)   :: kh,kqbot,kfraz,kh2ot
   integer(IN)   :: k10uu           ! index for u10
   integer(IN)   :: kRSO_bckgrd_sst ! index for background SST (relaxed slab ocean)
   integer(IN)   :: index_lat, index_lon
