@@ -201,6 +201,7 @@ void HommeDynamics::remap_dyn_to_fv_phys (GllFvRemapTmp* t) const {
 }
 
 void HommeDynamics::remap_fv_phys_to_dyn () const {
+  // PAB mod here
   if (not fv_phys_active()) return;
   const auto& c = Homme::Context::singleton();
   auto& gfr = c.get<Homme::GllFvRemap>();
@@ -216,6 +217,10 @@ void HommeDynamics::remap_fv_phys_to_dyn () const {
   const auto uv_ndim = m_helper_fields.at("FM_phys").get_view<const Real***>().extent_int(1);
   assert(uv_ndim == 2);
 
+  // SGS Eddy diffusivities on FV phys grid
+  const auto Km_phys = get_field_in("eddy_diff_mom",gn).get_view<const Real***();
+  const auto Kh_phys = get_field_in("eddy_diff_heat",gn).get_view<const Real***>();
+
   const auto T = Homme::GllFvRemap::CPhys2T(
     m_helper_fields.at("FT_phys").get_view<const Real**>().data(),
     nelem, npg, nlev);
@@ -226,7 +231,10 @@ void HommeDynamics::remap_fv_phys_to_dyn () const {
     get_group_in("tracers", gn).m_monolithic_field->get_view<const Real***>().data(),
     nelem, npg, nq, nlev);
 
-  gfr.run_fv_phys_to_dyn(time_idx, T, uv, q);
+  const auto Km = Homme::GllFvRemap::CPhys2T(Km_phys.data(), nelem, npg, nlev);
+  const auto Kh = Homme::GllFvRemap::CPhys2T(Kh_phys.data(), nelem, npg, nlev);
+
+  gfr.run_fv_phys_to_dyn(time_idx, T, uv, q, Km, Kh);
   Kokkos::fence();
   gfr.run_fv_phys_to_dyn_dss();
   Kokkos::fence();

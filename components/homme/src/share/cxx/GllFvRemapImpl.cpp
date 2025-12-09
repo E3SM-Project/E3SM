@@ -559,7 +559,8 @@ void GllFvRemapImpl
 
 void GllFvRemapImpl::
 run_fv_phys_to_dyn (const int timeidx, const CPhys2T& Ts, const CPhys3T& uvs,
-                    const CPhys3T& qs) {
+                    const CPhys3T& qs, const CPhys2T& Kms, const CPhys2T& Khs) {
+//PAB Modify this
 #ifdef MODEL_THETA_L
   using Kokkos::parallel_for;
 
@@ -584,7 +585,9 @@ run_fv_phys_to_dyn (const int timeidx, const CPhys2T& Ts, const CPhys3T& uvs,
 #endif
 
   CVPhys2T
-    T(creal2pack(Ts), Ts.extent_int(0), Ts.extent_int(1), Ts.extent_int(2)/packn);
+    T(creal2pack(Ts), Ts.extent_int(0), Ts.extent_int(1), Ts.extent_int(2)/packn),
+    Km(creal2pack(Kms), Kms.extent_int(0), Kms.extent_int(1), Kms.extent_int(2)/packn),
+    Kh(creal2pack(Khs), Khs.extent_int(0), Khs.extent_int(1), Khs.extent_int(2)/packn);
   CVPhys3T
     uv(creal2pack(uvs), uvs.extent_int(0), uvs.extent_int(1), uvs.extent_int(2),
        uvs.extent_int(3)/packn),
@@ -605,6 +608,8 @@ run_fv_phys_to_dyn (const int timeidx, const CPhys2T& Ts, const CPhys3T& uvs,
   const auto fT = m_forcing.m_ft;
   const auto hvcoord = m_hvcoord;
   const auto dp3d = m_state.m_dp3d;
+  const auto Km_gll = m_derived.m_turb_diff_mom;
+  const auto Kh_gll = m_derived.m_turb_diff_heat;
   const bool theta_hydrostatic_mode = m_data.theta_hydrostatic_mode;
   EquationOfState eos; eos.init(theta_hydrostatic_mode, hvcoord);
   ElementOps ops; ops.init(hvcoord);
@@ -634,6 +639,39 @@ run_fv_phys_to_dyn (const int timeidx, const CPhys2T& Ts, const CPhys3T& uvs,
              ps_v_ie, w1, evur2(w2, nf2, 1));
       kv.team_barrier();
       calc_dp_fv(team, hvcoord, nf2, nlevpk, EVU<Real*>(w2, nf2), dp_fv_ie);
+      kv.team_barrier();
+    }
+
+    {
+      using Homme::Scalar;
+
+      const evus2 Km_f_ie(const_cast<Scalar*>(&Km(ie,0,0)), nf2, nlevpk);
+      const evus2 Kh_f_ie(const_cast<Scalar*>(&Kh(ie,0,0)), nf2, nlevpk);
+
+      // GLL-side Km/Kh on this element: [NP*NP][nlevpk]
+      evus_np2_nlev Km_g_ie(&Km_gll(ie,0,0,0));
+      evus_np2_nlev Kh_g_ie(&Kh_gll(ie,0,0,0));
+
+      // dp on GLL grid/timeidx (needed by f2g_scalar_dp)
+      const evucs_np2_nlev dp_g_ie(&dp3d(ie,timeidx,0,0,0));
+
+      // Use rw1 as scratch, exactly like the theta remap below
+      f2g_scalar_dp(kv, nf2, np2, nlevpk,
+                    f2g_remapd,
+                    fv_metdet_ie, gll_metdet_ie,
+                    dp_fv_ie, dp_g_ie,
+                    Km_f_ie,
+                    evus_np2_nlev(rw1.data()),  // scratch
+                    Km_g_ie);
+      kv.team_barrier();
+
+      f2g_scalar_dp(kv, nf2, np2, nlevpk,
+                    f2g_remapd,
+                    fv_metdet_ie, gll_metdet_ie,
+                    dp_fv_ie, dp_g_ie,
+                    Kh_f_ie,
+                    evus_np2_nlev(rw1.data()),  // scratch
+                    Kh_g_ie);
       kv.team_barrier();
     }
 
