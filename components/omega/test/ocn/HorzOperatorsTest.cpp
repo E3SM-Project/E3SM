@@ -604,7 +604,10 @@ int testsecondderivativeoncellLeastSquaresFit(Real RTol) {
    OMEGA::deepCopy(XP, XPH);
    OMEGA::deepCopy(YP, YPH);
    Array2DReal B("B", MaxMaxEdges, MaxMaxEdges);
-   SecondDerivativeOnCellTest::Test(XP, YP, NEdges, B);
+   Kokkos::parallel_for(
+       1, KOKKOS_LAMBDA(int /* dummy */) {
+          SecondDerivativeOnCellTest::Test(XP, YP, NEdges, B);
+       });
 
    // From a Mathematica script.
    const Real c0      = 0.0412393049421;
@@ -630,14 +633,14 @@ int testsecondderivativeoncellLeastSquaresFit(Real RTol) {
                Err++;
                LOG_ERROR("{}: FAIL, expected {}, got {}",
                          "testsecondderivativeoncellLeastSquaresFit", m,
-                         B(i, j));
+                         BH(i, j));
             }
          } else {
-            if (!isApprox(B(i, j), m, RTol)) {
+            if (!isApprox(BH(i, j), m, RTol)) {
                Err++;
                LOG_ERROR("{}: FAIL, expected {}, got {}",
                          "testsecondderivativeoncellLeastSquaresFit", m,
-                         B(i, j));
+                         BH(i, j));
             }
          }
       }
@@ -832,9 +835,9 @@ int testsecondderivativeoncellDetermineSphericalPatchGeometry(Real RTol) {
       Array1DReal YP("YP", NEdges);
       Array1DReal Angle2D("Angle2D", NEdges);
       Array1DI4 CellList("CellList", NEdges + 1);
+      auto CellListH = createHostMirrorCopy(CellList);
       {
          const I4 List[NEdges + 1] = {3, 0, 2, 5, 6, 4, 1};
-         auto CellListH            = createHostMirrorCopy(CellList);
          for (int I = 0; I < NEdges + 1; ++I)
             CellListH[I] = List[I];
          OMEGA::deepCopy(CellList, CellListH);
@@ -856,7 +859,7 @@ int testsecondderivativeoncellDetermineSphericalPatchGeometry(Real RTol) {
          T[0] = T[1] = 0;
          for (int J = 0; J < 6; ++J)
             for (int K = 0; K < 2; ++K)
-               T[K] += X[E[CellList[i + 1]][J]][K];
+               T[K] += X[E[CellListH[i + 1]][J]][K];
          T[0] /= 6;
          T[1] /= 6;
 
