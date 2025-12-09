@@ -81,8 +81,8 @@ TracerHorzAdvOnCell::TracerHorzAdvOnCell(const HorzMesh *Mesh,
       MinLayerEdgeBot(VCoord->MinLayerEdgeBot),
       MaxLayerEdgeTop(VCoord->MaxLayerEdgeTop) {}
 
-TracerHighOrderHorzAdvOnCell::TracerHighOrderHorzAdvOnCell(const HorzMesh *Mesh,
-		                                           const VertCoord *VCoord)
+TracerHighOrderHorzAdvOnCell::TracerHighOrderHorzAdvOnCell(
+    const HorzMesh *Mesh, const VertCoord *VCoord)
     : HorzontalMesh(Mesh),
       NAdvCellsForEdge("NumberOfCellsContribToAdvectionAtEdge",
                        Mesh->NEdgesOwned),
