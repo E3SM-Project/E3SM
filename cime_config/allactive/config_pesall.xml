@@ -2365,7 +2365,7 @@
   <grid name="a%ne30np4.pg2_l%.+_g%mpas.gis1to10kmR2">
     <mach name="pm-cpu|muller-cpu|alvarez-cpu">
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+MALI.+SWAV.+" pesize="M">
-        <comment>pm-cpu: GIS 1-to-10km (high-res) baseline config</comment>
+        <comment>chrysalis: BG-case production config. using 1-to-10km (high-res) GIS init. cond.</comment>
         <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
         <ntasks>
@@ -2402,7 +2402,7 @@
     </mach>
     <mach name="chrysalis">
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+MALI.+SWAV.+" pesize="M">
-        <comment>GIS 1-to-10km (high-res) baseline config</comment>
+        <comment>chrysalis: BG-case production config. using 1-to-10km (high-res) GIS init. cond.</comment>
         <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
         <ntasks>
@@ -2441,7 +2441,7 @@
   <grid name="a%ne30np4.pg2_l%.+_g%mpas.gis4to40">
     <mach name="pm-cpu|muller-cpu|alvarez-cpu">
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+MALI.+SWAV.+" pesize="M">
-        <comment>pm-cpu: GIS 4-to-40km (med-res) baseline config</comment>
+        <comment>pm-cpu: BG-case testing config. using 4-to-40km (med-res) GIS init. cond.</comment>
         <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
         <ntasks>
@@ -2478,7 +2478,7 @@
     </mach>
     <mach name="chrysalis">
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+MALI.+SWAV.+" pesize="M">
-        <comment>chrys: GIS 4-to-40km (med-res) baseline config</comment>
+        <comment>chrysalis: BG-case testing config. using 4-to-40km (med-res) GIS init. cond.</comment>
         <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
         <ntasks>
