@@ -831,8 +831,7 @@ int testsecondderivativeoncellDetermineSphericalPatchGeometry(Real RTol) {
       Array1DReal XP("XP", NEdges);
       Array1DReal YP("YP", NEdges);
       Array1DReal Angle2D("Angle2D", NEdges);
-      ;
-      Array1DI4 CellList("CellList", NEdges);
+      Array1DI4 CellList("CellList", NEdges + 1);
       {
          const I4 List[NEdges + 1] = {3, 0, 2, 5, 6, 4, 1};
          auto CellListH            = createHostMirrorCopy(CellList);
