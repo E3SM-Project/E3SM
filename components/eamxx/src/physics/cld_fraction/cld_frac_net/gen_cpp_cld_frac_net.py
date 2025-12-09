@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
 
-from cld_frac_net import CldFracNet, create_cld_frac_net
+from cld_frac_net import create_cld_frac_net
 import os
 import sys
 import torch
-import torch_mlir
-from torch_mlir.compiler_utils import TensorPlaceholder
-from torch_mlir import torchscript
+import torch_mlir.torchscript
 
 CURR_FILE_PATH = os.path.dirname(os.path.abspath(__file__))
 EAMXX_SCRIPTS_PATH = os.path.join(os.path.abspath(CURR_FILE_PATH), '../../../../scripts')
@@ -17,10 +15,8 @@ from utils import run_cmd_no_fail
 def main ():
 
     model = create_cld_frac_net()
-
-    ph = TensorPlaceholder([model.nlevs],torch.float32)
-
-    mlir_module = torchscript.compile(model, (ph, ph), output_type='linalg-on-tensors')
+    col = torch.rand(model.nlevs)
+    mlir_module = torch_mlir.torchscript.compile(model, (col,col), output_type='linalg-on-tensors')
     with open("cld_frac_net.mlir",'w') as fd:
         fd.write(str(mlir_module))
 
