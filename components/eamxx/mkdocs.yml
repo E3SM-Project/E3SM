@@ -50,6 +50,8 @@ nav:
       - 'Atmosphere Processes': 'developer/processes.md'
       - 'Input/Output': 'developer/io.md'
       - 'Third-party Libraries': 'developer/TPLs.md'
+    - 'How to':
+      - 'Wrap Torch emulators': 'developer/torch_support.md'
   - 'Technical Guide':
     - 'Overview': 'technical/index.md'
     - 'AeroCom cloud top': 'technical/aerocom_cldtop.md'
