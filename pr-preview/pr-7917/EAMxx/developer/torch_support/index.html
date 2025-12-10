@@ -4622,11 +4622,11 @@
 Currently, there are two ways to do so:</p>
 <ul>
 <li>via python: EAMxx can call python functions via pybind11 interfaces, so one can write a small
-   py module that wraps a pytorch model</li>
+  py module that wraps a pytorch model</li>
 <li>via LAPIS: <a href="https://github.com/sandialabs/lapis">LAPIS</a> is a lightweight library
-   that can be used to translate torch-mlir into pure c++/kokkos code, so one can
-   write a small py script that dumps a torch model as MLIR, and then use LAPIS to
-   generate a kokkos equivalent version of that model.</li>
+  that can be used to translate torch-mlir into pure c++/kokkos code, so one can
+  write a small py script that dumps a torch model as MLIR, and then use LAPIS to
+  generate a kokkos equivalent version of that model.</li>
 </ul>
 <p>In the folder <code>src/physics/cld_fraction/cld_frac_net</code> one can find example files for how to
 wrap an emulator inside an AP. These files implement an AP called "CldFracNet",
