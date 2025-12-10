@@ -1296,6 +1296,7 @@ endif !scm_observed_aero
      endif
 
      ! large scale / geostropic horizontal wind (for nudging)
+     uls = 0.0_r8 ! Initialize to zer
      call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, &
        'u_ls', have_srf, srf(1), .true. , dplevs, nlev,psobs, hyam, hybm, uls, status )
      if ( status .ne. nf90_noerr ) then
@@ -1329,6 +1330,7 @@ endif !scm_observed_aero
      call shr_sys_flush( iulog )
 
      ! large scale / geostropic meridional wind (for nudging)
+     vls = 0.0_r8 ! Initialize to zero
      call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, &
        'v_ls', have_srf, srf(1), .true. , dplevs, nlev,psobs, hyam, hybm, vls, status )
      if ( status .ne. nf90_noerr ) then
@@ -1432,6 +1434,7 @@ endif !scm_observed_aero
        have_tg = .true.
      endif
 
+     wfld = 0.0_r8 ! Initialize to zero
      call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, &
        'omega', .true., ptend, fill_ends, dplevs, nlev,psobs, hyam, hybm, wfld, status )
      if ( status .ne. nf90_noerr ) then
