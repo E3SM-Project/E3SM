@@ -483,7 +483,6 @@ contains
     call mct_aVect_copy(aVin=r2x_l, aVout=x2l_l, vector=mct_usevector, sharedIndices=r2x_SharedIndices)
     call mct_aVect_copy(aVin=g2x_l, aVout=x2l_l, vector=mct_usevector, sharedIndices=g2x_SharedIndices)
     call mct_aVect_copy(aVin=z2x_l, aVout=x2l_l, vector=mct_usevector, sharedIndices=z2x_SharedIndices)
-    call mct_aVect_copy(aVin=o2x_l, aVout=x2l_l, vector=mct_usevector, sharedIndices=o2x_SharedIndices)
     if (ocn_lnd_one_way) then
        call mct_aVect_copy(aVin=o2x_l, aVout=x2l_l, vector=mct_usevector, sharedIndices=o2x_SharedIndices)
     endif
