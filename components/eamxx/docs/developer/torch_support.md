@@ -3,12 +3,12 @@
 In EAMxx, it is possible to wrap a ML emulator inside an atmosphere process (AP) relatively easily.
 Currently, there are two ways to do so:
 
- - via python: EAMxx can call python functions via pybind11 interfaces, so one can write a small
-   py module that wraps a pytorch model
- - via LAPIS: [LAPIS](https://github.com/sandialabs/lapis) is a lightweight library
-   that can be used to translate torch-mlir into pure c++/kokkos code, so one can
-   write a small py script that dumps a torch model as MLIR, and then use LAPIS to
-   generate a kokkos equivalent version of that model.
+- via python: EAMxx can call python functions via pybind11 interfaces, so one can write a small
+  py module that wraps a pytorch model
+- via LAPIS: [LAPIS](https://github.com/sandialabs/lapis) is a lightweight library
+  that can be used to translate torch-mlir into pure c++/kokkos code, so one can
+  write a small py script that dumps a torch model as MLIR, and then use LAPIS to
+  generate a kokkos equivalent version of that model.
 
 In the folder `src/physics/cld_fraction/cld_frac_net` one can find example files for how to
 wrap an emulator inside an AP. These files implement an AP called "CldFracNet",
@@ -37,26 +37,27 @@ desired function from the python module. Here's an example from the `cld_frac_ne
 
     py_module_call("forward",ice_threshold,py_qi,py_liq,py_ice,py_tot);
 ```
+
 The function `get_py_field_dev` is implemented in AP base class, and retrieves the PyField
 corresponding to the given input or output field. The function `py_module_call` is also implemented
 in the AP base class, and wraps the call to the python function, with some exception
 handling to ensure errors are nicely printed in case something goes wrong.
 
-A few comments:
+Some comments:
 
- - Since Python does not have the concept of "const", it is technically possible to pass a const
-   field as an output when calling python, so care is needed to ensure arguments are passed in the correct
-   order.
- - By default, the AP class looks for the module provided via `py_module_name` in the current working
-   directory. The user can override this by specifying the optional `py_module_path` parameter.
- - The AP base class also provides `get_py_field_host`. When the model is running on GPU, this allows
-   to obtain a PyField that shares the same pointer of the Host view in the Field. There is NO
-   automatic synchronization of device and host views. Like for regular fields, it is the process
-   responsibility to copy to host at the beginning of `run_impl`, and make sure that the field is
-   sync-ed back to device upon return. 
- - The file `cld_frac_net.py` provides the definition of the torch model, as well as the initialization
-   and run routines that are called at runtime. The names of these routines are arbitrary, but they must
-   of course match what the process interface calls in the C++ interface.
+- Since Python does not have the concept of "const", it is technically possible to pass a const
+  field as an output when calling python, so care is needed to ensure arguments are passed in the correct
+  order.
+- By default, the AP class looks for the module provided via `py_module_name` in the current working
+  directory. The user can override this by specifying the optional `py_module_path` parameter.
+- The AP base class also provides `get_py_field_host`. When the model is running on GPU, this allows
+  to obtain a PyField that shares the same pointer of the Host view in the Field. There is NO
+  automatic synchronization of device and host views. Like for regular fields, it is the process
+  responsibility to copy to host at the beginning of `run_impl`, and make sure that the field is
+  sync-ed back to device upon return.
+- The file `cld_frac_net.py` provides the definition of the torch model, as well as the initialization
+  and run routines that are called at runtime. The names of these routines are arbitrary, but they must
+  of course match what the process interface calls in the C++ interface.
 
 ## C++/Kokkos
 
@@ -98,16 +99,17 @@ The general structure of the code that calls the emulator is
     };
     Kokkos::parallel_for(policy,lambda);
 ```
+
 where the function names `forward_L0_scratch_required`, `forward_L1_scratch_required`, and `forward` are
 hard-coded by LAPIS, while `MemberType` and `ExeSpace` are typedefs similar to what is done in other
 areas of EAMxx.
 
 Some comments:
 
- - The code needed to wrap the C++/Kokkos version of CldFracNet is larger. This is because we cannot provide
-   any "common" implementation in the AP base class (like it was done for the Python version), and all
-   the necessary plumbing must happen in the derived process implementation.
- - The script `gen_cpp_cld_frac_net.py` illustrates how to convert the torch model to C++/Kokkos. The script
-   first creates and initializes the torch model (defined in `cld_frac_net.py`), then dumps MLIR code using
-   the torch-mlir package, and finally calls a couple of LAPIS executables to generate the hpp/cpp files.
-   These files must be included, built, and linked by the host project.
+- The code needed to wrap the C++/Kokkos version of CldFracNet is larger. This is because we cannot provide
+  any "common" implementation in the AP base class (like it was done for the Python version), and all
+  the necessary plumbing must happen in the derived process implementation.
+- The script `gen_cpp_cld_frac_net.py` illustrates how to convert the torch model to C++/Kokkos. The script
+  first creates and initializes the torch model (defined in `cld_frac_net.py`), then dumps MLIR code using
+  the torch-mlir package, and finally calls a couple of LAPIS executables to generate the hpp/cpp files.
+  These files must be included, built, and linked by the host project.
