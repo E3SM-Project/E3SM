@@ -110,7 +110,6 @@ module iop_data_mod
   real(r8), public ::      asdifobs(1)         ! observed asdif
 
   real(r8), public ::      wfld(plev)          ! Vertical motion (slt)
-  real(r8), public ::      wfldh(plevp)        ! Vertical motion (slt)
   real(r8), public ::      divq(plev,pcnst)    ! Divergence of moisture
   real(r8), public ::      divt(plev)          ! Divergence of temperature
   real(r8), public ::      divu(plev)          ! Horiz Divergence of E/W
@@ -677,10 +676,6 @@ subroutine readiopdata(iop_update_phase1,hyam,hybm)
    real(r8) dummy
    real(r8) lat,xlat
    real(r8) srf(1)                  ! value at surface
-   real(r8) pmid(plev)  ! pressure at model levels (time n)
-   real(r8) pint(plevp) ! pressure at model interfaces (n  )
-   real(r8) pdel(plev)  ! pdel(k)   = pint  (k+1)-pint  (k)
-   real(r8) weight
    real(r8) tmpdata(1)
    real(r8) coldata(plev)
    real(r8) ps_surf, thelat, thelon, the_clat
@@ -1067,6 +1062,7 @@ endif !scm_observed_aero
        have_srf = .true.
      endif
 
+     divq(:,:) = 0.0_r8 ! Initialize all to zero
      call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, 'divq', &
         have_srf, srf(1), fill_ends, dplevs, nlev,psobs, hyam, hybm, divq(:,1), status )
      if ( status .ne. nf90_noerr ) then
@@ -1085,6 +1081,7 @@ endif !scm_observed_aero
        have_srf = .true.
      endif
 
+     vertdivq(:,:) = 0.0_r8 ! Initialize all to zero
      call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, 'vertdivq', &
         have_srf, srf(1), fill_ends, dplevs, nlev,psobs, hyam, hybm, vertdivq(:,1), status )
      if ( status .ne. nf90_noerr ) then
@@ -1109,7 +1106,6 @@ endif !scm_observed_aero
          have_srf, srf(1), fill_ends, dplevs, nlev,psobs, hyam, hybm, divq3d(:,m), status )
        if ( status .ne. nf90_noerr ) then
          have_cnst(m) = .false.
-         divq3d(1:,m)=0._r8
        else
          have_cnst(m) = .true.
        endif
@@ -1280,21 +1276,7 @@ endif !scm_observed_aero
        ptend= srf(1)
      endif
 
-     call plevs0(1    ,plon   ,plev    ,psobs   ,pint,pmid ,pdel)
      call shr_sys_flush( iulog )
-
-     ! Build interface vector for the specified omega profile
-     !   (weighted average in pressure of specified level values)
-
-     wfldh(1) = 0.0_r8
-
-     do k=2,plev
-       weight = (pint(k) - pmid(k-1))/(pmid(k) - pmid(k-1))
-       wfldh(k) = (1.0_r8 - weight)*wfld(k-1) + weight*wfld(k)
-     end do
-
-     wfldh(plevp) = 0.0_r8
-
 
      status = nf90_inq_varid( ncid, 'usrf', varid   )
      if ( status .ne. nf90_noerr ) then
@@ -1314,6 +1296,7 @@ endif !scm_observed_aero
      endif
 
      ! large scale / geostropic horizontal wind (for nudging)
+     uls = 0.0_r8 ! Initialize to zer
      call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, &
        'u_ls', have_srf, srf(1), .true. , dplevs, nlev,psobs, hyam, hybm, uls, status )
      if ( status .ne. nf90_noerr ) then
@@ -1347,6 +1330,7 @@ endif !scm_observed_aero
      call shr_sys_flush( iulog )
 
      ! large scale / geostropic meridional wind (for nudging)
+     vls = 0.0_r8 ! Initialize to zero
      call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, &
        'v_ls', have_srf, srf(1), .true. , dplevs, nlev,psobs, hyam, hybm, vls, status )
      if ( status .ne. nf90_noerr ) then
@@ -1378,7 +1362,7 @@ endif !scm_observed_aero
      endif
 
      call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, 'Q2', &
-        .false., dummy, fill_ends, dplevs, nlev,psobs, hyam, hybm, q1obs, status )
+        .false., dummy, fill_ends, dplevs, nlev,psobs, hyam, hybm, q2obs, status )
      if ( status .ne. nf90_noerr ) then
        have_q2 = .false.
      else
@@ -1449,7 +1433,8 @@ endif !scm_observed_aero
        call wrap_get_vara_realx (ncid,varid,strt4,cnt4,tground)
        have_tg = .true.
      endif
-     
+
+     wfld = 0.0_r8 ! Initialize to zero
      call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, &
        'omega', .true., ptend, fill_ends, dplevs, nlev,psobs, hyam, hybm, wfld, status )
      if ( status .ne. nf90_noerr ) then
