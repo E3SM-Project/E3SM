@@ -181,7 +181,7 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
    real(r8),pointer,dimension(:,:), intent(in   ) :: t_star          ! for DCAPE - prev temperature      [K]
    real(r8),pointer,dimension(:,:), intent(in   ) :: q_star          ! for DCAPE - prev sp. humidity     [kg/kg]
    integer,                         intent(  out) :: lengath         ! number of active columns in chunk for gathering
-   integer,  dimension(pcols),      intent(  out) :: gather_index     ! flag for active columns
+   integer,  dimension(pcols),      intent(  out) :: gather_index    ! flag for active columns
    integer,  dimension(pcols),      intent(  out) :: maxg            ! gathered level indices of max MSE (maxi)
    integer,  dimension(pcols),      intent(  out) :: jctop           ! top-of-deep-convection indices
    integer,  dimension(pcols),      intent(  out) :: jcbot           ! base of cloud indices
@@ -300,7 +300,6 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
 
    !----------------------------------------------------------------------------
    ! initialize various arrays
-
    do i = 1,ncol
       do k = 1,pver
          qtnd(i,k)  = 0._r8
@@ -391,7 +390,6 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
    ! - call #1, cape_calc_msemax_klev=.true.   standard calculation using state of current step
    ! - call #2, cape_calc_msemax_klev=.false.  use launch level (msemax_klev) from previous call
    ! DCAPE is the difference in CAPE between the two calls using the same launch level
-
    cape_calc_msemax_klev = .true.
    call compute_dilute_cape( pcols, ncol, pver, pverp, &
                              zm_param%num_cin, msg, &
@@ -419,7 +417,6 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
 
    !----------------------------------------------------------------------------
    ! determine whether active columns for gathering
-
    call zm_get_gather_index(pcols, ncol, pver, pverp, is_first_step, cape, dcape, &
                             cape_threshold_loc, gather_index, lengath)
 
@@ -733,8 +730,8 @@ subroutine zm_conv_evap(pcols, ncol, pver, pverp, time_step, &
    real(r8), dimension(pcols,pver), intent(inout) :: tend_q             ! water vapor tendency                    [kg/kg/s]
    real(r8), dimension(pcols,pver), intent(out  ) :: tend_s_snwprd      ! Heating rate of snow production         [J/kg/s]
    real(r8), dimension(pcols,pver), intent(out  ) :: tend_s_snwevmlt    ! Heating rate of snow evap/melt          [J/kg/s]
-   real(r8), dimension(pcols),      intent(inout) :: prec(pcols)        ! Convective-scale prec rate              [m/s]
-   real(r8), dimension(pcols),      intent(out  ) :: snow(pcols)        ! Convective-scale snow rate              [m/s]
+   real(r8), dimension(pcols),      intent(inout) :: prec               ! Convective-scale prec rate              [m/s]
+   real(r8), dimension(pcols),      intent(out  ) :: snow               ! Convective-scale snow rate              [m/s]
    real(r8), dimension(pcols,pver), intent(out  ) :: ntprprd            ! net precip production in layer          [?]
    real(r8), dimension(pcols,pver), intent(out  ) :: ntsnprd            ! net snow production in layer            [?]
    real(r8), dimension(pcols,pverp),intent(out  ) :: flxprec            ! Convective flux of prec at interfaces   [kg/m2/s]
@@ -1138,7 +1135,7 @@ subroutine zm_downdraft_properties(pcols, ncol, pver, pverp, msg, &
    !----------------------------------------------------------------------------
    ! Local variables
    integer :: i,k ! loop iterators
-   real(r8), dimension(pcols)      :: ratmjb    !
+   real(r8), dimension(pcols) :: ratmjb ! ?
    real(r8) dz_tmp   ! temporary vertical thickness for downdraft mass flux calculation
    real(r8) mdt      ! temporary downdraft mass flux for normalization
    !----------------------------------------------------------------------------
