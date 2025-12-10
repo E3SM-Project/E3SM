@@ -223,7 +223,7 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
 
    real(r8), dimension(pcols,pver) :: t_pcl        ! parcel temperature                      [K]
    real(r8), dimension(pcols,pver) :: q_pcl_sat    ! parcel saturation specific humidity     [kg/kg]
-   real(r8), dimension(pcols)      :: tl           ! parcel temperature at lcl               [K]
+   real(r8), dimension(pcols)      :: t_pcl_lcl    ! parcel temperature at lcl               [K]
    integer,  dimension(pcols)      :: lcl          ! base level index of deep cumulus convection
    integer,  dimension(pcols)      :: lel          ! index of highest theoretical convective plume
    integer,  dimension(pcols)      :: lon          ! index of onset level for deep convection
@@ -231,7 +231,7 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
 
    real(r8), dimension(pcols,pver) :: t_pcl_m1     ! time n-1 parcel temperatures
    real(r8), dimension(pcols,pver) :: q_pcl_sat_m1 ! time n-1 parcel saturation specific humidity
-   real(r8), dimension(pcols)      :: tl_m1        ! time n-1 parcel Temperature at LCL
+   real(r8), dimension(pcols)      :: t_pcl_lcl_m1 ! time n-1 parcel Temperature at LCL
    integer,  dimension(pcols)      :: lcl_m1       ! time n-1 base level index of deep cumulus convection
    integer,  dimension(pcols)      :: lel_m1       ! time n-1 index of highest theoretical convective plume
    integer,  dimension(pcols)      :: lon_m1       ! time n-1 index of onset level for deep convection
@@ -255,7 +255,7 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
    real(r8), dimension(pcols,pver) :: rprd_g       ! gathered rain production rate
    real(r8), dimension(pcols,pver) :: ql_g         ! gathered cloud liquid water
    real(r8), dimension(pcols)      :: cape_g       ! gathered convective available potential energy
-   real(r8), dimension(pcols)      :: tl_g         ! gathered values of tl
+   real(r8), dimension(pcols)      :: t_pcl_lcl_g  ! gathered values of t_pcl_lcl
    real(r8), dimension(pcols)      :: landfrac_g   ! gathered landfrac
    real(r8), dimension(pcols)      :: tpert_g      ! gathered values of tpert (temperature perturbation from PBL)
    integer,  dimension(pcols)      :: lcl_g        ! gathered values of lcl level index
@@ -377,12 +377,12 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
    end do
 
    do i = 1,ncol
-      cape_g(i)  = 0._r8
-      lcl_g(i)   = 1
-      lel_g(i)   = pver
-      maxg(i)    = 1
-      tl_g(i)    = 400._r8
-      dsubcld(i) = 0._r8
+      cape_g(i)      = 0._r8
+      lcl_g(i)       = 1
+      lel_g(i)       = pver
+      maxg(i)        = 1
+      t_pcl_lcl_g(i) = 400._r8
+      dsubcld(i)     = 0._r8
    end do
 
    !----------------------------------------------------------------------------
@@ -395,7 +395,7 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
                              zm_param%num_cin, msg, &
                              q_mid, t_mid, z_mid, p_mid, p_int, &
                              pbl_top, tpert, &
-                             t_pcl, q_pcl_sat, maxi, tl, &
+                             t_pcl, q_pcl_sat, maxi, t_pcl_lcl, &
                              lcl, lel, cape, &
                              zm_const, zm_param, &
                              cape_calc_msemax_klev )
@@ -408,7 +408,7 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
                                 zm_param%num_cin, msg, &
                                 q_star, t_star, z_mid, p_mid, p_int, &
                                 pbl_top, tpert, &
-                                t_pcl_m1, q_pcl_sat_m1, maxi_m1, tl_m1, &
+                                t_pcl_m1, q_pcl_sat_m1, maxi_m1, t_pcl_lcl_m1, &
                                 lcl_m1, lel_m1, cape_m1, &
                                 zm_const, zm_param, &
                                 cape_calc_msemax_klev, prev_msemax_klev )
@@ -446,7 +446,7 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
       lcl_g(i)             = lcl(gather_index(i))
       lel_g(i)             = lel(gather_index(i))
       maxg(i)              = maxi(gather_index(i))
-      tl_g(i)              = tl(gather_index(i))
+      t_pcl_lcl_g(i)       = t_pcl_lcl(gather_index(i))
       landfrac_g(i)        = landfrac(gather_index(i))
       pbl_top_g(i)         = pbl_top(gather_index(i))
       tpert_g(i)           = tpert(gather_index(i))
@@ -545,7 +545,7 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
                    lcl_g, lel_g, jt, maxg, dsubcld, &
                    z_mid_g, z_int_g, p_mid_g, p_del, t_mid_g, &
                    s_mid_g, q_mid_g, q_mid_sat_g, ql_g, s_int_g, q_int_g, &
-                   tl_g, t_pcl_g, q_pcl_sat_g, su, qu, &
+                   t_pcl_lcl_g, t_pcl_g, q_pcl_sat_g, su, qu, &
                    mc, du, mu, md, qd, sd, cape_g, cld_bass_mass_flux )
 
    !----------------------------------------------------------------------------
@@ -1864,7 +1864,7 @@ subroutine zm_closure(pcols, ncol, pver, pverp, msg, cape_threshold_in, &
                       lcl, lel, jt, mx, dsubcld, &
                       z_mid, z_int, p_mid, p_del, t_mid, &
                       s_mid, q_mid, qs, ql, s_int, q_int,  &
-                      tl, t_pcl, q_pcl_sat, su, qu, &
+                      t_pcl_lcl, t_pcl, q_pcl_sat, su, qu, &
                       mc, du, mu, md, qd, sd, cape, cld_bass_mass_flux )
    !----------------------------------------------------------------------------
    ! Purpose: calculate closure condition for ZM convection scheme using the
@@ -1902,7 +1902,7 @@ subroutine zm_closure(pcols, ncol, pver, pverp, msg, cape_threshold_in, &
    real(r8), dimension(pcols,pver), intent(in ) :: ql                ! ambient liquid water mixing ratio
    real(r8), dimension(pcols,pver), intent(in ) :: s_int             ! env. normalized dry static energy at intrfcs
    real(r8), dimension(pcols,pver), intent(in ) :: q_int             ! environment specific humidity at interfaces
-   real(r8), dimension(pcols),      intent(in ) :: tl                ! parcel temperature at lcl
+   real(r8), dimension(pcols),      intent(in ) :: t_pcl_lcl         ! parcel temperature at LCL
    real(r8), dimension(pcols,pver), intent(in ) :: t_pcl             ! parcel temperature
    real(r8), dimension(pcols,pver), intent(in ) :: q_pcl_sat         ! parcel specific humidity
    real(r8), dimension(pcols,pver), intent(in ) :: su                ! updraft dry static energy (normalized)
@@ -2005,7 +2005,7 @@ subroutine zm_closure(pcols, ncol, pver, pverp, msg, cape_threshold_in, &
             thetavm = t_mid(i,k)* (1000._r8/p_mid(i,k))**(zm_const%rdair/zm_const%cpair)*(1._r8+0.608_r8*q_mid(i,k))
             dqsdtp  = q_pcl_sat(i,k) * (1._r8+q_pcl_sat(i,k)/zm_const%epsilo)*zm_const%epsilo*zm_const%latvap/(zm_const%rdair*t_pcl(i,k)**2)
             dtpdt   = t_pcl(i,k)/ (1._r8+zm_const%latvap/zm_const%cpair* (dqsdtp-q_pcl_sat(i,k)/t_pcl(i,k)))* &
-                          (dtbdt(i)/t_mid(i,mx(i))+zm_const%latvap/zm_const%cpair* (dqbdt(i)/tl(i)-q_mid(i,mx(i))/tl(i)**2*dtldt(i)))
+                          (dtbdt(i)/t_mid(i,mx(i))+zm_const%latvap/zm_const%cpair* (dqbdt(i)/t_pcl_lcl(i)-q_mid(i,mx(i))/t_pcl_lcl(i)**2*dtldt(i)))
             dboydt(i,k) = ((dtpdt/t_pcl(i,k)+1._r8/(1._r8+1.608_r8*q_pcl_sat(i,k)-q_mid(i,mx(i)))* &
                           (1.608_r8 * dqsdtp * dtpdt -dqbdt(i))) - (dtmdt(i,k)/t_mid(i,k)+0.608_r8/ &
                           (1._r8+0.608_r8*q_mid(i,k))*dqmdt(i,k)))*zm_const%grav*thetavp/thetavm
