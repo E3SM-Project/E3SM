@@ -2387,12 +2387,12 @@ subroutine tphysbc (ztodt,               &
     !BSINGH - Following variables are from zm_conv_intr, which are moved here as they are now used
     ! by aero_model_wetdep subroutine. 
 
-    real(r8):: mu(pcols,pver) 
-    real(r8):: eu(pcols,pver)
-    real(r8):: du(pcols,pver)
-    real(r8):: md(pcols,pver)
-    real(r8):: ed(pcols,pver)
-    real(r8):: dp(pcols,pver)
+    real(r8):: mu(pcols,pver) ! ZM deep convection gathered updraft mass flux
+    real(r8):: eu(pcols,pver) ! ZM deep convection gathered updraft entrainment
+    real(r8):: du(pcols,pver) ! ZM deep convection gathered updraft detrainment
+    real(r8):: md(pcols,pver) ! ZM deep convection gathered downdraft mass flux
+    real(r8):: ed(pcols,pver) ! ZM deep convection gathered downdraft entrainment
+    real(r8):: dp(pcols,pver) ! ZM deep convection gathered pressure thickness [mb]
     
     ! wg layer thickness in mbs (between upper/lower interface).
     real(r8):: dsubcld(pcols)
