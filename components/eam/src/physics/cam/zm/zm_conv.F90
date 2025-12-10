@@ -152,7 +152,7 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
                         t_mid, q_mid_in, omega, p_mid_in, p_int_in, p_del_in, &
                         geos, z_mid_in, z_int_in, pbl_hgt, &
                         tpert, landfrac, t_star, q_star, &
-                        lengath, gather_index, maxg, jctop, jcbot, jt, &
+                        lengath, gather_index, msemax_klev_g, jctop, jcbot, jt, &
                         prec, heat, qtnd, cape, dcape, &
                         mcon, pflx, zdu, mu, eu, du, md, ed, p_del, dsubcld, &
                         ql, rliq, rprd, dlf, aero, microp_st )
@@ -165,42 +165,42 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
    integer,                         intent(in   ) :: pver            ! number of mid-point levels
    integer,                         intent(in   ) :: pverp           ! number of interface levels
    logical,                         intent(in   ) :: is_first_step   ! flag for first step of run
-   real(r8),                        intent(in   ) :: time_step       ! model time-step                   [s]
-   real(r8), dimension(pcols,pver), intent(in   ) :: t_mid           ! temperature                       [K]
-   real(r8), dimension(pcols,pver), intent(in   ) :: q_mid_in        ! specific humidity                 [kg/kg]
-   real(r8), dimension(pcols,pver), intent(in   ) :: omega           ! vertical pressure velocity        [Pa/s]
-   real(r8), dimension(pcols,pver), intent(in   ) :: p_mid_in        ! mid-point pressure                [Pa]
-   real(r8), dimension(pcols,pverp),intent(in   ) :: p_int_in        ! interface pressure                [Pa]
-   real(r8), dimension(pcols,pver), intent(in   ) :: p_del_in        ! pressure thickness                [Pa]
-   real(r8), dimension(pcols),      intent(in   ) :: geos            ! surface geopotential              [m2/s2]
-   real(r8), dimension(pcols,pver), intent(in   ) :: z_mid_in        ! mid-point geopotential            [m2/s2]
-   real(r8), dimension(pcols,pverp),intent(in   ) :: z_int_in        ! interface geopotential            [m2/s2]
-   real(r8), dimension(pcols),      intent(in   ) :: pbl_hgt         ! boundary layer height             [m]
-   real(r8), dimension(pcols),      intent(in   ) :: tpert           ! parcel temperature perturbation   [K]
-   real(r8), dimension(pcols),      intent(in   ) :: landfrac        ! land fraction
-   real(r8),pointer,dimension(:,:), intent(in   ) :: t_star          ! for DCAPE - prev temperature      [K]
-   real(r8),pointer,dimension(:,:), intent(in   ) :: q_star          ! for DCAPE - prev sp. humidity     [kg/kg]
+   real(r8),                        intent(in   ) :: time_step       ! model time-step                         [s]
+   real(r8), dimension(pcols,pver), intent(in   ) :: t_mid           ! temperature                             [K]
+   real(r8), dimension(pcols,pver), intent(in   ) :: q_mid_in        ! specific humidity                       [kg/kg]
+   real(r8), dimension(pcols,pver), intent(in   ) :: omega           ! vertical pressure velocity              [Pa/s]
+   real(r8), dimension(pcols,pver), intent(in   ) :: p_mid_in        ! mid-point pressure                      [Pa]
+   real(r8), dimension(pcols,pverp),intent(in   ) :: p_int_in        ! interface pressure                      [Pa]
+   real(r8), dimension(pcols,pver), intent(in   ) :: p_del_in        ! pressure thickness                      [Pa]
+   real(r8), dimension(pcols),      intent(in   ) :: geos            ! surface geopotential                    [m2/s2]
+   real(r8), dimension(pcols,pver), intent(in   ) :: z_mid_in        ! mid-point geopotential                  [m2/s2]
+   real(r8), dimension(pcols,pverp),intent(in   ) :: z_int_in        ! interface geopotential                  [m2/s2]
+   real(r8), dimension(pcols),      intent(in   ) :: pbl_hgt         ! boundary layer height                   [m]
+   real(r8), dimension(pcols),      intent(in   ) :: tpert           ! parcel temperature perturbation         [K]
+   real(r8), dimension(pcols),      intent(in   ) :: landfrac        ! land fraction                           []
+   real(r8),pointer,dimension(:,:), intent(in   ) :: t_star          ! for DCAPE - prev temperature            [K]
+   real(r8),pointer,dimension(:,:), intent(in   ) :: q_star          ! for DCAPE - prev sp. humidity           [kg/kg]
    integer,                         intent(  out) :: lengath         ! number of active columns in chunk for gathering
    integer,  dimension(pcols),      intent(  out) :: gather_index    ! flag for active columns
-   integer,  dimension(pcols),      intent(  out) :: maxg            ! gathered level indices of max MSE (maxi)
+   integer,  dimension(pcols),      intent(  out) :: msemax_klev_g   ! gathered level indices of max MSE (msemax_klev)
    integer,  dimension(pcols),      intent(  out) :: jctop           ! top-of-deep-convection indices
    integer,  dimension(pcols),      intent(  out) :: jcbot           ! base of cloud indices
    integer,  dimension(pcols),      intent(  out) :: jt              ! gathered top level index of deep cumulus convection
    real(r8), dimension(pcols),      intent(  out) :: prec            ! output precipitation
-   real(r8), dimension(pcols,pver), intent(  out) :: heat            ! dry static energy tendency        [W/kg]
-   real(r8), dimension(pcols,pver), intent(  out) :: qtnd            ! specific humidity tendency        [kg/kg/s]
-   real(r8), dimension(pcols),      intent(  out) :: cape            ! conv. avail. potential energy     [J]
-   real(r8), dimension(pcols),      intent(  out) :: dcape           ! CAPE generated by dycor (dCAPE)   [J]
-   real(r8), dimension(pcols,pverp),intent(  out) :: mcon            ! convective mass flux              [mb/s]
-   real(r8), dimension(pcols,pverp),intent(  out) :: pflx            ! precip flux at each level         [?]
-   real(r8), dimension(pcols,pver), intent(  out) :: zdu             ! detraining mass flux              [?]
-   real(r8), dimension(pcols,pver), intent(  out) :: mu              ! updraft mass flux                 [?]
-   real(r8), dimension(pcols,pver), intent(  out) :: eu              ! updraft entrainment               [?]
-   real(r8), dimension(pcols,pver), intent(  out) :: du              ! updraft detrainment               [?]
-   real(r8), dimension(pcols,pver), intent(  out) :: md              ! downdraft mass flux               [?]
-   real(r8), dimension(pcols,pver), intent(  out) :: ed              ! downdraft entrainment             [?]
-   real(r8), dimension(pcols,pver), intent(  out) :: p_del           ! layer thickness                   [mb]
-   real(r8), dimension(pcols),      intent(  out) :: dsubcld         ! thickness between lcl and maxi    [mb]
+   real(r8), dimension(pcols,pver), intent(  out) :: heat            ! dry static energy tendency              [W/kg]
+   real(r8), dimension(pcols,pver), intent(  out) :: qtnd            ! specific humidity tendency              [kg/kg/s]
+   real(r8), dimension(pcols),      intent(  out) :: cape            ! conv. avail. potential energy           [J]
+   real(r8), dimension(pcols),      intent(  out) :: dcape           ! CAPE generated by dycor (dCAPE)         [J]
+   real(r8), dimension(pcols,pverp),intent(  out) :: mcon            ! convective mass flux                    [mb/s]
+   real(r8), dimension(pcols,pverp),intent(  out) :: pflx            ! precip flux at each level               [?]
+   real(r8), dimension(pcols,pver), intent(  out) :: zdu             ! detraining mass flux                    [?]
+   real(r8), dimension(pcols,pver), intent(  out) :: mu              ! updraft mass flux                       [?]
+   real(r8), dimension(pcols,pver), intent(  out) :: eu              ! updraft entrainment                     [?]
+   real(r8), dimension(pcols,pver), intent(  out) :: du              ! updraft detrainment                     [?]
+   real(r8), dimension(pcols,pver), intent(  out) :: md              ! downdraft mass flux                     [?]
+   real(r8), dimension(pcols,pver), intent(  out) :: ed              ! downdraft entrainment                   [?]
+   real(r8), dimension(pcols,pver), intent(  out) :: p_del           ! layer thickness                         [mb]
+   real(r8), dimension(pcols),      intent(  out) :: dsubcld         ! thickness between lcl and msemax_klev   [mb]
    real(r8), dimension(pcols,pver), intent(  out) :: ql              ! cloud liquid water for chem/wetdep
    real(r8), dimension(pcols),      intent(  out) :: rliq            ! reserved liquid (not yet in cldliq) for energy integrals
    real(r8), dimension(pcols,pver), intent(  out) :: rprd            ! rain production rate
@@ -209,74 +209,74 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
    type(zm_microp_st),              intent(inout) :: microp_st       ! convective microphysics state and tendencies
    !----------------------------------------------------------------------------
    ! Local variables
-   real(r8), dimension(pcols,pver) :: s_mid        ! scaled dry static energy (t+gz/cp)      [K]
-   real(r8), dimension(pcols,pver) :: q_mid        ! local copy of specific humidity         [kg/kg]
-   real(r8), dimension(pcols,pver) :: p_mid        ! local copy of mid-point pressure        [mb]
-   real(r8), dimension(pcols,pverp):: p_int        ! local copy of interface pressure        [mb]
-   real(r8), dimension(pcols,pver) :: z_mid        ! local copy of mid-point altitude        [m]
-   real(r8), dimension(pcols,pverp):: z_int        ! local copy of interface altitude        [m]
-   real(r8), dimension(pcols)      :: z_srf        ! surface altitude                        [m]
-   real(r8), dimension(pcols)      :: mumax        ! max value of mu/dp
+   real(r8), dimension(pcols,pver) :: s_mid           ! scaled dry static energy (t+gz/cp)      [K]
+   real(r8), dimension(pcols,pver) :: q_mid           ! local copy of specific humidity         [kg/kg]
+   real(r8), dimension(pcols,pver) :: p_mid           ! local copy of mid-point pressure        [mb]
+   real(r8), dimension(pcols,pverp):: p_int           ! local copy of interface pressure        [mb]
+   real(r8), dimension(pcols,pver) :: z_mid           ! local copy of mid-point altitude        [m]
+   real(r8), dimension(pcols,pverp):: z_int           ! local copy of interface altitude        [m]
+   real(r8), dimension(pcols)      :: z_srf           ! surface altitude                        [m]
+   real(r8), dimension(pcols)      :: mumax           ! max value of mu/dp
 
-   integer,  dimension(pcols)      :: pbl_top      ! pbl top indices
-   integer,  dimension(pcols)      :: pbl_top_g    ! gathered pbl top indices
+   integer,  dimension(pcols)      :: pbl_top         ! pbl top indices
+   integer,  dimension(pcols)      :: pbl_top_g       ! gathered pbl top indices
 
-   real(r8), dimension(pcols,pver) :: t_pcl        ! parcel temperature                      [K]
-   real(r8), dimension(pcols,pver) :: q_pcl_sat    ! parcel saturation specific humidity     [kg/kg]
-   real(r8), dimension(pcols)      :: t_pcl_lcl    ! parcel temperature at lcl               [K]
-   integer,  dimension(pcols)      :: lcl          ! base level index of deep cumulus convection
-   integer,  dimension(pcols)      :: lel          ! index of highest theoretical convective plume
-   integer,  dimension(pcols)      :: lon          ! index of onset level for deep convection
-   integer,  dimension(pcols)      :: maxi         ! index of level with largest moist static energy
+   real(r8), dimension(pcols,pver) :: t_pcl           ! parcel temperature                      [K]
+   real(r8), dimension(pcols,pver) :: q_pcl_sat       ! parcel saturation specific humidity     [kg/kg]
+   real(r8), dimension(pcols)      :: t_pcl_lcl       ! parcel temperature at lcl               [K]
+   integer,  dimension(pcols)      :: lcl             ! base level index of deep cumulus convection
+   integer,  dimension(pcols)      :: lel             ! index of highest theoretical convective plume
+   integer,  dimension(pcols)      :: lon             ! index of onset level for deep convection
+   integer,  dimension(pcols)      :: msemax_klev     ! index of level with largest moist static energy
 
-   real(r8), dimension(pcols,pver) :: t_pcl_m1     ! time n-1 parcel temperatures
-   real(r8), dimension(pcols,pver) :: q_pcl_sat_m1 ! time n-1 parcel saturation specific humidity
-   real(r8), dimension(pcols)      :: t_pcl_lcl_m1 ! time n-1 parcel Temperature at LCL
-   integer,  dimension(pcols)      :: lcl_m1       ! time n-1 base level index of deep cumulus convection
-   integer,  dimension(pcols)      :: lel_m1       ! time n-1 index of highest theoretical convective plume
-   integer,  dimension(pcols)      :: lon_m1       ! time n-1 index of onset level for deep convection
-   integer,  dimension(pcols)      :: maxi_m1      ! time n-1 index of level with largest moist static energy
-   real(r8), dimension(pcols)      :: cape_m1      ! time n-1 CAPE
+   real(r8), dimension(pcols,pver) :: t_pcl_m1        ! time n-1 parcel temperatures
+   real(r8), dimension(pcols,pver) :: q_pcl_sat_m1    ! time n-1 parcel saturation specific humidity
+   real(r8), dimension(pcols)      :: t_pcl_lcl_m1    ! time n-1 parcel Temperature at LCL
+   integer,  dimension(pcols)      :: lcl_m1          ! time n-1 base level index of deep cumulus convection
+   integer,  dimension(pcols)      :: lel_m1          ! time n-1 index of highest theoretical convective plume
+   integer,  dimension(pcols)      :: lon_m1          ! time n-1 index of onset level for deep convection
+   integer,  dimension(pcols)      :: msemax_klev_m1  ! time n-1 index of level with largest moist static energy
+   real(r8), dimension(pcols)      :: cape_m1         ! time n-1 CAPE
 
-   logical  :: cape_calc_msemax_klev               ! flag for compute_dilute_cape()
-   real(r8) :: cape_threshold_loc                  ! local CAPE threshold
+   logical  :: cape_calc_msemax_klev                  ! flag for compute_dilute_cape()
+   real(r8) :: cape_threshold_loc                     ! local CAPE threshold
 
-   real(r8), dimension(pcols,pver) :: q_mid_g      ! gathered mid-point env specific humidity
-   real(r8), dimension(pcols,pver) :: q_int_g      ! gathered interface env specific humidity
-   real(r8), dimension(pcols,pver) :: t_mid_g      ! gathered temperature at interface
-   real(r8), dimension(pcols,pver) :: p_mid_g      ! gathered values of p_mid
-   real(r8), dimension(pcols,pver) :: z_mid_g      ! gathered values of z_mid
-   real(r8), dimension(pcols,pver) :: s_mid_g      ! gathered values of s
-   real(r8), dimension(pcols,pver) :: s_int_g      ! gathered upper interface dry static energy
-   real(r8), dimension(pcols,pverp):: z_int_g      ! gathered values of z_int
-   real(r8), dimension(pcols,pver) :: t_pcl_g      ! gathered values of t_pcl
-   real(r8), dimension(pcols,pver) :: q_pcl_sat_g  ! gathered values of q_pcl_sat
-   real(r8), dimension(pcols,pver) :: omega_g      ! gathered values of omega
-   real(r8), dimension(pcols,pver) :: rprd_g       ! gathered rain production rate
-   real(r8), dimension(pcols,pver) :: ql_g         ! gathered cloud liquid water
-   real(r8), dimension(pcols)      :: cape_g       ! gathered convective available potential energy
-   real(r8), dimension(pcols)      :: t_pcl_lcl_g  ! gathered values of t_pcl_lcl
-   real(r8), dimension(pcols)      :: landfrac_g   ! gathered landfrac
-   real(r8), dimension(pcols)      :: tpert_g      ! gathered values of tpert (temperature perturbation from PBL)
-   integer,  dimension(pcols)      :: lcl_g        ! gathered values of lcl level index
-   integer,  dimension(pcols)      :: lel_g        ! gathered values of equilibrium level index
+   real(r8), dimension(pcols,pver) :: q_mid_g         ! gathered mid-point env specific humidity
+   real(r8), dimension(pcols,pver) :: q_int_g         ! gathered interface env specific humidity
+   real(r8), dimension(pcols,pver) :: t_mid_g         ! gathered temperature at interface
+   real(r8), dimension(pcols,pver) :: p_mid_g         ! gathered values of p_mid
+   real(r8), dimension(pcols,pver) :: z_mid_g         ! gathered values of z_mid
+   real(r8), dimension(pcols,pver) :: s_mid_g         ! gathered values of s
+   real(r8), dimension(pcols,pver) :: s_int_g         ! gathered upper interface dry static energy
+   real(r8), dimension(pcols,pverp):: z_int_g         ! gathered values of z_int
+   real(r8), dimension(pcols,pver) :: t_pcl_g         ! gathered values of t_pcl
+   real(r8), dimension(pcols,pver) :: q_pcl_sat_g     ! gathered values of q_pcl_sat
+   real(r8), dimension(pcols,pver) :: omega_g         ! gathered values of omega
+   real(r8), dimension(pcols,pver) :: rprd_g          ! gathered rain production rate
+   real(r8), dimension(pcols,pver) :: ql_g            ! gathered cloud liquid water
+   real(r8), dimension(pcols)      :: cape_g          ! gathered convective available potential energy
+   real(r8), dimension(pcols)      :: t_pcl_lcl_g     ! gathered values of t_pcl_lcl
+   real(r8), dimension(pcols)      :: landfrac_g      ! gathered landfrac
+   real(r8), dimension(pcols)      :: tpert_g         ! gathered values of tpert (temperature perturbation from PBL)
+   integer,  dimension(pcols)      :: lcl_g           ! gathered values of lcl level index
+   integer,  dimension(pcols)      :: lel_g           ! gathered values of equilibrium level index
 
-   real(r8), dimension(pcols,pver) :: dqdt         ! gathered specific humidity tendency
-   real(r8), dimension(pcols,pver) :: dsdt         ! gathered dry static energy ("temp") tendency at gathered points
-   real(r8), dimension(pcols,pver) :: sd           ! gathered downdraft dry static energy
-   real(r8), dimension(pcols,pver) :: qd           ! gathered downdraft specific humidity
-   real(r8), dimension(pcols,pver) :: mc           ! gathered net upward (scaled by mb) cloud mass flux
-   real(r8), dimension(pcols,pver) :: qu           ! gathered updraft specific humidity
-   real(r8), dimension(pcols,pver) :: su           ! gathered updraft dry static energy
-   real(r8), dimension(pcols,pver) :: q_mid_sat_g  ! gathered mid-point saturation specific humidity
-   real(r8), dimension(pcols,pver) :: dl_g         ! gathered detraining cld h2o tend
-   real(r8), dimension(pcols,pverp):: pflx_g       ! gathered precip flux at each level
-   real(r8), dimension(pcols,pver) :: cu_g         ! gathered condensation rate
-   real(r8), dimension(pcols,pver) :: evp_g        ! gathered evap rate of rain in downdraft
+   real(r8), dimension(pcols,pver) :: dqdt            ! gathered specific humidity tendency
+   real(r8), dimension(pcols,pver) :: dsdt            ! gathered dry static energy ("temp") tendency at gathered points
+   real(r8), dimension(pcols,pver) :: sd              ! gathered downdraft dry static energy
+   real(r8), dimension(pcols,pver) :: qd              ! gathered downdraft specific humidity
+   real(r8), dimension(pcols,pver) :: mc              ! gathered net upward (scaled by mb) cloud mass flux
+   real(r8), dimension(pcols,pver) :: qu              ! gathered updraft specific humidity
+   real(r8), dimension(pcols,pver) :: su              ! gathered updraft dry static energy
+   real(r8), dimension(pcols,pver) :: q_mid_sat_g     ! gathered mid-point saturation specific humidity
+   real(r8), dimension(pcols,pver) :: dl_g            ! gathered detraining cld h2o tend
+   real(r8), dimension(pcols,pverp):: pflx_g          ! gathered precip flux at each level
+   real(r8), dimension(pcols,pver) :: cu_g            ! gathered condensation rate
+   real(r8), dimension(pcols,pver) :: evp_g           ! gathered evap rate of rain in downdraft
 
-   integer,  dimension(pcols)      :: jlcl         ! updraft lifting cond level
-   integer,  dimension(pcols)      :: j0           ! detrainment initiation level index
-   integer,  dimension(pcols)      :: jd           ! downdraft initiation level index
+   integer,  dimension(pcols)      :: jlcl            ! updraft lifting cond level
+   integer,  dimension(pcols)      :: j0              ! detrainment initiation level index
+   integer,  dimension(pcols)      :: jd              ! downdraft initiation level index
 
    real(r8), dimension(pcols)      :: cld_bass_mass_flux ! cloud base mass flux determined from zm_closure()
 
@@ -377,16 +377,16 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
    end do
 
    do i = 1,ncol
-      cape_g(i)      = 0._r8
-      lcl_g(i)       = 1
-      lel_g(i)       = pver
-      maxg(i)        = 1
-      t_pcl_lcl_g(i) = 400._r8
-      dsubcld(i)     = 0._r8
+      cape_g(i)         = 0._r8
+      lcl_g(i)          = 1
+      lel_g(i)          = pver
+      msemax_klev_g(i)  = 1
+      t_pcl_lcl_g(i)    = 400._r8
+      dsubcld(i)        = 0._r8
    end do
 
    !----------------------------------------------------------------------------
-   ! Evaluate Tparcel, qs(Tparcel), buoyancy, CAPE, lcl, lel, parcel launch level at index maxi()=hmax
+   ! Evaluate Tparcel, qs(Tparcel), buoyancy, CAPE, lcl, lel, parcel launch level at index msemax_klev()=hmax
    ! - call #1, cape_calc_msemax_klev=.true.   standard calculation using state of current step
    ! - call #2, cape_calc_msemax_klev=.false.  use launch level (msemax_klev) from previous call
    ! DCAPE is the difference in CAPE between the two calls using the same launch level
@@ -395,7 +395,7 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
                              zm_param%num_cin, msg, &
                              q_mid, t_mid, z_mid, p_mid, p_int, &
                              pbl_top, tpert, &
-                             t_pcl, q_pcl_sat, maxi, t_pcl_lcl, &
+                             t_pcl, q_pcl_sat, msemax_klev, t_pcl_lcl, &
                              lcl, lel, cape, &
                              zm_const, zm_param, &
                              cape_calc_msemax_klev )
@@ -403,12 +403,12 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
    ! Calculate dcape trigger condition
    if ( .not.is_first_step .and. zm_param%trig_dcape ) then
       cape_calc_msemax_klev = .false.
-      prev_msemax_klev(:ncol) = maxi(:ncol)
+      prev_msemax_klev(:ncol) = msemax_klev(:ncol)
       call compute_dilute_cape( pcols, ncol, pver, pverp, &
                                 zm_param%num_cin, msg, &
                                 q_star, t_star, z_mid, p_mid, p_int, &
                                 pbl_top, tpert, &
-                                t_pcl_m1, q_pcl_sat_m1, maxi_m1, t_pcl_lcl_m1, &
+                                t_pcl_m1, q_pcl_sat_m1, msemax_klev_m1, t_pcl_lcl_m1, &
                                 lcl_m1, lel_m1, cape_m1, &
                                 zm_const, zm_param, &
                                 cape_calc_msemax_klev, prev_msemax_klev )
@@ -445,7 +445,7 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
       cape_g(i)            = cape(gather_index(i))
       lcl_g(i)             = lcl(gather_index(i))
       lel_g(i)             = lel(gather_index(i))
-      maxg(i)              = maxi(gather_index(i))
+      msemax_klev_g(i)     = msemax_klev(gather_index(i))
       t_pcl_lcl_g(i)       = t_pcl_lcl(gather_index(i))
       landfrac_g(i)        = landfrac(gather_index(i))
       pbl_top_g(i)         = pbl_top(gather_index(i))
@@ -482,7 +482,7 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
    ! calculate sub-cloud layer pressure "thickness" for closure and tendency calculations
    do k = msg+1, pver
       do i = 1,lengath
-         if (k >= maxg(i)) then
+         if (k >= msemax_klev_g(i)) then
             dsubcld(i) = dsubcld(i) + p_del(i,k)
          end if
       end do
@@ -516,7 +516,7 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
    call zm_cloud_properties(pcols, lengath, pver, pverp, msg, zm_param%limcnv, &
                             p_mid_g, z_mid_g, z_int_g, t_mid_g, s_mid_g, s_int_g, q_mid_g, &
                             landfrac_g, tpert_g, &
-                            maxg, lel_g, jt, jlcl, j0, jd, &
+                            msemax_klev_g, lel_g, jt, jlcl, j0, jd, &
                             mu, eu, du, md, ed, mc, &
                             su, qu, ql_g, sd, qd,  &
                             q_mid_sat_g, cu_g, evp_g, pflx_g, rprd_g, &
@@ -542,7 +542,7 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
    !----------------------------------------------------------------------------
    ! apply closure assumption to calculate cloud base mass flux
    call zm_closure(pcols, lengath, pver, pverp, msg, cape_threshold_loc, &
-                   lcl_g, lel_g, jt, maxg, dsubcld, &
+                   lcl_g, lel_g, jt, msemax_klev_g, dsubcld, &
                    z_mid_g, z_int_g, p_mid_g, p_del, t_mid_g, &
                    s_mid_g, q_mid_g, q_mid_sat_g, ql_g, s_int_g, q_int_g, &
                    t_pcl_lcl_g, t_pcl_g, q_pcl_sat_g, su, qu, &
@@ -606,7 +606,8 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
    !----------------------------------------------------------------------------
    ! compute temperature and moisture changes due to convection.
    call zm_calc_output_tend(pcols, lengath, pver, pverp, msg, &
-                            jt, maxg, dsubcld, p_del, s_int_g, q_int_g, su, qu, &
+                            jt, msemax_klev_g, dsubcld, p_del, &
+                            s_int_g, q_int_g, su, qu, &
                             mu, du, md, sd, qd, ql_g, evp_g, cu_g, &
                             dsdt, dqdt, dl_g, &
                             loc_microp_st)
@@ -642,7 +643,7 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
    ! scatter 1d variables
    do i = 1,lengath
       jctop(gather_index(i)) = jt(i)
-      jcbot(gather_index(i)) = maxg(i)
+      jcbot(gather_index(i)) = msemax_klev_g(i)
       pflx(gather_index(i),pverp) = pflx_g(i,pverp)
    end do
 
