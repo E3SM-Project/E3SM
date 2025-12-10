@@ -4640,7 +4640,7 @@ arrays (from now on, "PyFields") for each of the process input/output <code>Fiel
 provided that the process input parameters contain a non-null string for the option <code>py_module_name</code>.</p>
 <p>At runtime, the derived process implementation is in charge of gathering all PyField's, and call the
 desired function from the python module. Here's an example from the <code>cld_frac_net</code> process:</p>
-<p><div class="highlight"><pre><span></span><code><span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">py_qi</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">get_py_field_dev</span><span class="p">(</span><span class="s">&quot;qi&quot;</span><span class="p">);</span>
+<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">py_qi</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">get_py_field_dev</span><span class="p">(</span><span class="s">&quot;qi&quot;</span><span class="p">);</span>
 <span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">py_liq</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get_py_field_dev</span><span class="p">(</span><span class="s">&quot;cldfrac_liq&quot;</span><span class="p">);</span>
 <span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">py_ice</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get_py_field_dev</span><span class="p">(</span><span class="s">&quot;cldfrac_ice&quot;</span><span class="p">);</span>
 <span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">py_tot</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get_py_field_dev</span><span class="p">(</span><span class="s">&quot;cldfrac_tot&quot;</span><span class="p">);</span>
@@ -4649,25 +4649,25 @@ desired function from the python module. Here's an example from the <code>cld_fr
 
 <span class="w">    </span><span class="n">py_module_call</span><span class="p">(</span><span class="s">&quot;forward&quot;</span><span class="p">,</span><span class="n">ice_threshold</span><span class="p">,</span><span class="n">py_qi</span><span class="p">,</span><span class="n">py_liq</span><span class="p">,</span><span class="n">py_ice</span><span class="p">,</span><span class="n">py_tot</span><span class="p">);</span>
 </code></pre></div>
-The function <code>get_py_field_dev</code> is implemented in AP base class, and retrieves the PyField
+<p>The function <code>get_py_field_dev</code> is implemented in AP base class, and retrieves the PyField
 corresponding to the given input or output field. The function <code>py_module_call</code> is also implemented
 in the AP base class, and wraps the call to the python function, with some exception
 handling to ensure errors are nicely printed in case something goes wrong.</p>
-<p>A few comments:</p>
+<p>Some comments:</p>
 <ul>
 <li>Since Python does not have the concept of "const", it is technically possible to pass a const
-   field as an output when calling python, so care is needed to ensure arguments are passed in the correct
-   order.</li>
+  field as an output when calling python, so care is needed to ensure arguments are passed in the correct
+  order.</li>
 <li>By default, the AP class looks for the module provided via <code>py_module_name</code> in the current working
-   directory. The user can override this by specifying the optional <code>py_module_path</code> parameter.</li>
+  directory. The user can override this by specifying the optional <code>py_module_path</code> parameter.</li>
 <li>The AP base class also provides <code>get_py_field_host</code>. When the model is running on GPU, this allows
-   to obtain a PyField that shares the same pointer of the Host view in the Field. There is NO
-   automatic synchronization of device and host views. Like for regular fields, it is the process
-   responsibility to copy to host at the beginning of <code>run_impl</code>, and make sure that the field is
-   sync-ed back to device upon return. </li>
+  to obtain a PyField that shares the same pointer of the Host view in the Field. There is NO
+  automatic synchronization of device and host views. Like for regular fields, it is the process
+  responsibility to copy to host at the beginning of <code>run_impl</code>, and make sure that the field is
+  sync-ed back to device upon return.</li>
 <li>The file <code>cld_frac_net.py</code> provides the definition of the torch model, as well as the initialization
-   and run routines that are called at runtime. The names of these routines are arbitrary, but they must
-   of course match what the process interface calls in the C++ interface.</li>
+  and run routines that are called at runtime. The names of these routines are arbitrary, but they must
+  of course match what the process interface calls in the C++ interface.</li>
 </ul>
 <h2 id="ckokkos">C++/Kokkos</h2>
 <p>In order to generate C++/Kokkos, we can make use of the LAPIS library. LAPIS is a lightweight C++
@@ -4682,7 +4682,7 @@ as a function inside a kernel. In our example, we opted for the second strategy,
 versatile one (e.g., one could replace a small portion of a device kernel). In the process implementation,
 we provide the syntactic sugar necessary to then wrap the converted model inside a <code>Kokkos::parallel_for</code>.</p>
 <p>The general structure of the code that calls the emulator is</p>
-<p><div class="highlight"><pre><span></span><code><span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">policy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">...;</span>
+<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">policy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">...;</span>
 <span class="w">    </span><span class="c1">// Allow up to this much level 0 scratch (aka shared mem) per team</span>
 <span class="w">    </span><span class="c1">// when deciding which temporary views to spill into level 1 scratch (global pool).</span>
 <span class="w">    </span><span class="k">constexpr</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">max_shared</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">4096</span><span class="p">;</span>
@@ -4704,18 +4704,18 @@ we provide the syntactic sugar necessary to then wrap the converted model inside
 <span class="w">    </span><span class="p">};</span>
 <span class="w">    </span><span class="n">Kokkos</span><span class="o">::</span><span class="n">parallel_for</span><span class="p">(</span><span class="n">policy</span><span class="p">,</span><span class="n">lambda</span><span class="p">);</span>
 </code></pre></div>
-where the function names <code>forward_L0_scratch_required</code>, <code>forward_L1_scratch_required</code>, and <code>forward</code> are
+<p>where the function names <code>forward_L0_scratch_required</code>, <code>forward_L1_scratch_required</code>, and <code>forward</code> are
 hard-coded by LAPIS, while <code>MemberType</code> and <code>ExeSpace</code> are typedefs similar to what is done in other
 areas of EAMxx.</p>
 <p>Some comments:</p>
 <ul>
 <li>The code needed to wrap the C++/Kokkos version of CldFracNet is larger. This is because we cannot provide
-   any "common" implementation in the AP base class (like it was done for the Python version), and all
-   the necessary plumbing must happen in the derived process implementation.</li>
+  any "common" implementation in the AP base class (like it was done for the Python version), and all
+  the necessary plumbing must happen in the derived process implementation.</li>
 <li>The script <code>gen_cpp_cld_frac_net.py</code> illustrates how to convert the torch model to C++/Kokkos. The script
-   first creates and initializes the torch model (defined in <code>cld_frac_net.py</code>), then dumps MLIR code using
-   the torch-mlir package, and finally calls a couple of LAPIS executables to generate the hpp/cpp files.
-   These files must be included, built, and linked by the host project.</li>
+  first creates and initializes the torch model (defined in <code>cld_frac_net.py</code>), then dumps MLIR code using
+  the torch-mlir package, and finally calls a couple of LAPIS executables to generate the hpp/cpp files.
+  These files must be included, built, and linked by the host project.</li>
 </ul>
 
 
