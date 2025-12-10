@@ -61,7 +61,7 @@
 <config_number_of_time_levels>2</config_number_of_time_levels>
 
 <!-- lateral_walls -->
-<config_wall_slip_factor>0.0</config_wall_slip_factor>
+<config_wall_slip_factor>1.0</config_wall_slip_factor>
 
 <!-- hmix -->
 <config_hmix_scaleWithMesh ocn_grid="oQU480">.false.</config_hmix_scaleWithMesh>
