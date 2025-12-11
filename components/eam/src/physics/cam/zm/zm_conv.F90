@@ -204,7 +204,7 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
    real(r8), dimension(pcols,pver), intent(  out) :: ql              ! cloud liquid water for chem/wetdep      [?]
    real(r8), dimension(pcols),      intent(  out) :: rliq            ! reserved liquid (not yet in cldliq) for energy integrals
    real(r8), dimension(pcols,pver), intent(  out) :: rprd            ! rain production rate                    [kg/kg/s]
-   real(r8), dimension(pcols,pver), intent(  out) :: dlf             ! detrained cloud liq mixing ratio        [kg/kg/s]
+   real(r8), dimension(pcols,pver), intent(  out) :: dlf             ! etrainment rate of cloud liquid         [kg/kg/s]
    type(zm_aero_t),                 intent(inout) :: aero            ! aerosol object
    type(zm_microp_st),              intent(inout) :: microp_st       ! convective microphysics state and tendencies
    !----------------------------------------------------------------------------
