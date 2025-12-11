@@ -312,6 +312,9 @@ contains
     ! bgc & pflotran interface
     namelist /elm_inparm/ use_elm_interface, use_elm_bgc, use_pflotran
 
+    ! onset_gdd_extension in plant phenology
+    namelist /elm_inparm/ onset_gdd_extension
+
     namelist /elm_inparm/ use_dynroot
 
     namelist /elm_inparm/ use_var_soil_thick, use_lake_wat_storage
@@ -980,6 +983,9 @@ contains
     call mpi_bcast (use_elm_interface, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_elm_bgc, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_pflotran, 1, MPI_LOGICAL, 0, mpicom, ier)
+
+    ! phenology
+    call mpi_bcast (onset_gdd_extension, 1, MPI_LOGICAL, 0, mpicom, ier)
 
     !cpl_bypass
      call mpi_bcast (metdata_type,   len(metdata_type),   MPI_CHARACTER, 0, mpicom, ier)
