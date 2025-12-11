@@ -800,6 +800,7 @@
        <queue strict="true" nodemin="1" nodemax="91" walltimemax="2:00:00" default="true">batch</queue>
        <queue strict="true" nodemin="92" nodemax="183" walltimemax="6:00:00">batch</queue>
        <queue strict="true" nodemin="184" nodemax="9408" walltimemax="12:00:00">batch</queue>
+       <queue strict="true" nodemin="1" nodemax="4" walltimemax="2:00:00">debug</queue>
      </queues>
    </batch_system>
 
