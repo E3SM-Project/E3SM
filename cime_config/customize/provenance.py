@@ -684,7 +684,7 @@ def _archive_atm_costs(lid, rundir):
 
 def _archive_memory_profile(lid, rundir):
     # gzip memory profile log
-    glob_to_copy = "memory.[0-4].*.log"
+    glob_to_copy = "memory_*.[0-4].*.log"
     for item in glob.glob(os.path.join(rundir, glob_to_copy)):
         mprof_dst_path = os.path.join(
             os.path.dirname(item), (os.path.basename(item) + ".{}").format(lid)
@@ -738,7 +738,7 @@ def _copy_performance_archive_files(
     globs_to_copy.append(os.path.join(rundir, "e3sm.log.{}.gz".format(lid)))
     globs_to_copy.append(os.path.join(rundir, "cpl.log.{}.gz".format(lid)))
     globs_to_copy.append(os.path.join(rundir, "atm_chunk_costs.{}.gz".format(lid)))
-    globs_to_copy.append(os.path.join(rundir, "memory.[0-4].*.log.{}.gz".format(lid)))
+    globs_to_copy.append(os.path.join(rundir, "memory_*.[0-4].*.log.{}.gz".format(lid)))
     globs_to_copy.append("timing/*.{}*".format(lid))
     globs_to_copy.append("CaseStatus")
     globs_to_copy.append(os.path.join(rundir, "spio_stats.{}.tar.gz".format(lid)))
