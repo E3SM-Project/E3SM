@@ -3274,7 +3274,7 @@
        <arguments>
           <arg name="total_num_tasks">-np {{ total_tasks }} --label</arg>
           <arg name="ranks_per_node">-ppn {{ tasks_per_node }}</arg>
-          <arg name="ranks_bind">--cpu-bindy core </arg>
+          <arg name="ranks_bind">--cpu-bind core </arg>
           <arg name="threads_per_rank">-d $SHELL{echo 32/ {{ tasks_per_node }} |bc}</arg>
           <arg name="gpu_maps">$ENV{GPU_TILE_COMPACT}</arg>
        </arguments>
