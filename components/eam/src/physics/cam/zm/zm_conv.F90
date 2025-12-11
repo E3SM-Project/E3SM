@@ -203,8 +203,8 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
    real(r8), dimension(pcols),      intent(  out) :: dsubcld         ! thickness between lcl and msemax_klev   [mb]
    real(r8), dimension(pcols,pver), intent(  out) :: ql              ! cloud liquid water for chem/wetdep      [?]
    real(r8), dimension(pcols),      intent(  out) :: rliq            ! reserved liquid (not yet in cldliq) for energy integrals
-   real(r8), dimension(pcols,pver), intent(  out) :: rprd            ! rain production rate                    [?]
-   real(r8), dimension(pcols,pver), intent(  out) :: dlf             ! detrained cloud liq mixing ratio        [kg/kg]
+   real(r8), dimension(pcols,pver), intent(  out) :: rprd            ! rain production rate                    [kg/kg/s]
+   real(r8), dimension(pcols,pver), intent(  out) :: dlf             ! detrained cloud liq mixing ratio        [kg/kg/s]
    type(zm_aero_t),                 intent(inout) :: aero            ! aerosol object
    type(zm_microp_st),              intent(inout) :: microp_st       ! convective microphysics state and tendencies
    !----------------------------------------------------------------------------
@@ -734,8 +734,8 @@ subroutine zm_conv_evap(pcols, ncol, pver, pverp, time_step, &
    real(r8), dimension(pcols,pver), intent(out  ) :: tend_s_snwevmlt    ! Heating rate of snow evap/melt          [J/kg/s]
    real(r8), dimension(pcols),      intent(inout) :: prec               ! Convective-scale prec rate              [m/s]
    real(r8), dimension(pcols),      intent(out  ) :: snow               ! Convective-scale snow rate              [m/s]
-   real(r8), dimension(pcols,pver), intent(out  ) :: ntprprd            ! net precip production in layer          [?]
-   real(r8), dimension(pcols,pver), intent(out  ) :: ntsnprd            ! net snow production in layer            [?]
+   real(r8), dimension(pcols,pver), intent(out  ) :: ntprprd            ! net precip production in layer          [kg/kg/s]
+   real(r8), dimension(pcols,pver), intent(out  ) :: ntsnprd            ! net snow production in layer            [kg/kg/s]
    real(r8), dimension(pcols,pverp),intent(out  ) :: flxprec            ! Convective flux of prec at interfaces   [kg/m2/s]
    real(r8), dimension(pcols,pverp),intent(out  ) :: flxsnow            ! Convective flux of snow at interfaces   [kg/m2/s]
    type(zm_microp_st),              intent(inout) :: microp_st          ! ZM microphysics data structure
