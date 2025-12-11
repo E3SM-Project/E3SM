@@ -40,7 +40,6 @@ module atm_comp_mct
   !--------------------------------------------------------------------------
 
   integer                :: inst_index          ! number of current instance (ie. 1)
-  integer(IN)            :: compid              ! mct comp id
   integer(IN),parameter  :: master_task=0       ! task number of master task
 
   ! global cell = all cells in the mesh
