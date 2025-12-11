@@ -89,7 +89,7 @@ If the control surface moves with the fluid in a Lagrangian fashion, then ${\bf 
 
 The momentum equation is an expression of Newton's second law and includes two types of external forces.
 The first is the body force, represented here as ${\bf b}({\bf x}, t)$, which encompasses any volumetric force acting throughout the fluid, such as gravitational acceleration or the Coriolis force. In some contexts, body forces may be expressible as the gradient of a potential, ${\bf b} = -\nabla_{3D} \Phi$, but this is not assumed in general.
-The second is the surface force ${\bf \tau}$, which acts on the boundary of the control volume and includes pressure and viscous stresses. These forces appear as surface integrals over the boundary and drive momentum exchange between adjacent fluid parcels or between the fluid and its environment.
+The second is the surface force or traction vector ${\bf \tau} = \sigma \cdot {\bf n}$, which acts on the boundary of the control volume and includes pressure and viscous stresses. These forces appear as surface integrals over the boundary and drive momentum exchange between adjacent fluid parcels or between the fluid and its environment.
 The derivation of the momentum equation may also be found in [Leishman 2025](https://eaglepubs.erau.edu/introductiontoaerospaceflightvehicles/chapter/conservation-of-momentum-momentum-equation/#chapter-260-section-2), Chapter 21, equation 10.
 
 ## 4. Hydrostatic Approximation
@@ -295,13 +295,15 @@ $$
 &=
 \int_A \int_{\tilde{z}^{\text{bot}}}^{\tilde{z}^{\text{top}}} {\bf b}_{\perp} \, d\tilde{z} \, dA
 +
-\int_{\partial A} \left( \int_{\tilde{z}^{\text{bot}}}^{\tilde{z}^{\text{top}}} \frac{{\bf \tau}}{\rho} \, d\tilde{z} \right) \mathbf{n}_\perp  dl \\
+\int_{\partial A} \left( \int_{\tilde{z}^{\text{bot}}}^{\tilde{z}^{\text{top}}} \frac{{\bf \tau}_\perp}{\rho} \, d\tilde{z} \right) \mathbf{n}_\perp dl \\
 &\quad
-+ \int_A \left[ \frac{{\bf \tau}}{\rho} \right]_{\tilde{z} = \tilde{z}^{\text{top}}} \, dA
-- \int_A \left[ \frac{{\bf \tau}}{\rho} \right]_{\tilde{z} = \tilde{z}^{\text{bot}}} \, dA
++ \int_A \left[ \frac{{\bf \tau}_\perp}{\rho} \right]_{\tilde{z} = \tilde{z}^{\text{top}}} \, dA
+- \int_A \left[ \frac{{\bf \tau}_\perp}{\rho} \right]_{\tilde{z} = \tilde{z}^{\text{bot}}} \, dA
 $$ (vh-momentum-pseudo)
 
-In [](#vh-momentum-pseudo), $\mathbf{b}_\perp$ is defined similarly to $\mathbf{n}_\perp$, it is the body force normal to $dl$. These equations express horizontal and vertical fluxes naturally in terms of pseudo-height, enabling fully consistent discretization in the vertical coordinate used for prognostic evolution.
+Here, we have divided by $\rho_0$, since it occurs in every term.
+
+In [](#vh-momentum-pseudo), $\mathbf{b}_\perp$ is defined similarly to $\mathbf{n}_\perp$, it is the body force normal to $dl$, and ${\bf \tau}_\perp$ is the horizontal component of the traction vector. These equations express horizontal and vertical fluxes naturally in terms of pseudo-height, enabling fully consistent discretization in the vertical coordinate used for prognostic evolution.
 
 ## 7. Vertical Discretization for the Layered Equations
 
@@ -496,14 +498,22 @@ We now derive the horizontal momentum equation in our non-Boussinesq, hydrostati
 We specify the body forces:
 
 $$
-\mathbf{b}_{\perp} = {\bf f} \times \mathbf{u} + \nabla \Phi
+\mathbf{b}_{\perp} = - \left({\bf f} \times \mathbf{u} + \nabla \Phi \right).
 $$ (body-forces)
 
-and surface force:
+We neglect viscous stresses and take the stress tensor to be purely isotropic pressure, so the traction vector on any surface is
 
 $$
-\tau = p
+{\bf \tau} = - p \mathbf{n},
+$$ (surface-forces-perp)
+
+where $\mathbf{n}$ is the outward unit normal. In the horizontally projected momentum equation, only the horizontal component appears:
+
+$$
+{\bf \tau}_\perp = - p \mathbf{n}_\perp,
 $$ (surface-forces)
+
+where $\mathbf{n}_\perp$ is the horizontal projection of $\mathbf{n}$. On vertical side walls, $\mathbf{n}_\perp = \mathbf{n}$; on sloping top and bottom interfaces, $\mathbf{n}_\perp \approx - \nabla \tilde{z}$.
 
 Substituting these into [](#vh-momentum-pseudo), we arrive at:
 
@@ -513,9 +523,9 @@ $$
 & + \int_A \, {\bf u} \left[ \tilde{w}_{tr} - \tilde{\bf u} \right]_{\tilde{z} = \tilde{z}_k^{\text{top}}} \, dA
 - \int_A \, {\bf u} \left[ \tilde{w}_{tr} - \tilde{\bf u} \right]_{\tilde{z} = \tilde{z}_k^{\text{bot}}} \, dA \\
 & = -\int_A \int_{\tilde{z}_k^{\text{bot}}}^{\tilde{z}_k^{\text{top}}} \left({\bf f} \times \mathbf{u} + \nabla \Phi \right) \, d\tilde{z} \, dA
-- \int_{\partial A} \left( \int_{\tilde{z}_k^{\text{bot}}}^{\tilde{z}_k^{\text{top}}} \frac{p}{\rho} \, d\tilde{z} \right) \mathbf{n}_\perp dl  \\
-& - \int_A \left[ \frac{p}{\rho} \nabla \tilde{z}_k^{\text{top}} \right]_{\tilde{z} = \tilde{z}_k^{\text{top}}} \, dA
-+ \int_A \left[ \frac{p}{\rho} \nabla \tilde{z}_k^{\text{bot}} \right]_{\tilde{z} = \tilde{z}_k^{\text{bot}}} \, dA.
+- \int_{\partial A} \left( \int_{\tilde{z}_k^{\text{bot}}}^{\tilde{z}_k^{\text{top}}} \frac{p}{\rho} \, d\tilde{z} \right) \mathbf{n}_\perp dl \\
+& + \int_A \left[ \frac{p}{\rho} \nabla \tilde{z}_k^{\text{top}} \right]_{\tilde{z} = \tilde{z}_k^{\text{top}}} \, dA
+- \int_A \left[ \frac{p}{\rho} \nabla \tilde{z}_k^{\text{bot}} \right]_{\tilde{z} = \tilde{z}_k^{\text{bot}}} \, dA.
 $$ (vh-momentum-forces)
 
 In this equation:
