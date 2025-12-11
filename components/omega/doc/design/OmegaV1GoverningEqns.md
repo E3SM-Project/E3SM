@@ -198,7 +198,7 @@ We now express the top and bottom surfaces using the pseudo-height variable $\ti
 
 $$
 {\bf n}^{\text{top}} \approx (-\nabla \tilde{z}^{\text{top}}, 1), \quad
-{\bf n}^{\text{bot}} \approx (-\nabla \tilde{z}^{\text{bot}}, 1)
+{\bf n}^{\text{bot}} \approx (\nabla \tilde{z}^{\text{bot}}, -1)
 $$ (top-bot-normal-pseudo)
 
 Here we apply a small-slope approximation, assuming $|\nabla \tilde{z}| \ll 1$, and omit normalization factors for clarity. This approximation retains leading-order effects of slope while simplifying the surface geometry.
