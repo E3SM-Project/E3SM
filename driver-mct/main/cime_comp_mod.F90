@@ -2674,7 +2674,7 @@ contains
        if ( iamroot_CPLID) then
           mlog = shr_file_getUnit()
           ! log-name: memory_$ninst_driver.{0,1,2,3,4}.$nsecs.log
-          write(c_mprof_file,'(a7,i0,a1,i1,a1,i0,a4)') 'memory_',driver_id,'.',info_mprof,'.',info_mprof_dt,'.log'
+          write(c_mprof_file,'(a7,i4.4,a1,i1,a1,i0,a4)') 'memory_',driver_id,'.',info_mprof,'.',info_mprof_dt,'.log'
           inquire(file=trim(c_mprof_file),exist=exists)
           if (exists) then
              open(mlog, file=trim(c_mprof_file), status='old', position='append')
