@@ -13,6 +13,3 @@
 ./xmlchange --file env_run.xml --id DATM_CLMNCEP_YR_START --val 1980
 ./xmlchange --file env_run.xml --id DATM_CLMNCEP_YR_END   --val 1981
 ./xmlchange --file env_run.xml --id DATM_CLMNCEP_YR_ALIGN --val 1980
-
-./xmlchange PIO_TYPENAME_OCN=netcdf # pnetcdf doesn't support NETCDF4
-./xmlchange NTASKS=600
