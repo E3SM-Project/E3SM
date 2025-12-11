@@ -207,7 +207,7 @@ To facilitate integration over a fixed horizontal domain, we introduce the follo
 - $A$ is the horizontal footprint (in the $x$–$y$ plane) of the control volume $V(t)$.
 - $dA$ is the horizontal area element.
 - $\partial A$ is the boundary of $A$, and $dl$ is the line element along this boundary.
-- ${\bf n}_\perp$ is the outward-pointing unit normal vector in the horizontal plane, defined on $\partial A$. It lies in the $x$–$y$ plane and is orthogonal to $dl$.
+- $\mathbf{n}_\perp$ is the outward-pointing unit normal vector in the horizontal plane, defined on $\partial A$. It lies in the $x$–$y$ plane and is orthogonal to $dl$.
 
 We now project the tracer equation [](#tr-vh-split-pseudo) onto a horizontal domain $A$ (the footprint of the control volume), over which the top and bottom boundaries vary in height. The side walls remain fixed in time and space, but not vertical extent.
 
@@ -250,7 +250,7 @@ $\tilde{W}_{tr}$ will be introduced and defined in [](#notational-simplification
 
 $$
 \frac{d}{dt} \int_A \int_{\tilde{z}^{\text{bot}}}^{\tilde{z}^{\text{top}}} \, \varphi \, d\tilde{z} \, dA
-& + \int_{\partial A} \left( \int_{\tilde{z}^{\text{bot}}}^{\tilde{z}^{\text{top}}} \varphi \, {\bf u} \, d\tilde{z} \right) \cdot {\bf n}_\perp \, dl \\
+& + \int_{\partial A} \left( \int_{\tilde{z}^{\text{bot}}}^{\tilde{z}^{\text{top}}} \varphi \, {\bf u} \, d\tilde{z} \right) \cdot \mathbf{n}_\perp \, dl \\
 & + \int_A \rho_0 \left\{\varphi \left[ \tilde{w}_{tr} - \tilde{ u} \right]\right\}_{\tilde{z} = \tilde{z}^{\text{top}}} dA \\
 & - \int_A \rho_0 \left\{\varphi \left[ \tilde{w}_{tr} - \tilde{ u} \right]\right\}_{\tilde{z} = \tilde{z}^{\text{bot}}} dA
 = 0
@@ -266,9 +266,9 @@ Similar expressions to [](#tr-vh-separation-pseudo) hold for mass and momentum:
 
 $$
 \frac{d}{dt} \int_A \int_{\tilde{z}^{\text{bot}}}^{\tilde{z}^{\text{top}}} \, d\tilde{z} \, dA
-& + \int_{\partial A} \left( \int_{\tilde{z}^{\text{bot}}}^{\tilde{z}^{\text{top}}} \, {\bf u} \, d\tilde{z} \right) \cdot {\bf n}_\perp \, dl \\
-& + \int_A \rho_0 \left\{\left[ \tilde{w}_{tr} - \tilde{ u} \right]\right\}_{\tilde{z} = \tilde{z}^{\text{top}}} dA \\
-& - \int_A \rho_0 \left\{\left[ \tilde{w}_{tr} - \tilde{ u} \right]\right\}_{\tilde{z} = \tilde{z}^{\text{bot}}} dA
+& + \int_{\partial A} \left( \int_{\tilde{z}^{\text{bot}}}^{\tilde{z}^{\text{top}}} \, {\bf u} \, d\tilde{z} \right) \cdot \mathbf{n}_\perp \, dl \\
+& + \int_A \left\{\left[ \tilde{w}_{tr} - \tilde{ u} \right]\right\}_{\tilde{z} = \tilde{z}^{\text{top}}} dA \\
+& - \int_A \left\{\left[ \tilde{w}_{tr} - \tilde{ u} \right]\right\}_{\tilde{z} = \tilde{z}^{\text{bot}}} dA
 = 0
 $$ (vh-mass-pseudo)
 
@@ -276,9 +276,9 @@ $$ (vh-mass-pseudo)
 
 $$
 \frac{d}{dt} \int_A \int_{\tilde{z}^{\text{bot}}}^{\tilde{z}^{\text{top}}}  \varphi \, d\tilde{z} \, dA
-& + \int_{\partial A} \left( \int_{\tilde{z}^{\text{bot}}}^{\tilde{z}^{\text{top}}}  \varphi \, {\bf u} \, d\tilde{z} \right) \cdot {\bf n}_\perp \, dl & \\
-& + \int_A \rho_0 \left\{\varphi \left[\tilde{w}_{tr} - \tilde{ u} \right] \right\}_{\tilde{z} = \tilde{z}^{\text{top}}} \, dA & \\
-& - \int_A \rho_0 \left\{\varphi \left[\tilde{w}_{tr} - \tilde{ u} \right] \right\}_{\tilde{z} = \tilde{z}^{\text{bot}}}\, dA
+& + \int_{\partial A} \left( \int_{\tilde{z}^{\text{bot}}}^{\tilde{z}^{\text{top}}}  \varphi \, {\bf u} \, d\tilde{z} \right) \cdot \mathbf{n}_\perp \, dl & \\
+& + \int_A \left\{\varphi \left[\tilde{w}_{tr} - \tilde{ u} \right] \right\}_{\tilde{z} = \tilde{z}^{\text{top}}} \, dA & \\
+& - \int_A \left\{\varphi \left[\tilde{w}_{tr} - \tilde{ u} \right] \right\}_{\tilde{z} = \tilde{z}^{\text{bot}}}\, dA
 & = 0
 $$ (vh-tracer-pseudo)
 
@@ -287,15 +287,15 @@ $$ (vh-tracer-pseudo)
 $$
 \frac{d}{dt} \int_{A} \int_{\tilde{z}^{\text{bot}}}^{\tilde{z}^{\text{top}}} \, {\bf u} \, d\tilde{z} \, dA
 &+
-\int_{\partial A} \left( \int_{\tilde{z}^{\text{bot}}}^{\tilde{z}^{\text{top}}} \, {\bf u} \otimes {\bf u} \, d\tilde{z} \right) \cdot {\bf n}_\perp \, dl \\
+\int_{\partial A} \left( \int_{\tilde{z}^{\text{bot}}}^{\tilde{z}^{\text{top}}} \, {\bf u} \otimes {\bf u} \, d\tilde{z} \right) \cdot \mathbf{n}_\perp \, dl \\
 &+
-\int_A \rho_0 \, \left\{{\bf u} \left[ \tilde{w}_{tr} - \tilde{ u} \right]\right\}_{\tilde{z} = \tilde{z}^{\text{top}}} \, dA
+\int_A \, \left\{{\bf u} \left[ \tilde{w}_{tr} - \tilde{ u} \right]\right\}_{\tilde{z} = \tilde{z}^{\text{top}}} \, dA
 -
-\int_A \rho_0 \, \left\{{\bf u} \left[ \tilde{w}_{tr} - \tilde{ u} \right]\right\}_{\tilde{z} = \tilde{z}^{\text{bot}}} \, dA \\
+\int_A \, \left\{{\bf u} \left[ \tilde{w}_{tr} - \tilde{ u} \right]\right\}_{\tilde{z} = \tilde{z}^{\text{bot}}} \, dA \\
 &=
 \int_A \int_{\tilde{z}^{\text{bot}}}^{\tilde{z}^{\text{top}}} {\bf b}_{\perp} \, d\tilde{z} \, dA
 +
-\int_{\partial A} \left( \int_{\tilde{z}^{\text{bot}}}^{\tilde{z}^{\text{top}}} \frac{{\bf \tau}}{\rho} \, d\tilde{z} \right) {\bf n}_\perp  dl \\
+\int_{\partial A} \left( \int_{\tilde{z}^{\text{bot}}}^{\tilde{z}^{\text{top}}} \frac{{\bf \tau}}{\rho} \, d\tilde{z} \right) \mathbf{n}_\perp  dl \\
 &\quad
 + \int_A \left[ \frac{{\bf \tau}}{\rho} \right]_{\tilde{z} = \tilde{z}^{\text{top}}} \, dA
 - \int_A \left[ \frac{{\bf \tau}}{\rho} \right]_{\tilde{z} = \tilde{z}^{\text{bot}}} \, dA
@@ -404,9 +404,9 @@ We first Reynolds' average [](#vh-tracer-pseudo) and given the definition of the
 
 $$
 \frac{d}{dt} \int_A \int_{\tilde{z}_{k+1}^{\text{top}}}^{\tilde{z}_k^{\text{top}}} \left<\varphi\right> \, d\tilde{z} \, dA
-& + \int_{\partial A} \left( \int_{\tilde{z}_{k+1}^{\text{bot}}}^{\tilde{z}_k^{\text{bot}}} \left<\varphi \, {\bf u} \right> \, d\tilde{z} \right) \cdot {\bf n}_\perp \, dl & \\
-& + \int_A \left<\left\{ \rho_0 \varphi \left[\tilde{w}_{tr} - \tilde{ u} \right] \right\}\right>_{\tilde{z} = \tilde{z}_k^{\text{top}}} \, dA & \\
-& - \int_A \left<\left\{ \rho_0 \varphi \left[\tilde{w}_{tr} - \tilde{ u} \right] \right\}\right>_{\tilde{z} = \tilde{z}_k^{\text{bot}}}\, dA
+& + \int_{\partial A} \left( \int_{\tilde{z}_{k+1}^{\text{bot}}}^{\tilde{z}_k^{\text{bot}}} \left<\varphi \, {\bf u} \right> \, d\tilde{z} \right) \cdot \mathbf{n}_\perp \, dl & \\
+& + \int_A \left<\left\{ \varphi \left[\tilde{w}_{tr} - \tilde{ u} \right] \right\}\right>_{\tilde{z} = \tilde{z}_k^{\text{top}}} \, dA & \\
+& - \int_A \left<\left\{ \varphi \left[\tilde{w}_{tr} - \tilde{ u} \right] \right\}\right>_{\tilde{z} = \tilde{z}_k^{\text{bot}}}\, dA
 & = 0.
 $$ (Aintegral-tracer-first-reynolds)
 
@@ -415,9 +415,9 @@ Next, we use a Reynolds' decomposition on any terms involving products inside a 
 $$
 \frac{d}{dt} \int_A \int_{\tilde{z}_{k}^{\text{bot}}}^{\tilde{z}_k^{\text{top}}} \left<\varphi \right> \, d\tilde{z} \, dA
 & +
-\int_{\partial A} \left( \int_{\tilde{z}_{k}^{\text{bot}}}^{\tilde{z}_k^{\text{top}}} \left(\left<{\varphi}\right>\left<{\bf u}\right> + \left<\varphi^{\prime}{\bf u}^{\prime}\right> \right) d\tilde{z} \right) \, \cdot {\bf n}_\perp \, dl & \\
-& + \int_A \left\{ \rho_0 \left[ \left<\varphi\right>\left<\tilde{w}_{tr}\right> + \left<\varphi^{\prime} \tilde{w}_{tr}^\prime \right> - \left<\varphi\right> \left<\tilde{ u}\right> -\left<\varphi^{\prime} \tilde{ u}^{\prime}\right> \right] \right\}_{\tilde{z} = \tilde{z}_k^{\text{top}}} \, dA & \\
-& - \int_A \left\{ \rho_0 \left[ \left<\varphi\right>\left<\tilde{w}_{tr}\right> + \left<\varphi^{\prime} \tilde{w}_{tr}^\prime \right> - \left<\varphi\right> \left<\tilde{ u}\right> - \left<\varphi^{\prime} \tilde{ u}^{\prime}\right> \right] \right\}_{\tilde{z} = \tilde{z}_k^{\text{bot}}}\, dA
+\int_{\partial A} \left( \int_{\tilde{z}_{k}^{\text{bot}}}^{\tilde{z}_k^{\text{top}}} \left(\left<{\varphi}\right>\left<{\bf u}\right> + \left<\varphi^{\prime}{\bf u}^{\prime}\right> \right) d\tilde{z} \right) \, \cdot \mathbf{n}_\perp \, dl & \\
+& + \int_A \left\{ \left[ \left<\varphi\right>\left<\tilde{w}_{tr}\right> + \left<\varphi^{\prime} \tilde{w}_{tr}^\prime \right> - \left<\varphi\right> \left<\tilde{ u}\right> -\left<\varphi^{\prime} \tilde{ u}^{\prime}\right> \right] \right\}_{\tilde{z} = \tilde{z}_k^{\text{top}}} \, dA & \\
+& - \int_A \left\{ \left[ \left<\varphi\right>\left<\tilde{w}_{tr}\right> + \left<\varphi^{\prime} \tilde{w}_{tr}^\prime \right> - \left<\varphi\right> \left<\tilde{ u}\right> - \left<\varphi^{\prime} \tilde{ u}^{\prime}\right> \right] \right\}_{\tilde{z} = \tilde{z}_k^{\text{bot}}}\, dA
 & = 0.
 $$ (Aintegral-tracer-reynolds)
 
@@ -425,9 +425,9 @@ We can rewrite the first two terms in [](#Aintegral-tracer-reynolds) using [](#d
 
 $$
 \frac{d}{dt} \int_A \tilde{h}_k \, \overline{\left<\varphi\right>}^{\tilde{z}}_k \, dA
-& + \int_{\partial A} \left( \tilde{h}_k \, \left[\overline{\left<\varphi\right> \left<{\bf u}\right> + \left<\varphi^{\prime}{\bf u}^{\prime}\right>}^{\tilde{z}}_k \right] \right) \cdot {\bf n}_\perp \, dl & \\
-& + \int_A \left\{ \rho_0 \left[ \left<\varphi\right>\left<\tilde{w}_{tr}\right> + \left<\varphi^{\prime} \tilde{w}_{tr}^\prime \right> - \left<\varphi\right> \left<\tilde{ u}\right> -\left<\varphi^{\prime} \tilde{ u}^{\prime}\right> \right] \right\}_{\tilde{z} = \tilde{z}_k^{\text{top}}} \, dA & \\
-& - \int_A \left\{ \rho_0 \left[ \left<\varphi\right>\left<\tilde{w}_{tr}\right> + \left<\varphi^{\prime} \tilde{w}_{tr}^\prime \right> - \left<\varphi\right> \left<\tilde{ u}\right> - \left<\varphi^{\prime} \tilde{ u}^{\prime}\right> \right] \right\}_{\tilde{z} = \tilde{z}_k^{\text{bot}}}\, dA
+& + \int_{\partial A} \left( \tilde{h}_k \, \left[\overline{\left<\varphi\right> \left<{\bf u}\right> + \left<\varphi^{\prime}{\bf u}^{\prime}\right>}^{\tilde{z}}_k \right] \right) \cdot \mathbf{n}_\perp \, dl & \\
+& + \int_A \left\{ \left[ \left<\varphi\right>\left<\tilde{w}_{tr}\right> + \left<\varphi^{\prime} \tilde{w}_{tr}^\prime \right> - \left<\varphi\right> \left<\tilde{ u}\right> -\left<\varphi^{\prime} \tilde{ u}^{\prime}\right> \right] \right\}_{\tilde{z} = \tilde{z}_k^{\text{top}}} \, dA & \\
+& - \int_A \left\{ \left[ \left<\varphi\right>\left<\tilde{w}_{tr}\right> + \left<\varphi^{\prime} \tilde{w}_{tr}^\prime \right> - \left<\varphi\right> \left<\tilde{ u}\right> - \left<\varphi^{\prime} \tilde{ u}^{\prime}\right> \right] \right\}_{\tilde{z} = \tilde{z}_k^{\text{bot}}}\, dA
 & = 0.
 $$ (Aintegral-tracer)
 
@@ -435,9 +435,9 @@ The second term is expanded utilizing [](#vertical-decomposition)
 
 $$
 \frac{d}{dt} \int_A \tilde{h}_k \, \overline{\left<\varphi\right>}^{\tilde{z}}_k \, dA
-& + \int_{\partial A} \left( \tilde{h}_k \, \overline{\left(\overline{\left<\varphi\right>}^{\tilde{z}}_k + \delta \varphi\right)\left(\overline{\left<{\bf u}\right>}^{\tilde{z}}_k + \delta {\bf u}\right)}^{\tilde{z}}_k + \tilde{h}_k \overline{\left<\varphi^{\prime}{\bf u}^{\prime}\right>}^{\tilde{z}}_k \right) \cdot {\bf n}_\perp \, dl & \\
-& + \int_A \left\{ \rho_0 \left[ \left<\varphi\right>\left<\tilde{w}_{tr}\right> + \left<\varphi^{\prime} \tilde{w}_{tr}^\prime \right> - \left<\varphi\right> \left<\tilde{ u}\right> -\left<\varphi^{\prime} \tilde{ u}^{\prime}\right> \right] \right\}_{\tilde{z} = \tilde{z}_k^{\text{top}}} \, dA & \\
-& - \int_A \left\{ \rho_0 \left[ \left<\varphi\right>\left<\tilde{w}_{tr}\right> + \left<\varphi^{\prime} \tilde{w}_{tr}^\prime \right> - \left<\varphi\right> \left<\tilde{ u}\right> - \left<\varphi^{\prime} \tilde{ u}^{\prime}\right> \right] \right\}_{\tilde{z} = \tilde{z}_k^{\text{bot}}}\, dA
+& + \int_{\partial A} \left( \tilde{h}_k \, \overline{\left(\overline{\left<\varphi\right>}^{\tilde{z}}_k + \delta \varphi\right)\left(\overline{\left<{\bf u}\right>}^{\tilde{z}}_k + \delta {\bf u}\right)}^{\tilde{z}}_k + \tilde{h}_k \overline{\left<\varphi^{\prime}{\bf u}^{\prime}\right>}^{\tilde{z}}_k \right) \cdot \mathbf{n}_\perp \, dl & \\
+& + \int_A \left\{ \left[ \left<\varphi\right>\left<\tilde{w}_{tr}\right> + \left<\varphi^{\prime} \tilde{w}_{tr}^\prime \right> - \left<\varphi\right> \left<\tilde{ u}\right> -\left<\varphi^{\prime} \tilde{ u}^{\prime}\right> \right] \right\}_{\tilde{z} = \tilde{z}_k^{\text{top}}} \, dA & \\
+& - \int_A \left\{ \left[ \left<\varphi\right>\left<\tilde{w}_{tr}\right> + \left<\varphi^{\prime} \tilde{w}_{tr}^\prime \right> - \left<\varphi\right> \left<\tilde{ u}\right> - \left<\varphi^{\prime} \tilde{ u}^{\prime}\right> \right] \right\}_{\tilde{z} = \tilde{z}_k^{\text{bot}}}\, dA
 & = 0.
 $$ (Aintegral-tracer2)
 
@@ -445,9 +445,9 @@ And then is simplified using [](#delta-vert-average)
 
 $$
 \frac{d}{dt} \int_A \tilde{h}_k \, \overline{\left<\varphi\right>}^{\tilde{z}}_k \, dA
-& + \int_{\partial A} \left[ \tilde{h}_k \, \left(\overline{\left<\varphi\right>}^{\tilde{z}}_k \overline{\left<{\bf u}\right>}^{\tilde{z}}_k + \overline{\delta \varphi \delta {\bf u}}^{\tilde{z}}_k + \overline{\left<\varphi^{\prime}{\bf u}^{\prime}\right>}^{\tilde{z}}_k \right)\right] \cdot {\bf n}_\perp \, dl & \\
-& + \int_A \left\{ \rho_0 \left[ \left<\varphi\right>\left<\tilde{w}_{tr}\right> + \left<\varphi^{\prime} \tilde{w}_{tr}^\prime \right> - \left<\varphi\right> \left<\tilde{ u}\right> -\left<\varphi^{\prime} \tilde{ u}^{\prime}\right> \right] \right\}_{\tilde{z} = \tilde{z}_k^{\text{top}}} \, dA & \\
-& - \int_A \left\{ \rho_0 \left[ \left<\varphi\right>\left<\tilde{w}_{tr}\right> + \left<\varphi^{\prime} \tilde{w}_{tr}^\prime \right> - \left<\varphi\right> \left<\tilde{ u}\right> - \left<\varphi^{\prime} \tilde{ u}^{\prime}\right> \right] \right\}_{\tilde{z} = \tilde{z}_k^{\text{bot}}}\, dA
+& + \int_{\partial A} \left[ \tilde{h}_k \, \left(\overline{\left<\varphi\right>}^{\tilde{z}}_k \overline{\left<{\bf u}\right>}^{\tilde{z}}_k + \overline{\delta \varphi \delta {\bf u}}^{\tilde{z}}_k + \overline{\left<\varphi^{\prime}{\bf u}^{\prime}\right>}^{\tilde{z}}_k \right)\right] \cdot \mathbf{n}_\perp \, dl & \\
+& + \int_A \left\{ \left[ \left<\varphi\right>\left<\tilde{w}_{tr}\right> + \left<\varphi^{\prime} \tilde{w}_{tr}^\prime \right> - \left<\varphi\right> \left<\tilde{ u}\right> -\left<\varphi^{\prime} \tilde{ u}^{\prime}\right> \right] \right\}_{\tilde{z} = \tilde{z}_k^{\text{top}}} \, dA & \\
+& - \int_A \left\{ \left[ \left<\varphi\right>\left<\tilde{w}_{tr}\right> + \left<\varphi^{\prime} \tilde{w}_{tr}^\prime \right> - \left<\varphi\right> \left<\tilde{ u}\right> - \left<\varphi^{\prime} \tilde{ u}^{\prime}\right> \right] \right\}_{\tilde{z} = \tilde{z}_k^{\text{bot}}}\, dA
 & = 0.
 $$
 
@@ -456,8 +456,8 @@ Given that the horizontal area is not changing in time, we can move the time der
 $$
 \int_A  \bigl\{ \frac{\partial \tilde{h}_k \, \overline{\left<\varphi\right>}^{\tilde{z}}_k}{\partial t}
 & + \nabla \cdot \left[ \tilde{h}_k \, \left(\overline{\left<\varphi\right>}^{\tilde{z}}_k \overline{\left<{\bf u}\right>}^{\tilde{z}}_k + \overline{\delta \varphi \delta {\bf u}}^{\tilde{z}}_k + \overline{\left<\varphi^{\prime}{\bf u}^{\prime}\right>}^{\tilde{z}}_k \right)\right] & \\
-& + \left\{ \rho_0 \left[ \left<\varphi\right>\left<\tilde{w}_{tr}\right> + \left<\varphi^{\prime} \tilde{w}_{tr}^\prime \right> - \left<\varphi\right> \left<\tilde{ u}\right> - \left<\varphi^{\prime} \tilde{ u}^{\prime}\right> \right] \right\}_{\tilde{z} = \tilde{z}_k^{\text{top}}} & \\
-& - \left\{ \rho_0 \left[ \left<\varphi\right>\left<\tilde{w}_{tr}\right> + \left<\varphi^{\prime} \tilde{w}_{tr}^\prime \right> - \left<\varphi\right> \left<\tilde{ u}\right> - \left<\varphi^{\prime} \tilde{ u}^{\prime}\right> \right] \right\}_{\tilde{z} = \tilde{z}_k^{\text{bot}}} \bigr\}  \, dA
+& + \left\{ \left[ \left<\varphi\right>\left<\tilde{w}_{tr}\right> + \left<\varphi^{\prime} \tilde{w}_{tr}^\prime \right> - \left<\varphi\right> \left<\tilde{ u}\right> - \left<\varphi^{\prime} \tilde{ u}^{\prime}\right> \right] \right\}_{\tilde{z} = \tilde{z}_k^{\text{top}}} & \\
+& - \left\{ \left[ \left<\varphi\right>\left<\tilde{w}_{tr}\right> + \left<\varphi^{\prime} \tilde{w}_{tr}^\prime \right> - \left<\varphi\right> \left<\tilde{ u}\right> - \left<\varphi^{\prime} \tilde{ u}^{\prime}\right> \right] \right\}_{\tilde{z} = \tilde{z}_k^{\text{bot}}} \bigr\}  \, dA
 & = 0.
 $$ (reynolds-tracer-final)
 
@@ -470,9 +470,9 @@ Finally, given that the area integral operates on the entire equation, it is val
 
 $$
 \frac{\partial {\tilde h}_k \overline{\left<\varphi\right>}^{\tilde{z}}_k  }{\partial t}  & + \nabla \cdot \left({\tilde h}_k \overline{\left<\varphi\right>}^{\tilde{z}}_k \overline{\left<{\bf u}\right>}^{\tilde{z}}_k\right) \\
-& + \rho_0 \left\{ \left[ \left<\varphi\right> \left<{\tilde w}_{tr}\right> - \left<\varphi\right>\left<\tilde{ u}\right> \right]_{{\tilde z}={\tilde z}_k^{\text{top}}} - \left[ \left<\varphi\right> \left<{\tilde w}_{tr}\right> - \left<\varphi\right>\left<\tilde{ u}\right> \right]_{{\tilde z}={\tilde z}_k^{\text{bot}}} \right\} \\
+& + \left\{ \left[ \left<\varphi\right> \left<{\tilde w}_{tr}\right> - \left<\varphi\right>\left<\tilde{ u}\right> \right]_{{\tilde z}={\tilde z}_k^{\text{top}}} - \left[ \left<\varphi\right> \left<{\tilde w}_{tr}\right> - \left<\varphi\right>\left<\tilde{ u}\right> \right]_{{\tilde z}={\tilde z}_k^{\text{bot}}} \right\} \\
 & = - \nabla \cdot \left({\tilde h}_k \overline{\left<\varphi^{\prime} {\bf u}^{\prime}\right>}^{\tilde{z}}_k \, + {\tilde h}_k \overline{\delta \varphi \delta {\bf u}}^{\tilde{z}}_k \right) \\
-& - \rho_0 \left\{ \left[\left< \varphi^\prime {\tilde w}_{tr}^{\prime} \right> - \left< \varphi^\prime \tilde{ u}^{\prime}\right> \right]_{{\tilde z}={\tilde z}_{k}^{\text{top}}} - \left[\left< \varphi^\prime {\tilde w}_{tr}^{\prime} \right> - \left< \varphi^\prime \tilde{ u}^{\prime}\right> \right]_{{\tilde z}={\tilde z}_{k}^{\text{bot}}}\right\}.
+& - \left\{ \left[\left< \varphi^\prime {\tilde w}_{tr}^{\prime} \right> - \left< \varphi^\prime \tilde{ u}^{\prime}\right> \right]_{{\tilde z}={\tilde z}_{k}^{\text{top}}} - \left[\left< \varphi^\prime {\tilde w}_{tr}^{\prime} \right> - \left< \varphi^\prime \tilde{ u}^{\prime}\right> \right]_{{\tilde z}={\tilde z}_{k}^{\text{bot}}}\right\}.
 $$ (layer-tracer)
 
 A few notes on the layer-averaged tracer equation. In this complete form, it includes three types of fluctuating quantities that must be dealt with: (1) the layer averaged, Reynolds' averaged horizontal turbulent flux $\left( \overline{\left<\varphi^{\prime} {\bf u}^{\prime}\right>}^{\tilde{z}}_k \right)$, (2) the Reynolds' average vertical turbulent flux $\left( \left< \varphi^\prime {\tilde w}_{tr}^{\prime} \right> - \left< \varphi^\prime \tilde{u}^{\prime}\right> \right)$, and (3) the layer-averaged product of deviations from the layer-integrated variables $\left(\overline{\delta \varphi \delta {\bf u}}^{\tilde{z}}_k \right)$. The details of the first two quantities will be discussed later in this document and follow-on design documents. The terms involving perturbations from the layer integrated quantity are necessary to extend beyond piecewise constant represenation of variables. In this equation, variables with no overline are the full field variable at the interfaces.
@@ -484,8 +484,8 @@ The mass equation is identical to the tracer equation with $\varphi=1$.
 $$
 \frac{\partial {\tilde h}_k }{\partial t}
 + \nabla \cdot \left({\tilde h}_k \overline{\left<{\bf u}\right>}^{\tilde{z}}_k\right)
-+ \rho_0 \left[ \left<{\tilde w}_{tr}\right> - \left<\tilde{ u}\right> \right]_{{\tilde z}={\tilde z}_k^{\text{top}}}
-- \rho_0 \left[ \left<{\tilde w}_{tr}\right> - \left<\tilde{ u}\right> \right]_{{\tilde z}={\tilde z}_{k}^{\text{bot}}}
++ \left[ \left<{\tilde w}_{tr}\right> - \left<\tilde{ u}\right> \right]_{{\tilde z}={\tilde z}_k^{\text{top}}}
+- \left[ \left<{\tilde w}_{tr}\right> - \left<\tilde{ u}\right> \right]_{{\tilde z}={\tilde z}_{k}^{\text{bot}}}
 = 0.
 $$ (layer-mass)
 
@@ -493,17 +493,29 @@ $$ (layer-mass)
 
 We now derive the horizontal momentum equation in our non-Boussinesq, hydrostatic framework, following the same finite-volume approach used for mass and tracer conservation.
 
-We begin from [](#vh-momentum-pseudo) and specify the body forces ${\bf b}$ and surface forces ${\bf \tau}$
+We specify the body forces:
+
+$$
+\mathbf{b}_{\perp} = {\bf f} \times \mathbf{u} + \nabla \Phi
+$$ (body-forces)
+
+and surface force:
+
+$$
+\tau = p
+$$ (surface-forces)
+
+Substituting these into [](#vh-momentum-pseudo), we arrive at:
 
 $$
 \frac{d}{dt} \int_A \int_{\tilde{z}_k^{\text{bot}}}^{\tilde{z}_k^{\text{top}}} {\bf u} \, d\tilde{z} \, dA
-& + \int_{\partial A} \left( \int_{\tilde{z}_k^{\text{bot}}}^{\tilde{z}_k^{\text{top}}} {\bf u} \otimes {\bf u} \, d\tilde{z} \right) \cdot {\bf n}_\perp \, dl \\
-& + \int_A \rho_0 \, {\bf u} \left[ \tilde{w}_{tr} - \tilde{\bf u} \right]_{\tilde{z} = \tilde{z}_k^{\text{top}}} \, dA
-- \int_A \rho_0 \, {\bf u} \left[ \tilde{w}_{tr} - \tilde{\bf u} \right]_{\tilde{z} = \tilde{z}_k^{\text{bot}}} \, dA \\
-& = -\int_A \int_{\tilde{z}_k^{\text{bot}}}^{\tilde{z}_k^{\text{top}}} \rho_0 \left({\bf f} \times \mathbf{u} + \nabla \Phi \right) \, d\tilde{z} \, dA
-- \int_{\partial A} \left( \int_{\tilde{z}_k^{\text{bot}}}^{\tilde{z}_k^{\text{top}}} \frac{\rho_0 p}{\rho} \, d\tilde{z} \right) {\bf n}_\perp  dl \\
-& - \int_A \left[ \frac{\rho_0 p}{\rho} \nabla \tilde{z}_k^{\text{top}} \right]_{\tilde{z} = \tilde{z}_k^{\text{top}}} \, dA
-+ \int_A \left[ \frac{\rho_0 p}{\rho} \nabla \tilde{z}_k^{\text{bot}} \right]_{\tilde{z} = \tilde{z}_k^{\text{bot}}} \, dA.
+& + \int_{\partial A} \left( \int_{\tilde{z}_k^{\text{bot}}}^{\tilde{z}_k^{\text{top}}} {\bf u} \otimes {\bf u} \, d\tilde{z} \right) \cdot \mathbf{n}_\perp \, dl \\
+& + \int_A \, {\bf u} \left[ \tilde{w}_{tr} - \tilde{\bf u} \right]_{\tilde{z} = \tilde{z}_k^{\text{top}}} \, dA
+- \int_A \, {\bf u} \left[ \tilde{w}_{tr} - \tilde{\bf u} \right]_{\tilde{z} = \tilde{z}_k^{\text{bot}}} \, dA \\
+& = -\int_A \int_{\tilde{z}_k^{\text{bot}}}^{\tilde{z}_k^{\text{top}}} \left({\bf f} \times \mathbf{u} + \nabla \Phi \right) \, d\tilde{z} \, dA
+- \int_{\partial A} \left( \int_{\tilde{z}_k^{\text{bot}}}^{\tilde{z}_k^{\text{top}}} \frac{p}{\rho} \, d\tilde{z} \right) \mathbf{n}_\perp dl  \\
+& - \int_A \left[ \frac{p}{\rho} \nabla \tilde{z}_k^{\text{top}} \right]_{\tilde{z} = \tilde{z}_k^{\text{top}}} \, dA
++ \int_A \left[ \frac{p}{\rho} \nabla \tilde{z}_k^{\text{bot}} \right]_{\tilde{z} = \tilde{z}_k^{\text{bot}}} \, dA.
 $$ (vh-momentum-forces)
 
 In this equation:
@@ -517,11 +529,11 @@ As with the tracer derivation, we next Reynolds' average [](#vh-momentum-forces)
 
 $$
 \frac{d}{dt} \int_A \int_{\tilde{z}_k^{\text{bot}}}^{\tilde{z}_k^{\text{top}}} \left< {\bf u} \right> \, d\tilde{z} \, dA
-& + \int_{\partial A} \left( \int_{\tilde{z}^{\text{bot}}}^{\tilde{z}_k^{\text{top}}} \left< {\bf u} \otimes {\bf u} \right> \, d\tilde{z} \right) \cdot {\bf n}_\perp \, dl \\
+& + \int_{\partial A} \left( \int_{\tilde{z}^{\text{bot}}}^{\tilde{z}_k^{\text{top}}} \left< {\bf u} \otimes {\bf u} \right> \, d\tilde{z} \right) \cdot \mathbf{n}_\perp \, dl \\
 & + \int_A \rho_0 \,\left< {\bf u} \left[ \tilde{w}_{tr} - \tilde{\bf u} \right]_{\tilde{z} = \tilde{z}_k^{\text{top}}} \right> \, dA
 - \int_A \rho_0 \, \left< {\bf u} \left[ \tilde{w}_{tr} - \tilde{\bf u} \right]_{\tilde{z} = \tilde{z}_k^{\text{bot}}} \right> \, dA \\
 & = -\int_A \int_{\tilde{z}_k^{\text{bot}}}^{\tilde{z}_k^{\text{top}}} \rho_0 \, \left<\left( {\bf f} \times \mathbf{u} + \nabla \Phi \right) \right> \, d\tilde{z} \, dA
-- \int_{\partial A} \left( \int_{\tilde{z}_k^{\text{bot}}}^{\tilde{z}_k^{\text{top}}} \rho_0 \left< \frac{p}{\rho} \right> \, d\tilde{z} \right) {\bf n}_\perp dl \\
+- \int_{\partial A} \left( \int_{\tilde{z}_k^{\text{bot}}}^{\tilde{z}_k^{\text{top}}} \rho_0 \left< \frac{p}{\rho} \right> \, d\tilde{z} \right) \mathbf{n}_\perp dl \\
 & - \int_A \rho_0 \left[ \left< \frac{p}{\rho} \nabla \tilde{z}_k^{\text{top}} \right> \right]_{\tilde{z} = \tilde{z}_k^{\text{top}}} \, dA
 + \int_A \rho_0 \left[ \left< \frac{p}{\rho} \nabla \tilde{z}_k^{\text{bot}} \right> \right]_{\tilde{z} = \tilde{z}_k^{\text{bot}}} \, dA.
 $$ (vh-momentum-reynolds1)
@@ -530,11 +542,11 @@ Here we have also moved the Reynolds' average through the spatial integrals give
 
 $$
 \frac{d}{dt} \int_A \int_{\tilde{z}_k^{\text{bot}}}^{\tilde{z}_k^{\text{top}}} \left< {\bf u} \right> \, d\tilde{z} \, dA
-& + \int_{\partial A} \left( \int_{\tilde{z}_k^{\text{bot}}}^{\tilde{z}^{\text{top}}} \left( \left< {\bf u} \right> \otimes \left< {\bf u} \right> + \left< {\bf u}^\prime \otimes {\bf u}^\prime \right> \right) \, d\tilde{z} \right) \cdot {\bf n}_\perp \, dl \\
+& + \int_{\partial A} \left( \int_{\tilde{z}_k^{\text{bot}}}^{\tilde{z}^{\text{top}}} \left( \left< {\bf u} \right> \otimes \left< {\bf u} \right> + \left< {\bf u}^\prime \otimes {\bf u}^\prime \right> \right) \, d\tilde{z} \right) \cdot \mathbf{n}_\perp \, dl \\
 & + \int_A \rho_0 \, \left[ \left(\left< {\bf u} \right> \left< \tilde{w}_{tr} \right> + \left<{\bf u}^\prime \tilde{w}_{tr}^\prime \right> \right) - \left(\left<{\bf u}\right> \left<\tilde{\bf u}\right> + \left< {\bf u}^\prime \tilde{\bf u}^\prime \right> \right) \right]_{\tilde{z} = \tilde{z}_k^{\text{top}}} \, dA \\
 & - \int_A \rho_0 \, \left[ \left(\left< {\bf u} \right> \left< \tilde{w}_{tr} \right> + \left<{\bf u}^\prime \tilde{w}_{tr}^\prime \right> \right) - \left(\left<{\bf u}\right> \left<\tilde{\bf u}\right> + \left< {\bf u}^\prime \tilde{\bf u}^\prime \right> \right) \right]_{\tilde{z} = \tilde{z}_k^{\text{bot}}} \, dA  \\
 & = - \int_A \int_{\tilde{z}_k^{\text{bot}}}^{\tilde{z}_k^{\text{top}}} \rho_0 \, \left( {\bf f} \times \left<\mathbf{u}\right> + \nabla \left<\Phi\right> \right) \, d\tilde{z} \, dA \\
-& - \int_{\partial A} \left( \int_{\tilde{z}_k^{\text{bot}}}^{\tilde{z}_k^{\text{top}}} \rho_0 \left(\left< \alpha \right> \left<p \right> + \left<\alpha^\prime p^\prime\right> \right) \, d\tilde{z} \right) {\bf n}_\perp  dl \\
+& - \int_{\partial A} \left( \int_{\tilde{z}_k^{\text{bot}}}^{\tilde{z}_k^{\text{top}}} \rho_0 \left(\left< \alpha \right> \left<p \right> + \left<\alpha^\prime p^\prime\right> \right) \, d\tilde{z} \right) \mathbf{n}_\perp  dl \\
 & - \int_A \rho_0 \left[ \left< \alpha \right> \left<p \nabla \tilde{z}_k^{\text{top}} \right> + \left<\alpha^\prime \left(p \nabla \tilde{z}_k^{\text{top}}\right)^\prime\right> \right]_{\tilde{z} = \tilde{z}_k^{\text{top}}} \, dA \\
 & + \int_A \rho_0 \left[ \left< \alpha \right> \left<p \nabla \tilde{z}_k^{\text{bot}} \right> + \left<\alpha^\prime \left(p \nabla \tilde{z}_k^{\text{bot}}\right)^\prime\right> \right]_{\tilde{z} = \tilde{z}_k^{\text{bot}}} \, dA.
 $$ (vh-momentum-reynolds2)
@@ -543,11 +555,11 @@ In [](#vh-momentum-reynolds2) we have also used $\alpha = \frac{1}{\rho}$ for no
 
 $$
 \frac{d}{dt} \int_A \tilde{h}_k \overline{\left< {\bf u} \right>}^{\tilde{z}}_k  \, dA
-& + \int_{\partial A} \tilde{h}_k \left( \overline{\left< {\bf u} \right> \otimes \left< {\bf u} \right>}^{\tilde{z}}_k + \overline{\left< {\bf u}^\prime \otimes {\bf u}^\prime \right>}^{\tilde{z}}_k  \right) \cdot {\bf n}_\perp \, dl \\
+& + \int_{\partial A} \tilde{h}_k \left( \overline{\left< {\bf u} \right> \otimes \left< {\bf u} \right>}^{\tilde{z}}_k + \overline{\left< {\bf u}^\prime \otimes {\bf u}^\prime \right>}^{\tilde{z}}_k  \right) \cdot \mathbf{n}_\perp \, dl \\
 & + \int_A \rho_0 \, \left[ \left(\left< {\bf u} \right> \left< \tilde{w}_{tr} \right> + \left<{\bf u}^\prime \tilde{w}_{tr}^\prime \right> \right) - \left(\left<{\bf u}\right> \left<\tilde{\bf u}\right> + \left< {\bf u}^\prime \tilde{\bf u}^\prime \right> \right) \right]_{\tilde{z} = \tilde{z}_k^{\text{top}}} \, dA \\
 & - \int_A \rho_0 \, \left[ \left(\left< {\bf u} \right> \left< \tilde{w}_{tr} \right> + \left<{\bf u}^\prime \tilde{w}_{tr}^\prime \right> \right) - \left(\left<{\bf u}\right> \left<\tilde{\bf u}\right> + \left< {\bf u}^\prime \tilde{\bf u}^\prime \right> \right) \right]_{\tilde{z} = \tilde{z}_k^{\text{bot}}} \, dA  \\
 & = - \int_A \rho_0 \, \tilde{h}_k \overline{\left( {\bf f} \times \left<\mathbf{u}\right> + \nabla \left<\Phi\right> \right)}^{\tilde{z}}_k \, dA \\
-& - \int_{\partial A} \rho_0 \tilde{h}_k \left( \overline{\left< \alpha \right> \left<p \right>}^{\tilde{z}}_k + \overline{\left<\alpha^\prime p^\prime\right>}^{\tilde{z}}_k \right) {\bf n}_\perp dl \\
+& - \int_{\partial A} \rho_0 \tilde{h}_k \left( \overline{\left< \alpha \right> \left<p \right>}^{\tilde{z}}_k + \overline{\left<\alpha^\prime p^\prime\right>}^{\tilde{z}}_k \right) \mathbf{n}_\perp dl \\
 & - \int_A \rho_0 \left[ \left< \alpha \right> \left<p \nabla \tilde{z}_k^{\text{top}} \right> + \left<\alpha^\prime \left(p \nabla \tilde{z}_k^{\text{top}} \right)^\prime\right> \right]_{\tilde{z} = \tilde{z}_k^{\text{top}}} \, dA \\
 & + \int_A \rho_0 \left[ \left< \alpha \right> \left<p \nabla \tilde{z}_k^{\text{bot}} \right> + \left<\alpha^\prime \left(p \nabla \tilde{z}_k^{\text{bot}} \right)^\prime\right> \right]_{\tilde{z} = \tilde{z}_k^{\text{bot}}} \, dA.
 $$ (vh-momentum-reynolds-lay-avg)
@@ -556,11 +568,11 @@ The next step is to decompose vertical averages of products. This yields
 
 $$
 \frac{d}{dt} \int_{A} \tilde{h}_k \overline{\left< {\bf u} \right>}^{\tilde{z}}_k  \, dA
-& + \int_{\partial A} \tilde{h}_k \left( \overline{\left< {\bf u} \right>}^{\tilde{z}}_k \otimes \overline{\left< {\bf u} \right>}^{\tilde{z}}_k + \overline{\delta {\bf u} \otimes \delta {\bf u}}^{\tilde{z}}_k + \overline{\left< {\bf u}^\prime \otimes {\bf u}^\prime \right>}^{\tilde{z}}_k  \right) \cdot {\bf n}_\perp \, dl \\
+& + \int_{\partial A} \tilde{h}_k \left( \overline{\left< {\bf u} \right>}^{\tilde{z}}_k \otimes \overline{\left< {\bf u} \right>}^{\tilde{z}}_k + \overline{\delta {\bf u} \otimes \delta {\bf u}}^{\tilde{z}}_k + \overline{\left< {\bf u}^\prime \otimes {\bf u}^\prime \right>}^{\tilde{z}}_k  \right) \cdot \mathbf{n}_\perp \, dl \\
 & + \int_A \rho_0 \, \left[ \left(\left< {\bf u} \right> \left< \tilde{w}_{tr} \right> + \left<{\bf u}^\prime \tilde{w}_{tr}^\prime \right> \right) - \left(\left<{\bf u}\right> \left<\tilde{\bf u}\right> + \left< {\bf u}^\prime \tilde{\bf u}^\prime \right> \right) \right]_{\tilde{z} = \tilde{z}_k^{\text{top}}} \, dA \\
 & - \int_A \rho_0 \, \left[ \left(\left< {\bf u} \right> \left< \tilde{w}_{tr} \right> + \left<{\bf u}^\prime \tilde{w}_{tr}^\prime \right> \right) - \left(\left<{\bf u}\right> \left<\tilde{\bf u}\right> + \left< {\bf u}^\prime \tilde{\bf u}^\prime \right> \right) \right]_{\tilde{z} = \tilde{z}_k^{\text{bot}}} \, dA  \\
 & = - \int_A \rho_0 \, \tilde{h}_k \overline{\left( {\bf f} \times \left<\mathbf{u}\right> + \nabla \left<\Phi\right> \right)}^{\tilde{z}}_k \, dA \\
-& - \int_{\partial A} \rho_0 \tilde{h}_k \left( \overline{\left< \alpha \right>}^{\tilde{z}}_k \overline{\left<p \right>}^{\tilde{z}}_k + \overline{\delta \alpha \delta p}^{\tilde{z}}_k+ \overline{\left<\alpha^\prime p^\prime\right>}^{\tilde{z}}_k \right) {\bf n}_\perp dl \\
+& - \int_{\partial A} \rho_0 \tilde{h}_k \left( \overline{\left< \alpha \right>}^{\tilde{z}}_k \overline{\left<p \right>}^{\tilde{z}}_k + \overline{\delta \alpha \delta p}^{\tilde{z}}_k+ \overline{\left<\alpha^\prime p^\prime\right>}^{\tilde{z}}_k \right) \mathbf{n}_\perp dl \\
 & - \int_A \rho_0 \left[\left< \alpha \right> \left<p \nabla \tilde{z}_k^{\text{top}} \right> + \left<\alpha^\prime \left(p \nabla \tilde{z}_k^{\text{top}} \right)^\prime\right> \right]_{\tilde{z} = \tilde{z}_k^{\text{top}}} \, dA \\
 & + \int_A \rho_0 \left[\left< \alpha \right> \left<p \nabla \tilde{z}_k^{\text{bot}} \right> + \left<\alpha^\prime \left(p \nabla \tilde{z}_k^{\text{bot}} \right)^\prime\right> \right]_{\tilde{z} = \tilde{z}_k^{\text{bot}}} \, dA.
 $$ (vh-momentum-reynolds-lay-avg2)
@@ -699,7 +711,7 @@ In [](#layer-tracer-final-simple) and [](#layer-momentum-final-simple) we have n
 
 ## 10. Discrete Equations
 
-In the following equations, the subscripts $i$, $e$, and $v$ indicate cell, edge, and vertex locations and subscript $k$ is the layer.  Square brackets $[\cdot]_e$ and $[\cdot]_v$ are quantities that are interpolated to edge and vertex locations. For vector quantities, $u_{e,k}$ denotes the normal component at the center of the edge (where the normal component is the local ${\bf n}_\perp$ described in above sections), while $u_{e,k}^\perp$ denotes the tangential component. We have switched from $\varphi_{i,k}^{bot}$ to the identical $\varphi_{i,k+1}^{top}$ for all variables in order for the notation to match the array names in the code. It is important to note that any term without a subscript $k$ are quantities evaluated at that location and are ***not*** individual layer averages, but will be reconstructed as a function of neighboring layer average values.  For example, Eq (44) of [White and Adcroft (2008)](https://www.sciencedirect.com/science/article/pii/S0021999108002593) shows a third order reconstruction.  Finally, we note that in the equations below, it is assumed that $k$ increases away from the surface.
+In the following equations, the subscripts $i$, $e$, and $v$ indicate cell, edge, and vertex locations and subscript $k$ is the layer.  Square brackets $[\cdot]_e$ and $[\cdot]_v$ are quantities that are interpolated to edge and vertex locations. For vector quantities, $u_{e,k}$ denotes the normal component at the center of the edge (where the normal component is the local $\mathbf{n}_\perp$ described in above sections), while $u_{e,k}^\perp$ denotes the tangential component. We have switched from $\varphi_{i,k}^{bot}$ to the identical $\varphi_{i,k+1}^{top}$ for all variables in order for the notation to match the array names in the code. It is important to note that any term without a subscript $k$ are quantities evaluated at that location and are ***not*** individual layer averages, but will be reconstructed as a function of neighboring layer average values.  For example, Eq (44) of [White and Adcroft (2008)](https://www.sciencedirect.com/science/article/pii/S0021999108002593) shows a third order reconstruction.  Finally, we note that in the equations below, it is assumed that $k$ increases away from the surface.
 
 **Mass:**
 
