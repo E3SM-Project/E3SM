@@ -218,8 +218,8 @@ void HommeDynamics::remap_fv_phys_to_dyn () const {
   assert(uv_ndim == 2);
 
   // SGS Eddy diffusivities on FV phys grid
-  const auto Km_phys = get_field_in("eddy_diff_mom",gn).get_view<const Real***>();
-  const auto Kh_phys = get_field_in("eddy_diff_heat",gn).get_view<const Real***>();
+  const auto Km_phys = get_field_in("eddy_diff_mom",gn).get_view<const Real**>();
+  const auto Kh_phys = get_field_in("eddy_diff_heat",gn).get_view<const Real**>();
 
   const auto T = Homme::GllFvRemap::CPhys2T(
     m_helper_fields.at("FT_phys").get_view<const Real**>().data(),
