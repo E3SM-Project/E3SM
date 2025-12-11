@@ -232,7 +232,7 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
   !-----------------------------------------------------------------------------
   ! Call the primary Zhang-McFarlane convection parameterization
 
-  call zm_conv_main(ncol, ncol, pver, pverp, loc_is_first_step, 0.5*dtime, &
+  call zm_conv_main(ncol, ncol, pver, pverp, loc_is_first_step, dtime, &
                     state_t, state_qv, state_omega, &
                     state_p_mid, state_p_int, state_p_del, &
                     state_phis, state_zm, state_zi, state_pblh, &
