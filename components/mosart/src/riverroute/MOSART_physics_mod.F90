@@ -265,7 +265,7 @@ MODULE MOSART_physics_mod
              end if
              
              if (heatflag .and. lakeflag .and. TUnit_lake_t%lake_flg(iunit) >=1) then ! lake is on the sub-channel
-			 if (iunit == 234096 .and. nt == nt_nliq) then
+			 if (nt == nt_nliq) then
                  localDeltaT = Tctl%DeltaT/Tctl%DLevelH2R
                  call mosart_lake_t(iunit,nt,localDeltaT,temp_Tt) ! here calculate the lake layer change and stratification only
                  !THeat%ha_lateral(iunit) = cr_advectheat(abs(TRunoff%erlateral(iunit,nt_nliq)+TRunoff%erlateral(iunit,nt_nice)), TLake_t%lake_Tout(iunit))
@@ -567,7 +567,7 @@ MODULE MOSART_physics_mod
              end if
              
              if (heatflag .and. lakeflag .and. TUnit_lake_r%lake_flg(iunit) >=1) then ! lake is on the main channel
-			 if (0>1 .and. nt == nt_nliq) then
+			 if (nt == nt_nliq) then
              !if(TUnit%rlen(iunit) > myTINYVALUE) then  ! if no mainchannel, no lake modeling. TODO
                  localDeltaT = Tctl%DeltaT/Tctl%DLevelH2R
                  call mosart_lake_r(iunit,nt,localDeltaT,temp_Tr) ! here calculate the lake layer change and stratification only
