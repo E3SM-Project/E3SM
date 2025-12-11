@@ -501,6 +501,12 @@ $$
 \mathbf{b}_{\perp} = - \left({\bf f} \times \mathbf{u} + \nabla \Phi \right).
 $$ (body-forces)
 
+The first term on the right hand side is the **Coriolis force**, where $ \mathbf{f} $ is the vector Coriolis vector (e.g., $ f \hat{\mathbf{z}} $ on the sphere).
+
+The second term on the right hand side represents the **gravitational force**, expressed in terms of the two-dimensional along-layer gradient of the gravitational potential $ \Phi(x, y, z, t) $, which may include effects such as tides and self-attraction and loading.  Because layers may tilt, this gradient is not taken at constant $z$ or $\tilde{z}$; instead it is the projection of $\nabla_{3D}\Phi$ onto the tangent plane of the layer surface.
+
+Going forward, $\nabla$ without a subscript will be used to represent along-layer gradients.
+
 We neglect viscous stresses and take the stress tensor to be purely isotropic pressure, so the traction vector on any surface is
 
 $$
@@ -530,8 +536,7 @@ $$ (vh-momentum-forces)
 
 In this equation:
 
-- The first term on the right hand side is the **Coriolis force**, where $ \mathbf{f} $ is the vector Coriolis vector (e.g., $ f \hat{\mathbf{z}} $ on the sphere).
-- The second term on the right hand side represents the **gravitational force**, expressed in terms of the two-dimensional gradient of the gravitational potential $ \Phi(x, y, z, t) $, which may include effects such as tides and self-attraction and loading.  This gradient is along layer (e.g. constant $\tilde{z}$) such that the gradient of $\Phi$ doesn't disappear.
+- The first two terms are the body forces explained above.
 - The final terms are the **pressure force**, which acts on the boundary surfaces and is naturally expressed as a surface integral. It gives rise to both horizontal pressure gradients and contributions from sloping surfaces.
 - A negative sign is included for the pressure terms derived from the surface force terms. According to [Leishman 2025](https://eaglepubs.erau.edu/introductiontoaerospaceflightvehicles/chapter/conservation-of-momentum-momentum-equation/#chapter-260-section-2), Chapter 21, equation 2, "the negative sign indicates that the force is inward and in the opposite direction to the unit normal vector area, which always points *outward* by convention". Also see discussion in [Kundu et al. 2016](https://doi.org/10.1016/C2012-0-00611-4) page 104 and equation 4.26.
 
