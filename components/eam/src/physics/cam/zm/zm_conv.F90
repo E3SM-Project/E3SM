@@ -318,8 +318,8 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
       end do
       prec(i)        = 0._r8
       rliq(i)        = 0._r8
-      pflx(i,pverp)  = 0
-      pflx_g(i,pverp)= 0
+      pflx(i,pverp)  = 0._r8
+      pflx_g(i,pverp)= 0._r8
       pbl_top(i)     = pver
       dsubcld(i)     = 0._r8
       jctop(i)       = pver
@@ -552,7 +552,7 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
    !----------------------------------------------------------------------------
    ! limit cloud base mass flux to theoretical upper bound.
    do i = 1,lengath
-      mflx_up_max(i) = 0
+      mflx_up_max(i) = 0._r8
       do k = msg+2, pver
         mflx_up_max(i) = max(mflx_up_max(i), mflx_up(i,k)/p_del(i,k))
       end do
@@ -571,7 +571,7 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
    if (zm_param%no_deep_pbl) then
       do i = 1,lengath
          if (z_mid_in(gather_index(i),jt(i)) < pbl_hgt(gather_index(i))) then
-            cld_base_mass_flux(i) = 0
+            cld_base_mass_flux(i) = 0._r8
          end if
       end do
    end if
