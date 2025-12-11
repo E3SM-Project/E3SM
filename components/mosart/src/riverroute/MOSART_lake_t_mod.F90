@@ -1353,7 +1353,7 @@ MODULE mosart_lake_t_mod
         write(iulog,*) 'Warning under_flow_t occured ! ', iunit, TUnit_lake_t%V_max(iunit)*1e6, TLake_t%d_ns(iunit), TLake_t%v_zt(iunit, TLake_t%d_ns(iunit) + 1), TLake_t%v_zti(iunit,1), TLake_t%v_zti(iunit,ngeom+1)
         !call shr_sys_abort('mosart: imbalance in MOSART-lake: '//subname)
 
-if(0>1) then
+!if(0>1) then
         TLake_t%d_ns(iunit)      = d_n_n                
         TLake_t%d_lake(iunit)    = d_tes_sub 
         do j = 1, nlayers+1    
@@ -1372,7 +1372,7 @@ if(0>1) then
                 TLake_t%d_z(iunit,j)     = TLake_t%d_z0(iunit,j)
             end if
         end do
-end if
+!end if
 
     end subroutine under_flow_t
 
@@ -1394,7 +1394,7 @@ end if
         write(iulog,*) 'Warning over_flow_t occured ! ', iunit, TUnit_lake_t%V_max(iunit)*1e6, TLake_t%d_ns(iunit), TLake_t%v_zt(iunit, TLake_t%d_ns(iunit) + 1), TLake_t%v_zti(iunit,1), TLake_t%v_zti(iunit,ngeom+1)
         !call shr_sys_abort('mosart: imbalance in MOSART-lake: '//subname)
 
-if(0>1) then
+!if(0>1) then
         TLake_t%d_ns(iunit)      = d_n_n                
         TLake_t%d_lake(iunit)    = d_tes_sub 
         do j = 1, nlayers+1    
@@ -1413,7 +1413,7 @@ if(0>1) then
                 TLake_t%d_z(iunit,j)     = TLake_t%d_z0(iunit,j)
             end if
         end do
-end if
+!end if
 
     end subroutine over_flow_t
      
