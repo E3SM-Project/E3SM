@@ -557,7 +557,7 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
         mflx_up_max(i) = max(mflx_up_max(i), mflx_up(i,k)/p_del(i,k))
       end do
       if (mflx_up_max(i) > 0._r8) then
-         cld_base_mass_flux(i) = min(cld_base_mass_flux(i),1/(time_step*mflx_up_max(i)))
+         cld_base_mass_flux(i) = min(cld_base_mass_flux(i),1._r8/(time_step*mflx_up_max(i)))
       else
          cld_base_mass_flux(i) = 0._r8
       end if
