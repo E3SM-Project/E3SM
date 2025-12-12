@@ -41,17 +41,15 @@ jobs:
           - ERS_Ld5_P4.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.ghci-oci_gnu.eamxx-prod
           - ERS_P4.ne4pg2_oQU480.A.ghci-oci_gnu
           - ERS_P4.ne4pg2_oQU480.I1850ELMCN.ghci-oci_gnu.elm-qian_1948
-    container:
-      image: ghcr.io/e3sm-project/containers-ghci:ghci-0.2.1
 
     steps:
       -
-        name: Free disk space
+        name: Free disk space on runner
         run: |
           echo "Disk space before cleanup:"
           df -h
           echo "Removing large directories using rsync method"
-          mkdir -p /opt/empty_dir || true
+          sudo mkdir -p /opt/empty_dir || true
           for d in \
                    /opt/ghc \
                    /opt/hostedtoolcache \
@@ -62,15 +60,15 @@ jobs:
                    /usr/share/dotnet \
                    /usr/share/swift \
                    ; do
-            mkdir -p "$d" || true
-            rsync --stats -a --delete /opt/empty_dir/ "$d" || true
+            sudo mkdir -p "$d" || true
+            sudo rsync --stats -a --delete /opt/empty_dir/ "$d" || true
           done
           echo "Removing browsers and cleaning up"
-          apt-get purge -y -f firefox \
-                             google-chrome-stable \
-                             microsoft-edge-stable || true
-          apt-get autoremove -y || true
-          apt-get autoclean -y || true
+          sudo apt-get purge -y -f firefox \
+                                  google-chrome-stable \
+                                  microsoft-edge-stable || true
+          sudo apt-get autoremove -y || true
+          sudo apt-get autoclean -y || true
           echo "Disk space after cleanup:"
           df -h
       -
@@ -81,11 +79,19 @@ jobs:
           submodules: recursive
       -
         name: CIME
-        working-directory: cime/scripts
         run: |
           echo "Disk space before test:"
           df -h
-          ./create_test ${{ matrix.test }} --wait --debug
+          # Create projects directory for test outputs
+          sudo mkdir -p /projects/e3sm/scratch
+          sudo chmod -R 777 /projects
+          # Run test in container
+          docker run --rm \
+            -v ${{ github.workspace }}:/__w/E3SM/E3SM \
+            -v /projects:/projects \
+            -w /__w/E3SM/E3SM/cime/scripts \
+            ghcr.io/e3sm-project/containers-ghci:ghci-0.2.1 \
+            bash -c "./create_test ${{ matrix.test }} --wait --debug"
           echo "Disk space after test:"
           df -h
       -
