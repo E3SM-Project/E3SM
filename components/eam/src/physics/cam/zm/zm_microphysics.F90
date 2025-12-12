@@ -3243,8 +3243,8 @@ subroutine zm_microphysics_adjust(pcols, ncol, pver, jt, msg, delt, zm_const, &
 !DIR$ CONCURRENT
 #endif
          do i = 1,ncol
-            if (dqdt(i,k)*2._r8*delt+qv(i,k)<0._r8) then
-               negadq = dqdt(i,k)+0.5_r8*qv(i,k)/delt
+            if (dqdt(i,k)*delt+qv(i,k)<0._r8) then
+               negadq = dqdt(i,k)+qv(i,k)/delt
                dqdt(i,k) = dqdt(i,k)-negadq
                !----------------------------------------------------------------
                ! First evaporate precipitation from k layer to cloud top assuming that the preciptation

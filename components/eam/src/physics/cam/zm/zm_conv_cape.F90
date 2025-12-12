@@ -34,7 +34,7 @@ subroutine compute_dilute_cape( pcols, ncol, pver, pverp, &
                                 lcl_temperature, lcl_klev, &
                                 eql_klev, cape, &
                                 zm_const, zm_param, &
-                                iclosure, dcapemx, &
+                                calc_msemax_klev, prev_msemax_klev, &
                                 use_input_tq_mx, q_mx, t_mx )
    !----------------------------------------------------------------------------
    ! Purpose: calculate convective available potential energy (CAPE), lifting
@@ -72,9 +72,9 @@ subroutine compute_dilute_cape( pcols, ncol, pver, pverp, &
    real(r8), dimension(pcols),           intent(inout) :: cape                ! convective available potential energy
    type(zm_const_t),                     intent(in   ) :: zm_const            ! derived type to hold ZM constants
    type(zm_param_t),                     intent(in   ) :: zm_param            ! derived type to hold ZM tunable parameters
-   logical,                              intent(in   ) :: iclosure            ! true for normal procedure, otherwise use dcapemx from 1st call
-   integer,  dimension(pcols), optional, intent(in   ) :: dcapemx             ! values of msemax_klev from previous call for dcape closure
-   logical,                    optional, intent(in   ) :: use_input_tq_mx     ! if .true., use input values of dcapemx, q_mx, t_mx in the CAPE calculation
+   logical,                              intent(in   ) :: calc_msemax_klev    ! true for normal procedure, otherwise use prev_msemax_klev from 1st call
+   integer,  dimension(pcols), optional, intent(in   ) :: prev_msemax_klev    ! values of msemax_klev from previous call for dcape closure
+   logical,                    optional, intent(in   ) :: use_input_tq_mx     ! if .true., use input values of prev_msemax_klev, q_mx, t_mx in the CAPE calculation
    real(r8), dimension(pcols), optional, intent(inout) :: q_mx                ! specified sp humidity to apply at level of max MSE if use_input_tq_mx=.true.
    real(r8), dimension(pcols), optional, intent(inout) :: t_mx                ! specified temperature to apply at level of max MSE if use_input_tq_mx=.true.
    !----------------------------------------------------------------------------
@@ -105,8 +105,8 @@ subroutine compute_dilute_cape( pcols, ncol, pver, pverp, &
    if ( use_input_tq_mx_loc  .and. &
        ((.not.present(t_mx)) .or.  &
         (.not.present(q_mx)) .or.  &
-        (.not.present(dcapemx)) )  ) then
-      call endrun('compute_dilute_cape: use_input_tq_mx = .true. but dcapemx, t_mx or q_mx is not provided')
+        (.not.present(prev_msemax_klev)) )  ) then
+      call endrun('compute_dilute_cape: use_input_tq_mx = .true. but prev_msemax_klev, t_mx or q_mx is not provided')
    end if
 
    !----------------------------------------------------------------------------
@@ -118,11 +118,11 @@ subroutine compute_dilute_cape( pcols, ncol, pver, pverp, &
    ! initialize msemax_klev and potentially modify T/q
    if (use_input_tq_mx_loc) then
       ! note - in this case we expect:
-      ! (1) the incoming array dcapemx contains prev identified launching level index, and 
+      ! (1) the incoming array prev_msemax_klev contains prev identified launching level index, and
       ! (2) the arrays q_mx and t_mx contain q and T values at the old launching level 
       !     at the time when the old launching level was identified. 
       ! Copy the old values to work arrays for calculations in the rest of this subroutine
-      msemax_klev(1:ncol) = dcapemx(1:ncol)
+      msemax_klev(1:ncol) = prev_msemax_klev(1:ncol)
       do i=1,ncol
          sp_humidity(i,msemax_klev(i)) = q_mx(i)
          temperature(i,msemax_klev(i)) = t_mx(i)
@@ -159,10 +159,10 @@ subroutine compute_dilute_cape( pcols, ncol, pver, pverp, &
 
    !----------------------------------------------------------------------------
    ! Set level of max moist static energy for parcel initialization
-   if ( zm_param%trig_dcape .and. (.not.iclosure) ) then
+   if ( zm_param%trig_dcape .and. (.not.calc_msemax_klev) ) then
       ! Use max moist static energy level that is passed in
-      if (.not.present(dcapemx)) call endrun('** ZM CONV compute_dilute_cape: dcapemx not present **')
-      msemax_klev(1:ncol) = dcapemx(1:ncol)
+      if (.not.present(prev_msemax_klev)) call endrun('** ZM CONV compute_dilute_cape: prev_msemax_klev not present **')
+      msemax_klev(1:ncol) = prev_msemax_klev(1:ncol)
    elseif (.not.use_input_tq_mx_loc) then
       if (     zm_param%trig_ull) msemax_top_k(1:ncol) = pblt_ull(1:ncol)
       if (.not.zm_param%trig_ull) msemax_top_k(1:ncol) = pblt    (1:ncol)

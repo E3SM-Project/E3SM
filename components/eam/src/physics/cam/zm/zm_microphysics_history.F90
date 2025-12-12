@@ -150,7 +150,7 @@ subroutine zm_microphysics_history_convert( ncol, microp_st, pmid, temperature )
    integer  :: msg ! number of missing moisture levels at the top of model
    real(r8) :: rho
    !----------------------------------------------------------------------------
-   msg = zm_param%limcnv - 1 ! set this to match zm_convr()
+   msg = zm_param%limcnv - 1 ! set this to match zm_conv_main()
 
    do i = 1,ncol
       do k = msg + 1,pver
