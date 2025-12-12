@@ -38,22 +38,26 @@ jobs:
         run: |
           echo "Disk space before cleanup:"
           df -h
-          echo "Listing 100 largest packages"
-          dpkg-query -Wf '${Installed-Size}\t${Package}\n' | sort -n | tail -n 100
-          echo "Removing large packages"
-          sudo apt-get remove -y '^dotnet-.*' || true
-          sudo apt-get remove -y '^llvm-.*' || true
-          sudo apt-get remove -y 'php.*' || true
-          sudo apt-get remove -y '^mongodb-.*' || true
-          sudo apt-get remove -y '^mysql-.*' || true
-          sudo apt-get remove -y azure-cli google-cloud-sdk hhvm google-chrome-stable firefox powershell mono-devel libgl1-mesa-dri || true
-          sudo apt-get autoremove -y || true
-          sudo apt-get clean || true
-          echo "Removing large directories"
-          sudo rm -rf /usr/share/dotnet || true
-          sudo rm -rf /opt/ghc || true
-          sudo rm -rf /usr/local/share/boost || true
-          sudo rm -rf "$AGENT_TOOLSDIRECTORY" || true
+          echo "Removing large directories using rsync method"
+          mkdir -p /opt/empty_dir || true
+          for d in \
+                   /opt/ghc \
+                   /opt/hostedtoolcache \
+                   /usr/lib/jvm \
+                   /usr/local/.ghcup \
+                   /usr/local/lib/android \
+                   /usr/local/share/powershell \
+                   /usr/share/dotnet \
+                   /usr/share/swift \
+                   ; do
+            rsync --stats -a --delete /opt/empty_dir/ $d || true
+          done
+          echo "Removing browsers and cleaning up"
+          apt-get purge -y -f firefox \
+                             google-chrome-stable \
+                             microsoft-edge-stable || true
+          apt-get autoremove -y > /dev/null 2>&1 || true
+          apt-get autoclean -y > /dev/null 2>&1 || true
           echo "Disk space after cleanup:"
           df -h
       - 
