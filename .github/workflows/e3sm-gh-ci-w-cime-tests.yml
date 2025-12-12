@@ -48,12 +48,13 @@ jobs:
           # Clean package manager cache
           rm -rf /var/lib/apt/lists/* 2>/dev/null || true
           rm -rf /var/cache/apt/archives/* 2>/dev/null || true
-          # Clean any temp directories
-          rm -rf /tmp/* 2>/dev/null || true
-          rm -rf /var/tmp/* 2>/dev/null || true
           # Clean common build caches that might exist
           rm -rf ~/.cache 2>/dev/null || true
           rm -rf /root/.cache 2>/dev/null || true
+          # Clean old log files if they exist
+          find /var/log -type f -name "*.log" -mtime +1 -delete 2>/dev/null || true
+          # Clean Python cache
+          find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
           echo "Disk space after cleanup:"
           df -h
       - 
