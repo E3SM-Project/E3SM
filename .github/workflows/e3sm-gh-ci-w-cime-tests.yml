@@ -34,27 +34,37 @@ jobs:
 
     steps:
       - 
-        name: Free disk space
-        uses: jlumbroso/free-disk-space@v1.3.1
-        with:
-          tool-cache: true
-          android: true
-          dotnet: true
-          haskell: true
-          large-packages: true
-          docker-images: true
-          swap-storage: true
-      - 
         name: Checkout
         uses: actions/checkout@v6
         with:
           show-progress: false
           submodules: recursive
       - 
+        name: Free disk space
+        run: |
+          echo "Disk space before cleanup:"
+          df -h
+          echo "Cleaning up unnecessary files to free disk space..."
+          # Clean package manager cache
+          rm -rf /var/lib/apt/lists/* 2>/dev/null || true
+          rm -rf /var/cache/apt/archives/* 2>/dev/null || true
+          # Clean any temp directories
+          rm -rf /tmp/* 2>/dev/null || true
+          rm -rf /var/tmp/* 2>/dev/null || true
+          # Clean common build caches that might exist
+          rm -rf ~/.cache 2>/dev/null || true
+          rm -rf /root/.cache 2>/dev/null || true
+          echo "Disk space after cleanup:"
+          df -h
+      - 
         name: CIME
         working-directory: cime/scripts
         run: |
+          echo "Disk space before test:"
+          df -h
           ./create_test ${{ matrix.test }} --wait --debug
+          echo "Disk space after test:"
+          df -h
       - 
         name: Artifacts
         uses: actions/upload-artifact@v5
