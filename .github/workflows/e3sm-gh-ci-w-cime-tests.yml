@@ -34,22 +34,34 @@ jobs:
 
     steps:
       - 
+        name: Free disk space
+        run: |
+          echo "Disk space before cleanup:"
+          df -h
+          echo "Listing 100 largest packages"
+          dpkg-query -Wf '${Installed-Size}\t${Package}\n' | sort -n | tail -n 100
+          echo "Removing large packages"
+          sudo apt-get remove -y '^dotnet-.*' || true
+          sudo apt-get remove -y '^llvm-.*' || true
+          sudo apt-get remove -y 'php.*' || true
+          sudo apt-get remove -y '^mongodb-.*' || true
+          sudo apt-get remove -y '^mysql-.*' || true
+          sudo apt-get remove -y azure-cli google-cloud-sdk hhvm google-chrome-stable firefox powershell mono-devel libgl1-mesa-dri || true
+          sudo apt-get autoremove -y || true
+          sudo apt-get clean || true
+          echo "Removing large directories"
+          sudo rm -rf /usr/share/dotnet || true
+          sudo rm -rf /opt/ghc || true
+          sudo rm -rf /usr/local/share/boost || true
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY" || true
+          echo "Disk space after cleanup:"
+          df -h
+      - 
         name: Checkout
         uses: actions/checkout@v6
         with:
           show-progress: false
           submodules: recursive
-      - 
-        name: Free disk space
-        run: |
-          echo "Disk space before cleanup:"
-          df -h
-          echo "Cleaning up unnecessary files to free disk space..."
-          # Clean user caches only (safe and commonly helps)
-          rm -rf ~/.cache 2>/dev/null || true
-          rm -rf /root/.cache 2>/dev/null || true
-          echo "Disk space after cleanup:"
-          df -h
       - 
         name: CIME
         working-directory: cime/scripts
