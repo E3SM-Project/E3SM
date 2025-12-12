@@ -84,7 +84,7 @@ jobs:
           df -h
           # Create projects directory for test outputs
           sudo mkdir -p /projects/e3sm/scratch
-          sudo chmod -R 777 /projects
+          sudo chown -R $USER:$USER /projects
           # Run test in container
           docker run --rm \
             -v ${{ github.workspace }}:/__w/E3SM/E3SM \
