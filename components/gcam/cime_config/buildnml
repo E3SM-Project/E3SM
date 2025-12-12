@@ -5,6 +5,10 @@ Namelist creator for E3SM's GCAM component
 """
 
 import os, sys
+import shutil
+import filecmp
+import re
+import glob
 
 _CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..","cime")
 sys.path.append(os.path.join(_CIMEROOT, "scripts", "Tools"))
@@ -30,8 +34,8 @@ def buildnml(case, caseroot, compname):
     ninst_iac            = case.get_value("NINST_IAC")
     get_refcase          = case.get_value("GET_REFCASE")
     iac_grid             = case.get_value("IAC_GRID")
-    #glm_grid             = case.get_value("GLM_GRID") # 
     gcam_bldnml_opts   = case.get_value("GCAM_BLDNML_OPTS")
+    gcam_nml_use_case = case.get_value("GCAM_NML_USE_CASE")
     gcam_namelist_opts = case.get_value("GCAM_NAMELIST_OPTS")
     rundir               = case.get_value("RUNDIR")
     run_type             = case.get_value("RUN_TYPE")
@@ -40,6 +44,17 @@ def buildnml(case, caseroot, compname):
     run_refdir           = case.get_value("RUN_REFDIR")
     run_reftod           = case.get_value("RUN_REFTOD")
     scriptsroot          = case.get_value("SCRIPTSROOT")
+    mach                 = case.get_value("MACH")
+
+    # Optional: dynamic surface dataset name; if unset we'll parse gcam_in for gcam_grid
+    def _case_get(key):
+        try:
+            return case.get_value(key)
+        except Exception:
+            return None
+
+    # Will derive from gcam_in (namelist) later; initialize as None
+    iesm_dyn_source = None
 
     iacconf_dir = os.path.join(casebuild, "gcamconf")
 
@@ -54,8 +69,19 @@ def buildnml(case, caseroot, compname):
     #--------------------------------------------------------------------
 
     # Have to update this when we build grids more
-    iac_grid_supported = ("0.9x1.25", "1.9x2.5", "null")
+    iac_grid_supported = ("r0125", "r025", "r05", "0.9x1.25", "1.9x2.5", "null")
     expect(iac_grid in iac_grid_supported, "IAC_GRID '{}' is not supported in GCAM. Choose from: {}".format(iac_grid,iac_grid_supported))
+
+    #--------------------------------------------------------------------
+    # There is no configure script!
+    # So for now make a simple one that just sets hgrid in config_cache.xml
+    # - remove the creation of config_cache.xml from build-namelist
+    #--------------------------------------------------------------------
+    
+    sysmod = os.path.join(srcroot, "components/gcam/bld/configure")
+    sysmod += " -hgrid {}".format(iac_grid)
+    sysmod += " -usr_src {}".format(caseroot)
+    run_cmd_no_fail(sysmod, from_dir=iacconf_dir)    
 
     #--------------------------------------------------------------------
     # Invoke gcam build-namelist - output will go in $CASEBUILD/gcamconf
@@ -80,6 +106,10 @@ def buildnml(case, caseroot, compname):
                    os.path.exists(os.path.join(rundir, "rpointer.iac")):
                 safe_copy(os.path.join(rundir, "rpointer.iac"),
                           os.path.join(rundir, "rpointer.iac{}".format(inst_string)))
+
+
+
+
 
         # -----------------------------------------------------
         # create gcamconf/namelist
@@ -116,13 +146,15 @@ def buildnml(case, caseroot, compname):
         # call build-namelist
         # -----------------------------------------------------
 
+        usecase = (gcam_nml_use_case) if gcam_nml_use_case not in [None, "UNSET"] else " "
         sysmod  = os.path.join(srcroot, "components/gcam/bld/build-namelist")
         sysmod += " -infile {}/namelist".format(iacconf_dir)
         sysmod += " -caseroot {}".format(caseroot)
         sysmod += " -scriptsroot {}".format(scriptsroot)
         sysmod += ' -namelist " &gcamexp {} /" '.format(gcam_namelist_opts)
+        sysmod += " -use_case {}".format(usecase)
         sysmod += ' -inst_string "{}" {}'.format(inst_string, gcam_bldnml_opts)
-
+        
         run_cmd_no_fail(sysmod, from_dir=iacconf_dir)
 
         # -----------------------------------------------------
@@ -130,6 +162,276 @@ def buildnml(case, caseroot, compname):
         # -----------------------------------------------------
         if os.path.exists(rundir):
             safe_copy(os.path.join(iacconf_dir, "gcam_in"), os.path.join(rundir, "gcam_in{}".format(inst_string)))
+
+    def _ensure_symlink(src, dst):
+        """Create symlink dst -> src without clobbering by default.
+        If dst exists and matches, do nothing. If differs, require _OVERWRITE.
+        """
+        expect(os.path.exists(src), "Missing source for symlink: {}".format(src))
+        os.makedirs(os.path.dirname(dst) or ".", exist_ok=True)
+        if os.path.lexists(dst):
+            if os.path.islink(dst):
+                cur = os.readlink(dst)
+                if os.path.abspath(cur) == os.path.abspath(src):
+                    # logger.info("Symlink exists and matches: {} -> {}".format(dst, src))
+                    return
+            if not _OVERWRITE:
+                expect(False, "Refusing to overwrite existing path: {} (set GCAM_OVERWRITE=1 to override)".format(dst))
+            if os.path.isdir(dst) and not os.path.islink(dst):
+                shutil.rmtree(dst)
+            else:
+                os.remove(dst)
+        os.symlink(src, dst)
+        # logger.info("Created symlink: {} -> {}".format(dst, src))
+
+    def _ensure_copy(src, dst):
+        """Copy src -> dst without clobbering by default; skip if identical."""
+        expect(os.path.isfile(src), "Missing source file to copy: {}".format(src))
+        os.makedirs(os.path.dirname(dst) or ".", exist_ok=True)
+        if os.path.exists(dst):
+            try:
+                if filecmp.cmp(src, dst, shallow=False):
+                    return
+            except Exception:
+                pass
+            # Always allow overwrite for file copies in rundir
+            os.remove(dst)
+        shutil.copy2(src, dst)
+        # logger.info("Copied file to: {}".format(dst))
+
+    # Derive standard directories from DIN_LOC_ROOT (input_data_dir in the run script)
+    input_data_dir = din_loc_root
+    expect(os.path.isdir(input_data_dir), "DIN_LOC_ROOT does not exist: {}".format(input_data_dir))
+    expect(os.path.isdir(rundir),         "RUNDIR does not exist: {}".format(rundir))
+    expect(mach,                         "MACH is not set in the case")
+
+    gcam_idir   = os.path.join(input_data_dir, "iac", "giac", "gcam", "gcam_6_0")
+    glm_idir    = os.path.join(input_data_dir, "iac", "giac", "glm")
+    glm2iacdir  = os.path.join(input_data_dir, "iac", "giac", "glm2iac")
+    ldir        = os.path.join(input_data_dir, "lnd", "clm2", "rawdata", "LUT_input_files_current")
+
+    for pth, label in ((gcam_idir, "gcam_idir"), (glm_idir, "glm_idir"), (glm2iacdir, "glm2iacdir"), (ldir, "ldir")):
+        expect(os.path.exists(pth), "Required path missing ({}): {}".format(label, pth))
+
+    # If iesm_dyn_source is not provided, try to parse it from gcam_in as gcam_gridfile or gcam_grid
+    def _extract_gcam_grid_from_gcam_in(rundir_path):
+        pat = re.compile(r"^\s*(gcam_gridfile|gcam_grid)\s*=\s*['\"]([^'\"]+)['\"]", re.IGNORECASE)
+        candidates = [os.path.join(rundir_path, "gcam_in")] + sorted(glob.glob(os.path.join(rundir_path, "gcam_in*")))
+        for fn in candidates:
+            if not os.path.isfile(fn):
+                continue
+            try:
+                with open(fn, 'r') as fh:
+                    for line in fh:
+                        m = pat.match(line)
+                        if m:
+                            return m.group(2)
+            except Exception:
+                pass
+        return None
+
+    if not iesm_dyn_source:
+        guessed = _extract_gcam_grid_from_gcam_in(rundir)
+        if guessed:
+            iesm_dyn_source = guessed
+            # logger.info("Derived dynamic surface dataset from gcam_in (gcam_gridfile/gcam_grid): {}".format(iesm_dyn_source))
+        else:
+            logger.warning("IESM_DYN_SOURCE not set and could not be derived from gcam_in; dynamic file link may be skipped.")
+
+    # Derive restart scenario directory from case_name in gcam_in
+    def _extract_case_name_from_gcam_in(rundir_path):
+        pat = re.compile(r"^\s*case_name\s*=\s*['\"]([^'\"]+)['\"]", re.IGNORECASE)
+        candidates = [os.path.join(rundir_path, "gcam_in")] + sorted(glob.glob(os.path.join(rundir_path, "gcam_in*")))
+        for fn in candidates:
+            if not os.path.isfile(fn):
+                continue
+            try:
+                with open(fn, 'r') as fh:
+                    for line in fh:
+                        m = pat.match(line)
+                        if m:
+                            return m.group(1)
+            except Exception:
+                pass
+        return None
+
+    def _scenario_dir_from_case_name(case_name):
+        s = (case_name or "").upper()
+        if "SSP245" in s:
+            return "ssp2rcp45"
+        if "SSP370" in s:
+            return "ssp3"
+        if "SSP585" in s:
+            return "ssp5"
+        m = re.search(r"SSP(\d+)", s)
+        if m:
+            code = m.group(1)
+            if code == "245":
+                return "ssp2rcp45"
+            if code == "370":
+                return "ssp3"
+            if code == "585": #place holder for 585
+                return "ssp5"
+        logger.warning("Unrecognized case_name for scenario mapping: %s", case_name)
+        return "ssp2rcp45"  # conservative default
+
+    case_name = _extract_case_name_from_gcam_in(rundir)
+    scenario_dir = _scenario_dir_from_case_name(case_name)
+    gcam_rdir = os.path.join(gcam_idir, "restart", scenario_dir, mach)
+    expect(os.path.isdir(gcam_rdir), "GCAM restart dir missing: {}".format(gcam_rdir))
+
+    # === Symlinks formerly created by the run script ===
+    _ensure_symlink(os.path.join(gcam_idir, "input"),
+                    os.path.join(os.path.dirname(caseroot), "input"))
+    _ensure_symlink(os.path.join(gcam_idir, "configuration", "log_conf.xml"),
+                    os.path.join(rundir, "log_conf.xml"))
+    _ensure_symlink(os.path.join(glm_idir, "glm.fut.conf.{}".format(mach)),
+                    os.path.join(rundir, "glm.fut.conf"))
+
+    # Handle restart.* files based on gcam_spinup
+
+    # Helper function to parse gcam_spinup from gcam_in
+    def _get_gcam_spinup(path):
+        pat = re.compile(r"^\s*gcam_spinup\s*=\s*\.([Tt][Rr][Uu][Ee]|[Ff][Aa][Ll][Ss][Ee])\." )
+        try:
+            with open(path, 'r') as fh:
+                for line in fh:
+                    m = pat.match(line)
+                    if m:
+                        return m.group(1).lower() == "true"
+        except Exception:
+            pass
+        return False
+
+    gcam_in_path = os.path.join(rundir, "gcam_in")
+    gcam_spinup = False
+    if os.path.isfile(gcam_in_path):
+        gcam_spinup = _get_gcam_spinup(gcam_in_path)
+
+    if gcam_spinup:
+        # Do not read or copy restart.* files; do not overwrite protection for existing
+        logger.info("gcam_spinup = .true.; skipping all restart.* file handling and overwrite protection")
+        # Model will write restart.* files if needed
+    else:
+        # For each restart.* file in gcam_rdir, copy only if not present in rundir
+        for src in glob.glob(os.path.join(gcam_rdir, "restart.*")):
+            fname = os.path.basename(src)
+            dst = os.path.join(rundir, fname)
+            if not os.path.exists(dst):
+                _ensure_copy(src, dst)
+            # else: file exists in rundir, use as is
+
+    # Helper function to parse gcam_spinup from gcam_in
+    def _get_gcam_spinup(path):
+        pat = re.compile(r"^\s*gcam_spinup\s*=\s*\.([Tt][Rr][Uu][Ee]|[Ff][Aa][Ll][Ss][Ee])\." )
+        try:
+            with open(path, 'r') as fh:
+                for line in fh:
+                    m = pat.match(line)
+                    if m:
+                        return m.group(1).lower() == "true"
+        except Exception:
+            pass
+        return False
+
+    # Static files into run dir (with target names) - use copies for these files
+    _ensure_copy(os.path.join(ldir, "iESM_Ref_CropPast2015_c10142019.nc"),
+                 os.path.join(rundir, "iESM_Init_CropPast.nc"))
+    _ensure_copy(os.path.join(ldir, "surfdata_360x720_mcrop2015_c07082020.nc"),
+                 os.path.join(rundir, "surfdata_360x720_mcrop_init.nc"))
+    
+    # Dynamic source: absolute path or relative to glm2iacdir - use copies for these files
+    dyn_src_path = None
+    if iesm_dyn_source:
+        dyn_src_path = iesm_dyn_source if os.path.isabs(iesm_dyn_source) else os.path.join(glm2iacdir, iesm_dyn_source)
+        expect(os.path.isfile(dyn_src_path), "iesm_dyn_source not found: {}".format(dyn_src_path))
+        _ensure_copy(dyn_src_path, os.path.join(rundir, os.path.basename(iesm_dyn_source)))
+        # Also create the standard surfdata_iESM.nc copy for compatibility
+        _ensure_copy(dyn_src_path, os.path.join(rundir, "surfdata_iESM.nc"))
+    else:
+        logger.warning("Skipping dynamic source copy because iesm_dyn_source was not determined.")
+
+    # Link previously saved scalar files if read_scalars = .true. in gcam_in
+    def _get_namelist_item(path, key):
+        pat = re.compile(rf"^\s*{key}\s*=\s*['\"]?([^'\"\s]+)['\"]?", re.IGNORECASE)
+        try:
+            with open(path, 'r') as fh:
+                for line in fh:
+                    m = pat.match(line)
+                    if m:
+                        return m.group(1)
+        except Exception:
+            pass
+        return None
+
+    gcam_in_path = os.path.join(rundir, "gcam_in")
+    read_scalars = False
+    if os.path.isfile(gcam_in_path):
+        # Check for read_scalars = .true.
+        try:
+            with open(gcam_in_path, 'r') as fh:
+                for line in fh:
+                    if re.search(r"read_scalars\s*=\s*\.true\.", line, re.IGNORECASE):
+                        read_scalars = True
+                        break
+        except Exception:
+            pass
+
+    if read_scalars:
+        # Only get scalar_source_dir when read_scalars = .true.
+        scalar_source_dir = _get_namelist_item(gcam_in_path, "scalar_source_dir")
+        expect(scalar_source_dir, "read_scalars = .true. but scalar_source_dir is not specified in gcam_in")
+        expect(os.path.isdir(scalar_source_dir), f"scalar_source_dir '{scalar_source_dir}' does not exist")
+        for src in glob.glob(os.path.join(scalar_source_dir, "scalar.*")):
+            fname = os.path.basename(src)
+            dst = os.path.join(rundir, fname)
+            _ensure_symlink(src, dst)
+        logger.info("Linked scalar files from control run: %s", scalar_source_dir)
+    else:
+        logger.info("read_scalars = .false., skipping scalar file linking")
+
+    for fname in ("surfdata_360x720_potveg.nc", "mksurf_landuse_iESM_720x360.nc"):
+        src = os.path.join(glm2iacdir, fname)
+        expect(os.path.isfile(src), "Missing GLM2IAC file: {}".format(src))
+        _ensure_copy(src, os.path.join(rundir, fname))
+
+    # === Copies to refresh each run (were `cp` lines) ===
+    init_crop_past = os.path.join(rundir, "iESM_Init_CropPast.nc")
+    mcrop_init     = os.path.join(rundir, "surfdata_360x720_mcrop_init.nc")
+    if dyn_src_path is None and iesm_dyn_source:
+        # In unlikely case symlink creation was skipped but we still have a path
+        dyn_src_path = iesm_dyn_source if os.path.isabs(iesm_dyn_source) else os.path.join(glm2iacdir, iesm_dyn_source)
+    dyn_src_in_rundir = os.path.join(rundir, os.path.basename(iesm_dyn_source)) if iesm_dyn_source else None
+
+    expect(os.path.exists(init_crop_past), "Expected iESM_Init_CropPast.nc in RUNDIR")
+    expect(os.path.exists(mcrop_init),     "Expected surfdata_360x720_mcrop_init.nc in RUNDIR")
+    if iesm_dyn_source:
+        expect(os.path.exists(dyn_src_in_rundir), "Expected dynamic source in RUNDIR: {}".format(dyn_src_in_rundir))
+
+    # Initialize dynamic files if they don't exist (prevents overwriting updated state from restarts)
+    dyn_files_to_check = [
+        ("iESM_Dyn_CropPast.nc", init_crop_past),
+        ("surfdata_360x720_mcrop_dyn.nc", mcrop_init)
+    ]
+    if iesm_dyn_source:
+        dyn_files_to_check.append(("surfdata_iESM_dyn.nc", dyn_src_in_rundir))
+    
+    # Check if this is a fresh start (no existing dynamic files) or if we should create missing ones
+    for dyn_name, src_file in dyn_files_to_check:
+        dyn_path = os.path.join(rundir, dyn_name)
+        if not os.path.exists(dyn_path):
+            logger.info("Creating missing dynamic file: %s", dyn_name)
+            _ensure_copy(src_file, dyn_path)
+        else:
+            logger.info("Dynamic file already exists, preserving: %s", dyn_name)
+    
+    # Special case: ensure surfdata_iESM_dyn.nc exists for non-startup runs if we have surfdata_iESM.nc
+    if not (run_type == "startup" and str(run_refdate).startswith("2015")):
+        if iesm_dyn_source and os.path.exists(os.path.join(rundir, "surfdata_iESM.nc")):
+            dyn_file = os.path.join(rundir, "surfdata_iESM_dyn.nc")
+            if not os.path.exists(dyn_file):
+                logger.info("Creating surfdata_iESM_dyn.nc for non-startup run")
+                _ensure_copy(os.path.join(rundir, "surfdata_iESM.nc"), dyn_file)
 
 ###############################################################################
 def _main_func():

@@ -1557,6 +1557,7 @@ contains
                photosyns_vars, soilhydrology_vars,     &
                soilstate_vars, solarabs_vars, surfalb_vars,  &
                sedflux_vars, ep_betr, alm_fates, crop_vars, rdate=rdate )
+         
          !----------------------------------------------
          ! pflotran (off now)
          ! if (use_pflotran) then
