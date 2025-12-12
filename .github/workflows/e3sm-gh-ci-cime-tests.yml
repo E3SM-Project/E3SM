@@ -48,27 +48,39 @@ jobs:
         run: |
           echo "Disk space before cleanup:"
           df -h
-          echo "Removing large directories using rsync method"
-          sudo mkdir -p /opt/empty_dir || true
-          for d in \
-                   /opt/ghc \
-                   /opt/hostedtoolcache \
-                   /usr/lib/jvm \
-                   /usr/local/.ghcup \
-                   /usr/local/lib/android \
-                   /usr/local/share/powershell \
-                   /usr/share/dotnet \
-                   /usr/share/swift \
-                   ; do
-            sudo mkdir -p "$d" || true
-            sudo rsync --stats -a --delete /opt/empty_dir/ "$d" || true
-          done
-          echo "Removing browsers and cleaning up"
+          echo "Aggressive cleanup to free ~20GB..."
+          # Remove Java (JDKs)
+          sudo rm -rf /usr/lib/jvm
+          # Remove .NET SDKs
+          sudo rm -rf /usr/share/dotnet
+          # Remove Swift toolchain
+          sudo rm -rf /usr/share/swift
+          # Remove Haskell (GHC)
+          sudo rm -rf /usr/local/.ghcup
+          sudo rm -rf /opt/ghc
+          # Remove Julia
+          sudo rm -rf /usr/local/julia*
+          # Remove Android SDKs
+          sudo rm -rf /usr/local/lib/android
+          # Remove Chromium
+          sudo rm -rf /usr/local/share/chromium
+          # Remove Microsoft/Edge and Google Chrome builds
+          sudo rm -rf /opt/microsoft /opt/google
+          # Remove Azure CLI
+          sudo rm -rf /opt/az
+          # Remove PowerShell
+          sudo rm -rf /usr/local/share/powershell
+          # Remove CodeQL and other toolcaches
+          sudo rm -rf /opt/hostedtoolcache
+          echo "Removing browsers and cleaning up packages"
           sudo apt-get purge -y -f firefox \
                                   google-chrome-stable \
                                   microsoft-edge-stable || true
           sudo apt-get autoremove -y || true
           sudo apt-get autoclean -y || true
+          echo "Cleaning up Docker"
+          docker system prune -af || true
+          docker builder prune -af || true
           echo "Disk space after cleanup:"
           df -h
       -
