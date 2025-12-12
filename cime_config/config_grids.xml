@@ -4371,6 +4371,18 @@
 
     <!-- iac/ehc mappings -->
 
+    <!--gridmap atm_grid="1.9x2.5" iac_grid="0.9x1.25"-->
+      <!--map name="IAC2ATM_FMAPNAME">cpl/gridmaps/0.9x1.25/map_0.9x1.25_TO_1.9x2.5_aave.210910.nc</map-->
+      <!--map name="IAC2ATM_SMAPNAME">cpl/gridmaps/0.9x1.25/map_0.9x1.25_TO_1.9x2.5_aave.210910.nc</map-->
+      <!--map name="ATM2IAC_SMAPNAME">cpl/gridmaps/1.9x2.5/map_1.9x2.5_TO_0.9x1.25_aave.210910.nc</map-->
+    <!--/gridmap-->
+
+    <!--gridmap lnd_grid="1.9x2.5" iac_grid="0.9x1.25"-->
+      <!--map name="LND2IAC_SMAPNAME">cpl/gridmaps/1.9x2.5/map_1.9x2.5_TO_0.9x1.25_aave.210910.nc</map-->
+      <!--map name="IAC2LND_SMAPNAME">cpl/gridmaps/0.9x1.25/map_0.9x1.25_TO_1.9x2.5_aave.210910.nc</map-->
+      <!--map name="IAC2LND_FMAPNAME">cpl/gridmaps/0.9x1.25/map_0.9x1.25_TO_1.9x2.5_aave.210910.nc</map-->
+    <!--/gridmap-->
+
     <gridmap atm_grid="ne30np4.pg2" iac_grid="r0125">
       <map name="IAC2ATM_FMAPNAME">cpl/gridmaps/r0125/map_r0125_TO_ne30pg2_aave.241125.nc</map>
       <map name="IAC2ATM_SMAPNAME">cpl/gridmaps/r0125/map_r0125_TO_ne30pg2_aave.241125.nc</map>
