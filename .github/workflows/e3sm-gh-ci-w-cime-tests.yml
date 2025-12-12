@@ -34,26 +34,22 @@ jobs:
 
     steps:
       - 
+        name: Free disk space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: true
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+      - 
         name: Checkout
         uses: actions/checkout@v6
         with:
           show-progress: false
           submodules: recursive
-      - 
-        name: Free disk space
-        run: |
-          echo "Before cleanup:"
-          df -h
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /usr/local/lib/android
-          sudo rm -rf /opt/ghc
-          sudo rm -rf /opt/hostedtoolcache/CodeQL
-          sudo rm -rf /usr/share/swift
-          sudo rm -rf /usr/local/.ghcup
-          sudo docker image prune --all --force
-          sudo apt-get clean
-          echo "After cleanup:"
-          df -h
       - 
         name: CIME
         working-directory: cime/scripts
