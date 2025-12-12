@@ -2707,7 +2707,7 @@ contains
     logical               :: prep_glc_accum_avg_called ! Whether prep_glc_accum_avg has been called this timestep
     integer               :: i, nodeId
     character(len=15)     :: c_ymdtod
-    character(len=18)     :: c_mprof_file
+    character(len=28)     :: c_mprof_file
     integer               :: cur_step_no ! step number
 
 101 format( A, i10.8, i8, 12A, A, F8.2, A, F8.2 )
@@ -2797,8 +2797,13 @@ contains
        ! write to standalone file
        if ( iamroot_CPLID) then
           mlog = shr_file_getUnit()
-          ! log-name: memory.{0,1,2,3,4}.$nsecs.log
-          write(c_mprof_file,'(a7,i1,a1,i0,a4)') 'memory.',info_mprof,'.',info_mprof_dt,'.log'
+          ! log-name: memory.{0,1,2,3,4}.$nsecs.log (single instance)
+          !       or: memory_$ninst_driver.{0,1,2,3,4}.$nsecs.log (multiple instances)
+          if (num_inst_driver > 1) then
+             write(c_mprof_file,'(a7,i4.4,a1,i1,a1,i0,a4)') 'memory_',driver_id,'.',info_mprof,'.',info_mprof_dt,'.log'
+          else
+             write(c_mprof_file,'(a7,i1,a1,i0,a4)') 'memory.',info_mprof,'.',info_mprof_dt,'.log'
+          endif
           inquire(file=trim(c_mprof_file),exist=exists)
           if (exists) then
              open(mlog, file=trim(c_mprof_file), status='old', position='append')
