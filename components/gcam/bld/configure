@@ -1,0 +1,321 @@
+#!/usr/bin/env perl
+#-----------------------------------------------------------------------------------------------
+#
+# configure
+#
+# This is an incomplete utility because it was not created, likely because it wasn't needed.
+# But it seems like the appropriate way to create config_cache.xml so that hgrid can be
+# passed to build-namelist.
+# Code extracted and modified from cice configure
+#
+# Date        Contributor           Modification
+# -----------------------------------------------------------------------------------------------------
+# 2024-12-06  Alan Di Vittorio      Original version
+#-----------------------------------------------------------------------------------------------
+
+use strict;
+
+use Cwd qw(getcwd abs_path);
+use English;
+use Getopt::Long;
+use IO::File;
+use IO::Handle;
+
+sub usage {
+    die <<EOF;
+SYNOPSIS
+     configure [options]
+OPTIONS
+     User supplied values are denoted in angle brackets (<>).  Any value that contains
+     white-space must be quoted.  Long option names may be supplied with either single
+     or double leading dashes.  A consequence of this is that single letter options may
+     NOT be bundled.
+
+     -hgrid <name>       Specify horizontal grid.  Use nlatxnlon for spectral grids;
+                         Use dlatxdlon for fv grids f09 and f19
+                         (dlat and dlon are the grid cell size in degrees for latitude
+                         and longitude respectively);
+                         Use 'r0125' and 'r05' for these fv grids
+     -usr_src <dir1>[,<dir2>[,<dir3>[...]]]
+                        Directories containing user source code.
+EOF
+}
+
+#-----------------------------------------------------------------------------------------------
+# Set the directory that contains the EHC configuration scripts.  If the configure command was
+# issued using a relative or absolute path, that path is in $ProgDir.  Otherwise assume the
+# command was issued from the current working directory.
+
+(my $ProgName = $0) =~ s!(.*)/!!;      # name of this script
+my $ProgDir = $1;                      # name of directory containing this script -- may be a
+                                       # relative or absolute path, or null if the script is in
+                                       # the user's PATH
+my $cwd = getcwd();                    # current working directory
+my $cfgdir;                            # absolute pathname of directory that contains this script
+if ($ProgDir) { 
+    $cfgdir = absolute_path($ProgDir);
+} else {
+    $cfgdir = $cwd;
+}
+
+#-----------------------------------------------------------------------------------------------
+# Save commandline
+my $commandline = "$cfgdir/configure @ARGV";
+
+#-----------------------------------------------------------------------------------------------
+# Parse command-line options.
+my %opts = (
+	    cache     => "config_cache.xml",
+	    );
+GetOptions(
+    "hgrid=s"                   => \$opts{'hgrid'},
+    "usr_src=s"                 => \$opts{'usr_src'},
+    "h|help"                    => \$opts{'help'},
+) or usage();
+
+# Give usage message.
+usage() if $opts{'help'};
+
+# Check for unparsed arguments
+if (@ARGV) {
+    print "ERROR: unrecognized arguments: @ARGV\n";
+    usage();
+}
+
+# Define 3 print levels:
+# 0 - only issue fatal error messages
+# 1 - only informs what files are created (default)
+# 2 - verbose
+my $print = 2;
+if ($opts{'silent'})  { $print = 0; }
+if ($opts{'verbose'}) { $print = 2; }
+my $eol = "\n";
+
+my %cfg = ();           # build configuration
+
+#-----------------------------------------------------------------------------------------------
+# CESM root directory and perl5lib root directories  
+my $cesmroot = abs_path("$cfgdir/../../../");
+my $perl5lib = "$cesmroot/cime/utils/perl5lib";
+
+if (! -e $cesmroot) {
+    die "** Invalid CESM root directory: $cesmroot ** ";
+}
+if (! -e "$perl5lib") {
+    die "** Invalid perl5lib root directory: $perl5lib ** ";
+}
+
+if ($print>=2) { print "Setting CESM root directory to $cesmroot$eol"; }
+
+#-----------------------------------------------------------------------------------------------
+# Make sure we can find required perl modules and configuration files.
+# Look for them in the directory that contains the configure script.
+
+# Check for the configuration definition file.
+my $config_def_file = "config_files/definition.xml";
+(-f "$cfgdir/$config_def_file")  or  die <<"EOF";
+** Cannot find configuration definition file \"$config_def_file\" in directory \"$cfgdir\" **
+EOF
+
+# The Build::Config module provides utilities to store and manipulate the configuration.
+(-f "$perl5lib/Build/Config.pm") or  die <<"EOF";
+** Cannot find perl module \"Build/Config.pm\" in directory \"$perl5lib\" **
+EOF
+
+if ($print>=2) { print "Setting EHC configuration script directory to $cfgdir$eol"; }
+
+#-----------------------------------------------------------------------------------------------
+# Add perl5lib to the list of paths that Perl searches for modules
+unshift @INC, "$perl5lib";
+require Build::Config;
+
+# Initialize the configuration.  The $config_def_file provides the definition of a EHC
+# configuration. $cfg_ref is a reference to the new configuration object.
+my $cfg_ref = Build::Config->new("$cfgdir/$config_def_file");
+
+#-----------------------------------------------------------------------------------------------
+# EHC build directory.
+my $ehc_bld;
+if (defined $opts{'ehc_bld'}) {
+    $ehc_bld = absolute_path($opts{'ehc_bld'});
+}
+else { # use default value
+    $ehc_bld = absolute_path($cfg_ref->get('ehc_bld'));
+}
+
+if (-d $ehc_bld or mkdirp($ehc_bld)) {
+    # If the build directory exists or can be made then set the value...
+    $cfg_ref->set('ehc_bld', $ehc_bld);
+}
+else {
+    die <<"EOF";
+** Could not create the specified EHC build directory: $ehc_bld
+EOF
+}
+
+if ($print>=2) { print "Setting EHC build directory to $ehc_bld$eol"; }
+
+#-----------------------------------------------------------------------------------------------
+# configuration cache directory and file.
+my $config_cache_dir;
+my $config_cache_file;
+if (defined $opts{'cachedir'}) {
+    $config_cache_dir = absolute_path($opts{'cachedir'});
+}
+else {
+    $config_cache_dir = $cfg_ref->get('ehc_bld');
+}
+
+if (-d $config_cache_dir or mkdirp($config_cache_dir)) {
+    $config_cache_file = "$config_cache_dir/$opts{'cache'}";
+} else {
+    die <<"EOF";
+** Could not create the specified directory for configuration cache file: $config_cache_dir
+EOF
+}
+
+if ($print>=2) { print "The configuration cache file will be created in $config_cache_file$eol"; }
+
+
+#-----------------------------------------------------------------------------------------------
+# Horizontal grid parameters
+
+if (defined $opts{'hgrid'}) {
+    $cfg_ref->set('hgrid', $opts{'hgrid'});
+}
+my $hgrid = $cfg_ref->get('hgrid');
+
+if ($print>=2) { print "Horizontal grid specifier: $hgrid.$eol"; }
+
+my $hgrid = $cfg_ref->get('hgrid');
+
+if ($print>=2) { print "ehc : grid         is $hgrid     $eol";}
+
+#-----------------------------------------------------------------------------------------------
+# User source directories.
+my $usr_src = '';
+if (defined $opts{'usr_src'}) {
+    my @dirs = split ',', $opts{'usr_src'};
+    my @adirs;
+    while ( my $dir = shift @dirs ) {
+	if (-d "$dir") {
+	    push @adirs, absolute_path($dir);
+	} else {
+	    die "** User source directory does not exist: $dir\n";
+	}
+    }
+    $usr_src = join ',', @adirs;
+    $cfg_ref->set('usr_src', $usr_src);
+}
+
+if ($print>=2) { print "User source directories: $usr_src$eol"; }
+
+#-----------------------------------------------------------------------------------------------
+## Write configuration files ####################################################################
+##-----------------------------------------------------------------------------------------------
+
+my $CASEROOT = "$ENV{'CASEROOT'}";
+
+# Write the configuration file.
+$cfg_ref->write_file("$config_cache_file", $commandline);
+if ($print>=2) { print "creating $ehc_bld/$config_cache_file\n"; }
+
+#-----------------------------------------------------------------------------------------------
+## Finished unless testing requested ############################################################
+##-----------------------------------------------------------------------------------------------
+
+# Done testing.
+
+chdir( $cwd ) || die <<"EOF";
+** Trouble changing directory back to $cwd
+**
+EOF
+if ($print) { print "EHC configure done.\n"; }
+exit;
+
+#-----------------------------------------------------------------------------------------------
+## REALLY FINNISHED #############################################################################
+##-----------------------------------------------------------------------------------------------
+
+sub absolute_path {
+#
+# Convert a pathname into an absolute pathname, expanding any . or .. characters.
+# Assumes pathnames refer to a local filesystem.
+# Assumes the directory separator is "/".
+#
+
+ my $path = shift;
+ my $cwd = getcwd();  # current working directory
+ my $abspath;         # resulting absolute pathname
+
+# Strip off any leading or trailing whitespace.  (This pattern won't match if
+# there's embedded whitespace.
+  $path =~ s!^\s*(\S*)\s*$!$1!;
+
+# Convert relative to absolute path.
+
+  if ($path =~ m!^\.$!) {          # path is "."
+      return $cwd;
+  } elsif ($path =~ m!^\./!) {     # path starts with "./"
+      $path =~ s!^\.!$cwd!;
+  } elsif ($path =~ m!^\.\.$!) {   # path is ".."
+      $path = "$cwd/..";
+  } elsif ($path =~ m!^\.\./!) {   # path starts with "../"
+      $path = "$cwd/$path";
+  } elsif ($path =~ m!^[^/]!) {    # path starts with non-slash character
+      $path = "$cwd/$path";
+  }
+
+  my ($dir, @dirs2);
+  my @dirs = split "/", $path, -1;   # The -1 prevents split from stripping trailing nulls
+                                     # This enables correct processing of the input "/".
+
+
+  # Remove any "" that are not leading.
+  for (my $i=0; $i<=$#dirs; ++$i) {
+      if ($i == 0 or $dirs[$i] ne "") {
+	  push @dirs2, $dirs[$i];
+      }
+  }
+  @dirs = ();
+
+  # Remove any "."
+  foreach $dir (@dirs2) {
+      unless ($dir eq ".") {
+	  push @dirs, $dir;
+      }
+  }
+  @dirs2 = ();
+
+  # Remove the "subdir/.." parts.
+  foreach $dir (@dirs) {
+    if ( $dir !~ /^\.\.$/ ) {
+        push @dirs2, $dir;
+    } else {
+        pop @dirs2;   # remove previous dir when current dir is ..
+    }
+  }
+  if ($#dirs2 == 0 and $dirs2[0] eq "") { return "/"; }
+  $abspath = join '/', @dirs2;
+  return( $abspath );
+}
+
+#-------------------------------------------------------------------------------
+
+sub mkdirp {
+    my ($dir) = @_;
+    my (@dirs) = split /\//, $dir;
+    my (@subdirs, $path);
+
+    # if $dir is absolute pathname then @dirs will start with ""
+    if ($dirs[0] eq "") { push @subdirs, shift @dirs; }  
+
+    while ( @dirs ) { # check that each subdir exists and mkdir if it doesn't
+	push @subdirs, shift @dirs;
+	$path = join '/', @subdirs;
+	unless (-d $path or mkdir($path, 0777)) { return 0; }
+    }
+    return 1;
+}
+
+#-------------------------------------------------------------------------------
