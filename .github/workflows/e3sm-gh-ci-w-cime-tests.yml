@@ -50,14 +50,15 @@ jobs:
                    /usr/share/dotnet \
                    /usr/share/swift \
                    ; do
+            mkdir -p "$d" || true
             rsync --stats -a --delete /opt/empty_dir/ "$d" || true
           done
           echo "Removing browsers and cleaning up"
           apt-get purge -y -f firefox \
                              google-chrome-stable \
                              microsoft-edge-stable || true
-          apt-get autoremove -y > /dev/null 2>&1 || true
-          apt-get autoclean -y > /dev/null 2>&1 || true
+          apt-get autoremove -y || true
+          apt-get autoclean -y || true
           echo "Disk space after cleanup:"
           df -h
       - 
