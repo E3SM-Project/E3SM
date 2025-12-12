@@ -50,7 +50,7 @@ jobs:
                    /usr/share/dotnet \
                    /usr/share/swift \
                    ; do
-            rsync --stats -a --delete /opt/empty_dir/ $d || true
+            rsync --stats -a --delete /opt/empty_dir/ "$d" || true
           done
           echo "Removing browsers and cleaning up"
           apt-get purge -y -f firefox \
