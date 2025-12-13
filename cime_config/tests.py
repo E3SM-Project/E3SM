@@ -66,6 +66,7 @@ _TESTS = {
             "ERS_Ld20.f45_f45.IELMFATES.elm-fates",
             "ERS.f09_g16.IELMBC.elm-simple_decomp",
             "ERS.hcru_hcru.IELM.elm-multi_inst",
+            "SMS.ELM_USRDAT.GTSM2ELM.elm-lnd_docn_1way",
             )
         },
 
@@ -101,7 +102,7 @@ _TESTS = {
             "ERS.ELM_USRDAT.I1850ELM.elm-usrdat",
             "ERS.r05_r05.IELM.elm-lnd_rof_2way",
             "ERS.r05_r05.IELM.elm-V2_ELM_MOSART_features",
-            "ERS.ELM_USRDAT.IELM.elm-surface_water_dynamics"
+            "ERS.ELM_USRDAT.IELM.elm-surface_water_dynamics",
             )
         },
 
