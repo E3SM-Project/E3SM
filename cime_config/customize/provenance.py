@@ -743,8 +743,8 @@ def _copy_performance_archive_files(
     globs_to_copy.append("logs/run_environment.txt.{}".format(lid))
     globs_to_copy.append(os.path.join(rundir, "e3sm.log.{}.gz".format(lid)))
     globs_to_copy.append(os.path.join(rundir, "cpl.log.{}.gz".format(lid)))
+    globs_to_copy.append(os.path.join(rundir, "cpl_*.log.{}.gz".format(lid)))
     globs_to_copy.append(os.path.join(rundir, "atm_chunk_costs.{}.gz".format(lid)))
-    # Handle both single instance and multiple instances memory log files
     globs_to_copy.append(os.path.join(rundir, "memory.[0-4].*.log.{}.gz".format(lid)))
     globs_to_copy.append(os.path.join(rundir, "memory_*.[0-4].*.log.{}.gz".format(lid)))
     globs_to_copy.append("timing/*.{}*".format(lid))
