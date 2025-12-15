@@ -367,7 +367,7 @@
         <arg name="thread_count">-c $SHELL{echo 128/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
         <arg name="binding"> $SHELL{if [ 64 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu_bind=cores"; else echo "--cpu_bind=threads";fi;} </arg>
         <arg name="placement"> -m plane=$SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
-        <arg name="gpu-bind"> /global/cfs/cdirs/e3sm/tools/set_affinity_npergpu.sh $SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
+        <arg name="gpu-bind"> $SRCROOT/cime_config/machines/scripts/pm-gpu_set_affinity_npergpu.sh $SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
     </arguments>
     </mpirun>
     <module_system type="module" allow_error="true">
