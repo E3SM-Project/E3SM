@@ -37,21 +37,30 @@ class PressureGradCentered {
                                    const Array2DReal &Geopotential,
                                    const Array2DReal &LayerThick,
                                    const Array2DReal &InterfaceProduct,
-                                   const Array2DReal &SpecVol) const {
+                                   const Array2DReal &SpecVol,
+                                   const Array2DReal &ZMid) const {
+
       const I4 KStart = chunkStart(KChunk, MinLayerEdgeBot(IEdge));
       const I4 KLen   = chunkLength(KChunk, KStart, MaxLayerEdgeTop(IEdge));
       
       const I4 ICell0      = CellsOnEdge(IEdge, 0);
       const I4 ICell1      = CellsOnEdge(IEdge, 1);
       const Real InvDcEdge = 1.0_Real / DcEdge(IEdge);
+      Real Rho0   = 1026.0_Real;
+      Real Gravity = 9.80616_Real;
 
       for (int KVec = 0; KVec < KLen; ++KVec) {
          const I4 K = KStart + KVec;
          const Real InvLayerThickEdge =
              2.0_Real / (LayerThick(ICell1, K) + LayerThick(ICell0, K));
+         //Real RhoEdge = 1.0_Real / (0.5_Real*(SpecVol(ICell1, K) + SpecVol(ICell0, K)));
+         //Real GeoEdgeK = (ZInterface(ICell1, K) + ZInterface(ICell0, K)) * 0.5_Real;
+         //Real GeoEdgeKp1 = (ZInterface(ICell1, K+1) + ZInterface(ICell0, K+1)) * 0.5_Real;
 
          Real GeoTerm =
-             (Geopotential(ICell1, K) - Geopotential(ICell0, K)) * InvDcEdge;
+             (LayerThick(ICell1, K) * (Geopotential(ICell1, K) - Gravity * ZMid(ICell1, K)) -
+              LayerThick(ICell0, K) * (Geopotential(ICell0, K) - Gravity * ZMid(ICell0, K))) * InvDcEdge;
+         //GeoTerm *= (1.0_Real - (RhoEdge / Rho0)*(GeoEdgeK - GeoEdgeKp1) * InvLayerThickEdge);
          Real PresTerm = (LayerThick(ICell1, K) * SpecVol(ICell1, K) *
                               PressureMid(ICell1, K) -
                           LayerThick(ICell0, K) * SpecVol(ICell0, K) *
@@ -180,9 +189,11 @@ class PressureGrad {
 
   // Compute interface product needed for centered pressure gradient
   void computeInterfaceProduct(const Array2DReal &PressureMid,
-                              const Array2DReal &SpecVol,
-                              const Array2DReal &LayerThick,
-                              const Array2DReal &ZInterface);
+                               const Array2DReal &SpecVol,
+                               const Array2DReal &LayerThick,
+                               const Array2DReal &PressureInterface,
+                               const Array2DReal &ZMid,
+                               const Array2DReal &Geopotential);
 
 }; // end class PressureGrad
 
