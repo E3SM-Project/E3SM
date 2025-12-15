@@ -70,6 +70,8 @@ Module SoilHydrologyType
      real(r8), pointer :: max_drain         (:)     => null()! maximum bottom drainage rate for sensitivity analysis
      real(r8), pointer :: ice_imped         (:)     => null()! ice impedance factor for sensitivity analysis
      real(r8), pointer :: mu                (:)     => null()! scaling exponent
+     real(r8), pointer :: aq_sp_yield_min   (:)     => null()! minimum aquifer specific yield
+     real(r8), pointer :: accum_factor      (:)     => null()! accumulation constant for fractional snow covered area (unitless)
      
    contains
 
@@ -165,6 +167,8 @@ contains
     allocate(this%max_drain         (begg:endg))                 ; this%max_drain         (:)     = spval
     allocate(this%ice_imped         (begg:endg))                 ; this%ice_imped         (:)     = spval
     allocate(this%mu                (begg:endg))                 ; this%mu                (:)     = spval
+    allocate(this%aq_sp_yield_min   (begg:endg))                 ; this%aq_sp_yield_min   (:)     = spval
+    allocate(this%accum_factor      (begg:endg))                 ; this%accum_factor      (:)     = spval
 
   end subroutine InitAllocate
 
@@ -591,6 +595,22 @@ contains
     call ncd_io(ncid=ncid, varname='mu', flag='read', data=this%mu, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
       this%mu(:) = 0.13889_r8
+    end if
+    call ncd_pio_closefile(ncid)
+
+    call getfil (fsurdat, locfn, 0)
+    call ncd_pio_openfile (ncid, locfn, 0)
+    call ncd_io(ncid=ncid, varname='aq_sp_yield_min', flag='read', data=this%aq_sp_yield_min, dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) then
+      this%aq_sp_yield_min(:) = 0.02_r8
+    end if
+    call ncd_pio_closefile(ncid)
+
+    call getfil (fsurdat, locfn, 0)
+    call ncd_pio_openfile (ncid, locfn, 0)
+    call ncd_io(ncid=ncid, varname='accum_factor', flag='read', data=this%accum_factor, dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) then
+      this%aq_sp_yield_min(:) = 0.1_r8
     end if
     call ncd_pio_closefile(ncid)
 

@@ -58,6 +58,7 @@ contains
     real(r8) ,pointer     :: std (:)           ! read in - topo_std 
     real(r8) ,pointer     :: tslope (:)        ! read in - topo_slope 
     real(r8) ,pointer     :: hslp_p10 (:,:,:)    ! read in - hillslope slope percentiles
+    real(r8) ,pointer     :: n_melt_coef(:)    ! read in - n_melt parameter (unitless)
     real(r8) ,pointer     :: dtb (:,:)           ! read in - DTB
     real(r8)              :: beddep            ! temporary
     integer               :: nlevbed           ! temporary
@@ -667,6 +668,11 @@ contains
       ! SCA shape function defined
       !-----------------------------------------------
 
+      allocate(n_melt_coef(bounds%begg:bounds%endg))
+      call ncd_io(ncid=ncid, varname='n_melt_coef', flag='read', data=n_melt_coef, dim1name=grlnd, readvar=readvar)
+      if (.not. readvar) then
+         n_melt_coef(:) = 200.0
+      end if
       do c = begc,endc
          l = col_pp%landunit(c)
 
@@ -677,7 +683,7 @@ contains
             ! of n_melt that assumes little topographic variability within the column
             col_pp%n_melt(c) = 10._r8
          else
-            col_pp%n_melt(c) = 200.0/max(10.0_r8, col_pp%topo_std(c))
+            col_pp%n_melt(c) = n_melt_coef(g)/max(10.0_r8, col_pp%topo_std(c))
          end if
 
          ! microtopographic parameter, units are meters (try smooth function of slope)
@@ -687,6 +693,7 @@ contains
          slope0 = slopemax**(-1._r8/slopebeta)
          col_pp%micro_sigma(c) = (col_pp%topo_slope(c) + slope0)**(-slopebeta)
       end do
+      deallocate(n_melt_coef)
 
     call ncd_pio_closefile(ncid)
 

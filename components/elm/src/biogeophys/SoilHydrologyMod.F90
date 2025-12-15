@@ -738,6 +738,7 @@ contains
           wa                 =>    soilhydrology_vars%wa_col             , & ! Output: [real(r8) (:)   ]  water in the unconfined aquifer (mm)
           qcharge            =>    soilhydrology_vars%qcharge_col        , & ! Input:  [real(r8) (:)   ]  aquifer recharge rate (mm/s)
           origflag           =>    soilhydrology_vars%origflag           , & ! Input:  logical
+          aq_sp_yield_min    =>    soilhydrology_vars%aq_sp_yield_min    , & ! Input:  [real(r8) (:)   ] minimum aquifer specific yield (unitless)
 
           qflx_sub_snow      =>    col_wf%qflx_sub_snow      , & ! Output: [real(r8) (:)   ]  sublimation rate from snow pack (mm H2O /s) [+]
           qflx_drain         =>    col_wf%qflx_drain         , & ! Output: [real(r8) (:)   ]  sub-surface runoff (mm H2O /s)
@@ -791,13 +792,13 @@ contains
           c = filter_hydrologyc(fc)
        	  nlevbed = nlev2bed(c)
 
+          g = col_pp%gridcell(c)
           !scs: use analytical expression for aquifer specific yield
           rous = watsat(c,nlevbed) &
                * ( 1. - (1.+1.e3*zwt(c)/sucsat(c,nlevbed))**(-1./bsw(c,nlevbed)))
-          rous=max(rous,0.02_r8)
+          rous=max(rous, aq_sp_yield_min(g))
 
           !--  water table is below the soil column  --------------------------------------
-		      g = col_pp%gridcell(c)
           l = col_pp%landunit(c)
           qcharge_temp = qcharge(c)
 
@@ -818,7 +819,7 @@ contains
                    !scs: use analytical expression for specific yield
                    s_y = watsat(c,j) &
                         * ( 1. -  (1.+1.e3*zwt(c)/sucsat(c,j))**(-1./bsw(c,j)))
-                   s_y=max(s_y,0.02_r8)
+                   s_y=max(s_y, aq_sp_yield_min(g))
 
                    qcharge_layer=min(qcharge_tot,(s_y*(zwt(c) - zi(c,j-1))*1.e3))
                    qcharge_layer=max(qcharge_layer,0._r8)
@@ -833,7 +834,7 @@ contains
                    !scs: use analytical expression for specific yield
                    s_y = watsat(c,j) &
                         * ( 1. -  (1.+1.e3*zwt(c)/sucsat(c,j))**(-1./bsw(c,j)))
-                   s_y=max(s_y,0.02_r8)
+                   s_y=max(s_y, aq_sp_yield_min(g))
 
                    qcharge_layer=max(qcharge_tot,-(s_y*(zi(c,j) - zwt(c))*1.e3))
                    qcharge_layer=min(qcharge_layer,0._r8)
@@ -1093,8 +1094,9 @@ contains
           qcharge            =>    soilhydrology_vars%qcharge_col        , & ! Input:  [real(r8) (:)   ] aquifer recharge rate (mm/s)
           origflag           =>    soilhydrology_vars%origflag           , & ! Input:  logical
           h2osfcflag         =>    soilhydrology_vars%h2osfcflag         , & ! Input:  logical
-          max_drain          =>    soilhydrology_vars%max_drain          , & ! Input:  [real(r8) (:)   ]  maximum bottom drainage rate for sensitivity analysis
-          ice_imped          =>    soilhydrology_vars%ice_imped          , & ! Input:  [real(r8) (:)   ]  ice impedance parameter
+          max_drain          =>    soilhydrology_vars%max_drain          , & ! Input:  [real(r8) (:)   ] maximum bottom drainage rate for sensitivity analysis
+          ice_imped          =>    soilhydrology_vars%ice_imped          , & ! Input:  [real(r8) (:)   ] ice impedance parameter
+          aq_sp_yield_min    =>    soilhydrology_vars%aq_sp_yield_min    , & ! Input:  [real(r8) (:)   ] minimum aquifer specific yield (unitless)
 
           qflx_snwcp_liq     =>    col_wf%qflx_snwcp_liq     , & ! Output: [real(r8) (:)   ] excess rainfall due to snow capping (mm H2O /s) [+]
           qflx_snwcp_ice     =>    col_wf%qflx_snwcp_ice     , & ! Output: [real(r8) (:)   ] excess snowfall due to snow capping (mm H2O /s) [+]
@@ -1382,7 +1384,7 @@ contains
              ! use analytical expression for aquifer specific yield
              rous = watsat(c,nlevbed) &
                   * ( 1. - (1.+1.e3*zwt(c)/sucsat(c,nlevbed))**(-1./bsw(c,nlevbed)))
-             rous=max(rous,0.02_r8)
+             rous=max(rous, aq_sp_yield_min(g))
 
              !--  water table is below the soil column  --------------------------------------
              if(jwt(c) == nlevbed) then
@@ -1394,7 +1396,7 @@ contains
                    rsub_top_tot = - rsub_top(c) * dtime
                    s_y = watsat(c,nlevbed) &
                      * ( 1. - (1.+1.e3*zwt(c)/sucsat(c,nlevbed))**(-1./bsw(c,nlevbed)))
-                   s_y=max(s_y,0.02_r8)
+                   s_y=max(s_y, aq_sp_yield_min(g))
                    rsub_top_layer=max(rsub_top_tot,-(s_y*(zi(c,nlevbed) - zwt(c))*1.e3))
                    rsub_top_layer=min(rsub_top_layer,0._r8)
                    h2osoi_liq(c,nlevbed) = h2osoi_liq(c,nlevbed) + rsub_top_layer
@@ -1443,7 +1445,7 @@ contains
                          ! use analytical expression for specific yield
                          s_y = watsat(c,j) &
                               * ( 1. - (1.+1.e3*zwt(c)/sucsat(c,j))**(-1./bsw(c,j)))
-                         s_y=max(s_y,0.02_r8)
+                         s_y=max(s_y, aq_sp_yield_min(g))
 
                          rsub_top_layer=max(rsub_top_tot,-(s_y*(zi(c,j) - zwt(c))*1.e3))
                          rsub_top_layer=min(rsub_top_layer,0._r8)

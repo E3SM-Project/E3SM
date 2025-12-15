@@ -21,6 +21,7 @@ module CanopyHydrologyMod
   use atm2lndType       , only : atm2lnd_type
   use AerosolType       , only : aerosol_type
   use CanopyStateType   , only : canopystate_type
+  use SoilHydrologyType , only : soilhydrology_type
   use TopounitDataType  , only : top_as, top_af ! Atmospheric state and flux variables
   use ColumnType        , only : col_pp 
   use ColumnDataType    , only : col_es, col_ws, col_wf  
@@ -99,7 +100,7 @@ contains
    !-----------------------------------------------------------------------
    subroutine CanopyHydrology(bounds, &
         num_nolakec, filter_nolakec, num_nolakep, filter_nolakep, &
-        atm2lnd_vars, canopystate_vars, &
+        atm2lnd_vars, canopystate_vars, soilhydrology_vars, &
         aerosol_vars )
      !
      ! !DESCRIPTION:
@@ -135,6 +136,7 @@ contains
      integer                , intent(in)    :: filter_nolakep(:)    ! patch filter for non-lake points
      type(atm2lnd_type)     , intent(in)    :: atm2lnd_vars
      type(canopystate_type) , intent(in)    :: canopystate_vars
+     type(soilhydrology_type) , intent(in)  :: soilhydrology_vars
      type(aerosol_type)     , intent(inout) :: aerosol_vars
      !
      ! !LOCAL VARIABLES:
@@ -167,7 +169,6 @@ contains
      real(r8) :: smr
      real(r8) :: delf_melt
      real(r8) :: fsno_new
-     real(r8) :: accum_factor
      real(r8) :: newsnow(bounds%begc:bounds%endc)
      real(r8) :: snowmelt(bounds%begc:bounds%endc)
      integer  :: j
@@ -207,6 +208,7 @@ contains
           frac_veg_nosno       => canopystate_vars%frac_veg_nosno_patch    , & ! Input:  [integer  (:)   ]  fraction of vegetation not covered by snow (0 OR 1) [-]
           elai                 => canopystate_vars%elai_patch              , & ! Input:  [real(r8) (:)   ]  one-sided leaf area index with burying by snow
           esai                 => canopystate_vars%esai_patch              , & ! Input:  [real(r8) (:)   ]  one-sided stem area index with burying by snow
+          accum_factor         => soilhydrology_vars%accum_factor            , & ! Input:  [real(r8) (:)   ]  accumulation constant for fractional snow covered area (unitless)
 
           t_grnd               => col_es%t_grnd              , & ! Input:  [real(r8) (:)   ]  ground temperature (Kelvin)             
           t_soisno             => col_es%t_soisno            , & ! Output: [real(r8) (:,:) ]  soil temperature (Kelvin)  
@@ -542,9 +544,6 @@ contains
              ! snowmelt from previous time step * dtime
              snowmelt(c) = qflx_snow_melt(c) * dtime
 
-             ! set shape factor for accumulation of snow
-             accum_factor=0.1
-
              if (h2osno(c) > 0.0) then
 
                 !======================  FSCA PARAMETERIZATIONS  ======================
@@ -560,7 +559,7 @@ contains
 
                 ! update fsca by new snow event, add to previous fsca
                 if (newsnow(c) > 0._r8) then
-                   fsno_new = 1._r8 - (1._r8 - tanh(accum_factor*newsnow(c)))*(1._r8 - frac_sno(c))
+                   fsno_new = 1._r8 - (1._r8 - tanh(accum_factor(g)*newsnow(c)))*(1._r8 - frac_sno(c))
                    frac_sno(c) = fsno_new
 
                    ! reset int_snow after accumulation events
@@ -600,7 +599,7 @@ contains
                 if (newsnow(c) > 0._r8) then 
                    z_avg = newsnow(c)/bifall(c)
                    fmelt=newsnow(c)
-                   frac_sno(c) = tanh(accum_factor*newsnow(c))
+                   frac_sno(c) = tanh(accum_factor(g)*newsnow(c))
 
                    ! make int_snow consistent w/ new fsno, h2osno
                    int_snow(c) = 0. !reset prior to adding newsnow below
