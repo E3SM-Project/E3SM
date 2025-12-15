@@ -75,18 +75,15 @@ PressureGrad::PressureGrad(
     const HorzMesh *Mesh,    ///< [in] Horizontal mesh
     const VertCoord *VCoord, ///< [in] Vertical coordinate
     Config *Options)         ///< [in] Configuration options
-    : CellsOnEdge(Mesh->CellsOnEdge), DcEdge(Mesh->DcEdge),
-      EdgeSignOnCell(Mesh->EdgeSignOnCell), MinLayerEdgeBot(VCoord->MinLayerEdgeBot),
-      MaxLayerEdgeTop(VCoord->MaxLayerEdgeTop), CenteredPGrad(Mesh, VCoord),
-      HighOrderPGrad(Mesh, VCoord) {
+    : CellsOnEdge(Mesh->CellsOnEdge), DcEdge(Mesh->DcEdge), EdgeSignOnCell(Mesh->EdgeSignOnCell),
+      MinLayerEdgeBot(VCoord->MinLayerEdgeBot), MaxLayerEdgeTop(VCoord->MaxLayerEdgeTop),
+      CenteredPGrad(Mesh, VCoord), HighOrderPGrad(Mesh, VCoord) {
 
    // store mesh sizes
    NEdgesAll   = Mesh->NEdgesAll;
    NVertLayers = VCoord->NVertLayers;
    NVertLayersP1 = NVertLayers + 1;
    NChunks     = NVertLayers / VecLength;
-
-   InterfaceProduct = Array2DReal("InterfaceProduct", NEdgesAll, NVertLayersP1);
 
    // Read config options for PressureGrad type
    // and enable the appropriate functor
@@ -159,7 +156,6 @@ void PressureGrad::computePressureGrad(Array2DReal &Tend,
 
    OMEGA_SCOPE(LocCenteredPGrad, CenteredPGrad);
    OMEGA_SCOPE(LocHighOrderPGrad, HighOrderPGrad);
-   OMEGA_SCOPE(LocInterfaceProduct, InterfaceProduct);
    OMEGA_SCOPE(LocMinLayerEdgeBot, MinLayerEdgeBot);
    OMEGA_SCOPE(LocMaxLayerEdgeTop, MaxLayerEdgeTop);
 
@@ -174,11 +170,6 @@ void PressureGrad::computePressureGrad(Array2DReal &Tend,
 
    if (PressureGradChoice == PressureGradType::Centered) {
 
-      // computes alpha*p*grad(z) term at edge interfaces
-      computeInterfaceProduct(PressureMid, SpecVol,
-                              LayerThick, PressureInterface,
-                              ZMid, Geopotential);
-
       // computes centered geopotential and pressure gradient tendency
       parallelForOuter(
           "pgrad-centered", {NEdgesAll},
@@ -191,8 +182,9 @@ void PressureGrad::computePressureGrad(Array2DReal &Tend,
                  Team, KRange,
                  INNER_LAMBDA(int KChunk) {
                     LocCenteredPGrad(Tend, IEdge, KChunk, PressureMid,
-                                     Geopotential, LayerThick,
-                                     LocInterfaceProduct, SpecVol, ZMid);
+                                     PressureInterface, ZInterface,
+                                     LayerThick,
+                                     SpecVol);
                  });
           });
 
@@ -216,104 +208,6 @@ void PressureGrad::computePressureGrad(Array2DReal &Tend,
 
    }
 } // end compute pressure gradient
-
-//------------------------------------------------------------------------------
-// Compute the alpha*p*grad(z) product at edge interfaces that is
-// needed for the centered pressure gradient
-void PressureGrad::computeInterfaceProduct(
-    const Array2DReal &PressureMid,
-    const Array2DReal &SpecVol,
-    const Array2DReal &LayerThick,
-    const Array2DReal &PInterface,
-    const Array2DReal &ZMid,
-    const Array2DReal &Geopotential
-    ) {
-
-   OMEGA_SCOPE(LocCellsOnEdge, CellsOnEdge);
-   OMEGA_SCOPE(LocDcEdge, DcEdge);
-   OMEGA_SCOPE(LocInterfaceProduct, InterfaceProduct);
-   OMEGA_SCOPE(LocMinLayerEdgeBot, MinLayerEdgeBot);
-   OMEGA_SCOPE(LocMaxLayerEdgeTop, MaxLayerEdgeTop);
-
-   Real Gravity = 9.80616_Real;
-   Real Rho0   = 1026.0_Real;
-
-   parallelForOuter(
-       "compute-interface-product", {NEdgesAll},
-       KOKKOS_LAMBDA(I4 IEdge, const TeamMember &Team) {
-          const int KMin = LocMinLayerEdgeBot(IEdge);
-          const int KMax = LocMaxLayerEdgeTop(IEdge);
-          
-          const I4 ICell0 = LocCellsOnEdge(IEdge, 0);
-          const I4 ICell1 = LocCellsOnEdge(IEdge, 1);
-
-          // Two-point average for surface interface product
-          LocInterfaceProduct(IEdge, KMin) =
-              PressureMid(ICell1, KMin) * SpecVol(ICell1, KMin) *
-                  LayerThick(ICell1, KMin) +
-              PressureMid(ICell0, KMin) * SpecVol(ICell0, KMin) *
-                  LayerThick(ICell0, KMin) + 
-               Geopotential(ICell1, KMin) + Geopotential(ICell0, KMin) -
-               Gravity * (ZMid(ICell1, KMin) + ZMid(ICell0, KMin));
-          LocInterfaceProduct(IEdge, KMin) /=
-              (LayerThick(ICell1, KMin) + LayerThick(ICell0, KMin));
-
-          LocInterfaceProduct(IEdge, KMin) *=
-                -(PInterface(ICell1, KMin) - PInterface(ICell0, KMin)) /
-                (LocDcEdge(IEdge) * Gravity * Rho0);
-
-          // Four-point average for interior interface products
-          const int KRange = vertRange(KMin + 1, KMax);
-           parallelForInner(
-              Team, KRange,
-              INNER_LAMBDA(int KChunk) {
-                 const I4 KStart = chunkStart(KChunk, KMin + 1);
-                 const I4 KLen   = chunkLength(KChunk, KStart, KMax);
-
-                 for (int KVec = 0; KVec < KLen; ++KVec) {
-                    const I4 K = KStart + KVec;
-
-                       LocInterfaceProduct(IEdge, K) =
-                           PressureMid(ICell1, K) * SpecVol(ICell1, K) *
-                               LayerThick(ICell1, K) +
-                           PressureMid(ICell0, K) * SpecVol(ICell0, K) *
-                               LayerThick(ICell0, K) +
-                           PressureMid(ICell1, K - 1) * SpecVol(ICell1, K - 1) *
-                               LayerThick(ICell1, K - 1) +
-                           PressureMid(ICell0, K - 1) * SpecVol(ICell0, K - 1) *
-                               LayerThick(ICell0, K - 1);
-                           Geopotential(ICell1, K) + Geopotential(ICell0, K) +
-                           Geopotential(ICell1, K - 1) + Geopotential(ICell0, K - 1) -
-                           Gravity * (ZMid(ICell1, K) + ZMid(ICell0, K) +
-                                      ZMid(ICell1, K - 1) + ZMid(ICell0, K - 1));
-                       LocInterfaceProduct(IEdge, K) /=
-                           (LayerThick(ICell1, K) + LayerThick(ICell0, K) +
-                            LayerThick(ICell1, K - 1) +
-                            LayerThick(ICell0, K - 1));
-
-                       LocInterfaceProduct(IEdge, K) *=
-                             -(PInterface(ICell1, K) - PInterface(ICell0, K)) /
-                             (LocDcEdge(IEdge) * Gravity * Rho0);
-                 }          
-           });
-
-          // Two-point average for bottom interface product 
-          LocInterfaceProduct(IEdge, KMax + 1) =
-              PressureMid(ICell1, KMax) * SpecVol(ICell1, KMax) *
-                  LayerThick(ICell1, KMax) +
-              PressureMid(ICell0, KMax) * SpecVol(ICell0, KMax) *
-                  LayerThick(ICell0, KMax);
-               Geopotential(ICell1, KMax) + Geopotential(ICell0, KMax) -
-               Gravity * (ZMid(ICell1, KMax) + ZMid(ICell0, KMax));
-          LocInterfaceProduct(IEdge, KMax + 1) /=
-              (LayerThick(ICell1, KMax) +
-               LayerThick(ICell0, KMax));
-          LocInterfaceProduct(IEdge, KMax + 1) *=
-                -(PInterface(ICell1, KMax + 1) - PInterface(ICell0, KMax + 1)) /
-                (LocDcEdge(IEdge) * Gravity * Rho0);
-   });
-
-} // end compute interface product
 
 //------------------------------------------------------------------------------
 // Constructor for centered pressure gradient functor

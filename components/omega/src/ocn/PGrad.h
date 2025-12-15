@@ -34,11 +34,11 @@ class PressureGradCentered {
    // vertical chunk. This appends results into the Tend array (in-place).
    KOKKOS_FUNCTION void operator()(const Array2DReal &Tend, I4 IEdge, I4 KChunk,
                                    const Array2DReal &PressureMid,
-                                   const Array2DReal &Geopotential,
+                                   const Array2DReal &PressureInterface,
+                                   const Array2DReal &ZInterface,
                                    const Array2DReal &LayerThick,
-                                   const Array2DReal &InterfaceProduct,
-                                   const Array2DReal &SpecVol,
-                                   const Array2DReal &ZMid) const {
+                                   const Array2DReal &SpecVol
+                                   ) const {
 
       const I4 KStart = chunkStart(KChunk, MinLayerEdgeBot(IEdge));
       const I4 KLen   = chunkLength(KChunk, KStart, MaxLayerEdgeTop(IEdge));
@@ -51,28 +51,20 @@ class PressureGradCentered {
 
       for (int KVec = 0; KVec < KLen; ++KVec) {
          const I4 K = KStart + KVec;
-         const Real InvLayerThickEdge =
-             2.0_Real / (LayerThick(ICell1, K) + LayerThick(ICell0, K));
-         //Real RhoEdge = 1.0_Real / (0.5_Real*(SpecVol(ICell1, K) + SpecVol(ICell0, K)));
-         //Real GeoEdgeK = (ZInterface(ICell1, K) + ZInterface(ICell0, K)) * 0.5_Real;
-         //Real GeoEdgeKp1 = (ZInterface(ICell1, K+1) + ZInterface(ICell0, K+1)) * 0.5_Real;
+         Real MontPotCell0K = PressureInterface(ICell0, K) * SpecVol(ICell0, K) + Gravity * ZInterface(ICell0, K);
+         Real MontPotCell1K = PressureInterface(ICell1, K) * SpecVol(ICell1, K) + Gravity * ZInterface(ICell1, K);
+         Real GradMontPotK = (MontPotCell1K - MontPotCell0K) * InvDcEdge;
 
-         Real GeoTerm =
-             (LayerThick(ICell1, K) * (Geopotential(ICell1, K) - Gravity * ZMid(ICell1, K)) -
-              LayerThick(ICell0, K) * (Geopotential(ICell0, K) - Gravity * ZMid(ICell0, K))) * InvDcEdge;
-         //GeoTerm *= (1.0_Real - (RhoEdge / Rho0)*(GeoEdgeK - GeoEdgeKp1) * InvLayerThickEdge);
-         Real PresTerm = (LayerThick(ICell1, K) * SpecVol(ICell1, K) *
-                              PressureMid(ICell1, K) -
-                          LayerThick(ICell0, K) * SpecVol(ICell0, K) *
-                              PressureMid(ICell0, K)) *
-                         InvDcEdge * InvLayerThickEdge;
-         Real InterfaceTerm = (InterfaceProduct(IEdge, K) - InterfaceProduct(IEdge, K+1)) *
-                              InvLayerThickEdge;
+         Real MontPotCell0Kp1 = PressureInterface(ICell0, K+1) * SpecVol(ICell0, K) + Gravity * ZInterface(ICell0, K+1);
+         Real MontPotCell1Kp1 = PressureInterface(ICell1, K+1) * SpecVol(ICell1, K) + Gravity * ZInterface(ICell1, K+1);
+         Real GradMontPotKp1 = (MontPotCell1Kp1 - MontPotCell0Kp1) * InvDcEdge;
+         Real GradMontPot = 0.5_Real * (GradMontPotK + GradMontPotKp1);
 
+         Real PGradAlpha = 0.5 * (PressureMid(ICell1, K) + PressureMid(ICell0, K)) * (SpecVol(ICell1, K) - SpecVol(ICell0, K)) * InvDcEdge;
          Tend(IEdge, K) +=
-             EdgeMask(IEdge, K) * (GeoTerm + PresTerm - InterfaceTerm);
+             EdgeMask(IEdge, K) * (GradMontPot - PGradAlpha);
          if (IEdge == 0)    
-         LOG_INFO("IEdge {}, K {}: GeoTerm {}, PresTerm {}, InterfaceTerm {}, Tend {}", IEdge, K, GeoTerm, PresTerm, InterfaceTerm, Tend(IEdge, K));
+         LOG_INFO("IEdge {}, K {}: GradMontPot {}, PGradAlpha {}, Tend {}", IEdge, K, GradMontPot, PGradAlpha, Tend(IEdge, K));
       }
    }
 
@@ -178,22 +170,11 @@ class PressureGrad {
    PressureGradCentered CenteredPGrad;
    PressureGradHighOrder HighOrderPGrad;
 
-   // Array for interface product needed in centered pressure gradient
-   Array2DReal InterfaceProduct;
-
    // Choice from config
    PressureGradType PressureGradChoice = PressureGradType::Centered;
 
    // Map of all pressure gradient objects by name
    static std::map<std::string, std::unique_ptr<PressureGrad>> AllPGrads;
-
-  // Compute interface product needed for centered pressure gradient
-  void computeInterfaceProduct(const Array2DReal &PressureMid,
-                               const Array2DReal &SpecVol,
-                               const Array2DReal &LayerThick,
-                               const Array2DReal &PressureInterface,
-                               const Array2DReal &ZMid,
-                               const Array2DReal &Geopotential);
 
 }; // end class PressureGrad
 
