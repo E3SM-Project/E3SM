@@ -10,10 +10,11 @@ Module HydrologyNoDrainageMod
   use elm_varctl        , only : iulog, use_vichydro, use_extrasnowlayers, use_firn_percolation_and_compaction
   use elm_varcon        , only : e_ice, denh2o, denice, rpi, spval
   use atm2lndType       , only : atm2lnd_type
+  use ocn2lndType       , only : ocn2lnd_type
   use lnd2atmType       , only : lnd2atm_type
   use AerosolType       , only : aerosol_type
   use EnergyFluxType    , only : energyflux_type
-  use CanopyStateType  , only  : canopystate_type
+  use CanopyStateType   , only  : canopystate_type
   use SoilHydrologyType , only : soilhydrology_type
   use SoilStateType     , only : soilstate_type
   use LandunitType      , only : lun_pp
@@ -44,7 +45,7 @@ contains
        num_urbanc, filter_urbanc, &
        num_snowc, filter_snowc, &
        num_nosnowc, filter_nosnowc, canopystate_vars, &
-       atm2lnd_vars, lnd2atm_vars, soilstate_vars,    &
+       atm2lnd_vars, ocn2lnd_vars, lnd2atm_vars, soilstate_vars, &
        energyflux_vars, soilhydrology_vars, aerosol_vars)
     ! !DESCRIPTION:
     ! This is the main subroutine to execute the calculation of soil/snow
@@ -93,6 +94,7 @@ contains
     integer                  , intent(inout) :: num_nosnowc          ! number of column non-snow points
     integer                  , intent(inout) :: filter_nosnowc(:)    ! column filter for non-snow points
     type(atm2lnd_type)       , intent(in)    :: atm2lnd_vars
+    type(ocn2lnd_type)       , intent(in)    :: ocn2lnd_vars
     type(lnd2atm_type)       , intent(in)    :: lnd2atm_vars
     type(soilstate_type)     , intent(inout) :: soilstate_vars
     type(energyflux_type)    , intent(in)    :: energyflux_vars
@@ -194,15 +196,16 @@ contains
       !------------------------------------------------------------------------------------
       if (use_pflotran .and. pf_hmode) then
 
-        call Infiltration(bounds, num_hydrononsoic, filter_hydrononsoic, &
-             num_urbanc, filter_urbanc, atm2lnd_vars, lnd2atm_vars,      &
+        call Infiltration(bounds, num_hydrononsoic, filter_hydrononsoic,          &
+             num_urbanc, filter_urbanc, atm2lnd_vars, ocn2lnd_vars, lnd2atm_vars, &
              energyflux_vars, soilhydrology_vars, soilstate_vars, dtime)
 
       else
       !------------------------------------------------------------------------------------
 
-        call Infiltration(bounds, num_hydrologyc, filter_hydrologyc, num_urbanc, filter_urbanc, &
-             atm2lnd_vars, lnd2atm_vars, energyflux_vars, soilhydrology_vars, soilstate_vars, dtime)
+        call Infiltration(bounds, num_hydrologyc, filter_hydrologyc,              &
+             num_urbanc, filter_urbanc, atm2lnd_vars, ocn2lnd_vars, lnd2atm_vars, &
+             energyflux_vars, soilhydrology_vars, soilstate_vars, dtime)
 
       !------------------------------------------------------------------------------------
       end if
