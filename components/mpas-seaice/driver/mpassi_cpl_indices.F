@@ -12,6 +12,7 @@ module mpassi_cpl_indices
 
   integer :: index_i2x_Si_ifrac        ! fractional ice coverage wrt ocean
   integer :: index_i2x_Si_ithick       ! ice thickness (m)
+  integer :: index_i2x_Si_ifloe        ! ice floe diameter (m)
   integer :: index_i2x_Si_snowh        ! snow height (m)
   integer :: index_i2x_Si_t            ! temperature                     
   integer :: index_i2x_Si_bpress       ! basal pressure                  
@@ -128,13 +129,22 @@ module mpassi_cpl_indices
   integer :: index_x2i_So_zaer4        !
   integer :: index_x2i_So_zaer5        !
   integer :: index_x2i_So_zaer6        !
+ 
+  ! drv -> ice (waves) 
+  integer :: index_x2i_Sw_Hs           ! wave significant wave height
+  integer,dimension(:),allocatable :: index_x2i_Sw_wavespec ! wave spectrum
 
 contains
 
   subroutine mpassi_cpl_indices_set( )
 
+    use seq_flds_mod, only : wav_nfreq, wav_ice_coup
     type(mct_aVect) :: i2x      ! temporary
     type(mct_aVect) :: x2i      ! temporary
+
+    integer :: i
+    character(len= 2) :: freqnum
+    character(len=64) :: name
 
     ! Determine attribute vector indices
 
@@ -148,6 +158,7 @@ contains
     index_i2x_Si_qref       = mct_avect_indexra(i2x,'Si_qref')
     index_i2x_Si_ifrac      = mct_avect_indexra(i2x,'Si_ifrac')
     index_i2x_Si_ithick     = mct_avect_indexra(i2x,'Si_ithick')
+    index_i2x_Si_ifloe      = mct_avect_indexra(i2x,'Si_ifloe')
     index_i2x_Si_avsdr      = mct_avect_indexra(i2x,'Si_avsdr')
     index_i2x_Si_anidr      = mct_avect_indexra(i2x,'Si_anidr')
     index_i2x_Si_avsdf      = mct_avect_indexra(i2x,'Si_avsdf')
@@ -228,6 +239,16 @@ contains
     index_x2i_Faxa_dstwet2  = mct_avect_indexra(x2i,'Faxa_dstwet2')
     index_x2i_Faxa_dstwet3  = mct_avect_indexra(x2i,'Faxa_dstwet3')
     index_x2i_Faxa_dstwet4  = mct_avect_indexra(x2i,'Faxa_dstwet4')
+
+    if (wav_ice_coup .eq. 'twoway') then
+       index_x2i_Sw_Hs         = mct_avect_indexra(x2i,'Sw_Hs')
+       allocate(index_x2i_Sw_wavespec(1:wav_nfreq))
+       do i = 1,wav_nfreq
+          write(freqnum,'(i2.2)') i
+          name = 'Sw_wavespec' // freqnum
+          index_x2i_Sw_wavespec(i)   = mct_avect_indexra(x2i,trim(name))
+       enddo
+    endif
 
     index_x2i_So_algae1     = mct_avect_indexra(x2i,'So_algae1',perrWith='quiet')
     index_x2i_So_algae2     = mct_avect_indexra(x2i,'So_algae2',perrWith='quiet')
