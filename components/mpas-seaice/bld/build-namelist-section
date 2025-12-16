@@ -68,6 +68,7 @@ add_default($nl, 'config_nCategories');
 add_default($nl, 'config_nFloeCategories');
 add_default($nl, 'config_nIceLayers');
 add_default($nl, 'config_nSnowLayers');
+add_default($nl, 'config_nFrequencies');
 
 ##############################
 # Namelist group: initialize #
@@ -166,6 +167,7 @@ add_default($nl, 'config_use_column_biogeochemistry');
 add_default($nl, 'config_use_column_itd_thermodynamics');
 add_default($nl, 'config_use_column_ridging');
 add_default($nl, 'config_use_column_snow_tracers');
+add_default($nl, 'config_use_column_waves');
 
 ##################################
 # Namelist group: column_tracers #
@@ -181,6 +183,15 @@ add_default($nl, 'config_use_effective_snow_density');
 add_default($nl, 'config_use_snow_grain_radius');
 add_default($nl, 'config_use_special_boundaries_tracers');
 add_default($nl, 'config_use_floe_size_distribution');
+
+###################################
+# Namelist group: wave_config     #
+###################################
+
+add_default($nl, 'config_xfreq');
+add_default($nl, 'config_freq1');
+add_default($nl, 'config_wave_spec_type');
+add_default($nl, 'config_wave_height_type');
 
 ###################################
 # Namelist group: biogeochemistry #

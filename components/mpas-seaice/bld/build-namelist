@@ -422,6 +422,8 @@ my $RUN_STARTDATE          = "$xmlvars{'RUN_STARTDATE'}";
 my $START_TOD              = "$xmlvars{'START_TOD'}";
 my $RUN_REFDATE            = "$xmlvars{'RUN_REFDATE'}";
 my $CONTINUE_RUN           = "$xmlvars{'CONTINUE_RUN'}";
+my $wave_spec              = "$xmlvars{'WAV_SPEC'}";
+my $wave_comp              = "$xmlvars{'COMP_WAV'}";
 
 my $SSTICE_GRID_FILENAME;
 my $SSTICE_DATA_FILENAME;
@@ -526,9 +528,22 @@ add_default($nl, 'config_restart_timestamp_name');
 ##############################
 
 add_default($nl, 'config_nCategories');
-add_default($nl, 'config_nFloeCategories');
 add_default($nl, 'config_nIceLayers');
 add_default($nl, 'config_nSnowLayers');
+if ($wave_comp eq 'ww3' or $wave_comp eq 'dwav') {
+	add_default($nl, 'config_nFloeCategories', 'val'=>"12");
+} else {
+	add_default($nl, 'config_nFloeCategories');
+}
+if ($wave_spec eq 'sp25x36') {
+	add_default($nl, 'config_nFrequencies', 'val'=>"25");
+} elsif ($wave_spec eq 'sp36x36' or $wave_comp eq 'dwav') {
+	add_default($nl, 'config_nFrequencies', 'val'=>"36");
+} elsif ($wave_spec eq 'sp50x36') {
+	add_default($nl, 'config_nFrequencies', 'val'=>"50");
+} else {
+	add_default($nl, 'config_nFrequencies');
+}
 
 ##############################
 # Namelist group: initialize #
@@ -635,6 +650,11 @@ if ($ice_bgc eq 'ice_bgc') {
 add_default($nl, 'config_use_column_itd_thermodynamics');
 add_default($nl, 'config_use_column_ridging');
 add_default($nl, 'config_use_column_snow_tracers');
+if ($wave_comp eq 'ww3' or $wave_comp eq 'dwav') {
+	add_default($nl, 'config_use_column_waves', 'val'=>".true.");
+} else {
+	add_default($nl, 'config_use_column_waves');
+}
 
 ##################################
 # Namelist group: column_tracers #
@@ -649,7 +669,37 @@ add_default($nl, 'config_use_aerosols');
 add_default($nl, 'config_use_effective_snow_density');
 add_default($nl, 'config_use_snow_grain_radius');
 add_default($nl, 'config_use_special_boundaries_tracers');
-add_default($nl, 'config_use_floe_size_distribution');
+if ($wave_comp eq 'ww3' or $wave_comp eq 'dwav') {
+   add_default($nl, 'config_use_floe_size_distribution', 'val'=>".true.");
+} else {
+   add_default($nl, 'config_use_floe_size_distribution');
+}
+
+##################################
+# Namelist group: wave_config #
+##################################
+# the frequency values below should not be modified.
+# They are defined to match available WW3 configurations
+if ($wave_spec eq 'sp25x36') {
+	add_default($nl, 'config_xfreq', 'val'=>"1.147");
+	add_default($nl, 'config_freq1', 'val'=>"0.035");
+} elsif ($wave_spec eq 'sp36x36' or $wave_comp eq 'dwav') {
+	add_default($nl, 'config_xfreq', 'val'=>"1.10");
+	add_default($nl, 'config_freq1', 'val'=>"0.035");
+} elsif ($wave_spec eq 'sp50x36') {
+	add_default($nl, 'config_xfreq', 'val'=>"1.07");
+	add_default($nl, 'config_freq1', 'val'=>"0.035");
+} else {
+	add_default($nl, 'config_xfreq');
+	add_default($nl, 'config_freq1');
+}
+if ($wave_comp eq 'ww3' or $wave_comp eq 'dwav') {
+	add_default($nl, 'config_wave_spec_type','val'=>"constant");
+	add_default($nl, 'config_wave_height_type','val'=>"coupled");
+} else {
+        add_default($nl,'config_wave_spec_type');
+	add_default($nl,'config_wave_height_type');
+}
 
 ###################################
 # Namelist group: biogeochemistry #
@@ -1254,6 +1304,7 @@ my @groups = qw(seaice_model
                 advection
                 column_package
                 column_tracers
+		wave_config
                 biogeochemistry
                 shortwave
                 snow

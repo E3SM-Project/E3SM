@@ -67,9 +67,10 @@
 
 <!-- dimensions -->
 <config_nCategories>5</config_nCategories>
-<config_nFloeCategories>1</config_nFloeCategories>
+<config_nFloeCategories>0</config_nFloeCategories>
 <config_nIceLayers>7</config_nIceLayers>
 <config_nSnowLayers>5</config_nSnowLayers>
+<config_nFrequencies>0</config_nFrequencies>
 
 <!-- initialize -->
 <config_earth_radius>6371229.0</config_earth_radius>
@@ -210,6 +211,7 @@
 <config_use_column_itd_thermodynamics prognostic_mode="prescribed">false</config_use_column_itd_thermodynamics>
 <config_use_column_ridging>true</config_use_column_ridging>
 <config_use_column_snow_tracers>true</config_use_column_snow_tracers>
+<config_use_column_waves>false</config_use_column_waves>
 
 <!-- column_tracers -->
 <config_use_ice_age>false</config_use_ice_age>
@@ -222,6 +224,12 @@
 <config_use_snow_grain_radius>true</config_use_snow_grain_radius>
 <config_use_special_boundaries_tracers>false</config_use_special_boundaries_tracers>
 <config_use_floe_size_distribution>false</config_use_floe_size_distribution>
+
+<!-- wave_config -->
+<config_xfreq>0.0</config_xfreq>
+<config_freq1>0.0</config_freq1>
+<config_wave_spec_type>'none'</config_wave_spec_type>
+<config_wave_height_type>'none'</config_wave_height_type>
 
 <!-- biogeochemistry -->
 <config_couple_biogeochemistry_fields>false</config_couple_biogeochemistry_fields>
