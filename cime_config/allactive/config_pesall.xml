@@ -2578,8 +2578,8 @@
           <excl_stride_atm>16</excl_stride_atm>
         </excl_stride>
       </pes>
-      <pes compset=".*SCREAM.*ELM.*MPASSI.*MPASO.*" pesize="M">
-        <comment>pm-gpu ne256 for fully coupled cases with ATM on GPU, MPAS on CPU -- WCYCLXX2010 128 nodes, 64x1</comment>
+      <pes compset=".*SCREAM.*ELM.*MPASSI.*MPASO.*" pesize="L">
+        <comment>pm-gpu ne256 for fully coupled cases with ATM on GPU, MPAS on CPU -- WCYCLXX2010 256 nodes, 64x1</comment>
         <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
         <ntasks>
           <ntasks_atm>1024</ntasks_atm>
