@@ -636,6 +636,7 @@ CONTAINS
     !
     ! LOCAL VARIABLES
     logical :: found
+    integer, dimension(:) :: grid_dims(2)
     character(len=*),parameter :: subname = '(atm_read_eatm) '
     integer, parameter :: RKIND = selected_real_kind(13)
     type(file_desc_t) :: ncid                 ! netcdf file id
@@ -652,16 +653,19 @@ CONTAINS
 
     call ncd_inqfdims(ncid, gsize)
 
+    call ncd_io(varname='grid_dims', data=grid_dims, flag='read', ncid=ncid, readvar=found)
+    if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: reading EATM grid_dims')
+
+    !JW for now let lsize = gsize (local vs global)
+    lsize = gsize
+    lsize_x = grid_dims(1)
+    lsize_y = grid_dims(2)
+
     if (masterproc) then
-       write(logunit_atm,*) 'Values for lon/lat: ', gsize
+       write(logunit_atm,*) 'Values for lon/lat: ', lsize_x, lsize_y
        write(logunit_atm,*) 'Successfully read eatm dimensions'
        call shr_sys_flush(logunit_atm)
     endif
-
-    !JW for now let lsize = gsize (local vs global)
-    lsize   = gsize
-    lsize_x = gsize
-    lsize_y = 1
 
     allocate(lonc_g(gsize))
     allocate(latc_g(gsize))
