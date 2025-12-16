@@ -201,7 +201,9 @@ contains
     allocate( this%eflx_lwrad_out_r_patch  (begp:endp))             ; this%eflx_lwrad_out_r_patch  (:)   = spval 
     allocate( this%eflx_gnet_patch         (begp:endp))             ; this%eflx_gnet_patch         (:)   = spval 
     allocate( this%eflx_grnd_lake_patch    (begp:endp))             ; this%eflx_grnd_lake_patch    (:)   = spval 
-    allocate( this%eflx_dynbal_grc         (begg:endg))             ; this%eflx_dynbal_grc         (:)   = spval 
+    allocate( this%eflx_dynbal_grc         (begg:endg))             ; this%eflx_dynbal_grc         (:)   = spval
+    allocate( this%eflx_lh_tot_col         (begc:endc))             ; this%eflx_lh_tot_col         (:)   = nan
+    allocate( this%eflx_sh_tot_col         (begc:endc))             ; this%eflx_sh_tot_col         (:)   = nan 
     allocate( this%eflx_bot_col            (begc:endc))             ; this%eflx_bot_col            (:)   = spval 
     allocate( this%eflx_snomelt_col        (begc:endc))             ; this%eflx_snomelt_col        (:)   = spval 
     allocate( this%eflx_snomelt_r_col      (begc:endc))             ; this%eflx_snomelt_r_col      (:)   = spval 
