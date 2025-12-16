@@ -58,7 +58,7 @@ void run(std::mt19937_64& engine)
 
   // Construct random input data
   using RPDF = std::uniform_real_distribution<Real>;
-  RPDF pdf_pres(0.0,PC::P0),
+  RPDF pdf_pres(0.0,PC::P0.value),
        pdf_temp(200.0,400.0),
        pdf_surface(100.0,400.0);
 

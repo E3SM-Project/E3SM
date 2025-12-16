@@ -205,7 +205,7 @@ void AeroComCld::compute_diagnostic_impl() {
              * from grid-mean to in-cloud, but after that, the
              * calculation follows the general logic */
             auto cdnc = nc_icol(ilay) * pden_icol(ilay) / dz_icol(ilay) /
-                        physconst::gravit / cld_icol(ilay);
+                        physconst::gravit.value / cld_icol(ilay);
             o_cdnc(icol) += cdnc * phi * wts;
             o_nc(icol) += nc_icol(ilay) * phi * wts;
             o_ni(icol) += ni_icol(ilay) * (1.0 - phi) * wts;

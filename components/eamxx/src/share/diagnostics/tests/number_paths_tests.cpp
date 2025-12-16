@@ -40,7 +40,7 @@ void run(std::mt19937_64 &engine) {
   using view_1d    = typename KT::template view_1d<Real>;
 
   constexpr int num_levs = 33;
-  constexpr Real g       = PC::gravit;
+  constexpr Real g       = PC::gravit.value;
   constexpr Real macheps = PC::macheps;
 
   // A world comm

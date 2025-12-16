@@ -135,7 +135,7 @@ void run(std::mt19937_64& engine)
       Field qv_vert_integrated_flux_u_f = diag_out.clone();
       qv_vert_integrated_flux_u_f.deep_copy(0);
       const auto& qv_vert_integrated_flux_u_v = qv_vert_integrated_flux_u_f.get_view<Real*>();
-      constexpr Real g = PC::gravit;
+      constexpr Real g = PC::gravit.value;
       int comp = which_comp=="Zonal" ? 0 : 1;
 
       Kokkos::parallel_for("", policy, KOKKOS_LAMBDA(const MemberType& team) {

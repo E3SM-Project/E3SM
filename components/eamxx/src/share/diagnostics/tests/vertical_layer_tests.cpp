@@ -77,14 +77,14 @@ void run (const std::string& diag_name, const std::string& location)
   // Note: we are not testing the calculate_dz utility. We are testing
   //       the diag class, so use some inputs that make checking results easier
   //       With these inputs, T_virt=T, and dz=8*rd/g
-  const Real g = PC::gravit;
+  const Real g = PC::gravit.value;
   const Real rho_val = 4;
   const Real qv_val = 0;
   const Real p_val = 2;
   const Real T_val = 4;
-  const Real c1 = -PC::ONE + PC::ONE / PC::ep_2;
+  const Real c1 = -PC::ONE + PC::ONE / PC::ep_2.value;
   const Real Tvirt_val = T_val*(PC::ONE + c1*qv_val);
-  const Real dz_val = (PC::RD/g) * rho_val*Tvirt_val / p_val;
+  const Real dz_val = (PC::RD.value/g) * rho_val*Tvirt_val / p_val;
   const Real phis_val = 3;
 
   input_fields["T_mid"].deep_copy(T_val);

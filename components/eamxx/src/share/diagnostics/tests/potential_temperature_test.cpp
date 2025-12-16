@@ -63,7 +63,7 @@ void run(std::mt19937_64& engine, int int_ptype)
 
   // Construct random input data
   using RPDF = std::uniform_real_distribution<Real>;
-  RPDF pdf_pres(0.0,PC::P0),
+  RPDF pdf_pres(0.0,PC::P0.value),
        pdf_temp(200.0,400.0);
 
   // A time stamp
@@ -131,7 +131,7 @@ void run(std::mt19937_64& engine, int int_ptype)
       Kokkos::parallel_for(Kokkos::TeamVectorRange(team,num_levs), [&] (const Int& ilev) {
         auto theta = PF::calculate_theta_from_T(T_mid_v(icol,ilev),p_mid_v(icol,ilev));
         if (int_ptype==1) {
-          theta_v(icol,ilev) = theta - (theta/T_mid_v(icol,ilev)) * (PC::LatVap/PC::Cpair) * q_mid_v(icol,ilev);
+          theta_v(icol,ilev) = theta - (theta/T_mid_v(icol,ilev)) * (PC::LatVap.value/PC::Cpair.value) * q_mid_v(icol,ilev);
         } else { theta_v(icol,ilev) = theta; }
       });
       team.team_barrier();
