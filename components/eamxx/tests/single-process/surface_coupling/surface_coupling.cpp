@@ -369,11 +369,11 @@ void test_exports(const FieldManager& fm,
     // provide theta based on an exner function that evaluates to 1 at the bottom interface.
     // To accomplish this we calculate a theta that replaces the reference pressure (P0) for exner
     // with the pressure of the lowest interface level => p_int_i(nlevs)
-    Sa_ptem(i) = T_mid_i(nlevs-1) / pow( p_mid_i(nlevs-1)/p_int_i(nlevs), PC::RD*PC::INV_CP);
+    Sa_ptem(i) = T_mid_i(nlevs-1) / pow( p_mid_i(nlevs-1)/p_int_i(nlevs), PC::RD.value*PC::INV_CP.value);
 
     if (not called_directly_after_init) {
-      Faxa_rainl(i) = precip_liq_surf_mass(i)/dt*(1000.0/PC::RHO_H2O);
-      Faxa_snowl(i) = precip_ice_surf_mass(i)/dt*(1000.0/PC::RHO_H2O);
+      Faxa_rainl(i) = precip_liq_surf_mass(i)/dt*(1000.0/PC::RHO_H2O.value);
+      Faxa_snowl(i) = precip_ice_surf_mass(i)/dt*(1000.0/PC::RHO_H2O.value);
     }
   });
 
