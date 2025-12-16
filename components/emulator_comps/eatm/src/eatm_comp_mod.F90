@@ -130,9 +130,10 @@ CONTAINS
        allocate(swvdf(lsize_x,lsize_y))
        allocate(swnet(lsize_x,lsize_y))
 
+       call t_stopf('eatm_initmctavs')
+
        allocate(net_inputs(1, n_input_channels, lsize_x, lsize_y))
        allocate(net_outputs(1, n_output_channels, lsize_x, lsize_y))
-       call t_stopf('eatm_initmctavs')
 
        ! initialize the interpolater struct
        allocate(eatm_intrp%t_im1(n_output_channels, lsize_x, lsize_y))
@@ -254,6 +255,7 @@ CONTAINS
 
     call t_barrierf('eatm_BARRIER',mpicom_atm)
     call t_startf('eatm')
+    call t_startf('eatm_datamode')
 
     !JW real work goes here
     call ace_comp_run(EClock)

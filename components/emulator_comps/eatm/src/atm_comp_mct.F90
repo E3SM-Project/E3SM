@@ -39,7 +39,7 @@ module atm_comp_mct
   ! Private module data
   !--------------------------------------------------------------------------
 
-  integer                :: inst_index          ! number of current instance (ie. 1)
+  integer                :: inst_index          ! number of current instance (e.g., 1)
   integer(IN),parameter  :: master_task=0       ! task number of master task
 
   ! global cell = all cells in the mesh
@@ -224,7 +224,7 @@ CONTAINS
          a2x = a2x, &
          gsmap = gsmap, &
          ggrid = ggrid)
-       call t_stopf('EATM_run1')
+       call t_stopf('EATM_run')
 
        call atm_export_mct(a2x)
 
@@ -559,7 +559,7 @@ CONTAINS
 
   subroutine eatm_read_namelist()
 
-    use shr_mpi_mod
+    use shr_mpi_mod, only: shr_mpi_bcast
     !---------------------------------------------------------------------------
     ! DESCRIPTION:
     ! Read the eatm_in file and associated namelist
@@ -602,8 +602,8 @@ CONTAINS
        end do
        call shr_file_freeunit(unitn)
     end if
-    call mpi_bcast (do_eatm,        1,                      MPI_LOGICAL,   0, mpicom_atm, ier)
-    call mpi_bcast (filename_eatm,  len(filename_eatm),     MPI_CHARACTER, 0, mpicom_atm, ier)
+    call shr_mpi_bcast(do_eatm, mpicom_atm, 'do_eatm')
+    call shr_mpi_bcast(filename_eatm, mpicom_atm, 'filename_eatm')
 
     ! print out namelist settings to log
     if (masterproc) then

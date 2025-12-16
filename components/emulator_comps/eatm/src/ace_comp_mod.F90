@@ -36,7 +36,7 @@ module ace_comp_mod
   ! Public module data
   !--------------------------------------------------------------------------
   integer, public :: n_input_channels=39  ! number of input channels to emulator
-  integer, public :: n_output_channels=44 ! number of input channels to emulator
+  integer, public :: n_output_channels=44 ! number of output channels to emulator
   integer, public :: eatm_idt=6 * 60 * 60 ! eatm timestep (6hr) in seconds
 
   !--------------------------------------------------------------------------
@@ -64,20 +64,23 @@ CONTAINS
 
   subroutine ace_comp_init()
 
+    implicit none
 
     integer     :: i, j, k           ! loop indicies
 
-    input_tensor_shape = [&
+    input_tensor_shape = [ &
       int(1, kind=c_int), &
       int(n_input_channels, kind=c_int), &
       int(lsize_y, kind=c_int), &
       int(lsize_x, kind=c_int) &
     ]
 
-    output_tensor_shape = [int(1, kind=c_int), &
+    output_tensor_shape = [ &
+      int(1, kind=c_int), &
       int(n_output_channels, kind=c_int), &
       int(lsize_y, kind=c_int), &
-      int(lsize_x, kind=c_int)]
+      int(lsize_x, kind=c_int) &
+    ]
 
     tensor_layout = [1_c_int, 2_c_int, 4_c_int, 3_c_int]
 
