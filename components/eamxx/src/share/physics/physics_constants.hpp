@@ -148,6 +148,48 @@ struct Constants
   static constexpr Scalar earth_ellipsoid1 = 111132.92; // first coefficient, meters per degree longitude at equator
   static constexpr Scalar earth_ellipsoid2 = 559.82;    // second expansion coefficient for WGS84 ellipsoid
   static constexpr Scalar earth_ellipsoid3 = 1.175;     // third expansion coefficient for WGS84 ellipsoid
+
+  static const std::map<ci_string,quantity_t>& dictionary() {
+    static std::map<ci_string,quantity_t> dict;
+    if (dict.size()==0) {
+      dict["Cpair"]       = Cpair;
+      dict["CP"]          = CP;
+      dict["INV_CP"]      = INV_CP;
+      dict["Rair"]        = Rair;
+      dict["RH2O"]        = RH2O;
+      dict["RV"]          = RV;
+      dict["RD"]          = RD;
+      dict["RHO_H2O"]     = RHO_H2O;
+      dict["INV_RHO_H2O"] = INV_RHO_H2O;
+      dict["RHOW"]        = RHOW;
+      dict["INV_RHOW"]    = INV_RHOW;
+      dict["RhoIce"]      = RhoIce;
+      dict["MWH2O"]       = MWH2O;
+      dict["MWWV"]        = MWWV;
+      dict["MWdry"]       = MWdry;
+      dict["ep_2"]        = ep_2;
+      dict["o2mmr"]       = o2mmr;
+      dict["gravit"]      = gravit;
+      dict["LatVap"]      = LatVap;
+      dict["LatIce"]      = LatIce;
+      dict["CpLiq"]       = CpLiq;
+      dict["Tmelt"]       = Tmelt;
+      dict["T_zerodegc"]  = T_zerodegc;
+      dict["T_homogfrz"]  = T_homogfrz;
+      dict["T_rainfrz"]   = T_rainfrz;
+
+      dict["P0"]          = P0;
+      dict["RHOSUR"]      = RHOSUR;
+      dict["Avogad"]      = Avogad;
+      dict["Boltz"]       = Boltz;
+      dict["Rgas"]        = Rgas;
+      dict["RWV"]         = RWV;
+      dict["r_earth"]     = r_earth;
+      dict["stebol"]      = stebol;
+      dict["omega"]       = omega;
+    }
+    return dict;
+  }
 };
 
 // Gases
