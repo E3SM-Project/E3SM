@@ -200,7 +200,7 @@ TEST_CASE("rrtmgp_scream_standalone_k", "") {
 
   // Need to calculate a dummy pseudo_density for our test problem
   Kokkos::parallel_for(MDRP::template get<2>({nlay,ncol}), KOKKOS_LAMBDA(int ilay, int icol) {
-    p_del(icol,ilay) = abs(p_lev(icol,ilay+1) - p_lev(icol,ilay));
+    p_del(icol,ilay) = ekat::abs(p_lev(icol,ilay+1) - p_lev(icol,ilay));
   });
 
   // We do not want to pass lwp and iwp through the FM, so back out qc and qi for this test

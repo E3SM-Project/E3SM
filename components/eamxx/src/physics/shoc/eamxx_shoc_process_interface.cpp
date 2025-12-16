@@ -637,7 +637,7 @@ void SHOCMacrophysics::check_flux_state_consistency(const double dt)
     // the moisture in the lowest model level. If so, apply fixer.
     const auto condition = surf_evap(i) - (qmin - qv_i(last_pack_idx)[last_pack_entry])/(dt*gravit*rpdel);
     if (condition < 0) {
-      const auto cc = abs(surf_evap(i)*dt*gravit);
+      const auto cc = ekat::abs(surf_evap(i)*dt*gravit);
 
       auto tracer_mass = [&](const int k) {
         return qv_i(k)*pseudo_density_i(k);
