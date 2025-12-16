@@ -78,8 +78,8 @@ public:
       const int i = team.league_rank();
 
       const Real zvir = C::ZVIR;
-      const Real cpair = C::Cpair;
-      const Real ggr = C::gravit;
+      const Real cpair = C::Cpair.value;
+      const Real ggr = C::gravit.value;
       const Real inv_ggr = 1/ggr;
       const Real mintke = SC::mintke;
 

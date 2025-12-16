@@ -19,7 +19,7 @@ void Functions<S,D>
   const Smask& context)
 {
   constexpr Scalar qsmall = C::QSMALL;
-  constexpr Scalar tmelt  = C::Tmelt;
+  constexpr Scalar tmelt  = C::Tmelt.value;
 
   // set up masks
   const auto t_is_negative        = temp <= tmelt;
@@ -65,7 +65,7 @@ void Functions<S,D>
   const Smask& context)
 {
   constexpr Scalar qsmall = C::QSMALL;
-  constexpr Scalar tmelt  = C::Tmelt;
+  constexpr Scalar tmelt  = C::Tmelt.value;
 
   // Set up masks
   const auto t_is_negative        = temp <= tmelt;

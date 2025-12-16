@@ -207,8 +207,8 @@ struct Functions {
     }
     // -------------------------------------------------------------------------
     void calculate_tpert(int ncol,int nlev,bool is_first_step) {
-      const Real cpair  = PC::Cpair;
-      const Real latvap = PC::LatVap;
+      const Real cpair  = PC::Cpair.value;
+      const Real latvap = PC::LatVap.value;
 
       // create temporaries to avoid "Implicit capture" warning
       auto loc_tpert    = tpert;

@@ -631,7 +631,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
   auto d_eff_radius_qi_at_cldtop =
       get_field_out("eff_radius_qi_at_cldtop").get_view<Real *>();
 
-  constexpr auto stebol = PC::stebol;
+  constexpr auto stebol = PC::stebol.value;
   const auto nlay = m_nlay;
   const auto nlwbands = m_nlwbands;
   const auto nswbands = m_nswbands;
@@ -713,7 +713,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
           m_co2vmr, m_n2ovmr, m_ch4vmr, m_f11vmr, m_f12vmr
         );
         // Back out volume mixing ratios
-        const auto air_mol_weight = PC::MWdry;
+        const auto air_mol_weight = PC::MWdry.value;
         const auto policy = TPF::get_default_team_policy(m_ncol, m_nlay);
         Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
           const int i = team.league_rank();

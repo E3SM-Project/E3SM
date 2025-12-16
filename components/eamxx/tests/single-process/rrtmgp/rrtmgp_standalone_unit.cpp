@@ -209,8 +209,8 @@ TEST_CASE("rrtmgp_scream_standalone_k", "") {
   auto nc = real2dk("nc", ncol, nlay);
   auto qi = real2dk("qi", ncol, nlay);
   Kokkos::parallel_for(MDRP::template get<2>({nlay,ncol}), KOKKOS_LAMBDA(int ilay, int icol) {
-    qc(icol,ilay) = 1e-3 * lwp(icol,ilay) * cld(icol,ilay) * PC::gravit / p_del(icol,ilay);
-    qi(icol,ilay) = 1e-3 * iwp(icol,ilay) * cld(icol,ilay) * PC::gravit / p_del(icol,ilay);
+    qc(icol,ilay) = 1e-3 * lwp(icol,ilay) * cld(icol,ilay) * PC::gravit.value / p_del(icol,ilay);
+    qi(icol,ilay) = 1e-3 * iwp(icol,ilay) * cld(icol,ilay) * PC::gravit.value / p_del(icol,ilay);
   });
 
   // Copy gases from gas_concs to gas_vmr array
@@ -283,7 +283,7 @@ TEST_CASE("rrtmgp_scream_standalone_k", "") {
         d_cld(i,k)  = cld(i,k);
         d_pint(i,k) = p_lev(i,k);
         // qv specified as a wet mixing ratio
-        Real qv_dry = gas_vmr(i,k,0)*PC::ep_2;
+        Real qv_dry = gas_vmr(i,k,0)*PC::ep_2.value;
         Real qv_wet = qv_dry/(1.0+qv_dry);
         d_qv(i,k)  = qv_wet;
         // rest of active gases are specified as volume mixing ratios
@@ -300,7 +300,7 @@ TEST_CASE("rrtmgp_scream_standalone_k", "") {
 
       // Compute surface flux from surface temperature
       auto ibot = (p_lay(0,0) > p_lay(0,nlay-1)) ? 0 : nlay;
-      d_surf_lw_flux_up(i) = PC::stebol * pow(t_lev(i,ibot), 4.0);
+      d_surf_lw_flux_up(i) = PC::stebol.value * pow(t_lev(i,ibot), 4.0);
     });
   }
   Kokkos::fence();

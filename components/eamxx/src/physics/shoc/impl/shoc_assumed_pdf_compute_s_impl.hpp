@@ -30,11 +30,11 @@ void Functions<S,D>::shoc_assumed_pdf_compute_s(
   Spack&       qn,
   Spack&       C)
 {
-  const Scalar rair = C::Rair;
-  const Scalar basepres = C::P0;
-  const Scalar cp = C::CP;
-  const Scalar lcond = C::LatVap;
-  const Scalar pi = C::Pi;
+  const Scalar rair     = C::Rair.value;
+  const Scalar basepres = C::P0.value;
+  const Scalar cp       = C::CP.value;
+  const Scalar lcond    = C::LatVap.value;
+  const Scalar pi       = C::Pi;
 
   const Scalar sqrt2(std::sqrt(Scalar(2.0))), sqrt2pi(std::sqrt(2*pi));
 

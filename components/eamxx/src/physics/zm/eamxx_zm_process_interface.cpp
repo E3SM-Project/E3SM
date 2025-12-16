@@ -259,8 +259,8 @@ void ZMDeepConvection::run_impl (const double dt)
     // accumulate surface precipitation fluxes
     Kokkos::parallel_for("zm_update_precip",KT::RangePolicy(0, m_ncol), KOKKOS_LAMBDA (const int i) {
       auto prec_liq = loc_zm_output_prec(i) - loc_zm_output_snow(i);
-      precip_liq_surf_mass(i) += ekat::impl::max(0.0,prec_liq) * PC::RHO_H2O * dt;
-      precip_ice_surf_mass(i) += loc_zm_output_snow(i) * PC::RHO_H2O * dt;
+      precip_liq_surf_mass(i) += ekat::impl::max(0.0,prec_liq) * PC::RHO_H2O.value * dt;
+      precip_ice_surf_mass(i) += loc_zm_output_snow(i) * PC::RHO_H2O.value * dt;
     });
 
     Kokkos::parallel_for("zm_update_prognostic",KT::RangePolicy(0, m_ncol*nlev_mid_packs), KOKKOS_LAMBDA (const int idx) {

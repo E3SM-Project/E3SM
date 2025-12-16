@@ -163,8 +163,8 @@ advance_iop_subsidence(const MemberType& team,
                        const view_1d<Pack>& T,
                        const view_2d<Pack>& Q)
 {
-  constexpr Real Rair = C::Rair;
-  constexpr Real Cpair = C::Cpair;
+  constexpr Real Rair = C::Rair.value;
+  constexpr Real Cpair = C::Cpair.value;
 
   const auto n_q_tracers = Q.extent_int(0);
   const auto nlev_packs = ekat::npack<Pack>(nlevs);
@@ -321,7 +321,7 @@ iop_apply_coriolis(const MemberType& team,
                    const view_1d<Pack>& v)
 {
   constexpr Real pi = C::Pi;
-  constexpr Real earth_rotation = C::omega;
+  constexpr Real earth_rotation = C::omega.value;
 
   // Compute coriolis force
   const auto fcor = 2*earth_rotation*std::sin(lat*pi/180);
@@ -343,7 +343,7 @@ void IOPForcing::run_impl (const double dt)
   const auto nlev_packs  = ekat::npack<Pack>(m_num_levs);
 
   // Hybrid coord values
-  const auto ps0 = C::P0;
+  const Real ps0 = C::P0.value;
   const auto hyam = m_grid->get_geometry_data("hyam").get_view<const Real*>();
   const auto hybm = m_grid->get_geometry_data("hybm").get_view<const Real*>();
   const auto hyai = m_grid->get_geometry_data("hyai").get_view<const Real*>();

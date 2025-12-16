@@ -59,10 +59,10 @@ void Functions<S,D>
   const P3Runtime& runtime_options)
 {
   constexpr Scalar qsmall       = C::QSMALL;
-  constexpr Scalar inv_cp       = C::INV_CP;
+  constexpr Scalar inv_cp       = C::INV_CP.value;
   constexpr Scalar nsmall       = C::NSMALL;
-  constexpr Scalar latvap       = C::LatVap;
-  constexpr Scalar latice       = C::LatIce;
+  constexpr Scalar latvap       = C::LatVap.value;
+  constexpr Scalar latice       = C::LatIce.value;
 
   Kokkos::parallel_for(
     Kokkos::TeamVectorRange(team, nk_pack), [&] (Int k) {

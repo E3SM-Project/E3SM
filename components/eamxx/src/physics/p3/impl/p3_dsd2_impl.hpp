@@ -64,7 +64,7 @@ get_cloud_dsd2(
     lamc.set(lamc_lt_min, lammin);
     lamc.set(lamc_gt_max, lammax);
 
-    nc.set(min_or_max, 6 * (lamc * lamc * lamc) * qc / (C::Pi * C::RHO_H2O * (mu_c + 3) * (mu_c + 2) * (mu_c + 1)));
+    nc.set(min_or_max, 6 * (lamc * lamc * lamc) * qc / (C::Pi * C::RHO_H2O.value * (mu_c + 3) * (mu_c + 2) * (mu_c + 1)));
 
     cdist.set(qc_gt_small, nc * (mu_c+1) / lamc);
     cdist1.set(qc_gt_small, nc / tgamma(mu_c + 1));
