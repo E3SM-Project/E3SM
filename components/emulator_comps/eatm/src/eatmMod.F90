@@ -18,9 +18,6 @@ module eatmMod
   character(len=16), public :: inst_name
   character(len=16), public :: inst_suffix = ""    ! char string associated with instance (ie. "_0001" or "")
 
-     !JW TODO: load up all arrays into a big 3D container? lots of 2D arrays?
-     !         for now, using 2D arrays with EAM naming convention
-     !         and EAM sign conventions
   ! imported arrays first
   real(kind=R8), dimension(:,:), allocatable, public :: shf          ! sensible heat flux
   real(kind=R8), dimension(:,:), allocatable, public :: cflx         ! constituent flux (emissions)
@@ -49,23 +46,21 @@ module eatmMod
   real(kind=R8), dimension(:,:), allocatable, public :: ubot         ! bot level u wind
   real(kind=R8), dimension(:,:), allocatable, public :: vbot         ! bot level v wind
   real(kind=R8), dimension(:,:), allocatable, public :: tbot         ! bot level temperature
-  real(kind=R8), dimension(:,:), allocatable, public :: thbot        ! bot level potential temperature
-  real(kind=R8), dimension(:,:), allocatable, public :: qbot         ! bot level specific humidity
-  real(kind=R8), dimension(:,:), allocatable, public :: rho          ! bot level density
+  real(kind=R8), dimension(:,:), allocatable, public :: ptem         ! bot level potential temperature
+  real(kind=R8), dimension(:,:), allocatable, public :: shum         ! bot level specific humidity
+  real(kind=R8), dimension(:,:), allocatable, public :: dens         ! bot level density
   real(kind=R8), dimension(:,:), allocatable, public :: pbot         ! bot level pressure
-  real(kind=R8), dimension(:,:), allocatable, public :: psl          ! sea level atm pressure
-  real(kind=R8), dimension(:,:), allocatable, public :: flwds        ! Down longwave flux at surface
-  !JW EAM uses precc, precsc, precsl, precsl instead of rain/snow below, but has to manipulate them
-  !JW     either is fine with me if someone feels strongly
+  real(kind=R8), dimension(:,:), allocatable, public :: pslv         ! sea level atm pressure
+  real(kind=R8), dimension(:,:), allocatable, public :: lwdn         ! Down longwave flux at surface
   real(kind=R8), dimension(:,:), allocatable, public :: rainc        ! liquid "convective" precip
   real(kind=R8), dimension(:,:), allocatable, public :: rainl        ! liquid "large scale" precip
   real(kind=R8), dimension(:,:), allocatable, public :: snowc        ! frozen "convective" precip
   real(kind=R8), dimension(:,:), allocatable, public :: snowl        ! frozen "large scale" precip
-  real(kind=R8), dimension(:,:), allocatable, public :: soll         ! direct near-infrared incident solar radiation
-  real(kind=R8), dimension(:,:), allocatable, public :: sols         ! direct visible incident solar radiation
-  real(kind=R8), dimension(:,:), allocatable, public :: solld        ! diffuse near-infrared incident solar radiation
-  real(kind=R8), dimension(:,:), allocatable, public :: solsd        ! diffuse visible incident solar radiation
-  real(kind=R8), dimension(:,:), allocatable, public :: netsw        ! net shortwave radiation
+  real(kind=R8), dimension(:,:), allocatable, public :: swndr        ! direct near-infrared incident solar radiation
+  real(kind=R8), dimension(:,:), allocatable, public :: swvdr        ! direct visible incident solar radiation
+  real(kind=R8), dimension(:,:), allocatable, public :: swndf        ! diffuse near-infrared incident solar radiation
+  real(kind=R8), dimension(:,:), allocatable, public :: swvdf        ! diffuse visible incident solar radiation
+  real(kind=R8), dimension(:,:), allocatable, public :: swnet        ! net shortwave radiation
 
   character(CS), public :: myModelName = 'atm'   ! user defined model name
 
