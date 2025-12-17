@@ -90,7 +90,7 @@ struct UnitWrap::UnitTest<D>::TestShocVVParameters {
 
     // Verify that first gaussian absolute value is larger
     //  than second gaussian
-    REQUIRE(abs(SDS.w1_1) > abs(SDS.w1_2));
+    REQUIRE(std::abs(SDS.w1_1) > std::abs(SDS.w1_2));
 
     // TEST THREE
     // Given highly negative skewed distribution, verify that the gaussian
@@ -123,7 +123,7 @@ struct UnitWrap::UnitTest<D>::TestShocVVParameters {
 
     // Verify that second gaussian absolute value is larger
     //  than first gaussian
-    REQUIRE(abs(SDS.w1_1) < abs(SDS.w1_2));
+    REQUIRE(std::abs(SDS.w1_1) < std::abs(SDS.w1_2));
   }
 
   static void run_bfb()
