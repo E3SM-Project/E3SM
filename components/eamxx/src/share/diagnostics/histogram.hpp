@@ -1,4 +1,4 @@
-#ifndef EAMXX_HISTOTGRAM_HPP
+#ifndef EAMXX_HISTOGRAM_HPP
 #define EAMXX_HISTOGRAM_HPP
 
 #include "share/atm_process/atmosphere_diagnostic.hpp"
