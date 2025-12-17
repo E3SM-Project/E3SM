@@ -32,7 +32,10 @@ def buildlib(bldroot, installpath, case):
         fd.write(f"{srcroot}/components/ww3/src/WW3/model/src/SCRIP\n")
         fd.write(f"{srcroot}/components/ww3/src/cpl\n")
 
-    cmake_args = " -DSWITCH=E3SM"
+    if "MPASSI" in compset:
+        cmake_args = " -DSWITCH=E3SM_wavice"
+    else:
+        cmake_args = " -DSWITCH=E3SM"
 
     return cmake_args
 

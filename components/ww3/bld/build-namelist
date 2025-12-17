@@ -386,6 +386,7 @@ if ($NML_TYPE eq "ww3_grid_nml") {
     add_default($nl, 'plon');
     add_default($nl, 'unrot');
 
+    add_default($nl,'e3d', 'val'=>"1");
     add_default($nl, 'ussp', 'val'=>"1");
     add_default($nl, 'iussp', 'val'=>"6");
     add_default($nl, 'stk_wn', 'val'=>"0.01,0.03,0.06,0.1,0.2,0.35");
@@ -395,7 +396,9 @@ if ($NML_TYPE eq "ww3_grid_nml") {
 
     add_default($nl, 'uostfilelocal', 'val'=>"'${DIN_LOC_ROOT}/wav/ww3/obstructions_local.${WAV_GRID}${WAV_SPEC}.rtd.in'");
     add_default($nl, 'uostfileshadow', 'val'=>"'${DIN_LOC_ROOT}/wav/ww3/obstructions_shadow.${WAV_GRID}${WAV_SPEC}.rtd.in'");
-    
+   
+    add_default($nl, 'ic4method', 'val'=>"8");
+    add_default($nl, 'icnumerics', 'val'=>".true.");
 }
 
 #-----------------------------------------------------------------------------------------------
@@ -420,7 +423,7 @@ if ($NML_TYPE eq "ww3_grid") {
     $outfile = "./ww3_grid.nml";
 }
 if ($NML_TYPE eq "ww3_grid_nml") {
-    @groups = qw(unst rotd outs uost misc);
+    @groups = qw(unst rotd outs uost misc sic4);
     $outfile = "./ww3_grid_namelists.nml";
 }
 
