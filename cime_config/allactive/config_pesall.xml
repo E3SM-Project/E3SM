@@ -65,7 +65,7 @@
       </pes>
     </mach>
     <!-- machine-specific generic defaults -->
-    <mach name="anvil|compy">
+    <mach name="anvil|compy|dane">
       <pes compset="any" pesize="any">
         <comment>allactive: default, 4 nodes x MAX_MPITASKS_PER_NODE mpi x 1 omp @ root 0</comment>
         <ntasks>
