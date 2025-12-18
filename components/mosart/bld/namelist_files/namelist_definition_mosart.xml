@@ -126,14 +126,6 @@ Default: .false.
 If .true., mosart will read in bgc nutrients and send to ocean.
 </entry>
 
-<entry id="redirect_negative_qgwl" 
-       type="logical" 
-       category="mosart"
-       group="mosart_inparm">
-Default: .false.
-If .true., mosart will redirect negative qgwl to the ocean.
-</entry>
-
 <entry id="rstraflag" 
        type="logical" 
        category="mosart"

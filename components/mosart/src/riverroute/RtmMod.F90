@@ -14,9 +14,8 @@ module RtmMod
   use shr_const_mod   , only : SHR_CONST_PI, SHR_CONST_CDAY
   use rof_cpl_indices , only : nt_rtm, rtm_tracers, KW, DW
   use seq_flds_mod    , only : rof_sed
-  use RtmSpmd         , only : masterproc, npes, iam, mpicom_rof, ROFID, mastertask
-  use shr_reprosum_mod, only : shr_reprosum_calc
-  use mpi
+  use RtmSpmd         , only : masterproc, npes, iam, mpicom_rof, ROFID, mastertask, &
+                               MPI_REAL8,MPI_INTEGER,MPI_CHARACTER,MPI_LOGICAL,MPI_MAX
   use RtmVar          , only : re, spval, rtmlon, rtmlat, iulog, ice_runoff, &
                                frivinp_rtm, frivinp_mesh, finidat_rtm, nrevsn_rtm,rstraflag,ngeom,nlayers,rinittemp, &
                                nsrContinue, nsrBranch, nsrStartup, nsrest, &
@@ -131,13 +130,6 @@ module RtmMod
 
   logical :: do_rtmflood
   logical :: do_rtm
-
-  ! Namelist variable and flag for negative qgwl redirection
-  logical, public :: redirect_negative_qgwl = .false.  ! Namelist control
-  logical, save   :: redirect_negative_qgwl_flag = .false.  ! Module flag
-  real(r8), parameter :: TINYVALUE_s = 1.0e-14_r8  ! Threshold for near-zero qgwl values
-  real(r8), save   :: global_positive_qgwl_sum = 0.0_r8    ! Sum of all positive qgwl
-  real(r8), save   :: global_negative_qgwl_sum = 0.0_r8    ! Sum of all negative qgwl 
 
   real(r8), save :: delt_save             ! previous delt 
 
@@ -283,7 +275,7 @@ contains
          rtmhist_fexcl1,  rtmhist_fexcl2, rtmhist_fexcl3, &
          rtmhist_avgflag_pertape, decomp_option, wrmflag,rstraflag,ngeom,nlayers,rinittemp, &
          inundflag, smat_option, delt_mosart, barrier_timers, do_budget, &
-         RoutingMethod, DLevelH2R, DLevelR, sediflag, heatflag, data_bgc_fluxes_to_ocean_flag,redirect_negative_qgwl
+         RoutingMethod, DLevelH2R, DLevelR, sediflag, heatflag, data_bgc_fluxes_to_ocean_flag
 
     namelist /inund_inparm / opt_inund, &
          opt_truedw, opt_calcnr, nr_max, nr_min, &
@@ -376,7 +368,6 @@ contains
 
     end if
     
-    redirect_negative_qgwl_flag = redirect_negative_qgwl
 
     call mpi_bcast (coupling_period,   1, MPI_INTEGER, 0, mpicom_rof, ier)
     call mpi_bcast (delt_mosart    ,   1, MPI_INTEGER, 0, mpicom_rof, ier)
@@ -421,7 +412,6 @@ contains
     call mpi_bcast (rtmhist_fincl3, (max_namlen+2)*size(rtmhist_fincl3), MPI_CHARACTER, 0, mpicom_rof, ier)
 
     call mpi_bcast (rtmhist_avgflag_pertape, size(rtmhist_avgflag_pertape), MPI_CHARACTER, 0, mpicom_rof, ier)
-    call mpi_bcast (redirect_negative_qgwl_flag, 1, MPI_LOGICAL, 0, mpicom_rof, ier) 
 
     if (inundflag) then
        call mpi_bcast (OPT_inund,          1, MPI_INTEGER, 0, mpicom_rof, ier)
@@ -1831,6 +1821,7 @@ contains
 !    if (masterproc) call shr_sys_flush(iulog)
     call MOSART_init()
 
+
     if(sediflag) then
         call t_startf('mosarti_sediment_init')
         call MOSART_sediment_init(rtmCTL%begr, rtmCTL%endr, rtmCTL%numr)
@@ -2087,7 +2078,7 @@ contains
 !
 ! !LOCAL VARIABLES:
 !EOP
-    integer  :: i, j, k, n, nr, ns, nt, n2, nf, idam ! indices
+    integer  :: i, j, n, nr, ns, nt, n2, nf, idam ! indices
     integer, parameter :: budget_terms_total = 80
     real(r8) :: budget_terms (budget_terms_total,nt_rtm)    ! local budget sums
     real(r8) :: budget_global(budget_terms_total,nt_rtm)    ! global budget sums
@@ -2102,9 +2093,6 @@ contains
                 budget_other
     logical  :: budget_check, budget_write  ! do global budget check
     integer  :: nt_print ! number of tracers to be printed out
-    integer  :: nr_local
-    real(r8) :: qgwl_to_discharge_ratio
-    character(len=12) :: char_current_top_n, char_param_n, char_ratio
 
     ! BUDGET term ids
     ! budget computed in m3 over each coupling period
@@ -2231,18 +2219,6 @@ contains
     real(r8) :: river_volume_minimum        ! gridcell area multiplied by average river_depth_minimum [m3]
     real(r8) :: qgwl_volume                 ! volume of runoff during time step [m3]
 !scs
-
-    ! Variables for negative runoff redirection
-    real(r8) :: net_global_qgwl, scaling_factor
-    real(r8), allocatable :: qgwl_correction_local(:)
-    real(r8) :: qgwl_to_redistribute
-    real(r8) :: local_total_outlet_discharge, global_total_outlet_discharge
-    real(r8) :: outlet_discharge_local(1,1), outlet_discharge_global(1)
-    real(r8) :: qgwl_to_discharge_ratio_percent
-    real(r8) :: conservation_error
-    real(r8) :: local_correction_sum, global_correction_sum
-    real(r8) :: correction_local(1,1), correction_global(1)
-    real(r8) :: correction_ratio
     character(len=*),parameter :: subname = '(Rtmrun) '
 !-----------------------------------------------------------------------
 
@@ -2376,127 +2352,11 @@ contains
     endif ! budget_check
 
     ! data for euler solver, in m3/s here
-
-    ! Aggregate global Qgwl (TNR) if flag is true ---
-    global_negative_qgwl_sum = 0.0_r8 ! Reset global sum each step
-
-     if (redirect_negative_qgwl_flag) then
-        ! Use sparse packing approach: only include values exceeding threshold in reprosum
-        block
-            real(r8), allocatable :: local_qgwl_array(:,:)
-            real(r8) :: global_sums(2)
-            real(r8) :: global_total_qgwl_sum
-            integer :: num_positive, num_negative, num_total
-            integer :: idx_pos, idx_neg, idx_tot
-            integer :: local_count
-            integer :: nstep, yr, mon, day, tod
-
-            ! First pass: count how many values exceed threshold
-            num_positive = 0
-            num_negative = 0
-            do nr = rtmCTL%begr, rtmCTL%endr
-                if (rtmCTL%qgwl(nr, nt_nliq) > TINYVALUE_s) then
-                    num_positive = num_positive + 1
-                elseif (rtmCTL%qgwl(nr, nt_nliq) < -TINYVALUE_s) then
-                    num_negative = num_negative + 1
-                endif
-            enddo
-
-            ! Total entries to pack
-            local_count = num_positive + num_negative
-
-            ! Allocate sparse array for reprosum (2 fields: positive and negative)
-            allocate(local_qgwl_array(local_count, 2))
-            local_qgwl_array(:,:) = 0.0_r8
-
-            ! Second pass: pack only values exceeding threshold
-            idx_pos = 0
-            idx_neg = 0
-            do nr = rtmCTL%begr, rtmCTL%endr
-                if (rtmCTL%qgwl(nr, nt_nliq) > TINYVALUE_s) then
-                    idx_pos = idx_pos + 1
-                    local_qgwl_array(idx_pos, 1) = rtmCTL%qgwl(nr, nt_nliq)
-                elseif (rtmCTL%qgwl(nr, nt_nliq) < -TINYVALUE_s) then
-                    idx_neg = idx_neg + 1
-                    local_qgwl_array(num_positive + idx_neg, 2) = rtmCTL%qgwl(nr, nt_nliq)
-                endif
-            enddo
-
-            ! Reproducible sum with sparse packing
-            call shr_reprosum_calc(local_qgwl_array, global_sums, local_count, local_count, 2, &
-                                   commid=mpicom_rof)
-            global_positive_qgwl_sum = global_sums(1)
-            global_negative_qgwl_sum = global_sums(2)
-
-            ! Diagnostic output - total positive, negative, and net sums
-            if (masterproc .and. do_budget == 3) then
-                write(iulog, '(A,ES24.16)') trim(subname)//'   Global positive qgwl (threshold)=', global_positive_qgwl_sum
-                write(iulog, '(A,ES24.16)') trim(subname)//'   Global negative qgwl (threshold)=', global_negative_qgwl_sum
-                write(iulog, '(A,ES24.16)') trim(subname)//'   Net global qgwl (pos+neg)       =', global_positive_qgwl_sum + global_negative_qgwl_sum
-            endif
-
-            deallocate(local_qgwl_array)
-        end block
-
-        net_global_qgwl = global_positive_qgwl_sum + global_negative_qgwl_sum
-
-        ! Decide how to set TRunoff%qgwl for local routing
-        if (net_global_qgwl >= 0.0_r8) then
-            ! --- SCENARIO A: Net global QGWL is non-negative. ---
-            ! Proportionally reduce positive qgwl to offset negatives, zero out negative cells
-            ! This ensures NO negative qgwl enters the ocean at any grid cell
-
-            ! Master PE calculates scaling factor, then broadcasts for bit-for-bit reproducibility
-            if (masterproc) then
-               if (global_positive_qgwl_sum > 0.0_r8) then
-                  ! Calculate scaling factor: (positive - |negative|) / positive = net / positive
-                  scaling_factor = net_global_qgwl / global_positive_qgwl_sum
-               else
-                  scaling_factor = 1.0_r8  ! No positive qgwl, keep as is
-               endif
-               ! DEBUG: Show scaling factor calculation
-               if (do_budget == 3) then
-                  write(iulog, '(A,ES24.16)') trim(subname)//' [Scenario A] net_global_qgwl = ', net_global_qgwl
-                  write(iulog, '(A,ES24.16)') trim(subname)//' [Scenario A] global_positive_qgwl_sum = ', global_positive_qgwl_sum
-                  write(iulog, '(A,ES24.16)') trim(subname)//' [Scenario A] scaling_factor = ', scaling_factor
-               endif
-            endif
-
-            ! Broadcast scaling factor from master to all PEs
-            call MPI_Bcast(scaling_factor, 1, MPI_REAL8, 0, mpicom_rof, ier)
-
-            ! Apply scaling with TINYVALUE_s threshold to ensure reproducibility
-            do nr = rtmCTL%begr, rtmCTL%endr
-               do nt = 1, nt_rtm
-                  if (rtmCTL%qgwl(nr, nt) > TINYVALUE_s) then
-                     ! Positive cell: scale down proportionally
-                     TRunoff%qgwl(nr, nt) = rtmCTL%qgwl(nr, nt) * scaling_factor
-                  else
-                     ! Negative, zero, or near-zero cell: set to zero
-                     TRunoff%qgwl(nr, nt) = 0.0_r8
-                  endif
-               enddo
-            enddo
-        else
-            ! --- SCENARIO B: Net global QGWL is negative. Redistribute ALL qgwl mass to outlets.---
-            ! Set all local qgwl to zero - entire net amount will be added at outlets
-            do nr = rtmCTL%begr, rtmCTL%endr
-                TRunoff%qgwl(nr, :) = 0.0_r8
-            enddo
-        endif
-     else
-        ! If flag is false, ensure TRunoff gets the qgwl from rtmCTL for routing
-        do nr = rtmCTL%begr, rtmCTL%endr
-           TRunoff%qgwl(nr, :) = rtmCTL%qgwl(nr, :)
-        enddo
-     endif
-
-    ! Remove the incorrect "before" diagnostic from here - will be added at the right location
-
     do nr = rtmCTL%begr,rtmCTL%endr
     do nt = 1,nt_rtm
        TRunoff%qsur(nr,nt) = rtmCTL%qsur(nr,nt)
        TRunoff%qsub(nr,nt) = rtmCTL%qsub(nr,nt)
+       TRunoff%qgwl(nr,nt) = rtmCTL%qgwl(nr,nt)
        TRunoff%qdem(nr,nt) = rtmCTL%qdem(nr,nt)
     enddo
     enddo
@@ -2981,176 +2841,6 @@ contains
     enddo
     enddo
 
-   ! Collect outlet discharge, Rank, Redistribute qgwl, Update discharge map ---
-   allocate(qgwl_correction_local(rtmCTL%begr:rtmCTL%endr)) ! Moved allocation here
-   qgwl_correction_local = 0.0_r8                          ! Initialize
-
-   if (redirect_negative_qgwl_flag) then ! Check the main flag first
-      ! Determine amount to redistribute:
-      ! Scenario A (net >= 0): Original qgwl flows to direct (no outlet correction needed)
-      ! Scenario B (net < 0): All qgwl zeroed, redistribute net amount to outlets
-      if (net_global_qgwl >= 0.0_r8) then
-         qgwl_to_redistribute = 0.0_r8 ! Scenario A: negatives already in direct discharge
-         if (masterproc .and. do_budget == 3) then
-            write(iulog, *) trim(subname), 'Using Scenario A: original qgwl flows to direct (no outlet correction)'
-         endif
-      else
-         qgwl_to_redistribute = net_global_qgwl ! Scenario B (negative value)
-         if (masterproc .and. do_budget == 3) then
-            write(iulog, *) trim(subname), 'Using Scenario B: redistributing entire net qgwl (', &
-                                       qgwl_to_redistribute, ' m3/s) to outlets'
-         endif
-      endif
-
-      if (abs(qgwl_to_redistribute) > 1.0e-15_r8) then ! Only proceed if there's something to redistribute
-         call t_startf('mosartr_qgwl_redir_dist')
-
-         ! Calculate total discharge from all outlets globally using reprosum
-         local_total_outlet_discharge = 0.0_r8
-         do nr = rtmCTL%begr, rtmCTL%endr
-            if (rtmCTL%mask(nr) == 3) then ! Outlet cell
-               local_total_outlet_discharge = local_total_outlet_discharge + rtmCTL%runoffocn(nr, nt_nliq)
-            endif
-         enddo
-
-         ! Use reproducible sum for bit-for-bit reproducibility across PE layouts
-         outlet_discharge_local(1,1) = local_total_outlet_discharge
-         call shr_reprosum_calc(outlet_discharge_local, outlet_discharge_global, 1, 1, 1, commid=mpicom_rof)
-         global_total_outlet_discharge = outlet_discharge_global(1)
-
-         ! Print diagnostic on master
-         if (masterproc) then
-            if (abs(global_total_outlet_discharge) > 1.0e-9_r8) then
-               qgwl_to_discharge_ratio_percent = (qgwl_to_redistribute / global_total_outlet_discharge) * 100.0_r8
-
-               if (do_budget == 3) then
-                  write(iulog, *) trim(subname), &
-                     'Debug QGWL Ratio: (QGWL_to_redistribute / TotalOutletDischarge) = ', &
-                     qgwl_to_discharge_ratio_percent, '% (', qgwl_to_redistribute, ' m3/s)'
-               endif
-
-               ! Check for concerning redistribution ratios
-               if (abs(qgwl_to_discharge_ratio_percent) > 100.0_r8) then
-                  call shr_sys_flush(iulog)
-                  write(iulog, *) trim(subname), &
-                     'WARNING: QGWL_Redist_Ratio magnitude > 100% (', &
-                     qgwl_to_discharge_ratio_percent, '%).'
-                  write(iulog, *) trim(subname), &
-                     'Negative runoff to ocean is unavoidable as negative qgwl magnitude (', &
-                     abs(qgwl_to_redistribute), ' m3/s) exceeds total outlet discharge (', &
-                     global_total_outlet_discharge, ' m3/s).'
-                  call shr_sys_flush(iulog)
-               endif
-
-               if (abs(qgwl_to_discharge_ratio_percent) > 5.0_r8) then
-                  call shr_sys_flush(iulog)
-                  write(iulog, *) trim(subname), &
-                     'WARNING: QGWL_Redist_Ratio magnitude > 5% (', &
-                     qgwl_to_discharge_ratio_percent, '%). This may impact global hydrology.'
-                  call shr_sys_flush(iulog)
-               endif
-            else
-               if (do_budget == 3) then
-                  write(iulog, *) trim(subname), &
-                     'Debug QGWL Ratio: Total outlet discharge is near zero. Ratio not calculated.'
-               endif
-            endif
-         endif
-
-         ! Master PE calculates the correction ratio, then broadcast to all PEs
-         ! This ensures bit-for-bit reproducibility across different PE layouts (PEM test)
-         if (abs(global_total_outlet_discharge) > 1.0e-9_r8) then
-            if (masterproc) then
-               correction_ratio = qgwl_to_redistribute / global_total_outlet_discharge
-
-               ! DEBUG: Show correction ratio calculation
-               if (do_budget == 3) then
-                  write(iulog, '(A,ES24.16)') trim(subname)//' [Scenario B] qgwl_to_redistribute = ', qgwl_to_redistribute
-                  write(iulog, '(A,ES24.16)') trim(subname)//' [Scenario B] global_total_outlet_discharge = ', global_total_outlet_discharge
-                  write(iulog, '(A,ES24.16)') trim(subname)//' [Scenario B] correction_ratio (before bcast) = ', correction_ratio
-               endif
-            endif
-
-            ! Broadcast the correction ratio from master to all PEs
-            call MPI_Bcast(correction_ratio, 1, MPI_REAL8, 0, mpicom_rof, ier)
-
-            ! All PEs apply the same ratio to their local outlets
-            do nr = rtmCTL%begr, rtmCTL%endr
-               if (rtmCTL%mask(nr) == 3) then ! Outlet cell
-                  ! Apply the correction ratio
-                  qgwl_correction_local(nr) = rtmCTL%runoffocn(nr, nt_nliq) * correction_ratio
-               endif
-            enddo
-         else
-            ! If total discharge is zero, no redistribution (corrections remain 0)
-            if (masterproc) then
-               write(iulog, *) trim(subname), &
-                  'Warning: Cannot redistribute qgwl - total outlet discharge is zero'
-            endif
-         endif
-
-         call t_stopf('mosartr_qgwl_redir_dist')
-      endif ! abs(qgwl_to_redistribute) > 1.0e-15
-
-   endif ! redirect_negative_qgwl_flag
-
-   ! Apply outlet corrections to runoff
-   do nt = 1,nt_rtm
-   do nr = rtmCTL%begr,rtmCTL%endr
-      volr_init = rtmCTL%volr(nr,nt)
-
-      rtmCTL%runoff(nr,nt) = flow(nr,nt) ! This is main channel outflow from routing
-      rtmCTL%runofftot(nr,nt) = rtmCTL%direct(nr,nt) ! This is ice, qdto (if flag off), etc.
-
-      if (rtmCTL%mask(nr) == 1) then ! Land
-         rtmCTL%runofflnd(nr,nt) = rtmCTL%runoff(nr,nt)
-         rtmCTL%dvolrdtlnd(nr,nt)= rtmCTL%dvolrdt(nr,nt)
-      elseif (rtmCTL%mask(nr) >= 2) then ! Ocean or Outlet
-         rtmCTL%runoffocn(nr,nt) = rtmCTL%runoff(nr,nt) ! Routed component
-
-         ! Apply the distributed global qgwl correction ONLY to liquid tracer at target outlets
-         ! Apply to rtmCTL%runoff (not runoffocn) since runoff is what gets sent to coupler
-         if (redirect_negative_qgwl_flag .and. nt == nt_nliq) then
-            rtmCTL%runoff(nr,nt) = rtmCTL%runoff(nr,nt) + qgwl_correction_local(nr)
-            rtmCTL%runoffocn(nr,nt) = rtmCTL%runoff(nr,nt) ! Keep runoffocn in sync
-         endif
-         rtmCTL%runofftot(nr,nt) = rtmCTL%runofftot(nr,nt) + rtmCTL%runoffocn(nr,nt) ! Add corrected routed flow
-         rtmCTL%dvolrdtocn(nr,nt)= rtmCTL%dvolrdt(nr,nt)
-      endif
-   enddo ! nr
-   enddo ! nt
-
-   ! Conservation check: verify that corrections were applied correctly
-   if (redirect_negative_qgwl_flag .and. abs(qgwl_to_redistribute) > 1.0e-15_r8) then
-       ! Sum up all the corrections that were applied
-       local_correction_sum = 0.0_r8
-       do nr = rtmCTL%begr, rtmCTL%endr
-           local_correction_sum = local_correction_sum + qgwl_correction_local(nr)
-       enddo
-
-       ! Use reprosum for bit-for-bit reproducibility
-       correction_local(1,1) = local_correction_sum
-       call shr_reprosum_calc(correction_local, correction_global, 1, 1, 1, commid=mpicom_rof)
-       global_correction_sum = correction_global(1)
-
-       ! Check if total corrections match what we intended to redistribute
-       if (masterproc) then
-           conservation_error = abs(global_correction_sum - qgwl_to_redistribute)
-           if (conservation_error > 1.0e-10_r8) then
-               call shr_sys_flush(iulog)
-               write(iulog, '(A)') trim(subname)//' WARNING: QGWL redistribution error detected!'
-               write(iulog, '(A,ES24.16)') trim(subname)//'   Intended to redistribute = ', qgwl_to_redistribute
-               write(iulog, '(A,ES24.16)') trim(subname)//'   Actually redistributed   = ', global_correction_sum
-               write(iulog, '(A,ES24.16)') trim(subname)//'   Difference               = ', conservation_error
-               call shr_sys_flush(iulog)
-           endif
-       endif
-   endif
-
-   ! Deallocate qgwl_correction_local after use
-   if (allocated(qgwl_correction_local)) deallocate(qgwl_correction_local)
-
-
     call t_stopf('mosartr_subcycling')
 
     !-----------------------------------
@@ -3187,7 +2877,7 @@ contains
 
           if (rtmCTL%mask(nr) >= 2) then    ! (2 -- Ocean; 3 -- Outlet. --Inund.)
 
-             budget_terms(br_ocnout,nt) = budget_terms(br_ocnout,nt) + rtmCTL%runoff(nr,nt)*delt_coupling  ! (Volume of outflows to oceans. runoff includes qgwl corrections from line 3221. --Inund.)
+             budget_terms(br_ocnout,nt) = budget_terms(br_ocnout,nt) + rtmCTL%runoff(nr,nt)*delt_coupling  ! (Volume of outflows to oceans. Note that rtmCTL%runoff is averge value of sub-steps used by MOSART. --Inund.)
              budget_terms(br_erolpo,nt) = budget_terms(br_erolpo,nt) + eroup_lagi(nr,nt)*delt_coupling     ! (Volume of outflows to oceans in the previous MOSART sub-step. 
                                                                                                            ! Also eroup_lagi is averge value of several previous MOSART sub-steps. --Inund.)
              budget_terms(br_erolco,nt) = budget_terms(br_erolco,nt) + eroup_lagf(nr,nt)*delt_coupling     ! (Volume of outflows to oceans. Actually eroup_lagf is same as the above rtmCTL%runoff. --Inund.)
@@ -5381,4 +5071,7 @@ contains
     end do
   end subroutine SubTimestep
 
+!-----------------------------------------------------------------------
+
 end module RtmMod
+
