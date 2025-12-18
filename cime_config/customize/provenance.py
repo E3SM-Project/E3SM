@@ -607,9 +607,13 @@ def save_postrun_provenance(case, lid=None):
 
             _archive_spio_stats(lid, rundir)
 
-            utils.gzip_existing_file(
-                os.path.join(caseroot, "timing", "e3sm_timing_stats.%s" % lid)
-            )
+            # Handle both single instance and multi-instance timing stats files
+            # For NINST=1: e3sm_timing_stats.{lid}
+            # For NINST>1: e3sm_timing_0001_stats.{lid}, e3sm_timing_0002_stats.{lid}, etc.
+            timing_stats_pattern = os.path.join(caseroot, "timing", "e3sm_timing*stats.%s" % lid)
+            timing_stats_files = glob.glob(timing_stats_pattern)
+            for timing_stats_file in timing_stats_files:
+                utils.gzip_existing_file(timing_stats_file)
 
             # JGF: not sure why we do this
             timing_saved_file = "timing.%s.saved" % lid
@@ -739,8 +743,8 @@ def _copy_performance_archive_files(
     globs_to_copy.append("logs/run_environment.txt.{}".format(lid))
     globs_to_copy.append(os.path.join(rundir, "e3sm.log.{}.gz".format(lid)))
     globs_to_copy.append(os.path.join(rundir, "cpl.log.{}.gz".format(lid)))
+    globs_to_copy.append(os.path.join(rundir, "cpl_*.log.{}.gz".format(lid)))
     globs_to_copy.append(os.path.join(rundir, "atm_chunk_costs.{}.gz".format(lid)))
-    # Handle both single instance and multiple instances memory log files
     globs_to_copy.append(os.path.join(rundir, "memory.[0-4].*.log.{}.gz".format(lid)))
     globs_to_copy.append(os.path.join(rundir, "memory_*.[0-4].*.log.{}.gz".format(lid)))
     globs_to_copy.append("timing/*.{}*".format(lid))
