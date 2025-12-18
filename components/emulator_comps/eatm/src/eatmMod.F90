@@ -62,6 +62,10 @@ module eatmMod
   real(kind=R8), dimension(:,:), allocatable, public :: swvdf        ! diffuse visible incident solar radiation
   real(kind=R8), dimension(:,:), allocatable, public :: swnet        ! net shortwave radiation
 
+  !
+  real(kind=R8), dimension(:, :, :, :), allocatable, target, public :: net_inputs
+  real(kind=R8), dimension(:, :, :, :), allocatable, target, public :: net_outputs
+
   character(CS), public :: myModelName = 'atm'   ! user defined model name
 
   character(len=*), parameter, public :: rpfile = 'rpointer.atm'
