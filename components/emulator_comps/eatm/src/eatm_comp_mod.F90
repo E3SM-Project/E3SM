@@ -15,6 +15,7 @@ module eatm_comp_mod
   use eatmMod
   use eatmSpmdMod
   use eatmIO
+  use ace_comp_mod
 
   ! !PUBLIC TYPES:
 
@@ -128,6 +129,9 @@ CONTAINS
        allocate(swndf(lsize_x,lsize_y))
        allocate(swvdf(lsize_x,lsize_y))
        allocate(swnet(lsize_x,lsize_y))
+
+       allocate(net_inputs(1, n_input_channels, lsize_x, lsize_y))
+       allocate(net_outputs(1, n_output_channels, lsize_x, lsize_y))
        call t_stopf('eatm_initmctavs')
 
        !----------------------------------------------------------------------------
@@ -164,6 +168,22 @@ CONTAINS
     ! Set initial atm state
     !----------------------------------------------------------------------------
     !JW IC file?
+    ! populate all fields to zero OR from ACE IC if it's present
+    call t_startf ('eatm_grid')
+
+    ! based on a list in the compset, we should know the emulator
+    ! then call the correct read_ic / init based on that.
+    call ace_comp_init()
+
+    if (masterproc) then
+      write(logunit_atm, *) "zbot  (min, max):  ( ", minval(zbot(:, :)),  maxval(zbot(:, :)), " )"
+      write(logunit_atm, *) "ubot  (min, max):  ( ", minval(ubot(:, :)),  maxval(ubot(:, :)), " )"
+      write(logunit_atm, *) "vbot  (min, max):  ( ", minval(vbot(:, :)),  maxval(vbot(:, :)), " )"
+      write(logunit_atm, *) "rainl (min, max):  ( ", minval(rainl(:, :)), maxval(rainl(:, :)), " )"
+      write(logunit_atm, *) "snowl (min, max):  ( ", minval(snowl(:, :)), maxval(snowl(:, :)), " )"
+    endif
+
+    call t_stopf ('eatm_grid')
 
     call t_stopf('EATM_INIT')
 
@@ -336,6 +356,9 @@ CONTAINS
     deallocate(swndf)
     deallocate(swvdf)
     deallocate(swnet)
+
+    deallocate(net_inputs)
+    deallocate(net_outputs)
     if (masterproc) then
        write(logunit_atm,F91)
        write(logunit_atm,F00) trim(myModelName),': end of main integration loop'
