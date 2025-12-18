@@ -536,7 +536,7 @@
   <grid name="a%ne30np4.pg2_l%r05_oi%null_r%r05_g%mpas.gis4to40km_w%null_z%null_m%IcoswISC30E3r5">
     <mach name="pm-cpu|muller-cpu|alvarez-cpu">
       <pes compset="any" pesize="any">
-        <comment>pm-cpu: IG-case testing config. using 4-to-40km (mde res) GIS init. cond.</comment>
+        <comment>pm-cpu: IG-case testing config. using 4-to-40km (med-res) GIS init. cond.</comment>
         <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
         <ntasks>
@@ -573,7 +573,7 @@
     </mach>
     <mach name="chrysalis">
       <pes compset="any" pesize="any">
-        <comment>chrys: IG-case testing config. using 4-to-40km (mde res) GIS init. cond.</comment>
+        <comment>chrys: IG-case testing config. using 4-to-40km (med-res) GIS init. cond.</comment>
         <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
         <ntasks>
