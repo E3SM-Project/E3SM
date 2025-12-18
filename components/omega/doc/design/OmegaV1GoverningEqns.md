@@ -859,7 +859,7 @@ $$ (weak-derivative)
 If [](#weak-derivative) is averaged between $\tilde{z}_{k-1/2}^{\text{top}}$ and $\tilde{z}_{k+1/2}^{\text{top}}$, we arrive at the expected form of the gradient centered on layer interfaces
 
 $$
-\left[\frac{\partial \varphi}{\partial z}\right]_{avg} = \frac{\left(\varphi_k - \varphi_{k+1}\right)}{0.5 \left(\tilde{h}_k + \tilde{h}_{k+1}\right)}
+\left[\frac{\partial \varphi}{\partial \tilde{z}}\right]_{avg} = \frac{\left(\varphi_k - \varphi_{k+1}\right)}{0.5 \left(\tilde{h}_k + \tilde{h}_{k+1}\right)}
 $$ (weak-deriv-final)
 
 where $0.5 \left(\tilde{h}_k + \tilde{h}_{k+1}\right)$ is the distance between $\tilde{z}_{k-1/2}^{\text{top}}$ and $\tilde{z}_{k+1/2}^{\text{top}}$.  A similar derivation can be followed to compute gradients across layer centers.  This will form discrete derivatives in Omega.
@@ -867,7 +867,7 @@ where $0.5 \left(\tilde{h}_k + \tilde{h}_{k+1}\right)$ is the distance between $
 With this, we can now fully discretize [](#discrete-mom-vert-diff) as
 
 $$
--\frac{\rho_0}{\left[\tilde{h}_k\right]_e} \left\{ \left[\left<u^\prime \tilde{w}_{tr}^\prime\right> \right]_{e,k} - \left[\left<u^\prime \tilde{w}_{tr}^\prime\right> \right]_{e,k+1} \right\} = -\frac{\rho_0}{\left[\tilde{h}_k\right]_e} \left\{ \frac{\left(u_{e,k-1} - u_{e,k}\right)}{0.5 \left(\tilde{h}_{k-1} + \tilde{h}_{k}\right)} - \frac{\left(u_{e,k} - u_{e,k+1}\right)}{0.5 \left(\tilde{h}_k + \tilde{h}_{k+1}\right)} \right\}.
+-\frac{1}{\left[\tilde{h}_k\right]_e} \left\{ \left[\left<u^\prime \tilde{w}_{tr}^\prime\right> \right]_{e,k} - \left[\left<u^\prime \tilde{w}_{tr}^\prime\right> \right]_{e,k+1} \right\} = -\frac{1}{\left[\tilde{h}_k\right]_e} \left\{ \frac{\left(u_{e,k-1} - u_{e,k}\right)}{0.5 \left(\tilde{h}_{k-1} + \tilde{h}_{k}\right)} - \frac{\left(u_{e,k} - u_{e,k+1}\right)}{0.5 \left(\tilde{h}_k + \tilde{h}_{k+1}\right)} \right\}.
 $$ (final-vert-vel-dissipation)
 
 This form can be interfaced with the Omega [tridiagonal solver](TridiagonalSolver.md) routine.
