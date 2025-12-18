@@ -23,12 +23,14 @@ module rof_comp_mct
                               index_r2x_Flrr_flood,   index_r2x_Flrr_volr,   &
                               index_r2x_Flrr_volrmch, index_r2x_Flrr_supply, &
                               index_r2x_Flrr_deficit, index_x2r_So_ssh
-  use rdycoreMod      , only: inst_name, inst_suffix, inst_index
+  use rdycore_varctl  , only: inst_name, inst_suffix, inst_index
   use rdycoreSpmdMod  , only: masterproc, mpicom_rof, iam, npes, rofid, RDycoreSpmdInit
-
+  use seq_timemgr_mod , only: seq_timemgr_RestartAlarmIsOn, seq_timemgr_EClockGetData
   use RDycoreIO
 
   use rdycoreMod     , only: rdycore_init
+  use rdycore_varctl , only: nsrStartup, nsrContinue, nsrBranch
+  use rdycore_varctl , only: rdycore_varctl_set
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -119,6 +121,7 @@ CONTAINS
     logical           :: rof_prognostic            ! flag
     logical           :: rofice_present            ! flag
     logical           :: flood_present             ! flag
+    integer           :: nsrest                    ! restart type
 
     character(CL)     :: filePath ! generic file path
     character(CL)     :: fileName ! generic file name
@@ -128,6 +131,12 @@ CONTAINS
     character(CS)     :: hgtName  ! domain file: hgt  variable name
     character(CS)     :: maskName ! domain file: mask variable name
     character(CS)     :: areaName ! domain file: area variable name
+
+    character(CL)     :: caseid    ! case identifier name
+    character(CL)     :: ctitle    ! case description title
+    character(CL)     :: hostname  ! hostname of machine running on
+    character(CL)     :: username  ! user running the model
+    character(CL)     :: starttype ! start type (startup, continue, branch, hybrid)
 
     character(*), parameter :: subName = "(rof_init_mct) "
     !-------------------------------------------------------------------------------
@@ -148,7 +157,19 @@ CONTAINS
 
     ! Obtain infodata variables
     call seq_infodata_getData(infodata, &
+         case_name=caseid, case_desc=ctitle, start_type=starttype, &
+         hostname=hostname, username=username, &
          read_restart=read_restart)
+
+    if (trim(starttype) == trim(seq_infodata_start_type_start)) then
+       nsrest = nsrStartup
+    else if (trim(starttype) == trim(seq_infodata_start_type_cont) ) then
+       nsrest = nsrContinue
+    else if (trim(starttype) == trim(seq_infodata_start_type_brnch)) then
+       nsrest = nsrBranch
+    else
+       call shr_sys_abort( subName//' ERROR: unknown starttype' )
+    end if
 
     ! Determine instance information
     inst_name   = seq_comm_name(rofid)
@@ -179,6 +200,8 @@ CONTAINS
        write(logunit_rof,*) ' RDycore iam  = ', iam
        write(logunit_rof,*) ' inst_name = ', trim(inst_name)
     endif
+
+    call rdycore_varctl_set(caseid, ctitle, nsrest, hostname, username)
 
     !----------------------------------------------------------------------------
     ! Read namelist file (TODO) - set values for now
@@ -298,9 +321,20 @@ CONTAINS
     !-------------------------------------------------------------------------------
 
     !--- local ---
-    integer :: coupling_dt_in_sec
+    integer :: ymd_sync, ymd      ! current date (YYYYMMDD)
+    integer :: yr_sync, yr        ! current year
+    integer :: mon_sync, mon      ! current month
+    integer :: day_sync, day      ! current day
+    integer :: tod_sync, tod      ! current time of day (sec)
+    logical :: rstwr              ! .true. => write restart file before returning
+    integer :: coupling_dt_in_sec ! runtime for rdycore before returning back
+    character(len=32) :: rdate    ! date char string for restart file names
 
     coupling_dt_in_sec = get_step_size(EClock)
+
+    call seq_timemgr_EClockGetData(EClock, &
+         curr_ymd=ymd, curr_tod=tod_sync,  &
+         curr_yr=yr_sync, curr_mon=mon_sync, curr_day=day_sync)
 
     ! Map MCT datatype to rof data
     call t_startf ('lc_rof_import')
@@ -308,7 +342,9 @@ CONTAINS
     call t_stopf ('lc_rof_import')
 
     ! run the model
-    call rdycore_run(logunit_rof, coupling_dt_in_sec)
+    rstwr = seq_timemgr_RestartAlarmIsOn( EClock )
+    write(rdate,'(i4.4,"-",i2.2,"-",i2.2,"-",i5.5)') yr_sync,mon_sync,day_sync,tod_sync
+    call rdycore_run(logunit_rof, coupling_dt_in_sec, rstwr, rdate)
 
     ! Map rof data to MCT datatype
     call t_startf ('lc_rof_export')

@@ -13,8 +13,8 @@ module RDycoreIO
   use shr_sys_mod    , only : shr_sys_flush, shr_sys_abort
   use shr_file_mod   , only : shr_file_getunit, shr_file_freeunit
   use rdycoreSpmdMod , only : masterproc, mpicom_rof, iam, npes
-  use rdycoreMod     , only : num_cells_owned, num_cells_global, natural_id_cells_owned, &
-                              inst_name
+  use rdycoreMod     , only : num_cells_owned, num_cells_global, natural_id_cells_owned
+  use rdycore_varctl , only : inst_name
   use perf_mod       , only : t_startf, t_stopf
   use mct_mod
   use pio

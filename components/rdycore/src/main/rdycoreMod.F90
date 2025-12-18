@@ -22,11 +22,6 @@ module rdycoreMod
 
   PetscReal             , public, pointer :: total_runoff_data(:)      ! the water source to RDycore's SWE
 
-  integer               , public          :: iulog = 6
-  character(len=16)     , public          :: inst_name
-  character(len=16)     , public          :: inst_suffix         ! char string associated with instance (ie. "_0001" or "")
-  integer               , public          :: inst_index          ! number of current instance (ie. 1)
-
 
   public :: rdycore_init
   public :: rdycore_run
@@ -98,12 +93,14 @@ contains
   end subroutine rdycore_init
 
   !-----------------------------------------------------------------------
-  subroutine rdycore_run(iulog, coupling_dt_in_sec)
+  subroutine rdycore_run(iulog, coupling_dt_in_sec, rstwr, rdate)
     !
     implicit none
     !
-    integer, intent(in)   :: iulog
-    integer, intent(in)   :: coupling_dt_in_sec
+    integer          , intent(in) :: iulog              ! logfile
+    integer          , intent(in) :: coupling_dt_in_sec ! runtime for rdycore before returning
+    logical          , intent(in) :: rstwr              ! if .true., then write restart file
+    character(len=*) , intent(in) :: rdate              ! date char string for restart file name
     !
     character(len=256)   :: dateTimeString
     real(r8)             :: dtime
@@ -120,7 +117,7 @@ contains
 
     !call get_curr_time_string(dateTimeString)
     if (masterproc) then
-       write(*,*)'Beginning timestep of RDycore  : '!,trim(dateTimeString)
+       write(iulog,*)'Beginning timestep of RDycore  : ',trim(dateTimeString)
        call shr_sys_flush(iulog)
     end if
 
