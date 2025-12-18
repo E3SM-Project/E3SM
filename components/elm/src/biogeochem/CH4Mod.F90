@@ -1316,6 +1316,8 @@ contains
     use pftvarcon          , only : noveg
     use CH4varcon          , only : replenishlakec, allowlakeprod, ch4offline, fin_use_fsat
     use elm_varcon         , only : secspday
+    use elm_varcon         , only : dzsoi_decomp
+    use landunit_varcon    , only : isturb_tbd, isturb_hd, isturb_md
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds
@@ -1341,7 +1343,7 @@ contains
     ! !LOCAL VARIABLES:
     integer  :: sat                                    ! 0 = unsatured, 1 = saturated
     logical  :: lake                                   ! lake or not lake
-    integer  :: j,fc,c,g,fp,p,t,pf,s                   ! indices
+    integer  :: j,fc,c,g,fp,p,t,pf,s,l                 ! indices
     real(r8) :: dtime_ch4                              ! ch4 model time step (sec)
     integer  :: nstep
     integer  :: jwt(bounds%begc:bounds%endc)           ! index of the soil layer right above the water table (-)
@@ -1857,9 +1859,21 @@ contains
          do fc = 1, num_soilc
             c = filter_soilc(fc)
 
-            totcolch4(c) = totcolch4(c) + &
-                 (finundated(c)*conc_ch4_sat(c,j) + (1._r8-finundated(c))*conc_ch4_unsat(c,j))*dz(c,j)*catomw
-            ! mol CH4 --> g C
+            ! The following change was made to avoid running into  methane conservation
+            ! error the first time PCT_URBAN changed. The dynamic adjustments for conc_ch4_sat_col and
+            ! When the total column ch4 is summed over the soil layers (or in this case, urban layers), the
+            ! summation is done over nlevsoi, not nlevurb, using dz. dz is 1.e36 for roof/wall layers
+            ! that are greater than nlevurb, thus creating an imbalance.
+            l = col_pp%landunit(c)
+            if (lun_pp%itype(l) == isturb_tbd .or. lun_pp%itype(l) == isturb_hd .or. lun_pp%itype(l) == isturb_md) then
+               totcolch4(c) = totcolch4(c) + &
+                    (finundated(c)*conc_ch4_sat(c,j) + (1._r8-finundated(c))*conc_ch4_unsat(c,j)) * &
+                    dzsoi_decomp(j)*catomw
+            else
+               totcolch4(c) = totcolch4(c) + &
+                    (finundated(c)*conc_ch4_sat(c,j) + (1._r8-finundated(c))*conc_ch4_unsat(c,j))*dz(c,j)*catomw
+               ! mol CH4 --> g C
+            end if
 
             if (j == nlevsoi .and. totcolch4_bef(c) /= spval) then ! not first timestep
                ! Check balance
