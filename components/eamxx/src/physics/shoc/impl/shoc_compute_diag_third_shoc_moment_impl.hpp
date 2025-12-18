@@ -27,7 +27,7 @@ void Functions<S,D>
   const uview_1d<const Spack>& thetal_zi,
   const uview_1d<Spack>& w3)
 {
-  const auto ggr = C::gravit;
+  const auto ggr = C::gravit.value;
 
   const Int nlev_pack = ekat::npack<Spack>(nlev);
 

@@ -178,7 +178,7 @@ void Cosp::run_impl (const double dt)
     using PF       = scream::PhysicsFunctions<DefaultDevice>;
 
     const auto scan_policy = TPF::get_thread_range_parallel_scan_team_policy(ncol, nlev);
-    const auto g = physics::Constants<Real>::gravit;
+    const Real g = physics::Constants<Real>::gravit.value;
     Kokkos::parallel_for(scan_policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
         const int i = team.league_rank();
         const auto p_mid_s = ekat::subview(p_mid_d, i);

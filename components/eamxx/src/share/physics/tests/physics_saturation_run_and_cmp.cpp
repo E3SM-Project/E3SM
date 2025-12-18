@@ -63,7 +63,7 @@ struct UnitWrap::UnitTest<D>::TestSaturation
   }
 
   static constexpr auto atm_pres = 1e5;
-  static constexpr auto tmelt = C::Tmelt;
+  static constexpr auto tmelt = C::Tmelt.value;
 
   /*
     Originally written by Kyle Pressel, updated by Peter Caldwell on 4/5/20 and

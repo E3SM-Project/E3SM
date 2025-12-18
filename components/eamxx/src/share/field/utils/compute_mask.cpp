@@ -29,6 +29,8 @@ bool compare (const ST lhs, const ST rhs, Comparison CMP)
   } else {
     EKAT_KERNEL_ERROR_MSG ("Error! Unsupported CMP\n");
   }
+  // Silence NVCC warning "missing return statement at end of non-void function"
+  return false;
 }
 
 template<int N, typename ST>

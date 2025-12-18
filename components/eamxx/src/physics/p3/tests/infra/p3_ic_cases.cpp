@@ -70,7 +70,7 @@ P3Data::Ptr make_mixed (const Int ncol, const Int nlev) {
     for (k = 0; k < nk; ++k) {
       T_atm(k) = 150 + 150/double(nk)*k;
       if (i > 0) T_atm(k) += ((i % 3) - 0.5)/double(nk)*k;
-      d.th_atm(i,k) = T_atm(k)*std::pow(Real(consts::P0/d.pres(i,k)), Real(consts::RD/consts::CP));
+      d.th_atm(i,k) = T_atm(k)*std::pow(Real(consts::P0.value/d.pres(i,k)), Real(consts::RD.value/consts::CP.value));
     }
 
     // The next section modifies inout variables to satisfy weird conditions
@@ -112,7 +112,7 @@ P3Data::Ptr make_mixed (const Int ncol, const Int nlev) {
         d.pres(i,nk-1) + 0.5*(d.pres(i,nk-1) - d.pres(i,nk-2))/(1 - 0) :
         0.5*(d.pres(i,k) + d.pres(i,k+1));
       const auto dpres = phi - plo;
-      d.dz(i,k) = consts::RD*T_atm(k)/(g*d.pres(i,k))*dpres;
+      d.dz(i,k) = consts::RD.value*T_atm(k)/(g*d.pres(i,k))*dpres;
     }
     for (k = 0; k < nk; ++k) {
       d.hetfrz_immersion_nucleation_tend(i,k) = 0.01;

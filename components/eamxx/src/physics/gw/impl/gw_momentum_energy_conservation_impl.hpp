@@ -36,7 +36,7 @@ void Functions<S,D>::momentum_energy_conservation(
   Real dz = 0;
   Kokkos::parallel_reduce(
     Kokkos::TeamVectorRange(team, tend_level+1, pver), [&] (const int k, Real& lsum) {
-    lsum += pdel(k) / C::gravit;
+    lsum += pdel(k) / C::gravit.value;
   }, Kokkos::Sum<Real>(dz));
 
   // Tendency for U & V below source level.

@@ -26,11 +26,11 @@ void Functions<S,D>::shoc_diag_obklen(
   Scalar&       obklen)
 {
   // Constants
-  const auto cp = C::CP;
-  const auto lcond = C::LatVap;
+  const auto cp = C::CP.value;
+  const auto lcond = C::LatVap.value;
   const auto eps = C::ZVIR;
   const auto ustar_min = SC::ustar_min;
-  const auto ggr = C::gravit;
+  const auto ggr = C::gravit.value;
   const auto vk = C::Karman;
 
   // Local variables

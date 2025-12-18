@@ -51,11 +51,11 @@ void run_bfb_p3_main_part1()
   auto engine = Base::get_engine();
 
   constexpr Scalar qsmall = C::QSMALL; //PMC wouldn't it make more sense to define qsmall at a higher level since used in part1, part2, and part3?
-  constexpr Scalar T_zerodegc   = C::T_zerodegc;
+  constexpr Scalar T_zerodegc   = C::T_zerodegc.value;
   constexpr Scalar sup_upper = -0.05;
   constexpr Scalar sup_lower = -0.1;
-  constexpr Scalar latvap = C::LatVap;
-  constexpr Scalar latice = C::LatIce;
+  constexpr Scalar latvap = C::LatVap.value;
+  constexpr Scalar latice = C::LatIce.value;
 
   P3MainPart1Data isds_baseline[] = {
     //            kts, kte, ktop, kbot, kdir, do_predict_nc, do_prescribed_CCN,       dt
@@ -159,11 +159,11 @@ void run_bfb_p3_main_part2()
   auto engine = Base::get_engine();
 
   constexpr Scalar qsmall     = C::QSMALL;
-  constexpr Scalar T_zerodegc   = C::T_zerodegc;
+  constexpr Scalar T_zerodegc   = C::T_zerodegc.value;
   constexpr Scalar sup_upper = -0.05;
   constexpr Scalar sup_lower = -0.1;
-  constexpr Scalar latvap = C::LatVap;
-  constexpr Scalar latice = C::LatIce;
+  constexpr Scalar latvap = C::LatVap.value;
+  constexpr Scalar latice = C::LatIce.value;
 
   P3MainPart2Data isds_baseline[] = {
     //            kts, kte, ktop, kbot, kdir, do_predict_nc, do_prescribed_CCN,       dt
@@ -297,8 +297,8 @@ void run_bfb_p3_main_part2()
 
 void run_bfb_p3_main_part3()
 {
-  constexpr Scalar latvap = C::LatVap;
-  constexpr Scalar latice = C::LatIce;
+  constexpr Scalar latvap = C::LatVap.value;
+  constexpr Scalar latice = C::LatIce.value;
 
   auto engine = Base::get_engine();
 

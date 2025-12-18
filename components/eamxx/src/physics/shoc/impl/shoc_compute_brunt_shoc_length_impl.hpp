@@ -17,7 +17,7 @@ void Functions<S,D>::compute_brunt_shoc_length(
   const uview_1d<const Spack>& thv_zi,
   const uview_1d<Spack>&       brunt)
 {
-  const auto ggr = C::gravit;
+  const auto ggr = C::gravit.value;
   const auto s_thv_zi = scalarize(thv_zi);
 
   const Int nlev_pack = ekat::npack<Spack>(nlev);

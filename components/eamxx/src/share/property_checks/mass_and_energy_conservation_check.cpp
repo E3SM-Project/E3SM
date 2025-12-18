@@ -435,7 +435,7 @@ void MassAndEnergyConservationCheck::global_fixer(const bool air_sea_surface_wat
   }
 
   using PC = scream::physics::Constants<Real>;
-  const Real cpdry = PC::Cpair;
+  const Real cpdry = PC::Cpair.value;
   m_pb_fixer /= (cpdry*m_total_gas_mass_after); // T change due to fixer
 
   //add the fixer to temperature
@@ -494,7 +494,7 @@ compute_total_mass_on_column (const KT::MemberType&       team,
   using PC = scream::physics::Constants<Real>;
   using RU = ekat::ReductionUtils<DefaultDevice::execution_space>;
 
-  const Real gravit = PC::gravit;
+  const Real gravit = PC::gravit.value;
 
   return RU::parallel_reduce<Real>(team, 0, nlevs,
                                    [&] (const int lev, Real& local_mass) {
@@ -513,7 +513,7 @@ compute_gas_mass_on_column (const KT::MemberType&       team,
 {
   using RU = ekat::ReductionUtils<DefaultDevice::execution_space>;
   using PC = scream::physics::Constants<Real>;
-  const Real gravit = PC::gravit;
+  const Real gravit = PC::gravit.value;
 
   return RU::parallel_reduce<Real>(team, 0, nlevs,
                                               [&] (const int lev, Real& local_mass) {
@@ -527,7 +527,7 @@ compute_mass_boundary_flux_on_column (const Real vapor_flux,
                                       const Real water_flux)
 {
   using PC = scream::physics::Constants<Real>;
-  const Real RHO_H2O  = PC::RHO_H2O;
+  const Real RHO_H2O  = PC::RHO_H2O.value;
 
   return vapor_flux - water_flux*RHO_H2O;
 }
@@ -548,10 +548,10 @@ compute_total_energy_on_column (const KT::MemberType&       team,
   using PC = scream::physics::Constants<Real>;
   using RU = ekat::ReductionUtils<DefaultDevice::execution_space>;
 
-  const Real LatVap = PC::LatVap;
-  const Real LatIce = PC::LatIce;
-  const Real gravit = PC::gravit;
-  const Real Cpair  = PC::Cpair;
+  const Real LatVap = PC::LatVap.value;
+  const Real LatIce = PC::LatIce.value;
+  const Real gravit = PC::gravit.value;
+  const Real Cpair  = PC::Cpair.value;
 
   Real total_energy =
     RU::parallel_reduce<Real>(team, 0, nlevs,
@@ -577,9 +577,9 @@ compute_energy_boundary_flux_on_column (const Real vapor_flux,
                                         const Real heat_flux)
 {
   using PC = scream::physics::Constants<Real>;
-  const Real LatVap = PC::LatVap;
-  const Real LatIce = PC::LatIce;
-  const Real RHO_H2O  = PC::RHO_H2O;
+  const Real LatVap = PC::LatVap.value;
+  const Real LatIce = PC::LatIce.value;
+  const Real RHO_H2O  = PC::RHO_H2O.value;
 
   return vapor_flux*(LatVap+LatIce) - (water_flux-ice_flux)*RHO_H2O*LatIce + heat_flux;
 }

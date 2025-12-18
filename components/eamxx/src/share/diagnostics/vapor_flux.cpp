@@ -58,7 +58,7 @@ void VaporFluxDiagnostic::compute_diagnostic_impl()
   using MT  = typename KT::MemberType;
   using TPF = ekat::TeamPolicyFactory<typename KT::ExeSpace>;
 
-  constexpr Real g = PC::gravit;
+  constexpr Real g = PC::gravit.value;
 
   const auto diag  = m_diagnostic_output.get_view<Real*>();
   const auto qv    = get_field_in("qv").get_view<const Real**>();

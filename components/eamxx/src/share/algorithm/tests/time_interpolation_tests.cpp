@@ -21,7 +21,6 @@ namespace scream {
 
 // Test Constants
 constexpr Real tol            = std::numeric_limits<Real>::epsilon()*1e5;
-constexpr int  slp_switch     = 4; // The frequency that we change the slope of the data written to file.
 constexpr int  dt             = 100;
 constexpr int  total_snaps    = 10;
 constexpr int  snap_freq      = 4;

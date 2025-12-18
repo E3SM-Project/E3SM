@@ -54,7 +54,7 @@ void Functions<S,D>::gw_oro_src(
   Int k = pver-1;
 
   // Averages over source region.
-  Real rsrc = pmid(k)/(C::Rair*t(k)) * dpm(k); // Density.
+  Real rsrc = pmid(k)/(C::Rair.value*t(k)) * dpm(k); // Density.
   Real usrc = u(k) * dpm(k); // Zonal wind.
   Real vsrc = v(k) * dpm(k); // Meridional wind.
   Real nsrc = nm(k)* dpm(k); // B-V frequency.
@@ -63,7 +63,7 @@ void Functions<S,D>::gw_oro_src(
   Kokkos::parallel_reduce(
     Kokkos::TeamVectorRange(team, pver/2 - 1, pver-1), [&] (const int k, Real& lrsrc, Real& lusrc, Real& lvsrc, Real& lnsrc) {
       if (hdsp > std::sqrt(zm(k)*zm(k+1))) {
-        lrsrc += pmid(k) / (C::Rair*t(k))* dpm(k);
+        lrsrc += pmid(k) / (C::Rair.value*t(k))* dpm(k);
         lusrc += u(k) * dpm(k);
         lvsrc += v(k) * dpm(k);
         lnsrc += (nm(k)* dpm(k));

@@ -21,8 +21,8 @@ struct UnitWrap::UnitTest<D>::TestP3IceMelting : public UnitWrap::UnitTest<D>::B
 {
 
 void ice_melting_bfb() {
-  constexpr Scalar latvap = C::LatVap;
-  constexpr Scalar latice = C::LatIce;
+  constexpr Scalar latvap = C::LatVap.value;
+  constexpr Scalar latice = C::LatIce.value;
 
   // make array of input data (why not pass actual variables?). Copied 1st 4 rows 4x to fill pack size.
   IceMeltingData IceMelt[max_pack_size] = {

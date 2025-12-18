@@ -1418,7 +1418,7 @@ void AtmosphereDriver::set_initial_conditions ()
     const auto gll_grid = m_grids_manager->get_grid("physics_gll");
     const auto hyam_h = gll_grid->get_geometry_data("hyam").get_view<const Real*, Host>();
     const auto hybm_h = gll_grid->get_geometry_data("hybm").get_view<const Real*, Host>();
-    constexpr auto ps0 = physics::Constants<Real>::P0;
+    constexpr auto ps0 = physics::Constants<Real>::P0.value;
     const auto min_pressure = ic_pl.get<Real>("perturbation_minimum_pressure", 1050.0);
 
     const auto& pmask_lt = gll_grid->get_vertical_layout(true);

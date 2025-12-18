@@ -17,7 +17,7 @@ void Functions<S,D>
   const Smask& context)
 {
   constexpr Scalar QSMALL   = C::QSMALL;
-  constexpr Scalar T_zerodegc = C::T_zerodegc;
+  constexpr Scalar T_zerodegc = C::T_zerodegc.value;
 
   Spack qi_tend;   //temporary var for mass tend before splitting into sublim or depos
 

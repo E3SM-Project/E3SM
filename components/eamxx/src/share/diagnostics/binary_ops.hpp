@@ -7,7 +7,7 @@ namespace scream {
 
 /*
  * This diagnostic will perform binary ops
- * like +, -, *, ÷ on two input fields.
+ * like +, -, *, ÷ on two input fields or on an input field and a known physical constant.
  */
 
 class BinaryOpsDiag : public AtmosphereDiagnostic {
@@ -16,23 +16,23 @@ class BinaryOpsDiag : public AtmosphereDiagnostic {
   BinaryOpsDiag(const ekat::Comm &comm, const ekat::ParameterList &params);
 
   // The name of the diagnostic CLASS (not the computed field)
-  std::string name() const { return "BinaryOpsDiag"; }
+  std::string name() const  override{ return "BinaryOpsDiag"; }
 
   // Set the grid
-  void set_grids(const std::shared_ptr<const GridsManager> grids_manager);
+  void set_grids(const std::shared_ptr<const GridsManager> grids_manager) override;
 
  protected:
-#ifdef KOKKOS_ENABLE_CUDA
- public:
-#endif
-  void compute_diagnostic_impl();
+  void compute_diagnostic_impl() override;
 
   void initialize_impl(const RunType /*run_type*/) override;
 
-  std::string m_field_1;
-  std::string m_field_2;
-  std::string m_binary_op;
+  std::string m_arg1_name;
+  std::string m_arg2_name;
+  std::string m_binary_op_str;
+  int         m_binary_op_code;
 
+  bool m_arg1_is_field;
+  bool m_arg2_is_field;
 };  // class BinaryOpsDiag
 
 }  // namespace scream

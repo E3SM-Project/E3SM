@@ -36,11 +36,11 @@ void trcmix(
   const auto mwf12 = C::get_gas_mol_weight("cfc12");
   const auto mwco2 = C::get_gas_mol_weight("co2");
 
-  const auto rmwn2o = mwn2o/C::MWdry;
-  const auto rmwch4 = mwch4/C::MWdry;
-  const auto rmwf11 = mwf11/C::MWdry;
-  const auto rmwf12 = mwf12/C::MWdry;
-  const auto rmwco2 = mwco2/C::MWdry;
+  const auto rmwn2o = mwn2o/C::MWdry.value;
+  const auto rmwch4 = mwch4/C::MWdry.value;
+  const auto rmwf11 = mwf11/C::MWdry.value;
+  const auto rmwf12 = mwf12/C::MWdry.value;
+  const auto rmwco2 = mwco2/C::MWdry.value;
 
   // Constants map: gas_name -> [trop_mmr, scale1_base, scale1_fact, scale2_base, scale2_fact]
   std::map<std::string, std::vector<Real> > const_map = {
@@ -53,7 +53,7 @@ void trcmix(
   const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(ncols, nlevs);
 
   if (name == "o2" || name == "co2") {
-    const auto val = name == "o2" ? C::o2mmr : rmwco2 * co2vmr;
+    const Real val = name == "o2" ? C::o2mmr.value : rmwco2 * co2vmr;
     Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
       const Int i = team.league_rank();
       Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlevs), [&] (const Int& k) {
