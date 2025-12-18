@@ -268,8 +268,8 @@ struct UnitWrap::UnitTest<D>::TestShocMain : public UnitWrap::UnitTest<D>::Base 
         REQUIRE( (SDS.qw[offset] > qw_lbound && SDS.qw[offset] < qw_ubound) );
         REQUIRE( (SDS.tke[offset] > tke_lbound && SDS.tke[offset] < tke_ubound) );
         // Increase wind bounds by 2 m/s to allow for surface flux effects
-        REQUIRE(std::abs(SDS.u_wind[offset] < wind_bounds+2));
-        REQUIRE(std::abs(SDS.v_wind[offset] < wind_bounds+2));
+        REQUIRE(std::abs(SDS.u_wind[offset]) < wind_bounds+2);
+        REQUIRE(std::abs(SDS.v_wind[offset]) < wind_bounds+2);
 
         REQUIRE( (SDS.shoc_mix[offset] >= minlen && SDS.shoc_mix[offset] <= maxlen) );
         REQUIRE( (SDS.isotropy[offset] >= 0 && SDS.isotropy[offset] < maxiso) );
@@ -278,7 +278,7 @@ struct UnitWrap::UnitTest<D>::TestShocMain : public UnitWrap::UnitTest<D>::Base 
         REQUIRE( (SDS.tk[offset] >= 0 && SDS.tk[offset] < 100) );
         REQUIRE( (SDS.tkh[offset] >= 0 && SDS.tkh[offset] < 100) );
         REQUIRE(std::abs(SDS.wthv_sec[offset]) < 1);
-        REQUIRE(std::abs(SDS.brunt[offset] < 1));
+        REQUIRE(std::abs(SDS.brunt[offset]) < 1);
 
         // Make sure there are no "empty" clouds
         if (SDS.shoc_cldfrac[offset] > 0){
@@ -298,7 +298,7 @@ struct UnitWrap::UnitTest<D>::TestShocMain : public UnitWrap::UnitTest<D>::Base 
         REQUIRE(SDS.host_dse[offset] < dse_upper);
 
         // Verify that w2 is less than tke
-        REQUIRE(std::abs(SDS.w_sec[offset] < SDS.tke[offset]));
+        REQUIRE(std::abs(SDS.w_sec[offset]) < SDS.tke[offset]);
 
         // Verify tracer output is reasonable
         for (Int t = 0; t < num_qtracers; ++t){
@@ -314,12 +314,12 @@ struct UnitWrap::UnitTest<D>::TestShocMain : public UnitWrap::UnitTest<D>::Base 
         // Make sure turbulence output is appropriate
         REQUIRE( (SDS.thl_sec[offset] >= 0 && SDS.thl_sec[offset] < 1e2 ) );
         REQUIRE( (SDS.qw_sec[offset] >= 0 && SDS.qw_sec[offset] < 1e-3) );
-        REQUIRE(std::abs(SDS.wthl_sec[offset] < 1));
-        REQUIRE(std::abs(SDS.wqw_sec[offset] < 1e-3));
-        REQUIRE(std::abs(SDS.w3[offset] < 10));
-        REQUIRE(std::abs(SDS.qwthl_sec[offset] < 1));
-        REQUIRE(std::abs(SDS.uw_sec[offset] < 1));
-        REQUIRE(std::abs(SDS.vw_sec[offset] < 1));
+        REQUIRE(std::abs(SDS.wthl_sec[offset]) < 1);
+        REQUIRE(std::abs(SDS.wqw_sec[offset]) < 1e-3);
+        REQUIRE(std::abs(SDS.w3[offset]) < 10);
+        REQUIRE(std::abs(SDS.qwthl_sec[offset]) < 1);
+        REQUIRE(std::abs(SDS.uw_sec[offset]) < 1);
+        REQUIRE(std::abs(SDS.vw_sec[offset]) < 1);
       }
 
     }

@@ -71,8 +71,8 @@ struct UnitWrap::UnitTest<D>::TestPblintdHeight : public UnitWrap::UnitTest<D>::
       for(Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
         REQUIRE(SDS.z[offset] > 0);
-        REQUIRE(std::abs(SDS.u[offset] < 100));
-        REQUIRE(std::abs(SDS.v[offset] < 100));
+        REQUIRE(std::abs(SDS.u[offset]) < 100);
+        REQUIRE(std::abs(SDS.v[offset]) < 100);
         REQUIRE(SDS.thv[offset] < 1000);
         REQUIRE(SDS.thv[offset] > 150);
       }
