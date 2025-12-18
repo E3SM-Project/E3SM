@@ -3437,10 +3437,6 @@ subroutine init_column_waves(domain)
     logical, pointer :: &
        config_use_column_biogeochemistry
 
-    character(len=strKIND), pointer :: &
-       config_wave_spec_type, &
-       config_wave_height_type
-
     type(MPAS_pool_type), pointer :: &
        mesh, &
        velocity_solver, &
@@ -3468,6 +3464,7 @@ subroutine init_column_waves(domain)
          floeSizeBinCenter, & ! fsd size bin center in m (radius)
          floeSizeDiameter, & ! representative floe diameter
          waveFrequency, & ! wave frequencies
+         waveFreqBinWidth, &   ! wave frequency bin widths
          significantWaveHeight ! significant wave height
 
     real(kind=RKIND), dimension(:,:), pointer :: &
@@ -3497,8 +3494,6 @@ subroutine init_column_waves(domain)
 
        !MPAS_pool_get* calls
        call MPAS_pool_get_config(block % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
-       call MPAS_pool_get_config(block % configs, "config_wave_spec_type", config_wave_spec_type)
-       call MPAS_pool_get_config(block % configs, "config_wave_height_type", config_wave_height_type)
 
        call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
        call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
@@ -3530,6 +3525,7 @@ subroutine init_column_waves(domain)
 
        call MPAS_pool_get_array(wave_coupling, "waveSpectra", waveSpectra)
        call MPAS_pool_get_array(wave_coupling, "waveFrequency", waveFrequency)
+       call MPAS_pool_get_array(wave_coupling, "waveFreqBinWidth", waveFreqBinWidth)
        call MPAS_pool_get_array(wave_coupling, "significantWaveHeight", significantWaveHeight)
 
        setGetPhysicsTracers = .true.
@@ -3543,8 +3539,6 @@ subroutine init_column_waves(domain)
                  tracerArrayCategory, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
           call icepack_step_wavefracture(&
-                  wave_spec_type = config_wave_spec_type, &
-                  wave_height_type = config_wave_height_type, &
                   dt = dynamicsTimeStep, &
                   nfreq = nFrequencies, &
                   aice = iceAreaCell(iCell), &
@@ -3552,6 +3546,7 @@ subroutine init_column_waves(domain)
                   aicen = iceAreaCategory(1,:,iCell), &
                   wave_spectrum = waveSpectra(:,iCell), &
                   wavefreq = waveFrequency(:), &
+                  dwavefreq = waveFreqBinWidth(:), &
                   trcrn = tracerArrayCategory, &
                   d_afsd_wave = dFloeSizeWaves(:,iCell), &
                   wave_height = significantWaveHeight(iCell))
@@ -10567,7 +10562,7 @@ subroutine init_column_waves(domain)
          nt_smliq_in      = tracerObject % index_snowLiquidMass, &
          nt_rhos_in       = tracerObject % index_snowDensity, &
          nt_rsnw_in       = tracerObject % index_snowGrainRadius, &
-         nt_fsd           = tracerObject % index_floeSizeDist, &
+         nt_fsd_in        = tracerObject % index_floeSizeDist, &
          !nt_isosno_in
          !nt_isoice_in
          nt_aero_in       = tracerObject % index_aerosols, &
