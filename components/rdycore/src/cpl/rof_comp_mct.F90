@@ -30,6 +30,7 @@ module rof_comp_mct
 
   use rdycoreMod     , only: rdycore_init
   use rdycore_varctl , only: nsrStartup, nsrContinue, nsrBranch
+  use rdycore_varctl , only: iulog
   use rdycore_varctl , only: rdycore_varctl_set
   !
   ! !PUBLIC TYPES:
@@ -184,21 +185,21 @@ CONTAINS
     if (masterproc) then
        inquire(file='rof_modelio.nml'//trim(inst_suffix),exist=exists)
        if (exists) then
-          logunit_rof = shr_file_getUnit()
-          call shr_file_setIO('rof_modelio.nml'//trim(inst_suffix),logunit_rof)
+          iulog = shr_file_getUnit()
+          call shr_file_setIO('rof_modelio.nml'//trim(inst_suffix),iulog)
        end if
-       write(logunit_rof,*) "RDycore model initialization"
+       write(iulog,*) "RDycore model initialization"
     else
-       logunit_rof = shrlogunit
+       iulog = shrlogunit
     end if
 
     call shr_file_getLogLevel(shrloglev)
-    call shr_file_setLogUnit (logunit_rof)
+    call shr_file_setLogUnit (iulog)
 
     if (masterproc) then
-       write(logunit_rof,*) ' RDycore npes = ', npes
-       write(logunit_rof,*) ' RDycore iam  = ', iam
-       write(logunit_rof,*) ' inst_name = ', trim(inst_name)
+       write(iulog,*) ' RDycore npes = ', npes
+       write(iulog,*) ' RDycore iam  = ', iam
+       write(iulog,*) ' inst_name = ', trim(inst_name)
     endif
 
     call rdycore_varctl_set(caseid, ctitle, nsrest, hostname, username)
@@ -212,7 +213,7 @@ CONTAINS
     flood_present=.false.
     call rof_read_namelist()
 
-    call rdycore_init(logunit_rof)
+    call rdycore_init()
 
     !----------------------------------------------------------------------------
     ! Initialize RDycore
@@ -252,8 +253,8 @@ CONTAINS
     ! Reset shr logging to original values
     !----------------------------------------------------------------------------
 
-    if (masterproc) write(logunit_rof,F00) 'rof_comp_init done'
-    call shr_sys_flush(logunit_rof)
+    if (masterproc) write(iulog,F00) 'rof_comp_init done'
+    call shr_sys_flush(iulog)
 
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)
@@ -268,7 +269,7 @@ CONTAINS
 
     if ( rc == ESMF_SUCCESS ) return
 
-    write(logunit_rof,*) mes
+    write(iulog,*) mes
 
     call shr_sys_abort ('CHKRC')
 
@@ -344,7 +345,7 @@ CONTAINS
     ! run the model
     rstwr = seq_timemgr_RestartAlarmIsOn( EClock )
     write(rdate,'(i4.4,"-",i2.2,"-",i2.2,"-",i5.5)') yr_sync,mon_sync,day_sync,tod_sync
-    call rdycore_run(logunit_rof, coupling_dt_in_sec, rstwr, rdate)
+    call rdycore_run(coupling_dt_in_sec, rstwr, rdate)
 
     ! Map rof data to MCT datatype
     call t_startf ('lc_rof_export')
@@ -382,7 +383,7 @@ CONTAINS
 
     call rdycore_final()
 
-    close (logunit_rof)
+    close (iulog)
 
    end subroutine rof_final_mct
 
@@ -635,7 +636,7 @@ CONTAINS
       enddo
     end if
 
-    if (masterproc) write(logunit_rof,*) 'Import ssh ',minval(ssh),maxval(ssh)
+    if (masterproc) write(iulog,*) 'Import ssh ',minval(ssh),maxval(ssh)
     deallocate(ssh)
 
   end subroutine rof_import_mct
@@ -703,13 +704,13 @@ CONTAINS
     nlfilename_rof = "rdycore_in" // trim(inst_suffix)
     inquire (file = trim(nlfilename_rof), exist = lexist)
     if ( .not. lexist ) then
-       write(logunit_rof,*) subname // ' ERROR: nlfilename_rof does NOT exist:'&
+       write(iulog,*) subname // ' ERROR: nlfilename_rof does NOT exist:'&
             //trim(nlfilename_rof)
        call shr_sys_abort(trim(subname)//' ERROR nlfilename_rof does not exist')
     end if
     if (masterproc) then
        unitn = shr_file_getunit()
-       write(logunit_rof,*) 'Read in rdycore_inparm namelist from: ', trim(nlfilename_rof)
+       write(iulog,*) 'Read in rdycore_inparm namelist from: ', trim(nlfilename_rof)
        open( unitn, file=trim(nlfilename_rof), status='old' )
        ier = 1
        do while ( ier /= 0 )
@@ -727,11 +728,11 @@ CONTAINS
 
     ! print out namelist settings to log
     if (masterproc) then
-       write(logunit_rof,*) ' '
-       write(logunit_rof,*) 'read from namelist:'
-       write(logunit_rof,*) '   do_rdycore        = ', do_rdycore
-       write(logunit_rof,*) '   rdycore_yaml_file = ', trim(rdycore_yaml_file)
-       write(logunit_rof,*) '   filename_rof      = ', trim(filename_rof)
+       write(iulog,*) ' '
+       write(iulog,*) 'read from namelist:'
+       write(iulog,*) '   do_rdycore        = ', do_rdycore
+       write(iulog,*) '   rdycore_yaml_file = ', trim(rdycore_yaml_file)
+       write(iulog,*) '   filename_rof      = ', trim(filename_rof)
     end if
 
     return
@@ -765,8 +766,8 @@ CONTAINS
 !JW    filename_rof = '/global/cfs/cdirs/e3sm/inputdata/rof/rdycore/MOSART_global_half_20180721a.nc'
 
     if (masterproc) then
-       write(logunit_rof,*) 'Read in RDycore file name: ',trim(filename_rof)
-       call shr_sys_flush(logunit_rof)
+       write(iulog,*) 'Read in RDycore file name: ',trim(filename_rof)
+       call shr_sys_flush(iulog)
     endif
 
     call ncd_pio_openfile(ncid, trim(filename_rof), 0)
@@ -774,14 +775,14 @@ CONTAINS
     call ncd_inqfdims(ncid, isgrid2d, nlong, nlatg, gsize)
 
     if (masterproc) then
-       write(logunit_rof,*) 'Values for lon/lat: ', nlong, nlatg, gsize
-       write(logunit_rof,*) 'Successfully read RDycore dimensions'
+       write(iulog,*) 'Values for lon/lat: ', nlong, nlatg, gsize
+       write(iulog,*) 'Successfully read RDycore dimensions'
        if (isgrid2d) then
-        write(logunit_rof,*) 'RDycore input is 2d'
+        write(iulog,*) 'RDycore input is 2d'
        else
-        write(logunit_rof,*) 'RDycore input is 1d'
+        write(iulog,*) 'RDycore input is 1d'
        endif
-       call shr_sys_flush(logunit_rof)
+       call shr_sys_flush(iulog)
     endif
 
     ! allocate arrays
@@ -797,15 +798,15 @@ CONTAINS
        ! read the mesh data
        call ncd_io(ncid=ncid, varname='lon', flag='read', data=lon1D, readvar=found)
        if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read RDycore longitudes')
-       if (masterproc) write(logunit_rof,*) 'Read lon ',minval(lon1D),maxval(lon1D)
+       if (masterproc) write(iulog,*) 'Read lon ',minval(lon1D),maxval(lon1D)
 
        call ncd_io(ncid=ncid, varname='lat', flag='read', data=lat1D, readvar=found)
        if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read RDycore latitudes')
-       if (masterproc) write(logunit_rof,*) 'Read lat ',minval(lat1D),maxval(lat1D)
+       if (masterproc) write(iulog,*) 'Read lat ',minval(lat1D),maxval(lat1D)
 
        call ncd_io(ncid=ncid, varname='area', flag='read', data=areac_g, readvar=found)
        if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read RDycore area')
-       if (masterproc) write(logunit_rof,*) 'Read area ',minval(areac_g),maxval(areac_g)
+       if (masterproc) write(iulog,*) 'Read area ',minval(areac_g),maxval(areac_g)
 
        count = 0
        do j = 1, nlong

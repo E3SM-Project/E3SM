@@ -7,6 +7,7 @@ module rdycoreMod
   use shr_kind_mod  , only : r8 => shr_kind_r8
   use shr_sys_mod   , only : shr_sys_flush
   use RDycoreSpmdMod, only : masterproc, iam, mpicom_rof
+  use RDycore_varctl, only : iulog
 
   implicit none
 
@@ -30,7 +31,7 @@ module rdycoreMod
 contains
 
   !-----------------------------------------------------------------------
-  subroutine rdycore_init(iulog)
+  subroutine rdycore_init()
     !
     ! !DESCRIPTION:
     ! Initialize RDycore
@@ -39,8 +40,6 @@ contains
     !
     use petsc
     implicit none
-    !
-    integer, intent(in)   :: iulog
     !
     ! !LOCAL VARIABLES:
     PetscViewer           :: viewer
@@ -93,11 +92,10 @@ contains
   end subroutine rdycore_init
 
   !-----------------------------------------------------------------------
-  subroutine rdycore_run(iulog, coupling_dt_in_sec, rstwr, rdate)
+  subroutine rdycore_run(coupling_dt_in_sec, rstwr, rdate)
     !
     implicit none
     !
-    integer          , intent(in) :: iulog              ! logfile
     integer          , intent(in) :: coupling_dt_in_sec ! runtime for rdycore before returning
     logical          , intent(in) :: rstwr              ! if .true., then write restart file
     character(len=*) , intent(in) :: rdate              ! date char string for restart file name
@@ -117,7 +115,7 @@ contains
 
     !call get_curr_time_string(dateTimeString)
     if (masterproc) then
-       write(iulog,*)'Beginning timestep of RDycore  : ',trim(dateTimeString)
+       write(iulog,*)'Beginning timestep of RDycore  : '!,trim(dateTimeString)
        call shr_sys_flush(iulog)
     end if
 

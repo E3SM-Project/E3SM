@@ -14,7 +14,7 @@ module RDycoreIO
   use shr_file_mod   , only : shr_file_getunit, shr_file_freeunit
   use rdycoreSpmdMod , only : masterproc, mpicom_rof, iam, npes
   use rdycoreMod     , only : num_cells_owned, num_cells_global, natural_id_cells_owned
-  use rdycore_varctl , only : inst_name
+  use rdycore_varctl , only : inst_name, iulog
   use perf_mod       , only : t_startf, t_stopf
   use mct_mod
   use pio
@@ -61,9 +61,6 @@ module RDycoreIO
 
   real(r8), public, parameter :: spval    = 1.e20_r8        ! special value for real data
   integer , public, parameter :: ispval   = -9999           ! special value for int data
-
-  ! Unit Numbers
-  integer, public :: logunit_rof = 6        ! "stdout" log file unit number, default is 6
 
   ! PIO types needed for ncdio_pio interface calls
   public file_desc_t
@@ -179,8 +176,8 @@ contains
     !-----------------------------------------------------------------------
 
     if (masterproc) then
-       write(logunit_rof,*) trim(subname),' opening ', trim(fname), file%fh
-       call shr_sys_flush(logunit_rof)
+       write(iulog,*) trim(subname),' opening ', trim(fname), file%fh
+       call shr_sys_flush(iulog)
     endif
 
     ierr = pio_openfile(pio_subsystem, file, io_type, fname, mode)
@@ -188,7 +185,7 @@ contains
     if(ierr/= PIO_NOERR) then
        call shr_sys_abort(subname//'ERROR: Failed to open file')
     else if(pio_iotask_rank(pio_subsystem)==0) then
-       write(logunit_rof,*) 'Opened existing file ', trim(fname), file%fh
+       write(iulog,*) 'Opened existing file ', trim(fname), file%fh
     end if
 
   end subroutine ncd_pio_openfile
@@ -231,7 +228,7 @@ contains
     if(ierr/= PIO_NOERR) then
        call shr_sys_abort( subname//' ERROR: Failed to open file to write: '//trim(fname))
     else if(pio_iotask_rank(pio_subsystem)==0) then
-       write(logunit_rof,*) 'Opened file ', trim(fname),  ' to write', file%fh
+       write(iulog,*) 'Opened file ', trim(fname),  ' to write', file%fh
     end if
 
   end subroutine ncd_pio_createfile
@@ -269,7 +266,7 @@ contains
     if (ret /= PIO_noerr) then
        readvar = .false.
        if (masterproc .and. log_err) &
-            write(logunit_rof,*) subname//': variable ',trim(varname),' is not on dataset'
+            write(iulog,*) subname//': variable ',trim(varname),' is not on dataset'
     end if
     call pio_seterrorhandling(ncid, PIO_INTERNAL_ERROR)
 
@@ -296,7 +293,7 @@ contains
     status = pio_inq_dimid (ncid, trim(dimname), dimid)
     status = pio_inq_dimlen (ncid, dimid, dimlen)
     if (dimlen /= value) then
-       write(logunit_rof,*) subname//' ERROR: mismatch of input dimension ',dimlen, &
+       write(iulog,*) subname//' ERROR: mismatch of input dimension ',dimlen, &
             ' with expected value ',value,' for variable ',trim(dimname)
        call shr_sys_abort()
     end if
@@ -449,7 +446,7 @@ contains
     call pio_seterrorhandling(ncid, PIO_INTERNAL_ERROR)
 
     if (ni == 0 .or. nj == 0) then
-       write(logunit_rof,*) trim(subname),' ERROR: ni,nj = ',ni,nj,' cannot be zero '
+       write(iulog,*) trim(subname),' ERROR: ni,nj = ',ni,nj,' cannot be zero '
        call shr_sys_abort()
     end if
 
@@ -488,7 +485,7 @@ contains
        call pio_seterrorhandling(ncid, PIO_BCAST_ERROR)
        ret = PIO_inq_varid(ncid,name,vardesc)
        if (ret /= PIO_noerr) then
-          if (masterproc) write(logunit_rof,*) subname//': variable ',trim(name),' is not on dataset'
+          if (masterproc) write(iulog,*) subname//': variable ',trim(name),' is not on dataset'
           readvar = .false.
        else
           readvar = .true.
@@ -722,7 +719,7 @@ contains
        ldimid(1:ndims) = dimid(1:ndims)
     else   ! ndims must be zero if dimid not present
        if (ndims /= 0) then
-          write(logunit_rof,*) subname//' ERROR: dimid not supplied and ndims ne 0 ',trim(varname),ndims
+          write(iulog,*) subname//' ERROR: dimid not supplied and ndims ne 0 ',trim(varname),ndims
           call shr_sys_abort()
        endif
     endif
@@ -733,8 +730,8 @@ contains
        lxtype = xtype
     end if
     if (masterproc .and. debug > 1) then
-       write(logunit_rof,*) trim(subname),' Defining variable = ', trim(varname)
-       write(logunit_rof,*) trim(subname),' ',trim(varname),lxtype,ndims,ldimid(1:ndims)
+       write(iulog,*) trim(subname),' Defining variable = ', trim(varname)
+       write(iulog,*) trim(subname),' ',trim(varname),lxtype,ndims,ldimid(1:ndims)
     endif
 
     if (ndims >  0) then 
@@ -758,23 +755,23 @@ contains
     if (present(flag_values)) then
        status = PIO_put_att(ncid,varid,'flag_values',flag_values)
        if ( .not. present(flag_meanings)) then
-          write(logunit_rof,*) 'Error in defining variable = ', trim(varname)
+          write(iulog,*) 'Error in defining variable = ', trim(varname)
           call shr_sys_abort( subname//" ERROR:: flag_values set -- but not flag_meanings" )
        end if
     end if
     if (present(flag_meanings)) then
        if ( .not. present(flag_values)) then
-          write(logunit_rof,*) 'Error in defining variable = ', trim(varname)
+          write(iulog,*) 'Error in defining variable = ', trim(varname)
           call shr_sys_abort( subname//" ERROR:: flag_meanings set -- but not flag_values" )
        end if
        if ( size(flag_values) /= size(flag_meanings) ) then
-          write(logunit_rof,*) 'Error in defining variable = ', trim(varname)
+          write(iulog,*) 'Error in defining variable = ', trim(varname)
           call shr_sys_abort( subname//" ERROR:: flag_meanings and flag_values dimension different")
        end if
        str = flag_meanings(1)
        do n = 1, size(flag_meanings)
           if ( index(flag_meanings(n), ' ') /= 0 )then
-             write(logunit_rof,*) 'Error in defining variable = ', trim(varname)
+             write(iulog,*) 'Error in defining variable = ', trim(varname)
              call shr_sys_abort( subname//" ERROR:: flag_meanings has an invalid space in it" )
           end if
           if ( n > 1 ) str = trim(str)//" "//flag_meanings(n)
@@ -1549,7 +1546,7 @@ contains
     !-----------------------------------------------------------------------
 
     if (masterproc .and. debug > 1) then
-       write(logunit_rof,*) subname//' ',trim(flag),' ',trim(varname),' ',trim(dim1name)
+       write(iulog,*) subname//' ',trim(flag),' ',trim(varname),' ',trim(dim1name)
     end if
 
     if (flag == 'read') then
@@ -1604,7 +1601,7 @@ contains
     else
 
        if (masterproc) then
-          write(logunit_rof,*) subname//' ERROR: unsupported flag ',trim(flag)
+          write(iulog,*) subname//' ERROR: unsupported flag ',trim(flag)
           call shr_sys_abort()
        endif
 
@@ -1652,7 +1649,7 @@ contains
     !-----------------------------------------------------------------------
 
     if (masterproc .and. debug > 1) then
-       write(logunit_rof,*) subname//' ',trim(flag),' ',trim(varname)
+       write(iulog,*) subname//' ',trim(flag),' ',trim(varname)
     end if
 
     if (flag == 'read') then
@@ -1720,7 +1717,7 @@ contains
     else
 
        if (masterproc) then
-          write(logunit_rof,*) subname//' ERROR: unsupported flag ',trim(flag)
+          write(iulog,*) subname//' ERROR: unsupported flag ',trim(flag)
           call shr_sys_abort()
        endif
 
@@ -1767,7 +1764,7 @@ contains
     !-----------------------------------------------------------------------
 
     if (masterproc .and. debug > 1) then
-       write(logunit_rof,*) trim(subname),' ',trim(flag),' ',trim(varname)
+       write(iulog,*) trim(subname),' ',trim(flag),' ',trim(varname)
     endif
 
     if (flag == 'read') then
@@ -1822,7 +1819,7 @@ contains
     else
 
        if (masterproc) then
-          write(logunit_rof,*) subname,' error: unsupported flag ',trim(flag)
+          write(iulog,*) subname,' error: unsupported flag ',trim(flag)
           call shr_sys_abort()
        endif
 
@@ -1894,7 +1891,7 @@ contains
           if (found) then
              iodnum = n
              if (iodnum > num_iodesc) then
-                write(logunit_rof,*) trim(subname),' ERROR: iodnum out of range ',iodnum,num_iodesc
+                write(iulog,*) trim(subname),' ERROR: iodnum out of range ',iodnum,num_iodesc
                 call shr_sys_abort()
              endif
              RETURN
@@ -1908,12 +1905,12 @@ contains
     if (ndims > 0) then 
        num_iodesc = num_iodesc + 1
        if (num_iodesc > max_iodesc) then
-          write(logunit_rof,*) trim(subname),' ERROR num_iodesc gt max_iodesc ',max_iodesc
+          write(iulog,*) trim(subname),' ERROR num_iodesc gt max_iodesc ',max_iodesc
           call shr_sys_abort()
        endif
        iodnum = num_iodesc
        if (masterproc .and. debug > 1) then
-          write(logunit_rof,*) trim(subname),' creating iodesc at iodnum,ndims,dims(1:ndims),xtype',&
+          write(iulog,*) trim(subname),' creating iodesc at iodnum,ndims,dims(1:ndims),xtype',&
                iodnum,ndims,dims(1:ndims),xtype
        endif
     end if
@@ -1937,9 +1934,9 @@ contains
     if (debug > 1) then
        do m = 0,npes-1
           if (iam == m) then
-             write(logunit_rof,*) trim(subname),' sizes1  = ',iam,gsize,lsize,npes
-             write(logunit_rof,*) trim(subname),' compDOF = ',iam,size(compDOF),minval(compDOF),maxval(compDOF)
-             call shr_sys_flush(logunit_rof)
+             write(iulog,*) trim(subname),' sizes1  = ',iam,gsize,lsize,npes
+             write(iulog,*) trim(subname),' compDOF = ',iam,size(compDOF),minval(compDOF),maxval(compDOF)
+             call shr_sys_flush(iulog)
           endif
           call mpi_barrier(mpicom_rof,status)
        enddo
