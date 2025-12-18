@@ -46,7 +46,7 @@ constexpr auto operator* (const Quantity<S1>& l, const S2 r)
 template<typename S1, typename S2>
 constexpr auto operator/ (const Quantity<S1>& l, const Quantity<S2>& r)
 {
-  return create_quantity(l.value/r.value,l.units*r.units);
+  return create_quantity(l.value/r.value,l.units/r.units);
 }
 template<typename S1, typename S2>
 constexpr auto operator/ (const S1 l, const Quantity<S2>& r)
