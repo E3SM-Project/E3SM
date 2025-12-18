@@ -143,20 +143,32 @@ struct Functions {
       auto nlev_mid_packs = ekat::npack<Spack>(nlev_mid);
       auto nlev_int_packs = ekat::npack<Spack>(nlev_int);
       if (D == ekat::TransposeDirection::c2f) {
+        // create temporaries to avoid "Implicit capture" warning
+        const auto loc_f_z_mid   = f_z_mid;
+        const auto loc_f_p_mid   = f_p_mid;
+        const auto loc_f_p_del   = f_p_del;
+        const auto loc_f_T_mid   = f_T_mid;
+        const auto loc_f_qv      = f_qv;
+        const auto loc_f_uwind   = f_uwind;
+        const auto loc_f_vwind   = f_vwind;
+        const auto loc_f_omega   = f_omega;
+        const auto loc_f_cldfrac = f_cldfrac;
+        const auto loc_f_z_int   = f_z_int;
+        const auto loc_f_p_int   = f_p_int;
         //----------------------------------------------------------------------
         // mid-point level variables
         Kokkos::parallel_for("zm_output_tx_mid",KT::RangePolicy(0, ncol*nlev_mid_packs), KOKKOS_LAMBDA (const int i) {
           const int icol = i/nlev_mid_packs;
           const int klev = i%nlev_mid_packs;
-          f_z_mid   (icol,klev) = z_mid   (icol,klev/Spack::n)[klev%Spack::n];
-          f_p_mid   (icol,klev) = p_mid   (icol,klev/Spack::n)[klev%Spack::n];
-          f_p_del   (icol,klev) = p_del   (icol,klev/Spack::n)[klev%Spack::n];
-          f_T_mid   (icol,klev) = T_mid   (icol,klev/Spack::n)[klev%Spack::n];
-          f_qv      (icol,klev) = qv      (icol,klev/Spack::n)[klev%Spack::n];
-          f_uwind   (icol,klev) = uwind   (icol,klev/Spack::n)[klev%Spack::n];
-          f_vwind   (icol,klev) = vwind   (icol,klev/Spack::n)[klev%Spack::n];
-          f_omega   (icol,klev) = omega   (icol,klev/Spack::n)[klev%Spack::n];
-          f_cldfrac (icol,klev) = cldfrac (icol,klev/Spack::n)[klev%Spack::n];
+          loc_f_z_mid   (icol,klev) = z_mid   (icol,klev/Spack::n)[klev%Spack::n];
+          loc_f_p_mid   (icol,klev) = p_mid   (icol,klev/Spack::n)[klev%Spack::n];
+          loc_f_p_del   (icol,klev) = p_del   (icol,klev/Spack::n)[klev%Spack::n];
+          loc_f_T_mid   (icol,klev) = T_mid   (icol,klev/Spack::n)[klev%Spack::n];
+          loc_f_qv      (icol,klev) = qv      (icol,klev/Spack::n)[klev%Spack::n];
+          loc_f_uwind   (icol,klev) = uwind   (icol,klev/Spack::n)[klev%Spack::n];
+          loc_f_vwind   (icol,klev) = vwind   (icol,klev/Spack::n)[klev%Spack::n];
+          loc_f_omega   (icol,klev) = omega   (icol,klev/Spack::n)[klev%Spack::n];
+          loc_f_cldfrac (icol,klev) = cldfrac (icol,klev/Spack::n)[klev%Spack::n];
         });
         // interface level variables
         Kokkos::parallel_for("zm_output_tx_mid",KT::RangePolicy(0, ncol*nlev_int_packs), KOKKOS_LAMBDA (const int i) {
@@ -332,24 +344,35 @@ struct Functions {
         Kokkos::deep_copy(cape,       h_cape);
         Kokkos::deep_copy(activity,   h_activity);
         //----------------------------------------------------------------------
+        // create temporaries to avoid "Implicit capture" warning
+        const auto loc_tend_t    = tend_t;
+        const auto loc_tend_qv   = tend_qv;
+        const auto loc_tend_u    = tend_u;
+        const auto loc_tend_v    = tend_v;
+        const auto loc_rain_prod = rain_prod;
+        const auto loc_snow_prod = snow_prod;
+        const auto loc_prec_flux = prec_flux;
+        const auto loc_snow_flux = snow_flux;
+        const auto loc_mass_flux = mass_flux;
+        //----------------------------------------------------------------------
         // mid-point level variables
         Kokkos::parallel_for("zm_output_tx_mid",KT::RangePolicy(0, ncol*nlev_mid_packs), KOKKOS_LAMBDA (const int i) {
           const int icol = i/nlev_mid_packs;
           const int klev = i%nlev_mid_packs;
-          tend_t   (icol,klev/Spack::n)[klev%Spack::n] = f_tend_t   (icol,klev);
-          tend_qv  (icol,klev/Spack::n)[klev%Spack::n] = f_tend_qv  (icol,klev);
-          tend_u   (icol,klev/Spack::n)[klev%Spack::n] = f_tend_u   (icol,klev);
-          tend_v   (icol,klev/Spack::n)[klev%Spack::n] = f_tend_v   (icol,klev);
-          rain_prod(icol,klev/Spack::n)[klev%Spack::n] = f_rain_prod(icol,klev);
-          snow_prod(icol,klev/Spack::n)[klev%Spack::n] = f_snow_prod(icol,klev);
+          loc_tend_t   (icol,klev/Spack::n)[klev%Spack::n] = f_tend_t   (icol,klev);
+          loc_tend_qv  (icol,klev/Spack::n)[klev%Spack::n] = f_tend_qv  (icol,klev);
+          loc_tend_u   (icol,klev/Spack::n)[klev%Spack::n] = f_tend_u   (icol,klev);
+          loc_tend_v   (icol,klev/Spack::n)[klev%Spack::n] = f_tend_v   (icol,klev);
+          loc_rain_prod(icol,klev/Spack::n)[klev%Spack::n] = f_rain_prod(icol,klev);
+          loc_snow_prod(icol,klev/Spack::n)[klev%Spack::n] = f_snow_prod(icol,klev);
         });
         // interface level variables
         Kokkos::parallel_for("zm_output_tx_mid",KT::RangePolicy(0, ncol*nlev_int_packs), KOKKOS_LAMBDA (const int i) {
           const int icol = i/nlev_int_packs;
           const int klev = i%nlev_int_packs;
-          prec_flux(icol,klev/Spack::n)[klev%Spack::n] = f_prec_flux(icol,klev);
-          snow_flux(icol,klev/Spack::n)[klev%Spack::n] = f_snow_flux(icol,klev);
-          mass_flux(icol,klev/Spack::n)[klev%Spack::n] = f_mass_flux(icol,klev);
+          loc_prec_flux(icol,klev/Spack::n)[klev%Spack::n] = f_prec_flux(icol,klev);
+          loc_snow_flux(icol,klev/Spack::n)[klev%Spack::n] = f_snow_flux(icol,klev);
+          loc_mass_flux(icol,klev/Spack::n)[klev%Spack::n] = f_mass_flux(icol,klev);
         });
       }
       // ***********************************************************************
