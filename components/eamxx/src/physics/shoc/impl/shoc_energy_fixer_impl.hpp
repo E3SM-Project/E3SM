@@ -45,11 +45,11 @@ void Functions<S,D>::shoc_energy_fixer(
   auto rho_zi = workspace.take("rho_zi");
 
   // Constants
-  const auto cp = C::CP;
-  const auto lcond = C::LatVap;
-  const auto lice = C::LatIce;
+  const auto cp = C::CP.value;
+  const auto lcond = C::LatVap.value;
+  const auto lice = C::LatIce.value;
   const auto mintke = SC::mintke;
-  const auto ggr = C::gravit;
+  const auto ggr = C::gravit.value;
 
   // Local variables
   Scalar te_a = 0;

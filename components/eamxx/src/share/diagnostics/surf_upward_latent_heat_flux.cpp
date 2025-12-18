@@ -49,7 +49,7 @@ void SurfaceUpwardLatentHeatFlux::compute_diagnostic_impl()
   using KT = ekat::KokkosTypes<DefaultDevice>;
   using PC = scream::physics::Constants<Real>;
 
-  constexpr auto latent_heat_evap = PC::LatVap; // [J/kg]
+  constexpr Real latent_heat_evap = PC::LatVap.value; // [J/kg]
 
   Field::view_dev_t<const Real*> evap_view_d;
 

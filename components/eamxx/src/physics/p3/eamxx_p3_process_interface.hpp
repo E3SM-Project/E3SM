@@ -276,8 +276,8 @@ public:
       // Note: we need to ensure that only a single thread within the team is
       //       updating the mass value.
       Kokkos::single(Kokkos::PerTeam(team), [&] {
-        precip_liq_surf_mass(icol) += precip_liq_surf_flux(icol) * PC::RHO_H2O * m_dt;
-        precip_ice_surf_mass(icol) += precip_ice_surf_flux(icol) * PC::RHO_H2O * m_dt;
+        precip_liq_surf_mass(icol) += precip_liq_surf_flux(icol) * PC::RHO_H2O.value * m_dt;
+        precip_ice_surf_mass(icol) += precip_ice_surf_flux(icol) * PC::RHO_H2O.value * m_dt;
       });
 
       // If necessary, set appropriate boundary fluxes for energy and mass

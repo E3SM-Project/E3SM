@@ -23,7 +23,7 @@ void Functions<S,D>
   const Smask& context)
 {
   constexpr Scalar qsmall   = C::QSMALL;
-  constexpr Scalar T_zerodegc = C::T_zerodegc;
+  constexpr Scalar T_zerodegc = C::T_zerodegc.value;
   constexpr Scalar bcn      = C::bcn;
 
   const auto qc2qi_collect_tend_not_small_and_t_freezing = (qc2qi_collect_tend >= qsmall) &&

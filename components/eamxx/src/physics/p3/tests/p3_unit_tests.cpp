@@ -528,8 +528,8 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticIce : public UnitWrap::UnitT
     constexpr Scalar nmltratio     = C::nmltratio;
     constexpr Scalar dt            = 1.8000E+03;
     constexpr bool   do_predict_nc = true;
-    constexpr Scalar latvap        = C::LatVap;
-    constexpr Scalar latice        = C::LatIce;
+    constexpr Scalar latvap        = C::LatVap.value;
+    constexpr Scalar latice        = C::LatIce.value;
 
     //baseline generated data is input to the following
     P3UpdatePrognosticIceData pupidc[max_pack_size] = {
@@ -766,8 +766,8 @@ template <typename D>
 struct UnitWrap::UnitTest<D>::TestGetTimeSpacePhysVariables : public UnitWrap::UnitTest<D>::Base
 {
   void get_time_space_phys_variables_unit_bfb_tests() {
-    constexpr Scalar latvap = C::LatVap;
-    constexpr Scalar latice = C::LatIce;
+    constexpr Scalar latvap = C::LatVap.value;
+    constexpr Scalar latice = C::LatIce.value;
 
     //baseline generated data is input to the following
     GetTimeSpacePhysVarsData gtspvd[max_pack_size] = {
@@ -886,7 +886,7 @@ template <typename D>
 struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticLiq : public UnitWrap::UnitTest<D>::Base
 {
   void update_prognostic_liquid_unit_bfb_tests() {
-    constexpr Scalar latvap = C::LatVap;
+    constexpr Scalar latvap = C::LatVap.value;
 
     //baseline generated data is input to the following
     P3UpdatePrognosticLiqData pupldc[max_pack_size] = {

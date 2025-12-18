@@ -66,7 +66,7 @@ void run(std::mt19937_64& engine)
   using RPDF = std::uniform_real_distribution<Real>;
   RPDF pdf_qv(1e-6,1e-3),
        pdf_pseudodens(1.0,100.0),
-       pdf_pres(0.0,PC::P0),
+       pdf_pres(0.0,PC::P0.value),
        pdf_temp(200.0,400.0),
        pdf_surface(100.0,400.0);
 

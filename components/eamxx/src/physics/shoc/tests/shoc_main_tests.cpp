@@ -20,11 +20,11 @@ struct UnitWrap::UnitTest<D>::TestShocMain : public UnitWrap::UnitTest<D>::Base 
     static constexpr Real minlen = scream::shoc::Constants<Real>::minlen;
     static constexpr Real maxlen = scream::shoc::Constants<Real>::maxlen;
     static constexpr Real maxiso = scream::shoc::Constants<Real>::maxiso;
-    static constexpr Real Cpair = scream::physics::Constants<Real>::Cpair;
-    static constexpr Real gravit = scream::physics::Constants<Real>::gravit;
-    static constexpr Real LatVap = scream::physics::Constants<Real>::LatVap;
-    static constexpr Real Rair = scream::physics::Constants<Real>::Rair;
-    static constexpr Real p0 = scream::physics::Constants<Real>::P0;
+    static constexpr Real Cpair = scream::physics::Constants<Real>::Cpair.value;
+    static constexpr Real gravit = scream::physics::Constants<Real>::gravit.value;
+    static constexpr Real LatVap = scream::physics::Constants<Real>::LatVap.value;
+    static constexpr Real Rair = scream::physics::Constants<Real>::Rair.value;
+    static constexpr Real p0 = scream::physics::Constants<Real>::P0.value;
 
     static constexpr Int shcol    = 5;
     static constexpr Int nlev     = 5;

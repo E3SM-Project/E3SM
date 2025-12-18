@@ -68,7 +68,7 @@ void Functions<S,D>::gwd_compute_tendencies_from_stress_divergence(
 
       // Determine the wind tendency, including excess stress carried down
       // from above.
-      Real ubtl = C::gravit * (tau(pl_idx,k+1)-tau(pl_idx,k)) * rdpm(k);
+      Real ubtl = C::gravit.value * (tau(pl_idx,k+1)-tau(pl_idx,k)) * rdpm(k);
 
       if (init.orographic_only) {
         // Require that the tendency be no larger than the analytic
@@ -106,7 +106,7 @@ void Functions<S,D>::gwd_compute_tendencies_from_stress_divergence(
         // causing stress divergence in the next layer down. This
         // smoothes large stress divergences downward while conserving
         // total stress.
-        tau(pl_idx,k+1) = tau(pl_idx,k) + ubtl * dpm(k) / C::gravit;
+        tau(pl_idx,k+1) = tau(pl_idx,k) + ubtl * dpm(k) / C::gravit.value;
       }
     }
   });

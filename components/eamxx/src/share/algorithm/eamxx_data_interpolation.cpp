@@ -117,7 +117,7 @@ void DataInterpolation::run (const util::TimeStamp& ts)
     auto hyam = m_vert_remapper->get_src_grid()->get_geometry_data("hyam").get_view<const PT*>();
     auto hybm = m_vert_remapper->get_src_grid()->get_geometry_data("hybm").get_view<const PT*>();
 
-    constexpr auto P0 = C::P0;
+    constexpr Real P0 = C::P0.value;
 
     const int ncols = ps_v.extent(0);
     const int num_vert_packs = p_v.extent(1);

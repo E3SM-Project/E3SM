@@ -750,8 +750,8 @@ struct ShocMainData : public ShocTestGridDataBase {
   void compute_column_pressure(Int shcol, Int nlev, const Real* z,
                                Real* pres) {
     using consts = scream::physics::Constants<Real>;
-    const Real k = consts::Rair / consts::Cpair;
-    const Real c = -consts::gravit * pow(consts::P0, k) / consts::Rair;
+    const Real k = consts::Rair.value / consts::Cpair.value;
+    const Real c = -consts::gravit.value * pow(consts::P0.value, k) / consts::Rair.value;
     const Real p_s = 1015e2;
 
     const std::array<Real, 5> z_ref = {0.0, 520.0, 1480.0, 2000.0, 3000.0};
@@ -801,14 +801,14 @@ struct ShocMainData : public ShocTestGridDataBase {
       const auto nlevi_offset = i * nlevi;
       for (auto k = decltype(nlev){0}; k < nlev; ++k) {
         pdel[nlev_offset + k] = std::abs(presi[nlevi_offset + k] - presi[nlevi_offset + k+1]);
-        inv_exner[nlev_offset + k] = pow(pres[nlev_offset + k]/consts::P0, consts::Rair/consts::Cpair);
-        host_dse[nlev_offset + k] = consts::Cpair * inv_exner[nlev_offset + k] * thv[nlev_offset + k] +
-          consts::gravit * zt_grid[nlev_offset + k];
+        inv_exner[nlev_offset + k] = pow(pres[nlev_offset + k]/consts::P0.value, consts::Rair.value/consts::Cpair.value);
+        host_dse[nlev_offset + k] = consts::Cpair.value * inv_exner[nlev_offset + k] * thv[nlev_offset + k] +
+          consts::gravit.value * zt_grid[nlev_offset + k];
 
         const Real qv = qw[nlev_offset+k] - shoc_ql[nlev_offset+k];
-        thetal[nlev_offset+k] = pot_temp - (consts::LatVap/consts::Cpair)*shoc_ql[nlev_offset+k];
+        thetal[nlev_offset+k] = pot_temp - (consts::LatVap.value/consts::Cpair.value)*shoc_ql[nlev_offset+k];
         thv[nlev_offset+k] = pot_temp * (1 + 0.61*qv - shoc_ql[nlev_offset+k]);
-        inv_exner[nlev_offset+k] = 1/std::pow(pres[nlev_offset+k]/consts::P0,consts::Rair/consts::Cpair);
+        inv_exner[nlev_offset+k] = 1/std::pow(pres[nlev_offset+k]/consts::P0.value,consts::Rair.value/consts::Cpair.value);
       }
     }
 

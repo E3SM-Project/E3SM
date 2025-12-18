@@ -98,7 +98,7 @@ void PrecipSurfMassFlux::compute_diagnostic_impl()
     return;
   }
 
-  auto rhodt = PC::RHO_H2O*dt;
+  Real rhodt = PC::RHO_H2O.value*dt;
   const auto& flux_view  = m_diagnostic_output.get_view<Real*>();
   Kokkos::parallel_for(m_name,
                        KT::RangePolicy(0,m_num_cols),

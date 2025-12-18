@@ -16,7 +16,7 @@ void Functions<S,D>
   const uview_1d<const Spack>& dz_zt,
   const uview_1d<Spack>&       rdp_zt)
 {
-  const auto ggr = C::gravit;
+  const auto ggr = C::gravit.value;
 
   const Int nlev_pack = ekat::npack<Spack>(nlev);
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {

@@ -22,24 +22,31 @@ void AtmosphereDiagnostic::compute_diagnostic (const double dt) {
   // Some diagnostics need the timestep, store in case.
   m_dt = dt;
 
-  // Set the timestamp of the diagnostic to the most
-  // recent timestamp among the inputs
+  // Set the timestamp of the diagnostic to the most recent timestamp among the inputs
+  // NOTE: it's a corner case, but it can happen that the diag has NO input fields.
+  //       This can happen for BinaryOpsDiag, in the case where both args are physics
+  //       constants. In that case, we assume the diagnostic can be pre-computed
+  //       during initialiation, so that every call to compute_diagnostic sees
+  //       ts==m_last_eval_ts, and does nothing.
   const auto& inputs = get_fields_in();
-  util::TimeStamp ts;
-  for (const auto& f : inputs) {
-    const auto& fts = f.get_header().get_tracking().get_time_stamp();
-    if (not ts.is_valid() || ts<fts) {
-      ts = fts;
+  util::TimeStamp ts = m_last_eval_ts;
+  if (inputs.size()>0) {
+    for (const auto& f : inputs) {
+      const auto& fts = f.get_header().get_tracking().get_time_stamp();
+      if (not ts.is_valid() || ts<fts) {
+        ts = fts;
+      }
     }
-  }
 
-  // If all inputs have invalid timestamps, we have a problem.
-  auto fname = [](const Field& f) { return f.name(); };
-  EKAT_REQUIRE_MSG (ts.is_valid(),
-      "Error! All inputs to diagnostic have invalid timestamp.\n"
-      "  - Diag name: " + name() + "\n"
-      "  - Diag field name: " + m_diagnostic_output.name() + "\n"
-      "  - Diag inputs names: " + ekat::join(inputs,fname,",") + "\n");
+    // If all inputs have invalid timestamps, we have a problem.
+    auto fname = [](const Field& f) { return f.name(); };
+    EKAT_REQUIRE_MSG (ts.is_valid(),
+        "Error! All inputs to diagnostic have invalid timestamp.\n"
+        "  - Diag name: " + name() + "\n"
+        "  - Diag field name: " + m_diagnostic_output.name() + "\n"
+        "  - Diag inputs names: " + ekat::join(inputs,fname,",") + "\n");
+
+  }
 
   if (ts==m_last_eval_ts) {
     // No need to compute the diag again

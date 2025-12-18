@@ -63,7 +63,7 @@ void run(std::mt19937_64& engine)
 
   // Construct random input data
   using RPDF = std::uniform_real_distribution<Real>;
-  RPDF pdf_pres(0.0,PC::P0);
+  RPDF pdf_pres(0.0,PC::P0.value);
 
   // A time stamp
   util::TimeStamp t0 ({2022,1,1},{0,0,0});

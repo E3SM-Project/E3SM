@@ -64,7 +64,7 @@ void NumberPathDiagnostic::compute_diagnostic_impl() {
   using MT  = typename KT::MemberType;
   using TPF = ekat::TeamPolicyFactory<typename KT::ExeSpace>;
 
-  constexpr Real g = PC::gravit;
+  constexpr Real g = PC::gravit.value;
 
   const auto np  = m_diagnostic_output.get_view<Real *>();
   const auto q   = get_field_in(m_qname).get_view<const Real **>();

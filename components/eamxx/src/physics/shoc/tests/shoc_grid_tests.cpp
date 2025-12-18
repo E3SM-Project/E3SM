@@ -24,7 +24,7 @@ struct UnitWrap::UnitTest<D>::TestShocGrid : public UnitWrap::UnitTest<D>::Base 
 
   void run_property()
   {
-    static constexpr Real gravit  = scream::physics::Constants<Real>::gravit;
+    static constexpr Real gravit  = scream::physics::Constants<Real>::gravit.value;
     static constexpr Int shcol    = 2;
     static constexpr Int nlev     = 5;
     static constexpr auto nlevi   = nlev + 1;
@@ -115,7 +115,7 @@ struct UnitWrap::UnitTest<D>::TestShocGrid : public UnitWrap::UnitTest<D>::Base 
         const auto offset = n + s * nlev;
 
         // check that the density is consistent with the hydrostatic approximation
-        REQUIRE(abs(SDS.rho_zt[offset] - density_zt[n]) <= std::numeric_limits<Real>::epsilon());
+        REQUIRE(std::abs(SDS.rho_zt[offset] - density_zt[n]) <= std::numeric_limits<Real>::epsilon());
 
         // check that the density has physically realistic values
         REQUIRE(SDS.rho_zt[offset] <= 2);

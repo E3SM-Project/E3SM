@@ -23,8 +23,8 @@ struct UnitWrap::UnitTest<D>::TestIceCldliqWetGrowth : public UnitWrap::UnitTest
   {
     using KTH = KokkosTypes<HostDevice>;
 
-    constexpr Scalar latvap = C::LatVap;
-    constexpr Scalar latice = C::LatIce;
+    constexpr Scalar latvap = C::LatVap.value;
+    constexpr Scalar latice = C::LatIce.value;
 
     IceWetGrowthData self[max_pack_size] = {
       // rho,temp,pres,rhofaci,table_val_qi2qr_melting,table_val_qi2qr_vent_melt,latent_heat_vapor,latent_heat_fusion,dv,kap,mu,sc,qv,qc_incld,qi_incld,ni_incld,qr_incld,log_wetgrowth,qr2qi_collect_tend,qc2qi_collect_tend,qc_growth_rate,nr_ice_shed_tend,qc2qr_ice_shed_tend

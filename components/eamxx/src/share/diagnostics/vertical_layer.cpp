@@ -185,7 +185,7 @@ void VerticalLayerDiagnostic::do_compute_diagnostic_impl()
   const bool from_sea_level      = m_from_sea_level;
   const bool geopotential        = m_geopotential;
   const int  num_levs            = m_num_levs;
-  constexpr auto g = scream::physics::Constants<Real>::gravit;
+  constexpr Real g = scream::physics::Constants<Real>::gravit.value;
 
   // Alias correct view for diagnostic output and for tmp class views
   auto tmp_mid = m_tmp_midpoint.get_view<PackT**>();

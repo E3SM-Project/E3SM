@@ -127,8 +127,8 @@ struct UnitWrap::UnitTest<D>::TestEvapSublPrecip : public UnitWrap::UnitTest<D>:
   } //end run_property
 
   void run_bfb() {
-    constexpr Scalar latvap = C::LatVap;
-    constexpr Scalar latice = C::LatIce;
+    constexpr Scalar latvap = C::LatVap.value;
+    constexpr Scalar latice = C::LatIce.value;
 
     //baseline generated data is input to the following
     //This subroutine has 20 args, only 18 are supplied here for invoking it as last 2 are intent-outs

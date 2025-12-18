@@ -185,7 +185,7 @@ void VertContractDiag::compute_diagnostic_impl() {
 
   // update the weights; if weighting by dp, we need to scale by 1/g
   if (m_weighting_method == "dp") {
-    auto g = scream::physics::Constants<Real>::gravit;
+    auto g = scream::physics::Constants<Real>::gravit.value;
     m_weighting.update(get_field_in("pseudo_density"), 1 / g, sp(0.0));
   } else if (m_weighting_method == "dz") {
     // TODO: for some reason the dz field keeps getting set to 0
