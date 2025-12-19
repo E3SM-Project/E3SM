@@ -356,15 +356,15 @@ void VertCoord::defineFields() {
    );
 
    auto ZInterfaceField = Field::create(
-       ZInterfFldName,                               // field name
-       "Cartesian Z coordinate at layer interfaces", // long name or description
-       "m",                                          // units
-       "height",                                     // CF standard Name
-       std::numeric_limits<Real>::min(),             // min valid value
-       std::numeric_limits<Real>::max(),             // max valid value
-       FillValueReal, // scalar for undefined entries
-       NDims,         // number of dimensions
-       DimNames       // dimension names
+       ZInterfFldName,                         // field name
+       "Geometric height at layer interfaces", // long name or description
+       "m",                                    // units
+       "height",                               // CF standard Name
+       std::numeric_limits<Real>::min(),       // min valid value
+       std::numeric_limits<Real>::max(),       // max valid value
+       FillValueReal,                          // scalar for undefined entries
+       NDims,                                  // number of dimensions
+       DimNames                                // dimension names
    );
 
    DimNames[1] = "NVertLayers";
@@ -382,15 +382,15 @@ void VertCoord::defineFields() {
    );
 
    auto ZMidField = Field::create(
-       ZMidFldName,                                 // field name
-       "Cartesian Z coordinate at layer midpoints", // long name or description
-       "m",                                         // units
-       "height",                                    // CF standard Name
-       std::numeric_limits<Real>::min(),            // min valid value
-       std::numeric_limits<Real>::max(),            // max valid value
-       FillValueReal, // scalar for undefined entries
-       NDims,         // number of dimensions
-       DimNames       // dimension names
+       ZMidFldName,                           // field name
+       "Geometric height at layer midpoints", // long name or description
+       "m",                                   // units
+       "height",                              // CF standard Name
+       std::numeric_limits<Real>::min(),      // min valid value
+       std::numeric_limits<Real>::max(),      // max valid value
+       FillValueReal,                         // scalar for undefined entries
+       NDims,                                 // number of dimensions
+       DimNames                               // dimension names
    );
 
    auto GeopotentialMidField = Field::create(
