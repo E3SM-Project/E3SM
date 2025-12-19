@@ -1805,6 +1805,12 @@ is the value of that variable from the *previous* time level!
                 <var name="oceanSalinity" type="real" dimensions="nISMIP6OceanLayers nCells Time" units="g/kg"
                      description="ocean salinity to be extrapolated to all grounding lines if config_calcuate_thermal_forcing is true."
                 />
+                <var name="oceanTemperatureApplied" type="real" dimensions="nISMIP6OceanLayers nCells Time" units="C"
+                     description="The actual ocean potential temperature used to calculate thermal forcing after extrapolation."
+                />
+                <var name="oceanSalinityApplied" type="real" dimensions="nISMIP6OceanLayers nCells Time" units="g/kg"
+                     description="The actual ocean salinity used to calculate thermal forcing after extrapolation."
+                />
                 <var name="icebergFjordMask" type="integer" dimensions="nCells Time" default_value="0"
                      description="Binary mask depicting where to parameterize iceberg melt-driven cooling if using config_TF_iceberg_melt = mask. 1 parameterizes iceberg melt-driven cooling at that cell, 0 indicates no iceberg-related alteration."
 		/>
