@@ -404,7 +404,7 @@ int main(int argc, char *argv[]) {
 
    LOG_INFO("----- Time Stepper Unit Test -----");
 
-   RetVal += timeStepperTest();
+   RetVal += timeStepperTest("OmegaSphereMesh.nc");
 
    Pacer::finalize();
    Kokkos::finalize();
