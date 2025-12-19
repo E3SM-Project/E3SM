@@ -124,7 +124,7 @@ int initTendenciesTest(const std::string &mesh) {
    }
 
    HorzMesh::init();
-   VertCoord::init(false);
+   VertCoord::init();
    Tracers::init();
 
    // VertCoord::init2();

@@ -119,7 +119,7 @@ int initAuxStateTest(const std::string &mesh) {
 
    HorzMesh::init();
 
-   VertCoord::init(false);
+   VertCoord::init();
 
    Tracers::init();
    int StateErr = OceanState::init();
