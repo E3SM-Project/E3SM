@@ -124,17 +124,14 @@ Some tests require a valid Omega mesh file. Different tests require different
 meshes. At the moment, mesh files need to be copied or linked to specifically
 named files under the `test` directory. Appropriate mesh files can be
 downloaded from:
-- [Ocean Mesh](https://web.lcrc.anl.gov/public/e3sm/inputdata/ocn/mpas-o/oQU240/ocean.QU.240km.151209.nc)
-- [Global Mesh](https://web.lcrc.anl.gov/public/e3sm/polaris/ocean/polaris_cache/global_convergence/icos/cosine_bell/Icos480/init/initial_state.230220.nc)
-- [Planar Mesh](https://gist.github.com/mwarusz/f8caf260398dbe140d2102ec46a41268/raw/e3c29afbadc835797604369114321d93fd69886d/PlanarPeriodic48x48.nc)
+- [Ocean Mesh](https://web.lcrc.anl.gov/public/e3sm/polaris/ocean/omega_ctest/ocean.QU.240km.omega_vars.251219.nc)
+- [Global Mesh](https://web.lcrc.anl.gov/public/e3sm/polaris/ocean/omega_ctest/cosine_bell_icos480.omega_vars.250219.nc)
+- [Planar Mesh](https://web.lcrc.anl.gov/public/e3sm/polaris/ocean/omega_ctest/PlanarPeriodic48x48.omega_vars.251219.nc)
 ```sh
-wget -O ocean_test_mesh.nc https://web.lcrc.anl.gov/public/e3sm/inputdata/ocn/mpas-o/oQU240/ocean.QU.240km.151209.nc
-wget -O global_test_mesh.nc https://web.lcrc.anl.gov/public/e3sm/polaris/ocean/polaris_cache/global_convergence/icos/cosine_bell/Icos480/init/initial_state.230220.nc
-wget -O planar_test_mesh.nc https://gist.github.com/mwarusz/f8caf260398dbe140d2102ec46a41268/raw/e3c29afbadc835797604369114321d93fd69886d/PlanarPeriodic48x48.nc
 cd test
-ln -sf  ../ocean_test_mesh.nc OmegaMesh.nc
-ln -sf  ../global_test_mesh.nc OmegaSphereMesh.nc
-ln -sf  ../planar_test_mesh.nc OmegaPlanarMesh.nc
+wget -O OmegaMesh.nc https://web.lcrc.anl.gov/public/e3sm/polaris/ocean/omega_ctest/ocean.QU.240km.omega_vars.251219.nc
+wget -O OmegaSphereMesh.nc https://web.lcrc.anl.gov/public/e3sm/polaris/ocean/omega_ctest/cosine_bell_icos480.omega_vars.250219.nc
+wget -O OmegaPlanarMesh.nc https://web.lcrc.anl.gov/public/e3sm/polaris/ocean/omega_ctest/PlanarPeriodic48x48.omega_vars.251219.nc
 cd ..
 ```
 
