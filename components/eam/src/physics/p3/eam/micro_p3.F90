@@ -749,10 +749,14 @@ end function bfb_expm1
 
     logical(btype) :: log_exitlevel, log_wetgrowth
 
-   ! Initialise FTorch sample emulator data
-   real(rtype), dimension(5), target :: ftorch_in
-   real(sp), dimension(5), target :: ftorch_out_sp
-   real(rtype), dimension(5), target :: ftorch_out
+   ! FTorch emulator buffers: 11 inputs, 4 outputs
+   real(rtype), dimension(11), target :: ftorch_in
+   real(sp),    dimension(4),  target :: ftorch_out_sp
+   real(rtype), dimension(4),  target :: ftorch_out
+   ! Debug flag for emulator testing
+   logical(btype), parameter :: test_emulator = .true.
+   ! Ensure we only emit the debug block once per run
+   logical(btype), save :: test_emulator_logged = .false.
 
    rho_qm_cloud = 400._rtype
    is_hydromet_present = .false.
@@ -1052,16 +1056,107 @@ end function bfb_expm1
 !         qrtend_TAU = qrtend_TAU_raw
 
       elseif (trim(warm_rain_method) == 'ftorch_emulator') then
-      ! Test: Do inference with Ftorch here....
-      ! This test is single precision, so pass that, and convert output back to double
+      ! FTorch ML emulator for warm rain microphysics (standalone: physical in/out)
 
-         ftorch_in = [0.0_rtype, 1.0_rtype, 2.0_rtype, 3.0_rtype, 4.0_rtype]
+         ! Map E3SM variables to emulator inputs (11 features, physical values)
+         ftorch_in(1)  = qc_incld(k)      ! QC_TAU_in
+         ftorch_in(2)  = qr_incld(k)      ! QR_TAU_in
+         ftorch_in(3)  = nc_incld(k)      ! NC_TAU_in
+         ftorch_in(4)  = nr_incld(k)      ! NR_TAU_in
+         ftorch_in(5)  = mu_c(k)          ! PGAM
+         ftorch_in(6)  = lamc(k)          ! LAMC
+         ftorch_in(7)  = lamr(k)          ! LAMR
+         ftorch_in(8)  = n0r              ! N0R (10**logn0r computed above)
+         ftorch_in(9)  = rho(k)           ! RHO_CLUBB
+         ftorch_in(10) = cld_frac_l(k)    ! CLOUD
+         ftorch_in(11) = cld_frac_r(k)    ! FREQR
 
-         call ftorch_inference_cpu(model,real(ftorch_in, kind=sp),ftorch_out_sp)
+         ! DEBUG: Test emulator with known inputs from test set
+         ! Only run once per column at the bottom level (kbot)
+         if (test_emulator .and. k == kbot .and. .not. test_emulator_logged) then
+            write(iulog, *) '========================================='
+            write(iulog, *) '=== EMULATOR DEBUG TEST (micro_p3) ==='
+            write(iulog, *) '========================================='
+            write(iulog, *) 'Level:', k, ' (kbot=', kbot, ')'
+            write(iulog, *) 'Original E3SM inputs:'
+            write(iulog, *) '  QC_TAU_in  =', ftorch_in(1)
+            write(iulog, *) '  QR_TAU_in  =', ftorch_in(2)
+            write(iulog, *) '  NC_TAU_in  =', ftorch_in(3)
+            write(iulog, *) '  NR_TAU_in  =', ftorch_in(4)
+            write(iulog, *) '  PGAM       =', ftorch_in(5)
+            write(iulog, *) '  LAMC       =', ftorch_in(6)
+            write(iulog, *) '  LAMR       =', ftorch_in(7)
+            write(iulog, *) '  N0R        =', ftorch_in(8)
+            write(iulog, *) '  RHO_CLUBB  =', ftorch_in(9)
+            write(iulog, *) '  CLOUD      =', ftorch_in(10)
+            write(iulog, *) '  FREQR      =', ftorch_in(11)
+            
+            ! write(iulog, *) '-----------------------------------------'
+            ! write(iulog, *) 'Overriding with test sample values...'
+            
+            ! ! Override with known test sample
+            ! ftorch_in(1)  = 0.00029336384168_rtype       ! QC_TAU_in
+            ! ftorch_in(2)  = 1.9902995356E-10_rtype       ! QR_TAU_in
+            ! ftorch_in(3)  = 70800471.11_rtype            ! NC_TAU_in
+            ! ftorch_in(4)  = 0.058837683909_rtype         ! NR_TAU_in
+            ! ftorch_in(5)  = 9.363465298_rtype            ! PGAM
+            ! ftorch_in(6)  = 568758.77351_rtype           ! LAMC
+            ! ftorch_in(7)  = 8518.5056809_rtype           ! LAMR
+            ! ftorch_in(8)  = 501.20939251_rtype           ! N0R
+            ! ftorch_in(9)  = 0.001072655398_rtype         ! RHO_CLUBB
+            ! ftorch_in(10) = 1.0000000043_rtype           ! CLOUD
+            ! ftorch_in(11) = 0.000000026590097846_rtype   ! FREQR
+            
+            ! write(iulog, *) 'Test inputs:'
+            ! write(iulog, *) '  QC_TAU_in  =', ftorch_in(1)
+            ! write(iulog, *) '  QR_TAU_in  =', ftorch_in(2)
+            ! write(iulog, *) '  NC_TAU_in  =', ftorch_in(3)
+            ! write(iulog, *) '  NR_TAU_in  =', ftorch_in(4)
+            ! write(iulog, *) '  PGAM       =', ftorch_in(5)
+            ! write(iulog, *) '  LAMC       =', ftorch_in(6)
+            ! write(iulog, *) '  LAMR       =', ftorch_in(7)
+            ! write(iulog, *) '  N0R        =', ftorch_in(8)
+            ! write(iulog, *) '  RHO_CLUBB  =', ftorch_in(9)
+            ! write(iulog, *) '  CLOUD      =', ftorch_in(10)
+            ! write(iulog, *) '  FREQR      =', ftorch_in(11)
+         endif
 
+         ! Run emulator inference (single precision)
+         call ftorch_inference_cpu(model, real(ftorch_in, kind=sp), ftorch_out_sp)
+
+         ! Convert output back to model precision (4 tendencies)
          ftorch_out = real(ftorch_out_sp, kind=rtype)
 
-!         write(iulog, *) 'P3 Ftorch Output:', ftorch_out(:)
+         ! DEBUG: Print outputs from test
+         if (test_emulator .and. k == kbot .and. .not. test_emulator_logged) then
+            write(iulog, *) '-----------------------------------------'
+            write(iulog, *) 'Emulator outputs (raw):'
+            write(iulog, *) '  qrtend_TAU_raw (ftorch_out(1)) =', ftorch_out(1)
+            write(iulog, *) '  nctend_TAU_raw (ftorch_out(2)) =', ftorch_out(2)
+            write(iulog, *) '  nrtend_TAU_raw (ftorch_out(3)) =', ftorch_out(3)
+            write(iulog, *) '  qctend_TAU_raw (ftorch_out(4)) =', ftorch_out(4)
+            write(iulog, *) '========================================='
+            write(iulog, *) '=== END EMULATOR DEBUG TEST ==='
+            write(iulog, *) '========================================='
+            test_emulator_logged = .true.
+         endif
+
+         ! Assign raw tendencies from emulator
+         qrtend_TAU_raw = ftorch_out(1)   ! Rain tendency
+         nctend_TAU_raw = ftorch_out(2)   ! Cloud number tendency
+         nrtend_TAU_raw = ftorch_out(3)   ! Rain number tendency
+         qctend_TAU_raw = ftorch_out(4)   ! Cloud water tendency (= -qrtend inside model)
+
+         ! Apply P3 sign conventions (sinks positive)
+         qctend_TAU = -1._rtype * qctend_TAU_raw
+         nctend_TAU = -1._rtype * nctend_TAU_raw
+         nrtend_TAU = nrtend_TAU_raw
+
+         ! Diagnostics: store initial state
+         qc_in_TAU = qc_incld(k)
+         nc_in_TAU = nc_incld(k)
+         qr_in_TAU = qr_incld(k)
+         nr_in_TAU = nr_incld(k)
 
       endif
 
