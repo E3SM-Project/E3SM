@@ -8,21 +8,30 @@ module RDycoreRestFile
   implicit none
   private
 
+  public :: RDycoreRestFileNameBase
   public :: RDycoreRestFileName
 
 contains
 
   !------------------------------------------------------------------------
-  character(len=256) function RDycoreRestFileName( rdate )
+  character(len=1024) function RDycoreRestFileNameBase( rdate )
+    use rdycore_varctl, only : inst_suffix
+
+    implicit none
+    character(len=*), intent(in) :: rdate   ! input date for restart file name
+
+    RDycoreRestFileNameBase = "./"//trim(caseid)//".rdycore"//trim(inst_suffix)//".r."//trim(rdate)!//".h5"
+
+  end function RDycoreRestFileNameBase
+
+  !------------------------------------------------------------------------
+  character(len=1024) function RDycoreRestFileName( rdate )
     use rdycore_varctl, only : inst_suffix
 
     implicit none
     character(len=*), intent(in) :: rdate   ! input date for restart file name
 
     RDycoreRestFileName = "./"//trim(caseid)//".rdycore"//trim(inst_suffix)//".r."//trim(rdate)//".h5"
-    if (masterproc) then
-       write(iulog,*)'writing restart file ',trim(RDycoreRestFileName),' for model date = ',rdate
-    end if
 
   end function RDycoreRestFileName
 

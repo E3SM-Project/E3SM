@@ -94,6 +94,8 @@ contains
   !-----------------------------------------------------------------------
   subroutine rdycore_run(coupling_dt_in_sec, rstwr, rdate)
     !
+    use RDycoreRestFile, only : RDycoreRestFileNameBase
+    !
     implicit none
     !
     integer          , intent(in) :: coupling_dt_in_sec ! runtime for rdycore before returning
@@ -101,6 +103,7 @@ contains
     character(len=*) , intent(in) :: rdate              ! date char string for restart file name
     !
     character(len=256)   :: dateTimeString
+    character(len=1024)  :: restart_filename_base
     real(r8)             :: dtime
     PetscInt             :: t!, nstep
     integer(RDyTimeUnit) :: time_unit
@@ -129,6 +132,12 @@ contains
     ! Run the simulation to completion.
     PetscCallA(RDyAdvance(rdy_, ierr))
 
+    if (rstwr) then
+       ! determine the name of the restart file
+       restart_filename_base = RDycoreRestFileNameBase(rdate)
+
+       PetscCallA(RDyWriteHDF5CheckpointFile(rdy_, restart_filename_base, ierr))
+    end if
   end subroutine rdycore_run
 
   !-----------------------------------------------------------------------
