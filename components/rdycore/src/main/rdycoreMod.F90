@@ -94,7 +94,7 @@ contains
   !-----------------------------------------------------------------------
   subroutine rdycore_run(coupling_dt_in_sec, rstwr, rdate)
     !
-    use RDycoreRestFile, only : RDycoreRestFileNameBase
+    use RDycoreRestFile, only : RDycoreRestFileNameBase, RDycoreWriteRestFile
     !
     implicit none
     !
@@ -132,12 +132,14 @@ contains
     ! Run the simulation to completion.
     PetscCallA(RDyAdvance(rdy_, ierr))
 
+    ! Is it time to write a restart file?
     if (rstwr) then
        ! determine the name of the restart file
        restart_filename_base = RDycoreRestFileNameBase(rdate)
 
-       PetscCallA(RDyWriteHDF5CheckpointFile(rdy_, restart_filename_base, ierr))
+       call RDycoreWriteRestFile( rdy_, restart_filename_base )
     end if
+
   end subroutine rdycore_run
 
   !-----------------------------------------------------------------------

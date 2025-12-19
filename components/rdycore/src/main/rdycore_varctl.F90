@@ -23,6 +23,7 @@ module rdycore_varctl
 
   logical, private :: rdycore_varctl_isset = .false.
 
+  character(len=256), public :: rpntdir = '.'            ! directory name for local restart pointer file
   character(len=256), public :: rpntfil = 'rpointer.rof' ! file name for local restart pointer file
 
   character(len=256), public :: hostname = ' ' ! Hostname of machine running on
