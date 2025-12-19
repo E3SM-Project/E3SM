@@ -544,19 +544,20 @@ globalSum(const Kokkos::View<T, ML, MS> Array, ///< [in] array to be summed
          }
       }
       // Original Kokkos sum code
-      //R8 LocalSum = 0;
+      // R8 LocalSum = 0;
       // Transfer some info on device
-      //Array1DI4 DevRange("IRange", 10);
-      //Array1DI8 DevStrides("Strides", 5);
-      //copyReduceInfoToDevice(DevRange, DevStrides, IRange, Strides);
-      //OMEGA_SCOPE(LocStrides, DevStrides);
-      //OMEGA_SCOPE(LocRange, DevRange);
-      //OMEGA_SCOPE(LocArray, Array);
-      //parallelReduce(
+      // Array1DI4 DevRange("IRange", 10);
+      // Array1DI8 DevStrides("Strides", 5);
+      // copyReduceInfoToDevice(DevRange, DevStrides, IRange, Strides);
+      // OMEGA_SCOPE(LocStrides, DevStrides);
+      // OMEGA_SCOPE(LocRange, DevRange);
+      // OMEGA_SCOPE(LocArray, Array);
+      // parallelReduce(
       //    {IRange[1] + 1, IRange[3] + 1, IRange[5] + 1, IRange[7] + 1,
       //     IRange[9] + 1},
       //    KOKKOS_LAMBDA(int I, int J, int K, int L, int M, R8 &Accum) {
-      //       if (I >= LocRange(0) and J >= LocRange(2) and K >= LocRange(4) and
+      //       if (I >= LocRange(0) and J >= LocRange(2) and K >= LocRange(4)
+      //       and
       //           L >= LocRange(6) and M >= LocRange(8)) {
       //          size_t LinearAdd = I * LocStrides[0] + J * LocStrides[1] +
       //                             K * LocStrides[2] + L * LocStrides[3] +
@@ -565,7 +566,7 @@ globalSum(const Kokkos::View<T, ML, MS> Array, ///< [in] array to be summed
       //       }
       //    },
       //    LocalSum);
-      //DDTmp = complex<double>(LocalSum, 0.0);
+      // DDTmp = complex<double>(LocalSum, 0.0);
    } // end if onHost
    // Compute final sum by adding local sums from each MPI task
    complex<double> GlobalTmp(0.0, 0.0);
@@ -854,29 +855,31 @@ globalSum(const Kokkos::View<T, ML, MS> Arr1, // [in] first  array in product
             }
          }
       }
-      //R8 LocalSum = 0;
-      // Transfer some info on device
-      //Array1DI4 DevRange("IRange", 10);
-      //Array1DI8 DevStrides("Strides", 5);
-      //copyReduceInfoToDevice(DevRange, DevStrides, IRange, Strides);
-      //OMEGA_SCOPE(LocStrides, DevStrides);
-      //OMEGA_SCOPE(LocRange, DevRange);
-      //OMEGA_SCOPE(LocArr1, Arr1);
-      //OMEGA_SCOPE(LocArr2, Arr2);
-      //parallelReduce(
-      //    {IRange[1] + 1, IRange[3] + 1, IRange[5] + 1, IRange[7] + 1,
-      //     IRange[9] + 1},
-      //    KOKKOS_LAMBDA(int I, int J, int K, int L, int M, R8 &Accum) {
-      //       if (I >= LocRange(0) and J >= LocRange(2) and K >= LocRange(4) and
-      //           L >= LocRange(6) and M >= LocRange(8)) {
-      //          size_t LinearAdd = I * LocStrides[0] + J * LocStrides[1] +
-      //                             K * LocStrides[2] + L * LocStrides[3] +
-      //                             M * LocStrides[4];
-      //          Accum += LocArr1.data()[LinearAdd] * LocArr2.data()[LinearAdd];
-      //       }
-      //    },
-      //    LocalSum);
-      //DDTmp = complex<double>(LocalSum, 0.0);
+      // R8 LocalSum = 0;
+      //  Transfer some info on device
+      // Array1DI4 DevRange("IRange", 10);
+      // Array1DI8 DevStrides("Strides", 5);
+      // copyReduceInfoToDevice(DevRange, DevStrides, IRange, Strides);
+      // OMEGA_SCOPE(LocStrides, DevStrides);
+      // OMEGA_SCOPE(LocRange, DevRange);
+      // OMEGA_SCOPE(LocArr1, Arr1);
+      // OMEGA_SCOPE(LocArr2, Arr2);
+      // parallelReduce(
+      //     {IRange[1] + 1, IRange[3] + 1, IRange[5] + 1, IRange[7] + 1,
+      //      IRange[9] + 1},
+      //     KOKKOS_LAMBDA(int I, int J, int K, int L, int M, R8 &Accum) {
+      //        if (I >= LocRange(0) and J >= LocRange(2) and K >= LocRange(4)
+      //        and
+      //            L >= LocRange(6) and M >= LocRange(8)) {
+      //           size_t LinearAdd = I * LocStrides[0] + J * LocStrides[1] +
+      //                              K * LocStrides[2] + L * LocStrides[3] +
+      //                              M * LocStrides[4];
+      //           Accum += LocArr1.data()[LinearAdd] *
+      //           LocArr2.data()[LinearAdd];
+      //        }
+      //     },
+      //     LocalSum);
+      // DDTmp = complex<double>(LocalSum, 0.0);
    } // end if onHost
    // Compute final sum by adding local sums from each MPI task
    complex<double> GlobalTmp(0.0, 0.0);

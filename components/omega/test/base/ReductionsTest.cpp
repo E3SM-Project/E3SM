@@ -225,11 +225,10 @@ void testScalarSums() {
 //------------------------------------------------------------------------------
 // Individual array test functions
 template <typename AT, typename T>
-void testArray(
-      const std::string &TestLabel, ///< [in] label for test
-      const AT Array,               ///< [in] array to be summed
-      const T RefResult,            ///< [in] reference result
-      const std::vector<I4> *IndxRange = nullptr ///< [in] index range
+void testArray(const std::string &TestLabel, ///< [in] label for test
+               const AT Array,               ///< [in] array to be summed
+               const T RefResult,            ///< [in] reference result
+               const std::vector<I4> *IndxRange = nullptr ///< [in] index range
 ) {
    MachEnv *DefEnv = MachEnv::getDefault();
    MPI_Comm Comm   = DefEnv->getComm();
@@ -239,26 +238,25 @@ void testArray(
       TestResult = globalSum(Array, Comm);
    } else {
       TestResult = globalSum(Array, Comm, IndxRange);
-   } 
+   }
 
    // temporarily document result
-   LOG_INFO(" GlobalSum Test {}: Expected {} Actual {}",
-            TestLabel, RefResult, TestResult);
+   LOG_INFO(" GlobalSum Test {}: Expected {} Actual {}", TestLabel, RefResult,
+            TestResult);
    // Exit on error
    if (TestResult != RefResult)
-      ABORT_ERROR("GlobalSum {} Test FAIL: Expected {} Actual {}",
-            TestLabel, RefResult, TestResult);
-
+      ABORT_ERROR("GlobalSum {} Test FAIL: Expected {} Actual {}", TestLabel,
+                  RefResult, TestResult);
 }
 //------------------------------------------------------------------------------
 // Individual array product test functions
 template <typename AT, typename T>
 void testArrayProd(
-      const std::string &TestLabel, ///< [in] label for test
-      const AT Arr1,                ///< [in] first array in product
-      const AT Arr2,                ///< [in] second array in product
-      const T RefResult,                  ///< [in] reference result
-      const std::vector<I4> *IndxRange = nullptr ///< [in] index range
+    const std::string &TestLabel,              ///< [in] label for test
+    const AT Arr1,                             ///< [in] first array in product
+    const AT Arr2,                             ///< [in] second array in product
+    const T RefResult,                         ///< [in] reference result
+    const std::vector<I4> *IndxRange = nullptr ///< [in] index range
 ) {
    MachEnv *DefEnv = MachEnv::getDefault();
    MPI_Comm Comm   = DefEnv->getComm();
@@ -268,16 +266,15 @@ void testArrayProd(
       TestResult = globalSum(Arr1, Arr2, Comm);
    } else {
       TestResult = globalSum(Arr1, Arr2, Comm, IndxRange);
-   } 
+   }
 
    // temporarily document result
-   LOG_INFO(" GlobalSum Test {}: Expected {} Actual {}",
-            TestLabel, RefResult, TestResult);
+   LOG_INFO(" GlobalSum Test {}: Expected {} Actual {}", TestLabel, RefResult,
+            TestResult);
    // Exit on error
    if (TestResult != RefResult)
-      ABORT_ERROR("GlobalSum {} Test FAIL: Expected {} Actual {}",
-            TestLabel, RefResult, TestResult);
-
+      ABORT_ERROR("GlobalSum {} Test FAIL: Expected {} Actual {}", TestLabel,
+                  RefResult, TestResult);
 }
 //------------------------------------------------------------------------------
 // Array sum test function
