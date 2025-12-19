@@ -259,14 +259,14 @@
   <grid name="a%ne0np4_conus_x4v1_lowcon.pg2_l%r05_oi%oEC60to30v3_r%null_g%null_w%null_z%null_m%oEC60to30v3">
     <mach name="frontier">
       <pes compset="any" pesize="any">
-        <comment>frontier conus 2 nodes, 8x1 except 7 threads in LND</comment>
+        <comment>frontier conus 4 nodes, 8x1 except 7 threads in LND</comment>
         <ntasks>
-          <ntasks_atm>-2</ntasks_atm>
-          <ntasks_lnd>-2</ntasks_lnd>
-          <ntasks_rof>-2</ntasks_rof>
-          <ntasks_ice>-2</ntasks_ice>
-          <ntasks_ocn>-2</ntasks_ocn>
-          <ntasks_cpl>-2</ntasks_cpl>
+          <ntasks_atm>-4</ntasks_atm>
+          <ntasks_lnd>-4</ntasks_lnd>
+          <ntasks_rof>-4</ntasks_rof>
+          <ntasks_ice>-4</ntasks_ice>
+          <ntasks_ocn>-4</ntasks_ocn>
+          <ntasks_cpl>-4</ntasks_cpl>
           <ntasks_glc>-1</ntasks_glc>
           <ntasks_wav>-1</ntasks_wav>
         </ntasks>
