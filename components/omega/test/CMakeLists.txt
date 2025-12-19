@@ -376,7 +376,7 @@ add_omega_test(
     REDUCTIONS_TEST
     testReductions.exe
     base/ReductionsTest.cpp
-    "-n;2;"
+    "-n;8;"
 )
 
 ###################
