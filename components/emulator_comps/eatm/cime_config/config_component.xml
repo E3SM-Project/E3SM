@@ -1,0 +1,66 @@
+<?xml version="1.0"?>
+
+<definitions_variables>
+
+  <entry id="COMP_ATM"> 
+     <type>char</type>
+     <valid_values>eatm</valid_values>
+     <default_value>eatm</default_value>
+     <group>case_comp</group>
+     <file>env_case.xml</file>
+     <desc>Name of atm component</desc>
+  </entry>
+
+  <entry id="EATM_MODE">
+    <type>char</type>
+    <valid_values>ACTIVE,NULL</valid_values>
+    <default_value>ACTIVE</default_value>
+    <values>
+      <value compset="_EATM.*" >ACTIVE</value>
+      <value grid="a%null">NULL</value>
+    </values>
+    <group>build_component_eatm</group>
+    <file>env_build.xml</file>
+    <desc>mode for eatm model, NULL means eatm is turned off</desc>
+  </entry>
+
+  <entry id="EATM_BLDNML_OPTS"> 
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value>-simyr 2000</default_value>
+    <values>
+      <value compset="1850.*_EATM">-simyr 1850</value>
+      <value compset="1950.*_EATM">-simyr 1950</value>
+      <value compset="HIST.*_EATM">-simyr 1850</value>
+      <value compset="2000.*_EATM">-simyr 2000</value>
+    </values>
+    <group>run_component_eatm</group>
+    <file>env_run.xml</file>
+    <desc>EATM build-namelist options</desc>
+  </entry>
+
+  <entry id="EATM_NAMELIST_OPTS">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value></default_value>
+    <group>run_component_eatm</group>
+    <file>env_run.xml</file>
+    <desc>EATM-specific namelist settings in the EATM build-namelist.
+      EATM_NAMELIST_OPTS is normally set as a compset variable
+      and in general should not be modified for supported compsets. 
+      It is recommended that if you want to modify this value for your experiment, 
+      you should use your own user-defined component sets via using create_newcase 
+      with a compset_file argument.</desc>
+  </entry>
+
+  <description>
+    <desc compset="_EATM">EATM:</desc>
+  </description>
+
+  <help>
+    =========================================
+    EATM naming conventions
+    =========================================
+  </help>
+
+</definitions_variables>

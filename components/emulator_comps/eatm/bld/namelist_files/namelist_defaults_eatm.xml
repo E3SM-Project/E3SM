@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="namelist_defaults.xsl"?>
+
+<namelist_defaults>
+
+<!--
+Values to use by default for creation of EATM model namelists.
+The element names are the same as the corresponding namelist
+variables.  Values that depend on the model configuration use
+attributes to express the dependency.  
+
+The default filenames are given relative to the root directory
+for the EATM data in the E3SM distribution 
+-->
+
+<!-- Default eatm namelist -->
+
+<do_eatm>.true.</do_eatm> 
+
+<!-- Emulator atm domain file (relative to DIN_LOC_ROOT) -->
+<filename_eatm atm_grid="gauss180x360" >share/meshes/gaussian_180x360_latlon.scrip.nc</filename_eatm>
+
+</namelist_defaults>
