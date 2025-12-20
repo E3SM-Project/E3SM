@@ -40,4 +40,6 @@ endif()
 string(APPEND KOKKOS_OPTIONS " -DKokkos_ENABLE_HIP=On -DKokkos_ARCH_ZEN3=On -DKokkos_ARCH_VEGA90A=On -DKokkos_ENABLE_OPENMP=Off")
 
 set(USE_HIP "TRUE")
-string(APPEND CMAKE_HIP_FLAGS "$ENV{CXXFLAGS} --offload-arch=gfx90a -munsafe-fp-atomics")
+set(AMDGPU_TARGETS "gfx90a")
+set(GPU_TARGETS "gfx90a")
+string(APPEND CMAKE_HIP_FLAGS "$ENV{CXXFLAGS} -munsafe-fp-atomics")
