@@ -2439,6 +2439,7 @@ void IOStream::writeStream(
    // Open output file
    int OutFileID;
    IO::openFile(OutFileID, OutFileName, Mode, IO::FmtDefault, ExistAction);
+   bool NeedEndDef = false; // check if we need to call end-define-mode
 
    // For files with multiple frames or time slices, we need to determine the
    // default Frame number for time-dependent fields. If the frame/time already
@@ -2491,6 +2492,7 @@ void IOStream::writeStream(
    if (Frame < 1) {
       writeFieldMeta(CodeMeta, OutFileID, IO::GlobalID);
       writeFieldMeta(SimMeta, OutFileID, IO::GlobalID);
+      NeedEndDef = true;
    }
 
    // Create and write a field for any global data that is file or time
@@ -2506,6 +2508,10 @@ void IOStream::writeStream(
       FileField->addMetadata(SimTimeName, SimTimeStr);
    }
    // Write and then destroy temporary field
+   if (!NeedEndDef) { // in data-mode, need to redef
+      PIOc_redef(OutFileID);
+      NeedEndDef = true;
+   }
    writeFieldMeta("FileField", OutFileID, IO::GlobalID);
    Field::destroy("FileField");
 
@@ -2557,7 +2563,11 @@ void IOStream::writeStream(
       // Now we can write the field metadata
       if (Frame < 1) { // only write if it's the first time
          writeFieldMeta(FieldName, OutFileID, FieldID);
+         NeedEndDef = true;
       }
+   }
+   if (NeedEndDef) {
+      IO::endDefinePhase(OutFileID);
    }
 
    // Now write data arrays for all fields in contents

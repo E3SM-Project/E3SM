@@ -291,7 +291,7 @@ void openFile(
       case IfExists::Append:
          if (std::filesystem::exists(Filename)) {
             PIOErr = PIOc_openfile(SysID, &FileID, &Format, Filename.c_str(),
-                                   InMode);
+                                   NC_CLOBBER | PIO_64BIT_DATA | InMode);
          } else {
             PIOErr = PIOc_createfile(SysID, &FileID, &Format, Filename.c_str(),
                                      PIO_64BIT_DATA | InMode);
