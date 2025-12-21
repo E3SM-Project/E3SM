@@ -45,8 +45,7 @@ struct TestSetup {
    }
 };
 
-constexpr Geometry Geom   = Geometry::Spherical;
-constexpr int NVertLayers = 60;
+constexpr Geometry Geom = Geometry::Spherical;
 
 int initState() {
    int Err = 0;
