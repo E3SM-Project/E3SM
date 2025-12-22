@@ -5,6 +5,7 @@
 		<var name="snowVolumeCategoryMask"		type="integer"	dimensions="ONE nCategories nCells"			name_in_code="snowVolumeCategoryMask"/>
 		<var name="surfaceTemperatureMask"		type="integer"	dimensions="ONE nCategories nCells"			name_in_code="surfaceTemperatureMask"/>
 		<var name="iceEnthalpyMask"			type="integer"	dimensions="nIceLayers nCategories nCells"		name_in_code="iceEnthalpyMask"/>
+                <var name="floeSizeDistMask"                    type="integer"  dimensions="nFloeCategories nCategories nCells"         name_in_code="floeSizeDistMask"/>
 		<var name="iceSalinityMask"			type="integer"	dimensions="nIceLayers nCategories nCells"		name_in_code="iceSalinityMask"/>
 		<var name="snowEnthalpyMask"			type="integer"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowEnthalpyMask"/>
 		<var name="snowIceMassMask"			type="integer"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowIceMassMask"			packages="pkgColumnTracerEffectiveSnowDensity"/>
@@ -77,6 +78,7 @@
 		<var name="surfaceTemperatureEdgeFlux"			type="real"	dimensions="ONE nCategories nEdges"			name_in_code="surfaceTemperatureEdgeFlux"/>
 		<var name="iceEnthalpyEdgeFlux"			type="real"	dimensions="nIceLayers nCategories nEdges"		name_in_code="iceEnthalpyEdgeFlux"/>
 		<var name="iceSalinityEdgeFlux"			type="real"	dimensions="nIceLayers nCategories nEdges"		name_in_code="iceSalinityEdgeFlux"/>
+		<var name="floeSizeDistEdgeFlux" type="real" dimensions="nFloeCategories nCategories nEdges" name_in_code="floeSizeDistEdgeFlux"/>
 		<var name="snowEnthalpyEdgeFlux"			type="real"	dimensions="nSnowLayers nCategories nEdges"		name_in_code="snowEnthalpyEdgeFlux"/>
 		<var name="snowIceMassEdgeFlux"			type="real"	dimensions="nSnowLayers nCategories nEdges"		name_in_code="snowIceMassEdgeFlux"			packages="pkgColumnTracerEffectiveSnowDensity"/>
 		<var name="snowLiquidMassEdgeFlux"			type="real"	dimensions="nSnowLayers nCategories nEdges"		name_in_code="snowLiquidMassEdgeFlux"			packages="pkgColumnTracerEffectiveSnowDensity"/>
@@ -148,6 +150,7 @@
 		<var name="surfaceTemperatureProduct"		type="real"	dimensions="ONE nCategories nCells"			name_in_code="surfaceTemperatureProduct"/>
 		<var name="iceEnthalpyProduct"			type="real"	dimensions="nIceLayers nCategories nCells"		name_in_code="iceEnthalpyProduct"/>
 		<var name="iceSalinityProduct"			type="real"	dimensions="nIceLayers nCategories nCells"		name_in_code="iceSalinityProduct"/>
+		<var name="floeSizeDistProduct" type="real" dimensions="nFloeCategories nCategories nCells" name_in_code="floeSizeDistProduct"/>
 		<var name="snowEnthalpyProduct"		type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowEnthalpyProduct"/>
 		<var name="snowIceMassProduct"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowIceMassProduct"			packages="pkgColumnTracerEffectiveSnowDensity"/>
 		<var name="snowLiquidMassProduct"		type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowLiquidMassProduct"			packages="pkgColumnTracerEffectiveSnowDensity"/>
@@ -218,6 +221,7 @@
 		<var name="surfaceTemperatureTriangle"			type="real"	dimensions="ONE nCategories nQuadPoints nTriPerEdgeRemap nEdges"			name_in_code="surfaceTemperatureTriangle"/>
 		<var name="iceEnthalpyTriangle"			type="real"	dimensions="nIceLayers nCategories nQuadPoints nTriPerEdgeRemap nEdges"		name_in_code="iceEnthalpyTriangle"/>
 		<var name="iceSalinityTriangle"			type="real"	dimensions="nIceLayers nCategories nQuadPoints nTriPerEdgeRemap nEdges"		name_in_code="iceSalinityTriangle"/>
+		<var name="floeSizeDistTriangle" type="real" dimensions="nFloeCategories nCategories nQuadPoints nTriPerEdgeRemap nEdges" name_in_code="floeSizeDistTriangle"/>
 		<var name="snowEnthalpyTriangle"			type="real"	dimensions="nSnowLayers nCategories nQuadPoints nTriPerEdgeRemap nEdges"		name_in_code="snowEnthalpyTriangle"/>
 		<var name="snowIceMassTriangle"			type="real"	dimensions="nSnowLayers nCategories nQuadPoints nTriPerEdgeRemap nEdges"		name_in_code="snowIceMassTriangle"			packages="pkgColumnTracerEffectiveSnowDensity"/>
 		<var name="snowLiquidMassTriangle"			type="real"	dimensions="nSnowLayers nCategories nQuadPoints nTriPerEdgeRemap nEdges"		name_in_code="snowLiquidMassTriangle"			packages="pkgColumnTracerEffectiveSnowDensity"/>
@@ -294,6 +298,8 @@
 		<var name="iceEnthalpyBarycentery"			type="real"	dimensions="nIceLayers nCategories nCells"		name_in_code="iceEnthalpyBarycentery"/>
 		<var name="iceSalinityBarycenterx"			type="real"	dimensions="nIceLayers nCategories nCells"		name_in_code="iceSalinityBarycenterx"/>
 		<var name="iceSalinityBarycentery"			type="real"	dimensions="nIceLayers nCategories nCells"		name_in_code="iceSalinityBarycentery"/>
+		<var name="floeSizeDistBarycenterx"			type="real"	dimensions="nFloeCategories nCategories nCells"		name_in_code="floeSizeDistBarycenterx"/>
+		<var name="floeSizeDistBarycentery"			type="real"	dimensions="nFloeCategories nCategories nCells"		name_in_code="floeSizeDistBarycentery"/>
 		<var name="snowEnthalpyBarycenterx"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowEnthalpyBarycenterx"/>
 		<var name="snowEnthalpyBarycentery"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowEnthalpyBarycentery"/>
 		<var name="snowIceMassBarycenterx"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowIceMassBarycenterx"			packages="pkgColumnTracerEffectiveSnowDensity"/>
@@ -438,6 +444,9 @@
 		<var name="iceSalinityCenter"			type="real"	dimensions="nIceLayers nCategories nCells"		name_in_code="iceSalinityCenter"/>
 		<var name="iceSalinityGradx"			type="real"	dimensions="nIceLayers nCategories nCells"		name_in_code="iceSalinityGradx"/>
 		<var name="iceSalinityGrady"			type="real"	dimensions="nIceLayers nCategories nCells"		name_in_code="iceSalinityGrady"/>
+		<var name="floeSizeDistCenter"			type="real"	dimensions="nFloeCategories nCategories nCells"		name_in_code="floeSizeDistCenter"/>
+		<var name="floeSizeDistGradx"			type="real"	dimensions="nFloeCategories nCategories nCells"		name_in_code="floeSizeDistGradx"/>
+		<var name="floeSizeDistGrady"			type="real"	dimensions="nFloeCategories nCategories nCells"		name_in_code="floeSizeDistGrady"/>
 		<var name="snowEnthalpyCenter"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowEnthalpyCenter"/>
 		<var name="snowEnthalpyGradx"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowEnthalpyGradx"/>
 		<var name="snowEnthalpyGrady"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowEnthalpyGrady"/>
@@ -632,6 +641,7 @@
 		<var name="surfaceTemperatureCons"		type="real"	dimensions="ONE nCategories"				name_in_code="surfaceTemperatureCons"/>
 		<var name="iceEnthalpyCons"			type="real"	dimensions="nIceLayers nCategories"			name_in_code="iceEnthalpyCons"/>
 		<var name="iceSalinityCons"			type="real"	dimensions="nIceLayers nCategories"			name_in_code="iceSalinityCons"/>
+		<var name="floeSizeDistCons" type="real" dimensions="nFloeCategories nCategories" name_in_code="floeSizeDistCons"/>
 		<var name="snowEnthalpyCons"			type="real"	dimensions="nSnowLayers nCategories"			name_in_code="snowEnthalpyCons"/>
 		<var name="snowIceMassCons"			type="real"	dimensions="nSnowLayers nCategories"			name_in_code="snowIceMassCons"			packages="pkgColumnTracerEffectiveSnowDensity"/>
 		<var name="snowLiquidMassCons"			type="real"	dimensions="nSnowLayers nCategories"			name_in_code="snowLiquidMassCons"		packages="pkgColumnTracerEffectiveSnowDensity"/>
@@ -708,6 +718,8 @@
 		<var name="iceEnthalpyLocalMax"			type="real"	dimensions="nIceLayers nCategories nCells"		name_in_code="iceEnthalpyLocalMax"/>
 		<var name="iceSalinityLocalMin"			type="real"	dimensions="nIceLayers nCategories nCells"		name_in_code="iceSalinityLocalMin"/>
 		<var name="iceSalinityLocalMax"			type="real"	dimensions="nIceLayers nCategories nCells"		name_in_code="iceSalinityLocalMax"/>
+		<var name="floeSizeDistLocalMin"		type="real"	dimensions="nFloeCategories nCategories nCells"		name_in_code="floeSizeDistLocalMin"/>
+		<var name="floeSizeDistLocalMax"			type="real"	dimensions="nFloeCategories nCategories nCells"		name_in_code="floeSizeDistLocalMax"/>
 		<var name="snowEnthalpyLocalMin"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowEnthalpyLocalMin"/>
 		<var name="snowEnthalpyLocalMax"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowEnthalpyLocalMax"/>
 		<var name="snowIceMassLocalMin"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowIceMassLocalMin"			packages="pkgColumnTracerEffectiveSnowDensity"/>

@@ -358,6 +358,22 @@
     <values>
       <value>none</value>
       <value WAV_ICE_COUP="oneway">oneway</value>
+      <value WAV_ICE_COUP="twoway">twoway</value>
+    </values>
+  </entry>
+
+   <entry id="wav_nfreq">
+    <type>integer</type>
+    <category>seq_flds</category>
+    <group>seq_cplflds_inparm</group>
+    <desc>
+      Number of wave frequencies. Set by the xml variable WAV_SPEC in env_case.xml
+    </desc>
+    <values>
+      <value WAVSPEC='none'>0</value>
+      <value WAVSPEC='sp25x36'>25</value>
+      <value WAVSPEC='sp36x36'>36</value>
+      <value WAVSPEC='sp50x36'>50</value>
     </values>
   </entry>
 
@@ -5195,6 +5211,36 @@
     </desc>
     <values>
       <value>$WAV2OCN_FMAPTYPE</value>
+      <value bfbflag="on">X</value>
+    </values>
+  </entry>
+
+    <entry id="wav2ice_smapname"    modify_via_xml="WAV2ICE_SMAPNAME">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      wav to ice state mapping file for states
+    </desc>
+    <values>
+      <value>$WAV2ICE_SMAPNAME</value>
+    </values>
+  </entry>
+
+  <entry id="wav2ice_smaptype"    modify_via_xml="WAV2ICE_SMAPTYPE">
+    <type>char</type>
+    <category>mapping</category>
+    <group>seq_maps</group>
+    <desc>
+      The type of mapping desired, either "source" or "destination" mapping.
+      X is associated with rearrangement of the source grid to the
+      destination grid and then local mapping.  Y is associated with mapping
+      on the source grid and then rearrangement and sum to the destination
+      grid.
+    </desc>
+    <values>
+      <value>$WAV2ICE_SMAPTYPE</value>
       <value bfbflag="on">X</value>
     </values>
   </entry>
