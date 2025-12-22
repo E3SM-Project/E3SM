@@ -4,6 +4,7 @@
 #include "DataTypes.h"
 #include "HorzMesh.h"
 #include "OmegaKokkos.h"
+#include "VertCoord.h"
 
 #include <string>
 
@@ -20,16 +21,18 @@ class LayerThicknessAuxVars {
    FluxThickEdgeOption FluxThickEdgeChoice;
 
    LayerThicknessAuxVars(const std::string &AuxStateSuffix,
-                         const HorzMesh *Mesh, int NVertLayers);
+                         const HorzMesh *Mesh, const VertCoord *VCoord);
 
    KOKKOS_FUNCTION void
    computeVarsOnEdge(int IEdge, int KChunk, const Array2DReal &LayerThickCell,
                      const Array2DReal &NormalVelEdge) const {
-      const int KStart = KChunk * VecLength;
+      const int KStart = chunkStart(KChunk, MinLayerEdgeBot(IEdge));
+      const int KLen   = chunkLength(KChunk, KStart, MaxLayerEdgeTop(IEdge));
+
       const int JCell0 = CellsOnEdge(IEdge, 0);
       const int JCell1 = CellsOnEdge(IEdge, 1);
 
-      for (int KVec = 0; KVec < VecLength; ++KVec) {
+      for (int KVec = 0; KVec < KLen; ++KVec) {
          const int K = KStart + KVec;
          MeanLayerThickEdge(IEdge, K) =
              0.5_Real * (LayerThickCell(JCell0, K) + LayerThickCell(JCell1, K));
@@ -37,7 +40,7 @@ class LayerThicknessAuxVars {
 
       switch (FluxThickEdgeChoice) {
       case FluxThickEdgeOption::Center:
-         for (int KVec = 0; KVec < VecLength; ++KVec) {
+         for (int KVec = 0; KVec < KLen; ++KVec) {
             const int K = KStart + KVec;
             FluxLayerThickEdge(IEdge, K) =
                 0.5_Real *
@@ -45,7 +48,7 @@ class LayerThicknessAuxVars {
          }
          break;
       case FluxThickEdgeOption::Upwind:
-         for (int KVec = 0; KVec < VecLength; ++KVec) {
+         for (int KVec = 0; KVec < KLen; ++KVec) {
             const int K = KStart + KVec;
             if (NormalVelEdge(IEdge, K) > 0) {
                FluxLayerThickEdge(IEdge, K) = LayerThickCell(JCell0, K);
@@ -65,8 +68,10 @@ class LayerThicknessAuxVars {
                       const Array2DReal &LayerThickCell) const {
 
       // Temporary for stacked shallow water
-      const int KStart = KChunk * VecLength;
-      for (int KVec = 0; KVec < VecLength; ++KVec) {
+      const int KStart = chunkStart(KChunk, MinLayerCell(ICell));
+      const int KLen   = chunkLength(KChunk, KStart, MaxLayerCell(ICell));
+
+      for (int KVec = 0; KVec < KLen; ++KVec) {
          const int K       = KStart + KVec;
          SshCell(ICell, K) = LayerThickCell(ICell, K) - BottomDepth(ICell);
       }
@@ -88,6 +93,10 @@ class LayerThicknessAuxVars {
  private:
    Array2DI4 CellsOnEdge;
    Array1DReal BottomDepth;
+   Array1DI4 MinLayerEdgeBot;
+   Array1DI4 MaxLayerEdgeTop;
+   Array1DI4 MinLayerCell;
+   Array1DI4 MaxLayerCell;
 };
 
 } // namespace OMEGA

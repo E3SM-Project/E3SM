@@ -83,6 +83,7 @@ TimeStepper *TimeStepper::create(
     Tendencies *InTend,             ///< [in] ptr to tendencies
     AuxiliaryState *InAuxState,     ///< [in] ptr to aux state variables
     HorzMesh *InMesh,               ///< [in] ptr to mesh information
+    VertCoord *InVCoord,            ///< [in] ptr to vertical coordinate
     Halo *InMeshHalo                ///< [in] ptr to halos
 ) {
 
@@ -119,7 +120,7 @@ TimeStepper *TimeStepper::create(
    }
 
    // Attach data pointers
-   NewTimeStepper->attachData(InTend, InAuxState, InMesh, InMeshHalo);
+   NewTimeStepper->attachData(InTend, InAuxState, InMesh, InVCoord, InMeshHalo);
 
    // Store instance
    AllTimeSteppers.emplace(InName, NewTimeStepper);
@@ -182,6 +183,7 @@ void TimeStepper::attachData(
     Tendencies *InTend,         // [in] ptr to tendencies (right hand side)
     AuxiliaryState *InAuxState, // [in] ptr to needed aux state variables
     HorzMesh *InMesh,           // [in] ptr to mesh information
+    VertCoord *InVCoord,        // [in] ptr to vertical coordinate
     Halo *InMeshHalo            // [in] ptr to halos
 ) {
 
@@ -191,12 +193,15 @@ void TimeStepper::attachData(
       ABORT_ERROR("AuxState pointer not defined");
    if (!InMesh)
       ABORT_ERROR("HorzMesh pointer not defined");
+   if (!InVCoord)
+      ABORT_ERROR("VertCoord pointer not defined");
    if (!InMeshHalo)
       ABORT_ERROR("MeshHalo pointer not defined");
 
    Tend     = InTend;
    AuxState = InAuxState;
    Mesh     = InMesh;
+   VCoord   = InVCoord;
    MeshHalo = InMeshHalo;
 
    // Some time steppers have additional tasks to finalize
@@ -303,12 +308,14 @@ void TimeStepper::init2() {
 
    // Get default pointers
    HorzMesh *DefMesh        = HorzMesh::getDefault();
+   VertCoord *DefVCoord     = VertCoord::getDefault();
    Halo *DefHalo            = Halo::getDefault();
    Tendencies *DefTend      = Tendencies::getDefault();
    AuxiliaryState *AuxState = AuxiliaryState::getDefault();
 
    // Attach data pointers
-   DefaultTimeStepper->attachData(DefTend, AuxState, DefMesh, DefHalo);
+   DefaultTimeStepper->attachData(DefTend, AuxState, DefMesh, DefVCoord,
+                                  DefHalo);
 }
 
 //------------------------------------------------------------------------------
@@ -386,17 +393,28 @@ void TimeStepper::updateThicknessByTend(OceanState *State1, int TimeLevel1,
    Err = State2->getLayerThickness(LayerThick2, TimeLevel2);
    if (Err != 0)
       ABORT_ERROR("TimeStepper updateThickness: error retrieving layer thick");
-   const auto &LayerThickTend = Tend->LayerThicknessTend;
-   const int NVertLayers      = LayerThickTend.extent_int(1);
 
    R8 CoeffSeconds;
    Coeff.get(CoeffSeconds, TimeUnits::Seconds);
 
-   parallelFor(
-       "updateThickByTend", {Mesh->NCellsAll, NVertLayers},
-       KOKKOS_LAMBDA(int ICell, int K) {
-          LayerThick1(ICell, K) =
-              LayerThick2(ICell, K) + CoeffSeconds * LayerThickTend(ICell, K);
+   OMEGA_SCOPE(LayerThickTend, Tend->LayerThicknessTend);
+   OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
+   OMEGA_SCOPE(MaxLayerCell, VCoord->MaxLayerCell);
+
+   parallelForOuter(
+       "updateThickByTend", {Mesh->NCellsAll},
+       KOKKOS_LAMBDA(int ICell, const TeamMember &Team) {
+          const int KMin   = MinLayerCell(ICell);
+          const int KMax   = MaxLayerCell(ICell);
+          const int KRange = vertRange(KMin, KMax);
+
+          parallelForInner(
+              Team, KRange, INNER_LAMBDA(int KChunk) {
+                 const int K = KMin + KChunk;
+                 LayerThick1(ICell, K) =
+                     LayerThick2(ICell, K) +
+                     CoeffSeconds * LayerThickTend(ICell, K);
+              });
        });
 }
 
@@ -415,17 +433,27 @@ void TimeStepper::updateVelocityByTend(OceanState *State1, int TimeLevel1,
    Err = State2->getNormalVelocity(NormalVel2, TimeLevel2);
    if (Err != 0)
       ABORT_ERROR("TimeStepper updateVelocity: error retrieving velocity");
-   const auto &NormalVelTend = Tend->NormalVelocityTend;
-   const int NVertLayers     = NormalVelTend.extent_int(1);
 
    R8 CoeffSeconds;
    Coeff.get(CoeffSeconds, TimeUnits::Seconds);
 
-   parallelFor(
-       "updateVelByTend", {Mesh->NEdgesAll, NVertLayers},
-       KOKKOS_LAMBDA(int IEdge, int K) {
-          NormalVel1(IEdge, K) =
-              NormalVel2(IEdge, K) + CoeffSeconds * NormalVelTend(IEdge, K);
+   OMEGA_SCOPE(NormalVelTend, Tend->NormalVelocityTend);
+   OMEGA_SCOPE(MinLayerEdgeBot, VCoord->MinLayerEdgeBot);
+   OMEGA_SCOPE(MaxLayerEdgeTop, VCoord->MaxLayerEdgeTop);
+
+   parallelForOuter(
+       "updateVelByTend", {Mesh->NEdgesAll},
+       KOKKOS_LAMBDA(int IEdge, const TeamMember &Team) {
+          const int KMin   = MinLayerEdgeBot(IEdge);
+          const int KMax   = MaxLayerEdgeTop(IEdge);
+          const int KRange = vertRange(KMin, KMax);
+
+          parallelForInner(
+              Team, KRange, INNER_LAMBDA(int KChunk) {
+                 const int K          = KMin + KChunk;
+                 NormalVel1(IEdge, K) = NormalVel2(IEdge, K) +
+                                        CoeffSeconds * NormalVelTend(IEdge, K);
+              });
        });
 }
 
@@ -451,20 +479,29 @@ void TimeStepper::updateTracersByTend(const Array3DReal &NextTracers,
 
    const auto &LayerThick1 = State1->LayerThickness[TimeLevel1];
    const auto &LayerThick2 = State2->LayerThickness[TimeLevel2];
-   const auto &TracerTend  = Tend->TracerTend;
-   const int NTracers      = TracerTend.extent(0);
-   const int NVertLayers   = TracerTend.extent(2);
+
+   OMEGA_SCOPE(TracerTend, Tend->TracerTend);
+   const int NTracers = TracerTend.extent(0);
+   OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
+   OMEGA_SCOPE(MaxLayerCell, VCoord->MaxLayerCell);
 
    R8 CoeffSeconds;
    Coeff.get(CoeffSeconds, TimeUnits::Seconds);
 
-   parallelFor(
-       "updateTracersByTend", {NTracers, Mesh->NCellsAll, NVertLayers},
-       KOKKOS_LAMBDA(int L, int ICell, int K) {
-          NextTracers(L, ICell, K) =
-              (CurTracers(L, ICell, K) * LayerThick2(ICell, K) +
-               CoeffSeconds * TracerTend(L, ICell, K)) /
-              LayerThick1(ICell, K);
+   parallelForOuter(
+       "updateTracersByTend", {NTracers, Mesh->NCellsAll},
+       KOKKOS_LAMBDA(int L, int ICell, const TeamMember &Team) {
+          const int KMin   = MinLayerCell(ICell);
+          const int KMax   = MaxLayerCell(ICell);
+          const int KRange = vertRange(KMin, KMax);
+          parallelForInner(
+              Team, KRange, INNER_LAMBDA(int KChunk) {
+                 const int K = KMin + KChunk;
+                 NextTracers(L, ICell, K) =
+                     (CurTracers(L, ICell, K) * LayerThick2(ICell, K) +
+                      CoeffSeconds * TracerTend(L, ICell, K)) /
+                     LayerThick1(ICell, K);
+              });
        });
 }
 
@@ -476,13 +513,21 @@ void TimeStepper::weightTracers(const Array3DReal &NextTracers,
 
    const Array2DReal &CurThickness = CurState->LayerThickness[TimeLevel1];
    const int NTracers              = NextTracers.extent(0);
-   const int NVertLayers           = NextTracers.extent(2);
+   OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
+   OMEGA_SCOPE(MaxLayerCell, VCoord->MaxLayerCell);
 
-   parallelFor(
-       "weightTracers", {NTracers, Mesh->NCellsAll, NVertLayers},
-       KOKKOS_LAMBDA(int L, int ICell, int K) {
-          NextTracers(L, ICell, K) =
-              CurTracers(L, ICell, K) * CurThickness(ICell, K);
+   parallelForOuter(
+       "weightTracers", {NTracers, Mesh->NCellsAll},
+       KOKKOS_LAMBDA(int L, int ICell, const TeamMember &Team) {
+          const int KMin   = MinLayerCell(ICell);
+          const int KMax   = MaxLayerCell(ICell);
+          const int KRange = vertRange(KMin, KMax);
+          parallelForInner(
+              Team, KRange, INNER_LAMBDA(int KChunk) {
+                 const int K = KMin + KChunk;
+                 NextTracers(L, ICell, K) =
+                     CurTracers(L, ICell, K) * CurThickness(ICell, K);
+              });
        });
 }
 
@@ -494,15 +539,24 @@ void TimeStepper::accumulateTracersUpdate(const Array3DReal &AccumTracer,
 
    const auto &TracerTend = Tend->TracerTend;
    const int NTracers     = TracerTend.extent(0);
-   const int NVertLayers  = TracerTend.extent(2);
+   OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
+   OMEGA_SCOPE(MaxLayerCell, VCoord->MaxLayerCell);
 
    R8 CoeffSeconds;
    Coeff.get(CoeffSeconds, TimeUnits::Seconds);
 
-   parallelFor(
-       "accumulateTracersUpdate", {NTracers, Mesh->NCellsAll, NVertLayers},
-       KOKKOS_LAMBDA(int L, int ICell, int K) {
-          AccumTracer(L, ICell, K) += CoeffSeconds * TracerTend(L, ICell, K);
+   parallelForOuter(
+       "accumulateTracersUpdate", {NTracers, Mesh->NCellsAll},
+       KOKKOS_LAMBDA(int L, int ICell, const TeamMember &Team) {
+          const int KMin   = MinLayerCell(ICell);
+          const int KMax   = MaxLayerCell(ICell);
+          const int KRange = vertRange(KMin, KMax);
+          parallelForInner(
+              Team, KRange, INNER_LAMBDA(int KChunk) {
+                 const int K = KMin + KChunk;
+                 AccumTracer(L, ICell, K) +=
+                     CoeffSeconds * TracerTend(L, ICell, K);
+              });
        });
 }
 
@@ -514,12 +568,20 @@ void TimeStepper::finalizeTracersUpdate(const Array3DReal &NextTracers,
 
    const Array2DReal &NextThick = State->LayerThickness[TimeLevel];
    const int NTracers           = NextTracers.extent(0);
-   const int NVertLayers        = NextTracers.extent(2);
+   OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
+   OMEGA_SCOPE(MaxLayerCell, VCoord->MaxLayerCell);
 
-   parallelFor(
-       "finalizeTracersUpdate", {NTracers, Mesh->NCellsAll, NVertLayers},
-       KOKKOS_LAMBDA(int L, int ICell, int K) {
-          NextTracers(L, ICell, K) /= NextThick(ICell, K);
+   parallelForOuter(
+       "finalizeTracersUpdate", {NTracers, Mesh->NCellsAll},
+       KOKKOS_LAMBDA(int L, int ICell, const TeamMember &Team) {
+          const int KMin   = MinLayerCell(ICell);
+          const int KMax   = MaxLayerCell(ICell);
+          const int KRange = vertRange(KMin, KMax);
+          parallelForInner(
+              Team, KRange, INNER_LAMBDA(int KChunk) {
+                 const int K = KMin + KChunk;
+                 NextTracers(L, ICell, K) /= NextThick(ICell, K);
+              });
        });
 }
 

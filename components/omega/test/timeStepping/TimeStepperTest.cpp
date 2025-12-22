@@ -204,8 +204,8 @@ int initTimeStepperTest(const std::string &mesh) {
       LOG_ERROR("TimeStepperTest: error creating test state");
    }
 
-   auto *TestAuxState = AuxiliaryState::create(
-       "TestAuxState", DefMesh, DefVertCoord, DefHalo, NVertLayers, NTracers);
+   auto *TestAuxState = AuxiliaryState::create("TestAuxState", DefMesh, DefHalo,
+                                               DefVertCoord, NTracers);
 
    Config *OmegaConfig = Config::getOmegaConfig();
    TestAuxState->readConfigOptions(OmegaConfig);
@@ -293,6 +293,7 @@ int testTimeStepper(const std::string &Name, TimeStepperType Type,
 
    // Set pointers to data
    auto *DefMesh        = HorzMesh::getDefault();
+   auto *DefVCoord      = VertCoord::getDefault();
    auto *DefHalo        = Halo::getDefault();
    auto *TestAuxState   = AuxiliaryState::get("TestAuxState");
    auto *TestTendencies = Tendencies::get("TestTendencies");
@@ -308,7 +309,7 @@ int testTimeStepper(const std::string &Name, TimeStepperType Type,
 
    auto *TestTimeStepper = TimeStepper::create(
        "TestTimeStepper", Type, TimeStart, TimeEndTI, TimeStepTI,
-       TestTendencies, TestAuxState, DefMesh, DefHalo);
+       TestTendencies, TestAuxState, DefMesh, DefVCoord, DefHalo);
 
    if (!TestTimeStepper) {
       Err++;
@@ -403,7 +404,7 @@ int main(int argc, char *argv[]) {
 
    LOG_INFO("----- Time Stepper Unit Test -----");
 
-   RetVal += timeStepperTest();
+   RetVal += timeStepperTest("OmegaSphereMesh.nc");
 
    Pacer::finalize();
    Kokkos::finalize();

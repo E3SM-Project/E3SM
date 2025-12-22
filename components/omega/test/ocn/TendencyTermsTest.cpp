@@ -334,7 +334,8 @@ int testThickFluxDiv(int NVertLayers, Real RTol) {
    int Err = 0;
    TestSetup Setup;
 
-   const auto Mesh = HorzMesh::getDefault();
+   const auto Mesh   = HorzMesh::getDefault();
+   const auto VCoord = VertCoord::getDefault();
 
    // Compute exact result
    Array2DReal ExactThickFluxDiv("ExactThickFluxDiv", Mesh->NCellsOwned,
@@ -361,7 +362,7 @@ int testThickFluxDiv(int NVertLayers, Real RTol) {
    // Compute numerical result
    Array2DReal NumThickFluxDiv("NumThickFluxDiv", Mesh->NCellsOwned,
                                NVertLayers);
-   ThicknessFluxDivOnCell ThickFluxDivOnC(Mesh);
+   ThicknessFluxDivOnCell ThickFluxDivOnC(Mesh, VCoord);
    parallelFor(
        {Mesh->NCellsOwned, NVertLayers}, KOKKOS_LAMBDA(int ICell, int KLayer) {
           ThickFluxDivOnC(NumThickFluxDiv, ICell, KLayer, OnesEdge,
@@ -1048,8 +1049,7 @@ int tendencyTermsTest(const std::string &MeshFile = DefaultMeshFile) {
 
    initTendTest(MeshFile, NVertLayers);
 
-   const auto &Mesh = HorzMesh::getDefault();
-   int NTracers     = 3;
+   int NTracers = 3;
 
    const Real RTol = sizeof(Real) == 4 ? 2e-2 : 1e-5;
 

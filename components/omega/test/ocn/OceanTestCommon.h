@@ -66,23 +66,39 @@ KOKKOS_INLINE_FUNCTION void tangentVector(Real (&TanVec)[3],
 enum class EdgeComponent { Normal, Tangential };
 enum class Geometry { Planar, Spherical };
 enum class ExchangeHalos { Yes, No };
+enum class SetBoundary { Yes = 1, No = 0 };
+
+// helper to get vertical iteration bounds that can be provided
+// either as an integer or an array
+template <class T> KOKKOS_FUNCTION int getVertBound(const T &VertBound, int I) {
+   if constexpr (std::is_integral_v<T>) {
+      return VertBound;
+   } else {
+      static_assert(Kokkos::is_view_v<T>);
+      return VertBound(I);
+   }
+}
 
 // set scalar field on chosen elements (cells/vertices/edges) based on
 // analytical formula and optionally exchange halos
-template <class Functor, class Array>
+template <class Functor, class Array, class VertMin, class VertMax>
 int setScalar(const Functor &Fun, const Array &ScalarElement, Geometry Geom,
-              const HorzMesh *Mesh, MeshElement Element,
-              ExchangeHalos ExchangeHalosOpt = ExchangeHalos::Yes) {
+              const HorzMesh *Mesh, MeshElement Element, const VertMin &VMin,
+              const VertMax &VMax,
+              ExchangeHalos ExchangeHalosOpt = ExchangeHalos::Yes,
+              SetBoundary SetBndOpt          = SetBoundary::No) {
 
    int Err = 0;
 
    int NElementsOwned;
+   int NElementsSize;
    Array1DReal XElement, YElement;
    Array1DReal LonElement, LatElement;
 
    switch (Element) {
    case OnCell:
       NElementsOwned = Mesh->NCellsOwned;
+      NElementsSize  = Mesh->NCellsSize;
       XElement       = createDeviceMirrorCopy(Mesh->XCellH);
       YElement       = createDeviceMirrorCopy(Mesh->YCellH);
       LonElement     = createDeviceMirrorCopy(Mesh->LonCellH);
@@ -90,6 +106,7 @@ int setScalar(const Functor &Fun, const Array &ScalarElement, Geometry Geom,
       break;
    case OnVertex:
       NElementsOwned = Mesh->NVerticesOwned;
+      NElementsSize  = Mesh->NVerticesSize;
       XElement       = createDeviceMirrorCopy(Mesh->XVertexH);
       YElement       = createDeviceMirrorCopy(Mesh->YVertexH);
       LonElement     = createDeviceMirrorCopy(Mesh->LonVertexH);
@@ -97,6 +114,7 @@ int setScalar(const Functor &Fun, const Array &ScalarElement, Geometry Geom,
       break;
    case OnEdge:
       NElementsOwned = Mesh->NEdgesOwned;
+      NElementsSize  = Mesh->NEdgesSize;
       XElement       = createDeviceMirrorCopy(Mesh->XEdgeH);
       YElement       = createDeviceMirrorCopy(Mesh->YEdgeH);
       LonElement     = createDeviceMirrorCopy(Mesh->LonEdgeH);
@@ -108,9 +126,14 @@ int setScalar(const Functor &Fun, const Array &ScalarElement, Geometry Geom,
       return 1;
    }
 
+   const int NElementsSet = NElementsOwned + static_cast<int>(SetBndOpt);
+
    if constexpr (Array::rank == 1) {
       parallelFor(
-          {NElementsOwned}, KOKKOS_LAMBDA(int IElement) {
+          {NElementsSet}, KOKKOS_LAMBDA(int IElement) {
+             if (SetBndOpt == SetBoundary::Yes) {
+                IElement = IElement == 0 ? (NElementsSize - 1) : (IElement - 1);
+             }
              if (Geom == Geometry::Planar) {
                 const Real X            = XElement(IElement);
                 const Real Y            = YElement(IElement);
@@ -126,35 +149,54 @@ int setScalar(const Functor &Fun, const Array &ScalarElement, Geometry Geom,
    if constexpr (Array::rank == 2) {
       const int NVertLayers = ScalarElement.extent_int(1);
 
-      parallelFor(
-          {NElementsOwned, NVertLayers}, KOKKOS_LAMBDA(int IElement, int K) {
-             if (Geom == Geometry::Planar) {
-                const Real X               = XElement(IElement);
-                const Real Y               = YElement(IElement);
-                ScalarElement(IElement, K) = Fun(X, Y);
-             } else {
-                const Real Lon             = LonElement(IElement);
-                const Real Lat             = LatElement(IElement);
-                ScalarElement(IElement, K) = Fun(Lon, Lat);
+      parallelForOuter(
+          {NElementsSet}, KOKKOS_LAMBDA(int IElement, const TeamMember &Team) {
+             if (SetBndOpt == SetBoundary::Yes) {
+                IElement = IElement == 0 ? (NElementsSize - 1) : (IElement - 1);
              }
+             const int KMin   = getVertBound(VMin, IElement);
+             const int KMax   = getVertBound(VMax, IElement);
+             const int KRange = KMax - KMin + 1;
+             parallelForInner(
+                 Team, KRange, INNER_LAMBDA(int KOff) {
+                    const int K = KMin + KOff;
+                    if (Geom == Geometry::Planar) {
+                       const Real X               = XElement(IElement);
+                       const Real Y               = YElement(IElement);
+                       ScalarElement(IElement, K) = Fun(X, Y);
+                    } else {
+                       const Real Lon             = LonElement(IElement);
+                       const Real Lat             = LatElement(IElement);
+                       ScalarElement(IElement, K) = Fun(Lon, Lat);
+                    }
+                 });
           });
    }
 
    if constexpr (Array::rank == 3) {
-      const int NTracers    = ScalarElement.extent_int(0);
-      const int NVertLayers = ScalarElement.extent_int(2);
-      parallelFor(
-          {NTracers, NElementsOwned, NVertLayers},
-          KOKKOS_LAMBDA(int L, int IElement, int K) {
-             if (Geom == Geometry::Planar) {
-                const Real X                  = XElement(IElement);
-                const Real Y                  = YElement(IElement);
-                ScalarElement(L, IElement, K) = Fun(X, Y);
-             } else {
-                const Real Lon                = LonElement(IElement);
-                const Real Lat                = LatElement(IElement);
-                ScalarElement(L, IElement, K) = Fun(Lon, Lat);
+      const int NTracers = ScalarElement.extent_int(0);
+      parallelForOuter(
+          {NTracers, NElementsSet},
+          KOKKOS_LAMBDA(int L, int IElement, const TeamMember &Team) {
+             if (SetBndOpt == SetBoundary::Yes) {
+                IElement = IElement == 0 ? (NElementsSize - 1) : (IElement - 1);
              }
+             const int KMin   = getVertBound(VMin, IElement);
+             const int KMax   = getVertBound(VMax, IElement);
+             const int KRange = KMax - KMin + 1;
+             parallelForInner(
+                 Team, KRange, INNER_LAMBDA(int KOff) {
+                    const int K = KMin + KOff;
+                    if (Geom == Geometry::Planar) {
+                       const Real X                  = XElement(IElement);
+                       const Real Y                  = YElement(IElement);
+                       ScalarElement(L, IElement, K) = Fun(X, Y);
+                    } else {
+                       const Real Lon                = LonElement(IElement);
+                       const Real Lat                = LatElement(IElement);
+                       ScalarElement(L, IElement, K) = Fun(Lon, Lat);
+                    }
+                 });
           });
    }
 
@@ -167,15 +209,28 @@ int setScalar(const Functor &Fun, const Array &ScalarElement, Geometry Geom,
    return Err;
 }
 
+// This overload calls setScalar with vertical bounds based on the array size
+template <class Functor, class Array>
+int setScalar(const Functor &Fun, const Array &ScalarElement, Geometry Geom,
+              const HorzMesh *Mesh, MeshElement Element,
+              ExchangeHalos ExchangeHalosOpt = ExchangeHalos::Yes) {
+   const int VMin = 0;
+   const int VMax = ScalarElement.extent_int(Array::rank - 1) - 1;
+   return setScalar(Fun, ScalarElement, Geom, Mesh, Element, VMin, VMax,
+                    ExchangeHalosOpt);
+}
+
 enum class CartProjection { Yes, No };
 
 // set vector field on edges based on analytical formula and optionally
 // exchange halos
-template <class Functor, class Array>
+template <class Functor, class Array, class VertMin, class VertMax>
 int setVectorEdge(const Functor &Fun, const Array &VectorFieldEdge,
                   EdgeComponent EdgeComp, Geometry Geom, const HorzMesh *Mesh,
+                  const VertMin &VMin, const VertMax &VMax,
                   ExchangeHalos ExchangeHalosOpt   = ExchangeHalos::Yes,
-                  CartProjection CartProjectionOpt = CartProjection::Yes) {
+                  CartProjection CartProjectionOpt = CartProjection::Yes,
+                  SetBoundary SetBndOpt            = SetBoundary::No) {
 
    int Err = 0;
 
@@ -197,6 +252,8 @@ int setVectorEdge(const Functor &Fun, const Array &VectorFieldEdge,
    auto &AngleEdge      = Mesh->AngleEdge;
    auto &CellsOnEdge    = Mesh->CellsOnEdge;
    auto &VerticesOnEdge = Mesh->VerticesOnEdge;
+   const int NEdgesSize = Mesh->NEdgesSize;
+   const int NEdgesSet  = Mesh->NEdgesOwned + static_cast<int>(SetBndOpt);
 
    auto ProjectVector = KOKKOS_LAMBDA(int IEdge) {
       Real VecFieldEdge;
@@ -278,16 +335,28 @@ int setVectorEdge(const Functor &Fun, const Array &VectorFieldEdge,
 
    if constexpr (Array::rank == 1) {
       parallelFor(
-          {Mesh->NEdgesOwned}, KOKKOS_LAMBDA(int IEdge) {
+          {NEdgesSet}, KOKKOS_LAMBDA(int IEdge) {
+             if (SetBndOpt == SetBoundary::Yes) {
+                IEdge = IEdge == 0 ? (NEdgesSize - 1) : (IEdge - 1);
+             }
              VectorFieldEdge(IEdge) = ProjectVector(IEdge);
           });
    }
 
    if constexpr (Array::rank == 2) {
-      const int NVertLayers = VectorFieldEdge.extent_int(1);
-      parallelFor(
-          {Mesh->NEdgesOwned, NVertLayers}, KOKKOS_LAMBDA(int IEdge, int K) {
-             VectorFieldEdge(IEdge, K) = ProjectVector(IEdge);
+      parallelForOuter(
+          {NEdgesSet}, KOKKOS_LAMBDA(int IEdge, const TeamMember &Team) {
+             if (SetBndOpt == SetBoundary::Yes) {
+                IEdge = IEdge == 0 ? (NEdgesSize - 1) : (IEdge - 1);
+             }
+             const int KMin   = getVertBound(VMin, IEdge);
+             const int KMax   = getVertBound(VMax, IEdge);
+             const int KRange = KMax - KMin + 1;
+             parallelForInner(
+                 Team, KRange, INNER_LAMBDA(int KOff) {
+                    const int K               = KMin + KOff;
+                    VectorFieldEdge(IEdge, K) = ProjectVector(IEdge);
+                 });
           });
    }
 
@@ -300,97 +369,128 @@ int setVectorEdge(const Functor &Fun, const Array &VectorFieldEdge,
    return Err;
 }
 
-inline Real maxVal(const Array1DReal &Arr) {
-   Real MaxVal;
+// This overload calls setVectorEdge with vertical bounds based on the array
+// size
+template <class Functor, class Array>
+int setVectorEdge(const Functor &Fun, const Array &VectorFieldEdge,
+                  EdgeComponent EdgeComp, Geometry Geom, const HorzMesh *Mesh,
+                  ExchangeHalos ExchangeHalosOpt   = ExchangeHalos::Yes,
+                  CartProjection CartProjectionOpt = CartProjection::Yes) {
 
+   const int VMin = 0;
+   const int VMax = VectorFieldEdge.extent_int(Array::rank - 1) - 1;
+   return setVectorEdge(Fun, VectorFieldEdge, EdgeComp, Geom, Mesh, VMin, VMax,
+                        ExchangeHalosOpt, CartProjectionOpt);
+}
+
+template <class Reducer> Real reduceArray(const Array1DReal &Arr, int Extent0) {
+   Real Res;
+   Reducer R(Res);
    parallelReduce(
-       {Arr.extent_int(0)},
-       KOKKOS_LAMBDA(int I, Real &Accum) {
-          Accum = Kokkos::max(Arr(I), Accum);
+       {Extent0}, KOKKOS_LAMBDA(int I, Real &Accum) { R.join(Accum, Arr(I)); },
+       R);
+
+   return Res;
+}
+
+template <class Reducer> Real reduceArray(const Array1DReal &Arr) {
+   return reduceArray<Reducer>(Arr, Arr.extent_int(0));
+}
+
+template <class Reducer, class VertMin, class VertMax>
+Real reduceArray(const Array2DReal &Arr, int Extent0, const VertMin &VMin,
+                 const VertMax &VMax) {
+   Real Res;
+   Reducer ROuter(Res);
+
+   parallelReduceOuter(
+       {Extent0},
+       KOKKOS_LAMBDA(int I, const TeamMember &Team, Real &AccumOuter) {
+          Real ResInner;
+          Reducer RInner(ResInner);
+
+          const int KMin   = getVertBound(VMin, I);
+          const int KMax   = getVertBound(VMax, I);
+          const int KRange = KMax - KMin + 1;
+
+          parallelReduceInner(
+              Team, KRange,
+              INNER_LAMBDA(int KOff, Real &AccumInner) {
+                 const int K = KMin + KOff;
+                 RInner.join(AccumInner, Arr(I, K));
+              },
+              RInner);
+
+          Kokkos::single(PerTeam(Team),
+                         [&]() { ROuter.join(AccumOuter, ResInner); });
        },
-       Kokkos::Max<Real>(MaxVal));
+       ROuter);
 
-   return MaxVal;
+   return Res;
 }
 
-inline Real maxVal(const Array2DReal &Arr) {
-   Real MaxVal;
-
-   parallelReduce(
-       {Arr.extent_int(0), Arr.extent_int(1)},
-       KOKKOS_LAMBDA(int I, int J, Real &Accum) {
-          Accum = Kokkos::max(Arr(I, J), Accum);
-       },
-       Kokkos::Max<Real>(MaxVal));
-
-   return MaxVal;
+template <class Reducer> Real reduceArray(const Array2DReal &Arr, int Extent0) {
+   return reduceArray<Reducer>(Arr, Extent0, 0, Arr.extent_int(1) - 1);
 }
 
-inline Real maxVal(const Array3DReal &Arr) {
-   Real MaxVal;
-
-   parallelReduce(
-       {Arr.extent_int(0), Arr.extent_int(1), Arr.extent_int(2)},
-       KOKKOS_LAMBDA(int I, int J, int K, Real &Accum) {
-          Accum = Kokkos::max(Arr(I, J, K), Accum);
-       },
-       Kokkos::Max<Real>(MaxVal));
-
-   return MaxVal;
+template <class Reducer> Real reduceArray(const Array2DReal &Arr) {
+   return reduceArray<Reducer>(Arr, Arr.extent_int(0), 0,
+                               Arr.extent_int(1) - 1);
 }
 
-inline Real sum(const Array1DReal &Arr, int Extent0) {
-   Real Sum;
+template <class Reducer, class VertMin, class VertMax>
+Real reduceArray(const Array3DReal &Arr, int Extent0, int Extent1,
+                 const VertMin &VMin, const VertMax &VMax) {
+   Real Res;
+   Reducer ROuter(Res);
 
-   parallelReduce(
-       {Extent0}, KOKKOS_LAMBDA(int I, Real &Accum) { Accum += Arr(I); }, Sum);
-
-   return Sum;
-}
-
-inline Real sum(const Array1DReal &Arr) { return sum(Arr, Arr.extent_int(0)); }
-
-inline Real sum(const Array2DReal &Arr, int Extent0, int Extent1) {
-   Real Sum;
-
-   parallelReduce(
+   parallelReduceOuter(
        {Extent0, Extent1},
-       KOKKOS_LAMBDA(int I, int J, Real &Accum) { Accum += Arr(I, J); }, Sum);
+       KOKKOS_LAMBDA(int L, int I, const TeamMember &Team, Real &AccumOuter) {
+          Real ResInner;
+          Reducer RInner(ResInner);
 
-   return Sum;
-}
+          const int KMin   = getVertBound(VMin, I);
+          const int KMax   = getVertBound(VMax, I);
+          const int KRange = KMax - KMin + 1;
 
-inline Real sum(const Array2DReal &Arr) {
-   return sum(Arr, Arr.extent_int(0), Arr.extent_int(1));
-}
+          parallelReduceInner(
+              Team, KRange,
+              INNER_LAMBDA(int KOff, Real &AccumInner) {
+                 const int K = KMin + KOff;
+                 RInner.join(AccumInner, Arr(L, I, K));
+              },
+              RInner);
 
-inline Real sum(const Array2DReal &Arr, int Extent0) {
-   return sum(Arr, Extent0, Arr.extent_int(1));
-}
-
-inline Real sum(const Array3DReal &Arr, int Extent0, int Extent1, int Extent2) {
-   Real Sum;
-
-   parallelReduce(
-       {Extent0, Extent1, Extent2},
-       KOKKOS_LAMBDA(int I, int J, int K, Real &Accum) {
-          Accum += Arr(I, J, K);
+          Kokkos::single(PerTeam(Team),
+                         [&]() { ROuter.join(AccumOuter, ResInner); });
        },
-       Sum);
+       ROuter);
 
-   return Sum;
+   return Res;
 }
 
-inline Real sum(const Array3DReal &Arr) {
-   return sum(Arr, Arr.extent_int(0), Arr.extent_int(1), Arr.extent_int(2));
+template <class Reducer>
+Real reduceArray(const Array3DReal &Arr, int Extent0, int Extent1) {
+   return reduceArray<Reducer>(Arr, Extent0, Extent1, 0, Arr.extent_int(2) - 1);
 }
 
-inline Real sum(const Array3DReal &Arr, int Extent0) {
-   return sum(Arr, Extent0, Arr.extent_int(1), Arr.extent_int(2));
+template <class Reducer> Real reduceArray(const Array3DReal &Arr, int Extent0) {
+   return reduceArray<Reducer>(Arr, Extent0, Arr.extent_int(1), 0,
+                               Arr.extent_int(2) - 1);
 }
 
-inline Real sum(const Array3DReal &Arr, int Extent0, int Extent1) {
-   return sum(Arr, Extent0, Extent1, Arr.extent_int(2));
+template <class Reducer> Real reduceArray(const Array3DReal &Arr) {
+   return reduceArray<Reducer>(Arr, Arr.extent_int(0), Arr.extent_int(1), 0,
+                               Arr.extent_int(2) - 1);
+}
+
+template <class... ArgTypes> Real maxVal(ArgTypes &&...Args) {
+   return reduceArray<Kokkos::Max<Real>>(std::forward<ArgTypes>(Args)...);
+}
+
+template <class... ArgTypes> Real sum(ArgTypes &&...Args) {
+   return reduceArray<Kokkos::Sum<Real>>(std::forward<ArgTypes>(Args)...);
 }
 
 struct ErrorMeasures {

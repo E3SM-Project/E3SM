@@ -7,14 +7,15 @@
 namespace OMEGA {
 
 KineticAuxVars::KineticAuxVars(const std::string &AuxStateSuffix,
-                               const HorzMesh *Mesh, int NVertLayers)
+                               const HorzMesh *Mesh, const VertCoord *VCoord)
     : KineticEnergyCell("KineticEnergyCell" + AuxStateSuffix, Mesh->NCellsSize,
-                        NVertLayers),
+                        VCoord->NVertLayers),
       VelocityDivCell("VelocityDivCell" + AuxStateSuffix, Mesh->NCellsSize,
-                      NVertLayers),
+                      VCoord->NVertLayers),
       NEdgesOnCell(Mesh->NEdgesOnCell), EdgesOnCell(Mesh->EdgesOnCell),
       EdgeSignOnCell(Mesh->EdgeSignOnCell), DcEdge(Mesh->DcEdge),
-      DvEdge(Mesh->DvEdge), AreaCell(Mesh->AreaCell) {}
+      DvEdge(Mesh->DvEdge), AreaCell(Mesh->AreaCell),
+      MinLayerCell(VCoord->MinLayerCell), MaxLayerCell(VCoord->MaxLayerCell) {}
 
 void KineticAuxVars::registerFields(
     const std::string &AuxGroupName, // name of Auxiliary field group

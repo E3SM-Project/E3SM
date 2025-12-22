@@ -359,8 +359,7 @@ KOKKOS_FUNCTION void parallelForInner(const TeamMember &Team, int UpperBound,
 template <class T, class Enable = void> struct AccumTypeHelper;
 
 template <class T>
-struct AccumTypeHelper<
-    T, std::enable_if_t<std::is_arithmetic_v<std::remove_reference_t<T>>>> {
+struct AccumTypeHelper<T, std::enable_if_t<std::is_arithmetic_v<T>>> {
    using Type = T;
 };
 
@@ -386,7 +385,8 @@ inline void parallelReduceOuter(const std::string &Label,
    auto Policy = TeamPolicy(LinBound, OMEGA_TEAMSIZE);
    Kokkos::parallel_reduce(
        Label, Policy,
-       KOKKOS_LAMBDA(const TeamMember &Team, AccumType<R> &...Accums) {
+       KOKKOS_LAMBDA(const TeamMember &Team,
+                     AccumType<std::remove_reference_t<R>> &...Accums) {
           const int TeamId = Team.league_rank();
           LinFunctor(TeamId, Team, Accums...);
        },

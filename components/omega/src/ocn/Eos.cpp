@@ -14,26 +14,25 @@
 namespace OMEGA {
 
 /// Constructor for Teos10Eos
-Teos10Eos::Teos10Eos(int NVertLayers) : NVertLayers(NVertLayers) {
+Teos10Eos::Teos10Eos(const VertCoord *VCoord)
+    : MinLayerCell(VCoord->MinLayerCell), MaxLayerCell(VCoord->MaxLayerCell) {
    SpecVolPCoeffs = Array2DReal("SpecVolPCoeffs", 6, VecLength);
 }
 
 /// Constructor for LinearEos
-LinearEos::LinearEos() {}
+LinearEos::LinearEos(const VertCoord *VCoord)
+    : MinLayerCell(VCoord->MinLayerCell), MaxLayerCell(VCoord->MaxLayerCell) {}
 
 /// Constructor for Eos
-Eos::Eos(const std::string &Name_, ///< [in] Name for eos object
-         const HorzMesh *Mesh,     ///< [in] Horizontal mesh
-         int NVertLayers           ///< [in] Number of vertical layers
+Eos::Eos(const std::string &Name, ///< [in] Name for eos object
+         const HorzMesh *Mesh,    ///< [in] Horizontal mesh
+         const VertCoord *VCoord  ///< [in] Vertical coordinate
          )
-    : ComputeSpecVolTeos10(NVertLayers) {
-   SpecVol = Array2DReal("SpecVol", Mesh->NCellsAll, NVertLayers);
+    : ComputeSpecVolLinear(VCoord), ComputeSpecVolTeos10(VCoord), Name(Name),
+      Mesh(Mesh), VCoord(VCoord) {
+   SpecVol = Array2DReal("SpecVol", Mesh->NCellsAll, VCoord->NVertLayers);
    SpecVolDisplaced =
-       Array2DReal("SpecVolDisplaced", Mesh->NCellsAll, NVertLayers);
-   // Array dimension lengths
-   NCellsAll = Mesh->NCellsAll;
-   NChunks   = NVertLayers / VecLength;
-   Name      = Name_;
+       Array2DReal("SpecVolDisplaced", Mesh->NCellsAll, VCoord->NVertLayers);
 
    defineFields();
 }
@@ -60,8 +59,8 @@ void Eos::destroyInstance() {
 void Eos::init() {
 
    if (!Instance) {
-      Instance = new Eos("Default", HorzMesh::getDefault(),
-                         VertCoord::getDefault()->NVertLayers);
+      Instance =
+          new Eos("Default", HorzMesh::getDefault(), VertCoord::getDefault());
    }
 
    Error Err; // error code
@@ -118,24 +117,42 @@ void Eos::computeSpecVol(const Array2DReal &ConservTemp,
                ComputeSpecVolLinear); /// Local view for linear EOS computation
    OMEGA_SCOPE(LocComputeSpecVolTeos10,
                ComputeSpecVolTeos10); /// Local view for TEOS-10 computation
+   OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
+   OMEGA_SCOPE(MaxLayerCell, VCoord->MaxLayerCell);
+
    deepCopy(LocSpecVol, 0); /// Initialize local specific volume to zero
 
    I4 KDisp = 0; /// No displacement in this case
 
    /// Dispatch to the correct EOS calculation
    if (EosChoice == EosType::LinearEos) {
-      parallelFor(
-          "eos-linear", {NCellsAll, NChunks},
-          KOKKOS_LAMBDA(I4 ICell, I4 KChunk) {
-             LocComputeSpecVolLinear(LocSpecVol, ICell, KChunk, ConservTemp,
-                                     AbsSalinity);
+      parallelForOuter(
+          "eos-linear", {Mesh->NCellsAll},
+          KOKKOS_LAMBDA(I4 ICell, const TeamMember &Team) {
+             const int KMin   = MinLayerCell(ICell);
+             const int KMax   = MaxLayerCell(ICell);
+             const int KRange = vertRangeChunked(KMin, KMax);
+
+             parallelForInner(
+                 Team, KRange, INNER_LAMBDA(int KChunk) {
+                    LocComputeSpecVolLinear(LocSpecVol, ICell, KChunk,
+                                            ConservTemp, AbsSalinity);
+                 });
           });
    } else if (EosChoice == EosType::Teos10Eos) {
-      parallelFor(
-          "eos-teos10", {NCellsAll, NChunks},
-          KOKKOS_LAMBDA(I4 ICell, I4 KChunk) {
-             LocComputeSpecVolTeos10(LocSpecVol, ICell, KChunk, ConservTemp,
-                                     AbsSalinity, Pressure, KDisp);
+      parallelForOuter(
+          "eos-teos10", {Mesh->NCellsAll},
+          KOKKOS_LAMBDA(I4 ICell, const TeamMember &Team) {
+             const int KMin   = MinLayerCell(ICell);
+             const int KMax   = MaxLayerCell(ICell);
+             const int KRange = vertRangeChunked(KMin, KMax);
+
+             parallelForInner(
+                 Team, KRange, INNER_LAMBDA(int KChunk) {
+                    LocComputeSpecVolTeos10(LocSpecVol, ICell, KChunk,
+                                            ConservTemp, AbsSalinity, Pressure,
+                                            KDisp);
+                 });
           });
    }
 }
@@ -150,6 +167,9 @@ void Eos::computeSpecVolDisp(const Array2DReal &ConservTemp,
                ComputeSpecVolLinear); /// Local view for linear EOS computation
    OMEGA_SCOPE(LocComputeSpecVolTeos10,
                ComputeSpecVolTeos10); /// Local view for TEOS-10 computation
+   OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
+   OMEGA_SCOPE(MaxLayerCell, VCoord->MaxLayerCell);
+
    deepCopy(LocSpecVolDisplaced,
             0); /// Initialize local specific volume to zero
 
@@ -160,18 +180,31 @@ void Eos::computeSpecVolDisp(const Array2DReal &ConservTemp,
       LOG_INFO("Eos::computeSpecVolDisp called with Linear EOS. "
                "SpecVol is independent of pressure/depth, so the "
                "displaced value will be the same as SpecVol.");
-      parallelFor(
-          "eos-linear", {NCellsAll, NChunks},
-          KOKKOS_LAMBDA(I4 ICell, I4 KChunk) {
-             LocComputeSpecVolLinear(LocSpecVolDisplaced, ICell, KChunk,
-                                     ConservTemp, AbsSalinity);
+      parallelForOuter(
+          "eos-linear", {Mesh->NCellsAll},
+          KOKKOS_LAMBDA(I4 ICell, const TeamMember &Team) {
+             const int KMin   = MinLayerCell(ICell);
+             const int KMax   = MaxLayerCell(ICell);
+             const int KRange = vertRangeChunked(KMin, KMax);
+             parallelForInner(
+                 Team, KRange, INNER_LAMBDA(int KChunk) {
+                    LocComputeSpecVolLinear(LocSpecVolDisplaced, ICell, KChunk,
+                                            ConservTemp, AbsSalinity);
+                 });
           });
    } else if (EosChoice == EosType::Teos10Eos) {
-      parallelFor(
-          "eos-teos10", {NCellsAll, NChunks},
-          KOKKOS_LAMBDA(I4 ICell, I4 KChunk) {
-             LocComputeSpecVolTeos10(LocSpecVolDisplaced, ICell, KChunk,
-                                     ConservTemp, AbsSalinity, Pressure, KDisp);
+      parallelForOuter(
+          "eos-teos10", {Mesh->NCellsAll},
+          KOKKOS_LAMBDA(I4 ICell, const TeamMember &Team) {
+             const int KMin   = MinLayerCell(ICell);
+             const int KMax   = MaxLayerCell(ICell);
+             const int KRange = vertRangeChunked(KMin, KMax);
+             parallelForInner(
+                 Team, KRange, INNER_LAMBDA(int KChunk) {
+                    LocComputeSpecVolTeos10(LocSpecVolDisplaced, ICell, KChunk,
+                                            ConservTemp, AbsSalinity, Pressure,
+                                            KDisp);
+                 });
           });
    }
 }

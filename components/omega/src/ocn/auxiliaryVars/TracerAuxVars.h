@@ -21,20 +21,21 @@ class TracerAuxVars {
    FluxTracerEdgeOption TracersOnEdgeChoice;
 
    TracerAuxVars(const std::string &AuxStateSuffix, const HorzMesh *Mesh,
-                 const VertCoord *VCoord, const I4 NVertLayers,
-                 const I4 NTracers);
+                 const VertCoord *VCoord, const I4 NTracers);
 
    KOKKOS_FUNCTION void computeVarsOnEdge(int L, int IEdge, int KChunk,
                                           const Array2DReal &NormalVelEdge,
                                           const Array2DReal &HCell,
                                           const Array3DReal &TrCell) const {
-      const int KStart = KChunk * VecLength;
+      const int KStart = chunkStart(KChunk, MinLayerEdgeBot(IEdge));
+      const int KLen   = chunkLength(KChunk, KStart, MaxLayerEdgeTop(IEdge));
+
       const int JCell0 = CellsOnEdge(IEdge, 0);
       const int JCell1 = CellsOnEdge(IEdge, 1);
 
       switch (TracersOnEdgeChoice) {
       case FluxTracerEdgeOption::Center:
-         for (int KVec = 0; KVec < VecLength; ++KVec) {
+         for (int KVec = 0; KVec < KLen; ++KVec) {
             const int K = KStart + KVec;
             HTracersEdge(L, IEdge, K) =
                 0.5_Real * (HCell(JCell0, K) * TrCell(L, JCell0, K) +
@@ -42,7 +43,7 @@ class TracerAuxVars {
          }
          break;
       case FluxTracerEdgeOption::Upwind:
-         for (int KVec = 0; KVec < VecLength; ++KVec) {
+         for (int KVec = 0; KVec < KLen; ++KVec) {
             const int K = KStart + KVec;
             if (NormalVelEdge(IEdge, K) > 0) {
                HTracersEdge(L, IEdge, K) =
@@ -65,7 +66,10 @@ class TracerAuxVars {
                       const Array2DReal &LayerThickEdgeMean,
                       const Array3DReal &TrCell) const {
 
-      const int KStart       = KChunk * VecLength;
+      const int KStartCell = chunkStart(KChunk, MinLayerCell(ICell));
+      const int KLenCell = chunkLength(KChunk, KStartCell, MaxLayerCell(ICell));
+      const int KEndCell = KStartCell + KLenCell - 1;
+
       const Real InvAreaCell = 1._Real / AreaCell(ICell);
 
       Real Del2TrCellTmp[VecLength] = {0};
@@ -78,16 +82,19 @@ class TracerAuxVars {
 
          const Real DvDcEdge = DvEdge(JEdge) / DcEdge(JEdge);
 
-         for (int KVec = 0; KVec < VecLength; ++KVec) {
-            const int K           = KStart + KVec;
+         const int KStartEdge = Kokkos::max(KStartCell, MinLayerEdgeBot(JEdge));
+         const int KEndEdge   = Kokkos::min(KEndCell, MaxLayerEdgeTop(JEdge));
+
+         for (int K = KStartEdge; K <= KEndEdge; ++K) {
+            const int KVec        = K - KStartCell;
             const Real TracerGrad = TrCell(L, JCell1, K) - TrCell(L, JCell0, K);
             Del2TrCellTmp[KVec] -= EdgeMask(JEdge, K) *
                                    EdgeSignOnCell(ICell, J) * DvDcEdge *
                                    LayerThickEdgeMean(JEdge, K) * TracerGrad;
          }
       }
-      for (int KVec = 0; KVec < VecLength; ++KVec) {
-         const int K                  = KStart + KVec;
+      for (int KVec = 0; KVec < KLenCell; ++KVec) {
+         const int K                  = KStartCell + KVec;
          Del2TracersCell(L, ICell, K) = Del2TrCellTmp[KVec] * InvAreaCell;
       }
    }
@@ -105,6 +112,10 @@ class TracerAuxVars {
    Array1DReal DvEdge;
    Array1DReal AreaCell;
    Array2DReal EdgeMask;
+   Array1DI4 MinLayerEdgeBot;
+   Array1DI4 MaxLayerEdgeTop;
+   Array1DI4 MinLayerCell;
+   Array1DI4 MaxLayerCell;
 };
 
 } // namespace OMEGA

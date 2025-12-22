@@ -17,12 +17,13 @@ class VelocityDel2AuxVars {
    Array2DReal Del2RelVortVertex;
 
    VelocityDel2AuxVars(const std::string &AuxStateSuffix, const HorzMesh *Mesh,
-                       const VertCoord *VCoord, int NVertLayers);
+                       const VertCoord *VCoord);
 
    KOKKOS_FUNCTION void
    computeVarsOnEdge(int IEdge, int KChunk, const Array2DReal &VelocityDivCell,
                      const Array2DReal &RelVortVertex) const {
-      const int KStart = KChunk * VecLength;
+      const int KStart = chunkStart(KChunk, MinLayerEdgeBot(IEdge));
+      const int KLen   = chunkLength(KChunk, KStart, MaxLayerEdgeTop(IEdge));
 
       const int JCell0   = CellsOnEdge(IEdge, 0);
       const int JCell1   = CellsOnEdge(IEdge, 1);
@@ -33,7 +34,7 @@ class VelocityDel2AuxVars {
       const Real InvDvEdge =
           1._Real / Kokkos::max(DvEdge(IEdge), 0.25_Real * DcEdge(IEdge));
 
-      for (int KVec = 0; KVec < VecLength; ++KVec) {
+      for (int KVec = 0; KVec < KLen; ++KVec) {
          const int K = KStart + KVec;
          const Real GradDiv =
              (VelocityDivCell(JCell1, K) - VelocityDivCell(JCell0, K)) *
@@ -47,35 +48,43 @@ class VelocityDel2AuxVars {
 
    KOKKOS_FUNCTION void computeVarsOnCell(int ICell, int KChunk) const {
       const Real InvAreaCell = 1._Real / AreaCell(ICell);
-      const int KStart       = KChunk * VecLength;
+      const int KStartCell   = chunkStart(KChunk, MinLayerCell(ICell));
+      const int KLenCell = chunkLength(KChunk, KStartCell, MaxLayerCell(ICell));
+      const int KEndCell = KStartCell + KLenCell - 1;
 
       Real Del2DivCellTmp[VecLength] = {0};
 
       for (int J = 0; J < NEdgesOnCell(ICell); ++J) {
          const int JEdge     = EdgesOnCell(ICell, J);
          const Real AreaEdge = 0.5_Real * DvEdge(JEdge) * DcEdge(JEdge);
-         for (int KVec = 0; KVec < VecLength; ++KVec) {
-            const int K = KStart + KVec;
+
+         const int KStartEdge = Kokkos::max(KStartCell, MinLayerEdgeBot(JEdge));
+         const int KEndEdge   = Kokkos::min(KEndCell, MaxLayerEdgeTop(JEdge));
+
+         for (int K = KStartEdge; K <= KEndEdge; ++K) {
+            const int KVec = K - KStartCell;
             Del2DivCellTmp[KVec] -= DvEdge(JEdge) * InvAreaCell *
                                     EdgeSignOnCell(ICell, J) *
                                     Del2Edge(JEdge, K);
          }
       }
-      for (int KVec = 0; KVec < VecLength; ++KVec) {
-         const int K           = KStart + KVec;
+      for (int KVec = 0; KVec < KLenCell; ++KVec) {
+         const int K           = KStartCell + KVec;
          Del2DivCell(ICell, K) = Del2DivCellTmp[KVec];
       }
    }
 
    KOKKOS_FUNCTION void computeVarsOnVertex(int IVertex, int KChunk) const {
-      const int KStart           = KChunk * VecLength;
+      const int KStart = chunkStart(KChunk, MinLayerVertexBot(IVertex));
+      const int KLen = chunkLength(KChunk, KStart, MaxLayerVertexTop(IVertex));
+
       const Real InvAreaTriangle = 1._Real / AreaTriangle(IVertex);
 
       Real Del2RelVortVertexTmp[VecLength] = {0};
 
       for (int J = 0; J < VertexDegree; ++J) {
          const int JEdge = EdgesOnVertex(IVertex, J);
-         for (int KVec = 0; KVec < VecLength; ++KVec) {
+         for (int KVec = 0; KVec < KLen; ++KVec) {
             const int K = KStart + KVec;
             Del2RelVortVertexTmp[KVec] += InvAreaTriangle * DcEdge(JEdge) *
                                           EdgeSignOnVertex(IVertex, J) *
@@ -83,7 +92,7 @@ class VelocityDel2AuxVars {
          }
       }
 
-      for (int KVec = 0; KVec < VecLength; ++KVec) {
+      for (int KVec = 0; KVec < KLen; ++KVec) {
          const int K                   = KStart + KVec;
          Del2RelVortVertex(IVertex, K) = Del2RelVortVertexTmp[KVec];
       }
@@ -107,6 +116,12 @@ class VelocityDel2AuxVars {
    Array1DReal AreaTriangle;
    Array2DReal EdgeMask;
    I4 VertexDegree;
+   Array1DI4 MinLayerEdgeBot;
+   Array1DI4 MaxLayerEdgeTop;
+   Array1DI4 MinLayerVertexBot;
+   Array1DI4 MaxLayerVertexTop;
+   Array1DI4 MinLayerCell;
+   Array1DI4 MaxLayerCell;
 };
 
 } // namespace OMEGA

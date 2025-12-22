@@ -31,6 +31,26 @@ enum class MovementWeightType {
    Uniform /// Uniform stretching
 };
 
+KOKKOS_INLINE_FUNCTION int vertRange(int KMin, int KMax) {
+   return KMax - KMin + 1;
+}
+
+KOKKOS_INLINE_FUNCTION int vertRangeChunked(int KMin, int KMax) {
+   return (vertRange(KMin, KMax) + VecLength - 1) / VecLength;
+}
+
+KOKKOS_INLINE_FUNCTION int chunkStart(int KChunk, int KMin) {
+   return KMin + KChunk * VecLength;
+}
+
+KOKKOS_INLINE_FUNCTION int chunkLength(int KChunk, int KStart, int KMax) {
+   if constexpr (VecLength == 1) {
+      return 1;
+   } else {
+      return (KStart + VecLength - 1) > KMax ? (KMax - KStart + 1) : VecLength;
+   }
+}
+
 class VertCoord {
 
  private:

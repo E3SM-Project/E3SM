@@ -101,8 +101,9 @@ I4 initEosTest(const std::string &mesh) {
 
 /// Test Linear EOS calculation for all cells/layers
 int testEosLinear() {
-   int Err          = 0;
-   const auto *Mesh = HorzMesh::getDefault();
+   int Err            = 0;
+   const auto *Mesh   = HorzMesh::getDefault();
+   const auto *VCoord = VertCoord::getDefault();
    /// Get Eos instance to test
    Eos *TestEos       = Eos::getInstance();
    TestEos->EosChoice = EosType::LinearEos;
@@ -120,24 +121,40 @@ int testEosLinear() {
    /// Compute specific volume
    TestEos->computeSpecVol(TArray, SArray, PArray);
 
+   const auto &MinLayerCell = VCoord->MinLayerCell;
+   const auto &MaxLayerCell = VCoord->MaxLayerCell;
+
    /// Check all array values against expected value
-   int numMismatches   = 0;
+   int NumMismatches   = 0;
    Array2DReal SpecVol = TestEos->SpecVol;
-   parallelReduce(
-       "CheckSpecVolMatrix-linear", {Mesh->NCellsAll, NVertLayers},
-       KOKKOS_LAMBDA(int i, int j, int &localCount) {
-          if (!isApprox(SpecVol(i, j), LinearExpValue, RTol)) {
-             localCount++;
-          }
+   parallelReduceOuter(
+       "CheckSpecVolMatrix-linear", {Mesh->NCellsAll},
+       KOKKOS_LAMBDA(int ICell, const TeamMember &Team, int &OuterCount) {
+          int NumMismatchesCol;
+          const int KMin   = MinLayerCell(ICell);
+          const int KMax   = MaxLayerCell(ICell);
+          const int KRange = vertRange(KMin, KMax);
+          parallelReduceInner(
+              Team, KRange,
+              INNER_LAMBDA(int KOff, int &InnerCount) {
+                 const int K = KMin + KOff;
+                 if (!isApprox(SpecVol(ICell, K), LinearExpValue, RTol)) {
+                    InnerCount++;
+                 }
+              },
+              NumMismatchesCol);
+
+          Kokkos::single(PerTeam(Team),
+                         [&]() { OuterCount += NumMismatchesCol; });
        },
-       numMismatches);
+       NumMismatches);
 
    auto SpecVolH = createHostMirrorCopy(SpecVol);
-   if (numMismatches != 0) {
+   if (NumMismatches != 0) {
       Err++;
       LOG_ERROR("EosTest: SpecVol Linear isApprox FAIL, "
                 "expected {}, got {} with {} mismatches",
-                LinearExpValue, SpecVolH(1, 1), numMismatches);
+                LinearExpValue, SpecVolH(1, 1), NumMismatches);
    }
    if (Err == 0) {
       LOG_INFO("EosTest SpecVolCalc Linear: PASS");
@@ -148,8 +165,9 @@ int testEosLinear() {
 
 /// Test Linear EOS calculation with vertical displacement
 int testEosLinearDisplaced() {
-   int Err          = 0;
-   const auto *Mesh = HorzMesh::getDefault();
+   int Err            = 0;
+   const auto *Mesh   = HorzMesh::getDefault();
+   const auto *VCoord = VertCoord::getDefault();
    /// Get Eos instance to test
    Eos *TestEos       = Eos::getInstance();
    TestEos->EosChoice = EosType::LinearEos;
@@ -167,24 +185,41 @@ int testEosLinearDisplaced() {
    /// Compute displaced specific volume
    TestEos->computeSpecVolDisp(TArray, SArray, PArray, KDisp);
 
+   const auto &MinLayerCell = VCoord->MinLayerCell;
+   const auto &MaxLayerCell = VCoord->MaxLayerCell;
+
    /// Check all array values against expected value
-   int numMismatches            = 0;
+   int NumMismatches            = 0;
    Array2DReal SpecVolDisplaced = TestEos->SpecVolDisplaced;
-   parallelReduce(
-       "CheckSpecVolDispMatrix-linear", {Mesh->NCellsAll, NVertLayers},
-       KOKKOS_LAMBDA(int i, int j, int &localCount) {
-          if (!isApprox(SpecVolDisplaced(i, j), LinearExpValue, RTol)) {
-             localCount++;
-          }
+   parallelReduceOuter(
+       "CheckSpecVolDispMatrix-linear", {Mesh->NCellsAll},
+       KOKKOS_LAMBDA(int ICell, const TeamMember &Team, int &OuterCount) {
+          int NumMismatchesCol;
+          const int KMin   = MinLayerCell(ICell);
+          const int KMax   = MaxLayerCell(ICell);
+          const int KRange = vertRange(KMin, KMax);
+          parallelReduceInner(
+              Team, KRange,
+              INNER_LAMBDA(int KOff, int &InnerCount) {
+                 const int K = KMin + KOff;
+                 if (!isApprox(SpecVolDisplaced(ICell, K), LinearExpValue,
+                               RTol)) {
+                    InnerCount++;
+                 }
+              },
+              NumMismatchesCol);
+
+          Kokkos::single(PerTeam(Team),
+                         [&]() { OuterCount += NumMismatchesCol; });
        },
-       numMismatches);
+       NumMismatches);
 
    auto SpecVolDisplacedH = createHostMirrorCopy(SpecVolDisplaced);
-   if (numMismatches != 0) {
+   if (NumMismatches != 0) {
       Err++;
       LOG_ERROR("EosTest: Linear SpecVolDisp isApprox FAIL, "
                 "expected {}, got {} with {} mismatches",
-                LinearExpValue, SpecVolDisplacedH(1, 1), numMismatches);
+                LinearExpValue, SpecVolDisplacedH(1, 1), NumMismatches);
    }
    if (Err == 0) {
       LOG_INFO("EosTest SpecVolCalcDisp Linear: PASS");
@@ -195,8 +230,9 @@ int testEosLinearDisplaced() {
 
 /// Test TEOS-10 EOS calculation for all cells/layers
 int testEosTeos10() {
-   int Err          = 0;
-   const auto *Mesh = HorzMesh::getDefault();
+   int Err            = 0;
+   const auto *Mesh   = HorzMesh::getDefault();
+   const auto *VCoord = VertCoord::getDefault();
    /// Get Eos instance to test
    Eos *TestEos       = Eos::getInstance();
    TestEos->EosChoice = EosType::Teos10Eos;
@@ -214,24 +250,40 @@ int testEosTeos10() {
    /// Compute specific volume
    TestEos->computeSpecVol(TArray, SArray, PArray);
 
+   const auto &MinLayerCell = VCoord->MinLayerCell;
+   const auto &MaxLayerCell = VCoord->MaxLayerCell;
+
    /// Check all array values against expected value
-   int numMismatches   = 0;
+   int NumMismatches   = 0;
    Array2DReal SpecVol = TestEos->SpecVol;
-   parallelReduce(
-       "CheckSpecVolMatrix-Teos", {Mesh->NCellsAll, NVertLayers},
-       KOKKOS_LAMBDA(int i, int j, int &localCount) {
-          if (!isApprox(SpecVol(i, j), TeosExpValue, RTol)) {
-             localCount++;
-          }
+   parallelReduceOuter(
+       "CheckSpecVolMatrix-Teos", {Mesh->NCellsAll},
+       KOKKOS_LAMBDA(int ICell, const TeamMember &Team, int &OuterCount) {
+          int NumMismatchesCol;
+          const int KMin   = MinLayerCell(ICell);
+          const int KMax   = MaxLayerCell(ICell);
+          const int KRange = vertRange(KMin, KMax);
+          parallelReduceInner(
+              Team, KRange,
+              INNER_LAMBDA(int KOff, int &InnerCount) {
+                 const int K = KMin + KOff;
+                 if (!isApprox(SpecVol(ICell, K), TeosExpValue, RTol)) {
+                    InnerCount++;
+                 }
+              },
+              NumMismatchesCol);
+
+          Kokkos::single(PerTeam(Team),
+                         [&]() { OuterCount += NumMismatchesCol; });
        },
-       numMismatches);
+       NumMismatches);
 
    auto SpecVolH = createHostMirrorCopy(SpecVol);
-   if (numMismatches != 0) {
+   if (NumMismatches != 0) {
       Err++;
       LOG_ERROR("EosTest: TEOS SpecVol isApprox FAIL, "
                 "expected {}, got {} with {} mismatches",
-                TeosExpValue, SpecVolH(1, 1), numMismatches);
+                TeosExpValue, SpecVolH(1, 1), NumMismatches);
    }
    if (Err == 0) {
       LOG_INFO("EosTest SpecVolCalc TEOS-10: PASS");
@@ -242,8 +294,9 @@ int testEosTeos10() {
 
 /// Test TEOS-10 EOS calculation with vertical displacement
 int testEosTeos10Displaced() {
-   int Err          = 0;
-   const auto *Mesh = HorzMesh::getDefault();
+   int Err            = 0;
+   const auto *Mesh   = HorzMesh::getDefault();
+   const auto *VCoord = VertCoord::getDefault();
    /// Get Eos instance to test
    Eos *TestEos       = Eos::getInstance();
    TestEos->EosChoice = EosType::Teos10Eos;
@@ -261,24 +314,41 @@ int testEosTeos10Displaced() {
    /// Compute displaced specific volume
    TestEos->computeSpecVolDisp(TArray, SArray, PArray, KDisp);
 
+   const auto &MinLayerCell = VCoord->MinLayerCell;
+   const auto &MaxLayerCell = VCoord->MaxLayerCell;
+
    /// Check all array values against expected value
-   int numMismatches            = 0;
+   int NumMismatches            = 0;
    Array2DReal SpecVolDisplaced = TestEos->SpecVolDisplaced;
-   parallelReduce(
-       "CheckSpecVolDispMatrix-Teos", {Mesh->NCellsAll, NVertLayers},
-       KOKKOS_LAMBDA(int i, int j, int &localCount) {
-          if (!isApprox(SpecVolDisplaced(i, j), TeosExpValue, RTol)) {
-             localCount++;
-          }
+   parallelReduceOuter(
+       "CheckSpecVolDispMatrix-Teos", {Mesh->NCellsAll},
+       KOKKOS_LAMBDA(int ICell, const TeamMember &Team, int &OuterCount) {
+          int NumMismatchesCol;
+          const int KMin   = MinLayerCell(ICell);
+          const int KMax   = MaxLayerCell(ICell);
+          const int KRange = vertRange(KMin, KMax);
+          parallelReduceInner(
+              Team, KRange,
+              INNER_LAMBDA(int KOff, int &InnerCount) {
+                 const int K = KMin + KOff;
+                 if (!isApprox(SpecVolDisplaced(ICell, K), TeosExpValue,
+                               RTol)) {
+                    InnerCount++;
+                 }
+              },
+              NumMismatchesCol);
+
+          Kokkos::single(PerTeam(Team),
+                         [&]() { OuterCount += NumMismatchesCol; });
        },
-       numMismatches);
+       NumMismatches);
 
    auto SpecVolDisplacedH = createHostMirrorCopy(SpecVolDisplaced);
-   if (numMismatches != 0) {
+   if (NumMismatches != 0) {
       Err++;
       LOG_ERROR("EosTest: TEOS SpecVolDisp isApprox FAIL, "
                 "expected {}, got {} with {} mismatches",
-                TeosExpValue, SpecVolDisplacedH(1, 1), numMismatches);
+                TeosExpValue, SpecVolDisplacedH(1, 1), NumMismatches);
    }
    if (Err == 0) {
       LOG_INFO("EosTest SpecVolCalcDisp TEOS-10: PASS");
