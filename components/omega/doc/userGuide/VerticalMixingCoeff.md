@@ -20,7 +20,7 @@ VertMix:
   Convective:
     Enable: true         # Enables the convective-induced mixing option
     Diffusivity: 1.0     # Convective mixing coefficient (m²/s)
-    TriggerBVF: 0.0      # Brunt-Vaisala frequency threshold
+    TriggerBVF: 0.0      # Squared Brunt-Vaisala frequency threshold
   Shear:
     Enable: true         # Enables the shear-instability driven mixing option
     NuZero: 1.0e-2       # Base viscosity coefficient
@@ -37,7 +37,7 @@ happening in the ocean's stratified interior.
 
 ### 2. Convective Mixing
 
-Enhanced convective adjustment mixing that occurs in statically unstable regions of the water column to parameterize convection and homogenize properties. In Omega this is mixing is defaulted to occur when the Brunt Vaisala Frequency is less than 0.0 (unstable), and is off when equal to (neutral) or greater than (stable) 0.0.
+Enhanced convective adjustment mixing that occurs in statically unstable regions of the water column to parameterize convection and homogenize properties. In Omega this is mixing is defaulted to occur when the squared Brunt Vaisala Frequency is less than 0.0 (unstable), and is off when equal to (neutral) or greater than (stable) 0.0.
 
 $$
 \kappa =
