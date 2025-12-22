@@ -23,7 +23,7 @@ In addition to `SpecVol`, the displaced specific volume `SpecVolDisplaced` and `
 
 ## Displaced Specific Volume
 
-The `Eos` class calculates the density of a parcel of fluid that is adiabatically displaced by a relative `k` levels, capturing the effects of pressure/depth changes. This is primarily used to calculate quantities for determining the water column stability (i.e. the stratification) and the vertical mixing coefficients (viscosity and diffusivity). Note: when using the `Linear` EOS option, `SpecVolDisplaced` will be the same as `SpecVol` since the specific volume calculation is independent of pressure/depth.
+The `Eos` class calculates the density of a parcel of fluid that is adiabatically displaced by a relative `k` levels (`k` counted positive downward), capturing the effects of pressure/depth changes. This is primarily used to calculate quantities for determining the water column stability (i.e. the stratification) and the vertical mixing coefficients (viscosity and diffusivity). Note: when using the `Linear` EOS option, `SpecVolDisplaced` will be the same as `SpecVol` since the specific volume calculation is independent of pressure/depth.
 
 ## Brunt Vaisala Frequency
 

@@ -21,12 +21,12 @@ Teos10Eos::Teos10Eos(const VertCoord *VCoord)
 LinearEos::LinearEos(const VertCoord *VCoord)
     : MinLayerCell(VCoord->MinLayerCell), MaxLayerCell(VCoord->MaxLayerCell) {}
 
-/// Constructor for Teos10 Brunt-Vaisala frequency
-Teos10BruntVaisalaFreq::Teos10BruntVaisalaFreq(const VertCoord *VCoord)
+/// Constructor for Teos10 squared Brunt-Vaisala frequency
+Teos10BruntVaisalaFreqSq::Teos10BruntVaisalaFreqSq(const VertCoord *VCoord)
     : NVertLayers(VCoord->NVertLayers) {}
 
-/// Constructor for Linear Brunt-Vaisala frequency
-LinearBruntVaisalaFreq::LinearBruntVaisalaFreq(const VertCoord *VCoord)
+/// Constructor for Linear squared Brunt-Vaisala frequency
+LinearBruntVaisalaFreqSq::LinearBruntVaisalaFreqSq(const VertCoord *VCoord)
     : NVertLayers(VCoord->NVertLayers), ZMid(VCoord->ZMid) {}
 
 /// Constructor for Eos
@@ -218,40 +218,41 @@ void Eos::computeSpecVolDisp(const Array2DReal &ConservTemp,
    }
 }
 
-/// Compute Brunt-Vaisala frequency (NSquared) for all cells/layers
-void Eos::computeBruntVaisalaFreq(const Array2DReal &ConservTemp,
-                                  const Array2DReal &AbsSalinity,
-                                  const Array2DReal &Pressure,
-                                  const Array2DReal &SpecVol) {
-   OMEGA_SCOPE(LocBruntVaisalaFreq,
-               BruntVaisalaFreq); /// Local view for computation
+/// Compute squared Brunt-Vaisala frequency for all cells/layers
+void Eos::computeBruntVaisalaFreqSq(const Array2DReal &ConservTemp,
+                                    const Array2DReal &AbsSalinity,
+                                    const Array2DReal &Pressure,
+                                    const Array2DReal &SpecVol) {
+   OMEGA_SCOPE(LocBruntVaisalaFreqSq,
+               BruntVaisalaFreqSq); /// Local view for computation
    OMEGA_SCOPE(
-       LocComputeBruntVaisalaFreqLinear,
-       ComputeBruntVaisalaFreqLinear); /// Local view for linear computation
+       LocComputeBruntVaisalaFreqSqLinear,
+       ComputeBruntVaisalaFreqSqLinear); /// Local view for linear computation
    OMEGA_SCOPE(
-       LocComputeBruntVaisalaFreqTeos10,
-       ComputeBruntVaisalaFreqTeos10); /// Local view for TEOS-10 computation
-   deepCopy(LocBruntVaisalaFreq,
+       LocComputeBruntVaisalaFreqSqTeos10,
+       ComputeBruntVaisalaFreqSqTeos10); /// Local view for TEOS-10 computation
+   deepCopy(LocBruntVaisalaFreqSq,
             0); /// Initialize local Brunt-Vaisala frequency to zero
 
-   /// Dispatch to the correct Brunt-Vaisala frequency calculation
+   /// Dispatch to the correct squared Brunt-Vaisala frequency calculation
    if (EosChoice == EosType::LinearEos) {
-      /// If Linear EOS, use linear Brunt-Vaisala frequency calculation
+      /// If Linear EOS, use linear squared Brunt-Vaisala frequency calculation
       parallelFor(
           "bvf-linear", {NCellsAll, NChunks},
           KOKKOS_LAMBDA(I4 ICell, I4 KChunk) {
-             LocComputeBruntVaisalaFreqLinear(LocBruntVaisalaFreq, ICell,
-                                              KChunk, SpecVol);
+             LocComputeBruntVaisalaFreqSqLinear(LocBruntVaisalaFreqSq, ICell,
+                                                KChunk, SpecVol);
           });
    } else if (EosChoice == EosType::Teos10Eos) {
-      /// If TEOS-10 EOS, use TEOS-10 Brunt-Vaisala frequency calculation
+      /// If TEOS-10 EOS, use TEOS-10 squared Brunt-Vaisala frequency
+      /// calculation
       parallelFor(
           "bvf-teos10", {NCellsAll, NChunks},
           KOKKOS_LAMBDA(I4 ICell, I4 KChunk) {
-             /// Compute Brunt-Vaisala frequency
-             LocComputeBruntVaisalaFreqTeos10(LocBruntVaisalaFreq, ICell,
-                                              KChunk, ConservTemp, AbsSalinity,
-                                              Pressure, SpecVol);
+             /// Compute squared Brunt-Vaisala frequency
+             LocComputeBruntVaisalaFreqSqTeos10(LocBruntVaisalaFreqSq, ICell,
+                                                KChunk, ConservTemp,
+                                                AbsSalinity, Pressure, SpecVol);
           });
    }
 }
@@ -260,13 +261,13 @@ void Eos::computeBruntVaisalaFreq(const Array2DReal &ConservTemp,
 void Eos::defineFields() {
 
    /// Set field names (append Name if not default)
-   SpecVolFldName          = "SpecVol";
-   SpecVolDisplacedFldName = "SpecVolDisplaced";
-   BruntVaisalaFreqFldName = "BruntVaisalaFreq";
+   SpecVolFldName            = "SpecVol";
+   SpecVolDisplacedFldName   = "SpecVolDisplaced";
+   BruntVaisalaFreqSqFldName = "BruntVaisalaFreqSq";
    if (Name != "Default") {
       SpecVolFldName.append(Name);
       SpecVolDisplacedFldName.append(Name);
-      BruntVaisalaFreqFldName.append(Name);
+      BruntVaisalaFreqSqFldName.append(Name);
    }
 
    /// Create fields for state variables
@@ -301,9 +302,9 @@ void Eos::defineFields() {
                      NDims,     // Number of dimensions
                      DimNames   // Dimension names
        );
-   /// Create and register the BruntVaisalaFreq field
-   auto BruntVaisalaFreqField =
-       Field::create(BruntVaisalaFreqFldName,                     // Field name
+   /// Create and register the BruntVaisalaFreqSq field
+   auto BruntVaisalaFreqSqField =
+       Field::create(BruntVaisalaFreqSqFldName,                   // Field name
                      "Brunt-Vaisala frequency squared",           // Long Name
                      "s-2",                                       // Units
                      "sea_water_brunt_vaisala_frequency_squared", // CF-ish Name
@@ -324,12 +325,12 @@ void Eos::defineFields() {
    // Add fields to the EOS group
    EosGroup->addField(SpecVolDisplacedFldName);
    EosGroup->addField(SpecVolFldName);
-   EosGroup->addField(BruntVaisalaFreqFldName);
+   EosGroup->addField(BruntVaisalaFreqSqFldName);
 
    // Attach Kokkos views to the fields
    SpecVolDisplacedField->attachData<Array2DReal>(SpecVolDisplaced);
    SpecVolField->attachData<Array2DReal>(SpecVol);
-   BruntVaisalaFreqField->attachData<Array2DReal>(BruntVaisalaFreq);
+   BruntVaisalaFreqSqField->attachData<Array2DReal>(BruntVaisalaFreqSq);
 
 } // end defineIOFields
 

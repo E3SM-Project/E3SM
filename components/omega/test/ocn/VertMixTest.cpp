@@ -31,11 +31,11 @@ constexpr int NVertLayers = 60;
 
 /// Values to test against
 const Real VertDiffExpValueN =
-    1.0391936989129011; // Expected value for diffusivity for positive BVF
+    1.0393923290498872; // Expected value for diffusivity for positive BVF
 const Real VertViscExpValueN =
     1.0198269656595984; // Expected value for viscosity for positive BVF
 const Real VertDiffExpValueP =
-    0.0015017457509864886; // Expected value for diffusivity for negative BVF
+    0.0015685660274841844; // Expected value for diffusivity for negative BVF
 const Real VertViscExpValueP =
     0.002332474675614262; // Expected value for viscosity for negative BVF
 const Real VertDiffBackExp =
@@ -80,11 +80,14 @@ void initVertMixTest() {
    /// Initialize decomposition
    Decomp::init();
 
-   // Initialize the vertical coordinate (phase 1)
-   VertCoord::init1();
+   /// Initialize Halo
+   Halo::init();
 
    /// Initialize mesh
    HorzMesh::init();
+
+   /// Initialize vertical coordinate
+   VertCoord::init(false);
 
    /// Initialize VertMix
    VertMix::init();
@@ -112,13 +115,13 @@ void testBackVertMix() {
    /// Create and fill ocean state arrays
    auto NormalVelEdge = Array2DReal("NormalVelEdge", NEdgesSize, NVertLayers);
    auto TangVelEdge   = Array2DReal("TangVelEdge", NEdgesSize, NVertLayers);
-   auto BruntVaisalaFreqCell =
-       Array2DReal("BruntVaisalaFreqCell", NCellsSize, NVertLayers);
+   auto BruntVaisalaFreqSqCell =
+       Array2DReal("BruntVaisalaFreqSqCell", NCellsSize, NVertLayers);
 
    /// Use deep copy initialize with reference or zero values
    deepCopy(NormalVelEdge, NV);
    deepCopy(TangVelEdge, TV);
-   deepCopy(BruntVaisalaFreqCell, BVFN);
+   deepCopy(BruntVaisalaFreqSqCell, BVFN);
    deepCopy(TestVertMix->VertDiff, 0.0);
    deepCopy(TestVertMix->VertVisc, 0.0);
 
@@ -139,7 +142,7 @@ void testBackVertMix() {
    TestVertMix->ComputeVertMixConv.Enabled  = false;
    TestVertMix->ComputeVertMixShear.Enabled = false;
    TestVertMix->computeVertMix(NormalVelEdge, TangVelEdge,
-                               BruntVaisalaFreqCell);
+                               BruntVaisalaFreqSqCell);
    Array2DReal BackVertVisc = TestVertMix->VertVisc;
    Array2DReal BackVertDiff = TestVertMix->VertDiff;
 
@@ -208,13 +211,13 @@ void testConvVertMix() {
    /// Create and fill ocean state arrays
    auto NormalVelEdge = Array2DReal("NormalVelEdge", NEdgesAll, NVertLayers);
    auto TangVelEdge   = Array2DReal("TangVelEdge", NEdgesAll, NVertLayers);
-   auto BruntVaisalaFreqCell =
-       Array2DReal("BruntVaisalaFreqCell", NCellsAll, NVertLayers);
+   auto BruntVaisalaFreqSqCell =
+       Array2DReal("BruntVaisalaFreqSqCell", NCellsAll, NVertLayers);
 
    /// Use deep copy to initialize with the ref value
    deepCopy(NormalVelEdge, NV);
    deepCopy(TangVelEdge, TV);
-   deepCopy(BruntVaisalaFreqCell, BVFN);
+   deepCopy(BruntVaisalaFreqSqCell, BVFN);
    deepCopy(TestVertMix->VertDiff, 0.0);
    deepCopy(TestVertMix->VertVisc, 0.0);
 
@@ -235,7 +238,7 @@ void testConvVertMix() {
    TestVertMix->ComputeVertMixConv.Enabled  = true;
    TestVertMix->ComputeVertMixShear.Enabled = false;
    TestVertMix->computeVertMix(NormalVelEdge, TangVelEdge,
-                               BruntVaisalaFreqCell);
+                               BruntVaisalaFreqSqCell);
    Array2DReal ConvVertVisc = TestVertMix->VertVisc;
    Array2DReal ConvVertDiff = TestVertMix->VertDiff;
 
@@ -309,13 +312,13 @@ void testShearVertMix() {
    /// Create and fill ocean state arrays
    auto NormalVelEdge = Array2DReal("NormalVelEdge", NEdgesAll, NVertLayers);
    auto TangVelEdge   = Array2DReal("TangVelEdge", NEdgesAll, NVertLayers);
-   auto BruntVaisalaFreqCell =
-       Array2DReal("BruntVaisalaFreqCell", NCellsAll, NVertLayers);
+   auto BruntVaisalaFreqSqCell =
+       Array2DReal("BruntVaisalaFreqSqCell", NCellsAll, NVertLayers);
 
    /// Use Kokkos::deep_copy to fill the entire view with the ref value
    deepCopy(NormalVelEdge, NV);
    deepCopy(TangVelEdge, TV);
-   deepCopy(BruntVaisalaFreqCell, BVFN);
+   deepCopy(BruntVaisalaFreqSqCell, BVFN);
    deepCopy(TestVertMix->VertDiff, 0.0);
    deepCopy(TestVertMix->VertVisc, 0.0);
 
@@ -342,7 +345,7 @@ void testShearVertMix() {
    TestVertMix->ComputeVertMixConv.Enabled  = false;
    TestVertMix->ComputeVertMixShear.Enabled = true;
    TestVertMix->computeVertMix(NormalVelEdge, TangVelEdge,
-                               BruntVaisalaFreqCell);
+                               BruntVaisalaFreqSqCell);
    Array2DReal ShearVertVisc = TestVertMix->VertVisc;
    Array2DReal ShearVertDiff = TestVertMix->VertDiff;
 
@@ -427,15 +430,15 @@ void testTotalVertMix() {
    /// Create and fill ocean state arrays
    auto NormalVelEdge = Array2DReal("NormalVelEdge", NEdgesAll, NVertLayers);
    auto TangVelEdge   = Array2DReal("TangVelEdge", NEdgesAll, NVertLayers);
-   auto BruntVaisalaFreqCell =
-       Array2DReal("BruntVaisalaFreqCell", NCellsAll, NVertLayers);
+   auto BruntVaisalaFreqSqCell =
+       Array2DReal("BruntVaisalaFreqSqCell", NCellsAll, NVertLayers);
 
    /// Use deep copy to initialize with the ref value
    deepCopy(NormalVelEdge, NV);
    deepCopy(TangVelEdge, TV);
 
    // Test with positive BVF first
-   deepCopy(BruntVaisalaFreqCell, BVFP);
+   deepCopy(BruntVaisalaFreqSqCell, BVFP);
    deepCopy(TestVertMix->VertDiff, 0.0);
    deepCopy(TestVertMix->VertVisc, 0.0);
 
@@ -462,7 +465,7 @@ void testTotalVertMix() {
    TestVertMix->ComputeVertMixConv.Enabled  = true;
    TestVertMix->ComputeVertMixShear.Enabled = true;
    TestVertMix->computeVertMix(NormalVelEdge, TangVelEdge,
-                               BruntVaisalaFreqCell);
+                               BruntVaisalaFreqSqCell);
    OMEGA_SCOPE(VertDiffP, TestVertMix->VertDiff);
    OMEGA_SCOPE(VertViscP, TestVertMix->VertVisc);
 
@@ -521,13 +524,13 @@ void testTotalVertMix() {
    }
 
    // Now test with negative BVF
-   deepCopy(BruntVaisalaFreqCell, BVFN);
+   deepCopy(BruntVaisalaFreqSqCell, BVFN);
    deepCopy(TestVertMix->VertDiff, 0.0);
    deepCopy(TestVertMix->VertVisc, 0.0);
 
    /// Compute vertical viscosity and diffusivity
    TestVertMix->computeVertMix(NormalVelEdge, TangVelEdge,
-                               BruntVaisalaFreqCell);
+                               BruntVaisalaFreqSqCell);
    OMEGA_SCOPE(VertDiffN, TestVertMix->VertDiff);
    OMEGA_SCOPE(VertViscN, TestVertMix->VertVisc);
 
@@ -592,6 +595,7 @@ void testTotalVertMix() {
 void finalizeVertMixTest() {
    VertMix::destroyInstance();
    HorzMesh::clear();
+   Halo::clear();
    VertCoord::clear();
    Decomp::clear();
    Field::clear();

@@ -79,11 +79,11 @@ class Teos10Eos {
    KOKKOS_FUNCTION void calcPCoeffs(Real (&SpecVolPCoeffs)[6 * VecLength],
                                     const I4 KVec, const Real Ct,
                                     const Real Sa) const {
-      constexpr Real SAu    = 40.0 * 35.16504 / 35.0;
-      constexpr Real CTu    = 40.0;
+      constexpr Real SaNorm = 40.0 * 35.16504 / 35.0;
+      constexpr Real CtNorm = 40.0;
       constexpr Real DeltaS = 24.0;
-      Real Ss               = Kokkos::sqrt((Sa + DeltaS) / SAu);
-      Real Tt               = Ct / CTu;
+      Real Ss               = Kokkos::sqrt((Sa + DeltaS) / SaNorm);
+      Real Tt               = Ct / CtNorm;
 
       /// Coefficients for the polynomial expansion
       constexpr Real V000 = 1.0769995862e-03;
@@ -203,7 +203,8 @@ class Teos10Eos {
    KOKKOS_FUNCTION Real calcDelta(const Real (&SpecVolPCoeffs)[6 * VecLength],
                                   const I4 KVec, const Real P) const {
 
-      Real Pp = P * Pa2Db;
+      constexpr Real PNorm = 1e-4;
+      Real Pp              = P * PNorm;
 
       Real Delta = ((((SpecVolPCoeffs[5 + 6 * KVec] * Pp +
                        SpecVolPCoeffs[4 + 6 * KVec]) *
@@ -221,13 +222,14 @@ class Teos10Eos {
 
    /// Calculate reference profile for TEOS-10
    KOKKOS_FUNCTION Real calcRefProfile(Real P) const {
-      constexpr Real V00 = -4.4015007269e-05;
-      constexpr Real V01 = 6.9232335784e-06;
-      constexpr Real V02 = -7.5004675975e-07;
-      constexpr Real V03 = 1.7009109288e-08;
-      constexpr Real V04 = -1.6884162004e-08;
-      constexpr Real V05 = 1.9613503930e-09;
-      Real Pp            = P * Pa2Db;
+      constexpr Real PNorm = 1e-4;
+      constexpr Real V00   = -4.4015007269e-05;
+      constexpr Real V01   = 6.9232335784e-06;
+      constexpr Real V02   = -7.5004675975e-07;
+      constexpr Real V03   = 1.7009109288e-08;
+      constexpr Real V04   = -1.6884162004e-08;
+      constexpr Real V05   = 1.9613503930e-09;
+      Real Pp              = P * PNorm;
 
       Real V0 =
           (((((V05 * Pp + V04) * Pp + V03) * Pp + V02) * Pp + V01) * Pp + V00) *
@@ -275,23 +277,21 @@ class LinearEos {
    Array1DI4 MaxLayerCell;
 };
 
-/// Functor for calculating the Brunt-Vaisala frequency using TEOS-10
-class Teos10BruntVaisalaFreq {
+/// Functor for calculating the squared Brunt-Vaisala frequency using TEOS-10
+class Teos10BruntVaisalaFreqSq {
  public:
-   /// Constructor for BruntVaisalaFreq
-   Teos10BruntVaisalaFreq(const VertCoord *VCoord);
+   /// Constructor for BruntVaisalaFreqSq
+   Teos10BruntVaisalaFreqSq(const VertCoord *VCoord);
 
-   //   The functor takes the full arrays of Brunt-Vaisala frequency (inout),
-   //   the indix ICell, and the ocean tracers (conservative) temperature,
-   //   (absolute) salinity, pressure, specific volume as inputs, and outputs
-   //   the Brunt-Vaisala frequency.
-   KOKKOS_FUNCTION void operator()(Array2DReal BruntVaisalaFreq, I4 ICell,
+   //   The functor takes the full arrays of squared Brunt-Vaisala frequency
+   //   (inout) the index ICell, and the ocean tracers (conservative)
+   //   temperature, (absolute) salinity, pressure, specific volume as inputs,
+   //   and outputs the squared Brunt-Vaisala frequency.
+   KOKKOS_FUNCTION void operator()(Array2DReal BruntVaisalaFreqSq, I4 ICell,
                                    I4 KChunk, const Array2DReal &ConservTemp,
                                    const Array2DReal &AbsSalinity,
                                    const Array2DReal &Pressure,
                                    const Array2DReal &SpecVol) const {
-      Real Gravity    = 9.80616;
-      Real Db2Pa      = 1.0e4;
       const I4 KStart = KChunk * VecLength;
       for (int KVec = 0; KVec < VecLength; ++KVec) {
          const I4 K = KStart + KVec;
@@ -299,9 +299,9 @@ class Teos10BruntVaisalaFreq {
             continue;
          else if (K == 0) {
             // No Brunt-Vaisala frequency at surface
-            BruntVaisalaFreq(ICell, K) = 0.0_Real;
+            BruntVaisalaFreqSq(ICell, K) = 0.0_Real;
          } else {
-            // Calculate Brunt-Vaisala frequency
+            // Calculate squared Brunt-Vaisala frequency
             Real CtInt =
                 0.5_Real * (ConservTemp(ICell, K) + ConservTemp(ICell, K - 1));
             Real SaInt =
@@ -315,21 +315,21 @@ class Teos10BruntVaisalaFreq {
             Real DCt      = ConservTemp(ICell, K) - ConservTemp(ICell, K - 1);
             Real DP       = Pressure(ICell, K) - Pressure(ICell, K - 1);
 
-            BruntVaisalaFreq(ICell, K) = Gravity * Gravity *
-                                         ((1.0_Real / SpInt) / (Db2Pa * DP)) *
-                                         (BetaInt * DSa - AlphaInt * DCt);
+            BruntVaisalaFreqSq(ICell, K) = Gravity * Gravity *
+                                           (BetaInt * DSa - AlphaInt * DCt) /
+                                           (SpInt * Db2Pa * DP);
          }
       }
    }
 
-   /// Calculate alpha values for the Brunt-Vaisala frequency
+   /// Calculate alpha values for the squared Brunt-Vaisala frequency
    KOKKOS_FUNCTION Real calcAlpha(Real Sa, Real Ct, Real P, Real Sp) const {
       constexpr Real Factor = 0.0248826675584615;
       constexpr Real Offset = 5.971840214030754e-1;
-      constexpr Real Pa2Db  = 1.0e-4;
+      constexpr Real PNorm  = 1.0e-4;
       Real Ss               = Kokkos::sqrt(Factor * Sa + Offset);
       Real Tt               = 0.025_Real * Ct;
-      Real Pp               = P * Pa2Db;
+      Real Pp               = P * PNorm;
 
       constexpr Real A000 = -1.56497346750e-5;
       constexpr Real A001 = 1.85057654290e-5;
@@ -401,14 +401,14 @@ class Teos10BruntVaisalaFreq {
       return 0.025_Real * Rval / Sp;
    }
 
-   /// Calculate alpha values for the Brunt-Vaisala frequency
+   /// Calculate beta values for the squared Brunt-Vaisala frequency
    KOKKOS_FUNCTION Real calcBeta(Real Sa, Real Ct, Real P, Real Sp) const {
       constexpr Real Factor = 0.0248826675584615;
       constexpr Real Offset = 5.971840214030754e-1;
-      constexpr Real Pa2Db  = 1.0e-4;
+      constexpr Real PNorm  = 1.0e-4;
       Real Ss               = Kokkos::sqrt(Factor * Sa + Offset);
       Real Tt               = 0.025_Real * Ct;
-      Real Pp               = P * Pa2Db;
+      Real Pp               = P * PNorm;
 
       constexpr Real B000 = -3.10389819760e-4;
       constexpr Real B003 = 3.63101885150e-7;
@@ -484,22 +484,21 @@ class Teos10BruntVaisalaFreq {
    I4 NVertLayers;
 };
 
-/// Linear Brunt-Vaisala frequency calculator
-class LinearBruntVaisalaFreq {
+/// Linear squared Brunt-Vaisala frequency calculator
+class LinearBruntVaisalaFreqSq {
  public:
    /// Coefficients from LinearEos (overwritten by config file if set there)
    Real RhoT0S0 = 1000.0; ///< Reference density (kg m^-3) at (T,S)=(0,0)
 
    /// constructor declaration
-   LinearBruntVaisalaFreq(const VertCoord *VCoord);
+   LinearBruntVaisalaFreqSq(const VertCoord *VCoord);
 
-   //   The functor takes the full arrays of Brunt-Vaisala frequency (inout),
-   //   the index ICell, and the specific volume and layer thickness as inputs,
-   //   and outputs the Brunt-Vaisala frequency.
-   KOKKOS_FUNCTION void operator()(Array2DReal BruntVaisalaFreq, I4 ICell,
+   //   The functor takes the full arrays of squared Brunt-Vaisala frequency
+   //   (inout), the index ICell, and the specific volume and layer thickness as
+   //   inputs, and outputs the squared Brunt-Vaisala frequency.
+   KOKKOS_FUNCTION void operator()(Array2DReal BruntVaisalaFreqSq, I4 ICell,
                                    I4 KChunk,
                                    const Array2DReal &SpecVol) const {
-      Real Gravity    = 9.80616; // gravitational acceleration
       const I4 KStart = KChunk * VecLength;
       for (int KVec = 0; KVec < VecLength; ++KVec) {
          const I4 K = KStart + KVec;
@@ -507,15 +506,16 @@ class LinearBruntVaisalaFreq {
             continue;
          else if (K == 0) {
             /// No Brunt-Vaisala frequency at the top level
-            BruntVaisalaFreq(ICell, K) = 0.0_Real;
+            BruntVaisalaFreqSq(ICell, K) = 0.0_Real;
          } else {
-            /// Calculate Brunt-Vaisala frequency at mid-point between K-1 and K
-            /// Do not need to use displaced specific volume here since only the
-            /// linear EOS is used with this BVF formulation.
-            BruntVaisalaFreq(ICell, K) = -(Gravity / RhoT0S0) *
-                                         ((1.0_Real / SpecVol(ICell, K - 1)) -
-                                          (1.0_Real / SpecVol(ICell, K))) /
-                                         (ZMid(ICell, K - 1) - ZMid(ICell, K));
+            /// Calculate squared Brunt-Vaisala frequency at mid-point between
+            /// K-1 and K Do not need to use displaced specific volume here
+            /// since only the linear EOS is used with this BVF formulation.
+            BruntVaisalaFreqSq(ICell, K) =
+                -(Gravity / RhoT0S0) *
+                ((1.0_Real / SpecVol(ICell, K - 1)) -
+                 (1.0_Real / SpecVol(ICell, K))) /
+                (ZMid(ICell, K - 1) - ZMid(ICell, K));
          }
       }
    }
@@ -534,18 +534,18 @@ class Eos {
    /// Destroy instance (frees Kokkos views)
    static void destroyInstance();
 
-   EosType EosChoice;            ///< Current EOS type in use
-   Array2DReal SpecVol;          ///< Specific volume field at level centers
-   Array2DReal SpecVolDisplaced; ///< Displaced specific volume field
-   Array2DReal BruntVaisalaFreq; ///< Brunt-Vaisala frequency field
+   EosType EosChoice;              ///< Current EOS type in use
+   Array2DReal SpecVol;            ///< Specific volume field at level centers
+   Array2DReal SpecVolDisplaced;   ///< Displaced specific volume field
+   Array2DReal BruntVaisalaFreqSq; ///< Squared Brunt-Vaisala frequency field
 
    std::string SpecVolFldName; ///< Field name for specific volume
    std::string
        SpecVolDisplacedFldName; ///< Field name for displaced specific volume
-   std::string
-       BruntVaisalaFreqFldName; ///< Field name for Brunt-Vaisala frequency
-   std::string EosGroupName;    ///< EOS group name (for config)
-   std::string Name;            ///< Name of this EOS instance
+   std::string BruntVaisalaFreqSqFldName; ///< Field name for squared
+                                          ///< Brunt-Vaisala frequency
+   std::string EosGroupName;              ///< EOS group name (for config)
+   std::string Name;                      ///< Name of this EOS instance
 
    /// Compute specific volume for all cells/layers
    void computeSpecVol(const Array2DReal &ConservTemp,
@@ -557,11 +557,11 @@ class Eos {
                            const Array2DReal &AbsSalinity,
                            const Array2DReal &Pressure, I4 KDisp);
 
-   /// Compute Brunt-Vaisala frequency for all cells/layers
-   void computeBruntVaisalaFreq(const Array2DReal &ConservTemp,
-                                const Array2DReal &AbsSalinity,
-                                const Array2DReal &Pressure,
-                                const Array2DReal &SpecVol);
+   /// Compute squared Brunt-Vaisala frequency for all cells/layers
+   void computeBruntVaisalaFreqSq(const Array2DReal &ConservTemp,
+                                  const Array2DReal &AbsSalinity,
+                                  const Array2DReal &Pressure,
+                                  const Array2DReal &SpecVol);
 
    /// Initialize EOS from config and mesh
    static void init();
@@ -587,10 +587,12 @@ class Eos {
 
    Teos10Eos ComputeSpecVolTeos10; ///< TEOS-10 specific volume calculator
    LinearEos ComputeSpecVolLinear; ///< Linear specific volume calculator
-   Teos10BruntVaisalaFreq
-       ComputeBruntVaisalaFreqTeos10; ///< TEOS-10 Brunt-Vaisala calculator
-   LinearBruntVaisalaFreq
-       ComputeBruntVaisalaFreqLinear; ///< Linear Brunt-Vaisala calculator
+   Teos10BruntVaisalaFreqSq
+       ComputeBruntVaisalaFreqSqTeos10; ///< TEOS-10 squared Brunt-Vaisala
+                                        ///< calculator
+   LinearBruntVaisalaFreqSq
+       ComputeBruntVaisalaFreqSqLinear; ///< Linear squared Brunt-Vaisala
+                                        ///< calculator
 
    // Define fields and metadata
    void defineFields();

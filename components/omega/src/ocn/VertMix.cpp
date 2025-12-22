@@ -159,7 +159,7 @@ void VertMix::init() {
 /// Compute diffusivity and viscosity for all cells/layers (no displacement)
 void VertMix::computeVertMix(const Array2DReal &NormalVelocity,
                              const Array2DReal &TangentialVelocity,
-                             const Array2DReal &BruntVaisalaFreq) {
+                             const Array2DReal &BruntVaisalaFreqSq) {
    OMEGA_SCOPE(LocVertDiff, VertDiff); /// Create a local view for computation
    OMEGA_SCOPE(LocVertVisc, VertVisc); /// Create a local view for computation
    OMEGA_SCOPE(
@@ -178,11 +178,11 @@ void VertMix::computeVertMix(const Array2DReal &NormalVelocity,
       parallelFor(
           "VertMix-ConvPlusShear", {NCellsAll, NChunks},
           KOKKOS_LAMBDA(I4 ICell, I4 KChunk) {
-             LocComputeVertMixConv(LocVertDiff, LocVertVisc, ICell, KChunk,
-                                   BruntVaisalaFreq);
              LocComputeVertMixShear(LocVertDiff, LocVertVisc, ICell, KChunk,
                                     NormalVelocity, TangentialVelocity,
-                                    BruntVaisalaFreq);
+                                    BruntVaisalaFreqSq);
+             LocComputeVertMixConv(LocVertDiff, LocVertVisc, ICell, KChunk,
+                                   BruntVaisalaFreqSq);
           });
    } else if (LocComputeVertMixShear.Enabled) {
       parallelFor(
@@ -190,14 +190,14 @@ void VertMix::computeVertMix(const Array2DReal &NormalVelocity,
           KOKKOS_LAMBDA(I4 ICell, I4 KChunk) {
              LocComputeVertMixShear(LocVertDiff, LocVertVisc, ICell, KChunk,
                                     NormalVelocity, TangentialVelocity,
-                                    BruntVaisalaFreq);
+                                    BruntVaisalaFreqSq);
           });
    } else if (LocComputeVertMixConv.Enabled) {
       parallelFor(
           "VertMix-ConvOnly", {NCellsAll, NChunks},
           KOKKOS_LAMBDA(I4 ICell, I4 KChunk) {
              LocComputeVertMixConv(LocVertDiff, LocVertVisc, ICell, KChunk,
-                                   BruntVaisalaFreq);
+                                   BruntVaisalaFreqSq);
           });
    } else {
       parallelFor(

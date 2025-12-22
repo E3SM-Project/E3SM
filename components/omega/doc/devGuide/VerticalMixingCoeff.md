@@ -79,4 +79,4 @@ void computeVertMix(const Array2DReal &NormalVelocity,
 This method combines the effects of:
 - Background mixing (constant coefficients)
 - Convective mixing (triggered by static instability)
-- Shear instability driven mixing (Pacanowski-Philander scheme)
+- Shear instability driven mixing (Pacanowski-Philander scheme; to be changed to [Large et al., 1994](https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/94rg01872) shear mixing scheme in a later development)

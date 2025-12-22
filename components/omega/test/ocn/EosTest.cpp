@@ -42,9 +42,11 @@ const Real TeosSVExpValue =
 const Real LinearExpValue =
     0.0009784735812133072; // Expected value for Linear specific volume
 const Real TeosBVFExpValue =
-    0.020911744281268286; // Expected value for TEOS-10 Brunt-Vaisala frequency
+    0.020913834194283325; // Expected value for TEOS-10 squared Brunt-Vaisala
+                          // frequency
 const Real LinearBVFExpValue =
-    0.017833905406889013; // Expected value for Linear Brunt-Vaisala frequency
+    0.017834796542017275; // Expected value for Linear squared Brunt-Vaisala
+                          // frequency
 const Real GswBVFExpValue =
     0.02081197958166906; // Expected value from GSW-C library
 
@@ -240,8 +242,8 @@ void testEosLinearDisplaced() {
    return;
 }
 
-/// Test linear Brunt-Vaisala frequency calculation for all cells/layers
-void testBruntVaisalaFreqLinear() {
+/// Test linear squared Brunt-Vaisala frequency calculation for all cells/layers
+void testBruntVaisalaFreqSqLinear() {
    /// Get mesh and coordinate info
    const auto Mesh     = HorzMesh::getDefault();
    const auto VCoord   = VertCoord::getDefault();
@@ -257,7 +259,7 @@ void testBruntVaisalaFreqLinear() {
    Array2DReal PArray = Array2DReal("PArray", NCellsAll, NVertLayers);
    /// Use deep copy to initialize results to zero
    deepCopy(TestEos->SpecVol, 0.0);
-   deepCopy(TestEos->BruntVaisalaFreq, 0.0);
+   deepCopy(TestEos->BruntVaisalaFreqSq, 0.0);
 
    // fill remaining entries with sample values that should lead to ref result
    // for K = 1.
@@ -292,25 +294,25 @@ void testBruntVaisalaFreqLinear() {
    TestEos->computeSpecVol(TArray, SArray, PArray);
    Array2DReal SpecVol = TestEos->SpecVol;
 
-   /// Compute Brunt-Vaisala frequency
-   TestEos->computeBruntVaisalaFreq(TArray, SArray, PArray, SpecVol);
+   /// Compute squared Brunt-Vaisala frequency
+   TestEos->computeBruntVaisalaFreqSq(TArray, SArray, PArray, SpecVol);
 
    /// Check all array values against expected value
    int NumMismatches = 0;
-   OMEGA_SCOPE(BruntVaisalaFreq, TestEos->BruntVaisalaFreq);
+   OMEGA_SCOPE(BruntVaisalaFreqSq, TestEos->BruntVaisalaFreqSq);
    parallelReduce(
-       "CheckBruntVaisala-Teos", {NCellsAll, NVertLayers},
+       "CheckBruntVaisalaSq-Teos", {NCellsAll, NVertLayers},
        KOKKOS_LAMBDA(int I, int K, int &LocalCount) {
           if (K == 0) { // should be zero
-             if (BruntVaisalaFreq(I, K) != 0.0)
+             if (BruntVaisalaFreqSq(I, K) != 0.0)
                 LocalCount++;
           } else if (K == 1) { // should be ref value
-             if (!isApprox(BruntVaisalaFreq(I, K), LinearBVFExpValue, RTol))
+             if (!isApprox(BruntVaisalaFreqSq(I, K), LinearBVFExpValue, RTol))
                 LocalCount++;
           } else { // just check for unreasonable values
-             if (BruntVaisalaFreq(I, K) == 0.0 or
-                 Kokkos::isnan(BruntVaisalaFreq(I, K)) or
-                 Kokkos::isinf(BruntVaisalaFreq(I, K)))
+             if (BruntVaisalaFreqSq(I, K) == 0.0 or
+                 Kokkos::isnan(BruntVaisalaFreqSq(I, K)) or
+                 Kokkos::isinf(BruntVaisalaFreqSq(I, K)))
                 LocalCount++;
           }
        },
@@ -318,26 +320,26 @@ void testBruntVaisalaFreqLinear() {
 
    // If test fails, print bad values and abort
    if (NumMismatches != 0) {
-      auto BruntVaisalaFreqH = createHostMirrorCopy(BruntVaisalaFreq);
+      auto BruntVaisalaFreqSqH = createHostMirrorCopy(BruntVaisalaFreqSq);
       for (int I = 0; I < NCellsAll; ++I) {
          // top layer should be zero
-         if (BruntVaisalaFreqH(I, 0) != 0.0)
+         if (BruntVaisalaFreqSqH(I, 0) != 0.0)
             LOG_ERROR("EosTest: Brunt-Vaisala Linear Bad Value: "
                       "BruntVaisala({},{}) = {}; Expected {}",
-                      I, 0, BruntVaisalaFreqH(I, 0), 0.0);
+                      I, 0, BruntVaisalaFreqSqH(I, 0), 0.0);
          // K = 1 should be ref value
-         if (!isApprox(BruntVaisalaFreqH(I, 1), LinearBVFExpValue, RTol))
+         if (!isApprox(BruntVaisalaFreqSqH(I, 1), LinearBVFExpValue, RTol))
             LOG_ERROR("EosTest: Brunt-Vaisala Linear Bad Value: "
                       "BruntVaisala({},{}) = {}; Expected {}",
-                      I, 1, BruntVaisalaFreqH(I, 1), LinearBVFExpValue);
+                      I, 1, BruntVaisalaFreqSqH(I, 1), LinearBVFExpValue);
          // remaining values just check for other conditions
          for (int K = 2; K < NVertLayers; ++K) {
-            if (BruntVaisalaFreqH(I, K) == 0.0 or
-                Kokkos::isnan(BruntVaisalaFreqH(I, K)) or
-                Kokkos::isinf(BruntVaisalaFreqH(I, K)))
+            if (BruntVaisalaFreqSqH(I, K) == 0.0 or
+                Kokkos::isnan(BruntVaisalaFreqSqH(I, K)) or
+                Kokkos::isinf(BruntVaisalaFreqSqH(I, K)))
                LOG_ERROR("EosTest: Brunt-Vaisala Linear Bad Value: "
                          "BruntVaisala({},{}) = {}",
-                         I, K, BruntVaisalaFreqH(I, K));
+                         I, K, BruntVaisalaFreqSqH(I, K));
          }
       }
       ABORT_ERROR("EosTest: BruntVaisala Linear FAIL with {} bad values",
@@ -484,8 +486,8 @@ void testEosTeos10Displaced() {
    return;
 }
 
-/// Test TEOS-10 Brunt-Vaisala frequency calculation for all cells/layer
-void testBruntVaisalaFreqTeos10() {
+/// Test TEOS-10 squared Brunt-Vaisala frequency calculation for all cells/layer
+void testBruntVaisalaFreqSqTeos10() {
    /// Get mesh and coordinate info
    const auto Mesh     = HorzMesh::getDefault();
    const auto VCoord   = VertCoord::getDefault();
@@ -500,7 +502,7 @@ void testBruntVaisalaFreqTeos10() {
    Array2DReal TArray = Array2DReal("TArray", NCellsAll, NVertLayers);
    Array2DReal PArray = Array2DReal("PArray", NCellsAll, NVertLayers);
    /// Use deep copy to initialize results to zero
-   deepCopy(TestEos->BruntVaisalaFreq, 0.0);
+   deepCopy(TestEos->BruntVaisalaFreqSq, 0.0);
    deepCopy(TestEos->SpecVol, 0.0);
 
    /// Fill inputs with values that should lead to ref result for K=1
@@ -536,24 +538,24 @@ void testBruntVaisalaFreqTeos10() {
    Array2DReal SpecVol = TestEos->SpecVol;
 
    /// Compute Brunt-Vaisala frequency
-   TestEos->computeBruntVaisalaFreq(TArray, SArray, PArray, SpecVol);
+   TestEos->computeBruntVaisalaFreqSq(TArray, SArray, PArray, SpecVol);
 
    /// Check all array values against expected value
    int NumMismatches = 0;
-   OMEGA_SCOPE(BruntVaisalaFreq, TestEos->BruntVaisalaFreq);
+   OMEGA_SCOPE(BruntVaisalaFreqSq, TestEos->BruntVaisalaFreqSq);
    parallelReduce(
        "CheckBruntVaisala-Teos", {NCellsAll, NVertLayers},
        KOKKOS_LAMBDA(int I, int K, int &LocalCount) {
           if (K == 0) { // should be zero at top
-             if (BruntVaisalaFreq(I, K) != 0.0)
+             if (BruntVaisalaFreqSq(I, K) != 0.0)
                 LocalCount++;
           } else if (K == 1) { // should be ref value
-             if (!isApprox(BruntVaisalaFreq(I, K), TeosBVFExpValue, RTol))
+             if (!isApprox(BruntVaisalaFreqSq(I, K), TeosBVFExpValue, RTol))
                 LocalCount++;
           } else { // just check for unreasonable values
-             if (BruntVaisalaFreq(I, K) == 0.0 or
-                 Kokkos::isnan(BruntVaisalaFreq(I, K)) or
-                 Kokkos::isinf(BruntVaisalaFreq(I, K)))
+             if (BruntVaisalaFreqSq(I, K) == 0.0 or
+                 Kokkos::isnan(BruntVaisalaFreqSq(I, K)) or
+                 Kokkos::isinf(BruntVaisalaFreqSq(I, K)))
                 LocalCount++;
           }
        },
@@ -561,26 +563,26 @@ void testBruntVaisalaFreqTeos10() {
 
    // If test fails, print bad values and abort
    if (NumMismatches != 0) {
-      auto BruntVaisalaFreqH = createHostMirrorCopy(BruntVaisalaFreq);
+      auto BruntVaisalaFreqSqH = createHostMirrorCopy(BruntVaisalaFreqSq);
       for (int I = 0; I < NCellsAll; ++I) {
          // top layer should be zero
-         if (BruntVaisalaFreqH(I, 0) != 0.0)
+         if (BruntVaisalaFreqSqH(I, 0) != 0.0)
             LOG_ERROR("EosTest: Brunt-Vaisala TEOS Bad Value: "
                       "BruntVaisala({},{}) = {}; Expected {}",
-                      I, 0, BruntVaisalaFreqH(I, 0), 0.0);
+                      I, 0, BruntVaisalaFreqSqH(I, 0), 0.0);
          // K = 1 should be ref value
-         if (!isApprox(BruntVaisalaFreqH(I, 1), TeosBVFExpValue, RTol))
+         if (!isApprox(BruntVaisalaFreqSqH(I, 1), TeosBVFExpValue, RTol))
             LOG_ERROR("EosTest: Brunt-Vaisala TEOS Bad Value: "
                       "BruntVaisala({},{}) = {}; Expected {}",
-                      I, 1, BruntVaisalaFreqH(I, 1), TeosBVFExpValue);
+                      I, 1, BruntVaisalaFreqSqH(I, 1), TeosBVFExpValue);
          // remaining values just check for other conditions
          for (int K = 2; K < NVertLayers; ++K) {
-            if (BruntVaisalaFreqH(I, K) == 0.0 or
-                Kokkos::isnan(BruntVaisalaFreqH(I, K)) or
-                Kokkos::isinf(BruntVaisalaFreqH(I, K)))
+            if (BruntVaisalaFreqSqH(I, K) == 0.0 or
+                Kokkos::isnan(BruntVaisalaFreqSqH(I, K)) or
+                Kokkos::isinf(BruntVaisalaFreqSqH(I, K)))
                LOG_ERROR("EosTest: Brunt-Vaisala TEOS Bad Value: "
                          "BruntVaisala({},{}) = {}",
-                         I, K, BruntVaisalaFreqH(I, 1));
+                         I, K, BruntVaisalaFreqSqH(I, K));
          }
       }
       ABORT_ERROR("EosTest: BruntVaisala TEOS FAIL with {} bad values",
@@ -656,10 +658,12 @@ void checkValueGswcN2() {
 // Full array tests:
 // --> one tests the value on a Eos with linear option
 // --> next checks the value on a Eos with linear displaced option
-// --> next checks the value of the linear Brunt Vaisala Freq. calculation
+// --> next checks the value of the linear squared Brunt Vaisala Freq.
+// calculation
 // --> next checks the value on a Eos with TEOS-10 option
 // --> next checks the value on a Eos with TEOS-10 displaced option
-// --> last checks the value of the TOES-10 Brunt Vaisala Freq. calculation
+// --> last checks the value of the TOES-10 squared Brunt Vaisala Freq.
+// calculation
 void eosTest(const std::string &MeshFile = "OmegaMesh.nc") {
    initEosTest(MeshFile);
    const auto &Mesh = HorzMesh::getDefault();
@@ -669,10 +673,10 @@ void eosTest(const std::string &MeshFile = "OmegaMesh.nc") {
 
    testEosLinear();
    testEosLinearDisplaced();
-   testBruntVaisalaFreqLinear();
+   testBruntVaisalaFreqSqLinear();
    testEosTeos10();
    testEosTeos10Displaced();
-   testBruntVaisalaFreqTeos10();
+   testBruntVaisalaFreqSqTeos10();
 
    finalizeEosTest();
 

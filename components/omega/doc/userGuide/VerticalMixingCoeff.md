@@ -42,12 +42,12 @@ Enhanced convective adjustment mixing that occurs in statically unstable regions
 $$
 \kappa =
 \begin{cases}
-\kappa_{b} + \kappa_{conv} \quad \text{ if } N^2 < N^2_{crit}\\
-\kappa_{b} \quad \text{ if } N^2 \geq N^2_{crit}
++\kappa_b + \kappa_{conv} \quad \text{ if } N^2 < N^2_{crit}\\
++\kappa_b \quad \text{ if } N^2 \geq N^2_{crit}
 \end{cases}
 $$
 
-This is different than some current implementations (i.e. in MPAS-Ocean and the CVMix package), where convective adjustment occurs both with unstable and neutral conditions ($N^2 \leq N^2_{crit}$).
+This is different than some current implementations (i.e. in MPAS-Ocean and the CVMix package), where convective adjustment occurs both with unstable and neutral conditions ($N^2 \leq N^2_{crit}$). $\kappa_{conv}$ and $N^2_{crit}$ are constant parameters set in the `VertMix` section of the yaml file (`Diffusivity` and `TriggerBVF` under the `Convective` header).
 
 ### 3. Shear Mixing
 
@@ -66,3 +66,5 @@ where $Ri$ is defined as:
 $$
 Ri = \frac{N^2}{\left|\frac{\partial \mathbf{U}}{\partial z}\right|^2}\,,
 $$
+
+where $\nu_o$, $\alpha$, $n$, $\nu_b$, $\kappa_b$ are constant parameters set in the `VertMix` section of the yaml file (`NuZero`, `Alpha`, `Exponent` under the `Shear` header and `Viscosity`, `Diffusivity` under the `Background` header). $N^2$ is calculated by the EOS based on the ocean state and $\mathbf{U}$ is the magnitude of the horizontal velocity. $N^2$, $\partial \mathbf{U}}{\partial z}\right|^2$ and $Ri$ of `K` are all defined at the cell center, top interface of layer `K`.  $N^2$, $\nu_{shear}$ and $\kappa_{shear}$ are set to zero for the surface layer. In a later development, the shear mixing option will be changed to the interior shear mixing formulation in [Large et al., 1994](https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/94rg01872).

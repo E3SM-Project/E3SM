@@ -157,7 +157,6 @@ class HorzMesh {
 
    HostArray1DReal ZCellH;   ///< Z Coordinates of cell centers (m)
    HostArray1DReal LonCellH; ///< Longitude location of cell centers (radians)
-
    HostArray1DReal LatCellH; ///< Latitude location of cell centers (radians)
 
    Array1DReal XEdge;      ///< X Coordinate of edge midpoints (m)

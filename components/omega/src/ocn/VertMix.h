@@ -34,9 +34,9 @@ class ConvectiveMix {
    /// Constructor for ConvectiveMix
    ConvectiveMix(const VertCoord *VCoord);
 
-   KOKKOS_FUNCTION void operator()(Array2DReal VertDiff, Array2DReal VertVisc,
-                                   I4 ICell, I4 KChunk,
-                                   const Array2DReal &BruntVaisalaFreq) const {
+   KOKKOS_FUNCTION void
+   operator()(Array2DReal VertDiff, Array2DReal VertVisc, I4 ICell, I4 KChunk,
+              const Array2DReal &BruntVaisalaFreqSq) const {
       const I4 KStart = KChunk * VecLength;
       for (int KVec = 0; KVec < VecLength; ++KVec) {
          const I4 K = KStart + KVec;
@@ -46,7 +46,7 @@ class ConvectiveMix {
             VertVisc(ICell, K) = 0.0_Real;
             VertDiff(ICell, K) = 0.0_Real;
          } else {
-            if (BruntVaisalaFreq(ICell, K) < ConvTriggerBVF) {
+            if (BruntVaisalaFreqSq(ICell, K) < ConvTriggerBVF) {
                VertDiff(ICell, K) += ConvDiff;
                VertVisc(ICell, K) += ConvDiff;
             }
@@ -73,11 +73,11 @@ class ShearMix {
    /// Constructor for ShearMix
    ShearMix(const HorzMesh *Mesh, const VertCoord *VCoord);
 
-   KOKKOS_FUNCTION void operator()(Array2DReal VertDiff, Array2DReal VertVisc,
-                                   I4 ICell, I4 KChunk,
-                                   const Array2DReal &NormalVelocity,
-                                   const Array2DReal &TangentialVelocity,
-                                   const Array2DReal &BruntVaisalaFreq) const {
+   KOKKOS_FUNCTION void
+   operator()(Array2DReal VertDiff, Array2DReal VertVisc, I4 ICell, I4 KChunk,
+              const Array2DReal &NormalVelocity,
+              const Array2DReal &TangentialVelocity,
+              const Array2DReal &BruntVaisalaFreqSq) const {
 
       const I4 KStart = KChunk * VecLength;
       for (int KVec = 0; KVec < VecLength; ++KVec) {
@@ -105,7 +105,7 @@ class ShearMix {
             Real DelZMid = ZMid(ICell, K - 1) - ZMid(ICell, K);
             ShearSquared = ShearSquared / (DelZMid * DelZMid);
 
-            Real RichardsonNum = BruntVaisalaFreq(ICell, K) /
+            Real RichardsonNum = BruntVaisalaFreqSq(ICell, K) /
                                  Kokkos::max(1.0e-12_Real, ShearSquared);
 
             ShearViscVal =
@@ -113,7 +113,7 @@ class ShearMix {
                                           ShearExponent);
             VertVisc(ICell, K) += ShearViscVal;
             VertDiff(ICell, K) +=
-                ShearViscVal / (1.0_Real + ShearAlpha * RichardsonNum);
+                VertVisc(ICell, K) / (1.0_Real + ShearAlpha * RichardsonNum);
          }
       }
    }
@@ -156,7 +156,7 @@ class VertMix {
    /// Compute vertical diffusivity and viscosity for all cells/layers
    void computeVertMix(const Array2DReal &NormalVelocity,
                        const Array2DReal &TangentialVelocity,
-                       const Array2DReal &BruntVaisalaFreq);
+                       const Array2DReal &BruntVaisalaFreqSq);
 
    /// Initialize VertMix from config and mesh
    static void init();

@@ -7,7 +7,7 @@ and `BruntVaisalaFreq`. Current EOS options are a linear EOS or an EOS computed 
 75 term expansion from [Roquet et al. 2015](https://www.sciencedirect.com/science/article/pii/S1463500315000566).
 If `SpecVolDisplaced` is calculated with the linear EOS option, it will be equal to `SpecVol` as there
 is no pressure/depth dependence for the linear EOS. `SpecVolDisplaced` computes specific volume
-adiabatically displaced to `K + KDisp`. Note: `SpecVol` must be calculated before `BruntVaisalaFreq`, as
+adiabatically displaced to `K + KDisp` (where `K` counted positive downward, ie `K+1` is one layer below `K`). Note: `SpecVol` must be calculated before `BruntVaisalaFreq`, as
 `SpecVol` is an input for the `BruntVaisalaFreq` calculation. If the linear EOS option is used, then the `BruntVaisalaFreq`
 is calculated using linear coefficients. If the TEOS-10 option is used, the `BruntVaisalaFreq` is calculated with non-linear
 coefficients according to the [TEOS-10 toolbox](https://www.teos-10.org/software.htm). Note: two assumption for ease of computation and efficiency have been made
