@@ -367,7 +367,7 @@
         <arg name="thread_count">-c $SHELL{echo 128/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
         <arg name="binding"> $SHELL{if [ 64 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu_bind=cores"; else echo "--cpu_bind=threads";fi;} </arg>
         <arg name="placement"> -m plane=$SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
-        <arg name="gpu-bind"> $SHELL{ppn=`./xmlquery --value MAX_MPITASKS_PER_NODE`; if [ 64 -le $ppn ]; then echo $CIMEROOT/../cime_config/machines/scripts/pm-gpu_set_affinity_npergpu.sh $ppn; fi;} </arg>
+        <arg name="gpu-bind"> $SHELL{mpn=`./xmlquery --value MAX_MPITASKS_PER_NODE`; if [ 64 -le $mpn ]; then echo $CIMEROOT/../cime_config/machines/scripts/pm-gpu_set_affinity_npergpu.sh $mpn; fi;} </arg>
     </arguments>
     </mpirun>
     <module_system type="module" allow_error="true">
@@ -725,7 +725,8 @@
         <arg name="thread_count">-c $SHELL{echo 128/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
         <arg name="binding"> $SHELL{if [ 64 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu_bind=cores"; else echo "--cpu_bind=threads";fi;} </arg>
         <arg name="placement"> -m plane=$SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
-    </arguments>
+        <arg name="gpu-bind"> $SHELL{mpn=`./xmlquery --value MAX_MPITASKS_PER_NODE`; if [ 64 -le $mpn ]; then echo $CIMEROOT/../cime_config/machines/scripts/pm-gpu_set_affinity_npergpu.sh $mpn; fi;} </arg>
+      </arguments>
     </mpirun>
     <module_system type="module" allow_error="true">
       <init_path lang="perl">/opt/cray/pe/lmod/8.7.19/init/perl</init_path>
@@ -1083,7 +1084,8 @@
         <arg name="thread_count">-c $SHELL{echo 128/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
         <arg name="binding"> $SHELL{if [ 64 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu_bind=cores"; else echo "--cpu_bind=threads";fi;} </arg>
         <arg name="placement"> -m plane=$SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
-    </arguments>
+        <arg name="gpu-bind"> $SHELL{mpn=`./xmlquery --value MAX_MPITASKS_PER_NODE`; if [ 64 -le $mpn ]; then echo $CIMEROOT/../cime_config/machines/scripts/pm-gpu_set_affinity_npergpu.sh $mpn; fi;} </arg>
+      </arguments>
     </mpirun>
     <module_system type="module" allow_error="true">
       <init_path lang="perl">/opt/cray/pe/lmod/8.7.19/init/perl</init_path>
