@@ -24,10 +24,9 @@ OMEGA::AuxiliaryState* DefAuxState = OMEGA::AuxiliaryState::getDefault();
 
 ## Creation of non-default auxiliary states
 
-A non-default auxiliary state can be created from a string `Name`, horizontal mesh `Mesh`, a number of
-vertical layers `NVertLayers`, and a number of Tracers `NTracers`:
+A non-default auxiliary state can be created from a string `Name`, horizontal mesh `Mesh`, halo layer `MeshHalo`, vertical coordinate `VCoord`, and a number of Tracers `NTracers`:
 ```c++
-OMEGA::AuxiliaryState*  NewAuxState = OMEGA::AuxiliaryState::create(Name, Mesh, NVertLayers, NTracers);
+OMEGA::AuxiliaryState*  NewAuxState = OMEGA::AuxiliaryState::create(Name, Mesh, MeshHalo, VCoord, NTracers);
 ```
 For conveniece, this returns a pointer to the newly created state. Given its name, a pointer to a named auxiliary state
 can be obtained at any time by calling the static `get` method:
@@ -37,9 +36,9 @@ OMEGA::AuxiliaryState* NewAuxState = OMEGA::AuxiliaryState::get(Name);
 
 ## Computation of auxiliary variables
 To compute all auxiliary variables stored in an auxiliary state `AuxState`,
-given ocean state `State` and time level `TimeLevel` do:
+given ocean state `State`, an array of tracers `TracerArray`, and time level `TimeLevel` do:
 ```c++
-AuxState.computeAll(State, TimeLevel);
+AuxState.computeAll(State, TracerArray, TimeLevel);
 ```
 
 ## Removal of auxiliary states
