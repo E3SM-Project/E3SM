@@ -2529,7 +2529,7 @@
     </mach>
   </grid>
   <grid name="a%ne256np4.pg2.*">
-    <mach name="pm-gpu">
+    <mach name="pm-gpu|muller-gpu|alvarez-gpu">
       <pes compset=".*SCREAM.*ELM.*MPASSI.*MPASO.*" pesize="S">
         <comment>pm-gpu ne256 for fully coupled cases with ATM on GPU, MPAS on CPU -- WCYCLXX2010 64 nodes, 64x1</comment>
         <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
