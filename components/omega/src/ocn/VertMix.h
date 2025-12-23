@@ -37,12 +37,13 @@ class ConvectiveMix {
    KOKKOS_FUNCTION void
    operator()(Array2DReal VertDiff, Array2DReal VertVisc, I4 ICell, I4 KChunk,
               const Array2DReal &BruntVaisalaFreqSq) const {
-      const I4 KStart = KChunk * VecLength;
-      for (int KVec = 0; KVec < VecLength; ++KVec) {
+
+      const I4 KStart = chunkStart(KChunk, MinLayerCell(ICell));
+      const I4 KLen   = chunkLength(KChunk, KStart, MaxLayerCell(ICell));
+
+      for (int KVec = 0; KVec < KLen; ++KVec) {
          const I4 K = KStart + KVec;
-         if (K >= NVertLayers)
-            continue;
-         else if (K == 0) {
+         if (K == 0) {
             VertVisc(ICell, K) = 0.0_Real;
             VertDiff(ICell, K) = 0.0_Real;
          } else {
@@ -55,7 +56,8 @@ class ConvectiveMix {
    }
 
  private:
-   I4 NVertLayers;
+   Array1DI4 MinLayerCell;
+   Array1DI4 MaxLayerCell;
 };
 
 class ShearMix {
@@ -79,12 +81,12 @@ class ShearMix {
               const Array2DReal &TangentialVelocity,
               const Array2DReal &BruntVaisalaFreqSq) const {
 
-      const I4 KStart = KChunk * VecLength;
-      for (int KVec = 0; KVec < VecLength; ++KVec) {
+      const I4 KStart = chunkStart(KChunk, MinLayerCell(ICell));
+      const I4 KLen   = chunkLength(KChunk, KStart, MaxLayerCell(ICell));
+
+      for (int KVec = 0; KVec < KLen; ++KVec) {
          const I4 K = KStart + KVec;
-         if (K >= NVertLayers)
-            continue;
-         else if (K == 0) {
+         if (K == 0) {
             VertVisc(ICell, K) = 0.0_Real;
             VertDiff(ICell, K) = 0.0_Real;
          } else {
@@ -125,7 +127,8 @@ class ShearMix {
    Array2DReal ZMid;
    Array1DI4 NEdgesOnCell;
    Array2DI4 EdgesOnCell;
-   I4 NVertLayers;
+   Array1DI4 MinLayerCell;
+   Array1DI4 MaxLayerCell;
 };
 
 /// Class for Vertical Mixing Coefficient (VertMix) calculations
@@ -177,9 +180,8 @@ class VertMix {
    VertMix(VertMix &&)                 = delete;
    VertMix &operator=(VertMix &&)      = delete;
 
-   I4 NCellsAll;   ///< Number of horizontal cells
-   I4 NChunks;     ///< Number of vertical chunks (for vectorization)
-   I4 NVertLayers; ///< Number of vertical layers
+   const HorzMesh *Mesh;    ///< Horizontal mesh
+   const VertCoord *VCoord; ///< Vertical coordinate
 
    // Define fields and metadata
    void defineFields();

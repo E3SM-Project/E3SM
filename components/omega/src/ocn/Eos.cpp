@@ -23,25 +23,27 @@ LinearEos::LinearEos(const VertCoord *VCoord)
 
 /// Constructor for Teos10 squared Brunt-Vaisala frequency
 Teos10BruntVaisalaFreqSq::Teos10BruntVaisalaFreqSq(const VertCoord *VCoord)
-    : NVertLayers(VCoord->NVertLayers) {}
+    : MinLayerCell(VCoord->MinLayerCell), MaxLayerCell(VCoord->MaxLayerCell) {}
 
 /// Constructor for Linear squared Brunt-Vaisala frequency
 LinearBruntVaisalaFreqSq::LinearBruntVaisalaFreqSq(const VertCoord *VCoord)
-    : NVertLayers(VCoord->NVertLayers), ZMid(VCoord->ZMid) {}
+    : MinLayerCell(VCoord->MinLayerCell), MaxLayerCell(VCoord->MaxLayerCell),
+      ZMid(VCoord->ZMid) {}
 
 /// Constructor for Eos
 Eos::Eos(const std::string &Name, ///< [in] Name for eos object
          const HorzMesh *Mesh,    ///< [in] Horizontal mesh
          const VertCoord *VCoord  ///< [in] Vertical coordinate
          )
-    : ComputeSpecVolLinear(VCoord), ComputeSpecVolTeos10(VCoord), 
-      ComputeBruntVaisalaFreqLinear(VCoord), ComputeBruntVaisalaFreqTeos10(Mesh),
-      Name(Name), Mesh(Mesh), VCoord(VCoord) {
+    : ComputeSpecVolLinear(VCoord), ComputeSpecVolTeos10(VCoord),
+      ComputeBruntVaisalaFreqSqLinear(VCoord),
+      ComputeBruntVaisalaFreqSqTeos10(VCoord), Name(Name), Mesh(Mesh),
+      VCoord(VCoord) {
    SpecVol = Array2DReal("SpecVol", Mesh->NCellsAll, VCoord->NVertLayers);
    SpecVolDisplaced =
        Array2DReal("SpecVolDisplaced", Mesh->NCellsAll, VCoord->NVertLayers);
-   BruntVaisalaFreq =
-       Array2DReal("BruntVaisalaFreq", Mesh->NCellsAll, VCoord->NVertLayers);
+   BruntVaisalaFreqSq =
+       Array2DReal("BruntVaisalaFreqSq", Mesh->NCellsAll, VCoord->NVertLayers);
 
    defineFields();
 }
@@ -186,9 +188,6 @@ void Eos::computeSpecVolDisp(const Array2DReal &ConservTemp,
    /// If EosChoice is Linear, the displaced specific
    /// volume is the same as the specific volume
    if (EosChoice == EosType::LinearEos) {
-      LOG_INFO("Eos::computeSpecVolDisp called with Linear EOS. "
-               "SpecVol is independent of pressure/depth, so the "
-               "displaced value will be the same as SpecVol.");
       parallelForOuter(
           "eos-linear", {Mesh->NCellsAll},
           KOKKOS_LAMBDA(I4 ICell, const TeamMember &Team) {
@@ -231,28 +230,42 @@ void Eos::computeBruntVaisalaFreqSq(const Array2DReal &ConservTemp,
    OMEGA_SCOPE(
        LocComputeBruntVaisalaFreqSqTeos10,
        ComputeBruntVaisalaFreqSqTeos10); /// Local view for TEOS-10 computation
+   OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
+   OMEGA_SCOPE(MaxLayerCell, VCoord->MaxLayerCell);
+
    deepCopy(LocBruntVaisalaFreqSq,
             0); /// Initialize local Brunt-Vaisala frequency to zero
 
    /// Dispatch to the correct squared Brunt-Vaisala frequency calculation
    if (EosChoice == EosType::LinearEos) {
       /// If Linear EOS, use linear squared Brunt-Vaisala frequency calculation
-      parallelFor(
-          "bvf-linear", {NCellsAll, NChunks},
-          KOKKOS_LAMBDA(I4 ICell, I4 KChunk) {
-             LocComputeBruntVaisalaFreqSqLinear(LocBruntVaisalaFreqSq, ICell,
-                                                KChunk, SpecVol);
+      parallelForOuter(
+          "bvf-linear", {Mesh->NCellsAll},
+          KOKKOS_LAMBDA(I4 ICell, const TeamMember &Team) {
+             const int KMin   = MinLayerCell(ICell);
+             const int KMax   = MaxLayerCell(ICell);
+             const int KRange = vertRangeChunked(KMin, KMax);
+             parallelForInner(
+                 Team, KRange, INNER_LAMBDA(int KChunk) {
+                    LocComputeBruntVaisalaFreqSqLinear(LocBruntVaisalaFreqSq,
+                                                       ICell, KChunk, SpecVol);
+                 });
           });
    } else if (EosChoice == EosType::Teos10Eos) {
       /// If TEOS-10 EOS, use TEOS-10 squared Brunt-Vaisala frequency
       /// calculation
-      parallelFor(
-          "bvf-teos10", {NCellsAll, NChunks},
-          KOKKOS_LAMBDA(I4 ICell, I4 KChunk) {
-             /// Compute squared Brunt-Vaisala frequency
-             LocComputeBruntVaisalaFreqSqTeos10(LocBruntVaisalaFreqSq, ICell,
-                                                KChunk, ConservTemp,
-                                                AbsSalinity, Pressure, SpecVol);
+      parallelForOuter(
+          "bvf-teos10", {Mesh->NCellsAll},
+          KOKKOS_LAMBDA(I4 ICell, const TeamMember &Team) {
+             const int KMin   = MinLayerCell(ICell);
+             const int KMax   = MaxLayerCell(ICell);
+             const int KRange = vertRangeChunked(KMin, KMax);
+             parallelForInner(
+                 Team, KRange, INNER_LAMBDA(int KChunk) {
+                    LocComputeBruntVaisalaFreqSqTeos10(
+                        LocBruntVaisalaFreqSq, ICell, KChunk, ConservTemp,
+                        AbsSalinity, Pressure, SpecVol);
+                 });
           });
    }
 }

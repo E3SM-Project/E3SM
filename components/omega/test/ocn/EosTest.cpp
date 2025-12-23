@@ -297,24 +297,41 @@ void testBruntVaisalaFreqSqLinear() {
    /// Compute squared Brunt-Vaisala frequency
    TestEos->computeBruntVaisalaFreqSq(TArray, SArray, PArray, SpecVol);
 
+   const auto &MinLayerCell = VCoord->MinLayerCell;
+   const auto &MaxLayerCell = VCoord->MaxLayerCell;
+
    /// Check all array values against expected value
    int NumMismatches = 0;
    OMEGA_SCOPE(BruntVaisalaFreqSq, TestEos->BruntVaisalaFreqSq);
-   parallelReduce(
-       "CheckBruntVaisalaSq-Teos", {NCellsAll, NVertLayers},
-       KOKKOS_LAMBDA(int I, int K, int &LocalCount) {
-          if (K == 0) { // should be zero
-             if (BruntVaisalaFreqSq(I, K) != 0.0)
-                LocalCount++;
-          } else if (K == 1) { // should be ref value
-             if (!isApprox(BruntVaisalaFreqSq(I, K), LinearBVFExpValue, RTol))
-                LocalCount++;
-          } else { // just check for unreasonable values
-             if (BruntVaisalaFreqSq(I, K) == 0.0 or
-                 Kokkos::isnan(BruntVaisalaFreqSq(I, K)) or
-                 Kokkos::isinf(BruntVaisalaFreqSq(I, K)))
-                LocalCount++;
-          }
+   parallelReduceOuter(
+       "CheckBruntVaisalaSq-Linear", {Mesh->NCellsAll},
+       KOKKOS_LAMBDA(int ICell, const TeamMember &Team, int &OuterCount) {
+          int NumMismatchesCol;
+          const int KMin   = MinLayerCell(ICell);
+          const int KMax   = MaxLayerCell(ICell);
+          const int KRange = vertRange(KMin, KMax);
+          parallelReduceInner(
+              Team, KRange,
+              INNER_LAMBDA(int KOff, int &InnerCount) {
+                 const int K = KMin + KOff;
+                 if (K == 0) { // should be zero
+                    if (BruntVaisalaFreqSq(ICell, K) != 0.0)
+                       InnerCount++;
+                 } else if (K == 1) { // should be ref value
+                    if (!isApprox(BruntVaisalaFreqSq(ICell, K),
+                                  LinearBVFExpValue, RTol))
+                       InnerCount++;
+                 } else { // just check for unreasonable values
+                    if (BruntVaisalaFreqSq(ICell, K) == 0.0 or
+                        Kokkos::isnan(BruntVaisalaFreqSq(ICell, K)) or
+                        Kokkos::isinf(BruntVaisalaFreqSq(ICell, K)))
+                       InnerCount++;
+                 }
+              },
+              NumMismatchesCol);
+
+          Kokkos::single(PerTeam(Team),
+                         [&]() { OuterCount += NumMismatchesCol; });
        },
        NumMismatches);
 
@@ -398,6 +415,8 @@ void testEosTeos10() {
 
           Kokkos::single(PerTeam(Team),
                          [&]() { OuterCount += NumMismatchesCol; });
+       },
+       NumMismatches);
 
    // If test fails, print bad values and abort
    if (NumMismatches != 0) {
@@ -467,6 +486,8 @@ void testEosTeos10Displaced() {
 
           Kokkos::single(PerTeam(Team),
                          [&]() { OuterCount += NumMismatchesCol; });
+       },
+       NumMismatches);
 
    // If test fails, print bad values and abort
    if (NumMismatches != 0) {
@@ -540,49 +561,66 @@ void testBruntVaisalaFreqSqTeos10() {
    /// Compute Brunt-Vaisala frequency
    TestEos->computeBruntVaisalaFreqSq(TArray, SArray, PArray, SpecVol);
 
+   const auto &MinLayerCell = VCoord->MinLayerCell;
+   const auto &MaxLayerCell = VCoord->MaxLayerCell;
+
    /// Check all array values against expected value
    int NumMismatches = 0;
    OMEGA_SCOPE(BruntVaisalaFreqSq, TestEos->BruntVaisalaFreqSq);
-   parallelReduce(
-       "CheckBruntVaisala-Teos", {NCellsAll, NVertLayers},
-       KOKKOS_LAMBDA(int I, int K, int &LocalCount) {
-          if (K == 0) { // should be zero at top
-             if (BruntVaisalaFreqSq(I, K) != 0.0)
-                LocalCount++;
-          } else if (K == 1) { // should be ref value
-             if (!isApprox(BruntVaisalaFreqSq(I, K), TeosBVFExpValue, RTol))
-                LocalCount++;
-          } else { // just check for unreasonable values
-             if (BruntVaisalaFreqSq(I, K) == 0.0 or
-                 Kokkos::isnan(BruntVaisalaFreqSq(I, K)) or
-                 Kokkos::isinf(BruntVaisalaFreqSq(I, K)))
-                LocalCount++;
-          }
+   parallelReduceOuter(
+       "CheckSpecVolMatrix-Teos", {Mesh->NCellsAll},
+       KOKKOS_LAMBDA(int ICell, const TeamMember &Team, int &OuterCount) {
+          int NumMismatchesCol;
+          const int KMin   = MinLayerCell(ICell);
+          const int KMax   = MaxLayerCell(ICell);
+          const int KRange = vertRange(KMin, KMax);
+          parallelReduceInner(
+              Team, KRange,
+              INNER_LAMBDA(int KOff, int &InnerCount) {
+                 const int K = KMin + KOff;
+                 if (K == 0) { // should be zero at top
+                    if (BruntVaisalaFreqSq(ICell, K) != 0.0)
+                       InnerCount++;
+                 } else if (K == 1) { // should be ref value
+                    if (!isApprox(BruntVaisalaFreqSq(ICell, K), TeosBVFExpValue,
+                                  RTol))
+                       InnerCount++;
+                 } else { // just check for unreasonable values
+                    if (BruntVaisalaFreqSq(ICell, K) == 0.0 or
+                        Kokkos::isnan(BruntVaisalaFreqSq(ICell, K)) or
+                        Kokkos::isinf(BruntVaisalaFreqSq(ICell, K)))
+                       InnerCount++;
+                 }
+              },
+              NumMismatchesCol);
+
+          Kokkos::single(PerTeam(Team),
+                         [&]() { OuterCount += NumMismatchesCol; });
        },
        NumMismatches);
 
    // If test fails, print bad values and abort
    if (NumMismatches != 0) {
       auto BruntVaisalaFreqSqH = createHostMirrorCopy(BruntVaisalaFreqSq);
-      for (int I = 0; I < NCellsAll; ++I) {
+      for (int ICell = 0; ICell < NCellsAll; ++ICell) {
          // top layer should be zero
-         if (BruntVaisalaFreqSqH(I, 0) != 0.0)
+         if (BruntVaisalaFreqSqH(ICell, 0) != 0.0)
             LOG_ERROR("EosTest: Brunt-Vaisala TEOS Bad Value: "
                       "BruntVaisala({},{}) = {}; Expected {}",
-                      I, 0, BruntVaisalaFreqSqH(I, 0), 0.0);
+                      ICell, 0, BruntVaisalaFreqSqH(ICell, 0), 0.0);
          // K = 1 should be ref value
-         if (!isApprox(BruntVaisalaFreqSqH(I, 1), TeosBVFExpValue, RTol))
+         if (!isApprox(BruntVaisalaFreqSqH(ICell, 1), TeosBVFExpValue, RTol))
             LOG_ERROR("EosTest: Brunt-Vaisala TEOS Bad Value: "
                       "BruntVaisala({},{}) = {}; Expected {}",
-                      I, 1, BruntVaisalaFreqSqH(I, 1), TeosBVFExpValue);
+                      ICell, 1, BruntVaisalaFreqSqH(ICell, 1), TeosBVFExpValue);
          // remaining values just check for other conditions
          for (int K = 2; K < NVertLayers; ++K) {
-            if (BruntVaisalaFreqSqH(I, K) == 0.0 or
-                Kokkos::isnan(BruntVaisalaFreqSqH(I, K)) or
-                Kokkos::isinf(BruntVaisalaFreqSqH(I, K)))
+            if (BruntVaisalaFreqSqH(ICell, K) == 0.0 or
+                Kokkos::isnan(BruntVaisalaFreqSqH(ICell, K)) or
+                Kokkos::isinf(BruntVaisalaFreqSqH(ICell, K)))
                LOG_ERROR("EosTest: Brunt-Vaisala TEOS Bad Value: "
                          "BruntVaisala({},{}) = {}",
-                         I, K, BruntVaisalaFreqSqH(I, K));
+                         ICell, K, BruntVaisalaFreqSqH(ICell, K));
          }
       }
       ABORT_ERROR("EosTest: BruntVaisala TEOS FAIL with {} bad values",

@@ -44,8 +44,10 @@ class Teos10Eos {
                                    I4 KDisp) const {
 
       Real SpecVolPCoeffs[6 * VecLength];
+
       const I4 KStart = chunkStart(KChunk, MinLayerCell(ICell));
       const I4 KLen   = chunkLength(KChunk, KStart, MaxLayerCell(ICell));
+
       for (int KVec = 0; KVec < KLen; ++KVec) {
          const I4 K = KStart + KVec;
          /// Calculate the local specific volume polynomial pressure
@@ -292,12 +294,13 @@ class Teos10BruntVaisalaFreqSq {
                                    const Array2DReal &AbsSalinity,
                                    const Array2DReal &Pressure,
                                    const Array2DReal &SpecVol) const {
-      const I4 KStart = KChunk * VecLength;
-      for (int KVec = 0; KVec < VecLength; ++KVec) {
+
+      const I4 KStart = chunkStart(KChunk, MinLayerCell(ICell));
+      const I4 KLen   = chunkLength(KChunk, KStart, MaxLayerCell(ICell));
+
+      for (int KVec = 0; KVec < KLen; ++KVec) {
          const I4 K = KStart + KVec;
-         if (K >= NVertLayers)
-            continue;
-         else if (K == 0) {
+         if (K == 0) {
             // No Brunt-Vaisala frequency at surface
             BruntVaisalaFreqSq(ICell, K) = 0.0_Real;
          } else {
@@ -481,7 +484,8 @@ class Teos10BruntVaisalaFreqSq {
    }
 
  private:
-   I4 NVertLayers;
+   Array1DI4 MinLayerCell;
+   Array1DI4 MaxLayerCell;
 };
 
 /// Linear squared Brunt-Vaisala frequency calculator
@@ -499,12 +503,13 @@ class LinearBruntVaisalaFreqSq {
    KOKKOS_FUNCTION void operator()(Array2DReal BruntVaisalaFreqSq, I4 ICell,
                                    I4 KChunk,
                                    const Array2DReal &SpecVol) const {
-      const I4 KStart = KChunk * VecLength;
-      for (int KVec = 0; KVec < VecLength; ++KVec) {
+
+      const I4 KStart = chunkStart(KChunk, MinLayerCell(ICell));
+      const I4 KLen   = chunkLength(KChunk, KStart, MaxLayerCell(ICell));
+
+      for (int KVec = 0; KVec < KLen; ++KVec) {
          const I4 K = KStart + KVec;
-         if (K >= NVertLayers)
-            continue;
-         else if (K == 0) {
+         if (K == 0) {
             /// No Brunt-Vaisala frequency at the top level
             BruntVaisalaFreqSq(ICell, K) = 0.0_Real;
          } else {
@@ -522,7 +527,8 @@ class LinearBruntVaisalaFreqSq {
 
  private:
    Array2DReal ZMid;
-   I4 NVertLayers;
+   Array1DI4 MinLayerCell;
+   Array1DI4 MaxLayerCell;
 };
 
 /// Class for Equation of State (EOS) calculations

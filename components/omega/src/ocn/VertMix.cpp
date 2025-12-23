@@ -17,24 +17,23 @@
 namespace OMEGA {
 
 ShearMix::ShearMix(const HorzMesh *Mesh, const VertCoord *VCoord)
-    : NVertLayers(VCoord->NVertLayers), ZMid(VCoord->ZMid),
-      NEdgesOnCell(Mesh->NEdgesOnCell), EdgesOnCell(Mesh->EdgesOnCell),
-      DvEdge(Mesh->DvEdge), DcEdge(Mesh->DcEdge), AreaCell(Mesh->AreaCell) {}
+    : MinLayerCell(VCoord->MinLayerCell), MaxLayerCell(VCoord->MaxLayerCell),
+      ZMid(VCoord->ZMid), NEdgesOnCell(Mesh->NEdgesOnCell),
+      AreaCell(Mesh->AreaCell), EdgesOnCell(Mesh->EdgesOnCell),
+      DvEdge(Mesh->DvEdge), DcEdge(Mesh->DcEdge) {}
 
 ConvectiveMix::ConvectiveMix(const VertCoord *VCoord)
-    : NVertLayers(VCoord->NVertLayers) {}
+    : MinLayerCell(VCoord->MinLayerCell), MaxLayerCell(VCoord->MaxLayerCell) {}
 
 /// Constructor for VertMix
-VertMix::VertMix(const std::string &Name_, ///< [in] Name for VertMix object
-                 const HorzMesh *Mesh,     ///< [in] Horizontal mesh
-                 const VertCoord *VCoord   ///< [in] Vertical coordinate
+VertMix::VertMix(const std::string &Name, ///< [in] Name for VertMix object
+                 const HorzMesh *Mesh,    ///< [in] Horizontal mesh
+                 const VertCoord *VCoord  ///< [in] Vertical coordinate
                  )
-    : ComputeVertMixConv(VCoord), ComputeVertMixShear(Mesh, VCoord) {
-   VertDiff  = Array2DReal("VertDiff", Mesh->NCellsAll, VCoord->NVertLayers);
-   VertVisc  = Array2DReal("VertVisc", Mesh->NCellsAll, VCoord->NVertLayers);
-   NCellsAll = Mesh->NCellsAll;
-   NChunks   = VCoord->NVertLayers / VecLength;
-   Name      = Name_;
+    : ComputeVertMixConv(VCoord), ComputeVertMixShear(Mesh, VCoord), Name(Name),
+      Mesh(Mesh), VCoord(VCoord) {
+   VertDiff = Array2DReal("VertDiff", Mesh->NCellsAll, VCoord->NVertLayers);
+   VertVisc = Array2DReal("VertVisc", Mesh->NCellsAll, VCoord->NVertLayers);
 
    defineFields();
 }
@@ -168,6 +167,8 @@ void VertMix::computeVertMix(const Array2DReal &NormalVelocity,
    OMEGA_SCOPE(
        LocComputeVertMixShear,
        ComputeVertMixShear); /// Local view for Shear VertMix computation
+   OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
+   OMEGA_SCOPE(MaxLayerCell, VCoord->MaxLayerCell);
 
    /// Initialize VertDiff and VertVisc to background values
    deepCopy(LocVertDiff, BackDiff);
@@ -175,33 +176,54 @@ void VertMix::computeVertMix(const Array2DReal &NormalVelocity,
 
    /// Dispatch to the correct VertMix calculation
    if (LocComputeVertMixShear.Enabled && LocComputeVertMixConv.Enabled) {
-      parallelFor(
-          "VertMix-ConvPlusShear", {NCellsAll, NChunks},
-          KOKKOS_LAMBDA(I4 ICell, I4 KChunk) {
-             LocComputeVertMixShear(LocVertDiff, LocVertVisc, ICell, KChunk,
-                                    NormalVelocity, TangentialVelocity,
-                                    BruntVaisalaFreqSq);
-             LocComputeVertMixConv(LocVertDiff, LocVertVisc, ICell, KChunk,
-                                   BruntVaisalaFreqSq);
+      parallelForOuter(
+          "VertMix-ConvPlusShear", {Mesh->NCellsAll},
+          KOKKOS_LAMBDA(I4 ICell, const TeamMember &Team) {
+             const int KMin   = MinLayerCell(ICell);
+             const int KMax   = MaxLayerCell(ICell);
+             const int KRange = vertRangeChunked(KMin, KMax);
+
+             parallelForInner(
+                 Team, KRange, INNER_LAMBDA(int KChunk) {
+                    LocComputeVertMixShear(
+                        LocVertDiff, LocVertVisc, ICell, KChunk, NormalVelocity,
+                        TangentialVelocity, BruntVaisalaFreqSq);
+                    LocComputeVertMixConv(LocVertDiff, LocVertVisc, ICell,
+                                          KChunk, BruntVaisalaFreqSq);
+                 });
           });
    } else if (LocComputeVertMixShear.Enabled) {
-      parallelFor(
-          "VertMix-ShearOnly", {NCellsAll, NChunks},
-          KOKKOS_LAMBDA(I4 ICell, I4 KChunk) {
-             LocComputeVertMixShear(LocVertDiff, LocVertVisc, ICell, KChunk,
-                                    NormalVelocity, TangentialVelocity,
-                                    BruntVaisalaFreqSq);
+      parallelForOuter(
+          "VertMix-ShearOnly", {Mesh->NCellsAll},
+          KOKKOS_LAMBDA(I4 ICell, const TeamMember &Team) {
+             const int KMin   = MinLayerCell(ICell);
+             const int KMax   = MaxLayerCell(ICell);
+             const int KRange = vertRangeChunked(KMin, KMax);
+
+             parallelForInner(
+                 Team, KRange, INNER_LAMBDA(int KChunk) {
+                    LocComputeVertMixShear(
+                        LocVertDiff, LocVertVisc, ICell, KChunk, NormalVelocity,
+                        TangentialVelocity, BruntVaisalaFreqSq);
+                 });
           });
    } else if (LocComputeVertMixConv.Enabled) {
-      parallelFor(
-          "VertMix-ConvOnly", {NCellsAll, NChunks},
-          KOKKOS_LAMBDA(I4 ICell, I4 KChunk) {
-             LocComputeVertMixConv(LocVertDiff, LocVertVisc, ICell, KChunk,
-                                   BruntVaisalaFreqSq);
+      parallelForOuter(
+          "VertMix-ConvOnly", {Mesh->NCellsAll},
+          KOKKOS_LAMBDA(I4 ICell, const TeamMember &Team) {
+             const int KMin   = MinLayerCell(ICell);
+             const int KMax   = MaxLayerCell(ICell);
+             const int KRange = vertRangeChunked(KMin, KMax);
+
+             parallelForInner(
+                 Team, KRange, INNER_LAMBDA(int KChunk) {
+                    LocComputeVertMixConv(LocVertDiff, LocVertVisc, ICell,
+                                          KChunk, BruntVaisalaFreqSq);
+                 });
           });
    } else {
       parallelFor(
-          "VertMix-Background", {NCellsAll}, KOKKOS_LAMBDA(I4 ICell) {
+          "VertMix-Background", {Mesh->NCellsAll}, KOKKOS_LAMBDA(I4 ICell) {
              LocVertDiff(ICell, 0) = 0.0_Real;
              LocVertVisc(ICell, 0) = 0.0_Real;
           });
