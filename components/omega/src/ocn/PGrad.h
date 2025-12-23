@@ -62,7 +62,7 @@ class PressureGradCentered {
 
          Real PGradAlpha = 0.5 * (PressureMid(ICell1, K) + PressureMid(ICell0, K)) * (SpecVol(ICell1, K) - SpecVol(ICell0, K)) * InvDcEdge;
          Tend(IEdge, K) +=
-             EdgeMask(IEdge, K) * (GradMontPot - PGradAlpha);
+             EdgeMask(IEdge, K) * (-GradMontPot + PGradAlpha);
          if (IEdge == 0)    
          LOG_INFO("IEdge {}, K {}: GradMontPot {}, PGradAlpha {}, Tend {}", IEdge, K, GradMontPot, PGradAlpha, Tend(IEdge, K));
       }
@@ -112,6 +112,10 @@ class PressureGradHighOrder {
 // Pressure gradient manager class
 class PressureGrad {
  public:
+
+   // Flag to indicate if pressure gradient term is enabled
+   bool Enabled;
+
    // Initialize the default instance
    static void init();
 
@@ -139,7 +143,7 @@ class PressureGrad {
    // Compute pressure gradient tendencies and add into Tend array
    void computePressureGrad(Array2DReal &Tend, const OceanState *State,
                             const VertCoord *VCoord, const Eos *EqState,
-                            const int TimeLevel);
+                            const int TimeLevel) const;
 
 
  private:

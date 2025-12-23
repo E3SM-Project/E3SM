@@ -152,7 +152,7 @@ void PressureGrad::computePressureGrad(Array2DReal &Tend,
                                        const OceanState *State,
                                        const VertCoord *VCoord,
                                        const Eos *EqState,
-                                       const int TimeLevel) {
+                                       const int TimeLevel) const {
 
    OMEGA_SCOPE(LocCenteredPGrad, CenteredPGrad);
    OMEGA_SCOPE(LocHighOrderPGrad, HighOrderPGrad);

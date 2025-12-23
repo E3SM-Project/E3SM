@@ -5,6 +5,7 @@
 #include "Decomp.h"
 #include "Dimension.h"
 #include "Error.h"
+#include "Eos.h"
 #include "Field.h"
 #include "GlobalConstants.h"
 #include "Halo.h"
@@ -16,6 +17,7 @@
 #include "OceanTestCommon.h"
 #include "OmegaKokkos.h"
 #include "Pacer.h"
+#include "PGrad.h"
 #include "TimeStepper.h"
 #include "VertCoord.h"
 #include "mpi.h"
@@ -57,8 +59,15 @@ int initState() {
    auto *VCoord = VertCoord::getDefault();
    auto *State  = OceanState::getDefault();
 
-   Array2DReal LayerThickCell = State->getLayerThickness(0);
-   Array2DReal NormalVelEdge  = State->getNormalVelocity(0);
+   // Define tendency fields
+   int NDims = 2;
+   std::vector<std::string> DimNamesThickness(NDims);
+   DimNamesThickness[0] = "NCells";
+
+   Array2DReal LayerThickCell;
+   Array2DReal NormalVelEdge;
+   Err += State->getLayerThickness(LayerThickCell, 0);
+   Err += State->getNormalVelocity(NormalVelEdge, 0);
 
    Array3DReal TracersArray = Tracers::getAll(0);
    const auto &TracersCell  = TracersArray;
@@ -156,13 +165,15 @@ int testTendencies() {
    const auto Mesh     = HorzMesh::getDefault();
    const auto VCoord   = VertCoord::getDefault();
    const auto VAdv     = VertAdv::getDefault();
+   auto *PGrad         = PressureGrad::getDefault();
+   auto *EqState       = Eos::getInstance();
    VCoord->NVertLayers = 12;
    // test creation of another tendencies
 
    TimeInterval ZeroTimeStep; // Zero-length time step placeholder
    Config *Options = Config::getOmegaConfig();
-   Tendencies::create("TestTendencies", Mesh, VCoord, VAdv, 3, ZeroTimeStep,
-                      Options);
+   Tendencies::create("TestTendencies", Mesh, VCoord, VAdv, PGrad, EqState, 3,
+                      ZeroTimeStep, Options);
 
    // test retrievel of another tendencies
    if (Tendencies::get("TestTendencies")) {
