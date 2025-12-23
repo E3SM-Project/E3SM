@@ -519,6 +519,20 @@ module elm_varctl
   !$acc declare copyin(initth_pf2clm)
   !$acc declare copyin(pf_clmnstep0 )
 
+  !-----------------------------------------------------------------------
+  ! N fixation parameters are assigned for individual pft
+  logical, public :: nfix_npp_patch = .false.
+  !$acc declare create(nfix_npp_patch)
+
+  !-----------------------------------------------------------------------
+  ! onset_gdd summation ending switch in phenology
+  ! by default, onset_gdd will reset to zero passing summer-solstice
+  ! This may cause non-growing if heavy winter snowing which results in
+  ! snow-melting passing summer-solstice in arctic.
+  ! When this switches, it will end by offset critical daylength (i.e. vegetation senescence starts normally in Fall)
+  logical, public :: onset_gdd_extension = .false.
+  !$acc declare create(onset_gdd_extension)
+
   ! cpl_bypass
    character(len=fname_len), public :: metdata_type   = ' '    ! metdata type for CPL_BYPASS mode
    character(len=fname_len), public :: metdata_bypass = ' '    ! met data directory for CPL_BYPASS mode (site, qian, cru_ncep)

@@ -684,7 +684,7 @@ contains
                    sand = sand3d(g,ti,1)
                    gravel = grvl3d(g,ti,1)
                    om_frac = organic3d(g,ti,1)/organic_max 
-                else if (lev <= nlevsoi) then
+                else if (lev <= min(nlevbed,nlevsoi)) then
                    do j = 1,nlevsoifl-1
                       if (zisoi(lev) >= zisoifl(j) .AND. zisoi(lev) < zisoifl(j+1)) then
                          clay = clay3d(g,ti,j+1)
@@ -700,7 +700,7 @@ contains
                    om_frac = 0._r8
                 endif
              else
-                if (lev <= nlevsoi) then ! duplicate clay and sand values from 10th soil layer
+                if (lev <= min(nlevbed,nlevsoi)) then ! duplicate clay and sand values from 10th soil layer
                    clay = clay3d(g,ti,lev)
                    sand = sand3d(g,ti,lev)
                    gravel = grvl3d(g,ti,lev)
@@ -715,7 +715,7 @@ contains
 
              if (lun_pp%itype(l) == istdlak) then
 
-                if (lev <= nlevsoi) then
+                if (lev <= min(nlevbed,nlevsoi)) then
                    this%cellsand_col(c,lev) = sand
                    this%cellclay_col(c,lev) = clay
                    this%cellgrvl_col(c,lev) = gravel
@@ -728,7 +728,7 @@ contains
                    om_frac = 0._r8 ! No organic matter for urban
                 end if
 
-                if (lev <= nlevbed) then
+                if (lev <= min(nlevbed,nlevsoi)) then
                    this%cellsand_col(c,lev) = sand
                    this%cellclay_col(c,lev) = clay
                    this%cellgrvl_col(c,lev) = gravel

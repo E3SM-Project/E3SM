@@ -986,9 +986,14 @@ contains
                  (f3*(1._r8-f4)*(1._r8+f2))/cpdw
 
          else
-            c_allometry(p) = 1._r8+g1+f1+f1*g1
+            !c_allometry(p) = (1._r8+g1)*(1._r8+f1+f3)    ! B Sulman: Let graminoids allocate rhizomes (all livecroot) using stem_leaf parameter
+            c_allometry(p) = 1._r8+g1+f1+f1*g1+f3+f3*g1  ! B Sulman: Let graminoids allocate rhizomes (all livecroot) using stem_leaf parameter
+            ! a note for above 2 lines of code: mathematically they're same, but the first (commented out) may cause one land developer test failure.
             n_allometry(p) = 1._r8/cnl + f1/cnfr
+            if(cnlw>0) n_allometry(p) = n_allometry(p) + f3/cnlw ! Rhizomes
             p_allometry(p) = 1._r8/cpl + f1/cpfr
+            if(cplw>0) p_allometry(p) = p_allometry(p) + f3/cplw ! Rhizomes
+            
          end if
          plant_ndemand(p) = availc(p)*(n_allometry(p)/c_allometry(p))
          plant_pdemand(p) = availc(p)*(p_allometry(p)/c_allometry(p))
@@ -3682,6 +3687,10 @@ contains
           cpool_to_livecrootc_storage(p) = nlc * f2 * f3 * f4 * (1._r8 - fcur)
           cpool_to_deadcrootc(p)         = nlc * f2 * f3 * (1._r8 - f4) * fcur
           cpool_to_deadcrootc_storage(p) = nlc * f2 * f3 * (1._r8 - f4) * (1._r8 - fcur)
+       else
+          ! Assume "stem" allocation in graminoids goes to rhizomes which are all live wood (B Sulman)
+          cpool_to_livecrootc(p)         = nlc * f3 * fcur
+          cpool_to_livecrootc_storage(p) = nlc * f3 * (1._r8 - fcur)
        end if
        if (iscft(ivt)) then ! skip 2 generic crops
           cpool_to_livestemc(p)          = nlc * f3 * f4 * fcur
@@ -3715,6 +3724,10 @@ contains
           npool_to_livecrootn_storage(p) = (nlc * f2 * f3 * f4 / cnlw) * (1._r8 - fcur)
           npool_to_deadcrootn(p)         = (nlc * f2 * f3 * (1._r8 - f4) / cndw) * fcur
           npool_to_deadcrootn_storage(p) = (nlc * f2 * f3 * (1._r8 - f4) / cndw) * (1._r8 - fcur)
+       elseif (cnlw > 0.0_r8) then
+          ! Assume "stem" allocation in graminoids goes to rhizomes which are all live wood (B Sulman)
+          npool_to_livecrootn(p)         = (nlc * f3 / cnlw ) * fcur
+          npool_to_livecrootn_storage(p) = (nlc * f3 / cnlw ) * (1._r8 - fcur)
        end if
        if (iscft(ivt)) then ! skip 2 generic crops
           cng = graincn(ivt)
@@ -3748,6 +3761,10 @@ contains
           ppool_to_livecrootp_storage(p) = (nlc * f2 * f3 * f4 / cplw) * (1._r8 -fcur)
           ppool_to_deadcrootp(p)         = (nlc * f2 * f3 * (1._r8 - f4) / cpdw)* fcur
           ppool_to_deadcrootp_storage(p) = (nlc * f2 * f3 * (1._r8 - f4) / cpdw)* (1._r8 - fcur)
+       elseif (cplw > 0.0_r8) then
+          ! Assume "stem" allocation in graminoids goes to rhizomes which are all live wood (B Sulman)
+          ppool_to_livecrootp(p)         = (nlc * f3 / cplw ) * fcur
+          ppool_to_livecrootp_storage(p) = (nlc * f3 / cplw ) * (1._r8 - fcur)
        end if
        if (iscft(ivt)) then ! skip 2 generic crops
           cpg = graincp(ivt)
@@ -3773,10 +3790,10 @@ contains
        ! growth is assigned here.
 
        gresp_storage = cpool_to_leafc_storage(p) + cpool_to_frootc_storage(p)
+       gresp_storage = gresp_storage + cpool_to_livecrootc_storage(p)
        if (woody(ivt) >= 1._r8) then
           gresp_storage = gresp_storage + cpool_to_livestemc_storage(p)
           gresp_storage = gresp_storage + cpool_to_deadstemc_storage(p)
-          gresp_storage = gresp_storage + cpool_to_livecrootc_storage(p)
           gresp_storage = gresp_storage + cpool_to_deadcrootc_storage(p)
        end if
        if (iscft(ivt)) then ! skip 2 generic crops
@@ -4195,7 +4212,9 @@ contains
          else
              c_allometry(p) = 1._r8+g1+f1+f1*g1
              n_allometry(p) = 1._r8/cnl + f1/cnfr
+             if(cnlw>0.0) n_allometry(p) = n_allometry(p) + f3/cnlw ! Rhizomes
              p_allometry(p) = 1._r8/cpl + f1/cpfr
+             if(cplw>0.0) p_allometry(p) = p_allometry(p) + f3/cplw ! Rhizomes
          end if
 
          ! calculate the amount of new leaf C dictated by these allocation
