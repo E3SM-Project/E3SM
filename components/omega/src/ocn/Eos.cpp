@@ -15,24 +15,35 @@ namespace OMEGA {
 
 /// Constructor for Teos10Eos
 Teos10Eos::Teos10Eos(const VertCoord *VCoord)
-    : MinLayerCell(VCoord->MinLayerCell), MaxLayerCell(VCoord->MaxLayerCell) {
-   SpecVolPCoeffs = Array2DReal("SpecVolPCoeffs", 6, VecLength);
-}
+    : MinLayerCell(VCoord->MinLayerCell), MaxLayerCell(VCoord->MaxLayerCell) {}
 
 /// Constructor for LinearEos
 LinearEos::LinearEos(const VertCoord *VCoord)
     : MinLayerCell(VCoord->MinLayerCell), MaxLayerCell(VCoord->MaxLayerCell) {}
+
+/// Constructor for Teos10 squared Brunt-Vaisala frequency
+Teos10BruntVaisalaFreqSq::Teos10BruntVaisalaFreqSq(const VertCoord *VCoord)
+    : MinLayerCell(VCoord->MinLayerCell), MaxLayerCell(VCoord->MaxLayerCell) {}
+
+/// Constructor for Linear squared Brunt-Vaisala frequency
+LinearBruntVaisalaFreqSq::LinearBruntVaisalaFreqSq(const VertCoord *VCoord)
+    : MinLayerCell(VCoord->MinLayerCell), MaxLayerCell(VCoord->MaxLayerCell),
+      ZMid(VCoord->ZMid) {}
 
 /// Constructor for Eos
 Eos::Eos(const std::string &Name, ///< [in] Name for eos object
          const HorzMesh *Mesh,    ///< [in] Horizontal mesh
          const VertCoord *VCoord  ///< [in] Vertical coordinate
          )
-    : ComputeSpecVolLinear(VCoord), ComputeSpecVolTeos10(VCoord), Name(Name),
-      Mesh(Mesh), VCoord(VCoord) {
+    : ComputeSpecVolLinear(VCoord), ComputeSpecVolTeos10(VCoord),
+      ComputeBruntVaisalaFreqSqLinear(VCoord),
+      ComputeBruntVaisalaFreqSqTeos10(VCoord), Name(Name), Mesh(Mesh),
+      VCoord(VCoord) {
    SpecVol = Array2DReal("SpecVol", Mesh->NCellsAll, VCoord->NVertLayers);
    SpecVolDisplaced =
        Array2DReal("SpecVolDisplaced", Mesh->NCellsAll, VCoord->NVertLayers);
+   BruntVaisalaFreqSq =
+       Array2DReal("BruntVaisalaFreqSq", Mesh->NCellsAll, VCoord->NVertLayers);
 
    defineFields();
 }
@@ -104,7 +115,7 @@ void Eos::init() {
               (EosTypeStr == "TEOS-10")) {
       eos->EosChoice = EosType::Teos10Eos;
    } else {
-      LOG_ERROR("Eos::init: Unknown EosType requested");
+      ABORT_ERROR("Eos::init: Unknown EosType requested");
    }
 } // end init
 
@@ -177,9 +188,6 @@ void Eos::computeSpecVolDisp(const Array2DReal &ConservTemp,
    /// If EosChoice is Linear, the displaced specific
    /// volume is the same as the specific volume
    if (EosChoice == EosType::LinearEos) {
-      LOG_INFO("Eos::computeSpecVolDisp called with Linear EOS. "
-               "SpecVol is independent of pressure/depth, so the "
-               "displaced value will be the same as SpecVol.");
       parallelForOuter(
           "eos-linear", {Mesh->NCellsAll},
           KOKKOS_LAMBDA(I4 ICell, const TeamMember &Team) {
@@ -209,19 +217,75 @@ void Eos::computeSpecVolDisp(const Array2DReal &ConservTemp,
    }
 }
 
+/// Compute squared Brunt-Vaisala frequency for all cells/layers
+void Eos::computeBruntVaisalaFreqSq(const Array2DReal &ConservTemp,
+                                    const Array2DReal &AbsSalinity,
+                                    const Array2DReal &Pressure,
+                                    const Array2DReal &SpecVol) {
+   OMEGA_SCOPE(LocBruntVaisalaFreqSq,
+               BruntVaisalaFreqSq); /// Local view for computation
+   OMEGA_SCOPE(
+       LocComputeBruntVaisalaFreqSqLinear,
+       ComputeBruntVaisalaFreqSqLinear); /// Local view for linear computation
+   OMEGA_SCOPE(
+       LocComputeBruntVaisalaFreqSqTeos10,
+       ComputeBruntVaisalaFreqSqTeos10); /// Local view for TEOS-10 computation
+   OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
+   OMEGA_SCOPE(MaxLayerCell, VCoord->MaxLayerCell);
+
+   deepCopy(LocBruntVaisalaFreqSq,
+            0); /// Initialize local Brunt-Vaisala frequency to zero
+
+   /// Dispatch to the correct squared Brunt-Vaisala frequency calculation
+   if (EosChoice == EosType::LinearEos) {
+      /// If Linear EOS, use linear squared Brunt-Vaisala frequency calculation
+      parallelForOuter(
+          "bvf-linear", {Mesh->NCellsAll},
+          KOKKOS_LAMBDA(I4 ICell, const TeamMember &Team) {
+             const int KMin   = MinLayerCell(ICell);
+             const int KMax   = MaxLayerCell(ICell);
+             const int KRange = vertRangeChunked(KMin, KMax);
+             parallelForInner(
+                 Team, KRange, INNER_LAMBDA(int KChunk) {
+                    LocComputeBruntVaisalaFreqSqLinear(LocBruntVaisalaFreqSq,
+                                                       ICell, KChunk, SpecVol);
+                 });
+          });
+   } else if (EosChoice == EosType::Teos10Eos) {
+      /// If TEOS-10 EOS, use TEOS-10 squared Brunt-Vaisala frequency
+      /// calculation
+      parallelForOuter(
+          "bvf-teos10", {Mesh->NCellsAll},
+          KOKKOS_LAMBDA(I4 ICell, const TeamMember &Team) {
+             const int KMin   = MinLayerCell(ICell);
+             const int KMax   = MaxLayerCell(ICell);
+             const int KRange = vertRangeChunked(KMin, KMax);
+             parallelForInner(
+                 Team, KRange, INNER_LAMBDA(int KChunk) {
+                    LocComputeBruntVaisalaFreqSqTeos10(
+                        LocBruntVaisalaFreqSq, ICell, KChunk, ConservTemp,
+                        AbsSalinity, Pressure, SpecVol);
+                 });
+          });
+   }
+}
+
 /// Define IO fields and metadata for output
 void Eos::defineFields() {
 
    /// Set field names (append Name if not default)
-   SpecVolFldName          = "SpecVol";
-   SpecVolDisplacedFldName = "SpecVolDisplaced";
+   SpecVolFldName            = "SpecVol";
+   SpecVolDisplacedFldName   = "SpecVolDisplaced";
+   BruntVaisalaFreqSqFldName = "BruntVaisalaFreqSq";
    if (Name != "Default") {
       SpecVolFldName.append(Name);
       SpecVolDisplacedFldName.append(Name);
+      BruntVaisalaFreqSqFldName.append(Name);
    }
 
    /// Create fields for state variables
-   int NDims = 2;
+   const Real FillValue = -9.99e30;
+   int NDims            = 2;
    std::vector<std::string> DimNames(NDims);
    DimNames[0] = "NCells";
    DimNames[1] = "NVertLayers";
@@ -233,8 +297,8 @@ void Eos::defineFields() {
                      "m3 kg-1",                        // Units
                      "sea_water_specific_volume",      // CF-ish Name
                      0.0,                              // Min valid value
-                     9.99E+30,                         // Max valid value
-                     -9.99E+30, // Scalar used for undefined entries
+                     std::numeric_limits<Real>::max(), // Max valid value
+                     FillValue, // Scalar used for undefined entries
                      NDims,     // Number of dimensions
                      DimNames   // Dimension names
        );
@@ -246,8 +310,20 @@ void Eos::defineFields() {
                      "m3 kg-1",                             // Units
                      "sea_water_specific_volume_displaced", // CF-ish Name
                      0.0,                                   // Min valid value
-                     9.99E+30,                              // Max valid value
-                     -9.99E+30, // Scalar used for undefined entried
+                     std::numeric_limits<Real>::max(),      // Max valid value
+                     FillValue, // Scalar used for undefined entried
+                     NDims,     // Number of dimensions
+                     DimNames   // Dimension names
+       );
+   /// Create and register the BruntVaisalaFreqSq field
+   auto BruntVaisalaFreqSqField =
+       Field::create(BruntVaisalaFreqSqFldName,                   // Field name
+                     "Brunt-Vaisala frequency squared",           // Long Name
+                     "s-2",                                       // Units
+                     "sea_water_brunt_vaisala_frequency_squared", // CF-ish Name
+                     std::numeric_limits<Real>::min(), // Min valid value
+                     std::numeric_limits<Real>::max(), // Max valid value
+                     FillValue, // Scalar used for undefined entries
                      NDims,     // Number of dimensions
                      DimNames   // Dimension names
        );
@@ -262,10 +338,12 @@ void Eos::defineFields() {
    // Add fields to the EOS group
    EosGroup->addField(SpecVolDisplacedFldName);
    EosGroup->addField(SpecVolFldName);
+   EosGroup->addField(BruntVaisalaFreqSqFldName);
 
    // Attach Kokkos views to the fields
    SpecVolDisplacedField->attachData<Array2DReal>(SpecVolDisplaced);
    SpecVolField->attachData<Array2DReal>(SpecVol);
+   BruntVaisalaFreqSqField->attachData<Array2DReal>(BruntVaisalaFreqSq);
 
 } // end defineIOFields
 

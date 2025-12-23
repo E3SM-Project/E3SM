@@ -465,3 +465,14 @@ add_omega_test(
     ocn/VertCoordTest.cpp
     "-n;8"
 )
+
+##########################
+# Vert Mix test
+##########################
+
+add_omega_test(
+    VERTMIX_TEST
+    testVertMix.exe
+    ocn/VertMixTest.cpp
+    "-n;4"
+)
