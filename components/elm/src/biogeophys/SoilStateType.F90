@@ -382,10 +382,10 @@ contains
     integer            :: begc, endc
     integer            :: begg, endg
     real(r8), parameter :: min_liquid_pressure = -10132500._r8 ! Minimum soil liquid water pressure [mm]
-    real(r8) ,pointer  :: bsw3d (:,:)
-    real(r8) ,pointer  :: sucsat3d (:,:)
-    real(r8) ,pointer  :: xksat3d (:,:)
-    real(r8) ,pointer  :: watsat3d (:,:)
+    real(r8) ,pointer  :: bsw_sf (:)
+    real(r8) ,pointer  :: sucsat_sf (:)
+    real(r8) ,pointer  :: xksat_sf (:)
+    real(r8) ,pointer  :: watsat_sf (:)
     !-----------------------------------------------------------------------
     begc = bounds%begc; endc= bounds%endc
     begg = bounds%begg; endg= bounds%endg
@@ -548,23 +548,23 @@ contains
        deallocate(tillage_in, litho_in)
     end if
 
-    allocate(bsw3d(begg:endg,nlevsoifl))
-    allocate(sucsat3d(begg:endg,nlevsoifl))
-    allocate(xksat3d(begg:endg,nlevsoifl))
-    allocate(watsat3d(begg:endg,nlevsoifl))
-    call ncd_io(ncid=ncid, varname='bsw', flag='read', data=bsw3d, dim1name=grlnd, readvar=readvar)
+    allocate(bsw_sf(begg:endg))
+    allocate(sucsat_sf(begg:endg))
+    allocate(xksat_sf(begg:endg))
+    allocate(watsat_sf(begg:endg))
+    call ncd_io(ncid=ncid, varname='bsw_sf', flag='read', data=bsw_sf, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
        call endrun(msg=' ERROR: bsw NOT on surfdata file'//errMsg(__FILE__, __LINE__))
     end if
-    call ncd_io(ncid=ncid, varname='sucsat', flag='read', data=sucsat3d, dim1name=grlnd, readvar=readvar)
+    call ncd_io(ncid=ncid, varname='sucsat_sf', flag='read', data=sucsat_sf, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
        call endrun(msg=' ERROR: sucsat NOT on surfdata file'//errMsg(__FILE__, __LINE__))
     end if
-    call ncd_io(ncid=ncid, varname='xksat', flag='read', data=xksat3d, dim1name=grlnd, readvar=readvar)
+    call ncd_io(ncid=ncid, varname='xksat_sf', flag='read', data=xksat_sf, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
        call endrun(msg=' ERROR: xksat NOT on surfdata file'//errMsg(__FILE__, __LINE__))
     end if
-    call ncd_io(ncid=ncid, varname='watsat', flag='read', data=watsat3d, dim1name=grlnd, readvar=readvar)
+    call ncd_io(ncid=ncid, varname='watsat_sf', flag='read', data=watsat_sf, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
        call endrun(msg=' ERROR: watsat NOT on surfdata file'//errMsg(__FILE__, __LINE__))
     end if
@@ -747,27 +747,6 @@ contains
                 ipedof=get_ipedof(0)
                 call pedotransf(ipedof, sand, clay, &
                      this%watsat_col(c,lev), this%bsw_col(c,lev), this%sucsat_col(c,lev), xksat)
-                ! Runoff sensitivity analysis
-                if (lev .eq. 1) then
-                  this%watsat_col(c,lev) = watsat3d(g,1)
-                  this%bsw_col(c,lev)    = bsw3d(g,1)
-                  this%sucsat_col(c,lev) = sucsat3d(g,1)
-                  xksat                  = xksat3d(g,1)
-               else if (lev <= nlevsoi) then
-                  do j = 1,nlevsoifl-1
-                     if (zisoi(lev) >= zisoifl(j) .AND. zisoi(lev) < zisoifl(j+1)) then
-                        this%watsat_col(c,lev) = watsat3d(g,j+1)
-                        this%bsw_col(c,lev)    = bsw3d(g,j+1)
-                        this%sucsat_col(c,lev) = sucsat3d(g,j+1)
-                        xksat                  = xksat3d(g,j+1)
-                     endif
-                  end do
-               else
-                  this%watsat_col(c,lev) = watsat3d(g,nlevsoifl)
-                  this%bsw_col(c,lev)    = bsw3d(g,nlevsoifl)
-                  this%sucsat_col(c,lev) = sucsat3d(g,nlevsoifl)
-                  xksat                  = xksat3d(g,nlevsoifl)
-               endif
 
                 om_watsat         = max(0.93_r8 - 0.1_r8   *(zsoi(lev)/zsapric), 0.83_r8)
                 om_b              = min(2.7_r8  + 9.3_r8   *(zsoi(lev)/zsapric), 12.0_r8)
@@ -775,10 +754,10 @@ contains
                 om_hksat          = max(0.28_r8 - 0.2799_r8*(zsoi(lev)/zsapric), 0.0001_r8)
 
                 this%bd_col(c,lev)        = (1._r8 - this%watsat_col(c,lev))*2.7e3_r8
-                this%watsat_col(c,lev)    = (1._r8 - om_frac) * this%watsat_col(c,lev) + om_watsat*om_frac
+                this%watsat_col(c,lev)    = min(watsat_sf(g)*((1._r8 - om_frac) * this%watsat_col(c,lev) + om_watsat*om_frac), 0.93_r8)
                 tkm                       = (1._r8-om_frac) * (8.80_r8*sand+2.92_r8*clay)/(sand+clay)+om_tkm*om_frac ! W/(m K)
-                ! this%bsw_col(c,lev)       = (1._r8-om_frac) * (2.91_r8 + 0.159_r8*clay) + om_frac*om_b
-                this%sucsat_col(c,lev)    = (1._r8-om_frac) * this%sucsat_col(c,lev) + om_sucsat*om_frac
+                this%bsw_col(c,lev)       = bsw_sf(g) * (1._r8-om_frac) * (2.91_r8 + 0.159_r8*clay) + om_frac*om_b
+                this%sucsat_col(c,lev)    = sucsat_sf(g) * (1._r8-om_frac) * this%sucsat_col(c,lev) + om_sucsat*om_frac
                 this%hksat_min_col(c,lev) = xksat
 
                 ! perc_frac is zero unless perf_frac greater than percolation threshold
@@ -799,7 +778,7 @@ contains
                 else
                    uncon_hksat = 0._r8
                 end if
-                this%hksat_col(c,lev)  = uncon_frac*uncon_hksat + (perc_frac*om_frac)*om_hksat
+                this%hksat_col(c,lev)  = xksat_sf(g) * uncon_frac*uncon_hksat + (perc_frac*om_frac)*om_hksat
 
                 this%tkmg_col(c,lev)   = tkm ** (1._r8- this%watsat_col(c,lev))
 
@@ -943,7 +922,7 @@ contains
     ! --------------------------------------------------------------------
 
     deallocate(sand3d, clay3d, grvl3d, organic3d)
-    deallocate(bsw3d,sucsat3d,xksat3d,watsat3d)
+    deallocate(bsw_sf,sucsat_sf,xksat_sf,watsat_sf)
     deallocate(zisoifl, zsoifl, dzsoifl)
 
   end subroutine InitCold
