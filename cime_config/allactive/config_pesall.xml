@@ -2526,4 +2526,80 @@
       </pes>
     </mach>
   </grid>
+  <grid name="a%ne256np4.pg2.*">
+    <mach name="pm-gpu|muller-gpu|alvarez-gpu">
+      <pes compset=".*SCREAM.*ELM.*MPASSI.*MPASO.*" pesize="S">
+        <comment>pm-gpu ne256 for fully coupled cases with ATM on GPU, MPAS on CPU -- WCYCLXX2010 64 nodes, 64x1</comment>
+        <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
+        <ntasks>
+          <ntasks_atm>256</ntasks_atm>
+          <ntasks_cpl>-64</ntasks_cpl>
+          <ntasks_lnd>-64</ntasks_lnd>
+          <ntasks_rof>-64</ntasks_rof>
+          <ntasks_ice>-64</ntasks_ice>
+          <ntasks_ocn>-64</ntasks_ocn>
+        </ntasks>
+        <rootpe>
+          <rootpe_glc>1</rootpe_glc>
+          <rootpe_wav>1</rootpe_wav>
+          <rootpe_esp>1</rootpe_esp>
+          <rootpe_iac>1</rootpe_iac>
+        </rootpe>
+        <pstrid>
+          <pstrid_atm>16</pstrid_atm>
+        </pstrid>
+        <excl_stride>
+          <excl_stride_atm>16</excl_stride_atm>
+        </excl_stride>
+      </pes>
+      <pes compset=".*SCREAM.*ELM.*MPASSI.*MPASO.*" pesize="M">
+        <comment>pm-gpu ne256 for fully coupled cases with ATM on GPU, MPAS on CPU -- WCYCLXX2010 128 nodes, 64x1</comment>
+        <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
+        <ntasks>
+          <ntasks_atm>512</ntasks_atm>
+          <ntasks_cpl>-128</ntasks_cpl>
+          <ntasks_lnd>-128</ntasks_lnd>
+          <ntasks_rof>-128</ntasks_rof>
+          <ntasks_ice>-128</ntasks_ice>
+          <ntasks_ocn>-128</ntasks_ocn>
+        </ntasks>
+        <rootpe>
+          <rootpe_glc>1</rootpe_glc>
+          <rootpe_wav>1</rootpe_wav>
+          <rootpe_esp>1</rootpe_esp>
+          <rootpe_iac>1</rootpe_iac>
+        </rootpe>
+        <pstrid>
+          <pstrid_atm>16</pstrid_atm>
+        </pstrid>
+        <excl_stride>
+          <excl_stride_atm>16</excl_stride_atm>
+        </excl_stride>
+      </pes>
+      <pes compset=".*SCREAM.*ELM.*MPASSI.*MPASO.*" pesize="L">
+        <comment>pm-gpu ne256 for fully coupled cases with ATM on GPU, MPAS on CPU -- WCYCLXX2010 256 nodes, 64x1</comment>
+        <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
+        <ntasks>
+          <ntasks_atm>1024</ntasks_atm>
+          <ntasks_cpl>-256</ntasks_cpl>
+          <ntasks_lnd>-256</ntasks_lnd>
+          <ntasks_rof>-256</ntasks_rof>
+          <ntasks_ice>-256</ntasks_ice>
+          <ntasks_ocn>-256</ntasks_ocn>
+        </ntasks>
+        <rootpe>
+          <rootpe_glc>1</rootpe_glc>
+          <rootpe_wav>1</rootpe_wav>
+          <rootpe_esp>1</rootpe_esp>
+          <rootpe_iac>1</rootpe_iac>
+        </rootpe>
+        <pstrid>
+          <pstrid_atm>16</pstrid_atm>
+        </pstrid>
+        <excl_stride>
+          <excl_stride_atm>16</excl_stride_atm>
+        </excl_stride>
+      </pes>
+    </mach>
+  </grid>
 </config_pes>
