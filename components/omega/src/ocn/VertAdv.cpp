@@ -2,8 +2,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "Tracers.h"
 #include "VertAdv.h"
+#include "Tracers.h"
 
 namespace OMEGA {
 
@@ -16,8 +16,8 @@ std::map<std::string, std::unique_ptr<VertAdv>> VertAdv::AllVertAdvs;
 // HorzMesh and VertCoord
 void VertAdv::init() {
 
-   auto Mesh     = HorzMesh::getDefault();
-   auto VCoord   = VertCoord::getDefault();
+   auto Mesh   = HorzMesh::getDefault();
+   auto VCoord = VertCoord::getDefault();
 
    Config *OmegaConfig = Config::getOmegaConfig();
 
@@ -139,6 +139,7 @@ VertAdv *VertAdv::get(const std::string Name ///< [in] Name of VertAdv
 
 } // end get VertAdv
 
+//------------------------------------------------------------------------------
 // Read and set config options
 void VertAdv::readConfigOptions(Config *OmegaConfig) {
 
@@ -202,6 +203,90 @@ void VertAdv::readConfigOptions(Config *OmegaConfig) {
    CHECK_ERROR_ABORT(Err, "VertAdv: Coef3rdOrder not found in AdvectConfig");
 
 } // end readConfigOptions
+
+//------------------------------------------------------------------------------
+// Compute VerticalVelocity and TotalVerticalVelocity from the horizontal
+// velocity (NormalVelocity) and the layer thickness used for fluxes through
+// edges (FluxLayerThickEdge)
+void VertAdv::computeVerticalVelocity(const Array2DReal &NormalVelocity,
+                                      const Array2DReal &FluxLayerThickEdge) {
+
+   OMEGA_SCOPE(LocNVertLayers, NVertLayers);
+   OMEGA_SCOPE(LocAreaCell, Mesh->AreaCell);
+   OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
+   OMEGA_SCOPE(MaxLayerCell, VCoord->MaxLayerCell);
+   OMEGA_SCOPE(LocNEOnC, Mesh->NEdgesOnCell);
+   OMEGA_SCOPE(LocEOnC, Mesh->EdgesOnCell);
+   OMEGA_SCOPE(LocDvE, Mesh->DvEdge);
+   OMEGA_SCOPE(LocESOnC, Mesh->EdgeSignOnCell);
+
+   // Loop over all cells owned by the task
+   parallelForOuter(
+       "computeVerticalVelocity", {NCellsOwned},
+       KOKKOS_LAMBDA(int ICell, const TeamMember &Team) {
+          RealScratchArray DivHU(Team.team_scratch(0), LocNVertLayers);
+
+          const Real InvAreaCell = 1._Real / LocAreaCell(ICell);
+
+          const I4 KMin = MinLayerCell(ICell);
+          const I4 KMax = MaxLayerCell(ICell);
+          I4 KRange     = vertRangeChunked(KMin, KMax);
+
+          // Compute thickness-weighted divergence of horizontal velocity
+          // in each layer
+          parallelForInner(
+              Team, KRange, INNER_LAMBDA(int KChunk) {
+                 Real DivHUTmp[VecLength] = {0};
+                 const I4 KStart          = chunkStart(KChunk, KMin);
+                 const I4 KLen            = chunkLength(KChunk, KStart, KMax);
+
+                 for (int J = 0; J < LocNEOnC(ICell); ++J) {
+                    const I4 JEdge = LocEOnC(ICell, J);
+                    for (int KVec = 0; KVec < KLen; ++KVec) {
+                       const I4 K = KStart + KVec;
+                       DivHUTmp[KVec] -= LocDvE(JEdge) * LocESOnC(ICell, J) *
+                                         FluxLayerThickEdge(JEdge, K) *
+                                         NormalVelocity(JEdge, K) * InvAreaCell;
+                    }
+                 }
+                 for (int KVec = 0; KVec < KLen; ++KVec) {
+                    const I4 K = KStart + KVec;
+                    DivHU(K)   = DivHUTmp[KVec];
+                 }
+              });
+
+          Team.team_barrier();
+
+          // Set velocity through top and bottom interfaces to zero
+          Kokkos::single(
+              PerTeam(Team), INNER_LAMBDA() {
+                 VerticalVelocity(ICell, KMin)     = 0.;
+                 VerticalVelocity(ICell, KMax + 1) = 0.;
+              });
+          KRange = vertRange(KMin + 1, KMax);
+
+          // Prefix sum of divergence to determine velocity through each
+          // interface
+          parallelScanInner(
+              Team, KRange, INNER_LAMBDA(int K, Real &Accum, bool IsFinal) {
+                 const I4 KRev = KMax - K;
+                 Accum -= DivHU(KRev);
+
+                 if (IsFinal) {
+                    VerticalVelocity(ICell, KRev) = Accum;
+                 }
+              });
+       },
+       NVertLayers);
+
+   // TODO: currently assuming TotalVerticalVelocity = VerticalVelocity, i.e.
+   //  purely from divergence of horizontal velocity. Need to add optional
+   //  corrections to transport velocity from other contributions, e.g.
+   //  movement of vertical interfaces, contribution of horizontal velocity
+   //  through tilted interface.
+   deepCopy(TotalVerticalVelocity, VerticalVelocity);
+
+} // end computeVerticalVelocity
 
 } // end namespace OMEGA
 //===----------------------------------------------------------------------===//

@@ -92,6 +92,13 @@ class VertAdv {
    /// Read and set config options
    void readConfigOptions(Config *Options);
 
+   /// Determine transport due to vertical advection from divergence of
+   /// horizontal advection.
+   void computeVerticalVelocity(
+       const Array2DReal &NormalVelocity,
+       const Array2DReal &FluxLayerThickEdge
+   );
+
  private:
    // Vertical loop bounds from VertCoord
    Array1DI4 MinLayerCell;
