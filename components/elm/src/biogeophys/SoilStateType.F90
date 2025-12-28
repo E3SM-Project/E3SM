@@ -384,7 +384,7 @@ contains
     real(r8), parameter :: min_liquid_pressure = -10132500._r8 ! Minimum soil liquid water pressure [mm]
     real(r8) ,pointer  :: bsw_sf (:)
     real(r8) ,pointer  :: sucsat_sf (:)
-    real(r8) ,pointer  :: xksat_sf (:)
+    real(r8) ,pointer  :: hksat_sf (:)
     real(r8) ,pointer  :: watsat_sf (:)
     !-----------------------------------------------------------------------
     begc = bounds%begc; endc= bounds%endc
@@ -550,23 +550,23 @@ contains
 
     allocate(bsw_sf(begg:endg))
     allocate(sucsat_sf(begg:endg))
-    allocate(xksat_sf(begg:endg))
+    allocate(hksat_sf(begg:endg))
     allocate(watsat_sf(begg:endg))
     call ncd_io(ncid=ncid, varname='bsw_sf', flag='read', data=bsw_sf, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
-       call endrun(msg=' ERROR: bsw NOT on surfdata file'//errMsg(__FILE__, __LINE__))
+       call endrun(msg=' ERROR: bsw_sf NOT on surfdata file'//errMsg(__FILE__, __LINE__))
     end if
     call ncd_io(ncid=ncid, varname='sucsat_sf', flag='read', data=sucsat_sf, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
-       call endrun(msg=' ERROR: sucsat NOT on surfdata file'//errMsg(__FILE__, __LINE__))
+       call endrun(msg=' ERROR: sucsat_sf NOT on surfdata file'//errMsg(__FILE__, __LINE__))
     end if
-    call ncd_io(ncid=ncid, varname='xksat_sf', flag='read', data=xksat_sf, dim1name=grlnd, readvar=readvar)
+    call ncd_io(ncid=ncid, varname='hksat_sf', flag='read', data=hksat_sf, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
-       call endrun(msg=' ERROR: xksat NOT on surfdata file'//errMsg(__FILE__, __LINE__))
+       call endrun(msg=' ERROR: hksat_sf NOT on surfdata file'//errMsg(__FILE__, __LINE__))
     end if
     call ncd_io(ncid=ncid, varname='watsat_sf', flag='read', data=watsat_sf, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
-       call endrun(msg=' ERROR: watsat NOT on surfdata file'//errMsg(__FILE__, __LINE__))
+       call endrun(msg=' ERROR: watsat_sf NOT on surfdata file'//errMsg(__FILE__, __LINE__))
     end if
 
     ! Close file
@@ -756,8 +756,8 @@ contains
                 this%bd_col(c,lev)        = (1._r8 - this%watsat_col(c,lev))*2.7e3_r8
                 this%watsat_col(c,lev)    = min(watsat_sf(g)*((1._r8 - om_frac) * this%watsat_col(c,lev) + om_watsat*om_frac), 0.93_r8)
                 tkm                       = (1._r8-om_frac) * (8.80_r8*sand+2.92_r8*clay)/(sand+clay)+om_tkm*om_frac ! W/(m K)
-                this%bsw_col(c,lev)       = bsw_sf(g) * (1._r8-om_frac) * (2.91_r8 + 0.159_r8*clay) + om_frac*om_b
-                this%sucsat_col(c,lev)    = sucsat_sf(g) * (1._r8-om_frac) * this%sucsat_col(c,lev) + om_sucsat*om_frac
+                this%bsw_col(c,lev)       = bsw_sf(g) * ((1._r8-om_frac) * (2.91_r8 + 0.159_r8*clay) + om_frac*om_b)
+                this%sucsat_col(c,lev)    = sucsat_sf(g) * ((1._r8-om_frac) * this%sucsat_col(c,lev) + om_sucsat*om_frac)
                 this%hksat_min_col(c,lev) = xksat
 
                 ! perc_frac is zero unless perf_frac greater than percolation threshold
@@ -778,7 +778,7 @@ contains
                 else
                    uncon_hksat = 0._r8
                 end if
-                this%hksat_col(c,lev)  = xksat_sf(g) * uncon_frac*uncon_hksat + (perc_frac*om_frac)*om_hksat
+                this%hksat_col(c,lev)  = hksat_sf(g) * (uncon_frac*uncon_hksat + (perc_frac*om_frac)*om_hksat)
 
                 this%tkmg_col(c,lev)   = tkm ** (1._r8- this%watsat_col(c,lev))
 
@@ -922,7 +922,7 @@ contains
     ! --------------------------------------------------------------------
 
     deallocate(sand3d, clay3d, grvl3d, organic3d)
-    deallocate(bsw_sf,sucsat_sf,xksat_sf,watsat_sf)
+    deallocate(bsw_sf,sucsat_sf,hksat_sf,watsat_sf)
     deallocate(zisoifl, zsoifl, dzsoifl)
 
   end subroutine InitCold

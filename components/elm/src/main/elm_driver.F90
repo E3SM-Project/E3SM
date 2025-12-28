@@ -700,7 +700,7 @@ contains
        call CanopyHydrology(bounds_clump, &
             filter(nc)%num_nolakec, filter(nc)%nolakec, &
             filter(nc)%num_nolakep, filter(nc)%nolakep, &
-            atm2lnd_vars, canopystate_vars, &
+            atm2lnd_vars, canopystate_vars, soilhydrology_vars, &
             aerosol_vars )
        call t_stopf('canhydro')
 
