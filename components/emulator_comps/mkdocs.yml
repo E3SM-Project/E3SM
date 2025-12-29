@@ -1,0 +1,58 @@
+site_name: Emulators
+site_description: AI-based emulators for E3SM component models
+docs_dir: docs
+
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - navigation.expand
+    - content.code.copy
+
+plugins:
+  - search
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - admonition
+  - pymdownx.details
+  - tables
+
+nav:
+  - Introduction: index.md
+  - User Guide:
+    - Quick Start: user-guide/quickstart.md
+  - Developer Guide:
+    - Testing: developer-guide/testing.md
+    - Standalone Build: developer-guide/standalone-build.md
+  - Technical Guide:
+    - Architecture: tech-guide/architecture.md
+    - Inference Backends: tech-guide/inference-backends.md
+  - Emulator API:
+      - 'Links': 'emulator/links.md'
+      - 'Classes':
+          - 'Class List': 'emulator/annotated.md'
+          - 'Class Index': 'emulator/classes.md'
+          - 'Class Hierarchy': 'emulator/hierarchy.md'
+          - 'Class Members': 'emulator/class_members.md'
+          - 'Class Member Functions': 'emulator/class_member_functions.md'
+          - 'Class Member Variables': 'emulator/class_member_variables.md'
+          - 'Class Member Typedefs': 'emulator/class_member_typedefs.md'
+          - 'Class Member Enumerations': 'emulator/class_member_enums.md'
+      - 'Namespaces':
+          - 'Namespace List': 'emulator/namespaces.md'
+          - 'Namespace Members': 'emulator/namespace_members.md'
+          - 'Namespace Member Functions': 'emulator/namespace_member_functions.md'
+          - 'Namespace Member Variables': 'emulator/namespace_member_variables.md'
+          - 'Namespace Member Typedefs': 'emulator/namespace_member_typedefs.md'
+          - 'Namespace Member Enumerations': 'emulator/namespace_member_enums.md'
+      - 'Functions': 'emulator/functions.md'
+      - 'Variables': 'emulator/variables.md'
+      - 'Macros': 'emulator/macros.md'
+      - 'Files': 'emulator/files.md'

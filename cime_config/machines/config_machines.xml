@@ -419,6 +419,8 @@
 
       <modules compiler="gnugpu">
         <command name="load">cudatoolkit/12.9</command>
+        <!-- load 12.4 temporarily for libtorch backend in emulator_comps -->
+        <command name="load">cudatoolkit/12.4</command>
         <command name="load">craype-accel-nvidia80</command>
       </modules>
 

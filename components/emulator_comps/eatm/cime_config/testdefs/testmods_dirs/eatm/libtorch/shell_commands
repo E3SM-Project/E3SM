@@ -1,0 +1,42 @@
+#!/bin/bash
+
+MACHINE=$(./xmlquery --value MACH)
+
+LIBTORCH_DIR_PMCPU="/global/cfs/cdirs/e3sm/software/libtorch/libtorch-cxx11-abi-shared-with-deps-2.6.0+cpu/share/cmake/Torch"
+LIBTORCH_DIR_PMGPU="/global/cfs/cdirs/e3sm/software/libtorch/libtorch-cxx11-abi-shared-with-deps-2.6.0+cu124/share/cmake/Torch"
+MODEL_PATH_PMCPU="/pscratch/sd/m/mahf708/ACE2-ERA5/ace2_era5_ckpt_traced_cpu.pt"
+# Note we can use the same model path for both CPU and GPU, but we may want to investigate
+# tracing on GPU to see if it works better, etc.
+MODEL_PATH_PMGPU="/pscratch/sd/m/mahf708/ACE2-ERA5/ace2_era5_ckpt_traced_cpu.pt"
+MODEL_IC_FILE_PM="/pscratch/sd/m/mahf708/ACE2-ERA5/initial_conditions/ic_2020.nc"
+
+if [[ "$MACHINE" = "pm-cpu" ]]; then
+    ./xmlchange EATM_CMAKE_OPTIONS="EATM_INFERENCE_BACKEND libtorch Torch_DIR $LIBTORCH_DIR_PMCPU"
+    MODEL_PATH=$MODEL_PATH_PMCPU
+    MODEL_IC_FILE=$MODEL_IC_FILE_PM
+    # Configure for CPU inference: 1 ATM rank to avoid distributed stuff for now
+    ./xmlchange NTASKS_ATM=1
+    ./xmlchange NTHRDS_ATM=2
+elif [[ "$MACHINE" = "pm-gpu" ]]; then
+    ./xmlchange EATM_CMAKE_OPTIONS="EATM_INFERENCE_BACKEND libtorch Torch_DIR $LIBTORCH_DIR_PMGPU"
+    MODEL_PATH=$MODEL_PATH_PMGPU
+    MODEL_IC_FILE=$MODEL_IC_FILE_PM
+    # Configure for GPU inference: 1 ATM rank per GPU to avoid distributed stuff for now
+    ./xmlchange NTASKS_ATM=1
+    ./xmlchange NTHRDS_ATM=1
+else
+    echo "Using stub inference backend"
+    ./xmlchange EATM_CMAKE_OPTIONS="EATM_INFERENCE_BACKEND stub"
+    MODEL_PATH=""
+    MODEL_IC_FILE=""
+fi
+
+# Write to user_yaml_eatm, adding model_path and ic_file
+cat <<EOF > user_yaml_eatm
+%YAML 1.2
+---
+eatm:
+    runtime:
+        model_path: $MODEL_PATH
+        ic_file: $MODEL_IC_FILE
+EOF

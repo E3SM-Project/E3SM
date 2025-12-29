@@ -126,6 +126,7 @@
     <type>char</type>
     <values>
       <value component="datm"                        >$SRCROOT/components/data_comps/datm</value>
+      <value component="eatm"                        >$SRCROOT/components/emulator_comps/eatm</value>
       <value component="satm"                        >$SRCROOT/components/stub_comps/satm</value>
       <value component="xatm"                        >$SRCROOT/components/xcpl_comps/xatm</value>
       <value component="eam"                         >$SRCROOT/components/eam/</value>
@@ -265,6 +266,7 @@
       <value component="allactive">$SRCROOT/cime_config/allactive/config_compsets.xml</value>
       <value component="drv"      >$COMP_ROOT_DIR_CPL/cime_config/config_compsets.xml</value>
       <value component="eam"      >$COMP_ROOT_DIR_ATM/cime_config/config_compsets.xml</value>
+      <value component="eatm"     >$COMP_ROOT_DIR_ATM/cime_config/config_compsets.xml</value>
       <value component="scream"   >$COMP_ROOT_DIR_ATM/cime_config/config_compsets.xml</value>
       <value component="elm"      >$COMP_ROOT_DIR_LND/cime_config/config_compsets.xml</value>
       <value component="cice"     >$COMP_ROOT_DIR_ICE/cime_config/config_compsets.xml</value>
@@ -348,6 +350,7 @@
     <values>
       <value component="allactive">$SRCROOT/cime_config/testmods_dirs</value>
       <value component="drv"      >$COMP_ROOT_DIR_CPL/cime_config/testdefs/testmods_dirs</value>
+      <value component="eatm"     >$COMP_ROOT_DIR_ATM/cime_config/testdefs/testmods_dirs</value>
       <value component="eam"      >$COMP_ROOT_DIR_ATM/cime_config/testdefs/testmods_dirs</value>
       <value component="elm"      >$COMP_ROOT_DIR_LND/cime_config/testdefs/testmods_dirs</value>
       <value component="cice"     >$COMP_ROOT_DIR_ICE/cime_config/testdefs/testmods_dirs</value>

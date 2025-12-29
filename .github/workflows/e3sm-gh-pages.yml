@@ -61,6 +61,7 @@ jobs:
             mkdocs-material
             pymdown-extensions
             mkdocs-monorepo-plugin
+            mkdoxy
             mdutils
             mkdocs-bibtex==2.18.0
             marp-cli

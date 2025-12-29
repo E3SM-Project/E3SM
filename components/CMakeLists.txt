@@ -109,6 +109,7 @@ endforeach()
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_util.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/build_mpas_model.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/build_eamxx.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/build_emulator_comps.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/build_model.cmake)
 
 # Set up CMAKE_MODULE_PATH so any component can use E3SM
@@ -123,6 +124,9 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/find_dep_packages.cmake)
 
 # Scream manages its own flags
 build_eamxx()
+
+# Emulator components (EATM, EOCN, EICE) manage their own build
+build_emulator_comps()
 
 set(BUILDCONF ${CASEROOT}/Buildconf)
 
@@ -141,6 +145,11 @@ endif()
 set(IDX 0)
 set(COMP_CLASSES cpl atm lnd ice ocn rof glc wav iac esp)
 set(SKIP_COMPS "scream" "mpaso" "mpassi" "mali")
+# Append emulator components (set by build_emulator_comps.cmake)
+if(EMULATOR_COMP_NAMES)
+  list(APPEND SKIP_COMPS ${EMULATOR_COMP_NAMES})
+endif()
+message(STATUS "Components to skip (handled by dedicated cmake): ${SKIP_COMPS}")
 foreach(COMP_NAME IN LISTS COMP_NAMES)
   list(GET COMP_CLASSES ${IDX} COMP_CLASS)
   if (NOT COMP_CLASS STREQUAL "cpl" AND NOT COMP_NAME IN_LIST SKIP_COMPS)

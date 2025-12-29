@@ -387,6 +387,8 @@
       <value compset="_XATM">48</value>
       <value compset="_EAM.*">48</value>
       <value compset="_DATM">48</value>
+      <!-- EATM ACE steps 6-hourly for now (ATM_NCPL=4 -> 6hrs) -->
+      <value compset="_EATM">4</value>
       <value compset="_EAM\d+%WCBC">144</value>
       <value compset="_EAM\d+%WCMX">288</value>
       <value compset="_EAM\d+%WCXI">288</value>

@@ -576,6 +576,26 @@
       <mask>IcoswISC30E3r5</mask>
     </model_grid>
 
+    <model_grid alias="gauss180x360_IcoswISC30E3r5" compset="(EATM|XATM|SATM)">
+      <grid name="atm">gauss180x360</grid>
+      <grid name="lnd">gauss180x360</grid>
+      <grid name="ocnice">IcoswISC30E3r5</grid>
+      <grid name="rof">JRA025</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>IcoswISC30E3r5</mask>
+    </model_grid>
+
+    <model_grid alias="gauss180x360_r05_IcoswISC30E3r5" compset="(EATM|XATM|SATM).+(DROF%CPLHIST|MOSART)">
+      <grid name="atm">gauss180x360</grid>
+      <grid name="lnd">r05</grid>
+      <grid name="ocnice">IcoswISC30E3r5</grid>
+      <grid name="rof">r05</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>IcoswISC30E3r5</mask>
+    </model_grid>
+
     <model_grid alias="TL319_WCAtl12to45E2r4" compset="(DATM|XATM|SATM)">
       <grid name="atm">TL319</grid>
       <grid name="lnd">TL319</grid>
@@ -3149,6 +3169,14 @@
       <desc>TL319 is JRA lat/lon grid:</desc>
     </domain>
 
+    <domain name="gauss180x360">
+      <nx>64800</nx>
+      <ny>1</ny>
+      <file grid="atm|lnd" mask="IcoswISC30E3r5">$DIN_LOC_ROOT/share/domains/domain.lnd.gauss180x360_IcoswISC30E3r5.20251106.nc</file>
+      <file grid="ice|ocn" mask="IcoswISC30E3r5">$DIN_LOC_ROOT/share/domains/domain.ocn.gauss180x360_IcoswISC30E3r5.20251106.nc</file>
+      <desc>gauss180x360 is an EATM ACE lat/lon grid:</desc>
+    </domain>
+
     <domain name="ERA5r025">
       <nx>1440</nx>
       <ny>721</ny>
@@ -5328,6 +5356,26 @@
        <map name="ATM2LND_SMAPNAME">cpl/gridmaps/TL319/map_TL319_to_r05_trbilin.20240212.nc</map>
        <map name="LND2ATM_FMAPNAME">cpl/gridmaps/TL319/map_r05_to_TL319_traave.20240212.nc</map>
        <map name="LND2ATM_SMAPNAME">cpl/gridmaps/TL319/map_r05_to_TL319_traave.20240212.nc</map>
+    </gridmap>
+
+    <gridmap atm_grid="gauss180x360" ocn_grid="IcoswISC30E3r5">
+      <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/gauss180x360/map_gauss180x360_to_IcoswISC30E3r5_traave.20251105.nc</map>
+      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/gauss180x360/map_gauss180x360_to_IcoswISC30E3r5-nomask_trbilin.20251105.nc</map>
+      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/gauss180x360/map_gauss180x360_to_IcoswISC30E3r5_trbilin.20251105.nc</map>
+      <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/gauss180x360/map_IcoswISC30E3r5_to_gauss180x360_traave.20251105.nc</map>
+      <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/gauss180x360/map_IcoswISC30E3r5_to_gauss180x360_traave.20251105.nc</map>
+    </gridmap>
+
+    <gridmap atm_grid="gauss180x360" lnd_grid="r05">
+       <map name="ATM2LND_FMAPNAME">cpl/gridmaps/gauss180x360/map_gauss180x360_to_r05_traave.20251105.nc</map>
+       <map name="ATM2LND_SMAPNAME">cpl/gridmaps/gauss180x360/map_gauss180x360_to_r05_traave.20251105.nc</map>
+       <map name="LND2ATM_FMAPNAME">cpl/gridmaps/gauss180x360/map_r05_to_gauss_180x360_traave.20251105.nc</map>
+       <map name="LND2ATM_SMAPNAME">cpl/gridmaps/gauss180x360/map_r05_to_gauss_180x360_traave.20251105.nc</map>
+    </gridmap>
+
+    <gridmap atm_grid="gauss180x360" rof_grid="r05">
+       <map name="ATM2ROF_FMAPNAME">cpl/gridmaps/gauss180x360/map_gauss180x360_to_r05_traave.20251105.nc</map>
+       <map name="ATM2ROF_SMAPNAME">cpl/gridmaps/gauss180x360/map_gauss180x360_to_r05_traave.20251105.nc</map>
     </gridmap>
 
     <gridmap atm_grid="ERA5r025" ocn_grid="IcoswISC30E3r5">

@@ -1,0 +1,4 @@
+%YAML 1.2
+---
+# User-specified EATM configuration overrides defaults_yaml_eatm
+# Formatted as a YAML dictionary, see defaults_yaml_eatm for defaults

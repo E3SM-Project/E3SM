@@ -1,0 +1,148 @@
+#!/bin/bash
+#==============================================================================
+# Emulator Components Test Script
+#
+# Usage: ./test [action] [options]
+#
+# A modular entry point for building and testing emulator components.
+# See: ./test --help
+#==============================================================================
+
+set -e  # Exit on error
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+EMULATOR_COMPS_DIR="${SCRIPT_DIR}"
+BUILD_DIR="${EMULATOR_COMPS_DIR}/build"
+LOG_DIR="${BUILD_DIR}/logs"
+
+# Source common functions
+source "${SCRIPT_DIR}/scripts/common.sh"
+
+#------------------------------------------------------------------------------
+# Defaults (can be overridden by environment)
+#------------------------------------------------------------------------------
+BUILD_TYPE="${BUILD_TYPE:-Release}"
+BUILD_TESTS="${BUILD_TESTS:-ON}"
+TEST_LEVEL="${TEST_LEVEL:-3}"
+RUN_TESTS="${RUN_TESTS:-true}"
+SKIP_MPI_TESTS="${SKIP_MPI_TESTS:-true}"
+JOBS="${JOBS:-16}"
+QUIET="${QUIET:-false}"
+VERBOSE="${VERBOSE:-false}"
+BACKEND="${BACKEND:-stub}"
+ACTION="build"
+MACHINE=""
+
+#------------------------------------------------------------------------------
+# Parse Arguments
+#------------------------------------------------------------------------------
+case "${1:-}" in
+    build|rebuild|test|configure|clean) ACTION="$1"; shift ;;
+    -*) ;;  # Option, not action
+    "") ;;  # No args
+    *) log_error "Unknown action: $1"; show_usage; exit 1 ;;
+esac
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -h|--help) show_usage; exit 0 ;;
+        -b|--backend) BACKEND="$2"; shift 2 ;;
+        -m|--machine) MACHINE="$2"; shift 2 ;;
+        -j|--jobs) JOBS="$2"; shift 2 ;;
+        -j[0-9]*) JOBS="${1#-j}"; shift ;;
+        -t|--test-level) TEST_LEVEL="$2"; shift 2 ;;
+        -t[0-9]*) TEST_LEVEL="${1#-t}"; shift ;;
+        -q|--quiet) QUIET=true; shift ;;
+        -v|--verbose) VERBOSE=true; shift ;;
+        --no-tests) BUILD_TESTS=OFF; RUN_TESTS=false; shift ;;
+        --mpi) SKIP_MPI_TESTS=false; shift ;;
+        --debug) BUILD_TYPE=Debug; shift ;;
+        --torch-dir) Torch_DIR="$2"; export Torch_DIR; shift 2 ;;
+        --no-color) RED=''; GREEN=''; YELLOW=''; BLUE=''; BOLD=''; NC=''; shift ;;
+        *) log_error "Unknown option: $1"; show_usage; exit 1 ;;
+    esac
+done
+
+# Validate backend
+case "${BACKEND}" in
+    stub|libtorch) ;;
+    *) log_error "Invalid backend: ${BACKEND} (use: stub, libtorch)"; exit 1 ;;
+esac
+
+#------------------------------------------------------------------------------
+# Machine Setup
+#------------------------------------------------------------------------------
+setup_machine() {
+    local machine=$1
+    case "${machine}" in
+        perlmutter)
+            source "${SCRIPT_DIR}/scripts/perlmutter.sh"
+            load_modules_perlmutter
+            if [[ "${BACKEND}" == "libtorch" ]]; then setup_libtorch_perlmutter; fi
+            ;;
+        *)
+            source "${SCRIPT_DIR}/scripts/generic.sh"
+            load_modules_generic
+            if [[ "${BACKEND}" == "libtorch" ]]; then setup_libtorch_generic; fi
+            ;;
+    esac
+}
+
+#------------------------------------------------------------------------------
+# Main
+#------------------------------------------------------------------------------
+main() {
+    [[ "${QUIET}" != "true" ]] && echo -e "\n${BOLD}Emulator Components Test${NC}\n"
+    
+    # Clean doesn't need machine setup
+    if [[ "${ACTION}" == "clean" ]]; then
+        source "${SCRIPT_DIR}/scripts/build.sh"
+        do_clean
+        return 0
+    fi
+    
+    # Detect and setup machine
+    [[ -z "${MACHINE}" ]] && MACHINE=$(detect_machine)
+    log_info "Machine: ${MACHINE}"
+    log_info "Backend: ${BACKEND}"
+    setup_machine "${MACHINE}"
+    
+    # Source build functions
+    source "${SCRIPT_DIR}/scripts/build.sh"
+    setup_build_dir
+    generate_summary
+    
+    # Execute action
+    case "${ACTION}" in
+        rebuild)
+            do_clean
+            setup_build_dir
+            generate_summary
+            run_cmake
+            run_build
+            if [[ "${BUILD_TESTS}" == "ON" ]]; then run_tests || true; fi
+            ;;
+        configure)
+            run_cmake
+            ;;
+        test)
+            [[ ! -f "${BUILD_DIR}/Makefile" ]] && { log_error "Not configured. Run build first."; exit 1; }
+            RUN_TESTS=true
+            run_tests || true
+            ;;
+        build|*)
+            if [[ ! -f "${BUILD_DIR}/Makefile" ]]; then
+                run_cmake
+            else
+                log_info "Already configured (use 'rebuild' to reconfigure)"
+            fi
+            run_build
+            if [[ "${BUILD_TESTS}" == "ON" ]]; then run_tests || true; fi
+            ;;
+    esac
+    
+    [[ "${QUIET}" != "true" ]] && echo ""
+    log_success "Done! Logs: ${LOG_DIR}"
+}
+
+main "$@"

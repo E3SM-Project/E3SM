@@ -41,6 +41,8 @@ theme:
     - navigation.sections
     - navigation.path
     - navigation.tracking
+    - navigation.path
+    - navigation.tracking
     - navigation.top
     - search.suggest
     - search.highlight
@@ -73,6 +75,17 @@ plugins:
   - search
   - bibtex:
       bib_dir: docs/refs
+  - mkdoxy:
+      projects:
+        emulator:
+          src-dirs: components/emulator_comps/common/src components/emulator_comps/eatm/src
+          full-doc: True
+          api-path: Emulators/emulator
+          doxy-cfg:
+            FILE_PATTERNS: "*.cpp *.hpp"
+            RECURSIVE: True
+            EXTRACT_ALL: True
+            JAVADOC_AUTOBRIEF: True
 extra:
   analytics:
     provider: google

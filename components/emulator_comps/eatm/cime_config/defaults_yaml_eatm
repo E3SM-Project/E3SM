@@ -1,0 +1,185 @@
+%YAML 1.2
+---
+# Default EATM configuration
+# This file is portable and parseable by Python (PyYAML) and C++ (yaml-cpp)
+#
+# Grid-specific defaults are computed by buildnml based on ATM_GRID
+
+eatm:
+  # Build-time configuration (set by buildnml based on case settings)
+  # These values are fixed for a case and cannot change between runs
+  build:
+    # Grid name (set by buildnml from ATM_GRID)
+    grid_name: ""
+    
+    # Inference backend: "stub", "pytorch", or "libtorch"
+    # Set by EATM_CMAKE_OPTIONS via EATM_INFERENCE_BACKEND
+    inference_backend: "stub"
+
+  # Runtime configuration (can be modified per run via user_yaml_eatm)
+  runtime:
+    # Path to the trained model file (e.g., .pt for PyTorch/LibTorch)
+    # Users can change this to switch models between runs
+    model_path: ""
+    
+    # Path to initial conditions file (NetCDF format)
+    # Required for production runs (libtorch/pytorch backends)
+    # Can be empty for stub backend (uses defaults for testing)
+    ic_file: ""
+    
+    # Flag to enable EATM (always true when component is active)
+    enabled: true
+
+  # Model I/O configuration - must match traced model exactly
+  # ACE2-ERA5 model: 44 inputs, 50 outputs
+  model_io:
+    # Input variable names expected by the model (44 total)
+    input_variables:
+      - land_fraction
+      - ocean_fraction
+      - sea_ice_fraction
+      - DSWRFtoa
+      - HGTsfc
+      - PRESsfc
+      - surface_temperature
+      - global_mean_co2
+      - TMP2m
+      - Q2m
+      - UGRD10m
+      - VGRD10m
+      - air_temperature_0
+      - air_temperature_1
+      - air_temperature_2
+      - air_temperature_3
+      - air_temperature_4
+      - air_temperature_5
+      - air_temperature_6
+      - air_temperature_7
+      - specific_total_water_0
+      - specific_total_water_1
+      - specific_total_water_2
+      - specific_total_water_3
+      - specific_total_water_4
+      - specific_total_water_5
+      - specific_total_water_6
+      - specific_total_water_7
+      - eastward_wind_0
+      - eastward_wind_1
+      - eastward_wind_2
+      - eastward_wind_3
+      - eastward_wind_4
+      - eastward_wind_5
+      - eastward_wind_6
+      - eastward_wind_7
+      - northward_wind_0
+      - northward_wind_1
+      - northward_wind_2
+      - northward_wind_3
+      - northward_wind_4
+      - northward_wind_5
+      - northward_wind_6
+      - northward_wind_7
+
+    # Output variable names produced by the model (50 total)
+    output_variables:
+      - PRESsfc
+      - surface_temperature
+      - air_temperature_0
+      - air_temperature_1
+      - air_temperature_2
+      - air_temperature_3
+      - air_temperature_4
+      - air_temperature_5
+      - air_temperature_6
+      - air_temperature_7
+      - specific_total_water_0
+      - specific_total_water_1
+      - specific_total_water_2
+      - specific_total_water_3
+      - specific_total_water_4
+      - specific_total_water_5
+      - specific_total_water_6
+      - specific_total_water_7
+      - eastward_wind_0
+      - eastward_wind_1
+      - eastward_wind_2
+      - eastward_wind_3
+      - eastward_wind_4
+      - eastward_wind_5
+      - eastward_wind_6
+      - eastward_wind_7
+      - northward_wind_0
+      - northward_wind_1
+      - northward_wind_2
+      - northward_wind_3
+      - northward_wind_4
+      - northward_wind_5
+      - northward_wind_6
+      - northward_wind_7
+      - LHTFLsfc
+      - SHTFLsfc
+      - PRATEsfc
+      - ULWRFsfc
+      - ULWRFtoa
+      - DLWRFsfc
+      - DSWRFsfc
+      - USWRFsfc
+      - USWRFtoa
+      - tendency_of_total_water_path_due_to_advection
+      - TMP850
+      - h500
+      - TMP2m
+      - Q2m
+      - UGRD10m
+      - VGRD10m
+
+  # Coupling configuration
+  coupling:
+    # Whether to zero-initialize export fields
+    zero_init_exports: true
+    
+    # Debug mode for coupling (print field statistics)
+    debug: false
+
+  # Diagnostic output configuration
+  diagnostics:
+    # History output streams (.h. files)
+    history:
+      - stream_name: h0
+        filename_prefix: "atm.h0"
+        frequency: 1
+        frequency_unit: ndays
+        averaging: instant
+        precision: float32
+        max_snapshots_per_file: 1
+        fields:
+          - PRESsfc
+          - surface_temperature
+          - air_temperature
+          - specific_total_water
+          - eastward_wind
+          - northward_wind
+          - LHTFLsfc
+          - SHTFLsfc
+          - PRATEsfc
+          - DLWRFsfc
+          - DSWRFsfc
+
+    # Model restart configuration (.r. files)
+    # NOTE: Frequency settings are synced at RUNTIME with CIME's REST_N and
+    # REST_OPTION environment variables. Users should modify case settings
+    # for restart frequency control rather than editing this file.
+    restart:
+      enabled: true
+      frequency: 1
+      frequency_unit: ndays
+      filename_prefix: "atm.r"
+
+    # History restart configuration (.rh. files)
+    # Required for non-instant averaging to preserve state across restarts
+    history_restart:
+      enabled: true
+      filename_prefix: "atm.rh"
+
+  # Legacy field (TODO: deprecate, use domain info instead)
+  grid_file: "UNSET"

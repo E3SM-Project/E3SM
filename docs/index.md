@@ -25,6 +25,7 @@ research problems and Department of Energy mission needs while efficiently using
 - [MPAS-seaice](./MPAS-seaice/index.md)
 - [Omega](https://docs.e3sm.org/Omega/Omega/index.html) — not yet supported.
 - [Data Models](./Data-Models/index.md)
+- [Emulators](./Emulators/index.md) — AI-based component emulators.
 
 ## Tools
 
