@@ -209,8 +209,8 @@ void VertAdv::readConfigOptions(Config *OmegaConfig) {
 // velocity (NormalVelocity) and the layer thickness used for fluxes through
 // edges (FluxLayerThickEdge)
 void VertAdv::computeVerticalVelocity(
-    const Array2DReal &NormalVelocity,    /// [in] horizontal velocity
-    const Array2DReal &FluxLayerThickEdge /// [in] layer thickness at edges
+    const Array2DReal &NormalVelocity,    ///< [in] horizontal velocity
+    const Array2DReal &FluxLayerThickEdge ///< [in] layer thickness at edges
 ) {
 
    OMEGA_SCOPE(LocNVertLayers, NVertLayers);
@@ -293,7 +293,7 @@ void VertAdv::computeVerticalVelocity(
 //------------------------------------------------------------------------------
 // Compute thickness tendency due to vertical advection
 void VertAdv::computeThicknessVAdvTend(
-    const Array2DReal &ThickTend // [inout] thickness tendency
+    const Array2DReal &ThickTend ///< [inout] thickness tendency
 ) {
 
    // Return if vertical advection thickness tendency not enabled
@@ -327,6 +327,87 @@ void VertAdv::computeThicknessVAdvTend(
        });
 
 } // end computeThicknessVAdvTend
+
+//------------------------------------------------------------------------------
+// Compute velocity tendency due to vertical advection
+void VertAdv::computeVelocityVAdvTend(
+    const Array2DReal &VelTend,        ///< [inout] horizontal velocity tendency
+    const Array2DReal &NormalVelocity, ///< [in] horizontal velocity
+    const Array2DReal &FluxLayerThickEdge ///< [in] layer thickness at edges
+) {
+
+   // Return if vertical advection velocity tendency not enabled
+   if (!VelVertAdvEnabled)
+      return;
+
+   OMEGA_SCOPE(LocCOnE, Mesh->CellsOnEdge);
+   OMEGA_SCOPE(MinLayerEdgeBot, VCoord->MinLayerEdgeBot);
+   OMEGA_SCOPE(MaxLayerEdgeTop, VCoord->MaxLayerEdgeTop);
+   OMEGA_SCOPE(LocTotVertVelocity, TotalVerticalVelocity);
+   OMEGA_SCOPE(EdgeMask, VCoord->EdgeMask);
+   OMEGA_SCOPE(LocNVertLayersP1, NVertLayersP1);
+
+   // Loop over every owned edge
+   parallelForOuter(
+       "computeVelocityVAdvTend", {NEdgesOwned},
+       KOKKOS_LAMBDA(int IEdge, const TeamMember &Team) {
+          const I4 Cell1 = LocCOnE(IEdge, 0);
+          const I4 Cell2 = LocCOnE(IEdge, 1);
+          const I4 KMin  = MinLayerEdgeBot(IEdge);
+          const I4 KMax  = MaxLayerEdgeTop(IEdge);
+          I4 KRange      = vertRangeChunked(KMin + 1, KMax);
+
+          // Allocate scratch space for W times Du/Dz at vertical interfaces
+          // between edges
+          RealScratchArray WDuDzEdge(Team.team_scratch(0), LocNVertLayersP1);
+
+          // Flux is zero at top and bottom
+          Kokkos::single(
+              PerTeam(Team), INNER_LAMBDA() {
+                 WDuDzEdge(Kmin)     = 0._Real;
+                 WDuDzEdge(KMax + 1) = 0._Real;
+              });
+
+          // Average vertical velocities from cell centers to edges and multiply
+          // by derivative of horizontal velocity to obtain flux of horizontal
+          // velocity at the vertical interfaces between edges
+          parallelForInner(
+              Team, KRange, INNER_LAMBDA(int KChunk) {
+                 const I4 KStart = chunkStart(KChunk, KMin + 1);
+                 const I4 KLen   = chunkLength(KChunk, KStart, KMax);
+
+                 for (int KVec = 0; KVec < KLen; ++KVec) {
+                    const I4 K      = KStart + KVec;
+                    const Real WAvg = 0.5_Real * (LocTotVertVelocity(Cell1, K) +
+                                                  LocTotVertVelocity(Cell2, K));
+                    WDuDzEdge(K) =
+                        WAvg *
+                        (NormalVelocity(IEdge, K - 1) -
+                         NormalVelocity(IEdge, K)) /
+                        (0.5_Real * (FluxLayerThickEdge(IEdge, K - 1) +
+                                     FluxLayerThickEdge(IEdge, K)));
+                 }
+              });
+
+          Team.team_barrier();
+
+          KRange = vertRangeChunked(KMin, KMax);
+          // Average W*Du/Dz from interfaces to layer midpoints
+          parallelForInner(
+              Team, KRange, INNER_LAMBDA(int KChunk) {
+                 const I4 KStart = chunkStart(KChunk, KMin);
+                 const I4 KLen   = chunkLength(KChunk, KStart, KMax);
+
+                 for (int KVec = 0; KVec < KLen; ++KVec) {
+                    const I4 K = KStart + KVec;
+                    VelTend(IEdge, K) -= EdgeMask(IEdge, K) * 0.5_Real *
+                                         (WDuDzEdge(K) + WDuDzEdge(K + 1));
+                 }
+              });
+       },
+       NVertLayersP1);
+
+} // end computeVelocityVAdvTend
 
 } // end namespace OMEGA
 //===----------------------------------------------------------------------===//

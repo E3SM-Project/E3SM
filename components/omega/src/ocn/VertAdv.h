@@ -104,6 +104,13 @@ class VertAdv {
        const Array2DReal &ThickTend // [inout] thickness tendency
    );
 
+   /// Compute velocity tendency due to vertical advection
+   void computeVelocityVAdvTend(
+       const Array2DReal &VelTend, // [inout] horizontal velocity tendency
+       const Array2DReal &NormalVelocity,    // [in] horizontal velocity
+       const Array2DReal &FluxLayerThickEdge // [in] layer thickness at edges
+   );
+
  private:
    // Vertical loop bounds from VertCoord
    Array1DI4 MinLayerCell;
