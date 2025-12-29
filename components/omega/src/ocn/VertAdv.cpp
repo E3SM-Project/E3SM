@@ -208,8 +208,10 @@ void VertAdv::readConfigOptions(Config *OmegaConfig) {
 // Compute VerticalVelocity and TotalVerticalVelocity from the horizontal
 // velocity (NormalVelocity) and the layer thickness used for fluxes through
 // edges (FluxLayerThickEdge)
-void VertAdv::computeVerticalVelocity(const Array2DReal &NormalVelocity,
-                                      const Array2DReal &FluxLayerThickEdge) {
+void VertAdv::computeVerticalVelocity(
+    const Array2DReal &NormalVelocity,    /// [in] horizontal velocity
+    const Array2DReal &FluxLayerThickEdge /// [in] layer thickness at edges
+) {
 
    OMEGA_SCOPE(LocNVertLayers, NVertLayers);
    OMEGA_SCOPE(LocAreaCell, Mesh->AreaCell);
@@ -287,6 +289,44 @@ void VertAdv::computeVerticalVelocity(const Array2DReal &NormalVelocity,
    deepCopy(TotalVerticalVelocity, VerticalVelocity);
 
 } // end computeVerticalVelocity
+
+//------------------------------------------------------------------------------
+// Compute thickness tendency due to vertical advection
+void VertAdv::computeThicknessVAdvTend(
+    const Array2DReal &ThickTend // [inout] thickness tendency
+) {
+
+   // Return if vertical advection thickness tendency not enabled
+   if (!ThickVertAdvEnabled)
+      return;
+
+   OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
+   OMEGA_SCOPE(MaxLayerCell, VCoord->MaxLayerCell);
+   OMEGA_SCOPE(LocTotVertVelocity, TotalVerticalVelocity);
+
+   // Loop over every owned cell, pseudo thickness tendency is simply
+   // difference in pseudo velocity between bottom and top interface for
+   // each layer
+   parallelForOuter(
+       "computeThicknessVAdvTend", {NCellsOwned},
+       KOKKOS_LAMBDA(int ICell, const TeamMember &Team) {
+          const I4 KMin   = MinLayerCell(ICell);
+          const I4 KMax   = MaxLayerCell(ICell);
+          const I4 KRange = vertRangeChunked(KMin, KMax);
+
+          parallelForInner(
+              Team, KRange, INNER_LAMBDA(int KChunk) {
+                 const I4 KStart = chunkStart(KChunk, KMin);
+                 const I4 KLen   = chunkLength(KChunk, KStart, KMax);
+                 for (int KVec = 0; KVec < KLen; ++KVec) {
+                    const I4 K = KStart + KVec;
+                    ThickTend(ICell, K) += LocTotVertVelocity(ICell, K + 1) -
+                                           LocTotVertVelocity(ICell, K);
+                 }
+              });
+       });
+
+} // end computeThicknessVAdvTend
 
 } // end namespace OMEGA
 //===----------------------------------------------------------------------===//
