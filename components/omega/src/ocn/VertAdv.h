@@ -111,6 +111,15 @@ class VertAdv {
        const Array2DReal &FluxLayerThickEdge // [in] layer thickness at edges
    );
 
+   /// Compute tracer tendency due to vertical advection, TimeStep is only
+   /// needed as an argument for flux-corrected transport
+   void computeTracerVAdvTend(
+       const Array3DReal &TracerTend,               // [inout] tracer tendencies
+       const Array3DReal &Tracers,                  // [in] tracer array
+       const Array2DReal &LayerThickness,           // [in] layer thickness
+       const TimeInterval TimeStep = TimeInterval() // [in] (optional) time step
+   );
+
  private:
    // Vertical loop bounds from VertCoord
    Array1DI4 MinLayerCell;

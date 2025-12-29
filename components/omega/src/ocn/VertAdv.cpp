@@ -409,5 +409,31 @@ void VertAdv::computeVelocityVAdvTend(
 
 } // end computeVelocityVAdvTend
 
+//------------------------------------------------------------------------------
+// Compute tracer tendency due to vertical advection, TimeStep is only needed
+// as an arugement for flux-corrected transport
+void VertAdv::computeTracerVAdvTend(
+    const Array3DReal &TracerTend,     ///< [inout] tracer tendencies
+    const Array3DReal &Tracers,        ///< [in] tracer array
+    const Array2DReal &LayerThickness, ///< [in] layer thickness
+    const TimeInterval TimeStep        ///< [in] (optional) time step
+) {
+
+   computeVerticalFluxes(Tracers, LayerThickness);
+
+   // dispatch to appropriate algorithm based on configuration settings
+   switch (VertAdvChoice) {
+   case VertAdvOption::Standard:
+      computeStdVAdvTend(TracerTend);
+      break;
+   case VertAdvOption::FCT:
+      R8 Dt;
+      TimeStep.get(Dt, TimeUnits::Seconds);
+      computeFCTVAdvTend(TracerTend, Tracers, LayerThickness, Dt);
+      break;
+   }
+
+} // end computeTracerVAdvTend
+
 } // end namespace OMEGA
 //===----------------------------------------------------------------------===//
