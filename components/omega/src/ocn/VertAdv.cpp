@@ -364,7 +364,7 @@ void VertAdv::computeVelocityVAdvTend(
           // Flux is zero at top and bottom
           Kokkos::single(
               PerTeam(Team), INNER_LAMBDA() {
-                 WDuDzEdge(Kmin)     = 0._Real;
+                 WDuDzEdge(KMin)     = 0._Real;
                  WDuDzEdge(KMax + 1) = 0._Real;
               });
 
@@ -434,6 +434,171 @@ void VertAdv::computeTracerVAdvTend(
    }
 
 } // end computeTracerVAdvTend
+
+//------------------------------------------------------------------------------
+// Compute tracer fluxes due to vertical advection, the particular scheme used
+// is chosen via configuration settings
+void VertAdv::computeVerticalFluxes(
+    const Array3DReal &Tracers,       ///< [in] tracer array
+    const Array2DReal &LayerThickness ///< [in] layer thickness
+) {
+
+   OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
+   OMEGA_SCOPE(MaxLayerCell, VCoord->MaxLayerCell);
+   OMEGA_SCOPE(LocTotVertVel, TotalVerticalVelocity);
+   OMEGA_SCOPE(LocVertFlux, VertFlux);
+   OMEGA_SCOPE(LocLowOrderVertFlux, LowOrderVertFlux);
+   OMEGA_SCOPE(LocCoef3rdOrder, Coef3rdOrder);
+
+   // Compute the fluxes used for the standard VAdv scheme, or the high-order
+   // fluxes used for the FCT VAdv scheme, store in VertFlux member array
+   switch (VertFluxChoice) {
+   // 2nd-order centered fluxes
+   case VertFluxOption::Second:
+      parallelForOuter(
+          "computeVerticalFluxes-Second", {NTracers, NCellsOwned},
+          KOKKOS_LAMBDA(int L, int ICell, const TeamMember &Team) {
+             const I4 KMin   = MinLayerCell(ICell);
+             const I4 KMax   = MaxLayerCell(ICell);
+             const I4 KRange = vertRangeChunked(KMin + 2, KMax - 1);
+             parallelForInner(
+                 Team, KRange, INNER_LAMBDA(int KChunk) {
+                    const I4 KStart = chunkStart(KChunk, KMin + 2);
+                    const I4 KLen   = chunkLength(KChunk, KStart, KMax - 1);
+                    for (int KVec = 0; KVec < KLen; ++KVec) {
+                       const I4 K = KStart + KVec;
+                       const Real InvLayerThickSum =
+                           1._Real / (LayerThickness(ICell, K - 1) +
+                                      LayerThickness(ICell, K));
+                       const Real VerticalWeightK =
+                           LayerThickness(ICell, K - 1) * InvLayerThickSum;
+                       const Real VerticalWeightKm1 =
+                           LayerThickness(ICell, K) * InvLayerThickSum;
+                       LocVertFlux(L, ICell, K) =
+                           LocTotVertVel(ICell, K) *
+                           (VerticalWeightK * Tracers(L, ICell, K) +
+                            VerticalWeightKm1 * Tracers(L, ICell, K - 1));
+                    }
+                 });
+          });
+      break;
+   // 3rd-order upwind fluxes
+   case VertFluxOption::Third:
+      parallelForOuter(
+          "computeVerticalFluxes-Third", {NTracers, NCellsOwned},
+          KOKKOS_LAMBDA(int L, int ICell, const TeamMember &Team) {
+             const I4 KMin   = MinLayerCell(ICell);
+             const I4 KMax   = MaxLayerCell(ICell);
+             const I4 KRange = vertRangeChunked(KMin + 2, KMax - 1);
+             parallelForInner(
+                 Team, KRange, INNER_LAMBDA(int KChunk) {
+                    const I4 KStart = chunkStart(KChunk, KMin + 2);
+                    const I4 KLen   = chunkLength(KChunk, KStart, KMax - 1);
+                    for (int KVec = 0; KVec < KLen; ++KVec) {
+                       const I4 K = KStart + KVec;
+                       LocVertFlux(L, ICell, K) =
+                           (LocTotVertVel(ICell, K) *
+                                (7._Real * (Tracers(L, ICell, K) +
+                                            Tracers(L, ICell, K - 1)) -
+                                 (Tracers(L, ICell, K + 1) +
+                                  Tracers(L, ICell, K - 2))) -
+                            LocCoef3rdOrder *
+                                std::abs(LocTotVertVel(ICell, K)) *
+                                ((Tracers(L, ICell, K + 1) -
+                                  Tracers(L, ICell, K - 2)) -
+                                 3._Real * (Tracers(L, ICell, K) -
+                                            Tracers(L, ICell, K - 1)))) /
+                           12._Real;
+                    }
+                 });
+          });
+      break;
+   // 4th-order centered fluxes
+   case VertFluxOption::Fourth:
+      parallelForOuter(
+          "computeVerticalFluxes-Fourth", {NTracers, NCellsOwned},
+          KOKKOS_LAMBDA(int L, int ICell, const TeamMember &Team) {
+             const I4 KMin   = MinLayerCell(ICell);
+             const I4 KMax   = MaxLayerCell(ICell);
+             const I4 KRange = vertRangeChunked(KMin + 2, KMax - 1);
+             parallelForInner(
+                 Team, KRange, INNER_LAMBDA(int KChunk) {
+                    const I4 KStart = chunkStart(KChunk, KMin + 2);
+                    const I4 KLen   = chunkLength(KChunk, KStart, KMax - 1);
+                    for (int KVec = 0; KVec < KLen; ++KVec) {
+                       const I4 K = KStart + KVec;
+                       LocVertFlux(L, ICell, K) =
+                           LocTotVertVel(ICell, K) *
+                           (7._Real * (Tracers(L, ICell, K) +
+                                       Tracers(L, ICell, K - 1)) -
+                            (Tracers(L, ICell, K + 1) +
+                             Tracers(L, ICell, K - 2))) /
+                           12._Real;
+                    }
+                 });
+          });
+      break;
+   }
+
+   // Handle fluxes on interfaces near top and bottom layers. Fluxes are 0 on
+   // top-most (KMin) and bottom-most (KMax + 1) interfaces, use second order
+   // for fluxes on next-to-top (KMin + 1) and next-to-bottom (KMax) interfaces.
+   parallelFor(
+       "computeVerticalFluxes-TopBot", {NTracers, NCellsOwned},
+       KOKKOS_LAMBDA(int L, int ICell) {
+          const I4 KMin = MinLayerCell(ICell);
+          const I4 KMax = MaxLayerCell(ICell);
+          for (int K : {KMin, KMax + 1}) {
+             LocVertFlux(L, ICell, K) = 0._Real;
+          }
+          for (int K : {KMin + 1, KMax}) {
+             const Real InvLayerThickSum =
+                 1._Real /
+                 (LayerThickness(ICell, K - 1) + LayerThickness(ICell, K));
+             const Real VerticalWeightK =
+                 LayerThickness(ICell, K - 1) * InvLayerThickSum;
+             const Real VerticalWeightKm1 =
+                 LayerThickness(ICell, K) * InvLayerThickSum;
+             LocVertFlux(L, ICell, K) =
+                 LocTotVertVel(ICell, K) *
+                 (VerticalWeightK * Tracers(L, ICell, K) +
+                  VerticalWeightKm1 * Tracers(L, ICell, K - 1));
+          }
+       });
+
+   // If using FCT scheme, compute 1st-order upwind fluxes for low-order and
+   // remove low-order flux from high-order flux
+   if (VertAdvChoice == VertAdvOption::FCT) {
+      parallelForOuter(
+          "computeVerticalFluxes-LowOrder", {NTracers, NCellsOwned},
+          KOKKOS_LAMBDA(int L, int ICell, const TeamMember &Team) {
+             const I4 KMin   = MinLayerCell(ICell);
+             const I4 KMax   = MaxLayerCell(ICell);
+             const I4 KRange = vertRangeChunked(KMin + 1, KMax);
+
+             for (int K : {KMin, KMax + 1}) {
+                LocLowOrderVertFlux(L, ICell, K) = 0._Real;
+             }
+             parallelForInner(
+                 Team, KRange, INNER_LAMBDA(int KChunk) {
+                    const I4 KStart = chunkStart(KChunk, KMin + 1);
+                    const I4 KLen   = chunkLength(KChunk, KStart, KMax);
+                    for (int KVec = 0; KVec < KLen; ++KVec) {
+                       const I4 K = KStart + KVec;
+                       LocLowOrderVertFlux(L, ICell, K) =
+                           Kokkos::min(0._Real, LocTotVertVel(ICell, K)) *
+                               Tracers(L, ICell, K - 1) +
+                           Kokkos::max(0._Real, LocTotVertVel(ICell, K)) *
+                               Tracers(L, ICell, K);
+
+                       LocVertFlux(L, ICell, K) -=
+                           LocLowOrderVertFlux(L, ICell, K);
+                    }
+                 });
+          });
+   }
+
+} // end computeVerticalFluxes
 
 } // end namespace OMEGA
 //===----------------------------------------------------------------------===//

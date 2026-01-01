@@ -120,6 +120,12 @@ class VertAdv {
        const TimeInterval TimeStep = TimeInterval() // [in] (optional) time step
    );
 
+   /// Compute tracer fluxes due to vertical advection
+   void computeVerticalFluxes(
+       const Array3DReal &Tracers,       // [in] tracer array
+       const Array2DReal &LayerThickness // [in] layer thickness
+   );
+
  private:
    // Vertical loop bounds from VertCoord
    Array1DI4 MinLayerCell;
