@@ -600,5 +600,38 @@ void VertAdv::computeVerticalFluxes(
 
 } // end computeVerticalFluxes
 
+//------------------------------------------------------------------------------
+// Compute tracer tendencies due to vertical advection using standard advection
+// scheme
+void VertAdv::computeStdVAdvTend(
+    const Array3DReal &TracerTend ///< [inout] tracer tendencies
+) {
+
+   OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
+   OMEGA_SCOPE(MaxLayerCell, VCoord->MaxLayerCell);
+   OMEGA_SCOPE(LocVertFlux, VertFlux);
+
+   // Loop over owned cells, tracer tendency in each layer is computed from
+   // difference between fluxes through bottom and top interfaces
+   parallelForOuter(
+       "computeStdVAdvTend", {NTracers, NCellsOwned},
+       KOKKOS_LAMBDA(int L, int ICell, const TeamMember &Team) {
+          const I4 KMin   = MinLayerCell(ICell);
+          const I4 KMax   = MaxLayerCell(ICell);
+          const I4 KRange = vertRangeChunked(KMin, KMax);
+          parallelForInner(
+              Team, KRange, INNER_LAMBDA(int KChunk) {
+                 const I4 KStart = chunkStart(KChunk, KMin);
+                 const I4 KLen   = chunkLength(KChunk, KStart, KMax);
+                 for (int KVec = 0; KVec < KLen; ++KVec) {
+                    const I4 K = KStart + KVec;
+                    TracerTend(L, ICell, K) +=
+                        LocVertFlux(L, ICell, K + 1) - LocVertFlux(L, ICell, K);
+                 }
+              });
+       });
+
+} // end computeStdVAdvTend
+
 } // end namespace OMEGA
 //===----------------------------------------------------------------------===//

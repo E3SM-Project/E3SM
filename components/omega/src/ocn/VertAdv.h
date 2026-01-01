@@ -126,6 +126,12 @@ class VertAdv {
        const Array2DReal &LayerThickness // [in] layer thickness
    );
 
+   /// Compute tracer tendencies due to vertical advection using standard
+   /// advection scheme
+   void
+   computeStdVAdvTend(const Array3DReal &TracerTend // [inout] tracer tendencies
+   );
+
  private:
    // Vertical loop bounds from VertCoord
    Array1DI4 MinLayerCell;
