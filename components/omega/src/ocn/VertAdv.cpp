@@ -633,5 +633,158 @@ void VertAdv::computeStdVAdvTend(
 
 } // end computeStdVAdvTend
 
+//------------------------------------------------------------------------------
+// Compute tracer tendencies due to vertical advection using flux-corrected
+// transport scheme. ProvThickness input is provisional layer thickness after
+// horizontal thickness flux
+void VertAdv::computeFCTVAdvTend(
+    const Array3DReal &TracerTend,    ///< [inout] tracer tendencies
+    const Array3DReal &Tracers,       ///< [in] tracer array
+    const Array2DReal &ProvThickness, ///< [in] provisional layer thickness
+    const Real Dt                     ///< [in] time step
+) {
+
+   OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
+   OMEGA_SCOPE(MaxLayerCell, VCoord->MaxLayerCell);
+   OMEGA_SCOPE(LocTotVertVel, TotalVerticalVelocity);
+   OMEGA_SCOPE(LocVertFlux, VertFlux);
+   OMEGA_SCOPE(LocLowOrderVertFlux, LowOrderVertFlux);
+   OMEGA_SCOPE(LocNVertLayers, NVertLayers);
+   OMEGA_SCOPE(LocEps, Eps);
+
+   parallelForOuter(
+       "computeFCTVAdvTend", {NTracers, NCellsOwned},
+       KOKKOS_LAMBDA(int L, int ICell, const TeamMember &Team) {
+          const I4 KMin = MinLayerCell(ICell);
+          const I4 KMax = MaxLayerCell(ICell);
+          I4 KRange     = vertRangeChunked(KMin, KMax);
+
+          RealScratchArray InvNewProvThick(Team.team_scratch(0),
+                                           LocNVertLayers);
+          RealScratchArray WorkTend(Team.team_scratch(0), LocNVertLayers);
+          RealScratchArray FlxIn(Team.team_scratch(0), LocNVertLayers);
+          RealScratchArray FlxOut(Team.team_scratch(0), LocNVertLayers);
+          RealScratchArray RescaledFlux(Team.team_scratch(0),
+                                        LocNVertLayers + 1);
+
+          parallelForInner(
+              Team, KRange, INNER_LAMBDA(int KChunk) {
+                 const I4 KStart = chunkStart(KChunk, KMin);
+                 const I4 KLen   = chunkLength(KChunk, KStart, KMax);
+
+                 for (int KVec = 0; KVec < KLen; ++KVec) {
+                    const I4 K = KStart + KVec;
+                    InvNewProvThick(K) =
+                        1._Real / (ProvThickness(ICell, K) +
+                                   Dt * (LocTotVertVel(ICell, K + 1) -
+                                         LocTotVertVel(ICell, K)));
+                    Real TracerMax;
+                    Real TracerMin;
+                    // Determine bounds on tracer from neighbor values for
+                    // limiting
+                    if (K == KMin) {
+                       TracerMax = Kokkos::max(Tracers(L, ICell, K),
+                                               Tracers(L, ICell, K + 1));
+                       TracerMin = Kokkos::min(Tracers(L, ICell, K),
+                                               Tracers(L, ICell, K + 1));
+                    } else if (K == KMax) {
+                       TracerMax = Kokkos::max(Tracers(L, ICell, K - 1),
+                                               Tracers(L, ICell, K));
+                       TracerMin = Kokkos::min(Tracers(L, ICell, K - 1),
+                                               Tracers(L, ICell, K));
+                    } else {
+                       TracerMax =
+                           Kokkos::max(Tracers(L, ICell, K - 1),
+                                       Kokkos::max(Tracers(L, ICell, K),
+                                                   Tracers(L, ICell, K + 1)));
+                       TracerMin =
+                           Kokkos::min(Tracers(L, ICell, K - 1),
+                                       Kokkos::min(Tracers(L, ICell, K),
+                                                   Tracers(L, ICell, K + 1)));
+                    }
+
+                    // Accumulate upwind flux in WorkTend
+                    WorkTend(K) = LocLowOrderVertFlux(L, ICell, K + 1) -
+                                  LocLowOrderVertFlux(L, ICell, K);
+                    // Accumulate remaining high-order flux into layer
+                    FlxIn(K) =
+                        Kokkos::max(0._Real, LocVertFlux(L, ICell, K + 1)) -
+                        Kokkos::min(0._Real, LocVertFlux(L, ICell, K));
+                    // Accumulate remaining high-order flux out of layer
+                    FlxOut(K) =
+                        Kokkos::min(0._Real, LocVertFlux(L, ICell, K + 1)) -
+                        Kokkos::max(0._Real, LocVertFlux(L, ICell, K));
+                    // Build scale factors to limit flux for FCT using the
+                    // bounds determined above and bounds on newly updated
+                    // values. Factors are stored in FlxIn and FlxOut
+                    // scratch space.
+                    Real TracerMinNew =
+                        (Tracers(L, ICell, K) * ProvThickness(ICell, K) +
+                         Dt * (WorkTend(K) + FlxOut(K))) *
+                        InvNewProvThick(K);
+                    Real TracerMaxNew =
+                        (Tracers(L, ICell, K) * ProvThickness(ICell, K) +
+                         Dt * (WorkTend(K) + FlxIn(K))) *
+                        InvNewProvThick(K);
+                    Real TracerUpwindNew =
+                        (Tracers(L, ICell, K) * ProvThickness(ICell, K) +
+                         Dt * WorkTend(K)) *
+                        InvNewProvThick(K);
+                    Real ScaleFactor =
+                        (TracerMax - TracerUpwindNew) /
+                        (TracerMaxNew - TracerUpwindNew + LocEps);
+                    FlxIn(K) =
+                        Kokkos::min(1._Real, Kokkos::max(0._Real, ScaleFactor));
+                    ScaleFactor = (TracerUpwindNew - TracerMin) /
+                                  (TracerUpwindNew - TracerMinNew + LocEps);
+                    FlxOut(K) =
+                        Kokkos::min(1._Real, Kokkos::max(0._Real, ScaleFactor));
+                 }
+              });
+
+          Team.team_barrier();
+
+          KRange = vertRangeChunked(KMin + 1, KMax);
+
+          // Rescale the high-order vertical flux
+          RescaledFlux(KMin)     = 0._Real;
+          RescaledFlux(KMax + 1) = 0._Real;
+          parallelForInner(
+              Team, KRange, INNER_LAMBDA(int KChunk) {
+                 const I4 KStart = chunkStart(KChunk, KMin + 1);
+                 const I4 KLen   = chunkLength(KChunk, KStart, KMax);
+
+                 for (int KVec = 0; KVec < KLen; ++KVec) {
+                    const I4 K = KStart + KVec;
+
+                    RescaledFlux(K) =
+                        Kokkos::max(0._Real, LocVertFlux(L, ICell, K)) *
+                            Kokkos::min(FlxOut(K), FlxIn(K - 1)) +
+                        Kokkos::min(0._Real, LocVertFlux(L, ICell, K)) *
+                            Kokkos::min(FlxOut(K - 1), FlxIn(K));
+                 }
+              });
+
+          Team.team_barrier();
+
+          // Accumulate total FCT vertical advection tendency
+          KRange = vertRangeChunked(KMin, KMax);
+          parallelForInner(
+              Team, KRange, INNER_LAMBDA(int KChunk) {
+                 const I4 KStart = chunkStart(KChunk, KMin);
+                 const I4 KLen   = chunkLength(KChunk, KStart, KMax);
+
+                 for (int KVec = 0; KVec < KLen; ++KVec) {
+                    const I4 K = KStart + KVec;
+                    WorkTend(K) += RescaledFlux(K + 1) - RescaledFlux(K);
+                    TracerTend(L, ICell, K) += WorkTend(K);
+                 }
+              });
+          // TODO: Monotonicity and diagnostic checks
+       },
+       5 * NVertLayers + 1);
+
+} // end computeFTCVAdvTend
+
 } // end namespace OMEGA
 //===----------------------------------------------------------------------===//

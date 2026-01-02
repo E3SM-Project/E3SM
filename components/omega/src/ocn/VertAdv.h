@@ -132,6 +132,15 @@ class VertAdv {
    computeStdVAdvTend(const Array3DReal &TracerTend // [inout] tracer tendencies
    );
 
+   /// Compute tracer tendencies due to vertical advection using flux-corrected
+   /// transport scheme
+   void computeFCTVAdvTend(
+       const Array3DReal &TracerTend,    // [inout] tracer tendencies
+       const Array3DReal &Tracers,       // [in] tracer array
+       const Array2DReal &ProvThickness, // [in] provisional layer thickness
+       const Real Dt                     // [in] time step
+   );
+
  private:
    // Vertical loop bounds from VertCoord
    Array1DI4 MinLayerCell;
