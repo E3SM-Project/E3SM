@@ -84,11 +84,14 @@ contains
             do j = 1,nlevdecomp
 
                col_ns%decomp_npools_vr(c,j,i_met_lit) = col_ns%decomp_npools_vr(c,j,i_met_lit) + &
-                    col_nf%dwt_frootn_to_litr_met_n(c,j) * dt
+                    col_nf%dwt_frootn_to_litr_met_n(c,j) * dt + &
+                    col_nf%dwt_residue_to_litr_met_n(c,j) * dt
                col_ns%decomp_npools_vr(c,j,i_cel_lit) = col_ns%decomp_npools_vr(c,j,i_cel_lit) + &
-                    col_nf%dwt_frootn_to_litr_cel_n(c,j) * dt
+                    col_nf%dwt_frootn_to_litr_cel_n(c,j) * dt + &
+                    col_nf%dwt_residue_to_litr_cel_n(c,j) * dt
                col_ns%decomp_npools_vr(c,j,i_lig_lit) = col_ns%decomp_npools_vr(c,j,i_lig_lit) + &
-                    col_nf%dwt_frootn_to_litr_lig_n(c,j) * dt
+                    col_nf%dwt_frootn_to_litr_lig_n(c,j) * dt + &
+                    col_nf%dwt_residue_to_litr_lig_n(c,j) * dt
                col_ns%decomp_npools_vr(c,j,i_cwd) = col_ns%decomp_npools_vr(c,j,i_cwd) + &
                     ( col_nf%dwt_livecrootn_to_cwdn(c,j) + col_nf%dwt_deadcrootn_to_cwdn(c,j) ) * dt
 

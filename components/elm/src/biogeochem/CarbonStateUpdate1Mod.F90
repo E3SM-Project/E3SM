@@ -101,32 +101,41 @@ contains
           do j = 1,nlevdecomp
 
              col_cs%decomp_cpools_vr(c,j,i_met_lit) = col_cs%decomp_cpools_vr(c,j,i_met_lit) + &
-                  col_cf%dwt_frootc_to_litr_met_c(c,j) * dt
+                  col_cf%dwt_frootc_to_litr_met_c(c,j) * dt + &
+                  col_cf%dwt_residue_to_litr_met_c(c,j) * dt
              col_cs%decomp_cpools_vr(c,j,i_cel_lit) = col_cs%decomp_cpools_vr(c,j,i_cel_lit) + &
-                  col_cf%dwt_frootc_to_litr_cel_c(c,j) * dt
+                  col_cf%dwt_frootc_to_litr_cel_c(c,j) * dt + &
+                  col_cf%dwt_residue_to_litr_cel_c(c,j) * dt
              col_cs%decomp_cpools_vr(c,j,i_lig_lit) = col_cs%decomp_cpools_vr(c,j,i_lig_lit) + &
-                  col_cf%dwt_frootc_to_litr_lig_c(c,j) * dt
+                  col_cf%dwt_frootc_to_litr_lig_c(c,j) * dt + &
+                  col_cf%dwt_residue_to_litr_lig_c(c,j) * dt
              col_cs%decomp_cpools_vr(c,j,i_cwd) = col_cs%decomp_cpools_vr(c,j,i_cwd) + &
                   ( col_cf%dwt_livecrootc_to_cwdc(c,j) + col_cf%dwt_deadcrootc_to_cwdc(c,j) ) * dt
 
              if (use_c13) then
                 c13_col_cs%decomp_cpools_vr(c,j,i_met_lit) = c13_col_cs%decomp_cpools_vr(c,j,i_met_lit) + &
-                     c13_col_cf%dwt_frootc_to_litr_met_c(c,j) * dt
+                     c13_col_cf%dwt_frootc_to_litr_met_c(c,j) * dt + &
+                     c13_col_cf%dwt_residue_to_litr_met_c(c,j) * dt
                 c13_col_cs%decomp_cpools_vr(c,j,i_cel_lit) = c13_col_cs%decomp_cpools_vr(c,j,i_cel_lit) + &
-                     c13_col_cf%dwt_frootc_to_litr_cel_c(c,j) * dt
+                     c13_col_cf%dwt_frootc_to_litr_cel_c(c,j) * dt + &
+                     c13_col_cf%dwt_residue_to_litr_cel_c(c,j) * dt
                 c13_col_cs%decomp_cpools_vr(c,j,i_lig_lit) = c13_col_cs%decomp_cpools_vr(c,j,i_lig_lit) + &
-                     c13_col_cf%dwt_frootc_to_litr_lig_c(c,j) * dt
+                     c13_col_cf%dwt_frootc_to_litr_lig_c(c,j) * dt + &
+                     c13_col_cf%dwt_residue_to_litr_lig_c(c,j) * dt
                 c13_col_cs%decomp_cpools_vr(c,j,i_cwd) = c13_col_cs%decomp_cpools_vr(c,j,i_cwd) + &
                      ( c13_col_cf%dwt_livecrootc_to_cwdc(c,j) + c13_col_cf%dwt_deadcrootc_to_cwdc(c,j) ) * dt
              end if
 
              if (use_c14) then
                 c14_col_cs%decomp_cpools_vr(c,j,i_met_lit) = c14_col_cs%decomp_cpools_vr(c,j,i_met_lit) + &
-                     c14_col_cf%dwt_frootc_to_litr_met_c(c,j) * dt
+                     c14_col_cf%dwt_frootc_to_litr_met_c(c,j) * dt + &
+                     c14_col_cf%dwt_residue_to_litr_met_c(c,j) * dt
                 c14_col_cs%decomp_cpools_vr(c,j,i_cel_lit) = c14_col_cs%decomp_cpools_vr(c,j,i_cel_lit) + &
-                     c14_col_cf%dwt_frootc_to_litr_cel_c(c,j) * dt
+                     c14_col_cf%dwt_frootc_to_litr_cel_c(c,j) * dt + &
+                     c14_col_cf%dwt_residue_to_litr_cel_c(c,j) * dt
                 c14_col_cs%decomp_cpools_vr(c,j,i_lig_lit) = c14_col_cs%decomp_cpools_vr(c,j,i_lig_lit) + &
-                     c14_col_cf%dwt_frootc_to_litr_lig_c(c,j) * dt
+                     c14_col_cf%dwt_frootc_to_litr_lig_c(c,j) * dt + &
+                     c14_col_cf%dwt_residue_to_litr_lig_c(c,j) * dt
                 c14_col_cs%decomp_cpools_vr(c,j,i_cwd) = c14_col_cs%decomp_cpools_vr(c,j,i_cwd) + &
                      ( c14_col_cf%dwt_livecrootc_to_cwdc(c,j) + c14_col_cf%dwt_deadcrootc_to_cwdc(c,j) ) * dt
              end if

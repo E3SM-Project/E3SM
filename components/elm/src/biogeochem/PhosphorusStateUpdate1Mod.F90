@@ -81,11 +81,14 @@ contains
             do j = 1,nlevdecomp
 
                col_ps%decomp_ppools_vr(c,j,i_met_lit) = col_ps%decomp_ppools_vr(c,j,i_met_lit) + &
-                    col_pf%dwt_frootp_to_litr_met_p(c,j) * dt
+                    col_pf%dwt_frootp_to_litr_met_p(c,j) * dt + &
+                    col_pf%dwt_residue_to_litr_met_p(c,j) * dt
                col_ps%decomp_ppools_vr(c,j,i_cel_lit) = col_ps%decomp_ppools_vr(c,j,i_cel_lit) + &
-                    col_pf%dwt_frootp_to_litr_cel_p(c,j) * dt
+                    col_pf%dwt_frootp_to_litr_cel_p(c,j) * dt + &
+                    col_pf%dwt_residue_to_litr_cel_p(c,j) * dt
                col_ps%decomp_ppools_vr(c,j,i_lig_lit) = col_ps%decomp_ppools_vr(c,j,i_lig_lit) + &
-                    col_pf%dwt_frootp_to_litr_lig_p(c,j) * dt
+                    col_pf%dwt_frootp_to_litr_lig_p(c,j) * dt + &
+                    col_pf%dwt_residue_to_litr_lig_p(c,j) * dt
                col_ps%decomp_ppools_vr(c,j,i_cwd) = col_ps%decomp_ppools_vr(c,j,i_cwd) + &
                     ( col_pf%dwt_livecrootp_to_cwdp(c,j) + col_pf%dwt_deadcrootp_to_cwdp(c,j) ) * dt
 

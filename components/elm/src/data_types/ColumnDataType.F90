@@ -623,6 +623,9 @@ module ColumnDataType
     real(r8), pointer :: dwt_frootc_to_litr_lig_c              (:,:)   => null() ! (gC/m3/s) fine root to litter due to landcover change
     real(r8), pointer :: dwt_livecrootc_to_cwdc                (:,:)   => null() ! (gC/m3/s) live coarse root to CWD due to landcover change
     real(r8), pointer :: dwt_deadcrootc_to_cwdc                (:,:)   => null() ! (gC/m3/s) dead coarse root to CWD due to landcover change
+    real(r8), pointer :: dwt_residue_to_litr_met_c             (:,:)   => null() ! (gC/m3/s) residue to litter due to landcover change
+    real(r8), pointer :: dwt_residue_to_litr_cel_c             (:,:)   => null() ! (gC/m3/s) residue to litter due to landcover change
+    real(r8), pointer :: dwt_residue_to_litr_lig_c             (:,:)   => null() ! (gC/m3/s) residue to litter due to landcover change 
     real(r8), pointer :: dwt_slash_cflux                       (:)     => null() ! (gC/m2/s) conversion slash flux due to landcover change
     real(r8), pointer :: dwt_conv_cflux                        (:)     => null() ! (gC/m2/s) conversion C flux (immediate loss to atm)
     real(r8), pointer :: dwt_prod10c_gain                      (:)     => null() ! (gC/m2/s) addition to 10-yr wood product pool
@@ -855,6 +858,9 @@ module ColumnDataType
     real(r8), pointer :: dwt_frootn_to_litr_lig_n              (:,:)   => null() ! (gN/m3/s) fine root to litter due to landcover change
     real(r8), pointer :: dwt_livecrootn_to_cwdn                (:,:)   => null() ! (gN/m3/s) live coarse root to CWD due to landcover change
     real(r8), pointer :: dwt_deadcrootn_to_cwdn                (:,:)   => null() ! (gN/m3/s) dead coarse root to CWD due to landcover change
+    real(r8), pointer :: dwt_residue_to_litr_met_n             (:,:)   => null() ! (gN/m3/s) residue to litter due to landcover change
+    real(r8), pointer :: dwt_residue_to_litr_cel_n             (:,:)   => null() ! (gN/m3/s) residue to litter due to landcover change
+    real(r8), pointer :: dwt_residue_to_litr_lig_n             (:,:)   => null() ! (gN/m3/s) residue to litter due to landcover change 
     real(r8), pointer :: dwt_nloss                             (:)     => null() ! (gN/m2/s) total nitrogen loss from product pools and conversion
     ! wood product pool loss fluxes
     real(r8), pointer :: prod1n_loss                           (:)     => null() ! (gN/m2/s) decomposition loss from 1-yr crop product pool
@@ -1049,6 +1055,9 @@ module ColumnDataType
     real(r8), pointer :: dwt_frootp_to_litr_lig_p              (:,:)   => null() ! (gP/m3/s) fine root to litter due to landcover change
     real(r8), pointer :: dwt_livecrootp_to_cwdp                (:,:)   => null() ! (gP/m3/s) live coarse root to CWD due to landcover change
     real(r8), pointer :: dwt_deadcrootp_to_cwdp                (:,:)   => null() ! (gP/m3/s) dead coarse root to CWD due to landcover change
+    real(r8), pointer :: dwt_residue_to_litr_met_p             (:,:)   => null() ! (gP/m3/s) residue to litter due to landcover change
+    real(r8), pointer :: dwt_residue_to_litr_cel_p             (:,:)   => null() ! (gP/m3/s) residue to litter due to landcover change
+    real(r8), pointer :: dwt_residue_to_litr_lig_p             (:,:)   => null() ! (gP/m3/s) residue to litter due to landcover change 
     real(r8), pointer :: dwt_ploss                             (:)     => null() ! (gP/m2/s) total phosphorus loss from product pools and conversion
     real(r8), pointer :: prod1p_loss                           (:)     => null() ! (gP/m2/s) decomposition loss from 1-yr crop product pool
     real(r8), pointer :: prod10p_loss                          (:)     => null() ! (gP/m2/s) decomposition loss from 10-yr wood product pool
@@ -6474,6 +6483,9 @@ contains
     allocate(this%dwt_frootc_to_litr_lig_c          (begc:endc,1:nlevdecomp_full)); this%dwt_frootc_to_litr_lig_c     (:,:) = spval
     allocate(this%dwt_livecrootc_to_cwdc            (begc:endc,1:nlevdecomp_full)); this%dwt_livecrootc_to_cwdc       (:,:) = spval
     allocate(this%dwt_deadcrootc_to_cwdc            (begc:endc,1:nlevdecomp_full)); this%dwt_deadcrootc_to_cwdc       (:,:) = spval
+    allocate(this%dwt_residue_to_litr_met_c         (begc:endc,1:nlevdecomp_full)); this%dwt_residue_to_litr_met_c    (:,:) = spval
+    allocate(this%dwt_residue_to_litr_cel_c         (begc:endc,1:nlevdecomp_full)); this%dwt_residue_to_litr_cel_c    (:,:) = spval
+    allocate(this%dwt_residue_to_litr_lig_c         (begc:endc,1:nlevdecomp_full)); this%dwt_residue_to_litr_lig_c    (:,:) = spval
     allocate(this%dwt_slash_cflux                   (begc:endc))                  ; this%dwt_slash_cflux              (:)   = spval
     allocate(this%dwt_conv_cflux                    (begc:endc))                  ; this%dwt_conv_cflux               (:)   = spval
     allocate(this%dwt_prod10c_gain                  (begc:endc))                  ; this%dwt_prod10c_gain             (:)   = spval
@@ -7496,6 +7508,9 @@ contains
              this%dwt_frootc_to_litr_lig_c(c,j) = 0._r8
              this%dwt_livecrootc_to_cwdc(c,j)   = 0._r8
              this%dwt_deadcrootc_to_cwdc(c,j)   = 0._r8
+             this%dwt_residue_to_litr_met_c(c,j) = 0._r8
+             this%dwt_residue_to_litr_cel_c(c,j) = 0._r8
+             this%dwt_residue_to_litr_lig_c(c,j) = 0._r8
           end do
           this%dwt_closs(c)  = 0._r8
           this%annsum_npp(c) = 0._r8
@@ -7759,6 +7774,12 @@ contains
                 this%residue_hr(p,l) * wt_col
           end do
        end if
+    end do
+
+    do fp = 1, num_soilp
+       p = filter_soilp(fp)
+       c = veg_pp%column(p)
+       wt_col = veg_pp%wtcol(p)
     end do
 
     ! soil organic matter heterotrophic respiration (SOMHR)
@@ -8505,6 +8526,9 @@ contains
           this%dwt_frootc_to_litr_lig_c(c,j)    = 0._r8
           this%dwt_livecrootc_to_cwdc(c,j)      = 0._r8
           this%dwt_deadcrootc_to_cwdc(c,j)      = 0._r8
+          this%dwt_residue_to_litr_met_c(c,j)   = 0._r8
+          this%dwt_residue_to_litr_cel_c(c,j)   = 0._r8
+          this%dwt_residue_to_litr_lig_c(c,j)   = 0._r8
        end do
     end do
 
@@ -8632,7 +8656,8 @@ contains
                         + this%gap_mortality_c_to_litr_met_c(c,j)        &
                         + this%harvest_c_to_litr_met_c(c,j)              &
                         + this%m_c_to_litr_met_fire(c,j)                 &
-                        + this%residue_to_litr_met_c(c,j)
+                        + this%residue_to_litr_met_c(c,j)                &
+                        + this%dwt_residue_to_litr_met_c(c,j)
 
              elseif (l==i_cel_lit) then
                 this%externalc_to_decomp_cpools(c,j,l) =                 &
@@ -8642,7 +8667,8 @@ contains
                         + this%gap_mortality_c_to_litr_cel_c(c,j)        &
                         + this%harvest_c_to_litr_cel_c(c,j)              &
                         + this%m_c_to_litr_cel_fire(c,j)                 &
-                        + this%residue_to_litr_cel_c(c,j)
+                        + this%residue_to_litr_cel_c(c,j)                &
+                        + this%dwt_residue_to_litr_cel_c(c,j)
 
              elseif (l==i_lig_lit) then
                 this%externalc_to_decomp_cpools(c,j,l) =                 &
@@ -8652,7 +8678,8 @@ contains
                         + this%gap_mortality_c_to_litr_lig_c(c,j)        &
                         + this%harvest_c_to_litr_lig_c(c,j)              &
                         + this%m_c_to_litr_lig_fire(c,j)                 &
-                        + this%residue_to_litr_lig_c(c,j)
+                        + this%residue_to_litr_lig_c(c,j)                &
+                        + this%dwt_residue_to_litr_lig_c(c,j)
 
              ! for cwd
              elseif (l==i_cwd) then
@@ -8783,6 +8810,9 @@ contains
     allocate(this%dwt_frootn_to_litr_lig_n        (begc:endc,1:nlevdecomp_full)) ; this%dwt_frootn_to_litr_lig_n       (:,:) = spval
     allocate(this%dwt_livecrootn_to_cwdn          (begc:endc,1:nlevdecomp_full)) ; this%dwt_livecrootn_to_cwdn         (:,:) = spval
     allocate(this%dwt_deadcrootn_to_cwdn          (begc:endc,1:nlevdecomp_full)) ; this%dwt_deadcrootn_to_cwdn         (:,:) = spval
+    allocate(this%dwt_residue_to_litr_met_n       (begc:endc,1:nlevdecomp_full)) ; this%dwt_residue_to_litr_met_n      (:,:) = spval
+    allocate(this%dwt_residue_to_litr_cel_n       (begc:endc,1:nlevdecomp_full)) ; this%dwt_residue_to_litr_cel_n      (:,:) = spval
+    allocate(this%dwt_residue_to_litr_lig_n       (begc:endc,1:nlevdecomp_full)) ; this%dwt_residue_to_litr_lig_n      (:,:) = spval
     allocate(this%f_nit_vr                        (begc:endc,1:nlevdecomp_full)) ; this%f_nit_vr                       (:,:) = spval
     allocate(this%f_denit_vr                      (begc:endc,1:nlevdecomp_full)) ; this%f_denit_vr                     (:,:) = spval
     allocate(this%smin_no3_leached_vr             (begc:endc,1:nlevdecomp_full)) ; this%smin_no3_leached_vr            (:,:) = spval
@@ -10182,6 +10212,9 @@ contains
           this%dwt_frootn_to_litr_lig_n(c,j) = 0._r8
           this%dwt_livecrootn_to_cwdn(c,j)   = 0._r8
           this%dwt_deadcrootn_to_cwdn(c,j)   = 0._r8
+          this%dwt_residue_to_litr_met_n(c,j) = 0._r8
+          this%dwt_residue_to_litr_cel_n(c,j) = 0._r8
+          this%dwt_residue_to_litr_lig_n(c,j) = 0._r8
        end do
     end do
 
@@ -10628,7 +10661,8 @@ contains
                      + this%gap_mortality_n_to_litr_met_n(c,j)        &
                      + this%harvest_n_to_litr_met_n(c,j)              &
                      + this%m_n_to_litr_met_fire(c,j)                 &
-                     + this%residue_to_litr_met_n(c,j)
+                     + this%residue_to_litr_met_n(c,j)                &
+                     + this%dwt_residue_to_litr_met_n(c,j)
 
              elseif (l==i_cel_lit) then
                 this%externaln_to_decomp_npools(c,j,l) =              &
@@ -10638,7 +10672,8 @@ contains
                      + this%gap_mortality_n_to_litr_cel_n(c,j)        &
                      + this%harvest_n_to_litr_cel_n(c,j)              &
                      + this%m_n_to_litr_cel_fire(c,j)                 &
-                     + this%residue_to_litr_cel_n(c,j)
+                     + this%residue_to_litr_cel_n(c,j)                &
+                     + this%dwt_residue_to_litr_cel_n(c,j)
 
              elseif (l==i_lig_lit) then
                 this%externaln_to_decomp_npools(c,j,l) =              &
@@ -10648,7 +10683,8 @@ contains
                      + this%gap_mortality_n_to_litr_lig_n(c,j)        &
                      + this%harvest_n_to_litr_lig_n(c,j)              &
                      + this%m_n_to_litr_lig_fire(c,j)                 &
-                     + this%residue_to_litr_lig_n(c,j)
+                     + this%residue_to_litr_lig_n(c,j)                &
+                     + this%dwt_residue_to_litr_lig_n(c,j)
 
              ! for cwd
              elseif (l==i_cwd) then
@@ -10806,6 +10842,9 @@ contains
     allocate(this%dwt_frootp_to_litr_lig_p         (begc:endc,1:nlevdecomp_full)) ; this%dwt_frootp_to_litr_lig_p      (:,:) = spval
     allocate(this%dwt_livecrootp_to_cwdp           (begc:endc,1:nlevdecomp_full)) ; this%dwt_livecrootp_to_cwdp        (:,:) = spval
     allocate(this%dwt_deadcrootp_to_cwdp           (begc:endc,1:nlevdecomp_full)) ; this%dwt_deadcrootp_to_cwdp        (:,:) = spval
+    allocate(this%dwt_residue_to_litr_met_p        (begc:endc,1:nlevdecomp_full)) ; this%dwt_residue_to_litr_met_p     (:,:) = spval
+    allocate(this%dwt_residue_to_litr_cel_p        (begc:endc,1:nlevdecomp_full)) ; this%dwt_residue_to_litr_cel_p     (:,:) = spval
+    allocate(this%dwt_residue_to_litr_lig_p        (begc:endc,1:nlevdecomp_full)) ; this%dwt_residue_to_litr_lig_p     (:,:) = spval
     allocate(this%decomp_cascade_ptransfer_vr      (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions )) ; this%decomp_cascade_ptransfer_vr  (:,:,:) = spval
     allocate(this%decomp_cascade_sminp_flux_vr     (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions )) ; this%decomp_cascade_sminp_flux_vr (:,:,:) = spval
     allocate(this%m_decomp_ppools_to_fire_vr       (begc:endc,1:nlevdecomp_full,1:ndecomp_pools               )) ; this%m_decomp_ppools_to_fire_vr   (:,:,:) = spval
@@ -11785,6 +11824,9 @@ contains
           this%dwt_frootp_to_litr_lig_p(c,j) = 0._r8
           this%dwt_livecrootp_to_cwdp(c,j)   = 0._r8
           this%dwt_deadcrootp_to_cwdp(c,j)   = 0._r8
+          this%dwt_residue_to_litr_met_p(c,j) = 0._r8
+          this%dwt_residue_to_litr_cel_p(c,j) = 0._r8
+          this%dwt_residue_to_litr_lig_p(c,j) = 0._r8
        end do
     end do
 
@@ -12202,7 +12244,8 @@ contains
                      + this%dwt_frootp_to_litr_met_p(c,j)             &
                      + this%gap_mortality_p_to_litr_met_p(c,j)        &
                      + this%harvest_p_to_litr_met_p(c,j)              &
-                     + this%residue_to_litr_met_p(c,j)
+                     + this%residue_to_litr_met_p(c,j)                &
+                     + this%dwt_residue_to_litr_met_p(c,j)
 
              elseif (l==i_cel_lit) then
                 this%externalp_to_decomp_ppools(c,j,l) =              &
@@ -12211,7 +12254,8 @@ contains
                      + this%dwt_frootp_to_litr_cel_p(c,j)             &
                      + this%gap_mortality_p_to_litr_cel_p(c,j)        &
                      + this%harvest_p_to_litr_cel_p(c,j)              &
-                     + this%residue_to_litr_cel_p(c,j)
+                     + this%residue_to_litr_cel_p(c,j)                &
+                     + this%dwt_residue_to_litr_cel_p(c,j)
 
              elseif (l==i_lig_lit) then
                 this%externalp_to_decomp_ppools(c,j,l) =              &
@@ -12220,7 +12264,8 @@ contains
                      + this%dwt_frootp_to_litr_lig_p(c,j)             &
                      + this%gap_mortality_p_to_litr_lig_p(c,j)        &
                      + this%harvest_p_to_litr_lig_p(c,j)              &
-                     + this%residue_to_litr_lig_p(c,j)
+                     + this%residue_to_litr_lig_p(c,j)                &
+                     + this%dwt_residue_to_litr_lig_p(c,j)
 
              ! for cwd
              elseif (l==i_cwd) then
