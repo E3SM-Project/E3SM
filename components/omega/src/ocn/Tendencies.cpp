@@ -236,7 +236,7 @@ Tendencies::Tendencies(const std::string &Name, ///< [in] Name for tendencies
       VelocityHyperDiff(Mesh, VCoord), WindForcing(Mesh, VCoord),
       BottomDrag(Mesh, VCoord), TracerHorzAdv(Mesh, VCoord),
       TracerDiffusion(Mesh, VCoord), TracerHyperDiff(Mesh, VCoord),
-      TracerHighOrderHorzAdv(Mesh), TracerHighOrderHorzAdv(Mesh, VCoord),
+      TracerHighOrderHorzAdv(Mesh, VCoord),
       CustomThicknessTend(InCustomThicknessTend),
       CustomVelocityTend(InCustomVelocityTend) {
 
@@ -514,6 +514,8 @@ void Tendencies::computeTracerTendenciesOnly(
    OMEGA_SCOPE(LocTracerHyperDiff, TracerHyperDiff);
    OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
    OMEGA_SCOPE(MaxLayerCell, VCoord->MaxLayerCell);
+   OMEGA_SCOPE(MinLayerEdgeBot, VCoord->MinLayerEdgeBot);
+   OMEGA_SCOPE(MaxLayerEdgeTop, VCoord->MaxLayerEdgeTop);
 
    Pacer::start("Tend:computeTracerTendenciesOnly", 1);
 
@@ -553,17 +555,32 @@ void Tendencies::computeTracerTendenciesOnly(
       Pacer::stop("Tend:tracerHorzAdv", 2);
    }
    if (LocTracerHighOrderHorzAdv.Enabled) {
-      parallelFor(
-          {NTracers, NEdgesAll, NChunks},
-          KOKKOS_LAMBDA(int L, int IEdge, int KChunk) {
-             LocTracerHighOrderHorzAdv(L, IEdge, KChunk, TracerArray,
-                                       FluxLayerThickEdge, NormalVelEdge);
+      Pacer::start("Tend:TracerHighOrderHorzAdv", 2);
+      parallelForOuter(
+          {NTracers, Mesh->NEdgesAll},
+          KOKKOS_LAMBDA(int L, int IEdge, const TeamMember &Team) {
+             const int KMin   = MinLayerEdgeBot(IEdge);
+             const int KMax   = MaxLayerEdgeTop(IEdge);
+             const int KRange = vertRangeChunked(KMin, KMax);
+             parallelForInner(
+                 Team, KRange, INNER_LAMBDA(int KChunk) {
+                    LocTracerHighOrderHorzAdv(L, IEdge, KChunk, TracerArray,
+                                              FluxLayerThickEdge,
+                                              NormalVelEdge);
+                 });
           });
-      parallelFor(
-          {NTracers, NCellsAll, NChunks},
-          KOKKOS_LAMBDA(int L, int ICell, int KChunk) {
-             LocTracerHighOrderHorzAdv(LocTracerTend, L, ICell, KChunk);
+      parallelForOuter(
+          {NTracers, Mesh->NCellsAll},
+          KOKKOS_LAMBDA(int L, int ICell, const TeamMember &Team) {
+             const int KMin   = MinLayerCell(ICell);
+             const int KMax   = MaxLayerCell(ICell);
+             const int KRange = vertRangeChunked(KMin, KMax);
+             parallelForInner(
+                 Team, KRange, INNER_LAMBDA(int KChunk) {
+                    LocTracerHighOrderHorzAdv(LocTracerTend, L, ICell, KChunk);
+                 });
           });
+      Pacer::stop("Tend:LocTracerHighOrderHorzAdv", 2);
    }
 
    // compute tracer diffusion
