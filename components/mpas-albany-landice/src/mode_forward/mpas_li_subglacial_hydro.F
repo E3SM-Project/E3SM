@@ -900,7 +900,7 @@ module li_subglacial_hydro
       real (kind=RKIND), pointer :: conduc_coeff
       real (kind=RKIND), pointer :: conduc_coeff_drowned
       real (kind=RKIND), pointer :: bedRoughMax
-      real (kind=RKIND) :: conduc_coeff_wtd
+      real (kind=RKIND), dimension(:), allocatable :: conduc_coeff_wtd
       character (len=StrKIND), pointer :: config_SGH_tangent_slope_calculation
       logical, pointer :: config_SGH_allow_terrestrial_outflow
       real (kind=RKIND), pointer :: config_sea_level
@@ -1143,24 +1143,26 @@ module li_subglacial_hydro
       gradMagPhiBaseEdge = sqrt(hydropotentialBaseSlopeNormal**2 + hydropotentialBaseSlopeTangent**2)
 
       ! calculate effective conductivity on edges
+      allocate(conduc_coeff_wtd(nEdges + 1))
       if (conduc_coeff_drowned > 0.0_RKIND) then
          ! Use a thickness weighted conductivity coeff. when water thickness exceeds bump height
          do iEdge = 1, nEdges
-            conduc_coeff_wtd = (conduc_coeff * min(waterThicknessEdge(iEdge), bedRoughMax) + &
+            conduc_coeff_wtd(iEdge) = (conduc_coeff * min(waterThicknessEdge(iEdge), bedRoughMax) + &
                conduc_coeff_drowned * max(waterThicknessEdge(iEdge) - bedRoughMax, 0.0_RKIND)) / &
                (waterThicknessEdge(iEdge) + 1.0e-16_RKIND)  ! Regularization only applies where value doesn't matter
-
-            effectiveConducEdge(iEdge) = conduc_coeff_wtd * waterThicknessEdge(iEdge)**(alpha-1.0_RKIND) * &
-               gradMagPhiBaseEdge(iEdge)**(beta - 2.0_RKIND)
-         end do
-      else
-         do iEdge = 1, nEdges
-            ! Just use a single conductivity coeff.
-            effectiveConducEdge(iEdge) = conduc_coeff * waterThicknessEdge(iEdge)**(alpha-1.0_RKIND) *&
-               gradMagPhiBaseEdge(iEdge)**(beta - 2.0_RKIND)
          enddo
+      else
+         conduc_coeff_wtd(:) = conduc_coeff  ! constant value irrespective of water depth
       endif
 
+      ! Calculate effectiveConducEdge now that we have determined the conductivity coefficient
+      do iEdge = 1, nEdges
+         effectiveConducEdge(iEdge) = conduc_coeff_wtd(iEdge) * waterThicknessEdge(iEdge)**(alpha-1.0_RKIND) * &
+            gradMagPhiBaseEdge(iEdge)**(beta - 2.0_RKIND)
+      end do
+      deallocate(conduc_coeff_wtd)
+
+      ! Apply some thresholding of small values
       do iEdge = 1, nEdges
          if (gradMagPhiBaseEdge(iEdge) < SMALL_GRADPHI) then
             effectiveConducEdge(iEdge) = 0.0_RKIND
