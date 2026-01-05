@@ -37,7 +37,7 @@ if (compile_threaded)
   string(APPEND CMAKE_EXE_LINKER_FLAGS " -fopenmp")
 endif()
 
-string(APPEND KOKKOS_OPTIONS " -DKokkos_ENABLE_HIP=On -DKokkos_ARCH_ZEN3=On -DKokkos_ARCH_VEGA90A=On -DKokkos_ENABLE_OPENMP=Off")
+string(APPEND KOKKOS_OPTIONS " -DKokkos_ENABLE_HIP=On -DKokkos_ARCH_ZEN3=On -DKokkos_ARCH_VEGA90A=On -DKokkos_ENABLE_OPENMP=Off -DAMDGPU_TARGETS=gfx90a -DGPU_TARGETS=gfx90a")
 
 set(USE_HIP "TRUE")
 set(AMDGPU_TARGETS "gfx90a")
