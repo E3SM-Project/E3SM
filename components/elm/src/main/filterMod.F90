@@ -308,8 +308,7 @@ contains
        t =col_pp%topounit(c)
        if (top_pp%active(t)) then
           if (col_pp%active(c) .or. include_inactive) then
-             l =col_pp%landunit(c)          
-             if (lun_pp%lakpoi(l)) then
+             if (col_pp%is_lake(c)) then
                 fl = fl + 1
                 this_filter(nc)%lakec(fl) = c
              else
@@ -332,7 +331,8 @@ contains
        if (top_pp%active(t)) then
           if (veg_pp%active(p) .or. include_inactive) then
              l =veg_pp%landunit(p)
-             if (lun_pp%lakpoi(l) ) then
+             c =veg_pp%column(p)
+             if (col_pp%is_lake(c) ) then
                 fl = fl + 1
                 this_filter(nc)%lakep(fl) = p
              else
