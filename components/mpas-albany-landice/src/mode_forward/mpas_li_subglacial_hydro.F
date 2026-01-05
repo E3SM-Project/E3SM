@@ -1140,39 +1140,35 @@ module li_subglacial_hydro
       gradMagPhiEdge = sqrt(hydropotentialSlopeNormal**2 + hydropotentialSlopeTangent**2)
 
       ! calculate magnitude of gradient of hydropotentialBase
-      gradMagPhiBaseEdge = sqrt(hydropotentialBaseSlopeNormal**2 +&
-      hydropotentialBaseSlopeTangent**2)
+      gradMagPhiBaseEdge = sqrt(hydropotentialBaseSlopeNormal**2 + hydropotentialBaseSlopeTangent**2)
 
       ! calculate effective conductivity on edges
       if (conduc_coeff_drowned > 0.0_RKIND) then
          ! Use a thickness weighted conductivity coeff. when water thickness exceeds bump height
          do iEdge = 1, nEdges
-            if (gradMagPhiBaseEdge(iEdge) < SMALL_GRADPHI) then
-               effectiveConducEdge(iEdge) = 0.0_RKIND
-            else
-               conduc_coeff_wtd = (conduc_coeff * min(waterThicknessEdge(iEdge), bedRoughMax) + &
-                  conduc_coeff_drowned * max(waterThicknessEdge(iEdge) - bedRoughMax, 0.0_RKIND)) / &
-                  (waterThicknessEdge(iEdge) + 1.0e-16_RKIND)  ! Regularization only applies where value doesn't matter
+            conduc_coeff_wtd = (conduc_coeff * min(waterThicknessEdge(iEdge), bedRoughMax) + &
+               conduc_coeff_drowned * max(waterThicknessEdge(iEdge) - bedRoughMax, 0.0_RKIND)) / &
+               (waterThicknessEdge(iEdge) + 1.0e-16_RKIND)  ! Regularization only applies where value doesn't matter
 
-               effectiveConducEdge(iEdge) = conduc_coeff_wtd * waterThicknessEdge(iEdge)**(alpha-1.0_RKIND) * &
-                  gradMagPhiBaseEdge(iEdge)**(beta - 2.0_RKIND)
-            endif
+            effectiveConducEdge(iEdge) = conduc_coeff_wtd * waterThicknessEdge(iEdge)**(alpha-1.0_RKIND) * &
+               gradMagPhiBaseEdge(iEdge)**(beta - 2.0_RKIND)
          end do
       else
          do iEdge = 1, nEdges
             ! Just use a single conductivity coeff.
-            if (gradMagPhiBaseEdge(iEdge) < SMALL_GRADPHI) then
-               effectiveConducEdge(iEdge) = 0.0_RKIND
-            else
-               effectiveConducEdge(iEdge) = conduc_coeff * waterThicknessEdge(iEdge)**(alpha-1.0_RKIND) *&
-                  gradMagPhiBaseEdge(iEdge)**(beta - 2.0_RKIND)
-            endif
+            effectiveConducEdge(iEdge) = conduc_coeff * waterThicknessEdge(iEdge)**(alpha-1.0_RKIND) *&
+               gradMagPhiBaseEdge(iEdge)**(beta - 2.0_RKIND)
          enddo
       endif
 
-      where (effectiveConducEdge < SMALL_CONDUC)
-              effectiveConducEdge = 0.0_RKIND
-      end where
+      do iEdge = 1, nEdges
+         if (gradMagPhiBaseEdge(iEdge) < SMALL_GRADPHI) then
+            effectiveConducEdge(iEdge) = 0.0_RKIND
+         endif
+         if (effectiveConducEdge(iEdge) < SMALL_CONDUC) then
+              effectiveConducEdge(iEdge) = 0.0_RKIND
+         endif
+      enddo
 
       ! calculate diffusivity on edges
       diffusivity(:) = rho_water * gravity * effectiveConducEdge(:) * waterThicknessEdge(:)
