@@ -274,9 +274,9 @@ def write_seq_maps_file(case, nmlgen, confdir):
                         if "rof2ocn_" in name:
                             if case.get_value("COMP_OCN") == 'docn':
                                 logger.warning("   NOTE: ignoring setting of {}=idmap in seq_maps.rc".format(name))
-                        elif "ocn2lnd_" in name: 
+                        elif "ocn2lnd_" in name:
                             logger.warning("   NOTE: ignoring setting of {}=idmap in seq_maps.rc".format(name))
-                        elif "lnd2ocn_" in name: 
+                        elif "lnd2ocn_" in name:
                             logger.warning("   NOTE: ignoring setting of {}=idmap in seq_maps.rc".format(name))
                         else:
                             expect(gridvalue[component1] == gridvalue[component2],
@@ -431,7 +431,7 @@ def buildnml(case, caseroot, component):
         if "aquaplanet" in cam_config_opts:
             infile_text = "aqua_planet = .true. \n aqua_planet_sst = 1"
 
-    # add dust_emis_scheme 
+    # add dust_emis_scheme
     dust_emis_scheme = case.get_value('dust_emis_scheme')
     infile_text += " dust_emis_scheme = {}".format(dust_emis_scheme)
 
