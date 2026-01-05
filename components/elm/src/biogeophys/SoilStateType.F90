@@ -722,7 +722,7 @@ contains
                    this%cellorg_col(c,lev)  = om_frac*organic_max
                 end if
 
-             else if (lun_pp%itype(l) /= istdlak) then  ! soil columns of both urban and non-urban types
+             else if (.not. col_pp%is_lake(c)) then  ! soil columns of both urban and non-urban types
 
                 if (lun_pp%urbpoi(l)) then
                    om_frac = 0._r8 ! No organic matter for urban
