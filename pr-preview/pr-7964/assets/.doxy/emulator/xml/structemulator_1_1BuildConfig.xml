@@ -1,0 +1,51 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="structemulator_1_1BuildConfig" kind="struct" language="C++" prot="public">
+    <compoundname>emulator::BuildConfig</compoundname>
+    <includes refid="emulator__config_8hpp" local="no">emulator_config.hpp</includes>
+    <sectiondef kind="public-attrib">
+      <memberdef kind="variable" id="structemulator_1_1BuildConfig_1a73e245782795bd4b292f7a217f9fe63b" prot="public" static="no" mutable="no">
+        <type>std::string</type>
+        <definition>std::string emulator::BuildConfig::grid_name</definition>
+        <argsstring></argsstring>
+        <name>grid_name</name>
+        <qualifiedname>emulator::BuildConfig::grid_name</qualifiedname>
+        <briefdescription>
+<para>Grid name (e.g., &quot;gauss180x360&quot;) </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_config.hpp" line="27" column="15" bodyfile="components/emulator_comps/common/src/emulator_config.hpp" bodystart="27" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1BuildConfig_1a2d608b6dafd44faf865fbc79cf1eb4a3" prot="public" static="no" mutable="no">
+        <type>std::string</type>
+        <definition>std::string emulator::BuildConfig::inference_backend</definition>
+        <argsstring></argsstring>
+        <name>inference_backend</name>
+        <qualifiedname>emulator::BuildConfig::inference_backend</qualifiedname>
+        <initializer>= &quot;stub&quot;</initializer>
+        <briefdescription>
+<para>Backend: &quot;stub&quot; or &quot;libtorch&quot;. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_config.hpp" line="28" column="15" bodyfile="components/emulator_comps/common/src/emulator_config.hpp" bodystart="28" bodyend="-1"/>
+      </memberdef>
+    </sectiondef>
+    <briefdescription>
+<para>Build-time configuration (set by buildnml, fixed for a case). </para>
+    </briefdescription>
+    <detaileddescription>
+<para>These values are determined at case creation time and cannot change between runs without rebuilding the case. </para>
+    </detaileddescription>
+    <location file="components/emulator_comps/common/src/emulator_config.hpp" line="26" column="1" bodyfile="components/emulator_comps/common/src/emulator_config.hpp" bodystart="26" bodyend="29"/>
+    <listofallmembers>
+      <member refid="structemulator_1_1BuildConfig_1a73e245782795bd4b292f7a217f9fe63b" prot="public" virt="non-virtual"><scope>emulator::BuildConfig</scope><name>grid_name</name></member>
+      <member refid="structemulator_1_1BuildConfig_1a2d608b6dafd44faf865fbc79cf1eb4a3" prot="public" virt="non-virtual"><scope>emulator::BuildConfig</scope><name>inference_backend</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

@@ -1,0 +1,173 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="derived__diagnostic_8hpp" kind="file" language="C++">
+    <compoundname>derived_diagnostic.hpp</compoundname>
+    <includes refid="emulator__output__stream_8hpp" local="yes">../emulator_output_stream.hpp</includes>
+    <includes local="no">memory</includes>
+    <includes local="no">string</includes>
+    <includes local="no">vector</includes>
+    <includedby refid="diagnostic__factory_8hpp" local="yes">components/emulator_comps/common/src/diagnostics/diagnostic_factory.hpp</includedby>
+    <includedby refid="horiz__avg__diagnostic_8hpp" local="yes">components/emulator_comps/common/src/diagnostics/horiz_avg_diagnostic.hpp</includedby>
+    <includedby refid="vert__slice__diagnostic_8hpp" local="yes">components/emulator_comps/common/src/diagnostics/vert_slice_diagnostic.hpp</includedby>
+    <incdepgraph>
+      <node id="1">
+        <label>components/emulator_comps/common/src/diagnostics/derived_diagnostic.hpp</label>
+        <link refid="derived__diagnostic_8hpp"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="5" relation="include">
+        </childnode>
+      </node>
+      <node id="3">
+        <label>emulator_diagnostics.hpp</label>
+        <link refid="emulator__diagnostics_8hpp"/>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="5" relation="include">
+        </childnode>
+      </node>
+      <node id="6">
+        <label>emulator_logger.hpp</label>
+        <link refid="emulator__logger_8hpp"/>
+        <childnode refid="7" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+      </node>
+      <node id="2">
+        <label>../emulator_output_stream.hpp</label>
+        <link refid="emulator__output__stream_8hpp"/>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+        <childnode refid="9" relation="include">
+        </childnode>
+        <childnode refid="10" relation="include">
+        </childnode>
+        <childnode refid="11" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="5" relation="include">
+        </childnode>
+      </node>
+      <node id="7">
+        <label>fstream</label>
+      </node>
+      <node id="9">
+        <label>functional</label>
+      </node>
+      <node id="8">
+        <label>iostream</label>
+      </node>
+      <node id="10">
+        <label>map</label>
+      </node>
+      <node id="12">
+        <label>memory</label>
+      </node>
+      <node id="11">
+        <label>mpi.h</label>
+      </node>
+      <node id="4">
+        <label>string</label>
+      </node>
+      <node id="5">
+        <label>vector</label>
+      </node>
+    </incdepgraph>
+    <invincdepgraph>
+      <node id="1">
+        <label>components/emulator_comps/common/src/diagnostics/derived_diagnostic.hpp</label>
+        <link refid="derived__diagnostic_8hpp"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+      </node>
+      <node id="3">
+        <label>components/emulator_comps/common/src/diagnostics/diagnostic_factory.cpp</label>
+        <link refid="diagnostic__factory_8cpp"/>
+      </node>
+      <node id="2">
+        <label>components/emulator_comps/common/src/diagnostics/diagnostic_factory.hpp</label>
+        <link refid="diagnostic__factory_8hpp"/>
+        <childnode refid="3" relation="include">
+        </childnode>
+      </node>
+      <node id="5">
+        <label>components/emulator_comps/common/src/diagnostics/horiz_avg_diagnostic.cpp</label>
+        <link refid="horiz__avg__diagnostic_8cpp"/>
+      </node>
+      <node id="4">
+        <label>components/emulator_comps/common/src/diagnostics/horiz_avg_diagnostic.hpp</label>
+        <link refid="horiz__avg__diagnostic_8hpp"/>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="5" relation="include">
+        </childnode>
+      </node>
+      <node id="7">
+        <label>components/emulator_comps/common/src/diagnostics/vert_slice_diagnostic.cpp</label>
+        <link refid="vert__slice__diagnostic_8cpp"/>
+      </node>
+      <node id="6">
+        <label>components/emulator_comps/common/src/diagnostics/vert_slice_diagnostic.hpp</label>
+        <link refid="vert__slice__diagnostic_8hpp"/>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+      </node>
+    </invincdepgraph>
+    <innerclass refid="classemulator_1_1DerivedDiagnostic" prot="public">emulator::DerivedDiagnostic</innerclass>
+    <innernamespace refid="namespaceemulator">emulator</innernamespace>
+    <briefdescription>
+<para>Base class for derived diagnostics. </para>
+    </briefdescription>
+    <detaileddescription>
+<para>Part of the modular diagnostics infrastructure in common/src/diagnostics/. </para>
+    </detaileddescription>
+    <programlisting>
+<codeline lineno="1"><highlight class="normal"></highlight></codeline>
+<codeline lineno="7"><highlight class="normal"></highlight></codeline>
+<codeline lineno="8"><highlight class="normal"></highlight><highlight class="preprocessor">#ifndef<sp/>EMULATOR_DERIVED_DIAGNOSTIC_HPP</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="9"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>EMULATOR_DERIVED_DIAGNOSTIC_HPP</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="10"><highlight class="normal"></highlight></codeline>
+<codeline lineno="11"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&quot;<ref refid="emulator__output__stream_8hpp" kindref="compound">../emulator_output_stream.hpp</ref>&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="12"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;memory&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="13"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;string&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="14"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;vector&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="15"><highlight class="normal"></highlight></codeline>
+<codeline lineno="16"><highlight class="normal"></highlight><highlight class="keyword">namespace<sp/></highlight><highlight class="normal"><ref refid="namespaceemulator" kindref="compound">emulator</ref><sp/>{</highlight></codeline>
+<codeline lineno="17"><highlight class="normal"></highlight></codeline>
+<codeline lineno="32" refid="classemulator_1_1DerivedDiagnostic" refkind="compound"><highlight class="normal"></highlight><highlight class="keyword">class<sp/></highlight><highlight class="normal"><ref refid="classemulator_1_1DerivedDiagnostic" kindref="compound">DerivedDiagnostic</ref><sp/>{</highlight></codeline>
+<codeline lineno="33"><highlight class="normal"></highlight><highlight class="keyword">public</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="34" refid="classemulator_1_1DerivedDiagnostic_1a6e624fae8644a8419ed28405dd80a56a" refkind="member"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">virtual</highlight><highlight class="normal"><sp/><ref refid="classemulator_1_1DerivedDiagnostic_1a6e624fae8644a8419ed28405dd80a56a" kindref="member">~DerivedDiagnostic</ref>()<sp/>=<sp/></highlight><highlight class="keywordflow">default</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="35"><highlight class="normal"></highlight></codeline>
+<codeline lineno="39" refid="classemulator_1_1DerivedDiagnostic_1a29cc53dea2845c12ca120e78028e1e03" refkind="member"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">virtual</highlight><highlight class="normal"><sp/>std::string<sp/><ref refid="classemulator_1_1DerivedDiagnostic_1a29cc53dea2845c12ca120e78028e1e03" kindref="member">name</ref>()<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>=<sp/>0;</highlight></codeline>
+<codeline lineno="40"><highlight class="normal"></highlight></codeline>
+<codeline lineno="44" refid="classemulator_1_1DerivedDiagnostic_1a0b6fd5c12c2581a0fedea1be85d24629" refkind="member"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">virtual</highlight><highlight class="normal"><sp/>std::string<sp/><ref refid="classemulator_1_1DerivedDiagnostic_1a0b6fd5c12c2581a0fedea1be85d24629" kindref="member">source_field</ref>()<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>=<sp/>0;</highlight></codeline>
+<codeline lineno="45"><highlight class="normal"></highlight></codeline>
+<codeline lineno="51" refid="classemulator_1_1DerivedDiagnostic_1a308e0c8bb44b2d3be8b53ad2f8548bef" refkind="member"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">virtual</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="classemulator_1_1DerivedDiagnostic_1a308e0c8bb44b2d3be8b53ad2f8548bef" kindref="member">compute</ref>(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/><ref refid="classemulator_1_1FieldDataProvider" kindref="compound">FieldDataProvider</ref><sp/>&amp;fields,</highlight></codeline>
+<codeline lineno="52"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>std::vector&lt;double&gt;<sp/>&amp;output)<sp/>=<sp/>0;</highlight></codeline>
+<codeline lineno="53"><highlight class="normal"></highlight></codeline>
+<codeline lineno="59" refid="classemulator_1_1DerivedDiagnostic_1afb82b445a6d355dcd3c3103974ba146a" refkind="member"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">virtual</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/><ref refid="classemulator_1_1DerivedDiagnostic_1afb82b445a6d355dcd3c3103974ba146a" kindref="member">output_size</ref>(</highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/>ncols,<sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/>nlevs)<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>=<sp/>0;</highlight></codeline>
+<codeline lineno="60"><highlight class="normal">};</highlight></codeline>
+<codeline lineno="61"><highlight class="normal"></highlight></codeline>
+<codeline lineno="62"><highlight class="normal">}<sp/></highlight><highlight class="comment">//<sp/>namespace<sp/>emulator</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="63"><highlight class="normal"></highlight></codeline>
+<codeline lineno="64"><highlight class="normal"></highlight><highlight class="preprocessor">#endif<sp/></highlight><highlight class="comment">//<sp/>EMULATOR_DERIVED_DIAGNOSTIC_HPP</highlight><highlight class="normal"></highlight></codeline>
+    </programlisting>
+    <location file="components/emulator_comps/common/src/diagnostics/derived_diagnostic.hpp"/>
+  </compounddef>
+</doxygen>

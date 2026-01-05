@@ -1,0 +1,401 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="classemulator_1_1inference_1_1LibTorchBackend" kind="class" language="C++" prot="public">
+    <compoundname>emulator::inference::LibTorchBackend</compoundname>
+    <basecompoundref refid="classemulator_1_1inference_1_1InferenceBackend" prot="public" virt="non-virtual">emulator::inference::InferenceBackend</basecompoundref>
+    <includes refid="libtorch__backend_8hpp" local="no">libtorch_backend.hpp</includes>
+    <innerclass refid="structemulator_1_1inference_1_1LibTorchBackend_1_1Impl" prot="public">emulator::inference::LibTorchBackend::Impl</innerclass>
+    <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classemulator_1_1inference_1_1LibTorchBackend_1a145652095bf77908d243403f4c36664c" prot="private" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool emulator::inference::LibTorchBackend::m_initialized</definition>
+        <argsstring></argsstring>
+        <name>m_initialized</name>
+        <qualifiedname>emulator::inference::LibTorchBackend::m_initialized</qualifiedname>
+        <initializer>= false</initializer>
+        <briefdescription>
+<para>Initialization state. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/libtorch_backend.hpp" line="81" column="8" bodyfile="components/emulator_comps/common/src/inference/libtorch_backend.hpp" bodystart="81" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1inference_1_1LibTorchBackend_1ae2c2eb073ac4ad7dccff745dfc54951b" prot="private" static="no" mutable="no">
+        <type><ref refid="structemulator_1_1inference_1_1InferenceConfig" kindref="compound">InferenceConfig</ref></type>
+        <definition>InferenceConfig emulator::inference::LibTorchBackend::m_config</definition>
+        <argsstring></argsstring>
+        <name>m_config</name>
+        <qualifiedname>emulator::inference::LibTorchBackend::m_config</qualifiedname>
+        <briefdescription>
+<para>Stored configuration. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/libtorch_backend.hpp" line="82" column="19" bodyfile="components/emulator_comps/common/src/inference/libtorch_backend.hpp" bodystart="82" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1inference_1_1LibTorchBackend_1a0ef271cc15b7acef337bc56baf4a641c" prot="private" static="no" mutable="no">
+        <type>size_t</type>
+        <definition>size_t emulator::inference::LibTorchBackend::m_model_memory_bytes</definition>
+        <argsstring></argsstring>
+        <name>m_model_memory_bytes</name>
+        <qualifiedname>emulator::inference::LibTorchBackend::m_model_memory_bytes</qualifiedname>
+        <initializer>= 0</initializer>
+        <briefdescription>
+<para>Cached memory usage estimate. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/libtorch_backend.hpp" line="83" column="10" bodyfile="components/emulator_comps/common/src/inference/libtorch_backend.hpp" bodystart="83" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1inference_1_1LibTorchBackend_1afd956936ae98510beb562ecb8a0beb6c" prot="private" static="no" mutable="no">
+        <type>std::unique_ptr&lt; <ref refid="structemulator_1_1inference_1_1LibTorchBackend_1_1Impl" kindref="compound">Impl</ref> &gt;</type>
+        <definition>std::unique_ptr&lt;Impl&gt; emulator::inference::LibTorchBackend::m_impl</definition>
+        <argsstring></argsstring>
+        <name>m_impl</name>
+        <qualifiedname>emulator::inference::LibTorchBackend::m_impl</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/libtorch_backend.hpp" line="87" column="19" bodyfile="components/emulator_comps/common/src/inference/libtorch_backend.hpp" bodystart="87" bodyend="-1"/>
+      </memberdef>
+    </sectiondef>
+    <sectiondef kind="public-func">
+      <memberdef kind="function" id="classemulator_1_1inference_1_1LibTorchBackend_1a1c0da195cd923659f7dce02b14214cc1" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>emulator::inference::LibTorchBackend::LibTorchBackend</definition>
+        <argsstring>()</argsstring>
+        <name>LibTorchBackend</name>
+        <qualifiedname>emulator::inference::LibTorchBackend::LibTorchBackend</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/libtorch_backend.hpp" line="53" column="3"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1inference_1_1LibTorchBackend_1a7ebb02a6447c00da5deb99c390607706" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>emulator::inference::LibTorchBackend::~LibTorchBackend</definition>
+        <argsstring>() override</argsstring>
+        <name>~LibTorchBackend</name>
+        <qualifiedname>emulator::inference::LibTorchBackend::~LibTorchBackend</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/libtorch_backend.hpp" line="54" column="3" bodyfile="components/emulator_comps/common/src/inference/libtorch_backend.cpp" bodystart="42" bodyend="46"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1inference_1_1LibTorchBackend_1a748dcb4fd55a2b336c1de2bee87c3d85" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
+        <type>bool</type>
+        <definition>bool emulator::inference::LibTorchBackend::initialize</definition>
+        <argsstring>(const InferenceConfig &amp;config) override</argsstring>
+        <name>initialize</name>
+        <qualifiedname>emulator::inference::LibTorchBackend::initialize</qualifiedname>
+        <reimplements refid="classemulator_1_1inference_1_1InferenceBackend_1a1f1eb8e2bad9c2f8f6085c0ed7113c70">initialize</reimplements>
+        <param>
+          <type>const <ref refid="structemulator_1_1inference_1_1InferenceConfig" kindref="compound">InferenceConfig</ref> &amp;</type>
+          <declname>config</declname>
+        </param>
+        <briefdescription>
+<para>Initialize the backend.    </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Initialize the LibTorch backend.</para>
+<para>Loads the model, allocates resources, and prepares for inference. Must be called before <ref refid="classemulator_1_1inference_1_1LibTorchBackend_1ac9850ff1056a6364b5d765d2105a8302" kindref="member">infer()</ref>.</para>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>config</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Configuration options </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+<simplesect kind="return"><para>true if initialization succeeded, false on error   </para>
+</simplesect>
+Loads the TorchScript model from the configured path and sets up the execution device and precision. </para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/libtorch_backend.hpp" line="57" column="8" bodyfile="components/emulator_comps/common/src/inference/libtorch_backend.cpp" bodystart="54" bodyend="89"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1inference_1_1LibTorchBackend_1ac9850ff1056a6364b5d765d2105a8302" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
+        <type>bool</type>
+        <definition>bool emulator::inference::LibTorchBackend::infer</definition>
+        <argsstring>(const double *inputs, double *outputs, int batch_size) override</argsstring>
+        <name>infer</name>
+        <qualifiedname>emulator::inference::LibTorchBackend::infer</qualifiedname>
+        <reimplements refid="classemulator_1_1inference_1_1InferenceBackend_1a1be8aa53c3707a5d49e394c6f3f562a6">infer</reimplements>
+        <param>
+          <type>const double *</type>
+          <declname>inputs</declname>
+        </param>
+        <param>
+          <type>double *</type>
+          <declname>outputs</declname>
+        </param>
+        <param>
+          <type>int</type>
+          <declname>batch_size</declname>
+        </param>
+        <briefdescription>
+<para>Run inference on input data.    </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Run inference on input data.</para>
+<para>Executes the model on the provided input batch and writes results to the output buffer.</para>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>inputs</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Input data array, size = batch_size * input_channels </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>outputs</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Output data array, size = batch_size * output_channels </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>batch_size</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Number of samples in the batch </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+<simplesect kind="return"><para>true if inference succeeded, false on error</para>
+</simplesect>
+<simplesect kind="pre"><para><ref refid="classemulator_1_1inference_1_1LibTorchBackend_1a748dcb4fd55a2b336c1de2bee87c3d85" kindref="member">initialize()</ref> must have been called successfully </para>
+</simplesect>
+<simplesect kind="pre"><para>outputs must be pre-allocated with sufficient size   </para>
+</simplesect>
+Executes the loaded model on the provided input data. The backend expects input in [batch_size, input_channels] format. For CNN models requiring [N, C, H, W], the caller (<ref refid="classemulator_1_1EmulatorComp" kindref="compound">EmulatorComp</ref>) must reshape first.</para>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>inputs</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Input data array of size [batch_size * input_channels] </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>outputs</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Output data array of size [batch_size * output_channels] </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>batch_size</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Number of samples in the batch </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+<simplesect kind="return"><para>true if inference succeeded, false on error </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/libtorch_backend.hpp" line="60" column="8" bodyfile="components/emulator_comps/common/src/inference/libtorch_backend.cpp" bodystart="103" bodyend="173"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1inference_1_1LibTorchBackend_1a8c849a1784ce1e351fdd2a6c5b86639f" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
+        <type>void</type>
+        <definition>void emulator::inference::LibTorchBackend::finalize</definition>
+        <argsstring>() override</argsstring>
+        <name>finalize</name>
+        <qualifiedname>emulator::inference::LibTorchBackend::finalize</qualifiedname>
+        <reimplements refid="classemulator_1_1inference_1_1InferenceBackend_1a44394f344e641421b699675da096ca51">finalize</reimplements>
+        <briefdescription>
+<para>Release resources and finalize the backend.    </para>
+        </briefdescription>
+        <detaileddescription>
+<para>After calling this, the backend is no longer usable until <ref refid="classemulator_1_1inference_1_1LibTorchBackend_1a748dcb4fd55a2b336c1de2bee87c3d85" kindref="member">initialize()</ref> is called again.    </para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/libtorch_backend.hpp" line="63" column="8" bodyfile="components/emulator_comps/common/src/inference/libtorch_backend.cpp" bodystart="175" bodyend="178"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1inference_1_1LibTorchBackend_1a1713df499bc077fe7cf2171b48cd9b6c" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="virtual">
+        <type>std::string</type>
+        <definition>std::string emulator::inference::LibTorchBackend::name</definition>
+        <argsstring>() const override</argsstring>
+        <name>name</name>
+        <qualifiedname>emulator::inference::LibTorchBackend::name</qualifiedname>
+        <reimplements refid="classemulator_1_1inference_1_1InferenceBackend_1a473a507068279e92f27584cc0623bd0a">name</reimplements>
+        <briefdescription>
+<para>Get the human-readable name of this backend.    </para>
+        </briefdescription>
+        <detaileddescription>
+<para><simplesect kind="return"><para>Backend name (e.g., &quot;LibTorch&quot;, &quot;Stub&quot;)    </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/libtorch_backend.hpp" line="66" column="15" bodyfile="components/emulator_comps/common/src/inference/libtorch_backend.hpp" bodystart="66" bodyend="66"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1inference_1_1LibTorchBackend_1ab640e96d9880d6777df86af498d6f8cd" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="virtual">
+        <type>bool</type>
+        <definition>bool emulator::inference::LibTorchBackend::is_initialized</definition>
+        <argsstring>() const override</argsstring>
+        <name>is_initialized</name>
+        <qualifiedname>emulator::inference::LibTorchBackend::is_initialized</qualifiedname>
+        <reimplements refid="classemulator_1_1inference_1_1InferenceBackend_1aabd915e2ce3450c4e3317d6848f02ecc">is_initialized</reimplements>
+        <briefdescription>
+<para>Check if the backend is ready for inference.    </para>
+        </briefdescription>
+        <detaileddescription>
+<para><simplesect kind="return"><para>true if initialized and ready    </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/libtorch_backend.hpp" line="69" column="8" bodyfile="components/emulator_comps/common/src/inference/libtorch_backend.hpp" bodystart="69" bodyend="69"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1inference_1_1LibTorchBackend_1aa2a923de57bc67cc2b0073922da7582d" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="virtual">
+        <type><ref refid="namespaceemulator_1_1inference_1a77255e7a61c3dc84e403c2f79d386a0e" kindref="member">BackendType</ref></type>
+        <definition>BackendType emulator::inference::LibTorchBackend::type</definition>
+        <argsstring>() const override</argsstring>
+        <name>type</name>
+        <qualifiedname>emulator::inference::LibTorchBackend::type</qualifiedname>
+        <reimplements refid="classemulator_1_1inference_1_1InferenceBackend_1aad3ec735dcf04f4a327a86db7c23d67b">type</reimplements>
+        <briefdescription>
+<para>Get the backend type enumeration.    </para>
+        </briefdescription>
+        <detaileddescription>
+<para><simplesect kind="return"><para><ref refid="namespaceemulator_1_1inference_1a77255e7a61c3dc84e403c2f79d386a0e" kindref="member">BackendType</ref> value    </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/libtorch_backend.hpp" line="72" column="15" bodyfile="components/emulator_comps/common/src/inference/libtorch_backend.hpp" bodystart="72" bodyend="72"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1inference_1_1LibTorchBackend_1a222ca3846212cabcd74d96183c169900" prot="public" static="no" const="yes" explicit="no" inline="no" virt="non-virtual">
+        <type>size_t</type>
+        <definition>size_t emulator::inference::LibTorchBackend::get_memory_usage_bytes</definition>
+        <argsstring>() const</argsstring>
+        <name>get_memory_usage_bytes</name>
+        <qualifiedname>emulator::inference::LibTorchBackend::get_memory_usage_bytes</qualifiedname>
+        <briefdescription>
+<para>Get approximate memory usage in bytes. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><simplesect kind="return"><para>Estimated memory used by model and buffers </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/libtorch_backend.hpp" line="78" column="10" bodyfile="components/emulator_comps/common/src/inference/libtorch_backend.cpp" bodystart="180" bodyend="182"/>
+      </memberdef>
+    </sectiondef>
+    <briefdescription>
+<para>LibTorch backend for native C++ PyTorch inference. </para>
+    </briefdescription>
+    <detaileddescription>
+<para>Uses LibTorch (PyTorch C++ API) to load and run TorchScript models. This provides production-grade inference without Python dependencies.</para>
+<sect1 id="classemulator_1_1inference_1_1LibTorchBackend_1autotoc_md22_1s1"><sect2 id="classemulator_1_1inference_1_1LibTorchBackend_1autotoc_md22">
+<title>Advantages</title><para><itemizedlist>
+<listitem><para>Native C++ performance with no interpreter overhead</para>
+</listitem><listitem><para>No Python dependency at runtime</para>
+</listitem><listitem><para>Full GPU support via CUDA</para>
+</listitem><listitem><para>Thread-safe (no GIL limitations)</para>
+</listitem></itemizedlist>
+</para>
+</sect2></sect1>
+<sect1 id="classemulator_1_1inference_1_1LibTorchBackend_1autotoc_md23_1s1"><sect2 id="classemulator_1_1inference_1_1LibTorchBackend_1autotoc_md23">
+<title>Limitations</title><para><itemizedlist>
+<listitem><para>Requires model export to TorchScript format</para>
+</listitem><listitem><para>LibTorch library must be available at build time</para>
+</listitem><listitem><para>Model must be compatible with torch.jit.trace() or torch.jit.script()</para>
+</listitem></itemizedlist>
+</para>
+</sect2></sect1>
+<sect1 id="classemulator_1_1inference_1_1LibTorchBackend_1autotoc_md24_1s1"><sect2 id="classemulator_1_1inference_1_1LibTorchBackend_1autotoc_md24">
+<title>Data Format</title><para>Input and output tensors are expected in [batch_size, channels] format. The backend does NOT perform spatial reshaping - callers are responsible for providing data in the format expected by their model.</para>
+</sect2></sect1>
+<sect1 id="classemulator_1_1inference_1_1LibTorchBackend_1autotoc_md25_1s1"><sect2 id="classemulator_1_1inference_1_1LibTorchBackend_1autotoc_md25">
+<title>Configuration</title><para><itemizedlist>
+<listitem><para><computeroutput>model_path</computeroutput>: Path to TorchScript model (.pt file)</para>
+</listitem><listitem><para><computeroutput>device_id</computeroutput>: GPU device ID (-1 for CPU, 0+ for CUDA device)</para>
+</listitem><listitem><para><computeroutput>use_fp16</computeroutput>: Use half precision (requires CUDA, may improve performance)</para>
+</listitem><listitem><para><computeroutput>input_channels</computeroutput>: Number of input features per sample</para>
+</listitem><listitem><para><computeroutput>output_channels</computeroutput>: Number of output features per sample</para>
+</listitem></itemizedlist>
+</para>
+<para><simplesect kind="see"><para><ref refid="classemulator_1_1inference_1_1InferenceBackend" kindref="compound">InferenceBackend</ref> for the base interface </para>
+</simplesect>
+<simplesect kind="see"><para><ref refid="namespaceemulator_1_1inference_1ab7b522a945c4570d2ec45577cbebaf52" kindref="member">create_backend()</ref> for factory function </para>
+</simplesect>
+</para>
+</sect2></sect1>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="2">
+        <label>emulator::inference::InferenceBackend</label>
+        <link refid="classemulator_1_1inference_1_1InferenceBackend"/>
+      </node>
+      <node id="1">
+        <label>emulator::inference::LibTorchBackend</label>
+        <link refid="classemulator_1_1inference_1_1LibTorchBackend"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="2">
+        <label>emulator::inference::InferenceBackend</label>
+        <link refid="classemulator_1_1inference_1_1InferenceBackend"/>
+      </node>
+      <node id="1">
+        <label>emulator::inference::LibTorchBackend</label>
+        <link refid="classemulator_1_1inference_1_1LibTorchBackend"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </collaborationgraph>
+    <location file="components/emulator_comps/common/src/inference/libtorch_backend.hpp" line="51" column="1" bodyfile="components/emulator_comps/common/src/inference/libtorch_backend.hpp" bodystart="51" bodyend="88"/>
+    <listofallmembers>
+      <member refid="classemulator_1_1inference_1_1LibTorchBackend_1a8c849a1784ce1e351fdd2a6c5b86639f" prot="public" virt="virtual"><scope>emulator::inference::LibTorchBackend</scope><name>finalize</name></member>
+      <member refid="classemulator_1_1inference_1_1LibTorchBackend_1a222ca3846212cabcd74d96183c169900" prot="public" virt="non-virtual"><scope>emulator::inference::LibTorchBackend</scope><name>get_memory_usage_bytes</name></member>
+      <member refid="classemulator_1_1inference_1_1LibTorchBackend_1ac9850ff1056a6364b5d765d2105a8302" prot="public" virt="virtual"><scope>emulator::inference::LibTorchBackend</scope><name>infer</name></member>
+      <member refid="classemulator_1_1inference_1_1LibTorchBackend_1a748dcb4fd55a2b336c1de2bee87c3d85" prot="public" virt="virtual"><scope>emulator::inference::LibTorchBackend</scope><name>initialize</name></member>
+      <member refid="classemulator_1_1inference_1_1LibTorchBackend_1ab640e96d9880d6777df86af498d6f8cd" prot="public" virt="virtual"><scope>emulator::inference::LibTorchBackend</scope><name>is_initialized</name></member>
+      <member refid="classemulator_1_1inference_1_1LibTorchBackend_1a1c0da195cd923659f7dce02b14214cc1" prot="public" virt="non-virtual"><scope>emulator::inference::LibTorchBackend</scope><name>LibTorchBackend</name></member>
+      <member refid="classemulator_1_1inference_1_1LibTorchBackend_1ae2c2eb073ac4ad7dccff745dfc54951b" prot="private" virt="non-virtual"><scope>emulator::inference::LibTorchBackend</scope><name>m_config</name></member>
+      <member refid="classemulator_1_1inference_1_1LibTorchBackend_1afd956936ae98510beb562ecb8a0beb6c" prot="private" virt="non-virtual"><scope>emulator::inference::LibTorchBackend</scope><name>m_impl</name></member>
+      <member refid="classemulator_1_1inference_1_1LibTorchBackend_1a145652095bf77908d243403f4c36664c" prot="private" virt="non-virtual"><scope>emulator::inference::LibTorchBackend</scope><name>m_initialized</name></member>
+      <member refid="classemulator_1_1inference_1_1LibTorchBackend_1a0ef271cc15b7acef337bc56baf4a641c" prot="private" virt="non-virtual"><scope>emulator::inference::LibTorchBackend</scope><name>m_model_memory_bytes</name></member>
+      <member refid="classemulator_1_1inference_1_1LibTorchBackend_1a1713df499bc077fe7cf2171b48cd9b6c" prot="public" virt="virtual"><scope>emulator::inference::LibTorchBackend</scope><name>name</name></member>
+      <member refid="classemulator_1_1inference_1_1LibTorchBackend_1aa2a923de57bc67cc2b0073922da7582d" prot="public" virt="virtual"><scope>emulator::inference::LibTorchBackend</scope><name>type</name></member>
+      <member refid="classemulator_1_1inference_1_1InferenceBackend_1ad1c8d689cc47aa4f417b8f00b8332700" prot="public" virt="virtual"><scope>emulator::inference::LibTorchBackend</scope><name>validate</name></member>
+      <member refid="classemulator_1_1inference_1_1InferenceBackend_1ab0d15f580fd4b29b9a6fb5bb7c8c7aae" prot="public" virt="virtual"><scope>emulator::inference::LibTorchBackend</scope><name>~InferenceBackend</name></member>
+      <member refid="classemulator_1_1inference_1_1LibTorchBackend_1a7ebb02a6447c00da5deb99c390607706" prot="public" virt="non-virtual"><scope>emulator::inference::LibTorchBackend</scope><name>~LibTorchBackend</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

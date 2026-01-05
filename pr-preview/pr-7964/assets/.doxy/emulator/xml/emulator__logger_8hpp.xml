@@ -1,0 +1,240 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="emulator__logger_8hpp" kind="file" language="C++">
+    <compoundname>emulator_logger.hpp</compoundname>
+    <includes local="no">fstream</includes>
+    <includes local="no">iostream</includes>
+    <includes local="no">string</includes>
+    <includedby refid="emulator__comp_8hpp" local="yes">components/emulator_comps/common/src/emulator_comp.hpp</includedby>
+    <includedby refid="emulator__logger_8cpp" local="yes">components/emulator_comps/common/src/emulator_logger.cpp</includedby>
+    <includedby refid="emulator__output__manager_8hpp" local="yes">components/emulator_comps/common/src/emulator_output_manager.hpp</includedby>
+    <includedby refid="emulator__output__stream_8hpp" local="yes">components/emulator_comps/common/src/emulator_output_stream.hpp</includedby>
+    <includedby refid="atm__io_8hpp" local="yes">components/emulator_comps/eatm/src/impl/atm_io.hpp</includedby>
+    <incdepgraph>
+      <node id="1">
+        <label>components/emulator_comps/common/src/emulator_logger.hpp</label>
+        <link refid="emulator__logger_8hpp"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+      </node>
+      <node id="2">
+        <label>fstream</label>
+      </node>
+      <node id="3">
+        <label>iostream</label>
+      </node>
+      <node id="4">
+        <label>string</label>
+      </node>
+    </incdepgraph>
+    <invincdepgraph>
+      <node id="11">
+        <label>components/emulator_comps/common/src/diagnostics/derived_diagnostic.hpp</label>
+        <link refid="derived__diagnostic_8hpp"/>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="14" relation="include">
+        </childnode>
+        <childnode refid="16" relation="include">
+        </childnode>
+      </node>
+      <node id="13">
+        <label>components/emulator_comps/common/src/diagnostics/diagnostic_factory.cpp</label>
+        <link refid="diagnostic__factory_8cpp"/>
+      </node>
+      <node id="12">
+        <label>components/emulator_comps/common/src/diagnostics/diagnostic_factory.hpp</label>
+        <link refid="diagnostic__factory_8hpp"/>
+        <childnode refid="13" relation="include">
+        </childnode>
+      </node>
+      <node id="15">
+        <label>components/emulator_comps/common/src/diagnostics/horiz_avg_diagnostic.cpp</label>
+        <link refid="horiz__avg__diagnostic_8cpp"/>
+      </node>
+      <node id="14">
+        <label>components/emulator_comps/common/src/diagnostics/horiz_avg_diagnostic.hpp</label>
+        <link refid="horiz__avg__diagnostic_8hpp"/>
+        <childnode refid="13" relation="include">
+        </childnode>
+        <childnode refid="15" relation="include">
+        </childnode>
+      </node>
+      <node id="17">
+        <label>components/emulator_comps/common/src/diagnostics/vert_slice_diagnostic.cpp</label>
+        <link refid="vert__slice__diagnostic_8cpp"/>
+      </node>
+      <node id="16">
+        <label>components/emulator_comps/common/src/diagnostics/vert_slice_diagnostic.hpp</label>
+        <link refid="vert__slice__diagnostic_8hpp"/>
+        <childnode refid="13" relation="include">
+        </childnode>
+        <childnode refid="17" relation="include">
+        </childnode>
+      </node>
+      <node id="3">
+        <label>components/emulator_comps/common/src/emulator_comp.cpp</label>
+        <link refid="emulator__comp_8cpp"/>
+      </node>
+      <node id="2">
+        <label>components/emulator_comps/common/src/emulator_comp.hpp</label>
+        <link refid="emulator__comp_8hpp"/>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+      </node>
+      <node id="7">
+        <label>components/emulator_comps/common/src/emulator_logger.cpp</label>
+        <link refid="emulator__logger_8cpp"/>
+      </node>
+      <node id="1">
+        <label>components/emulator_comps/common/src/emulator_logger.hpp</label>
+        <link refid="emulator__logger_8hpp"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="10" relation="include">
+        </childnode>
+        <childnode refid="21" relation="include">
+        </childnode>
+      </node>
+      <node id="9">
+        <label>components/emulator_comps/common/src/emulator_output_manager.cpp</label>
+        <link refid="emulator__output__manager_8cpp"/>
+      </node>
+      <node id="8">
+        <label>components/emulator_comps/common/src/emulator_output_manager.hpp</label>
+        <link refid="emulator__output__manager_8hpp"/>
+        <childnode refid="9" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+      </node>
+      <node id="18">
+        <label>components/emulator_comps/common/src/emulator_output_stream.cpp</label>
+        <link refid="emulator__output__stream_8cpp"/>
+      </node>
+      <node id="10">
+        <label>components/emulator_comps/common/src/emulator_output_stream.hpp</label>
+        <link refid="emulator__output__stream_8hpp"/>
+        <childnode refid="11" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="18" relation="include">
+        </childnode>
+        <childnode refid="19" relation="include">
+        </childnode>
+      </node>
+      <node id="5">
+        <label>components/emulator_comps/eatm/src/emulator_atm.cpp</label>
+        <link refid="emulator__atm_8cpp"/>
+      </node>
+      <node id="4">
+        <label>components/emulator_comps/eatm/src/emulator_atm.hpp</label>
+        <link refid="emulator__atm_8hpp"/>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+      </node>
+      <node id="6">
+        <label>components/emulator_comps/eatm/src/emulator_atm_interface.cpp</label>
+        <link refid="emulator__atm__interface_8cpp"/>
+      </node>
+      <node id="20">
+        <label>components/emulator_comps/eatm/src/impl/atm_field_data_provider.cpp</label>
+        <link refid="atm__field__data__provider_8cpp"/>
+      </node>
+      <node id="19">
+        <label>components/emulator_comps/eatm/src/impl/atm_field_data_provider.hpp</label>
+        <link refid="atm__field__data__provider_8hpp"/>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="20" relation="include">
+        </childnode>
+      </node>
+      <node id="22">
+        <label>components/emulator_comps/eatm/src/impl/atm_io.cpp</label>
+        <link refid="atm__io_8cpp"/>
+      </node>
+      <node id="21">
+        <label>components/emulator_comps/eatm/src/impl/atm_io.hpp</label>
+        <link refid="atm__io_8hpp"/>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="22" relation="include">
+        </childnode>
+      </node>
+    </invincdepgraph>
+    <innerclass refid="classemulator_1_1Logger" prot="public">emulator::Logger</innerclass>
+    <innernamespace refid="namespaceemulator">emulator</innernamespace>
+    <briefdescription>
+<para>Simple logging utility for emulator components. </para>
+    </briefdescription>
+    <detaileddescription>
+<para>Provides timestamped logging to stdout or an optional file. Used by EmulatorComp and derived classes for runtime diagnostics. </para>
+    </detaileddescription>
+    <programlisting>
+<codeline lineno="1"><highlight class="normal"></highlight></codeline>
+<codeline lineno="8"><highlight class="normal"></highlight></codeline>
+<codeline lineno="9"><highlight class="normal"></highlight><highlight class="preprocessor">#ifndef<sp/>EMULATOR_LOGGER_HPP</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="10"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>EMULATOR_LOGGER_HPP</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="11"><highlight class="normal"></highlight></codeline>
+<codeline lineno="12"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;fstream&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="13"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;iostream&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="14"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;string&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="15"><highlight class="normal"></highlight></codeline>
+<codeline lineno="16"><highlight class="normal"></highlight><highlight class="keyword">namespace<sp/></highlight><highlight class="normal"><ref refid="namespaceemulator" kindref="compound">emulator</ref><sp/>{</highlight></codeline>
+<codeline lineno="17"><highlight class="normal"></highlight></codeline>
+<codeline lineno="21" refid="namespaceemulator_1ae9e73fded16e907d3a1dad79433af078" refkind="member"><highlight class="normal"></highlight><highlight class="keyword">enum<sp/>class</highlight><highlight class="normal"><sp/><ref refid="namespaceemulator_1ae9e73fded16e907d3a1dad79433af078" kindref="member">LogLevel</ref><sp/>{</highlight></codeline>
+<codeline lineno="22" refid="namespaceemulator_1ae9e73fded16e907d3a1dad79433af078adc30ec20708ef7b0f641ef78b7880a15" refkind="member"><highlight class="normal"><sp/><sp/><ref refid="namespaceemulator_1ae9e73fded16e907d3a1dad79433af078adc30ec20708ef7b0f641ef78b7880a15" kindref="member">DEBUG</ref>,<sp/><sp/><sp/></highlight></codeline>
+<codeline lineno="23" refid="namespaceemulator_1ae9e73fded16e907d3a1dad79433af078aec1f06e9fb39c4ef0729b3c7c9c8e8cc" refkind="member"><highlight class="normal"><sp/><sp/><ref refid="namespaceemulator_1ae9e73fded16e907d3a1dad79433af078aec1f06e9fb39c4ef0729b3c7c9c8e8cc" kindref="member">VERBOSE</ref>,<sp/></highlight></codeline>
+<codeline lineno="24" refid="namespaceemulator_1ae9e73fded16e907d3a1dad79433af078a551b723eafd6a31d444fcb2f5920fbd3" refkind="member"><highlight class="normal"><sp/><sp/><ref refid="namespaceemulator_1ae9e73fded16e907d3a1dad79433af078a551b723eafd6a31d444fcb2f5920fbd3" kindref="member">INFO</ref>,<sp/><sp/><sp/><sp/></highlight></codeline>
+<codeline lineno="25" refid="namespaceemulator_1ae9e73fded16e907d3a1dad79433af078a059e9861e0400dfbe05c98a841f3f96b" refkind="member"><highlight class="normal"><sp/><sp/><ref refid="namespaceemulator_1ae9e73fded16e907d3a1dad79433af078a059e9861e0400dfbe05c98a841f3f96b" kindref="member">WARNING</ref>,<sp/></highlight></codeline>
+<codeline lineno="26" refid="namespaceemulator_1ae9e73fded16e907d3a1dad79433af078abb1ca97ec761fc37101737ba0aa2e7c5" refkind="member"><highlight class="normal"><sp/><sp/><ref refid="namespaceemulator_1ae9e73fded16e907d3a1dad79433af078abb1ca97ec761fc37101737ba0aa2e7c5" kindref="member">ERROR</ref><sp/><sp/><sp/><sp/></highlight></codeline>
+<codeline lineno="27"><highlight class="normal">};</highlight></codeline>
+<codeline lineno="28"><highlight class="normal"></highlight></codeline>
+<codeline lineno="44" refid="classemulator_1_1Logger" refkind="compound"><highlight class="normal"></highlight><highlight class="keyword">class<sp/></highlight><highlight class="normal"><ref refid="classemulator_1_1Logger_1a0a007e23a1bd08a4436ca7a0a31c85c0" kindref="member">Logger</ref><sp/>{</highlight></codeline>
+<codeline lineno="45"><highlight class="normal"></highlight><highlight class="keyword">public</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="46" refid="classemulator_1_1Logger_1a0a007e23a1bd08a4436ca7a0a31c85c0" refkind="member"><highlight class="normal"><sp/><sp/><ref refid="classemulator_1_1Logger_1a0a007e23a1bd08a4436ca7a0a31c85c0" kindref="member">Logger</ref>()<sp/>=<sp/></highlight><highlight class="keywordflow">default</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="47"><highlight class="normal"><sp/><sp/><ref refid="classemulator_1_1Logger_1a799d670fcb490bf379d6a77a9a91fbea" kindref="member">~Logger</ref>();</highlight></codeline>
+<codeline lineno="48"><highlight class="normal"></highlight></codeline>
+<codeline lineno="57"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="classemulator_1_1Logger_1aba19a95b86ae8bfa650c7b3453641e1a" kindref="member">set_file</ref>(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string<sp/>&amp;filename);</highlight></codeline>
+<codeline lineno="58"><highlight class="normal"></highlight></codeline>
+<codeline lineno="64"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="classemulator_1_1Logger_1a432d2cb3f5e755ae9f0f91293d2f5132" kindref="member">log</ref>(<ref refid="namespaceemulator_1ae9e73fded16e907d3a1dad79433af078" kindref="member">LogLevel</ref><sp/>level,<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string<sp/>&amp;message);</highlight></codeline>
+<codeline lineno="65"><highlight class="normal"></highlight></codeline>
+<codeline lineno="67"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="classemulator_1_1Logger_1adef99458aaba4165b5be097fc6550222" kindref="member">debug</ref>(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string<sp/>&amp;message);</highlight></codeline>
+<codeline lineno="68"><highlight class="normal"></highlight></codeline>
+<codeline lineno="70"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="classemulator_1_1Logger_1a9c710d241960051a2996da1e7f011eec" kindref="member">verbose</ref>(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string<sp/>&amp;message);</highlight></codeline>
+<codeline lineno="71"><highlight class="normal"></highlight></codeline>
+<codeline lineno="73"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="classemulator_1_1Logger_1a0f9815f93bfcd402b1ce76ad6440a262" kindref="member">info</ref>(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string<sp/>&amp;message);</highlight></codeline>
+<codeline lineno="74"><highlight class="normal"></highlight></codeline>
+<codeline lineno="76"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="classemulator_1_1Logger_1a07c15f03d279eb3cfb60059563d07d09" kindref="member">warn</ref>(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string<sp/>&amp;message);</highlight></codeline>
+<codeline lineno="77"><highlight class="normal"></highlight></codeline>
+<codeline lineno="79"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="classemulator_1_1Logger_1a551ba08465ac050d95cddc05f53b90b4" kindref="member">error</ref>(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string<sp/>&amp;message);</highlight></codeline>
+<codeline lineno="80"><highlight class="normal"></highlight></codeline>
+<codeline lineno="81"><highlight class="normal"></highlight><highlight class="keyword">private</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="82"><highlight class="normal"><sp/><sp/>std::string<sp/>get_timestamp();</highlight></codeline>
+<codeline lineno="83"><highlight class="normal"><sp/><sp/>std::string<sp/>level_to_string(<ref refid="namespaceemulator_1ae9e73fded16e907d3a1dad79433af078" kindref="member">LogLevel</ref><sp/>level);</highlight></codeline>
+<codeline lineno="84"><highlight class="normal"></highlight></codeline>
+<codeline lineno="85"><highlight class="normal"><sp/><sp/>std::ofstream<sp/>m_file;<sp/></highlight></codeline>
+<codeline lineno="86"><highlight class="normal">};</highlight></codeline>
+<codeline lineno="87"><highlight class="normal"></highlight></codeline>
+<codeline lineno="88"><highlight class="normal">}<sp/></highlight><highlight class="comment">//<sp/>namespace<sp/>emulator</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="89"><highlight class="normal"></highlight></codeline>
+<codeline lineno="90"><highlight class="normal"></highlight><highlight class="preprocessor">#endif<sp/></highlight><highlight class="comment">//<sp/>EMULATOR_LOGGER_HPP</highlight><highlight class="normal"></highlight></codeline>
+    </programlisting>
+    <location file="components/emulator_comps/common/src/emulator_logger.hpp"/>
+  </compounddef>
+</doxygen>

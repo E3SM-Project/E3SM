@@ -1,0 +1,207 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="structemulator_1_1OutputControl" kind="struct" language="C++" prot="public">
+    <compoundname>emulator::OutputControl</compoundname>
+    <includes refid="emulator__output__stream_8hpp" local="no">emulator_output_stream.hpp</includes>
+    <sectiondef kind="public-attrib">
+      <memberdef kind="variable" id="structemulator_1_1OutputControl_1aba79e6374e26255d02d1afd31ac9f726" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::OutputControl::frequency</definition>
+        <argsstring></argsstring>
+        <name>frequency</name>
+        <qualifiedname>emulator::OutputControl::frequency</qualifiedname>
+        <initializer>= 1</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_output_stream.hpp" line="29" column="7" bodyfile="components/emulator_comps/common/src/emulator_output_stream.hpp" bodystart="29" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1OutputControl_1a8760a9c504f2dd0643b757c00d9926ee" prot="public" static="no" mutable="no">
+        <type><ref refid="namespaceemulator_1ac145d6905ecd2dc434fdff93ca2375ff" kindref="member">FrequencyUnit</ref></type>
+        <definition>FrequencyUnit emulator::OutputControl::frequency_unit</definition>
+        <argsstring></argsstring>
+        <name>frequency_unit</name>
+        <qualifiedname>emulator::OutputControl::frequency_unit</qualifiedname>
+        <initializer>= <ref refid="namespaceemulator_1ac145d6905ecd2dc434fdff93ca2375ffa85b245d9aa07e88b84e07983410d5d07" kindref="member">FrequencyUnit::NDAYS</ref></initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_output_stream.hpp" line="30" column="17" bodyfile="components/emulator_comps/common/src/emulator_output_stream.hpp" bodystart="30" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1OutputControl_1ad153ab1ad825b8f72a5f36ec4d17a935" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::OutputControl::nsamples_since_last_write</definition>
+        <argsstring></argsstring>
+        <name>nsamples_since_last_write</name>
+        <qualifiedname>emulator::OutputControl::nsamples_since_last_write</qualifiedname>
+        <initializer>= 0</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_output_stream.hpp" line="32" column="7" bodyfile="components/emulator_comps/common/src/emulator_output_stream.hpp" bodystart="32" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1OutputControl_1a3b68ff3051f75ad79b8a81181cfd8818" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::OutputControl::last_write_step</definition>
+        <argsstring></argsstring>
+        <name>last_write_step</name>
+        <qualifiedname>emulator::OutputControl::last_write_step</qualifiedname>
+        <initializer>= -1</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_output_stream.hpp" line="33" column="7" bodyfile="components/emulator_comps/common/src/emulator_output_stream.hpp" bodystart="33" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1OutputControl_1ad75a212d4049ec7193165cdbe2b6ace5" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::OutputControl::next_write_step</definition>
+        <argsstring></argsstring>
+        <name>next_write_step</name>
+        <qualifiedname>emulator::OutputControl::next_write_step</qualifiedname>
+        <initializer>= 0</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_output_stream.hpp" line="34" column="7" bodyfile="components/emulator_comps/common/src/emulator_output_stream.hpp" bodystart="34" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1OutputControl_1a10bad7f44a0633c5692f53bf88fa5b4c" prot="public" static="no" mutable="no">
+        <type>double</type>
+        <definition>double emulator::OutputControl::dt</definition>
+        <argsstring></argsstring>
+        <name>dt</name>
+        <qualifiedname>emulator::OutputControl::dt</qualifiedname>
+        <initializer>= 0.0</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_output_stream.hpp" line="37" column="10" bodyfile="components/emulator_comps/common/src/emulator_output_stream.hpp" bodystart="37" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1OutputControl_1aea3bf49a2d740e04ec4d42ba3f4f1010" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::OutputControl::current_step</definition>
+        <argsstring></argsstring>
+        <name>current_step</name>
+        <qualifiedname>emulator::OutputControl::current_step</qualifiedname>
+        <initializer>= 0</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_output_stream.hpp" line="38" column="7" bodyfile="components/emulator_comps/common/src/emulator_output_stream.hpp" bodystart="38" bodyend="-1"/>
+      </memberdef>
+    </sectiondef>
+    <sectiondef kind="public-func">
+      <memberdef kind="function" id="structemulator_1_1OutputControl_1a7e1c26d74f80b2a969ee2e252090e358" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>bool</type>
+        <definition>bool emulator::OutputControl::output_enabled</definition>
+        <argsstring>() const</argsstring>
+        <name>output_enabled</name>
+        <qualifiedname>emulator::OutputControl::output_enabled</qualifiedname>
+        <briefdescription>
+<para>Check if output is enabled. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_output_stream.hpp" line="43" column="8" bodyfile="components/emulator_comps/common/src/emulator_output_stream.hpp" bodystart="43" bodyend="43"/>
+      </memberdef>
+      <memberdef kind="function" id="structemulator_1_1OutputControl_1ab9e6c9152b22ef29d3b30f3e6399178a" prot="public" static="no" const="yes" explicit="no" inline="no" virt="non-virtual">
+        <type>bool</type>
+        <definition>bool emulator::OutputControl::is_write_step</definition>
+        <argsstring>(int step) const</argsstring>
+        <name>is_write_step</name>
+        <qualifiedname>emulator::OutputControl::is_write_step</qualifiedname>
+        <param>
+          <type>int</type>
+          <declname>step</declname>
+        </param>
+        <briefdescription>
+<para>Check if current step is a write step. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_output_stream.hpp" line="48" column="8" bodyfile="components/emulator_comps/common/src/emulator_output_stream.cpp" bodystart="19" bodyend="25"/>
+      </memberdef>
+      <memberdef kind="function" id="structemulator_1_1OutputControl_1af16053c88d15c0839fe921133a9fec5d" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator::OutputControl::compute_next_write_step</definition>
+        <argsstring>(int current_step, double dt)</argsstring>
+        <name>compute_next_write_step</name>
+        <qualifiedname>emulator::OutputControl::compute_next_write_step</qualifiedname>
+        <param>
+          <type>int</type>
+          <declname>current_step</declname>
+        </param>
+        <param>
+          <type>double</type>
+          <declname>dt</declname>
+        </param>
+        <briefdescription>
+<para>Compute next write step from frequency and current step. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_output_stream.hpp" line="53" column="8" bodyfile="components/emulator_comps/common/src/emulator_output_stream.cpp" bodystart="49" bodyend="70"/>
+      </memberdef>
+      <memberdef kind="function" id="structemulator_1_1OutputControl_1ad7f7fad0f1ba2540d1fcb40c2986645d" prot="public" static="no" const="yes" explicit="no" inline="no" virt="non-virtual">
+        <type>double</type>
+        <definition>double emulator::OutputControl::seconds_per_unit</definition>
+        <argsstring>() const</argsstring>
+        <name>seconds_per_unit</name>
+        <qualifiedname>emulator::OutputControl::seconds_per_unit</qualifiedname>
+        <briefdescription>
+<para>Get number of seconds per frequency unit. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_output_stream.hpp" line="58" column="10" bodyfile="components/emulator_comps/common/src/emulator_output_stream.cpp" bodystart="27" bodyend="47"/>
+      </memberdef>
+    </sectiondef>
+    <briefdescription>
+<para>Controls output timing and tracks averaging state. </para>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="components/emulator_comps/common/src/emulator_output_stream.hpp" line="28" column="1" bodyfile="components/emulator_comps/common/src/emulator_output_stream.hpp" bodystart="28" bodyend="59"/>
+    <listofallmembers>
+      <member refid="structemulator_1_1OutputControl_1af16053c88d15c0839fe921133a9fec5d" prot="public" virt="non-virtual"><scope>emulator::OutputControl</scope><name>compute_next_write_step</name></member>
+      <member refid="structemulator_1_1OutputControl_1aea3bf49a2d740e04ec4d42ba3f4f1010" prot="public" virt="non-virtual"><scope>emulator::OutputControl</scope><name>current_step</name></member>
+      <member refid="structemulator_1_1OutputControl_1a10bad7f44a0633c5692f53bf88fa5b4c" prot="public" virt="non-virtual"><scope>emulator::OutputControl</scope><name>dt</name></member>
+      <member refid="structemulator_1_1OutputControl_1aba79e6374e26255d02d1afd31ac9f726" prot="public" virt="non-virtual"><scope>emulator::OutputControl</scope><name>frequency</name></member>
+      <member refid="structemulator_1_1OutputControl_1a8760a9c504f2dd0643b757c00d9926ee" prot="public" virt="non-virtual"><scope>emulator::OutputControl</scope><name>frequency_unit</name></member>
+      <member refid="structemulator_1_1OutputControl_1ab9e6c9152b22ef29d3b30f3e6399178a" prot="public" virt="non-virtual"><scope>emulator::OutputControl</scope><name>is_write_step</name></member>
+      <member refid="structemulator_1_1OutputControl_1a3b68ff3051f75ad79b8a81181cfd8818" prot="public" virt="non-virtual"><scope>emulator::OutputControl</scope><name>last_write_step</name></member>
+      <member refid="structemulator_1_1OutputControl_1ad75a212d4049ec7193165cdbe2b6ace5" prot="public" virt="non-virtual"><scope>emulator::OutputControl</scope><name>next_write_step</name></member>
+      <member refid="structemulator_1_1OutputControl_1ad153ab1ad825b8f72a5f36ec4d17a935" prot="public" virt="non-virtual"><scope>emulator::OutputControl</scope><name>nsamples_since_last_write</name></member>
+      <member refid="structemulator_1_1OutputControl_1a7e1c26d74f80b2a969ee2e252090e358" prot="public" virt="non-virtual"><scope>emulator::OutputControl</scope><name>output_enabled</name></member>
+      <member refid="structemulator_1_1OutputControl_1ad7f7fad0f1ba2540d1fcb40c2986645d" prot="public" virt="non-virtual"><scope>emulator::OutputControl</scope><name>seconds_per_unit</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

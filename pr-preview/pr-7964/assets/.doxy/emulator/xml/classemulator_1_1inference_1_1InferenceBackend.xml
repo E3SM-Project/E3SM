@@ -1,0 +1,265 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="classemulator_1_1inference_1_1InferenceBackend" kind="class" language="C++" prot="public" abstract="yes">
+    <compoundname>emulator::inference::InferenceBackend</compoundname>
+    <derivedcompoundref refid="classemulator_1_1inference_1_1LibTorchBackend" prot="public" virt="non-virtual">emulator::inference::LibTorchBackend</derivedcompoundref>
+    <derivedcompoundref refid="classemulator_1_1inference_1_1StubBackend" prot="public" virt="non-virtual">emulator::inference::StubBackend</derivedcompoundref>
+    <includes refid="inference__backend_8hpp" local="no">inference_backend.hpp</includes>
+    <sectiondef kind="public-func">
+      <memberdef kind="function" id="classemulator_1_1inference_1_1InferenceBackend_1ab0d15f580fd4b29b9a6fb5bb7c8c7aae" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
+        <type></type>
+        <definition>virtual emulator::inference::InferenceBackend::~InferenceBackend</definition>
+        <argsstring>()=default</argsstring>
+        <name>~InferenceBackend</name>
+        <qualifiedname>emulator::inference::InferenceBackend::~InferenceBackend</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/inference_backend.hpp" line="172" column="11"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1inference_1_1InferenceBackend_1a1f1eb8e2bad9c2f8f6085c0ed7113c70" prot="public" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
+        <type>bool</type>
+        <definition>virtual bool emulator::inference::InferenceBackend::initialize</definition>
+        <argsstring>(const InferenceConfig &amp;config)=0</argsstring>
+        <name>initialize</name>
+        <qualifiedname>emulator::inference::InferenceBackend::initialize</qualifiedname>
+        <reimplementedby refid="classemulator_1_1inference_1_1LibTorchBackend_1a748dcb4fd55a2b336c1de2bee87c3d85">initialize</reimplementedby>
+        <reimplementedby refid="classemulator_1_1inference_1_1StubBackend_1a66ce42efeb7f0833bf58a25c75827e99">initialize</reimplementedby>
+        <param>
+          <type>const <ref refid="structemulator_1_1inference_1_1InferenceConfig" kindref="compound">InferenceConfig</ref> &amp;</type>
+          <declname>config</declname>
+        </param>
+        <briefdescription>
+<para>Initialize the backend. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Loads the model, allocates resources, and prepares for inference. Must be called before <ref refid="classemulator_1_1inference_1_1InferenceBackend_1a1be8aa53c3707a5d49e394c6f3f562a6" kindref="member">infer()</ref>.</para>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>config</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Configuration options </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+<simplesect kind="return"><para>true if initialization succeeded, false on error </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/inference_backend.hpp" line="183" column="16"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1inference_1_1InferenceBackend_1a1be8aa53c3707a5d49e394c6f3f562a6" prot="public" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
+        <type>bool</type>
+        <definition>virtual bool emulator::inference::InferenceBackend::infer</definition>
+        <argsstring>(const double *inputs, double *outputs, int batch_size)=0</argsstring>
+        <name>infer</name>
+        <qualifiedname>emulator::inference::InferenceBackend::infer</qualifiedname>
+        <reimplementedby refid="classemulator_1_1inference_1_1LibTorchBackend_1ac9850ff1056a6364b5d765d2105a8302">infer</reimplementedby>
+        <reimplementedby refid="classemulator_1_1inference_1_1StubBackend_1ae7b9c9b320385d1007b9076b1abf4622">infer</reimplementedby>
+        <param>
+          <type>const double *</type>
+          <declname>inputs</declname>
+        </param>
+        <param>
+          <type>double *</type>
+          <declname>outputs</declname>
+        </param>
+        <param>
+          <type>int</type>
+          <declname>batch_size</declname>
+        </param>
+        <briefdescription>
+<para>Run inference on input data. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Executes the model on the provided input batch and writes results to the output buffer.</para>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>inputs</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Input data array, size = batch_size * input_channels </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>outputs</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Output data array, size = batch_size * output_channels </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>batch_size</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Number of samples in the batch </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+<simplesect kind="return"><para>true if inference succeeded, false on error</para>
+</simplesect>
+<simplesect kind="pre"><para><ref refid="classemulator_1_1inference_1_1InferenceBackend_1a1f1eb8e2bad9c2f8f6085c0ed7113c70" kindref="member">initialize()</ref> must have been called successfully </para>
+</simplesect>
+<simplesect kind="pre"><para>outputs must be pre-allocated with sufficient size </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/inference_backend.hpp" line="199" column="16"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1inference_1_1InferenceBackend_1a44394f344e641421b699675da096ca51" prot="public" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
+        <type>void</type>
+        <definition>virtual void emulator::inference::InferenceBackend::finalize</definition>
+        <argsstring>()=0</argsstring>
+        <name>finalize</name>
+        <qualifiedname>emulator::inference::InferenceBackend::finalize</qualifiedname>
+        <reimplementedby refid="classemulator_1_1inference_1_1LibTorchBackend_1a8c849a1784ce1e351fdd2a6c5b86639f">finalize</reimplementedby>
+        <reimplementedby refid="classemulator_1_1inference_1_1StubBackend_1a5c7e6413232db610d89d59ce30220031">finalize</reimplementedby>
+        <briefdescription>
+<para>Release resources and finalize the backend. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>After calling this, the backend is no longer usable until <ref refid="classemulator_1_1inference_1_1InferenceBackend_1a1f1eb8e2bad9c2f8f6085c0ed7113c70" kindref="member">initialize()</ref> is called again. </para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/inference_backend.hpp" line="207" column="16"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1inference_1_1InferenceBackend_1a473a507068279e92f27584cc0623bd0a" prot="public" static="no" const="yes" explicit="no" inline="no" virt="pure-virtual">
+        <type>std::string</type>
+        <definition>virtual std::string emulator::inference::InferenceBackend::name</definition>
+        <argsstring>() const =0</argsstring>
+        <name>name</name>
+        <qualifiedname>emulator::inference::InferenceBackend::name</qualifiedname>
+        <reimplementedby refid="classemulator_1_1inference_1_1LibTorchBackend_1a1713df499bc077fe7cf2171b48cd9b6c">name</reimplementedby>
+        <reimplementedby refid="classemulator_1_1inference_1_1StubBackend_1ac0efb81262a83641fc054aed650ec49c">name</reimplementedby>
+        <briefdescription>
+<para>Get the human-readable name of this backend. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><simplesect kind="return"><para>Backend name (e.g., &quot;LibTorch&quot;, &quot;Stub&quot;) </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/inference_backend.hpp" line="213" column="23"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1inference_1_1InferenceBackend_1aabd915e2ce3450c4e3317d6848f02ecc" prot="public" static="no" const="yes" explicit="no" inline="no" virt="pure-virtual">
+        <type>bool</type>
+        <definition>virtual bool emulator::inference::InferenceBackend::is_initialized</definition>
+        <argsstring>() const =0</argsstring>
+        <name>is_initialized</name>
+        <qualifiedname>emulator::inference::InferenceBackend::is_initialized</qualifiedname>
+        <reimplementedby refid="classemulator_1_1inference_1_1LibTorchBackend_1ab640e96d9880d6777df86af498d6f8cd">is_initialized</reimplementedby>
+        <reimplementedby refid="classemulator_1_1inference_1_1StubBackend_1a7ff1d5d32ff41c35c801afdf3eb6b593">is_initialized</reimplementedby>
+        <briefdescription>
+<para>Check if the backend is ready for inference. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><simplesect kind="return"><para>true if initialized and ready </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/inference_backend.hpp" line="219" column="16"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1inference_1_1InferenceBackend_1ad1c8d689cc47aa4f417b8f00b8332700" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="virtual">
+        <type><ref refid="structemulator_1_1inference_1_1ValidationResult" kindref="compound">ValidationResult</ref></type>
+        <definition>virtual ValidationResult emulator::inference::InferenceBackend::validate</definition>
+        <argsstring>() const</argsstring>
+        <name>validate</name>
+        <qualifiedname>emulator::inference::InferenceBackend::validate</qualifiedname>
+        <briefdescription>
+<para>Validate configuration before running. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Checks that the model file exists, dimensions match, device is available, etc. Call this after <ref refid="classemulator_1_1inference_1_1InferenceBackend_1a1f1eb8e2bad9c2f8f6085c0ed7113c70" kindref="member">initialize()</ref> to detect configuration errors early.</para>
+<para><simplesect kind="return"><para><ref refid="structemulator_1_1inference_1_1ValidationResult" kindref="compound">ValidationResult</ref> with errors/warnings if any </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/inference_backend.hpp" line="229" column="28" bodyfile="components/emulator_comps/common/src/inference/inference_backend.hpp" bodystart="229" bodyend="232"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1inference_1_1InferenceBackend_1aad3ec735dcf04f4a327a86db7c23d67b" prot="public" static="no" const="yes" explicit="no" inline="no" virt="pure-virtual">
+        <type><ref refid="namespaceemulator_1_1inference_1a77255e7a61c3dc84e403c2f79d386a0e" kindref="member">BackendType</ref></type>
+        <definition>virtual BackendType emulator::inference::InferenceBackend::type</definition>
+        <argsstring>() const =0</argsstring>
+        <name>type</name>
+        <qualifiedname>emulator::inference::InferenceBackend::type</qualifiedname>
+        <reimplementedby refid="classemulator_1_1inference_1_1LibTorchBackend_1aa2a923de57bc67cc2b0073922da7582d">type</reimplementedby>
+        <reimplementedby refid="classemulator_1_1inference_1_1StubBackend_1aed09b30119ed29bf389201692661dd3f">type</reimplementedby>
+        <briefdescription>
+<para>Get the backend type enumeration. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><simplesect kind="return"><para><ref refid="namespaceemulator_1_1inference_1a77255e7a61c3dc84e403c2f79d386a0e" kindref="member">BackendType</ref> value </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/inference_backend.hpp" line="238" column="23"/>
+      </memberdef>
+    </sectiondef>
+    <briefdescription>
+<para>Abstract interface for inference backends. </para>
+    </briefdescription>
+    <detaileddescription>
+<para>Provides a unified API for running neural network inference regardless of the underlying ML framework. All backends:</para>
+<para><itemizedlist>
+<listitem><para>Accept input as a flat double array [batch_size * input_channels]</para>
+</listitem><listitem><para>Produce output as a flat double array [batch_size * output_channels]</para>
+</listitem><listitem><para>Handle device placement and precision conversion internally</para>
+</listitem></itemizedlist>
+</para>
+<sect1 id="classemulator_1_1inference_1_1InferenceBackend_1autotoc_md21_1s1"><sect2 id="classemulator_1_1inference_1_1InferenceBackend_1autotoc_md21">
+<title>Thread Safety</title><para>Implementations should document their thread-safety characteristics. In general, a single backend instance should only be used from one thread.</para>
+<para><simplesect kind="see"><para><ref refid="classemulator_1_1inference_1_1LibTorchBackend" kindref="compound">LibTorchBackend</ref>, <ref refid="classemulator_1_1inference_1_1StubBackend" kindref="compound">StubBackend</ref> for concrete implementations </para>
+</simplesect>
+</para>
+</sect2></sect1>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="1">
+        <label>emulator::inference::InferenceBackend</label>
+        <link refid="classemulator_1_1inference_1_1InferenceBackend"/>
+      </node>
+      <node id="2">
+        <label>emulator::inference::LibTorchBackend</label>
+        <link refid="classemulator_1_1inference_1_1LibTorchBackend"/>
+        <childnode refid="1" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="3">
+        <label>emulator::inference::StubBackend</label>
+        <link refid="classemulator_1_1inference_1_1StubBackend"/>
+        <childnode refid="1" relation="public-inheritance">
+        </childnode>
+      </node>
+    </inheritancegraph>
+    <location file="components/emulator_comps/common/src/inference/inference_backend.hpp" line="170" column="1" bodyfile="components/emulator_comps/common/src/inference/inference_backend.hpp" bodystart="170" bodyend="239"/>
+    <listofallmembers>
+      <member refid="classemulator_1_1inference_1_1InferenceBackend_1a44394f344e641421b699675da096ca51" prot="public" virt="pure-virtual"><scope>emulator::inference::InferenceBackend</scope><name>finalize</name></member>
+      <member refid="classemulator_1_1inference_1_1InferenceBackend_1a1be8aa53c3707a5d49e394c6f3f562a6" prot="public" virt="pure-virtual"><scope>emulator::inference::InferenceBackend</scope><name>infer</name></member>
+      <member refid="classemulator_1_1inference_1_1InferenceBackend_1a1f1eb8e2bad9c2f8f6085c0ed7113c70" prot="public" virt="pure-virtual"><scope>emulator::inference::InferenceBackend</scope><name>initialize</name></member>
+      <member refid="classemulator_1_1inference_1_1InferenceBackend_1aabd915e2ce3450c4e3317d6848f02ecc" prot="public" virt="pure-virtual"><scope>emulator::inference::InferenceBackend</scope><name>is_initialized</name></member>
+      <member refid="classemulator_1_1inference_1_1InferenceBackend_1a473a507068279e92f27584cc0623bd0a" prot="public" virt="pure-virtual"><scope>emulator::inference::InferenceBackend</scope><name>name</name></member>
+      <member refid="classemulator_1_1inference_1_1InferenceBackend_1aad3ec735dcf04f4a327a86db7c23d67b" prot="public" virt="pure-virtual"><scope>emulator::inference::InferenceBackend</scope><name>type</name></member>
+      <member refid="classemulator_1_1inference_1_1InferenceBackend_1ad1c8d689cc47aa4f417b8f00b8332700" prot="public" virt="virtual"><scope>emulator::inference::InferenceBackend</scope><name>validate</name></member>
+      <member refid="classemulator_1_1inference_1_1InferenceBackend_1ab0d15f580fd4b29b9a6fb5bb7c8c7aae" prot="public" virt="virtual"><scope>emulator::inference::InferenceBackend</scope><name>~InferenceBackend</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

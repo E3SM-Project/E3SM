@@ -1,0 +1,315 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="namespaceemulator_1_1impl" kind="namespace" language="C++">
+    <compoundname>emulator::impl</compoundname>
+    <innerclass refid="structemulator_1_1impl_1_1AtmCouplingIndices" prot="public">emulator::impl::AtmCouplingIndices</innerclass>
+    <innerclass refid="classemulator_1_1impl_1_1AtmFieldDataProvider" prot="public">emulator::impl::AtmFieldDataProvider</innerclass>
+    <innerclass refid="classemulator_1_1impl_1_1AtmFieldManager" prot="public">emulator::impl::AtmFieldManager</innerclass>
+    <sectiondef kind="func">
+      <memberdef kind="function" id="namespaceemulator_1_1impl_1a09ecf7d1b384846bf6c8f75eb631961b" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator::impl::import_atm_fields</definition>
+        <argsstring>(const double *import_data, int ncols, int nfields, const AtmCouplingIndices &amp;idx, AtmFieldManager &amp;fields)</argsstring>
+        <name>import_atm_fields</name>
+        <qualifiedname>emulator::impl::import_atm_fields</qualifiedname>
+        <param>
+          <type>const double *</type>
+          <declname>import_data</declname>
+        </param>
+        <param>
+          <type>int</type>
+          <declname>ncols</declname>
+        </param>
+        <param>
+          <type>int</type>
+          <declname>nfields</declname>
+        </param>
+        <param>
+          <type>const <ref refid="structemulator_1_1impl_1_1AtmCouplingIndices" kindref="compound">AtmCouplingIndices</ref> &amp;</type>
+          <declname>idx</declname>
+        </param>
+        <param>
+          <type><ref refid="classemulator_1_1impl_1_1AtmFieldManager" kindref="compound">AtmFieldManager</ref> &amp;</type>
+          <declname>fields</declname>
+        </param>
+        <briefdescription>
+<para>Import fields from MCT buffer to field manager. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Import fields from MCT buffer to local field manager.</para>
+<para>MCT aVect layout is column-major (Fortran): rAttr(nfields, lsize) In C this translates to: data[col * nfields + field_idx]</para>
+<para>Copies data from the MCT import buffer (x2a fields) to the corresponding vectors in the <ref refid="classemulator_1_1impl_1_1AtmFieldManager" kindref="compound">AtmFieldManager</ref>.</para>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>import_data</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Pointer to MCT import buffer (column-major layout) </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>ncols</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Number of local columns </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>nfields</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Number of import fields </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>idx</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Coupling indices </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>fields</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Field manager to populate</para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+<simplesect kind="note"><para>MCT uses column-major (Fortran) layout: data[col * nfields + field_idx] </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_coupling.cpp" line="67" column="6" bodyfile="components/emulator_comps/eatm/src/impl/atm_coupling.cpp" bodystart="67" bodyend="103" declfile="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" declline="111" declcolumn="6"/>
+      </memberdef>
+      <memberdef kind="function" id="namespaceemulator_1_1impl_1aa3b0879c3420af1078a15594d50aee98" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator::impl::export_atm_fields</definition>
+        <argsstring>(double *export_data, int ncols, int nfields, const AtmCouplingIndices &amp;idx, const AtmFieldManager &amp;fields)</argsstring>
+        <name>export_atm_fields</name>
+        <qualifiedname>emulator::impl::export_atm_fields</qualifiedname>
+        <param>
+          <type>double *</type>
+          <declname>export_data</declname>
+        </param>
+        <param>
+          <type>int</type>
+          <declname>ncols</declname>
+        </param>
+        <param>
+          <type>int</type>
+          <declname>nfields</declname>
+        </param>
+        <param>
+          <type>const <ref refid="structemulator_1_1impl_1_1AtmCouplingIndices" kindref="compound">AtmCouplingIndices</ref> &amp;</type>
+          <declname>idx</declname>
+        </param>
+        <param>
+          <type>const <ref refid="classemulator_1_1impl_1_1AtmFieldManager" kindref="compound">AtmFieldManager</ref> &amp;</type>
+          <declname>fields</declname>
+        </param>
+        <briefdescription>
+<para>Export fields from field manager to MCT buffer. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Export fields from local field manager to MCT buffer.</para>
+<para>Copies data from the <ref refid="classemulator_1_1impl_1_1AtmFieldManager" kindref="compound">AtmFieldManager</ref> vectors to the MCT export buffer (a2x fields).</para>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>export_data</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Pointer to MCT export buffer (column-major layout) </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>ncols</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Number of local columns </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>nfields</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Number of export fields </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>idx</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Coupling indices </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>fields</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Field manager with data to export </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_coupling.cpp" line="108" column="6" bodyfile="components/emulator_comps/eatm/src/impl/atm_coupling.cpp" bodystart="108" bodyend="151" declfile="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" declline="126" declcolumn="6"/>
+      </memberdef>
+      <memberdef kind="function" id="namespaceemulator_1_1impl_1ae932e0858e2d94b7236c016dd41fe96c" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>bool</type>
+        <definition>bool emulator::impl::read_atm_initial_conditions</definition>
+        <argsstring>(const std::string &amp;filename, int num_global_cols, int num_local_cols, const std::vector&lt; int &gt; &amp;col_gids, const std::vector&lt; double &gt; &amp;lat, AtmFieldManager &amp;fields, const std::vector&lt; std::string &gt; &amp;required_vars, Logger &amp;logger, bool is_root)</argsstring>
+        <name>read_atm_initial_conditions</name>
+        <qualifiedname>emulator::impl::read_atm_initial_conditions</qualifiedname>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>filename</declname>
+        </param>
+        <param>
+          <type>int</type>
+          <declname>num_global_cols</declname>
+        </param>
+        <param>
+          <type>int</type>
+          <declname>num_local_cols</declname>
+        </param>
+        <param>
+          <type>const std::vector&lt; int &gt; &amp;</type>
+          <declname>col_gids</declname>
+        </param>
+        <param>
+          <type>const std::vector&lt; double &gt; &amp;</type>
+          <declname>lat</declname>
+        </param>
+        <param>
+          <type><ref refid="classemulator_1_1impl_1_1AtmFieldManager" kindref="compound">AtmFieldManager</ref> &amp;</type>
+          <declname>fields</declname>
+        </param>
+        <param>
+          <type>const std::vector&lt; std::string &gt; &amp;</type>
+          <declname>required_vars</declname>
+        </param>
+        <param>
+          <type><ref refid="classemulator_1_1Logger" kindref="compound">Logger</ref> &amp;</type>
+          <declname>logger</declname>
+        </param>
+        <param>
+          <type>bool</type>
+          <declname>is_root</declname>
+        </param>
+        <briefdescription>
+<para>Read initial conditions from a NetCDF file. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Reads atmosphere state variables from an IC file (typically ERA5 or ACE2 format) and distributes the data to local partitions based on the column global IDs.</para>
+<sect1 id="namespaceemulator_1_1impl_1autotoc_md36_1s1"><sect2 id="namespaceemulator_1_1impl_1autotoc_md36">
+<title>Supported Variables</title><para>Variables are read based on the <computeroutput>required_vars</computeroutput> list. Missing variables are handled with defaults:</para>
+<para><itemizedlist>
+<listitem><para><computeroutput>global_mean_co2</computeroutput>: Default 415e-6</para>
+</listitem><listitem><para><computeroutput>HGTsfc</computeroutput>: Default 0.0</para>
+</listitem><listitem><para><computeroutput>DSWRFtoa</computeroutput>: Default 1361.0 (solar constant)</para>
+</listitem><listitem><para>Other missing vars: Default 0.0</para>
+</listitem></itemizedlist>
+</para>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>filename</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Path to NetCDF IC file </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>num_global_cols</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Total global columns </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>num_local_cols</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Local columns on this rank </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>col_gids</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Global IDs of local columns (1-based) </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>lat</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Latitude of each local column [radians] </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>fields</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Field manager to populate </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>required_vars</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>List of variable names to read </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>logger</parametername>
+</parameternamelist>
+<parameterdescription>
+<para><ref refid="classemulator_1_1Logger" kindref="compound">Logger</ref> for status messages </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>is_root</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>True if this is rank 0 (for logging) </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+<simplesect kind="return"><para>true if successful </para>
+</simplesect>
+</para>
+</sect2></sect1>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_io.cpp" line="22" column="6" bodyfile="components/emulator_comps/eatm/src/impl/atm_io.cpp" bodystart="22" bodyend="124" declfile="components/emulator_comps/eatm/src/impl/atm_io.hpp" declline="47" declcolumn="6"/>
+      </memberdef>
+    </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="components/emulator_comps/eatm/src/impl/atm_coupling.cpp" line="14" column="1"/>
+  </compounddef>
+</doxygen>

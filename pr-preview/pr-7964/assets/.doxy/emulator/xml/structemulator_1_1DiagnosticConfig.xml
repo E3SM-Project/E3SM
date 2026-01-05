@@ -1,0 +1,101 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="structemulator_1_1DiagnosticConfig" kind="struct" language="C++" prot="public">
+    <compoundname>emulator::DiagnosticConfig</compoundname>
+    <includes refid="emulator__diagnostics_8hpp" local="no">emulator_diagnostics.hpp</includes>
+    <sectiondef kind="public-attrib">
+      <memberdef kind="variable" id="structemulator_1_1DiagnosticConfig_1a2da59097038f0eab21173a5f9a632890" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; <ref refid="structemulator_1_1OutputStreamConfig" kindref="compound">OutputStreamConfig</ref> &gt;</type>
+        <definition>std::vector&lt;OutputStreamConfig&gt; emulator::DiagnosticConfig::history_streams</definition>
+        <argsstring></argsstring>
+        <name>history_streams</name>
+        <qualifiedname>emulator::DiagnosticConfig::history_streams</qualifiedname>
+        <briefdescription>
+<para>.h. file streams </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_diagnostics.hpp" line="133" column="15" bodyfile="components/emulator_comps/common/src/emulator_diagnostics.hpp" bodystart="133" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1DiagnosticConfig_1a5dd5e2f8f2c319b3758257c186eee932" prot="public" static="no" mutable="no">
+        <type><ref refid="structemulator_1_1RestartConfig" kindref="compound">RestartConfig</ref></type>
+        <definition>RestartConfig emulator::DiagnosticConfig::restart</definition>
+        <argsstring></argsstring>
+        <name>restart</name>
+        <qualifiedname>emulator::DiagnosticConfig::restart</qualifiedname>
+        <briefdescription>
+<para>.r. file config </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_diagnostics.hpp" line="134" column="17" bodyfile="components/emulator_comps/common/src/emulator_diagnostics.hpp" bodystart="134" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1DiagnosticConfig_1a2e9e40f9305340a49f8fc24fbf2d3a27" prot="public" static="no" mutable="no">
+        <type><ref refid="structemulator_1_1HistoryRestartConfig" kindref="compound">HistoryRestartConfig</ref></type>
+        <definition>HistoryRestartConfig emulator::DiagnosticConfig::history_restart</definition>
+        <argsstring></argsstring>
+        <name>history_restart</name>
+        <qualifiedname>emulator::DiagnosticConfig::history_restart</qualifiedname>
+        <briefdescription>
+<para>.rh. file config </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_diagnostics.hpp" line="135" column="24" bodyfile="components/emulator_comps/common/src/emulator_diagnostics.hpp" bodystart="135" bodyend="-1"/>
+      </memberdef>
+    </sectiondef>
+    <briefdescription>
+<para>Complete diagnostic output configuration. </para>
+    </briefdescription>
+    <detaileddescription>
+<para>Aggregates all output stream configurations. Parsed from the <computeroutput>diagnostics</computeroutput> section of the YAML configuration file.</para>
+<sect1 id="structemulator_1_1DiagnosticConfig_1autotoc_md12_1s1"><sect2 id="structemulator_1_1DiagnosticConfig_1autotoc_md12">
+<title>Example YAML</title><para><programlisting filename=".yaml"><codeline><highlight class="normal">diagnostics:</highlight></codeline>
+<codeline><highlight class="normal"><sp/><sp/>history:</highlight></codeline>
+<codeline><highlight class="normal"><sp/><sp/><sp/><sp/>-<sp/>stream_name:<sp/>h0</highlight></codeline>
+<codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>filename_prefix:<sp/>&quot;eatm.h0&quot;</highlight></codeline>
+<codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>frequency:<sp/>1</highlight></codeline>
+<codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>frequency_unit:<sp/>ndays</highlight></codeline>
+<codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>averaging:<sp/>instant</highlight></codeline>
+<codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>fields:<sp/>[surface_temperature,<sp/>PRESsfc]</highlight></codeline>
+<codeline><highlight class="normal"><sp/><sp/>restart:</highlight></codeline>
+<codeline><highlight class="normal"><sp/><sp/><sp/><sp/>enabled:<sp/>true</highlight></codeline>
+<codeline><highlight class="normal"><sp/><sp/><sp/><sp/>frequency:<sp/>1</highlight></codeline>
+<codeline><highlight class="normal"><sp/><sp/><sp/><sp/>frequency_unit:<sp/>ndays</highlight></codeline>
+</programlisting> </para>
+</sect2></sect1>
+    </detaileddescription>
+    <collaborationgraph>
+      <node id="1">
+        <label>emulator::DiagnosticConfig</label>
+        <link refid="structemulator_1_1DiagnosticConfig"/>
+        <childnode refid="2" relation="usage">
+          <edgelabel>restart</edgelabel>
+        </childnode>
+        <childnode refid="3" relation="usage">
+          <edgelabel>history_restart</edgelabel>
+        </childnode>
+      </node>
+      <node id="3">
+        <label>emulator::HistoryRestartConfig</label>
+        <link refid="structemulator_1_1HistoryRestartConfig"/>
+      </node>
+      <node id="2">
+        <label>emulator::RestartConfig</label>
+        <link refid="structemulator_1_1RestartConfig"/>
+      </node>
+    </collaborationgraph>
+    <location file="components/emulator_comps/common/src/emulator_diagnostics.hpp" line="132" column="1" bodyfile="components/emulator_comps/common/src/emulator_diagnostics.hpp" bodystart="132" bodyend="136"/>
+    <listofallmembers>
+      <member refid="structemulator_1_1DiagnosticConfig_1a2e9e40f9305340a49f8fc24fbf2d3a27" prot="public" virt="non-virtual"><scope>emulator::DiagnosticConfig</scope><name>history_restart</name></member>
+      <member refid="structemulator_1_1DiagnosticConfig_1a2da59097038f0eab21173a5f9a632890" prot="public" virt="non-virtual"><scope>emulator::DiagnosticConfig</scope><name>history_streams</name></member>
+      <member refid="structemulator_1_1DiagnosticConfig_1a5dd5e2f8f2c319b3758257c186eee932" prot="public" virt="non-virtual"><scope>emulator::DiagnosticConfig</scope><name>restart</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

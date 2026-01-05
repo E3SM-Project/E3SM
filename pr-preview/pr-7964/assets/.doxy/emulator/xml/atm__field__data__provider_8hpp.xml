@@ -1,0 +1,208 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="atm__field__data__provider_8hpp" kind="file" language="C++">
+    <compoundname>atm_field_data_provider.hpp</compoundname>
+    <includes refid="emulator__output__stream_8hpp" local="yes">../../../common/src/emulator_output_stream.hpp</includes>
+    <includes refid="atm__field__manager_8hpp" local="yes">atm_field_manager.hpp</includes>
+    <includes local="no">regex</includes>
+    <includes local="no">set</includes>
+    <includes local="no">string</includes>
+    <includes local="no">vector</includes>
+    <includedby refid="emulator__atm_8hpp" local="yes">components/emulator_comps/eatm/src/emulator_atm.hpp</includedby>
+    <includedby refid="atm__field__data__provider_8cpp" local="yes">components/emulator_comps/eatm/src/impl/atm_field_data_provider.cpp</includedby>
+    <incdepgraph>
+      <node id="3">
+        <label>emulator_diagnostics.hpp</label>
+        <link refid="emulator__diagnostics_8hpp"/>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="5" relation="include">
+        </childnode>
+      </node>
+      <node id="6">
+        <label>emulator_logger.hpp</label>
+        <link refid="emulator__logger_8hpp"/>
+        <childnode refid="7" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+      </node>
+      <node id="2">
+        <label>../../../common/src/emulator_output_stream.hpp</label>
+        <link refid="emulator__output__stream_8hpp"/>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+        <childnode refid="9" relation="include">
+        </childnode>
+        <childnode refid="10" relation="include">
+        </childnode>
+        <childnode refid="11" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="5" relation="include">
+        </childnode>
+      </node>
+      <node id="1">
+        <label>components/emulator_comps/eatm/src/impl/atm_field_data_provider.hpp</label>
+        <link refid="atm__field__data__provider_8hpp"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="13" relation="include">
+        </childnode>
+        <childnode refid="14" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="5" relation="include">
+        </childnode>
+      </node>
+      <node id="12">
+        <label>atm_field_manager.hpp</label>
+        <link refid="atm__field__manager_8hpp"/>
+        <childnode refid="10" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="5" relation="include">
+        </childnode>
+      </node>
+      <node id="7">
+        <label>fstream</label>
+      </node>
+      <node id="9">
+        <label>functional</label>
+      </node>
+      <node id="8">
+        <label>iostream</label>
+      </node>
+      <node id="10">
+        <label>map</label>
+      </node>
+      <node id="11">
+        <label>mpi.h</label>
+      </node>
+      <node id="13">
+        <label>regex</label>
+      </node>
+      <node id="14">
+        <label>set</label>
+      </node>
+      <node id="4">
+        <label>string</label>
+      </node>
+      <node id="5">
+        <label>vector</label>
+      </node>
+    </incdepgraph>
+    <invincdepgraph>
+      <node id="3">
+        <label>components/emulator_comps/eatm/src/emulator_atm.cpp</label>
+        <link refid="emulator__atm_8cpp"/>
+      </node>
+      <node id="2">
+        <label>components/emulator_comps/eatm/src/emulator_atm.hpp</label>
+        <link refid="emulator__atm_8hpp"/>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+      </node>
+      <node id="4">
+        <label>components/emulator_comps/eatm/src/emulator_atm_interface.cpp</label>
+        <link refid="emulator__atm__interface_8cpp"/>
+      </node>
+      <node id="5">
+        <label>components/emulator_comps/eatm/src/impl/atm_field_data_provider.cpp</label>
+        <link refid="atm__field__data__provider_8cpp"/>
+      </node>
+      <node id="1">
+        <label>components/emulator_comps/eatm/src/impl/atm_field_data_provider.hpp</label>
+        <link refid="atm__field__data__provider_8hpp"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="5" relation="include">
+        </childnode>
+      </node>
+    </invincdepgraph>
+    <innerclass refid="classemulator_1_1impl_1_1AtmFieldDataProvider" prot="public">emulator::impl::AtmFieldDataProvider</innerclass>
+    <innernamespace refid="namespaceemulator">emulator</innernamespace>
+    <innernamespace refid="namespaceemulator_1_1impl">emulator::impl</innernamespace>
+    <briefdescription>
+<para>FieldDataProvider adapter for AtmFieldManager. </para>
+    </briefdescription>
+    <detaileddescription>
+<para>Provides the FieldDataProvider interface implementation that wraps AtmFieldManager for use with the EmulatorOutputManager. </para>
+    </detaileddescription>
+    <programlisting>
+<codeline lineno="1"><highlight class="normal"></highlight></codeline>
+<codeline lineno="8"><highlight class="normal"></highlight></codeline>
+<codeline lineno="9"><highlight class="normal"></highlight><highlight class="preprocessor">#ifndef<sp/>ATM_FIELD_DATA_PROVIDER_HPP</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="10"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>ATM_FIELD_DATA_PROVIDER_HPP</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="11"><highlight class="normal"></highlight></codeline>
+<codeline lineno="12"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&quot;<ref refid="emulator__output__stream_8hpp" kindref="compound">../../../common/src/emulator_output_stream.hpp</ref>&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="13"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&quot;<ref refid="atm__field__manager_8hpp" kindref="compound">atm_field_manager.hpp</ref>&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="14"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;regex&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="15"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;set&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="16"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;string&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="17"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;vector&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="18"><highlight class="normal"></highlight></codeline>
+<codeline lineno="19"><highlight class="normal"></highlight><highlight class="keyword">namespace<sp/></highlight><highlight class="normal"><ref refid="namespaceemulator" kindref="compound">emulator</ref><sp/>{</highlight></codeline>
+<codeline lineno="20"><highlight class="normal"></highlight><highlight class="keyword">namespace<sp/></highlight><highlight class="normal"><ref refid="namespaceemulator_1_1impl" kindref="compound">impl</ref><sp/>{</highlight></codeline>
+<codeline lineno="21"><highlight class="normal"></highlight></codeline>
+<codeline lineno="38" refid="classemulator_1_1impl_1_1AtmFieldDataProvider" refkind="compound"><highlight class="normal"></highlight><highlight class="keyword">class<sp/></highlight><highlight class="normal"><ref refid="classemulator_1_1impl_1_1AtmFieldDataProvider_1a6462e3f5bb1a1623b3cf97bc9aecd2c9" kindref="member">AtmFieldDataProvider</ref><sp/>:<sp/></highlight><highlight class="keyword">public</highlight><highlight class="normal"><sp/><ref refid="classemulator_1_1FieldDataProvider" kindref="compound">FieldDataProvider</ref><sp/>{</highlight></codeline>
+<codeline lineno="39"><highlight class="normal"></highlight><highlight class="keyword">public</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="45"><highlight class="normal"><sp/><sp/><ref refid="classemulator_1_1impl_1_1AtmFieldDataProvider_1a6462e3f5bb1a1623b3cf97bc9aecd2c9" kindref="member">AtmFieldDataProvider</ref>(<ref refid="classemulator_1_1impl_1_1AtmFieldManager" kindref="compound">AtmFieldManager</ref><sp/>&amp;fields,<sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/>ncols_local);</highlight></codeline>
+<codeline lineno="46"><highlight class="normal"></highlight></codeline>
+<codeline lineno="47" refid="classemulator_1_1impl_1_1AtmFieldDataProvider_1a67b3ad33e169fc966a7a3d537c6ebf82" refkind="member"><highlight class="normal"><sp/><sp/><ref refid="classemulator_1_1impl_1_1AtmFieldDataProvider_1a67b3ad33e169fc966a7a3d537c6ebf82" kindref="member">~AtmFieldDataProvider</ref>()<sp/></highlight><highlight class="keyword">override</highlight><highlight class="normal"><sp/>=<sp/></highlight><highlight class="keywordflow">default</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="48"><highlight class="normal"></highlight></codeline>
+<codeline lineno="57"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::vector&lt;double&gt;<sp/>*<ref refid="classemulator_1_1impl_1_1AtmFieldDataProvider_1ac743c68cb9e0a18d93c5fed511a1dfba" kindref="member">get_field</ref>(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string<sp/>&amp;name)<sp/></highlight><highlight class="keyword">const<sp/>override</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="58"><highlight class="normal"></highlight></codeline>
+<codeline lineno="64"><highlight class="normal"><sp/><sp/>std::vector&lt;std::string&gt;<sp/><ref refid="classemulator_1_1impl_1_1AtmFieldDataProvider_1a6f64139d87b69272c560b2d03f367e2f" kindref="member">get_field_names</ref>()<sp/></highlight><highlight class="keyword">const<sp/>override</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="65"><highlight class="normal"></highlight></codeline>
+<codeline lineno="69" refid="classemulator_1_1impl_1_1AtmFieldDataProvider_1a9d67a7c0f6190472d86e9df8d7e50a9a" refkind="member"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/><ref refid="classemulator_1_1impl_1_1AtmFieldDataProvider_1a9d67a7c0f6190472d86e9df8d7e50a9a" kindref="member">get_ncols</ref>()</highlight><highlight class="keyword"><sp/>const<sp/>override<sp/></highlight><highlight class="normal">{<sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>m_ncols;<sp/>}</highlight></codeline>
+<codeline lineno="70"><highlight class="normal"></highlight></codeline>
+<codeline lineno="76"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/><ref refid="classemulator_1_1impl_1_1AtmFieldDataProvider_1ac383ac1fc549b67f2a7e8c24f3d1ebd8" kindref="member">get_field_nlevs</ref>(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string<sp/>&amp;name)<sp/></highlight><highlight class="keyword">const<sp/>override</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="77"><highlight class="normal"></highlight></codeline>
+<codeline lineno="84"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="classemulator_1_1impl_1_1AtmFieldDataProvider_1ad74ae858cb805fae72444aac6003c51e" kindref="member">detect_stacked_fields</ref>();</highlight></codeline>
+<codeline lineno="85"><highlight class="normal"></highlight></codeline>
+<codeline lineno="89"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/><ref refid="classemulator_1_1impl_1_1AtmFieldDataProvider_1a82a72a57420cbf74460eb6e45efa2225" kindref="member">is_stacked_field</ref>(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string<sp/>&amp;name)<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="90"><highlight class="normal"></highlight></codeline>
+<codeline lineno="100"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::vector&lt;double&gt;<sp/>&amp;</highlight></codeline>
+<codeline lineno="101"><highlight class="normal"><sp/><sp/><ref refid="classemulator_1_1impl_1_1AtmFieldDataProvider_1a073b0fd2eff9979c5ab1f29976327346" kindref="member">get_stacked_field</ref>(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string<sp/>&amp;basename)<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="102"><highlight class="normal"></highlight></codeline>
+<codeline lineno="103"><highlight class="normal"></highlight><highlight class="keyword">private</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="104"><highlight class="normal"><sp/><sp/><ref refid="classemulator_1_1impl_1_1AtmFieldManager" kindref="compound">AtmFieldManager</ref><sp/>&amp;m_fields;</highlight></codeline>
+<codeline lineno="105"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/>m_ncols;</highlight></codeline>
+<codeline lineno="106"><highlight class="normal"></highlight></codeline>
+<codeline lineno="107"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>Stacked<sp/>field<sp/>detection<sp/>and<sp/>caching</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="108"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>Maps<sp/>basename<sp/>→<sp/>list<sp/>of<sp/>level<sp/>indices<sp/>found</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="109"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">mutable</highlight><highlight class="normal"><sp/>std::map&lt;std::string,<sp/>std::vector&lt;int&gt;&gt;<sp/>m_stacked_field_levels;</highlight></codeline>
+<codeline lineno="110"><highlight class="normal"></highlight></codeline>
+<codeline lineno="111"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>Cache<sp/>for<sp/>stacked<sp/>field<sp/>data</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="112"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">mutable</highlight><highlight class="normal"><sp/>std::map&lt;std::string,<sp/>std::vector&lt;double&gt;&gt;<sp/>m_stacked_cache;</highlight></codeline>
+<codeline lineno="113"><highlight class="normal"></highlight></codeline>
+<codeline lineno="114"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>Set<sp/>of<sp/>all<sp/>known<sp/>field<sp/>names<sp/>(for<sp/>get_field_names)</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="115"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">mutable</highlight><highlight class="normal"><sp/>std::set&lt;std::string&gt;<sp/>m_all_field_names;</highlight></codeline>
+<codeline lineno="116"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">mutable</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/>m_field_names_cached<sp/>=<sp/></highlight><highlight class="keyword">false</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="117"><highlight class="normal"></highlight></codeline>
+<codeline lineno="125"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/>parse_slice_pattern(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string<sp/>&amp;name,<sp/>std::string<sp/>&amp;basename,</highlight></codeline>
+<codeline lineno="126"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/>&amp;level_idx)<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="127"><highlight class="normal"></highlight></codeline>
+<codeline lineno="131"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>build_stacked_cache(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string<sp/>&amp;basename)<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="132"><highlight class="normal">};</highlight></codeline>
+<codeline lineno="133"><highlight class="normal"></highlight></codeline>
+<codeline lineno="134"><highlight class="normal">}<sp/></highlight><highlight class="comment">//<sp/>namespace<sp/>impl</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="135"><highlight class="normal">}<sp/></highlight><highlight class="comment">//<sp/>namespace<sp/>emulator</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="136"><highlight class="normal"></highlight></codeline>
+<codeline lineno="137"><highlight class="normal"></highlight><highlight class="preprocessor">#endif<sp/></highlight><highlight class="comment">//<sp/>ATM_FIELD_DATA_PROVIDER_HPP</highlight><highlight class="normal"></highlight></codeline>
+    </programlisting>
+    <location file="components/emulator_comps/eatm/src/impl/atm_field_data_provider.hpp"/>
+  </compounddef>
+</doxygen>

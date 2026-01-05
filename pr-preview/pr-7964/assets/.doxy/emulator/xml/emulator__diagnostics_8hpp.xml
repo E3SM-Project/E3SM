@@ -1,0 +1,284 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="emulator__diagnostics_8hpp" kind="file" language="C++">
+    <compoundname>emulator_diagnostics.hpp</compoundname>
+    <includes local="no">string</includes>
+    <includes local="no">vector</includes>
+    <includedby refid="emulator__config_8cpp" local="yes">components/emulator_comps/common/src/emulator_config.cpp</includedby>
+    <includedby refid="emulator__config_8hpp" local="yes">components/emulator_comps/common/src/emulator_config.hpp</includedby>
+    <includedby refid="emulator__diagnostics_8cpp" local="yes">components/emulator_comps/common/src/emulator_diagnostics.cpp</includedby>
+    <includedby refid="emulator__output__manager_8hpp" local="yes">components/emulator_comps/common/src/emulator_output_manager.hpp</includedby>
+    <includedby refid="emulator__output__stream_8hpp" local="yes">components/emulator_comps/common/src/emulator_output_stream.hpp</includedby>
+    <incdepgraph>
+      <node id="1">
+        <label>components/emulator_comps/common/src/emulator_diagnostics.hpp</label>
+        <link refid="emulator__diagnostics_8hpp"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="3" relation="include">
+        </childnode>
+      </node>
+      <node id="2">
+        <label>string</label>
+      </node>
+      <node id="3">
+        <label>vector</label>
+      </node>
+    </incdepgraph>
+    <invincdepgraph>
+      <node id="12">
+        <label>components/emulator_comps/common/src/diagnostics/derived_diagnostic.hpp</label>
+        <link refid="derived__diagnostic_8hpp"/>
+        <childnode refid="13" relation="include">
+        </childnode>
+        <childnode refid="15" relation="include">
+        </childnode>
+        <childnode refid="17" relation="include">
+        </childnode>
+      </node>
+      <node id="14">
+        <label>components/emulator_comps/common/src/diagnostics/diagnostic_factory.cpp</label>
+        <link refid="diagnostic__factory_8cpp"/>
+      </node>
+      <node id="13">
+        <label>components/emulator_comps/common/src/diagnostics/diagnostic_factory.hpp</label>
+        <link refid="diagnostic__factory_8hpp"/>
+        <childnode refid="14" relation="include">
+        </childnode>
+      </node>
+      <node id="16">
+        <label>components/emulator_comps/common/src/diagnostics/horiz_avg_diagnostic.cpp</label>
+        <link refid="horiz__avg__diagnostic_8cpp"/>
+      </node>
+      <node id="15">
+        <label>components/emulator_comps/common/src/diagnostics/horiz_avg_diagnostic.hpp</label>
+        <link refid="horiz__avg__diagnostic_8hpp"/>
+        <childnode refid="14" relation="include">
+        </childnode>
+        <childnode refid="16" relation="include">
+        </childnode>
+      </node>
+      <node id="18">
+        <label>components/emulator_comps/common/src/diagnostics/vert_slice_diagnostic.cpp</label>
+        <link refid="vert__slice__diagnostic_8cpp"/>
+      </node>
+      <node id="17">
+        <label>components/emulator_comps/common/src/diagnostics/vert_slice_diagnostic.hpp</label>
+        <link refid="vert__slice__diagnostic_8hpp"/>
+        <childnode refid="14" relation="include">
+        </childnode>
+        <childnode refid="18" relation="include">
+        </childnode>
+      </node>
+      <node id="4">
+        <label>components/emulator_comps/common/src/emulator_comp.cpp</label>
+        <link refid="emulator__comp_8cpp"/>
+      </node>
+      <node id="2">
+        <label>components/emulator_comps/common/src/emulator_config.cpp</label>
+        <link refid="emulator__config_8cpp"/>
+      </node>
+      <node id="3">
+        <label>components/emulator_comps/common/src/emulator_config.hpp</label>
+        <link refid="emulator__config_8hpp"/>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+      </node>
+      <node id="8">
+        <label>components/emulator_comps/common/src/emulator_diagnostics.cpp</label>
+        <link refid="emulator__diagnostics_8cpp"/>
+      </node>
+      <node id="1">
+        <label>components/emulator_comps/common/src/emulator_diagnostics.hpp</label>
+        <link refid="emulator__diagnostics_8hpp"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="9" relation="include">
+        </childnode>
+        <childnode refid="11" relation="include">
+        </childnode>
+      </node>
+      <node id="10">
+        <label>components/emulator_comps/common/src/emulator_output_manager.cpp</label>
+        <link refid="emulator__output__manager_8cpp"/>
+      </node>
+      <node id="9">
+        <label>components/emulator_comps/common/src/emulator_output_manager.hpp</label>
+        <link refid="emulator__output__manager_8hpp"/>
+        <childnode refid="10" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+      </node>
+      <node id="19">
+        <label>components/emulator_comps/common/src/emulator_output_stream.cpp</label>
+        <link refid="emulator__output__stream_8cpp"/>
+      </node>
+      <node id="11">
+        <label>components/emulator_comps/common/src/emulator_output_stream.hpp</label>
+        <link refid="emulator__output__stream_8hpp"/>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="9" relation="include">
+        </childnode>
+        <childnode refid="19" relation="include">
+        </childnode>
+        <childnode refid="20" relation="include">
+        </childnode>
+      </node>
+      <node id="5">
+        <label>components/emulator_comps/eatm/src/emulator_atm.cpp</label>
+        <link refid="emulator__atm_8cpp"/>
+      </node>
+      <node id="6">
+        <label>components/emulator_comps/eatm/src/emulator_atm.hpp</label>
+        <link refid="emulator__atm_8hpp"/>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+      </node>
+      <node id="7">
+        <label>components/emulator_comps/eatm/src/emulator_atm_interface.cpp</label>
+        <link refid="emulator__atm__interface_8cpp"/>
+      </node>
+      <node id="21">
+        <label>components/emulator_comps/eatm/src/impl/atm_field_data_provider.cpp</label>
+        <link refid="atm__field__data__provider_8cpp"/>
+      </node>
+      <node id="20">
+        <label>components/emulator_comps/eatm/src/impl/atm_field_data_provider.hpp</label>
+        <link refid="atm__field__data__provider_8hpp"/>
+        <childnode refid="6" relation="include">
+        </childnode>
+        <childnode refid="21" relation="include">
+        </childnode>
+      </node>
+    </invincdepgraph>
+    <innerclass refid="structemulator_1_1OutputStreamConfig" prot="public">emulator::OutputStreamConfig</innerclass>
+    <innerclass refid="structemulator_1_1RestartConfig" prot="public">emulator::RestartConfig</innerclass>
+    <innerclass refid="structemulator_1_1HistoryRestartConfig" prot="public">emulator::HistoryRestartConfig</innerclass>
+    <innerclass refid="structemulator_1_1DiagnosticConfig" prot="public">emulator::DiagnosticConfig</innerclass>
+    <innernamespace refid="namespaceemulator">emulator</innernamespace>
+    <briefdescription>
+<para>Configuration structures for diagnostic output. </para>
+    </briefdescription>
+    <detaileddescription>
+<para>Defines enums and structs for configuring output streams including history files (.atm.h.), restart files (.atm.r.), and history restart files (.atm.rh.). </para>
+    </detaileddescription>
+    <programlisting>
+<codeline lineno="1"><highlight class="normal"></highlight></codeline>
+<codeline lineno="9"><highlight class="normal"></highlight></codeline>
+<codeline lineno="10"><highlight class="normal"></highlight><highlight class="preprocessor">#ifndef<sp/>EMULATOR_DIAGNOSTICS_HPP</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="11"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>EMULATOR_DIAGNOSTICS_HPP</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="12"><highlight class="normal"></highlight></codeline>
+<codeline lineno="13"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;string&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="14"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;vector&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="15"><highlight class="normal"></highlight></codeline>
+<codeline lineno="16"><highlight class="normal"></highlight><highlight class="keyword">namespace<sp/></highlight><highlight class="normal"><ref refid="namespaceemulator" kindref="compound">emulator</ref><sp/>{</highlight></codeline>
+<codeline lineno="17"><highlight class="normal"></highlight></codeline>
+<codeline lineno="18"><highlight class="normal"></highlight><highlight class="comment">//<sp/>============================================================================</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="19"><highlight class="normal"></highlight><highlight class="comment">//<sp/>Enums</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="20"><highlight class="normal"></highlight><highlight class="comment">//<sp/>============================================================================</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="21"><highlight class="normal"></highlight></codeline>
+<codeline lineno="27" refid="namespaceemulator_1ac145d6905ecd2dc434fdff93ca2375ff" refkind="member"><highlight class="normal"></highlight><highlight class="keyword">enum<sp/>class</highlight><highlight class="normal"><sp/><ref refid="namespaceemulator_1ac145d6905ecd2dc434fdff93ca2375ff" kindref="member">FrequencyUnit</ref><sp/>{</highlight></codeline>
+<codeline lineno="28" refid="namespaceemulator_1ac145d6905ecd2dc434fdff93ca2375ffab27f2b1bdb5d72e12149c9371d307fd6" refkind="member"><highlight class="normal"><sp/><sp/><ref refid="namespaceemulator_1ac145d6905ecd2dc434fdff93ca2375ffab27f2b1bdb5d72e12149c9371d307fd6" kindref="member">NSTEPS</ref>,<sp/><sp/></highlight></codeline>
+<codeline lineno="29" refid="namespaceemulator_1ac145d6905ecd2dc434fdff93ca2375ffa3cb79432b34582aed2d3fb4d75d95819" refkind="member"><highlight class="normal"><sp/><sp/><ref refid="namespaceemulator_1ac145d6905ecd2dc434fdff93ca2375ffa3cb79432b34582aed2d3fb4d75d95819" kindref="member">NSECS</ref>,<sp/><sp/><sp/></highlight></codeline>
+<codeline lineno="30" refid="namespaceemulator_1ac145d6905ecd2dc434fdff93ca2375ffa4321f3c0d76f9a4f6515ed4b548efb0c" refkind="member"><highlight class="normal"><sp/><sp/><ref refid="namespaceemulator_1ac145d6905ecd2dc434fdff93ca2375ffa4321f3c0d76f9a4f6515ed4b548efb0c" kindref="member">NMINS</ref>,<sp/><sp/><sp/></highlight></codeline>
+<codeline lineno="31" refid="namespaceemulator_1ac145d6905ecd2dc434fdff93ca2375ffa68883f3524d21270a895161328eedc8a" refkind="member"><highlight class="normal"><sp/><sp/><ref refid="namespaceemulator_1ac145d6905ecd2dc434fdff93ca2375ffa68883f3524d21270a895161328eedc8a" kindref="member">NHOURS</ref>,<sp/><sp/></highlight></codeline>
+<codeline lineno="32" refid="namespaceemulator_1ac145d6905ecd2dc434fdff93ca2375ffa85b245d9aa07e88b84e07983410d5d07" refkind="member"><highlight class="normal"><sp/><sp/><ref refid="namespaceemulator_1ac145d6905ecd2dc434fdff93ca2375ffa85b245d9aa07e88b84e07983410d5d07" kindref="member">NDAYS</ref>,<sp/><sp/><sp/></highlight></codeline>
+<codeline lineno="33" refid="namespaceemulator_1ac145d6905ecd2dc434fdff93ca2375ffa41ffa3e136d25c63d69d9ab55e34a88c" refkind="member"><highlight class="normal"><sp/><sp/><ref refid="namespaceemulator_1ac145d6905ecd2dc434fdff93ca2375ffa41ffa3e136d25c63d69d9ab55e34a88c" kindref="member">NMONTHS</ref>,<sp/></highlight></codeline>
+<codeline lineno="34" refid="namespaceemulator_1ac145d6905ecd2dc434fdff93ca2375ffa76cdd92a64867e2148a85c55748b6dc1" refkind="member"><highlight class="normal"><sp/><sp/><ref refid="namespaceemulator_1ac145d6905ecd2dc434fdff93ca2375ffa76cdd92a64867e2148a85c55748b6dc1" kindref="member">NYEARS</ref>,<sp/><sp/></highlight></codeline>
+<codeline lineno="35" refid="namespaceemulator_1ac145d6905ecd2dc434fdff93ca2375ffab50339a10e1de285ac99d4c3990b8693" refkind="member"><highlight class="normal"><sp/><sp/><ref refid="namespaceemulator_1ac145d6905ecd2dc434fdff93ca2375ffab50339a10e1de285ac99d4c3990b8693" kindref="member">NONE</ref><sp/><sp/><sp/><sp/><sp/></highlight></codeline>
+<codeline lineno="36"><highlight class="normal">};</highlight></codeline>
+<codeline lineno="37"><highlight class="normal"></highlight></codeline>
+<codeline lineno="43" refid="namespaceemulator_1a52af206b444654873ad1f1b1f5c12298" refkind="member"><highlight class="normal"></highlight><highlight class="keyword">enum<sp/>class</highlight><highlight class="normal"><sp/><ref refid="namespaceemulator_1a52af206b444654873ad1f1b1f5c12298" kindref="member">OutputAvgType</ref><sp/>{</highlight></codeline>
+<codeline lineno="44" refid="namespaceemulator_1a52af206b444654873ad1f1b1f5c12298a0cb59bada85ae6029aac02b5c6dc7622" refkind="member"><highlight class="normal"><sp/><sp/><ref refid="namespaceemulator_1a52af206b444654873ad1f1b1f5c12298a0cb59bada85ae6029aac02b5c6dc7622" kindref="member">INSTANT</ref>,<sp/></highlight></codeline>
+<codeline lineno="45" refid="namespaceemulator_1a52af206b444654873ad1f1b1f5c12298a16de38737a9f8366e9b2042b4e9b6290" refkind="member"><highlight class="normal"><sp/><sp/><ref refid="namespaceemulator_1a52af206b444654873ad1f1b1f5c12298a16de38737a9f8366e9b2042b4e9b6290" kindref="member">AVERAGE</ref>,<sp/></highlight></codeline>
+<codeline lineno="46" refid="namespaceemulator_1a52af206b444654873ad1f1b1f5c12298ace31e2a082d17e038fcc6e3006166653" refkind="member"><highlight class="normal"><sp/><sp/><ref refid="namespaceemulator_1a52af206b444654873ad1f1b1f5c12298ace31e2a082d17e038fcc6e3006166653" kindref="member">MIN</ref>,<sp/><sp/><sp/><sp/><sp/></highlight></codeline>
+<codeline lineno="47" refid="namespaceemulator_1a52af206b444654873ad1f1b1f5c12298a26a4b44a837bf97b972628509912b4a5" refkind="member"><highlight class="normal"><sp/><sp/><ref refid="namespaceemulator_1a52af206b444654873ad1f1b1f5c12298a26a4b44a837bf97b972628509912b4a5" kindref="member">MAX</ref>,<sp/><sp/><sp/><sp/><sp/></highlight></codeline>
+<codeline lineno="48" refid="namespaceemulator_1a52af206b444654873ad1f1b1f5c12298ac6ce23be5d350ce18a665427d2d950f7" refkind="member"><highlight class="normal"><sp/><sp/><ref refid="namespaceemulator_1a52af206b444654873ad1f1b1f5c12298ac6ce23be5d350ce18a665427d2d950f7" kindref="member">STD</ref>,<sp/><sp/><sp/><sp/><sp/></highlight></codeline>
+<codeline lineno="49" refid="namespaceemulator_1a52af206b444654873ad1f1b1f5c12298a6970bdc2201030b9c03fbdcf3973858a" refkind="member"><highlight class="normal"><sp/><sp/><ref refid="namespaceemulator_1a52af206b444654873ad1f1b1f5c12298a6970bdc2201030b9c03fbdcf3973858a" kindref="member">SUM</ref><sp/><sp/><sp/><sp/><sp/><sp/></highlight></codeline>
+<codeline lineno="50"><highlight class="normal">};</highlight></codeline>
+<codeline lineno="51"><highlight class="normal"></highlight></codeline>
+<codeline lineno="55" refid="namespaceemulator_1a57a100b1e7f196d0998ed65a7f48aec3" refkind="member"><highlight class="normal"></highlight><highlight class="keyword">enum<sp/>class</highlight><highlight class="normal"><sp/><ref refid="namespaceemulator_1a57a100b1e7f196d0998ed65a7f48aec3" kindref="member">OutputPrecision</ref><sp/>{</highlight></codeline>
+<codeline lineno="56" refid="namespaceemulator_1a57a100b1e7f196d0998ed65a7f48aec3a967d280b5c16d95f2947647dd2ca6cc2" refkind="member"><highlight class="normal"><sp/><sp/><ref refid="namespaceemulator_1a57a100b1e7f196d0998ed65a7f48aec3a967d280b5c16d95f2947647dd2ca6cc2" kindref="member">FLOAT32</ref>,<sp/></highlight></codeline>
+<codeline lineno="57" refid="namespaceemulator_1a57a100b1e7f196d0998ed65a7f48aec3a139882c654db8a57f7c3092de1dd0b02" refkind="member"><highlight class="normal"><sp/><sp/><ref refid="namespaceemulator_1a57a100b1e7f196d0998ed65a7f48aec3a139882c654db8a57f7c3092de1dd0b02" kindref="member">FLOAT64</ref><sp/><sp/></highlight></codeline>
+<codeline lineno="58"><highlight class="normal">};</highlight></codeline>
+<codeline lineno="59"><highlight class="normal"></highlight></codeline>
+<codeline lineno="63" refid="namespaceemulator_1a1cf5decce58a3e5bc0c5c37239a86923" refkind="member"><highlight class="normal"></highlight><highlight class="keyword">enum<sp/>class</highlight><highlight class="normal"><sp/><ref refid="namespaceemulator_1a1cf5decce58a3e5bc0c5c37239a86923" kindref="member">FileType</ref><sp/>{</highlight></codeline>
+<codeline lineno="64" refid="namespaceemulator_1a1cf5decce58a3e5bc0c5c37239a86923a5d83de1c9f32e1adaf68625c99c29ac4" refkind="member"><highlight class="normal"><sp/><sp/><ref refid="namespaceemulator_1a1cf5decce58a3e5bc0c5c37239a86923a5d83de1c9f32e1adaf68625c99c29ac4" kindref="member">HISTORY</ref>,<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight></codeline>
+<codeline lineno="65" refid="namespaceemulator_1a1cf5decce58a3e5bc0c5c37239a86923a1104c54a9ec6549e4ef9562b687596fb" refkind="member"><highlight class="normal"><sp/><sp/><ref refid="namespaceemulator_1a1cf5decce58a3e5bc0c5c37239a86923a1104c54a9ec6549e4ef9562b687596fb" kindref="member">RESTART</ref>,<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight></codeline>
+<codeline lineno="66" refid="namespaceemulator_1a1cf5decce58a3e5bc0c5c37239a86923a62436c54430929da9a5279c15617f029" refkind="member"><highlight class="normal"><sp/><sp/><ref refid="namespaceemulator_1a1cf5decce58a3e5bc0c5c37239a86923a62436c54430929da9a5279c15617f029" kindref="member">HISTORY_RESTART</ref><sp/></highlight></codeline>
+<codeline lineno="67"><highlight class="normal">};</highlight></codeline>
+<codeline lineno="68"><highlight class="normal"></highlight></codeline>
+<codeline lineno="69"><highlight class="normal"></highlight><highlight class="comment">//<sp/>============================================================================</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="70"><highlight class="normal"></highlight><highlight class="comment">//<sp/>Configuration<sp/>Structures</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="71"><highlight class="normal"></highlight><highlight class="comment">//<sp/>============================================================================</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="72"><highlight class="normal"></highlight></codeline>
+<codeline lineno="79" refid="structemulator_1_1OutputStreamConfig" refkind="compound"><highlight class="normal"></highlight><highlight class="keyword">struct<sp/></highlight><highlight class="normal"><ref refid="structemulator_1_1OutputStreamConfig" kindref="compound">OutputStreamConfig</ref><sp/>{</highlight></codeline>
+<codeline lineno="80" refid="structemulator_1_1OutputStreamConfig_1abac947f5aad0bd4ff10a66839c201542" refkind="member"><highlight class="normal"><sp/><sp/>std::string<sp/><ref refid="structemulator_1_1OutputStreamConfig_1abac947f5aad0bd4ff10a66839c201542" kindref="member">stream_name</ref><sp/>=<sp/></highlight><highlight class="stringliteral">&quot;h0&quot;</highlight><highlight class="normal">;<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight></codeline>
+<codeline lineno="81" refid="structemulator_1_1OutputStreamConfig_1a13b412575e09feb46dfc32c4c503a027" refkind="member"><highlight class="normal"><sp/><sp/>std::string<sp/><ref refid="structemulator_1_1OutputStreamConfig_1a13b412575e09feb46dfc32c4c503a027" kindref="member">filename_prefix</ref><sp/>=<sp/></highlight><highlight class="stringliteral">&quot;emulator&quot;</highlight><highlight class="normal">;<sp/></highlight></codeline>
+<codeline lineno="82" refid="structemulator_1_1OutputStreamConfig_1ac652c5abc784e7a8815075be67e55aac" refkind="member"><highlight class="normal"><sp/><sp/>std::vector&lt;std::string&gt;<sp/><ref refid="structemulator_1_1OutputStreamConfig_1ac652c5abc784e7a8815075be67e55aac" kindref="member">fields</ref>;<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight></codeline>
+<codeline lineno="83"><highlight class="normal"></highlight></codeline>
+<codeline lineno="84" refid="structemulator_1_1OutputStreamConfig_1a0cd7e2c34b58a0834ef8924b657d5fc1" refkind="member"><highlight class="normal"><sp/><sp/><ref refid="namespaceemulator_1ac145d6905ecd2dc434fdff93ca2375ff" kindref="member">FrequencyUnit</ref><sp/><ref refid="structemulator_1_1OutputStreamConfig_1a0cd7e2c34b58a0834ef8924b657d5fc1" kindref="member">frequency_unit</ref><sp/>=<sp/><ref refid="namespaceemulator_1ac145d6905ecd2dc434fdff93ca2375ffa85b245d9aa07e88b84e07983410d5d07" kindref="member">FrequencyUnit::NDAYS</ref>;</highlight></codeline>
+<codeline lineno="85" refid="structemulator_1_1OutputStreamConfig_1a3159fa99882c96c052887675796ddfe1" refkind="member"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/><ref refid="structemulator_1_1OutputStreamConfig_1a3159fa99882c96c052887675796ddfe1" kindref="member">frequency</ref><sp/>=<sp/>1;<sp/></highlight></codeline>
+<codeline lineno="86"><highlight class="normal"></highlight></codeline>
+<codeline lineno="87" refid="structemulator_1_1OutputStreamConfig_1ae1e9d12895c9a221be26e9d603bf073d" refkind="member"><highlight class="normal"><sp/><sp/><ref refid="namespaceemulator_1a52af206b444654873ad1f1b1f5c12298" kindref="member">OutputAvgType</ref><sp/><ref refid="structemulator_1_1OutputStreamConfig_1ae1e9d12895c9a221be26e9d603bf073d" kindref="member">avg_type</ref><sp/>=<sp/><ref refid="namespaceemulator_1a52af206b444654873ad1f1b1f5c12298a0cb59bada85ae6029aac02b5c6dc7622" kindref="member">OutputAvgType::INSTANT</ref>;</highlight></codeline>
+<codeline lineno="88" refid="structemulator_1_1OutputStreamConfig_1a02d05f60feaa6b411bf435275320c992" refkind="member"><highlight class="normal"><sp/><sp/><ref refid="namespaceemulator_1a57a100b1e7f196d0998ed65a7f48aec3" kindref="member">OutputPrecision</ref><sp/><ref refid="structemulator_1_1OutputStreamConfig_1a02d05f60feaa6b411bf435275320c992" kindref="member">precision</ref><sp/>=<sp/><ref refid="namespaceemulator_1a57a100b1e7f196d0998ed65a7f48aec3a967d280b5c16d95f2947647dd2ca6cc2" kindref="member">OutputPrecision::FLOAT32</ref>;</highlight></codeline>
+<codeline lineno="89" refid="structemulator_1_1OutputStreamConfig_1a1a33535635ed699a7f4894eccf77c7b1" refkind="member"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/><ref refid="structemulator_1_1OutputStreamConfig_1a1a33535635ed699a7f4894eccf77c7b1" kindref="member">max_snapshots_per_file</ref><sp/>=<sp/>1;<sp/></highlight></codeline>
+<codeline lineno="90"><highlight class="normal">};</highlight></codeline>
+<codeline lineno="91"><highlight class="normal"></highlight></codeline>
+<codeline lineno="95" refid="structemulator_1_1RestartConfig" refkind="compound"><highlight class="normal"></highlight><highlight class="keyword">struct<sp/></highlight><highlight class="normal"><ref refid="structemulator_1_1RestartConfig" kindref="compound">RestartConfig</ref><sp/>{</highlight></codeline>
+<codeline lineno="96" refid="structemulator_1_1RestartConfig_1a9b77985fc3eaf0ce5e17f87ea3599680" refkind="member"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/><ref refid="structemulator_1_1RestartConfig_1a9b77985fc3eaf0ce5e17f87ea3599680" kindref="member">enabled</ref><sp/>=<sp/></highlight><highlight class="keyword">true</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="97" refid="structemulator_1_1RestartConfig_1a5786f13aaef3bc31ba5709766026dd11" refkind="member"><highlight class="normal"><sp/><sp/>std::string<sp/><ref refid="structemulator_1_1RestartConfig_1a5786f13aaef3bc31ba5709766026dd11" kindref="member">filename_prefix</ref><sp/>=<sp/></highlight><highlight class="stringliteral">&quot;emulator.atm.r&quot;</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="98" refid="structemulator_1_1RestartConfig_1a2094d42b44f69d6c4d1e699fd55a9592" refkind="member"><highlight class="normal"><sp/><sp/><ref refid="namespaceemulator_1ac145d6905ecd2dc434fdff93ca2375ff" kindref="member">FrequencyUnit</ref><sp/><ref refid="structemulator_1_1RestartConfig_1a2094d42b44f69d6c4d1e699fd55a9592" kindref="member">frequency_unit</ref><sp/>=<sp/><ref refid="namespaceemulator_1ac145d6905ecd2dc434fdff93ca2375ffa85b245d9aa07e88b84e07983410d5d07" kindref="member">FrequencyUnit::NDAYS</ref>;</highlight></codeline>
+<codeline lineno="99" refid="structemulator_1_1RestartConfig_1a5a78ccc9a6c67d987b907f9919ed9703" refkind="member"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/><ref refid="structemulator_1_1RestartConfig_1a5a78ccc9a6c67d987b907f9919ed9703" kindref="member">frequency</ref><sp/>=<sp/>1;</highlight></codeline>
+<codeline lineno="100"><highlight class="normal">};</highlight></codeline>
+<codeline lineno="101"><highlight class="normal"></highlight></codeline>
+<codeline lineno="105" refid="structemulator_1_1HistoryRestartConfig" refkind="compound"><highlight class="normal"></highlight><highlight class="keyword">struct<sp/></highlight><highlight class="normal"><ref refid="structemulator_1_1HistoryRestartConfig" kindref="compound">HistoryRestartConfig</ref><sp/>{</highlight></codeline>
+<codeline lineno="106" refid="structemulator_1_1HistoryRestartConfig_1a1e983876af44d22c9877fd47fde59f91" refkind="member"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/><ref refid="structemulator_1_1HistoryRestartConfig_1a1e983876af44d22c9877fd47fde59f91" kindref="member">enabled</ref><sp/>=<sp/></highlight><highlight class="keyword">true</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="107" refid="structemulator_1_1HistoryRestartConfig_1af541bb47704750908e5a6e37761626fd" refkind="member"><highlight class="normal"><sp/><sp/>std::string<sp/><ref refid="structemulator_1_1HistoryRestartConfig_1af541bb47704750908e5a6e37761626fd" kindref="member">filename_prefix</ref><sp/>=<sp/></highlight><highlight class="stringliteral">&quot;emulator.atm.rh&quot;</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="108"><highlight class="normal">};</highlight></codeline>
+<codeline lineno="109"><highlight class="normal"></highlight></codeline>
+<codeline lineno="132" refid="structemulator_1_1DiagnosticConfig" refkind="compound"><highlight class="normal"></highlight><highlight class="keyword">struct<sp/></highlight><highlight class="normal"><ref refid="structemulator_1_1DiagnosticConfig" kindref="compound">DiagnosticConfig</ref><sp/>{</highlight></codeline>
+<codeline lineno="133" refid="structemulator_1_1DiagnosticConfig_1a2da59097038f0eab21173a5f9a632890" refkind="member"><highlight class="normal"><sp/><sp/>std::vector&lt;OutputStreamConfig&gt;<sp/><ref refid="structemulator_1_1DiagnosticConfig_1a2da59097038f0eab21173a5f9a632890" kindref="member">history_streams</ref>;<sp/></highlight></codeline>
+<codeline lineno="134" refid="structemulator_1_1DiagnosticConfig_1a5dd5e2f8f2c319b3758257c186eee932" refkind="member"><highlight class="normal"><sp/><sp/><ref refid="structemulator_1_1RestartConfig" kindref="compound">RestartConfig</ref><sp/><ref refid="structemulator_1_1DiagnosticConfig_1a5dd5e2f8f2c319b3758257c186eee932" kindref="member">restart</ref>;<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight></codeline>
+<codeline lineno="135" refid="structemulator_1_1DiagnosticConfig_1a2e9e40f9305340a49f8fc24fbf2d3a27" refkind="member"><highlight class="normal"><sp/><sp/><ref refid="structemulator_1_1HistoryRestartConfig" kindref="compound">HistoryRestartConfig</ref><sp/><ref refid="structemulator_1_1DiagnosticConfig_1a2e9e40f9305340a49f8fc24fbf2d3a27" kindref="member">history_restart</ref>;<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight></codeline>
+<codeline lineno="136"><highlight class="normal">};</highlight></codeline>
+<codeline lineno="137"><highlight class="normal"></highlight></codeline>
+<codeline lineno="138"><highlight class="normal"></highlight><highlight class="comment">//<sp/>============================================================================</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="139"><highlight class="normal"></highlight><highlight class="comment">//<sp/>Conversion<sp/>Utilities</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="140"><highlight class="normal"></highlight><highlight class="comment">//<sp/>============================================================================</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="141"><highlight class="normal"></highlight></codeline>
+<codeline lineno="147"><highlight class="normal"><ref refid="namespaceemulator_1ac145d6905ecd2dc434fdff93ca2375ff" kindref="member">FrequencyUnit</ref><sp/><ref refid="namespaceemulator_1a6610cb46c1bb8eac2930d3a304530c4b" kindref="member">str_to_freq_unit</ref>(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string<sp/>&amp;s);</highlight></codeline>
+<codeline lineno="148"><highlight class="normal"></highlight></codeline>
+<codeline lineno="152"><highlight class="normal">std::string<sp/><ref refid="namespaceemulator_1adb28b528ba7d2e2131f811c27d45e724" kindref="member">freq_unit_to_str</ref>(<ref refid="namespaceemulator_1ac145d6905ecd2dc434fdff93ca2375ff" kindref="member">FrequencyUnit</ref><sp/>u);</highlight></codeline>
+<codeline lineno="153"><highlight class="normal"></highlight></codeline>
+<codeline lineno="159"><highlight class="normal"><ref refid="namespaceemulator_1a52af206b444654873ad1f1b1f5c12298" kindref="member">OutputAvgType</ref><sp/><ref refid="namespaceemulator_1af2c915d684d27558cc8606fb73ebcb42" kindref="member">str_to_avg_type</ref>(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string<sp/>&amp;s);</highlight></codeline>
+<codeline lineno="160"><highlight class="normal"></highlight></codeline>
+<codeline lineno="164"><highlight class="normal">std::string<sp/><ref refid="namespaceemulator_1ad47d9dda5ca3e658c4de29a1ba01e6f2" kindref="member">avg_type_to_str</ref>(<ref refid="namespaceemulator_1a52af206b444654873ad1f1b1f5c12298" kindref="member">OutputAvgType</ref><sp/>t);</highlight></codeline>
+<codeline lineno="165"><highlight class="normal"></highlight></codeline>
+<codeline lineno="169"><highlight class="normal"><ref refid="namespaceemulator_1a57a100b1e7f196d0998ed65a7f48aec3" kindref="member">OutputPrecision</ref><sp/><ref refid="namespaceemulator_1a62b2274498bdfc606242c56b3cb40de6" kindref="member">str_to_precision</ref>(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string<sp/>&amp;s);</highlight></codeline>
+<codeline lineno="170"><highlight class="normal"></highlight></codeline>
+<codeline lineno="174"><highlight class="normal">std::string<sp/><ref refid="namespaceemulator_1abc3022d3e4add0c378f1ae7faf9a5d84" kindref="member">precision_to_str</ref>(<ref refid="namespaceemulator_1a57a100b1e7f196d0998ed65a7f48aec3" kindref="member">OutputPrecision</ref><sp/>p);</highlight></codeline>
+<codeline lineno="175"><highlight class="normal"></highlight></codeline>
+<codeline lineno="180"><highlight class="normal">std::string<sp/><ref refid="namespaceemulator_1acf102151d428f5f4846436b9b022bb85" kindref="member">file_type_suffix</ref>(<ref refid="namespaceemulator_1a1cf5decce58a3e5bc0c5c37239a86923" kindref="member">FileType</ref><sp/>t);</highlight></codeline>
+<codeline lineno="181"><highlight class="normal"></highlight></codeline>
+<codeline lineno="182"><highlight class="normal">}<sp/></highlight><highlight class="comment">//<sp/>namespace<sp/>emulator</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="183"><highlight class="normal"></highlight></codeline>
+<codeline lineno="184"><highlight class="normal"></highlight><highlight class="preprocessor">#endif<sp/></highlight><highlight class="comment">//<sp/>EMULATOR_DIAGNOSTICS_HPP</highlight><highlight class="normal"></highlight></codeline>
+    </programlisting>
+    <location file="components/emulator_comps/common/src/emulator_diagnostics.hpp"/>
+  </compounddef>
+</doxygen>

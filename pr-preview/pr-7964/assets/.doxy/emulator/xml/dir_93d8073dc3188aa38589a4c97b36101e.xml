@@ -1,0 +1,17 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="dir_93d8073dc3188aa38589a4c97b36101e" kind="dir">
+    <compoundname>components/emulator_comps/common/src/inference</compoundname>
+    <innerfile refid="inference__backend_8hpp">inference_backend.hpp</innerfile>
+    <innerfile refid="inference__factory_8cpp">inference_factory.cpp</innerfile>
+    <innerfile refid="libtorch__backend_8cpp">libtorch_backend.cpp</innerfile>
+    <innerfile refid="libtorch__backend_8hpp">libtorch_backend.hpp</innerfile>
+    <innerfile refid="stub__backend_8cpp">stub_backend.cpp</innerfile>
+    <innerfile refid="stub__backend_8hpp">stub_backend.hpp</innerfile>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="components/emulator_comps/common/src/inference/"/>
+  </compounddef>
+</doxygen>

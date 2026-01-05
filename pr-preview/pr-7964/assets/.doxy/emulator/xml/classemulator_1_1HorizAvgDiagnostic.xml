@@ -1,0 +1,291 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="classemulator_1_1HorizAvgDiagnostic" kind="class" language="C++" prot="public">
+    <compoundname>emulator::HorizAvgDiagnostic</compoundname>
+    <basecompoundref refid="classemulator_1_1DerivedDiagnostic" prot="public" virt="non-virtual">emulator::DerivedDiagnostic</basecompoundref>
+    <includes refid="horiz__avg__diagnostic_8hpp" local="no">horiz_avg_diagnostic.hpp</includes>
+    <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classemulator_1_1HorizAvgDiagnostic_1a03318a478dff9faeeed41ae5e1833bdf" prot="private" static="no" mutable="no">
+        <type>std::string</type>
+        <definition>std::string emulator::HorizAvgDiagnostic::m_name</definition>
+        <argsstring></argsstring>
+        <name>m_name</name>
+        <qualifiedname>emulator::HorizAvgDiagnostic::m_name</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/diagnostics/horiz_avg_diagnostic.hpp" line="50" column="15" bodyfile="components/emulator_comps/common/src/diagnostics/horiz_avg_diagnostic.hpp" bodystart="50" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1HorizAvgDiagnostic_1a1fe105032acb2d94b898a93ad7a0fc7e" prot="private" static="no" mutable="no">
+        <type>std::string</type>
+        <definition>std::string emulator::HorizAvgDiagnostic::m_source_field</definition>
+        <argsstring></argsstring>
+        <name>m_source_field</name>
+        <qualifiedname>emulator::HorizAvgDiagnostic::m_source_field</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/diagnostics/horiz_avg_diagnostic.hpp" line="51" column="15" bodyfile="components/emulator_comps/common/src/diagnostics/horiz_avg_diagnostic.hpp" bodystart="51" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1HorizAvgDiagnostic_1aea3d9565adde0baf0d41336808bdbe8f" prot="private" static="no" mutable="no">
+        <type>std::vector&lt; double &gt;</type>
+        <definition>std::vector&lt;double&gt; emulator::HorizAvgDiagnostic::m_area_weights</definition>
+        <argsstring></argsstring>
+        <name>m_area_weights</name>
+        <qualifiedname>emulator::HorizAvgDiagnostic::m_area_weights</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/diagnostics/horiz_avg_diagnostic.hpp" line="52" column="15" bodyfile="components/emulator_comps/common/src/diagnostics/horiz_avg_diagnostic.hpp" bodystart="52" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1HorizAvgDiagnostic_1ae72a6be51e4f3d542d424ae59dbc41db" prot="private" static="no" mutable="no">
+        <type><ref refid="inference__backend_8hpp_1a68c509d4adb3f4a1d6fe3a9b0b87c7b9" kindref="member">MPI_Comm</ref></type>
+        <definition>MPI_Comm emulator::HorizAvgDiagnostic::m_comm</definition>
+        <argsstring></argsstring>
+        <name>m_comm</name>
+        <qualifiedname>emulator::HorizAvgDiagnostic::m_comm</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/diagnostics/horiz_avg_diagnostic.hpp" line="53" column="12" bodyfile="components/emulator_comps/common/src/diagnostics/horiz_avg_diagnostic.hpp" bodystart="53" bodyend="-1"/>
+      </memberdef>
+    </sectiondef>
+    <sectiondef kind="public-func">
+      <memberdef kind="function" id="classemulator_1_1HorizAvgDiagnostic_1ac090c6e09c2d715f8140023e09b8c56f" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>emulator::HorizAvgDiagnostic::HorizAvgDiagnostic</definition>
+        <argsstring>(const std::string &amp;field_name, const std::vector&lt; double &gt; &amp;area_weights, MPI_Comm comm)</argsstring>
+        <name>HorizAvgDiagnostic</name>
+        <qualifiedname>emulator::HorizAvgDiagnostic::HorizAvgDiagnostic</qualifiedname>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>field_name</declname>
+        </param>
+        <param>
+          <type>const std::vector&lt; double &gt; &amp;</type>
+          <declname>area_weights</declname>
+        </param>
+        <param>
+          <type><ref refid="inference__backend_8hpp_1a68c509d4adb3f4a1d6fe3a9b0b87c7b9" kindref="member">MPI_Comm</ref></type>
+          <declname>comm</declname>
+        </param>
+        <briefdescription>
+<para>Construct horizontal averaging diagnostic. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>field_name</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Source field name </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>area_weights</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Area weights for each column (normalized to sum to 1) </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>comm</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>MPI communicator for global reduction </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/diagnostics/horiz_avg_diagnostic.hpp" line="35" column="3" bodyfile="components/emulator_comps/common/src/diagnostics/horiz_avg_diagnostic.cpp" bodystart="11" bodyend="16"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1HorizAvgDiagnostic_1a2973f6685d9bfea71e0ead60b8004517" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="virtual">
+        <type>std::string</type>
+        <definition>std::string emulator::HorizAvgDiagnostic::name</definition>
+        <argsstring>() const override</argsstring>
+        <name>name</name>
+        <qualifiedname>emulator::HorizAvgDiagnostic::name</qualifiedname>
+        <reimplements refid="classemulator_1_1DerivedDiagnostic_1a29cc53dea2845c12ca120e78028e1e03">name</reimplements>
+        <briefdescription>
+<para>Get the diagnostic name. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/diagnostics/horiz_avg_diagnostic.hpp" line="38" column="15" bodyfile="components/emulator_comps/common/src/diagnostics/horiz_avg_diagnostic.hpp" bodystart="38" bodyend="38"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1HorizAvgDiagnostic_1a4aab62ad2f92468c70e28609149c6cee" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="virtual">
+        <type>std::string</type>
+        <definition>std::string emulator::HorizAvgDiagnostic::source_field</definition>
+        <argsstring>() const override</argsstring>
+        <name>source_field</name>
+        <qualifiedname>emulator::HorizAvgDiagnostic::source_field</qualifiedname>
+        <reimplements refid="classemulator_1_1DerivedDiagnostic_1a0b6fd5c12c2581a0fedea1be85d24629">source_field</reimplements>
+        <briefdescription>
+<para>Get the source field name. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/diagnostics/horiz_avg_diagnostic.hpp" line="39" column="15" bodyfile="components/emulator_comps/common/src/diagnostics/horiz_avg_diagnostic.hpp" bodystart="39" bodyend="39"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1HorizAvgDiagnostic_1ae0456b8effd649032b6dfd4fce2591c8" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
+        <type>void</type>
+        <definition>void emulator::HorizAvgDiagnostic::compute</definition>
+        <argsstring>(const FieldDataProvider &amp;fields, std::vector&lt; double &gt; &amp;output) override</argsstring>
+        <name>compute</name>
+        <qualifiedname>emulator::HorizAvgDiagnostic::compute</qualifiedname>
+        <reimplements refid="classemulator_1_1DerivedDiagnostic_1a308e0c8bb44b2d3be8b53ad2f8548bef">compute</reimplements>
+        <param>
+          <type>const <ref refid="classemulator_1_1FieldDataProvider" kindref="compound">FieldDataProvider</ref> &amp;</type>
+          <declname>fields</declname>
+        </param>
+        <param>
+          <type>std::vector&lt; double &gt; &amp;</type>
+          <declname>output</declname>
+        </param>
+        <briefdescription>
+<para>Compute the diagnostic. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>fields</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Input field provider </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>output</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Output data buffer (caller must allocate) </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/diagnostics/horiz_avg_diagnostic.hpp" line="41" column="8" bodyfile="components/emulator_comps/common/src/diagnostics/horiz_avg_diagnostic.cpp" bodystart="18" bodyend="71"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1HorizAvgDiagnostic_1a293a047532e5c479d1d67b5c40332f98" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="virtual">
+        <type>int</type>
+        <definition>int emulator::HorizAvgDiagnostic::output_size</definition>
+        <argsstring>(int ncols, int nlevs) const override</argsstring>
+        <name>output_size</name>
+        <qualifiedname>emulator::HorizAvgDiagnostic::output_size</qualifiedname>
+        <reimplements refid="classemulator_1_1DerivedDiagnostic_1afb82b445a6d355dcd3c3103974ba146a">output_size</reimplements>
+        <param>
+          <type>int</type>
+          <declname>ncols</declname>
+        </param>
+        <param>
+          <type>int</type>
+          <declname>nlevs</declname>
+        </param>
+        <briefdescription>
+<para>Get output size. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>ncols</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Number of local columns </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>nlevs</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Number of vertical levels (for source field) </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/diagnostics/horiz_avg_diagnostic.hpp" line="44" column="7" bodyfile="components/emulator_comps/common/src/diagnostics/horiz_avg_diagnostic.hpp" bodystart="44" bodyend="47"/>
+      </memberdef>
+    </sectiondef>
+    <briefdescription>
+<para>Computes area-weighted horizontal average of a field. </para>
+    </briefdescription>
+    <detaileddescription>
+<para>Reduces a field from [ncols] or [ncols, nlevs] to a scalar (or [nlevs]).</para>
+<sect1 id="classemulator_1_1HorizAvgDiagnostic_1autotoc_md4_1s1"><sect2 id="classemulator_1_1HorizAvgDiagnostic_1autotoc_md4">
+<title>Pattern</title><para>Triggered by field names ending in &quot;_horiz_avg&quot; or &quot;_global_mean&quot;.</para>
+</sect2></sect1>
+<sect1 id="classemulator_1_1HorizAvgDiagnostic_1autotoc_md5_1s1"><sect2 id="classemulator_1_1HorizAvgDiagnostic_1autotoc_md5">
+<title>Example</title><para><itemizedlist>
+<listitem><para>Input: &quot;surface_temperature&quot; with shape [ncols]</para>
+</listitem><listitem><para>Request: &quot;surface_temperature_horiz_avg&quot;</para>
+</listitem><listitem><para>Output: scalar (global mean) </para>
+</listitem></itemizedlist>
+</para>
+</sect2></sect1>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="2">
+        <label>emulator::DerivedDiagnostic</label>
+        <link refid="classemulator_1_1DerivedDiagnostic"/>
+      </node>
+      <node id="1">
+        <label>emulator::HorizAvgDiagnostic</label>
+        <link refid="classemulator_1_1HorizAvgDiagnostic"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="2">
+        <label>emulator::DerivedDiagnostic</label>
+        <link refid="classemulator_1_1DerivedDiagnostic"/>
+      </node>
+      <node id="1">
+        <label>emulator::HorizAvgDiagnostic</label>
+        <link refid="classemulator_1_1HorizAvgDiagnostic"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </collaborationgraph>
+    <location file="components/emulator_comps/common/src/diagnostics/horiz_avg_diagnostic.hpp" line="27" column="1" bodyfile="components/emulator_comps/common/src/diagnostics/horiz_avg_diagnostic.hpp" bodystart="27" bodyend="54"/>
+    <listofallmembers>
+      <member refid="classemulator_1_1HorizAvgDiagnostic_1ae0456b8effd649032b6dfd4fce2591c8" prot="public" virt="virtual"><scope>emulator::HorizAvgDiagnostic</scope><name>compute</name></member>
+      <member refid="classemulator_1_1HorizAvgDiagnostic_1ac090c6e09c2d715f8140023e09b8c56f" prot="public" virt="non-virtual"><scope>emulator::HorizAvgDiagnostic</scope><name>HorizAvgDiagnostic</name></member>
+      <member refid="classemulator_1_1HorizAvgDiagnostic_1aea3d9565adde0baf0d41336808bdbe8f" prot="private" virt="non-virtual"><scope>emulator::HorizAvgDiagnostic</scope><name>m_area_weights</name></member>
+      <member refid="classemulator_1_1HorizAvgDiagnostic_1ae72a6be51e4f3d542d424ae59dbc41db" prot="private" virt="non-virtual"><scope>emulator::HorizAvgDiagnostic</scope><name>m_comm</name></member>
+      <member refid="classemulator_1_1HorizAvgDiagnostic_1a03318a478dff9faeeed41ae5e1833bdf" prot="private" virt="non-virtual"><scope>emulator::HorizAvgDiagnostic</scope><name>m_name</name></member>
+      <member refid="classemulator_1_1HorizAvgDiagnostic_1a1fe105032acb2d94b898a93ad7a0fc7e" prot="private" virt="non-virtual"><scope>emulator::HorizAvgDiagnostic</scope><name>m_source_field</name></member>
+      <member refid="classemulator_1_1HorizAvgDiagnostic_1a2973f6685d9bfea71e0ead60b8004517" prot="public" virt="virtual"><scope>emulator::HorizAvgDiagnostic</scope><name>name</name></member>
+      <member refid="classemulator_1_1HorizAvgDiagnostic_1a293a047532e5c479d1d67b5c40332f98" prot="public" virt="virtual"><scope>emulator::HorizAvgDiagnostic</scope><name>output_size</name></member>
+      <member refid="classemulator_1_1HorizAvgDiagnostic_1a4aab62ad2f92468c70e28609149c6cee" prot="public" virt="virtual"><scope>emulator::HorizAvgDiagnostic</scope><name>source_field</name></member>
+      <member refid="classemulator_1_1DerivedDiagnostic_1a6e624fae8644a8419ed28405dd80a56a" prot="public" virt="virtual"><scope>emulator::HorizAvgDiagnostic</scope><name>~DerivedDiagnostic</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

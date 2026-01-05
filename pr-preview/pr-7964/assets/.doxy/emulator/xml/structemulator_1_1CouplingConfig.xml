@@ -1,0 +1,52 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="structemulator_1_1CouplingConfig" kind="struct" language="C++" prot="public">
+    <compoundname>emulator::CouplingConfig</compoundname>
+    <includes refid="emulator__config_8hpp" local="no">emulator_config.hpp</includes>
+    <sectiondef kind="public-attrib">
+      <memberdef kind="variable" id="structemulator_1_1CouplingConfig_1a06c2e91774f6813ae2459e2b228c62cf" prot="public" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool emulator::CouplingConfig::zero_init_exports</definition>
+        <argsstring></argsstring>
+        <name>zero_init_exports</name>
+        <qualifiedname>emulator::CouplingConfig::zero_init_exports</qualifiedname>
+        <initializer>= true</initializer>
+        <briefdescription>
+<para>Zero export fields on initialization. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_config.hpp" line="77" column="8" bodyfile="components/emulator_comps/common/src/emulator_config.hpp" bodystart="77" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1CouplingConfig_1a4b5cd57e02a6dca4ffa251b8831c636e" prot="public" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool emulator::CouplingConfig::debug</definition>
+        <argsstring></argsstring>
+        <name>debug</name>
+        <qualifiedname>emulator::CouplingConfig::debug</qualifiedname>
+        <initializer>= false</initializer>
+        <briefdescription>
+<para>Enable coupling debug output. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_config.hpp" line="78" column="8" bodyfile="components/emulator_comps/common/src/emulator_config.hpp" bodystart="78" bodyend="-1"/>
+      </memberdef>
+    </sectiondef>
+    <briefdescription>
+<para>Coupling configuration options. </para>
+    </briefdescription>
+    <detaileddescription>
+<para>Controls behavior of the component&apos;s interaction with the MCT coupler. </para>
+    </detaileddescription>
+    <location file="components/emulator_comps/common/src/emulator_config.hpp" line="76" column="1" bodyfile="components/emulator_comps/common/src/emulator_config.hpp" bodystart="76" bodyend="79"/>
+    <listofallmembers>
+      <member refid="structemulator_1_1CouplingConfig_1a4b5cd57e02a6dca4ffa251b8831c636e" prot="public" virt="non-virtual"><scope>emulator::CouplingConfig</scope><name>debug</name></member>
+      <member refid="structemulator_1_1CouplingConfig_1a06c2e91774f6813ae2459e2b228c62cf" prot="public" virt="non-virtual"><scope>emulator::CouplingConfig</scope><name>zero_init_exports</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

@@ -1,0 +1,108 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="libtorch__backend_8hpp" kind="file" language="C++">
+    <compoundname>libtorch_backend.hpp</compoundname>
+    <includes refid="inference__backend_8hpp" local="yes">inference_backend.hpp</includes>
+    <includes local="no">memory</includes>
+    <includes local="no">string</includes>
+    <includedby refid="libtorch__backend_8cpp" local="yes">components/emulator_comps/common/src/inference/libtorch_backend.cpp</includedby>
+    <incdepgraph>
+      <node id="2">
+        <label>inference_backend.hpp</label>
+        <link refid="inference__backend_8hpp"/>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="5" relation="include">
+        </childnode>
+      </node>
+      <node id="1">
+        <label>components/emulator_comps/common/src/inference/libtorch_backend.hpp</label>
+        <link refid="libtorch__backend_8hpp"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+      </node>
+      <node id="3">
+        <label>memory</label>
+      </node>
+      <node id="4">
+        <label>string</label>
+      </node>
+      <node id="5">
+        <label>vector</label>
+      </node>
+    </incdepgraph>
+    <invincdepgraph>
+      <node id="2">
+        <label>components/emulator_comps/common/src/inference/libtorch_backend.cpp</label>
+        <link refid="libtorch__backend_8cpp"/>
+      </node>
+      <node id="1">
+        <label>components/emulator_comps/common/src/inference/libtorch_backend.hpp</label>
+        <link refid="libtorch__backend_8hpp"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+      </node>
+    </invincdepgraph>
+    <innerclass refid="classemulator_1_1inference_1_1LibTorchBackend" prot="public">emulator::inference::LibTorchBackend</innerclass>
+    <innernamespace refid="namespaceemulator">emulator</innernamespace>
+    <innernamespace refid="namespaceemulator_1_1inference">emulator::inference</innernamespace>
+    <briefdescription>
+<para>LibTorch inference backend for native C++ PyTorch inference. </para>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <programlisting>
+<codeline lineno="1"><highlight class="normal"></highlight></codeline>
+<codeline lineno="5"><highlight class="normal"></highlight></codeline>
+<codeline lineno="6"><highlight class="normal"></highlight><highlight class="preprocessor">#ifndef<sp/>LIBTORCH_BACKEND_HPP</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="7"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>LIBTORCH_BACKEND_HPP</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="8"><highlight class="normal"></highlight></codeline>
+<codeline lineno="9"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&quot;<ref refid="inference__backend_8hpp" kindref="compound">inference_backend.hpp</ref>&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="10"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;memory&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="11"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;string&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="12"><highlight class="normal"></highlight></codeline>
+<codeline lineno="13"><highlight class="normal"></highlight><highlight class="keyword">namespace<sp/></highlight><highlight class="normal"><ref refid="namespaceemulator" kindref="compound">emulator</ref><sp/>{</highlight></codeline>
+<codeline lineno="14"><highlight class="normal"></highlight><highlight class="keyword">namespace<sp/></highlight><highlight class="normal"><ref refid="namespaceemulator_1_1inference" kindref="compound">inference</ref><sp/>{</highlight></codeline>
+<codeline lineno="15"><highlight class="normal"></highlight></codeline>
+<codeline lineno="51" refid="classemulator_1_1inference_1_1LibTorchBackend" refkind="compound"><highlight class="normal"></highlight><highlight class="keyword">class<sp/></highlight><highlight class="normal"><ref refid="classemulator_1_1inference_1_1LibTorchBackend_1a1c0da195cd923659f7dce02b14214cc1" kindref="member">LibTorchBackend</ref><sp/>:<sp/></highlight><highlight class="keyword">public</highlight><highlight class="normal"><sp/><ref refid="classemulator_1_1inference_1_1InferenceBackend" kindref="compound">InferenceBackend</ref><sp/>{</highlight></codeline>
+<codeline lineno="52"><highlight class="normal"></highlight><highlight class="keyword">public</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="53" refid="classemulator_1_1inference_1_1LibTorchBackend_1a1c0da195cd923659f7dce02b14214cc1" refkind="member"><highlight class="normal"><sp/><sp/><ref refid="classemulator_1_1inference_1_1LibTorchBackend_1a1c0da195cd923659f7dce02b14214cc1" kindref="member">LibTorchBackend</ref>();</highlight></codeline>
+<codeline lineno="54"><highlight class="normal"><sp/><sp/><ref refid="classemulator_1_1inference_1_1LibTorchBackend_1a7ebb02a6447c00da5deb99c390607706" kindref="member">~LibTorchBackend</ref>()<sp/></highlight><highlight class="keyword">override</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="55"><highlight class="normal"></highlight></codeline>
+<codeline lineno="57"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/><ref refid="classemulator_1_1inference_1_1LibTorchBackend_1a748dcb4fd55a2b336c1de2bee87c3d85" kindref="member">initialize</ref>(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/><ref refid="structemulator_1_1inference_1_1InferenceConfig" kindref="compound">InferenceConfig</ref><sp/>&amp;config)<sp/></highlight><highlight class="keyword">override</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="58"><highlight class="normal"></highlight></codeline>
+<codeline lineno="60"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/><ref refid="classemulator_1_1inference_1_1LibTorchBackend_1ac9850ff1056a6364b5d765d2105a8302" kindref="member">infer</ref>(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">double</highlight><highlight class="normal"><sp/>*inputs,<sp/></highlight><highlight class="keywordtype">double</highlight><highlight class="normal"><sp/>*outputs,<sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/>batch_size)<sp/></highlight><highlight class="keyword">override</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="61"><highlight class="normal"></highlight></codeline>
+<codeline lineno="63"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="classemulator_1_1inference_1_1LibTorchBackend_1a8c849a1784ce1e351fdd2a6c5b86639f" kindref="member">finalize</ref>()<sp/></highlight><highlight class="keyword">override</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="64"><highlight class="normal"></highlight></codeline>
+<codeline lineno="66" refid="classemulator_1_1inference_1_1LibTorchBackend_1a1713df499bc077fe7cf2171b48cd9b6c" refkind="member"><highlight class="normal"><sp/><sp/>std::string<sp/><ref refid="classemulator_1_1inference_1_1LibTorchBackend_1a1713df499bc077fe7cf2171b48cd9b6c" kindref="member">name</ref>()</highlight><highlight class="keyword"><sp/>const<sp/>override<sp/></highlight><highlight class="normal">{<sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/></highlight><highlight class="stringliteral">&quot;LibTorch&quot;</highlight><highlight class="normal">;<sp/>}</highlight></codeline>
+<codeline lineno="67"><highlight class="normal"></highlight></codeline>
+<codeline lineno="69" refid="classemulator_1_1inference_1_1LibTorchBackend_1ab640e96d9880d6777df86af498d6f8cd" refkind="member"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/><ref refid="classemulator_1_1inference_1_1LibTorchBackend_1ab640e96d9880d6777df86af498d6f8cd" kindref="member">is_initialized</ref>()</highlight><highlight class="keyword"><sp/>const<sp/>override<sp/></highlight><highlight class="normal">{<sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>m_initialized;<sp/>}</highlight></codeline>
+<codeline lineno="70"><highlight class="normal"></highlight></codeline>
+<codeline lineno="72" refid="classemulator_1_1inference_1_1LibTorchBackend_1aa2a923de57bc67cc2b0073922da7582d" refkind="member"><highlight class="normal"><sp/><sp/><ref refid="namespaceemulator_1_1inference_1a77255e7a61c3dc84e403c2f79d386a0e" kindref="member">BackendType</ref><sp/><ref refid="classemulator_1_1inference_1_1LibTorchBackend_1aa2a923de57bc67cc2b0073922da7582d" kindref="member">type</ref>()</highlight><highlight class="keyword"><sp/>const<sp/>override<sp/></highlight><highlight class="normal">{<sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/><ref refid="namespaceemulator_1_1inference_1a77255e7a61c3dc84e403c2f79d386a0ea48487d0a658c8f181ea30724733d7b27" kindref="member">BackendType::LIBTORCH</ref>;<sp/>}</highlight></codeline>
+<codeline lineno="73"><highlight class="normal"></highlight></codeline>
+<codeline lineno="78"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">size_t</highlight><highlight class="normal"><sp/><ref refid="classemulator_1_1inference_1_1LibTorchBackend_1a222ca3846212cabcd74d96183c169900" kindref="member">get_memory_usage_bytes</ref>()<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="79"><highlight class="normal"></highlight></codeline>
+<codeline lineno="80"><highlight class="normal"></highlight><highlight class="keyword">private</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="81"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/>m_initialized<sp/>=<sp/></highlight><highlight class="keyword">false</highlight><highlight class="normal">;<sp/><sp/><sp/><sp/><sp/><sp/></highlight></codeline>
+<codeline lineno="82"><highlight class="normal"><sp/><sp/><ref refid="structemulator_1_1inference_1_1InferenceConfig" kindref="compound">InferenceConfig</ref><sp/>m_config;<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight></codeline>
+<codeline lineno="83"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">size_t</highlight><highlight class="normal"><sp/>m_model_memory_bytes<sp/>=<sp/>0;<sp/></highlight></codeline>
+<codeline lineno="84"><highlight class="normal"></highlight></codeline>
+<codeline lineno="86"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">struct<sp/></highlight><highlight class="normal">Impl;</highlight></codeline>
+<codeline lineno="87"><highlight class="normal"><sp/><sp/>std::unique_ptr&lt;Impl&gt;<sp/>m_impl;</highlight></codeline>
+<codeline lineno="88"><highlight class="normal">};</highlight></codeline>
+<codeline lineno="89"><highlight class="normal"></highlight></codeline>
+<codeline lineno="90"><highlight class="normal">}<sp/></highlight><highlight class="comment">//<sp/>namespace<sp/>inference</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="91"><highlight class="normal">}<sp/></highlight><highlight class="comment">//<sp/>namespace<sp/>emulator</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="92"><highlight class="normal"></highlight></codeline>
+<codeline lineno="93"><highlight class="normal"></highlight><highlight class="preprocessor">#endif<sp/></highlight><highlight class="comment">//<sp/>LIBTORCH_BACKEND_HPP</highlight><highlight class="normal"></highlight></codeline>
+    </programlisting>
+    <location file="components/emulator_comps/common/src/inference/libtorch_backend.hpp"/>
+  </compounddef>
+</doxygen>

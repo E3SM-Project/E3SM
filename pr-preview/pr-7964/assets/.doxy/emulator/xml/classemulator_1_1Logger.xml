@@ -1,0 +1,287 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="classemulator_1_1Logger" kind="class" language="C++" prot="public">
+    <compoundname>emulator::Logger</compoundname>
+    <includes refid="emulator__logger_8hpp" local="no">emulator_logger.hpp</includes>
+    <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classemulator_1_1Logger_1a2f1bfa6ebdfb011684c53939e69ba369" prot="private" static="no" mutable="no">
+        <type>std::ofstream</type>
+        <definition>std::ofstream emulator::Logger::m_file</definition>
+        <argsstring></argsstring>
+        <name>m_file</name>
+        <qualifiedname>emulator::Logger::m_file</qualifiedname>
+        <briefdescription>
+<para>Optional output file. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_logger.hpp" line="85" column="17" bodyfile="components/emulator_comps/common/src/emulator_logger.hpp" bodystart="85" bodyend="-1"/>
+      </memberdef>
+    </sectiondef>
+    <sectiondef kind="public-func">
+      <memberdef kind="function" id="classemulator_1_1Logger_1a0a007e23a1bd08a4436ca7a0a31c85c0" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>emulator::Logger::Logger</definition>
+        <argsstring>()=default</argsstring>
+        <name>Logger</name>
+        <qualifiedname>emulator::Logger::Logger</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_logger.hpp" line="46" column="3"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1Logger_1a799d670fcb490bf379d6a77a9a91fbea" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>emulator::Logger::~Logger</definition>
+        <argsstring>()</argsstring>
+        <name>~Logger</name>
+        <qualifiedname>emulator::Logger::~Logger</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_logger.hpp" line="47" column="3" bodyfile="components/emulator_comps/common/src/emulator_logger.cpp" bodystart="15" bodyend="19"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1Logger_1aba19a95b86ae8bfa650c7b3453641e1a" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator::Logger::set_file</definition>
+        <argsstring>(const std::string &amp;filename)</argsstring>
+        <name>set_file</name>
+        <qualifiedname>emulator::Logger::set_file</qualifiedname>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>filename</declname>
+        </param>
+        <briefdescription>
+<para>Set the log file path. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>If a file is already open, it is closed before opening the new file. If filename is empty, logging reverts to stdout.</para>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>filename</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Path to log file (empty string for stdout) </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_logger.hpp" line="57" column="8" bodyfile="components/emulator_comps/common/src/emulator_logger.cpp" bodystart="21" bodyend="28"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1Logger_1a432d2cb3f5e755ae9f0f91293d2f5132" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator::Logger::log</definition>
+        <argsstring>(LogLevel level, const std::string &amp;message)</argsstring>
+        <name>log</name>
+        <qualifiedname>emulator::Logger::log</qualifiedname>
+        <param>
+          <type><ref refid="namespaceemulator_1ae9e73fded16e907d3a1dad79433af078" kindref="member">LogLevel</ref></type>
+          <declname>level</declname>
+        </param>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>message</declname>
+        </param>
+        <briefdescription>
+<para>Log a message at the specified level. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>level</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Log level </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>message</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Message to log </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_logger.hpp" line="64" column="8" bodyfile="components/emulator_comps/common/src/emulator_logger.cpp" bodystart="30" bodyend="40"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1Logger_1adef99458aaba4165b5be097fc6550222" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator::Logger::debug</definition>
+        <argsstring>(const std::string &amp;message)</argsstring>
+        <name>debug</name>
+        <qualifiedname>emulator::Logger::debug</qualifiedname>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>message</declname>
+        </param>
+        <briefdescription>
+<para>Log a debug message. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_logger.hpp" line="67" column="8" bodyfile="components/emulator_comps/common/src/emulator_logger.cpp" bodystart="42" bodyend="44"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1Logger_1a9c710d241960051a2996da1e7f011eec" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator::Logger::verbose</definition>
+        <argsstring>(const std::string &amp;message)</argsstring>
+        <name>verbose</name>
+        <qualifiedname>emulator::Logger::verbose</qualifiedname>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>message</declname>
+        </param>
+        <briefdescription>
+<para>Log a verbose message. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_logger.hpp" line="70" column="8" bodyfile="components/emulator_comps/common/src/emulator_logger.cpp" bodystart="46" bodyend="48"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1Logger_1a0f9815f93bfcd402b1ce76ad6440a262" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator::Logger::info</definition>
+        <argsstring>(const std::string &amp;message)</argsstring>
+        <name>info</name>
+        <qualifiedname>emulator::Logger::info</qualifiedname>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>message</declname>
+        </param>
+        <briefdescription>
+<para>Log an informational message. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_logger.hpp" line="73" column="8" bodyfile="components/emulator_comps/common/src/emulator_logger.cpp" bodystart="50" bodyend="50"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1Logger_1a07c15f03d279eb3cfb60059563d07d09" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator::Logger::warn</definition>
+        <argsstring>(const std::string &amp;message)</argsstring>
+        <name>warn</name>
+        <qualifiedname>emulator::Logger::warn</qualifiedname>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>message</declname>
+        </param>
+        <briefdescription>
+<para>Log a warning message. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_logger.hpp" line="76" column="8" bodyfile="components/emulator_comps/common/src/emulator_logger.cpp" bodystart="52" bodyend="54"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1Logger_1a551ba08465ac050d95cddc05f53b90b4" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator::Logger::error</definition>
+        <argsstring>(const std::string &amp;message)</argsstring>
+        <name>error</name>
+        <qualifiedname>emulator::Logger::error</qualifiedname>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>message</declname>
+        </param>
+        <briefdescription>
+<para>Log an error message. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_logger.hpp" line="79" column="8" bodyfile="components/emulator_comps/common/src/emulator_logger.cpp" bodystart="56" bodyend="58"/>
+      </memberdef>
+    </sectiondef>
+    <sectiondef kind="private-func">
+      <memberdef kind="function" id="classemulator_1_1Logger_1ad08e90aff4b9f37d21480e999b68e2d9" prot="private" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>std::string</type>
+        <definition>std::string emulator::Logger::get_timestamp</definition>
+        <argsstring>()</argsstring>
+        <name>get_timestamp</name>
+        <qualifiedname>emulator::Logger::get_timestamp</qualifiedname>
+        <briefdescription>
+<para>Get current timestamp as formatted string. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><simplesect kind="return"><para>Timestamp in &quot;YYYY-MM-DD HH:MM:SS&quot; format </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_logger.hpp" line="82" column="15" bodyfile="components/emulator_comps/common/src/emulator_logger.cpp" bodystart="64" bodyend="70"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1Logger_1a144258e4b6fe326cb5e64ef484659b17" prot="private" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>std::string</type>
+        <definition>std::string emulator::Logger::level_to_string</definition>
+        <argsstring>(LogLevel level)</argsstring>
+        <name>level_to_string</name>
+        <qualifiedname>emulator::Logger::level_to_string</qualifiedname>
+        <param>
+          <type><ref refid="namespaceemulator_1ae9e73fded16e907d3a1dad79433af078" kindref="member">LogLevel</ref></type>
+          <declname>level</declname>
+        </param>
+        <briefdescription>
+<para>Convert log level to string representation. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_logger.hpp" line="83" column="15" bodyfile="components/emulator_comps/common/src/emulator_logger.cpp" bodystart="75" bodyend="90"/>
+      </memberdef>
+    </sectiondef>
+    <briefdescription>
+<para>Simple logger with optional file output. </para>
+    </briefdescription>
+    <detaileddescription>
+<para>By default, logs to stdout. Call <ref refid="classemulator_1_1Logger_1aba19a95b86ae8bfa650c7b3453641e1a" kindref="member">set_file()</ref> to redirect output to a log file. Each message is prefixed with a timestamp and log level.</para>
+<sect1 id="classemulator_1_1Logger_1autotoc_md16_1s1"><sect2 id="classemulator_1_1Logger_1autotoc_md16">
+<title>Usage</title><para><programlisting filename=".cpp"><codeline><highlight class="normal"><ref refid="classemulator_1_1Logger_1a0a007e23a1bd08a4436ca7a0a31c85c0" kindref="member">Logger</ref><sp/>logger;</highlight></codeline>
+<codeline><highlight class="normal">logger.set_file(</highlight><highlight class="stringliteral">&quot;component.log&quot;</highlight><highlight class="normal">);</highlight></codeline>
+<codeline><highlight class="normal">logger.info(</highlight><highlight class="stringliteral">&quot;Component<sp/>initialized&quot;</highlight><highlight class="normal">);</highlight></codeline>
+<codeline><highlight class="normal">logger.warn(</highlight><highlight class="stringliteral">&quot;Configuration<sp/>missing,<sp/>using<sp/>defaults&quot;</highlight><highlight class="normal">);</highlight></codeline>
+</programlisting> </para>
+</sect2></sect1>
+    </detaileddescription>
+    <location file="components/emulator_comps/common/src/emulator_logger.hpp" line="44" column="1" bodyfile="components/emulator_comps/common/src/emulator_logger.hpp" bodystart="44" bodyend="86"/>
+    <listofallmembers>
+      <member refid="classemulator_1_1Logger_1adef99458aaba4165b5be097fc6550222" prot="public" virt="non-virtual"><scope>emulator::Logger</scope><name>debug</name></member>
+      <member refid="classemulator_1_1Logger_1a551ba08465ac050d95cddc05f53b90b4" prot="public" virt="non-virtual"><scope>emulator::Logger</scope><name>error</name></member>
+      <member refid="classemulator_1_1Logger_1ad08e90aff4b9f37d21480e999b68e2d9" prot="private" virt="non-virtual"><scope>emulator::Logger</scope><name>get_timestamp</name></member>
+      <member refid="classemulator_1_1Logger_1a0f9815f93bfcd402b1ce76ad6440a262" prot="public" virt="non-virtual"><scope>emulator::Logger</scope><name>info</name></member>
+      <member refid="classemulator_1_1Logger_1a144258e4b6fe326cb5e64ef484659b17" prot="private" virt="non-virtual"><scope>emulator::Logger</scope><name>level_to_string</name></member>
+      <member refid="classemulator_1_1Logger_1a432d2cb3f5e755ae9f0f91293d2f5132" prot="public" virt="non-virtual"><scope>emulator::Logger</scope><name>log</name></member>
+      <member refid="classemulator_1_1Logger_1a0a007e23a1bd08a4436ca7a0a31c85c0" prot="public" virt="non-virtual"><scope>emulator::Logger</scope><name>Logger</name></member>
+      <member refid="classemulator_1_1Logger_1a2f1bfa6ebdfb011684c53939e69ba369" prot="private" virt="non-virtual"><scope>emulator::Logger</scope><name>m_file</name></member>
+      <member refid="classemulator_1_1Logger_1aba19a95b86ae8bfa650c7b3453641e1a" prot="public" virt="non-virtual"><scope>emulator::Logger</scope><name>set_file</name></member>
+      <member refid="classemulator_1_1Logger_1a9c710d241960051a2996da1e7f011eec" prot="public" virt="non-virtual"><scope>emulator::Logger</scope><name>verbose</name></member>
+      <member refid="classemulator_1_1Logger_1a07c15f03d279eb3cfb60059563d07d09" prot="public" virt="non-virtual"><scope>emulator::Logger</scope><name>warn</name></member>
+      <member refid="classemulator_1_1Logger_1a799d670fcb490bf379d6a77a9a91fbea" prot="public" virt="non-virtual"><scope>emulator::Logger</scope><name>~Logger</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

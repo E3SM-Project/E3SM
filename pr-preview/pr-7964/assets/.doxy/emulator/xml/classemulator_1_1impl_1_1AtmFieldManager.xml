@@ -1,0 +1,1016 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="classemulator_1_1impl_1_1AtmFieldManager" kind="class" language="C++" prot="public">
+    <compoundname>emulator::impl::AtmFieldManager</compoundname>
+    <includes refid="atm__field__manager_8hpp" local="no">atm_field_manager.hpp</includes>
+    <sectiondef kind="public-static-attrib">
+      <memberdef kind="variable" id="classemulator_1_1impl_1_1AtmFieldManager_1a82587596c228566f4368bc63b1531ff6" prot="public" static="yes" constexpr="yes" mutable="no">
+        <type>int</type>
+        <definition>int emulator::impl::AtmFieldManager::N_INPUT_CHANNELS</definition>
+        <argsstring></argsstring>
+        <name>N_INPUT_CHANNELS</name>
+        <qualifiedname>emulator::impl::AtmFieldManager::N_INPUT_CHANNELS</qualifiedname>
+        <initializer>= 39</initializer>
+        <briefdescription>
+<para>Default number of input channels (legacy, use config instead). </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="47" column="24" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" bodystart="47" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1impl_1_1AtmFieldManager_1a612e95ba104c9932e1cb8a66e21cf7b3" prot="public" static="yes" constexpr="yes" mutable="no">
+        <type>int</type>
+        <definition>int emulator::impl::AtmFieldManager::N_OUTPUT_CHANNELS</definition>
+        <argsstring></argsstring>
+        <name>N_OUTPUT_CHANNELS</name>
+        <qualifiedname>emulator::impl::AtmFieldManager::N_OUTPUT_CHANNELS</qualifiedname>
+        <initializer>= 44</initializer>
+        <briefdescription>
+<para>Default number of output channels (legacy, use config instead). </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="50" column="24" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" bodystart="50" bodyend="-1"/>
+      </memberdef>
+    </sectiondef>
+    <sectiondef kind="public-attrib">
+      <memberdef kind="variable" id="classemulator_1_1impl_1_1AtmFieldManager_1a2bd5d1d5afd518db962c21cdc089129c" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; double &gt;</type>
+        <definition>std::vector&lt;double&gt; emulator::impl::AtmFieldManager::net_inputs</definition>
+        <argsstring></argsstring>
+        <name>net_inputs</name>
+        <qualifiedname>emulator::impl::AtmFieldManager::net_inputs</qualifiedname>
+        <briefdescription>
+<para>Packed input tensor for inference. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="119" column="15" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" bodystart="119" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1impl_1_1AtmFieldManager_1a4ff72465403d43caed03f458defb462d" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; double &gt;</type>
+        <definition>std::vector&lt;double&gt; emulator::impl::AtmFieldManager::net_outputs</definition>
+        <argsstring></argsstring>
+        <name>net_outputs</name>
+        <qualifiedname>emulator::impl::AtmFieldManager::net_outputs</qualifiedname>
+        <briefdescription>
+<para>Packed output tensor from inference. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="120" column="15" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" bodystart="120" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1impl_1_1AtmFieldManager_1aa96491c3eef3145199d1e038e05d3b91" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; double &gt;</type>
+        <definition>std::vector&lt;double&gt; emulator::impl::AtmFieldManager::shf</definition>
+        <argsstring></argsstring>
+        <name>shf</name>
+        <qualifiedname>emulator::impl::AtmFieldManager::shf</qualifiedname>
+        <briefdescription>
+<para>Sensible heat flux [W/m²]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="126" column="15" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" bodystart="126" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1impl_1_1AtmFieldManager_1abfe07b95389de87efc58553a77ea3dcf" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; double &gt;</type>
+        <definition>std::vector&lt;double&gt; emulator::impl::AtmFieldManager::cflx</definition>
+        <argsstring></argsstring>
+        <name>cflx</name>
+        <qualifiedname>emulator::impl::AtmFieldManager::cflx</qualifiedname>
+        <briefdescription>
+<para>CO2 flux [kg/m²/s]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="127" column="15" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" bodystart="127" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1impl_1_1AtmFieldManager_1af5fd31b7f7fef2f9afb2562b28d084f6" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; double &gt;</type>
+        <definition>std::vector&lt;double&gt; emulator::impl::AtmFieldManager::lhf</definition>
+        <argsstring></argsstring>
+        <name>lhf</name>
+        <qualifiedname>emulator::impl::AtmFieldManager::lhf</qualifiedname>
+        <briefdescription>
+<para>Latent heat flux [W/m²]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="128" column="15" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" bodystart="128" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1impl_1_1AtmFieldManager_1a9a918ec65cba9f66aa8314ce7cf246b9" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; double &gt;</type>
+        <definition>std::vector&lt;double&gt; emulator::impl::AtmFieldManager::wsx</definition>
+        <argsstring></argsstring>
+        <name>wsx</name>
+        <qualifiedname>emulator::impl::AtmFieldManager::wsx</qualifiedname>
+        <briefdescription>
+<para>Zonal wind stress [N/m²]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="129" column="15" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" bodystart="129" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1impl_1_1AtmFieldManager_1a54142825a9de0b05b556e639e589f638" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; double &gt;</type>
+        <definition>std::vector&lt;double&gt; emulator::impl::AtmFieldManager::wsy</definition>
+        <argsstring></argsstring>
+        <name>wsy</name>
+        <qualifiedname>emulator::impl::AtmFieldManager::wsy</qualifiedname>
+        <briefdescription>
+<para>Meridional wind stress [N/m²]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="130" column="15" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" bodystart="130" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1impl_1_1AtmFieldManager_1a71af46dd33eab8fc1bd929b581ce0843" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; double &gt;</type>
+        <definition>std::vector&lt;double&gt; emulator::impl::AtmFieldManager::lwup</definition>
+        <argsstring></argsstring>
+        <name>lwup</name>
+        <qualifiedname>emulator::impl::AtmFieldManager::lwup</qualifiedname>
+        <briefdescription>
+<para>Upward longwave radiation [W/m²]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="131" column="15" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" bodystart="131" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1impl_1_1AtmFieldManager_1a74494ce3b1173c8d0b1ae3a753d873c5" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; double &gt;</type>
+        <definition>std::vector&lt;double&gt; emulator::impl::AtmFieldManager::asdir</definition>
+        <argsstring></argsstring>
+        <name>asdir</name>
+        <qualifiedname>emulator::impl::AtmFieldManager::asdir</qualifiedname>
+        <briefdescription>
+<para>Visible direct albedo [-]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="132" column="15" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" bodystart="132" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1impl_1_1AtmFieldManager_1abf7b9995b5fb075702c01a35a78aa2b5" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; double &gt;</type>
+        <definition>std::vector&lt;double&gt; emulator::impl::AtmFieldManager::aldir</definition>
+        <argsstring></argsstring>
+        <name>aldir</name>
+        <qualifiedname>emulator::impl::AtmFieldManager::aldir</qualifiedname>
+        <briefdescription>
+<para>NIR direct albedo [-]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="133" column="15" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" bodystart="133" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1impl_1_1AtmFieldManager_1a9a1b7fa8d557b76ae864b9562873c718" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; double &gt;</type>
+        <definition>std::vector&lt;double&gt; emulator::impl::AtmFieldManager::asdif</definition>
+        <argsstring></argsstring>
+        <name>asdif</name>
+        <qualifiedname>emulator::impl::AtmFieldManager::asdif</qualifiedname>
+        <briefdescription>
+<para>Visible diffuse albedo [-]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="134" column="15" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" bodystart="134" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1impl_1_1AtmFieldManager_1a913f6c11989f58fbba1d0987430a4281" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; double &gt;</type>
+        <definition>std::vector&lt;double&gt; emulator::impl::AtmFieldManager::aldif</definition>
+        <argsstring></argsstring>
+        <name>aldif</name>
+        <qualifiedname>emulator::impl::AtmFieldManager::aldif</qualifiedname>
+        <briefdescription>
+<para>NIR diffuse albedo [-]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="135" column="15" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" bodystart="135" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1impl_1_1AtmFieldManager_1a26e4db93602987ced99c72f354e97f6c" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; double &gt;</type>
+        <definition>std::vector&lt;double&gt; emulator::impl::AtmFieldManager::ts</definition>
+        <argsstring></argsstring>
+        <name>ts</name>
+        <qualifiedname>emulator::impl::AtmFieldManager::ts</qualifiedname>
+        <briefdescription>
+<para>Surface temperature [K]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="136" column="15" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" bodystart="136" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1impl_1_1AtmFieldManager_1ae1a1087ce1a0b8c1eb8e3fe9fecfba12" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; double &gt;</type>
+        <definition>std::vector&lt;double&gt; emulator::impl::AtmFieldManager::sst</definition>
+        <argsstring></argsstring>
+        <name>sst</name>
+        <qualifiedname>emulator::impl::AtmFieldManager::sst</qualifiedname>
+        <briefdescription>
+<para>Sea surface temperature [K]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="137" column="15" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" bodystart="137" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1impl_1_1AtmFieldManager_1a6d31e62af3f2be8dcad08be587056f27" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; double &gt;</type>
+        <definition>std::vector&lt;double&gt; emulator::impl::AtmFieldManager::snowhland</definition>
+        <argsstring></argsstring>
+        <name>snowhland</name>
+        <qualifiedname>emulator::impl::AtmFieldManager::snowhland</qualifiedname>
+        <briefdescription>
+<para>Snow height over land [m]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="138" column="15" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" bodystart="138" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1impl_1_1AtmFieldManager_1a7a8192aafe28ae5261a7bf9fec1beb90" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; double &gt;</type>
+        <definition>std::vector&lt;double&gt; emulator::impl::AtmFieldManager::snowhice</definition>
+        <argsstring></argsstring>
+        <name>snowhice</name>
+        <qualifiedname>emulator::impl::AtmFieldManager::snowhice</qualifiedname>
+        <briefdescription>
+<para>Snow height over ice [m]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="139" column="15" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" bodystart="139" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1impl_1_1AtmFieldManager_1a2cd0f7ef76e719d5c77c2608c96cfe4f" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; double &gt;</type>
+        <definition>std::vector&lt;double&gt; emulator::impl::AtmFieldManager::tref</definition>
+        <argsstring></argsstring>
+        <name>tref</name>
+        <qualifiedname>emulator::impl::AtmFieldManager::tref</qualifiedname>
+        <briefdescription>
+<para>Reference temperature [K]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="140" column="15" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" bodystart="140" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1impl_1_1AtmFieldManager_1acc1cc6e8d5a4b289cfb9e5b117565c7e" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; double &gt;</type>
+        <definition>std::vector&lt;double&gt; emulator::impl::AtmFieldManager::qref</definition>
+        <argsstring></argsstring>
+        <name>qref</name>
+        <qualifiedname>emulator::impl::AtmFieldManager::qref</qualifiedname>
+        <briefdescription>
+<para>Reference specific humidity [kg/kg]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="141" column="15" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" bodystart="141" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1impl_1_1AtmFieldManager_1a6a2506001737f5df278a6d9189e5fe42" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; double &gt;</type>
+        <definition>std::vector&lt;double&gt; emulator::impl::AtmFieldManager::u10</definition>
+        <argsstring></argsstring>
+        <name>u10</name>
+        <qualifiedname>emulator::impl::AtmFieldManager::u10</qualifiedname>
+        <briefdescription>
+<para>10m wind speed [m/s] </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="142" column="15" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" bodystart="142" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1impl_1_1AtmFieldManager_1a8fd79854e70fe2543a297ff812506413" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; double &gt;</type>
+        <definition>std::vector&lt;double&gt; emulator::impl::AtmFieldManager::u10withgusts</definition>
+        <argsstring></argsstring>
+        <name>u10withgusts</name>
+        <qualifiedname>emulator::impl::AtmFieldManager::u10withgusts</qualifiedname>
+        <briefdescription>
+<para>10m wind with gusts [m/s] </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="143" column="15" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" bodystart="143" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1impl_1_1AtmFieldManager_1aa272f923801a1c1c2f8294b185be15b5" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; double &gt;</type>
+        <definition>std::vector&lt;double&gt; emulator::impl::AtmFieldManager::icefrac</definition>
+        <argsstring></argsstring>
+        <name>icefrac</name>
+        <qualifiedname>emulator::impl::AtmFieldManager::icefrac</qualifiedname>
+        <briefdescription>
+<para>Sea ice fraction [-]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="144" column="15" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" bodystart="144" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1impl_1_1AtmFieldManager_1a39be66261a4a2c12c59ac78f7c049101" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; double &gt;</type>
+        <definition>std::vector&lt;double&gt; emulator::impl::AtmFieldManager::ocnfrac</definition>
+        <argsstring></argsstring>
+        <name>ocnfrac</name>
+        <qualifiedname>emulator::impl::AtmFieldManager::ocnfrac</qualifiedname>
+        <briefdescription>
+<para>Ocean fraction [-]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="145" column="15" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" bodystart="145" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1impl_1_1AtmFieldManager_1a5b8de27c15ab711753548b4a8e2e7722" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; double &gt;</type>
+        <definition>std::vector&lt;double&gt; emulator::impl::AtmFieldManager::lndfrac</definition>
+        <argsstring></argsstring>
+        <name>lndfrac</name>
+        <qualifiedname>emulator::impl::AtmFieldManager::lndfrac</qualifiedname>
+        <briefdescription>
+<para>Land fraction [-]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="146" column="15" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" bodystart="146" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1impl_1_1AtmFieldManager_1aef37f2bf69caea666e293ed538962e9c" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; double &gt;</type>
+        <definition>std::vector&lt;double&gt; emulator::impl::AtmFieldManager::zbot</definition>
+        <argsstring></argsstring>
+        <name>zbot</name>
+        <qualifiedname>emulator::impl::AtmFieldManager::zbot</qualifiedname>
+        <briefdescription>
+<para>Height at bottom level [m]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="152" column="15" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" bodystart="152" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1impl_1_1AtmFieldManager_1a7f18a89025603b77a3c9fc22f5887032" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; double &gt;</type>
+        <definition>std::vector&lt;double&gt; emulator::impl::AtmFieldManager::ubot</definition>
+        <argsstring></argsstring>
+        <name>ubot</name>
+        <qualifiedname>emulator::impl::AtmFieldManager::ubot</qualifiedname>
+        <briefdescription>
+<para>Zonal wind at bottom level [m/s]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="153" column="15" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" bodystart="153" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1impl_1_1AtmFieldManager_1a199bb728a745e31f38f309d3b5872733" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; double &gt;</type>
+        <definition>std::vector&lt;double&gt; emulator::impl::AtmFieldManager::vbot</definition>
+        <argsstring></argsstring>
+        <name>vbot</name>
+        <qualifiedname>emulator::impl::AtmFieldManager::vbot</qualifiedname>
+        <briefdescription>
+<para>Meridional wind at bottom level [m/s]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="154" column="15" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" bodystart="154" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1impl_1_1AtmFieldManager_1ac6d7aff27c3b9c193f20c345116124b1" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; double &gt;</type>
+        <definition>std::vector&lt;double&gt; emulator::impl::AtmFieldManager::tbot</definition>
+        <argsstring></argsstring>
+        <name>tbot</name>
+        <qualifiedname>emulator::impl::AtmFieldManager::tbot</qualifiedname>
+        <briefdescription>
+<para>Temperature at bottom level [K]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="155" column="15" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" bodystart="155" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1impl_1_1AtmFieldManager_1a5c97475d0b14decc1ead5662fddb5747" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; double &gt;</type>
+        <definition>std::vector&lt;double&gt; emulator::impl::AtmFieldManager::ptem</definition>
+        <argsstring></argsstring>
+        <name>ptem</name>
+        <qualifiedname>emulator::impl::AtmFieldManager::ptem</qualifiedname>
+        <briefdescription>
+<para>Potential temperature [K]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="156" column="15" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" bodystart="156" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1impl_1_1AtmFieldManager_1a65e153c31a93444bc9a4e92d87cf3fef" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; double &gt;</type>
+        <definition>std::vector&lt;double&gt; emulator::impl::AtmFieldManager::shum</definition>
+        <argsstring></argsstring>
+        <name>shum</name>
+        <qualifiedname>emulator::impl::AtmFieldManager::shum</qualifiedname>
+        <briefdescription>
+<para>Specific humidity [kg/kg]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="157" column="15" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" bodystart="157" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1impl_1_1AtmFieldManager_1a893131a7bd1210c485dca4a573d3c91b" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; double &gt;</type>
+        <definition>std::vector&lt;double&gt; emulator::impl::AtmFieldManager::dens</definition>
+        <argsstring></argsstring>
+        <name>dens</name>
+        <qualifiedname>emulator::impl::AtmFieldManager::dens</qualifiedname>
+        <briefdescription>
+<para>Air density [kg/m³]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="158" column="15" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" bodystart="158" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1impl_1_1AtmFieldManager_1a4d49a56dee7ea8a91a2972c3a4241bd5" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; double &gt;</type>
+        <definition>std::vector&lt;double&gt; emulator::impl::AtmFieldManager::pbot</definition>
+        <argsstring></argsstring>
+        <name>pbot</name>
+        <qualifiedname>emulator::impl::AtmFieldManager::pbot</qualifiedname>
+        <briefdescription>
+<para>Pressure at bottom level [Pa]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="159" column="15" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" bodystart="159" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1impl_1_1AtmFieldManager_1a9112701931447414608672a338278237" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; double &gt;</type>
+        <definition>std::vector&lt;double&gt; emulator::impl::AtmFieldManager::pslv</definition>
+        <argsstring></argsstring>
+        <name>pslv</name>
+        <qualifiedname>emulator::impl::AtmFieldManager::pslv</qualifiedname>
+        <briefdescription>
+<para>Sea level pressure [Pa]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="160" column="15" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" bodystart="160" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1impl_1_1AtmFieldManager_1a344f4b2e5719b29c98549cc046a43ce7" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; double &gt;</type>
+        <definition>std::vector&lt;double&gt; emulator::impl::AtmFieldManager::lwdn</definition>
+        <argsstring></argsstring>
+        <name>lwdn</name>
+        <qualifiedname>emulator::impl::AtmFieldManager::lwdn</qualifiedname>
+        <briefdescription>
+<para>Downward longwave radiation [W/m²]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="161" column="15" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" bodystart="161" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1impl_1_1AtmFieldManager_1a7a156e9fdc3b1c1544ae2eb80dfd043d" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; double &gt;</type>
+        <definition>std::vector&lt;double&gt; emulator::impl::AtmFieldManager::rainc</definition>
+        <argsstring></argsstring>
+        <name>rainc</name>
+        <qualifiedname>emulator::impl::AtmFieldManager::rainc</qualifiedname>
+        <briefdescription>
+<para>Convective precipitation [kg/m²/s]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="162" column="15" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" bodystart="162" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1impl_1_1AtmFieldManager_1a879500a26a1a1b765dc2105f48b61932" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; double &gt;</type>
+        <definition>std::vector&lt;double&gt; emulator::impl::AtmFieldManager::rainl</definition>
+        <argsstring></argsstring>
+        <name>rainl</name>
+        <qualifiedname>emulator::impl::AtmFieldManager::rainl</qualifiedname>
+        <briefdescription>
+<para>Large-scale precipitation [kg/m²/s]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="163" column="15" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" bodystart="163" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1impl_1_1AtmFieldManager_1aaa8e62654c0f8b3e706c865d05292b0f" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; double &gt;</type>
+        <definition>std::vector&lt;double&gt; emulator::impl::AtmFieldManager::snowc</definition>
+        <argsstring></argsstring>
+        <name>snowc</name>
+        <qualifiedname>emulator::impl::AtmFieldManager::snowc</qualifiedname>
+        <briefdescription>
+<para>Convective snowfall [kg/m²/s]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="164" column="15" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" bodystart="164" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1impl_1_1AtmFieldManager_1abbf461a04259c236d31a77b16c62db3a" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; double &gt;</type>
+        <definition>std::vector&lt;double&gt; emulator::impl::AtmFieldManager::snowl</definition>
+        <argsstring></argsstring>
+        <name>snowl</name>
+        <qualifiedname>emulator::impl::AtmFieldManager::snowl</qualifiedname>
+        <briefdescription>
+<para>Large-scale snowfall [kg/m²/s]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="165" column="15" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" bodystart="165" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1impl_1_1AtmFieldManager_1a5f21a5b56d6ead29bb38e0c1c845828a" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; double &gt;</type>
+        <definition>std::vector&lt;double&gt; emulator::impl::AtmFieldManager::swndr</definition>
+        <argsstring></argsstring>
+        <name>swndr</name>
+        <qualifiedname>emulator::impl::AtmFieldManager::swndr</qualifiedname>
+        <briefdescription>
+<para>NIR direct shortwave [W/m²]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="166" column="15" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" bodystart="166" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1impl_1_1AtmFieldManager_1ae6de3bc3df175b2a6ed7254a75154572" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; double &gt;</type>
+        <definition>std::vector&lt;double&gt; emulator::impl::AtmFieldManager::swvdr</definition>
+        <argsstring></argsstring>
+        <name>swvdr</name>
+        <qualifiedname>emulator::impl::AtmFieldManager::swvdr</qualifiedname>
+        <briefdescription>
+<para>Visible direct shortwave [W/m²]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="167" column="15" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" bodystart="167" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1impl_1_1AtmFieldManager_1a03e1dadde9ca6f6c199ad12f78f02601" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; double &gt;</type>
+        <definition>std::vector&lt;double&gt; emulator::impl::AtmFieldManager::swndf</definition>
+        <argsstring></argsstring>
+        <name>swndf</name>
+        <qualifiedname>emulator::impl::AtmFieldManager::swndf</qualifiedname>
+        <briefdescription>
+<para>NIR diffuse shortwave [W/m²]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="168" column="15" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" bodystart="168" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1impl_1_1AtmFieldManager_1af8bb3f195e222dce11e265ab3619e8a2" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; double &gt;</type>
+        <definition>std::vector&lt;double&gt; emulator::impl::AtmFieldManager::swvdf</definition>
+        <argsstring></argsstring>
+        <name>swvdf</name>
+        <qualifiedname>emulator::impl::AtmFieldManager::swvdf</qualifiedname>
+        <briefdescription>
+<para>Visible diffuse shortwave [W/m²]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="169" column="15" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" bodystart="169" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1impl_1_1AtmFieldManager_1ab08c943690e310565d9ea1a1f42f318a" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; double &gt;</type>
+        <definition>std::vector&lt;double&gt; emulator::impl::AtmFieldManager::swnet</definition>
+        <argsstring></argsstring>
+        <name>swnet</name>
+        <qualifiedname>emulator::impl::AtmFieldManager::swnet</qualifiedname>
+        <briefdescription>
+<para>Net shortwave radiation [W/m²]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="170" column="15" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" bodystart="170" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1impl_1_1AtmFieldManager_1ab231329d680952d035f54ffde5172ec1" prot="public" static="no" mutable="no">
+        <type>std::map&lt; std::string, std::vector&lt; double &gt; &gt;</type>
+        <definition>std::map&lt;std::string, std::vector&lt;double&gt; &gt; emulator::impl::AtmFieldManager::dynamic_fields</definition>
+        <argsstring></argsstring>
+        <name>dynamic_fields</name>
+        <qualifiedname>emulator::impl::AtmFieldManager::dynamic_fields</qualifiedname>
+        <briefdescription>
+<para>Runtime-registered fields for configurable I/O. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="177" column="12" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" bodystart="177" bodyend="-1"/>
+      </memberdef>
+    </sectiondef>
+    <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classemulator_1_1impl_1_1AtmFieldManager_1ac9228b8335ddae1fcce30716daed719b" prot="private" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool emulator::impl::AtmFieldManager::m_allocated</definition>
+        <argsstring></argsstring>
+        <name>m_allocated</name>
+        <qualifiedname>emulator::impl::AtmFieldManager::m_allocated</qualifiedname>
+        <initializer>= false</initializer>
+        <briefdescription>
+<para>Allocation flag. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="180" column="8" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" bodystart="180" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1impl_1_1AtmFieldManager_1afa3277919739c94890bf2af6319a9d9e" prot="private" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::impl::AtmFieldManager::m_ncols</definition>
+        <argsstring></argsstring>
+        <name>m_ncols</name>
+        <qualifiedname>emulator::impl::AtmFieldManager::m_ncols</qualifiedname>
+        <initializer>= 0</initializer>
+        <briefdescription>
+<para>Number of columns. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="181" column="7" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" bodystart="181" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1impl_1_1AtmFieldManager_1ac36471e618a84ceaae1ca14f9eb983bb" prot="private" static="no" mutable="no">
+        <type>std::map&lt; std::string, std::vector&lt; double &gt; * &gt;</type>
+        <definition>std::map&lt;std::string, std::vector&lt;double&gt; *&gt; emulator::impl::AtmFieldManager::m_field_map</definition>
+        <argsstring></argsstring>
+        <name>m_field_map</name>
+        <qualifiedname>emulator::impl::AtmFieldManager::m_field_map</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="184" column="12" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" bodystart="184" bodyend="-1"/>
+      </memberdef>
+    </sectiondef>
+    <sectiondef kind="public-func">
+      <memberdef kind="function" id="classemulator_1_1impl_1_1AtmFieldManager_1a69a42b25258a947b7821e7c743bbcec9" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>emulator::impl::AtmFieldManager::AtmFieldManager</definition>
+        <argsstring>()=default</argsstring>
+        <name>AtmFieldManager</name>
+        <qualifiedname>emulator::impl::AtmFieldManager::AtmFieldManager</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="52" column="3"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1impl_1_1AtmFieldManager_1a3227d8ff695cd4f63e7a62720464f416" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>emulator::impl::AtmFieldManager::~AtmFieldManager</definition>
+        <argsstring>()=default</argsstring>
+        <name>~AtmFieldManager</name>
+        <qualifiedname>emulator::impl::AtmFieldManager::~AtmFieldManager</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="53" column="3"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1impl_1_1AtmFieldManager_1a11cb4f661b8c62ddc54a739aad37dfef" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator::impl::AtmFieldManager::allocate</definition>
+        <argsstring>(int ncols)</argsstring>
+        <name>allocate</name>
+        <qualifiedname>emulator::impl::AtmFieldManager::allocate</qualifiedname>
+        <param>
+          <type>int</type>
+          <declname>ncols</declname>
+        </param>
+        <briefdescription>
+<para>Allocate all field vectors for given number of columns. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Allocates import and export field vectors. The <computeroutput>net_inputs</computeroutput> and <computeroutput>net_outputs</computeroutput> vectors are cleared but not pre-allocated (they are sized dynamically in <computeroutput>prepare_inputs()</computeroutput>).</para>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>ncols</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Number of local columns </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="68" column="8" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_manager.cpp" bodystart="104" bodyend="166"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1impl_1_1AtmFieldManager_1a880f74377b05bbe6c6910e75f3ffa375" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator::impl::AtmFieldManager::deallocate</definition>
+        <argsstring>()</argsstring>
+        <name>deallocate</name>
+        <qualifiedname>emulator::impl::AtmFieldManager::deallocate</qualifiedname>
+        <briefdescription>
+<para>Deallocate all field vectors. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="73" column="8" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_manager.cpp" bodystart="168" bodyend="220"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1impl_1_1AtmFieldManager_1a703a1db93a5dbf1872fc5b4eff859eb7" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator::impl::AtmFieldManager::set_defaults</definition>
+        <argsstring>(int ncols)</argsstring>
+        <name>set_defaults</name>
+        <qualifiedname>emulator::impl::AtmFieldManager::set_defaults</qualifiedname>
+        <param>
+          <type>int</type>
+          <declname>ncols</declname>
+        </param>
+        <briefdescription>
+<para>Set default climatological values for export fields. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Initializes export fields with reasonable default values for testing.</para>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>ncols</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Number of columns </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="82" column="8" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_manager.cpp" bodystart="222" bodyend="246"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1impl_1_1AtmFieldManager_1a9a0938d97e8573190a3b379f5a94b900" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>bool</type>
+        <definition>bool emulator::impl::AtmFieldManager::is_allocated</definition>
+        <argsstring>() const</argsstring>
+        <name>is_allocated</name>
+        <qualifiedname>emulator::impl::AtmFieldManager::is_allocated</qualifiedname>
+        <briefdescription>
+<para>Check if fields are allocated. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><simplesect kind="return"><para>true if <ref refid="classemulator_1_1impl_1_1AtmFieldManager_1a11cb4f661b8c62ddc54a739aad37dfef" kindref="member">allocate()</ref> has been called </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="88" column="8" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" bodystart="88" bodyend="88"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1impl_1_1AtmFieldManager_1a0609f50bec9f97307d8927182532c705" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>std::vector&lt; double &gt; *</type>
+        <definition>std::vector&lt; double &gt; * emulator::impl::AtmFieldManager::get_field_ptr</definition>
+        <argsstring>(const std::string &amp;name)</argsstring>
+        <name>get_field_ptr</name>
+        <qualifiedname>emulator::impl::AtmFieldManager::get_field_ptr</qualifiedname>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>name</declname>
+        </param>
+        <briefdescription>
+<para>Get pointer to a field vector by name. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Looks up the field in the hardcoded field map, then in dynamic fields.</para>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>name</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Field name (e.g., &quot;ts&quot;, &quot;tbot&quot;, &quot;pbot&quot;) </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+<simplesect kind="return"><para>Pointer to the field vector, or nullptr if not found </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="102" column="15" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_manager.cpp" bodystart="73" bodyend="89"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1impl_1_1AtmFieldManager_1ae3dbb64c14c36e97f32ae89f048a928d" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator::impl::AtmFieldManager::register_dynamic_field</definition>
+        <argsstring>(const std::string &amp;name)</argsstring>
+        <name>register_dynamic_field</name>
+        <qualifiedname>emulator::impl::AtmFieldManager::register_dynamic_field</qualifiedname>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>name</declname>
+        </param>
+        <briefdescription>
+<para>Register or create a dynamic field. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>If the field doesn&apos;t exist (not in hardcoded or dynamic fields), creates a new entry in dynamic_fields. If already allocated, resizes the new field to match ncols.</para>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>name</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Field name to register </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="113" column="8" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_manager.cpp" bodystart="91" bodyend="102"/>
+      </memberdef>
+    </sectiondef>
+    <sectiondef kind="private-func">
+      <memberdef kind="function" id="classemulator_1_1impl_1_1AtmFieldManager_1add7d5e25ab3d341db94306eb59cca67e" prot="private" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator::impl::AtmFieldManager::init_field_map</definition>
+        <argsstring>()</argsstring>
+        <name>init_field_map</name>
+        <qualifiedname>emulator::impl::AtmFieldManager::init_field_map</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="183" column="8" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_manager.cpp" bodystart="15" bodyend="71"/>
+      </memberdef>
+    </sectiondef>
+    <briefdescription>
+<para>Field storage container for atmosphere emulator. </para>
+    </briefdescription>
+    <detaileddescription>
+<para>Manages all field vectors for the atmosphere component, including:</para>
+<para><itemizedlist>
+<listitem><para>Import fields (x2a) received from other components via coupler</para>
+</listitem><listitem><para>Export fields (a2x) sent to other components via coupler</para>
+</listitem><listitem><para>AI model tensor buffers (net_inputs, net_outputs)</para>
+</listitem><listitem><para>Dynamic fields for configurable I/O variables</para>
+</listitem></itemizedlist>
+</para>
+<sect1 id="classemulator_1_1impl_1_1AtmFieldManager_1autotoc_md34_1s1"><sect2 id="classemulator_1_1impl_1_1AtmFieldManager_1autotoc_md34">
+<title>Allocation</title><para>Call <computeroutput>allocate(ncols)</computeroutput> to allocate all field vectors for the given number of local columns. The <computeroutput>net_inputs</computeroutput> and <computeroutput>net_outputs</computeroutput> vectors are allocated dynamically by <computeroutput>EmulatorAtm::prepare_inputs()</computeroutput>.</para>
+</sect2></sect1>
+<sect1 id="classemulator_1_1impl_1_1AtmFieldManager_1autotoc_md35_1s1"><sect2 id="classemulator_1_1impl_1_1AtmFieldManager_1autotoc_md35">
+<title>Field Access</title><para>Fields can be accessed directly or via <computeroutput><ref refid="classemulator_1_1impl_1_1AtmFieldManager_1a0609f50bec9f97307d8927182532c705" kindref="member">get_field_ptr()</ref></computeroutput> for string-based lookup. Dynamic fields can be registered at runtime via <computeroutput><ref refid="classemulator_1_1impl_1_1AtmFieldManager_1ae3dbb64c14c36e97f32ae89f048a928d" kindref="member">register_dynamic_field()</ref></computeroutput>. </para>
+</sect2></sect1>
+    </detaileddescription>
+    <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" line="40" column="1" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp" bodystart="40" bodyend="185"/>
+    <listofallmembers>
+      <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a913f6c11989f58fbba1d0987430a4281" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldManager</scope><name>aldif</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldManager_1abf7b9995b5fb075702c01a35a78aa2b5" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldManager</scope><name>aldir</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a11cb4f661b8c62ddc54a739aad37dfef" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldManager</scope><name>allocate</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a9a1b7fa8d557b76ae864b9562873c718" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldManager</scope><name>asdif</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a74494ce3b1173c8d0b1ae3a753d873c5" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldManager</scope><name>asdir</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a69a42b25258a947b7821e7c743bbcec9" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldManager</scope><name>AtmFieldManager</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldManager_1abfe07b95389de87efc58553a77ea3dcf" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldManager</scope><name>cflx</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a880f74377b05bbe6c6910e75f3ffa375" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldManager</scope><name>deallocate</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a893131a7bd1210c485dca4a573d3c91b" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldManager</scope><name>dens</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldManager_1ab231329d680952d035f54ffde5172ec1" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldManager</scope><name>dynamic_fields</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a0609f50bec9f97307d8927182532c705" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldManager</scope><name>get_field_ptr</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldManager_1aa272f923801a1c1c2f8294b185be15b5" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldManager</scope><name>icefrac</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldManager_1add7d5e25ab3d341db94306eb59cca67e" prot="private" virt="non-virtual"><scope>emulator::impl::AtmFieldManager</scope><name>init_field_map</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a9a0938d97e8573190a3b379f5a94b900" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldManager</scope><name>is_allocated</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldManager_1af5fd31b7f7fef2f9afb2562b28d084f6" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldManager</scope><name>lhf</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a5b8de27c15ab711753548b4a8e2e7722" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldManager</scope><name>lndfrac</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a344f4b2e5719b29c98549cc046a43ce7" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldManager</scope><name>lwdn</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a71af46dd33eab8fc1bd929b581ce0843" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldManager</scope><name>lwup</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldManager_1ac9228b8335ddae1fcce30716daed719b" prot="private" virt="non-virtual"><scope>emulator::impl::AtmFieldManager</scope><name>m_allocated</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldManager_1ac36471e618a84ceaae1ca14f9eb983bb" prot="private" virt="non-virtual"><scope>emulator::impl::AtmFieldManager</scope><name>m_field_map</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldManager_1afa3277919739c94890bf2af6319a9d9e" prot="private" virt="non-virtual"><scope>emulator::impl::AtmFieldManager</scope><name>m_ncols</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a82587596c228566f4368bc63b1531ff6" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldManager</scope><name>N_INPUT_CHANNELS</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a612e95ba104c9932e1cb8a66e21cf7b3" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldManager</scope><name>N_OUTPUT_CHANNELS</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a2bd5d1d5afd518db962c21cdc089129c" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldManager</scope><name>net_inputs</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a4ff72465403d43caed03f458defb462d" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldManager</scope><name>net_outputs</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a39be66261a4a2c12c59ac78f7c049101" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldManager</scope><name>ocnfrac</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a4d49a56dee7ea8a91a2972c3a4241bd5" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldManager</scope><name>pbot</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a9112701931447414608672a338278237" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldManager</scope><name>pslv</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a5c97475d0b14decc1ead5662fddb5747" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldManager</scope><name>ptem</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldManager_1acc1cc6e8d5a4b289cfb9e5b117565c7e" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldManager</scope><name>qref</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a7a156e9fdc3b1c1544ae2eb80dfd043d" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldManager</scope><name>rainc</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a879500a26a1a1b765dc2105f48b61932" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldManager</scope><name>rainl</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldManager_1ae3dbb64c14c36e97f32ae89f048a928d" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldManager</scope><name>register_dynamic_field</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a703a1db93a5dbf1872fc5b4eff859eb7" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldManager</scope><name>set_defaults</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldManager_1aa96491c3eef3145199d1e038e05d3b91" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldManager</scope><name>shf</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a65e153c31a93444bc9a4e92d87cf3fef" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldManager</scope><name>shum</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldManager_1aaa8e62654c0f8b3e706c865d05292b0f" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldManager</scope><name>snowc</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a7a8192aafe28ae5261a7bf9fec1beb90" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldManager</scope><name>snowhice</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a6d31e62af3f2be8dcad08be587056f27" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldManager</scope><name>snowhland</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldManager_1abbf461a04259c236d31a77b16c62db3a" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldManager</scope><name>snowl</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldManager_1ae1a1087ce1a0b8c1eb8e3fe9fecfba12" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldManager</scope><name>sst</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a03e1dadde9ca6f6c199ad12f78f02601" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldManager</scope><name>swndf</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a5f21a5b56d6ead29bb38e0c1c845828a" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldManager</scope><name>swndr</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldManager_1ab08c943690e310565d9ea1a1f42f318a" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldManager</scope><name>swnet</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldManager_1af8bb3f195e222dce11e265ab3619e8a2" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldManager</scope><name>swvdf</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldManager_1ae6de3bc3df175b2a6ed7254a75154572" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldManager</scope><name>swvdr</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldManager_1ac6d7aff27c3b9c193f20c345116124b1" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldManager</scope><name>tbot</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a2cd0f7ef76e719d5c77c2608c96cfe4f" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldManager</scope><name>tref</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a26e4db93602987ced99c72f354e97f6c" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldManager</scope><name>ts</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a6a2506001737f5df278a6d9189e5fe42" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldManager</scope><name>u10</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a8fd79854e70fe2543a297ff812506413" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldManager</scope><name>u10withgusts</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a7f18a89025603b77a3c9fc22f5887032" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldManager</scope><name>ubot</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a199bb728a745e31f38f309d3b5872733" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldManager</scope><name>vbot</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a9a918ec65cba9f66aa8314ce7cf246b9" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldManager</scope><name>wsx</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a54142825a9de0b05b556e639e589f638" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldManager</scope><name>wsy</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldManager_1aef37f2bf69caea666e293ed538962e9c" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldManager</scope><name>zbot</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a3227d8ff695cd4f63e7a62720464f416" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldManager</scope><name>~AtmFieldManager</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

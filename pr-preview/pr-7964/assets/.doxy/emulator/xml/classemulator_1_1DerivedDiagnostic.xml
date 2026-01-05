@@ -1,0 +1,186 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="classemulator_1_1DerivedDiagnostic" kind="class" language="C++" prot="public" abstract="yes">
+    <compoundname>emulator::DerivedDiagnostic</compoundname>
+    <derivedcompoundref refid="classemulator_1_1HorizAvgDiagnostic" prot="public" virt="non-virtual">emulator::HorizAvgDiagnostic</derivedcompoundref>
+    <derivedcompoundref refid="classemulator_1_1VertSliceDiagnostic" prot="public" virt="non-virtual">emulator::VertSliceDiagnostic</derivedcompoundref>
+    <includes refid="derived__diagnostic_8hpp" local="no">derived_diagnostic.hpp</includes>
+    <sectiondef kind="public-func">
+      <memberdef kind="function" id="classemulator_1_1DerivedDiagnostic_1a6e624fae8644a8419ed28405dd80a56a" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
+        <type></type>
+        <definition>virtual emulator::DerivedDiagnostic::~DerivedDiagnostic</definition>
+        <argsstring>()=default</argsstring>
+        <name>~DerivedDiagnostic</name>
+        <qualifiedname>emulator::DerivedDiagnostic::~DerivedDiagnostic</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/diagnostics/derived_diagnostic.hpp" line="34" column="11"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1DerivedDiagnostic_1a29cc53dea2845c12ca120e78028e1e03" prot="public" static="no" const="yes" explicit="no" inline="no" virt="pure-virtual">
+        <type>std::string</type>
+        <definition>virtual std::string emulator::DerivedDiagnostic::name</definition>
+        <argsstring>() const =0</argsstring>
+        <name>name</name>
+        <qualifiedname>emulator::DerivedDiagnostic::name</qualifiedname>
+        <reimplementedby refid="classemulator_1_1HorizAvgDiagnostic_1a2973f6685d9bfea71e0ead60b8004517">name</reimplementedby>
+        <reimplementedby refid="classemulator_1_1VertSliceDiagnostic_1a55d9ef659269df0520d40d2d7abcf4bd">name</reimplementedby>
+        <briefdescription>
+<para>Get the diagnostic name. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/diagnostics/derived_diagnostic.hpp" line="39" column="23"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1DerivedDiagnostic_1a0b6fd5c12c2581a0fedea1be85d24629" prot="public" static="no" const="yes" explicit="no" inline="no" virt="pure-virtual">
+        <type>std::string</type>
+        <definition>virtual std::string emulator::DerivedDiagnostic::source_field</definition>
+        <argsstring>() const =0</argsstring>
+        <name>source_field</name>
+        <qualifiedname>emulator::DerivedDiagnostic::source_field</qualifiedname>
+        <reimplementedby refid="classemulator_1_1HorizAvgDiagnostic_1a4aab62ad2f92468c70e28609149c6cee">source_field</reimplementedby>
+        <reimplementedby refid="classemulator_1_1VertSliceDiagnostic_1a3b1868cab448947d9a04766abe325801">source_field</reimplementedby>
+        <briefdescription>
+<para>Get the source field name. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/diagnostics/derived_diagnostic.hpp" line="44" column="23"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1DerivedDiagnostic_1a308e0c8bb44b2d3be8b53ad2f8548bef" prot="public" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
+        <type>void</type>
+        <definition>virtual void emulator::DerivedDiagnostic::compute</definition>
+        <argsstring>(const FieldDataProvider &amp;fields, std::vector&lt; double &gt; &amp;output)=0</argsstring>
+        <name>compute</name>
+        <qualifiedname>emulator::DerivedDiagnostic::compute</qualifiedname>
+        <reimplementedby refid="classemulator_1_1HorizAvgDiagnostic_1ae0456b8effd649032b6dfd4fce2591c8">compute</reimplementedby>
+        <reimplementedby refid="classemulator_1_1VertSliceDiagnostic_1a9259d65a22df077a398a53c2ec2a9702">compute</reimplementedby>
+        <param>
+          <type>const <ref refid="classemulator_1_1FieldDataProvider" kindref="compound">FieldDataProvider</ref> &amp;</type>
+          <declname>fields</declname>
+        </param>
+        <param>
+          <type>std::vector&lt; double &gt; &amp;</type>
+          <declname>output</declname>
+        </param>
+        <briefdescription>
+<para>Compute the diagnostic. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>fields</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Input field provider </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>output</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Output data buffer (caller must allocate) </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/diagnostics/derived_diagnostic.hpp" line="51" column="16"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1DerivedDiagnostic_1afb82b445a6d355dcd3c3103974ba146a" prot="public" static="no" const="yes" explicit="no" inline="no" virt="pure-virtual">
+        <type>int</type>
+        <definition>virtual int emulator::DerivedDiagnostic::output_size</definition>
+        <argsstring>(int ncols, int nlevs) const =0</argsstring>
+        <name>output_size</name>
+        <qualifiedname>emulator::DerivedDiagnostic::output_size</qualifiedname>
+        <reimplementedby refid="classemulator_1_1HorizAvgDiagnostic_1a293a047532e5c479d1d67b5c40332f98">output_size</reimplementedby>
+        <reimplementedby refid="classemulator_1_1VertSliceDiagnostic_1a42022b08b043802889f461980f6645d4">output_size</reimplementedby>
+        <param>
+          <type>int</type>
+          <declname>ncols</declname>
+        </param>
+        <param>
+          <type>int</type>
+          <declname>nlevs</declname>
+        </param>
+        <briefdescription>
+<para>Get output size. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>ncols</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Number of local columns </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>nlevs</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Number of vertical levels (for source field) </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/diagnostics/derived_diagnostic.hpp" line="59" column="15"/>
+      </memberdef>
+    </sectiondef>
+    <briefdescription>
+<para>Base class for derived diagnostics. </para>
+    </briefdescription>
+    <detaileddescription>
+<para>Derived diagnostics compute output values from one or more input fields. Examples: horizontal averages, vertical slices, pressure interpolation.</para>
+<sect1 id="classemulator_1_1DerivedDiagnostic_1autotoc_md3_1s1"><sect2 id="classemulator_1_1DerivedDiagnostic_1autotoc_md3">
+<title>Implementing Custom Diagnostics</title><para>To add a new diagnostic type:</para>
+<para><orderedlist>
+<listitem><para>Create a subclass of <ref refid="classemulator_1_1DerivedDiagnostic" kindref="compound">DerivedDiagnostic</ref></para>
+</listitem><listitem><para>Implement all virtual methods</para>
+</listitem><listitem><para>Add pattern matching in <ref refid="diagnostic__factory_8cpp" kindref="compound">diagnostic_factory.cpp</ref> </para>
+</listitem></orderedlist>
+</para>
+</sect2></sect1>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="1">
+        <label>emulator::DerivedDiagnostic</label>
+        <link refid="classemulator_1_1DerivedDiagnostic"/>
+      </node>
+      <node id="2">
+        <label>emulator::HorizAvgDiagnostic</label>
+        <link refid="classemulator_1_1HorizAvgDiagnostic"/>
+        <childnode refid="1" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="3">
+        <label>emulator::VertSliceDiagnostic</label>
+        <link refid="classemulator_1_1VertSliceDiagnostic"/>
+        <childnode refid="1" relation="public-inheritance">
+        </childnode>
+      </node>
+    </inheritancegraph>
+    <location file="components/emulator_comps/common/src/diagnostics/derived_diagnostic.hpp" line="32" column="1" bodyfile="components/emulator_comps/common/src/diagnostics/derived_diagnostic.hpp" bodystart="32" bodyend="60"/>
+    <listofallmembers>
+      <member refid="classemulator_1_1DerivedDiagnostic_1a308e0c8bb44b2d3be8b53ad2f8548bef" prot="public" virt="pure-virtual"><scope>emulator::DerivedDiagnostic</scope><name>compute</name></member>
+      <member refid="classemulator_1_1DerivedDiagnostic_1a29cc53dea2845c12ca120e78028e1e03" prot="public" virt="pure-virtual"><scope>emulator::DerivedDiagnostic</scope><name>name</name></member>
+      <member refid="classemulator_1_1DerivedDiagnostic_1afb82b445a6d355dcd3c3103974ba146a" prot="public" virt="pure-virtual"><scope>emulator::DerivedDiagnostic</scope><name>output_size</name></member>
+      <member refid="classemulator_1_1DerivedDiagnostic_1a0b6fd5c12c2581a0fedea1be85d24629" prot="public" virt="pure-virtual"><scope>emulator::DerivedDiagnostic</scope><name>source_field</name></member>
+      <member refid="classemulator_1_1DerivedDiagnostic_1a6e624fae8644a8419ed28405dd80a56a" prot="public" virt="virtual"><scope>emulator::DerivedDiagnostic</scope><name>~DerivedDiagnostic</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

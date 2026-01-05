@@ -1,0 +1,83 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="structemulator_1_1ModelIOConfig" kind="struct" language="C++" prot="public">
+    <compoundname>emulator::ModelIOConfig</compoundname>
+    <includes refid="emulator__config_8hpp" local="no">emulator_config.hpp</includes>
+    <sectiondef kind="public-attrib">
+      <memberdef kind="variable" id="structemulator_1_1ModelIOConfig_1ace0b444b9b1f2f9cb139167f07bb76cb" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; std::string &gt;</type>
+        <definition>std::vector&lt;std::string&gt; emulator::ModelIOConfig::input_variables</definition>
+        <argsstring></argsstring>
+        <name>input_variables</name>
+        <qualifiedname>emulator::ModelIOConfig::input_variables</qualifiedname>
+        <briefdescription>
+<para>Fields to pack as model input. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_config.hpp" line="49" column="15" bodyfile="components/emulator_comps/common/src/emulator_config.hpp" bodystart="49" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1ModelIOConfig_1a40fe98b2589d5e4372fadd446aa134a5" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; std::string &gt;</type>
+        <definition>std::vector&lt;std::string&gt; emulator::ModelIOConfig::output_variables</definition>
+        <argsstring></argsstring>
+        <name>output_variables</name>
+        <qualifiedname>emulator::ModelIOConfig::output_variables</qualifiedname>
+        <briefdescription>
+<para>Fields to extract from output. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_config.hpp" line="50" column="15" bodyfile="components/emulator_comps/common/src/emulator_config.hpp" bodystart="50" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1ModelIOConfig_1afc0dec3dae00aa202a035ce65096ba0c" prot="public" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool emulator::ModelIOConfig::spatial_mode</definition>
+        <argsstring></argsstring>
+        <name>spatial_mode</name>
+        <qualifiedname>emulator::ModelIOConfig::spatial_mode</qualifiedname>
+        <initializer>= true</initializer>
+        <briefdescription>
+<para>Enable spatial mode for CNN-based models (e.g., ACE2). </para>
+        </briefdescription>
+        <detaileddescription>
+<para>When true (CNN mode):</para>
+<para><itemizedlist>
+<listitem><para>Input data is reshaped from [H*W, C] to [1, C, H, W] before inference</para>
+</listitem><listitem><para>Output data is reshaped from [1, C, H, W] to [H*W, C] after inference</para>
+</listitem><listitem><para>The entire grid is processed as a single sample (batch_size=1)</para>
+</listitem></itemizedlist>
+</para>
+<para>When false (pointwise/MLP mode):</para>
+<para><itemizedlist>
+<listitem><para>Data remains in [batch_size, channels] format</para>
+</listitem><listitem><para>Each grid point is processed independently (batch_size=H*W)</para>
+</listitem></itemizedlist>
+</para>
+<para><simplesect kind="note"><para>Default: true (assumes CNN model like ACE2) </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_config.hpp" line="68" column="8" bodyfile="components/emulator_comps/common/src/emulator_config.hpp" bodystart="68" bodyend="-1"/>
+      </memberdef>
+    </sectiondef>
+    <briefdescription>
+<para>Model I/O variable configuration. </para>
+    </briefdescription>
+    <detaileddescription>
+<para>Specifies which fields are used as inputs and outputs for the AI model, and controls the data layout during inference. </para>
+    </detaileddescription>
+    <location file="components/emulator_comps/common/src/emulator_config.hpp" line="48" column="1" bodyfile="components/emulator_comps/common/src/emulator_config.hpp" bodystart="48" bodyend="69"/>
+    <listofallmembers>
+      <member refid="structemulator_1_1ModelIOConfig_1ace0b444b9b1f2f9cb139167f07bb76cb" prot="public" virt="non-virtual"><scope>emulator::ModelIOConfig</scope><name>input_variables</name></member>
+      <member refid="structemulator_1_1ModelIOConfig_1a40fe98b2589d5e4372fadd446aa134a5" prot="public" virt="non-virtual"><scope>emulator::ModelIOConfig</scope><name>output_variables</name></member>
+      <member refid="structemulator_1_1ModelIOConfig_1afc0dec3dae00aa202a035ce65096ba0c" prot="public" virt="non-virtual"><scope>emulator::ModelIOConfig</scope><name>spatial_mode</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

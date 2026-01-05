@@ -1,0 +1,1358 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="classemulator_1_1EmulatorComp" kind="class" language="C++" prot="public" abstract="yes">
+    <compoundname>emulator::EmulatorComp</compoundname>
+    <derivedcompoundref refid="classemulator_1_1EmulatorAtm" prot="public" virt="non-virtual">emulator::EmulatorAtm</derivedcompoundref>
+    <includes refid="emulator__comp_8hpp" local="no">emulator_comp.hpp</includes>
+    <sectiondef kind="protected-attrib">
+      <memberdef kind="variable" id="classemulator_1_1EmulatorComp_1a6da05ee246e7e7f30b22330a8c6bd363" prot="protected" static="no" mutable="no">
+        <type><ref refid="inference__backend_8hpp_1a68c509d4adb3f4a1d6fe3a9b0b87c7b9" kindref="member">MPI_Comm</ref></type>
+        <definition>MPI_Comm emulator::EmulatorComp::m_comm</definition>
+        <argsstring></argsstring>
+        <name>m_comm</name>
+        <qualifiedname>emulator::EmulatorComp::m_comm</qualifiedname>
+        <briefdescription>
+<para>MPI communicator. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="232" column="12" bodyfile="components/emulator_comps/common/src/emulator_comp.hpp" bodystart="232" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1EmulatorComp_1a0ab0c47cbdfc09ce90fb980d0e1b014a" prot="protected" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::EmulatorComp::m_comp_id</definition>
+        <argsstring></argsstring>
+        <name>m_comp_id</name>
+        <qualifiedname>emulator::EmulatorComp::m_comp_id</qualifiedname>
+        <briefdescription>
+<para>Component ID from driver. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="233" column="7" bodyfile="components/emulator_comps/common/src/emulator_comp.hpp" bodystart="233" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1EmulatorComp_1aeb481f9e674f015b9e3fc6b29597c6db" prot="protected" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::EmulatorComp::m_rank</definition>
+        <argsstring></argsstring>
+        <name>m_rank</name>
+        <qualifiedname>emulator::EmulatorComp::m_rank</qualifiedname>
+        <briefdescription>
+<para>MPI rank within component. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="234" column="7" bodyfile="components/emulator_comps/common/src/emulator_comp.hpp" bodystart="234" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1EmulatorComp_1a0e484a4c7574efd8ad0ab1541e591f43" prot="protected" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::EmulatorComp::m_nprocs</definition>
+        <argsstring></argsstring>
+        <name>m_nprocs</name>
+        <qualifiedname>emulator::EmulatorComp::m_nprocs</qualifiedname>
+        <briefdescription>
+<para>Number of MPI processes. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="235" column="7" bodyfile="components/emulator_comps/common/src/emulator_comp.hpp" bodystart="235" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1EmulatorComp_1a1bc1c0052b7efaa1f6c3e4450a5631dd" prot="protected" static="no" mutable="no">
+        <type><ref refid="namespaceemulator_1a4eba730d57900d80c4cde91a064a5d7c" kindref="member">CompType</ref></type>
+        <definition>CompType emulator::EmulatorComp::m_type</definition>
+        <argsstring></argsstring>
+        <name>m_type</name>
+        <qualifiedname>emulator::EmulatorComp::m_type</qualifiedname>
+        <briefdescription>
+<para>Component type enum. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="236" column="12" bodyfile="components/emulator_comps/common/src/emulator_comp.hpp" bodystart="236" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1EmulatorComp_1abefbe4d0e820535e3c2e61791326775a" prot="protected" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::EmulatorComp::m_run_type</definition>
+        <argsstring></argsstring>
+        <name>m_run_type</name>
+        <qualifiedname>emulator::EmulatorComp::m_run_type</qualifiedname>
+        <briefdescription>
+<para>Run type (startup/continue/branch) </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="237" column="7" bodyfile="components/emulator_comps/common/src/emulator_comp.hpp" bodystart="237" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1EmulatorComp_1a49087ef25a2cf999c1acfa3ad4f6f5d6" prot="protected" static="no" mutable="no">
+        <type><ref refid="classemulator_1_1Logger" kindref="compound">Logger</ref></type>
+        <definition>Logger emulator::EmulatorComp::m_logger</definition>
+        <argsstring></argsstring>
+        <name>m_logger</name>
+        <qualifiedname>emulator::EmulatorComp::m_logger</qualifiedname>
+        <briefdescription>
+<para>Component logger. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="238" column="10" bodyfile="components/emulator_comps/common/src/emulator_comp.hpp" bodystart="238" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1EmulatorComp_1aed096a4b0a89a243b99c64db193ac502" prot="protected" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::EmulatorComp::m_current_ymd</definition>
+        <argsstring></argsstring>
+        <name>m_current_ymd</name>
+        <qualifiedname>emulator::EmulatorComp::m_current_ymd</qualifiedname>
+        <initializer>= 0</initializer>
+        <briefdescription>
+<para>Current date as YYYYMMDD. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="241" column="7" bodyfile="components/emulator_comps/common/src/emulator_comp.hpp" bodystart="241" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1EmulatorComp_1abb80d380907ac685437366d0191db5ee" prot="protected" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::EmulatorComp::m_current_tod</definition>
+        <argsstring></argsstring>
+        <name>m_current_tod</name>
+        <qualifiedname>emulator::EmulatorComp::m_current_tod</qualifiedname>
+        <initializer>= 0</initializer>
+        <briefdescription>
+<para>Current time of day [seconds]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="242" column="7" bodyfile="components/emulator_comps/common/src/emulator_comp.hpp" bodystart="242" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1EmulatorComp_1a9a8996a9841b8975ea84b6451594edfb" prot="protected" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::EmulatorComp::m_step_count</definition>
+        <argsstring></argsstring>
+        <name>m_step_count</name>
+        <qualifiedname>emulator::EmulatorComp::m_step_count</qualifiedname>
+        <initializer>= 0</initializer>
+        <briefdescription>
+<para>Number of steps executed. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="243" column="7" bodyfile="components/emulator_comps/common/src/emulator_comp.hpp" bodystart="243" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1EmulatorComp_1af5d08fcd26736106bf96d5ee09ac49a7" prot="protected" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::EmulatorComp::m_num_local_cols</definition>
+        <argsstring></argsstring>
+        <name>m_num_local_cols</name>
+        <qualifiedname>emulator::EmulatorComp::m_num_local_cols</qualifiedname>
+        <initializer>= 0</initializer>
+        <briefdescription>
+<para>Local column count. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="246" column="7" bodyfile="components/emulator_comps/common/src/emulator_comp.hpp" bodystart="246" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1EmulatorComp_1aaac793034bcb82e0d7ceefa4b9797af4" prot="protected" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::EmulatorComp::m_num_global_cols</definition>
+        <argsstring></argsstring>
+        <name>m_num_global_cols</name>
+        <qualifiedname>emulator::EmulatorComp::m_num_global_cols</qualifiedname>
+        <initializer>= 0</initializer>
+        <briefdescription>
+<para>Global column count. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="247" column="7" bodyfile="components/emulator_comps/common/src/emulator_comp.hpp" bodystart="247" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1EmulatorComp_1a23164e13a2f20510af3642b5b95161ef" prot="protected" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::EmulatorComp::m_nx</definition>
+        <argsstring></argsstring>
+        <name>m_nx</name>
+        <qualifiedname>emulator::EmulatorComp::m_nx</qualifiedname>
+        <initializer>= 0</initializer>
+        <briefdescription>
+<para>Grid points in x (longitude) </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="248" column="7" bodyfile="components/emulator_comps/common/src/emulator_comp.hpp" bodystart="248" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1EmulatorComp_1a91087470201ed7028100ecad4fb89967" prot="protected" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::EmulatorComp::m_ny</definition>
+        <argsstring></argsstring>
+        <name>m_ny</name>
+        <qualifiedname>emulator::EmulatorComp::m_ny</qualifiedname>
+        <initializer>= 0</initializer>
+        <briefdescription>
+<para>Grid points in y (latitude) </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="249" column="7" bodyfile="components/emulator_comps/common/src/emulator_comp.hpp" bodystart="249" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1EmulatorComp_1a680c034456776d3cb1fa7775a3e84b15" prot="protected" static="no" mutable="no">
+        <type>std::vector&lt; int &gt;</type>
+        <definition>std::vector&lt;int&gt; emulator::EmulatorComp::m_col_gids</definition>
+        <argsstring></argsstring>
+        <name>m_col_gids</name>
+        <qualifiedname>emulator::EmulatorComp::m_col_gids</qualifiedname>
+        <briefdescription>
+<para>Global IDs for local columns. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="250" column="15" bodyfile="components/emulator_comps/common/src/emulator_comp.hpp" bodystart="250" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1EmulatorComp_1adc8ec9ea47e39f2c0a73b9c10e65a78b" prot="protected" static="no" mutable="no">
+        <type>std::vector&lt; double &gt;</type>
+        <definition>std::vector&lt;double&gt; emulator::EmulatorComp::m_lat</definition>
+        <argsstring></argsstring>
+        <name>m_lat</name>
+        <qualifiedname>emulator::EmulatorComp::m_lat</qualifiedname>
+        <briefdescription>
+<para>Latitude [radians]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="251" column="15" bodyfile="components/emulator_comps/common/src/emulator_comp.hpp" bodystart="251" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1EmulatorComp_1a70bf49f4cbf4fa23b3ec994382859b98" prot="protected" static="no" mutable="no">
+        <type>std::vector&lt; double &gt;</type>
+        <definition>std::vector&lt;double&gt; emulator::EmulatorComp::m_lon</definition>
+        <argsstring></argsstring>
+        <name>m_lon</name>
+        <qualifiedname>emulator::EmulatorComp::m_lon</qualifiedname>
+        <briefdescription>
+<para>Longitude [radians]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="252" column="15" bodyfile="components/emulator_comps/common/src/emulator_comp.hpp" bodystart="252" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1EmulatorComp_1a5415b6b157b0cec1d93e548a90965fcd" prot="protected" static="no" mutable="no">
+        <type>std::vector&lt; double &gt;</type>
+        <definition>std::vector&lt;double&gt; emulator::EmulatorComp::m_area</definition>
+        <argsstring></argsstring>
+        <name>m_area</name>
+        <qualifiedname>emulator::EmulatorComp::m_area</qualifiedname>
+        <briefdescription>
+<para>Cell area [km²]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="253" column="15" bodyfile="components/emulator_comps/common/src/emulator_comp.hpp" bodystart="253" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1EmulatorComp_1a76314a7561a297617866f59bf7e47f09" prot="protected" static="no" mutable="no">
+        <type>double *</type>
+        <definition>double* emulator::EmulatorComp::m_import_data</definition>
+        <argsstring></argsstring>
+        <name>m_import_data</name>
+        <qualifiedname>emulator::EmulatorComp::m_import_data</qualifiedname>
+        <initializer>= nullptr</initializer>
+        <briefdescription>
+<para>Import buffer pointer (x2a) </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="256" column="10" bodyfile="components/emulator_comps/common/src/emulator_comp.hpp" bodystart="256" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1EmulatorComp_1a45350bdd14fc150338a75a669c0a7211" prot="protected" static="no" mutable="no">
+        <type>double *</type>
+        <definition>double* emulator::EmulatorComp::m_export_data</definition>
+        <argsstring></argsstring>
+        <name>m_export_data</name>
+        <qualifiedname>emulator::EmulatorComp::m_export_data</qualifiedname>
+        <initializer>= nullptr</initializer>
+        <briefdescription>
+<para>Export buffer pointer (a2x) </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="257" column="10" bodyfile="components/emulator_comps/common/src/emulator_comp.hpp" bodystart="257" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1EmulatorComp_1a09f42f0242acef3cbad24a67a6f555df" prot="protected" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::EmulatorComp::m_num_imports</definition>
+        <argsstring></argsstring>
+        <name>m_num_imports</name>
+        <qualifiedname>emulator::EmulatorComp::m_num_imports</qualifiedname>
+        <initializer>= 0</initializer>
+        <briefdescription>
+<para>Number of import fields. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="258" column="7" bodyfile="components/emulator_comps/common/src/emulator_comp.hpp" bodystart="258" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1EmulatorComp_1ac1715fc77ead3429dc4bc94ec46800c0" prot="protected" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::EmulatorComp::m_num_exports</definition>
+        <argsstring></argsstring>
+        <name>m_num_exports</name>
+        <qualifiedname>emulator::EmulatorComp::m_num_exports</qualifiedname>
+        <initializer>= 0</initializer>
+        <briefdescription>
+<para>Number of export fields. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="259" column="7" bodyfile="components/emulator_comps/common/src/emulator_comp.hpp" bodystart="259" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1EmulatorComp_1a5edfe375b592ce11c16405b3f215b420" prot="protected" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::EmulatorComp::m_field_size</definition>
+        <argsstring></argsstring>
+        <name>m_field_size</name>
+        <qualifiedname>emulator::EmulatorComp::m_field_size</qualifiedname>
+        <initializer>= 0</initializer>
+        <briefdescription>
+<para>Size per field (should = num_local_cols) </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="260" column="7" bodyfile="components/emulator_comps/common/src/emulator_comp.hpp" bodystart="260" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1EmulatorComp_1a737dbc4567eb540f4eddd738d51be9bf" prot="protected" static="no" mutable="no">
+        <type>std::string</type>
+        <definition>std::string emulator::EmulatorComp::m_input_file</definition>
+        <argsstring></argsstring>
+        <name>m_input_file</name>
+        <qualifiedname>emulator::EmulatorComp::m_input_file</qualifiedname>
+        <briefdescription>
+<para>Path to configuration file. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="262" column="15" bodyfile="components/emulator_comps/common/src/emulator_comp.hpp" bodystart="262" bodyend="-1"/>
+      </memberdef>
+    </sectiondef>
+    <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classemulator_1_1EmulatorComp_1a18366b3d685ddd0c4ec12f72889667bb" prot="private" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool emulator::EmulatorComp::m_initialized</definition>
+        <argsstring></argsstring>
+        <name>m_initialized</name>
+        <qualifiedname>emulator::EmulatorComp::m_initialized</qualifiedname>
+        <initializer>= false</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="272" column="8" bodyfile="components/emulator_comps/common/src/emulator_comp.hpp" bodystart="272" bodyend="-1"/>
+      </memberdef>
+    </sectiondef>
+    <sectiondef kind="public-func">
+      <memberdef kind="function" id="classemulator_1_1EmulatorComp_1a3029bc394bbc08b1307c7387915907e0" prot="public" static="no" const="no" explicit="yes" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>emulator::EmulatorComp::EmulatorComp</definition>
+        <argsstring>(CompType type)</argsstring>
+        <name>EmulatorComp</name>
+        <qualifiedname>emulator::EmulatorComp::EmulatorComp</qualifiedname>
+        <param>
+          <type><ref refid="namespaceemulator_1a4eba730d57900d80c4cde91a064a5d7c" kindref="member">CompType</ref></type>
+          <declname>type</declname>
+        </param>
+        <briefdescription>
+<para>Construct an emulator component of the given type. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>type</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Component type (ATM, OCN, ICE, LND) </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="59" column="12" bodyfile="components/emulator_comps/common/src/emulator_comp.cpp" bodystart="22" bodyend="24"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorComp_1a2ba0a807e47790f7a7990de8f4568d66" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
+        <type></type>
+        <definition>virtual emulator::EmulatorComp::~EmulatorComp</definition>
+        <argsstring>()=default</argsstring>
+        <name>~EmulatorComp</name>
+        <qualifiedname>emulator::EmulatorComp::~EmulatorComp</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="61" column="11"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorComp_1a623d17026efc45f994de51f694fe4590" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator::EmulatorComp::create_instance</definition>
+        <argsstring>(MPI_Comm comm, int comp_id, const char *input_file, int run_type, int start_ymd, int start_tod)</argsstring>
+        <name>create_instance</name>
+        <qualifiedname>emulator::EmulatorComp::create_instance</qualifiedname>
+        <param>
+          <type><ref refid="inference__backend_8hpp_1a68c509d4adb3f4a1d6fe3a9b0b87c7b9" kindref="member">MPI_Comm</ref></type>
+          <declname>comm</declname>
+        </param>
+        <param>
+          <type>int</type>
+          <declname>comp_id</declname>
+        </param>
+        <param>
+          <type>const char *</type>
+          <declname>input_file</declname>
+        </param>
+        <param>
+          <type>int</type>
+          <declname>run_type</declname>
+        </param>
+        <param>
+          <type>int</type>
+          <declname>start_ymd</declname>
+        </param>
+        <param>
+          <type>int</type>
+          <declname>start_tod</declname>
+        </param>
+        <briefdescription>
+<para>Initialize the component instance. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Initialize the component instance with MPI and metadata.</para>
+<para>Sets up MPI communicator, stores component metadata, and prepares for grid data and coupling setup.</para>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>comm</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>MPI communicator for this component </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>comp_id</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Component ID assigned by the driver </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>input_file</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Path to component configuration file </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>run_type</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Run type (startup, continue, branch) </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>start_ymd</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Start date as YYYYMMDD </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>start_tod</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Start time of day in seconds </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="80" column="8" bodyfile="components/emulator_comps/common/src/emulator_comp.cpp" bodystart="29" bodyend="68"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorComp_1a8855bf433073da6cc049da797e620a3c" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator::EmulatorComp::set_grid_data</definition>
+        <argsstring>(int nx, int ny, int num_local_cols, int num_global_cols, const int *col_gids, const double *lat, const double *lon, const double *area)</argsstring>
+        <name>set_grid_data</name>
+        <qualifiedname>emulator::EmulatorComp::set_grid_data</qualifiedname>
+        <param>
+          <type>int</type>
+          <declname>nx</declname>
+        </param>
+        <param>
+          <type>int</type>
+          <declname>ny</declname>
+        </param>
+        <param>
+          <type>int</type>
+          <declname>num_local_cols</declname>
+        </param>
+        <param>
+          <type>int</type>
+          <declname>num_global_cols</declname>
+        </param>
+        <param>
+          <type>const int *</type>
+          <declname>col_gids</declname>
+        </param>
+        <param>
+          <type>const double *</type>
+          <declname>lat</declname>
+        </param>
+        <param>
+          <type>const double *</type>
+          <declname>lon</declname>
+        </param>
+        <param>
+          <type>const double *</type>
+          <declname>area</declname>
+        </param>
+        <briefdescription>
+<para>Set grid decomposition data from the driver. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Override grid data with values from Fortran driver.</para>
+<para>Receives the local portion of the global grid as distributed by the E3SM driver&apos;s domain decomposition.</para>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>nx</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Number of grid points in x-direction (longitude) </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>ny</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Number of grid points in y-direction (latitude) </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>num_local_cols</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Number of columns on this MPI rank </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>num_global_cols</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Total number of columns globally </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>col_gids</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Global IDs for each local column </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>lat</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Latitude values for each local column [radians] </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>lon</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Longitude values for each local column [radians] </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>area</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Grid cell areas for each local column [km²]</para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+Used when the driver provides grid decomposition directly instead of reading from a file. </para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="98" column="8" bodyfile="components/emulator_comps/common/src/emulator_comp.cpp" bodystart="237" bodyend="262"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorComp_1ab5d42f9801943882c1c2d6167b8f47b3" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator::EmulatorComp::setup_coupling</definition>
+        <argsstring>(double *import_data, double *export_data, int num_imports, int num_exports, int field_size)</argsstring>
+        <name>setup_coupling</name>
+        <qualifiedname>emulator::EmulatorComp::setup_coupling</qualifiedname>
+        <param>
+          <type>double *</type>
+          <declname>import_data</declname>
+        </param>
+        <param>
+          <type>double *</type>
+          <declname>export_data</declname>
+        </param>
+        <param>
+          <type>int</type>
+          <declname>num_imports</declname>
+        </param>
+        <param>
+          <type>int</type>
+          <declname>num_exports</declname>
+        </param>
+        <param>
+          <type>int</type>
+          <declname>field_size</declname>
+        </param>
+        <briefdescription>
+<para>Set up coupling data buffers. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Set up coupling buffer pointers from the MCT layer.</para>
+<para>Receives pointers to the MCT attribute vector buffers for data exchange with other components via the coupler.</para>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>import_data</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Pointer to import buffer (x2a fields) </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>export_data</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Pointer to export buffer (a2x fields) </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>num_imports</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Number of import fields </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>num_exports</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Number of export fields </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>field_size</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Size of each field (should equal num_local_cols) </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="114" column="8" bodyfile="components/emulator_comps/common/src/emulator_comp.cpp" bodystart="267" bodyend="282"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorComp_1a966205ef2c077484dc667214977aca23" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator::EmulatorComp::initialize</definition>
+        <argsstring>()</argsstring>
+        <name>initialize</name>
+        <qualifiedname>emulator::EmulatorComp::initialize</qualifiedname>
+        <briefdescription>
+<para>Initialize the component (phase 2). </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Initialize the component by calling the derived class implementation.</para>
+<para>Called after grid and coupling setup. Loads AI model, reads initial conditions, and prepares for time stepping. </para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="123" column="8" bodyfile="components/emulator_comps/common/src/emulator_comp.cpp" bodystart="287" bodyend="300"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorComp_1a4a85112a98bded63a6129b9727063f26" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator::EmulatorComp::run</definition>
+        <argsstring>(int dt)</argsstring>
+        <name>run</name>
+        <qualifiedname>emulator::EmulatorComp::run</qualifiedname>
+        <param>
+          <type>int</type>
+          <declname>dt</declname>
+        </param>
+        <briefdescription>
+<para>Execute one time step. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Execute one time step: import → run → export.</para>
+<para>Performs the main computational cycle:</para>
+<para><orderedlist>
+<listitem><para>Import fields from coupler</para>
+</listitem><listitem><para>Run AI inference</para>
+</listitem><listitem><para>Export fields to coupler</para>
+</listitem></orderedlist>
+</para>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>dt</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Time step size in seconds </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="136" column="8" bodyfile="components/emulator_comps/common/src/emulator_comp.cpp" bodystart="305" bodyend="337"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorComp_1ae34a562b789d3459bd204199dc0bbdf4" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator::EmulatorComp::finalize</definition>
+        <argsstring>()</argsstring>
+        <name>finalize</name>
+        <qualifiedname>emulator::EmulatorComp::finalize</qualifiedname>
+        <briefdescription>
+<para>Finalize and clean up the component. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Finalize the component and release resources.</para>
+<para>Releases resources, finalizes inference backend, and performs any necessary cleanup. </para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="144" column="8" bodyfile="components/emulator_comps/common/src/emulator_comp.cpp" bodystart="342" bodyend="356"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorComp_1ae49c51a48c75014c158523891f1f1fc3" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>int</type>
+        <definition>int emulator::EmulatorComp::get_num_local_cols</definition>
+        <argsstring>() const</argsstring>
+        <name>get_num_local_cols</name>
+        <qualifiedname>emulator::EmulatorComp::get_num_local_cols</qualifiedname>
+        <briefdescription>
+<para>Get number of columns on this MPI rank. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="151" column="7" bodyfile="components/emulator_comps/common/src/emulator_comp.hpp" bodystart="151" bodyend="151"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorComp_1aaa9c17dd955beaeb39f7cfc1367f3516" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>int</type>
+        <definition>int emulator::EmulatorComp::get_num_global_cols</definition>
+        <argsstring>() const</argsstring>
+        <name>get_num_global_cols</name>
+        <qualifiedname>emulator::EmulatorComp::get_num_global_cols</qualifiedname>
+        <briefdescription>
+<para>Get total number of columns globally. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="154" column="7" bodyfile="components/emulator_comps/common/src/emulator_comp.hpp" bodystart="154" bodyend="154"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorComp_1ab358a2e945d029a9586aefdede65cbcb" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>int</type>
+        <definition>int emulator::EmulatorComp::get_nx</definition>
+        <argsstring>() const</argsstring>
+        <name>get_nx</name>
+        <qualifiedname>emulator::EmulatorComp::get_nx</qualifiedname>
+        <briefdescription>
+<para>Get number of grid points in x-direction (longitude). </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="157" column="7" bodyfile="components/emulator_comps/common/src/emulator_comp.hpp" bodystart="157" bodyend="157"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorComp_1aa5745a247d0b22e82deadd61b4ca5e86" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>int</type>
+        <definition>int emulator::EmulatorComp::get_ny</definition>
+        <argsstring>() const</argsstring>
+        <name>get_ny</name>
+        <qualifiedname>emulator::EmulatorComp::get_ny</qualifiedname>
+        <briefdescription>
+<para>Get number of grid points in y-direction (latitude). </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="160" column="7" bodyfile="components/emulator_comps/common/src/emulator_comp.hpp" bodystart="160" bodyend="160"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorComp_1a7057c0eb9d18ec46289707d138ba8b16" prot="public" static="no" const="yes" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator::EmulatorComp::get_local_col_gids</definition>
+        <argsstring>(int *gids) const</argsstring>
+        <name>get_local_col_gids</name>
+        <qualifiedname>emulator::EmulatorComp::get_local_col_gids</qualifiedname>
+        <param>
+          <type>int *</type>
+          <declname>gids</declname>
+        </param>
+        <briefdescription>
+<para>Get global IDs for local columns. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>gids</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Output array (must be pre-allocated with num_local_cols) </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="166" column="8" bodyfile="components/emulator_comps/common/src/emulator_comp.cpp" bodystart="358" bodyend="362"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorComp_1a3d2e5d680124326927d5856e4f87b54e" prot="public" static="no" const="yes" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator::EmulatorComp::get_cols_latlon</definition>
+        <argsstring>(double *lat, double *lon) const</argsstring>
+        <name>get_cols_latlon</name>
+        <qualifiedname>emulator::EmulatorComp::get_cols_latlon</qualifiedname>
+        <param>
+          <type>double *</type>
+          <declname>lat</declname>
+        </param>
+        <param>
+          <type>double *</type>
+          <declname>lon</declname>
+        </param>
+        <briefdescription>
+<para>Get lat/lon for local columns. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>lat</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Output latitude array [radians] </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>lon</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Output longitude array [radians] </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="173" column="8" bodyfile="components/emulator_comps/common/src/emulator_comp.cpp" bodystart="364" bodyend="371"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorComp_1af412e477cfaa1edb474812cbbbfbc794" prot="public" static="no" const="yes" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator::EmulatorComp::get_cols_area</definition>
+        <argsstring>(double *area) const</argsstring>
+        <name>get_cols_area</name>
+        <qualifiedname>emulator::EmulatorComp::get_cols_area</qualifiedname>
+        <param>
+          <type>double *</type>
+          <declname>area</declname>
+        </param>
+        <briefdescription>
+<para>Get area for local columns. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>area</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Output area array [km²] </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="179" column="8" bodyfile="components/emulator_comps/common/src/emulator_comp.cpp" bodystart="373" bodyend="377"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorComp_1a19c4109920f42223bfb9fafb9c5de12e" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type><ref refid="namespaceemulator_1a4eba730d57900d80c4cde91a064a5d7c" kindref="member">CompType</ref></type>
+        <definition>CompType emulator::EmulatorComp::type</definition>
+        <argsstring>() const</argsstring>
+        <name>type</name>
+        <qualifiedname>emulator::EmulatorComp::type</qualifiedname>
+        <briefdescription>
+<para>Get component type. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="186" column="12" bodyfile="components/emulator_comps/common/src/emulator_comp.hpp" bodystart="186" bodyend="186"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorComp_1a9a7b7e46700b20de7a6d3d5b43c7be44" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type><ref refid="inference__backend_8hpp_1a68c509d4adb3f4a1d6fe3a9b0b87c7b9" kindref="member">MPI_Comm</ref></type>
+        <definition>MPI_Comm emulator::EmulatorComp::comm</definition>
+        <argsstring>() const</argsstring>
+        <name>comm</name>
+        <qualifiedname>emulator::EmulatorComp::comm</qualifiedname>
+        <briefdescription>
+<para>Get MPI communicator. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="189" column="12" bodyfile="components/emulator_comps/common/src/emulator_comp.hpp" bodystart="189" bodyend="189"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorComp_1a77c1b30943a1e11186e7815909505f76" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>int</type>
+        <definition>int emulator::EmulatorComp::comp_id</definition>
+        <argsstring>() const</argsstring>
+        <name>comp_id</name>
+        <qualifiedname>emulator::EmulatorComp::comp_id</qualifiedname>
+        <briefdescription>
+<para>Get component ID. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="192" column="7" bodyfile="components/emulator_comps/common/src/emulator_comp.hpp" bodystart="192" bodyend="192"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorComp_1a281b436e53a5434ee1d287bd5d05d92d" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>int</type>
+        <definition>int emulator::EmulatorComp::rank</definition>
+        <argsstring>() const</argsstring>
+        <name>rank</name>
+        <qualifiedname>emulator::EmulatorComp::rank</qualifiedname>
+        <briefdescription>
+<para>Get MPI rank within component communicator. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="195" column="7" bodyfile="components/emulator_comps/common/src/emulator_comp.hpp" bodystart="195" bodyend="195"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorComp_1a11a86d25af4d06cb473c96124dc3590c" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>bool</type>
+        <definition>bool emulator::EmulatorComp::is_root</definition>
+        <argsstring>() const</argsstring>
+        <name>is_root</name>
+        <qualifiedname>emulator::EmulatorComp::is_root</qualifiedname>
+        <briefdescription>
+<para>Check if this is the root rank (rank 0). </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="198" column="8" bodyfile="components/emulator_comps/common/src/emulator_comp.hpp" bodystart="198" bodyend="198"/>
+      </memberdef>
+    </sectiondef>
+    <sectiondef kind="protected-func">
+      <memberdef kind="function" id="classemulator_1_1EmulatorComp_1a931fe1141a977aa67d2590f5004dbeca" prot="protected" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
+        <type>void</type>
+        <definition>virtual void emulator::EmulatorComp::init_impl</definition>
+        <argsstring>()=0</argsstring>
+        <name>init_impl</name>
+        <qualifiedname>emulator::EmulatorComp::init_impl</qualifiedname>
+        <reimplementedby refid="classemulator_1_1EmulatorAtm_1ae797ccfb65937ef6c46528cd8dffe01c">init_impl</reimplementedby>
+        <briefdescription>
+<para>Component-specific initialization. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="206" column="16"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorComp_1a79ad29a4d5c520e1dfdab5c4b161c38d" prot="protected" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
+        <type>void</type>
+        <definition>virtual void emulator::EmulatorComp::run_impl</definition>
+        <argsstring>(int dt)=0</argsstring>
+        <name>run_impl</name>
+        <qualifiedname>emulator::EmulatorComp::run_impl</qualifiedname>
+        <reimplementedby refid="classemulator_1_1EmulatorAtm_1a3d39cd15394c69f8d8b4149b2e4650e3">run_impl</reimplementedby>
+        <param>
+          <type>int</type>
+          <declname>dt</declname>
+        </param>
+        <briefdescription>
+<para>Component-specific time step execution. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="209" column="16"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorComp_1a1aa9c2463ef7bd65ccd3327e383dc67b" prot="protected" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
+        <type>void</type>
+        <definition>virtual void emulator::EmulatorComp::final_impl</definition>
+        <argsstring>()=0</argsstring>
+        <name>final_impl</name>
+        <qualifiedname>emulator::EmulatorComp::final_impl</qualifiedname>
+        <reimplementedby refid="classemulator_1_1EmulatorAtm_1ac8e27d0b2adfe44456c88cb858e9402a">final_impl</reimplementedby>
+        <briefdescription>
+<para>Component-specific finalization. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="212" column="16"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorComp_1a90899c19c5c30e241f5472fca420a49e" prot="protected" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
+        <type>void</type>
+        <definition>virtual void emulator::EmulatorComp::run_inference</definition>
+        <argsstring>(const std::vector&lt; double &gt; &amp;inputs, std::vector&lt; double &gt; &amp;outputs)=0</argsstring>
+        <name>run_inference</name>
+        <qualifiedname>emulator::EmulatorComp::run_inference</qualifiedname>
+        <reimplementedby refid="classemulator_1_1EmulatorAtm_1a843280b745347b3e3f884b9966d04304">run_inference</reimplementedby>
+        <param>
+          <type>const std::vector&lt; double &gt; &amp;</type>
+          <declname>inputs</declname>
+        </param>
+        <param>
+          <type>std::vector&lt; double &gt; &amp;</type>
+          <declname>outputs</declname>
+        </param>
+        <briefdescription>
+<para>Run AI inference on packed input/output vectors. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>inputs</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Packed input features </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>outputs</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Packed output features (will be resized as needed) </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="219" column="16"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorComp_1ad291d2c60b175a87fc93f261acae51bb" prot="protected" static="no" const="no" explicit="no" inline="yes" virt="virtual">
+        <type>void</type>
+        <definition>virtual void emulator::EmulatorComp::import_from_coupler</definition>
+        <argsstring>()</argsstring>
+        <name>import_from_coupler</name>
+        <qualifiedname>emulator::EmulatorComp::import_from_coupler</qualifiedname>
+        <briefdescription>
+<para>Import fields from coupler (override as needed). </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="223" column="16" bodyfile="components/emulator_comps/common/src/emulator_comp.hpp" bodystart="223" bodyend="223"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorComp_1a23b6b16432401d1b86f66c0c2e4cd427" prot="protected" static="no" const="no" explicit="no" inline="yes" virt="virtual">
+        <type>void</type>
+        <definition>virtual void emulator::EmulatorComp::export_to_coupler</definition>
+        <argsstring>()</argsstring>
+        <name>export_to_coupler</name>
+        <qualifiedname>emulator::EmulatorComp::export_to_coupler</qualifiedname>
+        <briefdescription>
+<para>Export fields to coupler (override as needed). </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="226" column="16" bodyfile="components/emulator_comps/common/src/emulator_comp.hpp" bodystart="226" bodyend="226"/>
+      </memberdef>
+    </sectiondef>
+    <sectiondef kind="private-func">
+      <memberdef kind="function" id="classemulator_1_1EmulatorComp_1a322468d4001ed9344b372a8a448d2be5" prot="private" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator::EmulatorComp::read_grid_file</definition>
+        <argsstring>(const std::string &amp;config_file)</argsstring>
+        <name>read_grid_file</name>
+        <qualifiedname>emulator::EmulatorComp::read_grid_file</qualifiedname>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>config_file</declname>
+          <defname>input_file</defname>
+        </param>
+        <briefdescription>
+<para>Read grid information from the configuration and grid files. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Parses the YAML configuration to find the grid file path, then reads grid dimensions and coordinates using PIO. </para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="265" column="8" bodyfile="components/emulator_comps/common/src/emulator_comp.cpp" bodystart="76" bodyend="141"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorComp_1ab7329cb32d5c778f57e8172174091a52" prot="private" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator::EmulatorComp::distribute_grid_data</definition>
+        <argsstring>(const std::vector&lt; double &gt; &amp;lon_global, const std::vector&lt; double &gt; &amp;lat_global, const std::vector&lt; double &gt; &amp;area_global)</argsstring>
+        <name>distribute_grid_data</name>
+        <qualifiedname>emulator::EmulatorComp::distribute_grid_data</qualifiedname>
+        <param>
+          <type>const std::vector&lt; double &gt; &amp;</type>
+          <declname>lon_global</declname>
+        </param>
+        <param>
+          <type>const std::vector&lt; double &gt; &amp;</type>
+          <declname>lat_global</declname>
+        </param>
+        <param>
+          <type>const std::vector&lt; double &gt; &amp;</type>
+          <declname>area_global</declname>
+        </param>
+        <briefdescription>
+<para>Distribute global grid data to local partitions. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Performs a simple 1D decomposition across MPI ranks, assigning contiguous blocks of columns to each rank. </para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="266" column="8" bodyfile="components/emulator_comps/common/src/emulator_comp.cpp" bodystart="149" bodyend="186"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorComp_1a003ee5839e87f65ae7868ab0ad172fae" prot="private" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator::EmulatorComp::setup_default_grid</definition>
+        <argsstring>()</argsstring>
+        <name>setup_default_grid</name>
+        <qualifiedname>emulator::EmulatorComp::setup_default_grid</qualifiedname>
+        <briefdescription>
+<para>Set up a default 360x180 global grid. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Used when no grid file is available or readable. </para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="269" column="8" bodyfile="components/emulator_comps/common/src/emulator_comp.cpp" bodystart="193" bodyend="229"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorComp_1af4b50a9e5b5d61e2fbfd97ec13a159af" prot="private" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator::EmulatorComp::advance_time</definition>
+        <argsstring>(int dt)</argsstring>
+        <name>advance_time</name>
+        <qualifiedname>emulator::EmulatorComp::advance_time</qualifiedname>
+        <param>
+          <type>int</type>
+          <declname>dt</declname>
+        </param>
+        <briefdescription>
+<para>Advance simulation time by dt seconds. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Handles day rollover using a NO_LEAP calendar. </para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="270" column="8" bodyfile="components/emulator_comps/common/src/emulator_comp.cpp" bodystart="384" bodyend="413"/>
+      </memberdef>
+    </sectiondef>
+    <briefdescription>
+<para>Abstract base class for all emulated E3SM components. </para>
+    </briefdescription>
+    <detaileddescription>
+<para>Provides the common infrastructure for emulator components including:<itemizedlist>
+<listitem><para>MPI communicator management</para>
+</listitem><listitem><para>Grid data distribution and storage</para>
+</listitem><listitem><para>Coupling data buffer management</para>
+</listitem><listitem><para>Time stepping and state management</para>
+</listitem><listitem><para>Logging infrastructure</para>
+</listitem></itemizedlist>
+</para>
+<para>Derived classes (e.g., <ref refid="classemulator_1_1EmulatorAtm" kindref="compound">EmulatorAtm</ref>) implement the pure virtual methods to provide component-specific behavior.</para>
+<sect1 id="classemulator_1_1EmulatorComp_1autotoc_md8_1s1"><sect2 id="classemulator_1_1EmulatorComp_1autotoc_md8">
+<title>Lifecycle</title><para><orderedlist>
+<listitem><para><computeroutput><ref refid="classemulator_1_1EmulatorComp_1a623d17026efc45f994de51f694fe4590" kindref="member">create_instance()</ref></computeroutput> - Initialize MPI and component metadata</para>
+</listitem><listitem><para><computeroutput><ref refid="classemulator_1_1EmulatorComp_1a8855bf433073da6cc049da797e620a3c" kindref="member">set_grid_data()</ref></computeroutput> - Receive grid decomposition from driver</para>
+</listitem><listitem><para><computeroutput><ref refid="classemulator_1_1EmulatorComp_1ab5d42f9801943882c1c2d6167b8f47b3" kindref="member">setup_coupling()</ref></computeroutput> - Receive coupling buffer pointers</para>
+</listitem><listitem><para><computeroutput><ref refid="classemulator_1_1EmulatorComp_1a966205ef2c077484dc667214977aca23" kindref="member">initialize()</ref></computeroutput> - Load model, read ICs, set up inference</para>
+</listitem><listitem><para><computeroutput><ref refid="classemulator_1_1EmulatorComp_1a4a85112a98bded63a6129b9727063f26" kindref="member">run()</ref></computeroutput> - Execute time step (import → inference → export)</para>
+</listitem><listitem><para><computeroutput><ref refid="classemulator_1_1EmulatorComp_1ae34a562b789d3459bd204199dc0bbdf4" kindref="member">finalize()</ref></computeroutput> - Clean up resources</para>
+</listitem></orderedlist>
+</para>
+<para><simplesect kind="see"><para><ref refid="classemulator_1_1EmulatorAtm" kindref="compound">EmulatorAtm</ref> for the atmosphere implementation </para>
+</simplesect>
+</para>
+</sect2></sect1>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="2">
+        <label>emulator::EmulatorAtm</label>
+        <link refid="classemulator_1_1EmulatorAtm"/>
+        <childnode refid="1" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="1">
+        <label>emulator::EmulatorComp</label>
+        <link refid="classemulator_1_1EmulatorComp"/>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="1">
+        <label>emulator::EmulatorComp</label>
+        <link refid="classemulator_1_1EmulatorComp"/>
+        <childnode refid="2" relation="usage">
+          <edgelabel>m_logger</edgelabel>
+        </childnode>
+      </node>
+      <node id="2">
+        <label>emulator::Logger</label>
+        <link refid="classemulator_1_1Logger"/>
+      </node>
+    </collaborationgraph>
+    <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="53" column="1" bodyfile="components/emulator_comps/common/src/emulator_comp.hpp" bodystart="53" bodyend="273"/>
+    <listofallmembers>
+      <member refid="classemulator_1_1EmulatorComp_1af4b50a9e5b5d61e2fbfd97ec13a159af" prot="private" virt="non-virtual"><scope>emulator::EmulatorComp</scope><name>advance_time</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a9a7b7e46700b20de7a6d3d5b43c7be44" prot="public" virt="non-virtual"><scope>emulator::EmulatorComp</scope><name>comm</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a77c1b30943a1e11186e7815909505f76" prot="public" virt="non-virtual"><scope>emulator::EmulatorComp</scope><name>comp_id</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a623d17026efc45f994de51f694fe4590" prot="public" virt="non-virtual"><scope>emulator::EmulatorComp</scope><name>create_instance</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1ab7329cb32d5c778f57e8172174091a52" prot="private" virt="non-virtual"><scope>emulator::EmulatorComp</scope><name>distribute_grid_data</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a3029bc394bbc08b1307c7387915907e0" prot="public" virt="non-virtual"><scope>emulator::EmulatorComp</scope><name>EmulatorComp</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a23b6b16432401d1b86f66c0c2e4cd427" prot="protected" virt="virtual"><scope>emulator::EmulatorComp</scope><name>export_to_coupler</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a1aa9c2463ef7bd65ccd3327e383dc67b" prot="protected" virt="pure-virtual"><scope>emulator::EmulatorComp</scope><name>final_impl</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1ae34a562b789d3459bd204199dc0bbdf4" prot="public" virt="non-virtual"><scope>emulator::EmulatorComp</scope><name>finalize</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1af412e477cfaa1edb474812cbbbfbc794" prot="public" virt="non-virtual"><scope>emulator::EmulatorComp</scope><name>get_cols_area</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a3d2e5d680124326927d5856e4f87b54e" prot="public" virt="non-virtual"><scope>emulator::EmulatorComp</scope><name>get_cols_latlon</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a7057c0eb9d18ec46289707d138ba8b16" prot="public" virt="non-virtual"><scope>emulator::EmulatorComp</scope><name>get_local_col_gids</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1aaa9c17dd955beaeb39f7cfc1367f3516" prot="public" virt="non-virtual"><scope>emulator::EmulatorComp</scope><name>get_num_global_cols</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1ae49c51a48c75014c158523891f1f1fc3" prot="public" virt="non-virtual"><scope>emulator::EmulatorComp</scope><name>get_num_local_cols</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1ab358a2e945d029a9586aefdede65cbcb" prot="public" virt="non-virtual"><scope>emulator::EmulatorComp</scope><name>get_nx</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1aa5745a247d0b22e82deadd61b4ca5e86" prot="public" virt="non-virtual"><scope>emulator::EmulatorComp</scope><name>get_ny</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1ad291d2c60b175a87fc93f261acae51bb" prot="protected" virt="virtual"><scope>emulator::EmulatorComp</scope><name>import_from_coupler</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a931fe1141a977aa67d2590f5004dbeca" prot="protected" virt="pure-virtual"><scope>emulator::EmulatorComp</scope><name>init_impl</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a966205ef2c077484dc667214977aca23" prot="public" virt="non-virtual"><scope>emulator::EmulatorComp</scope><name>initialize</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a11a86d25af4d06cb473c96124dc3590c" prot="public" virt="non-virtual"><scope>emulator::EmulatorComp</scope><name>is_root</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a5415b6b157b0cec1d93e548a90965fcd" prot="protected" virt="non-virtual"><scope>emulator::EmulatorComp</scope><name>m_area</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a680c034456776d3cb1fa7775a3e84b15" prot="protected" virt="non-virtual"><scope>emulator::EmulatorComp</scope><name>m_col_gids</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a6da05ee246e7e7f30b22330a8c6bd363" prot="protected" virt="non-virtual"><scope>emulator::EmulatorComp</scope><name>m_comm</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a0ab0c47cbdfc09ce90fb980d0e1b014a" prot="protected" virt="non-virtual"><scope>emulator::EmulatorComp</scope><name>m_comp_id</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1abb80d380907ac685437366d0191db5ee" prot="protected" virt="non-virtual"><scope>emulator::EmulatorComp</scope><name>m_current_tod</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1aed096a4b0a89a243b99c64db193ac502" prot="protected" virt="non-virtual"><scope>emulator::EmulatorComp</scope><name>m_current_ymd</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a45350bdd14fc150338a75a669c0a7211" prot="protected" virt="non-virtual"><scope>emulator::EmulatorComp</scope><name>m_export_data</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a5edfe375b592ce11c16405b3f215b420" prot="protected" virt="non-virtual"><scope>emulator::EmulatorComp</scope><name>m_field_size</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a76314a7561a297617866f59bf7e47f09" prot="protected" virt="non-virtual"><scope>emulator::EmulatorComp</scope><name>m_import_data</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a18366b3d685ddd0c4ec12f72889667bb" prot="private" virt="non-virtual"><scope>emulator::EmulatorComp</scope><name>m_initialized</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a737dbc4567eb540f4eddd738d51be9bf" prot="protected" virt="non-virtual"><scope>emulator::EmulatorComp</scope><name>m_input_file</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1adc8ec9ea47e39f2c0a73b9c10e65a78b" prot="protected" virt="non-virtual"><scope>emulator::EmulatorComp</scope><name>m_lat</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a49087ef25a2cf999c1acfa3ad4f6f5d6" prot="protected" virt="non-virtual"><scope>emulator::EmulatorComp</scope><name>m_logger</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a70bf49f4cbf4fa23b3ec994382859b98" prot="protected" virt="non-virtual"><scope>emulator::EmulatorComp</scope><name>m_lon</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a0e484a4c7574efd8ad0ab1541e591f43" prot="protected" virt="non-virtual"><scope>emulator::EmulatorComp</scope><name>m_nprocs</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1ac1715fc77ead3429dc4bc94ec46800c0" prot="protected" virt="non-virtual"><scope>emulator::EmulatorComp</scope><name>m_num_exports</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1aaac793034bcb82e0d7ceefa4b9797af4" prot="protected" virt="non-virtual"><scope>emulator::EmulatorComp</scope><name>m_num_global_cols</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a09f42f0242acef3cbad24a67a6f555df" prot="protected" virt="non-virtual"><scope>emulator::EmulatorComp</scope><name>m_num_imports</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1af5d08fcd26736106bf96d5ee09ac49a7" prot="protected" virt="non-virtual"><scope>emulator::EmulatorComp</scope><name>m_num_local_cols</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a23164e13a2f20510af3642b5b95161ef" prot="protected" virt="non-virtual"><scope>emulator::EmulatorComp</scope><name>m_nx</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a91087470201ed7028100ecad4fb89967" prot="protected" virt="non-virtual"><scope>emulator::EmulatorComp</scope><name>m_ny</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1aeb481f9e674f015b9e3fc6b29597c6db" prot="protected" virt="non-virtual"><scope>emulator::EmulatorComp</scope><name>m_rank</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1abefbe4d0e820535e3c2e61791326775a" prot="protected" virt="non-virtual"><scope>emulator::EmulatorComp</scope><name>m_run_type</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a9a8996a9841b8975ea84b6451594edfb" prot="protected" virt="non-virtual"><scope>emulator::EmulatorComp</scope><name>m_step_count</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a1bc1c0052b7efaa1f6c3e4450a5631dd" prot="protected" virt="non-virtual"><scope>emulator::EmulatorComp</scope><name>m_type</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a281b436e53a5434ee1d287bd5d05d92d" prot="public" virt="non-virtual"><scope>emulator::EmulatorComp</scope><name>rank</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a322468d4001ed9344b372a8a448d2be5" prot="private" virt="non-virtual"><scope>emulator::EmulatorComp</scope><name>read_grid_file</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a4a85112a98bded63a6129b9727063f26" prot="public" virt="non-virtual"><scope>emulator::EmulatorComp</scope><name>run</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a79ad29a4d5c520e1dfdab5c4b161c38d" prot="protected" virt="pure-virtual"><scope>emulator::EmulatorComp</scope><name>run_impl</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a90899c19c5c30e241f5472fca420a49e" prot="protected" virt="pure-virtual"><scope>emulator::EmulatorComp</scope><name>run_inference</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a8855bf433073da6cc049da797e620a3c" prot="public" virt="non-virtual"><scope>emulator::EmulatorComp</scope><name>set_grid_data</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1ab5d42f9801943882c1c2d6167b8f47b3" prot="public" virt="non-virtual"><scope>emulator::EmulatorComp</scope><name>setup_coupling</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a003ee5839e87f65ae7868ab0ad172fae" prot="private" virt="non-virtual"><scope>emulator::EmulatorComp</scope><name>setup_default_grid</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a19c4109920f42223bfb9fafb9c5de12e" prot="public" virt="non-virtual"><scope>emulator::EmulatorComp</scope><name>type</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a2ba0a807e47790f7a7990de8f4568d66" prot="public" virt="virtual"><scope>emulator::EmulatorComp</scope><name>~EmulatorComp</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

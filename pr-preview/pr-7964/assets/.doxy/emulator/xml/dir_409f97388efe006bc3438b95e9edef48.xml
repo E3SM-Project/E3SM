@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="dir_409f97388efe006bc3438b95e9edef48" kind="dir">
+    <compoundname>components</compoundname>
+    <innerdir refid="dir_cd6ef227c082afa5b90fe3621cc9f093">components/emulator_comps</innerdir>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="components/"/>
+  </compounddef>
+</doxygen>

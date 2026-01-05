@@ -1,0 +1,143 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="coupling__fields_8hpp" kind="file" language="C++">
+    <compoundname>coupling_fields.hpp</compoundname>
+    <includes local="no">map</includes>
+    <includes local="no">sstream</includes>
+    <includes local="no">string</includes>
+    <includedby refid="coupling__fields_8cpp" local="yes">components/emulator_comps/common/src/coupling_fields.cpp</includedby>
+    <includedby refid="emulator__atm_8hpp" local="yes">components/emulator_comps/eatm/src/emulator_atm.hpp</includedby>
+    <includedby refid="atm__coupling_8hpp" local="yes">components/emulator_comps/eatm/src/impl/atm_coupling.hpp</includedby>
+    <incdepgraph>
+      <node id="1">
+        <label>components/emulator_comps/common/src/coupling_fields.hpp</label>
+        <link refid="coupling__fields_8hpp"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+      </node>
+      <node id="2">
+        <label>map</label>
+      </node>
+      <node id="3">
+        <label>sstream</label>
+      </node>
+      <node id="4">
+        <label>string</label>
+      </node>
+    </incdepgraph>
+    <invincdepgraph>
+      <node id="2">
+        <label>components/emulator_comps/common/src/coupling_fields.cpp</label>
+        <link refid="coupling__fields_8cpp"/>
+      </node>
+      <node id="1">
+        <label>components/emulator_comps/common/src/coupling_fields.hpp</label>
+        <link refid="coupling__fields_8hpp"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+      </node>
+      <node id="4">
+        <label>components/emulator_comps/eatm/src/emulator_atm.cpp</label>
+        <link refid="emulator__atm_8cpp"/>
+      </node>
+      <node id="3">
+        <label>components/emulator_comps/eatm/src/emulator_atm.hpp</label>
+        <link refid="emulator__atm_8hpp"/>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="5" relation="include">
+        </childnode>
+      </node>
+      <node id="5">
+        <label>components/emulator_comps/eatm/src/emulator_atm_interface.cpp</label>
+        <link refid="emulator__atm__interface_8cpp"/>
+      </node>
+      <node id="7">
+        <label>components/emulator_comps/eatm/src/impl/atm_coupling.cpp</label>
+        <link refid="atm__coupling_8cpp"/>
+      </node>
+      <node id="6">
+        <label>components/emulator_comps/eatm/src/impl/atm_coupling.hpp</label>
+        <link refid="atm__coupling_8hpp"/>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+      </node>
+    </invincdepgraph>
+    <innerclass refid="classemulator_1_1CouplingFieldsBase" prot="public">emulator::CouplingFieldsBase</innerclass>
+    <innernamespace refid="namespaceemulator">emulator</innernamespace>
+    <briefdescription>
+<para>Base class for managing coupling field indices between components. </para>
+    </briefdescription>
+    <detaileddescription>
+<para>Provides utilities for parsing and looking up field indices used in data exchange between coupled model components via MCT (Model Coupling Toolkit). </para>
+    </detaileddescription>
+    <programlisting>
+<codeline lineno="1"><highlight class="normal"></highlight></codeline>
+<codeline lineno="9"><highlight class="normal"></highlight></codeline>
+<codeline lineno="10"><highlight class="normal"></highlight><highlight class="preprocessor">#ifndef<sp/>COUPLING_FIELDS_HPP</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="11"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>COUPLING_FIELDS_HPP</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="12"><highlight class="normal"></highlight></codeline>
+<codeline lineno="13"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;map&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="14"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;sstream&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="15"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;string&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="16"><highlight class="normal"></highlight></codeline>
+<codeline lineno="17"><highlight class="normal"></highlight><highlight class="keyword">namespace<sp/></highlight><highlight class="normal"><ref refid="namespaceemulator" kindref="compound">emulator</ref><sp/>{</highlight></codeline>
+<codeline lineno="18"><highlight class="normal"></highlight></codeline>
+<codeline lineno="37" refid="classemulator_1_1CouplingFieldsBase" refkind="compound"><highlight class="normal"></highlight><highlight class="keyword">class<sp/></highlight><highlight class="normal"><ref refid="classemulator_1_1CouplingFieldsBase" kindref="compound">CouplingFieldsBase</ref><sp/>{</highlight></codeline>
+<codeline lineno="38"><highlight class="normal"></highlight><highlight class="keyword">public</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="39" refid="classemulator_1_1CouplingFieldsBase_1a00e7052f27f5041dacfb883e2b69c87a" refkind="member"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">virtual</highlight><highlight class="normal"><sp/><ref refid="classemulator_1_1CouplingFieldsBase_1a00e7052f27f5041dacfb883e2b69c87a" kindref="member">~CouplingFieldsBase</ref>()<sp/>=<sp/></highlight><highlight class="keywordflow">default</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="40"><highlight class="normal"></highlight></codeline>
+<codeline lineno="50" refid="classemulator_1_1CouplingFieldsBase_1ae64b730c82f9fba34486e15a95a64d27" refkind="member"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">virtual</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="classemulator_1_1CouplingFieldsBase_1ae64b730c82f9fba34486e15a95a64d27" kindref="member">initialize</ref>(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string<sp/>&amp;export_fields,</highlight></codeline>
+<codeline lineno="51"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string<sp/>&amp;import_fields)<sp/>{</highlight></codeline>
+<codeline lineno="52"><highlight class="normal"><sp/><sp/><sp/><sp/><ref refid="classemulator_1_1CouplingFieldsBase_1a56e2803298fcc53e3035b2349a3cd7eb" kindref="member">parse_field_list</ref>(export_fields,<sp/><ref refid="classemulator_1_1CouplingFieldsBase_1a9b5bbd29f08f5bb90e6a86cc1fe31cd8" kindref="member">export_map</ref>,<sp/><ref refid="classemulator_1_1CouplingFieldsBase_1aca03f4ef9c223b39a883c340d89e8ed8" kindref="member">num_exports</ref>);</highlight></codeline>
+<codeline lineno="53"><highlight class="normal"><sp/><sp/><sp/><sp/><ref refid="classemulator_1_1CouplingFieldsBase_1a56e2803298fcc53e3035b2349a3cd7eb" kindref="member">parse_field_list</ref>(import_fields,<sp/><ref refid="classemulator_1_1CouplingFieldsBase_1a7309646ee3537c7609f6dbc5c6d4fed6" kindref="member">import_map</ref>,<sp/><ref refid="classemulator_1_1CouplingFieldsBase_1a1ae025a151b8eb932dc5bdf71bc549e3" kindref="member">num_imports</ref>);</highlight></codeline>
+<codeline lineno="54"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="55"><highlight class="normal"></highlight></codeline>
+<codeline lineno="61" refid="classemulator_1_1CouplingFieldsBase_1a15041c2ec9b39a66544387312abc1169" refkind="member"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/><ref refid="classemulator_1_1CouplingFieldsBase_1a15041c2ec9b39a66544387312abc1169" kindref="member">get_export_index</ref>(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string<sp/>&amp;name)</highlight><highlight class="keyword"><sp/>const<sp/></highlight><highlight class="normal">{</highlight></codeline>
+<codeline lineno="62"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>it<sp/>=<sp/><ref refid="classemulator_1_1CouplingFieldsBase_1a9b5bbd29f08f5bb90e6a86cc1fe31cd8" kindref="member">export_map</ref>.find(name);</highlight></codeline>
+<codeline lineno="63"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>(it<sp/>!=<sp/><ref refid="classemulator_1_1CouplingFieldsBase_1a9b5bbd29f08f5bb90e6a86cc1fe31cd8" kindref="member">export_map</ref>.end())<sp/>?<sp/>it-&gt;second<sp/>:<sp/>-1;</highlight></codeline>
+<codeline lineno="64"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="65"><highlight class="normal"></highlight></codeline>
+<codeline lineno="71" refid="classemulator_1_1CouplingFieldsBase_1aaa625d4df4155acb805020ea49f21196" refkind="member"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/><ref refid="classemulator_1_1CouplingFieldsBase_1aaa625d4df4155acb805020ea49f21196" kindref="member">get_import_index</ref>(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string<sp/>&amp;name)</highlight><highlight class="keyword"><sp/>const<sp/></highlight><highlight class="normal">{</highlight></codeline>
+<codeline lineno="72"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>it<sp/>=<sp/><ref refid="classemulator_1_1CouplingFieldsBase_1a7309646ee3537c7609f6dbc5c6d4fed6" kindref="member">import_map</ref>.find(name);</highlight></codeline>
+<codeline lineno="73"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>(it<sp/>!=<sp/><ref refid="classemulator_1_1CouplingFieldsBase_1a7309646ee3537c7609f6dbc5c6d4fed6" kindref="member">import_map</ref>.end())<sp/>?<sp/>it-&gt;second<sp/>:<sp/>-1;</highlight></codeline>
+<codeline lineno="74"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="75"><highlight class="normal"></highlight></codeline>
+<codeline lineno="76" refid="classemulator_1_1CouplingFieldsBase_1aca03f4ef9c223b39a883c340d89e8ed8" refkind="member"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/><ref refid="classemulator_1_1CouplingFieldsBase_1aca03f4ef9c223b39a883c340d89e8ed8" kindref="member">num_exports</ref><sp/>=<sp/>0;<sp/></highlight></codeline>
+<codeline lineno="77" refid="classemulator_1_1CouplingFieldsBase_1a1ae025a151b8eb932dc5bdf71bc549e3" refkind="member"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/><ref refid="classemulator_1_1CouplingFieldsBase_1a1ae025a151b8eb932dc5bdf71bc549e3" kindref="member">num_imports</ref><sp/>=<sp/>0;<sp/></highlight></codeline>
+<codeline lineno="78"><highlight class="normal"></highlight></codeline>
+<codeline lineno="79"><highlight class="normal"></highlight><highlight class="keyword">protected</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="80" refid="classemulator_1_1CouplingFieldsBase_1a9b5bbd29f08f5bb90e6a86cc1fe31cd8" refkind="member"><highlight class="normal"><sp/><sp/>std::map&lt;std::string,<sp/>int&gt;<sp/><ref refid="classemulator_1_1CouplingFieldsBase_1a9b5bbd29f08f5bb90e6a86cc1fe31cd8" kindref="member">export_map</ref>;<sp/></highlight></codeline>
+<codeline lineno="81" refid="classemulator_1_1CouplingFieldsBase_1a7309646ee3537c7609f6dbc5c6d4fed6" refkind="member"><highlight class="normal"><sp/><sp/>std::map&lt;std::string,<sp/>int&gt;<sp/><ref refid="classemulator_1_1CouplingFieldsBase_1a7309646ee3537c7609f6dbc5c6d4fed6" kindref="member">import_map</ref>;<sp/></highlight></codeline>
+<codeline lineno="82"><highlight class="normal"></highlight></codeline>
+<codeline lineno="89" refid="classemulator_1_1CouplingFieldsBase_1a56e2803298fcc53e3035b2349a3cd7eb" refkind="member"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="classemulator_1_1CouplingFieldsBase_1a56e2803298fcc53e3035b2349a3cd7eb" kindref="member">parse_field_list</ref>(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string<sp/>&amp;fields,</highlight></codeline>
+<codeline lineno="90"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>std::map&lt;std::string,<sp/>int&gt;<sp/>&amp;field_map,<sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/>&amp;count)<sp/>{</highlight></codeline>
+<codeline lineno="91"><highlight class="normal"><sp/><sp/><sp/><sp/>std::istringstream<sp/>ss(fields);</highlight></codeline>
+<codeline lineno="92"><highlight class="normal"><sp/><sp/><sp/><sp/>std::string<sp/>field;</highlight></codeline>
+<codeline lineno="93"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/>idx<sp/>=<sp/>0;</highlight></codeline>
+<codeline lineno="94"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">while</highlight><highlight class="normal"><sp/>(std::getline(ss,<sp/>field,<sp/></highlight><highlight class="charliteral">&apos;:&apos;</highlight><highlight class="normal">))<sp/>{</highlight></codeline>
+<codeline lineno="95"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(!field.empty())<sp/>{</highlight></codeline>
+<codeline lineno="96"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>field_map[field]<sp/>=<sp/>idx++;</highlight></codeline>
+<codeline lineno="97"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="98"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="99"><highlight class="normal"><sp/><sp/><sp/><sp/>count<sp/>=<sp/>idx;</highlight></codeline>
+<codeline lineno="100"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="101"><highlight class="normal">};</highlight></codeline>
+<codeline lineno="102"><highlight class="normal"></highlight></codeline>
+<codeline lineno="103"><highlight class="normal">}<sp/></highlight><highlight class="comment">//<sp/>namespace<sp/>emulator</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="104"><highlight class="normal"></highlight></codeline>
+<codeline lineno="105"><highlight class="normal"></highlight><highlight class="preprocessor">#endif<sp/></highlight><highlight class="comment">//<sp/>COUPLING_FIELDS_HPP</highlight><highlight class="normal"></highlight></codeline>
+    </programlisting>
+    <location file="components/emulator_comps/common/src/coupling_fields.hpp"/>
+  </compounddef>
+</doxygen>

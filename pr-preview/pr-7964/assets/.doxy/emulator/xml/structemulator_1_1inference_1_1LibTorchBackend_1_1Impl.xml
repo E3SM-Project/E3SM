@@ -1,0 +1,84 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="structemulator_1_1inference_1_1LibTorchBackend_1_1Impl" kind="struct" language="C++" prot="public">
+    <compoundname>emulator::inference::LibTorchBackend::Impl</compoundname>
+    <sectiondef kind="public-attrib">
+      <memberdef kind="variable" id="structemulator_1_1inference_1_1LibTorchBackend_1_1Impl_1a37394e633ac05cc9343eb71b36beb528" prot="public" static="no" mutable="no">
+        <type>torch::jit::script::Module</type>
+        <definition>torch::jit::script::Module emulator::inference::LibTorchBackend::Impl::model</definition>
+        <argsstring></argsstring>
+        <name>model</name>
+        <qualifiedname>emulator::inference::LibTorchBackend::Impl::model</qualifiedname>
+        <briefdescription>
+<para>Loaded TorchScript model. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/libtorch_backend.cpp" line="34" column="30" bodyfile="components/emulator_comps/common/src/inference/libtorch_backend.cpp" bodystart="34" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1inference_1_1LibTorchBackend_1_1Impl_1a220f517f7c2fa1c69bdde4d6c84fa285" prot="public" static="no" mutable="no">
+        <type>torch::Device</type>
+        <definition>torch::Device emulator::inference::LibTorchBackend::Impl::device</definition>
+        <argsstring></argsstring>
+        <name>device</name>
+        <qualifiedname>emulator::inference::LibTorchBackend::Impl::device</qualifiedname>
+        <initializer>= torch::kCPU</initializer>
+        <briefdescription>
+<para>Execution device (CPU or CUDA) </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/libtorch_backend.cpp" line="35" column="17" bodyfile="components/emulator_comps/common/src/inference/libtorch_backend.cpp" bodystart="35" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1inference_1_1LibTorchBackend_1_1Impl_1a913b6682cc12a62d32e38884818a4612" prot="public" static="no" mutable="no">
+        <type>torch::ScalarType</type>
+        <definition>torch::ScalarType emulator::inference::LibTorchBackend::Impl::dtype</definition>
+        <argsstring></argsstring>
+        <name>dtype</name>
+        <qualifiedname>emulator::inference::LibTorchBackend::Impl::dtype</qualifiedname>
+        <initializer>= torch::kFloat32</initializer>
+        <briefdescription>
+<para>Model precision. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/libtorch_backend.cpp" line="36" column="21" bodyfile="components/emulator_comps/common/src/inference/libtorch_backend.cpp" bodystart="36" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1inference_1_1LibTorchBackend_1_1Impl_1ab02e6ea7ec7437533e54c52e213f3b53" prot="public" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool emulator::inference::LibTorchBackend::Impl::model_loaded</definition>
+        <argsstring></argsstring>
+        <name>model_loaded</name>
+        <qualifiedname>emulator::inference::LibTorchBackend::Impl::model_loaded</qualifiedname>
+        <initializer>= false</initializer>
+        <briefdescription>
+<para>Whether model was successfully loaded. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/libtorch_backend.cpp" line="37" column="8" bodyfile="components/emulator_comps/common/src/inference/libtorch_backend.cpp" bodystart="37" bodyend="-1"/>
+      </memberdef>
+    </sectiondef>
+    <briefdescription>
+<para>Private implementation details for <ref refid="classemulator_1_1inference_1_1LibTorchBackend" kindref="compound">LibTorchBackend</ref>. </para>
+    </briefdescription>
+    <detaileddescription>
+<para>Uses PIMPL idiom to hide LibTorch types from the header, avoiding the need to include torch headers in dependent code. </para>
+    </detaileddescription>
+    <location file="components/emulator_comps/common/src/inference/libtorch_backend.cpp" line="33" column="1" bodyfile="components/emulator_comps/common/src/inference/libtorch_backend.cpp" bodystart="33" bodyend="38"/>
+    <listofallmembers>
+      <member refid="structemulator_1_1inference_1_1LibTorchBackend_1_1Impl_1a220f517f7c2fa1c69bdde4d6c84fa285" prot="public" virt="non-virtual"><scope>emulator::inference::LibTorchBackend::Impl</scope><name>device</name></member>
+      <member refid="structemulator_1_1inference_1_1LibTorchBackend_1_1Impl_1a913b6682cc12a62d32e38884818a4612" prot="public" virt="non-virtual"><scope>emulator::inference::LibTorchBackend::Impl</scope><name>dtype</name></member>
+      <member refid="structemulator_1_1inference_1_1LibTorchBackend_1_1Impl_1a37394e633ac05cc9343eb71b36beb528" prot="public" virt="non-virtual"><scope>emulator::inference::LibTorchBackend::Impl</scope><name>model</name></member>
+      <member refid="structemulator_1_1inference_1_1LibTorchBackend_1_1Impl_1ab02e6ea7ec7437533e54c52e213f3b53" prot="public" virt="non-virtual"><scope>emulator::inference::LibTorchBackend::Impl</scope><name>model_loaded</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

@@ -1,0 +1,126 @@
+# Doxyfile for Emulator Components
+# Generate with: doxygen docs/Doxyfile
+# Output: docs/api/html/
+
+#------------------------------------------------------------------------------
+# Project Settings
+#------------------------------------------------------------------------------
+
+PROJECT_NAME           = "E3SM Emulator Components"
+PROJECT_NUMBER         = "1.0"
+PROJECT_BRIEF          = "AI-based E3SM component emulators"
+PROJECT_LOGO           =
+
+OUTPUT_DIRECTORY       = docs/api
+CREATE_SUBDIRS         = YES
+
+#------------------------------------------------------------------------------
+# Input Configuration
+#------------------------------------------------------------------------------
+
+INPUT                  = common/src \
+                         eatm/src \
+                         docs/api-guide
+
+FILE_PATTERNS          = *.hpp *.cpp *.md
+
+RECURSIVE              = YES
+
+# Exclude build artifacts and tests
+EXCLUDE_PATTERNS       = */tests/* */build/*
+
+#------------------------------------------------------------------------------
+# Source Code Handling
+#------------------------------------------------------------------------------
+
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = NO
+EXTRACT_STATIC         = YES
+EXTRACT_LOCAL_CLASSES  = YES
+
+# Better C++ parsing
+CLANG_ASSISTED_PARSING = NO
+CPP_CLI_SUPPORT        = NO
+
+#------------------------------------------------------------------------------
+# Documentation Style
+#------------------------------------------------------------------------------
+
+# Use markdown for documentation
+MARKDOWN_SUPPORT       = YES
+AUTOLINK_SUPPORT       = YES
+
+# Generate structured docs
+GENERATE_TODOLIST      = YES
+GENERATE_TESTLIST      = YES
+GENERATE_BUGLIST       = YES
+
+# Source code browsing
+SOURCE_BROWSER         = YES
+INLINE_SOURCES         = NO
+STRIP_CODE_COMMENTS    = YES
+REFERENCED_BY_RELATION = YES
+REFERENCES_RELATION    = YES
+
+#------------------------------------------------------------------------------
+# Output Formats
+#------------------------------------------------------------------------------
+
+GENERATE_HTML          = YES
+HTML_OUTPUT            = html
+HTML_FILE_EXTENSION    = .html
+
+# Modern HTML styling
+GENERATE_TREEVIEW      = YES
+TREEVIEW_WIDTH         = 280
+
+# For GitHub Pages
+DISABLE_INDEX          = NO
+GENERATE_LATEX         = NO
+GENERATE_RTF           = NO
+GENERATE_MAN           = NO
+GENERATE_XML           = NO
+
+#------------------------------------------------------------------------------
+# Diagrams & Graphs
+#------------------------------------------------------------------------------
+
+HAVE_DOT               = YES
+DOT_NUM_THREADS        = 4
+
+# Class diagrams
+CLASS_DIAGRAMS         = YES
+CLASS_GRAPH            = YES
+COLLABORATION_GRAPH    = YES
+INCLUDE_GRAPH          = YES
+INCLUDED_BY_GRAPH      = YES
+CALL_GRAPH             = NO
+CALLER_GRAPH           = NO
+
+# Graph styling
+DOT_IMAGE_FORMAT       = svg
+INTERACTIVE_SVG        = YES
+DOT_TRANSPARENT        = YES
+
+#------------------------------------------------------------------------------
+# Preprocessing
+#------------------------------------------------------------------------------
+
+ENABLE_PREPROCESSING   = YES
+MACRO_EXPANSION        = YES
+EXPAND_ONLY_PREDEF     = YES
+
+# Define macros for conditional compilation
+PREDEFINED             = EMULATOR_HAS_LIBTORCH \
+                         EMULATOR_HAS_PIO \
+                         EMULATOR_HAS_YAML_CPP \
+                         EMULATOR_HAS_MPI
+
+#------------------------------------------------------------------------------
+# Warnings
+#------------------------------------------------------------------------------
+
+QUIET                  = NO
+WARNINGS               = YES
+WARN_IF_UNDOCUMENTED   = YES
+WARN_IF_DOC_ERROR      = YES

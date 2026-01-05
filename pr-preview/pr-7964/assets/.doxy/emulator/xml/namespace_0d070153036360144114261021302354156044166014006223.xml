@@ -1,0 +1,11 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="namespace_0d070153036360144114261021302354156044166014006223" kind="namespace" language="C++">
+    <compoundname></compoundname>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="components/emulator_comps/eatm/src/emulator_atm_interface.cpp" line="25" column="1"/>
+  </compounddef>
+</doxygen>

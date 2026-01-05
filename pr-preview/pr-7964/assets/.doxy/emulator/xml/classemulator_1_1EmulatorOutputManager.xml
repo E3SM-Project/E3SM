@@ -1,0 +1,848 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="classemulator_1_1EmulatorOutputManager" kind="class" language="C++" prot="public">
+    <compoundname>emulator::EmulatorOutputManager</compoundname>
+    <includes refid="emulator__output__manager_8hpp" local="no">emulator_output_manager.hpp</includes>
+    <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classemulator_1_1EmulatorOutputManager_1ac5c455b482d9b3af014bd64d2cb30db7" prot="private" static="no" mutable="no">
+        <type><ref refid="structemulator_1_1DiagnosticConfig" kindref="compound">DiagnosticConfig</ref></type>
+        <definition>DiagnosticConfig emulator::EmulatorOutputManager::m_config</definition>
+        <argsstring></argsstring>
+        <name>m_config</name>
+        <qualifiedname>emulator::EmulatorOutputManager::m_config</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_output_manager.hpp" line="178" column="20" bodyfile="components/emulator_comps/common/src/emulator_output_manager.hpp" bodystart="178" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1EmulatorOutputManager_1a9751521218eeb639bc79b0d11c1120a3" prot="private" static="no" mutable="no">
+        <type>std::vector&lt; std::unique_ptr&lt; <ref refid="classemulator_1_1EmulatorOutputStream" kindref="compound">EmulatorOutputStream</ref> &gt; &gt;</type>
+        <definition>std::vector&lt;std::unique_ptr&lt;EmulatorOutputStream&gt; &gt; emulator::EmulatorOutputManager::m_history_streams</definition>
+        <argsstring></argsstring>
+        <name>m_history_streams</name>
+        <qualifiedname>emulator::EmulatorOutputManager::m_history_streams</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_output_manager.hpp" line="181" column="15" bodyfile="components/emulator_comps/common/src/emulator_output_manager.hpp" bodystart="181" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1EmulatorOutputManager_1a4546fe29d6cc21f810834e27c35643b6" prot="private" static="no" mutable="no">
+        <type><ref refid="structemulator_1_1OutputControl" kindref="compound">OutputControl</ref></type>
+        <definition>OutputControl emulator::EmulatorOutputManager::m_restart_control</definition>
+        <argsstring></argsstring>
+        <name>m_restart_control</name>
+        <qualifiedname>emulator::EmulatorOutputManager::m_restart_control</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_output_manager.hpp" line="184" column="17" bodyfile="components/emulator_comps/common/src/emulator_output_manager.hpp" bodystart="184" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1EmulatorOutputManager_1ad714ce2cb8e79de0b444f214dd41d1a7" prot="private" static="no" mutable="no">
+        <type>std::vector&lt; std::string &gt;</type>
+        <definition>std::vector&lt;std::string&gt; emulator::EmulatorOutputManager::m_restart_fields</definition>
+        <argsstring></argsstring>
+        <name>m_restart_fields</name>
+        <qualifiedname>emulator::EmulatorOutputManager::m_restart_fields</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_output_manager.hpp" line="185" column="15" bodyfile="components/emulator_comps/common/src/emulator_output_manager.hpp" bodystart="185" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1EmulatorOutputManager_1ac9a61183b7c17078cc6e0ea6a6ca8d3f" prot="private" static="no" mutable="no">
+        <type><ref refid="inference__backend_8hpp_1a68c509d4adb3f4a1d6fe3a9b0b87c7b9" kindref="member">MPI_Comm</ref></type>
+        <definition>MPI_Comm emulator::EmulatorOutputManager::m_comm</definition>
+        <argsstring></argsstring>
+        <name>m_comm</name>
+        <qualifiedname>emulator::EmulatorOutputManager::m_comm</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_output_manager.hpp" line="187" column="12" bodyfile="components/emulator_comps/common/src/emulator_output_manager.hpp" bodystart="187" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1EmulatorOutputManager_1a8298efc9f831a086f1ae3cfee515cebd" prot="private" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::EmulatorOutputManager::m_rank</definition>
+        <argsstring></argsstring>
+        <name>m_rank</name>
+        <qualifiedname>emulator::EmulatorOutputManager::m_rank</qualifiedname>
+        <initializer>= 0</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_output_manager.hpp" line="188" column="7" bodyfile="components/emulator_comps/common/src/emulator_output_manager.hpp" bodystart="188" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1EmulatorOutputManager_1ab89c9f5a2a59716eb2a55d74007a87e5" prot="private" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool emulator::EmulatorOutputManager::m_is_root</definition>
+        <argsstring></argsstring>
+        <name>m_is_root</name>
+        <qualifiedname>emulator::EmulatorOutputManager::m_is_root</qualifiedname>
+        <initializer>= false</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_output_manager.hpp" line="189" column="8" bodyfile="components/emulator_comps/common/src/emulator_output_manager.hpp" bodystart="189" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1EmulatorOutputManager_1a17ee047cceec5671ae155b3853861b13" prot="private" static="no" mutable="no">
+        <type>std::vector&lt; int &gt;</type>
+        <definition>std::vector&lt;int&gt; emulator::EmulatorOutputManager::m_col_gids</definition>
+        <argsstring></argsstring>
+        <name>m_col_gids</name>
+        <qualifiedname>emulator::EmulatorOutputManager::m_col_gids</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_output_manager.hpp" line="191" column="15" bodyfile="components/emulator_comps/common/src/emulator_output_manager.hpp" bodystart="191" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1EmulatorOutputManager_1a27e1481b77049df410f76d025df797b1" prot="private" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::EmulatorOutputManager::m_nlat</definition>
+        <argsstring></argsstring>
+        <name>m_nlat</name>
+        <qualifiedname>emulator::EmulatorOutputManager::m_nlat</qualifiedname>
+        <initializer>= 0</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_output_manager.hpp" line="192" column="7" bodyfile="components/emulator_comps/common/src/emulator_output_manager.hpp" bodystart="192" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1EmulatorOutputManager_1abfb4bfae939e571b88ec567876565e6e" prot="private" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::EmulatorOutputManager::m_nlon</definition>
+        <argsstring></argsstring>
+        <name>m_nlon</name>
+        <qualifiedname>emulator::EmulatorOutputManager::m_nlon</qualifiedname>
+        <initializer>= 0</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_output_manager.hpp" line="193" column="7" bodyfile="components/emulator_comps/common/src/emulator_output_manager.hpp" bodystart="193" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1EmulatorOutputManager_1a6d746dcf44deb68a8846a80e0e470c73" prot="private" static="no" mutable="no">
+        <type>std::string</type>
+        <definition>std::string emulator::EmulatorOutputManager::m_case_name</definition>
+        <argsstring></argsstring>
+        <name>m_case_name</name>
+        <qualifiedname>emulator::EmulatorOutputManager::m_case_name</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_output_manager.hpp" line="195" column="15" bodyfile="components/emulator_comps/common/src/emulator_output_manager.hpp" bodystart="195" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1EmulatorOutputManager_1ac45a56e79455bef9a04ff38c82f7c2dc" prot="private" static="no" mutable="no">
+        <type>std::string</type>
+        <definition>std::string emulator::EmulatorOutputManager::m_run_dir</definition>
+        <argsstring></argsstring>
+        <name>m_run_dir</name>
+        <qualifiedname>emulator::EmulatorOutputManager::m_run_dir</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_output_manager.hpp" line="196" column="15" bodyfile="components/emulator_comps/common/src/emulator_output_manager.hpp" bodystart="196" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1EmulatorOutputManager_1a9db051d9c6380f0a2dd5e27170697890" prot="private" static="no" mutable="no">
+        <type><ref refid="classemulator_1_1Logger" kindref="compound">Logger</ref> *</type>
+        <definition>Logger* emulator::EmulatorOutputManager::m_logger</definition>
+        <argsstring></argsstring>
+        <name>m_logger</name>
+        <qualifiedname>emulator::EmulatorOutputManager::m_logger</qualifiedname>
+        <initializer>= nullptr</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_output_manager.hpp" line="198" column="10" bodyfile="components/emulator_comps/common/src/emulator_output_manager.hpp" bodystart="198" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1EmulatorOutputManager_1a8b686ec83f79ed817872fc937897fced" prot="private" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool emulator::EmulatorOutputManager::m_initialized</definition>
+        <argsstring></argsstring>
+        <name>m_initialized</name>
+        <qualifiedname>emulator::EmulatorOutputManager::m_initialized</qualifiedname>
+        <initializer>= false</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_output_manager.hpp" line="199" column="8" bodyfile="components/emulator_comps/common/src/emulator_output_manager.hpp" bodystart="199" bodyend="-1"/>
+      </memberdef>
+    </sectiondef>
+    <sectiondef kind="public-func">
+      <memberdef kind="function" id="classemulator_1_1EmulatorOutputManager_1a9d60176e12270507ef4c45fd6fd59a82" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>emulator::EmulatorOutputManager::EmulatorOutputManager</definition>
+        <argsstring>()=default</argsstring>
+        <name>EmulatorOutputManager</name>
+        <qualifiedname>emulator::EmulatorOutputManager::EmulatorOutputManager</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_output_manager.hpp" line="42" column="3"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorOutputManager_1a481635979bd3b51d64f467cb6923bf39" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>emulator::EmulatorOutputManager::~EmulatorOutputManager</definition>
+        <argsstring>()=default</argsstring>
+        <name>~EmulatorOutputManager</name>
+        <qualifiedname>emulator::EmulatorOutputManager::~EmulatorOutputManager</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_output_manager.hpp" line="43" column="3"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorOutputManager_1a782fe7e01240ffef1071adda8fd561b1" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator::EmulatorOutputManager::initialize</definition>
+        <argsstring>(const DiagnosticConfig &amp;config, MPI_Comm comm, const std::vector&lt; int &gt; &amp;col_gids, int nlat, int nlon, const std::string &amp;case_name, const std::string &amp;run_dir, Logger &amp;logger)</argsstring>
+        <name>initialize</name>
+        <qualifiedname>emulator::EmulatorOutputManager::initialize</qualifiedname>
+        <param>
+          <type>const <ref refid="structemulator_1_1DiagnosticConfig" kindref="compound">DiagnosticConfig</ref> &amp;</type>
+          <declname>config</declname>
+        </param>
+        <param>
+          <type><ref refid="inference__backend_8hpp_1a68c509d4adb3f4a1d6fe3a9b0b87c7b9" kindref="member">MPI_Comm</ref></type>
+          <declname>comm</declname>
+        </param>
+        <param>
+          <type>const std::vector&lt; int &gt; &amp;</type>
+          <declname>col_gids</declname>
+        </param>
+        <param>
+          <type>int</type>
+          <declname>nlat</declname>
+        </param>
+        <param>
+          <type>int</type>
+          <declname>nlon</declname>
+        </param>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>case_name</declname>
+        </param>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>run_dir</declname>
+        </param>
+        <param>
+          <type><ref refid="classemulator_1_1Logger" kindref="compound">Logger</ref> &amp;</type>
+          <declname>logger</declname>
+        </param>
+        <briefdescription>
+<para>Initialize the output manager. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>config</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Diagnostic configuration </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>comm</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>MPI communicator </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>col_gids</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Global IDs of local columns </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>nlat</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Number of latitudes </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>nlon</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Number of longitudes </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>case_name</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Case name for filenames </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>run_dir</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Run directory for output files </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>logger</parametername>
+</parameternamelist>
+<parameterdescription>
+<para><ref refid="classemulator_1_1Logger" kindref="compound">Logger</ref> reference </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_output_manager.hpp" line="56" column="8" bodyfile="components/emulator_comps/common/src/emulator_output_manager.cpp" bodystart="16" bodyend="63"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorOutputManager_1ad88deac35a015e492c1a63e229992964" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator::EmulatorOutputManager::setup</definition>
+        <argsstring>(const FieldDataProvider &amp;fields)</argsstring>
+        <name>setup</name>
+        <qualifiedname>emulator::EmulatorOutputManager::setup</qualifiedname>
+        <param>
+          <type>const <ref refid="classemulator_1_1FieldDataProvider" kindref="compound">FieldDataProvider</ref> &amp;</type>
+          <declname>fields</declname>
+        </param>
+        <briefdescription>
+<para>Set up output streams with field information. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>fields</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Field data provider </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_output_manager.hpp" line="65" column="8" bodyfile="components/emulator_comps/common/src/emulator_output_manager.cpp" bodystart="65" bodyend="76"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorOutputManager_1a52fd0f3f2dc9be770e923a09891cfb3a" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator::EmulatorOutputManager::init_timestep</definition>
+        <argsstring>(int current_step, double dt)</argsstring>
+        <name>init_timestep</name>
+        <qualifiedname>emulator::EmulatorOutputManager::init_timestep</qualifiedname>
+        <param>
+          <type>int</type>
+          <declname>current_step</declname>
+        </param>
+        <param>
+          <type>double</type>
+          <declname>dt</declname>
+        </param>
+        <briefdescription>
+<para>Called at the start of each timestep. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>current_step</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Current model step </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>dt</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Timestep in seconds </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_output_manager.hpp" line="72" column="8" bodyfile="components/emulator_comps/common/src/emulator_output_manager.cpp" bodystart="78" bodyend="92"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorOutputManager_1a3dc5b909786a0c42c11fd9e93658205f" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator::EmulatorOutputManager::run</definition>
+        <argsstring>(int current_step, const FieldDataProvider &amp;fields)</argsstring>
+        <name>run</name>
+        <qualifiedname>emulator::EmulatorOutputManager::run</qualifiedname>
+        <param>
+          <type>int</type>
+          <declname>current_step</declname>
+        </param>
+        <param>
+          <type>const <ref refid="classemulator_1_1FieldDataProvider" kindref="compound">FieldDataProvider</ref> &amp;</type>
+          <declname>fields</declname>
+        </param>
+        <briefdescription>
+<para>Process output at current timestep. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Updates averaging buffers and writes output if needed.</para>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>current_step</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Current model step </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>fields</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Field data provider </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_output_manager.hpp" line="82" column="8" bodyfile="components/emulator_comps/common/src/emulator_output_manager.cpp" bodystart="94" bodyend="104"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorOutputManager_1a662979eb6829e1f5bb3029063d50fd5f" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator::EmulatorOutputManager::finalize</definition>
+        <argsstring>()</argsstring>
+        <name>finalize</name>
+        <qualifiedname>emulator::EmulatorOutputManager::finalize</qualifiedname>
+        <briefdescription>
+<para>Finalize and close all files. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_output_manager.hpp" line="87" column="8" bodyfile="components/emulator_comps/common/src/emulator_output_manager.cpp" bodystart="106" bodyend="115"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorOutputManager_1a47c00e91c55c3f5dbdb3de470c747eca" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>bool</type>
+        <definition>bool emulator::EmulatorOutputManager::write_restart</definition>
+        <argsstring>(const FieldDataProvider &amp;fields, int step)</argsstring>
+        <name>write_restart</name>
+        <qualifiedname>emulator::EmulatorOutputManager::write_restart</qualifiedname>
+        <param>
+          <type>const <ref refid="classemulator_1_1FieldDataProvider" kindref="compound">FieldDataProvider</ref> &amp;</type>
+          <declname>fields</declname>
+        </param>
+        <param>
+          <type>int</type>
+          <declname>step</declname>
+        </param>
+        <briefdescription>
+<para>Write model restart file. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Writes all prognostic fields to a restart file and updates rpointer.atm.</para>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>fields</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Field data provider </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>step</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Current step (for filename) </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+<simplesect kind="return"><para>true if successful </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_output_manager.hpp" line="102" column="8" bodyfile="components/emulator_comps/common/src/emulator_output_manager.cpp" bodystart="130" bodyend="226"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorOutputManager_1a913f42e4d6912544f042e190170b8692" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>bool</type>
+        <definition>bool emulator::EmulatorOutputManager::read_restart</definition>
+        <argsstring>(const std::string &amp;filename)</argsstring>
+        <name>read_restart</name>
+        <qualifiedname>emulator::EmulatorOutputManager::read_restart</qualifiedname>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>filename</declname>
+        </param>
+        <briefdescription>
+<para>Read model restart file. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>filename</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Restart file path </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>fields</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Field data receiver (mutable) </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+<simplesect kind="return"><para>true if successful </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_output_manager.hpp" line="110" column="8" bodyfile="components/emulator_comps/common/src/emulator_output_manager.cpp" bodystart="228" bodyend="235"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorOutputManager_1a0006eb45fa1ce6e9fbb737b8e78160ed" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>bool</type>
+        <definition>bool emulator::EmulatorOutputManager::write_history_restart</definition>
+        <argsstring>(int step)</argsstring>
+        <name>write_history_restart</name>
+        <qualifiedname>emulator::EmulatorOutputManager::write_history_restart</qualifiedname>
+        <param>
+          <type>int</type>
+          <declname>step</declname>
+        </param>
+        <briefdescription>
+<para>Write history restart for all non-instant streams. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>step</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Current step (for filename) </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+<simplesect kind="return"><para>true if successful </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_output_manager.hpp" line="117" column="8" bodyfile="components/emulator_comps/common/src/emulator_output_manager.cpp" bodystart="237" bodyend="270"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorOutputManager_1a6fe8537e1594cef1edeaac34956c28e7" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>bool</type>
+        <definition>bool emulator::EmulatorOutputManager::read_history_restart</definition>
+        <argsstring>(const std::string &amp;filename)</argsstring>
+        <name>read_history_restart</name>
+        <qualifiedname>emulator::EmulatorOutputManager::read_history_restart</qualifiedname>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>filename</declname>
+        </param>
+        <briefdescription>
+<para>Read history restart from file. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>filename</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>History restart file path </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+<simplesect kind="return"><para>true if successful </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_output_manager.hpp" line="124" column="8" bodyfile="components/emulator_comps/common/src/emulator_output_manager.cpp" bodystart="272" bodyend="279"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorOutputManager_1a1e14f8d2e542709abe9e20ce021fa566" prot="public" static="no" const="yes" explicit="no" inline="no" virt="non-virtual">
+        <type>bool</type>
+        <definition>bool emulator::EmulatorOutputManager::is_restart_step</definition>
+        <argsstring>(int step) const</argsstring>
+        <name>is_restart_step</name>
+        <qualifiedname>emulator::EmulatorOutputManager::is_restart_step</qualifiedname>
+        <param>
+          <type>int</type>
+          <declname>step</declname>
+        </param>
+        <briefdescription>
+<para>Check if restart should be written at this step. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_output_manager.hpp" line="129" column="8" bodyfile="components/emulator_comps/common/src/emulator_output_manager.cpp" bodystart="117" bodyend="119"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorOutputManager_1ab09db9bada9be8f7b62a1375b4c45f52" prot="public" static="no" const="yes" explicit="no" inline="no" virt="non-virtual">
+        <type>std::string</type>
+        <definition>std::string emulator::EmulatorOutputManager::find_restart_file</definition>
+        <argsstring>(const std::string &amp;rpointer_dir, FileType file_type) const</argsstring>
+        <name>find_restart_file</name>
+        <qualifiedname>emulator::EmulatorOutputManager::find_restart_file</qualifiedname>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>rpointer_dir</declname>
+        </param>
+        <param>
+          <type><ref refid="namespaceemulator_1a1cf5decce58a3e5bc0c5c37239a86923" kindref="member">FileType</ref></type>
+          <declname>file_type</declname>
+        </param>
+        <briefdescription>
+<para>Find restart file from rpointer. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>rpointer_dir</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Directory containing rpointer.atm </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>file_type</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>RESTART or HISTORY_RESTART </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+<simplesect kind="return"><para>Filename if found, empty string otherwise </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_output_manager.hpp" line="137" column="15" bodyfile="components/emulator_comps/common/src/emulator_output_manager.cpp" bodystart="323" bodyend="341"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorOutputManager_1a4fb0539e9b1114b233719bec893807f7" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>size_t</type>
+        <definition>size_t emulator::EmulatorOutputManager::num_history_streams</definition>
+        <argsstring>() const</argsstring>
+        <name>num_history_streams</name>
+        <qualifiedname>emulator::EmulatorOutputManager::num_history_streams</qualifiedname>
+        <briefdescription>
+<para>Get number of history streams. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_output_manager.hpp" line="147" column="10" bodyfile="components/emulator_comps/common/src/emulator_output_manager.hpp" bodystart="147" bodyend="147"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorOutputManager_1af91940040f0a00401ad50188fcfbb073" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>bool</type>
+        <definition>bool emulator::EmulatorOutputManager::is_initialized</definition>
+        <argsstring>() const</argsstring>
+        <name>is_initialized</name>
+        <qualifiedname>emulator::EmulatorOutputManager::is_initialized</qualifiedname>
+        <briefdescription>
+<para>Check if output manager is initialized. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_output_manager.hpp" line="152" column="8" bodyfile="components/emulator_comps/common/src/emulator_output_manager.hpp" bodystart="152" bodyend="152"/>
+      </memberdef>
+    </sectiondef>
+    <sectiondef kind="private-func">
+      <memberdef kind="function" id="classemulator_1_1EmulatorOutputManager_1ab8f93f60631baef515d3e21a66a6e033" prot="private" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator::EmulatorOutputManager::update_rpointer</definition>
+        <argsstring>(const std::string &amp;restart_file, FileType file_type)</argsstring>
+        <name>update_rpointer</name>
+        <qualifiedname>emulator::EmulatorOutputManager::update_rpointer</qualifiedname>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>restart_file</declname>
+        </param>
+        <param>
+          <type><ref refid="namespaceemulator_1a1cf5decce58a3e5bc0c5c37239a86923" kindref="member">FileType</ref></type>
+          <declname>file_type</declname>
+        </param>
+        <briefdescription>
+<para>Update rpointer.atm with new restart file. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_output_manager.hpp" line="162" column="8" bodyfile="components/emulator_comps/common/src/emulator_output_manager.cpp" bodystart="281" bodyend="320"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorOutputManager_1a4fca3c9232ba89fbe81c1ed1086f8975" prot="private" static="no" const="yes" explicit="no" inline="no" virt="non-virtual">
+        <type>std::string</type>
+        <definition>std::string emulator::EmulatorOutputManager::generate_restart_filename</definition>
+        <argsstring>(int step, FileType file_type) const</argsstring>
+        <name>generate_restart_filename</name>
+        <qualifiedname>emulator::EmulatorOutputManager::generate_restart_filename</qualifiedname>
+        <param>
+          <type>int</type>
+          <declname>step</declname>
+        </param>
+        <param>
+          <type><ref refid="namespaceemulator_1a1cf5decce58a3e5bc0c5c37239a86923" kindref="member">FileType</ref></type>
+          <declname>file_type</declname>
+        </param>
+        <briefdescription>
+<para>Generate restart filename. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_output_manager.hpp" line="167" column="15" bodyfile="components/emulator_comps/common/src/emulator_output_manager.cpp" bodystart="122" bodyend="128"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorOutputManager_1ad2713608dffc348edbcbab106221ac75" prot="private" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator::EmulatorOutputManager::compute_restart_timing</definition>
+        <argsstring>(int current_step, double dt)</argsstring>
+        <name>compute_restart_timing</name>
+        <qualifiedname>emulator::EmulatorOutputManager::compute_restart_timing</qualifiedname>
+        <param>
+          <type>int</type>
+          <declname>current_step</declname>
+        </param>
+        <param>
+          <type>double</type>
+          <declname>dt</declname>
+        </param>
+        <briefdescription>
+<para>Compute restart control timing. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_output_manager.hpp" line="172" column="8" bodyfile="components/emulator_comps/common/src/emulator_output_manager.cpp" bodystart="343" bodyend="346"/>
+      </memberdef>
+    </sectiondef>
+    <briefdescription>
+<para>Manages all diagnostic output for an emulator component. </para>
+    </briefdescription>
+    <detaileddescription>
+<sect1 id="classemulator_1_1EmulatorOutputManager_1autotoc_md17_1s1"><sect2 id="classemulator_1_1EmulatorOutputManager_1autotoc_md17">
+<title>Responsibilities</title><para><itemizedlist>
+<listitem><para>Multiple history output streams (.h. files)</para>
+</listitem><listitem><para>Model restart output (.r. files)</para>
+</listitem><listitem><para>History restart output (.rh. files)</para>
+</listitem><listitem><para>rpointer.atm management for restart discovery</para>
+</listitem></itemizedlist>
+</para>
+</sect2></sect1>
+<sect1 id="classemulator_1_1EmulatorOutputManager_1autotoc_md18_1s1"><sect2 id="classemulator_1_1EmulatorOutputManager_1autotoc_md18">
+<title>Lifecycle</title><para><orderedlist>
+<listitem><para><computeroutput><ref refid="classemulator_1_1EmulatorOutputManager_1a782fe7e01240ffef1071adda8fd561b1" kindref="member">initialize()</ref></computeroutput> - Parse config, set up internals</para>
+</listitem><listitem><para><computeroutput><ref refid="classemulator_1_1EmulatorOutputManager_1ad88deac35a015e492c1a63e229992964" kindref="member">setup()</ref></computeroutput> - Register fields from field provider</para>
+</listitem><listitem><para><computeroutput><ref refid="classemulator_1_1EmulatorOutputManager_1a52fd0f3f2dc9be770e923a09891cfb3a" kindref="member">init_timestep()</ref></computeroutput> - Called each step before run</para>
+</listitem><listitem><para><computeroutput><ref refid="classemulator_1_1EmulatorOutputManager_1a3dc5b909786a0c42c11fd9e93658205f" kindref="member">run()</ref></computeroutput> - Update averaging, write if needed</para>
+</listitem><listitem><para><computeroutput><ref refid="classemulator_1_1EmulatorOutputManager_1a662979eb6829e1f5bb3029063d50fd5f" kindref="member">finalize()</ref></computeroutput> - Close all files </para>
+</listitem></orderedlist>
+</para>
+</sect2></sect1>
+    </detaileddescription>
+    <location file="components/emulator_comps/common/src/emulator_output_manager.hpp" line="40" column="1" bodyfile="components/emulator_comps/common/src/emulator_output_manager.hpp" bodystart="40" bodyend="200"/>
+    <listofallmembers>
+      <member refid="classemulator_1_1EmulatorOutputManager_1ad2713608dffc348edbcbab106221ac75" prot="private" virt="non-virtual"><scope>emulator::EmulatorOutputManager</scope><name>compute_restart_timing</name></member>
+      <member refid="classemulator_1_1EmulatorOutputManager_1a9d60176e12270507ef4c45fd6fd59a82" prot="public" virt="non-virtual"><scope>emulator::EmulatorOutputManager</scope><name>EmulatorOutputManager</name></member>
+      <member refid="classemulator_1_1EmulatorOutputManager_1a662979eb6829e1f5bb3029063d50fd5f" prot="public" virt="non-virtual"><scope>emulator::EmulatorOutputManager</scope><name>finalize</name></member>
+      <member refid="classemulator_1_1EmulatorOutputManager_1ab09db9bada9be8f7b62a1375b4c45f52" prot="public" virt="non-virtual"><scope>emulator::EmulatorOutputManager</scope><name>find_restart_file</name></member>
+      <member refid="classemulator_1_1EmulatorOutputManager_1a4fca3c9232ba89fbe81c1ed1086f8975" prot="private" virt="non-virtual"><scope>emulator::EmulatorOutputManager</scope><name>generate_restart_filename</name></member>
+      <member refid="classemulator_1_1EmulatorOutputManager_1a52fd0f3f2dc9be770e923a09891cfb3a" prot="public" virt="non-virtual"><scope>emulator::EmulatorOutputManager</scope><name>init_timestep</name></member>
+      <member refid="classemulator_1_1EmulatorOutputManager_1a782fe7e01240ffef1071adda8fd561b1" prot="public" virt="non-virtual"><scope>emulator::EmulatorOutputManager</scope><name>initialize</name></member>
+      <member refid="classemulator_1_1EmulatorOutputManager_1af91940040f0a00401ad50188fcfbb073" prot="public" virt="non-virtual"><scope>emulator::EmulatorOutputManager</scope><name>is_initialized</name></member>
+      <member refid="classemulator_1_1EmulatorOutputManager_1a1e14f8d2e542709abe9e20ce021fa566" prot="public" virt="non-virtual"><scope>emulator::EmulatorOutputManager</scope><name>is_restart_step</name></member>
+      <member refid="classemulator_1_1EmulatorOutputManager_1a6d746dcf44deb68a8846a80e0e470c73" prot="private" virt="non-virtual"><scope>emulator::EmulatorOutputManager</scope><name>m_case_name</name></member>
+      <member refid="classemulator_1_1EmulatorOutputManager_1a17ee047cceec5671ae155b3853861b13" prot="private" virt="non-virtual"><scope>emulator::EmulatorOutputManager</scope><name>m_col_gids</name></member>
+      <member refid="classemulator_1_1EmulatorOutputManager_1ac9a61183b7c17078cc6e0ea6a6ca8d3f" prot="private" virt="non-virtual"><scope>emulator::EmulatorOutputManager</scope><name>m_comm</name></member>
+      <member refid="classemulator_1_1EmulatorOutputManager_1ac5c455b482d9b3af014bd64d2cb30db7" prot="private" virt="non-virtual"><scope>emulator::EmulatorOutputManager</scope><name>m_config</name></member>
+      <member refid="classemulator_1_1EmulatorOutputManager_1a9751521218eeb639bc79b0d11c1120a3" prot="private" virt="non-virtual"><scope>emulator::EmulatorOutputManager</scope><name>m_history_streams</name></member>
+      <member refid="classemulator_1_1EmulatorOutputManager_1a8b686ec83f79ed817872fc937897fced" prot="private" virt="non-virtual"><scope>emulator::EmulatorOutputManager</scope><name>m_initialized</name></member>
+      <member refid="classemulator_1_1EmulatorOutputManager_1ab89c9f5a2a59716eb2a55d74007a87e5" prot="private" virt="non-virtual"><scope>emulator::EmulatorOutputManager</scope><name>m_is_root</name></member>
+      <member refid="classemulator_1_1EmulatorOutputManager_1a9db051d9c6380f0a2dd5e27170697890" prot="private" virt="non-virtual"><scope>emulator::EmulatorOutputManager</scope><name>m_logger</name></member>
+      <member refid="classemulator_1_1EmulatorOutputManager_1a27e1481b77049df410f76d025df797b1" prot="private" virt="non-virtual"><scope>emulator::EmulatorOutputManager</scope><name>m_nlat</name></member>
+      <member refid="classemulator_1_1EmulatorOutputManager_1abfb4bfae939e571b88ec567876565e6e" prot="private" virt="non-virtual"><scope>emulator::EmulatorOutputManager</scope><name>m_nlon</name></member>
+      <member refid="classemulator_1_1EmulatorOutputManager_1a8298efc9f831a086f1ae3cfee515cebd" prot="private" virt="non-virtual"><scope>emulator::EmulatorOutputManager</scope><name>m_rank</name></member>
+      <member refid="classemulator_1_1EmulatorOutputManager_1a4546fe29d6cc21f810834e27c35643b6" prot="private" virt="non-virtual"><scope>emulator::EmulatorOutputManager</scope><name>m_restart_control</name></member>
+      <member refid="classemulator_1_1EmulatorOutputManager_1ad714ce2cb8e79de0b444f214dd41d1a7" prot="private" virt="non-virtual"><scope>emulator::EmulatorOutputManager</scope><name>m_restart_fields</name></member>
+      <member refid="classemulator_1_1EmulatorOutputManager_1ac45a56e79455bef9a04ff38c82f7c2dc" prot="private" virt="non-virtual"><scope>emulator::EmulatorOutputManager</scope><name>m_run_dir</name></member>
+      <member refid="classemulator_1_1EmulatorOutputManager_1a4fb0539e9b1114b233719bec893807f7" prot="public" virt="non-virtual"><scope>emulator::EmulatorOutputManager</scope><name>num_history_streams</name></member>
+      <member refid="classemulator_1_1EmulatorOutputManager_1a6fe8537e1594cef1edeaac34956c28e7" prot="public" virt="non-virtual"><scope>emulator::EmulatorOutputManager</scope><name>read_history_restart</name></member>
+      <member refid="classemulator_1_1EmulatorOutputManager_1a913f42e4d6912544f042e190170b8692" prot="public" virt="non-virtual"><scope>emulator::EmulatorOutputManager</scope><name>read_restart</name></member>
+      <member refid="classemulator_1_1EmulatorOutputManager_1a3dc5b909786a0c42c11fd9e93658205f" prot="public" virt="non-virtual"><scope>emulator::EmulatorOutputManager</scope><name>run</name></member>
+      <member refid="classemulator_1_1EmulatorOutputManager_1ad88deac35a015e492c1a63e229992964" prot="public" virt="non-virtual"><scope>emulator::EmulatorOutputManager</scope><name>setup</name></member>
+      <member refid="classemulator_1_1EmulatorOutputManager_1ab8f93f60631baef515d3e21a66a6e033" prot="private" virt="non-virtual"><scope>emulator::EmulatorOutputManager</scope><name>update_rpointer</name></member>
+      <member refid="classemulator_1_1EmulatorOutputManager_1a0006eb45fa1ce6e9fbb737b8e78160ed" prot="public" virt="non-virtual"><scope>emulator::EmulatorOutputManager</scope><name>write_history_restart</name></member>
+      <member refid="classemulator_1_1EmulatorOutputManager_1a47c00e91c55c3f5dbdb3de470c747eca" prot="public" virt="non-virtual"><scope>emulator::EmulatorOutputManager</scope><name>write_restart</name></member>
+      <member refid="classemulator_1_1EmulatorOutputManager_1a481635979bd3b51d64f467cb6923bf39" prot="public" virt="non-virtual"><scope>emulator::EmulatorOutputManager</scope><name>~EmulatorOutputManager</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

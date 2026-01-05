@@ -1,0 +1,333 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="classemulator_1_1EmulatorContext" kind="class" language="C++" prot="public">
+    <compoundname>emulator::EmulatorContext</compoundname>
+    <includes refid="emulator__context_8hpp" local="no">emulator_context.hpp</includes>
+    <sectiondef kind="private-type">
+      <memberdef kind="typedef" id="classemulator_1_1EmulatorContext_1a1e52226d7d5b5edc45652b97c5dfb202" prot="private" static="no">
+        <type>std::type_index</type>
+        <definition>using emulator::EmulatorContext::key_type =  std::type_index</definition>
+        <argsstring></argsstring>
+        <name>key_type</name>
+        <qualifiedname>emulator::EmulatorContext::key_type</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_context.hpp" line="137" column="3" bodyfile="components/emulator_comps/common/src/emulator_context.hpp" bodystart="137" bodyend="-1"/>
+      </memberdef>
+    </sectiondef>
+    <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classemulator_1_1EmulatorContext_1abda46033fc62820d3c31ba909b36c631" prot="private" static="no" mutable="no">
+        <type>std::map&lt; key_type, std::any &gt;</type>
+        <definition>std::map&lt;key_type, std::any&gt; emulator::EmulatorContext::m_objects</definition>
+        <argsstring></argsstring>
+        <name>m_objects</name>
+        <qualifiedname>emulator::EmulatorContext::m_objects</qualifiedname>
+        <briefdescription>
+<para>Type-indexed object storage. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_context.hpp" line="145" column="12" bodyfile="components/emulator_comps/common/src/emulator_context.hpp" bodystart="145" bodyend="-1"/>
+      </memberdef>
+    </sectiondef>
+    <sectiondef kind="public-static-func">
+      <memberdef kind="function" id="classemulator_1_1EmulatorContext_1a381c199b2c20b290a342c8fcc5cd9837" prot="public" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type><ref refid="classemulator_1_1EmulatorContext" kindref="compound">EmulatorContext</ref> &amp;</type>
+        <definition>static EmulatorContext &amp; emulator::EmulatorContext::singleton</definition>
+        <argsstring>()</argsstring>
+        <name>singleton</name>
+        <qualifiedname>emulator::EmulatorContext::singleton</qualifiedname>
+        <briefdescription>
+<para>Get the singleton instance. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><simplesect kind="return"><para>Reference to the global <ref refid="classemulator_1_1EmulatorContext" kindref="compound">EmulatorContext</ref> </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_context.hpp" line="51" column="26" bodyfile="components/emulator_comps/common/src/emulator_context.hpp" bodystart="51" bodyend="54"/>
+      </memberdef>
+    </sectiondef>
+    <sectiondef kind="public-func">
+      <memberdef kind="function" id="classemulator_1_1EmulatorContext_1aa2d5d007fe8230c6782f17c19c9cdbe2" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename T</type>
+          </param>
+          <param>
+            <type>typename...</type>
+            <declname>Args</declname>
+            <defname>Args</defname>
+          </param>
+        </templateparamlist>
+        <type>T &amp;</type>
+        <definition>T &amp; emulator::EmulatorContext::create</definition>
+        <argsstring>(Args &amp;&amp;...args)</argsstring>
+        <name>create</name>
+        <qualifiedname>emulator::EmulatorContext::create</qualifiedname>
+        <param>
+          <type>Args &amp;&amp;...</type>
+          <declname>args</declname>
+        </param>
+        <briefdescription>
+<para>Create and register a new component instance. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Creates an instance of type T with the given constructor arguments and stores it in the context.</para>
+<para><parameterlist kind="templateparam"><parameteritem>
+<parameternamelist>
+<parametername>T</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Component type to create </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>Args</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Constructor argument types </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+<parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>args</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Arguments to pass to T&apos;s constructor </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+<simplesect kind="return"><para>Reference to the newly created instance </para>
+</simplesect>
+<parameterlist kind="exception"><parameteritem>
+<parameternamelist>
+<parametername>std::runtime_error</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>if an instance of T already exists </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_context.hpp" line="68" column="19" bodyfile="components/emulator_comps/common/src/emulator_context.hpp" bodystart="68" bodyend="80"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorContext_1a6c326e8e388f1ffcf102c6c05fe9d725" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename T</type>
+          </param>
+        </templateparamlist>
+        <type>const T &amp;</type>
+        <definition>const T &amp; emulator::EmulatorContext::get</definition>
+        <argsstring>() const</argsstring>
+        <name>get</name>
+        <qualifiedname>emulator::EmulatorContext::get</qualifiedname>
+        <briefdescription>
+<para>Get a const reference to an existing component. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><parameterlist kind="templateparam"><parameteritem>
+<parameternamelist>
+<parametername>T</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Component type to retrieve </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+<simplesect kind="return"><para>Const reference to the component </para>
+</simplesect>
+<parameterlist kind="exception"><parameteritem>
+<parameternamelist>
+<parametername>std::runtime_error</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>if no instance of T exists </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_context.hpp" line="89" column="23" bodyfile="components/emulator_comps/common/src/emulator_context.hpp" bodystart="89" bodyend="98"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorContext_1a8311cb62391f4d028362cd3ec93bde30" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename T</type>
+          </param>
+        </templateparamlist>
+        <type>T &amp;</type>
+        <definition>T &amp; emulator::EmulatorContext::getNonConst</definition>
+        <argsstring>()</argsstring>
+        <name>getNonConst</name>
+        <qualifiedname>emulator::EmulatorContext::getNonConst</qualifiedname>
+        <briefdescription>
+<para>Get a non-const reference to an existing component. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><parameterlist kind="templateparam"><parameteritem>
+<parameternamelist>
+<parametername>T</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Component type to retrieve </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+<simplesect kind="return"><para>Reference to the component </para>
+</simplesect>
+<parameterlist kind="exception"><parameteritem>
+<parameternamelist>
+<parametername>std::runtime_error</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>if no instance of T exists </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_context.hpp" line="107" column="17" bodyfile="components/emulator_comps/common/src/emulator_context.hpp" bodystart="107" bodyend="116"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorContext_1a6ff01cda79d7a25da55a33124e1ad1ac" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename T</type>
+          </param>
+        </templateparamlist>
+        <type>bool</type>
+        <definition>bool emulator::EmulatorContext::has</definition>
+        <argsstring>() const</argsstring>
+        <name>has</name>
+        <qualifiedname>emulator::EmulatorContext::has</qualifiedname>
+        <briefdescription>
+<para>Check if a component of type T exists. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><parameterlist kind="templateparam"><parameteritem>
+<parameternamelist>
+<parametername>T</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Component type to check </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+<simplesect kind="return"><para>true if an instance of T exists in the context </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_context.hpp" line="124" column="20" bodyfile="components/emulator_comps/common/src/emulator_context.hpp" bodystart="124" bodyend="127"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorContext_1a450010af05955cd66a2b4dd1a9311cc3" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator::EmulatorContext::clean_up</definition>
+        <argsstring>()</argsstring>
+        <name>clean_up</name>
+        <qualifiedname>emulator::EmulatorContext::clean_up</qualifiedname>
+        <briefdescription>
+<para>Remove all objects from the context. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Should be called during shutdown to release resources. </para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_context.hpp" line="134" column="8" bodyfile="components/emulator_comps/common/src/emulator_context.hpp" bodystart="134" bodyend="134"/>
+      </memberdef>
+    </sectiondef>
+    <sectiondef kind="private-func">
+      <memberdef kind="function" id="classemulator_1_1EmulatorContext_1aa9ceceae51b1990d6767b86820a6bc95" prot="private" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>emulator::EmulatorContext::EmulatorContext</definition>
+        <argsstring>()=default</argsstring>
+        <name>EmulatorContext</name>
+        <qualifiedname>emulator::EmulatorContext::EmulatorContext</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_context.hpp" line="139" column="3"/>
+      </memberdef>
+    </sectiondef>
+    <sectiondef kind="private-static-func">
+      <memberdef kind="function" id="classemulator_1_1EmulatorContext_1a2db6272b9fabaf21b7293dba31c626c1" prot="private" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename T</type>
+          </param>
+        </templateparamlist>
+        <type>key_type</type>
+        <definition>static key_type emulator::EmulatorContext::getKey</definition>
+        <argsstring>()</argsstring>
+        <name>getKey</name>
+        <qualifiedname>emulator::EmulatorContext::getKey</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_context.hpp" line="141" column="31" bodyfile="components/emulator_comps/common/src/emulator_context.hpp" bodystart="141" bodyend="143"/>
+      </memberdef>
+    </sectiondef>
+    <briefdescription>
+<para>Singleton context for managing emulator component instances. </para>
+    </briefdescription>
+    <detaileddescription>
+<para>Provides type-safe storage and retrieval of component instances, allowing the Fortran interface to create components and later retrieve them for operations.</para>
+<sect1 id="classemulator_1_1EmulatorContext_1autotoc_md11_1s1"><sect2 id="classemulator_1_1EmulatorContext_1autotoc_md11">
+<title>Usage</title><para><programlisting filename=".cpp"><codeline><highlight class="comment">//<sp/>Create<sp/>a<sp/>component</highlight><highlight class="normal"></highlight></codeline>
+<codeline><highlight class="normal"></highlight><highlight class="keyword">auto</highlight><highlight class="normal">&amp;<sp/>atm<sp/>=<sp/><ref refid="classemulator_1_1EmulatorContext_1a381c199b2c20b290a342c8fcc5cd9837" kindref="member">EmulatorContext::singleton</ref>().<ref refid="classemulator_1_1EmulatorContext_1aa2d5d007fe8230c6782f17c19c9cdbe2" kindref="member">create</ref>&lt;EmulatorAtm&gt;();</highlight></codeline>
+<codeline><highlight class="normal"></highlight></codeline>
+<codeline><highlight class="normal"></highlight><highlight class="comment">//<sp/>Later,<sp/>retrieve<sp/>it</highlight><highlight class="normal"></highlight></codeline>
+<codeline><highlight class="normal"></highlight><highlight class="keyword">auto</highlight><highlight class="normal">&amp;<sp/>atm<sp/>=<sp/><ref refid="classemulator_1_1EmulatorContext_1a381c199b2c20b290a342c8fcc5cd9837" kindref="member">EmulatorContext::singleton</ref>().<ref refid="classemulator_1_1EmulatorContext_1a8311cb62391f4d028362cd3ec93bde30" kindref="member">getNonConst</ref>&lt;EmulatorAtm&gt;();</highlight></codeline>
+<codeline><highlight class="normal"></highlight></codeline>
+<codeline><highlight class="normal"></highlight><highlight class="comment">//<sp/>Check<sp/>if<sp/>it<sp/>exists</highlight><highlight class="normal"></highlight></codeline>
+<codeline><highlight class="normal"></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(<ref refid="classemulator_1_1EmulatorContext_1a381c199b2c20b290a342c8fcc5cd9837" kindref="member">EmulatorContext::singleton</ref>().<ref refid="classemulator_1_1EmulatorContext_1a6ff01cda79d7a25da55a33124e1ad1ac" kindref="member">has&lt;EmulatorAtm&gt;</ref>())<sp/>{<sp/>...<sp/>}</highlight></codeline>
+<codeline><highlight class="normal"></highlight></codeline>
+<codeline><highlight class="normal"></highlight><highlight class="comment">//<sp/>Clean<sp/>up</highlight><highlight class="normal"></highlight></codeline>
+<codeline><highlight class="normal"><ref refid="namespaceemulator_1ab1269d1fbe9bc737197b4b45d7972972" kindref="member">cleanup_emulator_context</ref>();</highlight></codeline>
+</programlisting></para>
+<para><simplesect kind="note"><para>Only one instance of each type can exist in the context. </para>
+</simplesect>
+</para>
+</sect2></sect1>
+    </detaileddescription>
+    <location file="components/emulator_comps/common/src/emulator_context.hpp" line="45" column="1" bodyfile="components/emulator_comps/common/src/emulator_context.hpp" bodystart="45" bodyend="146"/>
+    <listofallmembers>
+      <member refid="classemulator_1_1EmulatorContext_1a450010af05955cd66a2b4dd1a9311cc3" prot="public" virt="non-virtual"><scope>emulator::EmulatorContext</scope><name>clean_up</name></member>
+      <member refid="classemulator_1_1EmulatorContext_1aa2d5d007fe8230c6782f17c19c9cdbe2" prot="public" virt="non-virtual"><scope>emulator::EmulatorContext</scope><name>create</name></member>
+      <member refid="classemulator_1_1EmulatorContext_1aa9ceceae51b1990d6767b86820a6bc95" prot="private" virt="non-virtual"><scope>emulator::EmulatorContext</scope><name>EmulatorContext</name></member>
+      <member refid="classemulator_1_1EmulatorContext_1a6c326e8e388f1ffcf102c6c05fe9d725" prot="public" virt="non-virtual"><scope>emulator::EmulatorContext</scope><name>get</name></member>
+      <member refid="classemulator_1_1EmulatorContext_1a2db6272b9fabaf21b7293dba31c626c1" prot="private" virt="non-virtual"><scope>emulator::EmulatorContext</scope><name>getKey</name></member>
+      <member refid="classemulator_1_1EmulatorContext_1a8311cb62391f4d028362cd3ec93bde30" prot="public" virt="non-virtual"><scope>emulator::EmulatorContext</scope><name>getNonConst</name></member>
+      <member refid="classemulator_1_1EmulatorContext_1a6ff01cda79d7a25da55a33124e1ad1ac" prot="public" virt="non-virtual"><scope>emulator::EmulatorContext</scope><name>has</name></member>
+      <member refid="classemulator_1_1EmulatorContext_1a1e52226d7d5b5edc45652b97c5dfb202" prot="private" virt="non-virtual"><scope>emulator::EmulatorContext</scope><name>key_type</name></member>
+      <member refid="classemulator_1_1EmulatorContext_1abda46033fc62820d3c31ba909b36c631" prot="private" virt="non-virtual"><scope>emulator::EmulatorContext</scope><name>m_objects</name></member>
+      <member refid="classemulator_1_1EmulatorContext_1a381c199b2c20b290a342c8fcc5cd9837" prot="public" virt="non-virtual"><scope>emulator::EmulatorContext</scope><name>singleton</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

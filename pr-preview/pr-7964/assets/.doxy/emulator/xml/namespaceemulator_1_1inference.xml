@@ -1,0 +1,219 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="namespaceemulator_1_1inference" kind="namespace" language="C++">
+    <compoundname>emulator::inference</compoundname>
+    <innerclass refid="classemulator_1_1inference_1_1InferenceBackend" prot="public">emulator::inference::InferenceBackend</innerclass>
+    <innerclass refid="structemulator_1_1inference_1_1InferenceConfig" prot="public">emulator::inference::InferenceConfig</innerclass>
+    <innerclass refid="classemulator_1_1inference_1_1LibTorchBackend" prot="public">emulator::inference::LibTorchBackend</innerclass>
+    <innerclass refid="classemulator_1_1inference_1_1StubBackend" prot="public">emulator::inference::StubBackend</innerclass>
+    <innerclass refid="structemulator_1_1inference_1_1ValidationResult" prot="public">emulator::inference::ValidationResult</innerclass>
+    <sectiondef kind="enum">
+      <memberdef kind="enum" id="namespaceemulator_1_1inference_1a77255e7a61c3dc84e403c2f79d386a0e" prot="public" static="no" strong="yes">
+        <type></type>
+        <name>BackendType</name>
+        <qualifiedname>emulator::inference::BackendType</qualifiedname>
+        <enumvalue id="namespaceemulator_1_1inference_1a77255e7a61c3dc84e403c2f79d386a0eaf41fe3526307daaed671a5107bcb97f0" prot="public">
+          <name>STUB</name>
+          <briefdescription>
+<para>No-op backend for testing (no ML dependencies) </para>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <enumvalue id="namespaceemulator_1_1inference_1a77255e7a61c3dc84e403c2f79d386a0ea48487d0a658c8f181ea30724733d7b27" prot="public">
+          <name>LIBTORCH</name>
+          <briefdescription>
+<para>LibTorch C++ backend (native libtorch inference) </para>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <briefdescription>
+<para>Enumeration of available inference backend types. </para>
+        </briefdescription>
+        <detaileddescription>
+<sect1 id="namespaceemulator_1_1inference_1autotoc_md19_1s1"><sect2 id="namespaceemulator_1_1inference_1autotoc_md19">
+<title>Current Backends</title><para><itemizedlist>
+<listitem><para><bold>STUB</bold>: No-op backend for testing. Always returns zeros. Useful for development and CI testing without ML dependencies.</para>
+</listitem><listitem><para><bold>LIBTORCH</bold>: Uses LibTorch (PyTorch&apos;s C++ API) for inference. Requires a traced TorchScript model (.pt file). Best for production use with PyTorch models. Supports CPU and GPU execution.</para>
+</listitem></itemizedlist>
+</para>
+</sect2></sect1>
+<sect1 id="namespaceemulator_1_1inference_1autotoc_md20_1s1"><sect2 id="namespaceemulator_1_1inference_1autotoc_md20">
+<title>Planned Backends</title><para><itemizedlist>
+<listitem><para><bold>PYTORCH</bold>: Will embed a Python interpreter directly to run native PyTorch models without tracing/scripting. Useful for rapid prototyping and models that don&apos;t trace well. Requires Python + PyTorch installation.</para>
+</listitem><listitem><para><bold>ONNX</bold>: Will use ONNX Runtime for cross-framework inference. Allows running models exported from PyTorch, TensorFlow, JAX, etc. in a unified, optimized runtime. Good for production with diverse model sources.</para>
+</listitem><listitem><para><bold>LAPIS</bold>: Will provide Kokkos-based inference for tight integration with E3SM&apos;s GPU/accelerator infrastructure. Designed for models that need to share memory with other Kokkos-enabled components (e.g., EAMxx) without data movement overhead. </para>
+</listitem></itemizedlist>
+</para>
+</sect2></sect1>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/inference_backend.hpp" line="58" column="1" bodyfile="components/emulator_comps/common/src/inference/inference_backend.hpp" bodystart="58" bodyend="65"/>
+      </memberdef>
+    </sectiondef>
+    <sectiondef kind="func">
+      <memberdef kind="function" id="namespaceemulator_1_1inference_1a17c9fdc0f3f280880dd3ad17e1ef8cf2" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>std::string</type>
+        <definition>std::string emulator::inference::backend_type_to_string</definition>
+        <argsstring>(BackendType type)</argsstring>
+        <name>backend_type_to_string</name>
+        <qualifiedname>emulator::inference::backend_type_to_string</qualifiedname>
+        <param>
+          <type><ref refid="namespaceemulator_1_1inference_1a77255e7a61c3dc84e403c2f79d386a0e" kindref="member">BackendType</ref></type>
+          <declname>type</declname>
+        </param>
+        <briefdescription>
+<para>Convert a <ref refid="namespaceemulator_1_1inference_1a77255e7a61c3dc84e403c2f79d386a0e" kindref="member">BackendType</ref> to its string representation. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>type</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>The backend type </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+<simplesect kind="return"><para>String name of the backend </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/inference_backend.hpp" line="72" column="20" bodyfile="components/emulator_comps/common/src/inference/inference_backend.hpp" bodystart="72" bodyend="81"/>
+      </memberdef>
+      <memberdef kind="function" id="namespaceemulator_1_1inference_1abda5d96fa8758af6984ee241e5a0b4f0" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type><ref refid="namespaceemulator_1_1inference_1a77255e7a61c3dc84e403c2f79d386a0e" kindref="member">BackendType</ref></type>
+        <definition>BackendType emulator::inference::parse_backend_type</definition>
+        <argsstring>(const std::string &amp;str)</argsstring>
+        <name>parse_backend_type</name>
+        <qualifiedname>emulator::inference::parse_backend_type</qualifiedname>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>str</declname>
+        </param>
+        <briefdescription>
+<para>Parse a backend type from a string. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Supports case-insensitive matching and common aliases.</para>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>str</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>String to parse (&quot;libtorch&quot;, &quot;torch&quot;, &quot;stub&quot;, etc.) </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+<simplesect kind="return"><para>Corresponding <ref refid="namespaceemulator_1_1inference_1a77255e7a61c3dc84e403c2f79d386a0e" kindref="member">BackendType</ref> (defaults to STUB if unrecognized) </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/inference_backend.hpp" line="91" column="20" bodyfile="components/emulator_comps/common/src/inference/inference_backend.hpp" bodystart="91" bodyend="96"/>
+      </memberdef>
+      <memberdef kind="function" id="namespaceemulator_1_1inference_1ab7b522a945c4570d2ec45577cbebaf52" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>std::unique_ptr&lt; <ref refid="classemulator_1_1inference_1_1InferenceBackend" kindref="compound">InferenceBackend</ref> &gt;</type>
+        <definition>std::unique_ptr&lt; InferenceBackend &gt; emulator::inference::create_backend</definition>
+        <argsstring>(BackendType type)</argsstring>
+        <name>create_backend</name>
+        <qualifiedname>emulator::inference::create_backend</qualifiedname>
+        <param>
+          <type><ref refid="namespaceemulator_1_1inference_1a77255e7a61c3dc84e403c2f79d386a0e" kindref="member">BackendType</ref></type>
+          <declname>type</declname>
+        </param>
+        <briefdescription>
+<para>Factory function to create an inference backend by type. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Create an inference backend by type.</para>
+<para>Creates an uninitialized backend instance. Call initialize() on the returned object before use.</para>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>type</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Backend type to create </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+<simplesect kind="return"><para>Unique pointer to new backend instance, or nullptr on error</para>
+</simplesect>
+Creates an uninitialized backend instance. The caller must call initialize() on the returned object before using it.</para>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>type</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Backend type to create </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+<simplesect kind="return"><para>Unique pointer to new backend, or <ref refid="classemulator_1_1inference_1_1StubBackend" kindref="compound">StubBackend</ref> if type unavailable</para>
+</simplesect>
+<simplesect kind="note"><para>If a requested backend is not available at compile time (e.g., LIBTORCH without EMULATOR_HAS_LIBTORCH defined), falls back to Stub. </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/inference_factory.cpp" line="31" column="17" bodyfile="components/emulator_comps/common/src/inference/inference_factory.cpp" bodystart="31" bodyend="45" declfile="components/emulator_comps/common/src/inference/inference_backend.hpp" declline="250" declcolumn="17"/>
+      </memberdef>
+      <memberdef kind="function" id="namespaceemulator_1_1inference_1a076f90c68fe3b09b9708f567dec8e6ba" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>std::unique_ptr&lt; <ref refid="classemulator_1_1inference_1_1InferenceBackend" kindref="compound">InferenceBackend</ref> &gt;</type>
+        <definition>std::unique_ptr&lt; InferenceBackend &gt; emulator::inference::create_backend</definition>
+        <argsstring>(const InferenceConfig &amp;config)</argsstring>
+        <name>create_backend</name>
+        <qualifiedname>emulator::inference::create_backend</qualifiedname>
+        <param>
+          <type>const <ref refid="structemulator_1_1inference_1_1InferenceConfig" kindref="compound">InferenceConfig</ref> &amp;</type>
+          <declname>config</declname>
+        </param>
+        <briefdescription>
+<para>Factory function to create and initialize a backend. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Create and initialize a backend from configuration.</para>
+<para>Convenience function that creates a backend and calls initialize().</para>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>config</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Configuration including backend type and init parameters </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+<simplesect kind="return"><para>Initialized backend, or nullptr if creation/init failed</para>
+</simplesect>
+Convenience function that creates a backend and calls initialize(). If initialization fails, returns nullptr.</para>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>config</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Configuration with backend type and parameters </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+<simplesect kind="return"><para>Initialized backend, or nullptr on failure </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/inference_factory.cpp" line="57" column="1" bodyfile="components/emulator_comps/common/src/inference/inference_factory.cpp" bodystart="57" bodyend="65" declfile="components/emulator_comps/common/src/inference/inference_backend.hpp" declline="260" declcolumn="17"/>
+      </memberdef>
+    </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="components/emulator_comps/common/src/inference/inference_backend.hpp" line="29" column="1"/>
+  </compounddef>
+</doxygen>

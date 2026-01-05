@@ -1,0 +1,932 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="namespaceemulator" kind="namespace" language="C++">
+    <compoundname>emulator</compoundname>
+    <innerclass refid="structemulator_1_1BuildConfig" prot="public">emulator::BuildConfig</innerclass>
+    <innerclass refid="structemulator_1_1CouplingConfig" prot="public">emulator::CouplingConfig</innerclass>
+    <innerclass refid="classemulator_1_1CouplingFieldsBase" prot="public">emulator::CouplingFieldsBase</innerclass>
+    <innerclass refid="classemulator_1_1DataView" prot="public">emulator::DataView</innerclass>
+    <innerclass refid="classemulator_1_1DerivedDiagnostic" prot="public">emulator::DerivedDiagnostic</innerclass>
+    <innerclass refid="structemulator_1_1DiagnosticConfig" prot="public">emulator::DiagnosticConfig</innerclass>
+    <innerclass refid="structemulator_1_1DiagnosticMetadata" prot="public">emulator::DiagnosticMetadata</innerclass>
+    <innerclass refid="classemulator_1_1EmulatorAtm" prot="public">emulator::EmulatorAtm</innerclass>
+    <innerclass refid="classemulator_1_1EmulatorComp" prot="public">emulator::EmulatorComp</innerclass>
+    <innerclass refid="structemulator_1_1EmulatorConfig" prot="public">emulator::EmulatorConfig</innerclass>
+    <innerclass refid="classemulator_1_1EmulatorContext" prot="public">emulator::EmulatorContext</innerclass>
+    <innerclass refid="classemulator_1_1EmulatorIO" prot="public">emulator::EmulatorIO</innerclass>
+    <innerclass refid="classemulator_1_1EmulatorOutputManager" prot="public">emulator::EmulatorOutputManager</innerclass>
+    <innerclass refid="classemulator_1_1EmulatorOutputStream" prot="public">emulator::EmulatorOutputStream</innerclass>
+    <innerclass refid="classemulator_1_1FieldDataProvider" prot="public">emulator::FieldDataProvider</innerclass>
+    <innerclass refid="structemulator_1_1HistoryRestartConfig" prot="public">emulator::HistoryRestartConfig</innerclass>
+    <innerclass refid="classemulator_1_1HorizAvgDiagnostic" prot="public">emulator::HorizAvgDiagnostic</innerclass>
+    <innerclass refid="classemulator_1_1Logger" prot="public">emulator::Logger</innerclass>
+    <innerclass refid="structemulator_1_1ModelIOConfig" prot="public">emulator::ModelIOConfig</innerclass>
+    <innerclass refid="structemulator_1_1OutputControl" prot="public">emulator::OutputControl</innerclass>
+    <innerclass refid="structemulator_1_1OutputStreamConfig" prot="public">emulator::OutputStreamConfig</innerclass>
+    <innerclass refid="structemulator_1_1RestartConfig" prot="public">emulator::RestartConfig</innerclass>
+    <innerclass refid="structemulator_1_1RuntimeConfig" prot="public">emulator::RuntimeConfig</innerclass>
+    <innerclass refid="classemulator_1_1VertSliceDiagnostic" prot="public">emulator::VertSliceDiagnostic</innerclass>
+    <innernamespace refid="namespaceemulator_1_1impl">emulator::impl</innernamespace>
+    <innernamespace refid="namespaceemulator_1_1inference">emulator::inference</innernamespace>
+    <sectiondef kind="enum">
+      <memberdef kind="enum" id="namespaceemulator_1a5c37d3988c19d14990921fb3b7db8bb4" prot="public" static="no" strong="yes">
+        <type></type>
+        <name>DataLayout</name>
+        <qualifiedname>emulator::DataLayout</qualifiedname>
+        <enumvalue id="namespaceemulator_1a5c37d3988c19d14990921fb3b7db8bb4a21541962976d7709c26e9cd8385bd648" prot="public">
+          <name>ROW_MAJOR</name>
+          <briefdescription>
+<para>C-style: last dimension varies fastest. </para>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <enumvalue id="namespaceemulator_1a5c37d3988c19d14990921fb3b7db8bb4ada7520ed89bff27b02664af80951c6b0" prot="public">
+          <name>COLUMN_MAJOR</name>
+          <briefdescription>
+<para>Fortran-style: first dimension varies fastest. </para>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <enumvalue id="namespaceemulator_1a5c37d3988c19d14990921fb3b7db8bb4a696b031073e74bf2cb98e5ef201d4aa3" prot="public">
+          <name>UNKNOWN</name>
+          <briefdescription>
+<para>Layout not specified. </para>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <briefdescription>
+<para>Memory layout for multi-dimensional data. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/data_view.hpp" line="21" column="1" bodyfile="components/emulator_comps/common/src/data_view.hpp" bodystart="21" bodyend="25"/>
+      </memberdef>
+      <memberdef kind="enum" id="namespaceemulator_1a4eba730d57900d80c4cde91a064a5d7c" prot="public" static="no" strong="yes">
+        <type></type>
+        <name>CompType</name>
+        <qualifiedname>emulator::CompType</qualifiedname>
+        <enumvalue id="namespaceemulator_1a4eba730d57900d80c4cde91a064a5d7ca292f535a3b6fe8853df2f03c8ed890a1" prot="public">
+          <name>ATM</name>
+          <initializer>= 0</initializer>
+          <briefdescription>
+<para>Atmosphere component. </para>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <enumvalue id="namespaceemulator_1a4eba730d57900d80c4cde91a064a5d7ca2248df4eb3f2e96526cbf0d0381de7e0" prot="public">
+          <name>OCN</name>
+          <initializer>= 1</initializer>
+          <briefdescription>
+<para>Ocean component. </para>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <enumvalue id="namespaceemulator_1a4eba730d57900d80c4cde91a064a5d7ca22fb77eba93786121faa55c581785893" prot="public">
+          <name>ICE</name>
+          <initializer>= 2</initializer>
+          <briefdescription>
+<para>Sea ice component. </para>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <enumvalue id="namespaceemulator_1a4eba730d57900d80c4cde91a064a5d7ca9b619a81ef0b0c7ab081e3f0aeafc96f" prot="public">
+          <name>LND</name>
+          <initializer>= 3</initializer>
+          <briefdescription>
+<para>Land component. </para>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <briefdescription>
+<para>Enumeration of component types in E3SM. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="23" column="1" bodyfile="components/emulator_comps/common/src/emulator_comp.hpp" bodystart="23" bodyend="28"/>
+      </memberdef>
+      <memberdef kind="enum" id="namespaceemulator_1ac145d6905ecd2dc434fdff93ca2375ff" prot="public" static="no" strong="yes">
+        <type></type>
+        <name>FrequencyUnit</name>
+        <qualifiedname>emulator::FrequencyUnit</qualifiedname>
+        <enumvalue id="namespaceemulator_1ac145d6905ecd2dc434fdff93ca2375ffab27f2b1bdb5d72e12149c9371d307fd6" prot="public">
+          <name>NSTEPS</name>
+          <briefdescription>
+<para>Every N model steps. </para>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <enumvalue id="namespaceemulator_1ac145d6905ecd2dc434fdff93ca2375ffa3cb79432b34582aed2d3fb4d75d95819" prot="public">
+          <name>NSECS</name>
+          <briefdescription>
+<para>Every N seconds. </para>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <enumvalue id="namespaceemulator_1ac145d6905ecd2dc434fdff93ca2375ffa4321f3c0d76f9a4f6515ed4b548efb0c" prot="public">
+          <name>NMINS</name>
+          <briefdescription>
+<para>Every N minutes. </para>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <enumvalue id="namespaceemulator_1ac145d6905ecd2dc434fdff93ca2375ffa68883f3524d21270a895161328eedc8a" prot="public">
+          <name>NHOURS</name>
+          <briefdescription>
+<para>Every N hours. </para>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <enumvalue id="namespaceemulator_1ac145d6905ecd2dc434fdff93ca2375ffa85b245d9aa07e88b84e07983410d5d07" prot="public">
+          <name>NDAYS</name>
+          <briefdescription>
+<para>Every N days. </para>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <enumvalue id="namespaceemulator_1ac145d6905ecd2dc434fdff93ca2375ffa41ffa3e136d25c63d69d9ab55e34a88c" prot="public">
+          <name>NMONTHS</name>
+          <briefdescription>
+<para>Every N months. </para>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <enumvalue id="namespaceemulator_1ac145d6905ecd2dc434fdff93ca2375ffa76cdd92a64867e2148a85c55748b6dc1" prot="public">
+          <name>NYEARS</name>
+          <briefdescription>
+<para>Every N years. </para>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <enumvalue id="namespaceemulator_1ac145d6905ecd2dc434fdff93ca2375ffab50339a10e1de285ac99d4c3990b8693" prot="public">
+          <name>NONE</name>
+          <briefdescription>
+<para>Disabled. </para>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <briefdescription>
+<para>Output frequency units. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Specifies the time unit for output frequency. Follows EAMxx conventions. </para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_diagnostics.hpp" line="27" column="1" bodyfile="components/emulator_comps/common/src/emulator_diagnostics.hpp" bodystart="27" bodyend="36"/>
+      </memberdef>
+      <memberdef kind="enum" id="namespaceemulator_1a52af206b444654873ad1f1b1f5c12298" prot="public" static="no" strong="yes">
+        <type></type>
+        <name>OutputAvgType</name>
+        <qualifiedname>emulator::OutputAvgType</qualifiedname>
+        <enumvalue id="namespaceemulator_1a52af206b444654873ad1f1b1f5c12298a0cb59bada85ae6029aac02b5c6dc7622" prot="public">
+          <name>INSTANT</name>
+          <briefdescription>
+<para>No averaging, instantaneous value. </para>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <enumvalue id="namespaceemulator_1a52af206b444654873ad1f1b1f5c12298a16de38737a9f8366e9b2042b4e9b6290" prot="public">
+          <name>AVERAGE</name>
+          <briefdescription>
+<para>Mean over output window. </para>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <enumvalue id="namespaceemulator_1a52af206b444654873ad1f1b1f5c12298ace31e2a082d17e038fcc6e3006166653" prot="public">
+          <name>MIN</name>
+          <briefdescription>
+<para>Minimum over output window. </para>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <enumvalue id="namespaceemulator_1a52af206b444654873ad1f1b1f5c12298a26a4b44a837bf97b972628509912b4a5" prot="public">
+          <name>MAX</name>
+          <briefdescription>
+<para>Maximum over output window. </para>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <enumvalue id="namespaceemulator_1a52af206b444654873ad1f1b1f5c12298ac6ce23be5d350ce18a665427d2d950f7" prot="public">
+          <name>STD</name>
+          <briefdescription>
+<para>Standard deviation over output window. </para>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <enumvalue id="namespaceemulator_1a52af206b444654873ad1f1b1f5c12298a6970bdc2201030b9c03fbdcf3973858a" prot="public">
+          <name>SUM</name>
+          <briefdescription>
+<para>Accumulated sum (e.g., precipitation) </para>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <briefdescription>
+<para>Output averaging type. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Specifies how to combine multiple timesteps in the output window. </para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_diagnostics.hpp" line="43" column="1" bodyfile="components/emulator_comps/common/src/emulator_diagnostics.hpp" bodystart="43" bodyend="50"/>
+      </memberdef>
+      <memberdef kind="enum" id="namespaceemulator_1a57a100b1e7f196d0998ed65a7f48aec3" prot="public" static="no" strong="yes">
+        <type></type>
+        <name>OutputPrecision</name>
+        <qualifiedname>emulator::OutputPrecision</qualifiedname>
+        <enumvalue id="namespaceemulator_1a57a100b1e7f196d0998ed65a7f48aec3a967d280b5c16d95f2947647dd2ca6cc2" prot="public">
+          <name>FLOAT32</name>
+          <briefdescription>
+<para>Single precision (default, saves space) </para>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <enumvalue id="namespaceemulator_1a57a100b1e7f196d0998ed65a7f48aec3a139882c654db8a57f7c3092de1dd0b02" prot="public">
+          <name>FLOAT64</name>
+          <briefdescription>
+<para>Double precision. </para>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <briefdescription>
+<para>Output data precision. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_diagnostics.hpp" line="55" column="1" bodyfile="components/emulator_comps/common/src/emulator_diagnostics.hpp" bodystart="55" bodyend="58"/>
+      </memberdef>
+      <memberdef kind="enum" id="namespaceemulator_1a1cf5decce58a3e5bc0c5c37239a86923" prot="public" static="no" strong="yes">
+        <type></type>
+        <name>FileType</name>
+        <qualifiedname>emulator::FileType</qualifiedname>
+        <enumvalue id="namespaceemulator_1a1cf5decce58a3e5bc0c5c37239a86923a5d83de1c9f32e1adaf68625c99c29ac4" prot="public">
+          <name>HISTORY</name>
+          <briefdescription>
+<para>Regular output (.h. files) </para>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <enumvalue id="namespaceemulator_1a1cf5decce58a3e5bc0c5c37239a86923a1104c54a9ec6549e4ef9562b687596fb" prot="public">
+          <name>RESTART</name>
+          <briefdescription>
+<para>Model state for restarting (.r. files) </para>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <enumvalue id="namespaceemulator_1a1cf5decce58a3e5bc0c5c37239a86923a62436c54430929da9a5279c15617f029" prot="public">
+          <name>HISTORY_RESTART</name>
+          <briefdescription>
+<para>Diagnostic state for restart (.rh. files) </para>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <briefdescription>
+<para>File type indicator for restart discovery. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_diagnostics.hpp" line="63" column="1" bodyfile="components/emulator_comps/common/src/emulator_diagnostics.hpp" bodystart="63" bodyend="67"/>
+      </memberdef>
+      <memberdef kind="enum" id="namespaceemulator_1ae9e73fded16e907d3a1dad79433af078" prot="public" static="no" strong="yes">
+        <type></type>
+        <name>LogLevel</name>
+        <qualifiedname>emulator::LogLevel</qualifiedname>
+        <enumvalue id="namespaceemulator_1ae9e73fded16e907d3a1dad79433af078adc30ec20708ef7b0f641ef78b7880a15" prot="public">
+          <name>DEBUG</name>
+          <briefdescription>
+<para>Detailed debugging information. </para>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <enumvalue id="namespaceemulator_1ae9e73fded16e907d3a1dad79433af078aec1f06e9fb39c4ef0729b3c7c9c8e8cc" prot="public">
+          <name>VERBOSE</name>
+          <briefdescription>
+<para>Verbose output for development. </para>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <enumvalue id="namespaceemulator_1ae9e73fded16e907d3a1dad79433af078a551b723eafd6a31d444fcb2f5920fbd3" prot="public">
+          <name>INFO</name>
+          <briefdescription>
+<para>General informational messages. </para>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <enumvalue id="namespaceemulator_1ae9e73fded16e907d3a1dad79433af078a059e9861e0400dfbe05c98a841f3f96b" prot="public">
+          <name>WARNING</name>
+          <briefdescription>
+<para>Warning conditions. </para>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <enumvalue id="namespaceemulator_1ae9e73fded16e907d3a1dad79433af078abb1ca97ec761fc37101737ba0aa2e7c5" prot="public">
+          <name>ERROR</name>
+          <briefdescription>
+<para>Error conditions. </para>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <briefdescription>
+<para>Log level enumeration. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_logger.hpp" line="21" column="1" bodyfile="components/emulator_comps/common/src/emulator_logger.hpp" bodystart="21" bodyend="27"/>
+      </memberdef>
+    </sectiondef>
+    <sectiondef kind="typedef">
+      <memberdef kind="typedef" id="namespaceemulator_1a10f9f49bcd35f092704f28be0ae6b4e9" prot="public" static="no">
+        <type><ref refid="classemulator_1_1DataView" kindref="compound">DataView</ref>&lt; double &gt;</type>
+        <definition>using emulator::DoubleView =  DataView&lt;double&gt;</definition>
+        <argsstring></argsstring>
+        <name>DoubleView</name>
+        <qualifiedname>emulator::DoubleView</qualifiedname>
+        <briefdescription>
+<para>Convenience type aliases. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/data_view.hpp" line="107" column="1" bodyfile="components/emulator_comps/common/src/data_view.hpp" bodystart="107" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="namespaceemulator_1a1b70cd6a682f5c01d41f1f44ea3b9d6e" prot="public" static="no">
+        <type><ref refid="classemulator_1_1DataView" kindref="compound">DataView</ref>&lt; float &gt;</type>
+        <definition>using emulator::FloatView =  DataView&lt;float&gt;</definition>
+        <argsstring></argsstring>
+        <name>FloatView</name>
+        <qualifiedname>emulator::FloatView</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/data_view.hpp" line="108" column="1" bodyfile="components/emulator_comps/common/src/data_view.hpp" bodystart="108" bodyend="-1"/>
+      </memberdef>
+    </sectiondef>
+    <sectiondef kind="var">
+      <memberdef kind="variable" id="namespaceemulator_1a13c2a83a39f0c9b983b9eeb16c3c6d7c" prot="public" static="no" constexpr="yes" mutable="no">
+        <type>double</type>
+        <definition>double emulator::FILLVALUE</definition>
+        <argsstring></argsstring>
+        <name>FILLVALUE</name>
+        <qualifiedname>emulator::FILLVALUE</qualifiedname>
+        <initializer>= 1.0e20</initializer>
+        <briefdescription>
+<para>Default fill value for missing data. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_io.hpp" line="239" column="18" bodyfile="components/emulator_comps/common/src/emulator_io.hpp" bodystart="239" bodyend="-1"/>
+      </memberdef>
+    </sectiondef>
+    <sectiondef kind="func">
+      <memberdef kind="function" id="namespaceemulator_1ac228f874405abaefc99d4bd8906f0228" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>bool</type>
+        <definition>bool emulator::is_derived_diagnostic</definition>
+        <argsstring>(const std::string &amp;name)</argsstring>
+        <name>is_derived_diagnostic</name>
+        <qualifiedname>emulator::is_derived_diagnostic</qualifiedname>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>name</declname>
+        </param>
+        <briefdescription>
+<para>Check if a field name is a derived diagnostic pattern. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>name</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Field name to check </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+<simplesect kind="return"><para>true if name matches a diagnostic pattern </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/diagnostics/diagnostic_factory.cpp" line="19" column="6" bodyfile="components/emulator_comps/common/src/diagnostics/diagnostic_factory.cpp" bodystart="19" bodyend="22" declfile="components/emulator_comps/common/src/diagnostics/diagnostic_factory.hpp" declline="44" declcolumn="6"/>
+      </memberdef>
+      <memberdef kind="function" id="namespaceemulator_1afdc65972eb31b85a29ff5642b1b251b1" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>std::string</type>
+        <definition>std::string emulator::get_base_field_name</definition>
+        <argsstring>(const std::string &amp;diag_name)</argsstring>
+        <name>get_base_field_name</name>
+        <qualifiedname>emulator::get_base_field_name</qualifiedname>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>diag_name</declname>
+        </param>
+        <briefdescription>
+<para>Extract base field name from diagnostic name. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Examples:<itemizedlist>
+<listitem><para>&quot;T_horiz_avg&quot; → &quot;T&quot;</para>
+</listitem><listitem><para>&quot;T_at_lev3&quot; → &quot;T&quot;</para>
+</listitem></itemizedlist>
+</para>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>diag_name</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Diagnostic name </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+<simplesect kind="return"><para>Base field name </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/diagnostics/diagnostic_factory.cpp" line="24" column="13" bodyfile="components/emulator_comps/common/src/diagnostics/diagnostic_factory.cpp" bodystart="24" bodyend="36" declfile="components/emulator_comps/common/src/diagnostics/diagnostic_factory.hpp" declline="56" declcolumn="13"/>
+      </memberdef>
+      <memberdef kind="function" id="namespaceemulator_1ac8e23d67dc0559e47af2a62b4742ce19" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>std::unique_ptr&lt; <ref refid="classemulator_1_1DerivedDiagnostic" kindref="compound">DerivedDiagnostic</ref> &gt;</type>
+        <definition>std::unique_ptr&lt; DerivedDiagnostic &gt; emulator::create_diagnostic</definition>
+        <argsstring>(const std::string &amp;diag_name, const DiagnosticMetadata &amp;metadata)</argsstring>
+        <name>create_diagnostic</name>
+        <qualifiedname>emulator::create_diagnostic</qualifiedname>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>diag_name</declname>
+        </param>
+        <param>
+          <type>const <ref refid="structemulator_1_1DiagnosticMetadata" kindref="compound">DiagnosticMetadata</ref> &amp;</type>
+          <declname>metadata</declname>
+        </param>
+        <briefdescription>
+<para>Parse a field name and create appropriate diagnostic if needed. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Recognized patterns:<itemizedlist>
+<listitem><para>&quot;{field}_horiz_avg&quot; or &quot;{field}_global_mean&quot; → <ref refid="classemulator_1_1HorizAvgDiagnostic" kindref="compound">HorizAvgDiagnostic</ref></para>
+</listitem><listitem><para>&quot;{field}_at_lev{N}&quot; → <ref refid="classemulator_1_1VertSliceDiagnostic" kindref="compound">VertSliceDiagnostic</ref> at level N</para>
+</listitem></itemizedlist>
+</para>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>diag_name</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Requested diagnostic/field name </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>metadata</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Context for creating diagnostics </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+<simplesect kind="return"><para>Unique pointer to diagnostic, or nullptr if name is not a diagnostic </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/diagnostics/diagnostic_factory.cpp" line="39" column="1" bodyfile="components/emulator_comps/common/src/diagnostics/diagnostic_factory.cpp" bodystart="39" bodyend="60" declfile="components/emulator_comps/common/src/diagnostics/diagnostic_factory.hpp" declline="36" declcolumn="1"/>
+      </memberdef>
+      <memberdef kind="function" id="namespaceemulator_1a77a6cef524a84a0f05777da1f856ee76" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>std::string</type>
+        <definition>std::string emulator::get_import_prefix</definition>
+        <argsstring>(CompType type)</argsstring>
+        <name>get_import_prefix</name>
+        <qualifiedname>emulator::get_import_prefix</qualifiedname>
+        <param>
+          <type><ref refid="namespaceemulator_1a4eba730d57900d80c4cde91a064a5d7c" kindref="member">CompType</ref></type>
+          <declname>type</declname>
+        </param>
+        <briefdescription>
+<para>Get the coupling import prefix for a component type. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>type</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Component type </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+<simplesect kind="return"><para>Prefix string (e.g., &quot;x2a&quot; for atmosphere) </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="284" column="20" bodyfile="components/emulator_comps/common/src/emulator_comp.hpp" bodystart="284" bodyend="297"/>
+      </memberdef>
+      <memberdef kind="function" id="namespaceemulator_1afcee35539c38edc0e2ab530c826e6cfb" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>std::string</type>
+        <definition>std::string emulator::get_export_prefix</definition>
+        <argsstring>(CompType type)</argsstring>
+        <name>get_export_prefix</name>
+        <qualifiedname>emulator::get_export_prefix</qualifiedname>
+        <param>
+          <type><ref refid="namespaceemulator_1a4eba730d57900d80c4cde91a064a5d7c" kindref="member">CompType</ref></type>
+          <declname>type</declname>
+        </param>
+        <briefdescription>
+<para>Get the coupling export prefix for a component type. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>type</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Component type </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+<simplesect kind="return"><para>Prefix string (e.g., &quot;a2x&quot; for atmosphere) </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="304" column="20" bodyfile="components/emulator_comps/common/src/emulator_comp.hpp" bodystart="304" bodyend="317"/>
+      </memberdef>
+      <memberdef kind="function" id="namespaceemulator_1a0cd274631039d88e029b3605db533fe3" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>std::string</type>
+        <definition>std::string emulator::get_comp_name</definition>
+        <argsstring>(CompType type)</argsstring>
+        <name>get_comp_name</name>
+        <qualifiedname>emulator::get_comp_name</qualifiedname>
+        <param>
+          <type><ref refid="namespaceemulator_1a4eba730d57900d80c4cde91a064a5d7c" kindref="member">CompType</ref></type>
+          <declname>type</declname>
+        </param>
+        <briefdescription>
+<para>Get the short name for a component type. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>type</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Component type </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+<simplesect kind="return"><para>Short name string (e.g., &quot;atm&quot; for atmosphere) </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_comp.hpp" line="324" column="20" bodyfile="components/emulator_comps/common/src/emulator_comp.hpp" bodystart="324" bodyend="337"/>
+      </memberdef>
+      <memberdef kind="function" id="namespaceemulator_1ae23d330f2ad23b374e140445b07f87be" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type><ref refid="structemulator_1_1EmulatorConfig" kindref="compound">EmulatorConfig</ref></type>
+        <definition>EmulatorConfig emulator::parse_emulator_config</definition>
+        <argsstring>(const std::string &amp;yaml_file, const std::string &amp;section_name)</argsstring>
+        <name>parse_emulator_config</name>
+        <qualifiedname>emulator::parse_emulator_config</qualifiedname>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>yaml_file</declname>
+        </param>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>section_name</declname>
+        </param>
+        <briefdescription>
+<para>Parse configuration from a YAML file. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Parse emulator configuration from a YAML file.</para>
+<para>Reads the YAML file and extracts configuration for the specified component section (e.g., &quot;eatm&quot;). All subsections (build, runtime, model_io, coupling) are parsed if present.</para>
+<para>Reads the specified YAML file and extracts the configuration for the given component section.</para>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>yaml_file</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Path to YAML configuration file </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>section_name</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Name of the component section (e.g., &quot;eatm&quot;, &quot;eocn&quot;) </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+<simplesect kind="return"><para>Parsed configuration structure </para>
+</simplesect>
+<parameterlist kind="exception"><parameteritem>
+<parameternamelist>
+<parametername>std::runtime_error</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>if file cannot be read or section is missing </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_config.cpp" line="25" column="16" bodyfile="components/emulator_comps/common/src/emulator_config.cpp" bodystart="25" bodyend="177" declfile="components/emulator_comps/common/src/emulator_config.hpp" declline="131" declcolumn="16"/>
+      </memberdef>
+      <memberdef kind="function" id="namespaceemulator_1a9c98c3d74d18d0a8d09c350af0a931bc" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type><ref refid="structemulator_1_1EmulatorConfig" kindref="compound">EmulatorConfig</ref></type>
+        <definition>EmulatorConfig emulator::parse_emulator_config_with_defaults</definition>
+        <argsstring>(const std::string &amp;yaml_file, const std::string &amp;section_name, bool verbose)</argsstring>
+        <name>parse_emulator_config_with_defaults</name>
+        <qualifiedname>emulator::parse_emulator_config_with_defaults</qualifiedname>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>yaml_file</declname>
+        </param>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>section_name</declname>
+        </param>
+        <param>
+          <type>bool</type>
+          <declname>verbose</declname>
+        </param>
+        <briefdescription>
+<para>Parse configuration with fallback to defaults. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Parse emulator configuration with fallback to defaults.</para>
+<para>Gracefully handles missing or malformed config files by returning default configuration values.</para>
+<para>Attempts to parse the YAML file. If the file doesn&apos;t exist or parsing fails, returns default configuration values.</para>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>yaml_file</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Path to YAML configuration file </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>section_name</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Name of the component section (e.g., &quot;eatm&quot;, &quot;eocn&quot;) </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>verbose</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Print debug information if true </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+<simplesect kind="return"><para>Parsed configuration structure (or defaults on failure) </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_config.cpp" line="186" column="1" bodyfile="components/emulator_comps/common/src/emulator_config.cpp" bodystart="186" bodyend="207" declfile="components/emulator_comps/common/src/emulator_config.hpp" declline="146" declcolumn="1"/>
+      </memberdef>
+      <memberdef kind="function" id="namespaceemulator_1ab1269d1fbe9bc737197b4b45d7972972" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator::cleanup_emulator_context</definition>
+        <argsstring>()</argsstring>
+        <name>cleanup_emulator_context</name>
+        <qualifiedname>emulator::cleanup_emulator_context</qualifiedname>
+        <briefdescription>
+<para>Convenience function to clean up the global emulator context. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Equivalent to <ref refid="classemulator_1_1EmulatorContext_1a381c199b2c20b290a342c8fcc5cd9837" kindref="member">EmulatorContext::singleton()</ref>.clean_up(). </para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_context.hpp" line="153" column="13" bodyfile="components/emulator_comps/common/src/emulator_context.hpp" bodystart="153" bodyend="155"/>
+      </memberdef>
+      <memberdef kind="function" id="namespaceemulator_1a6610cb46c1bb8eac2930d3a304530c4b" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type><ref refid="namespaceemulator_1ac145d6905ecd2dc434fdff93ca2375ff" kindref="member">FrequencyUnit</ref></type>
+        <definition>FrequencyUnit emulator::str_to_freq_unit</definition>
+        <argsstring>(const std::string &amp;s)</argsstring>
+        <name>str_to_freq_unit</name>
+        <qualifiedname>emulator::str_to_freq_unit</qualifiedname>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>s</declname>
+        </param>
+        <briefdescription>
+<para>Convert string to <ref refid="namespaceemulator_1ac145d6905ecd2dc434fdff93ca2375ff" kindref="member">FrequencyUnit</ref>. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>s</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>String like &quot;nsteps&quot;, &quot;ndays&quot;, &quot;nmonths&quot;, etc. </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+<simplesect kind="return"><para>Corresponding <ref refid="namespaceemulator_1ac145d6905ecd2dc434fdff93ca2375ff" kindref="member">FrequencyUnit</ref> (NONE if invalid) </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_diagnostics.cpp" line="22" column="15" bodyfile="components/emulator_comps/common/src/emulator_diagnostics.cpp" bodystart="22" bodyend="44" declfile="components/emulator_comps/common/src/emulator_diagnostics.hpp" declline="147" declcolumn="15"/>
+      </memberdef>
+      <memberdef kind="function" id="namespaceemulator_1adb28b528ba7d2e2131f811c27d45e724" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>std::string</type>
+        <definition>std::string emulator::freq_unit_to_str</definition>
+        <argsstring>(FrequencyUnit u)</argsstring>
+        <name>freq_unit_to_str</name>
+        <qualifiedname>emulator::freq_unit_to_str</qualifiedname>
+        <param>
+          <type><ref refid="namespaceemulator_1ac145d6905ecd2dc434fdff93ca2375ff" kindref="member">FrequencyUnit</ref></type>
+          <declname>u</declname>
+        </param>
+        <briefdescription>
+<para>Convert <ref refid="namespaceemulator_1ac145d6905ecd2dc434fdff93ca2375ff" kindref="member">FrequencyUnit</ref> to string. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_diagnostics.cpp" line="46" column="13" bodyfile="components/emulator_comps/common/src/emulator_diagnostics.cpp" bodystart="46" bodyend="66" declfile="components/emulator_comps/common/src/emulator_diagnostics.hpp" declline="152" declcolumn="13"/>
+      </memberdef>
+      <memberdef kind="function" id="namespaceemulator_1af2c915d684d27558cc8606fb73ebcb42" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type><ref refid="namespaceemulator_1a52af206b444654873ad1f1b1f5c12298" kindref="member">OutputAvgType</ref></type>
+        <definition>OutputAvgType emulator::str_to_avg_type</definition>
+        <argsstring>(const std::string &amp;s)</argsstring>
+        <name>str_to_avg_type</name>
+        <qualifiedname>emulator::str_to_avg_type</qualifiedname>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>s</declname>
+        </param>
+        <briefdescription>
+<para>Convert string to <ref refid="namespaceemulator_1a52af206b444654873ad1f1b1f5c12298" kindref="member">OutputAvgType</ref>. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>s</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>String like &quot;instant&quot;, &quot;average&quot;, &quot;min&quot;, &quot;max&quot;, &quot;std&quot;, &quot;sum&quot; </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+<simplesect kind="return"><para>Corresponding <ref refid="namespaceemulator_1a52af206b444654873ad1f1b1f5c12298" kindref="member">OutputAvgType</ref> </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_diagnostics.cpp" line="68" column="15" bodyfile="components/emulator_comps/common/src/emulator_diagnostics.cpp" bodystart="68" bodyend="86" declfile="components/emulator_comps/common/src/emulator_diagnostics.hpp" declline="159" declcolumn="15"/>
+      </memberdef>
+      <memberdef kind="function" id="namespaceemulator_1ad47d9dda5ca3e658c4de29a1ba01e6f2" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>std::string</type>
+        <definition>std::string emulator::avg_type_to_str</definition>
+        <argsstring>(OutputAvgType t)</argsstring>
+        <name>avg_type_to_str</name>
+        <qualifiedname>emulator::avg_type_to_str</qualifiedname>
+        <param>
+          <type><ref refid="namespaceemulator_1a52af206b444654873ad1f1b1f5c12298" kindref="member">OutputAvgType</ref></type>
+          <declname>t</declname>
+        </param>
+        <briefdescription>
+<para>Convert <ref refid="namespaceemulator_1a52af206b444654873ad1f1b1f5c12298" kindref="member">OutputAvgType</ref> to string. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_diagnostics.cpp" line="88" column="13" bodyfile="components/emulator_comps/common/src/emulator_diagnostics.cpp" bodystart="88" bodyend="105" declfile="components/emulator_comps/common/src/emulator_diagnostics.hpp" declline="164" declcolumn="13"/>
+      </memberdef>
+      <memberdef kind="function" id="namespaceemulator_1a62b2274498bdfc606242c56b3cb40de6" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type><ref refid="namespaceemulator_1a57a100b1e7f196d0998ed65a7f48aec3" kindref="member">OutputPrecision</ref></type>
+        <definition>OutputPrecision emulator::str_to_precision</definition>
+        <argsstring>(const std::string &amp;s)</argsstring>
+        <name>str_to_precision</name>
+        <qualifiedname>emulator::str_to_precision</qualifiedname>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>s</declname>
+        </param>
+        <briefdescription>
+<para>Convert string to <ref refid="namespaceemulator_1a57a100b1e7f196d0998ed65a7f48aec3" kindref="member">OutputPrecision</ref>. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_diagnostics.cpp" line="107" column="17" bodyfile="components/emulator_comps/common/src/emulator_diagnostics.cpp" bodystart="107" bodyend="115" declfile="components/emulator_comps/common/src/emulator_diagnostics.hpp" declline="169" declcolumn="17"/>
+      </memberdef>
+      <memberdef kind="function" id="namespaceemulator_1abc3022d3e4add0c378f1ae7faf9a5d84" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>std::string</type>
+        <definition>std::string emulator::precision_to_str</definition>
+        <argsstring>(OutputPrecision p)</argsstring>
+        <name>precision_to_str</name>
+        <qualifiedname>emulator::precision_to_str</qualifiedname>
+        <param>
+          <type><ref refid="namespaceemulator_1a57a100b1e7f196d0998ed65a7f48aec3" kindref="member">OutputPrecision</ref></type>
+          <declname>p</declname>
+        </param>
+        <briefdescription>
+<para>Convert <ref refid="namespaceemulator_1a57a100b1e7f196d0998ed65a7f48aec3" kindref="member">OutputPrecision</ref> to string. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_diagnostics.cpp" line="117" column="13" bodyfile="components/emulator_comps/common/src/emulator_diagnostics.cpp" bodystart="117" bodyend="125" declfile="components/emulator_comps/common/src/emulator_diagnostics.hpp" declline="174" declcolumn="13"/>
+      </memberdef>
+      <memberdef kind="function" id="namespaceemulator_1acf102151d428f5f4846436b9b022bb85" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>std::string</type>
+        <definition>std::string emulator::file_type_suffix</definition>
+        <argsstring>(FileType t)</argsstring>
+        <name>file_type_suffix</name>
+        <qualifiedname>emulator::file_type_suffix</qualifiedname>
+        <param>
+          <type><ref refid="namespaceemulator_1a1cf5decce58a3e5bc0c5c37239a86923" kindref="member">FileType</ref></type>
+          <declname>t</declname>
+        </param>
+        <briefdescription>
+<para>Get file type suffix string. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><simplesect kind="return"><para>&quot;.atm.h.&quot;, &quot;.atm.r.&quot;, or &quot;.atm.rh.&quot; </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_diagnostics.cpp" line="127" column="13" bodyfile="components/emulator_comps/common/src/emulator_diagnostics.cpp" bodystart="127" bodyend="137" declfile="components/emulator_comps/common/src/emulator_diagnostics.hpp" declline="180" declcolumn="13"/>
+      </memberdef>
+    </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="components/emulator_comps/common/src/coupling_fields.cpp" line="13" column="1"/>
+  </compounddef>
+</doxygen>

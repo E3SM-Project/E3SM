@@ -1,0 +1,31 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="dir_cf65ed25a3cb4ff7a3950496111c5548" kind="dir">
+    <compoundname>components/emulator_comps/common/src</compoundname>
+    <innerdir refid="dir_8c59288332f7499e80b506ac6e5a3903">components/emulator_comps/common/src/diagnostics</innerdir>
+    <innerdir refid="dir_93d8073dc3188aa38589a4c97b36101e">components/emulator_comps/common/src/inference</innerdir>
+    <innerfile refid="coupling__fields_8cpp">coupling_fields.cpp</innerfile>
+    <innerfile refid="coupling__fields_8hpp">coupling_fields.hpp</innerfile>
+    <innerfile refid="data__view_8hpp">data_view.hpp</innerfile>
+    <innerfile refid="emulator__comp_8cpp">emulator_comp.cpp</innerfile>
+    <innerfile refid="emulator__comp_8hpp">emulator_comp.hpp</innerfile>
+    <innerfile refid="emulator__config_8cpp">emulator_config.cpp</innerfile>
+    <innerfile refid="emulator__config_8hpp">emulator_config.hpp</innerfile>
+    <innerfile refid="emulator__context_8hpp">emulator_context.hpp</innerfile>
+    <innerfile refid="emulator__diagnostics_8cpp">emulator_diagnostics.cpp</innerfile>
+    <innerfile refid="emulator__diagnostics_8hpp">emulator_diagnostics.hpp</innerfile>
+    <innerfile refid="emulator__io_8cpp">emulator_io.cpp</innerfile>
+    <innerfile refid="emulator__io_8hpp">emulator_io.hpp</innerfile>
+    <innerfile refid="emulator__logger_8cpp">emulator_logger.cpp</innerfile>
+    <innerfile refid="emulator__logger_8hpp">emulator_logger.hpp</innerfile>
+    <innerfile refid="emulator__output__manager_8cpp">emulator_output_manager.cpp</innerfile>
+    <innerfile refid="emulator__output__manager_8hpp">emulator_output_manager.hpp</innerfile>
+    <innerfile refid="emulator__output__stream_8cpp">emulator_output_stream.cpp</innerfile>
+    <innerfile refid="emulator__output__stream_8hpp">emulator_output_stream.hpp</innerfile>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="components/emulator_comps/common/src/"/>
+  </compounddef>
+</doxygen>

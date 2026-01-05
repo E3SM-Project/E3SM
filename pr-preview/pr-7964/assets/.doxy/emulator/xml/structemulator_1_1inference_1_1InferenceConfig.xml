@@ -1,0 +1,237 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="structemulator_1_1inference_1_1InferenceConfig" kind="struct" language="C++" prot="public">
+    <compoundname>emulator::inference::InferenceConfig</compoundname>
+    <includes refid="inference__backend_8hpp" local="no">inference_backend.hpp</includes>
+    <sectiondef kind="public-attrib">
+      <memberdef kind="variable" id="structemulator_1_1inference_1_1InferenceConfig_1a6d78a410fa53fd820d4828c3057db8f4" prot="public" static="no" mutable="no">
+        <type><ref refid="namespaceemulator_1_1inference_1a77255e7a61c3dc84e403c2f79d386a0e" kindref="member">BackendType</ref></type>
+        <definition>BackendType emulator::inference::InferenceConfig::backend</definition>
+        <argsstring></argsstring>
+        <name>backend</name>
+        <qualifiedname>emulator::inference::InferenceConfig::backend</qualifiedname>
+        <initializer>= <ref refid="namespaceemulator_1_1inference_1a77255e7a61c3dc84e403c2f79d386a0eaf41fe3526307daaed671a5107bcb97f0" kindref="member">BackendType::STUB</ref></initializer>
+        <briefdescription>
+<para>Backend implementation to use. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/inference_backend.hpp" line="105" column="15" bodyfile="components/emulator_comps/common/src/inference/inference_backend.hpp" bodystart="105" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1inference_1_1InferenceConfig_1a7e8dcbac2473a4ee3cd260693ada1f52" prot="public" static="no" mutable="no">
+        <type>std::string</type>
+        <definition>std::string emulator::inference::InferenceConfig::model_path</definition>
+        <argsstring></argsstring>
+        <name>model_path</name>
+        <qualifiedname>emulator::inference::InferenceConfig::model_path</qualifiedname>
+        <briefdescription>
+<para>Path to model file (TorchScript .pt for LibTorch) </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/inference_backend.hpp" line="107" column="15" bodyfile="components/emulator_comps/common/src/inference/inference_backend.hpp" bodystart="107" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1inference_1_1InferenceConfig_1abbde15ef4b44efb6558b8018ed003fd2" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::inference::InferenceConfig::device_id</definition>
+        <argsstring></argsstring>
+        <name>device_id</name>
+        <qualifiedname>emulator::inference::InferenceConfig::device_id</qualifiedname>
+        <initializer>= -1</initializer>
+        <briefdescription>
+<para>GPU device ID (-1 for CPU) </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/inference_backend.hpp" line="109" column="7" bodyfile="components/emulator_comps/common/src/inference/inference_backend.hpp" bodystart="109" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1inference_1_1InferenceConfig_1a3727f5bb6cb8426811db50ea7feecd63" prot="public" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool emulator::inference::InferenceConfig::use_fp16</definition>
+        <argsstring></argsstring>
+        <name>use_fp16</name>
+        <qualifiedname>emulator::inference::InferenceConfig::use_fp16</qualifiedname>
+        <initializer>= false</initializer>
+        <briefdescription>
+<para>Use half precision (requires CUDA) </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/inference_backend.hpp" line="110" column="8" bodyfile="components/emulator_comps/common/src/inference/inference_backend.hpp" bodystart="110" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1inference_1_1InferenceConfig_1ac45bde9a6002d7fa46cf0ef38e612a43" prot="public" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool emulator::inference::InferenceConfig::verbose</definition>
+        <argsstring></argsstring>
+        <name>verbose</name>
+        <qualifiedname>emulator::inference::InferenceConfig::verbose</qualifiedname>
+        <initializer>= false</initializer>
+        <briefdescription>
+<para>Enable verbose output (for debugging) </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/inference_backend.hpp" line="111" column="8" bodyfile="components/emulator_comps/common/src/inference/inference_backend.hpp" bodystart="111" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1inference_1_1InferenceConfig_1a6feb6a3f1c14fe1925d03ca802b7ef03" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::inference::InferenceConfig::input_channels</definition>
+        <argsstring></argsstring>
+        <name>input_channels</name>
+        <qualifiedname>emulator::inference::InferenceConfig::input_channels</qualifiedname>
+        <initializer>= 44</initializer>
+        <briefdescription>
+<para>Number of input features per sample. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/inference_backend.hpp" line="113" column="7" bodyfile="components/emulator_comps/common/src/inference/inference_backend.hpp" bodystart="113" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1inference_1_1InferenceConfig_1ae32a0d32445645f4ad421cb0f22e2f45" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::inference::InferenceConfig::output_channels</definition>
+        <argsstring></argsstring>
+        <name>output_channels</name>
+        <qualifiedname>emulator::inference::InferenceConfig::output_channels</qualifiedname>
+        <initializer>= 50</initializer>
+        <briefdescription>
+<para>Number of output features per sample. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/inference_backend.hpp" line="114" column="7" bodyfile="components/emulator_comps/common/src/inference/inference_backend.hpp" bodystart="114" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1inference_1_1InferenceConfig_1ac6989766503ecf4f4c74569607b7165a" prot="public" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool emulator::inference::InferenceConfig::spatial_mode</definition>
+        <argsstring></argsstring>
+        <name>spatial_mode</name>
+        <qualifiedname>emulator::inference::InferenceConfig::spatial_mode</qualifiedname>
+        <initializer>=
+      false</initializer>
+        <briefdescription>
+<para>If true, reshape to [N, C, H, W] for CNN models. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/inference_backend.hpp" line="117" column="8" bodyfile="components/emulator_comps/common/src/inference/inference_backend.hpp" bodystart="117" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1inference_1_1InferenceConfig_1a23d2095bf90755f6d1f51cc12fe62677" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::inference::InferenceConfig::grid_height</definition>
+        <argsstring></argsstring>
+        <name>grid_height</name>
+        <qualifiedname>emulator::inference::InferenceConfig::grid_height</qualifiedname>
+        <initializer>= 0</initializer>
+        <briefdescription>
+<para>Height dimension (for spatial_mode) </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/inference_backend.hpp" line="119" column="7" bodyfile="components/emulator_comps/common/src/inference/inference_backend.hpp" bodystart="119" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1inference_1_1InferenceConfig_1a83a83f2fe631707f6032f8c2288cacbf" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::inference::InferenceConfig::grid_width</definition>
+        <argsstring></argsstring>
+        <name>grid_width</name>
+        <qualifiedname>emulator::inference::InferenceConfig::grid_width</qualifiedname>
+        <initializer>= 0</initializer>
+        <briefdescription>
+<para>Width dimension (for spatial_mode) </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/inference_backend.hpp" line="120" column="7" bodyfile="components/emulator_comps/common/src/inference/inference_backend.hpp" bodystart="120" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1inference_1_1InferenceConfig_1a3cfe5151c44e7db705ba5f89cdc1022b" prot="public" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool emulator::inference::InferenceConfig::dry_run</definition>
+        <argsstring></argsstring>
+        <name>dry_run</name>
+        <qualifiedname>emulator::inference::InferenceConfig::dry_run</qualifiedname>
+        <initializer>= false</initializer>
+        <briefdescription>
+<para>If true, validate config and exit without running. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/inference_backend.hpp" line="123" column="8" bodyfile="components/emulator_comps/common/src/inference/inference_backend.hpp" bodystart="123" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1inference_1_1InferenceConfig_1a208fa429f74ad0f1ee4aab16305036cc" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; std::string &gt;</type>
+        <definition>std::vector&lt;std::string&gt; emulator::inference::InferenceConfig::expected_input_vars</definition>
+        <argsstring></argsstring>
+        <name>expected_input_vars</name>
+        <qualifiedname>emulator::inference::InferenceConfig::expected_input_vars</qualifiedname>
+        <briefdescription>
+<para>Expected input variable names. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/inference_backend.hpp" line="125" column="7" bodyfile="components/emulator_comps/common/src/inference/inference_backend.hpp" bodystart="125" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1inference_1_1InferenceConfig_1a7fffaaf1d8258bf37fa36be1c6b30050" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; std::string &gt;</type>
+        <definition>std::vector&lt;std::string&gt; emulator::inference::InferenceConfig::expected_output_vars</definition>
+        <argsstring></argsstring>
+        <name>expected_output_vars</name>
+        <qualifiedname>emulator::inference::InferenceConfig::expected_output_vars</qualifiedname>
+        <briefdescription>
+<para>Expected output variable names. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/inference_backend.hpp" line="127" column="7" bodyfile="components/emulator_comps/common/src/inference/inference_backend.hpp" bodystart="127" bodyend="-1"/>
+      </memberdef>
+    </sectiondef>
+    <briefdescription>
+<para>Configuration options for inference backends. </para>
+    </briefdescription>
+    <detaileddescription>
+<para>Contains all parameters needed to initialize an inference backend, including model path, device selection, and tensor dimensions. </para>
+    </detaileddescription>
+    <location file="components/emulator_comps/common/src/inference/inference_backend.hpp" line="104" column="1" bodyfile="components/emulator_comps/common/src/inference/inference_backend.hpp" bodystart="104" bodyend="128"/>
+    <listofallmembers>
+      <member refid="structemulator_1_1inference_1_1InferenceConfig_1a6d78a410fa53fd820d4828c3057db8f4" prot="public" virt="non-virtual"><scope>emulator::inference::InferenceConfig</scope><name>backend</name></member>
+      <member refid="structemulator_1_1inference_1_1InferenceConfig_1abbde15ef4b44efb6558b8018ed003fd2" prot="public" virt="non-virtual"><scope>emulator::inference::InferenceConfig</scope><name>device_id</name></member>
+      <member refid="structemulator_1_1inference_1_1InferenceConfig_1a3cfe5151c44e7db705ba5f89cdc1022b" prot="public" virt="non-virtual"><scope>emulator::inference::InferenceConfig</scope><name>dry_run</name></member>
+      <member refid="structemulator_1_1inference_1_1InferenceConfig_1a208fa429f74ad0f1ee4aab16305036cc" prot="public" virt="non-virtual"><scope>emulator::inference::InferenceConfig</scope><name>expected_input_vars</name></member>
+      <member refid="structemulator_1_1inference_1_1InferenceConfig_1a7fffaaf1d8258bf37fa36be1c6b30050" prot="public" virt="non-virtual"><scope>emulator::inference::InferenceConfig</scope><name>expected_output_vars</name></member>
+      <member refid="structemulator_1_1inference_1_1InferenceConfig_1a23d2095bf90755f6d1f51cc12fe62677" prot="public" virt="non-virtual"><scope>emulator::inference::InferenceConfig</scope><name>grid_height</name></member>
+      <member refid="structemulator_1_1inference_1_1InferenceConfig_1a83a83f2fe631707f6032f8c2288cacbf" prot="public" virt="non-virtual"><scope>emulator::inference::InferenceConfig</scope><name>grid_width</name></member>
+      <member refid="structemulator_1_1inference_1_1InferenceConfig_1a6feb6a3f1c14fe1925d03ca802b7ef03" prot="public" virt="non-virtual"><scope>emulator::inference::InferenceConfig</scope><name>input_channels</name></member>
+      <member refid="structemulator_1_1inference_1_1InferenceConfig_1a7e8dcbac2473a4ee3cd260693ada1f52" prot="public" virt="non-virtual"><scope>emulator::inference::InferenceConfig</scope><name>model_path</name></member>
+      <member refid="structemulator_1_1inference_1_1InferenceConfig_1ae32a0d32445645f4ad421cb0f22e2f45" prot="public" virt="non-virtual"><scope>emulator::inference::InferenceConfig</scope><name>output_channels</name></member>
+      <member refid="structemulator_1_1inference_1_1InferenceConfig_1ac6989766503ecf4f4c74569607b7165a" prot="public" virt="non-virtual"><scope>emulator::inference::InferenceConfig</scope><name>spatial_mode</name></member>
+      <member refid="structemulator_1_1inference_1_1InferenceConfig_1a3727f5bb6cb8426811db50ea7feecd63" prot="public" virt="non-virtual"><scope>emulator::inference::InferenceConfig</scope><name>use_fp16</name></member>
+      <member refid="structemulator_1_1inference_1_1InferenceConfig_1ac45bde9a6002d7fa46cf0ef38e612a43" prot="public" virt="non-virtual"><scope>emulator::inference::InferenceConfig</scope><name>verbose</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

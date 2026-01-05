@@ -1,0 +1,455 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="classemulator_1_1impl_1_1AtmFieldDataProvider" kind="class" language="C++" prot="public">
+    <compoundname>emulator::impl::AtmFieldDataProvider</compoundname>
+    <basecompoundref refid="classemulator_1_1FieldDataProvider" prot="public" virt="non-virtual">emulator::FieldDataProvider</basecompoundref>
+    <includes refid="atm__field__data__provider_8hpp" local="no">atm_field_data_provider.hpp</includes>
+    <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classemulator_1_1impl_1_1AtmFieldDataProvider_1ad94b44a920d5c7e1fa26f06378b82c39" prot="private" static="no" mutable="no">
+        <type><ref refid="classemulator_1_1impl_1_1AtmFieldManager" kindref="compound">AtmFieldManager</ref> &amp;</type>
+        <definition>AtmFieldManager&amp; emulator::impl::AtmFieldDataProvider::m_fields</definition>
+        <argsstring></argsstring>
+        <name>m_fields</name>
+        <qualifiedname>emulator::impl::AtmFieldDataProvider::m_fields</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_data_provider.hpp" line="104" column="19" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_data_provider.hpp" bodystart="104" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1impl_1_1AtmFieldDataProvider_1a8caeda772b55b3488294f81692ed829b" prot="private" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::impl::AtmFieldDataProvider::m_ncols</definition>
+        <argsstring></argsstring>
+        <name>m_ncols</name>
+        <qualifiedname>emulator::impl::AtmFieldDataProvider::m_ncols</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_data_provider.hpp" line="105" column="7" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_data_provider.hpp" bodystart="105" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1impl_1_1AtmFieldDataProvider_1ab0cd6181ec7118d5c9f0f213f84c69c5" prot="private" static="no" mutable="yes">
+        <type>std::map&lt; std::string, std::vector&lt; int &gt; &gt;</type>
+        <definition>std::map&lt;std::string, std::vector&lt;int&gt; &gt; emulator::impl::AtmFieldDataProvider::m_stacked_field_levels</definition>
+        <argsstring></argsstring>
+        <name>m_stacked_field_levels</name>
+        <qualifiedname>emulator::impl::AtmFieldDataProvider::m_stacked_field_levels</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_data_provider.hpp" line="109" column="20" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_data_provider.hpp" bodystart="109" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1impl_1_1AtmFieldDataProvider_1a1ce45339bc6cfebaa71dd877d82848be" prot="private" static="no" mutable="yes">
+        <type>std::map&lt; std::string, std::vector&lt; double &gt; &gt;</type>
+        <definition>std::map&lt;std::string, std::vector&lt;double&gt; &gt; emulator::impl::AtmFieldDataProvider::m_stacked_cache</definition>
+        <argsstring></argsstring>
+        <name>m_stacked_cache</name>
+        <qualifiedname>emulator::impl::AtmFieldDataProvider::m_stacked_cache</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_data_provider.hpp" line="112" column="20" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_data_provider.hpp" bodystart="112" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1impl_1_1AtmFieldDataProvider_1af6fbec9a92a60c7c68bd863de71eec69" prot="private" static="no" mutable="yes">
+        <type>std::set&lt; std::string &gt;</type>
+        <definition>std::set&lt;std::string&gt; emulator::impl::AtmFieldDataProvider::m_all_field_names</definition>
+        <argsstring></argsstring>
+        <name>m_all_field_names</name>
+        <qualifiedname>emulator::impl::AtmFieldDataProvider::m_all_field_names</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_data_provider.hpp" line="115" column="20" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_data_provider.hpp" bodystart="115" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1impl_1_1AtmFieldDataProvider_1acfdcae970937496da07554ff20a10f05" prot="private" static="no" mutable="yes">
+        <type>bool</type>
+        <definition>bool emulator::impl::AtmFieldDataProvider::m_field_names_cached</definition>
+        <argsstring></argsstring>
+        <name>m_field_names_cached</name>
+        <qualifiedname>emulator::impl::AtmFieldDataProvider::m_field_names_cached</qualifiedname>
+        <initializer>= false</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_data_provider.hpp" line="116" column="16" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_data_provider.hpp" bodystart="116" bodyend="-1"/>
+      </memberdef>
+    </sectiondef>
+    <sectiondef kind="public-func">
+      <memberdef kind="function" id="classemulator_1_1impl_1_1AtmFieldDataProvider_1a6462e3f5bb1a1623b3cf97bc9aecd2c9" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>emulator::impl::AtmFieldDataProvider::AtmFieldDataProvider</definition>
+        <argsstring>(AtmFieldManager &amp;fields, int ncols_local)</argsstring>
+        <name>AtmFieldDataProvider</name>
+        <qualifiedname>emulator::impl::AtmFieldDataProvider::AtmFieldDataProvider</qualifiedname>
+        <param>
+          <type><ref refid="classemulator_1_1impl_1_1AtmFieldManager" kindref="compound">AtmFieldManager</ref> &amp;</type>
+          <declname>fields</declname>
+        </param>
+        <param>
+          <type>int</type>
+          <declname>ncols_local</declname>
+        </param>
+        <briefdescription>
+<para>Construct adapter with reference to field manager. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>fields</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Reference to <ref refid="classemulator_1_1impl_1_1AtmFieldManager" kindref="compound">AtmFieldManager</ref> </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>ncols_local</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Number of local columns </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_data_provider.hpp" line="45" column="3" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_data_provider.cpp" bodystart="13" bodyend="15"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1impl_1_1AtmFieldDataProvider_1a67b3ad33e169fc966a7a3d537c6ebf82" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>emulator::impl::AtmFieldDataProvider::~AtmFieldDataProvider</definition>
+        <argsstring>() override=default</argsstring>
+        <name>~AtmFieldDataProvider</name>
+        <qualifiedname>emulator::impl::AtmFieldDataProvider::~AtmFieldDataProvider</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_data_provider.hpp" line="47" column="3"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1impl_1_1AtmFieldDataProvider_1ac743c68cb9e0a18d93c5fed511a1dfba" prot="public" static="no" const="yes" explicit="no" inline="no" virt="virtual">
+        <type>const std::vector&lt; double &gt; *</type>
+        <definition>const std::vector&lt; double &gt; * emulator::impl::AtmFieldDataProvider::get_field</definition>
+        <argsstring>(const std::string &amp;name) const override</argsstring>
+        <name>get_field</name>
+        <qualifiedname>emulator::impl::AtmFieldDataProvider::get_field</qualifiedname>
+        <reimplements refid="classemulator_1_1FieldDataProvider_1a7e743037cd968a0edad15a63bc07028b">get_field</reimplements>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>name</declname>
+        </param>
+        <briefdescription>
+<para>Get pointer to field data by name. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>First checks for exact match, then checks for stacked fields.</para>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>name</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Field name </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+<simplesect kind="return"><para>Pointer to data vector, or nullptr if not found </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_data_provider.hpp" line="57" column="21" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_data_provider.cpp" bodystart="18" bodyend="35"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1impl_1_1AtmFieldDataProvider_1a6f64139d87b69272c560b2d03f367e2f" prot="public" static="no" const="yes" explicit="no" inline="no" virt="virtual">
+        <type>std::vector&lt; std::string &gt;</type>
+        <definition>std::vector&lt; std::string &gt; emulator::impl::AtmFieldDataProvider::get_field_names</definition>
+        <argsstring>() const override</argsstring>
+        <name>get_field_names</name>
+        <qualifiedname>emulator::impl::AtmFieldDataProvider::get_field_names</qualifiedname>
+        <reimplements refid="classemulator_1_1FieldDataProvider_1a05eff352eac4a0e1697a0bd95e92ec41">get_field_names</reimplements>
+        <briefdescription>
+<para>Get list of all available field names. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Includes both direct fields and auto-detected stacked fields. </para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_data_provider.hpp" line="64" column="15" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_data_provider.cpp" bodystart="37" bodyend="74"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1impl_1_1AtmFieldDataProvider_1a9d67a7c0f6190472d86e9df8d7e50a9a" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="virtual">
+        <type>int</type>
+        <definition>int emulator::impl::AtmFieldDataProvider::get_ncols</definition>
+        <argsstring>() const override</argsstring>
+        <name>get_ncols</name>
+        <qualifiedname>emulator::impl::AtmFieldDataProvider::get_ncols</qualifiedname>
+        <reimplements refid="classemulator_1_1FieldDataProvider_1a68b3af2b298ec8407bf6cb194382b701">get_ncols</reimplements>
+        <briefdescription>
+<para>Get number of local columns. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_data_provider.hpp" line="69" column="7" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_data_provider.hpp" bodystart="69" bodyend="69"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1impl_1_1AtmFieldDataProvider_1ac383ac1fc549b67f2a7e8c24f3d1ebd8" prot="public" static="no" const="yes" explicit="no" inline="no" virt="virtual">
+        <type>int</type>
+        <definition>int emulator::impl::AtmFieldDataProvider::get_field_nlevs</definition>
+        <argsstring>(const std::string &amp;name) const override</argsstring>
+        <name>get_field_nlevs</name>
+        <qualifiedname>emulator::impl::AtmFieldDataProvider::get_field_nlevs</qualifiedname>
+        <reimplements refid="classemulator_1_1FieldDataProvider_1abcbf4268c75c6a2b1ec2393948351d36">get_field_nlevs</reimplements>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>name</declname>
+        </param>
+        <briefdescription>
+<para>Get number of vertical levels for a field. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>name</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Field name </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+<simplesect kind="return"><para>Number of levels (1 for 2D fields, &gt;1 for stacked fields) </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_data_provider.hpp" line="76" column="7" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_data_provider.cpp" bodystart="76" bodyend="102"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1impl_1_1AtmFieldDataProvider_1ad74ae858cb805fae72444aac6003c51e" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator::impl::AtmFieldDataProvider::detect_stacked_fields</definition>
+        <argsstring>()</argsstring>
+        <name>detect_stacked_fields</name>
+        <qualifiedname>emulator::impl::AtmFieldDataProvider::detect_stacked_fields</qualifiedname>
+        <briefdescription>
+<para>Scan fields and detect stackable slice patterns. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Finds fields matching &quot;basename_N&quot; pattern and registers them as stackable groups. </para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_data_provider.hpp" line="84" column="8" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_data_provider.cpp" bodystart="104" bodyend="124"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1impl_1_1AtmFieldDataProvider_1a82a72a57420cbf74460eb6e45efa2225" prot="public" static="no" const="yes" explicit="no" inline="no" virt="non-virtual">
+        <type>bool</type>
+        <definition>bool emulator::impl::AtmFieldDataProvider::is_stacked_field</definition>
+        <argsstring>(const std::string &amp;name) const</argsstring>
+        <name>is_stacked_field</name>
+        <qualifiedname>emulator::impl::AtmFieldDataProvider::is_stacked_field</qualifiedname>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>name</declname>
+        </param>
+        <briefdescription>
+<para>Check if a field is a stacked field. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_data_provider.hpp" line="89" column="8" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_data_provider.cpp" bodystart="126" bodyend="140"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1impl_1_1AtmFieldDataProvider_1a073b0fd2eff9979c5ab1f29976327346" prot="public" static="no" const="yes" explicit="no" inline="no" virt="non-virtual">
+        <type>const std::vector&lt; double &gt; &amp;</type>
+        <definition>const std::vector&lt; double &gt; &amp; emulator::impl::AtmFieldDataProvider::get_stacked_field</definition>
+        <argsstring>(const std::string &amp;basename) const</argsstring>
+        <name>get_stacked_field</name>
+        <qualifiedname>emulator::impl::AtmFieldDataProvider::get_stacked_field</qualifiedname>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>basename</declname>
+        </param>
+        <briefdescription>
+<para>Get the stacked data for a 3D field. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Combines sliced fields [field_0, field_1, ...] into a single contiguous buffer with shape [nlevs, ncols].</para>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>basename</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Base field name (without _N suffix) </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+<simplesect kind="return"><para>Stacked data buffer </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_data_provider.hpp" line="101" column="3" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_data_provider.cpp" bodystart="159" bodyend="170"/>
+      </memberdef>
+    </sectiondef>
+    <sectiondef kind="private-func">
+      <memberdef kind="function" id="classemulator_1_1impl_1_1AtmFieldDataProvider_1ac5ab25450b69bc0f3ba302fe0992bf1e" prot="private" static="no" const="yes" explicit="no" inline="no" virt="non-virtual">
+        <type>bool</type>
+        <definition>bool emulator::impl::AtmFieldDataProvider::parse_slice_pattern</definition>
+        <argsstring>(const std::string &amp;name, std::string &amp;basename, int &amp;level_idx) const</argsstring>
+        <name>parse_slice_pattern</name>
+        <qualifiedname>emulator::impl::AtmFieldDataProvider::parse_slice_pattern</qualifiedname>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>name</declname>
+        </param>
+        <param>
+          <type>std::string &amp;</type>
+          <declname>basename</declname>
+        </param>
+        <param>
+          <type>int &amp;</type>
+          <declname>level_idx</declname>
+        </param>
+        <briefdescription>
+<para>Parse a field name for slice pattern. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>name</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Full field name (e.g., &quot;wind_0&quot;) </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername direction="out">basename</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Base name without suffix (e.g., &quot;wind&quot;) </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername direction="out">level_idx</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Level index </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+<simplesect kind="return"><para>true if pattern matched </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_data_provider.hpp" line="125" column="8" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_data_provider.cpp" bodystart="142" bodyend="156"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1impl_1_1AtmFieldDataProvider_1ac98ec1d737f63766525980ca63671340" prot="private" static="no" const="yes" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator::impl::AtmFieldDataProvider::build_stacked_cache</definition>
+        <argsstring>(const std::string &amp;basename) const</argsstring>
+        <name>build_stacked_cache</name>
+        <qualifiedname>emulator::impl::AtmFieldDataProvider::build_stacked_cache</qualifiedname>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>basename</declname>
+        </param>
+        <briefdescription>
+<para>Build stacked field cache for a given basename. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_field_data_provider.hpp" line="131" column="8" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_data_provider.cpp" bodystart="172" bodyend="210"/>
+      </memberdef>
+    </sectiondef>
+    <briefdescription>
+<para>Adapter implementing <ref refid="classemulator_1_1FieldDataProvider" kindref="compound">FieldDataProvider</ref> for <ref refid="classemulator_1_1impl_1_1AtmFieldManager" kindref="compound">AtmFieldManager</ref>. </para>
+    </briefdescription>
+    <detaileddescription>
+<para>Wraps an <ref refid="classemulator_1_1impl_1_1AtmFieldManager" kindref="compound">AtmFieldManager</ref> instance and provides the <ref refid="classemulator_1_1FieldDataProvider" kindref="compound">FieldDataProvider</ref> interface required by <ref refid="classemulator_1_1EmulatorOutputStream" kindref="compound">EmulatorOutputStream</ref> for diagnostic output.</para>
+<sect1 id="classemulator_1_1impl_1_1AtmFieldDataProvider_1autotoc_md32_1s1"><sect2 id="classemulator_1_1impl_1_1AtmFieldDataProvider_1autotoc_md32">
+<title>Features</title><para><itemizedlist>
+<listitem><para>Field access by name via <ref refid="classemulator_1_1impl_1_1AtmFieldManager_1a0609f50bec9f97307d8927182532c705" kindref="member">AtmFieldManager::get_field_ptr()</ref></para>
+</listitem><listitem><para>Field stacking for sliced variables (e.g., wind_0, wind_1 → wind_3d)</para>
+</listitem><listitem><para>Tracking of available field names</para>
+</listitem></itemizedlist>
+</para>
+</sect2></sect1>
+<sect1 id="classemulator_1_1impl_1_1AtmFieldDataProvider_1autotoc_md33_1s1"><sect2 id="classemulator_1_1impl_1_1AtmFieldDataProvider_1autotoc_md33">
+<title>Field Stacking</title><para>Detects sliced field patterns like &quot;field_N&quot; (where N is an integer) and can combine them into stacked 3D fields with shape [ncols, nlevs]. </para>
+</sect2></sect1>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="2">
+        <label>emulator::FieldDataProvider</label>
+        <link refid="classemulator_1_1FieldDataProvider"/>
+      </node>
+      <node id="1">
+        <label>emulator::impl::AtmFieldDataProvider</label>
+        <link refid="classemulator_1_1impl_1_1AtmFieldDataProvider"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="2">
+        <label>emulator::FieldDataProvider</label>
+        <link refid="classemulator_1_1FieldDataProvider"/>
+      </node>
+      <node id="1">
+        <label>emulator::impl::AtmFieldDataProvider</label>
+        <link refid="classemulator_1_1impl_1_1AtmFieldDataProvider"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </collaborationgraph>
+    <location file="components/emulator_comps/eatm/src/impl/atm_field_data_provider.hpp" line="38" column="1" bodyfile="components/emulator_comps/eatm/src/impl/atm_field_data_provider.hpp" bodystart="38" bodyend="132"/>
+    <listofallmembers>
+      <member refid="classemulator_1_1impl_1_1AtmFieldDataProvider_1a6462e3f5bb1a1623b3cf97bc9aecd2c9" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldDataProvider</scope><name>AtmFieldDataProvider</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldDataProvider_1ac98ec1d737f63766525980ca63671340" prot="private" virt="non-virtual"><scope>emulator::impl::AtmFieldDataProvider</scope><name>build_stacked_cache</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldDataProvider_1ad74ae858cb805fae72444aac6003c51e" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldDataProvider</scope><name>detect_stacked_fields</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldDataProvider_1ac743c68cb9e0a18d93c5fed511a1dfba" prot="public" virt="virtual"><scope>emulator::impl::AtmFieldDataProvider</scope><name>get_field</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldDataProvider_1a6f64139d87b69272c560b2d03f367e2f" prot="public" virt="virtual"><scope>emulator::impl::AtmFieldDataProvider</scope><name>get_field_names</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldDataProvider_1ac383ac1fc549b67f2a7e8c24f3d1ebd8" prot="public" virt="virtual"><scope>emulator::impl::AtmFieldDataProvider</scope><name>get_field_nlevs</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldDataProvider_1a9d67a7c0f6190472d86e9df8d7e50a9a" prot="public" virt="virtual"><scope>emulator::impl::AtmFieldDataProvider</scope><name>get_ncols</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldDataProvider_1a073b0fd2eff9979c5ab1f29976327346" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldDataProvider</scope><name>get_stacked_field</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldDataProvider_1a82a72a57420cbf74460eb6e45efa2225" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldDataProvider</scope><name>is_stacked_field</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldDataProvider_1af6fbec9a92a60c7c68bd863de71eec69" prot="private" virt="non-virtual"><scope>emulator::impl::AtmFieldDataProvider</scope><name>m_all_field_names</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldDataProvider_1acfdcae970937496da07554ff20a10f05" prot="private" virt="non-virtual"><scope>emulator::impl::AtmFieldDataProvider</scope><name>m_field_names_cached</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldDataProvider_1ad94b44a920d5c7e1fa26f06378b82c39" prot="private" virt="non-virtual"><scope>emulator::impl::AtmFieldDataProvider</scope><name>m_fields</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldDataProvider_1a8caeda772b55b3488294f81692ed829b" prot="private" virt="non-virtual"><scope>emulator::impl::AtmFieldDataProvider</scope><name>m_ncols</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldDataProvider_1a1ce45339bc6cfebaa71dd877d82848be" prot="private" virt="non-virtual"><scope>emulator::impl::AtmFieldDataProvider</scope><name>m_stacked_cache</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldDataProvider_1ab0cd6181ec7118d5c9f0f213f84c69c5" prot="private" virt="non-virtual"><scope>emulator::impl::AtmFieldDataProvider</scope><name>m_stacked_field_levels</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldDataProvider_1ac5ab25450b69bc0f3ba302fe0992bf1e" prot="private" virt="non-virtual"><scope>emulator::impl::AtmFieldDataProvider</scope><name>parse_slice_pattern</name></member>
+      <member refid="classemulator_1_1impl_1_1AtmFieldDataProvider_1a67b3ad33e169fc966a7a3d537c6ebf82" prot="public" virt="non-virtual"><scope>emulator::impl::AtmFieldDataProvider</scope><name>~AtmFieldDataProvider</name></member>
+      <member refid="classemulator_1_1FieldDataProvider_1a8b4205e970582ba9211c7197fa268c7c" prot="public" virt="virtual"><scope>emulator::impl::AtmFieldDataProvider</scope><name>~FieldDataProvider</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

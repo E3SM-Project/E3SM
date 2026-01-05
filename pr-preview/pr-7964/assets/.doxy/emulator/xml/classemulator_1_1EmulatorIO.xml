@@ -1,0 +1,1013 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="classemulator_1_1EmulatorIO" kind="class" language="C++" prot="public">
+    <compoundname>emulator::EmulatorIO</compoundname>
+    <includes refid="emulator__io_8hpp" local="no">emulator_io.hpp</includes>
+    <sectiondef kind="private-static-attrib">
+      <memberdef kind="variable" id="classemulator_1_1EmulatorIO_1a6a8fd585880e5d4953617231134d5010" prot="private" static="yes" mutable="no">
+        <type><ref refid="inference__backend_8hpp_1a68c509d4adb3f4a1d6fe3a9b0b87c7b9" kindref="member">MPI_Comm</ref></type>
+        <definition>MPI_Comm emulator::EmulatorIO::s_comm</definition>
+        <argsstring></argsstring>
+        <name>s_comm</name>
+        <qualifiedname>emulator::EmulatorIO::s_comm</qualifiedname>
+        <initializer>= <ref refid="inference__backend_8hpp_1a117133520e81a669c853602ac650d9d4" kindref="member">MPI_COMM_NULL</ref></initializer>
+        <briefdescription>
+<para>MPI communicator. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_io.hpp" line="232" column="19" bodyfile="components/emulator_comps/common/src/emulator_io.hpp" bodystart="232" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1EmulatorIO_1a4ee4e030a472654a44ecfafef34f35da" prot="private" static="yes" mutable="no">
+        <type>int</type>
+        <definition>int emulator::EmulatorIO::s_iosysid</definition>
+        <argsstring></argsstring>
+        <name>s_iosysid</name>
+        <qualifiedname>emulator::EmulatorIO::s_iosysid</qualifiedname>
+        <initializer>= -1</initializer>
+        <briefdescription>
+<para>PIO I/O system ID. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_io.hpp" line="233" column="14" bodyfile="components/emulator_comps/common/src/emulator_io.hpp" bodystart="233" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1EmulatorIO_1aba97c478c84aa8857bc614bdeeffb1ed" prot="private" static="yes" mutable="no">
+        <type>bool</type>
+        <definition>bool emulator::EmulatorIO::s_initialized</definition>
+        <argsstring></argsstring>
+        <name>s_initialized</name>
+        <qualifiedname>emulator::EmulatorIO::s_initialized</qualifiedname>
+        <initializer>= false</initializer>
+        <briefdescription>
+<para>Initialization flag. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_io.hpp" line="234" column="15" bodyfile="components/emulator_comps/common/src/emulator_io.hpp" bodystart="234" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1EmulatorIO_1a985e6c32643044879d808b81e1e55120" prot="private" static="yes" mutable="no">
+        <type>int</type>
+        <definition>int emulator::EmulatorIO::s_rank</definition>
+        <argsstring></argsstring>
+        <name>s_rank</name>
+        <qualifiedname>emulator::EmulatorIO::s_rank</qualifiedname>
+        <initializer>= -1</initializer>
+        <briefdescription>
+<para>MPI rank (for root-only logging) </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_io.hpp" line="235" column="14" bodyfile="components/emulator_comps/common/src/emulator_io.hpp" bodystart="235" bodyend="-1"/>
+      </memberdef>
+    </sectiondef>
+    <sectiondef kind="public-static-func">
+      <memberdef kind="function" id="classemulator_1_1EmulatorIO_1aa4c36a706de45950dfd577a73f692832" prot="public" static="yes" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator::EmulatorIO::initialize</definition>
+        <argsstring>(MPI_Comm comm, const std::string &amp;comp_name)</argsstring>
+        <name>initialize</name>
+        <qualifiedname>emulator::EmulatorIO::initialize</qualifiedname>
+        <param>
+          <type><ref refid="inference__backend_8hpp_1a68c509d4adb3f4a1d6fe3a9b0b87c7b9" kindref="member">MPI_Comm</ref></type>
+          <declname>comm</declname>
+        </param>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>comp_name</declname>
+        </param>
+        <briefdescription>
+<para>Initialize the PIO subsystem. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Must be called once before any file operations. Typically called from <ref refid="classemulator_1_1EmulatorComp_1a623d17026efc45f994de51f694fe4590" kindref="member">EmulatorComp::create_instance()</ref>.</para>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>comm</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>MPI communicator for parallel I/O </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>comp_name</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Component name (for logging) </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_io.hpp" line="62" column="15" bodyfile="components/emulator_comps/common/src/emulator_io.cpp" bodystart="21" bodyend="54"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorIO_1a4d370b578ee066e98157ece1d1abda0c" prot="public" static="yes" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator::EmulatorIO::finalize</definition>
+        <argsstring>()</argsstring>
+        <name>finalize</name>
+        <qualifiedname>emulator::EmulatorIO::finalize</qualifiedname>
+        <briefdescription>
+<para>Finalize the PIO subsystem. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Should be called before MPI_Finalize to release resources. </para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_io.hpp" line="69" column="15" bodyfile="components/emulator_comps/common/src/emulator_io.cpp" bodystart="56" bodyend="67"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorIO_1a6ff8c29e9228f8c53340b09adfcbc3aa" prot="public" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>bool</type>
+        <definition>static bool emulator::EmulatorIO::is_initialized</definition>
+        <argsstring>()</argsstring>
+        <name>is_initialized</name>
+        <qualifiedname>emulator::EmulatorIO::is_initialized</qualifiedname>
+        <briefdescription>
+<para>Check if PIO is initialized. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><simplesect kind="return"><para>true if <ref refid="classemulator_1_1EmulatorIO_1aa4c36a706de45950dfd577a73f692832" kindref="member">initialize()</ref> has been called successfully </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_io.hpp" line="75" column="15" bodyfile="components/emulator_comps/common/src/emulator_io.hpp" bodystart="75" bodyend="75"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorIO_1a66f9c27f15302b3e16263c6b58c30d9a" prot="public" static="yes" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>int</type>
+        <definition>int emulator::EmulatorIO::open_file</definition>
+        <argsstring>(const std::string &amp;filename)</argsstring>
+        <name>open_file</name>
+        <qualifiedname>emulator::EmulatorIO::open_file</qualifiedname>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>filename</declname>
+        </param>
+        <briefdescription>
+<para>Open an existing NetCDF file for reading. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>filename</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Path to the file </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+<simplesect kind="return"><para>NetCDF file ID (ncid), or -1 on failure </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_io.hpp" line="86" column="14" bodyfile="components/emulator_comps/common/src/emulator_io.cpp" bodystart="69" bodyend="82"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorIO_1afa56df1b67086b004d17a68893d6718e" prot="public" static="yes" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>int</type>
+        <definition>int emulator::EmulatorIO::create_file</definition>
+        <argsstring>(const std::string &amp;filename)</argsstring>
+        <name>create_file</name>
+        <qualifiedname>emulator::EmulatorIO::create_file</qualifiedname>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>filename</declname>
+        </param>
+        <briefdescription>
+<para>Create a new NetCDF file for writing. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>filename</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Path to the new file </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+<simplesect kind="return"><para>NetCDF file ID (ncid), or -1 on failure </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_io.hpp" line="93" column="14" bodyfile="components/emulator_comps/common/src/emulator_io.cpp" bodystart="84" bodyend="97"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorIO_1a00135153b8ed2131b12d131a6b3d027e" prot="public" static="yes" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator::EmulatorIO::close_file</definition>
+        <argsstring>(int ncid)</argsstring>
+        <name>close_file</name>
+        <qualifiedname>emulator::EmulatorIO::close_file</qualifiedname>
+        <param>
+          <type>int</type>
+          <declname>ncid</declname>
+        </param>
+        <briefdescription>
+<para>Close an open file. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>ncid</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>File ID from <ref refid="classemulator_1_1EmulatorIO_1a66f9c27f15302b3e16263c6b58c30d9a" kindref="member">open_file()</ref> or <ref refid="classemulator_1_1EmulatorIO_1afa56df1b67086b004d17a68893d6718e" kindref="member">create_file()</ref> </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_io.hpp" line="99" column="15" bodyfile="components/emulator_comps/common/src/emulator_io.cpp" bodystart="99" bodyend="103"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorIO_1a4342113a30cbbed496f48309ff06460a" prot="public" static="yes" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator::EmulatorIO::sync_file</definition>
+        <argsstring>(int ncid)</argsstring>
+        <name>sync_file</name>
+        <qualifiedname>emulator::EmulatorIO::sync_file</qualifiedname>
+        <param>
+          <type>int</type>
+          <declname>ncid</declname>
+        </param>
+        <briefdescription>
+<para>Synchronize (flush) file contents to disk. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>ncid</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>File ID </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_io.hpp" line="105" column="15" bodyfile="components/emulator_comps/common/src/emulator_io.cpp" bodystart="105" bodyend="109"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorIO_1a80de5c8cd352c945708a605a2f77b408" prot="public" static="yes" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>bool</type>
+        <definition>bool emulator::EmulatorIO::read_var_1d</definition>
+        <argsstring>(int ncid, const std::string &amp;varname, double *data, int size)</argsstring>
+        <name>read_var_1d</name>
+        <qualifiedname>emulator::EmulatorIO::read_var_1d</qualifiedname>
+        <param>
+          <type>int</type>
+          <declname>ncid</declname>
+        </param>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>varname</declname>
+        </param>
+        <param>
+          <type>double *</type>
+          <declname>data</declname>
+        </param>
+        <param>
+          <type>int</type>
+          <declname>size</declname>
+        </param>
+        <briefdescription>
+<para>Read a 1D double array from a NetCDF variable. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>ncid</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>File ID </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>varname</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Variable name </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>data</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Output buffer (must be pre-allocated) </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>size</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Number of elements to read </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+<simplesect kind="return"><para>true on success, false if variable not found or read failed </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_io.hpp" line="119" column="15" bodyfile="components/emulator_comps/common/src/emulator_io.cpp" bodystart="111" bodyend="124"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorIO_1a7ead9472bf7eee31b589c6c4f0e263b0" prot="public" static="yes" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>bool</type>
+        <definition>bool emulator::EmulatorIO::read_var_2d</definition>
+        <argsstring>(int ncid, const std::string &amp;varname, double *data, int nx, int ny)</argsstring>
+        <name>read_var_2d</name>
+        <qualifiedname>emulator::EmulatorIO::read_var_2d</qualifiedname>
+        <param>
+          <type>int</type>
+          <declname>ncid</declname>
+        </param>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>varname</declname>
+        </param>
+        <param>
+          <type>double *</type>
+          <declname>data</declname>
+        </param>
+        <param>
+          <type>int</type>
+          <declname>nx</declname>
+        </param>
+        <param>
+          <type>int</type>
+          <declname>ny</declname>
+        </param>
+        <briefdescription>
+<para>Read a 2D double array from a NetCDF variable. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>ncid</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>File ID </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>varname</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Variable name </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>data</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Output buffer (must be pre-allocated, row-major) </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>nx</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Size in x dimension </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>ny</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Size in y dimension </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+<simplesect kind="return"><para>true on success </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_io.hpp" line="131" column="15" bodyfile="components/emulator_comps/common/src/emulator_io.cpp" bodystart="126" bodyend="140"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorIO_1a2aa7977f208d3d1f584c17c6a75e45b5" prot="public" static="yes" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>bool</type>
+        <definition>bool emulator::EmulatorIO::read_var_3d_slice</definition>
+        <argsstring>(int ncid, const std::string &amp;varname, double *data, int nx, int ny, int time_idx)</argsstring>
+        <name>read_var_3d_slice</name>
+        <qualifiedname>emulator::EmulatorIO::read_var_3d_slice</qualifiedname>
+        <param>
+          <type>int</type>
+          <declname>ncid</declname>
+        </param>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>varname</declname>
+        </param>
+        <param>
+          <type>double *</type>
+          <declname>data</declname>
+        </param>
+        <param>
+          <type>int</type>
+          <declname>nx</declname>
+        </param>
+        <param>
+          <type>int</type>
+          <declname>ny</declname>
+        </param>
+        <param>
+          <type>int</type>
+          <declname>time_idx</declname>
+        </param>
+        <briefdescription>
+<para>Read a 2D slice from a 3D variable (time, lat, lon). </para>
+        </briefdescription>
+        <detaileddescription>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>ncid</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>File ID </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>varname</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Variable name </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>data</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Output buffer </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>nx</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Size in x dimension </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>ny</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Size in y dimension </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>time_idx</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Time index to read </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+<simplesect kind="return"><para>true on success </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_io.hpp" line="144" column="15" bodyfile="components/emulator_comps/common/src/emulator_io.cpp" bodystart="142" bodyend="157"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorIO_1a8995fda10943d019ebd6e66892454ead" prot="public" static="yes" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>bool</type>
+        <definition>bool emulator::EmulatorIO::read_var_1d_int</definition>
+        <argsstring>(int ncid, const std::string &amp;varname, int *data, int size)</argsstring>
+        <name>read_var_1d_int</name>
+        <qualifiedname>emulator::EmulatorIO::read_var_1d_int</qualifiedname>
+        <param>
+          <type>int</type>
+          <declname>ncid</declname>
+        </param>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>varname</declname>
+        </param>
+        <param>
+          <type>int *</type>
+          <declname>data</declname>
+        </param>
+        <param>
+          <type>int</type>
+          <declname>size</declname>
+        </param>
+        <briefdescription>
+<para>Read a 1D integer array from a NetCDF variable. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>ncid</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>File ID </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>varname</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Variable name </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>data</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Output buffer </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>size</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Number of elements to read </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+<simplesect kind="return"><para>true on success </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_io.hpp" line="155" column="15" bodyfile="components/emulator_comps/common/src/emulator_io.cpp" bodystart="159" bodyend="172"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorIO_1ab87742e0565fe59d3b2e486a23d1b2dd" prot="public" static="yes" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>bool</type>
+        <definition>bool emulator::EmulatorIO::write_var_1d</definition>
+        <argsstring>(int ncid, const std::string &amp;varname, const double *data, int size)</argsstring>
+        <name>write_var_1d</name>
+        <qualifiedname>emulator::EmulatorIO::write_var_1d</qualifiedname>
+        <param>
+          <type>int</type>
+          <declname>ncid</declname>
+        </param>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>varname</declname>
+        </param>
+        <param>
+          <type>const double *</type>
+          <declname>data</declname>
+        </param>
+        <param>
+          <type>int</type>
+          <declname>size</declname>
+        </param>
+        <briefdescription>
+<para>Write a 1D double array to a NetCDF variable. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>ncid</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>File ID </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>varname</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Variable name (must already exist) </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>data</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Input data buffer </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>size</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Number of elements to write </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+<simplesect kind="return"><para>true on success </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_io.hpp" line="166" column="15" bodyfile="components/emulator_comps/common/src/emulator_io.cpp" bodystart="174" bodyend="187"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorIO_1ae3ea68f8df6fa1f123648b994eb83f13" prot="public" static="yes" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>bool</type>
+        <definition>bool emulator::EmulatorIO::write_var_2d</definition>
+        <argsstring>(int ncid, const std::string &amp;varname, const double *data, int nx, int ny)</argsstring>
+        <name>write_var_2d</name>
+        <qualifiedname>emulator::EmulatorIO::write_var_2d</qualifiedname>
+        <param>
+          <type>int</type>
+          <declname>ncid</declname>
+        </param>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>varname</declname>
+        </param>
+        <param>
+          <type>const double *</type>
+          <declname>data</declname>
+        </param>
+        <param>
+          <type>int</type>
+          <declname>nx</declname>
+        </param>
+        <param>
+          <type>int</type>
+          <declname>ny</declname>
+        </param>
+        <briefdescription>
+<para>Write a 2D double array to a NetCDF variable. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>ncid</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>File ID </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>varname</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Variable name (must already exist) </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>data</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Input data buffer (row-major) </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>nx</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Size in x dimension </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>ny</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Size in y dimension </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+<simplesect kind="return"><para>true on success </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_io.hpp" line="178" column="15" bodyfile="components/emulator_comps/common/src/emulator_io.cpp" bodystart="189" bodyend="203"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorIO_1a816be56bc37a0bf9a49d02f743c8afd3" prot="public" static="yes" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>int</type>
+        <definition>int emulator::EmulatorIO::define_dim</definition>
+        <argsstring>(int ncid, const std::string &amp;dimname, int length)</argsstring>
+        <name>define_dim</name>
+        <qualifiedname>emulator::EmulatorIO::define_dim</qualifiedname>
+        <param>
+          <type>int</type>
+          <declname>ncid</declname>
+        </param>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>dimname</declname>
+        </param>
+        <param>
+          <type>int</type>
+          <declname>length</declname>
+        </param>
+        <briefdescription>
+<para>Define a new dimension in a NetCDF file. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>ncid</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>File ID (must be in define mode) </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>dimname</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Dimension name </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>length</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Dimension length </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+<simplesect kind="return"><para>Dimension ID, or -1 on failure </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_io.hpp" line="192" column="14" bodyfile="components/emulator_comps/common/src/emulator_io.cpp" bodystart="205" bodyend="209"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorIO_1a59c321a8761eb246642941a6a0fa45b9" prot="public" static="yes" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>int</type>
+        <definition>int emulator::EmulatorIO::get_dim_size</definition>
+        <argsstring>(int ncid, const std::string &amp;dimname)</argsstring>
+        <name>get_dim_size</name>
+        <qualifiedname>emulator::EmulatorIO::get_dim_size</qualifiedname>
+        <param>
+          <type>int</type>
+          <declname>ncid</declname>
+        </param>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>dimname</declname>
+        </param>
+        <briefdescription>
+<para>Get the size of a dimension. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>ncid</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>File ID </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>dimname</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Dimension name </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+<simplesect kind="return"><para>Dimension length, or -1 if not found </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_io.hpp" line="200" column="14" bodyfile="components/emulator_comps/common/src/emulator_io.cpp" bodystart="211" bodyend="221"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorIO_1afb923730a3eb36a21e3f75b07625a18e" prot="public" static="yes" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>bool</type>
+        <definition>bool emulator::EmulatorIO::has_var</definition>
+        <argsstring>(int ncid, const std::string &amp;varname)</argsstring>
+        <name>has_var</name>
+        <qualifiedname>emulator::EmulatorIO::has_var</qualifiedname>
+        <param>
+          <type>int</type>
+          <declname>ncid</declname>
+        </param>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>varname</declname>
+        </param>
+        <briefdescription>
+<para>Check if a variable exists in the file. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>ncid</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>File ID </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>varname</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Variable name </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+<simplesect kind="return"><para>true if variable exists </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_io.hpp" line="208" column="15" bodyfile="components/emulator_comps/common/src/emulator_io.cpp" bodystart="223" bodyend="226"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorIO_1a29688a1be708c856e064da28226a99d6" prot="public" static="yes" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>int</type>
+        <definition>int emulator::EmulatorIO::define_var</definition>
+        <argsstring>(int ncid, const std::string &amp;varname, int nctype, const std::vector&lt; int &gt; &amp;dimids)</argsstring>
+        <name>define_var</name>
+        <qualifiedname>emulator::EmulatorIO::define_var</qualifiedname>
+        <param>
+          <type>int</type>
+          <declname>ncid</declname>
+        </param>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>varname</declname>
+        </param>
+        <param>
+          <type>int</type>
+          <declname>nctype</declname>
+        </param>
+        <param>
+          <type>const std::vector&lt; int &gt; &amp;</type>
+          <declname>dimids</declname>
+        </param>
+        <briefdescription>
+<para>Define a new variable in a NetCDF file. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>ncid</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>File ID (must be in define mode) </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>varname</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Variable name </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>nctype</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>NetCDF type (e.g., NC_DOUBLE) </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>dimids</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Vector of dimension IDs </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+<simplesect kind="return"><para>Variable ID, or -1 on failure </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_io.hpp" line="218" column="14" bodyfile="components/emulator_comps/common/src/emulator_io.cpp" bodystart="228" bodyend="235"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorIO_1a3de4ffbe7bb7e4e05380b0a09a2afb23" prot="public" static="yes" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>bool</type>
+        <definition>bool emulator::EmulatorIO::end_def</definition>
+        <argsstring>(int ncid)</argsstring>
+        <name>end_def</name>
+        <qualifiedname>emulator::EmulatorIO::end_def</qualifiedname>
+        <param>
+          <type>int</type>
+          <declname>ncid</declname>
+        </param>
+        <briefdescription>
+<para>End define mode and switch to data mode. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Must be called after defining dimensions and variables, before writing data. <parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>ncid</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>File ID </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+<simplesect kind="return"><para>true on success </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_io.hpp" line="229" column="15" bodyfile="components/emulator_comps/common/src/emulator_io.cpp" bodystart="237" bodyend="240"/>
+      </memberdef>
+    </sectiondef>
+    <briefdescription>
+<para>Static class providing parallel I/O using SCORPIO/PIO. </para>
+    </briefdescription>
+    <detaileddescription>
+<para>Wraps the SCORPIO (Scalable Parallel I/O) C library to provide convenient C++ methods for reading and writing NetCDF files in parallel. All methods are static as only one PIO system is active.</para>
+<sect1 id="classemulator_1_1EmulatorIO_1autotoc_md13_1s1"><sect2 id="classemulator_1_1EmulatorIO_1autotoc_md13">
+<title>Initialization</title><para>Call <computeroutput><ref refid="classemulator_1_1EmulatorIO_1aa4c36a706de45950dfd577a73f692832" kindref="member">initialize()</ref></computeroutput> once per component with the MPI communicator. Call <computeroutput><ref refid="classemulator_1_1EmulatorIO_1a4d370b578ee066e98157ece1d1abda0c" kindref="member">finalize()</ref></computeroutput> before MPI_Finalize.</para>
+</sect2></sect1>
+<sect1 id="classemulator_1_1EmulatorIO_1autotoc_md14_1s1"><sect2 id="classemulator_1_1EmulatorIO_1autotoc_md14">
+<title>File Operations</title><para><itemizedlist>
+<listitem><para><computeroutput><ref refid="classemulator_1_1EmulatorIO_1a66f9c27f15302b3e16263c6b58c30d9a" kindref="member">open_file()</ref></computeroutput> / <computeroutput><ref refid="classemulator_1_1EmulatorIO_1afa56df1b67086b004d17a68893d6718e" kindref="member">create_file()</ref></computeroutput> - Open or create NetCDF files</para>
+</listitem><listitem><para><computeroutput><ref refid="classemulator_1_1EmulatorIO_1a00135153b8ed2131b12d131a6b3d027e" kindref="member">close_file()</ref></computeroutput> - Close an open file</para>
+</listitem><listitem><para><computeroutput><ref refid="classemulator_1_1EmulatorIO_1a4342113a30cbbed496f48309ff06460a" kindref="member">sync_file()</ref></computeroutput> - Flush writes to disk</para>
+</listitem></itemizedlist>
+</para>
+</sect2></sect1>
+<sect1 id="classemulator_1_1EmulatorIO_1autotoc_md15_1s1"><sect2 id="classemulator_1_1EmulatorIO_1autotoc_md15">
+<title>Variable I/O</title><para><itemizedlist>
+<listitem><para><computeroutput><ref refid="classemulator_1_1EmulatorIO_1a80de5c8cd352c945708a605a2f77b408" kindref="member">read_var_1d()</ref></computeroutput>, <computeroutput><ref refid="classemulator_1_1EmulatorIO_1a7ead9472bf7eee31b589c6c4f0e263b0" kindref="member">read_var_2d()</ref></computeroutput> - Read array data</para>
+</listitem><listitem><para><computeroutput><ref refid="classemulator_1_1EmulatorIO_1ab87742e0565fe59d3b2e486a23d1b2dd" kindref="member">write_var_1d()</ref></computeroutput>, <computeroutput><ref refid="classemulator_1_1EmulatorIO_1ae3ea68f8df6fa1f123648b994eb83f13" kindref="member">write_var_2d()</ref></computeroutput> - Write array data</para>
+</listitem><listitem><para><computeroutput><ref refid="classemulator_1_1EmulatorIO_1afb923730a3eb36a21e3f75b07625a18e" kindref="member">has_var()</ref></computeroutput> - Check if variable exists</para>
+</listitem></itemizedlist>
+</para>
+<para><simplesect kind="note"><para>Currently uses serial NetCDF (PIO_IOTYPE_NETCDF) for simplicity. For large-scale runs, consider PIO_IOTYPE_PNETCDF. </para>
+</simplesect>
+</para>
+</sect2></sect1>
+    </detaileddescription>
+    <location file="components/emulator_comps/common/src/emulator_io.hpp" line="47" column="1" bodyfile="components/emulator_comps/common/src/emulator_io.hpp" bodystart="47" bodyend="236"/>
+    <listofallmembers>
+      <member refid="classemulator_1_1EmulatorIO_1a00135153b8ed2131b12d131a6b3d027e" prot="public" virt="non-virtual"><scope>emulator::EmulatorIO</scope><name>close_file</name></member>
+      <member refid="classemulator_1_1EmulatorIO_1afa56df1b67086b004d17a68893d6718e" prot="public" virt="non-virtual"><scope>emulator::EmulatorIO</scope><name>create_file</name></member>
+      <member refid="classemulator_1_1EmulatorIO_1a816be56bc37a0bf9a49d02f743c8afd3" prot="public" virt="non-virtual"><scope>emulator::EmulatorIO</scope><name>define_dim</name></member>
+      <member refid="classemulator_1_1EmulatorIO_1a29688a1be708c856e064da28226a99d6" prot="public" virt="non-virtual"><scope>emulator::EmulatorIO</scope><name>define_var</name></member>
+      <member refid="classemulator_1_1EmulatorIO_1a3de4ffbe7bb7e4e05380b0a09a2afb23" prot="public" virt="non-virtual"><scope>emulator::EmulatorIO</scope><name>end_def</name></member>
+      <member refid="classemulator_1_1EmulatorIO_1a4d370b578ee066e98157ece1d1abda0c" prot="public" virt="non-virtual"><scope>emulator::EmulatorIO</scope><name>finalize</name></member>
+      <member refid="classemulator_1_1EmulatorIO_1a59c321a8761eb246642941a6a0fa45b9" prot="public" virt="non-virtual"><scope>emulator::EmulatorIO</scope><name>get_dim_size</name></member>
+      <member refid="classemulator_1_1EmulatorIO_1afb923730a3eb36a21e3f75b07625a18e" prot="public" virt="non-virtual"><scope>emulator::EmulatorIO</scope><name>has_var</name></member>
+      <member refid="classemulator_1_1EmulatorIO_1aa4c36a706de45950dfd577a73f692832" prot="public" virt="non-virtual"><scope>emulator::EmulatorIO</scope><name>initialize</name></member>
+      <member refid="classemulator_1_1EmulatorIO_1a6ff8c29e9228f8c53340b09adfcbc3aa" prot="public" virt="non-virtual"><scope>emulator::EmulatorIO</scope><name>is_initialized</name></member>
+      <member refid="classemulator_1_1EmulatorIO_1a66f9c27f15302b3e16263c6b58c30d9a" prot="public" virt="non-virtual"><scope>emulator::EmulatorIO</scope><name>open_file</name></member>
+      <member refid="classemulator_1_1EmulatorIO_1a80de5c8cd352c945708a605a2f77b408" prot="public" virt="non-virtual"><scope>emulator::EmulatorIO</scope><name>read_var_1d</name></member>
+      <member refid="classemulator_1_1EmulatorIO_1a8995fda10943d019ebd6e66892454ead" prot="public" virt="non-virtual"><scope>emulator::EmulatorIO</scope><name>read_var_1d_int</name></member>
+      <member refid="classemulator_1_1EmulatorIO_1a7ead9472bf7eee31b589c6c4f0e263b0" prot="public" virt="non-virtual"><scope>emulator::EmulatorIO</scope><name>read_var_2d</name></member>
+      <member refid="classemulator_1_1EmulatorIO_1a2aa7977f208d3d1f584c17c6a75e45b5" prot="public" virt="non-virtual"><scope>emulator::EmulatorIO</scope><name>read_var_3d_slice</name></member>
+      <member refid="classemulator_1_1EmulatorIO_1a6a8fd585880e5d4953617231134d5010" prot="private" virt="non-virtual"><scope>emulator::EmulatorIO</scope><name>s_comm</name></member>
+      <member refid="classemulator_1_1EmulatorIO_1aba97c478c84aa8857bc614bdeeffb1ed" prot="private" virt="non-virtual"><scope>emulator::EmulatorIO</scope><name>s_initialized</name></member>
+      <member refid="classemulator_1_1EmulatorIO_1a4ee4e030a472654a44ecfafef34f35da" prot="private" virt="non-virtual"><scope>emulator::EmulatorIO</scope><name>s_iosysid</name></member>
+      <member refid="classemulator_1_1EmulatorIO_1a985e6c32643044879d808b81e1e55120" prot="private" virt="non-virtual"><scope>emulator::EmulatorIO</scope><name>s_rank</name></member>
+      <member refid="classemulator_1_1EmulatorIO_1a4342113a30cbbed496f48309ff06460a" prot="public" virt="non-virtual"><scope>emulator::EmulatorIO</scope><name>sync_file</name></member>
+      <member refid="classemulator_1_1EmulatorIO_1ab87742e0565fe59d3b2e486a23d1b2dd" prot="public" virt="non-virtual"><scope>emulator::EmulatorIO</scope><name>write_var_1d</name></member>
+      <member refid="classemulator_1_1EmulatorIO_1ae3ea68f8df6fa1f123648b994eb83f13" prot="public" virt="non-virtual"><scope>emulator::EmulatorIO</scope><name>write_var_2d</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

@@ -1,0 +1,150 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="structemulator_1_1OutputStreamConfig" kind="struct" language="C++" prot="public">
+    <compoundname>emulator::OutputStreamConfig</compoundname>
+    <includes refid="emulator__diagnostics_8hpp" local="no">emulator_diagnostics.hpp</includes>
+    <sectiondef kind="public-attrib">
+      <memberdef kind="variable" id="structemulator_1_1OutputStreamConfig_1abac947f5aad0bd4ff10a66839c201542" prot="public" static="no" mutable="no">
+        <type>std::string</type>
+        <definition>std::string emulator::OutputStreamConfig::stream_name</definition>
+        <argsstring></argsstring>
+        <name>stream_name</name>
+        <qualifiedname>emulator::OutputStreamConfig::stream_name</qualifiedname>
+        <initializer>= &quot;h0&quot;</initializer>
+        <briefdescription>
+<para>Stream identifier. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_diagnostics.hpp" line="80" column="15" bodyfile="components/emulator_comps/common/src/emulator_diagnostics.hpp" bodystart="80" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1OutputStreamConfig_1a13b412575e09feb46dfc32c4c503a027" prot="public" static="no" mutable="no">
+        <type>std::string</type>
+        <definition>std::string emulator::OutputStreamConfig::filename_prefix</definition>
+        <argsstring></argsstring>
+        <name>filename_prefix</name>
+        <qualifiedname>emulator::OutputStreamConfig::filename_prefix</qualifiedname>
+        <initializer>= &quot;emulator&quot;</initializer>
+        <briefdescription>
+<para>Output filename prefix. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_diagnostics.hpp" line="81" column="15" bodyfile="components/emulator_comps/common/src/emulator_diagnostics.hpp" bodystart="81" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1OutputStreamConfig_1ac652c5abc784e7a8815075be67e55aac" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; std::string &gt;</type>
+        <definition>std::vector&lt;std::string&gt; emulator::OutputStreamConfig::fields</definition>
+        <argsstring></argsstring>
+        <name>fields</name>
+        <qualifiedname>emulator::OutputStreamConfig::fields</qualifiedname>
+        <briefdescription>
+<para>Fields to output. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_diagnostics.hpp" line="82" column="15" bodyfile="components/emulator_comps/common/src/emulator_diagnostics.hpp" bodystart="82" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1OutputStreamConfig_1a0cd7e2c34b58a0834ef8924b657d5fc1" prot="public" static="no" mutable="no">
+        <type><ref refid="namespaceemulator_1ac145d6905ecd2dc434fdff93ca2375ff" kindref="member">FrequencyUnit</ref></type>
+        <definition>FrequencyUnit emulator::OutputStreamConfig::frequency_unit</definition>
+        <argsstring></argsstring>
+        <name>frequency_unit</name>
+        <qualifiedname>emulator::OutputStreamConfig::frequency_unit</qualifiedname>
+        <initializer>= <ref refid="namespaceemulator_1ac145d6905ecd2dc434fdff93ca2375ffa85b245d9aa07e88b84e07983410d5d07" kindref="member">FrequencyUnit::NDAYS</ref></initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_diagnostics.hpp" line="84" column="17" bodyfile="components/emulator_comps/common/src/emulator_diagnostics.hpp" bodystart="84" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1OutputStreamConfig_1a3159fa99882c96c052887675796ddfe1" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::OutputStreamConfig::frequency</definition>
+        <argsstring></argsstring>
+        <name>frequency</name>
+        <qualifiedname>emulator::OutputStreamConfig::frequency</qualifiedname>
+        <initializer>= 1</initializer>
+        <briefdescription>
+<para>Output every N units. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_diagnostics.hpp" line="85" column="7" bodyfile="components/emulator_comps/common/src/emulator_diagnostics.hpp" bodystart="85" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1OutputStreamConfig_1ae1e9d12895c9a221be26e9d603bf073d" prot="public" static="no" mutable="no">
+        <type><ref refid="namespaceemulator_1a52af206b444654873ad1f1b1f5c12298" kindref="member">OutputAvgType</ref></type>
+        <definition>OutputAvgType emulator::OutputStreamConfig::avg_type</definition>
+        <argsstring></argsstring>
+        <name>avg_type</name>
+        <qualifiedname>emulator::OutputStreamConfig::avg_type</qualifiedname>
+        <initializer>= <ref refid="namespaceemulator_1a52af206b444654873ad1f1b1f5c12298a0cb59bada85ae6029aac02b5c6dc7622" kindref="member">OutputAvgType::INSTANT</ref></initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_diagnostics.hpp" line="87" column="17" bodyfile="components/emulator_comps/common/src/emulator_diagnostics.hpp" bodystart="87" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1OutputStreamConfig_1a02d05f60feaa6b411bf435275320c992" prot="public" static="no" mutable="no">
+        <type><ref refid="namespaceemulator_1a57a100b1e7f196d0998ed65a7f48aec3" kindref="member">OutputPrecision</ref></type>
+        <definition>OutputPrecision emulator::OutputStreamConfig::precision</definition>
+        <argsstring></argsstring>
+        <name>precision</name>
+        <qualifiedname>emulator::OutputStreamConfig::precision</qualifiedname>
+        <initializer>= <ref refid="namespaceemulator_1a57a100b1e7f196d0998ed65a7f48aec3a967d280b5c16d95f2947647dd2ca6cc2" kindref="member">OutputPrecision::FLOAT32</ref></initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_diagnostics.hpp" line="88" column="19" bodyfile="components/emulator_comps/common/src/emulator_diagnostics.hpp" bodystart="88" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1OutputStreamConfig_1a1a33535635ed699a7f4894eccf77c7b1" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::OutputStreamConfig::max_snapshots_per_file</definition>
+        <argsstring></argsstring>
+        <name>max_snapshots_per_file</name>
+        <qualifiedname>emulator::OutputStreamConfig::max_snapshots_per_file</qualifiedname>
+        <initializer>= 1</initializer>
+        <briefdescription>
+<para>Snapshots before new file. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_diagnostics.hpp" line="89" column="7" bodyfile="components/emulator_comps/common/src/emulator_diagnostics.hpp" bodystart="89" bodyend="-1"/>
+      </memberdef>
+    </sectiondef>
+    <briefdescription>
+<para>Configuration for a single output stream. </para>
+    </briefdescription>
+    <detaileddescription>
+<para>Each stream writes to its own set of NetCDF files with configurable output frequency, averaging, and field selection. </para>
+    </detaileddescription>
+    <location file="components/emulator_comps/common/src/emulator_diagnostics.hpp" line="79" column="1" bodyfile="components/emulator_comps/common/src/emulator_diagnostics.hpp" bodystart="79" bodyend="90"/>
+    <listofallmembers>
+      <member refid="structemulator_1_1OutputStreamConfig_1ae1e9d12895c9a221be26e9d603bf073d" prot="public" virt="non-virtual"><scope>emulator::OutputStreamConfig</scope><name>avg_type</name></member>
+      <member refid="structemulator_1_1OutputStreamConfig_1ac652c5abc784e7a8815075be67e55aac" prot="public" virt="non-virtual"><scope>emulator::OutputStreamConfig</scope><name>fields</name></member>
+      <member refid="structemulator_1_1OutputStreamConfig_1a13b412575e09feb46dfc32c4c503a027" prot="public" virt="non-virtual"><scope>emulator::OutputStreamConfig</scope><name>filename_prefix</name></member>
+      <member refid="structemulator_1_1OutputStreamConfig_1a3159fa99882c96c052887675796ddfe1" prot="public" virt="non-virtual"><scope>emulator::OutputStreamConfig</scope><name>frequency</name></member>
+      <member refid="structemulator_1_1OutputStreamConfig_1a0cd7e2c34b58a0834ef8924b657d5fc1" prot="public" virt="non-virtual"><scope>emulator::OutputStreamConfig</scope><name>frequency_unit</name></member>
+      <member refid="structemulator_1_1OutputStreamConfig_1a1a33535635ed699a7f4894eccf77c7b1" prot="public" virt="non-virtual"><scope>emulator::OutputStreamConfig</scope><name>max_snapshots_per_file</name></member>
+      <member refid="structemulator_1_1OutputStreamConfig_1a02d05f60feaa6b411bf435275320c992" prot="public" virt="non-virtual"><scope>emulator::OutputStreamConfig</scope><name>precision</name></member>
+      <member refid="structemulator_1_1OutputStreamConfig_1abac947f5aad0bd4ff10a66839c201542" prot="public" virt="non-virtual"><scope>emulator::OutputStreamConfig</scope><name>stream_name</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

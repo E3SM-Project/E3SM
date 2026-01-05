@@ -1,0 +1,151 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="vert__slice__diagnostic_8hpp" kind="file" language="C++">
+    <compoundname>vert_slice_diagnostic.hpp</compoundname>
+    <includes refid="derived__diagnostic_8hpp" local="yes">derived_diagnostic.hpp</includes>
+    <includedby refid="diagnostic__factory_8cpp" local="yes">components/emulator_comps/common/src/diagnostics/diagnostic_factory.cpp</includedby>
+    <includedby refid="vert__slice__diagnostic_8cpp" local="yes">components/emulator_comps/common/src/diagnostics/vert_slice_diagnostic.cpp</includedby>
+    <incdepgraph>
+      <node id="2">
+        <label>derived_diagnostic.hpp</label>
+        <link refid="derived__diagnostic_8hpp"/>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="13" relation="include">
+        </childnode>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+      </node>
+      <node id="1">
+        <label>components/emulator_comps/common/src/diagnostics/vert_slice_diagnostic.hpp</label>
+        <link refid="vert__slice__diagnostic_8hpp"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+      </node>
+      <node id="4">
+        <label>emulator_diagnostics.hpp</label>
+        <link refid="emulator__diagnostics_8hpp"/>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+      </node>
+      <node id="7">
+        <label>emulator_logger.hpp</label>
+        <link refid="emulator__logger_8hpp"/>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="9" relation="include">
+        </childnode>
+        <childnode refid="5" relation="include">
+        </childnode>
+      </node>
+      <node id="3">
+        <label>../emulator_output_stream.hpp</label>
+        <link refid="emulator__output__stream_8hpp"/>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+        <childnode refid="10" relation="include">
+        </childnode>
+        <childnode refid="11" relation="include">
+        </childnode>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+      </node>
+      <node id="8">
+        <label>fstream</label>
+      </node>
+      <node id="10">
+        <label>functional</label>
+      </node>
+      <node id="9">
+        <label>iostream</label>
+      </node>
+      <node id="11">
+        <label>map</label>
+      </node>
+      <node id="13">
+        <label>memory</label>
+      </node>
+      <node id="12">
+        <label>mpi.h</label>
+      </node>
+      <node id="5">
+        <label>string</label>
+      </node>
+      <node id="6">
+        <label>vector</label>
+      </node>
+    </incdepgraph>
+    <invincdepgraph>
+      <node id="2">
+        <label>components/emulator_comps/common/src/diagnostics/diagnostic_factory.cpp</label>
+        <link refid="diagnostic__factory_8cpp"/>
+      </node>
+      <node id="3">
+        <label>components/emulator_comps/common/src/diagnostics/vert_slice_diagnostic.cpp</label>
+        <link refid="vert__slice__diagnostic_8cpp"/>
+      </node>
+      <node id="1">
+        <label>components/emulator_comps/common/src/diagnostics/vert_slice_diagnostic.hpp</label>
+        <link refid="vert__slice__diagnostic_8hpp"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="3" relation="include">
+        </childnode>
+      </node>
+    </invincdepgraph>
+    <innerclass refid="classemulator_1_1VertSliceDiagnostic" prot="public">emulator::VertSliceDiagnostic</innerclass>
+    <innernamespace refid="namespaceemulator">emulator</innernamespace>
+    <briefdescription>
+<para>Vertical slicing diagnostic. </para>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <programlisting>
+<codeline lineno="1"><highlight class="normal"></highlight></codeline>
+<codeline lineno="5"><highlight class="normal"></highlight></codeline>
+<codeline lineno="6"><highlight class="normal"></highlight><highlight class="preprocessor">#ifndef<sp/>EMULATOR_VERT_SLICE_DIAGNOSTIC_HPP</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="7"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>EMULATOR_VERT_SLICE_DIAGNOSTIC_HPP</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="8"><highlight class="normal"></highlight></codeline>
+<codeline lineno="9"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&quot;<ref refid="derived__diagnostic_8hpp" kindref="compound">derived_diagnostic.hpp</ref>&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="10"><highlight class="normal"></highlight></codeline>
+<codeline lineno="11"><highlight class="normal"></highlight><highlight class="keyword">namespace<sp/></highlight><highlight class="normal"><ref refid="namespaceemulator" kindref="compound">emulator</ref><sp/>{</highlight></codeline>
+<codeline lineno="12"><highlight class="normal"></highlight></codeline>
+<codeline lineno="26" refid="classemulator_1_1VertSliceDiagnostic" refkind="compound"><highlight class="normal"></highlight><highlight class="keyword">class<sp/></highlight><highlight class="normal"><ref refid="classemulator_1_1VertSliceDiagnostic_1ae784f4109f57ff5eee3e1b1c419e93cc" kindref="member">VertSliceDiagnostic</ref><sp/>:<sp/></highlight><highlight class="keyword">public</highlight><highlight class="normal"><sp/><ref refid="classemulator_1_1DerivedDiagnostic" kindref="compound">DerivedDiagnostic</ref><sp/>{</highlight></codeline>
+<codeline lineno="27"><highlight class="normal"></highlight><highlight class="keyword">public</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="34"><highlight class="normal"><sp/><sp/><ref refid="classemulator_1_1VertSliceDiagnostic_1ae784f4109f57ff5eee3e1b1c419e93cc" kindref="member">VertSliceDiagnostic</ref>(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string<sp/>&amp;field_name,<sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/>level_idx,<sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/>nlevs);</highlight></codeline>
+<codeline lineno="35"><highlight class="normal"></highlight></codeline>
+<codeline lineno="36" refid="classemulator_1_1VertSliceDiagnostic_1a55d9ef659269df0520d40d2d7abcf4bd" refkind="member"><highlight class="normal"><sp/><sp/>std::string<sp/><ref refid="classemulator_1_1VertSliceDiagnostic_1a55d9ef659269df0520d40d2d7abcf4bd" kindref="member">name</ref>()</highlight><highlight class="keyword"><sp/>const<sp/>override<sp/></highlight><highlight class="normal">{<sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>m_name;<sp/>}</highlight></codeline>
+<codeline lineno="37" refid="classemulator_1_1VertSliceDiagnostic_1a3b1868cab448947d9a04766abe325801" refkind="member"><highlight class="normal"><sp/><sp/>std::string<sp/><ref refid="classemulator_1_1VertSliceDiagnostic_1a3b1868cab448947d9a04766abe325801" kindref="member">source_field</ref>()</highlight><highlight class="keyword"><sp/>const<sp/>override<sp/></highlight><highlight class="normal">{<sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>m_source_field;<sp/>}</highlight></codeline>
+<codeline lineno="38"><highlight class="normal"></highlight></codeline>
+<codeline lineno="39"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="classemulator_1_1VertSliceDiagnostic_1a9259d65a22df077a398a53c2ec2a9702" kindref="member">compute</ref>(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/><ref refid="classemulator_1_1FieldDataProvider" kindref="compound">FieldDataProvider</ref><sp/>&amp;fields,</highlight></codeline>
+<codeline lineno="40"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>std::vector&lt;double&gt;<sp/>&amp;output)<sp/></highlight><highlight class="keyword">override</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="41"><highlight class="normal"></highlight></codeline>
+<codeline lineno="42" refid="classemulator_1_1VertSliceDiagnostic_1a42022b08b043802889f461980f6645d4" refkind="member"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/><ref refid="classemulator_1_1VertSliceDiagnostic_1a42022b08b043802889f461980f6645d4" kindref="member">output_size</ref>(</highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/>ncols,<sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/>nlevs)</highlight><highlight class="keyword"><sp/>const<sp/>override<sp/></highlight><highlight class="normal">{</highlight></codeline>
+<codeline lineno="43"><highlight class="normal"><sp/><sp/><sp/><sp/>(void)nlevs;</highlight></codeline>
+<codeline lineno="44"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>ncols;<sp/></highlight><highlight class="comment">//<sp/>Returns<sp/>one<sp/>value<sp/>per<sp/>column</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="45"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="46"><highlight class="normal"></highlight></codeline>
+<codeline lineno="47"><highlight class="normal"></highlight><highlight class="keyword">private</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="48"><highlight class="normal"><sp/><sp/>std::string<sp/>m_name;</highlight></codeline>
+<codeline lineno="49"><highlight class="normal"><sp/><sp/>std::string<sp/>m_source_field;</highlight></codeline>
+<codeline lineno="50"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/>m_level_idx;</highlight></codeline>
+<codeline lineno="51"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/>m_nlevs;</highlight></codeline>
+<codeline lineno="52"><highlight class="normal">};</highlight></codeline>
+<codeline lineno="53"><highlight class="normal"></highlight></codeline>
+<codeline lineno="54"><highlight class="normal">}<sp/></highlight><highlight class="comment">//<sp/>namespace<sp/>emulator</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="55"><highlight class="normal"></highlight></codeline>
+<codeline lineno="56"><highlight class="normal"></highlight><highlight class="preprocessor">#endif<sp/></highlight><highlight class="comment">//<sp/>EMULATOR_VERT_SLICE_DIAGNOSTIC_HPP</highlight><highlight class="normal"></highlight></codeline>
+    </programlisting>
+    <location file="components/emulator_comps/common/src/diagnostics/vert_slice_diagnostic.hpp"/>
+  </compounddef>
+</doxygen>

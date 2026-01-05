@@ -1,0 +1,18 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="dir_8c59288332f7499e80b506ac6e5a3903" kind="dir">
+    <compoundname>components/emulator_comps/common/src/diagnostics</compoundname>
+    <innerfile refid="derived__diagnostic_8hpp">derived_diagnostic.hpp</innerfile>
+    <innerfile refid="diagnostic__factory_8cpp">diagnostic_factory.cpp</innerfile>
+    <innerfile refid="diagnostic__factory_8hpp">diagnostic_factory.hpp</innerfile>
+    <innerfile refid="horiz__avg__diagnostic_8cpp">horiz_avg_diagnostic.cpp</innerfile>
+    <innerfile refid="horiz__avg__diagnostic_8hpp">horiz_avg_diagnostic.hpp</innerfile>
+    <innerfile refid="vert__slice__diagnostic_8cpp">vert_slice_diagnostic.cpp</innerfile>
+    <innerfile refid="vert__slice__diagnostic_8hpp">vert_slice_diagnostic.hpp</innerfile>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="components/emulator_comps/common/src/diagnostics/"/>
+  </compounddef>
+</doxygen>

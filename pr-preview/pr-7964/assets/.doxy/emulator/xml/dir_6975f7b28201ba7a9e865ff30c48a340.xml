@@ -1,0 +1,19 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="dir_6975f7b28201ba7a9e865ff30c48a340" kind="dir">
+    <compoundname>components/emulator_comps/eatm/src/impl</compoundname>
+    <innerfile refid="atm__coupling_8cpp">atm_coupling.cpp</innerfile>
+    <innerfile refid="atm__coupling_8hpp">atm_coupling.hpp</innerfile>
+    <innerfile refid="atm__field__data__provider_8cpp">atm_field_data_provider.cpp</innerfile>
+    <innerfile refid="atm__field__data__provider_8hpp">atm_field_data_provider.hpp</innerfile>
+    <innerfile refid="atm__field__manager_8cpp">atm_field_manager.cpp</innerfile>
+    <innerfile refid="atm__field__manager_8hpp">atm_field_manager.hpp</innerfile>
+    <innerfile refid="atm__io_8cpp">atm_io.cpp</innerfile>
+    <innerfile refid="atm__io_8hpp">atm_io.hpp</innerfile>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="components/emulator_comps/eatm/src/impl/"/>
+  </compounddef>
+</doxygen>

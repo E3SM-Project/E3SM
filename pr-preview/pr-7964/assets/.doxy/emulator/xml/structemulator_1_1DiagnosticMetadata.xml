@@ -1,0 +1,67 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="structemulator_1_1DiagnosticMetadata" kind="struct" language="C++" prot="public">
+    <compoundname>emulator::DiagnosticMetadata</compoundname>
+    <includes refid="diagnostic__factory_8hpp" local="no">diagnostic_factory.hpp</includes>
+    <sectiondef kind="public-attrib">
+      <memberdef kind="variable" id="structemulator_1_1DiagnosticMetadata_1af546323e14ac5490cbc0c6ec0911a2ab" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; double &gt;</type>
+        <definition>std::vector&lt;double&gt; emulator::DiagnosticMetadata::area_weights</definition>
+        <argsstring></argsstring>
+        <name>area_weights</name>
+        <qualifiedname>emulator::DiagnosticMetadata::area_weights</qualifiedname>
+        <briefdescription>
+<para>Area weights for horiz averaging. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/diagnostics/diagnostic_factory.hpp" line="19" column="15" bodyfile="components/emulator_comps/common/src/diagnostics/diagnostic_factory.hpp" bodystart="19" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1DiagnosticMetadata_1a4d79df0eae5d454cc2b7ff15501c7ee2" prot="public" static="no" mutable="no">
+        <type><ref refid="inference__backend_8hpp_1a68c509d4adb3f4a1d6fe3a9b0b87c7b9" kindref="member">MPI_Comm</ref></type>
+        <definition>MPI_Comm emulator::DiagnosticMetadata::comm</definition>
+        <argsstring></argsstring>
+        <name>comm</name>
+        <qualifiedname>emulator::DiagnosticMetadata::comm</qualifiedname>
+        <initializer>= <ref refid="inference__backend_8hpp_1a2df6a15627583d5e6f5a48550644cbef" kindref="member">MPI_COMM_WORLD</ref></initializer>
+        <briefdescription>
+<para>MPI communicator. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/diagnostics/diagnostic_factory.hpp" line="20" column="12" bodyfile="components/emulator_comps/common/src/diagnostics/diagnostic_factory.hpp" bodystart="20" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1DiagnosticMetadata_1a41e0bb1985d6f4fdc09273e177136448" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::DiagnosticMetadata::nlevs</definition>
+        <argsstring></argsstring>
+        <name>nlevs</name>
+        <qualifiedname>emulator::DiagnosticMetadata::nlevs</qualifiedname>
+        <initializer>= 1</initializer>
+        <briefdescription>
+<para>Default number of levels. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/diagnostics/diagnostic_factory.hpp" line="21" column="7" bodyfile="components/emulator_comps/common/src/diagnostics/diagnostic_factory.hpp" bodystart="21" bodyend="-1"/>
+      </memberdef>
+    </sectiondef>
+    <briefdescription>
+<para>Metadata for creating diagnostics. </para>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="components/emulator_comps/common/src/diagnostics/diagnostic_factory.hpp" line="18" column="1" bodyfile="components/emulator_comps/common/src/diagnostics/diagnostic_factory.hpp" bodystart="18" bodyend="22"/>
+    <listofallmembers>
+      <member refid="structemulator_1_1DiagnosticMetadata_1af546323e14ac5490cbc0c6ec0911a2ab" prot="public" virt="non-virtual"><scope>emulator::DiagnosticMetadata</scope><name>area_weights</name></member>
+      <member refid="structemulator_1_1DiagnosticMetadata_1a4d79df0eae5d454cc2b7ff15501c7ee2" prot="public" virt="non-virtual"><scope>emulator::DiagnosticMetadata</scope><name>comm</name></member>
+      <member refid="structemulator_1_1DiagnosticMetadata_1a41e0bb1985d6f4fdc09273e177136448" prot="public" virt="non-virtual"><scope>emulator::DiagnosticMetadata</scope><name>nlevs</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

@@ -1,0 +1,67 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="structemulator_1_1RuntimeConfig" kind="struct" language="C++" prot="public">
+    <compoundname>emulator::RuntimeConfig</compoundname>
+    <includes refid="emulator__config_8hpp" local="no">emulator_config.hpp</includes>
+    <sectiondef kind="public-attrib">
+      <memberdef kind="variable" id="structemulator_1_1RuntimeConfig_1a64e9830322c6d56a84baaee743e0ae2f" prot="public" static="no" mutable="no">
+        <type>std::string</type>
+        <definition>std::string emulator::RuntimeConfig::model_path</definition>
+        <argsstring></argsstring>
+        <name>model_path</name>
+        <qualifiedname>emulator::RuntimeConfig::model_path</qualifiedname>
+        <briefdescription>
+<para>Path to AI model file (TorchScript .pt) </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_config.hpp" line="37" column="15" bodyfile="components/emulator_comps/common/src/emulator_config.hpp" bodystart="37" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1RuntimeConfig_1a3467028448ec4f341398e67b67a53d63" prot="public" static="no" mutable="no">
+        <type>std::string</type>
+        <definition>std::string emulator::RuntimeConfig::ic_file</definition>
+        <argsstring></argsstring>
+        <name>ic_file</name>
+        <qualifiedname>emulator::RuntimeConfig::ic_file</qualifiedname>
+        <briefdescription>
+<para>Initial conditions file path. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_config.hpp" line="38" column="15" bodyfile="components/emulator_comps/common/src/emulator_config.hpp" bodystart="38" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1RuntimeConfig_1a911cf3a81eb45ed6182296eae7cf1953" prot="public" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool emulator::RuntimeConfig::enabled</definition>
+        <argsstring></argsstring>
+        <name>enabled</name>
+        <qualifiedname>emulator::RuntimeConfig::enabled</qualifiedname>
+        <initializer>= true</initializer>
+        <briefdescription>
+<para>Enable inference (false = pass-through mode) </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_config.hpp" line="39" column="8" bodyfile="components/emulator_comps/common/src/emulator_config.hpp" bodystart="39" bodyend="-1"/>
+      </memberdef>
+    </sectiondef>
+    <briefdescription>
+<para>Runtime configuration (can change per run via atm_in YAML). </para>
+    </briefdescription>
+    <detaileddescription>
+<para>These values can be modified between runs without rebuilding the case. </para>
+    </detaileddescription>
+    <location file="components/emulator_comps/common/src/emulator_config.hpp" line="36" column="1" bodyfile="components/emulator_comps/common/src/emulator_config.hpp" bodystart="36" bodyend="40"/>
+    <listofallmembers>
+      <member refid="structemulator_1_1RuntimeConfig_1a911cf3a81eb45ed6182296eae7cf1953" prot="public" virt="non-virtual"><scope>emulator::RuntimeConfig</scope><name>enabled</name></member>
+      <member refid="structemulator_1_1RuntimeConfig_1a3467028448ec4f341398e67b67a53d63" prot="public" virt="non-virtual"><scope>emulator::RuntimeConfig</scope><name>ic_file</name></member>
+      <member refid="structemulator_1_1RuntimeConfig_1a64e9830322c6d56a84baaee743e0ae2f" prot="public" virt="non-virtual"><scope>emulator::RuntimeConfig</scope><name>model_path</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

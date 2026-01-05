@@ -1,0 +1,634 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="classemulator_1_1EmulatorAtm" kind="class" language="C++" prot="public">
+    <compoundname>emulator::EmulatorAtm</compoundname>
+    <basecompoundref refid="classemulator_1_1EmulatorComp" prot="public" virt="non-virtual">emulator::EmulatorComp</basecompoundref>
+    <includes refid="emulator__atm_8hpp" local="no">emulator_atm.hpp</includes>
+    <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classemulator_1_1EmulatorAtm_1aa68f4bb5df0f70b0abc50596f8464b91" prot="private" static="no" mutable="no">
+        <type><ref refid="classemulator_1_1CouplingFieldsBase" kindref="compound">CouplingFieldsBase</ref></type>
+        <definition>CouplingFieldsBase emulator::EmulatorAtm::m_coupling_fields</definition>
+        <argsstring></argsstring>
+        <name>m_coupling_fields</name>
+        <qualifiedname>emulator::EmulatorAtm::m_coupling_fields</qualifiedname>
+        <briefdescription>
+<para>Base coupling field parser. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/emulator_atm.hpp" line="130" column="22" bodyfile="components/emulator_comps/eatm/src/emulator_atm.hpp" bodystart="130" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1EmulatorAtm_1a22b4997563daea2e1a7fd009be744c79" prot="private" static="no" mutable="no">
+        <type><ref refid="structemulator_1_1impl_1_1AtmCouplingIndices" kindref="compound">impl::AtmCouplingIndices</ref></type>
+        <definition>impl::AtmCouplingIndices emulator::EmulatorAtm::m_coupling_idx</definition>
+        <argsstring></argsstring>
+        <name>m_coupling_idx</name>
+        <qualifiedname>emulator::EmulatorAtm::m_coupling_idx</qualifiedname>
+        <briefdescription>
+<para>Atmosphere coupling indices. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/emulator_atm.hpp" line="131" column="28" bodyfile="components/emulator_comps/eatm/src/emulator_atm.hpp" bodystart="131" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1EmulatorAtm_1a37f0b663bf37c320ec95a0af4309d608" prot="private" static="no" mutable="no">
+        <type><ref refid="classemulator_1_1impl_1_1AtmFieldManager" kindref="compound">impl::AtmFieldManager</ref></type>
+        <definition>impl::AtmFieldManager emulator::EmulatorAtm::m_fields</definition>
+        <argsstring></argsstring>
+        <name>m_fields</name>
+        <qualifiedname>emulator::EmulatorAtm::m_fields</qualifiedname>
+        <briefdescription>
+<para>Field storage manager. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/emulator_atm.hpp" line="132" column="25" bodyfile="components/emulator_comps/eatm/src/emulator_atm.hpp" bodystart="132" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1EmulatorAtm_1a09840f3ece44697ed9e4cb1731be9cc8" prot="private" static="no" mutable="no">
+        <type><ref refid="structemulator_1_1EmulatorConfig" kindref="compound">EmulatorConfig</ref></type>
+        <definition>EmulatorConfig emulator::EmulatorAtm::m_config</definition>
+        <argsstring></argsstring>
+        <name>m_config</name>
+        <qualifiedname>emulator::EmulatorAtm::m_config</qualifiedname>
+        <briefdescription>
+<para>Component config. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/emulator_atm.hpp" line="137" column="18" bodyfile="components/emulator_comps/eatm/src/emulator_atm.hpp" bodystart="137" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1EmulatorAtm_1af6c5533937607e9dfedb3b15126961ad" prot="private" static="no" mutable="no">
+        <type><ref refid="structemulator_1_1inference_1_1InferenceConfig" kindref="compound">inference::InferenceConfig</ref></type>
+        <definition>inference::InferenceConfig emulator::EmulatorAtm::m_inference_config</definition>
+        <argsstring></argsstring>
+        <name>m_inference_config</name>
+        <qualifiedname>emulator::EmulatorAtm::m_inference_config</qualifiedname>
+        <briefdescription>
+<para>Backend config. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/emulator_atm.hpp" line="138" column="30" bodyfile="components/emulator_comps/eatm/src/emulator_atm.hpp" bodystart="138" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1EmulatorAtm_1a32f815d718c1cf2137389c66492b5c30" prot="private" static="no" mutable="no">
+        <type>std::unique_ptr&lt; <ref refid="classemulator_1_1inference_1_1InferenceBackend" kindref="compound">inference::InferenceBackend</ref> &gt;</type>
+        <definition>std::unique_ptr&lt;inference::InferenceBackend&gt; emulator::EmulatorAtm::m_inference</definition>
+        <argsstring></argsstring>
+        <name>m_inference</name>
+        <qualifiedname>emulator::EmulatorAtm::m_inference</qualifiedname>
+        <briefdescription>
+<para>Backend instance. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/emulator_atm.hpp" line="140" column="7" bodyfile="components/emulator_comps/eatm/src/emulator_atm.hpp" bodystart="140" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1EmulatorAtm_1a4bb97fd5c64ea05270486a6a6af28b42" prot="private" static="no" mutable="no">
+        <type><ref refid="classemulator_1_1EmulatorOutputManager" kindref="compound">EmulatorOutputManager</ref></type>
+        <definition>EmulatorOutputManager emulator::EmulatorAtm::m_output_manager</definition>
+        <argsstring></argsstring>
+        <name>m_output_manager</name>
+        <qualifiedname>emulator::EmulatorAtm::m_output_manager</qualifiedname>
+        <briefdescription>
+<para>Diagnostic output manager. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/emulator_atm.hpp" line="141" column="25" bodyfile="components/emulator_comps/eatm/src/emulator_atm.hpp" bodystart="141" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1EmulatorAtm_1a2762b0387e5acbc8930f723b06293762" prot="private" static="no" mutable="no">
+        <type>std::unique_ptr&lt; <ref refid="classemulator_1_1impl_1_1AtmFieldDataProvider" kindref="compound">impl::AtmFieldDataProvider</ref> &gt;</type>
+        <definition>std::unique_ptr&lt;impl::AtmFieldDataProvider&gt; emulator::EmulatorAtm::m_field_provider</definition>
+        <argsstring></argsstring>
+        <name>m_field_provider</name>
+        <qualifiedname>emulator::EmulatorAtm::m_field_provider</qualifiedname>
+        <briefdescription>
+<para>Field data adapter for output. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/emulator_atm.hpp" line="143" column="7" bodyfile="components/emulator_comps/eatm/src/emulator_atm.hpp" bodystart="143" bodyend="-1"/>
+      </memberdef>
+    </sectiondef>
+    <sectiondef kind="public-func">
+      <memberdef kind="function" id="classemulator_1_1EmulatorAtm_1a02878a10211998b830b559d633c9c66d" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>emulator::EmulatorAtm::EmulatorAtm</definition>
+        <argsstring>()</argsstring>
+        <name>EmulatorAtm</name>
+        <qualifiedname>emulator::EmulatorAtm::EmulatorAtm</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/emulator_atm.hpp" line="69" column="3" bodyfile="components/emulator_comps/eatm/src/emulator_atm.cpp" bodystart="20" bodyend="23"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorAtm_1ad87796f63a2fc073c95edb3750801c06" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>emulator::EmulatorAtm::~EmulatorAtm</definition>
+        <argsstring>() override=default</argsstring>
+        <name>~EmulatorAtm</name>
+        <qualifiedname>emulator::EmulatorAtm::~EmulatorAtm</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/emulator_atm.hpp" line="70" column="3"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorAtm_1a03068000f1cbe87bcb4f3dc607c41e76" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator::EmulatorAtm::init_coupling_indices</definition>
+        <argsstring>(const std::string &amp;export_fields, const std::string &amp;import_fields)</argsstring>
+        <name>init_coupling_indices</name>
+        <qualifiedname>emulator::EmulatorAtm::init_coupling_indices</qualifiedname>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>export_fields</declname>
+        </param>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>import_fields</declname>
+        </param>
+        <briefdescription>
+<para>Initialize coupling field indices from MCT field lists. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Parses the colon-separated field lists provided by the MCT layer and sets up internal index mappings for import/export operations.</para>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>export_fields</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Colon-separated list of a2x field names </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>import_fields</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Colon-separated list of x2a field names </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/emulator_atm.hpp" line="81" column="8" bodyfile="components/emulator_comps/eatm/src/emulator_atm.cpp" bodystart="41" bodyend="45"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorAtm_1a324326dbd8f30b0dee2aa497d2566c00" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator::EmulatorAtm::set_inference_config</definition>
+        <argsstring>(const inference::InferenceConfig &amp;config)</argsstring>
+        <name>set_inference_config</name>
+        <qualifiedname>emulator::EmulatorAtm::set_inference_config</qualifiedname>
+        <param>
+          <type>const <ref refid="structemulator_1_1inference_1_1InferenceConfig" kindref="compound">inference::InferenceConfig</ref> &amp;</type>
+          <declname>config</declname>
+        </param>
+        <briefdescription>
+<para>Configure inference backend. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Must be called before <ref refid="classemulator_1_1EmulatorComp_1a966205ef2c077484dc667214977aca23" kindref="member">initialize()</ref> to select the inference backend and set model parameters.</para>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>config</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Inference configuration (backend type, model path, etc.) </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/emulator_atm.hpp" line="92" column="8" bodyfile="components/emulator_comps/eatm/src/emulator_atm.cpp" bodystart="29" bodyend="39"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorAtm_1a7ed0e6a3539c540783664e3838b289c5" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>const <ref refid="structemulator_1_1inference_1_1InferenceConfig" kindref="compound">inference::InferenceConfig</ref> &amp;</type>
+        <definition>const inference::InferenceConfig &amp; emulator::EmulatorAtm::get_inference_config</definition>
+        <argsstring>() const</argsstring>
+        <name>get_inference_config</name>
+        <qualifiedname>emulator::EmulatorAtm::get_inference_config</qualifiedname>
+        <briefdescription>
+<para>Get current inference configuration. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><simplesect kind="return"><para>Reference to the current InferenceConfig </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/emulator_atm.hpp" line="98" column="36" bodyfile="components/emulator_comps/eatm/src/emulator_atm.hpp" bodystart="98" bodyend="100"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorAtm_1af092df309e69794df28198ec3b458803" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator::EmulatorAtm::set_log_file</definition>
+        <argsstring>(const std::string &amp;filename)</argsstring>
+        <name>set_log_file</name>
+        <qualifiedname>emulator::EmulatorAtm::set_log_file</qualifiedname>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>filename</declname>
+        </param>
+        <briefdescription>
+<para>Set logging file. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Redirects the component logger to the specified file. If empty, logging goes to stdout.</para>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>filename</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Path to log file </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/emulator_atm.hpp" line="110" column="8" bodyfile="components/emulator_comps/eatm/src/emulator_atm.cpp" bodystart="25" bodyend="27"/>
+      </memberdef>
+    </sectiondef>
+    <sectiondef kind="protected-func">
+      <memberdef kind="function" id="classemulator_1_1EmulatorAtm_1ae797ccfb65937ef6c46528cd8dffe01c" prot="protected" static="no" const="no" explicit="no" inline="no" virt="virtual">
+        <type>void</type>
+        <definition>void emulator::EmulatorAtm::init_impl</definition>
+        <argsstring>() override</argsstring>
+        <name>init_impl</name>
+        <qualifiedname>emulator::EmulatorAtm::init_impl</qualifiedname>
+        <reimplements refid="classemulator_1_1EmulatorComp_1a931fe1141a977aa67d2590f5004dbeca">init_impl</reimplements>
+        <briefdescription>
+<para>Component-specific initialization (load model, read ICs). </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/emulator_atm.hpp" line="114" column="8" bodyfile="components/emulator_comps/eatm/src/emulator_atm.cpp" bodystart="47" bodyend="145"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorAtm_1a3d39cd15394c69f8d8b4149b2e4650e3" prot="protected" static="no" const="no" explicit="no" inline="no" virt="virtual">
+        <type>void</type>
+        <definition>void emulator::EmulatorAtm::run_impl</definition>
+        <argsstring>(int dt) override</argsstring>
+        <name>run_impl</name>
+        <qualifiedname>emulator::EmulatorAtm::run_impl</qualifiedname>
+        <reimplements refid="classemulator_1_1EmulatorComp_1a79ad29a4d5c520e1dfdab5c4b161c38d">run_impl</reimplements>
+        <param>
+          <type>int</type>
+          <declname>dt</declname>
+        </param>
+        <briefdescription>
+<para>Execute one time step of inference. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/emulator_atm.hpp" line="117" column="8" bodyfile="components/emulator_comps/eatm/src/emulator_atm.cpp" bodystart="147" bodyend="176"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorAtm_1ac8e27d0b2adfe44456c88cb858e9402a" prot="protected" static="no" const="no" explicit="no" inline="no" virt="virtual">
+        <type>void</type>
+        <definition>void emulator::EmulatorAtm::final_impl</definition>
+        <argsstring>() override</argsstring>
+        <name>final_impl</name>
+        <qualifiedname>emulator::EmulatorAtm::final_impl</qualifiedname>
+        <reimplements refid="classemulator_1_1EmulatorComp_1a1aa9c2463ef7bd65ccd3327e383dc67b">final_impl</reimplements>
+        <briefdescription>
+<para>Component-specific finalization. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/emulator_atm.hpp" line="120" column="8" bodyfile="components/emulator_comps/eatm/src/emulator_atm.cpp" bodystart="441" bodyend="461"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorAtm_1a843280b745347b3e3f884b9966d04304" prot="protected" static="no" const="no" explicit="no" inline="no" virt="virtual">
+        <type>void</type>
+        <definition>void emulator::EmulatorAtm::run_inference</definition>
+        <argsstring>(const std::vector&lt; double &gt; &amp;inputs, std::vector&lt; double &gt; &amp;outputs) override</argsstring>
+        <name>run_inference</name>
+        <qualifiedname>emulator::EmulatorAtm::run_inference</qualifiedname>
+        <reimplements refid="classemulator_1_1EmulatorComp_1a90899c19c5c30e241f5472fca420a49e">run_inference</reimplements>
+        <param>
+          <type>const std::vector&lt; double &gt; &amp;</type>
+          <declname>inputs</declname>
+        </param>
+        <param>
+          <type>std::vector&lt; double &gt; &amp;</type>
+          <declname>outputs</declname>
+        </param>
+        <briefdescription>
+<para>Run AI inference via the configured backend. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Run inference using the configured backend.</para>
+<para>For spatial_mode, the backend is called with batch_size=1 and the full [C*H*W] flattened tensor. For pointwise mode, batch_size=H*W.</para>
+<para><simplesect kind="note"><para>If inference fails, this function will abort the simulation with a clear error message. </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/emulator_atm.hpp" line="123" column="8" bodyfile="components/emulator_comps/eatm/src/emulator_atm.cpp" bodystart="388" bodyend="439"/>
+      </memberdef>
+    </sectiondef>
+    <sectiondef kind="private-func">
+      <memberdef kind="function" id="classemulator_1_1EmulatorAtm_1a79faab6462a5a73b09399ce1395f9f55" prot="private" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator::EmulatorAtm::import_coupling_fields</definition>
+        <argsstring>()</argsstring>
+        <name>import_coupling_fields</name>
+        <qualifiedname>emulator::EmulatorAtm::import_coupling_fields</qualifiedname>
+        <briefdescription>
+<para>Copy fields from coupler import buffer to internal storage. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/emulator_atm.hpp" line="150" column="8" bodyfile="components/emulator_comps/eatm/src/emulator_atm.cpp" bodystart="178" bodyend="189"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorAtm_1a8449bff8fec3fa25f3d2719bba23ed17" prot="private" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator::EmulatorAtm::export_coupling_fields</definition>
+        <argsstring>()</argsstring>
+        <name>export_coupling_fields</name>
+        <qualifiedname>emulator::EmulatorAtm::export_coupling_fields</qualifiedname>
+        <briefdescription>
+<para>Copy fields from internal storage to coupler export buffer. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/emulator_atm.hpp" line="153" column="8" bodyfile="components/emulator_comps/eatm/src/emulator_atm.cpp" bodystart="191" bodyend="201"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorAtm_1aa13108c081eab56eebb4223d7db98e30" prot="private" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator::EmulatorAtm::prepare_inputs</definition>
+        <argsstring>()</argsstring>
+        <name>prepare_inputs</name>
+        <qualifiedname>emulator::EmulatorAtm::prepare_inputs</qualifiedname>
+        <briefdescription>
+<para>Pack input fields into net_inputs tensor. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Pack input fields into flattened tensor for inference.</para>
+<para>Handles spatial reshaping based on config.model_io.spatial_mode.</para>
+<para>Field data is stored as separate vectors per variable. This function packs them into a format suitable for the inference backend:</para>
+<para><itemizedlist>
+<listitem><para>For spatial_mode=true (CNN models like ACE2): Input: separate fields [ncols] each where ncols = H*W Output: [1, C, H, W] flattened as [C*H*W] in memory The backend receives this directly as [1, C, H, W]</para>
+<para>CRITICAL: The spatial ordering of columns must match the expected (H,W) layout. E3SM&apos;s domain decomposition provides columns in a specific order determined by the grid file. For global uniform grids (ne4, ne30, etc.), columns are typically ordered as (lat, lon) pairs. The user must ensure:<orderedlist>
+<listitem><para>m_ny, m_nx match the grid dimensions (e.g., 180x360 for ne4)</para>
+</listitem><listitem><para>Column ordering in the grid file matches PyTorch&apos;s [H, W] row-major convention</para>
+</listitem><listitem><para>For non-structured grids, spatial_mode should NOT be used</para>
+</listitem></orderedlist>
+</para>
+<para>Memory layout after packing (C++ row-major, PyTorch NCHW): net_inputs[c*H*W + h*W + w] corresponds to channel c, height h, width w</para>
+</listitem><listitem><para>For spatial_mode=false (pointwise MLP models): Input: separate fields [ncols] each Output: [H*W, C] in row-major order The backend receives this as [batch_size=H*W, channels=C] </para>
+</listitem></itemizedlist>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/emulator_atm.hpp" line="160" column="8" bodyfile="components/emulator_comps/eatm/src/emulator_atm.cpp" bodystart="231" bodyend="296"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorAtm_1a6f05c05dfeb3e150672b993d3b0f3923" prot="private" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator::EmulatorAtm::process_outputs</definition>
+        <argsstring>()</argsstring>
+        <name>process_outputs</name>
+        <qualifiedname>emulator::EmulatorAtm::process_outputs</qualifiedname>
+        <briefdescription>
+<para>Unpack net_outputs tensor into output fields. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Unpack output tensor from inference into separate field vectors.</para>
+<para>Handles inverse spatial reshaping based on config.model_io.spatial_mode.</para>
+<para>The inverse of prepare_inputs():</para>
+<para><itemizedlist>
+<listitem><para>For spatial_mode=true (CNN models): Input: [1, C, H, W] flattened (directly from backend) Memory layout: net_outputs[c*H*W + h*W + w] Output: separate fields [ncols] each</para>
+<para>The unpacking preserves the spatial structure: each output channel is extracted as a contiguous block of H*W values, which should match the original column ordering from the grid decomposition.</para>
+</listitem><listitem><para>For spatial_mode=false (pointwise MLP models): Input: [H*W, C] in row-major order Output: separate fields [ncols] each </para>
+</listitem></itemizedlist>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/emulator_atm.hpp" line="167" column="8" bodyfile="components/emulator_comps/eatm/src/emulator_atm.cpp" bodystart="316" bodyend="377"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1EmulatorAtm_1afd075d5e487a3f9314cf84111087fbeb" prot="private" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>bool</type>
+        <definition>bool emulator::EmulatorAtm::read_initial_conditions</definition>
+        <argsstring>(const std::string &amp;filename)</argsstring>
+        <name>read_initial_conditions</name>
+        <qualifiedname>emulator::EmulatorAtm::read_initial_conditions</qualifiedname>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>filename</declname>
+        </param>
+        <briefdescription>
+<para>Read initial condition fields from a NetCDF file. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>filename</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Path to IC file </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+<simplesect kind="return"><para>true if successful </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/emulator_atm.hpp" line="174" column="8" bodyfile="components/emulator_comps/eatm/src/emulator_atm.cpp" bodystart="463" bodyend="467"/>
+      </memberdef>
+    </sectiondef>
+    <briefdescription>
+<para>Atmosphere emulator component. </para>
+    </briefdescription>
+    <detaileddescription>
+<para>Derived from <ref refid="classemulator_1_1EmulatorComp" kindref="compound">EmulatorComp</ref>, provides atmosphere-specific functionality:</para>
+<para><itemizedlist>
+<listitem><para>Coupling field mappings (x2a → atm inputs, a2x → atm outputs)</para>
+</listitem><listitem><para>AI model integration via configurable inference backends</para>
+</listitem><listitem><para>Tensor reshaping for CNN vs MLP models (spatial_mode)</para>
+</listitem></itemizedlist>
+</para>
+<sect1 id="classemulator_1_1EmulatorAtm_1autotoc_md27_1s1"><sect2 id="classemulator_1_1EmulatorAtm_1autotoc_md27">
+<title>Supported Backends</title><para><itemizedlist>
+<listitem><para><bold>STUB</bold>: No-op for testing (returns zeros)</para>
+</listitem><listitem><para><bold>LIBTORCH</bold>: Native C++ TorchScript inference</para>
+</listitem></itemizedlist>
+</para>
+</sect2></sect1>
+<sect1 id="classemulator_1_1EmulatorAtm_1autotoc_md28_1s1"><sect2 id="classemulator_1_1EmulatorAtm_1autotoc_md28">
+<title>Lifecycle</title><para><orderedlist>
+<listitem><para>Constructor creates <ref refid="classemulator_1_1EmulatorAtm" kindref="compound">EmulatorAtm</ref> with <ref refid="namespaceemulator_1a4eba730d57900d80c4cde91a064a5d7ca292f535a3b6fe8853df2f03c8ed890a1" kindref="member">CompType::ATM</ref></para>
+</listitem><listitem><para><computeroutput><ref refid="classemulator_1_1EmulatorComp_1a623d17026efc45f994de51f694fe4590" kindref="member">create_instance()</ref></computeroutput> initializes MPI and reads grid</para>
+</listitem><listitem><para><computeroutput><ref refid="classemulator_1_1EmulatorAtm_1a03068000f1cbe87bcb4f3dc607c41e76" kindref="member">init_coupling_indices()</ref></computeroutput> parses MCT field lists</para>
+</listitem><listitem><para><computeroutput><ref refid="classemulator_1_1EmulatorAtm_1a324326dbd8f30b0dee2aa497d2566c00" kindref="member">set_inference_config()</ref></computeroutput> configures the backend</para>
+</listitem><listitem><para><computeroutput><ref refid="classemulator_1_1EmulatorComp_1a966205ef2c077484dc667214977aca23" kindref="member">initialize()</ref></computeroutput> loads model and reads initial conditions</para>
+</listitem><listitem><para><computeroutput><ref refid="classemulator_1_1EmulatorComp_1a4a85112a98bded63a6129b9727063f26" kindref="member">run()</ref></computeroutput> executes time steps (import → inference → export)</para>
+</listitem><listitem><para><computeroutput><ref refid="classemulator_1_1EmulatorComp_1ae34a562b789d3459bd204199dc0bbdf4" kindref="member">finalize()</ref></computeroutput> cleans up resources</para>
+</listitem></orderedlist>
+</para>
+</sect2></sect1>
+<sect1 id="classemulator_1_1EmulatorAtm_1autotoc_md29_1s1"><sect2 id="classemulator_1_1EmulatorAtm_1autotoc_md29">
+<title>Spatial Mode</title><para>When <computeroutput>config.model_io.spatial_mode = true</computeroutput> (for CNN models like ACE2):</para>
+<para><itemizedlist>
+<listitem><para>Input data is packed as [C, H, W] (channel-first)</para>
+</listitem><listitem><para>Inference runs with batch_size=1</para>
+</listitem><listitem><para>Output is unpacked from [C, H, W] format</para>
+</listitem></itemizedlist>
+</para>
+<para>When <computeroutput>spatial_mode = false</computeroutput> (for pointwise MLP models):</para>
+<para><itemizedlist>
+<listitem><para>Data is packed as [H*W, C] (sample-first)</para>
+</listitem><listitem><para>Inference runs with batch_size=H*W</para>
+</listitem></itemizedlist>
+</para>
+<para><simplesect kind="see"><para><ref refid="classemulator_1_1EmulatorComp" kindref="compound">EmulatorComp</ref> for base class functionality </para>
+</simplesect>
+<simplesect kind="see"><para>InferenceBackend for backend interface </para>
+</simplesect>
+</para>
+</sect2></sect1>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="1">
+        <label>emulator::EmulatorAtm</label>
+        <link refid="classemulator_1_1EmulatorAtm"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="2">
+        <label>emulator::EmulatorComp</label>
+        <link refid="classemulator_1_1EmulatorComp"/>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="1">
+        <label>emulator::EmulatorAtm</label>
+        <link refid="classemulator_1_1EmulatorAtm"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="2">
+        <label>emulator::EmulatorComp</label>
+        <link refid="classemulator_1_1EmulatorComp"/>
+        <childnode refid="3" relation="usage">
+          <edgelabel>m_logger</edgelabel>
+        </childnode>
+      </node>
+      <node id="3">
+        <label>emulator::Logger</label>
+        <link refid="classemulator_1_1Logger"/>
+      </node>
+    </collaborationgraph>
+    <location file="components/emulator_comps/eatm/src/emulator_atm.hpp" line="67" column="1" bodyfile="components/emulator_comps/eatm/src/emulator_atm.hpp" bodystart="67" bodyend="175"/>
+    <listofallmembers>
+      <member refid="classemulator_1_1EmulatorComp_1a9a7b7e46700b20de7a6d3d5b43c7be44" prot="public" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>comm</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a77c1b30943a1e11186e7815909505f76" prot="public" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>comp_id</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a623d17026efc45f994de51f694fe4590" prot="public" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>create_instance</name></member>
+      <member refid="classemulator_1_1EmulatorAtm_1a02878a10211998b830b559d633c9c66d" prot="public" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>EmulatorAtm</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a3029bc394bbc08b1307c7387915907e0" prot="public" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>EmulatorComp</name></member>
+      <member refid="classemulator_1_1EmulatorAtm_1a8449bff8fec3fa25f3d2719bba23ed17" prot="private" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>export_coupling_fields</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a23b6b16432401d1b86f66c0c2e4cd427" prot="protected" virt="virtual"><scope>emulator::EmulatorAtm</scope><name>export_to_coupler</name></member>
+      <member refid="classemulator_1_1EmulatorAtm_1ac8e27d0b2adfe44456c88cb858e9402a" prot="protected" virt="virtual"><scope>emulator::EmulatorAtm</scope><name>final_impl</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1ae34a562b789d3459bd204199dc0bbdf4" prot="public" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>finalize</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1af412e477cfaa1edb474812cbbbfbc794" prot="public" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>get_cols_area</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a3d2e5d680124326927d5856e4f87b54e" prot="public" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>get_cols_latlon</name></member>
+      <member refid="classemulator_1_1EmulatorAtm_1a7ed0e6a3539c540783664e3838b289c5" prot="public" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>get_inference_config</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a7057c0eb9d18ec46289707d138ba8b16" prot="public" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>get_local_col_gids</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1aaa9c17dd955beaeb39f7cfc1367f3516" prot="public" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>get_num_global_cols</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1ae49c51a48c75014c158523891f1f1fc3" prot="public" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>get_num_local_cols</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1ab358a2e945d029a9586aefdede65cbcb" prot="public" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>get_nx</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1aa5745a247d0b22e82deadd61b4ca5e86" prot="public" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>get_ny</name></member>
+      <member refid="classemulator_1_1EmulatorAtm_1a79faab6462a5a73b09399ce1395f9f55" prot="private" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>import_coupling_fields</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1ad291d2c60b175a87fc93f261acae51bb" prot="protected" virt="virtual"><scope>emulator::EmulatorAtm</scope><name>import_from_coupler</name></member>
+      <member refid="classemulator_1_1EmulatorAtm_1a03068000f1cbe87bcb4f3dc607c41e76" prot="public" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>init_coupling_indices</name></member>
+      <member refid="classemulator_1_1EmulatorAtm_1ae797ccfb65937ef6c46528cd8dffe01c" prot="protected" virt="virtual"><scope>emulator::EmulatorAtm</scope><name>init_impl</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a966205ef2c077484dc667214977aca23" prot="public" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>initialize</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a11a86d25af4d06cb473c96124dc3590c" prot="public" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>is_root</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a5415b6b157b0cec1d93e548a90965fcd" prot="protected" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>m_area</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a680c034456776d3cb1fa7775a3e84b15" prot="protected" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>m_col_gids</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a6da05ee246e7e7f30b22330a8c6bd363" prot="protected" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>m_comm</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a0ab0c47cbdfc09ce90fb980d0e1b014a" prot="protected" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>m_comp_id</name></member>
+      <member refid="classemulator_1_1EmulatorAtm_1a09840f3ece44697ed9e4cb1731be9cc8" prot="private" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>m_config</name></member>
+      <member refid="classemulator_1_1EmulatorAtm_1aa68f4bb5df0f70b0abc50596f8464b91" prot="private" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>m_coupling_fields</name></member>
+      <member refid="classemulator_1_1EmulatorAtm_1a22b4997563daea2e1a7fd009be744c79" prot="private" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>m_coupling_idx</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1abb80d380907ac685437366d0191db5ee" prot="protected" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>m_current_tod</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1aed096a4b0a89a243b99c64db193ac502" prot="protected" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>m_current_ymd</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a45350bdd14fc150338a75a669c0a7211" prot="protected" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>m_export_data</name></member>
+      <member refid="classemulator_1_1EmulatorAtm_1a2762b0387e5acbc8930f723b06293762" prot="private" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>m_field_provider</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a5edfe375b592ce11c16405b3f215b420" prot="protected" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>m_field_size</name></member>
+      <member refid="classemulator_1_1EmulatorAtm_1a37f0b663bf37c320ec95a0af4309d608" prot="private" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>m_fields</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a76314a7561a297617866f59bf7e47f09" prot="protected" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>m_import_data</name></member>
+      <member refid="classemulator_1_1EmulatorAtm_1a32f815d718c1cf2137389c66492b5c30" prot="private" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>m_inference</name></member>
+      <member refid="classemulator_1_1EmulatorAtm_1af6c5533937607e9dfedb3b15126961ad" prot="private" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>m_inference_config</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a737dbc4567eb540f4eddd738d51be9bf" prot="protected" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>m_input_file</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1adc8ec9ea47e39f2c0a73b9c10e65a78b" prot="protected" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>m_lat</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a49087ef25a2cf999c1acfa3ad4f6f5d6" prot="protected" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>m_logger</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a70bf49f4cbf4fa23b3ec994382859b98" prot="protected" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>m_lon</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a0e484a4c7574efd8ad0ab1541e591f43" prot="protected" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>m_nprocs</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1ac1715fc77ead3429dc4bc94ec46800c0" prot="protected" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>m_num_exports</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1aaac793034bcb82e0d7ceefa4b9797af4" prot="protected" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>m_num_global_cols</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a09f42f0242acef3cbad24a67a6f555df" prot="protected" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>m_num_imports</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1af5d08fcd26736106bf96d5ee09ac49a7" prot="protected" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>m_num_local_cols</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a23164e13a2f20510af3642b5b95161ef" prot="protected" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>m_nx</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a91087470201ed7028100ecad4fb89967" prot="protected" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>m_ny</name></member>
+      <member refid="classemulator_1_1EmulatorAtm_1a4bb97fd5c64ea05270486a6a6af28b42" prot="private" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>m_output_manager</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1aeb481f9e674f015b9e3fc6b29597c6db" prot="protected" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>m_rank</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1abefbe4d0e820535e3c2e61791326775a" prot="protected" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>m_run_type</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a9a8996a9841b8975ea84b6451594edfb" prot="protected" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>m_step_count</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a1bc1c0052b7efaa1f6c3e4450a5631dd" prot="protected" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>m_type</name></member>
+      <member refid="classemulator_1_1EmulatorAtm_1aa13108c081eab56eebb4223d7db98e30" prot="private" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>prepare_inputs</name></member>
+      <member refid="classemulator_1_1EmulatorAtm_1a6f05c05dfeb3e150672b993d3b0f3923" prot="private" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>process_outputs</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a281b436e53a5434ee1d287bd5d05d92d" prot="public" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>rank</name></member>
+      <member refid="classemulator_1_1EmulatorAtm_1afd075d5e487a3f9314cf84111087fbeb" prot="private" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>read_initial_conditions</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a4a85112a98bded63a6129b9727063f26" prot="public" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>run</name></member>
+      <member refid="classemulator_1_1EmulatorAtm_1a3d39cd15394c69f8d8b4149b2e4650e3" prot="protected" virt="virtual"><scope>emulator::EmulatorAtm</scope><name>run_impl</name></member>
+      <member refid="classemulator_1_1EmulatorAtm_1a843280b745347b3e3f884b9966d04304" prot="protected" virt="virtual"><scope>emulator::EmulatorAtm</scope><name>run_inference</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a8855bf433073da6cc049da797e620a3c" prot="public" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>set_grid_data</name></member>
+      <member refid="classemulator_1_1EmulatorAtm_1a324326dbd8f30b0dee2aa497d2566c00" prot="public" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>set_inference_config</name></member>
+      <member refid="classemulator_1_1EmulatorAtm_1af092df309e69794df28198ec3b458803" prot="public" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>set_log_file</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1ab5d42f9801943882c1c2d6167b8f47b3" prot="public" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>setup_coupling</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a19c4109920f42223bfb9fafb9c5de12e" prot="public" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>type</name></member>
+      <member refid="classemulator_1_1EmulatorAtm_1ad87796f63a2fc073c95edb3750801c06" prot="public" virt="non-virtual"><scope>emulator::EmulatorAtm</scope><name>~EmulatorAtm</name></member>
+      <member refid="classemulator_1_1EmulatorComp_1a2ba0a807e47790f7a7990de8f4568d66" prot="public" virt="virtual"><scope>emulator::EmulatorAtm</scope><name>~EmulatorComp</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

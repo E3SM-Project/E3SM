@@ -1,0 +1,346 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="classemulator_1_1inference_1_1StubBackend" kind="class" language="C++" prot="public">
+    <compoundname>emulator::inference::StubBackend</compoundname>
+    <basecompoundref refid="classemulator_1_1inference_1_1InferenceBackend" prot="public" virt="non-virtual">emulator::inference::InferenceBackend</basecompoundref>
+    <includes refid="stub__backend_8hpp" local="no">stub_backend.hpp</includes>
+    <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classemulator_1_1inference_1_1StubBackend_1a30005de2d076a035fba849a3178b0323" prot="private" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool emulator::inference::StubBackend::m_initialized</definition>
+        <argsstring></argsstring>
+        <name>m_initialized</name>
+        <qualifiedname>emulator::inference::StubBackend::m_initialized</qualifiedname>
+        <initializer>= false</initializer>
+        <briefdescription>
+<para>Initialization state. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/stub_backend.hpp" line="57" column="8" bodyfile="components/emulator_comps/common/src/inference/stub_backend.hpp" bodystart="57" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1inference_1_1StubBackend_1af7f2459b367782a79ef6e809f9c79094" prot="private" static="no" mutable="no">
+        <type><ref refid="structemulator_1_1inference_1_1InferenceConfig" kindref="compound">InferenceConfig</ref></type>
+        <definition>InferenceConfig emulator::inference::StubBackend::m_config</definition>
+        <argsstring></argsstring>
+        <name>m_config</name>
+        <qualifiedname>emulator::inference::StubBackend::m_config</qualifiedname>
+        <briefdescription>
+<para>Stored configuration. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/stub_backend.hpp" line="58" column="19" bodyfile="components/emulator_comps/common/src/inference/stub_backend.hpp" bodystart="58" bodyend="-1"/>
+      </memberdef>
+    </sectiondef>
+    <sectiondef kind="public-func">
+      <memberdef kind="function" id="classemulator_1_1inference_1_1StubBackend_1a6971d19bd720ae43b51f81bfbdf261b4" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>emulator::inference::StubBackend::StubBackend</definition>
+        <argsstring>()=default</argsstring>
+        <name>StubBackend</name>
+        <qualifiedname>emulator::inference::StubBackend::StubBackend</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/stub_backend.hpp" line="35" column="3"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1inference_1_1StubBackend_1a3aad489f7b76a5aee05a6cb175b8de23" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>emulator::inference::StubBackend::~StubBackend</definition>
+        <argsstring>() override=default</argsstring>
+        <name>~StubBackend</name>
+        <qualifiedname>emulator::inference::StubBackend::~StubBackend</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/stub_backend.hpp" line="36" column="3"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1inference_1_1StubBackend_1a66ce42efeb7f0833bf58a25c75827e99" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
+        <type>bool</type>
+        <definition>bool emulator::inference::StubBackend::initialize</definition>
+        <argsstring>(const InferenceConfig &amp;config) override</argsstring>
+        <name>initialize</name>
+        <qualifiedname>emulator::inference::StubBackend::initialize</qualifiedname>
+        <reimplements refid="classemulator_1_1inference_1_1InferenceBackend_1a1f1eb8e2bad9c2f8f6085c0ed7113c70">initialize</reimplements>
+        <param>
+          <type>const <ref refid="structemulator_1_1inference_1_1InferenceConfig" kindref="compound">InferenceConfig</ref> &amp;</type>
+          <declname>config</declname>
+        </param>
+        <briefdescription>
+<para>Initialize the backend.    </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Initialize the stub backend.</para>
+<para>Loads the model, allocates resources, and prepares for inference. Must be called before <ref refid="classemulator_1_1inference_1_1StubBackend_1ae7b9c9b320385d1007b9076b1abf4622" kindref="member">infer()</ref>.</para>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>config</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Configuration options </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+<simplesect kind="return"><para>true if initialization succeeded, false on error   </para>
+</simplesect>
+Stores configuration for later use. Always succeeds.</para>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>config</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Configuration (only input/output channels are used) </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+<simplesect kind="return"><para>Always returns true </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/stub_backend.hpp" line="39" column="8" bodyfile="components/emulator_comps/common/src/inference/stub_backend.cpp" bodystart="23" bodyend="27"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1inference_1_1StubBackend_1ae7b9c9b320385d1007b9076b1abf4622" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
+        <type>bool</type>
+        <definition>bool emulator::inference::StubBackend::infer</definition>
+        <argsstring>(const double *inputs, double *outputs, int batch_size) override</argsstring>
+        <name>infer</name>
+        <qualifiedname>emulator::inference::StubBackend::infer</qualifiedname>
+        <reimplements refid="classemulator_1_1inference_1_1InferenceBackend_1a1be8aa53c3707a5d49e394c6f3f562a6">infer</reimplements>
+        <param>
+          <type>const double *</type>
+          <declname>inputs</declname>
+        </param>
+        <param>
+          <type>double *</type>
+          <declname>outputs</declname>
+        </param>
+        <param>
+          <type>int</type>
+          <declname>batch_size</declname>
+        </param>
+        <briefdescription>
+<para>Run inference on input data.    </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Run stub inference (no-op).</para>
+<para>Executes the model on the provided input batch and writes results to the output buffer.</para>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>inputs</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Input data array, size = batch_size * input_channels </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>outputs</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Output data array, size = batch_size * output_channels </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>batch_size</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Number of samples in the batch </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+<simplesect kind="return"><para>true if inference succeeded, false on error</para>
+</simplesect>
+<simplesect kind="pre"><para><ref refid="classemulator_1_1inference_1_1StubBackend_1a66ce42efeb7f0833bf58a25c75827e99" kindref="member">initialize()</ref> must have been called successfully </para>
+</simplesect>
+<simplesect kind="pre"><para>outputs must be pre-allocated with sufficient size   </para>
+</simplesect>
+Sets all output values to zero. Useful for testing the data pipeline without actual model inference.</para>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>inputs</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Input data (unused) </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>outputs</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Output data, will be zeroed </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>batch_size</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Number of samples in batch </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+<simplesect kind="return"><para>true if initialized, false otherwise </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/stub_backend.hpp" line="42" column="8" bodyfile="components/emulator_comps/common/src/inference/stub_backend.cpp" bodystart="40" bodyend="52"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1inference_1_1StubBackend_1a5c7e6413232db610d89d59ce30220031" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
+        <type>void</type>
+        <definition>void emulator::inference::StubBackend::finalize</definition>
+        <argsstring>() override</argsstring>
+        <name>finalize</name>
+        <qualifiedname>emulator::inference::StubBackend::finalize</qualifiedname>
+        <reimplements refid="classemulator_1_1inference_1_1InferenceBackend_1a44394f344e641421b699675da096ca51">finalize</reimplements>
+        <briefdescription>
+<para>Release resources and finalize the backend.    </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Finalize the stub backend.</para>
+<para>After calling this, the backend is no longer usable until <ref refid="classemulator_1_1inference_1_1StubBackend_1a66ce42efeb7f0833bf58a25c75827e99" kindref="member">initialize()</ref> is called again.   </para>
+<para>Resets initialization state. Backend can be re-initialized after this. </para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/stub_backend.hpp" line="45" column="8" bodyfile="components/emulator_comps/common/src/inference/stub_backend.cpp" bodystart="59" bodyend="59"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1inference_1_1StubBackend_1ac0efb81262a83641fc054aed650ec49c" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="virtual">
+        <type>std::string</type>
+        <definition>std::string emulator::inference::StubBackend::name</definition>
+        <argsstring>() const override</argsstring>
+        <name>name</name>
+        <qualifiedname>emulator::inference::StubBackend::name</qualifiedname>
+        <reimplements refid="classemulator_1_1inference_1_1InferenceBackend_1a473a507068279e92f27584cc0623bd0a">name</reimplements>
+        <briefdescription>
+<para>Get the human-readable name of this backend.    </para>
+        </briefdescription>
+        <detaileddescription>
+<para><simplesect kind="return"><para>Backend name (e.g., &quot;LibTorch&quot;, &quot;Stub&quot;)    </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/stub_backend.hpp" line="48" column="15" bodyfile="components/emulator_comps/common/src/inference/stub_backend.hpp" bodystart="48" bodyend="48"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1inference_1_1StubBackend_1a7ff1d5d32ff41c35c801afdf3eb6b593" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="virtual">
+        <type>bool</type>
+        <definition>bool emulator::inference::StubBackend::is_initialized</definition>
+        <argsstring>() const override</argsstring>
+        <name>is_initialized</name>
+        <qualifiedname>emulator::inference::StubBackend::is_initialized</qualifiedname>
+        <reimplements refid="classemulator_1_1inference_1_1InferenceBackend_1aabd915e2ce3450c4e3317d6848f02ecc">is_initialized</reimplements>
+        <briefdescription>
+<para>Check if the backend is ready for inference.    </para>
+        </briefdescription>
+        <detaileddescription>
+<para><simplesect kind="return"><para>true if initialized and ready    </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/stub_backend.hpp" line="51" column="8" bodyfile="components/emulator_comps/common/src/inference/stub_backend.hpp" bodystart="51" bodyend="51"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1inference_1_1StubBackend_1aed09b30119ed29bf389201692661dd3f" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="virtual">
+        <type><ref refid="namespaceemulator_1_1inference_1a77255e7a61c3dc84e403c2f79d386a0e" kindref="member">BackendType</ref></type>
+        <definition>BackendType emulator::inference::StubBackend::type</definition>
+        <argsstring>() const override</argsstring>
+        <name>type</name>
+        <qualifiedname>emulator::inference::StubBackend::type</qualifiedname>
+        <reimplements refid="classemulator_1_1inference_1_1InferenceBackend_1aad3ec735dcf04f4a327a86db7c23d67b">type</reimplements>
+        <briefdescription>
+<para>Get the backend type enumeration.    </para>
+        </briefdescription>
+        <detaileddescription>
+<para><simplesect kind="return"><para><ref refid="namespaceemulator_1_1inference_1a77255e7a61c3dc84e403c2f79d386a0e" kindref="member">BackendType</ref> value    </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/stub_backend.hpp" line="54" column="15" bodyfile="components/emulator_comps/common/src/inference/stub_backend.hpp" bodystart="54" bodyend="54"/>
+      </memberdef>
+    </sectiondef>
+    <briefdescription>
+<para>Stub backend for testing without actual inference. </para>
+    </briefdescription>
+    <detaileddescription>
+<para>Provides a no-op implementation that returns zeros for all outputs. Useful for:</para>
+<para><itemizedlist>
+<listitem><para>CI/CD testing without ML dependencies</para>
+</listitem><listitem><para>Debugging coupling and I/O logic</para>
+</listitem><listitem><para>Development when GPU or PyTorch is unavailable</para>
+</listitem><listitem><para>Validating data pipeline correctness</para>
+</listitem></itemizedlist>
+</para>
+<sect1 id="classemulator_1_1inference_1_1StubBackend_1autotoc_md26_1s1"><sect2 id="classemulator_1_1inference_1_1StubBackend_1autotoc_md26">
+<title>Behavior</title><para><itemizedlist>
+<listitem><para><ref refid="classemulator_1_1inference_1_1StubBackend_1a66ce42efeb7f0833bf58a25c75827e99" kindref="member">initialize()</ref> always succeeds</para>
+</listitem><listitem><para><ref refid="classemulator_1_1inference_1_1StubBackend_1ae7b9c9b320385d1007b9076b1abf4622" kindref="member">infer()</ref> zeros all output values</para>
+</listitem><listitem><para>No external dependencies required</para>
+</listitem></itemizedlist>
+</para>
+<para><simplesect kind="see"><para><ref refid="classemulator_1_1inference_1_1InferenceBackend" kindref="compound">InferenceBackend</ref> for the base interface </para>
+</simplesect>
+</para>
+</sect2></sect1>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="2">
+        <label>emulator::inference::InferenceBackend</label>
+        <link refid="classemulator_1_1inference_1_1InferenceBackend"/>
+      </node>
+      <node id="1">
+        <label>emulator::inference::StubBackend</label>
+        <link refid="classemulator_1_1inference_1_1StubBackend"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="2">
+        <label>emulator::inference::InferenceBackend</label>
+        <link refid="classemulator_1_1inference_1_1InferenceBackend"/>
+      </node>
+      <node id="1">
+        <label>emulator::inference::StubBackend</label>
+        <link refid="classemulator_1_1inference_1_1StubBackend"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </collaborationgraph>
+    <location file="components/emulator_comps/common/src/inference/stub_backend.hpp" line="33" column="1" bodyfile="components/emulator_comps/common/src/inference/stub_backend.hpp" bodystart="33" bodyend="59"/>
+    <listofallmembers>
+      <member refid="classemulator_1_1inference_1_1StubBackend_1a5c7e6413232db610d89d59ce30220031" prot="public" virt="virtual"><scope>emulator::inference::StubBackend</scope><name>finalize</name></member>
+      <member refid="classemulator_1_1inference_1_1StubBackend_1ae7b9c9b320385d1007b9076b1abf4622" prot="public" virt="virtual"><scope>emulator::inference::StubBackend</scope><name>infer</name></member>
+      <member refid="classemulator_1_1inference_1_1StubBackend_1a66ce42efeb7f0833bf58a25c75827e99" prot="public" virt="virtual"><scope>emulator::inference::StubBackend</scope><name>initialize</name></member>
+      <member refid="classemulator_1_1inference_1_1StubBackend_1a7ff1d5d32ff41c35c801afdf3eb6b593" prot="public" virt="virtual"><scope>emulator::inference::StubBackend</scope><name>is_initialized</name></member>
+      <member refid="classemulator_1_1inference_1_1StubBackend_1af7f2459b367782a79ef6e809f9c79094" prot="private" virt="non-virtual"><scope>emulator::inference::StubBackend</scope><name>m_config</name></member>
+      <member refid="classemulator_1_1inference_1_1StubBackend_1a30005de2d076a035fba849a3178b0323" prot="private" virt="non-virtual"><scope>emulator::inference::StubBackend</scope><name>m_initialized</name></member>
+      <member refid="classemulator_1_1inference_1_1StubBackend_1ac0efb81262a83641fc054aed650ec49c" prot="public" virt="virtual"><scope>emulator::inference::StubBackend</scope><name>name</name></member>
+      <member refid="classemulator_1_1inference_1_1StubBackend_1a6971d19bd720ae43b51f81bfbdf261b4" prot="public" virt="non-virtual"><scope>emulator::inference::StubBackend</scope><name>StubBackend</name></member>
+      <member refid="classemulator_1_1inference_1_1StubBackend_1aed09b30119ed29bf389201692661dd3f" prot="public" virt="virtual"><scope>emulator::inference::StubBackend</scope><name>type</name></member>
+      <member refid="classemulator_1_1inference_1_1InferenceBackend_1ad1c8d689cc47aa4f417b8f00b8332700" prot="public" virt="virtual"><scope>emulator::inference::StubBackend</scope><name>validate</name></member>
+      <member refid="classemulator_1_1inference_1_1InferenceBackend_1ab0d15f580fd4b29b9a6fb5bb7c8c7aae" prot="public" virt="virtual"><scope>emulator::inference::StubBackend</scope><name>~InferenceBackend</name></member>
+      <member refid="classemulator_1_1inference_1_1StubBackend_1a3aad489f7b76a5aee05a6cb175b8de23" prot="public" virt="non-virtual"><scope>emulator::inference::StubBackend</scope><name>~StubBackend</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

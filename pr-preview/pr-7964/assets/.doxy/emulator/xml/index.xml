@@ -1,0 +1,727 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygenindex xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="index.xsd" version="1.13.2" xml:lang="en-US">
+  <compound refid="structemulator_1_1impl_1_1AtmCouplingIndices" kind="struct"><name>emulator::impl::AtmCouplingIndices</name>
+    <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1aa8b2c050e9efa82a44274a71359c1d9a" kind="variable"><name>Sa_z</name></member>
+    <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1a1797b465f74c73c8f8d9d70966e34e8a" kind="variable"><name>Sa_u</name></member>
+    <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1a97b94eaa2a9210cb594f459db19c736e" kind="variable"><name>Sa_v</name></member>
+    <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1aa0940bfb68d2326d4cd6b8ee97385401" kind="variable"><name>Sa_tbot</name></member>
+    <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1ae9aa1223107ffcd63bdba1fc5c5e9696" kind="variable"><name>Sa_ptem</name></member>
+    <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1a9ae077c7711fe9b84595260fd5b897e9" kind="variable"><name>Sa_shum</name></member>
+    <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1a5e4e2565eec5975c63d802849ec91eac" kind="variable"><name>Sa_dens</name></member>
+    <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1a921335ae575afde7c8182b03f85e1cc6" kind="variable"><name>Sa_pbot</name></member>
+    <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1af06f30e7ebe8763c8e284eaf8d9cb3f1" kind="variable"><name>Sa_pslv</name></member>
+    <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1aa3ba00bcd4335d28ac8a40a495132a8e" kind="variable"><name>Faxa_lwdn</name></member>
+    <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1acb3f02d30417f758e81f1c7c481b1bb6" kind="variable"><name>Faxa_rainc</name></member>
+    <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1a9119b3bcf1256d9ca18664edaf3a7fd7" kind="variable"><name>Faxa_rainl</name></member>
+    <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1a05d1a1ece9bda3e275c7f6da5b39c139" kind="variable"><name>Faxa_snowc</name></member>
+    <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1a51f7ca838b1bf9bac2f2402b7378e295" kind="variable"><name>Faxa_snowl</name></member>
+    <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1a11b36bf0c097cb8152607384e5d197a9" kind="variable"><name>Faxa_swndr</name></member>
+    <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1a2f0498865af61ab12409f47fa328c249" kind="variable"><name>Faxa_swvdr</name></member>
+    <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1ad658d04ecb7ba9b8c11e22044ef013f2" kind="variable"><name>Faxa_swndf</name></member>
+    <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1a024ff1a84b2e2e49f3c58d213483f75d" kind="variable"><name>Faxa_swvdf</name></member>
+    <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1ad3c9e8624eff71d2c281ba5e112e213d" kind="variable"><name>Faxa_swnet</name></member>
+    <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1aeb548fffeb7b639d4fa9d0f82398c1c6" kind="variable"><name>Sx_t</name></member>
+    <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1aa81fc3ead43b2bd9b0aa5dae64f2590a" kind="variable"><name>So_t</name></member>
+    <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1a1a93f3727387d7e0591641c04c441f9e" kind="variable"><name>Faxx_sen</name></member>
+    <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1a9c4245f1079ff55276c085ee82df7897" kind="variable"><name>Faxx_evap</name></member>
+    <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1a9825e45fb0e86594500da150278455d0" kind="variable"><name>Faxx_lat</name></member>
+    <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1a82c956db95222bb67a33835fdd80e26a" kind="variable"><name>Faxx_taux</name></member>
+    <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1a53d5c4a086f2351f0bd8719855f70b32" kind="variable"><name>Faxx_tauy</name></member>
+    <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1a7da8ff2a5ebb62a636518b5790755fb8" kind="variable"><name>Faxx_lwup</name></member>
+    <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1a5b938479edc8cdc88fb6173f8efc5ece" kind="variable"><name>Sx_avsdr</name></member>
+    <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1a1449a770ebec03f95004cefa72ae49b0" kind="variable"><name>Sx_anidr</name></member>
+    <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1ac7929bbe94a187daf39e9e843c6b94a7" kind="variable"><name>Sx_avsdf</name></member>
+    <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1a1791b3849546bf994ed25f3ed0d730b7" kind="variable"><name>Sx_anidf</name></member>
+    <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1a530a71db934e222f79906363fa696146" kind="variable"><name>Sl_snowh</name></member>
+    <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1acd4ba4e82960a0488f0752c29d30f3c9" kind="variable"><name>Si_snowh</name></member>
+    <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1a16491fa3665cb39cb7539bacc2bf7598" kind="variable"><name>Sx_tref</name></member>
+    <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1ac6f1cee6eaaf87d15775b41b61040709" kind="variable"><name>Sx_qref</name></member>
+    <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1af73212406645242a32f196194b752cbd" kind="variable"><name>Sx_u10</name></member>
+    <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1a6d792baeb6ff06727b9b4ed5eeb8509c" kind="variable"><name>Sf_ifrac</name></member>
+    <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1a1717f446c33e858b01b4ddaa0e17e53a" kind="variable"><name>Sf_ofrac</name></member>
+    <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1ad783c88287ebe9a317f48deb37ff992a" kind="variable"><name>Sf_lfrac</name></member>
+    <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1af3505997b82ae1ff06cce32f2206b2ae" kind="function"><name>initialize</name></member>
+  </compound>
+  <compound refid="classemulator_1_1impl_1_1AtmFieldDataProvider" kind="class"><name>emulator::impl::AtmFieldDataProvider</name>
+    <member refid="classemulator_1_1impl_1_1AtmFieldDataProvider_1ad94b44a920d5c7e1fa26f06378b82c39" kind="variable"><name>m_fields</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldDataProvider_1a8caeda772b55b3488294f81692ed829b" kind="variable"><name>m_ncols</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldDataProvider_1ab0cd6181ec7118d5c9f0f213f84c69c5" kind="variable"><name>m_stacked_field_levels</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldDataProvider_1a1ce45339bc6cfebaa71dd877d82848be" kind="variable"><name>m_stacked_cache</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldDataProvider_1af6fbec9a92a60c7c68bd863de71eec69" kind="variable"><name>m_all_field_names</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldDataProvider_1acfdcae970937496da07554ff20a10f05" kind="variable"><name>m_field_names_cached</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldDataProvider_1a6462e3f5bb1a1623b3cf97bc9aecd2c9" kind="function"><name>AtmFieldDataProvider</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldDataProvider_1a67b3ad33e169fc966a7a3d537c6ebf82" kind="function"><name>~AtmFieldDataProvider</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldDataProvider_1ac743c68cb9e0a18d93c5fed511a1dfba" kind="function"><name>get_field</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldDataProvider_1a6f64139d87b69272c560b2d03f367e2f" kind="function"><name>get_field_names</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldDataProvider_1a9d67a7c0f6190472d86e9df8d7e50a9a" kind="function"><name>get_ncols</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldDataProvider_1ac383ac1fc549b67f2a7e8c24f3d1ebd8" kind="function"><name>get_field_nlevs</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldDataProvider_1ad74ae858cb805fae72444aac6003c51e" kind="function"><name>detect_stacked_fields</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldDataProvider_1a82a72a57420cbf74460eb6e45efa2225" kind="function"><name>is_stacked_field</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldDataProvider_1a073b0fd2eff9979c5ab1f29976327346" kind="function"><name>get_stacked_field</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldDataProvider_1ac5ab25450b69bc0f3ba302fe0992bf1e" kind="function"><name>parse_slice_pattern</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldDataProvider_1ac98ec1d737f63766525980ca63671340" kind="function"><name>build_stacked_cache</name></member>
+  </compound>
+  <compound refid="classemulator_1_1impl_1_1AtmFieldManager" kind="class"><name>emulator::impl::AtmFieldManager</name>
+    <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a82587596c228566f4368bc63b1531ff6" kind="variable"><name>N_INPUT_CHANNELS</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a612e95ba104c9932e1cb8a66e21cf7b3" kind="variable"><name>N_OUTPUT_CHANNELS</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a2bd5d1d5afd518db962c21cdc089129c" kind="variable"><name>net_inputs</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a4ff72465403d43caed03f458defb462d" kind="variable"><name>net_outputs</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldManager_1aa96491c3eef3145199d1e038e05d3b91" kind="variable"><name>shf</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldManager_1abfe07b95389de87efc58553a77ea3dcf" kind="variable"><name>cflx</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldManager_1af5fd31b7f7fef2f9afb2562b28d084f6" kind="variable"><name>lhf</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a9a918ec65cba9f66aa8314ce7cf246b9" kind="variable"><name>wsx</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a54142825a9de0b05b556e639e589f638" kind="variable"><name>wsy</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a71af46dd33eab8fc1bd929b581ce0843" kind="variable"><name>lwup</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a74494ce3b1173c8d0b1ae3a753d873c5" kind="variable"><name>asdir</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldManager_1abf7b9995b5fb075702c01a35a78aa2b5" kind="variable"><name>aldir</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a9a1b7fa8d557b76ae864b9562873c718" kind="variable"><name>asdif</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a913f6c11989f58fbba1d0987430a4281" kind="variable"><name>aldif</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a26e4db93602987ced99c72f354e97f6c" kind="variable"><name>ts</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldManager_1ae1a1087ce1a0b8c1eb8e3fe9fecfba12" kind="variable"><name>sst</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a6d31e62af3f2be8dcad08be587056f27" kind="variable"><name>snowhland</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a7a8192aafe28ae5261a7bf9fec1beb90" kind="variable"><name>snowhice</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a2cd0f7ef76e719d5c77c2608c96cfe4f" kind="variable"><name>tref</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldManager_1acc1cc6e8d5a4b289cfb9e5b117565c7e" kind="variable"><name>qref</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a6a2506001737f5df278a6d9189e5fe42" kind="variable"><name>u10</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a8fd79854e70fe2543a297ff812506413" kind="variable"><name>u10withgusts</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldManager_1aa272f923801a1c1c2f8294b185be15b5" kind="variable"><name>icefrac</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a39be66261a4a2c12c59ac78f7c049101" kind="variable"><name>ocnfrac</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a5b8de27c15ab711753548b4a8e2e7722" kind="variable"><name>lndfrac</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldManager_1aef37f2bf69caea666e293ed538962e9c" kind="variable"><name>zbot</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a7f18a89025603b77a3c9fc22f5887032" kind="variable"><name>ubot</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a199bb728a745e31f38f309d3b5872733" kind="variable"><name>vbot</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldManager_1ac6d7aff27c3b9c193f20c345116124b1" kind="variable"><name>tbot</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a5c97475d0b14decc1ead5662fddb5747" kind="variable"><name>ptem</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a65e153c31a93444bc9a4e92d87cf3fef" kind="variable"><name>shum</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a893131a7bd1210c485dca4a573d3c91b" kind="variable"><name>dens</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a4d49a56dee7ea8a91a2972c3a4241bd5" kind="variable"><name>pbot</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a9112701931447414608672a338278237" kind="variable"><name>pslv</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a344f4b2e5719b29c98549cc046a43ce7" kind="variable"><name>lwdn</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a7a156e9fdc3b1c1544ae2eb80dfd043d" kind="variable"><name>rainc</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a879500a26a1a1b765dc2105f48b61932" kind="variable"><name>rainl</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldManager_1aaa8e62654c0f8b3e706c865d05292b0f" kind="variable"><name>snowc</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldManager_1abbf461a04259c236d31a77b16c62db3a" kind="variable"><name>snowl</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a5f21a5b56d6ead29bb38e0c1c845828a" kind="variable"><name>swndr</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldManager_1ae6de3bc3df175b2a6ed7254a75154572" kind="variable"><name>swvdr</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a03e1dadde9ca6f6c199ad12f78f02601" kind="variable"><name>swndf</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldManager_1af8bb3f195e222dce11e265ab3619e8a2" kind="variable"><name>swvdf</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldManager_1ab08c943690e310565d9ea1a1f42f318a" kind="variable"><name>swnet</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldManager_1ab231329d680952d035f54ffde5172ec1" kind="variable"><name>dynamic_fields</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldManager_1ac9228b8335ddae1fcce30716daed719b" kind="variable"><name>m_allocated</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldManager_1afa3277919739c94890bf2af6319a9d9e" kind="variable"><name>m_ncols</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldManager_1ac36471e618a84ceaae1ca14f9eb983bb" kind="variable"><name>m_field_map</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a69a42b25258a947b7821e7c743bbcec9" kind="function"><name>AtmFieldManager</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a3227d8ff695cd4f63e7a62720464f416" kind="function"><name>~AtmFieldManager</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a11cb4f661b8c62ddc54a739aad37dfef" kind="function"><name>allocate</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a880f74377b05bbe6c6910e75f3ffa375" kind="function"><name>deallocate</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a703a1db93a5dbf1872fc5b4eff859eb7" kind="function"><name>set_defaults</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a9a0938d97e8573190a3b379f5a94b900" kind="function"><name>is_allocated</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldManager_1a0609f50bec9f97307d8927182532c705" kind="function"><name>get_field_ptr</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldManager_1ae3dbb64c14c36e97f32ae89f048a928d" kind="function"><name>register_dynamic_field</name></member>
+    <member refid="classemulator_1_1impl_1_1AtmFieldManager_1add7d5e25ab3d341db94306eb59cca67e" kind="function"><name>init_field_map</name></member>
+  </compound>
+  <compound refid="structemulator_1_1BuildConfig" kind="struct"><name>emulator::BuildConfig</name>
+    <member refid="structemulator_1_1BuildConfig_1a73e245782795bd4b292f7a217f9fe63b" kind="variable"><name>grid_name</name></member>
+    <member refid="structemulator_1_1BuildConfig_1a2d608b6dafd44faf865fbc79cf1eb4a3" kind="variable"><name>inference_backend</name></member>
+  </compound>
+  <compound refid="structemulator_1_1CouplingConfig" kind="struct"><name>emulator::CouplingConfig</name>
+    <member refid="structemulator_1_1CouplingConfig_1a06c2e91774f6813ae2459e2b228c62cf" kind="variable"><name>zero_init_exports</name></member>
+    <member refid="structemulator_1_1CouplingConfig_1a4b5cd57e02a6dca4ffa251b8831c636e" kind="variable"><name>debug</name></member>
+  </compound>
+  <compound refid="classemulator_1_1CouplingFieldsBase" kind="class"><name>emulator::CouplingFieldsBase</name>
+    <member refid="classemulator_1_1CouplingFieldsBase_1aca03f4ef9c223b39a883c340d89e8ed8" kind="variable"><name>num_exports</name></member>
+    <member refid="classemulator_1_1CouplingFieldsBase_1a1ae025a151b8eb932dc5bdf71bc549e3" kind="variable"><name>num_imports</name></member>
+    <member refid="classemulator_1_1CouplingFieldsBase_1a9b5bbd29f08f5bb90e6a86cc1fe31cd8" kind="variable"><name>export_map</name></member>
+    <member refid="classemulator_1_1CouplingFieldsBase_1a7309646ee3537c7609f6dbc5c6d4fed6" kind="variable"><name>import_map</name></member>
+    <member refid="classemulator_1_1CouplingFieldsBase_1a00e7052f27f5041dacfb883e2b69c87a" kind="function"><name>~CouplingFieldsBase</name></member>
+    <member refid="classemulator_1_1CouplingFieldsBase_1ae64b730c82f9fba34486e15a95a64d27" kind="function"><name>initialize</name></member>
+    <member refid="classemulator_1_1CouplingFieldsBase_1a15041c2ec9b39a66544387312abc1169" kind="function"><name>get_export_index</name></member>
+    <member refid="classemulator_1_1CouplingFieldsBase_1aaa625d4df4155acb805020ea49f21196" kind="function"><name>get_import_index</name></member>
+    <member refid="classemulator_1_1CouplingFieldsBase_1a56e2803298fcc53e3035b2349a3cd7eb" kind="function"><name>parse_field_list</name></member>
+  </compound>
+  <compound refid="classemulator_1_1DataView" kind="class"><name>emulator::DataView</name>
+    <member refid="classemulator_1_1DataView_1a5872016e4e1944c070cbda400761af2d" kind="variable"><name>m_data</name></member>
+    <member refid="classemulator_1_1DataView_1a2300f8480213ebb0cdbd7aa3be61ab1f" kind="variable"><name>m_size</name></member>
+    <member refid="classemulator_1_1DataView_1aa3bb7bb4669925ab332287522bf8d585" kind="variable"><name>m_layout</name></member>
+    <member refid="classemulator_1_1DataView_1af3b16dfb9c8a6437a7a5691719bca183" kind="function"><name>DataView</name></member>
+    <member refid="classemulator_1_1DataView_1add4ff70ebd839a0f0d03ee316f51c0e0" kind="function"><name>DataView</name></member>
+    <member refid="classemulator_1_1DataView_1a6ce1cfe3a4211267ca0b915900a86f66" kind="function"><name>DataView</name></member>
+    <member refid="classemulator_1_1DataView_1a5aaf597ab5fc0866684c163c53a9439b" kind="function"><name>DataView</name></member>
+    <member refid="classemulator_1_1DataView_1a404ebe5288dc597faf3ba6764788a904" kind="function"><name>DataView</name></member>
+    <member refid="classemulator_1_1DataView_1afd593d0e36d21221c23ce4f4a7cf1dd2" kind="function"><name>data</name></member>
+    <member refid="classemulator_1_1DataView_1a6594c2411cee4694f58f3513b9f33f38" kind="function"><name>data</name></member>
+    <member refid="classemulator_1_1DataView_1a90b8253070a0464f0f2befd238dbb751" kind="function"><name>size</name></member>
+    <member refid="classemulator_1_1DataView_1a6c58c73690b22887ca4af42478b191c9" kind="function"><name>empty</name></member>
+    <member refid="classemulator_1_1DataView_1a8822af5b5e3b75b4d665e80043fda2da" kind="function"><name>layout</name></member>
+    <member refid="classemulator_1_1DataView_1a84b8fb9070986929fe96c39521f5f8cd" kind="function"><name>operator[]</name></member>
+    <member refid="classemulator_1_1DataView_1a13a38a462bab1ab095bade608463b790" kind="function"><name>operator[]</name></member>
+    <member refid="classemulator_1_1DataView_1a2a3556f34aacfe9406293fd0c3ae619e" kind="function"><name>begin</name></member>
+    <member refid="classemulator_1_1DataView_1a9f3bc889821a9d1f303b3921bc3bd366" kind="function"><name>end</name></member>
+    <member refid="classemulator_1_1DataView_1a19eb132a1adb3d10b623651d1f0a82ca" kind="function"><name>begin</name></member>
+    <member refid="classemulator_1_1DataView_1ae0a4b6c7cd26688ca6f00abb806a80e2" kind="function"><name>end</name></member>
+  </compound>
+  <compound refid="classemulator_1_1DerivedDiagnostic" kind="class"><name>emulator::DerivedDiagnostic</name>
+    <member refid="classemulator_1_1DerivedDiagnostic_1a6e624fae8644a8419ed28405dd80a56a" kind="function"><name>~DerivedDiagnostic</name></member>
+    <member refid="classemulator_1_1DerivedDiagnostic_1a29cc53dea2845c12ca120e78028e1e03" kind="function"><name>name</name></member>
+    <member refid="classemulator_1_1DerivedDiagnostic_1a0b6fd5c12c2581a0fedea1be85d24629" kind="function"><name>source_field</name></member>
+    <member refid="classemulator_1_1DerivedDiagnostic_1a308e0c8bb44b2d3be8b53ad2f8548bef" kind="function"><name>compute</name></member>
+    <member refid="classemulator_1_1DerivedDiagnostic_1afb82b445a6d355dcd3c3103974ba146a" kind="function"><name>output_size</name></member>
+  </compound>
+  <compound refid="structemulator_1_1DiagnosticConfig" kind="struct"><name>emulator::DiagnosticConfig</name>
+    <member refid="structemulator_1_1DiagnosticConfig_1a2da59097038f0eab21173a5f9a632890" kind="variable"><name>history_streams</name></member>
+    <member refid="structemulator_1_1DiagnosticConfig_1a5dd5e2f8f2c319b3758257c186eee932" kind="variable"><name>restart</name></member>
+    <member refid="structemulator_1_1DiagnosticConfig_1a2e9e40f9305340a49f8fc24fbf2d3a27" kind="variable"><name>history_restart</name></member>
+  </compound>
+  <compound refid="structemulator_1_1DiagnosticMetadata" kind="struct"><name>emulator::DiagnosticMetadata</name>
+    <member refid="structemulator_1_1DiagnosticMetadata_1af546323e14ac5490cbc0c6ec0911a2ab" kind="variable"><name>area_weights</name></member>
+    <member refid="structemulator_1_1DiagnosticMetadata_1a4d79df0eae5d454cc2b7ff15501c7ee2" kind="variable"><name>comm</name></member>
+    <member refid="structemulator_1_1DiagnosticMetadata_1a41e0bb1985d6f4fdc09273e177136448" kind="variable"><name>nlevs</name></member>
+  </compound>
+  <compound refid="classemulator_1_1EmulatorAtm" kind="class"><name>emulator::EmulatorAtm</name>
+    <member refid="classemulator_1_1EmulatorAtm_1aa68f4bb5df0f70b0abc50596f8464b91" kind="variable"><name>m_coupling_fields</name></member>
+    <member refid="classemulator_1_1EmulatorAtm_1a22b4997563daea2e1a7fd009be744c79" kind="variable"><name>m_coupling_idx</name></member>
+    <member refid="classemulator_1_1EmulatorAtm_1a37f0b663bf37c320ec95a0af4309d608" kind="variable"><name>m_fields</name></member>
+    <member refid="classemulator_1_1EmulatorAtm_1a09840f3ece44697ed9e4cb1731be9cc8" kind="variable"><name>m_config</name></member>
+    <member refid="classemulator_1_1EmulatorAtm_1af6c5533937607e9dfedb3b15126961ad" kind="variable"><name>m_inference_config</name></member>
+    <member refid="classemulator_1_1EmulatorAtm_1a32f815d718c1cf2137389c66492b5c30" kind="variable"><name>m_inference</name></member>
+    <member refid="classemulator_1_1EmulatorAtm_1a4bb97fd5c64ea05270486a6a6af28b42" kind="variable"><name>m_output_manager</name></member>
+    <member refid="classemulator_1_1EmulatorAtm_1a2762b0387e5acbc8930f723b06293762" kind="variable"><name>m_field_provider</name></member>
+    <member refid="classemulator_1_1EmulatorAtm_1a02878a10211998b830b559d633c9c66d" kind="function"><name>EmulatorAtm</name></member>
+    <member refid="classemulator_1_1EmulatorAtm_1ad87796f63a2fc073c95edb3750801c06" kind="function"><name>~EmulatorAtm</name></member>
+    <member refid="classemulator_1_1EmulatorAtm_1a03068000f1cbe87bcb4f3dc607c41e76" kind="function"><name>init_coupling_indices</name></member>
+    <member refid="classemulator_1_1EmulatorAtm_1a324326dbd8f30b0dee2aa497d2566c00" kind="function"><name>set_inference_config</name></member>
+    <member refid="classemulator_1_1EmulatorAtm_1a7ed0e6a3539c540783664e3838b289c5" kind="function"><name>get_inference_config</name></member>
+    <member refid="classemulator_1_1EmulatorAtm_1af092df309e69794df28198ec3b458803" kind="function"><name>set_log_file</name></member>
+    <member refid="classemulator_1_1EmulatorAtm_1ae797ccfb65937ef6c46528cd8dffe01c" kind="function"><name>init_impl</name></member>
+    <member refid="classemulator_1_1EmulatorAtm_1a3d39cd15394c69f8d8b4149b2e4650e3" kind="function"><name>run_impl</name></member>
+    <member refid="classemulator_1_1EmulatorAtm_1ac8e27d0b2adfe44456c88cb858e9402a" kind="function"><name>final_impl</name></member>
+    <member refid="classemulator_1_1EmulatorAtm_1a843280b745347b3e3f884b9966d04304" kind="function"><name>run_inference</name></member>
+    <member refid="classemulator_1_1EmulatorAtm_1a79faab6462a5a73b09399ce1395f9f55" kind="function"><name>import_coupling_fields</name></member>
+    <member refid="classemulator_1_1EmulatorAtm_1a8449bff8fec3fa25f3d2719bba23ed17" kind="function"><name>export_coupling_fields</name></member>
+    <member refid="classemulator_1_1EmulatorAtm_1aa13108c081eab56eebb4223d7db98e30" kind="function"><name>prepare_inputs</name></member>
+    <member refid="classemulator_1_1EmulatorAtm_1a6f05c05dfeb3e150672b993d3b0f3923" kind="function"><name>process_outputs</name></member>
+    <member refid="classemulator_1_1EmulatorAtm_1afd075d5e487a3f9314cf84111087fbeb" kind="function"><name>read_initial_conditions</name></member>
+  </compound>
+  <compound refid="classemulator_1_1EmulatorComp" kind="class"><name>emulator::EmulatorComp</name>
+    <member refid="classemulator_1_1EmulatorComp_1a6da05ee246e7e7f30b22330a8c6bd363" kind="variable"><name>m_comm</name></member>
+    <member refid="classemulator_1_1EmulatorComp_1a0ab0c47cbdfc09ce90fb980d0e1b014a" kind="variable"><name>m_comp_id</name></member>
+    <member refid="classemulator_1_1EmulatorComp_1aeb481f9e674f015b9e3fc6b29597c6db" kind="variable"><name>m_rank</name></member>
+    <member refid="classemulator_1_1EmulatorComp_1a0e484a4c7574efd8ad0ab1541e591f43" kind="variable"><name>m_nprocs</name></member>
+    <member refid="classemulator_1_1EmulatorComp_1a1bc1c0052b7efaa1f6c3e4450a5631dd" kind="variable"><name>m_type</name></member>
+    <member refid="classemulator_1_1EmulatorComp_1abefbe4d0e820535e3c2e61791326775a" kind="variable"><name>m_run_type</name></member>
+    <member refid="classemulator_1_1EmulatorComp_1a49087ef25a2cf999c1acfa3ad4f6f5d6" kind="variable"><name>m_logger</name></member>
+    <member refid="classemulator_1_1EmulatorComp_1aed096a4b0a89a243b99c64db193ac502" kind="variable"><name>m_current_ymd</name></member>
+    <member refid="classemulator_1_1EmulatorComp_1abb80d380907ac685437366d0191db5ee" kind="variable"><name>m_current_tod</name></member>
+    <member refid="classemulator_1_1EmulatorComp_1a9a8996a9841b8975ea84b6451594edfb" kind="variable"><name>m_step_count</name></member>
+    <member refid="classemulator_1_1EmulatorComp_1af5d08fcd26736106bf96d5ee09ac49a7" kind="variable"><name>m_num_local_cols</name></member>
+    <member refid="classemulator_1_1EmulatorComp_1aaac793034bcb82e0d7ceefa4b9797af4" kind="variable"><name>m_num_global_cols</name></member>
+    <member refid="classemulator_1_1EmulatorComp_1a23164e13a2f20510af3642b5b95161ef" kind="variable"><name>m_nx</name></member>
+    <member refid="classemulator_1_1EmulatorComp_1a91087470201ed7028100ecad4fb89967" kind="variable"><name>m_ny</name></member>
+    <member refid="classemulator_1_1EmulatorComp_1a680c034456776d3cb1fa7775a3e84b15" kind="variable"><name>m_col_gids</name></member>
+    <member refid="classemulator_1_1EmulatorComp_1adc8ec9ea47e39f2c0a73b9c10e65a78b" kind="variable"><name>m_lat</name></member>
+    <member refid="classemulator_1_1EmulatorComp_1a70bf49f4cbf4fa23b3ec994382859b98" kind="variable"><name>m_lon</name></member>
+    <member refid="classemulator_1_1EmulatorComp_1a5415b6b157b0cec1d93e548a90965fcd" kind="variable"><name>m_area</name></member>
+    <member refid="classemulator_1_1EmulatorComp_1a76314a7561a297617866f59bf7e47f09" kind="variable"><name>m_import_data</name></member>
+    <member refid="classemulator_1_1EmulatorComp_1a45350bdd14fc150338a75a669c0a7211" kind="variable"><name>m_export_data</name></member>
+    <member refid="classemulator_1_1EmulatorComp_1a09f42f0242acef3cbad24a67a6f555df" kind="variable"><name>m_num_imports</name></member>
+    <member refid="classemulator_1_1EmulatorComp_1ac1715fc77ead3429dc4bc94ec46800c0" kind="variable"><name>m_num_exports</name></member>
+    <member refid="classemulator_1_1EmulatorComp_1a5edfe375b592ce11c16405b3f215b420" kind="variable"><name>m_field_size</name></member>
+    <member refid="classemulator_1_1EmulatorComp_1a737dbc4567eb540f4eddd738d51be9bf" kind="variable"><name>m_input_file</name></member>
+    <member refid="classemulator_1_1EmulatorComp_1a18366b3d685ddd0c4ec12f72889667bb" kind="variable"><name>m_initialized</name></member>
+    <member refid="classemulator_1_1EmulatorComp_1a3029bc394bbc08b1307c7387915907e0" kind="function"><name>EmulatorComp</name></member>
+    <member refid="classemulator_1_1EmulatorComp_1a2ba0a807e47790f7a7990de8f4568d66" kind="function"><name>~EmulatorComp</name></member>
+    <member refid="classemulator_1_1EmulatorComp_1a623d17026efc45f994de51f694fe4590" kind="function"><name>create_instance</name></member>
+    <member refid="classemulator_1_1EmulatorComp_1a8855bf433073da6cc049da797e620a3c" kind="function"><name>set_grid_data</name></member>
+    <member refid="classemulator_1_1EmulatorComp_1ab5d42f9801943882c1c2d6167b8f47b3" kind="function"><name>setup_coupling</name></member>
+    <member refid="classemulator_1_1EmulatorComp_1a966205ef2c077484dc667214977aca23" kind="function"><name>initialize</name></member>
+    <member refid="classemulator_1_1EmulatorComp_1a4a85112a98bded63a6129b9727063f26" kind="function"><name>run</name></member>
+    <member refid="classemulator_1_1EmulatorComp_1ae34a562b789d3459bd204199dc0bbdf4" kind="function"><name>finalize</name></member>
+    <member refid="classemulator_1_1EmulatorComp_1ae49c51a48c75014c158523891f1f1fc3" kind="function"><name>get_num_local_cols</name></member>
+    <member refid="classemulator_1_1EmulatorComp_1aaa9c17dd955beaeb39f7cfc1367f3516" kind="function"><name>get_num_global_cols</name></member>
+    <member refid="classemulator_1_1EmulatorComp_1ab358a2e945d029a9586aefdede65cbcb" kind="function"><name>get_nx</name></member>
+    <member refid="classemulator_1_1EmulatorComp_1aa5745a247d0b22e82deadd61b4ca5e86" kind="function"><name>get_ny</name></member>
+    <member refid="classemulator_1_1EmulatorComp_1a7057c0eb9d18ec46289707d138ba8b16" kind="function"><name>get_local_col_gids</name></member>
+    <member refid="classemulator_1_1EmulatorComp_1a3d2e5d680124326927d5856e4f87b54e" kind="function"><name>get_cols_latlon</name></member>
+    <member refid="classemulator_1_1EmulatorComp_1af412e477cfaa1edb474812cbbbfbc794" kind="function"><name>get_cols_area</name></member>
+    <member refid="classemulator_1_1EmulatorComp_1a19c4109920f42223bfb9fafb9c5de12e" kind="function"><name>type</name></member>
+    <member refid="classemulator_1_1EmulatorComp_1a9a7b7e46700b20de7a6d3d5b43c7be44" kind="function"><name>comm</name></member>
+    <member refid="classemulator_1_1EmulatorComp_1a77c1b30943a1e11186e7815909505f76" kind="function"><name>comp_id</name></member>
+    <member refid="classemulator_1_1EmulatorComp_1a281b436e53a5434ee1d287bd5d05d92d" kind="function"><name>rank</name></member>
+    <member refid="classemulator_1_1EmulatorComp_1a11a86d25af4d06cb473c96124dc3590c" kind="function"><name>is_root</name></member>
+    <member refid="classemulator_1_1EmulatorComp_1a931fe1141a977aa67d2590f5004dbeca" kind="function"><name>init_impl</name></member>
+    <member refid="classemulator_1_1EmulatorComp_1a79ad29a4d5c520e1dfdab5c4b161c38d" kind="function"><name>run_impl</name></member>
+    <member refid="classemulator_1_1EmulatorComp_1a1aa9c2463ef7bd65ccd3327e383dc67b" kind="function"><name>final_impl</name></member>
+    <member refid="classemulator_1_1EmulatorComp_1a90899c19c5c30e241f5472fca420a49e" kind="function"><name>run_inference</name></member>
+    <member refid="classemulator_1_1EmulatorComp_1ad291d2c60b175a87fc93f261acae51bb" kind="function"><name>import_from_coupler</name></member>
+    <member refid="classemulator_1_1EmulatorComp_1a23b6b16432401d1b86f66c0c2e4cd427" kind="function"><name>export_to_coupler</name></member>
+    <member refid="classemulator_1_1EmulatorComp_1a322468d4001ed9344b372a8a448d2be5" kind="function"><name>read_grid_file</name></member>
+    <member refid="classemulator_1_1EmulatorComp_1ab7329cb32d5c778f57e8172174091a52" kind="function"><name>distribute_grid_data</name></member>
+    <member refid="classemulator_1_1EmulatorComp_1a003ee5839e87f65ae7868ab0ad172fae" kind="function"><name>setup_default_grid</name></member>
+    <member refid="classemulator_1_1EmulatorComp_1af4b50a9e5b5d61e2fbfd97ec13a159af" kind="function"><name>advance_time</name></member>
+  </compound>
+  <compound refid="structemulator_1_1EmulatorConfig" kind="struct"><name>emulator::EmulatorConfig</name>
+    <member refid="structemulator_1_1EmulatorConfig_1ac10c54a28f616a174e5f1b91ee893126" kind="variable"><name>build</name></member>
+    <member refid="structemulator_1_1EmulatorConfig_1ab0cd2f29a71be18214a55be9940b589b" kind="variable"><name>runtime</name></member>
+    <member refid="structemulator_1_1EmulatorConfig_1aeb58252c159d0b8796494198aed83480" kind="variable"><name>model_io</name></member>
+    <member refid="structemulator_1_1EmulatorConfig_1a291bfc165f1e4fdc9e3c0503745e5bd8" kind="variable"><name>coupling</name></member>
+    <member refid="structemulator_1_1EmulatorConfig_1a589549ecbbac49314e9167a373cb4963" kind="variable"><name>diagnostics</name></member>
+    <member refid="structemulator_1_1EmulatorConfig_1a2e56ad73eed844c18da583c21fb2727c" kind="variable"><name>grid_file</name></member>
+  </compound>
+  <compound refid="classemulator_1_1EmulatorContext" kind="class"><name>emulator::EmulatorContext</name>
+    <member refid="classemulator_1_1EmulatorContext_1a1e52226d7d5b5edc45652b97c5dfb202" kind="typedef"><name>key_type</name></member>
+    <member refid="classemulator_1_1EmulatorContext_1abda46033fc62820d3c31ba909b36c631" kind="variable"><name>m_objects</name></member>
+    <member refid="classemulator_1_1EmulatorContext_1a381c199b2c20b290a342c8fcc5cd9837" kind="function"><name>singleton</name></member>
+    <member refid="classemulator_1_1EmulatorContext_1aa2d5d007fe8230c6782f17c19c9cdbe2" kind="function"><name>create</name></member>
+    <member refid="classemulator_1_1EmulatorContext_1a6c326e8e388f1ffcf102c6c05fe9d725" kind="function"><name>get</name></member>
+    <member refid="classemulator_1_1EmulatorContext_1a8311cb62391f4d028362cd3ec93bde30" kind="function"><name>getNonConst</name></member>
+    <member refid="classemulator_1_1EmulatorContext_1a6ff01cda79d7a25da55a33124e1ad1ac" kind="function"><name>has</name></member>
+    <member refid="classemulator_1_1EmulatorContext_1a450010af05955cd66a2b4dd1a9311cc3" kind="function"><name>clean_up</name></member>
+    <member refid="classemulator_1_1EmulatorContext_1aa9ceceae51b1990d6767b86820a6bc95" kind="function"><name>EmulatorContext</name></member>
+    <member refid="classemulator_1_1EmulatorContext_1a2db6272b9fabaf21b7293dba31c626c1" kind="function"><name>getKey</name></member>
+  </compound>
+  <compound refid="classemulator_1_1EmulatorIO" kind="class"><name>emulator::EmulatorIO</name>
+    <member refid="classemulator_1_1EmulatorIO_1a6a8fd585880e5d4953617231134d5010" kind="variable"><name>s_comm</name></member>
+    <member refid="classemulator_1_1EmulatorIO_1a4ee4e030a472654a44ecfafef34f35da" kind="variable"><name>s_iosysid</name></member>
+    <member refid="classemulator_1_1EmulatorIO_1aba97c478c84aa8857bc614bdeeffb1ed" kind="variable"><name>s_initialized</name></member>
+    <member refid="classemulator_1_1EmulatorIO_1a985e6c32643044879d808b81e1e55120" kind="variable"><name>s_rank</name></member>
+    <member refid="classemulator_1_1EmulatorIO_1aa4c36a706de45950dfd577a73f692832" kind="function"><name>initialize</name></member>
+    <member refid="classemulator_1_1EmulatorIO_1a4d370b578ee066e98157ece1d1abda0c" kind="function"><name>finalize</name></member>
+    <member refid="classemulator_1_1EmulatorIO_1a6ff8c29e9228f8c53340b09adfcbc3aa" kind="function"><name>is_initialized</name></member>
+    <member refid="classemulator_1_1EmulatorIO_1a66f9c27f15302b3e16263c6b58c30d9a" kind="function"><name>open_file</name></member>
+    <member refid="classemulator_1_1EmulatorIO_1afa56df1b67086b004d17a68893d6718e" kind="function"><name>create_file</name></member>
+    <member refid="classemulator_1_1EmulatorIO_1a00135153b8ed2131b12d131a6b3d027e" kind="function"><name>close_file</name></member>
+    <member refid="classemulator_1_1EmulatorIO_1a4342113a30cbbed496f48309ff06460a" kind="function"><name>sync_file</name></member>
+    <member refid="classemulator_1_1EmulatorIO_1a80de5c8cd352c945708a605a2f77b408" kind="function"><name>read_var_1d</name></member>
+    <member refid="classemulator_1_1EmulatorIO_1a7ead9472bf7eee31b589c6c4f0e263b0" kind="function"><name>read_var_2d</name></member>
+    <member refid="classemulator_1_1EmulatorIO_1a2aa7977f208d3d1f584c17c6a75e45b5" kind="function"><name>read_var_3d_slice</name></member>
+    <member refid="classemulator_1_1EmulatorIO_1a8995fda10943d019ebd6e66892454ead" kind="function"><name>read_var_1d_int</name></member>
+    <member refid="classemulator_1_1EmulatorIO_1ab87742e0565fe59d3b2e486a23d1b2dd" kind="function"><name>write_var_1d</name></member>
+    <member refid="classemulator_1_1EmulatorIO_1ae3ea68f8df6fa1f123648b994eb83f13" kind="function"><name>write_var_2d</name></member>
+    <member refid="classemulator_1_1EmulatorIO_1a816be56bc37a0bf9a49d02f743c8afd3" kind="function"><name>define_dim</name></member>
+    <member refid="classemulator_1_1EmulatorIO_1a59c321a8761eb246642941a6a0fa45b9" kind="function"><name>get_dim_size</name></member>
+    <member refid="classemulator_1_1EmulatorIO_1afb923730a3eb36a21e3f75b07625a18e" kind="function"><name>has_var</name></member>
+    <member refid="classemulator_1_1EmulatorIO_1a29688a1be708c856e064da28226a99d6" kind="function"><name>define_var</name></member>
+    <member refid="classemulator_1_1EmulatorIO_1a3de4ffbe7bb7e4e05380b0a09a2afb23" kind="function"><name>end_def</name></member>
+  </compound>
+  <compound refid="classemulator_1_1EmulatorOutputManager" kind="class"><name>emulator::EmulatorOutputManager</name>
+    <member refid="classemulator_1_1EmulatorOutputManager_1ac5c455b482d9b3af014bd64d2cb30db7" kind="variable"><name>m_config</name></member>
+    <member refid="classemulator_1_1EmulatorOutputManager_1a9751521218eeb639bc79b0d11c1120a3" kind="variable"><name>m_history_streams</name></member>
+    <member refid="classemulator_1_1EmulatorOutputManager_1a4546fe29d6cc21f810834e27c35643b6" kind="variable"><name>m_restart_control</name></member>
+    <member refid="classemulator_1_1EmulatorOutputManager_1ad714ce2cb8e79de0b444f214dd41d1a7" kind="variable"><name>m_restart_fields</name></member>
+    <member refid="classemulator_1_1EmulatorOutputManager_1ac9a61183b7c17078cc6e0ea6a6ca8d3f" kind="variable"><name>m_comm</name></member>
+    <member refid="classemulator_1_1EmulatorOutputManager_1a8298efc9f831a086f1ae3cfee515cebd" kind="variable"><name>m_rank</name></member>
+    <member refid="classemulator_1_1EmulatorOutputManager_1ab89c9f5a2a59716eb2a55d74007a87e5" kind="variable"><name>m_is_root</name></member>
+    <member refid="classemulator_1_1EmulatorOutputManager_1a17ee047cceec5671ae155b3853861b13" kind="variable"><name>m_col_gids</name></member>
+    <member refid="classemulator_1_1EmulatorOutputManager_1a27e1481b77049df410f76d025df797b1" kind="variable"><name>m_nlat</name></member>
+    <member refid="classemulator_1_1EmulatorOutputManager_1abfb4bfae939e571b88ec567876565e6e" kind="variable"><name>m_nlon</name></member>
+    <member refid="classemulator_1_1EmulatorOutputManager_1a6d746dcf44deb68a8846a80e0e470c73" kind="variable"><name>m_case_name</name></member>
+    <member refid="classemulator_1_1EmulatorOutputManager_1ac45a56e79455bef9a04ff38c82f7c2dc" kind="variable"><name>m_run_dir</name></member>
+    <member refid="classemulator_1_1EmulatorOutputManager_1a9db051d9c6380f0a2dd5e27170697890" kind="variable"><name>m_logger</name></member>
+    <member refid="classemulator_1_1EmulatorOutputManager_1a8b686ec83f79ed817872fc937897fced" kind="variable"><name>m_initialized</name></member>
+    <member refid="classemulator_1_1EmulatorOutputManager_1a9d60176e12270507ef4c45fd6fd59a82" kind="function"><name>EmulatorOutputManager</name></member>
+    <member refid="classemulator_1_1EmulatorOutputManager_1a481635979bd3b51d64f467cb6923bf39" kind="function"><name>~EmulatorOutputManager</name></member>
+    <member refid="classemulator_1_1EmulatorOutputManager_1a782fe7e01240ffef1071adda8fd561b1" kind="function"><name>initialize</name></member>
+    <member refid="classemulator_1_1EmulatorOutputManager_1ad88deac35a015e492c1a63e229992964" kind="function"><name>setup</name></member>
+    <member refid="classemulator_1_1EmulatorOutputManager_1a52fd0f3f2dc9be770e923a09891cfb3a" kind="function"><name>init_timestep</name></member>
+    <member refid="classemulator_1_1EmulatorOutputManager_1a3dc5b909786a0c42c11fd9e93658205f" kind="function"><name>run</name></member>
+    <member refid="classemulator_1_1EmulatorOutputManager_1a662979eb6829e1f5bb3029063d50fd5f" kind="function"><name>finalize</name></member>
+    <member refid="classemulator_1_1EmulatorOutputManager_1a47c00e91c55c3f5dbdb3de470c747eca" kind="function"><name>write_restart</name></member>
+    <member refid="classemulator_1_1EmulatorOutputManager_1a913f42e4d6912544f042e190170b8692" kind="function"><name>read_restart</name></member>
+    <member refid="classemulator_1_1EmulatorOutputManager_1a0006eb45fa1ce6e9fbb737b8e78160ed" kind="function"><name>write_history_restart</name></member>
+    <member refid="classemulator_1_1EmulatorOutputManager_1a6fe8537e1594cef1edeaac34956c28e7" kind="function"><name>read_history_restart</name></member>
+    <member refid="classemulator_1_1EmulatorOutputManager_1a1e14f8d2e542709abe9e20ce021fa566" kind="function"><name>is_restart_step</name></member>
+    <member refid="classemulator_1_1EmulatorOutputManager_1ab09db9bada9be8f7b62a1375b4c45f52" kind="function"><name>find_restart_file</name></member>
+    <member refid="classemulator_1_1EmulatorOutputManager_1a4fb0539e9b1114b233719bec893807f7" kind="function"><name>num_history_streams</name></member>
+    <member refid="classemulator_1_1EmulatorOutputManager_1af91940040f0a00401ad50188fcfbb073" kind="function"><name>is_initialized</name></member>
+    <member refid="classemulator_1_1EmulatorOutputManager_1ab8f93f60631baef515d3e21a66a6e033" kind="function"><name>update_rpointer</name></member>
+    <member refid="classemulator_1_1EmulatorOutputManager_1a4fca3c9232ba89fbe81c1ed1086f8975" kind="function"><name>generate_restart_filename</name></member>
+    <member refid="classemulator_1_1EmulatorOutputManager_1ad2713608dffc348edbcbab106221ac75" kind="function"><name>compute_restart_timing</name></member>
+  </compound>
+  <compound refid="classemulator_1_1EmulatorOutputStream" kind="class"><name>emulator::EmulatorOutputStream</name>
+    <member refid="classemulator_1_1EmulatorOutputStream_1ac761003f8f144ee13430bb7796ed8525" kind="variable"><name>m_config</name></member>
+    <member refid="classemulator_1_1EmulatorOutputStream_1a0cd949f0515cea8276f847b7011faa75" kind="variable"><name>m_control</name></member>
+    <member refid="classemulator_1_1EmulatorOutputStream_1afbecdca070d8c21badda867a54e47cd6" kind="variable"><name>m_comm</name></member>
+    <member refid="classemulator_1_1EmulatorOutputStream_1acf38ad29b00d7deadc1ee945fd7f951b" kind="variable"><name>m_rank</name></member>
+    <member refid="classemulator_1_1EmulatorOutputStream_1a29a959d66c1d369639d9c4be49d65008" kind="variable"><name>m_is_root</name></member>
+    <member refid="classemulator_1_1EmulatorOutputStream_1a1d81a05a18c8cee5759ec04915ab3318" kind="variable"><name>m_col_gids</name></member>
+    <member refid="classemulator_1_1EmulatorOutputStream_1a3c5077fa19b62777434f8c365cd1e7e0" kind="variable"><name>m_nlat</name></member>
+    <member refid="classemulator_1_1EmulatorOutputStream_1aa888cc10860f536a5e53d0fe58319e75" kind="variable"><name>m_nlon</name></member>
+    <member refid="classemulator_1_1EmulatorOutputStream_1a9622d590ca842e85e4d0a78f441a95c7" kind="variable"><name>m_ncols_local</name></member>
+    <member refid="classemulator_1_1EmulatorOutputStream_1a97557a5f2f22b8cfe8a5eee6138aeb0c" kind="variable"><name>m_avg_buffer</name></member>
+    <member refid="classemulator_1_1EmulatorOutputStream_1a0e85a241f4016740d09b904c3ba57a3b" kind="variable"><name>m_avg_buffer_sq</name></member>
+    <member refid="classemulator_1_1EmulatorOutputStream_1a320431e583c1ccf734f008849bde8781" kind="variable"><name>m_current_file_ncid</name></member>
+    <member refid="classemulator_1_1EmulatorOutputStream_1a925863f649c22345a70b50f1971eb7f5" kind="variable"><name>m_snapshots_in_file</name></member>
+    <member refid="classemulator_1_1EmulatorOutputStream_1ad20b705a7a9e3ed8655002a4b8488f49" kind="variable"><name>m_current_filename</name></member>
+    <member refid="classemulator_1_1EmulatorOutputStream_1a1d8fbeb73f099d22b4077573cb7de7f6" kind="variable"><name>m_logger</name></member>
+    <member refid="classemulator_1_1EmulatorOutputStream_1ad4e1d8dc8be449b554ebf837b636cb7c" kind="variable"><name>m_initialized</name></member>
+    <member refid="classemulator_1_1EmulatorOutputStream_1a60006316c4cbf76465fc02c1884d15f9" kind="function"><name>EmulatorOutputStream</name></member>
+    <member refid="classemulator_1_1EmulatorOutputStream_1a61215c89eb21cddb94c963270d0a1543" kind="function"><name>~EmulatorOutputStream</name></member>
+    <member refid="classemulator_1_1EmulatorOutputStream_1ab8fc5ecb7ad3aa842a893b436661d503" kind="function"><name>initialize</name></member>
+    <member refid="classemulator_1_1EmulatorOutputStream_1aed30a0b04ecd53a706aea101ec125efb" kind="function"><name>init_timestep</name></member>
+    <member refid="classemulator_1_1EmulatorOutputStream_1acd0d0bc5f32e3745614c10da233b976b" kind="function"><name>run</name></member>
+    <member refid="classemulator_1_1EmulatorOutputStream_1acde42a70f35e7b06f626d619ff4aadd8" kind="function"><name>finalize</name></member>
+    <member refid="classemulator_1_1EmulatorOutputStream_1a04f5e3f5b4aa93793c5b381d49172d9c" kind="function"><name>is_write_step</name></member>
+    <member refid="classemulator_1_1EmulatorOutputStream_1a2966d9f3670de0af2056ffcc8edb9c38" kind="function"><name>config</name></member>
+    <member refid="classemulator_1_1EmulatorOutputStream_1a0d8ebfbc00a1c8a6117d8131d176c264" kind="function"><name>write_history_restart</name></member>
+    <member refid="classemulator_1_1EmulatorOutputStream_1a33d94d7febc2672cb4fae1c7b2402326" kind="function"><name>read_history_restart</name></member>
+    <member refid="classemulator_1_1EmulatorOutputStream_1ac7bb316e87736c58b8bd3304309bfbfc" kind="function"><name>needs_history_restart</name></member>
+    <member refid="classemulator_1_1EmulatorOutputStream_1ae3aeac08016a15fdbe6ad579f7c25c42" kind="function"><name>update_averaging</name></member>
+    <member refid="classemulator_1_1EmulatorOutputStream_1a5dcc36cf234ff58ae9cea75f1dda2e67" kind="function"><name>write_output</name></member>
+    <member refid="classemulator_1_1EmulatorOutputStream_1a9d7ec80e4839ae92ede826c34463857e" kind="function"><name>setup_file</name></member>
+    <member refid="classemulator_1_1EmulatorOutputStream_1a22d3135963c6c83fb9d9b0d19ebce82b" kind="function"><name>generate_filename</name></member>
+    <member refid="classemulator_1_1EmulatorOutputStream_1a219054b8dc2c75c44797457c09c7126f" kind="function"><name>reset_averaging_buffers</name></member>
+    <member refid="classemulator_1_1EmulatorOutputStream_1a50fb46197566cbc999732bdd6d7b5fa6" kind="function"><name>get_output_data</name></member>
+  </compound>
+  <compound refid="classemulator_1_1FieldDataProvider" kind="class"><name>emulator::FieldDataProvider</name>
+    <member refid="classemulator_1_1FieldDataProvider_1a8b4205e970582ba9211c7197fa268c7c" kind="function"><name>~FieldDataProvider</name></member>
+    <member refid="classemulator_1_1FieldDataProvider_1a7e743037cd968a0edad15a63bc07028b" kind="function"><name>get_field</name></member>
+    <member refid="classemulator_1_1FieldDataProvider_1a05eff352eac4a0e1697a0bd95e92ec41" kind="function"><name>get_field_names</name></member>
+    <member refid="classemulator_1_1FieldDataProvider_1a68b3af2b298ec8407bf6cb194382b701" kind="function"><name>get_ncols</name></member>
+    <member refid="classemulator_1_1FieldDataProvider_1abcbf4268c75c6a2b1ec2393948351d36" kind="function"><name>get_field_nlevs</name></member>
+  </compound>
+  <compound refid="structemulator_1_1HistoryRestartConfig" kind="struct"><name>emulator::HistoryRestartConfig</name>
+    <member refid="structemulator_1_1HistoryRestartConfig_1a1e983876af44d22c9877fd47fde59f91" kind="variable"><name>enabled</name></member>
+    <member refid="structemulator_1_1HistoryRestartConfig_1af541bb47704750908e5a6e37761626fd" kind="variable"><name>filename_prefix</name></member>
+  </compound>
+  <compound refid="classemulator_1_1HorizAvgDiagnostic" kind="class"><name>emulator::HorizAvgDiagnostic</name>
+    <member refid="classemulator_1_1HorizAvgDiagnostic_1a03318a478dff9faeeed41ae5e1833bdf" kind="variable"><name>m_name</name></member>
+    <member refid="classemulator_1_1HorizAvgDiagnostic_1a1fe105032acb2d94b898a93ad7a0fc7e" kind="variable"><name>m_source_field</name></member>
+    <member refid="classemulator_1_1HorizAvgDiagnostic_1aea3d9565adde0baf0d41336808bdbe8f" kind="variable"><name>m_area_weights</name></member>
+    <member refid="classemulator_1_1HorizAvgDiagnostic_1ae72a6be51e4f3d542d424ae59dbc41db" kind="variable"><name>m_comm</name></member>
+    <member refid="classemulator_1_1HorizAvgDiagnostic_1ac090c6e09c2d715f8140023e09b8c56f" kind="function"><name>HorizAvgDiagnostic</name></member>
+    <member refid="classemulator_1_1HorizAvgDiagnostic_1a2973f6685d9bfea71e0ead60b8004517" kind="function"><name>name</name></member>
+    <member refid="classemulator_1_1HorizAvgDiagnostic_1a4aab62ad2f92468c70e28609149c6cee" kind="function"><name>source_field</name></member>
+    <member refid="classemulator_1_1HorizAvgDiagnostic_1ae0456b8effd649032b6dfd4fce2591c8" kind="function"><name>compute</name></member>
+    <member refid="classemulator_1_1HorizAvgDiagnostic_1a293a047532e5c479d1d67b5c40332f98" kind="function"><name>output_size</name></member>
+  </compound>
+  <compound refid="structemulator_1_1inference_1_1LibTorchBackend_1_1Impl" kind="struct"><name>emulator::inference::LibTorchBackend::Impl</name>
+    <member refid="structemulator_1_1inference_1_1LibTorchBackend_1_1Impl_1a37394e633ac05cc9343eb71b36beb528" kind="variable"><name>model</name></member>
+    <member refid="structemulator_1_1inference_1_1LibTorchBackend_1_1Impl_1a220f517f7c2fa1c69bdde4d6c84fa285" kind="variable"><name>device</name></member>
+    <member refid="structemulator_1_1inference_1_1LibTorchBackend_1_1Impl_1a913b6682cc12a62d32e38884818a4612" kind="variable"><name>dtype</name></member>
+    <member refid="structemulator_1_1inference_1_1LibTorchBackend_1_1Impl_1ab02e6ea7ec7437533e54c52e213f3b53" kind="variable"><name>model_loaded</name></member>
+  </compound>
+  <compound refid="classemulator_1_1inference_1_1InferenceBackend" kind="class"><name>emulator::inference::InferenceBackend</name>
+    <member refid="classemulator_1_1inference_1_1InferenceBackend_1ab0d15f580fd4b29b9a6fb5bb7c8c7aae" kind="function"><name>~InferenceBackend</name></member>
+    <member refid="classemulator_1_1inference_1_1InferenceBackend_1a1f1eb8e2bad9c2f8f6085c0ed7113c70" kind="function"><name>initialize</name></member>
+    <member refid="classemulator_1_1inference_1_1InferenceBackend_1a1be8aa53c3707a5d49e394c6f3f562a6" kind="function"><name>infer</name></member>
+    <member refid="classemulator_1_1inference_1_1InferenceBackend_1a44394f344e641421b699675da096ca51" kind="function"><name>finalize</name></member>
+    <member refid="classemulator_1_1inference_1_1InferenceBackend_1a473a507068279e92f27584cc0623bd0a" kind="function"><name>name</name></member>
+    <member refid="classemulator_1_1inference_1_1InferenceBackend_1aabd915e2ce3450c4e3317d6848f02ecc" kind="function"><name>is_initialized</name></member>
+    <member refid="classemulator_1_1inference_1_1InferenceBackend_1ad1c8d689cc47aa4f417b8f00b8332700" kind="function"><name>validate</name></member>
+    <member refid="classemulator_1_1inference_1_1InferenceBackend_1aad3ec735dcf04f4a327a86db7c23d67b" kind="function"><name>type</name></member>
+  </compound>
+  <compound refid="structemulator_1_1inference_1_1InferenceConfig" kind="struct"><name>emulator::inference::InferenceConfig</name>
+    <member refid="structemulator_1_1inference_1_1InferenceConfig_1a6d78a410fa53fd820d4828c3057db8f4" kind="variable"><name>backend</name></member>
+    <member refid="structemulator_1_1inference_1_1InferenceConfig_1a7e8dcbac2473a4ee3cd260693ada1f52" kind="variable"><name>model_path</name></member>
+    <member refid="structemulator_1_1inference_1_1InferenceConfig_1abbde15ef4b44efb6558b8018ed003fd2" kind="variable"><name>device_id</name></member>
+    <member refid="structemulator_1_1inference_1_1InferenceConfig_1a3727f5bb6cb8426811db50ea7feecd63" kind="variable"><name>use_fp16</name></member>
+    <member refid="structemulator_1_1inference_1_1InferenceConfig_1ac45bde9a6002d7fa46cf0ef38e612a43" kind="variable"><name>verbose</name></member>
+    <member refid="structemulator_1_1inference_1_1InferenceConfig_1a6feb6a3f1c14fe1925d03ca802b7ef03" kind="variable"><name>input_channels</name></member>
+    <member refid="structemulator_1_1inference_1_1InferenceConfig_1ae32a0d32445645f4ad421cb0f22e2f45" kind="variable"><name>output_channels</name></member>
+    <member refid="structemulator_1_1inference_1_1InferenceConfig_1ac6989766503ecf4f4c74569607b7165a" kind="variable"><name>spatial_mode</name></member>
+    <member refid="structemulator_1_1inference_1_1InferenceConfig_1a23d2095bf90755f6d1f51cc12fe62677" kind="variable"><name>grid_height</name></member>
+    <member refid="structemulator_1_1inference_1_1InferenceConfig_1a83a83f2fe631707f6032f8c2288cacbf" kind="variable"><name>grid_width</name></member>
+    <member refid="structemulator_1_1inference_1_1InferenceConfig_1a3cfe5151c44e7db705ba5f89cdc1022b" kind="variable"><name>dry_run</name></member>
+    <member refid="structemulator_1_1inference_1_1InferenceConfig_1a208fa429f74ad0f1ee4aab16305036cc" kind="variable"><name>expected_input_vars</name></member>
+    <member refid="structemulator_1_1inference_1_1InferenceConfig_1a7fffaaf1d8258bf37fa36be1c6b30050" kind="variable"><name>expected_output_vars</name></member>
+  </compound>
+  <compound refid="classemulator_1_1inference_1_1LibTorchBackend" kind="class"><name>emulator::inference::LibTorchBackend</name>
+    <member refid="classemulator_1_1inference_1_1LibTorchBackend_1a145652095bf77908d243403f4c36664c" kind="variable"><name>m_initialized</name></member>
+    <member refid="classemulator_1_1inference_1_1LibTorchBackend_1ae2c2eb073ac4ad7dccff745dfc54951b" kind="variable"><name>m_config</name></member>
+    <member refid="classemulator_1_1inference_1_1LibTorchBackend_1a0ef271cc15b7acef337bc56baf4a641c" kind="variable"><name>m_model_memory_bytes</name></member>
+    <member refid="classemulator_1_1inference_1_1LibTorchBackend_1afd956936ae98510beb562ecb8a0beb6c" kind="variable"><name>m_impl</name></member>
+    <member refid="classemulator_1_1inference_1_1LibTorchBackend_1a1c0da195cd923659f7dce02b14214cc1" kind="function"><name>LibTorchBackend</name></member>
+    <member refid="classemulator_1_1inference_1_1LibTorchBackend_1a7ebb02a6447c00da5deb99c390607706" kind="function"><name>~LibTorchBackend</name></member>
+    <member refid="classemulator_1_1inference_1_1LibTorchBackend_1a748dcb4fd55a2b336c1de2bee87c3d85" kind="function"><name>initialize</name></member>
+    <member refid="classemulator_1_1inference_1_1LibTorchBackend_1ac9850ff1056a6364b5d765d2105a8302" kind="function"><name>infer</name></member>
+    <member refid="classemulator_1_1inference_1_1LibTorchBackend_1a8c849a1784ce1e351fdd2a6c5b86639f" kind="function"><name>finalize</name></member>
+    <member refid="classemulator_1_1inference_1_1LibTorchBackend_1a1713df499bc077fe7cf2171b48cd9b6c" kind="function"><name>name</name></member>
+    <member refid="classemulator_1_1inference_1_1LibTorchBackend_1ab640e96d9880d6777df86af498d6f8cd" kind="function"><name>is_initialized</name></member>
+    <member refid="classemulator_1_1inference_1_1LibTorchBackend_1aa2a923de57bc67cc2b0073922da7582d" kind="function"><name>type</name></member>
+    <member refid="classemulator_1_1inference_1_1LibTorchBackend_1a222ca3846212cabcd74d96183c169900" kind="function"><name>get_memory_usage_bytes</name></member>
+  </compound>
+  <compound refid="classemulator_1_1Logger" kind="class"><name>emulator::Logger</name>
+    <member refid="classemulator_1_1Logger_1a2f1bfa6ebdfb011684c53939e69ba369" kind="variable"><name>m_file</name></member>
+    <member refid="classemulator_1_1Logger_1a0a007e23a1bd08a4436ca7a0a31c85c0" kind="function"><name>Logger</name></member>
+    <member refid="classemulator_1_1Logger_1a799d670fcb490bf379d6a77a9a91fbea" kind="function"><name>~Logger</name></member>
+    <member refid="classemulator_1_1Logger_1aba19a95b86ae8bfa650c7b3453641e1a" kind="function"><name>set_file</name></member>
+    <member refid="classemulator_1_1Logger_1a432d2cb3f5e755ae9f0f91293d2f5132" kind="function"><name>log</name></member>
+    <member refid="classemulator_1_1Logger_1adef99458aaba4165b5be097fc6550222" kind="function"><name>debug</name></member>
+    <member refid="classemulator_1_1Logger_1a9c710d241960051a2996da1e7f011eec" kind="function"><name>verbose</name></member>
+    <member refid="classemulator_1_1Logger_1a0f9815f93bfcd402b1ce76ad6440a262" kind="function"><name>info</name></member>
+    <member refid="classemulator_1_1Logger_1a07c15f03d279eb3cfb60059563d07d09" kind="function"><name>warn</name></member>
+    <member refid="classemulator_1_1Logger_1a551ba08465ac050d95cddc05f53b90b4" kind="function"><name>error</name></member>
+    <member refid="classemulator_1_1Logger_1ad08e90aff4b9f37d21480e999b68e2d9" kind="function"><name>get_timestamp</name></member>
+    <member refid="classemulator_1_1Logger_1a144258e4b6fe326cb5e64ef484659b17" kind="function"><name>level_to_string</name></member>
+  </compound>
+  <compound refid="structemulator_1_1ModelIOConfig" kind="struct"><name>emulator::ModelIOConfig</name>
+    <member refid="structemulator_1_1ModelIOConfig_1ace0b444b9b1f2f9cb139167f07bb76cb" kind="variable"><name>input_variables</name></member>
+    <member refid="structemulator_1_1ModelIOConfig_1a40fe98b2589d5e4372fadd446aa134a5" kind="variable"><name>output_variables</name></member>
+    <member refid="structemulator_1_1ModelIOConfig_1afc0dec3dae00aa202a035ce65096ba0c" kind="variable"><name>spatial_mode</name></member>
+  </compound>
+  <compound refid="structemulator_1_1OutputControl" kind="struct"><name>emulator::OutputControl</name>
+    <member refid="structemulator_1_1OutputControl_1aba79e6374e26255d02d1afd31ac9f726" kind="variable"><name>frequency</name></member>
+    <member refid="structemulator_1_1OutputControl_1a8760a9c504f2dd0643b757c00d9926ee" kind="variable"><name>frequency_unit</name></member>
+    <member refid="structemulator_1_1OutputControl_1ad153ab1ad825b8f72a5f36ec4d17a935" kind="variable"><name>nsamples_since_last_write</name></member>
+    <member refid="structemulator_1_1OutputControl_1a3b68ff3051f75ad79b8a81181cfd8818" kind="variable"><name>last_write_step</name></member>
+    <member refid="structemulator_1_1OutputControl_1ad75a212d4049ec7193165cdbe2b6ace5" kind="variable"><name>next_write_step</name></member>
+    <member refid="structemulator_1_1OutputControl_1a10bad7f44a0633c5692f53bf88fa5b4c" kind="variable"><name>dt</name></member>
+    <member refid="structemulator_1_1OutputControl_1aea3bf49a2d740e04ec4d42ba3f4f1010" kind="variable"><name>current_step</name></member>
+    <member refid="structemulator_1_1OutputControl_1a7e1c26d74f80b2a969ee2e252090e358" kind="function"><name>output_enabled</name></member>
+    <member refid="structemulator_1_1OutputControl_1ab9e6c9152b22ef29d3b30f3e6399178a" kind="function"><name>is_write_step</name></member>
+    <member refid="structemulator_1_1OutputControl_1af16053c88d15c0839fe921133a9fec5d" kind="function"><name>compute_next_write_step</name></member>
+    <member refid="structemulator_1_1OutputControl_1ad7f7fad0f1ba2540d1fcb40c2986645d" kind="function"><name>seconds_per_unit</name></member>
+  </compound>
+  <compound refid="structemulator_1_1OutputStreamConfig" kind="struct"><name>emulator::OutputStreamConfig</name>
+    <member refid="structemulator_1_1OutputStreamConfig_1abac947f5aad0bd4ff10a66839c201542" kind="variable"><name>stream_name</name></member>
+    <member refid="structemulator_1_1OutputStreamConfig_1a13b412575e09feb46dfc32c4c503a027" kind="variable"><name>filename_prefix</name></member>
+    <member refid="structemulator_1_1OutputStreamConfig_1ac652c5abc784e7a8815075be67e55aac" kind="variable"><name>fields</name></member>
+    <member refid="structemulator_1_1OutputStreamConfig_1a0cd7e2c34b58a0834ef8924b657d5fc1" kind="variable"><name>frequency_unit</name></member>
+    <member refid="structemulator_1_1OutputStreamConfig_1a3159fa99882c96c052887675796ddfe1" kind="variable"><name>frequency</name></member>
+    <member refid="structemulator_1_1OutputStreamConfig_1ae1e9d12895c9a221be26e9d603bf073d" kind="variable"><name>avg_type</name></member>
+    <member refid="structemulator_1_1OutputStreamConfig_1a02d05f60feaa6b411bf435275320c992" kind="variable"><name>precision</name></member>
+    <member refid="structemulator_1_1OutputStreamConfig_1a1a33535635ed699a7f4894eccf77c7b1" kind="variable"><name>max_snapshots_per_file</name></member>
+  </compound>
+  <compound refid="structemulator_1_1RestartConfig" kind="struct"><name>emulator::RestartConfig</name>
+    <member refid="structemulator_1_1RestartConfig_1a9b77985fc3eaf0ce5e17f87ea3599680" kind="variable"><name>enabled</name></member>
+    <member refid="structemulator_1_1RestartConfig_1a5786f13aaef3bc31ba5709766026dd11" kind="variable"><name>filename_prefix</name></member>
+    <member refid="structemulator_1_1RestartConfig_1a2094d42b44f69d6c4d1e699fd55a9592" kind="variable"><name>frequency_unit</name></member>
+    <member refid="structemulator_1_1RestartConfig_1a5a78ccc9a6c67d987b907f9919ed9703" kind="variable"><name>frequency</name></member>
+  </compound>
+  <compound refid="structemulator_1_1RuntimeConfig" kind="struct"><name>emulator::RuntimeConfig</name>
+    <member refid="structemulator_1_1RuntimeConfig_1a64e9830322c6d56a84baaee743e0ae2f" kind="variable"><name>model_path</name></member>
+    <member refid="structemulator_1_1RuntimeConfig_1a3467028448ec4f341398e67b67a53d63" kind="variable"><name>ic_file</name></member>
+    <member refid="structemulator_1_1RuntimeConfig_1a911cf3a81eb45ed6182296eae7cf1953" kind="variable"><name>enabled</name></member>
+  </compound>
+  <compound refid="classemulator_1_1inference_1_1StubBackend" kind="class"><name>emulator::inference::StubBackend</name>
+    <member refid="classemulator_1_1inference_1_1StubBackend_1a30005de2d076a035fba849a3178b0323" kind="variable"><name>m_initialized</name></member>
+    <member refid="classemulator_1_1inference_1_1StubBackend_1af7f2459b367782a79ef6e809f9c79094" kind="variable"><name>m_config</name></member>
+    <member refid="classemulator_1_1inference_1_1StubBackend_1a6971d19bd720ae43b51f81bfbdf261b4" kind="function"><name>StubBackend</name></member>
+    <member refid="classemulator_1_1inference_1_1StubBackend_1a3aad489f7b76a5aee05a6cb175b8de23" kind="function"><name>~StubBackend</name></member>
+    <member refid="classemulator_1_1inference_1_1StubBackend_1a66ce42efeb7f0833bf58a25c75827e99" kind="function"><name>initialize</name></member>
+    <member refid="classemulator_1_1inference_1_1StubBackend_1ae7b9c9b320385d1007b9076b1abf4622" kind="function"><name>infer</name></member>
+    <member refid="classemulator_1_1inference_1_1StubBackend_1a5c7e6413232db610d89d59ce30220031" kind="function"><name>finalize</name></member>
+    <member refid="classemulator_1_1inference_1_1StubBackend_1ac0efb81262a83641fc054aed650ec49c" kind="function"><name>name</name></member>
+    <member refid="classemulator_1_1inference_1_1StubBackend_1a7ff1d5d32ff41c35c801afdf3eb6b593" kind="function"><name>is_initialized</name></member>
+    <member refid="classemulator_1_1inference_1_1StubBackend_1aed09b30119ed29bf389201692661dd3f" kind="function"><name>type</name></member>
+  </compound>
+  <compound refid="structemulator_1_1inference_1_1ValidationResult" kind="struct"><name>emulator::inference::ValidationResult</name>
+    <member refid="structemulator_1_1inference_1_1ValidationResult_1a356ef2380ea935dfff808a15cbbefd8f" kind="variable"><name>valid</name></member>
+    <member refid="structemulator_1_1inference_1_1ValidationResult_1a20867b58d52dfa79a1208215e3277287" kind="variable"><name>errors</name></member>
+    <member refid="structemulator_1_1inference_1_1ValidationResult_1a6da9c9604334c5dacafb11b33d9898b2" kind="variable"><name>warnings</name></member>
+    <member refid="structemulator_1_1inference_1_1ValidationResult_1a6bfe8f31f95d2c77babad9e322f085d0" kind="function"><name>add_error</name></member>
+    <member refid="structemulator_1_1inference_1_1ValidationResult_1a0332338f679ca7eb3e06166da0d2e66e" kind="function"><name>add_warning</name></member>
+    <member refid="structemulator_1_1inference_1_1ValidationResult_1a61ac3769f82fe37f7f43e374e28e49d5" kind="function"><name>has_warnings</name></member>
+  </compound>
+  <compound refid="classemulator_1_1VertSliceDiagnostic" kind="class"><name>emulator::VertSliceDiagnostic</name>
+    <member refid="classemulator_1_1VertSliceDiagnostic_1a81d0efa36f20177824bc9cfab4b27384" kind="variable"><name>m_name</name></member>
+    <member refid="classemulator_1_1VertSliceDiagnostic_1a6b971f37d03acd4ebf859d62aacc7ffb" kind="variable"><name>m_source_field</name></member>
+    <member refid="classemulator_1_1VertSliceDiagnostic_1a74a3f0fde863596c4b0daa9e46113fe9" kind="variable"><name>m_level_idx</name></member>
+    <member refid="classemulator_1_1VertSliceDiagnostic_1ad9d30621739e7e5a91300db282ca9173" kind="variable"><name>m_nlevs</name></member>
+    <member refid="classemulator_1_1VertSliceDiagnostic_1ae784f4109f57ff5eee3e1b1c419e93cc" kind="function"><name>VertSliceDiagnostic</name></member>
+    <member refid="classemulator_1_1VertSliceDiagnostic_1a55d9ef659269df0520d40d2d7abcf4bd" kind="function"><name>name</name></member>
+    <member refid="classemulator_1_1VertSliceDiagnostic_1a3b1868cab448947d9a04766abe325801" kind="function"><name>source_field</name></member>
+    <member refid="classemulator_1_1VertSliceDiagnostic_1a9259d65a22df077a398a53c2ec2a9702" kind="function"><name>compute</name></member>
+    <member refid="classemulator_1_1VertSliceDiagnostic_1a42022b08b043802889f461980f6645d4" kind="function"><name>output_size</name></member>
+  </compound>
+  <compound refid="namespace_0d070153036360144114261021302354156044166014006223" kind="namespace"><name>@070153036360144114261021302354156044166014006223</name>
+  </compound>
+  <compound refid="namespaceemulator" kind="namespace"><name>emulator</name>
+    <member refid="namespaceemulator_1a5c37d3988c19d14990921fb3b7db8bb4" kind="enum"><name>DataLayout</name></member>
+    <member refid="namespaceemulator_1a5c37d3988c19d14990921fb3b7db8bb4a21541962976d7709c26e9cd8385bd648" kind="enumvalue"><name>ROW_MAJOR</name></member>
+    <member refid="namespaceemulator_1a5c37d3988c19d14990921fb3b7db8bb4ada7520ed89bff27b02664af80951c6b0" kind="enumvalue"><name>COLUMN_MAJOR</name></member>
+    <member refid="namespaceemulator_1a5c37d3988c19d14990921fb3b7db8bb4a696b031073e74bf2cb98e5ef201d4aa3" kind="enumvalue"><name>UNKNOWN</name></member>
+    <member refid="namespaceemulator_1a4eba730d57900d80c4cde91a064a5d7c" kind="enum"><name>CompType</name></member>
+    <member refid="namespaceemulator_1a4eba730d57900d80c4cde91a064a5d7ca292f535a3b6fe8853df2f03c8ed890a1" kind="enumvalue"><name>ATM</name></member>
+    <member refid="namespaceemulator_1a4eba730d57900d80c4cde91a064a5d7ca2248df4eb3f2e96526cbf0d0381de7e0" kind="enumvalue"><name>OCN</name></member>
+    <member refid="namespaceemulator_1a4eba730d57900d80c4cde91a064a5d7ca22fb77eba93786121faa55c581785893" kind="enumvalue"><name>ICE</name></member>
+    <member refid="namespaceemulator_1a4eba730d57900d80c4cde91a064a5d7ca9b619a81ef0b0c7ab081e3f0aeafc96f" kind="enumvalue"><name>LND</name></member>
+    <member refid="namespaceemulator_1ac145d6905ecd2dc434fdff93ca2375ff" kind="enum"><name>FrequencyUnit</name></member>
+    <member refid="namespaceemulator_1ac145d6905ecd2dc434fdff93ca2375ffab27f2b1bdb5d72e12149c9371d307fd6" kind="enumvalue"><name>NSTEPS</name></member>
+    <member refid="namespaceemulator_1ac145d6905ecd2dc434fdff93ca2375ffa3cb79432b34582aed2d3fb4d75d95819" kind="enumvalue"><name>NSECS</name></member>
+    <member refid="namespaceemulator_1ac145d6905ecd2dc434fdff93ca2375ffa4321f3c0d76f9a4f6515ed4b548efb0c" kind="enumvalue"><name>NMINS</name></member>
+    <member refid="namespaceemulator_1ac145d6905ecd2dc434fdff93ca2375ffa68883f3524d21270a895161328eedc8a" kind="enumvalue"><name>NHOURS</name></member>
+    <member refid="namespaceemulator_1ac145d6905ecd2dc434fdff93ca2375ffa85b245d9aa07e88b84e07983410d5d07" kind="enumvalue"><name>NDAYS</name></member>
+    <member refid="namespaceemulator_1ac145d6905ecd2dc434fdff93ca2375ffa41ffa3e136d25c63d69d9ab55e34a88c" kind="enumvalue"><name>NMONTHS</name></member>
+    <member refid="namespaceemulator_1ac145d6905ecd2dc434fdff93ca2375ffa76cdd92a64867e2148a85c55748b6dc1" kind="enumvalue"><name>NYEARS</name></member>
+    <member refid="namespaceemulator_1ac145d6905ecd2dc434fdff93ca2375ffab50339a10e1de285ac99d4c3990b8693" kind="enumvalue"><name>NONE</name></member>
+    <member refid="namespaceemulator_1a52af206b444654873ad1f1b1f5c12298" kind="enum"><name>OutputAvgType</name></member>
+    <member refid="namespaceemulator_1a52af206b444654873ad1f1b1f5c12298a0cb59bada85ae6029aac02b5c6dc7622" kind="enumvalue"><name>INSTANT</name></member>
+    <member refid="namespaceemulator_1a52af206b444654873ad1f1b1f5c12298a16de38737a9f8366e9b2042b4e9b6290" kind="enumvalue"><name>AVERAGE</name></member>
+    <member refid="namespaceemulator_1a52af206b444654873ad1f1b1f5c12298ace31e2a082d17e038fcc6e3006166653" kind="enumvalue"><name>MIN</name></member>
+    <member refid="namespaceemulator_1a52af206b444654873ad1f1b1f5c12298a26a4b44a837bf97b972628509912b4a5" kind="enumvalue"><name>MAX</name></member>
+    <member refid="namespaceemulator_1a52af206b444654873ad1f1b1f5c12298ac6ce23be5d350ce18a665427d2d950f7" kind="enumvalue"><name>STD</name></member>
+    <member refid="namespaceemulator_1a52af206b444654873ad1f1b1f5c12298a6970bdc2201030b9c03fbdcf3973858a" kind="enumvalue"><name>SUM</name></member>
+    <member refid="namespaceemulator_1a57a100b1e7f196d0998ed65a7f48aec3" kind="enum"><name>OutputPrecision</name></member>
+    <member refid="namespaceemulator_1a57a100b1e7f196d0998ed65a7f48aec3a967d280b5c16d95f2947647dd2ca6cc2" kind="enumvalue"><name>FLOAT32</name></member>
+    <member refid="namespaceemulator_1a57a100b1e7f196d0998ed65a7f48aec3a139882c654db8a57f7c3092de1dd0b02" kind="enumvalue"><name>FLOAT64</name></member>
+    <member refid="namespaceemulator_1a1cf5decce58a3e5bc0c5c37239a86923" kind="enum"><name>FileType</name></member>
+    <member refid="namespaceemulator_1a1cf5decce58a3e5bc0c5c37239a86923a5d83de1c9f32e1adaf68625c99c29ac4" kind="enumvalue"><name>HISTORY</name></member>
+    <member refid="namespaceemulator_1a1cf5decce58a3e5bc0c5c37239a86923a1104c54a9ec6549e4ef9562b687596fb" kind="enumvalue"><name>RESTART</name></member>
+    <member refid="namespaceemulator_1a1cf5decce58a3e5bc0c5c37239a86923a62436c54430929da9a5279c15617f029" kind="enumvalue"><name>HISTORY_RESTART</name></member>
+    <member refid="namespaceemulator_1ae9e73fded16e907d3a1dad79433af078" kind="enum"><name>LogLevel</name></member>
+    <member refid="namespaceemulator_1ae9e73fded16e907d3a1dad79433af078adc30ec20708ef7b0f641ef78b7880a15" kind="enumvalue"><name>DEBUG</name></member>
+    <member refid="namespaceemulator_1ae9e73fded16e907d3a1dad79433af078aec1f06e9fb39c4ef0729b3c7c9c8e8cc" kind="enumvalue"><name>VERBOSE</name></member>
+    <member refid="namespaceemulator_1ae9e73fded16e907d3a1dad79433af078a551b723eafd6a31d444fcb2f5920fbd3" kind="enumvalue"><name>INFO</name></member>
+    <member refid="namespaceemulator_1ae9e73fded16e907d3a1dad79433af078a059e9861e0400dfbe05c98a841f3f96b" kind="enumvalue"><name>WARNING</name></member>
+    <member refid="namespaceemulator_1ae9e73fded16e907d3a1dad79433af078abb1ca97ec761fc37101737ba0aa2e7c5" kind="enumvalue"><name>ERROR</name></member>
+    <member refid="namespaceemulator_1a10f9f49bcd35f092704f28be0ae6b4e9" kind="typedef"><name>DoubleView</name></member>
+    <member refid="namespaceemulator_1a1b70cd6a682f5c01d41f1f44ea3b9d6e" kind="typedef"><name>FloatView</name></member>
+    <member refid="namespaceemulator_1a13c2a83a39f0c9b983b9eeb16c3c6d7c" kind="variable"><name>FILLVALUE</name></member>
+    <member refid="namespaceemulator_1ac228f874405abaefc99d4bd8906f0228" kind="function"><name>is_derived_diagnostic</name></member>
+    <member refid="namespaceemulator_1afdc65972eb31b85a29ff5642b1b251b1" kind="function"><name>get_base_field_name</name></member>
+    <member refid="namespaceemulator_1ac8e23d67dc0559e47af2a62b4742ce19" kind="function"><name>create_diagnostic</name></member>
+    <member refid="namespaceemulator_1a77a6cef524a84a0f05777da1f856ee76" kind="function"><name>get_import_prefix</name></member>
+    <member refid="namespaceemulator_1afcee35539c38edc0e2ab530c826e6cfb" kind="function"><name>get_export_prefix</name></member>
+    <member refid="namespaceemulator_1a0cd274631039d88e029b3605db533fe3" kind="function"><name>get_comp_name</name></member>
+    <member refid="namespaceemulator_1ae23d330f2ad23b374e140445b07f87be" kind="function"><name>parse_emulator_config</name></member>
+    <member refid="namespaceemulator_1a9c98c3d74d18d0a8d09c350af0a931bc" kind="function"><name>parse_emulator_config_with_defaults</name></member>
+    <member refid="namespaceemulator_1ab1269d1fbe9bc737197b4b45d7972972" kind="function"><name>cleanup_emulator_context</name></member>
+    <member refid="namespaceemulator_1a6610cb46c1bb8eac2930d3a304530c4b" kind="function"><name>str_to_freq_unit</name></member>
+    <member refid="namespaceemulator_1adb28b528ba7d2e2131f811c27d45e724" kind="function"><name>freq_unit_to_str</name></member>
+    <member refid="namespaceemulator_1af2c915d684d27558cc8606fb73ebcb42" kind="function"><name>str_to_avg_type</name></member>
+    <member refid="namespaceemulator_1ad47d9dda5ca3e658c4de29a1ba01e6f2" kind="function"><name>avg_type_to_str</name></member>
+    <member refid="namespaceemulator_1a62b2274498bdfc606242c56b3cb40de6" kind="function"><name>str_to_precision</name></member>
+    <member refid="namespaceemulator_1abc3022d3e4add0c378f1ae7faf9a5d84" kind="function"><name>precision_to_str</name></member>
+    <member refid="namespaceemulator_1acf102151d428f5f4846436b9b022bb85" kind="function"><name>file_type_suffix</name></member>
+  </compound>
+  <compound refid="namespaceemulator_1_1_0d123014276007031377224173102036175132222221352317" kind="namespace"><name>emulator::@123014276007031377224173102036175132222221352317</name>
+  </compound>
+  <compound refid="namespaceemulator_1_1_0d351360357202143324273130142075163307310363145270" kind="namespace"><name>emulator::@351360357202143324273130142075163307310363145270</name>
+  </compound>
+  <compound refid="namespaceemulator_1_1impl" kind="namespace"><name>emulator::impl</name>
+    <member refid="namespaceemulator_1_1impl_1a09ecf7d1b384846bf6c8f75eb631961b" kind="function"><name>import_atm_fields</name></member>
+    <member refid="namespaceemulator_1_1impl_1aa3b0879c3420af1078a15594d50aee98" kind="function"><name>export_atm_fields</name></member>
+    <member refid="namespaceemulator_1_1impl_1ae932e0858e2d94b7236c016dd41fe96c" kind="function"><name>read_atm_initial_conditions</name></member>
+  </compound>
+  <compound refid="namespaceemulator_1_1inference" kind="namespace"><name>emulator::inference</name>
+    <member refid="namespaceemulator_1_1inference_1a77255e7a61c3dc84e403c2f79d386a0e" kind="enum"><name>BackendType</name></member>
+    <member refid="namespaceemulator_1_1inference_1a77255e7a61c3dc84e403c2f79d386a0eaf41fe3526307daaed671a5107bcb97f0" kind="enumvalue"><name>STUB</name></member>
+    <member refid="namespaceemulator_1_1inference_1a77255e7a61c3dc84e403c2f79d386a0ea48487d0a658c8f181ea30724733d7b27" kind="enumvalue"><name>LIBTORCH</name></member>
+    <member refid="namespaceemulator_1_1inference_1a17c9fdc0f3f280880dd3ad17e1ef8cf2" kind="function"><name>backend_type_to_string</name></member>
+    <member refid="namespaceemulator_1_1inference_1abda5d96fa8758af6984ee241e5a0b4f0" kind="function"><name>parse_backend_type</name></member>
+    <member refid="namespaceemulator_1_1inference_1ab7b522a945c4570d2ec45577cbebaf52" kind="function"><name>create_backend</name></member>
+    <member refid="namespaceemulator_1_1inference_1a076f90c68fe3b09b9708f567dec8e6ba" kind="function"><name>create_backend</name></member>
+  </compound>
+  <compound refid="coupling__fields_8cpp" kind="file"><name>coupling_fields.cpp</name>
+  </compound>
+  <compound refid="coupling__fields_8hpp" kind="file"><name>coupling_fields.hpp</name>
+  </compound>
+  <compound refid="data__view_8hpp" kind="file"><name>data_view.hpp</name>
+  </compound>
+  <compound refid="derived__diagnostic_8hpp" kind="file"><name>derived_diagnostic.hpp</name>
+  </compound>
+  <compound refid="diagnostic__factory_8cpp" kind="file"><name>diagnostic_factory.cpp</name>
+  </compound>
+  <compound refid="diagnostic__factory_8hpp" kind="file"><name>diagnostic_factory.hpp</name>
+  </compound>
+  <compound refid="horiz__avg__diagnostic_8cpp" kind="file"><name>horiz_avg_diagnostic.cpp</name>
+  </compound>
+  <compound refid="horiz__avg__diagnostic_8hpp" kind="file"><name>horiz_avg_diagnostic.hpp</name>
+  </compound>
+  <compound refid="vert__slice__diagnostic_8cpp" kind="file"><name>vert_slice_diagnostic.cpp</name>
+  </compound>
+  <compound refid="vert__slice__diagnostic_8hpp" kind="file"><name>vert_slice_diagnostic.hpp</name>
+  </compound>
+  <compound refid="emulator__comp_8cpp" kind="file"><name>emulator_comp.cpp</name>
+  </compound>
+  <compound refid="emulator__comp_8hpp" kind="file"><name>emulator_comp.hpp</name>
+  </compound>
+  <compound refid="emulator__config_8cpp" kind="file"><name>emulator_config.cpp</name>
+  </compound>
+  <compound refid="emulator__config_8hpp" kind="file"><name>emulator_config.hpp</name>
+  </compound>
+  <compound refid="emulator__context_8hpp" kind="file"><name>emulator_context.hpp</name>
+  </compound>
+  <compound refid="emulator__diagnostics_8cpp" kind="file"><name>emulator_diagnostics.cpp</name>
+  </compound>
+  <compound refid="emulator__diagnostics_8hpp" kind="file"><name>emulator_diagnostics.hpp</name>
+  </compound>
+  <compound refid="emulator__io_8cpp" kind="file"><name>emulator_io.cpp</name>
+  </compound>
+  <compound refid="emulator__io_8hpp" kind="file"><name>emulator_io.hpp</name>
+  </compound>
+  <compound refid="emulator__logger_8cpp" kind="file"><name>emulator_logger.cpp</name>
+  </compound>
+  <compound refid="emulator__logger_8hpp" kind="file"><name>emulator_logger.hpp</name>
+  </compound>
+  <compound refid="emulator__output__manager_8cpp" kind="file"><name>emulator_output_manager.cpp</name>
+  </compound>
+  <compound refid="emulator__output__manager_8hpp" kind="file"><name>emulator_output_manager.hpp</name>
+  </compound>
+  <compound refid="emulator__output__stream_8cpp" kind="file"><name>emulator_output_stream.cpp</name>
+  </compound>
+  <compound refid="emulator__output__stream_8hpp" kind="file"><name>emulator_output_stream.hpp</name>
+  </compound>
+  <compound refid="inference__backend_8hpp" kind="file"><name>inference_backend.hpp</name>
+    <member refid="inference__backend_8hpp_1a2df6a15627583d5e6f5a48550644cbef" kind="define"><name>MPI_COMM_WORLD</name></member>
+    <member refid="inference__backend_8hpp_1a117133520e81a669c853602ac650d9d4" kind="define"><name>MPI_COMM_NULL</name></member>
+    <member refid="inference__backend_8hpp_1a68c509d4adb3f4a1d6fe3a9b0b87c7b9" kind="typedef"><name>MPI_Comm</name></member>
+  </compound>
+  <compound refid="inference__factory_8cpp" kind="file"><name>inference_factory.cpp</name>
+  </compound>
+  <compound refid="libtorch__backend_8cpp" kind="file"><name>libtorch_backend.cpp</name>
+  </compound>
+  <compound refid="libtorch__backend_8hpp" kind="file"><name>libtorch_backend.hpp</name>
+  </compound>
+  <compound refid="stub__backend_8cpp" kind="file"><name>stub_backend.cpp</name>
+  </compound>
+  <compound refid="stub__backend_8hpp" kind="file"><name>stub_backend.hpp</name>
+  </compound>
+  <compound refid="emulator__atm_8cpp" kind="file"><name>emulator_atm.cpp</name>
+  </compound>
+  <compound refid="emulator__atm_8hpp" kind="file"><name>emulator_atm.hpp</name>
+  </compound>
+  <compound refid="emulator__atm__interface_8cpp" kind="file"><name>emulator_atm_interface.cpp</name>
+    <member refid="emulator__atm__interface_8cpp_1a075af4e30f95dd098f501fc0b1491483" kind="function"><name>emulator_atm_create_instance</name></member>
+    <member refid="emulator__atm__interface_8cpp_1a30ec144b70032d461bc8f7ad2c6837c1" kind="function"><name>emulator_atm_set_grid_data</name></member>
+    <member refid="emulator__atm__interface_8cpp_1a02c6312b4b49530e71faf1a4139fe94a" kind="function"><name>emulator_atm_init_coupling_indices</name></member>
+    <member refid="emulator__atm__interface_8cpp_1af0b0f4a016af612255e54a91e0c42edd" kind="function"><name>emulator_atm_setup_coupling</name></member>
+    <member refid="emulator__atm__interface_8cpp_1a816fd370df00ef4e3647f254ab3f290c" kind="function"><name>emulator_atm_init</name></member>
+    <member refid="emulator__atm__interface_8cpp_1acc3378865837ed9b857489385b952f07" kind="function"><name>emulator_atm_run</name></member>
+    <member refid="emulator__atm__interface_8cpp_1a344d4ba90a3ce947c48a191231488560" kind="function"><name>emulator_atm_finalize</name></member>
+    <member refid="emulator__atm__interface_8cpp_1a911e342df01a35e4b92eabb83e70677f" kind="function"><name>emulator_atm_get_num_local_cols</name></member>
+    <member refid="emulator__atm__interface_8cpp_1aa8734e69bc802475c98b8718510be386" kind="function"><name>emulator_atm_get_num_global_cols</name></member>
+    <member refid="emulator__atm__interface_8cpp_1ad1177831539a6d43cacdd3f433ff0ef5" kind="function"><name>emulator_atm_get_nx</name></member>
+    <member refid="emulator__atm__interface_8cpp_1a1c432d90dd6e7e9a31962ab06f814fc3" kind="function"><name>emulator_atm_get_ny</name></member>
+    <member refid="emulator__atm__interface_8cpp_1a072b2ecbc286f2bd1914dac5fc5b43c9" kind="function"><name>emulator_atm_get_local_cols_gids</name></member>
+    <member refid="emulator__atm__interface_8cpp_1a09be25d51c36e0ef66f2dfa0db793b46" kind="function"><name>emulator_atm_get_cols_latlon</name></member>
+    <member refid="emulator__atm__interface_8cpp_1a774eed313f218501101f99c336e733bf" kind="function"><name>emulator_atm_get_cols_area</name></member>
+  </compound>
+  <compound refid="atm__coupling_8cpp" kind="file"><name>atm_coupling.cpp</name>
+  </compound>
+  <compound refid="atm__coupling_8hpp" kind="file"><name>atm_coupling.hpp</name>
+  </compound>
+  <compound refid="atm__field__data__provider_8cpp" kind="file"><name>atm_field_data_provider.cpp</name>
+  </compound>
+  <compound refid="atm__field__data__provider_8hpp" kind="file"><name>atm_field_data_provider.hpp</name>
+  </compound>
+  <compound refid="atm__field__manager_8cpp" kind="file"><name>atm_field_manager.cpp</name>
+  </compound>
+  <compound refid="atm__field__manager_8hpp" kind="file"><name>atm_field_manager.hpp</name>
+  </compound>
+  <compound refid="atm__io_8cpp" kind="file"><name>atm_io.cpp</name>
+  </compound>
+  <compound refid="atm__io_8hpp" kind="file"><name>atm_io.hpp</name>
+  </compound>
+  <compound refid="deprecated" kind="page"><name>deprecated</name>
+  </compound>
+  <compound refid="dir_03a82009d675450cd7b26f7887b718e6" kind="dir"><name>components/emulator_comps/common</name>
+  </compound>
+  <compound refid="dir_409f97388efe006bc3438b95e9edef48" kind="dir"><name>components</name>
+  </compound>
+  <compound refid="dir_8c59288332f7499e80b506ac6e5a3903" kind="dir"><name>components/emulator_comps/common/src/diagnostics</name>
+  </compound>
+  <compound refid="dir_54689134e1a693092e83f56806593839" kind="dir"><name>components/emulator_comps/eatm</name>
+  </compound>
+  <compound refid="dir_cd6ef227c082afa5b90fe3621cc9f093" kind="dir"><name>components/emulator_comps</name>
+  </compound>
+  <compound refid="dir_6975f7b28201ba7a9e865ff30c48a340" kind="dir"><name>components/emulator_comps/eatm/src/impl</name>
+  </compound>
+  <compound refid="dir_93d8073dc3188aa38589a4c97b36101e" kind="dir"><name>components/emulator_comps/common/src/inference</name>
+  </compound>
+  <compound refid="dir_cf65ed25a3cb4ff7a3950496111c5548" kind="dir"><name>components/emulator_comps/common/src</name>
+  </compound>
+  <compound refid="dir_1c3b735e18de9b9534f50214e18facf2" kind="dir"><name>components/emulator_comps/eatm/src</name>
+  </compound>
+</doxygenindex>

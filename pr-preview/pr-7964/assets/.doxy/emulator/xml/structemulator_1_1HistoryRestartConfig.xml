@@ -1,0 +1,49 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="structemulator_1_1HistoryRestartConfig" kind="struct" language="C++" prot="public">
+    <compoundname>emulator::HistoryRestartConfig</compoundname>
+    <includes refid="emulator__diagnostics_8hpp" local="no">emulator_diagnostics.hpp</includes>
+    <sectiondef kind="public-attrib">
+      <memberdef kind="variable" id="structemulator_1_1HistoryRestartConfig_1a1e983876af44d22c9877fd47fde59f91" prot="public" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool emulator::HistoryRestartConfig::enabled</definition>
+        <argsstring></argsstring>
+        <name>enabled</name>
+        <qualifiedname>emulator::HistoryRestartConfig::enabled</qualifiedname>
+        <initializer>= true</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_diagnostics.hpp" line="106" column="8" bodyfile="components/emulator_comps/common/src/emulator_diagnostics.hpp" bodystart="106" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1HistoryRestartConfig_1af541bb47704750908e5a6e37761626fd" prot="public" static="no" mutable="no">
+        <type>std::string</type>
+        <definition>std::string emulator::HistoryRestartConfig::filename_prefix</definition>
+        <argsstring></argsstring>
+        <name>filename_prefix</name>
+        <qualifiedname>emulator::HistoryRestartConfig::filename_prefix</qualifiedname>
+        <initializer>= &quot;emulator.atm.rh&quot;</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_diagnostics.hpp" line="107" column="15" bodyfile="components/emulator_comps/common/src/emulator_diagnostics.hpp" bodystart="107" bodyend="-1"/>
+      </memberdef>
+    </sectiondef>
+    <briefdescription>
+<para>History restart configuration for averaging buffers. </para>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="components/emulator_comps/common/src/emulator_diagnostics.hpp" line="105" column="1" bodyfile="components/emulator_comps/common/src/emulator_diagnostics.hpp" bodystart="105" bodyend="108"/>
+    <listofallmembers>
+      <member refid="structemulator_1_1HistoryRestartConfig_1a1e983876af44d22c9877fd47fde59f91" prot="public" virt="non-virtual"><scope>emulator::HistoryRestartConfig</scope><name>enabled</name></member>
+      <member refid="structemulator_1_1HistoryRestartConfig_1af541bb47704750908e5a6e37761626fd" prot="public" virt="non-virtual"><scope>emulator::HistoryRestartConfig</scope><name>filename_prefix</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

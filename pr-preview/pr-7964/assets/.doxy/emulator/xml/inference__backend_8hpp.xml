@@ -1,0 +1,265 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="inference__backend_8hpp" kind="file" language="C++">
+    <compoundname>inference_backend.hpp</compoundname>
+    <includes local="no">memory</includes>
+    <includes local="no">string</includes>
+    <includes local="no">vector</includes>
+    <includedby refid="inference__factory_8cpp" local="yes">components/emulator_comps/common/src/inference/inference_factory.cpp</includedby>
+    <includedby refid="libtorch__backend_8hpp" local="yes">components/emulator_comps/common/src/inference/libtorch_backend.hpp</includedby>
+    <includedby refid="stub__backend_8hpp" local="yes">components/emulator_comps/common/src/inference/stub_backend.hpp</includedby>
+    <includedby refid="emulator__atm_8hpp" local="yes">components/emulator_comps/eatm/src/emulator_atm.hpp</includedby>
+    <incdepgraph>
+      <node id="1">
+        <label>components/emulator_comps/common/src/inference/inference_backend.hpp</label>
+        <link refid="inference__backend_8hpp"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+      </node>
+      <node id="2">
+        <label>memory</label>
+      </node>
+      <node id="3">
+        <label>string</label>
+      </node>
+      <node id="4">
+        <label>vector</label>
+      </node>
+    </incdepgraph>
+    <invincdepgraph>
+      <node id="1">
+        <label>components/emulator_comps/common/src/inference/inference_backend.hpp</label>
+        <link refid="inference__backend_8hpp"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+      </node>
+      <node id="2">
+        <label>components/emulator_comps/common/src/inference/inference_factory.cpp</label>
+        <link refid="inference__factory_8cpp"/>
+      </node>
+      <node id="4">
+        <label>components/emulator_comps/common/src/inference/libtorch_backend.cpp</label>
+        <link refid="libtorch__backend_8cpp"/>
+      </node>
+      <node id="3">
+        <label>components/emulator_comps/common/src/inference/libtorch_backend.hpp</label>
+        <link refid="libtorch__backend_8hpp"/>
+        <childnode refid="4" relation="include">
+        </childnode>
+      </node>
+      <node id="6">
+        <label>components/emulator_comps/common/src/inference/stub_backend.cpp</label>
+        <link refid="stub__backend_8cpp"/>
+      </node>
+      <node id="5">
+        <label>components/emulator_comps/common/src/inference/stub_backend.hpp</label>
+        <link refid="stub__backend_8hpp"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+      </node>
+      <node id="8">
+        <label>components/emulator_comps/eatm/src/emulator_atm.cpp</label>
+        <link refid="emulator__atm_8cpp"/>
+      </node>
+      <node id="7">
+        <label>components/emulator_comps/eatm/src/emulator_atm.hpp</label>
+        <link refid="emulator__atm_8hpp"/>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="9" relation="include">
+        </childnode>
+      </node>
+      <node id="9">
+        <label>components/emulator_comps/eatm/src/emulator_atm_interface.cpp</label>
+        <link refid="emulator__atm__interface_8cpp"/>
+      </node>
+    </invincdepgraph>
+    <innerclass refid="structemulator_1_1inference_1_1InferenceConfig" prot="public">emulator::inference::InferenceConfig</innerclass>
+    <innerclass refid="structemulator_1_1inference_1_1ValidationResult" prot="public">emulator::inference::ValidationResult</innerclass>
+    <innerclass refid="classemulator_1_1inference_1_1InferenceBackend" prot="public">emulator::inference::InferenceBackend</innerclass>
+    <innernamespace refid="namespaceemulator">emulator</innernamespace>
+    <innernamespace refid="namespaceemulator_1_1inference">emulator::inference</innernamespace>
+    <sectiondef kind="define">
+      <memberdef kind="define" id="inference__backend_8hpp_1a2df6a15627583d5e6f5a48550644cbef" prot="public" static="no">
+        <name>MPI_COMM_WORLD</name>
+        <initializer>0</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/inference_backend.hpp" line="24" column="9" bodyfile="components/emulator_comps/common/src/inference/inference_backend.hpp" bodystart="24" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="inference__backend_8hpp_1a117133520e81a669c853602ac650d9d4" prot="public" static="no">
+        <name>MPI_COMM_NULL</name>
+        <initializer>0</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/inference_backend.hpp" line="25" column="9" bodyfile="components/emulator_comps/common/src/inference/inference_backend.hpp" bodystart="25" bodyend="-1"/>
+      </memberdef>
+    </sectiondef>
+    <sectiondef kind="typedef">
+      <memberdef kind="typedef" id="inference__backend_8hpp_1a68c509d4adb3f4a1d6fe3a9b0b87c7b9" prot="public" static="no">
+        <type>int</type>
+        <definition>typedef int MPI_Comm</definition>
+        <argsstring></argsstring>
+        <name>MPI_Comm</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/inference_backend.hpp" line="23" column="13" bodyfile="components/emulator_comps/common/src/inference/inference_backend.hpp" bodystart="23" bodyend="-1"/>
+      </memberdef>
+    </sectiondef>
+    <briefdescription>
+<para>Abstract interface for neural network inference backends. </para>
+    </briefdescription>
+    <detaileddescription>
+<para>Defines the common interface for all inference backends, allowing pluggable AI/ML frameworks for model execution. </para>
+    </detaileddescription>
+    <programlisting>
+<codeline lineno="1"><highlight class="normal"></highlight></codeline>
+<codeline lineno="8"><highlight class="normal"></highlight></codeline>
+<codeline lineno="9"><highlight class="normal"></highlight><highlight class="preprocessor">#ifndef<sp/>INFERENCE_BACKEND_HPP</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="10"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>INFERENCE_BACKEND_HPP</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="11"><highlight class="normal"></highlight></codeline>
+<codeline lineno="12"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;memory&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="13"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;string&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="14"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;vector&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="15"><highlight class="normal"></highlight></codeline>
+<codeline lineno="16"><highlight class="normal"></highlight><highlight class="comment">//<sp/>MPI<sp/>type<sp/>handling:</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="17"><highlight class="normal"></highlight><highlight class="comment">//<sp/>Try<sp/>to<sp/>include<sp/>mpi.h<sp/>if<sp/>available<sp/>to<sp/>get<sp/>real<sp/>definitions.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="18"><highlight class="normal"></highlight><highlight class="comment">//<sp/>If<sp/>mpi.h<sp/>is<sp/>not<sp/>available,<sp/>provide<sp/>stub<sp/>definitions<sp/>for<sp/>non-MPI<sp/>builds.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="19"><highlight class="normal"></highlight><highlight class="preprocessor">#if<sp/>defined(__has_include)<sp/>&amp;&amp;<sp/>__has_include(&lt;mpi.h&gt;)</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="20"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;mpi.h&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="21"><highlight class="normal"></highlight><highlight class="preprocessor">#else</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="22"><highlight class="normal"></highlight><highlight class="comment">//<sp/>No<sp/>mpi.h<sp/>available<sp/>-<sp/>provide<sp/>stub<sp/>definitions<sp/>for<sp/>non-MPI<sp/>builds</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="23" refid="inference__backend_8hpp_1a68c509d4adb3f4a1d6fe3a9b0b87c7b9" refkind="member"><highlight class="normal"></highlight><highlight class="keyword">typedef</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/><ref refid="inference__backend_8hpp_1a68c509d4adb3f4a1d6fe3a9b0b87c7b9" kindref="member">MPI_Comm</ref>;</highlight></codeline>
+<codeline lineno="24" refid="inference__backend_8hpp_1a2df6a15627583d5e6f5a48550644cbef" refkind="member"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>MPI_COMM_WORLD<sp/>0</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="25" refid="inference__backend_8hpp_1a117133520e81a669c853602ac650d9d4" refkind="member"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>MPI_COMM_NULL<sp/>0</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="26"><highlight class="normal"></highlight><highlight class="preprocessor">#endif</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="27"><highlight class="normal"></highlight></codeline>
+<codeline lineno="28"><highlight class="normal"></highlight><highlight class="keyword">namespace<sp/></highlight><highlight class="normal"><ref refid="namespaceemulator" kindref="compound">emulator</ref><sp/>{</highlight></codeline>
+<codeline lineno="29" refid="namespaceemulator_1_1inference" refkind="compound"><highlight class="normal"></highlight><highlight class="keyword">namespace<sp/></highlight><highlight class="normal"><ref refid="namespaceemulator_1_1inference" kindref="compound">inference</ref><sp/>{</highlight></codeline>
+<codeline lineno="30"><highlight class="normal"></highlight></codeline>
+<codeline lineno="58" refid="namespaceemulator_1_1inference_1a77255e7a61c3dc84e403c2f79d386a0e" refkind="member"><highlight class="normal"></highlight><highlight class="keyword">enum<sp/>class</highlight><highlight class="normal"><sp/><ref refid="namespaceemulator_1_1inference_1a77255e7a61c3dc84e403c2f79d386a0e" kindref="member">BackendType</ref><sp/>{</highlight></codeline>
+<codeline lineno="59" refid="namespaceemulator_1_1inference_1a77255e7a61c3dc84e403c2f79d386a0eaf41fe3526307daaed671a5107bcb97f0" refkind="member"><highlight class="normal"><sp/><sp/><ref refid="namespaceemulator_1_1inference_1a77255e7a61c3dc84e403c2f79d386a0eaf41fe3526307daaed671a5107bcb97f0" kindref="member">STUB</ref>,<sp/><sp/><sp/><sp/><sp/></highlight></codeline>
+<codeline lineno="60" refid="namespaceemulator_1_1inference_1a77255e7a61c3dc84e403c2f79d386a0ea48487d0a658c8f181ea30724733d7b27" refkind="member"><highlight class="normal"><sp/><sp/><ref refid="namespaceemulator_1_1inference_1a77255e7a61c3dc84e403c2f79d386a0ea48487d0a658c8f181ea30724733d7b27" kindref="member">LIBTORCH</ref>,<sp/></highlight></codeline>
+<codeline lineno="61"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>Future<sp/>backends<sp/>(uncomment<sp/>when<sp/>implemented):</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="62"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>PYTORCH,<sp/>///&lt;<sp/>Python<sp/>interpreter<sp/>backend<sp/>(native<sp/>PyTorch,<sp/>no<sp/>tracing)</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="63"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>ONNX,<sp/><sp/><sp/><sp/>///&lt;<sp/>ONNX<sp/>Runtime<sp/>backend<sp/>(cross-framework,<sp/>optimized)</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="64"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>LAPIS,<sp/><sp/><sp/>///&lt;<sp/>Kokkos<sp/>interop<sp/>backend<sp/>(GPU<sp/>memory<sp/>sharing<sp/>with<sp/>E3SM)</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="65"><highlight class="normal">};</highlight></codeline>
+<codeline lineno="66"><highlight class="normal"></highlight></codeline>
+<codeline lineno="72" refid="namespaceemulator_1_1inference_1a17c9fdc0f3f280880dd3ad17e1ef8cf2" refkind="member"><highlight class="normal"></highlight><highlight class="keyword">inline</highlight><highlight class="normal"><sp/>std::string<sp/><ref refid="namespaceemulator_1_1inference_1a17c9fdc0f3f280880dd3ad17e1ef8cf2" kindref="member">backend_type_to_string</ref>(<ref refid="namespaceemulator_1_1inference_1a77255e7a61c3dc84e403c2f79d386a0e" kindref="member">BackendType</ref><sp/>type)<sp/>{</highlight></codeline>
+<codeline lineno="73"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">switch</highlight><highlight class="normal"><sp/>(type)<sp/>{</highlight></codeline>
+<codeline lineno="74"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">case</highlight><highlight class="normal"><sp/><ref refid="namespaceemulator_1_1inference_1a77255e7a61c3dc84e403c2f79d386a0eaf41fe3526307daaed671a5107bcb97f0" kindref="member">BackendType::STUB</ref>:</highlight></codeline>
+<codeline lineno="75"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/></highlight><highlight class="stringliteral">&quot;STUB&quot;</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="76"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">case</highlight><highlight class="normal"><sp/><ref refid="namespaceemulator_1_1inference_1a77255e7a61c3dc84e403c2f79d386a0ea48487d0a658c8f181ea30724733d7b27" kindref="member">BackendType::LIBTORCH</ref>:</highlight></codeline>
+<codeline lineno="77"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/></highlight><highlight class="stringliteral">&quot;LIBTORCH&quot;</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="78"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">default</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="79"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/></highlight><highlight class="stringliteral">&quot;UNKNOWN&quot;</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="80"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="81"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="82"><highlight class="normal"></highlight></codeline>
+<codeline lineno="91" refid="namespaceemulator_1_1inference_1abda5d96fa8758af6984ee241e5a0b4f0" refkind="member"><highlight class="normal"></highlight><highlight class="keyword">inline</highlight><highlight class="normal"><sp/><ref refid="namespaceemulator_1_1inference_1a77255e7a61c3dc84e403c2f79d386a0e" kindref="member">BackendType</ref><sp/><ref refid="namespaceemulator_1_1inference_1abda5d96fa8758af6984ee241e5a0b4f0" kindref="member">parse_backend_type</ref>(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string<sp/>&amp;str)<sp/>{</highlight></codeline>
+<codeline lineno="92"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(str<sp/>==<sp/></highlight><highlight class="stringliteral">&quot;LIBTORCH&quot;</highlight><highlight class="normal"><sp/>||<sp/>str<sp/>==<sp/></highlight><highlight class="stringliteral">&quot;libtorch&quot;</highlight><highlight class="normal"><sp/>||<sp/>str<sp/>==<sp/></highlight><highlight class="stringliteral">&quot;torch&quot;</highlight><highlight class="normal">)<sp/>{</highlight></codeline>
+<codeline lineno="93"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/><ref refid="namespaceemulator_1_1inference_1a77255e7a61c3dc84e403c2f79d386a0ea48487d0a658c8f181ea30724733d7b27" kindref="member">BackendType::LIBTORCH</ref>;</highlight></codeline>
+<codeline lineno="94"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="95"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/><ref refid="namespaceemulator_1_1inference_1a77255e7a61c3dc84e403c2f79d386a0eaf41fe3526307daaed671a5107bcb97f0" kindref="member">BackendType::STUB</ref>;</highlight></codeline>
+<codeline lineno="96"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="97"><highlight class="normal"></highlight></codeline>
+<codeline lineno="104" refid="structemulator_1_1inference_1_1InferenceConfig" refkind="compound"><highlight class="normal"></highlight><highlight class="keyword">struct<sp/></highlight><highlight class="normal"><ref refid="structemulator_1_1inference_1_1InferenceConfig" kindref="compound">InferenceConfig</ref><sp/>{</highlight></codeline>
+<codeline lineno="105" refid="structemulator_1_1inference_1_1InferenceConfig_1a6d78a410fa53fd820d4828c3057db8f4" refkind="member"><highlight class="normal"><sp/><sp/><ref refid="namespaceemulator_1_1inference_1a77255e7a61c3dc84e403c2f79d386a0e" kindref="member">BackendType</ref><sp/><ref refid="structemulator_1_1inference_1_1InferenceConfig_1a6d78a410fa53fd820d4828c3057db8f4" kindref="member">backend</ref><sp/>=<sp/><ref refid="namespaceemulator_1_1inference_1a77255e7a61c3dc84e403c2f79d386a0eaf41fe3526307daaed671a5107bcb97f0" kindref="member">BackendType::STUB</ref>;<sp/></highlight></codeline>
+<codeline lineno="106"><highlight class="normal"></highlight></codeline>
+<codeline lineno="107" refid="structemulator_1_1inference_1_1InferenceConfig_1a7e8dcbac2473a4ee3cd260693ada1f52" refkind="member"><highlight class="normal"><sp/><sp/>std::string<sp/><ref refid="structemulator_1_1inference_1_1InferenceConfig_1a7e8dcbac2473a4ee3cd260693ada1f52" kindref="member">model_path</ref>;<sp/></highlight></codeline>
+<codeline lineno="108"><highlight class="normal"></highlight></codeline>
+<codeline lineno="109" refid="structemulator_1_1inference_1_1InferenceConfig_1abbde15ef4b44efb6558b8018ed003fd2" refkind="member"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/><ref refid="structemulator_1_1inference_1_1InferenceConfig_1abbde15ef4b44efb6558b8018ed003fd2" kindref="member">device_id</ref><sp/>=<sp/>-1;<sp/><sp/><sp/><sp/></highlight></codeline>
+<codeline lineno="110" refid="structemulator_1_1inference_1_1InferenceConfig_1a3727f5bb6cb8426811db50ea7feecd63" refkind="member"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/><ref refid="structemulator_1_1inference_1_1InferenceConfig_1a3727f5bb6cb8426811db50ea7feecd63" kindref="member">use_fp16</ref><sp/>=<sp/></highlight><highlight class="keyword">false</highlight><highlight class="normal">;<sp/></highlight></codeline>
+<codeline lineno="111" refid="structemulator_1_1inference_1_1InferenceConfig_1ac45bde9a6002d7fa46cf0ef38e612a43" refkind="member"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/><ref refid="structemulator_1_1inference_1_1InferenceConfig_1ac45bde9a6002d7fa46cf0ef38e612a43" kindref="member">verbose</ref><sp/>=<sp/></highlight><highlight class="keyword">false</highlight><highlight class="normal">;<sp/><sp/></highlight></codeline>
+<codeline lineno="112"><highlight class="normal"></highlight></codeline>
+<codeline lineno="113" refid="structemulator_1_1inference_1_1InferenceConfig_1a6feb6a3f1c14fe1925d03ca802b7ef03" refkind="member"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/><ref refid="structemulator_1_1inference_1_1InferenceConfig_1a6feb6a3f1c14fe1925d03ca802b7ef03" kindref="member">input_channels</ref><sp/>=<sp/>44;<sp/><sp/></highlight></codeline>
+<codeline lineno="114" refid="structemulator_1_1inference_1_1InferenceConfig_1ae32a0d32445645f4ad421cb0f22e2f45" refkind="member"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/><ref refid="structemulator_1_1inference_1_1InferenceConfig_1ae32a0d32445645f4ad421cb0f22e2f45" kindref="member">output_channels</ref><sp/>=<sp/>50;<sp/></highlight></codeline>
+<codeline lineno="115"><highlight class="normal"></highlight></codeline>
+<codeline lineno="116"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>Spatial<sp/>mode<sp/>settings<sp/>(for<sp/>CNN<sp/>models)</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="117" refid="structemulator_1_1inference_1_1InferenceConfig_1ac6989766503ecf4f4c74569607b7165a" refkind="member"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/><ref refid="structemulator_1_1inference_1_1InferenceConfig_1ac6989766503ecf4f4c74569607b7165a" kindref="member">spatial_mode</ref><sp/>=</highlight></codeline>
+<codeline lineno="118"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">false</highlight><highlight class="normal">;<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight></codeline>
+<codeline lineno="119" refid="structemulator_1_1inference_1_1InferenceConfig_1a23d2095bf90755f6d1f51cc12fe62677" refkind="member"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/><ref refid="structemulator_1_1inference_1_1InferenceConfig_1a23d2095bf90755f6d1f51cc12fe62677" kindref="member">grid_height</ref><sp/>=<sp/>0;<sp/></highlight></codeline>
+<codeline lineno="120" refid="structemulator_1_1inference_1_1InferenceConfig_1a83a83f2fe631707f6032f8c2288cacbf" refkind="member"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/><ref refid="structemulator_1_1inference_1_1InferenceConfig_1a83a83f2fe631707f6032f8c2288cacbf" kindref="member">grid_width</ref><sp/>=<sp/>0;<sp/><sp/></highlight></codeline>
+<codeline lineno="121"><highlight class="normal"></highlight></codeline>
+<codeline lineno="122"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>Validation<sp/>and<sp/>dry-run</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="123" refid="structemulator_1_1inference_1_1InferenceConfig_1a3cfe5151c44e7db705ba5f89cdc1022b" refkind="member"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/><ref refid="structemulator_1_1inference_1_1InferenceConfig_1a3cfe5151c44e7db705ba5f89cdc1022b" kindref="member">dry_run</ref><sp/>=<sp/></highlight><highlight class="keyword">false</highlight><highlight class="normal">;<sp/></highlight></codeline>
+<codeline lineno="124"><highlight class="normal"><sp/><sp/>std::vector&lt;std::string&gt;</highlight></codeline>
+<codeline lineno="125" refid="structemulator_1_1inference_1_1InferenceConfig_1a208fa429f74ad0f1ee4aab16305036cc" refkind="member"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="structemulator_1_1inference_1_1InferenceConfig_1a208fa429f74ad0f1ee4aab16305036cc" kindref="member">expected_input_vars</ref>;<sp/></highlight></codeline>
+<codeline lineno="126"><highlight class="normal"><sp/><sp/>std::vector&lt;std::string&gt;</highlight></codeline>
+<codeline lineno="127" refid="structemulator_1_1inference_1_1InferenceConfig_1a7fffaaf1d8258bf37fa36be1c6b30050" refkind="member"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="structemulator_1_1inference_1_1InferenceConfig_1a7fffaaf1d8258bf37fa36be1c6b30050" kindref="member">expected_output_vars</ref>;<sp/></highlight></codeline>
+<codeline lineno="128"><highlight class="normal">};</highlight></codeline>
+<codeline lineno="129"><highlight class="normal"></highlight></codeline>
+<codeline lineno="136" refid="structemulator_1_1inference_1_1ValidationResult" refkind="compound"><highlight class="normal"></highlight><highlight class="keyword">struct<sp/></highlight><highlight class="normal"><ref refid="structemulator_1_1inference_1_1ValidationResult" kindref="compound">ValidationResult</ref><sp/>{</highlight></codeline>
+<codeline lineno="137" refid="structemulator_1_1inference_1_1ValidationResult_1a356ef2380ea935dfff808a15cbbefd8f" refkind="member"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/><ref refid="structemulator_1_1inference_1_1ValidationResult_1a356ef2380ea935dfff808a15cbbefd8f" kindref="member">valid</ref><sp/>=<sp/></highlight><highlight class="keyword">true</highlight><highlight class="normal">;<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight></codeline>
+<codeline lineno="138" refid="structemulator_1_1inference_1_1ValidationResult_1a20867b58d52dfa79a1208215e3277287" refkind="member"><highlight class="normal"><sp/><sp/>std::vector&lt;std::string&gt;<sp/><ref refid="structemulator_1_1inference_1_1ValidationResult_1a20867b58d52dfa79a1208215e3277287" kindref="member">errors</ref>;<sp/><sp/><sp/></highlight></codeline>
+<codeline lineno="139" refid="structemulator_1_1inference_1_1ValidationResult_1a6da9c9604334c5dacafb11b33d9898b2" refkind="member"><highlight class="normal"><sp/><sp/>std::vector&lt;std::string&gt;<sp/><ref refid="structemulator_1_1inference_1_1ValidationResult_1a6da9c9604334c5dacafb11b33d9898b2" kindref="member">warnings</ref>;<sp/></highlight></codeline>
+<codeline lineno="140"><highlight class="normal"></highlight></codeline>
+<codeline lineno="142" refid="structemulator_1_1inference_1_1ValidationResult_1a6bfe8f31f95d2c77babad9e322f085d0" refkind="member"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="structemulator_1_1inference_1_1ValidationResult_1a6bfe8f31f95d2c77babad9e322f085d0" kindref="member">add_error</ref>(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string<sp/>&amp;msg)<sp/>{</highlight></codeline>
+<codeline lineno="143"><highlight class="normal"><sp/><sp/><sp/><sp/><ref refid="structemulator_1_1inference_1_1ValidationResult_1a356ef2380ea935dfff808a15cbbefd8f" kindref="member">valid</ref><sp/>=<sp/></highlight><highlight class="keyword">false</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="144"><highlight class="normal"><sp/><sp/><sp/><sp/><ref refid="structemulator_1_1inference_1_1ValidationResult_1a20867b58d52dfa79a1208215e3277287" kindref="member">errors</ref>.push_back(msg);</highlight></codeline>
+<codeline lineno="145"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="146"><highlight class="normal"></highlight></codeline>
+<codeline lineno="148" refid="structemulator_1_1inference_1_1ValidationResult_1a0332338f679ca7eb3e06166da0d2e66e" refkind="member"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="structemulator_1_1inference_1_1ValidationResult_1a0332338f679ca7eb3e06166da0d2e66e" kindref="member">add_warning</ref>(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string<sp/>&amp;msg)<sp/>{<sp/><ref refid="structemulator_1_1inference_1_1ValidationResult_1a6da9c9604334c5dacafb11b33d9898b2" kindref="member">warnings</ref>.push_back(msg);<sp/>}</highlight></codeline>
+<codeline lineno="149"><highlight class="normal"></highlight></codeline>
+<codeline lineno="151" refid="structemulator_1_1inference_1_1ValidationResult_1a61ac3769f82fe37f7f43e374e28e49d5" refkind="member"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/><ref refid="structemulator_1_1inference_1_1ValidationResult_1a61ac3769f82fe37f7f43e374e28e49d5" kindref="member">has_warnings</ref>()</highlight><highlight class="keyword"><sp/>const<sp/></highlight><highlight class="normal">{<sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>!<ref refid="structemulator_1_1inference_1_1ValidationResult_1a6da9c9604334c5dacafb11b33d9898b2" kindref="member">warnings</ref>.empty();<sp/>}</highlight></codeline>
+<codeline lineno="152"><highlight class="normal">};</highlight></codeline>
+<codeline lineno="153"><highlight class="normal"></highlight></codeline>
+<codeline lineno="170" refid="classemulator_1_1inference_1_1InferenceBackend" refkind="compound"><highlight class="normal"></highlight><highlight class="keyword">class<sp/></highlight><highlight class="normal"><ref refid="classemulator_1_1inference_1_1InferenceBackend" kindref="compound">InferenceBackend</ref><sp/>{</highlight></codeline>
+<codeline lineno="171"><highlight class="normal"></highlight><highlight class="keyword">public</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="172" refid="classemulator_1_1inference_1_1InferenceBackend_1ab0d15f580fd4b29b9a6fb5bb7c8c7aae" refkind="member"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">virtual</highlight><highlight class="normal"><sp/><ref refid="classemulator_1_1inference_1_1InferenceBackend_1ab0d15f580fd4b29b9a6fb5bb7c8c7aae" kindref="member">~InferenceBackend</ref>()<sp/>=<sp/></highlight><highlight class="keywordflow">default</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="173"><highlight class="normal"></highlight></codeline>
+<codeline lineno="183" refid="classemulator_1_1inference_1_1InferenceBackend_1a1f1eb8e2bad9c2f8f6085c0ed7113c70" refkind="member"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">virtual</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/><ref refid="classemulator_1_1inference_1_1InferenceBackend_1a1f1eb8e2bad9c2f8f6085c0ed7113c70" kindref="member">initialize</ref>(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/><ref refid="structemulator_1_1inference_1_1InferenceConfig" kindref="compound">InferenceConfig</ref><sp/>&amp;config)<sp/>=<sp/>0;</highlight></codeline>
+<codeline lineno="184"><highlight class="normal"></highlight></codeline>
+<codeline lineno="199" refid="classemulator_1_1inference_1_1InferenceBackend_1a1be8aa53c3707a5d49e394c6f3f562a6" refkind="member"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">virtual</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/><ref refid="classemulator_1_1inference_1_1InferenceBackend_1a1be8aa53c3707a5d49e394c6f3f562a6" kindref="member">infer</ref>(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">double</highlight><highlight class="normal"><sp/>*inputs,<sp/></highlight><highlight class="keywordtype">double</highlight><highlight class="normal"><sp/>*outputs,<sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/>batch_size)<sp/>=<sp/>0;</highlight></codeline>
+<codeline lineno="200"><highlight class="normal"></highlight></codeline>
+<codeline lineno="207" refid="classemulator_1_1inference_1_1InferenceBackend_1a44394f344e641421b699675da096ca51" refkind="member"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">virtual</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="classemulator_1_1inference_1_1InferenceBackend_1a44394f344e641421b699675da096ca51" kindref="member">finalize</ref>()<sp/>=<sp/>0;</highlight></codeline>
+<codeline lineno="208"><highlight class="normal"></highlight></codeline>
+<codeline lineno="213" refid="classemulator_1_1inference_1_1InferenceBackend_1a473a507068279e92f27584cc0623bd0a" refkind="member"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">virtual</highlight><highlight class="normal"><sp/>std::string<sp/><ref refid="classemulator_1_1inference_1_1InferenceBackend_1a473a507068279e92f27584cc0623bd0a" kindref="member">name</ref>()<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>=<sp/>0;</highlight></codeline>
+<codeline lineno="214"><highlight class="normal"></highlight></codeline>
+<codeline lineno="219" refid="classemulator_1_1inference_1_1InferenceBackend_1aabd915e2ce3450c4e3317d6848f02ecc" refkind="member"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">virtual</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/><ref refid="classemulator_1_1inference_1_1InferenceBackend_1aabd915e2ce3450c4e3317d6848f02ecc" kindref="member">is_initialized</ref>()<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>=<sp/>0;</highlight></codeline>
+<codeline lineno="220"><highlight class="normal"></highlight></codeline>
+<codeline lineno="229" refid="classemulator_1_1inference_1_1InferenceBackend_1ad1c8d689cc47aa4f417b8f00b8332700" refkind="member"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">virtual</highlight><highlight class="normal"><sp/><ref refid="structemulator_1_1inference_1_1ValidationResult" kindref="compound">ValidationResult</ref><sp/><ref refid="classemulator_1_1inference_1_1InferenceBackend_1ad1c8d689cc47aa4f417b8f00b8332700" kindref="member">validate</ref>()</highlight><highlight class="keyword"><sp/>const<sp/></highlight><highlight class="normal">{</highlight></codeline>
+<codeline lineno="230"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>Default<sp/>implementation:<sp/>always<sp/>valid</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="231"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/><ref refid="structemulator_1_1inference_1_1ValidationResult" kindref="compound">ValidationResult</ref>{};</highlight></codeline>
+<codeline lineno="232"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="233"><highlight class="normal"></highlight></codeline>
+<codeline lineno="238" refid="classemulator_1_1inference_1_1InferenceBackend_1aad3ec735dcf04f4a327a86db7c23d67b" refkind="member"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">virtual</highlight><highlight class="normal"><sp/><ref refid="namespaceemulator_1_1inference_1a77255e7a61c3dc84e403c2f79d386a0e" kindref="member">BackendType</ref><sp/><ref refid="classemulator_1_1inference_1_1InferenceBackend_1aad3ec735dcf04f4a327a86db7c23d67b" kindref="member">type</ref>()<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>=<sp/>0;</highlight></codeline>
+<codeline lineno="239"><highlight class="normal">};</highlight></codeline>
+<codeline lineno="240"><highlight class="normal"></highlight></codeline>
+<codeline lineno="250"><highlight class="normal">std::unique_ptr&lt;InferenceBackend&gt;<sp/><ref refid="namespaceemulator_1_1inference_1ab7b522a945c4570d2ec45577cbebaf52" kindref="member">create_backend</ref>(<ref refid="namespaceemulator_1_1inference_1a77255e7a61c3dc84e403c2f79d386a0e" kindref="member">BackendType</ref><sp/>type);</highlight></codeline>
+<codeline lineno="251"><highlight class="normal"></highlight></codeline>
+<codeline lineno="260"><highlight class="normal">std::unique_ptr&lt;InferenceBackend&gt;<sp/><ref refid="namespaceemulator_1_1inference_1ab7b522a945c4570d2ec45577cbebaf52" kindref="member">create_backend</ref>(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/><ref refid="structemulator_1_1inference_1_1InferenceConfig" kindref="compound">InferenceConfig</ref><sp/>&amp;config);</highlight></codeline>
+<codeline lineno="261"><highlight class="normal"></highlight></codeline>
+<codeline lineno="262"><highlight class="normal">}<sp/></highlight><highlight class="comment">//<sp/>namespace<sp/>inference</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="263"><highlight class="normal">}<sp/></highlight><highlight class="comment">//<sp/>namespace<sp/>emulator</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="264"><highlight class="normal"></highlight></codeline>
+<codeline lineno="265"><highlight class="normal"></highlight><highlight class="preprocessor">#endif<sp/></highlight><highlight class="comment">//<sp/>INFERENCE_BACKEND_HPP</highlight><highlight class="normal"></highlight></codeline>
+    </programlisting>
+    <location file="components/emulator_comps/common/src/inference/inference_backend.hpp"/>
+  </compounddef>
+</doxygen>

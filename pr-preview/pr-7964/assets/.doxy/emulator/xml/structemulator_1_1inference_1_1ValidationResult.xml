@@ -1,0 +1,125 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="structemulator_1_1inference_1_1ValidationResult" kind="struct" language="C++" prot="public">
+    <compoundname>emulator::inference::ValidationResult</compoundname>
+    <includes refid="inference__backend_8hpp" local="no">inference_backend.hpp</includes>
+    <sectiondef kind="public-attrib">
+      <memberdef kind="variable" id="structemulator_1_1inference_1_1ValidationResult_1a356ef2380ea935dfff808a15cbbefd8f" prot="public" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool emulator::inference::ValidationResult::valid</definition>
+        <argsstring></argsstring>
+        <name>valid</name>
+        <qualifiedname>emulator::inference::ValidationResult::valid</qualifiedname>
+        <initializer>= true</initializer>
+        <briefdescription>
+<para>True if all checks passed. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/inference_backend.hpp" line="137" column="8" bodyfile="components/emulator_comps/common/src/inference/inference_backend.hpp" bodystart="137" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1inference_1_1ValidationResult_1a20867b58d52dfa79a1208215e3277287" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; std::string &gt;</type>
+        <definition>std::vector&lt;std::string&gt; emulator::inference::ValidationResult::errors</definition>
+        <argsstring></argsstring>
+        <name>errors</name>
+        <qualifiedname>emulator::inference::ValidationResult::errors</qualifiedname>
+        <briefdescription>
+<para>List of error messages. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/inference_backend.hpp" line="138" column="15" bodyfile="components/emulator_comps/common/src/inference/inference_backend.hpp" bodystart="138" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1inference_1_1ValidationResult_1a6da9c9604334c5dacafb11b33d9898b2" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; std::string &gt;</type>
+        <definition>std::vector&lt;std::string&gt; emulator::inference::ValidationResult::warnings</definition>
+        <argsstring></argsstring>
+        <name>warnings</name>
+        <qualifiedname>emulator::inference::ValidationResult::warnings</qualifiedname>
+        <briefdescription>
+<para>List of warning messages. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/inference_backend.hpp" line="139" column="15" bodyfile="components/emulator_comps/common/src/inference/inference_backend.hpp" bodystart="139" bodyend="-1"/>
+      </memberdef>
+    </sectiondef>
+    <sectiondef kind="public-func">
+      <memberdef kind="function" id="structemulator_1_1inference_1_1ValidationResult_1a6bfe8f31f95d2c77babad9e322f085d0" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator::inference::ValidationResult::add_error</definition>
+        <argsstring>(const std::string &amp;msg)</argsstring>
+        <name>add_error</name>
+        <qualifiedname>emulator::inference::ValidationResult::add_error</qualifiedname>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>msg</declname>
+        </param>
+        <briefdescription>
+<para>Add an error and mark as invalid. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/inference_backend.hpp" line="142" column="8" bodyfile="components/emulator_comps/common/src/inference/inference_backend.hpp" bodystart="142" bodyend="145"/>
+      </memberdef>
+      <memberdef kind="function" id="structemulator_1_1inference_1_1ValidationResult_1a0332338f679ca7eb3e06166da0d2e66e" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator::inference::ValidationResult::add_warning</definition>
+        <argsstring>(const std::string &amp;msg)</argsstring>
+        <name>add_warning</name>
+        <qualifiedname>emulator::inference::ValidationResult::add_warning</qualifiedname>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>msg</declname>
+        </param>
+        <briefdescription>
+<para>Add a warning (does not affect validity) </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/inference_backend.hpp" line="148" column="8" bodyfile="components/emulator_comps/common/src/inference/inference_backend.hpp" bodystart="148" bodyend="148"/>
+      </memberdef>
+      <memberdef kind="function" id="structemulator_1_1inference_1_1ValidationResult_1a61ac3769f82fe37f7f43e374e28e49d5" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>bool</type>
+        <definition>bool emulator::inference::ValidationResult::has_warnings</definition>
+        <argsstring>() const</argsstring>
+        <name>has_warnings</name>
+        <qualifiedname>emulator::inference::ValidationResult::has_warnings</qualifiedname>
+        <briefdescription>
+<para>Check if there are any warnings. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/inference/inference_backend.hpp" line="151" column="8" bodyfile="components/emulator_comps/common/src/inference/inference_backend.hpp" bodystart="151" bodyend="151"/>
+      </memberdef>
+    </sectiondef>
+    <briefdescription>
+<para>Result of configuration validation. </para>
+    </briefdescription>
+    <detaileddescription>
+<para>Returned by <ref refid="classemulator_1_1inference_1_1InferenceBackend_1ad1c8d689cc47aa4f417b8f00b8332700" kindref="member">InferenceBackend::validate()</ref> to report validation status and any errors found. </para>
+    </detaileddescription>
+    <location file="components/emulator_comps/common/src/inference/inference_backend.hpp" line="136" column="1" bodyfile="components/emulator_comps/common/src/inference/inference_backend.hpp" bodystart="136" bodyend="152"/>
+    <listofallmembers>
+      <member refid="structemulator_1_1inference_1_1ValidationResult_1a6bfe8f31f95d2c77babad9e322f085d0" prot="public" virt="non-virtual"><scope>emulator::inference::ValidationResult</scope><name>add_error</name></member>
+      <member refid="structemulator_1_1inference_1_1ValidationResult_1a0332338f679ca7eb3e06166da0d2e66e" prot="public" virt="non-virtual"><scope>emulator::inference::ValidationResult</scope><name>add_warning</name></member>
+      <member refid="structemulator_1_1inference_1_1ValidationResult_1a20867b58d52dfa79a1208215e3277287" prot="public" virt="non-virtual"><scope>emulator::inference::ValidationResult</scope><name>errors</name></member>
+      <member refid="structemulator_1_1inference_1_1ValidationResult_1a61ac3769f82fe37f7f43e374e28e49d5" prot="public" virt="non-virtual"><scope>emulator::inference::ValidationResult</scope><name>has_warnings</name></member>
+      <member refid="structemulator_1_1inference_1_1ValidationResult_1a356ef2380ea935dfff808a15cbbefd8f" prot="public" virt="non-virtual"><scope>emulator::inference::ValidationResult</scope><name>valid</name></member>
+      <member refid="structemulator_1_1inference_1_1ValidationResult_1a6da9c9604334c5dacafb11b33d9898b2" prot="public" virt="non-virtual"><scope>emulator::inference::ValidationResult</scope><name>warnings</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

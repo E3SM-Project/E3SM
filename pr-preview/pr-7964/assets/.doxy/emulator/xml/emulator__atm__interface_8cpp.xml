@@ -1,0 +1,792 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="emulator__atm__interface_8cpp" kind="file" language="C++">
+    <compoundname>emulator_atm_interface.cpp</compoundname>
+    <includes refid="emulator__comp_8hpp" local="yes">../../common/src/emulator_comp.hpp</includes>
+    <includes refid="emulator__context_8hpp" local="yes">../../common/src/emulator_context.hpp</includes>
+    <includes refid="emulator__atm_8hpp" local="yes">emulator_atm.hpp</includes>
+    <incdepgraph>
+      <node id="16">
+        <label>../../common/src/coupling_fields.hpp</label>
+        <link refid="coupling__fields_8hpp"/>
+        <childnode refid="11" relation="include">
+        </childnode>
+        <childnode refid="17" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+      </node>
+      <node id="2">
+        <label>../../common/src/emulator_comp.hpp</label>
+        <link refid="emulator__comp_8hpp"/>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+      </node>
+      <node id="18">
+        <label>../../common/src/emulator_config.hpp</label>
+        <link refid="emulator__config_8hpp"/>
+        <childnode refid="19" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+      </node>
+      <node id="9">
+        <label>../../common/src/emulator_context.hpp</label>
+        <link refid="emulator__context_8hpp"/>
+        <childnode refid="10" relation="include">
+        </childnode>
+        <childnode refid="11" relation="include">
+        </childnode>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="13" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+        <childnode refid="14" relation="include">
+        </childnode>
+      </node>
+      <node id="19">
+        <label>emulator_diagnostics.hpp</label>
+        <link refid="emulator__diagnostics_8hpp"/>
+        <childnode refid="6" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+      </node>
+      <node id="3">
+        <label>emulator_logger.hpp</label>
+        <link refid="emulator__logger_8hpp"/>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+      </node>
+      <node id="20">
+        <label>../../common/src/emulator_output_manager.hpp</label>
+        <link refid="emulator__output__manager_8hpp"/>
+        <childnode refid="19" relation="include">
+        </childnode>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="21" relation="include">
+        </childnode>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+      </node>
+      <node id="21">
+        <label>emulator_output_stream.hpp</label>
+        <link refid="emulator__output__stream_8hpp"/>
+        <childnode refid="19" relation="include">
+        </childnode>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="22" relation="include">
+        </childnode>
+        <childnode refid="11" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+      </node>
+      <node id="23">
+        <label>../../common/src/inference/inference_backend.hpp</label>
+        <link refid="inference__backend_8hpp"/>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+      </node>
+      <node id="15">
+        <label>emulator_atm.hpp</label>
+        <link refid="emulator__atm_8hpp"/>
+        <childnode refid="16" relation="include">
+        </childnode>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="18" relation="include">
+        </childnode>
+        <childnode refid="20" relation="include">
+        </childnode>
+        <childnode refid="23" relation="include">
+        </childnode>
+        <childnode refid="24" relation="include">
+        </childnode>
+        <childnode refid="26" relation="include">
+        </childnode>
+        <childnode refid="25" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+      </node>
+      <node id="1">
+        <label>components/emulator_comps/eatm/src/emulator_atm_interface.cpp</label>
+        <link refid="emulator__atm__interface_8cpp"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="9" relation="include">
+        </childnode>
+        <childnode refid="15" relation="include">
+        </childnode>
+      </node>
+      <node id="24">
+        <label>impl/atm_coupling.hpp</label>
+        <link refid="atm__coupling_8hpp"/>
+        <childnode refid="16" relation="include">
+        </childnode>
+        <childnode refid="25" relation="include">
+        </childnode>
+      </node>
+      <node id="26">
+        <label>impl/atm_field_data_provider.hpp</label>
+        <link refid="atm__field__data__provider_8hpp"/>
+        <childnode refid="21" relation="include">
+        </childnode>
+        <childnode refid="25" relation="include">
+        </childnode>
+        <childnode refid="27" relation="include">
+        </childnode>
+        <childnode refid="28" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+      </node>
+      <node id="25">
+        <label>atm_field_manager.hpp</label>
+        <link refid="atm__field__manager_8hpp"/>
+        <childnode refid="11" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+      </node>
+      <node id="10">
+        <label>any</label>
+      </node>
+      <node id="4">
+        <label>fstream</label>
+      </node>
+      <node id="22">
+        <label>functional</label>
+      </node>
+      <node id="5">
+        <label>iostream</label>
+      </node>
+      <node id="11">
+        <label>map</label>
+      </node>
+      <node id="12">
+        <label>memory</label>
+      </node>
+      <node id="7">
+        <label>mpi.h</label>
+      </node>
+      <node id="27">
+        <label>regex</label>
+      </node>
+      <node id="28">
+        <label>set</label>
+      </node>
+      <node id="17">
+        <label>sstream</label>
+      </node>
+      <node id="13">
+        <label>stdexcept</label>
+      </node>
+      <node id="6">
+        <label>string</label>
+      </node>
+      <node id="14">
+        <label>typeindex</label>
+      </node>
+      <node id="8">
+        <label>vector</label>
+      </node>
+    </incdepgraph>
+    <sectiondef kind="func">
+      <memberdef kind="function" id="emulator__atm__interface_8cpp_1a075af4e30f95dd098f501fc0b1491483" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator_atm_create_instance</definition>
+        <argsstring>(const MPI_Fint f_comm, const int comp_id, const char *input_file, const char *log_file, const int run_type, const int start_ymd, const int start_tod)</argsstring>
+        <name>emulator_atm_create_instance</name>
+        <param>
+          <type>const MPI_Fint</type>
+          <declname>f_comm</declname>
+        </param>
+        <param>
+          <type>const int</type>
+          <declname>comp_id</declname>
+        </param>
+        <param>
+          <type>const char *</type>
+          <declname>input_file</declname>
+        </param>
+        <param>
+          <type>const char *</type>
+          <declname>log_file</declname>
+        </param>
+        <param>
+          <type>const int</type>
+          <declname>run_type</declname>
+        </param>
+        <param>
+          <type>const int</type>
+          <declname>start_ymd</declname>
+        </param>
+        <param>
+          <type>const int</type>
+          <declname>start_tod</declname>
+        </param>
+        <briefdescription>
+<para>Create and initialize the atmosphere emulator instance. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>f_comm</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Fortran MPI communicator </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>comp_id</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Component ID from driver </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>input_file</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Path to atm_in configuration file </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>log_file</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Path to log file (NULL for stdout) </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>run_type</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Run type (startup, continue, branch) </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>start_ymd</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Start date as YYYYMMDD </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>start_tod</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Start time of day in seconds </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/emulator_atm_interface.cpp" line="64" column="6" bodyfile="components/emulator_comps/eatm/src/emulator_atm_interface.cpp" bodystart="64" bodyend="76"/>
+      </memberdef>
+      <memberdef kind="function" id="emulator__atm__interface_8cpp_1a30ec144b70032d461bc8f7ad2c6837c1" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator_atm_set_grid_data</definition>
+        <argsstring>(const int nx, const int ny, const int num_local_cols, const int num_global_cols, const int *col_gids, const double *lat, const double *lon, const double *area)</argsstring>
+        <name>emulator_atm_set_grid_data</name>
+        <param>
+          <type>const int</type>
+          <declname>nx</declname>
+        </param>
+        <param>
+          <type>const int</type>
+          <declname>ny</declname>
+        </param>
+        <param>
+          <type>const int</type>
+          <declname>num_local_cols</declname>
+        </param>
+        <param>
+          <type>const int</type>
+          <declname>num_global_cols</declname>
+        </param>
+        <param>
+          <type>const int *</type>
+          <declname>col_gids</declname>
+        </param>
+        <param>
+          <type>const double *</type>
+          <declname>lat</declname>
+        </param>
+        <param>
+          <type>const double *</type>
+          <declname>lon</declname>
+        </param>
+        <param>
+          <type>const double *</type>
+          <declname>area</declname>
+        </param>
+        <briefdescription>
+<para>Set grid decomposition data from driver. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/emulator_atm_interface.cpp" line="81" column="6" bodyfile="components/emulator_comps/eatm/src/emulator_atm_interface.cpp" bodystart="81" bodyend="89"/>
+      </memberdef>
+      <memberdef kind="function" id="emulator__atm__interface_8cpp_1a02c6312b4b49530e71faf1a4139fe94a" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator_atm_init_coupling_indices</definition>
+        <argsstring>(const char *export_fields, const char *import_fields)</argsstring>
+        <name>emulator_atm_init_coupling_indices</name>
+        <param>
+          <type>const char *</type>
+          <declname>export_fields</declname>
+        </param>
+        <param>
+          <type>const char *</type>
+          <declname>import_fields</declname>
+        </param>
+        <briefdescription>
+<para>Initialize coupling field index mappings. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/emulator_atm_interface.cpp" line="94" column="6" bodyfile="components/emulator_comps/eatm/src/emulator_atm_interface.cpp" bodystart="94" bodyend="100"/>
+      </memberdef>
+      <memberdef kind="function" id="emulator__atm__interface_8cpp_1af0b0f4a016af612255e54a91e0c42edd" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator_atm_setup_coupling</definition>
+        <argsstring>(double *import_data, double *export_data, const int num_imports, const int num_exports, const int field_size)</argsstring>
+        <name>emulator_atm_setup_coupling</name>
+        <param>
+          <type>double *</type>
+          <declname>import_data</declname>
+        </param>
+        <param>
+          <type>double *</type>
+          <declname>export_data</declname>
+        </param>
+        <param>
+          <type>const int</type>
+          <declname>num_imports</declname>
+        </param>
+        <param>
+          <type>const int</type>
+          <declname>num_exports</declname>
+        </param>
+        <param>
+          <type>const int</type>
+          <declname>field_size</declname>
+        </param>
+        <briefdescription>
+<para>Set up coupling buffer pointers from MCT. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/emulator_atm_interface.cpp" line="105" column="6" bodyfile="components/emulator_comps/eatm/src/emulator_atm_interface.cpp" bodystart="105" bodyend="111"/>
+      </memberdef>
+      <memberdef kind="function" id="emulator__atm__interface_8cpp_1a816fd370df00ef4e3647f254ab3f290c" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator_atm_init</definition>
+        <argsstring>()</argsstring>
+        <name>emulator_atm_init</name>
+        <briefdescription>
+<para>Initialize the atmosphere emulator (phase 2). </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/emulator_atm_interface.cpp" line="116" column="6" bodyfile="components/emulator_comps/eatm/src/emulator_atm_interface.cpp" bodystart="116" bodyend="119"/>
+      </memberdef>
+      <memberdef kind="function" id="emulator__atm__interface_8cpp_1acc3378865837ed9b857489385b952f07" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator_atm_run</definition>
+        <argsstring>(const int dt)</argsstring>
+        <name>emulator_atm_run</name>
+        <param>
+          <type>const int</type>
+          <declname>dt</declname>
+        </param>
+        <briefdescription>
+<para>Execute one time step. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>dt</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Time step size in seconds </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/emulator_atm_interface.cpp" line="125" column="6" bodyfile="components/emulator_comps/eatm/src/emulator_atm_interface.cpp" bodystart="125" bodyend="128"/>
+      </memberdef>
+      <memberdef kind="function" id="emulator__atm__interface_8cpp_1a344d4ba90a3ce947c48a191231488560" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator_atm_finalize</definition>
+        <argsstring>()</argsstring>
+        <name>emulator_atm_finalize</name>
+        <briefdescription>
+<para>Finalize and clean up the atmosphere emulator. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/emulator_atm_interface.cpp" line="133" column="6" bodyfile="components/emulator_comps/eatm/src/emulator_atm_interface.cpp" bodystart="133" bodyend="138"/>
+      </memberdef>
+      <memberdef kind="function" id="emulator__atm__interface_8cpp_1a911e342df01a35e4b92eabb83e70677f" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>int</type>
+        <definition>int emulator_atm_get_num_local_cols</definition>
+        <argsstring>()</argsstring>
+        <name>emulator_atm_get_num_local_cols</name>
+        <briefdescription>
+<para>Get number of local columns on this rank. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/emulator_atm_interface.cpp" line="143" column="5" bodyfile="components/emulator_comps/eatm/src/emulator_atm_interface.cpp" bodystart="143" bodyend="146"/>
+      </memberdef>
+      <memberdef kind="function" id="emulator__atm__interface_8cpp_1aa8734e69bc802475c98b8718510be386" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>int</type>
+        <definition>int emulator_atm_get_num_global_cols</definition>
+        <argsstring>()</argsstring>
+        <name>emulator_atm_get_num_global_cols</name>
+        <briefdescription>
+<para>Get total number of global columns. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/emulator_atm_interface.cpp" line="151" column="5" bodyfile="components/emulator_comps/eatm/src/emulator_atm_interface.cpp" bodystart="151" bodyend="154"/>
+      </memberdef>
+      <memberdef kind="function" id="emulator__atm__interface_8cpp_1ad1177831539a6d43cacdd3f433ff0ef5" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>int</type>
+        <definition>int emulator_atm_get_nx</definition>
+        <argsstring>()</argsstring>
+        <name>emulator_atm_get_nx</name>
+        <briefdescription>
+<para>Get grid size in x-direction. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/emulator_atm_interface.cpp" line="159" column="5" bodyfile="components/emulator_comps/eatm/src/emulator_atm_interface.cpp" bodystart="159" bodyend="162"/>
+      </memberdef>
+      <memberdef kind="function" id="emulator__atm__interface_8cpp_1a1c432d90dd6e7e9a31962ab06f814fc3" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>int</type>
+        <definition>int emulator_atm_get_ny</definition>
+        <argsstring>()</argsstring>
+        <name>emulator_atm_get_ny</name>
+        <briefdescription>
+<para>Get grid size in y-direction. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/emulator_atm_interface.cpp" line="167" column="5" bodyfile="components/emulator_comps/eatm/src/emulator_atm_interface.cpp" bodystart="167" bodyend="170"/>
+      </memberdef>
+      <memberdef kind="function" id="emulator__atm__interface_8cpp_1a072b2ecbc286f2bd1914dac5fc5b43c9" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator_atm_get_local_cols_gids</definition>
+        <argsstring>(int *gids)</argsstring>
+        <name>emulator_atm_get_local_cols_gids</name>
+        <param>
+          <type>int *</type>
+          <declname>gids</declname>
+        </param>
+        <briefdescription>
+<para>Get global IDs for local columns. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>gids</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Output array (must be pre-allocated) </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/emulator_atm_interface.cpp" line="176" column="6" bodyfile="components/emulator_comps/eatm/src/emulator_atm_interface.cpp" bodystart="176" bodyend="179"/>
+      </memberdef>
+      <memberdef kind="function" id="emulator__atm__interface_8cpp_1a09be25d51c36e0ef66f2dfa0db793b46" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator_atm_get_cols_latlon</definition>
+        <argsstring>(double *lat, double *lon)</argsstring>
+        <name>emulator_atm_get_cols_latlon</name>
+        <param>
+          <type>double *</type>
+          <declname>lat</declname>
+        </param>
+        <param>
+          <type>double *</type>
+          <declname>lon</declname>
+        </param>
+        <briefdescription>
+<para>Get latitude/longitude for local columns. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>lat</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Output latitude array [radians] </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>lon</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Output longitude array [radians] </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/emulator_atm_interface.cpp" line="186" column="6" bodyfile="components/emulator_comps/eatm/src/emulator_atm_interface.cpp" bodystart="186" bodyend="189"/>
+      </memberdef>
+      <memberdef kind="function" id="emulator__atm__interface_8cpp_1a774eed313f218501101f99c336e733bf" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator_atm_get_cols_area</definition>
+        <argsstring>(double *area)</argsstring>
+        <name>emulator_atm_get_cols_area</name>
+        <param>
+          <type>double *</type>
+          <declname>area</declname>
+        </param>
+        <briefdescription>
+<para>Get cell areas for local columns. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>area</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Output area array </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/emulator_atm_interface.cpp" line="195" column="6" bodyfile="components/emulator_comps/eatm/src/emulator_atm_interface.cpp" bodystart="195" bodyend="198"/>
+      </memberdef>
+    </sectiondef>
+    <briefdescription>
+<para>C interface for the atmosphere emulator (Fortran-callable). </para>
+    </briefdescription>
+    <detaileddescription>
+<para>Provides extern &quot;C&quot; functions that can be called from Fortran via ISO_C_BINDING. These functions wrap the EmulatorAtm C++ class methods.</para>
+<para>The interface follows the E3SM component lifecycle:<orderedlist>
+<listitem><para>create_instance - Initialize MPI and component</para>
+</listitem><listitem><para>set_grid_data - Set grid decomposition</para>
+</listitem><listitem><para>init_coupling_indices - Parse MCT field lists</para>
+</listitem><listitem><para>setup_coupling - Set coupling buffer pointers</para>
+</listitem><listitem><para>init - Load model and prepare for time stepping</para>
+</listitem><listitem><para>run - Execute time steps</para>
+</listitem><listitem><para>finalize - Clean up resources</para>
+</listitem></orderedlist>
+</para>
+<para><simplesect kind="see"><para>EmulatorAtm for the C++ implementation </para>
+</simplesect>
+<simplesect kind="see"><para>emulator_atm_f2c.F90 for the Fortran interface module </para>
+</simplesect>
+</para>
+    </detaileddescription>
+    <programlisting>
+<codeline lineno="1"><highlight class="normal"></highlight></codeline>
+<codeline lineno="20"><highlight class="normal"></highlight></codeline>
+<codeline lineno="21"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&quot;<ref refid="emulator__comp_8hpp" kindref="compound">../../common/src/emulator_comp.hpp</ref>&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="22"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&quot;<ref refid="emulator__context_8hpp" kindref="compound">../../common/src/emulator_context.hpp</ref>&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="23"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&quot;<ref refid="emulator__atm_8hpp" kindref="compound">emulator_atm.hpp</ref>&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="24"><highlight class="normal"></highlight></codeline>
+<codeline lineno="25"><highlight class="normal"></highlight><highlight class="keyword">namespace<sp/></highlight><highlight class="normal">{</highlight></codeline>
+<codeline lineno="26"><highlight class="normal"></highlight></codeline>
+<codeline lineno="31"><highlight class="normal"><ref refid="classemulator_1_1EmulatorAtm" kindref="compound">emulator::EmulatorAtm</ref><sp/>&amp;get_atm_emulator_nonconst()<sp/>{</highlight></codeline>
+<codeline lineno="32"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>&amp;ctx<sp/>=<sp/><ref refid="classemulator_1_1EmulatorContext_1a381c199b2c20b290a342c8fcc5cd9837" kindref="member">emulator::EmulatorContext::singleton</ref>();</highlight></codeline>
+<codeline lineno="33"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>ctx.getNonConst&lt;<ref refid="classemulator_1_1EmulatorAtm" kindref="compound">emulator::EmulatorAtm</ref>&gt;();</highlight></codeline>
+<codeline lineno="34"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="35"><highlight class="normal"></highlight></codeline>
+<codeline lineno="40"><highlight class="normal"></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/><ref refid="classemulator_1_1EmulatorAtm" kindref="compound">emulator::EmulatorAtm</ref><sp/>&amp;get_atm_emulator()<sp/>{</highlight></codeline>
+<codeline lineno="41"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>&amp;ctx<sp/>=<sp/><ref refid="classemulator_1_1EmulatorContext_1a381c199b2c20b290a342c8fcc5cd9837" kindref="member">emulator::EmulatorContext::singleton</ref>();</highlight></codeline>
+<codeline lineno="42"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>ctx.get&lt;<ref refid="classemulator_1_1EmulatorAtm" kindref="compound">emulator::EmulatorAtm</ref>&gt;();</highlight></codeline>
+<codeline lineno="43"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="44"><highlight class="normal"></highlight></codeline>
+<codeline lineno="45"><highlight class="normal">}<sp/></highlight><highlight class="comment">//<sp/>anonymous<sp/>namespace</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="46"><highlight class="normal"></highlight></codeline>
+<codeline lineno="47"><highlight class="normal"></highlight><highlight class="keyword">extern</highlight><highlight class="normal"><sp/></highlight><highlight class="stringliteral">&quot;C&quot;</highlight><highlight class="normal"><sp/>{</highlight></codeline>
+<codeline lineno="48"><highlight class="normal"></highlight></codeline>
+<codeline lineno="49"><highlight class="normal"></highlight><highlight class="comment">//<sp/>===========================================================================</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="50"><highlight class="normal"></highlight><highlight class="comment">//<sp/>Atmosphere<sp/>Emulator<sp/>C<sp/>Interface<sp/>(callable<sp/>from<sp/>Fortran)</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="51"><highlight class="normal"></highlight><highlight class="comment">//<sp/>===========================================================================</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="52"><highlight class="normal"></highlight></codeline>
+<codeline lineno="64"><highlight class="normal"></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="emulator__atm__interface_8cpp_1a075af4e30f95dd098f501fc0b1491483" kindref="member">emulator_atm_create_instance</ref>(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>MPI_Fint<sp/>f_comm,<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/>comp_id,</highlight></codeline>
+<codeline lineno="65"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">char</highlight><highlight class="normal"><sp/>*input_file,<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">char</highlight><highlight class="normal"><sp/>*log_file,</highlight></codeline>
+<codeline lineno="66"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/>run_type,<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/>start_ymd,</highlight></codeline>
+<codeline lineno="67"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/>start_tod)<sp/>{</highlight></codeline>
+<codeline lineno="68"><highlight class="normal"><sp/><sp/><ref refid="inference__backend_8hpp_1a68c509d4adb3f4a1d6fe3a9b0b87c7b9" kindref="member">MPI_Comm</ref><sp/>c_comm<sp/>=<sp/>MPI_Comm_f2c(f_comm);</highlight></codeline>
+<codeline lineno="69"><highlight class="normal"></highlight></codeline>
+<codeline lineno="70"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>&amp;ctx<sp/>=<sp/><ref refid="classemulator_1_1EmulatorContext_1a381c199b2c20b290a342c8fcc5cd9837" kindref="member">emulator::EmulatorContext::singleton</ref>();</highlight></codeline>
+<codeline lineno="71"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>&amp;atm<sp/>=<sp/>ctx.create&lt;<ref refid="classemulator_1_1EmulatorAtm" kindref="compound">emulator::EmulatorAtm</ref>&gt;();</highlight></codeline>
+<codeline lineno="72"><highlight class="normal"></highlight></codeline>
+<codeline lineno="73"><highlight class="normal"><sp/><sp/>atm.<ref refid="classemulator_1_1EmulatorComp_1a623d17026efc45f994de51f694fe4590" kindref="member">create_instance</ref>(c_comm,<sp/>comp_id,<sp/>input_file,<sp/>run_type,<sp/>start_ymd,</highlight></codeline>
+<codeline lineno="74"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>start_tod);</highlight></codeline>
+<codeline lineno="75"><highlight class="normal"><sp/><sp/>atm.set_log_file(log_file<sp/>?<sp/>log_file<sp/>:<sp/></highlight><highlight class="stringliteral">&quot;&quot;</highlight><highlight class="normal">);</highlight></codeline>
+<codeline lineno="76"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="77"><highlight class="normal"></highlight></codeline>
+<codeline lineno="81"><highlight class="normal"></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="emulator__atm__interface_8cpp_1a30ec144b70032d461bc8f7ad2c6837c1" kindref="member">emulator_atm_set_grid_data</ref>(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/>nx,<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/>ny,</highlight></codeline>
+<codeline lineno="82"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/>num_local_cols,</highlight></codeline>
+<codeline lineno="83"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/>num_global_cols,<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/>*col_gids,</highlight></codeline>
+<codeline lineno="84"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">double</highlight><highlight class="normal"><sp/>*lat,<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">double</highlight><highlight class="normal"><sp/>*lon,</highlight></codeline>
+<codeline lineno="85"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">double</highlight><highlight class="normal"><sp/>*area)<sp/>{</highlight></codeline>
+<codeline lineno="86"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>&amp;atm<sp/>=<sp/>get_atm_emulator_nonconst();</highlight></codeline>
+<codeline lineno="87"><highlight class="normal"><sp/><sp/>atm.set_grid_data(nx,<sp/>ny,<sp/>num_local_cols,<sp/>num_global_cols,<sp/>col_gids,<sp/>lat,<sp/>lon,</highlight></codeline>
+<codeline lineno="88"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>area);</highlight></codeline>
+<codeline lineno="89"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="90"><highlight class="normal"></highlight></codeline>
+<codeline lineno="94"><highlight class="normal"></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="emulator__atm__interface_8cpp_1a02c6312b4b49530e71faf1a4139fe94a" kindref="member">emulator_atm_init_coupling_indices</ref>(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">char</highlight><highlight class="normal"><sp/>*export_fields,</highlight></codeline>
+<codeline lineno="95"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">char</highlight><highlight class="normal"><sp/>*import_fields)<sp/>{</highlight></codeline>
+<codeline lineno="96"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>&amp;atm<sp/>=<sp/>get_atm_emulator_nonconst();</highlight></codeline>
+<codeline lineno="97"><highlight class="normal"><sp/><sp/>std::string<sp/>exp_str<sp/>=<sp/>export_fields<sp/>?<sp/>export_fields<sp/>:<sp/></highlight><highlight class="stringliteral">&quot;&quot;</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="98"><highlight class="normal"><sp/><sp/>std::string<sp/>imp_str<sp/>=<sp/>import_fields<sp/>?<sp/>import_fields<sp/>:<sp/></highlight><highlight class="stringliteral">&quot;&quot;</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="99"><highlight class="normal"><sp/><sp/>atm.init_coupling_indices(exp_str,<sp/>imp_str);</highlight></codeline>
+<codeline lineno="100"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="101"><highlight class="normal"></highlight></codeline>
+<codeline lineno="105"><highlight class="normal"></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="emulator__atm__interface_8cpp_1af0b0f4a016af612255e54a91e0c42edd" kindref="member">emulator_atm_setup_coupling</ref>(</highlight><highlight class="keywordtype">double</highlight><highlight class="normal"><sp/>*import_data,<sp/></highlight><highlight class="keywordtype">double</highlight><highlight class="normal"><sp/>*export_data,</highlight></codeline>
+<codeline lineno="106"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/>num_imports,<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/>num_exports,</highlight></codeline>
+<codeline lineno="107"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/>field_size)<sp/>{</highlight></codeline>
+<codeline lineno="108"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>&amp;atm<sp/>=<sp/>get_atm_emulator_nonconst();</highlight></codeline>
+<codeline lineno="109"><highlight class="normal"><sp/><sp/>atm.setup_coupling(import_data,<sp/>export_data,<sp/>num_imports,<sp/>num_exports,</highlight></codeline>
+<codeline lineno="110"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>field_size);</highlight></codeline>
+<codeline lineno="111"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="112"><highlight class="normal"></highlight></codeline>
+<codeline lineno="116"><highlight class="normal"></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="emulator__atm__interface_8cpp_1a816fd370df00ef4e3647f254ab3f290c" kindref="member">emulator_atm_init</ref>()<sp/>{</highlight></codeline>
+<codeline lineno="117"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>&amp;atm<sp/>=<sp/>get_atm_emulator_nonconst();</highlight></codeline>
+<codeline lineno="118"><highlight class="normal"><sp/><sp/>atm.initialize();</highlight></codeline>
+<codeline lineno="119"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="120"><highlight class="normal"></highlight></codeline>
+<codeline lineno="125"><highlight class="normal"></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="emulator__atm__interface_8cpp_1acc3378865837ed9b857489385b952f07" kindref="member">emulator_atm_run</ref>(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/>dt)<sp/>{</highlight></codeline>
+<codeline lineno="126"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>&amp;atm<sp/>=<sp/>get_atm_emulator_nonconst();</highlight></codeline>
+<codeline lineno="127"><highlight class="normal"><sp/><sp/>atm.run(dt);</highlight></codeline>
+<codeline lineno="128"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="129"><highlight class="normal"></highlight></codeline>
+<codeline lineno="133"><highlight class="normal"></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="emulator__atm__interface_8cpp_1a344d4ba90a3ce947c48a191231488560" kindref="member">emulator_atm_finalize</ref>()<sp/>{</highlight></codeline>
+<codeline lineno="134"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>&amp;atm<sp/>=<sp/>get_atm_emulator_nonconst();</highlight></codeline>
+<codeline lineno="135"><highlight class="normal"><sp/><sp/>atm.finalize();</highlight></codeline>
+<codeline lineno="136"><highlight class="normal"></highlight></codeline>
+<codeline lineno="137"><highlight class="normal"><sp/><sp/><ref refid="namespaceemulator_1ab1269d1fbe9bc737197b4b45d7972972" kindref="member">emulator::cleanup_emulator_context</ref>();</highlight></codeline>
+<codeline lineno="138"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="139"><highlight class="normal"></highlight></codeline>
+<codeline lineno="143"><highlight class="normal"></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/><ref refid="emulator__atm__interface_8cpp_1a911e342df01a35e4b92eabb83e70677f" kindref="member">emulator_atm_get_num_local_cols</ref>()<sp/>{</highlight></codeline>
+<codeline lineno="144"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>&amp;atm<sp/>=<sp/>get_atm_emulator();</highlight></codeline>
+<codeline lineno="145"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>atm.get_num_local_cols();</highlight></codeline>
+<codeline lineno="146"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="147"><highlight class="normal"></highlight></codeline>
+<codeline lineno="151"><highlight class="normal"></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/><ref refid="emulator__atm__interface_8cpp_1aa8734e69bc802475c98b8718510be386" kindref="member">emulator_atm_get_num_global_cols</ref>()<sp/>{</highlight></codeline>
+<codeline lineno="152"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>&amp;atm<sp/>=<sp/>get_atm_emulator();</highlight></codeline>
+<codeline lineno="153"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>atm.get_num_global_cols();</highlight></codeline>
+<codeline lineno="154"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="155"><highlight class="normal"></highlight></codeline>
+<codeline lineno="159"><highlight class="normal"></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/><ref refid="emulator__atm__interface_8cpp_1ad1177831539a6d43cacdd3f433ff0ef5" kindref="member">emulator_atm_get_nx</ref>()<sp/>{</highlight></codeline>
+<codeline lineno="160"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>&amp;atm<sp/>=<sp/>get_atm_emulator();</highlight></codeline>
+<codeline lineno="161"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>atm.get_nx();</highlight></codeline>
+<codeline lineno="162"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="163"><highlight class="normal"></highlight></codeline>
+<codeline lineno="167"><highlight class="normal"></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/><ref refid="emulator__atm__interface_8cpp_1a1c432d90dd6e7e9a31962ab06f814fc3" kindref="member">emulator_atm_get_ny</ref>()<sp/>{</highlight></codeline>
+<codeline lineno="168"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>&amp;atm<sp/>=<sp/>get_atm_emulator();</highlight></codeline>
+<codeline lineno="169"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>atm.get_ny();</highlight></codeline>
+<codeline lineno="170"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="171"><highlight class="normal"></highlight></codeline>
+<codeline lineno="176"><highlight class="normal"></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="emulator__atm__interface_8cpp_1a072b2ecbc286f2bd1914dac5fc5b43c9" kindref="member">emulator_atm_get_local_cols_gids</ref>(</highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/>*gids)<sp/>{</highlight></codeline>
+<codeline lineno="177"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>&amp;atm<sp/>=<sp/>get_atm_emulator();</highlight></codeline>
+<codeline lineno="178"><highlight class="normal"><sp/><sp/>atm.get_local_col_gids(gids);</highlight></codeline>
+<codeline lineno="179"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="180"><highlight class="normal"></highlight></codeline>
+<codeline lineno="186"><highlight class="normal"></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="emulator__atm__interface_8cpp_1a09be25d51c36e0ef66f2dfa0db793b46" kindref="member">emulator_atm_get_cols_latlon</ref>(</highlight><highlight class="keywordtype">double</highlight><highlight class="normal"><sp/>*lat,<sp/></highlight><highlight class="keywordtype">double</highlight><highlight class="normal"><sp/>*lon)<sp/>{</highlight></codeline>
+<codeline lineno="187"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>&amp;atm<sp/>=<sp/>get_atm_emulator();</highlight></codeline>
+<codeline lineno="188"><highlight class="normal"><sp/><sp/>atm.get_cols_latlon(lat,<sp/>lon);</highlight></codeline>
+<codeline lineno="189"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="190"><highlight class="normal"></highlight></codeline>
+<codeline lineno="195"><highlight class="normal"></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="emulator__atm__interface_8cpp_1a774eed313f218501101f99c336e733bf" kindref="member">emulator_atm_get_cols_area</ref>(</highlight><highlight class="keywordtype">double</highlight><highlight class="normal"><sp/>*area)<sp/>{</highlight></codeline>
+<codeline lineno="196"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>&amp;atm<sp/>=<sp/>get_atm_emulator();</highlight></codeline>
+<codeline lineno="197"><highlight class="normal"><sp/><sp/>atm.get_cols_area(area);</highlight></codeline>
+<codeline lineno="198"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="199"><highlight class="normal"></highlight></codeline>
+<codeline lineno="200"><highlight class="normal">}<sp/></highlight><highlight class="comment">//<sp/>extern<sp/>&quot;C&quot;</highlight><highlight class="normal"></highlight></codeline>
+    </programlisting>
+    <location file="components/emulator_comps/eatm/src/emulator_atm_interface.cpp"/>
+  </compounddef>
+</doxygen>

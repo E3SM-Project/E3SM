@@ -1,0 +1,11 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="namespaceemulator_1_1_0d123014276007031377224173102036175132222221352317" kind="namespace" language="C++">
+    <compoundname>emulator</compoundname>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="components/emulator_comps/common/src/diagnostics/diagnostic_factory.cpp" line="13" column="1"/>
+  </compounddef>
+</doxygen>

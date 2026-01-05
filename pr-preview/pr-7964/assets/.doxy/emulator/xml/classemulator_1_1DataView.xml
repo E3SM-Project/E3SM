@@ -1,0 +1,393 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="classemulator_1_1DataView" kind="class" language="C++" prot="public">
+    <compoundname>emulator::DataView</compoundname>
+    <includes refid="data__view_8hpp" local="no">data_view.hpp</includes>
+    <templateparamlist>
+      <param>
+        <type>typename T</type>
+      </param>
+    </templateparamlist>
+    <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classemulator_1_1DataView_1a5872016e4e1944c070cbda400761af2d" prot="private" static="no" mutable="no">
+        <type>T *</type>
+        <definition>T* emulator::DataView&lt; T &gt;::m_data</definition>
+        <argsstring></argsstring>
+        <name>m_data</name>
+        <qualifiedname>emulator::DataView::m_data</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/data_view.hpp" line="99" column="5" bodyfile="components/emulator_comps/common/src/data_view.hpp" bodystart="99" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1DataView_1a2300f8480213ebb0cdbd7aa3be61ab1f" prot="private" static="no" mutable="no">
+        <type>std::size_t</type>
+        <definition>std::size_t emulator::DataView&lt; T &gt;::m_size</definition>
+        <argsstring></argsstring>
+        <name>m_size</name>
+        <qualifiedname>emulator::DataView::m_size</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/data_view.hpp" line="100" column="15" bodyfile="components/emulator_comps/common/src/data_view.hpp" bodystart="100" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1DataView_1aa3bb7bb4669925ab332287522bf8d585" prot="private" static="no" mutable="no">
+        <type><ref refid="namespaceemulator_1a5c37d3988c19d14990921fb3b7db8bb4" kindref="member">DataLayout</ref></type>
+        <definition>DataLayout emulator::DataView&lt; T &gt;::m_layout</definition>
+        <argsstring></argsstring>
+        <name>m_layout</name>
+        <qualifiedname>emulator::DataView::m_layout</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/data_view.hpp" line="101" column="14" bodyfile="components/emulator_comps/common/src/data_view.hpp" bodystart="101" bodyend="-1"/>
+      </memberdef>
+    </sectiondef>
+    <sectiondef kind="public-func">
+      <memberdef kind="function" id="classemulator_1_1DataView_1af3b16dfb9c8a6437a7a5691719bca183" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>emulator::DataView&lt; T &gt;::DataView</definition>
+        <argsstring>()</argsstring>
+        <name>DataView</name>
+        <qualifiedname>emulator::DataView::DataView</qualifiedname>
+        <briefdescription>
+<para>Default constructor: empty view. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/data_view.hpp" line="53" column="3" bodyfile="components/emulator_comps/common/src/data_view.hpp" bodystart="53" bodyend="53"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1DataView_1add4ff70ebd839a0f0d03ee316f51c0e0" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>emulator::DataView&lt; T &gt;::DataView</definition>
+        <argsstring>(T *data, std::size_t size, DataLayout layout=DataLayout::ROW_MAJOR)</argsstring>
+        <name>DataView</name>
+        <qualifiedname>emulator::DataView::DataView</qualifiedname>
+        <param>
+          <type>T *</type>
+          <declname>data</declname>
+        </param>
+        <param>
+          <type>std::size_t</type>
+          <declname>size</declname>
+        </param>
+        <param>
+          <type><ref refid="namespaceemulator_1a5c37d3988c19d14990921fb3b7db8bb4" kindref="member">DataLayout</ref></type>
+          <declname>layout</declname>
+          <defval><ref refid="namespaceemulator_1a5c37d3988c19d14990921fb3b7db8bb4a21541962976d7709c26e9cd8385bd648" kindref="member">DataLayout::ROW_MAJOR</ref></defval>
+        </param>
+        <briefdescription>
+<para>Construct from raw pointer and size. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/data_view.hpp" line="56" column="3" bodyfile="components/emulator_comps/common/src/data_view.hpp" bodystart="56" bodyend="57"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1DataView_1a6ce1cfe3a4211267ca0b915900a86f66" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>emulator::DataView&lt; T &gt;::DataView</definition>
+        <argsstring>(const T *data, std::size_t size, DataLayout layout=DataLayout::ROW_MAJOR)</argsstring>
+        <name>DataView</name>
+        <qualifiedname>emulator::DataView::DataView</qualifiedname>
+        <param>
+          <type>const T *</type>
+          <declname>data</declname>
+        </param>
+        <param>
+          <type>std::size_t</type>
+          <declname>size</declname>
+        </param>
+        <param>
+          <type><ref refid="namespaceemulator_1a5c37d3988c19d14990921fb3b7db8bb4" kindref="member">DataLayout</ref></type>
+          <declname>layout</declname>
+          <defval><ref refid="namespaceemulator_1a5c37d3988c19d14990921fb3b7db8bb4a21541962976d7709c26e9cd8385bd648" kindref="member">DataLayout::ROW_MAJOR</ref></defval>
+        </param>
+        <briefdescription>
+<para>Construct from raw pointer and size (const version) </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/data_view.hpp" line="60" column="3" bodyfile="components/emulator_comps/common/src/data_view.hpp" bodystart="60" bodyend="62"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1DataView_1a5aaf597ab5fc0866684c163c53a9439b" prot="public" static="no" const="no" explicit="yes" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>emulator::DataView&lt; T &gt;::DataView</definition>
+        <argsstring>(std::vector&lt; T &gt; &amp;vec, DataLayout layout=DataLayout::ROW_MAJOR)</argsstring>
+        <name>DataView</name>
+        <qualifiedname>emulator::DataView::DataView</qualifiedname>
+        <param>
+          <type>std::vector&lt; T &gt; &amp;</type>
+          <declname>vec</declname>
+        </param>
+        <param>
+          <type><ref refid="namespaceemulator_1a5c37d3988c19d14990921fb3b7db8bb4" kindref="member">DataLayout</ref></type>
+          <declname>layout</declname>
+          <defval><ref refid="namespaceemulator_1a5c37d3988c19d14990921fb3b7db8bb4a21541962976d7709c26e9cd8385bd648" kindref="member">DataLayout::ROW_MAJOR</ref></defval>
+        </param>
+        <briefdescription>
+<para>Construct from std::vector (non-owning) </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/data_view.hpp" line="65" column="12" bodyfile="components/emulator_comps/common/src/data_view.hpp" bodystart="65" bodyend="67"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1DataView_1a404ebe5288dc597faf3ba6764788a904" prot="public" static="no" const="no" explicit="yes" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>emulator::DataView&lt; T &gt;::DataView</definition>
+        <argsstring>(const std::vector&lt; T &gt; &amp;vec, DataLayout layout=DataLayout::ROW_MAJOR)</argsstring>
+        <name>DataView</name>
+        <qualifiedname>emulator::DataView::DataView</qualifiedname>
+        <param>
+          <type>const std::vector&lt; T &gt; &amp;</type>
+          <declname>vec</declname>
+        </param>
+        <param>
+          <type><ref refid="namespaceemulator_1a5c37d3988c19d14990921fb3b7db8bb4" kindref="member">DataLayout</ref></type>
+          <declname>layout</declname>
+          <defval><ref refid="namespaceemulator_1a5c37d3988c19d14990921fb3b7db8bb4a21541962976d7709c26e9cd8385bd648" kindref="member">DataLayout::ROW_MAJOR</ref></defval>
+        </param>
+        <briefdescription>
+<para>Construct from const std::vector (non-owning) </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/data_view.hpp" line="70" column="12" bodyfile="components/emulator_comps/common/src/data_view.hpp" bodystart="70" bodyend="73"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1DataView_1afd593d0e36d21221c23ce4f4a7cf1dd2" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>T *</type>
+        <definition>T * emulator::DataView&lt; T &gt;::data</definition>
+        <argsstring>()</argsstring>
+        <name>data</name>
+        <qualifiedname>emulator::DataView::data</qualifiedname>
+        <briefdescription>
+<para>Get raw pointer to data. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/data_view.hpp" line="76" column="5" bodyfile="components/emulator_comps/common/src/data_view.hpp" bodystart="76" bodyend="76"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1DataView_1a6594c2411cee4694f58f3513b9f33f38" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>const T *</type>
+        <definition>const T * emulator::DataView&lt; T &gt;::data</definition>
+        <argsstring>() const</argsstring>
+        <name>data</name>
+        <qualifiedname>emulator::DataView::data</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/data_view.hpp" line="77" column="11" bodyfile="components/emulator_comps/common/src/data_view.hpp" bodystart="77" bodyend="77"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1DataView_1a90b8253070a0464f0f2befd238dbb751" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>std::size_t</type>
+        <definition>std::size_t emulator::DataView&lt; T &gt;::size</definition>
+        <argsstring>() const</argsstring>
+        <name>size</name>
+        <qualifiedname>emulator::DataView::size</qualifiedname>
+        <briefdescription>
+<para>Get number of elements. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/data_view.hpp" line="80" column="15" bodyfile="components/emulator_comps/common/src/data_view.hpp" bodystart="80" bodyend="80"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1DataView_1a6c58c73690b22887ca4af42478b191c9" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>bool</type>
+        <definition>bool emulator::DataView&lt; T &gt;::empty</definition>
+        <argsstring>() const</argsstring>
+        <name>empty</name>
+        <qualifiedname>emulator::DataView::empty</qualifiedname>
+        <briefdescription>
+<para>Check if view is empty. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/data_view.hpp" line="83" column="8" bodyfile="components/emulator_comps/common/src/data_view.hpp" bodystart="83" bodyend="83"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1DataView_1a8822af5b5e3b75b4d665e80043fda2da" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type><ref refid="namespaceemulator_1a5c37d3988c19d14990921fb3b7db8bb4" kindref="member">DataLayout</ref></type>
+        <definition>DataLayout emulator::DataView&lt; T &gt;::layout</definition>
+        <argsstring>() const</argsstring>
+        <name>layout</name>
+        <qualifiedname>emulator::DataView::layout</qualifiedname>
+        <briefdescription>
+<para>Get memory layout. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/data_view.hpp" line="86" column="14" bodyfile="components/emulator_comps/common/src/data_view.hpp" bodystart="86" bodyend="86"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1DataView_1a84b8fb9070986929fe96c39521f5f8cd" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>T &amp;</type>
+        <definition>T &amp; emulator::DataView&lt; T &gt;::operator[]</definition>
+        <argsstring>(std::size_t idx)</argsstring>
+        <name>operator[]</name>
+        <qualifiedname>emulator::DataView::operator[]</qualifiedname>
+        <param>
+          <type>std::size_t</type>
+          <declname>idx</declname>
+        </param>
+        <briefdescription>
+<para>Element access (bounds checking in debug builds) </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/data_view.hpp" line="89" column="5" bodyfile="components/emulator_comps/common/src/data_view.hpp" bodystart="89" bodyend="89"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1DataView_1a13a38a462bab1ab095bade608463b790" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>const T &amp;</type>
+        <definition>const T &amp; emulator::DataView&lt; T &gt;::operator[]</definition>
+        <argsstring>(std::size_t idx) const</argsstring>
+        <name>operator[]</name>
+        <qualifiedname>emulator::DataView::operator[]</qualifiedname>
+        <param>
+          <type>std::size_t</type>
+          <declname>idx</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/data_view.hpp" line="90" column="11" bodyfile="components/emulator_comps/common/src/data_view.hpp" bodystart="90" bodyend="90"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1DataView_1a2a3556f34aacfe9406293fd0c3ae619e" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>T *</type>
+        <definition>T * emulator::DataView&lt; T &gt;::begin</definition>
+        <argsstring>()</argsstring>
+        <name>begin</name>
+        <qualifiedname>emulator::DataView::begin</qualifiedname>
+        <briefdescription>
+<para>Iterator support. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/data_view.hpp" line="93" column="5" bodyfile="components/emulator_comps/common/src/data_view.hpp" bodystart="93" bodyend="93"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1DataView_1a9f3bc889821a9d1f303b3921bc3bd366" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>T *</type>
+        <definition>T * emulator::DataView&lt; T &gt;::end</definition>
+        <argsstring>()</argsstring>
+        <name>end</name>
+        <qualifiedname>emulator::DataView::end</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/data_view.hpp" line="94" column="5" bodyfile="components/emulator_comps/common/src/data_view.hpp" bodystart="94" bodyend="94"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1DataView_1a19eb132a1adb3d10b623651d1f0a82ca" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>const T *</type>
+        <definition>const T * emulator::DataView&lt; T &gt;::begin</definition>
+        <argsstring>() const</argsstring>
+        <name>begin</name>
+        <qualifiedname>emulator::DataView::begin</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/data_view.hpp" line="95" column="11" bodyfile="components/emulator_comps/common/src/data_view.hpp" bodystart="95" bodyend="95"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1DataView_1ae0a4b6c7cd26688ca6f00abb806a80e2" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>const T *</type>
+        <definition>const T * emulator::DataView&lt; T &gt;::end</definition>
+        <argsstring>() const</argsstring>
+        <name>end</name>
+        <qualifiedname>emulator::DataView::end</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/data_view.hpp" line="96" column="11" bodyfile="components/emulator_comps/common/src/data_view.hpp" bodystart="96" bodyend="96"/>
+      </memberdef>
+    </sectiondef>
+    <briefdescription>
+<para>Non-owning view over contiguous data. </para>
+    </briefdescription>
+    <detaileddescription>
+<para>Provides zero-copy access to data stored elsewhere. Does not manage lifetime - the caller must ensure the underlying data remains valid.</para>
+<sect1 id="classemulator_1_1DataView_1autotoc_md1_1s1"><sect2 id="classemulator_1_1DataView_1autotoc_md1">
+<title>Usage</title><para><programlisting filename=".cpp"><codeline><highlight class="normal">std::vector&lt;double&gt;<sp/><ref refid="classemulator_1_1DataView_1afd593d0e36d21221c23ce4f4a7cf1dd2" kindref="member">data</ref><sp/>=<sp/>{1.0,<sp/>2.0,<sp/>3.0};</highlight></codeline>
+<codeline><highlight class="normal"><ref refid="classemulator_1_1DataView_1af3b16dfb9c8a6437a7a5691719bca183" kindref="member">DataView&lt;double&gt;</ref><sp/>view(<ref refid="classemulator_1_1DataView_1afd593d0e36d21221c23ce4f4a7cf1dd2" kindref="member">data</ref>);</highlight></codeline>
+<codeline><highlight class="normal"></highlight><highlight class="comment">//<sp/>or<sp/>from<sp/>raw<sp/>pointer:</highlight><highlight class="normal"></highlight></codeline>
+<codeline><highlight class="normal"><ref refid="classemulator_1_1DataView_1af3b16dfb9c8a6437a7a5691719bca183" kindref="member">DataView&lt;double&gt;</ref><sp/>view(ptr,<sp/><ref refid="classemulator_1_1DataView_1a90b8253070a0464f0f2befd238dbb751" kindref="member">size</ref>);</highlight></codeline>
+</programlisting></para>
+</sect2></sect1>
+<sect1 id="classemulator_1_1DataView_1autotoc_md2_1s1"><sect2 id="classemulator_1_1DataView_1autotoc_md2">
+<title>Future Kokkos Integration</title><para>When implementing the LAPIS backend, <ref refid="classemulator_1_1DataView" kindref="compound">DataView</ref> can be constructed directly from Kokkos::View without copying, enabling zero-copy data paths between E3SM components and ML inference.</para>
+<para><parameterlist kind="templateparam"><parameteritem>
+<parameternamelist>
+<parametername>T</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Element type (typically double or float) </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+</para>
+</sect2></sect1>
+    </detaileddescription>
+    <location file="components/emulator_comps/common/src/data_view.hpp" line="50" column="12" bodyfile="components/emulator_comps/common/src/data_view.hpp" bodystart="50" bodyend="102"/>
+    <listofallmembers>
+      <member refid="classemulator_1_1DataView_1a2a3556f34aacfe9406293fd0c3ae619e" prot="public" virt="non-virtual"><scope>emulator::DataView</scope><name>begin</name></member>
+      <member refid="classemulator_1_1DataView_1a19eb132a1adb3d10b623651d1f0a82ca" prot="public" virt="non-virtual"><scope>emulator::DataView</scope><name>begin</name></member>
+      <member refid="classemulator_1_1DataView_1afd593d0e36d21221c23ce4f4a7cf1dd2" prot="public" virt="non-virtual"><scope>emulator::DataView</scope><name>data</name></member>
+      <member refid="classemulator_1_1DataView_1a6594c2411cee4694f58f3513b9f33f38" prot="public" virt="non-virtual"><scope>emulator::DataView</scope><name>data</name></member>
+      <member refid="classemulator_1_1DataView_1af3b16dfb9c8a6437a7a5691719bca183" prot="public" virt="non-virtual"><scope>emulator::DataView</scope><name>DataView</name></member>
+      <member refid="classemulator_1_1DataView_1add4ff70ebd839a0f0d03ee316f51c0e0" prot="public" virt="non-virtual"><scope>emulator::DataView</scope><name>DataView</name></member>
+      <member refid="classemulator_1_1DataView_1a6ce1cfe3a4211267ca0b915900a86f66" prot="public" virt="non-virtual"><scope>emulator::DataView</scope><name>DataView</name></member>
+      <member refid="classemulator_1_1DataView_1a5aaf597ab5fc0866684c163c53a9439b" prot="public" virt="non-virtual"><scope>emulator::DataView</scope><name>DataView</name></member>
+      <member refid="classemulator_1_1DataView_1a404ebe5288dc597faf3ba6764788a904" prot="public" virt="non-virtual"><scope>emulator::DataView</scope><name>DataView</name></member>
+      <member refid="classemulator_1_1DataView_1a6c58c73690b22887ca4af42478b191c9" prot="public" virt="non-virtual"><scope>emulator::DataView</scope><name>empty</name></member>
+      <member refid="classemulator_1_1DataView_1a9f3bc889821a9d1f303b3921bc3bd366" prot="public" virt="non-virtual"><scope>emulator::DataView</scope><name>end</name></member>
+      <member refid="classemulator_1_1DataView_1ae0a4b6c7cd26688ca6f00abb806a80e2" prot="public" virt="non-virtual"><scope>emulator::DataView</scope><name>end</name></member>
+      <member refid="classemulator_1_1DataView_1a8822af5b5e3b75b4d665e80043fda2da" prot="public" virt="non-virtual"><scope>emulator::DataView</scope><name>layout</name></member>
+      <member refid="classemulator_1_1DataView_1a5872016e4e1944c070cbda400761af2d" prot="private" virt="non-virtual"><scope>emulator::DataView</scope><name>m_data</name></member>
+      <member refid="classemulator_1_1DataView_1aa3bb7bb4669925ab332287522bf8d585" prot="private" virt="non-virtual"><scope>emulator::DataView</scope><name>m_layout</name></member>
+      <member refid="classemulator_1_1DataView_1a2300f8480213ebb0cdbd7aa3be61ab1f" prot="private" virt="non-virtual"><scope>emulator::DataView</scope><name>m_size</name></member>
+      <member refid="classemulator_1_1DataView_1a84b8fb9070986929fe96c39521f5f8cd" prot="public" virt="non-virtual"><scope>emulator::DataView</scope><name>operator[]</name></member>
+      <member refid="classemulator_1_1DataView_1a13a38a462bab1ab095bade608463b790" prot="public" virt="non-virtual"><scope>emulator::DataView</scope><name>operator[]</name></member>
+      <member refid="classemulator_1_1DataView_1a90b8253070a0464f0f2befd238dbb751" prot="public" virt="non-virtual"><scope>emulator::DataView</scope><name>size</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

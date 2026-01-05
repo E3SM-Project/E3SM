@@ -1,0 +1,730 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="structemulator_1_1impl_1_1AtmCouplingIndices" kind="struct" language="C++" prot="public">
+    <compoundname>emulator::impl::AtmCouplingIndices</compoundname>
+    <includes refid="atm__coupling_8hpp" local="no">atm_coupling.hpp</includes>
+    <sectiondef kind="public-attrib">
+      <memberdef kind="variable" id="structemulator_1_1impl_1_1AtmCouplingIndices_1aa8b2c050e9efa82a44274a71359c1d9a" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::impl::AtmCouplingIndices::Sa_z</definition>
+        <argsstring></argsstring>
+        <name>Sa_z</name>
+        <qualifiedname>emulator::impl::AtmCouplingIndices::Sa_z</qualifiedname>
+        <initializer>= -1</initializer>
+        <briefdescription>
+<para>Atmospheric height at bottom level [m]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" line="42" column="7" bodyfile="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" bodystart="42" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1impl_1_1AtmCouplingIndices_1a1797b465f74c73c8f8d9d70966e34e8a" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::impl::AtmCouplingIndices::Sa_u</definition>
+        <argsstring></argsstring>
+        <name>Sa_u</name>
+        <qualifiedname>emulator::impl::AtmCouplingIndices::Sa_u</qualifiedname>
+        <initializer>= -1</initializer>
+        <briefdescription>
+<para>Zonal wind at bottom level [m/s]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" line="43" column="7" bodyfile="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" bodystart="43" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1impl_1_1AtmCouplingIndices_1a97b94eaa2a9210cb594f459db19c736e" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::impl::AtmCouplingIndices::Sa_v</definition>
+        <argsstring></argsstring>
+        <name>Sa_v</name>
+        <qualifiedname>emulator::impl::AtmCouplingIndices::Sa_v</qualifiedname>
+        <initializer>= -1</initializer>
+        <briefdescription>
+<para>Meridional wind at bottom level [m/s]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" line="44" column="7" bodyfile="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" bodystart="44" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1impl_1_1AtmCouplingIndices_1aa0940bfb68d2326d4cd6b8ee97385401" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::impl::AtmCouplingIndices::Sa_tbot</definition>
+        <argsstring></argsstring>
+        <name>Sa_tbot</name>
+        <qualifiedname>emulator::impl::AtmCouplingIndices::Sa_tbot</qualifiedname>
+        <initializer>= -1</initializer>
+        <briefdescription>
+<para>Temperature at bottom level [K]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" line="45" column="7" bodyfile="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" bodystart="45" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1impl_1_1AtmCouplingIndices_1ae9aa1223107ffcd63bdba1fc5c5e9696" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::impl::AtmCouplingIndices::Sa_ptem</definition>
+        <argsstring></argsstring>
+        <name>Sa_ptem</name>
+        <qualifiedname>emulator::impl::AtmCouplingIndices::Sa_ptem</qualifiedname>
+        <initializer>= -1</initializer>
+        <briefdescription>
+<para>Potential temperature [K]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" line="46" column="7" bodyfile="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" bodystart="46" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1impl_1_1AtmCouplingIndices_1a9ae077c7711fe9b84595260fd5b897e9" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::impl::AtmCouplingIndices::Sa_shum</definition>
+        <argsstring></argsstring>
+        <name>Sa_shum</name>
+        <qualifiedname>emulator::impl::AtmCouplingIndices::Sa_shum</qualifiedname>
+        <initializer>= -1</initializer>
+        <briefdescription>
+<para>Specific humidity [kg/kg]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" line="47" column="7" bodyfile="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" bodystart="47" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1impl_1_1AtmCouplingIndices_1a5e4e2565eec5975c63d802849ec91eac" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::impl::AtmCouplingIndices::Sa_dens</definition>
+        <argsstring></argsstring>
+        <name>Sa_dens</name>
+        <qualifiedname>emulator::impl::AtmCouplingIndices::Sa_dens</qualifiedname>
+        <initializer>= -1</initializer>
+        <briefdescription>
+<para>Air density [kg/m³]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" line="48" column="7" bodyfile="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" bodystart="48" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1impl_1_1AtmCouplingIndices_1a921335ae575afde7c8182b03f85e1cc6" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::impl::AtmCouplingIndices::Sa_pbot</definition>
+        <argsstring></argsstring>
+        <name>Sa_pbot</name>
+        <qualifiedname>emulator::impl::AtmCouplingIndices::Sa_pbot</qualifiedname>
+        <initializer>= -1</initializer>
+        <briefdescription>
+<para>Pressure at bottom level [Pa]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" line="49" column="7" bodyfile="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" bodystart="49" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1impl_1_1AtmCouplingIndices_1af06f30e7ebe8763c8e284eaf8d9cb3f1" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::impl::AtmCouplingIndices::Sa_pslv</definition>
+        <argsstring></argsstring>
+        <name>Sa_pslv</name>
+        <qualifiedname>emulator::impl::AtmCouplingIndices::Sa_pslv</qualifiedname>
+        <initializer>= -1</initializer>
+        <briefdescription>
+<para>Sea level pressure [Pa]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" line="50" column="7" bodyfile="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" bodystart="50" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1impl_1_1AtmCouplingIndices_1aa3ba00bcd4335d28ac8a40a495132a8e" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::impl::AtmCouplingIndices::Faxa_lwdn</definition>
+        <argsstring></argsstring>
+        <name>Faxa_lwdn</name>
+        <qualifiedname>emulator::impl::AtmCouplingIndices::Faxa_lwdn</qualifiedname>
+        <initializer>= -1</initializer>
+        <briefdescription>
+<para>Downward longwave radiation [W/m²]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" line="51" column="7" bodyfile="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" bodystart="51" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1impl_1_1AtmCouplingIndices_1acb3f02d30417f758e81f1c7c481b1bb6" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::impl::AtmCouplingIndices::Faxa_rainc</definition>
+        <argsstring></argsstring>
+        <name>Faxa_rainc</name>
+        <qualifiedname>emulator::impl::AtmCouplingIndices::Faxa_rainc</qualifiedname>
+        <initializer>= -1</initializer>
+        <briefdescription>
+<para>Convective precipitation [kg/m²/s]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" line="52" column="7" bodyfile="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" bodystart="52" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1impl_1_1AtmCouplingIndices_1a9119b3bcf1256d9ca18664edaf3a7fd7" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::impl::AtmCouplingIndices::Faxa_rainl</definition>
+        <argsstring></argsstring>
+        <name>Faxa_rainl</name>
+        <qualifiedname>emulator::impl::AtmCouplingIndices::Faxa_rainl</qualifiedname>
+        <initializer>= -1</initializer>
+        <briefdescription>
+<para>Large-scale precipitation [kg/m²/s]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" line="53" column="7" bodyfile="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" bodystart="53" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1impl_1_1AtmCouplingIndices_1a05d1a1ece9bda3e275c7f6da5b39c139" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::impl::AtmCouplingIndices::Faxa_snowc</definition>
+        <argsstring></argsstring>
+        <name>Faxa_snowc</name>
+        <qualifiedname>emulator::impl::AtmCouplingIndices::Faxa_snowc</qualifiedname>
+        <initializer>= -1</initializer>
+        <briefdescription>
+<para>Convective snowfall [kg/m²/s]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" line="54" column="7" bodyfile="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" bodystart="54" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1impl_1_1AtmCouplingIndices_1a51f7ca838b1bf9bac2f2402b7378e295" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::impl::AtmCouplingIndices::Faxa_snowl</definition>
+        <argsstring></argsstring>
+        <name>Faxa_snowl</name>
+        <qualifiedname>emulator::impl::AtmCouplingIndices::Faxa_snowl</qualifiedname>
+        <initializer>= -1</initializer>
+        <briefdescription>
+<para>Large-scale snowfall [kg/m²/s]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" line="55" column="7" bodyfile="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" bodystart="55" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1impl_1_1AtmCouplingIndices_1a11b36bf0c097cb8152607384e5d197a9" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::impl::AtmCouplingIndices::Faxa_swndr</definition>
+        <argsstring></argsstring>
+        <name>Faxa_swndr</name>
+        <qualifiedname>emulator::impl::AtmCouplingIndices::Faxa_swndr</qualifiedname>
+        <initializer>= -1</initializer>
+        <briefdescription>
+<para>NIR direct shortwave [W/m²]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" line="56" column="7" bodyfile="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" bodystart="56" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1impl_1_1AtmCouplingIndices_1a2f0498865af61ab12409f47fa328c249" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::impl::AtmCouplingIndices::Faxa_swvdr</definition>
+        <argsstring></argsstring>
+        <name>Faxa_swvdr</name>
+        <qualifiedname>emulator::impl::AtmCouplingIndices::Faxa_swvdr</qualifiedname>
+        <initializer>= -1</initializer>
+        <briefdescription>
+<para>Visible direct shortwave [W/m²]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" line="57" column="7" bodyfile="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" bodystart="57" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1impl_1_1AtmCouplingIndices_1ad658d04ecb7ba9b8c11e22044ef013f2" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::impl::AtmCouplingIndices::Faxa_swndf</definition>
+        <argsstring></argsstring>
+        <name>Faxa_swndf</name>
+        <qualifiedname>emulator::impl::AtmCouplingIndices::Faxa_swndf</qualifiedname>
+        <initializer>= -1</initializer>
+        <briefdescription>
+<para>NIR diffuse shortwave [W/m²]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" line="58" column="7" bodyfile="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" bodystart="58" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1impl_1_1AtmCouplingIndices_1a024ff1a84b2e2e49f3c58d213483f75d" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::impl::AtmCouplingIndices::Faxa_swvdf</definition>
+        <argsstring></argsstring>
+        <name>Faxa_swvdf</name>
+        <qualifiedname>emulator::impl::AtmCouplingIndices::Faxa_swvdf</qualifiedname>
+        <initializer>= -1</initializer>
+        <briefdescription>
+<para>Visible diffuse shortwave [W/m²]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" line="59" column="7" bodyfile="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" bodystart="59" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1impl_1_1AtmCouplingIndices_1ad3c9e8624eff71d2c281ba5e112e213d" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::impl::AtmCouplingIndices::Faxa_swnet</definition>
+        <argsstring></argsstring>
+        <name>Faxa_swnet</name>
+        <qualifiedname>emulator::impl::AtmCouplingIndices::Faxa_swnet</qualifiedname>
+        <initializer>= -1</initializer>
+        <briefdescription>
+<para>Net shortwave radiation [W/m²]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" line="60" column="7" bodyfile="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" bodystart="60" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1impl_1_1AtmCouplingIndices_1aeb548fffeb7b639d4fa9d0f82398c1c6" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::impl::AtmCouplingIndices::Sx_t</definition>
+        <argsstring></argsstring>
+        <name>Sx_t</name>
+        <qualifiedname>emulator::impl::AtmCouplingIndices::Sx_t</qualifiedname>
+        <initializer>= -1</initializer>
+        <briefdescription>
+<para>Merged surface temperature [K]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" line="65" column="7" bodyfile="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" bodystart="65" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1impl_1_1AtmCouplingIndices_1aa81fc3ead43b2bd9b0aa5dae64f2590a" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::impl::AtmCouplingIndices::So_t</definition>
+        <argsstring></argsstring>
+        <name>So_t</name>
+        <qualifiedname>emulator::impl::AtmCouplingIndices::So_t</qualifiedname>
+        <initializer>= -1</initializer>
+        <briefdescription>
+<para>Ocean surface temperature [K]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" line="66" column="7" bodyfile="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" bodystart="66" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1impl_1_1AtmCouplingIndices_1a1a93f3727387d7e0591641c04c441f9e" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::impl::AtmCouplingIndices::Faxx_sen</definition>
+        <argsstring></argsstring>
+        <name>Faxx_sen</name>
+        <qualifiedname>emulator::impl::AtmCouplingIndices::Faxx_sen</qualifiedname>
+        <initializer>= -1</initializer>
+        <briefdescription>
+<para>Sensible heat flux [W/m²]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" line="67" column="7" bodyfile="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" bodystart="67" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1impl_1_1AtmCouplingIndices_1a9c4245f1079ff55276c085ee82df7897" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::impl::AtmCouplingIndices::Faxx_evap</definition>
+        <argsstring></argsstring>
+        <name>Faxx_evap</name>
+        <qualifiedname>emulator::impl::AtmCouplingIndices::Faxx_evap</qualifiedname>
+        <initializer>= -1</initializer>
+        <briefdescription>
+<para>Evaporative flux [kg/m²/s]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" line="68" column="7" bodyfile="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" bodystart="68" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1impl_1_1AtmCouplingIndices_1a9825e45fb0e86594500da150278455d0" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::impl::AtmCouplingIndices::Faxx_lat</definition>
+        <argsstring></argsstring>
+        <name>Faxx_lat</name>
+        <qualifiedname>emulator::impl::AtmCouplingIndices::Faxx_lat</qualifiedname>
+        <initializer>= -1</initializer>
+        <briefdescription>
+<para>Latent heat flux [W/m²]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" line="69" column="7" bodyfile="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" bodystart="69" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1impl_1_1AtmCouplingIndices_1a82c956db95222bb67a33835fdd80e26a" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::impl::AtmCouplingIndices::Faxx_taux</definition>
+        <argsstring></argsstring>
+        <name>Faxx_taux</name>
+        <qualifiedname>emulator::impl::AtmCouplingIndices::Faxx_taux</qualifiedname>
+        <initializer>= -1</initializer>
+        <briefdescription>
+<para>Zonal wind stress [N/m²]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" line="70" column="7" bodyfile="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" bodystart="70" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1impl_1_1AtmCouplingIndices_1a53d5c4a086f2351f0bd8719855f70b32" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::impl::AtmCouplingIndices::Faxx_tauy</definition>
+        <argsstring></argsstring>
+        <name>Faxx_tauy</name>
+        <qualifiedname>emulator::impl::AtmCouplingIndices::Faxx_tauy</qualifiedname>
+        <initializer>= -1</initializer>
+        <briefdescription>
+<para>Meridional wind stress [N/m²]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" line="71" column="7" bodyfile="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" bodystart="71" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1impl_1_1AtmCouplingIndices_1a7da8ff2a5ebb62a636518b5790755fb8" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::impl::AtmCouplingIndices::Faxx_lwup</definition>
+        <argsstring></argsstring>
+        <name>Faxx_lwup</name>
+        <qualifiedname>emulator::impl::AtmCouplingIndices::Faxx_lwup</qualifiedname>
+        <initializer>= -1</initializer>
+        <briefdescription>
+<para>Upward longwave radiation [W/m²]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" line="72" column="7" bodyfile="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" bodystart="72" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1impl_1_1AtmCouplingIndices_1a5b938479edc8cdc88fb6173f8efc5ece" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::impl::AtmCouplingIndices::Sx_avsdr</definition>
+        <argsstring></argsstring>
+        <name>Sx_avsdr</name>
+        <qualifiedname>emulator::impl::AtmCouplingIndices::Sx_avsdr</qualifiedname>
+        <initializer>= -1</initializer>
+        <briefdescription>
+<para>Visible direct albedo [-]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" line="73" column="7" bodyfile="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" bodystart="73" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1impl_1_1AtmCouplingIndices_1a1449a770ebec03f95004cefa72ae49b0" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::impl::AtmCouplingIndices::Sx_anidr</definition>
+        <argsstring></argsstring>
+        <name>Sx_anidr</name>
+        <qualifiedname>emulator::impl::AtmCouplingIndices::Sx_anidr</qualifiedname>
+        <initializer>= -1</initializer>
+        <briefdescription>
+<para>NIR direct albedo [-]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" line="74" column="7" bodyfile="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" bodystart="74" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1impl_1_1AtmCouplingIndices_1ac7929bbe94a187daf39e9e843c6b94a7" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::impl::AtmCouplingIndices::Sx_avsdf</definition>
+        <argsstring></argsstring>
+        <name>Sx_avsdf</name>
+        <qualifiedname>emulator::impl::AtmCouplingIndices::Sx_avsdf</qualifiedname>
+        <initializer>= -1</initializer>
+        <briefdescription>
+<para>Visible diffuse albedo [-]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" line="75" column="7" bodyfile="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" bodystart="75" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1impl_1_1AtmCouplingIndices_1a1791b3849546bf994ed25f3ed0d730b7" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::impl::AtmCouplingIndices::Sx_anidf</definition>
+        <argsstring></argsstring>
+        <name>Sx_anidf</name>
+        <qualifiedname>emulator::impl::AtmCouplingIndices::Sx_anidf</qualifiedname>
+        <initializer>= -1</initializer>
+        <briefdescription>
+<para>NIR diffuse albedo [-]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" line="76" column="7" bodyfile="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" bodystart="76" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1impl_1_1AtmCouplingIndices_1a530a71db934e222f79906363fa696146" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::impl::AtmCouplingIndices::Sl_snowh</definition>
+        <argsstring></argsstring>
+        <name>Sl_snowh</name>
+        <qualifiedname>emulator::impl::AtmCouplingIndices::Sl_snowh</qualifiedname>
+        <initializer>= -1</initializer>
+        <briefdescription>
+<para>Snow height over land [m]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" line="77" column="7" bodyfile="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" bodystart="77" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1impl_1_1AtmCouplingIndices_1acd4ba4e82960a0488f0752c29d30f3c9" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::impl::AtmCouplingIndices::Si_snowh</definition>
+        <argsstring></argsstring>
+        <name>Si_snowh</name>
+        <qualifiedname>emulator::impl::AtmCouplingIndices::Si_snowh</qualifiedname>
+        <initializer>= -1</initializer>
+        <briefdescription>
+<para>Snow height over ice [m]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" line="78" column="7" bodyfile="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" bodystart="78" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1impl_1_1AtmCouplingIndices_1a16491fa3665cb39cb7539bacc2bf7598" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::impl::AtmCouplingIndices::Sx_tref</definition>
+        <argsstring></argsstring>
+        <name>Sx_tref</name>
+        <qualifiedname>emulator::impl::AtmCouplingIndices::Sx_tref</qualifiedname>
+        <initializer>= -1</initializer>
+        <briefdescription>
+<para>Reference temperature [K]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" line="79" column="7" bodyfile="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" bodystart="79" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1impl_1_1AtmCouplingIndices_1ac6f1cee6eaaf87d15775b41b61040709" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::impl::AtmCouplingIndices::Sx_qref</definition>
+        <argsstring></argsstring>
+        <name>Sx_qref</name>
+        <qualifiedname>emulator::impl::AtmCouplingIndices::Sx_qref</qualifiedname>
+        <initializer>= -1</initializer>
+        <briefdescription>
+<para>Reference specific humidity [kg/kg]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" line="80" column="7" bodyfile="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" bodystart="80" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1impl_1_1AtmCouplingIndices_1af73212406645242a32f196194b752cbd" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::impl::AtmCouplingIndices::Sx_u10</definition>
+        <argsstring></argsstring>
+        <name>Sx_u10</name>
+        <qualifiedname>emulator::impl::AtmCouplingIndices::Sx_u10</qualifiedname>
+        <initializer>= -1</initializer>
+        <briefdescription>
+<para>10m wind speed [m/s] </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" line="81" column="7" bodyfile="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" bodystart="81" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1impl_1_1AtmCouplingIndices_1a6d792baeb6ff06727b9b4ed5eeb8509c" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::impl::AtmCouplingIndices::Sf_ifrac</definition>
+        <argsstring></argsstring>
+        <name>Sf_ifrac</name>
+        <qualifiedname>emulator::impl::AtmCouplingIndices::Sf_ifrac</qualifiedname>
+        <initializer>= -1</initializer>
+        <briefdescription>
+<para>Sea ice fraction [-]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" line="82" column="7" bodyfile="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" bodystart="82" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1impl_1_1AtmCouplingIndices_1a1717f446c33e858b01b4ddaa0e17e53a" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::impl::AtmCouplingIndices::Sf_ofrac</definition>
+        <argsstring></argsstring>
+        <name>Sf_ofrac</name>
+        <qualifiedname>emulator::impl::AtmCouplingIndices::Sf_ofrac</qualifiedname>
+        <initializer>= -1</initializer>
+        <briefdescription>
+<para>Ocean fraction [-]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" line="83" column="7" bodyfile="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" bodystart="83" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1impl_1_1AtmCouplingIndices_1ad783c88287ebe9a317f48deb37ff992a" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::impl::AtmCouplingIndices::Sf_lfrac</definition>
+        <argsstring></argsstring>
+        <name>Sf_lfrac</name>
+        <qualifiedname>emulator::impl::AtmCouplingIndices::Sf_lfrac</qualifiedname>
+        <initializer>= -1</initializer>
+        <briefdescription>
+<para>Land fraction [-]. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" line="84" column="7" bodyfile="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" bodystart="84" bodyend="-1"/>
+      </memberdef>
+    </sectiondef>
+    <sectiondef kind="public-func">
+      <memberdef kind="function" id="structemulator_1_1impl_1_1AtmCouplingIndices_1af3505997b82ae1ff06cce32f2206b2ae" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void emulator::impl::AtmCouplingIndices::initialize</definition>
+        <argsstring>(CouplingFieldsBase &amp;fields)</argsstring>
+        <name>initialize</name>
+        <qualifiedname>emulator::impl::AtmCouplingIndices::initialize</qualifiedname>
+        <param>
+          <type><ref refid="classemulator_1_1CouplingFieldsBase" kindref="compound">CouplingFieldsBase</ref> &amp;</type>
+          <declname>fields</declname>
+        </param>
+        <briefdescription>
+<para>Initialize indices from coupling field base. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Looks up each field name in the <ref refid="classemulator_1_1CouplingFieldsBase" kindref="compound">CouplingFieldsBase</ref> maps and stores the corresponding index.</para>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>fields</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Initialized <ref refid="classemulator_1_1CouplingFieldsBase" kindref="compound">CouplingFieldsBase</ref> with parsed field lists </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" line="94" column="8" bodyfile="components/emulator_comps/eatm/src/impl/atm_coupling.cpp" bodystart="16" bodyend="59"/>
+      </memberdef>
+    </sectiondef>
+    <briefdescription>
+<para>Coupling field indices for atmosphere component. </para>
+    </briefdescription>
+    <detaileddescription>
+<para>Stores the index positions of all export (a2x) and import (x2a) fields within the MCT attribute vector buffers. An index of -1 indicates the field is not present in the coupling.</para>
+<sect1 id="structemulator_1_1impl_1_1AtmCouplingIndices_1autotoc_md30_1s1"><sect2 id="structemulator_1_1impl_1_1AtmCouplingIndices_1autotoc_md30">
+<title>Export Fields (a2x - atmosphere to coupler)</title><para><itemizedlist>
+<listitem><para>Sa_* : State variables at lowest atmosphere level</para>
+</listitem><listitem><para>Faxa_* : Atmosphere fluxes</para>
+</listitem></itemizedlist>
+</para>
+</sect2></sect1>
+<sect1 id="structemulator_1_1impl_1_1AtmCouplingIndices_1autotoc_md31_1s1"><sect2 id="structemulator_1_1impl_1_1AtmCouplingIndices_1autotoc_md31">
+<title>Import Fields (x2a - coupler to atmosphere)</title><para><itemizedlist>
+<listitem><para>Sx_* : Surface state variables (merged)</para>
+</listitem><listitem><para>So_* : Ocean state variables</para>
+</listitem><listitem><para>Faxx_* : Surface fluxes from other components</para>
+</listitem><listitem><para>Sf_* : Surface fractions </para>
+</listitem></itemizedlist>
+</para>
+</sect2></sect1>
+    </detaileddescription>
+    <location file="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" line="38" column="1" bodyfile="components/emulator_comps/eatm/src/impl/atm_coupling.hpp" bodystart="38" bodyend="95"/>
+    <listofallmembers>
+      <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1aa3ba00bcd4335d28ac8a40a495132a8e" prot="public" virt="non-virtual"><scope>emulator::impl::AtmCouplingIndices</scope><name>Faxa_lwdn</name></member>
+      <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1acb3f02d30417f758e81f1c7c481b1bb6" prot="public" virt="non-virtual"><scope>emulator::impl::AtmCouplingIndices</scope><name>Faxa_rainc</name></member>
+      <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1a9119b3bcf1256d9ca18664edaf3a7fd7" prot="public" virt="non-virtual"><scope>emulator::impl::AtmCouplingIndices</scope><name>Faxa_rainl</name></member>
+      <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1a05d1a1ece9bda3e275c7f6da5b39c139" prot="public" virt="non-virtual"><scope>emulator::impl::AtmCouplingIndices</scope><name>Faxa_snowc</name></member>
+      <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1a51f7ca838b1bf9bac2f2402b7378e295" prot="public" virt="non-virtual"><scope>emulator::impl::AtmCouplingIndices</scope><name>Faxa_snowl</name></member>
+      <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1ad658d04ecb7ba9b8c11e22044ef013f2" prot="public" virt="non-virtual"><scope>emulator::impl::AtmCouplingIndices</scope><name>Faxa_swndf</name></member>
+      <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1a11b36bf0c097cb8152607384e5d197a9" prot="public" virt="non-virtual"><scope>emulator::impl::AtmCouplingIndices</scope><name>Faxa_swndr</name></member>
+      <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1ad3c9e8624eff71d2c281ba5e112e213d" prot="public" virt="non-virtual"><scope>emulator::impl::AtmCouplingIndices</scope><name>Faxa_swnet</name></member>
+      <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1a024ff1a84b2e2e49f3c58d213483f75d" prot="public" virt="non-virtual"><scope>emulator::impl::AtmCouplingIndices</scope><name>Faxa_swvdf</name></member>
+      <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1a2f0498865af61ab12409f47fa328c249" prot="public" virt="non-virtual"><scope>emulator::impl::AtmCouplingIndices</scope><name>Faxa_swvdr</name></member>
+      <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1a9c4245f1079ff55276c085ee82df7897" prot="public" virt="non-virtual"><scope>emulator::impl::AtmCouplingIndices</scope><name>Faxx_evap</name></member>
+      <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1a9825e45fb0e86594500da150278455d0" prot="public" virt="non-virtual"><scope>emulator::impl::AtmCouplingIndices</scope><name>Faxx_lat</name></member>
+      <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1a7da8ff2a5ebb62a636518b5790755fb8" prot="public" virt="non-virtual"><scope>emulator::impl::AtmCouplingIndices</scope><name>Faxx_lwup</name></member>
+      <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1a1a93f3727387d7e0591641c04c441f9e" prot="public" virt="non-virtual"><scope>emulator::impl::AtmCouplingIndices</scope><name>Faxx_sen</name></member>
+      <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1a82c956db95222bb67a33835fdd80e26a" prot="public" virt="non-virtual"><scope>emulator::impl::AtmCouplingIndices</scope><name>Faxx_taux</name></member>
+      <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1a53d5c4a086f2351f0bd8719855f70b32" prot="public" virt="non-virtual"><scope>emulator::impl::AtmCouplingIndices</scope><name>Faxx_tauy</name></member>
+      <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1af3505997b82ae1ff06cce32f2206b2ae" prot="public" virt="non-virtual"><scope>emulator::impl::AtmCouplingIndices</scope><name>initialize</name></member>
+      <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1a5e4e2565eec5975c63d802849ec91eac" prot="public" virt="non-virtual"><scope>emulator::impl::AtmCouplingIndices</scope><name>Sa_dens</name></member>
+      <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1a921335ae575afde7c8182b03f85e1cc6" prot="public" virt="non-virtual"><scope>emulator::impl::AtmCouplingIndices</scope><name>Sa_pbot</name></member>
+      <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1af06f30e7ebe8763c8e284eaf8d9cb3f1" prot="public" virt="non-virtual"><scope>emulator::impl::AtmCouplingIndices</scope><name>Sa_pslv</name></member>
+      <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1ae9aa1223107ffcd63bdba1fc5c5e9696" prot="public" virt="non-virtual"><scope>emulator::impl::AtmCouplingIndices</scope><name>Sa_ptem</name></member>
+      <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1a9ae077c7711fe9b84595260fd5b897e9" prot="public" virt="non-virtual"><scope>emulator::impl::AtmCouplingIndices</scope><name>Sa_shum</name></member>
+      <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1aa0940bfb68d2326d4cd6b8ee97385401" prot="public" virt="non-virtual"><scope>emulator::impl::AtmCouplingIndices</scope><name>Sa_tbot</name></member>
+      <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1a1797b465f74c73c8f8d9d70966e34e8a" prot="public" virt="non-virtual"><scope>emulator::impl::AtmCouplingIndices</scope><name>Sa_u</name></member>
+      <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1a97b94eaa2a9210cb594f459db19c736e" prot="public" virt="non-virtual"><scope>emulator::impl::AtmCouplingIndices</scope><name>Sa_v</name></member>
+      <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1aa8b2c050e9efa82a44274a71359c1d9a" prot="public" virt="non-virtual"><scope>emulator::impl::AtmCouplingIndices</scope><name>Sa_z</name></member>
+      <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1a6d792baeb6ff06727b9b4ed5eeb8509c" prot="public" virt="non-virtual"><scope>emulator::impl::AtmCouplingIndices</scope><name>Sf_ifrac</name></member>
+      <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1ad783c88287ebe9a317f48deb37ff992a" prot="public" virt="non-virtual"><scope>emulator::impl::AtmCouplingIndices</scope><name>Sf_lfrac</name></member>
+      <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1a1717f446c33e858b01b4ddaa0e17e53a" prot="public" virt="non-virtual"><scope>emulator::impl::AtmCouplingIndices</scope><name>Sf_ofrac</name></member>
+      <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1acd4ba4e82960a0488f0752c29d30f3c9" prot="public" virt="non-virtual"><scope>emulator::impl::AtmCouplingIndices</scope><name>Si_snowh</name></member>
+      <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1a530a71db934e222f79906363fa696146" prot="public" virt="non-virtual"><scope>emulator::impl::AtmCouplingIndices</scope><name>Sl_snowh</name></member>
+      <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1aa81fc3ead43b2bd9b0aa5dae64f2590a" prot="public" virt="non-virtual"><scope>emulator::impl::AtmCouplingIndices</scope><name>So_t</name></member>
+      <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1a1791b3849546bf994ed25f3ed0d730b7" prot="public" virt="non-virtual"><scope>emulator::impl::AtmCouplingIndices</scope><name>Sx_anidf</name></member>
+      <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1a1449a770ebec03f95004cefa72ae49b0" prot="public" virt="non-virtual"><scope>emulator::impl::AtmCouplingIndices</scope><name>Sx_anidr</name></member>
+      <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1ac7929bbe94a187daf39e9e843c6b94a7" prot="public" virt="non-virtual"><scope>emulator::impl::AtmCouplingIndices</scope><name>Sx_avsdf</name></member>
+      <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1a5b938479edc8cdc88fb6173f8efc5ece" prot="public" virt="non-virtual"><scope>emulator::impl::AtmCouplingIndices</scope><name>Sx_avsdr</name></member>
+      <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1ac6f1cee6eaaf87d15775b41b61040709" prot="public" virt="non-virtual"><scope>emulator::impl::AtmCouplingIndices</scope><name>Sx_qref</name></member>
+      <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1aeb548fffeb7b639d4fa9d0f82398c1c6" prot="public" virt="non-virtual"><scope>emulator::impl::AtmCouplingIndices</scope><name>Sx_t</name></member>
+      <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1a16491fa3665cb39cb7539bacc2bf7598" prot="public" virt="non-virtual"><scope>emulator::impl::AtmCouplingIndices</scope><name>Sx_tref</name></member>
+      <member refid="structemulator_1_1impl_1_1AtmCouplingIndices_1af73212406645242a32f196194b752cbd" prot="public" virt="non-virtual"><scope>emulator::impl::AtmCouplingIndices</scope><name>Sx_u10</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

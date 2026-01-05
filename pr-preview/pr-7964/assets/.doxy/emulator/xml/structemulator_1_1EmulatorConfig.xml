@@ -1,0 +1,193 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="structemulator_1_1EmulatorConfig" kind="struct" language="C++" prot="public">
+    <compoundname>emulator::EmulatorConfig</compoundname>
+    <includes refid="emulator__config_8hpp" local="no">emulator_config.hpp</includes>
+    <sectiondef kind="public-attrib">
+      <memberdef kind="variable" id="structemulator_1_1EmulatorConfig_1ac10c54a28f616a174e5f1b91ee893126" prot="public" static="no" mutable="no">
+        <type><ref refid="structemulator_1_1BuildConfig" kindref="compound">BuildConfig</ref></type>
+        <definition>BuildConfig emulator::EmulatorConfig::build</definition>
+        <argsstring></argsstring>
+        <name>build</name>
+        <qualifiedname>emulator::EmulatorConfig::build</qualifiedname>
+        <briefdescription>
+<para>Build-time configuration. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_config.hpp" line="110" column="15" bodyfile="components/emulator_comps/common/src/emulator_config.hpp" bodystart="110" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1EmulatorConfig_1ab0cd2f29a71be18214a55be9940b589b" prot="public" static="no" mutable="no">
+        <type><ref refid="structemulator_1_1RuntimeConfig" kindref="compound">RuntimeConfig</ref></type>
+        <definition>RuntimeConfig emulator::EmulatorConfig::runtime</definition>
+        <argsstring></argsstring>
+        <name>runtime</name>
+        <qualifiedname>emulator::EmulatorConfig::runtime</qualifiedname>
+        <briefdescription>
+<para>Runtime configuration. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_config.hpp" line="111" column="17" bodyfile="components/emulator_comps/common/src/emulator_config.hpp" bodystart="111" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1EmulatorConfig_1aeb58252c159d0b8796494198aed83480" prot="public" static="no" mutable="no">
+        <type><ref refid="structemulator_1_1ModelIOConfig" kindref="compound">ModelIOConfig</ref></type>
+        <definition>ModelIOConfig emulator::EmulatorConfig::model_io</definition>
+        <argsstring></argsstring>
+        <name>model_io</name>
+        <qualifiedname>emulator::EmulatorConfig::model_io</qualifiedname>
+        <briefdescription>
+<para>Model I/O configuration. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_config.hpp" line="112" column="17" bodyfile="components/emulator_comps/common/src/emulator_config.hpp" bodystart="112" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1EmulatorConfig_1a291bfc165f1e4fdc9e3c0503745e5bd8" prot="public" static="no" mutable="no">
+        <type><ref refid="structemulator_1_1CouplingConfig" kindref="compound">CouplingConfig</ref></type>
+        <definition>CouplingConfig emulator::EmulatorConfig::coupling</definition>
+        <argsstring></argsstring>
+        <name>coupling</name>
+        <qualifiedname>emulator::EmulatorConfig::coupling</qualifiedname>
+        <briefdescription>
+<para>Coupling configuration. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_config.hpp" line="113" column="18" bodyfile="components/emulator_comps/common/src/emulator_config.hpp" bodystart="113" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1EmulatorConfig_1a589549ecbbac49314e9167a373cb4963" prot="public" static="no" mutable="no">
+        <type><ref refid="structemulator_1_1DiagnosticConfig" kindref="compound">DiagnosticConfig</ref></type>
+        <definition>DiagnosticConfig emulator::EmulatorConfig::diagnostics</definition>
+        <argsstring></argsstring>
+        <name>diagnostics</name>
+        <qualifiedname>emulator::EmulatorConfig::diagnostics</qualifiedname>
+        <briefdescription>
+<para>Diagnostic output configuration. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_config.hpp" line="114" column="20" bodyfile="components/emulator_comps/common/src/emulator_config.hpp" bodystart="114" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1EmulatorConfig_1a2e56ad73eed844c18da583c21fb2727c" prot="public" static="no" mutable="no">
+        <type>std::string</type>
+        <definition>std::string emulator::EmulatorConfig::grid_file</definition>
+        <argsstring></argsstring>
+        <name>grid_file</name>
+        <qualifiedname>emulator::EmulatorConfig::grid_file</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+<para><xrefsect id="deprecated_1_deprecated000001"><xreftitle>Deprecated</xreftitle><xrefdescription><para>Use domain info instead </para>
+</xrefdescription></xrefsect></para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_config.hpp" line="117" column="15" bodyfile="components/emulator_comps/common/src/emulator_config.hpp" bodystart="117" bodyend="-1"/>
+      </memberdef>
+    </sectiondef>
+    <briefdescription>
+<para>Base configuration structure for all emulator components. </para>
+    </briefdescription>
+    <detaileddescription>
+<para>Aggregates all configuration sub-structures. The YAML configuration file is generated by buildnml by merging defaults with user overrides.</para>
+<sect1 id="structemulator_1_1EmulatorConfig_1autotoc_md9_1s1"><sect2 id="structemulator_1_1EmulatorConfig_1autotoc_md9">
+<title>Configuration Sections</title><para><itemizedlist>
+<listitem><para><bold>build</bold>: Set at case creation, fixed for the case</para>
+</listitem><listitem><para><bold>runtime</bold>: Can be modified per run via atm_in YAML</para>
+</listitem><listitem><para><bold>model_io</bold>: Controls AI model input/output variables</para>
+</listitem><listitem><para><bold>coupling</bold>: Controls MCT coupling behavior</para>
+</listitem></itemizedlist>
+</para>
+</sect2></sect1>
+<sect1 id="structemulator_1_1EmulatorConfig_1autotoc_md10_1s1"><sect2 id="structemulator_1_1EmulatorConfig_1autotoc_md10">
+<title>Example YAML</title><para><programlisting filename=".yaml"><codeline><highlight class="normal">eatm:</highlight></codeline>
+<codeline><highlight class="normal"><sp/><sp/>build:</highlight></codeline>
+<codeline><highlight class="normal"><sp/><sp/><sp/><sp/>grid_name:<sp/>gauss180x360</highlight></codeline>
+<codeline><highlight class="normal"><sp/><sp/><sp/><sp/>inference_backend:<sp/>libtorch</highlight></codeline>
+<codeline><highlight class="normal"><sp/><sp/>runtime:</highlight></codeline>
+<codeline><highlight class="normal"><sp/><sp/><sp/><sp/>model_path:<sp/>/path/to/model.pt</highlight></codeline>
+<codeline><highlight class="normal"><sp/><sp/><sp/><sp/>ic_file:<sp/>/path/to/initial_conditions.nc</highlight></codeline>
+<codeline><highlight class="normal"><sp/><sp/>model_io:</highlight></codeline>
+<codeline><highlight class="normal"><sp/><sp/><sp/><sp/>spatial_mode:<sp/>true</highlight></codeline>
+<codeline><highlight class="normal"><sp/><sp/><sp/><sp/>input_variables:<sp/>[Ta,<sp/>Qa,<sp/>Ua,<sp/>Va]</highlight></codeline>
+<codeline><highlight class="normal"><sp/><sp/><sp/><sp/>output_variables:<sp/>[prec,<sp/>lwdn,<sp/>swdn]</highlight></codeline>
+</programlisting> </para>
+</sect2></sect1>
+    </detaileddescription>
+    <collaborationgraph>
+      <node id="2">
+        <label>emulator::BuildConfig</label>
+        <link refid="structemulator_1_1BuildConfig"/>
+      </node>
+      <node id="5">
+        <label>emulator::CouplingConfig</label>
+        <link refid="structemulator_1_1CouplingConfig"/>
+      </node>
+      <node id="6">
+        <label>emulator::DiagnosticConfig</label>
+        <link refid="structemulator_1_1DiagnosticConfig"/>
+        <childnode refid="7" relation="usage">
+          <edgelabel>restart</edgelabel>
+        </childnode>
+        <childnode refid="8" relation="usage">
+          <edgelabel>history_restart</edgelabel>
+        </childnode>
+      </node>
+      <node id="1">
+        <label>emulator::EmulatorConfig</label>
+        <link refid="structemulator_1_1EmulatorConfig"/>
+        <childnode refid="2" relation="usage">
+          <edgelabel>build</edgelabel>
+        </childnode>
+        <childnode refid="3" relation="usage">
+          <edgelabel>runtime</edgelabel>
+        </childnode>
+        <childnode refid="4" relation="usage">
+          <edgelabel>model_io</edgelabel>
+        </childnode>
+        <childnode refid="5" relation="usage">
+          <edgelabel>coupling</edgelabel>
+        </childnode>
+        <childnode refid="6" relation="usage">
+          <edgelabel>diagnostics</edgelabel>
+        </childnode>
+      </node>
+      <node id="8">
+        <label>emulator::HistoryRestartConfig</label>
+        <link refid="structemulator_1_1HistoryRestartConfig"/>
+      </node>
+      <node id="4">
+        <label>emulator::ModelIOConfig</label>
+        <link refid="structemulator_1_1ModelIOConfig"/>
+      </node>
+      <node id="7">
+        <label>emulator::RestartConfig</label>
+        <link refid="structemulator_1_1RestartConfig"/>
+      </node>
+      <node id="3">
+        <label>emulator::RuntimeConfig</label>
+        <link refid="structemulator_1_1RuntimeConfig"/>
+      </node>
+    </collaborationgraph>
+    <location file="components/emulator_comps/common/src/emulator_config.hpp" line="109" column="1" bodyfile="components/emulator_comps/common/src/emulator_config.hpp" bodystart="109" bodyend="118"/>
+    <listofallmembers>
+      <member refid="structemulator_1_1EmulatorConfig_1ac10c54a28f616a174e5f1b91ee893126" prot="public" virt="non-virtual"><scope>emulator::EmulatorConfig</scope><name>build</name></member>
+      <member refid="structemulator_1_1EmulatorConfig_1a291bfc165f1e4fdc9e3c0503745e5bd8" prot="public" virt="non-virtual"><scope>emulator::EmulatorConfig</scope><name>coupling</name></member>
+      <member refid="structemulator_1_1EmulatorConfig_1a589549ecbbac49314e9167a373cb4963" prot="public" virt="non-virtual"><scope>emulator::EmulatorConfig</scope><name>diagnostics</name></member>
+      <member refid="structemulator_1_1EmulatorConfig_1a2e56ad73eed844c18da583c21fb2727c" prot="public" virt="non-virtual"><scope>emulator::EmulatorConfig</scope><name>grid_file</name></member>
+      <member refid="structemulator_1_1EmulatorConfig_1aeb58252c159d0b8796494198aed83480" prot="public" virt="non-virtual"><scope>emulator::EmulatorConfig</scope><name>model_io</name></member>
+      <member refid="structemulator_1_1EmulatorConfig_1ab0cd2f29a71be18214a55be9940b589b" prot="public" virt="non-virtual"><scope>emulator::EmulatorConfig</scope><name>runtime</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

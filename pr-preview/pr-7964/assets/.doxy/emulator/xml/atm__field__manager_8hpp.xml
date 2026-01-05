@@ -1,0 +1,239 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="atm__field__manager_8hpp" kind="file" language="C++">
+    <compoundname>atm_field_manager.hpp</compoundname>
+    <includes local="no">map</includes>
+    <includes local="no">string</includes>
+    <includes local="no">vector</includes>
+    <includedby refid="emulator__atm_8hpp" local="yes">components/emulator_comps/eatm/src/emulator_atm.hpp</includedby>
+    <includedby refid="atm__coupling_8hpp" local="yes">components/emulator_comps/eatm/src/impl/atm_coupling.hpp</includedby>
+    <includedby refid="atm__field__data__provider_8hpp" local="yes">components/emulator_comps/eatm/src/impl/atm_field_data_provider.hpp</includedby>
+    <includedby refid="atm__field__manager_8cpp" local="yes">components/emulator_comps/eatm/src/impl/atm_field_manager.cpp</includedby>
+    <includedby refid="atm__io_8hpp" local="yes">components/emulator_comps/eatm/src/impl/atm_io.hpp</includedby>
+    <incdepgraph>
+      <node id="1">
+        <label>components/emulator_comps/eatm/src/impl/atm_field_manager.hpp</label>
+        <link refid="atm__field__manager_8hpp"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+      </node>
+      <node id="2">
+        <label>map</label>
+      </node>
+      <node id="3">
+        <label>string</label>
+      </node>
+      <node id="4">
+        <label>vector</label>
+      </node>
+    </incdepgraph>
+    <invincdepgraph>
+      <node id="3">
+        <label>components/emulator_comps/eatm/src/emulator_atm.cpp</label>
+        <link refid="emulator__atm_8cpp"/>
+      </node>
+      <node id="2">
+        <label>components/emulator_comps/eatm/src/emulator_atm.hpp</label>
+        <link refid="emulator__atm_8hpp"/>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+      </node>
+      <node id="4">
+        <label>components/emulator_comps/eatm/src/emulator_atm_interface.cpp</label>
+        <link refid="emulator__atm__interface_8cpp"/>
+      </node>
+      <node id="6">
+        <label>components/emulator_comps/eatm/src/impl/atm_coupling.cpp</label>
+        <link refid="atm__coupling_8cpp"/>
+      </node>
+      <node id="5">
+        <label>components/emulator_comps/eatm/src/impl/atm_coupling.hpp</label>
+        <link refid="atm__coupling_8hpp"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+      </node>
+      <node id="8">
+        <label>components/emulator_comps/eatm/src/impl/atm_field_data_provider.cpp</label>
+        <link refid="atm__field__data__provider_8cpp"/>
+      </node>
+      <node id="7">
+        <label>components/emulator_comps/eatm/src/impl/atm_field_data_provider.hpp</label>
+        <link refid="atm__field__data__provider_8hpp"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+      </node>
+      <node id="9">
+        <label>components/emulator_comps/eatm/src/impl/atm_field_manager.cpp</label>
+        <link refid="atm__field__manager_8cpp"/>
+      </node>
+      <node id="1">
+        <label>components/emulator_comps/eatm/src/impl/atm_field_manager.hpp</label>
+        <link refid="atm__field__manager_8hpp"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+        <childnode refid="9" relation="include">
+        </childnode>
+        <childnode refid="10" relation="include">
+        </childnode>
+      </node>
+      <node id="11">
+        <label>components/emulator_comps/eatm/src/impl/atm_io.cpp</label>
+        <link refid="atm__io_8cpp"/>
+      </node>
+      <node id="10">
+        <label>components/emulator_comps/eatm/src/impl/atm_io.hpp</label>
+        <link refid="atm__io_8hpp"/>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="11" relation="include">
+        </childnode>
+      </node>
+    </invincdepgraph>
+    <innerclass refid="classemulator_1_1impl_1_1AtmFieldManager" prot="public">emulator::impl::AtmFieldManager</innerclass>
+    <innernamespace refid="namespaceemulator">emulator</innernamespace>
+    <innernamespace refid="namespaceemulator_1_1impl">emulator::impl</innernamespace>
+    <briefdescription>
+<para>Field storage container for atmosphere emulator. </para>
+    </briefdescription>
+    <detaileddescription>
+<para>Manages allocation and access to all atmosphere fields, including import fields (from coupler), export fields (to coupler), and AI model input/output tensors. </para>
+    </detaileddescription>
+    <programlisting>
+<codeline lineno="1"><highlight class="normal"></highlight></codeline>
+<codeline lineno="9"><highlight class="normal"></highlight></codeline>
+<codeline lineno="10"><highlight class="normal"></highlight><highlight class="preprocessor">#ifndef<sp/>ATM_FIELD_MANAGER_HPP</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="11"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>ATM_FIELD_MANAGER_HPP</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="12"><highlight class="normal"></highlight></codeline>
+<codeline lineno="13"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;map&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="14"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;string&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="15"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;vector&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="16"><highlight class="normal"></highlight></codeline>
+<codeline lineno="17"><highlight class="normal"></highlight><highlight class="keyword">namespace<sp/></highlight><highlight class="normal"><ref refid="namespaceemulator" kindref="compound">emulator</ref><sp/>{</highlight></codeline>
+<codeline lineno="18"><highlight class="normal"></highlight><highlight class="keyword">namespace<sp/></highlight><highlight class="normal"><ref refid="namespaceemulator_1_1impl" kindref="compound">impl</ref><sp/>{</highlight></codeline>
+<codeline lineno="19"><highlight class="normal"></highlight></codeline>
+<codeline lineno="40" refid="classemulator_1_1impl_1_1AtmFieldManager" refkind="compound"><highlight class="normal"></highlight><highlight class="keyword">class<sp/></highlight><highlight class="normal"><ref refid="classemulator_1_1impl_1_1AtmFieldManager_1a69a42b25258a947b7821e7c743bbcec9" kindref="member">AtmFieldManager</ref><sp/>{</highlight></codeline>
+<codeline lineno="41"><highlight class="normal"></highlight><highlight class="keyword">public</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="42"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>=========================================================================</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="43"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>Constants</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="44"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>=========================================================================</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="45"><highlight class="normal"></highlight></codeline>
+<codeline lineno="47" refid="classemulator_1_1impl_1_1AtmFieldManager_1a82587596c228566f4368bc63b1531ff6" refkind="member"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">static</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">constexpr</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/><ref refid="classemulator_1_1impl_1_1AtmFieldManager_1a82587596c228566f4368bc63b1531ff6" kindref="member">N_INPUT_CHANNELS</ref><sp/>=<sp/>39;</highlight></codeline>
+<codeline lineno="48"><highlight class="normal"></highlight></codeline>
+<codeline lineno="50" refid="classemulator_1_1impl_1_1AtmFieldManager_1a612e95ba104c9932e1cb8a66e21cf7b3" refkind="member"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">static</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">constexpr</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/><ref refid="classemulator_1_1impl_1_1AtmFieldManager_1a612e95ba104c9932e1cb8a66e21cf7b3" kindref="member">N_OUTPUT_CHANNELS</ref><sp/>=<sp/>44;</highlight></codeline>
+<codeline lineno="51"><highlight class="normal"></highlight></codeline>
+<codeline lineno="52" refid="classemulator_1_1impl_1_1AtmFieldManager_1a69a42b25258a947b7821e7c743bbcec9" refkind="member"><highlight class="normal"><sp/><sp/><ref refid="classemulator_1_1impl_1_1AtmFieldManager_1a69a42b25258a947b7821e7c743bbcec9" kindref="member">AtmFieldManager</ref>()<sp/>=<sp/></highlight><highlight class="keywordflow">default</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="53" refid="classemulator_1_1impl_1_1AtmFieldManager_1a3227d8ff695cd4f63e7a62720464f416" refkind="member"><highlight class="normal"><sp/><sp/><ref refid="classemulator_1_1impl_1_1AtmFieldManager_1a3227d8ff695cd4f63e7a62720464f416" kindref="member">~AtmFieldManager</ref>()<sp/>=<sp/></highlight><highlight class="keywordflow">default</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="54"><highlight class="normal"></highlight></codeline>
+<codeline lineno="55"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>=========================================================================</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="56"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>Allocation</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="57"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>=========================================================================</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="58"><highlight class="normal"></highlight></codeline>
+<codeline lineno="68"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="classemulator_1_1impl_1_1AtmFieldManager_1a11cb4f661b8c62ddc54a739aad37dfef" kindref="member">allocate</ref>(</highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/>ncols);</highlight></codeline>
+<codeline lineno="69"><highlight class="normal"></highlight></codeline>
+<codeline lineno="73"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="classemulator_1_1impl_1_1AtmFieldManager_1a880f74377b05bbe6c6910e75f3ffa375" kindref="member">deallocate</ref>();</highlight></codeline>
+<codeline lineno="74"><highlight class="normal"></highlight></codeline>
+<codeline lineno="82"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="classemulator_1_1impl_1_1AtmFieldManager_1a703a1db93a5dbf1872fc5b4eff859eb7" kindref="member">set_defaults</ref>(</highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/>ncols);</highlight></codeline>
+<codeline lineno="83"><highlight class="normal"></highlight></codeline>
+<codeline lineno="88" refid="classemulator_1_1impl_1_1AtmFieldManager_1a9a0938d97e8573190a3b379f5a94b900" refkind="member"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/><ref refid="classemulator_1_1impl_1_1AtmFieldManager_1a9a0938d97e8573190a3b379f5a94b900" kindref="member">is_allocated</ref>()</highlight><highlight class="keyword"><sp/>const<sp/></highlight><highlight class="normal">{<sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>m_allocated;<sp/>}</highlight></codeline>
+<codeline lineno="89"><highlight class="normal"></highlight></codeline>
+<codeline lineno="90"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>=========================================================================</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="91"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>Generic<sp/>Field<sp/>Access</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="92"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>=========================================================================</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="93"><highlight class="normal"></highlight></codeline>
+<codeline lineno="102"><highlight class="normal"><sp/><sp/>std::vector&lt;double&gt;<sp/>*<ref refid="classemulator_1_1impl_1_1AtmFieldManager_1a0609f50bec9f97307d8927182532c705" kindref="member">get_field_ptr</ref>(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string<sp/>&amp;name);</highlight></codeline>
+<codeline lineno="103"><highlight class="normal"></highlight></codeline>
+<codeline lineno="113"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="classemulator_1_1impl_1_1AtmFieldManager_1ae3dbb64c14c36e97f32ae89f048a928d" kindref="member">register_dynamic_field</ref>(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string<sp/>&amp;name);</highlight></codeline>
+<codeline lineno="114"><highlight class="normal"></highlight></codeline>
+<codeline lineno="115"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>=========================================================================</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="116"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>AI<sp/>Model<sp/>Tensors</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="117"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>=========================================================================</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="118"><highlight class="normal"></highlight></codeline>
+<codeline lineno="119" refid="classemulator_1_1impl_1_1AtmFieldManager_1a2bd5d1d5afd518db962c21cdc089129c" refkind="member"><highlight class="normal"><sp/><sp/>std::vector&lt;double&gt;<sp/><ref refid="classemulator_1_1impl_1_1AtmFieldManager_1a2bd5d1d5afd518db962c21cdc089129c" kindref="member">net_inputs</ref>;<sp/><sp/></highlight></codeline>
+<codeline lineno="120" refid="classemulator_1_1impl_1_1AtmFieldManager_1a4ff72465403d43caed03f458defb462d" refkind="member"><highlight class="normal"><sp/><sp/>std::vector&lt;double&gt;<sp/><ref refid="classemulator_1_1impl_1_1AtmFieldManager_1a4ff72465403d43caed03f458defb462d" kindref="member">net_outputs</ref>;<sp/></highlight></codeline>
+<codeline lineno="121"><highlight class="normal"></highlight></codeline>
+<codeline lineno="122"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>=========================================================================</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="123"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>Imported<sp/>Fields<sp/>(x2a<sp/>-<sp/>from<sp/>coupler)</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="124"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>=========================================================================</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="125"><highlight class="normal"></highlight></codeline>
+<codeline lineno="126" refid="classemulator_1_1impl_1_1AtmFieldManager_1aa96491c3eef3145199d1e038e05d3b91" refkind="member"><highlight class="normal"><sp/><sp/>std::vector&lt;double&gt;<sp/><ref refid="classemulator_1_1impl_1_1AtmFieldManager_1aa96491c3eef3145199d1e038e05d3b91" kindref="member">shf</ref>;<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight></codeline>
+<codeline lineno="127" refid="classemulator_1_1impl_1_1AtmFieldManager_1abfe07b95389de87efc58553a77ea3dcf" refkind="member"><highlight class="normal"><sp/><sp/>std::vector&lt;double&gt;<sp/><ref refid="classemulator_1_1impl_1_1AtmFieldManager_1abfe07b95389de87efc58553a77ea3dcf" kindref="member">cflx</ref>;<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight></codeline>
+<codeline lineno="128" refid="classemulator_1_1impl_1_1AtmFieldManager_1af5fd31b7f7fef2f9afb2562b28d084f6" refkind="member"><highlight class="normal"><sp/><sp/>std::vector&lt;double&gt;<sp/><ref refid="classemulator_1_1impl_1_1AtmFieldManager_1af5fd31b7f7fef2f9afb2562b28d084f6" kindref="member">lhf</ref>;<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight></codeline>
+<codeline lineno="129" refid="classemulator_1_1impl_1_1AtmFieldManager_1a9a918ec65cba9f66aa8314ce7cf246b9" refkind="member"><highlight class="normal"><sp/><sp/>std::vector&lt;double&gt;<sp/><ref refid="classemulator_1_1impl_1_1AtmFieldManager_1a9a918ec65cba9f66aa8314ce7cf246b9" kindref="member">wsx</ref>;<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight></codeline>
+<codeline lineno="130" refid="classemulator_1_1impl_1_1AtmFieldManager_1a54142825a9de0b05b556e639e589f638" refkind="member"><highlight class="normal"><sp/><sp/>std::vector&lt;double&gt;<sp/><ref refid="classemulator_1_1impl_1_1AtmFieldManager_1a54142825a9de0b05b556e639e589f638" kindref="member">wsy</ref>;<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight></codeline>
+<codeline lineno="131" refid="classemulator_1_1impl_1_1AtmFieldManager_1a71af46dd33eab8fc1bd929b581ce0843" refkind="member"><highlight class="normal"><sp/><sp/>std::vector&lt;double&gt;<sp/><ref refid="classemulator_1_1impl_1_1AtmFieldManager_1a71af46dd33eab8fc1bd929b581ce0843" kindref="member">lwup</ref>;<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight></codeline>
+<codeline lineno="132" refid="classemulator_1_1impl_1_1AtmFieldManager_1a74494ce3b1173c8d0b1ae3a753d873c5" refkind="member"><highlight class="normal"><sp/><sp/>std::vector&lt;double&gt;<sp/><ref refid="classemulator_1_1impl_1_1AtmFieldManager_1a74494ce3b1173c8d0b1ae3a753d873c5" kindref="member">asdir</ref>;<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight></codeline>
+<codeline lineno="133" refid="classemulator_1_1impl_1_1AtmFieldManager_1abf7b9995b5fb075702c01a35a78aa2b5" refkind="member"><highlight class="normal"><sp/><sp/>std::vector&lt;double&gt;<sp/><ref refid="classemulator_1_1impl_1_1AtmFieldManager_1abf7b9995b5fb075702c01a35a78aa2b5" kindref="member">aldir</ref>;<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight></codeline>
+<codeline lineno="134" refid="classemulator_1_1impl_1_1AtmFieldManager_1a9a1b7fa8d557b76ae864b9562873c718" refkind="member"><highlight class="normal"><sp/><sp/>std::vector&lt;double&gt;<sp/><ref refid="classemulator_1_1impl_1_1AtmFieldManager_1a9a1b7fa8d557b76ae864b9562873c718" kindref="member">asdif</ref>;<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight></codeline>
+<codeline lineno="135" refid="classemulator_1_1impl_1_1AtmFieldManager_1a913f6c11989f58fbba1d0987430a4281" refkind="member"><highlight class="normal"><sp/><sp/>std::vector&lt;double&gt;<sp/><ref refid="classemulator_1_1impl_1_1AtmFieldManager_1a913f6c11989f58fbba1d0987430a4281" kindref="member">aldif</ref>;<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight></codeline>
+<codeline lineno="136" refid="classemulator_1_1impl_1_1AtmFieldManager_1a26e4db93602987ced99c72f354e97f6c" refkind="member"><highlight class="normal"><sp/><sp/>std::vector&lt;double&gt;<sp/><ref refid="classemulator_1_1impl_1_1AtmFieldManager_1a26e4db93602987ced99c72f354e97f6c" kindref="member">ts</ref>;<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight></codeline>
+<codeline lineno="137" refid="classemulator_1_1impl_1_1AtmFieldManager_1ae1a1087ce1a0b8c1eb8e3fe9fecfba12" refkind="member"><highlight class="normal"><sp/><sp/>std::vector&lt;double&gt;<sp/><ref refid="classemulator_1_1impl_1_1AtmFieldManager_1ae1a1087ce1a0b8c1eb8e3fe9fecfba12" kindref="member">sst</ref>;<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight></codeline>
+<codeline lineno="138" refid="classemulator_1_1impl_1_1AtmFieldManager_1a6d31e62af3f2be8dcad08be587056f27" refkind="member"><highlight class="normal"><sp/><sp/>std::vector&lt;double&gt;<sp/><ref refid="classemulator_1_1impl_1_1AtmFieldManager_1a6d31e62af3f2be8dcad08be587056f27" kindref="member">snowhland</ref>;<sp/><sp/><sp/><sp/></highlight></codeline>
+<codeline lineno="139" refid="classemulator_1_1impl_1_1AtmFieldManager_1a7a8192aafe28ae5261a7bf9fec1beb90" refkind="member"><highlight class="normal"><sp/><sp/>std::vector&lt;double&gt;<sp/><ref refid="classemulator_1_1impl_1_1AtmFieldManager_1a7a8192aafe28ae5261a7bf9fec1beb90" kindref="member">snowhice</ref>;<sp/><sp/><sp/><sp/><sp/></highlight></codeline>
+<codeline lineno="140" refid="classemulator_1_1impl_1_1AtmFieldManager_1a2cd0f7ef76e719d5c77c2608c96cfe4f" refkind="member"><highlight class="normal"><sp/><sp/>std::vector&lt;double&gt;<sp/><ref refid="classemulator_1_1impl_1_1AtmFieldManager_1a2cd0f7ef76e719d5c77c2608c96cfe4f" kindref="member">tref</ref>;<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight></codeline>
+<codeline lineno="141" refid="classemulator_1_1impl_1_1AtmFieldManager_1acc1cc6e8d5a4b289cfb9e5b117565c7e" refkind="member"><highlight class="normal"><sp/><sp/>std::vector&lt;double&gt;<sp/><ref refid="classemulator_1_1impl_1_1AtmFieldManager_1acc1cc6e8d5a4b289cfb9e5b117565c7e" kindref="member">qref</ref>;<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight></codeline>
+<codeline lineno="142" refid="classemulator_1_1impl_1_1AtmFieldManager_1a6a2506001737f5df278a6d9189e5fe42" refkind="member"><highlight class="normal"><sp/><sp/>std::vector&lt;double&gt;<sp/><ref refid="classemulator_1_1impl_1_1AtmFieldManager_1a6a2506001737f5df278a6d9189e5fe42" kindref="member">u10</ref>;<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight></codeline>
+<codeline lineno="143" refid="classemulator_1_1impl_1_1AtmFieldManager_1a8fd79854e70fe2543a297ff812506413" refkind="member"><highlight class="normal"><sp/><sp/>std::vector&lt;double&gt;<sp/><ref refid="classemulator_1_1impl_1_1AtmFieldManager_1a8fd79854e70fe2543a297ff812506413" kindref="member">u10withgusts</ref>;<sp/></highlight></codeline>
+<codeline lineno="144" refid="classemulator_1_1impl_1_1AtmFieldManager_1aa272f923801a1c1c2f8294b185be15b5" refkind="member"><highlight class="normal"><sp/><sp/>std::vector&lt;double&gt;<sp/><ref refid="classemulator_1_1impl_1_1AtmFieldManager_1aa272f923801a1c1c2f8294b185be15b5" kindref="member">icefrac</ref>;<sp/><sp/><sp/><sp/><sp/><sp/></highlight></codeline>
+<codeline lineno="145" refid="classemulator_1_1impl_1_1AtmFieldManager_1a39be66261a4a2c12c59ac78f7c049101" refkind="member"><highlight class="normal"><sp/><sp/>std::vector&lt;double&gt;<sp/><ref refid="classemulator_1_1impl_1_1AtmFieldManager_1a39be66261a4a2c12c59ac78f7c049101" kindref="member">ocnfrac</ref>;<sp/><sp/><sp/><sp/><sp/><sp/></highlight></codeline>
+<codeline lineno="146" refid="classemulator_1_1impl_1_1AtmFieldManager_1a5b8de27c15ab711753548b4a8e2e7722" refkind="member"><highlight class="normal"><sp/><sp/>std::vector&lt;double&gt;<sp/><ref refid="classemulator_1_1impl_1_1AtmFieldManager_1a5b8de27c15ab711753548b4a8e2e7722" kindref="member">lndfrac</ref>;<sp/><sp/><sp/><sp/><sp/><sp/></highlight></codeline>
+<codeline lineno="147"><highlight class="normal"></highlight></codeline>
+<codeline lineno="148"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>=========================================================================</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="149"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>Exported<sp/>Fields<sp/>(a2x<sp/>-<sp/>to<sp/>coupler)</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="150"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>=========================================================================</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="151"><highlight class="normal"></highlight></codeline>
+<codeline lineno="152" refid="classemulator_1_1impl_1_1AtmFieldManager_1aef37f2bf69caea666e293ed538962e9c" refkind="member"><highlight class="normal"><sp/><sp/>std::vector&lt;double&gt;<sp/><ref refid="classemulator_1_1impl_1_1AtmFieldManager_1aef37f2bf69caea666e293ed538962e9c" kindref="member">zbot</ref>;<sp/><sp/></highlight></codeline>
+<codeline lineno="153" refid="classemulator_1_1impl_1_1AtmFieldManager_1a7f18a89025603b77a3c9fc22f5887032" refkind="member"><highlight class="normal"><sp/><sp/>std::vector&lt;double&gt;<sp/><ref refid="classemulator_1_1impl_1_1AtmFieldManager_1a7f18a89025603b77a3c9fc22f5887032" kindref="member">ubot</ref>;<sp/><sp/></highlight></codeline>
+<codeline lineno="154" refid="classemulator_1_1impl_1_1AtmFieldManager_1a199bb728a745e31f38f309d3b5872733" refkind="member"><highlight class="normal"><sp/><sp/>std::vector&lt;double&gt;<sp/><ref refid="classemulator_1_1impl_1_1AtmFieldManager_1a199bb728a745e31f38f309d3b5872733" kindref="member">vbot</ref>;<sp/><sp/></highlight></codeline>
+<codeline lineno="155" refid="classemulator_1_1impl_1_1AtmFieldManager_1ac6d7aff27c3b9c193f20c345116124b1" refkind="member"><highlight class="normal"><sp/><sp/>std::vector&lt;double&gt;<sp/><ref refid="classemulator_1_1impl_1_1AtmFieldManager_1ac6d7aff27c3b9c193f20c345116124b1" kindref="member">tbot</ref>;<sp/><sp/></highlight></codeline>
+<codeline lineno="156" refid="classemulator_1_1impl_1_1AtmFieldManager_1a5c97475d0b14decc1ead5662fddb5747" refkind="member"><highlight class="normal"><sp/><sp/>std::vector&lt;double&gt;<sp/><ref refid="classemulator_1_1impl_1_1AtmFieldManager_1a5c97475d0b14decc1ead5662fddb5747" kindref="member">ptem</ref>;<sp/><sp/></highlight></codeline>
+<codeline lineno="157" refid="classemulator_1_1impl_1_1AtmFieldManager_1a65e153c31a93444bc9a4e92d87cf3fef" refkind="member"><highlight class="normal"><sp/><sp/>std::vector&lt;double&gt;<sp/><ref refid="classemulator_1_1impl_1_1AtmFieldManager_1a65e153c31a93444bc9a4e92d87cf3fef" kindref="member">shum</ref>;<sp/><sp/></highlight></codeline>
+<codeline lineno="158" refid="classemulator_1_1impl_1_1AtmFieldManager_1a893131a7bd1210c485dca4a573d3c91b" refkind="member"><highlight class="normal"><sp/><sp/>std::vector&lt;double&gt;<sp/><ref refid="classemulator_1_1impl_1_1AtmFieldManager_1a893131a7bd1210c485dca4a573d3c91b" kindref="member">dens</ref>;<sp/><sp/></highlight></codeline>
+<codeline lineno="159" refid="classemulator_1_1impl_1_1AtmFieldManager_1a4d49a56dee7ea8a91a2972c3a4241bd5" refkind="member"><highlight class="normal"><sp/><sp/>std::vector&lt;double&gt;<sp/><ref refid="classemulator_1_1impl_1_1AtmFieldManager_1a4d49a56dee7ea8a91a2972c3a4241bd5" kindref="member">pbot</ref>;<sp/><sp/></highlight></codeline>
+<codeline lineno="160" refid="classemulator_1_1impl_1_1AtmFieldManager_1a9112701931447414608672a338278237" refkind="member"><highlight class="normal"><sp/><sp/>std::vector&lt;double&gt;<sp/><ref refid="classemulator_1_1impl_1_1AtmFieldManager_1a9112701931447414608672a338278237" kindref="member">pslv</ref>;<sp/><sp/></highlight></codeline>
+<codeline lineno="161" refid="classemulator_1_1impl_1_1AtmFieldManager_1a344f4b2e5719b29c98549cc046a43ce7" refkind="member"><highlight class="normal"><sp/><sp/>std::vector&lt;double&gt;<sp/><ref refid="classemulator_1_1impl_1_1AtmFieldManager_1a344f4b2e5719b29c98549cc046a43ce7" kindref="member">lwdn</ref>;<sp/><sp/></highlight></codeline>
+<codeline lineno="162" refid="classemulator_1_1impl_1_1AtmFieldManager_1a7a156e9fdc3b1c1544ae2eb80dfd043d" refkind="member"><highlight class="normal"><sp/><sp/>std::vector&lt;double&gt;<sp/><ref refid="classemulator_1_1impl_1_1AtmFieldManager_1a7a156e9fdc3b1c1544ae2eb80dfd043d" kindref="member">rainc</ref>;<sp/></highlight></codeline>
+<codeline lineno="163" refid="classemulator_1_1impl_1_1AtmFieldManager_1a879500a26a1a1b765dc2105f48b61932" refkind="member"><highlight class="normal"><sp/><sp/>std::vector&lt;double&gt;<sp/><ref refid="classemulator_1_1impl_1_1AtmFieldManager_1a879500a26a1a1b765dc2105f48b61932" kindref="member">rainl</ref>;<sp/></highlight></codeline>
+<codeline lineno="164" refid="classemulator_1_1impl_1_1AtmFieldManager_1aaa8e62654c0f8b3e706c865d05292b0f" refkind="member"><highlight class="normal"><sp/><sp/>std::vector&lt;double&gt;<sp/><ref refid="classemulator_1_1impl_1_1AtmFieldManager_1aaa8e62654c0f8b3e706c865d05292b0f" kindref="member">snowc</ref>;<sp/></highlight></codeline>
+<codeline lineno="165" refid="classemulator_1_1impl_1_1AtmFieldManager_1abbf461a04259c236d31a77b16c62db3a" refkind="member"><highlight class="normal"><sp/><sp/>std::vector&lt;double&gt;<sp/><ref refid="classemulator_1_1impl_1_1AtmFieldManager_1abbf461a04259c236d31a77b16c62db3a" kindref="member">snowl</ref>;<sp/></highlight></codeline>
+<codeline lineno="166" refid="classemulator_1_1impl_1_1AtmFieldManager_1a5f21a5b56d6ead29bb38e0c1c845828a" refkind="member"><highlight class="normal"><sp/><sp/>std::vector&lt;double&gt;<sp/><ref refid="classemulator_1_1impl_1_1AtmFieldManager_1a5f21a5b56d6ead29bb38e0c1c845828a" kindref="member">swndr</ref>;<sp/></highlight></codeline>
+<codeline lineno="167" refid="classemulator_1_1impl_1_1AtmFieldManager_1ae6de3bc3df175b2a6ed7254a75154572" refkind="member"><highlight class="normal"><sp/><sp/>std::vector&lt;double&gt;<sp/><ref refid="classemulator_1_1impl_1_1AtmFieldManager_1ae6de3bc3df175b2a6ed7254a75154572" kindref="member">swvdr</ref>;<sp/></highlight></codeline>
+<codeline lineno="168" refid="classemulator_1_1impl_1_1AtmFieldManager_1a03e1dadde9ca6f6c199ad12f78f02601" refkind="member"><highlight class="normal"><sp/><sp/>std::vector&lt;double&gt;<sp/><ref refid="classemulator_1_1impl_1_1AtmFieldManager_1a03e1dadde9ca6f6c199ad12f78f02601" kindref="member">swndf</ref>;<sp/></highlight></codeline>
+<codeline lineno="169" refid="classemulator_1_1impl_1_1AtmFieldManager_1af8bb3f195e222dce11e265ab3619e8a2" refkind="member"><highlight class="normal"><sp/><sp/>std::vector&lt;double&gt;<sp/><ref refid="classemulator_1_1impl_1_1AtmFieldManager_1af8bb3f195e222dce11e265ab3619e8a2" kindref="member">swvdf</ref>;<sp/></highlight></codeline>
+<codeline lineno="170" refid="classemulator_1_1impl_1_1AtmFieldManager_1ab08c943690e310565d9ea1a1f42f318a" refkind="member"><highlight class="normal"><sp/><sp/>std::vector&lt;double&gt;<sp/><ref refid="classemulator_1_1impl_1_1AtmFieldManager_1ab08c943690e310565d9ea1a1f42f318a" kindref="member">swnet</ref>;<sp/></highlight></codeline>
+<codeline lineno="171"><highlight class="normal"></highlight></codeline>
+<codeline lineno="172"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>=========================================================================</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="173"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>Dynamic<sp/>Fields</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="174"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>=========================================================================</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="175"><highlight class="normal"></highlight></codeline>
+<codeline lineno="177" refid="classemulator_1_1impl_1_1AtmFieldManager_1ab231329d680952d035f54ffde5172ec1" refkind="member"><highlight class="normal"><sp/><sp/>std::map&lt;std::string,<sp/>std::vector&lt;double&gt;&gt;<sp/><ref refid="classemulator_1_1impl_1_1AtmFieldManager_1ab231329d680952d035f54ffde5172ec1" kindref="member">dynamic_fields</ref>;</highlight></codeline>
+<codeline lineno="178"><highlight class="normal"></highlight></codeline>
+<codeline lineno="179"><highlight class="normal"></highlight><highlight class="keyword">private</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="180"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/>m_allocated<sp/>=<sp/></highlight><highlight class="keyword">false</highlight><highlight class="normal">;<sp/></highlight></codeline>
+<codeline lineno="181"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/>m_ncols<sp/>=<sp/>0;<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight></codeline>
+<codeline lineno="182"><highlight class="normal"></highlight></codeline>
+<codeline lineno="183"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>init_field_map();</highlight></codeline>
+<codeline lineno="184"><highlight class="normal"><sp/><sp/>std::map&lt;std::string,<sp/>std::vector&lt;double&gt;<sp/>*&gt;<sp/>m_field_map;</highlight></codeline>
+<codeline lineno="185"><highlight class="normal">};</highlight></codeline>
+<codeline lineno="186"><highlight class="normal"></highlight></codeline>
+<codeline lineno="187"><highlight class="normal">}<sp/></highlight><highlight class="comment">//<sp/>namespace<sp/>impl</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="188"><highlight class="normal">}<sp/></highlight><highlight class="comment">//<sp/>namespace<sp/>emulator</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="189"><highlight class="normal"></highlight></codeline>
+<codeline lineno="190"><highlight class="normal"></highlight><highlight class="preprocessor">#endif<sp/></highlight><highlight class="comment">//<sp/>ATM_FIELD_MANAGER_HPP</highlight><highlight class="normal"></highlight></codeline>
+    </programlisting>
+    <location file="components/emulator_comps/eatm/src/impl/atm_field_manager.hpp"/>
+  </compounddef>
+</doxygen>

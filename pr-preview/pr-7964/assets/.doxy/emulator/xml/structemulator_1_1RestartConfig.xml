@@ -1,0 +1,81 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="structemulator_1_1RestartConfig" kind="struct" language="C++" prot="public">
+    <compoundname>emulator::RestartConfig</compoundname>
+    <includes refid="emulator__diagnostics_8hpp" local="no">emulator_diagnostics.hpp</includes>
+    <sectiondef kind="public-attrib">
+      <memberdef kind="variable" id="structemulator_1_1RestartConfig_1a9b77985fc3eaf0ce5e17f87ea3599680" prot="public" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool emulator::RestartConfig::enabled</definition>
+        <argsstring></argsstring>
+        <name>enabled</name>
+        <qualifiedname>emulator::RestartConfig::enabled</qualifiedname>
+        <initializer>= true</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_diagnostics.hpp" line="96" column="8" bodyfile="components/emulator_comps/common/src/emulator_diagnostics.hpp" bodystart="96" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1RestartConfig_1a5786f13aaef3bc31ba5709766026dd11" prot="public" static="no" mutable="no">
+        <type>std::string</type>
+        <definition>std::string emulator::RestartConfig::filename_prefix</definition>
+        <argsstring></argsstring>
+        <name>filename_prefix</name>
+        <qualifiedname>emulator::RestartConfig::filename_prefix</qualifiedname>
+        <initializer>= &quot;emulator.atm.r&quot;</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_diagnostics.hpp" line="97" column="15" bodyfile="components/emulator_comps/common/src/emulator_diagnostics.hpp" bodystart="97" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1RestartConfig_1a2094d42b44f69d6c4d1e699fd55a9592" prot="public" static="no" mutable="no">
+        <type><ref refid="namespaceemulator_1ac145d6905ecd2dc434fdff93ca2375ff" kindref="member">FrequencyUnit</ref></type>
+        <definition>FrequencyUnit emulator::RestartConfig::frequency_unit</definition>
+        <argsstring></argsstring>
+        <name>frequency_unit</name>
+        <qualifiedname>emulator::RestartConfig::frequency_unit</qualifiedname>
+        <initializer>= <ref refid="namespaceemulator_1ac145d6905ecd2dc434fdff93ca2375ffa85b245d9aa07e88b84e07983410d5d07" kindref="member">FrequencyUnit::NDAYS</ref></initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_diagnostics.hpp" line="98" column="17" bodyfile="components/emulator_comps/common/src/emulator_diagnostics.hpp" bodystart="98" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structemulator_1_1RestartConfig_1a5a78ccc9a6c67d987b907f9919ed9703" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::RestartConfig::frequency</definition>
+        <argsstring></argsstring>
+        <name>frequency</name>
+        <qualifiedname>emulator::RestartConfig::frequency</qualifiedname>
+        <initializer>= 1</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/emulator_diagnostics.hpp" line="99" column="7" bodyfile="components/emulator_comps/common/src/emulator_diagnostics.hpp" bodystart="99" bodyend="-1"/>
+      </memberdef>
+    </sectiondef>
+    <briefdescription>
+<para>Restart output configuration. </para>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="components/emulator_comps/common/src/emulator_diagnostics.hpp" line="95" column="1" bodyfile="components/emulator_comps/common/src/emulator_diagnostics.hpp" bodystart="95" bodyend="100"/>
+    <listofallmembers>
+      <member refid="structemulator_1_1RestartConfig_1a9b77985fc3eaf0ce5e17f87ea3599680" prot="public" virt="non-virtual"><scope>emulator::RestartConfig</scope><name>enabled</name></member>
+      <member refid="structemulator_1_1RestartConfig_1a5786f13aaef3bc31ba5709766026dd11" prot="public" virt="non-virtual"><scope>emulator::RestartConfig</scope><name>filename_prefix</name></member>
+      <member refid="structemulator_1_1RestartConfig_1a5a78ccc9a6c67d987b907f9919ed9703" prot="public" virt="non-virtual"><scope>emulator::RestartConfig</scope><name>frequency</name></member>
+      <member refid="structemulator_1_1RestartConfig_1a2094d42b44f69d6c4d1e699fd55a9592" prot="public" virt="non-virtual"><scope>emulator::RestartConfig</scope><name>frequency_unit</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

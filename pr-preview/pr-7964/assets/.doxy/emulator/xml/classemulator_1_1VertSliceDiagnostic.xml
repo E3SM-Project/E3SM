@@ -1,0 +1,291 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="classemulator_1_1VertSliceDiagnostic" kind="class" language="C++" prot="public">
+    <compoundname>emulator::VertSliceDiagnostic</compoundname>
+    <basecompoundref refid="classemulator_1_1DerivedDiagnostic" prot="public" virt="non-virtual">emulator::DerivedDiagnostic</basecompoundref>
+    <includes refid="vert__slice__diagnostic_8hpp" local="no">vert_slice_diagnostic.hpp</includes>
+    <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classemulator_1_1VertSliceDiagnostic_1a81d0efa36f20177824bc9cfab4b27384" prot="private" static="no" mutable="no">
+        <type>std::string</type>
+        <definition>std::string emulator::VertSliceDiagnostic::m_name</definition>
+        <argsstring></argsstring>
+        <name>m_name</name>
+        <qualifiedname>emulator::VertSliceDiagnostic::m_name</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/diagnostics/vert_slice_diagnostic.hpp" line="48" column="15" bodyfile="components/emulator_comps/common/src/diagnostics/vert_slice_diagnostic.hpp" bodystart="48" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1VertSliceDiagnostic_1a6b971f37d03acd4ebf859d62aacc7ffb" prot="private" static="no" mutable="no">
+        <type>std::string</type>
+        <definition>std::string emulator::VertSliceDiagnostic::m_source_field</definition>
+        <argsstring></argsstring>
+        <name>m_source_field</name>
+        <qualifiedname>emulator::VertSliceDiagnostic::m_source_field</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/diagnostics/vert_slice_diagnostic.hpp" line="49" column="15" bodyfile="components/emulator_comps/common/src/diagnostics/vert_slice_diagnostic.hpp" bodystart="49" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1VertSliceDiagnostic_1a74a3f0fde863596c4b0daa9e46113fe9" prot="private" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::VertSliceDiagnostic::m_level_idx</definition>
+        <argsstring></argsstring>
+        <name>m_level_idx</name>
+        <qualifiedname>emulator::VertSliceDiagnostic::m_level_idx</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/diagnostics/vert_slice_diagnostic.hpp" line="50" column="7" bodyfile="components/emulator_comps/common/src/diagnostics/vert_slice_diagnostic.hpp" bodystart="50" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classemulator_1_1VertSliceDiagnostic_1ad9d30621739e7e5a91300db282ca9173" prot="private" static="no" mutable="no">
+        <type>int</type>
+        <definition>int emulator::VertSliceDiagnostic::m_nlevs</definition>
+        <argsstring></argsstring>
+        <name>m_nlevs</name>
+        <qualifiedname>emulator::VertSliceDiagnostic::m_nlevs</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/diagnostics/vert_slice_diagnostic.hpp" line="51" column="7" bodyfile="components/emulator_comps/common/src/diagnostics/vert_slice_diagnostic.hpp" bodystart="51" bodyend="-1"/>
+      </memberdef>
+    </sectiondef>
+    <sectiondef kind="public-func">
+      <memberdef kind="function" id="classemulator_1_1VertSliceDiagnostic_1ae784f4109f57ff5eee3e1b1c419e93cc" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>emulator::VertSliceDiagnostic::VertSliceDiagnostic</definition>
+        <argsstring>(const std::string &amp;field_name, int level_idx, int nlevs)</argsstring>
+        <name>VertSliceDiagnostic</name>
+        <qualifiedname>emulator::VertSliceDiagnostic::VertSliceDiagnostic</qualifiedname>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>field_name</declname>
+        </param>
+        <param>
+          <type>int</type>
+          <declname>level_idx</declname>
+        </param>
+        <param>
+          <type>int</type>
+          <declname>nlevs</declname>
+        </param>
+        <briefdescription>
+<para>Construct vertical slicing diagnostic. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>field_name</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Source field name </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>level_idx</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Level index to extract (0-based) </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>nlevs</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Total number of levels in source field </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/diagnostics/vert_slice_diagnostic.hpp" line="34" column="3" bodyfile="components/emulator_comps/common/src/diagnostics/vert_slice_diagnostic.cpp" bodystart="10" bodyend="14"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1VertSliceDiagnostic_1a55d9ef659269df0520d40d2d7abcf4bd" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="virtual">
+        <type>std::string</type>
+        <definition>std::string emulator::VertSliceDiagnostic::name</definition>
+        <argsstring>() const override</argsstring>
+        <name>name</name>
+        <qualifiedname>emulator::VertSliceDiagnostic::name</qualifiedname>
+        <reimplements refid="classemulator_1_1DerivedDiagnostic_1a29cc53dea2845c12ca120e78028e1e03">name</reimplements>
+        <briefdescription>
+<para>Get the diagnostic name. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/diagnostics/vert_slice_diagnostic.hpp" line="36" column="15" bodyfile="components/emulator_comps/common/src/diagnostics/vert_slice_diagnostic.hpp" bodystart="36" bodyend="36"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1VertSliceDiagnostic_1a3b1868cab448947d9a04766abe325801" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="virtual">
+        <type>std::string</type>
+        <definition>std::string emulator::VertSliceDiagnostic::source_field</definition>
+        <argsstring>() const override</argsstring>
+        <name>source_field</name>
+        <qualifiedname>emulator::VertSliceDiagnostic::source_field</qualifiedname>
+        <reimplements refid="classemulator_1_1DerivedDiagnostic_1a0b6fd5c12c2581a0fedea1be85d24629">source_field</reimplements>
+        <briefdescription>
+<para>Get the source field name. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/diagnostics/vert_slice_diagnostic.hpp" line="37" column="15" bodyfile="components/emulator_comps/common/src/diagnostics/vert_slice_diagnostic.hpp" bodystart="37" bodyend="37"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1VertSliceDiagnostic_1a9259d65a22df077a398a53c2ec2a9702" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
+        <type>void</type>
+        <definition>void emulator::VertSliceDiagnostic::compute</definition>
+        <argsstring>(const FieldDataProvider &amp;fields, std::vector&lt; double &gt; &amp;output) override</argsstring>
+        <name>compute</name>
+        <qualifiedname>emulator::VertSliceDiagnostic::compute</qualifiedname>
+        <reimplements refid="classemulator_1_1DerivedDiagnostic_1a308e0c8bb44b2d3be8b53ad2f8548bef">compute</reimplements>
+        <param>
+          <type>const <ref refid="classemulator_1_1FieldDataProvider" kindref="compound">FieldDataProvider</ref> &amp;</type>
+          <declname>fields</declname>
+        </param>
+        <param>
+          <type>std::vector&lt; double &gt; &amp;</type>
+          <declname>output</declname>
+        </param>
+        <briefdescription>
+<para>Compute the diagnostic. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>fields</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Input field provider </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>output</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Output data buffer (caller must allocate) </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/diagnostics/vert_slice_diagnostic.hpp" line="39" column="8" bodyfile="components/emulator_comps/common/src/diagnostics/vert_slice_diagnostic.cpp" bodystart="16" bodyend="44"/>
+      </memberdef>
+      <memberdef kind="function" id="classemulator_1_1VertSliceDiagnostic_1a42022b08b043802889f461980f6645d4" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="virtual">
+        <type>int</type>
+        <definition>int emulator::VertSliceDiagnostic::output_size</definition>
+        <argsstring>(int ncols, int nlevs) const override</argsstring>
+        <name>output_size</name>
+        <qualifiedname>emulator::VertSliceDiagnostic::output_size</qualifiedname>
+        <reimplements refid="classemulator_1_1DerivedDiagnostic_1afb82b445a6d355dcd3c3103974ba146a">output_size</reimplements>
+        <param>
+          <type>int</type>
+          <declname>ncols</declname>
+        </param>
+        <param>
+          <type>int</type>
+          <declname>nlevs</declname>
+        </param>
+        <briefdescription>
+<para>Get output size. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>ncols</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Number of local columns </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>nlevs</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Number of vertical levels (for source field) </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="components/emulator_comps/common/src/diagnostics/vert_slice_diagnostic.hpp" line="42" column="7" bodyfile="components/emulator_comps/common/src/diagnostics/vert_slice_diagnostic.hpp" bodystart="42" bodyend="45"/>
+      </memberdef>
+    </sectiondef>
+    <briefdescription>
+<para>Extracts a single vertical level from a 3D field. </para>
+    </briefdescription>
+    <detaileddescription>
+<para>Reduces a field from [ncols, nlevs] to [ncols].</para>
+<sect1 id="classemulator_1_1VertSliceDiagnostic_1autotoc_md6_1s1"><sect2 id="classemulator_1_1VertSliceDiagnostic_1autotoc_md6">
+<title>Pattern</title><para>Triggered by field names with &quot;_at_lev{N}&quot; suffix.</para>
+</sect2></sect1>
+<sect1 id="classemulator_1_1VertSliceDiagnostic_1autotoc_md7_1s1"><sect2 id="classemulator_1_1VertSliceDiagnostic_1autotoc_md7">
+<title>Example</title><para><itemizedlist>
+<listitem><para>Input: &quot;air_temperature&quot; with shape [ncols, 8]</para>
+</listitem><listitem><para>Request: &quot;air_temperature_at_lev3&quot;</para>
+</listitem><listitem><para>Output: &quot;air_temperature&quot; at level index 3, shape [ncols] </para>
+</listitem></itemizedlist>
+</para>
+</sect2></sect1>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="2">
+        <label>emulator::DerivedDiagnostic</label>
+        <link refid="classemulator_1_1DerivedDiagnostic"/>
+      </node>
+      <node id="1">
+        <label>emulator::VertSliceDiagnostic</label>
+        <link refid="classemulator_1_1VertSliceDiagnostic"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="2">
+        <label>emulator::DerivedDiagnostic</label>
+        <link refid="classemulator_1_1DerivedDiagnostic"/>
+      </node>
+      <node id="1">
+        <label>emulator::VertSliceDiagnostic</label>
+        <link refid="classemulator_1_1VertSliceDiagnostic"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </collaborationgraph>
+    <location file="components/emulator_comps/common/src/diagnostics/vert_slice_diagnostic.hpp" line="26" column="1" bodyfile="components/emulator_comps/common/src/diagnostics/vert_slice_diagnostic.hpp" bodystart="26" bodyend="52"/>
+    <listofallmembers>
+      <member refid="classemulator_1_1VertSliceDiagnostic_1a9259d65a22df077a398a53c2ec2a9702" prot="public" virt="virtual"><scope>emulator::VertSliceDiagnostic</scope><name>compute</name></member>
+      <member refid="classemulator_1_1VertSliceDiagnostic_1a74a3f0fde863596c4b0daa9e46113fe9" prot="private" virt="non-virtual"><scope>emulator::VertSliceDiagnostic</scope><name>m_level_idx</name></member>
+      <member refid="classemulator_1_1VertSliceDiagnostic_1a81d0efa36f20177824bc9cfab4b27384" prot="private" virt="non-virtual"><scope>emulator::VertSliceDiagnostic</scope><name>m_name</name></member>
+      <member refid="classemulator_1_1VertSliceDiagnostic_1ad9d30621739e7e5a91300db282ca9173" prot="private" virt="non-virtual"><scope>emulator::VertSliceDiagnostic</scope><name>m_nlevs</name></member>
+      <member refid="classemulator_1_1VertSliceDiagnostic_1a6b971f37d03acd4ebf859d62aacc7ffb" prot="private" virt="non-virtual"><scope>emulator::VertSliceDiagnostic</scope><name>m_source_field</name></member>
+      <member refid="classemulator_1_1VertSliceDiagnostic_1a55d9ef659269df0520d40d2d7abcf4bd" prot="public" virt="virtual"><scope>emulator::VertSliceDiagnostic</scope><name>name</name></member>
+      <member refid="classemulator_1_1VertSliceDiagnostic_1a42022b08b043802889f461980f6645d4" prot="public" virt="virtual"><scope>emulator::VertSliceDiagnostic</scope><name>output_size</name></member>
+      <member refid="classemulator_1_1VertSliceDiagnostic_1a3b1868cab448947d9a04766abe325801" prot="public" virt="virtual"><scope>emulator::VertSliceDiagnostic</scope><name>source_field</name></member>
+      <member refid="classemulator_1_1VertSliceDiagnostic_1ae784f4109f57ff5eee3e1b1c419e93cc" prot="public" virt="non-virtual"><scope>emulator::VertSliceDiagnostic</scope><name>VertSliceDiagnostic</name></member>
+      <member refid="classemulator_1_1DerivedDiagnostic_1a6e624fae8644a8419ed28405dd80a56a" prot="public" virt="virtual"><scope>emulator::VertSliceDiagnostic</scope><name>~DerivedDiagnostic</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>
