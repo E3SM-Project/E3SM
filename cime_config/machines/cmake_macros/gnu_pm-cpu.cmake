@@ -1,11 +1,17 @@
 string(APPEND CONFIG_ARGS " --host=cray")
 if (COMP_NAME STREQUAL gptl)
   string(APPEND CPPDEFS " -DHAVE_NANOTIME -DBIT64 -DHAVE_SLASHPROC -DHAVE_GETTIMEOFDAY")
+  # Workaround GCC 12+ warnings that break gptl C build
+  string(APPEND CMAKE_C_FLAGS " -Wno-error -Wno-implicit-function-declaration -Wno-implicit-int")
 endif()
 string(APPEND CMAKE_C_FLAGS_RELEASE " -O2 -g")
 string(APPEND CMAKE_Fortran_FLAGS_RELEASE " -O2 -g")
+# FTorch include paths and library for emulator
 string(APPEND CMAKE_Fortran_FLAGS " -I/global/cfs/cdirs/m4549/code/FTorch_gnu_cpu/include")
-string(APPEND CMAKE_Fortran_FLAGS " -I/global/cfs/cdirs/m4549/code/FTorch_gnu_cpu/build/modules")
+string(APPEND CMAKE_Fortran_FLAGS " -I/global/cfs/cdirs/m4549/code/FTorch_gnu_cpu/include/ftorch")
+string(APPEND CMAKE_EXE_LINKER_FLAGS " -L/global/cfs/cdirs/m4549/code/FTorch_gnu_cpu/lib64 -lftorch")
+string(APPEND CMAKE_EXE_LINKER_FLAGS " -Wl,-rpath,/global/cfs/cdirs/m4549/code/FTorch_gnu_cpu/lib64")
+string(APPEND CMAKE_SHARED_LINKER_FLAGS " -Wl,-rpath,/global/cfs/cdirs/m4549/code/FTorch_gnu_cpu/lib64")
 
 set(MPICC "cc")
 set(MPICXX "CC")
