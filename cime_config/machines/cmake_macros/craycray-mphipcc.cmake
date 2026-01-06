@@ -27,5 +27,5 @@ set(SCC "cc")
 set(SCXX "CC")
 set(SFC "ftn")
 
-set(AMDGPU_TARGETS "gfx90a")
-set(GPU_TARGETS "gfx90a")
+set(AMDGPU_TARGETS "gfx90a" CACHE STRING "")
+set(GPU_TARGETS "gfx90a" CACHE STRING "")
