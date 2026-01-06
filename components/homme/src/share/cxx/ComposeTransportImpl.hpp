@@ -155,6 +155,7 @@ struct ComposeTransportImpl {
                const ExecViewUnmanaged<Scalar*[2][NP][NP][NUM_LEV]>& v);
 
   void advance_hypervis_scalar(const Real dt);
+  void advance_horizontal_turbulent_diffusion_scalar(const Real dt);
 
   int run_trajectory_unit_tests();
   int run_enhanced_trajectory_unit_tests();
