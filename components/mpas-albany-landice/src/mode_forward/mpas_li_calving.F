@@ -4005,8 +4005,10 @@ module li_calving
                                                   calvingThickness, &
                                                   strainRateEnhancementForCalving, &
                                                   sfcMassBalApplied
+      real (kind=RKIND), pointer :: deltat  !< time step (s)
       real (kind=RKIND), pointer :: config_flowLawExponent, &
-                                    config_crevasse_water_depth
+                                    config_crevasse_water_depth, &
+                                    config_smb_fraction_to_water_depth
       real (kind=RKIND) :: dryCrevasseDepth, waterAvailable, eEff, &
                            tauMaxForCalving, meanA
 
@@ -4015,6 +4017,7 @@ module li_calving
 
       call mpas_pool_get_config(liConfigs, 'config_crevasse_water_depth', config_crevasse_water_depth)
       call mpas_pool_get_config(liConfigs, 'config_crevasse_water_depth_source', config_crevasse_water_depth_source)
+      call mpas_pool_get_config(liConfigs, 'config_smb_fraction_to_water_depth', config_smb_fraction_to_water_depth)
       call mpas_pool_get_config(liConfigs, 'config_flowParamA_calculation', config_flowParamA_calculation)
       call mpas_pool_get_config(liConfigs, 'config_flowLawExponent', config_flowLawExponent)
       call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
@@ -4029,6 +4032,7 @@ module li_calving
       call mpas_pool_get_subpool(domain % blocklist % structs, 'thermal', thermalPool)
 
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_array(meshPool, 'deltat', deltat)
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
       call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness)
       call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
@@ -4069,6 +4073,13 @@ module li_calving
          crevasseWaterDepth(:) = config_crevasse_water_depth
       elseif (trim(config_crevasse_water_depth_source) == "data") then
          ! Do nothing. This was already retrieved above.
+      elseif (trim(config_crevasse_water_depth_source) == "scaled_smb") then
+         where (sfcMassBalApplied < 0.0_RKIND)
+             crevasseWaterDepth = crevasseWaterDepth + -1.0_RKIND * config_smb_fraction_to_water_depth * &
+                                  sfcMassBalApplied / config_ice_density * deltat
+         elsewhere
+             crevasseWaterDepth = 0.0_RKIND
+         endwhere
       else
          call mpas_log_write("config_crevasse_water_depth_source must be set to either 'scalar' or 'data'.", MPAS_LOG_ERR)
          err = 1
