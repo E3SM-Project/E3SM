@@ -159,15 +159,13 @@ CONTAINS
     do i = 1, lsize_x
       do j = 1, lsize_y
         zbot(i, j) = 10.0_R8
-        ubot(i, j) = net_outputs(1, 24, i, j) ! U_0
-        vbot(i, j) = net_outputs(1, 32, i, j) ! V_0
-        tbot(i, j) = net_outputs(1,  8, i, j) ! T_0
-        ptem(i, j) = net_outputs(1,  8, i, j) ! T_0
-        shum(i, j) = 0.0_R8                   ! TBD
-        dens(i, j) = 0.0_R8                   ! TBD
+        ubot(i, j) = net_outputs(1, 26, i, j) ! U_7
+        vbot(i, j) = net_outputs(1, 34, i, j) ! V_7
+        tbot(i, j) = net_outputs(1, 10, i, j) ! T_7
+        ptem(i, j) = net_outputs(1, 10, i, j) ! T_7
         ! do we want to make this correspond to level 0 by using ak_i and bk_i
-        pbot(i, j) = net_outputs(1,  6, i, j) ! PS (Surface pressure)
-        pslv(i, j) = net_outputs(1,  6, i, j) ! PS (Surface pressure)
+        pbot(i, j) = net_outputs(1,  1, i, j) ! PS (Surface pressure)
+        pslv(i, j) = net_outputs(1,  1, i, j) ! PS (Surface pressure)
         lwdn(i, j) = net_outputs(1, 40, i, j) ! FLDS (Downwelling longwave flux at surface)
 
         snowc(i, j) = 0.0_R8
@@ -181,7 +179,7 @@ CONTAINS
         endif
 
         ! swnet = (Downwelling solar flux at surface) - (surface upward shortwave flux)
-        swnet(i, j) = net_outputs(1, 41, i, j) - net_outputs(1, 41, i, j)
+        swnet(i, j) = net_outputs(1, 41, i, j) - net_outputs(1, 42, i, j)
         !--- fabricate required sw[n,v]d[r,f] components from swnet ---
         swvdr(i, j) = swnet(i, j) * 0.28_R8
         swndr(i, j) = swnet(i, j) * 0.31_R8
