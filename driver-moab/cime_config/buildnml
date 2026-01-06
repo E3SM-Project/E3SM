@@ -70,7 +70,7 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
     elif case.get_value('RUN_TYPE') == 'branch':
         config['run_type'] = 'branch'
 
-   # ---------------------------------------------------
+    # ---------------------------------------------------
     # set wave coupling settings based on compset:
     # ---------------------------------------------------
     if case.get_value('COMP_WAV') == 'ww3':
@@ -434,6 +434,10 @@ def buildnml(case, caseroot, component):
     # add dust_emis_scheme
     dust_emis_scheme = case.get_value('dust_emis_scheme')
     infile_text += " dust_emis_scheme = {}".format(dust_emis_scheme)
+
+    # add nlmaps_atm2srf_conserve flag
+    nlmaps_atm2srf_conserve = case.get_value('nlmaps_atm2srf_conserve')
+    infile_text += " nlmaps_atm2srf_conserve = {}".format(nlmaps_atm2srf_conserve)
 
     user_nl_file = os.path.join(caseroot, "user_nl_cpl")
     namelist_infile = os.path.join(confdir, "namelist_infile")

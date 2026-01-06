@@ -46,6 +46,31 @@ contains
   !================================================================================
 
   !================================================================================
+  ! subroutine seq_domain_check
+  !
+  ! Purpose: Comprehensive domain validation for E3SM coupled model components
+  !
+  ! This routine validates grid consistency across all climate model components
+  ! by checking:
+  ! 1. Component domain extraction and mapping to atmosphere grid
+  ! 2. Mask/fraction compatibility within each component
+  ! 3. Coordinate consistency between components sharing grids
+  ! 4. Fraction sum validation (land+ice+ocean = 1.0) on atmosphere grid
+  ! 5. Memory cleanup of temporary arrays and domain objects
+  !
+  ! The validation ensures that:
+  ! - Grid coordinates match within tolerance for same-grid components
+  ! - Component fractions are physically consistent
+  ! - Mask and fraction arrays are compatible
+  ! - Domain mappings are correctly initialized
+  !
+  ! Arguments:
+  !   infodata - Model configuration data including tolerance values
+  !   atm,ice,lnd,ocn,rof,glc,iac - Component type structures
+  !   samegrid_* - Flags indicating which components share identical grids
+  !
+  ! Called from: cime_comp_mod.F90 during CPL initialization when domain_check=true
+  !================================================================================
 
   subroutine seq_domain_check( infodata, &
        atm, ice, lnd, ocn, rof, glc, iac, &
@@ -166,6 +191,12 @@ contains
     character(*),parameter :: subName = '(seq_domain_check) '
     !-----------------------------------------------------------
 
+    !--- Initialize component mappers for grid transformations ---
+    ! These mappers handle regridding between component decompositions:
+    ! mapper_i2a: ice -> atmosphere, mapper_i2o: ice -> ocean
+    ! mapper_o2a: ocean -> atmosphere, mapper_l2g: land -> glacier
+    ! mapper_a2l: atmosphere -> land, mapper_l2a: land -> atmosphere
+    ! mapper_z2a: iac -> atmosphere
     mapper_i2a => prep_atm_get_mapper_Fi2a()
     mapper_i2o => prep_ocn_get_mapper_SFi2o()
     mapper_o2a => prep_atm_get_mapper_Fo2a()
@@ -176,6 +207,12 @@ contains
 
     call seq_comm_setptrs(CPLID,iamroot=iamroot, mpicom=mpicom_cplid)
 
+    !--- Extract component configuration and validation tolerances ---
+    ! Get presence flags for each component and tolerance values for:
+    ! - eps_frac: acceptable error in fraction sums
+    ! - eps_*mask: acceptable error in mask values
+    ! - eps_*grid: acceptable error in coordinate values
+    ! - eps_*area: acceptable error in grid cell areas
     call seq_infodata_GetData( infodata,      &
          lnd_present=lnd_present,             &
          ocn_present=ocn_present,             &
@@ -215,6 +252,10 @@ contains
           call shr_sys_abort(subname//' atm and lnd grid must have the same global size')
        end if
        if (iamroot) write(logunit,F00) ' --- checking land maskfrac ---'
+
+       !--- Process land component domain ---
+       ! Extract land domain data, validate mask/fraction compatibility,
+       ! then map to atmosphere grid for intercomparison with other components
        call seq_domain_check_fracmask(lnddom_l%data)
        call mct_gGrid_init(oGGrid=lnddom_a, iGGrid=lnddom_l, lsize=atmsize)
        call mct_aVect_zero(lnddom_a%data)
@@ -240,6 +281,10 @@ contains
           call shr_sys_abort(subname//' atm and ocn grid must have the same global size')
        end if
        if (iamroot) write(logunit,F00) ' --- checking ocean maskfrac ---'
+
+       !--- Process ocean component domain ---
+       ! Similar to land: extract, validate, and map to atmosphere grid.
+       ! For different grids, use mask as fraction (conservative assumption)
        call seq_domain_check_fracmask(ocndom_o%data)
        call mct_gGrid_init(oGGrid=ocndom_a, iGGrid=ocndom_o, lsize=atmsize)
        call mct_aVect_zero(ocndom_a%data)
@@ -270,6 +315,10 @@ contains
           call shr_sys_abort(subname//' atm and ice grid must have the same global size')
        end if
        if (iamroot) write(logunit,F00) ' --- checking ice maskfrac ---'
+
+       !--- Process ice component domain ---
+       ! Extract ice domain data, validate mask/fraction compatibility,
+       ! then map to atmosphere grid for fraction validation
        call seq_domain_check_fracmask(icedom_i%data)
        call mct_gGrid_init(oGGrid=icedom_a, iGGrid=icedom_i, lsize=atmsize)
        call mct_aVect_zero(icedom_a%data)
@@ -302,6 +351,10 @@ contains
              'must have the same global size')
        end if
        if (iamroot) write(logunit,F00) ' --- checking iac maskfrac ---'
+
+       !--- Process iac component domain ---
+       ! IAC domain is relative to atmosphere domain, extract and validate
+       ! mask/fraction compatibility, then map to atmosphere grid
        call seq_domain_check_fracmask(iacdom_z%data)
        call mct_gGrid_init(oGGrid=iacdom_a, iGGrid=iacdom_z, lsize=atmsize)
        call mct_aVect_zero(iacdom_a%data)
@@ -397,6 +450,9 @@ contains
     if (ocn_present .and. ice_present) then
        !    if (samegrid_oi) then       ! doesn't yet exist
 
+       !--- Validate ocean-ice grid consistency ---
+       ! Ocean and ice must use identical grids. Check that masks, coordinates,
+       ! and areas match within tolerance on the ocean decomposition
        npts = ocnsize
        allocate(mask(npts),stat=rcode)
        if(rcode /= 0) call shr_sys_abort(subname//' allocate mask')
@@ -421,6 +477,9 @@ contains
     !------------------------------------------------------------------------------
 
     if (atm_present .and. lnd_present .and. samegrid_al) then
+       !--- Validate atmosphere-land grid consistency (if samegrid_al) ---
+       ! When atmosphere and land share grids, verify coordinates match
+       ! within tolerance on the atmosphere decomposition
        if (iamroot) write(logunit,F00) ' --- checking atm/land domains ---'
        call seq_domain_check_grid(atmdom_a%data, lnddom_a%data, 'lat' , eps=eps_axgrid, mpicom=mpicom_cplid, mask=maskl)
        call seq_domain_check_grid(atmdom_a%data, lnddom_a%data, 'lon' , eps=eps_axgrid, mpicom=mpicom_cplid, mask=maskl)
@@ -464,6 +523,11 @@ contains
     !------------------------------------------------------------------------------
 
     if (atm_present) then
+       !--- Validate fraction sums on atmosphere grid ---
+       ! Ensure physical consistency: land + ice + ocean fractions = 1.0
+       ! at each atmosphere grid point. Use different tolerances based on:
+       ! - samegrid_ao: tighter tolerance for identical grids
+       ! - not samegrid_al: relaxed tolerance for different grids
        my_eps_frac = eps_frac
        if (samegrid_ao) my_eps_frac = eps_frac_samegrid
        if (.not. samegrid_al) my_eps_frac = eps_big
@@ -517,6 +581,10 @@ contains
     !------------------------------------------------------------------------------
     ! Clean up allocated memory
     !------------------------------------------------------------------------------
+
+    !--- Clean up temporary arrays and domain objects ---
+    ! Deallocate fraction/mask arrays and MCT grid objects created
+    ! during validation to prevent memory leaks
 
     if (atm_present .and. lnd_present) then
        deallocate(fracl,stat=rcode)
@@ -596,7 +664,17 @@ contains
 
   end subroutine seq_domain_compare
 
-  !===============================================================================
+  !================================================================================
+
+  !================================================================================
+  ! subroutine seq_domain_check_fracmask
+  !
+  ! Purpose: Validate mask and fraction compatibility within a component
+  !
+  ! Ensures that where fraction > 0, mask must also be > 0. This catches
+  ! inconsistencies where a component claims to exist somewhere (fraction > 0)
+  ! but is masked out (mask = 0).
+  !================================================================================
 
   subroutine seq_domain_check_fracmask(dom1)
 
@@ -650,7 +728,23 @@ contains
 
   end subroutine seq_domain_check_fracmask
 
-  !===============================================================================
+  !================================================================================
+
+  !================================================================================
+  ! subroutine seq_domain_check_grid  
+  !
+  ! Purpose: Compare grid attributes between two domains
+  !
+  ! Validates that the specified grid attribute (lat, lon, area, mask) matches
+  ! between two domains within tolerance. Handles longitude wraparound for
+  ! geographic coordinate comparison.
+  !
+  ! Key features:
+  ! - Longitude periodicity adjustment (360° wraparound)
+  ! - Optional masking to limit validation to active grid cells
+  ! - MPI reduction to find maximum difference across all processors
+  ! - Detailed error reporting with grid point indices
+  !================================================================================
 
   subroutine seq_domain_check_grid(dom1, dom2, attr, eps, mpicom, mask)
 
