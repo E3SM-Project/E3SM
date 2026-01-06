@@ -213,7 +213,6 @@ contains
     ! - eps_*mask: acceptable error in mask values
     ! - eps_*grid: acceptable error in coordinate values
     ! - eps_*area: acceptable error in grid cell areas
-
     call seq_infodata_GetData( infodata,      &
          lnd_present=lnd_present,             &
          ocn_present=ocn_present,             &

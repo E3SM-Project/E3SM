@@ -89,11 +89,11 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
         if case.get_value('COMP_ICE') == 'mpassi': 
             config['WAV_ICE_COUP'] = 'oneway' 
     elif case.get_value('COMP_WAV') == 'dwav':
-         config['WAVSPEC'] = 'sp36x36'
+        config['WAVSPEC'] = 'sp36x36'
     else:
-         config['WAVSPEC'] = 'none'
+        config['WAVSPEC'] = 'none'
 
-   #----------------------------------------------------
+    #----------------------------------------------------
     # Initialize namelist defaults
     #----------------------------------------------------
     nmlgen.init_defaults(infile, config)
