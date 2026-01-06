@@ -1680,6 +1680,7 @@ contains
     call ncd_io(ncid=ncid, varname='STDEV_ELEV', flag='read', data=domain%stdev_elev, &
          dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
+         if (masterproc) &
          write(iulog,*) trim(subname),' WARNING: STDEV_ELEV  NOT on fsurdat file. Try to use STD_ELEV instead.'
          call ncd_io(ncid=ncid, varname='STD_ELEV', flag='read', data=domain%stdev_elev, &
               dim1name=grlnd, readvar=readvar)
