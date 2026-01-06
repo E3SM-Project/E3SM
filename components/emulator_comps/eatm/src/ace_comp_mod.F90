@@ -23,6 +23,7 @@ module ace_comp_mod
   !--------------------------------------------------------------------------
   ! Private module data
   !--------------------------------------------------------------------------
+  real(R8), parameter :: rdair  = SHR_CONST_RDAIR  ! dry air gas constant   ~ J/K/kg
   real(R8), parameter :: tKFrz  = SHR_CONST_TKFRZ
 
   save
@@ -155,6 +156,8 @@ CONTAINS
   subroutine ace_eatm_export()
     ! !LOCAL VARIABLES:
     integer :: i, j
+    !--- temporaries
+    real(kind=R8) :: e
 
     do i = 1, lsize_x
       do j = 1, lsize_y
@@ -167,6 +170,13 @@ CONTAINS
         pbot(i, j) = net_outputs(1,  1, i, j) ! PS (Surface pressure)
         pslv(i, j) = net_outputs(1,  1, i, j) ! PS (Surface pressure)
         lwdn(i, j) = net_outputs(1, 40, i, j) ! FLDS (Downwelling longwave flux at surface)
+
+        !--- saturation vapor pressure ---
+        e = datm_shr_esat(tbot(i, j), tbot(i, j))
+        !--- specific humidity ---
+        shum(i, j) = (0.622_R8 * e)/(pbot(i, j) - 0.378_R8 * e)
+        !--- density ---
+        dens(i, j) = pbot(i, j)  / (rdair * tbot(i, j) * (1 + 0.608_R8 * shum(i, j)))
 
         snowc(i, j) = 0.0_R8
         rainc(i, j) = 0.0_R8
@@ -201,5 +211,48 @@ CONTAINS
     call ncd_io(varname=varname, data=data, flag='read', ncid=ncid, readvar=found)
     if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: reading ' //trim(varname))
   end subroutine ace_read_netcdf
+
+  !===============================================================================
+  real(R8) function datm_shr_eSat(tK,tKbot)
+
+    !--- arguments ---
+    real(R8),intent(in) :: tK    ! temp used in polynomial calculation
+    real(R8),intent(in) :: tKbot ! bottom atm temp
+
+    !--- local ---
+    real(R8)           :: t     ! tK converted to Celcius
+
+    !--- coefficients for esat over water ---
+    real(R8),parameter :: a0=6.107799961_R8
+    real(R8),parameter :: a1=4.436518521e-01_R8
+    real(R8),parameter :: a2=1.428945805e-02_R8
+    real(R8),parameter :: a3=2.650648471e-04_R8
+    real(R8),parameter :: a4=3.031240396e-06_R8
+    real(R8),parameter :: a5=2.034080948e-08_R8
+    real(R8),parameter :: a6=6.136820929e-11_R8
+
+    !--- coefficients for esat over ice ---
+    real(R8),parameter :: b0=6.109177956_R8
+    real(R8),parameter :: b1=5.034698970e-01_R8
+    real(R8),parameter :: b2=1.886013408e-02_R8
+    real(R8),parameter :: b3=4.176223716e-04_R8
+    real(R8),parameter :: b4=5.824720280e-06_R8
+    real(R8),parameter :: b5=4.838803174e-08_R8
+    real(R8),parameter :: b6=1.838826904e-10_R8
+
+    !----------------------------------------------------------------------------
+    ! use polynomials to calculate saturation vapor pressure and derivative with
+    ! respect to temperature: over water when t > 0 c and over ice when t <= 0 c
+    ! required to convert relative humidity to specific humidity
+    !----------------------------------------------------------------------------
+
+    t = min( 50.0_R8, max(-50.0_R8,(tK-tKfrz)) )
+    if ( tKbot < tKfrz) then
+       datm_shr_eSat = 100.0_R8*(b0+t*(b1+t*(b2+t*(b3+t*(b4+t*(b5+t*b6))))))
+    else
+       datm_shr_eSat = 100.0_R8*(a0+t*(a1+t*(a2+t*(a3+t*(a4+t*(a5+t*a6))))))
+    end if
+
+  end function datm_shr_eSat
 
 end module ace_comp_mod
