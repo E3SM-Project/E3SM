@@ -22,6 +22,7 @@ add_subdirectory(${CLM_ROOT}/src/external_models/fates/main ed_main)
 add_subdirectory(${CLM_ROOT}/src/external_models/fates/biogeophys ed_biogeophys)
 add_subdirectory(${CLM_ROOT}/src/external_models/fates/biogeochem ed_biogeochem)
 add_subdirectory(${CLM_ROOT}/src/external_models/fates/fire ed_fire)
+add_subdirectory(${CLM_ROOT}/src/da clm_da)
 
 
 # Add general unit test directories (mocked out files, etc.)

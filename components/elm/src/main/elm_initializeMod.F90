@@ -24,6 +24,7 @@ module elm_initializeMod
   use ELMFatesParamInterfaceMod, only: FatesReadPFTs
   use BeTRSimulationELM, only : create_betr_simulation_elm
   use SoilLittVertTranspMod, only : CreateLitterTransportList
+  use da_ml_wrapper,    only : ml_init
   use iso_c_binding
   !
   !-----------------------------------------
@@ -1169,6 +1170,7 @@ contains
 
     type(bounds_type) :: bounds_proc
     logical           :: restart_vsfm          ! does VSFM need to be restarted
+    integer           :: ier
 
     call t_startf('elm_init3')
 
@@ -1213,6 +1215,8 @@ contains
     if (use_petsc_thermal_model) then
        call EMI_Init_EM(EM_ID_PTM)
     endif
+
+    ier = ml_init()
 
     call t_stopf('elm_init3')
 
