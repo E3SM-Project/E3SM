@@ -1163,29 +1163,34 @@ module li_subglacial_hydro
       if (config_sgh_transition_flow) then
          ! Transition flow law from Hill et al. (2024), https://doi.org/10.1017/jog.2023.103
          do iEdge = 1, nEdges
-            effectiveConducEdge(iEdge) = kin_visc_water / (2.0_RKIND * flow_transition_param) * &
-               (waterThicknessEdge(iEdge) / bedRoughMax)** &
-               ((-2.0_RKIND + 2.0_RKIND * alpha) / (3.0_RKIND - 2.0_RKIND * alpha)) &
-               * &
-               (-1.0_RKIND + sqrt(1.0_RKIND + 4.0_RKIND * (flow_transition_param / kin_visc_water) * &
-               (waterThicknessEdge(iEdge) / bedRoughMax)**(3.0_RKIND - 2.0_RKIND * alpha) * &
-               conduc_coeff_wtd(iEdge) * waterThicknessEdge(iEdge)**3 * gradMagPhiBaseEdge(iEdge))) / &
-               gradMagPhiBaseEdge(iEdge)
+            if (gradMagPhiBaseEdge(iEdge) < SMALL_GRADPHI) then
+               effectiveConducEdge(iEdge) = 0.0_RKIND
+            else
+               effectiveConducEdge(iEdge) = kin_visc_water / (2.0_RKIND * flow_transition_param) * &
+                  (waterThicknessEdge(iEdge) / bedRoughMax)** &
+                  ((-2.0_RKIND + 2.0_RKIND * alpha) / (3.0_RKIND - 2.0_RKIND * alpha)) &
+                  * &
+                  (-1.0_RKIND + sqrt(1.0_RKIND + 4.0_RKIND * (flow_transition_param / kin_visc_water) * &
+                  (waterThicknessEdge(iEdge) / bedRoughMax)**(3.0_RKIND - 2.0_RKIND * alpha) * &
+                  conduc_coeff_wtd(iEdge) * waterThicknessEdge(iEdge)**3 * gradMagPhiBaseEdge(iEdge))) / &
+                  gradMagPhiBaseEdge(iEdge)
+            endif
          end do
       else
          ! Traditional flow law (laminar or turbulent)
          do iEdge = 1, nEdges
-            effectiveConducEdge(iEdge) = conduc_coeff_wtd(iEdge) * waterThicknessEdge(iEdge)**(alpha-1.0_RKIND) * &
-               gradMagPhiBaseEdge(iEdge)**(beta - 2.0_RKIND)
+            if (gradMagPhiBaseEdge(iEdge) < SMALL_GRADPHI) then
+               effectiveConducEdge(iEdge) = 0.0_RKIND
+            else
+               effectiveConducEdge(iEdge) = conduc_coeff_wtd(iEdge) * waterThicknessEdge(iEdge)**(alpha-1.0_RKIND) * &
+                  gradMagPhiBaseEdge(iEdge)**(beta - 2.0_RKIND)
+            endif
          end do
       endif
       deallocate(conduc_coeff_wtd)
 
       ! Apply some thresholding of small values
       do iEdge = 1, nEdges
-         if (gradMagPhiBaseEdge(iEdge) < SMALL_GRADPHI) then
-            effectiveConducEdge(iEdge) = 0.0_RKIND
-         endif
          if (effectiveConducEdge(iEdge) < SMALL_CONDUC) then
               effectiveConducEdge(iEdge) = 0.0_RKIND
          endif
