@@ -194,8 +194,9 @@ void AuxiliaryState::computeMomAux(const OceanState *State, int ThickTimeLevel,
 
           parallelForInner(
               Team, KRange, INNER_LAMBDA(int KChunk) {
-                 LocLayerThicknessAux.computeVarsOnCells(ICell, KChunk,
-                                                         LayerThickCell);
+                 LocLayerThicknessAux.computeVarsOnCells(
+                     ICell, KChunk, LayerThickCell, NormalVelEdge, 0._Real);
+                 // TODO: make timestep available to this call
               });
        });
    Pacer::stop("AuxState:cellAuxState3", 2);
