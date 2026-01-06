@@ -345,46 +345,47 @@ contains
   end subroutine seq_map_init_rearrolap
 
   !=======================================================================
-  !>
-  !> @brief Maps attribute vector fields from source to destination grid.
-  !>
-  !> This subroutine is the primary mapping interface for transferring field
-  !> data between component grids. It supports THREE mapping strategies:
-  !>
-  !> 1. COPY (mapper%copy_only=.true.)
-  !>    - Used when source and destination grids are IDENTICAL
-  !>    - Simply copies data without any transformation
-  !>    - only in MCT mode
-  !>
-  !> 2. REARRANGE (mapper%rearrange_only=.true.)
-  !>    - Used when grids have the SAME points but DIFFERENT MPI distribution
-  !>    - Performs MPI communication to redistribute data
-  !>
-  !> 3. MAP (neither copy_only nor rearrange_only)
-  !>    - Full interpolation/regridding between DIFFERENT grids
-  !>    - Uses sparse matrix multiplication with pre-computed weights
-  !>    - Supports optional normalization for conservation
-  !>
-  !> *** MOAB Integration ***
-  !> This subroutine maintains DUAL data paths:
-  !> - MCT path: Traditional mct_aVect operations (always executed)
-  !> - MOAB path: Parallel iMOAB operations (executed when valid_moab_context=.true.)
-  !>
-  !> The MOAB path uses iMOAB API calls to:
-  !> - Transfer data between MOAB application instances
-  !> - Apply projection weights for regridding
-  !> - Handle normalization for conservative mapping
-  !>
-  !> @param mapper     Mapping data structure containing weights and grid info
-  !> @param av_s       Source attribute vector (input fields)
-  !> @param av_d       Destination attribute vector (output fields)
-  !> @param fldlist    Optional: specific fields to map (default: all fields)
-  !> @param norm       Optional: enable normalization (default: .true.)
-  !> @param avwts_s    Optional: source weights for normalization
-  !> @param avwtsfld_s Optional: field name in avwts_s to use as weight
-  !> @param string     Optional: description string for logging
-  !> @param msgtag     Optional: MPI message tag for rearrangement
-  !>
+  !
+  ! seq_map_map - Maps attribute vector fields from source to destination grid.
+  !
+  ! This subroutine is the primary mapping interface for transferring field
+  ! data between component grids. It supports THREE mapping strategies:
+  !
+  ! 1. COPY (mapper%copy_only=.true.)
+  !    - Used when source and destination grids are IDENTICAL
+  !    - Simply copies data without any transformation
+  !    - only in MCT mode
+  !
+  ! 2. REARRANGE (mapper%rearrange_only=.true.)
+  !    - Used when grids have the SAME points but DIFFERENT MPI distribution
+  !    - Performs MPI communication to redistribute data
+  !
+  ! 3. MAP (neither copy_only nor rearrange_only)
+  !    - Full interpolation/regridding between DIFFERENT grids
+  !    - Uses sparse matrix multiplication with pre-computed weights
+  !    - Supports optional normalization for conservation
+  !
+  ! *** MOAB Integration ***
+  ! This subroutine maintains DUAL data paths:
+  ! - MCT path: Traditional mct_aVect operations (always executed)
+  ! - MOAB path: Parallel iMOAB operations (executed when valid_moab_context=.true.)
+  !
+  ! The MOAB path uses iMOAB API calls to:
+  ! - Transfer data between MOAB application instances
+  ! - Apply projection weights for regridding
+  ! - Handle normalization for conservative mapping
+  !
+  ! Arguments:
+  !   mapper     - Mapping data structure containing weights and grid info
+  !   av_s       - Source attribute vector (input fields)
+  !   av_d       - Destination attribute vector (output fields)
+  !   fldlist    - Optional: specific fields to map (default: all fields)
+  !   norm       - Optional: enable normalization (default: .true.)
+  !   avwts_s    - Optional: source weights for normalization
+  !   avwtsfld_s - Optional: field name in avwts_s to use as weight
+  !   string     - Optional: description string for logging
+  !   msgtag     - Optional: MPI message tag for rearrangement
+  !
   !=======================================================================
 
   subroutine seq_map_map( mapper, av_s, av_d, fldlist, norm, avwts_s, avwtsfld_s, &
