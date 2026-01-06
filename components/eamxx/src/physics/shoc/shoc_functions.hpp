@@ -84,6 +84,7 @@ template <typename ScalarT, typename DeviceT> struct Functions {
     Scalar Ckh;
     Scalar Ckm;
     bool shoc_1p5tke;
+    bool shoc_nocond;
     bool extra_diags;
   };
 
@@ -547,7 +548,7 @@ template <typename ScalarT, typename DeviceT> struct Functions {
                    const uview_1d<const Spack> &thetal, const uview_1d<const Spack> &qw,
                    const uview_1d<const Spack> &w_field, const uview_1d<const Spack> &thl_sec,
                    const uview_1d<const Spack> &qw_sec, const Scalar &dtime,
-                   const bool &extra_diags, const uview_1d<const Spack> &wthl_sec,
+                   const bool &extra_diags, const bool &shoc_nocond, const uview_1d<const Spack> &wthl_sec,
                    const uview_1d<const Spack> &w_sec, const uview_1d<const Spack> &wqw_sec,
                    const uview_1d<const Spack> &qwthl_sec, const uview_1d<const Spack> &w3,
                    const uview_1d<const Spack> &pres, const uview_1d<const Spack> &zt_grid,
@@ -688,7 +689,7 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       const Scalar &lambda_low, const Scalar &lambda_high, const Scalar &lambda_slope,
       const Scalar &lambda_thresh, const Scalar &thl2tune, const Scalar &qw2tune,
       const Scalar &qwthl2tune, const Scalar &w2tune, const Scalar &length_fac,
-      const Scalar &c_diag_3rd_mom, const Scalar &Ckh, const Scalar &Ckm, const bool &shoc_1p5tke,
+      const Scalar &c_diag_3rd_mom, const Scalar &Ckh, const Scalar &Ckm, const bool &shoc_1p5tke, const bool &shoc_nocond,
       const bool &extra_diags,
       // Input Variables
       const Scalar &host_dx, const Scalar &host_dy, const uview_1d<const Spack> &zt_grid,
@@ -730,7 +731,7 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       const Scalar &lambda_low, const Scalar &lambda_high, const Scalar &lambda_slope,
       const Scalar &lambda_thresh, const Scalar &thl2tune, const Scalar &qw2tune,
       const Scalar &qwthl2tune, const Scalar &w2tune, const Scalar &length_fac,
-      const Scalar &c_diag_3rd_mom, const Scalar &Ckh, const Scalar &Ckm, const bool &shoc_1p5tke,
+      const Scalar &c_diag_3rd_mom, const Scalar &Ckh, const Scalar &Ckm, const bool &shoc_1p5tke, const bool &shoc_nocond,
       const bool &extra_diags,
       // Input Variables
       const view_1d<const Scalar> &host_dx, const view_1d<const Scalar> &host_dy,

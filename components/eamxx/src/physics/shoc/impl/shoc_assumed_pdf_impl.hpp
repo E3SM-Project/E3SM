@@ -49,6 +49,7 @@ void Functions<S,D>::shoc_assumed_pdf(
   const uview_1d<const Spack>& qw_sec,
   const Scalar&                dtime,
   const bool&                  extra_diags,
+  const bool&                  shoc_nocond,
   const uview_1d<const Spack>& wthl_sec,
   const uview_1d<const Spack>& w_sec,
   const uview_1d<const Spack>& wqw_sec,
@@ -234,6 +235,14 @@ void Functions<S,D>::shoc_assumed_pdf(
 
       ql1 = ekat::min(qn1, qw1_1);
       ql2 = ekat::min(qn2, qw1_2);
+
+      // Deactivate SHOC condensation
+      if (shoc_nocond){
+        ql1 = 0;
+        ql2 = 0;
+        C1 = 0;
+        C2 = 0;
+      }
 
       // Compute SGS cloud fraction
       shoc_cldfrac(k) = ekat::min(1, a*C1 + (1 - a)*C2);

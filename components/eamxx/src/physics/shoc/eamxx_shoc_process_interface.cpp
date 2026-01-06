@@ -272,6 +272,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   runtime_options.Ckh           = m_params.get<double>("coeff_kh");
   runtime_options.Ckm           = m_params.get<double>("coeff_km");
   runtime_options.shoc_1p5tke   = m_params.get<bool>("shoc_1p5tke");
+  runtime_options.shoc_nocond   = m_params.get<bool>("shoc_nocond");
   runtime_options.extra_diags   = m_params.get<bool>("extra_shoc_diags");
   // Initialize all of the structures that are passed to shoc_main in run_impl.
   // Note: Some variables in the structures are not stored in the field manager.  For these
@@ -327,6 +328,8 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
     Kokkos::deep_copy(tk,0.0);
     Kokkos::deep_copy(tke,0.0004);
     Kokkos::deep_copy(tke_copy,0.0004);
+    //Kokkos::deep_copy(qc_copy,0.0);
+    //Kokkos::deep_copy(qc,0.0);
     Kokkos::deep_copy(cldfrac_liq,0.0);
   }
 
@@ -417,7 +420,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   shoc_postprocess.set_variables(m_num_cols,m_num_levs,
                                  rrho,qv,qw,qc,qc_copy,tke,tke_copy,qtracers,shoc_ql2,
                                  cldfrac_liq,inv_qc_relvar,
-                                 T_mid, dse, z_mid, phis);
+                                 T_mid, dse, z_mid, phis, runtime_options);
 
   if (has_column_conservation_check()) {
     const auto& vapor_flux = get_field_out("vapor_flux").get_view<Real*>();
