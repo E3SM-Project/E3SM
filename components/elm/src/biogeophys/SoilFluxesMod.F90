@@ -288,7 +288,7 @@ contains
                  - emg(c)*sb*lw_grnd - emg(c)*sb*t_grnd0(c)**3*(4._r8*tinc(c)) &
                  - (eflx_sh_grnd(p)+qflx_evap_soi(p)*htvp(c))
 
-            if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+            if (veg_pp%is_on_soil_col(p) .or. veg_pp%is_on_crop_col(p)) then
                eflx_soil_grnd_r(p) = eflx_soil_grnd(p)
             end if
          else
@@ -312,7 +312,7 @@ contains
          eflx_sh_tot(p) = eflx_sh_veg(p) + eflx_sh_grnd(p)
          qflx_evap_tot(p) = qflx_evap_veg(p) + qflx_evap_soi(p)
          eflx_lh_tot(p)= hvap*qflx_evap_veg(p) + htvp(c)*qflx_evap_soi(p)
-         if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+         if (veg_pp%is_on_soil_col(p) .or. veg_pp%is_on_crop_col(p)) then
             eflx_lh_tot_r(p)= eflx_lh_tot(p)
             eflx_sh_tot_r(p)= eflx_sh_tot(p)
          else if (lun_pp%urbpoi(l)) then
@@ -377,7 +377,7 @@ contains
          errsoi_patch(p) =  errsoi_patch(p)+eflx_h2osfc_to_snow_col(c)
          ! For urban sunwall, shadewall, and roof columns, the "soil" energy balance check
          ! must include the heat flux from the interior of the building.
-         if (col_pp%itype(c)==icol_sunwall .or. col_pp%itype(c)==icol_shadewall .or. col_pp%itype(c)==icol_roof) then
+         if (col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) == icol_shadewall .or. col_pp%itype(c) == icol_roof) then
             errsoi_patch(p) = errsoi_patch(p) + eflx_building_heat(c)
          end if
       end do
@@ -432,7 +432,7 @@ contains
                  + 4._r8*emg(c)*sb*t_grnd0(c)**3*tinc(c)
 
             eflx_lwrad_net(p) = eflx_lwrad_out(p) - forc_lwrad(t)
-            if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+            if (veg_pp%is_on_soil_col(p) .or. veg_pp%is_on_crop_col(p)) then
                eflx_lwrad_net_r(p) = eflx_lwrad_out(p) - forc_lwrad(t)
                eflx_lwrad_out_r(p) = eflx_lwrad_out(p)
             end if

@@ -466,7 +466,7 @@ contains
           ti = t - topi + 1
 
           if (lun_pp%itype(l) /= istdlak) then  ! soil columns of both urban and non-urban types
-             if (lun_pp%itype(l)==istwet .or. lun_pp%itype(l)==istice .or. lun_pp%itype(l)==istice_mec) then
+             if (lun_pp%itype(l) == istwet .or. lun_pp%itype(l) == istice .or. lun_pp%itype(l) == istice_mec) then
                 ! do nothing
              else if (lun_pp%urbpoi(l) .and. (col_pp%itype(c) /= icol_road_perv) .and. (col_pp%itype(c) /= icol_road_imperv) )then
                 ! do nothing
@@ -516,7 +516,7 @@ contains
 
           if (lun_pp%itype(l) /= istdlak) then  ! soil columns of both urban and non-urban types
              if (lun_pp%urbpoi(l)) then
-                if (col_pp%itype(c)==icol_sunwall .or. col_pp%itype(c)==icol_shadewall .or. col_pp%itype(c)==icol_roof) then
+                if (col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) == icol_shadewall .or. col_pp%itype(c) == icol_roof) then
                    ! do nothing
                 else
                    this%depth_col(c, 1:nlayer)         = dzvic

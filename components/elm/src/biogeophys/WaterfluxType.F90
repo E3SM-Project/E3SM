@@ -373,7 +373,7 @@ contains
     ! needed for NitrogenLeaching 
     do c = bounds%begc, bounds%endc
        l = col_pp%landunit(c)
-       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+       if (col_pp%is_soil(c) .or. col_pp%is_crop(c)) then
           this%qflx_drain_col(c) = 0._r8
           this%qflx_surf_col(c)  = 0._r8
           this%qflx_irr_demand_col(c)  = 0._r8
@@ -383,7 +383,7 @@ contains
     do p = bounds%begp, bounds%endp
        l = veg_pp%landunit(p)
        
-       if (lun_pp%itype(l)==istsoil) then
+       if (veg_pp%is_on_soil_col(p)) then
           this%n_irrig_steps_left_patch(p) = 0
           this%irrig_rate_patch(p)         = 0.0_r8
        end if
