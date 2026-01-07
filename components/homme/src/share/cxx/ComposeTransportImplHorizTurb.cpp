@@ -42,20 +42,10 @@ void ComposeTransportImpl::advance_horizontal_turbulent_diffusion_scalar (const 
     };
     laplace_simple_Qtens();
     m_hv_dss_be[0]->exchange(m_geometry.m_rspheremp);
-    if (m_data.hv_scaling == 0) {
-      Kokkos::fence();
-      laplace_simple_Qtens();
-    } else {
-      const auto tensorvisc = m_geometry.m_tensorvisc;
-      const auto f = KOKKOS_LAMBDA (const MT& team) {
-        KernelVariables kv(team, hv_q, tu_ne_hv_q);
-        const auto Qtens_ie = Homme::subview(Qtens, kv.ie, kv.iq);
-        sphere_ops.laplace_tensor(kv, Homme::subview(tensorvisc, kv.ie),
-                                  Qtens_ie, Qtens_ie);
-      };
-      Kokkos::fence();
-      Kokkos::parallel_for(m_tp_ne_hv_q, f);
-    }
+
+    Kokkos::fence();
+    laplace_simple_Qtens();
+
     { // Compute Q = Q spheremp - dt nu_q Qtens. N.B. spheremp is already in
       // Qtens from divergence_sphere_wk.
       const auto f = KOKKOS_LAMBDA (const int idx) {
