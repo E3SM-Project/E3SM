@@ -438,7 +438,7 @@ contains
     use landunit_varcon , only : istwet, istdlak, istice, istice_mec, istsoil
     use column_varcon   , only : icemec_class_to_col_itype
     use subgridMod      , only : subgrid_get_topounitinfo
-    use elm_varctl      , only : create_lakebed_column
+    use elm_varctl      , only : create_lakebed_column, create_twolakes_per_gridcell
     use pftvarcon       , only : noveg
 
     !
@@ -461,6 +461,7 @@ contains
     real(r8) :: wtlunit2topounit                 ! landunit weight in topounit
     real(r8) :: wtcol2lunit                      ! col weight in landunit
     logical  :: is_lake_col
+    integer :: nlakes, ilake
     !------------------------------------------------------------------------
 
     ! Set decomposition properties
@@ -529,13 +530,18 @@ contains
              ! If this is a lake landunit and creation of a lakebed soil column
              ! is enabled, add TWO columns
 
-             ! Add a lake column
-             call add_column(ci=ci, li=li, ctype=ltype, wtlunit=0.5_r8, is_lake=is_lake_col)
-             call add_patch(pi=pi, ci=ci, ptype=noveg, wtcol=1.0_r8)
+             nlakes = 1
+             if (create_twolakes_per_gridcell) nlakes = 2
 
-             ! Add a lakebed column
-             call add_column(ci=ci, li=li, ctype=istsoil, wtlunit=0.5_r8, is_soil=.true.)
-             call add_patch(pi=pi, ci=ci, ptype=noveg, wtcol=1.0_r8, is_on_soil_col=.true.)
+             do ilake = 1, nlakes
+                ! Add a lake column
+                call add_column(ci=ci, li=li, ctype=ltype, wtlunit=0.5_r8/nlakes, is_lake=is_lake_col)
+                call add_patch(pi=pi, ci=ci, ptype=noveg, wtcol=1.0_r8)
+
+                ! Add a lakebed column
+                call add_column(ci=ci, li=li, ctype=istsoil, wtlunit=0.5_r8/nlakes, is_soil=.true.)
+                call add_patch(pi=pi, ci=ci, ptype=noveg, wtcol=1.0_r8, is_on_soil_col=.true.)
+             enddo
           else
              ! Currently assume that each landunit only has only one column
              ! and that each column has its own pft

@@ -41,7 +41,7 @@ contains
     ! !USES
     use elm_varpar  , only : natpft_size, cft_size, maxpatch_urb, maxpatch_glcmec
     use elm_varctl  , only : create_crop_landunit, use_polygonal_tundra
-    use elm_varctl  , only : create_lakebed_column
+    use elm_varctl  , only : create_lakebed_column, create_twolakes_per_gridcell
     use elm_varsur  , only : wt_lunit, urban_valid, wt_glc_mec
     use landunit_varcon  , only : istsoil, istcrop, istice, istice_mec, istdlak, istwet, &
                              isturb_tbd, isturb_hd, isturb_md
@@ -221,7 +221,16 @@ contains
           npfts_per_lunit = npfts_per_lunit + 1
        end if
        if (npfts_per_lunit > 0) then
-          if (create_lakebed_column) npfts_per_lunit = npfts_per_lunit + 1
+          if (create_lakebed_column) then
+             ! Increase the PFT count corresponding to the lakebed column
+             npfts_per_lunit = npfts_per_lunit + 1
+
+             if (create_twolakes_per_gridcell) then
+                ! Increase the PFT count corresponding to the second lake
+                ! and lakebed colum
+                npfts_per_lunit = npfts_per_lunit + 2
+             end if
+          end if
           ilunits = ilunits + 1
           icols   = icols + npfts_per_lunit
        end if
@@ -344,7 +353,7 @@ contains
     ! !USES
     use elm_varpar  , only : natpft_size, cft_size, maxpatch_urb, maxpatch_glcmec
     use elm_varctl  , only : create_crop_landunit, use_polygonal_tundra
-    use elm_varctl  , only : create_lakebed_column
+    use elm_varctl  , only : create_lakebed_column, create_twolakes_per_gridcell
     use elm_varsur  , only : wt_lunit, urban_valid, wt_glc_mec
     use landunit_varcon  , only : istsoil, istcrop, istice, istice_mec, istdlak, istwet, &
                              isturb_tbd, isturb_hd, isturb_md
@@ -498,7 +507,16 @@ contains
        npfts_per_lunit = npfts_per_lunit + 1
     end if
     if (npfts_per_lunit > 0) then
-       if (create_lakebed_column) npfts_per_lunit = npfts_per_lunit + 1
+       if (create_lakebed_column) then
+          ! Increase the PFT count corresponding to the lakebed column
+          npfts_per_lunit = npfts_per_lunit + 1
+
+          if (create_twolakes_per_gridcell) then
+             ! Increase the PFT count corresponding to the second lake
+             ! and lakebed colum
+             npfts_per_lunit = npfts_per_lunit + 2
+          end if
+       end if
        ilunits = ilunits + 1
        icols   = icols + npfts_per_lunit
     end if

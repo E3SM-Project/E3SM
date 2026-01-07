@@ -440,6 +440,7 @@ module elm_varctl
   ! For dynamic lakes
   !----------------------------------------------------------
   logical, public :: create_lakebed_column = .true.
+  logical, public :: create_twolakes_per_gridcell = .true.
 
   !----------------------------------------------------------
   ! To retrieve namelist
