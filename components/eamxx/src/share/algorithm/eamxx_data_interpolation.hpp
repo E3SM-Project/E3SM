@@ -127,10 +127,13 @@ protected:
   TimeDatabase          m_time_database;
 
   ekat::Comm            m_comm;
-  ekat::ParameterList   m_params;
 
   bool                  m_time_db_created   = false;
   bool                  m_data_initialized  = false;
+
+  bool                  m_fields_have_col_dim = false;
+  bool                  m_fields_have_lev_dim = false;
+  bool                  m_fields_have_ilev_dim = false;
 
   std::shared_ptr<ekat::logger::LoggerBase> m_logger;
 };

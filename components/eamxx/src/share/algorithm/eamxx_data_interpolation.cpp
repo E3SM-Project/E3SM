@@ -34,10 +34,16 @@ DataInterpolation (const std::shared_ptr<const AbstractGrid>& model_grid,
   m_comm = model_grid->get_comm();
 
   using namespace ShortFieldTagsNames;
+  for (const auto& f : fields) {
+    const auto& fl = f.get_header().get_identifier().get_layout();
+    m_fields_have_col_dim |= fl.has_tag(COL);
+    m_fields_have_lev_dim |= fl.has_tag(LEV);
+    m_fields_have_lev_dim |= fl.has_tag(ILEV);
+  }
+
   m_input_files_dimnames[COL] = "ncol";
   m_input_files_dimnames[LEV] = "lev";
   m_input_files_dimnames[ILEV] = "ilev";
-  e2str(LEV);
 
   // Initialize logger with a console logger for warnings (logs on all ranks)
   m_logger = console_logger(ekat::logger::LogLevel::warn);
@@ -409,13 +415,22 @@ create_horiz_remappers (const std::string& map_file)
   EKAT_REQUIRE_MSG (m_horiz_remapper_beg==nullptr,
       "[DataInterpolation] Error! Horizontal remappers were already setup.\n");
 
+  int ncols_model = m_model_grid->get_num_global_dofs();
+  int nlevs_model = m_model_grid->get_num_vertical_levels();
+
   // Create hremap tgt grid
-  int nlevs_data = get_input_files_dimlen (m_input_files_dimnames[LEV]);
-  int ncols_data = get_input_files_dimlen (m_input_files_dimnames[COL]);
+  int nlevs_data = nlevs_model;
+  int ncols_data = m_fields_have_col_dim ? get_input_files_dimlen (m_input_files_dimnames[COL]) : ncols_model;
+
+  if (m_fields_have_lev_dim) {
+    nlevs_data = get_input_files_dimlen (m_input_files_dimnames[LEV]);
+  } else if (m_fields_have_ilev_dim) {
+    nlevs_data = get_input_files_dimlen(m_input_files_dimnames[ILEV]);
+  }
+
   m_grid_after_hremap = m_model_grid->clone("after_hremap",true);
   m_grid_after_hremap->reset_num_vertical_lev(nlevs_data);
 
-  int ncols_model = m_model_grid->get_num_global_dofs();
   if (map_file!="") {
     m_horiz_remapper_beg = std::make_shared<RefiningRemapperP2P>(m_grid_after_hremap,map_file);
     m_horiz_remapper_end = std::make_shared<RefiningRemapperP2P>(m_grid_after_hremap,map_file);
@@ -462,8 +477,12 @@ create_horiz_remappers (const Real iop_lat, const Real iop_lon)
       "  - iop_lat: " << iop_lat << "\n"
       "  - iop_lon: " << iop_lon << "\n");
 
-  int nlevs_data = get_input_files_dimlen (m_input_files_dimnames[LEV]);
-  int ncols_data = get_input_files_dimlen (m_input_files_dimnames[COL]);
+  int ncols_model = m_model_grid->get_num_global_dofs();
+  int nlevs_model = m_model_grid->get_num_vertical_levels();
+
+  // Create hremap tgt grid
+  int nlevs_data = m_fields_have_lev_dim ? get_input_files_dimlen (m_input_files_dimnames[LEV]) : nlevs_model;
+  int ncols_data = m_fields_have_col_dim ? get_input_files_dimlen (m_input_files_dimnames[COL]) : ncols_model;
 
   // Create grid for IO and load lat/lon field in IO grid from any data file
   auto data_grid = create_point_grid("data",ncols_data,nlevs_data,m_model_grid->get_comm());
@@ -499,13 +518,14 @@ create_vert_remapper (const VertRemapData& data)
 
   m_vr_type = data.vr_type;
 
+  int model_nlevs = m_model_grid->get_num_vertical_levels();
+
   if (m_vr_type==VRemapType::None) {
     // Not much to do. Set up a do-nothing remapper and return
     using IDR = IdentityRemapper;
     constexpr auto SAT = IDR::SrcAliasTgt;
 
     // If no vert remap is requested, model_grid and grid_after_hremap MUST have same nlevs
-    int model_nlevs = m_model_grid->get_num_vertical_levels();
     int data_nlevs  = m_grid_after_hremap->get_num_vertical_levels();
     EKAT_REQUIRE_MSG (model_nlevs==data_nlevs,
         "[DataInterpolation] Error! No vertical remap was requested, but the 'lev' dim from file does not match the model grid one.\n"
