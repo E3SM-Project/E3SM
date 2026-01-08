@@ -86,7 +86,7 @@ void SPA::initialize_impl (const RunType /* run_type */)
 
   util::TimeStamp ref_ts (1,1,1,0,0,0); // Beg of any year, since we use yearly periodic timeline
   m_data_interpolation = std::make_shared<DataInterpolation>(m_model_grid,spa_fields);
-  m_data_interpolation->setup_time_database ({spa_data_file},util::TimeLine::YearlyPeriodic, ref_ts);
+  m_data_interpolation->setup_time_database ({spa_data_file},util::TimeLine::YearlyPeriodic, DataInterpolation::Linear, ref_ts);
 
   if (m_iop_data_manager!=nullptr) {
     // IOP cases cannot have a remap file. We will create a IOPRemapper as the horiz remapper

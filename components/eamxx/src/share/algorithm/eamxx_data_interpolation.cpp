@@ -85,8 +85,16 @@ void DataInterpolation::run (const util::TimeStamp& ts)
     const auto& end = m_horiz_remapper_end->get_tgt_field(i);
           auto  out = m_vert_remapper->get_src_field(i);
 
-    out.deep_copy(beg);
-    out.update(end,alpha,1-alpha);
+    if (m_time_interp_type==Linear) {
+      out.deep_copy(beg);
+      out.update(end,alpha,1-alpha);
+    } else {
+      if (alpha>0.5) {
+        out.deep_copy(end);
+      } else {
+        out.deep_copy(beg);
+      }
+    }
   }
 
   // For Dynamic3D/Dynamic3D profile we also need to compute the source pressure profile
@@ -228,6 +236,7 @@ init_data_interval (const util::TimeStamp& t0)
 void DataInterpolation::
 setup_time_database (const strvec_t& input_files,
                      const util::TimeLine timeline,
+                     const TimeInterpType interp_type,
                      const util::TimeStamp& ref_ts)
 {
   // Log the final list of files, so the user know if something went wrong (e.g. a bad regex)
@@ -326,6 +335,8 @@ setup_time_database (const strvec_t& input_files,
   // we must ensure we have 2+ time slices overall
   EKAT_REQUIRE_MSG (m_time_database.size()>=2,
       "[DataInterpolation] Error! Input file(s) only contain 1 time slice overall.\n");
+
+  m_time_interp_type = interp_type;
 
   m_time_db_created = true;
 }
