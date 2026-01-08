@@ -60,10 +60,17 @@
   ncl_a6
   so4_a6
   nh4_a6
+  pom_a6
+  bc_a6
   num_a6
   dst_a7
   so4_a7
   nh4_a7
+  pom_a7
+  bc_a7
+  soa_a7
+  ncl_a7
+  mom_a7
   num_a7
   mpoly_a8
   mprot_a8

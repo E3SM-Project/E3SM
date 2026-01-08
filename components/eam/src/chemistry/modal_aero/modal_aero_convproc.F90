@@ -572,9 +572,7 @@ subroutine ma_convproc_dp_intr(                &
 
    integer :: i, ii, itmpa
    integer :: ixcldice, ixcldliq              ! constituent indices for cloud liquid and ice water.
-! ++MW
    integer :: ixh2o2, ixbc_a1, ixbc_a5, ixso4_a1
-! --MW
    integer :: itmpveca(pcols), itmpvecb(pcols)
    integer :: k, kaa, kbb, kk
    integer :: l, ll, lchnk, lun
@@ -687,7 +685,7 @@ subroutine ma_convproc_dp_intr(                &
 ! change profiles of first 4 gases
    call cnst_get_ind('H2O2',   ixh2o2)
    call cnst_get_ind('so4_a1', ixso4_a1)
-#if ( defined MODAL_AERO_5MODE_AGEDCARBON )
+#if ( defined MODAL_AERO_5MODE_AGEDCARBON || defined MODAL_AERO_7MODE_BB_ACARBON )
    call cnst_get_ind('bc_a5',  ixbc_a5)
 #else
    call cnst_get_ind('bc_a1',  ixbc_a1)
@@ -702,7 +700,7 @@ subroutine ma_convproc_dp_intr(                &
       call endrun( "*** ma_convproc_dp_intr -- bad ixh2o2" )
    if (ixso4_a1 < 6 .or. ixso4_a1 > pcnst) &
       call endrun( "*** ma_convproc_dp_intr -- bad ixso4_a1" )
-#if ( defined MODAL_AERO_5MODE_AGEDCARBON )
+#if ( defined MODAL_AERO_5MODE_AGEDCARBON || defined MODAL_AERO_7MODE_BB_ACARBON )
    if (ixbc_a5  < 6 .or. ixbc_a5  > pcnst) &
       call endrun( "*** ma_convproc_dp_intr -- bad ixbc_a5" )
 #else
@@ -785,7 +783,7 @@ subroutine ma_convproc_dp_intr(                &
          do k = pver-5, pver
             tmpd = hund_ovr_g*eu(ii,k)*dp(ii,k)
             tmpa = tmpa + tmpd*fracis(i,k,ixso4_a1)
-#if ( defined MODAL_AERO_5MODE_AGEDCARBON )
+#if ( defined MODAL_AERO_5MODE_AGEDCARBON || defined MODAL_AERO_7MODE_BB_ACARBON )
             tmpb = tmpb + tmpd*fracis(i,k,ixbc_a5)
 #else
             tmpb = tmpb + tmpd*fracis(i,k,ixbc_a1)
@@ -797,7 +795,7 @@ subroutine ma_convproc_dp_intr(                &
       end if
       write(lun,'(a,3i10,1p,3e10.2,2x,a)') 'qakq111222', &
          nstep, lchnk, i, tmpa, tmpb, tmpc, &
-#if ( defined MODAL_AERO_5MODE_AGEDCARBON )
+#if ( defined MODAL_AERO_5MODE_AGEDCARBON || defined MODAL_AERO_7MODE_BB_ACARBON )
          'nstep, lchnk, i, k25:30-avg fracis(so4_a1), fracis(bc_a5), eu*dp'
 #else
          'nstep, lchnk, i, k25:30-avg fracis(so4_a1), fracis(bc_a1), eu*dp'
@@ -1005,9 +1003,7 @@ subroutine ma_convproc_sh_intr(                 &
    integer :: i, ii, itmpa
    integer :: ido_20000_block_now
    integer :: ixcldice, ixcldliq              ! constituent indices for cloud liquid and ice water.
-! ++MW
    integer :: ixh2o2, ixbc_a1, ixbc_a5, ixso4_a1
-! --MW
    integer :: itmpveca(pcols), itmpveca2(pcols)
    integer :: k, kaa, kbb, kcc, kk
    integer :: l, ll, lchnk, lun
@@ -1231,7 +1227,7 @@ subroutine ma_convproc_sh_intr(                 &
 ! change profiles of first 4 gases
    call cnst_get_ind('H2O2',   ixh2o2)
    call cnst_get_ind('so4_a1', ixso4_a1)
-#if ( defined MODAL_AERO_5MODE_AGEDCARBON )
+#if ( defined MODAL_AERO_5MODE_AGEDCARBON || defined MODAL_AERO_7MODE_BB_ACARBON )
    call cnst_get_ind('bc_a5',  ixbc_a5)
 #else
    call cnst_get_ind('bc_a1',  ixbc_a1)
@@ -1246,7 +1242,7 @@ subroutine ma_convproc_sh_intr(                 &
       call endrun( "*** ma_convproc_sh_intr -- bad ixh2o2" )
    if (ixso4_a1 < 6 .or. ixso4_a1 > pcnst) &
       call endrun( "*** ma_convproc_sh_intr -- bad ixso4_a1" )
-#if ( defined MODAL_AERO_5MODE_AGEDCARBON )
+#if ( defined MODAL_AERO_5MODE_AGEDCARBON || defined MODAL_AERO_7MODE_BB_ACARBON )
    if (ixbc_a5  < 6 .or. ixbc_a5  > pcnst) &
       call endrun( "*** ma_convproc_sh_intr -- bad ixbc_a5" )
 #else

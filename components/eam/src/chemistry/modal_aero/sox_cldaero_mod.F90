@@ -144,7 +144,26 @@ contains
        id_nh4_4a = lptr_nh4_cw_amode(5) - loffset
        id_nh4_5a = lptr_nh4_cw_amode(6) - loffset
        id_nh4_6a = lptr_nh4_cw_amode(7) - loffset
+#elif ( defined MODAL_AERO_7MODE_BB_ACARBON )
+       id_so4_1a = lptr_so4_cw_amode(1) - loffset
+       id_so4_2a = lptr_so4_cw_amode(2) - loffset
+       id_so4_3a = lptr_so4_cw_amode(3) - loffset
+       id_so4_4a = lptr_so4_cw_amode(5) - loffset
+       id_so4_5a = lptr_so4_cw_amode(7) - loffset
 #endif
+
+#if ( defined MODAL_AERO_7MODE_BB_ACARBON )
+       conc_obj%so4c(:ncol,:) &
+            = qcw(:,:,id_so4_1a) &
+            + qcw(:,:,id_so4_2a) &
+            + qcw(:,:,id_so4_3a) &
+            + qcw(:,:,id_so4_4a) &
+            + qcw(:,:,id_so4_5a)
+
+       conc_obj%nh4c(:ncol,:) = 0._r8
+
+       conc_obj%so4_fact = 1._r8
+#else
        conc_obj%so4c(:ncol,:) &
             = qcw(:ncol,:,id_so4_1a) &
             + qcw(:ncol,:,id_so4_2a) &
@@ -159,7 +178,8 @@ contains
             + qcw(:ncol,:,id_nh4_3a) &
             + qcw(:ncol,:,id_nh4_4a) &
             + qcw(:ncol,:,id_nh4_5a) &
-            + qcw(:ncol,:,id_nh4_6a) 
+            + qcw(:ncol,:,id_nh4_6a)
+#endif 
     else
 #if ( defined MODAL_AERO_5MODE_AGEDCARBON )
        id_so4_1a = lptr_so4_cw_amode(1) - loffset

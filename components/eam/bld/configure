@@ -1378,6 +1378,8 @@ if ($chem_pkg =~ '_mam3') {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_4MODE ';
 } elsif ($chem_pkg =~ '_mam5_agedcarbon') {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_5MODE_AGEDCARBON ';
+} elsif ($chem_pkg =~ '_mam7_bb_acarbon') {
+    $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_7MODE_BB_ACARBON ';
 } elsif ($chem_pkg =~ '_mam7') {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_7MODE ';
 } elsif ($chem_pkg =~ '_mam9') {
@@ -1388,7 +1390,7 @@ if ($bc_dep_to_snow_updates == 1) {
     $chem_cppdefs = "$chem_cppdefs  -DMODAL_AER"
 }
 
-if ($rain_evap_to_coarse_aero == 1 && ($chem_pkg =~ '_mam3' || $chem_pkg =~ '_mam4' || $chem_pkg =~ '_mam5_agedcarbon' || $chem_pkg eq 'trop_mam4_resus' || $chem_pkg eq 'trop_mam4_resus_soag' || $chem_pkg eq 'trop_mam4_resus_mom')) {
+if ($rain_evap_to_coarse_aero == 1 && ($chem_pkg =~ '_mam3' || $chem_pkg =~ '_mam4' || $chem_pkg =~ '_mam5_agedcarbon' || $chem_pkg =~ '_mam7_bb_acarbon' || $chem_pkg eq 'trop_mam4_resus' || $chem_pkg eq 'trop_mam4_resus_soag' || $chem_pkg eq 'trop_mam4_resus_mom')) {
     $chem_cppdefs = "$chem_cppdefs  -DRAIN_EVAP_TO_COARSE_AERO "
 }
 
