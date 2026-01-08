@@ -134,6 +134,8 @@ int initTendenciesTest(const std::string &mesh) {
    VertCoord::init();
    Tracers::init();
    VertAdv::init();
+   PressureGrad::init();
+   Eos::init();
 
    int StateErr = OceanState::init();
    if (StateErr != 0) {
