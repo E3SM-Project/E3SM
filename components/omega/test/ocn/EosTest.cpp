@@ -53,11 +53,10 @@ const Real GswBVFExpValue =
 /// Test input values
 const Real Sa = 30.0;   // Absolute Salinity in g/kg
 const Real Ct = 10.0;   // Conservative Temperature in degC
-const Real P  = 1000.0; // Pressure in dbar
+const Real P  = 1000.0 * Db2Pa; // Pressure in Pa
 
 const I4 KDisp  = 1;     // Displate parcel to K=1 for TEOS-10 eos
 const Real RTol = 1e-10; // Relative tolerance for isApprox checks
-double PaToDBar = 1e-4;  // Conversion factor from Pa to dbar
 
 /// The initialization routine for Eos testing. It calls various
 /// init routines, including the creation of the default decomposition.
@@ -120,7 +119,7 @@ void testEosLinear() {
    /// Use Kokkos::deep_copy to fill the entire view with the ref value
    deepCopy(SArray, Sa);
    deepCopy(TArray, Ct);
-   deepCopy(PArray, P / PaToDBar);
+   deepCopy(PArray, P);
    deepCopy(TestEos->SpecVol, 0.0);
 
    /// Compute specific volume
@@ -190,7 +189,7 @@ void testEosLinearDisplaced() {
    /// Use Kokkos::deep_copy to fill the entire view with the ref value
    deepCopy(SArray, Sa);
    deepCopy(TArray, Ct);
-   deepCopy(PArray, P / PaToDBar);
+   deepCopy(PArray, P);
    deepCopy(TestEos->SpecVolDisplaced, 0.0);
 
    /// Compute displaced specific volume
@@ -385,7 +384,7 @@ void testEosTeos10() {
    /// Use Kokkos::deep_copy to fill the entire view with the ref value
    deepCopy(SArray, Sa);
    deepCopy(TArray, Ct);
-   deepCopy(PArray, P / PaToDBar);
+   deepCopy(PArray, P);
    deepCopy(TestEos->SpecVol, 0.0);
 
    /// Compute specific volume
@@ -455,7 +454,7 @@ void testEosTeos10Displaced() {
    /// Use Kokkos::deep_copy to fill the entire view with the ref value
    deepCopy(SArray, Sa);
    deepCopy(TArray, Ct);
-   deepCopy(PArray, P / PaToDBar);
+   deepCopy(PArray, P);
    deepCopy(TestEos->SpecVolDisplaced, 0.0);
 
    /// Compute displaced specific volume
@@ -541,17 +540,17 @@ void testBruntVaisalaFreqSqTeos10() {
              ZMid(ICell, 1)   = -993.1071379053125_Real;
              SArray(ICell, 1) = Sa;
              TArray(ICell, 1) = Ct + 10.0_Real;
-             PArray(ICell, 1) = P + 1.0_Real;
+             PArray(ICell, 1) = (P * Pa2Db + 1.0_Real) * Db2Pa;
           } else if (K == 2) {
              ZMid(ICell, 2)   = -994.0968821072275_Real;
              SArray(ICell, 2) = Sa + 1.0_Real;
              TArray(ICell, 2) = Ct + 5.0_Real;
-             PArray(ICell, K) = P + 2.0_Real;
+             PArray(ICell, K) = (P * Pa2Db + 2.0_Real) * Db2Pa;
           } else { // fill rest with valid junk to avoid Nans and Inf
              ZMid(ICell, K)   = -994.0968821072275_Real - 0.1_Real * K;
              SArray(ICell, K) = Sa + 1.0_Real + 0.1_Real * K;
              TArray(ICell, K) = Ct + 5.0_Real - 0.01_Real * K;
-             PArray(ICell, K) = P + 2.0_Real + 0.1_Real * K;
+             PArray(ICell, K) = (P * Pa2Db + 2.0_Real + 0.1_Real * K) * Db2Pa;
           }
        });
 
@@ -648,7 +647,7 @@ void checkValueGswcSpecVol() {
    const Real RTol = 1e-10;
 
    /// Get specific volume from GSW-C library
-   double SpecVol = gsw_specvol(Sa, Ct, P);
+   double SpecVol = gsw_specvol(Sa, Ct, P * Pa2Db);
    /// Check the value against the expected TEOS-10 value
    bool Check = isApprox(SpecVol, TeosSVExpValue, RTol);
    if (!Check) {
@@ -669,7 +668,7 @@ void checkValueGswcN2() {
    double Salt[4]  = {Sa - 1.0, Sa, Sa + 1.0}; // Absolute Salinity (g/kg)
    double Temp[4]  = {Ct + 15.0, Ct + 10.0,
                       Ct + 5.0};            // Conservative Temperature (deg C)
-   double Press[4] = {P, P + 1.0, P + 2.0}; // Pressure (dbar)
+   double Press[4] = {P * Pa2Db, P * Pa2Db + 1.0, P * Pa2Db + 2.0}; // Pressure (dbar)
 
    // Latitude (degrees north)
    double Latitude[4] = {0.0, 0.0, 0.0};
