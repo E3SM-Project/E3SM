@@ -439,6 +439,17 @@ def buildnml(case, caseroot, compname):
         if ocn_glc_ismf_coupling == 'data_mpaso':
             data_ismf_file = 'prescribed_ismf_paolo2023.SOwISC12to30E3r4.20250121.nc'
 
+    elif ocn_grid == 'MAB4to60E3r1':
+        decomp_date = '20251209'
+        decomp_prefix = 'partitions/mpas-o.graph.info.'
+        restoring_file = 'sss.WOA23_monthlyClimatology.MAB4to60E3r1.20251209.nc'
+        analysis_mask_file = 'MAB4to60E3r1_mocBasinsAndTransects20210623mg.20251209.nc'
+        ic_date = '20251209'
+        ic_prefix = 'mpaso.MAB4to60E3r1'
+        if ocn_ic_mode == 'spunup':
+            logger.warning("WARNING: The specified compset is requesting ocean ICs spunup from a G-case")
+            logger.warning("         But no file available for this grid.")
+
     #--------------------------------------------------------------------
     # Set OCN_FORCING = datm_forced_restoring if restoring file is available
     #--------------------------------------------------------------------
