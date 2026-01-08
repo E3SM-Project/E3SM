@@ -1,6 +1,7 @@
 #include "Tendencies.h"
 #include "AuxiliaryState.h"
 #include "Config.h"
+#include "CustomTendencyTerms.h"
 #include "DataTypes.h"
 #include "Decomp.h"
 #include "Dimension.h"
@@ -147,6 +148,7 @@ int initTendenciesTest(const std::string &mesh) {
 
 int testTendencies() {
    int Err = 0;
+   Error Err1;
 
    // test initialization
    Tendencies::init();
@@ -165,15 +167,20 @@ int testTendencies() {
    const auto Mesh     = HorzMesh::getDefault();
    const auto VCoord   = VertCoord::getDefault();
    const auto VAdv     = VertAdv::getDefault();
-   auto *PGrad         = PressureGrad::getDefault();
-   auto *EqState       = Eos::getInstance();
+   const auto PGrad    = PressureGrad::getDefault();
+   const auto EqState  = Eos::getInstance();
    VCoord->NVertLayers = 12;
+
    // test creation of another tendencies
 
    TimeInterval ZeroTimeStep; // Zero-length time step placeholder
    Config *Options = Config::getOmegaConfig();
-   Tendencies::create("TestTendencies", Mesh, VCoord, VAdv, PGrad, EqState, 3,
-                      ZeroTimeStep, Options);
+   Config TendConfig("Tendencies");
+   Err1 = Options->get(TendConfig);
+   int NTracersTest = 3;
+
+   Tendencies::create("TestTendencies", Mesh, VCoord, VAdv, PGrad, EqState,
+                      NTracersTest, ZeroTimeStep, &TendConfig);
 
    // test retrievel of another tendencies
    if (Tendencies::get("TestTendencies")) {
@@ -246,6 +253,8 @@ int testTendencies() {
 
 void finalizeTendenciesTest() {
    Tracers::clear();
+   PressureGrad::clear();
+   Eos::destroyInstance();
    AuxiliaryState::clear();
    OceanState::clear();
    VertAdv::clear();
