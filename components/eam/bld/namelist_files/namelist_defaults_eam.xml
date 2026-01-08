@@ -610,9 +610,12 @@
 <pom_a1_ext_file   ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_pom_elev_2000_c130422.nc </pom_a1_ext_file>
 <pom_a3_ext_file   ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_pom_elev_2000_c130422.nc </pom_a3_ext_file>
 <pom_a4_ext_file   ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_pom_elev_2000_c130422.nc </pom_a4_ext_file>
+<pom_a6_ext_file   ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_pom_elev_2000_c130422.nc </pom_a6_ext_file>
 <bc_a1_ext_file    ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_bc_elev_2000_c120315.nc </bc_a1_ext_file>
 <bc_a3_ext_file    ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_bc_elev_2000_c120315.nc </bc_a3_ext_file>
 <bc_a4_ext_file    ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_bc_elev_2000_c120315.nc </bc_a4_ext_file>
+<bc_a6_ext_file    ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_bc_elev_2000_c120315.nc </bc_a6_ext_file>
+
 
 <mam7_num_a1_emis_file >atm/cam/chem/trop_mozart_aero/emis/ar5_mam7_num_a1_surf_2000_c120716.nc</mam7_num_a1_emis_file>
 <mam7_num_a3_emis_file >atm/cam/chem/trop_mozart_aero/emis/ar5_mam7_num_a3_surf_2000_c120716.nc</mam7_num_a3_emis_file>
@@ -661,6 +664,7 @@
 <drydep_method chem="linoz_mam4_resus_mom">xactive_atm</drydep_method>
 <drydep_method chem="linoz_mam4_resus_mom_soag">xactive_atm</drydep_method>
 <drydep_method chem="linoz_mam5_agedcarbon_resus_mom_soag">xactive_atm</drydep_method>
+<drydep_method chem="linoz_mam7_bb_acarbon">xactive_atm</drydep_method>
 <drydep_method chem="superfast_mam4_resus_mom_soag">xactive_atm</drydep_method>
 <drydep_method chem="waccm_mozart_mam3">xactive_atm</drydep_method>
 
@@ -1707,6 +1711,7 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <clubb_use_sgv phys="default"> .true.     </clubb_use_sgv>
 <seasalt_emis_scale phys="default" chem="linoz_mam4_resus_mom_soag"> 0.6        </seasalt_emis_scale>
 <seasalt_emis_scale phys="default" chem="linoz_mam5_agedcarbon_resus_mom_soag"> 0.6        </seasalt_emis_scale>
+<seasalt_emis_scale phys="default" chem="linoz_mam7_bb_acarbon"> 0.6        </seasalt_emis_scale>
 <zmconv_c0_lnd phys="default"> 0.0020     </zmconv_c0_lnd>
 <zmconv_c0_ocn phys="default"> 0.0020     </zmconv_c0_ocn>
 <zmconv_alfa phys="default"> 0.14D0     </zmconv_alfa>

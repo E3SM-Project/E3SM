@@ -231,7 +231,7 @@ subroutine modal_aer_opt_init()
    call addfld ('AODBC',horiz_only,    'A','  ','Aerosol optical depth 550 nm from BC', flag_xyfill=.true.)
    call addfld ('AODSS',horiz_only,    'A','  ','Aerosol optical depth 550 nm from seasalt', flag_xyfill=.true.)
    call addfld ('AODABSBC',horiz_only, 'A','  ','Aerosol absorption optical depth 550 nm from BC', flag_xyfill=.true.)
-#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_AGEDCARBON )
+#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_AGEDCARBON || defined MODAL_AERO_7MODE_BB_ACARBON)
    call addfld ('AODMOM',horiz_only,    'A','  ','Aerosol optical depth 550 nm from marine organic', flag_xyfill=.true.)
 #elif ( defined MODAL_AERO_9MODE )
    call addfld ('AODPOLY',horiz_only,    'A','  ','Aerosol optical depth 550 nm from marine poly', flag_xyfill=.true.)
@@ -247,7 +247,7 @@ subroutine modal_aer_opt_init()
    call addfld ('BURDENSOA',horiz_only,  'A','kg/m2'    ,'SOA aerosol burden'         , flag_xyfill=.true.)
    call addfld ('BURDENBC',horiz_only,  'A','kg/m2'     ,'Black carbon aerosol burden', flag_xyfill=.true.)
    call addfld ('BURDENSEASALT',horiz_only,  'A','kg/m2','Seasalt aerosol burden'     , flag_xyfill=.true.)
-#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_AGEDCARBON )
+#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_AGEDCARBON || defined MODAL_AERO_7MODE_BB_ACARBON )
    call addfld ('BURDENMOM',horiz_only,  'A','kg/m2'    ,'Marine organic aerosol burden', flag_xyfill=.true.)
 #elif ( defined MODAL_AERO_9MODE )
    call addfld ('BURDENPOLY',horiz_only,  'A','kg/m2'   ,'Marine polysaccharide aerosol burden', flag_xyfill=.true.)
@@ -272,7 +272,7 @@ subroutine modal_aer_opt_init()
       call add_default ('BURDENSOA'    , 1, ' ')
       call add_default ('BURDENBC'     , 1, ' ')
       call add_default ('BURDENSEASALT', 1, ' ')
-#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_AGEDCARBON )
+#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_AGEDCARBON || defined MODAL_AERO_7MODE_BB_ACARBON )
       call add_default ('BURDENMOM', 1, ' ')
 #elif ( defined MODAL_AERO_9MODE )
       call add_default ('BURDENPOLY', 1, ' ')
@@ -311,7 +311,7 @@ subroutine modal_aer_opt_init()
       call add_default ('BURDENSOA'    , 1, ' ')
       call add_default ('BURDENBC'     , 1, ' ')
       call add_default ('BURDENSEASALT', 1, ' ')
-#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_AGEDCARBON )
+#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_AGEDCARBON || defined MODAL_AERO_7MODE_BB_ACARBON )
       call add_default ('BURDENMOM'    , 1, ' ')
 #elif ( defined MODAL_AERO_9MODE )
       call add_default ('BURDENPOLY'   , 1, ' ')
@@ -327,9 +327,8 @@ subroutine modal_aer_opt_init()
        cam_chempkg_is('trop_mam4_resus_soag').or.cam_chempkg_is('trop_mam7').or. &
        cam_chempkg_is('trop_mam9').or.cam_chempkg_is('trop_strat_mam7').or. &
        cam_chempkg_is('linoz_mam4_resus').or.cam_chempkg_is('linoz_mam4_resus_soag').or.&
-! ++MW
        cam_chempkg_is('linoz_mam5_agedcarbon_resus_mom_soag') .or. &
-! --MW
+       cam_chempkg_is('linoz_mam7_bb_acarbon') .or. &
        cam_chempkg_is('linoz_mam4_resus_mom').or. &
        cam_chempkg_is('linoz_mam4_resus_mom_soag').or.cam_chempkg_is('superfast_mam4_resus_mom_soag')) then
      call addfld ('AODDUST4',horiz_only,    'A','  ','Aerosol optical depth 550 nm model 4 from dust', flag_xyfill=.true.)
@@ -343,8 +342,9 @@ subroutine modal_aer_opt_init()
         call add_default ('BURDEN4' , 1, ' ')
      end if
   end if
-! ++MW
-  if (cam_chempkg_is('linoz_mam5_agedcarbon_resus_mom_soag')) then
+
+  if (cam_chempkg_is('linoz_mam5_agedcarbon_resus_mom_soag').or. &
+      cam_chempkg_is('linoz_mam7_bb_acarbon')) then
      call addfld ('AODDUST5',horiz_only,    'A','  ','Aerosol optical depth 550 nm model 5 from dust', flag_xyfill=.true.)
      call addfld ('AODMODE5',horiz_only,    'A','  ','Aerosol optical depth 550 nm mode 5', flag_xyfill=.true.)
      call addfld ('BURDEN5',horiz_only,    'A','kg/m2','Aerosol burden mode 5', flag_xyfill=.true.)
@@ -356,7 +356,26 @@ subroutine modal_aer_opt_init()
         call add_default ('BURDEN5' , 1, ' ')
      end if
   end if
-! --MW
+
+  if (cam_chempkg_is('linoz_mam7_bb_acarbon')) then
+     call addfld ('AODDUST6',horiz_only,    'A','  ','Aerosol optical depth 550 nm mode 6 from dust', flag_xyfill=.true.)
+     call addfld ('AODDUST7',horiz_only,    'A','  ','Aerosol optical depth 550 nm mode 7 from dust', flag_xyfill=.true.)
+     call addfld ('AODMODE6',horiz_only,    'A','  ','Aerosol optical depth 550 nm mode 6', flag_xyfill=.true.)
+     call addfld ('AODMODE7',horiz_only,    'A','  ','Aerosol optical depth 550 nm mode 7', flag_xyfill=.true.)
+     call addfld ('BURDEN6',horiz_only,    'A','kg/m2','Aerosol burden mode 6', flag_xyfill=.true.)
+     call addfld ('BURDEN7',horiz_only,    'A','kg/m2','Aerosol burden mode 7', flag_xyfill=.true.)
+      
+     if (history_aero_optics) then
+        call add_default ('AODDUST6', 1, ' ')
+        call add_default ('AODDUST7', 1, ' ')
+        call add_default ('AODMODE6', 1, ' ')
+        call add_default ('AODMODE7', 1, ' ')
+        call add_default ('BURDEN6' , 1, ' ')
+        call add_default ('BURDEN7' , 1, ' ')
+     end if
+  end if
+
+
    if (cam_chempkg_is('trop_mam7').or.cam_chempkg_is('trop_mam9').or.cam_chempkg_is('trop_strat_mam7')) then
       call addfld ('AODDUST5',horiz_only,    'A','  ','Aerosol optical depth 550 nm model 5 from dust', flag_xyfill=.true.)
       call addfld ('AODDUST6',horiz_only,    'A','  ','Aerosol optical depth 550 nm model 6 from dust', flag_xyfill=.true.)
@@ -509,7 +528,7 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
    real(r8) :: burden(pcols)
    real(r8) :: burdendust(pcols), burdenso4(pcols), burdenbc(pcols), &
                burdenpom(pcols), burdensoa(pcols), burdenseasalt(pcols)
-#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_AGEDCARBON )
+#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_AGEDCARBON || defined MODAL_AERO_7MODE_BB_ACARBON )
    real(r8) :: burdenmom(pcols)
 #elif ( defined MODAL_AERO_9MODE )
    real(r8) :: burdenpoly(pcols), burdenprot(pcols), burdenlip(pcols)
@@ -521,21 +540,21 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
    real(r8) :: specrefr, specrefi
    real(r8) :: scatdust(pcols), scatso4(pcols), scatbc(pcols), &
                scatpom(pcols), scatsoa(pcols), scatseasalt(pcols)
-#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_AGEDCARBON )
+#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_AGEDCARBON || defined MODAL_AERO_7MODE_BB_ACARBON )
    real(r8) :: scatmom(pcols)
 #elif ( defined MODAL_AERO_9MODE )
    real(r8) :: scatpoly(pcols), scatprot(pcols), scatlip(pcols)
 #endif
    real(r8) :: absdust(pcols), absso4(pcols), absbc(pcols), &
                abspom(pcols), abssoa(pcols), absseasalt(pcols)
-#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_AGEDCARBON )
+#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_AGEDCARBON || defined MODAL_AERO_7MODE_BB_ACARBON )
    real(r8) :: absmom(pcols)
 #elif ( defined MODAL_AERO_9MODE )
    real(r8) :: abspoly(pcols), absprot(pcols), abslip(pcols)
 #endif
    real(r8) :: hygrodust(pcols), hygroso4(pcols), hygrobc(pcols), &
                hygropom(pcols), hygrosoa(pcols), hygroseasalt(pcols)
-#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_AGEDCARBON )
+#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_AGEDCARBON || defined MODAL_AERO_7MODE_BB_ACARBON )
    real(r8) :: hygromom(pcols)
 #elif ( defined MODAL_AERO_9MODE )
    real(r8) :: hygropoly(pcols), hygroprot(pcols), hygrolip(pcols)
@@ -547,7 +566,7 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
    ! total species AOD
    real(r8) :: dustaod(pcols), so4aod(pcols), bcaod(pcols), &
                pomaod(pcols), soaaod(pcols), seasaltaod(pcols)
-#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_AGEDCARBON )
+#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_AGEDCARBON || defined MODAL_AERO_7MODE_BB_ACARBON )
    real(r8) :: momaod(pcols)
 #elif ( defined MODAL_AERO_9MODE )
    real(r8) :: polyaod(pcols), protaod(pcols), lipaod(pcols)
@@ -602,7 +621,7 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
    burdensoa(:ncol)      = 0.0_r8
    burdenbc(:ncol)       = 0.0_r8
    burdenseasalt(:ncol)  = 0.0_r8
-#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_AGEDCARBON )
+#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_AGEDCARBON || defined MODAL_AERO_7MODE_BB_ACARBON )
    burdenmom(:ncol)      = 0.0_r8
    momaod(:ncol)         = 0.0_r8
 #elif ( defined MODAL_AERO_9MODE )
@@ -703,7 +722,7 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
             scatseasalt(:ncol)  = 0._r8
             absseasalt(:ncol)   = 0._r8
             hygroseasalt(:ncol) = 0._r8
-#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_AGEDCARBON )
+#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_AGEDCARBON || defined MODAL_AERO_7MODE_BB_ACARBON )
             scatmom(:ncol)  = 0._r8
             absmom(:ncol)   = 0._r8
             hygromom(:ncol) = 0._r8
@@ -792,7 +811,7 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
                         hygroseasalt(i)  = vol(i)*hygro_aer
                       end do
                   end if
-#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_AGEDCARBON )
+#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_AGEDCARBON || defined MODAL_AERO_7MODE_BB_ACARBON )
                   if (trim(spectype) == 'm-organic') then
                      do i = 1, ncol
                         burdenmom(i) = burdenmom(i) + specmmr(i,k)*mass(i,k)
@@ -932,7 +951,7 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
 
                      scath2o        = watervol(i)*real(crefwsw(isw))
 		     absh2o         = -watervol(i)*aimag(crefwsw(isw))
-#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_AGEDCARBON )
+#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_AGEDCARBON || defined MODAL_AERO_7MODE_BB_ACARBON )
 		     sumscat        = scatso4(i) + scatpom(i) + scatsoa(i) + scatbc(i) + &
                                       scatdust(i) + scatseasalt(i) + scath2o + &
                                       scatmom(i)
@@ -979,7 +998,7 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
                      scatseasalt(i) = (scatseasalt(i) + scath2o*hygroseasalt(i)/sumhygro)/sumscat
                      absseasalt(i)  = (absseasalt(i) + absh2o*hygroseasalt(i)/sumhygro)/sumabs
 
-#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_AGEDCARBON )
+#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_AGEDCARBON || defined MODAL_AERO_7MODE_BB_ACARBON )
                      scatmom(i) = (scatmom(i) + scath2o*hygromom(i)/sumhygro)/sumscat
                      absmom(i)  = (absmom(i) + absh2o*hygromom(i)/sumhygro)/sumabs
 
@@ -1014,7 +1033,7 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
                      aodc           = (absseasalt(i)*(1.0_r8 - palb(i)) + palb(i)*scatseasalt(i))*dopaer(i)
                      seasaltaod(i)  = seasaltaod(i) + aodc
 
-#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_AGEDCARBON )
+#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_AGEDCARBON || defined MODAL_AERO_7MODE_BB_ACARBON )
                      aodc           = (absmom(i)*(1.0_r8 - palb(i)) + palb(i)*scatmom(i))*dopaer(i)
                      momaod(i)  = momaod(i) + aodc
 
@@ -1184,7 +1203,7 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
          pomaod(idxnite(i))     = fillvalue
          soaaod(idxnite(i))     = fillvalue
          bcaod(idxnite(i))      = fillvalue
-#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_AGEDCARBON )
+#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_AGEDCARBON || defined MODAL_AERO_7MODE_BB_ACARBON )
          momaod(idxnite(i)) = fillvalue
 #elif ( defined MODAL_AERO_9MODE )
          polyaod(idxnite(i)) = fillvalue
@@ -1205,7 +1224,7 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
       call outfld('BURDENBC'  ,    burdenbc,      pcols, lchnk)
       call outfld('BURDENSEASALT', burdenseasalt, pcols, lchnk)
 
-#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_AGEDCARBON )
+#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_AGEDCARBON || defined MODAL_AERO_7MODE_BB_ACARBON )
       call outfld('BURDENMOM', burdenmom, pcols, lchnk)
 #elif ( defined MODAL_AERO_9MODE )
       call outfld('BURDENPOLY', burdenpoly, pcols, lchnk)
@@ -1222,7 +1241,7 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
       call outfld('AODBC',         bcaod,         pcols, lchnk)
       call outfld('AODSS',         seasaltaod,    pcols, lchnk)
 
-#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_AGEDCARBON )
+#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_AGEDCARBON || defined MODAL_AERO_7MODE_BB_ACARBON )
       call outfld('AODMOM',         momaod,    pcols, lchnk)
 #elif ( defined MODAL_AERO_9MODE )
       call outfld('AODPOLY',         polyaod,    pcols, lchnk)

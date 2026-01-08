@@ -13,7 +13,7 @@
      integer, parameter ::  maxd_aspectype = 14
     ! aerosol mode definitions
     !
-#if ( defined MODAL_AERO_7MODE )
+#if ( defined MODAL_AERO_7MODE || defined MODAL_AERO_7MODE_BB_ACARBON )
     integer, parameter :: ntot_amode = 7
 #elif ( defined MODAL_AERO_9MODE )
     integer, parameter :: ntot_amode = 9
@@ -25,7 +25,7 @@
     integer, parameter :: ntot_amode = 3
 #endif
 
-#if (( defined MODAL_AERO_3MODE ) || ( defined MODAL_AERO_4MODE ) || ( defined MODAL_AERO_4MODE_MOM ) || ( defined MODAL_AERO_5MODE_AGEDCARBON )) && ( defined RAIN_EVAP_TO_COARSE_AERO )
+#if (( defined MODAL_AERO_3MODE ) || ( defined MODAL_AERO_4MODE ) || ( defined MODAL_AERO_4MODE_MOM ) || ( defined MODAL_AERO_5MODE_AGEDCARBON ) || ( defined MODAL_AERO_7MODE_BB_ACARBON )) && ( defined RAIN_EVAP_TO_COARSE_AERO )
     logical, parameter :: rain_evap_to_coarse_aero = .true.
 #else
     logical, parameter :: rain_evap_to_coarse_aero = .false.
@@ -46,7 +46,7 @@
        'p-organic ', 's-organic ', 'black-c   ', &
        'seasalt   ', 'dust      ', &
        'm-poly    ', 'm-prot    ', 'm-lip     ' /)
-#elif ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_AGEDCARBON )
+#elif ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_AGEDCARBON || defined MODAL_AERO_7MODE_BB_ACARBON )
   integer, parameter ::  ntot_aspectype = 9
   character(len=*),parameter ::  specname_amode(ntot_aspectype) = (/ 'sulfate   ', 'ammonium  ', 'nitrate   ', &
        'p-organic ', 's-organic ', 'black-c   ', &
@@ -69,7 +69,7 @@
     real(r8), parameter :: specmw_amode(ntot_aspectype)   = (/  96.0_r8,  18.0_r8,  62.0_r8, &
        12.0_r8,   12.0_r8,   12.0_r8,  58.5_r8, 135.0_r8, &
        250092.0_r8, 66528.0_r8,  284.0_r8 /)
-#elif ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_AGEDCARBON )
+#elif ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_AGEDCARBON || defined MODAL_AERO_7MODE_BB_ACARBON )
     real(r8), parameter :: specmw_amode(ntot_aspectype)   = (/ 115.0_r8, 115.0_r8,  62.0_r8, &
        12.0_r8,   12.0_r8,   12.0_r8,  58.5_r8, 135.0_r8, &
        250092.0_r8 /)
@@ -103,6 +103,15 @@
          'coarse_dust     ', &
          'accum_marine    ', &
          'aitken_marine   '/)
+#elif ( defined MODAL_AERO_7MODE_BB_ACARBON )
+    character(len=*), parameter :: modename_amode(ntot_amode) = (/ &
+         'accum           ', &
+         'aitken          ', &
+         'coarse          ', &
+         'primary_carbon  ', &
+         'aged_carbon     ', &
+         'primary_bb      ', &
+         'aged_bb         '/)
 #elif ( defined MODAL_AERO_5MODE_AGEDCARBON )
     character(len=*), parameter :: modename_amode(ntot_amode) = (/ &
          'accum           ', &
@@ -127,6 +136,8 @@
     integer, parameter :: nspec_amode(ntot_amode)           = (/ 6, 4, 2, 3, 3, 3, 3 /)  ! SS
 #elif ( defined MODAL_AERO_9MODE )
     integer, parameter :: nspec_amode(ntot_amode)           = (/ 9, 7, 5, 3, 3, 3, 3, 3, 3/)  ! SS
+#elif ( ( defined MODAL_AERO_7MODE_BB_ACARBON ) && ( defined RAIN_EVAP_TO_COARSE_AERO ) )
+    integer, parameter :: nspec_amode(ntot_amode)           = (/ 7, 4, 7, 3, 6, 2, 6 /)
 #elif ( ( defined MODAL_AERO_5MODE_AGEDCARBON ) && ( defined RAIN_EVAP_TO_COARSE_AERO ) )
     integer, parameter :: nspec_amode(ntot_amode)           = (/ 7, 4, 7, 3, 6 /)
 #elif ( defined MODAL_AERO_4MODE_MOM )
@@ -160,6 +171,11 @@
     integer, parameter ::     mdiagnum_amode(ntot_amode)   = (/ 0, 0, 0, 0, 0, 0, 0, 0, 0/)
     integer, parameter ::     mprogsfc_amode(ntot_amode)   = (/ 0, 0, 0, 0, 0, 0, 0, 0, 0/)
     integer, parameter ::     mcalcwater_amode(ntot_amode) = (/ 1, 1, 1, 1, 1, 1, 1, 1, 1/)
+#elif ( defined MODAL_AERO_7MODE_BB_ACARBON )
+    integer, parameter ::     mprognum_amode(ntot_amode)   = (/ 1, 1, 1, 1, 1, 1, 1/)
+    integer, parameter ::     mdiagnum_amode(ntot_amode)   = (/ 0, 0, 0, 0, 0, 0, 0/)
+    integer, parameter ::     mprogsfc_amode(ntot_amode)   = (/ 0, 0, 0, 0, 0, 0, 0/)
+    integer, parameter ::     mcalcwater_amode(ntot_amode) = (/ 0, 0, 0, 0, 0, 0, 0/)
 #elif ( defined MODAL_AERO_5MODE_AGEDCARBON )
     integer, parameter ::     mprognum_amode(ntot_amode)   = (/ 1, 1, 1, 1, 1/)
     integer, parameter ::     mdiagnum_amode(ntot_amode)   = (/ 0, 0, 0, 0, 0/)
@@ -249,9 +265,8 @@
           modeptr_maccum, modeptr_maitken,                              &
           modeptr_accum,  modeptr_aitken,                               &   !
           modeptr_ufine,  modeptr_coarse,                               &   !
-! ++MW
           modeptr_pcarbon,modeptr_acarbon,                              &   !
-! --MW
+          modeptr_pbb,    modeptr_abb,                                  &   !
           modeptr_finedust,  modeptr_fineseas,                          &   !
           modeptr_coardust,  modeptr_coarseas
 
