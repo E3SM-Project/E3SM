@@ -196,6 +196,7 @@
         <command name="unload">cray-parallel-netcdf</command>
         <command name="unload">cray-netcdf</command>
         <command name="unload">cray-hdf5</command>
+        <command name="unload">pytorch</command>
         <command name="unload">PrgEnv-gnu</command>
         <command name="unload">PrgEnv-intel</command>
         <command name="unload">PrgEnv-nvidia</command>
@@ -218,6 +219,7 @@
       </modules>
 
       <modules compiler="gnu">
+        <command name="load">pytorch/2.6.0</command>
         <command name="load">PrgEnv-gnu/8.5.0</command>
         <command name="load">gcc-native/12.3</command>
         <command name="load">cray-libsci/24.07.0</command>
@@ -328,6 +330,7 @@
     </environment_variables>
     <environment_variables compiler="gnu">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/gnu; else echo "$MOAB_ROOT"; fi}</env>
+      <env name="FTorch_ROOT">$SHELL{if [ -z "$FTorch_ROOT" ]; then echo /global/cfs/cdirs/e3sm/FTorch; else echo "$FTorch_ROOT"; fi}</env>
     </environment_variables>
     <resource_limits>
       <resource name="RLIMIT_STACK">-1</resource>
