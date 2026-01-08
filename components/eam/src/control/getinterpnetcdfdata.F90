@@ -76,10 +76,6 @@ subroutine getinterpncdata( NCID, camlat, camlon, TimeIdx, &
 
 !     -------  code ---------
 
-!  If fill ends is not applied, then initialize all values to zero to
-!  prevent uninitialized memory for the leves where there is no data.
-   if (.not. fill_ends) outData(:) = 0.0_r8
-
    call shr_scam_GetCloseLatLon(ncid,camlat,camlon,closelat,closelon,latidx,lonidx)
 
 !
