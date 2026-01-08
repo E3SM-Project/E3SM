@@ -13,6 +13,7 @@
 #include "Error.h"
 #include "Eos.h"
 #include "Field.h"
+#include "GlobalConstants.h"
 #include "Halo.h"
 #include "HorzMesh.h"
 #include "IO.h"
@@ -66,14 +67,11 @@ void initPGradTest() {
                    "PGrad: error initializing default halo");
    }
 
-   // Begin initialization of the default vertical coordinate
-   VertCoord::init1();
-
    // Initialize the default mesh
    HorzMesh::init();
 
-   // Complete initialization of the default vertical coordinate
-   VertCoord::init2();
+   // Initialize the default vertical coordinate
+   VertCoord::init();
 
    // Initialize the equation of state
    Eos::init();
@@ -145,7 +143,7 @@ int main(int argc, char *argv[]) {
 
          auto &CellsOnEdge = DefMesh->CellsOnEdge;
          auto &DcEdge = DefMesh->DcEdge;
-         auto &EdgeMask = DefMesh->EdgeMask;
+         auto &EdgeMask = VCoord->EdgeMask;
          parallelFor({NEdgesAll}, KOKKOS_LAMBDA(int i) {
             CellsOnEdge(i, 0)= 0;
             CellsOnEdge(i, 1)= 1;
@@ -154,13 +152,7 @@ int main(int argc, char *argv[]) {
 
          // Fetch reference desnity from Config
          Real Density0;
-         Error ErrorCode;
-         Config TendConfig("Tendencies");
-         ErrorCode.reset();
-         ErrorCode += Options->get(TendConfig);
-         CHECK_ERROR_ABORT(ErrorCode, "VertCoord: Tendencies group not found in Config");
-         ErrorCode += TendConfig.get("Density0", Density0);
-         CHECK_ERROR_ABORT(ErrorCode, "VertCoord: Density0 not found in TendConfig");
+         Density0 = RhoSw;
       
          I4 TimeLevel = 0;
 

@@ -215,7 +215,7 @@ PressureGradCentered::PressureGradCentered(const HorzMesh *Mesh, ///< [in] Horiz
                                            const VertCoord *VCoord  ///< [in] Vertical coordinate
                                            )
     : CellsOnEdge(Mesh->CellsOnEdge), DcEdge(Mesh->DcEdge),
-      EdgeMask(Mesh->EdgeMask), MinLayerEdgeBot(VCoord->MinLayerEdgeBot),
+      EdgeMask(VCoord->EdgeMask), MinLayerEdgeBot(VCoord->MinLayerEdgeBot),
       MaxLayerEdgeTop(VCoord->MaxLayerEdgeTop) {}
 
 //------------------------------------------------------------------------------
@@ -224,7 +224,7 @@ PressureGradHighOrder::PressureGradHighOrder(const HorzMesh *Mesh, ///< [in] Hor
                                              const VertCoord *VCoord  ///< [in] Vertical coordinate
                                              )
     : CellsOnEdge(Mesh->CellsOnEdge), DcEdge(Mesh->DcEdge),
-      EdgeMask(Mesh->EdgeMask), MinLayerEdgeBot(VCoord->MinLayerEdgeBot),
+      EdgeMask(VCoord->EdgeMask), MinLayerEdgeBot(VCoord->MinLayerEdgeBot),
       MaxLayerEdgeTop(VCoord->MaxLayerEdgeTop) {}
 
 } // namespace OMEGA
