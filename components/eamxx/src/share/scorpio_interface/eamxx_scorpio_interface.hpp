@@ -143,6 +143,12 @@ void set_dim_decomp (const std::string& filename,
 void set_dim_decomp (const std::string& filename,
                      const std::string& dimname);
 
+// This version declares a decomposition of a group of dimensions. The offsets
+// represent the offsets in the tensor-product of the dimensions.
+void set_dims_decomp (const std::string& filename,
+                      const std::vector<std::string>& dimnames,
+                      const std::vector<offset_t>& my_offsets);
+
 // ================== Variable operations ================== //
 
 // Define var on output file (cannot call on Read/Append files)
