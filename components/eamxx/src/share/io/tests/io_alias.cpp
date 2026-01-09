@@ -5,7 +5,7 @@
 #include "share/io/eamxx_io_utils.hpp"
 #include "share/io/eamxx_output_manager.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
-#include "share/io/scorpio_input.hpp"
+#include "share/data_managers/field_reader.hpp"
 #include "share/diagnostics/register_diagnostics.hpp"
 #include "share/field/field.hpp"
 #include "share/field/field_utils.hpp"
@@ -213,15 +213,8 @@ TEST_CASE("io_with_aliases") {
   read_fm->add_field(psurf_read);
   read_fm->add_field(surf_temp_read);
 
-  // Set up reader parameter list
-  ekat::ParameterList reader_pl;
-  reader_pl.set("filename", expected_filename);
-
-  // Use the aliased names in the field list for reading
-  reader_pl.set<strvec_t>("field_names", {"qv", "TEMP", "PSURF", "surf_temp"});
-
   // Try to read the file - this will fail if the aliases weren't written correctly
-  AtmosphereInput reader(reader_pl, read_fm);
+  FieldReader reader(expected_filename,grid,read_fm->get_fields());
 
   reader.set_logger(console_logger(ekat::logger::LogLevel::trace));
   auto qv_field_read        = read_fm->get_field("qv");

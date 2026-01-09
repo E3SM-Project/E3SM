@@ -3,7 +3,7 @@
 #include "share/atm_process/atmosphere_diagnostic.hpp"
 
 #include "share/io/eamxx_output_manager.hpp"
-#include "share/io/scorpio_input.hpp"
+#include "share/data_managers/field_reader.hpp"
 
 #include "share/data_managers/mesh_free_grids_manager.hpp"
 
@@ -235,16 +235,13 @@ void read (const int seed, const ekat::Comm& comm)
   REQUIRE (f_name!="");
 
   // Create reader pl
-  ekat::ParameterList reader_pl;
   std::string casename = "io_diags";
   auto filename = casename
     + ".INSTANT.nsteps_x1"
     + ".np" + std::to_string(comm.size())
     + "." + t0.to_string()
     + ".nc";
-  reader_pl.set("filename",filename);
-  reader_pl.set("field_names",fnames);
-  AtmosphereInput reader(reader_pl,fm);
+  FieldReader reader(filename,grid,fm->get_fields());
 
   Field one = f0.clone("one");
   one.deep_copy(1.0);

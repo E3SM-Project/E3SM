@@ -96,9 +96,4 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
   )
 
-  ## Test single-column reader
-  CreateUnitTest(io_scm_reader "io_scm_reader.cpp"
-    LIBS eamxx_io LABELS io
-    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
-  )
 endif()

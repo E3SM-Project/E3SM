@@ -1,7 +1,7 @@
 #include <catch2/catch.hpp>
 
 #include "share/io/eamxx_output_manager.hpp"
-#include "share/io/scorpio_input.hpp"
+#include "share/data_managers/field_reader.hpp"
 #include "share/io/eamxx_io_utils.hpp"
 
 #include "share/data_managers/mesh_free_grids_manager.hpp"
@@ -191,8 +191,6 @@ void read (const std::string& avg_type, const std::string& freq_units,
     fnames.push_back(it.second->name());
   }
 
-  // Create reader pl
-  ekat::ParameterList reader_pl;
   std::string casename = "io_filled";
   auto filename = casename
     + "." + avg_type
@@ -201,9 +199,7 @@ void read (const std::string& avg_type, const std::string& freq_units,
     + ".np" + std::to_string(comm.size())
     + "." + t0.to_string()
     + ".nc";
-  reader_pl.set("filename",filename);
-  reader_pl.set("field_names",fnames);
-  AtmosphereInput reader(reader_pl,fm);
+  FieldReader reader(filename,grid,fm->get_fields());
 
   // We set the value n to each input field for each odd valued timestep and fill_value for each even valued timestep
   // Hence, at output step N = snap*freq, we should get

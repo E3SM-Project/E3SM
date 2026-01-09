@@ -9,7 +9,7 @@
 #include "share/field/field.hpp"
 #include "share/data_managers/field_manager.hpp"
 
-#include "share/io/scorpio_input.hpp"
+#include "share/data_managers/field_reader.hpp"
 
 namespace scream{
 namespace util {
@@ -87,7 +87,7 @@ protected:
   // Variables related to the case where we use data from file
   std::vector<DataFromFileTriplet>           m_file_data_triplets;
   int                                        m_triplet_idx;
-  std::shared_ptr<AtmosphereInput>           m_file_data_atm_input;
+  std::shared_ptr<FieldReader>               m_file_data_atm_input;
   bool                                       m_is_data_from_file=false;
 
   std::shared_ptr<ekat::logger::LoggerBase>  m_logger = console_logger(ekat::logger::LogLevel::warn);

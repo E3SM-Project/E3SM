@@ -1,5 +1,5 @@
-#include "share/io/scorpio_scm_input.hpp"
-#include "share/io/scorpio_input.hpp"
+#include "share/data_managers/field_scm_reader.hpp"
+#include "share/data_managers/field_reader.hpp"
 
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 #include "share/grid/point_grid.hpp"
@@ -31,8 +31,8 @@ namespace ekat {
 namespace scream
 {
 
-SCMInput::
-SCMInput (const std::string& filename,
+SCMFieldReader::
+SCMFieldReader (const std::string& filename,
           const double lat, const double lon,
           const std::vector<Field>& fields,
           const ekat::Comm& comm)
@@ -62,7 +62,7 @@ SCMInput (const std::string& filename,
     const auto& fl  = fid.get_layout();
 
     EKAT_REQUIRE_MSG (fl.tags()[0]==FieldTag::Column,
-      "Error! SCMInput only works for physics-type layouts.\n"
+      "Error! SCMFieldReader only works for physics-type layouts.\n"
       "  - field name: " + f.name() + "\n"
       "  - field layout: " + fl.to_string() + "\n");
 
@@ -76,19 +76,19 @@ SCMInput (const std::string& filename,
   init_scorpio_structures ();
 }
 
-SCMInput::
-~SCMInput ()
+SCMFieldReader::
+~SCMFieldReader ()
 {
   scorpio::release_file(m_filename);
 }
 
-void SCMInput::
+void SCMFieldReader::
 set_logger(const std::shared_ptr<ekat::logger::LoggerBase>& atm_logger) {
   EKAT_REQUIRE_MSG (atm_logger, "Error! Invalid logger pointer.\n");
   m_atm_logger = atm_logger;
 }
 
-void SCMInput::create_io_grid ()
+void SCMFieldReader::create_io_grid ()
 {
   EKAT_REQUIRE_MSG (scorpio::has_dim(m_filename,"ncol"),
       "Error! Dimension 'ncol' not found in input file.\n"
@@ -99,7 +99,7 @@ void SCMInput::create_io_grid ()
   m_io_grid = create_point_grid("scm_io_grid",ncols,nlevs,m_comm);
 }
 
-void SCMInput::create_closest_col_info (double target_lat, double target_lon)
+void SCMFieldReader::create_closest_col_info (double target_lat, double target_lon)
 {
   // Read lat/lon fields
   const auto ncols = m_io_grid->get_num_local_dofs();
@@ -111,7 +111,7 @@ void SCMInput::create_closest_col_info (double target_lat, double target_lon)
   std::vector<Field> latlon = {lat,lon};
 
   // Read from file
-  AtmosphereInput file_reader(m_filename, m_io_grid, latlon);
+  FieldReader file_reader(m_filename, m_io_grid, latlon);
   file_reader.read_variables();
   file_reader.finalize();
 
@@ -139,7 +139,7 @@ void SCMInput::create_closest_col_info (double target_lat, double target_lon)
   m_closest_col_info.col_lid  = my_rank==min_dist_and_rank.idx ? minloc.loc : -1;
 }
 
-void SCMInput::read_variables (const int time_index)
+void SCMFieldReader::read_variables (const int time_index)
 {
   auto func_start = std::chrono::steady_clock::now();
   auto fname = [](const Field& f) { return f.name(); };
@@ -183,7 +183,7 @@ void SCMInput::read_variables (const int time_index)
   }
 }
 
-void SCMInput::init_scorpio_structures()
+void SCMFieldReader::init_scorpio_structures()
 {
   using namespace ShortFieldTagsNames;
 
@@ -236,7 +236,7 @@ void SCMInput::init_scorpio_structures()
 }
 
 /* ---------------------------------------------------------- */
-void SCMInput::set_decompositions()
+void SCMFieldReader::set_decompositions()
 {
   using namespace ShortFieldTagsNames;
 

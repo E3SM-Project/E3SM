@@ -4,7 +4,7 @@
 #include "share/diagnostics/register_diagnostics.hpp"
 
 #include "share/io/eamxx_output_manager.hpp"
-#include "share/io/scorpio_input.hpp"
+#include "share/data_managers/field_reader.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 #include "share/field/field_utils.hpp"
 #include "share/core/eamxx_setup_random_test.hpp"
@@ -142,7 +142,7 @@ TEST_CASE("io_remap_test","io_remap_test")
 
   std::vector<Field> fields = {s2d_tgt,s3d_tgt};
 
-  AtmosphereInput reader(filename,tgt_grid,fields);
+  FieldReader reader(filename,tgt_grid,fields);
   reader.read_variables();
   reader.finalize(); // manually finalize, or scorpio cleanup will complain about a file still open
 

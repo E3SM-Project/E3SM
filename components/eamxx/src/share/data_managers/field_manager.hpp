@@ -97,6 +97,8 @@ public:
     return has_group(group_name, m_grids_mgr->get_repo().begin()->second->name());
   }
 
+  std::vector<Field> get_fields (const std::string& grid_name) const;
+  std::vector<Field> get_fields () const;
   Field get_field (const std::string& name, const std::string& grid_name) const;
   Field get_field (const identifier_type& id) const { return get_field(id.name(), id.get_grid_name()); }
   Field get_field (const std::string& name) const {

@@ -2,7 +2,7 @@
 
 #include "share/field/field_utils.hpp"
 #include "share/io/eamxx_io_utils.hpp"
-#include "share/io/scorpio_input.hpp"
+#include "share/data_managers/field_reader.hpp"
 #include "share/remap/coarsening_remapper.hpp"
 #include "share/remap/vertical_remapper.hpp"
 #include "share/util/eamxx_timing.hpp"
@@ -296,7 +296,7 @@ void AtmosphereOutput::restart (const std::string& filename)
     fields.push_back(f);
   }
 
-  AtmosphereInput hist_restart (filename, fm->get_grid(), fields);
+  FieldReader hist_restart (filename, fm->get_grid(), fields);
   hist_restart.read_variables();
 }
 

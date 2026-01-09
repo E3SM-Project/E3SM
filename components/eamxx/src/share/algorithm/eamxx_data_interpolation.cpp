@@ -6,7 +6,7 @@
 #include "share/remap/iop_remapper.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
-#include "share/io/scorpio_input.hpp"
+#include "share/data_managers/field_reader.hpp"
 #include "share/io/eamxx_io_utils.hpp"
 #include "share/util/eamxx_universal_constants.hpp"
 #include "share/util/eamxx_utils.hpp"
@@ -201,7 +201,7 @@ init_data_interval (const util::TimeStamp& t0)
   horiz_interp_src_grid->reset_field_tag_name(LEV, m_input_files_dimnames[LEV]);
   horiz_interp_src_grid->reset_field_tag_name(ILEV, m_input_files_dimnames[ILEV]);
 
-  m_reader = std::make_shared<AtmosphereInput>(fnames,horiz_interp_src_grid);
+  m_reader = std::make_shared<FieldReader>(fnames,horiz_interp_src_grid);
 
   // Loop over all stored time slices to find an interval that contains t0
   auto t0_interval = m_time_database.find_interval(t0);
@@ -471,7 +471,7 @@ create_horiz_remappers (const Real iop_lat, const Real iop_lon)
     data_grid->create_geometry_data("lat",data_grid->get_2d_scalar_layout()),
     data_grid->create_geometry_data("lon",data_grid->get_2d_scalar_layout())
   };
-  AtmosphereInput latlon_reader (m_time_database.files.front(),data_grid,latlon);
+  FieldReader latlon_reader (m_time_database.files.front(),data_grid,latlon);
   latlon_reader.read_variables();
 
   // Create iop remap tgt grid
@@ -604,12 +604,12 @@ create_vert_remapper (const VertRemapData& data)
         m_grid_after_hremap->create_geometry_data("hyam",layout,nondim,real_t,SCREAM_PACK_SIZE),
         m_grid_after_hremap->create_geometry_data("hybm",layout,nondim,real_t,SCREAM_PACK_SIZE)
       };
-      AtmosphereInput hvcoord_reader (m_time_database.files.front(),m_grid_after_hremap,fields,true);
+      FieldReader hvcoord_reader (m_time_database.files.front(),m_grid_after_hremap,fields,true);
       hvcoord_reader.read_variables();
     } else if (m_vr_type==Static1D) {
       // Can load p now, since it's static
       std::vector<Field> fields = {p_data.alias(data.pname)};
-      AtmosphereInput p_data_reader (m_time_database.files.front(),m_grid_after_hremap,fields,true);
+      FieldReader p_data_reader (m_time_database.files.front(),m_grid_after_hremap,fields,true);
       p_data_reader.read_variables();
     }
     vremap->set_source_pressure (m_helper_pressure_fields["p_data"],VerticalRemapper::Both);

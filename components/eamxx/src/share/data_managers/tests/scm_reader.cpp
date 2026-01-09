@@ -1,6 +1,6 @@
 #include <catch2/catch.hpp>
 
-#include "share/io/scorpio_scm_input.hpp"
+#include "share/data_managers/field_scm_reader.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 
 #include "share/grid/point_grid.hpp"
@@ -107,7 +107,7 @@ void read (const int seed, const ekat::Comm& comm)
   var_f.allocate_view();
 
   // Read field
-  SCMInput reader(filename,tgt_lat,tgt_lon,{var_f},comm);
+  SCMFieldReader reader(filename,tgt_lat,tgt_lon,{var_f},comm);
   reader.read_variables();
 
   // Check

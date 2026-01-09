@@ -4,7 +4,7 @@
 #include "share/diagnostics/register_diagnostics.hpp"
 
 #include "share/io/eamxx_output_manager.hpp"
-#include "share/io/scorpio_input.hpp"
+#include "share/data_managers/field_reader.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 
 #include "share/data_managers/mesh_free_grids_manager.hpp"
@@ -31,7 +31,8 @@ get_test_fm(std::shared_ptr<const AbstractGrid> grid, const bool midonly, const 
 Real calculate_output(const Real pressure, const int col, const int cmp);
 
 ekat::ParameterList set_output_params(const std::string& name, const std::string& remap_filename, const int p_ref, const bool vert_remap, const bool horiz_remap);
-ekat::ParameterList set_input_params(const std::string& name, ekat::Comm& comm, const std::string& tstamp, const int p_ref);
+std::string get_filename(const std::string& prefix, ekat::Comm& comm, const util::TimeStamp& t0);
+std::vector<Field> get_fields(const std::shared_ptr<FieldManager>& fm, const int p_ref);
 
 bool approx(const Real a, const Real b) {
   const Real tol = std::numeric_limits<Real>::epsilon()*100000;
@@ -289,15 +290,14 @@ TEST_CASE("io_remap_test","io_remap_test")
     auto gm_vert   = get_test_gm(io_comm,ncols_src,nlevs_tgt);
     auto grid_vert = gm_vert->get_grid("point_grid");
     auto fm_vert   = get_test_fm(grid_vert,true,p_ref);
-    auto vert_in   = set_input_params("remap_vertical",io_comm,t0.to_string(),p_ref);
-    AtmosphereInput test_input(vert_in,fm_vert);
+    auto filename = get_filename("remap_vertical",io_comm,t0);
+    FieldReader test_input(filename,grid_vert,get_fields(fm_vert,p_ref));
     test_input.read_variables();
 
     // Check the "test" metadata, which should match the field name
     // Note: the FieldAtPressureLevel diag should get the attribute from its input field,
     //       so the valuf for "Y_int"_at_XPa should be "Y_int"
     std::string att_val;
-    const auto& filename = vert_in.get<std::string>("filename");
     for (auto& fname : fnames) {
       att_val = scorpio::get_attribute<std::string>(filename,fname,"test");
       REQUIRE (att_val==fname);
@@ -357,15 +357,14 @@ TEST_CASE("io_remap_test","io_remap_test")
     auto gm_horiz   = get_test_gm(io_comm,ncols_tgt,nlevs_src);
     auto grid_horiz = gm_horiz->get_grid("point_grid");
     auto fm_horiz   = get_test_fm(grid_horiz,false,p_ref);
-    auto horiz_in   = set_input_params("remap_horizontal",io_comm,t0.to_string(),p_ref);
-    AtmosphereInput test_input(horiz_in,fm_horiz);
+    auto filename = get_filename("remap_horizontal",io_comm,t0);
+    FieldReader test_input(filename,grid_horiz,get_fields(fm_horiz,p_ref));
     test_input.read_variables();
 
     // Check the "test" metadata, which should match the field name
     // Note: the FieldAtPressureLevel diag should get the attribute from its input field,
     //       so the valuf for "Y_int"_at_XPa should be "Y_int"
     std::string att_val;
-    const auto& filename = horiz_in.get<std::string>("filename");
     for (auto& fname : fnames) {
       att_val = scorpio::get_attribute<std::string>(filename,fname,"test");
       REQUIRE (att_val==fname);
@@ -441,15 +440,14 @@ TEST_CASE("io_remap_test","io_remap_test")
     auto gm_vh   = get_test_gm(io_comm,ncols_tgt,nlevs_tgt);
     auto grid_vh = gm_vh->get_grid("point_grid");
     auto fm_vh   = get_test_fm(grid_vh,true,p_ref);
-    auto vh_in   = set_input_params("remap_vertical_horizontal",io_comm,t0.to_string(),p_ref);
-    AtmosphereInput test_input(vh_in,fm_vh);
+    auto filename = get_filename("remap_vertical_horizontal",io_comm,t0);
+    FieldReader test_input(filename,grid_vh,get_fields(fm_vh,p_ref));
     test_input.read_variables();
 
     // Check the "test" metadata, which should match the field name
     // Note: the FieldAtPressureLevel diag should get the attribute from its input field,
     //       so the valuf for "Y_int"_at_XPa should be "Y_int"
     std::string att_val;
-    const auto& filename = vh_in.get<std::string>("filename");
     for (auto& fname : fnames) {
       att_val = scorpio::get_attribute<std::string>(filename,fname,"test");
       REQUIRE (att_val==fname);
@@ -701,21 +699,23 @@ ekat::ParameterList set_output_params(const std::string& name, const std::string
   return params;
 }
 /*==========================================================================================================*/
-ekat::ParameterList set_input_params(const std::string& name, ekat::Comm& comm, const std::string& tstamp, const int p_ref)
+std::string get_filename(const std::string& prefix, ekat::Comm& comm, const util::TimeStamp& t0)
 {
-  using vos_type = std::vector<std::string>;
-  ekat::ParameterList in_params("Input Parameters");
-  std::string filename = name + ".INSTANT.nsteps_x1.np" + std::to_string(comm.size()) + "." + tstamp + ".nc";
-  in_params.set<std::string>("filename",filename);
-  vos_type fields_in =  {"Y_flat", "Y_mid", "Y_int", "V_mid", "V_int"};
-  if (p_ref>=0) {
-    fields_in.push_back("Y_int_at_"+std::to_string(p_ref)+"Pa");
-  }
-
-  in_params.set<vos_type>("field_names", fields_in);
-  in_params.set<std::string>("floating_point_precision","real");
-  return in_params;
+  return prefix + ".INSTANT.nsteps_x1.np" + std::to_string(comm.size()) + "." + t0.to_string() + ".nc";
 }
-/*==========================================================================================================*/
+
+std::vector<Field> get_fields (const std::shared_ptr<FieldManager>& fm, const int p_ref)
+{
+  std::vector<Field> fields;
+  fields.push_back(fm->get_field("Y_flat"));
+  fields.push_back(fm->get_field("Y_mid"));
+  fields.push_back(fm->get_field("Y_int"));
+  fields.push_back(fm->get_field("V_mid"));
+  fields.push_back(fm->get_field("V_int"));
+  if (p_ref>=0) {
+    fields.push_back(fm->get_field("Y_int_at_"+std::to_string(p_ref)+"Pa"));
+  }
+  return fields;
+}
 
 } //namespace

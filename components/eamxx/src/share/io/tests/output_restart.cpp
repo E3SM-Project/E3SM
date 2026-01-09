@@ -2,7 +2,7 @@
 
 #include "share/io/eamxx_output_manager.hpp"
 #include "share/io/scorpio_output.hpp"
-#include "share/io/scorpio_input.hpp"
+#include "share/data_managers/field_reader.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 
 #include "share/data_managers/mesh_free_grids_manager.hpp"

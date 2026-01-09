@@ -1,6 +1,7 @@
 #ifndef EAMXX_DATA_INTERPOLATION_HPP
 #define EAMXX_DATA_INTERPOLATION_HPP
 
+#include "share/data_managers/field_reader.hpp"
 #include "share/grid/abstract_grid.hpp"
 #include "share/remap/abstract_remapper.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
@@ -10,8 +11,6 @@
 
 namespace scream
 {
-
-class AtmosphereInput;
 
 class DataInterpolation
 {
@@ -98,7 +97,7 @@ protected:
 
   // --------------- Internal data ------------- //
 
-  std::shared_ptr<AtmosphereInput> m_reader;
+  std::shared_ptr<FieldReader> m_reader;
 
   std::shared_ptr<const AbstractGrid> m_model_grid;
   std::shared_ptr<AbstractGrid>       m_grid_after_hremap; // nonconst b/c we may need to set some geo data

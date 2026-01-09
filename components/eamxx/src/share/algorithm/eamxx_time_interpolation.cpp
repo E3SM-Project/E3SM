@@ -115,7 +115,7 @@ void TimeInterpolation::shift_data()
     auto& field1 = m_fm_time1->get_field(name);
     std::swap(field0,field1);
   }
-  m_file_data_atm_input->set_field_manager(m_fm_time1);
+  m_file_data_atm_input->set_fields(m_fm_time1->get_fields());
 }
 /*-----------------------------------------------------------------------------------------------*/
 /* Function which will initialize the TimeStamps.
@@ -158,11 +158,11 @@ void TimeInterpolation::initialize_data_from_field(const Field& field_in)
 void TimeInterpolation::initialize_data_from_files()
 {
   auto triplet_curr = m_file_data_triplets[m_triplet_idx];
-  // Initialize the AtmosphereInput object that will be used to gather data
+  // Initialize the FieldReader object that will be used to gather data
   ekat::ParameterList input_params;
   input_params.set("field_names",m_field_names);
   input_params.set("filename",triplet_curr.filename);
-  m_file_data_atm_input = std::make_shared<AtmosphereInput>(input_params,m_fm_time1);
+  m_file_data_atm_input = std::make_shared<FieldReader>(input_params,m_fm_time1);
   m_file_data_atm_input->set_logger(m_logger);
 
   // Read first snap of data and shift to time0
@@ -309,7 +309,7 @@ void TimeInterpolation::read_data()
     ekat::ParameterList input_params;
     input_params.set("field_names",m_field_names);
     input_params.set("filename",triplet_curr.filename);
-    m_file_data_atm_input = std::make_shared<AtmosphereInput>(input_params,m_fm_time1);
+    m_file_data_atm_input = std::make_shared<FieldReader>(input_params,m_fm_time1);
     m_file_data_atm_input->set_logger(m_logger);
   }
 

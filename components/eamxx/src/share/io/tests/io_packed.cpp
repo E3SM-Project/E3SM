@@ -1,7 +1,7 @@
 #include <catch2/catch.hpp>
 
 #include "share/io/eamxx_output_manager.hpp"
-#include "share/io/scorpio_input.hpp"
+#include "share/data_managers/field_reader.hpp"
 
 #include "share/data_managers/mesh_free_grids_manager.hpp"
 
@@ -143,8 +143,6 @@ void read (const int freq, const int seed, const int ps_write, const int ps_read
     fnames.push_back(it.second->name());
   }
 
-  // Create reader pl
-  ekat::ParameterList reader_pl;
   std::string casename = "io_packed_ps"+std::to_string(ps_write);
   auto filename = casename
     + ".INSTANT.nsteps"
@@ -152,9 +150,7 @@ void read (const int freq, const int seed, const int ps_write, const int ps_read
     + ".np" + std::to_string(comm.size())
     + "." + t0.to_string()
     + ".nc";
-  reader_pl.set("filename",filename);
-  reader_pl.set("field_names",fnames);
-  AtmosphereInput reader(reader_pl,fm);
+  FieldReader reader(filename,grid,fm->get_fields());
 
   reader.read_variables();
   for (const auto& fn : fnames) {

@@ -1,7 +1,7 @@
 #include <catch2/catch.hpp>
 
 #include "share/io/eamxx_output_manager.hpp"
-#include "share/io/scorpio_input.hpp"
+#include "share/data_managers/field_reader.hpp"
 
 #include "share/data_managers/mesh_free_grids_manager.hpp"
 
@@ -179,10 +179,6 @@ void read (const int seed, const ekat::Comm& comm)
     return fname;
   };
 
-  // Create reader pl
-  ekat::ParameterList reader_pl;
-  reader_pl.set("field_names",fnames);
-
   for (int n=0; n<12; ++n) {
     auto t = t0 + n*dt;
     auto filename = get_filename(t);
@@ -190,8 +186,7 @@ void read (const int seed, const ekat::Comm& comm)
     // There should be just one time snapshot per file
     REQUIRE(scorpio::get_dimlen(filename,"time")==1);
 
-    reader_pl.set("filename",filename);
-    AtmosphereInput reader(reader_pl,fm);
+    FieldReader reader(filename,grid,fm->get_fields());
     reader.read_variables();
 
     for (const auto& fn : fnames) {

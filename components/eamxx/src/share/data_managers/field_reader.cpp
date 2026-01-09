@@ -1,4 +1,4 @@
-#include "share/io/scorpio_input.hpp"
+#include "share/data_managers/field_reader.hpp"
 
 #include "share/field/field_utils.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
@@ -11,130 +11,78 @@
 namespace scream
 {
 
-AtmosphereInput::
-AtmosphereInput (const ekat::ParameterList& params,
-                 const std::shared_ptr<const fm_type>& field_mgr)
+FieldReader::
+FieldReader (const std::string& filename,
+             const std::shared_ptr<const AbstractGrid>& grid,
+             const std::vector<Field>& fields,
+             const std::string& iotype)
 {
-  init(params,field_mgr);
+  m_filename = filename;
+
+  set_grid(grid);
+
+  set_fields(fields);
+
+  init_scorpio_structures(iotype);
 }
 
-AtmosphereInput::
-AtmosphereInput (const std::string& filename,
-                 const std::shared_ptr<const grid_type>& grid,
-                 const std::vector<Field>& fields,
-                 const bool skip_grid_checks)
-{
-  // Create param list and field manager on the fly
-  ekat::ParameterList params;
-  params.set("filename",filename);
-  params.set("skip_grid_checks",skip_grid_checks);
-  auto& names = params.get<std::vector<std::string>>("field_names",{});
-
-  auto fm = std::make_shared<fm_type>(grid);
-  for (auto& f : fields) {
-    fm->add_field(f);
-    names.push_back(f.name());
-  }
-  init(params,fm);
-}
-
-AtmosphereInput::
-AtmosphereInput (const std::string& filename,
-                 const std::shared_ptr<const grid_type>& grid,
-                 const std::map<std::string,Field>& fields,
-                 const bool skip_grid_checks)
-{
-  // Create param list and field manager on the fly
-  ekat::ParameterList params;
-  params.set("filename",filename);
-  params.set("skip_grid_checks",skip_grid_checks);
-  auto& names = params.get<std::vector<std::string>>("field_names",{});
-
-  auto fm = std::make_shared<fm_type>(grid);
-  for (const auto& [name, f] : fields) {
-    fm->add_field(f);
-    names.push_back(name);
-  }
-  init(params,fm);
-}
-
-AtmosphereInput::
-AtmosphereInput (const std::vector<std::string>& fields_names,
-                 const std::shared_ptr<const grid_type>& grid)
+FieldReader::
+FieldReader (const std::shared_ptr<const AbstractGrid>& grid)
 {
   set_grid(grid);
-  m_fields_names = fields_names;
 }
 
-AtmosphereInput::
-~AtmosphereInput ()
+FieldReader::
+~FieldReader ()
 {
   finalize();
 }
 
-void AtmosphereInput::
+void FieldReader::
 set_logger(const std::shared_ptr<ekat::logger::LoggerBase>& atm_logger) {
   EKAT_REQUIRE_MSG (atm_logger, "Error! Invalid logger pointer.\n");
   m_atm_logger = atm_logger;
 }
 
-void AtmosphereInput::
-init (const ekat::ParameterList& params,
-      const std::shared_ptr<const fm_type>& field_mgr)
+void FieldReader::
+set_fields (const std::vector<Field>& fields)
 {
-  EKAT_REQUIRE_MSG (field_mgr->get_grids_manager()->size()==1,
-      "Error! AtmosphereInput expects FieldManager defined only on a single grid.\n");
-  EKAT_REQUIRE_MSG (not m_fields_inited,
-      "Error! Input class was already inited.\n");
+  EKAT_REQUIRE_MSG (m_io_grid,
+      "[FieldReader] Error! Grid must be set BEFORE the fields.\n");
 
-  m_params = params;
-  m_fields_names = m_params.get<decltype(m_fields_names)>("field_names");
-  m_filename = m_params.get<std::string>("filename");
+  if (m_fields_names.size()>0) {
+    EKAT_REQUIRE_MSG (m_fields_names.size()==fields.size(),
+        "[FieldReader] Error! Resetting fields with a different set of fields.\n");
+    for (const auto& f_new : fields) {
+      EKAT_REQUIRE_MSG (m_fields_from_user->has_field(f_new.name()),
+        "[FieldReader] Error! Resetting fields with a different set of fields.\n"
+        " Adding extra field '" + f_new.name() + "'.\n");
 
-  // Sets the internal field mgr, and possibly sets up the remapper
-  set_field_manager(field_mgr);
-
-  // Init scorpio internal structures
-  init_scorpio_structures ();
-}
-
-void AtmosphereInput::
-set_field_manager (const std::shared_ptr<const fm_type>& field_mgr)
-{
-  // Sanity checks
-  EKAT_REQUIRE_MSG (field_mgr, "Error! Invalid field manager pointer.\n");
-  EKAT_REQUIRE_MSG (field_mgr->get_grid(), "Error! Field manager stores an invalid grid pointer.\n");
-
-  // If resetting a field manager we want to check that the layouts of all fields are the same.
-  if (m_fm_from_user) {
-    for (const auto& [name, f] : m_fm_from_user->get_repo()) {
-      auto field_new  = field_mgr->get_field(name);
-      // Check Layouts
-      auto lay_curr   = f->get_header().get_identifier().get_layout();
-      auto lay_new    = field_new.get_header().get_identifier().get_layout();
-      EKAT_REQUIRE_MSG(lay_curr==lay_new,"ERROR!! AtmosphereInput::set_field_manager - setting new field manager which has different layout for field " << name <<"\n"
-		      << "    Old Layout: " << lay_curr.to_string() << "\n"
-		      << "    New Layout: " << lay_new.to_string() << "\n");
+      const auto& f_old = m_fields_from_user->get_field(f_new.name());
+      const auto& fl_new = f_new.get_header().get_identifier().get_layout();
+      const auto& fl_old = f_old.get_header().get_identifier().get_layout();
+      EKAT_REQUIRE_MSG (fl_new==fl_old,
+        "[FieldReader] Error! Resetting fields with a different set of fields.\n"
+        " Changing layout of field '" + f_new.name() + "'.\n"
+        "  - old layout: " + fl_old.to_string() + "\n"
+        "  - new layout: " + fl_new.to_string() + "\n");
     }
   }
 
-  m_fm_from_user = field_mgr;
+  m_fields_from_user = std::make_shared<FieldManager>(m_io_grid,RepoState::Closed);
+  m_fields_for_scorpio = std::make_shared<FieldManager>(m_io_grid,RepoState::Closed);
+  m_fields_names.clear();
+  for (const auto& f : fields) {
+    m_fields_names.push_back(f.name());
+    m_fields_from_user->add_field(f);
 
-  // Store grid and fm
-  set_grid(field_mgr->get_grid());
-
-  // Init fm_for_scorpio
-  m_fm_for_scorpio = std::make_shared<FieldManager>(m_io_grid,RepoState::Closed);
-  for (auto const& name : m_fields_names) {
-    auto f = m_fm_from_user->get_field(name);
     const auto& fh  = f.get_header();
     const auto& fap = fh.get_alloc_properties();
 
-    // If we can alias the field's host view, do it.
-    // Otherwise, create a clone.
+    // If we can alias the field, do it,otherwise, create a clone.
     bool can_alias = fh.get_parent()==nullptr && fap.get_padding()==0;
     if (can_alias) {
-      m_fm_for_scorpio->add_field(f);
+      m_fields_for_scorpio->add_field(f);
     } else {
       // We have padding, or the field is a subfield (or both).
       // Either way, we need a temporary.
@@ -142,53 +90,39 @@ set_field_manager (const std::shared_ptr<const fm_type>& field_mgr)
       //       which would defy one of the reason for cloning it...
       Field copy (f.get_header().get_identifier());
       copy.allocate_view();
-      m_fm_for_scorpio->add_field(copy);
+      m_fields_for_scorpio->add_field(copy);
     }
   }
 
   m_fields_inited = true;
 }
 
-void AtmosphereInput::
-set_fields (const std::vector<Field>& fields) {
-  auto fm = std::make_shared<fm_type>(m_io_grid);
-  m_fields_names.clear();
-  for (const auto& f : fields) {
-    fm->add_field(f);
-    m_fields_names.push_back(f.name());
-  }
-  set_field_manager(fm);
-}
-
-void AtmosphereInput::
-reset_filename (const std::string& filename)
+void FieldReader::
+reset_filename (const std::string& filename,
+                const std::string& iotype)
 {
   if (m_filename!="") {
     scorpio::release_file(m_filename);
   }
-  m_params.set("filename",filename);
   m_filename = filename;
-  init_scorpio_structures();
+  init_scorpio_structures(iotype);
 }
 
 /* ---------------------------------------------------------- */
-void AtmosphereInput::
+void FieldReader::
 set_grid (const std::shared_ptr<const AbstractGrid>& grid)
 {
   // Sanity checks
   EKAT_REQUIRE_MSG (grid, "Error! Input grid pointer is invalid.\n");
-  const bool skip_grid_chk = m_params.get<bool>("skip_grid_checks",false);
-  if (!skip_grid_chk) {
-    EKAT_REQUIRE_MSG (grid->is_unique(),
-        "Error! I/O only supports grids which are 'unique', meaning that the\n"
-        "       map dof_gid->proc_id is well defined.\n");
-    EKAT_REQUIRE_MSG (
-        (grid->get_global_max_dof_gid()-grid->get_global_min_dof_gid()+1)==grid->get_num_global_dofs(),
-        "Error! IO requires DOF gids to (globally)  be in interval [gid_0,gid_0+num_global_dofs).\n"
-        "   - global min GID : " + std::to_string(grid->get_global_min_dof_gid()) + "\n"
-        "   - global max GID : " + std::to_string(grid->get_global_max_dof_gid()) + "\n"
-        "   - num global dofs: " + std::to_string(grid->get_num_global_dofs()) + "\n");
-  }
+  EKAT_REQUIRE_MSG (grid->is_unique(),
+      "Error! I/O only supports grids which are 'unique', meaning that the\n"
+      "       map dof_gid->proc_id is well defined.\n");
+  EKAT_REQUIRE_MSG (
+      (grid->get_global_max_dof_gid()-grid->get_global_min_dof_gid()+1)==grid->get_num_global_dofs(),
+      "Error! IO requires DOF gids to (globally)  be in interval [gid_0,gid_0+num_global_dofs).\n"
+      "   - global min GID : " + std::to_string(grid->get_global_min_dof_gid()) + "\n"
+      "   - global max GID : " + std::to_string(grid->get_global_max_dof_gid()) + "\n"
+      "   - num global dofs: " + std::to_string(grid->get_num_global_dofs()) + "\n");
 
   // The grid is good. Store it.
   m_io_grid = grid;
@@ -197,11 +131,9 @@ set_grid (const std::shared_ptr<const AbstractGrid>& grid)
 /* ---------------------------------------------------------- */
 // Note: The (zero-based) time_index argument provides a way to control which
 //       time step to read input from in the file.  If a negative number is
-//       provided the routine will read input at the last time level set by
-//       running eam_update_timesnap.
-void AtmosphereInput::read_variables (const int time_index)
+//       provided the routine will read input at the last time index present in the file
+void FieldReader::read_variables (const int time_index)
 {
-  auto func_start = std::chrono::steady_clock::now();
   m_atm_logger->info("[EAMxx::scorpio_input] Reading variables from file");
   m_atm_logger->info("  file name: " + m_filename);
   m_atm_logger->info("  var names: " + ekat::join(m_fields_names,", "));
@@ -214,8 +146,8 @@ void AtmosphereInput::read_variables (const int time_index)
 
   for (auto const& name : m_fields_names) {
 
-    auto f_scorpio = m_fm_for_scorpio->get_field(name);
-    auto f_user    = m_fm_from_user->get_field(name);
+    auto f_scorpio = m_fields_for_scorpio->get_field(name);
+    auto f_user    = m_fields_from_user->get_field(name);
 
     // Read the data
     switch (f_scorpio.data_type()) {
@@ -240,37 +172,30 @@ void AtmosphereInput::read_variables (const int time_index)
       f_user.deep_copy(f_scorpio);
     }
   }
-  if (m_atm_logger) {
-    auto func_finish = std::chrono::steady_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(func_finish - func_start)/1000.0;
-    m_atm_logger->debug("  Done! Elapsed time: " + std::to_string(duration.count()) +" seconds");
-  }
 }
 
 /* ---------------------------------------------------------- */
-void AtmosphereInput::finalize()
+void FieldReader::finalize()
 {
   if (m_scorpio_inited) {
     scorpio::release_file(m_filename);
   }
 
-  m_fm_from_user   = nullptr;
-  m_fm_for_scorpio = nullptr;
-  m_io_grid        = nullptr;
+  m_fields_from_user   = nullptr;
+  m_fields_for_scorpio = nullptr;
+  m_io_grid            = nullptr;
+  m_fields_names.clear();
 
   m_fields_inited  = false;
   m_scorpio_inited = false;
 }
 
-void AtmosphereInput::init_scorpio_structures()
+void FieldReader::init_scorpio_structures(const std::string& iotype)
 {
   EKAT_REQUIRE_MSG (m_fields_inited,
       "Error! Cannot init scorpio structures until fields/views have been set.\n");
 
-  std::string iotype_str = m_params.get<std::string>("iotype", "default");
-  auto iotype = scorpio::str2iotype(iotype_str);
-
-  scorpio::register_file(m_filename,scorpio::Read,iotype);
+  scorpio::register_file(m_filename,scorpio::Read,scorpio::str2iotype(iotype));
 
   // Some input files have the "time" dimension as non-unlimited. This messes up our
   // scorpio interface, which stores a pointer to a "time" dim to be used to read/write
@@ -281,7 +206,7 @@ void AtmosphereInput::init_scorpio_structures()
   }
 
   // Check variables are in the input file
-  for (const auto & [name, f] : m_fm_for_scorpio->get_repo()) {
+  for (const auto & [name, f] : m_fields_for_scorpio->get_repo()) {
     const auto& layout = f->get_header().get_identifier().get_layout();
 
     // Determine the IO-decomp and construct a vector of dimension ids for this variable:
@@ -329,7 +254,7 @@ void AtmosphereInput::init_scorpio_structures()
 
 /* ---------------------------------------------------------- */
 std::vector<std::string>
-AtmosphereInput::get_vec_of_dims(const FieldLayout& layout)
+FieldReader::get_vec_of_dims(const FieldLayout& layout)
 {
   // Given a set of dimensions in field tags, extract a vector of strings
   // for those dimensions to be used with IO
@@ -353,7 +278,7 @@ AtmosphereInput::get_vec_of_dims(const FieldLayout& layout)
 }
 
 /* ---------------------------------------------------------- */
-void AtmosphereInput::set_decompositions()
+void FieldReader::set_decompositions()
 {
   using namespace ShortFieldTagsNames;
 
@@ -361,7 +286,7 @@ void AtmosphereInput::set_decompositions()
   const auto decomp_tag  = m_io_grid->get_partitioned_dim_tag();
 
   bool has_decomposed_layouts = false;
-  for (const auto & [name, f] : m_fm_for_scorpio->get_repo()) {
+  for (const auto & [name, f] : m_fields_for_scorpio->get_repo()) {
     const auto& layout = f->get_header().get_identifier().get_layout();
     if (layout.has_tag(decomp_tag)) {
       has_decomposed_layouts = true;

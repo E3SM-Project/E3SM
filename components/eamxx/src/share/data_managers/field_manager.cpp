@@ -188,6 +188,26 @@ has_group (const std::string& group_name, const std::string& grid_name) const {
   return false;
 }
 
+std::vector<Field> FieldManager::get_fields (const std::string& grid_name) const
+{
+  std::vector<Field> fields;
+  for (auto it : get_repo(grid_name)) {
+    fields.push_back(*it.second);
+  }
+  return fields;
+}
+
+std::vector<Field> FieldManager::get_fields () const
+{
+  std::vector<Field> fields;
+  for (auto it1 : m_fields) {
+    for (auto it2 : get_repo(it1.first)) {
+      fields.push_back(*it2.second);
+    }
+  }
+  return fields;
+}
+
 Field FieldManager::get_field (const std::string& name, const std::string& grid_name) const {
   EKAT_REQUIRE_MSG(m_repo_state==RepoState::Closed,
     "Error! Cannot get fields from the repo while registration has not yet completed.\n");

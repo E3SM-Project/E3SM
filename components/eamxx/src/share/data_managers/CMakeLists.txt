@@ -2,6 +2,8 @@ add_library(eamxx_data_managers
   field_manager.cpp
   grids_manager.cpp
   IOPDataManager.cpp
+  field_reader.cpp
+  field_scm_reader.cpp
 )
 
 target_link_libraries(eamxx_data_managers PUBLIC

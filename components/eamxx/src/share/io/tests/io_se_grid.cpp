@@ -1,7 +1,7 @@
 #include <catch2/catch.hpp>
 
 #include "share/io/eamxx_output_manager.hpp"
-#include "share/io/scorpio_input.hpp"
+#include "share/data_managers/field_reader.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 
 #include "share/data_managers/mesh_free_grids_manager.hpp"
@@ -33,9 +33,6 @@ get_test_fm(const std::shared_ptr<const AbstractGrid>& grid,
 
 std::shared_ptr<GridsManager>
 get_test_gm(const ekat::Comm& io_comm, const int num_my_elems, const int np, const int num_levs);
-
-ekat::ParameterList get_in_params(const ekat::Comm& comm,
-                                  const util::TimeStamp& t0);
 
 TEST_CASE("se_grid_io")
 {
@@ -84,16 +81,19 @@ TEST_CASE("se_grid_io")
   }
 
   // Check fields were written correctly
-  auto in_params = get_in_params(io_comm,t0);
-  AtmosphereInput ins_input(in_params,fm1);
-  ins_input.read_variables();
+  std::string filename = "io_se_grid.INSTANT.nsteps_x1.np"
+                       + std::to_string(io_comm.size())
+                       + "." + t0.to_string() + ".nc";
+
+  FieldReader reader(filename,grid,fm1->get_fields());
+  reader.read_variables();
 
   for (const auto& fname : fnames) {
     auto f0 = fm0->get_field(fname);
     auto f1 = fm1->get_field(fname);
     REQUIRE (views_are_equal(f0,f1));
   }
-  ins_input.finalize();
+  reader.finalize();
 
   // All Done
   scorpio::finalize_subsystem();
@@ -163,22 +163,6 @@ get_test_gm(const ekat::Comm& io_comm, const int num_my_elems, const int np, con
   gm->build_grids();
 
   return gm;
-}
-/*==================================================================================================*/
-ekat::ParameterList get_in_params(const ekat::Comm& comm,
-                                  const util::TimeStamp& t0)
-{
-  using vos_type = std::vector<std::string>;
-  ekat::ParameterList in_params("Input Parameters");
-
-  std::string filename = "io_se_grid.INSTANT.nsteps_x1.np"
-                       + std::to_string(comm.size())
-                       + "." + t0.to_string() + ".nc";
-
-  in_params.set<std::string>("filename",filename);
-  in_params.set<vos_type>("field_names",{"field_1", "field_2", "field_3", "field_packed"});
-  in_params.set<std::string>("floating_point_precision","real");
-  return in_params;
 }
 
 } // anonymous namespace

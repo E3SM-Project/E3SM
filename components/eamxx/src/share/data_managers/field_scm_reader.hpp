@@ -1,5 +1,5 @@
-#ifndef SCREAM_SCORPIO_SCM_INPUT_HPP
-#define SCREAM_SCORPIO_SCM_INPUT_HPP
+#ifndef SCREAM_SCORPIO_SCM_FIELD_READER_HPP
+#define SCREAM_SCORPIO_SCM_FIELD_READER_HPP
 
 #include "share/grid/abstract_grid.hpp"
 
@@ -8,24 +8,24 @@
 namespace scream
 {
 
-// Similar to AtmosphereInput, but reads in a single column from
+// Similar to FieldReader, but reads in a single column from
 // a file with N columns. A few assumptions:
 //  - lat and lon variables are present in the file
 //  - fields have layout <COL [, ...]>
-class SCMInput
+class SCMFieldReader
 {
 public:
   // --- Constructor(s) & Destructor --- //
-  SCMInput (const std::string& filename,
+  SCMFieldReader (const std::string& filename,
             const double lat, const double lon,
             const std::vector<Field>& fields,
             const ekat::Comm& comm);
 
-  ~SCMInput ();
+  ~SCMFieldReader ();
 
   // Due to resource acquisition (in scorpio), avoid copies
-  SCMInput (const SCMInput&) = delete;
-  SCMInput& operator= (const SCMInput&) = delete;
+  SCMFieldReader (const SCMFieldReader&) = delete;
+  SCMFieldReader& operator= (const SCMFieldReader&) = delete;
 
   // Read fields that were required via parameter list.
   void read_variables (const int time_index = -1);
@@ -67,4 +67,4 @@ protected:
 
 } //namespace scream
 
-#endif // SCREAM_SCORPIO_SCM_INPUT_HPP
+#endif // SCREAM_SCORPIO_SCM_FIELD_READER_HPP

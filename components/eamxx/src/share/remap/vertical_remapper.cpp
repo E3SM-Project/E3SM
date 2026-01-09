@@ -1,7 +1,7 @@
 #include "vertical_remapper.hpp"
 
 #include "share/grid/point_grid.hpp"
-#include "share/io/scorpio_input.hpp"
+#include "share/data_managers/field_reader.hpp"
 #include "share/field/field_tag.hpp"
 #include "share/field/field_identifier.hpp"
 #include "share/util/eamxx_universal_constants.hpp"

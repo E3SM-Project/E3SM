@@ -1,7 +1,7 @@
 #include <catch2/catch.hpp>
 
 #include "share/io/eamxx_output_manager.hpp"
-#include "share/io/scorpio_input.hpp"
+#include "share/data_managers/field_reader.hpp"
 
 #include "share/data_managers/mesh_free_grids_manager.hpp"
 
@@ -36,7 +36,7 @@ void add (const Field& f, const double v) {
 }
 
 int get_dt (const std::string& freq_units) {
-  int dt;
+  int dt = -1;
   if (freq_units=="nsteps") {
     dt = 1;
   } else if (freq_units=="nsecs") {
@@ -214,7 +214,6 @@ void read (const std::string& avg_type, const std::string& freq_units,
   }
 
   // Create reader pl
-  ekat::ParameterList reader_pl;
   std::string casename = "io_basic";
   auto filename = casename
     + "." + avg_type
@@ -223,9 +222,7 @@ void read (const std::string& avg_type, const std::string& freq_units,
     + ".np" + std::to_string(comm.size())
     + "." + t0.to_string()
     + ".nc";
-  reader_pl.set("filename",filename);
-  reader_pl.set("field_names",fnames);
-  AtmosphereInput reader(reader_pl,fm);
+  FieldReader reader(filename,grid,fm->get_fields());
 
   // We added 1.0 to the input fields for each timestep
   // Hence, at output step N, we should get
