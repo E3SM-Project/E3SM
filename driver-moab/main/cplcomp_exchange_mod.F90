@@ -1982,12 +1982,15 @@ subroutine  copy_aream_from_area(mbappid)
 
   ! can exchange data between mesh in component and mesh on coupler.  Either way.
   ! used in first hop of 2-hop
-  subroutine component_exch_moab(comp, mbAPPid1, mbAppid2, direction, fields, context_exch )
+  subroutine component_exch_moab(comp, mbAPPid1, mbAppid2, direction, fields, context_exch, &
+       infodata, infodata_string, timer_infodata_exch, mpicom_barrier )
 
    use iMOAB ,  only: iMOAB_SendElementTag, iMOAB_ReceiveElementTag, iMOAB_WriteMesh, iMOAB_FreeSenderBuffers
    use seq_comm_mct, only :  num_moab_exports ! for debugging
+   use seq_infodata_mod
    use ISO_C_BINDING, only : C_NULL_CHAR
    use shr_kind_mod      , only :  CXX => shr_kind_CXX
+   use t_drv_timers_mod
    !---------------------------------------------------------------
     ! Description
     ! send tags (fields) from component to coupler or from coupler to component
@@ -1998,6 +2001,10 @@ subroutine  copy_aream_from_area(mbappid)
     character(len=*)         , intent(in)           :: direction
     character(CXX)           , intent(in)           :: fields
     character(len=*)        ,  intent(in), optional :: context_exch
+    type(seq_infodata_type) ,  intent(inout), optional :: infodata
+    character(len=*)        ,  intent(in), optional :: infodata_string
+    character(len=*)        ,  intent(in), optional :: timer_infodata_exch
+    integer                 ,  intent(in), optional :: mpicom_barrier
 
     character(*), parameter :: subname = '(component_exch_moab)'
     integer :: id_join, source_id, target_id, ierr
@@ -2069,6 +2076,24 @@ subroutine  copy_aream_from_area(mbappid)
        endif
     endif
 #endif
+
+    if (present(timer_infodata_exch)) then
+       call t_drvstartf (trim(timer_infodata_exch), barrier=mpicom_barrier)
+    end if
+    if (present(infodata) .and. present(infodata_string)) then
+       if (direction == 'c2x') then
+          if (comp%iamin_cplcompid) then
+             call seq_infodata_exchange(infodata, comp%cplcompid, trim(infodata_string))
+          end if
+       else if (direction == 'x2c') then
+          if (comp%iamin_cplallcompid) then
+             call seq_infodata_exchange(infodata, comp%cplallcompid, trim(infodata_string))
+          end if
+       endif
+    end if
+    if (present(timer_infodata_exch)) then
+       call t_drvstopf (trim(timer_infodata_exch))
+    end if
 
   end subroutine component_exch_moab
 
