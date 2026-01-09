@@ -840,8 +840,7 @@ void set_var_decomp (PIOVar& var,
 
 void set_dim_decomp (const std::string& filename,
                      const std::string& dimname,
-                     const std::vector<offset_t>& my_offsets,
-                     const bool allow_reset)
+                     const std::vector<offset_t>& my_offsets)
 {
   auto& s = ScorpioSession::instance();
   auto& f = impl::get_file(filename,"scorpio::set_decomp");
@@ -853,41 +852,17 @@ void set_dim_decomp (const std::string& filename,
       " - dimname : " + dimname + "\n");
 
   if (dim.offsets!=nullptr) {
-    if (allow_reset) {
-      // We likely won't need the previously created decomps that included this dimension.
-      // So, as we remove decomps from vars that have this dim, keep track of their name,
-      // so that we can free them later *if no other users of them remain*.
-      std::set<std::string> decomps_to_remove;
-      for (auto it : f.vars) {
-        auto v = it.second;
-        if (v->decomp!=nullptr and v->decomp->dim->name==dimname) {
-          decomps_to_remove.insert(v->decomp->name);
-          v->decomp = nullptr;
-        }
-      }
-      for (const auto& dn : decomps_to_remove) {
-        if (s.decomps.at(dn).use_count()==1) {
-          auto decomp = s.decomps.at(dn);
-          // There is no other customer of this decomposition, so we can safely free it
-          int err = PIOc_freedecomp(s.pio_sysid,decomp->ncid);
-          check_scorpio_noerr(err,filename,"decomp",dn,"set_dim_decomp","freedecomp");
-          s.decomps.erase(dn);
-        }
-      }
-    } else {
-      // Check that the offsets are (globally) the same
-      int same = *dim.offsets==my_offsets;
-      const auto& comm = ScorpioSession::instance().comm;
-      comm.all_reduce(&same,1,MPI_MIN);
-      EKAT_REQUIRE_MSG(same==1,
-          "Error! Attempt to redefine a decomposition with a different dofs distribution.\n"
-          " - filename: " + filename + "\n"
-          " - dimname : " + dimname + "\n"
-          "If you are attempting to redefine the decomp, call this function with throw_if_changing_decomp=false.\n");
+    // Not sure if we should error out. For now, if the offsets are the same (on ALL ranks), just return
+    int same = *dim.offsets==my_offsets;
+    const auto& comm = ScorpioSession::instance().comm;
+    comm.all_reduce(&same,1,MPI_MIN);
+    EKAT_REQUIRE_MSG(same==1,
+        "Error! Attempt to redefine a decomposition with a different dofs distribution.\n"
+        " - filename: " + filename + "\n"
+        " - dimname : " + dimname + "\n");
 
-      // Same decomposition, so we can just return
-      return;
-    }
+    // Same decomposition, so we can just return
+    return;
   }
   
   // Check that offsets are less than the global dimension length
@@ -913,17 +888,15 @@ void set_dim_decomp (const std::string& filename,
 
 void set_dim_decomp (const std::string& filename,
                      const std::string& dimname,
-                     const offset_t start, const offset_t count,
-                     const bool allow_reset)
+                     const offset_t start, const offset_t count)
 {
   std::vector<offset_t> offsets(count);
   std::iota(offsets.begin(),offsets.end(),start);
-  set_dim_decomp(filename,dimname,offsets,allow_reset);
+  set_dim_decomp(filename,dimname,offsets);
 }
 
 void set_dim_decomp (const std::string& filename,
-                     const std::string& dimname,
-                     const bool allow_reset)
+                     const std::string& dimname)
 {
   const auto& comm = ScorpioSession::instance().comm;
 
@@ -937,7 +910,7 @@ void set_dim_decomp (const std::string& filename,
   comm.scan(&offset,1,MPI_SUM);
   offset -= len; // scan is inclusive, but we need exclusive
 
-  set_dim_decomp (filename,dimname,offset,len,allow_reset);
+  set_dim_decomp (filename,dimname,offset,len);
 }
 
 // ================== Variable operations ================== //

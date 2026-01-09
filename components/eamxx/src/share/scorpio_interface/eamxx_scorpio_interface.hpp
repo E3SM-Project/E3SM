@@ -131,22 +131,17 @@ std::string get_time_name (const std::string& filename);
 // - the third version is a shortcut of the second, where we compute start/count based
 //   on a linear decomposition of the dimension along all ranks in the IO comm stored
 //   in the ScorpioInstance. The return value is the local length of the dimension
-// - if allow_reset=true, we simply reset the decomposition (if present).
-// - if allow_reset=false, if a decomposition for this dim is already set, we error out
 
 void set_dim_decomp (const std::string& filename,
                      const std::string& dimname,
-                     const std::vector<offset_t>& my_offsets,
-                     const bool allow_reset = false);
+                     const std::vector<offset_t>& my_offsets);
 
 void set_dim_decomp (const std::string& filename,
                      const std::string& dimname,
-                     const offset_t start, const offset_t count,
-                     const bool allow_reset = false);
+                     const offset_t start, const offset_t count);
 
 void set_dim_decomp (const std::string& filename,
-                     const std::string& dimname,
-                     const bool allow_reset = false);
+                     const std::string& dimname);
 
 // ================== Variable operations ================== //
 
