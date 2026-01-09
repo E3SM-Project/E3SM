@@ -17,6 +17,7 @@ LayerThicknessAuxVars::LayerThicknessAuxVars(const std::string &AuxStateSuffix,
       ProvThickness("ProvThickness" + AuxStateSuffix, Mesh->NCellsSize,
                     VCoord->NVertLayers),
       AreaCell(Mesh->AreaCell), DvEdge(Mesh->AreaCell),
+      NEdgesOnCell(Mesh->NEdgesOnCell), EdgesOnCell(Mesh->EdgesOnCell),
       EdgeSignOnCell(Mesh->EdgeSignOnCell), CellsOnEdge(Mesh->CellsOnEdge),
       BottomDepth(Mesh->BottomDepth), MinLayerEdgeBot(VCoord->MinLayerEdgeBot),
       MaxLayerEdgeTop(VCoord->MaxLayerEdgeTop),
@@ -81,21 +82,37 @@ void LayerThicknessAuxVars::registerFields(const std::string &AuxGroupName,
        DimNames                             // dimension names
    );
 
+   // Provisional Thickness
+   auto ProvThicknessField = Field::create(
+       ProvThickness.label(),                   // field name
+       "layer thickness after horizontal flux", // long Name or description
+       "m",                                     // units
+       "",                                      // CF standard Name
+       0,                                       // min valid value
+       std::numeric_limits<Real>::max(),        // max valid value
+       FillValue,                               // scalar for undefined entries
+       NDims,                                   // number of dimensions
+       DimNames                                 // dimension names
+   );
+
    // Add fields to Aux field group
    FieldGroup::addFieldToGroup(FluxLayerThickEdge.label(), AuxGroupName);
    FieldGroup::addFieldToGroup(MeanLayerThickEdge.label(), AuxGroupName);
    FieldGroup::addFieldToGroup(SshCell.label(), AuxGroupName);
+   FieldGroup::addFieldToGroup(ProvThickness.label(), AuxGroupName);
 
    // Attach field data
    FluxLayerThickEdgeField->attachData<Array2DReal>(FluxLayerThickEdge);
    MeanLayerThickEdgeField->attachData<Array2DReal>(MeanLayerThickEdge);
    SshCellField->attachData<Array2DReal>(SshCell);
+   ProvThicknessField->attachData<Array2DReal>(ProvThickness);
 }
 
 void LayerThicknessAuxVars::unregisterFields() const {
    Field::destroy(FluxLayerThickEdge.label());
    Field::destroy(MeanLayerThickEdge.label());
    Field::destroy(SshCell.label());
+   Field::destroy(ProvThickness.label());
 }
 
 } // namespace OMEGA
