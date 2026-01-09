@@ -186,7 +186,6 @@ int main(int argc, char *argv[]) {
 
       I4 NVertLayers   = DefVertAdv->NVertLayers;
       I4 NVertLayersP1 = DefVertAdv->NVertLayersP1;
-      I4 NTracers      = DefVertAdv->NTracers;
 
       Array2DReal FluxLayerThickEdge("FluxLayerThickEdge",
                                      DefDecomp->NEdgesSize, NVertLayers);
@@ -194,7 +193,7 @@ int main(int argc, char *argv[]) {
                                 NVertLayers);
 
       const I4 ICell0        = 0;
-      const I4 NEdgesOnCell0 = DefDecomp->NEdgesOnCell(ICell0);
+      const I4 NEdgesOnCell0 = DefDecomp->NEdgesOnCellH(ICell0);
 
       // Test for computeVerticalVelocity
       I4 Err = 0;
@@ -225,9 +224,9 @@ int main(int argc, char *argv[]) {
       // layer
       Real Perim0 = 0.;
       for (int J = 0; J < NEdgesOnCell0; ++J) {
-         Perim0 += DefMesh->DvEdge(DefMesh->EdgesOnCell(ICell0, J));
+         Perim0 += DefMesh->DvEdgeH(DefMesh->EdgesOnCellH(ICell0, J));
       }
-      Real InvAreaCell0 = 1._Real / DefMesh->AreaCell(ICell0);
+      Real InvAreaCell0 = 1._Real / DefMesh->AreaCellH(ICell0);
 
       for (int K = 1; K < NVertLayersP1; ++K) {
          Real Expected = (NVertLayers - K) * Perim0 * InvAreaCell0;
@@ -333,6 +332,7 @@ int main(int argc, char *argv[]) {
       DefVertAdv->Coef3rdOrder = 1.;
 
       Tol = 0.1_Real;
+      OMEGA_SCOPE(LocMaxLyrCell, DefVCoord->MaxLayerCell);
 
       // Compute L2 error for computeStdVAdvTend with each VertFluxOption over a
       // set of resolutions. Compare successive errors for each Order to confirm
@@ -342,8 +342,10 @@ int main(int argc, char *argv[]) {
          DefVertAdv->VertFluxChoice = Order;
          std::vector<Real> L2Errors;
          for (I4 NLayers : NLayersArray) {
-            DefVCoord->MaxLayerCell(0) = NLayers - 1;
-            Real L2Err                 = tendTest(NLayers, DefVertAdv);
+            parallelFor(
+                {1},
+                KOKKOS_LAMBDA(const int &) { LocMaxLyrCell(0) = NLayers - 1; });
+            Real L2Err = tendTest(NLayers, DefVertAdv);
             L2Errors.push_back(L2Err);
          }
          Real ExpectedRat = std::pow(2._Real, OrderOfAcc.at(Order));
@@ -370,6 +372,9 @@ int main(int argc, char *argv[]) {
       DefVertAdv->Coef3rdOrder   = 0.25;
       std::vector<Real> TestVel  = {1._Real, -1._Real};
       std::vector<I4> StartIdx   = {NVertLayers / 2, NVertLayers / 4};
+      parallelFor(
+          {1},
+          KOKKOS_LAMBDA(const int &) { LocMaxLyrCell(0) = NVertLayers - 1; });
 
       // Test a top-hat function for a uniform velocity in both directions
       for (int IMono = 0; IMono < 2; ++IMono) {
@@ -378,8 +383,7 @@ int main(int argc, char *argv[]) {
          Array2DReal LayerThick("LayerThick", 1, NVertLayers);
          Array3DReal TendCell3D("TendCell3D", 1, 1, NVertLayers);
          deepCopy(LayerThick, 1._Real);
-         DefVCoord->MaxLayerCell(0) = NVertLayers - 1;
-         DefVertAdv->NVertLayers    = NVertLayers;
+         DefVertAdv->NVertLayers = NVertLayers;
          LocVertVel = Array2DReal("TotalVerticaVelocity", 1, NVertLayers + 1);
          deepCopy(LocVertVel, TestVel[IMono]);
          parallelFor(
