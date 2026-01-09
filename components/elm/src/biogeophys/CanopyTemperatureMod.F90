@@ -13,7 +13,7 @@ module CanopyTemperatureMod
   use shr_kind_mod         , only : r8 => shr_kind_r8
   use shr_const_mod        , only : SHR_CONST_PI
   use decompMod            , only : bounds_type
-  use elm_varctl           , only : iulog, use_fates
+  use elm_varctl           , only : iulog, use_fates, use_finetop_rad
   use PhotosynthesisMod    , only : Photosynthesis, PhotosynthesisTotal, Fractionation
   use elm_instMod          , only : alm_fates
   use SurfaceResistanceMod , only : calc_soilevap_stress
@@ -29,6 +29,7 @@ module CanopyTemperatureMod
   use ColumnDataType       , only : col_es, col_ef, col_ws
   use VegetationType       , only : veg_pp
   use VegetationDataType   , only : veg_es, veg_ef, veg_wf
+  use GridcellType         , only : grc_pp
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -74,6 +75,7 @@ contains
     use column_varcon      , only : icol_road_imperv, icol_road_perv
     use landunit_varcon    , only : istice, istice_mec, istwet, istsoil, istdlak, istcrop, istdlak
     use elm_varpar         , only : nlevgrnd, nlevurb, nlevsno, nlevsoi
+    use shr_const_mod   , only : SHR_CONST_PI
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds
@@ -109,6 +111,7 @@ contains
     real(r8) :: vol_ice      ! partial volume of ice lens in layer
     real(r8) :: vol_liq      ! partial volume of liquid water in layer
     real(r8) :: fh2o_eff(bounds%begc:bounds%endc) ! effective surface water fraction (i.e. seen by atm)
+    real(r8) :: slope_rad, deg2rad
     !------------------------------------------------------------------------------
 
     associate(                                                          &
@@ -200,6 +203,7 @@ contains
          tssbef           =>    col_es%t_ssbef                          & ! Output: [real(r8) (:,:) ] soil/snow temperature before update (K)
          )
 
+      deg2rad = SHR_CONST_PI/180._r8
       do j = -nlevsno+1, nlevgrnd
          do fc = 1,num_nolakec
             c = filter_nolakec(fc)
@@ -409,6 +413,7 @@ contains
 
       do fp = 1,num_nolakep
          p = filter_nolakep(fp)
+         g = veg_pp%gridcell(p)
 
          ! Initial set (needed for history tape fields)
 
@@ -440,7 +445,12 @@ contains
          ! Vegetation Emissivity
 
          avmuir = 1._r8
-         emv(p) = 1._r8-exp(-(elai(p)+esai(p))/avmuir)
+         if (use_finetop_rad .and. (.not. lun_pp%urbpoi(l))) then
+            slope_rad = grc_pp%slope_deg(g) * deg2rad
+            emv(p) = 1._r8-exp(-(elai(p)+esai(p))*cos(slope_rad)/avmuir)
+         else
+            emv(p) = 1._r8-exp(-(elai(p)+esai(p))/avmuir)
+         endif
 
          z0mv(p)   = z0m(p)
          z0hv(p)   = z0mv(p)

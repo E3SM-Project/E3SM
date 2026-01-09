@@ -29,7 +29,7 @@ module CanopyHydrologyMod
   use elm_varcon        , only : snw_rds_min
   use pftvarcon         , only : irrigated
   use GridcellType      , only : grc_pp
-  use timeinfoMod, only : dtime_mod
+  use timeinfoMod       , only : dtime_mod
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -713,7 +713,7 @@ contains
        call FracH2oSfc(bounds, num_nolakec, filter_nolakec, &
              col_wf%qflx_h2osfc2topsoi, dtime)
 
-     end associate 
+     end associate
 
    end subroutine CanopyHydrology
 

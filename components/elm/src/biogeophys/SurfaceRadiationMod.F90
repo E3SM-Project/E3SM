@@ -328,7 +328,7 @@ contains
      use elm_varpar       , only : numrad, nlevsno
      use elm_varcon       , only : spval, degpsec, isecspday
      use landunit_varcon  , only : istsoil, istcrop
-     use elm_varctl       , only : subgridflag, use_snicar_frc
+     use elm_varctl       , only : subgridflag, use_snicar_frc, use_finetop_rad
      use SnowSnicarMod    , only : DO_SNO_OC
      !
      ! !ARGUMENTS:
@@ -388,6 +388,8 @@ contains
 
           forc_solad      =>    top_af%solad                      , & ! Input:  [real(r8) (:,:) ] direct beam radiation (W/m**2)
           forc_solai      =>    top_af%solai                      , & ! Input:  [real(r8) (:,:) ] diffuse radiation (W/m**2)
+          forc_solad_pp   =>    top_af%solad_pp                   , & ! Input:  [real(r8) (:,:) ] direct beam radiation under PP (W/m**2)
+          forc_solai_pp   =>    top_af%solai_pp                   , & ! Input:  [real(r8) (:,:) ] diffuse radiation under PP (W/m**2)
 
           snow_depth      =>    col_ws%snow_depth    , & ! Input:  [real(r8) (:)   ] snow height (m)
           frac_sno        =>    col_ws%frac_sno      , & ! Input:  [real(r8) (:)   ] fraction of ground covered by snow (0 to 1)
@@ -475,6 +477,12 @@ contains
 
           dtime = dtime_mod
           secs = secs_curr 
+
+       if (.not. use_finetop_rad) then
+          forc_solad_pp(:,:) = forc_solad(:,:)
+          forc_solai_pp(:,:) = forc_solai(:,:)
+       end if
+
        ! Initialize fluxes
        do fp = 1,num_nourbanp
           p = filter_nourbanp(fp)
@@ -736,6 +744,9 @@ contains
           fsr_vis_i(p)  = albi(p,1)*forc_solai(t,1)
           fsr_nir_i(p)  = albi(p,2)*forc_solai(t,2)
 
+          solarabs_vars%fsr_vis_d_patch(p) = fsr_vis_d(p)
+          solarabs_vars%fsr_vis_i_patch(p) = fsr_vis_i(p)
+
           local_secp1 = secs + nint((grc_pp%londeg(g)/degpsec)/dtime)*dtime
           local_secp1 = mod(local_secp1,isecspday)
           if (local_secp1 == isecspday/2) then
@@ -794,16 +805,16 @@ contains
         endif
           ! Solar incident
 
-          fsds_vis_d(p) = forc_solad(t,1)
-          fsds_nir_d(p) = forc_solad(t,2)
-          fsds_vis_i(p) = forc_solai(t,1)
-          fsds_nir_i(p) = forc_solai(t,2)
+          fsds_vis_d(p) = forc_solad_pp(t,1)
+          fsds_nir_d(p) = forc_solad_pp(t,2)
+          fsds_vis_i(p) = forc_solai_pp(t,1)
+          fsds_nir_i(p) = forc_solai_pp(t,2)
 
           ! Determine local noon incident solar
           if (local_secp1 == noonsec) then
-             fsds_vis_d_ln(p) = forc_solad(t,1)
-             fsds_nir_d_ln(p) = forc_solad(t,2)
-             fsds_vis_i_ln(p) = forc_solai(t,1)
+             fsds_vis_d_ln(p) = forc_solad_pp(t,1)
+             fsds_nir_d_ln(p) = forc_solad_pp(t,2)
+             fsds_vis_i_ln(p) = forc_solai_pp(t,1)
              parveg_ln(p)     = 0._r8
           else
              fsds_vis_d_ln(p) = spval
@@ -815,10 +826,13 @@ contains
           ! Solar reflected
           ! per unit ground area (roof, road) and per unit wall area (sunwall, shadewall)
 
-          fsr_vis_d(p) = albd(p,1) * forc_solad(t,1)
-          fsr_nir_d(p) = albd(p,2) * forc_solad(t,2)
-          fsr_vis_i(p) = albi(p,1) * forc_solai(t,1)
-          fsr_nir_i(p) = albi(p,2) * forc_solai(t,2)
+          fsr_vis_d(p) = albd(p,1) * forc_solad_pp(t,1)
+          fsr_nir_d(p) = albd(p,2) * forc_solad_pp(t,2)
+          fsr_vis_i(p) = albi(p,1) * forc_solai_pp(t,1)
+          fsr_nir_i(p) = albi(p,2) * forc_solai_pp(t,2)
+
+          solarabs_vars%fsr_vis_d_patch(p) = fsr_vis_d(p)
+          solarabs_vars%fsr_vis_i_patch(p) = fsr_vis_i(p)
 
           ! Determine local noon reflected solar
           if (local_secp1 == noonsec) then
