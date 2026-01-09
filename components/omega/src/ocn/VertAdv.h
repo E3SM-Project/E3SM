@@ -1,6 +1,13 @@
 #ifndef OMEGA_VERTADV_H
 #define OMEGA_VERTADV_H
-//===-- ocn/VertAdv.h - vertical advection ----------------------*- C++ -*-===//
+//===-- ocn/VertAdv.h - vertical advection definitions ----------*- C++ -*-===//
+//
+/// \file
+/// \brief Contains methods and variables for vertical advection
+///
+/// This header defines the VertAdv class which contains methods and variables
+/// for calculating the vertical velocity and for vertical transport of
+/// thickness, velocity, and tracers.
 //
 //===----------------------------------------------------------------------===//
 
@@ -50,16 +57,26 @@ class VertAdv {
    // Number of tracers
    I4 NTracers;
 
-   // Coefficient for blending 3rd-order and 4th-order reconstruction of tracers
+   // Coefficient for blending 3rd-order and 4th-order reconstruction of
+   // tracers with VertFluxOption::Third. Coef3rdOrder = 1 gives purely
+   // 3rd-order, Coef3rdOrder = 0 gives purely 4th-order.
    Real Coef3rdOrder;
 
-   // VertAdv instance name
-   std::string Name;
+   Array2DReal VerticalVelocity; ///< pseudovelocity through top of cell
+   Array2DReal
+       TotalVerticalVelocity;    ///< transport velocity through top of Cell
+   Array3DReal VertFlux;         ///< fluxes at vertical interfaces
+   Array3DReal LowOrderVertFlux; ///< low-order fluxes for FCT
 
-   Array2DReal VerticalVelocity;      // pseudovelocity through top of cell
-   Array2DReal TotalVerticalVelocity; // transport velocity through top of Cell
-   Array3DReal VertFlux;              // fluxes at vertical interfaces
-   Array3DReal LowOrderVertFlux;      // low-order fluxes for FCT
+   // VertAdv instance name and group name
+   std::string Name;
+   std::string GroupName;
+
+   // Field names
+   std::string VerticalVelocityFldName;
+   std::string TotalVertVelocityFldName;
+   std::string VertFluxFldName;
+   std::string LowOrderVertFluxFldName;
 
    // public methods
 
@@ -68,10 +85,11 @@ class VertAdv {
 
    /// Creates a new vertical advection object by calling the constructor and
    /// puts it in the AllVertAdvs map.
-   static VertAdv *create(const std::string &Name, // [in] name for new VertAdv
-                          const HorzMesh *Mesh,    // [in] associated HorzMesh
-                          const VertCoord *VCoord, // [in] associated VertCoord
-                          Config *Options          // [in] configuration options
+   static VertAdv *
+   create(const std::string &Name, ///< [in] name for new VertAdv
+          const HorzMesh *Mesh,    ///< [in] associated HorzMesh
+          const VertCoord *VCoord, ///< [in] associated VertCoord
+          Config *Options          ///< [in] configuration options
    );
 
    /// Destructor - deallocates all memory and deletes a VertAdv
@@ -95,50 +113,54 @@ class VertAdv {
    /// Determine transport due to vertical advection from divergence of
    /// horizontal advection.
    void computeVerticalVelocity(
-       const Array2DReal &NormalVelocity,    // [in] horizontal velocity
-       const Array2DReal &FluxLayerThickEdge // [in] layer thickness at edges
+       const Array2DReal &NormalVelocity,    ///< [in] horizontal velocity
+       const Array2DReal &FluxLayerThickEdge ///< [in] layer thickness at edges
    );
 
    /// Compute pseudo thickness tendency due to vertical advection
    void computeThicknessVAdvTend(
-       const Array2DReal &ThickTend // [inout] thickness tendency
+       const Array2DReal &ThickTend ///< [inout] thickness tendency
    );
 
    /// Compute velocity tendency due to vertical advection
    void computeVelocityVAdvTend(
-       const Array2DReal &VelTend, // [inout] horizontal velocity tendency
-       const Array2DReal &NormalVelocity,    // [in] horizontal velocity
-       const Array2DReal &FluxLayerThickEdge // [in] layer thickness at edges
+       const Array2DReal &VelTend, ///< [inout] horizontal velocity tendency
+       const Array2DReal &NormalVelocity,    ///< [in] horizontal velocity
+       const Array2DReal &FluxLayerThickEdge ///< [in] layer thickness at edges
    );
 
-   /// Compute tracer tendency due to vertical advection, TimeStep is only
-   /// needed as an argument for flux-corrected transport
+   /// Compute tracer tendency due to vertical advection, The LayerThickness at
+   /// the beginning of the time step is passed for standard advection, while
+   /// the provisional thickness including horizontal thickness flux is passed
+   /// for flux-corrected transport. The TimeStep is only needed as an argument
+   /// for flux-corrected transport
    void computeTracerVAdvTend(
-       const Array3DReal &TracerTend,               // [inout] tracer tendencies
-       const Array3DReal &Tracers,                  // [in] tracer array
-       const Array2DReal &LayerThickness,           // [in] layer thickness
-       const TimeInterval TimeStep = TimeInterval() // [in] (optional) time step
+       const Array3DReal &TracerTend,     ///< [inout] tracer tendencies
+       const Array3DReal &Tracers,        ///< [in] tracer array
+       const Array2DReal &LayerThickness, ///< [in] layer thickness
+       const TimeInterval TimeStep =
+           TimeInterval() ///< [in] (optional) time step
    );
 
    /// Compute tracer fluxes due to vertical advection
    void computeVerticalFluxes(
-       const Array3DReal &Tracers,       // [in] tracer array
-       const Array2DReal &LayerThickness // [in] layer thickness
+       const Array3DReal &Tracers,       ///< [in] tracer array
+       const Array2DReal &LayerThickness ///< [in] layer thickness
    );
 
    /// Compute tracer tendencies due to vertical advection using standard
    /// advection scheme
-   void
-   computeStdVAdvTend(const Array3DReal &TracerTend // [inout] tracer tendencies
+   void computeStdVAdvTend(
+       const Array3DReal &TracerTend ///< [inout] tracer tendencies
    );
 
    /// Compute tracer tendencies due to vertical advection using flux-corrected
    /// transport scheme
    void computeFCTVAdvTend(
-       const Array3DReal &TracerTend,    // [inout] tracer tendencies
-       const Array3DReal &Tracers,       // [in] tracer array
-       const Array2DReal &ProvThickness, // [in] provisional layer thickness
-       const Real Dt                     // [in] time step
+       const Array3DReal &TracerTend,    ///< [inout] tracer tendencies
+       const Array3DReal &Tracers,       ///< [in] tracer array
+       const Array2DReal &ProvThickness, ///< [in] provisional layer thickness
+       const Real Dt                     ///< [in] time step
    );
 
  private:
@@ -169,11 +191,14 @@ class VertAdv {
    // private methods
 
    /// construct a new vertical coordinate object
-   VertAdv(const std::string &Name, // [in] Name for new VertAdv
-           const HorzMesh *Mesh,    // [in] associated HorzMesh
-           const VertCoord *VCoord, // [in] associated VertCoord
-           Config *Options          // [in] configuration options
+   VertAdv(const std::string &Name, ///< [in] Name for new VertAdv
+           const HorzMesh *Mesh,    ///< [in] associated HorzMesh
+           const VertCoord *VCoord, ///< [in] associated VertCoord
+           Config *Options          ///< [in] configuration options
    );
+
+   /// define field metadata
+   void defineFields();
 
    // Forbid copy and move construction
    VertAdv(const VertAdv &) = delete;
