@@ -55,8 +55,10 @@ module MOSART_Budgets_mod
   integer, parameter :: s_wres_end      = 10
   integer, parameter :: s_wflood_beg    = 11
   integer, parameter :: s_wflood_end    = 12
-  integer, parameter :: s_wother_beg    = 13
-  integer, parameter :: s_wother_end    = 14
+  integer, parameter :: s_wlake_beg     = 13
+  integer, parameter :: s_wlake_end     = 14
+  integer, parameter :: s_wother_beg    = 15
+  integer, parameter :: s_wother_end    = 16
 
   integer, parameter, public :: s_size = s_wother_end
 
@@ -87,9 +89,9 @@ module MOSART_Budgets_mod
   !----- formats -----
   character(*),parameter :: FA0= "('    ',12x,(3x,a10,2x),' | ',(3x,a10,2x))"
   character(*),parameter :: FF = "('',a16,f15.8,' | ',f18.2)"
-  character(*),parameter :: FS0= "(' ',12x,6(a16),' | ',(a16))"
-  character(*),parameter :: FS2= "(' ',a12,40x,f16.2,40x,' | ',f16.2)"
-  character(*),parameter :: FS3= "(' ',a12,6(f16.2),' | ',(f16.2))"
+  character(*),parameter :: FS0= "(' ',12x,7(a16),' | ',(a16))"
+  character(*),parameter :: FS2= "(' ',a12,56x,f16.2,40x,' | ',f16.2)"
+  character(*),parameter :: FS3= "(' ',a12,7(f16.2),' | ',(f16.2))"
 
   !----- other variables -----
   real(r8)               :: unit_conversion
@@ -169,8 +171,8 @@ contains
   end subroutine MOSART_WaterBudget_Reset
 !--------------------------------------------------------------------
   subroutine MOSART_WaterBudget_Extraction(budget_global, budget_terms_total, bv_volt_beg, bv_volt_end, &
-   bv_wt_beg, bv_wt_end, bv_wr_beg, bv_wr_end, bv_wh_beg, bv_wh_end, bv_dstor_beg, bv_dstor_end, bv_fp_beg, bv_fp_end, br_sup, &
-   budget_in, budget_out, budget_oth)
+   bv_wt_beg, bv_wt_end, bv_wr_beg, bv_wr_end, bv_wh_beg, bv_wh_end, bv_dstor_beg, bv_dstor_end, bv_fp_beg, bv_fp_end, &
+   bv_lake_beg, bv_lake_end, br_sup, budget_in, budget_out, budget_oth)
 
    use RtmTimeManager, only : get_curr_date, get_prev_date, get_nstep, get_step_size
    implicit none
@@ -189,6 +191,8 @@ contains
    integer,  intent(in) :: bv_dstor_end ! = 10 ! final   reservoir storage
    integer,  intent(in) :: bv_fp_beg    ! = 11 ! Initial water volume over floodplains.
    integer,  intent(in) :: bv_fp_end    ! = 12 ! Final water volume over floodplains.
+   integer,  intent(in) :: bv_lake_beg  ! = 72 ! initial lake storage
+   integer,  intent(in) :: bv_lake_end  ! = 73 ! final   lake storage
    integer,  intent(in) :: br_sup       ! = 49 ! supply rate (m3/coupling period)
 
    real(r8), intent(in) :: budget_in, budget_out, budget_oth
@@ -221,6 +225,8 @@ contains
    rof_budg_stateG(s_wres_end, p_inst) =  budget_global(bv_dstor_end,nt_nliq) * unit_conversion
    rof_budg_stateG(s_wflood_beg, p_inst) =  budget_global(bv_fp_beg,nt_nliq) * unit_conversion
    rof_budg_stateG(s_wflood_end, p_inst) =  budget_global(bv_fp_end,nt_nliq) * unit_conversion
+   rof_budg_stateG(s_wlake_beg, p_inst) =  budget_global(bv_lake_beg,nt_nliq) * unit_conversion
+   rof_budg_stateG(s_wlake_end, p_inst) =  budget_global(bv_lake_end,nt_nliq) * unit_conversion
 
    call get_prev_date(year_prev, month_prev, day_prev, sec_prev)
    call get_curr_date(year_curr, month_curr, day_curr, sec_curr)
@@ -254,6 +260,7 @@ contains
          nf = s_whillslop_beg; rof_budg_stateG(nf,ip) = rof_budg_stateG(nf, p_inst)
          nf = s_wres_beg     ; rof_budg_stateG(nf,ip) = rof_budg_stateG(nf, p_inst)
          nf = s_wflood_beg   ; rof_budg_stateG(nf,ip) = rof_budg_stateG(nf, p_inst)
+         nf = s_wlake_beg    ; rof_budg_stateG(nf,ip) = rof_budg_stateG(nf, p_inst)
          nf = s_wother_beg   ; rof_budg_stateG(nf,ip) = rof_budg_other_rest(o_othr,ip) + (rof_budg_other(o_othr, ip) - rof_budg_other(o_othr,p_inst)) * unit_conversion * get_step_size()
       endif
 
@@ -264,7 +271,8 @@ contains
          nf = s_whillslop_end; rof_budg_stateG(nf,ip) = rof_budg_stateG(nf, p_inst)
          nf = s_wres_end     ; rof_budg_stateG(nf,ip) = rof_budg_stateG(nf, p_inst)
          nf = s_wflood_end   ; rof_budg_stateG(nf,ip) = rof_budg_stateG(nf, p_inst)
-         nf = s_wother_end   ; rof_budg_stateG(nf,ip) = rof_budg_other_rest(o_othr, ip) + rof_budg_other(o_othr, ip) * unit_conversion * get_step_size() 
+         nf = s_wlake_end    ; rof_budg_stateG(nf,ip) = rof_budg_stateG(nf, p_inst)
+         nf = s_wother_end   ; rof_budg_stateG(nf,ip) = rof_budg_other_rest(o_othr, ip) + rof_budg_other(o_othr, ip) * unit_conversion * get_step_size()
       endif
 
    end do
@@ -361,6 +369,7 @@ contains
                   '    hillslope ', &
                   '    reservoir ', &
                   '   floodplain ', &
+                  '         lake ', &
                   '        other ', &
                   '        TOTAL '
             write(iulog,'(110("-"),"|",20("-"))')
@@ -370,39 +379,45 @@ contains
                   rof_budg_stateG(s_whillslop_beg, ip), &
                   rof_budg_stateG(s_wres_beg    , ip), &
                   rof_budg_stateG(s_wflood_beg  , ip), &
+                  rof_budg_stateG(s_wlake_beg   , ip), &
                - rof_budg_stateG(s_wother_beg  , ip), & ! print out negative value to reflect the actural calculation
                   rof_budg_stateG(s_w_beg       , ip)- &
                   rof_budg_stateG(s_wother_beg  , ip)+ &
-                  rof_budg_stateG(s_wres_beg    , ip) ! s_w_beg doesn't include reservoir storage
+                  rof_budg_stateG(s_wres_beg    , ip)+ &
+                  rof_budg_stateG(s_wlake_beg   , ip) ! s_w_beg doesn't include reservoir and lake storage
             write(iulog,FS3) '         end', &
                   rof_budg_stateG(s_wchannel_end, ip), &
                   rof_budg_stateG(s_wsubnet_end, ip), &
                   rof_budg_stateG(s_whillslop_end, ip), &
                   rof_budg_stateG(s_wres_end    , ip), &
                   rof_budg_stateG(s_wflood_end  , ip), &
+                  rof_budg_stateG(s_wlake_end   , ip), &
                - rof_budg_stateG(s_wother_end  , ip), & ! print out negative value in the table for display only, actual calucation uses positive
                   rof_budg_stateG(s_w_end       , ip)- &
                   rof_budg_stateG(s_wother_end  , ip)+ &
-                  rof_budg_stateG(s_wres_end    , ip) ! s_w_end doesn't include reservoir storage
+                  rof_budg_stateG(s_wres_end    , ip)+ &
+                  rof_budg_stateG(s_wlake_end   , ip) ! s_w_end doesn't include reservoir and lake storage
             write(iulog,FS3)'*NET CHANGE*', &
                   (rof_budg_stateG(s_wchannel_end,ip) - rof_budg_stateG(s_wchannel_beg,ip)), &
                   (rof_budg_stateG(s_wsubnet_end,ip) - rof_budg_stateG(s_wsubnet_beg,ip)), &
                   (rof_budg_stateG(s_whillslop_end,ip) - rof_budg_stateG(s_whillslop_beg,ip)), &
                   (rof_budg_stateG(s_wres_end    ,ip) - rof_budg_stateG(s_wres_beg    ,ip)), &
                   (rof_budg_stateG(s_wflood_end  ,ip) - rof_budg_stateG(s_wflood_beg  ,ip)), &
+                  (rof_budg_stateG(s_wlake_end   ,ip) - rof_budg_stateG(s_wlake_beg   ,ip)), &
                 - (rof_budg_stateG(s_wother_end  ,ip) - rof_budg_stateG(s_wother_beg  ,ip)), &
-                  (rof_budg_stateG(s_w_end       ,ip) - rof_budg_stateG(s_wother_end  , ip) + rof_budg_stateG(s_wres_end , ip)) - & 
-                  (rof_budg_stateG(s_w_beg       ,ip) - rof_budg_stateG(s_wother_beg  , ip) + rof_budg_stateG(s_wres_beg , ip))
+                  (rof_budg_stateG(s_w_end       ,ip) - rof_budg_stateG(s_wother_end  , ip) + rof_budg_stateG(s_wres_end , ip) + rof_budg_stateG(s_wlake_end , ip)) - &
+                  (rof_budg_stateG(s_w_beg       ,ip) - rof_budg_stateG(s_wother_beg  , ip) + rof_budg_stateG(s_wres_beg , ip) + rof_budg_stateG(s_wlake_beg , ip))
             write(iulog,'(110("-"),"|",20("-"))')
             write(iulog,FS2)'       *SUM*', &
                   (rof_budg_stateG(s_wchannel_end,ip) - rof_budg_stateG(s_wchannel_beg,ip)) + &
                   (rof_budg_stateG(s_wsubnet_end,ip) - rof_budg_stateG(s_wsubnet_beg,ip)) + &
                   (rof_budg_stateG(s_whillslop_end,ip) - rof_budg_stateG(s_whillslop_beg,ip)) + &
                   (rof_budg_stateG(s_wres_end  ,ip) - rof_budg_stateG(s_wres_beg  ,ip)) + &
-                  (rof_budg_stateG(s_wflood_end  ,ip) - rof_budg_stateG(s_wflood_beg  ,ip)) - &
+                  (rof_budg_stateG(s_wflood_end  ,ip) - rof_budg_stateG(s_wflood_beg  ,ip)) + &
+                  (rof_budg_stateG(s_wlake_end  ,ip) - rof_budg_stateG(s_wlake_beg  ,ip)) - &
                   (rof_budg_stateG(s_wother_end  ,ip) - rof_budg_stateG(s_wother_beg  ,ip)), &
-                  (rof_budg_stateG(s_w_end       ,ip) - rof_budg_stateG(s_wother_end  , ip) + rof_budg_stateG(s_wres_end , ip)) - & 
-                  (rof_budg_stateG(s_w_beg       ,ip) - rof_budg_stateG(s_wother_beg  , ip) + rof_budg_stateG(s_wres_beg , ip))
+                  (rof_budg_stateG(s_w_end       ,ip) - rof_budg_stateG(s_wother_end  , ip) + rof_budg_stateG(s_wres_end , ip) + rof_budg_stateG(s_wlake_end , ip)) - &
+                  (rof_budg_stateG(s_w_beg       ,ip) - rof_budg_stateG(s_wother_beg  , ip) + rof_budg_stateG(s_wres_beg , ip) + rof_budg_stateG(s_wlake_beg , ip))
             write(iulog,'(110("-"),"|",20("-"))')
          end if
       end if

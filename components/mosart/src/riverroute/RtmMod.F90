@@ -3721,8 +3721,8 @@ contains
            
             if (nt .eq. nt_nliq) then
                call MOSART_WaterBudget_Extraction(budget_global, budget_terms_total, bv_volt_i, bv_volt_f, &
-                 bv_wt_i, bv_wt_f, bv_wr_i, bv_wr_f, bv_wh_i, bv_wh_f, bv_dstor_i, bv_dstor_f, bv_fp_i, bv_fp_f, br_supply,&
-                 budget_input, budget_output, budget_other)
+                 bv_wt_i, bv_wt_f, bv_wr_i, bv_wr_f, bv_wh_i, bv_wh_f, bv_dstor_i, bv_dstor_f, bv_fp_i, bv_fp_f, &
+                 bv_lake_i, bv_lake_f, br_supply, budget_input, budget_output, budget_other)
                call MOSART_WaterBudget_Print()
             endif
 
