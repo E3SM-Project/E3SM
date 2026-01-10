@@ -42,15 +42,11 @@ class HorzMesh {
 
    void readCoordinates();
 
-   void readBottomDepth();
-
    void readMeasurements();
 
    void readWeights();
 
    void readCoriolis();
-
-   // void computeEdgeSign();
 
    void copyToDevice();
 
@@ -234,11 +230,6 @@ class HorzMesh {
 
    Array1DReal FVertex;      ///< Coriolis parameter at vertices (radians s^-1)
    HostArray1DReal FVertexH; ///< Coriolis parameter at vertices (radians s^-1)
-
-   // Depth
-
-   Array1DReal BottomDepth;      ///< Depth of the bottom of the ocean (m)
-   HostArray1DReal BottomDepthH; ///< Depth of the bottom of the ocean (m)
 
    // Edge sign
 

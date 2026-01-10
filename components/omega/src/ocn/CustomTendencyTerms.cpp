@@ -10,6 +10,7 @@
 #include "Config.h"
 #include "GlobalConstants.h"
 #include "TimeStepper.h"
+#include "VertCoord.h"
 
 namespace OMEGA {
 
@@ -76,8 +77,8 @@ void ManufacturedSolution::init() {
    /// This test case assumes that the restingThickness is horizontally uniform
    /// and that only one vertical level is used so only one set of indices is
    /// used here.
-   HorzMesh *DefHorzMesh = HorzMesh::getDefault();
-   R8 H0                 = DefHorzMesh->BottomDepthH(0);
+   VertCoord *DefVCoord = VertCoord::getDefault();
+   R8 H0                = DefVCoord->BottomDepthH(0);
 
    // Define and compute common constants
    R8 Kx      = TwoPi / WavelengthX;                      // Wave in X-dir
