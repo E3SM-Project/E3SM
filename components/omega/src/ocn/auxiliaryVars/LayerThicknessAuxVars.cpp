@@ -19,7 +19,8 @@ LayerThicknessAuxVars::LayerThicknessAuxVars(const std::string &AuxStateSuffix,
       AreaCell(Mesh->AreaCell), DvEdge(Mesh->DvEdge),
       NEdgesOnCell(Mesh->NEdgesOnCell), EdgesOnCell(Mesh->EdgesOnCell),
       EdgeSignOnCell(Mesh->EdgeSignOnCell), CellsOnEdge(Mesh->CellsOnEdge),
-      BottomDepth(VCoord->BottomDepth), MinLayerEdgeBot(VCoord->MinLayerEdgeBot),
+      BottomDepth(VCoord->BottomDepth),
+      MinLayerEdgeBot(VCoord->MinLayerEdgeBot),
       MaxLayerEdgeTop(VCoord->MaxLayerEdgeTop),
       MinLayerCell(VCoord->MinLayerCell), MaxLayerCell(VCoord->MaxLayerCell) {}
 
