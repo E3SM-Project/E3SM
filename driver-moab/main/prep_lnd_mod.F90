@@ -40,6 +40,7 @@ module prep_lnd_mod
     iMOAB_WriteMesh, iMOAB_GetMeshInfo, iMOAB_SetDoubleTagStorage, &
     iMOAB_SetMapGhostLayers, iMOAB_MigrateMapMesh
   use seq_comm_mct,     only : num_moab_exports
+  use shr_moab_mod,      only : mbGetnCells, mbGetCellTagVals
 
 #ifdef MOABCOMP
   use component_type_mod, only:  compare_mct_av_moab_tag
@@ -168,6 +169,7 @@ contains
     integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3) ! for moab info
     integer  mlsize ! moab land size
     integer  nrflds  ! number of rof fields projected on land
+    integer  nflds   ! number of x2l fields for MOAB allocation
     integer arrsize  ! for setting the r2x fields on land to 0
     integer ent_type ! for setting tags
     real (kind=R8) , allocatable :: tmparray (:) ! used to set the r2x fields to 0
@@ -646,6 +648,13 @@ contains
        endif
        call shr_sys_flush(logunit)
 
+       ! Allocate x2l_lm for MOAB history output (used by prep_lnd_get_x2l_lm)
+       if (mblxid .ge. 0) then
+          mlsize = mbGetnCells(mblxid)
+          nflds = mct_aVect_nRattr(l2x_lx)
+          allocate(x2l_lm(mlsize, nflds))
+       endif
+
        if (glc_c2_lnd) then
           if (iamroot_CPLID) then
              write(logunit,*) ' '
@@ -749,9 +758,6 @@ contains
 ! this does almost nothing now, except documenting
   subroutine prep_lnd_mrg_moab (infodata)
 
-    use shr_moab_mod, only : mbGetnCells
-    use shr_moab_mod, only : mbGetCellTagVals
-
     type(seq_infodata_type) , intent(in) :: infodata
 
 
@@ -800,8 +806,6 @@ contains
        x2l_l => component_get_x2c_cx(lnd(1))
        nflds = mct_aVect_nRattr(x2l_l)
        mbsize = mbGetnCells(mblxid)
-
-       allocate (x2l_lm(mbsize,nflds))
 
        allocate(mrgstr(nflds))
        do i = 1,nflds
