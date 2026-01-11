@@ -69,10 +69,16 @@ VertAdv::VertAdv(const std::string &Name_,  //< [in] name for new VertAdv
        Array2DReal("TotalVerticalVelocity", NCellsSize, NVertLayersP1);
    VertFlux = Array3DReal("VertFlux", NTracers, NCellsSize, NVertLayersP1);
 
+   // Allocate host copies
+   VerticalVelocityH      = createHostMirrorCopy(VerticalVelocity);
+   TotalVerticalVelocityH = createHostMirrorCopy(TotalVerticalVelocity);
+   VertFluxH              = createHostMirrorCopy(VertFlux);
+
    // Low-order flux array only needed for flux-corrected transport
    if (VertAdvChoice == VertAdvOption::FCT) {
       LowOrderVertFlux =
           Array3DReal("LowOrderVertFlux", NTracers, NCellsSize, NVertLayersP1);
+      LowOrderVertFluxH = createHostMirrorCopy(LowOrderVertFlux);
    }
 
    defineFields();
@@ -231,6 +237,30 @@ void VertAdv::erase(std::string Name) {
    AllVertAdvs.erase(Name); // removes the VertAdv from the list and in the
                             // process, calls the destructor
 } // end erase
+
+//------------------------------------------------------------------------------
+// Perform deepCopy for each variable array from device to host
+void VertAdv::copyToHost() {
+
+   deepCopy(VerticalVelocityH, VerticalVelocity);
+   deepCopy(TotalVerticalVelocityH, TotalVerticalVelocity);
+   deepCopy(VertFluxH, VertFlux);
+   if (VertAdvChoice == VertAdvOption::FCT) {
+      deepCopy(LowOrderVertFluxH, LowOrderVertFlux);
+   }
+}
+
+//------------------------------------------------------------------------------
+// Perform deepCopy for each variable array from host to device
+void VertAdv::copyToDevice() {
+
+   deepCopy(VerticalVelocity, VerticalVelocityH);
+   deepCopy(TotalVerticalVelocity, TotalVerticalVelocityH);
+   deepCopy(VertFlux, VertFluxH);
+   if (VertAdvChoice == VertAdvOption::FCT) {
+      deepCopy(LowOrderVertFlux, LowOrderVertFluxH);
+   }
+}
 
 //------------------------------------------------------------------------------
 // Get default VertAdv

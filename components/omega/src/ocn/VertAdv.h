@@ -68,6 +68,12 @@ class VertAdv {
    Array3DReal VertFlux;         ///< fluxes at vertical interfaces
    Array3DReal LowOrderVertFlux; ///< low-order fluxes for FCT
 
+   // Arrays on host
+   HostArray2DReal VerticalVelocityH;
+   HostArray2DReal TotalVerticalVelocityH;
+   HostArray3DReal VertFluxH;
+   HostArray3DReal LowOrderVertFluxH;
+
    // VertAdv instance name and group name
    std::string Name;
    std::string GroupName;
@@ -91,6 +97,12 @@ class VertAdv {
           const VertCoord *VCoord, ///< [in] associated VertCoord
           Config *Options          ///< [in] configuration options
    );
+
+   /// Copy member arrays from device to host
+   void copyToHost();
+
+   /// Copy member arrays from host to device
+   void copyToDevice();
 
    /// Destructor - deallocates all memory and deletes a VertAdv
    ~VertAdv();
