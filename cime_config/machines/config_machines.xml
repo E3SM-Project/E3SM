@@ -3304,7 +3304,7 @@
         <command name="load">netcdf-nvidia/4.9.3c-4.6.2f</command>
       </modules>
       <modules compiler=".*gpu">
-        <command name="load">cuda/12.6</command>
+        <command name="load">cuda/12.9</command>
         <command name="load">craype-accel-nvidia80</command>
       </modules>
       <modules>
