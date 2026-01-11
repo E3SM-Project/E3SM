@@ -260,6 +260,9 @@
       <env name="MPICH_ENV_DISPLAY">1</env>
       <env name="MPICH_VERSION_DISPLAY">1</env>
       <env name="MPICH_MPIIO_DVS_MAXNODES">1</env>
+      <env name="OMP_STACKSIZE">128M</env>
+      <env name="OMP_PROC_BIND">spread</env>
+      <env name="OMP_PLACES">threads</env>
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
       <env name="PERL5LIB">/global/cfs/cdirs/e3sm/perl/lib/perl5-only-switch</env>
       <env name="FI_MR_CACHE_MONITOR">kdreg2</env>
@@ -269,11 +272,6 @@
       <env name="GATOR_INITIAL_MB">4000MB</env>
       <env name="LD_LIBRARY_PATH">$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env> <!-- https://github.com/E3SM-Project/E3SM/issues/7117 -->
       <env name="MPICH_SMP_SINGLE_COPY_MODE">CMA</env> <!-- https://github.com/E3SM-Project/E3SM/issues/7207 -->
-    </environment_variables>
-    <environment_variables BUILD_THREADED="TRUE">
-      <env name="OMP_STACKSIZE">128M</env>
-      <env name="OMP_PROC_BIND">spread</env>
-      <env name="OMP_PLACES">threads</env>
     </environment_variables>
     <environment_variables compiler="intel" mpilib="mpich">
       <env name="PKG_CONFIG_PATH">/global/cfs/cdirs/e3sm/3rdparty/protobuf/21.6/intel-2023.2.0/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}</env>
