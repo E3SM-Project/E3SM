@@ -227,7 +227,10 @@ void ComposeTransportImpl::run (const TimeLevel& tl, const Real dt) {
     advance_hypervis_scalar(dt);
     Kokkos::fence();
     GPTLstop("compose_hypervis_scalar");
+    GPTLstart("compose_horizturb_scalar");
     advance_horizontal_turbulent_diffusion_scalar(dt);
+    Kokkos::fence();
+    GPTLstop("compose_horizturb_scalar");
   }
   
   GPTLstart("compose_cedr_global");
