@@ -653,6 +653,7 @@ contains
           mlsize = mbGetnCells(mblxid)
           nflds = mct_aVect_nRattr(l2x_lx)
           allocate(x2l_lm(mlsize, nflds))
+          x2l_lm = 0.0_r8
        endif
 
        if (glc_c2_lnd) then
