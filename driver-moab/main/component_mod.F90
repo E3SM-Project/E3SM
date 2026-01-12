@@ -195,7 +195,50 @@ contains
   end subroutine component_init_pre
 
   !===============================================================================
-
+    !-----------------------------------------------------------------------
+  ! subroutine component_init_cc
+  !
+  ! Purpose:
+  !   Initialize a coupled model component within cpl7-moab using
+  !   This routine associates the component with the driver clock, sets up its
+  !   initialization callback, processes component-specific namelist
+  !   settings, and configures the exchange field lists used for
+  !   coupling to the central hub.
+  !
+  ! Arguments:
+  !   Eclock           [inout]  Driver/coupler clock object providing
+  !                             the current simulation time and calendar
+  !                             control for the component initialization.
+  !   comp             [inout]  Component descriptor/handle identifying
+  !                             which model component is being
+  !                             initialized (e.g., atmosphere, land,
+  !                             ocean, sea ice).
+  !   comp_init           [in]  Procedure pointer or interface to the
+  !                             component-specific initialization
+  !                             routine that will be called by the
+  !                             driver. (a function pointer)
+  !   infodata         [inout]  Information structure containing
+  !                             configuration and coupling metadata
+  !                             needed during component initialization
+  !                             (e.g., grid, timing, or run-type flags).
+  !   NLFilename          [in]  Name of the primary namelist file for
+  !                             this component; used to read
+  !                             component-specific runtime parameters.
+  !   seq_flds_x2c_fluxes [in]  Sequence (list) of exported flux
+  !                             fields from this component to the
+  !                             coupler ("x2c" cmponent to coupler).
+  !   seq_flds_c2x_fluxes [in]  Sequence (list) of imported flux
+  !                             fields from the coupler to this
+  !                             component ("c2x" coupler to component).
+  !
+  ! Notes:
+  !   - This routine should be called once per component during driver
+  !     initialization, after the driver clock and coupling metadata
+  !     structures have been created.
+  !   - The correctness of the coupling depends on consistency between
+  !     the x2c and c2x field lists and the fields actually used by the
+  !     component and coupler.
+  !-----------------------------------------------------------------------
   subroutine component_init_cc(Eclock, comp, comp_init, infodata, NLFilename, &
        seq_flds_x2c_fluxes, seq_flds_c2x_fluxes)
 
@@ -259,7 +302,7 @@ contains
           call shr_sys_flush(logunit)
 
           ! only done in second phase of atm init
-          ! multiple by area ratio
+          ! because seq_flds_x2c_fluxes is not present in first call
           if (present(seq_flds_x2c_fluxes)) then
              call mct_avect_vecmult(comp(eci)%x2c_cc, comp(eci)%drv2mdl, seq_flds_x2c_fluxes, mask_spval=.true.)
              call factor_moab_comp(comp(eci), 'drv2mdl', seq_flds_x2c_fluxes, mask_spval=.true.)
@@ -277,6 +320,7 @@ contains
           end If
 
           ! only done in second phase of atm init
+          ! because seq_flds_c2x_fluxes is not present in first call
           if (present(seq_flds_c2x_fluxes)) then
              call mct_avect_vecmult(comp(eci)%c2x_cc, comp(eci)%mdl2drv, seq_flds_c2x_fluxes, mask_spval=.true.)
              call factor_moab_comp(comp(eci), 'mdl2drv', seq_flds_c2x_fluxes, mask_spval=.true.)
@@ -310,7 +354,7 @@ contains
     end do
 
 
-    ! Initialize aream, set it to area for now until maps are read
+    ! Initialize aream in the component. Set it to area for now until maps are read
     !   in some cases, maps are not read at all !!
     ! Entire domain must have reasonable values before calling xxx2xxx init
 
@@ -494,7 +538,6 @@ contains
     integer                 :: tagtype, nloc, ent_type, tagindex, ierr
     character*100  tagname
     real(R8), allocatable, target :: data1(:)
-    integer ,    allocatable :: gids(:) ! used for setting values associated with ids
     !---------------------------------------------------------------
 
     ! Note that the following is assumed to hold - all gsmaps_cx for a given
@@ -518,7 +561,8 @@ contains
           dom_d  => component_get_dom_cx(ocn(1))   !dom_ox
           ka = mct_aVect_indexRa(dom_s%data, "area" )
           km = mct_aVect_indexRa(dom_s%data, "aream" )
-          ! copy atm area to ocn aream
+
+          ! copy atm area to atm aream within coupler
           dom_s%data%rAttr(km,:) = dom_s%data%rAttr(ka,:)
 
         ! TODO should actually compute aream from mesh model
@@ -535,22 +579,16 @@ contains
             ent_type = 0 ! for pure spectral case, the atm is PC on coupler side
          endif
           
-         allocate(gids(nloc))
-         gids = dom_s%data%iAttr(mct_aVect_indexIA(dom_s%data,"GlobGridNum"),:)
-         ! ! now set data on the coupler side too
-         ! put the mct atm area in the moab atm aream
-         ierr = iMOAB_SetDoubleTagStorageWithGid ( mbaxid, tagname, nloc, ent_type, &
-                                                    data1, gids)
          if (ierr .ne. 0) then
             write(logunit,*) subname,' error in setting the aream tag on atm '
             call shr_sys_abort(subname//' ERROR in setting aream tag on atm ')
          endif
-         deallocate(gids)
          deallocate(data1)
-         ! project now aream from atm to ocean.  This is a rearrange since samegrid_ao is true
+         ! Copy aream from coupler's atm to coupler'socean.  This is a rearrange since samegrid_ao is true
          call seq_map_map(mapper_Fa2o, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream')
           
        else
+          ! if not.samegrid_ao, read aream's from mapping file.
           gsmap_s => component_get_gsmap_cx(ocn(1)) ! gsmap_ox
           gsmap_d => component_get_gsmap_cx(atm(1)) ! gsmap_ax
           dom_s   => component_get_dom_cx(ocn(1))   ! dom_ox
@@ -570,7 +608,7 @@ contains
        dom_s  => component_get_dom_cx(ocn(1))   !dom_ox
        dom_d  => component_get_dom_cx(ice(1))   !dom_ix
 
-       ! copy aream from ocean to ice.  This is always a copy since ice and ocean have same mesh
+       ! copy aream from ocean to ice within coupler
        call seq_map_map(mapper_SFo2i, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream')
     endif
 
