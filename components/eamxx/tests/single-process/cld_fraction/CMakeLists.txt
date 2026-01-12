@@ -132,7 +132,7 @@ if (NOT EAMXX_ENABLE_GPU)
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/output_ml.yaml
                  ${CMAKE_CURRENT_BINARY_DIR}/output_ml_${POSTFIX}.yaml)
 
-  CreateUnitTestFromExec(cld_frac_net_${POSTFIX} cld_frac_net_standalone
+  CreateUnitTestFromExec(cld_frac_net_${POSTFIX} cld_fraction_standalone
     EXE_ARGS "--args -ifile=input_ml_${POSTFIX}.yaml"
     LABELS cld_fraction
     FIXTURES_SETUP cld_frac_net_${POSTFIX})
