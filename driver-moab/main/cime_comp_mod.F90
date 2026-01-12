@@ -1513,6 +1513,8 @@ contains
     call t_adj_detailf(-2)
     call t_stopf('CPL:comp_init_cc_iac')
 
+    ! First phase of atm init.   Calls basic atm init routine and exports data (But does not
+    ! transfer that data to coupler)
     call component_init_cc(Eclock_a, atm, atm_init, infodata, NLFilename)
     call t_adj_detailf(-2)
     call t_stopf('CPL:comp_init_cc_atm')
@@ -1564,7 +1566,7 @@ contains
    ! Initialize coupler-component data
    !  if processor has cpl or model
    !    init the extended gsMap that describes comp on mpijoin
-   !    call call cplcomp_moab_Init and use infodata
+   !    call cplcomp_moab_Init and use infodata
    !    MOAB: on component, send mesh (except lnd and rof).
    !       on coupler, register coupler version
    !       of app and receive mesh (except lnd and rof). The initial CommGraph is computed as part of
@@ -2180,28 +2182,23 @@ contains
     if (atm_present) call component_init_areacor(atm, areafact_samegrid, seq_flds_a2x_fluxes)
     ! send initial data to coupler
     if (atm_present) call component_init_areacor_moab(atm, areafact_samegrid, mphaid, mbaxid, seq_flds_a2x_fluxes, seq_flds_a2x_fields)
-    ! component_exch_moab(atm(1), mphaid, mbaxid, 0, seq_flds_a2x_fields)
 
     call mpi_barrier(mpicom_GLOID,ierr)
     if (lnd_present) call component_init_areacor(lnd, areafact_samegrid, seq_flds_l2x_fluxes)
     ! MOABTODO : lnd is vertex or cell ?
     if (lnd_present) call component_init_areacor_moab(lnd, areafact_samegrid, mlnid, mblxid, seq_flds_l2x_fluxes, seq_flds_l2x_fields)
-    !component_exch_moab(lnd(1), mlnid, mblxid, 0, seq_flds_l2x_fields)
 
     call mpi_barrier(mpicom_GLOID,ierr)
     if (rof_present) call component_init_areacor(rof, areafact_samegrid, seq_flds_r2x_fluxes)
     if (rof_present) call component_init_areacor_moab(rof, areafact_samegrid, mrofid, mbrxid, seq_flds_r2x_fluxes, seq_flds_r2x_fields)
-    !component_exch_moab(rof(1), mrofid, mbrxid, 0, seq_flds_r2x_fields)
 
     call mpi_barrier(mpicom_GLOID,ierr)
     if (ocn_present) call component_init_areacor(ocn, areafact_samegrid, seq_flds_o2x_fluxes)
     if (ocn_present) call component_init_areacor_moab(ocn, areafact_samegrid, mpoid, mboxid, seq_flds_o2x_fluxes, seq_flds_o2x_fields)
-    ! component_exch_moab(ocn(1), mpoid, mboxid, 0, seq_flds_o2x_fields)
 
     call mpi_barrier(mpicom_GLOID,ierr)
     if (ice_present) call component_init_areacor(ice, areafact_samegrid, seq_flds_i2x_fluxes)
     if (ice_present) call component_init_areacor_moab(ice, areafact_samegrid, mpsiid, mbixid, seq_flds_i2x_fluxes, seq_flds_i2x_fields)
-    !component_exch_moab(ice(1), mpsiid, mbixid, 0, seq_flds_i2x_fields)
 
     call mpi_barrier(mpicom_GLOID,ierr)
     if (glc_present) call component_init_areacor(glc, areafact_samegrid, seq_flds_g2x_fluxes)
@@ -2481,7 +2478,7 @@ contains
                infodata_string='cpl2atm_init')
           ! moab too
           call component_exch_moab(atm(1), mbaxid, mphaid, 'x2c', seq_flds_x2a_fields, &
-               infodata=infodata, infodata_string='cpl2atm_init')
+               context_exch="cpl2atminit2",infodata=infodata, infodata_string='cpl2atm_init')
        endif
 
        ! Set atm init phase to 2 for all atm instances on component instance pes
@@ -2500,9 +2497,8 @@ contains
        ! Send atm output data from atm pes to cpl pes
        call component_exch(atm, flow='c2x', infodata=infodata, &
             infodata_string='atm2cpl_init')
-       !
        call component_exch_moab(atm(1), mphaid, mbaxid, 'c2x', seq_flds_a2x_fields, &
-            infodata=infodata, infodata_string='atm2cpl_init')
+            context_exch="atm2cplinit2",infodata=infodata, infodata_string='atm2cpl_init')
 
        if (iamin_CPLID) then
           if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
