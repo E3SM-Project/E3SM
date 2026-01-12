@@ -115,40 +115,40 @@ if (EAMXX_ENABLE_PYTHON)
     # So that we know, below, that we can run cpp-vs-py test for cld_frac_net output
     set (HAS_CLD_FRAC_NET_PY TRUE)
   endif()
-endif()
 
+  if (NOT EAMXX_ENABLE_GPU)
+    #####################################
+    #         CldFracNet (CPP)          #
+    #####################################
 
-if (NOT EAMXX_ENABLE_GPU)
-  #####################################
-  #         CldFracNet (CPP)          #
-  #####################################
+    # Create test that runs lapis-generated emulator
+    unset (PY_MODULE_NAME)
+    set (POSTFIX cpp)
+    set (EMULATOR lapis)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input_ml.yaml
+      ${CMAKE_CURRENT_BINARY_DIR}/input_ml_${POSTFIX}.yaml)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/output_ml.yaml
+      ${CMAKE_CURRENT_BINARY_DIR}/output_ml_${POSTFIX}.yaml)
 
-  # Create test that runs lapis-generated emulator
-  unset (PY_MODULE_NAME)
-  set (POSTFIX cpp)
-  set (EMULATOR lapis)
-  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input_ml.yaml
-                 ${CMAKE_CURRENT_BINARY_DIR}/input_ml_${POSTFIX}.yaml)
-  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/output_ml.yaml
-                 ${CMAKE_CURRENT_BINARY_DIR}/output_ml_${POSTFIX}.yaml)
+    CreateUnitTestFromExec(cld_frac_net_${POSTFIX} cld_frac_net_standalone
+      EXE_ARGS "--args -ifile=input_ml_${POSTFIX}.yaml"
+      LABELS cld_fraction
+      FIXTURES_SETUP cld_frac_net_${POSTFIX})
 
-  CreateUnitTestFromExec(cld_frac_net_${POSTFIX} cld_fraction_standalone
-    EXE_ARGS "--args -ifile=input_ml_${POSTFIX}.yaml"
-    LABELS cld_fraction
-    FIXTURES_SETUP cld_frac_net_${POSTFIX})
-
-  if (HAS_CLD_FRAC_NET_PY)
-    # Compare output of py and cpp tests of cld_frac_net
-    set (SRC_FILE "cld_frac_net_standalone_output_cpp.INSTANT.nsteps_x1.np1.${RUN_T0}.nc")
-    set (TGT_FILE "cld_frac_net_standalone_output_py.INSTANT.nsteps_x1.np1.${RUN_T0}.nc")
-    set (TEST_NAME cld_frac_net_standalone_cpp_vs_py)
-    add_test (NAME ${TEST_NAME}
-      COMMAND ${SCREAM_BASE_DIR}/scripts/compare-nc-files
-                -s ${SRC_FILE} -t ${TGT_FILE} --tol 1e-6
-                -c cldfrac_ice=cldfrac_ice cldfrac_tot=cldfrac_tot
-              WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-    set_tests_properties(${TEST_NAME} PROPERTIES
-          LABELS "cldfrac;infrastructure"
-          FIXTURES_REQUIRED "cld_frac_net_py;cld_frac_net_cpp")
+    if (HAS_CLD_FRAC_NET_PY)
+      # Compare output of py and cpp tests of cld_frac_net
+      set (SRC_FILE "cld_frac_net_standalone_output_cpp.INSTANT.nsteps_x1.np1.${RUN_T0}.nc")
+      set (TGT_FILE "cld_frac_net_standalone_output_py.INSTANT.nsteps_x1.np1.${RUN_T0}.nc")
+      set (TEST_NAME cld_frac_net_standalone_cpp_vs_py)
+      add_test (NAME ${TEST_NAME}
+        COMMAND ${SCREAM_BASE_DIR}/scripts/compare-nc-files
+        -s ${SRC_FILE} -t ${TGT_FILE} --tol 1e-6
+        -c cldfrac_ice=cldfrac_ice cldfrac_tot=cldfrac_tot
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+      set_tests_properties(${TEST_NAME} PROPERTIES
+        LABELS "cldfrac;infrastructure"
+        FIXTURES_REQUIRED "cld_frac_net_py;cld_frac_net_cpp")
+    endif()
   endif()
 endif()
+
