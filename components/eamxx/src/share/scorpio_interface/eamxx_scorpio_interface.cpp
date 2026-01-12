@@ -200,7 +200,7 @@ size_t dtype_size (const std::string& dtype) {
 }
 
 int pio_iotype (IOType iotype) {
-  int iotype_int;
+  int iotype_int = {};
   auto& s = ScorpioSession::instance();
   switch(iotype){
     case IOType::DefaultIOType: iotype_int = s.pio_type_default;                    break;
@@ -998,6 +998,22 @@ void set_dims_decomp (const std::string& filename,
   }
 }
 
+void clear_unused_decomps ()
+{
+  auto& s = ScorpioSession::instance();
+
+  for (auto it=s.decomps.begin(); it!=s.decomps.end(); ) {
+    if (it->second.use_count()==1) {
+      int err = PIOc_freedecomp(s.pio_sysid,it->second->ncid);
+      check_scorpio_noerr(err,"clear_unused_decomps","freedecomp");
+
+      it = s.decomps.erase(it);
+    } else {
+      ++it;
+    }
+  }
+}
+
 // ================== Variable operations ================== //
 
 // Define var on output file (cannot call on Read/Append files)
@@ -1475,7 +1491,7 @@ T get_attribute (const std::string& filename,
   err = PIOc_inq_atttype(pf.file->ncid,varid,attname.c_str(),&att_type);
   check_scorpio_noerr(err,filename,"attribute",attname,"get_attribute","inq_atttype");
 
-  T val;
+  T val = T{};
   if (att_type!=nctype(get_dtype<T>())) {
 
     if (att_type==PIO_INT) {

@@ -149,6 +149,11 @@ void set_dims_decomp (const std::string& filename,
                       const std::vector<std::string>& dimnames,
                       const std::vector<offset_t>& my_offsets);
 
+// Clears all decompositions not currently in use
+// This helps in some unit tests, where the same file is used
+// in two different moments, with different grid decompositions
+void clear_unused_decomps ();
+
 // ================== Variable operations ================== //
 
 // Define var on output file (cannot call on Read/Append files)
