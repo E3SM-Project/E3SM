@@ -153,6 +153,7 @@ contains
     character(CL)            :: rof_gnam      ! rof grid
     character(CL)            :: glc_gnam      ! glc grid
     type(mct_avect), pointer :: l2x_lx
+    type(mct_avect), pointer :: x2l_lx
    ! MOAB stuff
     integer                  :: ierr, idintx, rank
     character*32             :: appname
@@ -210,7 +211,16 @@ contains
             mpicom=mpicom_CPLID, iamroot=iamroot_CPLID)
 
        l2x_lx => component_get_c2x_cx(lnd(1))
+       x2l_lx => component_get_x2c_cx(lnd(1))
        lsize_l = mct_aVect_lsize(l2x_lx)
+
+       ! Allocate x2l_lm for MOAB history output (used by prep_lnd_get_x2l_lm)
+       if (mblxid .ge. 0) then
+          mlsize = mbGetnCells(mblxid)
+          nflds = mct_aVect_nRattr(x2l_lx)
+          allocate(x2l_lm(mlsize, nflds))
+          x2l_lm = 0.0_r8
+       endif
 
        allocate(a2x_lx(num_inst_atm))
        do eai = 1,num_inst_atm
@@ -648,14 +658,6 @@ contains
        endif
        call shr_sys_flush(logunit)
 
-       ! Allocate x2l_lm for MOAB history output (used by prep_lnd_get_x2l_lm)
-       if (mblxid .ge. 0) then
-          mlsize = mbGetnCells(mblxid)
-          nflds = mct_aVect_nRattr(l2x_lx)
-          allocate(x2l_lm(mlsize, nflds))
-          x2l_lm = 0.0_r8
-       endif
-
        if (glc_c2_lnd) then
           if (iamroot_CPLID) then
              write(logunit,*) ' '
@@ -844,7 +846,7 @@ contains
     ! call mct_aVect_copy(aVin=r2x_l, aVout=x2l_l, vector=mct_usevector, sharedIndices=r2x_SharedIndices)
     ! call mct_aVect_copy(aVin=g2x_l, aVout=x2l_l, vector=mct_usevector, sharedIndices=g2x_SharedIndices)
 
-    call mbGetCellTagVals(mblxid, trim(seq_flds_x2l_fields)//C_NULL_CHAR,x2l_lm,mbsize*nflds)
+    call mbGetCellTagVals(mblxid, trim(seq_flds_x2l_fields),x2l_lm,mbsize*nflds)
 
     if (first_time) then
        if (iamroot) then
