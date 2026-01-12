@@ -114,9 +114,7 @@ if (EAMXX_ENABLE_PYTHON)
 
     # So that we know, below, that we can run cpp-vs-py test for cld_frac_net output
     set (HAS_CLD_FRAC_NET_PY TRUE)
-  endif()
 
-  if (NOT EAMXX_ENABLE_GPU)
     #####################################
     #         CldFracNet (CPP)          #
     #####################################
