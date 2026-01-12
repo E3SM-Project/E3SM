@@ -233,7 +233,8 @@ bool AbstractGrid::is_unique () const {
   };
 
 
-  std::lock_guard<std::mutex> lock(m_mutex); // Lock the mutex
+  static std::mutex m;
+  std::lock_guard<std::mutex> lock(m); // Lock the mutex
   if (not m_is_unique_computed) {
     m_is_unique = compute_is_unique();
     m_is_unique_computed = true;
@@ -256,7 +257,7 @@ is_valid_layout (const FieldLayout& layout) const
     case LayoutType::Scalar1D:
       return layout.congruent(get_vertical_layout(midpoints));
     case LayoutType::Vector1D:
-        return layout.congruent(get_vertical_layout(midpoints,layout.get_vector_dim()));
+      return layout.congruent(get_vertical_layout(midpoints,layout.get_vector_dim()));
     case LayoutType::Scalar2D:
       return layout.congruent(get_2d_scalar_layout());
     case LayoutType::Vector2D:
@@ -278,7 +279,8 @@ is_valid_layout (const FieldLayout& layout) const
 auto AbstractGrid::
 get_global_min_dof_gid () const ->gid_type
 {
-  std::lock_guard<std::mutex> lock(m_mutex); // Lock the mutex
+  static std::mutex m;
+  std::lock_guard<std::mutex> lock(m); // Lock the mutex
   // Lazy calculation
   if (m_global_min_dof_gid==std::numeric_limits<gid_type>::max()) {
     m_global_min_dof_gid = field_min(m_dofs_gids,&get_comm()).as<gid_type>();
@@ -289,7 +291,8 @@ get_global_min_dof_gid () const ->gid_type
 auto AbstractGrid::
 get_global_max_dof_gid () const ->gid_type
 {
-  std::lock_guard<std::mutex> lock(m_mutex); // Lock the mutex
+  static std::mutex m;
+  std::lock_guard<std::mutex> lock(m); // Lock the mutex
   // Lazy calculation
   if (m_global_max_dof_gid==-std::numeric_limits<gid_type>::max()) {
     m_global_max_dof_gid = field_max(m_dofs_gids,&get_comm()).as<gid_type>();
@@ -300,7 +303,8 @@ get_global_max_dof_gid () const ->gid_type
 auto AbstractGrid::
 get_global_min_partitioned_dim_gid () const ->gid_type
 {
-  std::lock_guard<std::mutex> lock(m_mutex); // Lock the mutex
+  static std::mutex m;
+  std::lock_guard<std::mutex> lock(m); // Lock the mutex
   // Lazy calculation
   if (m_global_min_partitioned_dim_gid==std::numeric_limits<gid_type>::max()) {
     m_global_min_partitioned_dim_gid = field_min(m_partitioned_dim_gids,&get_comm()).as<gid_type>();
@@ -311,7 +315,8 @@ get_global_min_partitioned_dim_gid () const ->gid_type
 auto AbstractGrid::
 get_global_max_partitioned_dim_gid () const ->gid_type
 {
-  std::lock_guard<std::mutex> lock(m_mutex); // Lock the mutex
+  static std::mutex m;
+  std::lock_guard<std::mutex> lock(m); // Lock the mutex
   // Lazy calculation
   if (m_global_max_partitioned_dim_gid==-std::numeric_limits<gid_type>::max()) {
     m_global_max_partitioned_dim_gid = field_max(m_partitioned_dim_gids,&get_comm()).as<gid_type>();
@@ -641,7 +646,8 @@ void AbstractGrid::create_dof_fields (const int scalar2d_layout_rank)
 auto AbstractGrid::get_gid2lid_map () const
  -> const std::map<gid_type,int>&
 {
-  std::lock_guard<std::mutex> lock(m_mutex); // Lock the mutex
+  static std::mutex m;
+  std::lock_guard<std::mutex> lock(m); // Lock the mutex
 
   int cur_sz = m_gid2lid.size();
   if (cur_sz<get_num_local_dofs()) {

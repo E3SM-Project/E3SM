@@ -323,10 +323,6 @@ protected:
   // Mutable, for lazy calculation
   mutable std::map<gid_type, int> m_gid2lid;
 
-  // For thread safety in modifying mutable items (just in case someone ever runs this code in
-  // threaded regions)
-  mutable std::mutex m_mutex;
-
   // The MPI comm containing the ranks across which the global mesh is partitioned
   ekat::Comm m_comm;
 };
