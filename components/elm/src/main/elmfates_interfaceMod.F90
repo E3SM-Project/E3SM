@@ -4024,6 +4024,10 @@ end subroutine wrap_update_hifrq_hist
    integer, intent(in)                            :: nc              ! clump number
 
    ! Locals
+   integer :: r               ! Register index
+   integer :: p               ! HLM patch index
+   integer :: c               ! Column index
+   logical :: is_bareground   ! Is this register associated with a bareground patch
    logical :: is_first        ! Is this register associated with the first patch on the column, landunit, etc
                               ! This is necessary to ensure that accumulation variables are zero'd properly
    
