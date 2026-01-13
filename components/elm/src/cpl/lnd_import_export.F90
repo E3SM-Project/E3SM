@@ -1412,7 +1412,7 @@ contains
     ! 
     ! !USES:
     use shr_kind_mod       , only : r8 => shr_kind_r8
-    use elm_varctl         , only : iulog, create_glacier_mec_landunit, iac_present
+    use elm_varctl         , only : iulog, create_glacier_mec_landunit, iac_present, use_finetop_rad
     use elm_time_manager   , only : get_nstep, get_step_size  
     use domainMod          , only : ldomain
     use seq_drydep_mod     , only : n_drydep
@@ -1446,10 +1446,19 @@ contains
        i = 1 + (g-bounds%begg)
        l2x(index_l2x_Sl_t,i)        =  lnd2atm_vars%t_rad_grc(g)
        l2x(index_l2x_Sl_snowh,i)    =  lnd2atm_vars%h2osno_grc(g)
-       l2x(index_l2x_Sl_avsdr,i)    =  lnd2atm_vars%albd_grc(g,1)
-       l2x(index_l2x_Sl_anidr,i)    =  lnd2atm_vars%albd_grc(g,2)
-       l2x(index_l2x_Sl_avsdf,i)    =  lnd2atm_vars%albi_grc(g,1)
-       l2x(index_l2x_Sl_anidf,i)    =  lnd2atm_vars%albi_grc(g,2)
+
+       if (use_finetop_rad) then
+          l2x(index_l2x_Sl_avsdr,i)    =  lnd2atm_vars%apparent_albd_grc(g,1)
+          l2x(index_l2x_Sl_anidr,i)    =  lnd2atm_vars%apparent_albd_grc(g,2)
+          l2x(index_l2x_Sl_avsdf,i)    =  lnd2atm_vars%apparent_albi_grc(g,1)
+          l2x(index_l2x_Sl_anidf,i)    =  lnd2atm_vars%apparent_albi_grc(g,2)
+       else
+          l2x(index_l2x_Sl_avsdr,i)    =  lnd2atm_vars%albd_grc(g,1)
+          l2x(index_l2x_Sl_anidr,i)    =  lnd2atm_vars%albd_grc(g,2)
+          l2x(index_l2x_Sl_avsdf,i)    =  lnd2atm_vars%albi_grc(g,1)
+          l2x(index_l2x_Sl_anidf,i)    =  lnd2atm_vars%albi_grc(g,2)
+       end if
+
        l2x(index_l2x_Sl_tref,i)     =  lnd2atm_vars%t_ref2m_grc(g)
        l2x(index_l2x_Sl_qref,i)     =  lnd2atm_vars%q_ref2m_grc(g)
        l2x(index_l2x_Sl_u10,i)      =  lnd2atm_vars%u_ref10m_grc(g)

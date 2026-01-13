@@ -12,7 +12,7 @@ module SoilTemperatureMod
   use shr_infnan_mod    , only : nan => shr_infnan_nan
   use decompMod         , only : bounds_type
   use abortutils        , only : endrun
-  use elm_varctl        , only : iulog
+  use elm_varctl        , only : iulog, use_finetop_rad
   use elm_varcon        , only : spval
   use UrbanParamsType   , only : urbanparams_type
   use atm2lndType       , only : atm2lnd_type
@@ -32,6 +32,8 @@ module SoilTemperatureMod
   use ExternalModelConstants   , only : EM_ID_PTM
   use ExternalModelConstants   , only : EM_PTM_TBASED_SOLVE_STAGE
   use ExternalModelInterfaceMod, only : EMI_Driver
+  use shr_const_mod            , only : SHR_CONST_PI
+  use GridcellType             , only : grc_pp
 
   !! Needed beacuse EMI is still using them as arguments
   use WaterstateType    , only : waterstate_type
@@ -1750,6 +1752,7 @@ contains
     real(r8) :: eflx_gnet_snow                                         !
     real(r8) :: eflx_gnet_soil                                         !
     real(r8) :: eflx_gnet_h2osfc                                       !
+    real(r8) :: slope_rad, deg2rad
     !-----------------------------------------------------------------------
 
     ! Enforce expected array sizes
@@ -1800,7 +1803,8 @@ contains
          sabg_lyr                => solarabs_vars%sabg_lyr_patch            , & ! Output: [real(r8) (:,:) ]  absorbed solar radiation (pft,lyr) [W/m2]
 
          begc                    => bounds%begc                             , & ! Input:  [integer        ] beginning column index
-         endc                    => bounds%endc                               & ! Input:  [integer        ] ending column index
+         endc                    => bounds%endc                             , & ! Input:  [integer        ] ending column index
+         slope_deg               => grc_pp%slope_deg                          &
          )
 
       ! Net ground heat flux into the surface and its temperature derivative
@@ -1809,6 +1813,8 @@ contains
 
       do fc = 1,num_nolakec
          c = filter_nolakec(fc)
+         g = col_pp%gridcell(c)
+         l = col_pp%landunit(c)
          lwrad_emit(c)  =    emg(c) * sb * t_grnd(c)**4
          dlwrad_emit(c) = 4._r8*emg(c) * sb * t_grnd(c)**3
 
@@ -1816,6 +1822,16 @@ contains
          lwrad_emit_snow(c)    =    emg(c) * sb * t_soisno(c,snl(c)+1)**4
          lwrad_emit_soil(c)    =    emg(c) * sb * t_soisno(c,1)**4
          lwrad_emit_h2osfc(c)  =    emg(c) * sb * t_h2osfc(c)**4
+
+         if (use_finetop_rad .and. (.not. lun_pp%urbpoi(l))) then
+            deg2rad = SHR_CONST_PI/180._r8
+            slope_rad = slope_deg(g) * deg2rad
+            lwrad_emit(c) = lwrad_emit(c) / cos(slope_rad)
+            dlwrad_emit(c) = dlwrad_emit(c) / cos(slope_rad)
+            lwrad_emit_snow(c) = lwrad_emit_snow(c) / cos(slope_rad)
+            lwrad_emit_soil(c) = lwrad_emit_soil(c) / cos(slope_rad)
+            lwrad_emit_h2osfc(c) = lwrad_emit_h2osfc(c) / cos(slope_rad)
+         endif
       end do
 
       hs_soil(begc:endc)   = 0._r8
