@@ -818,8 +818,7 @@ void set_var_decomp (PIOVar& var,
     }
 
     // We haven't create this decomp yet. Go ahead and create one
-    auto& decomp = s.decomps[decomp_tag];
-    decomp = std::make_shared<PIODecomp>();
+    auto decomp = std::make_shared<PIODecomp>();
     decomp->name = decomp_tag;
 
     // Retrieve the dim decomp
@@ -853,6 +852,8 @@ void set_var_decomp (PIOVar& var,
                                nullptr,nullptr);
 
     check_scorpio_noerr(err,filename,"decomp",decomp_tag,"set_var_decomp","InitDecomp");
+
+    s.decomps[decomp_tag] = decomp;
   }
 
   // Set decomp data in the var
