@@ -14,7 +14,7 @@ extern "C" void
 sl_get_params(double* nu_q, double* hv_scaling, int* hv_q, int* hv_subcycle_q,
               int* limiter_option, int* cdr_check, int* geometry_type,
               int* trajectory_nsubstep, int* trajectory_nvelocity,
-              int* diagnostics);
+              int* diagnostics, bool* do_3d_turbulence);
 
 namespace Homme {
 
@@ -60,7 +60,7 @@ void ComposeTransportImpl::reset (const SimulationParams& params) {
   sl_get_params(&m_data.nu_q, &m_data.hv_scaling, &m_data.hv_q, &m_data.hv_subcycle_q,
                 &m_data.limiter_option, &m_data.cdr_check, &m_data.geometry_type,
                 &m_data.trajectory_nsubstep, &m_data.trajectory_nvelocity,
-                &m_data.diagnostics);
+                &m_data.diagnostics, &m_data.do_3d_turbulence);
 
   if (independent_time_steps != m_data.independent_time_steps or
       m_data.nelemd != num_elems or m_data.qsize != params.qsize) {
@@ -221,18 +221,22 @@ void ComposeTransportImpl::run (const TimeLevel& tl, const Real dt) {
   homme::compose::advect(tl.np1, tl.n0_qdp, tl.np1_qdp);
   Kokkos::fence();
   GPTLstop("compose_isl");
-  
+
   if (m_data.hv_q > 0 && m_data.nu_q > 0) {
     GPTLstart("compose_hypervis_scalar");
     advance_hypervis_scalar(dt);
     Kokkos::fence();
     GPTLstop("compose_hypervis_scalar");
-    GPTLstart("compose_horizturb_scalar");
-    advance_horizontal_turbulent_diffusion_scalar(dt);
-    Kokkos::fence();
-    GPTLstop("compose_horizturb_scalar");
+
+    // SGS horizontal turbulent diffusion for scalars
+    if (m_data.do_3d_turbulence){
+      GPTLstart("compose_horizturb_scalar");
+      advance_horizontal_turbulent_diffusion_scalar(dt);
+      Kokkos::fence();
+      GPTLstop("compose_horizturb_scalar");
+    }
   }
-  
+
   GPTLstart("compose_cedr_global");
   homme::compose::set_dp3d_np1(m_data.independent_time_steps ?
                                0 : // dp3d is actually divdp

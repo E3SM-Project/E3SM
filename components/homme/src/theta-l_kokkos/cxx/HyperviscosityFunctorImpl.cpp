@@ -25,7 +25,8 @@ HyperviscosityFunctorImpl (const SimulationParams&     params,
  : m_num_elems(state.num_elems())
  , m_data (params.hypervis_subcycle,params.hypervis_subcycle_tom,
 		       params.nu_ratio1,params.nu_ratio2,params.nu_top,params.nu,
-		       params.nu_p,params.nu_s,params.hypervis_scaling)
+		       params.nu_p,params.nu_s,params.hypervis_scaling,
+                       params.do_3d_turbulence)
  , m_state   (state)
  , m_derived (derived)
  , m_geometry (geometry)
@@ -49,7 +50,8 @@ HyperviscosityFunctorImpl (const int num_elems, const SimulationParams &params)
   : m_num_elems(num_elems)
   , m_data (params.hypervis_subcycle,params.hypervis_subcycle_tom,
 		        params.nu_ratio1,params.nu_ratio2,params.nu_top,params.nu,
-		        params.nu_p,params.nu_s,params.hypervis_scaling)
+		        params.nu_p,params.nu_s,params.hypervis_scaling,
+                        params.do_3d_turbulence)
   , m_hvcoord (Context::singleton().get<HybridVCoord>())
   , m_policy_update_states (Homme::get_default_team_policy<ExecSpace,TagUpdateStates>(m_num_elems))
   , m_policy_first_laplace (Homme::get_default_team_policy<ExecSpace,TagFirstLaplaceHV>(m_num_elems))
@@ -285,7 +287,11 @@ void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real et
     Kokkos::fence();
 
     // Apply horizontal turbulent diffusion using SGS eddy diffusivities
-    apply_horizontal_turbulent_diffusion();
+    if (m_data.do_3d_turbulence) {
+      GPTLstart("hvf-3dturb");
+      apply_horizontal_turbulent_diffusion();
+      GPTLstop("hvf-3dturb");
+    }
 
   } //subcycle
 
@@ -490,7 +496,7 @@ void HyperviscosityFunctorImpl::apply_horizontal_turbulent_diffusion () const
         v(k)     += dt_loc * km * v_lap(k) * rspheremp;
 
         if (m_process_nh_vars) {
-          w(k)     += dt_loc * kh * w_lap(k) * rspheremp;
+          w(k)     += dt_loc * km * w_lap(k) * rspheremp;
           phi_i(k) += dt_loc * kh * phi_lap(k) * rspheremp;
         }
       });

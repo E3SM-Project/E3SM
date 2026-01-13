@@ -85,6 +85,7 @@ struct ComposeTransportImpl {
     int diagnostics;
     Real nu_q, hv_scaling, dp_tol, deta_tol;
     bool independent_time_steps;
+    bool do_3d_turbulence;
 
     // buf1o and buf1e point to the same memory, sized to the larger of the
     // two. They are used in different parts of the code.
@@ -107,7 +108,7 @@ struct ComposeTransportImpl {
     Data ()
       : nelemd(-1), qsize(-1), limiter_option(9), cdr_check(0), hv_q(0),
         hv_subcycle_q(0), geometry_type(0), nu_q(0), hv_scaling(0), dp_tol(-1),
-        independent_time_steps(false)
+        independent_time_steps(false), do_3d_turbulence(false)
     {}
   };
 

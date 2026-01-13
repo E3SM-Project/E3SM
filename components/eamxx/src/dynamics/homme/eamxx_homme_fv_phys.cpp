@@ -201,7 +201,6 @@ void HommeDynamics::remap_dyn_to_fv_phys (GllFvRemapTmp* t) const {
 }
 
 void HommeDynamics::remap_fv_phys_to_dyn () const {
-  // PAB mod here
   if (not fv_phys_active()) return;
   const auto& c = Homme::Context::singleton();
   auto& gfr = c.get<Homme::GllFvRemap>();
