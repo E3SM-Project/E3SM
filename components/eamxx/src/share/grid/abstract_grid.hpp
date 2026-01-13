@@ -180,6 +180,15 @@ public:
   void set_geometry_data(const Field &f) const;
   void delete_geometry_data(const std::string &name);
 
+  // Reads some geometry data from file
+  void read_geometry_data(const std::string& filename,
+                          const std::vector<std::string>& names,
+                          const std::map<std::string,std::string>& dim_to_ncdim = {});
+  void read_geometry_data(const std::string& filename,
+                          const std::vector<std::string>& names,
+                          const std::vector<std::string>& nc_names,
+                          const std::map<std::string,std::string>& dim_to_ncdim = {});
+
   bool
   has_geometry_data(const std::string &name) const
   {
