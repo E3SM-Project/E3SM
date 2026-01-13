@@ -4029,10 +4029,8 @@ end subroutine wrap_update_hifrq_hist
    integer, intent(in)                            :: nc              ! clump number
 
    ! Locals
-   integer :: r   ! register index
-   integer :: p   ! hlm patch index
-   integer :: c   ! column index
-   logical :: is_bareground
+   logical :: is_first        ! Is this register associated with the first patch on the column, landunit, etc
+                              ! This is necessary to ensure that accumulation variables are zero'd properly
    
    ! Iterate over the number of vegetated patches
    do r = 1, this%fates(nc)%npatches
@@ -4050,7 +4048,6 @@ end subroutine wrap_update_hifrq_hist
                                                         landunit = veg_pp%landunit(p), &
                                                         column = veg_pp%column(p), &
                                                         bareground = is_bareground)
-                                                        
 
       ! Register and initialize the boundary condition variables
       ! Global variables
@@ -4061,8 +4058,17 @@ end subroutine wrap_update_hifrq_hist
       call this%fates(nc)%registry(r)%Register(key=hlm_fates_decomp_thickness, &
                                                data=dzsoi_decomp, hlm_flag=.true.)
  
-      ! Column level variables
+      !! Column level variables
+      ! Get the column index
       c = this%fates(nc)%registry(r)%GetColumnIndex()
+      
+      ! Determine if this is the first register on the column
+      is_first = .false.
+      if (is_bareground) then
+         is_first = .true.
+      end if
+
+      ! Variables that do not need to accumulate
       call this%fates(nc)%registry(r)%Register(key=hlm_fates_soil_level, &
                                                data=col_pp%nlevbed(c), hlm_flag=.true.)
       call this%fates(nc)%registry(r)%Register(key=hlm_fates_decomp_frac_moisture, &
@@ -4080,9 +4086,11 @@ end subroutine wrap_update_hifrq_hist
       call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_carbon_labile, &
                                                data=col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_met_lit), &
                                                hlm_flag=.true., accumulate=.true.)
+
+      ! Pass is_first option to assure HLM updates are zero'd 
       call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_carbon_total, &
                                                data=col_cf%litfall(c), &
-                                               hlm_flag=.true., accumulate=.true.)
+                                               hlm_flag=.true., accumulate=.true., is_first=is_first)
 
       ! Register nitrogen and phosphorus litter fluxes if necessary
       if (fates_parteh_mode == prt_cnp_flex_allom_hyp) then
@@ -4096,9 +4104,11 @@ end subroutine wrap_update_hifrq_hist
          call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_phosphorus_labile, &
                                                   data=col_pf%decomp_ppools_sourcesink(c,:,i_met_lit), &
                                                   hlm_flag=.true., accumulate=.true.)
+         
+         ! Pass is_first option to assure HLM updates are zero'd
          call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_phosphorus_total, &
                                                   data=col_pf%plant_to_litter_pflux(c), &
-                                                  hlm_flag=.true., accumulate=.true.)
+                                                  hlm_flag=.true., accumulate=.true., is_first=is_first)
 
          ! Nitrogen
          call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_nitrogen_cellulose, &
@@ -4110,9 +4120,11 @@ end subroutine wrap_update_hifrq_hist
          call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_nitrogen_labile, &
                                                   data=col_nf%decomp_npools_sourcesink(c,:,i_met_lit), &
                                                   hlm_flag=.true., accumulate=.true.)
+
+         ! Pass is_first option to assure HLM updates are zero'd
          call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_nitrogen_total, &
                                                   data=col_nf%plant_to_litter_nflux(c), &
-                                                  hlm_flag=.true., accumulate=.true.)
+                                                  hlm_flag=.true., accumulate=.true., is_first=is_first)
       end if
    end do
 
