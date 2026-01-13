@@ -443,10 +443,7 @@ void HyperviscosityFunctorImpl::apply_horizontal_turbulent_diffusion () const
 
     kv.team_barrier();
 
-    // 2) Apply SHOC’s Km / Kh to those Laplacians and update the state,
-    //    mimicking:
-    //      vtens += turb_diff_mom * lap_v
-    //      stens += turb_diff_heat * lap_s
+    // 2) Apply SHOC’s Km / Kh to those Laplacians and update the state.
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, NP*NP),
                          [&] (const int idx) {
       const int igp = idx / NP;

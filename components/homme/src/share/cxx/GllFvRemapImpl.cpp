@@ -560,7 +560,6 @@ void GllFvRemapImpl
 void GllFvRemapImpl::
 run_fv_phys_to_dyn (const int timeidx, const CPhys2T& Ts, const CPhys3T& uvs,
                     const CPhys3T& qs, const CPhys2T& Kms, const CPhys2T& Khs) {
-//PAB Modify this
 #ifdef MODEL_THETA_L
   using Kokkos::parallel_for;
 
@@ -655,7 +654,7 @@ run_fv_phys_to_dyn (const int timeidx, const CPhys2T& Ts, const CPhys3T& uvs,
       // dp on GLL grid/timeidx (needed by f2g_scalar_dp)
       const evucs_np2_nlev dp_g_ie(&dp3d(ie,timeidx,0,0,0));
 
-      // Use rw1 as scratch, exactly like the theta remap below
+      // Use rw1 as scratch
       f2g_scalar_dp(kv, nf2, np2, nlevpk,
                     f2g_remapd,
                     fv_metdet_ie, gll_metdet_ie,
