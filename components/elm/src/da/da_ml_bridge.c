@@ -7,9 +7,9 @@ int
 ml_init_c()
 {
     int i;
-    //PyImport_AppendInittab("ml_reservoir_release", PyInit_ml_reservoir_release);
+    PyImport_AppendInittab("da", PyInit_da);
     Py_Initialize();
-    //PyImport_ImportModule("ml_reservoir_release");
+    PyImport_ImportModule("da");
 
     python_init();
 
