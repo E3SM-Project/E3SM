@@ -84,6 +84,8 @@ public:
 
 protected:
 
+  void setup_latlon_coarse_grid(const std::string& map_file);
+
   static constexpr bool MpiOnDev = SCREAM_MPI_ON_DEVICE;
 
   // If MpiOnDev=true, we can pass device pointers to MPI. Otherwise, we need host mirrors.

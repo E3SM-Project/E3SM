@@ -151,6 +151,10 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
           //       pio decomp for this var, since there are no dimensions.
           //       Perhaps you can explore setting the var as a global att
           continue;
+        } else if (f.get_header().has_extra_data("save_as_geo_data") and
+                   not f.get_header().get_extra_data<bool>("save_as_geo_data")) {
+          // This field is NOT to be saved as geo data
+          continue;
         }
         if (use_suffix) {
           fields.push_back(f.clone(f.name() + grid.second->m_disambiguation_suffix, grid.first));
