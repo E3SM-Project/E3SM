@@ -3,7 +3,7 @@ module ace_comp_mod
   use eatmMod
   use eatmIO
   use shr_const_mod
-  use shr_kind_mod, only: IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
+  use shr_kind_mod, only: R4=>SHR_KIND_R4, R8=>SHR_KIND_R8, CL=>SHR_KIND_CL
   use shr_sys_mod,  only: shr_sys_flush, shr_sys_abort
 
   implicit none
@@ -203,7 +203,7 @@ CONTAINS
     ! !ARGUMENTS:
     type(file_desc_t),intent(inout) :: ncid                ! netcdf file id
     character(len=*), intent(in)    :: varname             ! variable name
-    real(R8)        , intent(inout) :: data(:,:)           ! raw data
+    real(R4)        , intent(inout) :: data(:,:)           ! raw data
     ! !LOCAL VARIABLES:
     logical                    :: found
     character(len=*),parameter :: subname = '(ace_read_netcdf) '
