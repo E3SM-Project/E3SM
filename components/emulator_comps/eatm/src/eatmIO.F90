@@ -9,7 +9,7 @@ module eatmIO
 ! Generic interfaces to write fields to netcdf files for eatm
 !
 ! !USES:
-  use shr_kind_mod   , only : r8 => shr_kind_r8, i8=>shr_kind_i8, shr_kind_cl
+  use shr_kind_mod   , only : r4 => shr_kind_r4, r8 => shr_kind_r8, i8=>shr_kind_i8, shr_kind_cl
   use shr_sys_mod    , only : shr_sys_flush, shr_sys_abort
   use shr_file_mod   , only : shr_file_getunit, shr_file_freeunit
   use eatmSpmdMod    , only : masterproc, mpicom_atm, iam, npes
@@ -102,6 +102,7 @@ module eatmIO
      ! global 2d
      module procedure ncd_io_int_var2_nf
      module procedure ncd_io_real_var2_nf
+     module procedure ncd_io_double_var2_nf
      module procedure ncd_io_char_var2_nf
 
      ! local 1d
@@ -1345,7 +1346,7 @@ contains
     type(file_desc_t),intent(inout) :: ncid                ! netcdf file id
     character(len=*), intent(in)    :: flag                ! 'read' or 'write'
     character(len=*), intent(in)    :: varname             ! variable name
-    real(r8)        , intent(inout) :: data(:,:)           ! raw data
+    real(r4)        , intent(inout) :: data(:,:)           ! raw data
     logical         , optional, intent(out):: readvar      ! was var read?
     integer         , optional, intent(in) :: nt           ! time sample index
     ! !LOCAL VARIABLES:
@@ -1391,6 +1392,64 @@ contains
 
   end subroutine ncd_io_real_var2_nf
 
+!------------------------------------------------------------------------
+
+  subroutine ncd_io_double_var2_nf(varname, data, flag, ncid, readvar, nt)
+
+    !------------------------------------------------------------------------
+    ! !DESCRIPTION:
+    ! netcdf I/O of global double 2D  array
+    !
+    ! !ARGUMENTS:
+    implicit none
+    type(file_desc_t),intent(inout) :: ncid                ! netcdf file id
+    character(len=*), intent(in)    :: flag                ! 'read' or 'write'
+    character(len=*), intent(in)    :: varname             ! variable name
+    real(r8)        , intent(inout) :: data(:,:)           ! raw data
+    logical         , optional, intent(out):: readvar      ! was var read?
+    integer         , optional, intent(in) :: nt           ! time sample index
+    ! !LOCAL VARIABLES:
+    integer :: varid                ! netCDF variable id
+    integer :: start(3), count(3)   ! output bounds
+    integer :: status               ! error code
+    logical :: varpresent           ! if true, variable is on tape
+    character(len=32) :: vname      ! variable error checking
+    type(var_desc_t)  :: vardesc    ! local vardesc pointer
+    logical :: found                ! if true, found lat/lon dims on file
+    character(len=*),parameter :: subname='ncd_io_real_var2_nf'
+    !-----------------------------------------------------------------------
+
+    if (flag == 'read') then
+
+       call ncd_inqvid(ncid, varname, varid, vardesc, readvar=varpresent)
+       if (varpresent) then
+          status = pio_get_var(ncid, varid, data)
+       endif
+       if (present(readvar)) readvar = varpresent
+
+    elseif (flag == 'write') then
+
+       start = 0
+       count = 0
+       if (present(nt))      then
+          start(1) = 1
+          start(2) = 1
+          start(3) = nt
+          count(1) = size(data, dim=1)
+          count(2) = size(data, dim=2)
+          count(3) = 1
+       else
+          start(1) = 1
+          start(2) = 1
+          count(1) = size(data, dim=1)
+          count(2) = size(data, dim=2)
+       end if
+       call ncd_inqvid  (ncid, varname, varid, vardesc)
+       status = pio_put_var(ncid, varid, start, count, data)
+
+    endif
+
+  end subroutine ncd_io_double_var2_nf
 !------------------------------------------------------------------------
 
   subroutine ncd_io_char_var2_nf(varname, data, flag, ncid, readvar, nt)

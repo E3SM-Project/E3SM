@@ -2,7 +2,12 @@ module eatmMod
 
   ! !USES:
 
-  use shr_kind_mod   , only: IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
+  use shr_kind_mod, only: &
+    IN=>SHR_KIND_IN, &
+    R4=>SHR_KIND_R4, &
+    R8=>SHR_KIND_R8, &
+    CS=>SHR_KIND_CS, &
+    CL=>SHR_KIND_CL
 
   ! !PUBLIC TYPES:
 
@@ -63,8 +68,8 @@ module eatmMod
   real(kind=R8), dimension(:,:), allocatable, public :: swnet        ! net shortwave radiation
 
   !
-  real(kind=R8), dimension(:, :, :, :), allocatable, target, public :: net_inputs
-  real(kind=R8), dimension(:, :, :, :), allocatable, target, public :: net_outputs
+  real(kind=R4), dimension(:, :, :, :), allocatable, target, public :: net_inputs
+  real(kind=R4), dimension(:, :, :, :), allocatable, target, public :: net_outputs
 
   character(CS), public :: myModelName = 'atm'   ! user defined model name
 
