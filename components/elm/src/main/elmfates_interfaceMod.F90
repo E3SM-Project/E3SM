@@ -1492,12 +1492,7 @@ contains
          call FluxIntoLitterPools(this%fates(nc)%sites(s))
       end do
       
-      do c = bounds_clump%begc,bounds_clump%endc
-         if (col_pp%is_fates(c)) then
-            col_pf%plant_to_litter_pflux(c) = 0._r8
-            col_nf%plant_to_litter_nflux(c) = 0._r8
-         end if
-      end do
+      ! Accumulate the litter fluxes at the column level
       call this%fates(nc)%UpdateLitterFluxes(dtime)
 
       ! Scale the decomposition pools post accumulation at the column level
