@@ -159,8 +159,8 @@ CONTAINS
     !--- temporaries
     real(kind=R8) :: e
 
-    do i = 1, lsize_x
-      do j = 1, lsize_y
+    do j = 1, lsize_y
+      do i = 1, lsize_x
         zbot(i, j) = 10.0_R8
         ubot(i, j) = net_outputs(1, 26, i, j) ! U_7
         vbot(i, j) = net_outputs(1, 34, i, j) ! V_7
