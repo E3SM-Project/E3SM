@@ -1210,6 +1210,7 @@ contains
     use fileutils        , only: getavu, relavu
     use spmdmod          , only: masterproc, mpicom, iam, npes, MPI_REAL8, MPI_INTEGER, MPI_STATUS_SIZE
     use elm_nlUtilsMod   , only : find_nlgroup_name
+    use FrictionVelocityMod, only: implicit_stress, atm_gustiness
     use seq_timemgr_mod, only : seq_timemgr_eclockgetdata
     use netcdf
     !
@@ -1430,9 +1431,21 @@ contains
          top_as%ubot(topo)    = x2l_lm(i,index_x2l_Sa_u)         ! forc_uxy  Atm state m/s
          top_as%vbot(topo)    = x2l_lm(i,index_x2l_Sa_v)         ! forc_vxy  Atm state m/s
          top_as%zbot(topo)    = x2l_lm(i,index_x2l_Sa_z)         ! zgcmxy    Atm state m
+         if (implicit_stress) then
+            top_as%wsresp(topo)  = x2l_lm(i,index_x2l_Sa_wsresp) !           Atm state m/s/Pa
+            top_as%tau_est(topo) = x2l_lm(i,index_x2l_Sa_tau_est)!           Atm state Pa
+         end if
+         if (atm_gustiness) then
+            top_as%ugust(topo)  = x2l_lm(i,index_x2l_Sa_ugust)   !           Atm state m/s
+         else
+            top_as%ugust(topo) = 0._r8
+         end if
          ! assign the state forcing fields derived from other inputs
          ! Horizontal windspeed (m/s)
          top_as%windbot(topo) = sqrt(top_as%ubot(topo)**2 + top_as%vbot(topo)**2)
+         if (atm_gustiness) then
+            top_as%windbot(topo) = sqrt(top_as%windbot(topo)**2 + top_as%ugust(topo)**2)
+         end if
          ! Relative humidity (percent)
          if (top_as%tbot(topo) > SHR_CONST_TKFRZ) then
             e = esatw(tdc(top_as%tbot(topo)))
