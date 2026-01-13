@@ -6,6 +6,20 @@ module ace_comp_mod
   use shr_kind_mod, only: R4=>SHR_KIND_R4, R8=>SHR_KIND_R8, CL=>SHR_KIND_CL
   use shr_sys_mod,  only: shr_sys_flush, shr_sys_abort
 
+  use ftorch, only: &
+    torch_kCPU, &
+    torch_model, &
+    torch_tensor, &
+    torch_delete, &
+    torch_kFloat32, &
+    torch_model_load, &
+    torch_tensor_print, &
+    torch_model_forward, &
+    torch_tensor_from_array, &
+    torch_tensor_from_blob
+
+  use, intrinsic :: iso_c_binding, only: c_loc, c_int64_t, c_int
+
   implicit none
   private ! except
 
@@ -13,6 +27,8 @@ module ace_comp_mod
   ! Public interfaces
   !--------------------------------------------------------------------------
   public :: ace_comp_init
+  public :: ace_comp_run
+  public :: ace_comp_finalize
 
   !--------------------------------------------------------------------------
   ! Public module data
@@ -26,6 +42,18 @@ module ace_comp_mod
   real(R8), parameter :: rdair  = SHR_CONST_RDAIR  ! dry air gas constant   ~ J/K/kg
   real(R8), parameter :: tKFrz  = SHR_CONST_TKFRZ
 
+  ! Set up Torch data structures
+  type(torch_model) :: ace_model
+  type(torch_tensor), dimension(1) :: input_tensor
+  type(torch_tensor), dimension(1) :: output_tensor
+
+  integer(c_int64_t) :: input_tensor_shape(4)
+  integer(c_int64_t) :: output_tensor_shape(4)
+
+  integer(c_int) :: tensor_layout(4)
+
+  ! TODO (AN): Parse from namelist
+  character(len=*), parameter :: torchscript_file="/global/cfs/cdirs/e3sm/anolan/aigroup/FACE/ACE2-EAMv3/ace2_EAMv3_ckpt_traced.tar"
   save
 
   !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -33,18 +61,76 @@ CONTAINS
 
   subroutine ace_comp_init()
 
+    input_tensor_shape = [&
+      int(1, kind=c_int), &
+      int(n_input_channels, kind=c_int), &
+      int(lsize_y, kind=c_int), &
+      int(lsize_x, kind=c_int) &
+    ]
+
+    output_tensor_shape = [int(1, kind=c_int), &
+      int(n_output_channels, kind=c_int), &
+      int(lsize_y, kind=c_int), &
+      int(lsize_x, kind=c_int)]
+
+    tensor_layout = [1_c_int, 2_c_int, 4_c_int, 3_c_int]
+
     ! load the initial condition data into input array
     call ace_read_ic()
-    ! TODO: create a tensor from the input array
+
+    ! load the traced model
+    call torch_model_load(ace_model, torchscript_file, torch_kCPU)
 
     ! load the restart data (i.e. prognostic state) associated with IC
     call ace_read_restart()
-    ! TODO: create a tensor from the output array
 
     ! using restart data from ACE set the fields passed to the coupler
     call ace_eatm_export()
 
   end subroutine ace_comp_init
+
+  subroutine ace_comp_run()
+
+    ! populate net_imports array with IC/restart data passed to coupler for initializtion
+    call ace_eatm_import()
+
+    ! create input/output tensors based off net input/output arrays
+    ! call torch_tensor_from_array(input_tensor(1),  net_inputs, [1, 2, 3, 4], torch_kCPU)
+    call torch_tensor_from_blob(&
+      input_tensor(1), &
+      c_loc(net_inputs), &
+      4_c_int, &
+      input_tensor_shape, &
+      tensor_layout, &
+      torch_kFloat32, &
+      torch_kCPU &
+    )
+    ! call torch_tensor_from_array(output_tensor(1), net_outputs, [1, 2, 3, 4], torch_kCPU)
+    call torch_tensor_from_blob(&
+      output_tensor(1), &
+      c_loc(net_outputs), &
+      4_c_int, &
+      output_tensor_shape, &
+      tensor_layout, &
+      torch_kFloat32, &
+      torch_kCPU &
+    )
+
+    write(logunit_atm, *) "Shape of the input tensor:", input_tensor(1) % get_shape()
+    write(logunit_atm, *) "Shape of the output tensor:", output_tensor(1) % get_shape()
+    call shr_sys_flush(logunit_atm)
+
+    ! run inference
+    call torch_model_forward(ace_model, input_tensor, output_tensor)
+
+    call ace_eatm_export()
+  end subroutine ace_comp_run
+
+  subroutine ace_comp_finalize()
+    call torch_delete(ace_model)
+    call torch_delete(input_tensor)
+    call torch_delete(output_tensor)
+  end subroutine ace_comp_finalize
 
   subroutine ace_read_ic()
     ! AN TODO: add this to the namelist
@@ -152,6 +238,60 @@ CONTAINS
 
     call ncd_pio_closefile(ncid)
   end subroutine ace_read_restart
+
+  subroutine ace_eatm_import()
+    ! !LOCAL VARIABLES:
+    integer :: i, j
+
+    do j = 1, lsize_y
+      do i = 1, lsize_x
+        net_inputs(1,  1, i, j) = lndfrac(i, j)            ! ACE2-EAMv3: LANDFRAC
+        net_inputs(1,  2, i, j) = ocnfrac(i, j)            ! ACE2-EAMv3: OCNFRAC
+        net_inputs(1,  3, i, j) = icefrac(i, j)            ! ACE2-EAMv3: ICEFRAC
+        net_inputs(1,  4, i, j) = net_inputs(1, 4, i, j)   ! ACE2-EAMv3: PHIS
+        ! -----------------------------------------------------------------------
+        ! TODO (AN): Evolve `SOLIN`, `PS`, and TS fileds intime
+        ! -----------------------------------------------------------------------
+        net_inputs(1,  5, i, j) = net_inputs(1, 5, i, j)   ! ACE2-EAMv3: SOLIN
+        net_inputs(1,  6, i, j) = net_inputs(1, 6, i, j)   ! ACE2-EAMv3: PS
+        net_inputs(1,  7, i, j) = ts(i, j)                 ! ACE2-EAMv3: TS
+        ! For 3D fields just advance through with time
+        net_inputs(1,  8, i, j) = net_outputs(1,  3, i, j) ! ACE2-EAMv3: T_0
+        net_inputs(1,  9, i, j) = net_outputs(1,  4, i, j) ! ACE2-EAMv3: T_1
+        net_inputs(1, 10, i, j) = net_outputs(1,  5, i, j) ! ACE2-EAMv3: T_2
+        net_inputs(1, 11, i, j) = net_outputs(1,  6, i, j) ! ACE2-EAMv3: T_3
+        net_inputs(1, 12, i, j) = net_outputs(1,  7, i, j) ! ACE2-EAMv3: T_4
+        net_inputs(1, 13, i, j) = net_outputs(1,  8, i, j) ! ACE2-EAMv3: T_5
+        net_inputs(1, 14, i, j) = net_outputs(1,  9, i, j) ! ACE2-EAMv3: T_6
+        net_inputs(1, 15, i, j) = net_outputs(1, 10, i, j) ! ACE2-EAMv3: T_7
+        net_inputs(1, 16, i, j) = net_outputs(1, 11, i, j) ! ACE2-EAMv3: specific_total_water_0
+        net_inputs(1, 17, i, j) = net_outputs(1, 12, i, j) ! ACE2-EAMv3: specific_total_water_1
+        net_inputs(1, 18, i, j) = net_outputs(1, 13, i, j) ! ACE2-EAMv3: specific_total_water_2
+        net_inputs(1, 19, i, j) = net_outputs(1, 14, i, j) ! ACE2-EAMv3: specific_total_water_3
+        net_inputs(1, 20, i, j) = net_outputs(1, 15, i, j) ! ACE2-EAMv3: specific_total_water_4
+        net_inputs(1, 21, i, j) = net_outputs(1, 16, i, j) ! ACE2-EAMv3: specific_total_water_5
+        net_inputs(1, 22, i, j) = net_outputs(1, 17, i, j) ! ACE2-EAMv3: specific_total_water_6
+        net_inputs(1, 23, i, j) = net_outputs(1, 18, i, j) ! ACE2-EAMv3: specific_total_water_7
+        net_inputs(1, 24, i, j) = net_outputs(1, 19, i, j) ! ACE2-EAMv3: U_0
+        net_inputs(1, 25, i, j) = net_outputs(1, 20, i, j) ! ACE2-EAMv3: U_1
+        net_inputs(1, 26, i, j) = net_outputs(1, 21, i, j) ! ACE2-EAMv3: U_2
+        net_inputs(1, 27, i, j) = net_outputs(1, 22, i, j) ! ACE2-EAMv3: U_3
+        net_inputs(1, 28, i, j) = net_outputs(1, 23, i, j) ! ACE2-EAMv3: U_4
+        net_inputs(1, 29, i, j) = net_outputs(1, 24, i, j) ! ACE2-EAMv3: U_5
+        net_inputs(1, 30, i, j) = net_outputs(1, 25, i, j) ! ACE2-EAMv3: U_6
+        net_inputs(1, 31, i, j) = net_outputs(1, 26, i, j) ! ACE2-EAMv3: U_7
+        net_inputs(1, 32, i, j) = net_outputs(1, 27, i, j) ! ACE2-EAMv3: V_0
+        net_inputs(1, 33, i, j) = net_outputs(1, 28, i, j) ! ACE2-EAMv3: V_1
+        net_inputs(1, 34, i, j) = net_outputs(1, 29, i, j) ! ACE2-EAMv3: V_2
+        net_inputs(1, 35, i, j) = net_outputs(1, 30, i, j) ! ACE2-EAMv3: V_3
+        net_inputs(1, 36, i, j) = net_outputs(1, 31, i, j) ! ACE2-EAMv3: V_4
+        net_inputs(1, 37, i, j) = net_outputs(1, 32, i, j) ! ACE2-EAMv3: V_5
+        net_inputs(1, 38, i, j) = net_outputs(1, 33, i, j) ! ACE2-EAMv3: V_6
+        net_inputs(1, 39, i, j) = net_outputs(1, 34, i, j) ! ACE2-EAMv3: V_7
+      enddo
+    enddo
+
+  end subroutine ace_eatm_import
 
   subroutine ace_eatm_export()
     ! !LOCAL VARIABLES:

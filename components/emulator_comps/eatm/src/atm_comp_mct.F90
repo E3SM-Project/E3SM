@@ -306,7 +306,7 @@ CONTAINS
     character(*), parameter :: subName = "(atm_final_mct) "
     !-------------------------------------------------------------------------------
 
-    call  eatm_comp_final()
+    call eatm_comp_final()
 
   end subroutine atm_final_mct
 
@@ -439,7 +439,6 @@ CONTAINS
           if (index_x2a_Faxx_sen>0) then
              shf(i,j) = -x2a_a%rAttr(index_x2a_Faxx_sen,n)
           end if
-          if (masterproc) write(logunit_atm,*) 'Import shf ',minval(shf),maxval(shf)
           if (index_x2a_Faxx_evap>0) then
              cflx(i,j) = -x2a_a%rAttr(index_x2a_Faxx_evap,n)
           end if
@@ -503,6 +502,8 @@ CONTAINS
        end do
     end do
 
+    if (masterproc) write(logunit_atm,*) 'Import shf ',minval(shf),maxval(shf)
+
   end subroutine atm_import_mct
 
 !====================================================================================
@@ -523,11 +524,6 @@ CONTAINS
     logical,save :: first_time = .true.
     character(len=32), parameter :: sub = 'atm_export_mct'
     !---------------------------------------------------------------------------
-
-    !JW nothing to return yet and sending 0's will wreak havoc, so just stop for now
-    if (masterproc) write(logunit_atm,*) 'got to atm_export, stopping'
-    call shr_sys_flush(logunit_atm)
-    stop
 
     !JW list returned could be different for different emulators
     n = 0

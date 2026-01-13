@@ -181,6 +181,7 @@ CONTAINS
       write(logunit_atm, *) "vbot  (min, max):  ( ", minval(vbot(:, :)),  maxval(vbot(:, :)), " )"
       write(logunit_atm, *) "rainl (min, max):  ( ", minval(rainl(:, :)), maxval(rainl(:, :)), " )"
       write(logunit_atm, *) "snowl (min, max):  ( ", minval(snowl(:, :)), maxval(snowl(:, :)), " )"
+      call shr_sys_flush(logunit_atm)
     endif
 
     call t_stopf ('eatm_grid')
@@ -251,7 +252,7 @@ CONTAINS
     call t_startf('eatm')
 
     !JW real work goes here
-
+    call ace_comp_run()
 
     call t_stopf('eatm_datamode')
 
@@ -359,6 +360,10 @@ CONTAINS
 
     deallocate(net_inputs)
     deallocate(net_outputs)
+
+    ! TODO (AN): Generalize dispatching correct finalize method for different emulators
+    call ace_comp_finalize()
+
     if (masterproc) then
        write(logunit_atm,F91)
        write(logunit_atm,F00) trim(myModelName),': end of main integration loop'
@@ -369,5 +374,4 @@ CONTAINS
 
   end subroutine eatm_comp_final
   !===============================================================================
-
 end module eatm_comp_mod
