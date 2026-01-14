@@ -290,6 +290,7 @@ void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real et
     if (m_data.do_3d_turbulence) {
       GPTLstart("hvf-3dturb");
       apply_horizontal_turbulent_diffusion();
+      Kokkos::fence();
       GPTLstop("hvf-3dturb");
     }
 

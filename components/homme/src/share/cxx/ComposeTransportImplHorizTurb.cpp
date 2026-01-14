@@ -46,7 +46,7 @@ void ComposeTransportImpl::advance_horizontal_turbulent_diffusion_scalar (const 
     Kokkos::fence();
     laplace_simple_Qtens();
 
-    { // Compute Q = Q spheremp - dt nu_q Qtens. N.B. spheremp is already in
+    { // Compute Q = Q spheremp - dt Kh Qtens. N.B. spheremp is already in
       // Qtens from divergence_sphere_wk.
       const auto f = KOKKOS_LAMBDA (const int idx) {
         int ie, q, i, j, lev;
