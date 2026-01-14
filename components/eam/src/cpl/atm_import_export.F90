@@ -5,6 +5,12 @@ module atm_import_export
   implicit none
 
 #ifdef HAVE_MOAB
+#define A2X_SET(index) a2x_am(ig, index)
+#else
+#define A2X_SET(index) a2x(index, ig)
+#endif
+
+#ifdef HAVE_MOAB
   ! to store all fields to be set in moab
   integer                :: mblsize, totalmbls, nsend, totalmbls_r, nrecv
   real(r8) , allocatable :: a2x_am(:,:) ! atm to coupler, on atm mesh, on atm component pes
@@ -438,61 +444,61 @@ contains
     do c=begchunk, endchunk
        ncols = get_ncols_p(c)
        do i=1,ncols
-          call a2x_set(ig, index_a2x_Sa_pslv, cam_out(c)%psl(i))
-          call a2x_set(ig, index_a2x_Sa_z, cam_out(c)%zbot(i))
-          call a2x_set(ig, index_a2x_Sa_u, cam_out(c)%ubot(i))
-          call a2x_set(ig, index_a2x_Sa_v, cam_out(c)%vbot(i))
+          A2X_SET(index_a2x_Sa_pslv) = cam_out(c)%psl(i)
+          A2X_SET(index_a2x_Sa_z) = cam_out(c)%zbot(i)
+          A2X_SET(index_a2x_Sa_u) = cam_out(c)%ubot(i)
+          A2X_SET(index_a2x_Sa_v) = cam_out(c)%vbot(i)
           if (linearize_pbl_winds) then
-             call a2x_set(ig, index_a2x_Sa_wsresp, cam_out(c)%wsresp(i))
-             call a2x_set(ig, index_a2x_Sa_tau_est, cam_out(c)%tau_est(i))
+             A2X_SET(index_a2x_Sa_wsresp) = cam_out(c)%wsresp(i)
+             A2X_SET(index_a2x_Sa_tau_est) = cam_out(c)%tau_est(i)
           end if
           ! This check is only for SCREAMv0; otherwise gustiness should always
           ! be exported.
           if (index_a2x_Sa_ugust /= 0) then
-             call a2x_set(ig, index_a2x_Sa_ugust, cam_out(c)%ugust(i))
+             A2X_SET(index_a2x_Sa_ugust) = cam_out(c)%ugust(i)
           end if
-          call a2x_set(ig, index_a2x_Sa_tbot, cam_out(c)%tbot(i))
-          call a2x_set(ig, index_a2x_Sa_ptem, cam_out(c)%thbot(i))
-          call a2x_set(ig, index_a2x_Sa_pbot, cam_out(c)%pbot(i))
-          call a2x_set(ig, index_a2x_Sa_shum, cam_out(c)%qbot(i,1))
-          call a2x_set(ig, index_a2x_Sa_dens, cam_out(c)%rho(i))
+          A2X_SET(index_a2x_Sa_tbot) = cam_out(c)%tbot(i)
+          A2X_SET(index_a2x_Sa_ptem) = cam_out(c)%thbot(i)
+          A2X_SET(index_a2x_Sa_pbot) = cam_out(c)%pbot(i)
+          A2X_SET(index_a2x_Sa_shum) = cam_out(c)%qbot(i,1)
+          A2X_SET(index_a2x_Sa_dens) = cam_out(c)%rho(i)
 
           if (trim(adjustl(precip_downscaling_method)) == "FNM") then
              !if the land model's precip downscaling method is FNM, export uovern to the coupler
-             call a2x_set(ig, index_a2x_Sa_uovern, cam_out(c)%uovern(i))
+             A2X_SET(index_a2x_Sa_uovern) = cam_out(c)%uovern(i)
           end if
-          call a2x_set(ig, index_a2x_Faxa_swnet, cam_out(c)%netsw(i))
-          call a2x_set(ig, index_a2x_Faxa_lwdn, cam_out(c)%flwds(i))
-          call a2x_set(ig, index_a2x_Faxa_rainc, (cam_out(c)%precc(i)-cam_out(c)%precsc(i))*1000._r8)
-          call a2x_set(ig, index_a2x_Faxa_rainl, (cam_out(c)%precl(i)-cam_out(c)%precsl(i))*1000._r8)
-          call a2x_set(ig, index_a2x_Faxa_snowc, cam_out(c)%precsc(i)*1000._r8)
-          call a2x_set(ig, index_a2x_Faxa_snowl, cam_out(c)%precsl(i)*1000._r8)
-          call a2x_set(ig, index_a2x_Faxa_swndr, cam_out(c)%soll(i))
-          call a2x_set(ig, index_a2x_Faxa_swvdr, cam_out(c)%sols(i))
-          call a2x_set(ig, index_a2x_Faxa_swndf, cam_out(c)%solld(i))
-          call a2x_set(ig, index_a2x_Faxa_swvdf, cam_out(c)%solsd(i))
+          A2X_SET(index_a2x_Faxa_swnet) = cam_out(c)%netsw(i)
+          A2X_SET(index_a2x_Faxa_lwdn) = cam_out(c)%flwds(i)
+          A2X_SET(index_a2x_Faxa_rainc) = (cam_out(c)%precc(i)-cam_out(c)%precsc(i))*1000._r8
+          A2X_SET(index_a2x_Faxa_rainl) = (cam_out(c)%precl(i)-cam_out(c)%precsl(i))*1000._r8
+          A2X_SET(index_a2x_Faxa_snowc) = cam_out(c)%precsc(i)*1000._r8
+          A2X_SET(index_a2x_Faxa_snowl) = cam_out(c)%precsl(i)*1000._r8
+          A2X_SET(index_a2x_Faxa_swndr) = cam_out(c)%soll(i)
+          A2X_SET(index_a2x_Faxa_swvdr) = cam_out(c)%sols(i)
+          A2X_SET(index_a2x_Faxa_swndf) = cam_out(c)%solld(i)
+          A2X_SET(index_a2x_Faxa_swvdf) = cam_out(c)%solsd(i)
 
           ! aerosol deposition fluxes
-          call a2x_set(ig, index_a2x_Faxa_bcphidry, cam_out(c)%bcphidry(i))
-          call a2x_set(ig, index_a2x_Faxa_bcphodry, cam_out(c)%bcphodry(i))
-          call a2x_set(ig, index_a2x_Faxa_bcphiwet, cam_out(c)%bcphiwet(i))
-          call a2x_set(ig, index_a2x_Faxa_ocphidry, cam_out(c)%ocphidry(i))
-          call a2x_set(ig, index_a2x_Faxa_ocphodry, cam_out(c)%ocphodry(i))
-          call a2x_set(ig, index_a2x_Faxa_ocphiwet, cam_out(c)%ocphiwet(i))
-          call a2x_set(ig, index_a2x_Faxa_dstwet1, cam_out(c)%dstwet1(i))
-          call a2x_set(ig, index_a2x_Faxa_dstdry1, cam_out(c)%dstdry1(i))
-          call a2x_set(ig, index_a2x_Faxa_dstwet2, cam_out(c)%dstwet2(i))
-          call a2x_set(ig, index_a2x_Faxa_dstdry2, cam_out(c)%dstdry2(i))
-          call a2x_set(ig, index_a2x_Faxa_dstwet3, cam_out(c)%dstwet3(i))
-          call a2x_set(ig, index_a2x_Faxa_dstdry3, cam_out(c)%dstdry3(i))
-          call a2x_set(ig, index_a2x_Faxa_dstwet4, cam_out(c)%dstwet4(i))
-          call a2x_set(ig, index_a2x_Faxa_dstdry4, cam_out(c)%dstdry4(i))
+          A2X_SET(index_a2x_Faxa_bcphidry) = cam_out(c)%bcphidry(i)
+          A2X_SET(index_a2x_Faxa_bcphodry) = cam_out(c)%bcphodry(i)
+          A2X_SET(index_a2x_Faxa_bcphiwet) = cam_out(c)%bcphiwet(i)
+          A2X_SET(index_a2x_Faxa_ocphidry) = cam_out(c)%ocphidry(i)
+          A2X_SET(index_a2x_Faxa_ocphodry) = cam_out(c)%ocphodry(i)
+          A2X_SET(index_a2x_Faxa_ocphiwet) = cam_out(c)%ocphiwet(i)
+          A2X_SET(index_a2x_Faxa_dstwet1) = cam_out(c)%dstwet1(i)
+          A2X_SET(index_a2x_Faxa_dstdry1) = cam_out(c)%dstdry1(i)
+          A2X_SET(index_a2x_Faxa_dstwet2) = cam_out(c)%dstwet2(i)
+          A2X_SET(index_a2x_Faxa_dstdry2) = cam_out(c)%dstdry2(i)
+          A2X_SET(index_a2x_Faxa_dstwet3) = cam_out(c)%dstwet3(i)
+          A2X_SET(index_a2x_Faxa_dstdry3) = cam_out(c)%dstdry3(i)
+          A2X_SET(index_a2x_Faxa_dstwet4) = cam_out(c)%dstwet4(i)
+          A2X_SET(index_a2x_Faxa_dstdry4) = cam_out(c)%dstdry4(i)
 
           if (index_a2x_Sa_co2prog /= 0) then
-             call a2x_set(ig, index_a2x_Sa_co2prog, cam_out(c)%co2prog(i)) ! atm prognostic co2
+             A2X_SET(index_a2x_Sa_co2prog) = cam_out(c)%co2prog(i) ! atm prognostic co2
           end if
           if (index_a2x_Sa_co2diag /= 0) then
-             call a2x_set(ig, index_a2x_Sa_co2diag, cam_out(c)%co2diag(i)) ! atm diagnostic co2
+             A2X_SET(index_a2x_Sa_co2diag) = cam_out(c)%co2diag(i) ! atm diagnostic co2
           end if
 
           ig=ig+1
@@ -516,20 +522,6 @@ contains
     if (ierr > 0 )  &
       call endrun('Error: fail to write the atm phys mesh file with data')
 #endif
-
-  contains
-
-    subroutine a2x_set(ig, index, val)
-      integer, intent(in) :: ig
-      integer, intent(in) :: index
-      real(r8), intent(in) :: val
-#ifdef HAVE_MOAB
-      a2x_am(ig, index) = val
-#else
-      a2x(index, ig) = val
-#endif
-    end subroutine a2x_set
-
   end subroutine atm_export
 
 end module atm_import_export
