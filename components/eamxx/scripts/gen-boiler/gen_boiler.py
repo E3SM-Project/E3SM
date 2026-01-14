@@ -291,6 +291,21 @@ PHYSICS = {
         "ncol",
         True
     ),
+    "zm" : (
+        (
+            "components/eam/src/physics/cam/zm/zm_conv_cape.F90",
+            "components/eam/src/physics/cam/zm/zm_conv.F90",
+            "components/eam/src/physics/cam/zm/zm_conv_mcsp.F90",
+            "components/eam/src/physics/cam/zm/zm_conv_types.F90",
+            "components/eam/src/physics/cam/zm/zm_conv_util.F90",
+            "components/eam/src/physics/cam/zm/zm_transport.F90"
+        ),
+        "components/eamxx/src/physics/zm",
+        "zm_common_init(); // Might need more specific init",
+        "zm_finalize_cxx();",
+        "ncol",
+        True
+    ),
 }
 
 #
