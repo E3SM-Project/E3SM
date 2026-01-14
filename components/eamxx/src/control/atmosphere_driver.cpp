@@ -59,7 +59,7 @@ namespace control {
  *     Note: at this stage, atm procs that act on non-ref grid(s) should be able to create their
  *           remappers. The AD will *not* take care of remapping inputs/outputs of the process.
  *  4) Register all fields and all groups from all atm procs inside the field managers, and proceed
- *     to allocate fields. For more details, see the documentation in the share/field/field_request.hpp header.
+ *     to allocate fields. For more details, see the documentation in the share/data_managers/field_request.hpp header.
  *  5) Set all the fields into the atm procs. Before this point, all the atm procs had were the
  *     FieldIdentifiers for their input/output fields and FieldGroupInfo for their input/output
  *     field groups. Now, we pass actual Field and FieldGroup objects to them, where both the
@@ -84,7 +84,7 @@ namespace control {
  *  - for field                -> src/share/field/field.hpp
  *  - for field manager        -> src/share/data_managers/field_manager.hpp
  *  - for field groups         -> src/share/field/field_group.hpp
- *  - for field/group requests -> src/share/field/field_request.hpp
+ *  - for field/group requests -> src/share/data_managers/field_request.hpp
  *  - for grid                 -> src/share/grid/abstract_grid.hpp
  *  - for grid manager         -> src/share/data_managers/grids_manager.hpp
  *  - for atm proc             -> src/share/atm_process/atmosphere_process.hpp
