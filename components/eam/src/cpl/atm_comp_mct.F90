@@ -64,6 +64,7 @@ module atm_comp_mct
   use seq_comm_mct     , only: mphaid ! atm physics grid id in MOAB, on atm pes
   use iso_c_binding
   use seq_comm_mct,     only : num_moab_exports
+  use iMOAB, only:    iMOAB_SetDoubleTagStorage, iMOAB_WriteMesh, iMOAB_GetDoubleTagStorage
 #ifdef MOABCOMP
   use seq_comm_mct, only:  seq_comm_compare_mb_mct
 #endif
@@ -121,6 +122,12 @@ module atm_comp_mct
 
 #ifdef HAVE_MOAB
   integer,       pointer :: global_ids(:) ! they could be dof(), but better maintain our own list
+  ! to store all fields to be set in moab
+  integer                :: mblsize, totalmbls, nsend, totalmbls_r, nrecv
+  real(r8) , allocatable :: a2x_am(:,:) ! atm to coupler, on atm mesh, on atm component pes
+  real(r8) , allocatable :: a2x_am2(:,:) !transposed a2x_am2
+  real(r8) , allocatable :: x2a_am(:,:) ! coupler to atm, on atm mesh, on atm component pes
+  real(r8) , allocatable :: x2a_am2(:,:) ! transposed x2a_am
 
 #ifdef MOABCOMP
   integer  :: mpicom_atm_moab ! used just for mpi-reducing the difference between moab tags and mct avs
@@ -199,6 +206,10 @@ CONTAINS
     integer :: size_list, index_list, ent_type
     type(mct_string)    :: mctOStr  !
     character(CXX) ::tagname, mct_field, modelStr
+#endif
+#ifdef HAVE_MOAB
+    integer :: ent_type, ierr
+    character(CXX) :: tagname
 #endif
 
     !-----------------------------------------------------------------------
@@ -416,15 +427,31 @@ CONTAINS
        nsend = mct_avect_nRattr(a2x_a)
        totalmbls = mblsize * nsend   ! size of the double array
        allocate (a2x_am(mblsize, nsend) )
+       allocate (a2x_am2(nsend,mblsize) )
 
        nrecv = mct_avect_nRattr(x2a_a)
        totalmbls_r = mblsize * nrecv   ! size of the double array used to receive
        allocate (x2a_am(mblsize, nrecv) ) ! these will be received by moab tags, then used to set cam in surf data
+       allocate (x2a_am2(nrecv, mblsize) ) ! transpose of moab receive array
+       ! initialize/reset all export data to zero
+       a2x_am2 = 0.0D0
 #endif
        !
        ! Create initial atm export state
        !
+#ifdef HAVE_MOAB
+       a2x_am2 = 0.0_r8
+       call atm_export( cam_out, a2x_am2 )
+       a2x_am=transpose(a2x_am2)
+       tagname=trim(seq_flds_a2x_fields)//C_NULL_CHAR
+       ent_type = 0 ! vertices, point cloud
+       ierr = iMOAB_SetDoubleTagStorage ( mphaid, tagname, totalmbls , ent_type, a2x_am )
+       if ( ierr > 0) then
+         call endrun('Error: fail to set  seq_flds_a2x_fields for atm physgrid moab mesh')
+       endif
+#else
        call atm_export( cam_out, a2x_a%rattr )
+#endif
        !
        ! Set flag to specify that an extra albedo calculation is to be done (i.e. specify active)
        !
@@ -497,13 +524,37 @@ CONTAINS
 
 #endif
 
+#ifdef HAVE_MOAB
+          tagname=trim(seq_flds_x2a_fields)//C_NULL_CHAR
+          ent_type = 0 ! vertices, point cloud
+          ierr = iMOAB_GetDoubleTagStorage ( mphaid, tagname, totalmbls_r , ent_type, x2a_am )
+          if ( ierr > 0) then
+            call endrun('Error: fail to get  seq_flds_x2a_fields for atm physgrid moab mesh')
+          endif
+          ! transpose x2a_am into x2a_am2
+          x2a_am2 = transpose(x2a_am)
+          call atm_import( x2a_am2, cam_in )
+#else
           call atm_import( x2a_a%rattr, cam_in )
+#endif
 
           call t_startf('CAM_run1')
           call cam_run1 ( cam_in, cam_out )
           call t_stopf('CAM_run1')
 
+#ifdef HAVE_MOAB
+          a2x_am2 = 0.0_r8
+          call atm_export( cam_out, a2x_am2 )
+          a2x_am=transpose(a2x_am2)
+          tagname=trim(seq_flds_a2x_fields)//C_NULL_CHAR
+          ent_type = 0 ! vertices, point cloud
+          ierr = iMOAB_SetDoubleTagStorage ( mphaid, tagname, totalmbls , ent_type, a2x_am )
+          if ( ierr > 0) then
+            call endrun('Error: fail to set  seq_flds_a2x_fields for atm physgrid moab mesh')
+          endif
+#else
           call atm_export( cam_out, a2x_a%rattr )
+#endif
 
 !  If StepNo != 0 in atm_init, must be a resart
        else ! if (StepNo != 0) then
@@ -518,9 +569,22 @@ CONTAINS
           call t_stopf('atm_read_srfrest_mct')
 #endif
 
+#ifdef HAVE_MOAB
+          tagname=trim(seq_flds_x2a_fields)//C_NULL_CHAR
+          ent_type = 0 ! vertices, point cloud
+          ierr = iMOAB_GetDoubleTagStorage ( mphaid, tagname, totalmbls_r , ent_type, x2a_am )
+          if ( ierr > 0) then
+            call endrun('Error: fail to get  seq_flds_x2a_fields for atm physgrid moab mesh')
+          endif
+          ! transpose x2a_am into x2a_am2
+          x2a_am2 = transpose(x2a_am)
+
           ! Sent .true. as an optional argument so that restart_init is set to .true.  in atm_import
           ! This will ensure BFB restarts whenever qneg4 updates fluxes on the restart time step
+          call atm_import( x2a_am2, cam_in, .true. )
+#else
           call atm_import( x2a_a%rattr, cam_in, .true. )
+#endif
 
           call t_startf('cam_run1')
           call cam_run1 ( cam_in, cam_out )
@@ -620,6 +684,9 @@ CONTAINS
     integer :: size_list, index_list, ent_type
     type(mct_string)    :: mctOStr  !
     character(CXX) ::tagname, mct_field, modelStr
+#elif defined(HAVE_MOAB)
+    integer :: ent_type, ierr
+    character(CXX) :: tagname
 #endif
 
 #if (defined _MEMTRACE)
@@ -650,11 +717,23 @@ CONTAINS
     nlend_sync = seq_timemgr_StopAlarmIsOn(EClock)
     rstwr_sync = seq_timemgr_RestartAlarmIsOn(EClock)
 
-    ! Map input from mct to cam data structure
 
+    ! Map input from cpl7 to eam data structure
     call t_startf ('CAM_import')
-! move moab import after regular atm import, so it would be in charge
-    call atm_import( x2a_a%rattr, cam_in)
+#ifdef HAVE_MOAB
+    tagname=trim(seq_flds_x2a_fields)//C_NULL_CHAR
+    ent_type = 0 ! vertices, point cloud
+    ierr = iMOAB_GetDoubleTagStorage ( mphaid, tagname, totalmbls_r , ent_type, x2a_am )
+    if ( ierr > 0) then
+      call endrun('Error: fail to get  seq_flds_x2a_fields for atm physgrid moab mesh')
+    endif
+    ! transpose x2a_am into x2a_am2
+    x2a_am2 = transpose(x2a_am)
+    call atm_import( x2a_am2, cam_in )
+#else
+    call atm_import( x2a_a%rattr, cam_in )
+#endif
+    call t_stopf  ('CAM_import')
 
 #ifdef MOABCOMP
     ! loop over all fields in seq_flds_x2a_fields
@@ -671,9 +750,6 @@ CONTAINS
     enddo
     call mct_list_clean(temp_list)
 #endif
-
-
-    call t_stopf  ('CAM_import')
 
     ! Cycle over all time steps in the atm coupling interval
 
@@ -732,7 +808,19 @@ CONTAINS
        ! Map output from eam to cpl7 data structures
 
        call t_startf ('CAM_export')
+#ifdef HAVE_MOAB
+       a2x_am2 = 0.0_r8
+       call atm_export( cam_out, a2x_am2 )
+       a2x_am=transpose(a2x_am2)
+       tagname=trim(seq_flds_a2x_fields)//C_NULL_CHAR
+       ent_type = 0 ! vertices, point cloud
+       ierr = iMOAB_SetDoubleTagStorage ( mphaid, tagname, totalmbls , ent_type, a2x_am )
+       if ( ierr > 0) then
+         call endrun('Error: fail to set  seq_flds_a2x_fields for atm physgrid moab mesh')
+       endif
+#else
        call atm_export( cam_out, a2x_a%rattr )
+#endif
        call t_stopf ('CAM_export')
 
     end do

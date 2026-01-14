@@ -4,23 +4,6 @@ module atm_import_export
   use cam_logfile      , only: iulog
   implicit none
 
-#ifdef HAVE_MOAB
-#define X2A_GET(index) x2a_am(ig, index)
-#define X2A_SLICE(range) x2a_am(ig, range)
-#define A2X_SET(index) a2x_am(ig, index)
-#else
-#define X2A_GET(index) x2a(index, ig)
-#define X2A_SLICE(range) x2a(range, ig)
-#define A2X_SET(index) a2x(index, ig)
-#endif
-
-#ifdef HAVE_MOAB
-  ! to store all fields to be set in moab
-  integer                :: mblsize, totalmbls, nsend, totalmbls_r, nrecv
-  real(r8) , allocatable :: a2x_am(:,:) ! atm to coupler, on atm mesh, on atm component pes
-  real(r8) , allocatable :: x2a_am(:,:) ! coupler to atm, on atm mesh, on atm component pes
-#endif
-
 contains
 
   subroutine atm_import( x2a, cam_in, restart_init)
@@ -41,13 +24,6 @@ contains
     use time_manager  , only: is_first_step, get_curr_date
     use constituents  , only: pcnst
     use cam_abortutils, only: endrun
-#ifdef HAVE_MOAB
-    use seq_comm_mct,   only: mphaid
-    use shr_kind_mod,   only: CXX=>shr_kind_cxx
-    use iMOAB,          only: iMOAB_GetDoubleTagStorage
-    use iso_c_binding,  only: C_NULL_CHAR
-    use seq_flds_mod,   only: seq_flds_x2a_fields
-#endif
     !
     ! Arguments
     !
@@ -67,10 +43,6 @@ contains
     integer :: icnst, mon_idx
     logical :: overwrite_flds
     integer :: idx_megan_end, idx_ddvel_end  ! end indices for array slices
-#ifdef HAVE_MOAB
-    character(CXX) :: tagname
-    integer :: ent_type, ierr
-#endif
     !-----------------------------------------------------------------------
     overwrite_flds = .true.
     ! don't overwrite fields if invoked during the initialization phase
@@ -80,15 +52,6 @@ contains
     if (iac_present) then
       mon_idx = get_month_index()
     endif
-
-#ifdef HAVE_MOAB
-    tagname=trim(seq_flds_x2a_fields)//C_NULL_CHAR
-    ent_type = 0 ! vertices, point cloud
-    ierr = iMOAB_GetDoubleTagStorage ( mphaid, tagname, totalmbls_r , ent_type, x2a_am )
-    if ( ierr > 0) then
-      call endrun('Error: fail to get  seq_flds_a2x_fields for atm physgrid moab mesh')
-    endif
-#endif
 
     ! E3SM sign convention is that fluxes are positive downward
 
@@ -123,68 +86,68 @@ contains
              ! Move lhf to this if-block so that it is not overwritten to ensure BFB restarts when qneg4 correction
              ! occurs at the restart time step
              ! Modified by Wuyin Lin
-             cam_in(c)%shf(i)    = -X2A_GET(index_x2a_Faxx_sen)
-             cam_in(c)%cflx(i,1) = -X2A_GET(index_x2a_Faxx_evap)
-             cam_in(c)%lhf(i)    = -X2A_GET(index_x2a_Faxx_lat)
+             cam_in(c)%shf(i)    = -x2a(index_x2a_Faxx_sen,ig)
+             cam_in(c)%cflx(i,1) = -x2a(index_x2a_Faxx_evap,ig)
+             cam_in(c)%lhf(i)    = -x2a(index_x2a_Faxx_lat,ig)
           endif
 
           if (index_x2a_Faoo_h2otemp /= 0) then
-             cam_in(c)%h2otemp(i) = -X2A_GET(index_x2a_Faoo_h2otemp)
+             cam_in(c)%h2otemp(i) = -x2a(index_x2a_Faoo_h2otemp,ig)
           end if
 
-          cam_in(c)%wsx(i)    = -X2A_GET(index_x2a_Faxx_taux)
-          cam_in(c)%wsy(i)    = -X2A_GET(index_x2a_Faxx_tauy)
-          cam_in(c)%lwup(i)      = -X2A_GET(index_x2a_Faxx_lwup)
-          cam_in(c)%asdir(i)     =  X2A_GET(index_x2a_Sx_avsdr)
-          cam_in(c)%aldir(i)     =  X2A_GET(index_x2a_Sx_anidr)
-          cam_in(c)%asdif(i)     =  X2A_GET(index_x2a_Sx_avsdf)
-          cam_in(c)%aldif(i)     =  X2A_GET(index_x2a_Sx_anidf)
-          cam_in(c)%ts(i)        =  X2A_GET(index_x2a_Sx_t)
-          cam_in(c)%sst(i)       =  X2A_GET(index_x2a_So_t)
-          cam_in(c)%snowhland(i) =  X2A_GET(index_x2a_Sl_snowh)
-          cam_in(c)%snowhice(i)  =  X2A_GET(index_x2a_Si_snowh)
-          cam_in(c)%tref(i)      =  X2A_GET(index_x2a_Sx_tref)
-          cam_in(c)%qref(i)      =  X2A_GET(index_x2a_Sx_qref)
-          cam_in(c)%u10(i)       =  X2A_GET(index_x2a_Sx_u10)
-          cam_in(c)%u10withgusts(i) = X2A_GET(index_x2a_Sx_u10withgusts)
-          cam_in(c)%icefrac(i)   =  X2A_GET(index_x2a_Sf_ifrac)
-          cam_in(c)%ocnfrac(i)   =  X2A_GET(index_x2a_Sf_ofrac)
-          cam_in(c)%landfrac(i)  =  X2A_GET(index_x2a_Sf_lfrac)
+          cam_in(c)%wsx(i)    = -x2a(index_x2a_Faxx_taux,ig)
+          cam_in(c)%wsy(i)    = -x2a(index_x2a_Faxx_tauy,ig)
+          cam_in(c)%lwup(i)      = -x2a(index_x2a_Faxx_lwup,ig)
+          cam_in(c)%asdir(i)     =  x2a(index_x2a_Sx_avsdr,ig)
+          cam_in(c)%aldir(i)     =  x2a(index_x2a_Sx_anidr,ig)
+          cam_in(c)%asdif(i)     =  x2a(index_x2a_Sx_avsdf,ig)
+          cam_in(c)%aldif(i)     =  x2a(index_x2a_Sx_anidf,ig)
+          cam_in(c)%ts(i)        =  x2a(index_x2a_Sx_t,ig)
+          cam_in(c)%sst(i)       =  x2a(index_x2a_So_t,ig)
+          cam_in(c)%snowhland(i) =  x2a(index_x2a_Sl_snowh,ig)
+          cam_in(c)%snowhice(i)  =  x2a(index_x2a_Si_snowh,ig)
+          cam_in(c)%tref(i)      =  x2a(index_x2a_Sx_tref,ig)
+          cam_in(c)%qref(i)      =  x2a(index_x2a_Sx_qref,ig)
+          cam_in(c)%u10(i)       =  x2a(index_x2a_Sx_u10,ig)
+          cam_in(c)%u10withgusts(i) = x2a(index_x2a_Sx_u10withgusts,ig)
+          cam_in(c)%icefrac(i)   =  x2a(index_x2a_Sf_ifrac,ig)
+          cam_in(c)%ocnfrac(i)   =  x2a(index_x2a_Sf_ofrac,ig)
+          cam_in(c)%landfrac(i)  =  x2a(index_x2a_Sf_lfrac,ig)
           if ( associated(cam_in(c)%ram1) ) &
-               cam_in(c)%ram1(i) =  X2A_GET(index_x2a_Sl_ram1)
+               cam_in(c)%ram1(i) =  x2a(index_x2a_Sl_ram1,ig)
           if ( associated(cam_in(c)%fv) ) &
-               cam_in(c)%fv(i)   =  X2A_GET(index_x2a_Sl_fv)
+               cam_in(c)%fv(i)   =  x2a(index_x2a_Sl_fv,ig)
           if ( associated(cam_in(c)%soilw) ) &
-               cam_in(c)%soilw(i) =  X2A_GET(index_x2a_Sl_soilw)
+               cam_in(c)%soilw(i) =  x2a(index_x2a_Sl_soilw,ig)
           if ( associated(cam_in(c)%dstflx) ) then
-             cam_in(c)%dstflx(i,1) = X2A_GET(index_x2a_Fall_flxdst1)
-             cam_in(c)%dstflx(i,2) = X2A_GET(index_x2a_Fall_flxdst2)
-             cam_in(c)%dstflx(i,3) = X2A_GET(index_x2a_Fall_flxdst3)
-             cam_in(c)%dstflx(i,4) = X2A_GET(index_x2a_Fall_flxdst4)
+             cam_in(c)%dstflx(i,1) = x2a(index_x2a_Fall_flxdst1,ig)
+             cam_in(c)%dstflx(i,2) = x2a(index_x2a_Fall_flxdst2,ig)
+             cam_in(c)%dstflx(i,3) = x2a(index_x2a_Fall_flxdst3,ig)
+             cam_in(c)%dstflx(i,4) = x2a(index_x2a_Fall_flxdst4,ig)
           endif
           if ( associated(cam_in(c)%meganflx) ) then
              idx_megan_end = index_x2a_Fall_flxvoc+shr_megan_mechcomps_n-1
              cam_in(c)%meganflx(i,1:shr_megan_mechcomps_n) = &
-                  X2A_SLICE(index_x2a_Fall_flxvoc:idx_megan_end)
+                  x2a(index_x2a_Fall_flxvoc:idx_megan_end,ig)
           endif
 
           ! dry dep velocities
           if ( index_x2a_Sl_ddvel/=0 .and. n_drydep>0 ) then
              idx_ddvel_end = index_x2a_Sl_ddvel+n_drydep-1
              cam_in(c)%depvel(i,:n_drydep) = &
-                  X2A_SLICE(index_x2a_Sl_ddvel:idx_ddvel_end)
+                  x2a(index_x2a_Sl_ddvel:idx_ddvel_end,ig)
           endif
           !
           ! fields needed to calculate water isotopes to ocean evaporation processes
           !
-          cam_in(c)%ustar(i) = X2A_GET(index_x2a_So_ustar)
-          cam_in(c)%re(i)    = X2A_GET(index_x2a_So_re)
-          cam_in(c)%ssq(i)   = X2A_GET(index_x2a_So_ssq)
+          cam_in(c)%ustar(i) = x2a(index_x2a_So_ustar,ig)
+          cam_in(c)%re(i)    = x2a(index_x2a_So_re,ig)
+          cam_in(c)%ssq(i)   = x2a(index_x2a_So_ssq,ig)
           !
           ! bgc scenarios
           !
           if (index_x2a_Fall_fco2_lnd /= 0) then
-             cam_in(c)%fco2_lnd(i) = -X2A_GET(index_x2a_Fall_fco2_lnd)
+             cam_in(c)%fco2_lnd(i) = -x2a(index_x2a_Fall_fco2_lnd,ig)
           end if
 
           !------------------------------------------------------------------------------------------
@@ -196,23 +159,23 @@ contains
           if (iac_present) then
              ! if surface emissions from EHC exist for this month, get them from coupler var
              if (index_x2a_Fazz_co2sfc_iac(mon_idx) /= 0) then
-                cam_in(c)%fco2_surface_iac(i) = -X2A_GET(index_x2a_Fazz_co2sfc_iac(mon_idx))
+                cam_in(c)%fco2_surface_iac(i) = -x2a(index_x2a_Fazz_co2sfc_iac(mon_idx),ig)
              end if
              ! if aircraft lo emissions from EHC exist for this month, get them from coupler var
              if (index_x2a_Fazz_co2airlo_iac(mon_idx) /= 0) then
-                iac_vertical_emiss(c)%fco2_low_height(i) = -X2A_GET(index_x2a_Fazz_co2airlo_iac(mon_idx))
+                iac_vertical_emiss(c)%fco2_low_height(i) = -x2a(index_x2a_Fazz_co2airlo_iac(mon_idx),ig)
              end if
              ! if aircraft lo emissions from EHC exist for this month, get them from coupler var
              if (index_x2a_Fazz_co2airhi_iac(mon_idx) /= 0) then
-                iac_vertical_emiss(c)%fco2_high_height(i) = -X2A_GET(index_x2a_Fazz_co2airhi_iac(mon_idx))
+                iac_vertical_emiss(c)%fco2_high_height(i) = -x2a(index_x2a_Fazz_co2airhi_iac(mon_idx),ig)
              endif
           endif ! if (iac_present)
 
           if (index_x2a_Faoo_fco2_ocn /= 0) then
-             cam_in(c)%fco2_ocn(i) = -X2A_GET(index_x2a_Faoo_fco2_ocn)
+             cam_in(c)%fco2_ocn(i) = -x2a(index_x2a_Faoo_fco2_ocn,ig)
           end if
           if (index_x2a_Faoo_fdms_ocn /= 0) then
-             cam_in(c)%fdms(i)     = -X2A_GET(index_x2a_Faoo_fdms_ocn)
+             cam_in(c)%fdms(i)     = -x2a(index_x2a_Faoo_fdms_ocn,ig)
           end if
 
           ig=ig+1
@@ -379,17 +342,13 @@ contains
     use phys_control, only: phys_getopts
     use lnd_infodata, only: precip_downscaling_method
     use cam_abortutils, only: endrun
-#ifdef HAVE_MOAB
-    use shr_kind_mod,  only: CXX=>shr_kind_cxx
-    use seq_comm_mct,  only: mphaid
-    use iMOAB,         only: iMOAB_WriteMesh, iMOAB_SetDoubleTagStorage
-    use iso_c_binding, only: C_NULL_CHAR
-    use seq_flds_mod,  only: seq_flds_a2x_fields
-#endif
 
 #ifdef MOABDEBUG
+    use seq_comm_mct,  only: mphaid
+    use iMOAB,         only: iMOAB_WriteMesh
     character*100 outfile, wopts, lnum
     integer, save :: local_count = 0
+    integer       :: ierr
     character*100 lnum2
 #endif
     !
@@ -403,18 +362,9 @@ contains
     integer :: i,c,n,ig         ! indices
     integer :: ncols            ! Number of columns
     logical :: linearize_pbl_winds
-#ifdef HAVE_MOAB
-    character(CXX) :: tagname
-    integer :: ent_type, ierr
-#endif
     !-----------------------------------------------------------------------
 
     call phys_getopts(linearize_pbl_winds_out=linearize_pbl_winds)
-
-#ifdef HAVE_MOAB
-    ! initialize/reset all export data to zero
-    a2x_am = 0.0D0
-#endif
 
     ! Copy from component arrays into chunk array data structure
     ! Rearrange data from chunk structure into lat-lon buffer and subsequently
@@ -423,74 +373,66 @@ contains
     do c=begchunk, endchunk
        ncols = get_ncols_p(c)
        do i=1,ncols
-          A2X_SET(index_a2x_Sa_pslv) = cam_out(c)%psl(i)
-          A2X_SET(index_a2x_Sa_z) = cam_out(c)%zbot(i)
-          A2X_SET(index_a2x_Sa_u) = cam_out(c)%ubot(i)
-          A2X_SET(index_a2x_Sa_v) = cam_out(c)%vbot(i)
+          a2x(index_a2x_Sa_pslv,ig) = cam_out(c)%psl(i)
+          a2x(index_a2x_Sa_z,ig) = cam_out(c)%zbot(i)
+          a2x(index_a2x_Sa_u,ig) = cam_out(c)%ubot(i)
+          a2x(index_a2x_Sa_v,ig) = cam_out(c)%vbot(i)
           if (linearize_pbl_winds) then
-             A2X_SET(index_a2x_Sa_wsresp) = cam_out(c)%wsresp(i)
-             A2X_SET(index_a2x_Sa_tau_est) = cam_out(c)%tau_est(i)
+             a2x(index_a2x_Sa_wsresp,ig) = cam_out(c)%wsresp(i)
+             a2x(index_a2x_Sa_tau_est,ig) = cam_out(c)%tau_est(i)
           end if
           ! This check is only for SCREAMv0; otherwise gustiness should always
           ! be exported.
           if (index_a2x_Sa_ugust /= 0) then
-             A2X_SET(index_a2x_Sa_ugust) = cam_out(c)%ugust(i)
+             a2x(index_a2x_Sa_ugust,ig) = cam_out(c)%ugust(i)
           end if
-          A2X_SET(index_a2x_Sa_tbot) = cam_out(c)%tbot(i)
-          A2X_SET(index_a2x_Sa_ptem) = cam_out(c)%thbot(i)
-          A2X_SET(index_a2x_Sa_pbot) = cam_out(c)%pbot(i)
-          A2X_SET(index_a2x_Sa_shum) = cam_out(c)%qbot(i,1)
-          A2X_SET(index_a2x_Sa_dens) = cam_out(c)%rho(i)
+          a2x(index_a2x_Sa_tbot,ig) = cam_out(c)%tbot(i)
+          a2x(index_a2x_Sa_ptem,ig) = cam_out(c)%thbot(i)
+          a2x(index_a2x_Sa_pbot,ig) = cam_out(c)%pbot(i)
+          a2x(index_a2x_Sa_shum,ig) = cam_out(c)%qbot(i,1)
+          a2x(index_a2x_Sa_dens,ig) = cam_out(c)%rho(i)
 
           if (trim(adjustl(precip_downscaling_method)) == "FNM") then
              !if the land model's precip downscaling method is FNM, export uovern to the coupler
-             A2X_SET(index_a2x_Sa_uovern) = cam_out(c)%uovern(i)
+             a2x(index_a2x_Sa_uovern,ig) = cam_out(c)%uovern(i)
           end if
-          A2X_SET(index_a2x_Faxa_swnet) = cam_out(c)%netsw(i)
-          A2X_SET(index_a2x_Faxa_lwdn) = cam_out(c)%flwds(i)
-          A2X_SET(index_a2x_Faxa_rainc) = (cam_out(c)%precc(i)-cam_out(c)%precsc(i))*1000._r8
-          A2X_SET(index_a2x_Faxa_rainl) = (cam_out(c)%precl(i)-cam_out(c)%precsl(i))*1000._r8
-          A2X_SET(index_a2x_Faxa_snowc) = cam_out(c)%precsc(i)*1000._r8
-          A2X_SET(index_a2x_Faxa_snowl) = cam_out(c)%precsl(i)*1000._r8
-          A2X_SET(index_a2x_Faxa_swndr) = cam_out(c)%soll(i)
-          A2X_SET(index_a2x_Faxa_swvdr) = cam_out(c)%sols(i)
-          A2X_SET(index_a2x_Faxa_swndf) = cam_out(c)%solld(i)
-          A2X_SET(index_a2x_Faxa_swvdf) = cam_out(c)%solsd(i)
+          a2x(index_a2x_Faxa_swnet,ig) = cam_out(c)%netsw(i)
+          a2x(index_a2x_Faxa_lwdn,ig) = cam_out(c)%flwds(i)
+          a2x(index_a2x_Faxa_rainc,ig) = (cam_out(c)%precc(i)-cam_out(c)%precsc(i))*1000._r8
+          a2x(index_a2x_Faxa_rainl,ig) = (cam_out(c)%precl(i)-cam_out(c)%precsl(i))*1000._r8
+          a2x(index_a2x_Faxa_snowc,ig) = cam_out(c)%precsc(i)*1000._r8
+          a2x(index_a2x_Faxa_snowl,ig) = cam_out(c)%precsl(i)*1000._r8
+          a2x(index_a2x_Faxa_swndr,ig) = cam_out(c)%soll(i)
+          a2x(index_a2x_Faxa_swvdr,ig) = cam_out(c)%sols(i)
+          a2x(index_a2x_Faxa_swndf,ig) = cam_out(c)%solld(i)
+          a2x(index_a2x_Faxa_swvdf,ig) = cam_out(c)%solsd(i)
 
           ! aerosol deposition fluxes
-          A2X_SET(index_a2x_Faxa_bcphidry) = cam_out(c)%bcphidry(i)
-          A2X_SET(index_a2x_Faxa_bcphodry) = cam_out(c)%bcphodry(i)
-          A2X_SET(index_a2x_Faxa_bcphiwet) = cam_out(c)%bcphiwet(i)
-          A2X_SET(index_a2x_Faxa_ocphidry) = cam_out(c)%ocphidry(i)
-          A2X_SET(index_a2x_Faxa_ocphodry) = cam_out(c)%ocphodry(i)
-          A2X_SET(index_a2x_Faxa_ocphiwet) = cam_out(c)%ocphiwet(i)
-          A2X_SET(index_a2x_Faxa_dstwet1) = cam_out(c)%dstwet1(i)
-          A2X_SET(index_a2x_Faxa_dstdry1) = cam_out(c)%dstdry1(i)
-          A2X_SET(index_a2x_Faxa_dstwet2) = cam_out(c)%dstwet2(i)
-          A2X_SET(index_a2x_Faxa_dstdry2) = cam_out(c)%dstdry2(i)
-          A2X_SET(index_a2x_Faxa_dstwet3) = cam_out(c)%dstwet3(i)
-          A2X_SET(index_a2x_Faxa_dstdry3) = cam_out(c)%dstdry3(i)
-          A2X_SET(index_a2x_Faxa_dstwet4) = cam_out(c)%dstwet4(i)
-          A2X_SET(index_a2x_Faxa_dstdry4) = cam_out(c)%dstdry4(i)
+          a2x(index_a2x_Faxa_bcphidry,ig) = cam_out(c)%bcphidry(i)
+          a2x(index_a2x_Faxa_bcphodry,ig) = cam_out(c)%bcphodry(i)
+          a2x(index_a2x_Faxa_bcphiwet,ig) = cam_out(c)%bcphiwet(i)
+          a2x(index_a2x_Faxa_ocphidry,ig) = cam_out(c)%ocphidry(i)
+          a2x(index_a2x_Faxa_ocphodry,ig) = cam_out(c)%ocphodry(i)
+          a2x(index_a2x_Faxa_ocphiwet,ig) = cam_out(c)%ocphiwet(i)
+          a2x(index_a2x_Faxa_dstwet1,ig) = cam_out(c)%dstwet1(i)
+          a2x(index_a2x_Faxa_dstdry1,ig) = cam_out(c)%dstdry1(i)
+          a2x(index_a2x_Faxa_dstwet2,ig) = cam_out(c)%dstwet2(i)
+          a2x(index_a2x_Faxa_dstdry2,ig) = cam_out(c)%dstdry2(i)
+          a2x(index_a2x_Faxa_dstwet3,ig) = cam_out(c)%dstwet3(i)
+          a2x(index_a2x_Faxa_dstdry3,ig) = cam_out(c)%dstdry3(i)
+          a2x(index_a2x_Faxa_dstwet4,ig) = cam_out(c)%dstwet4(i)
+          a2x(index_a2x_Faxa_dstdry4,ig) = cam_out(c)%dstdry4(i)
 
           if (index_a2x_Sa_co2prog /= 0) then
-             A2X_SET(index_a2x_Sa_co2prog) = cam_out(c)%co2prog(i) ! atm prognostic co2
+             a2x(index_a2x_Sa_co2prog,ig) = cam_out(c)%co2prog(i) ! atm prognostic co2
           end if
           if (index_a2x_Sa_co2diag /= 0) then
-             A2X_SET(index_a2x_Sa_co2diag) = cam_out(c)%co2diag(i) ! atm diagnostic co2
+             a2x(index_a2x_Sa_co2diag,ig) = cam_out(c)%co2diag(i) ! atm diagnostic co2
           end if
 
           ig=ig+1
        end do
     end do
-#ifdef HAVE_MOAB
-    tagname=trim(seq_flds_a2x_fields)//C_NULL_CHAR
-    ent_type = 0 ! vertices, point cloud
-    ierr = iMOAB_SetDoubleTagStorage ( mphaid, tagname, totalmbls , ent_type, a2x_am )
-    if ( ierr > 0) then
-      call endrun('Error: fail to set  seq_flds_a2x_fields for atm physgrid moab mesh')
-    endif
-#endif
 #ifdef MOABDEBUG
     write(lnum,"(I0.2)")cur_atm_stepno
     local_count = local_count + 1
