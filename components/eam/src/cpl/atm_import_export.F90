@@ -5,8 +5,12 @@ module atm_import_export
   implicit none
 
 #ifdef HAVE_MOAB
+#define X2A_GET(index) x2a_am(ig, index)
+#define X2A_SLICE(range) x2a_am(ig, range)
 #define A2X_SET(index) a2x_am(ig, index)
 #else
+#define X2A_GET(index) x2a(index, ig)
+#define X2A_SLICE(range) x2a(range, ig)
 #define A2X_SET(index) a2x(index, ig)
 #endif
 
@@ -119,68 +123,68 @@ contains
              ! Move lhf to this if-block so that it is not overwritten to ensure BFB restarts when qneg4 correction
              ! occurs at the restart time step
              ! Modified by Wuyin Lin
-             cam_in(c)%shf(i)    = -x2a_get(ig, index_x2a_Faxx_sen)
-             cam_in(c)%cflx(i,1) = -x2a_get(ig, index_x2a_Faxx_evap)
-             cam_in(c)%lhf(i)    = -x2a_get(ig, index_x2a_Faxx_lat)
+             cam_in(c)%shf(i)    = -X2A_GET(index_x2a_Faxx_sen)
+             cam_in(c)%cflx(i,1) = -X2A_GET(index_x2a_Faxx_evap)
+             cam_in(c)%lhf(i)    = -X2A_GET(index_x2a_Faxx_lat)
           endif
 
           if (index_x2a_Faoo_h2otemp /= 0) then
-             cam_in(c)%h2otemp(i) = -x2a_get(ig, index_x2a_Faoo_h2otemp)
+             cam_in(c)%h2otemp(i) = -X2A_GET(index_x2a_Faoo_h2otemp)
           end if
 
-          cam_in(c)%wsx(i)    = -x2a_get(ig, index_x2a_Faxx_taux)
-          cam_in(c)%wsy(i)    = -x2a_get(ig, index_x2a_Faxx_tauy)
-          cam_in(c)%lwup(i)      = -x2a_get(ig, index_x2a_Faxx_lwup)
-          cam_in(c)%asdir(i)     =  x2a_get(ig, index_x2a_Sx_avsdr)
-          cam_in(c)%aldir(i)     =  x2a_get(ig, index_x2a_Sx_anidr)
-          cam_in(c)%asdif(i)     =  x2a_get(ig, index_x2a_Sx_avsdf)
-          cam_in(c)%aldif(i)     =  x2a_get(ig, index_x2a_Sx_anidf)
-          cam_in(c)%ts(i)        =  x2a_get(ig, index_x2a_Sx_t)
-          cam_in(c)%sst(i)       =  x2a_get(ig, index_x2a_So_t)
-          cam_in(c)%snowhland(i) =  x2a_get(ig, index_x2a_Sl_snowh)
-          cam_in(c)%snowhice(i)  =  x2a_get(ig, index_x2a_Si_snowh)
-          cam_in(c)%tref(i)      =  x2a_get(ig, index_x2a_Sx_tref)
-          cam_in(c)%qref(i)      =  x2a_get(ig, index_x2a_Sx_qref)
-          cam_in(c)%u10(i)       =  x2a_get(ig, index_x2a_Sx_u10)
-          cam_in(c)%u10withgusts(i) = x2a_get(ig, index_x2a_Sx_u10withgusts)
-          cam_in(c)%icefrac(i)   =  x2a_get(ig, index_x2a_Sf_ifrac)
-          cam_in(c)%ocnfrac(i)   =  x2a_get(ig, index_x2a_Sf_ofrac)
-          cam_in(c)%landfrac(i)  =  x2a_get(ig, index_x2a_Sf_lfrac)
+          cam_in(c)%wsx(i)    = -X2A_GET(index_x2a_Faxx_taux)
+          cam_in(c)%wsy(i)    = -X2A_GET(index_x2a_Faxx_tauy)
+          cam_in(c)%lwup(i)      = -X2A_GET(index_x2a_Faxx_lwup)
+          cam_in(c)%asdir(i)     =  X2A_GET(index_x2a_Sx_avsdr)
+          cam_in(c)%aldir(i)     =  X2A_GET(index_x2a_Sx_anidr)
+          cam_in(c)%asdif(i)     =  X2A_GET(index_x2a_Sx_avsdf)
+          cam_in(c)%aldif(i)     =  X2A_GET(index_x2a_Sx_anidf)
+          cam_in(c)%ts(i)        =  X2A_GET(index_x2a_Sx_t)
+          cam_in(c)%sst(i)       =  X2A_GET(index_x2a_So_t)
+          cam_in(c)%snowhland(i) =  X2A_GET(index_x2a_Sl_snowh)
+          cam_in(c)%snowhice(i)  =  X2A_GET(index_x2a_Si_snowh)
+          cam_in(c)%tref(i)      =  X2A_GET(index_x2a_Sx_tref)
+          cam_in(c)%qref(i)      =  X2A_GET(index_x2a_Sx_qref)
+          cam_in(c)%u10(i)       =  X2A_GET(index_x2a_Sx_u10)
+          cam_in(c)%u10withgusts(i) = X2A_GET(index_x2a_Sx_u10withgusts)
+          cam_in(c)%icefrac(i)   =  X2A_GET(index_x2a_Sf_ifrac)
+          cam_in(c)%ocnfrac(i)   =  X2A_GET(index_x2a_Sf_ofrac)
+          cam_in(c)%landfrac(i)  =  X2A_GET(index_x2a_Sf_lfrac)
           if ( associated(cam_in(c)%ram1) ) &
-               cam_in(c)%ram1(i) =  x2a_get(ig, index_x2a_Sl_ram1)
+               cam_in(c)%ram1(i) =  X2A_GET(index_x2a_Sl_ram1)
           if ( associated(cam_in(c)%fv) ) &
-               cam_in(c)%fv(i)   =  x2a_get(ig, index_x2a_Sl_fv)
+               cam_in(c)%fv(i)   =  X2A_GET(index_x2a_Sl_fv)
           if ( associated(cam_in(c)%soilw) ) &
-               cam_in(c)%soilw(i) =  x2a_get(ig, index_x2a_Sl_soilw)
+               cam_in(c)%soilw(i) =  X2A_GET(index_x2a_Sl_soilw)
           if ( associated(cam_in(c)%dstflx) ) then
-             cam_in(c)%dstflx(i,1) = x2a_get(ig, index_x2a_Fall_flxdst1)
-             cam_in(c)%dstflx(i,2) = x2a_get(ig, index_x2a_Fall_flxdst2)
-             cam_in(c)%dstflx(i,3) = x2a_get(ig, index_x2a_Fall_flxdst3)
-             cam_in(c)%dstflx(i,4) = x2a_get(ig, index_x2a_Fall_flxdst4)
+             cam_in(c)%dstflx(i,1) = X2A_GET(index_x2a_Fall_flxdst1)
+             cam_in(c)%dstflx(i,2) = X2A_GET(index_x2a_Fall_flxdst2)
+             cam_in(c)%dstflx(i,3) = X2A_GET(index_x2a_Fall_flxdst3)
+             cam_in(c)%dstflx(i,4) = X2A_GET(index_x2a_Fall_flxdst4)
           endif
           if ( associated(cam_in(c)%meganflx) ) then
              idx_megan_end = index_x2a_Fall_flxvoc+shr_megan_mechcomps_n-1
              cam_in(c)%meganflx(i,1:shr_megan_mechcomps_n) = &
-                  x2a_slice(ig, index_x2a_Fall_flxvoc, idx_megan_end)
+                  X2A_SLICE(index_x2a_Fall_flxvoc:idx_megan_end)
           endif
 
           ! dry dep velocities
           if ( index_x2a_Sl_ddvel/=0 .and. n_drydep>0 ) then
              idx_ddvel_end = index_x2a_Sl_ddvel+n_drydep-1
              cam_in(c)%depvel(i,:n_drydep) = &
-                  x2a_slice(ig, index_x2a_Sl_ddvel, idx_ddvel_end)
+                  X2A_SLICE(index_x2a_Sl_ddvel:idx_ddvel_end)
           endif
           !
           ! fields needed to calculate water isotopes to ocean evaporation processes
           !
-          cam_in(c)%ustar(i) = x2a_get(ig, index_x2a_So_ustar)
-          cam_in(c)%re(i)    = x2a_get(ig, index_x2a_So_re)
-          cam_in(c)%ssq(i)   = x2a_get(ig, index_x2a_So_ssq)
+          cam_in(c)%ustar(i) = X2A_GET(index_x2a_So_ustar)
+          cam_in(c)%re(i)    = X2A_GET(index_x2a_So_re)
+          cam_in(c)%ssq(i)   = X2A_GET(index_x2a_So_ssq)
           !
           ! bgc scenarios
           !
           if (index_x2a_Fall_fco2_lnd /= 0) then
-             cam_in(c)%fco2_lnd(i) = -x2a_get(ig, index_x2a_Fall_fco2_lnd)
+             cam_in(c)%fco2_lnd(i) = -X2A_GET(index_x2a_Fall_fco2_lnd)
           end if
 
           !------------------------------------------------------------------------------------------
@@ -192,23 +196,23 @@ contains
           if (iac_present) then
              ! if surface emissions from EHC exist for this month, get them from coupler var
              if (index_x2a_Fazz_co2sfc_iac(mon_idx) /= 0) then
-                cam_in(c)%fco2_surface_iac(i) = -x2a_get(ig, index_x2a_Fazz_co2sfc_iac(mon_idx))
+                cam_in(c)%fco2_surface_iac(i) = -X2A_GET(index_x2a_Fazz_co2sfc_iac(mon_idx))
              end if
              ! if aircraft lo emissions from EHC exist for this month, get them from coupler var
              if (index_x2a_Fazz_co2airlo_iac(mon_idx) /= 0) then
-                iac_vertical_emiss(c)%fco2_low_height(i) = -x2a_get(ig, index_x2a_Fazz_co2airlo_iac(mon_idx))
+                iac_vertical_emiss(c)%fco2_low_height(i) = -X2A_GET(index_x2a_Fazz_co2airlo_iac(mon_idx))
              end if
              ! if aircraft lo emissions from EHC exist for this month, get them from coupler var
              if (index_x2a_Fazz_co2airhi_iac(mon_idx) /= 0) then
-                iac_vertical_emiss(c)%fco2_high_height(i) = -x2a_get(ig, index_x2a_Fazz_co2airhi_iac(mon_idx))
+                iac_vertical_emiss(c)%fco2_high_height(i) = -X2A_GET(index_x2a_Fazz_co2airhi_iac(mon_idx))
              endif
           endif ! if (iac_present)
 
           if (index_x2a_Faoo_fco2_ocn /= 0) then
-             cam_in(c)%fco2_ocn(i) = -x2a_get(ig, index_x2a_Faoo_fco2_ocn)
+             cam_in(c)%fco2_ocn(i) = -X2A_GET(index_x2a_Faoo_fco2_ocn)
           end if
           if (index_x2a_Faoo_fdms_ocn /= 0) then
-             cam_in(c)%fdms(i)     = -x2a_get(ig, index_x2a_Faoo_fdms_ocn)
+             cam_in(c)%fdms(i)     = -X2A_GET(index_x2a_Faoo_fdms_ocn)
           end if
 
           ig=ig+1
@@ -300,31 +304,6 @@ contains
        end if
        first_time = .false.
     end if
-
-  contains
-
-    pure function x2a_get(ig, index) result(val)
-      integer, intent(in) :: ig
-      integer, intent(in) :: index
-      real(r8) :: val
-#ifdef HAVE_MOAB
-      val = x2a_am(ig, index)
-#else
-      val = x2a(index, ig)
-#endif
-    end function x2a_get
-
-    pure function x2a_slice(ig, istart, iend) result(val)
-      integer, intent(in) :: ig
-      integer, intent(in) :: istart
-      integer, intent(in) :: iend
-      real(r8) :: val(iend - istart + 1)
-#ifdef HAVE_MOAB
-      val = x2a_am(ig, istart:iend)
-#else
-      val = x2a(istart:iend, ig)
-#endif
-    end function x2a_slice
 
   end subroutine atm_import
 
