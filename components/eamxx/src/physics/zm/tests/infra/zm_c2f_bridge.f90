@@ -1,4 +1,4 @@
-module zm_iso_c
+module zm_c2f_bridge
   use iso_c_binding
   implicit none
 
@@ -46,4 +46,16 @@ end subroutine zm_find_mse_max_c
 
 !===================================================================================================
 
-end module zm_iso_c
+  subroutine ientropy_bridge_f(rcall, s, p, qt, t, qst, tfg) bind(C)
+    use zm, only : ientropy
+
+    integer(kind=c_int) , value, intent(in) :: rcall
+    real(kind=c_real) , value, intent(in) :: s, p, qt, tfg
+    real(kind=c_real) , intent(out) :: t, qst
+
+    type(c_ptr) :: zm_const
+
+    call zm_const_set_for_testing(zm_const)
+    call ientropy(rcall, s, p, qt, t, qst, tfg, zm_const)
+  end subroutine ientropy_bridge_f
+end module zm_c2f_bridge
