@@ -44,6 +44,7 @@ void Cosp::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   auto micron = micro*m;
   auto m2 = pow(m, 2);
   auto s2 = pow(s, 2);
+  auto hPa = hecto*Pa;  // hectopascal (100 Pa)
 
   m_grid = grids_manager->get_grid("physics");
   const auto& grid_name = m_grid->name();
@@ -102,6 +103,130 @@ void Cosp::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   m_z_int = Field(FieldIdentifier("z_int",scalar3d_int,m,grid_name));
   m_z_mid.allocate_view();
   m_z_int.allocate_view();
+
+  // Add COSP dimension coordinate values and bounds as geometry data
+  // These are needed for e3sm_diags to produce COSP diagnostics
+  using namespace ShortFieldTagsNames;
+  
+  // COSP tau bins (optical depth) - standard ISCCP/MODIS bins
+  // Bin edges: 0.3, 1.3, 3.6, 9.4, 23, 60, 379
+  if (not m_grid->has_geometry_data("cosp_tau_bnds")) {
+    FieldLayout tau_bnds_layout({CMP,CMP},{m_num_tau,2},{"cosp_tau","nbnd"});
+    Field tau_bnds(FieldIdentifier("cosp_tau_bnds", tau_bnds_layout, nondim, grid_name));
+    tau_bnds.allocate_view();
+    auto tau_bnds_h = tau_bnds.get_view<Real**,Host>();
+    
+    // Standard ISCCP/MODIS tau bin boundaries
+    tau_bnds_h(0,0) = 0.3;   tau_bnds_h(0,1) = 1.3;
+    tau_bnds_h(1,0) = 1.3;   tau_bnds_h(1,1) = 3.6;
+    tau_bnds_h(2,0) = 3.6;   tau_bnds_h(2,1) = 9.4;
+    tau_bnds_h(3,0) = 9.4;   tau_bnds_h(3,1) = 23.0;
+    tau_bnds_h(4,0) = 23.0;  tau_bnds_h(4,1) = 60.0;
+    tau_bnds_h(5,0) = 60.0;  tau_bnds_h(5,1) = 379.0;
+    tau_bnds_h(6,0) = 379.0; tau_bnds_h(6,1) = 100000.0;  // effectively infinity
+    
+    tau_bnds.sync_to_dev();
+    m_grid->set_geometry_data(tau_bnds);
+  }
+  
+  // COSP tau centers
+  if (not m_grid->has_geometry_data("cosp_tau")) {
+    auto tau_bnds = m_grid->get_geometry_data("cosp_tau_bnds");
+    auto tau_bnds_h = tau_bnds.get_view<const Real**,Host>();
+    
+    FieldLayout tau_layout({CMP},{m_num_tau},{"cosp_tau"});
+    Field tau(FieldIdentifier("cosp_tau", tau_layout, nondim, grid_name));
+    tau.allocate_view();
+    auto tau_h = tau.get_view<Real*,Host>();
+    
+    // Geometric mean of bin edges (log-space midpoint)
+    for (int i=0; i<m_num_tau; ++i) {
+      tau_h(i) = std::sqrt(tau_bnds_h(i,0) * tau_bnds_h(i,1));
+    }
+    
+    tau.sync_to_dev();
+    m_grid->set_geometry_data(tau);
+  }
+  
+  // COSP pressure bins (cloud-top pressure in hPa) - standard ISCCP bins
+  // Bin edges: 50, 180, 310, 440, 560, 680, 800, 1000 hPa
+  if (not m_grid->has_geometry_data("cosp_prs_bnds")) {
+    FieldLayout prs_bnds_layout({CMP,CMP},{m_num_ctp,2},{"cosp_prs","nbnd"});
+    Field prs_bnds(FieldIdentifier("cosp_prs_bnds", prs_bnds_layout, hPa, grid_name));
+    prs_bnds.allocate_view();
+    auto prs_bnds_h = prs_bnds.get_view<Real**,Host>();
+    
+    // Standard ISCCP pressure bin boundaries (hPa)
+    prs_bnds_h(0,0) = 50.0;  prs_bnds_h(0,1) = 180.0;
+    prs_bnds_h(1,0) = 180.0; prs_bnds_h(1,1) = 310.0;
+    prs_bnds_h(2,0) = 310.0; prs_bnds_h(2,1) = 440.0;
+    prs_bnds_h(3,0) = 440.0; prs_bnds_h(3,1) = 560.0;
+    prs_bnds_h(4,0) = 560.0; prs_bnds_h(4,1) = 680.0;
+    prs_bnds_h(5,0) = 680.0; prs_bnds_h(5,1) = 800.0;
+    prs_bnds_h(6,0) = 800.0; prs_bnds_h(6,1) = 1000.0;
+    
+    prs_bnds.sync_to_dev();
+    m_grid->set_geometry_data(prs_bnds);
+  }
+  
+  // COSP pressure centers
+  if (not m_grid->has_geometry_data("cosp_prs")) {
+    auto prs_bnds = m_grid->get_geometry_data("cosp_prs_bnds");
+    auto prs_bnds_h = prs_bnds.get_view<const Real**,Host>();
+    
+    FieldLayout prs_layout({CMP},{m_num_ctp},{"cosp_prs"});
+    Field prs(FieldIdentifier("cosp_prs", prs_layout, hPa, grid_name));
+    prs.allocate_view();
+    auto prs_h = prs.get_view<Real*,Host>();
+    
+    // Midpoint of pressure bins
+    for (int i=0; i<m_num_ctp; ++i) {
+      prs_h(i) = (prs_bnds_h(i,0) + prs_bnds_h(i,1)) / 2.0;
+    }
+    
+    prs.sync_to_dev();
+    m_grid->set_geometry_data(prs);
+  }
+  
+  // COSP height bins (cloud-top height in m) - standard MISR bins  
+  // 16 bins from 0 to 20 km
+  if (not m_grid->has_geometry_data("cosp_cth_bnds")) {
+    FieldLayout cth_bnds_layout({CMP,CMP},{m_num_cth,2},{"cosp_cth","nbnd"});
+    Field cth_bnds(FieldIdentifier("cosp_cth_bnds", cth_bnds_layout, m, grid_name));
+    cth_bnds.allocate_view();
+    auto cth_bnds_h = cth_bnds.get_view<Real**,Host>();
+    
+    // Standard MISR height bin boundaries (m) - 16 bins of varying width
+    // These follow the CFMIP/COSP standard MISR bins
+    const Real cth_edges[17] = {0.0, 500.0, 1000.0, 1500.0, 2000.0, 2500.0, 3000.0, 4000.0,
+                                 5000.0, 7000.0, 9000.0, 11000.0, 13000.0, 15000.0, 17000.0, 19000.0, 21000.0};
+    for (int i=0; i<m_num_cth; ++i) {
+      cth_bnds_h(i,0) = cth_edges[i];
+      cth_bnds_h(i,1) = cth_edges[i+1];
+    }
+    
+    cth_bnds.sync_to_dev();
+    m_grid->set_geometry_data(cth_bnds);
+  }
+  
+  // COSP height centers
+  if (not m_grid->has_geometry_data("cosp_cth")) {
+    auto cth_bnds = m_grid->get_geometry_data("cosp_cth_bnds");
+    auto cth_bnds_h = cth_bnds.get_view<const Real**,Host>();
+    
+    FieldLayout cth_layout({CMP},{m_num_cth},{"cosp_cth"});
+    Field cth(FieldIdentifier("cosp_cth", cth_layout, m, grid_name));
+    cth.allocate_view();
+    auto cth_h = cth.get_view<Real*,Host>();
+    
+    // Midpoint of height bins
+    for (int i=0; i<m_num_cth; ++i) {
+      cth_h(i) = (cth_bnds_h(i,0) + cth_bnds_h(i,1)) / 2.0;
+    }
+    
+    cth.sync_to_dev();
+    m_grid->set_geometry_data(cth);
+  }
 }
 
 // =========================================================================================

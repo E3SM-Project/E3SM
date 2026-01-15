@@ -38,7 +38,7 @@ transfer_extra_data(const scream::Field &src, scream::Field &tgt)
   
   // Transfer mask_value if present
   if (src.get_header().has_extra_data("mask_value")) {
-    auto src_mask_value = src.get_header().get_extra_data<Real>("mask_value");
+    auto src_mask_value = src.get_header().get_extra_data<scream::Real>("mask_value");
     tgt.get_header().set_extra_data("mask_value", src_mask_value);
   }
 };
