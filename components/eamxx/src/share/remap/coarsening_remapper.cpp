@@ -298,6 +298,12 @@ rescale_masked_fields (const Field& x, const Field& mask) const
                                 [&](const int j){
                 x_sub(j) /= mask;
             });
+          } else {
+            // Set to fill_value when mask indicates this column is masked
+            Kokkos::parallel_for(Kokkos::TeamVectorRange(team,dim1),
+                                [&](const int j){
+                x_sub(j) = fill_val;
+            });
           }
         } else {
           auto m_sub = ekat::subview(mask_2d,icol);
@@ -341,6 +347,15 @@ rescale_masked_fields (const Field& x, const Field& mask) const
               const int k = idx % dim2;
               auto x_sub = ekat::subview(x_view,icol,j);
               x_sub(k) /= mask;
+            });
+          } else {
+            // Set to fill_value when mask indicates this column is masked
+            Kokkos::parallel_for(Kokkos::TeamVectorRange(team,dim1*dim2),
+                                [&](const int idx){
+              const int j = idx / dim2;
+              const int k = idx % dim2;
+              auto x_sub = ekat::subview(x_view,icol,j);
+              x_sub(k) = fill_val;
             });
           }
         } else {
@@ -391,6 +406,16 @@ rescale_masked_fields (const Field& x, const Field& mask) const
               const int l =  idx % dim3;
               auto x_sub = ekat::subview(x_view,icol,j,k);
               x_sub(l) /= mask;
+            });
+          } else {
+            // Set to fill_value when mask indicates this column is masked
+            Kokkos::parallel_for(Kokkos::TeamVectorRange(team,dim1*dim2*dim3),
+                                [&](const int idx){
+              const int j = (idx / dim3) / dim2;
+              const int k = (idx / dim3) % dim2;
+              const int l =  idx % dim3;
+              auto x_sub = ekat::subview(x_view,icol,j,k);
+              x_sub(l) = fill_val;
             });
           }
         } else {
