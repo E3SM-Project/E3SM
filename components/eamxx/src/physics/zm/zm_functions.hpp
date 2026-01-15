@@ -290,6 +290,14 @@ struct Functions {
     Real& t,
     Real& qst);
 
+  KOKKOS_FUNCTION
+  static Real entropy(
+    // Inputs
+    const MemberType& team,
+    const Real& tk,
+    const Real& p,
+    const Real& qtot);
+
 }; // struct Functions
 
 } // namespace zm
@@ -301,5 +309,6 @@ struct Functions {
 # include "impl/zm_output_tend_impl.hpp"
 # include "impl/zm_common_init.hpp"
 # include "impl/zm_ientropy_impl.hpp"
+# include "impl/zm_entropy_impl.hpp"
 #endif // GPU && !KOKKOS_ENABLE_*_RELOCATABLE_DEVICE_CODE
 #endif // ZM_FUNCTIONS_HPP

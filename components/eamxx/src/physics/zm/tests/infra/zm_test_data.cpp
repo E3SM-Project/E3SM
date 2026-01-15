@@ -35,6 +35,7 @@ void zm_find_mse_max_f(Int pcols, Int ncol, Int pver, Int num_msg, Int *msemax_t
 
 void ientropy_bridge_f(Int rcall, Real s, Real p, Real qt, Real* t, Real* qst, Real tfg);
 
+void entropy_bridge_f(Real tk, Real p, Real qtot, zm_const_t zm_const, Real* entropy);
 } // extern "C" : end _f decls
 
 // Inits and finalizes are not intended to be called outside this comp unit
@@ -124,6 +125,48 @@ void ientropy(IentropyData& d)
   zm_finalize_cxx();
 }
 
+void entropy_f(EntropyData& d)
+{
+  d.transition<ekat::TransposeDirection::c2f>();
+  zm_common_init_f(); // Might need more specific init
+  entropy_bridge_f(d.tk, d.p, d.qtot, &d.entropy);
+  d.transition<ekat::TransposeDirection::f2c>();
+}
+
+void entropy(EntropyData& d)
+{
+  zm_common_init(); // Might need more specific init
+
+  // create device views and copy
+  const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(1, 1);
+
+  // unpack data scalars because we do not want the lambda to capture d
+  const Real p = d.p;
+  const Real qtot = d.qtot;
+  const Real tk = d.tk;
+  view0dr_d entropy_d("entropy_d");
+  auto entropy_h = Kokkos::create_mirror_view(entropy_d);
+
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    const Int i = team.league_rank();
+
+    // Get single-column subviews of all inputs, shouldn't need any i-indexing
+    // after this.
+
+    SHF::entropy(
+      team,
+      tk,
+      p,
+      qtot,
+      entropy_d());
+  });
+
+  // Get outputs back, start with scalars
+  Kokkos::deep_copy(entropy_h, entropy_d);
+  d.entropy = entropy_h();
+
+  zm_finalize_cxx();
+}
 // end glue impls
 
 } // namespace zm

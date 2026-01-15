@@ -46,17 +46,31 @@ end subroutine zm_find_mse_max_f
 
 !===================================================================================================
 
-  subroutine ientropy_bridge_f(rcall, s, p, qt, t, qst, tfg) bind(C)
-    use zm_conv_util, only : ientropy
-    use zm_conv_types,  only: zm_const_t, zm_const_set_for_testing
+subroutine ientropy_bridge_f(rcall, s, p, qt, t, qst, tfg) bind(C)
+  use zm_conv_util, only : ientropy
+  use zm_conv_types,  only: zm_const_t, zm_const_set_for_testing
 
-    integer(kind=c_int) , value, intent(in) :: rcall
-    real(kind=c_real) , value, intent(in) :: s, p, qt, tfg
-    real(kind=c_real) , intent(out) :: t, qst
+  integer(kind=c_int) , value, intent(in) :: rcall
+  real(kind=c_real) , value, intent(in) :: s, p, qt, tfg
+  real(kind=c_real) , intent(out) :: t, qst
 
-    type(zm_const_t) :: zm_const
+  type(zm_const_t) :: zm_const
 
-    call zm_const_set_for_testing(zm_const)
-    call ientropy(rcall, s, p, qt, t, qst, tfg, zm_const)
-  end subroutine ientropy_bridge_f
+  call zm_const_set_for_testing(zm_const)
+  call ientropy(rcall, s, p, qt, t, qst, tfg, zm_const)
+end subroutine ientropy_bridge_f
+
+subroutine entropy_bridge_f(tk, p, qtot, entropy_rv) bind(C)
+  use zm_conv_util, only : entropy
+  use zm_conv_types, only: zm_const_t, zm_const_set_for_testing
+
+  real(kind=c_real) , value, intent(in) :: tk, p, qtot
+  real(kind=c_real) , intent(out) :: entropy_rv
+
+  type(zm_const_t) :: zm_const
+
+  call zm_const_set_for_testing(zm_const)
+  entropy_rv = entropy(tk, p, qtot, zm_const)
+end subroutine entropy_bridge_f
+
 end module zm_c2f_bridge

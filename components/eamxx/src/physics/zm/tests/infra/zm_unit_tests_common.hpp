@@ -68,6 +68,7 @@ struct UnitWrap {
     struct Test_zm_find_mse_max;
     
     struct TestIentropy;
+    struct TestEntropy;
   }; // UnitWrap
 };
 
