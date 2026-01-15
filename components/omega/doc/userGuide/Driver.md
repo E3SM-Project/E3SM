@@ -14,8 +14,15 @@ time management of the simulation.
 ```
 The `StartTime` and `StopTime` should be formatted strings in the form
 `YYYY-MM-DD_HH:MM:SS.SSSS` and the `RunDuration` should be a formatted string in
-the form `DDDD_HH:MM:SS.SSSS` (the actual width of each unit can be arbitrary
-and the separators can be any single non-numeric character). Either the
+one of the following forms:
+
+- `DDDD_HH:MM:SS(.sss...)`
+- `HH:MM:SS(.sss...)`
+- `MM:SS(.sss...)`
+- `SS(.sss...)`
+
+The actual width of each unit can be arbitrary and the separators can be any
+single non-numeric character. Either the
 `StopTime` or `RunDuration` can be set to `none` in order to use the other to
 determine the duration of the run. If both are set and `StopTime - StartTime`
 is incosistent with `RunDuration`, then `RunDuration` is used for the

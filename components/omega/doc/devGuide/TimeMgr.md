@@ -135,6 +135,18 @@ Finally, a time interval can be defined as the time between two time instants:
 OMEGA::TimeInterval MyDeltaTime = MyTimeInstant2 - MyTimeInstant1;
 ```
 
+Time intervals can also be created from a formatted string (this is the form
+used when reading configuration options like `TimeStep` and `RunDuration`).
+The supported string formats are:
+
+- `DDDD_HH:MM:SS(.sss...)`
+- `HH:MM:SS(.sss...)`
+- `MM:SS(.sss...)`
+- `SS(.sss...)`
+
+Days, hours and minutes are optional but must be in order if included.
+Fractional seconds are optional.
+
 ### 5. Alarm
 
 The Alarm class is designed to trigger events at specified times. Alarms can be
