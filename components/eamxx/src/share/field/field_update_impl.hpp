@@ -211,7 +211,7 @@ svm (LhsView lhs,
 
 template<CombineMode CM, bool FillAware, typename ST, typename XST>
 void Field::
-update_impl (const Field& x, const ST alpha, const ST beta)
+update_impl (const Field& x, const ST alpha, const ST beta) const
 {
   const auto& layout = x.get_header().get_identifier().get_layout();
   const auto& dims = layout.dims();
@@ -355,7 +355,7 @@ update_impl (const Field& x, const ST alpha, const ST beta)
 }
 
 template<bool use_mask, typename ST>
-void Field::deep_copy_impl (const ST value, const Field& mask)
+void Field::deep_copy_impl (const ST value, const Field& mask) const
 {
   const auto& layout = get_header().get_identifier().get_layout();
   const auto  rank   = layout.rank();

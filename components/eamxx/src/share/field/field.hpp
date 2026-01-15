@@ -203,33 +203,33 @@ public:
   void sync_to_dev (const bool fence = true) const;
 
   // Set the field to a constant value (on device view ONLY)
-  void deep_copy (const ScalarWrapper value);
+  void deep_copy (const ScalarWrapper value) const;
 
   // Like the above one, but only sets the value where the mask is active
   // NOTE: mask field must have data type IntType. Runs on device ONLY
-  void deep_copy (const ScalarWrapper value, const Field& mask);
+  void deep_copy (const ScalarWrapper value, const Field& mask) const;
 
   // Copy the data from one field to this field (on device ONLY)
-  void deep_copy (const Field& src);
+  void deep_copy (const Field& src) const;
 
   // Updates this field y as y=beta*y + alpha*x
   // See share/util/eamxx_combine_ops.hpp for more details on CombineMode options
-  void update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta);
+  void update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta) const;
 
   // Special case of update for particular choices of the combine mode
-  void scale (const ScalarWrapper beta);
+  void scale (const ScalarWrapper beta) const;
 
   // Scale a field y as y=y*x where x is also a field
-  void scale (const Field& x);
+  void scale (const Field& x) const;
 
   // Scale a field y as y=y/x where x is also a field
-  void scale_inv (const Field& x);
+  void scale_inv (const Field& x) const;
 
   // Replace *this with max(*this, x)
-  void max (const Field& x);
+  void max (const Field& x) const;
 
   // Replace *this with min(*this, x)
-  void min (const Field& x);
+  void min (const Field& x) const;
 
   // Returns a subview of this field, slicing at entry k along dimension idim
   // NOTES:
@@ -319,10 +319,10 @@ protected:
   // The field manipulation methods call these two, with ST matching this field data type.
   // Note: use_fill/use_mask are used to resolve some if statements in the impl at compile time
   template<bool use_mask, typename ST>
-  void deep_copy_impl (const ST value, const Field& mask);
+  void deep_copy_impl (const ST value, const Field& mask) const;
 
   template<CombineMode CM, bool use_fill, typename ST, typename STX>
-  void update_impl (const Field& x, const ST alpha, const ST beta);
+  void update_impl (const Field& x, const ST alpha, const ST beta) const;
 
   template<HostOrDevice HD>
   const get_view_type<char*,HD>&

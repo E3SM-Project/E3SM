@@ -297,7 +297,8 @@ void Field::allocate_view ()
 }
 
 
-void Field::deep_copy (const ScalarWrapper value) {
+void Field::deep_copy (const ScalarWrapper value) const
+{
   EKAT_REQUIRE_MSG (not m_is_read_only,
       "Error! Cannot call deep_copy on read-only fields.\n");
 
@@ -317,7 +318,7 @@ void Field::deep_copy (const ScalarWrapper value) {
   }
 }
 
-void Field::deep_copy (const Field& x)
+void Field::deep_copy (const Field& x) const
 {
   // Check consistency of inputs
   update_checks(*this,&x,nullptr,nullptr);
@@ -344,7 +345,7 @@ void Field::deep_copy (const Field& x)
   }
 }
 
-void Field::deep_copy (const ScalarWrapper value, const Field& mask)
+void Field::deep_copy (const ScalarWrapper value, const Field& mask) const
 {
   update_checks(*this,nullptr,&value,nullptr);
 
@@ -364,7 +365,7 @@ void Field::deep_copy (const ScalarWrapper value, const Field& mask)
   }
 }
 
-void Field::scale (const ScalarWrapper beta)
+void Field::scale (const ScalarWrapper beta) const
 {
   // Check consistency of inputs
   update_checks(*this,nullptr,nullptr,&beta);
@@ -388,7 +389,7 @@ void Field::scale (const ScalarWrapper beta)
   }
 }
 
-void Field::scale (const Field& x)
+void Field::scale (const Field& x) const
 {
   // Check consistency of inputs
   update_checks(*this,&x,nullptr,nullptr);
@@ -436,7 +437,7 @@ void Field::scale (const Field& x)
   }
 }
 
-void Field::scale_inv (const Field& x)
+void Field::scale_inv (const Field& x) const
 {
   // Check consistency of inputs
   update_checks(*this,&x,nullptr,nullptr);
@@ -484,7 +485,7 @@ void Field::scale_inv (const Field& x)
   }
 }
 
-void Field::max (const Field& x)
+void Field::max (const Field& x) const
 {
   // Check consistency of inputs
   update_checks(*this,&x,nullptr,nullptr);
@@ -532,7 +533,7 @@ void Field::max (const Field& x)
   }
 }
 
-void Field::min (const Field& x)
+void Field::min (const Field& x) const
 {
   // Check consistency of inputs
   update_checks(*this,&x,nullptr,nullptr);
@@ -581,7 +582,7 @@ void Field::min (const Field& x)
 }
 
 void Field::
-update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta)
+update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta) const
 {
   // Check consistency of inputs
   update_checks(*this,&x,&alpha,&beta);
