@@ -218,25 +218,6 @@ public:
         "   - Atm proc name: " + this->name() + "\n");
   }
 
-  // Convenience function to retrieve input/output fields from the field/group (and grid) name.
-  // Note: the version without grid name only works if there is only one copy of the field/group.
-  //       In that case, the single copy is returned, regardless of the associated grid name.
-  //       If multiple copies are found, then an exception is thrown
-  Field& get_field_in(const std::string& field_name, const std::string& grid_name);
-  Field& get_field_in(const std::string& field_name);
-
-  Field& get_field_out(const std::string& field_name, const std::string& grid_name);
-  Field& get_field_out(const std::string& field_name);
-
-  FieldGroup& get_group_in(const std::string& group_name, const std::string& grid_name);
-  FieldGroup& get_group_in(const std::string& group_name);
-
-  FieldGroup& get_group_out(const std::string& group_name, const std::string& grid_name);
-  FieldGroup& get_group_out(const std::string& group_name);
-
-  Field& get_internal_field(const std::string& field_name, const std::string& grid_name);
-  Field& get_internal_field(const std::string& field_name);
-
   // Add a pre-built property check (PC) for precondition, postcondition,
   // invariant (i.e., pre+post), or column conservation check.
   void add_precondition_check        (const prop_check_ptr& prop_check,
@@ -291,6 +272,25 @@ public:
   }
 
 protected:
+
+  // Convenience function to retrieve input/output fields from the field/group (and grid) name.
+  // Note: the version without grid name only works if there is only one copy of the field/group.
+  //       In that case, the single copy is returned, regardless of the associated grid name.
+  //       If multiple copies are found, then an exception is thrown
+  Field& get_field_in(const std::string& field_name, const std::string& grid_name);
+  Field& get_field_in(const std::string& field_name);
+
+  Field& get_field_out(const std::string& field_name, const std::string& grid_name);
+  Field& get_field_out(const std::string& field_name);
+
+  FieldGroup& get_group_in(const std::string& group_name, const std::string& grid_name);
+  FieldGroup& get_group_in(const std::string& group_name);
+
+  FieldGroup& get_group_out(const std::string& group_name, const std::string& grid_name);
+  FieldGroup& get_group_out(const std::string& group_name);
+
+  Field& get_internal_field(const std::string& field_name, const std::string& grid_name);
+  Field& get_internal_field(const std::string& field_name);
   // Sends a message to the atm log
   void log (const LogLevel lev, const std::string& msg) const;
 
