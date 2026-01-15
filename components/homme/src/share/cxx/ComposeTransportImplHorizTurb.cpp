@@ -40,11 +40,14 @@ void ComposeTransportImpl::advance_horizontal_turbulent_diffusion_scalar (const 
       Kokkos::fence();
       Kokkos::parallel_for(m_tp_ne_hv_q, f);
     };
+    Kokkos::fence();
     laplace_simple_Qtens();
+    Kokkos::fence();
     m_hv_dss_be[0]->exchange(m_geometry.m_rspheremp);
 
     Kokkos::fence();
     laplace_simple_Qtens();
+    Kokkos::fence();
 
     { // Compute Q = Q spheremp - dt Kh Qtens. N.B. spheremp is already in
       // Qtens from divergence_sphere_wk.
@@ -60,6 +63,7 @@ void ComposeTransportImpl::advance_horizontal_turbulent_diffusion_scalar (const 
     // Halo exchange Q and apply rspheremp.
     Kokkos::fence();
     m_hv_dss_be[1]->exchange(m_geometry.m_rspheremp);
+    Kokkos::fence();
   }
 }
 
