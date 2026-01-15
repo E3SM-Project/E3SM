@@ -302,7 +302,7 @@ add_omega_test(
     TEND_PLANE_TEST
     testTendencyTermsPlane.exe
     ocn/TendencyTermsTest.cpp
-    "-n 8;"
+    "-n;8"
 )
 target_compile_definitions(
   testTendencyTermsPlane.exe
@@ -314,7 +314,7 @@ add_omega_test(
     TEND_PLANE_SINGLE_PRECISION_TEST
     testTendencyTermsPlaneSinglePrecision.exe
     ocn/TendencyTermsTest.cpp
-    "-n 8;"
+    "-n;8"
     single_precision
 )
 target_compile_definitions(
@@ -327,7 +327,7 @@ add_omega_test(
   TEND_SPHERE_TEST
     testTendencyTermsSphere.exe
     ocn/TendencyTermsTest.cpp
-    "-n 8;"
+    "-n;8"
 )
 target_compile_definitions(
   testTendencyTermsSphere.exe
@@ -416,7 +416,7 @@ add_omega_test(
   KOKKOS_FLATPAR_TEST
     testKokkosFlatPar.exe
     infra/OmegaKokkosFlatParTest.cpp
-    "-n;1;"
+    "-n;1"
 )
 
 add_omega_test(
