@@ -2174,6 +2174,7 @@ contains
     endif
 #endif
     if (single_column) areafact_samegrid = .true.
+    if (dead_comps) areafact_samegrid = .true.
 
     call t_startf ('CPL:init_areacor')
     call t_adj_detailf(+2)
