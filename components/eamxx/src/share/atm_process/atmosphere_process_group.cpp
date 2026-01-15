@@ -154,22 +154,19 @@ void AtmosphereProcessGroup::set_grids (const std::shared_ptr<const GridsManager
   // rule, in case of sequential splitting: if an atm proc requires a
   // field that is computed by a previous atm proc in the group, that
   // field is not exposed as a required field of the group.
-
   for (auto& atm_proc : m_atm_processes) {
     atm_proc->set_grids(grids_manager);
 
     // Add inputs/outputs to the list of inputs of the group
-    for (const auto& req : atm_proc->get_required_field_requests()) {
-      process_required_field(req);
+    for (const auto& ap_req : atm_proc->get_field_requests()) {
+      auto& req = m_field_requests.emplace_back(ap_req);
+      if (req.usage & Required)
+        process_required_field(req);
     }
-    for (const auto& req : atm_proc->get_computed_field_requests()) {
-      add_field<Computed>(req);
-    }
-    for (const auto& req : atm_proc->get_required_group_requests()) {
-      process_required_group(req);
-    }
-    for (const auto& req : atm_proc->get_computed_group_requests()) {
-      add_group<Computed>(req);
+    for (const auto& ap_req : atm_proc->get_group_requests()) {
+      auto& req = m_group_requests.emplace_back(ap_req);
+      if (req.usage & Required)
+        process_required_group(req);
     }
   }
 
@@ -351,10 +348,7 @@ void AtmosphereProcessGroup::pre_process_tracer_requests () {
       tracer_requests[req.fid.name()].push_back(req);
     }
   };
-  for (auto& req : m_required_field_requests){
-    gather_tracer_requests(req);
-  }
-  for (auto& req : m_computed_field_requests) {
+  for (auto& req : m_field_requests){
     gather_tracer_requests(req);
   }
 
@@ -404,12 +398,7 @@ void AtmosphereProcessGroup::pre_process_tracer_requests () {
       req.groups.push_back(advect_type);
     }
   };
-  for (auto& req : m_required_field_requests){
-    if (ekat::contains(req.groups, "tracers")) {
-      add_correct_tracer_group(req, tracer_advection_type.at(req.fid.name()));
-    }
-  }
-  for (auto& req : m_computed_field_requests) {
+  for (auto& req : m_field_requests){
     if (ekat::contains(req.groups, "tracers")) {
       add_correct_tracer_group(req, tracer_advection_type.at(req.fid.name()));
     }
@@ -670,7 +659,7 @@ void AtmosphereProcessGroup::set_computed_field_impl (const Field& f) {
 }
 
 void AtmosphereProcessGroup::
-process_required_group (const GroupRequest& req) {
+process_required_group (GroupRequest& req) {
   if (m_group_schedule_type==ScheduleType::Sequential) {
     if (has_computed_group(req.name,req.grid)) {
       // Some previous atm proc computes this group, so it's not an 'input'
@@ -682,18 +671,15 @@ process_required_group (const GroupRequest& req) {
       // NOTE; we don't have a way to check if all the fields in the group
       //       are computed by previous processes, since we don't have
       //       the list of all fields in this group.
-      add_group<Computed>(req);
-    } else {
-      add_group<Required>(req);
+      req.usage = Computed;
     }
   } else {
-    // In parallel schedule, the inputs of all processes are inputs of the group
-    add_group<Required>(req);
+    EKAT_ERROR_MSG ("Error! Parallel schedule not supported.\n");
   }
 }
 
 void AtmosphereProcessGroup::
-process_required_field (const FieldRequest& req) {
+process_required_field (FieldRequest& req) {
   if (m_group_schedule_type==ScheduleType::Sequential) {
     if (has_computed_field(req.fid)) {
       // Some previous atm proc computes this field, so it's not an 'input'
@@ -702,13 +688,10 @@ process_required_field (const FieldRequest& req) {
       // the required fields, we add to the computed fields. This way we
       // don't modify the inputs of the group, and still manage to communicate
       // to the AD the pack size and group affiliations that we need
-      add_field<Computed>(req);
-    } else {
-      add_field<Required>(req);
+      req.usage = Computed;
     }
   } else {
-    // In parallel schedule, the inputs of all processes are inputs of the group
-    add_field<Required>(req);
+    EKAT_ERROR_MSG ("Error! Parallel schedule not supported.\n");
   }
 }
 

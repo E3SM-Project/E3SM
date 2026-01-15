@@ -183,10 +183,8 @@ public:
   // These methods allow the AD to figure out what each process needs, with very fine
   // grain detail. See field_request.hpp for more info on what FieldRequest and GroupRequest
   // are, and field_group.hpp for what groups of fields are.
-  const std::list<FieldRequest>& get_required_field_requests () const { return m_required_field_requests; }
-  const std::list<FieldRequest>& get_computed_field_requests () const { return m_computed_field_requests; }
-  const std::list<GroupRequest>& get_required_group_requests () const { return m_required_group_requests; }
-  const std::list<GroupRequest>& get_computed_group_requests () const { return m_computed_group_requests; }
+  const std::list<FieldRequest>& get_field_requests () const { return m_field_requests; }
+  const std::list<GroupRequest>& get_group_requests () const { return m_group_requests; }
 
   // These sets allow to get all the actual in/out fields stored by the atm proc
   // Note: if an atm proc requires a group, then all the fields in the group, as well as
@@ -406,18 +404,8 @@ protected:
     static_assert(RT==Required || RT==Computed || RT==Updated,
                   "Error! Invalid request type in call to add_field.\n");
 
-    switch (RT) {
-      case Required:
-        m_required_field_requests.push_back(req);
-        break;
-      case Computed:
-        m_computed_field_requests.push_back(req);
-        break;
-      case Updated:
-        m_required_field_requests.push_back(req);
-        m_computed_field_requests.push_back(req);
-        break;
-    }
+    auto& r = m_field_requests.emplace_back(req);
+    r.usage = RT;
   }
 
   template<RequestType RT>
@@ -426,20 +414,10 @@ protected:
     // Since we use C-style enum, let's avoid invalid integers casts
     static_assert(RT==Required || RT==Updated || RT==Computed,
         "Error! Invalid request type in call to add_group.\n");
-    switch (RT) {
-      case Required:
-        m_required_group_requests.push_back(req);
-        break;
-      case Computed:
-        m_computed_group_requests.push_back(req);
-        break;
-      case Updated:
-        m_required_group_requests.push_back(req);
-        m_computed_group_requests.push_back(req);
-        break;
-    }
-  }
 
+    auto& r = m_group_requests.emplace_back(req);
+    r.usage = RT;
+  }
 
   // Override this method to initialize the derived
   virtual void initialize_impl(const RunType run_type) = 0;
@@ -628,11 +606,9 @@ protected:
   // IOP object
   iop_data_ptr m_iop_data_manager;
 
-  // The list of in/out field/group requests.
-  std::list<FieldRequest>   m_required_field_requests;
-  std::list<FieldRequest>   m_computed_field_requests;
-  std::list<GroupRequest>   m_required_group_requests;
-  std::list<GroupRequest>   m_computed_group_requests;
+  // A map grid_name->requests for in/out field/group.
+  std::list<FieldRequest>   m_field_requests;
+  std::list<GroupRequest>   m_group_requests;
 
   void add_py_fields (const Field& f);
   void add_py_fields (const FieldGroup& g);

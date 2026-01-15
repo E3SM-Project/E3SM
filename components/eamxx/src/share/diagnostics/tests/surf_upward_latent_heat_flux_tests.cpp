@@ -61,7 +61,7 @@ void run(std::mt19937_64& engine, const ekat::Comm& comm, LoggerType& logger)
 
   // Set the required fields for the diagnostic.
   std::map<std::string,Field> input_fields;
-  for (const auto& req: diag_latent_heat->get_required_field_requests()) {
+  for (const auto& req: diag_latent_heat->get_field_requests()) {
     Field f(req.fid);
     f.get_header().get_alloc_properties().request_allocation();
     f.allocate_view();
