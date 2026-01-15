@@ -134,6 +134,10 @@ CONTAINS
        allocate(net_outputs(1, n_output_channels, lsize_x, lsize_y))
        call t_stopf('eatm_initmctavs')
 
+       ! initialize the interpolater struct
+       allocate(eatm_intrp%t_im1(n_output_channels, lsize_x, lsize_y))
+       allocate(eatm_intrp%t_ip1(n_output_channels, lsize_x, lsize_y))
+
        !----------------------------------------------------------------------------
        ! Read restart
        !----------------------------------------------------------------------------
@@ -360,6 +364,9 @@ CONTAINS
 
     deallocate(net_inputs)
     deallocate(net_outputs)
+
+    deallocate(eatm_intrp%t_im1)
+    deallocate(eatm_intrp%t_ip1)
 
     ! TODO (AN): Generalize dispatching correct finalize method for different emulators
     call ace_comp_finalize()
