@@ -5,7 +5,7 @@ module dead_mct_mod
   use shr_sys_mod     , only : shr_sys_abort, shr_sys_flush
   use shr_const_mod   , only : shr_const_pi
   use mct_mod         , only : mct_gsmap, mct_ggrid, mct_avect, mct_ggrid_init, mct_gsmap_lsize, mct_ggrid_lsize
-  use mct_mod         , only : mct_avect_lsize, MCT_AVECT_NRATTR, mct_avect_indexra,mct_avect_zero
+  use mct_mod         , only : mct_avect_lsize, MCT_AVECT_NRATTR, mct_avect_indexra,mct_avect_zero, mct_aVect_exportRList2c
   use mct_mod         , only : mct_ggrid_importiattr, mct_ggrid_importrattr, mct_gsmap_init, mct_aVect_init
   use mct_mod         , only : mct_gsmap_orderedpoints
   use dead_data_mod   , only : dead_grid_lat, dead_grid_lon, dead_grid_area, dead_grid_mask, dead_grid_frac, dead_grid_index
@@ -117,6 +117,12 @@ contains
     call mct_aVect_init(x2d, rList=flds_x2d, lsize=lsize)
     call mct_aVect_zero(x2d)
 
+#ifdef HAVE_MOAB
+    if (present(mbdomain)) then
+      call define_reset_fields_moab(model, mpicom, gbuf, gsMap, logunit, mbdomain, nxg, nyg, flds_x2d, flds_d2x)
+    end if
+#endif
+
   end subroutine dead_init_mct
 
   !===============================================================================
@@ -150,7 +156,11 @@ contains
     integer(IN)             :: lsize             ! size of AttrVect
     real(R8)                :: lat               ! latitude
     real(R8)                :: lon               ! longitude
+
+    real(R8), pointer    :: data_d2x(:,:) ! data_x2d(:,:)
     integer                 :: nflds_d2x, nflds_x2d
+    character(len=2048)    :: flds_x2d
+    character(len=2048)    :: flds_d2x
     integer                 :: ncomp
     character(*), parameter :: F04   = "('(',a,'_run_mct) ',2a,2i8,'s')"
     character(*), parameter :: subName = "(dead_run_mct) "
@@ -179,11 +189,22 @@ contains
     nflds_d2x = mct_avect_nRattr(d2x)
     nflds_x2d = mct_avect_nRattr(x2d)
 
+#ifdef HAVE_MOAB
+    flds_d2x = trim(mct_aVect_exportRList2c(d2x)) ! exportRListToChar
+    flds_x2d = trim(mct_aVect_exportRList2c(x2d)) ! exportRListToChar
+
+    allocate(data_d2x(lsize,nflds_d2x))
+   !  allocate(data_x2d(lsize,nflds_x2d))
+#endif
+
     if (model.eq.'rof') then
 
        do nf=1,nflds_d2x
           do n=1,lsize
              d2x%rAttr(nf,n) = (nf+1) * 1.0_r8
+#ifdef HAVE_MOAB
+               data_d2x(n,nf) = d2x%rAttr(nf,n)
+#endif
           enddo
        enddo
 
@@ -199,6 +220,9 @@ contains
                   *  sin (SHR_CONST_PI*lon/180.0_R8)       &
                   *  sin (SHR_CONST_PI*lon/180.0_R8)       &
                   + (ncomp*10.0_R8)
+#ifdef HAVE_MOAB
+               data_d2x(n,nf) = d2x%rAttr(nf,n)
+#endif
           enddo
        enddo
 
@@ -213,6 +237,9 @@ contains
                   *  sin((SHR_CONST_PI*lon/180.0_R8)       &
                   -      (ncomp-1)*(SHR_CONST_PI/3.0_R8) ) &
                   + (ncomp*10.0_R8)
+#ifdef HAVE_MOAB
+               data_d2x(n,nf) = d2x%rAttr(nf,n)
+#endif
           enddo
        enddo
 
@@ -223,19 +250,40 @@ contains
 
        ki = mct_aVect_indexRA(d2x,"Si_ifrac",perrWith=subname)
        d2x%rAttr(ki,:) = min(1.0_R8,max(0.0_R8,d2x%rAttr(ki,:)))
+#ifdef HAVE_MOAB
+         do n=1,lsize
+           data_d2x(n,ki) = d2x%rAttr(ki,n)
+         enddo
+#endif
 
     case('glc')
 
        ki = mct_aVect_indexRA(d2x,"Sg_icemask",perrWith=subname)
        d2x%rAttr(ki,:) = 1.0_R8
+#ifdef HAVE_MOAB
+       data_d2x(:,ki) = 1.0_R8
+#endif
 
        ki = mct_aVect_indexRA(d2x,"Sg_icemask_coupled_fluxes",perrWith=subname)
        d2x%rAttr(ki,:) = 1.0_R8
+#ifdef HAVE_MOAB
+       data_d2x(:,ki) = 1.0_R8
+#endif
 
        ki = mct_aVect_indexRA(d2x,"Sg_ice_covered",perrWith=subname)
        d2x%rAttr(ki,:) = 1.0_R8
-
+#ifdef HAVE_MOAB
+       data_d2x(:,ki) = 1.0_R8
+#endif
     end select
+
+#ifdef HAVE_MOAB
+    ! Import data into MOAB structures
+   !  call define_import_fields_moab(model, mpicom, gbuf, gsMap, logunit, ggrid, &
+   !       flds_x2d, flds_d2x, data_x2d, data_d2x, nxg, nyg)
+    deallocate(data_d2x)
+    !deallocate(data_x2d)
+#endif
 
     ! log output for model date
 
@@ -369,7 +417,9 @@ contains
                      iMOAB_SetIntTagStorage, &
                      iMOAB_SetDoubleTagStorage, &
                      iMOAB_ResolveSharedEntities, &
-                     iMOAB_UpdateMeshInfo
+                     iMOAB_UpdateMeshInfo, &
+                     iMOAB_GetMeshInfo, &
+                     iMOAB_WriteMesh
       implicit none
     !-------------------------------------------------------------------
     !---arguments---
@@ -395,7 +445,10 @@ contains
     integer(IN), pointer :: idata(:)    ! temporary
     real(R8), dimension(:), allocatable :: moab_vert_coords  ! temporary
     logical          :: fullmesh =.false.
-
+#ifdef MOABDEBUG
+    character*32             :: outfile, wopts, lnum
+#endif
+    character(*), parameter :: subName = "(dead_domain_moab) "
     !-------------------------------------------------------------------
     !
     ! Initialize MOAB dead domain
@@ -410,48 +463,7 @@ contains
     ! Initialize attribute vector with special value
     !
     call mpi_comm_rank(mpicom, my_task, ier)
-   !  call mct_gsMap_orderedPoints(gsMap, my_task, idata)
-   !  call mct_gGrid_importIAttr(domain,'GlobGridNum',idata,lsize)
-    !
-   !  call mct_aVect_zero(domain%data)
-    data(:) = -9999.0_R8  ! generic special value
-   !  call mct_gGrid_importRAttr(domain,"lat" ,data,lsize)
-   !  call mct_gGrid_importRAttr(domain,"lon" ,data,lsize)
-   !  call mct_gGrid_importRAttr(domain,"area",data,lsize)
-   !  call mct_gGrid_importRAttr(domain,"frac",data,lsize)
-
     data(:) = 0.0_R8  ! generic special value
-   !  call mct_gGrid_importRAttr(domain,"mask" ,data,lsize)
-   !  call mct_gGrid_importRAttr(domain,"aream",data,lsize)
-    !
-    ! Fill in correct values for domain components
-    !
-   !  do n = 1,lsize
-   !     data(n) = gbuf(n,dead_grid_lat)
-   !  enddo
-   !  call mct_gGrid_importRAttr(domain,"lat",data,lsize)
-
-   !  do n = 1,lsize
-   !     data(n) = gbuf(n,dead_grid_lon)
-   !  enddo
-   !  call mct_gGrid_importRAttr(domain,"lon",data,lsize)
-
-   !  do n = 1,lsize
-   !     data(n) = gbuf(n,dead_grid_area)
-   !  enddo
-   !  call mct_gGrid_importRAttr(domain,"area",data,lsize)
-   !  call mct_gGrid_importRAttr(domain,"aream",data,lsize)
-
-   !  do n = 1,lsize
-   !     data(n) = gbuf(n,dead_grid_mask)
-   !  enddo
-   !  call mct_gGrid_importRAttr(domain,"mask"   ,data,lsize)
-
-   !  do n = 1,lsize
-   !     data(n) = gbuf(n,dead_grid_frac)
-   !  enddo
-   !  call mct_gGrid_importRAttr(domain,"frac"   ,data,lsize)
-
 
 #ifdef HAVE_MOAB
       ! Create MOAB mesh for dead domain
@@ -468,10 +480,11 @@ contains
     ierr = iMOAB_CreateVertices(mbdomain, lsize*3, 3, moab_vert_coords)
     if (ierr .ne. 0)  &
        call shr_sys_abort('Error: fail to create MOAB vertices in data lnd model')
+    deallocate(moab_vert_coords)
 
-    if (trim(model) .ne. 'atm') then
-      fullmesh = .true.
-    end if
+   !  if (trim(model) .ne. 'atm' .and. trim(model) .ne. 'lnd' .and. trim(model) .ne. 'rof') then
+   !    fullmesh = .true.
+   !  end if
 
     if (fullmesh) then
        ! atm model only uses point clouds for physics
@@ -548,12 +561,12 @@ contains
     if (ierr .ne. 0)  &
        call shr_sys_abort('Error: fail to set GLOBAL_ID tag ')
 
-    ierr = iMOAB_ResolveSharedEntities( mbdomain, lsize, idata );
-    if (ierr .ne. 0)  &
-       call shr_sys_abort('Error: fail to resolve shared entities')
-
-    deallocate(moab_vert_coords)
-   !  deallocate(idata)
+    if (fullmesh) then
+      ierr = iMOAB_ResolveSharedEntities( mbdomain, lsize, idata );
+      if (ierr .ne. 0)  &
+         call shr_sys_abort('Error: fail to resolve shared entities')
+    end if
+    deallocate(idata)
 
     ierr = iMOAB_UpdateMeshInfo( mbdomain )
     if (ierr .ne. 0)  &
@@ -622,9 +635,173 @@ contains
     if (ierr > 0 )  &
        call shr_sys_abort('Error: fail to set frac tag ')
 
+    ! deallocate temporary arrays
+    deallocate(data)
+
 #ifdef MOABDEBUG
        !      debug test
-    outfile = 'deadModels.h5m'//C_NULL_CHAR
+    outfile = trim(model) // '_deadModels.h5m'//C_NULL_CHAR
+    wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
+       !      write out the mesh file to disk
+    ierr = iMOAB_WriteMesh(mbdomain, trim(outfile), trim(wopts))
+    if (ierr .ne. 0) then
+       call shr_sys_abort(subname//' ERROR in writing data mesh lnd ')
+    endif
+#endif
+#endif
+
+
+  end subroutine dead_domain_moab
+  !===============================================================================
+
+
+  subroutine define_reset_fields_moab( model, mpicom, gbuf, gsMap, logunit, mbdomain, nxg, nyg, flds_x2d, flds_d2x )
+
+    use iMOAB, only: iMOAB_DefineTagStorage, &
+                     iMOAB_SetIntTagStorage, &
+                     iMOAB_SetDoubleTagStorage, &
+                     iMOAB_WriteMesh
+      implicit none
+    !-------------------------------------------------------------------
+    !---arguments---
+    character(len=*) , intent(in)    :: model
+    integer(IN)    , intent(in)  :: mpicom
+    real(R8)       , intent(in)  :: gbuf(:,:)
+    type(mct_gsMap), intent(in)  :: gsMap
+    integer(IN)    , intent(in)  :: logunit
+    integer(IN)    , intent(in)  :: mbdomain
+    integer(IN)    , intent(in)  :: nxg          ! global grid size in x-direction
+    integer(IN)    , intent(in)  :: nyg          ! global grid size in y-direction
+    character(len=*) , intent(in)    :: flds_x2d
+    character(len=*) , intent(in)    :: flds_d2x
+
+    !---local variables---
+    integer(IN)          :: ierr        ! error code
+    integer(IN)          :: my_task     ! mpi task within communicator
+    integer(IN)          :: lsize       ! temporary
+    integer(IN)          :: n    ,j,i   ! indices
+    integer(IN)          :: ier         ! error status
+    real(R8)             :: lonv, latv  ! lon/lat values
+    character(CL)        :: tagname
+    integer(IN)          :: tagindex, etype
+    real(R8), pointer    :: data(:)     ! temporary
+    integer(IN), pointer :: idata(:)    ! temporary
+    real(R8), dimension(:), allocatable :: moab_vert_coords  ! temporary
+    logical          :: fullmesh =.false.
+
+#ifdef MOABDEBUG
+    character*32             :: outfile, wopts, lnum
+#endif
+    character(*), parameter :: subName = "(dead_domain_moab) "
+    !-------------------------------------------------------------------
+    !
+    ! Initialize MOAB dead domain
+    !
+
+    ! Allocate memory
+    !
+    lsize = size(gbuf,dim=1)
+    allocate(data(lsize))
+    allocate(idata(lsize))
+    !
+    ! Initialize attribute vector with special value
+    !
+    call mpi_comm_rank(mpicom, my_task, ier)
+   !  call mct_aVect_zero(domain%data)
+    data(:) = -9999.0_R8  ! generic special value
+
+    data(:) = 0.0_R8  ! generic special value
+#ifdef HAVE_MOAB
+      ! Create MOAB mesh for dead domain
+    allocate(moab_vert_coords(lsize*3))
+    do n = 1,lsize
+       lonv = gbuf(n,dead_grid_lon)
+       latv = gbuf(n,dead_grid_lat)
+       moab_vert_coords(3*n-2)=COS(latv)*COS(lonv)
+       moab_vert_coords(3*n-1)=COS(latv)*SIN(lonv)
+       moab_vert_coords(3*n  )=SIN(latv)
+    enddo
+
+    etype = 0  ! vertices
+   !  if (trim(model) .ne. 'atm') then
+   !    fullmesh = .true.
+   !    etype = 1  ! cells
+   !  end if
+
+    ! first define the tags for x2d and d2x fields
+    ierr = iMOAB_DefineTagStorage( mbdomain, trim(flds_x2d)//C_NULL_CHAR, &
+                                     1, & ! dense, double
+                                     1, & ! number of components
+                                     tagindex )
+    if (ierr > 0 )  &
+       call shr_sys_abort('Error: fail to create tag: ' // trim(flds_x2d) )
+
+
+    ierr = iMOAB_DefineTagStorage( mbdomain, trim(flds_d2x)//C_NULL_CHAR, &
+                                     1, & ! dense, double
+                                     1, & ! number of components
+                                     tagindex )
+    if (ierr > 0 )  &
+       call shr_sys_abort('Error: fail to create tag: ' // trim(flds_x2d) )
+
+    ! Now let us set the default values for these fields to zero
+    data(:) = gbuf(:,dead_grid_lat)
+    tagname='lat'//C_NULL_CHAR
+    ierr = iMOAB_SetDoubleTagStorage ( mbdomain, tagname, lsize, &
+                                    etype, & ! set data on vertices
+                                    data)
+    if (ierr > 0 )  &
+       call shr_sys_abort('Error: fail to set lat tag ')
+
+    data(:) = gbuf(:,dead_grid_lon)
+    tagname='lon'//C_NULL_CHAR
+    ierr = iMOAB_SetDoubleTagStorage ( mbdomain, tagname, lsize, &
+                                    0, & ! set data on vertices
+                                    data)
+    if (ierr > 0 )  &
+       call shr_sys_abort('Error: fail to set lon tag ')
+
+    if (fullmesh) then
+      etype = 1  ! elements
+    else
+      etype = 0  ! vertices
+    end if
+    data(:) = gbuf(:,dead_grid_area)
+    tagname='area'//C_NULL_CHAR
+    ierr = iMOAB_SetDoubleTagStorage ( mbdomain, tagname, lsize, &
+                                     etype, & ! set data on elements
+                                     data)
+    if (ierr > 0 )  &
+       call shr_sys_abort('Error: fail to get area tag ')
+
+    ! set the same data for aream (model area) as area
+    ! data(:) = ggrid%data%rAttr(mct_aVect_indexRA(ggrid%data,'aream'),:)
+    tagname='aream'//C_NULL_CHAR
+    ierr = iMOAB_SetDoubleTagStorage ( mbdomain, tagname, lsize, &
+                                     etype, & ! set data on elements
+                                     data)
+    if (ierr > 0 )  &
+       call shr_sys_abort('Error: fail to set aream tag ')
+
+    data(:) = gbuf(:,dead_grid_mask)
+    tagname='mask'//C_NULL_CHAR
+    ierr = iMOAB_SetDoubleTagStorage ( mbdomain, tagname, lsize, &
+                                     etype, & ! set data on elements
+                                     data)
+    if (ierr > 0 )  &
+       call shr_sys_abort('Error: fail to set mask tag ')
+
+    data(:) = gbuf(:,dead_grid_frac)
+    tagname='frac'//C_NULL_CHAR
+    ierr = iMOAB_SetDoubleTagStorage ( mbdomain, tagname, lsize, &
+                                     etype, & ! set data on elements
+                                     data)
+    if (ierr > 0 )  &
+       call shr_sys_abort('Error: fail to set frac tag ')
+
+#ifdef MOABDEBUG
+       !      debug test
+    outfile = trim(model) // '_deadModels.h5m'//C_NULL_CHAR
     wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
        !      write out the mesh file to disk
     ierr = iMOAB_WriteMesh(mbdomain, trim(outfile), trim(wopts))
@@ -637,8 +814,9 @@ contains
     deallocate(data)
     deallocate(idata)
 
-  end subroutine dead_domain_moab
+  end subroutine define_reset_fields_moab
   !===============================================================================
+
 #endif
 
 end module dead_mct_mod

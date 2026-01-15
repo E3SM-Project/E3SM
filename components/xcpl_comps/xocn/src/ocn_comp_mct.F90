@@ -16,6 +16,11 @@ module ocn_comp_mct
   use dead_mct_mod    , only: dead_init_mct, dead_run_mct, dead_final_mct
   use seq_flds_mod    , only: seq_flds_o2x_fields, seq_flds_x2o_fields
 
+#ifdef HAVE_MOAB
+  use seq_comm_mct,     only: mpoid  ! iMOAB pid for ocean mesh on component pes
+  use iso_c_binding
+#endif
+
   ! !PUBLIC TYPES:
   implicit none
   save
@@ -51,6 +56,10 @@ CONTAINS
 
     ! !DESCRIPTION: initialize dead ocn model
 
+#ifdef HAVE_MOAB
+    use iMOAB, only: iMOAB_RegisterApplication
+#endif
+
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Clock)            , intent(inout) :: EClock
     type(seq_cdata)             , intent(inout) :: cdata
@@ -70,6 +79,7 @@ CONTAINS
     logical                          :: ocn_present    ! if true, component is present
     logical                          :: ocn_prognostic ! if true, component is prognostic
     logical                          :: ocnrof_prognostic
+    character(*), parameter :: subName = "(ocn_init_mct) "
     !-------------------------------------------------------------------------------
 
     ! Set cdata pointers to derived types (in coupler)
@@ -113,10 +123,20 @@ CONTAINS
     ! Initialize xocn
     !----------------------------------------------------------------------------
 
+#ifdef HAVE_MOAB
+  ierr = iMOAB_RegisterApplication(trim("XOCN")//C_NULL_CHAR, mpicom, compid, mpoid)
+  if (ierr .ne. 0) then
+    write(logunit,*) subName,' error in registering data ocn comp'
+    call shr_sys_abort(subName//' ERROR in registering data ocn comp')
+  endif
+   ! send path of ocean domain file to MOAB coupler.
+!   call seq_infodata_PutData( infodata, ocn_domain=SDOCN%domainFile)
+#endif
+
     call dead_init_mct('ocn', Eclock, x2d, d2x, &
          seq_flds_x2o_fields, seq_flds_o2x_fields, &
          gsmap, ggrid, gbuf, mpicom, compid, my_task, master_task, &
-         inst_index, inst_suffix, inst_name, logunit, nxg, nyg)
+         inst_index, inst_suffix, inst_name, logunit, nxg, nyg, mpoid)
 
     if (nxg == 0 .and. nyg == 0) then
        ocn_present = .false.
