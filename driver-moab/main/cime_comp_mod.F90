@@ -697,7 +697,7 @@ module cime_comp_mod
 
 #ifdef MOABDEBUG
 ! allocate to get data frpm moab
-  real(r8) ,  private, pointer :: moab_tag_vals(:,:) ! various tags for debug purposes 
+  real(r8) ,  private, pointer :: moab_tag_vals(:,:) ! various tags for debug purposes
   integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3), arrsize, ent_type
   character(100) :: tagname
   type(mct_aVect) , pointer :: a2x_aa => null()
@@ -2164,6 +2164,7 @@ contains
     endif
 #endif
     if (single_column) areafact_samegrid = .true.
+    if (dead_comps) areafact_samegrid = .true.
 
     call t_startf ('CPL:init_areacor')
     call t_adj_detailf(+2)
