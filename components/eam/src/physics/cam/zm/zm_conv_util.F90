@@ -22,7 +22,7 @@ contains
 real(r8) function entropy(TK, p, qtot, zm_const)
    !----------------------------------------------------------------------------
    ! Purpose: function to calculate entropy following:
-   ! 
+   !
    !    Raymond, D. J., and A. M. Blyth, 1992: Extension of the Stochastic Mixing
    !       Model to Cumulonimbus Clouds. J. Atmos. Sci., 49, 1968–1983
    !----------------------------------------------------------------------------
@@ -63,7 +63,7 @@ subroutine ientropy(rcall, s, p, qt, T, qst, Tfg, zm_const)
    !----------------------------------------------------------------------------
    ! Purpose: invert the entropy equation to return temperature and saturated
    ! vapor mixing ratio following Richard Brent's method::
-   ! 
+   !
    !    Brent, R. P. Ch. 3-4 in Algorithms for Minimization Without Derivatives.
    !       Englewood Cliffs, NJ: Prentice-Hall, 1973.
    !----------------------------------------------------------------------------
@@ -101,7 +101,7 @@ subroutine ientropy(rcall, s, p, qt, T, qst, Tfg, zm_const)
    c = b
    fc = fb
    !----------------------------------------------------------------------------
-   ! 
+   !
    converge: do i=0, LOOPMAX
 
       if ((fb > 0.0_r8 .and. fc > 0.0_r8) .or. &
@@ -123,7 +123,7 @@ subroutine ientropy(rcall, s, p, qt, T, qst, Tfg, zm_const)
 
       tolerance = 2.0_r8*tol_eps*abs(b) + 0.5_r8*tol_coeff
       xm = 0.5_r8*(c-b)
-      
+
       converged = (abs(xm) <= tolerance .or. fb == 0.0_r8)
       if (converged) exit converge
 

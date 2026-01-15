@@ -1,4 +1,5 @@
 #include "zm_test_data.hpp"
+#include "zm_functions.hpp"
 
 #include <ekat_pack_kokkos.hpp>
 
@@ -14,22 +15,48 @@ using scream::Int;
 namespace scream {
 namespace zm {
 
+using ZMF = Functions<Real, DefaultDevice>;
+using ZMC = typename ZMF::ZMC;
+
+using ExeSpace   = typename ZMF::KT::ExeSpace;
+using MemberType = typename ZMF::KT::MemberType;
+
+using view0dr_d = ZMF::view_0d<Real>;
+using view1di_d = ZMF::view_1d<Int>;
+using view1dr_d = ZMF::view_1d<Real>;
+using view2dr_d = ZMF::view_2d<Real>;
+using view3dr_d = ZMF::view_3d<Real>;
+
+using WSM = typename ZMF::WorkspaceManager;
+
 extern "C" {
 
-void zm_find_mse_max_f( Int  pcols,
-                        Int  ncol,
-                        Int  pver,
-                        Int  num_msg,
-                        Int  *msemax_top_k,
-                        bool pergro_active,
-                        Real *temperature,
-                        Real *zmid,
-                        Real *sp_humidity,
-                        Int *msemax_klev,
-                        Real *mse_max_val );
+void zm_find_mse_max_f(Int pcols, Int ncol, Int pver, Int num_msg, Int *msemax_top_k, bool pergro_active, Real *temperature, Real *zmid, Real *sp_humidity, Int *msemax_klev, Real *mse_max_val);
 
 void ientropy_bridge_f(Int rcall, Real s, Real p, Real qt, Real* t, Real* qst, Real tfg);
+
 } // extern "C" : end _f decls
+
+// Inits and finalizes are not intended to be called outside this comp unit
+namespace {
+
+void zm_common_init_f()
+{
+  // Anything to do here?
+}
+
+// Wrapper around gw_init for cxx
+void zm_common_init()
+{
+  ZMF::zm_common_init();
+}
+
+void zm_finalize_cxx()
+{
+  ZMF::zm_finalize();
+}
+
+}
 
 void zm_find_mse_max(zm_data_find_mse_max& d){
   d.transition<ekat::TransposeDirection::c2f>();
@@ -50,14 +77,14 @@ void zm_find_mse_max(zm_data_find_mse_max& d){
 void ientropy_f(IentropyData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  zm_common_init();
-  ientropy_c(d.rcall, d.s, d.p, d.qt, &d.t, &d.qst, d.tfg);
+  zm_common_init_f();
+  ientropy_bridge_f(d.rcall, d.s, d.p, d.qt, &d.t, &d.qst, d.tfg);
   d.transition<ekat::TransposeDirection::f2c>();
 }
 
 void ientropy(IentropyData& d)
 {
-  zm_common_init(); // Might need more specific init
+  zm_common_init();
 
   // create device views and copy
   const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(1, 1);
@@ -68,18 +95,16 @@ void ientropy(IentropyData& d)
   const Real s = d.s;
   const Real tfg = d.tfg;
   const Int rcall = d.rcall;
-  view0dr_h qst_h("qst_h");
-  view0dr_d qst_d = Kokkos::create_mirror_view_and_copy(DefaultDevice(), qst_h);
-  view0dr_h t_h("t_h");
-  view0dr_d t_d = Kokkos::create_mirror_view_and_copy(DefaultDevice(), t_h);
+  view0dr_d qst_d("qst_d");
+  view0dr_d t_d("t_d");
+  auto qst_h = Kokkos::create_mirror_view(qst_d);
+  auto t_h   = Kokkos::create_mirror_view(t_d);
 
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
-    const Int i = team.league_rank();
-
     // Get single-column subviews of all inputs, shouldn't need any i-indexing
     // after this.
 
-    SHF::ientropy(
+    ZMF::ientropy(
       team,
       rcall,
       s,

@@ -36,6 +36,7 @@ struct Functions {
 
   using KT  = ekat::KokkosTypes<DefaultDevice>;
 
+  template <typename S> using view_0d           = typename KT::template view<S>;
   template <typename S> using view_1d           = typename KT::template view_1d<S>;
   template <typename S> using view_2d           = typename KT::template view_2d<S>;
   template <typename S> using view_2dl          = typename KT::template lview<S**>;
@@ -47,6 +48,11 @@ struct Functions {
   template <typename S> using uview_2dl         = typename ekat::template Unmanaged<view_2dl<S> >;
   template <typename S> using view_2dh          = typename view_2dl<S>::HostMirror;
   template <typename S> using view_1dh          = typename view_1d<S>::HostMirror;
+
+  using MemberType = typename KT::MemberType;
+
+  using WorkspaceManager = typename ekat::WorkspaceManager<Scalar, Device>;
+  using Workspace        = typename WorkspaceManager::Workspace;
 
   // -----------------------------------------------------------------------------------------------
   // Structs
@@ -261,6 +267,8 @@ struct Functions {
   // --------- Init/Finalize Functions ---------
   //
   static void zm_common_init();
+
+  static void zm_finalize() {}
 
   // static Int zm_main()
 

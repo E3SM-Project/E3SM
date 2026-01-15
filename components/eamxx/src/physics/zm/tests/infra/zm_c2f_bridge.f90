@@ -13,7 +13,7 @@ module zm_c2f_bridge
 contains
 !===================================================================================================
 
-subroutine zm_find_mse_max_c( pcols, ncol, pver, num_msg, msemax_top_k, pergro_active, temperature, zmid, sp_humidity, msemax_klev, mse_max_val ) bind(C)
+subroutine zm_find_mse_max_f( pcols, ncol, pver, num_msg, msemax_top_k, pergro_active, temperature, zmid, sp_humidity, msemax_klev, mse_max_val ) bind(C)
   use zm_conv_cape,   only: find_mse_max
   use zm_conv_types,  only: zm_const_t, zm_param_t
   use zm_conv_types,  only: zm_param_set_for_testing, zm_const_set_for_testing
@@ -42,18 +42,19 @@ subroutine zm_find_mse_max_c( pcols, ncol, pver, num_msg, msemax_top_k, pergro_a
   pergro_active_f = pergro_active
   call find_mse_max( pcols, ncol, pver, num_msg, msemax_top_k, pergro_active_f, temperature, zmid, sp_humidity, zm_const, zm_param, msemax_klev, mse_max_val )
   !-----------------------------------------------------------------------------
-end subroutine zm_find_mse_max_c
+end subroutine zm_find_mse_max_f
 
 !===================================================================================================
 
   subroutine ientropy_bridge_f(rcall, s, p, qt, t, qst, tfg) bind(C)
-    use zm, only : ientropy
+    use zm_conv_util, only : ientropy
+    use zm_conv_types,  only: zm_const_t, zm_const_set_for_testing
 
     integer(kind=c_int) , value, intent(in) :: rcall
     real(kind=c_real) , value, intent(in) :: s, p, qt, tfg
     real(kind=c_real) , intent(out) :: t, qst
 
-    type(c_ptr) :: zm_const
+    type(zm_const_t) :: zm_const
 
     call zm_const_set_for_testing(zm_const)
     call ientropy(rcall, s, p, qt, t, qst, tfg, zm_const)
