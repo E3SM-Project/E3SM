@@ -119,10 +119,6 @@ public:
 
 protected:
 
-  // Adds fid to the list of required/computed fields of the group (as a whole).
-  void process_required_field (FieldRequest& req);
-  void process_required_group (GroupRequest& req);
-
   // The initialization, run, and finalization methods
   void initialize_impl(const RunType run_type);
   void initialize_impl ();

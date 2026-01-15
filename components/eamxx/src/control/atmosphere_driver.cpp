@@ -563,17 +563,17 @@ void AtmosphereDriver::create_fields()
   for (const auto& req : m_atm_process_group->get_field_requests()) {
     const auto& fid = req.fid;
     const auto& f = m_field_mgr->get_field(fid);
-    if (req.usage & Computed)
-      m_atm_process_group->set_computed_field(f);
     if (req.usage & Required)
       m_atm_process_group->set_required_field(f.get_const());
+    if (req.usage & Computed)
+      m_atm_process_group->set_computed_field(f);
   }
   for (const auto& req : m_atm_process_group->get_group_requests()) {
     auto group = m_field_mgr->get_field_group(req.name, req.grid);
-    if (req.usage & Computed)
-      m_atm_process_group->set_computed_group(group);
     if (req.usage & Required)
       m_atm_process_group->set_required_group(group.get_const());
+    if (req.usage & Computed)
+      m_atm_process_group->set_computed_group(group);
   }
 
   // Make atm procs create the proc-level tendency fields (if requested)
