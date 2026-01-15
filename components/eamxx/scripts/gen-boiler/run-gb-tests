@@ -292,16 +292,16 @@ class TestGenBoilerBasics(unittest.TestCase):
         # gen_struct_members
         self.assertEqual(gen_struct_members(UT_ARG_DATA), [
             "// Inputs",
-            "Real *foo1, *foo2, *bar1, *bar2, *bak1, *bak2, *tracerd1, *tracerd2;",
-            "Real gag;",
+            "Int shcol, nlev, nlevi, ntracers;",
             "Int *bag;",
+            "Real gag;",
+            "Real *foo1, *foo2, *bar1, *bar2, *bak1, *bak2, *tracerd1, *tracerd2;",
             "bool val;",
             "bool *vals;",
-            "Int shcol, nlev, nlevi, ntracers;",
             "",
             "// Inputs/Outputs",
-            "Real *baz;",
             "Int bab1;",
+            "Real *baz;",
             "",
             "// Outputs",
             "Int bab2;",
@@ -311,8 +311,7 @@ class TestGenBoilerBasics(unittest.TestCase):
 
         # group_data
         self.assertEqual(group_data(UT_ARG_DATA), (
-            ['shcol', 'nlev', 'nlevi', 'ntracers'],
-            [('gag', 'Real'), ('bab1', 'Int'), ('bab2', 'Int'), ('val', 'bool')],
+            [('gag', 'Real'), ('bab1', 'Int'), ('bab2', 'Int'), ('val', 'bool'), ('shcol', 'Int'), ('nlev', 'Int'), ('nlevi', 'Int'), ('ntracers', 'Int')],
             {
                 ('shcol',): ['foo1', 'foo2', 'baz'],
                 ('shcol', 'nlev'): ['bar1', 'bar2'],
@@ -326,7 +325,6 @@ class TestGenBoilerBasics(unittest.TestCase):
             },
             {('shcol',): ['vals']}))
         self.assertEqual(group_data(UT_ARG_DATA_ALL_SCALAR), (
-            [],
             [('foo1', 'Real'), ('foo2', 'Real'), ('bar1', 'Real'), ('bar2', 'Real'), ('baz1', 'Real'), ('baz2', 'Real'), ('gag1', 'Int'), ('gag2', 'Int'), ('gal1', 'Int'), ('gal2', 'Int'), ('bal1', 'Int'), ('bal2', 'Int'), ('bit1', 'bool'), ('bit2', 'bool'), ('gut1', 'bool'), ('gut2', 'bool'), ('gat1', 'bool'), ('gat2', 'bool')],
             {},
             {},
@@ -687,7 +685,7 @@ end module mymod
     def test_gen_struct_api(self):
     ###########################################################################
         expected = \
-"""DataSubName(Int shcol_, Int nlev_, Int nlevi_, Int ntracers_, Real gag_, Int bab1_, Int bab2_, bool val_) :
+"""DataSubName(Int shcol_, Int nlev_, Int nlevi_, Int ntracers_, Real gag_, bool val_, Int bab1_, Int bab2_) :
   PhysicsTestData({
       {shcol_},
       {shcol_, nlev_},
@@ -712,10 +710,10 @@ end module mymod
     {
       {&vals}
     }),
-    shcol(shcol_), nlev(nlev_), nlevi(nlevi_), ntracers(ntracers_), gag(gag_), bab1(bab1_), bab2(bab2_), val(val_)
+    shcol(shcol_), nlev(nlev_), nlevi(nlevi_), ntracers(ntracers_), gag(gag_), val(val_), bab1(bab1_), bab2(bab2_)
 {}
 
-PTD_STD_DEF(DataSubName, 8, shcol, nlev, nlevi, ntracers, gag, bab1, bab2, val);
+PTD_STD_DEF(DataSubName, 8, shcol, nlev, nlevi, ntracers, gag, val, bab1, bab2);
 
 // TODO - You may need to transition int scalars or tell parent to skip transitioning int arrays that do not represent indices
 // template <ekat::TransposeDirection::Enum D>
@@ -733,15 +731,15 @@ PTD_STD_DEF(DataSubName, 8, shcol, nlev, nlevi, ntracers, gag, bab1, bab2, val);
     def test_gen_struct_api_scalars(self):
     ###########################################################################
         expected = \
-"""DataSubName(Real foo1_, Real foo2_, Real bar1_, Real bar2_, Real baz1_, Real baz2_, Int gag1_, Int gag2_, Int gal1_, Int gal2_, Int bal1_, Int bal2_, bool bit1_, bool bit2_, bool gut1_, bool gut2_, bool gat1_, bool gat2_) :
+"""DataSubName(Int gag1_, Int gag2_, Real foo1_, Real foo2_, bool bit1_, bool bit2_, Int gal1_, Int gal2_, Real bar1_, Real bar2_, bool gut1_, bool gut2_, Int bal1_, Int bal2_, Real baz1_, Real baz2_, bool gat1_, bool gat2_) :
   PhysicsTestData({
     },
     {
     }),
-    foo1(foo1_), foo2(foo2_), bar1(bar1_), bar2(bar2_), baz1(baz1_), baz2(baz2_), gag1(gag1_), gag2(gag2_), gal1(gal1_), gal2(gal2_), bal1(bal1_), bal2(bal2_), bit1(bit1_), bit2(bit2_), gut1(gut1_), gut2(gut2_), gat1(gat1_), gat2(gat2_)
+    gag1(gag1_), gag2(gag2_), foo1(foo1_), foo2(foo2_), bit1(bit1_), bit2(bit2_), gal1(gal1_), gal2(gal2_), bar1(bar1_), bar2(bar2_), gut1(gut1_), gut2(gut2_), bal1(bal1_), bal2(bal2_), baz1(baz1_), baz2(baz2_), gat1(gat1_), gat2(gat2_)
 {}
 
-PTD_STD_DEF(DataSubName, 18, foo1, foo2, bar1, bar2, baz1, baz2, gag1, gag2, gal1, gal2, bal1, bal2, bit1, bit2, gut1, gut2, gat1, gat2);
+PTD_STD_DEF(DataSubName, 18, gag1, gag2, foo1, foo2, bit1, bit2, gal1, gal2, bar1, bar2, gut1, gut2, bal1, bal2, baz1, baz2, gat1, gat2);
 
 // TODO - You may need to transition int scalars or tell parent to skip transitioning int arrays that do not represent indices
 // template <ekat::TransposeDirection::Enum D>
@@ -987,22 +985,22 @@ PTD_STD_DEF(DataSubName, 18, foo1, foo2, bar1, bar2, baz1, baz2, gag1, gag2, gal
         expected = \
 """struct FakeSubData : public PhysicsTestData {
   // Inputs
-  Real *foo1, *foo2, *bar1, *bar2, *bak1, *bak2, *tracerd1, *tracerd2;
-  Real gag;
+  Int shcol, nlev, nlevi, ntracers;
   Int *bag;
+  Real gag;
+  Real *foo1, *foo2, *bar1, *bar2, *bak1, *bak2, *tracerd1, *tracerd2;
   bool val;
   bool *vals;
-  Int shcol, nlev, nlevi, ntracers;
 
   // Inputs/Outputs
-  Real *baz;
   Int bab1;
+  Real *baz;
 
   // Outputs
   Int bab2;
   Int *ball1, *ball2;
 
-  FakeSubData(Int shcol_, Int nlev_, Int nlevi_, Int ntracers_, Real gag_, Int bab1_, Int bab2_, bool val_) :
+  FakeSubData(Int shcol_, Int nlev_, Int nlevi_, Int ntracers_, Real gag_, bool val_, Int bab1_, Int bab2_) :
     PhysicsTestData({
       {shcol_},
       {shcol_, nlev_},
@@ -1027,10 +1025,10 @@ PTD_STD_DEF(DataSubName, 18, foo1, foo2, bar1, bar2, baz1, baz2, gag1, gag2, gal
     {
       {&vals}
     }),
-    shcol(shcol_), nlev(nlev_), nlevi(nlevi_), ntracers(ntracers_), gag(gag_), bab1(bab1_), bab2(bab2_), val(val_)
+    shcol(shcol_), nlev(nlev_), nlevi(nlevi_), ntracers(ntracers_), gag(gag_), val(val_), bab1(bab1_), bab2(bab2_)
   {}
 
-  PTD_STD_DEF(FakeSubData, 8, shcol, nlev, nlevi, ntracers, gag, bab1, bab2, val);
+  PTD_STD_DEF(FakeSubData, 8, shcol, nlev, nlevi, ntracers, gag, val, bab1, bab2);
 
   // TODO - You may need to transition int scalars or tell parent to skip transitioning int arrays that do not represent indices
   // template <ekat::TransposeDirection::Enum D>
@@ -1275,7 +1273,7 @@ void Functions<S,D>::fake_sub(
     // Set up inputs
     FakeSubData baseline_data[] = {
       // TODO
-      // shcol, nlev, nlevi, ntracers, gag, bab1 (output, set to zero), bab2 (output, set to zero), val
+      // shcol, nlev, nlevi, ntracers, gag, val, bab1 (output, set to zero), bab2 (output, set to zero)
       FakeSubData(),
     };
 

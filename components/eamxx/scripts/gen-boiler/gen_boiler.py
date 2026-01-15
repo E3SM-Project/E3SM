@@ -872,12 +872,10 @@ def gen_cxx_data_args(arg_data):
     """
     Based on data, generate unpacking of Data struct args
     """
-    all_dims = group_data(arg_data)[0]
     args_needs_ptr = [item[ARG_DIMS] is None and item[ARG_INTENT] != "in" for item in arg_data]
     arg_names      = [item[ARG_NAME] for item in arg_data]
-    arg_dim_call   = [item[ARG_NAME] in all_dims for item in arg_data]
     args = [f"{'&' if need_ptr else ''}d.{arg_name}"
-            for arg_name, need_ptr, dim_call in zip(arg_names, args_needs_ptr, arg_dim_call)]
+            for arg_name, need_ptr in zip(arg_names, args_needs_ptr)]
     return args
 
 ###############################################################################
@@ -910,6 +908,31 @@ def has_arrays(arg_data):
     return False
 
 ###############################################################################
+def get_scalar_members(arg_data):
+###############################################################################
+    """
+    Gen cxx code for data struct members in an order that matches gen_struct_members
+    """
+    metadata = {} # intent -> type -> names
+    for name, argtype, intent, dims in arg_data:
+        if dims is None:
+            metadata.setdefault(intent, {}).setdefault(argtype, []).append(name)
+
+    intent_order = ("in", "inout", "out")
+    type_order = ("integer", "real", "logical", "other")
+
+    result = []
+    for intent in intent_order:
+        if intent in metadata:
+            type_map = metadata[intent]
+            for curr_type in type_order:
+                for type_name, names in type_map.items():
+                    if (type_name == curr_type or (curr_type == "other" and type_name not in C_TYPE_MAP.keys())):
+                        result.extend([(name, get_cxx_scalar_type(type_name)) for name in names])
+
+    return result
+
+###############################################################################
 def gen_struct_members(arg_data):
 ###############################################################################
     """
@@ -920,16 +943,22 @@ def gen_struct_members(arg_data):
         metadata.setdefault(intent, {}).setdefault((argtype, dims is not None), []).append(name)
 
     intent_order = ( ("in", "Inputs"), ("inout", "Inputs/Outputs"), ("out", "Outputs") )
+    type_order = ("integer", "real", "logical", "other")
+    is_ptr_order = (False, True)
+
     result = []
     for intent, comment in intent_order:
         if intent in metadata:
             result.append(f"// {comment}")
             type_map = metadata[intent]
-            for type_info, names in type_map.items():
-                type_name, is_ptr = type_info
-                decl_str = get_cxx_scalar_type(type_name)
-                decl_str += f" {', '.join(['{}{}'.format('*' if is_ptr else '', name) for name in names])};"
-                result.append(decl_str)
+            for curr_type in type_order:
+                for curr_is_ptr in is_ptr_order:
+                    for type_info, names in type_map.items():
+                        type_name, is_ptr = type_info
+                        if (type_name == curr_type or (curr_type == "other" and type_name not in C_TYPE_MAP.keys())) and is_ptr == curr_is_ptr:
+                            decl_str = get_cxx_scalar_type(type_name)
+                            decl_str += f" {', '.join(['{}{}'.format('*' if is_ptr else '', name) for name in names])};"
+                            result.append(decl_str)
 
             result.append("")
 
@@ -964,7 +993,7 @@ def extract_dim_scalars(dim):
 def group_data(arg_data, filter_out_intent=None, filter_scalar_custom_types=False):
 ###############################################################################
     """
-    Given data, return ([all-dims], [scalars], {dims->[real_data]}, {dims->[int_data]}, {dims->[bool_data]})
+    Given data, return ([scalars], {dims->[real_data]}, {dims->[int_data]}, {dims->[bool_data]})
     """
     scalars  = []
 
@@ -986,9 +1015,8 @@ def group_data(arg_data, filter_out_intent=None, filter_scalar_custom_types=Fals
         if filter_out_intent is None or intent != filter_out_intent:
             if dims is None:
                 if not (is_custom_type(argtype) and filter_scalar_custom_types):
-                    if name not in all_dims:
-                        scalars.append( (name, get_cxx_scalar_type(argtype)))
-                    else:
+                    scalars.append( (name, get_cxx_scalar_type(argtype)))
+                    if name in all_dims:
                         expect(argtype == "integer", f"Expected dimension {name} to be of type integer")
                         expect(intent == "in", f"Expected dimension {name} to be intent in")
 
@@ -1001,7 +1029,7 @@ def group_data(arg_data, filter_out_intent=None, filter_scalar_custom_types=Fals
             elif argtype == "logical":
                 bool_data.setdefault(dims, []).append(name)
 
-    return all_dims, scalars, real_data, int_data, bool_data
+    return scalars, real_data, int_data, bool_data
 
 ###############################################################################
 def get_list_of_lists(items, indent):
@@ -1085,11 +1113,11 @@ def gen_struct_api(struct_name, arg_data):
     """
     Given data, generate code for data struct api
     """
-    all_dims, scalars, real_data, int_data, bool_data = group_data(arg_data, filter_scalar_custom_types=True)
+    _, real_data, int_data, bool_data = group_data(arg_data, filter_scalar_custom_types=True)
+    cons_args = get_scalar_members(arg_data)
 
+    # Due to the mechanics of PTD, the constructor must take all scalars, not just input scalars
     result = []
-    dim_args = [(item, "Int") for item in all_dims if item is not None]
-    cons_args = dim_args + scalars
     result.append("{struct_name}({cons_args}) :".\
                   format(struct_name=struct_name,
                          cons_args=", ".join(["{} {}_".format(argtype, name) for name, argtype in cons_args])))
@@ -1791,15 +1819,15 @@ f"""template<typename S, typename D>
       d.randomize(engine);
     }"""
 
-        _, scalars, real_data, int_data, bool_data = group_data(arg_data, filter_out_intent="in")
+        scalars, real_data, int_data, bool_data = group_data(arg_data, filter_out_intent="in")
         out_scalar_names = [scalar_name for scalar_name, _ in scalars]
         check_scalars, check_arrays, scalar_comments = "", "", ""
         for scalar in scalars:
             check_scalars += f"        REQUIRE(d_baseline.{scalar[0]} == d_test.{scalar[0]});\n"
 
         # Due to the mechanics of PTD, the constructor must take all scalars, not just input scalars
-        all_dims, all_scalars = group_data(arg_data)[0:2]
-        all_scalar_names = all_dims + [scalar_name for scalar_name, _ in all_scalars]
+        all_scalars = get_scalar_members(arg_data)
+        all_scalar_names = [scalar_name for scalar_name, _ in all_scalars]
         scalar_comments = "// " + ", ".join([('{} (output, set to zero)'.format(name) if name in out_scalar_names else name) for name in all_scalar_names])
 
         all_data = dict(real_data)
