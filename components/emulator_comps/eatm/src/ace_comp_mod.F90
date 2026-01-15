@@ -1,9 +1,11 @@
 module ace_comp_mod
 
+  use esmf
   use eatmMod
   use eatmIO
+  use seq_timemgr_mod, only: seq_timemgr_EClockGetData
   use shr_const_mod
-  use shr_kind_mod, only: R4=>SHR_KIND_R4, R8=>SHR_KIND_R8, CL=>SHR_KIND_CL
+  use shr_kind_mod, only: R4=>SHR_KIND_R4, R8=>SHR_KIND_R8, CL=>SHR_KIND_CL, IN=>SHR_KIND_IN
   use shr_sys_mod,  only: shr_sys_flush, shr_sys_abort
 
   use ftorch, only: &
@@ -35,6 +37,7 @@ module ace_comp_mod
   !--------------------------------------------------------------------------
   integer, public :: n_input_channels=39  ! number of input channels to emulator
   integer, public :: n_output_channels=44 ! number of input channels to emulator
+  integer, public :: eatm_idt=6 * 60 * 60 ! eatm timestep (6hr) in seconds
 
   !--------------------------------------------------------------------------
   ! Private module data
@@ -61,6 +64,9 @@ CONTAINS
 
   subroutine ace_comp_init()
 
+
+    integer     :: i, j, k           ! loop indicies
+
     input_tensor_shape = [&
       int(1, kind=c_int), &
       int(n_input_channels, kind=c_int), &
@@ -84,44 +90,103 @@ CONTAINS
     ! load the restart data (i.e. prognostic state) associated with IC
     call ace_read_restart()
 
+    ! fill both time levels of intrp struct with restart data
+    do k = 1, n_output_channels
+      do j = 1, lsize_y
+        do i = 1, lsize_x
+          eatm_intrp%t_im1(k, i, j) = net_outputs(1, k, i, j)
+          eatm_intrp%t_ip1(k, i, j) = net_outputs(1, k, i, j)
+        end do
+      end do
+    end do
+
     ! using restart data from ACE set the fields passed to the coupler
     call ace_eatm_export()
 
   end subroutine ace_comp_init
 
-  subroutine ace_comp_run()
+  subroutine ace_comp_run(EClock)
+    ! !DESCRIPTION: run method for ace model
+    implicit none
 
-    ! populate net_imports array with IC/restart data passed to coupler for initializtion
-    call ace_eatm_import()
+    ! !INPUT/OUTPUT PARAMETERS:
+    type(ESMF_Clock), intent(in) :: EClock
 
-    ! create input/output tensors based off net input/output arrays
-    ! call torch_tensor_from_array(input_tensor(1),  net_inputs, [1, 2, 3, 4], torch_kCPU)
-    call torch_tensor_from_blob(&
-      input_tensor(1), &
-      c_loc(net_inputs), &
-      4_c_int, &
-      input_tensor_shape, &
-      tensor_layout, &
-      torch_kFloat32, &
-      torch_kCPU &
-    )
-    ! call torch_tensor_from_array(output_tensor(1), net_outputs, [1, 2, 3, 4], torch_kCPU)
-    call torch_tensor_from_blob(&
-      output_tensor(1), &
-      c_loc(net_outputs), &
-      4_c_int, &
-      output_tensor_shape, &
-      tensor_layout, &
-      torch_kFloat32, &
-      torch_kCPU &
-    )
+    !--- local ---
+    integer     :: i, j, k           ! loop indicies
+    real(R8)    :: t_frac            ! frac of cpl_t / eatm_t
+    integer     :: t_modulo          ! frac of cpl_t / eatm_t
+    real(R8)    :: cpl_dt            ! timestep
+    integer(in) :: cpl_idt           ! integer timestep
+    integer(in) :: stepno            ! step number
+    integer(in) :: CurrentYMD        ! model date
+    integer(in) :: CurrentTOD        ! model sec into model date
+    logical     :: call_inference
 
-    write(logunit_atm, *) "Shape of the input tensor:", input_tensor(1) % get_shape()
-    write(logunit_atm, *) "Shape of the output tensor:", output_tensor(1) % get_shape()
+    call seq_timemgr_EClockGetData( EClock, curr_ymd=CurrentYMD, curr_tod=CurrentTOD)
+    call seq_timemgr_EClockGetData( EClock, stepno=stepno, dtime=cpl_idt)
+
+    cpl_dt = real(cpl_idt, kind=r8)
+
+    write(logunit_atm, *) "stepno: ", stepno
+    write(logunit_atm, *) "cpl_dt: ", cpl_dt
+    write(logunit_atm, *) "cpl_idt: ", cpl_idt
+    write(logunit_atm, *) "eatm_idt: ", eatm_idt
+    write(logunit_atm, *) "CurrentYMD: ", CurrentYMD
+    write(logunit_atm, *) "CurrentTOD: ", CurrentTOD
     call shr_sys_flush(logunit_atm)
 
-    ! run inference
-    call torch_model_forward(ace_model, input_tensor, output_tensor)
+    ! integer remained
+    t_modulo = mod(CurrentTOD, eatm_idt)
+
+    if (t_modulo .eq. 0) then
+
+      ! advance the time levels
+      do k = 1, n_output_channels
+        do j = 1, lsize_y
+          do i = 1, lsize_x
+            eatm_intrp%t_im1(k, i, j) = eatm_intrp%t_ip1(k, i, j)
+          end do
+        end do
+      end do
+
+      ! populate net_imports array with IC/restart data passed to coupler for initializtion
+      call ace_eatm_import()
+
+      ! create input/output tensors based off net input/output arrays
+      call torch_tensor_from_blob(&
+        input_tensor(1), &
+        c_loc(net_inputs), &
+        4_c_int, &
+        input_tensor_shape, &
+        tensor_layout, &
+        torch_kFloat32, &
+        torch_kCPU &
+      )
+      call torch_tensor_from_blob(&
+        output_tensor(1), &
+        c_loc(net_outputs), &
+        4_c_int, &
+        output_tensor_shape, &
+        tensor_layout, &
+        torch_kFloat32, &
+        torch_kCPU &
+      )
+
+      ! run inference
+      call torch_model_forward(ace_model, input_tensor, output_tensor)
+    end if
+
+    t_frac = real(t_modulo, kind=r8)/real(eatm_idt, kind=r8)
+
+    ! time interpolate the results
+    do k = 1, n_output_channels
+      do j = 1, lsize_y
+        do i = 1, lsize_x
+          net_outputs(1, k, i, j) = eatm_intrp%t_im1(k, i, j) + t_frac * (eatm_intrp%t_ip1(k, i, j) - eatm_intrp%t_im1(k, i, j))
+        end do
+      end do
+    end do
 
     call ace_eatm_export()
   end subroutine ace_comp_run
@@ -253,7 +318,7 @@ CONTAINS
         ! TODO (AN): Evolve `SOLIN`, `PS`, and TS fileds intime
         ! -----------------------------------------------------------------------
         net_inputs(1,  5, i, j) = net_inputs(1, 5, i, j)   ! ACE2-EAMv3: SOLIN
-        net_inputs(1,  6, i, j) = net_inputs(1, 6, i, j)   ! ACE2-EAMv3: PS
+        net_inputs(1,  6, i, j) = net_outputs(1, 1, i, j)  ! ACE2-EAMv3: PS
         net_inputs(1,  7, i, j) = ts(i, j)                 ! ACE2-EAMv3: TS
         ! For 3D fields just advance through with time
         net_inputs(1,  8, i, j) = net_outputs(1,  3, i, j) ! ACE2-EAMv3: T_0

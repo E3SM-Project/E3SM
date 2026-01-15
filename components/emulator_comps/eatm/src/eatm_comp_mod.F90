@@ -256,7 +256,7 @@ CONTAINS
     call t_startf('eatm')
 
     !JW real work goes here
-    call ace_comp_run()
+    call ace_comp_run(EClock)
 
     call t_stopf('eatm_datamode')
 
