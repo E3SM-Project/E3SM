@@ -385,7 +385,6 @@ add_omega_test(
   infra/TimeIntervalParseExtendedFormatsTest.cpp
   "-n;1"
 )
-set_tests_properties(TIMEINTERVAL_PARSE_EXTENDED_FORMATS_TEST PROPERTIES WILL_FAIL true)
 
 ##################
 # Reductions test
