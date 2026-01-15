@@ -121,9 +121,8 @@ protected:
 
   // The initialization, run, and finalization methods
   void initialize_impl(const RunType run_type);
-  void initialize_impl ();
-  void run_impl        (const double dt);
-  void finalize_impl   (/* what inputs? */);
+  void run_impl       (const double dt);
+  void finalize_impl  (/* what inputs? */);
 
   void run_sequential (const double dt);
   void run_parallel   (const double dt);
