@@ -405,7 +405,7 @@ void MAMMicrophysics::set_oxid_reader()
   // Beg of any year, since we use yearly periodic timeline
   util::TimeStamp ref_ts_oxid (1,1,1,0,0,0);
   data_interp_oxid_ = std::make_shared<DataInterpolation>(grid_,oxid_fields);
-  data_interp_oxid_->setup_time_database ({oxid_file_name},util::TimeLine::YearlyPeriodic, ref_ts_oxid);
+  data_interp_oxid_->setup_time_database ({oxid_file_name},util::TimeLine::YearlyPeriodic, DataInterpolation::Linear, ref_ts_oxid);
   data_interp_oxid_->create_horiz_remappers (oxid_map_file=="none" ? "" : oxid_map_file);
   data_interp_oxid_->set_logger(m_atm_logger);
   DataInterpolation::VertRemapData remap_data_oxid;
@@ -441,7 +441,7 @@ void MAMMicrophysics::set_linoz_reader(){
   }
 
   data_interp_linoz_ = std::make_shared<DataInterpolation>(grid_,linoz_fields);
-  data_interp_linoz_->setup_time_database ({m_linoz_file_name},util::TimeLine::YearlyPeriodic, ref_ts_linoz);
+  data_interp_linoz_->setup_time_database ({m_linoz_file_name},util::TimeLine::YearlyPeriodic, DataInterpolation::Linear, ref_ts_linoz);
   data_interp_linoz_->create_horiz_remappers (linoz_map_file=="none" ? "" : linoz_map_file);
   data_interp_linoz_->set_logger(m_atm_logger);
 
@@ -484,7 +484,7 @@ void MAMMicrophysics::set_elevated_emissions_reader()
     std::shared_ptr<DataInterpolation> di_vertical = std::make_shared<DataInterpolation>(grid_,vertical_fields);
     di_vertical->set_input_files_dimname(ShortFieldTagsNames::LEV,"altitude");
     di_vertical->set_input_files_dimname(ShortFieldTagsNames::ILEV,"altitude_int");
-    di_vertical->setup_time_database ({file_name},util::TimeLine::YearlyPeriodic, ref_ts_vertical);
+    di_vertical->setup_time_database ({file_name},util::TimeLine::YearlyPeriodic, DataInterpolation::Linear, ref_ts_vertical);
     di_vertical->create_horiz_remappers (extfrc_map_file=="none" ? "" : extfrc_map_file);
     di_vertical->set_logger(m_atm_logger);
     DataInterpolation::VertRemapData remap_data_vertical;
