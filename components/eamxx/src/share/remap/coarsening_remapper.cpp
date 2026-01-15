@@ -134,6 +134,15 @@ registration_ends_impl ()
       mask_idx = masks.size()-1;
     }
     tgt.get_header().set_extra_data("mask_field",masks[mask_idx].second);
+    // Also propagate mask_value if present
+    if (src.get_header().has_extra_data("mask_value")) {
+      auto src_mask_value = src.get_header().get_extra_data<Real>("mask_value");
+      tgt.get_header().set_extra_data("mask_value",src_mask_value);
+    }
+    // Also propagate may_be_filled flag
+    if (src.get_header().may_be_filled()) {
+      tgt.get_header().set_may_be_filled(true);
+    }
   }
 
   // Add all masks to the fields to remap
