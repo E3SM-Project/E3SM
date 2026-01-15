@@ -174,7 +174,7 @@ CONTAINS
 
 
 #ifdef HAVE_MOAB
-    ATM_PHYS_CID = 200 + compid 
+    ATM_PHYS_CID = 200 + compid
     ierr = iMOAB_RegisterApplication(trim("DATM")//C_NULL_CHAR, mpicom, ATM_PHYS_CID, mphaid)
     if (ierr .ne. 0) then
       write(logunit,*) subname,' error in registering data atm comp'
@@ -183,7 +183,7 @@ CONTAINS
      ! send path of atm domain file to MOAB coupler. Note that here we may have the land domain in some cases?
     call seq_infodata_PutData( infodata, atm_mesh=SDATM%domainFile)
 #endif
-  
+
     call datm_comp_init(Eclock, x2a, a2x, &
          seq_flds_x2a_fields, seq_flds_a2x_fields, &
          SDATM, gsmap, ggrid, mpicom, compid, my_task, master_task, &
@@ -238,7 +238,7 @@ CONTAINS
     type(mct_gGrid)        , pointer :: ggrid
     integer(IN)                      :: shrlogunit     ! original log unit
     integer(IN)                      :: shrloglev      ! original log level
-    character(CL)                    :: case_name      ! case name
+     
     real(R8)                         :: orbEccen       ! orb eccentricity (unit-less)
     real(R8)                         :: orbMvelpp      ! orb moving vernal eq (radians)
     real(R8)                         :: orbLambm0      ! orb mean long of perhelion (radians)

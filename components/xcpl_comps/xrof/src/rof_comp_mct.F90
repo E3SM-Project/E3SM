@@ -15,7 +15,11 @@ module rof_comp_mct
   use shr_file_mod    , only: shr_file_freeunit
   use dead_mct_mod    , only: dead_init_mct, dead_run_mct, dead_final_mct
   use seq_flds_mod    , only: seq_flds_r2x_fields, seq_flds_x2r_fields
-
+#ifdef HAVE_MOAB
+  use seq_comm_mct, only : mrofid !            iMOAB app id for rof
+  use iso_c_binding
+  use iMOAB           , only: iMOAB_RegisterApplication
+#endif
   ! !PUBLIC TYPES:
   implicit none
   save
@@ -51,6 +55,9 @@ CONTAINS
   subroutine rof_init_mct( EClock, cdata, x2d, d2x, NLFilename )
 
     ! !DESCRIPTION: initialize dead rof model
+#ifdef HAVE_MOAB
+    use shr_stream_mod, only: shr_stream_getDomainInfo, shr_stream_getFile
+#endif
 
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Clock)            , intent(inout) :: EClock
@@ -72,6 +79,7 @@ CONTAINS
     logical                          :: rof_prognostic ! if true, component is prognostic
     logical                          :: rofice_present
     logical                          :: flood_present
+    character(*), parameter :: subName = "(rof_init_mct) "
     !-------------------------------------------------------------------------------
 
     ! Set cdata pointers to derived types (in coupler)
@@ -115,10 +123,18 @@ CONTAINS
     ! Initialize xrof
     !----------------------------------------------------------------------------
 
+#ifdef HAVE_MOAB
+    ierr = iMOAB_RegisterApplication(trim("XROF")//C_NULL_CHAR, mpicom, compid, mrofid)
+    if (ierr .ne. 0) then
+      write(logunit,*) subname,' error in registering data rof comp'
+      call shr_sys_abort(subname//' ERROR in registering data rof comp')
+    endif
+#endif
+
     call dead_init_mct('rof', Eclock, x2d, d2x, &
          seq_flds_x2r_fields, seq_flds_r2x_fields, &
          gsmap, ggrid, gbuf, mpicom, compid, my_task, master_task, &
-         inst_index, inst_suffix, inst_name, logunit, nxg, nyg)
+         inst_index, inst_suffix, inst_name, logunit, nxg, nyg, mrofid)
 
     if (nxg == 0 .and. nyg == 0) then
        rof_present = .false.
