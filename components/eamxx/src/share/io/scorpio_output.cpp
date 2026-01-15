@@ -35,6 +35,12 @@ transfer_extra_data(const scream::Field &src, scream::Field &tgt)
   if (src.get_header().may_be_filled()) {
     tgt.get_header().set_may_be_filled(true);
   }
+  
+  // Transfer mask_value if present
+  if (src.get_header().has_extra_data("mask_value")) {
+    auto src_mask_value = src.get_header().get_extra_data<Real>("mask_value");
+    tgt.get_header().set_extra_data("mask_value", src_mask_value);
+  }
 };
 
 // Note: this is also declared in eamxx_scorpio_interface.cpp. Move it somewhere else?
