@@ -1086,10 +1086,12 @@ def gen_struct_api(struct_name, arg_data):
     Given data, generate code for data struct api
     """
     all_dims, scalars, real_data, int_data, bool_data = group_data(arg_data, filter_scalar_custom_types=True)
+    input_scalars = group_data(arg_data, filter_scalar_custom_types=True, filter_out_intent="out")[1]
 
     result = []
     dim_args = [(item, "Int") for item in all_dims if item is not None]
-    cons_args = dim_args + scalars
+    cons_args = dim_args + input_scalars
+    all_scalars = dim_args + scalars
     result.append("{struct_name}({cons_args}) :".\
                   format(struct_name=struct_name,
                          cons_args=", ".join(["{} {}_".format(argtype, name) for name, argtype in cons_args])))
@@ -1117,14 +1119,14 @@ def gen_struct_api(struct_name, arg_data):
 
     parent_call += "),\n"
 
-    parent_call += f"    {', '.join(['{0}({0}_)'.format(name) for name, _ in cons_args])}"
+    parent_call += f"    {', '.join(['{}({})'.format(name, name+'_' if name in [n for n,_ in cons_args] else '0') for name, _ in all_scalars])}"
 
     result.append(parent_call)
     result.append("{}")
     result.append("")
 
     result.append("PTD_STD_DEF({}, {}, {});".\
-                  format(struct_name, len(cons_args), ", ".join([name for name, _ in cons_args])))
+                  format(struct_name, len(all_scalars), ", ".join([name for name, _ in all_scalars])))
 
     result.append("")
     result.append("// TODO - You may need to transition int scalars or tell parent to skip transitioning int arrays that do not represent indices")

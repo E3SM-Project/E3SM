@@ -687,7 +687,7 @@ end module mymod
     def test_gen_struct_api(self):
     ###########################################################################
         expected = \
-"""DataSubName(Int shcol_, Int nlev_, Int nlevi_, Int ntracers_, Real gag_, Int bab1_, Int bab2_, bool val_) :
+"""DataSubName(Int shcol_, Int nlev_, Int nlevi_, Int ntracers_, Real gag_, Int bab1_, bool val_) :
   PhysicsTestData({
       {shcol_},
       {shcol_, nlev_},
@@ -712,7 +712,7 @@ end module mymod
     {
       {&vals}
     }),
-    shcol(shcol_), nlev(nlev_), nlevi(nlevi_), ntracers(ntracers_), gag(gag_), bab1(bab1_), bab2(bab2_), val(val_)
+    shcol(shcol_), nlev(nlev_), nlevi(nlevi_), ntracers(ntracers_), gag(gag_), bab1(bab1_), bab2(0), val(val_)
 {}
 
 PTD_STD_DEF(DataSubName, 8, shcol, nlev, nlevi, ntracers, gag, bab1, bab2, val);
@@ -733,12 +733,12 @@ PTD_STD_DEF(DataSubName, 8, shcol, nlev, nlevi, ntracers, gag, bab1, bab2, val);
     def test_gen_struct_api_scalars(self):
     ###########################################################################
         expected = \
-"""DataSubName(Real foo1_, Real foo2_, Real bar1_, Real bar2_, Real baz1_, Real baz2_, Int gag1_, Int gag2_, Int gal1_, Int gal2_, Int bal1_, Int bal2_, bool bit1_, bool bit2_, bool gut1_, bool gut2_, bool gat1_, bool gat2_) :
+"""DataSubName(Real foo1_, Real foo2_, Real bar1_, Real bar2_, Int gag1_, Int gag2_, Int gal1_, Int gal2_, bool bit1_, bool bit2_, bool gut1_, bool gut2_) :
   PhysicsTestData({
     },
     {
     }),
-    foo1(foo1_), foo2(foo2_), bar1(bar1_), bar2(bar2_), baz1(baz1_), baz2(baz2_), gag1(gag1_), gag2(gag2_), gal1(gal1_), gal2(gal2_), bal1(bal1_), bal2(bal2_), bit1(bit1_), bit2(bit2_), gut1(gut1_), gut2(gut2_), gat1(gat1_), gat2(gat2_)
+    foo1(foo1_), foo2(foo2_), bar1(bar1_), bar2(bar2_), baz1(0), baz2(0), gag1(gag1_), gag2(gag2_), gal1(gal1_), gal2(gal2_), bal1(0), bal2(0), bit1(bit1_), bit2(bit2_), gut1(gut1_), gut2(gut2_), gat1(0), gat2(0)
 {}
 
 PTD_STD_DEF(DataSubName, 18, foo1, foo2, bar1, bar2, baz1, baz2, gag1, gag2, gal1, gal2, bal1, bal2, bit1, bit2, gut1, gut2, gat1, gat2);
@@ -1002,7 +1002,7 @@ PTD_STD_DEF(DataSubName, 18, foo1, foo2, bar1, bar2, baz1, baz2, gag1, gag2, gal
   Int bab2;
   Int *ball1, *ball2;
 
-  FakeSubData(Int shcol_, Int nlev_, Int nlevi_, Int ntracers_, Real gag_, Int bab1_, Int bab2_, bool val_) :
+  FakeSubData(Int shcol_, Int nlev_, Int nlevi_, Int ntracers_, Real gag_, Int bab1_, bool val_) :
     PhysicsTestData({
       {shcol_},
       {shcol_, nlev_},
@@ -1027,7 +1027,7 @@ PTD_STD_DEF(DataSubName, 18, foo1, foo2, bar1, bar2, baz1, baz2, gag1, gag2, gal
     {
       {&vals}
     }),
-    shcol(shcol_), nlev(nlev_), nlevi(nlevi_), ntracers(ntracers_), gag(gag_), bab1(bab1_), bab2(bab2_), val(val_)
+    shcol(shcol_), nlev(nlev_), nlevi(nlevi_), ntracers(ntracers_), gag(gag_), bab1(bab1_), bab2(0), val(val_)
   {}
 
   PTD_STD_DEF(FakeSubData, 8, shcol, nlev, nlevi, ntracers, gag, bab1, bab2, val);
