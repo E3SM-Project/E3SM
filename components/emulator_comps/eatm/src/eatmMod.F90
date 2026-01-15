@@ -75,4 +75,12 @@ module eatmMod
 
   character(len=*), parameter, public :: rpfile = 'rpointer.atm'
 
+  type t_eatm_interpolator(kind)
+    integer, kind :: kind
+    real(kind=kind), dimension(:, :, :), allocatable :: t_im1
+    real(kind=kind), dimension(:, :, :), allocatable :: t_ip1
+  end type t_eatm_interpolator
+
+  type(t_eatm_interpolator(kind=R4)), public :: eatm_intrp
+
 end module eatmMod
