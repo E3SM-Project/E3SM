@@ -1275,7 +1275,7 @@ void Functions<S,D>::fake_sub(
     // Set up inputs
     FakeSubData baseline_data[] = {
       // TODO
-      // shcol, nlev, nlevi, ntracers, gag, bab1, val
+      // shcol, nlev, nlevi, ntracers, gag, bab1 (output, set to zero), bab2 (output, set to zero), val
       FakeSubData(),
     };
 

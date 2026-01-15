@@ -1792,13 +1792,15 @@ f"""template<typename S, typename D>
     }"""
 
         _, scalars, real_data, int_data, bool_data = group_data(arg_data, filter_out_intent="in")
+        out_scalar_names = [scalar_name for scalar_name, _ in scalars]
         check_scalars, check_arrays, scalar_comments = "", "", ""
         for scalar in scalars:
             check_scalars += f"        REQUIRE(d_baseline.{scalar[0]} == d_test.{scalar[0]});\n"
 
-        all_dims, input_scalars, _, _, _ = group_data(arg_data, filter_out_intent="out")
-        all_scalar_inputs = all_dims + [scalar_name for scalar_name, _ in input_scalars]
-        scalar_comments = "// " + ", ".join(all_scalar_inputs)
+        # Due to the mechanics of PTD, the constructor must take all scalars, not just input scalars
+        all_dims, all_scalars = group_data(arg_data)[0:2]
+        all_scalar_names = all_dims + [scalar_name for scalar_name, _ in all_scalars]
+        scalar_comments = "// " + ", ".join([('{} (output, set to zero)'.format(name) if name in out_scalar_names else name) for name in all_scalar_names])
 
         all_data = dict(real_data)
         for type_data in [int_data, bool_data]:
