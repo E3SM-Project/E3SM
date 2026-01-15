@@ -6075,8 +6075,8 @@
     </gridmap>
 
     <gridmap ocn_grid="MAB4to60E3r1" rof_grid="JRA025">
-      <map name="ROF2OCN_ICE_RMAPNAME">cpl/cpl6/map_JRA025_to_MAB4to60E3r1_r50e100.cstmnn.20251218.nc</map>
-      <map name="ROF2OCN_LIQ_RMAPNAME">cpl/cpl6/map_JRA025_to_MAB4to60E3r1_r50e100.cstmnn.20251218.nc</map>
+      <map name="ROF2OCN_ICE_RMAPNAME">cpl/cpl6/map_JRA025_to_MAB4to60E3r1_mtf005.cstmnn.20251218.nc</map>
+      <map name="ROF2OCN_LIQ_RMAPNAME">cpl/cpl6/map_JRA025_to_MAB4to60E3r1_mtf005.cstmnn.20251218.nc</map>
     </gridmap>
 
     <gridmap ocn_grid="oRRS18to6v3" rof_grid="JRA025">
