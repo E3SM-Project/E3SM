@@ -15,7 +15,11 @@ module ice_comp_mct
   use shr_file_mod    , only: shr_file_freeunit
   use dead_mct_mod    , only: dead_init_mct, dead_run_mct, dead_final_mct
   use seq_flds_mod    , only: seq_flds_i2x_fields, seq_flds_x2i_fields
-
+#ifdef HAVE_MOAB
+  use seq_comm_mct, only : MPSIID !            iMOAB app id for ice
+  use iso_c_binding
+  use iMOAB           , only: iMOAB_RegisterApplication
+#endif
   ! !PUBLIC TYPES:
   implicit none
   save
@@ -48,7 +52,9 @@ CONTAINS
 
   !===============================================================================
   subroutine ice_init_mct( EClock, cdata, x2d, d2x, NLFilename )
-
+#ifdef HAVE_MOAB
+    use shr_stream_mod, only: shr_stream_getDomainInfo, shr_stream_getFile
+#endif
     ! !DESCRIPTION: initialize dead ice model
 
     ! !INPUT/OUTPUT PARAMETERS:
@@ -70,6 +76,7 @@ CONTAINS
     logical                          :: ice_present        ! if true, component is present
     logical                          :: ice_prognostic     ! if true, component is prognostic
     logical                          :: iceberg_prognostic ! if true, component is iceberg_prognostic
+    character(*), parameter :: subName = "(ice_init_mct) "
     !-------------------------------------------------------------------------------
 
     ! Set cdata pointers to derived types (in coupler)
@@ -112,11 +119,17 @@ CONTAINS
     !----------------------------------------------------------------------------
     ! Initialize xice
     !----------------------------------------------------------------------------
-
+#ifdef HAVE_MOAB
+    ierr = iMOAB_RegisterApplication(trim("XICE")//C_NULL_CHAR, mpicom, compid, MPSIID)
+    if (ierr .ne. 0) then
+      write(logunit,*) subname,' error in registering data ice comp'
+      call shr_sys_abort(subname//' ERROR in registering data ice comp')
+    endif
+#endif
     call dead_init_mct('ice', Eclock, x2d, d2x, &
          seq_flds_x2i_fields, seq_flds_i2x_fields, &
          gsmap, ggrid, gbuf, mpicom, compid, my_task, master_task, &
-         inst_index, inst_suffix, inst_name, logunit, nxg, nyg)
+         inst_index, inst_suffix, inst_name, logunit, nxg, nyg, MPSIID)
 
     if (nxg == 0 .and. nyg == 0) then
        ice_present = .false.
