@@ -45,6 +45,7 @@ if (NOT EAMXX_ENABLE_GPU OR Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE OR Kokkos
     eti/zm_common_init.cpp
     eti/zm_input_state.cpp
     eti/zm_output_tend.cpp
+    eti/zm_ientropy.cpp
   ) # ZM ETI SRCS
 endif()
 

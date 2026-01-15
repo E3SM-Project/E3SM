@@ -13,7 +13,7 @@ FILE_TEMPLATES = {
     "cxx_bfb_unit_impl": lambda phys, sub, gen_code:
 f"""#include "catch2/catch.hpp"
 
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 #include "physics/{phys}/{phys}_functions.hpp"
 #include "physics/{phys}/tests/infra/{phys}_test_data.hpp"
 
@@ -1126,6 +1126,15 @@ def gen_struct_api(struct_name, arg_data):
     result.append("PTD_STD_DEF({}, {}, {});".\
                   format(struct_name, len(cons_args), ", ".join([name for name, _ in cons_args])))
 
+    result.append("")
+    result.append("// TODO - You may need to transition int scalars or tell parent to skip transitioning int arrays that do not represent indices")
+    result.append("// template <ekat::TransposeDirection::Enum D>")
+    result.append("// void transition()")
+    result.append("// {")
+    result.append("//   PhysicsTestData::transition<D>(PUT INT ARRAY SKIPS HERE);")
+    result.append("//   shift_int_scalar<D>(PUT INT SCALAR HERE);")
+    result.append("// }")
+
     return result
 
 ###############################################################################
@@ -1266,178 +1275,174 @@ def gen_glue_impl(phys, sub, arg_data, arg_names, col_dim, f2c=False, unpacked=F
     if not f2c:
         impl += init_code
 
-    if has_arrays(arg_data):
-        #
-        # Steps:
-        # 1) Set up typedefs
-        # 2) Sync to device
-        # 3) Unpack view array
-        # 4) Get nk_pack and policy
-        # 5) Get subviews
-        # 6) Call fn
-        # 7) Sync back to host
-        #
-        inputs, inouts, outputs = split_by_intent(arg_data)
-        reals, ints, bools   = split_by_type(arg_data)
-        scalars, views = split_by_scalar_vs_view(arg_data)
-        all_inputs  = inputs + inouts
-        all_outputs = inouts + outputs
+    #
+    # Steps:
+    # 1) Set up typedefs
+    # 2) Sync to device
+    # 3) Unpack view array
+    # 4) Get nk_pack and policy
+    # 5) Get subviews
+    # 6) Call fn
+    # 7) Sync back to host
+    #
+    inputs, inouts, outputs = split_by_intent(arg_data)
+    reals, ints, bools   = split_by_type(arg_data)
+    scalars, views = split_by_scalar_vs_view(arg_data)
+    all_inputs  = inputs + inouts
+    all_outputs = inouts + outputs
 
-        iscalars = list(sorted(set(all_inputs) & set(scalars)))
-        oscalars = list(sorted(set(all_outputs) & set(scalars)))
+    iscalars = list(sorted(set(all_inputs) & set(scalars)))
+    oscalars = list(sorted(set(all_outputs) & set(scalars)))
 
-        oviews = list(sorted(set(all_outputs) & set(views)))
+    oviews = list(sorted(set(all_outputs) & set(views)))
 
-        vreals = list(sorted(set(reals) & set(views)))
-        vints  = list(sorted(set(ints)  & set(views)))
-        vbools = list(sorted(set(bools) & set(views)))
+    vreals = list(sorted(set(reals) & set(views)))
+    vints  = list(sorted(set(ints)  & set(views)))
+    vbools = list(sorted(set(bools) & set(views)))
 
-        sreals = list(sorted(set(reals) & set(scalars)))
-        sints  = list(sorted(set(ints)  & set(scalars)))
-        sbools = list(sorted(set(bools) & set(scalars)))
+    sreals = list(sorted(set(reals) & set(scalars)))
+    sints  = list(sorted(set(ints)  & set(scalars)))
+    sbools = list(sorted(set(bools) & set(scalars)))
 
-        ovreals = list(sorted(set(vreals) & set(all_outputs)))
-        ovints  = list(sorted(set(vints)  & set(all_outputs)))
-        ovbools = list(sorted(set(vbools) & set(all_outputs)))
+    ovreals = list(sorted(set(vreals) & set(all_outputs)))
+    ovints  = list(sorted(set(vints)  & set(all_outputs)))
+    ovbools = list(sorted(set(vbools) & set(all_outputs)))
 
-        isreals = list(sorted(set(sreals) & set(all_inputs)))
-        isints  = list(sorted(set(sints)  & set(all_inputs)))
-        isbools = list(sorted(set(sbools) & set(all_inputs)))
+    isreals = list(sorted(set(sreals) & set(all_inputs)))
+    isints  = list(sorted(set(sints)  & set(all_inputs)))
+    isbools = list(sorted(set(sbools) & set(all_inputs)))
 
-        osreals = list(sorted(set(sreals) & set(all_outputs)))
-        osints  = list(sorted(set(sints)  & set(all_outputs)))
-        osbools = list(sorted(set(sbools) & set(all_outputs)))
+    osreals = list(sorted(set(sreals) & set(all_outputs)))
+    osints  = list(sorted(set(sints)  & set(all_outputs)))
+    osbools = list(sorted(set(sbools) & set(all_outputs)))
 
-        #
-        # 1) Set up typedefs (or just have these at the top of file so they can be shared?)
-        #
+    #
+    # 1) Set up typedefs (or just have these at the top of file so they can be shared?)
+    #
 
-        # set up basics
+    # set up basics
 
-        type_list    = ["Real", "Int", "bool"]
-        impl += "  // create device views and copy\n"
+    type_list    = ["Real", "Int", "bool"]
+    impl += "  // create device views and copy\n"
 
-        #
-        # 2) Sync to device. Do ALL views, not just inputs
-        #
+    #
+    # 2) Sync to device. Do ALL views, not just inputs
+    #
 
-        for input_group, typename in zip([vreals, vints, vbools], type_list):
-            if input_group:
-                rank_map = get_rank_map(arg_data, input_group)
+    for input_group, typename in zip([vreals, vints, vbools], type_list):
+        if input_group:
+            rank_map = get_rank_map(arg_data, input_group)
 
-                for rank, arg_list in rank_map.items():
-                    impl += get_htd_dth_call(arg_data, rank, arg_list, typename, f2c=f2c)
+            for rank, arg_list in rank_map.items():
+                impl += get_htd_dth_call(arg_data, rank, arg_list, typename, f2c=f2c)
 
-        #
-        # 3) Unpack view array
-        #
+    #
+    # 3) Unpack view array
+    #
 
-        for input_group, typename in zip([vreals, vints, vbools], type_list):
-            prefix_char = PREFIX_MAP[typename]
-            if input_group:
-                rank_map = get_rank_map(arg_data, input_group)
+    for input_group, typename in zip([vreals, vints, vbools], type_list):
+        prefix_char = PREFIX_MAP[typename]
+        if input_group:
+            rank_map = get_rank_map(arg_data, input_group)
 
-                for rank, arg_list in rank_map.items():
-                    view_type = get_view_type(typename, rank)
-                    impl += f"  {view_type}\n"
-                    for idx, input_item in enumerate(arg_list):
-                        impl += f"    {input_item}_d(vec{rank}d{prefix_char}_in[{idx}]){';' if idx == len(arg_list) - 1 else ','}\n"
-                    impl += "\n"
+            for rank, arg_list in rank_map.items():
+                view_type = get_view_type(typename, rank)
+                impl += f"  {view_type}\n"
+                for idx, input_item in enumerate(arg_list):
+                    impl += f"    {input_item}_d(vec{rank}d{prefix_char}_in[{idx}]){';' if idx == len(arg_list) - 1 else ','}\n"
+                impl += "\n"
 
 
-        #
-        # 4) Get nk_pack and policy, unpack scalars, and launch kernel
-        #
-        if unpacked:
-            impl += f"  const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy({obj}{col_dim}, {obj}nlev);\n\n"
-        else:
-            impl += f"  const Int nk_pack = ekat::npack<Spack>({obj}nlev);\n"
-            impl += f"  const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy({obj}{col_dim}, nk_pack);\n\n"
+    #
+    # 4) Get nk_pack and policy, unpack scalars, and launch kernel
+    #
+    if unpacked:
+        impl += f"  const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy({obj}{col_dim}, {obj}nlev);\n\n"
+    else:
+        impl += f"  const Int nk_pack = ekat::npack<Spack>({obj}nlev);\n"
+        impl += f"  const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy({obj}{col_dim}, nk_pack);\n\n"
 
-        if scalars:
-            if not f2c:
-                impl += "  // unpack data scalars because we do not want the lambda to capture d\n"
-                for input_group, typename in zip([isreals, isints, isbools], type_list):
-                    if input_group:
-                        for arg in input_group:
-                            if arg not in oscalars and arg != col_dim:
-                                impl += f"  const {typename} {arg} = {obj}{arg};\n"
+    if scalars:
+        if not f2c:
+            impl += "  // unpack data scalars because we do not want the lambda to capture d\n"
+            for input_group, typename in zip([isreals, isints, isbools], type_list):
+                if input_group:
+                    for arg in input_group:
+                        if arg not in oscalars and arg != col_dim:
+                            impl += f"  const {typename} {arg} = {obj}{arg};\n"
 
-            # We use 0-rank views to handle output scalars
-            for output_group, typename in zip([osreals, osints, osbools], type_list):
-                if output_group:
-                    view_type = get_view_type(typename, 0)
-                    hview_type = view_type[0:-2] + "_h"
-                    for arg in output_group:
-                        impl += f'  {hview_type} {arg}_h("{arg}_h");\n'
-                        if arg in iscalars:
-                            impl += f'  {arg}_h() = {obj}{arg};\n'
-                        impl += f'  {view_type} {arg}_d = Kokkos::create_mirror_view_and_copy(DefaultDevice(), {arg}_h);\n'
-
-            impl += "\n"
-
-        impl += "  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {\n"
-        impl += "    const Int i = team.league_rank();\n\n"
-
-        #
-        # 5) Get subviews
-        #
-        impl += "    // Get single-column subviews of all inputs, shouldn't need any i-indexing\n"
-        impl += "    // after this.\n"
-
-        for view_arg in views:
-            dims = get_data_by_name(arg_data, view_arg, ARG_DIMS)
-            if col_dim in dims:
-                if len(dims) == 1:
-                    pass
-                else:
-                    impl += f"    const auto {view_arg}_c = ekat::subview({view_arg}_d, i);\n"
+        # We use 0-rank views to handle output scalars
+        for output_group, typename in zip([osreals, osints, osbools], type_list):
+            if output_group:
+                view_type = get_view_type(typename, 0)
+                hview_type = view_type[0:-2] + "_h"
+                for arg in output_group:
+                    impl += f'  {hview_type} {arg}_h("{arg}_h");\n'
+                    if arg in iscalars:
+                        impl += f'  {arg}_h() = {obj}{arg};\n'
+                    impl += f'  {view_type} {arg}_d = Kokkos::create_mirror_view_and_copy(DefaultDevice(), {arg}_h);\n'
 
         impl += "\n"
 
-        #
-        # 6) Call fn
-        #
-        kernel_arg_names = ["team"]
-        for arg_name in arg_names:
-            if arg_name in views:
-                dims = get_data_by_name(arg_data, arg_name, ARG_DIMS)
-                if len(dims) == 1 and col_dim in dims:
-                    kernel_arg_names.append(f"{arg_name}_d(i)")
-                else:
-                    kernel_arg_names.append(f"{arg_name}_c")
-            elif arg_name in oscalars:
-                kernel_arg_names.append(f"{arg_name}_d()")
+    impl += "  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {\n"
+    impl += "    const Int i = team.league_rank();\n\n"
+
+    #
+    # 5) Get subviews
+    #
+    impl += "    // Get single-column subviews of all inputs, shouldn't need any i-indexing\n"
+    impl += "    // after this.\n"
+
+    for view_arg in views:
+        dims = get_data_by_name(arg_data, view_arg, ARG_DIMS)
+        if col_dim in dims:
+            if len(dims) == 1:
+                pass
             else:
-                if arg_name != col_dim:
-                    kernel_arg_names.append(arg_name)
+                impl += f"    const auto {view_arg}_c = ekat::subview({view_arg}_d, i);\n"
 
-        joinstr = ',\n      '
-        impl += f"    SHF::{sub}(\n      {joinstr.join(kernel_arg_names)});\n"
-        impl +=  "  });\n\n"
+    impl += "\n"
 
-        #
-        # 7) Sync back to host
-        #
-        if oscalars:
-            impl += "  // Get outputs back, start with scalars\n"
-            for arg in oscalars:
-                impl += f"  Kokkos::deep_copy({arg}_h, {arg}_d);\n"
-                impl += f"  {obj}{arg} = {arg}_h();\n"
+    #
+    # 6) Call fn
+    #
+    kernel_arg_names = ["team"]
+    for arg_name in arg_names:
+        if arg_name in views:
+            dims = get_data_by_name(arg_data, arg_name, ARG_DIMS)
+            if len(dims) == 1 and col_dim in dims:
+                kernel_arg_names.append(f"{arg_name}_d(i)")
+            else:
+                kernel_arg_names.append(f"{arg_name}_c")
+        elif arg_name in oscalars:
+            kernel_arg_names.append(f"{arg_name}_d()")
+        else:
+            if arg_name != col_dim:
+                kernel_arg_names.append(arg_name)
 
-            impl += "\n"
+    joinstr = ',\n      '
+    impl += f"    SHF::{sub}(\n      {joinstr.join(kernel_arg_names)});\n"
+    impl +=  "  });\n\n"
 
-        if oviews:
-            impl += "  // Now get arrays\n"
-            for output_group, typename in zip([ovreals, ovints, ovbools], type_list):
-                if output_group:
-                    rank_map = get_rank_map(arg_data, output_group)
+    #
+    # 7) Sync back to host
+    #
+    if oscalars:
+        impl += "  // Get outputs back, start with scalars\n"
+        for arg in oscalars:
+            impl += f"  Kokkos::deep_copy({arg}_h, {arg}_d);\n"
+            impl += f"  {obj}{arg} = {arg}_h();\n"
 
-                    for rank, arg_list in rank_map.items():
-                        impl += get_htd_dth_call(arg_data, rank, arg_list, typename, is_output=True, f2c=f2c)
+        impl += "\n"
 
-    else:
-        expect(False, "Not yet supported")
+    if oviews:
+        impl += "  // Now get arrays\n"
+        for output_group, typename in zip([ovreals, ovints, ovbools], type_list):
+            if output_group:
+                rank_map = get_rank_map(arg_data, output_group)
+
+                for rank, arg_list in rank_map.items():
+                    impl += get_htd_dth_call(arg_data, rank, arg_list, typename, is_output=True, f2c=f2c)
 
     if not f2c:
         impl += final_code
@@ -1621,14 +1626,14 @@ class GenBoiler(object):
         transition_code_1 = "d.transition<ekat::TransposeDirection::c2f>();"
         transition_code_2 = "d.transition<ekat::TransposeDirection::f2c>();"
         data_struct      = get_data_struct_name(sub)
-        init_code        = get_physics_data(phys, INIT_CODE)
+        init_code        = get_physics_data(phys, INIT_CODE).replace("(", "_f(")
 
         result = \
 f"""void {sub}_f({data_struct}& d)
 {{
   {transition_code_1}
   {init_code}
-  {sub}_c({arg_data_args});
+  {sub}_f({arg_data_args});
   {transition_code_2}
 }}
 
@@ -1676,10 +1681,9 @@ f"""{decl}
         """
         arg_data         = force_arg_data if force_arg_data else self._get_arg_data(phys, sub)
         struct_members   = "\n  ".join(gen_struct_members(arg_data))
-        any_arrays       = has_arrays(arg_data)
         struct_name      = get_data_struct_name(sub)
-        inheritance      = " : public PhysicsTestData" if any_arrays else ""
-        api              = "\n  " + "\n  ".join(gen_struct_api(struct_name, arg_data) if any_arrays else "")
+        inheritance      = " : public PhysicsTestData"
+        api              = "\n  " + "\n  ".join(gen_struct_api(struct_name, arg_data))
 
         result = \
 f"""struct {struct_name}{inheritance} {{
@@ -1777,7 +1781,6 @@ f"""template<typename S, typename D>
         """
         arg_data = force_arg_data if force_arg_data else self._get_arg_data(phys, sub)
         data_struct = get_data_struct_name(sub)
-        has_array = has_arrays(arg_data)
 
         gen_random = \
 """
@@ -1797,27 +1800,25 @@ f"""template<typename S, typename D>
         all_scalar_inputs = all_dims + [scalar_name for scalar_name, _ in input_scalars]
         scalar_comments = "// " + ", ".join(all_scalar_inputs)
 
-        if has_array:
-            all_data = dict(real_data)
-            for type_data in [int_data, bool_data]:
-                for k, v in type_data.items():
-                    if k in all_data:
-                        all_data[k].extend(v)
-                    else:
-                        all_data[k] = v
+        all_data = dict(real_data)
+        for type_data in [int_data, bool_data]:
+            for k, v in type_data.items():
+                if k in all_data:
+                    all_data[k].extend(v)
+                else:
+                    all_data[k] = v
 
-            for _, data in all_data.items():
-                for datum in data:
-                    check_arrays += f"        REQUIRE(d_baseline.total(d_baseline.{data[0]}) == d_test.total(d_test.{datum}));\n"
+        for _, data in all_data.items():
+            for datum in data:
+                check_arrays += f"        REQUIRE(d_baseline.total(d_baseline.{data[0]}) == d_test.total(d_test.{datum}));\n"
 
-                check_arrays += f"        for (Int k = 0; k < d_baseline.total(d_baseline.{data[0]}); ++k) {{\n"
-                for datum in data:
-                    check_arrays += f"          REQUIRE(d_baseline.{datum}[k] == d_test.{datum}[k]);\n"
+            check_arrays += f"        for (Int k = 0; k < d_baseline.total(d_baseline.{data[0]}); ++k) {{\n"
+            for datum in data:
+                check_arrays += f"          REQUIRE(d_baseline.{datum}[k] == d_test.{datum}[k]);\n"
 
-                check_arrays += "        }\n"
+            check_arrays += "        }\n"
 
-        if has_array:
-            result = \
+        result = \
 """  void run_bfb()
   {{
     auto engine = Base::get_engine();
@@ -1873,97 +1874,6 @@ f"""template<typename S, typename D>
                           gen_random=gen_random,
                           check_scalars=check_scalars,
                           check_arrays=check_arrays)
-        else:
-            inputs, inouts, outputs = split_by_intent(arg_data)
-            reals                   = split_by_type(arg_data)[0]
-            all_inputs              = inputs + inouts
-            all_outputs             = inouts + outputs
-
-            ireals  = list(sorted(set(all_inputs) & set(reals)))
-            oreals  = list(sorted(set(all_outputs) & set(reals)))
-            ooreals = list(sorted(set(outputs) & set(reals)))
-
-            spack_init = ""
-            if ireals:
-                spack_init = \
-"""// Init pack inputs
-      Spack {ireals};
-      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {{
-        {ireal_assigns}
-      }}
-""".format(ireals=", ".join(ireals), ireal_assigns="\n        ".join(["{0}[s] = test_device(vs).{0};".format(ireal) for ireal in ireals]))
-
-            spack_output_init = ""
-            if ooreals:
-                spack_output_init = \
-f"""// Init outputs
-      Spack {', '.join(['{}(0)'.format(ooreal) for ooreal in ooreals])};
-"""
-
-            scalars = group_data(arg_data)[1]
-            func_call = f"Functions::{sub}({', '.join([(scalar if scalar in reals else 'test_device(0).{}'.format(scalar)) for scalar, _ in scalars])});"
-
-            spack_output_to_dview = ""
-            if oreals:
-                spack_output_to_dview = \
-"""// Copy spacks back into test_device view
-      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {{
-        {}
-      }}
-""".format("\n        ".join(["test_device(vs).{0} = {0}[s];".format(oreal) for oreal in oreals]))
-
-            result = \
-"""  void run_bfb()
-  {{
-    auto engine = Base::get_engine();
-
-    {data_struct} baseline_data[max_pack_size] = {{
-      // TODO
-    }};
-
-    static constexpr Int num_runs = sizeof(baseline_data) / sizeof({data_struct});{gen_random}
-
-    // Create copies of data for use by test and sync it to device. Needs to happen before read calls so that
-    // inout data is in original state
-    view_1d<{data_struct}> test_device("test_device", max_pack_size);
-    const auto test_host = Kokkos::create_mirror_view(test_device);
-    std::copy(&baseline_data[0], &baseline_data[0] + max_pack_size, test_host.data());
-    Kokkos::deep_copy(test_device, test_host);
-
-    // Get data from fortran
-    for (auto& d : baseline_data) {{
-      {sub}(d);
-    }}
-
-    // Get data from test. Run {sub} from a kernel and copy results back to host
-    Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {{
-      const Int offset = i * Spack::n;
-
-      {spack_init}
-      {spack_output_init}
-
-      {func_call}
-
-      {spack_output_to_dview}
-    }});
-
-    Kokkos::deep_copy(test_host, test_device);
-
-    // Verify BFB results
-    if (SCREAM_BFB_TESTING) {{
-      for (Int i = 0; i < num_runs; ++i) {{
-        {data_struct}& d_baseline = baseline_data[i];
-        {data_struct}& d_test = test_host[i];
-{check_scalars}      }}
-    }}
-  }} // run_bfb""".format(data_struct=data_struct,
-                          sub=sub,
-                          gen_random=gen_random,
-                          check_scalars=check_scalars,
-                          spack_init=spack_init,
-                          spack_output_init=spack_output_init,
-                          func_call=func_call,
-                          spack_output_to_dview=spack_output_to_dview)
 
         return result
 

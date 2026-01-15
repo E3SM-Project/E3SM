@@ -58,11 +58,21 @@ struct zm_data_find_mse_max : public PhysicsTestData {
 
 };
 
-// Glue functions to call fortran from from C++ with the Data struct
-void zm_find_mse_max(zm_data_find_mse_max& d);
+struct IentropyData {
+  // Inputs
+  Int rcall;
+  Real s, p, qt, tfg;
 
-extern "C" { // _f function decls
-}
+  // Outputs
+  Real t, qst;
+};
+
+// Glue functions for host test data. We can call either fortran or CXX with this data (_f -> fortran)
+void zm_find_mse_max(zm_data_find_mse_max& d);
+void ientropy_f(IentropyData& d);
+void ientropy(IentropyData& d);
+
+// End glue function decls
 
 }  // namespace zm
 }  // namespace scream

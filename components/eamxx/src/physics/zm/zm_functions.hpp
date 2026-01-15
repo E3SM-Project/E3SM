@@ -269,6 +269,19 @@ struct Functions {
   //
   inline static ZmCommonInit s_common_init;
 
+  KOKKOS_FUNCTION
+  static void ientropy(
+    // Inputs
+    const MemberType& team,
+    const Int& rcall,
+    const Real& s,
+    const Real& p,
+    const Real& qt,
+    const Real& tfg,
+    // Outputs
+    Real& t,
+    Real& qst);
+
 }; // struct Functions
 
 } // namespace zm
@@ -279,5 +292,6 @@ struct Functions {
 # include "impl/zm_input_state_impl.hpp"
 # include "impl/zm_output_tend_impl.hpp"
 # include "impl/zm_common_init.hpp"
+# include "impl/zm_ientropy_impl.hpp"
 #endif // GPU && !KOKKOS_ENABLE_*_RELOCATABLE_DEVICE_CODE
 #endif // ZM_FUNCTIONS_HPP

@@ -716,8 +716,42 @@ end module mymod
 {}
 
 PTD_STD_DEF(DataSubName, 8, shcol, nlev, nlevi, ntracers, gag, bab1, bab2, val);
+
+// TODO - You may need to transition int scalars or tell parent to skip transitioning int arrays that do not represent indices
+// template <ekat::TransposeDirection::Enum D>
+// void transition()
+// {
+//   PhysicsTestData::transition<D>(PUT INT ARRAY SKIPS HERE);
+//   shift_int_scalar<D>(PUT INT SCALAR HERE);
+// }
 """
         actual = gen_struct_api("DataSubName", UT_ARG_DATA)
+
+        line_by_line_compare(self, expected, "\n".join(actual))
+
+    ###########################################################################
+    def test_gen_struct_api_scalars(self):
+    ###########################################################################
+        expected = \
+"""DataSubName(Real foo1_, Real foo2_, Real bar1_, Real bar2_, Real baz1_, Real baz2_, Int gag1_, Int gag2_, Int gal1_, Int gal2_, Int bal1_, Int bal2_, bool bit1_, bool bit2_, bool gut1_, bool gut2_, bool gat1_, bool gat2_) :
+  PhysicsTestData({
+    },
+    {
+    }),
+    foo1(foo1_), foo2(foo2_), bar1(bar1_), bar2(bar2_), baz1(baz1_), baz2(baz2_), gag1(gag1_), gag2(gag2_), gal1(gal1_), gal2(gal2_), bal1(bal1_), bal2(bal2_), bit1(bit1_), bit2(bit2_), gut1(gut1_), gut2(gut2_), gat1(gat1_), gat2(gat2_)
+{}
+
+PTD_STD_DEF(DataSubName, 18, foo1, foo2, bar1, bar2, baz1, baz2, gag1, gag2, gal1, gal2, bal1, bal2, bit1, bit2, gut1, gut2, gat1, gat2);
+
+// TODO - You may need to transition int scalars or tell parent to skip transitioning int arrays that do not represent indices
+// template <ekat::TransposeDirection::Enum D>
+// void transition()
+// {
+//   PhysicsTestData::transition<D>(PUT INT ARRAY SKIPS HERE);
+//   shift_int_scalar<D>(PUT INT SCALAR HERE);
+// }
+"""
+        actual = gen_struct_api("DataSubName", UT_ARG_DATA_ALL_SCALAR)
 
         line_by_line_compare(self, expected, "\n".join(actual))
 
@@ -803,8 +837,8 @@ PTD_STD_DEF(DataSubName, 8, shcol, nlev, nlevi, ntracers, gag, bab1, bab2, val);
 """void fake_sub_f(FakeSubData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  shoc_init(d.nlev, true);
-  fake_sub_c(d.foo1, d.foo2, d.bar1, d.bar2, d.bak1, d.bak2, d.tracerd1, d.tracerd2, d.gag, d.baz, d.bag, &d.bab1, &d.bab2, d.val, d.vals, d.shcol, d.nlev, d.nlevi, d.ntracers, d.ball1, d.ball2);
+  shoc_init_f(d.nlev, true);
+  fake_sub_f(d.foo1, d.foo2, d.bar1, d.bar2, d.bak1, d.bak2, d.tracerd1, d.tracerd2, d.gag, d.baz, d.bag, &d.bab1, &d.bab2, d.val, d.vals, d.shcol, d.nlev, d.nlevi, d.ntracers, d.ball1, d.ball2);
   d.transition<ekat::TransposeDirection::f2c>();
 }
 
@@ -997,6 +1031,14 @@ PTD_STD_DEF(DataSubName, 8, shcol, nlev, nlevi, ntracers, gag, bab1, bab2, val);
   {}
 
   PTD_STD_DEF(FakeSubData, 8, shcol, nlev, nlevi, ntracers, gag, bab1, bab2, val);
+
+  // TODO - You may need to transition int scalars or tell parent to skip transitioning int arrays that do not represent indices
+  // template <ekat::TransposeDirection::Enum D>
+  // void transition()
+  // {
+  //   PhysicsTestData::transition<D>(PUT INT ARRAY SKIPS HERE);
+  //   shift_int_scalar<D>(PUT INT SCALAR HERE);
+  // }
 };
 """
 
@@ -1358,8 +1400,8 @@ WITH:
 void fake_sub_f(FakeSubData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  shoc_init(d.nlev, true);
-  fake_sub_c(d.foo1, d.foo2, d.bar1, d.bar2, d.bak1, d.bak2, d.tracerd1, d.tracerd2, d.gag, d.baz, d.bag, &d.bab1, &d.bab2, d.val, d.vals, d.shcol, d.nlev, d.nlevi, d.ntracers, d.ball1, d.ball2);
+  shoc_init_f(d.nlev, true);
+  fake_sub_f(d.foo1, d.foo2, d.bar1, d.bar2, d.bak1, d.bak2, d.tracerd1, d.tracerd2, d.gag, d.baz, d.bag, &d.bab1, &d.bab2, d.val, d.vals, d.shcol, d.nlev, d.nlevi, d.ntracers, d.ball1, d.ball2);
   d.transition<ekat::TransposeDirection::f2c>();
 }
 
@@ -1386,8 +1428,8 @@ void fake_sub_f(FakeSubData& d)
 void fake_sub_f(FakeSubData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  shoc_init(d.nlev, true);
-  fake_sub_c(d.foo1, d.foo2, d.bar1, d.bar2, d.bak1, d.bak2, d.tracerd1, d.tracerd2, d.gag, d.baz, d.bag, &d.bab1, &d.bab2, d.val, d.vals, d.shcol, d.nlev, d.nlevi, d.ntracers, d.ball1, d.ball2);
+  shoc_init_f(d.nlev, true);
+  fake_sub_f(d.foo1, d.foo2, d.bar1, d.bar2, d.bak1, d.bak2, d.tracerd1, d.tracerd2, d.gag, d.baz, d.bag, &d.bab1, &d.bab2, d.val, d.vals, d.shcol, d.nlev, d.nlevi, d.ntracers, d.ball1, d.ball2);
   d.transition<ekat::TransposeDirection::f2c>();
 }
 
