@@ -252,13 +252,11 @@ rescale_masked_fields (const Field& x, const Field& mask) const
   const auto& layout = x.get_header().get_identifier().get_layout();
   const int rank = layout.rank();
   const int ncols = m_tgt_grid->get_num_local_dofs();
-  // Use a threshold of 0.5 for the mask: only rescale if more than half of the 
-  // contributing sources (by weight) are unmasked. This prevents division by very
-  // small mask values which can amplify numerical errors and cause large spurious values.
-  // For example, if a target cell has contributions from 9 masked and 1 unmasked source
-  // (each weight 0.1), the remapped mask would be 0.1. Dividing by such small values
-  // would amplify any numerical errors or stray fill values, producing huge results.
-  const Real mask_threshold = 0.5;
+  // Use epsilon as threshold: rescale if there are any valid (unmasked) contributions.
+  // The mask value represents the weighted fraction of valid source cells.
+  // Values near zero indicate almost entirely masked sources -> set to fill_val.
+  // Any non-negligible mask value -> valid data to preserve by rescaling.
+  const Real mask_threshold = std::numeric_limits<Real>::epsilon();
 
   switch (rank) {
     case 1:
@@ -466,6 +464,7 @@ local_mat_vec (const Field& x, const Field& y, const Field& mask) const
     //       loop to zero out y before the mat-vec.
     case 1:
     {
+      constexpr auto fill_val = constants::fill_value<Real>;
       // Unlike get_view, get_strided_view returns a LayoutStride view,
       // therefore allowing the 1d field to be a subfield of a 2d field
       // along the 2nd dimension.
@@ -476,15 +475,21 @@ local_mat_vec (const Field& x, const Field& y, const Field& mask) const
                            KOKKOS_LAMBDA(const int& row) {
         const auto beg = row_offsets(row);
         const auto end = row_offsets(row+1);
-        y_view(row) = weights(beg)*x_view(col_lids(beg))*mask_view(col_lids(beg));
+        // Check if source value is fill_val - if so, don't include it (treat as 0)
+        auto x_val = x_view(col_lids(beg));
+        y_view(row) = (x_val == fill_val) ? 0.0 : weights(beg)*x_val*mask_view(col_lids(beg));
         for (int icol=beg+1; icol<end; ++icol) {
-          y_view(row) += weights(icol)*x_view(col_lids(icol))*mask_view(col_lids(icol));
+          x_val = x_view(col_lids(icol));
+          if (x_val != fill_val) {
+            y_view(row) += weights(icol)*x_val*mask_view(col_lids(icol));
+          }
         }
       });
       break;
     }
     case 2:
     {
+      constexpr auto fill_val = constants::fill_value<Real>;
       auto x_view = x.get_view<const Pack**>();
       auto y_view = y.get_view<      Pack**>();
       view_1d<const Real> mask_1d;
@@ -507,11 +512,17 @@ local_mat_vec (const Field& x, const Field& y, const Field& mask) const
         const auto end = row_offsets(row+1);
         Kokkos::parallel_for(Kokkos::TeamVectorRange(team,dim1),
                             [&](const int j){
-          y_view(row,j) = weights(beg)*x_view(col_lids(beg),j) *
-                          (mask1d ? mask_1d (col_lids(beg)) : mask_2d(col_lids(beg),j));
+          // Check if source value is fill_val - if so, don't include it (treat as 0)
+          auto x_val = x_view(col_lids(beg),j);
+          auto is_fill = (x_val == fill_val);
+          y_view(row,j) = is_fill.any() ? Pack(0.0) : 
+                          weights(beg)*x_val*(mask1d ? mask_1d(col_lids(beg)) : mask_2d(col_lids(beg),j));
           for (int icol=beg+1; icol<end; ++icol) {
-            y_view(row,j) += weights(icol)*x_view(col_lids(icol),j) *
-                          (mask1d ? mask_1d (col_lids(icol)) : mask_2d(col_lids(icol),j));
+            x_val = x_view(col_lids(icol),j);
+            is_fill = (x_val == fill_val);
+            if (not is_fill.any()) {
+              y_view(row,j) += weights(icol)*x_val*(mask1d ? mask_1d(col_lids(icol)) : mask_2d(col_lids(icol),j));
+            }
           }
         });
       });
@@ -519,6 +530,7 @@ local_mat_vec (const Field& x, const Field& y, const Field& mask) const
     }
     case 3:
     {
+      constexpr auto fill_val = constants::fill_value<Real>;
       auto x_view = x.get_view<const Pack***>();
       auto y_view = y.get_view<      Pack***>();
       // Note, the mask is still assumed to be defined on COLxLEV so still only 2D for case 3.
@@ -545,11 +557,17 @@ local_mat_vec (const Field& x, const Field& y, const Field& mask) const
                             [&](const int idx){
           const int j = idx / dim2;
           const int k = idx % dim2;
-          y_view(row,j,k) = weights(beg)*x_view(col_lids(beg),j,k) * 
-                          (mask1d ? mask_1d (col_lids(beg)) : mask_2d(col_lids(beg),k));
+          // Check if source value is fill_val - if so, don't include it (treat as 0)
+          auto x_val = x_view(col_lids(beg),j,k);
+          auto is_fill = (x_val == fill_val);
+          y_view(row,j,k) = is_fill.any() ? Pack(0.0) :
+                          weights(beg)*x_val*(mask1d ? mask_1d(col_lids(beg)) : mask_2d(col_lids(beg),k));
           for (int icol=beg+1; icol<end; ++icol) {
-            y_view(row,j,k) += weights(icol)*x_view(col_lids(icol),j,k) *
-                          (mask1d ? mask_1d (col_lids(icol)) : mask_2d(col_lids(icol),k));
+            x_val = x_view(col_lids(icol),j,k);
+            is_fill = (x_val == fill_val);
+            if (not is_fill.any()) {
+              y_view(row,j,k) += weights(icol)*x_val*(mask1d ? mask_1d(col_lids(icol)) : mask_2d(col_lids(icol),k));
+            }
           }
         });
       });
@@ -557,6 +575,7 @@ local_mat_vec (const Field& x, const Field& y, const Field& mask) const
     }
     case 4:
     {
+      constexpr auto fill_val = constants::fill_value<Real>;
       auto x_view = x.get_view<const Pack****>();
       auto y_view = y.get_view<      Pack****>();
       // Note, the mask is still assumed to be defined on COLxLEV so still only 2D for case 3.
@@ -585,11 +604,17 @@ local_mat_vec (const Field& x, const Field& y, const Field& mask) const
           const int j = (idx / dim3) / dim2;
           const int k = (idx / dim3) % dim2;
           const int l =  idx % dim3;
-          y_view(row,j,k,l) = weights(beg)*x_view(col_lids(beg),j,k,l) * 
-                          (mask1d ? mask_1d (col_lids(beg)) : mask_2d(col_lids(beg),l));
+          // Check if source value is fill_val - if so, don't include it (treat as 0)
+          auto x_val = x_view(col_lids(beg),j,k,l);
+          auto is_fill = (x_val == fill_val);
+          y_view(row,j,k,l) = is_fill.any() ? Pack(0.0) :
+                          weights(beg)*x_val*(mask1d ? mask_1d(col_lids(beg)) : mask_2d(col_lids(beg),l));
           for (int icol=beg+1; icol<end; ++icol) {
-            y_view(row,j,k,l) += weights(icol)*x_view(col_lids(icol),j,k,l) *
-                          (mask1d ? mask_1d (col_lids(icol)) : mask_2d(col_lids(icol),l));
+            x_val = x_view(col_lids(icol),j,k,l);
+            is_fill = (x_val == fill_val);
+            if (not is_fill.any()) {
+              y_view(row,j,k,l) += weights(icol)*x_val*(mask1d ? mask_1d(col_lids(icol)) : mask_2d(col_lids(icol),l));
+            }
           }
         });
       });
