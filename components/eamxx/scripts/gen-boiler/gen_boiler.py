@@ -245,7 +245,7 @@ PIECES = dict([
 
 # physics map. maps the name of a physics packages containing the original fortran subroutines to:
 #   (path-to-origin, path-to-cxx-src, init-code)
-ORIGIN_FILES, CXX_ROOT, INIT_CODE, FINALIZE_CODE, COLS_DIMNAME, UNPACKED = range(6)
+ORIGIN_FILES, CXX_ROOT, INIT_CODE, FINALIZE_CODE, COLS_DIMNAME, UNPACKED, FTYPEDEF = range(7)
 PHYSICS = {
     "p3"   : (
         ("components/eam/src/physics/cam/micro_p3.F90",),
@@ -253,7 +253,8 @@ PHYSICS = {
         "p3_init();",
         "",
         "its:ite",
-        False
+        False,
+        "P3F",
     ),
     "shoc" : (
         ("components/eam/src/physics/cam/shoc.F90",),
@@ -261,7 +262,8 @@ PHYSICS = {
         "shoc_init(d.nlev, true);",
         "",
         "shcol",
-        False
+        False,
+        "SHF",
     ),
     "dp" : (
         (
@@ -274,7 +276,8 @@ PHYSICS = {
         "dp_init(d.plev, true);",
         ""
         "",
-        False
+        False,
+        "DPF",
     ),
     "gw" : (
         (
@@ -289,7 +292,8 @@ PHYSICS = {
         "gw_common_init(); // Might need more specific init",
         "gw_finalize_cxx();",
         "ncol",
-        True
+        True,
+        "GWF",
     ),
     "zm" : (
         (
@@ -304,7 +308,8 @@ PHYSICS = {
         "zm_common_init(); // Might need more specific init",
         "zm_finalize_cxx();",
         "ncol",
-        True
+        True,
+        "ZMF",
     ),
 }
 
@@ -1449,7 +1454,8 @@ def gen_glue_impl(phys, sub, arg_data, arg_names, col_dim, f2c=False, unpacked=F
                 kernel_arg_names.append(arg_name)
 
     joinstr = ',\n      '
-    impl += f"    SHF::{sub}(\n      {joinstr.join(kernel_arg_names)});\n"
+    ftypedef = get_physics_data(phys, FTYPEDEF)
+    impl += f"    {ftypedef}::{sub}(\n      {joinstr.join(kernel_arg_names)});\n"
     impl +=  "  });\n\n"
 
     #
