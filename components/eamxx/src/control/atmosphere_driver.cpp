@@ -513,10 +513,9 @@ void AtmosphereDriver::setup_shoc_tms_links ()
 void AtmosphereDriver::add_additional_column_data_to_property_checks () {
   // Get list of additional data fields from driver_options parameters.
   // If no fields given, return.
-  using vos_t = std::vector<std::string>;
-  auto additional_data_fields = m_atm_params.sublist("driver_options").get<vos_t>("property_check_data_fields",
+  auto additional_data_fields = m_atm_params.sublist("driver_options").get<strvec_t>("property_check_data_fields",
                                                                                   {"NONE"});
-  if (additional_data_fields == vos_t{"NONE"}) return;
+  if (additional_data_fields == strvec_t{"NONE"}) return;
 
   // Add requested fields to property checks
   const auto& grid_name = m_grids_manager->get_grid("physics")->name();
@@ -664,16 +663,11 @@ void AtmosphereDriver::create_fields()
       pl.set("units",fid.get_units().to_string());
       pl.set("layout",fid.get_layout().names());
       pl.set("standard_name",std_names.get_standardname(fid.name()));
-      std::vector<std::string> providers,customers;
       const auto& track = it.second->get_header().get_tracking();
-      for (auto ap : track.get_providers()) {
-        providers.push_back(ap.lock()->name());
-      }
-      for (auto ap : track.get_customers()) {
-        customers.push_back(ap.lock()->name());
-      }
-      pl.set("providers",providers);
-      pl.set("customers",customers);
+      const auto& p = track.get_providers();
+      const auto& c = track.get_customers();
+      pl.set("providers",strvec_t(p.begin(),p.end()));
+      pl.set("customers",strvec_t(c.begin(),c.end()));
     }
 
     ekat::write_yaml_file("eamxx_field_manager_content.yaml",pl_out);
@@ -723,8 +717,7 @@ void AtmosphereDriver::create_output_managers () {
   }
 
   // Create one output manager per output yaml file
-  using vos_t = std::vector<std::string>;
-  const auto& output_yaml_files = io_params.get<vos_t>("output_yaml_files",vos_t{});
+  const auto& output_yaml_files = io_params.get<strvec_t>("output_yaml_files",strvec_t{});
   for (const auto& fname : output_yaml_files) {
     ekat::ParameterList params;
     ekat::parse_yaml_file(fname,params);
@@ -1047,12 +1040,12 @@ void AtmosphereDriver::set_initial_conditions ()
   auto& ic_pl = m_atm_params.sublist("initial_conditions");
 
   // Check which fields need to have an initial condition.
-  std::map<std::string,std::vector<std::string>> ic_fields_names;
+  strmap_t<strvec_t> ic_fields_names;
   std::vector<FieldIdentifier> ic_fields_to_copy;
 
   // Check which fields should be loaded from the topography file
-  std::map<std::string,std::vector<std::string>> topography_file_fields_names;
-  std::map<std::string,std::vector<std::string>> topography_eamxx_fields_names;
+  strmap_t<strvec_t> topography_file_fields_names;
+  strmap_t<strvec_t> topography_eamxx_fields_names;
 
   // Helper lambda, to reduce code duplication
   auto process_ic_field = [&](const Field& f) {
@@ -1365,8 +1358,7 @@ void AtmosphereDriver::set_initial_conditions ()
   }
 
   // Compute IC perturbations of GLL fields (if requested)
-  using vos = std::vector<std::string>;
-  const auto perturbed_fields = ic_pl.get<vos>("perturbed_fields", {});
+  const auto perturbed_fields = ic_pl.get<strvec_t>("perturbed_fields", {});
   const auto num_perturb_fields = perturbed_fields.size();
   if (num_perturb_fields > 0) {
     m_atm_logger->info("    [EAMxx] Adding random perturbation to ICs ...");
