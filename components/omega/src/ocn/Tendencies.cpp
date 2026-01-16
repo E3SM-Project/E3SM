@@ -580,7 +580,7 @@ void Tendencies::computeTracerTendenciesOnly(
                     LocTracerHighOrderHorzAdv(LocTracerTend, L, ICell, KChunk);
                  });
           });
-      Pacer::stop("Tend:LocTracerHighOrderHorzAdv", 2);
+      Pacer::stop("Tend:TracerHighOrderHorzAdv", 2);
    }
 
    // compute tracer diffusion
