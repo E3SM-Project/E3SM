@@ -1,0 +1,21 @@
+
+averaging_type: instant
+fields:
+   physics_pg2:
+      field_names:
+      - LW_flux_up_at_model_top
+      - SW_flux_up_at_model_top
+      - precip_total_surf_mass_flux
+      - T_2m
+      - VapWaterPath
+      - IceWaterPath
+      - LiqWaterPath
+      - RainWaterPath
+max_snapshots_per_file: 8
+filename_prefix: 1hi
+iotype: pnetcdf
+output_control:
+  frequency: 51
+  frequency_units: nhours
+restart:
+  force_new_file: false

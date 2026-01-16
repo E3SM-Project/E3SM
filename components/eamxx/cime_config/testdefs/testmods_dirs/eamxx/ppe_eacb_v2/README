@@ -1,0 +1,36 @@
+This testmod is meant to reproduce v2.EACB (Eamxx AutoCal Blitz) PPE ensemble
+member in default configuration with
+```
+./cime/scripts/create_test SMS_P384x1.ne256pg2_ne256pg2.F20TR-SCREAMv1.$MACH_$COMPILER.eamxx-ppe_eacb_v2
+```
+
+Other PPE ensemble member configurations can be reproduced by perturbing
+19 parameters with atmchange commands within case-dir like below:
+```
+$atmchange -b shoc::thl2tune={tuning_params["thl2tune"]}
+$atmchange -b shoc::qw2tune={tuning_params["qw2tune"]}
+$atmchange -b shoc::length_fac={tuning_params["length_fac"]}
+$atmchange -b shoc::c_diag_3rd_mom={tuning_params["c_diag_3rd_mom"]}
+$atmchange -b shoc::coeff_kh={tuning_params["coeff_kh"]}
+$atmchange -b shoc::coeff_km={tuning_params["coeff_km"]}
+$atmchange -b shoc::lambda_low={tuning_params["lambda_low"]}
+$atmchange -b shoc::lambda_high={tuning_params["lambda_high"]}
+$atmchange -b p3::spa_ccn_to_nc_factor={tuning_params["spa_ccn_to_nc_factor"]}
+$atmchange -b p3::cldliq_to_ice_collection_factor={tuning_params["cldliq_to_ice_collection_factor"]}
+$atmchange -b p3::rain_to_ice_collection_factor={tuning_params["rain_to_ice_collection_factor"]}
+$atmchange -b p3::accretion_prefactor={tuning_params["accretion_prefactor"]}
+$atmchange -b p3::deposition_nucleation_exponent={tuning_params["deposition_nucleation_exponent"]}
+$atmchange -b p3::max_total_ni={tuning_params["max_total_ni"]}
+$atmchange -b p3::ice_sedimentation_factor={tuning_params["ice_sedimentation_factor"]}
+$atmchange -b p3::rain_selfcollection_breakup_diameter={tuning_params["rain_selfcollection_breakup_diameter"]}
+$atmchange -b p3::autoconversion_qc_exponent={tuning_params["autoconversion_qc_exponent"]}
+$atmchange -b p3::autoconversion_prefactor={tuning_params["autoconversion_prefactor"]}
+$atmchange -b p3::autoconversion_radius={tuning_params["autoconversion_radius"]}
+./preview_namelists
+./preview_run
+./case.submit
+```
+Tuning parameters can be obtained from a JSON file like
+```
+[[4.118961822038232,6.764018572296449,3.047160333040428,0.4272339142736187,0.1747164869405068,0.14157933795315827,0.0209752919843582,0.05170105747971634,3285.313773771069,0.5055492869375801,0.9547062645873976,3.369543460061865,0.2712982002765833,538066.5513825421,1.2563079244778552,0.0002769309769662852,4027.1899285656073,2.1294171065567404,2.8400213334675415e-05],...]
+```

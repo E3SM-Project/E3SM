@@ -1,0 +1,18 @@
+
+averaging_type: average
+fields:
+   physics_pg2:
+      field_names:
+      - precip_total_surf_mass_flux
+      - U_at_850hPa
+      - V_at_850hPa
+      - LW_flux_up_at_model_top
+max_snapshots_per_file: 40
+filename_prefix: 3ha_ne30pg2
+horiz_remap_file: ${DIN_LOC_ROOT}/atm/scream/maps/map_ne256pg2_to_ne30pg2_traave.20240206.nc
+iotype: pnetcdf
+output_control:
+   frequency: 3
+   frequency_units: nhours
+restart:
+   force_new_file: false

@@ -1,0 +1,8 @@
+ ! -- Reduce the size of land outputs since we dont need them --
+ hist_fincl1 = 'SNOWDP'
+ hist_mfilt = 1
+ hist_nhtfrq = 0
+ hist_avgflag_pertape = 'A'
+ fsurdat             = '$DIN_LOC_ROOT/lnd/clm2/surfdata_map/surfdata_ne256pg2_simyr2010_c230207.nc'
+ finidat             = '$DIN_LOC_ROOT/lnd/clm2/initdata/20230522.I2010CRUELM.ne256pg2.elm.r.2013-08-01-00000.nc'
+ check_dynpft_consistency = .false.

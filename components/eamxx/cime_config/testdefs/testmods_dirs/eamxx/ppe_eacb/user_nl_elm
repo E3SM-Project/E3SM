@@ -3,8 +3,7 @@
  hist_mfilt = 1
  hist_nhtfrq = 0
  hist_avgflag_pertape = 'A'
- flanduse_timeseries = '/lus/flare/projects/E3SMinput/data/lnd/clm2/surfdata_map/landuse.timeseries_r025_CMIP7_HIST_simyr1850-2024_c250723.nc'
- fsurdat             = '/lus/flare/projects/E3SMinput/data/lnd/clm2/surfdata_map/surfdata_0.25x0.25_simyr2010_c240206_TOP.nc'
- finidat             = '/lus/flare/projects/E3SMinput/data/lnd/clm2/initdata_map/elmi.2025-EACB.ne256.NN_64.nyr_1.d3115dc4f7d8.elm.r.2017-12-27-03600.64bit.v2.nc'
+ flanduse_timeseries = '$DIN_LOC_ROOT/lnd/clm2/surfdata_map/landuse.timeseries_r025_CMIP7_HIST_simyr1850-2024_c250723.nc'
+ fsurdat             = '$DIN_LOC_ROOT/lnd/clm2/surfdata_map/surfdata_0.25x0.25_simyr2010_c240206_TOP.nc'
+ finidat             = '$DIN_LOC_ROOT/lnd/clm2/initdata_map/elmi.2025-EACB.ne256.NN_64.nyr_1.d3115dc4f7d8.elm.r.2017-12-27-03600.64bit.v2.nc'
  check_dynpft_consistency = .false.
-

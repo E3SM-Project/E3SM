@@ -1,0 +1,21 @@
+#!/bin/bash
+atmchange=${CIMEROOT}/../components/eamxx/scripts/atmchange
+input_data_dir=$(./xmlquery --value DIN_LOC_ROOT)
+
+./xmlchange ATM_NCPL=120
+$atmchange -b ctl_nl::se_tstep=30
+$atmchange -b ctl_nl::dt_remap_factor=2
+$atmchange -b ctl_nl::dt_tracer_factor=12
+$atmchange -b ctl_nl::hypervis_subcycle_q=12
+$atmchange -b ctl_nl::semi_lagrange_trajectory_nsubstep=2
+
+./xmlchange RUN_STARTDATE=2019-08-01
+./xmlchange CCSM_CO2_PPMV=407.0
+$atmchange -b initial_conditions::filename="${input_data_dir}/atm/scream/init/screami_ne256np4L128_era5-20190801-topoadjx6t_20230620.nc"
+./xmlchange SSTICE_DATA_FILENAME="${input_data_dir}/atm/cam/sst/sst_ostia_ukmo-l4_ghrsst_3600x7200_20190731_20210309_c20240506.nc"
+./xmlchange SSTICE_GRID_FILENAME="${input_data_dir}/ocn/docn7/domain.ocn.3600x7200.230522.nc"
+./xmlchange SSTICE_YEAR_ALIGN=2019
+./xmlchange SSTICE_YEAR_START=2019
+./xmlchange SSTICE_YEAR_END=2021
+$atmchange -b scorpio::output_yaml_files="${CIMEROOT}/../components/eamxx/cime_config/testdefs/testmods_dirs/eamxx/ppe_eacb/1ma_ne30pg2.yaml,${CIMEROOT}/../components/eamxx/cime_config/testdefs/testmods_dirs/eamxx/ppe_eacb/3ha_ne30pg2.yaml,${CIMEROOT}/../components/eamxx/cime_config/testdefs/testmods_dirs/eamxx/ppe_eacb/51hi.yaml"
+$atmchange -b physics::atm_procs_list="mac_aero_mic,rrtmgp,cosp"
