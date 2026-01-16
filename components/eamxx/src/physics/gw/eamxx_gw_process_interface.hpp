@@ -1,44 +1,71 @@
-#ifndef SCREAM_GW_MICROPHYSICS_HPP
-#define SCREAM_GW_MICROPHYSICS_HPP
+#ifndef SCREAM_GW_DRAG_HPP
+#define SCREAM_GW_DRAG_HPP
 
 #include "share/atm_process/atmosphere_process.hpp"
-#include "physics/gw/gw_functions.hpp"
+#include "share/atm_process/ATMBufferManager.hpp"
 #include "share/physics/eamxx_common_physics_functions.hpp"
+#include "physics/gw/gw_functions.hpp"
 
 #include <ekat_parameter_list.hpp>
-
 #include <string>
 
 namespace scream
 {
-/*
- * The class responsible to handle the gravity wave physics
- *
- * The AD should store exactly ONE instance of this class stored
- * in its list of subcomponents (the AD should make sure of this).
- *
- * This is currently just a placeholder
+
+/* Gravity Wave Drag Parameterization Suite
+
+This suite of parameterizations can represent the drag from these sources:
+  orographic
+  frontogenesis
+  deep convection
 */
 
-class GWMicrophysics : public AtmosphereProcess
+class GWDrag : public AtmosphereProcess
 {
- public:
-  // Constructors
-  GWMicrophysics (const ekat::Comm& comm, const ekat::ParameterList& params);
 
-  // The type of subcomponent
-  AtmosphereProcessType type () const { return AtmosphereProcessType::Physics; }
+  using KT  = ekat::KokkosTypes<DefaultDevice>;
+  using GWF = gw::Functions<Real, DefaultDevice>;
+  using PF  = scream::PhysicsFunctions<DefaultDevice>;
+  using PC  = scream::physics::Constants<Real>;
 
-  // The name of the subcomponent
-  std::string name () const { return "gw"; }
+  using Scalar   = typename GWF::Scalar;
+  using Spack    = typename GWF::Spack;
+  using SPackInt = typename GWF::SPackInt;
 
-  // Set the grid
-  void create_requests ();
+  public:
+    // Constructors
+    GWDrag (const ekat::Comm& comm, const ekat::ParameterList& params);
 
- protected:
-  std::shared_ptr<const AbstractGrid> m_grid;
-}; // class GWMicrophysics
+    // The type of subcomponent
+    AtmosphereProcessType type () const { return AtmosphereProcessType::Physics; }
+
+    // The name of the subcomponent
+    std::string name () const { return "gw"; }
+
+    // Set the grid
+    void create_requests ();
+
+#ifndef KOKKOS_ENABLE_CUDA
+  // Cuda requires methods enclosing __device__ lambda's to be public
+  protected:
+#endif
+
+    void initialize_impl (const RunType run_type);
+    void run_impl        (const double dt);
+
+  protected:
+
+    void finalize_impl   ();
+
+    std::shared_ptr<const AbstractGrid> m_grid;
+    int m_ncol;
+    int m_nlev;
+
+    // Structures for arguments to ZM
+    GWF::gw_runtime_opt gw_opts;
+
+}; // class GWDrag
 
 } // namespace scream
 
-#endif // SCREAM_GW_MICROPHYSICS_HPP
+#endif // SCREAM_GW_DRAG_HPP
