@@ -252,7 +252,13 @@ rescale_masked_fields (const Field& x, const Field& mask) const
   const auto& layout = x.get_header().get_identifier().get_layout();
   const int rank = layout.rank();
   const int ncols = m_tgt_grid->get_num_local_dofs();
-  const Real mask_threshold = std::numeric_limits<Real>::epsilon();  // TODO: Should we not hardcode the threshold for simply masking out the column.
+  // Use a threshold of 0.5 for the mask: only rescale if more than half of the 
+  // contributing sources (by weight) are unmasked. This prevents division by very
+  // small mask values which can amplify numerical errors and cause large spurious values.
+  // For example, if a target cell has contributions from 9 masked and 1 unmasked source
+  // (each weight 0.1), the remapped mask would be 0.1. Dividing by such small values
+  // would amplify any numerical errors or stray fill values, producing huge results.
+  const Real mask_threshold = 0.5;
 
   switch (rank) {
     case 1:
