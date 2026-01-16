@@ -41,7 +41,7 @@ parser.add_option('--src_file',
 parser.add_option('--dst_file',
                   dest='dst_file',
                   default=None,
-                  help='Output scrip grid file')
+                  help='Output latlon grid file')
 (opts, args) = parser.parse_args()
 
 
