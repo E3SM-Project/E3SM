@@ -132,6 +132,7 @@ def main():
                       'cv_lon':'grid_corner_lon',\
                     }).isel(grid_corners=slice(0,num_corners))
 
+
   ds_out['grid_area'] = ds_out['grid_area'].assign_attrs(units='radians^2')
   ds_out['grid_area'] = ds_out['grid_area'].assign_attrs(long_name='area weights')
 
@@ -145,6 +146,10 @@ def main():
   for v in ds_out.variables:
     if 'grid_corners' in ds_out[v].dims:
       ds_out[v] = ds_out[v].transpose('grid_size','grid_corners',missing_dims='ignore')
+
+  # remove the grid_corners variable:
+  del ds_out['grid_corners']
+
   ds_out.load()
 
   if enable_timers: print_timer(timer_start,description='create output dataset')
@@ -190,7 +195,8 @@ def main():
   #-----------------------------------------------------------------------------
   # add imask and grid_dims to output datasest
   ds_out['grid_imask'] = xr.ones_like(ds_out['grid_size'],dtype=int)
-  ds_out['grid_dims'] = xr.DataArray([len(ds_out['grid_imask'])],dims=['grid_rank'])
+  # HOMME grids are always 1D unstructured:
+  ds_out['grid_dims'] = xr.DataArray([1],dims=['grid_rank'])
 
   #-----------------------------------------------------------------------------
   # add global attributes
