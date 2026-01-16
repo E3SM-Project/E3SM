@@ -25,7 +25,7 @@ Purpose:
 
 Environment
   
-  This requires libraries such as xarray, which included in the E3SM unified environment:
+  This requires libraries such as xarray, which is included in the E3SM unified environment:
   https://e3sm.org/resources/tools/other-tools/e3sm-unified-environment/
 
   Otherwise a simple conda environment can be created:
