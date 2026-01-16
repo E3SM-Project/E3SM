@@ -552,11 +552,11 @@ bool AtmosphereProcess::has_required_field (const FieldIdentifier& id) const {
   return has_required_field(id.name(),id.get_grid_name());
 }
 
-bool AtmosphereProcess::has_required_field (const std::string& name, const std::string& grid_name) const {
-  for (const auto& it : m_required_field_requests) {
-    if (it.fid.name()==name && it.fid.get_grid_name()==grid_name) {
+bool AtmosphereProcess::has_required_field (const std::string& name, const std::string& grid_name) const
+{
+  for (const auto& r : m_field_requests) {
+    if (r.fid.name()==name and r.fid.get_grid_name()==grid_name and r.usage & Required)
       return true;
-    }
   }
   return false;
 }
@@ -565,29 +565,29 @@ bool AtmosphereProcess::has_computed_field (const FieldIdentifier& id) const {
   return has_computed_field(id.name(),id.get_grid_name());
 }
 
-bool AtmosphereProcess::has_computed_field (const std::string& name, const std::string& grid_name) const {
-  for (const auto& it : m_computed_field_requests) {
-    if (it.fid.name()==name && it.fid.get_grid_name()==grid_name) {
+bool AtmosphereProcess::has_computed_field (const std::string& name, const std::string& grid_name) const
+{
+  for (const auto& r : m_field_requests) {
+    if (r.fid.name()==name and r.fid.get_grid_name()==grid_name and r.usage & Computed)
       return true;
-    }
   }
   return false;
 }
 
-bool AtmosphereProcess::has_required_group (const std::string& name, const std::string& grid) const {
-  for (const auto& it : m_required_group_requests) {
-    if (it.name==name && it.grid==grid) {
+bool AtmosphereProcess::has_required_group (const std::string& name, const std::string& grid) const
+{
+  for (const auto& r : m_group_requests) {
+    if (r.name==name and r.grid==grid and r.usage & Required)
       return true;
-    }
   }
   return false;
 }
 
-bool AtmosphereProcess::has_computed_group (const std::string& name, const std::string& grid) const {
-  for (const auto& it : m_computed_group_requests) {
-    if (it.name==name && it.grid==grid) {
+bool AtmosphereProcess::has_computed_group (const std::string& name, const std::string& grid) const
+{
+  for (const auto& r : m_group_requests) {
+    if (r.name==name and r.grid==grid and r.usage & Computed)
       return true;
-    }
   }
   return false;
 }

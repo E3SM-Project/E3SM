@@ -154,22 +154,22 @@ void AtmosphereProcessGroup::set_grids (const std::shared_ptr<const GridsManager
   // rule, in case of sequential splitting: if an atm proc requires a
   // field that is computed by a previous atm proc in the group, that
   // field is not exposed as a required field of the group.
-
+  const bool seq_splitting = m_group_schedule_type==ScheduleType::Sequential;
   for (auto& atm_proc : m_atm_processes) {
     atm_proc->set_grids(grids_manager);
 
     // Add inputs/outputs to the list of inputs of the group
-    for (const auto& req : atm_proc->get_required_field_requests()) {
-      process_required_field(req);
+    for (const auto& ap_req : atm_proc->get_field_requests()) {
+      bool already_computed = has_computed_field(ap_req.fid);
+      auto& req = m_field_requests.emplace_back(ap_req);
+      if (seq_splitting and req.usage & Required and already_computed)
+        req.usage = Computed;
     }
-    for (const auto& req : atm_proc->get_computed_field_requests()) {
-      add_field<Computed>(req);
-    }
-    for (const auto& req : atm_proc->get_required_group_requests()) {
-      process_required_group(req);
-    }
-    for (const auto& req : atm_proc->get_computed_group_requests()) {
-      add_group<Computed>(req);
+    for (const auto& ap_req : atm_proc->get_group_requests()) {
+      bool already_computed = has_computed_group(ap_req.name,ap_req.grid);
+      auto& req = m_group_requests.emplace_back(ap_req);
+      if (seq_splitting and req.usage & Required and already_computed)
+        req.usage = Computed;
     }
   }
 
@@ -351,10 +351,7 @@ void AtmosphereProcessGroup::pre_process_tracer_requests () {
       tracer_requests[req.fid.name()].push_back(req);
     }
   };
-  for (auto& req : m_required_field_requests){
-    gather_tracer_requests(req);
-  }
-  for (auto& req : m_computed_field_requests) {
+  for (auto& req : m_field_requests){
     gather_tracer_requests(req);
   }
 
@@ -404,12 +401,7 @@ void AtmosphereProcessGroup::pre_process_tracer_requests () {
       req.groups.push_back(advect_type);
     }
   };
-  for (auto& req : m_required_field_requests){
-    if (ekat::contains(req.groups, "tracers")) {
-      add_correct_tracer_group(req, tracer_advection_type.at(req.fid.name()));
-    }
-  }
-  for (auto& req : m_computed_field_requests) {
+  for (auto& req : m_field_requests){
     if (ekat::contains(req.groups, "tracers")) {
       add_correct_tracer_group(req, tracer_advection_type.at(req.fid.name()));
     }
@@ -499,9 +491,9 @@ set_required_field (const Field& f) {
   // by a previous process. If so, then this FG is not a "required" FG
   // for this AtmosphereProcessGroup.
   // NOTE: the case where the FG itself is computed by a previous atm proc
-  //       is already handled during `set_grids` (see process_required_group).
+  //       is already handled during `set_grids`
   // NOTE: we still check also the groups computed by the previous procs,
-  //       in case they contain some of the fields in this group.
+  //       in case they contain this field
   bool computed = false;
   for (int iproc=0; iproc<first_proc_that_needs_f; ++iproc) {
     if (m_atm_processes[iproc]->has_computed_field(fid)) {
@@ -567,9 +559,9 @@ set_required_group (const FieldGroup& group) {
   // by a previous process. If so, then this group is not a "required" group
   // for this group.
   // NOTE: the case where the group itself is computed by a previous atm proc
-  // is already handled during `set_grids` (see process_required_group).
+  // is already handled during `set_grids`
   // NOTE: we still check also the groups computed by the previous procs,
-  //       in case they contain some of the fields in this group.
+  //       in case they contain all the fields in this group.
   std::set<std::string> computed;
   for (const auto& it : group.m_individual_fields) {
     const auto& fn = it.first;
@@ -666,49 +658,6 @@ void AtmosphereProcessGroup::set_computed_field_impl (const Field& f) {
     if (atm_proc->has_required_field(fid)) {
       atm_proc->set_required_field(f.get_const());
     }
-  }
-}
-
-void AtmosphereProcessGroup::
-process_required_group (const GroupRequest& req) {
-  if (m_group_schedule_type==ScheduleType::Sequential) {
-    if (has_computed_group(req.name,req.grid)) {
-      // Some previous atm proc computes this group, so it's not an 'input'
-      // of the atm group as a whole. However, we might need a different
-      // pack size. So, instead of adding to the required groups,
-      // we add to the computed ones. This way we don't modify the inputs
-      // of the group, and still manage to communicate to the AD the pack size
-      // that we need.
-      // NOTE; we don't have a way to check if all the fields in the group
-      //       are computed by previous processes, since we don't have
-      //       the list of all fields in this group.
-      add_group<Computed>(req);
-    } else {
-      add_group<Required>(req);
-    }
-  } else {
-    // In parallel schedule, the inputs of all processes are inputs of the group
-    add_group<Required>(req);
-  }
-}
-
-void AtmosphereProcessGroup::
-process_required_field (const FieldRequest& req) {
-  if (m_group_schedule_type==ScheduleType::Sequential) {
-    if (has_computed_field(req.fid)) {
-      // Some previous atm proc computes this field, so it's not an 'input'
-      // of the group as a whole. However, we might need a different pack size,
-      // or want to add it to a different group. So, instead of adding to
-      // the required fields, we add to the computed fields. This way we
-      // don't modify the inputs of the group, and still manage to communicate
-      // to the AD the pack size and group affiliations that we need
-      add_field<Computed>(req);
-    } else {
-      add_field<Required>(req);
-    }
-  } else {
-    // In parallel schedule, the inputs of all processes are inputs of the group
-    add_field<Required>(req);
   }
 }
 

@@ -200,11 +200,7 @@ TEST_CASE("atm_proc_dag", "") {
     -> std::map<std::string,Field>
   {
     std::map<std::string,Field> fields;
-    for (auto r : ap.get_required_field_requests()) {
-      fields[r.fid.name()] = Field(r.fid);
-      fields[r.fid.name()].allocate_view();
-    }
-    for (auto r : ap.get_computed_field_requests()) {
+    for (auto r : ap.get_field_requests()) {
       fields[r.fid.name()] = Field(r.fid);
       fields[r.fid.name()].allocate_view();
     }
@@ -214,11 +210,11 @@ TEST_CASE("atm_proc_dag", "") {
   auto create_and_set_fields = [&] (AtmosphereProcess& ap)
   {
     auto fields = create_fields(ap);
-    for (auto r : ap.get_required_field_requests()) {
-      ap.set_required_field(fields.at(r.fid.name()));
-    }
-    for (auto r : ap.get_computed_field_requests()) {
-      ap.set_computed_field(fields.at(r.fid.name()));
+    for (auto r : ap.get_field_requests()) {
+      if (r.usage & Required)
+        ap.set_required_field(fields.at(r.fid.name()).get_const());
+      if (r.usage & Computed)
+        ap.set_computed_field(fields.at(r.fid.name()));
     }
   };
 
