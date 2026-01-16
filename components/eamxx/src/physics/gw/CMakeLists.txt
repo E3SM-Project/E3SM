@@ -33,6 +33,8 @@ endif()
 
 add_library(gw ${GW_SRCS})
 
+target_compile_definitions(gw PUBLIC EAMXX_HAS_GW)
+
 target_include_directories(gw PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_CURRENT_SOURCE_DIR}/impl
