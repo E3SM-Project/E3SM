@@ -474,18 +474,28 @@ def remove_comments_and_ws(contents):
     Remove comments and whitespaces from fortran code
     """
     new_lines = []
-    comment_regex = re.compile(r"^([^!]*)")
+    new_comments = []
+    prev_comment = ""
     for line in contents.splitlines():
-        m = comment_regex.match(line)
-        if m is not None:
-            line = m.groups()[0].strip()
+        if "!" in line:
+            noncomment, comment = line.split("!", maxsplit=1)
+            noncomment = noncomment.strip()
+            comment = comment.strip()
         else:
-            line = line.strip()
+            noncomment = line.strip()
+            comment = ""
 
-        if line != "":
-            new_lines.append(line)
+        if noncomment != "":
+            new_lines.append(noncomment)
+            if comment != "":
+                new_comments.append(comment)
+            else:
+                new_comments.append(prev_comment)
+            prev_comment = ""
+        else:
+            prev_comment += comment
 
-    return "\n".join(new_lines)
+    return new_lines, new_comments
 
 ###############################################################################
 def normalize_f90(contents):
@@ -495,21 +505,26 @@ def normalize_f90(contents):
     and lowercasing everything.
     """
     # Must remove comments and whitespace for the alg below to work
-    contents = remove_comments_and_ws(contents)
+    lines, comments = remove_comments_and_ws(contents)
+    expect(len(lines) == len(comments), "Comment/line mismatch")
 
     new_lines = []
+    new_comments = []
     contination = False
-    for line in contents.splitlines():
+    for line, comment in zip(lines, comments):
         line = line.lstrip("&") # always remove leading &, they are optional
+        line = line.lower()
         if line != "":
             if contination:
                 new_lines[-1] += line.rstrip("&")
+                new_comments[-1] += comment
             else:
                 new_lines.append(line.rstrip("&"))
+                new_comments.append(comment)
 
             contination = line.endswith("&")
 
-    return ("\n".join(new_lines)).lower()
+    return new_lines, new_comments
 
 ###############################################################################
 def split_top_commas(line):
@@ -559,12 +574,12 @@ def get_arg_order(line):
         args_raw = line.rstrip(")").split("(", maxsplit=1)[-1]
         return [item.strip() for item in args_raw.split(",") if item.strip()]
 
-ARG_NAME, ARG_TYPE, ARG_INTENT, ARG_DIMS = range(4)
+ARG_NAME, ARG_TYPE, ARG_INTENT, ARG_DIMS, ARG_COMMENT = range(5)
 ###############################################################################
-def parse_f90_args(line):
+def parse_f90_args(line, comment=None):
 ###############################################################################
     """
-    Given a line of fortran code declaring an argument[s], return [(argname, argtype, intent, dims)]
+    Given a line of fortran code declaring an argument[s], return [(argname, argtype, intent, dims, comment)]
     Anywhere you see "arg_data" in this program, it's referring to a list of data produced by
     this function. Anywhere you see "arg_datum", it's referring to a single item in this list.
     """
@@ -604,7 +619,7 @@ def parse_f90_args(line):
             all_dims.append(dims)
             names.append(name_dim.strip())
 
-    return [(name, argtype, intent, dims) for name, dims in zip(names, all_dims)]
+    return [(name, argtype, intent, dims, None if not comment else comment) for name, dims in zip(names, all_dims)]
 
 ###############################################################################
 def parse_origin(contents, subs):
@@ -616,14 +631,15 @@ def parse_origin(contents, subs):
     begin_func_regexes = [get_function_begin_regex(sub)   for sub in subs]
     arg_decl_regex = re.compile(r"^.+intent\s*[(]\s*(in|out|inout)\s*[)]")
 
-    contents = normalize_f90(contents)
+    new_lines, new_comments = normalize_f90(contents)
+    expect(len(new_lines) == len(new_comments), "New Comment/line mismatch")
 
     db = {}
     active_sub = None
     result_name = None
     arg_order = []
     arg_decls = []
-    for line in contents.splitlines():
+    for line, comment in zip(new_lines, new_comments):
         for sub, begin_sub_regex, begin_func_regex in zip(subs, begin_sub_regexes, begin_func_regexes):
             begin_sub_match = begin_sub_regex.match(line)
             begin_func_match = begin_func_regex.match(line)
@@ -640,13 +656,13 @@ def parse_origin(contents, subs):
         if active_sub:
             decl_match = arg_decl_regex.match(line)
             if decl_match is not None:
-                arg_decls.extend(parse_f90_args(line))
+                arg_decls.extend(parse_f90_args(line, comment))
             elif result_name:
                 result_decl_regex = re.compile(fr".+::\s*{result_name}([^\w]|$)")
                 result_decl_match = result_decl_regex.match(line)
                 if result_decl_match is not None:
                     line = line.replace("::", " , intent(out) ::")
-                    arg_decls.extend(parse_f90_args(line))
+                    arg_decls.extend(parse_f90_args(line, comment))
 
             end_regex = get_subroutine_end_regex(active_sub)
             end_match = end_regex.match(line)
@@ -682,7 +698,7 @@ def parse_origin(contents, subs):
                             dim_scalars = extract_dim_scalars(arg_dim)
                             for arg_dim in dim_scalars:
                                 if arg_dim not in arg_names:
-                                    global_ints_to_insert.append((arg_dim, "integer", "in", None))
+                                    global_ints_to_insert.append((arg_dim, "integer", "in", None, None))
                                     arg_names.add(arg_dim)
 
                 db[active_sub] = global_ints_to_insert + ordered_decls
@@ -778,22 +794,24 @@ def gen_arg_cxx_decls(arg_data, kokkos=False, unpacked=False, col_dim=None):
     types instead of C types.
     """
     arg_names    = [item[ARG_NAME] for item in arg_data]
+    arg_comments = [item[ARG_COMMENT] for item in arg_data]
+    arg_intents  = [item[ARG_INTENT] for item in arg_data]
     if kokkos:
         arg_types = [get_kokkos_type(item, col_dim, unpacked=unpacked) for item in arg_data]
     else:
         arg_types = [get_cxx_type(item) for item in arg_data]
 
-    arg_sig_list = [(f"{arg_type} {arg_name}", arg_datum[ARG_INTENT])
-                    for arg_name, arg_type, arg_datum in zip(arg_names, arg_types, arg_data)]
+    arg_sig_list = [(f"{arg_type} {arg_name}", arg_intent, arg_comment)
+                    for arg_name, arg_type, arg_intent, arg_comment in zip(arg_names, arg_types, arg_intents, arg_comments)]
 
     # For kokkos functions, we will almost always want the team and we don't want
     # the col_dim
     if kokkos:
-        arg_sig_list.insert(0, ("const MemberType& team", "in"))
-        for arg_sig, arg_intent in arg_sig_list:
+        arg_sig_list.insert(0, ("const MemberType& team", "in", None))
+        for arg_sig, arg_intent, arg_comment in arg_sig_list:
             if arg_sig.split()[-1] == col_dim:
                 expect(arg_intent == "in", f"col_dim {col_dim} wasn't an input, {arg_intent}?")
-                arg_sig_list.remove((arg_sig, arg_intent))
+                arg_sig_list.remove((arg_sig, arg_intent, arg_comment))
                 break
 
     result = []
@@ -803,16 +821,19 @@ def gen_arg_cxx_decls(arg_data, kokkos=False, unpacked=False, col_dim=None):
     if kokkos:
         intent_map = {"in" : "Inputs", "inout" : "Inputs/Outputs", "out" : "Outputs"}
         curr = None
-        for arg_sig, arg_intent in arg_sig_list:
+        for arg_sig, arg_intent, arg_comment in arg_sig_list:
             if arg_intent != curr:
                 fullname = intent_map[arg_intent]
                 result.append(f"// {fullname}")
                 curr = arg_intent
 
-            result.append(arg_sig)
+            if arg_comment:
+                result.append(f"{arg_sig} // {arg_comment}")
+            else:
+                result.append(arg_sig)
 
     else:
-        result = [arg_sig for arg_sig, _ in arg_sig_list]
+        result = [arg_sig for arg_sig, _, _ in arg_sig_list]
 
     return result
 
@@ -823,7 +844,7 @@ def split_by_intent(arg_data):
     Take arg data and split into three lists of names based on intent: [inputs], [intouts], [outputs]
     """
     inputs, inouts, outputs = [], [], []
-    for name, _, intent, _ in arg_data:
+    for name, _, intent, _, _ in arg_data:
         if intent == "in":
             inputs.append(name)
         elif intent == "inout":
@@ -842,7 +863,7 @@ def split_by_type(arg_data):
     Take arg data and split into three lists of names based on type: [reals], [ints], [logicals]
     """
     reals, ints, logicals = [], [], []
-    for name, argtype, _, _ in arg_data:
+    for name, argtype, _, _, _ in arg_data:
         if argtype == "real":
             reals.append(name)
         elif argtype == "integer":
@@ -863,7 +884,7 @@ def split_by_scalar_vs_view(arg_data):
     Take arg data and split into two lists of names based on scalar/not-scalar: [scalars] [non-scalars]
     """
     scalars, non_scalars = [], []
-    for name, _, _, dims in arg_data:
+    for name, _, _, dims, _ in arg_data:
         if dims is not None:
             non_scalars.append(name)
         else:
@@ -890,7 +911,7 @@ def gen_arg_f90_decls(arg_data):
     Generate f90 argument declarations, will attempt to group these together if possible.
     """
     metadata = {}
-    for name, argtype, intent, dims in arg_data:
+    for name, argtype, intent, dims, _ in arg_data:
         metatuple = (argtype, intent, dims)
         metadata.setdefault(metatuple, []).append(name)
 
@@ -906,7 +927,7 @@ def has_arrays(arg_data):
     """
     Return if arg_data contains any array data
     """
-    for _, _, _, dims in arg_data:
+    for _, _, _, dims, _ in arg_data:
         if dims is not None:
             return True
 
@@ -919,7 +940,7 @@ def get_scalar_members(arg_data):
     Gen cxx code for data struct members in an order that matches gen_struct_members
     """
     metadata = {} # intent -> type -> names
-    for name, argtype, intent, dims in arg_data:
+    for name, argtype, intent, dims, _ in arg_data:
         if dims is None:
             metadata.setdefault(intent, {}).setdefault(argtype, []).append(name)
 
@@ -944,7 +965,7 @@ def gen_struct_members(arg_data):
     Gen cxx code for data struct members
     """
     metadata = {} # intent -> (type, is_ptr) -> names
-    for name, argtype, intent, dims in arg_data:
+    for name, argtype, intent, dims, _ in arg_data:
         metadata.setdefault(intent, {}).setdefault((argtype, dims is not None), []).append(name)
 
     intent_order = ( ("in", "Inputs"), ("inout", "Inputs/Outputs"), ("out", "Outputs") )
@@ -1004,7 +1025,7 @@ def group_data(arg_data, filter_out_intent=None, filter_scalar_custom_types=Fals
 
     all_dims = []
 
-    for name, argtype, _, dims in arg_data:
+    for name, argtype, _, dims, _ in arg_data:
         if dims is not None:
             for dim in dims:
                 dscalars = extract_dim_scalars(dim)
@@ -1016,7 +1037,7 @@ def group_data(arg_data, filter_out_intent=None, filter_scalar_custom_types=Fals
     int_data = {}
     bool_data = {}
 
-    for name, argtype, intent, dims in arg_data:
+    for name, argtype, intent, dims, _ in arg_data:
         if filter_out_intent is None or intent != filter_out_intent:
             if dims is None:
                 if not (is_custom_type(argtype) and filter_scalar_custom_types):
@@ -1216,9 +1237,9 @@ def check_existing_piece(lines, begin_regex, end_regex):
 ###############################################################################
 def get_data_by_name(arg_data, arg_name, data_idx):
 ###############################################################################
-    for name, a, b, c in arg_data:
+    for name, a, b, c, d in arg_data:
         if name == arg_name:
-            return [name, a, b, c][data_idx]
+            return [name, a, b, c, d][data_idx]
 
     expect(False, f"Name {arg_name} not found")
 
@@ -1760,7 +1781,7 @@ f"""{decl}
         arg_data = force_arg_data if force_arg_data else self._get_arg_data(phys, sub)
         arg_decls = gen_arg_cxx_decls(arg_data, kokkos=True, unpacked=self._unpacked, col_dim=self._col_dim)
 
-        arg_decls_str = ("\n    ".join([item if item.startswith("//") else f"{item}," for item in arg_decls])).rstrip(",")
+        arg_decls_str = ("\n    ".join([item if item.startswith("//") else (item.replace(" //", ", //") if "//" in item else f"{item},") for item in arg_decls])).rstrip(",")
 
         return f"  KOKKOS_FUNCTION\n  static void {sub}(\n    {arg_decls_str});"
 
@@ -2036,7 +2057,3 @@ template struct Functions<Real,DefaultDevice>;
         print("ALL_SUCCESS" if all_success else "THERE WERE FAILURES")
 
         return all_success
-
-if __name__ == "__main__":
-    import doctest
-    doctest.run_docstring_examples(parse_f90_args, globals())

@@ -16,48 +16,48 @@ GEN_BOILER_DIR = Path(__file__).resolve().parent
 
 # A good set of arg data for unit testing
 UT_ARG_DATA = [
-    ("foo1", "real", "in", ("shcol",)),
-    ("foo2", "real", "in", ("shcol",)),
-    ("bar1", "real", "in", ("shcol","nlev")),
-    ("bar2", "real", "in", ("shcol","nlev")),
-    ("bak1", "real", "in", ("shcol","-nlev:nlev")),
-    ("bak2", "real", "in", ("shcol","nlevi")),
-    ("tracerd1", "real", "in", ("shcol","nlev", "ntracers")),
-    ("tracerd2", "real", "in", ("shcol","nlev", "ntracers")),
-    ("gag", "real", "in", None),
-    ("baz", "real", "inout", ("shcol",)),
-    ("bag", "integer", "in", ("shcol","0:nlev")),
-    ("bab1", "integer", "inout", None),
-    ("bab2", "integer", "out", None),
-    ("val", "logical", "in", None),
-    ("vals", "logical", "in", ("shcol",)),
-    ("shcol", "integer", "in", None),
-    ("nlev", "integer", "in", None),
-    ("nlevi", "integer", "in", None),
-    ("ntracers", "integer", "in", None),
-    ("ball1", "integer", "out", ("shcol",)),
-    ("ball2", "integer", "out", ("shcol",)),
+    ("foo1", "real", "in", ("shcol",), None),
+    ("foo2", "real", "in", ("shcol",), None),
+    ("bar1", "real", "in", ("shcol","nlev"), None),
+    ("bar2", "real", "in", ("shcol","nlev"), None),
+    ("bak1", "real", "in", ("shcol","-nlev:nlev"), None),
+    ("bak2", "real", "in", ("shcol","nlevi"), None),
+    ("tracerd1", "real", "in", ("shcol","nlev", "ntracers"), None),
+    ("tracerd2", "real", "in", ("shcol","nlev", "ntracers"), None),
+    ("gag", "real", "in", None, None),
+    ("baz", "real", "inout", ("shcol",), None),
+    ("bag", "integer", "in", ("shcol","0:nlev"), None),
+    ("bab1", "integer", "inout", None, None),
+    ("bab2", "integer", "out", None, None),
+    ("val", "logical", "in", None, "Lone val comment"),
+    ("vals", "logical", "in", ("shcol",), None),
+    ("shcol", "integer", "in", None, None),
+    ("nlev", "integer", "in", None, None),
+    ("nlevi", "integer", "in", None, None),
+    ("ntracers", "integer", "in", None, None),
+    ("ball1", "integer", "out", ("shcol",), None),
+    ("ball2", "integer", "out", ("shcol",), None),
 ]
 
 UT_ARG_DATA_ALL_SCALAR = [
-    ("foo1", "real", "in", None),
-    ("foo2", "real", "in", None),
-    ("bar1", "real", "inout", None),
-    ("bar2", "real", "inout", None),
-    ("baz1", "real", "out", None),
-    ("baz2", "real", "out", None),
-    ("gag1", "integer", "in", None),
-    ("gag2", "integer", "in", None),
-    ("gal1", "integer", "inout", None),
-    ("gal2", "integer", "inout", None),
-    ("bal1", "integer", "out", None),
-    ("bal2", "integer", "out", None),
-    ("bit1", "logical", "in", None),
-    ("bit2", "logical", "in", None),
-    ("gut1", "logical", "inout", None),
-    ("gut2", "logical", "inout", None),
-    ("gat1", "logical", "out", None),
-    ("gat2", "logical", "out", None),
+    ("foo1", "real", "in", None, None),
+    ("foo2", "real", "in", None, None),
+    ("bar1", "real", "inout", None, None),
+    ("bar2", "real", "inout", None, None),
+    ("baz1", "real", "out", None, None),
+    ("baz2", "real", "out", None, None),
+    ("gag1", "integer", "in", None, None),
+    ("gag2", "integer", "in", None, None),
+    ("gal1", "integer", "inout", None, None),
+    ("gal2", "integer", "inout", None, None),
+    ("bal1", "integer", "out", None, None),
+    ("bal2", "integer", "out", None, None),
+    ("bit1", "logical", "in", None, None),
+    ("bit2", "logical", "in", None, None),
+    ("gut1", "logical", "inout", None, None),
+    ("gut2", "logical", "inout", None, None),
+    ("gat1", "logical", "out", None, None),
+    ("gat2", "logical", "out", None, None),
 ]
 
 ###############################################################################
@@ -241,9 +241,11 @@ class TestGenBoilerBasics(unittest.TestCase):
                          'const uview_1d<Real>&')
 
         # gen_arg_cxx_decls
-        self.assertEqual(gen_arg_cxx_decls([("foo", "real", "in", ("100",)), ("bar", "real", "in", None)]),
+        self.assertEqual(gen_arg_cxx_decls([("foo", "real", "in", ("100",), None),
+                                            ("bar", "real", "in", None, None)]),
                          ['Real* foo', 'Real bar'])
-        self.assertEqual(gen_arg_cxx_decls([("foo", "real", "in", ("100",)), ("bar", "real", "out", None)], kokkos=True, col_dim="ignore"),
+        self.assertEqual(gen_arg_cxx_decls([("foo", "real", "in", ("100",), None),
+                                            ("bar", "real", "out", None, None)], kokkos=True, col_dim="ignore"),
                          ['// Inputs', 'const MemberType& team', 'const uview_1d<const Spack>& foo', '// Outputs', 'Spack& bar'])
 
         # split_by_intent
@@ -426,7 +428,7 @@ void Functions<S,D>::linear_interp(
   // Outputs
   Int& bab2,
   // Inputs
-  const bool& val,
+  const bool& val, // Lone val comment
   const bool& vals,
   const Int& nlev,
   const Int& nlevi,
@@ -479,7 +481,7 @@ c, d, e, f
 end subroutine foo
 end module mymod
 """
-        actual = remove_comments_and_ws(test_str)
+        actual = "\n".join(remove_comments_and_ws(test_str)[0])
         line_by_line_compare(self, expected_result, actual)
 
         expected_result2 = \
@@ -489,38 +491,45 @@ real, intent(in) :: a, b, c, d, e, f
 end subroutine foo
 end module mymod
 """
-        actual2 = normalize_f90(test_str)
+        actual2 = "\n".join(normalize_f90(test_str)[0])
         line_by_line_compare(self, expected_result2, actual2)
 
     ###########################################################################
     def test_parse_f90_args(self):
     ###########################################################################
         self.assertEqual(parse_f90_args('integer, intent(in) :: kts, kte, kbot'),
-                         [('kts', 'integer', 'in', None), ('kte', 'integer', 'in', None), ('kbot', 'integer', 'in', None)])
+                         [('kts', 'integer', 'in', None, None),
+                          ('kte', 'integer', 'in', None, None),
+                          ('kbot', 'integer', 'in', None, None)])
         self.assertEqual(parse_f90_args('real(rtype),intent(inout ), dimension(kts:kte) :: pres,dpres,  dz '),
-                         [('pres', 'real', 'inout', ('kts:kte',)), ('dpres', 'real', 'inout', ('kts:kte',)), ('dz', 'real', 'inout', ('kts:kte',))])
-        self.assertEqual(parse_f90_args('logical (btype), intent( in) ::do_predict_nc'),
-                         [('do_predict_nc', 'logical', 'in', None)])
+                         [('pres', 'real', 'inout', ('kts:kte',), None),
+                          ('dpres', 'real', 'inout', ('kts:kte',), None),
+                          ('dz', 'real', 'inout', ('kts:kte',), None)])
+        self.assertEqual(parse_f90_args('logical (btype), intent( in) ::do_predict_nc', 'hi'),
+                         [('do_predict_nc', 'logical', 'in', None, 'hi')])
         self.assertEqual(parse_f90_args('real(rtype),intent(inout), dimension( kts:kte, its: ite) :: dz'),
-                         [('dz', 'real', 'inout', ('kts:kte', 'its:ite'))])
+                         [('dz', 'real', 'inout', ('kts:kte', 'its:ite'), None)])
         self.assertEqual(parse_f90_args('real(rtype),intent(inout), dimension(3) :: dz'),
-                         [('dz', 'real', 'inout', ('3',))])
+                         [('dz', 'real', 'inout', ('3',), None)])
         self.assertEqual(parse_f90_args('real(rtype),intent(inout), dimension(3,4) :: dz'),
-                         [('dz', 'real', 'inout', ('3', '4'))])
+                         [('dz', 'real', 'inout', ('3', '4'), None)])
         self.assertEqual(parse_f90_args('real(rtype), dimension(3,4),intent(inout) :: dz'),
-                         [('dz', 'real', 'inout', ('3', '4'))])
+                         [('dz', 'real', 'inout', ('3', '4'), None)])
         self.assertEqual(parse_f90_args('real(rtype), intent(in) :: x1(ncol,km1), y1(ncol , km1 )'),
-                         [('x1', 'real', 'in', ('ncol', 'km1')), ('y1', 'real', 'in', ('ncol', 'km1'))])
+                         [('x1', 'real', 'in', ('ncol', 'km1'), None),
+                          ('y1', 'real', 'in', ('ncol', 'km1'), None)])
         self.assertEqual(parse_f90_args('real(rtype), intent(in) :: x1(ncol,km1,ntracers)'),
-                         [('x1', 'real', 'in', ('ncol', 'km1', 'ntracers'))])
+                         [('x1', 'real', 'in', ('ncol', 'km1', 'ntracers'), None)])
         self.assertEqual(parse_f90_args('type(element_t), intent(inout) :: elem(:)'),
-                         [('elem', 'type::element_t', 'inout', (':',))])
+                         [('elem', 'type::element_t', 'inout', (':',), None)])
         self.assertEqual(parse_f90_args('character*(max_path_len), intent(out), optional ::  iopfile_out'),
-                         [('iopfile_out', 'type::string', 'out', None)])
+                         [('iopfile_out', 'type::string', 'out', None, None)])
         self.assertEqual(parse_f90_args('real(r8), intent(out) :: nm(ncol,pver), ni(ncol,0:pver)'),
-                         [('nm', 'real', 'out', ('ncol', 'pver')), ('ni', 'real', 'out', ('ncol', '0:pver'))])
+                         [('nm', 'real', 'out', ('ncol', 'pver'), None),
+                          ('ni', 'real', 'out', ('ncol', '0:pver'), None)])
         self.assertEqual(parse_f90_args('real(r8), intent(out) :: nm(ncol,pver), ni(ncol,-pgwv:pgwv)'),
-                         [('nm', 'real', 'out', ('ncol', 'pver')), ('ni', 'real', 'out', ('ncol', '-pgwv:pgwv'))])
+                         [('nm', 'real', 'out', ('ncol', 'pver'), None),
+                          ('ni', 'real', 'out', ('ncol', '-pgwv:pgwv'), None)])
 
     ###########################################################################
     def test_parse_origin(self):
@@ -625,7 +634,7 @@ end module mymod
     integer(kind=c_int) , intent(in), dimension(shcol, 0:nlev) :: bag
     integer(kind=c_int) , intent(inout) :: bab1
     integer(kind=c_int) , intent(out) :: bab2
-    logical(kind=c_bool) , value, intent(in) :: val
+    logical(kind=c_bool) , value, intent(in) :: val  ! Lone val comment
     logical(kind=c_bool) , intent(in), dimension(shcol) :: vals
     integer(kind=c_int) , value, intent(in) :: shcol, nlev, nlevi, ntracers
     integer(kind=c_int) , intent(out), dimension(shcol) :: ball1, ball2
@@ -634,49 +643,50 @@ end module mymod
         test1 = [item for item in sorted(parse_origin(teststr, ["p3_get_tables", "p3_init_b"]).items())]
         self.assertEqual(test1, [
             ('p3_get_tables', [
-                ('mu_r_user', 'real', 'out', ('150',)),
-                ('revap_user', 'real', 'out', ('300', '10')),
-                ('tracerd', 'real', 'out', ('300', '10', '42')),
-                ('vn_user', 'real', 'out', ('300', '10')),
-                ('vm_user', 'real', 'out', ('300', '10'))
+                ('mu_r_user', 'real', 'out', ('150',), None),
+                ('revap_user', 'real', 'out', ('300', '10'), None),
+                ('tracerd', 'real', 'out', ('300', '10', '42'), None),
+                ('vn_user', 'real', 'out', ('300', '10'), None),
+                ('vm_user', 'real', 'out', ('300', '10'), None)
             ]),
             ('p3_init_b', [])
         ])
 
+        self.maxDiff = 9999
         test2 = [item for item in parse_origin(teststr, ["impli_srf_stress_term"]).items()]
         self.assertEqual(test2, [
             ('impli_srf_stress_term', [
-                ('shcol', 'integer', 'in', None),
-                ('rho_zi_sfc', 'real', 'in', ('shcol',)),
-                ('uw_sfc', 'real', 'in', ('shcol',)),
-                ('vw_sfc', 'real', 'in', ('shcol',)),
-                ('u_wind_sfc', 'real', 'in', ('shcol',)),
-                ('v_wind_sfc', 'real', 'in', ('shcol',)),
-                ('ksrf', 'real', 'out', ('shcol',))
+                ('shcol', 'integer', 'in', None, "intent-ins"),
+                ('rho_zi_sfc', 'real', 'in', ('shcol',), "air density at interfaces [kg/m3]"),
+                ('uw_sfc', 'real', 'in', ('shcol',), "vertical zonal momentum flux at surface [m3/s3]"),
+                ('vw_sfc', 'real', 'in', ('shcol',), "vertical meridional momentum flux at surface [m3/s3]"),
+                ('u_wind_sfc', 'real', 'in', ('shcol',), "zonal wind [m/s]"),
+                ('v_wind_sfc', 'real', 'in', ('shcol',), "meridional wind [m/s]"),
+                ('ksrf', 'real', 'out', ('shcol',), "function return value")
             ]),
         ])
 
         test3 = [item for item in parse_origin(teststr, ["advance_iop_forcing"]).items()]
         self.assertEqual(test3, [
             ('advance_iop_forcing', [
-                ('plev', 'integer', 'in', None),
-                ('pcnst', 'integer', 'in', None),
-                ('scm_dt', 'real', 'in', None),
-                ('ps_in', 'real', 'in', None),
-                ('u_in', 'real', 'in', ('plev',)),
-                ('v_in', 'real', 'in', ('plev',)),
-                ('t_in', 'real', 'in', ('plev',)),
-                ('q_in', 'real', 'in', ('plev', 'pcnst')),
-                ('t_phys_frc', 'real', 'in', ('plev',)),
-                ('u_update', 'real', 'out', ('plev',)),
-                ('v_update', 'real', 'out', ('plev',)),
-                ('t_update', 'real', 'out', ('plev',)),
-                ('q_update', 'real', 'out', ('plev', 'pcnst'))
+                ('plev', 'integer', 'in', None, None),
+                ('pcnst', 'integer', 'in', None, None),
+                ('scm_dt', 'real', 'in', None, 'model time step [s]'),
+                ('ps_in', 'real', 'in', None, 'surface pressure [Pa]'),
+                ('u_in', 'real', 'in', ('plev',), 'zonal wind [m/s]'),
+                ('v_in', 'real', 'in', ('plev',), 'meridional wind [m/s]'),
+                ('t_in', 'real', 'in', ('plev',), 'temperature [K]'),
+                ('q_in', 'real', 'in', ('plev', 'pcnst'), 'q tracer array [units vary]'),
+                ('t_phys_frc', 'real', 'in', ('plev',), 'temperature forcing from physics [K/s]'),
+                ('u_update', 'real', 'out', ('plev',), 'updated zonal wind [m/s]'),
+                ('v_update', 'real', 'out', ('plev',), 'updated meridional wind [m/s]'),
+                ('t_update', 'real', 'out', ('plev',), 'updated temperature [K]'),
+                ('q_update', 'real', 'out', ('plev', 'pcnst'), 'updated q tracer array [units vary]')
             ]),
         ])
 
         test4 = [item for item in parse_origin(teststr, ["iop_setinitial"]).items()]
-        self.assertEqual(test4, [('iop_setinitial', [('elem', 'type::element_t', 'inout', (':',))])])
+        self.assertEqual(test4, [('iop_setinitial', [('elem', 'type::element_t', 'inout', (':',), None)])])
 
         test5 = [item for item in parse_origin(teststr, ["fake_sub"]).items()]
         self.assertEqual(test5, [('fake_sub', UT_ARG_DATA)])
@@ -1189,7 +1199,7 @@ PTD_STD_DEF(DataSubName, 18, gag1, gag2, foo1, foo2, bit1, bit2, gal1, gal2, bar
     // Outputs
     Int& bab2,
     // Inputs
-    const bool& val,
+    const bool& val, // Lone val comment
     const bool& vals,
     const Int& nlev,
     const Int& nlevi,
@@ -1237,7 +1247,7 @@ void Functions<S,D>::fake_sub(
   // Outputs
   Int& bab2,
   // Inputs
-  const bool& val,
+  const bool& val, // Lone val comment
   const bool& vals,
   const Int& nlev,
   const Int& nlevi,
