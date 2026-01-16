@@ -675,16 +675,11 @@ void AtmosphereDriver::create_fields()
       pl.set("units",fid.get_units().to_string());
       pl.set("layout",fid.get_layout().names());
       pl.set("standard_name",std_names.get_standardname(fid.name()));
-      strvec_t providers,customers;
       const auto& track = it.second->get_header().get_tracking();
-      for (auto ap : track.get_providers()) {
-        providers.push_back(ap.lock()->name());
-      }
-      for (auto ap : track.get_customers()) {
-        customers.push_back(ap.lock()->name());
-      }
-      pl.set("providers",providers);
-      pl.set("customers",customers);
+      const auto& p = track.get_providers();
+      const auto& c = track.get_customers();
+      pl.set("providers",strvec_t(p.begin(),p.end()));
+      pl.set("customers",strvec_t(c.begin(),c.end()));
     }
 
     ekat::write_yaml_file("eamxx_field_manager_content.yaml",pl_out);

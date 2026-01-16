@@ -621,11 +621,11 @@ void AtmosphereProcess::update_time_stamps () {
 }
 
 void AtmosphereProcess::add_me_as_provider (const Field& f) {
-  f.get_header_ptr()->get_tracking().add_provider(weak_from_this());
+  f.get_header_ptr()->get_tracking().add_provider(name());
 }
 
 void AtmosphereProcess::add_me_as_customer (const Field& f) {
-  f.get_header_ptr()->get_tracking().add_customer(weak_from_this());
+  f.get_header_ptr()->get_tracking().add_customer(name());
 }
 
 void AtmosphereProcess::
