@@ -46,7 +46,7 @@ void Functions<S,D>::gw_common_init(
   s_common_init.alpha = view_1d<Real>("alpha", alpha_in.size());
   Kokkos::deep_copy(s_common_init.alpha, alpha_in);
   s_common_init.effkwv = kwv_in * fcrit2_in;
-  s_common_init.tndmax = orographic_only_in ? 500 / GWC::temp1 : 400 / GWC::temp1;
+  s_common_init.tndmax = orographic_only_in ? 500/GWC::sec_per_day : 400/GWC::sec_per_day;
 }
 
 } // namespace gw
