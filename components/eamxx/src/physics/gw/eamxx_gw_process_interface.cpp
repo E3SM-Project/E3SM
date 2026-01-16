@@ -120,6 +120,7 @@ void GWDrag::initialize_impl (const RunType) {
   using LowerBound = FieldLowerBoundCheck;
   add_postcondition_check<Interval>(get_field_out("T_mid"),       m_grid,100.0,400.0,false);
   add_postcondition_check<Interval>(get_field_out("horiz_winds"), m_grid,-200.0, 200.0,false);
+
 }
 
 /*------------------------------------------------------------------------------------------------*/
@@ -137,6 +138,7 @@ void GWDrag::run_impl (const double dt) {
 
   // variables not updated by GWD
   const auto& phis        = get_field_in("phis")          .get_view<const Real*>();
+
   const auto& p_mid       = get_field_in("p_mid")         .get_view<const Pack**>();
   const auto& p_int       = get_field_in("p_int")         .get_view<const Pack**>();
   const auto& p_del       = get_field_in("pseudo_density").get_view<const Pack**>();
@@ -386,6 +388,7 @@ void GWDrag::run_impl (const double dt) {
     // do k = 0, pver
     //   egwdffi_tot(:,k) = egwdffi_tot(:,k) + egwdffi(:,k)
     // end do
+
 
     // Store constituents tendencies
     // do m=1, pcnst

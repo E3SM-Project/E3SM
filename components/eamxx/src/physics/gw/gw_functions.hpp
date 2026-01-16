@@ -201,6 +201,7 @@ struct Functions
     //   frontgfc            = params.get<Real>("gw_frontal_fgfc", frontgfc);
     //   gw_frontal_eff      = params.get<Real>("gw_frontal_eff", gw_frontal_eff);
     // }
+
   };
 
   // -----------------------------------------------------------------------------------------------
