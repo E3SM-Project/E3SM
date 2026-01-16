@@ -315,11 +315,11 @@ rescale_masked_fields (const Field& x, const Field& mask) const
           auto m_sub = ekat::subview(mask_2d,icol);
           Kokkos::parallel_for(Kokkos::TeamVectorRange(team,dim1),
                               [&](const int j){
-            auto masked = m_sub(j) > mask_threshold;
-            if (masked.any()) {
-              x_sub(j).set(masked,x_sub(j)/m_sub(j));
-            }
-            x_sub(j).set(!masked,fill_val);
+            auto valid = m_sub(j) > mask_threshold;
+            // First set invalid values to fill_val
+            x_sub(j).set(!valid,fill_val);
+            // Then rescale valid values (overwrites the valid entries that were just set)
+            x_sub(j).set(valid,x_sub(j)/m_sub(j));
           });
         }
       });
@@ -371,12 +371,11 @@ rescale_masked_fields (const Field& x, const Field& mask) const
             const int j = idx / dim2;
             const int k = idx % dim2;
             auto x_sub = ekat::subview(x_view,icol,j);
-            auto masked = m_sub(k) > mask_threshold;
-
-            if (masked.any()) {
-              x_sub(k).set(masked,x_sub(k)/m_sub(k));
-            }
-            x_sub(k).set(!masked,fill_val);
+            auto valid = m_sub(k) > mask_threshold;
+            // First set invalid values to fill_val
+            x_sub(k).set(!valid,fill_val);
+            // Then rescale valid values (overwrites the valid entries that were just set)
+            x_sub(k).set(valid,x_sub(k)/m_sub(k));
           });
         }
       });
@@ -432,12 +431,11 @@ rescale_masked_fields (const Field& x, const Field& mask) const
             const int k = (idx / dim3) % dim2;
             const int l =  idx % dim3;
             auto x_sub = ekat::subview(x_view,icol,j,k);
-            auto masked = m_sub(l) > mask_threshold;
-
-            if (masked.any()) {
-              x_sub(l).set(masked,x_sub(l)/m_sub(l));
-            }
-            x_sub(l).set(!masked,fill_val);
+            auto valid = m_sub(l) > mask_threshold;
+            // First set invalid values to fill_val
+            x_sub(l).set(!valid,fill_val);
+            // Then rescale valid values (overwrites the valid entries that were just set)
+            x_sub(l).set(valid,x_sub(l)/m_sub(l));
           });
         }
       });
