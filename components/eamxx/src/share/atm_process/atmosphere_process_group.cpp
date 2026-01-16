@@ -154,6 +154,7 @@ void AtmosphereProcessGroup::set_grids (const std::shared_ptr<const GridsManager
   // rule, in case of sequential splitting: if an atm proc requires a
   // field that is computed by a previous atm proc in the group, that
   // field is not exposed as a required field of the group.
+  const bool seq_splitting = m_group_schedule_type==ScheduleType::Sequential;
   for (auto& atm_proc : m_atm_processes) {
     atm_proc->set_grids(grids_manager);
 
@@ -161,13 +162,13 @@ void AtmosphereProcessGroup::set_grids (const std::shared_ptr<const GridsManager
     for (const auto& ap_req : atm_proc->get_field_requests()) {
       bool already_computed = has_computed_field(ap_req.fid);
       auto& req = m_field_requests.emplace_back(ap_req);
-      if (req.usage & Required and already_computed)
+      if (seq_splitting and req.usage & Required and already_computed)
         req.usage = Computed;
     }
     for (const auto& ap_req : atm_proc->get_group_requests()) {
       bool already_computed = has_computed_group(ap_req.name,ap_req.grid);
       auto& req = m_group_requests.emplace_back(ap_req);
-      if (req.usage & Required and already_computed)
+      if (seq_splitting and req.usage & Required and already_computed)
         req.usage = Computed;
     }
   }
