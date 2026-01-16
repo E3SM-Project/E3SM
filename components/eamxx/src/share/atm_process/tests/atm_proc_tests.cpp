@@ -311,7 +311,7 @@ TEST_CASE ("subcycling") {
   ap_sub->set_grids(gm);
 
   // Create fields (should be just one) and set it in the atm procs
-  for(const auto& req : ap->get_required_field_requests()) {
+  for(const auto& req : ap->get_field_requests()) {
     Field f(req.fid);
     f.allocate_view();
     f.deep_copy(0);

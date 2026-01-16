@@ -8,9 +8,10 @@
 namespace scream {
 
 enum RequestType {
-  Required,
-  Computed,
-  Updated   // For convenience, triggers Required+Computed
+  Invalid  = 0,  // To spot if a request was not set correctly
+  Required = 1,
+  Computed = 2,
+  Updated  = 3,  // For convenience, triggers Required+Computed
 };
 
 // Whether a tracer should be advected by both Dynamics
@@ -68,8 +69,10 @@ struct GroupRequest {
   // Main parts of a group request
   std::string name;                  // Group name
   std::string grid;                  // Grid name
-  int pack_size;                     // Request an allocation that can accomodate Pack<Real,pack_size>
+  int pack_size = 1;                 // Request an allocation that can accomodate Pack<Real,pack_size>
   MonolithicAlloc monolithic_alloc;  // Whether the group should be allocated as a single n+1 dimensional field
+
+  RequestType usage = RequestType::Invalid; // Whether we will need the group for read, write, or read/write
 };
 
 // In order to use GroupRequest in std sorted containers (like std::set),
@@ -179,12 +182,14 @@ struct FieldRequest {
 
   // Data
   FieldIdentifier           fid;
-  int                       pack_size;
+  int                       pack_size = 1;
   std::list<std::string>    groups;
   SubviewInfo               subview_info;
   std::string               parent_name;
   bool                      incomplete = false;
   std::string               calling_process = "UNKNOWN";
+
+  RequestType usage = RequestType::Invalid; // Whether we will need the group for read, write, or read/write
 };
 
 // In order to use FieldRequest in std sorted containers (like std::set),

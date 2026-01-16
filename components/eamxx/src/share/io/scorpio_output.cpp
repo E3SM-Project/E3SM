@@ -1006,7 +1006,7 @@ process_requested_fields()
   // Helper lambda that initializes a diagnostic
   auto init_diag = [&](const std::shared_ptr<AtmosphereDiagnostic>& diag) {
     // Set inputs in the diag
-    for (const auto& freq : diag->get_required_field_requests()) {
+    for (const auto& freq : diag->get_field_requests()) {
       const auto& dep_name = freq.fid.name();
 
       auto dep = fm_model->get_field(dep_name);
@@ -1102,7 +1102,7 @@ process_requested_fields()
         }
         // Add its deps to the list of fields to process (if not already in fm_model)
         bool deps_met = true;
-        for (const auto& req : diag->get_required_field_requests()) {
+        for (const auto& req : diag->get_field_requests()) {
           if (not fm_model->has_field(req.fid.name())) {
             deps_met = false;
             add_these.insert(req.fid.name());

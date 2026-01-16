@@ -82,7 +82,7 @@ TEST_CASE ("diagnostics") {
   diag_sum->set_grids(gm);
 
   std::map<std::string,Field> input_fields;
-  for (const auto& req : diag_sum->get_required_field_requests()) {
+  for (const auto& req : diag_sum->get_field_requests()) {
     Field f(req.fid);
     f.allocate_view();
     f.get_header().get_tracking().update_time_stamp(t0);
