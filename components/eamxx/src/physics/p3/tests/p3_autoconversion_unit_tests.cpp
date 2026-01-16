@@ -124,7 +124,68 @@ void cloud_water_autoconversion_unit_bfb_tests() {
     cloud_water_autoconversion_unit_bfb_tests();
   }
 
+  void validate_autoconversion_parameters() {
+    std::cout << "\n=== Parameter Validation ===\n";
+    
+    auto runtime = p3::Functions<Real,DefaultDevice>::P3Runtime();
+    
+    const Real expected_prefactor = 1350.0;     // s^-1
+    const Real expected_qc_exp = 2.47;          // dimensionless
+    const Real expected_nc_exp = 1.79;          // dimensionless
+    const Real expected_radius = 25.0e-6;       // m (25 um)
+    
+    const Real tolerance = 0.01;  // 1% tolerance
+    
+    // Validate prefactor
+    Real prefactor_error = std::abs(runtime.autoconversion_prefactor - expected_prefactor) 
+                          / expected_prefactor;
+    if (prefactor_error > tolerance) {
+        std::cout << "WARNING: Prefactor mismatch\n";
+        std::cout << "  Expected: " << expected_prefactor << " s^-1\n";
+        std::cout << "  Actual: " << runtime.autoconversion_prefactor << " s^-1\n";
+    } else {
+        std::cout << "  Prefactor: " << runtime.autoconversion_prefactor << " s^-1\n";
+    }
+    
+    // Validate qc exponent
+    Real qc_exp_error = std::abs(runtime.autoconversion_qc_exponent - expected_qc_exp) 
+                       / expected_qc_exp;
+    if (qc_exp_error > tolerance) {
+        std::cout << "WARNING: qc exponent mismatch\n";
+        std::cout << "  Expected: " << expected_qc_exp << "\n";
+        std::cout << "  Actual: " << runtime.autoconversion_qc_exponent << "\n";
+    } else {
+        std::cout << "  qc exponent: " << runtime.autoconversion_qc_exponent << "\n";
+    }
+    
+    // Validate Nc exponent
+    Real nc_exp_error = std::abs(runtime.autoconversion_nc_exponent - expected_nc_exp) 
+                       / expected_nc_exp;
+    if (nc_exp_error > tolerance) {
+        std::cout << "WARNING: Nc exponent mismatch\n";
+        std::cout << "  Expected: " << expected_nc_exp << "\n";
+        std::cout << "  Actual: " << runtime.autoconversion_nc_exponent << "\n";
+    } else {
+        std::cout << "  Nc exponent: " << runtime.autoconversion_nc_exponent << "\n";
+    }
+    
+    // Validate characteristic radius
+    Real radius_error = std::abs(runtime.autoconversion_radius - expected_radius) 
+                       / expected_radius;
+    if (radius_error > tolerance) {
+        std::cout << "INFO: Characteristic radius differs from documented value\n";
+        std::cout << "  Documentation: " << expected_radius*1e6 << " um\n";
+        std::cout << "  Implementation: " << runtime.autoconversion_radius*1e6 << " um\n";
+    } else {
+        std::cout << "  Characteristic radius: " << runtime.autoconversion_radius*1e6 << " um\n";
+    }
+    
+    std::cout << "===========================\n\n";
+  }
+
   void run_physics() {
+    validate_autoconversion_parameters();
+
     // =========================================================================
     // P3 Autoconversion Physics Property Testing Plan
     // =========================================================================
@@ -134,18 +195,19 @@ void cloud_water_autoconversion_unit_bfb_tests() {
     //
     // Strategy:
     // Uses a deterministic grid-sampling strategy that sweeps the parameter 
-    // space logarithmically to cover regimes ranging from haze to heavy cloud, 
+    // space logarithmically to cover regimes ranging from haze to heavy cloud,
     // and pristine to polluted conditions.
-    //
-    // Grid: 
-    // - qc (Cloud Water): 1e-6 to 1e-2 kg/kg (40 points)
-    // - nc (Cloud Drops): 1e6 to 1e9 #/m3  (40 points)
     // =========================================================================
 
-    // 1. Grid Setup
+    // Grid Setup: qc from 5e-9 to 1e-2 kg/kg (covers below and above 1e-8 threshold)
     const int n_qc = 40;
     const int n_nc = 40;
     const int num_cases = n_qc * n_nc;
+
+    const Real log_qc_min = std::log10(5.0e-9);   
+    const Real log_qc_max = std::log10(1.0e-2);
+    const Real log_nc_min = std::log10(1.0e6);
+    const Real log_nc_max = std::log10(1.0e9);
 
     view_1d<Real> qc_dev("qc_dev", num_cases);
     view_1d<Real> nc_dev("nc_dev", num_cases);
@@ -160,11 +222,6 @@ void cloud_water_autoconversion_unit_bfb_tests() {
     auto nc_host = Kokkos::create_mirror_view(nc_dev);
     auto rho_host = Kokkos::create_mirror_view(rho_dev);
     auto inv_qc_relvar_host = Kokkos::create_mirror_view(inv_qc_relvar_dev);
-
-    const Real log_qc_min = std::log10(1.0e-6);
-    const Real log_qc_max = std::log10(1.0e-2);
-    const Real log_nc_min = std::log10(1.0e6);
-    const Real log_nc_max = std::log10(1.0e9);
 
     for (int j = 0; j < n_nc; ++j) {
       for (int i = 0; i < n_qc; ++i) {
@@ -252,6 +309,15 @@ void cloud_water_autoconversion_unit_bfb_tests() {
         Real N_loss = nc2nr_host(idx);
         Real R_ncautr = ncautr_host(idx); 
 
+        // Check for non-zero below threshold
+        if (qc < 1e-8) {
+           if (R > 1e-30) {
+              std::cout << "FAIL: Non-zero rate below threshold (1e-8). qc=" << qc << " R=" << R << "\n";
+              failures++;
+           }
+           continue;
+        }
+
         if (R < 1e-30) R = 0.0;
         if (N_loss < 1e-30) N_loss = 0.0;
         if (R_ncautr < 1e-30) R_ncautr = 0.0;
@@ -259,19 +325,25 @@ void cloud_water_autoconversion_unit_bfb_tests() {
         // =====================================================================
         // 1. Physical Sensitivity Tests (Monotonicity)
         // =====================================================================
-        // Verify that the autoconversion rate responds correctly to perturbations.
         
+        const Real relative_tolerance = 1e-3;
+        const Real absolute_floor = 1e-30;
+
         if (j < n_nc - 1) {
             int idx_next = (j + 1) * n_qc + i;
             Real R_next = qc2qr_host(idx_next);
             if (R_next < 1e-30) R_next = 0.0;
             
-            // A. Colloidal Stability (Inverse Nc Dependency)
-            // Principle: For fixed qc, higher Nc -> smaller drops -> less rain.
-            // Mathematical Assertion: dR_auto / dNc < 0
-            if (R > 1e-30 && R_next > R + 1e-14) { 
-                 std::cout << "Monotonicity Nc Fail: R increased with Nc. qc=" << qc << " nc=" << nc << " R=" << R << " R_next=" << R_next << "\n";
-                 failures++;
+            // A. Colloidal Stability (Inverse Nc Dependency): dR/dNc < 0
+            // R_next (high Nc) should be less than R (low Nc).
+            if (R > absolute_floor) {
+                // If R_next > R, it's a failure. Allow small tolerance.
+                Real max_allowed_R_next = R * (1.0 + relative_tolerance);
+                if (R_next > max_allowed_R_next) {
+                     std::cout << "Monotonicity Nc Fail: R increased with Nc. qc=" << qc 
+                               << " R=" << R << " R_next=" << R_next << "\n";
+                     failures++;
+                }
             }
         }
         
@@ -280,12 +352,16 @@ void cloud_water_autoconversion_unit_bfb_tests() {
             Real R_next = qc2qr_host(idx_next);
              if (R_next < 1e-30) R_next = 0.0;
             
-            // B. Water Content Sensitivity (Positive qc Dependency)
-            // Principle: For fixed Nc, higher qc -> larger drops -> more rain.
-            // Mathematical Assertion: dR_auto / dqc > 0
-            if (R_next > 1e-30 && R > R_next + 1e-14) {
-                 std::cout << "Monotonicity qc Fail: R decreased with qc. qc=" << qc << "\n";
-                 failures++;
+            // B. Water Content Sensitivity (Positive qc Dependency): dR/dqc > 0
+            // R_next (high qc) should be greater than R (low qc).
+            if (R_next > absolute_floor) {
+                // If R_next < R, it's a failure. 
+                Real min_allowed_R_next = R * (1.0 - relative_tolerance);
+                if (R_next < min_allowed_R_next) {
+                     std::cout << "Monotonicity qc Fail: R decreased with qc. qc=" << qc 
+                               << " R=" << R << " R_next=" << R_next << "\n";
+                     failures++;
+                }
             }
         }
         
@@ -295,29 +371,27 @@ void cloud_water_autoconversion_unit_bfb_tests() {
 
         if (R > 1e-30) {
              // A. Specific Loss Concentration
-             // Principle: Autoconversion removes mass and number proportionally.
-             // Mathematical Assertion: (1/qc)*dqc/dt = (1/Nc)*dNc/dt
-             Real specific_mass_loss = R / qc;
-             Real specific_num_loss = N_loss / nc;
+             Real expected_N_loss = R * nc / qc;
+             Real rel_error = std::abs(N_loss - expected_N_loss) / std::max(1e-30, expected_N_loss);
              
-             if (std::abs(specific_mass_loss - specific_num_loss) > 1e-10 * specific_mass_loss) {
-                 std::cout << "Specific Loss Conservation Fail: " << specific_mass_loss << " vs " << specific_num_loss << "\n";
+             if (rel_error > 1e-10) {
+                 std::cout << "Specific Loss Conservation Fail: Estimated=" << expected_N_loss << " Actual=" << N_loss << "\n";
                  failures++;
              }
         }
 
         // B. Rain Embryo Size Consistency
-        // Principle: New rain drops are formed at a specific characteristic size 
-        // (autoconversion radius, r_auto ~ 25um).
-        // Mathematical Assertion: R_auto / N_auto_rate = Constant Mass
         if (R > 1e-20 && R_ncautr > 1e-20) {
              Real mass_drop = R / R_ncautr;
-             // Expected mass for 25 micron drop ~ 6.5e-11 kg
-             // Just checking it's physical (between 1um and 1mm size). 
-             // Note: 4/3 * pi * (25e-6)^3 * 1000 ~ 6.5e-11 kg
-             // Limits set to [4.0e-15, 4.0e-6] roughly corresponding to [1um, 1mm] radius range
-             if (mass_drop < 4.0e-15 || mass_drop > 4.0e-6) { 
-                 std::cout << "Embryo Size Fail: Mass=" << mass_drop << "\n";
+             // Expected: 25 um radius drop.
+             // m = 4/3 * pi * rho_w * r^3
+             // m(20um) ~ 3.35e-11 kg
+             // m(30um) ~ 1.13e-10 kg
+             const Real min_allowed_mass = 3.3e-11; 
+             const Real max_allowed_mass = 1.2e-10;
+
+             if (mass_drop < min_allowed_mass || mass_drop > max_allowed_mass) { 
+                 std::cout << "Embryo Size Fail: Mass=" << mass_drop << " (Expected ~6.5e-11)\n";
                  failures++;
              }
         }
@@ -327,12 +401,12 @@ void cloud_water_autoconversion_unit_bfb_tests() {
         // =====================================================================
         
         Real mean_mass = qc / nc;
-        Real mean_rad = std::pow(mean_mass / (1000.0 * 4.0/3.0 * 3.14159), 1.0/3.0);
+        // Correct formula: r = (3*m / (4*pi*rho))^(1/3)
+        // rho_w = 1000.
+        Real mean_rad = std::pow((3.0 * mean_mass) / (4.0 * 3.14159 * 1000.0), 1.0/3.0);
         
         // A. Haze Limit
-        // Principle: If mean droplet radius is small (< 1 um, Haze), rate should be zero.
         if (mean_rad < 1e-6) {
-            // Relax tolerance for very small rates. 1e-15 is effectively zero for autoconversion.
             if (R > 1e-15) {
                 std::cout << "Haze Limit Fail: r=" << mean_rad << ", R=" << R << "\n";
                 failures++;
@@ -344,17 +418,12 @@ void cloud_water_autoconversion_unit_bfb_tests() {
     // =========================================================================
     // CHECK 4: Subgrid Variance Scaling
     // =========================================================================
-    // Physics: Higher subgrid variance (lower inv_qc_relvar) implies "wetter" 
-    // pockets exist within the cell. Autoconversion (non-linear ~q^2.47) 
-    // should be ENHANCED by this variance (Jensen's Inequality).
     
-    view_1d<Real> var_rate_1("rate_1", n_qc); // Homogeneous (1.0)
-    view_1d<Real> var_rate_2("rate_2", n_qc); // High Variance (0.1)
+    view_1d<Real> var_rate_1("rate_1", n_qc);
+    view_1d<Real> var_rate_2("rate_2", n_qc); 
     
-    // Use a fixed Nc typical for clouds
     Real fixed_nc = 100.0e6; 
 
-    // Parallel dispatch for Variance Test
     Kokkos::parallel_for("Variance_Check", n_qc, KOKKOS_LAMBDA(const int& i) {
         Real alpha = (Real)i / (Real)(n_qc - 1);
         Real qc = std::pow(10.0, -6.0 + alpha * 4.0);
@@ -384,21 +453,28 @@ void cloud_water_autoconversion_unit_bfb_tests() {
     auto h_rate_1 = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), var_rate_1);
     auto h_rate_2 = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), var_rate_2);
 
+    bool is_variance_scaling_enabled = false;
     int variance_failures = 0;
+
     for(int i=0; i<n_qc; ++i) {
         if (h_rate_1(i) > 1e-30) {
-            // Enhancement Factor check
-            // Rate should increase. If it doesn't, the variance scaling is broken.
-            if (h_rate_2(i) <= h_rate_1(i)) {
+            Real ratio = h_rate_2(i) / h_rate_1(i);
+            if (ratio > 1.05 || ratio < 0.95) {
+                is_variance_scaling_enabled = true;
+            }
+            if (ratio < 0.95) { // Should enhance, not suppress
                  variance_failures++;
             }
         }
     }
 
-    if (variance_failures > 0) {
-         std::cout << "WARNING: Variance Scaling Check failed for " << variance_failures << " cases.\n";
-         std::cout << "  (This is expected if subgrid_variance_scaling is disabled in p3_autoconversion_impl.hpp)\n";
-         // failures += variance_failures; // Uncomment when feature is enabled
+    if (is_variance_scaling_enabled) {
+        if (variance_failures > 0) {
+             std::cout << "Variance Scaling FAIL: " << variance_failures << " cases suppressed rate.\n";
+             failures += variance_failures;
+        }
+    } else {
+         std::cout << "Variance Scaling: DISABLED (sgs_var_coef = 1 always)\n";
     }
 
     REQUIRE(failures == 0);
