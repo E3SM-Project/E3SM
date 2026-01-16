@@ -1261,7 +1261,7 @@ subroutine  copy_aream_from_area(mbappid)
          ! this is hard to digest :(
          tagname = 'lat:lon:area:frac:mask'//C_NULL_CHAR
          ! TODO:  this should be called on the joint procs, not coupler only.
-         call component_exch_moab(comp, mphaid, mbaxid, 0, tagname, context_exch='doma')
+         call component_exch_moab(comp, mphaid, mbaxid, 'c2x', tagname, context_exch='doma')
          if (mbaxid .ge. 0 ) then   !  coupler pes only 
             ! copy aream from area in case atm_mesh
             call copy_aream_from_area(mbaxid)
@@ -1438,7 +1438,7 @@ subroutine  copy_aream_from_area(mbappid)
             ! also, frac, area,  masks has to come from ocean mpoid, not from domain file reader
             ! this is hard to digest :(
             tagname = 'lat:lon:area:frac:mask'//C_NULL_CHAR
-            call component_exch_moab(comp, mpoid, mboxid, 0, tagname, context_exch='domo')
+            call component_exch_moab(comp, mpoid, mboxid, 'c2x', tagname, context_exch='domo')
          endif 
 
 !!!!!!!!!!! OCEAN 2nd COPY
@@ -1706,7 +1706,7 @@ subroutine  copy_aream_from_area(mbappid)
             endif
          endif
          tagname = 'lat:lon:area:frac:mask'//C_NULL_CHAR
-         call component_exch_moab(comp, mlnid, mblxid, 0, tagname, context_exch='doml')
+         call component_exch_moab(comp, mlnid, mblxid, 'c2x', tagname, context_exch='doml')
          if (mblxid > 0) then ! on coupler pes only
             call copy_aream_from_area(mblxid)
          endif
@@ -1862,7 +1862,7 @@ subroutine  copy_aream_from_area(mbappid)
             ! also, frac, area,  masks has to come from ice MPSIID , not from domain file reader
             ! this is hard to digest :(
             tagname = 'lat:lon:area:frac:mask'//C_NULL_CHAR
-            call component_exch_moab(comp, MPSIID, mbixid, 0, tagname, context_exch='domi')
+            call component_exch_moab(comp, MPSIID, mbixid, 'c2x', tagname, context_exch='domi')
          endif 
 #ifdef MOABDEBUG
   !      debug test
@@ -1957,7 +1957,7 @@ subroutine  copy_aream_from_area(mbappid)
          endif
 
          tagname = 'area:lon:lat:frac:mask'//C_NULL_CHAR
-         call component_exch_moab(comp, mrofid, mbrxid, 0, tagname, context_exch='domr')
+         call component_exch_moab(comp, mrofid, mbrxid, 'c2x', tagname, context_exch='domr')
          ! copy aream from area in all cases
          ! initialize aream from area; it may have different values in the end, or reset again
          if (mbrxid > 0) then ! on coupler pes only
@@ -1993,8 +1993,9 @@ subroutine  copy_aream_from_area(mbappid)
     ! send tags (fields) from component to coupler or from coupler to component
 
     type(component_type)     , intent(in)           :: comp
-    ! direction 0 is from component to coupler; 1 is from coupler to component
-    integer,                   intent(in)           :: mbAPPid1, mbAppid2, direction
+    ! direction 'c2x' is from component to coupler; 'x2c' is from coupler to component
+    integer,                   intent(in)           :: mbAPPid1, mbAppid2
+    character(len=*)         , intent(in)           :: direction
     character(CXX)           , intent(in)           :: fields
     character(len=*)        ,  intent(in), optional :: context_exch
 
@@ -2002,7 +2003,7 @@ subroutine  copy_aream_from_area(mbappid)
     integer :: id_join, source_id, target_id, ierr
     integer :: mpicom_join
     character(CXX)              :: tagname
-    character*100 outfile, wopts, lnum, dir
+    character*100 outfile, wopts, lnum
 
   ! how to get mpicomm for joint comp + coupler
     id_join = comp%cplcompid
@@ -2010,20 +2011,20 @@ subroutine  copy_aream_from_area(mbappid)
 !
     tagName = trim(fields)//C_NULL_CHAR
 
-    if (direction .eq. 0) then
+    if (direction .eq. 'c2x') then
        source_id = comp%compid
        target_id = comp%cplcompid
-    else ! direction eq 1
+    else ! direction eq 'x2c'
        source_id = comp%cplcompid
        target_id = comp%compid
     endif
     ! for atm, add 200 to component side, because we will involve always the point cloud
     ! we are not supporting anymore the spectral case, at least for the time being
     ! we need to fix fv-cgll projection first
-    if (comp%oneletterid == 'a' .and. direction .eq. 0 ) then
+    if (comp%oneletterid == 'a' .and. direction .eq. 'c2x' ) then
        source_id = source_id + 200
     endif
-    if (comp%oneletterid == 'a' .and. direction .eq. 1 ) then
+    if (comp%oneletterid == 'a' .and. direction .eq. 'x2c' ) then
        target_id = target_id + 200
     endif
     if (mbAPPid1 .ge. 0) then !  we are on the sending pes
@@ -2049,22 +2050,17 @@ subroutine  copy_aream_from_area(mbappid)
     endif
     
 #ifdef MOABDEBUG
-    if (direction .eq. 0 ) then
-       dir = 'c2x'
-    else
-       dir = 'x2c'
-    endif
     write(lnum,"(I0.2)") num_moab_exports
     if (seq_comm_iamroot(CPLID) ) then
-       write(logunit,'(A)') subname//' '//comp%ntype//' at moab count '//trim(lnum)//' called in direction '//trim(dir)//' for fields '//trim(tagname)
+       write(logunit,'(A)') subname//' '//comp%ntype//' at moab count '//trim(lnum)//' called in direction '//trim(direction)//' for fields '//trim(tagname)
     endif
     if (mbAPPid2 .ge. 0 ) then !  we are on receiving pes, for sure
       ! number_proj = number_proj+1 ! count the number of projections
       
       if (present(context_exch)) then
-         outfile = comp%ntype//'_'//trim(context_exch)//'_'//trim(dir)//'_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+         outfile = comp%ntype//'_'//trim(context_exch)//'_'//trim(direction)//'_'//trim(lnum)//'.h5m'//C_NULL_CHAR
       else
-         outfile = comp%ntype//'_'//trim(dir)//'_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+         outfile = comp%ntype//'_'//trim(direction)//'_'//trim(lnum)//'.h5m'//C_NULL_CHAR
       endif
       wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
       ierr = iMOAB_WriteMesh(mbAPPid2, trim(outfile), trim(wopts))

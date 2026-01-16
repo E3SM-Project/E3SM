@@ -780,7 +780,7 @@ subroutine component_init_areacor_moab (comp, samegrid, mbccid, mbcxid, seq_flds
       tagname='aream'//C_NULL_CHAR
       ! bring on the comp side the aream from maps
       ! (it is either computed by mapping routine or read from mapping files)
-      call component_exch_moab(comp(1), mbcxid, mbccid, 1, tagname, context_exch='aream')
+      call component_exch_moab(comp(1), mbcxid, mbccid, 'x2c', tagname, context_exch='aream')
 
       ! For only component pes
       if (comp(1)%iamin_compid) then
@@ -889,7 +889,7 @@ subroutine component_init_areacor_moab (comp, samegrid, mbccid, mbcxid, seq_flds
 
       endif
        ! send data to coupler exchange ? everything, not only fluxes ?
-      call component_exch_moab(comp(1), mbccid, mbcxid, 0, seq_flds_c2x_fields, context_exch='areacor')
+      call component_exch_moab(comp(1), mbccid, mbcxid, 'c2x', seq_flds_c2x_fields, context_exch='areacor')
    endif
 
   end subroutine component_init_areacor_moab
