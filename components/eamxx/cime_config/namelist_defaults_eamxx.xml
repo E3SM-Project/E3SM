@@ -274,6 +274,13 @@ be lost if SCREAM_HACK_XML is not enabled.
       <apply_tendencies type="logical" doc="flag to apply ZM tendencies or not">true</apply_tendencies>
     </zm>
 
+    <!-- Gravity Wave Drag -->
+    <gw inherit="atm_proc_base">
+      <use_gw_convect type="logical" doc="flag for convective GWD">false</use_gw_convect>
+      <use_gw_frontal type="logical" doc="flag for frontal GWD">false</use_gw_frontal>
+      <use_gw_orogrph type="logical" doc="flag for orographic GWD">false</use_gw_orogrph>
+    </gw>
+
     <!-- Basic options for each mam4 atm process -->
     <mam4_atm_proc_base inherit="atm_proc_base">
       <create_fields_interval_checks type="logical" doc="Create field interval checks for all fields that are computed and requested in mam4xx." >false</create_fields_interval_checks>
