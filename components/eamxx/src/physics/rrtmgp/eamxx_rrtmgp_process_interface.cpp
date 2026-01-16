@@ -614,8 +614,6 @@ void RRTMGPRadiation::run_impl (const double dt) {
   auto d_dtau105 = get_field_out("dtau105").get_view<Real**>();
   auto d_sunlit = get_field_out("sunlit_mask").get_view<Real*>();
 
-  Kokkos::deep_copy(d_dtau067,0.0);
-  Kokkos::deep_copy(d_dtau105,0.0);
   // Outputs for AeroCom cloud-top diagnostics
   auto d_T_mid_at_cldtop = get_field_out("T_mid_at_cldtop").get_view<Real *>();
   auto d_p_mid_at_cldtop = get_field_out("p_mid_at_cldtop").get_view<Real *>();
@@ -643,6 +641,11 @@ void RRTMGPRadiation::run_impl (const double dt) {
   auto update_rad = scream::rrtmgp::radiation_do(m_rad_freq_in_steps, ts.get_num_steps());
 
   if (update_rad) {
+    // Init these to zero inside the update_rad conditional
+    // TODO why do we need this anyway???
+    // TODO figure out a way to get rid of this!!!
+    Kokkos::deep_copy(d_dtau067,0.0);
+    Kokkos::deep_copy(d_dtau105,0.0);
     // On each chunk, we internally "reset" the GasConcs object to subview the concs 3d array
     // with the correct ncol dimension. So let's keep a copy of the original (ref-counted)
     // array, to restore at the end inside the m_gast_concs object.
