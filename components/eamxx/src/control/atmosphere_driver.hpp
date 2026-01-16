@@ -191,6 +191,10 @@ protected:
                               const std::string& file_name);
   void register_groups ();
 
+  template<typename T>
+  using strmap_t = std::map<std::string,T>;
+  using strvec_t = std::vector<std::string>;
+
   field_mgr_ptr                             m_field_mgr;
 
   std::shared_ptr<AtmosphereProcessGroup>   m_atm_process_group;
@@ -255,7 +259,7 @@ protected:
   // Current simulation casename
   std::string m_casename;
   // maps grid name to a vector of its initialized fields
-  std::map<std::string, std::vector<std::string>> m_fields_inited;
+  strmap_t<strvec_t> m_fields_inited;
 };
 
 }  // namespace control
