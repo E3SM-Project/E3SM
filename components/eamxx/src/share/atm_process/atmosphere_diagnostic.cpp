@@ -79,14 +79,14 @@ set_required_field_impl (const Field& f) {
   //       While we fix all diags, this method will at least
   //       throw an error if the pack size that the diag "requested"
   //       is not compatible with the field alloc props.
-  for (const auto& it : get_required_field_requests()) {
-    if (it.fid.name()==f.name()) {
+  for (const auto& r : get_field_requests()) {
+    if (r.fid.name()==f.name()) {
       const auto& fap = f.get_header().get_alloc_properties();
-      EKAT_REQUIRE_MSG (fap.get_largest_pack_size()>=it.pack_size,
+      EKAT_REQUIRE_MSG (fap.get_largest_pack_size()>=r.pack_size,
           "Error! Diagnostic input field cannot accommodate the needed pack size.\n"
           "  - diag field: " + m_diagnostic_output.name() + "\n"
           "  - input field: " + f.name() + "\n"
-          "  - requested pack size: " + std::to_string(it.pack_size) + "\n"
+          "  - requested pack size: " + std::to_string(r.pack_size) + "\n"
           "  - field max pack size: " + std::to_string(fap.get_largest_pack_size()) + "\n");
       break;
     }

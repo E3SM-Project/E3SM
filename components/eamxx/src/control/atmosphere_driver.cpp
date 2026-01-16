@@ -59,7 +59,7 @@ namespace control {
  *     Note: at this stage, atm procs that act on non-ref grid(s) should be able to create their
  *           remappers. The AD will *not* take care of remapping inputs/outputs of the process.
  *  4) Register all fields and all groups from all atm procs inside the field managers, and proceed
- *     to allocate fields. For more details, see the documentation in the share/field/field_request.hpp header.
+ *     to allocate fields. For more details, see the documentation in the share/data_managers/field_request.hpp header.
  *  5) Set all the fields into the atm procs. Before this point, all the atm procs had were the
  *     FieldIdentifiers for their input/output fields and FieldGroupInfo for their input/output
  *     field groups. Now, we pass actual Field and FieldGroup objects to them, where both the
@@ -84,7 +84,7 @@ namespace control {
  *  - for field                -> src/share/field/field.hpp
  *  - for field manager        -> src/share/data_managers/field_manager.hpp
  *  - for field groups         -> src/share/field/field_group.hpp
- *  - for field/group requests -> src/share/field/field_request.hpp
+ *  - for field/group requests -> src/share/data_managers/field_request.hpp
  *  - for grid                 -> src/share/grid/abstract_grid.hpp
  *  - for grid manager         -> src/share/data_managers/grids_manager.hpp
  *  - for atm proc             -> src/share/atm_process/atmosphere_process.hpp
@@ -547,16 +547,10 @@ void AtmosphereDriver::create_fields()
 
   // Register required/computed fields. By now, the processes should have
   // fully built the ids of their required/computed fields and groups
-  for (const auto& req : m_atm_process_group->get_required_field_requests()) {
+  for (const auto& req : m_atm_process_group->get_field_requests()) {
     m_field_mgr->register_field(req);
   }
-  for (const auto& req : m_atm_process_group->get_computed_field_requests()) {
-    m_field_mgr->register_field(req);
-  }
-  for (const auto& greq : m_atm_process_group->get_required_group_requests()) {
-    m_field_mgr->register_group(greq);
-  }
-  for (const auto& greq : m_atm_process_group->get_computed_group_requests()) {
+  for (const auto& greq : m_atm_process_group->get_group_requests()) {
     m_field_mgr->register_group(greq);
   }
 
@@ -566,26 +560,20 @@ void AtmosphereDriver::create_fields()
   // Set all the fields/groups in the processes. Input fields/groups will be handed
   // to the processes with const scalar type (const Real), to prevent them from
   // overwriting them (though, they can always cast away const...).
-  // IMPORTANT: set all computed fields/groups first, since the AtmProcGroup class
-  // needs to inspect those before deciding whether a required group is indeed
-  // required or not. E.g., in AtmProcGroup [A, B], if A computes group "blah" (or all
-  // the fields contained in group "blah"), then group "blah" is not a required
-  // group for the AtmProcGroup, even if it is a required group for B.
-  for (const auto& req : m_atm_process_group->get_computed_field_requests()) {
+  for (const auto& req : m_atm_process_group->get_field_requests()) {
     const auto& fid = req.fid;
-    m_atm_process_group->set_computed_field(m_field_mgr->get_field(fid));
+    const auto& f = m_field_mgr->get_field(fid);
+    if (req.usage & Required)
+      m_atm_process_group->set_required_field(f.get_const());
+    if (req.usage & Computed)
+      m_atm_process_group->set_computed_field(f);
   }
-  for (const auto& it : m_atm_process_group->get_computed_group_requests()) {
-    auto group = m_field_mgr->get_field_group(it.name, it.grid);
-    m_atm_process_group->set_computed_group(group);
-  }
-  for (const auto& it : m_atm_process_group->get_required_group_requests()) {
-    auto group = m_field_mgr->get_field_group(it.name, it.grid).get_const();
-    m_atm_process_group->set_required_group(group);
-  }
-  for (const auto& req : m_atm_process_group->get_required_field_requests()) {
-    const auto& fid = req.fid;
-    m_atm_process_group->set_required_field(m_field_mgr->get_field(fid).get_const());
+  for (const auto& req : m_atm_process_group->get_group_requests()) {
+    auto group = m_field_mgr->get_field_group(req.name, req.grid);
+    if (req.usage & Required)
+      m_atm_process_group->set_required_group(group.get_const());
+    if (req.usage & Computed)
+      m_atm_process_group->set_computed_group(group);
   }
 
   // Make atm procs create the proc-level tendency fields (if requested)
