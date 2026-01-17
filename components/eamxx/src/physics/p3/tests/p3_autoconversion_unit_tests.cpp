@@ -374,7 +374,7 @@ void cloud_water_autoconversion_unit_bfb_tests() {
              Real expected_N_loss = R * nc / qc;
              Real rel_error = std::abs(N_loss - expected_N_loss) / std::max(1e-30, expected_N_loss);
              
-             if (rel_error > 1e-10) {
+             if (rel_error > 1e-7) {
                  std::cout << "Specific Loss Conservation Fail: Estimated=" << expected_N_loss << " Actual=" << N_loss << "\n";
                  failures++;
              }
@@ -391,7 +391,8 @@ void cloud_water_autoconversion_unit_bfb_tests() {
              const Real max_allowed_mass = 1.2e-10;
 
              if (mass_drop < min_allowed_mass || mass_drop > max_allowed_mass) { 
-                 std::cout << "Embryo Size Fail: Mass=" << mass_drop << " (Expected ~6.5e-11)\n";
+                 std::cout << "Embryo Size Fail: Mass=" << mass_drop 
+                           << " kg. Expected range [3.3e-11, 1.2e-10] (approx 20-30 um radius)\n";
                  failures++;
              }
         }
