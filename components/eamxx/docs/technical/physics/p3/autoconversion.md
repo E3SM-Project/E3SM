@@ -46,7 +46,7 @@ $$ \left(\frac{\partial N_r}{\partial t}\right)_{auto} = \frac{\left(\frac{\part
 
 Where $ m_{drop}(r) = \frac{4}{3} \pi \rho_w r^3 $. In the code, this mass is related to `CONS2`: $ m_{drop}(r) = \text{CONS2} \times r^3 $, where $ \text{CONS2} = \frac{4\pi}{3}\rho_w $.
 
-## implementation Details
+## Implementation Details
 
 *   **Reference**: This logic is implemented in `cloud_water_autoconversion()` within [p3_autoconversion_impl.hpp](../../../../src/physics/p3/impl/p3_autoconversion_impl.hpp).
 *   **Thresholds**: The process is active only when $ q_c > 10^{-8} \, kg/kg $.
