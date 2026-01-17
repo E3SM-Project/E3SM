@@ -453,28 +453,38 @@ void cloud_water_autoconversion_unit_bfb_tests() {
     auto h_rate_1 = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), var_rate_1);
     auto h_rate_2 = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), var_rate_2);
 
-    bool is_variance_scaling_enabled = false;
-    int variance_failures = 0;
+    bool is_variance_scaling_active = false;
+    int variance_suppression_failures = 0;
+    const Real detect_eps = 1e-3; // Threshold to decide if logic is ON
+    const Real validate_eps = 1e-12; // Threshold for physical violation (suppression)
 
     for(int i=0; i<n_qc; ++i) {
         if (h_rate_1(i) > 1e-30) {
             Real ratio = h_rate_2(i) / h_rate_1(i);
-            if (ratio > 1.05 || ratio < 0.95) {
-                is_variance_scaling_enabled = true;
-            }
-            if (ratio < 0.95) { // Should enhance, not suppress
-                 variance_failures++;
+
+            // Detection: Do standard and variance rates differ?
+            if (std::abs(ratio - 1.0) > detect_eps) {
+                is_variance_scaling_active = true;
+                
+                // Validation: If active, is the rate suppressed? (Physical violation)
+                // Jensen's inequality for convex functions implies enhancement (ratio > 1).
+                // We fail if ratio < 1.0 (minus tolerance).
+                if (ratio < 1.0 - validate_eps) {
+                     variance_suppression_failures++;
+                }
             }
         }
     }
 
-    if (is_variance_scaling_enabled) {
-        if (variance_failures > 0) {
-             std::cout << "Variance Scaling FAIL: " << variance_failures << " cases suppressed rate.\n";
-             failures += variance_failures;
+    if (is_variance_scaling_active) {
+        if (variance_suppression_failures > 0) {
+             std::cout << "Variance Scaling FAIL: " << variance_suppression_failures << " cases suppressed rate (physical violation).\n";
+             failures += variance_suppression_failures;
+        } else {
+             std::cout << "Variance Scaling: ACTIVE and working correctly (rates enhanced).\n";
         }
     } else {
-         std::cout << "Variance Scaling: DISABLED (sgs_var_coef = 1 always)\n";
+         std::cout << "Variance Scaling: DISABLED (sgs_var_coef approx 1)\n";
     }
 
     REQUIRE(failures == 0);
