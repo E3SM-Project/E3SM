@@ -410,6 +410,8 @@ void cloud_water_autoconversion_unit_bfb_tests() {
         
         // A. Haze Limit
         if (mean_rad < 1e-6) {
+            // Implementation does not explicitly cut off based on radius (only qc < 1e-8).
+            // Rates are physically small (~1e-18) but not zero. Use 1e-15 tolerance.
             if (R > 1e-15) {
                 std::cout << "Haze Limit Fail: r=" << mean_rad << ", R=" << R << "\n";
                 failures++;
