@@ -1980,17 +1980,67 @@ subroutine  copy_aream_from_area(mbappid)
    end subroutine cplcomp_moab_Init
 
 
-  ! can exchange data between mesh in component and mesh on coupler.  Either way.
-  ! used in first hop of 2-hop
-  subroutine component_exch_moab(comp, mbAPPid1, mbAppid2, direction, fields, context_exch )
+  !===============================================================================
+  ! component_exch_moab
+  !
+  ! PURPOSE:
+  !   Exchange field data (tags) between component and coupler meshes using iMOAB.
+  !   This routine handles bidirectional data transfer in the first hop of a 2-hop
+  !   exchange pattern for MOAB-based coupling.
+  !
+  ! DESCRIPTION:
+  !   This subroutine coordinates MPI-based field data exchange between MOAB mesh
+  !   applications on component PEs and coupler PEs. It uses iMOAB's send/receive
+  !   infrastructure to transfer tagged data, manages communication buffers, and
+  !   provides optional timing and debugging capabilities.
+  !
+  ! FLOW:
+  !   1. Execute optional barrier timing
+  !   2. Start exchange and map timers
+  !   3. Determine source/target IDs based on direction (c2x or x2c)
+  !   4. Send field tags from source mesh application
+  !   5. Receive field tags at target mesh application
+  !   6. Free sender communication buffers
+  !   7. Stop map timer
+  !   8. Exchange infodata if provided
+  !   9. Stop exchange timer
+  !   10. Optional debug output (if MOABDEBUG defined)
+  !
+  ! ARGUMENTS:
+  !   comp              - component type containing MPI communicator info
+  !   mbAPPid1          - iMOAB application ID for first mesh (sender or receiver)
+  !   mbAppid2          - iMOAB application ID for second mesh (receiver or sender)
+  !   direction         - data flow direction: 'c2x' (component->coupler) or
+  !                       'x2c' (coupler->component)
+  !   fields            - colon-separated list of field names to exchange
+  !   context_exch      - optional context string for debugging output
+  !   infodata          - optional metadata exchange object
+  !   infodata_string   - optional string for infodata exchange
+  !   mpicom_barrier    - optional MPI communicator for barriers
+  !   run_barriers      - optional flag to enable/disable barriers
+  !   timer_barrier     - optional timer name for barrier timing
+  !   timer_comp_exch   - optional timer name for component exchange
+  !   timer_map_exch    - optional timer name for mapping exchange
+  !   timer_infodata_exch - optional timer name for infodata exchange
+  !
+  ! NOTES:
+  !   - For atmosphere component, component-side ID is adjusted by +200 to handle
+  !     point cloud representation
+  !   - Sender buffers are freed after data transfer to conserve memory
+  !   - Debug output writes mesh files when MOABDEBUG is defined
+  !
+  !===============================================================================
+  subroutine component_exch_moab(comp, mbAPPid1, mbAppid2, direction, fields, context_exch, &
+       infodata, infodata_string, mpicom_barrier, run_barriers, &
+       timer_barrier, timer_comp_exch, timer_map_exch, timer_infodata_exch)
 
    use iMOAB ,  only: iMOAB_SendElementTag, iMOAB_ReceiveElementTag, iMOAB_WriteMesh, iMOAB_FreeSenderBuffers
    use seq_comm_mct, only :  num_moab_exports ! for debugging
    use ISO_C_BINDING, only : C_NULL_CHAR
    use shr_kind_mod      , only :  CXX => shr_kind_CXX
+   use seq_infodata_mod, only: seq_infodata_exchange, seq_infodata_type
+   use t_drv_timers_mod
    !---------------------------------------------------------------
-    ! Description
-    ! send tags (fields) from component to coupler or from coupler to component
 
     type(component_type)     , intent(in)           :: comp
     ! direction 'c2x' is from component to coupler; 'x2c' is from coupler to component
@@ -1998,6 +2048,14 @@ subroutine  copy_aream_from_area(mbappid)
     character(len=*)         , intent(in)           :: direction
     character(CXX)           , intent(in)           :: fields
     character(len=*)        ,  intent(in), optional :: context_exch
+    type(seq_infodata_type) , intent(inout), optional :: infodata
+    character(len=*)        , intent(in), optional :: infodata_string
+    integer                 , intent(in), optional :: mpicom_barrier
+    logical                 , intent(in), optional :: run_barriers
+    character(len=*)        , intent(in), optional :: timer_barrier
+    character(len=*)        , intent(in), optional :: timer_comp_exch
+    character(len=*)        , intent(in), optional :: timer_map_exch
+    character(len=*)        , intent(in), optional :: timer_infodata_exch
 
     character(*), parameter :: subname = '(component_exch_moab)'
     integer :: id_join, source_id, target_id, ierr
@@ -2005,12 +2063,45 @@ subroutine  copy_aream_from_area(mbappid)
     character(CXX)              :: tagname
     character*100 outfile, wopts, lnum
 
-  ! how to get mpicomm for joint comp + coupler
+    !---------------------------------------------------------------------------
+    ! Optional barrier timing for performance analysis
+    !---------------------------------------------------------------------------
+    if (present(timer_barrier)) then
+       if (present(run_barriers)) then
+          if (run_barriers) then
+             call t_drvstartf (trim(timer_barrier))
+             call mpi_barrier(comp%mpicom_cplallcompid, ierr)
+             call t_drvstopf (trim(timer_barrier))
+          endif
+       endif
+    end if
+
+    !---------------------------------------------------------------------------
+    ! Start performance timers for component exchange and mapping
+    !---------------------------------------------------------------------------
+    if (present(timer_comp_exch)) then
+       if (present(mpicom_barrier)) then
+          call t_drvstartf (trim(timer_comp_exch), cplcom=.true., barrier=mpicom_barrier)
+       end if
+    end if
+
+    if (present(timer_map_exch)) then
+       call t_drvstartf (trim(timer_map_exch), barrier=comp%mpicom_cplcompid)
+    end if
+
+    !---------------------------------------------------------------------------
+    ! Get joint communicator spanning both component and coupler PEs
+    !---------------------------------------------------------------------------
     id_join = comp%cplcompid
     call seq_comm_getinfo(ID_join,mpicom=mpicom_join)
-!
+
+    ! Prepare tag name with C null terminator for iMOAB interface
     tagName = trim(fields)//C_NULL_CHAR
 
+    !---------------------------------------------------------------------------
+    ! Determine source and target IDs based on data flow direction
+    ! c2x: component to coupler, x2c: coupler to component
+    !---------------------------------------------------------------------------
     if (direction .eq. 'c2x') then
        source_id = comp%compid
        target_id = comp%cplcompid
@@ -2018,22 +2109,35 @@ subroutine  copy_aream_from_area(mbappid)
        source_id = comp%cplcompid
        target_id = comp%compid
     endif
-    ! for atm, add 200 to component side, because we will involve always the point cloud
-    ! we are not supporting anymore the spectral case, at least for the time being
-    ! we need to fix fv-cgll projection first
+
+    !---------------------------------------------------------------------------
+    ! Special handling for atmosphere: add 200 to component-side ID
+    ! This offset accounts for the point cloud representation used in
+    ! atmosphere physics (vs spectral dynamics). The +200 convention matches
+    ! the ATM_PHYS_CID offset used elsewhere in the coupler code.
+    !---------------------------------------------------------------------------
     if (comp%oneletterid == 'a' .and. direction .eq. 'c2x' ) then
        source_id = source_id + 200
     endif
     if (comp%oneletterid == 'a' .and. direction .eq. 'x2c' ) then
        target_id = target_id + 200
     endif
+
+    !---------------------------------------------------------------------------
+    ! Send field tags from source mesh application
+    ! Only PEs with valid mbAPPid1 participate in sending
+    !---------------------------------------------------------------------------
     if (mbAPPid1 .ge. 0) then !  we are on the sending pes
-       ! basically, use the initial partitioning
        ierr = iMOAB_SendElementTag(mbAPPid1, tagName, mpicom_join, target_id)
        if (ierr .ne. 0) then
           call shr_sys_abort(subname//' cannot send element tag: '//trim(tagName))
        endif
     endif
+
+    !---------------------------------------------------------------------------
+    ! Receive field tags at target mesh application
+    ! Only PEs with valid mbAPPid2 participate in receiving
+    !---------------------------------------------------------------------------
     if ( mbAPPid2 .ge. 0 ) then !  we are on receiving end
        ierr = iMOAB_ReceiveElementTag(mbAPPid2, tagName, mpicom_join, source_id)
        if (ierr .ne. 0) then
@@ -2041,28 +2145,77 @@ subroutine  copy_aream_from_area(mbappid)
        endif
     endif
 
-!     ! we can now free the sender buffers
+    !---------------------------------------------------------------------------
+    ! Free sender communication buffers to conserve memory
+    ! Important for large-scale runs to avoid memory buildup
+    !---------------------------------------------------------------------------
     if (mbAPPid1 .ge. 0) then
        ierr = iMOAB_FreeSenderBuffers(mbAPPid1, target_id)
        if (ierr .ne. 0) then
           call shr_sys_abort(subname//' cannot free sender buffers')
        endif
     endif
+
+    !---------------------------------------------------------------------------
+    ! Stop map exchange timer
+    !---------------------------------------------------------------------------
+    if (present(timer_map_exch)) then
+       call t_drvstopf (trim(timer_map_exch))
+    end if
+
+    !---------------------------------------------------------------------------
+    ! Exchange infodata (metadata) if provided
+    ! Infodata contains runtime configuration and state information
+    !---------------------------------------------------------------------------
+    if (present(timer_infodata_exch)) then
+       if (present(mpicom_barrier)) then
+          call t_drvstartf (trim(timer_infodata_exch), barrier=mpicom_barrier)
+       end if
+    end if
     
+    if (present(infodata) .and. present(infodata_string)) then
+       if (direction == 'c2x') then  ! component to coupler
+          if (comp%iamin_cplcompid) then
+             call seq_infodata_exchange(infodata, comp%cplcompid, trim(infodata_string))
+          end if
+       else  ! x2c: coupler to component
+          if (comp%iamin_cplallcompid) then
+             call seq_infodata_exchange(infodata, comp%cplallcompid, trim(infodata_string))
+          end if
+       endif
+    end if
+
+    if (present(timer_infodata_exch)) then
+       call t_drvstopf (trim(timer_infodata_exch))
+    end if
+
+    !---------------------------------------------------------------------------
+    ! Stop component exchange timer
+    !---------------------------------------------------------------------------
+    if (present(timer_comp_exch)) then
+       if (present(mpicom_barrier)) then
+          call t_drvstopf (trim(timer_comp_exch), cplcom=.true.)
+       end if
+    end if
+
+    !---------------------------------------------------------------------------
+    ! Debug output: write mesh files when MOABDEBUG is defined
+    ! Useful for visualizing data exchange and debugging coupling issues
+    !---------------------------------------------------------------------------
 #ifdef MOABDEBUG
     write(lnum,"(I0.2)") num_moab_exports
     if (seq_comm_iamroot(CPLID) ) then
        write(logunit,'(A)') subname//' '//comp%ntype//' at moab count '//trim(lnum)//' called in direction '//trim(direction)//' for fields '//trim(tagname)
     endif
+
+    ! Write received mesh data to HDF5 file for visualization/debugging
     if (mbAPPid2 .ge. 0 ) then !  we are on receiving pes, for sure
-      ! number_proj = number_proj+1 ! count the number of projections
-      
       if (present(context_exch)) then
          outfile = comp%ntype//'_'//trim(context_exch)//'_'//trim(direction)//'_'//trim(lnum)//'.h5m'//C_NULL_CHAR
       else
          outfile = comp%ntype//'_'//trim(direction)//'_'//trim(lnum)//'.h5m'//C_NULL_CHAR
       endif
-      wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
+      wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR
       ierr = iMOAB_WriteMesh(mbAPPid2, trim(outfile), trim(wopts))
       if (ierr .ne. 0) then
           call shr_sys_abort(subname//' cannot write file '// outfile)
