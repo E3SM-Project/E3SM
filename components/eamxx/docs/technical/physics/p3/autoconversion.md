@@ -94,7 +94,7 @@ We check that the derived number tendencies match their physical definitions.
 *   **Rain Embryo Mass**:
     The implicit mass of the newly formed rain drops is recovered from the ratio of mass tendency to number tendency:
     $$ m_{effective} = \frac{\left(\partial q_r / \partial t\right)}{\left(\partial N_r / \partial t\right)} $$
-    The test verifies that this mass corresponds to a drop size of roughly $20-30 \mu m$ (consistent with $r_{auto} = 25 \mu m$).
+    The test verifies that this mass corresponds **exactly to the characteristic radius $r_{auto}$ (25 $\mu m$) within a 1% tolerance**, confirming the configuration parameter is conserved.
 
 ### 4. Physical Limits
 

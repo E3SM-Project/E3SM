@@ -383,17 +383,18 @@ void cloud_water_autoconversion_unit_bfb_tests() {
         // B. Rain Embryo Size Consistency
         if (R > 1e-20 && R_ncautr > 1e-20) {
              Real mass_drop = R / R_ncautr;
-             // Expected: 25 um radius drop.
-             // m = 4/3 * pi * rho_w * r^3
-             // m(20um) ~ 3.35e-11 kg
-             // m(30um) ~ 1.13e-10 kg
-             const Real min_allowed_mass = 3.3e-11; 
-             const Real max_allowed_mass = 1.2e-10;
+             
+             // Check against specific 25 um radius used in P3 Constants
+             // mass = 4/3 * pi * rho_w * r^3
+             using C = scream::physics::Constants<Real>;
+             const Real r_expected = 25.0e-6; 
+             const Real expected_mass = (4.0/3.0) * C::Pi * 1000.0 * std::pow(r_expected, 3);
+             const Real tol = 0.01; // 1% tolerance
 
-             if (mass_drop < min_allowed_mass || mass_drop > max_allowed_mass) { 
-                 std::cout << "Embryo Size Fail: Mass=" << mass_drop 
-                           << " kg. Expected range [3.3e-11, 1.2e-10] (approx 20-30 um radius)\n";
-                 failures++;
+             if (std::abs(mass_drop - expected_mass) / expected_mass > tol) {
+                  std::cout << "Embryo Size Fail: Mass=" << mass_drop 
+                            << " kg. Expected ~" << expected_mass << " kg (25 um radius, 1% tolerance)\n";
+                  failures++;
              }
         }
         
