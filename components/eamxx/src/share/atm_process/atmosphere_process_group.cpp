@@ -160,13 +160,13 @@ void AtmosphereProcessGroup::set_grids (const std::shared_ptr<const GridsManager
 
     // Add inputs/outputs to the list of inputs of the group
     for (const auto& ap_req : atm_proc->get_field_requests()) {
-      bool already_computed = has_computed_field(ap_req.fid);
+      bool already_computed = has_field(ap_req.fid.name(),ap_req.fid.get_grid_name(),Computed);
       auto& req = m_field_requests.emplace_back(ap_req);
       if (seq_splitting and req.usage & Required and already_computed)
         req.usage = Computed;
     }
     for (const auto& ap_req : atm_proc->get_group_requests()) {
-      bool already_computed = has_computed_group(ap_req.name,ap_req.grid);
+      bool already_computed = has_group(ap_req.name,ap_req.grid,Computed);
       auto& req = m_group_requests.emplace_back(ap_req);
       if (seq_splitting and req.usage & Required and already_computed)
         req.usage = Computed;
@@ -268,12 +268,12 @@ setup_column_conservation_checks (const std::shared_ptr<MassAndEnergyConservatio
     // might be changed after the process has run. If no field used in the mass or energy calculate
     // is updated by this process, there is no need to run the check.
     const std::string phys_grid_name  = conservation_check->get_grid()->name();
-    const bool updates_internal_energy  = atm_proc->has_computed_field("T_mid", phys_grid_name);
-    const bool updates_kinetic_energy = atm_proc->has_computed_field("horiz_winds", phys_grid_name);
-    const bool updates_water_vapor    = atm_proc->has_computed_field("qv", phys_grid_name);
-    const bool updates_water_liquid   = atm_proc->has_computed_field("qc", phys_grid_name) ||
-                                        atm_proc->has_computed_field("qr", phys_grid_name);
-    const bool updates_water_ice      = atm_proc->has_computed_field("qi", phys_grid_name);
+    const bool updates_internal_energy  = atm_proc->has_field("T_mid", phys_grid_name,Computed);
+    const bool updates_kinetic_energy = atm_proc->has_field("horiz_winds", phys_grid_name,Computed);
+    const bool updates_water_vapor    = atm_proc->has_field("qv", phys_grid_name,Computed);
+    const bool updates_water_liquid   = atm_proc->has_field("qc", phys_grid_name,Computed) ||
+                                        atm_proc->has_field("qr", phys_grid_name,Computed);
+    const bool updates_water_ice      = atm_proc->has_field("qi", phys_grid_name,Computed);
     const bool mass_or_energy_is_updated = updates_internal_energy || updates_kinetic_energy ||
                                            updates_water_vapor   || updates_water_liquid ||
                                            updates_water_ice;
@@ -284,10 +284,10 @@ setup_column_conservation_checks (const std::shared_ptr<MassAndEnergyConservatio
 
     // Require that, if a process adds the conservation check, it also defines all
     // the boundary fluxes needed to compute the mass and energy tendencies.
-    const bool has_all_boundary_fluxes = atm_proc->has_computed_field("vapor_flux", phys_grid_name) &&
-                                         atm_proc->has_computed_field("water_flux", phys_grid_name) &&
-                                         atm_proc->has_computed_field("ice_flux",   phys_grid_name) &&
-                                         atm_proc->has_computed_field("heat_flux",  phys_grid_name);
+    const bool has_all_boundary_fluxes = atm_proc->has_field("vapor_flux", phys_grid_name,Computed) &&
+                                         atm_proc->has_field("water_flux", phys_grid_name,Computed) &&
+                                         atm_proc->has_field("ice_flux",   phys_grid_name,Computed) &&
+                                         atm_proc->has_field("heat_flux",  phys_grid_name,Computed);
     EKAT_REQUIRE_MSG(has_all_boundary_fluxes,
                      "Error! Process \"" + atm_proc->name() + "\" enables the mass "
                      "and energy conservation check, but does not define all "
@@ -464,199 +464,19 @@ void AtmosphereProcessGroup::finalize_impl (/* what inputs? */) {
 }
 
 void AtmosphereProcessGroup::
-set_required_field (const Field& f) {
-  if (m_group_schedule_type==ScheduleType::Parallel) {
-    // In parallel splitting, all required fields are *actual* inputs,
-    // and the base class impl is fine.
-    AtmosphereProcess::set_required_field(f);
-  }
-
-  // Find the first process that requires this group
-  const auto& fid = f.get_header().get_identifier();
-  int first_proc_that_needs_f = -1;
-  for (int iproc=0; iproc<m_group_size; ++iproc) {
-    if (m_atm_processes[iproc]->has_required_field(fid)) {
-      first_proc_that_needs_f = iproc;
-      break;
-    }
-  }
-
-  EKAT_REQUIRE_MSG (first_proc_that_needs_f>=0,
-    "Error! This atmosphere process does not require the input field.\n"
-    "    field id: " + f.get_header().get_identifier().get_id_string() + "\n"
-    "   atm process: " + this->name() + "\n"
-    "Something is wrong up the call stack. Please, contact developers.\n");
-
-  // Loop over all the fields in the FieldGroup (FG), and see if they are all computed
-  // by a previous process. If so, then this FG is not a "required" FG
-  // for this AtmosphereProcessGroup.
-  // NOTE: the case where the FG itself is computed by a previous atm proc
-  //       is already handled during `set_grids`
-  // NOTE: we still check also the groups computed by the previous procs,
-  //       in case they contain this field
-  bool computed = false;
-  for (int iproc=0; iproc<first_proc_that_needs_f; ++iproc) {
-    if (m_atm_processes[iproc]->has_computed_field(fid)) {
-      computed = true;
-      goto endloop;
-    }
-
-    // Check if this proc computes fn as part of another group
-    const auto& out_g = m_atm_processes[iproc]->get_groups_out();
-    for (const auto& g : out_g) {
-      if (g.grid_name()!=fid.get_grid_name()) {
-        continue;
-      }
-      for (const auto& fn : g.m_info->m_fields_names) {
-        if (fid.name()==fn) {
-          computed = true;
-          goto endloop;
-        }
-      }
-    }
-
-  }
-  // Yes, goto statement are not the prettiest C++ feature, but they allow to
-  // break from multiple nested loops without the need of several checks.
-endloop:
-  if (computed) {
-    // We compute the field *before* any atm proc that requires it. Simply set it
-    // in the atm procs that require it, without storing it as an input to this group.
-    set_required_field_impl(f);
-  } else {
-    // The field is *not* computed before the 1st atm proc that requires it. We can
-    // resort to the base class' version of 'set_required_field', which will store
-    // the field as a required field of the whole AtmProgGroup.
-    AtmosphereProcess::set_required_field(f);
-  }
-}
-
-void AtmosphereProcessGroup::
-set_required_group (const FieldGroup& group) {
-  if (m_group_schedule_type==ScheduleType::Parallel) {
-    // In parallel splitting, all required group are *actual* inputs,
-    // and the base class impl is fine.
-    AtmosphereProcess::set_required_group(group);
-  }
-
-  // Find the first process that requires this group
-  int first_proc_that_needs_group = -1;
-  for (int iproc=0; iproc<m_group_size; ++iproc) {
-    if (m_atm_processes[iproc]->has_required_group(group.m_info->m_group_name,group.grid_name())) {
-      first_proc_that_needs_group = iproc;
-      break;
-    }
-  }
-
-  EKAT_REQUIRE_MSG (first_proc_that_needs_group>=0,
-    "Error! This atmosphere process does not require the input group.\n"
-    "   group name: " + group.m_info->m_group_name + "\n"
-    "   grid name : " + group.grid_name() + "\n"
-    "   atm process: " + this->name() + "\n"
-    "Something is wrong up the call stack. Please, contact developers.\n");
-
-  // Loop over all the fields in the group, and see if they are all computed
-  // by a previous process. If so, then this group is not a "required" group
-  // for this group.
-  // NOTE: the case where the group itself is computed by a previous atm proc
-  // is already handled during `set_grids`
-  // NOTE: we still check also the groups computed by the previous procs,
-  //       in case they contain all the fields in this group.
-  std::set<std::string> computed;
-  for (const auto& it : group.m_individual_fields) {
-    const auto& fn = it.first;
-    const auto& fid = it.second->get_header().get_identifier();
-    for (int iproc=0; iproc<first_proc_that_needs_group; ++iproc) {
-      if (m_atm_processes[iproc]->has_computed_field(fid)) {
-        computed.insert(fid.name());
-        goto endloop;
-      }
-
-      // Check if this proc computes fn as part of another group
-      const auto& out_g = m_atm_processes[iproc]->get_groups_out();
-      for (const auto& g : out_g) {
-        if (g.grid_name()!=group.grid_name()) {
-          continue;
-        }
-        for (const auto& f : g.m_info->m_fields_names) {
-          if (f==fn) {
-            computed.insert(fn);
-            goto endloop;
-          }
-        }
-      }
-
-    }
-  // Yes, goto statement are not the prettiest C++ feature, but they allow to
-  // break from multiple nested loops without the need of several checks.
-endloop:
-    if (computed.size()==group.m_info->m_fields_names.size()) {
-      break;
-    }
-  }
-
-  if (computed.size()==group.m_info->m_fields_names.size()) {
-    // We compute all the fields in the group *before* any atm proc
-    // that requires this group. Simply set the group in those atm
-    // proc that require it, without storing it as an input to this group.
-    set_required_group_impl(group);
-  } else {
-    // There's at least one field of the group that is not computed
-    // before the 1st atm proc that requires this group. We can resort
-    // to the base class' version of 'set_required_group', which will store
-    // the group as a required field group of the whole AtmProgGroup.
-    AtmosphereProcess::set_required_group(group);
-  }
-}
-
-void AtmosphereProcessGroup::
-set_required_group_impl (const FieldGroup& group)
+set_group_impl (const FieldGroup& group)
 {
   for (auto atm_proc : m_atm_processes) {
-    if (atm_proc->has_required_group(group.m_info->m_group_name,group.grid_name())) {
-      atm_proc->set_required_group(group);
-    }
+    if (atm_proc->has_group(group.m_info->m_group_name,group.grid_name()))
+      atm_proc->set_group(group);
   }
 }
 
-void AtmosphereProcessGroup::
-set_computed_group_impl (const FieldGroup& group)
-{
-  for (auto atm_proc : m_atm_processes) {
-    if (atm_proc->has_computed_group(group.m_info->m_group_name,group.grid_name())) {
-      atm_proc->set_computed_group(group);
-    }
-    // In sequential scheduling, some groups may be computed by
-    // a process and used by the next one. In this case, the group
-    // may not figure as 'input' for the group, but we still
-    // need to set it in the processes that need it.
-    if (atm_proc->has_required_group(group.m_info->m_group_name,group.grid_name())) {
-      atm_proc->set_required_group(group.get_const());
-    }
-  }
-}
-
-void AtmosphereProcessGroup::set_required_field_impl (const Field& f) {
+void AtmosphereProcessGroup::set_field_impl (const Field& f) {
   const auto& fid = f.get_header().get_identifier();
   for (auto atm_proc : m_atm_processes) {
-    if (atm_proc->has_required_field(fid)) {
-      atm_proc->set_required_field(f);
-    }
-  }
-}
-
-void AtmosphereProcessGroup::set_computed_field_impl (const Field& f) {
-  const auto& fid = f.get_header().get_identifier();
-  for (auto atm_proc : m_atm_processes) {
-    if (atm_proc->has_computed_field(fid)) {
-      atm_proc->set_computed_field(f);
-    }
-    // In sequential scheduling, some fields may be computed by
-    // a process and used by the next one. In this case, the field
-    // does not figure as 'input' for the group, but we still
-    // need to set it in the processes that need it.
-    if (atm_proc->has_required_field(fid)) {
-      atm_proc->set_required_field(f.get_const());
+    if (atm_proc->has_field(fid.name(),fid.get_grid_name())) {
+      atm_proc->set_field(f);
     }
   }
 }
