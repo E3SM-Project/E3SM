@@ -71,7 +71,7 @@ public:
 protected:
 
   void compute_diagnostic_impl () override {
-    const auto& f_in  = get_field_in("my_f");
+    const auto& f_in  = get_field("my_f");
 
     const auto& t = f_in.get_header().get_tracking().get_time_stamp();
     const double dt = t - m_t_beg;

@@ -47,7 +47,7 @@ set_grids (const std::shared_ptr<const GridsManager> grids_manager)
 void FieldAtPressureLevel::
 initialize_impl (const RunType /*run_type*/)
 {
-  const auto& f = get_field_in(m_field_name);
+  const auto& f = get_field(m_field_name);
   const auto& fid = f.get_header().get_identifier();
 
   // Sanity checks
@@ -112,9 +112,9 @@ void FieldAtPressureLevel::compute_diagnostic_impl()
   using MemberType = typename KT::MemberType;
 
   //This is 2D source pressure
-  const Field& p_src = get_field_in(m_pressure_name);
+  const Field& p_src = get_field(m_pressure_name);
   const auto p_src_v = p_src.get_view<const Real**>();
-  const Field& f = get_field_in(m_field_name);
+  const Field& f = get_field(m_field_name);
 
   // The setup for interpolation varies depending on the rank of the input field:
   const int rank = f.rank();

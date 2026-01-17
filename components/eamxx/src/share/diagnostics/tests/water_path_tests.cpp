@@ -129,8 +129,7 @@ void run(std::mt19937_64& engine)
         input_fields.emplace(f.name(),f);
       }
       const auto& f = input_fields.at(req.fid.name());
-      diag->set_required_field(f.get_const());
-      REQUIRE_THROWS(diag->set_computed_field(f));
+      diag->set_field(f.get_const());
     }
     // Initialize the diagnostic
     diag->initialize(t0,RunType::Initial);

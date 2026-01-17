@@ -94,7 +94,7 @@ void run(std::mt19937_64& engine)
       Field f(req.fid);
       f.allocate_view();
       f.get_header().get_tracking().update_time_stamp(t0);
-      diag->set_required_field(f.get_const());
+      diag->set_field(f.get_const());
       input_fields.emplace(f.name(),f);
     }
 

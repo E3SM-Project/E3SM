@@ -241,14 +241,14 @@ void ConditionalSampling::set_grids(const std::shared_ptr<const GridsManager> gr
 void ConditionalSampling::initialize_impl(const RunType /*run_type*/) {
 
   if (m_input_f != "count") {
-    auto ifid = get_field_in(m_input_f).get_header().get_identifier();
+    auto ifid = get_field(m_input_f).get_header().get_identifier();
     FieldIdentifier d_fid(m_diag_name, ifid.get_layout().clone(), ifid.get_units(),
                           ifid.get_grid_name());
     m_diagnostic_output = Field(d_fid);
     m_diagnostic_output.allocate_view();
   } else {
     if (m_condition_f != "lev") {
-      auto ifid = get_field_in(m_condition_f).get_header().get_identifier();
+      auto ifid = get_field(m_condition_f).get_header().get_identifier();
       FieldIdentifier d_fid(m_diag_name, ifid.get_layout().clone(), ifid.get_units(),
                           ifid.get_grid_name());
       m_diagnostic_output = Field(d_fid);
@@ -289,7 +289,7 @@ void ConditionalSampling::initialize_impl(const RunType /*run_type*/) {
                    " - field name: " + ifid.name() + "\n"
                    " - field layout: " + ifid.get_layout().to_string() + "\n");
   } else {
-    const auto cfid = get_field_in(m_condition_f).get_header().get_identifier();
+    const auto cfid = get_field(m_condition_f).get_header().get_identifier();
     
     // check that m_input_f and m_condition_f have the same layout
     EKAT_REQUIRE_MSG(ifid.get_layout() == cfid.get_layout(),
@@ -305,7 +305,7 @@ void ConditionalSampling::compute_diagnostic_impl() {
     // Special case: if the input field is "count", we use the diagnostic output as the input
     f = ones;
   } else {
-    f = get_field_in(m_input_f);
+    f = get_field(m_input_f);
   }
   const auto &d = m_diagnostic_output;
 
@@ -339,7 +339,7 @@ void ConditionalSampling::compute_diagnostic_impl() {
     }
   } else {
     // Field-based conditional sampling
-    const auto &c = get_field_in(m_condition_f);
+    const auto &c = get_field(m_condition_f);
     if (rank == 1) {
       // 1D field: (ncols) or (nlevs)
       apply_conditional_sampling_1d(d, f, c, m_condition_op, m_condition_v, fill_value);

@@ -100,7 +100,7 @@ TEST_CASE("horiz_avg") {
 
   // Test the horiz contraction of qc1
   // Get the diagnostic field
-  diag1->set_required_field(qc1);
+  diag1->set_field(qc1);
   diag1->initialize(t0, RunType::Initial);
   diag1->compute_diagnostic();
   auto diag1_f = diag1->get_diagnostic();
@@ -141,7 +141,7 @@ TEST_CASE("horiz_avg") {
   // Set qc2_v to 5.0 to get weighted average of 5.0
   wavg = sp(5.0);
   qc2.deep_copy(wavg);
-  diag2->set_required_field(qc2);
+  diag2->set_field(qc2);
   diag2->initialize(t0, RunType::Initial);
   diag2->compute_diagnostic();
   auto diag2_f = diag2->get_diagnostic();
@@ -160,7 +160,7 @@ TEST_CASE("horiz_avg") {
   Field diag3_manual(diag3_manual_fid);
   diag3_manual.allocate_view();
   horiz_contraction(diag3_manual, qc3, area, true, &comm);
-  diag3->set_required_field(qc3);
+  diag3->set_field(qc3);
   diag3->initialize(t0, RunType::Initial);
   diag3->compute_diagnostic();
   auto diag3_f = diag3->get_diagnostic();

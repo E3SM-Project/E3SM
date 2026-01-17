@@ -72,7 +72,7 @@ TEST_CASE("atm_backtend") {
   params.set<std::string>("tendency_name", "qc");
   auto diag = diag_factory.create("AtmBackTendDiag", comm, params);
   diag->set_grids(gm);
-  diag->set_required_field(qc);
+  diag->set_field(qc);
   diag->initialize(t0, RunType::Initial);
 
   // Run diag

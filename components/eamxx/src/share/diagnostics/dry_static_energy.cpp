@@ -56,11 +56,11 @@ void DryStaticEnergyDiagnostic::compute_diagnostic_impl()
   const auto default_policy = TPF::get_thread_range_parallel_scan_team_policy(m_num_cols, m_num_levs);
 
   const auto& dse                = m_diagnostic_output.get_view<Real**>();
-  const auto& T_mid              = get_field_in("T_mid").get_view<const Real**>();
-  const auto& p_mid              = get_field_in("p_mid").get_view<const Real**>();
-  const auto& qv_mid             = get_field_in("qv").get_view<const Real**>();
-  const auto& pseudo_density_mid = get_field_in("pseudo_density").get_view<const Real**>();
-  const auto& phis               = get_field_in("phis").get_view<const Real*>();
+  const auto& T_mid              = get_field("T_mid").get_view<const Real**>();
+  const auto& p_mid              = get_field("p_mid").get_view<const Real**>();
+  const auto& qv_mid             = get_field("qv").get_view<const Real**>();
+  const auto& pseudo_density_mid = get_field("pseudo_density").get_view<const Real**>();
+  const auto& phis               = get_field("phis").get_view<const Real*>();
 
   // Set surface geopotential for this diagnostic
   const Real surf_geopotential = 0.0;

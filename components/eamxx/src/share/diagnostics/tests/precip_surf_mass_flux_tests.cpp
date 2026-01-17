@@ -79,15 +79,12 @@ void run(std::mt19937_64& engine)
     const auto name = f.name();
     f.get_header().get_tracking().update_time_stamp(t0);
     f.get_header().get_tracking().set_accum_start_time(t0);
-    diag_total->set_required_field(f.get_const());
-    REQUIRE_THROWS(diag_total->set_computed_field(f));
+    diag_total->set_field(f.get_const());
     if (name=="precip_ice_surf_mass") {
-      diag_ice->set_required_field(f.get_const());
-      REQUIRE_THROWS(diag_ice->set_computed_field(f));
+      diag_ice->set_field(f.get_const());
     }
     if (name=="precip_liq_surf_mass") {
-      diag_liq->set_required_field(f.get_const());
-      REQUIRE_THROWS(diag_liq->set_computed_field(f));
+      diag_liq->set_field(f.get_const());
     }
     input_fields.emplace(name,f);
   }

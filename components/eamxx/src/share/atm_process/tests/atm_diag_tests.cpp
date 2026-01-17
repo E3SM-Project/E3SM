@@ -93,10 +93,8 @@ TEST_CASE ("diagnostics") {
   f_A.deep_copy(1.0);
   f_B.deep_copy(1.0);
 
-  diag_sum->set_required_field(f_A.get_const());
-  diag_sum->set_required_field(f_B.get_const());
-  // diag fields are created INSIDE diags, not set from outside
-  REQUIRE_THROWS(diag_sum->set_computed_field(f_A));
+  diag_sum->set_field(f_A);
+  diag_sum->set_field(f_B);
 
   diag_sum->initialize(t0,RunType::Initial);
 

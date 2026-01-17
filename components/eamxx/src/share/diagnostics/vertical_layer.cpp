@@ -77,11 +77,11 @@ initialize_impl (const RunType /*run_type*/)
   auto m2 = pow(m,2);
   auto s2 = pow(s,2);
 
-  const auto& T    = get_field_in("T_mid");
-  const auto& rho  = get_field_in("pseudo_density");
-  const auto& p    = get_field_in("p_mid");
-  const auto& qv   = get_field_in("qv");
-  const auto& phis = m_from_sea_level ? get_field_in("phis") : T; // unused if m_from_sea_level=false
+  const auto& T    = get_field("T_mid");
+  const auto& rho  = get_field("pseudo_density");
+  const auto& p    = get_field("p_mid");
+  const auto& qv   = get_field("qv");
+  const auto& phis = m_from_sea_level ? get_field("phis") : T; // unused if m_from_sea_level=false
 
   // Construct and allocate the diagnostic field.
   // Notes:
@@ -174,11 +174,11 @@ void VerticalLayerDiagnostic::do_compute_diagnostic_impl()
   const auto npacks = ekat::npack<PackT>(m_num_levs);
   const auto policy = TPF::get_thread_range_parallel_scan_team_policy(m_num_cols, npacks);
 
-  const auto& T    = get_field_in("T_mid").get_view<const PackT**>();
-  const auto& p    = get_field_in("p_mid").get_view<const PackT**>();
-  const auto& qv   = get_field_in("qv").get_view<const PackT**>();
-  const auto& rho  = get_field_in("pseudo_density").get_view<const PackT**>();
-  const auto  phis = m_from_sea_level ? get_field_in("phis").get_view<const Real*>() : typename KT::view_1d<const Real>();
+  const auto& T    = get_field("T_mid").get_view<const PackT**>();
+  const auto& p    = get_field("p_mid").get_view<const PackT**>();
+  const auto& qv   = get_field("qv").get_view<const PackT**>();
+  const auto& rho  = get_field("pseudo_density").get_view<const PackT**>();
+  const auto  phis = m_from_sea_level ? get_field("phis").get_view<const Real*>() : typename KT::view_1d<const Real>();
 
   const bool only_compute_dz     = m_diag_name=="dz";
   const bool is_interface_layout = m_is_interface_layout;

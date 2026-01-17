@@ -61,9 +61,9 @@ void VaporFluxDiagnostic::compute_diagnostic_impl()
   constexpr Real g = PC::gravit.value;
 
   const auto diag  = m_diagnostic_output.get_view<Real*>();
-  const auto qv    = get_field_in("qv").get_view<const Real**>();
-  const auto rho   = get_field_in("pseudo_density").get_view<const Real**>();
-  const auto wind  = get_field_in("horiz_winds").get_component(m_component).get_view<const Real**>();
+  const auto qv    = get_field("qv").get_view<const Real**>();
+  const auto rho   = get_field("pseudo_density").get_view<const Real**>();
+  const auto wind  = get_field("horiz_winds").get_component(m_component).get_view<const Real**>();
 
   const auto num_levs = m_num_levs;
   const auto policy = TPF::get_default_team_policy(m_num_cols, m_num_levs);

@@ -170,7 +170,7 @@ public:
   }
 protected:
     void run_impl (const double /* dt */) {
-    auto v = get_field_out("Field A", m_grid_name).get_view<Real*,Host>();
+    auto v = get_field("Field A", m_grid_name).get_view<Real*,Host>();
 
     for (int i=0; i<v.extent_int(0); ++i) {
       v[i] += Real(1.0);
@@ -260,8 +260,8 @@ TEST_CASE("field_checks", "") {
         auto foo = create_atmosphere_process<Foo>(comm,params);
         foo->set_grids(gm);
 
-        foo->set_required_field(T_tend);
-        foo->set_computed_field(T);
+        foo->set_field(T_tend);
+        foo->set_field(T);
         foo->initialize(t0,RunType::Initial);
 
         if (allow_failure) {
@@ -316,15 +316,15 @@ TEST_CASE ("subcycling") {
     f.allocate_view();
     f.deep_copy(0);
     f.get_header().get_tracking().update_time_stamp(t0);
-    ap->set_required_field(f.get_const());
-    ap->set_computed_field(f);
+    ap->set_field(f.get_const());
+    ap->set_field(f);
 
     Field f_sub(req.fid);
     f_sub.allocate_view();
     f_sub.deep_copy(0);
     f_sub.get_header().get_tracking().update_time_stamp(t0);
-    ap_sub->set_required_field(f_sub.get_const());
-    ap_sub->set_computed_field(f_sub);
+    ap_sub->set_field(f_sub.get_const());
+    ap_sub->set_field(f_sub);
   }
 
   ap->initialize(t0,RunType::Initial);

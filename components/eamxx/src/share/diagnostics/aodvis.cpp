@@ -41,7 +41,7 @@ set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 }
 
 void AODVis::initialize_impl(const RunType /*run_type*/) {
-  m_diagnostic_output.get_header().set_extra_data("mask_field", get_field_in("sunlit_mask"));
+  m_diagnostic_output.get_header().set_extra_data("mask_field", get_field("sunlit_mask"));
 }
 
 void AODVis::compute_diagnostic_impl() {
@@ -53,10 +53,10 @@ void AODVis::compute_diagnostic_impl() {
   constexpr auto fill_value = constants::fill_value<Real>;
 
   const auto aod     = m_diagnostic_output.get_view<Real *>();
-  const auto tau_vis = get_field_in("aero_tau_sw")
+  const auto tau_vis = get_field("aero_tau_sw")
                            .subfield(1, m_vis_bnd)
                            .get_view<const Real **>();
-  const auto sunlit = get_field_in("sunlit_mask").get_view<const Real *>();
+  const auto sunlit = get_field("sunlit_mask").get_view<const Real *>();
 
   const auto num_levs = m_nlevs;
   const auto policy   = TPF::get_default_team_policy(m_ncols, m_nlevs);

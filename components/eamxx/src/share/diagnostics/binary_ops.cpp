@@ -154,8 +154,8 @@ void BinaryOpsDiag::initialize_impl(const RunType /*run_type*/)
   const auto& dict = physics::Constants<Real>::dictionary();
 
   if (m_arg1_is_field and m_arg2_is_field) {
-    const auto& fid1   = get_field_in(m_arg1_name).get_header().get_identifier();
-    const auto& fid2   = get_field_in(m_arg2_name).get_header().get_identifier();
+    const auto& fid1   = get_field(m_arg1_name).get_header().get_identifier();
+    const auto& fid2   = get_field(m_arg2_name).get_header().get_identifier();
 
     // Must be on same layout, same datatype, same grid
     EKAT_REQUIRE_MSG (fid1.get_layout() == fid2.get_layout(),
@@ -179,12 +179,12 @@ void BinaryOpsDiag::initialize_impl(const RunType /*run_type*/)
   }
 
   // All good, create the diag output
-  auto dl = m_arg1_is_field ? get_field_in(m_arg1_name).get_header().get_identifier().get_layout()
-                            : (m_arg2_is_field ? get_field_in(m_arg2_name).get_header().get_identifier().get_layout()
+  auto dl = m_arg1_is_field ? get_field(m_arg1_name).get_header().get_identifier().get_layout()
+                            : (m_arg2_is_field ? get_field(m_arg2_name).get_header().get_identifier().get_layout()
                                                : FieldLayout({},{}));
-  const auto& u1 = m_arg1_is_field ? get_field_in(m_arg1_name).get_header().get_identifier().get_units()
+  const auto& u1 = m_arg1_is_field ? get_field(m_arg1_name).get_header().get_identifier().get_units()
                                    : dict.at(m_arg1_name).units;
-  const auto& u2 = m_arg2_is_field ? get_field_in(m_arg2_name).get_header().get_identifier().get_units()
+  const auto& u2 = m_arg2_is_field ? get_field(m_arg2_name).get_header().get_identifier().get_units()
                                    : dict.at(m_arg2_name).units;
   auto diag_units = apply_binary_op(u1, u2, m_binary_op_code);
   auto gn = m_params.get<std::string>("grid_name");
@@ -203,17 +203,17 @@ void BinaryOpsDiag::compute_diagnostic_impl()
 {
   const auto& dict = physics::Constants<Real>::dictionary();
   if (m_arg1_is_field and m_arg2_is_field) {
-    const auto& f1 = get_field_in(m_arg1_name);
-    const auto& f2 = get_field_in(m_arg2_name);
+    const auto& f1 = get_field(m_arg1_name);
+    const auto& f2 = get_field(m_arg2_name);
     apply_binary_op(m_diagnostic_output, f1, f2, m_binary_op_code);
   } else if (m_arg1_is_field) {
-    const auto& f1 = get_field_in(m_arg1_name);
+    const auto& f1 = get_field(m_arg1_name);
     const auto  c2 = dict.at(m_arg2_name).value;
     apply_binary_op(m_diagnostic_output, f1, c2, m_binary_op_code);
   } else if (m_arg2_is_field) {
     // We can do scale/scale_inv for * and /, but for + and - we must deep copy arg2 first
     const auto  c1 = physics::Constants<Real>::dictionary().at(m_arg1_name).value;
-    const auto& f2 = get_field_in(m_arg2_name);
+    const auto& f2 = get_field(m_arg2_name);
     apply_binary_op(m_diagnostic_output, c1, f2, m_binary_op_code);
   } else {
     const auto  c1 = dict.at(m_arg1_name).value;

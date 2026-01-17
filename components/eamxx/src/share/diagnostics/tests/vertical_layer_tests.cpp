@@ -67,12 +67,10 @@ void run (const std::string& diag_name, const std::string& location)
     f.allocate_view();
     const auto name = f.name();
     f.get_header().get_tracking().update_time_stamp(t0);
-    diag->set_required_field(f.get_const());
+    diag->set_field(f.get_const());
     input_fields.emplace(name,f);
   }
 
-  // Can't set computed fields in the diag
-  REQUIRE_THROWS(diag->set_computed_field(input_fields.begin()->second));
 
   // Note: we are not testing the calculate_dz utility. We are testing
   //       the diag class, so use some inputs that make checking results easier

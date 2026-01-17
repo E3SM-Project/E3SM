@@ -81,12 +81,12 @@ void VertContractDiag::initialize_impl(const RunType /*run_type*/) {
 
   // set up the weighting fields
   if (m_weighting_method == "dp") {
-    m_weighting = get_field_in("pseudo_density").clone("vert_contract_wts");
+    m_weighting = get_field("pseudo_density").clone("vert_contract_wts");
   } else if (m_weighting_method == "dz") {
     // TODO: for some reason the dz field keeps getting set to 0
     // TODO: as a workaround, just calculate dz here (sigh...)
-    // m_weighting = get_field_in("dz").clone("vert_contract_wts");
-    m_weighting = get_field_in("pseudo_density").clone("vert_contract_wts");
+    // m_weighting = get_field("dz").clone("vert_contract_wts");
+    m_weighting = get_field("pseudo_density").clone("vert_contract_wts");
   } else {
     // no weighting needed, so we set it to 1 with layout of (lev)
     FieldLayout layout_wts = {{LEV}, {layout.dim(LEV)}};
@@ -186,11 +186,11 @@ void VertContractDiag::compute_diagnostic_impl() {
   // update the weights; if weighting by dp, we need to scale by 1/g
   if (m_weighting_method == "dp") {
     auto g = scream::physics::Constants<Real>::gravit.value;
-    m_weighting.update(get_field_in("pseudo_density"), 1 / g, sp(0.0));
+    m_weighting.update(get_field("pseudo_density"), 1 / g, sp(0.0));
   } else if (m_weighting_method == "dz") {
     // TODO: for some reason the dz field keeps getting set to 0
     // TODO: as a workaround, just calculate dz here (sigh...)
-    // m_weighting.update(get_field_in("dz"), 1.0, 0.0);
+    // m_weighting.update(get_field("dz"), 1.0, 0.0);
     using KT          = KokkosTypes<DefaultDevice>;
     using MT          = typename KT::MemberType;
     using TPF         = ekat::TeamPolicyFactory<typename KT::ExeSpace>;
@@ -200,10 +200,10 @@ void VertContractDiag::compute_diagnostic_impl() {
     const auto policy = TPF::get_default_team_policy(ncols, nlevs);
 
     auto dz_v = m_weighting.get_view<Real **>();
-    auto dp_v = get_field_in("pseudo_density").get_view<const Real **>();
-    auto pm_v = get_field_in("p_mid").get_view<const Real **>();
-    auto tm_v = get_field_in("T_mid").get_view<const Real **>();
-    auto qv_v = get_field_in("qv").get_view<const Real **>();
+    auto dp_v = get_field("pseudo_density").get_view<const Real **>();
+    auto pm_v = get_field("p_mid").get_view<const Real **>();
+    auto tm_v = get_field("T_mid").get_view<const Real **>();
+    auto qv_v = get_field("qv").get_view<const Real **>();
     Kokkos::parallel_for(
         "Compute dz for " + m_diagnostic_output.name(), policy, KOKKOS_LAMBDA(const MT &team) {
           const int icol = team.league_rank();

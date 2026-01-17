@@ -41,9 +41,9 @@ void SeaLevelPressureDiagnostic::set_grids(const std::shared_ptr<const GridsMana
 void SeaLevelPressureDiagnostic::compute_diagnostic_impl()
 {
   const auto& psl   = m_diagnostic_output.get_view<Real*>();
-  const auto& T_mid = get_field_in("T_mid").get_view<const Real**>();
-  const auto& p_mid = get_field_in("p_mid").get_view<const Real**>();
-  const auto& phis  = get_field_in("phis").get_view<const Real*>();
+  const auto& T_mid = get_field("T_mid").get_view<const Real**>();
+  const auto& p_mid = get_field("p_mid").get_view<const Real**>();
+  const auto& phis  = get_field("phis").get_view<const Real*>();
 
   int surf_lev = m_num_levs - 1;
   using RP = typename KokkosTypes<DefaultDevice>::RangePolicy;

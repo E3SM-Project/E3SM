@@ -67,9 +67,9 @@ void NumberPathDiagnostic::compute_diagnostic_impl() {
   constexpr Real g = PC::gravit.value;
 
   const auto np  = m_diagnostic_output.get_view<Real *>();
-  const auto q   = get_field_in(m_qname).get_view<const Real **>();
-  const auto n   = get_field_in(m_nname).get_view<const Real **>();
-  const auto rho = get_field_in("pseudo_density").get_view<const Real **>();
+  const auto q   = get_field(m_qname).get_view<const Real **>();
+  const auto n   = get_field(m_nname).get_view<const Real **>();
+  const auto rho = get_field("pseudo_density").get_view<const Real **>();
 
   const auto num_levs = m_num_levs;
   const auto policy   = TPF::get_default_team_policy(m_num_cols, m_num_levs);

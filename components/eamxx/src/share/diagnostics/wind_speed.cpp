@@ -38,7 +38,7 @@ void WindSpeed::compute_diagnostic_impl()
   using KT = KokkosTypes<DefaultDevice>;
   using RP = typename KT::RangePolicy;
 
-  const auto uv = get_field_in("horiz_winds").get_view<const Real***>();
+  const auto uv = get_field("horiz_winds").get_view<const Real***>();
   const auto ws = m_diagnostic_output.get_view<Real**>();
 
   const int nlevs = m_nlevs;

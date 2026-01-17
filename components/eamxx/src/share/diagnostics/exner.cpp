@@ -40,7 +40,7 @@ void ExnerDiagnostic::compute_diagnostic_impl()
   using PF = PhysicsFunctions<DefaultDevice>;
 
   const auto& exner = m_diagnostic_output.get_view<Real**>();
-  const auto& p_mid = get_field_in("p_mid").get_view<const Real**>();
+  const auto& p_mid = get_field("p_mid").get_view<const Real**>();
 
   int nlevs = m_num_levs;
   Kokkos::parallel_for("ExnerDiagnostic",

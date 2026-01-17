@@ -1010,7 +1010,7 @@ process_requested_fields()
       const auto& dep_name = freq.fid.name();
 
       auto dep = fm_model->get_field(dep_name);
-      diag->set_required_field(dep);
+      diag->set_field(dep);
     }
 
     // Initialize the diag

@@ -97,12 +97,12 @@ TEST_CASE("binary_ops") {
   auto prod_scl_scl = diag_factory.create("BinaryOpsDiag", comm, params_scl_scl);
 
   plus_diag->set_grids(gm);
-  plus_diag->set_required_field(qc);
-  plus_diag->set_required_field(qv);
+  plus_diag->set_field(qc);
+  plus_diag->set_field(qv);
   plus_diag->initialize(t0, RunType::Initial);
 
   prod_diag->set_grids(gm);
-  prod_diag->set_required_field(m);
+  prod_diag->set_field(m);
   prod_diag->initialize(t0, RunType::Initial);
 
   prod_scl_scl->set_grids(gm);

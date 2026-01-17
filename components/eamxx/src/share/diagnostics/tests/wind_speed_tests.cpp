@@ -73,7 +73,7 @@ TEST_CASE("wind_speed")
     ekat::ParameterList params;
     auto diag = diag_factory.create("wind_speed",comm,params);
     diag->set_grids(gm);
-    diag->set_required_field(uv);
+    diag->set_field(uv);
     diag->initialize(t0,RunType::Initial);
 
     // Run diag

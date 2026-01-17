@@ -65,7 +65,7 @@ void PrecipSurfMassFlux::compute_diagnostic_impl()
 
   double dt = 0;
   if (use_ice) {
-    auto mass_ice = get_field_in("precip_ice_surf_mass");
+    auto mass_ice = get_field("precip_ice_surf_mass");
     mass_ice_d = mass_ice.get_view<const Real*>();
 
     const auto& t_start = mass_ice.get_header().get_tracking().get_accum_start_time ();
@@ -73,14 +73,14 @@ void PrecipSurfMassFlux::compute_diagnostic_impl()
     dt = t_now.seconds_from(t_start);
     if (use_liq) {
       // Ensure liq/ice have same accumulation times
-      auto mass_liq = get_field_in("precip_liq_surf_mass");
+      auto mass_liq = get_field("precip_liq_surf_mass");
       mass_liq_d = mass_liq.get_view<const Real*>();
       EKAT_REQUIRE_MSG (t_now==mass_liq.get_header().get_tracking().get_time_stamp() and
                         t_start==mass_liq.get_header().get_tracking().get_accum_start_time(),
           "Error! Liquid and ice precip mass fields have different accumulation time stamps!\n");
     }
   } else if (use_liq) {
-    auto mass_liq = get_field_in("precip_liq_surf_mass");
+    auto mass_liq = get_field("precip_liq_surf_mass");
     mass_liq_d = mass_liq.get_view<const Real*>();
 
     const auto& t_start = mass_liq.get_header().get_tracking().get_accum_start_time ();

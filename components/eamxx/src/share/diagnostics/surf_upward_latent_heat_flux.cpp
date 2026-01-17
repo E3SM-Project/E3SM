@@ -53,7 +53,7 @@ void SurfaceUpwardLatentHeatFlux::compute_diagnostic_impl()
 
   Field::view_dev_t<const Real*> evap_view_d;
 
-  auto evap = get_field_in("surf_evap");
+  auto evap = get_field("surf_evap");
   evap_view_d = evap.get_view<const Real*>();
   const auto& flux_view = m_diagnostic_output.get_view<Real*>();
   Kokkos::parallel_for("SurfaceUpwardLatentHeatFlux",

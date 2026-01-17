@@ -71,7 +71,7 @@ set_grids (const std::shared_ptr<const GridsManager> grids_manager)
 void FieldAtHeight::
 initialize_impl (const RunType /*run_type*/)
 {
-  const auto& f = get_field_in(m_field_name);
+  const auto& f = get_field(m_field_name);
   const auto& fid = f.get_header().get_identifier();
 
   // Sanity checks
@@ -115,8 +115,8 @@ initialize_impl (const RunType /*run_type*/)
 // =========================================================================================
 void FieldAtHeight::compute_diagnostic_impl()
 {
-  const auto z_view = get_field_in(m_z_name + m_z_suffix).get_view<const Real**>();
-  const Field& f = get_field_in(m_field_name);
+  const auto z_view = get_field(m_z_name + m_z_suffix).get_view<const Real**>();
+  const Field& f = get_field(m_field_name);
   const auto& fl = f.get_header().get_identifier().get_layout();
 
   using RangePolicy = typename KokkosTypes<DefaultDevice>::RangePolicy;

@@ -108,21 +108,21 @@ TEST_CASE("conditional_sampling") {
     diag21->set_grids(gm);
 
     // Set the fields for each diagnostic
-    diag11->set_required_field(qc11);
+    diag11->set_field(qc11);
     diag11->initialize(t0, RunType::Initial);
     diag11->compute_diagnostic();
     auto diag11_f = diag11->get_diagnostic();
     diag11_f.sync_to_host();
     auto diag11_v = diag11_f.get_view<const Real *, Host>();
 
-    diag12->set_required_field(qc12);
+    diag12->set_field(qc12);
     diag12->initialize(t0, RunType::Initial);
     diag12->compute_diagnostic();
     auto diag12_f = diag12->get_diagnostic();
     diag12_f.sync_to_host();
     auto diag12_v = diag12_f.get_view<const Real *, Host>();
 
-    diag21->set_required_field(qc21);
+    diag21->set_field(qc21);
     diag21->initialize(t0, RunType::Initial);
     diag21->compute_diagnostic();
     auto diag21_f = diag21->get_diagnostic();
@@ -198,10 +198,10 @@ TEST_CASE("conditional_sampling") {
     diag21->set_grids(gm);
 
     // Set the fields for each diagnostic
-    diag11->set_required_field(qc11);
+    diag11->set_field(qc11);
     REQUIRE_THROWS(diag11->initialize(t0, RunType::Initial)); // bad dimensions (no lev in qc11)
 
-    diag12->set_required_field(qc12);
+    diag12->set_field(qc12);
     
     diag12->initialize(t0, RunType::Initial);
     diag12->compute_diagnostic();
@@ -209,7 +209,7 @@ TEST_CASE("conditional_sampling") {
     diag12_f.sync_to_host();
     auto diag12_v = diag12_f.get_view<const Real *, Host>();
 
-    diag21->set_required_field(qc21);
+    diag21->set_field(qc21);
     diag21->initialize(t0, RunType::Initial);
     diag21->compute_diagnostic();
     auto diag21_f = diag21->get_diagnostic();
@@ -271,21 +271,21 @@ TEST_CASE("conditional_sampling") {
     count_diag21->set_grids(gm);
 
     // Set the fields for each diagnostic
-    count_diag11->set_required_field(qc11);
+    count_diag11->set_field(qc11);
     count_diag11->initialize(t0, RunType::Initial);
     count_diag11->compute_diagnostic();
     auto count_diag11_f = count_diag11->get_diagnostic();
     count_diag11_f.sync_to_host();
     auto count_diag11_v = count_diag11_f.get_view<const Real *, Host>();
 
-    count_diag12->set_required_field(qc12);
+    count_diag12->set_field(qc12);
     count_diag12->initialize(t0, RunType::Initial);
     count_diag12->compute_diagnostic();
     auto count_diag12_f = count_diag12->get_diagnostic();
     count_diag12_f.sync_to_host();
     auto count_diag12_v = count_diag12_f.get_view<const Real *, Host>();
 
-    count_diag21->set_required_field(qc21);
+    count_diag21->set_field(qc21);
     count_diag21->initialize(t0, RunType::Initial);
     count_diag21->compute_diagnostic();
     auto count_diag21_f = count_diag21->get_diagnostic();

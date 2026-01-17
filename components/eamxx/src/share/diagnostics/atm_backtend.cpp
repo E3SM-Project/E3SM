@@ -24,7 +24,7 @@ set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 }
 
 void AtmBackTendDiag::initialize_impl(const RunType /*run_type*/) {
-  const auto &f   = get_field_in(m_name);
+  const auto &f   = get_field(m_name);
   const auto &fid = f.get_header().get_identifier();
   const auto &gn  = fid.get_grid_name();
 
@@ -55,7 +55,7 @@ void AtmBackTendDiag::initialize_impl(const RunType /*run_type*/) {
 }
 
 void AtmBackTendDiag::init_timestep(const util::TimeStamp &start_of_step) {
-  const auto &f_curr = get_field_in(m_name);
+  const auto &f_curr = get_field(m_name);
   m_f_prev.deep_copy(f_curr);
   m_f_prev.get_header().get_tracking().update_time_stamp(start_of_step);
 }
@@ -63,7 +63,7 @@ void AtmBackTendDiag::init_timestep(const util::TimeStamp &start_of_step) {
 void AtmBackTendDiag::compute_diagnostic_impl() {
   std::int64_t dt;
 
-  const auto &f       = get_field_in(m_name);
+  const auto &f       = get_field(m_name);
   const auto &curr_ts = f.get_header().get_tracking().get_time_stamp();
   const auto &prev_ts = m_f_prev.get_header().get_tracking().get_time_stamp();
 

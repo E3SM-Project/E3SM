@@ -418,6 +418,24 @@ void AtmosphereProcessGroup::initialize_impl (const RunType run_type) {
     m_atm_logger->debug("[EAMxx::initialize::"+atm_proc->name()+"] memory usage: " + std::to_string(max_mem_usage) + "MB");
 #endif
   }
+
+  // We need to run some final check on our input groups.
+  // When we parsed field/group requests with (usage & Required)==1,
+  // we checked if the 1st proc using that field/group as input comes AFTER
+  // another proc that computes it. However, for groups, that does not cover
+  // all bases. At the time of requests, we didn't yet know the full list of
+  // fields in each group. It is possible that proc X needs a group whose fields
+  // are all INDIVIDUALLY computed by procs before X.
+  // NOTE: this is only relevant for Sequential splitting
+  if (m_group_schedule_type==ScheduleType::Sequential) {
+    for (auto g : get_group_requests()) {
+      // // Find idx of 1st process that needs it as input
+      // int first_needed = -1;
+      // for (auto ap : m_atm_processes) {
+      //   auto req = ap->find_field_request
+      // }
+    }
+  }
 }
 
 void AtmosphereProcessGroup::run_impl (const double dt) {

@@ -71,7 +71,7 @@ void VertDerivativeDiag::compute_diagnostic_impl() {
   const auto &f = get_fields_in().front();
   const auto &o = m_diagnostic_output;
   // keep dp around
-  const auto &dp = get_field_in("pseudo_density");
+  const auto &dp = get_field("pseudo_density");
 
   // TODO: support higher-dimensioned input fields
   auto f2d = f.get_view<const Real **>();
@@ -86,7 +86,7 @@ void VertDerivativeDiag::compute_diagnostic_impl() {
   const int nlevs   = f.get_header().get_identifier().get_layout().dim(1);
   const auto policy = TPF::get_default_team_policy(ncols, nlevs);
 
-  auto d_v = (m_derivative_method == "z") ? get_field_in("dz").get_view<Real **>() : dp2d;
+  auto d_v = (m_derivative_method == "z") ? get_field("dz").get_view<Real **>() : dp2d;
 
   Kokkos::parallel_for(
       "Compute df / denominator for " + m_diagnostic_output.name(), policy,

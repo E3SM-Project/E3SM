@@ -96,7 +96,7 @@ void run(std::mt19937_64& engine)
     f.allocate_view();
     const auto name = f.name();
     f.get_header().get_tracking().update_time_stamp(t0);
-    diag->set_required_field(f.get_const());
+    diag->set_field(f.get_const());
     input_fields.emplace(name,f);
   }
 

@@ -41,10 +41,10 @@ void AtmDensityDiagnostic::compute_diagnostic_impl()
   using PF = scream::PhysicsFunctions<DefaultDevice>;
 
   const auto atm_dens = m_diagnostic_output.get_view<Real**>();
-  const auto T_mid    = get_field_in("T_mid").get_view<const Real**>();
-  const auto p_mid    = get_field_in("p_mid").get_view<const Real**>();
-  const auto qv_mid   = get_field_in("qv").get_view<const Real**>();
-  const auto pseudo_density_mid = get_field_in("pseudo_density").get_view<const Real**>();
+  const auto T_mid    = get_field("T_mid").get_view<const Real**>();
+  const auto p_mid    = get_field("p_mid").get_view<const Real**>();
+  const auto qv_mid   = get_field("qv").get_view<const Real**>();
+  const auto pseudo_density_mid = get_field("pseudo_density").get_view<const Real**>();
 
   int nlevs = m_num_levs;
   Kokkos::parallel_for("AtmosphereDensityDiagnostic",

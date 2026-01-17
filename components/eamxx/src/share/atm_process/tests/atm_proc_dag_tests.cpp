@@ -167,7 +167,7 @@ public:
   }
 protected:
     void run_impl (const double /* dt */) {
-    auto v = get_field_out("Field A", m_grid_name).get_view<Real*,Host>();
+    auto v = get_field("Field A", m_grid_name).get_view<Real*,Host>();
 
     for (int i=0; i<v.extent_int(0); ++i) {
       v[i] += Real(1.0);
@@ -212,9 +212,9 @@ TEST_CASE("atm_proc_dag", "") {
     auto fields = create_fields(ap);
     for (auto r : ap.get_field_requests()) {
       if (r.usage & Required)
-        ap.set_required_field(fields.at(r.fid.name()).get_const());
+        ap.set_field(fields.at(r.fid.name()).get_const());
       if (r.usage & Computed)
-        ap.set_computed_field(fields.at(r.fid.name()));
+        ap.set_field(fields.at(r.fid.name()));
     }
   };
 

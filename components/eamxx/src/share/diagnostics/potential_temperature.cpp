@@ -58,11 +58,11 @@ void PotentialTemperatureDiagnostic::compute_diagnostic_impl()
   bool is_liq = (m_ptype=="LiqPotentialTemperature");
 
   auto theta = m_diagnostic_output.get_view<Real**>();
-  auto T_mid = get_field_in("T_mid").get_view<const Real**>();
-  auto p_mid = get_field_in("p_mid").get_view<const Real**>();
+  auto T_mid = get_field("T_mid").get_view<const Real**>();
+  auto p_mid = get_field("p_mid").get_view<const Real**>();
   decltype(p_mid) q_mid;
   if (is_liq)
-   q_mid = get_field_in("qc").get_view<const Real**>();
+   q_mid = get_field("qc").get_view<const Real**>();
 
   int nlevs = m_num_levs;
   Kokkos::parallel_for("PotentialTemperatureDiagnostic",

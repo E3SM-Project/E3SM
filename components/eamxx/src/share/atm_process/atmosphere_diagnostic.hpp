@@ -58,9 +58,8 @@ public:
   void compute_diagnostic (const double dt = 0);
 protected:
 
-  void set_required_field_impl (const Field& f) final;
-  void set_computed_field_impl (const Field& f) final;
-  void set_computed_group_impl (const FieldGroup& group) final;
+  void set_field_impl (const Field& f) final;
+  void set_group_impl (const FieldGroup& group) final;
 
   virtual void compute_diagnostic_impl () = 0;
 

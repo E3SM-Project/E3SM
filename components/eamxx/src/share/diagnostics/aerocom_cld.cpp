@@ -103,17 +103,17 @@ void AeroComCld::compute_diagnostic_impl() {
   using PF = scream::PhysicsFunctions<DefaultDevice>;
 
   // Get the input fields
-  const auto tmid = get_field_in("T_mid").get_view<const Real **>();
-  const auto pden = get_field_in("pseudo_density").get_view<const Real **>();
-  const auto pmid = get_field_in("p_mid").get_view<const Real **>();
-  const auto qv   = get_field_in("qv").get_view<const Real **>();
-  const auto qc   = get_field_in("qc").get_view<const Real **>();
-  const auto qi   = get_field_in("qi").get_view<const Real **>();
-  const auto rel  = get_field_in("eff_radius_qc").get_view<const Real **>();
-  const auto rei  = get_field_in("eff_radius_qi").get_view<const Real **>();
-  const auto cld  = get_field_in("cldfrac_tot").get_view<const Real **>();
-  const auto nc   = get_field_in("nc").get_view<const Real **>();
-  const auto ni   = get_field_in("ni").get_view<const Real **>();
+  const auto tmid = get_field("T_mid").get_view<const Real **>();
+  const auto pden = get_field("pseudo_density").get_view<const Real **>();
+  const auto pmid = get_field("p_mid").get_view<const Real **>();
+  const auto qv   = get_field("qv").get_view<const Real **>();
+  const auto qc   = get_field("qc").get_view<const Real **>();
+  const auto qi   = get_field("qi").get_view<const Real **>();
+  const auto rel  = get_field("eff_radius_qc").get_view<const Real **>();
+  const auto rei  = get_field("eff_radius_qi").get_view<const Real **>();
+  const auto cld  = get_field("cldfrac_tot").get_view<const Real **>();
+  const auto nc   = get_field("nc").get_view<const Real **>();
+  const auto ni   = get_field("ni").get_view<const Real **>();
 
   auto dz = m_dz.get_view<Real **>();
 

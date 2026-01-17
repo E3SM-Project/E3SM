@@ -227,7 +227,7 @@ get_test_diag(const ekat::Comm& comm, std::shared_ptr<const FieldManager> fm, st
     diag->set_grids(gm);
     for (const auto& req : diag->get_field_requests()) {
       auto req_field = fm->get_field(req.fid);
-      diag->set_required_field(req_field);
+      diag->set_field(req_field);
     }
     return diag;
 }

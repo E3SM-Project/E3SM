@@ -121,7 +121,7 @@ TEST_CASE("zonal_avg") {
   diag3->set_grids(gm);
 
   // Test the zonal average of qc1
-  diag1->set_required_field(qc1);
+  diag1->set_field(qc1);
   diag1->initialize(t0, RunType::Initial);
   diag1->compute_diagnostic();
   auto diag1_field = diag1->get_diagnostic();
@@ -164,7 +164,7 @@ TEST_CASE("zonal_avg") {
   // Set qc2_v to 5.0 to get weighted average of 5.0
   const Real zavg2 = sp(5.0);
   qc2.deep_copy(zavg2);
-  diag2->set_required_field(qc2);
+  diag2->set_field(qc2);
   diag2->initialize(t0, RunType::Initial);
   diag2->compute_diagnostic();
   auto diag2_field = diag2->get_diagnostic();
@@ -195,7 +195,7 @@ TEST_CASE("zonal_avg") {
   comm.all_reduce(diag3m_field.template get_internal_view_data<Real, Host>(),
     diag3m_layout.size(), MPI_SUM);
   diag3m_field.sync_to_dev();
-  diag3->set_required_field(qc3);
+  diag3->set_field(qc3);
   diag3->initialize(t0, RunType::Initial);
   diag3->compute_diagnostic();
   auto diag3_field = diag3->get_diagnostic();
