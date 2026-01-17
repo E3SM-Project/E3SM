@@ -17,12 +17,12 @@ Where:
 *   $ A $ is the autoconversion prefactor ( `autoconversion_prefactor` ).
 *   $ \alpha $ is the cloud water exponent ( `autoconversion_qc_exponent` ).
 *   $ \beta $ is the cloud number exponent ( `autoconversion_nc_exponent` ).
-    *   **Note**: $\beta$ is stored as a positive value (1.79 in default configuration) following KK2000 convention. The implementation uses `pow(Nc_vol, -1.79)`.
+    *   **Note**: $\beta$ is stored as a positive value (1.79 in default configuration) following KK2000 convention. In the implementation this appears as `pow(nc_incld * sp(1.e-6) * rho, -autoconversion_nc_exponent)`, which is the code equivalent of the analytic form $ \mathrm{pow}(N_{c, vol}, -\beta) $.
 *   $ N_{c, vol} $ is the cloud droplet number concentration in units of $ cm^{-3} $.
 
-In the implementation, $ N_{c, vol} $ is derived from the in-cloud number mixing ratio $ N_c $ ($ \#/kg $) and air density $ \rho $ ($ kg/m^3 $):
+In the implementation, $ N_{c, vol} $ is derived from the in-cloud number mixing ratio $ N_c $ ($ \#/kg $) and air density $ \rho $ ($ kg/m^3 $), where $ N_c $ corresponds to the variable `nc_incld`:
 
-$$ N_{c, vol} = N_c \cdot \rho \cdot 10^{-6} $$
+$$ N_{c, vol} = N_c \cdot \rho \cdot 10^{-6} \;\equiv\; \texttt{nc\_incld} \cdot \texttt{sp(1.e-6)} \cdot \rho $$
 
 ### Number Tendencies
 
