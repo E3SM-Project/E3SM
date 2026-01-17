@@ -335,12 +335,13 @@ void cloud_water_autoconversion_unit_bfb_tests() {
             if (R_next < 1e-30) R_next = 0.0;
             
             // A. Colloidal Stability (Inverse Nc Dependency): dR/dNc < 0
-            // R_next (high Nc) should be less than R (low Nc).
+            // R_next (high Nc) must be strictly less than R (low Nc).
             if (R > absolute_floor) {
-                // If R_next > R, it's a failure. Allow small tolerance.
-                Real max_allowed_R_next = R * (1.0 + relative_tolerance);
-                if (R_next > max_allowed_R_next) {
-                     std::cout << "Monotonicity Nc Fail: R increased with Nc. qc=" << qc 
+                // FAIL if R_next is greater than or equal to R.
+                // We do not use the loose 'relative_tolerance' here because the physics 
+                // requires strict monotonicity.
+                if (R_next >= R) {
+                     std::cout << "Monotonicity Nc Fail: R increased or stayed same with Nc. qc=" << qc 
                                << " R=" << R << " R_next=" << R_next << "\n";
                      failures++;
                 }

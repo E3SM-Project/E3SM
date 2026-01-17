@@ -74,10 +74,10 @@ For $q_c < 10^{-8} \, kg/kg$, the test verifies that the autoconversion rate is 
 
 ### 2. Monotonicity & Sensitivity
 
-We verify the sign of the partial derivatives with respect to the input state variables (using a relative tolerance check):
+We verify the sign of the partial derivatives with respect to the input state variables:
 
 *   **Colloidal Stability (Inverse $N_c$ Dependency)**:
-    Increasing droplet number concentration while holding water content fixed should decrease the rate.
+    Increasing droplet number concentration while holding water content fixed must strictly decrease the rate. The test enforces this with **no relative tolerance**, as the physics dictates a strict inverse relationship.
     $$ \frac{\partial}{\partial N_c} \left(\frac{\partial q_r}{\partial t}\right)_{auto} < 0 $$
 
 *   **Water Content Sensitivity (Positive $q_c$ Dependency)**:
@@ -99,7 +99,7 @@ We check that the derived number tendencies match their physical definitions.
 ### 4. Physical Limits
 
 *   **Haze Limit**:
-    If the mean droplet radius corresponds to haze ($ r < 1 \mu m $), the autoconversion rate must be negligible.
+    If the mean droplet radius corresponds to haze ($ r < 1 \mu m $), the autoconversion rate must be negligible. **The test uses a threshold of $10^{-15}$ (rather than machine zero)** to account for the finite power-law tail in the haze regime while confirming the rate is physically irrelevant.
 
 ### 5. Variance Scaling (Disabled)
 
