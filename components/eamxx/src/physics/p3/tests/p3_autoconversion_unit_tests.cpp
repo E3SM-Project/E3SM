@@ -403,7 +403,8 @@ void cloud_water_autoconversion_unit_bfb_tests() {
         Real mean_mass = qc / nc;
         // Correct formula: r = (3*m / (4*pi*rho))^(1/3)
         // rho_w = 1000.
-        Real mean_rad = std::pow((3.0 * mean_mass) / (4.0 * 3.14159 * 1000.0), 1.0/3.0);
+        using C = scream::physics::Constants<Real>;
+        Real mean_rad = std::pow((3.0 * mean_mass) / (4.0 * C::Pi * 1000.0), 1.0/3.0);
         
         // A. Haze Limit
         if (mean_rad < 1e-6) {
