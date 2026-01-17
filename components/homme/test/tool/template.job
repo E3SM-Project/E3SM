@@ -97,13 +97,13 @@ time $mpirun $exe < input.nl
 
 
 # make the 'latlon' file and the scrip file:
-ncl $TOOLDIR/ncl/HOMME2META.ncl  name=\"$mesh\"  ne=$NE  np=$NPTS
-ncl $TOOLDIR/ncl/HOMME2SCRIP.ncl  name=\"$mesh\" ne=$NE  np=$NPTS
+#ncl $TOOLDIR/ncl/HOMME2META.ncl  name=\"$mesh\"  ne=$NE  np=$NPTS
+#ncl $TOOLDIR/ncl/HOMME2SCRIP.ncl  name=\"$mesh\" ne=$NE  np=$NPTS
 
 # python code to make latlon and scrip file:
-# 10x slower than NCL code and requires numpy and xarray:
-#python $TOOLDIR/python/HOMME2META.py  --src_file ${mesh}_tmp1.nc  --dst_file ${mesh}_latlon_python.nc
-#python $TOOLDIR/python/HOMME2SCRIP.py  --src_file ${mesh}_tmp1.nc  --dst_file ${mesh}_scrip_python.nc
+# needs numpy, xarray and numba:
+python $TOOLDIR/python/HOMME2META.py  --src_file ${mesh}_tmp1.nc  --dst_file ${mesh}_latlon_python.nc
+python $TOOLDIR/python/HOMME2SCRIP.py  --src_file ${mesh}_tmp1.nc  --dst_file ${mesh}_scrip_python.nc
 
 
 # make some plots (ncl defaults to ne4np4 grid
