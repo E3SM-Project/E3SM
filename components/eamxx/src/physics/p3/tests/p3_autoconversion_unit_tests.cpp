@@ -187,6 +187,26 @@ void cloud_water_autoconversion_unit_bfb_tests() {
     validate_autoconversion_parameters();
 
     // =========================================================================
+    // Test Tolerance Definitions
+    // =========================================================================
+    // Identity tolerances: precision-dependent (mathematical exactness)
+    // These verify that the implementation follows its documented formulas.
+#ifdef SCREAM_DOUBLE_PRECISION
+    const Real identity_tol = 1e-14;  // ~100x machine epsilon (double)
+#else
+    const Real identity_tol = 1e-7;   // ~1000x machine epsilon (float)
+#endif
+
+    // Physics tolerances: precision-independent (empirical/configuration)
+    // These verify physical approximations and configuration parameters.
+    const Real physics_tol = 0.01;      // 1% (matches KK2000 accuracy, config params)
+
+    // Regime thresholds: physical relevance cutoffs (DO NOT MODIFY)
+    const Real haze_regime_floor = 1e-15;      // Physically negligible rate
+    const Real absolute_floor = 1e-30;         // Numerical zero proxy
+    const Real detect_threshold = 1e-3;        // Feature detection (0.1%)
+
+    // =========================================================================
     // P3 Autoconversion Physics Property Testing Plan
     // =========================================================================
     // This suite validates that the `cloud_water_autoconversion` implementation
@@ -326,8 +346,7 @@ void cloud_water_autoconversion_unit_bfb_tests() {
         // 1. Physical Sensitivity Tests (Monotonicity)
         // =====================================================================
         
-        const Real relative_tolerance = 1e-3;
-        const Real absolute_floor = 1e-30;
+        const Real relative_tolerance = 1e-3;  // 0.1% sensitivity detection threshold
 
         if (j < n_nc - 1) {
             int idx_next = (j + 1) * n_qc + i;
@@ -370,31 +389,36 @@ void cloud_water_autoconversion_unit_bfb_tests() {
         // 2. Consistency Tests (Constraint Satisfaction)
         // =====================================================================
 
-        if (R > 1e-30) {
-             // A. Specific Loss Concentration
+        if (R > absolute_floor) {
+             // A. Specific Loss Conservation (Mathematical Identity)
+             // Verifies: nc2nr_autoconv_tend = qc2qr_autoconv_tend * (nc/qc)
              Real expected_N_loss = R * nc / qc;
-             Real rel_error = std::abs(N_loss - expected_N_loss) / std::max(1e-30, expected_N_loss);
+             Real rel_error = std::abs(N_loss - expected_N_loss) / std::max(absolute_floor, expected_N_loss);
              
-             if (rel_error > 1e-7) {
-                 std::cout << "Specific Loss Conservation Fail: Estimated=" << expected_N_loss << " Actual=" << N_loss << "\n";
+             if (rel_error > identity_tol) {
+                 std::cout << "Specific Loss Conservation Fail (should be near machine precision):\n";
+                 std::cout << "  Expected: " << expected_N_loss << "\n";
+                 std::cout << "  Actual:   " << N_loss << "\n";
+                 std::cout << "  Rel Error: " << rel_error << " (tolerance: " << identity_tol << ")\n";
                  failures++;
              }
         }
 
         // B. Rain Embryo Size Consistency
         if (R > 1e-20 && R_ncautr > 1e-20) {
+             // B. Rain Embryo Size Consistency (Configuration Parameter)
+             // Verifies: autoconversion_radius parameter is preserved through calculation
              Real mass_drop = R / R_ncautr;
              
-             // Check against specific 25 um radius used in P3 Constants
-             // mass = 4/3 * pi * rho_w * r^3
              using C = scream::physics::Constants<Real>;
-             const Real r_expected = 25.0e-6; 
+             const Real r_expected = 25.0e-6;  // Must match autoconversion_radius
              const Real expected_mass = (4.0/3.0) * C::Pi * 1000.0 * std::pow(r_expected, 3);
-             const Real tol = 0.01; // 1% tolerance
-
-             if (std::abs(mass_drop - expected_mass) / expected_mass > tol) {
-                  std::cout << "Embryo Size Fail: Mass=" << mass_drop 
-                            << " kg. Expected ~" << expected_mass << " kg (25 um radius, 1% tolerance)\n";
+             
+             if (std::abs(mass_drop - expected_mass) / expected_mass > physics_tol) {
+                  std::cout << "Embryo Size Fail (configuration mismatch):\n";
+                  std::cout << "  Computed mass: " << mass_drop << " kg\n";
+                  std::cout << "  Expected mass: " << expected_mass << " kg (r=25um)\n";
+                  std::cout << "  Tolerance: " << physics_tol*100 << "%\n";
                   failures++;
              }
         }
@@ -411,10 +435,12 @@ void cloud_water_autoconversion_unit_bfb_tests() {
         
         // A. Haze Limit
         if (mean_rad < 1e-6) {
-            // Implementation does not explicitly cut off based on radius (only qc < 1e-8).
-            // Rates are physically small (~1e-18) but not zero. Use 1e-15 tolerance.
-            if (R > 1e-15) {
-                std::cout << "Haze Limit Fail: r=" << mean_rad << ", R=" << R << "\n";
+            // A. Haze Limit (Physical Regime Check)
+            // For haze-sized droplets (r < 1 μm), rates should be physically negligible.
+            // Note: Implementation threshold is qc < 1e-8, not radius-based.
+            if (R > haze_regime_floor) {
+                std::cout << "Haze Limit Fail: r=" << mean_rad << " m, R=" << R << " kg/kg/s\n";
+                std::cout << "  (Rate exceeds physical relevance threshold: " << haze_regime_floor << ")\n";
                 failures++;
             }
         }
@@ -461,21 +487,21 @@ void cloud_water_autoconversion_unit_bfb_tests() {
 
     bool is_variance_scaling_active = false;
     int variance_suppression_failures = 0;
-    const Real detect_eps = 1e-3; // Threshold to decide if logic is ON
-    const Real validate_eps = 1e-12; // Threshold for physical violation (suppression)
+    const Real variance_detect_eps = detect_threshold;  // 0.1% change indicates active scaling
+    const Real variance_validate_eps = 1e-12;           // Numerical noise floor for suppression check
 
     for(int i=0; i<n_qc; ++i) {
         if (h_rate_1(i) > 1e-30) {
             Real ratio = h_rate_2(i) / h_rate_1(i);
 
             // Detection: Do standard and variance rates differ?
-            if (std::abs(ratio - 1.0) > detect_eps) {
+            if (std::abs(ratio - 1.0) > variance_detect_eps) {
                 is_variance_scaling_active = true;
                 
                 // Validation: If active, is the rate suppressed? (Physical violation)
                 // Jensen's inequality for convex functions implies enhancement (ratio > 1).
                 // We fail if ratio < 1.0 (minus tolerance).
-                if (ratio < 1.0 - validate_eps) {
+                if (ratio < 1.0 - variance_validate_eps) {
                      variance_suppression_failures++;
                 }
             }

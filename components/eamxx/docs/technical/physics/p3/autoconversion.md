@@ -81,6 +81,42 @@ $$\texttt{ncautr} = \texttt{nc2nr\_autoconv\_tend} \times \frac{q_c}{N_c} \times
 
 The unit testing suite (`p3_autoconversion_unit_tests.cpp`) employs a "Physics Property Test" strategy. We validate that the implementation adheres to fundamental physical principles across a wide parameter space.
 
+### Tolerance Philosophy
+
+The test suite uses two categories of tolerances based on what is being validated:
+
+#### 1. Identity Tolerances (Precision-Dependent)
+These validate that the implementation follows its documented mathematical formulas exactly. Since floating-point precision differs between single and double precision builds, these tolerances are conditionally compiled:
+
+- **Double precision**: `1e-14` (~100× machine epsilon)
+- **Single precision**: `1e-7` (~1000× machine epsilon)
+
+**Examples**:
+- Verifying `nc2nr_autoconv_tend = qc2qr_autoconv_tend × (Nc/qc)`
+- Conservation laws with exact arithmetic
+
+**Rationale**: These are code correctness checks. Failure indicates implementation bugs, not physics issues. The tolerance accounts for ~10 floating-point operations while remaining strict enough to catch formula errors.
+
+#### 2. Physics Tolerances (Precision-Independent)
+These validate physical approximations and configuration parameters. They do not depend on floating-point precision:
+
+- **Standard**: `1%` (0.01)
+
+**Examples**:
+- Embryo radius consistency (configuration parameter)
+- KK2000 parameterization accuracy
+- Monotonicity detection thresholds
+
+**Rationale**: Physics uncertainties exceed numerical precision. A 1% parameterization error is 1% regardless of whether calculations use float or double.
+
+#### 3. Regime Thresholds (Physical Relevance)
+These define when values are physically negligible rather than mathematically zero:
+
+- **Haze regime floor**: `1e-15` kg/kg/s (physically irrelevant rate)
+- **Absolute floor**: `1e-30` (proxy for numerical zero)
+
+**Rationale**: Power-law formulas produce non-zero values even in physically irrelevant regimes. These thresholds distinguish "numerically small" from "physically negligible."
+
 ### Test Strategy
 
 We perform a dense sampling of the phase space:
@@ -112,18 +148,20 @@ We verify the sign of the partial derivatives with respect to the input state va
 
 We check that the derived number tendencies match their physical definitions.
 
-* **Specific Loss Conservation**:
+* **Specific Loss Conservation** (Mathematical Identity):
   The code checks that the number loss rate satisfies the conservation relationship: $ (dNc/dt)_{auto} = (dqr/dt)_{auto} \cdot (N_c / q_c) $.
+  
+  **Tolerance**: Precision-dependent (`1e-14` for double, `1e-7` for float). This is an exact mathematical identity in the implementation, so failures indicate code bugs rather than physics issues.
 
-* **Rain Embryo Mass**:
+* **Rain Embryo Mass** (Configuration Consistency):
   The implicit mass of the newly formed rain drops is recovered from the ratio of mass tendency to number tendency:
   $$ m_{effective} = \frac{\left(\partial q_r / \partial t\right)}{\left(\partial N_r / \partial t\right)} $$
-  The test verifies that this mass corresponds **exactly to the characteristic radius $r_{auto}$ (25 $\mu m$) within a 1% tolerance**, confirming the configuration parameter is conserved.
+  The test verifies that this mass corresponds to the characteristic radius $r_{auto}$ (25 $\mu m$) within **1% tolerance** (physics-based, precision-independent). This confirms the `autoconversion_radius` configuration parameter is correctly preserved through the calculation.
 
 ### 4. Physical Limits
 
-* **Haze Limit**:
-  If the mean droplet radius corresponds to haze ($ r < 1 \mu m $), the autoconversion rate must be negligible. **The test uses a threshold of $10^{-15}$ (rather than machine zero)** to account for the finite power-law tail in the haze regime while confirming the rate is physically irrelevant.
+* **Haze Limit** (Physical Regime Check):
+  If the mean droplet radius corresponds to haze ($ r < 1 \mu m $), the autoconversion rate must be negligible. **The test uses a threshold of $10^{-15}$ kg/kg/s** to distinguish "physically irrelevant" from "mathematically zero." This accounts for the power-law formula producing non-zero values in regimes where the process has no physical significance. This is a regime threshold, not a precision-dependent tolerance.
 
 ### 5. Variance Scaling (Disabled)
 
@@ -131,3 +169,14 @@ The test suite checks for subgrid variance scaling.
 
 * **Principle**: Due to the nonlinearity of the autoconversion rate, subgrid variability in $ q_c $ should enhance the grid-mean rate.
 * **Status**: Since the feature is currently disabled in the implementation (`sgs_var_coef = 1`), the test detects this state and reports it as "DISABLED" without failing. If the rates differ significantly but do not show enhancement, it flags a failure.
+
+### Tolerance Summary
+
+| Test Category | Tolerance Type | Value (Double/Single) | Rationale |
+|--------------|----------------|----------------------|-----------|
+| **Specific Loss Conservation** | Identity | `1e-14` / `1e-7` | Mathematical identity (2 FLOPs) |
+| **Rain Embryo Mass** | Physics | `1%` (both) | Configuration parameter accuracy |
+| **Monotonicity (Nc)** | Strict | No tolerance | Physics requires strict inequality |
+| **Monotonicity (qc)** | Physics | `0.1%` | Physical sensitivity detection |
+| **Haze Regime** | Physical | `1e-15` kg/kg/s | Relevance threshold |
+| **Variance Detection** | Feature | `0.1%` | Distinguish on/off state |
