@@ -2668,6 +2668,7 @@
       </modules>
       <modules compiler="oneapi-ifx" mpilib="openmpi">
         <command name="load">openmpi/4.1.8-nygtpa3</command>
+        <command name="load">intel-oneapi-mkl/2025.2.0-bcimxay</command>
         <command name="load">hdf5/1.14.6-5cgownf</command>
         <command name="load">netcdf-c/4.9.3-mekqsor</command>
         <command name="load">netcdf-fortran/4.6.2-cjqpiwp</command>
@@ -2717,9 +2718,6 @@
       <env name="BLOSC2_ROOT">$SHELL{if [ -z "$BLOSC2_ROOT" ]; then echo /lcrc/soft/climate/c-blosc2/2.15.2/gcc-11.2.0; else echo "$BLOSC2_ROOT"; fi}</env>
       <env name="SZ_ROOT">$SHELL{if [ -z "$SZ_ROOT" ]; then echo /lcrc/soft/climate/sz/2.1.12.5/gcc-11.2.0; else echo "$SZ_ROOT"; fi}</env>
       <env name="ZFP_ROOT">$SHELL{if [ -z "$ZFP_ROOT" ]; then echo /lcrc/soft/climate/zfp/1.0.1/gcc-11.2.0; else echo "$ZFP_ROOT"; fi}</env>
-    </environment_variables>
-    <environment_variables compiler="oneapi-ifx" mpilib="openmpi">
-      <env name="LD_LIBRARY_PATH">$ENV{NETCDF_FORTRAN_PATH}/lib:$ENV{NETCDF_C_PATH}/lib:/gpfs/fs1/soft/chrysalis/spack-latest/opt/spack/linux-rhel8-x86_64/gcc-8.5.0/gcc-11.3.0-jkpmtgq/lib64:$ENV{LD_LIBRARY_PATH}</env>
     </environment_variables>
   </machine>
 
