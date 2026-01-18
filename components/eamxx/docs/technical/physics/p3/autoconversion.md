@@ -86,34 +86,39 @@ The unit testing suite (`p3_autoconversion_unit_tests.cpp`) employs a "Physics P
 The test suite uses two categories of tolerances based on what is being validated:
 
 #### 1. Identity Tolerances (Precision-Dependent)
+
 These validate that the implementation follows its documented mathematical formulas exactly. Since floating-point precision differs between single and double precision builds, these tolerances are conditionally compiled:
 
-- **Double precision**: `1e-14` (~100× machine epsilon)
-- **Single precision**: `1e-7` (~1000× machine epsilon)
+* **Double precision**: `1e-14` (~100× machine epsilon)
+* **Single precision**: `1e-7` (~1000× machine epsilon)
 
 **Examples**:
-- Verifying `nc2nr_autoconv_tend = qc2qr_autoconv_tend × (Nc/qc)`
-- Conservation laws with exact arithmetic
+
+* Verifying `nc2nr_autoconv_tend = qc2qr_autoconv_tend × (Nc/qc)`
+* Conservation laws with exact arithmetic
 
 **Rationale**: These are code correctness checks. Failure indicates implementation bugs, not physics issues. The tolerance accounts for ~10 floating-point operations while remaining strict enough to catch formula errors.
 
 #### 2. Physics Tolerances (Precision-Independent)
+
 These validate physical approximations and configuration parameters. They do not depend on floating-point precision:
 
-- **Standard**: `1%` (0.01)
+* **Standard**: `1%` (0.01)
 
 **Examples**:
-- Embryo radius consistency (configuration parameter)
-- KK2000 parameterization accuracy
-- Monotonicity detection thresholds
+
+* Embryo radius consistency (configuration parameter)
+* KK2000 parameterization accuracy
+* Monotonicity detection thresholds
 
 **Rationale**: Physics uncertainties exceed numerical precision. A 1% parameterization error is 1% regardless of whether calculations use float or double.
 
 #### 3. Regime Thresholds (Physical Relevance)
+
 These define when values are physically negligible rather than mathematically zero:
 
-- **Haze regime floor**: `1e-15` kg/kg/s (physically irrelevant rate)
-- **Absolute floor**: `1e-30` (proxy for numerical zero)
+* **Haze regime floor**: `1e-15` kg/kg/s (physically irrelevant rate)
+* **Absolute floor**: `1e-30` (proxy for numerical zero)
 
 **Rationale**: Power-law formulas produce non-zero values even in physically irrelevant regimes. These thresholds distinguish "numerically small" from "physically negligible."
 
@@ -173,7 +178,7 @@ The test suite checks for subgrid variance scaling.
 ### Tolerance Summary
 
 | Test Category | Tolerance Type | Value (Double/Single) | Rationale |
-|--------------|----------------|----------------------|-----------|
+| ------------- | -------------- | --------------------- | --------- |
 | **Specific Loss Conservation** | Identity | `1e-14` / `1e-7` | Mathematical identity (2 FLOPs) |
 | **Rain Embryo Mass** | Physics | `1%` (both) | Configuration parameter accuracy |
 | **Monotonicity (Nc)** | Strict | No tolerance | Physics requires strict inequality |
