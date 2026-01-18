@@ -28,7 +28,7 @@ $$ N_{c, vol} = N_c \cdot \rho \cdot 10^{-6} \;\equiv\; \texttt{nc\_incld} \cdot
 
 Consistent with the 2-moment approach, the parameterization calculates the tendencies for both mass and number.
 
-**1. Cloud-to-Rain Number Transfer**
+#### 1. Cloud-to-Rain Number Transfer
 
 The rate at which cloud droplet number converts to rain droplet number is determined by preserving the specific number concentration:
 
@@ -37,7 +37,7 @@ $$ \left|\frac{\partial N_c}{\partial t}\right|_{auto} = \left(\frac{\partial q_
 **Implementation**: The variable `nc2nr_autoconv_tend` stores the positive magnitude of this transfer rate. The actual tendency of cloud droplet number is the negative of this value:
 $$\frac{\partial N_c}{\partial t} = -\texttt{nc2nr\_autoconv\_tend}$$
 
-**2. Rain Droplet Number Source**
+#### 2. Rain Droplet Number Source
 
 The source of rain droplet number is determined by the characteristic mass of newly formed rain embryos:
 
@@ -62,10 +62,12 @@ $$\texttt{ncautr} = \texttt{nc2nr\_autoconv\_tend} \times \frac{q_c}{N_c} \times
 * **Reference**: This logic is implemented in `cloud_water_autoconversion()` within [p3_autoconversion_impl.hpp](../../../../src/physics/p3/impl/p3_autoconversion_impl.hpp).
 * **Thresholds**: The process is active only when $ q_c > 10^{-8} \, kg/kg $.
 * **Consistency Enforcement**: The implementation ensures that if either the mass or number tendency is zero, both are set to zero, preventing numerical artifacts in extreme regimes:
+
   ```cpp
   nc2nr_autoconv_tend.set(qc2qr_autoconv_tend == 0 && context, 0);
   qc2qr_autoconv_tend.set(nc2nr_autoconv_tend == 0 && context, 0);
   ```
+
 * **Subgrid Variance**: The code includes a placeholder for subgrid variance scaling (Jensen's inequality effect), but it is currently disabled:
 
   ```cpp
