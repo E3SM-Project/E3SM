@@ -298,7 +298,6 @@ contains
      real(r8) :: qflx_h2osfc_drain(bounds%begc:bounds%endc) ! bottom drainage from h2osfc
      real(r8) :: qflx_in_h2osfc(bounds%begc:bounds%endc)    ! surface input to h2osfc
      real(r8) :: qflx_in_soil(bounds%begc:bounds%endc)      ! surface input to soil
-     real(r8) :: qflx_infl_excess(bounds%begc:bounds%endc)  ! infiltration excess runoff -> h2osfc
      real(r8) :: frac_infclust                              ! fraction of submerged area that is connected
      real(r8) :: fsno                                       ! copy of frac_sno
      real(r8) :: k_wet                                      ! linear reservoir coefficient for h2osfc
@@ -356,6 +355,7 @@ contains
           qflx_surf            =>    col_wf%qflx_surf            , & ! Output: [real(r8) (:)   ]  surface runoff (mm H2O /s)
           qflx_h2osfc_surf     =>    col_wf%qflx_h2osfc_surf     , & ! Output: [real(r8) (:)   ]  surface water runoff (mm/s)
           qflx_infl            =>    col_wf%qflx_infl            , & ! Output: [real(r8) (:)   ] infiltration (mm H2O /s)
+          qflx_infl_excess     =>    col_wf%qflx_infl_excess     , & ! Output: [real(r8) (:)   ] infiltration excess (mm H2O /s) 
           qflx_gross_infl_soil =>    col_wf%qflx_gross_infl_soil , & ! Output: [real(r8) (:)] gross infiltration (mm H2O/s)
           qflx_gross_evap_soil =>    col_wf%qflx_gross_evap_soil , & ! Output: [real(r8) (:)] gross evaporation (mm H2O/s)
           qflx_h2orof_drain    =>    col_wf%qflx_h2orof_drain    , & ! Output: [real(r8) (:)] drainange from floodplain inundation volume (mm H2O/s) 
@@ -624,6 +624,7 @@ contains
                 qflx_gross_evap_soil(c) = (1.0_r8 - frac_sno(c)) * qflx_ev_soil(c)
              end if
              qflx_h2osfc_surf(c) = 0._r8
+             qflx_infl_excess(c) = 0._r8
           endif
 
        enddo

@@ -489,6 +489,7 @@ module ColumnDataType
     real(r8), pointer :: qflx_rootsoi         (:,:) => null() ! root and soil water exchange [mm H2O/s] [+ into root]
     real(r8), pointer :: dwb                  (:)   => null() !  water mass change [+ increase] [mm H2O/s]
     real(r8), pointer :: qflx_infl            (:)   => null() ! infiltration (mm H2O /s)
+    real(r8), pointer :: qflx_infl_excess     (:)   => null() ! infiltration excess (mm H2O /s) 
     real(r8), pointer :: qflx_surf            (:)   => null() ! surface runoff (mm H2O /s)
     real(r8), pointer :: qflx_drain           (:)   => null() ! sub-surface runoff (mm H2O /s)
     real(r8), pointer :: qflx_totdrain        (:)   => null()
@@ -6117,6 +6118,7 @@ contains
     allocate(this%qflx_rootsoi           (begc:endc,1:nlevgrnd))  ; this%qflx_rootsoi         (:,:) = spval
     allocate(this%dwb                    (begc:endc))             ; this%dwb                  (:)   = spval
     allocate(this%qflx_infl              (begc:endc))             ; this%qflx_infl            (:)   = spval
+    allocate(this%qflx_infl_excess       (begc:endc))             ; this%qflx_infl_excess     (:)   = spval
     allocate(this%qflx_surf              (begc:endc))             ; this%qflx_surf            (:)   = spval
     allocate(this%qflx_drain             (begc:endc))             ; this%qflx_drain           (:)   = spval
     allocate(this%qflx_totdrain          (begc:endc))             ; this%qflx_totdrain        (:)   = spval
@@ -6191,6 +6193,12 @@ contains
      call hist_addfld1d (fname='QINFL',  units='mm/s',  &
           avgflag='A', long_name='infiltration', &
            ptr_col=this%qflx_infl, c2l_scale_type='urbanf')
+
+    this%qflx_infl_excess(begc:endc) = spval
+    call hist_addfld1d (fname='QINFL_EXCESS',  units='mm/s',  &
+         avgflag='A', long_name='infiltration excess runoff', &
+         ptr_col=this%qflx_infl_excess, c2l_scale_type='urbanf', &
+         default='inactive')
 
     this%qflx_surf(begc:endc) = spval
      call hist_addfld1d (fname='QOVER',  units='mm/s',  &
