@@ -202,7 +202,7 @@ void cloud_water_autoconversion_unit_bfb_tests() {
     const Real physics_tol = 0.01;      // 1% (matches KK2000 accuracy, config params)
 
     // Regime thresholds: physical relevance cutoffs (DO NOT MODIFY)
-    const Real haze_regime_floor = 1e-15;      // Physically negligible rate
+    const Real small_droplet_regime_floor = 1e-15;  // Physically negligible rate for r < 1μm
     const Real absolute_floor = 1e-30;         // Numerical zero proxy
     const Real detect_threshold = 1e-3;        // Feature detection (0.1%)
 
@@ -215,11 +215,14 @@ void cloud_water_autoconversion_unit_bfb_tests() {
     //
     // Strategy:
     // Uses a deterministic grid-sampling strategy that sweeps the parameter 
-    // space logarithmically to cover regimes ranging from haze to heavy cloud,
-    // and pristine to polluted conditions.
+    // space logarithmically to cover regimes ranging from sub-threshold 
+    // (qc < 1e-8) through incipient cloud to heavy precipitation, and 
+    // pristine to polluted conditions.
     // =========================================================================
 
-    // Grid Setup: qc from 5e-9 to 1e-2 kg/kg (covers below and above 1e-8 threshold)
+    // Grid Setup: qc from 5e-9 to 1e-2 kg/kg
+    // Lower bound: sub-threshold regime (qc < 1e-8, autoconversion inactive)
+    // Upper bound: heavy precipitation (qc ~ 1e-2, vigorous autoconversion)
     const int n_qc = 40;
     const int n_nc = 40;
     const int num_cases = n_qc * n_nc;
@@ -435,14 +438,16 @@ void cloud_water_autoconversion_unit_bfb_tests() {
         using C = scream::physics::Constants<Real>;
         Real mean_rad = std::pow((3.0 * mean_mass) / (4.0 * C::Pi * 1000.0), 1.0/3.0);
         
-        // A. Haze Limit
+        // A. Small Droplet Regime Limit
         if (mean_rad < 1e-6) {
-            // A. Haze Limit (Physical Regime Check)
-            // For haze-sized droplets (r < 1 μm), rates should be physically negligible.
+            // A. Small Droplet Regime Limit (Physical Relevance Check)
+            // For very small activated droplets (r < 1 μm), autoconversion rates 
+            // should be physically negligible due to low collision efficiency.
+            // This regime represents incipient cloud or sub-threshold conditions.
             // Note: Implementation threshold is qc < 1e-8, not radius-based.
-            if (R > haze_regime_floor) {
-                std::cout << "Haze Limit Fail: r=" << mean_rad << " m, R=" << R << " kg/kg/s\n";
-                std::cout << "  (Rate exceeds physical relevance threshold: " << haze_regime_floor << ")\n";
+            if (R > small_droplet_regime_floor) {
+                std::cout << "Small Droplet Regime Fail: r=" << mean_rad << " m, R=" << R << " kg/kg/s\n";
+                std::cout << "  (Rate exceeds physical relevance threshold: " << small_droplet_regime_floor << ")\n";
                 failures++;
             }
         }

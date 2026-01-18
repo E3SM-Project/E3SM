@@ -117,16 +117,18 @@ These validate physical approximations and configuration parameters. They do not
 
 These define when values are physically negligible rather than mathematically zero:
 
-* **Haze regime floor**: `1e-15` kg/kg/s (physically irrelevant rate)
+* **Small droplet regime floor**: `1e-15` kg/kg/s (physically irrelevant rate for r < 1 μm)
 * **Absolute floor**: `1e-30` (proxy for numerical zero)
 
-**Rationale**: Power-law formulas produce non-zero values even in physically irrelevant regimes. These thresholds distinguish "numerically small" from "physically negligible."
+**Rationale**: Power-law formulas produce non-zero values even in physically irrelevant regimes. The small droplet threshold distinguishes when mean droplet sizes are too small for efficient collision-coalescence (r < 1 μm, representing incipient cloud or sub-threshold conditions) from regimes where autoconversion is physically active.
 
 ### Test Strategy
 
 We perform a dense sampling of the phase space:
 
-* **Cloud Water ($q_c$)**: Logarithmic sweep from $ 5 \times 10^{-9} $ (below threshold) to $ 10^{-2} \, kg/kg $.
+* **Cloud Water ($q_c$)**: Logarithmic sweep from $ 5 \times 10^{-9} $ (sub-threshold regime) to $ 10^{-2} \, kg/kg $ (heavy precipitation).
+  - Below $ 10^{-8} $: autoconversion inactive (incipient cloud)
+  - Above $ 10^{-8} $: active cloud-to-rain transition
 * **Cloud Number ($N_c$)**: Logarithmic sweep from $ 10^{6} $ to $ 10^{9} \, \#/m^3 $.
 
 ### Parameter Validation
@@ -165,8 +167,8 @@ We check that the derived number tendencies match their physical definitions.
 
 ### 4. Physical Limits
 
-* **Haze Limit** (Physical Regime Check):
-  If the mean droplet radius corresponds to haze ($ r < 1 \mu m $), the autoconversion rate must be negligible. **The test uses a threshold of $10^{-15}$ kg/kg/s** to distinguish "physically irrelevant" from "mathematically zero." This accounts for the power-law formula producing non-zero values in regimes where the process has no physical significance. This is a regime threshold, not a precision-dependent tolerance.
+* **Small Droplet Regime Limit** (Physical Relevance Check):
+  When the mean droplet radius is very small ($ r < 1 \mu m $, characteristic of incipient cloud or sub-threshold conditions), autoconversion must be physically negligible due to low collision efficiency. **The test uses a threshold of $10^{-15}$ kg/kg/s** to distinguish "physically irrelevant" from "mathematically zero." This accounts for the power-law formula producing non-zero values in regimes where collision-coalescence has no physical significance. This is a regime threshold, not a precision-dependent tolerance.
 
 ### 5. Variance Scaling (Disabled)
 
@@ -183,5 +185,5 @@ The test suite checks for subgrid variance scaling.
 | **Rain Embryo Mass** | Physics | `1%` (both) | Configuration parameter accuracy |
 | **Monotonicity (Nc)** | Strict | No tolerance | Physics requires strict inequality |
 | **Monotonicity (qc)** | Physics | `0.1%` | Physical sensitivity detection |
-| **Haze Regime** | Physical | `1e-15` kg/kg/s | Relevance threshold |
+| **Small Droplet Regime** | Physical | `1e-15` kg/kg/s | Relevance threshold (r < 1 μm) |
 | **Variance Detection** | Feature | `0.1%` | Distinguish on/off state |
