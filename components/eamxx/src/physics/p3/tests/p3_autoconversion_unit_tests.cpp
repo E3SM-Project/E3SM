@@ -345,8 +345,10 @@ void cloud_water_autoconversion_unit_bfb_tests() {
         // =====================================================================
         // 1. Physical Sensitivity Tests (Monotonicity)
         // =====================================================================
+        // Uses strict inequality for Nc (physics requirement) and 0.1% tolerance for qc
+        // (sensitivity detection). Both reference the global absolute_floor (1e-30).
         
-        const Real relative_tolerance = 1e-3;  // 0.1% sensitivity detection threshold
+        const Real relative_tolerance = 1e-3;  // 0.1% sensitivity threshold for qc monotonicity
 
         if (j < n_nc - 1) {
             int idx_next = (j + 1) * n_qc + i;
