@@ -141,7 +141,7 @@ CONTAINS
          inst_index, inst_suffix, inst_name, logunit, nxg, nyg)
 
 #ifdef HAVE_MOAB
-    call dead_init_moab( mphaid, 'atm', gsMap, gbuf, seq_flds_x2a_fields, seq_flds_a2x_fields, mpicom, compid, logunit, nxg, nyg )
+    call dead_init_moab( mphaid, 'atm', gsMap, gbuf, x2d, d2x, mpicom, compid, logunit, nxg, nyg )
 #endif
 
     if (nxg == 0 .and. nyg == 0) then
