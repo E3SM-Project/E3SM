@@ -19,6 +19,8 @@ module ocn_comp_mct
 #ifdef HAVE_MOAB
   use seq_comm_mct,     only: mpoid  ! iMOAB pid for ocean mesh on component pes
   use iso_c_binding
+  use iMOAB           , only: iMOAB_RegisterApplication
+  use dead_mct_mod   , only: dead_init_moab
 #endif
 
   ! !PUBLIC TYPES:
@@ -55,10 +57,6 @@ CONTAINS
   subroutine ocn_init_mct( EClock, cdata, x2d, d2x, NLFilename )
 
     ! !DESCRIPTION: initialize dead ocn model
-
-#ifdef HAVE_MOAB
-    use iMOAB, only: iMOAB_RegisterApplication
-#endif
 
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Clock)            , intent(inout) :: EClock
@@ -129,14 +127,16 @@ CONTAINS
     write(logunit,*) subName,' error in registering data ocn comp'
     call shr_sys_abort(subName//' ERROR in registering data ocn comp')
   endif
-   ! send path of ocean domain file to MOAB coupler.
-!   call seq_infodata_PutData( infodata, ocn_domain=SDOCN%domainFile)
 #endif
 
     call dead_init_mct('ocn', Eclock, x2d, d2x, &
          seq_flds_x2o_fields, seq_flds_o2x_fields, &
          gsmap, ggrid, gbuf, mpicom, compid, my_task, master_task, &
-         inst_index, inst_suffix, inst_name, logunit, nxg, nyg, mpoid)
+         inst_index, inst_suffix, inst_name, logunit, nxg, nyg)
+
+#ifdef HAVE_MOAB
+    call dead_init_moab( mpoid, 'ocn', gsMap, gbuf, seq_flds_x2o_fields, seq_flds_o2x_fields, mpicom, compid, logunit, nxg, nyg )
+#endif
 
     if (nxg == 0 .and. nyg == 0) then
        ocn_present = .false.
