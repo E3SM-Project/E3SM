@@ -5220,62 +5220,97 @@
 
 
 <h1 id="p3-autoconversion">P3 Autoconversion</h1>
-<p>This document details the implementation and verification of the cloud water to rain autoconversion process in the P3 microphysics scheme.</p>
+<p>This document details the implementation and verification of the cloud water to
+rain autoconversion process in the P3 microphysics scheme.</p>
 <h2 id="physical-formulation">Physical Formulation</h2>
-<p>The autoconversion parameterization follows the formulation of <strong>Khairoutdinov and Kogan (2000)</strong>. It represents the collision and coalescence of cloud droplets to form rain drops.</p>
+<p>The autoconversion parameterization follows the formulation of <strong>Khairoutdinov
+and Kogan (2000)</strong>. It represents the collision and coalescence of cloud
+droplets to form rain drops.</p>
 <h3 id="autoconversion-rate">Autoconversion Rate</h3>
-<p>The time tendency of rain mass mixing ratio due to autoconversion, $ \left(\frac{\partial q_r}{\partial t}\right)_{auto} <span class="arithmatex">\(, is calculated as a power law function of the cloud water mixing ratio (\)</span>q_c<span class="arithmatex">\() and the cloud droplet number concentration (\)</span>N_c$).</p>
-<div class="arithmatex">\[ \left(\frac{\partial q_r}{\partial t}\right)_{auto} = A \, q_c^{\alpha} \, (N_{c, vol})^{-\beta} \]</div>
+<p>The time tendency of rain mass mixing ratio due to autoconversion,
+<span class="arithmatex">\(\left(\frac{\partial q_r}{\partial t}\right)_{\text{auto}}\)</span>, is calculated as a
+power law function of the cloud water mixing ratio (<span class="arithmatex">\(q_c\)</span>) and the cloud droplet
+number concentration (<span class="arithmatex">\(N_c\)</span>).</p>
+<div class="arithmatex">\[ \left(\frac{\partial q_r}{\partial t}\right)_{\text{auto}} = A \, q_c^{\alpha} \, (N_{c, \text{vol}})^{-\beta} \]</div>
 <p>Where:</p>
 <ul>
-<li>$ A $ is the autoconversion prefactor ( <code>autoconversion_prefactor</code> ).</li>
-<li>$ \alpha $ is the cloud water exponent ( <code>autoconversion_qc_exponent</code> ).</li>
-<li>$ \beta $ is the cloud number exponent ( <code>autoconversion_nc_exponent</code> ).</li>
-<li><strong>Note</strong>: <span class="arithmatex">\(\beta\)</span> is stored as a positive value (1.79 in default configuration) following KK2000 convention. In the implementation this appears as <code>pow(nc_incld * sp(1.e-6) * rho, -autoconversion_nc_exponent)</code>, which is the code equivalent of the analytic form $ \mathrm{pow}(N_{c, vol}, -\beta) $.</li>
-<li>$ N_{c, vol} $ is the cloud droplet number concentration in units of $ cm^{-3} $.</li>
+<li><span class="arithmatex">\(A\)</span> is the autoconversion prefactor ( <code>autoconversion_prefactor</code> ).</li>
+<li><span class="arithmatex">\(\alpha\)</span> is the cloud water exponent ( <code>autoconversion_qc_exponent</code> ).</li>
+<li><span class="arithmatex">\(\beta\)</span> is the cloud number exponent ( <code>autoconversion_nc_exponent</code> ).</li>
+<li><strong>Note</strong>: <span class="arithmatex">\(\beta\)</span> is stored as a positive value (1.79 in default
+     configuration) following KK2000 convention. In the implementation this
+     appears as
+     <code>pow(nc_incld * sp(1.e-6) * rho, -autoconversion_nc_exponent)</code>, which is
+     the code equivalent of the analytic form
+     <span class="arithmatex">\(\mathrm{pow}(N_{c, \text{vol}}, -\beta)\)</span>.</li>
+<li><span class="arithmatex">\(N_{c, \text{vol}}\)</span> is the cloud droplet number concentration in units of
+  <span class="arithmatex">\(\text{cm}^{-3}\)</span>.</li>
 </ul>
-<p>In the implementation, $ N_{c, vol} $ is derived from the in-cloud number mixing ratio $ N_c $ ($ #/kg $) and air density $ \rho $ ($ kg/m^3 $), where $ N_c $ corresponds to the variable <code>nc_incld</code>:</p>
-<div class="arithmatex">\[ N_{c, vol} = N_c \cdot \rho \cdot 10^{-6} \;\equiv\; \texttt{nc\_incld} \cdot \texttt{sp(1.e-6)} \cdot \rho \]</div>
+<p>In the implementation, <span class="arithmatex">\(N_{c, \text{vol}}\)</span> is derived from the in-cloud number
+mixing ratio <span class="arithmatex">\(N_c\)</span> (<span class="arithmatex">\(\#/\text{kg}\)</span>) and air density <span class="arithmatex">\(\rho\)</span> (<span class="arithmatex">\(\text{kg}/\text{m}^3\)</span>),
+where <span class="arithmatex">\(N_c\)</span> corresponds to the variable <code>nc_incld</code>:</p>
+<div class="arithmatex">\[ N_{c, \text{vol}} = N_c \cdot \rho \cdot 10^{-6} \;\equiv\; \texttt{nc\_incld} \cdot \texttt{sp(1.e-6)} \cdot \rho \]</div>
 <h3 id="number-tendencies">Number Tendencies</h3>
-<p>Consistent with the 2-moment approach, the parameterization calculates the tendencies for both mass and number.</p>
+<p>Consistent with the 2-moment approach, the parameterization calculates the
+tendencies for both mass and number.</p>
 <h4 id="1-cloud-to-rain-number-transfer">1. Cloud-to-Rain Number Transfer</h4>
-<p>The rate at which cloud droplet number converts to rain droplet number is determined by preserving the specific number concentration:</p>
-<div class="arithmatex">\[ \left|\frac{\partial N_c}{\partial t}\right|_{auto} = \left(\frac{\partial q_r}{\partial t}\right)_{auto} \frac{N_c}{q_c} \]</div>
-<p><strong>Implementation</strong>: The variable <code>nc2nr_autoconv_tend</code> stores the positive magnitude of this transfer rate. The actual tendency of cloud droplet number is the negative of this value:
+<p>The rate at which cloud droplet number converts to rain droplet number is
+determined by preserving the specific number concentration:</p>
+<div class="arithmatex">\[ \left|\frac{\partial N_c}{\partial t}\right|_{\text{auto}} = \left(\frac{\partial q_r}{\partial t}\right)_{\text{auto}} \frac{N_c}{q_c} \]</div>
+<p><strong>Implementation</strong>: The variable <code>nc2nr_autoconv_tend</code> stores the positive
+magnitude of this transfer rate. The actual tendency of cloud droplet number is
+the negative of this value:
 $<span class="arithmatex">\(\frac{\partial N_c}{\partial t} = -\texttt{nc2nr\_autoconv\_tend}\)</span>$</p>
 <h4 id="2-rain-droplet-number-source">2. Rain Droplet Number Source</h4>
-<p>The source of rain droplet number is determined by the characteristic mass of newly formed rain embryos:</p>
-<div class="arithmatex">\[ \left(\frac{\partial N_r}{\partial t}\right)_{auto} = \frac{\left(\frac{\partial q_r}{\partial t}\right)_{auto}}{m_{drop}(r_{auto})} \]</div>
-<p>where <span class="arithmatex">\(m_{drop}(r) = \frac{4}{3}\pi\rho_w r^3\)</span> and <span class="arithmatex">\(r_{auto}\)</span> is the characteristic autoconversion radius (default: 25 μm).</p>
-<p><strong>Implementation</strong>: The variable <code>ncautr</code> stores this rain number source. It is computed as:</p>
+<p>The source of rain droplet number is determined by the characteristic mass of
+newly formed rain embryos:</p>
+<div class="arithmatex">\[ \left(\frac{\partial N_r}{\partial t}\right)_{\text{auto}} = \frac{\left(\frac{\partial q_r}{\partial t}\right)_{\text{auto}}}{m_{\text{drop}}(r_{\text{auto}})} \]</div>
+<p>where <span class="arithmatex">\(m_{\text{drop}}(r) = \frac{4}{3}\pi\rho_w r^3\)</span> and <span class="arithmatex">\(r_{\text{auto}}\)</span> is
+the characteristic autoconversion radius (default: 25 <span class="arithmatex">\(\mu\text{m}\)</span>).</p>
+<p><strong>Implementation</strong>: The variable <code>ncautr</code> stores this rain number source. It is
+computed as:</p>
 <div class="highlight"><pre><span></span><code><span class="n">ncautr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">qc2qr_autoconv_tend</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">CONS3</span>
 </code></pre></div>
 <p>where <code>CONS3</code> is computed locally as:
-$$ \text{CONS3} = \frac{1}{\frac{4\pi}{3}\rho_w r_{auto}^3} = \frac{1}{m_{drop}(r_{auto})} $$</p>
-<p><strong>Important</strong>: Note that <code>ncautr</code> (rain number source) is <strong>not equal</strong> to <code>nc2nr_autoconv_tend</code> (cloud number transfer magnitude). The relationship is:
+$$ \text{CONS3} = \frac{1}{\frac{4\pi}{3}\rho_w r_{\text{auto}}^3} = \frac{1}{m_{\text{drop}}(r_{\text{auto}})} $$</p>
+<p><strong>Important</strong>: Note that <code>ncautr</code> (rain number source) is <strong>not equal</strong> to
+<code>nc2nr_autoconv_tend</code> (cloud number transfer magnitude). The relationship is:
 $<span class="arithmatex">\(\texttt{ncautr} = \texttt{nc2nr\_autoconv\_tend} \times \frac{q_c}{N_c} \times \text{CONS3}\)</span>$</p>
 <h2 id="implementation-details">Implementation Details</h2>
 <ul>
-<li><strong>Reference</strong>: This logic is implemented in <code>cloud_water_autoconversion()</code> within <a href="https://github.com/E3SM-Project/E3SM/blob/master/components/eamxx/src/physics/p3/impl/p3_autoconversion_impl.hpp">p3_autoconversion_impl.hpp</a>.</li>
-<li><strong>Thresholds</strong>: The process is active only when $ q_c &gt; 10^{-8} \, kg/kg $.</li>
-<li><strong>Consistency Enforcement</strong>: The implementation ensures that if either the mass or number tendency is zero, both are set to zero, preventing numerical artifacts in extreme regimes:</li>
+<li><strong>Reference</strong>: This logic is implemented in <code>cloud_water_autoconversion()</code>
+  within <a href="https://github.com/E3SM-Project/E3SM/blob/master/components/eamxx/src/physics/p3/impl/p3_autoconversion_impl.hpp">p3_autoconversion_impl.hpp</a>.</li>
+<li><strong>Thresholds</strong>: The process is active only when <span class="arithmatex">\(q_c &gt; 10^{-8} \, \text{kg}/\text{kg}\)</span>.</li>
+<li><strong>Consistency Enforcement</strong>: The implementation ensures that if either the
+  mass or number tendency is zero, both are set to zero, preventing numerical
+  artifacts in extreme regimes:</li>
 </ul>
 <div class="highlight"><pre><span></span><code><span class="n">nc2nr_autoconv_tend</span><span class="p">.</span><span class="n">set</span><span class="p">(</span><span class="n">qc2qr_autoconv_tend</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
 <span class="n">qc2qr_autoconv_tend</span><span class="p">.</span><span class="n">set</span><span class="p">(</span><span class="n">nc2nr_autoconv_tend</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
 </code></pre></div>
 <ul>
-<li><strong>Subgrid Variance</strong>: The code includes a placeholder for subgrid variance scaling (Jensen's inequality effect), but it is currently disabled:</li>
+<li><strong>Subgrid Variance</strong>: The code includes a placeholder for subgrid variance
+  scaling (Jensen's inequality effect), but it is currently disabled:</li>
 </ul>
 <div class="highlight"><pre><span></span><code><span class="c1">// sgs_var_coef = subgrid_variance_scaling(inv_qc_relvar, sp(2.47) );</span>
 <span class="n">sgs_var_coef</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
 </code></pre></div>
-<p><strong>Note</strong>: When enabled, the scaling factor uses the same exponent (<span class="arithmatex">\(\alpha = 2.47\)</span>) as the <span class="arithmatex">\(q_c\)</span> dependency, consistent with Jensen's inequality for power-law functions: $ \langle q_c^{\alpha} \rangle &gt; \langle q_c \rangle^{\alpha} $ when variance exists.</p>
+<p><strong>Note</strong>: When enabled, the scaling factor uses the same exponent
+  (<span class="arithmatex">\(\alpha = 2.47\)</span>) as the <span class="arithmatex">\(q_c\)</span> dependency, consistent with Jensen's
+  inequality for power-law functions:
+  <span class="arithmatex">\(\langle q_c^{\alpha} \rangle &gt; \langle q_c \rangle^{\alpha}\)</span> when variance
+  exists.</p>
 <h2 id="property-tests">Property Tests</h2>
-<p>The unit testing suite (<code>p3_autoconversion_unit_tests.cpp</code>) employs a "Physics Property Test" strategy. We validate that the implementation adheres to fundamental physical principles across a wide parameter space.</p>
+<p>The unit testing suite (<code>p3_autoconversion_unit_tests.cpp</code>) employs a "Physics
+Property Test" strategy. We validate that the implementation adheres to
+fundamental physical principles across a wide parameter space.</p>
 <h3 id="tolerance-philosophy">Tolerance Philosophy</h3>
-<p>The test suite uses two categories of tolerances based on what is being validated:</p>
+<p>The test suite uses two categories of tolerances based on what is being
+validated:</p>
 <h4 id="1-identity-tolerances-precision-dependent">1. Identity Tolerances (Precision-Dependent)</h4>
-<p>These validate that the implementation follows its documented mathematical formulas exactly. Since floating-point precision differs between single and double precision builds, these tolerances are conditionally compiled:</p>
+<p>These validate that the implementation follows its documented mathematical
+formulas exactly. Since floating-point precision differs between single and
+double precision builds, these tolerances are conditionally compiled:</p>
 <ul>
 <li><strong>Double precision</strong>: <code>1e-14</code> (~100× machine epsilon)</li>
 <li><strong>Single precision</strong>: <code>1e-7</code> (~1000× machine epsilon)</li>
@@ -5285,9 +5320,12 @@ $<span class="arithmatex">\(\texttt{ncautr} = \texttt{nc2nr\_autoconv\_tend} \ti
 <li>Verifying <code>nc2nr_autoconv_tend = qc2qr_autoconv_tend × (Nc/qc)</code></li>
 <li>Conservation laws with exact arithmetic</li>
 </ul>
-<p><strong>Rationale</strong>: These are code correctness checks. Failure indicates implementation bugs, not physics issues. The tolerance accounts for ~10 floating-point operations while remaining strict enough to catch formula errors.</p>
+<p><strong>Rationale</strong>: These are code correctness checks. Failure indicates
+implementation bugs, not physics issues. The tolerance accounts for ~10
+floating-point operations while remaining strict enough to catch formula errors.</p>
 <h4 id="2-physics-tolerances-precision-independent">2. Physics Tolerances (Precision-Independent)</h4>
-<p>These validate physical approximations and configuration parameters. They do not depend on floating-point precision:</p>
+<p>These validate physical approximations and configuration parameters. They do not
+depend on floating-point precision:</p>
 <ul>
 <li><strong>Standard</strong>: <code>1%</code> (0.01)</li>
 </ul>
@@ -5297,63 +5335,96 @@ $<span class="arithmatex">\(\texttt{ncautr} = \texttt{nc2nr\_autoconv\_tend} \ti
 <li>KK2000 parameterization accuracy</li>
 <li>Monotonicity detection thresholds</li>
 </ul>
-<p><strong>Rationale</strong>: Physics uncertainties exceed numerical precision. A 1% parameterization error is 1% regardless of whether calculations use float or double.</p>
+<p><strong>Rationale</strong>: Physics uncertainties exceed numerical precision. A 1%
+parameterization error is 1% regardless of whether calculations use float or
+double.</p>
 <h4 id="3-regime-thresholds-physical-relevance">3. Regime Thresholds (Physical Relevance)</h4>
-<p>These define when values are physically negligible rather than mathematically zero:</p>
+<p>These define when values are physically negligible rather than mathematically
+zero:</p>
 <ul>
-<li><strong>Small droplet regime floor</strong>: <code>1e-15</code> kg/kg/s (physically irrelevant rate for r &lt; 1 μm)</li>
+<li><strong>Small droplet regime floor</strong>: <code>1e-15</code> <span class="arithmatex">\(\text{kg}/\text{kg}/\text{s}\)</span> (physically irrelevant
+  rate for <span class="arithmatex">\(r &lt; 1 \, \mu\text{m}\)</span>)</li>
 <li><strong>Absolute floor</strong>: <code>1e-30</code> (proxy for numerical zero)</li>
 </ul>
-<p><strong>Rationale</strong>: Power-law formulas produce non-zero values even in physically irrelevant regimes. The small droplet threshold distinguishes when mean droplet sizes are too small for efficient collision-coalescence (r &lt; 1 μm, representing incipient cloud or sub-threshold conditions) from regimes where autoconversion is physically active.</p>
+<p><strong>Rationale</strong>: Power-law formulas produce non-zero values even in physically
+irrelevant regimes. The small droplet threshold distinguishes when mean droplet
+sizes are too small for efficient collision-coalescence (<span class="arithmatex">\(r &lt; 1 \, \mu\text{m}\)</span>,
+representing incipient cloud or sub-threshold conditions) from regimes where
+autoconversion is physically active.</p>
 <h3 id="test-strategy">Test Strategy</h3>
 <p>We perform a dense sampling of the phase space:</p>
 <ul>
-<li><strong>Cloud Water (<span class="arithmatex">\(q_c\)</span>)</strong>: Logarithmic sweep from $ 5 \times 10^{-9} $ (sub-threshold regime) to $ 10^{-2} \, kg/kg $ (heavy precipitation).</li>
-<li>Below $ 10^{-8} $: autoconversion inactive (incipient cloud)</li>
-<li>Above $ 10^{-8} $: active cloud-to-rain transition</li>
-<li><strong>Cloud Number (<span class="arithmatex">\(N_c\)</span>)</strong>: Logarithmic sweep from $ 10^{6} $ to $ 10^{9} \, #/m^3 $.</li>
+<li><strong>Cloud Water (<span class="arithmatex">\(q_c\)</span>)</strong>: Logarithmic sweep from <span class="arithmatex">\(5 \times 10^{-9}\)</span>
+  (sub-threshold regime) to <span class="arithmatex">\(10^{-2} \, \text{kg}/\text{kg}\)</span> (heavy precipitation).</li>
+<li>Below <span class="arithmatex">\(10^{-8}\)</span>: autoconversion inactive (incipient cloud)</li>
+<li>Above <span class="arithmatex">\(10^{-8}\)</span>: active cloud-to-rain transition</li>
+<li><strong>Cloud Number (<span class="arithmatex">\(N_c\)</span>)</strong>: Logarithmic sweep from <span class="arithmatex">\(10^{6}\)</span> to <span class="arithmatex">\(10^{9} \, \#/\text{m}^3\)</span>.</li>
 </ul>
 <h3 id="parameter-validation">Parameter Validation</h3>
-<p>Before running property checks, the test suite verifies that the runtime configuration parameters match the expected Khairoutdinov and Kogan (2000) constants (e.g., <span class="arithmatex">\(A=1350\)</span>, <span class="arithmatex">\(\alpha=2.47\)</span>, <span class="arithmatex">\(r_{auto}=25\mu m\)</span>).</p>
+<p>Before running property checks, the test suite verifies that the runtime
+configuration parameters match the expected Khairoutdinov and Kogan (2000)
+constants (e.g., <span class="arithmatex">\(A=1350\)</span>, <span class="arithmatex">\(\alpha=2.47\)</span>, <span class="arithmatex">\(r_{\text{auto}}=25\mu\text{m}\)</span>).</p>
 <h3 id="1-threshold-behavior">1. Threshold Behavior</h3>
-<p>For <span class="arithmatex">\(q_c &lt; 10^{-8} \, kg/kg\)</span>, the test verifies that the autoconversion rate is strictly zero.</p>
+<p>For <span class="arithmatex">\(q_c &lt; 10^{-8} \, \text{kg}/\text{kg}\)</span>, the test verifies that the autoconversion
+rate is strictly zero.</p>
 <h3 id="2-monotonicity-sensitivity">2. Monotonicity &amp; Sensitivity</h3>
-<p>We verify the sign of the partial derivatives with respect to the input state variables:</p>
+<p>We verify the sign of the partial derivatives with respect to the input state
+variables:</p>
 <ul>
 <li>
 <p><strong>Colloidal Stability (Inverse <span class="arithmatex">\(N_c\)</span> Dependency)</strong>:
-  Increasing droplet number concentration while holding water content fixed must strictly decrease the rate. The test enforces this with <strong>no relative tolerance</strong>, as the physics dictates a strict inverse relationship.
-  $$ \frac{\partial}{\partial N_c} \left(\frac{\partial q_r}{\partial t}\right)_{auto} &lt; 0 $$</p>
+  Increasing droplet number concentration while holding water content fixed must
+  strictly decrease the rate. The test enforces this with <strong>no relative
+  tolerance</strong>, as the physics dictates a strict inverse relationship.
+  $$ \frac{\partial}{\partial N_c} \left(\frac{\partial q_r}{\partial t}\right)_{\text{auto}} &lt; 0 $$</p>
 </li>
 <li>
 <p><strong>Water Content Sensitivity (Positive <span class="arithmatex">\(q_c\)</span> Dependency)</strong>:
-  Increasing water content while holding number concentration fixed should increase the rate.
-  $$ \frac{\partial}{\partial q_c} \left(\frac{\partial q_r}{\partial t}\right)_{auto} &gt; 0 $$</p>
+  Increasing water content while holding number concentration fixed should
+  increase the rate.
+  $$ \frac{\partial}{\partial q_c} \left(\frac{\partial q_r}{\partial t}\right)_{\text{auto}} &gt; 0 $$</p>
 </li>
 </ul>
 <h3 id="3-consistency-constraints">3. Consistency Constraints</h3>
 <p>We check that the derived number tendencies match their physical definitions.</p>
 <ul>
 <li><strong>Specific Loss Conservation</strong> (Mathematical Identity):
-  The code checks that the number loss rate satisfies the conservation relationship: $ (dNc/dt)<em auto="auto">{auto} = (dqr/dt)</em> \cdot (N_c / q_c) $.</li>
+  The code checks that the number loss rate satisfies the conservation
+  relationship: <span class="arithmatex">\((dNc/dt)_{\text{auto}} = (dqr/dt)_{\text{auto}} \cdot (N_c / q_c)\)</span>.</li>
 </ul>
-<p><strong>Tolerance</strong>: Precision-dependent (<code>1e-14</code> for double, <code>1e-7</code> for float). This is an exact mathematical identity in the implementation, so failures indicate code bugs rather than physics issues.</p>
+<p><strong>Tolerance</strong>: Precision-dependent (<code>1e-14</code> for double, <code>1e-7</code> for float).
+  This is an exact mathematical identity in the implementation, so failures
+  indicate code bugs rather than physics issues.</p>
 <ul>
 <li><strong>Rain Embryo Mass</strong> (Configuration Consistency):
-  The implicit mass of the newly formed rain drops is recovered from the ratio of mass tendency to number tendency:
-  $$ m_{effective} = \frac{\left(\partial q_r / \partial t\right)}{\left(\partial N_r / \partial t\right)} $$
-  The test verifies that this mass corresponds to the characteristic radius <span class="arithmatex">\(r_{auto}\)</span> (25 <span class="arithmatex">\(\mu m\)</span>) within <strong>1% tolerance</strong> (physics-based, precision-independent). This confirms the <code>autoconversion_radius</code> configuration parameter is correctly preserved through the calculation.</li>
+  The implicit mass of the newly formed rain drops is recovered from the ratio
+  of mass tendency to number tendency:
+  $$ m_{\text{effective}} = \frac{\left(\partial q_r / \partial t\right)}{\left(\partial N_r / \partial t\right)} $$
+  The test verifies that this mass corresponds to the characteristic radius
+  <span class="arithmatex">\(r_{\text{auto}}\)</span> (25 <span class="arithmatex">\(\mu\text{m}\)</span>) within <strong>1% tolerance</strong> (physics-based,
+  precision-independent). This confirms the <code>autoconversion_radius</code>
+  configuration parameter is correctly preserved through the calculation.</li>
 </ul>
 <h3 id="4-physical-limits">4. Physical Limits</h3>
 <ul>
 <li><strong>Small Droplet Regime Limit</strong> (Physical Relevance Check):
-  When the mean droplet radius is very small ($ r &lt; 1 \mu m $, characteristic of incipient cloud or sub-threshold conditions), autoconversion must be physically negligible due to low collision efficiency. <strong>The test uses a threshold of <span class="arithmatex">\(10^{-15}\)</span> kg/kg/s</strong> to distinguish "physically irrelevant" from "mathematically zero." This accounts for the power-law formula producing non-zero values in regimes where collision-coalescence has no physical significance. This is a regime threshold, not a precision-dependent tolerance.</li>
+  When the mean droplet radius is very small (<span class="arithmatex">\(r &lt; 1 \, \mu\text{m}\)</span>, characteristic of
+  incipient cloud or sub-threshold conditions), autoconversion must be
+  physically negligible due to low collision efficiency. <strong>The test uses a
+  threshold of <span class="arithmatex">\(10^{-15} \, \text{kg}/\text{kg}/\text{s}\)</span></strong> to distinguish "physically irrelevant"
+  from "mathematically zero." This accounts for the power-law formula producing
+  non-zero values in regimes where collision-coalescence has no physical
+  significance. This is a regime threshold, not a precision-dependent tolerance.</li>
 </ul>
 <h3 id="5-variance-scaling-disabled">5. Variance Scaling (Disabled)</h3>
 <p>The test suite checks for subgrid variance scaling.</p>
 <ul>
-<li><strong>Principle</strong>: Due to the nonlinearity of the autoconversion rate, subgrid variability in $ q_c $ should enhance the grid-mean rate.</li>
-<li><strong>Status</strong>: Since the feature is currently disabled in the implementation (<code>sgs_var_coef = 1</code>), the test detects this state and reports it as "DISABLED" without failing. If the rates differ significantly but do not show enhancement, it flags a failure.</li>
+<li><strong>Principle</strong>: Due to the nonlinearity of the autoconversion rate, subgrid
+  variability in <span class="arithmatex">\(q_c\)</span> should enhance the grid-mean rate.</li>
+<li><strong>Status</strong>: Since the feature is currently disabled in the implementation
+  (<code>sgs_var_coef = 1</code>), the test detects this state and reports it as
+  "DISABLED" without failing. If the rates differ significantly but do not show
+  enhancement, it flags a failure.</li>
 </ul>
 <h3 id="tolerance-summary">Tolerance Summary</h3>
 <table>
@@ -5393,8 +5464,8 @@ $<span class="arithmatex">\(\texttt{ncautr} = \texttt{nc2nr\_autoconv\_tend} \ti
 <tr>
 <td><strong>Small Droplet Regime</strong></td>
 <td>Physical</td>
-<td><code>1e-15</code> kg/kg/s</td>
-<td>Relevance threshold (r &lt; 1 μm)</td>
+<td><code>1e-15</code> <span class="arithmatex">\(\text{kg}/\text{kg}/\text{s}\)</span></td>
+<td>Relevance threshold (<span class="arithmatex">\(r &lt; 1 \, \mu\text{m}\)</span>)</td>
 </tr>
 <tr>
 <td><strong>Variance Detection</strong></td>
