@@ -399,7 +399,7 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
     !-------------------------------------------------------------------------------
     ! actual moab name is
     !moab_rest_file = 'moab_'//trim(rest_file)
-    moab_rest_file = trim(rest_file) 
+    moab_rest_file = trim(rest_file)
     !----------------------------------------------------------------------------
     ! get required infodata
     !----------------------------------------------------------------------------
@@ -461,7 +461,7 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
                ierr = iMOAB_GetGlobalInfo(mbrxid, ngv, nx_lnd) ! max id for land will come from rof
                call seq_io_read(moab_rest_file, mblxid, 'fractions_lx', &
                   'afrac:lfrac:lfrin', nx=nx_lnd)
-             else ! is this ever true  ? 
+             else ! is this ever true  ?
                 call seq_io_read(moab_rest_file, mblxid, 'fractions_lx', &
                    'afrac:lfrac:lfrin')
              endif
@@ -484,7 +484,7 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
                call seq_io_read(moab_rest_file, mblxid, 'l2racc_lx', &
                 trim(tagname), &
                 matrix = p_l2racc_lm, nx=nx_lnd)
-             else 
+             else
                 call seq_io_read(moab_rest_file, mblxid, 'l2racc_lx', &
                  trim(tagname), &
                  matrix = p_l2racc_lm )
@@ -744,7 +744,7 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
 
     rest_file = 'mct_'//trim(rest_file_org) ! will actually write here, and return the original name
     ! moab will write the original one, and read the original one; mct will read the original too
-    ! for the time being, read twice, the same file;; comapre mct_ one with original one to see how different 
+    ! for the time being, read twice, the same file;; comapre mct_ one with original one to see how different
     ! they are ! tehy should be no different
     ! Write driver data to restart file
 
