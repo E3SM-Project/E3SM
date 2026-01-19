@@ -5231,7 +5231,9 @@ droplets to form rain drops.</p>
 <span class="arithmatex">\(\left(\frac{\partial q_r}{\partial t}\right)_{\text{auto}}\)</span>, is calculated as a
 power law function of the cloud water mixing ratio (<span class="arithmatex">\(q_c\)</span>) and the cloud droplet
 number concentration (<span class="arithmatex">\(N_c\)</span>).</p>
-<div class="arithmatex">\[ \left(\frac{\partial q_r}{\partial t}\right)_{\text{auto}} = A \, q_c^{\alpha} \, (N_{c, \text{vol}})^{-\beta} \]</div>
+<div class="arithmatex">\[
+\left(\frac{\partial q_r}{\partial t}\right)_{\text{auto}} = A \, q_c^{\alpha} \, (N_{c, \text{vol}})^{-\beta}
+\]</div>
 <p>Where:</p>
 <ul>
 <li><span class="arithmatex">\(A\)</span> is the autoconversion prefactor ( <code>autoconversion_prefactor</code> ).</li>
@@ -5249,33 +5251,45 @@ number concentration (<span class="arithmatex">\(N_c\)</span>).</p>
 <p>In the implementation, <span class="arithmatex">\(N_{c, \text{vol}}\)</span> is derived from the in-cloud number
 mixing ratio <span class="arithmatex">\(N_c\)</span> (<span class="arithmatex">\(\#/\text{kg}\)</span>) and air density <span class="arithmatex">\(\rho\)</span> (<span class="arithmatex">\(\text{kg}/\text{m}^3\)</span>),
 where <span class="arithmatex">\(N_c\)</span> corresponds to the variable <code>nc_incld</code>:</p>
-<div class="arithmatex">\[ N_{c, \text{vol}} = N_c \cdot \rho \cdot 10^{-6} \;\equiv\; \texttt{nc\_incld} \cdot \texttt{sp(1.e-6)} \cdot \rho \]</div>
+<div class="arithmatex">\[
+N_{c, \text{vol}} = N_c \cdot \rho \cdot 10^{-6} \;\equiv\; \texttt{nc\_incld} \cdot \texttt{sp(1.e-6)} \cdot \rho
+\]</div>
 <h3 id="number-tendencies">Number Tendencies</h3>
 <p>Consistent with the 2-moment approach, the parameterization calculates the
 tendencies for both mass and number.</p>
 <h4 id="1-cloud-to-rain-number-transfer">1. Cloud-to-Rain Number Transfer</h4>
 <p>The rate at which cloud droplet number converts to rain droplet number is
 determined by preserving the specific number concentration:</p>
-<div class="arithmatex">\[ \left|\frac{\partial N_c}{\partial t}\right|_{\text{auto}} = \left(\frac{\partial q_r}{\partial t}\right)_{\text{auto}} \frac{N_c}{q_c} \]</div>
+<div class="arithmatex">\[
+\left|\frac{\partial N_c}{\partial t}\right|_{\text{auto}} = \left(\frac{\partial q_r}{\partial t}\right)_{\text{auto}} \frac{N_c}{q_c}
+\]</div>
 <p><strong>Implementation</strong>: The variable <code>nc2nr_autoconv_tend</code> stores the positive
 magnitude of this transfer rate. The actual tendency of cloud droplet number is
-the negative of this value:
-$<span class="arithmatex">\(\frac{\partial N_c}{\partial t} = -\texttt{nc2nr\_autoconv\_tend}\)</span>$</p>
+the negative of this value:</p>
+<div class="arithmatex">\[
+\frac{\partial N_c}{\partial t} = -\texttt{nc2nr\_autoconv\_tend}
+\]</div>
 <h4 id="2-rain-droplet-number-source">2. Rain Droplet Number Source</h4>
 <p>The source of rain droplet number is determined by the characteristic mass of
 newly formed rain embryos:</p>
-<div class="arithmatex">\[ \left(\frac{\partial N_r}{\partial t}\right)_{\text{auto}} = \frac{\left(\frac{\partial q_r}{\partial t}\right)_{\text{auto}}}{m_{\text{drop}}(r_{\text{auto}})} \]</div>
+<div class="arithmatex">\[
+\left(\frac{\partial N_r}{\partial t}\right)_{\text{auto}} = \frac{\left(\frac{\partial q_r}{\partial t}\right)_{\text{auto}}}{m_{\text{drop}}(r_{\text{auto}})}
+\]</div>
 <p>where <span class="arithmatex">\(m_{\text{drop}}(r) = \frac{4}{3}\pi\rho_w r^3\)</span> and <span class="arithmatex">\(r_{\text{auto}}\)</span> is
 the characteristic autoconversion radius (default: 25 <span class="arithmatex">\(\mu\text{m}\)</span>).</p>
 <p><strong>Implementation</strong>: The variable <code>ncautr</code> stores this rain number source. It is
 computed as:</p>
 <div class="highlight"><pre><span></span><code><span class="n">ncautr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">qc2qr_autoconv_tend</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">CONS3</span>
 </code></pre></div>
-<p>where <code>CONS3</code> is computed locally as:
-$$ \text{CONS3} = \frac{1}{\frac{4\pi}{3}\rho_w r_{\text{auto}}^3} = \frac{1}{m_{\text{drop}}(r_{\text{auto}})} $$</p>
+<p>where <code>CONS3</code> is computed locally as:</p>
+<div class="arithmatex">\[
+\text{CONS3} = \frac{1}{\frac{4\pi}{3}\rho_w r_{\text{auto}}^3} = \frac{1}{m_{\text{drop}}(r_{\text{auto}})}
+\]</div>
 <p><strong>Important</strong>: Note that <code>ncautr</code> (rain number source) is <strong>not equal</strong> to
-<code>nc2nr_autoconv_tend</code> (cloud number transfer magnitude). The relationship is:
-$<span class="arithmatex">\(\texttt{ncautr} = \texttt{nc2nr\_autoconv\_tend} \times \frac{q_c}{N_c} \times \text{CONS3}\)</span>$</p>
+<code>nc2nr_autoconv_tend</code> (cloud number transfer magnitude). The relationship is:</p>
+<div class="arithmatex">\[
+\texttt{ncautr} = \texttt{nc2nr\_autoconv\_tend} \times \frac{q_c}{N_c} \times \text{CONS3}
+\]</div>
 <h2 id="implementation-details">Implementation Details</h2>
 <ul>
 <li><strong>Reference</strong>: This logic is implemented in <code>cloud_water_autoconversion()</code>
@@ -5363,7 +5377,7 @@ autoconversion is physically active.</p>
 <h3 id="parameter-validation">Parameter Validation</h3>
 <p>Before running property checks, the test suite verifies that the runtime
 configuration parameters match the expected Khairoutdinov and Kogan (2000)
-constants (e.g., <span class="arithmatex">\(A=1350\)</span>, <span class="arithmatex">\(\alpha=2.47\)</span>, <span class="arithmatex">\(r_{\text{auto}}=25\mu\text{m}\)</span>).</p>
+constants (e.g., <span class="arithmatex">\(A=1350\)</span>, <span class="arithmatex">\(\alpha=2.47\)</span>, <span class="arithmatex">\(r_{\text{auto}}=25 \, \mu\text{m}\)</span>).</p>
 <h3 id="1-threshold-behavior">1. Threshold Behavior</h3>
 <p>For <span class="arithmatex">\(q_c &lt; 10^{-8} \, \text{kg}/\text{kg}\)</span>, the test verifies that the autoconversion
 rate is strictly zero.</p>
@@ -5371,20 +5385,22 @@ rate is strictly zero.</p>
 <p>We verify the sign of the partial derivatives with respect to the input state
 variables:</p>
 <ul>
-<li>
-<p><strong>Colloidal Stability (Inverse <span class="arithmatex">\(N_c\)</span> Dependency)</strong>:
+<li><strong>Colloidal Stability (Inverse <span class="arithmatex">\(N_c\)</span> Dependency)</strong>:
   Increasing droplet number concentration while holding water content fixed must
   strictly decrease the rate. The test enforces this with <strong>no relative
-  tolerance</strong>, as the physics dictates a strict inverse relationship.
-  $$ \frac{\partial}{\partial N_c} \left(\frac{\partial q_r}{\partial t}\right)_{\text{auto}} &lt; 0 $$</p>
-</li>
-<li>
-<p><strong>Water Content Sensitivity (Positive <span class="arithmatex">\(q_c\)</span> Dependency)</strong>:
-  Increasing water content while holding number concentration fixed should
-  increase the rate.
-  $$ \frac{\partial}{\partial q_c} \left(\frac{\partial q_r}{\partial t}\right)_{\text{auto}} &gt; 0 $$</p>
-</li>
+  tolerance</strong>, as the physics dictates a strict inverse relationship.</li>
 </ul>
+<div class="arithmatex">\[
+\frac{\partial}{\partial N_c} \left(\frac{\partial q_r}{\partial t}\right)_{\text{auto}} &lt; 0
+\]</div>
+<ul>
+<li><strong>Water Content Sensitivity (Positive <span class="arithmatex">\(q_c\)</span> Dependency)</strong>:
+  Increasing water content while holding number concentration fixed should
+  increase the rate.</li>
+</ul>
+<p>$$
+  \frac{\partial}{\partial q_c} \left(\frac{\partial q_r}{\partial t}\right)_{\text{auto}} &gt; 0
+  $$</p>
 <h3 id="3-consistency-constraints">3. Consistency Constraints</h3>
 <p>We check that the derived number tendencies match their physical definitions.</p>
 <ul>
@@ -5398,13 +5414,15 @@ variables:</p>
 <ul>
 <li><strong>Rain Embryo Mass</strong> (Configuration Consistency):
   The implicit mass of the newly formed rain drops is recovered from the ratio
-  of mass tendency to number tendency:
-  $$ m_{\text{effective}} = \frac{\left(\partial q_r / \partial t\right)}{\left(\partial N_r / \partial t\right)} $$
-  The test verifies that this mass corresponds to the characteristic radius
+  of mass tendency to number tendency:</li>
+</ul>
+<p>$$
+  m_{\text{effective}} = \frac{\left(\partial q_r / \partial t\right)}{\left(\partial N_r / \partial t\right)}
+  $$</p>
+<p>The test verifies that this mass corresponds to the characteristic radius
   <span class="arithmatex">\(r_{\text{auto}}\)</span> (25 <span class="arithmatex">\(\mu\text{m}\)</span>) within <strong>1% tolerance</strong> (physics-based,
   precision-independent). This confirms the <code>autoconversion_radius</code>
-  configuration parameter is correctly preserved through the calculation.</li>
-</ul>
+  configuration parameter is correctly preserved through the calculation.</p>
 <h3 id="4-physical-limits">4. Physical Limits</h3>
 <ul>
 <li><strong>Small Droplet Regime Limit</strong> (Physical Relevance Check):
