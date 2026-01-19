@@ -21,7 +21,8 @@ module dead_mct_mod
   public  :: dead_init_mct, dead_run_mct, dead_final_mct
   private :: dead_domain_mct
 #ifdef HAVE_MOAB
-  private :: dead_domain_moab
+  public :: dead_init_moab
+  private :: define_reset_fields_moab
 #endif
 
 !===============================================================================
@@ -31,7 +32,7 @@ contains
   subroutine dead_init_mct(model, Eclock, x2d, d2x, &
          flds_x2d, flds_d2x, &
          gsmap, ggrid, gbuf, mpicom, compid, my_task, master_task, &
-         inst_index, inst_suffix, inst_name, logunit, nxg, nyg, mbdomain)
+         inst_index, inst_suffix, inst_name, logunit, nxg, nyg )
 
     ! !INPUT/OUTPUT PARAMETERS:
     character(len=*) , intent(in)    :: model
@@ -53,7 +54,6 @@ contains
     integer(IN)      , intent(in)    :: logunit     ! logging unit number
     integer(IN)      , intent(out)   :: nxg         ! global dim i-direction
     integer(IN)      , intent(out)   :: nyg         ! global dim j-direction
-    integer(IN)    , optional, intent(in)  :: mbdomain
 
     !--- local variables ---
     integer(IN)              :: ierr          ! error code
@@ -103,11 +103,6 @@ contains
     ! Initialize MCT domain
 
     call dead_domain_mct(mpicom, gbuf, gsMap, logunit, ggrid)
-#ifdef HAVE_MOAB
-    if (present(mbdomain)) then
-      call dead_domain_moab(model, mpicom, gbuf, gsMap, logunit, mbdomain, nxg, nyg)
-    end if
-#endif
 
     ! Initialize MCT attribute vectors
 
@@ -116,12 +111,6 @@ contains
 
     call mct_aVect_init(x2d, rList=flds_x2d, lsize=lsize)
     call mct_aVect_zero(x2d)
-
-#ifdef HAVE_MOAB
-    if (present(mbdomain)) then
-      call define_reset_fields_moab(model, mpicom, gbuf, gsMap, logunit, mbdomain, nxg, nyg, flds_x2d, flds_d2x)
-    end if
-#endif
 
   end subroutine dead_init_mct
 
@@ -409,7 +398,7 @@ contains
   !===============================================================================
 
 #ifdef HAVE_MOAB
-  subroutine dead_domain_moab( model, mpicom, gbuf, gsMap, logunit, mbdomain, nxg, nyg )
+  subroutine dead_init_moab( mbdomain, model, gsMap, gbuf, flds_x2d, flds_d2x, mpicom, compid, logunit, nxg, nyg )
 
     use iMOAB, only: iMOAB_CreateVertices, &
                      iMOAB_CreateElements, &
@@ -423,14 +412,17 @@ contains
       implicit none
     !-------------------------------------------------------------------
     !---arguments---
-    character(len=*) , intent(in)    :: model
-    integer(IN)    , intent(in)  :: mpicom
-    real(R8)       , intent(in)  :: gbuf(:,:)
-    type(mct_gsMap), intent(in)  :: gsMap
-    integer(IN)    , intent(in)  :: logunit
-    integer(IN)    , intent(in)  :: mbdomain
-    integer(IN)    , intent(in)  :: nxg          ! global grid size in x-direction
-    integer(IN)    , intent(in)  :: nyg          ! global grid size in y-direction
+    integer(IN)    , intent(in)   :: mbdomain
+    character(len=*) , intent(in) :: model
+    type(mct_gsMap), intent(in)   :: gsMap
+    real(R8)       , intent(in)   :: gbuf(:,:)
+    character(len=*) , intent(in)    :: flds_x2d
+    character(len=*) , intent(in)    :: flds_d2x
+    integer(IN)    , intent(in)   :: mpicom
+    integer(IN)    , intent(in)   :: compid      ! mct comp id
+    integer(IN)    , intent(in)   :: logunit
+    integer(IN)    , intent(in)   :: nxg          ! global grid size in x-direction
+    integer(IN)    , intent(in)   :: nyg          ! global grid size in y-direction
 
     !---local variables---
     integer(IN)          :: ierr        ! error code
@@ -448,7 +440,7 @@ contains
 ! #ifdef MOABDEBUG
     character*32             :: outfile, wopts, lnum
 ! #endif
-    character(*), parameter :: subName = "(dead_domain_moab) "
+    character(*), parameter :: subName = "(dead_init_moab) "
     !-------------------------------------------------------------------
     !
     ! Initialize MOAB dead domain
@@ -711,6 +703,8 @@ contains
     ! deallocate temporary arrays
     deallocate(data)
 
+    call define_reset_fields_moab(mbdomain, model, gbuf, gsMap, flds_x2d, flds_d2x, mpicom, logunit, nxg, nyg )
+
 #ifdef MOABDEBUG
        !      debug test
     outfile = trim(model) // '_deadModels.h5m'//C_NULL_CHAR
@@ -723,12 +717,11 @@ contains
 #endif
 #endif
 
-
-  end subroutine dead_domain_moab
+  end subroutine dead_init_moab
   !===============================================================================
 
 
-  subroutine define_reset_fields_moab( model, mpicom, gbuf, gsMap, logunit, mbdomain, nxg, nyg, flds_x2d, flds_d2x )
+  subroutine define_reset_fields_moab( mbdomain, model, gbuf, gsMap, flds_x2d, flds_d2x, mpicom, logunit, nxg, nyg )
 
     use iMOAB, only: iMOAB_DefineTagStorage, &
                      iMOAB_SetIntTagStorage, &
@@ -737,16 +730,16 @@ contains
       implicit none
     !-------------------------------------------------------------------
     !---arguments---
+    integer(IN)    , intent(in)  :: mbdomain
     character(len=*) , intent(in)    :: model
-    integer(IN)    , intent(in)  :: mpicom
     real(R8)       , intent(in)  :: gbuf(:,:)
     type(mct_gsMap), intent(in)  :: gsMap
-    integer(IN)    , intent(in)  :: logunit
-    integer(IN)    , intent(in)  :: mbdomain
-    integer(IN)    , intent(in)  :: nxg          ! global grid size in x-direction
-    integer(IN)    , intent(in)  :: nyg          ! global grid size in y-direction
     character(len=*) , intent(in)    :: flds_x2d
     character(len=*) , intent(in)    :: flds_d2x
+    integer(IN)      , intent(in)    :: mpicom      ! mpi communicator
+    integer(IN)    , intent(in)  :: logunit
+    integer(IN)    , intent(in)  :: nxg          ! global grid size in x-direction
+    integer(IN)    , intent(in)  :: nyg          ! global grid size in y-direction
 
     !---local variables---
     integer(IN)          :: ierr        ! error code
@@ -765,7 +758,7 @@ contains
 #ifdef MOABDEBUG
     character*32             :: outfile, wopts, lnum
 #endif
-    character(*), parameter :: subName = "(dead_domain_moab) "
+    character(*), parameter :: subName = "(define_reset_fields_moab) "
     !-------------------------------------------------------------------
     !
     ! Initialize MOAB dead domain

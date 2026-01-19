@@ -15,10 +15,12 @@ module lnd_comp_mct
   use shr_file_mod    , only: shr_file_freeunit
   use dead_mct_mod    , only: dead_init_mct, dead_run_mct, dead_final_mct
   use seq_flds_mod    , only: seq_flds_l2x_fields, seq_flds_x2l_fields
+
 #ifdef HAVE_MOAB
   use seq_comm_mct, only : mlnid !            iMOAB app id for lnd
   use iso_c_binding
   use iMOAB           , only: iMOAB_RegisterApplication
+  use dead_mct_mod   , only: dead_init_moab
 #endif
   ! !PUBLIC TYPES:
   implicit none
@@ -125,10 +127,15 @@ CONTAINS
       call shr_sys_abort(subname//' ERROR in registering data lnd comp')
     endif
 #endif
+
     call dead_init_mct('lnd', Eclock, x2d, d2x, &
          seq_flds_x2l_fields, seq_flds_l2x_fields, &
          gsmap, ggrid, gbuf, mpicom, compid, my_task, master_task, &
-         inst_index, inst_suffix, inst_name, logunit, nxg, nyg, mlnid)
+         inst_index, inst_suffix, inst_name, logunit, nxg, nyg )
+
+#ifdef HAVE_MOAB
+    call dead_init_moab( mlnid, 'lnd', gsMap, gbuf, seq_flds_x2l_fields, seq_flds_l2x_fields, mpicom, compid, logunit, nxg, nyg )
+#endif
 
     if (nxg == 0 .and. nyg == 0) then
        lnd_present = .false.

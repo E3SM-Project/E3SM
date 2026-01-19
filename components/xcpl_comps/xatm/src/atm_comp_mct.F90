@@ -20,7 +20,8 @@ module atm_comp_mct
 #ifdef HAVE_MOAB
   use seq_comm_mct, only : mphaid !            iMOAB app id for phys atm; comp atm is 5, phys 5+200
   use iso_c_binding
-  use iMOAB           , only: iMOAB_RegisterApplication
+  use iMOAB          , only: iMOAB_RegisterApplication
+  use dead_mct_mod   , only: dead_init_moab
 #endif
 
   ! !PUBLIC TYPES:
@@ -132,21 +133,16 @@ CONTAINS
       write(logunit,*) subname,' error in registering data atm comp'
       call shr_sys_abort(subname//' ERROR in registering data atm comp')
     endif
-     ! send path of atm domain file to MOAB coupler. Note that here we may have the land domain in some cases?
-   !  call seq_infodata_PutData( infodata, atm_mesh=SXATM%domainFile)
 #endif
 
     call dead_init_mct('atm', Eclock, x2d, d2x, &
          seq_flds_x2a_fields, seq_flds_a2x_fields, &
          gsmap, ggrid, gbuf, mpicom, compid, my_task, master_task, &
-         inst_index, inst_suffix, inst_name, logunit, nxg, nyg, mphaid)
+         inst_index, inst_suffix, inst_name, logunit, nxg, nyg)
 
-! #ifdef HAVE_MOAB
-!     call dead_init_moab('atm', Eclock, x2d, d2x, &
-!          seq_flds_x2a_fields, seq_flds_a2x_fields, &
-!          gsmap, ggrid, gbuf, mpicom, compid, my_task, master_task, &
-!          inst_index, inst_suffix, inst_name, logunit, nxg, nyg)
-! #endif
+#ifdef HAVE_MOAB
+    call dead_init_moab( mphaid, 'atm', gsMap, gbuf, seq_flds_x2a_fields, seq_flds_a2x_fields, mpicom, compid, logunit, nxg, nyg )
+#endif
 
     if (nxg == 0 .and. nyg == 0) then
        atm_present = .false.
