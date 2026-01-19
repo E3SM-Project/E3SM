@@ -194,8 +194,17 @@ CONTAINS
          dom=ggrid, &
          infodata=infodata)
 
+#ifdef HAVE_MOAB
+
+    call dead_run_mct('ice', EClock, x2d, d2x, &
+       gsmap, ggrid, gbuf, mpicom, compid, my_task, master_task, logunit, mpsiid )
+
+#else
+
     call dead_run_mct('ice', EClock, x2d, d2x, &
        gsmap, ggrid, gbuf, mpicom, compid, my_task, master_task, logunit)
+
+#endif
 
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)

@@ -199,8 +199,17 @@ CONTAINS
          dom=ggrid, &
          infodata=infodata)
 
+#ifdef HAVE_MOAB
+
+    call dead_run_mct( 'atm', EClock, x2d, d2x, &
+       gsmap, ggrid, gbuf, mpicom, compid, my_task, master_task, logunit, mphaid )
+
+#else
+
     call dead_run_mct('atm', EClock, x2d, d2x, &
        gsmap, ggrid, gbuf, mpicom, compid, my_task, master_task, logunit)
+
+#endif
 
     ! Set time of next radiadtion computation
     call seq_timemgr_EClockGetData (EClock, next_cday=nextsw_cday)
