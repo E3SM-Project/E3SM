@@ -414,7 +414,7 @@ contains
   !===============================================================================
 
 #ifdef HAVE_MOAB
-  subroutine dead_init_moab( mbdomain, model, gsMap, gbuf, flds_x2d, flds_d2x, mpicom, compid, logunit, nxg, nyg )
+  subroutine dead_init_moab( mbdomain, model, gsMap, gbuf, x2d, d2x, mpicom, compid, logunit, nxg, nyg )
 
     use iMOAB, only: iMOAB_CreateVertices, &
                      iMOAB_CreateElements, &
@@ -428,12 +428,14 @@ contains
       implicit none
     !-------------------------------------------------------------------
     !---arguments---
-    integer(IN)    , intent(in)   :: mbdomain
+    integer(IN)    , intent(inout)   :: mbdomain
     character(len=*) , intent(in) :: model
     type(mct_gsMap), intent(in)   :: gsMap
     real(R8)       , intent(in)   :: gbuf(:,:)
-    character(len=*) , intent(in)    :: flds_x2d
-    character(len=*) , intent(in)    :: flds_d2x
+   !  character(len=*) , intent(in)    :: flds_x2d
+   !  character(len=*) , intent(in)    :: flds_d2x
+    type(mct_aVect)  , intent(in) :: x2d         ! driver -> dead
+    type(mct_aVect)  , intent(in) :: d2x         ! dead   -> driver
     integer(IN)    , intent(in)   :: mpicom
     integer(IN)    , intent(in)   :: compid      ! mct comp id
     integer(IN)    , intent(in)   :: logunit
@@ -707,7 +709,7 @@ contains
     ! deallocate temporary arrays
     deallocate(data)
 
-    call define_reset_fields_moab(mbdomain, model, gbuf, flds_x2d, flds_d2x, mpicom, logunit, nxg, nyg )
+    call define_reset_fields_moab(mbdomain, model, x2d, d2x, mpicom, logunit )
 
   !      debug test
    !  outfile = trim(model) // '_deadModels.h5m'//C_NULL_CHAR
@@ -723,7 +725,7 @@ contains
   !===============================================================================
 
 
-  subroutine define_reset_fields_moab( mbdomain, model, gbuf, flds_x2d, flds_d2x, mpicom, logunit, nxg, nyg )
+  subroutine define_reset_fields_moab( mbdomain, model, x2d, d2x, mpicom, logunit )
 
     use iMOAB, only: iMOAB_DefineTagStorage, &
                      iMOAB_SetIntTagStorage, &
@@ -732,15 +734,12 @@ contains
       implicit none
     !-------------------------------------------------------------------
     !---arguments---
-    integer(IN)    , intent(in)  :: mbdomain
+    integer(IN)    , intent(inout)  :: mbdomain
     character(len=*) , intent(in)    :: model
-    real(R8)       , intent(in)  :: gbuf(:,:)
-    character(len=*) , intent(in)    :: flds_x2d
-    character(len=*) , intent(in)    :: flds_d2x
+    type(mct_aVect)  , intent(in) :: x2d         ! driver -> dead
+    type(mct_aVect)  , intent(in) :: d2x         ! dead   -> driver
     integer(IN)      , intent(in)    :: mpicom      ! mpi communicator
     integer(IN)    , intent(in)  :: logunit
-    integer(IN)    , intent(in)  :: nxg          ! global grid size in x-direction
-    integer(IN)    , intent(in)  :: nyg          ! global grid size in y-direction
 
     !---local variables---
     integer(IN)          :: ierr        ! error code
@@ -750,7 +749,10 @@ contains
     integer(IN)          :: ier         ! error status
     character(CL)        :: tagname
     integer(IN)          :: tagindex, etype
-    real(R8), pointer    :: data(:)     ! temporary
+    integer                 :: nflds_d2x, nflds_x2d
+    character(len=2048)    :: flds_x2d
+    character(len=2048)    :: flds_d2x
+    real(R8), pointer    :: data_x2d(:,:), data_d2x(:,:)     ! temporary
 
 #ifdef MOABDEBUG
     character*32             :: outfile, wopts, lnum
@@ -763,16 +765,24 @@ contains
 
     ! Allocate memory
     !
-    lsize = size(gbuf,dim=1)
-    allocate(data(lsize))
+    lsize = mct_avect_lsize(x2d)
+
+    flds_d2x = trim(mct_aVect_exportRList2c(d2x)) ! exportRListToChar
+    nflds_d2x = mct_avect_nRattr(d2x)
+    allocate(data_d2x(lsize,nflds_d2x))
+
+    flds_x2d = trim(mct_aVect_exportRList2c(x2d)) ! exportRListToChar
+    nflds_x2d = mct_avect_nRattr(x2d)
+    allocate(data_x2d(lsize,nflds_x2d), data_d2x(lsize,nflds_d2x))
+
     !
     ! Initialize attribute vector with special value
     !
     call mpi_comm_rank(mpicom, my_task, ier)
-   !  call mct_aVect_zero(domain%data)
-    data(:) = -9999.0_R8  ! generic special value
 
-    data(:) = 0.0_R8  ! generic special value
+   !  data(:) = -9999.0_R8  ! generic special value
+    data_x2d(:,:) = 0.0_R8  ! generic special value
+    data_d2x(:,:) = 0.0_R8  ! generic special value
 
     etype = 0  ! vertices
    !  if (trim(model) .ne. 'atm' .and. trim(model) .ne. 'lnd' .and. trim(model) .ne. 'rof') then
@@ -789,62 +799,30 @@ contains
        call shr_sys_abort('Error: fail to create tag: ' // trim(flds_x2d) )
 
 
+    ierr = iMOAB_SetDoubleTagStorage( mbdomain, trim(flds_x2d)//C_NULL_CHAR, &
+                                     lsize*nflds_x2d, & ! size
+                                     etype, & ! set data on vertices
+                                     data_x2d )
+    if (ierr > 0 )  &
+       call shr_sys_abort('Error: fail to reset tag: ' // trim(flds_x2d) )
+
+
     ierr = iMOAB_DefineTagStorage( mbdomain, trim(flds_d2x)//C_NULL_CHAR, &
                                      1, & ! dense, double
                                      1, & ! number of components
                                      tagindex )
     if (ierr > 0 )  &
-       call shr_sys_abort('Error: fail to create tag: ' // trim(flds_x2d) )
+       call shr_sys_abort('Error: fail to create tag: ' // trim(flds_d2x) )
 
-   !  ! Now let us set the default values for these fields to zero
-   !  data(:) = gbuf(:,dead_grid_lat)
-   !  tagname='lat'//C_NULL_CHAR
-   !  ierr = iMOAB_SetDoubleTagStorage ( mbdomain, tagname, lsize, &
-   !                                  etype, & ! set data on vertices
-   !                                  data)
-   !  if (ierr > 0 )  &
-   !     call shr_sys_abort('Error: fail to set lat tag ')
+    ierr = iMOAB_SetDoubleTagStorage( mbdomain, trim(flds_d2x)//C_NULL_CHAR, &
+                                     lsize*nflds_d2x, & ! size
+                                     etype, & ! set data on vertices
+                                     data_d2x )
+    if (ierr > 0 )  &
+       call shr_sys_abort('Error: fail to reset tag: ' // trim(flds_d2x) )
 
-   !  data(:) = gbuf(:,dead_grid_lon)
-   !  tagname='lon'//C_NULL_CHAR
-   !  ierr = iMOAB_SetDoubleTagStorage ( mbdomain, tagname, lsize, &
-   !                                  0, & ! set data on vertices
-   !                                  data)
-   !  if (ierr > 0 )  &
-   !     call shr_sys_abort('Error: fail to set lon tag ')
-
-   !  data(:) = gbuf(:,dead_grid_area)
-   !  tagname='area'//C_NULL_CHAR
-   !  ierr = iMOAB_SetDoubleTagStorage ( mbdomain, tagname, lsize, &
-   !                                   etype, & ! set data on elements
-   !                                   data)
-   !  if (ierr > 0 )  &
-   !     call shr_sys_abort('Error: fail to get area tag ')
-
-   !  ! set the same data for aream (model area) as area
-   !  ! data(:) = ggrid%data%rAttr(mct_aVect_indexRA(ggrid%data,'aream'),:)
-   !  tagname='aream'//C_NULL_CHAR
-   !  ierr = iMOAB_SetDoubleTagStorage ( mbdomain, tagname, lsize, &
-   !                                   etype, & ! set data on elements
-   !                                   data)
-   !  if (ierr > 0 )  &
-   !     call shr_sys_abort('Error: fail to set aream tag ')
-
-   !  data(:) = gbuf(:,dead_grid_mask)
-   !  tagname='mask'//C_NULL_CHAR
-   !  ierr = iMOAB_SetDoubleTagStorage ( mbdomain, tagname, lsize, &
-   !                                   etype, & ! set data on elements
-   !                                   data)
-   !  if (ierr > 0 )  &
-   !     call shr_sys_abort('Error: fail to set mask tag ')
-
-   !  data(:) = gbuf(:,dead_grid_frac)
-   !  tagname='frac'//C_NULL_CHAR
-   !  ierr = iMOAB_SetDoubleTagStorage ( mbdomain, tagname, lsize, &
-   !                                   etype, & ! set data on elements
-   !                                   data)
-   !  if (ierr > 0 )  &
-   !     call shr_sys_abort('Error: fail to set frac tag ')
+    deallocate(data_x2d)
+    deallocate(data_d2x)
 
 #ifdef MOABDEBUG
        !      debug test
@@ -856,8 +834,6 @@ contains
        call shr_sys_abort(subname//' ERROR in writing data mesh lnd ')
     endif
 #endif
-
-    deallocate(data)
 
   end subroutine define_reset_fields_moab
   !===============================================================================
