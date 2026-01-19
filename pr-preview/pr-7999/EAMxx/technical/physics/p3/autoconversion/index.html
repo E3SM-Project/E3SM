@@ -5385,22 +5385,24 @@ rate is strictly zero.</p>
 <p>We verify the sign of the partial derivatives with respect to the input state
 variables:</p>
 <ul>
-<li><strong>Colloidal Stability (Inverse <span class="arithmatex">\(N_c\)</span> Dependency)</strong>:
+<li>
+<p><strong>Colloidal Stability (Inverse <span class="arithmatex">\(N_c\)</span> Dependency)</strong>:
   Increasing droplet number concentration while holding water content fixed must
   strictly decrease the rate. The test enforces this with <strong>no relative
-  tolerance</strong>, as the physics dictates a strict inverse relationship.</li>
-</ul>
+  tolerance</strong>, as the physics dictates a strict inverse relationship.</p>
 <div class="arithmatex">\[
 \frac{\partial}{\partial N_c} \left(\frac{\partial q_r}{\partial t}\right)_{\text{auto}} &lt; 0
 \]</div>
-<ul>
-<li><strong>Water Content Sensitivity (Positive <span class="arithmatex">\(q_c\)</span> Dependency)</strong>:
+</li>
+<li>
+<p><strong>Water Content Sensitivity (Positive <span class="arithmatex">\(q_c\)</span> Dependency)</strong>:
   Increasing water content while holding number concentration fixed should
-  increase the rate.</li>
+  increase the rate.</p>
+<div class="arithmatex">\[
+\frac{\partial}{\partial q_c} \left(\frac{\partial q_r}{\partial t}\right)_{\text{auto}} &gt; 0
+\]</div>
+</li>
 </ul>
-<p>$$
-  \frac{\partial}{\partial q_c} \left(\frac{\partial q_r}{\partial t}\right)_{\text{auto}} &gt; 0
-  $$</p>
 <h3 id="3-consistency-constraints">3. Consistency Constraints</h3>
 <p>We check that the derived number tendencies match their physical definitions.</p>
 <ul>
@@ -5412,13 +5414,15 @@ variables:</p>
   This is an exact mathematical identity in the implementation, so failures
   indicate code bugs rather than physics issues.</p>
 <ul>
-<li><strong>Rain Embryo Mass</strong> (Configuration Consistency):
+<li>
+<p><strong>Rain Embryo Mass</strong> (Configuration Consistency):
   The implicit mass of the newly formed rain drops is recovered from the ratio
-  of mass tendency to number tendency:</li>
+  of mass tendency to number tendency:</p>
+<div class="arithmatex">\[
+m_{\text{effective}} = \frac{\left(\partial q_r / \partial t\right)}{\left(\partial N_r / \partial t\right)}
+\]</div>
+</li>
 </ul>
-<p>$$
-  m_{\text{effective}} = \frac{\left(\partial q_r / \partial t\right)}{\left(\partial N_r / \partial t\right)}
-  $$</p>
 <p>The test verifies that this mass corresponds to the characteristic radius
   <span class="arithmatex">\(r_{\text{auto}}\)</span> (25 <span class="arithmatex">\(\mu\text{m}\)</span>) within <strong>1% tolerance</strong> (physics-based,
   precision-independent). This confirms the <code>autoconversion_radius</code>
