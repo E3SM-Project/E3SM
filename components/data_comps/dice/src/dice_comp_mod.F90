@@ -541,8 +541,8 @@ CONTAINS
     use iMOAB, only: iMOAB_WriteMesh
 #endif
 #ifdef HAVE_MOAB
-    use seq_flds_mod    , only: seq_flds_i2x_fields 
-    use seq_flds_mod    , only: moab_set_tag_from_av
+    use seq_flds_mod    , only: seq_flds_i2x_fields
+    use shr_moab_mod    , only: moab_set_tag_from_av
 #endif
     implicit none
 

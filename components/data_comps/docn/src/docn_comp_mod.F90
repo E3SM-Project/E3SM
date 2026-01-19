@@ -562,7 +562,7 @@ CONTAINS
     use iMOAB, only: iMOAB_GetMeshInfo, &
                      iMOAB_SetDoubleTagStorage, &
                      iMOAB_WriteMesh
-    use seq_flds_mod, only: moab_set_tag_from_av
+    use shr_moab_mod, only: moab_set_tag_from_av
 #endif
 
     implicit none
