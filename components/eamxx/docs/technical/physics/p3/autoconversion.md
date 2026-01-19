@@ -59,7 +59,7 @@ $$\texttt{ncautr} = \texttt{nc2nr\_autoconv\_tend} \times \frac{q_c}{N_c} \times
 
 ## Implementation Details
 
-* **Reference**: This logic is implemented in `cloud_water_autoconversion()` within [p3_autoconversion_impl.hpp](../../../../src/physics/p3/impl/p3_autoconversion_impl.hpp).
+* **Reference**: This logic is implemented in `cloud_water_autoconversion()` within [p3_autoconversion_impl.hpp](https://github.com/E3SM-Project/E3SM/blob/master/components/eamxx/src/physics/p3/impl/p3_autoconversion_impl.hpp).
 * **Thresholds**: The process is active only when $ q_c > 10^{-8} \, kg/kg $.
 * **Consistency Enforcement**: The implementation ensures that if either the mass or number tendency is zero, both are set to zero, preventing numerical artifacts in extreme regimes:
 
