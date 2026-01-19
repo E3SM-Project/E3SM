@@ -445,9 +445,9 @@ contains
     integer(IN), pointer :: idata(:)    ! temporary
     real(R8), dimension(:), allocatable :: moab_vert_coords  ! temporary
     logical          :: fullmesh =.false.
-#ifdef MOABDEBUG
+! #ifdef MOABDEBUG
     character*32             :: outfile, wopts, lnum
-#endif
+! #endif
     character(*), parameter :: subName = "(dead_domain_moab) "
     !-------------------------------------------------------------------
     !
@@ -466,82 +466,150 @@ contains
     data(:) = 0.0_R8  ! generic special value
 
 #ifdef HAVE_MOAB
-      ! Create MOAB mesh for dead domain
-    allocate(moab_vert_coords(lsize*3))
-    do n = 1,lsize
-       lonv = gbuf(n,dead_grid_lon)
-       latv = gbuf(n,dead_grid_lat)
-       moab_vert_coords(3*n-2)=COS(latv)*COS(lonv)
-       moab_vert_coords(3*n-1)=COS(latv)*SIN(lonv)
-       moab_vert_coords(3*n  )=SIN(latv)
-    enddo
+    ! Remove the previously created vertex cloud; we will create a proper RLL mesh with vertices at corners
+    ! This is done by deleting the mesh and starting fresh with corner-based vertices
 
-    ! create the vertices with coordinates from MCT domain
-    ierr = iMOAB_CreateVertices(mbdomain, lsize*3, 3, moab_vert_coords)
-    if (ierr .ne. 0)  &
-       call shr_sys_abort('Error: fail to create MOAB vertices in data lnd model')
-    deallocate(moab_vert_coords)
-
+    etype = 0  ! vertices
    !  if (trim(model) .ne. 'atm' .and. trim(model) .ne. 'lnd' .and. trim(model) .ne. 'rof') then
    !    fullmesh = .true.
+   !    etype = 1  ! elements
    !  end if
 
     if (fullmesh) then
-       ! atm model only uses point clouds for physics
-      ! Create RLL (rectangular lat-lon) elements from vertices
-      ! Elements are quads connecting 4 adjacent vertices
-      ! For a grid of (nxg x nyg) cells, we have (nxg-1) x (nyg-1) elements
-      block
-         integer(IN)          :: nelems         ! number of elements
-         integer(IN), allocatable :: elem_conn(:,:)  ! element connectivity
-         integer(IN)          :: ie, ix, iy, v0, v1, v2, v3  ! element indices
-         integer(IN)          :: elem_type      ! element type (3 = quad)
-         integer(IN), allocatable :: elem_conn_flat(:)  ! flattened connectivity for iMOAB
+       ! Create RLL dual mesh: centroids (lat,lon) become element centers; vertices at corners
+       ! For nxg x nyg centroid grid, we need (nxg+1) x (nyg+1) corner vertices
+       ! Each centroid becomes a quad element using its 4 neighboring corners
+       block
+          integer(IN)          :: nverts_total   ! total vertices in RLL mesh
+          integer(IN)          :: nelems         ! number of elements
+          integer(IN), allocatable :: elem_conn(:,:)  ! element connectivity
+          integer(IN), allocatable :: vert_glid(:)    ! global IDs for vertices
+          integer(IN)          :: ie, iv, ix, iy, v0, v1, v2, v3
+          integer(IN)          :: elem_type
+          integer(IN), allocatable :: elem_conn_flat(:)
+          real(R8), allocatable :: vert_coords(:)     ! vertex coords in 3D
+          real(R8)             :: lat_c, lon_c, lat_v, lon_v
+          real(R8)             :: dlat, dlon          ! grid spacing
+          integer(IN)          :: i_global, j_global  ! global grid indices for centroid
+          logical, allocatable :: vert_in_local(:)    ! which vertices belong locally
 
-         ! Calculate element connectivity for RLL grid
-         ! Vertices are numbered sequentially; need to map to 2D grid
-         nelems = (nxg - 1) * (nyg - 1)
-         if (nelems > 0) then
-            allocate(elem_conn(4, nelems))
-            allocate(elem_conn_flat(nelems * 4))
+          ! Grid spacing (approximate; valid for regular grid)
+          dlat = 180.0_R8 / real(nyg, R8)
+          dlon = 360.0_R8 / real(nxg, R8)
 
-            ! Build connectivity: each element is a quad with 4 vertices
-            ! v0---v2
-            ! |     |
-            ! v1---v3
-            ! where vertices are arranged in a grid of nxg x nyg
-            ! Vertices are 1-indexed in MOAB
+          ! Vertices in full RLL mesh (corners only exist if centroid exists locally or is adjacent)
+          nverts_total = (nxg + 1) * (nyg + 1)
+          nelems = nxg * nyg
 
-            ie = 1
-            do iy = 1, nyg-1
-               do ix = 1, nxg-1
-                  v0 = (iy-1)*nxg + ix           ! bottom-left
-                  v1 = (iy-1)*nxg + ix + 1       ! bottom-right
-                  v2 = iy*nxg + ix               ! top-left
-                  v3 = iy*nxg + ix + 1           ! top-right
+          allocate(vert_glid(nverts_total))
+          allocate(vert_in_local(nverts_total))
+          allocate(vert_coords(nverts_total * 3))
+          allocate(elem_conn(4, nelems))
+          allocate(elem_conn_flat(nelems * 4))
 
-                  elem_conn(1, ie) = v0
-                  elem_conn(2, ie) = v1
-                  elem_conn(3, ie) = v3
-                  elem_conn(4, ie) = v2
-                  ie = ie + 1
-               enddo
-            enddo
+          ! Initialize: mark all vertices as non-local initially
+          vert_in_local = .false.
+          vert_coords = 0.0_R8
 
-            ! Flatten connectivity array for iMOAB
-            elem_conn_flat = reshape(elem_conn, [nelems * 4])
+          ! Loop through local centroid points and mark adjacent vertices
+          do n = 1, lsize
+             lat_c = gbuf(n, dead_grid_lat)
+             lon_c = gbuf(n, dead_grid_lon)
+             ! Find global grid position (i_global, j_global) of this centroid in [0, nxg-1] x [0, nyg-1]
+             ! Use MCT global index to infer position
+             ! For simplicity, assume sequential ordering: centroid (i,j) has global index i + j*nxg
+             i_global = mod(n-1, nxg)
+             j_global = (n-1) / nxg
 
-            ! Create the quad (RLL) elements in MOAB
-            ! Element type: 3 = quad in MOAB
-            elem_type = 3
-            ierr = iMOAB_CreateElements(mbdomain, nelems, elem_type, 4, elem_conn_flat, block_ID=1)
-            if (ierr .ne. 0) &
-               call shr_sys_abort('Error: fail to create MOAB RLL elements in data model')
+             ! Mark 4 corner vertices of this centroid's cell as local
+             ! Vertices are in [0, nxg] x [0, nyg], so corners of cell (i,j) are:
+             !   (i, j), (i+1, j), (i+1, j+1), (i, j+1)
+             do iy = j_global, j_global + 1
+                do ix = i_global, i_global + 1
+                   if (ix >= 0 .and. ix <= nxg .and. iy >= 0 .and. iy <= nyg) then
+                      iv = iy * (nxg + 1) + ix + 1  ! 1-indexed vertex ID
+                      vert_in_local(iv) = .true.
+                      ! Compute corner lat/lon (offset by half-grid spacing from centroid)
+                      lat_v = lat_c + (real(iy, R8) - real(j_global, R8) - 0.5_R8) * dlat
+                      lon_v = lon_c + (real(ix, R8) - real(i_global, R8) - 0.5_R8) * dlon
+                      ! Clamp lat to [-90, 90]
+                      lat_v = max(-90.0_R8, min(90.0_R8, lat_v))
+                      ! Convert to 3D spherical coords
+                      vert_coords(3*iv-2) = cos(lat_v * shr_const_pi / 180.0_R8) * cos(lon_v * shr_const_pi / 180.0_R8)
+                      vert_coords(3*iv-1) = cos(lat_v * shr_const_pi / 180.0_R8) * sin(lon_v * shr_const_pi / 180.0_R8)
+                      vert_coords(3*iv  ) = sin(lat_v * shr_const_pi / 180.0_R8)
+                      ! Global vertex ID = global grid position
+                      vert_glid(iv) = iy * (nxg + 1) + ix + 1
+                   endif
+                enddo
+             enddo
+          enddo
 
-            deallocate(elem_conn)
-            deallocate(elem_conn_flat)
-         endif
-      end block
+          ! Create vertices for local mesh (only the ones marked as local)
+          allocate(moab_vert_coords(count(vert_in_local)*3))
+          iv = 0
+          do i = 1, nverts_total
+             if (vert_in_local(i)) then
+                iv = iv + 1
+                moab_vert_coords(3*iv-2:3*iv) = vert_coords(3*i-2:3*i)
+             endif
+          enddo
+          ierr = iMOAB_CreateVertices(mbdomain, iv*3, 3, moab_vert_coords)
+          if (ierr .ne. 0) &
+             call shr_sys_abort('Error: fail to create corner vertices for RLL mesh')
+          deallocate(moab_vert_coords)
+
+          ! Create quad elements: each centroid becomes a quad using its 4 corner vertices
+          ie = 0
+          do n = 1, lsize
+             i_global = mod(n-1, nxg)
+             j_global = (n-1) / nxg
+             ! 4 corners of element (i,j): at vertex positions (i,j), (i+1,j), (i+1,j+1), (i,j+1)
+             v0 = j_global * (nxg + 1) + i_global + 1      ! (i, j)
+             v1 = j_global * (nxg + 1) + i_global + 1 + 1  ! (i+1, j)
+             v2 = (j_global+1) * (nxg + 1) + i_global + 1 + 1  ! (i+1, j+1)
+             v3 = (j_global+1) * (nxg + 1) + i_global + 1  ! (i, j+1)
+
+             ie = ie + 1
+             elem_conn(1, ie) = v0 - 1  ! Convert to 0-indexed
+             elem_conn(2, ie) = v1 - 1
+             elem_conn(3, ie) = v2 - 1
+             elem_conn(4, ie) = v3 - 1
+          enddo
+
+          ! Flatten connectivity
+          elem_conn_flat = reshape(elem_conn, [nelems * 4])
+
+          ! Create elements
+          elem_type = 3  ! quad
+          ierr = iMOAB_CreateElements(mbdomain, lsize, elem_type, 4, elem_conn_flat, block_ID=1)
+          if (ierr .ne. 0) &
+             call shr_sys_abort('Error: fail to create RLL quad elements')
+
+          deallocate(elem_conn)
+          deallocate(elem_conn_flat)
+          deallocate(vert_coords)
+          deallocate(vert_glid)
+          deallocate(vert_in_local)
+       end block
+    else
+
+         ! Create MOAB mesh for dead domain
+      allocate(moab_vert_coords(lsize*3))
+      do n = 1,lsize
+         lonv = gbuf(n,dead_grid_lon)
+         latv = gbuf(n,dead_grid_lat)
+         moab_vert_coords(3*n-2)=COS(latv)*COS(lonv)
+         moab_vert_coords(3*n-1)=COS(latv)*SIN(lonv)
+         moab_vert_coords(3*n  )=SIN(latv)
+      enddo
+
+      ! create the vertices with coordinates from MCT domain
+      ierr = iMOAB_CreateVertices(mbdomain, lsize*3, 3, moab_vert_coords)
+      if (ierr .ne. 0)  &
+         call shr_sys_abort('Error: fail to create MOAB vertices in data lnd model')
+      deallocate(moab_vert_coords)
+
     end if
 
     tagname='GLOBAL_ID'//C_NULL_CHAR
@@ -567,6 +635,16 @@ contains
          call shr_sys_abort('Error: fail to resolve shared entities')
     end if
     deallocate(idata)
+
+  !      debug test
+   !  outfile = trim(model) // '_deadModels.h5m'//C_NULL_CHAR
+    wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
+   !  wopts   = ''//C_NULL_CHAR !
+       !      write out the mesh file to disk
+    ierr = iMOAB_WriteMesh(mbdomain, trim(model) // '_unr_deadModels.h5m'//C_NULL_CHAR, trim(wopts))
+    if (ierr .ne. 0) then
+       call shr_sys_abort(subname//' ERROR in writing data mesh lnd ')
+    endif
 
     ierr = iMOAB_UpdateMeshInfo( mbdomain )
     if (ierr .ne. 0)  &
@@ -597,11 +675,6 @@ contains
     if (ierr > 0 )  &
        call shr_sys_abort('Error: fail to set lon tag ')
 
-    if (fullmesh) then
-      etype = 1  ! elements
-    else
-      etype = 0  ! vertices
-    end if
     data(:) = gbuf(:,dead_grid_area)
     tagname='area'//C_NULL_CHAR
     ierr = iMOAB_SetDoubleTagStorage ( mbdomain, tagname, lsize, &
@@ -723,7 +796,7 @@ contains
     enddo
 
     etype = 0  ! vertices
-   !  if (trim(model) .ne. 'atm') then
+   !  if (trim(model) .ne. 'atm' .and. trim(model) .ne. 'lnd' .and. trim(model) .ne. 'rof') then
    !    fullmesh = .true.
    !    etype = 1  ! cells
    !  end if
