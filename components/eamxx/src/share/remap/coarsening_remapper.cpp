@@ -1169,14 +1169,11 @@ void CoarseningRemapper::setup_latlon_coarse_grid(const std::string& map_file)
   auto nondim = ekat::units::Units::nondimensional();
   ekat::units::Units deg(nondim,"degrees");
 
+  // Declare lat/lon and read them from the map file.
+  // WARNING: the vars/dims names are different from what eamxx uses
   auto pt_lat = m_coarse_grid->create_geometry_data("lat",m_coarse_grid->get_2d_scalar_layout(),deg);
   auto pt_lon = m_coarse_grid->create_geometry_data("lon",m_coarse_grid->get_2d_scalar_layout(),deg);
-  // Read lat/lon from the map file. Be careful cause the vars/dims names are different from what eamxx uses
   m_coarse_grid->read_geometry_data(map_file,{"lat","lon"},{"yc_b","xc_b"},{{"ncol","n_b"}});
-
-  // // We will NOT save the ncol version of lat/lon, but only the (lat) and (lon) 1d arrays
-  // pt_lat.get_header().set_extra_data("save_as_geo_data",false);
-  // pt_lon.get_header().set_extra_data("save_as_geo_data",false);
 
   RealsClose cmp;
   std::set<Real,RealsClose> my_lats(cmp), my_lons(cmp);
