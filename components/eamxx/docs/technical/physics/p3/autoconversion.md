@@ -39,9 +39,11 @@ mixing ratio $N_c$ ($\#/\text{kg}$) and air density $\rho$ ($\text{kg}/\text{m}^
 where $N_c$ corresponds to the variable `nc_incld`:
 
 $$
-N_{c, \text{vol}} = N_c \cdot \rho \cdot 10^{-6} \;\equiv\; \texttt{nc\\_incld} \cdot \texttt{sp(1.e-6)} \cdot \rho
+N_{c,\text{vol}} = N_c \cdot \rho \cdot 10^{-6}
+\;\equiv\; \texttt{nc\_incld} \cdot \texttt{sp(1.e-6)} \cdot \rho
 $$
 
+\equiv \texttt{nc_incld} \cdot \texttt{sp(1.e-6)} \cdot \rho
 ### Number Tendencies
 
 Consistent with the 2-moment approach, the parameterization calculates the
@@ -61,7 +63,9 @@ magnitude of this transfer rate. The actual tendency of cloud droplet number is
 the negative of this value:
 
 $$
-\frac{\partial N_c}{\partial t} = -\texttt{nc2nr\\_autoconv\\_tend}
+\frac{\partial N_c}{\partial t}
+=
+-\texttt{nc2nr\_autoconv\_tend}
 $$
 
 #### 2. Rain Droplet Number Source
@@ -91,9 +95,12 @@ $$
 
 **Important**: Note that `ncautr` (rain number source) is **not equal** to
 `nc2nr_autoconv_tend` (cloud number transfer magnitude). The relationship is:
-
 $$
-\texttt{ncautr} = \texttt{nc2nr\\_autoconv\\_tend} \times \frac{q_c}{N_c} \times \text{CONS3}
+\texttt{ncautr}
+=
+\texttt{nc2nr\_autoconv\_tend}
+\times \frac{q_c}{N_c}
+\times \texttt{CONS3}
 $$
 
 ## Implementation Details
