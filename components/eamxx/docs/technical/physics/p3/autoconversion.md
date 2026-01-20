@@ -121,8 +121,12 @@ $$
   **Note**: When enabled, the scaling factor uses the same exponent
   ($\alpha = 2.47$) as the $q_c$ dependency, consistent with Jensen's
   inequality for power-law functions:
-  $\langle q_c^{\alpha} \rangle > \langle q_c \rangle^{\alpha}$ when variance
-  exists.
+
+  $$
+  \langle q_c^{\alpha} \rangle > \langle q_c \rangle^{\alpha}
+  $$
+
+  when variance exists.
 
 ## Property Tests
 
@@ -216,17 +220,17 @@ variables:
   strictly decrease the rate. The test enforces this with **no relative
   tolerance**, as the physics dictates a strict inverse relationship.
 
-    $$
-    \frac{\partial}{\partial N_c} \left(\frac{\partial q_r}{\partial t}\right)_{\text{auto}} < 0
-    $$
+  $$
+  \frac{\partial}{\partial N_c} \left(\frac{\partial q_r}{\partial t}\right)_{\text{auto}} < 0
+  $$
 
 * **Water Content Sensitivity (Positive $q_c$ Dependency)**:
   Increasing water content while holding number concentration fixed should
   increase the rate.
 
-    $$
-    \frac{\partial}{\partial q_c} \left(\frac{\partial q_r}{\partial t}\right)_{\text{auto}} > 0
-    $$
+  $$
+  \frac{\partial}{\partial q_c} \left(\frac{\partial q_r}{\partial t}\right)_{\text{auto}} > 0
+  $$
 
 ### 3. Consistency Constraints
 
@@ -244,9 +248,9 @@ We check that the derived number tendencies match their physical definitions.
   The implicit mass of the newly formed rain drops is recovered from the ratio
   of mass tendency to number tendency:
 
-    $$
-    m_{\text{effective}} = \frac{\left(\partial q_r / \partial t\right)}{\left(\partial N_r / \partial t\right)}
-    $$
+  $$
+  m_{\text{effective}} = \frac{\left(\partial q_r / \partial t\right)}{\left(\partial N_r / \partial t\right)}
+  $$
 
   The test verifies that this mass corresponds to the characteristic radius
   $r_{\text{auto}}$ (25 $\mu\text{m}$) within **1% tolerance** (physics-based,
