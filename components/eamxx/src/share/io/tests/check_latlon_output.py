@@ -49,7 +49,7 @@ def check_latlon_output(map_file,out_file,mask_cols):
 
     # Reshape yc_b and xc_b to match the layout of f_lat and f_lon
     nlat = f_lat.shape[1] # nlat is the 2nd dim, as the 1st one is time
-    nlon = f_lat.shape[2] # nlon is the 3nd dim, as the 1st one is time
+    nlon = f_lat.shape[2] # nlon is the 3rd dim, as the 1st one is time
 
     yc_b = yc_b.reshape(nlat,nlon)
     xc_b = xc_b.reshape(nlat,nlon)

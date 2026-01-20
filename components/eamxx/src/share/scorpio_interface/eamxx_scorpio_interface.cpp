@@ -772,7 +772,7 @@ void set_var_decomp (PIOVar& var,
   }
 
   EKAT_REQUIRE_MSG (decomp_ranks.size()==1,
-      "Error! We cannot decomposed this variable, as it contained multiple decomposed dims that were not decompsed together.\n"
+      "Error! We cannot decompose this variable, as it contained multiple decomposed dims that were not decomppsed together.\n"
       " - filename: " + filename + "\n"
       " - varname : " + var.name + "\n"
       " - var dims: " + ekat::join(var.dims,get_entity_name,",") + "\n"
@@ -788,14 +788,14 @@ void set_var_decomp (PIOVar& var,
   }
 
   EKAT_REQUIRE_MSG (num_decomp==decomp_rank,
-      "Error! We cannot decomposed this variable, as it contained multiple decomposed dims that were not decompsed together.\n"
+      "Error! We cannot decompose this variable, as it contained multiple decomposed dims that were not decomppsed together.\n"
       " - filename: " + filename + "\n"
       " - varname : " + var.name + "\n"
       " - var dims: " + ekat::join(var.dims,get_entity_name,",") + "\n"
       " - decomp dims: " + ekat::join(decomposed_dims,",") + "\n");
 
   EKAT_REQUIRE_MSG (last_decomp==(num_decomp-1),
-      "Error! We cannot decomposed this variable, as the decomp dims are not the slowest striding ones.\n"
+      "Error! We cannot decompose this variable, as the decomp dims are not the slowest striding ones.\n"
       " - filename: " + filename + "\n"
       " - varname : " + var.name + "\n"
       " - var dims: " + ekat::join(var.dims,get_entity_name,",") + "\n"
@@ -990,7 +990,7 @@ void set_dims_decomp (const std::string& filename,
         "Error! Cannot partition an unlimited dimension.\n"
         " - filename: " + filename + "\n"
         " - dimname : " + n + "\n");
-    EKAT_REQUIRE_MSG (not dim.decomp_rank>0,
+    EKAT_REQUIRE_MSG (dim.decomp_rank==0,
         "Error! At least one of the dimensions in this decomposition was already decomposed in a different way.\n"
         " - filename: " + filename + "\n"
         " - dimname : " + n + "\n");
