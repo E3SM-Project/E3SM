@@ -2343,7 +2343,7 @@
   <grid name="a%ne30np4.pg2_l%.+_g%mpas.gis1to10kmR2">
     <mach name="pm-cpu|muller-cpu|alvarez-cpu">
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+MALI.+SWAV.+" pesize="M">
-        <comment>pm-cpu: GIS 1-to-10km (high-res) baseline config</comment>
+        <comment>chrysalis: BG-case production config. using 1-to-10km (high-res) GIS init. cond.</comment>
         <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
         <ntasks>
@@ -2380,7 +2380,7 @@
     </mach>
     <mach name="chrysalis">
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+MALI.+SWAV.+" pesize="M">
-        <comment>GIS 1-to-10km (high-res) baseline config</comment>
+        <comment>chrysalis: BG-case production config. using 1-to-10km (high-res) GIS init. cond.</comment>
         <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
         <ntasks>
@@ -2419,7 +2419,7 @@
   <grid name="a%ne30np4.pg2_l%.+_g%mpas.gis4to40">
     <mach name="pm-cpu|muller-cpu|alvarez-cpu">
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+MALI.+SWAV.+" pesize="M">
-        <comment>pm-cpu: GIS 4-to-40km (med-res) baseline config</comment>
+        <comment>pm-cpu: BG-case testing config. using 4-to-40km (med-res) GIS init. cond.</comment>
         <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
         <ntasks>
@@ -2456,7 +2456,7 @@
     </mach>
     <mach name="chrysalis">
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+MALI.+SWAV.+" pesize="M">
-        <comment>chrys: GIS 4-to-40km (med-res) baseline config</comment>
+        <comment>chrysalis: BG-case testing config. using 4-to-40km (med-res) GIS init. cond.</comment>
         <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
         <ntasks>
@@ -2496,8 +2496,8 @@
     <mach name="chrysalis">
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+MALI.+SWAV.+" pesize="any">
         <comment>GIS 20km (low-res) testing config</comment>
-        <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>
-        <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
+        <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
+        <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
         <ntasks>
           <ntasks_atm>512</ntasks_atm>
           <ntasks_lnd>512</ntasks_lnd>
@@ -2514,6 +2514,8 @@
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+MALI.+SWAV.+" pesize="any">
         <comment>pm-cpu: GIS 20 or 40km (low-res) testing config, 2 nodes, 128x1</comment>
         <ntasks>
+        <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>
+        <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
           <ntasks_atm>256</ntasks_atm>
           <ntasks_lnd>256</ntasks_lnd>
           <ntasks_rof>256</ntasks_rof>
@@ -2523,6 +2525,82 @@
           <ntasks_wav>256</ntasks_wav>
           <ntasks_cpl>256</ntasks_cpl>
         </ntasks>
+      </pes>
+    </mach>
+  </grid>
+  <grid name="a%ne256np4.pg2.*">
+    <mach name="pm-gpu|muller-gpu|alvarez-gpu">
+      <pes compset=".*SCREAM.*ELM.*MPASSI.*MPASO.*" pesize="S">
+        <comment>pm-gpu ne256 for fully coupled cases with ATM on GPU, MPAS on CPU -- WCYCLXX2010 64 nodes, 64x1</comment>
+        <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
+        <ntasks>
+          <ntasks_atm>256</ntasks_atm>
+          <ntasks_cpl>-64</ntasks_cpl>
+          <ntasks_lnd>-64</ntasks_lnd>
+          <ntasks_rof>-64</ntasks_rof>
+          <ntasks_ice>-64</ntasks_ice>
+          <ntasks_ocn>-64</ntasks_ocn>
+        </ntasks>
+        <rootpe>
+          <rootpe_glc>1</rootpe_glc>
+          <rootpe_wav>1</rootpe_wav>
+          <rootpe_esp>1</rootpe_esp>
+          <rootpe_iac>1</rootpe_iac>
+        </rootpe>
+        <pstrid>
+          <pstrid_atm>16</pstrid_atm>
+        </pstrid>
+        <excl_stride>
+          <excl_stride_atm>16</excl_stride_atm>
+        </excl_stride>
+      </pes>
+      <pes compset=".*SCREAM.*ELM.*MPASSI.*MPASO.*" pesize="M">
+        <comment>pm-gpu ne256 for fully coupled cases with ATM on GPU, MPAS on CPU -- WCYCLXX2010 128 nodes, 64x1</comment>
+        <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
+        <ntasks>
+          <ntasks_atm>512</ntasks_atm>
+          <ntasks_cpl>-128</ntasks_cpl>
+          <ntasks_lnd>-128</ntasks_lnd>
+          <ntasks_rof>-128</ntasks_rof>
+          <ntasks_ice>-128</ntasks_ice>
+          <ntasks_ocn>-128</ntasks_ocn>
+        </ntasks>
+        <rootpe>
+          <rootpe_glc>1</rootpe_glc>
+          <rootpe_wav>1</rootpe_wav>
+          <rootpe_esp>1</rootpe_esp>
+          <rootpe_iac>1</rootpe_iac>
+        </rootpe>
+        <pstrid>
+          <pstrid_atm>16</pstrid_atm>
+        </pstrid>
+        <excl_stride>
+          <excl_stride_atm>16</excl_stride_atm>
+        </excl_stride>
+      </pes>
+      <pes compset=".*SCREAM.*ELM.*MPASSI.*MPASO.*" pesize="L">
+        <comment>pm-gpu ne256 for fully coupled cases with ATM on GPU, MPAS on CPU -- WCYCLXX2010 256 nodes, 64x1</comment>
+        <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
+        <ntasks>
+          <ntasks_atm>1024</ntasks_atm>
+          <ntasks_cpl>-256</ntasks_cpl>
+          <ntasks_lnd>-256</ntasks_lnd>
+          <ntasks_rof>-256</ntasks_rof>
+          <ntasks_ice>-256</ntasks_ice>
+          <ntasks_ocn>-256</ntasks_ocn>
+        </ntasks>
+        <rootpe>
+          <rootpe_glc>1</rootpe_glc>
+          <rootpe_wav>1</rootpe_wav>
+          <rootpe_esp>1</rootpe_esp>
+          <rootpe_iac>1</rootpe_iac>
+        </rootpe>
+        <pstrid>
+          <pstrid_atm>16</pstrid_atm>
+        </pstrid>
+        <excl_stride>
+          <excl_stride_atm>16</excl_stride_atm>
+        </excl_stride>
       </pes>
     </mach>
   </grid>

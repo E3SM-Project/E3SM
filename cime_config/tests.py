@@ -103,6 +103,7 @@ _TESTS = {
             "ERS.r05_r05.IELM.elm-lnd_rof_2way",
             "ERS.r05_r05.IELM.elm-V2_ELM_MOSART_features",
             "ERS.ELM_USRDAT.IELM.elm-surface_water_dynamics",
+            "ERS.ELM_USRDAT.IELM.elm-finetop_rad"
             )
         },
 
@@ -145,11 +146,11 @@ _TESTS = {
 
     "e3sm_landice_developer" : {
         "tests"   : (
-            "SMS.ne30pg2_r05_IcoswISC30E3r5_gis20.IGELM_MLI.mali-gis20km",
-            "ERS.ne30pg2_r05_IcoswISC30E3r5_gis20.IGELM_MLI.mali-gis20km",
-            "SMS.ne30pg2_r05_IcoswISC30E3r5_gis20.BGWCYCL1850.allactive-gis20km",
-            "SMS.ne30pg2_r05_IcoswISC30E3r5_gis4to40.BGWCYCL1850.allactive-gis20km",
-            "SMS.ne30_oECv3_gis.IGELM_MLI.elm-extrasnowlayers",
+            "SMS.ne30pg2_r05_IcoswISC30E3r5_gis4to40.IGELM_MLI.mali-landiceIG",
+            "ERS_Ld3.ne30pg2_r05_IcoswISC30E3r5_gis4to40.IGELM_MLI.mali-landiceIG",
+            "SMS.ne30pg2_r05_IcoswISC30E3r5_gis4to40.BGWCYCL1850.allactive-landiceBG",
+            "ERS_Ld3.ne30pg2_r05_IcoswISC30E3r5_gis4to40.BGWCYCL1850.allactive-landiceBG",
+            "SMS.ne30pg2_r05_IcoswISC30E3r5_gis4to40.IGELM_MLI.elm-extrasnowlayers",
             "ERS_Ld5.TL319_oQU240wLI_gis4to40.MPAS_FOLISIO_JRA1p5.mpaso-jra_1958",
             "ERS_Ld5.TL319_oQU240wLI_ais8to30.MPAS_FOLISIO_JRA1p5.mpaso-jra_1958",
             )
@@ -886,6 +887,11 @@ _TESTS = {
     },
 
     "e3sm_moab_dev" : {
+        "inherit" : ("e3sm_moab_ers",
+                     "e3sm_moab_pem"),
+    },
+
+    "e3sm_moab_ers" : {
         "time"  : "01:00:00",
         "tests" : (
             "ERS_Vmoab_Ld3.ne4pg2_r05_oQU480.WCYCL1850NS",

@@ -137,15 +137,15 @@
     </values>
   </entry>
 
-  <entry  id="flds_wiso" modify_via_xml="FLDS_WISO">
+  <entry id="flds_polar">
     <type>logical</type>
     <category>seq_flds</category>
     <group>seq_cplflds_inparm</group>
     <desc>
-      Pass water isotopes between components
+      If set to .true. Polar fields will be passed from the ocean to the coupler.
     </desc>
     <values>
-      <value>$FLDS_WISO</value>
+      <value>$FLDS_POLAR</value>
     </values>
   </entry>
 
@@ -161,15 +161,15 @@
     </values>
   </entry>
 
-  <entry id="flds_polar">
+  <entry  id="flds_wiso" modify_via_xml="FLDS_WISO">
     <type>logical</type>
     <category>seq_flds</category>
     <group>seq_cplflds_inparm</group>
     <desc>
-      If set to .true. Polar fields will be passed from the ocean to the coupler.
+      Pass water isotopes between components
     </desc>
     <values>
-      <value>$FLDS_POLAR</value>
+      <value>$FLDS_WISO</value>
     </values>
   </entry>
 
@@ -198,7 +198,7 @@
     <category>seq_flds</category>
     <group>seq_cplflds_inparm</group>
     <desc>
-      Number of cism elevation classes. Set by the xml variable GLC_NEC in env_run.xml
+      Number of GLC elevation classes. Set by the xml variable GLC_NEC in env_run.xml
     </desc>
     <values>
       <value>$GLC_NEC</value>
@@ -216,7 +216,7 @@
       <value>$GLC_NZOC</value>
     </values>
   </entry>
-  
+
   <entry id="ice_ncat" modify_via_xml="ICE_NCAT">
     <type>integer</type>
     <category>seq_flds</category>
@@ -302,6 +302,18 @@
     </values>
   </entry>
 
+  <entry id="ocn_lnd_one_way">
+    <type>logical</type>
+    <category>seq_flds</category>
+    <group>seq_cplflds_inparm</group>
+    <desc>
+      If set to .true., adds fields needed to calculate ocean-land one-way coupling
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
   <entry id="rof_sed">
     <type>logical</type>
     <category>seq_flds</category>
@@ -313,7 +325,7 @@
       <value>.false.</value>
     </values>
   </entry>
- 
+
   <entry id="wav_ocn_coup">
     <type>char</type>
     <category>seq_flds</category>
@@ -346,6 +358,16 @@
     <values>
       <value>none</value>
       <value WAV_ICE_COUP="oneway">oneway</value>
+    </values>
+  </entry>
+
+  <entry id="add_iac_to_cplstate">
+    <type>logical</type>
+    <category>seq_flds</category>
+    <group>seq_cplflds_inparm</group>
+    <desc>Flag to control adding IAC component variable to the coupler history files.</desc>
+    <values>
+      <value>.false.</value>
     </values>
   </entry>
 
@@ -661,7 +683,7 @@
     <group>seq_infodata_inparm</group>
     <desc>
       Constant solar zenith angle value in degrees for idealized configurations
-      such as radiative-convective equilibrium experiments. This is disabled when 
+      such as radiative-convective equilibrium experiments. This is disabled when
       the value is less than 0
       Default: -1
     </desc>
@@ -857,7 +879,7 @@
      <category>control</category>
      <group>seq_infodata_inparm</group>
      <desc>
-      0: standard surface flux calculation as in E3SMv1 
+      0: standard surface flux calculation as in E3SMv1
       1: COAREv3.0 flux computation (Fairall et al., 2003)
       2: University of Arizona algorithm (Zeng et al., 1998)
       default: 0
@@ -1389,17 +1411,17 @@
   </entry>
 
   <entry id="histaux_z2x">
-    <type>logical</type>
-    <category>history</category>
-    <group>seq_infodata_inparm</group>
-    <desc>
-      turns on coupler history stream for instantaneous iac to coupler fields.
-      default: false
-    </desc>
-    <values>
-      <value>.false.</value>
-    </values>
-  </entry>
+      <type>logical</type>
+      <category>history</category>
+      <group>seq_infodata_inparm</group>
+      <desc>
+        turns on coupler history stream for instantaneous iac to coupler fields.
+        default: false
+      </desc>
+      <values>
+        <value>.false.</value>
+      </values>
+    </entry>
 
   <entry id="histaux_double_precision">
     <type>logical</type>
@@ -1597,6 +1619,7 @@
       <value atm_grid="ne1024np4.pg2" lnd_grid="ne1024np4.pg2">1.e-10</value>
       <value atm_grid="ne120np4.pg2" lnd_grid="ne120np4.pg2">1.e-10</value>
       <value atm_grid="ne256np4.pg2" lnd_grid="ne256np4.pg2">1.e-10</value>
+      <value atm_grid="ne512np4.pg2" lnd_grid="ne512np4.pg2">1.e-10</value>
     </values>
   </entry>
 
@@ -1785,6 +1808,53 @@
     </desc>
     <values>
       <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="nlmaps_verbosity">
+    <type>integer</type>
+    <category>nlmaps</category>
+    <group>seq_infodata_inparm</group>
+    <desc>
+      Measure and print information about nonlinearly mapped fields. 0 means no
+      analysis is done or printed. >= 1 triggers analysis written to
+      cpl.log. Modify user_nl_cpl to edit this.
+      default: 0
+    </desc>
+    <values>
+      <value>0</value>
+    </values>
+  </entry>
+
+  <entry id="nlmaps_atm2srf_conserve">
+    <type>logical</type>
+    <category>nlmaps</category>
+    <group>seq_infodata_inparm</group>
+    <desc>
+      Use various source and destination grid area fractions in the
+      atmosphere-to-surface nonlinear maps so that an atmosphere-to-surface flux
+      integrates to the same value on the atmosphere grid and on the land +
+      ocean + ice grids.
+      default: .false.
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="nlmaps_exclude_fields">
+    <type>char(20)</type>
+    <category>nlmaps</category>
+    <group>seq_infodata_inparm</group>
+    <desc>
+      List of fields that are to be excluded from the set that are nonlinearly
+      mapped. For these excluded fields, the low-order linear map is used,
+      instead. Modify user_nl_cpl to edit this. This option is ignored if
+      nlmaps_atm2srf_conserve is .true.
+      default: 'Faxa_rainc', 'Faxa_rainl', 'Faxa_snowc', 'Faxa_snowl'
+    </desc>
+    <values>
+      <value>'Faxa_rainc', 'Faxa_rainl', 'Faxa_snowc', 'Faxa_snowl'</value>
     </values>
   </entry>
 
@@ -3340,7 +3410,7 @@
     <category>cime_pes</category>
     <group>cime_pes</group>
     <desc>
-      level of task-to-node mapping output for the whole model 
+      level of task-to-node mapping output for the whole model
       (0: no output; 1: compact; 2: verbose)
     </desc>
     <values>
@@ -4317,6 +4387,36 @@
     </values>
   </entry>
 
+  <entry id="lnd2iac_smapname"    modify_via_xml="LND2IAC_SMAPNAME">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      lnd to iac mapping file for states
+    </desc>
+    <values>
+      <value>$LND2IAC_SMAPNAME</value>
+    </values>
+  </entry>
+  
+  <entry id="lnd2iac_smaptype"    modify_via_xml="LND2IAC_SMAPTYPE">
+    <type>char</type>
+    <category>mapping</category>
+    <group>seq_maps</group>
+    <desc>
+      The type of mapping desired, either "source" or "destination" mapping.
+      X is associated with rearrangement of the source grid to the
+      destination grid and then local mapping.  Y is associated with mapping
+      on the source grid and then rearrangement and sum to the destination
+      grid.
+    </desc>
+    <values>
+      <value>$LND2IAC_SMAPTYPE</value>
+      <value bfbflag="on">X</value>
+    </values>
+  </entry>
+
   <entry id="rof2lnd_fmapname"    modify_via_xml="ROF2LND_FMAPNAME">
     <type>char</type>
     <category>mapping</category>
@@ -4570,20 +4670,20 @@
     </values>
   </entry>
 
-  <entry id="ocn2glc_fmapname"    modify_via_xml="OCN2GLC_FMAPNAME">
+  <entry id="ocn2glc_shelf_fmapname"    modify_via_xml="OCN2GLC_SHELF_FMAPNAME">
     <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
     <desc>
-      ocn to glc flux mapping file for fluxes
+      ocn to glc shelf mapping file for fluxes
     </desc>
     <values>
-      <value>$OCN2GLC_FMAPNAME</value>
+      <value>$OCN2GLC_SHELF_FMAPNAME</value>
     </values>
   </entry>
 
-  <entry id="ocn2glc_fmaptype"    modify_via_xml="OCN2GLC_FMAPTYPE">
+  <entry id="ocn2glc_shelf_fmaptype"    modify_via_xml="OCN2GLC_SHELF_FMAPTYPE">
     <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
@@ -4595,25 +4695,25 @@
       grid.
     </desc>
     <values>
-      <value>$OCN2GLC_FMAPTYPE</value>
+      <value>$OCN2GLC_SHELF_FMAPTYPE</value>
       <value bfbflag="on">X</value>
     </values>
   </entry>
 
-  <entry id="ocn2glc_smapname"    modify_via_xml="OCN2GLC_SMAPNAME">
+  <entry id="ocn2glc_shelf_smapname"    modify_via_xml="OCN2GLC_SHELF_SMAPNAME">
     <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
     <desc>
-      ocn to glc state mapping file for states
+      ocn to glc shelf mapping file for states
     </desc>
     <values>
-      <value>$OCN2GLC_SMAPNAME</value>
+      <value>$OCN2GLC_SHELF_SMAPNAME</value>
     </values>
   </entry>
 
-  <entry id="ocn2glc_smaptype"    modify_via_xml="OCN2GLC_SMAPTYPE">
+  <entry id="ocn2glc_shelf_smaptype"    modify_via_xml="OCN2GLC_SHELF_SMAPTYPE">
     <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
@@ -4625,7 +4725,37 @@
       grid.
     </desc>
     <values>
-      <value>$OCN2GLC_SMAPTYPE</value>
+      <value>$OCN2GLC_SHELF_SMAPTYPE</value>
+      <value bfbflag="on">X</value>
+    </values>
+  </entry>
+
+  <entry id="ocn2glc_tf_smapname"    modify_via_xml="OCN2GLC_TF_SMAPNAME">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      ocn to glc state mapping file for thermal forcing state fields
+    </desc>
+    <values>
+      <value>$OCN2GLC_TF_SMAPNAME</value>
+    </values>
+  </entry>
+
+  <entry id="ocn2glc_tf_smaptype"    modify_via_xml="OCN2GLC_TF_SMAPTYPE">
+    <type>char</type>
+    <category>mapping</category>
+    <group>seq_maps</group>
+    <desc>
+      The type of mapping desired, either "source" or "destination" mapping.
+      X is associated with rearrangement of the source grid to the
+      destination grid and then local mapping.  Y is associated with mapping
+      on the source grid and then rearrangement and sum to the destination
+      grid.
+    </desc>
+    <values>
+      <value>$OCN2GLC_TF_SMAPTYPE</value>
       <value bfbflag="on">X</value>
     </values>
   </entry>
@@ -4961,6 +5091,7 @@
     </values>
   </entry>
 
+
   <entry id="ocn2wav_smapname"    modify_via_xml="OCN2WAV_SMAPNAME">
     <type>char</type>
     <category>mapping</category>
@@ -5093,6 +5224,36 @@
     </desc>
     <values>
       <value>Buildconf/eamconf/drv_flds_in,Buildconf/elmconf/drv_flds_in</value>
+    </values>
+  </entry>
+
+  <entry id="atm2iac_smapname"    modify_via_xml="ATM2IAC_SMAPNAME">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      atm to iac mapping file for states
+    </desc>
+    <values>
+      <value>$ATM2IAC_SMAPNAME</value>
+    </values>
+  </entry>
+  
+  <entry id="atm2iac_smaptype"    modify_via_xml="ATM2IAC_SMAPTYPE">
+    <type>char</type>
+    <category>mapping</category>
+    <group>seq_maps</group>
+    <desc>
+      The type of mapping desired, either "source" or "destination" mapping.
+      X is associated with rearrangement of the source grid to the
+      destination grid and then local mapping.  Y is associated with mapping
+      on the source grid and then rearrangement and sum to the destination
+      grid.
+    </desc>
+    <values>
+      <value>$ATM2IAC_SMAPTYPE</value>
+      <value bfbflag="on">X</value>
     </values>
   </entry>
 
@@ -5242,6 +5403,126 @@
     </desc>
     <values>
       <value>$OCN2ROF_SMAPTYPE</value>
+      <value bfbflag="on">X</value>
+    </values>
+  </entry>
+
+  <entry id="ocn2lnd_smapname"    modify_via_xml="OCN2LND_SMAPNAME">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      ocn to lnd mapping file for states
+    </desc>
+    <values>
+      <value>$OCN2LND_SMAPNAME</value>
+    </values>
+  </entry>
+
+  <entry id="ocn2lnd_smaptype"    modify_via_xml="OCN2LND_SMAPTYPE">
+    <type>char</type>
+    <category>mapping</category>
+    <group>seq_maps</group>
+    <desc>
+      The type of mapping desired, either "source" or "destination" mapping.
+      X is associated with rearrangement of the source grid to the
+      destination grid and then local mapping.  Y is associated with mapping
+      on the source grid and then rearrangement and sum to the destination
+      grid.
+    </desc>
+    <values>
+      <value>$OCN2LND_SMAPTYPE</value>
+      <value bfbflag="on">X</value>
+    </values>
+  </entry>
+
+  <entry id="ocn2lnd_fmapname"    modify_via_xml="OCN2LND_FMAPNAME">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      ocn to rof mapping file for fluxes
+    </desc>
+    <values>
+      <value>$OCN2LND_FMAPNAME</value>
+    </values>
+  </entry>
+
+  <entry id="ocn2lnd_fmaptype"    modify_via_xml="OCN2LND_FMAPTYPE">
+    <type>char</type>
+    <category>mapping</category>
+    <group>seq_maps</group>
+    <desc>
+      The type of mapping desired, either "source" or "destination" mapping.
+      X is associated with rearrangement of the source grid to the
+      destination grid and then local mapping.  Y is associated with mapping
+      on the source grid and then rearrangement and sum to the destination
+      grid.
+    </desc>
+    <values>
+      <value>$OCN2LND_FMAPTYPE</value>
+      <value bfbflag="on">X</value>
+    </values>
+  </entry>
+
+  <entry id="lnd2ocn_smapname"    modify_via_xml="LND2OCN_SMAPNAME">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      ocn to rof mapping file for states
+    </desc>
+    <values>
+      <value>$LND2OCN_SMAPNAME</value>
+    </values>
+  </entry>
+
+  <entry id="lnd2ocn_smaptype"    modify_via_xml="LND2OCN_SMAPTYPE">
+    <type>char</type>
+    <category>mapping</category>
+    <group>seq_maps</group>
+    <desc>
+      The type of mapping desired, either "source" or "destination" mapping.
+      X is associated with rearrangement of the source grid to the
+      destination grid and then local mapping.  Y is associated with mapping
+      on the source grid and then rearrangement and sum to the destination
+      grid.
+    </desc>
+    <values>
+      <value>$LND2OCN_SMAPTYPE</value>
+      <value bfbflag="on">X</value>
+    </values>
+  </entry>
+
+  <entry id="lnd2ocn_fmapname"    modify_via_xml="LND2OCN_FMAPNAME">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      ocn to rof mapping file for fluxes
+    </desc>
+    <values>
+      <value>$LND2OCN_FMAPNAME</value>
+    </values>
+  </entry>
+
+  <entry id="lnd2ocn_fmaptype"    modify_via_xml="LND2OCN_FMAPTYPE">
+    <type>char</type>
+    <category>mapping</category>
+    <group>seq_maps</group>
+    <desc>
+      The type of mapping desired, either "source" or "destination" mapping.
+      X is associated with rearrangement of the source grid to the
+      destination grid and then local mapping.  Y is associated with mapping
+      on the source grid and then rearrangement and sum to the destination
+      grid.
+    </desc>
+    <values>
+      <value>$LND2OCN_FMAPTYPE</value>
       <value bfbflag="on">X</value>
     </values>
   </entry>

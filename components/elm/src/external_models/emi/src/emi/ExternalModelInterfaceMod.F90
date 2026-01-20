@@ -371,8 +371,8 @@ contains
           do c = bounds_clump%begc,bounds_clump%endc
              if (col_pp%active(c)) then
                 l = col_pp%landunit(c)
-                if (lun_pp%itype(l) == istsoil .or. col_pp%itype(c) == icol_road_perv .or. &
-                    lun_pp%itype(l) == istcrop) then
+                if (col_pp%is_soil(c) .or. col_pp%itype(c) == icol_road_perv .or. &
+                    col_pp%is_crop(c)) then
                    num_e2l_filter_col = num_e2l_filter_col + 1
                    tmp_col(c) = 1
                 end if

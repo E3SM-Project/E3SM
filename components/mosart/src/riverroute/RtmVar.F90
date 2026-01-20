@@ -40,6 +40,7 @@ module RtmVar
   integer, public :: nlayers = 30                      ! Maximum number of reservoir layers for stratification
   logical, public :: noland = .false.                  ! true => no valid land points -- do NOT run
   logical, public :: data_bgc_fluxes_to_ocean_flag = .false.! read in and send BGC fluxes to ocean flag
+  logical, public :: redirect_negative_qgwl = .false.     ! redirect negative qgwl flag
   character(len=32) , public :: decomp_option          ! decomp option
   character(len=32) , public :: smat_option            ! smatrix multiply option (opt, Xonly, Yonly)
                                                        ! opt   = XandY in MCT

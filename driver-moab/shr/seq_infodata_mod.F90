@@ -60,6 +60,10 @@ MODULE seq_infodata_mod
   character(len=*), public, parameter :: seq_infodata_orb_variable_year    = 'variable_year'
   character(len=*), public, parameter :: seq_infodata_orb_fixed_parameters = 'fixed_parameters'
 
+  ! For seq_nlmap_mod.
+  integer, public, parameter :: nlmaps_exclude_max_number = 20
+  integer, public, parameter :: nlmaps_exclude_nchar = SHR_KIND_CS
+
   ! InputInfo derived type
 
   type seq_infodata_type
@@ -174,6 +178,8 @@ MODULE seq_infodata_mod
      logical                 :: mct_usealltoall ! flag for mct alltoall
      logical                 :: mct_usevector   ! flag for mct vector
      integer                 :: nlmaps_verbosity    ! see seq_nlmap_mod
+     logical                 :: nlmaps_atm2srf_conserve   ! see seq_nlmap_mod
+     character(nlmaps_exclude_nchar) :: nlmaps_exclude_fields(nlmaps_exclude_max_number) ! see seq_nlmap_mod
 
      logical                 :: reprosum_use_ddpdd  ! use ddpdd algorithm
      logical                 :: reprosum_allow_infnan ! allow INF and NaN summands
@@ -195,6 +201,7 @@ MODULE seq_infodata_mod
      logical                 :: rofice_present  ! does rof have iceberg coupling on
      logical                 :: rof_prognostic  ! does rof component need input data
      logical                 :: rofocn_prognostic ! does component need ocn data
+     logical                 :: lndocn_prognostic ! does component need ocn data
      logical                 :: flood_present   ! does rof have flooding on
      logical                 :: ocn_present     ! does component model exist
      logical                 :: ocn_prognostic  ! does component model need input data from driver
@@ -446,6 +453,9 @@ CONTAINS
     real(shr_kind_r8)      :: max_cplstep_time   ! abort if cplstep time exceeds this value
     character(SHR_KIND_CL) :: model_doi_url
     integer(SHR_KIND_IN)   :: nlmaps_verbosity   ! see seq_nlmap_mod
+    logical                :: nlmaps_atm2srf_conserve ! see seq_nlmap_mod
+    character(nlmaps_exclude_nchar) :: nlmaps_exclude_fields(nlmaps_exclude_max_number) ! see seq_nlmap_mod
+
 
     namelist /seq_infodata_inparm/  &
          cime_model, case_desc, case_name, start_type, tchkpt_dir,     &
@@ -486,7 +496,7 @@ CONTAINS
          reprosum_use_ddpdd, reprosum_allow_infnan,        &
          reprosum_diffmax, reprosum_recompute,             &
          mct_usealltoall, mct_usevector, max_cplstep_time, model_doi_url, &
-         nlmaps_verbosity
+         nlmaps_verbosity, nlmaps_atm2srf_conserve, nlmaps_exclude_fields
 
     !-------------------------------------------------------------------------------
 
@@ -610,6 +620,8 @@ CONTAINS
        max_cplstep_time      = 0.0
        model_doi_url        = 'unset'
        nlmaps_verbosity      = 0
+       nlmaps_atm2srf_conserve = .false.
+       nlmaps_exclude_fields(:) = ' '
 
        !---------------------------------------------------------------------------
        ! Read in namelist
@@ -747,6 +759,8 @@ CONTAINS
        infodata%mct_usealltoall       = mct_usealltoall
        infodata%mct_usevector         = mct_usevector
        infodata%nlmaps_verbosity      = nlmaps_verbosity
+       infodata%nlmaps_atm2srf_conserve = nlmaps_atm2srf_conserve
+       infodata%nlmaps_exclude_fields = nlmaps_exclude_fields
 
        infodata%info_debug            = info_debug
        infodata%bfbflag               = bfbflag
@@ -771,6 +785,7 @@ CONTAINS
        infodata%lnd_prognostic = .false.
        infodata%rof_prognostic = .false.
        infodata%rofocn_prognostic = .false.
+       infodata%lndocn_prognostic = .false.
        infodata%ocn_prognostic = .false.
        infodata%ocnrof_prognostic = .false.
        infodata%ocn_c2_glcshelf = .false.
@@ -1023,7 +1038,7 @@ CONTAINS
        single_column, scmlat,scmlon,logFilePostFix, outPathRoot,&
        scm_multcols, scm_nx, scm_ny,                                      &
        atm_present, atm_prognostic,                                       &
-       lnd_present, lnd_prognostic,                                       &
+       lnd_present, lnd_prognostic, lndocn_prognostic,                    &
        rof_present, rof_prognostic, rofocn_prognostic,                    &
        ocn_present, ocn_prognostic, ocnrof_prognostic,                    &
        ocn_c2_glcshelf, ocn_c2_glctf,                                     &
@@ -1064,7 +1079,8 @@ CONTAINS
        reprosum_use_ddpdd, reprosum_allow_infnan,                         &
        reprosum_diffmax, reprosum_recompute,                              &
        mct_usealltoall, mct_usevector, max_cplstep_time, model_doi_url,   &
-       glc_valid_input, nlmaps_verbosity, rmean_rmv_ice_runoff)
+       glc_valid_input, nlmaps_verbosity, nlmaps_atm2srf_conserve,        &
+       nlmaps_exclude_fields, rmean_rmv_ice_runoff)
 
     implicit none
 
@@ -1183,6 +1199,8 @@ CONTAINS
     logical,                optional, intent(OUT) :: mct_usealltoall         ! flag for mct alltoall
     logical,                optional, intent(OUT) :: mct_usevector           ! flag for mct vector
     integer(SHR_KIND_IN),   optional, intent(OUT) :: nlmaps_verbosity
+    logical,                optional, intent(OUT) :: nlmaps_atm2srf_conserve
+    character(nlmaps_exclude_nchar), optional, intent(OUT) :: nlmaps_exclude_fields(nlmaps_exclude_max_number)
 
     integer(SHR_KIND_IN),   optional, intent(OUT) :: info_debug
     logical,                optional, intent(OUT) :: bfbflag
@@ -1193,6 +1211,7 @@ CONTAINS
     logical,                optional, intent(OUT) :: atm_prognostic          ! need data
     logical,                optional, intent(OUT) :: lnd_present
     logical,                optional, intent(OUT) :: lnd_prognostic
+    logical,                optional, intent(OUT) :: lndocn_prognostic
     logical,                optional, intent(OUT) :: rof_present
     logical,                optional, intent(OUT) :: rofice_present
     logical,                optional, intent(OUT) :: rof_prognostic
@@ -1379,6 +1398,8 @@ CONTAINS
     if ( present(mct_usealltoall)) mct_usealltoall = infodata%mct_usealltoall
     if ( present(mct_usevector)  ) mct_usevector  = infodata%mct_usevector
     if ( present(nlmaps_verbosity)) nlmaps_verbosity = infodata%nlmaps_verbosity
+    if ( present(nlmaps_atm2srf_conserve)) nlmaps_atm2srf_conserve = infodata%nlmaps_atm2srf_conserve
+    if ( present(nlmaps_exclude_fields)) nlmaps_exclude_fields = infodata%nlmaps_exclude_fields
 
     if ( present(info_debug)     ) info_debug     = infodata%info_debug
     if ( present(bfbflag)        ) bfbflag        = infodata%bfbflag
@@ -1389,6 +1410,7 @@ CONTAINS
     if ( present(atm_prognostic) ) atm_prognostic = infodata%atm_prognostic
     if ( present(lnd_present)    ) lnd_present    = infodata%lnd_present
     if ( present(lnd_prognostic) ) lnd_prognostic = infodata%lnd_prognostic
+    if ( present(lndocn_prognostic) ) lndocn_prognostic = infodata%lndocn_prognostic
     if ( present(rof_present)    ) rof_present    = infodata%rof_present
     if ( present(rofice_present) ) rofice_present = infodata%rofice_present
     if ( present(rof_prognostic) ) rof_prognostic = infodata%rof_prognostic
@@ -1597,7 +1619,7 @@ CONTAINS
        single_column, scmlat,scmlon,logFilePostFix, outPathRoot,          &
        scm_multcols, scm_nx, scm_ny,                                      &
        atm_present, atm_prognostic,                                       &
-       lnd_present, lnd_prognostic,                                       &
+       lnd_present, lnd_prognostic, lndocn_prognostic,                    &
        rof_present, rof_prognostic, rofocn_prognostic,                    &
        ocn_present, ocn_prognostic, ocnrof_prognostic,                    &
        ocn_c2_glcshelf, ocn_c2_glctf,                                     &
@@ -1638,8 +1660,10 @@ CONTAINS
        eps_aarea, eps_omask, eps_ogrid, eps_oarea,                        &
        reprosum_use_ddpdd, reprosum_allow_infnan,                         &
        reprosum_diffmax, reprosum_recompute,                              &
-       mct_usealltoall, mct_usevector, glc_valid_input, nlmaps_verbosity, &
+       mct_usealltoall, mct_usevector, glc_valid_input,                   &
+       nlmaps_verbosity, nlmaps_atm2srf_conserve, nlmaps_exclude_fields,  &
        rmean_rmv_ice_runoff)
+
 
 
     implicit none
@@ -1758,6 +1782,8 @@ CONTAINS
     logical,                optional, intent(IN)    :: mct_usealltoall    ! flag for mct alltoall
     logical,                optional, intent(IN)    :: mct_usevector      ! flag for mct vector
     integer(SHR_KIND_IN),   optional, intent(IN)    :: nlmaps_verbosity
+    logical,                optional, intent(IN)    :: nlmaps_atm2srf_conserve
+    character(nlmaps_exclude_nchar), optional, intent(IN) :: nlmaps_exclude_fields(nlmaps_exclude_max_number)
 
     integer(SHR_KIND_IN),   optional, intent(IN)    :: info_debug
     logical,                optional, intent(IN)    :: bfbflag
@@ -1768,6 +1794,7 @@ CONTAINS
     logical,                optional, intent(IN)    :: atm_prognostic     ! need data
     logical,                optional, intent(IN)    :: lnd_present
     logical,                optional, intent(IN)    :: lnd_prognostic
+    logical,                optional, intent(IN)    :: lndocn_prognostic
     logical,                optional, intent(IN)    :: rof_present
     logical,                optional, intent(IN)    :: rofice_present
     logical,                optional, intent(IN)    :: rof_prognostic
@@ -1953,6 +1980,8 @@ CONTAINS
     if ( present(mct_usealltoall)) infodata%mct_usealltoall = mct_usealltoall
     if ( present(mct_usevector)  ) infodata%mct_usevector  = mct_usevector
     if ( present(nlmaps_verbosity)) infodata%nlmaps_verbosity = nlmaps_verbosity
+    if ( present(nlmaps_atm2srf_conserve)) infodata%nlmaps_atm2srf_conserve = nlmaps_atm2srf_conserve
+    if ( present(nlmaps_exclude_fields)) infodata%nlmaps_exclude_fields = nlmaps_exclude_fields
 
     if ( present(info_debug)     ) infodata%info_debug     = info_debug
     if ( present(bfbflag)        ) infodata%bfbflag        = bfbflag
@@ -1963,6 +1992,7 @@ CONTAINS
     if ( present(atm_prognostic) ) infodata%atm_prognostic = atm_prognostic
     if ( present(lnd_present)    ) infodata%lnd_present    = lnd_present
     if ( present(lnd_prognostic) ) infodata%lnd_prognostic = lnd_prognostic
+    if ( present(lndocn_prognostic) ) infodata%lndocn_prognostic = lndocn_prognostic
     if ( present(rof_present)    ) infodata%rof_present    = rof_present
     if ( present(rofice_present) ) infodata%rofice_present = rofice_present
     if ( present(rof_prognostic) ) infodata%rof_prognostic = rof_prognostic
@@ -2157,6 +2187,7 @@ CONTAINS
     !EOP
 
     !----- local -----
+    integer :: i
 
     !-------------------------------------------------------------------------------
     ! Notes:
@@ -2271,6 +2302,10 @@ CONTAINS
     call shr_mpi_bcast(infodata%mct_usealltoall,         mpicom)
     call shr_mpi_bcast(infodata%mct_usevector,           mpicom)
     call shr_mpi_bcast(infodata%nlmaps_verbosity,        mpicom)
+    call shr_mpi_bcast(infodata%nlmaps_atm2srf_conserve, mpicom)
+    do i = 1, nlmaps_exclude_max_number
+       call shr_mpi_bcast(infodata%nlmaps_exclude_fields(i), mpicom)
+    end do
 
     call shr_mpi_bcast(infodata%info_debug,              mpicom)
     call shr_mpi_bcast(infodata%bfbflag,                 mpicom)
@@ -2281,6 +2316,7 @@ CONTAINS
     call shr_mpi_bcast(infodata%atm_prognostic,          mpicom)
     call shr_mpi_bcast(infodata%lnd_present,             mpicom)
     call shr_mpi_bcast(infodata%lnd_prognostic,          mpicom)
+    call shr_mpi_bcast(infodata%lndocn_prognostic,       mpicom)
     call shr_mpi_bcast(infodata%rof_present,             mpicom)
     call shr_mpi_bcast(infodata%rofice_present,          mpicom)
     call shr_mpi_bcast(infodata%rof_prognostic,          mpicom)
@@ -2558,6 +2594,7 @@ CONTAINS
     if (lnd2cpli) then
        call shr_mpi_bcast(infodata%lnd_present,        mpicom, pebcast=cmppe)
        call shr_mpi_bcast(infodata%lnd_prognostic,     mpicom, pebcast=cmppe)
+       call shr_mpi_bcast(infodata%lndocn_prognostic,  mpicom, pebcast=cmppe)
        call shr_mpi_bcast(infodata%lnd_nx,             mpicom, pebcast=cmppe)
        call shr_mpi_bcast(infodata%lnd_ny,             mpicom, pebcast=cmppe)
        call shr_mpi_bcast(infodata%lnd_domain,         mpicom, pebcast=cmppe)
@@ -2659,6 +2696,7 @@ CONTAINS
        call shr_mpi_bcast(infodata%atm_prognostic,     mpicom, pebcast=cplpe)
        call shr_mpi_bcast(infodata%lnd_present,        mpicom, pebcast=cplpe)
        call shr_mpi_bcast(infodata%lnd_prognostic,     mpicom, pebcast=cplpe)
+       call shr_mpi_bcast(infodata%lndocn_prognostic,  mpicom, pebcast=cplpe)
        call shr_mpi_bcast(infodata%rof_present,        mpicom, pebcast=cplpe)
        call shr_mpi_bcast(infodata%rofice_present,     mpicom, pebcast=cplpe)
        call shr_mpi_bcast(infodata%rof_prognostic,     mpicom, pebcast=cplpe)
@@ -2858,7 +2896,7 @@ CONTAINS
     !EOP
 
     !----- local -----
-    integer                     :: ind
+    integer                     :: ind,i
     character(len=*), parameter :: subname = '(seq_infodata_print) '
     character(len=*), parameter ::  F0A = "(2A,A)"
     character(len=*), parameter ::  F0L = "(2A,L3)"
@@ -3004,6 +3042,14 @@ CONTAINS
     write(logunit,F0L) subname,'mct_usevector            = ', infodata%mct_usevector
 
     write(logunit,F0I) subname,'nlmaps_verbosity         = ', infodata%nlmaps_verbosity
+    write(logunit,F0L) subname,'nlmaps_atm2srf_conserve  = ', infodata%nlmaps_atm2srf_conserve
+
+    write(logunit,'(2A)',advance='no') subname,'nlmaps_exclude_fields    = '
+    do i = 1, size(infodata%nlmaps_exclude_fields)
+       if (len(trim(infodata%nlmaps_exclude_fields(i))) == 0) cycle
+       write(logunit,'(3A)',advance='no') ' ', trim(infodata%nlmaps_exclude_fields(i))
+    end do
+    write(logunit,'(A)') ''
 
     write(logunit,F0S) subname,'info_debug               = ', infodata%info_debug
     write(logunit,F0L) subname,'bfbflag                  = ', infodata%bfbflag
@@ -3015,6 +3061,7 @@ CONTAINS
     write(logunit,F0L) subname,'atm_prognostic           = ', infodata%atm_prognostic
     write(logunit,F0L) subname,'lnd_present              = ', infodata%lnd_present
     write(logunit,F0L) subname,'lnd_prognostic           = ', infodata%lnd_prognostic
+    write(logunit,F0L) subname,'lndocn_prognostic        = ', infodata%lndocn_prognostic
     write(logunit,F0L) subname,'rof_present              = ', infodata%rof_present
     write(logunit,F0L) subname,'rofice_present           = ', infodata%rofice_present
     write(logunit,F0L) subname,'rof_prognostic           = ', infodata%rof_prognostic

@@ -11,6 +11,7 @@
 
 #include "share/util/eamxx_universal_constants.hpp"
 #include "share/core/eamxx_setup_random_test.hpp"
+#include "share/physics/physics_constants.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
 #include "share/core/eamxx_types.hpp"
 
@@ -143,6 +144,8 @@ void write (const std::string& avg_type, const std::string& freq_units,
   ctrl_pl.set("frequency_units",freq_units);
   ctrl_pl.set("frequency",freq);
   ctrl_pl.set("save_grid_data",false);
+  // Also test writing physics constants to file
+  om_pl.set("constants",std::vector<std::string>{"gravit","Rgas"});
 
   // While setting this is in practice irrelevant (we would close
   // the file anyways at the end of the run), we can test that the OM closes
@@ -270,6 +273,20 @@ void read (const std::string& avg_type, const std::string& freq_units,
     auto att_str = scorpio::get_attribute<std::string>(filename,fn,"test");
     REQUIRE (att_str==fn);
   }
+
+  // Check constants
+  Real Rgas_v, gravit_v;
+
+  auto Rgas_u = scorpio::get_attribute<std::string>(filename,"Rgas","units");
+  auto gravit_u = scorpio::get_attribute<std::string>(filename,"gravit","units");
+  scorpio::read_var(filename,"Rgas",&Rgas_v);
+  scorpio::read_var(filename,"gravit",&gravit_v);
+
+  const auto& dict = physics::Constants<Real>::dictionary();
+  REQUIRE (Rgas_u==dict.at("Rgas").units.to_string());
+  REQUIRE (gravit_u==dict.at("gravit").units.to_string());
+  REQUIRE (Rgas_v==dict.at("Rgas").value);
+  REQUIRE (gravit_v==dict.at("gravit").value);
 }
 
 TEST_CASE ("io_basic") {

@@ -760,6 +760,13 @@ If TRUE, TOP solar radiation parameterization will be activated, which considers
 </entry>
 <!-- End TOP solar radiation parameterization                   -->
 
+<!-- fineTOP radiation parameterization -->
+<entry id="use_finetop_rad" type="logical" category="elm_physics"
+       group="elm_inparm" valid_values="" value=".false.">
+If TRUE, fineTOP radiation parameterization will be activated, which considers the effects of fine(grid)-scale topography.
+</entry>
+<!-- End fineTOP radiation parameterization -->
+
 <!-- ========================================================================================  -->
 <!-- Former CPP tokens -->
 <!-- ========================================================================================  -->

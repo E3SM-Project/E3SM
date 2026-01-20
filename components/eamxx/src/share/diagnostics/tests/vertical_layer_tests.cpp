@@ -60,7 +60,7 @@ void run (const std::string& diag_name, const std::string& location)
 
   // Set the required fields for the diagnostic.
   std::map<std::string,Field> input_fields;
-  for (const auto& req : diag->get_required_field_requests()) {
+  for (const auto& req : diag->get_field_requests()) {
     Field f(req.fid);
     auto & f_ap = f.get_header().get_alloc_properties();
     f_ap.request_allocation(packsize);
