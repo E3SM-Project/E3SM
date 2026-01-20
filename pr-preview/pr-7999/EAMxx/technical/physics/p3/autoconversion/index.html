@@ -5252,8 +5252,10 @@ number concentration (<span class="arithmatex">\(N_c\)</span>).</p>
 mixing ratio <span class="arithmatex">\(N_c\)</span> (<span class="arithmatex">\(\#/\text{kg}\)</span>) and air density <span class="arithmatex">\(\rho\)</span> (<span class="arithmatex">\(\text{kg}/\text{m}^3\)</span>),
 where <span class="arithmatex">\(N_c\)</span> corresponds to the variable <code>nc_incld</code>:</p>
 <div class="arithmatex">\[
-N_{c, \text{vol}} = N_c \cdot \rho \cdot 10^{-6} \;\equiv\; \texttt{nc\\_incld} \cdot \texttt{sp(1.e-6)} \cdot \rho
+N_{c,\text{vol}} = N_c \cdot \rho \cdot 10^{-6}
+\;\equiv\; \texttt{nc\_incld} \cdot \texttt{sp(1.e-6)} \cdot \rho
 \]</div>
+<p>\equiv \texttt{nc_incld} \cdot \texttt{sp(1.e-6)} \cdot \rho</p>
 <h3 id="number-tendencies">Number Tendencies</h3>
 <p>Consistent with the 2-moment approach, the parameterization calculates the
 tendencies for both mass and number.</p>
@@ -5267,7 +5269,9 @@ determined by preserving the specific number concentration:</p>
 magnitude of this transfer rate. The actual tendency of cloud droplet number is
 the negative of this value:</p>
 <div class="arithmatex">\[
-\frac{\partial N_c}{\partial t} = -\texttt{nc2nr\\_autoconv\\_tend}
+\frac{\partial N_c}{\partial t}
+=
+-\texttt{nc2nr\_autoconv\_tend}
 \]</div>
 <h4 id="2-rain-droplet-number-source">2. Rain Droplet Number Source</h4>
 <p>The source of rain droplet number is determined by the characteristic mass of
@@ -5286,10 +5290,14 @@ computed as:</p>
 \text{CONS3} = \frac{1}{\frac{4\pi}{3}\rho_w r_{\text{auto}}^3} = \frac{1}{m_{\text{drop}}(r_{\text{auto}})}
 \]</div>
 <p><strong>Important</strong>: Note that <code>ncautr</code> (rain number source) is <strong>not equal</strong> to
-<code>nc2nr_autoconv_tend</code> (cloud number transfer magnitude). The relationship is:</p>
-<div class="arithmatex">\[
-\texttt{ncautr} = \texttt{nc2nr\\_autoconv\\_tend} \times \frac{q_c}{N_c} \times \text{CONS3}
-\]</div>
+<code>nc2nr_autoconv_tend</code> (cloud number transfer magnitude). The relationship is:
+$$
+\texttt{ncautr}
+=
+\texttt{nc2nr_autoconv_tend}
+\times \frac{q_c}{N_c}
+\times \texttt{CONS3}
+$$</p>
 <h2 id="implementation-details">Implementation Details</h2>
 <ul>
 <li><strong>Reference</strong>: This logic is implemented in <code>cloud_water_autoconversion()</code>
