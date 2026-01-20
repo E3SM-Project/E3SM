@@ -214,16 +214,14 @@ void HyperviscosityFunctorImpl::init_boundary_exchanges () {
   m_be_tom->set_label("Hyperviscosity-TOM");
   std::shared_ptr<BoundaryExchange> bes[] = {m_be, m_be_tom};
   const int nlevs[] = {NUM_LEV, m_nu_scale_top_ilev_pack_lim};
-  const int nlevsi[] = {NUM_LEV_P, m_nu_scale_top_ilev_pack_lim};
   for (int i = 0; i < 2; ++i) {
     if (i == 1 && m_data.nu_top <= 0) continue;
     auto be = bes[i];
     be->set_diagnostics_level(sp.internal_diagnostics_level);
     const auto nlev = nlevs[i];
-    const auto nlevi = nlevsi[i];
     be->set_buffers_manager(bm_exchange);
     if (m_process_nh_vars) {
-      be->set_num_fields(0, 0, 8);
+      be->set_num_fields(0, 0, 6);
     } else {
       be->set_num_fields(0, 0, 4);
     }
@@ -232,8 +230,6 @@ void HyperviscosityFunctorImpl::init_boundary_exchanges () {
     if (m_process_nh_vars) {
       be->register_field(m_buffers.wtens, nlev);
       be->register_field(m_buffers.phitens, nlev);
-      be->register_field(m_buffers.turb_diff_heat_i, nlevi);
-      be->register_field(m_buffers.turb_diff_mom_i, nlevi);
     }
     be->register_field(m_buffers.vtens, 2, 0, nlev);
     be->registration_completed();
