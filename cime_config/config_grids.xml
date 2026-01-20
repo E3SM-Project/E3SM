@@ -6466,18 +6466,8 @@
       <map name="GLC2ICE_SMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10kmR2_to_IcoswISC30E3r5_esmfaave.20240403.nc</map>
       <map name="GLC2OCN_FMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10kmR2_to_IcoswISC30E3r5_esmfaave.20240403.nc</map>
       <map name="GLC2OCN_SMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10kmR2_to_IcoswISC30E3r5_esmfaave.20240403.nc</map>
-      <!-- map name="GLC2OCN_LIQ_RMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10kmR2_to_IcoswISC30E3r5_nn.20250326.nc</map>
-      <map name="GLC2OCN_ICE_RMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10kmR2_to_IcoswISC30E3r5-nomask_nn.20250403.nc</map-->
-      <!-- temp location of spreading files for testing on chrys -->
-      <map name="GLC2OCN_LIQ_RMAPNAME">/home/ac.sprice/temp/runoffSpreadingMaps/map_gis1to10kmR2_to_IcoswISC30E3r5_r50e100.cstmnn.20250326.nc</map>
-      <map name="GLC2OCN_ICE_RMAPNAME">/home/ac.sprice/temp/runoffSpreadingMaps/map_gis1to10kmR2_to_IcoswISC30E3r5-nomask_r50e100.cstmnn.20250403.nc</map>
-      <!--map name="GLC2OCN_LIQ_RMAPNAME">/home/ac.sprice/temp/runoffSpreadingMaps/map_gis1to10kmR2_to_IcoswISC30E3r5_r150e300.cstmnn.20250326.nc</map>
-      <map name="GLC2OCN_ICE_RMAPNAME">/home/ac.sprice/temp/runoffSpreadingMaps/map_gis1to10kmR2_to_IcoswISC30E3r5-nomask_r150e300.cstmnn.20250403.nc</map-->
-      <!-- temp location of spreading files for testing on perlmutter -->
-      <!-- map name="GLC2OCN_LIQ_RMAPNAME">/global/cfs/cdirs/e3sm/sprice/temp/map_gis1to10kmR2_to_IcoswISC30E3r5_r50e100.cstmnn.20250326.nc</map>
-      <map name="GLC2OCN_ICE_RMAPNAME">/global/cfs/cdirs/e3sm/sprice/temp/map_gis1to10kmR2_to_IcoswISC30E3r5-nomask_r50e100.cstmnn.20250403.nc</map>
-      <map name="GLC2OCN_LIQ_RMAPNAME">/global/cfs/cdirs/e3sm/sprice/temp/map_gis1to10kmR2_to_IcoswISC30E3r5_r150e300.cstmnn.20250326.nc</map>
-      <map name="GLC2OCN_ICE_RMAPNAME">/global/cfs/cdirs/e3sm/sprice/temp/map_gis1to10kmR2_to_IcoswISC30E3r5-nomask_r150e300.cstmnn.20250403.nc</map-->
+      <map name="GLC2OCN_LIQ_RMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10kmR2_to_IcoswISC30E3r5_r150e300.cstmnn.20250326.nc</map>
+      <map name="GLC2OCN_ICE_RMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10kmR2_to_IcoswISC30E3r5-nomask_r150e300.cstmnn.20250403.nc</map>
     </gridmap>
 
     <!-- ====================  -->
