@@ -144,15 +144,6 @@ CONTAINS
 
     if (t_modulo .eq. 0) then
 
-      ! advance the time levels
-      do k = 1, n_output_channels
-        do j = 1, lsize_y
-          do i = 1, lsize_x
-            eatm_intrp%t_im1(k, i, j) = eatm_intrp%t_ip1(k, i, j)
-          end do
-        end do
-      end do
-
       ! populate net_imports array with IC/restart data passed to coupler for initializtion
       call ace_eatm_import()
 
@@ -178,6 +169,17 @@ CONTAINS
 
       ! run inference
       call torch_model_forward(ace_model, input_tensor, output_tensor)
+
+      ! advance the time levels
+      do k = 1, n_output_channels
+        do j = 1, lsize_y
+          do i = 1, lsize_x
+            eatm_intrp%t_im1(k, i, j) = eatm_intrp%t_ip1(k, i, j)
+            eatm_intrp%t_ip1(k, i, j) = net_outputs(1, k, i, j)
+          end do
+        end do
+      end do
+
     end if
 
     t_frac = real(t_modulo, kind=r8)/real(eatm_idt, kind=r8)
