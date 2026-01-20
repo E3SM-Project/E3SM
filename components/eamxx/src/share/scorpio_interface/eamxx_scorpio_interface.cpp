@@ -748,24 +748,37 @@ void set_var_decomp (PIOVar& var,
       " - varname   : " + var.name  + "\n"
       " - var decomp: " + var.decomp->name  + "\n");
 
-  // First, check if this var actually needs a decomp
+  // First, check which dims are decomposed (if any). Check that different dims
+  // agree on what kind of decomp this should be. E.g., do NOT allow N dims that
+  // were not decomposed as part of a joint rank-N decomposition
   int ndims = var.dims.size();
 
-  int decomp_rank = 0;
-  int num_decomp = 0;
-  int last_decomp = -1;
+  std::set<int> decomp_ranks;
+  int last_decomp = 0;
+  std::vector<std::string> decomposed_dims;
   for (int idim=0; idim<ndims; ++idim) {
     auto d = var.dims[idim];
     if (d->decomp_rank>0) {
-      decomp_rank = d->decomp_rank;
-      ++num_decomp;
+      decomposed_dims.push_back(d->name);
+      decomp_ranks.insert(d->decomp_rank);
       last_decomp = idim;
     }
   }
-  if (decomp_rank==0) {
+
+  int num_decomp = decomposed_dims.size();
+  if (num_decomp==0) {
     // None of the var dims is decomposed
     return;
   }
+
+  EKAT_REQUIRE_MSG (decomp_ranks.size()==1,
+      "Error! We cannot decomposed this variable, as it contained multiple decomposed dims that were not decompsed together.\n"
+      " - filename: " + filename + "\n"
+      " - varname : " + var.name + "\n"
+      " - var dims: " + ekat::join(var.dims,get_entity_name,",") + "\n"
+      " - decomp dims: " + ekat::join(decomposed_dims,",") + "\n");
+
+  int decomp_rank = *decomp_ranks.begin();
   if (num_decomp<decomp_rank) {
     // In this case we ASSUME that the var is NOT actually decomposed. The only use case (for now)
     // of decomps with 2+ dims is (lat,lon,..) vars. If we have a var with layout (lat), we ASSUME
@@ -773,10 +786,20 @@ void set_var_decomp (PIOVar& var,
 
     return;
   }
+
+  EKAT_REQUIRE_MSG (num_decomp==decomp_rank,
+      "Error! We cannot decomposed this variable, as it contained multiple decomposed dims that were not decompsed together.\n"
+      " - filename: " + filename + "\n"
+      " - varname : " + var.name + "\n"
+      " - var dims: " + ekat::join(var.dims,get_entity_name,",") + "\n"
+      " - decomp dims: " + ekat::join(decomposed_dims,",") + "\n");
+
   EKAT_REQUIRE_MSG (last_decomp==(num_decomp-1),
       "Error! We cannot decomposed this variable, as the decomp dims are not the slowest striding ones.\n"
       " - filename: " + filename + "\n"
-      " - varname : " + var.name + "\n");
+      " - varname : " + var.name + "\n"
+      " - var dims: " + ekat::join(var.dims,get_entity_name,",") + "\n"
+      " - decomp dims: " + ekat::join(decomposed_dims,",") + "\n");
 
   // Create decomp name: dtype-dim1<len1>_dim2<len2>_..._dimk<lenN>
   auto get_dimtag = [](const auto dim) {
@@ -805,10 +828,14 @@ void set_var_decomp (PIOVar& var,
   if (s.decomps.count(decomp_tag)==0) {
     auto& f = s.files[filename];
 
-    EKAT_REQUIRE_MSG (num_decomp>=decomp_rank,
-        "Error! We cannot decomposed this variable, as it contained multiple decomposed dims that were not decompsed together.\n"
+    // Final check: the decomposed dims must have been decomposed together (e.g., 2 dims that
+    // are part of rank-2 decompositions but NOT with each other are not ok)
+    EKAT_REQUIRE_MSG (f.dim_decomps.count(ekat::join(decomposed_dims,"_"))==1,
+        "Error! We cannot decomposed this variable, as the decomp dims were not decomposed jointly.\n"
         " - filename: " + filename + "\n"
-        " - varname : " + var.name + "\n");
+        " - varname : " + var.name + "\n"
+        " - var dims: " + ekat::join(var.dims,get_entity_name,",") + "\n"
+        " - decomp dims: " + ekat::join(decomposed_dims,",") + "\n");
 
     // Get ALL dims global lengths, and compute prod of *non-decomposed* dims
     std::vector<int> gdimlen;
@@ -817,21 +844,18 @@ void set_var_decomp (PIOVar& var,
       gdimlen.push_back(d->length);
     }
 
-    // We haven't create this decomp yet. Go ahead and create one
-    auto decomp = std::make_shared<PIODecomp>();
-    decomp->name = decomp_tag;
-
-    // Retrieve the dim decomp
-    std::vector<std::string> decomp_dim_names;
+    // Retrieve the dimension(s) decomposition
     int non_decomp_dim_prod = 1;
     for (auto d : var.dims) {
-      if (d->decomp_rank>0) {
-        decomp_dim_names.push_back(d->name);
-      } else {
+      if (d->decomp_rank==0) {
         non_decomp_dim_prod *= d->length;
       }
     }
-    decomp->dim_decomp = f.dim_decomps.at(ekat::join(decomp_dim_names,"_"));
+
+    // We haven't create this decomp yet. Go ahead and create one
+    auto decomp = std::make_shared<PIODecomp>();
+    decomp->name = decomp_tag;
+    decomp->dim_decomp = f.dim_decomps.at(ekat::join(decomposed_dims,"_"));
 
     // Create offsets list
     const auto& dim_offsets = decomp->dim_decomp->offsets;
@@ -943,18 +967,6 @@ void set_dims_decomp (const std::string& filename,
 {
   auto& f = impl::get_file(filename,"scorpio::set_decomp");
 
-  std::vector<PIODim> dims;
-  int dims_prod = 1;
-  for (const auto& n : dimnames) {
-    dims.push_back(impl::get_dim(filename,n,"scorpio::set_dims_decomp"));
-    EKAT_REQUIRE_MSG (not dims.back().unlimited,
-        "Error! Cannot partition an unlimited dimension.\n"
-        " - filename: " + filename + "\n"
-        " - dimname : " + n + "\n");
-
-    dims_prod *= dims.back().length;
-  }
-
   auto& dim_decomp = f.dim_decomps[ekat::join(dimnames,"_")];
   if (dim_decomp!=nullptr) {
     // Not sure if we should error out. For now, if the offsets are the same (on ALL ranks), just return
@@ -971,6 +983,21 @@ void set_dims_decomp (const std::string& filename,
   }
   
   // Check that offsets are less than the global dimension length
+  int dims_prod = 1;
+  for (const auto& n : dimnames) {
+    const auto& dim = impl::get_dim(filename,n,"scorpio::set_dims_decomp");
+    EKAT_REQUIRE_MSG (not dim.unlimited,
+        "Error! Cannot partition an unlimited dimension.\n"
+        " - filename: " + filename + "\n"
+        " - dimname : " + n + "\n");
+    EKAT_REQUIRE_MSG (not dim.decomp_rank>0,
+        "Error! At least one of the dimensions in this decomposition was already decomposed in a different way.\n"
+        " - filename: " + filename + "\n"
+        " - dimname : " + n + "\n");
+
+    dims_prod *= dim.length;
+  }
+
   for (auto o : my_offsets) {
     EKAT_REQUIRE_MSG (o>=0 && o<dims_prod,
         "Error! Offset for dimension decomposition is out of bounds.\n"
