@@ -106,7 +106,7 @@ class TestAllScream(object):
         if self._work_dir is not None:
             self._work_dir = Path(self._work_dir).absolute()
         else:
-            self._work_dir = self._root_dir.absolute().joinpath("ctest-build")
+            self._work_dir = self._root_dir.absolute() / 'ctest-build' / self._machine.name
 
         self._work_dir.mkdir(parents=True, exist_ok=True)
 
