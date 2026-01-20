@@ -469,6 +469,11 @@ void AtmosphereProcess::run_property_check (const prop_check_ptr&       property
           }
         }
       }
+
+      // For debugging purposes, this allows to print the error BEFORE throwing the exception
+      if (m_params.get("print_checks_errors ",false)) {
+        std::cout << ss.str();
+      }
       EKAT_ERROR_MSG(ss.str());
     }
   }
