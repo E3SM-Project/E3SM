@@ -9,6 +9,7 @@
 #include "Context.hpp"
 #include "FunctorsBuffersManager.hpp"
 #include "profiling.hpp"
+#include "ColumnOps.hpp"
 
 #include "mpi/BoundaryExchange.hpp"
 #include "mpi/MpiBuffersManager.hpp"
@@ -147,7 +148,7 @@ int HyperviscosityFunctorImpl::requested_buffer_size () const {
 
   // Number of scalar/vector int/mid buffers needed, with size nelems
   const int mid_vectors_nelems = 1;
-  const int int_scalars_nelems = 0;
+  const int int_scalars_nelems = 0 + (m_process_nh_vars ? 2 : 0);
   const int mid_scalars_nelems = 2 + (m_process_nh_vars ? 2 : 0);
 
   const int size = m_num_elems*(mid_scalars_nelems*size_mid_scalar +
@@ -162,6 +163,7 @@ void HyperviscosityFunctorImpl::init_buffers (const FunctorsBuffersManager& fbm)
 
   constexpr int size_mid_scalar =   NP*NP*NUM_LEV;
   constexpr int size_mid_vector = 2*NP*NP*NUM_LEV;
+  constexpr int size_int_scalar =   NP*NP*NUM_LEV_P;
 
   auto mem_in = fbm.get_memory();
   Scalar* mem = reinterpret_cast<Scalar*>(fbm.get_memory());
@@ -180,6 +182,12 @@ void HyperviscosityFunctorImpl::init_buffers (const FunctorsBuffersManager& fbm)
 
     m_buffers.phitens = decltype(m_buffers.phitens)(mem,nelems);
     mem += size_mid_scalar*nelems;
+
+    m_buffers.turb_diff_heat_i = decltype(m_buffers.turb_diff_heat_i)(mem,nelems);
+    mem += size_int_scalar*nelems;
+
+    m_buffers.turb_diff_mom_i = decltype(m_buffers.turb_diff_mom_i)(mem,nelems);
+    mem += size_int_scalar*nelems;
   }
 
   m_buffers.vtens = decltype(m_buffers.vtens)(mem,nelems);
@@ -206,14 +214,16 @@ void HyperviscosityFunctorImpl::init_boundary_exchanges () {
   m_be_tom->set_label("Hyperviscosity-TOM");
   std::shared_ptr<BoundaryExchange> bes[] = {m_be, m_be_tom};
   const int nlevs[] = {NUM_LEV, m_nu_scale_top_ilev_pack_lim};
+  const int nlevsi[] = {NUM_LEV_P, m_nu_scale_top_ilev_pack_lim};
   for (int i = 0; i < 2; ++i) {
     if (i == 1 && m_data.nu_top <= 0) continue;
     auto be = bes[i];
     be->set_diagnostics_level(sp.internal_diagnostics_level);
     const auto nlev = nlevs[i];
+    const auto nlevi = nlevsi[i];
     be->set_buffers_manager(bm_exchange);
     if (m_process_nh_vars) {
-      be->set_num_fields(0, 0, 6);
+      be->set_num_fields(0, 0, 8);
     } else {
       be->set_num_fields(0, 0, 4);
     }
@@ -222,6 +232,8 @@ void HyperviscosityFunctorImpl::init_boundary_exchanges () {
     if (m_process_nh_vars) {
       be->register_field(m_buffers.wtens, nlev);
       be->register_field(m_buffers.phitens, nlev);
+      be->register_field(m_buffers.turb_diff_heat_i, nlevi);
+      be->register_field(m_buffers.turb_diff_mom_i, nlevi);
     }
     be->register_field(m_buffers.vtens, 2, 0, nlev);
     be->registration_completed();
@@ -474,9 +486,18 @@ void HyperviscosityFunctorImpl::apply_horizontal_turbulent_diffusion () const
       const auto& rspheremp = m_geometry.m_rspheremp(ie, igp, jgp);
 
       MidColumn w_lap, phi_lap;
+      IntColumn Km_i, Kh_i;
       if (m_process_nh_vars) {
         w_lap   = Homme::subview(m_buffers.wtens,   ie, igp, jgp);
         phi_lap = Homme::subview(m_buffers.phitens, ie, igp, jgp);
+
+        Km_i = Homme::subview(m_buffers.turb_diff_mom_i,  ie, igp, jgp);
+        Kh_i = Homme::subview(m_buffers.turb_diff_heat_i, ie, igp, jgp);
+
+        ColumnOps::compute_interface_values(kv, Km, Km_i);
+        ColumnOps::compute_interface_values(kv, Kh, Kh_i);
+
+	kv.team_barrier();
       }
 
       // Vertical loop: dp, theta, u, v, (w, phi) all get K * Lapterm * dt_loc
@@ -494,8 +515,10 @@ void HyperviscosityFunctorImpl::apply_horizontal_turbulent_diffusion () const
         v(k)     += dt_loc * km * v_lap(k) * rspheremp;
 
         if (m_process_nh_vars) {
-          w(k)     += dt_loc * km * w_lap(k) * rspheremp;
-          phi_i(k) += dt_loc * kh * phi_lap(k) * rspheremp;
+	  const auto km_i = Km(k);
+	  const auto kh_i = Kh(k);
+          w(k)     += dt_loc * km_i * w_lap(k) * rspheremp;
+          phi_i(k) += dt_loc * kh_i * phi_lap(k) * rspheremp;
         }
       });
     }); // TeamThreadRange

@@ -76,6 +76,8 @@ class HyperviscosityFunctorImpl
     ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>    wtens;
     ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>    phitens;
     ExecViewManaged<Scalar * [2][NP][NP][NUM_LEV]> vtens;
+    ExecViewManaged<Scalar * [NP][NP][NUM_LEV_P]>  turb_diff_heat_i;
+    ExecViewManaged<Scalar * [NP][NP][NUM_LEV_P]>  turb_diff_mom_i;
   };//buffers
 
 public:
