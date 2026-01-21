@@ -1,7 +1,7 @@
 #include "eamxx_scorpio_interface.hpp"
 #include "eamxx_shr_interface_c2f.hpp"
 
-#include "eamxx_config.h"
+#include "share/core/eamxx_config.hpp"
 
 #include <ekat_std_utils.hpp>
 #include <ekat_string_utils.hpp>
