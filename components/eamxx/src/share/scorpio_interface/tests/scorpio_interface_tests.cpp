@@ -209,4 +209,71 @@ TEST_CASE ("write_and_read") {
   finalize_subsystem ();
 }
 
+TEST_CASE ("joint_decomp") {
+  ekat::Comm comm (MPI_COMM_WORLD);
+
+  init_subsystem (comm);
+
+  std::string filename = "scorpio_interface_write_joint_decomp_test_np" + std::to_string(comm.size()) + ".nc";
+
+  const int dim1 = 3;
+  const int dim2 = 10;
+  const int dim3 = comm.size();
+
+  // Offsets for dim3 decomp owned by this rank
+  std::vector<offset_t> my_offsets;
+  for (int i=0; i<dim1; ++i) {
+    for (int j=0; j<dim2; ++j) {
+      int gid = i*dim2 + j;
+      if(gid % comm.size() == comm.rank())
+        my_offsets.push_back(gid);
+    }
+  }
+  int ldim = my_offsets.size();
+
+  // Write phase
+  {
+    register_file (filename,Write);
+    define_dim (filename,"dim1",dim1);
+    define_dim (filename,"dim2",dim2);
+    define_dim (filename,"dim3",dim3);
+    set_dims_decomp (filename,{"dim1","dim2"},my_offsets);
+    set_dim_decomp (filename,"dim3"); // Linear decomp
+
+    define_var (filename,"var1",{"dim1","dim2"},"int",false);
+    REQUIRE_THROWS (define_var (filename,"var2",{"dim1","dim3"},"int",false)); // ERROR: mixed decomps
+    enddef (filename);
+
+    // Write
+    std::vector<int> var1 (ldim);
+    for (int i=0; i<ldim; ++i) {
+      var1[i] = my_offsets[i];
+    }
+    write_var (filename,"var1",var1.data());
+
+    // Cleanup
+    release_file (filename);
+  }
+
+  // Read phase
+  {
+    register_file (filename,Read);
+
+    // Read without decomp
+    std::vector<int> var1 (dim1*dim2);
+
+    std::vector<int> tgt_var1 (dim1*dim2);
+    std::iota (tgt_var1.begin(),tgt_var1.end(),0);
+
+    read_var (filename,"var1",var1.data());
+    REQUIRE (tgt_var1==var1);
+
+    // Cleanup
+    release_file (filename);
+  }
+
+  finalize_subsystem ();
+}
+
+
 } // namespace scream
