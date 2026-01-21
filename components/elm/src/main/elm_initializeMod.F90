@@ -24,6 +24,7 @@ module elm_initializeMod
   use ELMFatesParamInterfaceMod, only: FatesReadPFTs
   use BeTRSimulationELM, only : create_betr_simulation_elm
   use SoilLittVertTranspMod, only : CreateLitterTransportList
+  use ColumnConnectionSetType, only : c2c_connections
   use iso_c_binding
   !
   !-----------------------------------------
@@ -229,11 +230,15 @@ contains
             'Unsupported domain_decomp_type = ' // trim(domain_decomp_type))
     end select
 
+#ifdef HAVE_MOAB
+    call domainlateral_init(ldomain_lateral)
+#else
     if (lateral_connectivity) then
        call domainlateral_init(ldomain_lateral, cellsOnCell, edgesOnCell, &
             nEdgesOnCell, areaCell, dcEdge, dvEdge, &
             nCells_loc, nEdges_loc, maxEdges)
     endif
+#endif
 
     ! *** Get JUST gridcell processor bounds ***
     ! Remaining bounds (landunits, columns, patches) will be determined
@@ -422,6 +427,10 @@ contains
     ! This is needed here for the following call to decompInit_glcp
 
     call initGridCells()
+    call initGhostGridCells()
+#ifdef HAVE_MOAB
+    call c2c_connections%Init(bounds_proc)
+#endif
 
     if (fsurdat /= " " .and. use_finetop_rad) then
        if (masterproc) then

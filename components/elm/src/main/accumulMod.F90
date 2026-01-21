@@ -278,7 +278,7 @@ contains
 
     beg = accum(nf)%beg1d
     end = accum(nf)%end1d
-    if (size(field,dim=1) /= end-beg+1) then
+    if (size(field,dim=1) < end-beg+1) then
        write(iulog,*)'ERROR in extract_accum_field for field ',accum(nf)%name
        write(iulog,*)'size of first dimension of field is ',&
             size(field,dim=1),' and should be ',end-beg+1
@@ -341,7 +341,7 @@ contains
     numlev = accum(nf)%numlev
     beg = accum(nf)%beg1d
     end = accum(nf)%end1d
-    if (size(field,dim=1) /= end-beg+1) then
+    if (size(field,dim=1) < end-beg+1) then
        write(iulog,*)'ERROR in extract_accum_field for field ',accum(nf)%name
        write(iulog,*)'size of first dimension of field is ',&
             size(field,dim=1),' and should be ',end-beg+1
@@ -406,7 +406,7 @@ contains
 
     beg = accum(nf)%beg1d
     end = accum(nf)%end1d
-    if (size(field,dim=1) /= end-beg+1) then
+    if (size(field,dim=1) < end-beg+1) then
        write(iulog,*)'ERROR in UPDATE_ACCUM_FIELD_SL for field ',accum(nf)%name
        write(iulog,*)'size of first dimension of field is ',size(field,dim=1),&
             ' and should be ',end-beg+1
@@ -500,7 +500,7 @@ contains
     numlev = accum(nf)%numlev
     beg = accum(nf)%beg1d
     end = accum(nf)%end1d
-    if (size(field,dim=1) /= end-beg+1) then
+    if (size(field,dim=1) < end-beg+1) then
        write(iulog,*)'ERROR in UPDATE_ACCUM_FIELD_ML for field ',accum(nf)%name
        write(iulog,*)'size of first dimension of field is ',size(field,dim=1),&
             ' and should be ',end-beg+1

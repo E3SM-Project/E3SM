@@ -1101,7 +1101,7 @@ contains
   !------------------------------------------------------------------------
   ! Subroutines to initialize and clean column energy state data structure
   !------------------------------------------------------------------------
-  subroutine col_es_init(this, begc, endc)
+  subroutine col_es_init(this, begc, endc, endc_owned)
     !
     ! !USES:
     use landunit_varcon, only : istice, istwet, istsoil, istdlak, istice_mec
@@ -1111,7 +1111,7 @@ contains
     !
     ! !ARGUMENTS:
     class(column_energy_state) :: this
-    integer, intent(in) :: begc,endc
+    integer, intent(in) :: begc,endc, endc_owned
     !------------------------------------------------------------------------
     !
     ! !LOCAL VARIABLES:
@@ -1227,7 +1227,7 @@ contains
     !-----------------------------------------------------------------------
 
     ! Initialize soil+snow temperatures
-    do c = begc,endc
+    do c = begc,endc_owned
        l = col_pp%landunit(c)
 
        ! Snow level temperatures - all land points
@@ -1385,12 +1385,12 @@ contains
   !------------------------------------------------------------------------
   ! Subroutines to initialize and clean column water state data structure
   !------------------------------------------------------------------------
-  subroutine col_ws_init(this, begc, endc, h2osno_input, snow_depth_input, watsat_input)
+  subroutine col_ws_init(this, begc, endc, endc_owned, h2osno_input, snow_depth_input, watsat_input)
     !
     use elm_varctl  , only : use_lake_wat_storage, use_arctic_init
     ! !ARGUMENTS:
     class(column_water_state) :: this
-    integer , intent(in)      :: begc,endc
+    integer , intent(in)      :: begc,endc, endc_owned
     real(r8), intent(in)      :: h2osno_input(begc:)
     real(r8), intent(in)      :: snow_depth_input(begc:)
     real(r8), intent(in)      :: watsat_input(begc:, 1:)          ! volumetric soil water at saturation (porosity)
@@ -1680,7 +1680,7 @@ contains
     ! Arrays that are initialized from input arguments
     this%wslake_col(begc:endc) = 0._r8
 
-    do c = begc,endc
+    do c = begc,endc_owned
        l = col_pp%landunit(c)
        this%h2osno(c)                 = h2osno_input(c)
        this%int_snow(c)               = h2osno_input(c)
@@ -5774,11 +5774,11 @@ contains
   !------------------------------------------------------------------------
   ! Subroutines to initialize and clean column water flux data structure
   !------------------------------------------------------------------------
-  subroutine col_wf_init(this, begc, endc)
+  subroutine col_wf_init(this, begc, endc, endc_owned)
     !
     ! !ARGUMENTS:
     class(column_water_flux) :: this
-    integer, intent(in) :: begc,endc
+    integer, intent(in) :: begc,endc, endc_owned
     ! !LOCAL VARIABLES:
     integer  :: l,c
     integer  :: ncells
@@ -6064,7 +6064,7 @@ contains
     this%qflx_to_downhill(begc:endc) = 0._r8
 
     ! needed for CNNLeaching
-    do c = begc, endc
+    do c = begc, endc_owned
        l = col_pp%landunit(c)
        if (col_pp%is_soil(c) .or. col_pp%is_crop(c)) then
           this%qflx_drain(c) = 0._r8
