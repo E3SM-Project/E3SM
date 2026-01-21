@@ -7,8 +7,8 @@ set(EKAT_MPI_NP_FLAG "-np" CACHE STRING "" FORCE)
 set(EKAT_MPI_EXTRA_ARGS "--label --cpu-bind depth -envall" CACHE STRING "")
 set(EKAT_MPI_THREAD_FLAG "-d" CACHE STRING "")
 
-SET(SYCL_COMPILE_FLAGS "-std=c++17 -fsycl -fsycl-device-code-split=per_kernel -fno-sycl-id-queries-fit-in-int -fsycl-unnamed-lambda")
-SET(SYCL_LINK_FLAGS "-fsycl -fsycl-device-code-split=per_kernel -fsycl-targets=spir64_gen -Xsycl-target-backend \"-device 12.60.7\"")
+SET(SYCL_COMPILE_FLAGS "-std=c++17 -fsycl -fsycl-device-code-split=per_kernel -fno-sycl-id-queries-fit-in-int -fsycl-unnamed-lambda -mcmodel=large")
+SET(SYCL_LINK_FLAGS "-fsycl -fsycl-device-code-split=per_kernel -fsycl-targets=spir64_gen -Xsycl-target-backend \"-device pvc\" -mcmodel=large -flink-huge-device-code")
 
 if (COMPILER MATCHES ".*gpu.*") # oneapi-ifxgpu
   include (${EKAT_MACH_FILES_PATH}/kokkos/intel-pvc.cmake)

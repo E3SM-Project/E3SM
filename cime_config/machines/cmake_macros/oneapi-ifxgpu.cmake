@@ -13,10 +13,10 @@ string(APPEND CMAKE_CXX_FLAGS_RELEASE " -fp-model precise -O2 -g -gline-tables-o
 string(APPEND CMAKE_Fortran_FLAGS_DEBUG   " -O0 -g -fpscomp logicals")
 string(APPEND CMAKE_C_FLAGS_DEBUG   " -O0 -g")
 string(APPEND CMAKE_CXX_FLAGS_DEBUG " -O0 -g")
-string(APPEND CMAKE_C_FLAGS   " -fp-model precise")
-string(APPEND CMAKE_CXX_FLAGS " -fp-model precise")
+string(APPEND CMAKE_C_FLAGS   " -fp-model precise -mcmodel=large")
+string(APPEND CMAKE_CXX_FLAGS " -fp-model precise -mcmodel=large")
 # -mllvm -disable-hir-temp-cleanup for oneapi v2025.2.0 https://github.com/argonne-lcf/AuroraBugTracking/issues/64
-string(APPEND CMAKE_Fortran_FLAGS   " -fpscomp logicals -traceback -convert big_endian -assume byterecl -assume realloc_lhs -fp-model precise -mllvm -disable-hir-temp-cleanup")
+string(APPEND CMAKE_Fortran_FLAGS   " -fpscomp logicals -traceback -convert big_endian -assume byterecl -assume realloc_lhs -fp-model precise -mllvm -disable-hir-temp-cleanup -mcmodel=large")
 string(APPEND CPPDEFS " -DFORTRANUNDERSCORE -DNO_R16 -DCPRINTEL -DHAVE_SLASHPROC -DHIDE_MPI")
 string(APPEND CMAKE_Fortran_FORMAT_FIXED_FLAG " -fixed -132")
 string(APPEND CMAKE_Fortran_FORMAT_FREE_FLAG " -free")
