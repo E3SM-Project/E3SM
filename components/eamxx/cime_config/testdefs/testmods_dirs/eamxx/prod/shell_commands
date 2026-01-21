@@ -65,7 +65,6 @@ fi
 
 # set the output yaml files
 output_yaml_files=$(find ${cime_root}/../components/eamxx/cime_config/testdefs/testmods_dirs/eamxx/prod/yaml_outs/ -maxdepth 1 -type f)
-$atmchange -b output_yaml_files=""
 for file in ${output_yaml_files[@]}; do
     # Grab the proper map file (if any)
     mapfile=""
