@@ -7,3 +7,5 @@ Shortwave radiation model
 - [TOP Parameterization](top_solar_parameterization.md):
 Parameterization of sub-grid topographical effects on solar radiation.
 - [Longwave Radiation](longwave_radiation.md): Longwave radiation model
+- [Respiration](plant_respiration.md)
+- [Carbon, Nitrogen, and Phosphorus allocation](CNP_pools.md)
