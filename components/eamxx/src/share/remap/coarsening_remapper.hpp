@@ -2,7 +2,6 @@
 #define SCREAM_COARSENING_REMAPPER_HPP
 
 #include "share/remap/horiz_interp_remapper_base.hpp"
-#include "eamxx_config.h"
 
 #include <mpi.h>
 

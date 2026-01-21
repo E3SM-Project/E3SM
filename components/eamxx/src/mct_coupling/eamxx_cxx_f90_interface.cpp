@@ -1,5 +1,3 @@
-#include "eamxx_config.h"
-
 #include "share/atm_process/atmosphere_process.hpp"
 #include "control/atmosphere_driver.hpp"
 #include "control/surface_coupling_utils.hpp"
