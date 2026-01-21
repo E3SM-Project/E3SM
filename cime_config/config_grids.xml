@@ -1536,10 +1536,12 @@
       <grid name="atm">ne32np4.pg2</grid>
       <grid name="lnd">ne32np4.pg2</grid>
       <grid name="ocnice">ne32np4.pg2</grid>
-      <grid name="rof">r05</grid>
+      <!-- <grid name="rof">r05</grid> -->
+      <grid name="rof">r025</grid>
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
-      <mask>gx1v6</mask>
+      <!-- <mask>gx1v6</mask> -->
+      <mask>RRSwISC6to18E3r5</mask>
     </model_grid>
 
     <model_grid alias="ne32pg2_r025_RRSwISC6to18E3r5">
@@ -1699,10 +1701,12 @@
       <grid name="atm">ne64np4.pg2</grid>
       <grid name="lnd">ne64np4.pg2</grid>
       <grid name="ocnice">ne64np4.pg2</grid>
-      <grid name="rof">r05</grid>
+      <!-- <grid name="rof">r05</grid> -->
+      <grid name="rof">r025</grid>
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
-      <mask>gx1v6</mask>
+      <!-- <mask>gx1v6</mask> -->
+      <mask>RRSwISC6to18E3r5</mask>
     </model_grid>
 
     <model_grid alias="ne64pg2_r025_RRSwISC6to18E3r5">
@@ -1789,6 +1793,16 @@
       <grid name="atm">ne120np4.pg2</grid>
       <grid name="lnd">r025</grid>
       <grid name="ocnice">RRSwISC6to18E3r5</grid>
+      <grid name="rof">r025</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>RRSwISC6to18E3r5</mask>
+    </model_grid>
+
+    <model_grid alias="ne128pg2_ne128pg2">
+      <grid name="atm">ne128np4.pg2</grid>
+      <grid name="lnd">ne128np4.pg2</grid>
+      <grid name="ocnice">ne128np4.pg2</grid>
       <grid name="rof">r025</grid>
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
