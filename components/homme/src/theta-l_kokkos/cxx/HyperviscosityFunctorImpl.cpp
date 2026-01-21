@@ -487,13 +487,16 @@ void HyperviscosityFunctorImpl::apply_horizontal_turbulent_diffusion () const
         w_lap   = Homme::subview(m_buffers.wtens,   ie, igp, jgp);
         phi_lap = Homme::subview(m_buffers.phitens, ie, igp, jgp);
 
+        // Diffusivities on the interface vertical grid
         Km_i = Homme::subview(m_buffers.turb_diff_mom_i,  ie, igp, jgp);
         Kh_i = Homme::subview(m_buffers.turb_diff_heat_i, ie, igp, jgp);
 
+        // Get diffusivities on the interface vertical grid from those
+        //  on the mid-point grid that were passed from physics
         ColumnOps::compute_interface_values(kv, Km, Km_i);
         ColumnOps::compute_interface_values(kv, Kh, Kh_i);
 
-	kv.team_barrier();
+        kv.team_barrier();
       }
 
       // Vertical loop: dp, theta, u, v, (w, phi) all get K * Lapterm * dt_loc
@@ -510,9 +513,11 @@ void HyperviscosityFunctorImpl::apply_horizontal_turbulent_diffusion () const
         u(k)     += dt_loc * km * u_lap(k) * rspheremp;
         v(k)     += dt_loc * km * v_lap(k) * rspheremp;
 
+        // NH variables are on interface grid, thus apply
+        //  diffusivities on the interface vertical grid
         if (m_process_nh_vars) {
-	  const auto km_i = Km(k);
-	  const auto kh_i = Kh(k);
+          const auto km_i = Km_i(k);
+          const auto kh_i = Kh_i(k);
           w(k)     += dt_loc * km_i * w_lap(k) * rspheremp;
           phi_i(k) += dt_loc * kh_i * phi_lap(k) * rspheremp;
         }
