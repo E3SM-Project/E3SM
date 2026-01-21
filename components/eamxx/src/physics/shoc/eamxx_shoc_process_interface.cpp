@@ -3,8 +3,6 @@
 #include "share/property_checks/field_lower_bound_check.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
 
-#include "eamxx_config.h" // for SCREAM_CIME_BUILD
-
 #include <ekat_assert.hpp>
 #include <ekat_team_policy_utils.hpp>
 #include <ekat_reduction_utils.hpp>
