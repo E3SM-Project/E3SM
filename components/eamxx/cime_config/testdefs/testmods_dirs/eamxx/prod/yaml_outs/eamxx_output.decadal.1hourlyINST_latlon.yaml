@@ -1,0 +1,39 @@
+%YAML 1.1
+---
+filename_prefix: eamxx_output.decadal.1hourlyINST_latlon.h
+iotype: pnetcdf
+averaging_type: instant
+max_snapshots_per_file: 1 # only one snapshot per file
+horiz_remap_file: ${TESTMOD_WILL_EDIT_THIS_LINE_VIA_SED}
+fields:
+  physics_pg2:
+    field_names:
+    # 3D
+    - T_mid
+    - RelativeHumidity
+    - qc
+    - qi
+    - qr
+    - qm
+    - ps
+    - cldfrac_tot_for_analysis
+    - cldfrac_liq
+    - cldfrac_ice_for_analysis
+    - omega
+    - tke
+    - eff_radius_qc
+    - eff_radius_qi
+    - nc
+    - ni
+    - nr
+    - bm
+    - p_mid
+    - z_mid
+    - U
+    - V
+    - landfrac
+output_control:
+  frequency: 1
+  frequency_units: nhours
+restart:
+  force_new_file: true

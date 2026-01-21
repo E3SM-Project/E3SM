@@ -76,7 +76,8 @@ std::shared_ptr<PointGrid>
 create_point_grid (const std::string& name,
                    const int num_global_cols,
                    const int num_vertical_lev,
-                   const ekat::Comm& comm);
+                   const ekat::Comm& comm,
+                   const int gid_base = 0);
 
 } // namespace scream
 
