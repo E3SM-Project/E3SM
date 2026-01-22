@@ -41,7 +41,8 @@ module homme_params_mod
   public :: get_homme_int_param_f90
   public :: get_homme_real_param_f90
   public :: get_homme_bool_param_f90
-  public :: get_homme_nsplit_f90
+  public :: get_homme_nsplit_int_f90
+  public :: get_homme_nsplit_real_f90
 
   public :: set_homme_int_param_f90
   public :: set_homme_real_param_f90
@@ -70,7 +71,7 @@ contains
     nl_fname = trim(nl_fname_ptr(1:str_len))
 
     call readnl(par,nl_fname)
-    
+
     is_params_inited = .true.
   end subroutine init_params_f90
 
@@ -107,7 +108,7 @@ contains
       case default
         call abortmp ("[get_homme_int_param_f90] Error! Unrecognized parameter name.")
         param_value = 0
-    end select 
+    end select
 
   end function get_homme_int_param_f90
 
@@ -145,7 +146,7 @@ contains
       case default
         call abortmp ("[get_homme_real_param_f90] Error! Unrecognized parameter name.")
         param_value = 0
-    end select 
+    end select
 
   end function get_homme_real_param_f90
 
@@ -174,11 +175,11 @@ contains
       case default
         call abortmp ("[get_homme_bool_param_f90] Error! Unrecognized parameter name.")
         param_value = .false.
-    end select 
+    end select
 
   end function get_homme_bool_param_f90
 
-  function get_homme_nsplit_f90 (atm_dt) result(nsplit_out) bind(c)
+  function get_homme_nsplit_int_f90 (atm_dt) result(nsplit_out) bind(c)
     use control_mod, only: compute_nsplit=>timestep_make_eam_parameters_consistent
     use homme_context_mod, only: par
     !
@@ -210,8 +211,32 @@ contains
       nsplit_inited = .true.
     endif
 
-  end function get_homme_nsplit_f90
+  end function get_homme_nsplit_int_f90
 
+  function get_homme_nsplit_real_f90 (atm_dt) result(nsplit_out) bind(c)
+    !
+    ! Input(s)
+    !
+    real (kind=c_double) :: atm_dt
+    !
+    ! Local(s)
+    !
+    integer (kind=c_int) :: nsplit_out
+    integer :: flag = 0
+
+    if (.not. nsplit_inited .and. tstep .gt. 0.0) then
+      call abortmp ("[get_homme_nsplit_f90] Error! Must specify tstep <= 0 to use non-integer atm timestep." )
+    endif
+    tstep = atm_dt
+
+    if (dt_remap_factor .ne. 1 .or. dt_tracer_factor .ne. 1) then
+      call abortmp ("[get_homme_nsplit_f90] Error! Must specify all dt_*_factor to 1 to use non-integer atm timestep." )
+    endif
+    nsplit_out = 1
+    nsplit = nsplit_out
+    nsplit_inited = .true.
+
+  end function get_homme_nsplit_real_f90
 
   subroutine set_homme_int_param_f90 (param_name_c, param_value) bind(c)
     use dimensions_mod,    only: qsize
@@ -246,7 +271,7 @@ contains
         if (qsize<1) use_moisture = .false.
       case default
         call abortmp ("[set_homme_int_param_f90] Error! Unrecognized parameter name.")
-    end select 
+    end select
 
   end subroutine set_homme_int_param_f90
 
@@ -296,7 +321,7 @@ contains
         endif
       case default
         call abortmp ("[set_homme_bool_param_f90] Error! Unrecognized parameter name.")
-    end select 
+    end select
 
   end subroutine set_homme_bool_param_f90
 

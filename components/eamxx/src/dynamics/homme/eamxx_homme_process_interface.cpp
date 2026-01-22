@@ -492,17 +492,13 @@ void HommeDynamics::run_impl (const double dt)
     //       in Hommexx's data structures.
     //       Also, nsplit calculation requires an integer atm timestep, so we
     //       check to ensure that's the case
-    EKAT_REQUIRE_MSG (std::abs(dt-std::round(dt))<std::numeric_limits<double>::epsilon()*10,
-        "[HommeDynamics] Error! Input timestep departure from integer above tolerance.\n"
-        "  - input dt : " << dt << "\n"
-        "  - tolerance: " << std::numeric_limits<double>::epsilon()*10 << "\n");
 
-    if (m_bfb_hash_nstep > 0 && start_of_step_ts().get_num_steps() % m_bfb_hash_nstep == 0)
-      print_fast_global_state_hash("Hommexx",start_of_step_ts());
+    const double integer_tol = std::numeric_limits<double>::epsilon()*10;
+    const bool is_dt_integer = std::abs(dt-std::round(dt)) < integer_tol;
+    const int dt_int = is_dt_integer ? static_cast<int>(std::round(dt)) : -1;
+    const int nsplit = is_dt_integer ? get_homme_nsplit_int_f90(dt_int) :
+                                       get_homme_nsplit_real_f90(dt);
 
-    const int dt_int = static_cast<int>(std::round(dt));
-
-    const int nsplit = get_homme_nsplit_f90(dt_int);
     const auto& c = Homme::Context::singleton();
     auto& params = c.get<Homme::SimulationParams>();
     params.nsplit = nsplit;

@@ -44,7 +44,7 @@ TEST_CASE("scream_ad_test") {
 
   // Time stepping parameters
         auto& ts     = ad_params.sublist("time_stepping");
-  const auto  dt     = ts.get<int>("time_step");
+  const auto  dt     = ts.isType<int>("time_step") ? ts.get<int>("time_step") : ts.get<double>("time_step");
   const auto  nsteps = ts.get<int>("number_of_steps");
   const auto  run_t0_str = ts.get<std::string>("run_t0");
   const auto  run_t0     = util::str_to_time_stamp(run_t0_str);

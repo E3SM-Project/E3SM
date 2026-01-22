@@ -1609,7 +1609,7 @@ initialize (const ekat::Comm& atm_comm,
   initialize_output_managers ();
 }
 
-void AtmosphereDriver::run (const int dt) {
+void AtmosphereDriver::run (const double dt) {
   start_timer("EAMxx::run");
 
   // DEBUG option: Check if user has set the run to fail at a specific timestep.

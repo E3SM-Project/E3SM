@@ -155,7 +155,7 @@ public:
   // Inside here you should find calls to the run method of each subcomponent, including parameterizations
   // and dynamics (HOMME).
   // Note: dt is assumed to be in seconds
-  void run (const int dt);
+  void run (const double dt);
 
   // Clean up the driver (finalizes and cleans up all internals)
   // NOTE: if already finalized, this is a no-op
