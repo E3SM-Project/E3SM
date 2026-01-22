@@ -3029,6 +3029,7 @@
       <modules>
         <command name="--force purge"/>
         <command name="load">cmake/3.27.4</command>
+        <command name="load">python/3.11.6</command>
       </modules>
       <modules compiler="gnu">
         <command name="load">gcc/12.3.0</command>
