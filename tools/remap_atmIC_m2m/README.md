@@ -2,6 +2,19 @@
 
 Remap E3SM atmospheric initial conditions from one grid to another with proper surface pressure adjustment for topography differences.
 
+Uses may need to edit the following input variables in the driver `remap_atmIC_m2m.sh` (m2m stands for model-to-model).
+
+```bash
+CASENAME="v3.LR.historical_0091"
+TIMESTAMP="2015-01-01-00000"
+SOURCE_GRID="ne30np4"
+TARGET_GRID="northamericax4v1np4"
+GRID_LABEL="northamericax4v1pg2"
+```
+
+The final output file is `${CASENAME}_mapped_${TARGET_GRID}-topoadj.eam.i.${TIMESTAMP}.nc`.
+
+
 ## Quick Start
 
 ### 1. Get the Scripts
@@ -26,7 +39,7 @@ Example files available at:
 You need:
 
 - Source initial condition file: `${CASENAME}.eam.i.${TIMESTAMP}.nc`
-- ESMF remapping weights: `map_source_to_target.nc`
+- Remapping weights on the "np4" grids (TempestRemap is recommended.): `map_source_to_target.nc`
 - Source grid topography file
 - Target grid topography file  
 - Vertical coordinate template: `E3SM_vert_coor_L80.nc`
