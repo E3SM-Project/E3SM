@@ -46,6 +46,19 @@ end subroutine zm_find_mse_max_f
 
 !===================================================================================================
 
+subroutine zm_common_init_bridge_f() bind(C)
+  use zm_eamxx_bridge_wv_saturation, only: wv_sat_init
+
+  call wv_sat_init()
+end subroutine zm_common_init_bridge_f
+
+subroutine zm_common_finalize_bridge_f() bind(C)
+  use zm_eamxx_bridge_wv_saturation, only: wv_sat_final
+
+  call wv_sat_final()
+end subroutine zm_common_finalize_bridge_f
+
+
 subroutine ientropy_bridge_f(rcall, s, p, qt, t, qst, tfg) bind(C)
   use zm_conv_util, only : ientropy
   use zm_conv_types,  only: zm_const_t, zm_const_set_for_testing

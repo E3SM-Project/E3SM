@@ -326,6 +326,7 @@ struct Functions {
                   magic5*(std::pow(10, magic6*(ZMC::tboil/t-1)) - 1) +
                   std::log10(magic7))*100;
 
+    // If pressure is less than SVP, set qs to maximum of 1.
     if ( (p*100 - es) <= 0 ) {
       qm = 1;
     }
@@ -333,9 +334,10 @@ struct Functions {
       qm = PC::ep_2.value*es / (p*100 - ZMC::omeps*es);
     }
 
-    es = es*0.01;
+    // Ensures returned es is consistent with limiters on qs.
+    es = std::min(es, p*100);
 
-    es = std::min(es, p*100)
+    es = es*0.01;
   }
 
   //

@@ -31,6 +31,10 @@ using WSM = typename ZMF::WorkspaceManager;
 
 extern "C" {
 
+void zm_common_init_bridge_f();
+
+void zm_common_finalize_bridge_f();
+
 void zm_find_mse_max_f(Int pcols, Int ncol, Int pver, Int num_msg, Int *msemax_top_k, bool pergro_active, Real *temperature, Real *zmid, Real *sp_humidity, Int *msemax_klev, Real *mse_max_val);
 
 void ientropy_bridge_f(Int rcall, Real s, Real p, Real qt, Real* t, Real* qst, Real tfg);
@@ -43,8 +47,14 @@ namespace {
 
 void zm_common_init_f()
 {
-  // Anything to do here?
+  zm_common_init_bridge_f();
 }
+
+void zm_common_finalize_f()
+{
+  zm_common_finalize_bridge_f();
+}
+
 
 // Wrapper around gw_init for cxx
 void zm_common_init()
@@ -80,6 +90,7 @@ void ientropy_f(IentropyData& d)
   d.transition<ekat::TransposeDirection::c2f>();
   zm_common_init_f();
   ientropy_bridge_f(d.rcall, d.s, d.p, d.qt, &d.t, &d.qst, d.tfg);
+  zm_common_finalize_f();
   d.transition<ekat::TransposeDirection::f2c>();
 }
 
@@ -127,6 +138,7 @@ void entropy_f(EntropyData& d)
   d.transition<ekat::TransposeDirection::c2f>();
   zm_common_init_f(); // Might need more specific init
   entropy_bridge_f(d.tk, d.p, d.qtot, &d.entropy);
+  zm_common_finalize_f();
   d.transition<ekat::TransposeDirection::f2c>();
 }
 
