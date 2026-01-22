@@ -16,10 +16,10 @@ cd /path/to/your/working/directory/
 ```
 
 Or download directly from:
-https://github.com/E3SM-Project/E3SM/tree/master/tools/remap_atmIC_m2m/
+<https://github.com/E3SM-Project/E3SM/tree/master/tools/remap_atmIC_m2m/>
 
 Example files available at:
-https://portal.nersc.gov/cfs/e3sm/tang30/remap_atmIC_m2m/
+<https://portal.nersc.gov/cfs/e3sm/tang30/remap_atmIC_m2m/>
 
 ### 2. Prepare Input Files
 
