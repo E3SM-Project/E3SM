@@ -14,7 +14,6 @@ GRID_LABEL="northamericax4v1pg2"
 
 The final output file is `${CASENAME}_mapped_${TARGET_GRID}-topoadj.eam.i.${TIMESTAMP}.nc`.
 
-
 ## Quick Start
 
 ### 1. Get the Scripts
