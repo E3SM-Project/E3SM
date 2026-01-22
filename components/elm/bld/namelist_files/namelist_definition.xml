@@ -532,7 +532,7 @@ constants for biogeochem modules
 </entry>
 
 <entry id="fates_paramfile" type="char*256" category="datasets"
-       input_pathname="abs" group="elm_inparm" valid_values="" >
+       input_pathname="landroot" group="elm_inparm" valid_values="" >
 Full pathname datafile with fates parameters
 </entry>
 
