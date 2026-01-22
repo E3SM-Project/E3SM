@@ -7,6 +7,7 @@ Remap E3SM atmospheric initial conditions from one grid to another with proper s
 ### 1. Get the Scripts
 
 From E3SM repository:
+
 ```bash
 # Clone or navigate to E3SM repository
 cd /path/to/E3SM/tools/remap_atmIC_m2m/
@@ -32,6 +33,7 @@ You need:
 ### 3. Edit Configuration
 
 Edit `remap_atmIC_m2m.sh`:
+
 ```bash
 CASENAME="v3.LR.historical_0091"
 TIMESTAMP="2015-01-01-00000"
@@ -83,7 +85,7 @@ In `remap_atmIC_m2m.sh`:
 - NCO tools (ncks, ncremap)
 
 Load E3SM unified environment:
+
 ```bash
 source /global/common/software/e3sm/anaconda_envs/load_latest_e3sm_unified_pm-cpu.sh
 ```
-
