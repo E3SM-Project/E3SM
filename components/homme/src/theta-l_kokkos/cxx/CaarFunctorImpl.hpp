@@ -1308,8 +1308,8 @@ struct CaarFunctorImpl {
         const int jgp = idx % NP;
         Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                             [&](const int ilev) {
-          grad_tmp(0,igp,jgp,ilev) += PhysicalConstants::cp*(grad_tmp3(0,igp,jgp,ilev) - exner(igp,jgp,ilev)*grad_tmp2(0,igp,jgp));
-          grad_tmp(1,igp,jgp,ilev) += PhysicalConstants::cp*(grad_tmp3(1,igp,jgp,ilev) - exner(igp,jgp,ilev)*grad_tmp2(1,igp,jgp));
+          grad_tmp(0,igp,jgp,ilev) += PhysicalConstants::cp*(grad_tmp3(0,igp,jgp,ilev) - exner(igp,jgp,ilev)*grad_tmp2(0,igp,jgp,ilev));
+          grad_tmp(1,igp,jgp,ilev) += PhysicalConstants::cp*(grad_tmp3(1,igp,jgp,ilev) - exner(igp,jgp,ilev)*grad_tmp2(1,igp,jgp,ilev));
 
           grad_tmp(0,igp,jgp,ilev) /= 2.0;
           grad_tmp(1,igp,jgp,ilev) /= 2.0;
