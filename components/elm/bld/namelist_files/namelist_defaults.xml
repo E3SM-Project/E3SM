@@ -328,9 +328,9 @@ lnd/clm2/surfdata_map/surfdata_ne4np4_simyr2010_c210908_with_TOP.nc</fsurdat>
 <fsurdat hgrid="ne30np4"   sim_year="2010" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_ne30np4_simyr2010_c20181025_with_TOP.nc</fsurdat>
 
-<fsurdat hgrid="ne32np4"   sim_year="2010" use_crop=".false." >lnd/clm2/surfdata_map/surfdata_ne32pg2_simyr2010_c260116.nc</fsurdat>
-<fsurdat hgrid="ne64np4"   sim_year="2010" use_crop=".false." >lnd/clm2/surfdata_map/surfdata_ne64pg2_simyr2010_c260116.nc</fsurdat>
-<fsurdat hgrid="ne128np4"  sim_year="2010" use_crop=".false." >lnd/clm2/surfdata_map/surfdata_ne128pg2_simyr2010_c260116.nc</fsurdat>
+<fsurdat hgrid="ne32np4.pg2"   sim_year="2010" use_crop=".false." >lnd/clm2/surfdata_map/surfdata_ne32pg2_simyr2010_c260116.nc</fsurdat>
+<fsurdat hgrid="ne64np4.pg2"   sim_year="2010" use_crop=".false." >lnd/clm2/surfdata_map/surfdata_ne64pg2_simyr2010_c260116.nc</fsurdat>
+<fsurdat hgrid="ne128np4.pg2"  sim_year="2010" use_crop=".false." >lnd/clm2/surfdata_map/surfdata_ne128pg2_simyr2010_c260116.nc</fsurdat>
 
 <fsurdat hgrid="r0125"   sim_year="2010" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_0.125x0.125_simyr2010_c191025.nc</fsurdat>
