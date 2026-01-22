@@ -891,393 +891,724 @@ globalSum(const Kokkos::View<T, ML, MS> Arr1, // [in] first  array in product
    return GlobalSum;
 }
 ///-----------------------------------------------------------------------------
-/*
-//////////
-// Global minval
-//////////
-// Array
-template <typename T, typename IT, typename ML, typename MS>
-std::enable_if_t<std::is_same_v<IT, typename Kokkos::View<T>::value_type>, void>
-globalMinVal(const Kokkos::View<T, ML, MS> arr, const MPI_Comm Comm,
-             IT *GlobalMinVal, const std::vector<I4> *IndxRange = nullptr) {
-   int dim = arr.rank;
-   int i, imin, imax;
-   if (IndxRange == nullptr) {
-      imin = 0;
-      imax = arr.size();
-   } else {
-      imin = (*IndxRange)[0];
-      imax = (*IndxRange)[dim * 2 - 1];
-   }
-   IT LocalMinVal = arr.data()[imin];
-   for (i = imin + 1; i < imax; i++) {
-      if (LocalMinVal > arr.data()[i]) {
-         LocalMinVal = arr.data()[i];
-      }
-   }
+/// Finds the minimum value across tasks of a scalar variable.
+template <typename T>
+T globalMinVal(const T LocalVal,   /// Local scalar on each task
+               const MPI_Comm Comm /// MPI communicator for the set of tasks
+) {
+   int Err; // MPI error code
+   T GlobalMin;
 
-   int Err;
-   if (typeid(IT) == typeid(I4)) {
-      Err = MPI_Allreduce(&LocalMinVal, GlobalMinVal, 1, MPI_INT32_T, MPI_MIN,
-                          Comm);
-   } else if (typeid(IT) == typeid(I8)) {
-      Err = MPI_Allreduce(&LocalMinVal, GlobalMinVal, 1, MPI_INT64_T, MPI_MIN,
-                          Comm);
-   } else if (typeid(IT) == typeid(R4)) {
-      Err = MPI_Allreduce(&LocalMinVal, GlobalMinVal, 1, MPI_FLOAT, MPI_MIN,
-                          Comm);
-   } else if (typeid(IT) == typeid(R8)) {
-      Err = MPI_Allreduce(&LocalMinVal, GlobalMinVal, 1, MPI_DOUBLE, MPI_MIN,
-                          Comm);
+   if (typeid(T) == typeid(I4)) {
+      Err = MPI_Allreduce(&LocalVal, &GlobalMin, 1, MPI_INT32_T, MPI_MIN, Comm);
+   } else if (typeid(T) == typeid(I8)) {
+      Err = MPI_Allreduce(&LocalVal, &GlobalMin, 1, MPI_INT64_T, MPI_MIN, Comm);
+   } else if (typeid(T) == typeid(R4)) {
+      Err = MPI_Allreduce(&LocalVal, &GlobalMin, 1, MPI_FLOAT, MPI_MIN, Comm);
+   } else if (typeid(T) == typeid(R8)) {
+      Err = MPI_Allreduce(&LocalVal, &GlobalMin, 1, MPI_DOUBLE, MPI_MIN, Comm);
    }
    if (Err != MPI_SUCCESS)
-      ABORT_ERROR("globalMinval: Error in MPI_Allreduce");
+      ABORT_ERROR("MPI Error in GlobalMinVal for scalars");
+
+   return GlobalMin;
 }
 
-// Array with mask
-template <typename T, typename IT, typename ML, typename MS>
-std::enable_if_t<std::is_same_v<IT, typename Kokkos::View<T>::value_type>, void>
-globalMinVal(const Kokkos::View<T, ML, MS> arr,
-             const Kokkos::View<T, ML, MS> arr2, const MPI_Comm Comm,
-             IT *GlobalMinVal, const std::vector<I4> *IndxRange = nullptr) {
-   int dim = arr.rank;
-   int i, imin, imax;
-   if (IndxRange == nullptr) {
-      imin = 0;
-      imax = arr.size();
-   } else {
-      imin = (*IndxRange)[0];
-      imax = (*IndxRange)[dim * 2 - 1];
-   }
-   IT tmp, LocalMinVal = arr.data()[imin] * arr2.data()[imin];
-   for (i = imin + 1; i < imax; i++) {
-      tmp = arr.data()[i] * arr2.data()[i];
-      if (LocalMinVal > tmp) {
-         LocalMinVal = tmp;
-      }
-   }
+///-----------------------------------------------------------------------------
+/// Finds the minimum values across tasks for each scalar in a vector
+template <typename T>
+std::vector<T> globalMinVal(
+    const std::vector<T> LocalVal, /// Vector of local scalars on each task
+    const MPI_Comm Comm            /// MPI communicator for the set of tasks
+) {
+   int Err; // MPI error code
+   int NFields = LocalVal.size();
+   std::vector<T> GlobalMin(NFields);
 
-   int Err;
-   if (typeid(IT) == typeid(I4)) {
-      Err = MPI_Allreduce(&LocalMinVal, GlobalMinVal, 1, MPI_INT32_T, MPI_MIN,
-                          Comm);
-   } else if (typeid(IT) == typeid(I8)) {
-      Err = MPI_Allreduce(&LocalMinVal, GlobalMinVal, 1, MPI_INT64_T, MPI_MIN,
-                          Comm);
-   } else if (typeid(IT) == typeid(R4)) {
-      Err = MPI_Allreduce(&LocalMinVal, GlobalMinVal, 1, MPI_FLOAT, MPI_MIN,
-                          Comm);
-   } else if (typeid(IT) == typeid(R8)) {
-      Err = MPI_Allreduce(&LocalMinVal, GlobalMinVal, 1, MPI_DOUBLE, MPI_MIN,
-                          Comm);
+   if (typeid(T) == typeid(I4)) {
+      Err = MPI_Allreduce(&LocalVal[0], &GlobalMin[0], NFields, MPI_INT32_T,
+                          MPI_MIN, Comm);
+   } else if (typeid(T) == typeid(I8)) {
+      Err = MPI_Allreduce(&LocalVal[0], &GlobalMin[0], NFields, MPI_INT64_T,
+                          MPI_MIN, Comm);
+   } else if (typeid(T) == typeid(R4)) {
+      Err = MPI_Allreduce(&LocalVal[0], &GlobalMin[0], NFields, MPI_FLOAT,
+                          MPI_MIN, Comm);
+   } else if (typeid(T) == typeid(R8)) {
+      Err = MPI_Allreduce(&LocalVal[0], &GlobalMin[0], NFields, MPI_DOUBLE,
+                          MPI_MIN, Comm);
    }
    if (Err != MPI_SUCCESS)
-      ABORT_ERROR("globalMinval with mask: Error in MPI_Allreduce");
+      ABORT_ERROR("MPI Error in GlobalMinVal for vector of scalars");
+
+   return GlobalMin;
 }
 
-// Array multi-field
+///-----------------------------------------------------------------------------
+/// Finds the local minimum of a Kokkos array
 template <typename T, typename IT, typename ML, typename MS>
 std::enable_if_t<std::is_same_v<IT, typename Kokkos::View<T>::value_type>, void>
-globalMinVal(const std::vector<Kokkos::View<T, ML, MS>> arrays,
-             const MPI_Comm Comm, std::vector<IT> GlobalMinVal,
-             const std::vector<I4> *IndxRange = nullptr) {
-   int dim = arrays[0].rank;
-   int i, imin, imax;
-   if (IndxRange == nullptr) {
-      imin = 0;
-      imax = arrays[0].size();
-   } else {
-      imin = (*IndxRange)[0];
-      imax = (*IndxRange)[dim * 2 - 1];
-   }
-   int ifld, NFields = arrays.size();
-   IT LocalMinVal[NFields];
-   for (ifld = 0; ifld < NFields; ifld++) {
-      LocalMinVal[ifld] = arrays[ifld].data()[imin];
-      for (i = imin + 1; i < imax; i++) {
-         if (LocalMinVal[ifld] > arrays[ifld].data()[i]) {
-            LocalMinVal[ifld] = arrays[ifld].data()[i];
+localMinVal(const Kokkos::View<T, ML, MS> Array, ///< [in] array to find min
+            const MPI_Comm Comm,                 ///< [in] MPI Communicator
+            IT &LocalMinVal,                     ///< [out] local min
+            const std::vector<I4> *IndxRange = nullptr ///< [in] index range
+
+) {
+   // Get array and layout information
+   bool IsHost = isReduceArrayOnHost(Array);
+   std::vector<I8> Strides(5, 0);
+   std::vector<I4> IRange(10, 0);
+   getReduceArrayInfo(IRange, Strides, Array, IndxRange);
+
+   // Compute local minimum on host or device
+   IT LocalMin = std::numeric_limits<IT>::max();
+   if (IsHost) {
+      for (I4 I = IRange[0]; I <= IRange[1]; ++I) {
+         for (I4 J = IRange[2]; J <= IRange[3]; ++J) {
+            for (I4 K = IRange[4]; K <= IRange[5]; ++K) {
+               for (I4 L = IRange[6]; L <= IRange[7]; ++L) {
+                  for (I4 M = IRange[8]; M <= IRange[9]; ++M) {
+                     size_t LinearAdd = I * Strides[0] + J * Strides[1] +
+                                        K * Strides[2] + L * Strides[3] +
+                                        M * Strides[4];
+                     IT TestVal = Array.data()[LinearAdd];
+                     if (TestVal < LocalMin)
+                        LocalMin = TestVal;
+                  }
+               }
+            }
          }
       }
-   }
-   int Err;
-   if (typeid(IT) == typeid(I4)) {
-      Err = MPI_Allreduce(LocalMinVal, &GlobalMinVal[0], NFields, MPI_INT32_T,
-                          MPI_MIN, Comm);
-   } else if (typeid(IT) == typeid(I8)) {
-      Err = MPI_Allreduce(LocalMinVal, &GlobalMinVal[0], NFields, MPI_INT64_T,
-                          MPI_MIN, Comm);
-   } else if (typeid(IT) == typeid(R4)) {
-      Err = MPI_Allreduce(LocalMinVal, &GlobalMinVal[0], NFields, MPI_FLOAT,
-                          MPI_MIN, Comm);
-   } else if (typeid(IT) == typeid(R8)) {
-      Err = MPI_Allreduce(LocalMinVal, &GlobalMinVal[0], NFields, MPI_DOUBLE,
-                          MPI_MIN, Comm);
-   }
-   if (Err != MPI_SUCCESS)
-      ABORT_ERROR("globalMinval multifield: Error in MPI_Allreduce");
+   } else { // on device
+      Array1DI4 DevRange("IRange", 10);
+      Array1DI8 DevStrides("Strides", 5);
+      copyReduceInfoToDevice(DevRange, DevStrides, IRange, Strides);
+      OMEGA_SCOPE(LocStrides, DevStrides);
+      OMEGA_SCOPE(LocRange, DevRange);
+      OMEGA_SCOPE(LocArray, Array);
+      parallelReduce(
+          {IRange[1] + 1, IRange[3] + 1, IRange[5] + 1, IRange[7] + 1,
+           IRange[9] + 1},
+          KOKKOS_LAMBDA(int I, int J, int K, int L, int M, IT &DevMin) {
+             if (I >= LocRange(0) and J >= LocRange(2) and K >= LocRange(4) and
+                 L >= LocRange(6) and M >= LocRange(8)) {
+                size_t LinearAdd = I * LocStrides(0) + J * LocStrides(1) +
+                                   K * LocStrides(2) + L * LocStrides(3) +
+                                   M * LocStrides(4);
+                IT TestVal = LocArray.data()[LinearAdd];
+                DevMin     = Kokkos::min(TestVal, DevMin);
+             }
+          },
+          Kokkos::Min<IT>(LocalMin));
+   } // end if onHost
+
+   LocalMinVal = LocalMin;
+   return;
 }
 
-//////////
-// Global maxval
-//////////
-// Array
+///-----------------------------------------------------------------------------
+/// Finds the local minimum of a Kokkos array product (eg mask)
 template <typename T, typename IT, typename ML, typename MS>
 std::enable_if_t<std::is_same_v<IT, typename Kokkos::View<T>::value_type>, void>
-globalMaxVal(const Kokkos::View<T, ML, MS> arr, const MPI_Comm Comm,
-             IT *GlobalMaxVal, const std::vector<I4> *IndxRange = nullptr) {
-   int dim = arr.rank;
-   int i, imin, imax;
-   if (IndxRange == nullptr) {
-      imin = 0;
-      imax = arr.size();
-   } else {
-      imin = (*IndxRange)[0];
-      imax = (*IndxRange)[dim * 2 - 1];
-   }
-   IT LocalMaxVal = arr.data()[imin];
-   for (i = imin + 1; i < imax; i++) {
-      if (LocalMaxVal < arr.data()[i]) {
-         LocalMaxVal = arr.data()[i];
-      }
-   }
+localMinVal(const Kokkos::View<T, ML, MS> Arr1, ///< [in] 1st array in product
+            const Kokkos::View<T, ML, MS> Arr2, ///< [in] 2nd array in product
+            const MPI_Comm Comm,                ///< [in] MPI Communicator
+            IT &LocalMinVal,                    ///< [out] local min
+            const std::vector<I4> *IndxRange = nullptr ///< [in] index range
 
-   int Err;
-   if (typeid(IT) == typeid(I4)) {
-      Err = MPI_Allreduce(&LocalMaxVal, GlobalMaxVal, 1, MPI_INT32_T, MPI_MAX,
-                          Comm);
-   } else if (typeid(IT) == typeid(I8)) {
-      Err = MPI_Allreduce(&LocalMaxVal, GlobalMaxVal, 1, MPI_INT64_T, MPI_MAX,
-                          Comm);
-   } else if (typeid(IT) == typeid(R4)) {
-      Err = MPI_Allreduce(&LocalMaxVal, GlobalMaxVal, 1, MPI_FLOAT, MPI_MAX,
-                          Comm);
-   } else if (typeid(IT) == typeid(R8)) {
-      Err = MPI_Allreduce(&LocalMaxVal, GlobalMaxVal, 1, MPI_DOUBLE, MPI_MAX,
-                          Comm);
-   }
-   if (Err != MPI_SUCCESS)
-      ABORT_ERROR("globalMaxval: Error in MPI_Allreduce");
-}
+) {
+   // Some error checks
+   OMEGA_REQUIRE(Arr1.rank == Arr2.rank,
+                 "localMinVal for Array product: Arrays must have same rank");
+   OMEGA_REQUIRE(Arr1.size() == Arr2.size(),
+                 "localMinVal for Array product: Arrays must have same size");
+   // Get array and layout information
+   bool IsHost = isReduceArrayOnHost(Arr1);
+   std::vector<I8> Strides(5, 0);
+   std::vector<I4> IRange(10, 0);
+   getReduceArrayInfo(IRange, Strides, Arr1, IndxRange);
 
-// Array with mask
-template <typename T, typename IT, typename ML, typename MS>
-std::enable_if_t<std::is_same_v<IT, typename Kokkos::View<T>::value_type>, void>
-globalMaxVal(const Kokkos::View<T, ML, MS> arr,
-             const Kokkos::View<T, ML, MS> arr2, const MPI_Comm Comm,
-             IT *GlobalMaxVal, const std::vector<I4> *IndxRange = nullptr) {
-   int dim = arr.rank;
-   int i, imin, imax;
-   if (IndxRange == nullptr) {
-      imin = 0;
-      imax = arr.size();
-   } else {
-      imin = (*IndxRange)[0];
-      imax = (*IndxRange)[dim * 2 - 1];
-   }
-   IT tmp, LocalMaxVal = arr.data()[imin] * arr2.data()[imin];
-   for (i = imin + 1; i < imax; i++) {
-      tmp = arr.data()[i] * arr2.data()[i];
-      if (LocalMaxVal < tmp) {
-         LocalMaxVal = tmp;
-      }
-   }
-
-   int Err;
-   if (typeid(IT) == typeid(I4)) {
-      Err = MPI_Allreduce(&LocalMaxVal, GlobalMaxVal, 1, MPI_INT32_T, MPI_MAX,
-                          Comm);
-   } else if (typeid(IT) == typeid(I8)) {
-      Err = MPI_Allreduce(&LocalMaxVal, GlobalMaxVal, 1, MPI_INT64_T, MPI_MAX,
-                          Comm);
-   } else if (typeid(IT) == typeid(R4)) {
-      Err = MPI_Allreduce(&LocalMaxVal, GlobalMaxVal, 1, MPI_FLOAT, MPI_MAX,
-                          Comm);
-   } else if (typeid(IT) == typeid(R8)) {
-      Err = MPI_Allreduce(&LocalMaxVal, GlobalMaxVal, 1, MPI_DOUBLE, MPI_MAX,
-                          Comm);
-   }
-   if (Err != MPI_SUCCESS)
-      ABORT_ERROR("globalMaxval with mask: Error in MPI_Allreduce");
-}
-
-// Array multi-field
-template <typename T, typename IT, typename ML, typename MS>
-std::enable_if_t<std::is_same_v<IT, typename Kokkos::View<T>::value_type>, void>
-globalMaxVal(const std::vector<Kokkos::View<T, ML, MS>> arrays,
-             const MPI_Comm Comm, std::vector<IT> GlobalMaxVal,
-             const std::vector<I4> *IndxRange = nullptr) {
-   int dim = arrays[0].rank;
-   int i, imin, imax;
-   if (IndxRange == nullptr) {
-      imin = 0;
-      imax = arrays[0].size();
-   } else {
-      imin = (*IndxRange)[0];
-      imax = (*IndxRange)[dim * 2 - 1];
-   }
-   int ifld, NFields = arrays.size();
-   IT LocalMaxVal[NFields];
-   for (ifld = 0; ifld < NFields; ifld++) {
-      LocalMaxVal[ifld] = arrays[ifld].data()[imin];
-      for (i = imin + 1; i < imax; i++) {
-         if (LocalMaxVal[ifld] < arrays[ifld].data()[i]) {
-            LocalMaxVal[ifld] = arrays[ifld].data()[i];
+   // Compute local minimum on host or device
+   IT LocalMin = std::numeric_limits<IT>::max();
+   if (IsHost) {
+      for (I4 I = IRange[0]; I <= IRange[1]; ++I) {
+         for (I4 J = IRange[2]; J <= IRange[3]; ++J) {
+            for (I4 K = IRange[4]; K <= IRange[5]; ++K) {
+               for (I4 L = IRange[6]; L <= IRange[7]; ++L) {
+                  for (I4 M = IRange[8]; M <= IRange[9]; ++M) {
+                     size_t LinearAdd = I * Strides[0] + J * Strides[1] +
+                                        K * Strides[2] + L * Strides[3] +
+                                        M * Strides[4];
+                     IT TestVal =
+                         Arr1.data()[LinearAdd] * Arr2.data()[LinearAdd];
+                     if (TestVal < LocalMin)
+                        LocalMin = TestVal;
+                  }
+               }
+            }
          }
       }
+   } else { // on device
+      Array1DI4 DevRange("IRange", 10);
+      Array1DI8 DevStrides("Strides", 5);
+      copyReduceInfoToDevice(DevRange, DevStrides, IRange, Strides);
+      OMEGA_SCOPE(LocStrides, DevStrides);
+      OMEGA_SCOPE(LocRange, DevRange);
+      OMEGA_SCOPE(LocArr1, Arr1);
+      OMEGA_SCOPE(LocArr2, Arr2);
+      parallelReduce(
+          {IRange[1] + 1, IRange[3] + 1, IRange[5] + 1, IRange[7] + 1,
+           IRange[9] + 1},
+          KOKKOS_LAMBDA(int I, int J, int K, int L, int M, IT &DevMin) {
+             if (I >= LocRange(0) and J >= LocRange(2) and K >= LocRange(4) and
+                 L >= LocRange(6) and M >= LocRange(8)) {
+                size_t LinearAdd = I * LocStrides(0) + J * LocStrides(1) +
+                                   K * LocStrides(2) + L * LocStrides(3) +
+                                   M * LocStrides(4);
+                IT TestVal =
+                    LocArr1.data()[LinearAdd] * LocArr2.data()[LinearAdd];
+                DevMin = Kokkos::min(TestVal, DevMin);
+             }
+          },
+          Kokkos::Min<IT>(LocalMin));
+   } // end if onHost
+
+   LocalMinVal = LocalMin;
+   return;
+}
+
+///-----------------------------------------------------------------------------
+/// Computes the minimum value of entries in a distributed array.
+/// The optional IndxRange argument is a vector that supplies the
+/// min and max local indices along each dimension over which the minimum is
+/// computed. If not provided, the minimum is computed over the full array.
+/// Specific I4 interface
+template <typename T, typename ML, typename MS>
+std::enable_if_t<std::is_same_v<I4, typename Kokkos::View<T>::value_type>, I4>
+globalMinVal(const Kokkos::View<T, ML, MS> Array, ///< [in] array to find min
+             const MPI_Comm Comm,                 ///< [in] MPI Communicator
+             const std::vector<I4> *IndxRange = nullptr ///< [in] index range
+) {
+   // Call routine to find local min
+   I4 LocalMin;
+   localMinVal(Array, Comm, LocalMin, IndxRange);
+
+   // Compute final minimum across MPI tasks
+   I4 GlobalMin;
+   int Err =
+       MPI_Allreduce(&LocalMin, &GlobalMin, 1, MPI_INT32_T, MPI_MIN, Comm);
+   if (Err != MPI_SUCCESS)
+      ABORT_ERROR("MPI Error in GlobalMinVal for I4 arrays");
+
+   return GlobalMin;
+}
+/// Specific I8 interface
+template <typename T, typename ML, typename MS>
+std::enable_if_t<std::is_same_v<I8, typename Kokkos::View<T>::value_type>, I8>
+globalMinVal(const Kokkos::View<T, ML, MS> Array, ///< [in] array to find min
+             const MPI_Comm Comm,                 ///< [in] MPI Communicator
+             const std::vector<I4> *IndxRange = nullptr ///< [in] index range
+) {
+   // Call routine to find local min
+   I8 LocalMin;
+   localMinVal(Array, Comm, LocalMin, IndxRange);
+
+   // Compute final minimum across MPI tasks
+   I8 GlobalMin;
+   int Err =
+       MPI_Allreduce(&LocalMin, &GlobalMin, 1, MPI_INT64_T, MPI_MIN, Comm);
+   if (Err != MPI_SUCCESS)
+      ABORT_ERROR("MPI Error in GlobalMinVal for I8 arrays");
+
+   return GlobalMin;
+}
+/// Specific R4 interface
+template <typename T, typename ML, typename MS>
+std::enable_if_t<std::is_same_v<R4, typename Kokkos::View<T>::value_type>, R4>
+globalMinVal(const Kokkos::View<T, ML, MS> Array, ///< [in] array to find min
+             const MPI_Comm Comm,                 ///< [in] MPI Communicator
+             const std::vector<I4> *IndxRange = nullptr ///< [in] index range
+) {
+   // Call routine to find local min
+   R4 LocalMin;
+   localMinVal(Array, Comm, LocalMin, IndxRange);
+
+   // Compute final minimum across MPI tasks
+   R4 GlobalMin;
+   int Err = MPI_Allreduce(&LocalMin, &GlobalMin, 1, MPI_FLOAT, MPI_MIN, Comm);
+   if (Err != MPI_SUCCESS)
+      ABORT_ERROR("MPI Error in GlobalMinVal for R4 arrays");
+
+   return GlobalMin;
+}
+/// Specific R8 interface
+template <typename T, typename ML, typename MS>
+std::enable_if_t<std::is_same_v<R8, typename Kokkos::View<T>::value_type>, R8>
+globalMinVal(const Kokkos::View<T, ML, MS> Array, ///< [in] array to find min
+             const MPI_Comm Comm,                 ///< [in] MPI Communicator
+             const std::vector<I4> *IndxRange = nullptr ///< [in] index range
+) {
+   // Call routine to find local min
+   R8 LocalMin;
+   localMinVal(Array, Comm, LocalMin, IndxRange);
+
+   // Compute final minimum across MPI tasks
+   R8 GlobalMin;
+   int Err = MPI_Allreduce(&LocalMin, &GlobalMin, 1, MPI_DOUBLE, MPI_MIN, Comm);
+   if (Err != MPI_SUCCESS)
+      ABORT_ERROR("MPI Error in GlobalMinVal for R8 arrays");
+
+   return GlobalMin;
+}
+///-----------------------------------------------------------------------------
+/// Computes the minimum value of a product of distributed arrays.
+/// The optional IndxRange argument is a vector that supplies the
+/// min and max local indices along each dimension over which the minimum is
+/// computed. If not provided, the minimum is computed over the full array.
+/// Specific I4 interface
+template <typename T, typename ML, typename MS>
+std::enable_if_t<std::is_same_v<I4, typename Kokkos::View<T>::value_type>, I4>
+globalMinVal(const Kokkos::View<T, ML, MS> Arr1, ///< [in] 1st array in product
+             const Kokkos::View<T, ML, MS> Arr2, ///< [in] 2nd array in product
+             const MPI_Comm Comm,                ///< [in] MPI Communicator
+             const std::vector<I4> *IndxRange = nullptr ///< [in] index range
+) {
+   // Call routine to find local min (also performs error checks)
+   I4 LocalMin;
+   localMinVal(Arr1, Arr2, Comm, LocalMin, IndxRange);
+
+   // Compute final minimum across MPI tasks
+   I4 GlobalMin;
+   int Err =
+       MPI_Allreduce(&LocalMin, &GlobalMin, 1, MPI_INT32_T, MPI_MIN, Comm);
+   if (Err != MPI_SUCCESS)
+      ABORT_ERROR("MPI Error in GlobalMinVal for I4 array product");
+
+   return GlobalMin;
+}
+/// Specific I8 interface
+template <typename T, typename ML, typename MS>
+std::enable_if_t<std::is_same_v<I8, typename Kokkos::View<T>::value_type>, I8>
+globalMinVal(const Kokkos::View<T, ML, MS> Arr1, ///< [in] 1st array in product
+             const Kokkos::View<T, ML, MS> Arr2, ///< [in] 2nd array in product
+             const MPI_Comm Comm,                ///< [in] MPI Communicator
+             const std::vector<I4> *IndxRange = nullptr ///< [in] index range
+) {
+   // Call routine to find local min (also performs error checks)
+   I8 LocalMin;
+   localMinVal(Arr1, Arr2, Comm, LocalMin, IndxRange);
+
+   // Compute final minimum across MPI tasks
+   I8 GlobalMin;
+   int Err =
+       MPI_Allreduce(&LocalMin, &GlobalMin, 1, MPI_INT64_T, MPI_MIN, Comm);
+   if (Err != MPI_SUCCESS)
+      ABORT_ERROR("MPI Error in GlobalMinVal for I8 array product");
+
+   return GlobalMin;
+}
+/// Specific R4 interface
+template <typename T, typename ML, typename MS>
+std::enable_if_t<std::is_same_v<R4, typename Kokkos::View<T>::value_type>, R4>
+globalMinVal(const Kokkos::View<T, ML, MS> Arr1, ///< [in] 1st array in product
+             const Kokkos::View<T, ML, MS> Arr2, ///< [in] 2nd array in product
+             const MPI_Comm Comm,                ///< [in] MPI Communicator
+             const std::vector<I4> *IndxRange = nullptr ///< [in] index range
+) {
+   // Call routine to find local min (also performs error checks)
+   R4 LocalMin;
+   localMinVal(Arr1, Arr2, Comm, LocalMin, IndxRange);
+
+   // Compute final minimum across MPI tasks
+   R4 GlobalMin;
+   int Err = MPI_Allreduce(&LocalMin, &GlobalMin, 1, MPI_FLOAT, MPI_MIN, Comm);
+   if (Err != MPI_SUCCESS)
+      ABORT_ERROR("MPI Error in GlobalMinVal for R4 array product");
+
+   return GlobalMin;
+}
+/// Specific R8 interface
+template <typename T, typename ML, typename MS>
+std::enable_if_t<std::is_same_v<R8, typename Kokkos::View<T>::value_type>, R8>
+globalMinVal(const Kokkos::View<T, ML, MS> Arr1, ///< [in] 1st array in product
+             const Kokkos::View<T, ML, MS> Arr2, ///< [in] 2nd array in product
+             const MPI_Comm Comm,                ///< [in] MPI Communicator
+             const std::vector<I4> *IndxRange = nullptr ///< [in] index range
+) {
+   // Call routine to find local min (also performs error checks)
+   R8 LocalMin;
+   localMinVal(Arr1, Arr2, Comm, LocalMin, IndxRange);
+
+   // Compute final minimum across MPI tasks
+   R8 GlobalMin;
+   int Err = MPI_Allreduce(&LocalMin, &GlobalMin, 1, MPI_DOUBLE, MPI_MIN, Comm);
+   if (Err != MPI_SUCCESS)
+      ABORT_ERROR("MPI Error in GlobalMinVal for R8 array product");
+
+   return GlobalMin;
+}
+///-----------------------------------------------------------------------------
+/// Finds the local maximum of a Kokkos array
+template <typename T, typename IT, typename ML, typename MS>
+std::enable_if_t<std::is_same_v<IT, typename Kokkos::View<T>::value_type>, void>
+localMaxVal(const Kokkos::View<T, ML, MS> Array, ///< [in] array to find max
+            const MPI_Comm Comm,                 ///< [in] MPI Communicator
+            IT &LocalMaxVal,                     ///< [out] local max
+            const std::vector<I4> *IndxRange = nullptr ///< [in] index range
+
+) {
+   // Get array and layout information
+   bool IsHost = isReduceArrayOnHost(Array);
+   std::vector<I8> Strides(5, 0);
+   std::vector<I4> IRange(10, 0);
+   getReduceArrayInfo(IRange, Strides, Array, IndxRange);
+
+   // Compute local maximum on host or device
+   IT LocalMax = -std::numeric_limits<IT>::max();
+   if (IsHost) {
+      for (I4 I = IRange[0]; I <= IRange[1]; ++I) {
+         for (I4 J = IRange[2]; J <= IRange[3]; ++J) {
+            for (I4 K = IRange[4]; K <= IRange[5]; ++K) {
+               for (I4 L = IRange[6]; L <= IRange[7]; ++L) {
+                  for (I4 M = IRange[8]; M <= IRange[9]; ++M) {
+                     size_t LinearAdd = I * Strides[0] + J * Strides[1] +
+                                        K * Strides[2] + L * Strides[3] +
+                                        M * Strides[4];
+                     IT TestVal = Array.data()[LinearAdd];
+                     if (TestVal > LocalMax)
+                        LocalMax = TestVal;
+                  }
+               }
+            }
+         }
+      }
+   } else { // on device
+      Array1DI4 DevRange("IRange", 10);
+      Array1DI8 DevStrides("Strides", 5);
+      copyReduceInfoToDevice(DevRange, DevStrides, IRange, Strides);
+      OMEGA_SCOPE(LocStrides, DevStrides);
+      OMEGA_SCOPE(LocRange, DevRange);
+      OMEGA_SCOPE(LocArray, Array);
+      parallelReduce(
+          {IRange[1] + 1, IRange[3] + 1, IRange[5] + 1, IRange[7] + 1,
+           IRange[9] + 1},
+          KOKKOS_LAMBDA(int I, int J, int K, int L, int M, IT &DevMax) {
+             if (I >= LocRange(0) and J >= LocRange(2) and K >= LocRange(4) and
+                 L >= LocRange(6) and M >= LocRange(8)) {
+                size_t LinearAdd = I * LocStrides(0) + J * LocStrides(1) +
+                                   K * LocStrides(2) + L * LocStrides(3) +
+                                   M * LocStrides(4);
+                IT TestVal = LocArray.data()[LinearAdd];
+                DevMax     = Kokkos::max(TestVal, DevMax);
+             }
+          },
+          Kokkos::Max<IT>(LocalMax));
+   } // end if onHost
+
+   LocalMaxVal = LocalMax;
+   MPI_Barrier(MPI_COMM_WORLD);
+   return;
+}
+
+///-----------------------------------------------------------------------------
+/// Finds the local maximum of a Kokkos array product
+template <typename T, typename IT, typename ML, typename MS>
+std::enable_if_t<std::is_same_v<IT, typename Kokkos::View<T>::value_type>, void>
+localMaxVal(const Kokkos::View<T, ML, MS> Arr1, ///< [in] 1st array in product
+            const Kokkos::View<T, ML, MS> Arr2, ///< [in] 2nd array in product
+            const MPI_Comm Comm,                ///< [in] MPI Communicator
+            IT &LocalMaxVal,                    ///< [out] local max
+            const std::vector<I4> *IndxRange = nullptr ///< [in] index range
+
+) {
+   // Some error checks
+   OMEGA_REQUIRE(Arr1.rank == Arr2.rank,
+                 "localMinVal for Array product: Arrays must have same rank");
+   OMEGA_REQUIRE(Arr1.size() == Arr2.size(),
+                 "localMinVal for Array product: Arrays must have same size");
+   // Get array and layout information
+   bool IsHost = isReduceArrayOnHost(Arr1);
+   std::vector<I8> Strides(5, 0);
+   std::vector<I4> IRange(10, 0);
+   getReduceArrayInfo(IRange, Strides, Arr1, IndxRange);
+
+   // Compute local maximum on host or device
+   IT LocalMax = -std::numeric_limits<IT>::max();
+   if (IsHost) {
+      for (I4 I = IRange[0]; I <= IRange[1]; ++I) {
+         for (I4 J = IRange[2]; J <= IRange[3]; ++J) {
+            for (I4 K = IRange[4]; K <= IRange[5]; ++K) {
+               for (I4 L = IRange[6]; L <= IRange[7]; ++L) {
+                  for (I4 M = IRange[8]; M <= IRange[9]; ++M) {
+                     size_t LinearAdd = I * Strides[0] + J * Strides[1] +
+                                        K * Strides[2] + L * Strides[3] +
+                                        M * Strides[4];
+                     IT TestVal =
+                         Arr1.data()[LinearAdd] * Arr2.data()[LinearAdd];
+                     if (TestVal > LocalMax)
+                        LocalMax = TestVal;
+                  }
+               }
+            }
+         }
+      }
+   } else { // on device
+      Array1DI4 DevRange("IRange", 10);
+      Array1DI8 DevStrides("Strides", 5);
+      copyReduceInfoToDevice(DevRange, DevStrides, IRange, Strides);
+      OMEGA_SCOPE(LocStrides, DevStrides);
+      OMEGA_SCOPE(LocRange, DevRange);
+      OMEGA_SCOPE(LocArr1, Arr1);
+      OMEGA_SCOPE(LocArr2, Arr2);
+      parallelReduce(
+          {IRange[1] + 1, IRange[3] + 1, IRange[5] + 1, IRange[7] + 1,
+           IRange[9] + 1},
+          KOKKOS_LAMBDA(int I, int J, int K, int L, int M, IT &DevMax) {
+             if (I >= LocRange(0) and J >= LocRange(2) and K >= LocRange(4) and
+                 L >= LocRange(6) and M >= LocRange(8)) {
+                size_t LinearAdd = I * LocStrides(0) + J * LocStrides(1) +
+                                   K * LocStrides(2) + L * LocStrides(3) +
+                                   M * LocStrides(4);
+                IT TestVal =
+                    LocArr1.data()[LinearAdd] * LocArr2.data()[LinearAdd];
+                DevMax = Kokkos::max(TestVal, DevMax);
+             }
+          },
+          Kokkos::Max<IT>(LocalMax));
+   } // end if onHost
+
+   LocalMaxVal = LocalMax;
+   MPI_Barrier(MPI_COMM_WORLD);
+   return;
+}
+
+///-----------------------------------------------------------------------------
+/// Finds the maximum value across tasks of a scalar variable.
+template <typename T>
+T globalMaxVal(const T LocalVal,   /// Local scalar on each task
+               const MPI_Comm Comm /// MPI communicator for the set of tasks
+) {
+   int Err; // MPI error code
+   T GlobalMax;
+
+   if (typeid(T) == typeid(I4)) {
+      Err = MPI_Allreduce(&LocalVal, &GlobalMax, 1, MPI_INT32_T, MPI_MAX, Comm);
+   } else if (typeid(T) == typeid(I8)) {
+      Err = MPI_Allreduce(&LocalVal, &GlobalMax, 1, MPI_INT64_T, MPI_MAX, Comm);
+   } else if (typeid(T) == typeid(R4)) {
+      Err = MPI_Allreduce(&LocalVal, &GlobalMax, 1, MPI_FLOAT, MPI_MAX, Comm);
+   } else if (typeid(T) == typeid(R8)) {
+      Err = MPI_Allreduce(&LocalVal, &GlobalMax, 1, MPI_DOUBLE, MPI_MAX, Comm);
    }
-   int Err;
-   if (typeid(IT) == typeid(I4)) {
-      Err = MPI_Allreduce(LocalMaxVal, &GlobalMaxVal[0], NFields, MPI_INT32_T,
+   if (Err != MPI_SUCCESS)
+      ABORT_ERROR("MPI Error in GlobalMaxVal for scalars");
+
+   return GlobalMax;
+}
+
+///-----------------------------------------------------------------------------
+/// Finds the maximum values across tasks for each scalar in a vector
+template <typename T>
+std::vector<T> globalMaxVal(
+    const std::vector<T> LocalVal, /// Vector of local scalars on each task
+    const MPI_Comm Comm            /// MPI communicator for the set of tasks
+) {
+   int Err; // MPI error code
+   int NFields = LocalVal.size();
+   std::vector<T> GlobalMax(NFields);
+
+   if (typeid(T) == typeid(I4)) {
+      Err = MPI_Allreduce(&LocalVal[0], &GlobalMax[0], NFields, MPI_INT32_T,
                           MPI_MAX, Comm);
-   } else if (typeid(IT) == typeid(I8)) {
-      Err = MPI_Allreduce(LocalMaxVal, &GlobalMaxVal[0], NFields, MPI_INT64_T,
+   } else if (typeid(T) == typeid(I8)) {
+      Err = MPI_Allreduce(&LocalVal[0], &GlobalMax[0], NFields, MPI_INT64_T,
                           MPI_MAX, Comm);
-   } else if (typeid(IT) == typeid(R4)) {
-      Err = MPI_Allreduce(LocalMaxVal, &GlobalMaxVal[0], NFields, MPI_FLOAT,
+   } else if (typeid(T) == typeid(R4)) {
+      Err = MPI_Allreduce(&LocalVal[0], &GlobalMax[0], NFields, MPI_FLOAT,
                           MPI_MAX, Comm);
-   } else if (typeid(IT) == typeid(R8)) {
-      Err = MPI_Allreduce(LocalMaxVal, &GlobalMaxVal[0], NFields, MPI_DOUBLE,
+   } else if (typeid(T) == typeid(R8)) {
+      Err = MPI_Allreduce(&LocalVal[0], &GlobalMax[0], NFields, MPI_DOUBLE,
                           MPI_MAX, Comm);
    }
    if (Err != MPI_SUCCESS)
-      ABORT_ERROR("globalMaxVal multifield: Error in MPI_Allreduce");
+      ABORT_ERROR("MPI Error in GlobalMaxVal for vector of scalars");
+
+   return GlobalMax;
 }
 
 ///-----------------------------------------------------------------------------
-/// Get MIN-value across all MPI processors in the MachEnv
+/// Computes the maximum value of entries in a distributed array.
+/// The optional IndxRange argument is a vector that supplies the
+/// min and max local indices along each dimension over which the maximum is
+/// computed. If not provided, the maximum is computed over the full array.
+/// Specific I4 interface
+template <typename T, typename ML, typename MS>
+std::enable_if_t<std::is_same_v<I4, typename Kokkos::View<T>::value_type>, I4>
+globalMaxVal(const Kokkos::View<T, ML, MS> Array, ///< [in] array to find max
+             const MPI_Comm Comm,                 ///< [in] MPI Communicator
+             const std::vector<I4> *IndxRange = nullptr ///< [in] index range
+) {
+   // Call routine to find local max
+   I4 LocalMax;
+   localMaxVal(Array, Comm, LocalMax, IndxRange);
+
+   // Compute final maximum across MPI tasks
+   I4 GlobalMax;
+   int Err =
+       MPI_Allreduce(&LocalMax, &GlobalMax, 1, MPI_INT32_T, MPI_MAX, Comm);
+   if (Err != MPI_SUCCESS)
+      ABORT_ERROR("MPI Error in GlobalMaxVal for I4 arrays");
+
+   return GlobalMax;
+}
+/// Specific I8 interface
+template <typename T, typename ML, typename MS>
+std::enable_if_t<std::is_same_v<I8, typename Kokkos::View<T>::value_type>, I8>
+globalMaxVal(const Kokkos::View<T, ML, MS> Array, ///< [in] array to find max
+             const MPI_Comm Comm,                 ///< [in] MPI Communicator
+             const std::vector<I4> *IndxRange = nullptr ///< [in] index range
+) {
+   // Call routine to find local max
+   I8 LocalMax;
+   localMaxVal(Array, Comm, LocalMax, IndxRange);
+
+   // Compute final maximum across MPI tasks
+   I8 GlobalMax;
+   int Err =
+       MPI_Allreduce(&LocalMax, &GlobalMax, 1, MPI_INT64_T, MPI_MAX, Comm);
+   if (Err != MPI_SUCCESS)
+      ABORT_ERROR("MPI Error in GlobalMaxVal for I8 arrays");
+
+   return GlobalMax;
+}
+/// Specific R4 interface
+template <typename T, typename ML, typename MS>
+std::enable_if_t<std::is_same_v<R4, typename Kokkos::View<T>::value_type>, R4>
+globalMaxVal(const Kokkos::View<T, ML, MS> Array, ///< [in] array to find max
+             const MPI_Comm Comm,                 ///< [in] MPI Communicator
+             const std::vector<I4> *IndxRange = nullptr ///< [in] index range
+) {
+   // Call routine to find local max
+   R4 LocalMax;
+   localMaxVal(Array, Comm, LocalMax, IndxRange);
+
+   // Compute final maximum across MPI tasks
+   R4 GlobalMax;
+   int Err = MPI_Allreduce(&LocalMax, &GlobalMax, 1, MPI_FLOAT, MPI_MAX, Comm);
+   if (Err != MPI_SUCCESS)
+      ABORT_ERROR("MPI Error in GlobalMaxVal for R4 arrays");
+
+   return GlobalMax;
+}
+/// Specific R8 interface
+template <typename T, typename ML, typename MS>
+std::enable_if_t<std::is_same_v<R8, typename Kokkos::View<T>::value_type>, R8>
+globalMaxVal(const Kokkos::View<T, ML, MS> Array, ///< [in] array to find max
+             const MPI_Comm Comm,                 ///< [in] MPI Communicator
+             const std::vector<I4> *IndxRange = nullptr ///< [in] index range
+) {
+   // Call routine to find local max
+   R8 LocalMax;
+   localMaxVal(Array, Comm, LocalMax, IndxRange);
+
+   // Compute final maximum across MPI tasks
+   R8 GlobalMax;
+   int Err = MPI_Allreduce(&LocalMax, &GlobalMax, 1, MPI_DOUBLE, MPI_MAX, Comm);
+   if (Err != MPI_SUCCESS)
+      ABORT_ERROR("MPI Error in GlobalMaxVal for R8 arrays");
+
+   return GlobalMax;
+}
+
 ///-----------------------------------------------------------------------------
-void globalMin(const I4 *Val, I4 *Res, const MPI_Comm Comm) {
-   int Err = MPI_Allreduce(Val, Res, 1, MPI_INT32_T, MPI_MIN, Comm);
-   if (Err != MPI_SUCCESS)
-      ABORT_ERROR("globalMin (I4 scalar): Error in MPI_Allreduce");
-}
-
-void globalMin(const I8 *Val, I8 *Res, const MPI_Comm Comm) {
-   int Err = MPI_Allreduce(Val, Res, 1, MPI_INT64_T, MPI_MIN, Comm);
-   if (Err != MPI_SUCCESS)
-      ABORT_ERROR("globalMin (I8 scalar): Error in MPI_Allreduce");
-}
-
-void globalMin(const R4 *Val, R4 *Res, const MPI_Comm Comm) {
-   int Err = MPI_Allreduce(Val, Res, 1, MPI_FLOAT, MPI_MIN, Comm);
-   if (Err != MPI_SUCCESS)
-      ABORT_ERROR("globalMin (R4 scalar): Error in MPI_Allreduce");
-}
-
-void globalMin(const R8 *Val, R8 *Res, const MPI_Comm Comm) {
-   int Err = MPI_Allreduce(Val, Res, 1, MPI_DOUBLE, MPI_MIN, Comm);
-   if (Err != MPI_SUCCESS)
-      ABORT_ERROR("globalMin (R8 scalar): Error in MPI_Allreduce");
-}
-
+/// Computes the maximum value of a product of distributed arrays.
+/// The optional IndxRange argument is a vector that supplies the
+/// min and max local indices along each dimension over which the maximum is
+/// computed. If not provided, the maximum is computed over the full array.
+/// Specific I4 interface
 template <typename T, typename ML, typename MS>
-std::enable_if_t<std::is_same_v<I4, typename Kokkos::View<T>::value_type>, void>
-globalMin(Kokkos::View<T, ML, MS> const in, Kokkos::View<T, ML, MS> out,
-          const MPI_Comm Comm) {
-   int Err = MPI_Allreduce(in.data(), out.data(), in.size(), MPI_INT32_T,
-                           MPI_MIN, Comm);
-   if (Err != MPI_SUCCESS)
-      ABORT_ERROR("globalMin (I4 array): Error in MPI_Allreduce");
-}
+std::enable_if_t<std::is_same_v<I4, typename Kokkos::View<T>::value_type>, I4>
+globalMaxVal(const Kokkos::View<T, ML, MS> Arr1, ///< [in] 1st array in product
+             const Kokkos::View<T, ML, MS> Arr2, ///< [in] 2nd array in product
+             const MPI_Comm Comm,                ///< [in] MPI Communicator
+             const std::vector<I4> *IndxRange = nullptr ///< [in] index range
+) {
+   // Call routine to find local max (also performs error checks)
+   I4 LocalMax;
+   localMaxVal(Arr1, Arr2, Comm, LocalMax, IndxRange);
 
+   // Compute final maximum across MPI tasks
+   I4 GlobalMax;
+   int Err =
+       MPI_Allreduce(&LocalMax, &GlobalMax, 1, MPI_INT32_T, MPI_MAX, Comm);
+   if (Err != MPI_SUCCESS)
+      ABORT_ERROR("MPI Error in GlobalMaxVal for I4 array product");
+
+   return GlobalMax;
+}
+/// Specific I8 interface
 template <typename T, typename ML, typename MS>
-std::enable_if_t<std::is_same_v<I8, typename Kokkos::View<T>::value_type>, void>
-globalMin(Kokkos::View<T, ML, MS> const in, Kokkos::View<T, ML, MS> out,
-          const MPI_Comm Comm) {
-   int Err = MPI_Allreduce(in.data(), out.data(), in.size(), MPI_INT64_T,
-                           MPI_MIN, Comm);
-   if (Err != MPI_SUCCESS)
-      ABORT_ERROR("globalMin (I8 array): Error in MPI_Allreduce");
-}
+std::enable_if_t<std::is_same_v<I8, typename Kokkos::View<T>::value_type>, I8>
+globalMaxVal(const Kokkos::View<T, ML, MS> Arr1, ///< [in] 1st array in product
+             const Kokkos::View<T, ML, MS> Arr2, ///< [in] 2nd array in product
+             const MPI_Comm Comm,                ///< [in] MPI Communicator
+             const std::vector<I4> *IndxRange = nullptr ///< [in] index range
+) {
+   // Call routine to find local max (also performs error checks)
+   I8 LocalMax;
+   localMaxVal(Arr1, Arr2, Comm, LocalMax, IndxRange);
 
+   // Compute final maximum across MPI tasks
+   I8 GlobalMax;
+   int Err =
+       MPI_Allreduce(&LocalMax, &GlobalMax, 1, MPI_INT64_T, MPI_MAX, Comm);
+   if (Err != MPI_SUCCESS)
+      ABORT_ERROR("MPI Error in GlobalMaxVal for I8 array product");
+
+   return GlobalMax;
+}
+/// Specific R4 interface
 template <typename T, typename ML, typename MS>
-std::enable_if_t<std::is_same_v<R4, typename Kokkos::View<T>::value_type>, void>
-globalMin(Kokkos::View<T, ML, MS> const in, Kokkos::View<T, ML, MS> out,
-          const MPI_Comm Comm) {
-   int Err = MPI_Allreduce(in.data(), out.data(), in.size(), MPI_FLOAT, MPI_MIN,
-                           Comm);
-   if (Err != MPI_SUCCESS)
-      ABORT_ERROR("globalMin (R4 array): Error in MPI_Allreduce");
-}
+std::enable_if_t<std::is_same_v<R4, typename Kokkos::View<T>::value_type>, R4>
+globalMaxVal(const Kokkos::View<T, ML, MS> Arr1, ///< [in] 1st array in product
+             const Kokkos::View<T, ML, MS> Arr2, ///< [in] 2nd array in product
+             const MPI_Comm Comm,                ///< [in] MPI Communicator
+             const std::vector<I4> *IndxRange = nullptr ///< [in] index range
+) {
+   // Call routine to find local max (also performs error checks)
+   R4 LocalMax;
+   localMaxVal(Arr1, Arr2, Comm, LocalMax, IndxRange);
 
+   // Compute final maximum across MPI tasks
+   R4 GlobalMax;
+   int Err = MPI_Allreduce(&LocalMax, &GlobalMax, 1, MPI_FLOAT, MPI_MAX, Comm);
+   if (Err != MPI_SUCCESS)
+      ABORT_ERROR("MPI Error in GlobalMaxVal for R4 array product");
+
+   return GlobalMax;
+}
+/// Specific R8 interface
 template <typename T, typename ML, typename MS>
-std::enable_if_t<std::is_same_v<R8, typename Kokkos::View<T>::value_type>, void>
-globalMin(Kokkos::View<T, ML, MS> const in, Kokkos::View<T, ML, MS> out,
-          const MPI_Comm Comm) {
-   int Err = MPI_Allreduce(in.data(), out.data(), in.size(), MPI_DOUBLE,
-                           MPI_MIN, Comm);
+std::enable_if_t<std::is_same_v<R8, typename Kokkos::View<T>::value_type>, R8>
+globalMaxVal(const Kokkos::View<T, ML, MS> Arr1, ///< [in] 1st array in product
+             const Kokkos::View<T, ML, MS> Arr2, ///< [in] 2nd array in product
+             const MPI_Comm Comm,                ///< [in] MPI Communicator
+             const std::vector<I4> *IndxRange = nullptr ///< [in] index range
+) {
+   // Call routine to find local max (also performs error checks)
+   R8 LocalMax;
+   localMaxVal(Arr1, Arr2, Comm, LocalMax, IndxRange);
+
+   // Compute final maximum across MPI tasks
+   R8 GlobalMax;
+   int Err = MPI_Allreduce(&LocalMax, &GlobalMax, 1, MPI_DOUBLE, MPI_MAX, Comm);
    if (Err != MPI_SUCCESS)
-      ABORT_ERROR("globalMin (R8 array): Error in MPI_Allreduce");
+      ABORT_ERROR("MPI Error in GlobalMaxVal for R8 array product");
+
+   return GlobalMax;
 }
 
-///-----------------------------------------------------------------------------
-/// Get MAX-value across all MPI processors in the MachEnv
-///-----------------------------------------------------------------------------
-void globalMax(const I4 *Val, I4 *Res, const MPI_Comm Comm) {
-   int Err = MPI_Allreduce(Val, Res, 1, MPI_INT32_T, MPI_MAX, Comm);
-   if (Err != MPI_SUCCESS)
-      ABORT_ERROR("globalMax (I4 scalar): Error in MPI_Allreduce");
-}
-
-void globalMax(const I8 *Val, I8 *Res, const MPI_Comm Comm) {
-   int Err = MPI_Allreduce(Val, Res, 1, MPI_INT64_T, MPI_MAX, Comm);
-   if (Err != MPI_SUCCESS)
-      ABORT_ERROR("globalMax (I8 scalar): Error in MPI_Allreduce");
-}
-
-void globalMax(const R4 *Val, R4 *Res, const MPI_Comm Comm) {
-   int Err = MPI_Allreduce(Val, Res, 1, MPI_FLOAT, MPI_MAX, Comm);
-   if (Err != MPI_SUCCESS)
-      ABORT_ERROR("globalMax (R4 scalar): Error in MPI_Allreduce");
-}
-
-void globalMax(const R8 *Val, R8 *Res, const MPI_Comm Comm) {
-   int Err = MPI_Allreduce(Val, Res, 1, MPI_DOUBLE, MPI_MAX, Comm);
-   if (Err != MPI_SUCCESS)
-      ABORT_ERROR("globalMax (R8 scalar): Error in MPI_Allreduce");
-}
-
-template <typename T, typename ML, typename MS>
-std::enable_if_t<std::is_same_v<I4, typename Kokkos::View<T>::value_type>, void>
-globalMax(Kokkos::View<T, ML, MS> const in, Kokkos::View<T, ML, MS> out,
-          const MPI_Comm Comm) {
-   int Err = MPI_Allreduce(in.data(), out.data(), in.size(), MPI_INT32_T,
-                           MPI_MAX, Comm);
-   if (Err != MPI_SUCCESS)
-      ABORT_ERROR("globalMax (I4 array): Error in MPI_Allreduce");
-}
-
-template <typename T, typename ML, typename MS>
-std::enable_if_t<std::is_same_v<I8, typename Kokkos::View<T>::value_type>, void>
-globalMax(Kokkos::View<T, ML, MS> const in, Kokkos::View<T, ML, MS> out,
-          const MPI_Comm Comm) {
-   int Err = MPI_Allreduce(in.data(), out.data(), in.size(), MPI_INT64_T,
-                           MPI_MAX, Comm);
-   if (Err != MPI_SUCCESS)
-      ABORT_ERROR("globalMax (I8 array): Error in MPI_Allreduce");
-}
-
-template <typename T, typename ML, typename MS>
-std::enable_if_t<std::is_same_v<R4, typename Kokkos::View<T>::value_type>, void>
-globalMax(Kokkos::View<T, ML, MS> const in, Kokkos::View<T, ML, MS> out,
-          const MPI_Comm Comm) {
-   int Err = MPI_Allreduce(in.data(), out.data(), in.size(), MPI_FLOAT, MPI_MAX,
-                           Comm);
-   if (Err != MPI_SUCCESS)
-      ABORT_ERROR("globalMax (R4 array): Error in MPI_Allreduce");
-}
-
-template <typename T, typename ML, typename MS>
-std::enable_if_t<std::is_same_v<R8, typename Kokkos::View<T>::value_type>, void>
-globalMax(Kokkos::View<T, ML, MS> const in, Kokkos::View<T, ML, MS> out,
-          const MPI_Comm Comm) {
-   int Err = MPI_Allreduce(in.data(), out.data(), in.size(), MPI_DOUBLE,
-                           MPI_MAX, Comm);
-   if (Err != MPI_SUCCESS)
-      ABORT_ERROR("globalMax (R8 array): Error in MPI_Allreduce");
-}
-*/
+//------------------------------------------------------------------------------
 } // end namespace OMEGA
 
 //===----------------------------------------------------------------------===//
