@@ -325,7 +325,6 @@ struct Functions {
                   magic3*(std::pow(10, magic4*(1 - t/ZMC::tboil)) - 1) +
                   magic5*(std::pow(10, magic6*(ZMC::tboil/t-1)) - 1) +
                   std::log10(magic7))*100;
-    std::cout << "From qsat_hPa, es = " << es << std::endl;
 
     if ( (p*100 - es) <= 0 ) {
       qm = 1;

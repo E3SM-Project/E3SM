@@ -46,8 +46,6 @@ Real Functions<S,D>::entropy(
   qv = ekat::impl::min(qtot,qst);
   e = qv*p / (PC::ep_2.value + qv);
 
-  std::cout << "JGF tk=" << tk << ", p=" << p << ", qtot=" << qtot << ", L=" << L << ", est=" << est << ", qst=" << qst << ", qv=" << qv << ", e=" << e << std::endl;
-
   // calculate entropy per unit mass of dry air - Eq. 1
   return (
     (PC::Cpair.value + qtot*PC::CpLiq.value)*std::log(tk/PC::Tmelt.value)
