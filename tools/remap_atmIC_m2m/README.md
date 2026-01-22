@@ -24,6 +24,7 @@ Example files available at:
 ### 2. Prepare Input Files
 
 You need:
+
 - Source initial condition file: `${CASENAME}.eam.i.${TIMESTAMP}.nc`
 - ESMF remapping weights: `map_source_to_target.nc`
 - Source grid topography file
@@ -67,16 +68,16 @@ Output: `${CASENAME}_mapped_${TARGET_GRID}-topoadj.eam.i.${TIMESTAMP}.nc`
 
 In `remap_atmIC_m2m.sh`:
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `CASENAME` | Case name | `v3.LR.historical_0091` |
-| `TIMESTAMP` | Time stamp | `2015-01-01-00000` |
-| `SOURCE_GRID` | Source grid | `ne30np4` |
-| `TARGET_GRID` | Target grid | `northamericax4v1np4` |
-| `GRID_LABEL` | For file naming | `northamericax4v1pg2` |
-| `VERTICAL_LEVELS` | Vertical levels | `L80` |
-| `PHIS_VAR` | PHIS variable name | `PHIS_d` |
-| `KEEP_INTERMEDIATE` | Keep temp files | `no` (default) |
+| Variable            | Description          | Example                    |
+|---------------------|----------------------|----------------------------|
+| `CASENAME`          | Case name            | `v3.LR.historical_0091`    |
+| `TIMESTAMP`         | Time stamp           | `2015-01-01-00000`         |
+| `SOURCE_GRID`       | Source grid          | `ne30np4`                  |
+| `TARGET_GRID`       | Target grid          | `northamericax4v1np4`      |
+| `GRID_LABEL`        | For file naming      | `northamericax4v1pg2`      |
+| `VERTICAL_LEVELS`   | Vertical levels      | `L80`                      |
+| `PHIS_VAR`          | PHIS variable name   | `PHIS_d`                   |
+| `KEEP_INTERMEDIATE` | Keep temp files      | `no` (default)             |
 
 ## Requirements
 
