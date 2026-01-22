@@ -1,0 +1,65 @@
+%YAML 1.1
+---
+driver_options:
+  atmosphere_dag_verbosity_level: 5
+  mass_column_conservation_error_tolerance: 1e-3
+  energy_column_conservation_error_tolerance: 1e-4
+  column_conservation_checks_fail_handling_type: warning
+  property_check_data_fields: [phis]
+
+time_stepping:
+  time_step: ${ATM_TIME_STEP}
+  run_t0: ${RUN_T0}  # YYYY-MM-DD-XXXXX
+  number_of_steps: ${NUM_STEPS}
+
+initial_conditions:
+  filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
+  topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
+  surf_evap: 0.0
+  surf_sens_flux: 0.0
+  precip_liq_surf_mass: 0.0
+  precip_ice_surf_mass: 0.0
+  hetfrz_immersion_nucleation_tend: 0.1
+  hetfrz_contact_nucleation_tend: 0.1
+  hetfrz_deposition_nucleation_tend: 0.1
+
+eamxx:
+  atm_procs_list: [homme,mac_mic]
+  schedule_type: sequential
+  homme:
+    moisture: moist
+  mac_mic:
+    atm_procs_list: [shoc,cld_fraction,p3]
+    schedule_type: sequential
+    type: group
+    number_of_subcycles: ${MAC_MIC_SUBCYCLES}
+    p3:
+      do_prescribed_ccn: false
+      enable_column_conservation_checks: true
+      max_total_ni: 740.0e3
+    shoc:
+      enable_column_conservation_checks: true
+      lambda_low: 0.001
+      lambda_high: 0.08
+      lambda_slope: 2.65
+      lambda_thresh: 0.02
+      thl2tune: 1.0
+      qw2tune: 1.0
+      qwthl2tune: 1.0
+      w2tune: 1.0
+      length_fac: 0.5
+      c_diag_3rd_mom: 7.0
+      coeff_kh: 0.1
+      coeff_km: 0.1
+      shoc_1p5tke: false
+
+grids_manager:
+  type: homme
+  physics_grid_type: gll
+  dynamics_namelist_file_name: namelist.nl
+  vertical_coordinate_filename: IC_FILE
+
+# The parameters for I/O control
+scorpio:
+  output_yaml_files: ["output.yaml"]
+...
