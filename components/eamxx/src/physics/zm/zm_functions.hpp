@@ -61,6 +61,16 @@ struct Functions {
   // ---------- ZM constants ---------
   //
   struct ZMC {
+    // This value is slightly high, but it seems to be the value for the
+    // steam point of water originally (and most frequently) used in the
+    // Goff & Gratch scheme.
+    static inline constexpr Real tboil = 373.16;
+
+    static inline constexpr Real omeps = 1 - PC::ep_2.value;
+
+    static inline constexpr Real pref = 1000;
+
+    static inline constexpr Real cpwv = 1.810e3; // specific heat of water vapor (J/K/kg)
   };
 
   struct zm_runtime_opt {
@@ -260,9 +270,6 @@ struct Functions {
     Real mcsp_v_coeff;  // MCSP coefficient for meridional momentum tendencies
   };
 
-  // -----------------------------------------------------------------------------------------------
-  // Functions
-
   //
   // --------- Init/Finalize Functions ---------
   //
@@ -273,30 +280,69 @@ struct Functions {
   // static Int zm_main()
 
   //
-  // --------- Members ---------
+  // --------- Functions ---------
   //
-  inline static ZmCommonInit s_common_init;
 
   KOKKOS_FUNCTION
   static void ientropy(
     // Inputs
     const MemberType& team,
-    const Int& rcall,
-    const Real& s,
-    const Real& p,
-    const Real& qt,
-    const Real& tfg,
+    const Int& rcall, // call index
+    const Real& s,    // entropy                           [J/kg]
+    const Real& p,    // pressure                          [mb]
+    const Real& qt,   // total water mixing ratio          [kg/kg]
+    const Real& tfg,  // input temperature for first guess [K]
     // Outputs
-    Real& t,
-    Real& qst);
+    Real& t,          // temperature                       [k]
+    Real& qst);       // saturation vapor mixing ratio     [kg/kg]
 
   KOKKOS_FUNCTION
   static Real entropy(
     // Inputs
     const MemberType& team,
-    const Real& tk,
-    const Real& p,
-    const Real& qtot);
+    const Real& tk,    // temperature              [K]
+    const Real& p,     // pressure                 [mb]
+    const Real& qtot); // total water mixing ratio [kg/kg]
+
+  KOKKOS_INLINE_FUNCTION
+  static void qsat_hPa(
+    // Inputs
+    const Real& t,    // Temperature                  [K]
+    const Real& p,    // Pressure                     [hPa]
+    Real& es,         // Saturation vapor pressure    [hPa]
+    Real& qm)         // Saturation mass mixing ratio [kg/kg] (vapor mass over dry mass)
+  {
+    // GoffGratch_svp_water
+    static constexpr Real magic1 = -7.90298;
+    static constexpr Real magic2 = 5.02808;
+    static constexpr Real magic3 = 1.3816e-7;
+    static constexpr Real magic4 = 11.344;
+    static constexpr Real magic5 = 8.1328e-3;
+    static constexpr Real magic6 = -3.49149;
+    static constexpr Real magic7 = 1013.246;
+    es = std::pow(10, magic1*(ZMC::tboil/t-1) +
+                  magic2*std::log10(ZMC::tboil/t) -
+                  magic3*(std::pow(10, magic4*(1 - t/ZMC::tboil)) - 1) +
+                  magic5*(std::pow(10, magic6*(ZMC::tboil/t-1)) - 1) +
+                  std::log10(magic7))*100;
+    std::cout << "From qsat_hPa, es = " << es << std::endl;
+
+    if ( (p*100 - es) <= 0 ) {
+      qm = 1;
+    }
+    else {
+      qm = PC::ep_2.value*es / (p*100 - ZMC::omeps*es);
+    }
+
+    es = es*0.01;
+
+    es = std::min(es, p*100)
+  }
+
+  //
+  // --------- Members ---------
+  //
+  inline static ZmCommonInit s_common_init;
 
 }; // struct Functions
 

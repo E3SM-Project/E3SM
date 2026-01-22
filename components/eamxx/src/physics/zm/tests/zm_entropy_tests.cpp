@@ -23,7 +23,7 @@ struct UnitWrap::UnitTest<D>::TestEntropy : public UnitWrap::UnitTest<D>::Base {
     // Set up inputs
     EntropyData baseline_data[] = {
       //          tk, p, qtot, entropy (output, set to zero)
-      EntropyData(0,  0,    0, 0),
+      EntropyData(270,  1000,    .01, 0),
     };
 
     static constexpr Int num_runs = sizeof(baseline_data) / sizeof(EntropyData);

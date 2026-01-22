@@ -35,7 +35,7 @@ void zm_find_mse_max_f(Int pcols, Int ncol, Int pver, Int num_msg, Int *msemax_t
 
 void ientropy_bridge_f(Int rcall, Real s, Real p, Real qt, Real* t, Real* qst, Real tfg);
 
-void entropy_bridge_f(Real tk, Real p, Real qtot, zm_const_t zm_const, Real* entropy);
+void entropy_bridge_f(Real tk, Real p, Real qtot, Real* entropy);
 } // extern "C" : end _f decls
 
 // Inits and finalizes are not intended to be called outside this comp unit
@@ -102,9 +102,6 @@ void ientropy(IentropyData& d)
   auto t_h   = Kokkos::create_mirror_view(t_d);
 
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
-    // Get single-column subviews of all inputs, shouldn't need any i-indexing
-    // after this.
-
     ZMF::ientropy(
       team,
       rcall,
@@ -148,17 +145,11 @@ void entropy(EntropyData& d)
   auto entropy_h = Kokkos::create_mirror_view(entropy_d);
 
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
-    const Int i = team.league_rank();
-
-    // Get single-column subviews of all inputs, shouldn't need any i-indexing
-    // after this.
-
-    SHF::entropy(
+    entropy_d() = ZMF::entropy(
       team,
       tk,
       p,
-      qtot,
-      entropy_d());
+      qtot);
   });
 
   // Get outputs back, start with scalars
