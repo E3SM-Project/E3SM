@@ -94,7 +94,7 @@ In `remap_atmIC_m2m.sh`:
 
 ## Requirements
 
-- E3SM unified environment
+- E3SM unified environment (<https://github.com/E3SM-Project/e3sm-unified/>)
 - Python 3 with numpy, netCDF4
 - NCO tools (ncks, ncremap)
 
