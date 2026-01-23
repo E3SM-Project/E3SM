@@ -3,8 +3,6 @@
 
 #include "zm_functions.hpp" // for ETI only but harmless for GPU
 
-#include <ekat_math_utils.hpp>
-
 namespace scream {
 namespace zm {
 
@@ -17,7 +15,6 @@ template<typename S, typename D>
 KOKKOS_FUNCTION
 Real Functions<S,D>::entropy(
   // Inputs
-  const MemberType& team,
   const Real& tk,
   const Real& p,
   const Real& qtot)

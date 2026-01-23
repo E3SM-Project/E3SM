@@ -22,9 +22,8 @@ struct UnitWrap::UnitTest<D>::TestIentropy : public UnitWrap::UnitTest<D>::Base 
 
     // Set up inputs
     IentropyData baseline_data[] = {
-      // TODO
-      //           rcall, s, p, qt, tfg, t (output, set to zero), qst (output, set to zero)
-      IentropyData(0    , 1, 2, 3 , 4  , 0                      , 0),
+      //              s,    p,  qt, tfg, t (output, set to zero), qst (output, set to zero)
+      IentropyData(3000, 1000, .01, 270, 0                      , 0),
     };
 
     static constexpr Int num_runs = sizeof(baseline_data) / sizeof(IentropyData);
@@ -38,7 +37,6 @@ struct UnitWrap::UnitTest<D>::TestIentropy : public UnitWrap::UnitTest<D>::Base 
     // Create copies of data for use by test. Needs to happen before read calls so that
     // inout data is in original state
     IentropyData test_data[] = {
-      // TODO
       IentropyData(baseline_data[0]),
     };
 

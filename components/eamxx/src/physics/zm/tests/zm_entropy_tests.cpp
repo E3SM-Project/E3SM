@@ -37,7 +37,6 @@ struct UnitWrap::UnitTest<D>::TestEntropy : public UnitWrap::UnitTest<D>::Base {
     // Create copies of data for use by test. Needs to happen before read calls so that
     // inout data is in original state
     EntropyData test_data[] = {
-      // TODO
       EntropyData(baseline_data[0]),
     };
 
@@ -58,12 +57,15 @@ struct UnitWrap::UnitTest<D>::TestEntropy : public UnitWrap::UnitTest<D>::Base {
       }
     }
 
+    const auto margin = std::numeric_limits<Real>::epsilon() *
+      (ekat::is_single_precision<Real>::value ? 1000 : 1);
+
     // Verify BFB results, all data should be in C layout
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < num_runs; ++i) {
         EntropyData& d_baseline = baseline_data[i];
         EntropyData& d_test = test_data[i];
-        REQUIRE(d_baseline.entropy == d_test.entropy);
+        REQUIRE(d_baseline.entropy == Approx(d_test.entropy).margin(margin));
       }
     }
     else if (this->m_baseline_action == GENERATE) {

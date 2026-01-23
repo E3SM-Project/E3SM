@@ -59,18 +59,17 @@ subroutine zm_common_finalize_bridge_f() bind(C)
 end subroutine zm_common_finalize_bridge_f
 
 
-subroutine ientropy_bridge_f(rcall, s, p, qt, t, qst, tfg) bind(C)
+subroutine ientropy_bridge_f(s, p, qt, t, qst, tfg) bind(C)
   use zm_conv_util, only : ientropy
   use zm_conv_types,  only: zm_const_t, zm_const_set_for_testing
 
-  integer(kind=c_int) , value, intent(in) :: rcall
   real(kind=c_real) , value, intent(in) :: s, p, qt, tfg
   real(kind=c_real) , intent(out) :: t, qst
 
   type(zm_const_t) :: zm_const
 
   call zm_const_set_for_testing(zm_const)
-  call ientropy(rcall, s, p, qt, t, qst, tfg, zm_const)
+  call ientropy(1, s, p, qt, t, qst, tfg, zm_const)
 end subroutine ientropy_bridge_f
 
 subroutine entropy_bridge_f(tk, p, qtot, entropy_rv) bind(C)

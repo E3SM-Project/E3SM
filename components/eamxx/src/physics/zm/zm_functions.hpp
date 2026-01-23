@@ -8,6 +8,7 @@
 #include <ekat_pack_kokkos.hpp>
 #include <ekat_workspace.hpp>
 #include <ekat_reduction_utils.hpp>
+#include <ekat_math_utils.hpp>
 
 namespace scream {
 namespace zm {
@@ -71,6 +72,12 @@ struct Functions {
     static inline constexpr Real pref = 1000;
 
     static inline constexpr Real cpwv = 1.810e3; // specific heat of water vapor (J/K/kg)
+
+    static inline constexpr Int LOOPMAX = 100; // Max number of iteration loops for ientropy
+
+    static inline constexpr Real tol_coeff = 0.001; // tolerance coeficient
+
+    static inline constexpr Real tol_eps   = 3.e-8; // small value for tolerance calculation
   };
 
   struct zm_runtime_opt {
@@ -287,7 +294,6 @@ struct Functions {
   static void ientropy(
     // Inputs
     const MemberType& team,
-    const Int& rcall, // call index
     const Real& s,    // entropy                           [J/kg]
     const Real& p,    // pressure                          [mb]
     const Real& qt,   // total water mixing ratio          [kg/kg]
@@ -299,7 +305,6 @@ struct Functions {
   KOKKOS_FUNCTION
   static Real entropy(
     // Inputs
-    const MemberType& team,
     const Real& tk,    // temperature              [K]
     const Real& p,     // pressure                 [mb]
     const Real& qtot); // total water mixing ratio [kg/kg]
@@ -335,7 +340,7 @@ struct Functions {
     }
 
     // Ensures returned es is consistent with limiters on qs.
-    es = std::min(es, p*100);
+    es = ekat::impl::min(es, p*100);
 
     es = es*0.01;
   }

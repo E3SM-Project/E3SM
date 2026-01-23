@@ -81,8 +81,6 @@ subroutine ientropy(rcall, s, p, qt, T, qst, Tfg, zm_const)
    integer  :: i           ! loop iterator
    logical  :: converged   ! flag for convergence
    real(r8) :: est         ! saturation vapor pressure
-   real(r8) :: this_lat    ! local latitude
-   real(r8) :: this_lon    ! local logitude
    real(r8) :: tolerance
    real(r8) :: a, b, c, d, ebr, fa, fb, fc, pbr, qbr, rbr, sbr, xm
    integer,  parameter :: LOOPMAX   = 100      ! Max number of iteration loops

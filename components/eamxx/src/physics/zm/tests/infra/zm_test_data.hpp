@@ -60,18 +60,17 @@ struct zm_data_find_mse_max : public PhysicsTestData {
 
 struct IentropyData : public PhysicsTestData {
   // Inputs
-  Int rcall;
   Real s, p, qt, tfg;
 
   // Outputs
   Real t, qst;
 
-  IentropyData(Int rcall_, Real s_, Real p_, Real qt_, Real tfg_, Real t_, Real qst_) :
+  IentropyData(Real s_, Real p_, Real qt_, Real tfg_, Real t_, Real qst_) :
     PhysicsTestData({}, {}),
-    rcall(rcall_), s(s_), p(p_), qt(qt_), tfg(tfg_), t(t_), qst(qst_)
+    s(s_), p(p_), qt(qt_), tfg(tfg_), t(t_), qst(qst_)
   {}
 
-  PTD_STD_DEF(IentropyData, 7, rcall, s, p, qt, tfg, t, qst);
+  PTD_STD_DEF(IentropyData, 6, s, p, qt, tfg, t, qst);
 };
 
 struct EntropyData : public PhysicsTestData {
