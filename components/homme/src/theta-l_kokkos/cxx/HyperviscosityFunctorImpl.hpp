@@ -34,6 +34,7 @@ class HyperviscosityFunctorImpl
 {
   // TODO: don't pass nu_ratio1/2. Instead, do like in F90: compute them from
   //       nu, nu_div, and hv_scaling
+public:
   struct HyperviscosityData {
     HyperviscosityData(const int hypervis_subcycle_in, 
                        const int hypervis_subcycle_tom_in, 

@@ -415,40 +415,46 @@ void HyperviscosityFunctorImpl::apply_horizontal_turbulent_diffusion () const
 
   auto policy = Homme::get_default_team_policy<ExecSpace>(m_geometry.num_elems());
 
+  auto tu = m_tu;
+  auto data = m_data;
+  auto buffers = m_buffers;
+  auto geometry = m_geometry;
+  auto process_nh_vars = m_process_nh_vars;
+
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const TeamMember& team) {
-    KernelVariables kv(team, m_tu);
+    KernelVariables kv(team, tu);
     const int ie = kv.ie;
 
     // 1) Compute Laplacians on the current state, like the lap_s / lap_v
     // in the original F90 implementaiton.  These fill the hv buffers with Lap(state).
     sphere_ops.laplace_simple(
       kv,
-      Homme::subview(state.m_dp3d, ie, m_data.np1),
-      Homme::subview(m_buffers.dptens, ie));
+      Homme::subview(state.m_dp3d, ie, data.np1),
+      Homme::subview(buffers.dptens, ie));
 
     sphere_ops.laplace_simple(
       kv,
-      Homme::subview(state.m_vtheta_dp, ie, m_data.np1),
-      Homme::subview(m_buffers.ttens, ie));
+      Homme::subview(state.m_vtheta_dp, ie, data.np1),
+      Homme::subview(buffers.ttens, ie));
 
-    if (m_process_nh_vars) {
+    if (process_nh_vars) {
       sphere_ops.laplace_simple<NUM_LEV,NUM_LEV_P>(
         kv,
-        Homme::subview(state.m_w_i, ie, m_data.np1),
-        Homme::subview(m_buffers.wtens, ie));
+        Homme::subview(state.m_w_i, ie, data.np1),
+        Homme::subview(buffers.wtens, ie));
 
       sphere_ops.laplace_simple<NUM_LEV,NUM_LEV_P>(
         kv,
-        Homme::subview(state.m_phinh_i, ie, m_data.np1),
-        Homme::subview(m_buffers.phitens, ie));
+        Homme::subview(state.m_phinh_i, ie, data.np1),
+        Homme::subview(buffers.phitens, ie));
     }
 
     // Laplacian of horizontal velocity (u,v) without any nu scaling.
     sphere_ops.vlaplace_sphere_wk_contra(
       kv,
       1.0, // no nu_ratio here, we want plain Lap(v)
-      Homme::subview(state.m_v, ie, m_data.np1),
-      Homme::subview(m_buffers.vtens, ie));
+      Homme::subview(state.m_v, ie, data.np1),
+      Homme::subview(buffers.vtens, ie));
 
     kv.team_barrier();
 
@@ -463,40 +469,40 @@ void HyperviscosityFunctorImpl::apply_horizontal_turbulent_diffusion () const
       auto Kh = Homme::subview(derived.m_turb_diff_heat, ie, igp, jgp);
 
       // State variables
-      auto dp     = Homme::subview(state.m_dp3d,     ie, m_data.np1, igp, jgp);
-      auto theta  = Homme::subview(state.m_vtheta_dp,ie, m_data.np1, igp, jgp);
-      auto u      = Homme::subview(state.m_v,        ie, m_data.np1, 0, igp, jgp);
-      auto v      = Homme::subview(state.m_v,        ie, m_data.np1, 1, igp, jgp);
+      auto dp     = Homme::subview(state.m_dp3d,     ie, data.np1, igp, jgp);
+      auto theta  = Homme::subview(state.m_vtheta_dp,ie, data.np1, igp, jgp);
+      auto u      = Homme::subview(state.m_v,        ie, data.np1, 0, igp, jgp);
+      auto v      = Homme::subview(state.m_v,        ie, data.np1, 1, igp, jgp);
 
       IntColumn w, phi_i;
-      if (m_process_nh_vars) {
-        w      = Homme::subview(state.m_w_i,     ie, m_data.np1, igp, jgp);
-        phi_i  = Homme::subview(state.m_phinh_i, ie, m_data.np1, igp, jgp);
+      if (process_nh_vars) {
+        w      = Homme::subview(state.m_w_i,     ie, data.np1, igp, jgp);
+        phi_i  = Homme::subview(state.m_phinh_i, ie, data.np1, igp, jgp);
       }
 
       // Laplacians (scratch buffers)
-      auto dp_lap    = Homme::subview(m_buffers.dptens,  ie, igp, jgp);
-      auto theta_lap = Homme::subview(m_buffers.ttens,   ie, igp, jgp);
-      auto u_lap     = Homme::subview(m_buffers.vtens,   ie, 0, igp, jgp);
-      auto v_lap     = Homme::subview(m_buffers.vtens,   ie, 1, igp, jgp);
-      const auto& rspheremp = m_geometry.m_rspheremp(ie, igp, jgp);
+      auto dp_lap    = Homme::subview(buffers.dptens,  ie, igp, jgp);
+      auto theta_lap = Homme::subview(buffers.ttens,   ie, igp, jgp);
+      auto u_lap     = Homme::subview(buffers.vtens,   ie, 0, igp, jgp);
+      auto v_lap     = Homme::subview(buffers.vtens,   ie, 1, igp, jgp);
+      const auto& rspheremp = geometry.m_rspheremp(ie, igp, jgp);
 
       MidColumn w_lap, phi_lap;
       IntColumn Km_i, Kh_i;
-      if (m_process_nh_vars) {
-        w_lap   = Homme::subview(m_buffers.wtens,   ie, igp, jgp);
-        phi_lap = Homme::subview(m_buffers.phitens, ie, igp, jgp);
+      if (process_nh_vars) {
+        w_lap   = Homme::subview(buffers.wtens,   ie, igp, jgp);
+        phi_lap = Homme::subview(buffers.phitens, ie, igp, jgp);
 
         // Diffusivities on the interface vertical grid
-        Km_i = Homme::subview(m_buffers.turb_diff_mom_i,  ie, igp, jgp);
-        Kh_i = Homme::subview(m_buffers.turb_diff_heat_i, ie, igp, jgp);
+        Km_i = Homme::subview(buffers.turb_diff_mom_i,  ie, igp, jgp);
+        Kh_i = Homme::subview(buffers.turb_diff_heat_i, ie, igp, jgp);
 
         // Get diffusivities on the interface vertical grid from those
         //  on the mid-point grid that were passed from physics
         ColumnOps::compute_interface_values(kv, Km, Km_i);
         ColumnOps::compute_interface_values(kv, Kh, Kh_i);
 
-        kv.team_barrier();
+        // kv.team_barrier();
       }
 
       // Vertical loop: dp, theta, u, v, (w, phi) all get K * Lapterm * dt_loc
@@ -515,7 +521,7 @@ void HyperviscosityFunctorImpl::apply_horizontal_turbulent_diffusion () const
 
         // NH variables are on interface grid, thus apply
         //  diffusivities on the interface vertical grid
-        if (m_process_nh_vars) {
+        if (process_nh_vars) {
           const auto km_i = Km_i(k);
           const auto kh_i = Kh_i(k);
           w(k)     += dt_loc * km_i * w_lap(k) * rspheremp;
