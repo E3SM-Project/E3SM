@@ -172,7 +172,7 @@ void MLCorrection::run_impl(const double dt) {
     const auto &pseudo_density       = get_field_in("pseudo_density").get_view<const Real**>();
     const auto &precip_liq_surf_mass = get_field_out("precip_liq_surf_mass").get_view<Real *>();
     const auto &precip_ice_surf_mass = get_field_out("precip_ice_surf_mass").get_view<Real *>();
-    constexpr Real g = PC::gravit;
+    constexpr Real g = PC::gravit.value;
     const auto num_levs = m_num_levs;
     const auto policy = TPF::get_default_team_policy(m_num_cols, m_num_levs);
 
