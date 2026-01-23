@@ -4829,15 +4829,16 @@
 
   <machine MACH="eddi">
     <DESC>small developer workhorse at lbl climate sciences</DESC>
+    <NODENAME_REGEX>eddi</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>gnu</COMPILERS>
     <MPILIBS>openmpi</MPILIBS>
     <PROJECT>ngeet</PROJECT>
-    <CIME_OUTPUT_ROOT>/raid1/lbleco/e3sm/</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/home/rgknox/Models/InputDatasets/cesm_input_data/</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/home/rgknox/Models/InputDatasets/cesm_input_data/atm/datm7/</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>/home/rgknox/Models//cesm_archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/home/rgknox/Models//cesm_baselines/$COMPILER</BASELINE_ROOT>
+    <CIME_OUTPUT_ROOT>/home/rgknox/Models/cime_output</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/home/rgknox/Models/InputDatasets/e3sm_input_datasets/</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/home/rgknox/Models/InputDatasets/e3sm_input_datasets/atm/datm7/</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>/home/rgknox/LandRuns/E3SM/e3sm_archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/home/rgknox/LandRuns/E3SM/e3sm_baselines/$COMPILER</BASELINE_ROOT>
     <CCSM_CPRNC>/raid1/lbleco/cesm/cesm_tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>1</GMAKE_J>
     <BATCH_SYSTEM>none</BATCH_SYSTEM>

@@ -1,3 +1,4 @@
+string(APPEND CMAKE_CXX_FLAGS " -fpermissive")
 if (COMP_NAME STREQUAL gptl)
   string(APPEND CPPDEFS " -DHAVE_VPRINTF -DHAVE_TIMES -DHAVE_GETTIMEOFDAY -DHAVE_BACKTRACE")
 endif()
@@ -8,3 +9,4 @@ if (MPILIB STREQUAL mpi-serial)
   set(SCC "gcc")
   set(SFC "gfortran")
 endif()
+
