@@ -359,7 +359,7 @@ struct Functions {
                                 && !defined(KOKKOS_ENABLE_HIP_RELOCATABLE_DEVICE_CODE)
 # include "impl/zm_input_state_impl.hpp"
 # include "impl/zm_output_tend_impl.hpp"
-# include "impl/zm_common_init.hpp"
+# include "impl/zm_common_init_impl.hpp"
 # include "impl/zm_ientropy_impl.hpp"
 # include "impl/zm_entropy_impl.hpp"
 #endif // GPU && !KOKKOS_ENABLE_*_RELOCATABLE_DEVICE_CODE
