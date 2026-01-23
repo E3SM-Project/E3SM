@@ -4851,14 +4851,14 @@
     <mpirun mpilib="openmpi">
       <executable>mpirun</executable>
       <arguments>
-        <arg name="num_tasks">-np {{ total_tasks }}</arg>
-        <arg name="tasks_per_node"> -npernode $MAX_MPITASKS_PER_NODE</arg>
+        <arg name="num_tasks"> -np {{ total_tasks }}</arg>
+        <arg name="tasks_per_node"> --map-by ppr:{{ tasks_per_node }}:socket:PE=$ENV{OMP_NUM_THREADS} --bind-to hwthread</arg>
       </arguments>
     </mpirun>
     <module_system type="none"/>
     <environment_variables compiler="gnu" >
-      <env name="CMAKE_ROOT">/usr/local/share/cmake-3.21/</env>
-      <env name="NETCDF_PATH">$ENV{NETCDF_HOME}</env>
+      <env name="NETCDF_C_PATH">$SHELL{nc-config --prefix}</env>
+      <env name="NETCDF_FORTRAN_PATH">$SHELL{nf-config --prefix}</env>
     </environment_variables>
   </machine>
 
