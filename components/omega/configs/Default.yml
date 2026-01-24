@@ -114,7 +114,7 @@ Omega:
         - Restart
     History:
       UsePointerFile: false
-      Filename: ocn.hist.$SimTime
+      Filename: ocn.hist.$Y-$M-$D_$h.$m.$s
       Mode: write
       IfExists: replace
       Precision: double
@@ -129,7 +129,7 @@ Omega:
       UsePointerFile: false
       Filename: ocn.hifreq.$Y-$M
       Mode: write
-      IfExists: replace
+      IfExists: append
       Precision: single
       Freq: 10
       FreqUnits: days
