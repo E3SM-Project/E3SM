@@ -11307,13 +11307,12 @@ subroutine init_column_waves(domain)
          zref_in                 = seaiceStabilityReferenceHeight, &
          hs_min_in               = seaiceSnowMinimumThickness, &
          snowpatch_in            = seaiceSnowPatchiness, & ! ccsm3 radiation scheme
-         !rhosi_in                = , &        ! brine, zbgc, zsalinity
+         !rhosi_in                = , &        ! brine, zbgc
          sk_l_in                 = skeletalLayerThickness, & !
          R_gC2molC_in            = gramsCarbonPerMolCarbon, &
          saltmax_in              = seaiceMaximumSalinity, &
          phi_init_in             = seaiceFrazilIcePorosity, &
-         !min_salin_in            = , &        ! ktherm=1, brine, zsalinity
-         !salt_loss_in            = , &        ! brine, zsalinity
+         !min_salin_in            = , &        ! ktherm=1, brine
          !min_bgc_in              = , &        ! shortwave
          dSin0_frazil_in         = seaiceFrazilSalinityReduction, &
          hs_ssl_in               = seaiceSnowSurfaceScatteringLayer, &
@@ -11329,7 +11328,6 @@ subroutine init_column_waves(domain)
          conduct_in              = config_heat_conductivity_type, &
          fbot_xfer_type_in       = config_ocean_heat_transfer_type, &
          calc_Tsfc_in            = config_calc_surface_temperature, &
-         !dts_b_in                = , &        ! brine, zsalinity
          cpl_frazil_in           = config_frazil_coupling_type, &
          congel_freeze_in        = config_congelation_freezing_method, &
          update_ocn_f_in         = config_update_ocean_fluxes, &
@@ -11395,8 +11393,6 @@ subroutine init_column_waves(domain)
          grid_o_in               = config_biogrid_bottom_molecular_sublayer, &
          l_sk_in                 = config_bio_gravity_drainage_length_scale, &
          grid_o_t_in             = config_biogrid_top_molecular_sublayer, &
-         !grid_oS_in              = config_zsalinity_molecular_sublayer, &
-         !l_skS_in                = config_zsalinity_gravity_drainage_scale, &
          phi_snow_in             = config_snow_porosity_at_ice_surface, &
          fr_resp_in              = config_respiration_fraction_of_growth, &
          algal_vel_in            = config_algal_maximum_velocity, &
@@ -12308,14 +12304,6 @@ subroutine init_column_waves(domain)
     ! ratio of C to N in proteins (mol/mol)
     ! ratio_C2N_proteins = config_ratio_C_to_N_proteins
 
-!    ! grid_oS:
-!    ! for bottom flux (zsalinity)
-!    !grid_oS = config_zsalinity_molecular_sublayer
-
-!    ! l_skS:
-!    ! 0.02 characteristic skeletal layer thickness (m) (zsalinity)
-!    !l_skS = config_zsalinity_gravity_drainage_scale
-
     !-----------------------------------------------------------------------
     ! Parameters for snow
     !-----------------------------------------------------------------------
@@ -12543,7 +12531,6 @@ subroutine init_column_waves(domain)
          pkgTracerVerticalDONActive, &
          pkgTracerVerticalIronActive, &
          pkgTracerZAerosolsActive, &
-!         pkgTracerZSalinityActive, &           !echmod deprecate
          pkgColumnTracerEffectiveSnowDensityActive, &
          pkgColumnTracerSnowGrainRadiusActive
 
@@ -12610,7 +12597,6 @@ subroutine init_column_waves(domain)
        call MPAS_pool_get_package(block % packages, "pkgTracerVerticalDONActive", pkgTracerVerticalDONActive)
        call MPAS_pool_get_package(block % packages, "pkgTracerVerticalIronActive", pkgTracerVerticalIronActive)
        call MPAS_pool_get_package(block % packages, "pkgTracerZAerosolsActive", pkgTracerZAerosolsActive)
-!       call MPAS_pool_get_package(block % packages, "pkgTracerZSalinityActive", pkgTracerZSalinityActive) !echmod - deprecate
        call MPAS_pool_get_package(block % packages, "pkgColumnTracerEffectiveSnowDensityActive", pkgColumnTracerEffectiveSnowDensityActive)
        call MPAS_pool_get_package(block % packages, "pkgColumnTracerSnowGrainRadiusActive", pkgColumnTracerSnowGrainRadiusActive)
 
@@ -12879,7 +12865,6 @@ subroutine init_column_waves(domain)
          pkgTracerVerticalDONActive, &
          pkgTracerVerticalIronActive, &
          pkgTracerZAerosolsActive, &
-!         pkgTracerZSalinityActive, &                   !echmod deprecate
          pkgColumnTracerEffectiveSnowDensityActive, &
          pkgColumnTracerSnowGrainRadiusActive
 
@@ -12938,7 +12923,6 @@ subroutine init_column_waves(domain)
        call MPAS_pool_get_package(block % packages, "pkgTracerVerticalDONActive", pkgTracerVerticalDONActive)
        call MPAS_pool_get_package(block % packages, "pkgTracerVerticalIronActive", pkgTracerVerticalIronActive)
        call MPAS_pool_get_package(block % packages, "pkgTracerZAerosolsActive", pkgTracerZAerosolsActive)
-!       call MPAS_pool_get_package(block % packages, "pkgTracerZSalinityActive", pkgTracerZSalinityActive)      !echmod deprecate
        call MPAS_pool_get_package(block % packages, "pkgColumnTracerEffectiveSnowDensityActive", pkgColumnTracerEffectiveSnowDensityActive)
        call MPAS_pool_get_package(block % packages, "pkgColumnTracerSnowGrainRadiusActive", pkgColumnTracerSnowGrainRadiusActive)
 
