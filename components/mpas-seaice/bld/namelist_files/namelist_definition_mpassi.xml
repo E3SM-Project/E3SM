@@ -567,6 +567,22 @@ Default: Defined in namelist_defaults.xml
 
 <!-- velocity_solver -->
 
+<entry id="config_dynamics_area_minimum" type="real"
+	category="velocity_solver" group="velocity_solver">
+Minimum sea ice area for dynamics calculation.
+
+Valid values: Any nonnegative number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_dynamics_mass_minimum" type="real"
+	category="velocity_solver" group="velocity_solver">
+Minimum seaice and snow mass for dynamics calculation.
+
+Valid values: Any nonnegative number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_dynamics_subcycle_number" type="integer"
 	category="velocity_solver" group="velocity_solver">
 The number of dynamics subcycles to perform per thermodynamic time step (config_dt)

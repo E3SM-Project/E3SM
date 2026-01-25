@@ -146,6 +146,8 @@
 <config_limit_air_temperatures>true</config_limit_air_temperatures>
 
 <!-- velocity_solver -->
+<config_dynamics_area_minimum>1.0e-11</config_dynamics_area_minimum>
+<config_dynamics_mass_minimum>1.0e-10</config_dynamics_mass_minimum>
 <config_dynamics_subcycle_number>1</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="oQU480">1</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="oQU240">1</config_dynamics_subcycle_number>

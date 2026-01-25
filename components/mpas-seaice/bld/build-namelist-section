@@ -124,6 +124,8 @@ add_default($nl, 'config_limit_air_temperatures');
 # Namelist group: velocity_solver #
 ###################################
 
+add_default($nl, 'config_dynamics_area_minimum');
+add_default($nl, 'config_dynamics_mass_minimum');
 add_default($nl, 'config_dynamics_subcycle_number');
 add_default($nl, 'config_rotate_cartesian_grid');
 add_default($nl, 'config_include_metric_terms');
