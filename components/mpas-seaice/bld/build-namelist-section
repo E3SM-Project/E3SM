@@ -179,6 +179,7 @@ add_default($nl, 'config_use_ice_age');
 add_default($nl, 'config_use_first_year_ice');
 add_default($nl, 'config_use_level_ice');
 add_default($nl, 'config_use_level_meltponds');
+add_default($nl, 'config_use_sealevel_meltponds');
 add_default($nl, 'config_use_topo_meltponds');
 add_default($nl, 'config_use_aerosols');
 add_default($nl, 'config_use_effective_snow_density');
@@ -396,6 +397,7 @@ add_default($nl, 'config_max_meltwater_retained_fraction');
 add_default($nl, 'config_pond_depth_to_fraction_ratio');
 add_default($nl, 'config_snow_on_pond_ice_tapering_parameter');
 add_default($nl, 'config_critical_pond_ice_thickness');
+add_default($nl, 'config_sealevel_pond_equilibrium_fraction');
 
 ##################################
 # Namelist group: thermodynamics #
