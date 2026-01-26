@@ -5,15 +5,9 @@ add_library(eamxx_remap
   horiz_interp_remapper_data.cpp
   iop_remapper.cpp
   identity_remapper.cpp
-  refining_remapper_p2p.cpp
+  refining_remapper.cpp
   vertical_remapper.cpp
 )
-
-if (EAMXX_ENABLE_EXPERIMENTAL_CODE)
-  target_sources(eamxx_remap PRIVATE
-    refining_remapper_rma.cpp
-  )
-endif()
 
 target_link_libraries(eamxx_remap PUBLIC
   eamxx_core

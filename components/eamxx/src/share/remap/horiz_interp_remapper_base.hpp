@@ -37,8 +37,8 @@ protected:
 
   void clean_up ();
 
-  // Derived classes will do different things, depending on m_type and the
-  // MPI strategy they use (P2P or RMA)
+  // Derived classes may elect to do different things (e.g., depending on interpolation direction
+  // or MPI communication strategy)
   virtual void setup_mpi_data_structures () = 0;
 
 #ifdef KOKKOS_ENABLE_CUDA
