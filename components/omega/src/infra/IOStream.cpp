@@ -2285,7 +2285,7 @@ Error IOStream::readStream(
 
    // Open input file
    int InFileID;
-   IO::openFile(InFileID, InFileName, Mode, IO::FmtDefault, ExistAction);
+   IO::openFile(InFileID, InFileName, Mode, IO::DefaultFileFmt, ExistAction);
 
    // Read any requested global metadata
    for (auto Iter = ReqMetadata.begin(); Iter != ReqMetadata.end(); ++Iter) {
@@ -2438,7 +2438,7 @@ void IOStream::writeStream(
 
    // Open output file
    int OutFileID;
-   IO::openFile(OutFileID, OutFileName, Mode, IO::FmtDefault, ExistAction);
+   IO::openFile(OutFileID, OutFileName, Mode, IO::DefaultFileFmt, ExistAction);
    bool NeedEndDef = false; // check if we need to call end-define-mode
 
    // For files with multiple frames or time slices, we need to determine the

@@ -193,7 +193,7 @@ void init(const MPI_Comm &InComm // [in] MPI communicator to use
    Err                   = IOConfig.get("IODefaultFormat", InFileFmt);
    CHECK_ERROR_WARN(Err, "IO: DefaultFileFmt not found in Config - using {}",
                     InFileFmt);
-   FileFmt DefaultFileFmt = FileFmtFromString(InFileFmt);
+   DefaultFileFmt = FileFmtFromString(InFileFmt);
 
    // Read parallel IO settings - default to single-task if config
    // values do not exist
