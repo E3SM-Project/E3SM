@@ -758,6 +758,11 @@
 			possible_values="true or false"
 			icepack_name="tr_pond_lvl"
 		/>
+		<nml_option name="config_use_sealevel_meltponds" type="logical" default_value="true" units="unitless"
+			description="If true use the sea-level meltponds tracers."
+			possible_values="true or false"
+			icepack_name="tr_pond_sealvl"
+		/>
 		<nml_option name="config_use_topo_meltponds" type="logical" default_value="false" units="unitless"
 			description="If true use the topo meltpond tracers."
 			possible_values="true or false"
@@ -1726,6 +1731,11 @@
 			description="Critical parameter for pond ice thickness."
 			possible_values=""
 			icepack_name="hp1"
+		/>
+		<nml_option name="config_sealevel_pond_equilibrium_fraction" type="real" default_value="0.27" units="unitless"
+			description="Equilibrium pond fraction for sea level parameterization."
+			possible_values="A real number between 0.0 and 1.0 inclusive."
+			icepack_name="apnd_sl"
 		/>
 	</nml_record>
 

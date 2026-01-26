@@ -893,6 +893,14 @@ Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_use_sealevel_meltponds" type="logical"
+	category="column_tracers" group="column_tracers">
+If true use the sea-level meltponds tracers.
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_use_topo_meltponds" type="logical"
 	category="column_tracers" group="column_tracers">
 If true use the topo meltpond tracers.
@@ -2434,6 +2442,13 @@ Valid values:
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_sealevel_pond_equilibrium_fraction" type="real"
+	category="meltponds" group="meltponds">
+Equilibrium pond fraction for sea level parameterization.
+
+Valid values:
+Default: Defined in namelist_defaults.xml
+</entry>
 
 <!-- thermodynamics -->
 
