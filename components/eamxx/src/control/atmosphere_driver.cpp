@@ -182,6 +182,20 @@ init_time_stamps (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0,
     default:
       EKAT_ERROR_MSG ("Unsupported/unrecognized run_type: " + std::to_string(run_type) + "\n");
   }
+
+  // If it is a restarted run, make sure we have the correct num steps.
+  // If num_steps is left at default (0), it messes up output managers logic
+  if (m_run_type==RunType::Restart) {
+    // Figure out the name of the netcdf file containing the restart data
+    const auto& provenance = m_atm_params.sublist("provenance");
+    const auto& casename = provenance.get<std::string>("rest_caseid");
+    auto filename = find_filename_in_rpointer (casename+".scream",true,m_atm_comm,m_run_t0);
+
+    // Restart the num steps counter in the atm time stamp
+    int nsteps = scorpio::get_attribute<int>(filename,"GLOBAL","nsteps");
+    m_run_t0.set_num_steps(nsteps);
+    m_current_ts.set_num_steps(nsteps);
+  }
 }
 
 void AtmosphereDriver::
@@ -766,8 +780,8 @@ void AtmosphereDriver::initialize_output_managers () {
       output_grids.erase("physics_gll");
     }
 
-    m_restart_output_manager->setup(m_field_mgr, output_grids);
     m_restart_output_manager->set_logger(m_atm_logger);
+    m_restart_output_manager->setup(m_field_mgr, output_grids);
     for (const auto& it : m_atm_process_group->get_restart_extra_data()) {
       m_restart_output_manager->add_global(it.first,it.second);
     }
@@ -945,11 +959,6 @@ void AtmosphereDriver::restart_model ()
       f.get_header().get_tracking().update_time_stamp(m_current_ts);
     }
   }
-
-  // Restart the num steps counter in the atm time stamp
-  int nsteps = scorpio::get_attribute<int>(filename,"GLOBAL","nsteps");
-  m_current_ts.set_num_steps(nsteps);
-  m_run_t0.set_num_steps(nsteps);
 
   for (auto& it : m_atm_process_group->get_restart_extra_data()) {
     const auto& name = it.first;
