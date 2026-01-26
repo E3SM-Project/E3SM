@@ -17,14 +17,9 @@ namespace scream
 
 class HorizInterpRemapperBase : public AbstractRemapper
 {
-public:
-  HorizInterpRemapperBase (const grid_ptr_type& fine_grid,
-                           const std::string& map_file,
-                           const InterpType type);
-
-  ~HorizInterpRemapperBase ();
-
 protected:
+  HorizInterpRemapperBase (const grid_ptr_type& grid,
+                           const std::string& map_file);
 
   void registration_ends_impl () override;
 
@@ -47,40 +42,26 @@ public:
   template<int N>
   void local_mat_vec (const Field& f_src, const Field& f_tgt) const;
 
-  // The fine and coarse grids. Depending on m_type, they could be
+  // The fine and coarse grids. Depending on interpolation direction, they could be
   // respectively m_src_grid and m_tgt_grid or viceversa
-  // Note: coarse grid is non-const, so that we can add geo data later.
-  //       This helps with m_type=Coarsen, which is typically during
-  //       model output, so that we can coarsen also geo data.
   grid_ptr_type   m_fine_grid;
-  std::shared_ptr<AbstractGrid> m_coarse_grid;
+  grid_ptr_type   m_coarse_grid;
 
-  // An version of the coarse grid where this rank owns all the ids
-  // needed for the local mat-vec product. Depending on m_type, this
-  // can be on the src or tgt side.
-  grid_ptr_type   m_ov_coarse_grid;
+  // The intermediate grid, where some dofs are replicated across ranks,
+  // to allow local calculation of mat-vec product.
+  grid_ptr_type   m_overlap_grid;
 
-  // Source, target, and overlapped intermediate fields
+  // Version of the fields on the intermediate overlapped grid
   std::vector<Field>    m_ov_fields;
-
-  // ----- Sparse matrix CRS representation ---- //
-  view_1d<int>    m_row_offsets;
-  view_1d<int>    m_col_lids;
-  view_1d<Real>   m_weights;
-
-  // Keep track of this, since we need to tell the remap data repo
-  // we are releasing the data for our map file.
-  std::string     m_map_file;
-
-  InterpType      m_type;
-
-  ekat::Comm      m_comm;
 
   // Store whether each field needs remap. Only fields with COL dim do.
   // NOTE: use int and NOT bool, as vector<bool> is evil
   std::vector<int>    m_needs_remap;
 
-  static std::map<std::string,HorizRemapperData> s_remapper_data;
+  // We need to keep this (and not just its content) so that the weak_ptr in HorizRemapperDataRepo
+  // does not expire. This allows other remappers that need the same data to reuse it rather than
+  // have the repo re-create it anew.
+  std::shared_ptr<const HorizRemapperData> m_remap_data;
 };
 
 } // namespace scream
