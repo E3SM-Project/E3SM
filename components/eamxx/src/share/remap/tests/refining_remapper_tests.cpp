@@ -136,17 +136,17 @@ void write_map_file (const std::string& filename, const int ngdofs_src) {
   std::vector<int> col(nnz), row(nnz);
   std::vector<double> S(nnz);
   for (int i=0; i<ngdofs_src; ++i) {
-    col[i] = i;
-    row[i] = i;
+    col[i] = i+1;
+    row[i] = i+1;
       S[i] = 1.0;
   }
   for (int i=0; i<ngdofs_src-1; ++i) {
-    col[ngdofs_src+2*i] = i;
-    row[ngdofs_src+2*i] = ngdofs_src+i;
+    col[ngdofs_src+2*i] = i+1;
+    row[ngdofs_src+2*i] = ngdofs_src+i+1;
       S[ngdofs_src+2*i] = 0.5;
 
-    col[ngdofs_src+2*i+1] = i+1;
-    row[ngdofs_src+2*i+1] = ngdofs_src+i;
+    col[ngdofs_src+2*i+1] = i+1+1;
+    row[ngdofs_src+2*i+1] = ngdofs_src+i+1;
       S[ngdofs_src+2*i+1] = 0.5;
   }
 
@@ -181,9 +181,9 @@ TEST_CASE ("refining_remapper") {
   for (int i=0; i<tgt_grid->get_num_local_dofs(); ++i) {
     int q = dofs_h[i] / 2;
     if (dofs_h[i] % 2 == 0) {
-      dofs_h[i] = q;
+      dofs_h[i] = q + 1;
     } else {
-      dofs_h[i] = ngdofs_src + q;
+      dofs_h[i] = ngdofs_src + q + 1;
     }
   }
   tgt_grid->get_dofs_gids().sync_to_dev();

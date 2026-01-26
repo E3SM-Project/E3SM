@@ -11,79 +11,50 @@ namespace scream
 {
 
 HorizInterpRemapperBase::
-HorizInterpRemapperBase (const grid_ptr_type& fine_grid,
-                         const std::string& map_file,
-                         const InterpType type)
- : m_fine_grid(fine_grid)
- , m_map_file (map_file)
- , m_type (type)
- , m_comm (fine_grid->get_comm())
+HorizInterpRemapperBase (const grid_ptr_type& grid, const std::string& map_file)
 {
-  // Sanity checks
-  EKAT_REQUIRE_MSG (fine_grid->type()==GridType::Point,
-      "Error! Horizontal interpolatory remap only works on PointGrid grids.\n"
-      "  - fine grid name: " + fine_grid->name() + "\n"
-      "  - fine_grid_type: " + e2str(fine_grid->type()) + "\n");
-  EKAT_REQUIRE_MSG (fine_grid->is_unique(),
-      "Error! HorizInterpRemapperBase requires a unique fine grid.\n");
-
-  // This is a special remapper. We only go in one direction
+  // Horiz remappers are built from a map file, which only goes in one direction
   m_bwd_allowed = false;
 
-  // Get the remap data (if not already present, it will be built)
-  auto& data = s_remapper_data[m_map_file];
-  if (data.num_customers==0) {
-    data.build(m_map_file,m_fine_grid,m_comm,m_type);
-  }
-  ++data.num_customers;
+  // Sanity checks
+  EKAT_REQUIRE_MSG (grid->type()==GridType::Point,
+      "Error! Horizontal interpolatory remap only works on PointGrid grids.\n"
+      "  - grid name: " + grid->name() + "\n"
+      "  - grid_type: " + e2str(grid->type()) + "\n");
+  EKAT_REQUIRE_MSG (grid->is_unique(),
+      "Error! HorizInterpRemapperBase requires a unique grid.\n");
 
-  m_row_offsets = data.row_offsets;
-  m_col_lids = data.col_lids;
-  m_weights = data.weights;
+  // Get the remap data (if not already present, it will be built)
+  m_remap_data = HorizRemapperDataRepo::instance().get_data(grid,map_file);
 
   // The grids really only matter for the horiz part. We may have 2+ remappers with
-  // fine grids that only differ in terms of number of levs. Such remappers cannot
-  // store the same coarse grid. So we soft-clone the grid, and reset the number of levels
-  auto coarse_grid = data.coarse_grid->clone(data.coarse_grid->name(),true);
-  auto ov_coarse_grid = data.ov_coarse_grid->clone(data.ov_coarse_grid->name(),true);
-
-  // Reset num levs, and remove any geo data that depends on levs
+  // grids that only differ in terms of number of levs. Such remappers cannot
+  // store the same generated grid.
+  // So we soft-clone the generated grid, and reset the number of levels.
+  // This requires to also delete any geo data that has the lev dim, as we cannot map it
+  auto gen_grid = m_remap_data->m_generated_grid->clone(map_file,true);
+  gen_grid->reset_num_vertical_lev(grid->get_num_vertical_levels());
   using namespace ShortFieldTagsNames;
-  for (std::shared_ptr<AbstractGrid> grid : {coarse_grid,ov_coarse_grid}) {
-    grid->reset_num_vertical_lev(fine_grid->get_num_vertical_levels());
-    for (const auto& name : grid->get_geometry_data_names()) {
-      const auto& f = grid->get_geometry_data(name);
-      const auto& fl = f.get_header().get_identifier().get_layout();
-      if (fl.has_tag(LEV) or fl.has_tag(ILEV)) {
-        grid->delete_geometry_data(name);
-      }
+  for (const auto& name : grid->get_geometry_data_names()) {
+    const auto& f = grid->get_geometry_data(name);
+    const auto& fl = f.get_header().get_identifier().get_layout();
+    if (fl.has_tag(LEV) or fl.has_tag(ILEV)) {
+      gen_grid->delete_geometry_data(name);
     }
   }
-  m_coarse_grid = coarse_grid;
-  m_ov_coarse_grid = ov_coarse_grid;
 
-  if (m_type==InterpType::Refine) {
-    set_grids(m_coarse_grid,m_fine_grid);
+  if (m_remap_data->m_built_from_src) {
+    set_grids(grid,gen_grid);
   } else {
-    set_grids(m_fine_grid,m_coarse_grid);
-  }
-}
-
-HorizInterpRemapperBase::
-~HorizInterpRemapperBase ()
-{
-  auto it = s_remapper_data.find(m_map_file);
-  if (it==s_remapper_data.end()) {
-    // This would be very suspicious. But since the error is "benign",
-    // and since we want to avoid throwing inside a destructor, just issue a warning.
-    std::cerr << "WARNING! Remapper data for this map file was already deleted!\n"
-                 " - map file: " << m_map_file << "\n";
-    return;
+    set_grids(gen_grid,grid);
   }
 
-  --it->second.num_customers;
-  if (it->second.num_customers==0) {
-    s_remapper_data.erase(it);
+  if (m_remap_data->m_coarsening) {
+    m_fine_grid   = m_src_grid;
+    m_coarse_grid = m_tgt_grid;
+  } else {
+    m_coarse_grid = m_src_grid;
+    m_fine_grid   = m_tgt_grid;
   }
 }
 
@@ -123,11 +94,11 @@ void HorizInterpRemapperBase::create_ov_fields ()
   using namespace ShortFieldTagsNames;
 
   m_ov_fields.reserve(m_num_fields);
-  const auto num_ov_gids = m_ov_coarse_grid->get_num_local_dofs();
-  const auto ov_gn = m_ov_coarse_grid->name();
+  const auto num_ov_gids = m_remap_data->m_overlap_grid->get_num_local_dofs();
+  const auto ov_gn = m_remap_data->m_overlap_grid->name();
   const auto dt = DataType::RealType;
   for (int i=0; i<m_num_fields; ++i) {
-    const auto& f = m_type==InterpType::Refine ? m_tgt_fields[i] : m_src_fields[i];
+    const auto& f = m_remap_data->m_coarsening ? m_src_fields[i] : m_tgt_fields[i];
     const auto& fid = f.get_header().get_identifier();
     if (m_needs_remap[i]==0) {
       // This field won't be remapped. We can simply emplace an empty field (which won't be used),
@@ -158,15 +129,15 @@ local_mat_vec (const Field& x, const Field& y) const
   using Pack        = ekat::Pack<Real,PackSize>;
   using PackInfo    = ekat::PackInfo<PackSize>;
 
-  const auto row_grid = m_type==InterpType::Refine ? m_fine_grid : m_ov_coarse_grid;
+  const auto row_grid = m_remap_data->m_coarsening ? m_remap_data->m_overlap_grid : m_tgt_grid;
   const int  nrows    = row_grid->get_num_local_dofs();
 
   const auto& src_layout = x.get_header().get_identifier().get_layout();
   const int   rank       = src_layout.rank();
 
-  auto row_offsets = m_row_offsets;
-  auto col_lids    = m_col_lids;
-  auto weights     = m_weights;
+  auto row_offsets = m_remap_data->m_row_offsets;
+  auto col_lids    = m_remap_data->m_col_lids;
+  auto weights     = m_remap_data->m_weights;
 
   switch (rank) {
     // Note: in each case, handle 1st contribution to each row separately,
@@ -283,8 +254,6 @@ void HorizInterpRemapperBase::clean_up ()
   m_state = RepoState::Clean;
   m_num_fields = 0;
 }
-
-std::map<std::string,HorizRemapperData> HorizInterpRemapperBase::s_remapper_data;
 
 // ETI, so derived classes can call this method
 template

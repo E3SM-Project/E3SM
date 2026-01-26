@@ -23,21 +23,21 @@ public:
   //       will give use a not read-only gids field, so we can pass
   //       pointers to MPI_Bcast (which needs pointer to nonconst)
   std::shared_ptr<AbstractGrid> get_coarse_grid () const {
-    return m_coarse_grid;
+    return m_remap_data->m_generated_grid;
   }
 
   view_1d<int> get_row_offsets () const {
-    return m_row_offsets;
+    return m_remap_data->m_row_offsets;
   }
   view_1d<int> get_col_lids () const {
-    return m_col_lids;
+    return m_remap_data->m_col_lids;
   }
   view_1d<Real> get_weights () const {
-    return m_weights;
+    return m_remap_data->m_weights;
   }
 
   grid_ptr_type get_ov_tgt_grid () const {
-    return m_ov_coarse_grid;
+    return m_remap_data->m_overlap_grid;
   }
 
   view_2d<int>::HostMirror get_send_f_pid_offsets () const {
@@ -83,7 +83,7 @@ build_src_grid(const ekat::Comm& comm, const int ngdofs, int seed)
   std::vector<gid_type> all_dofs (ngdofs);
   std::mt19937_64 engine(seed);
   if (comm.am_i_root()) {
-    std::iota(all_dofs.data(),all_dofs.data()+all_dofs.size(),0);
+    std::iota(all_dofs.data(),all_dofs.data()+all_dofs.size(),1);
     std::shuffle(all_dofs.data(),all_dofs.data()+ngdofs,engine);
   }
   comm.broadcast(all_dofs.data(),ngdofs,comm.root_rank());
@@ -250,10 +250,10 @@ void create_remap_file(const std::string& filename, const int ngdofs_tgt)
   std::vector<int> col(nnz), row(nnz);
   std::vector<double> S(nnz,0.5);
   for (int i=0; i<ngdofs_tgt; ++i) {
-    row[2*i] = i;
-    row[2*i+1] = i;
-    col[2*i] = i;
-    col[2*i+1] = i+1;
+    row[2*i] = i+1;
+    row[2*i+1] = i+1;
+    col[2*i] = i+1;
+    col[2*i+1] = i+1+1;
   }
 
   scorpio::write_var(filename,"row",row.data());

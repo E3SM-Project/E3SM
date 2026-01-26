@@ -54,7 +54,7 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
                     const std::string& map_file,
                     const bool track_mask,
                     const bool populate_tgt_grid_geo_data)
- : HorizInterpRemapperBase (src_grid,map_file,InterpType::Coarsen)
+ : HorizInterpRemapperBase (src_grid,map_file)
  , m_track_mask (track_mask)
 {
   using namespace ShortFieldTagsNames;
@@ -190,13 +190,15 @@ registration_ends_impl ()
 
 void CoarseningRemapper::remap_fwd_impl ()
 {
+  const auto& comm = m_src_grid->get_comm();
+
   // Fire the recv requests right away, so that if some other ranks
   // is done packing before us, we can start receiving their data
   if (not m_recv_req.empty()) {
     int ierr = MPI_Startall(m_recv_req.size(),m_recv_req.data());
     EKAT_REQUIRE_MSG (ierr==MPI_SUCCESS,
         "Error! Something whent wrong while starting persistent recv requests.\n"
-        "  - recv rank: " + std::to_string(m_comm.rank()) + "\n");
+        "  - recv rank: " + std::to_string(comm.rank()) + "\n");
   }
 
   // TODO: Add check that if there are mask values they are either 1's or 0's for unmasked/masked.
@@ -251,7 +253,7 @@ void CoarseningRemapper::remap_fwd_impl ()
     int ierr = MPI_Waitall(m_send_req.size(),m_send_req.data(), MPI_STATUSES_IGNORE);
     EKAT_REQUIRE_MSG (ierr==MPI_SUCCESS,
         "Error! Something whent wrong while waiting on persistent send requests.\n"
-        "  - send rank: " + std::to_string(m_comm.rank()) + "\n");
+        "  - send rank: " + std::to_string(comm.rank()) + "\n");
   }
 
   // Rescale any fields that had the mask applied.
@@ -461,10 +463,10 @@ local_mat_vec (const Field& x, const Field& y, const Field& mask) const
 
   const auto& src_layout = x.get_header().get_identifier().get_layout();
   const int rank = src_layout.rank();
-  const int nrows = m_ov_coarse_grid->get_num_local_dofs();
-  auto row_offsets = m_row_offsets;
-  auto col_lids = m_col_lids;
-  auto weights = m_weights;
+  const int nrows  = m_remap_data->m_overlap_grid->get_num_local_dofs();
+  auto row_offsets = m_remap_data->m_row_offsets;
+  auto col_lids    = m_remap_data->m_col_lids;
+  auto weights     = m_remap_data->m_weights;
   switch (rank) {
     // Note: in each case, handle 1st contribution to each row separately,
     //       using = instead of +=. This allows to avoid doing an extra
@@ -613,7 +615,7 @@ void CoarseningRemapper::pack_and_send ()
   using MemberType  = typename KT::MemberType;
   using TPF         = ekat::TeamPolicyFactory<DefaultDevice::execution_space>;
 
-  const int num_send_gids = m_ov_coarse_grid->get_num_local_dofs();
+  const int num_send_gids = m_remap_data->m_overlap_grid->get_num_local_dofs();
   const auto pid_lid_start = m_send_pid_lids_start;
   const auto lids_pids = m_send_lids_pids;
   const auto buf = m_send_buffer;
@@ -711,7 +713,7 @@ void CoarseningRemapper::pack_and_send ()
 
       default:
         EKAT_ERROR_MSG ("Unexpected field rank in CoarseningRemapper::pack.\n"
-            "  - MPI rank  : " + std::to_string(m_comm.rank()) + "\n"
+            "  - MPI rank  : " + std::to_string(m_src_grid->get_comm().rank()) + "\n"
             "  - field name: " + f.name() + "\n"
             "  - field rank: " + std::to_string(fl.rank()) + "\n");
     }
@@ -729,7 +731,7 @@ void CoarseningRemapper::pack_and_send ()
     int ierr = MPI_Startall(m_send_req.size(),m_send_req.data());
     EKAT_REQUIRE_MSG (ierr==MPI_SUCCESS,
         "Error! Something whent wrong while starting persistent send requests.\n"
-        "  - send rank: " + std::to_string(m_comm.rank()) + "\n");
+        "  - send rank: " + std::to_string(m_src_grid->get_comm().rank()) + "\n");
   }
 }
 
@@ -739,7 +741,7 @@ void CoarseningRemapper::recv_and_unpack ()
     int ierr = MPI_Waitall(m_recv_req.size(),m_recv_req.data(), MPI_STATUSES_IGNORE);
     EKAT_REQUIRE_MSG (ierr==MPI_SUCCESS,
         "Error! Something whent wrong while waiting on persistent recv requests.\n"
-        "  - recv rank: " + std::to_string(m_comm.rank()) + "\n");
+        "  - recv rank: " + std::to_string(m_src_grid->get_comm().rank()) + "\n");
   }
   // If MPI does not use dev pointers, we need to deep copy from host to dev
   if (not MpiOnDev) {
@@ -861,7 +863,7 @@ void CoarseningRemapper::recv_and_unpack ()
 
       default:
         EKAT_ERROR_MSG ("Unexpected field rank in CoarseningRemapper::pack.\n"
-            "  - MPI rank  : " + std::to_string(m_comm.rank()) + "\n"
+            "  - MPI rank  : " + std::to_string(m_src_grid->get_comm().rank()) + "\n"
             "  - field rank: " + std::to_string(fl.rank()) + "\n");
     }
   }
@@ -870,15 +872,16 @@ void CoarseningRemapper::recv_and_unpack ()
 std::vector<int>
 CoarseningRemapper::get_pids_for_recv (const std::vector<int>& send_to_pids) const
 {
+  const auto& comm = m_src_grid->get_comm();
   // Figure out how many sends each PID is doing
-  std::vector<int> num_sends(m_comm.size(),0);
-  num_sends[m_comm.rank()] = send_to_pids.size();
-  m_comm.all_gather(num_sends.data(),1);
+  std::vector<int> num_sends(comm.size(),0);
+  num_sends[comm.rank()] = send_to_pids.size();
+  comm.all_gather(num_sends.data(),1);
 
   // Offsets for send_pids coming from each pid
   // NOTE: the extra entry at the end if for ease of use later
-  std::vector<int> sends_offsets (m_comm.size()+1,0);
-  for (int pid=1; pid<=m_comm.size(); ++pid) {
+  std::vector<int> sends_offsets (comm.size()+1,0);
+  for (int pid=1; pid<=comm.size(); ++pid) {
     sends_offsets[pid] = sends_offsets[pid-1] + num_sends[pid-1];
   }
 
@@ -887,16 +890,16 @@ CoarseningRemapper::get_pids_for_recv (const std::vector<int>& send_to_pids) con
   std::vector<int> global_send_pids(nglobal_sends,-1);
   MPI_Allgatherv (send_to_pids.data(),send_to_pids.size(),MPI_INT,
                   global_send_pids.data(),num_sends.data(),sends_offsets.data(),
-                  MPI_INT, m_comm.mpi_comm());
+                  MPI_INT, comm.mpi_comm());
 
   // Loop over all the ranks, and all the pids they send to, and look for my pid
   std::vector<int> recv_from_pids;
-  for (int pid=0; pid<m_comm.size(); ++pid) {
+  for (int pid=0; pid<comm.size(); ++pid) {
     const int beg = sends_offsets[pid];
     const int end = sends_offsets[pid+1];
 
     for (int i=beg; i<end; ++i) {
-      if (global_send_pids[i]==m_comm.rank()) {
+      if (global_send_pids[i]==comm.rank()) {
         recv_from_pids.push_back(pid);
         break;
       }
@@ -910,7 +913,7 @@ std::map<int,std::vector<int>>
 CoarseningRemapper::
 recv_gids_from_pids (const std::map<int,std::vector<int>>& pid2gids_send) const
 {
-  const auto comm = m_comm.mpi_comm();
+  const auto& comm = m_src_grid->get_comm().mpi_comm();
 
   // First, figure out which PIDs I need to recv from
   std::vector<int> send_to;
@@ -965,10 +968,11 @@ void CoarseningRemapper::setup_mpi_data_structures ()
   using namespace ShortFieldTagsNames;
   using gid_type = AbstractGrid::gid_type;
 
-  const auto mpi_comm  = m_comm.mpi_comm();
+  const auto& comm = m_src_grid->get_comm();
+  const auto mpi_comm  = comm.mpi_comm();
   const auto mpi_real  = ekat::get_mpi_type<Real>();
 
-  const int last_rank = m_comm.size()-1;
+  const int last_rank = comm.size()-1;
 
   // Pre-compute the amount of data stored in each field on each dof
   std::vector<int> field_col_size (m_num_fields);
@@ -989,7 +993,7 @@ void CoarseningRemapper::setup_mpi_data_structures ()
 
   // 1. Retrieve pid (and associated lid) of all ov gids
   //    on the tgt grid
-  const auto ov_gids = m_ov_coarse_grid->get_dofs_gids().get_view<const gid_type*,Host>();
+  const auto ov_gids = m_remap_data->m_overlap_grid->get_dofs_gids().get_view<const gid_type*,Host>();
   auto gids_owners = m_tgt_grid->get_owners (ov_gids);
 
   // 2. Group dofs to send by remote pid
@@ -1003,10 +1007,10 @@ void CoarseningRemapper::setup_mpi_data_structures ()
   }
   const int num_send_pids = pid2lids_send.size();
   m_send_lids_pids = view_2d<int>("",num_ov_gids,2);
-  m_send_pid_lids_start = view_1d<int>("",m_comm.size());
+  m_send_pid_lids_start = view_1d<int>("",comm.size());
   auto send_lids_pids_h = Kokkos::create_mirror_view(m_send_lids_pids);
   auto send_pid_lids_start_h = Kokkos::create_mirror_view(m_send_pid_lids_start);
-  for (int pid=0,pos=0; pid<m_comm.size(); ++pid) {
+  for (int pid=0,pos=0; pid<comm.size(); ++pid) {
     send_pid_lids_start_h(pid) = pos;
     for (auto lid : pid2lids_send[pid]) {
       send_lids_pids_h(pos,0) = lid;
@@ -1017,10 +1021,10 @@ void CoarseningRemapper::setup_mpi_data_structures ()
   Kokkos::deep_copy(m_send_pid_lids_start,send_pid_lids_start_h);
 
   // 3. Compute offsets in send buffer for each pid/field pair
-  m_send_f_pid_offsets = view_2d<int>("",m_num_fields,m_comm.size());
+  m_send_f_pid_offsets = view_2d<int>("",m_num_fields,comm.size());
   auto send_f_pid_offsets_h = Kokkos::create_mirror_view(m_send_f_pid_offsets);
-  std::vector<int> send_pid_offsets(m_comm.size());
-  for (int pid=0,pos=0; pid<m_comm.size(); ++pid) {
+  std::vector<int> send_pid_offsets(comm.size());
+  for (int pid=0,pos=0; pid<comm.size(); ++pid) {
     send_pid_offsets[pid] = pos;
     for (int i=0; i<m_num_fields; ++i) {
       if (m_needs_remap[i]==0)
@@ -1110,17 +1114,17 @@ void CoarseningRemapper::setup_mpi_data_structures ()
 
   // 3. Splice gids from all pids, and convert to lid, and compute the offset of each pid
   //    in the spliced list of gids.
-  std::vector<int> recv_pid_start(m_comm.size()+1);
-  for (int pid=0,pos=0; pid<=m_comm.size(); ++pid) {
+  std::vector<int> recv_pid_start(comm.size()+1);
+  for (int pid=0,pos=0; pid<=comm.size(); ++pid) {
     recv_pid_start[pid] = pos;
     pos += pid2gids_recv[pid].size();
   }
 
   // 4. Compute offsets in recv buffer for each pid/field pair
-  m_recv_f_pid_offsets = view_2d<int>("",m_num_fields,m_comm.size());
+  m_recv_f_pid_offsets = view_2d<int>("",m_num_fields,comm.size());
   auto recv_f_pid_offsets_h = Kokkos::create_mirror_view(m_recv_f_pid_offsets);
-  std::vector<int> recv_pid_offsets(m_comm.size());
-  for (int pid=0,pos=0; pid<m_comm.size(); ++pid) {
+  std::vector<int> recv_pid_offsets(comm.size());
+  for (int pid=0,pos=0; pid<comm.size(); ++pid) {
     recv_pid_offsets[pid] = pos;
     const int num_recv_gids = recv_pid_start[pid+1] - recv_pid_start[pid];
     for (int i=0; i<m_num_fields; ++i) {
@@ -1145,7 +1149,7 @@ void CoarseningRemapper::setup_mpi_data_structures ()
 
   // 6. Setup recv requests
   m_recv_req.reserve(num_recv_pids);
-  for (int pid=0; pid<m_comm.size(); ++pid) {
+  for (int pid=0; pid<comm.size(); ++pid) {
     const int num_recv_gids = recv_pid_start[pid+1] - recv_pid_start[pid];
     const int n = num_recv_gids*sum_fields_col_sizes;
     if (n==0) {
@@ -1171,9 +1175,8 @@ void CoarseningRemapper::setup_latlon_coarse_grid(const std::string& map_file)
 
   // Declare lat/lon and read them from the map file.
   // WARNING: the vars/dims names are different from what eamxx uses
-  auto pt_lat = m_coarse_grid->create_geometry_data("lat",m_coarse_grid->get_2d_scalar_layout(),deg);
-  auto pt_lon = m_coarse_grid->create_geometry_data("lon",m_coarse_grid->get_2d_scalar_layout(),deg);
-  m_coarse_grid->read_geometry_data(map_file,{"lat","lon"},{"yc_b","xc_b"},{{"ncol","n_b"}});
+  auto pt_lat = m_coarse_grid->get_geometry_data("lat");
+  auto pt_lon = m_coarse_grid->get_geometry_data("lon");
 
   RealsClose cmp;
   std::set<Real,RealsClose> my_lats(cmp), my_lons(cmp);
@@ -1192,10 +1195,11 @@ void CoarseningRemapper::setup_latlon_coarse_grid(const std::string& map_file)
   int nlon = lons.size();
   
   // Re-create lat/lon geometry data with only lat (or lon) dim
-  m_coarse_grid->delete_geometry_data("lat");
-  m_coarse_grid->delete_geometry_data("lon");
-  auto lat = m_coarse_grid->create_geometry_data("lat",FieldLayout({CMP},{nlat},{"lat"}),deg);
-  auto lon = m_coarse_grid->create_geometry_data("lon",FieldLayout({CMP},{nlon},{"lon"}),deg);
+  auto coarse_grid = m_remap_data->m_generated_grid;
+  coarse_grid->delete_geometry_data("lat");
+  coarse_grid->delete_geometry_data("lon");
+  auto lat = coarse_grid->create_geometry_data("lat",FieldLayout({CMP},{nlat},{"lat"}),deg);
+  auto lon = coarse_grid->create_geometry_data("lon",FieldLayout({CMP},{nlon},{"lon"}),deg);
   
   auto lat_h = lat.get_view<Real*,Host>();
   auto lon_h = lon.get_view<Real*,Host>();
@@ -1204,9 +1208,9 @@ void CoarseningRemapper::setup_latlon_coarse_grid(const std::string& map_file)
   lat.sync_to_dev();
   lon.sync_to_dev();
 
-  auto scalar2d = m_coarse_grid->get_2d_scalar_layout();
-  auto lat_idx = m_coarse_grid->create_geometry_data("lat_idx",scalar2d,nondim,DataType::IntType);
-  auto lon_idx = m_coarse_grid->create_geometry_data("lon_idx",scalar2d,nondim,DataType::IntType);
+  auto scalar2d = coarse_grid->get_2d_scalar_layout();
+  auto lat_idx = coarse_grid->create_geometry_data("lat_idx",scalar2d,nondim,DataType::IntType);
+  auto lon_idx = coarse_grid->create_geometry_data("lon_idx",scalar2d,nondim,DataType::IntType);
   lat_idx.get_header().set_extra_data("save_as_geo_data",false);
   lon_idx.get_header().set_extra_data("save_as_geo_data",false);
 
