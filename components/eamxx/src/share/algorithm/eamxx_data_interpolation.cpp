@@ -2,7 +2,7 @@
 
 #include "share/remap/identity_remapper.hpp"
 #include "share/remap/vertical_remapper.hpp"
-#include "share/remap/refining_remapper_p2p.hpp"
+#include "share/remap/refining_remapper.hpp"
 #include "share/remap/iop_remapper.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
@@ -443,8 +443,8 @@ create_horiz_remappers (const std::string& map_file)
   m_grid_after_hremap->reset_num_vertical_lev(nlevs_data);
 
   if (map_file!="") {
-    m_horiz_remapper_beg = std::make_shared<RefiningRemapperP2P>(m_grid_after_hremap,map_file);
-    m_horiz_remapper_end = std::make_shared<RefiningRemapperP2P>(m_grid_after_hremap,map_file);
+    m_horiz_remapper_beg = std::make_shared<RefiningRemapper>(m_grid_after_hremap,map_file);
+    m_horiz_remapper_end = std::make_shared<RefiningRemapper>(m_grid_after_hremap,map_file);
 
     int map_ncols_src = m_horiz_remapper_beg->get_src_grid()->get_num_global_dofs();
     int map_ncols_tgt = m_horiz_remapper_beg->get_tgt_grid()->get_num_global_dofs();

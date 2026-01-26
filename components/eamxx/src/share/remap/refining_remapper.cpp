@@ -1,4 +1,4 @@
-#include "refining_remapper_p2p.hpp"
+#include "refining_remapper.hpp"
 
 #include "share/grid/point_grid.hpp"
 #include "share/grid/grid_import_export.hpp"
@@ -11,30 +11,30 @@
 namespace scream
 {
 
-RefiningRemapperP2P::
-RefiningRemapperP2P (const grid_ptr_type& tgt_grid,
-                     const std::string& map_file)
+RefiningRemapper::
+RefiningRemapper (const grid_ptr_type& tgt_grid,
+                  const std::string& map_file)
  : HorizInterpRemapperBase(tgt_grid,map_file,InterpType::Refine)
 {
   // Nothing to do here
 }
 
-RefiningRemapperP2P::
-~RefiningRemapperP2P ()
+RefiningRemapper::
+~RefiningRemapper ()
 {
   clean_up();
 }
 
-void RefiningRemapperP2P::remap_fwd_impl ()
+void RefiningRemapper::remap_fwd_impl ()
 {
   // Fire the recv requests right away, so that if some other ranks
   // is done packing before us, we can start receiving their data
   if (not m_recv_req.empty()) {
     check_mpi_call(MPI_Startall(m_recv_req.size(),m_recv_req.data()),
-                   "[RefiningRemapperP2P] starting persistent recv requests.\n");
+                   "[RefiningRemapper] starting persistent recv requests.\n");
   }
 
-  // Do P2P communications
+  // Do  communications
   pack_and_send ();
   recv_and_unpack ();
 
@@ -78,11 +78,11 @@ void RefiningRemapperP2P::remap_fwd_impl ()
   // Wait for all sends to be completed
   if (not m_send_req.empty()) {
     check_mpi_call(MPI_Waitall(m_send_req.size(),m_send_req.data(), MPI_STATUSES_IGNORE),
-                   "[RefiningRemapperP2P] waiting on persistent send requests.\n");
+                   "[RefiningRemapper] waiting on persistent send requests.\n");
   }
 }
 
-void RefiningRemapperP2P::setup_mpi_data_structures ()
+void RefiningRemapper::setup_mpi_data_structures ()
 {
   using namespace ShortFieldTagsNames;
 
@@ -123,7 +123,7 @@ void RefiningRemapperP2P::setup_mpi_data_structures ()
 
   // Create the recv buffer(s)
   auto recv_buf_size = ncols_recv*total_col_size;
-  m_recv_buffer = decltype(m_recv_buffer)("RefiningRemapperP2P::recv_buf",recv_buf_size);
+  m_recv_buffer = decltype(m_recv_buffer)("RefiningRemapper::recv_buf",recv_buf_size);
   m_mpi_recv_buffer = Kokkos::create_mirror_view(decltype(m_mpi_recv_buffer)::execution_space(),m_recv_buffer);
 
   // ----------- Compute SEND metadata -------------- //
@@ -140,7 +140,7 @@ void RefiningRemapperP2P::setup_mpi_data_structures ()
 
   // Create the send buffer(s)
   auto send_buf_size = pids_send_offsets_h(nranks)*total_col_size;
-  m_send_buffer = decltype(m_send_buffer)("RefiningRemapperP2P::send_buf",send_buf_size);
+  m_send_buffer = decltype(m_send_buffer)("RefiningRemapper::send_buf",send_buf_size);
   m_mpi_send_buffer = Kokkos::create_mirror_view(decltype(m_mpi_send_buffer)::execution_space(),m_send_buffer);
 
   // ----------- Create Requests ------------ //
@@ -167,7 +167,7 @@ void RefiningRemapperP2P::setup_mpi_data_structures ()
   }
 }
 
-void RefiningRemapperP2P::pack_and_send ()
+void RefiningRemapper::pack_and_send ()
 {
   using RangePolicy = typename KT::RangePolicy;
   using TeamMember  = typename KT::MemberType;
@@ -285,7 +285,7 @@ void RefiningRemapperP2P::pack_and_send ()
         break;
       }
       default:
-        EKAT_ERROR_MSG ("Unexpected field rank in RefiningRemapperP2P::pack.\n"
+        EKAT_ERROR_MSG ("Unexpected field rank in RefiningRemapper::pack.\n"
             "  - MPI rank  : " + std::to_string(m_comm.rank()) + "\n"
             "  - field name: " + f.name() + "\n"
             "  - field rank: " + std::to_string(fl.rank()) + "\n");
@@ -302,15 +302,15 @@ void RefiningRemapperP2P::pack_and_send ()
 
   if (not m_send_req.empty()) {
     check_mpi_call(MPI_Startall(m_send_req.size(),m_send_req.data()),
-                   "[RefiningRemapperP2P] start persistent send requests.\n");
+                   "[RefiningRemapper] start persistent send requests.\n");
   }
 }
 
-void RefiningRemapperP2P::recv_and_unpack ()
+void RefiningRemapper::recv_and_unpack ()
 {
   if (not m_recv_req.empty()) {
     check_mpi_call(MPI_Waitall(m_recv_req.size(),m_recv_req.data(), MPI_STATUSES_IGNORE),
-                   "[RefiningRemapperP2P] waiting on persistent recv requests.\n");
+                   "[RefiningRemapper] waiting on persistent recv requests.\n");
   }
   // If MPI does not use dev pointers, we need to deep copy from host to dev
   if (not MpiOnDev) {
@@ -433,7 +433,7 @@ void RefiningRemapperP2P::recv_and_unpack ()
         break;
       }
       default:
-        EKAT_ERROR_MSG ("Unexpected field rank in RefiningRemapperP2P::unpack.\n"
+        EKAT_ERROR_MSG ("Unexpected field rank in RefiningRemapper::unpack.\n"
             "  - MPI rank  : " + std::to_string(m_comm.rank()) + "\n"
             "  - field name: " + f.name() + "\n"
             "  - field rank: " + std::to_string(fl.rank()) + "\n");
@@ -441,7 +441,7 @@ void RefiningRemapperP2P::recv_and_unpack ()
   }
 }
 
-void RefiningRemapperP2P::clean_up ()
+void RefiningRemapper::clean_up ()
 {
   // Clear all MPI related structures
   m_send_buffer         = view_1d<Real>();
