@@ -570,5 +570,31 @@ class TracerHyperDiffOnCell {
    Array1DI4 MaxLayerEdgeTop;
 };
 
+/// Surface tracer restoring term
+class SurfaceTracerRestoringOnCell {
+ public:
+   bool Enabled;
+   Real PistonVelocity = 1.585e-5;
+
+   /// constructor declaration
+   SurfaceTracerRestoringOnCell(const HorzMesh *Mesh, const VertCoord *VCoord);
+
+   /// The functor takes the cell index and the array for the tracer surface
+   /// restoring values, outputs tendency array
+   KOKKOS_FUNCTION void
+   operator()(const Array3DReal &Tend, I4 L, I4 ICell, I4 KChunk,
+              const Array2DReal &SurfTracerRestValuesCell) const {
+      if (KChunk == 0) {
+         const I4 K = MinLayerCell(ICell);
+
+         Tend(L, ICell, K) +=
+             PistonVelocity * SurfTracerRestValuesCell(L, ICell);
+      }
+   }
+
+ private:
+   Array1DI4 MinLayerCell;
+};
+
 } // namespace OMEGA
 #endif

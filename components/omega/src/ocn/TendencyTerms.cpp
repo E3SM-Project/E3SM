@@ -111,6 +111,9 @@ TracerHyperDiffOnCell::TracerHyperDiffOnCell(const HorzMesh *Mesh,
       MinLayerEdgeBot(VCoord->MinLayerEdgeBot),
       MaxLayerEdgeTop(VCoord->MaxLayerEdgeTop) {}
 
+SurfaceTracerRestoringOnCell::SurfaceTracerRestoringOnCell(
+    const HorzMesh *Mesh) {}
+  
 void TracerHorzAdvOnCell::init() {
    const HorzMesh *Mesh = this->HorzontalMesh;
    const auto MaxEdges2 = Mesh->MaxEdges2;
@@ -133,6 +136,7 @@ void TracerHorzAdvOnCell::init() {
        {NEdgesAll}, KOKKOS_LAMBDA(int IEdge) { masksAndCoefficients(IEdge); });
    Kokkos::fence();
 }
+
 } // end namespace OMEGA
 
 //===----------------------------------------------------------------------===//
