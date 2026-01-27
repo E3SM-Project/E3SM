@@ -1,6 +1,6 @@
 #include <catch2/catch.hpp>
 
-#include "share/remap/refining_remapper.hpp"
+#include "share/remap/horizontal_remapper.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 #include "share/core/eamxx_setup_random_test.hpp"
@@ -8,15 +8,6 @@
 #include "share/field/field_utils.hpp"
 
 namespace scream {
-
-class RefiningRemapperTester : public RefiningRemapper {
-public:
-  RefiningRemapperTester (const grid_ptr_type& tgt_grid,
-                          const std::string& map_file)
-   : RefiningRemapper(tgt_grid,map_file) {}
-
-  ~RefiningRemapperTester () = default;
-};
 
 Field create_field (const std::string& name, const LayoutType lt, const AbstractGrid& grid)
 {
@@ -190,7 +181,7 @@ TEST_CASE ("refining_remapper") {
 
   // Test bad registrations separately, since they corrupt the remapper state for later
   {
-    auto r = std::make_shared<RefiningRemapperTester>(tgt_grid,filename);
+    auto r = std::make_shared<HorizontalRemapper>(tgt_grid,filename);
     auto src_grid = r->get_src_grid();
     Field bad_src(FieldIdentifier("",src_grid->get_2d_scalar_layout(),ekat::units::m,src_grid->name(),DataType::IntType));
     Field bad_tgt(FieldIdentifier("",tgt_grid->get_2d_scalar_layout(),ekat::units::m,tgt_grid->name(),DataType::IntType));
@@ -201,7 +192,7 @@ TEST_CASE ("refining_remapper") {
     CHECK_THROWS (r->registration_ends()); // bad data type (must be real)
   }
 
-  auto r = std::make_shared<RefiningRemapperTester>(tgt_grid,filename);
+  auto r = std::make_shared<HorizontalRemapper>(tgt_grid,filename);
   auto src_grid = r->get_src_grid();
 
   auto bundle_src = create_field("bundle3d_src",LayoutType::Vector3D,*src_grid,seed);

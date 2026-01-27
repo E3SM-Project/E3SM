@@ -2,7 +2,7 @@
 #define FRACTIONAL_LANDUSE_IMPL_HPP
 
 #include "share/remap/identity_remapper.hpp"
-#include "share/remap/refining_remapper.hpp"
+#include "share/remap/horizontal_remapper.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 #include "share/util/eamxx_timing.hpp"
 
@@ -49,7 +49,7 @@ fracLandUseFunctions<S, D>::create_horiz_remapper(
                      "land use parameter list.");
 
     remapper =
-        std::make_shared<RefiningRemapper>(horiz_interp_tgt_grid, map_file);
+        std::make_shared<HorizontalRemapper>(horiz_interp_tgt_grid, map_file);
   }
 
   const auto tgt_grid = remapper->get_tgt_grid();
