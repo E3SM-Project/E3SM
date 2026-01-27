@@ -189,7 +189,7 @@ void init(const MPI_Comm &InComm // [in] MPI communicator to use
    CHECK_ERROR_ABORT(Err, "IO: IO group not found in input Config");
 
    // Read default file format
-   std::string InFileFmt = "netcdf4c"; // set default value
+   std::string InFileFmt = "pnetcdf"; // set default value
    Err                   = IOConfig.get("IODefaultFormat", InFileFmt);
    CHECK_ERROR_WARN(Err, "IO: DefaultFileFmt not found in Config - using {}",
                     InFileFmt);

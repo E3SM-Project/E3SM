@@ -19,7 +19,7 @@ Omega:
     IOStride: 1
     IOBaseTask: 0
     IORearranger: box
-    IODefaultFormat: NetCDF4
+    IODefaultFormat: pnetcdf
   State:
     NTimeLevels: 2
   Advection:
