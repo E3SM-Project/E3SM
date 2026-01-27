@@ -207,7 +207,7 @@ class SecondDerivativeOnCell {
    SecondDerivativeOnCell(HorzMesh const *Mesh);
    KOKKOS_FUNCTION ~SecondDerivativeOnCell() {}
    KOKKOS_FUNCTION void operator()(const Array3DReal &DerivTwo,
-                                   int ICell) const {
+                                   const int ICell) const {
       const int NEdges = NEdgesOnCell(ICell);
       if (MaxMaxEdges < NEdges)
          printf("Error: Number of edges on cell:%d exceeds maximum "
@@ -255,7 +255,7 @@ class SecondDerivativeOnCell {
          const Real xx    = x * x;
          const Real xy    = x * y;
          const Real yy    = y * y;
-         for (int J = 0; J <= NEdges; ++J)
+         for (int J = 0; J <= NEdges; ++J) 
             DerivTwo(J, Ind, IEdge) = 2._Real * xx * B(3, J) +
                                       2._Real * xy * B(4, J) +
                                       2._Real * yy * B(5, J);

@@ -125,14 +125,14 @@ void TracerHighOrderHorzAdvOnCell::init() {
    const HorzMesh *Mesh   = this->HorzontalMesh;
    const auto MaxEdges2   = Mesh->MaxEdges2;
    const auto NEdgesAll   = Mesh->NEdgesAll;
-   const auto NCellsOwned = Mesh->NCellsOwned;
+   const auto NCellsAll   = Mesh->NCellsAll;
    const auto NEdgesOwned = Mesh->NEdgesOwned;
    // Allocate Kokkos arrays in member data
 
    SecondDerivativeOnCell secondDerivativeOnCell(Mesh);
    Array3DReal DerivTwo("DerivTwo", MaxEdges2 + 2, 2, NEdgesAll);
    parallelFor(
-       {NCellsOwned},
+       {NCellsAll},
        KOKKOS_LAMBDA(int ICell) { secondDerivativeOnCell(DerivTwo, ICell); });
    // Compute masks and coefficients
    Kokkos::fence();
