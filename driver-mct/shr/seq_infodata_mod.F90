@@ -909,7 +909,8 @@ CONTAINS
           call seq_io_read(infodata%restart_file,pioid,infodata%nextsw_cday   ,'seq_infodata_nextsw_cday')
           call seq_io_read(infodata%restart_file,pioid,infodata%precip_fact   ,'seq_infodata_precip_fact')
           call seq_io_read(infodata%restart_file,pioid,infodata%rest_case_name,'seq_infodata_case_name')
-          call seq_io_read(infodata%restart_file,pioid,infodata%rmean_rmv_ice_runoff,'seq_infodata_rmean_rmv_ice_runoff')
+          ! ndk https://github.com/E3SM-Project/E3SM/issues/6844
+          !ndk call seq_io_read(infodata%restart_file,pioid,infodata%rmean_rmv_ice_runoff,'seq_infodata_rmean_rmv_ice_runoff')
        endif
        !--- Send from CPLID ROOT to GLOBALID ROOT, use bcast as surrogate
        call shr_mpi_bcast(infodata%nextsw_cday,mpicom,pebcast=seq_comm_gloroot(CPLID))
