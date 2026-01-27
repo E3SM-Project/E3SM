@@ -64,7 +64,7 @@ create_mesh_free_grids_manager (const ekat::Comm& comm, const ekat::ParameterLis
 std::shared_ptr<GridsManager>
 create_mesh_free_grids_manager (const ekat::Comm& comm, const int num_local_elems,
                                 const int num_gp, const int num_vertical_levels,
-                                const int num_global_cols);
+                                const int num_global_cols, const int gid_base = 0);
 
 inline void register_mesh_free_grids_manager () {
   // A simple grids manager, useful to run physics-only unit tests
