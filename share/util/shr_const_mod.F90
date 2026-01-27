@@ -29,6 +29,7 @@ MODULE shr_const_mod
    real(R8),parameter :: SHR_CONST_MWC     = 12.0107_R8      ! molecular weight carbon
    real(R8),parameter :: SHR_CONST_MWO     = 15.9994_R8      ! molecular weight oxygen
    real(R8),parameter :: SHR_CONST_MWCO2   = 44.0095_R8      ! molecular weight carbon dioxide
+   real(R8),parameter :: SHR_CONST_MWFE    = 55.845_R8       ! molecular weight iron
    real(R8),parameter :: SHR_CONST_RDAIR   = SHR_CONST_RGAS/SHR_CONST_MWDAIR        ! Dry air gas constant     ~ J/K/kg
    real(R8),parameter :: SHR_CONST_RWV     = SHR_CONST_RGAS/SHR_CONST_MWWV          ! Water vapor gas constant ~ J/K/kg
    real(R8),parameter :: SHR_CONST_ZVIR    = (SHR_CONST_RWV/SHR_CONST_RDAIR)-1.0_R8 ! RWV/RDAIR - 1.0
