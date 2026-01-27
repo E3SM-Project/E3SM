@@ -73,26 +73,58 @@ struct Functions {
 
     static inline constexpr Real cpwv = 1.810e3; // specific heat of water vapor (J/K/kg)
 
-    static inline constexpr Int LOOPMAX = 100; // Max number of iteration loops for ientropy
+    static inline constexpr Int LOOPMAX = 100; // Max number of iteration loops for invert_entropy
 
     static inline constexpr Real tol_coeff = 0.001; // tolerance coeficient
 
     static inline constexpr Real tol_eps   = 3.e-8; // small value for tolerance calculation
   };
 
-  struct zm_runtime_opt {
-    zm_runtime_opt() = default;
-    bool apply_tendencies = false;
+  //----------------------------------------------------------------------------
+  // Purpose: derived type to hold ZM tunable parameters
+  //----------------------------------------------------------------------------
+  struct ZmRuntimeOpt {
+    ZmRuntimeOpt() = default;
 
     void load_runtime_options(ekat::ParameterList& params) {
       apply_tendencies = params.get<bool>("apply_tendencies", apply_tendencies);
     }
+
+    Real tau;           // convective adjustment time scale
+    Real alfa;          // max downdraft mass flux fraction
+    Real ke;            // evaporation efficiency
+    Real dmpdz;         // fractional mass entrainment rate [1/m]
+    bool tpert_fix;     // flag to disable using applying tpert to PBL-rooted convection
+    Real tpert_fac;     // tunable temperature perturbation factor
+    Real tiedke_add;    // tunable temperature perturbation
+    Real c0_lnd;        // autoconversion coefficient over land
+    Real c0_ocn;        // autoconversion coefficient over ocean
+    int num_cin;        // num of neg buoyancy regions allowed before the conv top and CAPE calc are completed
+    int limcnv;         // upper pressure interface level to limit deep convection
+    int mx_bot_lyr_adj; // bot layer index adjustment for launch level search
+    bool trig_dcape;    // true if to using DCAPE trigger - based on CAPE generation by the dycor
+    bool trig_ull;      // true if to using the "unrestricted launch level" (ULL) mode
+    bool clos_dyn_adj;  // flag for mass flux adjustment to CAPE closure
+    bool no_deep_pbl;   // flag to eliminate deep convection within PBL
+    bool apply_tendencies;
+    // ZM micro parameters
+    bool zm_microp;     // switch for convective microphysics
+    bool old_snow;      // switch to calculate snow prod in zm_conv_evap() (old treatment before zm_microp was implemented)
+    Real auto_fac;      // ZM microphysics enhancement factor for droplet-rain autoconversion
+    Real accr_fac;      // ZM microphysics enhancement factor for droplet-rain accretion
+    Real micro_dcs;     // ZM microphysics size threshold for cloud ice to snow autoconversion [m]
+    // MCSP parameters
+    bool mcsp_enabled;  // flag for mesoscale coherent structure parameterization (MSCP)
+    Real mcsp_t_coeff;  // MCSP coefficient for temperature tendencies
+    Real mcsp_q_coeff;  // MCSP coefficient for specific humidity tendencies
+    Real mcsp_u_coeff;  // MCSP coefficient for zonal momentum tendencies
+    Real mcsp_v_coeff;  // MCSP coefficient for meridional momentum tendencies
   };
 
   // -----------------------------------------------------------------------------------------------
 
-  struct zm_input_state {
-    zm_input_state() = default;
+  struct ZmInputState {
+    ZmInputState() = default;
     // -------------------------------------------------------------------------
     Real dtime;                     // model phsyics time step [s]
     bool is_first_step;             // flag for first call
@@ -171,8 +203,8 @@ struct Functions {
 
   // -----------------------------------------------------------------------------------------------
 
-  struct zm_output_tend {
-    zm_output_tend() = default;
+  struct ZmOutputTend {
+    ZmOutputTend() = default;
 
     // variable counters for device-side only
     static constexpr int num_1d_intgr = 1;  // number of 1D integer views
@@ -237,45 +269,10 @@ struct Functions {
 
   // -----------------------------------------------------------------------------------------------
 
-  struct zm_output_diag {
-    zm_output_diag() = default;
+  struct ZmOutputDiag {
+    ZmOutputDiag() = default;
   };
 
-  // -----------------------------------------------------------------------------------------------
-
-  //----------------------------------------------------------------------------
-  // Purpose: derived type to hold ZM tunable parameters
-  //----------------------------------------------------------------------------
-  struct ZmCommonInit {
-    Real tau;           // convective adjustment time scale
-    Real alfa;          // max downdraft mass flux fraction
-    Real ke;            // evaporation efficiency
-    Real dmpdz;         // fractional mass entrainment rate [1/m]
-    bool tpert_fix;     // flag to disable using applying tpert to PBL-rooted convection
-    Real tpert_fac;     // tunable temperature perturbation factor
-    Real tiedke_add;    // tunable temperature perturbation
-    Real c0_lnd;        // autoconversion coefficient over land
-    Real c0_ocn;        // autoconversion coefficient over ocean
-    int num_cin;        // num of neg buoyancy regions allowed before the conv top and CAPE calc are completed
-    int limcnv;         // upper pressure interface level to limit deep convection
-    int mx_bot_lyr_adj; // bot layer index adjustment for launch level search
-    bool trig_dcape;    // true if to using DCAPE trigger - based on CAPE generation by the dycor
-    bool trig_ull;      // true if to using the "unrestricted launch level" (ULL) mode
-    bool clos_dyn_adj;  // flag for mass flux adjustment to CAPE closure
-    bool no_deep_pbl;   // flag to eliminate deep convection within PBL
-    // ZM micro parameters
-    bool zm_microp;     // switch for convective microphysics
-    bool old_snow;      // switch to calculate snow prod in zm_conv_evap() (old treatment before zm_microp was implemented)
-    Real auto_fac;      // ZM microphysics enhancement factor for droplet-rain autoconversion
-    Real accr_fac;      // ZM microphysics enhancement factor for droplet-rain accretion
-    Real micro_dcs;     // ZM microphysics size threshold for cloud ice to snow autoconversion [m]
-    // MCSP parameters
-    bool mcsp_enabled;  // flag for mesoscale coherent structure parameterization (MSCP)
-    Real mcsp_t_coeff;  // MCSP coefficient for temperature tendencies
-    Real mcsp_q_coeff;  // MCSP coefficient for specific humidity tendencies
-    Real mcsp_u_coeff;  // MCSP coefficient for zonal momentum tendencies
-    Real mcsp_v_coeff;  // MCSP coefficient for meridional momentum tendencies
-  };
 
   //
   // --------- Init/Finalize Functions ---------
@@ -291,7 +288,7 @@ struct Functions {
   //
 
   KOKKOS_FUNCTION
-  static void ientropy(
+  static void invert_entropy(
     // Inputs
     const MemberType& team,
     const Real& s,    // entropy                           [J/kg]
@@ -348,7 +345,7 @@ struct Functions {
   //
   // --------- Members ---------
   //
-  inline static ZmCommonInit s_common_init;
+  inline static ZmRuntimeOpt s_common_init;
 
 }; // struct Functions
 
@@ -360,7 +357,7 @@ struct Functions {
 # include "impl/zm_input_state_impl.hpp"
 # include "impl/zm_output_tend_impl.hpp"
 # include "impl/zm_common_init_impl.hpp"
-# include "impl/zm_ientropy_impl.hpp"
+# include "impl/zm_invert_entropy_impl.hpp"
 # include "impl/zm_entropy_impl.hpp"
 #endif // GPU && !KOKKOS_ENABLE_*_RELOCATABLE_DEVICE_CODE
 #endif // ZM_FUNCTIONS_HPP

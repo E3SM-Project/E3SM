@@ -112,7 +112,7 @@ void ientropy(IentropyData& d)
   auto t_h   = Kokkos::create_mirror_view(t_d);
 
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
-    ZMF::ientropy(
+    ZMF::invert_entropy(
       team,
       s,
       p,

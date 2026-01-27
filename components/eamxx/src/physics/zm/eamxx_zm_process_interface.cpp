@@ -319,15 +319,15 @@ size_t ZMDeepConvection::requested_buffer_size_in_bytes() const
   const int nlev_int_packs = ekat::npack<Spack>(m_nlev+1);
   size_t zm_buffer_size = 0;
 
-  zm_buffer_size+= ZMF::zm_input_state::num_1d_intgr * sizeof(Int)   * m_ncol;
-  zm_buffer_size+= ZMF::zm_input_state::num_1d_scalr * sizeof(Scalar)* m_ncol;
-  zm_buffer_size+= ZMF::zm_input_state::num_2d_midlv * sizeof(Spack) * m_ncol * nlev_mid_packs;
-  zm_buffer_size+= ZMF::zm_input_state::num_2d_intfc * sizeof(Spack) * m_ncol * nlev_int_packs;
+  zm_buffer_size+= ZMF::ZmInputState::num_1d_intgr * sizeof(Int)   * m_ncol;
+  zm_buffer_size+= ZMF::ZmInputState::num_1d_scalr * sizeof(Scalar)* m_ncol;
+  zm_buffer_size+= ZMF::ZmInputState::num_2d_midlv * sizeof(Spack) * m_ncol * nlev_mid_packs;
+  zm_buffer_size+= ZMF::ZmInputState::num_2d_intfc * sizeof(Spack) * m_ncol * nlev_int_packs;
 
-  zm_buffer_size+= ZMF::zm_output_tend::num_1d_intgr * sizeof(Int)   * m_ncol;
-  zm_buffer_size+= ZMF::zm_output_tend::num_1d_scalr * sizeof(Scalar)* m_ncol;
-  zm_buffer_size+= ZMF::zm_output_tend::num_2d_midlv * sizeof(Spack) * m_ncol * nlev_mid_packs;
-  zm_buffer_size+= ZMF::zm_output_tend::num_2d_intfc * sizeof(Spack) * m_ncol * nlev_int_packs;
+  zm_buffer_size+= ZMF::ZmOutputTend::num_1d_intgr * sizeof(Int)   * m_ncol;
+  zm_buffer_size+= ZMF::ZmOutputTend::num_1d_scalr * sizeof(Scalar)* m_ncol;
+  zm_buffer_size+= ZMF::ZmOutputTend::num_2d_midlv * sizeof(Spack) * m_ncol * nlev_mid_packs;
+  zm_buffer_size+= ZMF::ZmOutputTend::num_2d_intfc * sizeof(Spack) * m_ncol * nlev_int_packs;
 
   int num_f_mid  = (9+6);
   int num_f_int  = (2+3);
@@ -347,10 +347,10 @@ void ZMDeepConvection::init_buffers(const ATMBufferManager &buffer_manager)
   const int nlev_mid_packs = ekat::npack<Spack>(m_nlev);
   const int nlev_int_packs = ekat::npack<Spack>(m_nlev+1);
 
-  constexpr auto num_1d_intgr = ZMF::zm_input_state::num_1d_intgr + ZMF::zm_output_tend::num_1d_intgr;
-  constexpr auto num_1d_scalr = ZMF::zm_input_state::num_1d_scalr + ZMF::zm_output_tend::num_1d_scalr;
-  constexpr auto num_2d_midlv = ZMF::zm_input_state::num_2d_midlv + ZMF::zm_output_tend::num_2d_midlv;
-  constexpr auto num_2d_intfc = ZMF::zm_input_state::num_2d_intfc + ZMF::zm_output_tend::num_2d_intfc;
+  constexpr auto num_1d_intgr = ZMF::ZmInputState::num_1d_intgr + ZMF::ZmOutputTend::num_1d_intgr;
+  constexpr auto num_1d_scalr = ZMF::ZmInputState::num_1d_scalr + ZMF::ZmOutputTend::num_1d_scalr;
+  constexpr auto num_2d_midlv = ZMF::ZmInputState::num_2d_midlv + ZMF::ZmOutputTend::num_2d_midlv;
+  constexpr auto num_2d_intfc = ZMF::ZmInputState::num_2d_intfc + ZMF::ZmOutputTend::num_2d_intfc;
 
   constexpr int num_f_mid  = (9+6);
   constexpr int num_f_int  = (2+3);

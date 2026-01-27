@@ -10,7 +10,7 @@ namespace zm {
 // transpose method for fortran bridging
 template<typename S, typename D>
 template <ekat::TransposeDirection::Enum DirT>
-void Functions<S,D>::zm_output_tend::transpose(int ncol, int nlev_mid)
+void Functions<S,D>::ZmOutputTend::transpose(int ncol, int nlev_mid)
 {
   auto nlev_int = nlev_mid+1;
 
@@ -92,7 +92,7 @@ void Functions<S,D>::zm_output_tend::transpose(int ncol, int nlev_mid)
 }
 
 template<typename S, typename D>
-void Functions<S,D>::zm_output_tend::init(int ncol, int nlev_mid)
+void Functions<S,D>::ZmOutputTend::init(int ncol, int nlev_mid)
 {
   auto nlev_int = nlev_mid+1;
   auto nlev_mid_packs = ekat::npack<Spack>(nlev_mid);

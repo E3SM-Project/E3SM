@@ -10,7 +10,7 @@ namespace zm {
 // transpose method for fortran bridging
 template<typename S, typename D>
 template <ekat::TransposeDirection::Enum DirT>
-void Functions<S,D>::zm_input_state::transpose(int ncol, int nlev_mid)
+void Functions<S,D>::ZmInputState::transpose(int ncol, int nlev_mid)
 {
   auto nlev_int = nlev_mid+1;
 
@@ -100,7 +100,7 @@ void Functions<S,D>::zm_input_state::transpose(int ncol, int nlev_mid)
 }
 
 template<typename S, typename D>
-void Functions<S,D>::zm_input_state::calculate_tpert(int ncol, int nlev, bool is_first_step)
+void Functions<S,D>::ZmInputState::calculate_tpert(int ncol, int nlev, bool is_first_step)
 {
   const Real cpair  = PC::Cpair.value;
   const Real latvap = PC::LatVap.value;

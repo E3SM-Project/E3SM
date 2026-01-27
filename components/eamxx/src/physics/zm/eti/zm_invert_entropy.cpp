@@ -1,10 +1,10 @@
-#include "impl/zm_ientropy_impl.hpp"
+#include "impl/zm_invert_entropy_impl.hpp"
 
 namespace scream {
 namespace zm {
 
 /*
- * Explicit instantiation for doing ientropy on Reals using the
+ * Explicit instantiation for doing invert_entropy on Reals using the
  * default device.
  */
 

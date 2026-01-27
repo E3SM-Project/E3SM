@@ -1,5 +1,5 @@
-#ifndef ZM_IENTROPY_IMPL_HPP
-#define ZM_IENTROPY_IMPL_HPP
+#ifndef ZM_INVERT_ENTROPY_IMPL_HPP
+#define ZM_INVERT_ENTROPY_IMPL_HPP
 
 #include "zm_functions.hpp" // for ETI only but harmless for GPU
 
@@ -7,13 +7,13 @@ namespace scream {
 namespace zm {
 
 /*
- * Implementation of zm ientropy. Clients should NOT
+ * Implementation of zm invert_entropy. Clients should NOT
  * #include this file, but include zm_functions.hpp instead.
  */
 
 template<typename S, typename D>
 KOKKOS_FUNCTION
-void Functions<S,D>::ientropy(
+void Functions<S,D>::invert_entropy(
   // Inputs
   const MemberType& team,
   const Real& s,
@@ -116,7 +116,7 @@ void Functions<S,D>::ientropy(
   Real est; // saturation vapor pressure
   qsat_hPa(t, p, est, qst);
 
-  EKAT_KERNEL_REQUIRE_MSG(converged, "ZM_CONV: IENTROPY: Failed to converge");
+  EKAT_KERNEL_REQUIRE_MSG(converged, "ZM_CONV: INVERT_ENTROPY: Failed to converge");
 }
 
 } // namespace zm
