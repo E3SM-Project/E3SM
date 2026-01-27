@@ -29,6 +29,7 @@ create_gm (const ekat::Comm& comm, const int ngcols, const int nlevs) {
   pl.set("aliases",vos_t{"physics"});
   pl.set<int>("number_of_global_columns", ngcols);
   pl.set<int>("number_of_vertical_levels", nlevs);
+  pl.set<int>("gid_base", 1);
 
   auto gm = create_mesh_free_grids_manager(comm,gm_params);
   gm->build_grids();
