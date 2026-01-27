@@ -1,11 +1,9 @@
 add_library(eamxx_remap
   abstract_remapper.cpp
-  coarsening_remapper.cpp
-  horiz_interp_remapper_base.cpp
   horiz_interp_remapper_data.cpp
+  horizontal_remapper.cpp
   iop_remapper.cpp
   identity_remapper.cpp
-  refining_remapper.cpp
   vertical_remapper.cpp
 )
 
