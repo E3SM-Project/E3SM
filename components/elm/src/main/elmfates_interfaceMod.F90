@@ -1499,14 +1499,15 @@ contains
       do c = bounds_clump%begc,bounds_clump%endc
 
          if (col_pp%is_fates(c)) then
-        col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_met_lit) =  &
-             col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_met_lit) * dtime
-        col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_cel_lit) =  &
-             col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_cel_lit) * dtime
-        col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_lig_lit) =  &
-             col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_lig_lit) * dtime
+
+            col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_met_lit) =  &
+                 col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_met_lit) * dtime
+            col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_cel_lit) =  &
+                 col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_cel_lit) * dtime
+            col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_lig_lit) =  &
+                 col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_lig_lit) * dtime
       
-         select case(fates_parteh_mode)
+            select case(fates_parteh_mode)
             case (prt_cnp_flex_allom_hyp )
 
                col_pf%decomp_ppools_sourcesink(c,1:nlevdecomp,i_met_lit) =  &
@@ -1522,8 +1523,7 @@ contains
                     col_nf%decomp_npools_sourcesink(c,1:nlevdecomp,i_cel_lit) * dtime
                col_nf%decomp_npools_sourcesink(c,1:nlevdecomp,i_lig_lit) =  &
                     col_nf%decomp_npools_sourcesink(c,1:nlevdecomp,i_lig_lit) * dtime
-
-         end select
+            end select
 
          end if
       end do
