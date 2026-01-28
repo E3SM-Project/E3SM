@@ -5,7 +5,7 @@ add_subdirectory(infra)
 set(ZM_TESTS_SRCS
   zm_test_find_mse_max.cpp
   zm_ientropy_tests.cpp
-    zm_entropy_tests.cpp
+  zm_entropy_tests.cpp
 ) # ZM_TESTS_SRCS
 
 # All tests should understand the same baseline args
