@@ -19,6 +19,6 @@ for the EATM data in the E3SM distribution
 <do_eatm>.true.</do_eatm> 
 
 <!-- Emulator atm domain file (relative to DIN_LOC_ROOT) -->
-<filename_eatm atm_grid="gauss180x360" >share/meshes/gaussian_180x360_latlon.scrip.nc</filename_eatm>
+<filename_eatm atm_grid="gauss180x360" >share/meshes/gaussian_180x360_latlon.scrip.20260127.nc</filename_eatm>
 
 </namelist_defaults>
