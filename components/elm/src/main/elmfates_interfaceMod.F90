@@ -4060,7 +4060,7 @@ end subroutine wrap_update_hifrq_hist
       !! Column level variables
       ! Get the column index
       c = this%fates(nc)%registry(r)%GetColumnIndex()
-      
+
       ! Determine if this is the first register on the column
       is_first = .false.
       if (is_bareground) then
@@ -4069,61 +4069,76 @@ end subroutine wrap_update_hifrq_hist
 
       ! Variables that do not need to accumulate
       call this%fates(nc)%registry(r)%Register(key=hlm_fates_soil_level, &
-                                               data=col_pp%nlevbed(c), hlm_flag=.true.)
+                                               data=col_pp%nlevbed(c), hlm_flag=.true., &
+                                               subgrid_type=registry_var_intid_column)
       call this%fates(nc)%registry(r)%Register(key=hlm_fates_decomp_frac_moisture, &
-                                               data=col_cf%w_scalar(c,:), hlm_flag=.true.)
+                                               data=col_cf%w_scalar(c,:), hlm_flag=.true., &
+                                               subgrid_type=registry_var_intid_column)
       call this%fates(nc)%registry(r)%Register(key=hlm_fates_decomp_frac_temperature, &
-                                               data=col_cf%t_scalar(c,:), hlm_flag=.true.)
+                                               data=col_cf%t_scalar(c,:), hlm_flag=.true., &
+                                               subgrid_type=registry_var_intid_column)
 
       ! Variables that need to accumulate                                               
       call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_carbon_cellulose, &
                                                data=col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_cel_lit), &
-                                               hlm_flag=.true., accumulate=.true.)
+                                               hlm_flag=.true., accumulate=.true., &
+                                               subgrid_type=registry_var_intid_column)
       call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_carbon_lignin, &
                                                data=col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_lig_lit), &
-                                               hlm_flag=.true., accumulate=.true.)
+                                               hlm_flag=.true., accumulate=.true., &
+                                               subgrid_type=registry_var_intid_column)
       call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_carbon_labile, &
                                                data=col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_met_lit), &
-                                               hlm_flag=.true., accumulate=.true.)
+                                               hlm_flag=.true., accumulate=.true., &
+                                               subgrid_type=registry_var_intid_column)
 
       ! Pass is_first option to assure HLM updates are zero'd 
       call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_carbon_total, &
                                                data=col_cf%litfall(c), &
-                                               hlm_flag=.true., accumulate=.true., is_first=is_first)
+                                               hlm_flag=.true., accumulate=.true., is_first=is_first, &
+                                               subgrid_type=registry_var_intid_column)
 
       ! Register nitrogen and phosphorus litter fluxes if necessary
       if (fates_parteh_mode == prt_cnp_flex_allom_hyp) then
          ! Phosphorus
          call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_phosphorus_cellulose, &
                                                   data=col_pf%decomp_ppools_sourcesink(c,:,i_cel_lit), &
-                                                  hlm_flag=.true., accumulate=.true.)
+                                                  hlm_flag=.true., accumulate=.true., &
+                                                  subgrid_type=registry_var_intid_column)
          call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_phosphorus_lignin, &
                                                   data=col_pf%decomp_ppools_sourcesink(c,:,i_lig_lit), &
-                                                  hlm_flag=.true., accumulate=.true.)
+                                                  hlm_flag=.true., accumulate=.true., &
+                                                  subgrid_type=registry_var_intid_column)
          call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_phosphorus_labile, &
                                                   data=col_pf%decomp_ppools_sourcesink(c,:,i_met_lit), &
-                                                  hlm_flag=.true., accumulate=.true.)
-         
+                                                  hlm_flag=.true., accumulate=.true., &
+                                                  subgrid_type=registry_var_intid_column)
+
          ! Pass is_first option to assure HLM updates are zero'd
          call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_phosphorus_total, &
                                                   data=col_pf%plant_to_litter_pflux(c), &
-                                                  hlm_flag=.true., accumulate=.true., is_first=is_first)
+                                                  hlm_flag=.true., accumulate=.true., is_first=is_first, &
+                                                  subgrid_type=registry_var_intid_column)
 
          ! Nitrogen
          call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_nitrogen_cellulose, &
                                                   data=col_nf%decomp_npools_sourcesink(c,:,i_cel_lit), &
-                                                  hlm_flag=.true., accumulate=.true.)
+                                                  hlm_flag=.true., accumulate=.true., &
+                                                  subgrid_type=registry_var_intid_column)
          call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_nitrogen_lignin, &
                                                   data=col_nf%decomp_npools_sourcesink(c,:,i_lig_lit), &
-                                                  hlm_flag=.true., accumulate=.true.)
+                                                  hlm_flag=.true., accumulate=.true., &
+                                                  subgrid_type=registry_var_intid_column)
          call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_nitrogen_labile, &
                                                   data=col_nf%decomp_npools_sourcesink(c,:,i_met_lit), &
-                                                  hlm_flag=.true., accumulate=.true.)
+                                                  hlm_flag=.true., accumulate=.true., &
+                                                  subgrid_type=registry_var_intid_column)
 
          ! Pass is_first option to assure HLM updates are zero'd
          call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_nitrogen_total, &
                                                   data=col_nf%plant_to_litter_nflux(c), &
-                                                  hlm_flag=.true., accumulate=.true., is_first=is_first)
+                                                  hlm_flag=.true., accumulate=.true., is_first=is_first, &
+                                                  subgrid_type=registry_var_intid_column)
       end if
    end do
 
