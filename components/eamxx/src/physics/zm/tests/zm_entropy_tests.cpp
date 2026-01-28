@@ -29,7 +29,7 @@ struct UnitWrap::UnitTest<D>::TestEntropy : public UnitWrap::UnitTest<D>::Base {
     static constexpr Int num_runs = sizeof(baseline_data) / sizeof(EntropyData);
 
     // Generate random input data
-    // Alternatively, you can use the baseline_data construtors/initializer lists to hardcode data
+    // Alternatively, you can use the baseline_data constructors/initializer lists to hardcode data
     for (auto& d : baseline_data) {
       d.randomize(engine);
     }
