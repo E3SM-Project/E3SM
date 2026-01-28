@@ -176,6 +176,7 @@ int build_struct_package_lists(ezxml_t currentPosition, char * out_packages){/*{
 	const char *name;
 
 	char *token, *string, *tofree;
+	char out_packages_tmp[2048];
 	int empty_packages;
 	int empty_struct;
 
@@ -227,12 +228,14 @@ int build_struct_package_lists(ezxml_t currentPosition, char * out_packages){/*{
 				if(out_packages[0] == '\0'){
 					sprintf(out_packages, "%s", token);
 				} else if(add_package_to_list(token, out_packages)){
-					sprintf(out_packages, "%s;%s", out_packages, token);
+					snprintf(out_packages_tmp, sizeof(out_packages_tmp), "%s;%s", out_packages, token);
+					snprintf(out_packages, 2048, "%s", out_packages_tmp);
 				}
 
 				while( (token = strsep(&string, ";")) != NULL){
 					if(add_package_to_list(token, out_packages)){
-						sprintf(out_packages, "%s;%s", out_packages, token);
+						snprintf(out_packages_tmp, sizeof(out_packages_tmp), "%s;%s", out_packages, token);
+						snprintf(out_packages, 2048, "%s", out_packages_tmp);
 					}
 				}
 
@@ -251,12 +254,14 @@ int build_struct_package_lists(ezxml_t currentPosition, char * out_packages){/*{
 					if(out_packages[0] == '\0'){
 						sprintf(out_packages, "%s", token);
 					} else if(add_package_to_list(token, out_packages)){
-						sprintf(out_packages, "%s;%s", out_packages, token);
+						snprintf(out_packages_tmp, sizeof(out_packages_tmp), "%s;%s", out_packages, token);
+						snprintf(out_packages, 2048, "%s", out_packages_tmp);
 					}
 
 					while( (token = strsep(&string, ";")) != NULL){
 						if(add_package_to_list(token, out_packages)){
-							sprintf(out_packages, "%s;%s", out_packages, token);
+							snprintf(out_packages_tmp, sizeof(out_packages_tmp), "%s;%s", out_packages, token);
+							snprintf(out_packages, 2048, "%s", out_packages_tmp);
 						}
 					}
 
@@ -277,12 +282,14 @@ int build_struct_package_lists(ezxml_t currentPosition, char * out_packages){/*{
 				if(out_packages[0] == '\0'){
 					sprintf(out_packages, "%s", token);
 				} else if(add_package_to_list(token, out_packages)){
-					sprintf(out_packages, "%s;%s", out_packages, token);
+					snprintf(out_packages_tmp, sizeof(out_packages_tmp), "%s;%s", out_packages, token);
+					snprintf(out_packages, 2048, "%s", out_packages_tmp);
 				}
 
 				while( (token = strsep(&string, ";")) != NULL){
 					if(add_package_to_list(token, out_packages)){
-						sprintf(out_packages, "%s;%s", out_packages, token);
+						snprintf(out_packages_tmp, sizeof(out_packages_tmp), "%s;%s", out_packages, token);
+						snprintf(out_packages, 2048, "%s", out_packages_tmp);
 					}
 				}
 
