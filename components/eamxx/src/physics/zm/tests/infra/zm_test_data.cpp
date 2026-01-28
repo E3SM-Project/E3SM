@@ -56,7 +56,7 @@ void zm_common_finalize_f()
 }
 
 
-// Wrapper around gw_init for cxx
+// Wrapper around zm_common_init for cxx
 void zm_common_init()
 {
   ZMF::zm_common_init();
