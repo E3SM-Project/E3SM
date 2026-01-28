@@ -75,7 +75,7 @@ struct Functions {
 
     static inline constexpr Int LOOPMAX = 100; // Max number of iteration loops for invert_entropy
 
-    static inline constexpr Real tol_coeff = 0.001; // tolerance coeficient
+    static inline constexpr Real tol_coeff = 0.001; // tolerance coefficient
 
     static inline constexpr Real tol_eps   = 3.e-8; // small value for tolerance calculation
   };
