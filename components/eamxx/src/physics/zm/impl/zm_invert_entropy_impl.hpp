@@ -27,7 +27,7 @@ void Functions<S,D>::invert_entropy(
   //----------------------------------------------------------------------------
   // Local variables
   bool converged;   // flag for convergence
-  Real a, b, c, d, ebr, fa, fb, fc, pbr, qbr, rbr, sbr, xm;
+  Real a, b, c, d = 0, ebr, fa, fb, fc, pbr, qbr, rbr, sbr, xm;
 
   //----------------------------------------------------------------------------
   // initialize variables
