@@ -61,6 +61,8 @@ private:
   // its local part of the mat-vec product
   std::vector<Triplet>  get_my_triplets (const std::vector<Triplet>& triplets);
 
+  void setup_latlon_data_in_generated_grid (const std::string& map_file);
+
   void create_ov_grid (const std::vector<Triplet>& triplets);
 
   // Not a const ref, since we'll sort the triplets according to
