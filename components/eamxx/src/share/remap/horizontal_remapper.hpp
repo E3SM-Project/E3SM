@@ -83,7 +83,6 @@ protected:
 
   void create_ov_fields ();
   void setup_mpi_data_structures ();
-  void setup_latlon_tgt_grid(const std::string& map_file);
 
   // Whether we are tracking mask fields
   bool                m_track_mask;

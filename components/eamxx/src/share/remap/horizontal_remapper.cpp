@@ -13,46 +13,6 @@
 namespace scream
 {
 
-// Anonymous namespace to define a couple of utilities we need below
-namespace {
-
-struct RealsClose {
-  // Find the unique lat/lon values
-  bool operator()(Real a, Real b) const {
-    // To avoid issues with rounding when lat/lon were stored in nc file,
-    // only compare up to 4 digits after decimal point
-    return std::round(a * 10000) < std::round(b * 10000);
-  }
-};
-
-// Helper fcn to gather the union of sets across MPI ranks
-std::vector<Real> allgatherv_vec (const std::vector<Real>& my_vals, const ekat::Comm& comm)
-{
-  // Step 1: Gather sizes of each local set
-  int my_size = my_vals.size();
-  std::vector<int> count(comm.size());
-  comm.all_gather(&my_size,count.data(),1);
-
-  // Step 2: compute offsets
-  std::vector<int> disp(comm.size(),0);
-  for (int i=1; i<comm.size(); ++i) {
-    disp[i] = disp[i-1] + count[i-1];
-  }
-
-  // Step 3: Gather all values from each rank
-  std::vector<Real> all_vals(disp.back()+count.back());
-  MPI_Allgatherv (my_vals.data(),my_size,ekat::get_mpi_type<Real>(),
-                  all_vals.data(),count.data(),disp.data(),
-                  ekat::get_mpi_type<Real>(),comm.mpi_comm());
-
-  // Step 4: remove duplicates
-  std::set<Real,RealsClose> vals_set(all_vals.begin(),all_vals.end());
-  return std::vector<Real>(vals_set.begin(),vals_set.end());
-}
-} // Anonymous namespace
-
-// -------------------------------------------------------------
-
 HorizontalRemapper::
 HorizontalRemapper (const grid_ptr_type& grid,
                     const std::string& map_file,
@@ -96,12 +56,6 @@ HorizontalRemapper (const grid_ptr_type& grid,
   }
 
   if (m_remap_data->m_built_from_src) {
-    // If this is a remap to lat-lon grid, replace the tgt PointGrid with a LatLonGrid
-    if (scorpio::has_dim(map_file,"dst_grid_rank") and
-        scorpio::get_dimlen(map_file,"dst_grid_rank")==2) {
-      setup_latlon_tgt_grid(map_file);
-    }
-
     // If the src grid contains geo data that is not in the tgt grid, then transfer it.
     // If the geo data has the COL dimension, then remap it.
     const auto& src_geo_data_names = m_src_grid->get_geometry_data_names();
@@ -1190,107 +1144,6 @@ void HorizontalRemapper::setup_mpi_data_structures ()
                      0, mpi_comm, &req);
     }
   }
-}
-
-void HorizontalRemapper::setup_latlon_tgt_grid(const std::string& map_file)
-{
-  using namespace ShortFieldTagsNames;
-
-  // Add lat/lon to the temp grid, and read from map file
-  auto nondim = ekat::units::Units::nondimensional();
-  ekat::units::Units deg(nondim,"degrees");
-
-  // Declare lat/lon and read them from the map file.
-  // WARNING: the vars/dims names are different from what eamxx uses
-  auto pt_lat = m_coarse_grid->get_geometry_data("lat");
-  auto pt_lon = m_coarse_grid->get_geometry_data("lon");
-
-  RealsClose cmp;
-  std::set<Real,RealsClose> my_lats(cmp), my_lons(cmp);
-
-  auto pt_lat_h = pt_lat.get_view<const Real*,Host>();
-  auto pt_lon_h = pt_lon.get_view<const Real*,Host>();
-  for (int i=0; i<m_coarse_grid->get_num_local_dofs(); ++i) {
-    my_lats.insert(pt_lat_h(i));
-    my_lons.insert(pt_lon_h(i));
-  }
-
-  const auto& comm = m_coarse_grid->get_comm();
-  auto lats = allgatherv_vec(std::vector<Real>(my_lats.begin(),my_lats.end()),comm);
-  auto lons = allgatherv_vec(std::vector<Real>(my_lons.begin(),my_lons.end()),comm);
-  int nlat = lats.size();
-  int nlon = lons.size();
-  
-  // Re-create lat/lon geometry data with only lat (or lon) dim
-  auto coarse_grid = m_remap_data->m_generated_grid;
-  coarse_grid->delete_geometry_data("lat");
-  coarse_grid->delete_geometry_data("lon");
-  auto lat = coarse_grid->create_geometry_data("lat",FieldLayout({CMP},{nlat},{"lat"}),deg);
-  auto lon = coarse_grid->create_geometry_data("lon",FieldLayout({CMP},{nlon},{"lon"}),deg);
-  
-  auto lat_h = lat.get_view<Real*,Host>();
-  auto lon_h = lon.get_view<Real*,Host>();
-  std::copy_n(lats.begin(),nlat,lat_h.data());
-  std::copy_n(lons.begin(),nlon,lon_h.data());
-  lat.sync_to_dev();
-  lon.sync_to_dev();
-
-  auto scalar2d = coarse_grid->get_2d_scalar_layout();
-  auto lat_idx = coarse_grid->create_geometry_data("lat_idx",scalar2d,nondim,DataType::IntType);
-  auto lon_idx = coarse_grid->create_geometry_data("lon_idx",scalar2d,nondim,DataType::IntType);
-  lat_idx.get_header().set_extra_data("save_as_geo_data",false);
-  lon_idx.get_header().set_extra_data("save_as_geo_data",false);
-
-  auto lat_idx_h = lat_idx.get_view<int*,Host>();
-  auto lon_idx_h = lon_idx.get_view<int*,Host>();
-  constexpr Real tol = 1e-3;
-  const auto lat_beg = lat_h.data();
-  const auto lon_beg = lon_h.data();
-  for (int i=0; i<m_coarse_grid->get_num_local_dofs(); ++i) {
-    auto lat_it = std::upper_bound(lat_beg,lat_beg+nlat,pt_lat_h(i));
-    auto lon_it = std::upper_bound(lon_beg,lon_beg+nlon,pt_lon_h(i));
-    if (lat_it == lat_beg) {
-      lat_idx_h(i) = 0;
-    } else if (lat_it == lat_beg+nlat) {
-      lat_idx_h(i) = std::distance(lat_beg,lat_it)-1;
-    } else {
-      auto prev = std::distance(lat_beg,lat_it)-1;
-      auto next = prev+1;
-      if (std::abs(pt_lat_h(i)- lat_h(prev))<std::abs(pt_lat_h(i)- lat_h(next))) {
-        lat_idx_h(i) = prev;
-      } else {
-        lat_idx_h(i) = next;
-      }
-    }
-    EKAT_REQUIRE_MSG (std::abs(pt_lat_h(i)- lat_h(lat_idx_h(i)))<tol,
-      "[LatLonGrid] Error! Something went wrong when computing lat idx fields.\n"
-      " - curr col idx: " + std::to_string(i) + "\n"
-      " - curr col lat: " + std::to_string(pt_lat_h(i)) + "\n"
-      " - lat idx     : " + std::to_string(lat_idx_h(i)) + "\n"
-      " - lat values  : " + ekat::join(lats,",") + "\n");
-
-    if (lon_it == lon_beg) {
-      lon_idx_h(i) = 0;
-    } else if (lon_it == lon_beg+nlon) {
-      lon_idx_h(i) = std::distance(lon_beg,lon_it)-1;
-    } else {
-      auto prev = std::distance(lon_beg,lon_it)-1;
-      auto next = prev+1;
-      if (std::abs(pt_lon_h(i)- lon_h(prev))<std::abs(pt_lon_h(i)- lon_h(next))) {
-        lon_idx_h(i) = prev;
-      } else {
-        lon_idx_h(i) = next;
-      }
-    }
-    EKAT_REQUIRE_MSG (std::abs(pt_lon_h(i)- lon_h(lon_idx_h(i)))<tol,
-      "[LatLonGrid] Error! Something went wrong when computing lon idx fields.\n"
-      " - curr col idx: " + std::to_string(i) + "\n"
-      " - curr col lon: " + std::to_string(pt_lon_h(i)) + "\n"
-      " - lon idx     : " + std::to_string(lon_idx_h(i)) + "\n"
-      " - lon values  : " + ekat::join(lons,",") + "\n");
-  }
-  lat_idx.sync_to_dev();
-  lon_idx.sync_to_dev();
 }
 
 void HorizontalRemapper::clean_up ()
