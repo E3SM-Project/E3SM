@@ -1,0 +1,24 @@
+\documentclass[12pt]{article}
+\usepackage{authblk}      %needed for compiling parts or entire documentation
+\usepackage{graphicx}     %needed for graphics
+\bibliographystyle{../../amermeteorsoc}
+
+\title{Converting Surface Pressure to Sea Level Pressure}
+
+\author[1]{Peter Caldwell}
+\date{\today}
+
+\affil[1]{Lawrence Livermore National Lab, Livermore CA}
+
+\begin{document}
+\maketitle{}
+
+\input{psl_doc.tex}
+
+%bib needs to be tacked onto main so all-text compilation doesn't look for bib in bad location.
+%================================
+\subsection{Bibliography}
+%================================
+\bibliography{../../biblio.bib}
+
+\end{document}
