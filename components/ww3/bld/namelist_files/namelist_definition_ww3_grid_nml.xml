@@ -405,7 +405,15 @@
        group="sbt1"
        valid_values="">
 </entry>
- 
+
+<!-- SIC4 -->
+<entry id="ic4method"
+       type="real"
+       category="sic4"
+       group="sic4"
+       valid_values="">
+</entry>
+
 <!-- SDB1 -->
  
 <entry id="bjalfa"
@@ -1001,6 +1009,12 @@
 </entry>
 <entry id="btbet"
        type="real"
+       category="misc"
+       group="misc"
+       valid_values="">
+</entry>
+<entry id="icnumerics"
+       type="logical"
        category="misc"
        group="misc"
        valid_values="">

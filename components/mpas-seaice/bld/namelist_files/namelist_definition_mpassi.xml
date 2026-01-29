@@ -282,9 +282,17 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_nFloeCategories" type="integer"
 	category="dimensions" group="dimensions">
-The number of floe size categories to use.
+The number of ice floe size categories to use.
 
-Valid values: Any positive integer.
+Valid values: 0(default), 1, 12, 16, 24.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_nFrequencies" type="integer"
+	category="dimensions" group="dimensions">
+The number of frequency bins used to define the wave spectrum.
+
+Valid values: 0(default),25,36,50. Defined by WW3 component. Do not edit.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -829,6 +837,14 @@ Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_use_column_waves" type="logical"
+	category="column_package" group="column_package">
+Allow wavebreaking of ice floes. Requires coupling to WW3.
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- column_tracers -->
 
@@ -909,6 +925,41 @@ Default: Defined in namelist_defaults.xml
 Use floe size distribution. Requires Icepack column package.
 
 Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- wave_config -->
+
+<entry id="config_xfreq" type="real"
+	category="wave_config" group="wave_config">
+Frequency multiplication factor used by wave model.
+
+Valid values: Defined by WW3 component. Do not modify.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_freq1" type="real"
+	category="wave_config" group="wave_config">
+The first frequency used by wave model.
+
+Valid values: Defined by WW3 component. Do not modify.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_wave_spec_type" type="char*1024"
+	category="wave_config" group="wave_config">
+The type of wave spectra input.
+
+Valid values: none, constant, random.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_wave_height_type" type="char*1024"
+	category="wave_config" group="wave_config">
+The type of wave height input.
+
+Valid values: none, coupled, internal.
 Default: Defined in namelist_defaults.xml
 </entry>
 
