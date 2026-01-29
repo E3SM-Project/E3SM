@@ -282,10 +282,18 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_nFloeCategories" type="integer"
 	category="dimensions" group="dimensions">
-The number of floe size categories to use.
+The number of ice floe size categories to use.
 
-Valid values: 0,1,12,16,24.
-Default: 0 (No waves). Defined in namelist_defaults.xml
+Valid values: 0(default), 1, 12, 16, 24.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_nFrequencies" type="integer"
+	category="dimensions" group="dimensions">
+The number of frequency bins used to define the wave spectrum.
+
+Valid values: 0(default),25,36,50. Defined by WW3 component. Do not edit.
+Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_nIceLayers" type="integer"
@@ -304,12 +312,6 @@ Valid values: Any positive integer.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_nFrequencies" type="integer"	
-        category="dimensions" group="dimensions">
-The number of frequencies used by the wave model.
-Valid values: 0,25,36,50.
-Default: 0 (no waves). Defined by WW3.
-</entry>
 
 <!-- initialize -->
 
@@ -837,11 +839,12 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_use_column_waves" type="logical"
 	category="column_package" group="column_package">
-Use the wave coupling to allow breaking of ice floes
+Allow wavebreaking of ice floes. Requires coupling to WW3.
 
 Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
+
 
 <!-- column_tracers -->
 
@@ -925,31 +928,41 @@ Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
+
 <!-- wave_config -->
 
 <entry id="config_xfreq" type="real"
 	category="wave_config" group="wave_config">
-Frequency multiplication factor used by the wave model.
+Frequency multiplication factor used by wave model.
+
+Valid values: Defined by WW3 component. Do not modify.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_freq1" type="real"
 	category="wave_config" group="wave_config">
-First frequency used by the wave model.
+The first frequency used by wave model.
+
+Valid values: Defined by WW3 component. Do not modify.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_wave_spec_type" type="char*1024"
 	category="wave_config" group="wave_config">
-Wave Spectra input type.
-Default = 'none'. Defined in namelist_defaults.xml
+The type of wave spectra input.
+
+Valid values: none, constant, random.
+Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_wave_height_type" type="char*1024"
 	category="wave_config" group="wave_config">
-Wave Height input type.
-Default = 'internal'. Defined in namelist_defaults.xml
+The type of wave height input.
+
+Valid values: none, coupled, internal.
+Default: Defined in namelist_defaults.xml
 </entry>
+
 
 <!-- biogeochemistry -->
 
