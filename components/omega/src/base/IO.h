@@ -74,7 +74,7 @@ enum FileFmt {
    FmtHDF5     = PIO_IOTYPE_HDF5,     ///< native HDF5 format
    FmtADIOS    = PIO_IOTYPE_ADIOS,    ///< ADIOS format
    FmtUnknown  = -1,                  ///< Unknown or undefined
-   FmtDefault  = PIO_IOTYPE_NETCDF4C, ///< NetCDF4 is default
+   FmtDefault  = PIO_IOTYPE_PNETCDF,  ///< PNETCDF is default
 };
 
 /// File operations

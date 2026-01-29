@@ -189,11 +189,11 @@ void init(const MPI_Comm &InComm // [in] MPI communicator to use
    CHECK_ERROR_ABORT(Err, "IO: IO group not found in input Config");
 
    // Read default file format
-   std::string InFileFmt = "netcdf4c"; // set default value
+   std::string InFileFmt = "pnetcdf"; // set default value
    Err                   = IOConfig.get("IODefaultFormat", InFileFmt);
    CHECK_ERROR_WARN(Err, "IO: DefaultFileFmt not found in Config - using {}",
                     InFileFmt);
-   FileFmt DefaultFileFmt = FileFmtFromString(InFileFmt);
+   DefaultFileFmt = FileFmtFromString(InFileFmt);
 
    // Read parallel IO settings - default to single-task if config
    // values do not exist
@@ -249,6 +249,7 @@ void openFile(
 
    int PIOErr = 0;        // internal SCORPIO/PIO return call
    int Format = InFormat; // coerce to integer for PIO calls
+   int IsCDF5 = (InFormat == PIO_IOTYPE_PNETCDF) ? PIO_64BIT_DATA : 0;
 
    switch (InMode) {
 
@@ -269,7 +270,7 @@ void openFile(
       // file exists, we use create and fail with an error
       case IfExists::Fail:
          PIOErr = PIOc_createfile(SysID, &FileID, &Format, Filename.c_str(),
-                                  NC_NOCLOBBER | InMode);
+                                  NC_NOCLOBBER | IsCDF5 | InMode);
          if (PIOErr != PIO_NOERR)
             ABORT_ERROR("IO::openFile: PIO error opening file {} for writing",
                         Filename);
@@ -279,7 +280,7 @@ void openFile(
       // we use create with the CLOBBER option
       case IfExists::Replace:
          PIOErr = PIOc_createfile(SysID, &FileID, &Format, Filename.c_str(),
-                                  NC_CLOBBER | InMode);
+                                  NC_CLOBBER | IsCDF5 | InMode);
          if (PIOErr != PIO_NOERR)
             ABORT_ERROR("IO::openFile: PIO error opening file {} for writing",
                         Filename);
@@ -291,10 +292,10 @@ void openFile(
       case IfExists::Append:
          if (std::filesystem::exists(Filename)) {
             PIOErr = PIOc_openfile(SysID, &FileID, &Format, Filename.c_str(),
-                                   InMode);
+                                   IsCDF5 | InMode);
          } else {
             PIOErr = PIOc_createfile(SysID, &FileID, &Format, Filename.c_str(),
-                                     InMode);
+                                     IsCDF5 | InMode);
          }
 
          if (PIOErr != PIO_NOERR)

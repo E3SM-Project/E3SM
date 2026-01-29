@@ -19,7 +19,7 @@ Omega:
     IOStride: 1
     IOBaseTask: 0
     IORearranger: box
-    IODefaultFormat: NetCDF4
+    IODefaultFormat: pnetcdf
   State:
     NTimeLevels: 2
   Advection:
@@ -127,7 +127,7 @@ Omega:
         - Restart
     History:
       UsePointerFile: false
-      Filename: ocn.hist.$SimTime
+      Filename: ocn.hist.$Y-$M-$D_$h.$m.$s
       Mode: write
       IfExists: replace
       Precision: double
