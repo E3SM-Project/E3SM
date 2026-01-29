@@ -199,12 +199,12 @@ sim_year="1950" glc_nec="0" use_crop=".false.">lnd/clm2/initdata/20220908.ICRUEL
 
 <!-- HOMME grid ne32 resolution -->
 <finidat hgrid="ne32np4.pg2"   maxpft="17"  mask="RRSwISC6to18E3r5" use_cn=".false." ic_ymd="20000101" more_vertlayers=".false."
-ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map/domain.lnd.ne32pg2_RRSwISC6to18E3r5.20251006.nc
+ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map/ne32pg2.elm.r.2013-08-01-00000.64bit.nc
 </finidat>
 
 <!-- HOMME grid ne64 resolution -->
 <finidat hgrid="ne64np4.pg2"   maxpft="17"  mask="RRSwISC6to18E3r5" use_cn=".false." ic_ymd="20000101" more_vertlayers=".false."
-ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map/domain.lnd.ne64pg2_RRSwISC6to18E3r5.20251006.nc
+ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map/ne64pg2.elm.r.2013-08-01-00000.64bit.nc
 </finidat>
 
 <!-- HOMME grid ne120 resolution -->
@@ -235,7 +235,7 @@ ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map
 
 <!-- HOMME grid ne128 resolution -->
 <finidat hgrid="ne128np4.pg2"   maxpft="17"  mask="RRSwISC6to18E3r5" use_cn=".false." ic_ymd="20000101" more_vertlayers=".false."
-ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map/domain.lnd.ne128pg2_RRSwISC6to18E3r5.20251006.nc
+ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map/ne128pg2.elm.r.2013-08-01-00000.64bit.nc
 </finidat>
 
 <!-- HOMME grid ne240 resolution -->
