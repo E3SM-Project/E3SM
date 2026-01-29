@@ -81,14 +81,11 @@ contains
             do j = 1,nlevdecomp
 
                col_ps%decomp_ppools_vr(c,j,i_met_lit) = col_ps%decomp_ppools_vr(c,j,i_met_lit) + &
-                    col_pf%dwt_frootp_to_litr_met_p(c,j) * dt + &
-                    col_pf%dwt_residue_to_litr_met_p(c,j) * dt
+                    col_pf%dwt_frootp_to_litr_met_p(c,j) * dt
                col_ps%decomp_ppools_vr(c,j,i_cel_lit) = col_ps%decomp_ppools_vr(c,j,i_cel_lit) + &
-                    col_pf%dwt_frootp_to_litr_cel_p(c,j) * dt + &
-                    col_pf%dwt_residue_to_litr_cel_p(c,j) * dt
+                    col_pf%dwt_frootp_to_litr_cel_p(c,j) * dt
                col_ps%decomp_ppools_vr(c,j,i_lig_lit) = col_ps%decomp_ppools_vr(c,j,i_lig_lit) + &
-                    col_pf%dwt_frootp_to_litr_lig_p(c,j) * dt + &
-                    col_pf%dwt_residue_to_litr_lig_p(c,j) * dt
+                    col_pf%dwt_frootp_to_litr_lig_p(c,j) * dt
                col_ps%decomp_ppools_vr(c,j,i_cwd) = col_ps%decomp_ppools_vr(c,j,i_cwd) + &
                     ( col_pf%dwt_livecrootp_to_cwdp(c,j) + col_pf%dwt_deadcrootp_to_cwdp(c,j) ) * dt
 
@@ -120,7 +117,6 @@ contains
     integer :: c,p,j,l,k ! indices
     integer :: fp,fc     ! lake filter indices
     integer :: csi
-    real(r8) :: wt_col
 
     integer:: kyr                     ! current year
     integer:: kmo                     ! month of year  (1, ..., 12)
@@ -137,8 +133,7 @@ contains
          cascade_receiver_pool => decomp_cascade_con%cascade_receiver_pool , & ! Input:  [integer  (:)     ]  which pool is C added to for a given decomposition step
 
          !!! N deposition profile, will weathering profile be needed?  -X.YANG
-         ndep_prof             => cnstate_vars%ndep_prof_col               , & ! Input:  [real(r8) (:,:)   ]  profile over which N deposition is distributed through column (1/m)
-         residue2litr          => cnstate_vars%residue2litr_patch            & ! Input:  [real(r8) (:)     ]  Residue to litter conversion rate (1/s)
+         ndep_prof             => cnstate_vars%ndep_prof_col                 & ! Input:  [real(r8) (:,:)   ]  profile over which N deposition is distributed through column (1/m)
          )
 
 
@@ -168,28 +163,38 @@ contains
                   col_pf%decomp_ppools_sourcesink(c,j,i_lig_lit) = &
                        col_pf%phenology_p_to_litr_lig_p(c,j) * dt + &
                        col_pf%residue_to_litr_lig_p(c,j) * dt
+
+                  ! update residue pools
+                  col_ps%residue_ppools(c,i_met_lit) = col_ps%residue_ppools(c,i_met_lit) - &
+                       col_pf%residue_to_litr_met_p(c,j) * dzsoi_decomp(j) * dt
+                  col_ps%residue_ppools(c,i_cel_lit) = col_ps%residue_ppools(c,i_cel_lit) - &
+                       col_pf%residue_to_litr_cel_p(c,j) * dzsoi_decomp(j) * dt
+                  col_ps%residue_ppools(c,i_lig_lit) = col_ps%residue_ppools(c,i_lig_lit) - &
+                       col_pf%residue_to_litr_lig_p(c,j) * dzsoi_decomp(j) * dt
                   
                end do
             end do
-
-            do fp = 1, num_soilp
-               p = filter_soilp(fp)
-
-               ! update residue pools
-               col_ps%residue_ppools(p,i_met_lit) = col_ps%residue_ppools(p,i_met_lit) - &
-                    col_ps%residue_ppools(p,i_met_lit) * residue2litr(p) * dt - &
-                    col_pf%residue_ptransfer(p,i_met_lit) * dt + &
-                    col_pf%phenology_p_to_residue_met_p(p) * dt
-               col_ps%residue_ppools(p,i_cel_lit) = col_ps%residue_ppools(p,i_cel_lit) - &
-                    col_ps%residue_ppools(p,i_cel_lit) * residue2litr(p) * dt - &
-                    col_pf%residue_ptransfer(p,i_cel_lit) * dt + &
-                    col_pf%phenology_p_to_residue_cel_p(p) * dt
-               col_ps%residue_ppools(p,i_lig_lit) = col_ps%residue_ppools(p,i_lig_lit) - &
-                    col_ps%residue_ppools(p,i_lig_lit) * residue2litr(p) * dt - &
-                    col_pf%residue_ptransfer(p,i_lig_lit) * dt + &
-                    col_pf%phenology_p_to_residue_lig_p(p) * dt
-            end do
          end if
+
+         do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            ! update residue pools
+            if(.not.use_fates)then
+               col_ps%residue_ppools(c,i_met_lit) = col_ps%residue_ppools(c,i_met_lit) + &
+                    col_pf%phenology_p_to_residue_met_p(c) * dt
+               col_ps%residue_ppools(c,i_cel_lit) = col_ps%residue_ppools(c,i_cel_lit) + &
+                    col_pf%phenology_p_to_residue_cel_p(c) * dt
+               col_ps%residue_ppools(c,i_lig_lit) = col_ps%residue_ppools(c,i_lig_lit) + &
+                    col_pf%phenology_p_to_residue_lig_p(c) * dt
+            end if
+
+            col_ps%residue_ppools(c,i_met_lit) = col_ps%residue_ppools(c,i_met_lit) - &
+                 col_pf%residue_ptransfer(c,i_met_lit) * dt
+            col_ps%residue_ppools(c,i_cel_lit) = col_ps%residue_ppools(c,i_cel_lit) - &
+                 col_pf%residue_ptransfer(c,i_cel_lit) * dt
+            col_ps%residue_ppools(c,i_lig_lit) = col_ps%residue_ppools(c,i_lig_lit) - &
+                 col_pf%residue_ptransfer(c,i_lig_lit) * dt
+         end do
 
         ! P fertilization for crops
       if ( crop_prog )then
@@ -249,14 +254,11 @@ contains
             end if
          end do
          if ( cascade_receiver_pool(csi) /= 0 ) then  ! skip terminal transitions
-            do fp = 1, num_soilp
-               p = filter_soilp(fp)
-               c = veg_pp%column(p)
-               wt_col = veg_pp%wtcol(p)
-
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
                col_pf%decomp_ppools_sourcesink(c,1,cascade_receiver_pool(csi)) = &
                   col_pf%decomp_ppools_sourcesink(c,1,cascade_receiver_pool(csi)) + &
-                  (col_pf%residue_ptransfer(p,k) + col_pf%residue_sminp_flux(p,k)) / dzsoi_decomp(1) * wt_col * dt
+                  (col_pf%residue_ptransfer(c,k) + col_pf%residue_sminp_flux(c,k)) / dzsoi_decomp(1) * dt
             end do
          end if
       end do

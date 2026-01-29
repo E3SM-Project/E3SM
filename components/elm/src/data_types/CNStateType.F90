@@ -60,7 +60,7 @@ module CNStateType
 
      real(r8) , pointer :: residue_prof_patch          (:,:)   ! patch (1/m) profile of residue litter input naturally
      real(r8) , pointer :: tillage_prof_patch          (:,:)   ! patch (1/m) profile of residue litter input by tillage
-     real(r8) , pointer :: residue2litr_patch          (:)     ! patch (1/s) residue to conversion rate
+     real(r8) , pointer :: residue2litr_patch          (:)     ! patch (1/s) residue to litter conversion rate
 
      real(r8) , pointer :: gdp_lf_col                  (:)     ! col global real gdp data (k US$/capita)
      real(r8) , pointer :: peatf_lf_col                (:)     ! col global peatland fraction data (0-1)

@@ -96,9 +96,9 @@ contains
          end do
 
          do l = 1, nlit_pools
-            do fp = 1, num_soilp
-               p = filter_soilp(fp)
-               col_ns%residue_npools(p,l) = col_ns%residue_npools(p,l) - col_nf%m_residue_fire_nloss(p,l) * dt
+            do fc = 1,num_soilc
+               c = filter_soilc(fc) 
+               col_ns%residue_npools(c,l) = col_ns%residue_npools(c,l) - col_nf%m_residue_fire_nloss(c,l) * dt
             end do
          end do
 

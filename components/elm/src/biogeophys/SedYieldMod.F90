@@ -121,7 +121,7 @@ contains
          fgrvl            =>    soilstate_vars%cellgrvl_col         , & ! Input: [real(r8) (:,:) ] gravel percentage
          litho            =>    soilstate_vars%litho_col            , & ! Input: [real(r8) (:) ] lithology erodiblity index
 
-         fscov_p          =>    col_cs%fscov_veg                    , & ! Input: [real(r8) (:) ] fraction of soil covered by residue
+         fscov            =>    col_cs%fscov                        , & ! Input: [real(r8) (:) ] fraction of soil covered by residue
 
          frac_sno         =>    col_ws%frac_sno                     , & ! Input: [real(r8) (:) ] fraction of ground covered by snow (0 to 1)
 
@@ -209,7 +209,7 @@ contains
                      ! ground cover factor
                      Clai = 1._r8 - exp(-tlai(p))
                      if (use_cn) then
-                        Crsd = fscov_p(p)
+                        Crsd = fscov(c)
                         Broot = 1.e-3_r8 * ( veg_cs%frootc(p)*froot_prof(p,1) + &
                            (veg_cs%livecrootc(p)+veg_cs%deadcrootc(p))*croot_prof(p,1) )
                      else
@@ -265,7 +265,7 @@ contains
                      ! ground cover factor 
                      Clai = 1._r8 - exp(-tlai(p))
                      if (use_cn) then
-                        Crsd = fscov_p(p)
+                        Crsd = fscov(c)
                         Broot = 1.e-3_r8 * ( veg_cs%frootc(p)*froot_prof(p,1) + &
                            (veg_cs%livecrootc(p)+veg_cs%deadcrootc(p))*croot_prof(p,1) )
                      else

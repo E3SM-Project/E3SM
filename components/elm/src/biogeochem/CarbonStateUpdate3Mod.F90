@@ -88,9 +88,9 @@ contains
          end do
          
          do l = 1, nlit_pools
-            do fp = 1, num_soilp
-               p = filter_soilp(fp)
-               col_cs%residue_cpools(p,l) = col_cs%residue_cpools(p,l) - col_cf%m_residue_fire_closs(p,l) * dt
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
+               col_cs%residue_cpools(c,l) = col_cs%residue_cpools(c,l) - col_cf%m_residue_fire_closs(c,l) * dt
             end do
          end do
       endif !

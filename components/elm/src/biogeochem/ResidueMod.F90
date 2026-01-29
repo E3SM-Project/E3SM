@@ -121,25 +121,25 @@ contains
        
        ! residue C/N/P to litter C/N/P
        residue_to_litr_met_c(c,1:nlevdecomp) = residue_to_litr_met_c(c,1:nlevdecomp) + &
-          residue_cpools(p,i_met_lit) * litr_prof * residue2litr(p) * wt_col
+          residue_cpools(c,i_met_lit) * litr_prof * residue2litr(p) * wt_col
        residue_to_litr_cel_c(c,1:nlevdecomp) = residue_to_litr_cel_c(c,1:nlevdecomp) + &
-          residue_cpools(p,i_cel_lit) * litr_prof * residue2litr(p) * wt_col
+          residue_cpools(c,i_cel_lit) * litr_prof * residue2litr(p) * wt_col
        residue_to_litr_lig_c(c,1:nlevdecomp) = residue_to_litr_lig_c(c,1:nlevdecomp) + &
-          residue_cpools(p,i_lig_lit) * litr_prof * residue2litr(p) * wt_col
+          residue_cpools(c,i_lig_lit) * litr_prof * residue2litr(p) * wt_col
 
        residue_to_litr_met_n(c,1:nlevdecomp) = residue_to_litr_met_n(c,1:nlevdecomp) + &
-          residue_npools(p,i_met_lit) * litr_prof * residue2litr(p) * wt_col
+          residue_npools(c,i_met_lit) * litr_prof * residue2litr(p) * wt_col
        residue_to_litr_cel_n(c,1:nlevdecomp) = residue_to_litr_cel_n(c,1:nlevdecomp) + &
-          residue_npools(p,i_cel_lit) * litr_prof * residue2litr(p) * wt_col
+          residue_npools(c,i_cel_lit) * litr_prof * residue2litr(p) * wt_col
        residue_to_litr_lig_n(c,1:nlevdecomp) = residue_to_litr_lig_n(c,1:nlevdecomp) + &
-          residue_npools(p,i_lig_lit) * litr_prof * residue2litr(p) * wt_col
+          residue_npools(c,i_lig_lit) * litr_prof * residue2litr(p) * wt_col
 
        residue_to_litr_met_p(c,1:nlevdecomp) = residue_to_litr_met_p(c,1:nlevdecomp) + &
-          residue_ppools(p,i_met_lit) * litr_prof * residue2litr(p) * wt_col
+          residue_ppools(c,i_met_lit) * litr_prof * residue2litr(p) * wt_col
        residue_to_litr_cel_p(c,1:nlevdecomp) = residue_to_litr_cel_p(c,1:nlevdecomp) + &
-          residue_ppools(p,i_cel_lit) * litr_prof * residue2litr(p) * wt_col
+          residue_ppools(c,i_cel_lit) * litr_prof * residue2litr(p) * wt_col
        residue_to_litr_lig_p(c,1:nlevdecomp) = residue_to_litr_lig_p(c,1:nlevdecomp) + &
-          residue_ppools(p,i_lig_lit) * litr_prof * residue2litr(p) * wt_col
+          residue_ppools(c,i_lig_lit) * litr_prof * residue2litr(p) * wt_col
     end do
 
     end associate

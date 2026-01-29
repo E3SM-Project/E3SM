@@ -84,14 +84,11 @@ contains
             do j = 1,nlevdecomp
 
                col_ns%decomp_npools_vr(c,j,i_met_lit) = col_ns%decomp_npools_vr(c,j,i_met_lit) + &
-                    col_nf%dwt_frootn_to_litr_met_n(c,j) * dt + &
-                    col_nf%dwt_residue_to_litr_met_n(c,j) * dt
+                    col_nf%dwt_frootn_to_litr_met_n(c,j) * dt
                col_ns%decomp_npools_vr(c,j,i_cel_lit) = col_ns%decomp_npools_vr(c,j,i_cel_lit) + &
-                    col_nf%dwt_frootn_to_litr_cel_n(c,j) * dt + &
-                    col_nf%dwt_residue_to_litr_cel_n(c,j) * dt
+                    col_nf%dwt_frootn_to_litr_cel_n(c,j) * dt
                col_ns%decomp_npools_vr(c,j,i_lig_lit) = col_ns%decomp_npools_vr(c,j,i_lig_lit) + &
-                    col_nf%dwt_frootn_to_litr_lig_n(c,j) * dt + &
-                    col_nf%dwt_residue_to_litr_lig_n(c,j) * dt
+                    col_nf%dwt_frootn_to_litr_lig_n(c,j) * dt
                col_ns%decomp_npools_vr(c,j,i_cwd) = col_ns%decomp_npools_vr(c,j,i_cwd) + &
                     ( col_nf%dwt_livecrootn_to_cwdn(c,j) + col_nf%dwt_deadcrootn_to_cwdn(c,j) ) * dt
 
@@ -124,7 +121,6 @@ contains
     integer :: c,p,j,l,k ! indices
     integer :: fp,fc     ! lake filter indices
     integer :: csi
-    real(r8) :: wt_col
     real(r8), parameter :: frootc_nfix_thc = 10._r8  !threshold fine root carbon for nitrogen fixation gC/m2
 
     integer:: kyr                     ! current year
@@ -142,8 +138,7 @@ contains
          cascade_receiver_pool => decomp_cascade_con%cascade_receiver_pool , & ! Input:  [integer  (:)     ]  which pool is C added to for a given decomposition step
 
          ndep_prof             => cnstate_vars%ndep_prof_col               , & ! Input:  [real(r8) (:,:)   ]  profile over which N deposition is distributed through column (1/m)
-         nfixation_prof        => cnstate_vars%nfixation_prof_col          , & ! Input:  [real(r8) (:,:)   ]  profile over which N fixation is distributed through column (1/m)
-         residue2litr          => cnstate_vars%residue2litr_patch            & ! Input:  [real(r8) (:)     ]  Residue to litter conversion rate (1/s)
+         nfixation_prof        => cnstate_vars%nfixation_prof_col            & ! Input:  [real(r8) (:,:)   ]  profile over which N fixation is distributed through column (1/m)
 
          )
 
@@ -173,26 +168,37 @@ contains
                   col_nf%decomp_npools_sourcesink(c,j,i_lig_lit) = &
                        col_nf%phenology_n_to_litr_lig_n(c,j) * dt + &
                        col_nf%residue_to_litr_lig_n(c,j) * dt
+
+                  ! update residue pools
+                  col_ns%residue_npools(c,i_met_lit) = col_ns%residue_npools(c,i_met_lit) - &
+                       col_nf%residue_to_litr_met_n(c,j) * dzsoi_decomp(j) * dt
+                  col_ns%residue_npools(c,i_cel_lit) = col_ns%residue_npools(c,i_cel_lit) - &
+                       col_nf%residue_to_litr_cel_n(c,j) * dzsoi_decomp(j) * dt
+                  col_ns%residue_npools(c,i_lig_lit) = col_ns%residue_npools(c,i_lig_lit) - &
+                       col_nf%residue_to_litr_lig_n(c,j) * dzsoi_decomp(j) * dt
                end if
+
             end do
          end do
 
-         do fp = 1, num_soilp
-            p = filter_soilp(fp)
-
+         do fc = 1,num_soilc
+            c = filter_soilc(fc)
             ! update residue pools
-            col_ns%residue_npools(p,i_met_lit) = col_ns%residue_npools(p,i_met_lit) - &
-                  col_ns%residue_npools(p,i_met_lit) * residue2litr(p) * dt - &
-                  col_nf%residue_ntransfer(p,i_met_lit) * dt + &
-                  col_nf%phenology_n_to_residue_met_n(p) * dt
-            col_ns%residue_npools(p,i_cel_lit) = col_ns%residue_npools(p,i_cel_lit) - &
-                  col_ns%residue_npools(p,i_cel_lit) * residue2litr(p) * dt - &
-                  col_nf%residue_ntransfer(p,i_cel_lit) * dt + &
-                  col_nf%phenology_n_to_residue_cel_n(p) * dt
-            col_ns%residue_npools(p,i_lig_lit) = col_ns%residue_npools(p,i_lig_lit) - &
-                  col_ns%residue_npools(p,i_lig_lit) * residue2litr(p) * dt - &
-                  col_nf%residue_ntransfer(p,i_lig_lit) * dt + &
-                  col_nf%phenology_n_to_residue_lig_n(p) * dt
+            if(.not.use_fates) then
+               col_ns%residue_npools(c,i_met_lit) = col_ns%residue_npools(c,i_met_lit) + & 
+                  col_nf%phenology_n_to_residue_met_n(c) * dt
+               col_ns%residue_npools(c,i_cel_lit) = col_ns%residue_npools(c,i_cel_lit) + & 
+                  col_nf%phenology_n_to_residue_cel_n(c) * dt
+               col_ns%residue_npools(c,i_lig_lit) = col_ns%residue_npools(c,i_lig_lit) + & 
+                  col_nf%phenology_n_to_residue_lig_n(c) * dt
+            end if
+
+            col_ns%residue_npools(c,i_met_lit) = col_ns%residue_npools(c,i_met_lit) - &
+                  col_nf%residue_ntransfer(c,i_met_lit) * dt
+            col_ns%residue_npools(c,i_cel_lit) = col_ns%residue_npools(c,i_cel_lit) - &
+                  col_nf%residue_ntransfer(c,i_cel_lit) * dt
+            col_ns%residue_npools(c,i_lig_lit) = col_ns%residue_npools(c,i_lig_lit) - &
+                  col_nf%residue_ntransfer(c,i_lig_lit) * dt
          end do
 
          ! repeating N dep and fixation for crops
@@ -256,14 +262,11 @@ contains
                end if
             end do
             if ( cascade_receiver_pool(csi) /= 0 ) then  ! skip terminal transitions
-               do fp = 1, num_soilp
-                  p = filter_soilp(fp)
-                  c = veg_pp%column(p)
-                  wt_col = veg_pp%wtcol(p)
-
+               do fc = 1,num_soilc
+                  c = filter_soilc(fc)
                   col_nf%decomp_npools_sourcesink(c,1,cascade_receiver_pool(csi)) = &
                      col_nf%decomp_npools_sourcesink(c,1,cascade_receiver_pool(csi)) + &
-                     (col_nf%residue_ntransfer(p,k) + col_nf%residue_sminn_flux(p,k)) / dzsoi_decomp(1) * wt_col * dt
+                     (col_nf%residue_ntransfer(c,k) + col_nf%residue_sminn_flux(c,k)) / dzsoi_decomp(1) * dt
                end do
             end if
          end do

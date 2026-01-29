@@ -382,7 +382,7 @@ contains
          rb1                  => frictionvel_vars%rb1_patch                , & ! Output: [real(r8) (:)   ]  boundary layer resistance (s/m)
          num_iter             => frictionvel_vars%num_iter_patch           , & ! Output: number of iterations required
 
-         fscov_p              => col_cs%fscov_veg            , & ! Input: [real(r8) (:) ] fraction of soil covered by residue
+         fscov                => col_cs%fscov                , & ! Input: [real(r8) (:) ] fraction of soil covered by residue
 
          t_h2osfc             => col_es%t_h2osfc             , & ! Input:  [real(r8) (:)   ]  surface water temperature
          t_soisno             => col_es%t_soisno             , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)
@@ -1015,7 +1015,7 @@ contains
             snow_depth_c = z_dl ! critical depth for 100% litter burial by snow (=litter thickness)
             fsno_dl = snow_depth(c)/snow_depth_c    ! effective snow cover for (dry)plant litter
             if (use_cn) then
-               lai_dl_dyn = fscov_p(p) 
+               lai_dl_dyn = fscov(c) 
             else
                lai_dl_dyn = lai_dl
             end if

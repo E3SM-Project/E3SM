@@ -172,16 +172,16 @@ contains
        ! associate statements (nag compiler complains otherwise)
 
        call grc_cs%Init(begg, endg, carbon_type='c12')
-       call col_cs%Init(begc, endc, begp, endp, carbon_type='c12', ratio=1._r8)
+       call col_cs%Init(begc, endc, carbon_type='c12', ratio=1._r8)
 
        if (use_c13) then
           call c13_grc_cs%Init(begg, endg,carbon_type='c13')
-          call c13_col_cs%Init(begc, endc, begp, endp, carbon_type='c13', ratio=c13ratio, &
+          call c13_col_cs%Init(begc, endc, carbon_type='c13', ratio=c13ratio, &
                c12_carbonstate_vars=col_cs)
        end if
        if (use_c14) then
           call c14_grc_cs%Init(begg, endg,carbon_type='c14')
-          call c14_col_cs%Init(begc, endc, begp, endp, carbon_type='c14', ratio=c14ratio, &
+          call c14_col_cs%Init(begc, endc, carbon_type='c14', ratio=c14ratio, &
                c12_carbonstate_vars=col_cs)
        end if
 
@@ -190,28 +190,28 @@ contains
        ! associate statements (nag compiler complains otherwise)
 
        call grc_cf%Init(begg, endg, carbon_type='c12')
-       call col_cf%Init(begc, endc, begp, endp, carbon_type='c12')
+       call col_cf%Init(begc, endc, carbon_type='c12')
 
        if (use_c13) then
           call c13_grc_cf%Init(begg, endg, carbon_type='c13')
-          call c13_col_cf%Init(begc, endc, begp, endp, carbon_type='c13')
+          call c13_col_cf%Init(begc, endc, carbon_type='c13')
        end if
        if (use_c14) then
           call c14_grc_cf%Init(begg, endg, carbon_type='c14')
-          call c14_col_cf%Init(begc, endc, begp, endp, carbon_type='c14')
+          call c14_col_cf%Init(begc, endc, carbon_type='c14')
        end if
 
        call grc_ns%Init(begg, endg)
-       call col_ns%Init(begc, endc, begp, endp, col_cs)
+       call col_ns%Init(begc, endc, col_cs)
 
        call grc_nf%Init(begg, endg)
-       call col_nf%Init(begc, endc, begp, endp)
+       call col_nf%Init(begc, endc)
 
        call grc_ps%Init(begg, endg)
-       call col_ps%Init(begc, endc, begp, endp, col_cs)
+       call col_ps%Init(begc, endc, col_cs)
 
        call grc_pf%Init(begg, endg)
-       call col_pf%Init(begc, endc, begp, endp)
+       call col_pf%Init(begc, endc)
 
        if(use_betr)then
           call PlantMicKinetics_vars%Init(bounds_proc)

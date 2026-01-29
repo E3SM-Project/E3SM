@@ -101,41 +101,32 @@ contains
           do j = 1,nlevdecomp
 
              col_cs%decomp_cpools_vr(c,j,i_met_lit) = col_cs%decomp_cpools_vr(c,j,i_met_lit) + &
-                  col_cf%dwt_frootc_to_litr_met_c(c,j) * dt + &
-                  col_cf%dwt_residue_to_litr_met_c(c,j) * dt
+                  col_cf%dwt_frootc_to_litr_met_c(c,j) * dt
              col_cs%decomp_cpools_vr(c,j,i_cel_lit) = col_cs%decomp_cpools_vr(c,j,i_cel_lit) + &
-                  col_cf%dwt_frootc_to_litr_cel_c(c,j) * dt + &
-                  col_cf%dwt_residue_to_litr_cel_c(c,j) * dt
+                  col_cf%dwt_frootc_to_litr_cel_c(c,j) * dt
              col_cs%decomp_cpools_vr(c,j,i_lig_lit) = col_cs%decomp_cpools_vr(c,j,i_lig_lit) + &
-                  col_cf%dwt_frootc_to_litr_lig_c(c,j) * dt + &
-                  col_cf%dwt_residue_to_litr_lig_c(c,j) * dt
+                  col_cf%dwt_frootc_to_litr_lig_c(c,j) * dt
              col_cs%decomp_cpools_vr(c,j,i_cwd) = col_cs%decomp_cpools_vr(c,j,i_cwd) + &
                   ( col_cf%dwt_livecrootc_to_cwdc(c,j) + col_cf%dwt_deadcrootc_to_cwdc(c,j) ) * dt
 
              if (use_c13) then
                 c13_col_cs%decomp_cpools_vr(c,j,i_met_lit) = c13_col_cs%decomp_cpools_vr(c,j,i_met_lit) + &
-                     c13_col_cf%dwt_frootc_to_litr_met_c(c,j) * dt + &
-                     c13_col_cf%dwt_residue_to_litr_met_c(c,j) * dt
+                     c13_col_cf%dwt_frootc_to_litr_met_c(c,j) * dt
                 c13_col_cs%decomp_cpools_vr(c,j,i_cel_lit) = c13_col_cs%decomp_cpools_vr(c,j,i_cel_lit) + &
-                     c13_col_cf%dwt_frootc_to_litr_cel_c(c,j) * dt + &
-                     c13_col_cf%dwt_residue_to_litr_cel_c(c,j) * dt
+                     c13_col_cf%dwt_frootc_to_litr_cel_c(c,j) * dt
                 c13_col_cs%decomp_cpools_vr(c,j,i_lig_lit) = c13_col_cs%decomp_cpools_vr(c,j,i_lig_lit) + &
-                     c13_col_cf%dwt_frootc_to_litr_lig_c(c,j) * dt + &
-                     c13_col_cf%dwt_residue_to_litr_lig_c(c,j) * dt
+                     c13_col_cf%dwt_frootc_to_litr_lig_c(c,j) * dt
                 c13_col_cs%decomp_cpools_vr(c,j,i_cwd) = c13_col_cs%decomp_cpools_vr(c,j,i_cwd) + &
                      ( c13_col_cf%dwt_livecrootc_to_cwdc(c,j) + c13_col_cf%dwt_deadcrootc_to_cwdc(c,j) ) * dt
              end if
 
              if (use_c14) then
                 c14_col_cs%decomp_cpools_vr(c,j,i_met_lit) = c14_col_cs%decomp_cpools_vr(c,j,i_met_lit) + &
-                     c14_col_cf%dwt_frootc_to_litr_met_c(c,j) * dt + &
-                     c14_col_cf%dwt_residue_to_litr_met_c(c,j) * dt
+                     c14_col_cf%dwt_frootc_to_litr_met_c(c,j) * dt
                 c14_col_cs%decomp_cpools_vr(c,j,i_cel_lit) = c14_col_cs%decomp_cpools_vr(c,j,i_cel_lit) + &
-                     c14_col_cf%dwt_frootc_to_litr_cel_c(c,j) * dt + &
-                     c14_col_cf%dwt_residue_to_litr_cel_c(c,j) * dt
+                     c14_col_cf%dwt_frootc_to_litr_cel_c(c,j) * dt
                 c14_col_cs%decomp_cpools_vr(c,j,i_lig_lit) = c14_col_cs%decomp_cpools_vr(c,j,i_lig_lit) + &
-                     c14_col_cf%dwt_frootc_to_litr_lig_c(c,j) * dt + &
-                     c14_col_cf%dwt_residue_to_litr_lig_c(c,j) * dt
+                     c14_col_cf%dwt_frootc_to_litr_lig_c(c,j) * dt
                 c14_col_cs%decomp_cpools_vr(c,j,i_cwd) = c14_col_cs%decomp_cpools_vr(c,j,i_cwd) + &
                      ( c14_col_cf%dwt_livecrootc_to_cwdc(c,j) + c14_col_cf%dwt_deadcrootc_to_cwdc(c,j) ) * dt
              end if
@@ -208,7 +199,6 @@ contains
     integer  :: c,p,j,k,l ! indices
     integer  :: fp,fc     ! lake filter indices
     integer  :: csi
-    real(r8) :: wt_col
     !-----------------------------------------------------------------------
 
     associate(                                                                                 &
@@ -216,7 +206,6 @@ contains
          woody                 =>    veg_vp%woody                               , & ! Input:  [real(r8) (:)     ]  woody lifeform flag (0 = non-woody, 1 = tree, 2 = shrub)
          cascade_donor_pool    =>    decomp_cascade_con%cascade_donor_pool      , & ! Input:  [integer  (:)     ]  which pool is C taken from for a given decomposition step
          cascade_receiver_pool =>    decomp_cascade_con%cascade_receiver_pool   , & ! Input:  [integer  (:)     ]  which pool is C added to for a given decomposition step
-         residue2litr          =>    cnstate_vars%residue2litr_patch            , & ! Input:  [real(r8) (:)     ]  Residue to litter conversion rate (1/s)
          harvdate              =>    crop_vars%harvdate_patch                     & ! Input:  [integer  (:)     ]  harvest date
          )
 
@@ -248,27 +237,37 @@ contains
                   col_cf%decomp_cpools_sourcesink(c,j,i_lig_lit) = &
                        col_cf%phenology_c_to_litr_lig_c(c,j) * dt + &
                        col_cf%residue_to_litr_lig_c(c,j) * dt
+
+                  ! update residue pools
+                  col_cs%residue_cpools(c,i_met_lit) = col_cs%residue_cpools(c,i_met_lit) - &
+                        col_cf%residue_to_litr_met_c(c,j) * dzsoi_decomp(j) * dt
+                  col_cs%residue_cpools(c,i_cel_lit) = col_cs%residue_cpools(c,i_cel_lit) - &
+                        col_cf%residue_to_litr_cel_c(c,j) * dzsoi_decomp(j) * dt
+                  col_cs%residue_cpools(c,i_lig_lit) = col_cs%residue_cpools(c,i_lig_lit) - &
+                        col_cf%residue_to_litr_lig_c(c,j) * dzsoi_decomp(j) * dt 
                end do
             end do
-
-            do fp = 1, num_soilp
-               p = filter_soilp(fp)
-               
-               ! update residue pools
-               col_cs%residue_cpools(p,i_met_lit) = col_cs%residue_cpools(p,i_met_lit) - &
-                     col_cs%residue_cpools(p,i_met_lit) * residue2litr(p) * dt - &
-                     (col_cf%residue_hr(p,i_met_lit) + col_cf%residue_ctransfer(p,i_met_lit)) * dt + &
-                     col_cf%phenology_c_to_residue_met_c(p) * dt
-               col_cs%residue_cpools(p,i_cel_lit) = col_cs%residue_cpools(p,i_cel_lit) - &
-                     col_cs%residue_cpools(p,i_cel_lit) * residue2litr(p) * dt - &
-                     (col_cf%residue_hr(p,i_cel_lit) + col_cf%residue_ctransfer(p,i_cel_lit)) * dt + &
-                     col_cf%phenology_c_to_residue_cel_c(p) * dt
-               col_cs%residue_cpools(p,i_lig_lit) = col_cs%residue_cpools(p,i_lig_lit) - &
-                     col_cs%residue_cpools(p,i_lig_lit) * residue2litr(p) * dt - &
-                     (col_cf%residue_hr(p,i_lig_lit) + col_cf%residue_ctransfer(p,i_lig_lit)) * dt + &
-                     col_cf%phenology_c_to_residue_lig_c(p) * dt
-            end do
          end if
+
+         do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            ! update residue pools
+            if(.not.use_fates)then
+               col_cs%residue_cpools(c,i_met_lit) = col_cs%residue_cpools(c,i_met_lit) + &
+                     col_cf%phenology_c_to_residue_met_c(c) * dt
+               col_cs%residue_cpools(c,i_cel_lit) = col_cs%residue_cpools(c,i_cel_lit) + &
+                     col_cf%phenology_c_to_residue_cel_c(c) * dt
+               col_cs%residue_cpools(c,i_lig_lit) = col_cs%residue_cpools(c,i_lig_lit) + &
+                     col_cf%phenology_c_to_residue_lig_c(c) * dt
+            end if
+
+            col_cs%residue_cpools(c,i_met_lit) = col_cs%residue_cpools(c,i_met_lit) - &
+                  (col_cf%residue_hr(c,i_met_lit) + col_cf%residue_ctransfer(c,i_met_lit)) * dt
+            col_cs%residue_cpools(c,i_cel_lit) = col_cs%residue_cpools(c,i_cel_lit) - &
+                  (col_cf%residue_hr(c,i_cel_lit) + col_cf%residue_ctransfer(c,i_cel_lit)) * dt
+            col_cs%residue_cpools(c,i_lig_lit) = col_cs%residue_cpools(c,i_lig_lit) - &
+                  (col_cf%residue_hr(c,i_lig_lit) + col_cf%residue_ctransfer(c,i_lig_lit)) * dt
+         end do
 
          ! litter and SOM HR fluxes
          do k = 1, ndecomp_cascade_transitions
@@ -303,14 +302,12 @@ contains
                end if
             end do
             if ( cascade_receiver_pool(csi) /= 0 ) then  ! skip terminal transitions
-               do fp = 1, num_soilp
-                  p = filter_soilp(fp)
-                  c = veg_pp%column(p)
-                  wt_col = veg_pp%wtcol(p)
+               do fc = 1,num_soilc 
+                  c = filter_soilc(fc)
 
                   col_cf%decomp_cpools_sourcesink(c,1,cascade_receiver_pool(csi)) = &
                      col_cf%decomp_cpools_sourcesink(c,1,cascade_receiver_pool(csi)) &
-                     + col_cf%residue_ctransfer(p,k) / dzsoi_decomp(1) * wt_col * dt
+                     + col_cf%residue_ctransfer(c,k) / dzsoi_decomp(1) * dt
                end do
             end if
          end do

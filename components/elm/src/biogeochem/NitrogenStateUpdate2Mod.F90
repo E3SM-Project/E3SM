@@ -154,16 +154,15 @@ contains
             end do
          end do
 
-         do fp = 1,num_soilp
-            p = filter_soilp(fp)
-
+         do fc = 1,num_soilc
+            c = filter_soilc(fc)
             ! update residue pools
-            col_ns%residue_npools(p,i_met_lit) = col_ns%residue_npools(p,i_met_lit) + &
-                 col_nf%harvest_n_to_residue_met_n(p) * dt
-            col_ns%residue_npools(p,i_cel_lit) = col_ns%residue_npools(p,i_cel_lit) + &
-                 col_nf%harvest_n_to_residue_cel_n(p) * dt
-            col_ns%residue_npools(p,i_lig_lit) = col_ns%residue_npools(p,i_lig_lit) + &
-                 col_nf%harvest_n_to_residue_lig_n(p) * dt
+            col_ns%residue_npools(c,i_met_lit) = col_ns%residue_npools(c,i_met_lit) + &
+                 col_nf%harvest_n_to_residue_met_n(c) * dt
+            col_ns%residue_npools(c,i_cel_lit) = col_ns%residue_npools(c,i_cel_lit) + &
+                 col_nf%harvest_n_to_residue_cel_n(c) * dt
+            col_ns%residue_npools(c,i_lig_lit) = col_ns%residue_npools(c,i_lig_lit) + &
+                 col_nf%harvest_n_to_residue_lig_n(c) * dt
          end do
 
       endif

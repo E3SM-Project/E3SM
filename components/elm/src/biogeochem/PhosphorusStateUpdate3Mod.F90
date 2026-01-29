@@ -64,7 +64,6 @@ contains
     integer :: c,p,j,l,k        ! indices
     integer :: fp,fc      ! lake filter indices
     integer :: csi
-    real(r8) :: wt_col
 
    real(r8):: smax_c       ! parameter(gP/m2), maximum amount of sorbed P in equilibrium with solution P
    real(r8):: ks_sorption_c ! parameter(gP/m2), empirical constant for sorbed P in equilibrium with solution P
@@ -132,22 +131,16 @@ contains
                end if
             end do
             if ( cascade_receiver_pool(csi) /= 0 ) then  ! skip terminal transitions
-               do fp = 1, num_soilp
-                  p = filter_soilp(fp)
-                  c = veg_pp%column(p)
-                  wt_col = veg_pp%wtcol(p)
-
+               do fc = 1,num_soilc
+                  c = filter_soilc(fc)
                   flux_mineralization(c,1) = flux_mineralization(c,1) - &
-                     col_pf%residue_sminp_flux(p,k) * wt_col * dt
+                     col_pf%residue_sminp_flux(c,k) * dt
                end do
             else
-               do fp = 1, num_soilp
-                  p = filter_soilp(fp)
-                  c = veg_pp%column(p)
-                  wt_col = veg_pp%wtcol(p)
-
+               do fc = 1,num_soilc
+                  c = filter_soilc(fc)
                   flux_mineralization(c,1) = flux_mineralization(c,1) + &
-                     col_pf%residue_sminp_flux(p,k) * wt_col * dt
+                     col_pf%residue_sminp_flux(c,k) * dt
                end do
             end if
          end do 
@@ -339,9 +332,9 @@ contains
       end do
 
       do l = 1, nlit_pools
-         do fp = 1, num_soilp
-            p = filter_soilp(fp)
-            col_ps%residue_ppools(p,l) = col_ps%residue_ppools(p,l) - col_pf%m_residue_fire_ploss(p,l) * dt
+         do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            col_ps%residue_ppools(c,l) = col_ps%residue_ppools(c,l) - col_pf%m_residue_fire_ploss(c,l) * dt
          end do
       end do
 

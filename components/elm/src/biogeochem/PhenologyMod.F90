@@ -3474,28 +3474,28 @@ contains
          wt_col = wtcol(p)
 
          ! leaf litter carbon fluxes
-         phenology_c_to_residue_met_c(p) = phenology_c_to_residue_met_c(p) &
-             + leafc_to_litter(p) * lf_flab(ivt(p))
-         phenology_c_to_residue_cel_c(p) = phenology_c_to_residue_cel_c(p) &
-             + leafc_to_litter(p) * lf_fcel(ivt(p))
-         phenology_c_to_residue_lig_c(p) = phenology_c_to_residue_lig_c(p) &
-             + leafc_to_litter(p) * lf_flig(ivt(p))
+         phenology_c_to_residue_met_c(c) = phenology_c_to_residue_met_c(c) &
+             + leafc_to_litter(p) * lf_flab(ivt(p)) * wt_col
+         phenology_c_to_residue_cel_c(c) = phenology_c_to_residue_cel_c(c) &
+             + leafc_to_litter(p) * lf_fcel(ivt(p)) * wt_col
+         phenology_c_to_residue_lig_c(c) = phenology_c_to_residue_lig_c(c) &
+             + leafc_to_litter(p) * lf_flig(ivt(p)) * wt_col
 
          ! leaf litter nitrogen fluxes
-         phenology_n_to_residue_met_n(p) = phenology_n_to_residue_met_n(p) &
-              + leafn_to_litter(p) * lf_flab(ivt(p))
-         phenology_n_to_residue_cel_n(p) = phenology_n_to_residue_cel_n(p) &
-              + leafn_to_litter(p) * lf_fcel(ivt(p))
-         phenology_n_to_residue_lig_n(p) = phenology_n_to_residue_lig_n(p) &
-              + leafn_to_litter(p) * lf_flig(ivt(p))
+         phenology_n_to_residue_met_n(c) = phenology_n_to_residue_met_n(c) &
+              + leafn_to_litter(p) * lf_flab(ivt(p)) * wt_col
+         phenology_n_to_residue_cel_n(c) = phenology_n_to_residue_cel_n(c) &
+              + leafn_to_litter(p) * lf_fcel(ivt(p)) * wt_col
+         phenology_n_to_residue_lig_n(c) = phenology_n_to_residue_lig_n(c) &
+              + leafn_to_litter(p) * lf_flig(ivt(p)) * wt_col
 
          ! leaf litter phosphorus fluxes
-         phenology_p_to_residue_met_p(p) = phenology_p_to_residue_met_p(p) &
-              + leafp_to_litter(p) * lf_flab(ivt(p))
-         phenology_p_to_residue_cel_p(p) = phenology_p_to_residue_cel_p(p) &
-              + leafp_to_litter(p) * lf_fcel(ivt(p))
-         phenology_p_to_residue_lig_p(p) = phenology_p_to_residue_lig_p(p) &
-              + leafp_to_litter(p) * lf_flig(ivt(p))
+         phenology_p_to_residue_met_p(c) = phenology_p_to_residue_met_p(c) &
+              + leafp_to_litter(p) * lf_flab(ivt(p)) * wt_col
+         phenology_p_to_residue_cel_p(c) = phenology_p_to_residue_cel_p(c) &
+              + leafp_to_litter(p) * lf_fcel(ivt(p)) * wt_col
+         phenology_p_to_residue_lig_p(c) = phenology_p_to_residue_lig_p(c) &
+              + leafp_to_litter(p) * lf_flig(ivt(p)) * wt_col
 
          ! agroibis puts crop stem litter together with leaf litter
          ! so I've used the leaf lf_f* parameters instead of making
@@ -3504,28 +3504,28 @@ contains
 
          if (iscft(ivt(p))) then ! add livestemc to litter
             ! stem litter carbon fluxes
-            phenology_c_to_residue_met_c(p) = phenology_c_to_residue_met_c(p) &
-                 + livestemc_to_litter(p) * lf_flab(ivt(p))
-            phenology_c_to_residue_cel_c(p) = phenology_c_to_residue_cel_c(p) &
-                 + livestemc_to_litter(p) * lf_fcel(ivt(p))
-            phenology_c_to_residue_lig_c(p) = phenology_c_to_residue_lig_c(p) &
-                 + livestemc_to_litter(p) * lf_flig(ivt(p))
+            phenology_c_to_residue_met_c(c) = phenology_c_to_residue_met_c(c) &
+                 + livestemc_to_litter(p) * lf_flab(ivt(p)) * wt_col
+            phenology_c_to_residue_cel_c(c) = phenology_c_to_residue_cel_c(c) &
+                 + livestemc_to_litter(p) * lf_fcel(ivt(p)) * wt_col
+            phenology_c_to_residue_lig_c(c) = phenology_c_to_residue_lig_c(c) &
+                 + livestemc_to_litter(p) * lf_flig(ivt(p)) * wt_col
 
             ! stem litter nitrogen fluxes
-            phenology_n_to_residue_met_n(p) = phenology_n_to_residue_met_n(p) &
-                 + livestemn_to_litter(p) * lf_flab(ivt(p))
-            phenology_n_to_residue_cel_n(p) = phenology_n_to_residue_cel_n(p) &
-                 + livestemn_to_litter(p) * lf_fcel(ivt(p))
-            phenology_n_to_residue_lig_n(p) = phenology_n_to_residue_lig_n(p) &
-                 + livestemn_to_litter(p) * lf_flig(ivt(p))
+            phenology_n_to_residue_met_n(c) = phenology_n_to_residue_met_n(c) &
+                 + livestemn_to_litter(p) * lf_flab(ivt(p)) * wt_col
+            phenology_n_to_residue_cel_n(c) = phenology_n_to_residue_cel_n(c) &
+                 + livestemn_to_litter(p) * lf_fcel(ivt(p)) * wt_col
+            phenology_n_to_residue_lig_n(c) = phenology_n_to_residue_lig_n(c) &
+                 + livestemn_to_litter(p) * lf_flig(ivt(p)) * wt_col
 
             ! stem litter phosphorus fluxes
-            phenology_p_to_residue_met_p(p) = phenology_p_to_residue_met_p(p) &
-                 + livestemp_to_litter(p) * lf_flab(ivt(p))
-            phenology_p_to_residue_cel_p(p) = phenology_p_to_residue_cel_p(p) &
-                 + livestemp_to_litter(p) * lf_fcel(ivt(p))
-            phenology_p_to_residue_lig_p(p) = phenology_p_to_residue_lig_p(p) &
-                 + livestemp_to_litter(p) * lf_flig(ivt(p))
+            phenology_p_to_residue_met_p(c) = phenology_p_to_residue_met_p(c) &
+                 + livestemp_to_litter(p) * lf_flab(ivt(p)) * wt_col
+            phenology_p_to_residue_cel_p(c) = phenology_p_to_residue_cel_p(c) &
+                 + livestemp_to_litter(p) * lf_fcel(ivt(p)) * wt_col
+            phenology_p_to_residue_lig_p(c) = phenology_p_to_residue_lig_p(c) &
+                 + livestemp_to_litter(p) * lf_flig(ivt(p)) * wt_col
 
          end if
 

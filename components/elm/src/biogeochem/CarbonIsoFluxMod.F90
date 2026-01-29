@@ -72,7 +72,7 @@ contains
     type(vegetation_carbon_flux),intent(inout):: isoveg_cf
     !
     ! !LOCAL VARIABLES:
-    integer :: fp,pi,l,p,fc,cc,j
+    integer :: fp,pi,l,fc,cc,j
     !-----------------------------------------------------------------------
 
     associate(&
@@ -418,20 +418,17 @@ contains
                   end if
                end do
             end do
-         end do
 
-         do fp = 1, num_soilp
-            p = filter_soilp(fp)
             do l = 1, nlit_pools
-               if ( col_cs%residue_cpools(p,l) /= 0._r8) then
-                  isocol_cf%residue_hr(p,l)  =  col_cf%residue_hr(p,l) * & 
-                     (isocol_cs%residue_cpools(p,l) / col_cs%residue_cpools(p,l)) * 1._r8
+               if ( col_cs%residue_cpools(cc,l) /= 0._r8) then
+                  isocol_cf%residue_hr(cc,l)  =  col_cf%residue_hr(cc,l) * &
+                     (isocol_cs%residue_cpools(cc,l) / col_cs%residue_cpools(cc,l)) * 1._r8
 
-                  isocol_cf%residue_ctransfer(p,l)  =  col_cf%residue_ctransfer(p,l) * &
-                     (isocol_cs%residue_cpools(p,l) / col_cs%residue_cpools(p,l)) * 1._r8
+                  isocol_cf%residue_ctransfer(cc,l)  =  col_cf%residue_ctransfer(cc,l) * &
+                     (isocol_cs%residue_cpools(cc,l) / col_cs%residue_cpools(cc,l)) * 1._r8
                else
-                  isocol_cf%residue_hr(p,l) = 0._r8 
-                  isocol_cf%residue_ctransfer(p,l) = 0._r8
+                  isocol_cf%residue_hr(cc,l) = 0._r8
+                  isocol_cf%residue_ctransfer(cc,l) = 0._r8
                end if
             end do
          end do
@@ -747,7 +744,7 @@ contains
     type(vegetation_carbon_flux),intent(inout):: isoveg_cf
     !
     ! !LOCAL VARIABLES:
-    integer :: pi,pp,l,fc,fp,cc,j
+    integer :: pi,pp,l,fc,cc,j
     !-----------------------------------------------------------------------
 
     associate(                                           &
@@ -920,17 +917,14 @@ contains
                   end if
                end do
             end do
-         end do
 
-         do fp = 1, num_soilp
-            pp = filter_soilp(fp)
             do l = 1, nlit_pools
-               if ( col_cs%residue_cpools(pp,l) /= 0._r8 ) then
-                  isocol_cf%m_residue_fire_closs(pp,l)  =  &
-                       col_cf%m_residue_fire_closs(pp,l) * &
-                       (isocol_cs%residue_cpools(pp,l) / col_cs%residue_cpools(pp,l)) * 1._r8
+               if ( col_cs%residue_cpools(cc,l) /= 0._r8 ) then
+                  isocol_cf%m_residue_fire_closs(cc,l)  =  &
+                       col_cf%m_residue_fire_closs(cc,l) * &
+                       (isocol_cs%residue_cpools(cc,l) / col_cs%residue_cpools(cc,l)) * 1._r8
                else
-                  isocol_cf%m_residue_fire_closs(pp,l) = 0._r8
+                  isocol_cf%m_residue_fire_closs(cc,l) = 0._r8
                end if
             end do
          end do
@@ -1007,32 +1001,21 @@ contains
                           + frootc_to_litter(p) * fr_fcel(ivt(p)) * wtcol(p) * froot_prof(p,j)
                      phenology_c_to_litr_lig_c(c,j) = phenology_c_to_litr_lig_c(c,j) &
                           + frootc_to_litter(p) * fr_flig(ivt(p)) * wtcol(p) * froot_prof(p,j)
+
+                     ! residue C to litter C
+                     r2l = residue2litr(p)
+                     residue_to_litr_met_c(c,j) = residue_to_litr_met_c(c,j) + &
+                        residue_cpools(c,i_met_lit) * residue_prof(p,j) * r2l * wtcol(p)
+                     residue_to_litr_cel_c(c,j) = residue_to_litr_cel_c(c,j) + &
+                        residue_cpools(c,i_cel_lit) * residue_prof(p,j) * r2l * wtcol(p)
+                     residue_to_litr_lig_c(c,j) = residue_to_litr_lig_c(c,j) + &
+                        residue_cpools(c,i_lig_lit) * residue_prof(p,j) * r2l * wtcol(p)                     
                   end if
                end if
 
             end do
          end do
 
-      end do
-
-      do pi = 1,max_patch_per_col 
-         do fc = 1, num_soilc
-            c = filter_soilc(fc)
-
-            if ( pi <=  col_pp%npfts(c) ) then
-               p = col_pp%pfti(c) + pi - 1
-               if (veg_pp%active(p)) then
-                  r2l = residue2litr(p)
-                  ! residue C to litter C
-                  residue_to_litr_met_c(c,1:nlevdecomp) = residue_to_litr_met_c(c,1:nlevdecomp) + &
-                     residue_cpools(p,i_met_lit) * residue_prof(p,1:nlevdecomp) * r2l * wtcol(p) 
-                  residue_to_litr_cel_c(c,1:nlevdecomp) = residue_to_litr_cel_c(c,1:nlevdecomp) + &
-                     residue_cpools(p,i_cel_lit) * residue_prof(p,1:nlevdecomp) * r2l * wtcol(p)
-                  residue_to_litr_lig_c(c,1:nlevdecomp) = residue_to_litr_lig_c(c,1:nlevdecomp) + &
-                     residue_cpools(p,i_lig_lit) * residue_prof(p,1:nlevdecomp) * r2l * wtcol(p)
-               end if
-            end if
-         end do
       end do
 
       do pi = 1,max_patch_per_col
@@ -1043,12 +1026,12 @@ contains
                p = col_pp%pfti(c) + pi - 1
                if (veg_pp%active(p)) then
                   ! leaf litter carbon fluxes
-                  phenology_c_to_residue_met_c(p) = phenology_c_to_residue_met_c(p) &
-                       + leafc_to_litter(p) * lf_flab(ivt(p))
-                  phenology_c_to_residue_cel_c(p) = phenology_c_to_residue_cel_c(p) &
-                       + leafc_to_litter(p) * lf_fcel(ivt(p))
-                  phenology_c_to_residue_lig_c(p) = phenology_c_to_residue_lig_c(p) &
-                       + leafc_to_litter(p) * lf_flig(ivt(p))
+                  phenology_c_to_residue_met_c(c) = phenology_c_to_residue_met_c(c) &
+                       + leafc_to_litter(p) * lf_flab(ivt(p)) * wtcol(p)
+                  phenology_c_to_residue_cel_c(c) = phenology_c_to_residue_cel_c(c) &
+                       + leafc_to_litter(p) * lf_fcel(ivt(p)) * wtcol(p)
+                  phenology_c_to_residue_lig_c(c) = phenology_c_to_residue_lig_c(c) &
+                       + leafc_to_litter(p) * lf_flig(ivt(p)) * wtcol(p)
                end if
             end if
          end do
@@ -1286,27 +1269,27 @@ contains
                 if (veg_pp%active(p)) then
 
                   ! leaf harvest mortality carbon fluxes
-                  harvest_c_to_residue_met_c(p) = harvest_c_to_residue_met_c(p) + &
-                       hrv_leafc_to_litter(p) * lf_flab(ivt(p))
-                  harvest_c_to_residue_cel_c(p) = harvest_c_to_residue_cel_c(p) + &
-                       hrv_leafc_to_litter(p) * lf_fcel(ivt(p))
-                  harvest_c_to_residue_lig_c(p) = harvest_c_to_residue_lig_c(p) + &
-                       hrv_leafc_to_litter(p) * lf_flig(ivt(p))
+                  harvest_c_to_residue_met_c(c) = harvest_c_to_residue_met_c(c) + &
+                       hrv_leafc_to_litter(p) * lf_flab(ivt(p)) * wtcol(p)
+                  harvest_c_to_residue_cel_c(c) = harvest_c_to_residue_cel_c(c) + &
+                       hrv_leafc_to_litter(p) * lf_fcel(ivt(p)) * wtcol(p)
+                  harvest_c_to_residue_lig_c(c) = harvest_c_to_residue_lig_c(c) + &
+                       hrv_leafc_to_litter(p) * lf_flig(ivt(p)) * wtcol(p)
 
                   ! storage harvest mortality carbon fluxes
-                  harvest_c_to_residue_met_c(p) = harvest_c_to_residue_met_c(p) + & 
-                       hrv_leafc_storage_to_litter(p) + &
+                  harvest_c_to_residue_met_c(c) = harvest_c_to_residue_met_c(c) + & 
+                       (hrv_leafc_storage_to_litter(p) + &
                        hrv_livestemc_storage_to_litter(p) + &
                        hrv_deadstemc_storage_to_litter(p) + &
                        hrv_gresp_storage_to_litter(p) + &
-                       hrv_cpool_to_litter(p)
+                       hrv_cpool_to_litter(p)) * wtcol(p)
 
                   ! transfer harvest mortality carbon fluxes
-                  harvest_c_to_residue_met_c(p) = harvest_c_to_residue_met_c(p) + & 
-                       hrv_leafc_xfer_to_litter(p) + &
+                  harvest_c_to_residue_met_c(c) = harvest_c_to_residue_met_c(c) + & 
+                       (hrv_leafc_xfer_to_litter(p) + &
                        hrv_livestemc_xfer_to_litter(p) + &
                        hrv_deadstemc_xfer_to_litter(p) + &
-                       hrv_gresp_xfer_to_litter(p)
+                       hrv_gresp_xfer_to_litter(p)) * wtcol(p)
                 end if
              end if
 

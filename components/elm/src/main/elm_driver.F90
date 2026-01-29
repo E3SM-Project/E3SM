@@ -426,16 +426,13 @@ contains
        if(use_cn .or. use_fates)then
 
           call col_cs%Summary(bounds_clump, &
-               filter(nc)%num_soilc, filter(nc)%soilc, &
-               filter(nc)%num_soilp, filter(nc)%soilp)
+               filter(nc)%num_soilc, filter(nc)%soilc)
 
           call col_ns%Summary(bounds_clump, &
-               filter(nc)%num_soilc, filter(nc)%soilc, &
-               filter(nc)%num_soilp, filter(nc)%soilp)
+               filter(nc)%num_soilc, filter(nc)%soilc)
 
           call col_ps%Summary(bounds_clump, &
-               filter(nc)%num_soilc, filter(nc)%soilc, &
-               filter(nc)%num_soilp, filter(nc)%soilp)
+               filter(nc)%num_soilc, filter(nc)%soilc)
 
           call BeginGridCBalance(bounds_clump, col_cs, grc_cs)
           call BeginGridNBalance(bounds_clump, col_ns, grc_ns)
@@ -501,16 +498,13 @@ contains
              end if
 
              call col_cs%Summary(bounds_clump, &
-                  filter(nc)%num_soilc, filter(nc)%soilc, &
-                  filter(nc)%num_soilp, filter(nc)%soilp)
+                  filter(nc)%num_soilc, filter(nc)%soilc)
 
              call col_ns%Summary(bounds_clump, &
-                  filter(nc)%num_soilc, filter(nc)%soilc, &
-                  filter(nc)%num_soilp, filter(nc)%soilp)
+                  filter(nc)%num_soilc, filter(nc)%soilc)
 
              call col_ps%Summary(bounds_clump, &
-                  filter(nc)%num_soilc, filter(nc)%soilc, &
-                  filter(nc)%num_soilp, filter(nc)%soilp)
+                  filter(nc)%num_soilc, filter(nc)%soilc)
 
              call EndGridCBalanceAfterDynSubgridDriver(bounds_clump, &
                   filter(nc)%num_soilc, filter(nc)%soilc, &
@@ -586,14 +580,11 @@ contains
        if (use_cn  .or. use_fates) then
           call t_startf('begcnpbalwf')
           call col_cs%Summary(bounds_clump, &
-               filter(nc)%num_soilc, filter(nc)%soilc, &
-               filter(nc)%num_soilp, filter(nc)%soilp)
+               filter(nc)%num_soilc, filter(nc)%soilc)
           call col_ns%Summary(bounds_clump, &
-               filter(nc)%num_soilc, filter(nc)%soilc, &
-               filter(nc)%num_soilp, filter(nc)%soilp)
+               filter(nc)%num_soilc, filter(nc)%soilc)
           call col_ps%Summary(bounds_clump, &
-               filter(nc)%num_soilc, filter(nc)%soilc, &
-               filter(nc)%num_soilp, filter(nc)%soilp)
+               filter(nc)%num_soilc, filter(nc)%soilc)
           call BeginColCBalance(bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc, &
                col_cs)

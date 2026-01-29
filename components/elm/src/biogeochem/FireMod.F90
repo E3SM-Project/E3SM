@@ -1377,21 +1377,6 @@ contains
 
         end do
      end do
-     ! residue C/N/P fire loss
-     do fp = 1, num_soilp
-        p = filter_soilp(fp)
-        c = veg_pp%column(p)
-        wt_col = veg_pp%wtcol(p)
-
-        baf_crop_sc = baf_crop(c)
-        f = farea_burned(c)
-
-        do l = 1, nlit_pools
-           m_residue_fire_closs(p,l) = residue_cpools(p,l) * f * 0.5_r8
-           m_residue_fire_nloss(p,l) = residue_npools(p,l) * f * 0.5_r8
-           m_residue_fire_ploss(p,l) = residue_ppools(p,l) * f * 0.5_r8
-        end do
-     end do
      !
      ! vertically-resolved decomposing C/N fire loss
      ! column loop
@@ -1401,6 +1386,13 @@ contains
 
         baf_crop_sc = baf_crop(c)
         f = farea_burned(c)
+
+        ! residue C/N/P fire loss
+        do l = 1, nlit_pools
+           m_residue_fire_closs(c,l) = residue_cpools(c,l) * f * 0.5_r8
+           m_residue_fire_nloss(c,l) = residue_npools(c,l) * f * 0.5_r8
+           m_residue_fire_ploss(c,l) = residue_ppools(c,l) * f * 0.5_r8
+        end do
 
         ! change CC for litter from 0.4_r8 to 0.5_r8 and CC for CWD from 0.2_r8
         ! to 0.25_r8 according to Li et al.(2014)

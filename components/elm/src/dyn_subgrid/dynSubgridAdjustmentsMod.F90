@@ -16,6 +16,7 @@ module dynSubgridAdjustmentsMod
   use shr_kind_mod           , only : r8 => shr_kind_r8
   use decompMod              , only : bounds_type
   use elm_varpar             , only : ndecomp_pools, nlevdecomp
+  use elm_varpar             , only : nlit_pools
   use elm_varctl             , only : use_crop
   use elm_varcon             , only : dzsoi_decomp
   use dynPatchStateUpdaterMod, only : patch_state_updater_type
@@ -411,6 +412,7 @@ contains
     associate(&
       decomp_cpools_vr    => col_cs%decomp_cpools_vr , &
       ctrunc_vr           => col_cs%ctrunc_vr      , &
+      residue_cpools      => col_cs%residue_cpools , &
       prod1c    => col_cs%prod1c , &
       prod10c   => col_cs%prod10c, &
       prod100c  => col_cs%prod100c &
@@ -433,6 +435,18 @@ contains
                adjustment_one_level(begc:endc) * dzsoi_decomp(j)
 
        end do
+    end do
+
+    do l = 1, nlit_pools
+       call update_column_state_no_special_handling( column_state_updater , &
+            bounds      = bounds,                                         &
+            clump_index = clump_index,                                    &
+            var         = residue_cpools(begc:endc, l),     &
+            adjustment  = adjustment_one_level(begc:endc))
+
+       col_cs%dyn_cbal_adjustments(begc:endc) = &
+            col_cs%dyn_cbal_adjustments(begc:endc) + &
+            adjustment_one_level(begc:endc)
     end do
 
     do j = 1, nlevdecomp
@@ -835,6 +849,7 @@ contains
       sminn_vr            => col_ns%sminn_vr ,  &
       smin_nh4_vr         => col_ns%smin_nh4_vr  , &
       smin_no3_vr         => col_ns%smin_no3_vr  , &
+      residue_npools      => col_ns%residue_npools , &
       prod1n              => col_ns%prod1n       , &
       prod10n             => col_ns%prod10n      , &
       prod100n            => col_ns%prod100n     &
@@ -856,6 +871,18 @@ contains
                adjustment_one_level(begc:endc) * dzsoi_decomp(j)
 
        end do
+    end do
+
+    do l = 1, nlit_pools            
+       call update_column_state_no_special_handling( column_state_updater , &
+            bounds      = bounds,                                         &
+            clump_index = clump_index,                                    &
+            var         = residue_npools(begc:endc, l),     &
+            adjustment  = adjustment_one_level(begc:endc))
+
+       col_ns%dyn_nbal_adjustments(begc:endc) = &
+            col_ns%dyn_nbal_adjustments(begc:endc) + &
+            adjustment_one_level(begc:endc) 
     end do
 
     do j = 1, nlevdecomp
@@ -1281,6 +1308,7 @@ contains
       secondp_vr          => col_ps%secondp_vr , &
       occlp_vr            => col_ps%occlp_vr , &
       primp_vr            => col_ps%primp_vr , &
+      residue_ppools      => col_ps%residue_ppools , &
       prod1p              => col_ps%prod1p  , &
       prod10p             => col_ps%prod10p , &
       prod100p            => col_ps%prod100p &
@@ -1304,6 +1332,18 @@ contains
                adjustment_one_level(begc:endc) * dzsoi_decomp(j)
 
        end do
+    end do
+
+    do l = 1, nlit_pools
+       call update_column_state_no_special_handling( column_state_updater , &
+            bounds      = bounds,                                         &
+            clump_index = clump_index,                                    &
+            var         = residue_ppools(begc:endc, l),     &
+            adjustment  = adjustment_one_level(begc:endc))
+
+       col_ps%dyn_pbal_adjustments(begc:endc) = &
+            col_ps%dyn_pbal_adjustments(begc:endc) + &
+            adjustment_one_level(begc:endc)
     end do
 
     do j = 1, nlevdecomp

@@ -13,7 +13,6 @@ module dynConsBiogeochemMod
   use decompMod                , only : bounds_type
   use abortutils               , only : endrun
   use elm_varctl               , only : iulog, use_c13, use_c14
-  use elm_varpar               , only : i_met_lit, i_cel_lit, i_lig_lit
   use VegetationPropertiesType , only : veg_vp
   use CanopyStateType          , only : canopystate_type
   use PhotosynthesisType       , only : photosyns_type
@@ -26,8 +25,6 @@ module dynConsBiogeochemMod
   use ColumnDataType           , only : column_phosphorus_state
   use ColumnDataType           , only : col_cf, c13_col_cf, c14_col_cf
   use ColumnDataType           , only : col_nf, col_pf
-  use ColumnDataType           , only : col_cs, c13_col_cs, c14_col_cs
-  use ColumnDataType           , only : col_ns, col_ps
   use VegetationType           , only : veg_pp
   use VegetationDataType       , only : vegetation_carbon_state, vegetation_carbon_flux
   use VegetationDataType       , only : vegetation_nitrogen_state
@@ -153,9 +150,8 @@ contains
     real(r8), allocatable :: prod10_c14flux(:)             ! pft-level mass loss due to weight shift
     real(r8), allocatable :: prod100_c14flux(:)            ! pft-level mass loss due to weight shift
     real(r8), allocatable :: crop_product_c14flux(:)       ! pft-level mass loss due to weight shift
-    real(r8) :: froot, croot, litr_prof 
+    real(r8) :: froot, croot
     real(r8) :: fr_flab, fr_fcel, fr_flig
-    real(r8) :: newfrac
     !-----------------------------------------------------------------------
 
     if ( use_c13 ) then
@@ -565,6 +561,7 @@ contains
                col_cf%dwt_frootc_to_litr_lig_c(c,j) + &
                (dwt_frootc_to_litter(fp)* fr_flig)/dt * froot
 
+
           ! fine root litter nitrogen fluxes
           col_nf%dwt_frootn_to_litr_met_n(c,j) = &
                col_nf%dwt_frootn_to_litr_met_n(c,j) + &
@@ -616,124 +613,6 @@ contains
           col_pf%dwt_deadcrootp_to_cwdp(c,j) = &
                col_pf%dwt_deadcrootp_to_cwdp(c,j) + &
                (dwt_deadcrootp_to_litter(fp))/dt * croot
-
-          ! residue C/N/P fluxes
-          litr_prof = cnstate_vars%tillage_prof_patch(p,j)          
-
-          if (patch_state_updater%dwt(p) > 0._r8) then
-             newfrac = patch_state_updater%growing_old_fraction(p)
-
-             col_cs%residue_cpools(p,i_met_lit) = & 
-                newfrac * col_cs%residue_cpools(p,i_met_lit)
-             col_cs%residue_cpools(p,i_cel_lit) = &
-                newfrac * col_cs%residue_cpools(p,i_cel_lit)
-             col_cs%residue_cpools(p,i_lig_lit) = &
-                newfrac * col_cs%residue_cpools(p,i_lig_lit)
-
-             col_ns%residue_npools(p,i_met_lit) = &
-                newfrac * col_ns%residue_npools(p,i_met_lit)
-             col_ns%residue_npools(p,i_cel_lit) = &
-                newfrac * col_ns%residue_npools(p,i_cel_lit)
-             col_ns%residue_npools(p,i_lig_lit) = &
-                newfrac * col_ns%residue_npools(p,i_lig_lit)
-
-             col_ps%residue_ppools(p,i_met_lit) = &
-                newfrac * col_ps%residue_ppools(p,i_met_lit)
-             col_ps%residue_ppools(p,i_cel_lit) = &
-                newfrac * col_ps%residue_ppools(p,i_cel_lit)
-             col_ps%residue_ppools(p,i_lig_lit) = &
-                newfrac * col_ps%residue_ppools(p,i_lig_lit)
-
-             if ( use_c13 ) then
-                c13_col_cs%residue_cpools(p,i_met_lit) = &
-                   newfrac * c13_col_cs%residue_cpools(p,i_met_lit)
-                c13_col_cs%residue_cpools(p,i_cel_lit) = &
-                   newfrac * c13_col_cs%residue_cpools(p,i_cel_lit)
-                c13_col_cs%residue_cpools(p,i_lig_lit) = &
-                   newfrac * c13_col_cs%residue_cpools(p,i_lig_lit)
-
-             end if
-
-             if ( use_c14 ) then
-                c14_col_cs%residue_cpools(p,i_met_lit) = &
-                   newfrac * c14_col_cs%residue_cpools(p,i_met_lit)
-                c14_col_cs%residue_cpools(p,i_cel_lit) = &
-                   newfrac * c14_col_cs%residue_cpools(p,i_cel_lit)
-                c14_col_cs%residue_cpools(p,i_lig_lit) = &
-                   newfrac * c14_col_cs%residue_cpools(p,i_lig_lit)
-
-             end if 
-          
-          else if (patch_state_updater%dwt(p) < 0._r8) then
-             newfrac = patch_state_updater%dwt(p) / patch_state_updater%cwtgcell_old(c) 
-
-             col_cf%dwt_residue_to_litr_met_c(c,j) = &
-                col_cf%dwt_residue_to_litr_met_c(c,j) - &
-                col_cs%residue_cpools(p,i_met_lit) * newfrac / dt * litr_prof
-
-             col_cf%dwt_residue_to_litr_cel_c(c,j) = &
-                col_cf%dwt_residue_to_litr_cel_c(c,j) - &
-                col_cs%residue_cpools(p,i_cel_lit) * newfrac / dt * litr_prof 
-
-             col_cf%dwt_residue_to_litr_lig_c(c,j) = &
-                col_cf%dwt_residue_to_litr_lig_c(c,j) - &
-                col_cs%residue_cpools(p,i_lig_lit) * newfrac / dt * litr_prof 
-
-             col_nf%dwt_residue_to_litr_met_n(c,j) = &
-                col_nf%dwt_residue_to_litr_met_n(c,j) - &
-                col_ns%residue_npools(p,i_met_lit) * newfrac / dt * litr_prof 
-
-             col_nf%dwt_residue_to_litr_cel_n(c,j) = &
-                col_nf%dwt_residue_to_litr_cel_n(c,j) - &
-                col_ns%residue_npools(p,i_cel_lit) * newfrac / dt * litr_prof 
-
-             col_nf%dwt_residue_to_litr_lig_n(c,j) = &
-                col_nf%dwt_residue_to_litr_lig_n(c,j) - &
-                col_ns%residue_npools(p,i_lig_lit) * newfrac / dt * litr_prof 
-
-             col_pf%dwt_residue_to_litr_met_p(c,j) = &
-                col_pf%dwt_residue_to_litr_met_p(c,j) - &
-                col_ps%residue_ppools(p,i_met_lit) * newfrac / dt * litr_prof 
-
-             col_pf%dwt_residue_to_litr_cel_p(c,j) = &
-                col_pf%dwt_residue_to_litr_cel_p(c,j) - &
-                col_ps%residue_ppools(p,i_cel_lit) * newfrac / dt * litr_prof 
-
-             col_pf%dwt_residue_to_litr_lig_p(c,j) = &
-                col_pf%dwt_residue_to_litr_lig_p(c,j) - &
-                col_ps%residue_ppools(p,i_lig_lit) * newfrac / dt * litr_prof 
-
-             if ( use_c13 ) then
-                c13_col_cf%dwt_residue_to_litr_met_c(c,j) = &
-                   c13_col_cf%dwt_residue_to_litr_met_c(c,j) - &
-                   c13_col_cs%residue_cpools(p,i_met_lit) * newfrac / dt * litr_prof 
-   
-                c13_col_cf%dwt_residue_to_litr_cel_c(c,j) = &
-                   c13_col_cf%dwt_residue_to_litr_cel_c(c,j) - &
-                   c13_col_cs%residue_cpools(p,i_cel_lit) * newfrac / dt * litr_prof 
-   
-                c13_col_cf%dwt_residue_to_litr_lig_c(c,j) = &
-                   c13_col_cf%dwt_residue_to_litr_lig_c(c,j) - &
-                   c13_col_cs%residue_cpools(p,i_lig_lit) * newfrac / dt * litr_prof 
-
-             end if
-
-             if ( use_c14 ) then
-                c14_col_cf%dwt_residue_to_litr_met_c(c,j) = &
-                   c14_col_cf%dwt_residue_to_litr_met_c(c,j) - &
-                   c14_col_cs%residue_cpools(p,i_met_lit) * newfrac / dt * litr_prof 
-   
-                c14_col_cf%dwt_residue_to_litr_cel_c(c,j) = &
-                   c14_col_cf%dwt_residue_to_litr_cel_c(c,j) - &
-                   c14_col_cs%residue_cpools(p,i_cel_lit) * newfrac / dt * litr_prof 
-   
-                c14_col_cf%dwt_residue_to_litr_lig_c(c,j) = &
-                   c14_col_cf%dwt_residue_to_litr_lig_c(c,j) - &
-                   c14_col_cs%residue_cpools(p,i_lig_lit) * newfrac / dt * litr_prof 
-
-             end if
-
-          end if
 
           if ( use_c13 ) then
              ! C13 fine root litter fluxes
