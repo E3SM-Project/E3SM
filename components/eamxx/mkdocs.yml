@@ -54,6 +54,9 @@ nav:
       - 'Wrap Torch emulators': 'developer/torch_support.md'
   - 'Technical Guide':
     - 'Overview': 'technical/index.md'
+    - 'Physics':
+      - 'P3':
+        - 'Autoconversion': 'technical/physics/p3/autoconversion.md'
     - 'AeroCom cloud top': 'technical/aerocom_cldtop.md'
 
 edit_uri: ""
