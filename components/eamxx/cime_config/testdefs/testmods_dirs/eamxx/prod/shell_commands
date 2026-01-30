@@ -57,8 +57,17 @@ elif [[ "${atm_grid}" = "ne4np4.pg2" ]]; then
     armmapfile="not-supported-yet"
     # Keep default SPA file
     # ... (do nothing)
+elif [[ "${atm_grid}" = "ne256np4.pg2" ]]; then
+    hmapfile="${input_data_dir}/atm/scream/maps/map_ne256pg2_to_ne30pg2_traave.20240206.nc"
+    latlonmapfile="${input_data_dir}/atm/scream/maps/map_ne4pg2_to_10x20_20260112.nc"
+    echo "Note: arm remap only works for ne30pg2 atm grids for now"
+    armmapfile="not-supported-yet"
+    echo "Note: latlon remap only works for ne4pg2 and ne30pg2 atm grids for now"
+    latlonmapfile="not-supported-yet"
+    # Keep default SPA file
+    # ... (do nothing)
 else
-    echo "Note: horiz/arm remaps only work for ne30pg2 and ne4pg2 atm grids for now"
+    echo "Note: horiz/arm/latlon remaps only work for ne30pg2 and ne4pg2 atm grids for now"
     hmapfile="not-supported-yet"
     armmapfile="not-supported-yet"
     latlonmapfile="not-supported-yet"
