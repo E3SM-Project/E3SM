@@ -4,6 +4,8 @@ add_subdirectory(infra)
 
 set(ZM_TESTS_SRCS
   zm_test_find_mse_max.cpp
+  zm_ientropy_tests.cpp
+  zm_entropy_tests.cpp
 ) # ZM_TESTS_SRCS
 
 # All tests should understand the same baseline args
@@ -22,10 +24,8 @@ else()
   set(GZM_THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC})
 endif()
 
-if (NOT EAMXX_ENABLE_GPU)
-  CreateUnitTest(zm_tests "${ZM_TESTS_SRCS}"
-    LIBS zm zm_test_infra
-    EXE_ARGS "--args ${BASELINE_FILE_ARG}"
-    THREADS ${ZM_THREADS}
-    LABELS "zm;physics;baseline_gen;baseline_cmp")
-endif()
+CreateUnitTest(zm_tests "${ZM_TESTS_SRCS}"
+  LIBS zm zm_test_infra
+  EXE_ARGS "--args ${BASELINE_FILE_ARG}"
+  THREADS ${ZM_THREADS}
+  LABELS "zm;physics;baseline_gen;baseline_cmp")

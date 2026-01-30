@@ -13,7 +13,7 @@ FILE_TEMPLATES = {
     "cxx_bfb_unit_impl": lambda phys, sub, gen_code:
 f"""#include "catch2/catch.hpp"
 
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 #include "physics/{phys}/{phys}_functions.hpp"
 #include "physics/{phys}/tests/infra/{phys}_test_data.hpp"
 
@@ -245,7 +245,7 @@ PIECES = dict([
 
 # physics map. maps the name of a physics packages containing the original fortran subroutines to:
 #   (path-to-origin, path-to-cxx-src, init-code)
-ORIGIN_FILES, CXX_ROOT, INIT_CODE, FINALIZE_CODE, COLS_DIMNAME, UNPACKED = range(6)
+ORIGIN_FILES, CXX_ROOT, INIT_CODE, FINALIZE_CODE, COLS_DIMNAME, UNPACKED, FTYPEDEF = range(7)
 PHYSICS = {
     "p3"   : (
         ("components/eam/src/physics/cam/micro_p3.F90",),
@@ -253,7 +253,8 @@ PHYSICS = {
         "p3_init();",
         "",
         "its:ite",
-        False
+        False,
+        "P3F",
     ),
     "shoc" : (
         ("components/eam/src/physics/cam/shoc.F90",),
@@ -261,7 +262,8 @@ PHYSICS = {
         "shoc_init(d.nlev, true);",
         "",
         "shcol",
-        False
+        False,
+        "SHF",
     ),
     "dp" : (
         (
@@ -274,7 +276,8 @@ PHYSICS = {
         "dp_init(d.plev, true);",
         ""
         "",
-        False
+        False,
+        "DPF",
     ),
     "gw" : (
         (
@@ -289,7 +292,24 @@ PHYSICS = {
         "gw_common_init(); // Might need more specific init",
         "gw_finalize_cxx();",
         "ncol",
-        True
+        True,
+        "GWF",
+    ),
+    "zm" : (
+        (
+            "components/eam/src/physics/cam/zm/zm_conv_cape.F90",
+            "components/eam/src/physics/cam/zm/zm_conv.F90",
+            "components/eam/src/physics/cam/zm/zm_conv_mcsp.F90",
+            "components/eam/src/physics/cam/zm/zm_conv_types.F90",
+            "components/eam/src/physics/cam/zm/zm_conv_util.F90",
+            "components/eam/src/physics/cam/zm/zm_transport.F90"
+        ),
+        "components/eamxx/src/physics/zm",
+        "zm_common_init(); // Might need more specific init",
+        "zm_finalize_cxx();",
+        "ncol",
+        True,
+        "ZMF",
     ),
 }
 
@@ -454,18 +474,28 @@ def remove_comments_and_ws(contents):
     Remove comments and whitespaces from fortran code
     """
     new_lines = []
-    comment_regex = re.compile(r"^([^!]*)")
+    new_comments = []
+    prev_comment = ""
     for line in contents.splitlines():
-        m = comment_regex.match(line)
-        if m is not None:
-            line = m.groups()[0].strip()
+        if "!" in line:
+            noncomment, comment = line.split("!", maxsplit=1)
+            noncomment = noncomment.strip()
+            comment = comment.strip()
         else:
-            line = line.strip()
+            noncomment = line.strip()
+            comment = ""
 
-        if line != "":
-            new_lines.append(line)
+        if noncomment != "":
+            new_lines.append(noncomment)
+            if comment != "":
+                new_comments.append(comment)
+            else:
+                new_comments.append(prev_comment)
+            prev_comment = ""
+        else:
+            prev_comment += comment
 
-    return "\n".join(new_lines)
+    return new_lines, new_comments
 
 ###############################################################################
 def normalize_f90(contents):
@@ -475,21 +505,26 @@ def normalize_f90(contents):
     and lowercasing everything.
     """
     # Must remove comments and whitespace for the alg below to work
-    contents = remove_comments_and_ws(contents)
+    lines, comments = remove_comments_and_ws(contents)
+    expect(len(lines) == len(comments), "Comment/line mismatch")
 
     new_lines = []
+    new_comments = []
     contination = False
-    for line in contents.splitlines():
+    for line, comment in zip(lines, comments):
         line = line.lstrip("&") # always remove leading &, they are optional
+        line = line.lower()
         if line != "":
             if contination:
                 new_lines[-1] += line.rstrip("&")
+                new_comments[-1] += comment
             else:
                 new_lines.append(line.rstrip("&"))
+                new_comments.append(comment)
 
             contination = line.endswith("&")
 
-    return ("\n".join(new_lines)).lower()
+    return new_lines, new_comments
 
 ###############################################################################
 def split_top_commas(line):
@@ -539,12 +574,12 @@ def get_arg_order(line):
         args_raw = line.rstrip(")").split("(", maxsplit=1)[-1]
         return [item.strip() for item in args_raw.split(",") if item.strip()]
 
-ARG_NAME, ARG_TYPE, ARG_INTENT, ARG_DIMS = range(4)
+ARG_NAME, ARG_TYPE, ARG_INTENT, ARG_DIMS, ARG_COMMENT = range(5)
 ###############################################################################
-def parse_f90_args(line):
+def parse_f90_args(line, comment=None):
 ###############################################################################
     """
-    Given a line of fortran code declaring an argument[s], return [(argname, argtype, intent, dims)]
+    Given a line of fortran code declaring an argument[s], return [(argname, argtype, intent, dims, comment)]
     Anywhere you see "arg_data" in this program, it's referring to a list of data produced by
     this function. Anywhere you see "arg_datum", it's referring to a single item in this list.
     """
@@ -584,7 +619,7 @@ def parse_f90_args(line):
             all_dims.append(dims)
             names.append(name_dim.strip())
 
-    return [(name, argtype, intent, dims) for name, dims in zip(names, all_dims)]
+    return [(name, argtype, intent, dims, None if not comment else comment) for name, dims in zip(names, all_dims)]
 
 ###############################################################################
 def parse_origin(contents, subs):
@@ -596,14 +631,15 @@ def parse_origin(contents, subs):
     begin_func_regexes = [get_function_begin_regex(sub)   for sub in subs]
     arg_decl_regex = re.compile(r"^.+intent\s*[(]\s*(in|out|inout)\s*[)]")
 
-    contents = normalize_f90(contents)
+    new_lines, new_comments = normalize_f90(contents)
+    expect(len(new_lines) == len(new_comments), "New Comment/line mismatch")
 
     db = {}
     active_sub = None
     result_name = None
     arg_order = []
     arg_decls = []
-    for line in contents.splitlines():
+    for line, comment in zip(new_lines, new_comments):
         for sub, begin_sub_regex, begin_func_regex in zip(subs, begin_sub_regexes, begin_func_regexes):
             begin_sub_match = begin_sub_regex.match(line)
             begin_func_match = begin_func_regex.match(line)
@@ -620,13 +656,13 @@ def parse_origin(contents, subs):
         if active_sub:
             decl_match = arg_decl_regex.match(line)
             if decl_match is not None:
-                arg_decls.extend(parse_f90_args(line))
+                arg_decls.extend(parse_f90_args(line, comment))
             elif result_name:
                 result_decl_regex = re.compile(fr".+::\s*{result_name}([^\w]|$)")
                 result_decl_match = result_decl_regex.match(line)
                 if result_decl_match is not None:
                     line = line.replace("::", " , intent(out) ::")
-                    arg_decls.extend(parse_f90_args(line))
+                    arg_decls.extend(parse_f90_args(line, comment))
 
             end_regex = get_subroutine_end_regex(active_sub)
             end_match = end_regex.match(line)
@@ -662,7 +698,7 @@ def parse_origin(contents, subs):
                             dim_scalars = extract_dim_scalars(arg_dim)
                             for arg_dim in dim_scalars:
                                 if arg_dim not in arg_names:
-                                    global_ints_to_insert.append((arg_dim, "integer", "in", None))
+                                    global_ints_to_insert.append((arg_dim, "integer", "in", None, None))
                                     arg_names.add(arg_dim)
 
                 db[active_sub] = global_ints_to_insert + ordered_decls
@@ -758,22 +794,24 @@ def gen_arg_cxx_decls(arg_data, kokkos=False, unpacked=False, col_dim=None):
     types instead of C types.
     """
     arg_names    = [item[ARG_NAME] for item in arg_data]
+    arg_comments = [item[ARG_COMMENT] for item in arg_data]
+    arg_intents  = [item[ARG_INTENT] for item in arg_data]
     if kokkos:
         arg_types = [get_kokkos_type(item, col_dim, unpacked=unpacked) for item in arg_data]
     else:
         arg_types = [get_cxx_type(item) for item in arg_data]
 
-    arg_sig_list = [(f"{arg_type} {arg_name}", arg_datum[ARG_INTENT])
-                    for arg_name, arg_type, arg_datum in zip(arg_names, arg_types, arg_data)]
+    arg_sig_list = [(f"{arg_type} {arg_name}", arg_intent, arg_comment)
+                    for arg_name, arg_type, arg_intent, arg_comment in zip(arg_names, arg_types, arg_intents, arg_comments)]
 
     # For kokkos functions, we will almost always want the team and we don't want
     # the col_dim
     if kokkos:
-        arg_sig_list.insert(0, ("const MemberType& team", "in"))
-        for arg_sig, arg_intent in arg_sig_list:
+        arg_sig_list.insert(0, ("const MemberType& team", "in", None))
+        for arg_sig, arg_intent, arg_comment in arg_sig_list:
             if arg_sig.split()[-1] == col_dim:
                 expect(arg_intent == "in", f"col_dim {col_dim} wasn't an input, {arg_intent}?")
-                arg_sig_list.remove((arg_sig, arg_intent))
+                arg_sig_list.remove((arg_sig, arg_intent, arg_comment))
                 break
 
     result = []
@@ -783,16 +821,19 @@ def gen_arg_cxx_decls(arg_data, kokkos=False, unpacked=False, col_dim=None):
     if kokkos:
         intent_map = {"in" : "Inputs", "inout" : "Inputs/Outputs", "out" : "Outputs"}
         curr = None
-        for arg_sig, arg_intent in arg_sig_list:
+        for arg_sig, arg_intent, arg_comment in arg_sig_list:
             if arg_intent != curr:
                 fullname = intent_map[arg_intent]
                 result.append(f"// {fullname}")
                 curr = arg_intent
 
-            result.append(arg_sig)
+            if arg_comment:
+                result.append(f"{arg_sig} // {arg_comment}")
+            else:
+                result.append(arg_sig)
 
     else:
-        result = [arg_sig for arg_sig, _ in arg_sig_list]
+        result = [arg_sig for arg_sig, _, _ in arg_sig_list]
 
     return result
 
@@ -803,7 +844,7 @@ def split_by_intent(arg_data):
     Take arg data and split into three lists of names based on intent: [inputs], [intouts], [outputs]
     """
     inputs, inouts, outputs = [], [], []
-    for name, _, intent, _ in arg_data:
+    for name, _, intent, _, _ in arg_data:
         if intent == "in":
             inputs.append(name)
         elif intent == "inout":
@@ -822,7 +863,7 @@ def split_by_type(arg_data):
     Take arg data and split into three lists of names based on type: [reals], [ints], [logicals]
     """
     reals, ints, logicals = [], [], []
-    for name, argtype, _, _ in arg_data:
+    for name, argtype, _, _, _ in arg_data:
         if argtype == "real":
             reals.append(name)
         elif argtype == "integer":
@@ -843,7 +884,7 @@ def split_by_scalar_vs_view(arg_data):
     Take arg data and split into two lists of names based on scalar/not-scalar: [scalars] [non-scalars]
     """
     scalars, non_scalars = [], []
-    for name, _, _, dims in arg_data:
+    for name, _, _, dims, _ in arg_data:
         if dims is not None:
             non_scalars.append(name)
         else:
@@ -857,12 +898,10 @@ def gen_cxx_data_args(arg_data):
     """
     Based on data, generate unpacking of Data struct args
     """
-    all_dims = group_data(arg_data)[0]
     args_needs_ptr = [item[ARG_DIMS] is None and item[ARG_INTENT] != "in" for item in arg_data]
     arg_names      = [item[ARG_NAME] for item in arg_data]
-    arg_dim_call   = [item[ARG_NAME] in all_dims for item in arg_data]
     args = [f"{'&' if need_ptr else ''}d.{arg_name}"
-            for arg_name, need_ptr, dim_call in zip(arg_names, args_needs_ptr, arg_dim_call)]
+            for arg_name, need_ptr in zip(arg_names, args_needs_ptr)]
     return args
 
 ###############################################################################
@@ -872,7 +911,7 @@ def gen_arg_f90_decls(arg_data):
     Generate f90 argument declarations, will attempt to group these together if possible.
     """
     metadata = {}
-    for name, argtype, intent, dims in arg_data:
+    for name, argtype, intent, dims, _ in arg_data:
         metatuple = (argtype, intent, dims)
         metadata.setdefault(metatuple, []).append(name)
 
@@ -888,11 +927,36 @@ def has_arrays(arg_data):
     """
     Return if arg_data contains any array data
     """
-    for _, _, _, dims in arg_data:
+    for _, _, _, dims, _ in arg_data:
         if dims is not None:
             return True
 
     return False
+
+###############################################################################
+def get_scalar_members(arg_data):
+###############################################################################
+    """
+    Gen cxx code for data struct members in an order that matches gen_struct_members
+    """
+    metadata = {} # intent -> type -> names
+    for name, argtype, intent, dims, _ in arg_data:
+        if dims is None:
+            metadata.setdefault(intent, {}).setdefault(argtype, []).append(name)
+
+    intent_order = ("in", "inout", "out")
+    type_order = ("integer", "real", "logical", "other")
+
+    result = []
+    for intent in intent_order:
+        if intent in metadata:
+            type_map = metadata[intent]
+            for curr_type in type_order:
+                for type_name, names in type_map.items():
+                    if (type_name == curr_type or (curr_type == "other" and type_name not in C_TYPE_MAP.keys())):
+                        result.extend([(name, get_cxx_scalar_type(type_name)) for name in names])
+
+    return result
 
 ###############################################################################
 def gen_struct_members(arg_data):
@@ -901,20 +965,26 @@ def gen_struct_members(arg_data):
     Gen cxx code for data struct members
     """
     metadata = {} # intent -> (type, is_ptr) -> names
-    for name, argtype, intent, dims in arg_data:
+    for name, argtype, intent, dims, _ in arg_data:
         metadata.setdefault(intent, {}).setdefault((argtype, dims is not None), []).append(name)
 
     intent_order = ( ("in", "Inputs"), ("inout", "Inputs/Outputs"), ("out", "Outputs") )
+    type_order = ("integer", "real", "logical", "other")
+    is_ptr_order = (False, True)
+
     result = []
     for intent, comment in intent_order:
         if intent in metadata:
             result.append(f"// {comment}")
             type_map = metadata[intent]
-            for type_info, names in type_map.items():
-                type_name, is_ptr = type_info
-                decl_str = get_cxx_scalar_type(type_name)
-                decl_str += f" {', '.join(['{}{}'.format('*' if is_ptr else '', name) for name in names])};"
-                result.append(decl_str)
+            for curr_type in type_order:
+                for curr_is_ptr in is_ptr_order:
+                    for type_info, names in type_map.items():
+                        type_name, is_ptr = type_info
+                        if (type_name == curr_type or (curr_type == "other" and type_name not in C_TYPE_MAP.keys())) and is_ptr == curr_is_ptr:
+                            decl_str = get_cxx_scalar_type(type_name)
+                            decl_str += f" {', '.join(['{}{}'.format('*' if is_ptr else '', name) for name in names])};"
+                            result.append(decl_str)
 
             result.append("")
 
@@ -949,13 +1019,13 @@ def extract_dim_scalars(dim):
 def group_data(arg_data, filter_out_intent=None, filter_scalar_custom_types=False):
 ###############################################################################
     """
-    Given data, return ([all-dims], [scalars], {dims->[real_data]}, {dims->[int_data]}, {dims->[bool_data]})
+    Given data, return ([scalars], {dims->[real_data]}, {dims->[int_data]}, {dims->[bool_data]})
     """
     scalars  = []
 
     all_dims = []
 
-    for name, argtype, _, dims in arg_data:
+    for name, argtype, _, dims, _ in arg_data:
         if dims is not None:
             for dim in dims:
                 dscalars = extract_dim_scalars(dim)
@@ -967,13 +1037,12 @@ def group_data(arg_data, filter_out_intent=None, filter_scalar_custom_types=Fals
     int_data = {}
     bool_data = {}
 
-    for name, argtype, intent, dims in arg_data:
+    for name, argtype, intent, dims, _ in arg_data:
         if filter_out_intent is None or intent != filter_out_intent:
             if dims is None:
                 if not (is_custom_type(argtype) and filter_scalar_custom_types):
-                    if name not in all_dims:
-                        scalars.append( (name, get_cxx_scalar_type(argtype)))
-                    else:
+                    scalars.append( (name, get_cxx_scalar_type(argtype)))
+                    if name in all_dims:
                         expect(argtype == "integer", f"Expected dimension {name} to be of type integer")
                         expect(intent == "in", f"Expected dimension {name} to be intent in")
 
@@ -986,7 +1055,7 @@ def group_data(arg_data, filter_out_intent=None, filter_scalar_custom_types=Fals
             elif argtype == "logical":
                 bool_data.setdefault(dims, []).append(name)
 
-    return all_dims, scalars, real_data, int_data, bool_data
+    return scalars, real_data, int_data, bool_data
 
 ###############################################################################
 def get_list_of_lists(items, indent):
@@ -1070,11 +1139,11 @@ def gen_struct_api(struct_name, arg_data):
     """
     Given data, generate code for data struct api
     """
-    all_dims, scalars, real_data, int_data, bool_data = group_data(arg_data, filter_scalar_custom_types=True)
+    _, real_data, int_data, bool_data = group_data(arg_data, filter_scalar_custom_types=True)
+    cons_args = get_scalar_members(arg_data)
 
+    # Due to the mechanics of PTD, the constructor must take all scalars, not just input scalars
     result = []
-    dim_args = [(item, "Int") for item in all_dims if item is not None]
-    cons_args = dim_args + scalars
     result.append("{struct_name}({cons_args}) :".\
                   format(struct_name=struct_name,
                          cons_args=", ".join(["{} {}_".format(argtype, name) for name, argtype in cons_args])))
@@ -1110,6 +1179,15 @@ def gen_struct_api(struct_name, arg_data):
 
     result.append("PTD_STD_DEF({}, {}, {});".\
                   format(struct_name, len(cons_args), ", ".join([name for name, _ in cons_args])))
+
+    result.append("")
+    result.append("// TODO - You may need to transition int scalars or tell parent to skip transitioning int arrays that do not represent indices")
+    result.append("// template <ekat::TransposeDirection::Enum D>")
+    result.append("// void transition()")
+    result.append("// {")
+    result.append("//   PhysicsTestData::transition<D>(PUT INT ARRAY SKIPS HERE);")
+    result.append("//   shift_int_scalar<D>(PUT INT SCALAR HERE);")
+    result.append("// }")
 
     return result
 
@@ -1159,9 +1237,9 @@ def check_existing_piece(lines, begin_regex, end_regex):
 ###############################################################################
 def get_data_by_name(arg_data, arg_name, data_idx):
 ###############################################################################
-    for name, a, b, c in arg_data:
+    for name, a, b, c, d in arg_data:
         if name == arg_name:
-            return [name, a, b, c][data_idx]
+            return [name, a, b, c, d][data_idx]
 
     expect(False, f"Name {arg_name} not found")
 
@@ -1251,178 +1329,175 @@ def gen_glue_impl(phys, sub, arg_data, arg_names, col_dim, f2c=False, unpacked=F
     if not f2c:
         impl += init_code
 
-    if has_arrays(arg_data):
-        #
-        # Steps:
-        # 1) Set up typedefs
-        # 2) Sync to device
-        # 3) Unpack view array
-        # 4) Get nk_pack and policy
-        # 5) Get subviews
-        # 6) Call fn
-        # 7) Sync back to host
-        #
-        inputs, inouts, outputs = split_by_intent(arg_data)
-        reals, ints, bools   = split_by_type(arg_data)
-        scalars, views = split_by_scalar_vs_view(arg_data)
-        all_inputs  = inputs + inouts
-        all_outputs = inouts + outputs
+    #
+    # Steps:
+    # 1) Set up typedefs
+    # 2) Sync to device
+    # 3) Unpack view array
+    # 4) Get nk_pack and policy
+    # 5) Get subviews
+    # 6) Call fn
+    # 7) Sync back to host
+    #
+    inputs, inouts, outputs = split_by_intent(arg_data)
+    reals, ints, bools   = split_by_type(arg_data)
+    scalars, views = split_by_scalar_vs_view(arg_data)
+    all_inputs  = inputs + inouts
+    all_outputs = inouts + outputs
 
-        iscalars = list(sorted(set(all_inputs) & set(scalars)))
-        oscalars = list(sorted(set(all_outputs) & set(scalars)))
+    iscalars = list(sorted(set(all_inputs) & set(scalars)))
+    oscalars = list(sorted(set(all_outputs) & set(scalars)))
 
-        oviews = list(sorted(set(all_outputs) & set(views)))
+    oviews = list(sorted(set(all_outputs) & set(views)))
 
-        vreals = list(sorted(set(reals) & set(views)))
-        vints  = list(sorted(set(ints)  & set(views)))
-        vbools = list(sorted(set(bools) & set(views)))
+    vreals = list(sorted(set(reals) & set(views)))
+    vints  = list(sorted(set(ints)  & set(views)))
+    vbools = list(sorted(set(bools) & set(views)))
 
-        sreals = list(sorted(set(reals) & set(scalars)))
-        sints  = list(sorted(set(ints)  & set(scalars)))
-        sbools = list(sorted(set(bools) & set(scalars)))
+    sreals = list(sorted(set(reals) & set(scalars)))
+    sints  = list(sorted(set(ints)  & set(scalars)))
+    sbools = list(sorted(set(bools) & set(scalars)))
 
-        ovreals = list(sorted(set(vreals) & set(all_outputs)))
-        ovints  = list(sorted(set(vints)  & set(all_outputs)))
-        ovbools = list(sorted(set(vbools) & set(all_outputs)))
+    ovreals = list(sorted(set(vreals) & set(all_outputs)))
+    ovints  = list(sorted(set(vints)  & set(all_outputs)))
+    ovbools = list(sorted(set(vbools) & set(all_outputs)))
 
-        isreals = list(sorted(set(sreals) & set(all_inputs)))
-        isints  = list(sorted(set(sints)  & set(all_inputs)))
-        isbools = list(sorted(set(sbools) & set(all_inputs)))
+    isreals = list(sorted(set(sreals) & set(all_inputs)))
+    isints  = list(sorted(set(sints)  & set(all_inputs)))
+    isbools = list(sorted(set(sbools) & set(all_inputs)))
 
-        osreals = list(sorted(set(sreals) & set(all_outputs)))
-        osints  = list(sorted(set(sints)  & set(all_outputs)))
-        osbools = list(sorted(set(sbools) & set(all_outputs)))
+    osreals = list(sorted(set(sreals) & set(all_outputs)))
+    osints  = list(sorted(set(sints)  & set(all_outputs)))
+    osbools = list(sorted(set(sbools) & set(all_outputs)))
 
-        #
-        # 1) Set up typedefs (or just have these at the top of file so they can be shared?)
-        #
+    #
+    # 1) Set up typedefs (or just have these at the top of file so they can be shared?)
+    #
 
-        # set up basics
+    # set up basics
 
-        type_list    = ["Real", "Int", "bool"]
-        impl += "  // create device views and copy\n"
+    type_list    = ["Real", "Int", "bool"]
+    impl += "  // create device views and copy\n"
 
-        #
-        # 2) Sync to device. Do ALL views, not just inputs
-        #
+    #
+    # 2) Sync to device. Do ALL views, not just inputs
+    #
 
-        for input_group, typename in zip([vreals, vints, vbools], type_list):
-            if input_group:
-                rank_map = get_rank_map(arg_data, input_group)
+    for input_group, typename in zip([vreals, vints, vbools], type_list):
+        if input_group:
+            rank_map = get_rank_map(arg_data, input_group)
 
-                for rank, arg_list in rank_map.items():
-                    impl += get_htd_dth_call(arg_data, rank, arg_list, typename, f2c=f2c)
+            for rank, arg_list in rank_map.items():
+                impl += get_htd_dth_call(arg_data, rank, arg_list, typename, f2c=f2c)
 
-        #
-        # 3) Unpack view array
-        #
+    #
+    # 3) Unpack view array
+    #
 
-        for input_group, typename in zip([vreals, vints, vbools], type_list):
-            prefix_char = PREFIX_MAP[typename]
-            if input_group:
-                rank_map = get_rank_map(arg_data, input_group)
+    for input_group, typename in zip([vreals, vints, vbools], type_list):
+        prefix_char = PREFIX_MAP[typename]
+        if input_group:
+            rank_map = get_rank_map(arg_data, input_group)
 
-                for rank, arg_list in rank_map.items():
-                    view_type = get_view_type(typename, rank)
-                    impl += f"  {view_type}\n"
-                    for idx, input_item in enumerate(arg_list):
-                        impl += f"    {input_item}_d(vec{rank}d{prefix_char}_in[{idx}]){';' if idx == len(arg_list) - 1 else ','}\n"
-                    impl += "\n"
+            for rank, arg_list in rank_map.items():
+                view_type = get_view_type(typename, rank)
+                impl += f"  {view_type}\n"
+                for idx, input_item in enumerate(arg_list):
+                    impl += f"    {input_item}_d(vec{rank}d{prefix_char}_in[{idx}]){';' if idx == len(arg_list) - 1 else ','}\n"
+                impl += "\n"
 
 
-        #
-        # 4) Get nk_pack and policy, unpack scalars, and launch kernel
-        #
-        if unpacked:
-            impl += f"  const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy({obj}{col_dim}, {obj}nlev);\n\n"
-        else:
-            impl += f"  const Int nk_pack = ekat::npack<Spack>({obj}nlev);\n"
-            impl += f"  const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy({obj}{col_dim}, nk_pack);\n\n"
+    #
+    # 4) Get nk_pack and policy, unpack scalars, and launch kernel
+    #
+    if unpacked:
+        impl += f"  const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy({obj}{col_dim}, {obj}nlev);\n\n"
+    else:
+        impl += f"  const Int nk_pack = ekat::npack<Spack>({obj}nlev);\n"
+        impl += f"  const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy({obj}{col_dim}, nk_pack);\n\n"
 
-        if scalars:
-            if not f2c:
-                impl += "  // unpack data scalars because we do not want the lambda to capture d\n"
-                for input_group, typename in zip([isreals, isints, isbools], type_list):
-                    if input_group:
-                        for arg in input_group:
-                            if arg not in oscalars and arg != col_dim:
-                                impl += f"  const {typename} {arg} = {obj}{arg};\n"
+    if scalars:
+        if not f2c:
+            impl += "  // unpack data scalars because we do not want the lambda to capture d\n"
+            for input_group, typename in zip([isreals, isints, isbools], type_list):
+                if input_group:
+                    for arg in input_group:
+                        if arg not in oscalars and arg != col_dim:
+                            impl += f"  const {typename} {arg} = {obj}{arg};\n"
 
-            # We use 0-rank views to handle output scalars
-            for output_group, typename in zip([osreals, osints, osbools], type_list):
-                if output_group:
-                    view_type = get_view_type(typename, 0)
-                    hview_type = view_type[0:-2] + "_h"
-                    for arg in output_group:
-                        impl += f'  {hview_type} {arg}_h("{arg}_h");\n'
-                        if arg in iscalars:
-                            impl += f'  {arg}_h() = {obj}{arg};\n'
-                        impl += f'  {view_type} {arg}_d = Kokkos::create_mirror_view_and_copy(DefaultDevice(), {arg}_h);\n'
-
-            impl += "\n"
-
-        impl += "  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {\n"
-        impl += "    const Int i = team.league_rank();\n\n"
-
-        #
-        # 5) Get subviews
-        #
-        impl += "    // Get single-column subviews of all inputs, shouldn't need any i-indexing\n"
-        impl += "    // after this.\n"
-
-        for view_arg in views:
-            dims = get_data_by_name(arg_data, view_arg, ARG_DIMS)
-            if col_dim in dims:
-                if len(dims) == 1:
-                    pass
-                else:
-                    impl += f"    const auto {view_arg}_c = ekat::subview({view_arg}_d, i);\n"
+        # We use 0-rank views to handle output scalars
+        for output_group, typename in zip([osreals, osints, osbools], type_list):
+            if output_group:
+                view_type = get_view_type(typename, 0)
+                hview_type = view_type[0:-2] + "_h"
+                for arg in output_group:
+                    impl += f'  {hview_type} {arg}_h("{arg}_h");\n'
+                    if arg in iscalars:
+                        impl += f'  {arg}_h() = {obj}{arg};\n'
+                    impl += f'  {view_type} {arg}_d = Kokkos::create_mirror_view_and_copy(DefaultDevice(), {arg}_h);\n'
 
         impl += "\n"
 
-        #
-        # 6) Call fn
-        #
-        kernel_arg_names = ["team"]
-        for arg_name in arg_names:
-            if arg_name in views:
-                dims = get_data_by_name(arg_data, arg_name, ARG_DIMS)
-                if len(dims) == 1 and col_dim in dims:
-                    kernel_arg_names.append(f"{arg_name}_d(i)")
-                else:
-                    kernel_arg_names.append(f"{arg_name}_c")
-            elif arg_name in oscalars:
-                kernel_arg_names.append(f"{arg_name}_d()")
+    impl += "  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {\n"
+    impl += "    const Int i = team.league_rank();\n\n"
+
+    #
+    # 5) Get subviews
+    #
+    impl += "    // Get single-column subviews of all inputs, shouldn't need any i-indexing\n"
+    impl += "    // after this.\n"
+
+    for view_arg in views:
+        dims = get_data_by_name(arg_data, view_arg, ARG_DIMS)
+        if col_dim in dims:
+            if len(dims) == 1:
+                pass
             else:
-                if arg_name != col_dim:
-                    kernel_arg_names.append(arg_name)
+                impl += f"    const auto {view_arg}_c = ekat::subview({view_arg}_d, i);\n"
 
-        joinstr = ',\n      '
-        impl += f"    SHF::{sub}(\n      {joinstr.join(kernel_arg_names)});\n"
-        impl +=  "  });\n\n"
+    impl += "\n"
 
-        #
-        # 7) Sync back to host
-        #
-        if oscalars:
-            impl += "  // Get outputs back, start with scalars\n"
-            for arg in oscalars:
-                impl += f"  Kokkos::deep_copy({arg}_h, {arg}_d);\n"
-                impl += f"  {obj}{arg} = {arg}_h();\n"
+    #
+    # 6) Call fn
+    #
+    kernel_arg_names = ["team"]
+    for arg_name in arg_names:
+        if arg_name in views:
+            dims = get_data_by_name(arg_data, arg_name, ARG_DIMS)
+            if len(dims) == 1 and col_dim in dims:
+                kernel_arg_names.append(f"{arg_name}_d(i)")
+            else:
+                kernel_arg_names.append(f"{arg_name}_c")
+        elif arg_name in oscalars:
+            kernel_arg_names.append(f"{arg_name}_d()")
+        else:
+            if arg_name != col_dim:
+                kernel_arg_names.append(arg_name)
 
-            impl += "\n"
+    joinstr = ',\n      '
+    ftypedef = get_physics_data(phys, FTYPEDEF)
+    impl += f"    {ftypedef}::{sub}(\n      {joinstr.join(kernel_arg_names)});\n"
+    impl +=  "  });\n\n"
 
-        if oviews:
-            impl += "  // Now get arrays\n"
-            for output_group, typename in zip([ovreals, ovints, ovbools], type_list):
-                if output_group:
-                    rank_map = get_rank_map(arg_data, output_group)
+    #
+    # 7) Sync back to host
+    #
+    if oscalars:
+        impl += "  // Get outputs back, start with scalars\n"
+        for arg in oscalars:
+            impl += f"  Kokkos::deep_copy({arg}_h, {arg}_d);\n"
+            impl += f"  {obj}{arg} = {arg}_h();\n"
 
-                    for rank, arg_list in rank_map.items():
-                        impl += get_htd_dth_call(arg_data, rank, arg_list, typename, is_output=True, f2c=f2c)
+        impl += "\n"
 
-    else:
-        expect(False, "Not yet supported")
+    if oviews:
+        impl += "  // Now get arrays\n"
+        for output_group, typename in zip([ovreals, ovints, ovbools], type_list):
+            if output_group:
+                rank_map = get_rank_map(arg_data, output_group)
+
+                for rank, arg_list in rank_map.items():
+                    impl += get_htd_dth_call(arg_data, rank, arg_list, typename, is_output=True, f2c=f2c)
 
     if not f2c:
         impl += final_code
@@ -1606,14 +1681,14 @@ class GenBoiler(object):
         transition_code_1 = "d.transition<ekat::TransposeDirection::c2f>();"
         transition_code_2 = "d.transition<ekat::TransposeDirection::f2c>();"
         data_struct      = get_data_struct_name(sub)
-        init_code        = get_physics_data(phys, INIT_CODE)
+        init_code        = get_physics_data(phys, INIT_CODE).replace("(", "_f(")
 
         result = \
 f"""void {sub}_f({data_struct}& d)
 {{
   {transition_code_1}
   {init_code}
-  {sub}_c({arg_data_args});
+  {sub}_f({arg_data_args});
   {transition_code_2}
 }}
 
@@ -1661,10 +1736,9 @@ f"""{decl}
         """
         arg_data         = force_arg_data if force_arg_data else self._get_arg_data(phys, sub)
         struct_members   = "\n  ".join(gen_struct_members(arg_data))
-        any_arrays       = has_arrays(arg_data)
         struct_name      = get_data_struct_name(sub)
-        inheritance      = " : public PhysicsTestData" if any_arrays else ""
-        api              = "\n  " + "\n  ".join(gen_struct_api(struct_name, arg_data) if any_arrays else "")
+        inheritance      = " : public PhysicsTestData"
+        api              = "\n  " + "\n  ".join(gen_struct_api(struct_name, arg_data))
 
         result = \
 f"""struct {struct_name}{inheritance} {{
@@ -1707,7 +1781,7 @@ f"""{decl}
         arg_data = force_arg_data if force_arg_data else self._get_arg_data(phys, sub)
         arg_decls = gen_arg_cxx_decls(arg_data, kokkos=True, unpacked=self._unpacked, col_dim=self._col_dim)
 
-        arg_decls_str = ("\n    ".join([item if item.startswith("//") else f"{item}," for item in arg_decls])).rstrip(",")
+        arg_decls_str = ("\n    ".join([item if item.startswith("//") else (item.replace(" //", ", //") if "//" in item else f"{item},") for item in arg_decls])).rstrip(",")
 
         return f"  KOKKOS_FUNCTION\n  static void {sub}(\n    {arg_decls_str});"
 
@@ -1762,47 +1836,46 @@ f"""template<typename S, typename D>
         """
         arg_data = force_arg_data if force_arg_data else self._get_arg_data(phys, sub)
         data_struct = get_data_struct_name(sub)
-        has_array = has_arrays(arg_data)
 
         gen_random = \
 """
 
     // Generate random input data
-    // Alternatively, you can use the baseline_data construtors/initializer lists to hardcode data
+    // Alternatively, you can use the baseline_data constructors/initializer lists to hardcode data
     for (auto& d : baseline_data) {
       d.randomize(engine);
     }"""
 
-        _, scalars, real_data, int_data, bool_data = group_data(arg_data, filter_out_intent="in")
+        scalars, real_data, int_data, bool_data = group_data(arg_data, filter_out_intent="in")
+        out_scalar_names = [scalar_name for scalar_name, _ in scalars]
         check_scalars, check_arrays, scalar_comments = "", "", ""
         for scalar in scalars:
             check_scalars += f"        REQUIRE(d_baseline.{scalar[0]} == d_test.{scalar[0]});\n"
 
-        all_dims, input_scalars, _, _, _ = group_data(arg_data, filter_out_intent="out")
-        all_scalar_inputs = all_dims + [scalar_name for scalar_name, _ in input_scalars]
-        scalar_comments = "// " + ", ".join(all_scalar_inputs)
+        # Due to the mechanics of PTD, the constructor must take all scalars, not just input scalars
+        all_scalars = get_scalar_members(arg_data)
+        all_scalar_names = [scalar_name for scalar_name, _ in all_scalars]
+        scalar_comments = "// " + ", ".join([('{} (output, set to zero)'.format(name) if name in out_scalar_names else name) for name in all_scalar_names])
 
-        if has_array:
-            all_data = dict(real_data)
-            for type_data in [int_data, bool_data]:
-                for k, v in type_data.items():
-                    if k in all_data:
-                        all_data[k].extend(v)
-                    else:
-                        all_data[k] = v
+        all_data = dict(real_data)
+        for type_data in [int_data, bool_data]:
+            for k, v in type_data.items():
+                if k in all_data:
+                    all_data[k].extend(v)
+                else:
+                    all_data[k] = v
 
-            for _, data in all_data.items():
-                for datum in data:
-                    check_arrays += f"        REQUIRE(d_baseline.total(d_baseline.{data[0]}) == d_test.total(d_test.{datum}));\n"
+        for _, data in all_data.items():
+            for datum in data:
+                check_arrays += f"        REQUIRE(d_baseline.total(d_baseline.{data[0]}) == d_test.total(d_test.{datum}));\n"
 
-                check_arrays += f"        for (Int k = 0; k < d_baseline.total(d_baseline.{data[0]}); ++k) {{\n"
-                for datum in data:
-                    check_arrays += f"          REQUIRE(d_baseline.{datum}[k] == d_test.{datum}[k]);\n"
+            check_arrays += f"        for (Int k = 0; k < d_baseline.total(d_baseline.{data[0]}); ++k) {{\n"
+            for datum in data:
+                check_arrays += f"          REQUIRE(d_baseline.{datum}[k] == d_test.{datum}[k]);\n"
 
-                check_arrays += "        }\n"
+            check_arrays += "        }\n"
 
-        if has_array:
-            result = \
+        result = \
 """  void run_bfb()
   {{
     auto engine = Base::get_engine();
@@ -1858,97 +1931,6 @@ f"""template<typename S, typename D>
                           gen_random=gen_random,
                           check_scalars=check_scalars,
                           check_arrays=check_arrays)
-        else:
-            inputs, inouts, outputs = split_by_intent(arg_data)
-            reals                   = split_by_type(arg_data)[0]
-            all_inputs              = inputs + inouts
-            all_outputs             = inouts + outputs
-
-            ireals  = list(sorted(set(all_inputs) & set(reals)))
-            oreals  = list(sorted(set(all_outputs) & set(reals)))
-            ooreals = list(sorted(set(outputs) & set(reals)))
-
-            spack_init = ""
-            if ireals:
-                spack_init = \
-"""// Init pack inputs
-      Spack {ireals};
-      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {{
-        {ireal_assigns}
-      }}
-""".format(ireals=", ".join(ireals), ireal_assigns="\n        ".join(["{0}[s] = test_device(vs).{0};".format(ireal) for ireal in ireals]))
-
-            spack_output_init = ""
-            if ooreals:
-                spack_output_init = \
-f"""// Init outputs
-      Spack {', '.join(['{}(0)'.format(ooreal) for ooreal in ooreals])};
-"""
-
-            scalars = group_data(arg_data)[1]
-            func_call = f"Functions::{sub}({', '.join([(scalar if scalar in reals else 'test_device(0).{}'.format(scalar)) for scalar, _ in scalars])});"
-
-            spack_output_to_dview = ""
-            if oreals:
-                spack_output_to_dview = \
-"""// Copy spacks back into test_device view
-      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {{
-        {}
-      }}
-""".format("\n        ".join(["test_device(vs).{0} = {0}[s];".format(oreal) for oreal in oreals]))
-
-            result = \
-"""  void run_bfb()
-  {{
-    auto engine = Base::get_engine();
-
-    {data_struct} baseline_data[max_pack_size] = {{
-      // TODO
-    }};
-
-    static constexpr Int num_runs = sizeof(baseline_data) / sizeof({data_struct});{gen_random}
-
-    // Create copies of data for use by test and sync it to device. Needs to happen before read calls so that
-    // inout data is in original state
-    view_1d<{data_struct}> test_device("test_device", max_pack_size);
-    const auto test_host = Kokkos::create_mirror_view(test_device);
-    std::copy(&baseline_data[0], &baseline_data[0] + max_pack_size, test_host.data());
-    Kokkos::deep_copy(test_device, test_host);
-
-    // Get data from fortran
-    for (auto& d : baseline_data) {{
-      {sub}(d);
-    }}
-
-    // Get data from test. Run {sub} from a kernel and copy results back to host
-    Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {{
-      const Int offset = i * Spack::n;
-
-      {spack_init}
-      {spack_output_init}
-
-      {func_call}
-
-      {spack_output_to_dview}
-    }});
-
-    Kokkos::deep_copy(test_host, test_device);
-
-    // Verify BFB results
-    if (SCREAM_BFB_TESTING) {{
-      for (Int i = 0; i < num_runs; ++i) {{
-        {data_struct}& d_baseline = baseline_data[i];
-        {data_struct}& d_test = test_host[i];
-{check_scalars}      }}
-    }}
-  }} // run_bfb""".format(data_struct=data_struct,
-                          sub=sub,
-                          gen_random=gen_random,
-                          check_scalars=check_scalars,
-                          spack_init=spack_init,
-                          spack_output_init=spack_output_init,
-                          func_call=func_call,
-                          spack_output_to_dview=spack_output_to_dview)
 
         return result
 
@@ -2075,7 +2057,3 @@ template struct Functions<Real,DefaultDevice>;
         print("ALL_SUCCESS" if all_success else "THERE WERE FAILURES")
 
         return all_success
-
-if __name__ == "__main__":
-    import doctest
-    doctest.run_docstring_examples(parse_f90_args, globals())

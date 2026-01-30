@@ -1,4 +1,4 @@
-module zm_iso_c
+module zm_c2f_bridge
   use iso_c_binding
   implicit none
 
@@ -13,7 +13,7 @@ module zm_iso_c
 contains
 !===================================================================================================
 
-subroutine zm_find_mse_max_c( pcols, ncol, pver, num_msg, msemax_top_k, pergro_active, temperature, zmid, sp_humidity, msemax_klev, mse_max_val ) bind(C)
+subroutine zm_find_mse_max_f( pcols, ncol, pver, num_msg, msemax_top_k, pergro_active, temperature, zmid, sp_humidity, msemax_klev, mse_max_val ) bind(C)
   use zm_conv_cape,   only: find_mse_max
   use zm_conv_types,  only: zm_const_t, zm_param_t
   use zm_conv_types,  only: zm_param_set_for_testing, zm_const_set_for_testing
@@ -42,8 +42,47 @@ subroutine zm_find_mse_max_c( pcols, ncol, pver, num_msg, msemax_top_k, pergro_a
   pergro_active_f = pergro_active
   call find_mse_max( pcols, ncol, pver, num_msg, msemax_top_k, pergro_active_f, temperature, zmid, sp_humidity, zm_const, zm_param, msemax_klev, mse_max_val )
   !-----------------------------------------------------------------------------
-end subroutine zm_find_mse_max_c
+end subroutine zm_find_mse_max_f
 
 !===================================================================================================
 
-end module zm_iso_c
+subroutine zm_common_init_bridge_f() bind(C)
+  use zm_eamxx_bridge_wv_saturation, only: wv_sat_init
+
+  call wv_sat_init()
+end subroutine zm_common_init_bridge_f
+
+subroutine zm_common_finalize_bridge_f() bind(C)
+  use zm_eamxx_bridge_wv_saturation, only: wv_sat_final
+
+  call wv_sat_final()
+end subroutine zm_common_finalize_bridge_f
+
+
+subroutine ientropy_bridge_f(s, p, qt, t, qst, tfg) bind(C)
+  use zm_conv_util, only : ientropy
+  use zm_conv_types,  only: zm_const_t, zm_const_set_for_testing
+
+  real(kind=c_real) , value, intent(in) :: s, p, qt, tfg
+  real(kind=c_real) , intent(out) :: t, qst
+
+  type(zm_const_t) :: zm_const
+
+  call zm_const_set_for_testing(zm_const)
+  call ientropy(1, s, p, qt, t, qst, tfg, zm_const)
+end subroutine ientropy_bridge_f
+
+subroutine entropy_bridge_f(tk, p, qtot, entropy_rv) bind(C)
+  use zm_conv_util, only : entropy
+  use zm_conv_types, only: zm_const_t, zm_const_set_for_testing
+
+  real(kind=c_real) , value, intent(in) :: tk, p, qtot
+  real(kind=c_real) , intent(out) :: entropy_rv
+
+  type(zm_const_t) :: zm_const
+
+  call zm_const_set_for_testing(zm_const)
+  entropy_rv = entropy(tk, p, qtot, zm_const)
+end subroutine entropy_bridge_f
+
+end module zm_c2f_bridge
