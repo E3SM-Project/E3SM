@@ -55,3 +55,6 @@ components/eamxx/docs/_presentations_html/
 components/eamxx/src/python/build
 components/eamxx/src/python/build_src
 components/eamxx/src/python/dist
+
+# Emulator Components
+components/emulators/build
