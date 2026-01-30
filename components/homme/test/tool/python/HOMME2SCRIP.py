@@ -7,14 +7,26 @@ Most legacy functionality is reproduced
 Created May, 2025 by Walter Hannah (LLNL) 
 '''
 #---------------------------------------------------------------------------------------------------
-import datetime, os, numpy as np, xarray as xr
+import datetime, os, numpy as np, xarray as xr, numba
 user, host = os.getenv('USER'), os.getenv('HOST')
 source_code_meta = 'HOMME2SCRIP.py'
 output_netcdf_type = 'NETCDF3_64BIT_DATA'
+from time import perf_counter
+enable_timers = True
+# ------------------------------------------------------------------------------
+class tclr: END,GREEN,YELLOW,MAGENTA,CYAN='\033[0m','\033[32m','\033[33m','\033[35m','\033[36m'
 #---------------------------------------------------------------------------------------------------
 class clr:END,RED,GREEN,MAGENTA,CYAN = '\033[0m','\033[31m','\033[32m','\033[35m','\033[36m'
 #---------------------------------------------------------------------------------------------------
 verbose_indent = ' '*2
+# ------------------------------------------------------------------------------
+def print_timer(timer_start,description='',indent=None):
+  global verbose_indent
+  if indent is None: indent = verbose_indent
+  etime = perf_counter()-timer_start
+  time_str = f'{etime:10.1f} sec'
+  if etime>60: time_str += f' ({(etime/60):4.1f} min)'
+  print(f'\n{indent}{tclr.YELLOW}{description:40} elapsed time: {time_str}{tclr.END}')
 #---------------------------------------------------------------------------------------------------
 usage = '''
 python HOMME2SCRIP.py -i <src_file> 
@@ -49,6 +61,7 @@ parser.add_option('--dst_file',
 (opts, args) = parser.parse_args()
 #---------------------------------------------------------------------------------------------------
 def main():
+  if enable_timers: timer_start_all = perf_counter()
   #-------------------------------------------------------------------------------
   # check for valid input arguments
   if opts.src_file is None: raise ValueError(f'{clr.RED}src_file argument was not specified{clr.END}')
@@ -63,7 +76,7 @@ def main():
 
   #-----------------------------------------------------------------------------
   # open input file as dataset
-  ds = xr.open_dataset(opts.src_file)
+  ds = xr.open_dataset(opts.src_file,decode_timedelta=True)
 
   #-----------------------------------------------------------------------------
   # check for variables we need
@@ -108,6 +121,8 @@ def main():
 
   #-----------------------------------------------------------------------------
   # Create output dataset
+  if enable_timers: timer_start = perf_counter()
+
   ds_out = ds.rename({'ncol'  :'grid_size',\
                       'area'  :'grid_area',\
                       'lev'   :'grid_corners',\
@@ -117,6 +132,7 @@ def main():
                       'cv_lon':'grid_corner_lon',\
                     }).isel(grid_corners=slice(0,num_corners))
 
+
   ds_out['grid_area'] = ds_out['grid_area'].assign_attrs(units='radians^2')
   ds_out['grid_area'] = ds_out['grid_area'].assign_attrs(long_name='area weights')
 
@@ -125,55 +141,62 @@ def main():
   ds_out['grid_corner_lat'] = ds_out['grid_corner_lat'].assign_attrs(units='degrees')
   ds_out['grid_corner_lon'] = ds_out['grid_corner_lon'].assign_attrs(units='degrees')
 
+  #-----------------------------------------------------------------------------
+  # transpose grid data
   for v in ds_out.variables:
     if 'grid_corners' in ds_out[v].dims:
       ds_out[v] = ds_out[v].transpose('grid_size','grid_corners',missing_dims='ignore')
 
+  # remove the grid_corners variable:
+  del ds_out['grid_corners']
+
   ds_out.load()
 
-  #-----------------------------------------------------------------------------
-  def print_corners(lat,lon,num_corners):
-    for c in range(num_corners):
-      print(verbose_indent+(' '*6)+f'corner {c} lat/lon: {lat[c]:8.4f} {lon[c]:8.4f}')
-    return
+  if enable_timers: print_timer(timer_start,description='create output dataset')
 
   #-----------------------------------------------------------------------------
-  def swap_corners(ds,i):
-    # 1 2 3 4 -> 1 4 3 2    swap pos 1,3
-    tmp_grid_corner_lon = ds.grid_corner_lon[i,:].copy(deep=True)
-    tmp_grid_corner_lat = ds.grid_corner_lat[i,:].copy(deep=True)
-    ds.grid_corner_lon[i,1] = tmp_grid_corner_lon[3]
-    ds.grid_corner_lon[i,3] = tmp_grid_corner_lon[1]
-    ds.grid_corner_lat[i,1] = tmp_grid_corner_lat[3]
-    ds.grid_corner_lat[i,3] = tmp_grid_corner_lat[1]
-    return
-
+  @numba.njit()
+  def pole_corner_check(ncol,center_lat,center_lon,corner_lat,corner_lon):
+    num_modified = 0
+    for i in range(ncol):
+      pole_dist = np.absolute( 90 - np.absolute( center_lat[i] ) )
+      if ( pole_dist < 1e-9 ):
+        # 1 2 3 4 -> 1 4 3 2    swap pos 1,3
+        tmp_corner_lon = corner_lon[i,:]
+        tmp_corner_lat = corner_lat[i,:]
+        corner_lon[i,1] = tmp_corner_lon[3]
+        corner_lon[i,3] = tmp_corner_lon[1]
+        corner_lat[i,1] = tmp_corner_lat[3]
+        corner_lat[i,3] = tmp_corner_lat[1]
+        num_modified += 1
+    return num_modified
   #-----------------------------------------------------------------------------
   # Fix orientation at pole points
   print()
   print(verbose_indent+f'{clr.GREEN}Checking pole coordinates...{clr.END}')
 
-  for i in range(len(ds_out['grid_size'])):
-    abs_lat = np.absolute( ds_out.grid_center_lat[i].values )
-    pole_dist = np.absolute( 90 - abs_lat )
-    if ( pole_dist < 1e-9 ):
-      print()
-      print(verbose_indent+(' '*2)+f'{clr.GREEN}Pole point identified:{clr.END}')
-      print(verbose_indent+(' '*4)+f'i :{i:12}')
-      print(verbose_indent+(' '*4)+f'center lat/lon: {ds_out.grid_center_lat[i].values:8.4f} / {ds_out.grid_center_lon[i].values:8.4f}')
-        
-      print(verbose_indent+(' '*4)+f'Original corner indices:')
-      print_corners( ds_out.grid_corner_lat[i,:].values, ds_out.grid_corner_lon[i,:].values, num_corners )
+  if enable_timers: timer_start = perf_counter()
 
-      print(verbose_indent+(' '*4)+f'Swapping corner indices 1 & 3...')
-      swap_corners(ds_out,i)
+  tmp_ncol       = len(ds_out['grid_size'].values)
+  tmp_center_lat = ds_out['grid_center_lat'].values
+  tmp_center_lon = ds_out['grid_center_lon'].values
+  tmp_corner_lat = ds_out['grid_corner_lat'].values
+  tmp_corner_lon = ds_out['grid_corner_lon'].values
 
-      print(verbose_indent+(' '*4)+f'Modified corner indices:')
-      print_corners( ds_out.grid_corner_lat[i,:].values, ds_out.grid_corner_lon[i,:].values, num_corners )
+  num_modified = pole_corner_check(tmp_ncol,tmp_center_lat,tmp_center_lon,tmp_corner_lat,tmp_corner_lon)
+
+  if num_modified>0:
+    print(verbose_indent+(' '*2)+f'{clr.GREEN}{num_modified} pole point modified{clr.END}')
+  else:
+    print(verbose_indent+(' '*2)+f'No pole points modified')
+
+  if enable_timers: print_timer(timer_start,description='pole check')
+
   #-----------------------------------------------------------------------------
   # add imask and grid_dims to output datasest
   ds_out['grid_imask'] = xr.ones_like(ds_out['grid_size'],dtype=int)
-  ds_out['grid_dims'] = xr.DataArray([len(ds_out['grid_imask'])],dims=['grid_rank'])
+  # HOMME grids are always 1D unstructured:
+  ds_out['grid_dims'] = xr.DataArray([1],dims=['grid_rank'])
 
   #-----------------------------------------------------------------------------
   # add global attributes
@@ -189,13 +212,18 @@ def main():
   print()
   print(verbose_indent+f'{clr.GREEN}Writing output grid data...{clr.END}')
 
+  if enable_timers: timer_start = perf_counter()
+
   ds_out.to_netcdf(path=opts.dst_file, mode='w', format=output_netcdf_type)
+
+  if enable_timers: print_timer(timer_start,description='write to file')
 
   #-----------------------------------------------------------------------------
   # final print statements
   print()
   print(verbose_indent+f'{clr.GREEN}Successfully created file:{clr.END} {opts.dst_file}')
-  print()
+
+  if enable_timers: print_timer(timer_start_all,description='total time')
 
 #---------------------------------------------------------------------------------------------------
 if __name__ == '__main__':

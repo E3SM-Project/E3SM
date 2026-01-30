@@ -14,17 +14,15 @@ if (.not. isvar("np")) then
    print("NPTS not specified on command line. Using default 4.")
 end if
 
-template = name + "_tmp.nc"
+template = name + "_tmp1.nc"
 output = name + "_latlon.nc"
 system("rm -f "+output)
 print("input: "+template+" output:"+output)
  
 
 fin   = addfile(template,"r")   ;
-if (ne .gt. 512) then
-  setfileoption("nc","Format","NetCDF4")
-  ;setfileoption("nc","Format","NetCDF4Classic")
-end if
+setfileoption("nc","Format","NetCDF4")
+;setfileoption("nc","Format","NetCDF4Classic")
 fout  = addfile(output,"c")   ;
 
 grid_size = dimsizes(fin->lat)
