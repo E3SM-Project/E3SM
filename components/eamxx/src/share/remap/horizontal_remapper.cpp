@@ -786,7 +786,7 @@ void HorizontalRemapper::pack_and_send ()
   auto pids_send_offsets = m_pids_send_offsets;
   auto send_buf = m_send_buffer;
   const int num_iters = pids.size();
-  const int total_col_size = m_fields_col_offsets.back();
+  const int total_col_size = m_field_offset.back();
   for (int ifield=0; ifield<m_num_fields; ++ifield) {
     if (m_needs_remap[ifield]==0)
       // No need to process this field. We'll deep copy src->tgt later
@@ -794,7 +794,7 @@ void HorizontalRemapper::pack_and_send ()
 
     const auto& f = coarsen ? m_ov_fields[ifield] : m_src_fields[ifield];
     const auto& fl = f.get_header().get_identifier().get_layout();
-    const auto f_col_sizes_scan_sum = m_fields_col_offsets[ifield];
+    const auto field_offset = m_field_offset[ifield];
     switch (fl.rank()) {
       case 1: 
       { 
@@ -805,7 +805,7 @@ void HorizontalRemapper::pack_and_send ()
           auto pid_offset = pids_send_offsets(pid); 
           auto pos_within_pid = idx - pid_offset;
           auto offset = pid_offset*total_col_size
-                      + ncols_send(pid)*f_col_sizes_scan_sum
+                      + ncols_send(pid)*field_offset
                       + pos_within_pid;
           send_buf(offset) = v(icol);
         };
@@ -824,7 +824,7 @@ void HorizontalRemapper::pack_and_send ()
           auto pid_offset = pids_send_offsets(pid);
           auto pos_within_pid = idx - pid_offset;
           auto offset = pid_offset*total_col_size
-                      + ncols_send(pid)*f_col_sizes_scan_sum
+                      + ncols_send(pid)*field_offset
                       + pos_within_pid*dim1;
           auto col_pack = [&](const int& k) {
             send_buf(offset+k) = v(icol,k);
@@ -849,7 +849,7 @@ void HorizontalRemapper::pack_and_send ()
           auto pid_offset = pids_send_offsets(pid);
           auto pos_within_pid = idx - pid_offset;
           auto offset = pid_offset*total_col_size
-                      + ncols_send(pid)*f_col_sizes_scan_sum
+                      + ncols_send(pid)*field_offset
                       + pos_within_pid*f_col_size;
           auto col_pack = [&](const int& idx) {
             const int j = idx / dim2;
@@ -877,7 +877,7 @@ void HorizontalRemapper::pack_and_send ()
           auto pid_offset = pids_send_offsets(pid);
           auto pos_within_pid = idx - pid_offset;
           auto offset = pid_offset*total_col_size
-                      + ncols_send(pid)*f_col_sizes_scan_sum
+                      + ncols_send(pid)*field_offset
                       + pos_within_pid*f_col_size;
           auto col_pack = [&](const int& idx) {
             const int j = (idx / dim3) / dim2;
@@ -938,7 +938,7 @@ void HorizontalRemapper::recv_and_unpack ()
   auto pids_recv_offsets = m_pids_recv_offsets;
   auto recv_buf = m_recv_buffer;
   const int num_iters = pids.size();
-  const int total_col_size = m_fields_col_offsets.back();
+  const int total_col_size = m_field_offset.back();
   for (int ifield=0; ifield<m_num_fields; ++ifield) {
     if (m_needs_remap[ifield]==0)
       // No need to process this field. We'll deep copy src->tgt later
@@ -946,7 +946,7 @@ void HorizontalRemapper::recv_and_unpack ()
 
           auto& f  = coarsen ? m_tgt_fields[ifield] : m_ov_fields[ifield];
     const auto& fl = f.get_header().get_identifier().get_layout();
-    const auto f_col_sizes_scan_sum = m_fields_col_offsets[ifield];
+    const auto field_offset = m_field_offset[ifield];
 
     // We accummulate contributions, so init to 0
     f.deep_copy(0);
@@ -961,7 +961,7 @@ void HorizontalRemapper::recv_and_unpack ()
           const auto pid_offset = pids_recv_offsets(pid);
           const auto pos_within_pid = idx - pid_offset;
           auto offset = pid_offset*total_col_size
-                      + ncols_recv(pid)*f_col_sizes_scan_sum
+                      + ncols_recv(pid)*field_offset
                       + pos_within_pid;
           v(icol) += recv_buf(offset);
         };
@@ -980,7 +980,7 @@ void HorizontalRemapper::recv_and_unpack ()
           const auto pid_offset = pids_recv_offsets(pid);
           const auto pos_within_pid = idx - pid_offset;
           auto offset = pid_offset*total_col_size
-                      + ncols_recv(pid)*f_col_sizes_scan_sum
+                      + ncols_recv(pid)*field_offset
                       + pos_within_pid*dim1;
           auto col_unpack = [&](const int& k) {
             v(icol,k) += recv_buf(offset+k);
@@ -1005,7 +1005,7 @@ void HorizontalRemapper::recv_and_unpack ()
           const auto pid_offset = pids_recv_offsets(pid);
           const auto pos_within_pid = idx - pid_offset;
           auto offset = pid_offset*total_col_size
-                      + ncols_recv(pid)*f_col_sizes_scan_sum
+                      + ncols_recv(pid)*field_offset
                       + pos_within_pid*f_col_size;
           auto col_unpack = [&](const int& idx) {
             const int j = idx / dim2;
@@ -1033,7 +1033,7 @@ void HorizontalRemapper::recv_and_unpack ()
           const auto pid_offset = pids_recv_offsets(pid);
           const auto pos_within_pid = idx - pid_offset;
           auto offset = pid_offset*total_col_size
-                      + ncols_recv(pid)*f_col_sizes_scan_sum
+                      + ncols_recv(pid)*field_offset
                       + pos_within_pid*f_col_size;
           auto col_unpack = [&](const int& idx) {
             const int j = (idx / dim3) / dim2;
@@ -1064,16 +1064,16 @@ void HorizontalRemapper::setup_mpi_data_structures ()
   const bool coarsen = m_remap_data->m_coarsening;
 
   // Compute offset of each field when we splice together a col for each
-  m_fields_col_offsets.resize(m_num_fields+1,0);
+  m_field_offset.resize(m_num_fields+1,0);
   for (int i=0; i<m_num_fields; ++i) {
     const auto& f = m_src_fields[i];
     const auto& fl = f.get_header().get_identifier().get_layout();
 
     // Fields without COL tag are nor remapped, so consider their col size as 0
     auto col_size = m_needs_remap[i] ? fl.clone().strip_dim(COL).size() : 0;
-    m_fields_col_offsets[i+1] = m_fields_col_offsets[i] + col_size;
+    m_field_offset[i+1] = m_field_offset[i] + col_size;
   }
-  auto total_col_size = m_fields_col_offsets.back();
+  auto total_col_size = m_field_offset.back();
 
   auto ov_grid = m_remap_data->m_overlap_grid;
   if (coarsen) {
