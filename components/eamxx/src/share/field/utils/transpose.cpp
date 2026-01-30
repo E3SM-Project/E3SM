@@ -73,12 +73,17 @@ void transpose (const Field& src, Field& tgt)
       " - src field layout: " + src_id.get_layout().to_string() + "\n"
       " - tgt field layout: " + tgt_id.get_layout().to_string() + "\n");
 
-  EKAT_REQUIRE_MSG (src_id.get_units()==tgt_id.get_units(),
-      "Error! Input transpose field units are incompatible with src field.\n"
-      " - src field name: " + src.name() + "\n"
-      " - tgt field name: " + tgt.name() + "\n"
-      " - src field units: " + src_id.get_units().get_si_string() + "\n"
-      " - tgt field units: " + tgt_id.get_units().get_si_string() + "\n");
+  // Check that the source and target field share the same units.  We skip this check
+  // if the units of either field are INVALID.
+  using namespace ekat::units;
+  if (src_id.get_units() != Units::invalid() and tgt_id.get_units() != Units::invalid()) {
+    EKAT_REQUIRE_MSG (src_id.get_units()==tgt_id.get_units(),
+        "Error! Input transpose field units are incompatible with src field.\n"
+        " - src field name: " + src.name() + "\n"
+        " - tgt field name: " + tgt.name() + "\n"
+        " - src field units: " + src_id.get_units().get_si_string() + "\n"
+        " - tgt field units: " + tgt_id.get_units().get_si_string() + "\n");i
+  }
 
   EKAT_REQUIRE_MSG (src_id.data_type()==tgt_id.data_type(),
       "Error! Input transpose field data type is incompatible with src field.\n"

@@ -100,6 +100,11 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
   // the name of the yaml file where the options are read from.
   m_stream_name = params.name();
 
+  // Is this output set to be transposed?
+  if (params.isParameter("transpose")) {
+    m_transpose = params.get<bool>("transpose");
+  }
+
   auto gm = field_mgr->get_grids_manager();
 
   // Figure out what kind of averaging is requested
@@ -338,7 +343,23 @@ void AtmosphereOutput::init()
 
     // Store the field layout, so that calls to setup_output_file are easier
     const auto& layout = fid.get_layout();
-    m_vars_dims[fname] = get_var_dimnames(layout);
+    m_vars_dims[fname] = get_var_dimnames(m_transpose ? layout.transpose() : layout);
+
+    // Initialize a helper_field for each unique layout.  This can be used for operations
+    // such as writing transposed output.
+    if (m_transpose) {
+      const auto helper_layout = layout.transpose();
+      const std::string helper_name   = "transposed_"+helper_layout.to_string()+"_"+e2str(fid.data_type());
+      if (m_helper_fields.find(helper_name) == m_helper_fields.end()) {
+        // We can add a new helper field for this layout
+        using namespace ekat::units;
+        FieldIdentifier fid_helper(helper_name,helper_layout,Units::invalid(),fid.get_grid_name(),fid.data_type());
+        Field helper(fid_helper);
+        helper.get_header().get_alloc_properties().request_allocation();
+        helper.allocate_view();
+        m_helper_fields[helper_name] = helper;
+      }
+    }
 
     // Now check that all the dims of this field are already set to be registered.
     const auto& tags = layout.tags();
@@ -506,7 +527,17 @@ run (const std::string& filename,
         count.sync_to_host();
 
         auto func_start = std::chrono::steady_clock::now();
-        scorpio::write_var(filename,count.name(),count.get_internal_view_data<int,Host>());
+        if (m_transpose) {
+          const auto& fl = count.get_header().get_identifier().get_layout().to_string();
+          const auto& fdt = count.get_header().get_identifier().data_type();
+          const std::string helper_name   = "transposed_"+fl+"_"+fdt;
+          auto& temp = m_helper_fields.at(helper_name);
+          transpose(count,temp);
+          temp.sync_to_host();
+          scorpio::write_var(filename,count.name(),temp.get_internal_view_data<int,Host>());
+        } else {
+          scorpio::write_var(filename,count.name(),count.get_internal_view_data<int,Host>());
+        }
         auto func_finish = std::chrono::steady_clock::now();
         auto duration_loc = std::chrono::duration_cast<std::chrono::milliseconds>(func_finish - func_start);
         duration_write += duration_loc.count();
@@ -584,7 +615,17 @@ run (const std::string& filename,
 
       // Write to file
       auto func_start = std::chrono::steady_clock::now();
-      scorpio::write_var(filename,field_name,f_out.get_internal_view_data<Real,Host>());
+      if (m_transpose) {
+        const auto& fl = f_out.get_header().get_identifier().get_layout().transpose().to_string();
+        const auto& fdt = f_out.get_header().get_identifier().data_type();
+        const std::string helper_name   = "transposed_"+fl+"_"+fdt;
+        auto& temp = m_helper_fields.at(helper_name);
+        transpose(f_out,temp);
+        temp.sync_to_host();
+        scorpio::write_var(filename,field_name,temp.get_internal_view_data<Real,Host>());
+      } else {
+        scorpio::write_var(filename,field_name,f_out.get_internal_view_data<Real,Host>());
+      }
       auto func_finish = std::chrono::steady_clock::now();
       auto duration_loc = std::chrono::duration_cast<std::chrono::milliseconds>(func_finish - func_start);
       duration_write += duration_loc.count();
@@ -662,7 +703,7 @@ void AtmosphereOutput::set_avg_cnt_tracking(const std::string& name, const Field
   }
 
   // We have not created this avg count field yet.
-  m_vars_dims[avg_cnt_name] = get_var_dimnames(layout);
+  m_vars_dims[avg_cnt_name] = get_var_dimnames(m_transpose ? layout.transpose() : layout);
 
   auto nondim = ekat::units::Units::nondimensional();
   FieldIdentifier count_id (avg_cnt_name,layout,nondim,m_io_grid->name(),DataType::IntType);

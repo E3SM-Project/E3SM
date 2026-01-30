@@ -852,7 +852,7 @@ void set_var_decomp (PIOVar& var,
       }
     }
 
-    // We haven't create this decomp yet. Go ahead and create one
+    // We haven't created this decomp yet. Go ahead and create one
     auto decomp = std::make_shared<PIODecomp>();
     decomp->name = decomp_tag;
     decomp->dim_decomp = f.dim_decomps.at(ekat::join(decomposed_dims,"_"));
