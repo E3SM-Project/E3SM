@@ -50,6 +50,9 @@ module control_mod
 ! should be renamed to "hydrostatic_mode"
   logical, public :: theta_hydrostatic_mode
 
+! option to run 3d turbulence
+  logical, public :: do_3d_turbulence
+
 
   integer, public  :: tstep_type= 5                           ! preqx timestepping options
   integer, public  :: rk_stage_user  = 0                      ! number of RK stages (shallow water model) 

@@ -40,7 +40,8 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     restartdir,    &       ! name of the restart directory for OUTPUT
     runtype,       &
     integration,   &       ! integration method
-    theta_hydrostatic_mode,       &   
+    theta_hydrostatic_mode,       &
+    do_3d_turbulence,   &
     transport_alg , &      ! SE Eulerian, classical SL, cell-integrated SL
     semi_lagrange_cdr_alg, &     ! see control_mod for semi_lagrange_* descriptions
     semi_lagrange_cdr_check, &
@@ -273,7 +274,8 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
       ne_y,            &             ! element resolution factor in y-dir for planar
       statefreq,     &             ! number of steps per printstate call
       integration,   &             ! integration method
-      theta_hydrostatic_mode,       &   
+      theta_hydrostatic_mode,       &
+      do_3d_turbulence, &
       transport_alg , &      ! SE Eulerian, classical SL, cell-integrated SL
       semi_lagrange_cdr_alg, &
       semi_lagrange_cdr_check, &
@@ -464,6 +466,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     planar_slice = .false.
 
     theta_hydrostatic_mode = .true.    ! for preqx, this must be .true.
+    do_3d_turbulence = .false.
 #if ( defined MODEL_THETA_C || defined MODEL_THETA_L ) 
     theta_hydrostatic_mode = .false.   ! default NH
 #endif
@@ -850,6 +853,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
 #endif
 
     call MPI_bcast(theta_hydrostatic_mode ,1,MPIlogical_t,par%root,par%comm,ierr)
+    call MPI_bcast(do_3d_turbulence, 1, MPIlogical_t,par%root,par%comm,ierr)
     call MPI_bcast(transport_alg ,1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(semi_lagrange_cdr_alg ,1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(semi_lagrange_cdr_check ,1,MPIlogical_t,par%root,par%comm,ierr)
@@ -1170,6 +1174,7 @@ end if
           write(iulog,*)"readnl: rk_stage_user   = ",rk_stage_user
        endif
        write(iulog,*)"readnl: theta_hydrostatic_mode = ",theta_hydrostatic_mode
+       write(iulog,*)"readnl: do_3d_turbulence = ",do_3d_turbulence
        write(iulog,*)"readnl: transport_alg   = ",transport_alg
        write(iulog,*)"readnl: semi_lagrange_cdr_alg   = ",semi_lagrange_cdr_alg
        write(iulog,*)"readnl: semi_lagrange_cdr_check   = ",semi_lagrange_cdr_check
