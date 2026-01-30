@@ -61,6 +61,7 @@ else
     echo "Note: horiz/arm remaps only work for ne30pg2 and ne4pg2 atm grids for now"
     hmapfile="not-supported-yet"
     armmapfile="not-supported-yet"
+    latlonmapfile="not-supported-yet"
 fi
 
 # set the output yaml files
