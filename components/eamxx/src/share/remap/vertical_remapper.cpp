@@ -208,6 +208,7 @@ registration_ends_impl ()
             " - tgt field name: " + tgt.name() + "\n");
 
         tgt.get_header().set_extra_data("mask_field",mask);
+        tgt.get_header().set_extra_data("mask_value", constants::fill_value<Real>);
 
         // Since we do mask (at top and/or bot), the tgt field MAY be contain fill_value entries
         tgt.get_header().set_may_be_filled(true);
@@ -222,6 +223,10 @@ registration_ends_impl ()
             " - tgt field name: " + tgt.name() + "\n");
         auto src_mask = src.get_header().get_extra_data<Field>("mask_field");
         tgt.get_header().set_extra_data("mask_field",src_mask);
+      }
+      if (src.get_header().has_extra_data("mask_value")) {
+        auto src_mask_value = src.get_header().get_extra_data<Real>("mask_value");
+        tgt.get_header().set_extra_data("mask_value",src_mask_value);
       }
       if (src.get_header().may_be_filled()) {
         tgt.get_header().set_may_be_filled(true);

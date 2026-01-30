@@ -92,6 +92,7 @@ initialize_impl (const RunType /*run_type*/)
   Field diag_mask(mask_fid);
   diag_mask.allocate_view();
   m_diagnostic_output.get_header().set_extra_data("mask_field",diag_mask);
+  m_diagnostic_output.get_header().set_extra_data("mask_value", constants::fill_value<Real>);
   m_diagnostic_output.get_header().set_may_be_filled(true);
 
   using stratts_t = std::map<std::string,std::string>;
