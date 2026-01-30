@@ -101,7 +101,7 @@ protected:
   // ------- MPI-related data structures -------- //
 
   // Offset of each field when we splice together one col of each.
-  std::vector<int> m_fields_col_offset;
+  std::vector<int> m_field_offset;
 
   // ImportData/export info
   std::shared_ptr<GridImportExport>  m_imp_exp;
