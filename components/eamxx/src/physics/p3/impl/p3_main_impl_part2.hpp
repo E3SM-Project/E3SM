@@ -49,6 +49,9 @@ void Functions<S,D>
   const uview_1d<const Spack>& cld_frac_r,
   const uview_1d<const Spack>& qv_prev,
   const uview_1d<const Spack>& t_prev,
+//[shanyp 20251120
+  const uview_1d<const Spack>& omega_mp,
+//shanyp 20251120]
   const uview_1d<Spack>& T_atm,
   const uview_1d<Spack>& rho,
   const uview_1d<Spack>& inv_rho,
@@ -221,7 +224,12 @@ void Functions<S,D>
       epsr(0),        // TODO(doc)
       epsc(0),        // TODO(doc)
       epsi_tot (0);   // inverse supersaturation relaxation timescale for combined ice categories
-
+//[shanyp 20251120
+    Spack xx(0),oxx(0),aaa(0),odt(0),ocp(0),dum(0),dumss(0),pcc(0),e0d(0),w0d(0);
+//[shanyp 20251216
+    Spack dum2(0),dumnc(0),dumqc(0),c1(0),k1(0);
+//shanyp 20251216]
+//shanyp 20251120]
     Smask wetgrowth(false);
 
     // skip micro process calculations except nucleation/acvtivation if there no hydrometeors are present
@@ -379,7 +387,59 @@ void Functions<S,D>
       calc_liq_relaxation_timescale(
         revap_table_vals, rho(k), f1r, f2r, dv, mu, sc, mu_r(k), lamr(k), cdistr(k), cdist(k), qr_incld(k), qc_incld(k),
         epsr, epsc, not_skip_micro);
-
+//[shanyp 20251216
+////      if(qv(k)/qv_sat_l(k)
+//      c1=100.; // CCN number concentration
+//      k1=0.4;  // parameter for the CCN activation equatino NCCN=C1*SS**K1
+//      const auto saturated = qv(k) > qv_sat_l(k) && not_skip_micro;
+//      if(saturated.any()){
+//       dum2=c1*ekat::pow(((qv(k)/qv_sat_l(k)-1.)*100.),k1);                // activated CCN number concentration. The unit of c1 is #/cm3.
+//      } else {
+//       dum2=0.;
+//      }
+//      dum2=dum2*1.e6;                                                      // #/cm3 -> #/m3
+//      dum2=dum2/rho(k);                                                    // #/m3 -> #/kg
+//      dumnc=dum2/cld_frac_l(k)-nc_incld(k);                                // number concentration of newly formed cloud droplets
+//      dumqc=dumnc*4./3.*3.14*1.e-15;                                       // mass mixing ratio of newly formed cloud droplets
+//      nc_incld(k)=nc_incld(k)+dumnc;                                       // update in-cloud number
+//      qc_incld(k)=qc_incld(k)+dumqc;                                       // update in-cloud mass
+//      qv(k) = qv(k) - cld_frac_l(k)*dumqc;                                 // update qv
+//      th_atm(k) = th_atm(k) + exner(k)*latvap*inv_cp*cld_frac_l(k)*dumqc;  // update th_atm
+//Adjust other cloud droplet parameters.
+//      get_cloud_dsd2(qc_incld(k), nc_incld(k), mu_c(k), rho(k), nu(k), dnu,
+//                     lamc(k), cdist(k), cdist1(k), not_skip_micro);
+//      nc(k).set(not_skip_micro, nc_incld(k) * cld_frac_l(k));
+//      calc_liq_relaxation_timescale(
+//        revap_table_vals, rho(k), f1r, f2r, dv, mu, sc, mu_r(k), lamr(k), cdistr(k), cdist(k), qr_incld(k), qc_incld(k),
+//        epsr, epsc, not_skip_micro);
+//[shanyp 20251120
+      const auto qc_gt_small = qc_incld(k) >= qsmall && not_skip_micro;
+//shanyp 20251120]
+//shanyp 20251216]
+//[shanyp 20251120
+      if(qc_gt_small.any()){
+       w0d = omega_mp(k)*(-1)/(rho(k)*9.81);
+       xx=epsc;
+       e0d=pres(k)*qv(k)/(qv(k)+0.622);
+       dum=qv_sat_l(k)*rho(k)*9.81*w0d/(pres(k)-e0d);
+       aaa=(-1)*dum-dqsdt*((-1)*w0d*9.81*inv_cp);
+       xx=ekat::max(1.e-8,xx);
+       oxx=1/xx;
+       pcc=(aaa*epsc*oxx+((qv(k)-qv_sat_l(k))-aaa*oxx)*inv_dt*epsc*oxx*(1.-ekat::exp(-xx*dt)))/ab;
+       pcc=ekat::max((-1)*qc_incld(k)/dt, pcc);
+//Updates
+       qc_incld(k)=qc_incld(k)+pcc*dt;
+       qv(k) = qv(k) - cld_frac_l(k)*pcc*dt;
+       th_atm(k) = th_atm(k) + exner(k)*latvap*inv_cp*cld_frac_l(k)*pcc*dt;
+//Adjust other cloud droplet parameters.
+       get_cloud_dsd2(qc_incld(k), nc_incld(k), mu_c(k), rho(k), nu(k), dnu,
+                      lamc(k), cdist(k), cdist1(k), not_skip_micro);
+       nc(k).set(not_skip_micro, nc_incld(k) * cld_frac_l(k));
+       calc_liq_relaxation_timescale(
+         revap_table_vals, rho(k), f1r, f2r, dv, mu, sc, mu_r(k), lamr(k), cdistr(k), cdist(k), qr_incld(k), qc_incld(k),
+         epsr, epsc, not_skip_micro);
+      }
+//shanyp 20251120]
       evaporate_rain(qr_incld(k),qc_incld(k),nr_incld(k),qi_incld(k),
 		     cld_frac_l(k),cld_frac_r(k),qv(k),qv_prev(k),qv_sat_l(k),qv_sat_i(k),
 		     ab,abi,epsr,epsi_tot,T_atm(k),t_prev(k),dqsdt,dt,

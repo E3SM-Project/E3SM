@@ -267,6 +267,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <coeff_km type="real" doc="Eddy diffusivity coefficient for momentum">0.1</coeff_km>
       <extra_shoc_diags type="logical" doc="Extra SHOC diagnostics">false</extra_shoc_diags>
       <shoc_1p5tke type="logical" doc="turn off SGS variability in SHOC, effectively reducing it to a 1.5 TKE closure">false</shoc_1p5tke>
+      <shoc_nocond type="logical" doc="turn off condensation in SHOC, should only be used with 1.5 TKE option">false</shoc_nocond>
     </shoc>
 
     <!-- ZM deep convection -->

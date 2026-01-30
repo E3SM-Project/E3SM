@@ -191,6 +191,9 @@ Int Functions<S,D>
     const auto odiag_eff_radius_qc = ekat::subview(diagnostic_outputs.diag_eff_radius_qc, i);
     const auto odiag_eff_radius_qi = ekat::subview(diagnostic_outputs.diag_eff_radius_qi, i);
     const auto odiag_eff_radius_qr = ekat::subview(diagnostic_outputs.diag_eff_radius_qr, i);
+//[shanyp 20251119
+    const auto oomega_mp           = ekat::subview(diagnostic_inputs.omega_mp, i);
+//shanyp 20251119]
     const auto oqv2qi_depos_tend   = ekat::subview(diagnostic_outputs.qv2qi_depos_tend, i);
     const auto orho_qi             = ekat::subview(diagnostic_outputs.rho_qi, i);
     const auto oprecip_liq_flux    = ekat::subview(diagnostic_outputs.precip_liq_flux, i);
@@ -269,7 +272,10 @@ Int Functions<S,D>
       ohetfrz_immersion_nucleation_tend, ohetfrz_contact_nucleation_tend, ohetfrz_deposition_nucleation_tend,
       lookup_tables.dnu_table_vals, lookup_tables.ice_table_vals, lookup_tables.collect_table_vals, lookup_tables.revap_table_vals, opres, odpres, odz, onc_nuceat_tend, oinv_exner,
       exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, oni_activated, oinv_qc_relvar, ocld_frac_i,
-      ocld_frac_l, ocld_frac_r, oqv_prev, ot_prev, T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn,
+//[shanyp 20251120
+//      ocld_frac_l, ocld_frac_r, oqv_prev, ot_prev, T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn,
+      ocld_frac_l, ocld_frac_r, oqv_prev, ot_prev, oomega_mp, T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn,
+//shanyp 20251120]
       oqv, oth, oqc, onc, oqr, onr, oqi, oni, oqm, obm,
       qc_incld, qr_incld, qi_incld, qm_incld, nc_incld,
       nr_incld, ni_incld, bm_incld, mu_c, nu, lamc, cdist, cdist1, cdistr,
