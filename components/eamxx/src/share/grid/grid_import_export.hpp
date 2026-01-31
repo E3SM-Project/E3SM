@@ -18,7 +18,7 @@ namespace scream
 /*
  * Import/Export data is used to figure out where data
  * can be retrieved or sent (both in terms of remote
- * rank and remote local id) when transferring between
+ * rank and local id) when transferring between
  * two grids. The terms import/export do not necessarily
  * imply that we are getting/sending data. Rather, they
  * have to do with which grid we're initiating the
@@ -44,8 +44,8 @@ namespace scream
 class GridImportExport {
 public:
   using KT = KokkosTypes<DefaultDevice>;
-  template<typename T>
-  using view_1d = typename KT::view_1d<int>;
+  using view_d = typename KT::view_1d<int>;
+  using view_h = typename view_d::HostMirror;
 
   GridImportExport (const std::shared_ptr<const AbstractGrid>& unique,
                     const std::shared_ptr<const AbstractGrid>& overlapped);
@@ -61,21 +61,23 @@ public:
                const std::map<int,std::vector<T>>& src,
                      std::map<int,std::vector<T>>& dst) const;
 
-  view_1d<int> num_exports_per_pid () const { return m_num_exports_per_pid; }
-  view_1d<int> num_imports_per_pid () const { return m_num_imports_per_pid; }
+  int num_exports () const { return m_num_exports; }
+  int num_imports () const { return m_num_imports; }
 
-  view_1d<int>::HostMirror num_exports_per_pid_h () const { return m_num_exports_per_pid_h; }
-  view_1d<int>::HostMirror num_imports_per_pid_h () const { return m_num_imports_per_pid_h; }
+  view_d export_pid_offsets () const { return m_export_pid_offset; }
+  view_d import_pid_offsets () const { return m_import_pid_offset; }
+  view_h export_pid_offsets_h () const { return m_export_pid_offset_h; }
+  view_h import_pid_offsets_h () const { return m_import_pid_offset_h; }
 
-  view_1d<int> import_pids () const { return m_import_pids; }
-  view_1d<int> import_lids () const { return m_import_lids; }
-  view_1d<int> export_pids () const { return m_export_pids; }
-  view_1d<int> export_lids () const { return m_export_lids; }
+  view_d import_pids () const { return m_import_pids; }
+  view_d import_lids () const { return m_import_lids; }
+  view_d export_pids () const { return m_export_pids; }
+  view_d export_lids () const { return m_export_lids; }
 
-  view_1d<int>::HostMirror import_pids_h () const { return m_import_pids_h; }
-  view_1d<int>::HostMirror import_lids_h () const { return m_import_lids_h; }
-  view_1d<int>::HostMirror export_pids_h () const { return m_export_pids_h; }
-  view_1d<int>::HostMirror export_lids_h () const { return m_export_lids_h; }
+  view_h import_pids_h () const { return m_import_pids_h; }
+  view_h import_lids_h () const { return m_import_lids_h; }
+  view_h export_pids_h () const { return m_export_pids_h; }
+  view_h export_lids_h () const { return m_export_lids_h; }
 
 protected:
 
@@ -84,23 +86,26 @@ protected:
   std::shared_ptr<const AbstractGrid>   m_unique;
   std::shared_ptr<const AbstractGrid>   m_overlapped;
 
+  int m_num_exports = 0;
+  int m_num_imports = 0;
+
+  // The pids/lids of each import/export
   // All these arrays are sorted by pid. That is, all imports
   // for pid 1 come before imports for pid 2, and same for exports.
-  view_1d<int>  m_import_pids;
-  view_1d<int>  m_import_lids;
-  view_1d<int>  m_export_pids;
-  view_1d<int>  m_export_lids;
+  view_d  m_import_pids;
+  view_d  m_import_lids;
+  view_d  m_export_pids;
+  view_d  m_export_lids;
+  view_h  m_import_pids_h;
+  view_h  m_import_lids_h;
+  view_h  m_export_pids_h;
+  view_h  m_export_lids_h;
 
-  view_1d<int>::HostMirror  m_import_pids_h;
-  view_1d<int>::HostMirror  m_import_lids_h;
-  view_1d<int>::HostMirror  m_export_pids_h;
-  view_1d<int>::HostMirror  m_export_lids_h;
-
-  view_1d<int>  m_num_imports_per_pid;
-  view_1d<int>  m_num_exports_per_pid;
-
-  view_1d<int>::HostMirror  m_num_imports_per_pid_h;
-  view_1d<int>::HostMirror  m_num_exports_per_pid_h;
+  // Count how many import/exports per pid we have. These views have size nranks
+  view_d  m_import_pid_offset;
+  view_d  m_export_pid_offset;
+  view_h  m_import_pid_offset_h;
+  view_h  m_export_pid_offset_h;
 
   ekat::Comm    m_comm;
 };
@@ -130,8 +135,6 @@ scatter (const MPI_Datatype mpi_data_t,
 
   std::vector<MPI_Request> send_req, recv_req;
   
-  const int nexp = m_export_lids.size();
-  const int nimp = m_import_lids.size();
   auto mpi_comm = m_comm.mpi_comm();
   auto mpi_gid_t = ekat::get_mpi_type<gid_type>();
 
@@ -139,7 +142,7 @@ scatter (const MPI_Datatype mpi_data_t,
 
   // 1. Communicate GIDs lists to recv pids
   std::map<int,std::vector<gid_type>> send_pid2gids;
-  for (int i=0; i<nexp; ++i) {
+  for (int i=0; i<m_num_exports; ++i) {
     auto pid = m_export_pids_h[i];
     auto lid = m_export_lids_h[i];
     send_pid2gids[pid].push_back(gids_h[lid]);
@@ -150,7 +153,7 @@ scatter (const MPI_Datatype mpi_data_t,
                    "GridImportExport::scatter, creating send request (step 1)");
   }
   std::map<int,std::vector<gid_type>> recv_pid2gids;
-  for (int i=0; i<nimp; ++i) {
+  for (int i=0; i<m_num_imports; ++i) {
     auto pid = m_import_pids_h[i];
     recv_pid2gids[pid].push_back(-1);
   }
@@ -168,7 +171,7 @@ scatter (const MPI_Datatype mpi_data_t,
   
   // 2. Communicate T's count for each GID to recv pids
   std::map<int,std::vector<int>> send_pid2count;
-  for (int i=0; i<nexp; ++i) {
+  for (int i=0; i<m_num_exports; ++i) {
     auto pid = m_export_pids_h[i];
     auto lid = m_export_lids_h[i];
     send_pid2count[pid].push_back(src.at(lid).size());
@@ -258,8 +261,6 @@ gather (const MPI_Datatype mpi_data_t,
 
   std::vector<MPI_Request> send_req, recv_req;
   
-  const int nexp = m_export_lids.size();
-  const int nimp = m_import_lids.size();
   auto mpi_comm = m_comm.mpi_comm();
   auto mpi_gid_t = ekat::get_mpi_type<gid_type>();
 
@@ -267,7 +268,7 @@ gather (const MPI_Datatype mpi_data_t,
 
   // 1. Communicate GIDs lists to recv pids
   std::map<int,std::vector<gid_type>> send_pid2gids;
-  for (int i=0; i<nimp; ++i) {
+  for (int i=0; i<m_num_imports; ++i) {
     auto pid = m_import_pids_h[i];
     auto lid = m_import_lids_h[i];
     send_pid2gids[pid].push_back(ov_gids_h[lid]);
@@ -278,7 +279,7 @@ gather (const MPI_Datatype mpi_data_t,
                    "GridImportExport::gather, creating send request (step 1)");
   }
   std::map<int,std::vector<gid_type>> recv_pid2gids;
-  for (int i=0; i<nexp; ++i) {
+  for (int i=0; i<m_num_exports; ++i) {
     auto pid = m_export_pids_h[i];
     recv_pid2gids[pid].push_back(-1);
   }
@@ -296,7 +297,7 @@ gather (const MPI_Datatype mpi_data_t,
   
   // 2. Communicate T's count for each GID to recv pids
   std::map<int,std::vector<int>> send_pid2count;
-  for (int i=0; i<nimp; ++i) {
+  for (int i=0; i<m_num_imports; ++i) {
     auto pid = m_import_pids_h[i];
     auto lid = m_import_lids_h[i];
     send_pid2count[pid].push_back(src.at(lid).size());
