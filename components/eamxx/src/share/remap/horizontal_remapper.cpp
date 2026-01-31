@@ -1076,6 +1076,11 @@ void HorizontalRemapper::setup_mpi_data_structures ()
   }
   auto total_col_size = m_field_offset.back();
 
+  if (total_col_size==0) {
+    // None of the registered fields actually needs remapping
+    return;
+  }
+
   auto ov_grid = m_remap_data->m_overlap_grid;
   const int ncols_ov = ov_grid->get_num_local_dofs();
   auto imp_exp = m_remap_data->m_imp_exp;
