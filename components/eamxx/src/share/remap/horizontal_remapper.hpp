@@ -103,9 +103,6 @@ protected:
   // Offset of each field when we splice together one col of each.
   std::vector<int> m_field_offset;
 
-  // ImportData/export info
-  std::shared_ptr<GridImportExport>  m_imp_exp;
-
   static constexpr bool MpiOnDev = SCREAM_MPI_ON_DEVICE;
 
   // If MpiOnDev=true, we can pass device pointers to MPI. Otherwise, we need host mirrors.

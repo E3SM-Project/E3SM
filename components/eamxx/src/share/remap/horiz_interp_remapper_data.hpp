@@ -2,6 +2,7 @@
 #define EAMXX_HORIZ_INTERP_REMAP_DATA_HPP
 
 #include "share/grid/abstract_grid.hpp"
+#include "share/grid/grid_import_export.hpp"
 
 #include <memory>
 #include <map>
@@ -48,6 +49,8 @@ public:
 
   std::shared_ptr<const AbstractGrid> m_input_grid;     // The grid that was passed to build
   std::shared_ptr<AbstractGrid>       m_generated_grid; // The grid we generated during build
+
+  std::shared_ptr<GridImportExport>   m_imp_exp;
 
   // This will be an overlap version of either the src or tgt grid, depending on whether
   // the remap is fine->coarse or coarse->fine
