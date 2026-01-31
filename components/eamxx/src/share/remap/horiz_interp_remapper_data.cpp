@@ -118,6 +118,14 @@ build (const std::shared_ptr<const AbstractGrid>& grid,
 
   // Create crs matrix
   create_crs_matrix_structures (my_triplets);
+
+  auto src_grid = m_built_from_src ? m_input_grid : m_generated_grid;
+  auto tgt_grid = m_built_from_src ? m_generated_grid : m_input_grid;
+  if (m_coarsening) {
+    m_imp_exp = std::make_shared<GridImportExport>(tgt_grid,m_overlap_grid);
+  } else {
+    m_imp_exp = std::make_shared<GridImportExport>(src_grid,m_overlap_grid);
+  }
 }
 
 std::vector<Triplet>

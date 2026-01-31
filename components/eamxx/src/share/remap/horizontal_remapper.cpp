@@ -780,16 +780,17 @@ void HorizontalRemapper::pack_and_send ()
 
   bool coarsen = m_remap_data->m_coarsening;
 
-  auto pids = coarsen ? m_imp_exp->import_pids() : m_imp_exp->export_pids();
-  auto lids = coarsen ? m_imp_exp->import_lids() : m_imp_exp->export_lids();
-  auto ncols_send  = coarsen ? m_imp_exp->num_imports_per_pid() : m_imp_exp->num_exports_per_pid();
+  auto imp_exp = m_remap_data->m_imp_exp;
+  auto pids = coarsen ? imp_exp->import_pids() : imp_exp->export_pids();
+  auto lids = coarsen ? imp_exp->import_lids() : imp_exp->export_lids();
+  auto ncols_send  = coarsen ? imp_exp->num_imports_per_pid() : imp_exp->num_exports_per_pid();
   auto pids_send_offsets = m_pids_send_offsets;
   auto send_buf = m_send_buffer;
   const int num_iters = pids.size();
   const int total_col_size = m_field_offset.back();
   for (int ifield=0; ifield<m_num_fields; ++ifield) {
     if (m_needs_remap[ifield]==0)
-      // No need to process this field. We'll deep copy src->tgt later
+      // No need to process this field. We'll simply deep copy src->tgt
       continue;
 
     const auto& f = coarsen ? m_ov_fields[ifield] : m_src_fields[ifield];
@@ -941,7 +942,7 @@ void HorizontalRemapper::recv_and_unpack ()
   const int total_col_size = m_field_offset.back();
   for (int ifield=0; ifield<m_num_fields; ++ifield) {
     if (m_needs_remap[ifield]==0)
-      // No need to process this field. We'll deep copy src->tgt later
+      // No need to process this field. We'll simply deep copy src->tgt
       continue;
 
           auto& f  = coarsen ? m_tgt_fields[ifield] : m_ov_fields[ifield];
@@ -1076,19 +1077,15 @@ void HorizontalRemapper::setup_mpi_data_structures ()
   auto total_col_size = m_field_offset.back();
 
   auto ov_grid = m_remap_data->m_overlap_grid;
-  if (coarsen) {
-    m_imp_exp = std::make_shared<GridImportExport>(m_tgt_grid,ov_grid);
-  } else {
-    m_imp_exp = std::make_shared<GridImportExport>(m_src_grid,ov_grid);
-  }
   const int ncols_ov = ov_grid->get_num_local_dofs();
+  auto imp_exp = m_remap_data->m_imp_exp;
 
   // ----------- Compute RECV metadata -------------- //
 
   // We can now compute the offset of each pid in the recv buffer
   m_pids_recv_offsets = view_1d<int>("",nranks+1);
-  auto ncols_recv_h = coarsen ? m_imp_exp->num_exports_per_pid_h()
-                              : m_imp_exp->num_imports_per_pid_h();
+  auto ncols_recv_h = coarsen ? imp_exp->num_exports_per_pid_h()
+                              : imp_exp->num_imports_per_pid_h();
   auto pids_recv_offsets_h = Kokkos::create_mirror_view(m_pids_recv_offsets);
   pids_recv_offsets_h[0] = 0;
   for (int pid=0; pid<nranks; ++pid) {
@@ -1106,8 +1103,8 @@ void HorizontalRemapper::setup_mpi_data_structures ()
   // ----------- Compute SEND metadata -------------- //
   
   m_pids_send_offsets = view_1d<int>("",nranks+1);
-  auto ncols_send_h = coarsen ? m_imp_exp->num_imports_per_pid_h()
-                              : m_imp_exp->num_exports_per_pid_h();
+  auto ncols_send_h = coarsen ? imp_exp->num_imports_per_pid_h()
+                              : imp_exp->num_exports_per_pid_h();
   auto pids_send_offsets_h = Kokkos::create_mirror_view(m_pids_send_offsets);
   pids_send_offsets_h[0] = 0;
   for (int pid=0; pid<nranks; ++pid) {
@@ -1161,7 +1158,6 @@ void HorizontalRemapper::clean_up ()
   m_mpi_recv_buffer = mpi_view_1d<Real>();
   m_send_req.clear();
   m_recv_req.clear();
-  m_imp_exp = nullptr;
 
   // Clear all fields
   m_src_fields.clear();
