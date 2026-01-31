@@ -64,6 +64,7 @@ Field all_gather_field (const Field& f, const ekat::Comm& comm) {
   FieldIdentifier gfid("g" + f.name(),gfl,fid.get_units(),fid.get_grid_name(),fid.data_type());
   Field gf(gfid);
   gf.allocate_view();
+  f.sync_to_host();
   std::vector<Real> data_vec(col_size);
   for (int pid=0,offset=0; pid<comm.size(); ++pid) {
     Real* data;
@@ -102,6 +103,7 @@ Field all_gather_field (const Field& f, const ekat::Comm& comm) {
       std::copy(data,data+col_size,gdata);
     }
   }
+  gf.sync_to_dev();
   return gf;
 }
 
@@ -126,18 +128,19 @@ void write_map_file (const std::string& filename, const int ngdofs_src) {
 
   std::vector<int> col(nnz), row(nnz);
   std::vector<double> S(nnz);
+  int gid_base = 1;
   for (int i=0; i<ngdofs_src; ++i) {
-    col[i] = i+1;
-    row[i] = i+1;
+    col[i] = i+gid_base;
+    row[i] = i+gid_base;
       S[i] = 1.0;
   }
   for (int i=0; i<ngdofs_src-1; ++i) {
-    col[ngdofs_src+2*i] = i+1;
-    row[ngdofs_src+2*i] = ngdofs_src+i+1;
+    col[ngdofs_src+2*i] = i+gid_base;
+    row[ngdofs_src+2*i] = ngdofs_src+i+gid_base;
       S[ngdofs_src+2*i] = 0.5;
 
-    col[ngdofs_src+2*i+1] = i+1+1;
-    row[ngdofs_src+2*i+1] = ngdofs_src+i+1;
+    col[ngdofs_src+2*i+1] = i+1+gid_base;
+    row[ngdofs_src+2*i+1] = ngdofs_src+i+gid_base;
       S[ngdofs_src+2*i+1] = 0.5;
   }
 

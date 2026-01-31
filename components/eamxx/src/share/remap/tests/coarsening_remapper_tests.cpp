@@ -159,6 +159,7 @@ Field all_gather_field_impl (const Field& f, const ekat::Comm& comm) {
       std::copy(data,data+col_size,gdata);
     }
   }
+  gf.sync_to_dev();
   return gf;
 }
 
