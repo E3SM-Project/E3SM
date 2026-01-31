@@ -1,6 +1,6 @@
 #include <catch2/catch.hpp>
 
-#include "share/remap/refining_remapper_rma.hpp"
+#include "share/remap/horizontal_remapper.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 #include "share/core/eamxx_setup_random_test.hpp"
@@ -9,70 +9,6 @@
 
 namespace scream {
 
-class RefiningRemapperRMATester : public RefiningRemapperRMA {
-public:
-  RefiningRemapperRMATester (const grid_ptr_type& tgt_grid,
-                          const std::string& map_file)
-   : RefiningRemapperRMA(tgt_grid,map_file) {}
-
-  ~RefiningRemapperRMATester () = default;
-
-  void test_internals () {
-    // Test arrays size
-    const size_t n = m_num_fields;
-    REQUIRE (m_src_fields.size()==n);
-    REQUIRE (m_ov_fields.size()==n);
-    REQUIRE (m_tgt_fields.size()==n);
-    REQUIRE (m_col_size.size()==n);
-    REQUIRE (m_col_stride.size()==n);
-    REQUIRE (m_col_offset.size()==n);
-    REQUIRE (m_mpi_win.size()==n);
-    REQUIRE (m_remote_lids.size()==static_cast<size_t>(m_ov_coarse_grid->get_num_local_dofs()));
-    REQUIRE (m_remote_pids.size()==static_cast<size_t>(m_ov_coarse_grid->get_num_local_dofs()));
-
-    // Test field specs
-    constexpr auto COL = ShortFieldTagsNames::COL;
-    for (int i=0; i<m_num_fields; ++i) {
-      const auto& fh = m_src_fields[i].get_header();
-      const auto& fl = fh.get_identifier().get_layout();
-      const auto& fap = fh.get_alloc_properties();
-      const auto col_alloc_size = fap.get_num_scalars() / fl.dim(COL);
-      REQUIRE (m_col_size[i]==fl.clone().strip_dim(COL).size());
-      if (fh.get_parent()) {
-        REQUIRE (m_col_stride[i]==col_alloc_size*fap.get_subview_info().dim_extent);
-        REQUIRE (m_col_offset[i]==col_alloc_size*fap.get_subview_info().slice_idx);
-      } else {
-        REQUIRE (m_col_stride[i]==col_alloc_size);
-        REQUIRE (m_col_offset[i]==0);
-      }
-    }
-
-    // Test CRS matirx
-    int nldofs_tgt = m_tgt_grid->get_num_local_dofs();
-    int ngdofs_src = m_src_grid->get_num_global_dofs();
-    REQUIRE (m_row_offsets.extent_int(0)==nldofs_tgt+1);
-    auto row_offsets_h = cmvdc(m_row_offsets);
-    auto col_lids_h = cmvdc(m_col_lids);
-    auto weights_h = cmvdc(m_weights);
-    auto col_gids_h = m_ov_coarse_grid->get_dofs_gids().get_view<const AbstractGrid::gid_type*,Host>();
-
-    auto row_gids_h = m_tgt_grid->get_dofs_gids().get_view<const AbstractGrid::gid_type*,Host>();
-    for (int i=0; i<nldofs_tgt; ++i) {
-      auto row_gid = row_gids_h[i];
-      auto beg = row_offsets_h(i);
-      auto end = row_offsets_h(i+1);
-      REQUIRE (end>=beg);
-      for (int j=beg; j<end; ++j) {
-        if (row_gid<ngdofs_src) {
-          REQUIRE (weights_h(j)==1);
-        } else {
-          REQUIRE (weights_h(j)==0.5);
-        }
-      }
-    }
-  }
-};
-
 Field create_field (const std::string& name, const LayoutType lt, const AbstractGrid& grid)
 {
   const auto u = ekat::units::Units::nondimensional();
@@ -80,6 +16,8 @@ Field create_field (const std::string& name, const LayoutType lt, const Abstract
   const auto  ndims = 2;
   Field f;
   switch (lt) {
+    case LayoutType::Scalar1D:
+      f = Field(FieldIdentifier(name,grid.get_vertical_layout(true),u,gn));  break;
     case LayoutType::Scalar2D:
       f = Field(FieldIdentifier(name,grid.get_2d_scalar_layout(),u,gn));  break;
     case LayoutType::Vector2D:
@@ -98,20 +36,14 @@ Field create_field (const std::string& name, const LayoutType lt, const Abstract
   return f;
 }
 
-template<typename Engine>
-Field create_field (const std::string& name, const LayoutType lt, const AbstractGrid& grid, Engine& engine) {
+Field create_field (const std::string& name, const LayoutType lt, const AbstractGrid& grid, int seed) {
   auto f = create_field(name,lt,grid);
 
   // Use discrete_distribution to get an integer, then use that as exponent for 2^-n.
   // This guarantees numbers that are exactly represented as FP numbers, which ensures
   // the test will produce the expected answer, regardless of how math ops are performed.
-  using IPDF = std::discrete_distribution<int>;
-  IPDF ipdf ({1,1,1,1,1,1,1,1,1,1});
-  auto pdf = [&](Engine& e) {
-    return std::pow(2,ipdf(e));
-  };
-  randomize_uniform(f,engine,pdf);
-
+  std::vector<Real> values = {1,2,4,8,16,32,64,128,256,512};
+  randomize_discrete(f,seed,values);
   return f;
 }
 
@@ -119,6 +51,10 @@ Field all_gather_field (const Field& f, const ekat::Comm& comm) {
   constexpr auto COL = ShortFieldTagsNames::COL;
   const auto& fid = f.get_header().get_identifier();
   const auto& fl  = fid.get_layout();
+  if (not fl.has_tag(COL)) {
+    // Not partitioned
+    return f;
+  }
   int col_size = fl.clone().strip_dim(COL).size();
   auto tags = fl.tags();
   auto dims = fl.dims();
@@ -128,6 +64,7 @@ Field all_gather_field (const Field& f, const ekat::Comm& comm) {
   FieldIdentifier gfid("g" + f.name(),gfl,fid.get_units(),fid.get_grid_name(),fid.data_type());
   Field gf(gfid);
   gf.allocate_view();
+  f.sync_to_host();
   std::vector<Real> data_vec(col_size);
   for (int pid=0,offset=0; pid<comm.size(); ++pid) {
     Real* data;
@@ -158,7 +95,7 @@ Field all_gather_field (const Field& f, const ekat::Comm& comm) {
           break;
         default:
           EKAT_ERROR_MSG (
-              "Unexpected rank in RefiningRemapperRMA unit test.\n"
+              "Unexpected rank in RefiningRemapper unit test.\n"
               "  - field name: " + f.name() + "\n");
       }
       comm.broadcast(data,col_size,pid);
@@ -166,6 +103,7 @@ Field all_gather_field (const Field& f, const ekat::Comm& comm) {
       std::copy(data,data+col_size,gdata);
     }
   }
+  gf.sync_to_dev();
   return gf;
 }
 
@@ -190,18 +128,19 @@ void write_map_file (const std::string& filename, const int ngdofs_src) {
 
   std::vector<int> col(nnz), row(nnz);
   std::vector<double> S(nnz);
+  int gid_base = 1;
   for (int i=0; i<ngdofs_src; ++i) {
-    col[i] = i;
-    row[i] = i;
+    col[i] = i+gid_base;
+    row[i] = i+gid_base;
       S[i] = 1.0;
   }
   for (int i=0; i<ngdofs_src-1; ++i) {
-    col[ngdofs_src+2*i] = i;
-    row[ngdofs_src+2*i] = ngdofs_src+i;
+    col[ngdofs_src+2*i] = i+gid_base;
+    row[ngdofs_src+2*i] = ngdofs_src+i+gid_base;
       S[ngdofs_src+2*i] = 0.5;
 
-    col[ngdofs_src+2*i+1] = i+1;
-    row[ngdofs_src+2*i+1] = ngdofs_src+i;
+    col[ngdofs_src+2*i+1] = i+1+gid_base;
+    row[ngdofs_src+2*i+1] = ngdofs_src+i+gid_base;
       S[ngdofs_src+2*i+1] = 0.5;
   }
 
@@ -219,14 +158,14 @@ TEST_CASE ("refining_remapper") {
 
   ekat::Comm comm(MPI_COMM_WORLD);
 
-  auto engine = setup_random_test (&comm);
+  int seed = get_random_test_seed(&comm);
 
   scorpio::init_subsystem(comm);
 
   // Create a map file
   const int ngdofs_src = 4*comm.size();
   const int ngdofs_tgt = 2*ngdofs_src-1;
-  auto filename = "rr_rma_tests_map.np" + std::to_string(comm.size()) + ".nc";
+  auto filename = "rr_tests_map.np" + std::to_string(comm.size()) + ".nc";
   write_map_file(filename,ngdofs_src);
 
   // Create target grid. Ensure gids are numbered like in map file
@@ -236,16 +175,16 @@ TEST_CASE ("refining_remapper") {
   for (int i=0; i<tgt_grid->get_num_local_dofs(); ++i) {
     int q = dofs_h[i] / 2;
     if (dofs_h[i] % 2 == 0) {
-      dofs_h[i] = q;
+      dofs_h[i] = q + 1;
     } else {
-      dofs_h[i] = ngdofs_src + q;
+      dofs_h[i] = ngdofs_src + q + 1;
     }
   }
   tgt_grid->get_dofs_gids().sync_to_dev();
 
   // Test bad registrations separately, since they corrupt the remapper state for later
   {
-    auto r = std::make_shared<RefiningRemapperRMATester>(tgt_grid,filename);
+    auto r = std::make_shared<HorizontalRemapper>(tgt_grid,filename);
     auto src_grid = r->get_src_grid();
     Field bad_src(FieldIdentifier("",src_grid->get_2d_scalar_layout(),ekat::units::m,src_grid->name(),DataType::IntType));
     Field bad_tgt(FieldIdentifier("",tgt_grid->get_2d_scalar_layout(),ekat::units::m,tgt_grid->name(),DataType::IntType));
@@ -256,21 +195,24 @@ TEST_CASE ("refining_remapper") {
     CHECK_THROWS (r->registration_ends()); // bad data type (must be real)
   }
 
-  auto r = std::make_shared<RefiningRemapperRMATester>(tgt_grid,filename);
+  auto r = std::make_shared<HorizontalRemapper>(tgt_grid,filename);
   auto src_grid = r->get_src_grid();
 
-  auto bundle_src = create_field("bundle3d_src",LayoutType::Vector3D,*src_grid,engine);
-  auto s2d_src   = create_field("s2d_src",LayoutType::Scalar2D,*src_grid,engine);
-  auto v2d_src   = create_field("v2d_src",LayoutType::Vector2D,*src_grid,engine);
-  auto s3d_src   = create_field("s3d_src",LayoutType::Scalar3D,*src_grid,engine);
-  auto v3d_src   = create_field("v3d_src",LayoutType::Vector3D,*src_grid,engine);
+  auto bundle_src = create_field("bundle3d_src",LayoutType::Vector3D,*src_grid,seed);
+  auto s1d_src   = create_field("s1d_src",LayoutType::Scalar1D,*src_grid,seed++);
+  auto s2d_src   = create_field("s2d_src",LayoutType::Scalar2D,*src_grid,seed++);
+  auto v2d_src   = create_field("v2d_src",LayoutType::Vector2D,*src_grid,seed++);
+  auto s3d_src   = create_field("s3d_src",LayoutType::Scalar3D,*src_grid,seed++);
+  auto v3d_src   = create_field("v3d_src",LayoutType::Vector3D,*src_grid,seed++);
 
   auto bundle_tgt = create_field("bundle3d_tgt",LayoutType::Vector3D,*tgt_grid);
+  auto s1d_tgt   = create_field("s1d_tgt",LayoutType::Scalar1D,*tgt_grid);
   auto s2d_tgt   = create_field("s2d_tgt",LayoutType::Scalar2D,*tgt_grid);
   auto v2d_tgt   = create_field("v2d_tgt",LayoutType::Vector2D,*tgt_grid);
   auto s3d_tgt   = create_field("s3d_tgt",LayoutType::Scalar3D,*tgt_grid);
   auto v3d_tgt   = create_field("v3d_tgt",LayoutType::Vector3D,*tgt_grid);
 
+  r->register_field(s1d_src,s1d_tgt);
   r->register_field(s2d_src,s2d_tgt);
   r->register_field(v2d_src,v2d_tgt);
   r->register_field(s3d_src,s3d_tgt);
@@ -279,20 +221,19 @@ TEST_CASE ("refining_remapper") {
   r->register_field(bundle_src.get_component(1),bundle_tgt.get_component(1));
   r->registration_ends();
 
-  // Test remapper internal state
-  r->test_internals();
-
   // Run remap
-  CHECK_THROWS (r->remap(false)); // No backward remap
-  r->remap(true);
+  CHECK_THROWS (r->remap_bwd()); // No backward remap
+  r->remap_fwd();
 
   // Gather global copies (to make checks easier) and check src/tgt fields
+  auto gs1d_src = all_gather_field(s1d_src,comm);
   auto gs2d_src = all_gather_field(s2d_src,comm);
   auto gv2d_src = all_gather_field(v2d_src,comm);
   auto gs3d_src = all_gather_field(s3d_src,comm);
   auto gv3d_src = all_gather_field(v3d_src,comm);
   auto gbundle_src = all_gather_field(bundle_src,comm);
 
+  auto gs1d_tgt = all_gather_field(s1d_tgt,comm);
   auto gs2d_tgt = all_gather_field(s2d_tgt,comm);
   auto gv2d_tgt = all_gather_field(v2d_tgt,comm);
   auto gs3d_tgt = all_gather_field(s3d_tgt,comm);
@@ -300,6 +241,22 @@ TEST_CASE ("refining_remapper") {
   auto gbundle_tgt = all_gather_field(bundle_tgt,comm);
 
   Real avg;
+  // Scalar 1D
+  {
+    if (comm.am_i_root()) {
+      printf(" -> Checking 1d scalars .........\n");
+    }
+    bool ok = true;
+    gs1d_src.sync_to_host();
+    gs1d_tgt.sync_to_host();
+
+    CHECK (views_are_equal(gs1d_src,gs1d_tgt));
+    ok &= catch_capture.lastAssertionPassed();
+    if (comm.am_i_root()) {
+      printf(" -> Checking 1d scalars ......... %s\n",ok ? "PASS" : "FAIL");
+    }
+  }
+
   // Scalar 2D
   {
     if (comm.am_i_root()) {

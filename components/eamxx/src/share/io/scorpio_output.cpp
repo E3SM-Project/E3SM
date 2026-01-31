@@ -3,7 +3,7 @@
 #include "share/field/field_utils.hpp"
 #include "share/io/eamxx_io_utils.hpp"
 #include "share/io/scorpio_input.hpp"
-#include "share/remap/coarsening_remapper.hpp"
+#include "share/remap/horizontal_remapper.hpp"
 #include "share/remap/vertical_remapper.hpp"
 #include "share/util/eamxx_timing.hpp"
 
@@ -237,7 +237,7 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
     if (use_horiz_remap_from_file) {
       // Construct the coarsening remapper
       auto horiz_remap_file   = params.get<std::string>("horiz_remap_file");
-      m_horiz_remapper = std::make_shared<CoarseningRemapper>(grid_after_vr,horiz_remap_file,true);
+      m_horiz_remapper = std::make_shared<HorizontalRemapper>(grid_after_vr,horiz_remap_file,true);
     } else {
       // Construct a generic remapper (likely, Dyn->PhysicsGLL)
       grid_after_hr = fm_grid->get_aux_grid(output_data_layout);
