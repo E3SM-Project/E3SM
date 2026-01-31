@@ -78,6 +78,8 @@ public:
   void rescale_masked_fields (const Field& f_tgt, const Field& f_mask) const;
   void pack_and_send ();
   void recv_and_unpack ();
+  void recv_and_unpack_refine ();   // For refining, MPI is a "scatter" operation
+  void recv_and_unpack_coarsen ();  // For coarsening, MPI is a "reduce" operation
 
 protected:
 
@@ -127,9 +129,11 @@ protected:
   mpi_view_1d<Real> m_mpi_send_buffer;
   mpi_view_1d<Real> m_mpi_recv_buffer;
 
-  // Offset of each pid's data in send/recv buffers
-  view_1d<int> m_pids_send_offsets;
-  view_1d<int> m_pids_recv_offsets;
+  // For coarsening, the MPI operation is a reduction, so we cannot let
+  // different threads accummulate onto the same col. Hence, we group all
+  // our imports by tgt col lid, and ensure 2 threads act on different cols.
+  view_1d<int> m_export_idxs_sorted_by_lid;
+  view_1d<int> m_export_lids_offsets;
 
   // Send/recv persistent requests
   std::vector<MPI_Request>  m_send_req;
