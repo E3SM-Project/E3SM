@@ -783,8 +783,7 @@ void HorizontalRemapper::pack_and_send ()
   auto imp_exp = m_remap_data->m_imp_exp;
   auto pids = coarsen ? imp_exp->import_pids() : imp_exp->export_pids();
   auto lids = coarsen ? imp_exp->import_lids() : imp_exp->export_lids();
-  auto ncols_send  = coarsen ? imp_exp->num_imports_per_pid() : imp_exp->num_exports_per_pid();
-  auto pids_send_offsets = m_pids_send_offsets;
+  auto pids_send_offsets = coarsen ? imp_exp->import_pid_offsets() : imp_exp->export_pid_offsets();
   auto send_buf = m_send_buffer;
   const int num_iters = pids.size();
   const int total_col_size = m_field_offset.back();
@@ -804,9 +803,10 @@ void HorizontalRemapper::pack_and_send ()
           auto pid = pids(idx);
           auto icol = lids(idx);
           auto pid_offset = pids_send_offsets(pid); 
+          auto ncols_send = pids_send_offsets(pid+1) - pid_offset;
           auto pos_within_pid = idx - pid_offset;
           auto offset = pid_offset*total_col_size
-                      + ncols_send(pid)*field_offset
+                      + ncols_send*field_offset
                       + pos_within_pid;
           send_buf(offset) = v(icol);
         };
@@ -819,13 +819,14 @@ void HorizontalRemapper::pack_and_send ()
         const int dim1 = fl.dim(1);
         auto policy = TPF::get_default_team_policy(num_iters,dim1);
         auto pack = KOKKOS_LAMBDA(const TeamMember& team) {
-          const int idx = team.league_rank();
-          const int icol = lids(idx);
-          const int pid  = pids(idx);
+          auto idx = team.league_rank();
+          auto icol = lids(idx);
+          auto pid  = pids(idx);
           auto pid_offset = pids_send_offsets(pid);
+          auto ncols_send = pids_send_offsets(pid+1) - pid_offset;
           auto pos_within_pid = idx - pid_offset;
           auto offset = pid_offset*total_col_size
-                      + ncols_send(pid)*field_offset
+                      + ncols_send*field_offset
                       + pos_within_pid*dim1;
           auto col_pack = [&](const int& k) {
             send_buf(offset+k) = v(icol,k);
@@ -844,13 +845,14 @@ void HorizontalRemapper::pack_and_send ()
         const int f_col_size = dim1*dim2;
         auto policy = TPF::get_default_team_policy(num_iters,dim1*dim2);
         auto pack = KOKKOS_LAMBDA(const TeamMember& team) {
-          const int idx = team.league_rank();
-          const int icol = lids(idx);
-          const int pid  = pids(idx);
+          auto idx = team.league_rank();
+          auto icol = lids(idx);
+          auto pid  = pids(idx);
           auto pid_offset = pids_send_offsets(pid);
+          auto ncols_send = pids_send_offsets(pid+1) - pid_offset;
           auto pos_within_pid = idx - pid_offset;
           auto offset = pid_offset*total_col_size
-                      + ncols_send(pid)*field_offset
+                      + ncols_send*field_offset
                       + pos_within_pid*f_col_size;
           auto col_pack = [&](const int& idx) {
             const int j = idx / dim2;
@@ -872,13 +874,14 @@ void HorizontalRemapper::pack_and_send ()
         const int f_col_size = dim1*dim2*dim3;
         auto policy = TPF::get_default_team_policy(num_iters,dim1*dim2*dim3);
         auto pack = KOKKOS_LAMBDA(const TeamMember& team) {
-          const int idx = team.league_rank();
-          const int icol = lids(idx);
-          const int pid  = pids(idx);
+          auto idx = team.league_rank();
+          auto icol = lids(idx);
+          auto pid  = pids(idx);
           auto pid_offset = pids_send_offsets(pid);
+          auto ncols_send = pids_send_offsets(pid+1) - pid_offset;
           auto pos_within_pid = idx - pid_offset;
           auto offset = pid_offset*total_col_size
-                      + ncols_send(pid)*field_offset
+                      + ncols_send*field_offset
                       + pos_within_pid*f_col_size;
           auto col_pack = [&](const int& idx) {
             const int j = (idx / dim3) / dim2;
@@ -927,25 +930,34 @@ void HorizontalRemapper::recv_and_unpack ()
     Kokkos::deep_copy (m_recv_buffer,m_mpi_recv_buffer);
   }
 
+  if (m_remap_data->m_coarsening) {
+    recv_and_unpack_coarsen();
+  } else {
+    recv_and_unpack_refine();
+  }
+}
+
+void HorizontalRemapper::recv_and_unpack_coarsen ()
+{
   using RangePolicy = typename KT::RangePolicy;
   using TeamMember  = typename KT::MemberType;
   using TPF         = ekat::TeamPolicyFactory<typename KT::ExeSpace>;
 
-  bool coarsen = m_remap_data->m_coarsening;
+  auto imp_exp = m_remap_data->m_imp_exp;
 
-  auto pids = coarsen ? m_imp_exp->export_pids(): m_imp_exp->import_pids();
-  auto lids = coarsen ? m_imp_exp->export_lids(): m_imp_exp->import_lids();
-  auto ncols_recv  = coarsen ? m_imp_exp->num_exports_per_pid() : m_imp_exp->num_imports_per_pid();
-  auto pids_recv_offsets = m_pids_recv_offsets;
+  auto export_idxs = m_export_idxs_sorted_by_lid;
+  auto lids_offsets = m_export_lids_offsets;
+  auto pids = imp_exp->export_pids();
+  auto pids_offsets = imp_exp->export_pid_offsets();
   auto recv_buf = m_recv_buffer;
-  const int num_iters = pids.size();
+  const int num_tgt_cols = m_tgt_grid->get_num_local_dofs();
   const int total_col_size = m_field_offset.back();
   for (int ifield=0; ifield<m_num_fields; ++ifield) {
     if (m_needs_remap[ifield]==0)
       // No need to process this field. We'll simply deep copy src->tgt
       continue;
 
-          auto& f  = coarsen ? m_tgt_fields[ifield] : m_ov_fields[ifield];
+          auto& f  = m_tgt_fields[ifield];
     const auto& fl = f.get_header().get_identifier().get_layout();
     const auto field_offset = m_field_offset[ifield];
 
@@ -956,38 +968,49 @@ void HorizontalRemapper::recv_and_unpack ()
       case 1:
       {
         auto v = f.get_view<Real*>();
-        auto unpack = KOKKOS_LAMBDA (const int idx) {
-          const int pid  = pids(idx);
-          const int icol = lids(idx);
-          const auto pid_offset = pids_recv_offsets(pid);
-          const auto pos_within_pid = idx - pid_offset;
-          auto offset = pid_offset*total_col_size
-                      + ncols_recv(pid)*field_offset
-                      + pos_within_pid;
-          v(icol) += recv_buf(offset);
+        auto unpack = KOKKOS_LAMBDA (const int icol) {
+          auto beg = lids_offsets(icol);
+          auto end = lids_offsets(icol+1);
+          for (int pos=beg; pos<end; ++pos) {
+            auto idx = export_idxs(pos);
+            auto pid = pids(idx);
+            auto pid_offset = pids_offsets(pid);
+            auto ncols_recv = pids_offsets(pid+1) - pid_offset;
+            auto pos_within_pid = idx - pid_offset;
+            auto offset = pid_offset*total_col_size
+                        + ncols_recv*field_offset
+                        + pos_within_pid;
+            v(icol) += recv_buf(offset);
+          }
         };
-        Kokkos::parallel_for(RangePolicy(0,num_iters),unpack);
+        Kokkos::parallel_for(RangePolicy(0,num_tgt_cols),unpack);
         break;
       }
       case 2:
       {
         auto v = f.get_view<Real**>();
-        const int dim1 = fl.dim(1);
-        auto policy = TPF::get_default_team_policy(num_iters,dim1);
+        auto dim1 = fl.dim(1);
+        auto policy = TPF::get_default_team_policy(num_tgt_cols,dim1);
         auto unpack = KOKKOS_LAMBDA (const TeamMember& team) {
-          const int idx  = team.league_rank();
-          const int pid  = pids(idx);
-          const int icol = lids(idx);
-          const auto pid_offset = pids_recv_offsets(pid);
-          const auto pos_within_pid = idx - pid_offset;
-          auto offset = pid_offset*total_col_size
-                      + ncols_recv(pid)*field_offset
-                      + pos_within_pid*dim1;
-          auto col_unpack = [&](const int& k) {
-            v(icol,k) += recv_buf(offset+k);
-          };
-          auto tvr = Kokkos::TeamVectorRange(team,dim1);
-          Kokkos::parallel_for(tvr,col_unpack);
+          auto icol = team.league_rank();
+          auto beg  = lids_offsets(icol);
+          auto end  = lids_offsets(icol+1);
+          for (int pos=beg; pos<end; ++pos) {
+            auto idx = export_idxs(pos);
+            auto pid = pids(idx);
+            auto pid_offset = pids_offsets(pid);
+            auto ncols_recv = pids_offsets(pid+1) - pid_offset;
+            auto pos_within_pid = idx - pid_offset;
+            auto offset = pid_offset*total_col_size
+                        + ncols_recv*field_offset
+                        + pos_within_pid*dim1;
+
+            auto col_unpack = [&](const int& k) {
+              v(icol,k) += recv_buf(offset+k);
+            };
+            auto tvr = Kokkos::TeamVectorRange(team,dim1);
+            Kokkos::parallel_for(tvr,col_unpack);
+          }
         };
         Kokkos::parallel_for(policy,unpack);
         break;
@@ -998,23 +1021,29 @@ void HorizontalRemapper::recv_and_unpack ()
         const int dim1 = fl.dim(1);
         const int dim2 = fl.dim(2);
         const int f_col_size = dim1*dim2;
-        auto policy = TPF::get_default_team_policy(num_iters,dim1*dim2);
+        auto policy = TPF::get_default_team_policy(num_tgt_cols,dim1*dim2);
         auto unpack = KOKKOS_LAMBDA (const TeamMember& team) {
-          const int idx  = team.league_rank();
-          const int pid  = pids(idx);
-          const int icol = lids(idx);
-          const auto pid_offset = pids_recv_offsets(pid);
-          const auto pos_within_pid = idx - pid_offset;
-          auto offset = pid_offset*total_col_size
-                      + ncols_recv(pid)*field_offset
-                      + pos_within_pid*f_col_size;
-          auto col_unpack = [&](const int& idx) {
-            const int j = idx / dim2;
-            const int k = idx % dim2;
-            v(icol,j,k) += recv_buf(offset+idx);
-          };
-          auto tvr = Kokkos::TeamVectorRange(team,f_col_size);
-          Kokkos::parallel_for(tvr,col_unpack);
+          auto icol = team.league_rank();
+          auto beg  = lids_offsets(icol);
+          auto end  = lids_offsets(icol+1);
+          for (int pos=beg; pos<end; ++pos) {
+            auto idx = export_idxs(pos);
+            auto pid = pids(idx);
+            auto pid_offset = pids_offsets(pid);
+            auto ncols_recv = pids_offsets(pid+1) - pid_offset;
+            auto pos_within_pid = idx - pid_offset;
+            auto offset = pid_offset*total_col_size
+                        + ncols_recv*field_offset
+                        + pos_within_pid*f_col_size;
+
+            auto col_unpack = [&](const int& iter) {
+              const int j = iter / dim2;
+              const int k = iter % dim2;
+              v(icol,j,k) += recv_buf(offset+iter);
+            };
+            auto tvr = Kokkos::TeamVectorRange(team,f_col_size);
+            Kokkos::parallel_for(tvr,col_unpack);
+          }
         };
         Kokkos::parallel_for(policy,unpack);
         break;
@@ -1026,21 +1055,159 @@ void HorizontalRemapper::recv_and_unpack ()
         const int dim2 = fl.dim(2);
         const int dim3 = fl.dim(3);
         const int f_col_size = dim1*dim2*dim3;
+        auto policy = TPF::get_default_team_policy(num_tgt_cols,dim1*dim2*dim3);
+        auto unpack = KOKKOS_LAMBDA (const TeamMember& team) {
+          auto icol = team.league_rank();
+          auto beg  = lids_offsets(icol);
+          auto end  = lids_offsets(icol+1);
+          for (int pos=beg; pos<end; ++pos) {
+            auto idx = export_idxs(pos);
+            auto pid = pids(idx);
+            auto pid_offset = pids_offsets(pid);
+            auto ncols_recv = pids_offsets(pid+1) - pid_offset;
+            auto pos_within_pid = idx - pid_offset;
+            auto offset = pid_offset*total_col_size
+                        + ncols_recv*field_offset
+                        + pos_within_pid*f_col_size;
+
+            auto col_unpack = [&](const int& iter) {
+              const int j = (iter / dim3) / dim2;
+              const int k = (iter / dim3) % dim2;
+              const int l =  iter % dim3;
+              v(icol,j,k,l) += recv_buf(offset+iter);
+            };
+            auto tvr = Kokkos::TeamVectorRange(team,f_col_size);
+            Kokkos::parallel_for(tvr,col_unpack);
+          }
+        };
+        Kokkos::parallel_for(policy,unpack);
+        break;
+      }
+      default:
+        EKAT_ERROR_MSG ("Unexpected field rank in RefiningRemapperP2P::unpack.\n"
+            "  - MPI rank  : " + std::to_string(m_src_grid->get_comm().rank()) + "\n"
+            "  - field name: " + f.name() + "\n"
+            "  - field rank: " + std::to_string(fl.rank()) + "\n");
+    }
+  }
+}
+
+void HorizontalRemapper::recv_and_unpack_refine ()
+{
+  using RangePolicy = typename KT::RangePolicy;
+  using TeamMember  = typename KT::MemberType;
+  using TPF         = ekat::TeamPolicyFactory<typename KT::ExeSpace>;
+
+  auto imp_exp = m_remap_data->m_imp_exp;
+
+  auto pids = imp_exp->import_pids();
+  auto lids = imp_exp->import_lids();
+  auto pids_offsets = imp_exp->import_pid_offsets();
+  auto recv_buf = m_recv_buffer;
+  const int num_iters = pids.size();
+  const int total_col_size = m_field_offset.back();
+  for (int ifield=0; ifield<m_num_fields; ++ifield) {
+    if (m_needs_remap[ifield]==0)
+      // No need to process this field. We'll simply deep copy src->tgt
+      continue;
+
+          auto& f  = m_ov_fields[ifield];
+    const auto& fl = f.get_header().get_identifier().get_layout();
+    const auto field_offset = m_field_offset[ifield];
+
+    switch (fl.rank()) {
+      case 1:
+      {
+        auto v = f.get_view<Real*>();
+        auto unpack = KOKKOS_LAMBDA (const int idx) {
+          auto pid  = pids(idx);
+          auto icol = lids(idx);
+          auto pid_offset = pids_offsets(pid);
+          auto ncols_recv = pids_offsets(pid+1) - pid_offset;
+          auto pos_within_pid = idx - pid_offset;
+          auto offset = pid_offset*total_col_size
+                      + ncols_recv*field_offset
+                      + pos_within_pid;
+          v(icol) = recv_buf(offset);
+        };
+        Kokkos::parallel_for(RangePolicy(0,num_iters),unpack);
+        break;
+      }
+      case 2:
+      {
+        auto v = f.get_view<Real**>();
+        auto dim1 = fl.dim(1);
+        auto policy = TPF::get_default_team_policy(num_iters,dim1);
+        auto unpack = KOKKOS_LAMBDA (const TeamMember& team) {
+          auto idx  = team.league_rank();
+          auto pid  = pids(idx);
+          auto icol = lids(idx);
+          auto pid_offset = pids_offsets(pid);
+          auto ncols_recv = pids_offsets(pid+1) - pid_offset;
+          auto pos_within_pid = idx - pid_offset;
+          auto offset = pid_offset*total_col_size
+                      + ncols_recv*field_offset
+                      + pos_within_pid*dim1;
+          auto col_unpack = [&](const int& k) {
+            v(icol,k) = recv_buf(offset+k);
+          };
+          auto tvr = Kokkos::TeamVectorRange(team,dim1);
+          Kokkos::parallel_for(tvr,col_unpack);
+        };
+        Kokkos::parallel_for(policy,unpack);
+        break;
+      }
+      case 3:
+      {
+        auto v = f.get_view<Real***>();
+        auto dim1 = fl.dim(1);
+        auto dim2 = fl.dim(2);
+        auto f_col_size = dim1*dim2;
+        auto policy = TPF::get_default_team_policy(num_iters,dim1*dim2);
+        auto unpack = KOKKOS_LAMBDA (const TeamMember& team) {
+          auto idx  = team.league_rank();
+          auto pid  = pids(idx);
+          auto icol = lids(idx);
+          auto pid_offset = pids_offsets(pid);
+          auto ncols_recv = pids_offsets(pid+1) - pid_offset;
+          auto pos_within_pid = idx - pid_offset;
+          auto offset = pid_offset*total_col_size
+                      + ncols_recv*field_offset
+                      + pos_within_pid*f_col_size;
+          auto col_unpack = [&](const int& idx) {
+            const int j = idx / dim2;
+            const int k = idx % dim2;
+            v(icol,j,k) = recv_buf(offset+idx);
+          };
+          auto tvr = Kokkos::TeamVectorRange(team,f_col_size);
+          Kokkos::parallel_for(tvr,col_unpack);
+        };
+        Kokkos::parallel_for(policy,unpack);
+        break;
+      }
+      case 4:
+      {
+        auto v = f.get_view<Real****>();
+        auto dim1 = fl.dim(1);
+        auto dim2 = fl.dim(2);
+        auto dim3 = fl.dim(3);
+        auto f_col_size = dim1*dim2*dim3;
         auto policy = TPF::get_default_team_policy(num_iters,dim1*dim2*dim3);
         auto unpack = KOKKOS_LAMBDA (const TeamMember& team) {
-          const int idx  = team.league_rank();
-          const int pid  = pids(idx);
-          const int icol = lids(idx);
-          const auto pid_offset = pids_recv_offsets(pid);
-          const auto pos_within_pid = idx - pid_offset;
+          auto idx  = team.league_rank();
+          auto pid  = pids(idx);
+          auto icol = lids(idx);
+          auto pid_offset = pids_offsets(pid);
+          auto ncols_recv = pids_offsets(pid+1) - pid_offset;
+          auto pos_within_pid = idx - pid_offset;
           auto offset = pid_offset*total_col_size
-                      + ncols_recv(pid)*field_offset
+                      + ncols_recv*field_offset
                       + pos_within_pid*f_col_size;
           auto col_unpack = [&](const int& idx) {
             const int j = (idx / dim3) / dim2;
             const int k = (idx / dim3) % dim2;
             const int l =  idx % dim3;
-            v(icol,j,k,l) += recv_buf(offset+idx);
+            v(icol,j,k,l) = recv_buf(offset+idx);
           };
           auto tvr = Kokkos::TeamVectorRange(team,f_col_size);
           Kokkos::parallel_for(tvr,col_unpack);
@@ -1085,66 +1252,74 @@ void HorizontalRemapper::setup_mpi_data_structures ()
   const int ncols_ov = ov_grid->get_num_local_dofs();
   auto imp_exp = m_remap_data->m_imp_exp;
 
-  // ----------- Compute RECV metadata -------------- //
-
-  // We can now compute the offset of each pid in the recv buffer
-  m_pids_recv_offsets = view_1d<int>("",nranks+1);
-  auto ncols_recv_h = coarsen ? imp_exp->num_exports_per_pid_h()
-                              : imp_exp->num_imports_per_pid_h();
-  auto pids_recv_offsets_h = Kokkos::create_mirror_view(m_pids_recv_offsets);
-  pids_recv_offsets_h[0] = 0;
-  for (int pid=0; pid<nranks; ++pid) {
-    pids_recv_offsets_h(pid+1) = pids_recv_offsets_h(pid)
-                               + ncols_recv_h(pid);
-  }
-  Kokkos::deep_copy(m_pids_recv_offsets,pids_recv_offsets_h);
+  // ----------- Create send/recv buffers -------------- //
 
   // Create the recv buffer(s)
-  auto recv_buf_size = coarsen ? pids_recv_offsets_h(nranks)*total_col_size
+  auto recv_buf_size = coarsen ? imp_exp->num_exports()*total_col_size
                                : ncols_ov*total_col_size;
   m_recv_buffer = decltype(m_recv_buffer)("HorizontalRemapper::recv_buf",recv_buf_size);
   m_mpi_recv_buffer = Kokkos::create_mirror_view(decltype(m_mpi_recv_buffer)::execution_space(),m_recv_buffer);
-
-  // ----------- Compute SEND metadata -------------- //
-  
-  m_pids_send_offsets = view_1d<int>("",nranks+1);
-  auto ncols_send_h = coarsen ? imp_exp->num_imports_per_pid_h()
-                              : imp_exp->num_exports_per_pid_h();
-  auto pids_send_offsets_h = Kokkos::create_mirror_view(m_pids_send_offsets);
-  pids_send_offsets_h[0] = 0;
-  for (int pid=0; pid<nranks; ++pid) {
-    pids_send_offsets_h(pid+1) = pids_send_offsets_h(pid)
-                               + ncols_send_h(pid);
-  }
-  Kokkos::deep_copy(m_pids_send_offsets,pids_send_offsets_h);
   
   // Create the send buffer(s)
   auto send_buf_size = coarsen ? ncols_ov*total_col_size
-                               : pids_send_offsets_h(nranks)*total_col_size;
+                               : imp_exp->num_exports()*total_col_size;
   m_send_buffer = decltype(m_send_buffer)("HorizontalRemapper::send_buf",send_buf_size);
   m_mpi_send_buffer = Kokkos::create_mirror_view(decltype(m_mpi_send_buffer)::execution_space(),m_send_buffer);
 
   // ----------- Create Requests ------------ //
 
+  auto pids_recv_offsets_h = coarsen ? imp_exp->export_pid_offsets_h()
+                                     : imp_exp->import_pid_offsets_h();
+  auto pids_send_offsets_h = coarsen ? imp_exp->import_pid_offsets_h()
+                                     : imp_exp->export_pid_offsets_h();
+  
   const auto mpi_comm = m_src_grid->get_comm().mpi_comm();
   const auto mpi_real  = ekat::get_mpi_type<Real>();
   for (int pid=0; pid<nranks; ++pid) {
     // Send request
-    if (ncols_send_h(pid)>0) {
+    int ncols_send = pids_send_offsets_h(pid+1)-pids_send_offsets_h(pid);
+    if (ncols_send>0) {
       auto send_ptr = m_mpi_send_buffer.data() + pids_send_offsets_h(pid)*total_col_size;
-      auto send_count = ncols_send_h(pid)*total_col_size;
+      auto send_count = ncols_send*total_col_size;
       auto& req = m_send_req.emplace_back();
       MPI_Send_init (send_ptr, send_count, mpi_real, pid,
                      0, mpi_comm, &req);
     }
     // Recv request
-    if (ncols_recv_h(pid)>0) {
+    int ncols_recv = pids_recv_offsets_h(pid+1)-pids_recv_offsets_h(pid);
+    if (ncols_recv>0) {
       auto recv_ptr = m_mpi_recv_buffer.data() + pids_recv_offsets_h(pid)*total_col_size;
-      auto recv_count = ncols_recv_h(pid)*total_col_size;
+      auto recv_count = ncols_recv*total_col_size;
       auto& req = m_recv_req.emplace_back();
       MPI_Recv_init (recv_ptr, recv_count, mpi_real, pid,
                      0, mpi_comm, &req);
     }
+  }
+
+  if (m_remap_data->m_coarsening) {
+    // Setup additional views needed for "reduce" unpack operations
+    int num_tgt_lids = m_tgt_grid->get_num_local_dofs();
+    m_export_idxs_sorted_by_lid = view_1d<int>("export_idxs_sorted_by_lid",imp_exp->num_exports());
+    m_export_lids_offsets       = view_1d<int>("m_export_lids_offsets",num_tgt_lids+1);
+    auto export_idxs_sorted_by_lid_h = Kokkos::create_mirror_view(m_export_idxs_sorted_by_lid);
+    auto export_lids_offsets_h       = Kokkos::create_mirror_view(m_export_lids_offsets);
+    std::map<int,std::vector<int>> lid2idxs;
+    auto lids_h = imp_exp->export_lids_h();
+    auto pids_h = imp_exp->export_pids_h();
+    for (int idx=0; idx<imp_exp->num_exports(); ++idx) {
+      lid2idxs[imp_exp->export_lids_h()[idx]].push_back(idx);
+    }
+    int pos = 0;
+    export_lids_offsets_h[0] = 0;
+    for (const auto& [lid,idxs] : lid2idxs) {
+      for (auto idx : idxs) {
+        export_idxs_sorted_by_lid_h[pos] = idx;
+        ++pos;
+      }
+      export_lids_offsets_h[lid+1] = export_lids_offsets_h[lid] + idxs.size();
+    }
+    Kokkos::deep_copy(m_export_idxs_sorted_by_lid,export_idxs_sorted_by_lid_h);
+    Kokkos::deep_copy(m_export_lids_offsets,export_lids_offsets_h);
   }
 }
 
