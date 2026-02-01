@@ -284,6 +284,8 @@ module li_subglacial_hydro
       logical, pointer :: config_ocean_connection_N
       logical, pointer :: config_SGH_chnl_active
       character (len=StrKIND), pointer :: config_SGH_basal_melt
+      character (len=StrKIND), pointer :: config_SGH_flowA_source
+      real(kind=RKIND), pointer :: config_SGH_flowA_value
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: geometryPool
       type (mpas_pool_type), pointer :: hydroPool
@@ -292,6 +294,7 @@ module li_subglacial_hydro
       type (mpas_pool_type), pointer :: velocityPool
       real (kind=RKIND), dimension(:), pointer :: thickness
       real (kind=RKIND), dimension(:,:), pointer :: temperature, flowParamA
+      real (kind=RKIND), dimension(:), pointer :: flowAHydro
       real (kind=RKIND), dimension(:), pointer :: Wtill, WtillOld
       real (kind=RKIND), dimension(:), pointer :: basalMeltInput
       real (kind=RKIND), dimension(:), pointer :: groundedBasalMassBal
@@ -325,6 +328,7 @@ module li_subglacial_hydro
       real (kind=RKIND), pointer :: tillMax
       integer, pointer :: nCellsSolve
       integer, pointer :: nCells
+      integer, pointer :: nVertLevels
       integer :: iCell, iEdge, iEdgeOnCell
       real (kind=RKIND) :: timeLeft ! subcycling time remaining until master dt is reached
       real (kind=RKIND) :: deltatSGHaccumulated
@@ -351,6 +355,7 @@ module li_subglacial_hydro
       call mpas_pool_get_config(liConfigs, 'config_SGH_till_drainage', Cd)
       call mpas_pool_get_config(liConfigs, 'config_SGH_till_max', tillMax)
       call mpas_pool_get_config(liConfigs, 'config_SGH_basal_melt', config_SGH_basal_melt)
+      call mpas_pool_get_config(liConfigs, 'config_SGH_flowA_source', config_SGH_flowA_source)
 
       block => domain % blocklist
       do while (associated(block))
@@ -358,15 +363,29 @@ module li_subglacial_hydro
          call mpas_pool_get_subpool(block % structs, 'thermal', thermalPool)
          call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
-         call mpas_pool_get_array(thermalPool, 'temperature', temperature)
-         call mpas_pool_get_array(velocityPool, 'flowParamA', flowParamA)
-         call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+         call mpas_pool_get_subpool(block % structs, 'hydro', hydroPool)
 
          call calc_iceThicknessHydro(block, err_tmp)
          err = ior(err, err_tmp)
 
-         call li_calculate_flowParamA(meshPool, temperature, thickness, flowParamA, err_tmp)
-         err = ior(err, err_tmp)
+         call mpas_pool_get_array(hydroPool, 'flowAHydro', flowAHydro)
+         if (trim(config_SGH_flowA_source) == 'constant') then
+            call mpas_pool_get_config(liConfigs, 'config_SGH_flowA_value', config_SGH_flowA_value)
+            flowAHydro(:) = config_SGH_flowA_value
+         elseif (trim(config_SGH_flowA_source) == 'data') then
+            ! do nothing - use value already in flowAHydro
+         elseif (trim(config_SGH_flowA_source) == 'flowParamA') then
+            call mpas_pool_get_array(thermalPool, 'temperature', temperature)
+            call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+            call mpas_pool_get_array(velocityPool, 'flowParamA', flowParamA)
+            call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+            call li_calculate_flowParamA(meshPool, temperature, thickness, flowParamA, err_tmp)
+            err = ior(err, err_tmp)
+            flowAHydro(:) = flowParamA(nVertLevels, :)
+         else
+            err = ior(err, 1)
+            call mpas_log_write("Unknown value for 'config_SGH_flowA_source': " // trim(config_SGH_flowA_source), MPAS_LOG_ERR)
+         endif
 
          block => block % next
       end do
@@ -375,7 +394,7 @@ module li_subglacial_hydro
       call mpas_timer_start("halo updates")
       call mpas_dmpar_field_halo_exch(domain, 'iceThicknessHydro')
       call mpas_timer_stop("halo updates")
-      
+
       ! initialize while loop
       call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)  ! can get from any block
       call mpas_pool_get_array(meshPool, 'deltat', masterDeltat)
@@ -384,7 +403,7 @@ module li_subglacial_hydro
 
       block => domain % blocklist
       do while (associated(block))
-        
+
          call mpas_pool_get_subpool(block % structs, 'hydro', hydroPool)
          call mpas_pool_get_array(hydroPool, 'effectivePressure', effectivePressure)
          effectivePressure = 0.0_RKIND
@@ -1610,11 +1629,11 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:), pointer :: Wtill, WtillOld
       real (kind=RKIND), dimension(:), pointer :: divergence
       real (kind=RKIND), dimension(:), pointer :: basalSpeed
-      real (kind=RKIND), dimension(:,:), pointer :: flowParamA
+      real (kind=RKIND), dimension(:), pointer :: flowAHydro
       real (kind=RKIND), dimension(:), pointer :: divergenceChannel
       real (kind=RKIND), dimension(:), pointer :: channelAreaChangeCell
       real (kind=RKIND), dimension(:), pointer :: bedTopography
-      real (kind=RKIND), dimension(:), pointer :: iceThicknessHydro      
+      real (kind=RKIND), dimension(:), pointer :: iceThicknessHydro
       integer, dimension(:), pointer :: hydroMarineMarginMask
       integer, dimension(:), pointer :: cellMask
       integer, dimension(:), pointer :: nEdgesOnCell
@@ -1677,7 +1696,7 @@ module li_subglacial_hydro
       call mpas_pool_get_array(hydroPool, 'channelAreaChangeCell', channelAreaChangeCell)
       call mpas_pool_get_array(hydroPool, 'hydroMarineMarginMask', hydroMarineMarginMask)
       call mpas_pool_get_array(velocityPool, 'basalSpeed', basalSpeed)
-      call mpas_pool_get_array(velocityPool, 'flowParamA', flowParamA)
+      call mpas_pool_get_array(hydroPool, 'flowAHydro', flowAHydro)
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
       call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
       call mpas_pool_get_array(hydroPool, 'iceThicknessHydro', iceThicknessHydro)
@@ -1687,7 +1706,7 @@ module li_subglacial_hydro
       !   basalMeltInput(:) / rhoi  ! Hewitt 2011 opening
       openingRate = max(0.0_RKIND, openingRate)
 
-      closingRate(:) = creepCoeff * flowParamA(nVertLevels, :) * &
+      closingRate(:) = creepCoeff * flowAHydro(:) * &
               effectivePressureSGH(:)**3 * waterThickness(:)
 !      closingRate(:) = waterThickness(:) * effectivePressureSGH(:) / 1.0e13_RKIND
 !          ! Hewitt 2011 creep closure form.  Denominator is ice viscosity
@@ -1700,7 +1719,7 @@ module li_subglacial_hydro
       select case (trim(config_SGH_pressure_calc))
       case ('cavity')
 
-         where (li_mask_is_grounded_ice(cellMask))        
+         where (li_mask_is_grounded_ice(cellMask))
             waterPressure = (zeroOrderSum - divergence - divergenceChannel - channelAreaChangeCell) * &
                    rho_water * gravity * deltatSGH / porosity + waterPressureOld
          elsewhere ((.not. (li_mask_is_grounded_ice(cellMask))) .and. (bedTopography > config_sea_level))
@@ -1902,7 +1921,7 @@ module li_subglacial_hydro
       integer, dimension(:), pointer :: waterFluxMask
       integer, dimension(:), pointer :: hydroMarineMarginMask
       integer, dimension(:), pointer :: edgeMask
-      real (kind=RKIND), dimension(:,:), pointer :: flowParamA
+      real (kind=RKIND), dimension(:), pointer :: flowAHydro
       integer, dimension(:,:), pointer :: cellsOnEdge
       integer, pointer :: nVertLevels
       integer, pointer :: nEdgesSolve
@@ -1941,7 +1960,7 @@ module li_subglacial_hydro
       call mpas_pool_get_array(hydroPool, 'flowParamAChannel', flowParamAChannel)
       call mpas_pool_get_array(hydroPool, 'channelEffectivePressure', channelEffectivePressure)
       call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
-      call mpas_pool_get_array(velocityPool, 'flowParamA', flowParamA)
+      call mpas_pool_get_array(hydroPool, 'flowAHydro', flowAHydro)
       call mpas_pool_get_array(hydroPool, 'effectivePressureSGH', effectivePressureSGH)
       call mpas_pool_get_array(hydroPool, 'waterFluxMask', waterFluxMask)
       call mpas_pool_get_array(hydroPool, 'hydroMarineMarginMask', hydroMarineMarginMask)
@@ -2012,7 +2031,7 @@ module li_subglacial_hydro
          cell2 = cellsOnEdge(2, iEdge)
 
          ! Not sure if these ought to be upwind average, but using centered
-         flowParamAChannel(iEdge) = 0.5_RKIND * (flowParamA(nVertLevels, cell1) + flowParamA(nVertLevels, cell2) )
+         flowParamAChannel(iEdge) = 0.5_RKIND * (flowAHydro(cell1) + flowAHydro(cell2))
          channelEffectivePressure(iEdge) = 0.5_RKIND * (effectivePressureSGH(cell1) + effectivePressureSGH(cell2))
       end do
       channelClosingRate(:) = creep_coeff * channelArea(:) * flowParamAChannel(:) * channelEffectivePressure(:)**3
