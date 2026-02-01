@@ -2643,6 +2643,8 @@ module li_subglacial_hydro
       real (kind=RKIND) :: chnlGroundingLineDischargeEdge
       real (kind=RKIND) :: totalGroundingLineDischargeEdge
 
+      err = 0
+
       call mpas_pool_get_subpool(block % structs, 'hydro', hydroPool)
       call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
       call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
