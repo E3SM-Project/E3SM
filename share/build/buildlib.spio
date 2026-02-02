@@ -169,6 +169,12 @@ def buildlib(bldroot, installpath, case):
 
     cppdefs += " -DTIMING"
 
+    # Remove problematic makefile functions that should not be passed to cmake
+    cppdefs = cppdefs.replace("$(subst ,, )", "").replace("$(subst ,,  )", "")
+    cflags = cflags.replace("$(subst ,, )", "").replace("$(subst ,,  )", "")
+    cxxflags = cxxflags.replace("$(subst ,, )", "").replace("$(subst ,,  )", "")
+    fflags = fflags.replace("$(subst ,, )", "").replace("$(subst ,,  )", "")
+
     # Setting GPTL_PATH is currently insufficient scorpio to find gptl headers?
     incl_flag = f" -I{installpath}/include"
 
