@@ -547,6 +547,7 @@ struct CaarFunctorImpl {
       Kokkos::single(Kokkos::PerThread(kv.team),[&]() {
         pi_i(0)[0] = m_hvcoord.ps0*m_hvcoord.hybrid_ai0;
       });
+      kv.team_barrier(); // necessary to avoid race in column_scan_mid_to_int
 
       ColumnOps::column_scan_mid_to_int<true>(kv,dp,pi_i);
 
@@ -555,6 +556,7 @@ struct CaarFunctorImpl {
       Kokkos::single(Kokkos::PerThread(kv.team),[&]() {
         omega_i(0)[0] = 0.0;
       });
+      kv.team_barrier(); // necessary to avoid race in column_scan_mid_to_int
 
       ColumnOps::column_scan_mid_to_int<true>(kv,div_vdp,omega_i);
       // Average omega_i to midpoints, and change sign, since later
