@@ -68,6 +68,9 @@ myst_enable_extensions = [
     'deflist',
     'dollarmath'
 ]
+math_number_all = True
+math_numfig = False
+myst_dmath_allow_labels = True
 myst_number_code_blocks = ["typescript"]
 myst_heading_anchors = 3
 myst_footnote_transition = True
