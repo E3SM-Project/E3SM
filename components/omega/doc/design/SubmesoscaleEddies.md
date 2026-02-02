@@ -96,7 +96,7 @@ where $\alpha$ is the specific volume.
 
 ### 2.2 Requirement: Buoyancy calculation must account for tilted pressure coordinates
 
-As in MPAS-Ocean, the horizontal buoyancy gradient calculation must supported tilted coordinates.  In the psuedo height coordinate for Omega, the horizontal gradient of buoyancy for a tilting surface ($\tilde{z}$) is
+As in MPAS-Ocean, the horizontal buoyancy gradient calculation must support tilted coordinates.  In the pseudo height coordinate for Omega, the horizontal gradient of buoyancy for a tilting surface ($\tilde{z}$) is
 
 $$
 \nabla b = \nabla_h b + \frac{\partial b}{\partial \tilde{z}} \nabla_h \tilde{z}
@@ -179,7 +179,7 @@ $$
 
 ### 3.4 Mixed layer depth calculation
 
-Both the FK11 and B23 formulations are critically dependent on determination of the mixed layer depth (MLD). For this parameterization, the mixed layer depth will use the density threshold criterion ([Holte and Talley, 2009](https://journals.ametsoc.org/view/journals/atot/26/9/2009jtecho543_1.xml), their option 1).  The mixed layer depth is defined as the pressure where
+Both the FK11 and B23 formulations are critically dependent on determination of the mixed layer depth (MLD). For this parameterization, the mixed layer depth will use the density threshold criterion ([Holte and Talley, 2009](https://journals.ametsoc.org/view/journals/atot/26/9/2009jtecho543_1.xml), their option 1).  The mixed layer depth is defined as the vertical location where
 
 $$
 \left|\rho(p) - \rho(p_0)\right| \geq \Delta \rho_t
@@ -208,7 +208,7 @@ The following options are necessary for the submesoscale eddy parameterization:
 - `DrhoCrit` critical threshold for the density MLD calculation (0.03 kg m$^-2$)
 - `$\rho_0$` a reference density in the ocean, set in the vertical coordinate section of the Omega yaml file.
 
-The `SubmesoEddy` class provides the main funcationality for this parameterization.  It contains data structure definitions, configuration parameters, and the compute methods necessary for computing the buoyancy flux associated with submesoscale eddies and the buoyancy gradient necessary for this parameterization and a future implementation of a mesoscale eddy parameterization.
+The `SubmesoEddy` class provides the main functionality for this parameterization.  It contains data structure definitions, configuration parameters, and the compute methods necessary for computing the buoyancy flux associated with submesoscale eddies and the buoyancy gradient necessary for this parameterization and a future implementation of a mesoscale eddy parameterization.
 
 ```c++
 class SubmesoEddy{
@@ -273,7 +273,7 @@ int SubmesoEddy::init(Config *Options)
 
 #### 4.2.2 Density MLD calculation
 
-The public `computeDenMLD` method will utilize the specific volume frmo the TEOS-10 calculation to compute a mixed layer depthy based on the threshold criterion. Given Omega has easy access to `SpecVol` and not density, we rearrange the standard density threshold calculation
+The public `computeDenMLD` method will utilize the specific volume from the TEOS-10 calculation to compute a mixed layer depth based on the threshold criterion. Given Omega has easy access to `SpecVol` and not density, we rearrange the standard density threshold calculation
 $$
 \rho(x,y,z,t) - \rho(x,y,10,t) \geq 0.03
 $$
@@ -290,7 +290,7 @@ $$
 \frac{\alpha(x,y,10,t) - \alpha(x,y,z,t)}{\alpha(x,y,z,t)} = \frac{\alpha(x,y,10,t)}{\alpha(x,y,z,t)} - 1 \geq 0.03 \alpha(x,y,10,t)
 $$ (mld-defn)
 
-This form allows for easier use of the `SpecVol` variable in Omega  with minimal conversions in the calculation.  The specific volumes in the calculation are referenced to pressure at 10m.  The fundamental `SpecVol` calculation in Omega is
+This form allows for easier use of the `SpecVol` variable in Omega with minimal conversions in the calculation.  All specific volumes in the calculation must be referenced to the same pressure (thus $\alpha(x,y,z,t)$ will use the $\theta, S$ from layer $z$ but the pressure at 10m).  The fundamental `SpecVol` calculation in Omega is
 
 ```c++
 SpecVol(ICell, K) =
@@ -298,7 +298,7 @@ SpecVol(ICell, K) =
     calcDelta(LocSpecVolPCoeffs, KVec, Pressure(ICell, K));
 ```
 
-Here, the computation of `LocSpecVolPCoeffs` is the most computationally expensive (the 75-term polynomial).  This calculation is only dependent on $\Theta$ and $S$ and can thus be reused for any displacement case.  With calculation of a `SpecVol10mDisplaced` variable, calculation of the mixed layer depth follows from [](#mld-defn).  If the MLD falls between two model layers, linear interpolation will be used to find the final MLD.
+Here, the computation of `LocSpecVolPCoeffs` is the most computationally expensive (64 terms out of the 75-term polynomial).  This calculation is only dependent on $\Theta$ and $S$ and can thus be reused for any displacement case.  With calculation of a `SpecVol10mDisplaced` variable, calculation of the mixed layer depth follows from [](#mld-defn).  If the MLD falls between two model layers, linear interpolation will be used to find the final MLD.
 
 ```c++
 void computeDenMLD(Array1DReal &DenMLD, const Array2DReal &SpecVol, const Array2DReal &ZInterface)
