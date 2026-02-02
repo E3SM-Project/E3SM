@@ -32,6 +32,7 @@
 #include "Logging.h"
 
 #include <algorithm>
+#include <cctype>
 #include <cfloat>
 #include <climits>
 #include <cmath>
@@ -2090,7 +2091,8 @@ TimeInterval::TimeInterval(
 // Construct a time interval from a standard string in the form
 // DDDD_HH:MM:SS.SSSS where the width of DD and SS strings can be of
 // arbitrary width (within reason) and the separators can be any single
-// non-numeric character
+// non-numeric character.  DD, HH, MM are optional but must be in order if
+// included.  Fractional seconds are optional.
 TimeInterval::TimeInterval(
     std::string &TimeString // [in] string form of time interval
 ) {
@@ -2099,15 +2101,131 @@ TimeInterval::TimeInterval(
    IsCalendar  = false;
    CalInterval = 0;
 
-   // Extract variables from string
+   // Extract variables from string.
+   // Supported formats:
+   // - DDDD_HH:MM:SS(.sss...)
+   // - HH:MM:SS(.sss...)
+   // - MM:SS(.sss...)
+   // - SS(.sss...)
+   // Separators between fields may be any single non-numeric character.
    I8 Day     = 0;
    I8 Hour    = 0;
    I8 Minute  = 0;
    R8 RSecond = 0.;
 
-   std::istringstream ss(TimeString);
-   char discard;
-   ss >> Day >> discard >> Hour >> discard >> Minute >> discard >> RSecond;
+   // Parse from the right so that '.' is always interpreted as the decimal
+   // point in the seconds field, while still allowing '.' to act as a
+   // separator between integer fields in the legacy format.
+   auto isSpace = [](char c) {
+      return std::isspace(static_cast<unsigned char>(c)) != 0;
+   };
+   auto isDigit = [](char c) {
+      return std::isdigit(static_cast<unsigned char>(c)) != 0;
+   };
+
+   const std::string &s = TimeString;
+   if (s.empty()) {
+      ABORT_ERROR("TimeMgr: empty time interval string");
+   }
+
+   std::size_t right = s.size();
+   while (right > 0 && isSpace(s[right - 1])) {
+      --right;
+   }
+   if (right == 0) {
+      ABORT_ERROR("TimeMgr: blank time interval string");
+   }
+
+   // Parse final seconds token (may include fractional part).
+   std::size_t secEnd = right;
+   std::size_t secBeg = secEnd;
+   while (secBeg > 0) {
+      char c = s[secBeg - 1];
+      if (isDigit(c) || c == '.') {
+         --secBeg;
+      } else if (isSpace(c)) {
+         // allow trailing whitespace only (already trimmed)
+         break;
+      } else {
+         break;
+      }
+   }
+   if (secBeg == secEnd) {
+      ABORT_ERROR("TimeMgr: invalid time interval string '{}'", TimeString);
+   }
+
+   try {
+      RSecond = std::stod(s.substr(secBeg, secEnd - secBeg));
+   } catch (...) {
+      ABORT_ERROR("TimeMgr: invalid seconds field in time interval string '{}'",
+                  TimeString);
+   }
+
+   // Walk left parsing up to 3 integer fields (minute, hour, day).
+   std::size_t idx   = secBeg;
+   auto parsePrevInt = [&](I8 &outVal) -> bool {
+      // Skip whitespace.
+      while (idx > 0 && isSpace(s[idx - 1])) {
+         --idx;
+      }
+      if (idx == 0) {
+         return false;
+      }
+
+      // Skip one or more non-digit separator characters.
+      bool sawSep = false;
+      while (idx > 0 && !isDigit(s[idx - 1]) && !isSpace(s[idx - 1])) {
+         sawSep = true;
+         --idx;
+      }
+      while (idx > 0 && isSpace(s[idx - 1])) {
+         --idx;
+      }
+      if (!sawSep) {
+         return false;
+      }
+      if (idx == 0 || !isDigit(s[idx - 1])) {
+         ABORT_ERROR("TimeMgr: invalid time interval string '{}'", TimeString);
+      }
+
+      std::size_t end = idx;
+      std::size_t beg = end;
+      while (beg > 0 && isDigit(s[beg - 1])) {
+         --beg;
+      }
+      try {
+         outVal = static_cast<I8>(std::stoll(s.substr(beg, end - beg)));
+      } catch (...) {
+         ABORT_ERROR(
+             "TimeMgr: invalid integer field in time interval string '{}'",
+             TimeString);
+      }
+      idx = beg;
+      return true;
+   };
+
+   I8 tmp    = 0;
+   int nInts = 0;
+   if (parsePrevInt(tmp)) {
+      Minute = tmp;
+      ++nInts;
+   }
+   if (parsePrevInt(tmp)) {
+      Hour = tmp;
+      ++nInts;
+   }
+   if (parsePrevInt(tmp)) {
+      Day = tmp;
+      ++nInts;
+   }
+
+   // Anything left besides whitespace is invalid.
+   while (idx > 0 && isSpace(s[idx - 1])) {
+      --idx;
+   }
+   if (idx != 0) {
+      ABORT_ERROR("TimeMgr: invalid time interval string '{}'", TimeString);
+   }
 
    R8 SecondsSet = Day * SECONDS_PER_DAY + Hour * SECONDS_PER_HOUR +
                    Minute * SECONDS_PER_MINUTE + RSecond;

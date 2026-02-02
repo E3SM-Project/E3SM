@@ -368,6 +368,24 @@ add_omega_test(
     "-n;1"
 )
 
+############################
+# TimeInterval parsing tests
+############################
+
+add_omega_test(
+  TIMEINTERVAL_PARSE_TEST
+  testTimeIntervalParse.exe
+  infra/TimeIntervalParseTest.cpp
+  "-n;1"
+)
+
+add_omega_test(
+  TIMEINTERVAL_PARSE_EXTENDED_FORMATS_TEST
+  testTimeIntervalParseExtendedFormats.exe
+  infra/TimeIntervalParseExtendedFormatsTest.cpp
+  "-n;1"
+)
+
 ##################
 # Reductions test
 ##################

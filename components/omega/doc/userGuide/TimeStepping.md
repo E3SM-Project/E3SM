@@ -32,8 +32,16 @@ The following time steppers are currently available:
 | RungeKutta4 | classic fourth-order four-stage Runge Kutta method |
 
 The time step refers to the main model time step used to advance the solution
-forward. The format is in ``dddd_hh:mm:ss`` for days, hours, minutes and
-seconds.
+forward. The time step is specified as a formatted string and can be provided
+in any of the following forms:
+
+- ``DDDD_HH:MM:SS(.sss...)``
+- ``HH:MM:SS(.sss...)``
+- ``MM:SS(.sss...)``
+- ``SS(.sss...)``
+
+Days, hours and minutes are optional but must be in order if included.
+Fractional seconds are optional.
 
 The StartTime refers to the starting time for the simulation. It is in the
 format ``yyyy-mm-day_hh:mm:ss`` for year, month, day, hour, minute, second.
