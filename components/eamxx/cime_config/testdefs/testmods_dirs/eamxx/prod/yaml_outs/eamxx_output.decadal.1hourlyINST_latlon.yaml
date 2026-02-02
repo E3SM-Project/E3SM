@@ -4,7 +4,7 @@ filename_prefix: eamxx_output.decadal.1hourlyINST_latlon.h
 iotype: pnetcdf
 averaging_type: instant
 max_snapshots_per_file: 1 # only one snapshot per file
-horiz_remap_file: ${TESTMOD_WILL_EDIT_THIS_LINE_VIA_SED}
+horiz_remap_file: non-existent.nc # shell_commands will sed this (if supported for current grid)
 fields:
   physics_pg2:
     field_names:
