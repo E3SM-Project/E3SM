@@ -6,39 +6,40 @@ using scream::Int;
 // A C++ interface to ZM fortran calls and vice versa
 
 extern "C" {
-  void zm_eamxx_bridge_init_c( Int  pver_in );
 
-  void zm_eamxx_bridge_run_c( Int  ncol,                // 01
-                              Real dtime,               // 02
-                              bool is_first_step,       // 03
-                        const Real *state_phis,         // 04
-                              Real *state_z_mid,        // 05
-                              Real *state_z_int,        // 06
-                        const Real *state_p_mid,        // 07
-                        const Real *state_p_int,        // 08
-                        const Real *state_p_del,        // 09
-                              Real *state_t,            // 10
-                              Real *state_qv,           // 11
-                              Real *state_u,            // 12
-                              Real *state_v,            // 13
-                              Real *state_omega,        // 14
-                        const Real *state_cldfrac,      // 15
-                        const Real *state_pblh,         // 16
-                        const Real *tpert,              // 17
-                        const Real *landfrac,           // 18
-                              Real *output_prec,        // 19
-                              Real *output_snow,        // 20
-                              Real *output_cape,        // 21
-                              Int  *output_activity,    // 22
-                              Real *output_tend_t,      // 23
-                              Real *output_tend_q,      // 24
-                              Real *output_tend_u,      // 25
-                              Real *output_tend_v,      // 26
-                              Real *output_rain_prod,   // 27
-                              Real *output_snow_prod,   // 28
-                              Real *output_prec_flux,   // 29
-                              Real *output_snow_flux,   // 30
-                              Real *output_mass_flux    // 31
+void zm_eamxx_bridge_init_c( Int  pver_in );
+
+void zm_eamxx_bridge_run_c( Int  ncol,                // 01
+                            Real dtime,               // 02
+                            bool is_first_step,       // 03
+                            const Real *state_phis,         // 04
+                            Real *state_z_mid,        // 05
+                            Real *state_z_int,        // 06
+                            const Real *state_p_mid,        // 07
+                            const Real *state_p_int,        // 08
+                            const Real *state_p_del,        // 09
+                            Real *state_t,            // 10
+                            Real *state_qv,           // 11
+                            Real *state_u,            // 12
+                            Real *state_v,            // 13
+                            Real *state_omega,        // 14
+                            const Real *state_cldfrac,      // 15
+                            const Real *state_pblh,         // 16
+                            const Real *tpert,              // 17
+                            const Real *landfrac,           // 18
+                            Real *output_prec,        // 19
+                            Real *output_snow,        // 20
+                            Real *output_cape,        // 21
+                            Int  *output_activity,    // 22
+                            Real *output_tend_t,      // 23
+                            Real *output_tend_q,      // 24
+                            Real *output_tend_u,      // 25
+                            Real *output_tend_v,      // 26
+                            Real *output_rain_prod,   // 27
+                            Real *output_snow_prod,   // 28
+                            Real *output_prec_flux,   // 29
+                            Real *output_snow_flux,   // 30
+                            Real *output_mass_flux    // 31
                             );
 } // extern "C" : end _c decls
 
@@ -50,9 +51,9 @@ void zm_eamxx_bridge_init( Int pver ){
 }
 
 void zm_eamxx_bridge_run( Int ncol, Int pver,
-                          ZMF::zm_input_state& zm_input,
-                          ZMF::zm_output_tend& zm_output,
-                          ZMF::zm_runtime_opt& zm_opts
+                          ZMF::ZmInputState& zm_input,
+                          ZMF::ZmOutputTend& zm_output,
+                          ZMF::ZmRuntimeOpt& zm_opts
                         ){
   //----------------------------------------------------------------------------
   zm_input.transpose<ekat::TransposeDirection::c2f>(ncol,pver);
