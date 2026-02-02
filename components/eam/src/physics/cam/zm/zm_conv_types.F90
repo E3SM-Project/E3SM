@@ -18,7 +18,7 @@ module zm_conv_types
    public :: zm_param_set_for_testing  ! set parameter values for testing
    public :: zm_param_mpi_broadcast    ! broadcast parameter values to all MPI ranks
    public :: zm_param_print            ! print parameter values for log file
-   
+
    ! ZM derived types
    public :: zm_const_t ! derived type to hold ZM constants
    public :: zm_param_t ! derived type to hold ZM tunable parameters
@@ -200,7 +200,7 @@ subroutine zm_param_set_for_testing(zm_param)
    zm_param%c0_lnd          = 0.0020D0
    zm_param%c0_ocn          = 0.0020D0
    zm_param%num_cin         = 1
-   zm_param%limcnv          = 23 ! note - default for E3SMv3 => ne30pg2 w/ L80 
+   zm_param%limcnv          = 23 ! note - default for E3SMv3 => ne30pg2 w/ L80
    zm_param%mx_bot_lyr_adj  = 1
    zm_param%trig_dcape      = .true.
    zm_param%trig_ull        = .true.
