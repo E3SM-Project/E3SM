@@ -13,6 +13,15 @@ if [[ $machine == "frontier" ]]; then
     export http_proxy=http://proxy.ccs.ornl.gov:3128/
     export https_proxy=http://proxy.ccs.ornl.gov:3128/
     export no_proxy='localhost,127.0.0.0/8,*.ccs.ornl.gov'
+elif [[ $machine == "pm-gpu" ]]; then
+  atm_grid=$(./xmlquery --value ATM_GRID)
+  if [[ "${atm_grid}" = "ne30np4.pg2" ]]; then
+    ./xmlchange NTASKS=8 # P8 testmod
+  elif [[ "${atm_grid}" = "ne4np4.pg2" ]]; then
+    ./xmlchange NTASKS=1 # P1 testmod
+  fi
+elif [[ $machine == "aurora" ]]; then
+  ./xmlchange JOB_QUEUE=prod # need >1-hr wall-time
 fi
 
 # Change run start

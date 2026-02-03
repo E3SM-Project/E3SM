@@ -798,8 +798,8 @@ _TESTS = {
         "inherit" : (
         ),
         "tests" : (
-            "RCS_P8_C4.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-perturb",  # 8 nodes, about 1.9 hours on pm-gpu
-            "RCS_P1_C4.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-perturb",    # 1 node, about 22min on pm-gpu
+            "RCS_C4.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-perturb",  # 8 nodes, about 1.9 hours on pm-gpu
+            "RCS_C4.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-perturb",    # 1 node, about 22min on pm-gpu
             "ERP_D_Lh182.ne4pg2_ne4pg2.F2010-SCREAMv1",
             "ERS_Ln362.ne30pg2_ne30pg2.F2010-SCREAMv1"
             )
