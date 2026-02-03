@@ -5,8 +5,11 @@ if (compile_threaded)
   string(APPEND CMAKE_Fortran_FLAGS   " -qopenmp")
   string(APPEND CMAKE_EXE_LINKER_FLAGS  " -qopenmp")
 endif()
-# Add linker flags to handle large relocations for debug builds
-string(APPEND CMAKE_EXE_LINKER_FLAGS " -mcmodel=large -Wl,--no-relax")
+# Add compiler and linker flags to handle large relocations for debug builds
+string(APPEND CMAKE_C_FLAGS " -mcmodel=large -fPIC")
+string(APPEND CMAKE_CXX_FLAGS " -mcmodel=large -fPIC")
+string(APPEND CMAKE_Fortran_FLAGS " -mcmodel=large -fPIC")
+string(APPEND CMAKE_EXE_LINKER_FLAGS " -mcmodel=large -Wl,-z,max-page-size=0x200000 -Wl,--no-relax")
 string(APPEND CMAKE_CXX_FLAGS_RELEASE " -O2")
 string(APPEND CMAKE_Fortran_FLAGS_RELEASE   " -O2 -debug minimal")
 string(APPEND CMAKE_C_FLAGS_DEBUG   " -O0 -g")
