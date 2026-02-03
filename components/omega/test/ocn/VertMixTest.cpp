@@ -205,6 +205,9 @@ void testGradRichNum() {
    TestVertMix->computeVertMix(NormalVelEdge, TangVelEdge,
                                BruntVaisalaFreqSqCell);
 
+   const auto &MinLayerCell = VCoord->MinLayerCell;
+   const auto &MaxLayerCell = VCoord->MaxLayerCell;
+
    /// Check all array values against expected value
    int NumMismatches = 0;
    OMEGA_SCOPE(GradRichNum, TestVertMix->GradRichNum);
@@ -259,6 +262,15 @@ void testGradRichNum() {
 
    // If test fails, print bad values and abort
    if (NumMismatches != 0) {
+      auto GradRichNumH = createHostMirrorCopy(GradRichNum);
+      for (int I = 0; I < NCellsAll; ++I) {
+         for (int K = 0; K < NVertLayers; ++K) {
+            if (!isApprox(GradRichNumH(I, K), RiExpValue, RTol))
+               LOG_ERROR("TestVertMix: GradRichNum Bad Value: "
+                         "GradRichNum({},{}) = {}; Expected {}",
+                         I, K, GradRichNumH(I, K), RiExpValue);
+         }
+      }
       ABORT_ERROR("TestVertMix: GradRichNum FAIL with {} bad values",
                   NumMismatches);
    } else {
@@ -352,6 +364,28 @@ void testOneTwoOneFilter() {
 
    // If test fails, print bad values and abort
    if (NumMismatches != 0) {
+      auto GradRichNumH         = createHostMirrorCopy(GradRichNum);
+      auto GradRichNumSmoothedH = createHostMirrorCopy(GradRichNumSmoothed);
+      for (int I = 0; I < NCellsAll; ++I) {
+         for (int K = 0; K < NVertLayers; ++K) {
+            if (K >= 1 && K < NVertLayers - 1) {
+               // Interior layers should be smoothed to 0.0
+               if (!isApprox(GradRichNumSmoothedH(I, K), 0.0, RTol))
+                  LOG_ERROR("TestVertMix: GradRichNumSmoothed Bad Value: "
+                            "GradRichNumSmoothed({},{}) = {}; Expected {}",
+                            I, K, GradRichNumSmoothedH(I, K), 0.0);
+            } else {
+               // Boundary layers (K==0 or K==NVertLayers-1) should be copied
+               // from input
+               if (!isApprox(GradRichNumSmoothedH(I, K), GradRichNumH(I, K),
+                             RTol))
+                  LOG_ERROR("TestVertMix: GradRichNumSmoothed Bad Value: "
+                            "GradRichNumSmoothed({},{}) = {}; Expected {}",
+                            I, K, GradRichNumSmoothedH(I, K),
+                            GradRichNumH(I, K));
+            }
+         }
+      }
       ABORT_ERROR("TestVertMix: GradRichNumSmoothed FAIL with {} bad values",
                   NumMismatches);
    } else {
@@ -575,6 +609,30 @@ void testConvVertMix() {
        NumMismatches);
 
    if (NumMismatches != 0) {
+      auto VertViscOutH = createHostMirrorCopy(VertViscOut);
+      for (int I = 0; I < NCellsAll; ++I) {
+         for (int K = 0; K < NVertLayers; ++K) {
+            if (K == 0) {
+               // Surface should be 0.0
+               if (!isApprox(VertViscOutH(I, K), 0.0_Real, RTol))
+                  LOG_ERROR("TestVertMixConv: VertVisc Bad Value: "
+                            "VertVisc({},{}) = {}; Expected {}",
+                            I, K, VertViscOutH(I, K), 0.0_Real);
+            } else if (K < 30) {
+               // Interior layers
+               if (!isApprox(VertViscOutH(I, K), VertConvExp, RTol))
+                  LOG_ERROR("TestVertMixConv: VertVisc Bad Value: "
+                            "VertVisc({},{}) = {}; Expected {}",
+                            I, K, VertViscOutH(I, K), VertConvExp);
+            } else {
+               // Interior layers
+               if (!isApprox(VertViscOutH(I, K), 0.0_Real, RTol))
+                  LOG_ERROR("TestVertMixConv: VertVisc Bad Value: "
+                            "VertVisc({},{}) = {}; Expected {}",
+                            I, K, VertViscOutH(I, K), 0.0_Real);
+            }
+         }
+      }
       ABORT_ERROR("TestVertMixConv: VertVisc FAIL with {} bad values",
                   NumMismatches);
    } else {
@@ -614,6 +672,30 @@ void testConvVertMix() {
        NumMismatches);
 
    if (NumMismatches != 0) {
+      auto VertDiffOutH = createHostMirrorCopy(VertDiffOut);
+      for (int I = 0; I < NCellsAll; ++I) {
+         for (int K = 0; K < NVertLayers; ++K) {
+            if (K == 0) {
+               // Surface should be 0.0
+               if (!isApprox(VertDiffOutH(I, K), 0.0_Real, RTol))
+                  LOG_ERROR("TestVertMixConv: VertDiff Bad Value: "
+                            "VertDiff({},{}) = {}; Expected {}",
+                            I, K, VertDiffOutH(I, K), 0.0_Real);
+            } else if (K < 30) {
+               // Interior layers
+               if (!isApprox(VertDiffOutH(I, K), VertConvExp, RTol))
+                  LOG_ERROR("TestVertMixConv: VertDiff Bad Value: "
+                            "VertDiff({},{}) = {}; Expected {}",
+                            I, K, VertDiffOutH(I, K), VertConvExp);
+            } else {
+               // Interior layers
+               if (!isApprox(VertDiffOutH(I, K), 0.0_Real, RTol))
+                  LOG_ERROR("TestVertMixConv: VertDiff Bad Value: "
+                            "VertDiff({},{}) = {}; Expected {}",
+                            I, K, VertDiffOutH(I, K), 0.0_Real);
+            }
+         }
+      }
       ABORT_ERROR("TestVertMixConv: VertDiff FAIL with {} bad values",
                   NumMismatches);
    } else {
@@ -713,6 +795,36 @@ void testShearVertMix() {
        NumMismatches);
 
    if (NumMismatches != 0) {
+      auto VertViscOutH = createHostMirrorCopy(VertViscOut);
+      for (int I = 0; I < NCellsAll; ++I) {
+         for (int K = 0; K < NVertLayers; ++K) {
+            if (K == 0) {
+               // Surface should be 0.0
+               if (!isApprox(VertViscOutH(I, K), 0.0_Real, RTol))
+                  LOG_ERROR("TestVertMixShear: VertVisc Bad Value: "
+                            "VertVisc({},{}) = {}; Expected {}",
+                            I, K, VertViscOutH(I, K), 0.0_Real);
+            } else if (K < 20) {
+               // Interior layers
+               if (!isApprox(VertViscOutH(I, K), VertShearBaseExp, RTol))
+                  LOG_ERROR("TestVertMixShear: VertVisc Bad Value: "
+                            "VertVisc({},{}) = {}; Expected {}",
+                            I, K, VertViscOutH(I, K), VertShearBaseExp);
+            } else if (K >= 20 && K < 40) {
+               // Interior layers
+               if (!isApprox(VertViscOutH(I, K), VertShearExp, RTol))
+                  LOG_ERROR("TestVertMixShear: VertVisc Bad Value: "
+                            "VertVisc({},{}) = {}; Expected {}",
+                            I, K, VertViscOutH(I, K), VertShearExp);
+            } else {
+               // Interior layers
+               if (!isApprox(VertViscOutH(I, K), 0.0_Real, RTol))
+                  LOG_ERROR("TestVertMixShear: VertVisc Bad Value: "
+                            "VertVisc({},{}) = {}; Expected {}",
+                            I, K, VertViscOutH(I, K), 0.0_Real);
+            }
+         }
+      }
       ABORT_ERROR("TestVertMixShear: VertVisc FAIL with {} bad values",
                   NumMismatches);
    } else {
@@ -756,6 +868,36 @@ void testShearVertMix() {
        NumMismatches);
 
    if (NumMismatches != 0) {
+      auto VertDiffOutH = createHostMirrorCopy(VertDiffOut);
+      for (int I = 0; I < NCellsAll; ++I) {
+         for (int K = 0; K < NVertLayers; ++K) {
+            if (K == 0) {
+               // Surface should be 0.0
+               if (!isApprox(VertDiffOutH(I, K), 0.0_Real, RTol))
+                  LOG_ERROR("TestVertMixShear: VertDiff Bad Value: "
+                            "VertDiff({},{}) = {}; Expected {}",
+                            I, K, VertDiffOutH(I, K), 0.0_Real);
+            } else if (K < 20) {
+               // Interior layers
+               if (!isApprox(VertDiffOutH(I, K), VertShearBaseExp, RTol))
+                  LOG_ERROR("TestVertMixShear: VertDiff Bad Value: "
+                            "VertDiff({},{}) = {}; Expected {}",
+                            I, K, VertDiffOutH(I, K), VertShearBaseExp);
+            } else if (K >= 20 && K < 40) {
+               // Interior layers
+               if (!isApprox(VertDiffOutH(I, K), VertShearExp, RTol))
+                  LOG_ERROR("TestVertMixShear: VertDiff Bad Value: "
+                            "VertDiff({},{}) = {}; Expected {}",
+                            I, K, VertDiffOutH(I, K), VertShearExp);
+            } else {
+               // Interior layers
+               if (!isApprox(VertDiffOutH(I, K), 0.0_Real, RTol))
+                  LOG_ERROR("TestVertMixShear: VertDiff Bad Value: "
+                            "VertDiff({},{}) = {}; Expected {}",
+                            I, K, VertDiffOutH(I, K), 0.0_Real);
+            }
+         }
+      }
       ABORT_ERROR("TestVertMixShear: VertDiff FAIL with {} bad values",
                   NumMismatches);
    } else {

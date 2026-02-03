@@ -6,8 +6,9 @@ The vertical mixing module in Omega handles the parameterization of unresolved v
 processes in the ocean. It calculates vertical diffusivity and viscosity coefficients that
 determine how properties (like momentum, heat, salt, and biogeochemical tracers) mix vertically
 in the ocean model. Currently, Omega offers three different mixing processes within the water column: (1) a constant
-background mixing value, (2) a convective instability mixing value, and (3) a Richardson number-dependent shear-instability-driven mixing value from the [Large et al (1994)](https://agupubs.onlinelibrary.wiley.com/doi/epdf/10.1029/94RG01872) or LMD94 shear instability driven mixing parameterization. These are linearly additive and are describe a bit
-more in detail below. Other mixing processes and parameterizations, such as the the K Profile Parameterization [(KPP; Large et al., 1994)](https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/94rg01872) will be added in the future. In addition to diffusivity and viscosity coefficients, the vertical mixing module calculates the gradient Richardson number and smooths that gradient Richardson number using a 1-2-1 filter before using it in the shear instability driven mixing calculation.
+background mixing value, (2) a convective instability mixing value, and (3) a Richardson number
+dependent shear instability driven mixing value from the [Large et al (1994)](https://agupubs.onlinelibrary.wiley.com/doi/epdf/10.1029/94RG01872) or LMD94 interior shear parameterization. These are linearly additive and are describe a bit
+more in detail below. Other mixing processes and parameterizations, such as the the K Profile Parameterization [(KPP; Large et al., 1994)](https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/94rg01872) will be added in the future. In addition to diffusivity and viscosity coefficients, the vertical mixing module calculates the gradient Richardson number and smooths that gradient Richardson number using a 1-2-1 filter before using it in the shear mixing calculation.
 
 The user-configurable options are the following parameters in the yaml configuration file:
 
@@ -25,14 +26,14 @@ VertMix:
     BaseShearValue: 0.005 # Base viscosity/diffusivity value
     RiCrit: 0.7          # Critical Richardson number
     Exponent: 3.0        # Richardson number exponent
-    RiSmoothLoops: 2     # Number of Richardson number smoothing loops
+    RiSmoothLoops: 3     # Number of Richardson number smoothing loops
 ```
 
 ## Vertical Mixing Processes/Types
 
 ### 1. Background Mixing
 
-A constant background mixing value that represents small-scale mixing processes not explicitly resolved or modeled. Typically, this is chosen to represent low values of vertical mixing happening in the ocean's stratified interior and is assumed roughly equivalent to the globally averaged interior mixing from all sources (e.g., from internal wave breaking).
+A constant background mixing value that represents small-scale mixing processes not explicitly resolved or modeled. Typically, this is chosen to represent low values of vertical mixing happening in the ocean's stratified interior.
 
 ### 2. Convective Mixing
 
@@ -50,14 +51,14 @@ This is different than some current implementations (i.e. in MPAS-Ocean and the 
 
 ### 3. Shear-Instability-Driven Mixing
 
-Mixing induced by vertical pseudo-velocity shear, implemented using the LMD94 scheme, through the gradient Richardson number (ratio of buoyancy to shear).
+Mixing induced by vertical velocity shear, implemented using the LMD94 scheme, through the gradient Richardson number (ratio of buoyancy to shear).
 
 $$
 \nu_{shear} = \kappa_{shear} =
 \begin{cases}
 \nu_o \quad \text{ if } Ri_g < 0\\
-\nu_o \left[1 - \left( \frac{Ri_g}{Ri_{crit}} \right)^2 \right]^p \text{ if } 0 \leq Ri_g < Ri_{crit}\\
-0.0 \quad \text{ if } Ri_{crit} \leq Ri_g
+\nu_o \left[1 - \left( \frac{Ri_g}{Ri_{crit}} \right)^2 \right]^p \text{ if } 0 < Ri_g < Ri_{crit}\\
+0.0 \quad \text{ if } Ri_{crit} < Ri_g
 \end{cases}
 $$
 
