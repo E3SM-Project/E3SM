@@ -53,6 +53,7 @@ Real tendTest(const int NLayers, VertAdv *VAdv) {
    VAdv->NVertLayers = NLayers;
    VAdv->TotalVerticalVelocity =
        Array2DReal("TotalVerticaVelocity", 1, NLayers + 1);
+   VAdv->VertFlux = Array3DReal("VertFlux", 1, 1, NLayers + 1);
    Array1DReal XLayer("XLayer", NLayers);
    OMEGA_SCOPE(LocTotVertVel, VAdv->TotalVerticalVelocity);
    Array2DReal LayerThick("LayerThickness", 1, NLayers);
@@ -366,7 +367,9 @@ int main(int argc, char *argv[]) {
 
       // Monotonicity check for computeFCTVAdvTend
 
-      NVertLayers                = 256;
+      NVertLayers = 256;
+      DefVertAdv->LowOrderVertFlux =
+          Array3DReal("LowOrderVertFlux", 1, 1, NVertLayers + 1);
       DefVertAdv->VertAdvChoice  = VertAdvOption::FCT;
       DefVertAdv->VertFluxChoice = VertFluxOption::Third;
       DefVertAdv->Coef3rdOrder   = 0.25;
