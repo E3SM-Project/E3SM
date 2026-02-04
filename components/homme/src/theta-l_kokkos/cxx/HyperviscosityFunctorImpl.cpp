@@ -415,6 +415,8 @@ void HyperviscosityFunctorImpl::apply_horizontal_turbulent_diffusion () const
 
   auto policy = Homme::get_default_team_policy<ExecSpace>(m_geometry.num_elems());
 
+  // Note that the following had to be redeclared before entering the kernel
+  //  the kernel to avoid hangs:
   auto tu = m_tu;
   auto data = m_data;
   auto buffers = m_buffers;

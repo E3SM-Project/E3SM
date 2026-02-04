@@ -27,7 +27,6 @@ void ComposeTransportImpl::advance_horizontal_turbulent_diffusion_scalar (const 
         idx_ie_q_ij_nlev<num_lev_pack>(hv_q, idx, ie, q, i, j, lev);
         Qtens(ie,q,i,j,lev) = Q(ie,q,i,j,lev);
       };
-      Kokkos::fence();
       launch_ie_q_ij_nlev<num_lev_pack>(hv_q, f);
     }
     // biharmonic_wk_scalar
@@ -37,12 +36,9 @@ void ComposeTransportImpl::advance_horizontal_turbulent_diffusion_scalar (const 
         const auto Qtens_ie = Homme::subview(Qtens, kv.ie, kv.iq);
         sphere_ops.laplace_simple(kv, Qtens_ie, Qtens_ie);
       };
-      Kokkos::fence();
       Kokkos::parallel_for(m_tp_ne_hv_q, f);
     };
-    Kokkos::fence();
     laplace_simple_Qtens();
-    Kokkos::fence();
     m_hv_dss_be[0]->exchange(m_geometry.m_rspheremp);
 
     Kokkos::fence();
