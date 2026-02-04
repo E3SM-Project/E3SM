@@ -2,7 +2,7 @@
 <config_pes>
   <grid name="any">
     <mach name="any">
-      <pes compset=".+" pesize="any">
+      <pes compset="any" pesize="any">
         <comment>default eamxx, 1 node, no threads</comment>
         <ntasks>
           <ntasks_atm>-1</ntasks_atm>
@@ -168,6 +168,19 @@
           <ntasks_ocn>-2</ntasks_ocn>
           <ntasks_glc>1</ntasks_glc>
           <ntasks_wav>1</ntasks_wav>
+        </ntasks>
+      </pes>
+    </mach>
+    <mach name="aurora">
+      <pes compset="any" pesize="any">
+        <comment>aurora: ne30 eamxx 2 nodes</comment>
+        <ntasks>
+          <ntasks_atm>-2</ntasks_atm>
+          <ntasks_cpl>-2</ntasks_cpl>
+          <ntasks_ice>-2</ntasks_ice>
+          <ntasks_lnd>-2</ntasks_lnd>
+          <ntasks_rof>-2</ntasks_rof>
+          <ntasks_ocn>-2</ntasks_ocn>
         </ntasks>
       </pes>
     </mach>
