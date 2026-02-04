@@ -5179,52 +5179,52 @@ contains
          allocate (TLake_t%lake_Tsur_avg(begr:endr))
          TLake_t%lake_Tsur_avg = 273.15_r8
          
-         ier = pio_inq_varid (ncid, name='mlake_Mean_len'      , vardesc=vardesc)
+         ier = pio_inq_varid(ncid, 'mlake_Mean_len', vardesc)
          call pio_read_darray(ncid, vardesc, iodesc_dbl , TUnit_lake_r%Length, ier)
          if (masterproc) write(iulog,FORMR) trim(subname),' read Mean_len in r-lake',minval(TUnit_lake_r%Length),maxval(TUnit_lake_r%Length)
          call shr_sys_flush(iulog)
          
-         ier = pio_inq_varid (ncid, name='mlake_Mean_wid'      , vardesc=vardesc)
+         ier = pio_inq_varid(ncid, 'mlake_Mean_wid', vardesc)
          call pio_read_darray(ncid, vardesc, iodesc_dbl , TUnit_lake_r%Width, ier)
          if (masterproc) write(iulog,FORMR) trim(subname),' read Mean_wid in r-lake',minval(TUnit_lake_r%Width),maxval(TUnit_lake_r%Width)
          call shr_sys_flush(iulog)
          
-         ier = pio_inq_varid (ncid, name='mlake_volume_computed'      , vardesc=vardesc)
+         ier = pio_inq_varid(ncid, 'mlake_volume_computed', vardesc)
          call pio_read_darray(ncid, vardesc, iodesc_dbl , TUnit_lake_r%V_max, ier)
          if (masterproc) write(iulog,FORMR) trim(subname),' read V_max in r-lake',minval(TUnit_lake_r%V_max),maxval(TUnit_lake_r%V_max)
          call shr_sys_flush(iulog)
          
-         ier = pio_inq_varid (ncid, name='mlake_area_computed'      , vardesc=vardesc)
+         ier = pio_inq_varid(ncid, 'mlake_area_computed', vardesc)
          call pio_read_darray(ncid, vardesc, iodesc_dbl , TUnit_lake_r%A_max, ier)
          if (masterproc) write(iulog,FORMR) trim(subname),' read A_max in r-lake',minval(TUnit_lake_r%A_max),maxval(TUnit_lake_r%A_max)
          call shr_sys_flush(iulog)
          
-         ier = pio_inq_varid (ncid, name='mlake_depth_m'      , vardesc=vardesc)
+         ier = pio_inq_varid(ncid, 'mlake_depth_m', vardesc)
          call pio_read_darray(ncid, vardesc, iodesc_dbl , TUnit_lake_r%h_lake, ier)
          if (masterproc) write(iulog,FORMR) trim(subname),' read depth_m in r-lake',minval(TUnit_lake_r%h_lake),maxval(TUnit_lake_r%h_lake)
          call shr_sys_flush(iulog)
          
-         ier = pio_inq_varid (ncid, name='mlake_Dn'      , vardesc=vardesc)
+         ier = pio_inq_varid(ncid, 'mlake_Dn', vardesc)
          call pio_read_darray(ncid, vardesc, iodesc_int , TLake_r%d_ns, ier)
          if (masterproc) write(iulog,FORMR) trim(subname),' read d_n in r-lake',minval(TLake_r%d_ns),maxval(TLake_r%d_ns)
          call shr_sys_flush(iulog)
          
-         ier = pio_inq_varid (ncid, name='mlake_flag'      , vardesc=vardesc)
+         ier = pio_inq_varid(ncid, 'mlake_flag', vardesc)
          call pio_read_darray(ncid, vardesc, iodesc_int , TUnit_lake_r%lake_flg, ier)
          if (masterproc) write(iulog,FORMR) trim(subname),' read lake_flag in r-lake',minval(TUnit_lake_r%lake_flg),maxval(TUnit_lake_r%lake_flg)
          call shr_sys_flush(iulog)
                   
-         ier = pio_inq_varid (ncid, name='mlake_Elevation'      , vardesc=vardesc)
+         ier = pio_inq_varid(ncid, 'mlake_Elevation', vardesc)
          call pio_read_darray(ncid, vardesc, iodesc_dbl , TUnit_lake_r%elev, ier)
          if (masterproc) write(iulog,FORMR) trim(subname),' read elev in r-lake',minval(TUnit_lake_r%elev),maxval(TUnit_lake_r%elev)
          call shr_sys_flush(iulog)
 
-         ier = pio_inq_varid (ncid, name='mlake_fhA_a'      , vardesc=vardesc)
+         ier = pio_inq_varid(ncid, 'mlake_fhA_a', vardesc)
          call pio_read_darray(ncid, vardesc, iodesc_dbl , TUnit_lake_r%para_a, ier)
          if (masterproc) write(iulog,FORMR) trim(subname),' read para_a in r-lake',minval(TUnit_lake_r%para_a),maxval(TUnit_lake_r%para_a)
          call shr_sys_flush(iulog)
          
-         ier = pio_inq_varid (ncid, name='mlake_fhA_b'      , vardesc=vardesc)
+         ier = pio_inq_varid(ncid, 'mlake_fhA_b', vardesc)
          call pio_read_darray(ncid, vardesc, iodesc_dbl , TUnit_lake_r%para_b, ier)
          if (masterproc) write(iulog,FORMR) trim(subname),' read para_a in r-lake',minval(TUnit_lake_r%para_b),maxval(TUnit_lake_r%para_b)
          call shr_sys_flush(iulog)
@@ -5261,57 +5261,57 @@ contains
          
          call lakegeom_init_r()
          
-         ier = pio_inq_varid (ncid, name='tlake_Mean_len'      , vardesc=vardesc)
+         ier = pio_inq_varid(ncid, 'tlake_Mean_len', vardesc)
          call pio_read_darray(ncid, vardesc, iodesc_dbl , TUnit_lake_t%Length, ier)
          if (masterproc) write(iulog,FORMR) trim(subname),' read Mean_len in t-lake',minval(TUnit_lake_t%Length),maxval(TUnit_lake_t%Length)
          call shr_sys_flush(iulog)
          
-         ier = pio_inq_varid (ncid, name='tlake_Mean_wid'      , vardesc=vardesc)
+         ier = pio_inq_varid(ncid, 'tlake_Mean_wid', vardesc)
          call pio_read_darray(ncid, vardesc, iodesc_dbl , TUnit_lake_t%Width, ier)
          if (masterproc) write(iulog,FORMR) trim(subname),' read Mean_wid in t-lake',minval(TUnit_lake_t%Width),maxval(TUnit_lake_t%Width)
          call shr_sys_flush(iulog)
                   
-         ier = pio_inq_varid (ncid, name='tlake_volume_computed'      , vardesc=vardesc)
+         ier = pio_inq_varid(ncid, 'tlake_volume_computed', vardesc)
          call pio_read_darray(ncid, vardesc, iodesc_dbl , TUnit_lake_t%V_max, ier)
          if (masterproc) write(iulog,FORMR) trim(subname),' read V_max in t-lake',minval(TUnit_lake_t%V_max),maxval(TUnit_lake_t%V_max)
          call shr_sys_flush(iulog)
          
-         ier = pio_inq_varid (ncid, name='tlake_area_computed'      , vardesc=vardesc)
+         ier = pio_inq_varid(ncid, 'tlake_area_computed', vardesc)
          call pio_read_darray(ncid, vardesc, iodesc_dbl , TUnit_lake_t%A_max, ier)
          if (masterproc) write(iulog,FORMR) trim(subname),' read A_max in t-lake',minval(TUnit_lake_t%A_max),maxval(TUnit_lake_t%A_max)
          call shr_sys_flush(iulog)
          
-         ier = pio_inq_varid (ncid, name='tlake_depth_m'      , vardesc=vardesc)
+         ier = pio_inq_varid(ncid, 'tlake_depth_m', vardesc)
          call pio_read_darray(ncid, vardesc, iodesc_dbl , TUnit_lake_t%h_lake, ier)
          if (masterproc) write(iulog,FORMR) trim(subname),' read depth_m in t-lake',minval(TUnit_lake_t%h_lake),maxval(TUnit_lake_t%h_lake)
          call shr_sys_flush(iulog)
-         
-         ier = pio_inq_varid (ncid, name='tlake_Dn'      , vardesc=vardesc)
+
+         ier = pio_inq_varid(ncid, 'tlake_Dn', vardesc)
          call pio_read_darray(ncid, vardesc, iodesc_int , TLake_t%d_ns, ier)
          if (masterproc) write(iulog,FORMR) trim(subname),' read d_n in t-lake',minval(TLake_t%d_ns),maxval(TLake_t%d_ns)
          call shr_sys_flush(iulog)
          
-         ier = pio_inq_varid (ncid, name='tlake_flag'      , vardesc=vardesc)
+         ier = pio_inq_varid(ncid, 'tlake_flag', vardesc)
          call pio_read_darray(ncid, vardesc, iodesc_int , TUnit_lake_t%lake_flg, ier)
          if (masterproc) write(iulog,FORMR) trim(subname),' read lake_flag in t-lake',minval(TUnit_lake_t%lake_flg),maxval(TUnit_lake_t%lake_flg)
          call shr_sys_flush(iulog)
 
-         ier = pio_inq_varid (ncid, name='tlake_depth_m'      , vardesc=vardesc)
+         ier = pio_inq_varid(ncid, 'tlake_depth_m', vardesc)
          call pio_read_darray(ncid, vardesc, iodesc_dbl , TUnit_lake_t%elev, ier)
          if (masterproc) write(iulog,FORMR) trim(subname),' read elev in t-lake',minval(TUnit_lake_t%elev),maxval(TUnit_lake_t%elev)
          call shr_sys_flush(iulog)
 
-         ier = pio_inq_varid (ncid, name='tlake_drainage_area'      , vardesc=vardesc)
+         ier = pio_inq_varid(ncid, 'tlake_drainage_area', vardesc)
          call pio_read_darray(ncid, vardesc, iodesc_dbl , TUnit_lake_t%A_local, ier)
          if (masterproc) write(iulog,FORMR) trim(subname),' read tlake_drainage_area in t-lake',minval(TUnit_lake_t%A_local),maxval(TUnit_lake_t%A_local)
          call shr_sys_flush(iulog)
 
-         ier = pio_inq_varid (ncid, name='tlake_fhA_a'      , vardesc=vardesc)
+         ier = pio_inq_varid(ncid, 'tlake_fhA_a', vardesc)
          call pio_read_darray(ncid, vardesc, iodesc_dbl , TUnit_lake_t%para_a, ier)
          if (masterproc) write(iulog,FORMR) trim(subname),' read para_a in t-lake',minval(TUnit_lake_t%para_a),maxval(TUnit_lake_t%para_a)
          call shr_sys_flush(iulog)
          
-         ier = pio_inq_varid (ncid, name='tlake_fhA_b'      , vardesc=vardesc)
+         ier = pio_inq_varid(ncid, 'tlake_fhA_b', vardesc)
          call pio_read_darray(ncid, vardesc, iodesc_dbl , TUnit_lake_t%para_b, ier)
          if (masterproc) write(iulog,FORMR) trim(subname),' read para_b in t-lake',minval(TUnit_lake_t%para_b),maxval(TUnit_lake_t%para_b)
          call shr_sys_flush(iulog)
