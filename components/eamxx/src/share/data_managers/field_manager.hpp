@@ -67,7 +67,7 @@ public:
   // but still leverage the FM class for certain features (e.g., I/O).
   // Requirements:
   //  - the repo must be in closed state
-  //  - cannot already store a field/group with that name
+  //  - cannot already store a different field/group with that name (adding SAME obj twice is ok)
   //  - for field, cannot store a monolithic group for any of its group
   void add_field (const Field& f);
   void add_group (const FieldGroup& g);
