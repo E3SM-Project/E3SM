@@ -49,8 +49,10 @@ ekat::ParameterList create_test_params ()
 class DummyProcess : public scream::AtmosphereProcess {
 public:
 
-  DummyProcess (const ekat::Comm& comm,const ekat::ParameterList& params)
-    : AtmosphereProcess(comm, params)
+  DummyProcess (const ekat::Comm& comm,
+                const ekat::ParameterList& params,
+                const std::shared_ptr<const GridsManager> gm)
+    : AtmosphereProcess(comm, params,gm)
   {
     m_name = params.name();
     m_grid_name = params.get<std::string> ("grid_name");
@@ -80,16 +82,11 @@ class Foo : public DummyProcess
 {
 public:
 
-  Foo (const ekat::Comm& comm,const ekat::ParameterList& params)
+  Foo (const ekat::Comm& comm,
+       const ekat::ParameterList& params,
+       const std::shared_ptr<const GridsManager> gm)
    : DummyProcess(comm,params)
   {
-    // Nothing to do here
-  }
-
-  // The type of the atm proc
-  AtmosphereProcessType type () const { return AtmosphereProcessType::Dynamics; }
-
-  void set_grids (const std::shared_ptr<const GridsManager> gm) {
     using namespace ekat::units;
 
     const auto grid = gm->get_grid(m_grid_name);
@@ -98,6 +95,9 @@ public:
     add_field<Required>("Temperature tendency",lt,K/s,m_grid_name);
     add_field<Computed>("Temperature",lt,K,m_grid_name);
   }
+
+  // The type of the atm proc
+  AtmosphereProcessType type () const { return AtmosphereProcessType::Dynamics; }
 };
 
 class Bar : public DummyProcess

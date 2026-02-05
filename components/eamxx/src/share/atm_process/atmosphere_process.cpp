@@ -44,7 +44,9 @@ namespace scream
 {
 
 AtmosphereProcess::
-AtmosphereProcess (const ekat::Comm& comm, const ekat::ParameterList& params)
+AtmosphereProcess (const ekat::Comm& comm,
+                   const ekat::ParameterList& params,
+                   const std::shared_ptr<const GridsManager>& grids_manager)
   : m_comm       (comm)
   , m_params     (params)
 {

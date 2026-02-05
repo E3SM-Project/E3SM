@@ -32,7 +32,9 @@ public:
   using atm_proc_type     = AtmosphereProcess;
 
   // Constructor(s)
-  AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& params);
+  AtmosphereProcessGroup (const ekat::Comm& comm,
+                          const ekat::ParameterList& params,
+                          const std::shared_ptr<const GridsManager> grids_manager);
 
   virtual ~AtmosphereProcessGroup () = default;
 

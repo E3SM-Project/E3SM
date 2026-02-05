@@ -90,7 +90,9 @@ public:
   using iop_data_ptr = std::shared_ptr<IOPDataManager>;
 
   // Base constructor to set MPI communicator and params
-  AtmosphereProcess (const ekat::Comm& comm, const ekat::ParameterList& params);
+  AtmosphereProcess (const ekat::Comm& comm,
+                     const ekat::ParameterList& params,
+                     const std::shared_ptr<const GridsManager>& grids_manager);
 
   virtual ~AtmosphereProcess () = default;
 
@@ -99,11 +101,6 @@ public:
 
   // The name of the process
   virtual std::string name () const = 0;
-
-  // Give the grids manager to the process, so it can grab its grid
-  // Upon return, the atm proc should have a valid and complete list
-  // of in/out/inout FieldRequest and GroupRequest.
-  virtual void set_grids (const std::shared_ptr<const GridsManager> grids_manager) = 0;
 
   // These are the three main interfaces:
   //   - the initialize method sets up all the stuff the process needs in order to run,

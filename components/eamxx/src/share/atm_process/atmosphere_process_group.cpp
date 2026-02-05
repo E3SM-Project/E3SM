@@ -12,8 +12,10 @@
 namespace scream {
 
 AtmosphereProcessGroup::
-AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& params)
-  : AtmosphereProcess(comm, params)
+AtmosphereProcessGroup (const ekat::Comm& comm,
+                        const ekat::ParameterList& params,
+                        const std::shared_ptr<const GridsManager> grids_manager)
+  : AtmosphereProcess(comm, params, grids_manager)
 {
   // Get the list of procs in the group
   auto group_list = m_params.get<std::vector<std::string>>("atm_procs_list");
@@ -77,7 +79,7 @@ AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& param
     params_i.set("logger",this->m_atm_logger);
 
     // Create the atm proc
-    auto ap = apf.create(ap_type,proc_comm,params_i);
+    auto ap = apf.create(ap_type,proc_comm,params_i,grids_manager);
     m_atm_processes.push_back(ap);
 
     // NOTE: the shared_ptr of the new atmosphere process *MUST* have been created correctly.

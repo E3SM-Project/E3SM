@@ -33,7 +33,9 @@ class AtmosphereDiagnostic : public AtmosphereProcess
 public:
 
   // Constructor(s)
-  AtmosphereDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params);
+  AtmosphereDiagnostic (const ekat::Comm& comm,
+                        const ekat::ParameterList& params,
+                        const std::shared_ptr<const GridsManager> grids_manager);
 
   virtual ~AtmosphereDiagnostic () = default;
 
@@ -91,14 +93,20 @@ using AtmosphereDiagnosticFactory =
     ekat::Factory<AtmosphereDiagnostic,
                   ekat::CaseInsensitiveString,
                   std::shared_ptr<AtmosphereDiagnostic>,
-                  const ekat::Comm&,const ekat::ParameterList&>;
+                  const ekat::Comm&,
+                  const ekat::ParameterList&,
+                  const std::shared_ptr<const GridsManager>&>;
 
-// Create an atmosphere process, and correctly set up the (weak) pointer to self.
+// Create an atmosphere diag, and correctly set up the (weak) pointer to self.
 template <typename AtmDiagType>
 inline std::shared_ptr<AtmosphereDiagnostic>
-create_atmosphere_diagnostic (const ekat::Comm& comm, const ekat::ParameterList& p) {
-  return std::make_shared<AtmDiagType>(comm,p);
+create_atmosphere_diagnostic (const ekat::Comm& comm,
+                              const ekat::ParameterList& p,
+                              const std::shared_ptr<const GridsManager>& gm)
+{
+  return std::make_shared<AtmDiagType>(comm,p,gm);
 }
+
 } //namespace scream
 
 #endif // SCREAM_ATMOSPHERE_DIAGNOSTIC_HPP

@@ -4,8 +4,10 @@ namespace scream
 {
 
 AtmosphereDiagnostic::
-AtmosphereDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params)
-  : AtmosphereProcess(comm,params)
+AtmosphereDiagnostic (const ekat::Comm& comm,
+                      const ekat::ParameterList& params,
+                      const std::shared_ptr<const GridsManager> grids_manager)
+  : AtmosphereProcess(comm,params,grids_manager)
 {
   // Nothing to do here
 }

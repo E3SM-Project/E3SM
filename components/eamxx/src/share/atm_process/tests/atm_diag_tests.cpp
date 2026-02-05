@@ -16,16 +16,13 @@ namespace scream {
 class DiagSum : public AtmosphereDiagnostic {
 
 public:
-  DiagSum (const ekat::Comm& comm, const ekat::ParameterList&params)
-    : AtmosphereDiagnostic(comm, params)
+  DiagSum (const ekat::Comm& comm,
+           const ekat::ParameterList&params,
+           const std::shared_ptr<const GridsManager> gm) {
+    : AtmosphereDiagnostic(comm, params,gm)
   {
     m_grid_name = params.get<std::string> ("grid_name");
-  }
 
-  // Return some sort of name, linked to PType
-  std::string name () const { return "Sum diagnostic"; }
-
-  void set_grids (const std::shared_ptr<const GridsManager> gm) {
     using namespace ekat::units;
 
     const auto grid = gm->get_grid(m_grid_name);
@@ -39,6 +36,9 @@ public:
     m_diagnostic_output = Field(fid);
     m_diagnostic_output.allocate_view();
   }
+
+  // Return some sort of name, linked to PType
+  std::string name () const { return "Sum diagnostic"; }
 
 protected:
 
@@ -78,8 +78,7 @@ TEST_CASE ("diagnostics") {
   // Create the sum diagnostic
   ekat::ParameterList params_sum("DiagSum");
   params_sum.set<std::string>("grid_name", "point_grid");
-  auto diag_sum = std::make_shared<DiagSum>(comm,params_sum);
-  diag_sum->set_grids(gm);
+  auto diag_sum = std::make_shared<DiagSum>(comm,params_sum,gm);
 
   std::map<std::string,Field> input_fields;
   for (const auto& req : diag_sum->get_field_requests()) {
