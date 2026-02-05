@@ -262,6 +262,110 @@ Error testHiparReduce1DReduce1D(int N1) {
    return Err;
 }
 
+Error testHiparFor1DSearch1D(int N2) {
+   Error Err;
+
+   const int Threshold = N2 / 2;
+   const int N1        = 3 * N2 + 3;
+
+   HostArray2DI4 DataH("DataH", N1, N2);
+
+   for (int J1 = 0; J1 < 3 * N2; ++J1) {
+      if (J1 < N2 + 10) {
+         for (int J2 = 0; J2 < N2; ++J2) {
+            DataH(J1, J2) = Threshold - (J1 - J2);
+         }
+      } else {
+         for (int J2 = 0; J2 < N2; ++J2) {
+            DataH(J1, J2) = Threshold - (J1 / 4 - J2);
+         }
+      }
+   }
+
+   // Ensure these patterns are in the input data
+   for (int J2 = 0; J2 < N2; ++J2) {
+      // Everything above threshold
+      DataH(3 * N2, J2) = Threshold + 1;
+      // Everything below threshold
+      DataH(3 * N2 + 1, J2) = Threshold - 1;
+      // Multiple non-consecutive values above threshold
+      DataH(3 * N2 + 2, J2) = Threshold - 3 + J2 % 4;
+   }
+
+   auto DataD = createDeviceMirrorCopy(DataH);
+
+   HostArray1DI4 RefIdxH("RefIdxH", N1);
+   Array1DI4 IdxD("IdxD", N1);
+
+   // test searching full range
+
+   for (int J1 = 0; J1 < N1; ++J1) {
+      int Idx = -1;
+      for (int J2 = 0; J2 < N2; ++J2) {
+         if (DataH(J1, J2) >= Threshold) {
+            Idx = J2;
+            break;
+         }
+      }
+      RefIdxH(J1) = Idx;
+   }
+
+   parallelForOuter(
+       {N1}, KOKKOS_LAMBDA(int J1, const TeamMember &Team) {
+          parallelSearchInner(
+              Team, N2,
+              INNER_LAMBDA(int J2) { return DataD(J1, J2) >= Threshold; },
+              IdxD(J1));
+       });
+
+   if (!arraysEqual(IdxD, RefIdxH)) {
+      Err += Error(ErrorCode::Fail,
+                   errorMsg("parallelFor1DSearch1D Full FAIL", N1));
+   }
+
+   deepCopy(RefIdxH, 0);
+   deepCopy(IdxD, 0);
+
+   // test searching limited range
+
+   if (N2 / 4 > 0) {
+
+      for (int J1 = 0; J1 < N1; ++J1) {
+         int Idx         = -1;
+         const int Start = N2 / 4 - J1 % (N2 / 4);
+         const int End   = 3 * N2 / 4 + J1 % (N2 / 4);
+         for (int J2 = Start; J2 < End; ++J2) {
+            if (DataH(J1, J2) >= Threshold) {
+               Idx = J2;
+               break;
+            }
+         }
+         RefIdxH(J1) = Idx;
+      }
+
+      parallelForOuter(
+          {N1}, KOKKOS_LAMBDA(int J1, const TeamMember &Team) {
+             const int Start = N2 / 4 - J1 % (N2 / 4);
+             const int End   = 3 * N2 / 4 + J1 % (N2 / 4);
+             int SearchIdx;
+             parallelSearchInner(
+                 Team, End - Start,
+                 INNER_LAMBDA(int J2) {
+                    return DataD(J1, J2 + Start) >= Threshold;
+                 },
+                 SearchIdx);
+             IdxD(J1) = SearchIdx == -1 ? SearchIdx : SearchIdx + Start;
+          });
+
+      if (!arraysEqual(IdxD, RefIdxH)) {
+         Err += Error(ErrorCode::Fail,
+                      errorMsg("parallelFor1DSearch1D Limited FAIL", N1));
+      }
+   }
+
+   return Err;
+}
+
 Error testHiparFor1DMultiple1D(int N1, int N2) {
    Error Err;
 
@@ -688,6 +792,7 @@ int main(int argc, char **argv) {
 #if !defined(KOKKOS_ENABLE_SYCL) || KOKKOS_VERSION_GREATER_EQUAL(4, 7, 1)
             Err += testHiparReduce1DReduce1D(N1);
 #endif
+            Err += testHiparFor1DSearch1D(N1);
 
             Err += testHiparFor1DMultiple1D(1, N1);
             Err += testHiparFor1DMultiple1D((N1 + 1) / 2, N1);
