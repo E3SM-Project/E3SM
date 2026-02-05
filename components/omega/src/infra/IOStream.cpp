@@ -73,8 +73,9 @@ void IOStream::init(Clock *&ModelClock //< [inout] Omega model clock
 /// Initialize with no clock. Convenience overload for testing.
 void IOStream::init(void) {
 
-   // Create an empty dummy clock
-   Clock *ModelClock = new Clock;
+   // Create an empty dummy clock on the stack (no heap alloc)
+   Clock ModelClockObj;
+   Clock *ModelClock = &ModelClockObj;
    init(ModelClock);
 
 } // End initialize(void)
@@ -112,8 +113,9 @@ void IOStream::finalize(
 // Finalize with no clock. Convenience overload for testing.
 void IOStream::finalize(void) {
 
-   // Create an empty dummy clock
-   Clock *ModelClock = new Clock;
+   // Create an empty dummy clock on the stack (no heap alloc)
+   Clock ModelClockObj;
+   Clock *ModelClock = &ModelClockObj;
    finalize(ModelClock);
 
 } // End finalize(void)
@@ -268,8 +270,9 @@ Error IOStream::read(const std::string &StreamName // [in] Name of stream
 
    Error Err; // returned error code
 
-   // create empty Clock and Metadata
-   Clock *ModelClock = new Clock;
+   // create empty Clock and Metadata (stack-allocated to avoid leak)
+   Clock ModelClockObj;
+   Clock *ModelClock = &ModelClockObj;
    Metadata ReqMetaData;
    bool ForceRead = true;
 
