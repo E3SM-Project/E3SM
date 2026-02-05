@@ -601,6 +601,19 @@
 <config_use_vegetation_drag>.false.</config_use_vegetation_drag>
 <config_vegetation_drag_coefficient>1.09</config_vegetation_drag_coefficient>
 
+<!-- wetting_drying -->
+<config_use_wetting_drying>.false.</config_use_wetting_drying>
+<config_prevent_drying>.false.</config_prevent_drying>
+<config_drying_min_cell_height>1.0e-3</config_drying_min_cell_height>
+<config_zero_drying_velocity>.false.</config_zero_drying_velocity>
+<config_zero_drying_velocity_ramp>.false.</config_zero_drying_velocity_ramp>
+<config_zero_drying_velocity_ramp_hmin>1e-3</config_zero_drying_velocity_ramp_hmin>
+<config_zero_drying_velocity_ramp_hmax>2e-3</config_zero_drying_velocity_ramp_hmax>
+<config_verify_not_dry>.false.</config_verify_not_dry>
+<config_drying_safety_height>1.0e-10</config_drying_safety_height>
+<config_use_subgrid_wetting_drying>.false.</config_use_subgrid_wetting_drying>
+<config_use_ssh_gradient_wetting_drying>.false.</config_use_ssh_gradient_wetting_drying>
+
 <!-- ocean_constants -->
 <config_density0>1026.0</config_density0>
 

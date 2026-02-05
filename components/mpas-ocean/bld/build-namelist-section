@@ -406,6 +406,22 @@ add_default($nl, 'config_Rayleigh_bottom_damping_coeff');
 add_default($nl, 'config_use_vegetation_drag');
 add_default($nl, 'config_vegetation_drag_coefficient');
 
+##################################
+# Namelist group: wetting_drying #
+##################################
+
+add_default($nl, 'config_use_wetting_drying');
+add_default($nl, 'config_prevent_drying');
+add_default($nl, 'config_drying_min_cell_height');
+add_default($nl, 'config_zero_drying_velocity');
+add_default($nl, 'config_zero_drying_velocity_ramp');
+add_default($nl, 'config_zero_drying_velocity_ramp_hmin');
+add_default($nl, 'config_zero_drying_velocity_ramp_hmax');
+add_default($nl, 'config_verify_not_dry');
+add_default($nl, 'config_drying_safety_height');
+add_default($nl, 'config_use_subgrid_wetting_drying');
+add_default($nl, 'config_use_ssh_gradient_wetting_drying');
+
 ###################################
 # Namelist group: ocean_constants #
 ###################################

@@ -1123,7 +1123,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_momentum_use_active_wave" type="logical"
 	category="wave_coupling" group="wave_coupling">
-Flag for correcting momentum in ocean due waves. Requires config_use_active_wave = .true.
+Flag for correcting momentum coupling in ocean due to waves. Requires config_use_active_wave = .true.
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
@@ -2152,6 +2152,97 @@ Default: Defined in namelist_defaults.xml
 Vegetation drag coefficient
 
 Valid values: O(1)
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- wetting_drying -->
+
+<entry id="config_use_wetting_drying" type="logical"
+	category="wetting_drying" group="wetting_drying">
+If true, use wetting and drying algorithm to allow for dry cells to config_min_cell_height.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_prevent_drying" type="logical"
+	category="wetting_drying" group="wetting_drying">
+If true, prevent cells from drying past config_min_cell_height.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_drying_min_cell_height" type="real"
+	category="wetting_drying" group="wetting_drying">
+Minimum allowable cell height under drying.  Cell to be kept wet to at least this thickness. When ramp is applied this is the min edge height
+
+Valid values: any positive real, typically 1.0e-3
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_zero_drying_velocity" type="logical"
+	category="wetting_drying" group="wetting_drying">
+If true, just zero out velocity that is contributing to drying for cell that is drying.  This option can be used to estimate acceptable minimum thicknesses for a run.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_zero_drying_velocity_ramp" type="logical"
+	category="wetting_drying" group="wetting_drying">
+If true, ramp velocities and tendencies to zero rather than applying a simple on/off switch.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_zero_drying_velocity_ramp_hmin" type="real"
+	category="wetting_drying" group="wetting_drying">
+Minimum layer thickness at which velocities and tendencies are ramped toward zero. Recommended value equal to config_drying_min_cell_height.
+
+Valid values: Any positive real
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_zero_drying_velocity_ramp_hmax" type="real"
+	category="wetting_drying" group="wetting_drying">
+Maximum layer thickness at which velocities and tendencies are ramped toward zero. Recommended values between 2x and 10x config_drying_min_cell_height.
+
+Valid values: Any positive real
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_verify_not_dry" type="logical"
+	category="wetting_drying" group="wetting_drying">
+If true, verify that cells are at least config_min_cell_height thick.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_drying_safety_height" type="real"
+	category="wetting_drying" group="wetting_drying">
+Safety factor on minimum cell height to ensure the minimum height is not violated due to round-off.
+
+Valid values: Real value greater or equal to 0.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_subgrid_wetting_drying" type="logical"
+	category="wetting_drying" group="wetting_drying">
+If true, use subgrid wetting and drying algorithm
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_ssh_gradient_wetting_drying" type="logical"
+	category="wetting_drying" group="wetting_drying">
+If true, use take into account the ssh gradient across previously flux-limited edges in the wetting and drying algorithm
+
+Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
