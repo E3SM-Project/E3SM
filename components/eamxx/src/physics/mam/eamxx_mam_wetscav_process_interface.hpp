@@ -42,8 +42,8 @@ public:
     return "mam4_wetscav";
   }
 
-  // Set the grid and input output variables
-  void set_grids(const std::shared_ptr<const GridsManager> grids_manager) override;
+  // Create field/group requests and input output variables
+  void create_requests () override;
 
   // management of common atm process memory
   // ON HOST, returns the number of bytes of device memory needed by the above

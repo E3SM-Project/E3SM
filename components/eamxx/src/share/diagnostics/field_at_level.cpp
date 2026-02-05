@@ -15,7 +15,7 @@ FieldAtLevel::FieldAtLevel (const ekat::Comm& comm, const ekat::ParameterList& p
 }
 
 void FieldAtLevel::
-set_grids (const std::shared_ptr<const GridsManager> grids_manager)
+create_requests()
 {
   const auto& fname = m_params.get<std::string>("field_name");
   const auto& gname = m_params.get<std::string>("grid_name");

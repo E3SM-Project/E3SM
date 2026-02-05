@@ -27,7 +27,7 @@ HistogramDiag::HistogramDiag(const ekat::Comm &comm, const ekat::ParameterList &
   m_bin_reals.back() = std::numeric_limits<Real>::max();
 }
 
-void HistogramDiag::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
+void HistogramDiag::create_requests() {
   const auto &field_name = m_params.get<std::string>("field_name");
   const auto &grid_name  = m_params.get<std::string>("grid_name");
   add_field<Required>(field_name, grid_name);

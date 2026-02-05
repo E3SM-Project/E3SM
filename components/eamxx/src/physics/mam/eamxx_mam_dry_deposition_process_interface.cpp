@@ -24,13 +24,13 @@ MAMDryDep::MAMDryDep(const ekat::Comm &comm, const ekat::ParameterList &params)
 // ================================================================
 //  SET_GRIDS
 // ================================================================
-void MAMDryDep::set_grids(
-    const std::shared_ptr<const GridsManager> grids_manager) {
+void MAMDryDep::create_requests()
+{
   using namespace ekat::units;
 
   // set grid for all the inputs and outputs
   // use physics grid
-  grid_ = grids_manager->get_grid("physics");
+  grid_ = m_grids_manager->get_grid("physics");
 
   // Name of the grid
   const auto &grid_name = grid_->name();
@@ -169,7 +169,7 @@ void MAMDryDep::set_grids(
       ncol_, field_name, dim_name1, dim_name2, grid_, frac_landuse_data_file,
       mapping_file, horizInterp_, dataReader_);  // output
 
-}  // set_grids
+}  // create_requests
 
 // ================================================================
 //  REQUEST_BUFFER_SIZE_IN_BYTES

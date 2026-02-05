@@ -59,8 +59,8 @@ public:
   // The name of the subcomponent
   std::string name () const { return "rrtmgp"; }
 
-  // Set the grid
-  void set_grids (const std::shared_ptr<const GridsManager> grid_manager);
+  // Create field/group requests
+  void create_requests () override;
 
 // NOTE: cannot use lambda functions for CUDA devices if these are protected!
 public:

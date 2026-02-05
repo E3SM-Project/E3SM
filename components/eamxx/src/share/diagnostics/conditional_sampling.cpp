@@ -218,9 +218,9 @@ ConditionalSampling::ConditionalSampling(const ekat::Comm &comm, const ekat::Par
       m_input_f + "_where_" + m_condition_f + "_" + m_condition_op + "_" + str_condition_v;
 }
 
-void ConditionalSampling::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
+void ConditionalSampling::create_requests() {
   const auto &gn = m_params.get<std::string>("grid_name");
-  const auto g   = grids_manager->get_grid("physics");
+  const auto g   = m_grids_manager->get_grid("physics");
 
   // Special case: if the input field is "count", we don't need to add it
   if (m_input_f != "count") {

@@ -58,7 +58,7 @@ FieldAtHeight (const ekat::Comm& comm, const ekat::ParameterList& params)
 }
 
 void FieldAtHeight::
-set_grids (const std::shared_ptr<const GridsManager> grids_manager)
+create_requests()
 {
   const auto& gname = m_params.get<std::string>("grid_name");
   add_field<Required>(m_field_name,gname);

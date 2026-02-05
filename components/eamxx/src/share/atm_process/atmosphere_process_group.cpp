@@ -147,8 +147,8 @@ bool AtmosphereProcessGroup::has_process(const std::string& name) const {
   return false;
 }
 
-void AtmosphereProcessGroup::set_grids (const std::shared_ptr<const GridsManager> grids_manager) {
-
+void AtmosphereProcessGroup::create_requests ()
+{
   // The atm process group (APG) simply 'concatenates' required/computed
   // fields of the stored process. There is a single exception to this
   // rule, in case of sequential splitting: if an atm proc requires a
@@ -156,7 +156,7 @@ void AtmosphereProcessGroup::set_grids (const std::shared_ptr<const GridsManager
   // field is not exposed as a required field of the group.
   const bool seq_splitting = m_group_schedule_type==ScheduleType::Sequential;
   for (auto& atm_proc : m_atm_processes) {
-    atm_proc->set_grids(grids_manager);
+    atm_proc->create_requests();
 
     // Add inputs/outputs to the list of inputs of the group
     for (const auto& ap_req : atm_proc->get_field_requests()) {
@@ -172,8 +172,6 @@ void AtmosphereProcessGroup::set_grids (const std::shared_ptr<const GridsManager
         req.usage = Computed;
     }
   }
-
-  m_grids_mgr = grids_manager;
 }
 
 void AtmosphereProcessGroup::

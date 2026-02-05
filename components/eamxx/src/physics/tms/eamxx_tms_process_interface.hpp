@@ -37,8 +37,8 @@ public:
   // The name of the subcomponent
   std::string name () const { return "tms"; }
 
-  // Set the grid
-  void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
+  // Create field/group requests
+  void create_requests () override;
 
   // Structure for storing local variables initialized using the ATMBufferManager
   struct Buffer {

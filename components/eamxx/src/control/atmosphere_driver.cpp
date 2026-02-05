@@ -50,8 +50,7 @@ namespace control {
  *  1) Create all atm processes. Each proc is allowed to start some sort of setup during creation,
  *     but will not be able to fully set up its required/computed fields, due to lack of grids info.
  *     However, and this is important, each process MUST establish what grid it needs.
- *  2) Create the grid manager, and query the atm procs for the grids they need. The GM will then
- *     proceed to build those grids (and only those grids).
+ *  2) Create the grid manager, which will then proceed to build all grids it knows how to build
  *  3) The GM is passed back to the atm procs, which can grab the needed grids, from which they can
  *     get the information needed to complete the setup of the FieldRequest and GroupRequest for
  *     the required/computed fields/groups. Their requests MUST be completed upon return from
@@ -320,8 +319,7 @@ void AtmosphereDriver::create_grids()
     setup_iop_data_manager ();
   }
 
-  // Set the grids in the processes. Do this by passing the grids manager.
-  // Each process will grab what they need
+  // Set the grids in the processes, and create the field/group requests
   m_atm_process_group->set_grids(m_grids_manager);
 
   m_ad_status |= s_grids_created;

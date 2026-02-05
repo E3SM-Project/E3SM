@@ -56,11 +56,11 @@ MAMAci::MAMAci(const ekat::Comm &comm, const ekat::ParameterList &params)
 // ================================================================
 //  SET_GRIDS
 // ================================================================
-void MAMAci::set_grids(
-    const std::shared_ptr<const GridsManager> grids_manager) {
+void MAMAci::create_requests()
+{
   // set grid for all the inputs and outputs
   // use physics grid
-  grid_ = grids_manager->get_grid("physics");
+  grid_ = m_grids_manager->get_grid("physics");
 
   // Name of the grid
   const auto &grid_name = grid_->name();
@@ -193,7 +193,7 @@ void MAMAci::set_grids(
   // heterogeneous freezing by deposition nucleation [cm^-3 s^-1]
   add_field<Computed>("hetfrz_deposition_nucleation_tend", scalar3d_mid,
                       frz_unit, grid_name);
-}  // function set_grids ends
+}  // function create_requests ends
 
 // ================================================================
 //  INIT_BUFFERS

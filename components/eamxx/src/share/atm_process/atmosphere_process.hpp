@@ -100,10 +100,10 @@ public:
   // The name of the process
   virtual std::string name () const = 0;
 
-  // Give the grids manager to the process, so it can grab its grid
-  // Upon return, the atm proc should have a valid and complete list
-  // of in/out/inout FieldRequest and GroupRequest.
-  virtual void set_grids (const std::shared_ptr<const GridsManager> grids_manager) = 0;
+  void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
+
+  // Create the list of field and group requests
+  virtual void create_requests () = 0;
 
   // These are the three main interfaces:
   //   - the initialize method sets up all the stuff the process needs in order to run,
@@ -602,6 +602,8 @@ private:
   int m_internal_diagnostics_level;
 
 protected:
+
+  std::shared_ptr<const GridsManager> m_grids_manager;
 
   // IOP object
   iop_data_ptr m_iop_data_manager;

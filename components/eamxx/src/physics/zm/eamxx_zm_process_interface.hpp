@@ -35,8 +35,8 @@ class ZMDeepConvection : public AtmosphereProcess
     // The name of the subcomponent
     std::string name() const override { return "ZM"; }
 
-    // Set the grid
-    void set_grids(const std::shared_ptr<const GridsManager> grids_manager) override;
+    // Create field/group requests
+  void create_requests () override;
 
 #ifndef KOKKOS_ENABLE_CUDA
   // Cuda requires methods enclosing __device__ lambda's to be public

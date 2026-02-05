@@ -29,8 +29,8 @@ public:
   // The name of the subcomponent
   std::string name () const { return "cosp"; }
 
-  // Set the grid
-  void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
+  // Create field/group requests
+  void create_requests () override;
 
   inline bool cosp_do(const int icosp, const int nstep) {
       // If icosp == 0, then never do cosp;

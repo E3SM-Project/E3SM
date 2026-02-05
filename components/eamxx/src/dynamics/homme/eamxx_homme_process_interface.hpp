@@ -49,8 +49,7 @@ public:
   // The name of the subcomponent
   std::string name () const { return "homme"; }
 
-  // Set the grid
-  void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
+  void create_requests ();
 
 #ifndef KOKKOS_ENABLE_CUDA
   // Cuda requires methods enclosing __device__ lambda's to be public

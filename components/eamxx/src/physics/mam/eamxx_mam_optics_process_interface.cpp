@@ -18,11 +18,11 @@ MAMOptics::MAMOptics(const ekat::Comm &comm, const ekat::ParameterList &params)
 
 std::string MAMOptics::name() const { return "mam4_optics"; }
 
-void MAMOptics::set_grids(
-    const std::shared_ptr<const GridsManager> grids_manager) {
+void MAMOptics::create_requests()
+{
   using namespace ekat::units;
 
-  grid_                 = grids_manager->get_grid("physics");
+  grid_                 = m_grids_manager->get_grid("physics");
   const auto &grid_name = grid_->name();
   Units n_unit(1 / kg, "#/kg");  // number mixing ratios [# / kg air]
   const auto m2 = pow(m, 2);
@@ -86,7 +86,7 @@ void MAMOptics::set_grids(
   add_tracers_gases();
   // add fields e.g., num_c1, soa_c1
   add_fields_cloudborne_aerosol();
-} //set_grids
+} //create_requests
 
 size_t MAMOptics::requested_buffer_size_in_bytes() const {
   return mam_coupling::buffer_size(ncol_, nlev_, num_2d_scratch_,

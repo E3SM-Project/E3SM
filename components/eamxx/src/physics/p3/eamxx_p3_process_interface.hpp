@@ -52,8 +52,8 @@ public:
   // The name of the subcomponent
   std::string name () const { return "p3"; }
 
-  // Set the grid
-  void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
+  // Create field/group requests
+  void create_requests () override;
 
   /*--------------------------------------------------------------------------------------------*/
   // Most individual processes have a pre-processing step that constructs needed variables from

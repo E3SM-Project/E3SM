@@ -32,8 +32,8 @@ class GWMicrophysics : public AtmosphereProcess
   // The name of the subcomponent
   std::string name () const { return "gw"; }
 
-  // Set the grid
-  void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
+  // Create field/group requests
+  void create_requests () override;
 
  protected:
   std::shared_ptr<const AbstractGrid> m_grid;

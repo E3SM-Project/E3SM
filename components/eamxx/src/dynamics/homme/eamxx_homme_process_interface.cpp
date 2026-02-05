@@ -75,13 +75,13 @@ HommeDynamics::~HommeDynamics ()
   HommeContextUser::singleton().remove_user();
 }
 
-void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_manager)
+void HommeDynamics::create_requests ()
 {
   // Grab dynamics, physics, and physicsGLL grids
   const auto dgn = "dynamics";
-  m_dyn_grid = grids_manager->get_grid(dgn);
-  m_phys_grid = grids_manager->get_grid("physics");
-  m_cgll_grid = grids_manager->get_grid("physics_gll");
+  m_dyn_grid  = m_grids_manager->get_grid(dgn);
+  m_phys_grid = m_grids_manager->get_grid("physics");
+  m_cgll_grid = m_grids_manager->get_grid("physics_gll");
 
   fv_phys_set_grids();
 
@@ -195,7 +195,7 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
     add_field<Required>("ps",            rg_scalar2d    ,Pa,    rgn);
     add_field<Required>("phis",          rg_scalar2d    ,m2/s2, rgn);
     add_group<Required>("tracers",rgn,N, MonolithicAlloc::Required);
-    fv_phys_rrtmgp_active_gases_init(grids_manager);
+    fv_phys_rrtmgp_active_gases_init(m_grids_manager);
     // This is needed for the dp_ref init in initialize_homme_state.
     add_field<Computed>("pseudo_density",rg_scalar3d_mid,Pa,    rgn,N);
   }
@@ -246,12 +246,12 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
     // is more convenient to use two different remappers: the pd remapper will
     // remap into Homme's forcing views, while the dp remapper will remap from
     // Homme's states.
-    m_p2d_remapper = grids_manager->create_remapper(m_phys_grid,m_dyn_grid);
-    m_d2p_remapper = grids_manager->create_remapper(m_dyn_grid,m_phys_grid);
+    m_p2d_remapper = m_grids_manager->create_remapper(m_phys_grid,m_dyn_grid);
+    m_d2p_remapper = m_grids_manager->create_remapper(m_dyn_grid,m_phys_grid);
   }
 
   // Create separate remapper for initial_conditions
-  m_ic_remapper = grids_manager->create_remapper(m_cgll_grid,m_dyn_grid);
+  m_ic_remapper = m_grids_manager->create_remapper(m_cgll_grid,m_dyn_grid);
 
   // Layout for 2D (1d horiz X 1d vertical) variable
   const auto& grid_name = m_phys_grid->name();
