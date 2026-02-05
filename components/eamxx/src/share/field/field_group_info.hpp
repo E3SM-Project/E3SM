@@ -45,6 +45,12 @@ struct FieldGroupInfo
 
   bool empty() const { return size()==0; }
 
+  FieldGroupInfo alias(const std::string& name) const {
+    FieldGroupInfo info(*this);
+    info.m_group_name = name;
+    return info;
+  }
+
   // The name of the group
   ci_string m_group_name;
 
