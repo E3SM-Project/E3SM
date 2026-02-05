@@ -1190,6 +1190,9 @@ end if
        if (hv_ref_profiles==0 .and. hv_theta_correction==1) then
           call abortmp("hv_theta_correction=1 requires hv_ref_profiles=1 or 2")
        endif
+       if (theta_advect_form==2 .and. pgrad_correction /= 0) then
+          call abortmp("theta_advect_form=2 (splitform) should not be used with pgrad_correction/=0")
+       endif
        
        write(iulog,*)"readnl: vert_remap_q_alg  = ",vert_remap_q_alg
        write(iulog,*)"readnl: vert_remap_u_alg  = ",vert_remap_u_alg
