@@ -715,6 +715,9 @@ contains
   subroutine cime_pre_init1(esmf_log_option)
     use shr_pio_mod, only : shr_pio_init1, shr_pio_init2
     use seq_comm_mct, only: num_inst_driver
+#ifndef NO_MPIMOD
+    use mpi
+#endif
     !----------------------------------------------------------
     !| Initialize MCT and MPI communicators and IO
     !----------------------------------------------------------
@@ -735,9 +738,16 @@ contains
     integer(i8) :: end_count          ! end time
     integer(i8) :: irtc_rate          ! factor to convert time to seconds
 
+    integer :: tmode ! Thread mode provided by the MPI library
+
     beg_count = shr_sys_irtc(irtc_rate)
 
+#if defined(MPI_INIT_THREADED)
+    call mpi_init_thread(MPI_THREAD_MULTIPLE, tmode, ierr)
+#else
     call mpi_init(ierr)
+#endif
+
     call shr_mpi_chkerr(ierr,subname//' mpi_init')
 
     end_count = shr_sys_irtc(irtc_rate)

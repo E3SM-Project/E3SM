@@ -685,6 +685,8 @@ contains
        iotype = pio_iotype_adiosc
     else if ( typename .eq. 'HDF5') then
        iotype = pio_iotype_hdf5
+    else if ( typename .eq. 'HDF5C') then
+       iotype = pio_iotype_hdf5c
 #endif
     else if ( typename .eq. 'NOTHING') then
        iotype = defaulttype
