@@ -826,10 +826,16 @@ void FieldManager::add_field (const Field& f) {
       "  - field manager grid: " + grid_name + "\n"
       "  - input field layout:   " + f.get_header().get_identifier().get_layout().to_string() + "\n"
       "  - field mgr name: " + m_name + "\n");
-  EKAT_REQUIRE_MSG (not has_field(f.name(), grid_name),
+
+  if (has_field(f.name(), grid_name)) {
+    // We do allow calling this method repeatedly passing the *same* obj.
+    EKAT_REQUIRE_MSG (get_field(f.name(),grid_name).is_aliasing(f),
       "Error! The method 'add_field' requires the input field to not be already existing.\n"
       "  - field name: " + f.get_header().get_identifier().name() + "\n"
       "  - field mgr name: " + m_name + "\n");
+
+    return;
+  }
 
   const auto& groups = f.get_header().get_tracking().get_groups_names();
   for (const auto& group_name : groups) {
