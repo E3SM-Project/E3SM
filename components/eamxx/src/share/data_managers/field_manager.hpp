@@ -65,9 +65,15 @@ public:
   // registration procedures.
   // This can be used to allow atm procs to create some helper fields internally,
   // but still leverage the FM class for certain features (e.g., I/O).
-  // NOTE: the repo must be in closed state, and the FieldManager must not already
-  //       store a field with the same name.
+  // Requirements:
+  //  - the repo must be in closed state
+  //  - cannot already store a field/group with that name
+  //  - for field, cannot store a monolithic group for any of its group
   void add_field (const Field& f);
+  void add_group (const FieldGroup& g);
+
+  void remove_field (const std::string& field_name, const std::string& grid_name);
+  void remove_group (const std::string& group_name, const std::string& grid_name);
 
   // Adds $field_name on $grid_name to group $group_name (creating the group, if necessary).
   // NOTE: if $group_name is allocated as a monolithic field, this throws.
@@ -136,6 +142,14 @@ public:
   FieldGroupInfo get_group_info (const std::string& group_name, const std::string& grid_name) const;
 
   FieldGroup get_field_group (const std::string& name, const std::string& grid_name);
+  FieldGroup get_field_group (const std::string& name) {
+    EKAT_ASSERT_MSG(m_grids_mgr->size() == 1,
+      "Error! More than one grid exists for FieldManager, must specify grid name to get group.\n"
+      "  - Group name: " + name + "\n"
+      "  - Grids in FM: " + m_grids_mgr->print_available_grids() + "\n"
+      "  - Field mgr name: " + m_name + "\n");
+    return get_field_group(name, m_grids_mgr->get_repo().begin()->second->name());
+  }
 
   const std::map<ci_string,std::shared_ptr<Field>>&
   get_repo () const {
@@ -152,6 +166,7 @@ public:
       "  - Field mgr name: " + m_name + "\n");
     return m_fields.at(grid_name);
   }
+  const repo_type& get_full_repo () const { return m_fields; }
 
   const std::shared_ptr<const AbstractGrid> get_grid () const {
     EKAT_ASSERT_MSG(m_grids_mgr->size() == 1,
