@@ -168,6 +168,8 @@ public:
   }
   const repo_type& get_full_repo () const { return m_fields; }
 
+  const std::list<Field>& get_fields_list () const { return m_fields_list; }
+
   const std::shared_ptr<const AbstractGrid> get_grid () const {
     EKAT_ASSERT_MSG(m_grids_mgr->size() == 1,
       "Error! More than one grid exists for FieldManager, must access grid through grids manager.\n"
@@ -215,6 +217,9 @@ protected:
   // we 'skip' them, hoping that some other request will contain the right specs.
   // If no complete request is given for that field, we need to error out
   std::list<std::pair<std::string,std::string>> m_incomplete_requests;
+
+  // A 1d list of ALL fields in this FM
+  std::list<Field> m_fields_list;
 
   // A user-configurable name for this FM, to print inside error msgs,
   // to help the user better understand where the error comes from
