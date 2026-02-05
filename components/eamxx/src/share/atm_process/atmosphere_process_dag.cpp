@@ -456,66 +456,44 @@ add_nodes (const group_type& atm_procs)
       node.name = proc->name();
       m_unmet_deps[id].clear(); // Ensures an entry for this id is in the map
 
-      // Input fields
-      for (const auto& f : proc->get_fields_in()) {
-        const auto& fid = f.get_header().get_identifier();
+      const auto& inputs  = proc->get_inputs();
+      const auto& outputs = proc->get_outputs();
+
+      auto add_field = [&](const auto& fid, auto usage) {
         const int fid_id = add_fid(fid);
-        node.required.insert(fid_id);
+        if (usage & Required) {
+          node.required.insert(fid_id);
+        }
+        if (usage & Computed) {
+          node.computed.insert(fid_id);
+          m_fid_to_last_provider[fid_id] = id;
+        }
+      };
+
+      // Fields
+      for (const auto& r : proc->get_field_requests()) {
+        const auto& fid = r.fid;
+        add_field(fid,r.usage);
       }
 
-      // Output fields
-      for (const auto& f : proc->get_fields_out()) {
-        const auto& fid = f.get_header().get_identifier();
-        const int fid_id = add_fid(fid);
-        node.computed.insert(fid_id);
-        m_fid_to_last_provider[fid_id] = id;
-      }
-
-      // Input groups
-      for (const auto& group : proc->get_groups_in()) {
-        if (!group.m_info->m_monolithic_allocation) {
+      // Groups
+      auto add_group = [&](const auto& group, auto usage) {
+        if (group.m_info->m_monolithic_allocation) {
+          // Group allocates a monolithic field: process the monolithic field
+          const auto& gr_fid = group.m_monolithic_field->get_header().get_identifier();
+          add_field(gr_fid,usage);
+        } else {
           // Group does not allocate a monolithic field: process fields individually
           for (const auto& it_f : group.m_individual_fields) {
             const auto& fid = it_f.second->get_header().get_identifier();
-            const int fid_id = add_fid(fid);
-            node.computed.insert(fid_id);
-            m_fid_to_last_provider[fid_id] = id;
-          }
-        } else {
-          // Group allocates a monolithic field: process the monolithic field
-          const auto& gr_fid = group.m_monolithic_field->get_header().get_identifier();
-          const int gr_fid_id = add_fid(gr_fid);
-          node.gr_required.insert(gr_fid_id);
-          m_gr_fid_to_group.emplace(gr_fid,group);
-        }
-      }
-
-      // Output groups
-      for (const auto& group : proc->get_groups_out()) {
-        if (!group.m_info->m_monolithic_allocation) {
-          // Group does not allocate a monolithic field: process fields in the group individually
-          for (const auto& it_f : group.m_individual_fields) {
-            const auto& fid = it_f.second->get_header().get_identifier();
-            const int fid_id = add_fid(fid);
-            node.computed.insert(fid_id);
-            m_fid_to_last_provider[fid_id] = id;
-          }
-        } else {
-          // Group allocates a monolithic field: process the monolithic field
-          const auto& gr_fid = group.m_monolithic_field->get_header().get_identifier();
-          const int gr_fid_id = add_fid(gr_fid);
-          node.gr_computed.insert(gr_fid_id);
-          m_fid_to_last_provider[gr_fid_id] = id;
-          m_gr_fid_to_group.emplace(gr_fid,group);
-
-          // Additionally, each field in the group is implicitly 'computed'
-          // by this node, so update their last provider
-          for (auto it_f : group.m_individual_fields) {
-            const auto& fid = it_f.second->get_header().get_identifier();
-            const int fid_id = add_fid(fid);
-            m_fid_to_last_provider[fid_id] = id;
+            add_field(fid,usage);
           }
         }
+      };
+      for (const auto& r : proc->get_group_requests()) {
+        auto fm = r.usage & Required ? inputs : outputs;
+        auto group = fm->get_field_group(r.name,r.grid);
+        add_group(group, r.usage);
       }
     }
   }

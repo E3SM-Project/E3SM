@@ -44,9 +44,6 @@ public:
   // The name of the block
   std::string name () const { return m_group_name; }
 
-  // Grab the proper grid from the grids manager
-  void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
-
   // Setup the tendencies requests for this group, as well as for all procs in the group
   void setup_step_tendencies (const std::string& default_grid);
 
@@ -77,11 +74,6 @@ public:
   // the ATMBufferManager
   void init_buffers(const ATMBufferManager& buffer_manager);
 
-  // The APG class needs to perform special checks before establishing whether
-  // a required group/field is indeed a required group for this APG
-  void set_required_field (const Field& field);
-  void set_required_group (const FieldGroup& group);
-
   // Gather internal fields from all processes in the group
   // NOTE: this method *must* be called before any attempt to query this atm proc group
   //       for its internal fields, otherwise it will appear as if this atm proc group
@@ -99,10 +91,9 @@ public:
       const std::shared_ptr<MassAndEnergyConservationCheck>& conservation_check,
       const CheckFailHandling                                      fail_handling_type) const;
 
-  // Add nan checks after each non-group process, for each computed field.
-  // If checks fail, we print all input and output fields of that process
-  // (that are on the same grid) at the location of the fail.
-  void add_postcondition_nan_checks () const;
+  // Override base class: we don't add a check in this process, simply
+  // ask the group procs to add the checks
+  void add_postcondition_nan_checks () override;
 
   // Add additional data fields to all property checks in the group
   void add_additional_data_fields_to_property_checks (const Field& data_field);
@@ -144,9 +135,6 @@ protected:
 
   // The schedule type: Parallel vs Sequential
   ScheduleType   m_group_schedule_type;
-
-  // This is only needed to be able to access grids objects later on
-  std::shared_ptr<const GridsManager>   m_grids_mgr;
 };
 
 } // namespace scream
