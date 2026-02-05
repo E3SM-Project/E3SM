@@ -786,6 +786,11 @@ void FieldManager::registration_ends ()
 
   // Prohibit further registration of fields to this repo
   m_repo_state = RepoState::Closed;
+
+  // Add all fields to the 1d list
+  for (const auto& it1 : m_fields)
+    for (const auto& it2 : it1.second)
+      m_fields_list.push_back(*it2.second);
 }
 
 void FieldManager::clean_up() {
@@ -862,7 +867,9 @@ void FieldManager::add_field (const Field& f) {
   }
 
   // All good, add the field to the repo
-  m_fields[grid_name][f.get_header().get_identifier().name()] = std::make_shared<Field>(f);
+  m_fields[grid_name][f.name()] = std::make_shared<Field>(f);
+
+  m_fields_list.push_back(f);
 
   // If it was not closed before, it is now
   m_repo_state = RepoState::Closed;
@@ -889,6 +896,13 @@ void FieldManager::
 remove_field (const std::string& field_name, const std::string& grid_name)
 {
   m_fields[grid_name].erase(field_name);
+  for (auto it = m_fields_list.begin(); it!=m_fields_list.end(); ++it) {
+    auto fid = it->get_header().get_identifier();
+    if (fid.name()==field_name and fid.get_grid_name()==grid_name) {
+      m_fields_list.erase(it);
+      break;
+    }
+  }
 }
 
 void FieldManager::
