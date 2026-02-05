@@ -568,6 +568,10 @@ void VertAdv::computeTracerVAdvTend(
     const TimeInterval TimeStep        //< [in] (optional) time step
 ) {
 
+   // Return if vertical advection tracer tendency not enabled
+   if (!TracerVertAdvEnabled)
+      return;
+
    // Compute tracer fluxes at the interfaces
    computeVerticalFluxes(Tracers, LayerThickness);
 
