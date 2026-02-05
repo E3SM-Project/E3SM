@@ -862,6 +862,40 @@ void FieldManager::add_field (const Field& f) {
   m_repo_state = RepoState::Closed;
 }
 
+void FieldManager::add_group (const FieldGroup& g)
+{
+  EKAT_REQUIRE_MSG (g.m_info->size()>0,
+      "Error! Attempting to call add_group with an empty group.\n"
+      " - group name: " + g.name() + "\n"
+      " - field mgr name: " + m_name + "\n");
+
+  // Add all fields. NOTE: add_field already takes care of checks as well as handling groups
+  if (g.m_monolithic_field) {
+    add_field(*g.m_monolithic_field);
+  }
+
+  for (const auto& [fname,f] : g.m_individual_fields) {
+    add_field(*f);
+  }
+}
+
+void FieldManager::
+remove_field (const std::string& field_name, const std::string& grid_name)
+{
+  m_fields[grid_name].erase(field_name);
+}
+
+void FieldManager::
+remove_group (const std::string& group_name, const std::string& grid_name)
+{
+  auto it = ekat::find(m_field_group_info.at(group_name)->m_requested_grids,grid_name);
+  m_field_group_info.at(group_name)->m_requested_grids.erase(it);
+  if (m_field_group_info.at(group_name)->m_requested_grids.size()==0) {
+    // We only had this group on this grid. We can remove the group altogether
+    m_field_group_info.erase(group_name);
+  }
+}
+
 void FieldManager::pre_process_monolithic_group_requests () {
   // For each group, loop over all fields in the group and register
   // on to each grid the group is requested on (if necessary)
