@@ -76,6 +76,7 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const std::vector<Fie
     fm->add_field(f);
     m_fields_names.push_back(f.name());
   }
+  fm->set_name("Output, grid=" + grid->name());
 
   // No remaps: set all FM except the one for scorpio (created in init())
   m_field_mgrs[FromModel] = m_field_mgrs[AfterVertRemap] = m_field_mgrs[AfterHorizRemap] = fm;
@@ -171,6 +172,7 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
 
   // For simplicity, we create a "copy" of the input fm, so we can stuff also diags in it
   fm_model = std::make_shared<FieldManager>(fm_grid,RepoState::Closed);
+  fm_model->set_name("[ScorpioOutput] stream=" + m_stream_name + ", model");
 
   // Add ALL field of the FM that are on the output grid
   for (const auto& [name,f_ptr] : field_mgr->get_repo(grid_name)) {
@@ -217,6 +219,7 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
 
     grid_after_vr = m_vert_remapper->get_tgt_grid();
     fm_after_vr = std::make_shared<FieldManager>(grid_after_vr,RepoState::Closed);
+    fm_after_vr->set_name("[ScorpioOutput] stream=" + m_stream_name + ", after vremap");
 
     for (const auto& fname : m_fields_names) {
       auto src = fm_model->get_field(fname,fm_grid->name());
@@ -246,6 +249,7 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
 
     grid_after_hr = m_horiz_remapper->get_tgt_grid();
     fm_after_hr = std::make_shared<FieldManager>(grid_after_hr,RepoState::Closed);
+    fm_after_vr->set_name("[ScorpioOutput] stream=" + m_stream_name + ", after hremap");
 
     for (const auto& fname : m_fields_names) {
       auto src = fm_after_vr->get_field(fname,grid_after_vr->name());
@@ -315,6 +319,7 @@ void AtmosphereOutput::init()
 
   // Create FM for scorpio. The fields in this FM are guaranteed to NOT have parents/padding
   auto fm_scorpio = m_field_mgrs[Scorpio] = std::make_shared<FieldManager>(fm_after_hr->get_grid(),RepoState::Closed);
+  fm_model->set_name("[ScorpioOutput] stream=" + m_stream_name + ", scorpio");
   for (size_t i = 0; i < m_fields_names.size(); ++i) {
     const auto& fname = m_fields_names[i];
     const auto& f = fm_after_hr->get_field(fname);

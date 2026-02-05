@@ -38,7 +38,8 @@ void FieldManager::register_field (const FieldRequest& req)
 {
   // Sanity checks
   EKAT_REQUIRE_MSG (m_repo_state!=RepoState::Closed,
-      "Error! Repo state is not 'Open' anymore. Did you already called 'registration_ends()'?\n");
+      "Error! Repo state is not 'Open' anymore. Did you already called 'registration_ends()'?\n"
+      "  - Field mgr name: " + m_name + "\n");
 
   m_repo_state = RepoState::Open;
 
@@ -49,18 +50,21 @@ void FieldManager::register_field (const FieldRequest& req)
   EKAT_REQUIRE_MSG(m_grids_mgr->has_grid(grid_name),
     "Error! Attempting to register field on grid not in the FM's grids manager:\n"
     "  - FieldRequest grid: " + grid_name + "\n"
-    "  - Grids stored by FM: " + m_grids_mgr->print_available_grids() + "\n");
+    "  - Grids stored by FM: " + m_grids_mgr->print_available_grids() + "\n"
+    "  - Field mgr name: " + m_name + "\n");
 
   // FieldManager does not allow incomplete requests
   EKAT_REQUIRE_MSG(not req.incomplete,
-    "Error! FieldManager does not allow registering incomplete FieldRequest.\n");
+    "Error! FieldManager does not allow registering incomplete FieldRequest.\n"
+    "  - Field mgr name: " + m_name + "\n");
 
   // Get or create the new field
   if (!has_field(id.name(), grid_name)) {
 
     EKAT_REQUIRE_MSG (id.data_type()==field_valid_data_types().at<Real>(),
         "Error! While refactoring, we only allow the Field data type to be Real.\n"
-        "       If you're done with refactoring, go back and fix things.\n");
+        "       If you're done with refactoring, go back and fix things.\n"
+        "  - Field mgr name: " + m_name + "\n");
     m_fields[grid_name][id.name()] = std::make_shared<Field>(id);
   } else {
     // Make sure the input field has the same layout and units as the field already stored.
@@ -70,15 +74,17 @@ void FieldManager::register_field (const FieldRequest& req)
     const auto id0 = m_fields[grid_name][id.name()]->get_header().get_identifier();
     EKAT_REQUIRE_MSG(id.get_units()==id0.get_units(),
         "Error! Field '" + id.name() + "' already registered with different units:\n"
-        "         - input field units:  " + id.get_units().to_string() + "\n"
-        "         - stored field units: " + id0.get_units().to_string() + "\n"
-        "       Please, check and make sure all atmosphere processes use the same units.\n");
+        "  - input field units:  " + id.get_units().to_string() + "\n"
+        "  - stored field units: " + id0.get_units().to_string() + "\n"
+        "  - field mgr name: " + m_name + "\n"
+        "Please, check and make sure all atmosphere processes use the same units.\n");
 
     EKAT_REQUIRE_MSG(id.get_layout()==id0.get_layout(),
         "Error! Field '" + id.name() + "' already registered with different layout:\n"
-        "         - input id:  " + id.get_id_string() + "\n"
-        "         - stored id: " + id0.get_id_string() + "\n"
-        "       Please, check and make sure all atmosphere processes use the same layout for a given field.\n");
+        "  - input id:  " + id.get_id_string() + "\n"
+        "  - stored id: " + id0.get_id_string() + "\n"
+        "  - field mgr name: " + m_name + "\n"
+        "Please, check and make sure all atmosphere processes use the same layout for a given field.\n");
   }
 
   // Make sure the field can accommodate the requested value type
@@ -118,7 +124,8 @@ void FieldManager::register_group (const GroupRequest& req)
   EKAT_REQUIRE_MSG(m_grids_mgr->has_grid(req.grid),
     "Error! Attempting to register group on grid not in the FM's grids manager:\n"
     "  - GroupRequest grid:  " + req.grid + "\n"
-    "  - Grids stored by FM: " + m_grids_mgr->print_available_grids() + "\n");
+    "  - Grids stored by FM: " + m_grids_mgr->print_available_grids() + "\n"
+    "  - Field mgr name: " + m_name + "\n");
 
   // Groups have to be handled once registration is over, so for now simply store the request,
   // and create an empty group info (if it does not already exist)
@@ -141,7 +148,8 @@ void FieldManager::
 add_to_group (const std::string& field_name, const std::string& grid_name, const std::string& group_name)
 {
   EKAT_REQUIRE_MSG (m_repo_state==RepoState::Closed,
-      "Error! You cannot call 'add_to_group' until after 'registration_ends' has been called.\n");
+      "Error! You cannot call 'add_to_group' until after 'registration_ends' has been called.\n"
+      "  - Field mgr name: " + m_name + "\n");
   auto& group = m_field_group_info[group_name];
   if (not group) {
     group = std::make_shared<FieldGroupInfo>(group_name);
@@ -149,13 +157,15 @@ add_to_group (const std::string& field_name, const std::string& grid_name, const
   EKAT_REQUIRE_MSG (not group->m_monolithic_allocation,
       "Error! Cannot add fields to a group that has a monolithic allocation.\n"
       "   field name: " + field_name + "\n"
-      "   group name: " + group_name + "\n");
+      "   group name: " + group_name + "\n"
+      "   field mgr name: " + m_name + "\n");
 
   EKAT_REQUIRE_MSG (has_field(field_name, grid_name),
       "Error! Cannot add field to group, since the field is not present in this FieldManager.\n"
       "   field name: " + field_name + "\n"
       "   grid name:  " + grid_name + "\n"
-      "   group name: " + group_name + "\n");
+      "   group name: " + group_name + "\n"
+      "   field mgr name: " + m_name + "\n");
 
   if (not ekat::contains(group->m_fields_names, field_name)) {
     group->m_fields_names.push_back(field_name);
@@ -190,18 +200,22 @@ has_group (const std::string& group_name, const std::string& grid_name) const {
 
 Field FieldManager::get_field (const std::string& name, const std::string& grid_name) const {
   EKAT_REQUIRE_MSG(m_repo_state==RepoState::Closed,
-    "Error! Cannot get fields from the repo while registration has not yet completed.\n");
+    "Error! Cannot get fields from the repo while registration has not yet completed.\n"
+    "  - field mgr name: " + m_name + "\n");
   EKAT_REQUIRE_MSG(has_field(name, grid_name),
-    "Error! Field " + name + " on grid " + grid_name + " not found.\n");
+    "Error! Field " + name + " on grid " + grid_name + " not found.\n"
+    "  - field mgr name: " + m_name + "\n");
 
   return *m_fields.at(grid_name).at(name);
 }
 
 Field& FieldManager::get_field (const std::string& name, const std::string& grid_name) {
   EKAT_REQUIRE_MSG(m_repo_state==RepoState::Closed,
-    "Error! Cannot get fields from the repo while registration has not yet completed.\n");
+    "Error! Cannot get fields from the repo while registration has not yet completed.\n"
+    "  - field mgr name: " + m_name + "\n");
   EKAT_REQUIRE_MSG(has_field(name, grid_name),
-    "Error! Field " + name + " on grid " + grid_name + " not found.\n");
+    "Error! Field " + name + " on grid " + grid_name + " not found.\n"
+    "  - field mgr name: " + m_name + "\n");
 
   return *m_fields.at(grid_name).at(name);
 }
@@ -211,9 +225,11 @@ get_group_info (const std::string& group_name, const std::string& grid_name) con
 {
   // Sanity checks
   EKAT_REQUIRE_MSG(m_repo_state==RepoState::Closed,
-    "Error! Cannot get field groups from the repo while registration has not yet completed.\n");
+    "Error! Cannot get field groups from the repo while registration has not yet completed.\n"
+    " - field mgr name: " + m_name + "\n");
   EKAT_REQUIRE_MSG (has_group(group_name, grid_name),
-    "Error! Field group '" + group_name + "' on grid '" + grid_name + "' not found.\n");
+    "Error! Field group '" + group_name + "' on grid '" + grid_name + "' not found.\n"
+    " - field mgr name: " + m_name + "\n");
 
   auto info = *m_field_group_info.at(group_name);
 
@@ -226,7 +242,8 @@ get_group_info (const std::string& group_name, const std::string& grid_name) con
         "The following field should, but does not, exist:\n"
         "  - Group: " + group_name + "\n"
         "  - Field: " + fname + "\n"
-        "  - Grid:  " + grid_name + "\n");
+        "  - Grid:  " + grid_name + "\n"
+        "  - field mgr name: " + m_name + "\n");
     }
   } else {
     // For all other groups, remove fields in the group
@@ -252,9 +269,11 @@ get_field_group (const std::string& group_name, const std::string& grid_name)
 {
   // Sanity checks
   EKAT_REQUIRE_MSG(m_repo_state==RepoState::Closed,
-      "Error! Cannot get field groups from the repo while registration has not yet completed.\n");
+      "Error! Cannot get field groups from the repo while registration has not yet completed.\n"
+      "  - field mgr name: " + m_name + "\n");
   EKAT_REQUIRE_MSG (has_group(group_name, grid_name),
-      "Error! Field group '" + group_name + "' on grid '" + grid_name + "' not found.\n");
+      "Error! Field group '" + group_name + "' on grid '" + grid_name + "' not found.\n"
+      "  - field mgr name: " + m_name + "\n");
 
   // If FieldGroup has already been built, return that
   if (m_field_groups.at(grid_name).find(group_name) != m_field_groups.at(grid_name).end()) {
@@ -279,7 +298,8 @@ get_field_group (const std::string& group_name, const std::string& grid_name)
     const auto& parent_header = group->m_individual_fields.begin()->second->get_header().get_parent();
 
     EKAT_REQUIRE_MSG(parent_header!=nullptr,
-      "Error! A field belonging to a field group with monolithic allocation is missing its 'parent'.\n");
+      "Error! A field belonging to a field group with monolithic allocation is missing its 'parent'.\n"
+      "  - field mgr name: " + m_name + "\n");
 
     const auto& parent_id = parent_header->get_identifier();
 
@@ -287,7 +307,8 @@ get_field_group (const std::string& group_name, const std::string& grid_name)
       "Internal FieldManager Error! Parent field must exist in the FieldManager:\n"
       "  - Group: " + group_name + "\n"
       "  - Bundeled field: " + parent_id.name() + "\n"
-      "  - Grid:  " + grid_name + "\n");
+      "  - Grid:  " + grid_name + "\n"
+      "  - Field mgr name: " + m_name + "\n");
 
     const auto& parent_field = m_fields.at(grid_name).at(parent_id.name());
 
@@ -327,7 +348,8 @@ get_field_group (const std::string& group_name, const std::string& grid_name)
       // Check that all subview indices are contiguous
       size_t span = ordered_subview_indices.back() - ordered_subview_indices.front() + 1;
       EKAT_REQUIRE_MSG (ordered_subview_indices.size()==span,
-        "Error! Non-contiguous subview indices found in group \""+group_name+"\"\n");
+        "Error! Non-contiguous subview indices found in group \""+group_name+"\"\n"
+        "  - field mgr name: " + m_name + "\n");
 
       group->m_monolithic_field = std::make_shared<Field>(
         parent_field->subfield(
@@ -345,7 +367,8 @@ void FieldManager::
 init_fields_time_stamp (const util::TimeStamp& t0)
 {
   EKAT_REQUIRE_MSG(m_repo_state==RepoState::Closed,
-      "Error! Cannot set initial time stamp until registration has completed.\n");
+      "Error! Cannot set initial time stamp until registration has completed.\n"
+      "  - field mgr name: " + m_name + "\n");
 
   for (auto& [grid_name, field_repo] : m_fields) {
     for (auto& field_it : field_repo) {
@@ -522,6 +545,7 @@ void FieldManager::registration_ends ()
           std::cout << "   - " << gn << "\n";
         }
         std::cout << "       Consdier modifying the Atm Procs where these groups are requested.\n";
+        std::cout << "        - field mgr name: " + m_name + "\n";
 
         EKAT_ERROR_MSG (" -- ERROR --\n");
       }
@@ -541,7 +565,8 @@ void FieldManager::registration_ends ()
           // Check that qv comes first or last (if last, reverse the list). If not, error out.
           // NOTE: I *think* this should not happen, unless 'tracers' is a subgroup of a bigger group.
           EKAT_REQUIRE_MSG(qv_it==cluster_ordered_fields.begin() || std::next(qv_it,1)==cluster_ordered_fields.end(),
-              "Error! The water vapor field has to be the first tracer, but it is not.\n");
+              "Error! The water vapor field has to be the first tracer, but it is not.\n"
+              "  - field mgr name: " + m_name + "\n");
 
           if (qv_it!=cluster_ordered_fields.begin()) {
             // Note: reversing the order of the fields preserves subgroups contiguity
@@ -608,12 +633,14 @@ void FieldManager::registration_ends ()
                 "Error! Found a group containing fields with different layouts.\n"
                 "       Group name: " + cluster_name + "\n"
                 "       Layout 1: " + e2str(lt) + "\n"
-                "       Layout 2: " + e2str(id.get_layout().type()) + "\n");
+                "       Layout 2: " + e2str(id.get_layout().type()) + "\n"
+                "  - field mgr name: " + m_name + "\n");
           }
         }
 
         EKAT_REQUIRE_MSG(lt==LayoutType::Scalar2D || lt==LayoutType::Scalar3D,
-            "Error! We can only monolithically allocate scalar fields. Found " + e2str(lt) + " fields instead.\n");
+            "Error! We can only monolithically allocate scalar fields. Found " + e2str(lt) + " fields instead.\n"
+            "  - field mgr name: " + m_name + "\n");
 
         FieldLayout c_layout = FieldLayout::invalid();
         if (lt==LayoutType::Scalar2D) {
@@ -655,7 +682,9 @@ void FieldManager::registration_ends ()
         const auto& C_tags = C->get_header().get_identifier().get_layout().tags();
         const int idim = std::distance(C_tags.begin(),ekat::find(C_tags,CMP));
         // See below where we assume idim is 1
-        EKAT_REQUIRE_MSG(idim==1, "Error! idim is assumed to be 1 in FieldManager::registration_ends().\n");
+        EKAT_REQUIRE_MSG(idim==1,
+            "Error! idim is assumed to be 1 in FieldManager::registration_ends().\n"
+            "  - field mgr name: " + m_name + "\n");
 
         // Create all individual subfields
         for (const auto& fn : cluster_ordered_fields) {
@@ -666,7 +695,8 @@ void FieldManager::registration_ends ()
           const auto& fid = f->get_header().get_identifier();
           EKAT_REQUIRE_MSG (fid.get_units()!=ekat::units::Units::invalid(),
               "Error! A field was registered without providing valid units.\n"
-              "  - field id: " + fid.get_id_string() + "\n");
+              "  - field id: " + fid.get_id_string() + "\n"
+              "  - field mgr name: " + m_name + "\n");
           auto fi = C->subfield(fn,fid.get_units(),idim,idx);
 
           // Overwrite existing field with subfield
@@ -694,13 +724,16 @@ void FieldManager::registration_ends ()
         // in cluster_odered_fields[first,last)
         EKAT_REQUIRE_MSG(first!=cluster_ordered_fields.end(),
             "Error! Could not find any field of this group in the ordered cluster.\n"
-            "       Group name: " + gn + "\n");
+            "       Group name: " + gn + "\n"
+            "       Field mgr name: " + m_name + "\n");
         EKAT_REQUIRE_MSG(std::distance(last,cluster_ordered_fields.end())>=0,
             "Error! Something went wrong while looking for fields of this group in the ordered cluster.\n"
-            "       Group name: " + gn + "\n");
+            "       Group name: " + gn + "\n"
+            "       Field mgr name: " + m_name + "\n");
         EKAT_REQUIRE_MSG(std::is_permutation(first,last,info.m_fields_names.begin(),info.m_fields_names.end()),
             "Error! Something went wrong while looking for fields of this group in the ordered cluster.\n"
-            "       Group name: " + gn + "\n");
+            "       Group name: " + gn + "\n"
+            "       Field mgr name: " + m_name + "\n");
 
         // Update the list of fields in the group info, mark it as monolithically
         // allocated, and update the subfield indices too.
@@ -779,19 +812,24 @@ void FieldManager::add_field (const Field& f) {
     "Error! Attempting to add_field on grid not in the FM's grids manager:\n"
     "  - Field name: " + f.name() + "\n"
     "  - Grid:       " + grid_name + "\n"
-    "  - Grids stored by FM: " + m_grids_mgr->print_available_grids() + "\n");
+    "  - Grids stored by FM: " + m_grids_mgr->print_available_grids() + "\n"
+    "  - Field mgr name: " + m_name + "\n");
   EKAT_REQUIRE_MSG (m_repo_state!=RepoState::Open,
-      "Error! The method 'add_field' can only be called on a closed or clean repo (if clean, will immediately be closed).\n");
+      "Error! The method 'add_field' can only be called on a closed or clean repo (if clean, will immediately be closed).\n"
+      "  - Field mgr name: " + m_name + "\n");
   EKAT_REQUIRE_MSG (f.is_allocated(),
-      "Error! The method 'add_field' requires the input field to be already allocated.\n");
+      "Error! The method 'add_field' requires the input field to be already allocated.\n"
+      "  - Field mgr name: " + m_name + "\n");
   EKAT_REQUIRE_MSG (m_grids_mgr->get_grid(grid_name)->is_valid_layout(f.get_header().get_identifier().get_layout()),
       "Error! Input field to 'add_field' has a layout not compatible with the stored grid.\n"
       "  - input field name : " + f.name() + "\n"
       "  - field manager grid: " + grid_name + "\n"
-      "  - input field layout:   " + f.get_header().get_identifier().get_layout().to_string() + "\n");
+      "  - input field layout:   " + f.get_header().get_identifier().get_layout().to_string() + "\n"
+      "  - field mgr name: " + m_name + "\n");
   EKAT_REQUIRE_MSG (not has_field(f.name(), grid_name),
       "Error! The method 'add_field' requires the input field to not be already existing.\n"
-      "  - field name: " + f.get_header().get_identifier().name() + "\n");
+      "  - field name: " + f.get_header().get_identifier().name() + "\n"
+      "  - field mgr name: " + m_name + "\n");
 
   const auto& groups = f.get_header().get_tracking().get_groups_names();
   for (const auto& group_name : groups) {
@@ -804,7 +842,8 @@ void FieldManager::add_field (const Field& f) {
         "  - there were no group requests for any of the field groups.\n"
         "  - the groups that the field belongs to do NOT have a monolithic field.\n"
         "The reason for this is that otherwise we *might* have missed some inclusion dependency\n"
-        "when we allocated the fields for one of those groups.\n");
+        "when we allocated the fields for one of those groups.\n"
+        "  - field mgr name: " + m_name + "\n");
     } else {
       // This group was not initially requested, so create a new group info
       group_info = std::make_shared<FieldGroupInfo>(group_name);
@@ -858,7 +897,8 @@ void FieldManager::pre_process_monolithic_group_requests () {
             "Error! Before registration_end(), FieldManager requires a field within a group to be registered on a single grid.\n"
             "  - Field name: " + field_name + "\n"
             "  - Group name: " + group_name + "\n"
-            "  - Grids registered: " + other_grid_name + "," + registered_grid + "\n");
+            "  - Grids registered: " + other_grid_name + "," + registered_grid + "\n"
+            "  - Field mgr name: " + m_name + "\n");
 
             registered_grid = other_grid_name;
         }
