@@ -180,7 +180,7 @@ class VertCoord {
    std::string ZMidFldName;        ///< Field name for midpoint Z height
    std::string GeopotFldName;      ///< Field name for geopotential
    std::string LyrThickTargetFldName; ///< Field name for target thickness
-   std::string SshFldName;        ///< Field name for sea surface height
+   std::string SshFldName;            ///< Field name for sea surface height
 
    // methods
 

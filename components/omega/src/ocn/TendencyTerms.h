@@ -184,8 +184,7 @@ class SSHGradOnEdge {
       for (int KVec = 0; KVec < KLen; ++KVec) {
          const I4 K = KStart + KVec;
          Tend(IEdge, K) -= EdgeMask(IEdge, K) * Gravity *
-                           (SshCell(ICell1) - SshCell(ICell0)) *
-                           InvDcEdge;
+                           (SshCell(ICell1) - SshCell(ICell0)) * InvDcEdge;
       }
    }
 
