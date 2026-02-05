@@ -27,7 +27,7 @@ Omega:
     FluxThicknessType: Center
     HorzTracerFluxOrder: 2
     FluxTracerType: Center
-    VerticalTracerFluxLimiterEnabled: true
+    VerticalTracerFluxLimiterEnable: true
     VerticalTracerFluxOrder: 3
   WindStress:
     InterpType: Isotropic

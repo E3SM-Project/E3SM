@@ -317,7 +317,7 @@ void VertAdv::readConfigOptions(Config *OmegaConfig) {
    CHECK_ERROR_ABORT(Err, "VertAdv: Advection group not in Config");
 
    bool FluxLimiterOn;
-   Err += AdvectConfig.get("VerticalTracerFluxLimiterEnabled", FluxLimiterOn);
+   Err += AdvectConfig.get("VerticalTracerFluxLimiterEnable", FluxLimiterOn);
    CHECK_ERROR_ABORT(
        Err,
        "VertAdv: VerticalTracerFluxLimiterEnabled not found in AdvectConfig");
