@@ -115,6 +115,7 @@ The following inner iteration patterns are supported in Omega:
 - `parallelForInner`
 - `parallelReduceInner`
 - `parallelScanInner`
+- `parallelSearchInner`
 
 To provide even more flexibility, the outer loops support iterating over a multi-dimensional range.
 Currently, the inner loops are limited to one dimension.
@@ -277,3 +278,25 @@ Moreover, this example illustrates that the final scan value can be obtained by 
 an additional argument `FinalScanValue`. Labels are not supported by `parallelScanInner`
 and only one-dimensional index range can be used. In contrast to `parallelReduceInner`,
 `parallelScanInner` supports only sum-based scans and only one scan variable.
+
+### parallelSearchInner
+To search an index range in parallel for the first index where a given condition occurs Omega
+provides the `parallelSearchInner` function.
+For example, the following code finds, for each row of a matrix, the first column index where
+the matrix element is above a certain threshold. If no element matches the condition then
+`parallelSearchInner` returns `-1`.
+```c++
+   Array2DReal M("M", N1, N2);
+   Array1DI3 ThresholdIdx("ThresholdIdx", N1);
+   parallelForOuter(
+       {N1}, KOKKOS_LAMBDA(int J1, const TeamMember &Team) {
+
+       int Idx;
+       parallelSearchInner(Team, N2, INNER_LAMBDA(Int J2) {
+            return M(J1, J2) > Threshold;
+       }, Idx);
+
+       ThresholdIdx(J1) = Idx;
+   });
+```
+Labels are not supported by `parallelSearchInner` and only one-dimensional index range can be used.
