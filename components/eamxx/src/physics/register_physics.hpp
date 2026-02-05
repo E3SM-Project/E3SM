@@ -23,6 +23,9 @@
 #ifdef EAMXX_HAS_SPA
 #include "physics/spa/eamxx_spa_process_interface.hpp"
 #endif
+#ifdef EAMXX_HAS_SPC
+#include "physics/spc/eamxx_spc_process_interface.hpp"
+#endif
 #ifdef EAMXX_HAS_NUDGING
 #include "physics/nudging/eamxx_nudging_process_interface.hpp"
 #endif
@@ -72,6 +75,9 @@ inline void register_physics () {
 #endif
 #ifdef EAMXX_HAS_SPA
   proc_factory.register_product("SPA",&create_atmosphere_process<SPA>);
+#endif
+#ifdef EAMXX_HAS_SPC
+  proc_factory.register_product("SPC",&create_atmosphere_process<SPC>);
 #endif
 #ifdef EAMXX_HAS_NUDGING
   proc_factory.register_product("Nudging",&create_atmosphere_process<Nudging>);
