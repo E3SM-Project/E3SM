@@ -3561,6 +3561,76 @@
     </resource_limits>
   </machine>
 
+  <machine MACH="crux">
+    <DESC>ALCF Cray 256 nodes, AMD EPYC Rome 7742 2-socket 64c CPU, 256GB DDR4</DESC>
+    <NODENAME_REGEX>crux-*</NODENAME_REGEX>
+    <OS>Linux</OS>
+    <COMPILERS>gnu</COMPILERS>
+    <MPILIBS>mpich</MPILIBS> 
+    <PROJECT>crocus</PROJECT>
+    <CHARGE_ACCOUNT>crocus</CHARGE_ACCOUNT>
+    <SAVE_TIMING_DIR>/grand/E3SMinput/crux/</SAVE_TIMING_DIR>  
+    <SAVE_TIMING_DIR_PROJECTS>crocus</SAVE_TIMING_DIR_PROJECTS>
+    <CIME_OUTPUT_ROOT>/eagle/$PROJECT/$USER/e3sm_scratch</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/grand/E3SMinput/data</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/grand/E3SMinput/data/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/grand/E3SMinput/baselines/crux/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/grand/E3SMinput/soft/crux/cprnc/cprnc</CCSM_CPRNC>
+    <GMAKE_J>4</GMAKE_J>
+    <TESTS>e3sm_prod</TESTS>
+    <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
+    <BATCH_SYSTEM>pbspro</BATCH_SYSTEM>
+    <SUPPORTED_BY>e3sm</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>
+    <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+    <mpirun mpilib="default">
+       <executable>mpiexec</executable>
+       <arguments>
+          <arg name="total_num_tasks">-np {{ total_tasks }} --label</arg>
+          <arg name="ranks_per_node">-ppn {{ tasks_per_node }}</arg>
+          <arg name="ranks_bind">--cpu-bind core </arg>
+          <arg name="threads_per_rank">-d $SHELL{echo 128/ {{ tasks_per_node }} |bc}</arg>
+       </arguments>
+    </mpirun>
+    <module_system type="module" allow_error="true">
+      <init_path lang="python">/opt/cray/pe/lmod/lmod/init/env_modules_python.py</init_path>
+      <init_path lang="sh">/opt/cray/pe/lmod/lmod/init/sh</init_path>  
+      <init_path lang="csh">/opt/cray/pe/lmod/lmod/init/csh</init_path>
+      <cmd_path lang="python">/opt/cray/pe/lmod/lmod/libexec/lmod python</cmd_path>
+      <cmd_path lang="sh">module</cmd_path> 
+      <cmd_path lang="csh">module</cmd_path>
+      <modules>
+        <command name="reset"></command>
+        <command name="use">/grand/E3SMinput/soft/modulefiles/crux</command>
+        <command name="load">cmake/3.27.9</command>
+        <command name="load">cray-python/3.11.7</command>
+        <command name="load">craype-accel-host</command>
+        <command name="load">PrgEnv-gnu/8.5.0</command>   
+        <command name="load">cray-libsci/24.03.0</command>
+        <command name="load">cray-hdf5-parallel/1.12.2.11</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.9.0.11</command>
+        <command name="load">cray-parallel-netcdf/1.12.3.11</command>
+      </modules>
+    </module_system>
+    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>  
+    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+    <MAX_GB_OLD_TEST_DATA>0</MAX_GB_OLD_TEST_DATA>
+    <environment_variables>
+      <env name="PERL5LIB">/grand/E3SMinput/soft/perl5/lib/perl5</env>   
+      <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
+      <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
+      <env name="LD_LIBRARY_PATH">$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env>
+      <env name="FI_CXI_RX_MATCH_MODE">hybrid</env>
+    </environment_variables>
+    <environment_variables BUILD_THREADED="TRUE">
+      <env name="OMP_STACKSIZE">128M</env>  
+      <env name="OMP_PROC_BIND">spread</env>
+      <env name="OMP_PLACES">cores</env>
+    </environment_variables>
+  </machine>
+
   <machine MACH="sooty">
     <DESC>PNL cluster, OS is Linux, batch system is SLURM</DESC>
     <NODENAME_REGEX>sooty</NODENAME_REGEX>
