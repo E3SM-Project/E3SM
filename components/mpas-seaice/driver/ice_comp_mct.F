@@ -391,6 +391,7 @@ contains
     ! Setup function pointers for MPASSI core and domain types
     call seaice_setup_core(corelist)
     call seaice_setup_domain(domain)
+    domain % domainID = 0
 
     ! ===========
     ! Initialize log manager
