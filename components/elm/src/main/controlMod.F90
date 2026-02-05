@@ -375,9 +375,15 @@ contains
     ! Set clumps per procoessor
 
 #if (defined _OPENMP)
-    clump_pproc = omp_get_max_threads()
+    if(use_fates)then
+       fates_pproc = omp_get_max_threads()
+       clump_pproc = 1
+    else
+       clump_pproc = omp_get_max_threads()
+    end if
 #else
     clump_pproc = 1
+    fates_pproc = 1
 #endif
 
     override_nsrest = nsrest
@@ -968,7 +974,8 @@ contains
     ! clump decomposition variables
 
     call mpi_bcast (clump_pproc, 1, MPI_INTEGER, 0, mpicom, ier)
-
+    call mpi_bcast (fates_pproc, 1, MPI_INTEGER, 0, mpicom, ier)
+    
     ! lateral connectivity
     call mpi_bcast (lateral_connectivity, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (domain_decomp_type, len(domain_decomp_type), MPI_CHARACTER, 0, mpicom, ier)

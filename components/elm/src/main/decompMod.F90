@@ -16,7 +16,12 @@ module decompMod
   ! !PUBLIC TYPES:
   implicit none
   integer, public :: clump_pproc ! number of clumps per MPI process
-
+  integer, public :: fates_pproc ! number of clumps (for FATES) per MPI proces
+                                 ! This is mutually exclusive with clump_pproc
+                                 ! If FATES is active, clump_pproc will be forced
+                                 ! to 1, and FATES will reserve the omp_num_threads()
+                                 ! for its patch-level processes
+  
   ! Define possible bounds subgrid levels
   integer, parameter, public :: BOUNDS_SUBGRID_GRIDCELL = 1
   integer, parameter, public :: BOUNDS_SUBGRID_TOPOUNIT = 2
