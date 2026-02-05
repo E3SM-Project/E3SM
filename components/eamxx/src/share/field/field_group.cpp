@@ -27,6 +27,13 @@ FieldGroup::get_const () const {
   return gr;
 }
 
+FieldGroup FieldGroup::alias (const std::string& name) const
+{
+  FieldGroup g(*this);
+  g.m_info = std::make_shared<FieldGroupInfo>(m_info->alias(name));
+  return g;
+}
+
 const std::string& FieldGroup::grid_name () const {
   EKAT_REQUIRE_MSG(m_individual_fields.size()>0 || m_monolithic_field,
       "Error! Cannot establish the group grid name until fields have been added.\n");
