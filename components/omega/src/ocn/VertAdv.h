@@ -11,7 +11,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "AuxiliaryState.h"
 #include "Config.h"
 #include "DataTypes.h"
 #include "Error.h"
