@@ -40,6 +40,14 @@ const std::string& FieldGroup::grid_name () const {
   }
 }
 
+FieldGroup FieldGroup::alias (const std::string& alias_name) const {
+  FieldGroup aliased(*m_info);
+  aliased.m_info = std::make_shared<FieldGroupInfo>(*m_info);
+  aliased.m_info->m_group_name = alias_name;
+  aliased.copy_fields(*this);
+  return aliased;
+}
+
 void FieldGroup::copy_fields (const FieldGroup& src) {
   m_monolithic_field = src.m_monolithic_field;
   for (auto it : src.m_individual_fields) {

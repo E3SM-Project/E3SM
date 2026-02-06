@@ -54,6 +54,9 @@ struct FieldGroup {
 
   FieldGroup& operator= (const FieldGroup& src) = default;
 
+  FieldGroup alias (const std::string& alias) const;
+
+  const std::string& name () const { return m_info->m_group_name; }
   const std::string& grid_name () const;
 
   // The fields in this group
@@ -77,7 +80,7 @@ private:
 // We use this to find a FieldGroup in a std container.
 // We do NOT allow two entries with same group name and grid name in such containers.
 inline bool operator== (const FieldGroup& lhs, const FieldGroup& rhs) {
-  return lhs.m_info->m_group_name == rhs.m_info->m_group_name &&
+  return lhs.name() == rhs.name() &&
          lhs.grid_name() == rhs.grid_name();
 }
 

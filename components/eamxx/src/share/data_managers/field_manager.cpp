@@ -849,8 +849,8 @@ void FieldManager::add_group (const FieldGroup& g) {
   // Check if group already exists - if same object, it's okay
   if (has_group(group_name, grid_name)) {
     auto existing = get_field_group(group_name, grid_name);
-    EKAT_REQUIRE_MSG(existing.m_bundle == g.m_bundle,
-      "Error! Group already exists with different fields:\n"
+    EKAT_REQUIRE_MSG(existing.m_info == g.m_info,
+      "Error! Group already exists with different info:\n"
       "  - Group name: " + group_name + "\n"
       "  - Grid name:  " + grid_name + "\n"
       "  - Field mgr name: " + m_name + "\n");
@@ -858,16 +858,16 @@ void FieldManager::add_group (const FieldGroup& g) {
   }
 
   // Add all fields from the group
-  for (const auto& f : g.m_bundle->get_const_fields_list()) {
-    if (not has_field(f.name(), grid_name)) {
-      add_field(f);
+  for (const auto& it : g.m_individual_fields) {
+    if (not has_field(it.second->name(), grid_name)) {
+      add_field(*it.second);
     }
   }
 
   // Create/update group info
   auto& group_info = m_field_group_info[group_name];
   if (not group_info) {
-    group_info = std::make_shared<FieldGroupInfo>(group_name);
+    group_info = g.m_info;
   }
   
   // Store the group
