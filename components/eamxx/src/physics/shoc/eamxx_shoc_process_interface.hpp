@@ -63,7 +63,7 @@ public:
   std::string name () const { return "shoc"; }
 
   // Set the grid
-  void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
+  void create_requests ();
 
   /*--------------------------------------------------------------------------------------------*/
   // Most individual processes have a pre-processing step that constructs needed variables from

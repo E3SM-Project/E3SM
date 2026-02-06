@@ -31,7 +31,7 @@ Cosp::Cosp (const ekat::Comm& comm, const ekat::ParameterList& params)
 }
 
 // =========================================================================================
-void Cosp::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
+void Cosp::create_requests()
 {
   using namespace ekat::units;
   using namespace ekat::prefixes;

@@ -25,7 +25,7 @@ ZMDeepConvection::ZMDeepConvection( const ekat::Comm& comm,
 }
 
 /*------------------------------------------------------------------------------------------------*/
-void ZMDeepConvection::set_grids (const std::shared_ptr<const GridsManager> grids_manager)
+void ZMDeepConvection::create_requests ()
 {
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
@@ -35,7 +35,7 @@ void ZMDeepConvection::set_grids (const std::shared_ptr<const GridsManager> grid
   // Gather runtime options from file
   zm_opts.load_runtime_options(m_params);
 
-  m_grid = grids_manager->get_grid("physics");
+  m_grid = m_grids_manager->get_grid("physics");
 
   const auto& grid_name = m_grid->name();
   const auto layout     = m_grid->get_3d_scalar_layout(true);

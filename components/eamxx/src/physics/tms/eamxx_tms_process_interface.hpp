@@ -38,7 +38,7 @@ public:
   std::string name () const { return "tms"; }
 
   // Set the grid
-  void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
+  void create_requests ();
 
   // Structure for storing local variables initialized using the ATMBufferManager
   struct Buffer {

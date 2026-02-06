@@ -43,7 +43,7 @@ public:
   }
 
   // Set the grid and input output variables
-  void set_grids(const std::shared_ptr<const GridsManager> grids_manager) override;
+  void create_requests() override;
 
   // management of common atm process memory
   // ON HOST, returns the number of bytes of device memory needed by the above

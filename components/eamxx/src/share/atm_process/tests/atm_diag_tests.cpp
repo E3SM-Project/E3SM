@@ -25,10 +25,10 @@ public:
   // Return some sort of name, linked to PType
   std::string name () const { return "Sum diagnostic"; }
 
-  void set_grids (const std::shared_ptr<const GridsManager> gm) {
+  void create_requests () {
     using namespace ekat::units;
 
-    const auto grid = gm->get_grid(m_grid_name);
+    const auto grid = m_grids_manager->get_grid(m_grid_name);
     const auto lt = grid->get_2d_scalar_layout ();
 
     add_field<Required>("Field A",lt,K,m_grid_name);

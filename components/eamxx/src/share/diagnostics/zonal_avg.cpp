@@ -109,12 +109,12 @@ ZonalAvgDiag::ZonalAvgDiag(const ekat::Comm &comm, const ekat::ParameterList &pa
   m_num_zonal_bins           = std::stoi(num_bins_value);
 }
 
-void ZonalAvgDiag::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
+void ZonalAvgDiag::create_requests() {
   const auto &field_name = m_params.get<std::string>("field_name");
   const auto &grid_name  = m_params.get<std::string>("grid_name");
 
   add_field<Required>(field_name, grid_name);
-  const GridsManager::grid_ptr_type grid = grids_manager->get_grid(grid_name);
+  const GridsManager::grid_ptr_type grid = m_grids_manager->get_grid(grid_name);
   m_lat                                  = grid->get_geometry_data("lat");
   // area will be scaled in initialize_impl
   m_scaled_area = grid->get_geometry_data("area").clone();
