@@ -356,6 +356,8 @@ void AtmosphereOutput::init()
     // such as writing transposed output.
     if (m_transpose) {
       const auto helper_layout = layout.transpose();
+      // Note: helper name is based on the ORIGINAL layout (not transposed), so that
+      // when we look up the helper during write, we use the field's original layout
       const std::string helper_name = get_transposed_helper_name(layout);
       if (m_helper_fields.find(helper_name) == m_helper_fields.end()) {
         // We can add a new helper field for this layout

@@ -62,7 +62,7 @@
  *      When set to true, all field dimensions will be reversed in the output file.
  *      For example, a field with layout (ncol, nlev) will be written as (nlev, ncol).
  *  - fields: parameters specifying fields to output
- *     - GRID_NAME: parameters specifyign fields to output from grid $GRID_NAME
+ *     - GRID_NAME: parameters specifying fields to output from grid $GRID_NAME
  *        - field_names: names of fields defined on grid $grid_name that need to be outputed
  *        - output_data_layout: attempt to 'remap' fields to this data layout first.
  *          This option is mostly used to enable dyn->phys_gll remap (to save storage),
