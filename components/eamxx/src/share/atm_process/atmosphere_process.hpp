@@ -192,17 +192,13 @@ public:
   const std::list<FieldRequest>& get_field_requests () const { return m_field_requests; }
   const std::list<GroupRequest>& get_group_requests () const { return m_group_requests; }
 
-  // These sets allow to get all the actual in/out fields stored by the atm proc
+  // These methods allow to get the FieldManagers storing in/out/internal fields
   // Note: if an atm proc requires a group, then all the fields in the group, as well as
-  //       the monolithic field (if present) will be added as required fields for this atm proc.
+  //       the monolithic field (if present) will be added to the appropriate field manager.
   //       See field_group.hpp for more info about groups of fields.
-  const std::list<Field>& get_fields_in  () const { return m_fields_in;  }
-  const std::list<Field>& get_fields_out () const { return m_fields_out; }
-  const std::list<FieldGroup>& get_groups_in  () const { return m_groups_in;  }
-  const std::list<FieldGroup>& get_groups_out () const { return m_groups_out; }
-
-  // The base class does not store internal fields.
-  virtual const std::list<Field>& get_internal_fields  () const { return m_internal_fields; }
+  const std::shared_ptr<FieldManager>& get_inputs () const { return m_inputs; }
+  const std::shared_ptr<FieldManager>& get_outputs () const { return m_outputs; }
+  const std::shared_ptr<FieldManager>& get_internals () const { return m_internals; }
 
   // Whether this atm proc requested the field/group as in/out, via a FieldRequest/GroupRequest.
   bool has_required_field (const FieldIdentifier& id) const;
@@ -227,30 +223,20 @@ public:
   // Convenience function to retrieve input/output fields from the field/group (and grid) name.
   // Note: the version without grid name only works if there is only one copy of the field/group.
   //       In that case, the single copy is returned, regardless of the associated grid name.
-  const Field& get_field_in(const std::string& field_name, const std::string& grid_name) const;
-        Field& get_field_in(const std::string& field_name, const std::string& grid_name);
-  const Field& get_field_in(const std::string& field_name) const;
-        Field& get_field_in(const std::string& field_name);
+  Field get_field_in(const std::string& field_name, const std::string& grid_name) const;
+  Field get_field_in(const std::string& field_name) const;
 
-  const Field& get_field_out(const std::string& field_name, const std::string& grid_name) const;
-        Field& get_field_out(const std::string& field_name, const std::string& grid_name);
-  const Field& get_field_out(const std::string& field_name) const;
-        Field& get_field_out(const std::string& field_name);
+  Field get_field_out(const std::string& field_name, const std::string& grid_name) const;
+  Field get_field_out(const std::string& field_name) const;
 
-  const FieldGroup& get_group_in(const std::string& group_name, const std::string& grid_name) const;
-        FieldGroup& get_group_in(const std::string& group_name, const std::string& grid_name);
-  const FieldGroup& get_group_in(const std::string& group_name) const;
-        FieldGroup& get_group_in(const std::string& group_name);
+  FieldGroup get_group_in(const std::string& group_name, const std::string& grid_name) const;
+  FieldGroup get_group_in(const std::string& group_name) const;
 
-  const FieldGroup& get_group_out(const std::string& group_name, const std::string& grid_name) const;
-        FieldGroup& get_group_out(const std::string& group_name, const std::string& grid_name);
-  const FieldGroup& get_group_out(const std::string& group_name) const;
-        FieldGroup& get_group_out(const std::string& group_name);
+  FieldGroup get_group_out(const std::string& group_name, const std::string& grid_name) const;
+  FieldGroup get_group_out(const std::string& group_name) const;
 
-  const Field& get_internal_field(const std::string& field_name, const std::string& grid_name) const;
-        Field& get_internal_field(const std::string& field_name, const std::string& grid_name);
-  const Field& get_internal_field(const std::string& field_name) const;
-        Field& get_internal_field(const std::string& field_name);
+  Field get_internal_field(const std::string& field_name, const std::string& grid_name) const;
+  Field get_internal_field(const std::string& field_name) const;
 
   // Add a pre-built property check (PC) for precondition, postcondition,
   // invariant (i.e., pre+post), or column conservation check.
@@ -457,13 +443,11 @@ protected:
   virtual void set_required_group_impl (const FieldGroup& /* group */) {}
   virtual void set_computed_group_impl (const FieldGroup& /* group */) {}
 
-  // Adds a field to the list of internal fields, possibly adding it to the given groups
-  void add_internal_field (const Field& f, const std::vector<std::string>& groups = {});
+  // Adds a field to the internal field manager, possibly adding it to the given groups
+  void add_internal_field (Field& f, const std::vector<std::string>& groups = {});
 
-  // These methods set up an extra pointer in the m_[fields|groups]_[in|out]_pointers,
+  // These methods set up an alias in the internal field managers,
   // for convenience of use (e.g., use a short name for a field/group).
-  // Note: these methods do *not* create a copy of the field/group. Also, notice that
-  //       these methods need to be called *after* set_fields_and_groups_pointers().
   void alias_field_in (const std::string& field_name,
                        const std::string& grid_name,
                        const std::string& alias_name);
@@ -511,22 +495,6 @@ protected:
   void remove_group(const std::string& group_name, const std::string& grid_name);
 
 private:
-  // Called from initialize, this method creates the m_[fields|groups]_[in|out]_pointers
-  // maps, which are used inside the get_[field|group]_[in|out] methods.
-  void set_fields_and_groups_pointers ();
-
-  // Getters that can be called on both const and non-const objects
-  Field& get_field_in_impl(const std::string& field_name, const std::string& grid_name) const;
-  Field& get_field_in_impl(const std::string& field_name) const;
-  Field& get_field_out_impl(const std::string& field_name, const std::string& grid_name) const;
-  Field& get_field_out_impl(const std::string& field_name) const;
-  Field& get_internal_field_impl(const std::string& field_name, const std::string& grid_name) const;
-  Field& get_internal_field_impl(const std::string& field_name) const;
-
-  FieldGroup& get_group_in_impl(const std::string& group_name, const std::string& grid_name) const;
-  FieldGroup& get_group_in_impl(const std::string& group_name) const;
-  FieldGroup& get_group_out_impl(const std::string& group_name, const std::string& grid_name) const;
-  FieldGroup& get_group_out_impl(const std::string& group_name) const;
 
   // Compute/store data needed for this processes mass and energy conservation
   // check: dt, tolerance, current mass and energy value per column.
@@ -544,25 +512,14 @@ private:
   //       Instead, they are forced to use access function, which include
   //       sanity checks and any setup/cleanup logic.
 
-  // Store input/output/internal fields and groups.
-  std::list<FieldGroup>   m_groups_in;
-  std::list<FieldGroup>   m_groups_out;
-  std::list<Field>        m_fields_in;
-  std::list<Field>        m_fields_out;
-  std::list<Field>        m_internal_fields;
+  // Store input/output/internal fields and groups in FieldManagers
+  std::shared_ptr<FieldManager>   m_inputs;
+  std::shared_ptr<FieldManager>   m_outputs;
+  std::shared_ptr<FieldManager>   m_internals;
 
   // Data structures necessary to compute tendencies of updated fields
   strmap_t<Field>    m_proc_tendencies;
   strmap_t<Field>    m_start_of_step_fields;
-
-  // These maps help to retrieve a field/group stored in the lists above. E.g.,
-  //   auto ptr = m_field_in_pointers[field_name][grid_name];
-  // then *ptr is a field in m_fields_in, with name $field_name, on grid $grid_name.
-  strmap_t<strmap_t<FieldGroup*>> m_groups_in_pointers;
-  strmap_t<strmap_t<FieldGroup*>> m_groups_out_pointers;
-  strmap_t<strmap_t<Field*>> m_fields_in_pointers;
-  strmap_t<strmap_t<Field*>> m_fields_out_pointers;
-  strmap_t<strmap_t<Field*>> m_internal_fields_pointers;
 
   // List of property checks for fields
   std::list<std::pair<CheckFailHandling,prop_check_ptr>> m_precondition_checks;
