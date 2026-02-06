@@ -112,6 +112,11 @@ AtmosphereProcess (const ekat::Comm& comm, const ekat::ParameterList& params)
 #endif
 }
 
+void AtmosphereProcess::set_grids (const std::shared_ptr<const GridsManager> grids_manager) {
+  m_grids_manager = grids_manager;
+  create_requests();
+}
+
 void AtmosphereProcess::initialize (const TimeStamp& t0, const RunType run_type) {
   if (this->type()!=AtmosphereProcessType::Group) {
     start_timer (m_timer_prefix + this->name() + "::init");
