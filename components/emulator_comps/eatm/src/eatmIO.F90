@@ -96,6 +96,7 @@ module eatmIO
      module procedure ncd_io_log_var1_nf
      module procedure ncd_io_int_var1_nf
      module procedure ncd_io_real_var1_nf
+     module procedure ncd_io_double_var1_nf
      module procedure ncd_io_char_var1_nf
      module procedure ncd_io_char_varn_strt_nf
 
@@ -1172,7 +1173,7 @@ contains
     type(file_desc_t), intent(inout) :: ncid                ! netcdf file id
     character(len=*) , intent(in)    :: flag                ! 'read' or 'write'
     character(len=*) , intent(in)    :: varname             ! variable name
-    real(r8)         , intent(inout) :: data(:)             ! raw data
+    real(r4)         , intent(inout) :: data(:)             ! raw data
     logical          , optional, intent(out):: readvar      ! was var read?
     integer          , optional, intent(in) :: nt           ! time sample index
     ! !LOCAL VARIABLES:
@@ -1213,6 +1214,57 @@ contains
 
   end subroutine ncd_io_real_var1_nf
 
+  subroutine ncd_io_double_var1_nf(varname, data, flag, ncid, readvar, nt)
+
+    !------------------------------------------------------------------------
+    ! !DESCRIPTION:
+    ! netcdf I/O of global double array
+    !
+    ! !ARGUMENTS:
+    implicit none
+    type(file_desc_t), intent(inout) :: ncid                ! netcdf file id
+    character(len=*) , intent(in)    :: flag                ! 'read' or 'write'
+    character(len=*) , intent(in)    :: varname             ! variable name
+    real(r8)         , intent(inout) :: data(:)             ! raw data
+    logical          , optional, intent(out):: readvar      ! was var read?
+    integer          , optional, intent(in) :: nt           ! time sample index
+    ! !LOCAL VARIABLES:
+    integer :: varid                ! netCDF variable id
+    integer :: start(2), count(2)   ! output bounds
+    integer :: status               ! error code
+    logical :: varpresent           ! if true, variable is on tape
+    character(len=32) :: vname      ! variable error checking
+    type(var_desc_t)  :: vardesc    ! local vardesc pointer
+    character(len=*),parameter :: subname='ncd_io_real_var1_nf'
+    !-----------------------------------------------------------------------
+
+    if (flag == 'read') then
+
+       call ncd_inqvid(ncid, varname, varid, vardesc, readvar=varpresent)
+       if (varpresent) then
+          status = pio_get_var(ncid, varid, data)
+       endif
+       if (present(readvar)) readvar = varpresent
+
+    elseif (flag == 'write') then
+
+       start = 0
+       count = 0
+       if (present(nt))      then
+          start(1) = 1
+          start(2) = nt
+          count(1) = size(data)
+          count(2) = 1
+       else
+          start(1) = 1
+          count(1) = size(data)
+       end if
+       call ncd_inqvid  (ncid, varname, varid, vardesc)
+       status = pio_put_var(ncid, varid, start, count, data)
+
+    endif   ! flag
+
+  end subroutine ncd_io_double_var1_nf
 !------------------------------------------------------------------------
 
   subroutine ncd_io_char_var1_nf(varname, data, flag, ncid, readvar, nt )
