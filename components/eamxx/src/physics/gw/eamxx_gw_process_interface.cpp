@@ -17,9 +17,9 @@ GWMicrophysics::GWMicrophysics(const ekat::Comm& comm, const ekat::ParameterList
 }
 
 // =========================================================================================
-void GWMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
+void GWMicrophysics::create_requests()
 {
-  m_grid = grids_manager->get_grid("physics");
+  m_grid = m_grids_manager->get_grid("physics");
 }
 
 // =========================================================================================

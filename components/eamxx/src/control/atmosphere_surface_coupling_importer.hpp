@@ -48,7 +48,7 @@ public:
   std::string name () const { return "SurfaceCouplingImporter"; }
 
   // Set the grid
-  void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
+  void create_requests ();
 
   // Function which performes the import to scream fields.
   // If calling in initialize_impl(), set

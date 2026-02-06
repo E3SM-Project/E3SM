@@ -83,7 +83,7 @@ RRTMGPRadiation (const ekat::Comm& comm, const ekat::ParameterList& params)
   m_ngas = m_gas_names.size();
 }
 
-void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
+void RRTMGPRadiation::create_requests() {
 
   using namespace ekat::units;
   using namespace ekat::prefixes;
@@ -93,7 +93,7 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   auto nondim = Units::nondimensional();
   auto micron = micro*m;
 
-  m_grid = grids_manager->get_grid("physics");
+  m_grid = m_grids_manager->get_grid("physics");
   const auto& grid_name = m_grid->name();
   m_ncol = m_grid->get_num_local_dofs();
   m_nlay = m_grid->get_num_vertical_levels();
@@ -122,7 +122,7 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
     m_col_chunk_beg[i+1] = std::min(m_ncol,m_col_chunk_beg[i] + m_col_chunk_size);
   }
   this->log(LogLevel::debug,
-            "[RRTMGP::set_grids] Col chunking stats:\n"
+            "[RRTMGP::create_requests] Col chunking stats:\n"
             "  - Chunk size: " + std::to_string(m_col_chunk_size) + "\n"
             "  - Number of chunks: " + std::to_string(m_num_col_chunks) + "\n");
 
@@ -288,7 +288,7 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
       m_grid->set_geometry_data(bands);
     }
   }
-}  // RRTMGPRadiation::set_grids
+}  // RRTMGPRadiation::create_requests
 
 size_t RRTMGPRadiation::requested_buffer_size_in_bytes() const
 {

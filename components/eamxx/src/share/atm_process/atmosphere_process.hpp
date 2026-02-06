@@ -103,7 +103,13 @@ public:
   // Give the grids manager to the process, so it can grab its grid
   // Upon return, the atm proc should have a valid and complete list
   // of in/out/inout FieldRequest and GroupRequest.
-  virtual void set_grids (const std::shared_ptr<const GridsManager> grids_manager) = 0;
+  // This method stores the grids manager and calls the purely virtual
+  // create_requests() method that derived classes must implement.
+  void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
+
+  // Derived classes must override this method to create their field/group requests.
+  // This is called by set_grids after storing the grids manager.
+  virtual void create_requests () = 0;
 
   // These are the three main interfaces:
   //   - the initialize method sets up all the stuff the process needs in order to run,
@@ -605,6 +611,9 @@ protected:
 
   // IOP object
   iop_data_ptr m_iop_data_manager;
+
+  // Grids manager
+  std::shared_ptr<const GridsManager> m_grids_manager;
 
   // A map grid_name->requests for in/out field/group.
   std::list<FieldRequest>   m_field_requests;

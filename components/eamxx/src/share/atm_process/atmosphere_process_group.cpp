@@ -147,7 +147,7 @@ bool AtmosphereProcessGroup::has_process(const std::string& name) const {
   return false;
 }
 
-void AtmosphereProcessGroup::set_grids (const std::shared_ptr<const GridsManager> grids_manager) {
+void AtmosphereProcessGroup::create_requests () {
 
   // The atm process group (APG) simply 'concatenates' required/computed
   // fields of the stored process. There is a single exception to this
@@ -156,7 +156,7 @@ void AtmosphereProcessGroup::set_grids (const std::shared_ptr<const GridsManager
   // field is not exposed as a required field of the group.
   const bool seq_splitting = m_group_schedule_type==ScheduleType::Sequential;
   for (auto& atm_proc : m_atm_processes) {
-    atm_proc->set_grids(grids_manager);
+    atm_proc->set_grids(m_grids_manager);
 
     // Add inputs/outputs to the list of inputs of the group
     for (const auto& ap_req : atm_proc->get_field_requests()) {
@@ -172,8 +172,6 @@ void AtmosphereProcessGroup::set_grids (const std::shared_ptr<const GridsManager
         req.usage = Computed;
     }
   }
-
-  m_grids_mgr = grids_manager;
 }
 
 void AtmosphereProcessGroup::
@@ -309,12 +307,12 @@ void AtmosphereProcessGroup::add_postcondition_nan_checks () const {
     } else {
       for (const auto& f : proc->get_fields_out()) {
         const auto& grid_name = f.get_header().get_identifier().get_grid_name();
-        auto nan_check = std::make_shared<FieldNaNCheck>(f,m_grids_mgr->get_grid(grid_name));
+        auto nan_check = std::make_shared<FieldNaNCheck>(f,m_grids_manager->get_grid(grid_name));
         proc->add_postcondition_check(nan_check, CheckFailHandling::Fatal);
       }
 
       for (const auto& g : proc->get_groups_out()) {
-        const auto& grid = m_grids_mgr->get_grid(g.grid_name());
+        const auto& grid = m_grids_manager->get_grid(g.grid_name());
         for (const auto& f : g.m_individual_fields) {
           auto nan_check = std::make_shared<FieldNaNCheck>(*f.second,grid);
           proc->add_postcondition_check(nan_check, CheckFailHandling::Fatal);
