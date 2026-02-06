@@ -885,6 +885,11 @@ register_variables(const std::string& filename,
       if (fid.get_layout().has_tag(COL)) {
         scorpio::set_attribute(filename, field_name, "coordinates", "lat lon");
       }
+
+      // If this is transposed output, mark the variable
+      if (m_transpose) {
+        scorpio::set_attribute(filename, field_name, "transposed_output", "true");
+      }
     }
   }
 
