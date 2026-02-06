@@ -84,7 +84,7 @@ public:
   MyProcess(const ekat::Comm& comm, const ekat::ParameterList& pl);
 
   std::string name () const override { return "my_fancy_process"; }
-  void set_grids (const gm_ptr& grids_manager) override;
+  void create_requests () override;
   size_t requested_buffer_size_in_bytes () const override;
   void init_buffers (const ATMBufferManager& buffer_manager) override;
 protected:
@@ -133,12 +133,12 @@ MyProcess::MyProcess (const ekat::Comm& comm, const ekat::ParameterList& pl)
   m_has_blah = m_params.get<bool>("enable_blah");
 }
 
-void MyProcess::set_grids (const std::shared_ptr<GridsManager>& gm)
+void MyProcess::create_requests ()
 {
   using namespace ekat::units;
   const auto nondim = Units::nondimensional();
 
-  auto grid = gm->get_grid("physics");
+  auto grid = m_grids_manager->get_grid("physics");
   m_ncols = grid->get_num_local_dofs();
   m_nlevs = grid->get_num_vertical_levels();
 

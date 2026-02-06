@@ -75,13 +75,13 @@ HommeDynamics::~HommeDynamics ()
   HommeContextUser::singleton().remove_user();
 }
 
-void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_manager)
+void HommeDynamics::create_requests ()
 {
   // Grab dynamics, physics, and physicsGLL grids
   const auto dgn = "dynamics";
-  m_dyn_grid = grids_manager->get_grid(dgn);
-  m_phys_grid = grids_manager->get_grid("physics");
-  m_cgll_grid = grids_manager->get_grid("physics_gll");
+  m_dyn_grid = m_grids_manager->get_grid(dgn);
+  m_phys_grid = m_grids_manager->get_grid("physics");
+  m_cgll_grid = m_grids_manager->get_grid("physics_gll");
 
   fv_phys_set_grids();
 

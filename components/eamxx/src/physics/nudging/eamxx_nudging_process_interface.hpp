@@ -36,7 +36,7 @@ public:
   std::string name () const override { return "Nudging"; }
 
   // Set the grid
-  void set_grids (const std::shared_ptr<const GridsManager> grids_manager) override;
+  void create_requests () override;
 
 #ifndef KOKKOS_ENABLE_CUDA
   // Cuda requires methods enclosing __device__ lambda's to be public

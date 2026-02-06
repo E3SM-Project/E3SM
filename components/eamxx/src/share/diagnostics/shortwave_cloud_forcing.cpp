@@ -12,13 +12,13 @@ ShortwaveCloudForcingDiagnostic (const ekat::Comm& comm, const ekat::ParameterLi
   // Nothing to do here
 }
 
-void ShortwaveCloudForcingDiagnostic::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
+void ShortwaveCloudForcingDiagnostic::create_requests()
 {
   using namespace ekat::units;
 
   Units m2 (m*m,"m2");
 
-  auto grid  = grids_manager->get_grid("physics");
+  auto grid  = m_grids_manager->get_grid("physics");
   const auto& grid_name = grid->name();
   m_num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = grid->get_num_vertical_levels();  // Number of levels per column
