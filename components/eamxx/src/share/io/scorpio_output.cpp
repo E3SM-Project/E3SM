@@ -37,11 +37,11 @@ transfer_extra_data(const scream::Field &src, scream::Field &tgt)
   }
 };
 
-// Helper function to get the name of a transposed helper field from a layout
+// Helper function to get the name of a transposed helper field from a layout and data type
 std::string
-get_transposed_helper_name(const scream::FieldLayout& layout)
+get_transposed_helper_name(const scream::FieldLayout& layout, const scream::DataType data_type)
 {
-  return "transposed_" + layout.transpose().to_string();
+  return "transposed_" + layout.transpose().to_string() + "_" + e2str(data_type);
 }
 
 // Note: this is also declared in eamxx_scorpio_interface.cpp. Move it somewhere else?
@@ -356,13 +356,14 @@ void AtmosphereOutput::init()
     // such as writing transposed output.
     if (m_transpose) {
       const auto helper_layout = layout.transpose();
-      // Note: helper name is based on the ORIGINAL layout (not transposed), so that
-      // when we look up the helper during write, we use the field's original layout
-      const std::string helper_name = get_transposed_helper_name(layout);
+      const auto data_type = fid.data_type();
+      // Note: helper name is based on the ORIGINAL layout (not transposed) and data type, so that
+      // when we look up the helper during write, we use the field's original layout and data type
+      const std::string helper_name = get_transposed_helper_name(layout, data_type);
       if (m_helper_fields.find(helper_name) == m_helper_fields.end()) {
-        // We can add a new helper field for this layout
+        // We can add a new helper field for this layout and data type
         using namespace ekat::units;
-        FieldIdentifier fid_helper(helper_name,helper_layout,Units::invalid(),fid.get_grid_name());
+        FieldIdentifier fid_helper(helper_name,helper_layout,Units::invalid(),fid.get_grid_name(),data_type);
         Field helper(fid_helper);
         helper.get_header().get_alloc_properties().request_allocation();
         helper.allocate_view();
@@ -537,8 +538,10 @@ run (const std::string& filename,
 
         auto func_start = std::chrono::steady_clock::now();
         if (m_transpose) {
-          const auto& layout = count.get_header().get_identifier().get_layout();
-          const std::string helper_name = get_transposed_helper_name(layout);
+          const auto& id = count.get_header().get_identifier();
+          const auto& layout = id.get_layout();
+          const auto data_type = id.data_type();
+          const std::string helper_name = get_transposed_helper_name(layout, data_type);
           auto& temp = m_helper_fields.at(helper_name);
           transpose(count,temp);
           temp.sync_to_host();
@@ -624,8 +627,10 @@ run (const std::string& filename,
       // Write to file
       auto func_start = std::chrono::steady_clock::now();
       if (m_transpose) {
-        const auto& layout = f_out.get_header().get_identifier().get_layout();
-        const std::string helper_name = get_transposed_helper_name(layout);
+        const auto& id = f_out.get_header().get_identifier();
+        const auto& layout = id.get_layout();
+        const auto data_type = id.data_type();
+        const std::string helper_name = get_transposed_helper_name(layout, data_type);
         auto& temp = m_helper_fields.at(helper_name);
         transpose(f_out,temp);
         temp.sync_to_host();
