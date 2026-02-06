@@ -10,6 +10,7 @@
 #include <fstream>
 #include <regex>
 #include <sstream>
+#include <cctype>
 
 namespace scream {
 
@@ -172,12 +173,16 @@ util::TimeStamp parse_cf_time_units (const std::string& time_units)
       time_str = time_str.substr(time_start);
     }
     
-    // Find timezone indicators (alphabetic characters like UTC, GMT)
-    // For numeric timezone offsets (+/-HH:MM), they should be parsed as part of
-    // the time components, so we only look for alphabetic timezone indicators here
-    auto tz_pos = time_str.find_first_of("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
-    if (tz_pos != std::string::npos) {
-      time_str = time_str.substr(0, tz_pos);
+    // Look for space-separated timezone (e.g., "12:30:45 UTC")
+    // In CF convention, timezones are typically separated by space
+    auto tz_space_pos = time_str.find(' ');
+    if (tz_space_pos != std::string::npos) {
+      // Check if what follows looks like a timezone (starts with letter)
+      size_t tz_start = time_str.find_first_not_of(" \t", tz_space_pos);
+      if (tz_start != std::string::npos && std::isalpha(time_str[tz_start])) {
+        // Truncate at the space before the timezone
+        time_str = time_str.substr(0, tz_space_pos);
+      }
     }
     
     // Trim trailing whitespace
