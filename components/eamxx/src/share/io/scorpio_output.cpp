@@ -37,6 +37,13 @@ transfer_extra_data(const scream::Field &src, scream::Field &tgt)
   }
 };
 
+// Helper function to get the name of a transposed helper field from a layout
+std::string
+get_transposed_helper_name(const scream::FieldLayout& layout)
+{
+  return "transposed_" + layout.transpose().to_string();
+}
+
 // Note: this is also declared in eamxx_scorpio_interface.cpp. Move it somewhere else?
 template <typename T>
 std::string
@@ -349,7 +356,7 @@ void AtmosphereOutput::init()
     // such as writing transposed output.
     if (m_transpose) {
       const auto helper_layout = layout.transpose();
-      const std::string helper_name   = "transposed_"+helper_layout.to_string();
+      const std::string helper_name = get_transposed_helper_name(layout);
       if (m_helper_fields.find(helper_name) == m_helper_fields.end()) {
         // We can add a new helper field for this layout
         using namespace ekat::units;
@@ -528,8 +535,8 @@ run (const std::string& filename,
 
         auto func_start = std::chrono::steady_clock::now();
         if (m_transpose) {
-          const auto& fl = count.get_header().get_identifier().get_layout().to_string();
-          const std::string helper_name   = "transposed_"+fl;
+          const auto& layout = count.get_header().get_identifier().get_layout();
+          const std::string helper_name = get_transposed_helper_name(layout);
           auto& temp = m_helper_fields.at(helper_name);
           transpose(count,temp);
           temp.sync_to_host();
@@ -615,8 +622,8 @@ run (const std::string& filename,
       // Write to file
       auto func_start = std::chrono::steady_clock::now();
       if (m_transpose) {
-        const auto& fl = f_out.get_header().get_identifier().get_layout().transpose().to_string();
-        const std::string helper_name   = "transposed_"+fl;
+        const auto& layout = f_out.get_header().get_identifier().get_layout();
+        const std::string helper_name = get_transposed_helper_name(layout);
         auto& temp = m_helper_fields.at(helper_name);
         transpose(f_out,temp);
         temp.sync_to_host();
