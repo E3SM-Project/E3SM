@@ -54,6 +54,12 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
   )
 
+  ## Test transposed output (all averaging types)
+  CreateUnitTest(io_transpose "io_transpose.cpp"
+    LIBS eamxx_io LABELS io
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+  )
+
   # Test output on SE grid
   CreateUnitTest(io_se_grid "io_se_grid.cpp"
     LIBS eamxx_io LABELS io
