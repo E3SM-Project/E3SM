@@ -486,7 +486,7 @@ contains
       time = secs_curr;
 
       irrig_nsteps_per_day = ((irrig_length + (dtime - 1))/dtime)  ! round up
-      ! First - set the following values over points where frac vegetation covered by snow is zero
+      ! First - set the following values over points where frac vegetation NOT covered by snow is zero
       ! (e.g. btran, t_veg, rootr, rresis)
       do fp = 1,num_nolakeurbanp
          p = filter_nolakeurbanp(fp)
