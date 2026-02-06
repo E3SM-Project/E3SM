@@ -213,6 +213,32 @@ class TestProvenance(unittest.TestCase):
             f"{tempdir}/.git/config", "/output/GIT_CONFIG.5", preserve_meta=False
         )
 
+    @mock.patch("provenance.logger")
+    def test_record_timing_invalid_timing_dir(self, mock_logger):
+        """Test that logger.warning properly handles RuntimeError without TypeError"""
+        mock_case = mock.Mock()
+        mock_case.get_value.side_effect = lambda key, **kwargs: {
+            "PROJECT": "test_project",
+            "RUNDIR": "/run",
+            "EXEROOT": "/exe",
+            "CASEROOT": "/case",
+            "SRCROOT": "/src",
+            "CASE": "test_case",
+            "SAVE_TIMING_DIR": "/invalid/path"
+        }.get(key, None)
+        mock_case.is_save_timing_dir_project.return_value = True
+        
+        # This should not raise TypeError anymore
+        provenance._record_timing(mock_case, "test_lid")
+        
+        # Verify that logger.warning was called with the error message
+        mock_logger.warning.assert_called_once()
+        # Get the actual warning message
+        call_args = mock_logger.warning.call_args[0][0]
+        # Should contain the error message about invalid SAVE_TIMING_DIR
+        assert "SAVE_TIMING_DIR" in call_args
+        assert "not valid" in call_args
+
 
 if __name__ == "__main__":
     unittest.main()
