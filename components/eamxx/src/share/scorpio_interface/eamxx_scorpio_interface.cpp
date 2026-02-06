@@ -794,12 +794,18 @@ void set_var_decomp (PIOVar& var,
       " - var dims: " + ekat::join(var.dims,get_entity_name,",") + "\n"
       " - decomp dims: " + ekat::join(decomposed_dims,",") + "\n");
 
-  EKAT_REQUIRE_MSG (last_decomp==(num_decomp-1),
-      "Error! We cannot decompose this variable, as the decomp dims are not the slowest striding ones.\n"
-      " - filename: " + filename + "\n"
-      " - varname : " + var.name + "\n"
-      " - var dims: " + ekat::join(var.dims,get_entity_name,",") + "\n"
-      " - decomp dims: " + ekat::join(decomposed_dims,",") + "\n");
+  // Check if this is transposed output - if so, skip the stride check
+  // For transposed output, decomposed dimensions may not be the slowest striding
+  bool is_transposed = has_attribute(filename, var.name, "transposed_output");
+  
+  if (!is_transposed) {
+    EKAT_REQUIRE_MSG (last_decomp==(num_decomp-1),
+        "Error! We cannot decompose this variable, as the decomp dims are not the slowest striding ones.\n"
+        " - filename: " + filename + "\n"
+        " - varname : " + var.name + "\n"
+        " - var dims: " + ekat::join(var.dims,get_entity_name,",") + "\n"
+        " - decomp dims: " + ekat::join(decomposed_dims,",") + "\n");
+  }
 
   // Create decomp name: dtype-dim1<len1>_dim2<len2>_..._dimk<lenN>
   auto get_dimtag = [](const auto dim) {
