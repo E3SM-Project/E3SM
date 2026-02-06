@@ -362,6 +362,7 @@ void AtmosphereOutput::init()
       const std::string helper_name = get_transposed_helper_name(layout, data_type);
       if (m_helper_fields.find(helper_name) == m_helper_fields.end()) {
         // We can add a new helper field for this layout and data type
+        // Use Units::invalid() since this helper is reused for fields with same layout but different units
         using namespace ekat::units;
         FieldIdentifier fid_helper(helper_name,helper_layout,Units::invalid(),fid.get_grid_name(),data_type);
         Field helper(fid_helper);
