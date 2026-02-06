@@ -1286,7 +1286,7 @@ contains
     call elm_moab_initialize()
 
     ! load the mesh file for ELM
-    !call elm_moab_load_grid_file(fatmlndfrc)
+    call elm_moab_load_grid_file(fatmlndfrc)
 
   end subroutine elm_moab_interface_init
 #endif
