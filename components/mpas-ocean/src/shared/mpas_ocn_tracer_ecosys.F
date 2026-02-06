@@ -1884,7 +1884,6 @@ contains
             IRON_FLUX_IN(iCell) = (1.0_RKIND - iceFraction(iCell))*IRON_FLUX_IN(iCell)  &
                                 + iceFluxFeDissolved(iCell)
          endif
-! NOTE pass in total Fe and mult by parm_Fe_bioavail inside the flux routine
          marbl_instances(1)%surface_flux_forcings(ironFlux_indexInMARBL)%field_0d(iCell) = &
             IRON_FLUX_IN(iCell)
          marbl_instances(1)%surface_flux_forcings(dustFluxSurface_indexInMARBL)%field_0d(iCell) = &
@@ -2868,7 +2867,7 @@ contains
              endif
              if (config_use_ecosystracers_sea_ice_coupling .and. .not. firstTimeStep) then
                dust_FLUX_IN(iCell) = (1.0_RKIND - iceFraction(iCell))*dust_FLUX_IN(iCell)  &
-                                + iceFluxDust(iCell)
+                                + max(0.0_RKIND,iceFluxDust(iCell))
              endif
              IRON_FLUX_IN(iCell)  = ( dust_FLUX_WET(iCell)*IRON_Solubility_wet(iCell)    &
                                     + dust_FLUX_DRY(iCell)*IRON_Solubility_dry(iCell) )  &

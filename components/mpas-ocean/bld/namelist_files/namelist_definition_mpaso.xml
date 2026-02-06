@@ -3168,7 +3168,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_use_ecosysTracers_iron_solubility_file" type="logical"
 	category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
-if true, use iron solubility field read in from a file
+if true, read in Fe solubility from the ecosys forcing file
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
@@ -3176,7 +3176,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_use_ecosysTracers_atm_dust_from_coupler" type="logical"
 	category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
-if true, get wet and dry atm dust deposition from the coupler instead of file
+if true, get atmospheric dust inputs from the coupler, else from ecosys monthly forcing file
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
