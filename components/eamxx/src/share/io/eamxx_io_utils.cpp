@@ -166,10 +166,23 @@ util::TimeStamp parse_cf_time_units (const std::string& time_units)
   
   // Parse time part if present (HH:MM:SS or HH:MM:SS.fraction)
   if (!time_str.empty()) {
-    // Remove any trailing timezone information
-    auto tz_pos = time_str.find_first_not_of("0123456789:. ");
+    // First, trim leading whitespace
+    size_t time_start = time_str.find_first_not_of(" \t\n\r");
+    if (time_start != std::string::npos) {
+      time_str = time_str.substr(time_start);
+    }
+    
+    // Find timezone indicators (letters like UTC, GMT, or +/- for offset)
+    // Allow digits, colons, periods (for fractional seconds), and spaces before timezone
+    auto tz_pos = time_str.find_first_of("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz+-");
     if (tz_pos != std::string::npos) {
-      time_str = time_str.substr(0, tz_pos);
+      // Check if this + or - is actually part of a timezone (comes after the time)
+      // It should appear after at least HH:MM (5 chars)
+      if ((time_str[tz_pos] == '+' || time_str[tz_pos] == '-') && tz_pos < 5) {
+        // This might be a negative year, not a timezone, so don't truncate
+      } else {
+        time_str = time_str.substr(0, tz_pos);
+      }
     }
     
     // Trim trailing whitespace
