@@ -172,6 +172,7 @@ protected:
 
   // --- Internal variables --- //
   ekat::Comm m_comm;
+  bool m_transpose = false;
 
   // We store separate shared pointers for field mgrs at different stages of IO:
   // More specifically, the order of operations is as follows:
@@ -201,6 +202,7 @@ protected:
     Scorpio // Output fields to pass to scorpio (may differ from the above in case of packing)
   };
   std::map<Phase, std::shared_ptr<fm_type>> m_field_mgrs;
+  std::map<std::string, Field> m_helper_fields;
 
   std::shared_ptr<const grid_type> m_io_grid;
   std::shared_ptr<remapper_type> m_horiz_remapper;
@@ -229,7 +231,7 @@ protected:
   DefaultMetadata m_default_metadata;
 
   bool m_add_time_dim;
-  bool m_track_avg_cnt = false;
+  bool m_track_avg_cnt         = false;
   bool m_latlon_output = false;
   std::string m_decomp_dimname = "";
 
