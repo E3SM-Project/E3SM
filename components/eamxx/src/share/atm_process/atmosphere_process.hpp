@@ -238,6 +238,13 @@ public:
   Field get_internal_field(const std::string& field_name, const std::string& grid_name) const;
   Field get_internal_field(const std::string& field_name) const;
 
+  // Methods to get all fields/groups
+  std::vector<Field> get_fields_in() const;
+  std::vector<Field> get_fields_out() const;
+  std::vector<Field> get_internal_fields() const;
+  std::vector<FieldGroup> get_groups_in() const;
+  std::vector<FieldGroup> get_groups_out() const;
+
   // Add a pre-built property check (PC) for precondition, postcondition,
   // invariant (i.e., pre+post), or column conservation check.
   void add_precondition_check        (const prop_check_ptr& prop_check,

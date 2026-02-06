@@ -106,6 +106,11 @@ void hash (const std::list<Field>& fs, HashType& accum) {
     hash(f, accum);
 }
 
+void hash (const std::vector<Field>& fs, HashType& accum) {
+  for (const auto& f : fs)
+    hash(f, accum);
+}
+
 template<typename Lambda>
 void hash_if (const std::list<Field>& fs, HashType& accum, const Lambda& condition) {
   for (const auto& f : fs) {
@@ -114,7 +119,21 @@ void hash_if (const std::list<Field>& fs, HashType& accum, const Lambda& conditi
   }
 }
 
+template<typename Lambda>
+void hash_if (const std::vector<Field>& fs, HashType& accum, const Lambda& condition) {
+  for (const auto& f : fs) {
+    if (condition(f))
+      hash(f, accum);
+  }
+}
+
 void hash (const std::list<FieldGroup>& fgs, HashType& accum) {
+  for (const auto& g : fgs)
+    for (const auto& e : g.m_individual_fields)
+      hash(*e.second, accum);
+}
+
+void hash (const std::vector<FieldGroup>& fgs, HashType& accum) {
   for (const auto& g : fgs)
     for (const auto& e : g.m_individual_fields)
       hash(*e.second, accum);
@@ -142,18 +161,18 @@ void AtmosphereProcess
     // Lump fields together (but keep in/out/internal separated)
     if (pre_run) {
       laccum.emplace_back();
-      hash(m_fields_in, laccum.back());
-      hash(m_groups_in, laccum.back());
+      hash(get_fields_in(), laccum.back());
+      hash(get_groups_in(), laccum.back());
       hash_names.push_back("inputs");
     } else {
       laccum.emplace_back();
-      hash(m_fields_out, laccum.back());
-      hash(m_groups_out, laccum.back());
+      hash(get_fields_out(), laccum.back());
+      hash(get_groups_out(), laccum.back());
       hash_names.push_back("outputs");
     }
 
     laccum.emplace_back();
-    hash_if(m_internal_fields, laccum.back(),process_internal_field);
+    hash_if(get_internal_fields(), laccum.back(),process_internal_field);
     hash_names.push_back("internals");
 
     slen = 10;
@@ -166,12 +185,12 @@ void AtmosphereProcess
       return f.name() + " (" + ekat::join(fl.names(),",") + ") <" + fid.get_grid_name() + ">";
     };
     if (pre_run) {
-      for (const auto& f : m_fields_in) {
+      for (const auto& f : get_fields_in()) {
         laccum.emplace_back();
         hash_names.push_back(make_hash_name(f));
         hash(f,laccum.back());
       }
-      for (const auto& g : m_groups_in) {
+      for (const auto& g : get_groups_in()) {
         for (const auto& [fn,f] : g.m_individual_fields) {
           laccum.emplace_back();
           hash_names.push_back(make_hash_name(*f));
@@ -179,12 +198,12 @@ void AtmosphereProcess
         }
       }
     } else {
-      for (const auto& f : m_fields_out) {
+      for (const auto& f : get_fields_out()) {
         laccum.emplace_back();
         hash_names.push_back(make_hash_name(f));
         hash(f,laccum.back());
       }
-      for (const auto& g : m_groups_out) {
+      for (const auto& g : get_groups_out()) {
         for (const auto& [fn,f] : g.m_individual_fields) {
           laccum.emplace_back();
           hash_names.push_back(make_hash_name(*f));
@@ -193,7 +212,7 @@ void AtmosphereProcess
       }
     }
 
-    for (const auto& f : m_internal_fields) {
+    for (const auto& f : get_internal_fields()) {
       laccum.emplace_back();
       hash_names.push_back(make_hash_name(f));
       if (process_internal_field(f))
@@ -253,7 +272,7 @@ void AtmosphereProcess::
 print_fast_global_state_hash (const std::string& label, const TimeStamp& t) const
 {
   HashType laccum = 0;
-  hash(m_fields_in, laccum);
+  hash(get_fields_in(), laccum);
   HashType gaccum;
   bfbhash::all_reduce_HashType(m_comm.mpi_comm(), &laccum, &gaccum, 1);
   if (m_comm.am_i_root())
