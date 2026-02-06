@@ -4645,7 +4645,7 @@
 <p>Nudging is supported in EAMxx.
 Currently, it is possible to nudge EAMxx to the output from a different EAMxx run or to reanalysis. Nudging data can be on your model grid or an arbitrary coarser grid. Inline interpolating of finer-grid nudging data to a coarser model resolution isn't implemented yet but may be in the future.</p>
 <h2 id="data-to-nudge-towards">Data to nudge towards</h2>
-<p>The user is expected to prepapre (and then use <code>atmchange</code> to point to) nudging data files that are compliant with EAMxx specification.
+<p>The user is expected to prepare (and then use <code>atmchange</code> to point to) nudging data files that are compliant with EAMxx specification.
 In practice, this means that the data files must contain variable names known to EAMxx (only U, V, T_mid, and qv are supported now).
 The files can be specified with an explicit list or via pattern matching.</p>
 <p>The files must contain a <code>time</code> dimension (which should be UNLIMITED) with a CF-compliant <code>units</code> attribute that specifies the reference time, such as <code>"days since 2000-01-01 00:00:00"</code> or <code>"seconds since 1970-01-01"</code>. </p>
