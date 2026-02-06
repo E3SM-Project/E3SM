@@ -222,6 +222,9 @@ template <typename ScalarT, typename DeviceT> struct Functions {
     view_2d<const Spack> cld_frac_l;
     // Rain cloud fraction
     view_2d<const Spack> cld_frac_r;
+//[shanyp 20251120
+    view_2d<const Spack> omega_mp;
+//shanyp 20251120]
     // Pressure [Pa]
     view_2d<const Spack> pres;
     // Vertical grid spacing [m]
@@ -1039,7 +1042,11 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       const uview_1d<const Spack> &ni_activated, const uview_1d<const Spack> &inv_qc_relvar,
       const uview_1d<const Spack> &cld_frac_i, const uview_1d<const Spack> &cld_frac_l,
       const uview_1d<const Spack> &cld_frac_r, const uview_1d<const Spack> &qv_prev,
-      const uview_1d<const Spack> &t_prev, const uview_1d<Spack> &T_atm, const uview_1d<Spack> &rho,
+      const uview_1d<const Spack> &t_prev, 
+//[shanyp 20251120
+      const uview_1d<const Spack>& oomega_mp,
+//shanyp 20251120]
+      const uview_1d<Spack> &T_atm, const uview_1d<Spack> &rho,
       const uview_1d<Spack> &inv_rho, const uview_1d<Spack> &qv_sat_l,
       const uview_1d<Spack> &qv_sat_i, const uview_1d<Spack> &qv_supersat_i,
       const uview_1d<Spack> &rhofacr, const uview_1d<Spack> &rhofaci, const uview_1d<Spack> &acn,
