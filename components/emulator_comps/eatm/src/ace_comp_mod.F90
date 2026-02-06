@@ -56,7 +56,9 @@ module ace_comp_mod
   integer(c_int) :: tensor_layout(4)
 
   ! TODO (AN): Parse from namelist
-  character(len=*), parameter :: torchscript_file="/global/cfs/cdirs/e3sm/anolan/aigroup/FACE/ACE2-EAMv3/ace2_EAMv3_ckpt_traced.tar"
+  character(len=*), parameter :: torchscript_file="/global/cfs/cdirs/e3sm/anolan/ACE2-E3SMv3/ace2_EAMv3_ckpt_traced.tar"
+  character(len=*), parameter :: norm_file="/global/cfs/cdirs/e3sm/anolan/ACE2-E3SMv3/ace2_EAMv3_normalize.nc"
+  character(len=*), parameter :: denorm_file="/global/cfs/cdirs/e3sm/anolan/ACE2-E3SMv3/ace2_EAMv3_denormalize.nc"
   save
 
   !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -106,6 +108,9 @@ CONTAINS
     ! using restart data from ACE set the fields passed to the coupler
     call ace_eatm_export()
 
+    call init_normalizer(normalizer, norm_file, n_input_channels)
+    call init_normalizer(denormalizer, denorm_file, n_output_channels)
+
   end subroutine ace_comp_init
 
   subroutine ace_comp_run(EClock)
@@ -147,6 +152,9 @@ CONTAINS
       ! populate net_imports array with IC/restart data passed to coupler for initializtion
       call ace_eatm_import()
 
+      ! normalize, can probably happen after tensor is made becuase it's a pointer
+      call normalizer%normalize(net_inputs)
+
       ! create input/output tensors based off net input/output arrays
       call torch_tensor_from_blob(&
         input_tensor(1), &
@@ -169,6 +177,9 @@ CONTAINS
 
       ! run inference
       call torch_model_forward(ace_model, input_tensor, output_tensor)
+
+      ! denormalize
+      call denormalizer%denormalize(net_outputs)
 
       ! advance the time levels
       do k = 1, n_output_channels
@@ -200,6 +211,9 @@ CONTAINS
     call torch_delete(ace_model)
     call torch_delete(input_tensor)
     call torch_delete(output_tensor)
+
+    call finalize_normalizer(normalizer)
+    call finalize_normalizer(denormalizer)
   end subroutine ace_comp_finalize
 
   subroutine ace_read_ic()
@@ -465,4 +479,37 @@ CONTAINS
 
   end function datm_shr_eSat
 
+  ! Define here becasue we need the eatmIO mod and trying to avoid circular imports
+  subroutine init_normalizer(norm, norm_file, n)
+    implicit none
+    class(t_normalization_struct), intent(out) :: norm
+    character(len=*),   intent(in)  :: norm_file
+    integer,            intent (in) :: n  ! number of variables
+    ! !LOCAL VARIABLES:
+    type(file_desc_t)          :: ncid    ! netcdf file id
+    logical                    :: found
+    character(len=*),parameter :: subname = '(init_normalizer) '
+
+    allocate(norm%stds(n))
+    allocate(norm%means(n))
+
+    call ncd_pio_openfile(ncid, trim(norm_file), 0)
+
+    call ncd_io(varname='stds', data=norm%stds, flag='read', ncid=ncid, readvar=found)
+    if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: reading -- stds -- from ' // trim(norm_file))
+
+    call ncd_io(varname='means', data=norm%means, flag='read', ncid=ncid, readvar=found)
+    if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: reading -- means -- from ' // trim(norm_file))
+
+    call ncd_pio_closefile(ncid)
+  end subroutine init_normalizer
+
+  subroutine finalize_normalizer(norm)
+    implicit none
+    class(t_normalization_struct), intent(inout) :: norm
+
+    deallocate(norm%stds)
+    deallocate(norm%means)
+
+  end subroutine finalize_normalizer
 end module ace_comp_mod

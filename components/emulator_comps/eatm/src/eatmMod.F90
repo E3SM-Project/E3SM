@@ -75,12 +75,74 @@ module eatmMod
 
   character(len=*), parameter, public :: rpfile = 'rpointer.atm'
 
-  type t_eatm_interpolator(kind)
+  type :: t_eatm_interpolator(kind)
     integer, kind :: kind
     real(kind=kind), dimension(:, :, :), allocatable :: t_im1
     real(kind=kind), dimension(:, :, :), allocatable :: t_ip1
   end type t_eatm_interpolator
 
   type(t_eatm_interpolator(kind=R4)), public :: eatm_intrp
+
+  type, public :: t_normalization_struct
+    real(kind=R4), dimension(:), allocatable :: means
+    real(kind=R4), dimension(:), allocatable :: stds
+  end type t_normalization_struct
+
+  type, extends(t_normalization_struct) :: t_normalizer
+    contains
+      procedure :: normalize
+  end type t_normalizer
+
+  type, extends(t_normalization_struct) :: t_denormalizer
+    contains
+      procedure :: denormalize
+  end type t_denormalizer
+
+  type(t_normalizer), public :: normalizer
+  type(t_denormalizer), public :: denormalizer
+
+contains
+
+  subroutine normalize(self, inputs)
+    class(t_normalizer) :: self
+    real(kind=R4), intent(inout) :: inputs(:, :, :, :)
+
+    integer :: i, j, k
+    integer :: nx, ny, nc
+
+    nc = SIZE(inputs, dim=2)
+    nx = SIZE(inputs, dim=3)
+    ny = SIZE(inputs, dim=4)
+
+    do k = 1, nc
+      do j = 1, ny
+        do i = 1, nx
+          inputs(1, k, i, j) = (inputs(1, k, i, j) + self%means(k)) / self%stds(k)
+        enddo
+      enddo
+    enddo
+
+  end subroutine normalize
+
+  subroutine denormalize(self, outputs)
+    class(t_denormalizer) :: self
+    real(kind=R4), intent(inout) :: outputs(:, :, :, :)
+
+    integer :: i, j, k
+    integer :: nx, ny, nc
+
+    nc = SIZE(outputs, dim=2)
+    nx = SIZE(outputs, dim=3)
+    ny = SIZE(outputs, dim=4)
+
+    do k = 1, nc
+      do j = 1, ny
+        do i = 1, nx
+          outputs(1, k, i, j) = outputs(1, k, i, j) * self%stds(k) + self%means(k)
+        enddo
+      enddo
+    enddo
+
+  end subroutine denormalize
 
 end module eatmMod
