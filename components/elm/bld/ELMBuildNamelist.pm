@@ -3764,20 +3764,26 @@ sub add_default {
 
     # query the definition to find out if the variable is an input pathname
     my $is_input_pathname = $definition->is_input_pathname($var);
+    
 
-    # The default values for input pathnames are relative.  If the namelist
-    # variable is defined to be an absolute pathname, then prepend
-    # the E3SM inputdata root directory.
-    if (not defined $settings{'no_abspath'}) {
-      if (defined $settings{'set_abspath'}) {
-        $val = set_abs_filepath($val, $settings{'set_abspath'});
-      } else {
-        if ($is_input_pathname eq 'abs') {
-          $val = set_abs_filepath($val, $inputdata_rootdir);
-        }
-      }
+    if ($is_input_pathname eq 'landroot') {
+	my $landroot = abs_path("$ProgDir/..");
+	$val = set_abs_filepath($val,$landroot);
+    } else {
+	# The default values for input pathnames are relative.  If the namelist
+	# variable is defined to be an absolute pathname, then prepend
+	# the E3SM inputdata root directory.
+	if (not defined $settings{'no_abspath'}) {
+	    if (defined $settings{'set_abspath'}) {
+		$val = set_abs_filepath($val, $settings{'set_abspath'});
+	    } else {
+		if ($is_input_pathname eq 'abs') {
+		    $val = set_abs_filepath($val, $inputdata_rootdir);
+		}
+	    }
+	}
     }
-
+    
     # query the definition to find out if the variable takes a string value.
     # The returned string length will be >0 if $var is a string, and 0 if not.
     my $str_len = $definition->get_str_len($var);
