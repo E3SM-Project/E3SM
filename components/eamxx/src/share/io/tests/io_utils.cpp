@@ -215,6 +215,17 @@ TEST_CASE ("parse_cf_time_units") {
     REQUIRE (ts.get_seconds() == 30);
   }
 
+  SECTION ("with fractional seconds (should be truncated)") {
+    auto ts_units = "seconds since 2020-05-10 14:25:36.789";
+    auto ts = parse_cf_time_units(ts_units);
+    REQUIRE (ts.get_year() == 2020);
+    REQUIRE (ts.get_month() == 5);
+    REQUIRE (ts.get_day() == 10);
+    REQUIRE (ts.get_hours() == 14);
+    REQUIRE (ts.get_minutes() == 25);
+    REQUIRE (ts.get_seconds() == 36); // fractional part is ignored
+  }
+
   SECTION ("invalid format (no 'since')") {
     auto ts_units = "seconds from 1970-01-01 00:00:00";
     REQUIRE_THROWS (parse_cf_time_units(ts_units));

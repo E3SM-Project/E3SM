@@ -164,9 +164,9 @@ util::TimeStamp parse_cf_time_units (const std::string& time_units)
       "  - date_str: " + date_str + "\n"
       "  - expected format: 'YYYY-MM-DD'\n");
   
-  // Parse time part if present (HH:MM:SS)
+  // Parse time part if present (HH:MM:SS or HH:MM:SS.fraction)
   if (!time_str.empty()) {
-    // Remove any trailing timezone information or extra characters
+    // Remove any trailing timezone information
     auto tz_pos = time_str.find_first_not_of("0123456789:. ");
     if (tz_pos != std::string::npos) {
       time_str = time_str.substr(0, tz_pos);
@@ -185,7 +185,12 @@ util::TimeStamp parse_cf_time_units (const std::string& time_units)
       if (time_stream.peek() == ':') {
         time_stream >> sep1 >> minute;
         if (time_stream.peek() == ':') {
-          time_stream >> sep2 >> second;
+          time_stream >> sep2;
+          // Read seconds as a double to handle fractional seconds, then truncate
+          double sec_with_frac;
+          time_stream >> sec_with_frac;
+          second = static_cast<int>(sec_with_frac);
+          // Note: fractional seconds are ignored as TimeStamp only supports integer seconds
         }
       }
     }
