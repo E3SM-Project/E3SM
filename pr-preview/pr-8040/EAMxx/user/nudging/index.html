@@ -4648,8 +4648,8 @@ Currently, it is possible to nudge EAMxx to the output from a different EAMxx ru
 <p>The user is expected to prepare (and then use <code>atmchange</code> to point to) nudging data files that are compliant with EAMxx specification.
 In practice, this means that the data files must contain variable names known to EAMxx (only U, V, T_mid, and qv are supported now).
 The files can be specified with an explicit list or via pattern matching.</p>
-<p>The files must contain a <code>time</code> dimension (which should be UNLIMITED) with a CF-compliant <code>units</code> attribute that specifies the reference time, such as <code>"days since 2000-01-01 00:00:00"</code> or <code>"seconds since 1970-01-01"</code>. </p>
-<p>For backward compatibility, the files may also contain a global attribute <code>case_t0</code> to specify the reference time. If both are present, <code>case_t0</code> takes precedence.</p>
+<p>The files must contain a <code>time</code> dimension (which should be UNLIMITED) with a CF-compliant <code>units</code> attribute that specifies the reference time and time unit, such as <code>"days since 2000-01-01 00:00:00"</code> or <code>"seconds since 1970-01-01"</code>. The time values in the file are assumed to be in the unit specified in the <code>units</code> attribute (e.g., days, seconds, minutes, or hours).</p>
+<p><strong>Note:</strong> The previously used <code>case_t0</code> global attribute is now deprecated and will be ignored if present. Please ensure your time coordinate has the correct <code>units</code> attribute.</p>
 <p>Finally, the dimension order must be such that <code>lev</code> is the last dimension, so most likely, the user must transpose the dimensions.</p>
 <h2 id="pressure-in-the-nudging-data">Pressure in the nudging data</h2>
 <p>Pressure can be explicitly provided in the nudging data as time-varying <code>p_mid</code> corresponding to the option <code>TIME_DEPENDENT_3D_PROFILE</code> for <code>source_pressure_type</code>.
