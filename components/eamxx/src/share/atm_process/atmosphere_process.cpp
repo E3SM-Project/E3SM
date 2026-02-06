@@ -114,6 +114,22 @@ AtmosphereProcess (const ekat::Comm& comm, const ekat::ParameterList& params)
 
 void AtmosphereProcess::set_grids (const std::shared_ptr<const GridsManager> grids_manager) {
   m_grids_manager = grids_manager;
+  
+  // Initialize the field managers
+  m_inputs = std::make_shared<FieldManager>(grids_manager);
+  m_inputs->set_name(name() + "::inputs");
+  
+  m_outputs = std::make_shared<FieldManager>(grids_manager);
+  m_outputs->set_name(name() + "::outputs");
+  
+  m_internals = std::make_shared<FieldManager>(grids_manager);
+  m_internals->set_name(name() + "::internals");
+  
+  // Close the repos since we'll be adding fields directly
+  m_inputs->registration_ends();
+  m_outputs->registration_ends();
+  m_internals->registration_ends();
+  
   create_requests();
 }
 
@@ -129,7 +145,6 @@ void AtmosphereProcess::initialize (const TimeStamp& t0, const RunType run_type)
     m_atm_logger->flush(); // During init, flush often (to help debug crashes)
   }
 
-  set_fields_and_groups_pointers();
   m_start_of_step_ts = m_end_of_step_ts = t0;
   initialize_impl(run_type);
 
@@ -286,9 +301,7 @@ void AtmosphereProcess::set_required_field (const Field& f) {
     "    atm process: " + this->name() + "\n"
     "Something is wrong up the call stack. Please, contact developers.\n");
 
-  if (not ekat::contains(m_fields_in,f)) {
-    m_fields_in.emplace_back(f);
-  }
+  m_inputs->add_field(f);
 
   // AtmosphereProcessGroup is just a "container" of *real* atm processes,
   // so don't add me as customer if I'm an atm proc group.
@@ -306,13 +319,11 @@ void AtmosphereProcess::set_computed_field (const Field& f) {
   // Sanity check
   EKAT_REQUIRE_MSG (has_computed_field(f.get_header().get_identifier()),
     "Error! Input field is not computed by this atm process.\n"
-    "   field id: " + f.get_header().get_identifier().get_id_string() + "\n"
+   "   field id: " + f.get_header().get_identifier().get_id_string() + "\n"
     "   atm process: " + this->name() + "\n"
     "Something is wrong up the call stack. Please, contact developers.\n");
 
-  if (not ekat::contains(m_fields_out,f)) {
-    m_fields_out.emplace_back(f);
-  }
+  m_outputs->add_field(f);
 
   // AtmosphereProcessGroup is just a "container" of *real* atm processes,
   // so don't add me as provider if I'm an atm proc group.
@@ -335,17 +346,16 @@ void AtmosphereProcess::set_required_group (const FieldGroup& group) {
     "   atm process: " + this->name() + "\n"
     "Something is wrong up the call stack. Please, contact developers.\n");
 
-  if (not ekat::contains(m_groups_in,group)) {
-    m_groups_in.emplace_back(group);
-    // AtmosphereProcessGroup is just a "container" of *real* atm processes,
-    // so don't add me as customer if I'm an atm proc group.
-    if (this->type()!=AtmosphereProcessType::Group) {
-      if (group.m_monolithic_field) {
-        add_me_as_customer(*group.m_monolithic_field);
-      } else {
-        for (auto& it : group.m_individual_fields) {
-          add_me_as_customer(*it.second);
-        }
+  m_inputs->add_group(group);
+  
+  // AtmosphereProcessGroup is just a "container" of *real* atm processes,
+  // so don't add me as customer if I'm an atm proc group.
+  if (this->type()!=AtmosphereProcessType::Group) {
+    if (group.m_monolithic_field) {
+      add_me_as_customer(*group.m_monolithic_field);
+    } else {
+      for (auto& it : group.m_individual_fields) {
+        add_me_as_customer(*it.second);
       }
     }
   }
@@ -364,17 +374,16 @@ void AtmosphereProcess::set_computed_group (const FieldGroup& group) {
     "   atm process: " + this->name() + "\n"
     "Something is wrong up the call stack. Please, contact developers.\n");
 
-  if (not ekat::contains(m_groups_out,group)) {
-    m_groups_out.emplace_back(group);
-    // AtmosphereProcessGroup is just a "container" of *real* atm processes,
-    // so don't add me as provider if I'm an atm proc group.
-    if (this->type()!=AtmosphereProcessType::Group) {
-      if (group.m_monolithic_field) {
-        add_me_as_provider(*group.m_monolithic_field);
-      } else {
-        for (auto& it : group.m_individual_fields) {
-          add_me_as_provider(*it.second);
-        }
+  m_outputs->add_group(group);
+  
+  // AtmosphereProcessGroup is just a "container" of *real* atm processes,
+  // so don't add me as provider if I'm an atm proc group.
+  if (this->type()!=AtmosphereProcessType::Group) {
+    if (group.m_monolithic_field) {
+      add_me_as_provider(*group.m_monolithic_field);
+    } else {
+      for (auto& it : group.m_individual_fields) {
+        add_me_as_provider(*it.second);
       }
     }
   }
