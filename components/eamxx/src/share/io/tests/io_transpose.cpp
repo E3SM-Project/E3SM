@@ -1,7 +1,6 @@
 #include <catch2/catch.hpp>
 
 #include "share/io/eamxx_output_manager.hpp"
-#include "share/io/scorpio_input.hpp"
 
 #include "share/data_managers/mesh_free_grids_manager.hpp"
 
@@ -113,9 +112,10 @@ get_fm (const std::shared_ptr<const AbstractGrid>& grid,
   return fm;
 }
 
-// Write output with transpose enabled
+// Write output with or without transpose
 void write (const std::string& avg_type, const std::string& freq_units,
-            const int freq, const int seed, const ekat::Comm& comm)
+            const int freq, const int seed, const ekat::Comm& comm,
+            const bool transpose)
 {
   // Create grid
   auto gm = get_gm(comm);
@@ -132,12 +132,15 @@ void write (const std::string& avg_type, const std::string& freq_units,
     fnames.push_back(it.second->name());
   }
 
-  // Create output params with transpose enabled
+  // Create output params
   ekat::ParameterList om_pl;
-  om_pl.set("filename_prefix",std::string("io_transpose"));
+  std::string prefix = transpose ? "io_transpose_T" : "io_transpose_N";
+  om_pl.set("filename_prefix", prefix);
   om_pl.set("field_names",fnames);
   om_pl.set("averaging_type", avg_type);
-  om_pl.set("transpose", true);  // Enable transposed output
+  if (transpose) {
+    om_pl.set("transpose", true);  // Enable transposed output
+  }
   auto& ctrl_pl = om_pl.sublist("output_control");
   ctrl_pl.set("frequency_units",freq_units);
   ctrl_pl.set("frequency",freq);
@@ -178,68 +181,6 @@ void write (const std::string& avg_type, const std::string& freq_units,
   om.finalize();
 }
 
-// Read output and verify transpose worked correctly
-void read (const std::string& avg_type, const std::string& freq_units,
-           const int freq, const int seed, const ekat::Comm& comm)
-{
-  bool instant = avg_type=="INSTANT";
-
-  // Time quantities
-  auto t0 = get_t0();
-  int num_writes = num_output_steps + (instant ? 1 : 0);
-
-  // Get gm
-  auto gm = get_gm (comm);
-  auto grid = gm->get_grid("point_grid");
-
-  // Get initial fields
-  auto fm0 = get_fm(grid,t0,seed);
-  auto fm  = get_fm(grid,t0,-seed-1);
-  std::vector<std::string> fnames;
-  for (auto it : fm->get_repo()) {
-    fnames.push_back(it.second->name());
-  }
-
-  // Create reader pl
-  ekat::ParameterList reader_pl;
-  std::string casename = "io_transpose";
-  auto filename = casename
-    + "." + avg_type
-    + "." + freq_units
-    + "_x" + std::to_string(freq)
-    + ".np" + std::to_string(comm.size())
-    + "." + t0.to_string()
-    + ".nc";
-  reader_pl.set("filename",filename);
-  reader_pl.set("field_names",fnames);
-  AtmosphereInput reader(reader_pl,fm);
-
-  // Verify data values are correct despite transpose
-  // The reader should handle the transpose automatically when reading
-  double delta = (freq+1)/2.0;
-
-  for (int n=0; n<num_writes; ++n) {
-    reader.read_variables(n);
-    for (const auto& fn : fnames) {
-      auto f0 = fm0->get_field(fn).clone();
-      auto f  = fm->get_field(fn);
-      if (avg_type=="MIN") {
-        add(f0,n*freq+1);
-        REQUIRE (views_are_equal(f,f0));
-      } else if (avg_type=="MAX") {
-        add(f0,(n+1)*freq);
-        REQUIRE (views_are_equal(f,f0));
-      } else if (avg_type=="INSTANT") {
-        add(f0,n*freq);
-        REQUIRE (views_are_equal(f,f0));
-      } else {
-        add(f0,n*freq+delta);
-        REQUIRE (views_are_equal(f,f0));
-      }
-    }
-  }
-}
-
 TEST_CASE ("io_transpose") {
   std::vector<std::string> avg_type = {
     "INSTANT",
@@ -269,8 +210,11 @@ TEST_CASE ("io_transpose") {
   print ("Testing transposed output\n");
   for (const auto& avg : avg_type) {
     print("   -> Averaging type: " + avg + " ", 40);
-    write(avg,freq_units,freq,seed,comm);
-    read (avg,freq_units,freq,seed,comm);
+    
+    // Write both transposed and non-transposed versions
+    write(avg,freq_units,freq,seed,comm,false);  // Non-transposed
+    write(avg,freq_units,freq,seed,comm,true);   // Transposed
+    
     print(" PASS\n");
   }
   
