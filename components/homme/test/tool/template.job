@@ -3,23 +3,54 @@
 #  script to show how to run various HOMME tools
 #  
 #  Generate NP4 scrip and subcell files
+#
+#  For internal grids (NE>0) run 1 MPI task per core
+#  PM-CPU only 1 node needed up to NE512.  4 nodes needed for NE1024
+#
+#  RRM grids:  non-memory scalable startup
+#  Need to use large -c values to get through GridVertex/GridEdge allocation,
+#  and large node counts to have sufficient memory for elem() allocation
+#  PM-CPU: 33M element RRM grid requires 128 nodes with -c 32
+#
+#
+# sbatch -q debug -N 4 -C cpu temp.job
+# sbatch -q regular -t 10:00 -N 16 -C cpu temp.job
 # 
 set TOOLDIR = `pwd`
 set WDIR = ~/scratch1/hommetool
-set MACH = $TOOLDIR/../../cmake/machineFiles/darwin.cmake
+set MACH = $TOOLDIR/../../cmake/machineFiles/pm-cpu.cmake
 set exe = $WDIR/src/tool/homme_tool
 
-set NE=1024
+# internal cubed-sphere grids
+set NE=30
+set mesh_file="none"  # filepath and name to exodus .g file
+set mesh_prefix=""    # prefix to add to output filename
+
+# RRM grids
+#set NE=0
+#set mesh_name = "2025-scream-conus-1024x2"
+#set mesh_name = "2026-incite-conus-1024x3"
+#set mesh_name = "2026-incite-conus-1024x4"
+#set mesh_file = "/global/cfs/cdirs/e3sm/2026-INCITE-CONUS-RRM/files_grid/${mesh_name}.g"
+#set mesh_name = "TEMPEST_NE30"
+#set mesh_file = "/global/cfs/cdirs/e3sm/taylorm/mapping/grids/${mesh_name}.g"
+#set mesh_prefix = ${mesh_name}-
+
+
+# output filename will be ${mesh}-tmp1.nc:
 set NPTS=4   # be sure to rerun CMAKE if this is changed
-set mesh = ne${NE}np${NPTS}
+set mesh = ${mesh_prefix}ne${NE}np${NPTS}
+
 
 
 cd $WDIR
 if (!  -x $exe ) then
-  # configure  set output = `$TOOLDIR/../../../../cime/CIME/Tools/get_case_env`
-  eval $output
-  cmake -C $MACH -DPREQX_NP=$NPTS -DPREQX_PLEV=26 $TOOLDIR/../..
-  # compile the tool
+  #configure
+  #set output = `$TOOLDIR/../../../../cime/CIME/Tools/get_case_env`
+  #eval $output
+  cmake -C $MACH -DPREQX_NP=$NPTS -DPREQX_PLEV=26 \
+       $TOOLDIR/../..
+
   make -j4 homme_tool
   if ( $status ) then
      echo Error compiling homme_tool. Ensure cmake configured properly.
@@ -27,7 +58,9 @@ if (!  -x $exe ) then
   endif
 endif
 if ( ${?SLURM_NNODES} ) then
-   set mpirun = "srun -K -c 1 -N $SLURM_NNODES"
+   #set mpirun = "srun -K -c 2 -N $SLURM_NNODES"
+   #set mpirun = "srun -K -c 8 -N $SLURM_NNODES"
+   set mpirun = "srun -K -c 32 -N $SLURM_NNODES"
 else
    set mpirun = "mpirun -np 4"
 endif
@@ -38,7 +71,7 @@ rm -f input.nl
 cat > input.nl <<EOF
 &ctl_nl
 ne = $NE
-mesh_file = "none"
+mesh_file = "$mesh_file"
 /
 
 &vert_nl
@@ -48,26 +81,30 @@ mesh_file = "none"
 tool = 'grid_template_tool'
 
 output_dir = "./" 
+output_prefix = "${mesh_prefix}"
 output_timeunits=1
 output_frequency=1
 output_varnames1='area','corners','cv_lat','cv_lon'
-output_type='netcdf'
-!output_type='netcdf4p'  ! needed for ne1024
+!output_type='netcdf'
+output_type='netcdf4p'  ! needed for > 2M element meshes
 io_stride = 16                                                                                                    
 /
 
 EOF
 
-$mpirun $exe < input.nl
+time $mpirun $exe < input.nl
 
-# make the 'latlon' file
-ncks -O -v lat,lon,corners,area ${mesh}_tmp1.nc ${mesh}_tmp.nc
-ncl $TOOLDIR/ncl/HOMME2META.ncl  name=\"$mesh\"  ne=$NE  np=$NPTS
 
-# make the 'scrip' file
-ncks -O -v lat,lon,area,cv_lat,cv_lon ${mesh}_tmp1.nc ${mesh}_tmp.nc
-ncl $TOOLDIR/ncl/HOMME2SCRIP.ncl  name=\"$mesh\"  ne=$NE  np=$NPTS
-rm -f {$mesh}_tmp.nc {$mesh}_tmp1.nc
+
+# make the 'latlon' file and the scrip file:
+#ncl $TOOLDIR/ncl/HOMME2META.ncl  name=\"$mesh\"  ne=$NE  np=$NPTS
+#ncl $TOOLDIR/ncl/HOMME2SCRIP.ncl  name=\"$mesh\" ne=$NE  np=$NPTS
+
+# python code to make latlon and scrip file:
+# needs numpy, xarray and numba:
+python $TOOLDIR/python/HOMME2META.py  --src_file ${mesh}_tmp1.nc  --dst_file ${mesh}_latlon_python.nc
+python $TOOLDIR/python/HOMME2SCRIP.py  --src_file ${mesh}_tmp1.nc  --dst_file ${mesh}_scrip_python.nc
+
 
 # make some plots (ncl defaults to ne4np4 grid
 #ncl $TOOLDIR/ncl/plotscrip.ncl
