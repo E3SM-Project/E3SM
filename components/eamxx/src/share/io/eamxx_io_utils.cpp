@@ -172,9 +172,10 @@ util::TimeStamp parse_cf_time_units (const std::string& time_units)
       time_str = time_str.substr(time_start);
     }
     
-    // Find timezone indicators (letters like UTC, GMT, or +/- for offset)
-    // Look for alphabetic characters or +/- that would indicate a timezone
-    auto tz_pos = time_str.find_first_of("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz+-");
+    // Find timezone indicators (alphabetic characters like UTC, GMT)
+    // For numeric timezone offsets (+/-HH:MM), they should be parsed as part of
+    // the time components, so we only look for alphabetic timezone indicators here
+    auto tz_pos = time_str.find_first_of("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
     if (tz_pos != std::string::npos) {
       time_str = time_str.substr(0, tz_pos);
     }
