@@ -30,6 +30,7 @@
  *  ------
  *  filename_prefix:                    STRING
  *  averaging_type:                     STRING
+ *  transpose:                          BOOL                  (default: false)
  *  max_snapshots_per_file:             INT                   (default: 1)
  *  fields:
  *     GRID_NAME_1:
@@ -57,6 +58,9 @@
  *    Here, 'time interval' is described by ${Output frequency} and ${Output frequency_units}.
  *    E.g., with 'Output frequency'=10 and 'Output frequency_units'="Days", the time interval is 10
  days.
+ *  - transpose: optional boolean flag to enable transposed output (default: false).
+ *      When set to true, all field dimensions will be reversed in the output file.
+ *      For example, a field with layout (ncol, nlev) will be written as (nlev, ncol).
  *  - fields: parameters specifying fields to output
  *     - GRID_NAME: parameters specifyign fields to output from grid $GRID_NAME
  *        - field_names: names of fields defined on grid $grid_name that need to be outputed
