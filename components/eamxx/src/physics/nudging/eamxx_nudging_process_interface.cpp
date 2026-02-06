@@ -55,11 +55,11 @@ Nudging::Nudging (const ekat::Comm& comm, const ekat::ParameterList& params)
 }
 
 // =========================================================================================
-void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
+void Nudging::create_requests()
 {
   using namespace ekat::units;
 
-  m_grid = grids_manager->get_grid("physics");
+  m_grid = m_grids_manager->get_grid("physics");
   const auto& grid_name = m_grid->name();
   m_num_cols = m_grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = m_grid->get_num_vertical_levels();  // Number of levels per column
@@ -114,7 +114,7 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   if (num_cols_src != num_cols_global) {
     // If differing cols, check if remap file is provided
     EKAT_REQUIRE_MSG(m_refine_remap_file != "no-file-given",
-                     "Error! Nudging::set_grids - the number of columns in the nudging data file "
+                     "Error! Nudging::create_requests - the number of columns in the nudging data file "
                      << std::to_string(num_cols_src) << " does not match the number of columns in the "
                      << "model grid " << std::to_string(num_cols_global) << ".  Please check the "
                      << "nudging data file and/or the model grid.");
@@ -124,17 +124,17 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
     int num_cols_remap_b = scorpio::get_dimlen(m_refine_remap_file,"n_b");
     // Then, check if n_a (source) and n_b (target) are consistent
     EKAT_REQUIRE_MSG(num_cols_remap_a == num_cols_src,
-                     "Error! Nudging::set_grids - the number of columns in the nudging data file "
+                     "Error! Nudging::create_requests - the number of columns in the nudging data file "
                      << std::to_string(num_cols_src) << " does not match the number of columns in the "
                      << "mapfile " << std::to_string(num_cols_remap_a) << ".  Please check the "
                      << "nudging data file and/or the mapfile.");
     EKAT_REQUIRE_MSG(num_cols_remap_b == num_cols_global,
-                     "Error! Nudging::set_grids - the number of columns in the model grid "
+                     "Error! Nudging::create_requests - the number of columns in the model grid "
                      << std::to_string(num_cols_global) << " does not match the number of columns in the "
                      << "mapfile " << std::to_string(num_cols_remap_b) << ".  Please check the "
                      << "model grid and/or the mapfile.");
     EKAT_REQUIRE_MSG(m_use_weights == false,
-                     "Error! Nudging::set_grids - it seems that the user intends to use both nuding "
+                     "Error! Nudging::create_requests - it seems that the user intends to use both nuding "
                      << "from coarse data as well as weighted nudging simultaneously. This is not supported. "
                      << "If the user wants to use both at their own risk, the user should edit the source code "
                      << "by deleting this error message.");
@@ -145,7 +145,7 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
     // but print a warning if the user provided a mapfile
     if (m_refine_remap_file != "no-file-given") {
       m_atm_logger->warn(
-           "[Nudging::set_grids] Warning! Map file provided, but it is not needed.\n"
+           "[Nudging::create_requests] Warning! Map file provided, but it is not needed.\n"
            "  - num cols in nudging data file: " + std::to_string(num_cols_src) + "\n"
            "  - num cols in model grid       : " + std::to_string(num_cols_global) + "\n"
            " Please, make sure the nudging data file and/or model grid are correct.\n"
@@ -154,7 +154,7 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
     // If the user gives us the vertical cutoff, warn them
     if (m_refine_remap_vert_cutoff > 0.0) {
       m_atm_logger->warn(
-          "[Nudging::set_grids] Warning! Non-zero vertical cutoff provided, but it is not needed\n"
+          "[Nudging::create_requests] Warning! Non-zero vertical cutoff provided, but it is not needed\n"
           " - vertical cutoff: " + std::to_string(m_refine_remap_vert_cutoff) + "\n"
           " Please, check your settings. This parameter is only needed if we are remapping.");
     }
