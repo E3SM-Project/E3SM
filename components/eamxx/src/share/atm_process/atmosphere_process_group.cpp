@@ -172,8 +172,6 @@ void AtmosphereProcessGroup::create_requests () {
         req.usage = Computed;
     }
   }
-
-  m_grids_mgr = m_grids_manager;
 }
 
 void AtmosphereProcessGroup::
@@ -309,12 +307,12 @@ void AtmosphereProcessGroup::add_postcondition_nan_checks () const {
     } else {
       for (const auto& f : proc->get_fields_out()) {
         const auto& grid_name = f.get_header().get_identifier().get_grid_name();
-        auto nan_check = std::make_shared<FieldNaNCheck>(f,m_grids_mgr->get_grid(grid_name));
+        auto nan_check = std::make_shared<FieldNaNCheck>(f,m_grids_manager->get_grid(grid_name));
         proc->add_postcondition_check(nan_check, CheckFailHandling::Fatal);
       }
 
       for (const auto& g : proc->get_groups_out()) {
-        const auto& grid = m_grids_mgr->get_grid(g.grid_name());
+        const auto& grid = m_grids_manager->get_grid(g.grid_name());
         for (const auto& f : g.m_individual_fields) {
           auto nan_check = std::make_shared<FieldNaNCheck>(*f.second,grid);
           proc->add_postcondition_check(nan_check, CheckFailHandling::Fatal);

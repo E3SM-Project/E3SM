@@ -142,9 +142,6 @@ protected:
 
   // The schedule type: Parallel vs Sequential
   ScheduleType   m_group_schedule_type;
-
-  // This is only needed to be able to access grids objects later on
-  std::shared_ptr<const GridsManager>   m_grids_mgr;
 };
 
 } // namespace scream
