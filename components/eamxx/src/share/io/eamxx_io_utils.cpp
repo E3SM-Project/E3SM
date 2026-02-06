@@ -9,6 +9,7 @@
 
 #include <fstream>
 #include <regex>
+#include <sstream>
 
 namespace scream {
 
@@ -119,6 +120,79 @@ util::TimeStamp read_timestamp (const std::string& filename,
     ts.set_num_steps(scorpio::get_attribute<int>(filename,"GLOBAL",ts_name+"_nsteps"));
   }
   return ts;
+}
+
+util::TimeStamp parse_cf_time_units (const std::string& time_units)
+{
+  // Parse CF convention time units string (e.g., "seconds since 1970-01-01 00:00:00")
+  // Expected format: "<unit> since <YYYY-MM-DD> <HH:MM:SS>"
+  // where unit can be: seconds, minutes, hours, days
+  
+  // Find "since" keyword
+  auto since_pos = time_units.find("since");
+  EKAT_REQUIRE_MSG (since_pos != std::string::npos,
+      "Error! Time units string does not contain 'since' keyword.\n"
+      "  - time_units: " + time_units + "\n"
+      "  - expected format: '<unit> since <YYYY-MM-DD> <HH:MM:SS>'\n");
+  
+  // Extract the datetime part after "since"
+  std::string datetime_str = time_units.substr(since_pos + 5); // 5 = length of "since"
+  
+  // Trim leading whitespace
+  size_t start = datetime_str.find_first_not_of(" \t\n\r");
+  if (start != std::string::npos) {
+    datetime_str = datetime_str.substr(start);
+  }
+  
+  // Parse the datetime string
+  // Expected format: "YYYY-MM-DD HH:MM:SS" or "YYYY-MM-DD" or variations
+  int year = 0, month = 1, day = 1, hour = 0, minute = 0, second = 0;
+  
+  // Find date and time parts
+  auto space_pos = datetime_str.find(' ');
+  std::string date_str = (space_pos != std::string::npos) ? datetime_str.substr(0, space_pos) : datetime_str;
+  std::string time_str = (space_pos != std::string::npos) ? datetime_str.substr(space_pos + 1) : "";
+  
+  // Parse date part (YYYY-MM-DD)
+  std::istringstream date_stream(date_str);
+  char sep;
+  date_stream >> year >> sep >> month >> sep >> day;
+  
+  EKAT_REQUIRE_MSG (date_stream.good() or date_stream.eof(),
+      "Error! Failed to parse date from time units string.\n"
+      "  - time_units: " + time_units + "\n"
+      "  - date_str: " + date_str + "\n"
+      "  - expected format: 'YYYY-MM-DD'\n");
+  
+  // Parse time part if present (HH:MM:SS)
+  if (!time_str.empty()) {
+    // Remove any trailing timezone information or extra characters
+    auto tz_pos = time_str.find_first_not_of("0123456789:. ");
+    if (tz_pos != std::string::npos) {
+      time_str = time_str.substr(0, tz_pos);
+    }
+    
+    // Trim trailing whitespace
+    auto end = time_str.find_last_not_of(" \t\n\r");
+    if (end != std::string::npos) {
+      time_str = time_str.substr(0, end + 1);
+    }
+    
+    if (!time_str.empty()) {
+      std::istringstream time_stream(time_str);
+      char sep1, sep2;
+      time_stream >> hour;
+      if (time_stream.peek() == ':') {
+        time_stream >> sep1 >> minute;
+        if (time_stream.peek() == ':') {
+          time_stream >> sep2 >> second;
+        }
+      }
+    }
+  }
+  
+  // Create and return the timestamp
+  return util::TimeStamp(year, month, day, hour, minute, second);
 }
 
 std::shared_ptr<AtmosphereDiagnostic>

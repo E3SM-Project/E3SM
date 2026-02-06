@@ -245,7 +245,18 @@ void TimeInterpolation::set_file_data_triplets(const vos_type& list_of_files) {
     const auto filename = list_of_files[ii];
     // Reference TimeStamp
     scorpio::register_file(filename,scorpio::FileMode::Read);
-    auto ts_file_start = read_timestamp(filename,"case_t0");
+    
+    // Try to read case_t0 attribute first (for backward compatibility)
+    // If it doesn't exist, parse the time units to get the reference timestamp
+    TimeStamp ts_file_start;
+    if (scorpio::has_attribute(filename,"GLOBAL","case_t0")) {
+      ts_file_start = read_timestamp(filename,"case_t0");
+    } else {
+      // Parse the time variable's units attribute to extract the reference time
+      auto time_units = scorpio::get_attribute<std::string>(filename,"time","units");
+      ts_file_start = parse_cf_time_units(time_units);
+    }
+    
     // Gather the units of time
     auto time_units = scorpio::get_attribute<std::string>(filename,"time","units");
     int time_mult;
