@@ -9,9 +9,9 @@ The user is expected to prepare (and then use `atmchange` to point to) nudging d
 In practice, this means that the data files must contain variable names known to EAMxx (only U, V, T_mid, and qv are supported now).
 The files can be specified with an explicit list or via pattern matching.
 
-The files must contain a `time` dimension (which should be UNLIMITED) with a CF-compliant `units` attribute that specifies the reference time, such as `"days since 2000-01-01 00:00:00"` or `"seconds since 1970-01-01"`. 
+The files must contain a `time` dimension (which should be UNLIMITED) with a CF-compliant `units` attribute that specifies the reference time and time unit, such as `"days since 2000-01-01 00:00:00"` or `"seconds since 1970-01-01"`. The time values in the file are assumed to be in the unit specified in the `units` attribute (e.g., days, seconds, minutes, or hours).
 
-For backward compatibility, the files may also contain a global attribute `case_t0` to specify the reference time. If both are present, `case_t0` takes precedence.
+**Note:** The previously used `case_t0` global attribute is now deprecated and will be ignored if present. Please ensure your time coordinate has the correct `units` attribute.
 
 Finally, the dimension order must be such that `lev` is the last dimension, so most likely, the user must transpose the dimensions.
 

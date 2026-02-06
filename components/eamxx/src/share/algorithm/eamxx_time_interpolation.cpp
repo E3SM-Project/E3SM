@@ -2,6 +2,8 @@
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 #include "share/io/eamxx_io_utils.hpp"
 
+#include <iostream>
+
 namespace scream{
 namespace util {
 
@@ -249,15 +251,16 @@ void TimeInterpolation::set_file_data_triplets(const vos_type& list_of_files) {
     // Gather the units of time (needed for both timestamp and multiplier)
     auto time_units = scorpio::get_attribute<std::string>(filename,"time","units");
     
-    // Try to read case_t0 attribute first (for backward compatibility)
-    // If it doesn't exist, parse the time units to get the reference timestamp
-    TimeStamp ts_file_start;
+    // Warn if case_t0 attribute exists (deprecated and ignored)
     if (scorpio::has_attribute(filename,"GLOBAL","case_t0")) {
-      ts_file_start = read_timestamp(filename,"case_t0");
-    } else {
-      // Parse the time variable's units attribute to extract the reference time
-      ts_file_start = parse_cf_time_units(time_units);
+      std::cout << "WARNING: The 'case_t0' global attribute in file '" << filename 
+                << "' is deprecated and will be ignored.\n"
+                << "         Please ensure the time coordinate's 'units' attribute "
+                << "is correct for your needs.\n";
     }
+    
+    // Parse the time variable's units attribute to extract the reference time
+    TimeStamp ts_file_start = parse_cf_time_units(time_units);
     
     // Determine time multiplier from units
     int time_mult;
