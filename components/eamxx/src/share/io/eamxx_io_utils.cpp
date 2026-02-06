@@ -147,6 +147,8 @@ util::TimeStamp parse_cf_time_units (const std::string& time_units)
   
   // Parse the datetime string
   // Expected format: "YYYY-MM-DD HH:MM:SS" or "YYYY-MM-DD" or variations
+  // Note: month and day default to 1 (not 0) as that's a valid fallback if only year is provided
+  // The TimeStamp constructor will validate all values are in valid ranges
   int year = 0, month = 1, day = 1, hour = 0, minute = 0, second = 0;
   
   // Find date and time parts
@@ -163,7 +165,8 @@ util::TimeStamp parse_cf_time_units (const std::string& time_units)
       "Error! Failed to parse date from time units string.\n"
       "  - time_units: " + time_units + "\n"
       "  - date_str: " + date_str + "\n"
-      "  - expected format: 'YYYY-MM-DD'\n");
+      "  - expected format: 'YYYY-MM-DD'\n"
+      "  Check that the date components are valid integers separated by '-'.\n");
   
   // Parse time part if present (HH:MM:SS or HH:MM:SS.fraction)
   if (!time_str.empty()) {
