@@ -57,14 +57,25 @@ public:
   void clean_up ();
   void clean_up (const std::string& grid_name);
 
-  // Adds an externally-constructed field to the FieldManager. Allows the FM
+  // Name getter/setter for debugging purposes
+  const std::string& name () const { return m_name; }
+  void set_name (const std::string& n) { m_name = n; }
+
+  // Adds an externally-constructed field/group to the FieldManager. Allows the FM
   // to make the field available as if it had been built with the usual
   // registration procedures.
   // This can be used to allow atm procs to create some helper fields internally,
   // but still leverage the FM class for certain features (e.g., I/O).
-  // NOTE: the repo must be in closed state, and the FieldManager must not already
-  //       store a field with the same name.
+  // Requirements:
+  //  - the repo must be in closed state
+  //  - cannot already store a different field/group with that name (adding SAME obj twice is ok)
+  //  - for field, cannot store a monolithic group for any of its groups
   void add_field (const Field& f);
+  void add_group (const FieldGroup& g);
+
+  // Remove a field or group from the FieldManager
+  void remove_field (const std::string& field_name, const std::string& grid_name);
+  void remove_group (const std::string& group_name, const std::string& grid_name);
 
   // Adds $field_name on $grid_name to group $group_name (creating the group, if necessary).
   // NOTE: if $group_name is allocated as a monolithic field, this throws.
@@ -73,7 +84,8 @@ public:
     EKAT_ASSERT_MSG(m_grids_mgr->size() == 1,
       "Error! More than one grid exists for FieldManager, must specify grid name to query for adding field to group.\n"
       "  - Field name: " + field_name + "\n"
-      "  - Grids in FM: " + m_grids_mgr->print_available_grids() + "\n");
+      "  - Grids in FM: " + m_grids_mgr->print_available_grids() + "\n"
+      "  - Field mgr name: " + m_name + "\n");
     return add_to_group(field_name, m_grids_mgr->get_repo().begin()->second->name(),group_name);
   }
   void add_to_group (const std::string& field_name, const std::string& grid_name, const std::string& group_name);
@@ -85,7 +97,8 @@ public:
     EKAT_ASSERT_MSG(m_grids_mgr->size() == 1,
       "Error! More than one grid exists for FieldManager, must specify grid name to query for field.\n"
       "  - Field name: " + field_name + "\n"
-      "  - Grids in FM: " + m_grids_mgr->print_available_grids() + "\n");
+      "  - Grids in FM: " + m_grids_mgr->print_available_grids() + "\n"
+      "  - Field mgr name: " + m_name + "\n");
     return has_field(field_name, m_grids_mgr->get_repo().begin()->second->name());
   }
   bool has_group (const std::string& group_name, const std::string& grid_name) const;
@@ -93,7 +106,8 @@ public:
     EKAT_ASSERT_MSG(m_grids_mgr->size() == 1,
       "Error! More than one grid exists for FieldManager, must specify grid name to query for group.\n"
       "  - Group name: " + group_name + "\n"
-      "  - Grids in FM: " + m_grids_mgr->print_available_grids() + "\n");
+      "  - Grids in FM: " + m_grids_mgr->print_available_grids() + "\n"
+      "  - Field mgr name: " + m_name + "\n");
     return has_group(group_name, m_grids_mgr->get_repo().begin()->second->name());
   }
 
@@ -103,7 +117,8 @@ public:
     EKAT_ASSERT_MSG(m_grids_mgr->size() == 1,
       "Error! More than one grid exists for FieldManager, must specify grid name to get field.\n"
       "  - Field name: " + name + "\n"
-      "  - Grids in FM: " + m_grids_mgr->print_available_grids() + "\n");
+      "  - Grids in FM: " + m_grids_mgr->print_available_grids() + "\n"
+      "  - Field mgr name: " + m_name + "\n");
     return get_field(name, m_grids_mgr->get_repo().begin()->second->name());
   }
 
@@ -113,7 +128,8 @@ public:
     EKAT_ASSERT_MSG(m_grids_mgr->size() == 1,
       "Error! More than one grid exists for FieldManager, must specify grid name to get field.\n"
       "  - Field name: " + name + "\n"
-      "  - Grids in FM: " + m_grids_mgr->print_available_grids() + "\n");
+      "  - Grids in FM: " + m_grids_mgr->print_available_grids() + "\n"
+      "  - Field mgr name: " + m_name + "\n");
     return get_field(name, m_grids_mgr->get_repo().begin()->second->name());
   }
 
@@ -121,31 +137,43 @@ public:
     EKAT_ASSERT_MSG(m_grids_mgr->size() == 1,
       "Error! More than one grid exists for FieldManager, must specify grid name to query for FieldGroupInfo.\n"
       "  - Group name: " + group_name + "\n"
-      "  - Grids in FM: " + m_grids_mgr->print_available_grids() + "\n");
+      "  - Grids in FM: " + m_grids_mgr->print_available_grids() + "\n"
+      "  - Field mgr name: " + m_name + "\n");
     return get_group_info(group_name, m_grids_mgr->get_repo().begin()->second->name());
   }
   FieldGroupInfo get_group_info (const std::string& group_name, const std::string& grid_name) const;
 
   FieldGroup get_field_group (const std::string& name, const std::string& grid_name);
+  FieldGroup get_field_group (const std::string& name) {
+    EKAT_ASSERT_MSG(m_grids_mgr->size() == 1,
+      "Error! More than one grid exists for FieldManager, must specify grid name to get group.\n"
+      "  - Group name: " + name + "\n"
+      "  - Grids in FM: " + m_grids_mgr->print_available_grids() + "\n"
+      "  - Field mgr name: " + m_name + "\n");
+    return get_field_group(name, m_grids_mgr->get_repo().begin()->second->name());
+  }
 
   const std::map<ci_string,std::shared_ptr<Field>>&
   get_repo () const {
     EKAT_ASSERT_MSG(m_grids_mgr->size() == 1,
       "Error! More than one grid exists for FieldManager, must specify grid name to get field repo.\n"
-      "  - Grids in FM: " + m_grids_mgr->print_available_grids() + "\n");
+      "  - Grids in FM: " + m_grids_mgr->print_available_grids() + "\n"
+      "  - Field mgr name: " + m_name + "\n");
     return m_fields.at(m_grids_mgr->get_repo().begin()->second->name());
   }
   const std::map<ci_string,std::shared_ptr<Field>>&
   get_repo (const std::string& grid_name) const {
     EKAT_REQUIRE_MSG(m_grids_mgr->has_grid(grid_name),
-      "Error! This field manager does not contain data on grid \""+grid_name+"\"\n");
+      "Error! This field manager does not contain data on grid \""+grid_name+"\"\n"
+      "  - Field mgr name: " + m_name + "\n");
     return m_fields.at(grid_name);
   }
 
   const std::shared_ptr<const AbstractGrid> get_grid () const {
     EKAT_ASSERT_MSG(m_grids_mgr->size() == 1,
       "Error! More than one grid exists for FieldManager, must access grid through grids manager.\n"
-      "  - Grids in FM: " + m_grids_mgr->print_available_grids() + "\n");
+      "  - Grids in FM: " + m_grids_mgr->print_available_grids() + "\n"
+      "  - Field mgr name: " + m_name + "\n");
     return m_grids_mgr->get_repo().begin()->second;
   }
 
@@ -161,6 +189,9 @@ public:
 protected:
 
   void pre_process_monolithic_group_requests ();
+
+  // Name for debugging
+  std::string m_name = "FieldManager";
 
   // The state of the repository
   RepoState m_repo_state;

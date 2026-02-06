@@ -788,10 +788,18 @@ void FieldManager::add_field (const Field& f) {
       "Error! Input field to 'add_field' has a layout not compatible with the stored grid.\n"
       "  - input field name : " + f.name() + "\n"
       "  - field manager grid: " + grid_name + "\n"
-      "  - input field layout:   " + f.get_header().get_identifier().get_layout().to_string() + "\n");
-  EKAT_REQUIRE_MSG (not has_field(f.name(), grid_name),
-      "Error! The method 'add_field' requires the input field to not be already existing.\n"
-      "  - field name: " + f.get_header().get_identifier().name() + "\n");
+      "  - input field layout:   " + f.get_header().get_identifier().get_layout().to_string() + "\n"
+      "  - field mgr name: " + m_name + "\n");
+  
+  // Check if field already exists - if it's the same field object, that's okay
+  if (has_field(f.name(), grid_name)) {
+    auto existing = get_field(f.name(), grid_name);
+    EKAT_REQUIRE_MSG (existing.get_header_ptr() == f.get_header_ptr(),
+        "Error! The method 'add_field' requires that if a field already exists, it must be the exact same object.\n"
+        "  - field name: " + f.get_header().get_identifier().name() + "\n"
+        "  - field mgr name: " + m_name + "\n");
+    return; // Already have this exact field
+  }
 
   const auto& groups = f.get_header().get_tracking().get_groups_names();
   for (const auto& group_name : groups) {
@@ -821,6 +829,72 @@ void FieldManager::add_field (const Field& f) {
 
   // If it was not closed before, it is now
   m_repo_state = RepoState::Closed;
+}
+
+void FieldManager::add_group (const FieldGroup& g) {
+  const auto& grid_name = g.grid_name();
+  const auto& group_name = g.name();
+
+  // Basic checks
+  EKAT_REQUIRE_MSG(m_grids_mgr->has_grid(grid_name),
+    "Error! Attempting to add_group on grid not in the FM's grids manager:\n"
+    "  - Group name: " + group_name + "\n"
+    "  - Grid:       " + grid_name + "\n"
+    "  - Grids stored by FM: " + m_grids_mgr->print_available_grids() + "\n"
+    "  - Field mgr name: " + m_name + "\n");
+  EKAT_REQUIRE_MSG (m_repo_state!=RepoState::Open,
+      "Error! The method 'add_group' can only be called on a closed or clean repo (if clean, will immediately be closed).\n"
+      "  - Field mgr name: " + m_name + "\n");
+  
+  // Check if group already exists - if same object, it's okay
+  if (has_group(group_name, grid_name)) {
+    auto existing = get_field_group(group_name, grid_name);
+    EKAT_REQUIRE_MSG(existing.m_bundle == g.m_bundle,
+      "Error! Group already exists with different fields:\n"
+      "  - Group name: " + group_name + "\n"
+      "  - Grid name:  " + grid_name + "\n"
+      "  - Field mgr name: " + m_name + "\n");
+    return; // Already have this exact group
+  }
+
+  // Add all fields from the group
+  for (const auto& f : g.m_bundle->get_const_fields_list()) {
+    if (not has_field(f.name(), grid_name)) {
+      add_field(f);
+    }
+  }
+
+  // Create/update group info
+  auto& group_info = m_field_group_info[group_name];
+  if (not group_info) {
+    group_info = std::make_shared<FieldGroupInfo>(group_name);
+  }
+  
+  // Store the group
+  m_field_groups[grid_name][group_name] = std::make_shared<FieldGroup>(g);
+
+  m_repo_state = RepoState::Closed;
+}
+
+void FieldManager::remove_field (const std::string& field_name, const std::string& grid_name) {
+  EKAT_REQUIRE_MSG(has_field(field_name, grid_name),
+    "Error! Cannot remove field that doesn't exist:\n"
+    "  - Field name: " + field_name + "\n"
+    "  - Grid name:  " + grid_name + "\n"
+    "  - Field mgr name: " + m_name + "\n");
+
+  m_fields[grid_name].erase(field_name);
+}
+
+void FieldManager::remove_group (const std::string& group_name, const std::string& grid_name) {
+  EKAT_REQUIRE_MSG(has_group(group_name, grid_name),
+    "Error! Cannot remove group that doesn't exist:\n"
+    "  - Group name: " + group_name + "\n"
+    "  - Grid name:  " + grid_name + "\n"
+    "  - Field mgr name: " + m_name + "\n");
+
+  m_field_groups[grid_name].erase(group_name);
+  // Note: We don't remove the fields themselves, just the group
 }
 
 void FieldManager::pre_process_monolithic_group_requests () {
