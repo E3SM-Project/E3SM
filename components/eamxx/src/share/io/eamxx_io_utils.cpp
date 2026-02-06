@@ -173,16 +173,10 @@ util::TimeStamp parse_cf_time_units (const std::string& time_units)
     }
     
     // Find timezone indicators (letters like UTC, GMT, or +/- for offset)
-    // Allow digits, colons, periods (for fractional seconds), and spaces before timezone
+    // Look for alphabetic characters or +/- that would indicate a timezone
     auto tz_pos = time_str.find_first_of("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz+-");
     if (tz_pos != std::string::npos) {
-      // Check if this + or - is actually part of a timezone (comes after the time)
-      // It should appear after at least HH:MM (5 chars)
-      if ((time_str[tz_pos] == '+' || time_str[tz_pos] == '-') && tz_pos < 5) {
-        // This might be a negative year, not a timezone, so don't truncate
-      } else {
-        time_str = time_str.substr(0, tz_pos);
-      }
+      time_str = time_str.substr(0, tz_pos);
     }
     
     // Trim trailing whitespace

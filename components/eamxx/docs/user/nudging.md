@@ -5,7 +5,7 @@ Currently, it is possible to nudge EAMxx to the output from a different EAMxx ru
 
 ## Data to nudge towards
 
-The user is expected to prepapre (and then use `atmchange` to point to) nudging data files that are compliant with EAMxx specification.
+The user is expected to prepare (and then use `atmchange` to point to) nudging data files that are compliant with EAMxx specification.
 In practice, this means that the data files must contain variable names known to EAMxx (only U, V, T_mid, and qv are supported now).
 The files can be specified with an explicit list or via pattern matching.
 
