@@ -2080,88 +2080,90 @@ subroutine  copy_aream_from_area(mbappid)
     ! Start performance timers for component exchange and mapping
     !---------------------------------------------------------------------------
     if (present(timer_comp_exch)) then
-       if (present(mpicom_barrier)) then
-          call t_drvstartf (trim(timer_comp_exch), cplcom=.true., barrier=mpicom_barrier)
+      if (present(mpicom_barrier)) then
+         call t_drvstartf (trim(timer_comp_exch), cplcom=.true., barrier=mpicom_barrier)
+      end if
+    end if
+
+    if (comp%iamin_cplcompid) then
+       if (present(timer_map_exch)) then
+          call t_drvstartf (trim(timer_map_exch), barrier=comp%mpicom_cplcompid)
        end if
-    end if
 
-    if (present(timer_map_exch)) then
-       call t_drvstartf (trim(timer_map_exch), barrier=comp%mpicom_cplcompid)
-    end if
+       !---------------------------------------------------------------------------
+       ! Get joint communicator spanning both component and coupler PEs
+       !---------------------------------------------------------------------------
+       id_join = comp%cplcompid
+       call seq_comm_getinfo(ID_join,mpicom=mpicom_join)
 
-    !---------------------------------------------------------------------------
-    ! Get joint communicator spanning both component and coupler PEs
-    !---------------------------------------------------------------------------
-    id_join = comp%cplcompid
-    call seq_comm_getinfo(ID_join,mpicom=mpicom_join)
+       ! Prepare tag name with C null terminator for iMOAB interface
+       tagName = trim(fields)//C_NULL_CHAR
 
-    ! Prepare tag name with C null terminator for iMOAB interface
-    tagName = trim(fields)//C_NULL_CHAR
-
-    !---------------------------------------------------------------------------
-    ! Determine source and target IDs based on data flow direction
-    ! c2x: component to coupler, x2c: coupler to component
-    !---------------------------------------------------------------------------
-    if (direction .eq. 'c2x') then
-       source_id = comp%compid
-       target_id = comp%cplcompid
-    else ! direction eq 'x2c'
-       source_id = comp%cplcompid
-       target_id = comp%compid
-    endif
-
-    !---------------------------------------------------------------------------
-    ! Special handling for atmosphere: add 200 to component-side ID
-    ! This offset accounts for the point cloud representation used in
-    ! atmosphere physics (vs spectral dynamics). The +200 convention matches
-    ! the ATM_PHYS_CID offset used elsewhere in the coupler code.
-    !---------------------------------------------------------------------------
-    if (comp%oneletterid == 'a' .and. direction .eq. 'c2x' ) then
-       source_id = source_id + 200
-    endif
-    if (comp%oneletterid == 'a' .and. direction .eq. 'x2c' ) then
-       target_id = target_id + 200
-    endif
-
-    !---------------------------------------------------------------------------
-    ! Send field tags from source mesh application
-    ! Only PEs with valid mbAPPid1 participate in sending
-    !---------------------------------------------------------------------------
-    if (mbAPPid1 .ge. 0) then !  we are on the sending pes
-       ierr = iMOAB_SendElementTag(mbAPPid1, tagName, mpicom_join, target_id)
-       if (ierr .ne. 0) then
-          call shr_sys_abort(subname//' cannot send element tag: '//trim(tagName))
+       !---------------------------------------------------------------------------
+       ! Determine source and target IDs based on data flow direction
+       ! c2x: component to coupler, x2c: coupler to component
+       !---------------------------------------------------------------------------
+       if (direction .eq. 'c2x') then
+          source_id = comp%compid
+          target_id = comp%cplcompid
+       else ! direction eq 'x2c'
+          source_id = comp%cplcompid
+          target_id = comp%compid
        endif
-    endif
 
-    !---------------------------------------------------------------------------
-    ! Receive field tags at target mesh application
-    ! Only PEs with valid mbAPPid2 participate in receiving
-    !---------------------------------------------------------------------------
-    if ( mbAPPid2 .ge. 0 ) then !  we are on receiving end
-       ierr = iMOAB_ReceiveElementTag(mbAPPid2, tagName, mpicom_join, source_id)
-       if (ierr .ne. 0) then
-          call shr_sys_abort(subname//' cannot receive element tag: '//trim(tagName))
+       !---------------------------------------------------------------------------
+       ! Special handling for atmosphere: add 200 to component-side ID
+       ! This offset accounts for the point cloud representation used in
+       ! atmosphere physics (vs spectral dynamics). The +200 convention matches
+       ! the ATM_PHYS_CID offset used elsewhere in the coupler code.
+       !---------------------------------------------------------------------------
+       if (comp%oneletterid == 'a' .and. direction .eq. 'c2x' ) then
+          source_id = source_id + 200
        endif
-    endif
-
-    !---------------------------------------------------------------------------
-    ! Free sender communication buffers to conserve memory
-    ! Important for large-scale runs to avoid memory buildup
-    !---------------------------------------------------------------------------
-    if (mbAPPid1 .ge. 0) then
-       ierr = iMOAB_FreeSenderBuffers(mbAPPid1, target_id)
-       if (ierr .ne. 0) then
-          call shr_sys_abort(subname//' cannot free sender buffers')
+       if (comp%oneletterid == 'a' .and. direction .eq. 'x2c' ) then
+          target_id = target_id + 200
        endif
-    endif
 
-    !---------------------------------------------------------------------------
-    ! Stop map exchange timer
-    !---------------------------------------------------------------------------
-    if (present(timer_map_exch)) then
-       call t_drvstopf (trim(timer_map_exch))
-    end if
+       !---------------------------------------------------------------------------
+       ! Send field tags from source mesh application
+       ! Only PEs with valid mbAPPid1 participate in sending
+       !---------------------------------------------------------------------------
+       if (mbAPPid1 .ge. 0) then !  we are on the sending pes
+          ierr = iMOAB_SendElementTag(mbAPPid1, tagName, mpicom_join, target_id)
+          if (ierr .ne. 0) then
+             call shr_sys_abort(subname//' cannot send element tag: '//trim(tagName))
+          endif
+       endif
+
+       !---------------------------------------------------------------------------
+       ! Receive field tags at target mesh application
+       ! Only PEs with valid mbAPPid2 participate in receiving
+       !---------------------------------------------------------------------------
+       if ( mbAPPid2 .ge. 0 ) then !  we are on receiving end
+          ierr = iMOAB_ReceiveElementTag(mbAPPid2, tagName, mpicom_join, source_id)
+          if (ierr .ne. 0) then
+             call shr_sys_abort(subname//' cannot receive element tag: '//trim(tagName))
+          endif
+       endif
+
+       !---------------------------------------------------------------------------
+       ! Free sender communication buffers to conserve memory
+       ! Important for large-scale runs to avoid memory buildup
+       !---------------------------------------------------------------------------
+       if (mbAPPid1 .ge. 0) then
+          ierr = iMOAB_FreeSenderBuffers(mbAPPid1, target_id)
+          if (ierr .ne. 0) then
+             call shr_sys_abort(subname//' cannot free sender buffers')
+          endif
+       endif
+
+       !---------------------------------------------------------------------------
+       ! Stop map exchange timer
+       !---------------------------------------------------------------------------
+       if (present(timer_map_exch)) then
+          call t_drvstopf (trim(timer_map_exch))
+       end if
+    endif
 
     !---------------------------------------------------------------------------
     ! Exchange infodata (metadata) if provided
