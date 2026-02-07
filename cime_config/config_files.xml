@@ -131,6 +131,7 @@
       <value component="eam"                         >$SRCROOT/components/eam/</value>
       <value component="eamxx"                       >$SRCROOT/components/eamxx/</value>
       <value component="scream"                      >$SRCROOT/components/eamxx/</value>
+      <value component="eatm"                        >$SRCROOT/components/emulators/eatm</value>
     </values>
     <group>case_comps</group>
     <file>env_case.xml</file>
