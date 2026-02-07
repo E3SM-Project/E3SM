@@ -1,84 +1,84 @@
 /**
- * @file eatm_binding.cpp
+ * @file eocn_binding.cpp
  * @brief extern "C" functions bridging Fortran MCT calls to
- *        the C++ Atm emulator via the EmulatorRegistry.
+ *        the C++ Ocn emulator via the EmulatorRegistry.
  *
  * Grid-agnostic: decomposition is passed in from F90, not computed here.
  */
 
-#include "atm.hpp"
 #include "emulator_registry.hpp"
+#include "ocn.hpp"
 
 #include <cstring>
 
-// Registry key for the singleton ATM emulator
-static const char *EATM_KEY = "eatm";
+// Registry key for the singleton OCN emulator
+static const char *EOCN_KEY = "eocn";
 
 extern "C" {
 
 /**
- * Create the Atm emulator in the global registry.
+ * Create the Ocn emulator in the global registry.
  */
-void eatm_create_c(int fcomm, int compid) {
+void eocn_create_c(int fcomm, int compid) {
   auto &reg = emulator::EmulatorRegistry::instance();
-  reg.create<emulator::atm::Atm>(EATM_KEY, fcomm, compid);
+  reg.create<emulator::ocn::Ocn>(EOCN_KEY, fcomm, compid);
 }
 
 /**
  * Set the decomposition from F90 MCT layer.
  * gindex is an array of 1-based global indices.
  */
-void eatm_set_decomposition_c(int lsize, const int *gindex) {
+void eocn_set_decomposition_c(int lsize, const int *gindex) {
   auto &reg = emulator::EmulatorRegistry::instance();
-  auto &atm = reg.get_mut<emulator::atm::Atm>(EATM_KEY);
-  atm.set_decomposition(lsize, gindex);
+  auto &ocn = reg.get_mut<emulator::ocn::Ocn>(EOCN_KEY);
+  ocn.set_decomposition(lsize, gindex);
 }
 
 /**
  * Return the local grid size on this PE.
  */
-int eatm_get_lsize_c() {
+int eocn_get_lsize_c() {
   auto &reg = emulator::EmulatorRegistry::instance();
-  const auto &atm = reg.get<emulator::atm::Atm>(EATM_KEY);
-  return atm.lsize();
+  const auto &ocn = reg.get<emulator::ocn::Ocn>(EOCN_KEY);
+  return ocn.lsize();
 }
 
 /**
  * Copy global indices into caller-supplied Fortran array.
  * Array must be pre-allocated to at least lsize elements.
  */
-void eatm_get_gindex_c(int *gindex) {
+void eocn_get_gindex_c(int *gindex) {
   auto &reg = emulator::EmulatorRegistry::instance();
-  const auto &atm = reg.get<emulator::atm::Atm>(EATM_KEY);
-  std::memcpy(gindex, atm.gindex().data(), atm.lsize() * sizeof(int));
+  const auto &ocn = reg.get<emulator::ocn::Ocn>(EOCN_KEY);
+  std::memcpy(gindex, ocn.gindex().data(), ocn.lsize() * sizeof(int));
 }
 
 /**
  * Delegate to Emulator::initialize().
  */
-void eatm_init_c() {
+void eocn_init_c() {
   auto &reg = emulator::EmulatorRegistry::instance();
-  auto &atm = reg.get_mut<emulator::atm::Atm>(EATM_KEY);
-  atm.initialize();
+  auto &ocn = reg.get_mut<emulator::ocn::Ocn>(EOCN_KEY);
+  ocn.initialize();
 }
 
 /**
  * Delegate to Emulator::run(dt).
  */
-void eatm_run_c(int dt) {
+void eocn_run_c(int dt) {
   auto &reg = emulator::EmulatorRegistry::instance();
-  auto &atm = reg.get_mut<emulator::atm::Atm>(EATM_KEY);
-  atm.run(dt);
+  auto &ocn = reg.get_mut<emulator::ocn::Ocn>(EOCN_KEY);
+  ocn.run(dt);
 }
 
 /**
  * Delegate to Emulator::finalize() and clean up registry.
  */
-void eatm_final_c() {
+void eocn_final_c() {
   auto &reg = emulator::EmulatorRegistry::instance();
-  if (reg.has(EATM_KEY)) {
-    auto &atm = reg.get_mut<emulator::atm::Atm>(EATM_KEY);
-    atm.finalize();
+  if (reg.has(EOCN_KEY)) {
+    auto &ocn = reg.get_mut<emulator::ocn::Ocn>(EOCN_KEY);
+    ocn.finalize();
   }
   emulator::cleanup_emulator_registry();
 }

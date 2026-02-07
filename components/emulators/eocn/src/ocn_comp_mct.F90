@@ -1,10 +1,10 @@
-module atm_comp_mct
+module ocn_comp_mct
 
    !---------------------------------------------------------------------------
-   ! Emulator ATM component — MCT interface module.
+   ! Emulator OCN component — MCT interface module.
    !
    ! Provides the three entry points the MCT driver expects:
-   !   atm_init_mct, atm_run_mct, atm_final_mct
+   !   ocn_init_mct, ocn_run_mct, ocn_final_mct
    !
    ! Grid-agnostic design: grid computed in F90 and passed to C++.
    !---------------------------------------------------------------------------
@@ -15,25 +15,25 @@ module atm_comp_mct
    use seq_infodata_mod, only: seq_infodata_type, &
       seq_infodata_PutData, &
       seq_infodata_GetData
-   use seq_flds_mod,     only: seq_flds_a2x_fields, seq_flds_x2a_fields
+   use seq_flds_mod,     only: seq_flds_o2x_fields, seq_flds_x2o_fields
    use shr_kind_mod,     only: R8 => SHR_KIND_R8, IN => SHR_KIND_IN, &
       CS => SHR_KIND_CS, CL => SHR_KIND_CL
    use iso_c_binding
 
-   use eatm_comp_mod,    only: eatm_create_c,             &
-      eatm_set_decomposition_c,  &
-      eatm_init_c,               &
-      eatm_run_c,                &
-      eatm_final_c,              &
-      eatm_compute_grid,         &
-      eatm_setup_domain
+   use eocn_comp_mod,    only: eocn_create_c,             &
+      eocn_set_decomposition_c,  &
+      eocn_init_c,               &
+      eocn_run_c,                &
+      eocn_final_c,              &
+      eocn_compute_grid,         &
+      eocn_setup_domain
 
    implicit none
    private
 
-   public :: atm_init_mct
-   public :: atm_run_mct
-   public :: atm_final_mct
+   public :: ocn_init_mct
+   public :: ocn_run_mct
+   public :: ocn_final_mct
 
    ! Module-level state
    integer(IN) :: mpicom       ! MPI communicator
@@ -47,13 +47,13 @@ module atm_comp_mct
 contains
 
    !===========================================================================
-   ! atm_init_mct
+   ! ocn_init_mct
    !===========================================================================
-   subroutine atm_init_mct(EClock, cdata, x2a, a2x, NLFilename)
+   subroutine ocn_init_mct(EClock, cdata, x2o, o2x, NLFilename)
 
       type(ESMF_Clock),           intent(inout) :: EClock
       type(seq_cdata),            intent(inout) :: cdata
-      type(mct_aVect),            intent(inout) :: x2a, a2x
+      type(mct_aVect),            intent(inout) :: x2o, o2x
       character(len=*), optional, intent(in)    :: NLFilename
 
       ! locals
@@ -65,7 +65,7 @@ contains
       real(R8),    allocatable         :: lons(:), lats(:)
       real(R8),    allocatable         :: areas(:), masks(:), fracs(:)
 
-      character(*), parameter :: subName = "(atm_init_mct) "
+      character(*), parameter :: subName = "(ocn_init_mct) "
 
       !--- extract pointers from cdata ---
       call seq_cdata_setptrs(cdata,               &
@@ -79,72 +79,72 @@ contains
       nxg = 48
       nyg = 24
 
-      !--- create the C++ Atm emulator ---
-      call eatm_create_c(int(mpicom, c_int), int(compid, c_int))
+      !--- create the C++ Ocn emulator ---
+      call eocn_create_c(int(mpicom, c_int), int(compid, c_int))
 
       !--- compute grid in F90 ---
-      call eatm_compute_grid(mpicom, nxg, nyg, lsize, &
+      call eocn_compute_grid(mpicom, nxg, nyg, lsize, &
          gindex, lons, lats, areas, masks, fracs)
 
       !--- pass decomposition to C++ ---
-      call eatm_set_decomposition_c(int(lsize, c_int), gindex)
+      call eocn_set_decomposition_c(int(lsize, c_int), gindex)
 
       !--- initialize gsMap (global-to-local index mapping) ---
       call mct_gsMap_init(gsMap, gindex, mpicom, compid, &
          lsize, nxg * nyg)
 
       !--- initialize MCT domain ---
-      call eatm_setup_domain(mpicom, gsMap, ggrid, lsize, &
+      call eocn_setup_domain(mpicom, gsMap, ggrid, lsize, &
          gindex, lons, lats, areas, masks, fracs)
 
       !--- initialize attribute vectors ---
-      call mct_aVect_init(a2x, rList=seq_flds_a2x_fields, lsize=lsize)
-      call mct_aVect_zero(a2x)
+      call mct_aVect_init(o2x, rList=seq_flds_o2x_fields, lsize=lsize)
+      call mct_aVect_zero(o2x)
 
-      call mct_aVect_init(x2a, rList=seq_flds_x2a_fields, lsize=lsize)
-      call mct_aVect_zero(x2a)
+      call mct_aVect_init(x2o, rList=seq_flds_x2o_fields, lsize=lsize)
+      call mct_aVect_zero(x2o)
 
       !--- call C++ emulator initialize ---
-      call eatm_init_c()
+      call eocn_init_c()
 
       !--- tell the coupler we are present and active ---
       call seq_infodata_PutData(infodata, &
-         atm_present   = .true.,        &
-         atm_prognostic = .true.,       &
-         atm_nx = nxg,                  &
-         atm_ny = nyg)
+         ocn_present   = .true.,        &
+         ocn_prognostic = .true.,       &
+         ocn_nx = nxg,                  &
+         ocn_ny = nyg)
 
       deallocate(gindex, lons, lats, areas, masks, fracs)
 
-   end subroutine atm_init_mct
+   end subroutine ocn_init_mct
 
    !===========================================================================
-   ! atm_run_mct
+   ! ocn_run_mct
    !===========================================================================
-   subroutine atm_run_mct(EClock, cdata, x2a, a2x)
+   subroutine ocn_run_mct(EClock, cdata, x2o, o2x)
 
       type(ESMF_Clock), intent(inout) :: EClock
       type(seq_cdata),  intent(inout) :: cdata
-      type(mct_aVect),  intent(inout) :: x2a
-      type(mct_aVect),  intent(inout) :: a2x
+      type(mct_aVect),  intent(inout) :: x2o
+      type(mct_aVect),  intent(inout) :: o2x
 
-      ! Skeleton: delegate to C++, a2x fields stay zeroed for now
-      call eatm_run_c(int(0, c_int))
+      ! Skeleton: delegate to C++, o2x fields stay zeroed for now
+      call eocn_run_c(int(0, c_int))
 
-   end subroutine atm_run_mct
+   end subroutine ocn_run_mct
 
    !===========================================================================
-   ! atm_final_mct
+   ! ocn_final_mct
    !===========================================================================
-   subroutine atm_final_mct(EClock, cdata, x2a, a2x)
+   subroutine ocn_final_mct(EClock, cdata, x2o, o2x)
 
       type(ESMF_Clock), intent(inout) :: EClock
       type(seq_cdata),  intent(inout) :: cdata
-      type(mct_aVect),  intent(inout) :: x2a
-      type(mct_aVect),  intent(inout) :: a2x
+      type(mct_aVect),  intent(inout) :: x2o
+      type(mct_aVect),  intent(inout) :: o2x
 
-      call eatm_final_c()
+      call eocn_final_c()
 
-   end subroutine atm_final_mct
+   end subroutine ocn_final_mct
 
-end module atm_comp_mct
+end module ocn_comp_mct

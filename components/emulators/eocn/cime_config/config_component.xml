@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="entry_id.xsl" ?>
+
+<entry_id version="3.0">
+  <description>
+    <desc ocn="EOCN">Emulator ocean component</desc>
+  </description>
+
+  <entry id="COMP_OCN">
+    <type>char</type>
+    <valid_values>eocn</valid_values>
+    <default_value>eocn</default_value>
+    <group>case_comp</group>
+    <file>env_case.xml</file>
+    <desc>Name of ocean component</desc>
+  </entry>
+
+  <entry id="EOCN_NXG">
+    <type>integer</type>
+    <default_value>48</default_value>
+    <group>build_component_eocn</group>
+    <file>env_build.xml</file>
+    <desc>Number of longitude points for the emulator OCN synthetic grid</desc>
+  </entry>
+
+  <entry id="EOCN_NYG">
+    <type>integer</type>
+    <default_value>24</default_value>
+    <group>build_component_eocn</group>
+    <file>env_build.xml</file>
+    <desc>Number of latitude points for the emulator OCN synthetic grid</desc>
+  </entry>
+
+  <help>
+    =========================================
+    EOCN naming conventions in compset name
+    =========================================
+  </help>
+
+</entry_id>

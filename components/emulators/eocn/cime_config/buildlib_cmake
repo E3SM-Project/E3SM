@@ -1,0 +1,61 @@
+#!/usr/bin/env python3
+
+"""
+Build the eocn (emulator ocean) component library.
+
+Custom buildlib because CIME's build_cime_component_lib assumes
+component names start with 'd', 'x', or 's' when writing Filepath.
+We write Filepath ourselves to include both eocn/src and the shared
+emulator common/src directory.
+"""
+
+import sys, os
+
+_CIMEROOT = os.environ.get("CIMEROOT")
+if _CIMEROOT is None:
+    raise ValueError("ERROR: CIMEROOT not defined.")
+sys.path.append(os.path.join(_CIMEROOT, "scripts", "Tools"))
+
+from standard_script_setup import *
+from CIME.buildlib import parse_input
+from CIME.case import Case
+from CIME.utils import safe_copy
+
+
+def buildlib(bldroot, libroot, case, compname="eocn"):
+    caseroot = case.get_value("CASEROOT")
+    casebuild = case.get_value("CASEBUILD")
+    srcroot = case.get_value("SRCROOT")
+    comp_root_dir = case.get_value("COMP_ROOT_DIR_OCN")
+
+    confdir = os.path.join(casebuild, "{}conf".format(compname))
+    if not os.path.exists(confdir):
+        os.makedirs(confdir)
+
+    # Write Filepath: SourceMods, eocn/src, emulators/common/src
+    filepath = os.path.join(confdir, "Filepath")
+    with open(filepath, "w") as fp:
+        fp.write(os.path.join(caseroot, "SourceMods",
+                              "src.{}".format(compname)) + "\n")
+        fp.write(os.path.join(comp_root_dir, "src") + "\n")
+        fp.write(os.path.join(srcroot, "components", "emulators",
+                              "common", "src") + "\n")
+
+    # Write empty CIME_cppdefs
+    cppdefs = os.path.join(confdir, "CIME_cppdefs")
+    with open(cppdefs, "w") as fp:
+        fp.write("")
+
+    # Copy into bldroot for cmake-based build
+    safe_copy(filepath, bldroot)
+    safe_copy(cppdefs, bldroot)
+
+
+def _main_func(args):
+    caseroot, libroot, bldroot = parse_input(args)
+    with Case(caseroot) as case:
+        buildlib(bldroot, libroot, case)
+
+
+if __name__ == "__main__":
+    _main_func(sys.argv)

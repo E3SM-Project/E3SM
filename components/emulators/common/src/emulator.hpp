@@ -6,7 +6,9 @@
 #ifndef EMULATOR_HPP
 #define EMULATOR_HPP
 
+#include <mpi.h>
 #include <string>
+#include <vector>
 
 namespace emulator {
 
@@ -25,7 +27,8 @@ enum class EmulatorType {
  *
  * Provides the common infrastructure for emulators.
  * Derived classes implement the pure virtual methods for
- * emulator-specific behavior.
+ * emulator-specific behavior. Grid-agnostic: grids provided
+ * externally via MCT or test harness.
  */
 class Emulator {
 public:
@@ -33,11 +36,12 @@ public:
    * @brief Construct a new Emulator.
    *
    * @param type Emulator type
+   * @param fcomm Fortran MPI communicator handle
    * @param id Emulator ID (-1 if unassigned)
    * @param name Emulator name (empty if unassigned)
    */
-  explicit Emulator(EmulatorType type, int id = -1,
-                    const std::string &name = "");
+  explicit Emulator(EmulatorType type, int fcomm = MPI_Comm_c2f(MPI_COMM_NULL),
+                    int id = -1, const std::string &name = "");
   virtual ~Emulator() = default;
 
   // Lifecycle methods
@@ -52,6 +56,15 @@ public:
   bool is_initialized() const { return m_initialized; }
   int step_count() const { return m_step_count; }
 
+  // MPI accessors
+  MPI_Comm comm() const { return m_comm; }
+  int rank() const { return m_rank; }
+  int nprocs() const { return m_nprocs; }
+
+  // Local decomposition size (set by derived class)
+  int lsize() const { return m_lsize; }
+  const std::vector<int> &gindex() const { return m_gindex; }
+
 protected:
   // Virtual methods for derived classes
   virtual void init_impl() = 0;
@@ -59,10 +72,17 @@ protected:
   virtual void final_impl() = 0;
 
   EmulatorType m_type;
+  MPI_Comm m_comm;
+  int m_rank;
+  int m_nprocs;
   int m_id;
   std::string m_name;
   bool m_initialized = false;
   int m_step_count = 0;
+
+  // Grid-agnostic decomposition (set by derived class or MCT layer)
+  int m_lsize = 0;
+  std::vector<int> m_gindex;
 };
 
 } // namespace emulator

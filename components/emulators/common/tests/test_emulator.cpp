@@ -9,10 +9,12 @@ namespace emulator {
 namespace test {
 
 // Concrete implementation for testing
+// Uses MPI_COMM_NULL (via default fcomm) for standalone tests
 class TestEmulator : public Emulator {
 public:
   TestEmulator(int id = -1, const std::string &name = "")
-      : Emulator(EmulatorType::ATM_COMP, id, name) {}
+      : Emulator(EmulatorType::ATM_COMP, MPI_Comm_c2f(MPI_COMM_NULL), id,
+                 name) {}
 
   // Track calls for verification
   bool init_called = false;
@@ -33,7 +35,8 @@ protected:
 class TestOcnEmulator : public Emulator {
 public:
   TestOcnEmulator(int id = -1, const std::string &name = "")
-      : Emulator(EmulatorType::OCN_COMP, id, name) {}
+      : Emulator(EmulatorType::OCN_COMP, MPI_Comm_c2f(MPI_COMM_NULL), id,
+                 name) {}
 
 protected:
   void init_impl() override {}
@@ -44,7 +47,8 @@ protected:
 class TestIceEmulator : public Emulator {
 public:
   TestIceEmulator(int id = -1, const std::string &name = "")
-      : Emulator(EmulatorType::ICE_COMP, id, name) {}
+      : Emulator(EmulatorType::ICE_COMP, MPI_Comm_c2f(MPI_COMM_NULL), id,
+                 name) {}
 
 protected:
   void init_impl() override {}
@@ -55,7 +59,8 @@ protected:
 class TestLndEmulator : public Emulator {
 public:
   TestLndEmulator(int id = -1, const std::string &name = "")
-      : Emulator(EmulatorType::LND_COMP, id, name) {}
+      : Emulator(EmulatorType::LND_COMP, MPI_Comm_c2f(MPI_COMM_NULL), id,
+                 name) {}
 
 protected:
   void init_impl() override {}

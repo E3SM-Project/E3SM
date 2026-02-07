@@ -5,7 +5,9 @@ module eatm_comp_mod
   !
   ! Provides:
   !   - iso_c_binding interfaces to C++ eatm_binding functions
-  !   - eatm_setup_domain: MCT domain initialization from C++ grid data
+  !   - eatm_setup_domain: MCT domain initialization
+  !
+  ! Grid-agnostic: decomposition computed here (F90) and passed to C++.
   !---------------------------------------------------------------------------
 
   use iso_c_binding
@@ -16,22 +18,28 @@ module eatm_comp_mod
   implicit none
   private
 
-  ! Public helper
+  ! Public helpers
   public :: eatm_setup_domain
+  public :: eatm_compute_grid
 
   !---------------------------------------------------------------------------
   ! C++ binding interfaces (eatm_binding.cpp)
   !---------------------------------------------------------------------------
   interface
 
-     subroutine eatm_create_c(fcomm, compid, nxg, nyg) &
+     subroutine eatm_create_c(fcomm, compid) &
           bind(C, name="eatm_create_c")
        import :: c_int
        integer(c_int), value, intent(in) :: fcomm
        integer(c_int), value, intent(in) :: compid
-       integer(c_int), value, intent(in) :: nxg
-       integer(c_int), value, intent(in) :: nyg
      end subroutine eatm_create_c
+
+     subroutine eatm_set_decomposition_c(lsize, gindex) &
+          bind(C, name="eatm_set_decomposition_c")
+       import :: c_int
+       integer(c_int), value, intent(in) :: lsize
+       integer(c_int), intent(in) :: gindex(*)
+     end subroutine eatm_set_decomposition_c
 
      function eatm_get_lsize_c() result(lsize) &
           bind(C, name="eatm_get_lsize_c")
@@ -39,17 +47,11 @@ module eatm_comp_mod
        integer(c_int) :: lsize
      end function eatm_get_lsize_c
 
-     subroutine eatm_get_grid_data_c(gindex, lons, lats, &
-          areas, masks, fracs) &
-          bind(C, name="eatm_get_grid_data_c")
-       import :: c_int, c_double
-       integer(c_int),  intent(out) :: gindex(*)
-       real(c_double),  intent(out) :: lons(*)
-       real(c_double),  intent(out) :: lats(*)
-       real(c_double),  intent(out) :: areas(*)
-       real(c_double),  intent(out) :: masks(*)
-       real(c_double),  intent(out) :: fracs(*)
-     end subroutine eatm_get_grid_data_c
+     subroutine eatm_get_gindex_c(gindex) &
+          bind(C, name="eatm_get_gindex_c")
+       import :: c_int
+       integer(c_int), intent(out) :: gindex(*)
+     end subroutine eatm_get_gindex_c
 
      subroutine eatm_init_c() bind(C, name="eatm_init_c")
      end subroutine eatm_init_c
@@ -67,9 +69,76 @@ module eatm_comp_mod
 contains
 
   !---------------------------------------------------------------------------
+  ! eatm_compute_grid
+  !
+  ! Compute a simple contiguous 1-D decomposition and synthetic grid.
+  ! This is done in F90 so C++ stays grid-agnostic.
+  !---------------------------------------------------------------------------
+  subroutine eatm_compute_grid(mpicom, nxg, nyg, lsize, &
+       gindex, lons, lats, areas, masks, fracs)
+
+    integer(IN), intent(in)  :: mpicom
+    integer(IN), intent(in)  :: nxg, nyg
+    integer(IN), intent(out) :: lsize
+    integer(IN), allocatable, intent(out) :: gindex(:)
+    real(R8), allocatable, intent(out) :: lons(:), lats(:)
+    real(R8), allocatable, intent(out) :: areas(:), masks(:), fracs(:)
+
+    ! locals
+    integer(IN) :: rank, nprocs, ierr
+    integer(IN) :: gsize, base, extra, offset, n, g, ig, jg
+    real(R8), parameter :: pi = 3.14159265358979323846_R8
+    real(R8), parameter :: deg2rad = pi / 180.0_R8
+    real(R8), parameter :: re = 6.37122e6_R8  ! Earth radius (m)
+    real(R8) :: dx, ys, yc, yn, dy
+
+    call mpi_comm_rank(mpicom, rank, ierr)
+    call mpi_comm_size(mpicom, nprocs, ierr)
+
+    gsize = nxg * nyg
+
+    ! Simple contiguous 1-D decomposition
+    base = gsize / nprocs
+    extra = mod(gsize, nprocs)
+    if (rank < extra) then
+       lsize = base + 1
+    else
+       lsize = base
+    endif
+    offset = rank * base + min(rank, extra)
+
+    ! Allocate arrays
+    allocate(gindex(lsize))
+    allocate(lons(lsize), lats(lsize), areas(lsize))
+    allocate(masks(lsize), fracs(lsize))
+
+    ! Fill synthetic grid data (mirrors dead_setNewGrid logic)
+    dx = 360.0_R8 / real(nxg, R8) * deg2rad
+
+    do n = 1, lsize
+       g = offset + n - 1  ! 0-based global index
+       ig = mod(g, nxg)    ! 0-based column
+       jg = g / nxg        ! 0-based row
+
+       ys = -90.0_R8 + real(jg, R8) * 180.0_R8 / real(nyg, R8)
+       yc = -90.0_R8 + (real(jg, R8) + 0.5_R8) * 180.0_R8 / real(nyg, R8)
+       yn = -90.0_R8 + (real(jg, R8) + 1.0_R8) * 180.0_R8 / real(nyg, R8)
+       dy = sin(yn * deg2rad) - sin(ys * deg2rad)
+
+       gindex(n) = g + 1   ! 1-based for MCT
+       lons(n) = real(ig, R8) * 360.0_R8 / real(nxg, R8)
+       lats(n) = yc
+       areas(n) = dx * dy * re * re
+       masks(n) = 1.0_R8
+       fracs(n) = 1.0_R8
+    end do
+
+  end subroutine eatm_compute_grid
+
+  !---------------------------------------------------------------------------
   ! eatm_setup_domain
   !
-  ! Initialize an MCT domain (mct_ggrid) from arrays provided by C++.
+  ! Initialize an MCT domain (mct_ggrid) from arrays.
   ! Follows the pattern in dead_mct_mod.F90::dead_domain_mct.
   !---------------------------------------------------------------------------
   subroutine eatm_setup_domain(mpicom, gsMap, domain, lsize, &
@@ -87,7 +156,6 @@ contains
     real(R8),        intent(in)    :: fracs(lsize)
 
     ! locals
-    integer(IN)          :: n, my_task, ier
     real(R8), allocatable    :: rdata(:)
     integer(IN), allocatable :: idata(:)
 

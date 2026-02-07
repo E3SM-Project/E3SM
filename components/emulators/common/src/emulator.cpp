@@ -8,9 +8,20 @@
 
 namespace emulator {
 
-Emulator::Emulator(EmulatorType type, int id, const std::string &name)
+Emulator::Emulator(EmulatorType type, int fcomm, int id,
+                   const std::string &name)
     : m_type(type), m_id(id), m_name(name), m_initialized(false),
-      m_step_count(0) {}
+      m_step_count(0), m_lsize(0) {
+  // Convert Fortran communicator to C communicator
+  m_comm = MPI_Comm_f2c(fcomm);
+  if (m_comm != MPI_COMM_NULL) {
+    MPI_Comm_rank(m_comm, &m_rank);
+    MPI_Comm_size(m_comm, &m_nprocs);
+  } else {
+    m_rank = 0;
+    m_nprocs = 1;
+  }
+}
 
 void Emulator::initialize() {
   if (m_initialized) {
