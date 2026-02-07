@@ -641,12 +641,6 @@ void RRTMGPRadiation::run_impl (const double dt) {
   auto update_rad = scream::rrtmgp::radiation_do(m_rad_freq_in_steps, ts.get_num_steps());
 
   if (update_rad) {
-    // Init optical depths to zero before recomputing.
-    // These fields are only updated on radiation timesteps (controlled by update_rad),
-    // and they must be zeroed before accumulation to avoid carrying over stale values.
-    // Between radiation calls, these fields persist in the FieldManager so COSP can use them.
-    Kokkos::deep_copy(d_dtau067,0.0);
-    Kokkos::deep_copy(d_dtau105,0.0);
     // On each chunk, we internally "reset" the GasConcs object to subview the concs 3d array
     // with the correct ncol dimension. So let's keep a copy of the original (ref-counted)
     // array, to restore at the end inside the m_gast_concs object.

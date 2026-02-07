@@ -314,10 +314,11 @@ rescale_masked_fields (const Field& x, const Field& mask) const
           Kokkos::parallel_for(Kokkos::TeamVectorRange(team,dim1),
                               [&](const int j){
             auto valid = m_sub(j) > mask_threshold;
-            // First set invalid values to fill_val
+            // Avoid division by zero FPE: only divide if there are valid entries
+            if (valid.any()) {
+              x_sub(j).set(valid,x_sub(j)/m_sub(j));
+            }
             x_sub(j).set(!valid,fill_val);
-            // Then rescale valid values (overwrites the valid entries that were just set)
-            x_sub(j).set(valid,x_sub(j)/m_sub(j));
           });
         }
       });
@@ -370,10 +371,11 @@ rescale_masked_fields (const Field& x, const Field& mask) const
             const int k = idx % dim2;
             auto x_sub = ekat::subview(x_view,icol,j);
             auto valid = m_sub(k) > mask_threshold;
-            // First set invalid values to fill_val
+            // Avoid division by zero FPE: only divide if there are valid entries
+            if (valid.any()) {
+              x_sub(k).set(valid,x_sub(k)/m_sub(k));
+            }
             x_sub(k).set(!valid,fill_val);
-            // Then rescale valid values (overwrites the valid entries that were just set)
-            x_sub(k).set(valid,x_sub(k)/m_sub(k));
           });
         }
       });
@@ -430,10 +432,11 @@ rescale_masked_fields (const Field& x, const Field& mask) const
             const int l =  idx % dim3;
             auto x_sub = ekat::subview(x_view,icol,j,k);
             auto valid = m_sub(l) > mask_threshold;
-            // First set invalid values to fill_val
+            // Avoid division by zero FPE: only divide if there are valid entries
+            if (valid.any()) {
+              x_sub(l).set(valid,x_sub(l)/m_sub(l));
+            }
             x_sub(l).set(!valid,fill_val);
-            // Then rescale valid values (overwrites the valid entries that were just set)
-            x_sub(l).set(valid,x_sub(l)/m_sub(l));
           });
         }
       });
