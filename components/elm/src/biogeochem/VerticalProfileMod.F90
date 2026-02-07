@@ -233,14 +233,17 @@ contains
 
             if (altmax_lastyear_indx(c) > 0) then
                zsoi_till_active = min( zsoi_till, zisoi(nlevbed) )
+               surface_prof_tot = 0._r8
                do j = 1, min(max(altmax_lastyear_indx(c), 1), nlevdecomp)
                   if (zisoi(j) <= zsoi_till_active) then
                      tillage_prof(p,j) = 1./zsoi_till_active
                   else if (zisoi(j) - dzsoi_decomp(j) < zsoi_till_active) then
-                     tillage_prof(p,j) = (zsoi_till_active - zisoi(j) + dzsoi_decomp(j)) / &
-                        zsoi_till_active / dzsoi_decomp(j)
+                     tillage_prof(p,j) = ((zsoi_till_active - zisoi(j) + dzsoi_decomp(j)) / &
+                        dzsoi_decomp(j)) / zsoi_till_active
                   end if
+                  surface_prof_tot = surface_prof_tot + tillage_prof(p,j) * dzsoi_decomp(j)
                end do
+               tillage_prof(p,:) = tillage_prof(p,:) / surface_prof_tot
             else
                ! if fully frozen, or no roots, put everything in the top layer
                tillage_prof(p,1) = 1./dzsoi_decomp(1)
@@ -385,6 +388,8 @@ contains
             write(iulog,*)  'froot_prof(p,:): ',froot_prof(p,:)
             write(iulog,*)  'leaf_prof(p,:): ',leaf_prof(p,:)
             write(iulog,*)  'stem_prof(p,:): ',stem_prof(p,:)
+            write(iulog,*)  'residue_prof(p,:): ',residue_prof(p,:)
+            write(iulog,*)  'tillage_prof(p,:): ',tillage_prof(p,:)
             call endrun(msg=' ERROR: sum-1 > delta'//errMsg(__FILE__, __LINE__))
          endif
       end do
