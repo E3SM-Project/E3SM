@@ -385,6 +385,7 @@ CONTAINS
     logical                :: flux_albav         ! T => no diurnal cycle in ocn albedos
     logical                :: flux_diurnal       ! T => diurnal cycle in atm/ocn fluxes
     integer                :: ocn_surface_flux_scheme  ! 0: E3SMv1 1: COARE  2: UA
+    character(SHR_KIND_CS) :: precip_downscaling_method ! Precipitation downscaling method
     logical                 :: coldair_outbreak_mod ! (Mahrt & Sun 1995,MWR)
     real(SHR_KIND_R8)       :: flux_convergence   ! atmocn flux calc convergence value
     integer                 :: flux_max_iteration ! max number of iterations of atmocn flux loop
@@ -507,6 +508,8 @@ CONTAINS
     !---------------------------------------------------------------------------
     if (seq_comm_iamroot(ID)) then
 
+       ! not in the namelist but in the infobuffer
+       precip_downscaling_method = ' '
        !---------------------------------------------------------------------------
        ! Set namelist defaults
        !---------------------------------------------------------------------------
@@ -691,6 +694,7 @@ CONTAINS
        infodata%flux_albav            = flux_albav
        infodata%flux_diurnal          = flux_diurnal
        infodata%ocn_surface_flux_scheme = ocn_surface_flux_scheme
+       infodata%precip_downscaling_method = precip_downscaling_method
        infodata%flux_convergence      = flux_convergence
        infodata%coldair_outbreak_mod      = coldair_outbreak_mod
        infodata%flux_max_iteration    = flux_max_iteration
@@ -3105,12 +3109,12 @@ CONTAINS
     write(logunit,F0I) subname,'wav_ny                   = ', infodata%wav_ny
     write(logunit,F0I) subname,'iac_nx                   = ', infodata%iac_nx
     write(logunit,F0I) subname,'iac_ny                   = ', infodata%iac_ny
-    write(logunit,F0I) subname,'lnd_domain               = ', infodata%lnd_domain
-    write(logunit,F0I) subname,'rof_mesh                 = ', infodata%rof_mesh
-    write(logunit,F0I) subname,'rof_domain               = ', infodata%rof_domain
-    write(logunit,F0I) subname,'ocn_domain               = ', infodata%ocn_domain
-    write(logunit,F0I) subname,'ice_domain               = ', infodata%ice_domain
-    write(logunit,F0I) subname,'atm_mesh                 = ', infodata%atm_mesh
+    write(logunit,F0A) subname,'lnd_domain               = ', trim(infodata%lnd_domain)
+    write(logunit,F0A) subname,'rof_mesh                 = ', trim(infodata%rof_mesh)
+    write(logunit,F0A) subname,'rof_domain               = ', trim(infodata%rof_domain)
+    write(logunit,F0A) subname,'ocn_domain               = ', trim(infodata%ocn_domain)
+    write(logunit,F0A) subname,'ice_domain               = ', trim(infodata%ice_domain)
+    write(logunit,F0A) subname,'atm_mesh                 = ', infodata%atm_mesh
 
     write(logunit,F0R) subname,'nextsw_cday              = ', infodata%nextsw_cday
     write(logunit,F0R) subname,'precip_fact              = ', infodata%precip_fact
