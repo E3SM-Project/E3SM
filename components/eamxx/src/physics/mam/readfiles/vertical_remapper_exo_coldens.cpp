@@ -38,12 +38,12 @@ void VerticalRemapperExoColdensMAM4::set_delta_pressure(const std::string& file_
 
     m_exo_ki=-1;
     m_exo_delp=0.0;
-    if (ptop_ref <= lev_src(0)) { // levs(1) in Fortran is levs[0] in C++
+    if (ptop_ref <= lev_src(0)*hPa2Pa) { // levs(1) in Fortran is levs[0] in C++
         m_exo_ki = 0;
         m_exo_delp = 0.0;
     } else {
     for (int ki = 1; ki < n_exo_levs; ++ki) { // ki starts from 2 in Fortran, so we start from 1 in C++
-      if (ptop_ref <= lev_src(ki)) {
+      if (ptop_ref <= lev_src(ki) * hPa2Pa) {
         m_exo_delp = std::log(ptop_ref / lev_src(ki - 1)/ hPa2Pa) / std::log(lev_src(ki) / lev_src(ki - 1));
         m_exo_ki=ki;
         break; // exit the loop
