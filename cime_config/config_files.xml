@@ -131,6 +131,7 @@
       <value component="eam"                         >$SRCROOT/components/eam/</value>
       <value component="eamxx"                       >$SRCROOT/components/eamxx/</value>
       <value component="scream"                      >$SRCROOT/components/eamxx/</value>
+      <value component="eatm"                        >$SRCROOT/components/emulators/eatm</value>
     </values>
     <group>case_comps</group>
     <file>env_case.xml</file>
@@ -314,6 +315,7 @@
       <value component="dlnd">$COMP_ROOT_DIR_LND/cime_config/config_archive.xml</value>
       <value component="docn">$COMP_ROOT_DIR_OCN/cime_config/config_archive.xml</value>
       <value component="dwav">$COMP_ROOT_DIR_WAV/cime_config/config_archive.xml</value>
+      <value component="eatm">$COMP_ROOT_DIR_ATM/cime_config/config_archive.xml</value>
       <!-- external model components -->
     </values>
     <group>case_last</group>

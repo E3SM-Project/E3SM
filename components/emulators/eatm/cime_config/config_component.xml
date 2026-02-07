@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+
+<definitions_variables>
+
+  <entry id="COMP_ATM">
+     <type>char</type>
+     <valid_values>eatm</valid_values>
+     <default_value>eatm</default_value>
+     <group>case_comp</group>
+     <file>env_case.xml</file>
+     <desc>Name of atm component</desc>
+  </entry>
+
+  <entry id="EATM_MODE">
+    <type>char</type>
+    <valid_values>ACTIVE,NULL</valid_values>
+    <default_value>ACTIVE</default_value>
+    <values>
+      <value compset="_EATM.*">ACTIVE</value>
+      <value grid="a%null">NULL</value>
+    </values>
+    <group>build_component_eatm</group>
+    <file>env_build.xml</file>
+    <desc>mode for eatm model, NULL means eatm is turned off</desc>
+  </entry>
+
+  <description>
+    <desc compset="_EATM">EATM:</desc>
+  </description>
+
+  <help>
+    =========================================
+    EATM naming conventions
+    =========================================
+  </help>
+
+</definitions_variables>
