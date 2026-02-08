@@ -34,20 +34,24 @@ class HyperviscosityFunctorImpl
 {
   // TODO: don't pass nu_ratio1/2. Instead, do like in F90: compute them from
   //       nu, nu_div, and hv_scaling
+public:
   struct HyperviscosityData {
     HyperviscosityData(const int hypervis_subcycle_in, 
                        const int hypervis_subcycle_tom_in, 
                        const Real nu_ratio1_in, const Real nu_ratio2_in, const Real nu_top_in,
                        const Real nu_in, const Real nu_p_in, const Real nu_s_in,
-                       const Real hypervis_scaling_in)
+                       const Real hypervis_scaling_in, bool do_3d_turbulence_in)
                       : hypervis_subcycle(hypervis_subcycle_in) 
                       , hypervis_subcycle_tom(hypervis_subcycle_tom_in)
                       , nu_ratio1(nu_ratio1_in), nu_ratio2(nu_ratio2_in)
                       , nu_top(nu_top_in), nu(nu_in), nu_p(nu_p_in), nu_s(nu_s_in)
-                      , consthv(hypervis_scaling_in == 0){}
+                      , consthv(hypervis_scaling_in == 0)
+                      , do_3d_turbulence(do_3d_turbulence_in){}
 
     const int   hypervis_subcycle;
     const int   hypervis_subcycle_tom;
+
+    bool do_3d_turbulence;
 
     Real  nu_ratio1;
     Real  nu_ratio2;
@@ -73,6 +77,8 @@ class HyperviscosityFunctorImpl
     ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>    wtens;
     ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>    phitens;
     ExecViewManaged<Scalar * [2][NP][NP][NUM_LEV]> vtens;
+    ExecViewManaged<Scalar * [NP][NP][NUM_LEV_P]>  turb_diff_heat_i;
+    ExecViewManaged<Scalar * [NP][NP][NUM_LEV_P]>  turb_diff_mom_i;
   };//buffers
 
 public:
@@ -106,6 +112,8 @@ public:
   void run (const int np1, const Real dt, const Real eta_ave_w);
 
   void biharmonic_wk_theta () const;
+
+  void apply_horizontal_turbulent_diffusion () const;
 
   // first iter of laplace, const hv
   KOKKOS_INLINE_FUNCTION
