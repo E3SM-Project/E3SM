@@ -3290,9 +3290,7 @@
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
       <modules>
-        <command name="reset"></command>
         <command name="use">/grand/E3SMinput/soft/modulefiles/polaris</command>
-        <command name="load">cray-python</command>
         <command name="load">cmake/3.27.9</command>
         <command name="load">craype-accel-host</command>
       </modules>
