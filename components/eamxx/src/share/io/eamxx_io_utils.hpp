@@ -83,6 +83,10 @@ util::TimeStamp read_timestamp (const std::string& filename,
                                 const std::string& ts_name,
                                 const bool read_nsteps = false);
 
+// Parse CF convention time units string (e.g., "seconds since 1970-01-01 00:00:00")
+// Returns a TimeStamp representing the reference time in the units string
+util::TimeStamp parse_cf_time_units (const std::string& time_units);
+
 // Create a diagnostic from a string representation of it.
 // E.g., create the diag to compute fieldX_at_500hPa.
 std::shared_ptr<AtmosphereDiagnostic>

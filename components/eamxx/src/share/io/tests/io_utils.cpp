@@ -145,3 +145,89 @@ TEST_CASE ("io_control") {
     REQUIRE (not control.is_write_step(t3));
   }
 }
+
+TEST_CASE ("parse_cf_time_units") {
+  using namespace scream;
+
+  SECTION ("seconds since with full timestamp") {
+    auto ts_units = "seconds since 1970-01-01 00:00:00";
+    auto ts = parse_cf_time_units(ts_units);
+    REQUIRE (ts.get_year() == 1970);
+    REQUIRE (ts.get_month() == 1);
+    REQUIRE (ts.get_day() == 1);
+    REQUIRE (ts.get_hours() == 0);
+    REQUIRE (ts.get_minutes() == 0);
+    REQUIRE (ts.get_seconds() == 0);
+  }
+
+  SECTION ("days since with full timestamp") {
+    auto ts_units = "days since 2000-01-01 00:00:00";
+    auto ts = parse_cf_time_units(ts_units);
+    REQUIRE (ts.get_year() == 2000);
+    REQUIRE (ts.get_month() == 1);
+    REQUIRE (ts.get_day() == 1);
+    REQUIRE (ts.get_hours() == 0);
+    REQUIRE (ts.get_minutes() == 0);
+    REQUIRE (ts.get_seconds() == 0);
+  }
+
+  SECTION ("hours since with full timestamp") {
+    auto ts_units = "hours since 2023-09-07 12:30:45";
+    auto ts = parse_cf_time_units(ts_units);
+    REQUIRE (ts.get_year() == 2023);
+    REQUIRE (ts.get_month() == 9);
+    REQUIRE (ts.get_day() == 7);
+    REQUIRE (ts.get_hours() == 12);
+    REQUIRE (ts.get_minutes() == 30);
+    REQUIRE (ts.get_seconds() == 45);
+  }
+
+  SECTION ("minutes since with full timestamp") {
+    auto ts_units = "minutes since 2015-06-15 08:15:30";
+    auto ts = parse_cf_time_units(ts_units);
+    REQUIRE (ts.get_year() == 2015);
+    REQUIRE (ts.get_month() == 6);
+    REQUIRE (ts.get_day() == 15);
+    REQUIRE (ts.get_hours() == 8);
+    REQUIRE (ts.get_minutes() == 15);
+    REQUIRE (ts.get_seconds() == 30);
+  }
+
+  SECTION ("date only (no time)") {
+    auto ts_units = "days since 2010-12-25";
+    auto ts = parse_cf_time_units(ts_units);
+    REQUIRE (ts.get_year() == 2010);
+    REQUIRE (ts.get_month() == 12);
+    REQUIRE (ts.get_day() == 25);
+    REQUIRE (ts.get_hours() == 0);
+    REQUIRE (ts.get_minutes() == 0);
+    REQUIRE (ts.get_seconds() == 0);
+  }
+
+  SECTION ("with timezone (should be ignored)") {
+    auto ts_units = "seconds since 1980-03-15 10:20:30 UTC";
+    auto ts = parse_cf_time_units(ts_units);
+    REQUIRE (ts.get_year() == 1980);
+    REQUIRE (ts.get_month() == 3);
+    REQUIRE (ts.get_day() == 15);
+    REQUIRE (ts.get_hours() == 10);
+    REQUIRE (ts.get_minutes() == 20);
+    REQUIRE (ts.get_seconds() == 30);
+  }
+
+  SECTION ("with fractional seconds (should be truncated)") {
+    auto ts_units = "seconds since 2020-05-10 14:25:36.789";
+    auto ts = parse_cf_time_units(ts_units);
+    REQUIRE (ts.get_year() == 2020);
+    REQUIRE (ts.get_month() == 5);
+    REQUIRE (ts.get_day() == 10);
+    REQUIRE (ts.get_hours() == 14);
+    REQUIRE (ts.get_minutes() == 25);
+    REQUIRE (ts.get_seconds() == 36); // fractional part is ignored
+  }
+
+  SECTION ("invalid format (no 'since')") {
+    auto ts_units = "seconds from 1970-01-01 00:00:00";
+    REQUIRE_THROWS (parse_cf_time_units(ts_units));
+  }
+}
