@@ -229,7 +229,7 @@ TEST_CASE ("exceptions")
   // Test correctness of some exception handling inside the DataInterpolation source code
   ekat::Comm comm(MPI_COMM_WORLD);
   scorpio::init_subsystem(comm);
-  auto grid = create_point_grid("pg",data_ngcols,data_nlevs,comm);
+  auto grid = create_point_grid("pg",data_ngcols,data_nlevs,comm,1);
 
   auto fields = create_fields(grid,false,false);
 
@@ -259,10 +259,10 @@ TEST_CASE ("interpolation")
 
   scorpio::init_subsystem(comm);
 
-  auto data_grid   = create_point_grid("pg",data_ngcols,data_nlevs,comm);
-  auto hfine_grid  = create_point_grid("pg_h",fine_ngcols,data_nlevs,comm);
-  auto vfine_grid  = create_point_grid("pg_v",data_ngcols,fine_nlevs,comm);
-  auto hvfine_grid = create_point_grid("pg_hv",fine_ngcols,fine_nlevs,comm);
+  auto data_grid   = create_point_grid("pg",data_ngcols,data_nlevs,comm,1);
+  auto hfine_grid  = create_point_grid("pg_h",fine_ngcols,data_nlevs,comm,1);
+  auto vfine_grid  = create_point_grid("pg_v",data_ngcols,fine_nlevs,comm,1);
+  auto hvfine_grid = create_point_grid("pg_hv",fine_ngcols,fine_nlevs,comm,1);
 
   SECTION ("linear_interp") {
     auto time_interp_type = DataInterpolation::Linear;
