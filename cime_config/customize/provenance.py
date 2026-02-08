@@ -371,7 +371,7 @@ def _record_timing(case, lid):
     try:
         full_timing_dir = _check_timing_dir(timing_dir, base_case, lid)
     except RuntimeError as e:
-        logger.warning("{!s}", e)
+        logger.warning(str(e))
 
         return
 
