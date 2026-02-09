@@ -73,12 +73,13 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
       set(file_T "${prefix_T}.${suffix}")
       
       # Add test to compare files using compare-nc-files script
-      # The script should handle transposed dimensions automatically
+      # The script should handle transposed dimensions automatically with -a flag
       add_test(
         NAME io_transpose_check_${AVG_TYPE}_np${MPI_RANKS}
         COMMAND ${SCREAM_BASE_DIR}/scripts/compare-nc-files
           -s ${file_N} -t ${file_T}
           -c "f_0=f_0" "f_1=f_1" "f_2=f_2"
+          -a
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
       )
       set_tests_properties(io_transpose_check_${AVG_TYPE}_np${MPI_RANKS} PROPERTIES
