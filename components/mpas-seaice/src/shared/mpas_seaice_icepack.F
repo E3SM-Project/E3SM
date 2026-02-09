@@ -2426,10 +2426,10 @@ subroutine init_column_waves(domain)
          freezeOnset, &
          categoryThicknessLimits, &
          frazilGrowthDiagnostic, &
-         WaveFrequency,      &
-         SignificantWaveHeight,&
-         FloeSizeBinCenter,  &
-         FloeSizeBinWidth
+         waveFrequency,      &
+         significantWaveHeight,&
+         floeSizeBinCenter,  &
+         floeSizeBinWidth
 
     real(kind=RKIND), dimension(:,:), pointer :: &
          iceAreaCategoryInitial, &
@@ -2440,12 +2440,12 @@ subroutine init_column_waves(domain)
          oceanBioConcentrations, &
          oceanBioConcentrationsInUse, &
          initialSalinityProfile, &
-         WaveSpectra, &
-         DFloeSizeNewIce, &
-         DFloeSizeLateralGrowth, &
-         DFloeSizeLateralMelt, &
-         DFloeSizeWaves, &
-         DFloeSizeWeld
+         waveSpectra, &
+         dFloeSizeNewIce, &
+         dFloeSizeLateralGrowth, &
+         dFloeSizeLateralMelt, &
+         dFloeSizeWaves, &
+         dFloeSizeWeld
 
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          iceAreaCategory, &
@@ -2541,17 +2541,17 @@ subroutine init_column_waves(domain)
        call MPAS_pool_get_array(ocean_coupling, "seaFreezingTemperature", seaFreezingTemperature)
        call MPAS_pool_get_array(ocean_coupling, "seaSurfaceSalinity", seaSurfaceSalinity)
 
-       call MPAS_pool_get_array(wave_coupling, "SignificantWaveHeight", SignificantWaveHeight)
-       call MPAS_pool_get_array(wave_coupling, "WaveSpectra", WaveSpectra)
-       call MPAS_pool_get_array(wave_coupling, "WaveFrequency", WaveFrequency)
+       call MPAS_pool_get_array(wave_coupling, "significantWaveHeight", significantWaveHeight)
+       call MPAS_pool_get_array(wave_coupling, "waveSpectra", waveSpectra)
+       call MPAS_pool_get_array(wave_coupling, "waveFrequency", waveFrequency)
 
-       call MPAS_pool_get_array(floe_size_distribution, "FloeSizeBinCenter", FloeSizeBinCenter)
-       call MPAS_pool_get_array(floe_size_distribution, "FloeSizeBinWidth", FloeSizeBinWidth)
-       call MPAS_pool_get_array(floe_size_distribution, "DFloeSizeNewIce", DFloeSizeNewIce)
-       call MPAS_pool_get_array(floe_size_distribution, "DFloeSizeLateralGrowth", DFloeSizeLateralGrowth)
-       call MPAS_pool_get_array(floe_size_distribution, "DFloeSizeLateralMelt", DFloeSizeLateralMelt)
-       call MPAS_pool_get_array(floe_size_distribution, "DFloeSizeWeld", DFloeSizeWeld)
-       call MPAS_pool_get_array(floe_size_distribution, "DFloeSizeWaves", DFloeSizeWaves)
+       call MPAS_pool_get_array(floe_size_distribution, "floeSizeBinCenter", floeSizeBinCenter)
+       call MPAS_pool_get_array(floe_size_distribution, "floeSizeBinWidth", floeSizeBinWidth)
+       call MPAS_pool_get_array(floe_size_distribution, "dFloeSizeNewIce", dFloeSizeNewIce)
+       call MPAS_pool_get_array(floe_size_distribution, "dFloeSizeLateralGrowth", dFloeSizeLateralGrowth)
+       call MPAS_pool_get_array(floe_size_distribution, "dFloeSizeLateralMelt", dFloeSizeLateralMelt)
+       call MPAS_pool_get_array(floe_size_distribution, "dFloeSizeWeld", dFloeSizeWeld)
+       call MPAS_pool_get_array(floe_size_distribution, "dFloeSizeWaves", dFloeSizeWaves)
 
        call MPAS_pool_get_array(ocean_fluxes, "oceanFreshWaterFlux", oceanFreshWaterFlux)
        call MPAS_pool_get_array(ocean_fluxes, "oceanSaltFlux", oceanSaltFlux)
@@ -2653,13 +2653,13 @@ subroutine init_column_waves(domain)
 !               H2_16O_ocn=, & ! optional - ocean concentration of H2_16O (kg/kg) 
 !               H2_18O_ocn=, & ! optional - ocean concentration of H2_18O (kg/kg)
 !               nfsd=nFloeCategories, &
-               wave_sig_ht=SignificantWaveHeight(iCell), &
-               wave_spectrum=WaveSpectra(:,iCell),    &
-               wavefreq=WaveFrequency(:),       &
-               d_afsd_latg=DFloeSizeLateralGrowth(:,iCell),    &
-               d_afsd_newi=DFloeSizeNewIce(:,iCell),   &
-               d_afsd_latm=DFloeSizeLateralMelt(:,iCell),   &
-               d_afsd_weld=DFloeSizeWeld(:,iCell))
+               wave_sig_ht=significantWaveHeight(iCell), &
+               wave_spectrum=waveSpectra(:,iCell),    &
+               wavefreq=waveFrequency(:),       &
+               d_afsd_latg=dFloeSizeLateralGrowth(:,iCell),    &
+               d_afsd_newi=dFloeSizeNewIce(:,iCell),   &
+               d_afsd_latm=dFloeSizeLateralMelt(:,iCell),   &
+               d_afsd_weld=dFloeSizeWeld(:,iCell))
 
           do iBioTracers = 1, ciceTracerObject % nBioTracers
              oceanBioFluxes(iBioTracers,iCell) = oceanBioFluxes(iBioTracers,iCell) + oceanBioFluxesTemp(iBioTracers,iCell)
