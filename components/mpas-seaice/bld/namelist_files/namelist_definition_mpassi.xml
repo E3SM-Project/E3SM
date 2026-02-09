@@ -2364,7 +2364,7 @@ Valid values:
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_min_meltwater_retained_fraction" type="real"
+<entry id="config_min_meltwater_retained_fraction_lvlponds" type="real"
 	category="meltponds" group="meltponds">
 Minimum retained fraction of meltwater.
 
@@ -2372,7 +2372,39 @@ Valid values: Any real number between 0 and 1
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_max_meltwater_retained_fraction" type="real"
+<entry id="config_min_meltwater_retained_fraction_sealvlponds" type="real"
+	category="meltponds" group="meltponds">
+Minimum retained fraction of meltwater.
+
+Valid values: Any real number between 0 and 1
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_min_meltwater_retained_fraction_topoponds" type="real"
+	category="meltponds" group="meltponds">
+Minimum retained fraction of meltwater.
+
+Valid values: Any real number between 0 and 1
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_max_meltwater_retained_fraction_lvlponds" type="real"
+	category="meltponds" group="meltponds">
+Maximum retained fraction of meltwater.
+
+Valid values: Any real number between 0 and 1
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_max_meltwater_retained_fraction_sealvlponds" type="real"
+	category="meltponds" group="meltponds">
+Maximum retained fraction of meltwater.
+
+Valid values: Any real number between 0 and 1
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_max_meltwater_retained_fraction_topoponds" type="real"
 	category="meltponds" group="meltponds">
 Maximum retained fraction of meltwater.
 
@@ -2470,7 +2502,23 @@ Valid values: Any real number between 0 and 1.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_macro_drainage_timescale" type="real"
+<entry id="config_macro_drainage_timescale_lvlponds" type="real"
+	category="thermodynamics" group="thermodynamics">
+Timescale for macroscopic drainage.
+
+Valid values: Any positive real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_macro_drainage_timescale_sealvlponds" type="real"
+	category="thermodynamics" group="thermodynamics">
+Timescale for macroscopic drainage.
+
+Valid values: Any positive real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_macro_drainage_timescale_topoponds" type="real"
 	category="thermodynamics" group="thermodynamics">
 Timescale for macroscopic drainage.
 

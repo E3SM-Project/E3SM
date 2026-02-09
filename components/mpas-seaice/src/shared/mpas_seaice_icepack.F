@@ -9453,9 +9453,17 @@ contains
     integer :: &
          nPondSchemesActive
 
+    real(kind=RKIND) :: &
+         min_meltwater_retained_fraction, &
+         max_meltwater_retained_fraction
+
     real(kind=RKIND), pointer :: &
-         config_max_meltwater_retained_fraction, &
-         config_min_meltwater_retained_fraction, &
+         config_max_meltwater_retained_fraction_lvlponds, &
+         config_min_meltwater_retained_fraction_lvlponds, &
+         config_max_meltwater_retained_fraction_sealvlponds, &
+         config_min_meltwater_retained_fraction_sealvlponds, &
+         config_max_meltwater_retained_fraction_topoponds, &
+         config_min_meltwater_retained_fraction_topoponds, &
          config_snow_to_ice_transition_depth
 
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nCategories", nCategories)
@@ -9476,8 +9484,12 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_salt_flux_coupling_type", config_salt_flux_coupling_type)
     call MPAS_pool_get_config(domain % configs, "config_calc_surface_stresses", config_calc_surface_stresses)
     call MPAS_pool_get_config(domain % configs, "config_calc_surface_temperature", config_calc_surface_temperature)
-    call MPAS_pool_get_config(domain % configs, "config_max_meltwater_retained_fraction", config_max_meltwater_retained_fraction)
-    call MPAS_pool_get_config(domain % configs, "config_min_meltwater_retained_fraction", config_min_meltwater_retained_fraction)
+    call MPAS_pool_get_config(domain % configs, "config_min_meltwater_retained_fraction_lvlponds", config_min_meltwater_retained_fraction_lvlponds)
+    call MPAS_pool_get_config(domain % configs, "config_max_meltwater_retained_fraction_lvlponds", config_max_meltwater_retained_fraction_lvlponds)
+    call MPAS_pool_get_config(domain % configs, "config_min_meltwater_retained_fraction_sealvlponds", config_min_meltwater_retained_fraction_sealvlponds)
+    call MPAS_pool_get_config(domain % configs, "config_max_meltwater_retained_fraction_sealvlponds", config_max_meltwater_retained_fraction_sealvlponds)
+    call MPAS_pool_get_config(domain % configs, "config_min_meltwater_retained_fraction_topoponds", config_min_meltwater_retained_fraction_topoponds)
+    call MPAS_pool_get_config(domain % configs, "config_max_meltwater_retained_fraction_topoponds", config_max_meltwater_retained_fraction_topoponds)
     call MPAS_pool_get_config(domain % configs, "config_snow_to_ice_transition_depth", config_snow_to_ice_transition_depth)
     call MPAS_pool_get_config(domain % configs, "config_use_form_drag", config_use_form_drag)
     call MPAS_pool_get_config(domain % configs, "config_use_level_ice", config_use_level_ice)
@@ -9707,14 +9719,24 @@ contains
     endif
 
     ! check range of config_min_meltwater_retained_fraction and config_max_meltwater_retained_fraction
-    if (config_min_meltwater_retained_fraction < 0.0_RKIND .or. &
-        config_min_meltwater_retained_fraction > 1.0_RKIND) then
+    if (config_use_level_meltponds) then
+       min_meltwater_retained_fraction = config_min_meltwater_retained_fraction_lvlponds
+       max_meltwater_retained_fraction = config_max_meltwater_retained_fraction_lvlponds
+    elseif (config_use_sealevel_meltponds) then
+       min_meltwater_retained_fraction = config_min_meltwater_retained_fraction_sealvlponds
+       max_meltwater_retained_fraction = config_max_meltwater_retained_fraction_sealvlponds
+    else ! topo meltponds
+       min_meltwater_retained_fraction = config_min_meltwater_retained_fraction_topoponds
+       max_meltwater_retained_fraction = config_max_meltwater_retained_fraction_topoponds
+    endif
+    if (min_meltwater_retained_fraction < 0.0_RKIND .or. &
+        min_meltwater_retained_fraction > 1.0_RKIND) then
        call mpas_log_write(&
             'check_column_package_configs: config_min_meltwater_retained_fraction out of bounds', &
             messageType=MPAS_LOG_CRIT)
     endif
-    if (config_max_meltwater_retained_fraction < 0.0_RKIND .or. &
-        config_max_meltwater_retained_fraction > 1.0_RKIND) then
+    if (max_meltwater_retained_fraction < 0.0_RKIND .or. &
+        max_meltwater_retained_fraction > 1.0_RKIND) then
        call mpas_log_write(&
             'check_column_package_configs: config_max_meltwater_retained_fraction out of bounds', &
             messageType=MPAS_LOG_CRIT)
@@ -10190,6 +10212,9 @@ contains
          config_snow_redistribution_scheme
 
     logical, pointer :: &
+         config_use_level_meltponds, &
+         config_use_sealevel_meltponds, &
+         config_use_topo_meltponds, &
          config_use_snicar_ad, &
          config_calc_surface_temperature, &
          config_update_ocean_fluxes, &
@@ -10219,7 +10244,9 @@ contains
          config_rapid_mode_aspect_ratio, &
          config_slow_mode_drainage_strength, &
          config_slow_mode_critical_porosity, &
-         config_macro_drainage_timescale, &
+         config_macro_drainage_timescale_lvlponds, &
+         config_macro_drainage_timescale_sealvlponds, &
+         config_macro_drainage_timescale_topoponds, &
          config_congelation_ice_porosity, &
 !         config_frazil_ice_porosity, &
 !         config_frazil_salinity_reduction, &
@@ -10241,8 +10268,12 @@ contains
          config_ratio_ridging_work_to_PE, &
          config_snow_to_ice_transition_depth, &
          config_pond_flushing_factor, &
-         config_min_meltwater_retained_fraction, &
-         config_max_meltwater_retained_fraction, &
+         config_min_meltwater_retained_fraction_lvlponds, &
+         config_max_meltwater_retained_fraction_lvlponds, &
+         config_min_meltwater_retained_fraction_sealvlponds, &
+         config_max_meltwater_retained_fraction_sealvlponds, &
+         config_min_meltwater_retained_fraction_topoponds, &
+         config_max_meltwater_retained_fraction_topoponds, &
          config_pond_depth_to_fraction_ratio, &
          config_snow_on_pond_ice_tapering_parameter, &
          config_critical_pond_ice_thickness, &
@@ -10353,6 +10384,11 @@ contains
          snowEmpiricalGrowthParameterKappa, &
          snowPropertyRate
 
+    real(kind=RKIND) :: &
+         min_meltwater_retained_fraction, &
+         max_meltwater_retained_fraction, &
+         macro_drainage_timescale
+
     integer, pointer :: &
          config_boundary_layer_iteration_number, &
          nGrainAgingTemperature, &
@@ -10391,10 +10427,15 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_rapid_mode_aspect_ratio", config_rapid_mode_aspect_ratio)
     call MPAS_pool_get_config(domain % configs, "config_slow_mode_drainage_strength", config_slow_mode_drainage_strength)
     call MPAS_pool_get_config(domain % configs, "config_slow_mode_critical_porosity", config_slow_mode_critical_porosity)
-    call MPAS_pool_get_config(domain % configs, "config_macro_drainage_timescale", config_macro_drainage_timescale)
+    call MPAS_pool_get_config(domain % configs, "config_macro_drainage_timescale_lvlponds", config_macro_drainage_timescale_lvlponds)
+    call MPAS_pool_get_config(domain % configs, "config_macro_drainage_timescale_sealvlponds", config_macro_drainage_timescale_sealvlponds)
+    call MPAS_pool_get_config(domain % configs, "config_macro_drainage_timescale_topoponds", config_macro_drainage_timescale_topoponds)
     call MPAS_pool_get_config(domain % configs, "config_congelation_ice_porosity", config_congelation_ice_porosity)
 !    call MPAS_pool_get_config(domain % configs, "config_frazil_ice_porosity", config_frazil_ice_porosity)
 !    call MPAS_pool_get_config(domain % configs, "config_frazil_salinity_reduction", config_frazil_salinity_reduction)
+    call MPAS_pool_get_config(domain % configs, "config_use_level_meltponds", config_use_level_meltponds)
+    call MPAS_pool_get_config(domain % configs, "config_use_sealevel_meltponds", config_use_sealevel_meltponds)
+    call MPAS_pool_get_config(domain % configs, "config_use_topo_meltponds", config_use_topo_meltponds)
     call MPAS_pool_get_config(domain % configs, "config_shortwave_type", config_shortwave_type)
     call MPAS_pool_get_config(domain % configs, "config_use_snicar_ad", config_use_snicar_ad)
     call MPAS_pool_get_config(domain % configs, "config_albedo_type", config_albedo_type)
@@ -10432,8 +10473,12 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_pond_refreezing_type", config_pond_refreezing_type)
     call MPAS_pool_get_config(domain % configs, "config_salt_flux_coupling_type", config_salt_flux_coupling_type)
     call MPAS_pool_get_config(domain % configs, "config_pond_flushing_factor", config_pond_flushing_factor)
-    call MPAS_pool_get_config(domain % configs, "config_min_meltwater_retained_fraction", config_min_meltwater_retained_fraction)
-    call MPAS_pool_get_config(domain % configs, "config_max_meltwater_retained_fraction", config_max_meltwater_retained_fraction)
+    call MPAS_pool_get_config(domain % configs, "config_min_meltwater_retained_fraction_lvlponds", config_min_meltwater_retained_fraction_lvlponds)
+    call MPAS_pool_get_config(domain % configs, "config_max_meltwater_retained_fraction_lvlponds", config_max_meltwater_retained_fraction_lvlponds)
+    call MPAS_pool_get_config(domain % configs, "config_min_meltwater_retained_fraction_sealvlponds", config_min_meltwater_retained_fraction_sealvlponds)
+    call MPAS_pool_get_config(domain % configs, "config_max_meltwater_retained_fraction_sealvlponds", config_max_meltwater_retained_fraction_sealvlponds)
+    call MPAS_pool_get_config(domain % configs, "config_min_meltwater_retained_fraction_topoponds", config_min_meltwater_retained_fraction_topoponds)
+    call MPAS_pool_get_config(domain % configs, "config_max_meltwater_retained_fraction_topoponds", config_max_meltwater_retained_fraction_topoponds)
     call MPAS_pool_get_config(domain % configs, "config_pond_depth_to_fraction_ratio", config_pond_depth_to_fraction_ratio)
     call MPAS_pool_get_config(domain % configs, "config_snow_on_pond_ice_tapering_parameter", &
                                                  config_snow_on_pond_ice_tapering_parameter)
@@ -10587,6 +10632,20 @@ contains
     else
        tmp_config_shortwave_type = config_shortwave_type
        tmp_config_snw_ssp_table  = 'test'
+    endif
+
+    if (config_use_level_meltponds) then
+       macro_drainage_timescale = config_macro_drainage_timescale_lvlponds
+       min_meltwater_retained_fraction = config_min_meltwater_retained_fraction_lvlponds
+       max_meltwater_retained_fraction = config_max_meltwater_retained_fraction_lvlponds
+    elseif (config_use_sealevel_meltponds) then
+       macro_drainage_timescale = config_macro_drainage_timescale_sealvlponds
+       min_meltwater_retained_fraction = config_min_meltwater_retained_fraction_sealvlponds
+       max_meltwater_retained_fraction = config_max_meltwater_retained_fraction_sealvlponds
+    else ! topo meltponds
+       macro_drainage_timescale = config_macro_drainage_timescale_topoponds
+       min_meltwater_retained_fraction = config_min_meltwater_retained_fraction_topoponds
+       max_meltwater_retained_fraction = config_max_meltwater_retained_fraction_topoponds
     endif
 
 !echmod debugging
@@ -10804,7 +10863,7 @@ contains
          dSdt_slow_mode_in       = config_slow_mode_drainage_strength, &
          phi_c_slow_mode_in      = config_slow_mode_critical_porosity, &
          phi_i_mushy_in          = config_congelation_ice_porosity, &
-         tscale_pnd_drain_in     = config_macro_drainage_timescale, &
+         tscale_pnd_drain_in     = macro_drainage_timescale, &
 !         shortwave_in            = config_shortwave_type, &
          shortwave_in            = tmp_config_shortwave_type, &
          albedo_type_in          = config_albedo_type, &
@@ -10841,8 +10900,8 @@ contains
          !wave_spec_type_in       = , &        ! not yet implemented in MPAS-SI (stealth feature)
          !nfreq_in                = , &        ! not yet implemented in MPAS-SI (stealth feature)
          dpscale_in              = config_pond_flushing_factor, &
-         rfracmin_in             = config_min_meltwater_retained_fraction, &
-         rfracmax_in             = config_max_meltwater_retained_fraction, &
+         rfracmin_in             = min_meltwater_retained_fraction, &
+         rfracmax_in             = max_meltwater_retained_fraction, &
          pndaspect_in            = config_pond_depth_to_fraction_ratio, &
          hs1_in                  = config_snow_on_pond_ice_tapering_parameter, &
          hp1_in                  = config_critical_pond_ice_thickness, &
