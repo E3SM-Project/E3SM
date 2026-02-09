@@ -11,6 +11,7 @@
 
 #include <set>
 #include <numeric>
+#include <functional>
 
 namespace scream {
 namespace scorpio {
@@ -867,11 +868,61 @@ void set_var_decomp (PIOVar& var,
     const auto& dim_offsets = decomp->dim_decomp->offsets;
     int decomp_loc_len = dim_offsets.size();
     decomp->offsets.resize (non_decomp_dim_prod*decomp_loc_len);
-    for (int idof=0; idof<decomp_loc_len; ++idof) {
-      auto dof_offset = dim_offsets[idof];
-      auto beg = decomp->offsets.begin()+ idof*non_decomp_dim_prod;
-      auto end = beg + non_decomp_dim_prod;
-      std::iota (beg,end,non_decomp_dim_prod*dof_offset);
+    
+    // For transposed output, we need to compute offsets with correct stride
+    if (is_transposed) {
+      // For transposed variables, calculate strides in reverse order
+      std::vector<int> strides(ndims, 1);
+      for (int idim = 0; idim < ndims-1; ++idim) {
+        strides[idim+1] = strides[idim] * gdimlen[idim];
+      }
+      
+      // Calculate base offset for each non-decomposed dimension combination
+      std::vector<int> base_offsets;
+      std::function<void(int, int)> generate_offsets = [&](int dim, int offset) {
+        if (dim == ndims) {
+          base_offsets.push_back(offset);
+          return;
+        }
+        
+        auto d = var.dims[dim];
+        if (d->decomp_rank > 0) {
+          // Skip decomposed dimension - will handle separately
+          generate_offsets(dim + 1, offset);
+        } else {
+          // Iterate through non-decomposed dimension
+          for (int i = 0; i < d->length; ++i) {
+            generate_offsets(dim + 1, offset + i * strides[dim]);
+          }
+        }
+      };
+      generate_offsets(0, 0);
+      
+      // Fill in offsets for each DOF
+      int idx = 0;
+      for (int idof = 0; idof < decomp_loc_len; ++idof) {
+        auto dof_offset = dim_offsets[idof];
+        // Find which dimension is decomposed and get its stride
+        int decomp_stride = 1;
+        for (int idim = 0; idim < ndims; ++idim) {
+          if (var.dims[idim]->decomp_rank > 0) {
+            decomp_stride = strides[idim];
+            break;
+          }
+        }
+        
+        for (int ibase = 0; ibase < base_offsets.size(); ++ibase) {
+          decomp->offsets[idx++] = base_offsets[ibase] + dof_offset * decomp_stride;
+        }
+      }
+    } else {
+      // Original non-transposed logic
+      for (int idof=0; idof<decomp_loc_len; ++idof) {
+        auto dof_offset = dim_offsets[idof];
+        auto beg = decomp->offsets.begin()+ idof*non_decomp_dim_prod;
+        auto end = beg + non_decomp_dim_prod;
+        std::iota (beg,end,non_decomp_dim_prod*dof_offset);
+      }
     }
 
     // Create PIO decomp
