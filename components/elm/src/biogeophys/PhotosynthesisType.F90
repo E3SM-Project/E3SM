@@ -354,6 +354,13 @@ contains
     do p = bounds%begp,bounds%endp
        l = veg_pp%landunit(p)
 
+       ! These nominal resistance values will be overwritten
+       ! during the canopy flux iteration process upon first
+       ! use. We just need something that wont break
+       ! the model on the first guess
+       this%rssun_patch(p) = 1.e-5
+       this%rssha_patch(p) = 1.e-5
+       
        this%lmrcanopy_patch(p) =  0.0_r8
 
        this%alphapsnsun_patch(p) = spval
@@ -405,7 +412,16 @@ contains
             dim1name='pft', long_name='', units='', &
             interpinic_flag='interp', readvar=readvar, data=this%rc13_psnsha_patch)
     endif
+    
+    call restartvar(ncid=ncid, flag=flag,'rssun_patch',xtype=ncd_double,  &
+         dim1name='pft', long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%rssun_patch)
+    
+    call restartvar(ncid=ncid, flag=flag,'rssha_patch',xtype=ncd_double,  &
+         dim1name='pft', long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%rssha_patch)
 
+    
   end subroutine Restart
   !------------------------------------------------------------------------------
   subroutine TimeStepInit (this, bounds)
