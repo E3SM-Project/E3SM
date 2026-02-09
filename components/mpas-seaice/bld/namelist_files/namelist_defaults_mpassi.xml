@@ -418,8 +418,12 @@
 <config_snow_to_ice_transition_depth>0.0</config_snow_to_ice_transition_depth>
 <config_pond_refreezing_type>'hlid'</config_pond_refreezing_type>
 <config_pond_flushing_factor>1.0e-3</config_pond_flushing_factor>
-<config_min_meltwater_retained_fraction>0.15</config_min_meltwater_retained_fraction>
-<config_max_meltwater_retained_fraction>1.0</config_max_meltwater_retained_fraction>
+<config_min_meltwater_retained_fraction_lvlponds>0.15</config_min_meltwater_retained_fraction_lvlponds>
+<config_max_meltwater_retained_fraction_lvlponds>1.0</config_max_meltwater_retained_fraction_lvlponds>
+<config_min_meltwater_retained_fraction_sealvlponds>1.0</config_min_meltwater_retained_fraction_sealvlponds>
+<config_max_meltwater_retained_fraction_sealvlponds>1.0</config_max_meltwater_retained_fraction_sealvlponds>
+<config_min_meltwater_retained_fraction_topoponds>0.15</config_min_meltwater_retained_fraction_topoponds>
+<config_max_meltwater_retained_fraction_topoponds>1.0</config_max_meltwater_retained_fraction_topoponds>
 <config_pond_depth_to_fraction_ratio>0.8</config_pond_depth_to_fraction_ratio>
 <config_snow_on_pond_ice_tapering_parameter>0.03</config_snow_on_pond_ice_tapering_parameter>
 <config_critical_pond_ice_thickness>0.01</config_critical_pond_ice_thickness>
@@ -433,7 +437,9 @@
 <config_rapid_mode_aspect_ratio>1.0</config_rapid_mode_aspect_ratio>
 <config_slow_mode_drainage_strength>-5.0e-8</config_slow_mode_drainage_strength>
 <config_slow_mode_critical_porosity>0.05</config_slow_mode_critical_porosity>
-<config_macro_drainage_timescale>10.</config_macro_drainage_timescale>
+<config_macro_drainage_timescale_lvlponds>10.</config_macro_drainage_timescale_lvlponds>
+<config_macro_drainage_timescale_sealvlponds>0.5</config_macro_drainage_timescale_sealvlponds>
+<config_macro_drainage_timescale_topoponds>10.</config_macro_drainage_timescale_topoponds>
 <config_congelation_freezing_method>'two-step'</config_congelation_freezing_method>
 <config_congelation_freezing_method ice_grid="RRSwISC6to18E3r5">'one-step'</config_congelation_freezing_method>
 <config_congelation_ice_porosity>0.85</config_congelation_ice_porosity>
