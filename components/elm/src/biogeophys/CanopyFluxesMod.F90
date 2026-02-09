@@ -779,12 +779,22 @@ contains
       
       event = 'can_iter'
       call t_start_lnd(event)
-      patch_loop: do f = 1, fn
+
+      !$OMP PARALLEL DO PRIVATE (f,p,c,t,g,istoma,itlef,converge_stoma, &
+      !$OMP                      converge_tveg,cf,w,csoilb,ri,csoilcn,  &
+      !$OMP                      ricsoilc,wta,wtl,wtshi,wtg0,wtga,rppdry, &
+      !$OMP                      efpot,rpp,wtag,wtlq,snow_depth_c,fsno_dl, &
+      !$OMP                      elai_dl,rdl,wtsqi,wtgq0,dc1,dc2,efsh,     &
+      !$OMP                      efeold,erre,lw_grnd,dels,ecidif,tstar,    &
+      !$OMP                      qstar,thvstar,iter_final,del_gs ) if (use_fates)
+      
+      patch_loop1: do f = 1, fn
 
          p = filterp(f)
          c = veg_pp%column(p)
          t = veg_pp%topounit(p)
          g = veg_pp%gridcell(p)
+
 
          ! Initialize Obukhov length scale and wind speed
          call MoninObukIni(ur(p), thv(c), dthv(p), zldis(p), z0mv(p), um(p), obu(p))
@@ -1235,30 +1245,9 @@ contains
 
          end do iterate_stoma
          
-      end do patch_loop
-
+      end do patch_loop1
+      !$OMP END PARALLEL DO
       call t_end_lnd(event)
-
-
-
-          
-       end do iterate_stoma
-          
-       end do iterate_stoma
-            fnold = fn
-            fn = 0
-            do f = 1, fnold
-               p = filterp(f)
-               if (.not. (det(p) < dtmin .and. dele(p) < dlemin) .or. &
-                    (implicit_stress .and. abs(tau_diff(p)) >= dtaumin)) then
-                  fn = fn + 1
-                  filterp(fn) = p
-               end if
-            end do
-         end if
-
-      end do ITERATION     ! End stability iteration
-      call t_stop_lnd(event)
 
       fn = fnorig
       filterp(1:fn) = fporig(1:fn)
@@ -1396,4 +1385,80 @@ contains
 
   end subroutine CanopyFluxes
 
+  ! =========================================================================
+  
+  subroutine WrapPhotosynthesis(bounds,p,svpts, )
+
+
+    real(r8) :: svpts(bounds%begp:bounds%endp)
+    real(r8) :: eah(bounds%begp:bounds%endp)
+    real(r8) :: o2(bounds%begp:bounds%endp)
+    real(r8) :: co2(bounds%begp:bounds%endp)
+    real(r8) :: rb(bounds%begp:bounds%endp)
+    real(r8) :: dayl_factor(bounds%begp:bounds%endp)
+    real(r8) :: bsun(bounds%begp:bounds%endp)
+    real(r8) :: bsha(bounds%begp:bounds%endp)
+    real(r8) :: btran(bounds%begp:bounds%endp)
+    real(r8) :: qsatl(bounds%begp:bounds%endp)
+    real(r8) :: qaf(bounds%begp:bounds%endp)
+    
+    type(atm2lnd_type)        , intent(inout) :: atm2lnd_vars
+    type(canopystate_type)    , intent(inout) :: canopystate_vars
+    type(photosyns_type)      , intent(inout) :: photosyns_vars
+    type(soilstate_type)      , intent(inout) :: soilstate_vars
+    type(surfalb_type)        , intent(inout) :: surfalb_vars
+    type(solarabs_type)       , intent(inout) :: solarabs_vars
+    type(cnstate_type)        , intent(inout) :: cnstate_vars
+
+    
+    ! Instead of updating stomatal conductances
+    ! we hold the value calculated in the outer loop
+    ! as constant during this inner loop (tveg) iteration
+    if_fates: if ( use_fates ) then
+#ifndef _OPENACC
+       call alm_fates%wrap_photosynthesis(bounds, 1, p, &
+            svpts(begp:endp), eah(begp:endp), o2(begp:endp), &
+            co2(begp:endp), rb(begp:endp), dayl_factor(begp:endp), &
+            atm2lnd_vars, canopystate_vars, photosyns_vars)
+#endif
+    else ! not use_fates
+       if ( use_hydrstress ) then
+          call PhotosynthesisHydraulicStress (bounds, 1, p, &
+               svpts(begp:endp), eah(begp:endp), o2(begp:endp), co2(begp:endp), rb(begp:endp), bsun(begp:endp), &
+               bsha(begp:endp), btran(begp:endp), dayl_factor(begp:endp), &
+               qsatl(begp:endp), qaf(begp:endp),     &
+               atm2lnd_vars, soilstate_vars, surfalb_vars, solarabs_vars,    &
+               canopystate_vars, photosyns_vars)
+       else
+          call Photosynthesis (bounds, 1, filterp(f), &
+               svpts(begp:endp), eah(begp:endp), o2(begp:endp), co2(begp:endp), rb(begp:endp), btran(begp:endp), &
+               dayl_factor(begp:endp), atm2lnd_vars,  surfalb_vars, solarabs_vars, &
+               canopystate_vars, photosyns_vars, 'sun')
+       end if
+       
+       if ( use_c13 ) then
+          call Fractionation (bounds, 1, filterp(f), &
+               cnstate_vars, solarabs_vars, surfalb_vars, photosyns_vars, 1)
+       endif
+       
+       ! soybean (crop with N fixation)
+       if (crop(veg_pp%itype(p)) >= 1 .and. nfixer(veg_pp%itype(p)) == 1) then
+          btran(p) = min(1._r8, btran(p) * 1.25_r8)
+       end if
+       
+       if ( .not. use_hydrstress ) then
+          call Photosynthesis (bounds, 1, filterp(f), &
+               svpts(begp:endp), eah(begp:endp), o2(begp:endp), co2(begp:endp), rb(begp:endp), btran(begp:endp), &
+               dayl_factor(begp:endp), atm2lnd_vars,surfalb_vars, solarabs_vars, &
+               canopystate_vars, photosyns_vars, 'sha')
+       end if
+       
+       if ( use_c13 ) then
+          call Fractionation (bounds, 1, filterp(f),  &
+               cnstate_vars, solarabs_vars, surfalb_vars, photosyns_vars, 0)
+       end if
+    end if if_fates ! end of if use_fates
+
+  end subroutine WrapPhotosynthesis
+  
 end module CanopyFluxesMod

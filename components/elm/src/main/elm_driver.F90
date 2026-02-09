@@ -326,7 +326,7 @@ contains
     ! the associated filter updates, too (otherwise we get a carbon balance error)
     ! ==================================================================================
 
-    !$OMP PARALLEL DO PRIVATE (nc,bounds_clump)
+    !$OMP PARALLEL DO PRIVATE (nc,bounds_clump)  if (.not.use_fates)
     do nc = 1,nclumps
        call get_clump_bounds(nc, bounds_clump)
 
@@ -359,7 +359,7 @@ contains
     ! Zero fluxes for transient land cover
     ! ============================================================================
 
-    !$OMP PARALLEL DO PRIVATE (nc,bounds_clump)
+    !$OMP PARALLEL DO PRIVATE (nc,bounds_clump)  if (.not.use_fates)
     do nc = 1,nclumps
        call get_clump_bounds(nc, bounds_clump)
 
@@ -477,7 +477,7 @@ contains
        else
           call t_startf('cnbalchk_at_grid')
 
-          !$OMP PARALLEL DO PRIVATE (nc,bounds_clump)
+          !$OMP PARALLEL DO PRIVATE (nc,bounds_clump) if (.not.use_fates)
           do nc = 1,nclumps
              call get_clump_bounds(nc, bounds_clump)
 
@@ -547,7 +547,7 @@ contains
     ! changes due to dynamic area adjustments can break column-level conservation
     ! ============================================================================
 
-    !$OMP PARALLEL DO PRIVATE (nc,bounds_clump)
+    !$OMP PARALLEL DO PRIVATE (nc,bounds_clump) if (.not.use_fates)
     do nc = 1,nclumps
        call get_clump_bounds(nc, bounds_clump)
 
@@ -673,7 +673,7 @@ contains
     ! snow accumulation exceeds 10 mm.
     ! ============================================================================
 
-    !$OMP PARALLEL DO PRIVATE (nc,l,c, bounds_clump)
+    !$OMP PARALLEL DO PRIVATE (nc,l,c, bounds_clump) if (.not.use_fates)
     do nc = 1,nclumps
        call get_clump_bounds(nc, bounds_clump)
 
@@ -1431,7 +1431,7 @@ contains
 
     if (create_glacier_mec_landunit) then
        call t_startf('lnd2glc')
-       !$OMP PARALLEL DO PRIVATE (nc, bounds_clump)
+       !$OMP PARALLEL DO PRIVATE (nc, bounds_clump) if (.not.use_fates)
        do nc = 1,nclumps
           call get_clump_bounds(nc, bounds_clump)
           call lnd2glc_vars%update_lnd2glc(bounds_clump,       &
@@ -1448,7 +1448,7 @@ contains
 
     if (iac_present) then
        call t_startf('lnd2iac')
-       !$OMP PARALLEL DO PRIVATE (nc, bounds_clump)
+       !$OMP PARALLEL DO PRIVATE (nc, bounds_clump) if (.not.use_fates)
        do nc = 1,nclumps
           call get_clump_bounds(nc, bounds_clump)
           call lnd2iac_vars%update_lnd2iac(bounds_clump)
