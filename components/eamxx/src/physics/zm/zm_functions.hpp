@@ -342,11 +342,35 @@ struct Functions {
     es = es*0.01;
   }
 
+  KOKKOS_FUNCTION
+  static void zm_transport_tracer(
+    // Inputs
+    const MemberType& team,
+    const Int& pver,                        // number of mid-point levels
+    const uview_1d<const bool>& doconvtran, // flag for doing convective transport
+    const uview_2d<const Real>& q,          // tracer array (including water vapor)
+    const Int& ncnst,                       // number of tracers to transport
+    const uview_1d<const Real>& mu,         // mass flux up
+    const uview_1d<const Real>& md,         // mass flux down
+    const uview_1d<const Real>& du,         // mass detraining from updraft
+    const uview_1d<const Real>& eu,         // mass entraining from updraft
+    const uview_1d<const Real>& ed,         // mass entraining from downdraft
+    const uview_1d<const Real>& dp,         // delta pressure between interfaces
+    const Int& jt,                          // index of cloud top for each column
+    const Int& mx,                          // index of cloud top for each column
+    const Int& ideep,                       // gathering array
+    const Int& il1g,                        // gathered min ncol index
+    const Int& il2g,                        // gathered max ncol index
+    const uview_2d<const Real>& fracis,     // fraction of tracer that is insoluble
+    const uview_1d<const Real>& dpdry,      // delta pressure between interfaces
+    const Real& dt,                         // model time increment)
+    // Outputs
+    const uview_2d<Real>& dqdt);            // output tendency array
+
   //
   // --------- Members ---------
   //
   inline static ZmRuntimeOpt s_common_init;
-
 }; // struct Functions
 
 } // namespace zm
@@ -359,5 +383,6 @@ struct Functions {
 # include "impl/zm_common_init_impl.hpp"
 # include "impl/zm_invert_entropy_impl.hpp"
 # include "impl/zm_entropy_impl.hpp"
+# include "impl/zm_zm_transport_tracer_impl.hpp"
 #endif // GPU && !KOKKOS_ENABLE_*_RELOCATABLE_DEVICE_CODE
 #endif // ZM_FUNCTIONS_HPP

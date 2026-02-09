@@ -88,12 +88,56 @@ struct EntropyData : public PhysicsTestData {
   PTD_STD_DEF(EntropyData, 4, tk, p, qtot, entropy);
 };
 
+struct ZmTransportTracerData : public PhysicsTestData {
+  // Inputs
+  Int pcols, ncol, pver, ncnst, il1g, il2g;
+  Int *jt, *mx, *ideep;
+  Real dt;
+  Real *q, *mu, *md, *du, *eu, *ed, *dp, *fracis, *dpdry;
+  bool *doconvtran;
+
+  // Outputs
+  Real *dqdt;
+
+  ZmTransportTracerData(Int pcols_, Int ncol_, Int pver_, Int ncnst_, Int il1g_, Int il2g_, Real dt_) :
+    PhysicsTestData({
+      {pcols_, pver_, ncnst_},
+      {pcols_, pver_},
+      {pcols_},
+      {ncnst_}
+    },
+    {
+      {&q, &fracis, &dqdt},
+      {&mu, &md, &du, &eu, &ed, &dp, &dpdry}
+    },
+    {
+      {&jt, &mx, &ideep}
+    },
+    {
+      {&doconvtran}
+    }),
+    pcols(pcols_), ncol(ncol_), pver(pver_), ncnst(ncnst_), il1g(il1g_), il2g(il2g_), dt(dt_)
+  {}
+
+  PTD_STD_DEF(ZmTransportTracerData, 7, pcols, ncol, pver, ncnst, il1g, il2g, dt);
+
+  template <ekat::TransposeDirection::Enum D>
+  void transition()
+  {
+    PhysicsTestData::transition<D>();
+    shift_int_scalar<D>(il1g);
+    shift_int_scalar<D>(il2g);
+  }
+};
+
 // Glue functions for host test data. We can call either fortran or CXX with this data (_f -> fortran)
 void zm_find_mse_max(zm_data_find_mse_max& d);
 void ientropy_f(IentropyData& d);
 void ientropy(IentropyData& d);
 void entropy_f(EntropyData& d);
 void entropy(EntropyData& d);
+void zm_transport_tracer_f(ZmTransportTracerData& d);
+void zm_transport_tracer(ZmTransportTracerData& d);
 // End glue function decls
 
 }  // namespace zm
