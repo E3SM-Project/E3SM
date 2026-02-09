@@ -78,6 +78,8 @@ struct Functions {
     static inline constexpr Real tol_coeff = 0.001; // tolerance coefficient
 
     static inline constexpr Real tol_eps   = 3.e-8; // small value for tolerance calculation
+
+    static inline constexpr Real half = 0.5; // Useful for bfb with fortran
   };
 
   //----------------------------------------------------------------------------
@@ -346,6 +348,7 @@ struct Functions {
   static void zm_transport_tracer(
     // Inputs
     const MemberType& team,
+    const Workspace& workspace,
     const Int& pver,                        // number of mid-point levels
     const uview_1d<const bool>& doconvtran, // flag for doing convective transport
     const uview_2d<const Real>& q,          // tracer array (including water vapor)

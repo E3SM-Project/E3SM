@@ -16,6 +16,7 @@ KOKKOS_FUNCTION
 void Functions<S,D>::zm_transport_tracer(
   // Inputs
   const MemberType& team,
+  const Workspace& workspace,
   const Int& pver,                        // number of mid-point levels
   const uview_1d<const bool>& doconvtran, // flag for doing convective transport
   const uview_2d<const Real>& q,          // tracer array (including water vapor)
@@ -44,16 +45,10 @@ void Functions<S,D>::zm_transport_tracer(
   constexpr Real mbsth = 1.e-15;
 
   // Allocate temporary arrays (no pcols dimension)
-  uview_1d<Real> chat("chat", pver);
-  uview_1d<Real> cond("cond", pver);
-  uview_1d<Real> const_arr("const_arr", pver);
-  uview_1d<Real> fisg("fisg", pver);
-  uview_1d<Real> conu("conu", pver);
-  uview_1d<Real> dcondt("dcondt", pver);
-  uview_1d<Real> dutmp("dutmp", pver);
-  uview_1d<Real> eutmp("eutmp", pver);
-  uview_1d<Real> edtmp("edtmp", pver);
-  uview_1d<Real> dptmp("dptmp", pver);
+  uview_1d<Real> chat, cond, const_arr, fisg, conu, dcondt, dutmp, eutmp, edtmp, dptmp;
+  workspace.template take_many_contiguous_unsafe<10>(
+    {"chat", "cond", "const_arr", "fisg", "conu", "dcondt", "dutmp", "eutmp", "edtmp", "dptmp"},
+    {&chat, &cond, &const_arr, &fisg, &conu, &dcondt, &dutmp, &eutmp, &edtmp, &dptmp});
 
   // Loop over each constituent (skip water vapor at m=1, Fortran indexing)
   for (Int m = 1; m < ncnst; ++m) {
@@ -65,103 +60,108 @@ void Functions<S,D>::zm_transport_tracer(
       dutmp(k) = du(k);
       eutmp(k) = eu(k);
       edtmp(k) = ed(k);
+      // Gather up the constituent and set tend to zero
       const_arr(k) = q(k, m);
       fisg(k) = fracis(k, m);
     });
     team.team_barrier();
+
+    // From now on work only with gathered data
 
     // Interpolate environment tracer values to interfaces
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, pver), [&] (const Int& k) {
       const Int km1 = ekat::impl::max(0, k-1);
       const Real minc = ekat::impl::min(const_arr(km1), const_arr(k));
       const Real maxc = ekat::impl::max(const_arr(km1), const_arr(k));
-      
+
       Real cdifr;
       if (minc < 0) {
         cdifr = 0.0;
       } else {
-        cdifr = ekat::impl::abs(const_arr(k) - const_arr(km1)) / ekat::impl::max(maxc, small);
+        cdifr = std::abs(const_arr(k) - const_arr(km1)) / ekat::impl::max(maxc, small);
       }
 
+      // If the two layers differ significantly use a geometric averaging
       if (cdifr > cdifr_min) {
         const Real cabv = ekat::impl::max(const_arr(km1), maxc*maxc_factor);
         const Real cbel = ekat::impl::max(const_arr(k), maxc*maxc_factor);
-        chat(k) = ekat::impl::log(cabv/cbel) / (cabv-cbel) * cabv * cbel;
-      } else {
-        chat(k) = 0.5 * (const_arr(k) + const_arr(km1));
+        chat(k) = std::log(cabv/cbel) / (cabv-cbel) * cabv * cbel;
+      } else { // Small diff, so just arithmetic mean
+        chat(k) = ZMC::half * (const_arr(k) + const_arr(km1));
       }
 
+      // Provisional updraft and downdraft values
       conu(k) = chat(k);
       cond(k) = chat(k);
+      // provisional tendencies
       dcondt(k) = 0.0;
     });
     team.team_barrier();
 
     // Do levels adjacent to top and bottom
     const Int kk = pver - 1;
-    if (team.team_rank() == 0) {
-      Real mupdudp = mu(kk) + dutmp(kk) * dptmp(kk);
+    Kokkos::single(Kokkos::PerTeam(team), [&] {
+      const Real mupdudp = mu(kk) + dutmp(kk) * dptmp(kk);
       if (mupdudp > mbsth) {
         conu(kk) = (eutmp(kk) * fisg(kk) * const_arr(kk) * dptmp(kk)) / mupdudp;
       }
       if (md(1) < -mbsth) {
         cond(1) = (-edtmp(0) * fisg(0) * const_arr(0) * dptmp(0)) / md(1);
       }
-    }
+    });
     team.team_barrier();
 
     // Updraft from bottom to top
-    for (Int kk = pver-2; kk >= 0; --kk) {
-      if (team.team_rank() == 0) {
+    Kokkos::single(Kokkos::PerTeam(team), [&] {
+      for (Int kk = pver-2; kk >= 0; --kk) {
         const Int kkp1 = ekat::impl::min(pver-1, kk+1);
-        Real mupdudp = mu(kk) + dutmp(kk) * dptmp(kk);
+        const Real mupdudp = mu(kk) + dutmp(kk) * dptmp(kk);
         if (mupdudp > mbsth) {
           conu(kk) = (mu(kkp1) * conu(kkp1) + eutmp(kk) * fisg(kk) * const_arr(kk) * dptmp(kk)) / mupdudp;
         }
       }
-      team.team_barrier();
-    }
+    });
 
     // Downdraft from top to bottom
-    for (Int k = 2; k < pver; ++k) {
-      if (team.team_rank() == 0) {
+    Kokkos::single(Kokkos::PerTeam(team), [&] {
+      for (Int k = 2; k < pver; ++k) {
         const Int km1 = ekat::impl::max(0, k-1);
         if (md(k) < -mbsth) {
           cond(k) = (md(km1) * cond(km1) - edtmp(km1) * fisg(km1) * const_arr(km1) * dptmp(km1)) / md(k);
         }
       }
-      team.team_barrier();
-    }
+    });
+    team.team_barrier();
 
     // Compute tendencies from cloud top to bottom
-    for (Int k = jt; k < pver; ++k) {
-      if (team.team_rank() == 0) {
+    Kokkos::single(Kokkos::PerTeam(team), [&] {
+      for (Int k = jt; k < pver; ++k) {
         const Int km1 = ekat::impl::max(0, k-1);
         const Int kp1 = ekat::impl::min(pver-1, k+1);
-        
+
         const Real fluxin = mu(kp1) * conu(kp1) + mu(k) * ekat::impl::min(chat(k), const_arr(km1))
                           - (md(k) * cond(k) + md(kp1) * ekat::impl::min(chat(kp1), const_arr(kp1)));
         const Real fluxout = mu(k) * conu(k) + mu(kp1) * ekat::impl::min(chat(kp1), const_arr(k))
                            - (md(kp1) * cond(kp1) + md(k) * ekat::impl::min(chat(k), const_arr(k)));
 
         Real netflux = fluxin - fluxout;
-        if (ekat::impl::abs(netflux) < ekat::impl::max(fluxin, fluxout) * flux_factor) {
+        if (std::abs(netflux) < ekat::impl::max(fluxin, fluxout) * flux_factor) {
           netflux = 0.0;
         }
         dcondt(k) = netflux / dptmp(k);
       }
-      team.team_barrier();
-    }
+    });
+    team.team_barrier();
 
     // Handle cloud base levels
-    for (Int k = mx; k < pver; ++k) {
-      if (team.team_rank() == 0) {
+    Kokkos::single(Kokkos::PerTeam(team), [&] {
+      for (Int k = mx; k < pver; ++k) {
         const Int km1 = ekat::impl::max(0, k-1);
         if (k == mx) {
           const Real fluxin = mu(k) * ekat::impl::min(chat(k), const_arr(km1)) - md(k) * cond(k);
           const Real fluxout = mu(k) * conu(k) - md(k) * ekat::impl::min(chat(k), const_arr(k));
           Real netflux = fluxin - fluxout;
-          if (ekat::impl::abs(netflux) < ekat::impl::max(fluxin, fluxout) * flux_factor) {
+          if (std::abs(netflux) < ekat::impl::max(fluxin, fluxout) * flux_factor) {
             netflux = 0.0;
           }
           dcondt(k) = netflux / dptmp(k);
@@ -169,8 +169,8 @@ void Functions<S,D>::zm_transport_tracer(
           dcondt(k) = 0.0;
         }
       }
-      team.team_barrier();
-    }
+    });
+    team.team_barrier();
 
     // Scatter tendency back to output array
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, pver), [&] (const Int& k) {
@@ -178,6 +178,9 @@ void Functions<S,D>::zm_transport_tracer(
     });
     team.team_barrier();
   }
+
+  workspace.template release_many_contiguous<10>(
+    {&chat, &cond, &const_arr, &fisg, &conu, &dcondt, &dutmp, &eutmp, &edtmp, &dptmp});
 }
 
 } // namespace zm
