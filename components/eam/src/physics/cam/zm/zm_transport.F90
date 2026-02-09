@@ -26,7 +26,6 @@ contains
 
 !===================================================================================================
 
-! We need to avoid building this for now when bridging from EAMxx
 subroutine zm_transport_tracer( pcols, ncol, pver, &
                                 doconvtran, q, ncnst, &
                                 mu, md, du, eu, ed, dp, &
