@@ -170,30 +170,6 @@ util::TimeStamp parse_cf_time_units (const std::string& time_units)
   
   // Parse time part if present (HH:MM:SS or HH:MM:SS.fraction)
   if (!time_str.empty()) {
-    // First, trim leading whitespace
-    size_t time_start = time_str.find_first_not_of(" \t\n\r");
-    if (time_start != std::string::npos) {
-      time_str = time_str.substr(time_start);
-    }
-    
-    // Look for space-separated timezone (e.g., "12:30:45 UTC")
-    // In CF convention, timezones are typically separated by space
-    auto tz_space_pos = time_str.find(' ');
-    if (tz_space_pos != std::string::npos) {
-      // Check if what follows looks like a timezone (starts with letter)
-      size_t tz_start = time_str.find_first_not_of(" \t", tz_space_pos);
-      if (tz_start != std::string::npos && std::isalpha(time_str[tz_start])) {
-        // Truncate at the space before the timezone
-        time_str = time_str.substr(0, tz_space_pos);
-      }
-    }
-    
-    // Trim trailing whitespace
-    auto end = time_str.find_last_not_of(" \t\n\r");
-    if (end != std::string::npos) {
-      time_str = time_str.substr(0, end + 1);
-    }
-    
     if (!time_str.empty()) {
       std::istringstream time_stream(time_str);
       char sep1, sep2;

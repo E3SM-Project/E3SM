@@ -402,10 +402,8 @@ void MAMMicrophysics::set_oxid_reader()
       oxid_fields.push_back(get_field_out("oxid_"+field_name).alias(field_name));
   }
 
-  // Beg of any year, since we use yearly periodic timeline
-  util::TimeStamp ref_ts_oxid (1,1,1,0,0,0);
   data_interp_oxid_ = std::make_shared<DataInterpolation>(grid_,oxid_fields);
-  data_interp_oxid_->setup_time_database ({oxid_file_name},util::TimeLine::YearlyPeriodic, DataInterpolation::Linear, ref_ts_oxid);
+  data_interp_oxid_->setup_time_database ({oxid_file_name},util::TimeLine::YearlyPeriodic, DataInterpolation::Linear);
   data_interp_oxid_->create_horiz_remappers (oxid_map_file=="none" ? "" : oxid_map_file);
   data_interp_oxid_->set_logger(m_atm_logger);
   DataInterpolation::VertRemapData remap_data_oxid;
@@ -430,8 +428,6 @@ void MAMMicrophysics::set_oxid_reader()
 // set DataInterpolation object for linoz reader.
 void MAMMicrophysics::set_linoz_reader(){
   auto pmid = get_field_in("p_mid");
-  // Beg of any year, since we use yearly periodic timeline
-  util::TimeStamp ref_ts_linoz (1,1,1,0,0,0);
   const auto m_linoz_file_name = m_params.get<std::string>("mam4_linoz_file_name");
   const std::string linoz_map_file =
         m_params.get<std::string>("aero_microphys_remap_file", "");
@@ -441,7 +437,7 @@ void MAMMicrophysics::set_linoz_reader(){
   }
 
   data_interp_linoz_ = std::make_shared<DataInterpolation>(grid_,linoz_fields);
-  data_interp_linoz_->setup_time_database ({m_linoz_file_name},util::TimeLine::YearlyPeriodic, DataInterpolation::Linear, ref_ts_linoz);
+  data_interp_linoz_->setup_time_database ({m_linoz_file_name},util::TimeLine::YearlyPeriodic, DataInterpolation::Linear);
   data_interp_linoz_->create_horiz_remappers (linoz_map_file=="none" ? "" : linoz_map_file);
   data_interp_linoz_->set_logger(m_atm_logger);
 
@@ -475,8 +471,6 @@ void MAMMicrophysics::set_elevated_emissions_reader()
     const auto& var_name=pair.first;
     std::string item_name = "mam4_" + var_name + "_elevated_emiss_file_name";
     const auto file_name  = m_params.get<std::string>(item_name);
-    // Beg of any year, since we use yearly periodic timeline
-    util::TimeStamp ref_ts_vertical (1,1,1,0,0,0);
     std::vector<Field> vertical_fields;
     for(const auto &field_name :pair.second) {
       vertical_fields.push_back(get_field_out(field_name+"_"+var_name).alias(field_name));
@@ -484,7 +478,7 @@ void MAMMicrophysics::set_elevated_emissions_reader()
     std::shared_ptr<DataInterpolation> di_vertical = std::make_shared<DataInterpolation>(grid_,vertical_fields);
     di_vertical->set_input_files_dimname(ShortFieldTagsNames::LEV,"altitude");
     di_vertical->set_input_files_dimname(ShortFieldTagsNames::ILEV,"altitude_int");
-    di_vertical->setup_time_database ({file_name},util::TimeLine::YearlyPeriodic, DataInterpolation::Linear, ref_ts_vertical);
+    di_vertical->setup_time_database ({file_name},util::TimeLine::YearlyPeriodic, DataInterpolation::Linear);
     di_vertical->create_horiz_remappers (extfrc_map_file=="none" ? "" : extfrc_map_file);
     di_vertical->set_logger(m_atm_logger);
     DataInterpolation::VertRemapData remap_data_vertical;

@@ -237,8 +237,7 @@ init_data_interval (const util::TimeStamp& t0)
 void DataInterpolation::
 setup_time_database (const strvec_t& input_files,
                      const util::TimeLine timeline,
-                     const TimeInterpType interp_type,
-                     const util::TimeStamp& ref_ts)
+                     const TimeInterpType interp_type)
 {
   // Log the final list of files, so the user know if something went wrong (e.g. a bad regex)
   m_logger->debug("Setting up DataInerpolation object. List of input files:");
@@ -292,13 +291,7 @@ setup_time_database (const strvec_t& input_files,
     }
     
     // Parse the time variable's units attribute to extract the reference time
-    util::TimeStamp t_ref;
-    if (ref_ts.is_valid()) {
-      // User-provided reference timestamp takes precedence
-      t_ref = ref_ts;
-    } else {
-      t_ref = parse_cf_time_units(time_units);
-    }
+    auto t_ref = parse_cf_time_units(time_units);
     
     // Determine time multiplier from units (time values are in this unit)
     int time_mult;

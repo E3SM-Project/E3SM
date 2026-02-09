@@ -56,8 +56,7 @@ public:
 
   void setup_time_database (const strvec_t& input_files,
                             const util::TimeLine timeline,
-                            const TimeInterpType interp_type = Linear,
-                            const util::TimeStamp& ref_ts = util::TimeStamp());
+                            const TimeInterpType interp_type = Linear);
 
   // In case the input files store col/lev dims with exhotic names, the user can provide them here
   void set_input_files_dimname (const FieldTag t, const std::string& name) { m_input_files_dimnames[t] = name; }
