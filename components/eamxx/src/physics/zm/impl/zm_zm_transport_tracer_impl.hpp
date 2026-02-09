@@ -37,252 +37,147 @@ void Functions<S,D>::zm_transport_tracer(
   // Outputs
   const uview_2d<Real>& dqdt)             // output tendency array
 {
-  // TODO
-  // Note, argument types may need tweaking. Generator is not always able to tell what needs to be packed
-  /*
-       !----------------------------------------------------------------------------
-   ! Local variables
-   integer  :: i,k                   ! loop indices
-   integer  :: kbm                   ! Highest altitude index of cloud base
-   integer  :: kk                    ! Work index
-   integer  :: kkp1                  ! Work index
-   integer  :: km1                   ! Work index
-   integer  :: kp1                   ! Work index
-   integer  :: ktm                   ! Highest altitude index of cloud top
-   integer  :: m                     ! Work index
-   real(r8) :: cabv                 ! Mix ratio of constituent above
-   real(r8) :: cbel                 ! Mix ratio of constituent below
-   real(r8) :: cdifr                ! Normalized diff between cabv and cbel
-   real(r8) :: chat(pcols,pver)     ! Mix ratio in env at interfaces
-   real(r8) :: cond(pcols,pver)     ! Mix ratio in downdraft at interfaces
-   real(r8) :: const(pcols,pver)    ! Gathered tracer array
-   real(r8) :: fisg(pcols,pver)     ! gathered insoluble fraction of tracer
-   real(r8) :: conu(pcols,pver)     ! Mix ratio in updraft at interfaces
-   real(r8) :: dcondt(pcols,pver)   ! Gathered convective tendency array
-   real(r8) :: mupdudp              ! A work variable
-   real(r8) :: minc                 ! A work variable
-   real(r8) :: maxc                 ! A work variable
-   real(r8) :: fluxin               ! A work variable
-   real(r8) :: fluxout              ! A work variable
-   real(r8) :: netflux              ! A work variable
-   real(r8) :: dutmp(pcols,pver)    ! Mass detraining from updraft
-   real(r8) :: eutmp(pcols,pver)    ! Mass entraining into updraft
-   real(r8) :: edtmp(pcols,pver)    ! Mass entraining into downdraft
-   real(r8) :: dptmp(pcols,pver)    ! Delta pressure between interfaces
-   real(r8) :: negadt               ! for Conservation check
-   real(r8) :: qtmp                 ! for Conservation check
-   ! constants
-   real(r8), parameter :: small        = 1.e-36_r8 ! a small number to avoid division by zero
-   real(r8), parameter :: cdifr_min    = 1.e-6_r8  ! minimum layer difference for geometric averaging
-   real(r8), parameter :: maxc_factor  = 1.e-12_r8
-   real(r8), parameter :: flux_factor  = 1.e-12_r8
-   !----------------------------------------------------------------------------
+  constexpr Real small = 1.e-36;
+  constexpr Real cdifr_min = 1.e-6;
+  constexpr Real maxc_factor = 1.e-12;
+  constexpr Real flux_factor = 1.e-12;
+  constexpr Real mbsth = 1.e-15;
 
-   ! Find the highest level top and bottom levels of convection
-   ktm = pver
-   kbm = pver
-   do i = il1g, il2g
-      ktm = min(ktm,jt(i))
-      kbm = min(kbm,mx(i))
-   end do
+  // Allocate temporary arrays (no pcols dimension)
+  uview_1d<Real> chat("chat", pver);
+  uview_1d<Real> cond("cond", pver);
+  uview_1d<Real> const_arr("const_arr", pver);
+  uview_1d<Real> fisg("fisg", pver);
+  uview_1d<Real> conu("conu", pver);
+  uview_1d<Real> dcondt("dcondt", pver);
+  uview_1d<Real> dutmp("dutmp", pver);
+  uview_1d<Real> eutmp("eutmp", pver);
+  uview_1d<Real> edtmp("edtmp", pver);
+  uview_1d<Real> dptmp("dptmp", pver);
 
-   ! Loop ever each constituent (skip water vapor at m=1)
-   do m = 2, ncnst
+  // Loop over each constituent (skip water vapor at m=1, Fortran indexing)
+  for (Int m = 1; m < ncnst; ++m) {
+    if (!doconvtran(m)) continue;
 
-      if (doconvtran(m)) then
+    // Initialize temporary arrays (always use moist formulation)
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, pver), [&] (const Int& k) {
+      dptmp(k) = dp(k);
+      dutmp(k) = du(k);
+      eutmp(k) = eu(k);
+      edtmp(k) = ed(k);
+      const_arr(k) = q(k, m);
+      fisg(k) = fracis(k, m);
+    });
+    team.team_barrier();
 
-#ifndef SCREAM_CONFIG_IS_CMAKE
-         if (cnst_get_type_byind(m).eq.'dry') then
-#else
-         if (.false.) then
-#endif
-            do k = 1,pver
-               do i =il1g,il2g
-                  dptmp(i,k) = dpdry(i,k)
-                  dutmp(i,k) = du(i,k)*dp(i,k)/dpdry(i,k)
-                  eutmp(i,k) = eu(i,k)*dp(i,k)/dpdry(i,k)
-                  edtmp(i,k) = ed(i,k)*dp(i,k)/dpdry(i,k)
-               end do
-            end do
-         else
-            do k = 1,pver
-               do i =il1g,il2g
-                  dptmp(i,k) = dp(i,k)
-                  dutmp(i,k) = du(i,k)
-                  eutmp(i,k) = eu(i,k)
-                  edtmp(i,k) = ed(i,k)
-               end do
-            end do
-         endif
+    // Interpolate environment tracer values to interfaces
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, pver), [&] (const Int& k) {
+      const Int km1 = ekat::impl::max(0, k-1);
+      const Real minc = ekat::impl::min(const_arr(km1), const_arr(k));
+      const Real maxc = ekat::impl::max(const_arr(km1), const_arr(k));
+      
+      Real cdifr;
+      if (minc < 0) {
+        cdifr = 0.0;
+      } else {
+        cdifr = ekat::impl::abs(const_arr(k) - const_arr(km1)) / ekat::impl::max(maxc, small);
+      }
 
-         ! Gather up the constituent and set tend to zero
-         do k = 1,pver
-            do i =il1g,il2g
-               const(i,k) = q(ideep(i),k,m)
-               fisg(i,k) = fracis(ideep(i),k,m)
-            end do
-         end do
+      if (cdifr > cdifr_min) {
+        const Real cabv = ekat::impl::max(const_arr(km1), maxc*maxc_factor);
+        const Real cbel = ekat::impl::max(const_arr(k), maxc*maxc_factor);
+        chat(k) = ekat::impl::log(cabv/cbel) / (cabv-cbel) * cabv * cbel;
+      } else {
+        chat(k) = 0.5 * (const_arr(k) + const_arr(km1));
+      }
 
-         ! From now on work only with gathered data
+      conu(k) = chat(k);
+      cond(k) = chat(k);
+      dcondt(k) = 0.0;
+    });
+    team.team_barrier();
 
-         ! Interpolate environment tracer values to interfaces
-         do k = 1,pver
-            km1 = max(1,k-1)
-            do i = il1g, il2g
-               minc = min(const(i,km1),const(i,k))
-               maxc = max(const(i,km1),const(i,k))
-               if (minc < 0) then
-                  cdifr = 0._r8
-               else
-                  cdifr = abs( const(i,k) - const(i,km1) )/max(maxc,small)
-               endif
-               ! If the two layers differ significantly use a geometric averaging
-               if (cdifr > cdifr_min) then
-                  cabv = max(const(i,km1),maxc*maxc_factor)
-                  cbel = max(const(i,k  ),maxc*maxc_factor)
-                  chat(i,k) = log(cabv/cbel)/(cabv-cbel)*cabv*cbel
-               else ! Small diff, so just arithmetic mean
-                  chat(i,k) = 0.5_r8*( const(i,k) + const(i,km1) )
-               end if
-               ! Provisional updraft and downdraft values
-               conu(i,k) = chat(i,k)
-               cond(i,k) = chat(i,k)
-               ! provisional tendencies
-               dcondt(i,k) = 0._r8
-            end do
-         end do
+    // Do levels adjacent to top and bottom
+    const Int kk = pver - 1;
+    if (team.team_rank() == 0) {
+      Real mupdudp = mu(kk) + dutmp(kk) * dptmp(kk);
+      if (mupdudp > mbsth) {
+        conu(kk) = (eutmp(kk) * fisg(kk) * const_arr(kk) * dptmp(kk)) / mupdudp;
+      }
+      if (md(1) < -mbsth) {
+        cond(1) = (-edtmp(0) * fisg(0) * const_arr(0) * dptmp(0)) / md(1);
+      }
+    }
+    team.team_barrier();
 
-         ! Do levels adjacent to top and bottom
-         k = 2
-         km1 = 1
-         kk = pver
-         do i = il1g,il2g
-            mupdudp = mu(i,kk) + dutmp(i,kk)*dptmp(i,kk)
-            if (mupdudp > mbsth) then
-               conu(i,kk) = ( +eutmp(i,kk)*fisg(i,kk)*const(i,kk)*dptmp(i,kk) )/mupdudp
-            endif
-            if (md(i,k) < -mbsth) then
-               cond(i,k) = ( -edtmp(i,km1)*fisg(i,km1)*const(i,km1)*dptmp(i,km1) )/md(i,k)
-            endif
-         end do
+    // Updraft from bottom to top
+    for (Int kk = pver-2; kk >= 0; --kk) {
+      if (team.team_rank() == 0) {
+        const Int kkp1 = ekat::impl::min(pver-1, kk+1);
+        Real mupdudp = mu(kk) + dutmp(kk) * dptmp(kk);
+        if (mupdudp > mbsth) {
+          conu(kk) = (mu(kkp1) * conu(kkp1) + eutmp(kk) * fisg(kk) * const_arr(kk) * dptmp(kk)) / mupdudp;
+        }
+      }
+      team.team_barrier();
+    }
 
-         ! Updraft from bottom to top
-         do kk = pver-1,1,-1
-            kkp1 = min(pver,kk+1)
-            do i = il1g,il2g
-               mupdudp = mu(i,kk) + dutmp(i,kk)*dptmp(i,kk)
-               if (mupdudp > mbsth) then
-                  conu(i,kk) = ( mu(i,kkp1)*conu(i,kkp1) + eutmp(i,kk)*fisg(i,kk)*const(i,kk)*dptmp(i,kk) )/mupdudp
-               endif
-            end do
-         end do
+    // Downdraft from top to bottom
+    for (Int k = 2; k < pver; ++k) {
+      if (team.team_rank() == 0) {
+        const Int km1 = ekat::impl::max(0, k-1);
+        if (md(k) < -mbsth) {
+          cond(k) = (md(km1) * cond(km1) - edtmp(km1) * fisg(km1) * const_arr(km1) * dptmp(km1)) / md(k);
+        }
+      }
+      team.team_barrier();
+    }
 
-         ! Downdraft from top to bottom
-         do k = 3,pver
-            km1 = max(1,k-1)
-            do i = il1g,il2g
-               if (md(i,k) < -mbsth) then
-                  cond(i,k) =  ( md(i,km1)*cond(i,km1) - edtmp(i,km1)*fisg(i,km1)*const(i,km1)*dptmp(i,km1) )/md(i,k)
-               endif
-            end do
-         end do
+    // Compute tendencies from cloud top to bottom
+    for (Int k = jt; k < pver; ++k) {
+      if (team.team_rank() == 0) {
+        const Int km1 = ekat::impl::max(0, k-1);
+        const Int kp1 = ekat::impl::min(pver-1, k+1);
+        
+        const Real fluxin = mu(kp1) * conu(kp1) + mu(k) * ekat::impl::min(chat(k), const_arr(km1))
+                          - (md(k) * cond(k) + md(kp1) * ekat::impl::min(chat(kp1), const_arr(kp1)));
+        const Real fluxout = mu(k) * conu(k) + mu(kp1) * ekat::impl::min(chat(kp1), const_arr(k))
+                           - (md(kp1) * cond(kp1) + md(k) * ekat::impl::min(chat(k), const_arr(k)));
 
-         do k = ktm,pver
-            km1 = max(1,k-1)
-            kp1 = min(pver,k+1)
-            do i = il1g,il2g
+        Real netflux = fluxin - fluxout;
+        if (ekat::impl::abs(netflux) < ekat::impl::max(fluxin, fluxout) * flux_factor) {
+          netflux = 0.0;
+        }
+        dcondt(k) = netflux / dptmp(k);
+      }
+      team.team_barrier();
+    }
 
-               ! limit fluxes outside convection to mass in appropriate layer
-               ! these limiters are probably only safe for positive definite quantitities
-               ! it assumes that mu and md already satify a courant number limit of 1
-               fluxin  =   mu(i,kp1)*conu(i,kp1) + mu(i,k  )*min(chat(i,k  ),const(i,km1)) &
-                         -(md(i,k  )*cond(i,k  ) + md(i,kp1)*min(chat(i,kp1),const(i,kp1)))
-               fluxout =   mu(i,k  )*conu(i,k  ) + mu(i,kp1)*min(chat(i,kp1),const(i,k  )) &
-                         -(md(i,kp1)*cond(i,kp1) + md(i,k  )*min(chat(i,k  ),const(i,k  )))
+    // Handle cloud base levels
+    for (Int k = mx; k < pver; ++k) {
+      if (team.team_rank() == 0) {
+        const Int km1 = ekat::impl::max(0, k-1);
+        if (k == mx) {
+          const Real fluxin = mu(k) * ekat::impl::min(chat(k), const_arr(km1)) - md(k) * cond(k);
+          const Real fluxout = mu(k) * conu(k) - md(k) * ekat::impl::min(chat(k), const_arr(k));
+          Real netflux = fluxin - fluxout;
+          if (ekat::impl::abs(netflux) < ekat::impl::max(fluxin, fluxout) * flux_factor) {
+            netflux = 0.0;
+          }
+          dcondt(k) = netflux / dptmp(k);
+        } else if (k > mx) {
+          dcondt(k) = 0.0;
+        }
+      }
+      team.team_barrier();
+    }
 
-               netflux = fluxin - fluxout
-               if (abs(netflux) < max(fluxin,fluxout)*flux_factor) then
-                  netflux = 0._r8
-               endif
-               dcondt(i,k) = netflux/dptmp(i,k)
-            end do
-         end do
-
-#ifdef CPRCRAY
-!DIR$ NOINTERCHANGE
-#endif
-         do k = kbm,pver
-            km1 = max(1,k-1)
-            do i = il1g,il2g
-               if (k == mx(i)) then
-                  fluxin  = mu(i,k)*min(chat(i,k),const(i,km1)) - md(i,k)*cond(i,k)
-                  fluxout = mu(i,k)*conu(i,k) - md(i,k)*min(chat(i,k),const(i,k))
-                  netflux = fluxin - fluxout
-                  if (abs(netflux) < max(fluxin,fluxout)*flux_factor) then
-                     netflux = 0._r8
-                  endif
-                  dcondt(i,k) = netflux/dptmp(i,k)
-               else if (k > mx(i)) then
-                  dcondt(i,k) = 0._r8
-               end if
-            end do
-         end do
-
-         ! Conservation check for ZM microphysics
-         if (zm_param%zm_microp) then
-            do i = il1g,il2g
-               do k = jt(i),mx(i)
-                  if (dcondt(i,k)*dt+const(i,k)<0._r8) then
-                     negadt = dcondt(i,k)+const(i,k)/dt
-                     dcondt(i,k) = -const(i,k)/dt
-                     do kk= k+1, mx(i)
-                        if (negadt<0._r8 .and. dcondt(i,kk)*dt+const(i,kk)>0._r8 ) then
-                           qtmp = dcondt(i,kk)+negadt*dptmp(i,k)/dptmp(i,kk)
-                           if (qtmp*dt+const(i,kk)>0._r8) then
-                              dcondt(i,kk)= qtmp
-                              negadt=0._r8
-                           else
-                              negadt= negadt+(const(i,kk)/dt+dcondt(i,kk))*dptmp(i,kk)/dptmp(i,k)
-                              dcondt(i,kk)= -const(i,kk)/dt
-                           end if
-                        end if
-                     end do
-                     do kk= k-1, jt(i), -1
-                        if (negadt<0._r8 .and. dcondt(i,kk)*dt+const(i,kk)>0._r8 ) then
-                           qtmp = dcondt(i,kk)+negadt*dptmp(i,k)/dptmp(i,kk)
-                           if (qtmp*dt+const(i,kk)>0._r8) then
-                              dcondt(i,kk)= qtmp
-                              negadt=0._r8
-                           else
-                              negadt= negadt+(const(i,kk)/dt+dcondt(i,kk))*dptmp(i,kk)/dptmp(i,k)
-                              dcondt(i,kk)= -const(i,kk)/dt
-                           end if
-                        end if
-                     end do
-                     if (negadt<0._r8) then
-                        dcondt(i,k) = dcondt(i,k) - negadt
-                     end if
-                  end if
-               end do
-            end do
-         end if
-
-         ! Initialize output tendency to zero, then scatter tendency back to full array
-         dqdt(:,:,m) = 0._r8
-         do k = 1,pver
-            kp1 = min(pver,k+1)
-#ifdef CPRCRAY
-!DIR$ CONCURRENT
-#endif
-            do i = il1g,il2g
-               dqdt(ideep(i),k,m) = dcondt(i,k)
-            end do
-         end do
-
-      end if ! for doconvtran
-
-   end do ! m = 2, ncnst
-  */
+    // Scatter tendency back to output array
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, pver), [&] (const Int& k) {
+      dqdt(k, m) = dcondt(k);
+    });
+    team.team_barrier();
+  }
 }
 
 } // namespace zm
