@@ -2,6 +2,7 @@
 #include "zm_functions.hpp"
 
 #include <ekat_pack_kokkos.hpp>
+#include <ekat_subview_utils.hpp>
 
 #include <random>
 
@@ -23,6 +24,7 @@ using MemberType = typename ZMF::KT::MemberType;
 
 using view0dr_d = ZMF::view_0d<Real>;
 using view1di_d = ZMF::view_1d<Int>;
+using view1db_d = ZMF::view_1d<bool>;
 using view1dr_d = ZMF::view_1d<Real>;
 using view2dr_d = ZMF::view_2d<Real>;
 using view3dr_d = ZMF::view_3d<Real>;
@@ -41,7 +43,7 @@ void ientropy_bridge_f(Real s, Real p, Real qt, Real* t, Real* qst, Real tfg);
 
 void entropy_bridge_f(Real tk, Real p, Real qtot, Real* entropy);
 
-void zm_transport_tracer_bridge_f(Int pcols, Int ncol, Int pver, bool* doconvtran, Real* q, Int ncnst, Real* mu, Real* md, Real* du, Real* eu, Real* ed, Real* dp, Int* jt, Int* mx, Int* ideep, Int il1g, Int il2g, Real* fracis, Real* dqdt, Real* dpdry, Real dt);
+void zm_transport_tracer_bridge_f(Int pcols, Int pver, bool* doconvtran, Real* q, Int ncnst, Real* mu, Real* md, Real* du, Real* eu, Real* ed, Real* dp, Int* jt, Int* mx, Int* ideep, Int il1g, Int il2g, Real* fracis, Real* dqdt, Real* dpdry, Real dt);
 } // extern "C" : end _f decls
 
 // Inits and finalizes are not intended to be called outside this comp unit
@@ -174,7 +176,7 @@ void zm_transport_tracer_f(ZmTransportTracerData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
   zm_common_init_f(); // Might need more specific init
-  zm_transport_tracer_f(d.pcols, d.ncol, d.pver, d.doconvtran, d.q, d.ncnst, d.mu, d.md, d.du, d.eu, d.ed, d.dp, d.jt, d.mx, d.ideep, d.il1g, d.il2g, d.fracis, d.dqdt, d.dpdry, d.dt);
+  zm_transport_tracer_bridge_f(d.pcols, d.pver, d.doconvtran, d.q, d.ncnst, d.mu, d.md, d.du, d.eu, d.ed, d.dp, d.jt, d.mx, d.ideep, d.il1g, d.il2g, d.fracis, d.dqdt, d.dpdry, d.dt);
   d.transition<ekat::TransposeDirection::f2c>();
 }
 
@@ -224,7 +226,6 @@ void zm_transport_tracer(ZmTransportTracerData& d)
   const Int il1g = d.il1g;
   const Int il2g = d.il2g;
   const Int ncnst = d.ncnst;
-  const Int ncol = d.ncol;
   const Int pver = d.pver;
 
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
@@ -246,7 +247,7 @@ void zm_transport_tracer(ZmTransportTracerData& d)
     ZMF::zm_transport_tracer(
       team,
       pver,
-      doconvtran_c,
+      doconvtran_d,
       q_c,
       ncnst,
       mu_c,

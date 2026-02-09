@@ -90,7 +90,7 @@ struct EntropyData : public PhysicsTestData {
 
 struct ZmTransportTracerData : public PhysicsTestData {
   // Inputs
-  Int pcols, ncol, pver, ncnst, il1g, il2g;
+  Int pcols, pver, ncnst, il1g, il2g;
   Int *jt, *mx, *ideep;
   Real dt;
   Real *q, *mu, *md, *du, *eu, *ed, *dp, *fracis, *dpdry;
@@ -99,7 +99,7 @@ struct ZmTransportTracerData : public PhysicsTestData {
   // Outputs
   Real *dqdt;
 
-  ZmTransportTracerData(Int pcols_, Int ncol_, Int pver_, Int ncnst_, Int il1g_, Int il2g_, Real dt_) :
+  ZmTransportTracerData(Int pcols_, Int pver_, Int ncnst_, Int il1g_, Int il2g_, Real dt_) :
     PhysicsTestData({
       {pcols_, pver_, ncnst_},
       {pcols_, pver_},
@@ -116,10 +116,10 @@ struct ZmTransportTracerData : public PhysicsTestData {
     {
       {&doconvtran}
     }),
-    pcols(pcols_), ncol(ncol_), pver(pver_), ncnst(ncnst_), il1g(il1g_), il2g(il2g_), dt(dt_)
+    pcols(pcols_), pver(pver_), ncnst(ncnst_), il1g(il1g_), il2g(il2g_), dt(dt_)
   {}
 
-  PTD_STD_DEF(ZmTransportTracerData, 7, pcols, ncol, pver, ncnst, il1g, il2g, dt);
+  PTD_STD_DEF(ZmTransportTracerData, 6, pcols, pver, ncnst, il1g, il2g, dt);
 
   template <ekat::TransposeDirection::Enum D>
   void transition()

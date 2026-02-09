@@ -5,17 +5,17 @@ module zm_transport
    !
    !----------------------------------------------------------------------------
 #ifdef SCREAM_CONFIG_IS_CMAKE
-   use zm_eamxx_bridge_params, only: r8
+   use zm_eamxx_bridge_params, only: r8, btype
 #else
    use shr_kind_mod,     only: r8=>shr_kind_r8
+   integer,parameter,public :: btype = kind(.true.)
+
 #endif
 
    implicit none
 
    ! public methods
-#ifndef SCREAM_CONFIG_IS_CMAKE
    public :: zm_transport_tracer    ! convective tracer transport
-#endif
    public :: zm_transport_momentum  ! convective momentum transport
 
    private
@@ -26,7 +26,7 @@ contains
 
 !===================================================================================================
 
-subroutine zm_transport_tracer( pcols, ncol, pver, &
+subroutine zm_transport_tracer( pcols, pver, &
                                 doconvtran, q, ncnst, &
                                 mu, md, du, eu, ed, dp, &
                                 jt, mx, ideep, il1g, il2g, &
@@ -41,10 +41,9 @@ subroutine zm_transport_tracer( pcols, ncol, pver, &
    !----------------------------------------------------------------------------
    ! Arguments
    integer,                               intent(in)  :: pcols       ! maximum number of columns
-   integer,                               intent(in)  :: ncol        ! actual number of columns
    integer,                               intent(in)  :: pver        ! number of mid-point levels
    integer,                               intent(in)  :: ncnst       ! number of tracers to transport
-   logical,  dimension(ncnst),            intent(in)  :: doconvtran  ! flag for doing convective transport
+   logical(btype),   dimension(ncnst),    intent(in)  :: doconvtran  ! flag for doing convective transport
    real(r8), dimension(pcols,pver,ncnst), intent(in)  :: q           ! tracer array (including water vapor)
    real(r8), dimension(pcols,pver),       intent(in)  :: mu          ! mass flux up
    real(r8), dimension(pcols,pver),       intent(in)  :: md          ! mass flux down
@@ -317,7 +316,6 @@ subroutine zm_transport_momentum( pcols, ncol, pver, pverp, wind_in, nwind, &
    !----------------------------------------------------------------------------
    ! Purpose: Convective transport of momentum
    !----------------------------------------------------------------------------
-   use zm_conv,         only: zm_param
    !----------------------------------------------------------------------------
    ! Arguments
    integer,                               intent(in)  :: pcols       ! maximum number of columns

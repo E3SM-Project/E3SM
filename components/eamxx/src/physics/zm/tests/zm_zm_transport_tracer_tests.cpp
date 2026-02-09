@@ -22,11 +22,11 @@ struct UnitWrap::UnitTest<D>::TestZmTransportTracer : public UnitWrap::UnitTest<
 
     // Set up inputs
     ZmTransportTracerData baseline_data[] = {
-      //                    pcols, ncol, pver, ncnst, il1g, il2g, dt
-      ZmTransportTracerData(    4,    4,   72,     6,    1,    2, 0.5),
-      ZmTransportTracerData(    4,    4,   72,     6,    2,    3, 1.5),
-      ZmTransportTracerData(    4,    4,   72,     6,    4,    2, 2.5),
-      ZmTransportTracerData(    4,    4,  128,     6,    4,    2, 2.5),
+      //                    pcols, pver, ncnst, il1g, il2g, dt
+      ZmTransportTracerData(    4,   72,     6,    1,    2, 0.5),
+      ZmTransportTracerData(    4,   72,     6,    2,    3, 1.5),
+      ZmTransportTracerData(    4,   72,     6,    4,    2, 2.5),
+      ZmTransportTracerData(    4,  128,     6,    4,    2, 2.5),
     };
 
     static constexpr Int num_runs = sizeof(baseline_data) / sizeof(ZmTransportTracerData);
