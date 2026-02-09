@@ -238,36 +238,46 @@ void Functions<S,D>::shoc_assumed_pdf(
 
       // Deactivate SHOC condensation
       if (shoc_nocond){
-        ql1 = 0;
-        ql2 = 0;
-        C1 = 0;
-        C2 = 0;
+        // Do NOT modify shoc_ql, allow it to persist from previous processes.
+        //   Diagnose liquid cloud fraction based on an all-or-nothing approach.
+        const Smask is_cloud (shoc_ql(k) > 1.e-18);
+        shoc_cldfrac(k).set(is_cloud,1);
+
+        // Set other SHOC outputs that depend on sub-grid variability or
+        //  condensation to zero.
+        shoc_cond(k) = 0; // diagnostic
+        shoc_evap(k) = 0; // diagnostic
+        shoc_ql2(k) = 0; // no SGS variability
+        wqls(k) = 0; // no SGS condensation
+        wthv_sec(k) = 0; // no SGS variability or condensation
       }
+      else{
 
-      // Compute SGS cloud fraction
-      shoc_cldfrac(k) = ekat::min(1, a*C1 + (1 - a)*C2);
+        // Compute SGS cloud fraction
+        shoc_cldfrac(k) = ekat::min(1, a*C1 + (1 - a)*C2);
 
-     // Compute cond and evap tendencies
-      if (extra_diags) {
-        auto dum     = ekat::max(0, a * ql1 + (1 - a) * ql2);
-        shoc_cond(k) = ekat::max(0, (dum - shoc_ql(k)) / dtime);
-        shoc_evap(k) = ekat::max(0, (shoc_ql(k) - dum) / dtime);
-      } 
+        // Compute cond and evap tendencies
+        if (extra_diags) {
+          auto dum     = ekat::max(0, a * ql1 + (1 - a) * ql2);
+          shoc_cond(k) = ekat::max(0, (dum - shoc_ql(k)) / dtime);
+          shoc_evap(k) = ekat::max(0, (shoc_ql(k) - dum) / dtime);
+        }
 
-      // Compute SGS liquid water mixing ratio
-      shoc_assumed_pdf_compute_sgs_liquid(a, ql1, ql2, shoc_ql(k));
+        // Compute SGS liquid water mixing ratio
+        shoc_assumed_pdf_compute_sgs_liquid(a, ql1, ql2, shoc_ql(k));
 
-      // Compute cloud liquid variance (CLUBB formulation, adjusted to SHOC parameters based)
-      shoc_assumed_pdf_compute_cloud_liquid_variance(a, s1, ql1, C1, std_s1,
+        // Compute cloud liquid variance (CLUBB formulation, adjusted to SHOC parameters based)
+        shoc_assumed_pdf_compute_cloud_liquid_variance(a, s1, ql1, C1, std_s1,
                                                      s2, ql2, C2, std_s2, shoc_ql(k),
                                                      shoc_ql2(k));
 
-      // Compute liquid water flux
-      shoc_assumed_pdf_compute_liquid_water_flux(a, w1_1, w_first, ql1, w1_2, ql2, wqls(k));
+        // Compute liquid water flux
+        shoc_assumed_pdf_compute_liquid_water_flux(a, w1_1, w_first, ql1, w1_2, ql2, wqls(k));
 
-      // Compute the SGS buoyancy flux
-      shoc_assumed_pdf_compute_buoyancy_flux(wthlsec, wqwsec, pval, wqls(k),
+        // Compute the SGS buoyancy flux
+        shoc_assumed_pdf_compute_buoyancy_flux(wthlsec, wqwsec, pval, wqls(k),
                                              wthv_sec(k));
+      }
   });
 
   // Release temporary variables from the workspace
