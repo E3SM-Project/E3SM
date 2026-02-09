@@ -334,6 +334,10 @@ contains
            num_soilc, filter_soilc, crop_vars, cnstate_vars)
    end if
 
+    if (num_pcropp > 0 .or. num_ppercropp > 0) then
+      call CNCropHarvestPftToColumn(num_soilc, filter_soilc,cnstate_vars)
+    end if
+
     call CNOffsetLitterfall(num_soilp, filter_soilp, &
          cnstate_vars)
 
@@ -2975,8 +2979,6 @@ contains
    ! gather all pft-level fluxes from harvest to the column
    ! for C and N inputs
 
-   call CNCropHarvestPftToColumn(num_soilc, filter_soilc,cnstate_vars)
-
 
     end associate
  end subroutine CNCropHarvest
@@ -3096,8 +3098,6 @@ contains
 
    ! gather all pft-level fluxes from harvest to the column
    ! for C and N inputs
-
-   call CNCropHarvestPftToColumn(num_soilc, filter_soilc, cnstate_vars)
 
     end associate
  end subroutine CNPerennialCropHarvest
