@@ -3,6 +3,7 @@
 #include "Field.h"
 #include "Logging.h"
 #include "Pacer.h"
+#include "TimeStepper.h"
 
 namespace OMEGA {
 
@@ -19,7 +20,7 @@ static std::string stripDefault(const std::string &Name) {
 // fields with IOStreams
 AuxiliaryState::AuxiliaryState(const std::string &Name, const HorzMesh *Mesh,
                                Halo *MeshHalo, const VertCoord *VCoord,
-                               int NTracers)
+                               int NTracers, TimeInterval TimeStep)
     : Mesh(Mesh), MeshHalo(MeshHalo), VCoord(VCoord), Name(stripDefault(Name)),
       KineticAux(stripDefault(Name), Mesh, VCoord),
       LayerThicknessAux(stripDefault(Name), Mesh, VCoord),
@@ -79,6 +80,9 @@ void AuxiliaryState::computeMomAux(const OceanState *State, int ThickTimeLevel,
    OMEGA_SCOPE(MinLayerEdgeBot, VCoord->MinLayerEdgeBot);
    OMEGA_SCOPE(MaxLayerEdgeBot, VCoord->MaxLayerEdgeBot);
    OMEGA_SCOPE(MaxLayerEdgeTop, VCoord->MaxLayerEdgeTop);
+
+   R8 TimeStepSeconds;
+   TimeStep.get(TimeStepSeconds, TimeUnits::Seconds);
 
    Pacer::start("AuxState:computeMomAux", 1);
 
@@ -195,8 +199,8 @@ void AuxiliaryState::computeMomAux(const OceanState *State, int ThickTimeLevel,
           parallelForInner(
               Team, KRange, INNER_LAMBDA(int KChunk) {
                  LocLayerThicknessAux.computeVarsOnCells(
-                     ICell, KChunk, LayerThickCell, NormalVelEdge, 0._Real);
-                 // TODO: make timestep available to this call
+                     ICell, KChunk, LayerThickCell, NormalVelEdge,
+                     TimeStepSeconds);
               });
        });
    Pacer::stop("AuxState:cellAuxState3", 2);
@@ -254,7 +258,8 @@ void AuxiliaryState::computeAll(const OceanState *State,
 AuxiliaryState *AuxiliaryState::create(const std::string &Name,
                                        const HorzMesh *Mesh, Halo *MeshHalo,
                                        const VertCoord *VCoord,
-                                       const int NTracers) {
+                                       const int NTracers,
+                                       TimeInterval TimeStep) {
    if (AllAuxStates.find(Name) != AllAuxStates.end()) {
       LOG_ERROR("Attempted to create a new AuxiliaryState with name {} but it "
                 "already exists",
@@ -263,7 +268,7 @@ AuxiliaryState *AuxiliaryState::create(const std::string &Name,
    }
 
    auto *NewAuxState =
-       new AuxiliaryState(Name, Mesh, MeshHalo, VCoord, NTracers);
+       new AuxiliaryState(Name, Mesh, MeshHalo, VCoord, NTracers, TimeStep);
    AllAuxStates.emplace(Name, NewAuxState);
 
    return NewAuxState;
@@ -275,11 +280,14 @@ void AuxiliaryState::init() {
    const HorzMesh *DefMesh    = HorzMesh::getDefault();
    Halo *DefHalo              = Halo::getDefault();
    const VertCoord *DefVCoord = VertCoord::getDefault();
+   const TimeStepper *DefTimeStepper = TimeStepper::getDefault();
 
    int NTracers = Tracers::getNumTracers();
+   TimeInterval TimeStep = DefTimeStepper->getTimeStep();
 
    AuxiliaryState::DefaultAuxState =
-       AuxiliaryState::create("Default", DefMesh, DefHalo, DefVCoord, NTracers);
+       AuxiliaryState::create("Default", DefMesh, DefHalo, DefVCoord, NTracers,
+                              TimeStep);
 
    Config *OmegaConfig = Config::getOmegaConfig();
    DefaultAuxState->readConfigOptions(OmegaConfig);

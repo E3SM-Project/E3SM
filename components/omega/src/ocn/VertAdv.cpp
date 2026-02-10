@@ -320,7 +320,7 @@ void VertAdv::readConfigOptions(Config *OmegaConfig) {
    Err += AdvectConfig.get("VerticalTracerFluxLimiterEnable", FluxLimiterOn);
    CHECK_ERROR_ABORT(
        Err,
-       "VertAdv: VerticalTracerFluxLimiterEnabled not found in AdvectConfig");
+       "VertAdv: VerticalTracerFluxLimiterEnable not found in AdvectConfig");
    if (FluxLimiterOn) {
       VertAdvChoice = VertAdvOption::FCT;
    } else {

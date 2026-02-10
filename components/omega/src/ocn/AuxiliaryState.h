@@ -6,6 +6,7 @@
 #include "Halo.h"
 #include "HorzMesh.h"
 #include "OceanState.h"
+#include "TimeMgr.h"
 #include "Tracers.h"
 #include "VertCoord.h"
 #include "auxiliaryVars/KineticAuxVars.h"
@@ -51,7 +52,7 @@ class AuxiliaryState {
    // Create a non-default auxiliary state
    static AuxiliaryState *create(const std::string &Name, const HorzMesh *Mesh,
                                  Halo *MeshHalo, const VertCoord *VCoord,
-                                 int NTracers);
+                                 int NTracers, TimeInterval TimeStep);
 
    /// Get the default auxiliary state
    static AuxiliaryState *getDefault();
@@ -84,7 +85,7 @@ class AuxiliaryState {
 
  private:
    AuxiliaryState(const std::string &Name, const HorzMesh *Mesh, Halo *MeshHalo,
-                  const VertCoord *VCoord, int NTracers);
+                  const VertCoord *VCoord, int NTracers, TimeInterval TimeStep);
 
    AuxiliaryState(const AuxiliaryState &) = delete;
    AuxiliaryState(AuxiliaryState &&)      = delete;
@@ -92,6 +93,8 @@ class AuxiliaryState {
    const HorzMesh *Mesh;
    Halo *MeshHalo;
    const VertCoord *VCoord;
+   TimeInterval TimeStep;
+
    static AuxiliaryState *DefaultAuxState;
    static std::map<std::string, std::unique_ptr<AuxiliaryState>> AllAuxStates;
 };
