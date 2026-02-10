@@ -53,7 +53,7 @@ subroutine zm_transport_tracer( pcols, pver, &
    real(r8), dimension(pcols,pver),       intent(in)  :: dp          ! delta pressure between interfaces
    real(r8), dimension(pcols,pver,ncnst), intent(in)  :: fracis      ! fraction of tracer that is insoluble
    integer,  dimension(pcols),            intent(in)  :: jt          ! index of cloud top for each column
-   integer,  dimension(pcols),            intent(in)  :: mx          ! index of cloud top for each column
+   integer,  dimension(pcols),            intent(in)  :: mx          ! index of cloud bottom for each column
    integer,  dimension(pcols),            intent(in)  :: ideep       ! gathering array
    integer,                               intent(in)  :: il1g        ! gathered min ncol index
    integer,                               intent(in)  :: il2g        ! gathered max ncol index
@@ -290,7 +290,6 @@ subroutine zm_transport_tracer( pcols, pver, &
          ! Initialize output tendency to zero, then scatter tendency back to full array
          dqdt(:,:,m) = 0._r8
          do k = 1,pver
-            kp1 = min(pver,k+1)
 #ifdef CPRCRAY
 !DIR$ CONCURRENT
 #endif

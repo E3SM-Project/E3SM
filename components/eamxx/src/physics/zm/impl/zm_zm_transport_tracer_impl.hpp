@@ -28,23 +28,16 @@ void Functions<S,D>::zm_transport_tracer(
   const uview_1d<const Real>& eu,         // mass entraining from updraft
   const uview_1d<const Real>& ed,         // mass entraining from downdraft
   const uview_1d<const Real>& dp,         // delta pressure between interfaces
-  const Int& jt,                          // index of cloud top for each column
-  const Int& mx,                          // index of cloud top for each column
-  const Int& ideep,                       // gathering array
-  const Int& il1g,                        // gathered min ncol index
-  const Int& il2g,                        // gathered max ncol index
+  const Int& jt,                          // index of cloud top for this column
+  const Int& mx,                          // index of cloud bottom for this column
+  const Int& ktm,                         // Highest top level for any column
+  const Int& kbm,                         // Highest bottom level for any column
   const uview_2d<const Real>& fracis,     // fraction of tracer that is insoluble
   const uview_1d<const Real>& dpdry,      // delta pressure between interfaces
   const Real& dt,                         // model time increment)
   // Outputs
   const uview_2d<Real>& dqdt)             // output tendency array
 {
-  constexpr Real small = 1.e-36;
-  constexpr Real cdifr_min = 1.e-6;
-  constexpr Real maxc_factor = 1.e-12;
-  constexpr Real flux_factor = 1.e-12;
-  constexpr Real mbsth = 1.e-15;
-
   // Allocate temporary arrays (no pcols dimension)
   uview_1d<Real> chat, cond, const_arr, fisg, conu, dcondt, dutmp, eutmp, edtmp, dptmp;
   workspace.template take_many_contiguous_unsafe<10>(
@@ -57,10 +50,20 @@ void Functions<S,D>::zm_transport_tracer(
 
     // Initialize temporary arrays (always use moist formulation)
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, pver), [&] (const Int& k) {
-      dptmp(k) = dp(k);
-      dutmp(k) = du(k);
-      eutmp(k) = eu(k);
-      edtmp(k) = ed(k);
+      // if (cnst_get_type_byind(m).eq.'dry') then
+      if (false) { // dry, assume false for now
+        const Real ratio = dp(k)/dpdry(k);
+        dptmp(k) = dpdry(k);
+        dutmp(k) = du(k) * ratio;
+        eutmp(k) = eu(k) * ratio;
+        edtmp(k) = ed(k) * ratio;
+      }
+      else {
+        dptmp(k) = dp(k);
+        dutmp(k) = du(k);
+        eutmp(k) = eu(k);
+        edtmp(k) = ed(k);
+      }
       // Gather up the constituent and set tend to zero
       const_arr(k) = q(k, m);
       fisg(k) = fracis(k, m);
@@ -79,13 +82,13 @@ void Functions<S,D>::zm_transport_tracer(
       if (minc < 0) {
         cdifr = 0.0;
       } else {
-        cdifr = std::abs(const_arr(k) - const_arr(km1)) / ekat::impl::max(maxc, small);
+        cdifr = std::abs(const_arr(k) - const_arr(km1)) / ekat::impl::max(maxc, ZMC::small);
       }
 
       // If the two layers differ significantly use a geometric averaging
-      if (cdifr > cdifr_min) {
-        const Real cabv = ekat::impl::max(const_arr(km1), maxc*maxc_factor);
-        const Real cbel = ekat::impl::max(const_arr(k), maxc*maxc_factor);
+      if (cdifr > ZMC::cdifr_min) {
+        const Real cabv = ekat::impl::max(const_arr(km1), maxc*ZMC::maxc_factor);
+        const Real cbel = ekat::impl::max(const_arr(k), maxc*ZMC::maxc_factor);
         chat(k) = std::log(cabv/cbel) / (cabv-cbel) * cabv * cbel;
       } else { // Small diff, so just arithmetic mean
         chat(k) = ZMC::half * (const_arr(k) + const_arr(km1));
@@ -103,10 +106,10 @@ void Functions<S,D>::zm_transport_tracer(
     const Int kk = pver - 1;
     Kokkos::single(Kokkos::PerTeam(team), [&] {
       const Real mupdudp = mu(kk) + dutmp(kk) * dptmp(kk);
-      if (mupdudp > mbsth) {
+      if (mupdudp > ZMC::mbsth) {
         conu(kk) = (eutmp(kk) * fisg(kk) * const_arr(kk) * dptmp(kk)) / mupdudp;
       }
-      if (md(1) < -mbsth) {
+      if (md(1) < -ZMC::mbsth) {
         cond(1) = (-edtmp(0) * fisg(0) * const_arr(0) * dptmp(0)) / md(1);
       }
     });
@@ -117,7 +120,7 @@ void Functions<S,D>::zm_transport_tracer(
       for (Int kk = pver-2; kk >= 0; --kk) {
         const Int kkp1 = ekat::impl::min(pver-1, kk+1);
         const Real mupdudp = mu(kk) + dutmp(kk) * dptmp(kk);
-        if (mupdudp > mbsth) {
+        if (mupdudp > ZMC::mbsth) {
           conu(kk) = (mu(kkp1) * conu(kkp1) + eutmp(kk) * fisg(kk) * const_arr(kk) * dptmp(kk)) / mupdudp;
         }
       }
@@ -127,7 +130,7 @@ void Functions<S,D>::zm_transport_tracer(
     Kokkos::single(Kokkos::PerTeam(team), [&] {
       for (Int k = 2; k < pver; ++k) {
         const Int km1 = ekat::impl::max(0, k-1);
-        if (md(k) < -mbsth) {
+        if (md(k) < -ZMC::mbsth) {
           cond(k) = (md(km1) * cond(km1) - edtmp(km1) * fisg(km1) * const_arr(km1) * dptmp(km1)) / md(k);
         }
       }
@@ -136,7 +139,7 @@ void Functions<S,D>::zm_transport_tracer(
 
     // Compute tendencies from cloud top to bottom
     Kokkos::single(Kokkos::PerTeam(team), [&] {
-      for (Int k = jt; k < pver; ++k) {
+      for (Int k = ktm; k < pver; ++k) {
         const Int km1 = ekat::impl::max(0, k-1);
         const Int kp1 = ekat::impl::min(pver-1, k+1);
 
@@ -146,7 +149,7 @@ void Functions<S,D>::zm_transport_tracer(
                            - (md(kp1) * cond(kp1) + md(k) * ekat::impl::min(chat(k), const_arr(k)));
 
         Real netflux = fluxin - fluxout;
-        if (std::abs(netflux) < ekat::impl::max(fluxin, fluxout) * flux_factor) {
+        if (std::abs(netflux) < ekat::impl::max(fluxin, fluxout) * ZMC::flux_factor) {
           netflux = 0.0;
         }
         dcondt(k) = netflux / dptmp(k);
@@ -156,7 +159,7 @@ void Functions<S,D>::zm_transport_tracer(
 
     // Handle cloud base levels
     Kokkos::single(Kokkos::PerTeam(team), [&] {
-      for (Int k = mx; k < pver; ++k) {
+      for (Int k = kbm; k < pver; ++k) {
         const Int km1 = ekat::impl::max(0, k-1);
         if (k == mx) {
           // limit fluxes outside convection to mass in appropriate layer
@@ -165,7 +168,7 @@ void Functions<S,D>::zm_transport_tracer(
           const Real fluxin = mu(k) * ekat::impl::min(chat(k), const_arr(km1)) - md(k) * cond(k);
           const Real fluxout = mu(k) * conu(k) - md(k) * ekat::impl::min(chat(k), const_arr(k));
           Real netflux = fluxin - fluxout;
-          if (std::abs(netflux) < ekat::impl::max(fluxin, fluxout) * flux_factor) {
+          if (std::abs(netflux) < ekat::impl::max(fluxin, fluxout) * ZMC::flux_factor) {
             netflux = 0.0;
           }
           dcondt(k) = netflux / dptmp(k);

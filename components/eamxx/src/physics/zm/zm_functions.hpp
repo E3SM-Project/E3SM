@@ -80,6 +80,16 @@ struct Functions {
     static inline constexpr Real tol_eps   = 3.e-8; // small value for tolerance calculation
 
     static inline constexpr Real half = 0.5; // Useful for bfb with fortran
+
+    static inline constexpr Real small = 1.e-36; // a small number to avoid division by zero
+
+    static inline constexpr Real cdifr_min = 1.e-6; // minimum layer difference for geometric averaging
+
+    static inline constexpr Real maxc_factor = 1.e-12; // ?
+
+    static inline constexpr Real flux_factor = 1.e-12; // ?
+
+    static inline constexpr Real mbsth = 1.e-15; // threshold below which we treat the mass fluxes as zero (in mb/s)
   };
 
   //----------------------------------------------------------------------------
@@ -360,11 +370,10 @@ struct Functions {
     const uview_1d<const Real>& eu,         // mass entraining from updraft
     const uview_1d<const Real>& ed,         // mass entraining from downdraft
     const uview_1d<const Real>& dp,         // delta pressure between interfaces
-    const Int& jt,                          // index of cloud top for each column
-    const Int& mx,                          // index of cloud top for each column
-    const Int& ideep,                       // gathering array
-    const Int& il1g,                        // gathered min ncol index
-    const Int& il2g,                        // gathered max ncol index
+    const Int& jt,                          // index of cloud top for this column
+    const Int& mx,                          // index of cloud bottom for this column
+    const Int& ktm,                         // Highest top level for any column
+    const Int& kbm,                         // Highest bottom level for any column
     const uview_2d<const Real>& fracis,     // fraction of tracer that is insoluble
     const uview_1d<const Real>& dpdry,      // delta pressure between interfaces
     const Real& dt,                         // model time increment)

@@ -128,6 +128,23 @@ struct ZmTransportTracerData : public PhysicsTestData {
     shift_int_scalar<D>(il1g);
     shift_int_scalar<D>(il2g);
   }
+
+  template <typename Engine>
+  void randomize(Engine& engine)
+  {
+    PhysicsTestData::randomize(engine);
+
+    // We don't want ideep random, we want it to match current col for now
+    for (Int i = 0; i < pcols; ++i) {
+      ideep[i] = i;
+    }
+
+    // We don't want jt or mx to be random. Those represent cloud tops and bottoms within pver
+    for (Int i = 0; i < pcols; ++i) {
+      jt[i] = i + 1;
+      mx[i] = jt[i] + pver / 2;
+    }
+  }
 };
 
 // Glue functions for host test data. We can call either fortran or CXX with this data (_f -> fortran)

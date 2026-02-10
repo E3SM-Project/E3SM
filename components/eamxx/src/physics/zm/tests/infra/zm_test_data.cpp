@@ -13,6 +13,18 @@ using scream::Int;
 // A C++ interface to ZM fortran calls and vice versa
 //
 
+using MinPair = Kokkos::pair<int, int>;
+
+// 1. Specialize the identity so Kokkos knows how to start the Min reduction
+namespace Kokkos {
+template<>
+struct reduction_identity<MinPair> {
+  KOKKOS_FORCEINLINE_FUNCTION static MinPair min() {
+    return MinPair(INT_MAX, INT_MAX);
+  }
+};
+}
+
 namespace scream {
 namespace zm {
 
@@ -177,6 +189,7 @@ void zm_transport_tracer_f(ZmTransportTracerData& d)
   d.transition<ekat::TransposeDirection::c2f>();
   zm_common_init_f(); // Might need more specific init
   zm_transport_tracer_bridge_f(d.pcols, d.pver, d.doconvtran, d.q, d.ncnst, d.mu, d.md, d.du, d.eu, d.ed, d.dp, d.jt, d.mx, d.ideep, d.il1g, d.il2g, d.fracis, d.dqdt, d.dpdry, d.dt);
+  zm_common_finalize_f();
   d.transition<ekat::TransposeDirection::f2c>();
 }
 
@@ -226,10 +239,23 @@ void zm_transport_tracer(ZmTransportTracerData& d)
 
   // unpack data scalars because we do not want the lambda to capture d
   const Real dt = d.dt;
-  const Int il1g = d.il1g;
-  const Int il2g = d.il2g;
   const Int ncnst = d.ncnst;
   const Int pver = d.pver;
+
+  Int ktm, kbm;
+  MinPair result;
+
+  // Perform the reduction
+  Kokkos::RangePolicy<ExeSpace> rpolicy(0, d.pcols);
+  Kokkos::parallel_reduce("FindMins", rpolicy, KOKKOS_LAMBDA(const int i, MinPair& update) {
+    // Update the first element of the pair
+    if (jt_d(i) < update.first)  update.first = jt_d(i);
+    // Update the second element of the pair
+    if (mx_d(i) < update.second) update.second = mx_d(i);
+  }, Kokkos::Min<MinPair>(result));
+
+  ktm = result.first;
+  kbm = result.second;
 
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const Int i = team.league_rank();
@@ -263,9 +289,8 @@ void zm_transport_tracer(ZmTransportTracerData& d)
       dp_c,
       jt_d(i),
       mx_d(i),
-      ideep_d(i),
-      il1g,
-      il2g,
+      ktm,
+      kbm,
       fracis_c,
       dpdry_c,
       dt,
