@@ -174,7 +174,7 @@ Create a PR from branch to cice-consortium/icepack -b main.
 
 Once the PR has been tested and merged into the main Icepack codebase, a new PR is submitted to E3SM.
 
-More extensive documentation of this workflow tool used for the Icepack merge project is available [here](https://e3sm.atlassian.net/wiki/spaces/pd/pages/3450339435/Project+Workflow)
+[An extensive example of this workflow](https://e3sm.atlassian.net/wiki/spaces/pd/pages/3450339435/Project+Workflow) is available.
 
 ## CICE-QC Quality Control Testing
 
