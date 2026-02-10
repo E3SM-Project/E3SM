@@ -2,6 +2,7 @@
 #define OMEGA_HORZOPERATORS_H
 
 #include "DataTypes.h"
+#include "GlobalConstants.h"
 #include "HorzMesh.h"
 #include "HorzUtil.h"
 
@@ -255,7 +256,7 @@ class SecondDerivativeOnCell {
          const Real xx    = x * x;
          const Real xy    = x * y;
          const Real yy    = y * y;
-         for (int J = 0; J <= NEdges; ++J) 
+         for (int J = 0; J <= NEdges; ++J)
             DerivTwo(J, Ind, IEdge) = 2._Real * xx * B(3, J) +
                                       2._Real * xy * B(4, J) +
                                       2._Real * yy * B(5, J);
@@ -341,7 +342,7 @@ class SecondDerivativeOnCell {
        const Array1DReal ZVertex, const Array1DI4 CellList, Array1DReal XP,
        Array1DReal YP, Array1DReal Angle2D, Real &ThetaAbs) {
       const Real length_scale = 1._Real;
-      const Real sphereRadius = distance(XCell(0), YCell(0), ZCell(0));
+      const Real sphereRadius = REarth;
       Real XC[MaxMaxEdges]    = {};
       Real YC[MaxMaxEdges]    = {};
       Real ZC[MaxMaxEdges]    = {};

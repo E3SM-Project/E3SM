@@ -85,8 +85,8 @@ TracerHighOrderHorzAdvOnCell::TracerHighOrderHorzAdvOnCell(
     const HorzMesh *Mesh, const VertCoord *VCoord)
     : HorzontalMesh(Mesh),
       NAdvCellsForEdge("NumberOfCellsContribToAdvectionAtEdge",
-                       Mesh->NEdgesOwned),
-      AdvCellsForEdge("IndexOfCellsContributingToAdvection", Mesh->NEdgesOwned,
+                       Mesh->NEdgesAll),
+      AdvCellsForEdge("IndexOfCellsContributingToAdvection", Mesh->NEdgesAll,
                       Mesh->MaxEdges2 + 2),
       AdvMaskHighOrder("MaskForHighOrderAdvectionTerms", Mesh->NEdgesAll),
       AdvCoefs("CommonAdvectionCoefficients", Mesh->MaxEdges2 + 2,
@@ -122,11 +122,10 @@ TracerHyperDiffOnCell::TracerHyperDiffOnCell(const HorzMesh *Mesh,
       MaxLayerEdgeTop(VCoord->MaxLayerEdgeTop) {}
 
 void TracerHighOrderHorzAdvOnCell::init() {
-   const HorzMesh *Mesh   = this->HorzontalMesh;
-   const auto MaxEdges2   = Mesh->MaxEdges2;
-   const auto NEdgesAll   = Mesh->NEdgesAll;
-   const auto NCellsAll   = Mesh->NCellsAll;
-   const auto NEdgesOwned = Mesh->NEdgesOwned;
+   const HorzMesh *Mesh = this->HorzontalMesh;
+   const auto MaxEdges2 = Mesh->MaxEdges2;
+   const auto NEdgesAll = Mesh->NEdgesAll;
+   const auto NCellsAll = Mesh->NCellsAll;
    // Allocate Kokkos arrays in member data
 
    SecondDerivativeOnCell secondDerivativeOnCell(Mesh);
@@ -141,8 +140,7 @@ void TracerHighOrderHorzAdvOnCell::init() {
                                              AdvCoefs, AdvCoefs3rd);
    Kokkos::fence();
    parallelFor(
-       {NEdgesOwned},
-       KOKKOS_LAMBDA(int IEdge) { masksAndCoefficients(IEdge); });
+       {NEdgesAll}, KOKKOS_LAMBDA(int IEdge) { masksAndCoefficients(IEdge); });
    Kokkos::fence();
 }
 } // end namespace OMEGA
