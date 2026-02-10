@@ -222,6 +222,7 @@ void zm_transport_tracer(ZmTransportTracerData& d)
   const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.pcols, d.pver);
 
   WSM wsm(d.pver, 10, policy);
+  ZMF::ZmRuntimeOpt init_cp = ZMF::s_common_init;
 
   // unpack data scalars because we do not want the lambda to capture d
   const Real dt = d.dt;
@@ -249,6 +250,7 @@ void zm_transport_tracer(ZmTransportTracerData& d)
     ZMF::zm_transport_tracer(
       team,
       wsm.get_workspace(team),
+      init_cp,
       pver,
       doconvtran_d,
       q_c,

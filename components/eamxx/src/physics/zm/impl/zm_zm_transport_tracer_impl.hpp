@@ -17,6 +17,7 @@ void Functions<S,D>::zm_transport_tracer(
   // Inputs
   const MemberType& team,
   const Workspace& workspace,
+  const ZmRuntimeOpt& runtime_opt,
   const Int& pver,                        // number of mid-point levels
   const uview_1d<const bool>& doconvtran, // flag for doing convective transport
   const uview_2d<const Real>& q,          // tracer array (including water vapor)
@@ -158,6 +159,9 @@ void Functions<S,D>::zm_transport_tracer(
       for (Int k = mx; k < pver; ++k) {
         const Int km1 = ekat::impl::max(0, k-1);
         if (k == mx) {
+          // limit fluxes outside convection to mass in appropriate layer
+          // these limiters are probably only safe for positive definite quantitities
+          // it assumes that mu and md already satify a courant number limit of 1
           const Real fluxin = mu(k) * ekat::impl::min(chat(k), const_arr(km1)) - md(k) * cond(k);
           const Real fluxout = mu(k) * conu(k) - md(k) * ekat::impl::min(chat(k), const_arr(k));
           Real netflux = fluxin - fluxout;
@@ -173,7 +177,7 @@ void Functions<S,D>::zm_transport_tracer(
     team.team_barrier();
 
     // Conservation check for ZM microphysics
-    if (s_common_init.zm_microp) {
+    if (runtime_opt.zm_microp) {
       Kokkos::single(Kokkos::PerTeam(team), [&] {
         for (Int k = jt; k <= mx; ++k) {
           if (dcondt(k) * dt + const_arr(k) < 0.0) {
