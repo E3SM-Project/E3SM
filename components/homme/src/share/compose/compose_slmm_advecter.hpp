@@ -295,7 +295,7 @@ private:
   Geometry::Type geometry_;
   LocalMeshesH local_mesh_h_;
   LocalMeshesD local_mesh_d_;
-  typename LocalMeshesD::HostMirror local_mesh_m_;
+  typename LocalMeshesD::host_mirror_type local_mesh_m_;
   // For CISL:
   const Int tq_order_;
   // For recovery from get_src_cell failure:

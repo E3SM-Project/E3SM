@@ -569,7 +569,7 @@ int ComposeTransportImpl::run_trajectory_unit_tests () {
           test_reconstruct_and_limit_dp());
 }
 
-ComposeTransport::TestDepView::HostMirror ComposeTransportImpl::
+ComposeTransport::TestDepView::host_mirror_type ComposeTransportImpl::
 test_trajectory (Real t0, Real t1, const bool independent_time_steps) {
   using Kokkos::create_mirror_view;
   using Kokkos::deep_copy;

@@ -74,7 +74,7 @@ void ElementsState::randomize(const int seed,
   // Note: to avoid errors in the equation of state, we need phi to be increasing.
   //       Rather than using a constraint (which may call the function many times,
   //       we simply ask that there are no duplicates, then we sort it later.
-  auto sort_and_chek = [](const ExecViewManaged<Real[NUM_PHYSICAL_LEV]>::HostMirror v)->bool {
+  auto sort_and_chek = [](const ExecViewManaged<Real[NUM_PHYSICAL_LEV]>::host_mirror_type v)->bool {
     Real* start = reinterpret_cast<Real*>(v.data());
     Real* end   = reinterpret_cast<Real*>(v.data()) + NUM_PHYSICAL_LEV;
     std::sort(start,end);
@@ -132,7 +132,7 @@ void ElementsState::randomize(const int seed,
   // Note: to avoid errors in the equation of state, we need phi to be increasing.
   //       Rather than using a constraint (which may call the function many times,
   //       we simply ask that there are no duplicates, then we sort it later.
-  auto sort_and_chek = [](const ExecViewManaged<Scalar[NUM_LEV_P]>::HostMirror v)->bool {
+  auto sort_and_chek = [](const ExecViewManaged<Scalar[NUM_LEV_P]>::host_mirror_type v)->bool {
     Real* start = reinterpret_cast<Real*>(v.data());
     Real* end   = reinterpret_cast<Real*>(v.data()) + NUM_LEV_P*VECTOR_SIZE;
     std::sort(start,end);
@@ -261,7 +261,7 @@ void ElementsState::randomize(const int seed,
   // Note: to avoid errors in the equation of state, we need phi to be increasing.
   //       Rather than using a constraint (which may call the function many times,
   //       we simply ask that there are no duplicates, then we sort it later.
-  auto sort_and_chek = [](const ExecViewManaged<Scalar[NUM_LEV_P]>::HostMirror v)->bool {
+  auto sort_and_chek = [](const ExecViewManaged<Scalar[NUM_LEV_P]>::host_mirror_type v)->bool {
     Real* start = reinterpret_cast<Real*>(v.data());
     Real* end   = reinterpret_cast<Real*>(v.data()) + NUM_LEV_P*VECTOR_SIZE;
     std::sort(start,end);

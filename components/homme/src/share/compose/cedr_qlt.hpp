@@ -98,13 +98,13 @@ public:
       };
     };
 
-    Arrays<typename ConstUnmanagedIntList::HostMirror> a_h;
+    Arrays<typename ConstUnmanagedIntList::host_mirror_type> a_h;
     Arrays<ConstUnmanagedIntList> a_d;
 
     void init(const MetaDataBuilder& mdb);
 
   private:
-    Arrays<typename IntList::HostMirror> a_h_;
+    Arrays<typename IntList::host_mirror_type> a_h_;
     Arrays<IntList> a_d_;
   };
 
@@ -187,7 +187,7 @@ public:
 
 protected:
   static void init(const std::string& name, IntList& d,
-                   typename IntList::HostMirror& h, size_t n);
+                   typename IntList::host_mirror_type& h, size_t n);
 
   void init(const Parallel::Ptr& p, const Int& ncells, const tree::Node::Ptr& tree);
 
