@@ -1149,8 +1149,9 @@ contains
                det(p)  = max(del(p),del2(p))
                num_iter(p) = real(itlef,r8)
                
-               if (.not. (det(p) < dtmin .and. dele(p) < dlemin) .or. &
-                    (implicit_stress .and. abs(tau_diff(p)) >= dtaumin)) then
+               if ( (.not. (det(p) < dtmin .and. dele(p) < dlemin) .or. &
+                    (implicit_stress .and. abs(tau_diff(p)) >= dtaumin)) .and. &
+                    (itlef < itmax)) then
                   converge_tveg = .false.
                else
                   converge_tveg = .true.
@@ -1177,7 +1178,7 @@ contains
 
             istoma_converge_if: if( do_b4b .or. &
                                     (del_gs < max_del_gs ) .or.  &
-                                    itstoma>itmax_stomata ) then
+                                    (itstoma>=itmax_stomata) ) then
                converge_stoma = .true.
                
             else
