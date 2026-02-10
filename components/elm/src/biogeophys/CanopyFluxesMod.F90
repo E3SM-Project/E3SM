@@ -129,8 +129,6 @@ contains
     integer  ::  time
     !
     ! !LOCAL VARIABLES:
-    real(r8), pointer   :: bsun(:)          ! sunlit canopy transpiration wetness factor (0 to 1)
-    real(r8), pointer   :: bsha(:)          ! shaded canopy transpiration wetness factor (0 to 1)
     real(r8), parameter :: btran0 = 0.0_r8  ! initial value
     real(r8), parameter :: zii = 1000.0_r8  ! convective boundary layer height [m]
     real(r8), parameter :: beta = 1.0_r8    ! coefficient of convective velocity [-]
@@ -481,10 +479,7 @@ contains
          begp                 => bounds%begp                               , &
          endp                 => bounds%endp                                 &
          )
-      if (use_hydrstress) then
-        bsun                    => energyflux_vars%bsun_patch ! Output:[real(r8) (:)   ]  sunlit canopy transpiration wetness factor (0 to 1)
-        bsha                    => energyflux_vars%bsha_patch ! Output:[real(r8) (:)   ]  sunlit canopy transpiration wetness factor (0 to 1)
-      end if
+
       ! Determine step size
       dtime = dtime_mod
       !yr = year_curr; mon = mon_curr; day = day_curr;
@@ -929,8 +924,8 @@ contains
 
                if(do_b4b)then
                   call WrapPhotosynthesis(bounds,p,svpts,eah,o2,co2,rb,dayl_factor, &
-                       bsun,bsha,btran,qsatl,qaf,atm2lnd_vars,canopystate_vars,photosyns_vars, &
-                       soilstate_vars, surfalb_vars,solarabs_vars,cnstate_vars)
+                       btran,qsatl,qaf,atm2lnd_vars,canopystate_vars,photosyns_vars, &
+                       soilstate_vars, surfalb_vars,solarabs_vars,cnstate_vars,energyflux_vars)
                end if
                   
                ! Sensible heat conductance for air, leaf and ground
@@ -1203,8 +1198,8 @@ contains
                ! as constant during this inner loop (tveg) iteration
 
                call WrapPhotosynthesis(bounds,p,svpts,eah,o2,co2,rb,dayl_factor, &
-                    bsun,bsha,btran,qsatl,qaf,atm2lnd_vars,canopystate_vars,photosyns_vars, &
-                    soilstate_vars, surfalb_vars,solarabs_vars,cnstate_vars)
+                    btran,qsatl,qaf,atm2lnd_vars,canopystate_vars,photosyns_vars, &
+                    soilstate_vars, surfalb_vars,solarabs_vars,cnstate_vars,energyflux_vars)
                
             end if istoma_converge_if
 
@@ -1338,8 +1333,8 @@ contains
   ! =========================================================================
   
   subroutine WrapPhotosynthesis(bounds,p,svpts,eah,o2,co2,rb,dayl_factor, &
-       bsun,bsha,btran,qsatl,qaf,atm2lnd_vars,canopystate_vars,photosyns_vars, &
-       soilstate_vars, surfalb_vars,solarabs_vars,cnstate_vars)
+       btran,qsatl,qaf,atm2lnd_vars,canopystate_vars,photosyns_vars, &
+       soilstate_vars, surfalb_vars,solarabs_vars,cnstate_vars,energyflux_vars)
 
     
     type(bounds_type)         , intent(in)    :: bounds
@@ -1350,8 +1345,6 @@ contains
     real(r8) :: co2(bounds%begp:bounds%endp)
     real(r8) :: rb(bounds%begp:bounds%endp)
     real(r8) :: dayl_factor(bounds%begp:bounds%endp)
-    real(r8) :: bsun(bounds%begp:bounds%endp)
-    real(r8) :: bsha(bounds%begp:bounds%endp)
     real(r8) :: btran(bounds%begp:bounds%endp)
     real(r8) :: qsatl(bounds%begp:bounds%endp)
     real(r8) :: qaf(bounds%begp:bounds%endp)
@@ -1363,7 +1356,7 @@ contains
     type(surfalb_type)        , intent(inout) :: surfalb_vars
     type(solarabs_type)       , intent(inout) :: solarabs_vars
     type(cnstate_type)        , intent(inout) :: cnstate_vars
-
+    type(energyflux_type)     , intent(inout) :: energyflux_vars
 
     integer :: begp,endp
 
@@ -1384,8 +1377,9 @@ contains
     else ! not use_fates
        if ( use_hydrstress ) then
           call PhotosynthesisHydraulicStress (bounds, 1, [p], &
-               svpts(begp:endp), eah(begp:endp), o2(begp:endp), co2(begp:endp), rb(begp:endp), bsun(begp:endp), &
-               bsha(begp:endp), btran(begp:endp), dayl_factor(begp:endp), &
+               svpts(begp:endp), eah(begp:endp), o2(begp:endp), co2(begp:endp), rb(begp:endp), &
+               energyflux_vars%bsun_patch(begp:endp), energyflux_vars%bsha_patch(begp:endp), &
+               btran(begp:endp), dayl_factor(begp:endp), &
                qsatl(begp:endp), qaf(begp:endp),     &
                atm2lnd_vars, soilstate_vars, surfalb_vars, solarabs_vars,    &
                canopystate_vars, photosyns_vars)
