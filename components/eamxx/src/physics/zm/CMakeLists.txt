@@ -64,6 +64,7 @@ target_include_directories(zm PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/fortran_bridge
   ${CMAKE_CURRENT_BINARY_DIR}/modules
   ${PATH_TO_LEGACY_ZM}
+  ${PATH_TO_LEGACY_ZM}/..
 )
 target_link_libraries(zm eamxx_physics_share scream_share csm_share)
 

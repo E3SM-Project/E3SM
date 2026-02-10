@@ -1,3 +1,5 @@
+#include "bfb_math.inc"
+
 module zm_transport
    !----------------------------------------------------------------------------
    !
@@ -5,7 +7,8 @@ module zm_transport
    !
    !----------------------------------------------------------------------------
 #ifdef SCREAM_CONFIG_IS_CMAKE
-   use zm_eamxx_bridge_params, only: r8, btype
+  use zm_eamxx_bridge_params, only: r8, btype
+  use physics_share_f2c, only: scream_log
 #else
    use shr_kind_mod,     only: r8=>shr_kind_r8
    integer,parameter,public :: btype = kind(.true.)
@@ -160,7 +163,7 @@ subroutine zm_transport_tracer( pcols, pver, &
                if (cdifr > cdifr_min) then
                   cabv = max(const(i,km1),maxc*maxc_factor)
                   cbel = max(const(i,k  ),maxc*maxc_factor)
-                  chat(i,k) = log(cabv/cbel)/(cabv-cbel)*cabv*cbel
+                  chat(i,k) = bfb_log(cabv/cbel)/(cabv-cbel)*cabv*cbel
                else ! Small diff, so just arithmetic mean
                   chat(i,k) = 0.5_r8*( const(i,k) + const(i,km1) )
                end if
