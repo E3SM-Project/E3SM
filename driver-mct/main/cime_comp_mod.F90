@@ -729,6 +729,9 @@ contains
 #if defined(MPINIT_WORKAROUND) && (MPINIT_WORKAROUND == 1)
     use atm_comp_mct, only: atm_init_hip_mct
 #endif
+#ifndef NO_MPIMOD
+    use mpi
+#endif
     !----------------------------------------------------------
     !| Initialize MCT and MPI communicators and IO
     !----------------------------------------------------------
@@ -748,13 +751,20 @@ contains
     integer(i8) :: beg_count          ! start time
     integer(i8) :: end_count          ! end time
     integer(i8) :: irtc_rate          ! factor to convert time to seconds
+
+    integer :: tmode ! Thread mode provided by the MPI library
     
     beg_count = shr_sys_irtc(irtc_rate)
     
 #if defined(MPINIT_WORKAROUND) && (MPINIT_WORKAROUND == 1)
     call atm_init_hip_mct()
 #endif
+#if defined(MPI_INIT_THREADED)
+    call mpi_init_thread(MPI_THREAD_MULTIPLE, tmode, ierr)
+#else
     call mpi_init(ierr)
+#endif
+
     call shr_mpi_chkerr(ierr,subname//' mpi_init')
 
     end_count = shr_sys_irtc(irtc_rate)

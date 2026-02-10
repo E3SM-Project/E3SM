@@ -80,6 +80,12 @@ def buildlib(bldroot, installpath, case):
         os.environ["ADIOS2_DIR"] = os.environ["ADIOS2_ROOT"]
     if "BLOSC2_ROOT" in os.environ:
         os.environ["Blosc2_DIR"] = os.environ["BLOSC2_ROOT"]
+    if "H5Z_BLOSC2_ROOT" in os.environ:
+        os.environ["H5Z_BLOSC2_DIR"] = os.environ["H5Z_BLOSC2_ROOT"]
+    if "ZFP_ROOT" in os.environ:
+        os.environ["ZFP_DIR"] = os.environ["ZFP_ROOT"]
+    if "H5Z_ZFP_ROOT" in os.environ:
+        os.environ["H5Z_ZFP_DIR"] = os.environ["H5Z_ZFP_ROOT"]
 
     # If variable PIO_VERSION_MAJOR is defined in the environment then
     # we assume that PIO is installed on the system
@@ -145,8 +151,16 @@ def buildlib(bldroot, installpath, case):
     # elif which_h5dump is not None:
     #     os.environ["HDF5"] = os.path.dirname(os.path.dirname(which_h5dump))
 
+    hdf5c_found = False
     if "HDF5_ROOT" in os.environ:
-       cmake_opts += "-DWITH_HDF5:BOOL=ON "
+        cmake_opts += "-DWITH_HDF5:BOOL=ON "
+        if "BLOSC2_ROOT" in os.environ and "H5Z_BLOSC2_ROOT" in os.environ:
+            cmake_opts += "-DHDF5_USE_COMPRESSION:BOOL=ON "
+            # Uncomment to enable flush after HDF5 write (useful when HDF5 runs out of memory)
+            #cmake_opts += "-DSPIO_HDF5_FLUSH_AFTER_COLL_WR:BOOL=ON "
+            # Note: Use regex to disable compression for selected variables, if needed
+            # e.g. cmake_opts += "-DSPIO_OVERRIDE_HDF5_COMPRESSION_VNAME_REGEX='(decomp_type|numlev|hwrt_prec|avgflag|fillvalue|meridional_complement|zonal_complement)' "
+            hdf5c_found = True
 
     # Same deal with libz and szip
     if "ZLIB_ROOT" in os.environ:
@@ -294,6 +308,8 @@ def buildlib(bldroot, installpath, case):
             valid_values += ",adiosc"
     if hdf5_found:
         valid_values += ",hdf5"
+        if hdf5c_found:
+            valid_values += ",hdf5c"
 
     _set_pio_valid_values(case, valid_values)
 
