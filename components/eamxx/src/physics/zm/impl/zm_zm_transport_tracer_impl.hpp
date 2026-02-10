@@ -172,6 +172,52 @@ void Functions<S,D>::zm_transport_tracer(
     });
     team.team_barrier();
 
+    // Conservation check for ZM microphysics
+    if (s_common_init.zm_microp) {
+      Kokkos::single(Kokkos::PerTeam(team), [&] {
+        for (Int k = jt; k <= mx; ++k) {
+          if (dcondt(k) * dt + const_arr(k) < 0.0) {
+            Real negadt = dcondt(k) + const_arr(k) / dt;
+            dcondt(k) = -const_arr(k) / dt;
+
+            // Try to redistribute to levels above (k+1 to mx)
+            for (Int kk = k+1; kk <= mx; ++kk) {
+              if (negadt < 0.0 && dcondt(kk) * dt + const_arr(kk) > 0.0) {
+                Real qtmp = dcondt(kk) + negadt * dptmp(k) / dptmp(kk);
+                if (qtmp * dt + const_arr(kk) > 0.0) {
+                  dcondt(kk) = qtmp;
+                  negadt = 0.0;
+                } else {
+                  negadt = negadt + (const_arr(kk) / dt + dcondt(kk)) * dptmp(kk) / dptmp(k);
+                  dcondt(kk) = -const_arr(kk) / dt;
+                }
+              }
+            }
+
+            // Try to redistribute to levels below (k-1 down to jt)
+            for (Int kk = k-1; kk >= jt; --kk) {
+              if (negadt < 0.0 && dcondt(kk) * dt + const_arr(kk) > 0.0) {
+                Real qtmp = dcondt(kk) + negadt * dptmp(k) / dptmp(kk);
+                if (qtmp * dt + const_arr(kk) > 0.0) {
+                  dcondt(kk) = qtmp;
+                  negadt = 0.0;
+                } else {
+                  negadt = negadt + (const_arr(kk) / dt + dcondt(kk)) * dptmp(kk) / dptmp(k);
+                  dcondt(kk) = -const_arr(kk) / dt;
+                }
+              }
+            }
+
+            // If still negative, add back to current level
+            if (negadt < 0.0) {
+              dcondt(k) = dcondt(k) - negadt;
+            }
+          }
+        }
+      });
+      team.team_barrier();
+    }
+
     // Scatter tendency back to output array
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, pver), [&] (const Int& k) {
       dqdt(k, m) = dcondt(k);
