@@ -348,8 +348,6 @@ void Tendencies::computeVelocityTendenciesOnly(
               });
        });
 
-   const Array2DReal &NormalVelEdge = State->NormalVelocity[VelTimeLevel];
-
    // Compute potential vorticity horizontal advection
    const Array2DReal &FluxLayerThickEdge =
        AuxState->LayerThicknessAux.FluxLayerThickEdge;
@@ -473,7 +471,7 @@ void Tendencies::computeVelocityTendenciesOnly(
       Pacer::start("Tend:bottomDrag", 2);
       parallelFor(
           {Mesh->NEdgesAll}, KOKKOS_LAMBDA(int IEdge) {
-             LocBottomDrag(LocNormalVelocityTend, IEdge, NormalVelEdge, KECell,
+             LocBottomDrag(LocNormalVelocityTend, IEdge, NormVelEdge, KECell,
                            MeanLayerThickEdge);
           });
       Pacer::stop("Tend:bottomDrag", 2);
@@ -521,8 +519,9 @@ void Tendencies::computeTracerTendenciesOnly(
        });
 
    // compute tracer horizotal advection
-   const Array2DReal &NormalVelEdge = State->NormalVelocity[VelTimeLevel];
-   const Array3DReal &HTracersEdge  = AuxState->TracerAux.HTracersEdge;
+   Array2DReal NormalVelEdge;
+   State->getNormalVelocity(NormalVelEdge, VelTimeLevel);
+   const Array3DReal &HTracersEdge = AuxState->TracerAux.HTracersEdge;
    if (LocTracerHorzAdv.Enabled) {
       Pacer::start("Tend:tracerHorzAdv", 2);
       parallelForOuter(
@@ -651,9 +650,11 @@ void Tendencies::computeTracerTendencies(
     int VelTimeLevel,               ///< [in] Time level
     TimeInstant Time                ///< [in] Time
 ) {
+   Array2DReal LayerThickCell;
+   Array2DReal NormalVelEdge;
+   State->getLayerThickness(LayerThickCell, ThickTimeLevel);
+   State->getNormalVelocity(NormalVelEdge, VelTimeLevel);
    OMEGA_SCOPE(TracerAux, AuxState->TracerAux);
-   OMEGA_SCOPE(LayerThickCell, State->LayerThickness[ThickTimeLevel]);
-   OMEGA_SCOPE(NormalVelEdge, State->NormalVelocity[VelTimeLevel]);
    OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
    OMEGA_SCOPE(MaxLayerCell, VCoord->MaxLayerCell);
    OMEGA_SCOPE(MinLayerEdgeBot, VCoord->MinLayerEdgeBot);

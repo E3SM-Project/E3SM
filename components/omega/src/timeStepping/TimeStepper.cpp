@@ -477,8 +477,9 @@ void TimeStepper::updateTracersByTend(const Array3DReal &NextTracers,
                                       OceanState *State2, int TimeLevel2,
                                       TimeInterval Coeff) const {
 
-   const auto &LayerThick1 = State1->LayerThickness[TimeLevel1];
-   const auto &LayerThick2 = State2->LayerThickness[TimeLevel2];
+   Array2DReal LayerThick1, LayerThick2;
+   State1->getLayerThickness(LayerThick1, TimeLevel1);
+   State2->getLayerThickness(LayerThick2, TimeLevel2);
 
    OMEGA_SCOPE(TracerTend, Tend->TracerTend);
    const int NTracers = TracerTend.extent(0);
@@ -511,8 +512,9 @@ void TimeStepper::weightTracers(const Array3DReal &NextTracers,
                                 const Array3DReal &CurTracers,
                                 OceanState *CurState, int TimeLevel1) const {
 
-   const Array2DReal &CurThickness = CurState->LayerThickness[TimeLevel1];
-   const int NTracers              = NextTracers.extent(0);
+   Array2DReal CurThickness;
+   CurState->getLayerThickness(CurThickness, TimeLevel1);
+   const int NTracers = NextTracers.extent(0);
    OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
    OMEGA_SCOPE(MaxLayerCell, VCoord->MaxLayerCell);
 
@@ -566,8 +568,9 @@ void TimeStepper::finalizeTracersUpdate(const Array3DReal &NextTracers,
                                         OceanState *State,
                                         int TimeLevel) const {
 
-   const Array2DReal &NextThick = State->LayerThickness[TimeLevel];
-   const int NTracers           = NextTracers.extent(0);
+   Array2DReal NextThick;
+   State->getLayerThickness(NextThick, TimeLevel);
+   const int NTracers = NextTracers.extent(0);
    OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
    OMEGA_SCOPE(MaxLayerCell, VCoord->MaxLayerCell);
 
