@@ -27,7 +27,7 @@
       character (len=StrKIND) :: parent_id = '' !< parent_id attribute, read in from input file.
 
       ! Unique global ID number for this domain
-      integer :: domainID
+      integer :: domainID = 0
 
       ! Pointer to timer root
       type (mpas_timer_root), pointer :: timer_root => null()
