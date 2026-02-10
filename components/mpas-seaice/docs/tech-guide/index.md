@@ -10,7 +10,7 @@ See complete citations in [References](../references.md).
 
 **E3SM v2 Overview**: Golaz et al., JAMES 2022
 
-**Icepack**: Full documentation for E3SM's version of Icepack can be found in [E3SM's Icepack readthedocs](https://e3sm-icepack.readthedocs.io/en/latest).  The most up-to-date documentation from the CICE Consortium's main Icepack repository is [here](https://cice-consortium-icepack.readthedocs.io/en/main).
+**Icepack**: Full documentation for E3SM's version of Icepack can be found in [E3SM's Icepack readthedocs](https://e3sm-icepack.readthedocs.io/en/latest).  The most [up-to-date documentation from the CICE Consortium's main Icepack repository](https://cice-consortium-icepack.readthedocs.io/en/main) is also available.
 
 A comprehensive paper describing MPAS-seaice is in preparation.
 
@@ -60,7 +60,7 @@ Icepack is implemented in MPAS-seaice as a git submodule. Icepack consists of th
 
 Icepack includes sophisticated vertical physics and biogeochemical schemes, which include vertical thermodynamics schemes (Bitz and Lipscomb, 1999; Turner et al., 2013; Turner and Hunke, 2015), melt-pond parameterizations (Flocco et al., 2010; Hunke et al., 2013; Clemens-Sewell et al., in prep), a delta-Eddington radiation scheme (Briegleb and Light, 2007; Holland et al., 2012a), schemes for transport in thickness space (Lipscomb, 2001), and representations of mechanical redistribution (Lipscomb et al., 2007).
 
-Full documentation for E3SM's version of Icepack can be found in [E3SM's Icepack readthedocs](https://e3sm-icepack.readthedocs.io/en/latest).  The most up-to-date documentation from the CICE Consortium's main Icepack repository is [here](https://cice-consortium-icepack.readthedocs.io/en/main).
+Full documentation for E3SM's version of Icepack can be found in [E3SM's Icepack readthedocs](https://e3sm-icepack.readthedocs.io/en/latest).  The most [up-to-date documentation from the CICE Consortium's main Icepack repository](https://cice-consortium-icepack.readthedocs.io/en/main) is also available.
 
 ### Thermodynamics
 
