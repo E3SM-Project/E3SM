@@ -242,11 +242,14 @@ contains
     real(r8) :: o2(bounds%begp:bounds%endp)          ! atmospheric o2 partial pressure (pa)
     real(r8) :: svpts(bounds%begp:bounds%endp)       ! saturation vapor pressure at t_veg (pa)
     real(r8) :: eah(bounds%begp:bounds%endp)         ! canopy air vapor pressure (pa)
+    real(r8) :: rssun_old(bounds%begp:bounds%endp)   ! used for determining convergence via change in resitance
+    real(r8) :: rssha_old(bounds%begp:bounds%endp)   !   from one iteration to the next
     real(r8) :: s_node                               ! vol_liq/eff_porosity
     real(r8) :: smp_node                             ! matrix potential
     real(r8) :: smp_node_lf                          ! F. Li and S. Levis
     real(r8) :: vol_liq                              ! partial volume of liquid water in layer
     integer  :: itlef                                ! counter for leaf temperature iteration [-]
+    integer  :: itstoma                              ! counter for stoma iteration [-]
     integer  :: iter_final                           ! number of iterations used
     integer  :: nmozsgn(bounds%begp:bounds%endp)     ! number of times stability changes sign
     real(r8) :: w                                    ! exp(-LSAI)
@@ -266,9 +269,6 @@ contains
     integer  :: filterp_noveg(bounds%endp-bounds%begp+1) ! bare ground pft filter
     integer  :: fn                                   ! number of values in vegetated pft filter
     integer  :: filterp(bounds%endp-bounds%begp+1)   ! vegetated pft filter
-    integer  :: fnorig                               ! number of values in pft filter copy
-    integer  :: fporig(bounds%endp-bounds%begp+1)    ! temporary filter
-    integer  :: fnold                                ! temporary copy of pft count
     integer  :: f                                    ! filter index
     logical  :: found                                ! error flag for canopy above forcing hgt
     integer  :: index                                ! patch index for error
@@ -334,7 +334,10 @@ contains
     ! to be equal to the maximum allowable stomatal resistance (this number is from fates)
     real(r8),parameter :: max_del_gs =  1._r8/2.e8_r8   ! [m/s]
 
-    integer, parameter, private :: itmax_stomata = 10
+    integer, parameter  :: itmax_stomata = 10
+
+    logical, parameter :: do_b4b = .true.  ! Set this true to reproduce results before
+                                           ! refactoring the patch-loops
     
     !------------------------------------------------------------------------------
 
@@ -774,13 +777,10 @@ contains
          end if
       end if
 
-      fnorig = fn
-      fporig(1:fn) = filterp(1:fn)
-      
       event = 'can_iter'
       call t_start_lnd(event)
 
-      !$OMP PARALLEL DO PRIVATE (f,p,c,t,g,istoma,itlef,converge_stoma, &
+      !$OMP PARALLEL DO PRIVATE (f,p,c,t,g,itstoma,itlef,converge_stoma, &
       !$OMP                      converge_tveg,cf,w,csoilb,ri,csoilcn,  &
       !$OMP                      ricsoilc,wta,wtl,wtshi,wtg0,wtga,rppdry, &
       !$OMP                      efpot,rpp,wtag,wtlq,snow_depth_c,fsno_dl, &
@@ -816,7 +816,7 @@ contains
          iterate_stoma: do while(.not.converge_stoma) 
 
             ! Set counter for leaf temperature iteration (itlef)
-            itlef = 0
+            itlef = 1
             converge_tveg = .false.
             iterate_tveg: do while(.not.converge_tveg)
             
@@ -860,9 +860,10 @@ contains
                end if
                
                cf  = 0.01_r8/(sqrt(uaf(p))*sqrt( dleaf_patch(p) ))
+               
                rb(p)  = 1._r8/(cf*uaf(p))
                rb1(p) = rb(p)
-               
+
                ! Parameterization for variation of csoilc with canopy density from
                ! X. Zeng, University of Arizona
                
@@ -926,6 +927,12 @@ contains
                   end if
                end if
 
+               if(do_b4b)then
+                  call WrapPhotosynthesis(bounds,p,svpts,eah,o2,co2,rb,dayl_factor, &
+                       bsun,bsha,btran,qsatl,qaf,atm2lnd_vars,canopystate_vars,photosyns_vars, &
+                       soilstate_vars, surfalb_vars,solarabs_vars,cnstate_vars)
+               end if
+                  
                ! Sensible heat conductance for air, leaf and ground
                ! Moved the original subroutine in-line...
 
@@ -1173,8 +1180,9 @@ contains
             del_gs = max( abs(1._r8/rssun(p)-1._r8/rssun_old(p)), &
                           abs(1._r8/rssha(p)-1._r8/rssha_old(p)) )
 
-            istoma_converge_if: if( (del_gs < max_del_gs ) &
-                                    .or. itstoma>itmax_stomata ) then
+            istoma_converge_if: if( do_b4b .or. &
+                                    (del_gs < max_del_gs ) .or.  &
+                                    itstoma>itmax_stomata ) then
                converge_stoma = .true.
                
             else
@@ -1183,9 +1191,6 @@ contains
                itstoma = itstoma + 1
                num_iter(p) = num_iter(p) + 1
                
-               ! Reset the inner iteration counter
-               itlef = 0
-
                ! Update the previous resistances
                rssun_old(p) = rssun(p)
                rssha_old(p) = rssha(p)
@@ -1196,50 +1201,10 @@ contains
                ! Instead of updating stomatal conductances
                ! we hold the value calculated in the outer loop
                ! as constant during this inner loop (tveg) iteration
-               if_fates: if ( use_fates ) then
-#ifndef _OPENACC
-                  call alm_fates%wrap_photosynthesis(bounds, 1, filterp(f), &
-                       svpts(begp:endp), eah(begp:endp), o2(begp:endp), &
-                       co2(begp:endp), rb(begp:endp), dayl_factor(begp:endp), &
-                       atm2lnd_vars, canopystate_vars, photosyns_vars)
-#endif
-               else ! not use_fates
-                  if ( use_hydrstress ) then
-                     call PhotosynthesisHydraulicStress (bounds, 1, filterp(f), &
-                          svpts(begp:endp), eah(begp:endp), o2(begp:endp), co2(begp:endp), rb(begp:endp), bsun(begp:endp), &
-                          bsha(begp:endp), btran(begp:endp), dayl_factor(begp:endp), &
-                          qsatl(begp:endp), qaf(begp:endp),     &
-                          atm2lnd_vars, soilstate_vars, surfalb_vars, solarabs_vars,    &
-                          canopystate_vars, photosyns_vars)
-                  else
-                     call Photosynthesis (bounds, 1, filterp(f), &
-                          svpts(begp:endp), eah(begp:endp), o2(begp:endp), co2(begp:endp), rb(begp:endp), btran(begp:endp), &
-                          dayl_factor(begp:endp), atm2lnd_vars,  surfalb_vars, solarabs_vars, &
-                          canopystate_vars, photosyns_vars, 'sun')
-                  end if
 
-                  if ( use_c13 ) then
-                     call Fractionation (bounds, 1, filterp(f), &
-                          cnstate_vars, solarabs_vars, surfalb_vars, photosyns_vars, 1)
-                  endif
-
-                  ! soybean (crop with N fixation)
-                  if (crop(veg_pp%itype(p)) >= 1 .and. nfixer(veg_pp%itype(p)) == 1) then
-                     btran(p) = min(1._r8, btran(p) * 1.25_r8)
-                  end if
-
-                  if ( .not. use_hydrstress ) then
-                     call Photosynthesis (bounds, 1, filterp(f), &
-                          svpts(begp:endp), eah(begp:endp), o2(begp:endp), co2(begp:endp), rb(begp:endp), btran(begp:endp), &
-                          dayl_factor(begp:endp), atm2lnd_vars,surfalb_vars, solarabs_vars, &
-                          canopystate_vars, photosyns_vars, 'sha')
-                  end if
-
-                  if ( use_c13 ) then
-                     call Fractionation (bounds, 1, filterp(f),  &
-                          cnstate_vars, solarabs_vars, surfalb_vars, photosyns_vars, 0)
-                  end if
-               end if if_fates ! end of if use_fates
+               call WrapPhotosynthesis(bounds,p,svpts,eah,o2,co2,rb,dayl_factor, &
+                    bsun,bsha,btran,qsatl,qaf,atm2lnd_vars,canopystate_vars,photosyns_vars, &
+                    soilstate_vars, surfalb_vars,solarabs_vars,cnstate_vars)
                
             end if istoma_converge_if
 
@@ -1247,10 +1212,7 @@ contains
          
       end do patch_loop1
       !$OMP END PARALLEL DO
-      call t_end_lnd(event)
-
-      fn = fnorig
-      filterp(1:fn) = fporig(1:fn)
+      call t_stop_lnd(event)
 
       do f = 1, fn
          p = filterp(f)
@@ -1360,36 +1322,28 @@ contains
          ! Determine total photosynthesis
          call PhotosynthesisTotal(fn, filterp, &
               atm2lnd_vars, cnstate_vars, canopystate_vars, photosyns_vars)
-
-         ! Filter out patches which have small energy balance errors; report others
-
-         fnold = fn
-         fn = 0
-         do f = 1, fnold
-            p = filterp(f)
-            if (abs(err(p)) > 0.1_r8) then
-               fn = fn + 1
-               filterp(fn) = p
-            end if
-         end do
-
-         do f = 1, fn
-            p = filterp(f)
-            write(iulog,*) 'energy balance in canopy ',p,', err=',err(p)
-         end do
-
       end if
+      
+      ! Report high energy balance errors
+      do f = 1, fn
+         p = filterp(f)
+         if (abs(err(p)) > 0.1_r8) then
+            write(iulog,*) 'energy balance in canopy ',p,', err=',err(p)
+         end if
+      end do
 
     end associate
-
-
   end subroutine CanopyFluxes
 
   ! =========================================================================
   
-  subroutine WrapPhotosynthesis(bounds,p,svpts, )
+  subroutine WrapPhotosynthesis(bounds,p,svpts,eah,o2,co2,rb,dayl_factor, &
+       bsun,bsha,btran,qsatl,qaf,atm2lnd_vars,canopystate_vars,photosyns_vars, &
+       soilstate_vars, surfalb_vars,solarabs_vars,cnstate_vars)
 
-
+    
+    type(bounds_type)         , intent(in)    :: bounds
+    integer  :: p                                        ! patch index from begp:endp
     real(r8) :: svpts(bounds%begp:bounds%endp)
     real(r8) :: eah(bounds%begp:bounds%endp)
     real(r8) :: o2(bounds%begp:bounds%endp)
@@ -1410,34 +1364,40 @@ contains
     type(solarabs_type)       , intent(inout) :: solarabs_vars
     type(cnstate_type)        , intent(inout) :: cnstate_vars
 
+
+    integer :: begp,endp
+
+    begp = bounds%begp
+    endp = bounds%endp
     
     ! Instead of updating stomatal conductances
     ! we hold the value calculated in the outer loop
     ! as constant during this inner loop (tveg) iteration
     if_fates: if ( use_fates ) then
 #ifndef _OPENACC
-       call alm_fates%wrap_photosynthesis(bounds, 1, p, &
+
+       call alm_fates%WrapPatchPhotosynthesis(bounds, p, &
             svpts(begp:endp), eah(begp:endp), o2(begp:endp), &
             co2(begp:endp), rb(begp:endp), dayl_factor(begp:endp), &
             atm2lnd_vars, canopystate_vars, photosyns_vars)
 #endif
     else ! not use_fates
        if ( use_hydrstress ) then
-          call PhotosynthesisHydraulicStress (bounds, 1, p, &
+          call PhotosynthesisHydraulicStress (bounds, 1, [p], &
                svpts(begp:endp), eah(begp:endp), o2(begp:endp), co2(begp:endp), rb(begp:endp), bsun(begp:endp), &
                bsha(begp:endp), btran(begp:endp), dayl_factor(begp:endp), &
                qsatl(begp:endp), qaf(begp:endp),     &
                atm2lnd_vars, soilstate_vars, surfalb_vars, solarabs_vars,    &
                canopystate_vars, photosyns_vars)
        else
-          call Photosynthesis (bounds, 1, filterp(f), &
+          call Photosynthesis (bounds, 1, [p], &
                svpts(begp:endp), eah(begp:endp), o2(begp:endp), co2(begp:endp), rb(begp:endp), btran(begp:endp), &
                dayl_factor(begp:endp), atm2lnd_vars,  surfalb_vars, solarabs_vars, &
                canopystate_vars, photosyns_vars, 'sun')
        end if
        
        if ( use_c13 ) then
-          call Fractionation (bounds, 1, filterp(f), &
+          call Fractionation (bounds, 1, [p], &
                cnstate_vars, solarabs_vars, surfalb_vars, photosyns_vars, 1)
        endif
        
@@ -1447,14 +1407,14 @@ contains
        end if
        
        if ( .not. use_hydrstress ) then
-          call Photosynthesis (bounds, 1, filterp(f), &
+          call Photosynthesis (bounds, 1, [p], &
                svpts(begp:endp), eah(begp:endp), o2(begp:endp), co2(begp:endp), rb(begp:endp), btran(begp:endp), &
                dayl_factor(begp:endp), atm2lnd_vars,surfalb_vars, solarabs_vars, &
                canopystate_vars, photosyns_vars, 'sha')
        end if
        
        if ( use_c13 ) then
-          call Fractionation (bounds, 1, filterp(f),  &
+          call Fractionation (bounds, 1, [p],  &
                cnstate_vars, solarabs_vars, surfalb_vars, photosyns_vars, 0)
        end if
     end if if_fates ! end of if use_fates

@@ -172,6 +172,8 @@ module ELMFatesInterfaceMod
                                       get_active_suction_layers
    use EDCanopyStructureMod  , only : canopy_summarization, update_hlm_dynamics
    use EDCanopyStructureMod  , only : UpdateFatesAvgSnowDepth
+   use FatesPlantRespPhotosynthMod, only : FatesCondPhotoPatch
+   use FatesPlantRespPhotosynthMod, only : FatesPlantRespPatch
    use FatesPlantRespPhotosynthMod, only : FatesPlantRespPhotosynthDrive
    use EDAccumulateFluxesMod , only : AccumulateFluxes_ED
    use FatesSoilBGCFluxMod   , only : UnPackNutrientAquisitionBCs
@@ -265,6 +267,7 @@ module ELMFatesInterfaceMod
       procedure, public :: wrap_sunfrac
       procedure, public :: wrap_btran
       procedure, public :: wrap_photosynthesis
+      procedure, public :: WrapPatchPhotosynthesis
       procedure, public :: wrap_accumulatefluxes
       procedure, public :: prep_canopyfluxes
       procedure, public :: wrap_canopy_radiation
@@ -2690,6 +2693,85 @@ contains
 
  end subroutine wrap_photosynthesis
 
+ ! ====================================================================================
+
+ subroutine WrapPatchPhotosynthesis(this, bounds_clump, p,      &
+        esat_tv, eair, oair, cair, rb, dayl_factor,             &
+        atm2lnd_inst, canopystate_inst, photosyns_inst)
+
+    use shr_log_mod       , only : errMsg => shr_log_errMsg
+    use abortutils        , only : endrun
+    use decompMod         , only : bounds_type
+    use elm_varcon        , only : rgas, tfrz, namep
+    use elm_varctl        , only : iulog
+    use quadraticMod      , only : quadratic
+
+    !
+    ! !ARGUMENTS:
+    class(hlm_fates_interface_type), intent(inout) :: this
+    type(bounds_type)      , intent(in)            :: bounds_clump
+    integer                , intent(in)            :: p                ! patch of interest
+    real(r8)               , intent(in)            :: esat_tv(bounds_clump%begp: )      ! saturation vapor pressure at t_veg (Pa)
+    real(r8)               , intent(in)            :: eair( bounds_clump%begp: )        ! vapor pressure of canopy air (Pa)
+    real(r8)               , intent(in)            :: oair( bounds_clump%begp: )        ! Atmospheric O2 partial pressure (Pa)
+    real(r8)               , intent(in)            :: cair( bounds_clump%begp: )        ! Atmospheric CO2 partial pressure (Pa)
+    real(r8)               , intent(in)            :: rb( bounds_clump%begp: )          ! boundary layer resistance (s/m)
+    real(r8)               , intent(in)            :: dayl_factor( bounds_clump%begp: ) ! scalar (0-1) for daylength
+    type(atm2lnd_type)     , intent(in)            :: atm2lnd_inst
+    type(canopystate_type) , intent(inout)         :: canopystate_inst
+    type(photosyns_type)   , intent(inout)         :: photosyns_inst
+
+    integer                                        :: nlevsoil
+    integer                                        :: s,t,c,ifp,j,icp,nc
+    real(r8)                                       :: dtime
+
+    call t_startf('edpsn')
+    associate(&
+          t_soisno  => col_es%t_soisno               , &
+          t_veg     => veg_es%t_veg                  , &
+          tgcm      => veg_es%thm                    , &
+          forc_pbot => top_as%pbot                   , &
+          rssun     => photosyns_inst%rssun_patch    , &
+          rssha     => photosyns_inst%rssha_patch) !    , &
+          !psnsun    => photosyns_inst%psnsun_patch   , &
+          !psnsha    => photosyns_inst%psnsha_patch)
+
+
+      nc = bounds_clump%clump_index
+      c   = veg_pp%column(p)
+      t   = col_pp%topounit(c)
+      s   = this%f2hmap(nc)%hsites(c)
+      ifp = p - col_pp%pfti(c)
+
+      ! This should be done during prep!
+      nlevsoil = this%fates(nc)%bc_in(s)%nlevsoil
+      this%fates(nc)%bc_in(s)%t_soisno_sl(1:nlevsoil) = t_soisno(c,1:nlevsoil)  ! soil temperature (Kelvin)
+      this%fates(nc)%bc_in(s)%forc_pbot               = forc_pbot(t)            ! atmospheric pressure (Pa)
+      this%fates(nc)%bc_in(s)%dayl_factor_pa(ifp) = dayl_factor(p) ! scalar (0-1) for daylength
+      this%fates(nc)%bc_in(s)%oair_pa(ifp)        = oair(p)        ! Atmospheric O2 partial pressure (Pa)
+      this%fates(nc)%bc_in(s)%cair_pa(ifp)        = cair(p)        ! Atmospheric CO2 partial pressure (Pa)
+      
+      ! These probably all dynamically respond to the LEB calculation
+      this%fates(nc)%bc_in(s)%esat_tv_pa(ifp)     = esat_tv(p)     ! saturation vapor pressure at t_veg (Pa)
+      this%fates(nc)%bc_in(s)%eair_pa(ifp)        = eair(p)        ! vapor pressure of canopy air (Pa)
+      this%fates(nc)%bc_in(s)%rb_pa(ifp)          = rb(p)          ! boundary layer resistance (s/m)
+      this%fates(nc)%bc_in(s)%t_veg_pa(ifp)       = t_veg(p)       ! vegetation temperature (Kelvin)
+      this%fates(nc)%bc_in(s)%tgcm_pa(ifp)        = tgcm(p)        ! air temperature at agcm
+
+      call FatesCondPhotoPatch(ifp,this%fates(nc)%sites(s),this%fates(nc)%bc_in(s),this%fates(nc)%bc_out(s))
+      
+      rssun(p) = this%fates(nc)%bc_out(s)%rssun_pa(ifp)
+      rssha(p) = this%fates(nc)%bc_out(s)%rssha_pa(ifp)
+      
+      dtime = real(get_step_size(),r8)
+      call FatesPlantRespPatch(ifp,this%fates(nc)%sites(s),this%fates(nc)%bc_in(s),dtime)
+
+
+    end associate
+    call t_stopf('edpsn')
+
+  end subroutine WrapPatchPhotosynthesis
+  
  ! ======================================================================================
 
  subroutine wrap_accumulatefluxes(this, bounds_clump, fn, filterp)
@@ -2712,11 +2794,11 @@ contains
        c = veg_pp%column(p)
        s = this%f2hmap(nc)%hsites(c)
        ifp = p-col_pp%pfti(c)
-       if(this%fates(nc)%bc_in(s)%filter_photo_pa(ifp) /= 3)then
-          write(iulog,*) 'Not all patches on the natveg column in the canopys'
-          write(iulog,*) 'filter ran canopy fluxes: s, p, icp, ifp: ',s,p,icp,ifp
-          call endrun(msg=errMsg(sourcefile, __LINE__))
-       end if
+       !if(this%fates(nc)%bc_in(s)%filter_photo_pa(ifp) /= 3)then
+       !   write(iulog,*) 'Not all patches on the natveg column in the canopys'
+       !   write(iulog,*) 'filter ran canopy fluxes: s, p, icp, ifp: ',s,p,icp,ifp
+       !   call endrun(msg=errMsg(sourcefile, __LINE__))
+       !end if
     end do
 
 

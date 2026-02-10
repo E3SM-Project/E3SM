@@ -413,11 +413,11 @@ contains
             interpinic_flag='interp', readvar=readvar, data=this%rc13_psnsha_patch)
     endif
     
-    call restartvar(ncid=ncid, flag=flag,'rssun_patch',xtype=ncd_double,  &
+    call restartvar(ncid=ncid, flag=flag, varname='rssun_patch',xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%rssun_patch)
     
-    call restartvar(ncid=ncid, flag=flag,'rssha_patch',xtype=ncd_double,  &
+    call restartvar(ncid=ncid, flag=flag, varname='rssha_patch',xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%rssha_patch)
 
