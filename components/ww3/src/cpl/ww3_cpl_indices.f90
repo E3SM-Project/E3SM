@@ -83,8 +83,10 @@ contains
        index_w2x_Sw_Ustar     = mct_avect_indexra(w2x,'Sw_Ustar') ! Friction velocity
        index_w2x_Sw_Z0        = mct_avect_indexra(w2x,'Sw_Z0')    ! Roughness length
     endif
-    if (wav_ocn_coup .eq. 'twoway') then
+    if (wav_ocn_coup .eq. 'twoway' .or. wav_ice_coup .eq. 'twoway') then
        index_w2x_Sw_Hs = mct_avect_indexra(w2x,'Sw_Hs') ! Significant wave height
+    endif
+    if (wav_ocn_coup .eq. 'twoway') then
        index_w2x_Sw_Fp = mct_avect_indexra(w2x,'Sw_Fp') ! Peak wave freqency  
        index_w2x_Sw_Dp = mct_avect_indexra(w2x,'Sw_Dp') ! Peak wave direction
        index_w2x_Faww_Tawx    = mct_avect_indexra(w2x,'Faww_Tawx')  ! Zonal Wave supported stress (Stress from atmosphere to waves)
