@@ -1188,13 +1188,15 @@ CONTAINS
          IY  = MAPSF(ISEA,2)
          if (MAPSTA(IY,IX) .eq. 1) then
 
-             if (wav_ocn_coup .eq. 'twoway' .or. wav_atm_coup .eq. 'twoway') then
+            if (wav_ocn_coup .eq. 'twoway' .or. wav_atm_coup .eq. 'twoway') then
                w2x_w%rattr(index_w2x_Sw_Charn,jsea) = CHARN(jsea)
                w2x_w%rattr(index_w2x_Sw_Ustar,jsea) = USTAR2(jsea) ! Friction velocity
                w2x_w%rattr(index_w2x_Sw_Z0,jsea) = Z0(jsea) ! Z0 surface roughness length
             endif
-            if (wav_ocn_coup .eq. 'twoway') then
+            if (wav_ocn_coup .eq. 'twoway' .or. wav_ice_coup .eq. 'twoway') then
                w2x_w%rattr(index_w2x_Sw_Hs,jsea) = HS(jsea)
+            endif
+            if (wav_ocn_coup .eq. 'twoway') then
                w2x_w%rattr(index_w2x_Sw_Fp,jsea) = FP0(jsea)
                w2x_w%rattr(index_w2x_Sw_Dp,jsea) = THP0(jsea)
 
