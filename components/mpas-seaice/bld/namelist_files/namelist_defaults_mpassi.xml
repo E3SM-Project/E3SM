@@ -217,8 +217,8 @@
 <config_use_ice_age>false</config_use_ice_age>
 <config_use_first_year_ice>false</config_use_first_year_ice>
 <config_use_level_ice>true</config_use_level_ice>
-<config_use_level_meltponds>false</config_use_level_meltponds>
-<config_use_sealevel_meltponds>true</config_use_sealevel_meltponds>
+<config_use_level_meltponds>true</config_use_level_meltponds>
+<config_use_sealevel_meltponds>false</config_use_sealevel_meltponds>
 <config_use_topo_meltponds>false</config_use_topo_meltponds>
 <config_use_aerosols>false</config_use_aerosols>
 <config_use_effective_snow_density>true</config_use_effective_snow_density>
@@ -415,7 +415,7 @@
 <config_min_meltwater_retained_fraction_sealvlponds>1.0</config_min_meltwater_retained_fraction_sealvlponds>
 <config_max_meltwater_retained_fraction_sealvlponds>1.0</config_max_meltwater_retained_fraction_sealvlponds>
 <config_min_meltwater_retained_fraction_topoponds>0.15</config_min_meltwater_retained_fraction_topoponds>
-<config_max_meltwater_retained_fraction_topoponds>1.0</config_max_meltwater_retained_fraction_topoponds>
+<config_max_meltwater_retained_fraction_topoponds>0.7</config_max_meltwater_retained_fraction_topoponds>
 <config_pond_depth_to_fraction_ratio>0.8</config_pond_depth_to_fraction_ratio>
 <config_snow_on_pond_ice_tapering_parameter>0.03</config_snow_on_pond_ice_tapering_parameter>
 <config_critical_pond_ice_thickness>0.01</config_critical_pond_ice_thickness>
