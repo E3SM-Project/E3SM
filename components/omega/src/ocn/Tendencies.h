@@ -152,10 +152,10 @@ class Tendencies {
    // Construct a new tendency object
    Tendencies(const std::string &Name, ///< [in] Name for tendencies
               const HorzMesh *Mesh,    ///< [in] Horizontal mesh
-              const VertCoord *VCoord, ///< [in] Vertical coordinate
+              VertCoord *VCoord,       ///< [in] Vertical coordinate
               VertAdv *VAdv,           ///< [in] Vertical advection
               const PressureGrad *PGrad,      ///< [in] Pressure gradient
-              const Eos *EqState,      ///< [in] Equation of state
+              Eos *EqState,      ///< [in] Equation of state
               int NTracersIn,          ///< [in] Number of tracers
               TimeInterval TimeStep,   ///< [in] Time step
               Config *Options,         ///< [in] Configuration options
@@ -164,10 +164,10 @@ class Tendencies {
 
    Tendencies(const std::string &Name, ///< [in] Name for tendencies
               const HorzMesh *Mesh,    ///< [in] Horizontal mesh
-              const VertCoord *VCoord, ///< [in] Vertical coordinate
+              VertCoord *VCoord,       ///< [in] Vertical coordinate
               VertAdv *VAdv,           ///< [in] Vertical advection
               const PressureGrad *PGrad,      ///< [in] Pressure gradient
-              const Eos *EqState,      ///< [in] Equation of state
+              Eos *EqState,      ///< [in] Equation of state
               int NTracersIn,          ///< [in] Number of tracers
               TimeInterval TimeStep,   ///< [in] Time step
               Config *Options          ///< [in] Configuration options
@@ -180,10 +180,10 @@ class Tendencies {
    Tendencies(Tendencies &&)      = delete;
 
    const HorzMesh *Mesh;    ///< Pointer to horizontal mesh
-   const VertCoord *VCoord; ///< Pointer to vertical coordinate
+   VertCoord *VCoord;         ///< Pointer to vertical coordinate
    VertAdv *VAdv;             ///< Pointer to vertical advection
    const PressureGrad *PGrad; ///< Pointer to pressure gradient
-   const Eos *EqState;        ///< Pointer to equation of state
+   Eos *EqState;              ///< Pointer to equation of state
    I4 NTracers;             ///< Number of tracers
    TimeInterval TimeStep;   ///< Time step
 

@@ -310,10 +310,10 @@ void Tendencies::defineFields() {
 // Construct a new group of tendencies
 Tendencies::Tendencies(const std::string &Name, ///< [in] Name for tendencies
                        const HorzMesh *Mesh,    ///< [in] Horizontal mesh
-                       const VertCoord *VCoord, ///< [in] Vertical coordinate
+                       VertCoord *VCoord,       ///< [in] Vertical coordinate
                        VertAdv *VAdv,           ///< [in] Vertical advection
                        const PressureGrad *PGrad,      ///< [in] Pressure gradient
-                       const Eos *EqState,  ///< [in] Equation of state
+                       Eos *EqState,  ///< [in] Equation of state
                        int NTracersIn,          ///< [in] Number of tracers
                        TimeInterval TimeStepIn, ///< [in] Time step
                        Config *Options,         ///< [in] Configuration options
@@ -340,14 +340,16 @@ Tendencies::Tendencies(const std::string &Name, ///< [in] Name for tendencies
    NTracers = NTracersIn;
    TimeStep = TimeStepIn;
 
+   defineFields();
+
 } // end constructor
 
 Tendencies::Tendencies(const std::string &Name, ///< [in] Name for tendencies
                        const HorzMesh *Mesh,    ///< [in] Horizontal mesh
-                       const VertCoord *VCoord, ///< [in] Vertical coordinate
+                       VertCoord *VCoord,       ///< [in] Vertical coordinate
                        VertAdv *VAdv,           ///< [in] Vertical advection
                        const PressureGrad *PGrad,      ///< [in] Pressure gradient
-                       const Eos *EqState,  ///< [in] Equation of state
+                       Eos *EqState,  ///< [in] Equation of state
                        int NTracersIn,          ///< [in] Number of tracers
                        TimeInterval TimeStepIn, ///< [in] Time step
                        Config *Options)         ///< [in] Configuration options
@@ -600,8 +602,25 @@ void Tendencies::computeVelocityTendenciesOnly(
       Pacer::stop("Tend:customVelocityTend", 2);
    }
 
+   // Compute pressure gradient
    if (PGrad->Enabled) {
+      I4 Err;
+      Array2DReal Temp;
+      Array2DReal Salinity;
+      Array2DReal LayerThick;
+
+      // Temporary handling of surface pressure
+      Array1DReal SurfacePressure("SurfacePressure", Mesh->NCellsSize);
+      deepCopy(SurfacePressure, 0.0_Real);
+
       Pacer::start("Tend:pressureGradTerm", 2);
+      State->getLayerThickness(LayerThick, VelTimeLevel);
+      VCoord->computePressure(LayerThick, SurfacePressure);
+      OMEGA_SCOPE(LocPressureMid, VCoord->PressureMid);
+      Err = Tracers::getByName(Temp, VelTimeLevel, "Temperature");
+      Err = Tracers::getByName(Salinity, VelTimeLevel, "Salinity");
+      
+      EqState->computeSpecVol(Temp, Salinity, LocPressureMid);
       PGrad->computePressureGrad(
           LocNormalVelocityTend, State, VCoord, EqState, VelTimeLevel);
       Pacer::stop("Tend:pressureGradTerm", 2);

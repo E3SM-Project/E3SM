@@ -6,6 +6,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "PGrad.h"
+#include "Eos.h"
 #include "Error.h"
 #include "Field.h"
 #include "HorzMesh.h"
