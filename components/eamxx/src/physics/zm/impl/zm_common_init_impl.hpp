@@ -31,7 +31,7 @@ void Functions<S,D>::zm_common_init()
   s_common_init.clos_dyn_adj    = true;
   s_common_init.no_deep_pbl     = false;
   // ZM micro parameters
-  s_common_init.zm_microp       = true;
+  s_common_init.zm_microp       = false;
   s_common_init.old_snow        = false;
   s_common_init.auto_fac        = 7.0;
   s_common_init.accr_fac        = 1.5;

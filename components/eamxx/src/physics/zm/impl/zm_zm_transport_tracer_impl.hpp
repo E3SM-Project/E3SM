@@ -190,7 +190,7 @@ void Functions<S,D>::zm_transport_tracer(
             // Try to redistribute to levels above (k+1 to mx)
             for (Int kk = k+1; kk <= mx; ++kk) {
               if (negadt < 0.0 && dcondt(kk) * dt + const_arr(kk) > 0.0) {
-                Real qtmp = dcondt(kk) + negadt * dptmp(k) / dptmp(kk);
+                const Real qtmp = dcondt(kk) + negadt * dptmp(k) / dptmp(kk);
                 if (qtmp * dt + const_arr(kk) > 0.0) {
                   dcondt(kk) = qtmp;
                   negadt = 0.0;
@@ -203,8 +203,8 @@ void Functions<S,D>::zm_transport_tracer(
 
             // Try to redistribute to levels below (k-1 down to jt)
             for (Int kk = k-1; kk >= jt; --kk) {
-              if (negadt < 0.0 && dcondt(kk) * dt + const_arr(kk) > 0.0) {
-                Real qtmp = dcondt(kk) + negadt * dptmp(k) / dptmp(kk);
+              if (negadt < 0.0 && (dcondt(kk) * dt + const_arr(kk) > 0.0)) {
+                const Real qtmp = dcondt(kk) + negadt * dptmp(k) / dptmp(kk);
                 if (qtmp * dt + const_arr(kk) > 0.0) {
                   dcondt(kk) = qtmp;
                   negadt = 0.0;
