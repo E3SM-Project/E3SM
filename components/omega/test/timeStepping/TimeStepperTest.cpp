@@ -234,6 +234,9 @@ int initTimeStepperTest(const std::string &mesh) {
    TestTendencies->TracerHyperDiff.Enabled    = false;
    TestTendencies->WindForcing.Enabled        = false;
    TestTendencies->BottomDrag.Enabled         = false;
+   DefVertAdv->ThickVertAdvEnabled            = false;
+   DefVertAdv->VelVertAdvEnabled              = false;
+   DefVertAdv->TracerVertAdvEnabled           = false;
 
    return Err;
 }
@@ -274,6 +277,7 @@ void finalizeTimeStepperTest() {
    Tendencies::clear();
    AuxiliaryState::clear();
    OceanState::clear();
+   VertAdv::clear();
    VertCoord::clear();
    HorzMesh::clear();
    Dimension::clear();
