@@ -303,6 +303,7 @@ void AtmosphereOutput::restart (const std::string& filename)
 void AtmosphereOutput::init()
 {
   auto fm_after_hr = m_field_mgrs[AfterHorizRemap];
+  auto fm_after_vr = m_field_mgrs[AfterVertRemap];
   m_io_grid  = fm_after_hr->get_grid();
   m_latlon_output = m_io_grid->has_geometry_data("lat_idx");
 
@@ -313,15 +314,24 @@ void AtmosphereOutput::init()
       (m_io_grid->get_global_max_dof_gid()-m_io_grid->get_global_min_dof_gid()+1)==m_io_grid->get_num_global_dofs(),
       "Error! In order for IO to work, the grid must (globally) have dof gids in interval [gid_0,gid_0+num_global_dofs).\n");
 
+  // For avg/max/min with horiz remap, we want to accumulate on the pre-horiz-remap grid
+  // to minimize MPI calls. The Scorpio FM is created on the appropriate grid for accumulation.
+  // However, if we're tracking avg count, we don't defer because avg count fields would need
+  // special handling to be remapped as well.
+  const bool defer_horiz_remap = m_horiz_remapper!=nullptr and 
+                                 m_avg_type!=OutputAvgType::Instant and
+                                 not m_track_avg_cnt;
+  auto fm_for_accum = defer_horiz_remap ? fm_after_vr : fm_after_hr;
+
   // Create FM for scorpio. The fields in this FM are guaranteed to NOT have parents/padding
-  auto fm_scorpio = m_field_mgrs[Scorpio] = std::make_shared<FieldManager>(fm_after_hr->get_grid(),RepoState::Closed);
+  auto fm_scorpio = m_field_mgrs[Scorpio] = std::make_shared<FieldManager>(fm_for_accum->get_grid(),RepoState::Closed);
   for (size_t i = 0; i < m_fields_names.size(); ++i) {
     const auto& fname = m_fields_names[i];
-    const auto& f = fm_after_hr->get_field(fname);
-    const auto& fh = f.get_header();
+    const auto& f_ref = fm_for_accum->get_field(fname);
+    const auto& fh = f_ref.get_header();
     const auto& fid = fh.get_identifier();
 
-    // Check if the field for scorpio can alias the field after hremap.
+    // Check if the field for scorpio can alias the field after remap.
     // It can do so only for Instant output, and if the field is NOT a subfield ant NOT padded
     // Also, if we track avg cnt, we MUST add the fill_value extra data, to trigger fill-value logic
     // when calling Field's update methods
@@ -330,14 +340,16 @@ void AtmosphereOutput::init()
         fh.get_parent()!=nullptr) {
       Field copy(fid);
       copy.allocate_view();
-      transfer_extra_data (f,copy);
+      transfer_extra_data (f_ref,copy);
       fm_scorpio->add_field(copy);
     } else {
-      fm_scorpio->add_field(f);
+      fm_scorpio->add_field(f_ref);
     }
 
     // Store the field layout, so that calls to setup_output_file are easier
-    const auto& layout = fid.get_layout();
+    // Use the layout from the final output grid for file registration
+    const auto& f_io = fm_after_hr->get_field(fname);
+    const auto& layout = f_io.get_header().get_identifier().get_layout();
     m_vars_dims[fname] = get_var_dimnames(layout);
 
     // Now check that all the dims of this field are already set to be registered.
@@ -449,7 +461,14 @@ run (const std::string& filename,
     stop_timer("EAMxx::IO::vert_remap");
   }
 
-  if (m_horiz_remapper) {
+  // For avg/max/min output with horiz remap, defer the horiz remap until write time
+  // to minimize MPI calls. For instant output, we do horiz remap every time (if needed).
+  // However, if we're tracking avg count, we don't defer because the avg count fields
+  // are not registered with the horiz remapper and would need special handling.
+  const bool defer_horiz_remap = m_horiz_remapper!=nullptr and 
+                                 m_avg_type!=OutputAvgType::Instant and
+                                 not m_track_avg_cnt;
+  if (m_horiz_remapper and not defer_horiz_remap) {
     start_timer("EAMxx::IO::horiz_remap");
     apply_remap(*m_horiz_remapper);
     stop_timer("EAMxx::IO::horiz_remap");
@@ -457,6 +476,10 @@ run (const std::string& filename,
 
   auto fm_scorpio = m_field_mgrs[Scorpio];
   auto fm_after_hr = m_field_mgrs[AfterHorizRemap];
+  auto fm_after_vr = m_field_mgrs[AfterVertRemap];
+
+  // The FM to read from for accumulation depends on whether we defer horiz remap
+  auto fm_for_accum = defer_horiz_remap ? fm_after_vr : fm_after_hr;
 
   // If tracking avg count, update the count at each field location separately.
   // We do count++ only where the fields are NOT equal to the fill value.
@@ -491,7 +514,7 @@ run (const std::string& filename,
       // 5. FieldAtPressureLevel (and vremap) should only fill the mask field
       //    if we later need it. E.g, if no AvgCount AND no hremap, we don't need it.
       //////////////////////////////////////////////////////
-      auto field = fm_after_hr->get_field(fname);
+      auto field = fm_for_accum->get_field(fname);
       auto mask  = count.get_header().get_extra_data<Field>("mask");
 
       // Find where the field is NOT equal to fill_value
@@ -536,7 +559,7 @@ run (const std::string& filename,
     const auto& field_name = m_fields_names[i];
     
     // Get all the info for this field.
-    const auto& f_in  = fm_after_hr->get_field(field_name);
+    const auto& f_in  = fm_for_accum->get_field(field_name);
           auto& f_out = fm_scorpio->get_field(field_name);
 
     // Safety check: if a field may contain fill values and we are computing an Average,
@@ -561,30 +584,55 @@ run (const std::string& filename,
       default:
         EKAT_ERROR_MSG ("Unexpected/unsupported averaging type.\n");
     }
+  }
 
-    if (is_write_step) {
+  // If we deferred horiz remap, do it now (once for all fields) before writing
+  if (is_write_step and defer_horiz_remap) {
+    // First, copy accumulated fields from Scorpio FM to the source fields of horiz remapper
+    for (size_t i = 0; i < m_fields_names.size(); ++i) {
+      const auto& field_name = m_fields_names[i];
+      auto src_field = fm_after_vr->get_field(field_name);
+      const auto& scorpio_field = fm_scorpio->get_field(field_name);
+      src_field.deep_copy(scorpio_field);
+    }
+    
+    // Perform the horiz remap once for all fields at write time
+    start_timer("EAMxx::IO::horiz_remap");
+    apply_remap(*m_horiz_remapper);
+    stop_timer("EAMxx::IO::horiz_remap");
+  }
+
+  // Now write the fields if it's a write step
+  if (is_write_step) {
+    for (size_t i = 0; i < m_fields_names.size(); ++i) {
+      const auto& field_name = m_fields_names[i];
+      
+      // Get the field to write (either from fm_after_hr if we did horiz remap, or from scorpio FM)
+      auto f_to_write = defer_horiz_remap ? fm_after_hr->get_field(field_name)
+                                          : fm_scorpio->get_field(field_name);
+
       // NOTE: we don't divide by the avg cnt for checkpoint output
       if (output_step and m_avg_type==OutputAvgType::Average) {
         // Even if m_track_avg_cnt=true, this field may not need it
         if (m_track_avg_cnt) {
           auto avg_count = m_field_to_avg_count.at(field_name);
 
-          f_out.scale_inv(avg_count);
+          f_to_write.scale_inv(avg_count);
 
           const auto& mask = avg_count.get_header().get_extra_data<Field>("mask");
-          f_out.deep_copy(constants::fill_value<Real>,mask);
+          f_to_write.deep_copy(constants::fill_value<Real>,mask);
         } else {
           // Divide by steps count only when the summation is complete
-          f_out.scale(Real(1.0) / nsteps_since_last_output);
+          f_to_write.scale(Real(1.0) / nsteps_since_last_output);
         }
       }
 
       // Bring data to host
-      f_out.sync_to_host();
+      f_to_write.sync_to_host();
 
       // Write to file
       auto func_start = std::chrono::steady_clock::now();
-      scorpio::write_var(filename,field_name,f_out.get_internal_view_data<Real,Host>());
+      scorpio::write_var(filename,field_name,f_to_write.get_internal_view_data<Real,Host>());
       auto func_finish = std::chrono::steady_clock::now();
       auto duration_loc = std::chrono::duration_cast<std::chrono::milliseconds>(func_finish - func_start);
       duration_write += duration_loc.count();
