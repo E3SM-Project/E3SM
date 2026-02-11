@@ -123,6 +123,7 @@ int initTendenciesTest(const std::string &mesh) {
    HorzMesh::init();
    VertCoord::init();
    Tracers::init();
+   VertAdv::init();
 
    // VertCoord::init2();
 
@@ -156,10 +157,11 @@ int testTendencies() {
 
    const auto Mesh     = HorzMesh::getDefault();
    const auto VCoord   = VertCoord::getDefault();
+   const auto VAdv     = VertAdv::getDefault();
    VCoord->NVertLayers = 12;
    // test creation of another tendencies
    Config *Options = Config::getOmegaConfig();
-   Tendencies::create("TestTendencies", Mesh, VCoord, 3, Options);
+   Tendencies::create("TestTendencies", Mesh, VCoord, VAdv, 3, Options);
 
    // test retrievel of another tendencies
    if (Tendencies::get("TestTendencies")) {

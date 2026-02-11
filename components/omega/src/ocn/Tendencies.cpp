@@ -13,6 +13,7 @@
 #include "Error.h"
 #include "Pacer.h"
 #include "Tracers.h"
+#include "VertAdv.h"
 #include <string>
 
 namespace OMEGA {
@@ -28,6 +29,7 @@ void Tendencies::init() {
 
    HorzMesh *DefHorzMesh   = HorzMesh::getDefault();
    VertCoord *DefVertCoord = VertCoord::getDefault();
+   VertAdv *DefVertAdv     = VertAdv::getDefault();
 
    I4 NTracers = Tracers::getNumTracers();
 
@@ -66,8 +68,8 @@ void Tendencies::init() {
 
    // Ceate default tendencies
    Tendencies::DefaultTendencies =
-       create("Default", DefHorzMesh, DefVertCoord, NTracers, &TendConfig,
-              CustomThickTend, CustomVelTend);
+       create("Default", DefHorzMesh, DefVertCoord, DefVertAdv, NTracers,
+              &TendConfig, CustomThickTend, CustomVelTend);
 
    DefaultTendencies->readConfig(OmegaConfig);
 
@@ -239,11 +241,12 @@ void Tendencies::readConfig(Config *OmegaConfig ///< [in] Omega config
 Tendencies::Tendencies(const std::string &Name, ///< [in] Name for tendencies
                        const HorzMesh *Mesh,    ///< [in] Horizontal mesh
                        const VertCoord *VCoord, ///< [in] Vertical coordinate
+                       VertAdv *VAdv,           ///< [in] Vertical advection
                        int NTracersIn,          ///< [in] Number of tracers
                        Config *Options,         ///< [in] Configuration options
                        CustomTendencyType InCustomThicknessTend,
                        CustomTendencyType InCustomVelocityTend)
-    : Mesh(Mesh), VCoord(VCoord), ThicknessFluxDiv(Mesh, VCoord),
+    : Mesh(Mesh), VCoord(VCoord), VAdv(VAdv), ThicknessFluxDiv(Mesh, VCoord),
       PotientialVortHAdv(Mesh, VCoord), KEGrad(Mesh, VCoord),
       SSHGrad(Mesh, VCoord), VelocityDiffusion(Mesh, VCoord),
       VelocityHyperDiff(Mesh, VCoord), WindForcing(Mesh, VCoord),
@@ -267,10 +270,11 @@ Tendencies::Tendencies(const std::string &Name, ///< [in] Name for tendencies
 Tendencies::Tendencies(const std::string &Name, ///< [in] Name for tendencies
                        const HorzMesh *Mesh,    ///< [in] Horizontal mesh
                        const VertCoord *VCoord, ///< [in] Vertical coordinate
+                       VertAdv *VAdv,           ///< [in] Vertical advection
                        int NTracersIn,          ///< [in] Number of tracers
                        Config *Options)         ///< [in] Configuration options
-    : Tendencies(Name, Mesh, VCoord, NTracersIn, Options, CustomTendencyType{},
-                 CustomTendencyType{}) {}
+    : Tendencies(Name, Mesh, VCoord, VAdv, NTracersIn, Options,
+                 CustomTendencyType{}, CustomTendencyType{}) {}
 
 //------------------------------------------------------------------------------
 // Compute tendencies for layer thickness equation
