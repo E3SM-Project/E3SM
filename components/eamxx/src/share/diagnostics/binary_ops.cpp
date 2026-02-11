@@ -135,7 +135,7 @@ BinaryOpsDiag(const ekat::Comm &comm,
 }
 
 void BinaryOpsDiag::
-set_grids(const std::shared_ptr<const GridsManager> grids_manager)
+create_requests()
 {
   const auto &gname = m_params.get<std::string>("grid_name");
   const auto& pc_dict = physics::Constants<Real>::dictionary();

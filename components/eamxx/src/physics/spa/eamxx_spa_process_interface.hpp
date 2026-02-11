@@ -28,7 +28,7 @@ public:
   std::string name () const { return "spa"; }
 
   // Set the grid
-  void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
+  void create_requests ();
 
 protected:
 

@@ -60,7 +60,7 @@ public:
   std::string name () const { return "rrtmgp"; }
 
   // Set the grid
-  void set_grids (const std::shared_ptr<const GridsManager> grid_manager);
+  void create_requests ();
 
 // NOTE: cannot use lambda functions for CUDA devices if these are protected!
 public:
