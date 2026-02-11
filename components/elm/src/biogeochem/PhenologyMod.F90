@@ -2161,8 +2161,8 @@ contains
 
             if (ivt(p)==nsugarcane .or. ivt(p)==nsugarcaneirrig) then
                if (t_ref2m_min_inst(p) /= spval .and. t_ref2m_max_inst(p) /= spval) then
-                  onset_gdd(p) = onset_gdd(p) + (((t_ref2m_min_inst(p) + &
-                                 t_ref2m_max_inst(p))/2.0_r8) - (baset(ivt(p)) + 273.15_r8))*fracday
+                  onset_gdd(p) = onset_gdd(p) + (max( ((t_ref2m_min_inst(p) + t_ref2m_max_inst(p))/2.0_r8) &
+                                              - (baset(ivt(p)) + 273.15_r8), 0._r8))*fracday
                end if
             end if
 
