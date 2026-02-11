@@ -2465,7 +2465,7 @@
           <ntasks_rof>960</ntasks_rof>
           <ntasks_ice>1792</ntasks_ice>
           <ntasks_ocn>512</ntasks_ocn>
-          <ntasks_glc>1024</ntasks_glc>
+          <ntasks_glc>512</ntasks_glc>
           <ntasks_wav>1</ntasks_wav>
           <ntasks_cpl>2752</ntasks_cpl>
         </ntasks>
