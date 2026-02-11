@@ -11,8 +11,6 @@ module zm_transport
   use physics_share_f2c, only: scream_log
 #else
    use shr_kind_mod,     only: r8=>shr_kind_r8
-   integer,parameter,public :: btype = kind(.true.)
-
 #endif
 
    implicit none
@@ -22,6 +20,10 @@ module zm_transport
    public :: zm_transport_momentum  ! convective momentum transport
 
    private
+
+#ifndef SCREAM_CONFIG_IS_CMAKE
+   integer,parameter,public :: btype = kind(.true.)
+#endif
 
    real(r8), parameter :: mbsth = 1.e-15_r8  ! threshold below which we treat the mass fluxes as zero (in mb/s)
 
