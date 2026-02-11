@@ -329,6 +329,11 @@ void Tendencies::computeThicknessTendenciesOnly(
       Pacer::stop("Tend:thicknessFluxDiv", 2);
    }
 
+   Pacer::start("Tend:computeThicknessVAdvTend", 2);
+   // Compute thickness tendency from vertical advection
+   VAdv->computeThicknessVAdvTend(LayerThicknessTend);
+   Pacer::stop("Tend:computeThicknessVAdvTend", 2);
+
    if (CustomThicknessTend) {
       Pacer::start("Tend:customThicknessTend", 2);
       CustomThicknessTend(LocLayerThicknessTend, State, AuxState,
