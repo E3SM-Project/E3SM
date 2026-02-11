@@ -36,6 +36,7 @@ int ocnFinalize(const TimeInstant &CurrTime ///< [in] current sim time
    Tendencies::clear();
    AuxiliaryState::clear();
    OceanState::clear();
+   VertAdv::clear();
    VertCoord::clear();
    Dimension::clear();
    Field::clear();
