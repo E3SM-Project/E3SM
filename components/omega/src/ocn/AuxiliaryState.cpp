@@ -20,9 +20,10 @@ static std::string stripDefault(const std::string &Name) {
 // fields with IOStreams
 AuxiliaryState::AuxiliaryState(const std::string &Name, const HorzMesh *Mesh,
                                Halo *MeshHalo, const VertCoord *VCoord,
-                               int NTracers, TimeInterval TimeStep)
-    : Mesh(Mesh), MeshHalo(MeshHalo), VCoord(VCoord), Name(stripDefault(Name)),
-      KineticAux(stripDefault(Name), Mesh, VCoord),
+                               VertAdv *VAdv, int NTracers,
+                               TimeInterval TimeStep)
+    : Mesh(Mesh), MeshHalo(MeshHalo), VCoord(VCoord), VAdv(VAdv),
+      Name(stripDefault(Name)), KineticAux(stripDefault(Name), Mesh, VCoord),
       LayerThicknessAux(stripDefault(Name), Mesh, VCoord),
       VorticityAux(stripDefault(Name), Mesh, VCoord),
       VelocityDel2Aux(stripDefault(Name), Mesh, VCoord),
@@ -294,7 +295,7 @@ void AuxiliaryState::computeAll(const OceanState *State,
 // Create a non-default auxiliary state
 AuxiliaryState *AuxiliaryState::create(const std::string &Name,
                                        const HorzMesh *Mesh, Halo *MeshHalo,
-                                       const VertCoord *VCoord,
+                                       const VertCoord *VCoord, VertAdv *VAdv,
                                        const int NTracers,
                                        TimeInterval TimeStep) {
    if (AllAuxStates.find(Name) != AllAuxStates.end()) {
@@ -304,26 +305,27 @@ AuxiliaryState *AuxiliaryState::create(const std::string &Name,
       return nullptr;
    }
 
-   auto *NewAuxState =
-       new AuxiliaryState(Name, Mesh, MeshHalo, VCoord, NTracers, TimeStep);
+   auto *NewAuxState = new AuxiliaryState(Name, Mesh, MeshHalo, VCoord, VAdv,
+                                          NTracers, TimeStep);
    AllAuxStates.emplace(Name, NewAuxState);
 
    return NewAuxState;
 }
 
-// Create the default auxiliary state. Assumes that HorzMesh, VertCoord and
-// Halo have been initialized.
+// Create the default auxiliary state. Assumes that HorzMesh, VertCoord,
+// VertAdv, and Halo have been initialized.
 void AuxiliaryState::init() {
    const HorzMesh *DefMesh           = HorzMesh::getDefault();
    Halo *DefHalo                     = Halo::getDefault();
    const VertCoord *DefVCoord        = VertCoord::getDefault();
+   VertAdv *DefVAdv                  = VertAdv::getDefault();
    const TimeStepper *DefTimeStepper = TimeStepper::getDefault();
 
    int NTracers          = Tracers::getNumTracers();
    TimeInterval TimeStep = DefTimeStepper->getTimeStep();
 
    AuxiliaryState::DefaultAuxState = AuxiliaryState::create(
-       "Default", DefMesh, DefHalo, DefVCoord, NTracers, TimeStep);
+       "Default", DefMesh, DefHalo, DefVCoord, DefVAdv, NTracers, TimeStep);
 
    Config *OmegaConfig = Config::getOmegaConfig();
    DefaultAuxState->readConfigOptions(OmegaConfig);
