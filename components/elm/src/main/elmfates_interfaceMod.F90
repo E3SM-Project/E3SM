@@ -2766,7 +2766,12 @@ contains
       dtime = real(get_step_size(),r8)
       call FatesPlantRespPatch(ifp,this%fates(nc)%sites(s),this%fates(nc)%bc_in(s),dtime)
 
+      photosyns_inst%psnsun_patch(p)   = spval
+      photosyns_inst%psnsha_patch(p)   = spval
 
+      ! This flags that this patch has experienced photosynthesis
+      this%fates(nc)%bc_in%filter_photo_pa(ifp) == 3
+      
     end associate
     call t_stopf('edpsn')
 
@@ -2789,17 +2794,17 @@ contains
 
    nc = bounds_clump%clump_index
     ! Run a check on the filter
-    do icp = 1,fn
-       p = filterp(icp)
-       c = veg_pp%column(p)
-       s = this%f2hmap(nc)%hsites(c)
-       ifp = p-col_pp%pfti(c)
+    !do icp = 1,fn
+    !   p = filterp(icp)
+    !   c = veg_pp%column(p)
+    !   s = this%f2hmap(nc)%hsites(c)
+    !   ifp = p-col_pp%pfti(c)
        !if(this%fates(nc)%bc_in(s)%filter_photo_pa(ifp) /= 3)then
        !   write(iulog,*) 'Not all patches on the natveg column in the canopys'
        !   write(iulog,*) 'filter ran canopy fluxes: s, p, icp, ifp: ',s,p,icp,ifp
        !   call endrun(msg=errMsg(sourcefile, __LINE__))
        !end if
-    end do
+    !end do
 
 
     dtime = real(get_step_size(),r8)
