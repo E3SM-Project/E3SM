@@ -23,10 +23,10 @@ AeroComCld::AeroComCld(const ekat::Comm &comm,
 }
 
 void AeroComCld::
-set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
+create_requests() {
   using namespace ekat::units;
 
-  auto grid             = grids_manager->get_grid("physics");
+  auto grid             = m_grids_manager->get_grid("physics");
   const auto &grid_name = grid->name();
 
   const auto nondim = Units::nondimensional();

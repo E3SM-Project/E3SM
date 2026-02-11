@@ -19,7 +19,7 @@ P3Microphysics::P3Microphysics(const ekat::Comm& comm, const ekat::ParameterList
 }
 
 // =========================================================================================
-void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
+void P3Microphysics::create_requests()
 {
   using namespace ekat::units;
   using namespace ekat::prefixes;
@@ -30,7 +30,7 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   auto micron = micro*m;
   auto m2 = pow(m,2);
 
-  m_grid = grids_manager->get_grid("physics");
+  m_grid = m_grids_manager->get_grid("physics");
   const auto& grid_name = m_grid->name();
   m_num_cols = m_grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = m_grid->get_num_vertical_levels();  // Number of levels per column

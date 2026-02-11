@@ -43,7 +43,7 @@ public:
   std::string name () const { return m_group_name; }
 
   // Grab the proper grid from the grids manager
-  void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
+  void create_requests ();
 
   // Setup the tendencies requests for this group, as well as for all procs in the group
   void setup_step_tendencies (const std::string& default_grid);
@@ -142,9 +142,6 @@ protected:
 
   // The schedule type: Parallel vs Sequential
   ScheduleType   m_group_schedule_type;
-
-  // This is only needed to be able to access grids objects later on
-  std::shared_ptr<const GridsManager>   m_grids_mgr;
 };
 
 } // namespace scream
