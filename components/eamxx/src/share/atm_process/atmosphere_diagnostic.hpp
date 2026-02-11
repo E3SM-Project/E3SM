@@ -93,12 +93,13 @@ using AtmosphereDiagnosticFactory =
                   std::shared_ptr<AtmosphereDiagnostic>,
                   const ekat::Comm&,const ekat::ParameterList&>;
 
-// Create an atmosphere process, and correctly set up the (weak) pointer to self.
+// Create an atmosphere diag, and correctly set up the (weak) pointer to self.
 template <typename AtmDiagType>
 inline std::shared_ptr<AtmosphereDiagnostic>
 create_atmosphere_diagnostic (const ekat::Comm& comm, const ekat::ParameterList& p) {
   return std::make_shared<AtmDiagType>(comm,p);
 }
+
 } //namespace scream
 
 #endif // SCREAM_ATMOSPHERE_DIAGNOSTIC_HPP

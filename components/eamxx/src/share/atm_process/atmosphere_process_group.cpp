@@ -114,9 +114,11 @@ AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& param
 }
 
 std::shared_ptr<AtmosphereProcessGroup::atm_proc_type>
-AtmosphereProcessGroup::get_process_nonconst (const std::string& name) const {
-  EKAT_REQUIRE_MSG(has_process(name), "Error! Process "+name+" requested from group "+this->name()+
-                                      " but is not constained in this group.\n");
+AtmosphereProcessGroup::get_process_nonconst (const std::string& name) const
+{
+  EKAT_REQUIRE_MSG(has_process(name),
+      "Error! Process "+name+" requested from group "+this->name()+
+      " but is not constained in this group.\n");
 
   std::shared_ptr<atm_proc_type> return_process;
   for (auto& process: m_atm_processes) {
@@ -147,8 +149,8 @@ bool AtmosphereProcessGroup::has_process(const std::string& name) const {
   return false;
 }
 
-void AtmosphereProcessGroup::create_requests () {
-
+void AtmosphereProcessGroup::create_requests ()
+{
   // The atm process group (APG) simply 'concatenates' required/computed
   // fields of the stored process. There is a single exception to this
   // rule, in case of sequential splitting: if an atm proc requires a
@@ -183,25 +185,21 @@ setup_step_tendencies (const std::string& default_grid) {
 }
 
 void AtmosphereProcessGroup::
-gather_internal_fields  () {
-  // For debug purposes
-  std::map<std::string,std::string> f2proc;
+gather_internal_fields  ()
+{
   for (auto& atm_proc : m_atm_processes) {
     auto apg = std::dynamic_pointer_cast<AtmosphereProcessGroup>(atm_proc);
     if (apg) {
       // Have this apg build its list of internal fields first
       apg->gather_internal_fields();
     }
-    const auto& ifs = atm_proc->get_internal_fields();
-    for (const auto& f : ifs) {
-      const auto& name = f.get_header().get_identifier().name();
-      EKAT_REQUIRE_MSG (f2proc.find(name)==f2proc.end(),
-          "Error! Two atm procs created the same internal field.\n"
-          "  - field name: " + name + "\n"
-          "  - first atm proc: " + f2proc.at(name) + "\n"
-          "  - second atm proc: " + atm_proc->name() + "\n");
-      add_internal_field(f);
-      f2proc[name] = atm_proc->name();
+    const auto& internals = atm_proc->get_internals();
+    for (const auto& [grid_name, grid_repo] : internals->get_full_repo()) {
+      for (const auto& [fname, fptr] : grid_repo) {
+        add_internal_field(*fptr);
+        (void) fname;
+      }
+      (void) grid_name;
     }
   }
 }
@@ -462,15 +460,19 @@ void AtmosphereProcessGroup::finalize_impl (/* what inputs? */) {
 }
 
 void AtmosphereProcessGroup::
-set_required_field (const Field& f) {
-  if (m_group_schedule_type==ScheduleType::Parallel) {
-    // In parallel splitting, all required fields are *actual* inputs,
-    // and the base class impl is fine.
-    AtmosphereProcess::set_required_field(f);
+set_required_field_impl (const Field& f)
+{
+  // First, set the field in any proc that may need it
+  const auto& fid = f.get_header().get_identifier();
+  for (auto atm_proc : m_atm_processes) {
+    if (atm_proc->has_required_field(fid)) {
+      atm_proc->set_required_field(f);
+    }
   }
 
+  // Now check if it is computed BEFORE the 1st proc that needs it.
+
   // Find the first process that requires this group
-  const auto& fid = f.get_header().get_identifier();
   int first_proc_that_needs_f = -1;
   for (int iproc=0; iproc<m_group_size; ++iproc) {
     if (m_atm_processes[iproc]->has_required_field(fid)) {
@@ -479,140 +481,95 @@ set_required_field (const Field& f) {
     }
   }
 
+  // Sanity check
   EKAT_REQUIRE_MSG (first_proc_that_needs_f>=0,
     "Error! This atmosphere process does not require the input field.\n"
     "    field id: " + f.get_header().get_identifier().get_id_string() + "\n"
     "   atm process: " + this->name() + "\n"
     "Something is wrong up the call stack. Please, contact developers.\n");
 
-  // Loop over all the fields in the FieldGroup (FG), and see if they are all computed
-  // by a previous process. If so, then this FG is not a "required" FG
-  // for this AtmosphereProcessGroup.
-  // NOTE: the case where the FG itself is computed by a previous atm proc
-  //       is already handled during `set_grids`
-  // NOTE: we still check also the groups computed by the previous procs,
-  //       in case they contain this field
-  bool computed = false;
+  // Loop over all prev procs in the group, to see if they compute the field
+  // (or a group that contains it). If so, remove it from the inputs
   for (int iproc=0; iproc<first_proc_that_needs_f; ++iproc) {
     if (m_atm_processes[iproc]->has_computed_field(fid)) {
-      computed = true;
-      goto endloop;
+      get_inputs()->remove_field(fid.name(),fid.get_grid_name());
+      break;
     }
-
-    // Check if this proc computes fn as part of another group
-    const auto& out_g = m_atm_processes[iproc]->get_groups_out();
-    for (const auto& g : out_g) {
-      if (g.grid_name()!=fid.get_grid_name()) {
-        continue;
-      }
-      for (const auto& fn : g.m_info->m_fields_names) {
-        if (fid.name()==fn) {
-          computed = true;
-          goto endloop;
-        }
-      }
-    }
-
-  }
-  // Yes, goto statement are not the prettiest C++ feature, but they allow to
-  // break from multiple nested loops without the need of several checks.
-endloop:
-  if (computed) {
-    // We compute the field *before* any atm proc that requires it. Simply set it
-    // in the atm procs that require it, without storing it as an input to this group.
-    set_required_field_impl(f);
-  } else {
-    // The field is *not* computed before the 1st atm proc that requires it. We can
-    // resort to the base class' version of 'set_required_field', which will store
-    // the field as a required field of the whole AtmProgGroup.
-    AtmosphereProcess::set_required_field(f);
   }
 }
 
-void AtmosphereProcessGroup::
-set_required_group (const FieldGroup& group) {
-  if (m_group_schedule_type==ScheduleType::Parallel) {
-    // In parallel splitting, all required group are *actual* inputs,
-    // and the base class impl is fine.
-    AtmosphereProcess::set_required_group(group);
-  }
-
-  // Find the first process that requires this group
-  int first_proc_that_needs_group = -1;
-  for (int iproc=0; iproc<m_group_size; ++iproc) {
-    if (m_atm_processes[iproc]->has_required_group(group.m_info->m_group_name,group.grid_name())) {
-      first_proc_that_needs_group = iproc;
-      break;
+void AtmosphereProcessGroup::set_computed_field_impl (const Field& f) {
+  const auto& fid = f.get_header().get_identifier();
+  for (auto atm_proc : m_atm_processes) {
+    if (atm_proc->has_computed_field(fid)) {
+      atm_proc->set_computed_field(f);
     }
-  }
-
-  EKAT_REQUIRE_MSG (first_proc_that_needs_group>=0,
-    "Error! This atmosphere process does not require the input group.\n"
-    "   group name: " + group.m_info->m_group_name + "\n"
-    "   grid name : " + group.grid_name() + "\n"
-    "   atm process: " + this->name() + "\n"
-    "Something is wrong up the call stack. Please, contact developers.\n");
-
-  // Loop over all the fields in the group, and see if they are all computed
-  // by a previous process. If so, then this group is not a "required" group
-  // for this group.
-  // NOTE: the case where the group itself is computed by a previous atm proc
-  // is already handled during `set_grids`
-  // NOTE: we still check also the groups computed by the previous procs,
-  //       in case they contain all the fields in this group.
-  std::set<std::string> computed;
-  for (const auto& it : group.m_individual_fields) {
-    const auto& fn = it.first;
-    const auto& fid = it.second->get_header().get_identifier();
-    for (int iproc=0; iproc<first_proc_that_needs_group; ++iproc) {
-      if (m_atm_processes[iproc]->has_computed_field(fid)) {
-        computed.insert(fid.name());
-        goto endloop;
-      }
-
-      // Check if this proc computes fn as part of another group
-      const auto& out_g = m_atm_processes[iproc]->get_groups_out();
-      for (const auto& g : out_g) {
-        if (g.grid_name()!=group.grid_name()) {
-          continue;
-        }
-        for (const auto& f : g.m_info->m_fields_names) {
-          if (f==fn) {
-            computed.insert(fn);
-            goto endloop;
-          }
-        }
-      }
-
+    // In sequential scheduling, some fields may be computed by
+    // a process and used by the next one. In this case, the field
+    // does not figure as 'input' for the group, but we still
+    // need to set it in the processes that need it.
+    if (atm_proc->has_required_field(fid)) {
+      atm_proc->set_required_field(f.get_const());
     }
-  // Yes, goto statement are not the prettiest C++ feature, but they allow to
-  // break from multiple nested loops without the need of several checks.
-endloop:
-    if (computed.size()==group.m_info->m_fields_names.size()) {
-      break;
-    }
-  }
-
-  if (computed.size()==group.m_info->m_fields_names.size()) {
-    // We compute all the fields in the group *before* any atm proc
-    // that requires this group. Simply set the group in those atm
-    // proc that require it, without storing it as an input to this group.
-    set_required_group_impl(group);
-  } else {
-    // There's at least one field of the group that is not computed
-    // before the 1st atm proc that requires this group. We can resort
-    // to the base class' version of 'set_required_group', which will store
-    // the group as a required field group of the whole AtmProgGroup.
-    AtmosphereProcess::set_required_group(group);
   }
 }
 
 void AtmosphereProcessGroup::
 set_required_group_impl (const FieldGroup& group)
 {
+  // First, set the group in any proc that may need it
   for (auto atm_proc : m_atm_processes) {
-    if (atm_proc->has_required_group(group.m_info->m_group_name,group.grid_name())) {
+    if (atm_proc->has_required_group(group.name(),group.grid_name())) {
       atm_proc->set_required_group(group);
+    }
+  }
+
+  // Find the first process that requires this group
+  int first_proc_that_needs_g = -1;
+  for (int iproc=0; iproc<m_group_size; ++iproc) {
+    if (m_atm_processes[iproc]->has_required_group(group.name(),group.grid_name())) {
+      first_proc_that_needs_g = iproc;
+      break;
+    }
+  }
+
+  // Sanity check
+  EKAT_REQUIRE_MSG (first_proc_that_needs_g>=0,
+    "Error! This atmosphere process does not require the input group.\n"
+    "   group name: " + group.name() + "\n"
+    "   group grid: " + group.grid_name() + "\n"
+    "   atm process: " + this->name() + "\n"
+    "Something is wrong up the call stack. Please, contact developers.\n");
+
+  // Now check which field (if any) is computed BEFORE the 1st proc that needs this group
+  std::map<std::string,bool> computed;
+
+  for (int iproc=0; iproc<first_proc_that_needs_g; ++iproc) {
+    for (const auto& r : m_atm_processes[iproc]->get_field_requests ()) {
+      if (r.usage & Computed) {
+        computed[r.fid.name()+"_"+r.fid.get_grid_name()] = true;
+      }
+    }
+    for (const auto& r : m_atm_processes[iproc]->get_group_requests ()) {
+      if (r.usage & Computed) {
+        computed[r.name+"_"+r.grid_name] = true;
+      }
+    }
+  }
+
+  bool mono_computed = computed[group.name()+"_"+group.grid_name()];
+  bool indv_computed = true;
+  for (const auto& fn : group.m_info->m_fields_names) {
+    indv_computed &= computed[fn+"_"+group.grid_name()];
+  }
+
+  if (not mono_computed and not indv_computed) {
+    if (group.m_monolithic_field) {
+      set_required_field_impl(group.m_monolithic_field->get_const());
+    } else {
+      for (const auto& it : group.m_individual_fields) {
+        set_required_field_impl(it.second->get_const());
+      }
     }
   }
 }
@@ -630,31 +587,6 @@ set_computed_group_impl (const FieldGroup& group)
     // need to set it in the processes that need it.
     if (atm_proc->has_required_group(group.m_info->m_group_name,group.grid_name())) {
       atm_proc->set_required_group(group.get_const());
-    }
-  }
-}
-
-void AtmosphereProcessGroup::set_required_field_impl (const Field& f) {
-  const auto& fid = f.get_header().get_identifier();
-  for (auto atm_proc : m_atm_processes) {
-    if (atm_proc->has_required_field(fid)) {
-      atm_proc->set_required_field(f);
-    }
-  }
-}
-
-void AtmosphereProcessGroup::set_computed_field_impl (const Field& f) {
-  const auto& fid = f.get_header().get_identifier();
-  for (auto atm_proc : m_atm_processes) {
-    if (atm_proc->has_computed_field(fid)) {
-      atm_proc->set_computed_field(f);
-    }
-    // In sequential scheduling, some fields may be computed by
-    // a process and used by the next one. In this case, the field
-    // does not figure as 'input' for the group, but we still
-    // need to set it in the processes that need it.
-    if (atm_proc->has_required_field(fid)) {
-      atm_proc->set_required_field(f.get_const());
     }
   }
 }

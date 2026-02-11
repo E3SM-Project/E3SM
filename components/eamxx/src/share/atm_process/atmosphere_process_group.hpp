@@ -42,7 +42,7 @@ public:
   // The name of the block
   std::string name () const { return m_group_name; }
 
-  // Grab the proper grid from the grids manager
+  // Create requests for fields and field groups
   void create_requests ();
 
   // Setup the tendencies requests for this group, as well as for all procs in the group
@@ -74,11 +74,6 @@ public:
   // Set local variables using memory provided by
   // the ATMBufferManager
   void init_buffers(const ATMBufferManager& buffer_manager);
-
-  // The APG class needs to perform special checks before establishing whether
-  // a required group/field is indeed a required group for this APG
-  void set_required_field (const Field& field);
-  void set_required_group (const FieldGroup& group);
 
   // Gather internal fields from all processes in the group
   // NOTE: this method *must* be called before any attempt to query this atm proc group
