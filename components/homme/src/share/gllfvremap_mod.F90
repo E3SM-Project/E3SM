@@ -390,7 +390,7 @@ contains
 
 #ifdef __INTEL_COMPILER
 # if __INTEL_COMPILER >= 1700 && __INTEL_COMPILER < 1800
-    ! On Anvil with Intel 17, and reproduced on one other platform
+    ! With Intel 17, and reproduced on one other platform
     ! using specfically
     !   icpc version 17.0.0 (gcc version 4.7.4 compatibility)
     ! -O3 causes buggy code to be emitted for the limiter block near
