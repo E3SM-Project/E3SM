@@ -77,6 +77,8 @@ public:
     return m_tgt_grid->is_valid_layout(layout);
   }
 
+  const std::string& name() const { return m_name; }
+  void set_name (const std::string& n) { m_name = n; }
 protected:
 
   virtual FieldLayout create_layout (const FieldLayout& from_layout,
@@ -124,6 +126,8 @@ private:
   // This allow better error msg in case fwd/bwd remap is not allowed.
   bool m_has_read_only_src_fields = false;
   bool m_has_read_only_tgt_fields = false;
+
+  std::string m_name = "UNSET";
 };
 
 // A short name for an AbstractRemapper factory

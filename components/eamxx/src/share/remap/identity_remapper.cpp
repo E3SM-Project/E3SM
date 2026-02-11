@@ -8,6 +8,8 @@ IdentityRemapper (const grid_ptr_type grid,
                   const Aliasing aliasing)
  : AbstractRemapper (grid,grid)
 {
+  set_name("Identity " + grid->name());
+
   set_aliasing(aliasing);
 }
 

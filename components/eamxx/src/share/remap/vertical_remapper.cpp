@@ -62,6 +62,8 @@ VerticalRemapper (const grid_ptr_type& src_grid,
  : m_src_int_same_as_mid(src_int_same_as_mid)
  , m_tgt_int_same_as_mid(tgt_int_same_as_mid)
 {
+  set_name("Vertical " + tgt_grid->name());
+
   // We only go in one direction for simplicity, since we need to setup some
   // infrsatructures, and we don't want to setup 2x as many "just in case".
   // If you need to remap bwd, just create another remapper with src/tgt grids swapped.

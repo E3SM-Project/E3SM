@@ -214,6 +214,7 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
     vert_remapper->set_source_pressure (p_mid,p_int);
     vert_remapper->set_extrapolation_type(VerticalRemapper::Mask); // both Top AND Bot
     m_vert_remapper = vert_remapper;
+    m_vert_remapper->set_name(m_stream_name + " VertRemap");
 
     grid_after_vr = m_vert_remapper->get_tgt_grid();
     fm_after_vr = std::make_shared<FieldManager>(grid_after_vr,RepoState::Closed);
@@ -243,6 +244,7 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
       grid_after_hr = fm_grid->get_aux_grid(output_data_layout);
       m_horiz_remapper = gm->create_remapper(grid_after_vr,grid_after_hr);
     }
+    m_horiz_remapper->set_name(m_stream_name + " HorizRemap");
 
     grid_after_hr = m_horiz_remapper->get_tgt_grid();
     fm_after_hr = std::make_shared<FieldManager>(grid_after_hr,RepoState::Closed);

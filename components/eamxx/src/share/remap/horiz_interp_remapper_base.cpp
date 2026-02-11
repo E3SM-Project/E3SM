@@ -19,6 +19,8 @@ HorizInterpRemapperBase (const grid_ptr_type& fine_grid,
  , m_type (type)
  , m_comm (fine_grid->get_comm())
 {
+  set_name("HorizRemapper " + map_file);
+
   // Sanity checks
   EKAT_REQUIRE_MSG (fine_grid->type()==GridType::Point,
       "Error! Horizontal interpolatory remap only works on PointGrid grids.\n"
