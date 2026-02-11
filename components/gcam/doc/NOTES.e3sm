@@ -2035,8 +2035,8 @@ XXXXXXXXXX
 
 * Some links to help running and debugging:
 
-1 https://acme-climate.atlassian.net/wiki/spaces/ED/pages/98992379/[machine-documentation]
-2 https://www.lcrc.anl.gov/for-users/using-lcrc/running-jobs/running-jobs-on-blues/
+1. Refer to your machine's documentation for specific instructions
+2. https://www.lcrc.anl.gov/for-users/using-lcrc/running-jobs/running-jobs-on-blues/
 
 * To make an interactive session, use salloc (from 2, above).  
 
@@ -2103,7 +2103,7 @@ XXXXXXXXXX
 
 * Can't find libxerces-c, and some other stuff:
 
-[shippert@blueslogin4 iac_ZLND_case]$ ldd /path/to/scratch/iac_ZLND_case/bld/e3sm.exe | grep found 
+[user@login-node iac_ZLND_case]$ ldd /path/to/scratch/iac_ZLND_case/bld/e3sm.exe | grep found 
 /path/to/scratch/iac_ZLND_case/bld/e3sm.exe: /lib64/libstdc++.so.6: version `CXXABI_1.3.8' not found (required by /path/to/scratch/iac_ZLND_case/bld/e3sm.exe) 
 /path/to/scratch/iac_ZLND_case/bld/e3sm.exe: /lib64/libstdc++.so.6: version `GLIBCXX_3.4.20' not found (required by /path/to/scratch/iac_ZLND_case/bld/e3sm.exe) 
 /path/to/scratch/iac_ZLND_case/bld/e3sm.exe: /lib64/libstdc++.so.6: version `GLIBCXX_3.4.21' not found (required by /path/to/scratch/iac_ZLND_case/bld/e3sm.exe) 

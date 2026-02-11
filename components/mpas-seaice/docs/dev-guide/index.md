@@ -279,7 +279,7 @@ cd ~/E3SM-Polar/code/newdev01/components/mpas-seaice/testing/cice-qc
 
 See README.md.
 
-Edit the appropriate ``job_script.cice-qc.<machine>`` to export (insert your username and machine name)
+Create a machine-specific job script (e.g., ``job_script.cice-qc.<machine>``) and export your username and machine name:
 
 ```text
 BASE = /path/to/[username]/E3SM-Polar/D12.qcbase.emc.qcbaseline.master.E3SM-Project.<machine>/run.k000/
