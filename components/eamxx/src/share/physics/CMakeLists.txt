@@ -1,5 +1,6 @@
 add_library (eamxx_physics_share
   eamxx_trcmix.cpp
+  physics_share_f2c.F90
 )
 
 # Add ETI source files if not on CUDA/HIP
@@ -23,7 +24,7 @@ target_link_libraries(eamxx_physics_share PUBLIC
 if (NOT SCREAM_LIB_ONLY)
   # Add source files that are only used in testing
   target_sources(eamxx_physics_share PRIVATE
-    physics_share_f2c.F90
+
     physics_share.cpp
   )
 
