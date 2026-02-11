@@ -153,6 +153,7 @@ class Tendencies {
               const VertCoord *VCoord, ///< [in] Vertical coordinate
               VertAdv *VAdv,           ///< [in] Vertical advection
               int NTracersIn,          ///< [in] Number of tracers
+              TimeInterval TimeStep,   ///< [in] Time step
               Config *Options,         ///< [in] Configuration options
               CustomTendencyType InCustomThicknessTend,
               CustomTendencyType InCustomVelocityTend);
@@ -162,6 +163,7 @@ class Tendencies {
               const VertCoord *VCoord, ///< [in] Vertical coordinate
               VertAdv *VAdv,           ///< [in] Vertical advection
               int NTracersIn,          ///< [in] Number of tracers
+              TimeInterval TimeStep,   ///< [in] Time step
               Config *Options          ///< [in] Configuration options
    );
 
@@ -173,6 +175,7 @@ class Tendencies {
    const VertCoord *VCoord; ///< Pointer to vertical coordinate
    VertAdv *VAdv;           ///< Pointer to vertical advection
    I4 NTracers;             ///< Number of tracers
+   TimeInterval TimeStep;   ///< Time step
 
    // Pointer to default tendencies
    static Tendencies *DefaultTendencies;
