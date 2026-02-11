@@ -336,8 +336,8 @@ TEST_CASE ("subcycling") {
   ap_sub->run(dt);
 
   // Now, ap_sub should have added one 5 times, while ap only once
-  auto v = ap->get_fields_in().front().get_view<const Real*,Host>();
-  auto v_sub = ap_sub->get_fields_in().front().get_view<const Real*,Host>();
+  auto v     = ap->get_inputs()->get_fields_list().front().get_view<const Real*,Host>();
+  auto v_sub = ap_sub->get_inputs()->get_fields_list().front().get_view<const Real*,Host>();
 
   // Safety check
   REQUIRE (v.size()==v_sub.size());

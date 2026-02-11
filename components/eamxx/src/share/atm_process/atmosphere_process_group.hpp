@@ -92,10 +92,9 @@ public:
       const std::shared_ptr<MassAndEnergyConservationCheck>& conservation_check,
       const CheckFailHandling                                      fail_handling_type) const;
 
-  // Add nan checks after each non-group process, for each computed field.
-  // If checks fail, we print all input and output fields of that process
-  // (that are on the same grid) at the location of the fail.
-  void add_postcondition_nan_checks () const;
+  // Override base class: we don't add a check in this process, simply
+  // ask the group procs to add the checks
+  void add_postcondition_nan_checks () override;
 
   // Add additional data fields to all property checks in the group
   void add_additional_data_fields_to_property_checks (const Field& data_field);

@@ -28,7 +28,7 @@ void AtmosphereDiagnostic::compute_diagnostic (const double dt) {
   //       constants. In that case, we assume the diagnostic can be pre-computed
   //       during initialiation, so that every call to compute_diagnostic sees
   //       ts==m_last_eval_ts, and does nothing.
-  const auto& inputs = get_fields_in();
+  const auto& inputs = get_inputs()->get_fields_list();
   util::TimeStamp ts = m_last_eval_ts;
   if (inputs.size()>0) {
     for (const auto& f : inputs) {

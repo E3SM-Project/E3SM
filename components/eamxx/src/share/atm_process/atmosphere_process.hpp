@@ -245,6 +245,9 @@ public:
   void add_column_conservation_check (const prop_check_ptr& prop_check,
                                       const CheckFailHandling cfh = CheckFailHandling::Fatal);
 
+  // Only atm proc group will override this
+  virtual void add_postcondition_nan_checks ();
+
   // Build a property check on the fly, then call the methods above
   template<typename FPC, typename... Args>
   void add_precondition_check (const Args... args);

@@ -1,8 +1,6 @@
 #include "share/atm_process/atmosphere_process_group.hpp"
 #include "share/field/field_utils.hpp"
 
-#include "share/property_checks/field_nan_check.hpp"
-
 #include <ekat_std_utils.hpp>
 #include <ekat_string_utils.hpp>
 #include <ekat_assert.hpp>
@@ -297,7 +295,7 @@ setup_column_conservation_checks (const std::shared_ptr<MassAndEnergyConservatio
 
 }
 
-void AtmosphereProcessGroup::add_postcondition_nan_checks () const {
+void AtmosphereProcessGroup::add_postcondition_nan_checks () {
   for (auto proc : m_atm_processes) {
     auto group = std::dynamic_pointer_cast<AtmosphereProcessGroup>(proc);
     if (group) {
