@@ -96,15 +96,6 @@ class LayerThicknessAuxVars {
          const int K             = KStart + KVec;
          ProvThickness(ICell, K) = LayerThickCell(ICell, K) + TmpProv[KVec];
       }
-
-      /*
-      Real TotalThickness = 0.0;
-      for (int K = 0; K < NVertLayers; K++) {
-         TotalThickness += LayerThickCell(ICell, K);
-      }
-
-      SshCell(ICell) = TotalThickness - BottomDepth(ICell);
-      */
    }
 
    void registerFields(const std::string &AuxGroupName,
