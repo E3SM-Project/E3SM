@@ -478,6 +478,12 @@ void Tendencies::computeVelocityTendenciesOnly(
       Pacer::stop("Tend:velocityHyperDiff", 2);
    }
 
+   Pacer::start("Tend:computeVelocityVAdvTend", 2);
+   // Compute velocity tendency from vertical advection
+   VAdv->computeVelocityVAdvTend(NormalVelocityTend, NormalVelEdge,
+                                 FluxLayerThickEdge);
+   Pacer::stop("Tend:computeVelocityVAdvTend", 2);
+
    // Compute wind forcing
    const auto &NormalStressEdge = AuxState->WindForcingAux.NormalStressEdge;
    const auto &MeanLayerThickEdge =
