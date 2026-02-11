@@ -422,8 +422,6 @@ then
         ncore=64
     elif [ "${MACHINE}" == "compy" ]; then
         ncore=40
-    elif [ "${MACHINE}" == "anvil" ]; then
-        ncore=36
     else
         echo 'ERROR: MACHINE = '${MACHINE}' is not supported for custom PE layout.' 
         exit 400

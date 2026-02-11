@@ -565,7 +565,7 @@ Contributors: Carolyn Begeman, Darren Engwirda, Xylar Asay-Davis
 
 Global ocean case :code:`GMPAS-JRA1p4.TL319_EC30to60E2r2` 50 year run comparison
 between VLR branch with VLR on and master without remapping:
-`Link to analysis <https://web.lcrc.anl.gov/public/e3sm/diagnostic_output/ac.cbegeman/scratch/anvil/mpas_analysis_output/20211020.GMPAS-JRA1p4.TL319_EC30to60E2r2.vlr.anvil.control/yrs46-50/>`_
+`Link to analysis <https://web.lcrc.anl.gov/public/e3sm/diagnostic_output/ac.cbegeman/scratch/<machine>/mpas_analysis_output/20211020.GMPAS-JRA1p4.TL319_EC30to60E2r2.vlr.<machine>.control/yrs46-50/>`_
 
 Testing and Validation: performance
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

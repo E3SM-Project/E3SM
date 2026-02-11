@@ -4,7 +4,7 @@
 #SNL:
 #SBATCH --account=FY150001
 #SBATCH -p ec
-#anvil:
+#Other machines - edit as needed:
 #SBATCH --account=condo
 #SBATCH -p acme-medium
 #SBATCH -N 12

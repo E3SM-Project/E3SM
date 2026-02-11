@@ -7,8 +7,6 @@
 #SBATCH -N 6
 #SBATCH --time=2:00:00
 #
-# Anvil: 6 nodes, 1h for all runs
-#
 export OMP_NUM_THREADS=1
 export OMP_STACKSIZE=16M     #  Cori has 96GB per node. had to lower to 8M on 3K nodes
 export MV2_ENABLE_AFFINITY=0

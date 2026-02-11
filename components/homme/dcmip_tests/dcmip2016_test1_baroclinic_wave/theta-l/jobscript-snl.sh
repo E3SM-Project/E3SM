@@ -66,10 +66,10 @@ prefix=r50    ; run $NCPU
 #prefix=ne512  ; run $NCPU       
 #prefix=ne1024  ; run $NCPU      
 
-# timings on ANVIL
-#ne120  72 nodes, 2h Anvil:  6s
-#ne256  72 nodes, 2h Anvil:  55s
-#ne512  100 nodes 2h Anvil:  611s (can run on 25 nodes)
+# timings on high-performance machines:
+#ne120  72 nodes, 2h: 6s
+#ne256  72 nodes, 2h: 55s
+#ne512  100 nodes 2h: 611s (can run on 25 nodes)
 #ne1024 100 nodes 2h Anvi:   4642s  (6min init)
 #       100 nodes  270 timesteps:  1836s (6min init)
 #

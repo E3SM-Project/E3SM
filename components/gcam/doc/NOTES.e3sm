@@ -1970,7 +1970,7 @@ XXXXXXXXXX
 
 * salloc -N 4 -t 30:00 -p acme-small -A condo
 
-  This now seems to be giving me some problems allocating - fairly long   delays.  I don't know if that's something new, or if I got lucky in the   past, or what.  Is there an interactive queue on anvil?  Go ahead and try   -p interactive and see...
+  This now seems to be giving me some problems allocating - fairly long   delays.  I don't know if that's something new, or if I got lucky in the   past, or what.
 
   Well, no interactive, but it might be in an maintenance mode.  Let me   just try to run regularly without a salloc call and see.
 
@@ -2035,7 +2035,8 @@ XXXXXXXXXX
 
 * Some links to help runnign and debugging:
 
-1 https://acme-climate.atlassian.net/wiki/spaces/ED/pages/98992379/Anvil+-+ACME+s+dedicated+nodes+hosted+on+Blues 2 https://www.lcrc.anl.gov/for-users/using-lcrc/running-jobs/running-jobs-on-blues/
+1 https://acme-climate.atlassian.net/wiki/spaces/ED/pages/98992379/
+2 https://www.lcrc.anl.gov/for-users/using-lcrc/running-jobs/running-jobs-on-blues/
 
 * To make an interactive session, use salloc (from 2, above).  
 
@@ -2060,8 +2061,6 @@ XXXXXXXXXX
 
 * Confluence page on debugging with totalview on NERSC:      https://acme-climate.atlassian.net/wiki/spaces/ED/pages/185008204/Debugging+with+Totalview+on+NERSC
 
-@ Need to figure out the interactive queue on Anvil, if there is one.  So,   I need an anvil web page.
-
 5/8/2020
 
 * Need to modify the .../cime/scripts/Tools/Makefile to deal with dynamic libraries
@@ -2081,8 +2080,6 @@ XXXXXXXXXX
   I'm not sure if we need these different fortran and C links, but it   worked, so there you go.
 
   I was unable to statically link netcdf - it apparently dynamically links   with HDF libraries so it can't find them if you statically link.
-
-* At any rate, I'm not sure why we don't have the dynamic load path already   by default when setting things up - I think that may be a failing of the   machine configuration for anvil.
 
 * Regardless, after all that we still have these errors:
 
@@ -2106,7 +2103,12 @@ XXXXXXXXXX
 
 * Can't find libxerces-c, and some other stuff:
 
-[shippert@blueslogin4 iac_ZLND_case]$ ldd /lcrc/group/acme/shippert/acme_scratch/anvil/iac_ZLND_case/bld/e3sm.exe | grep found /lcrc/group/acme/shippert/acme_scratch/anvil/iac_ZLND_case/bld/e3sm.exe: /lib64/libstdc++.so.6: version `CXXABI_1.3.8' not found (required by /lcrc/group/acme/shippert/acme_scratch/anvil/iac_ZLND_case/bld/e3sm.exe) /lcrc/group/acme/shippert/acme_scratch/anvil/iac_ZLND_case/bld/e3sm.exe: /lib64/libstdc++.so.6: version `GLIBCXX_3.4.20' not found (required by /lcrc/group/acme/shippert/acme_scratch/anvil/iac_ZLND_case/bld/e3sm.exe) /lcrc/group/acme/shippert/acme_scratch/anvil/iac_ZLND_case/bld/e3sm.exe: /lib64/libstdc++.so.6: version `GLIBCXX_3.4.21' not found (required by /lcrc/group/acme/shippert/acme_scratch/anvil/iac_ZLND_case/bld/e3sm.exe) /lcrc/group/acme/shippert/acme_scratch/anvil/iac_ZLND_case/bld/e3sm.exe: /lib64/libstdc++.so.6: version `CXXABI_1.3.9' not found (required by /lcrc/group/acme/shippert/acme_scratch/anvil/iac_ZLND_case/bld/e3sm.exe) 	libnetcdff.so.6 => not found 	libnetcdf.so.11 => not found 	libxerces-c-3.2.so => not found
+[shippert@blueslogin4 iac_ZLND_case]$ ldd /path/to/scratch/iac_ZLND_case/bld/e3sm.exe | grep found 
+/path/to/scratch/iac_ZLND_case/bld/e3sm.exe: /lib64/libstdc++.so.6: version `CXXABI_1.3.8' not found (required by /path/to/scratch/iac_ZLND_case/bld/e3sm.exe) 
+/path/to/scratch/iac_ZLND_case/bld/e3sm.exe: /lib64/libstdc++.so.6: version `GLIBCXX_3.4.20' not found (required by /path/to/scratch/iac_ZLND_case/bld/e3sm.exe) 
+/path/to/scratch/iac_ZLND_case/bld/e3sm.exe: /lib64/libstdc++.so.6: version `GLIBCXX_3.4.21' not found (required by /path/to/scratch/iac_ZLND_case/bld/e3sm.exe) 
+/path/to/scratch/iac_ZLND_case/bld/e3sm.exe: /lib64/libstdc++.so.6: version `CXXABI_1.3.9' not found (required by /path/to/scratch/iac_ZLND_case/bld/e3sm.exe) 
+	libnetcdff.so.6 => not found 	libnetcdf.so.11 => not found 	libxerces-c-3.2.so => not found
 
   Working through the Makefile now to see how these shared libraries are loaded. 	
 4/21/2020
@@ -2195,7 +2197,7 @@ XXXXXXXXXXXX * An added complication is that (for hector, at least, and probably
 
 * WTH!      This is in ~/iac_Z_case - building the straight Z case, which *just*   *worked* last week!
 
------------------------- Building e3sm with output to /lcrc/group/acme/shippert/acme_scratch/anvil/iac_gcam_submod/bld/e3sm.bldlog.200324-122658  /blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/gcam/src/iac/coupling/gcam_comp_mod.F90:309: undefined reference to `deleteccsminterface_'
+------------------------ Building e3sm with output to /path/to/scratch/iac_gcam_submod/bld/e3sm.bldlog.200324-122658  /blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/gcam/src/iac/coupling/gcam_comp_mod.F90:309: undefined reference to `deleteccsminterface_'
 
 /blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/gcam/src/iac/coupling/gcam_comp_mod.F90:167: undefined reference to `initccsminterface_'
 
@@ -2269,7 +2271,7 @@ XXXXXXXXXXXX * An added complication is that (for hector, at least, and probably
 
 /blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector_model.cpp:199: undefined reference to `Hector::INIToCoreReader::~INIToCoreReader()'
 
-ERROR: BUILD FAIL: buildexe failed, cat /lcrc/group/acme/shippert/acme_scratch/anvil/iac_gcam_submod/bld/e3sm.bldlog.200324-122658 ---------------
+ERROR: BUILD FAIL: buildexe failed, cat /path/to/scratch/iac_gcam_submod/bld/e3sm.bldlog.200324-122658 ---------------
 
 * Okay, a bunch of hector stuff, which I guess we'll figure out.  But the   gcam_comp_mod.F90 stuff?  What happened here?
 

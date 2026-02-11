@@ -15,15 +15,13 @@
 #   status:    see if PDF files for all tests are present
 #   latex:     collect all PDF files, create PDF of results
 #
-# Currently running in Anvil
-#
 # Requirements:
 #    standalone HOMME supported platform
 #    jobscript for each CASE that runs all tests and produces plots
 #    jobscript needs to produce plots with the exact names given below
 #    NCL, pdflatex 
 #
-MACH=anvil.cmake            # HOMME's machine file for the given machine
+MACH=<machine>.cmake        # HOMME's machine file for the given machine
 JOBSCRIPT=jobscript-snl.sh  # name of the jobscript to be submitted in every test
 
 # list of DCMIP tests to run

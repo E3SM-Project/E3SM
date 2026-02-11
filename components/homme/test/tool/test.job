@@ -12,7 +12,7 @@
 # 
 set TOOLDIR = `pwd`
 set WDIR = ~/scratch1/hommetool
-set MACH = $TOOLDIR/../../cmake/machineFiles/anvil.cmake
+set MACH = $TOOLDIR/../../cmake/machineFiles/<machine>.cmake
 set exe = $WDIR/src/tool/homme_tool
 
 

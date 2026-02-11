@@ -8,8 +8,6 @@
 #SBATCH -N 12
 #SBATCH --time=1:30:00
 #
-# on anvil, < 10min to run all simuilations on 20 nodes
-#
 #
 set OMP_NUM_THREADS = 1
 

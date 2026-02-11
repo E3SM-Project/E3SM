@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Anvil, 25 nodes, all 4 resolutions run in 25min
+# 25 nodes, all 4 resolutions run in 25min
 # need at least 11 nodes, since r400 is hardcoded as mpirun -np 384
 #
 #SBATCH --job-name d16-3-theta

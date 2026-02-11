@@ -30,7 +30,7 @@ set vdir = $HOMME/test/vcoord            # vertical coordinate files
 set bld = $wdir/bld                      # cmake/build directory
 
 #set MACH = $HOMME/cmake/machineFiles/sandia-srn-sems.cmake
-set MACH = $HOMME/cmake/machineFiles/anvil.cmake
+set MACH = $HOMME/cmake/machineFiles/<machine>.cmake
 #set MACH = $HOMME/cmake/machineFiles/titan.cmake
 #set MACH = $HOMME/cmake/machineFiles/titan-cuda.cmake    # CMAKE file for Titan GPU support
 #set MACH = $HOMME/cmake/machineFiles/darwin.cmake
@@ -49,7 +49,7 @@ if ( ${?SLURM_NNODES} ) then   # redsky
     @ NCPU *= 16
     @ NCPU /= $OMP_NUM_THREADS
 endif
-if ( ${?PBS_ENVIRONMENT} ) then   # anvil
+if ( ${?PBS_ENVIRONMENT} ) then   # PBS environment
   set NCPU = $PBS_NNODES
   if ( $PBS_ENVIRONMENT == PBS_BATCH ) cd $PBS_O_WORKDIR     
 endif

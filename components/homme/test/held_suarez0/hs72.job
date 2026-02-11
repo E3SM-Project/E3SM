@@ -72,7 +72,7 @@ if ( $ne == 15 ) then
  set HOMME = ~/codes/acme/components/homme
  set wdir = ~/scratch1/preqx
 
- set MACH = $HOMME/cmake/machineFiles/anvil.cmake
+ set MACH = $HOMME/cmake/machineFiles/<machine>.cmake
  set input = $HOMME/test/held_suarez0
  set bld = $wdir/bld72
  #set exe = preqx

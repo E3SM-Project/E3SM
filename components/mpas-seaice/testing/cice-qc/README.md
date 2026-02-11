@@ -18,7 +18,7 @@ This testing script to determine if the answers are climate-changing as determin
 
     python mpas-seaice.t-test.py $BASE $TEST
 
-where `$BASE`, `$TEST` are the paths to the run directories of the two tests containing the `mpassi.hist.*` files. A sample batch script for Chrysalis and Anvil is provided, `job_script.cice-qc.anvil`, `job_script.cice-qc.chrysalis`.
+where `$BASE`, `$TEST` are the paths to the run directories of the two tests containing the `mpassi.hist.*` files. Sample batch scripts for different machines are provided (e.g., `job_script.cice-qc.<machine>`).
 
 ## Output
 

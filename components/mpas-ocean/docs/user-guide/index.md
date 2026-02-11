@@ -9,7 +9,7 @@ Step-by-step instructions on how to run E3SM can be found at [https://docs.e3sm.
 
 This MPAS-Ocean Quick Start guide provides the additional information to run configurations that are not fully-coupled (e.g. C-case: active ocean only; G-case: active ocean and sea ice) within E3SM. This is done by changing the compset. Certain parameters, including the mesh, namelist parameters, input data files, and output file specifcations can also be modified. These are described below as ways to customize runs.
 
-Templates of 1-month example E3SM run-scripts for a [G-case](../gcase.template.v3LR.chrysalis.sh) and [C-case](../ccase.template.v3LR.anvil.sh) are provided. Key information for the user to modify includes:
+Templates of 1-month example E3SM run-scripts for a [G-case](../gcase.template.v3LR.chrysalis.sh) and [C-case](../ccase.template.v3LR.<machine>.sh) are provided. Key information for the user to modify includes:
 
 - `MACHINE` and `PROJECT` if applicable
 - Paths for code repository in `CODE_ROOT` and case directory in `CASE_ROOT`, which includes the run directory for output.
@@ -144,7 +144,7 @@ Under each block header is the list of variables (individual variables, variable
         precision="single"
         io_type="pnetcdf"
         useMissingValMask="true"
-        filename_template="GMPAS-JRA.TL319_IcoswISC30E3r5.anvil.mpaso.hist.am.timeSeriesStatsMonthly.$Y-$M-$D.nc"
+        filename_template="GMPAS-JRA.TL319_IcoswISC30E3r5.<machine>.mpaso.hist.am.timeSeriesStatsMonthly.$Y-$M-$D.nc"
         filename_interval="00-01-00_00:00:00"
         reference_time="01-01-01_00:00:00"
         output_interval="00-01-00_00:00:00"
@@ -169,7 +169,7 @@ Under each block header is the list of variables (individual variables, variable
         type="output"
         precision="single"
         io_type="pnetcdf"
-        filename_template="GMPAS-JRA.TL319_IcoswISC30E3r5.anvil.mpaso.highFrequencyOutput.$Y-$M-$D_$h.$m.$s.nc"
+        filename_template="GMPAS-JRA.TL319_IcoswISC30E3r5.<machine>.mpaso.highFrequencyOutput.$Y-$M-$D_$h.$m.$s.nc"
         filename_interval="00-01-00_00:00:00"
         reference_time="01-01-01_00:00:00"
         output_interval="00-00-05_00:00:00"

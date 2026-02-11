@@ -42,13 +42,13 @@ if ( $ne == 8 ) then
    set nu = 2e16
 endif
 if ( $ne == 15 ) then
-    # 2 degree  anvil 38 nodes, 1600 days: 5min 
+    # 2 degree
     # tbird 100 nodes, 1200days: 90min
     set tstep = 600
     set nu = 1e16
  endif
  if ( $ne == 16 ) then
-    # 2 degree  anvil 38 nodes, 1600 days: 5min 
+    # 2 degree
     # tbird 100 nodes, 1200days: 90min
     set tstep = 600
     set nu = 7e15    # turn on subcycling for larger values
@@ -104,7 +104,7 @@ if ( $ne == 15 ) then
  set HOMME = ~/codes/acme/components/homme
  set wdir = ~/scratch1/preqx
 
- set MACH = $HOMME/cmake/machineFiles/anvil.cmake
+ set MACH = $HOMME/cmake/machineFiles/<machine>.cmake
  set input = $HOMME/test/held_suarez0
  set bld = $wdir/bld
  #set exe = preqx

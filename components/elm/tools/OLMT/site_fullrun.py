@@ -230,10 +230,6 @@ if (options.machine == ''):
    elif ('eos' in hostname):
        options.machine = 'eos'
        npernode=32
-   elif ('blues' in hostname or 'blogin' in hostname):
-       print 'Hostname = '+hostname+' and machine not specified.  Assuming anvil'
-       options.machine = 'anvil' 
-       npernode=36
    elif ('compy' in hostname):
        options.machine = 'compy'
        npernode=40
@@ -249,8 +245,6 @@ elif (options.machine == 'cades'):
     ccsm_input = '/lustre/or-hydra/cades-ccsi/proj-shared/project_acme/ACME_inputdata/'
 elif (options.machine == 'edison' or 'cori' in options.machine):
     ccsm_input = '/project/projectdirs/acme/inputdata'
-elif ('anvil' in options.machine):
-    ccsm_input = '/home/ccsm-data/inputdata'
 elif ('compy' in options.machine):
     ccsm_input = '/compyfs/inputdata/'
 
@@ -299,9 +293,6 @@ if (options.runroot == '' or (os.path.exists(options.runroot) == False)):
         print('Project = '+myproject)
     elif ('edison' in options.machine):
         runroot=os.environ.get('CSCRATCH')+'/acme_scratch/edison/'
-    elif ('anvil' in options.machine):
-        runroot="/lcrc/group/acme/"+myuser
-        myproject='e3sm'
     elif ('compy' in options.machine):
         runroot='/compyfs/'+myuser+'/e3sm_scratch'
         myproject='e3sm'
@@ -760,7 +751,7 @@ for row in AFdatareader:
             
             mysubmit_type = 'qsub'
             groupnum = sitenum/npernode
-            if ('anvil' in options.machine or 'compy' in options.machine or 'cori' in options.machine):
+            if ('compy' in options.machine or 'cori' in options.machine):
                 mysubmit_type = 'sbatch'
             if ('ubuntu' in options.machine):
                 mysubmit_type = ''
@@ -789,9 +780,6 @@ for row in AFdatareader:
                             output.write('#SBATCH --time='+timestr+'\n')
                             if (myproject != ''):
                                 output.write('#SBATCH -A '+myproject+'\n')
-                            if ('anvil' in options.machine):
-                                output.write('#SBATCH --partition=acme-centos6\n')
-                                output.write('#SBATCH --account=condo\n')
                             if ('edison' in options.machine or 'cori' in options.machine):
                                 if (options.debug):
                                     output.write('#SBATCH --partition=debug\n')
