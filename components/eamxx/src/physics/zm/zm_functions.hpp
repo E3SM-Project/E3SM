@@ -85,9 +85,9 @@ struct Functions {
 
     static inline constexpr Real cdifr_min = 1.e-6; // minimum layer difference for geometric averaging
 
-    static inline constexpr Real maxc_factor = 1.e-12; // ?
+    static inline constexpr Real maxc_factor = 1.e-12; // Small numerical regularization constant used in the maximum cloud fraction
 
-    static inline constexpr Real flux_factor = 1.e-12; // ?
+    static inline constexpr Real flux_factor = 1.e-12; // Small numerical regularization constant used in convective flux related calculations
 
     static inline constexpr Real mbsth = 1.e-15; // threshold below which we treat the mass fluxes as zero (in mb/s)
   };

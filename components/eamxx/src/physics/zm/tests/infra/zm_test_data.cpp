@@ -234,7 +234,7 @@ void zm_transport_tracer(ZmTransportTracerData& d)
 
   const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.pcols, d.pver);
 
-  WSM wsm(d.pver, 10, policy);
+  WSM wsm(d.pver * d.ncnst, 10, policy);
   ZMF::ZmRuntimeOpt init_cp = ZMF::s_common_init;
 
   // unpack data scalars because we do not want the lambda to capture d
@@ -242,20 +242,21 @@ void zm_transport_tracer(ZmTransportTracerData& d)
   const Int ncnst = d.ncnst;
   const Int pver = d.pver;
 
+  // Find min top and bottom
+  assert(d.il1g == 0 && d.il2g == d.pcols-1);
   Int ktm, kbm;
-  MinPair result;
-
-  // Perform the reduction
   Kokkos::RangePolicy<ExeSpace> rpolicy(0, d.pcols);
-  Kokkos::parallel_reduce("FindMins", rpolicy, KOKKOS_LAMBDA(const int i, MinPair& update) {
-    // Update the first element of the pair
-    if (jt_d(i) < update.first)  update.first = jt_d(i);
-    // Update the second element of the pair
-    if (mx_d(i) < update.second) update.second = mx_d(i);
-  }, Kokkos::Min<MinPair>(result));
+  Kokkos::parallel_reduce("FindMinJt", rpolicy, KOKKOS_LAMBDA(const int i, Int& update) {
+    if (jt_d(i) < update) {
+      update = jt_d(i);
+    }
+  }, Kokkos::Min<Int>(ktm));
 
-  ktm = result.first;
-  kbm = result.second;
+  Kokkos::parallel_reduce("FindMinMx", rpolicy, KOKKOS_LAMBDA(const int i, Int& update) {
+    if (mx_d(i) < update) {
+      update = mx_d(i);
+    }
+  }, Kokkos::Min<Int>(kbm));
 
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const Int i = team.league_rank();

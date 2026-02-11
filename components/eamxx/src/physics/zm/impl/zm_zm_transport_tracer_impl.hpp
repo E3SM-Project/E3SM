@@ -40,10 +40,22 @@ void Functions<S,D>::zm_transport_tracer(
 {
   constexpr Real small = ZMC::small;
   // Allocate temporary arrays (2D: ncnst x pver)
-  uview_2d<Real> chat, cond, const_arr, fisg, conu, dcondt, dutmp, eutmp, edtmp, dptmp;
+  uview_1d<Real> chat1d, cond1d, const_arr1d, fisg1d, conu1d, dcondt1d, dutmp1d, eutmp1d, edtmp1d, dptmp1d;
   workspace.template take_many_contiguous_unsafe<10>(
     {"chat", "cond", "const_arr", "fisg", "conu", "dcondt", "dutmp", "eutmp", "edtmp", "dptmp"},
-    {&chat, &cond, &const_arr, &fisg, &conu, &dcondt, &dutmp, &eutmp, &edtmp, &dptmp});
+    {&chat1d, &cond1d, &const_arr1d, &fisg1d, &conu1d, &dcondt1d, &dutmp1d, &eutmp1d, &edtmp1d, &dptmp1d});
+
+  uview_2d<Real>
+    chat(chat1d.data(), ncnst, pver),
+    cond(cond1d.data(), ncnst, pver),
+    const_arr(const_arr1d.data(), ncnst, pver),
+    fisg(fisg1d.data(), ncnst, pver),
+    conu(conu1d.data(), ncnst, pver),
+    dcondt(dcondt1d.data(), ncnst, pver),
+    dutmp(dutmp1d.data(), ncnst, pver),
+    eutmp(eutmp1d.data(), ncnst, pver),
+    edtmp(edtmp1d.data(), ncnst, pver),
+    dptmp(dptmp1d.data(), ncnst, pver);
 
   // Parallel loop over each constituent (skip water vapor at m=0)
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team, 1, ncnst), [&] (const Int& m) {
@@ -215,7 +227,7 @@ void Functions<S,D>::zm_transport_tracer(
   team.team_barrier();
 
   workspace.template release_many_contiguous<10>(
-    {&chat, &cond, &const_arr, &fisg, &conu, &dcondt, &dutmp, &eutmp, &edtmp, &dptmp});
+    {&chat1d, &cond1d, &const_arr1d, &fisg1d, &conu1d, &dcondt1d, &dutmp1d, &eutmp1d, &edtmp1d, &dptmp1d});
 }
 
 } // namespace zm

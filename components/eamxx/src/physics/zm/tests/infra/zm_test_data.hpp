@@ -143,6 +143,7 @@ struct ZmTransportTracerData : public PhysicsTestData {
     for (Int i = 0; i < pcols; ++i) {
       jt[i] = i + 1;
       mx[i] = jt[i] + pver / 2;
+      assert(mx[i] < pver);
     }
   }
 };
