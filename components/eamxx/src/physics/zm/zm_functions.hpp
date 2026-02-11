@@ -384,6 +384,34 @@ struct Functions {
   // --------- Members ---------
   //
   inline static ZmRuntimeOpt s_common_init;
+  KOKKOS_FUNCTION
+  static void zm_transport_momentum(
+    // Inputs
+    const MemberType& team,
+    const Int& ncol, // actual number of columns
+    const Int& pver, // number of mid-point levels
+    const Int& pverp, // number of interface levels
+    const uview_2d<const Real>& wind_in, // input Momentum array
+    const Int& nwind, // number of tracers to transport
+    const uview_1d<const Real>& mu, // mass flux up
+    const uview_1d<const Real>& md, // mass flux down
+    const uview_1d<const Real>& du, // mass detraining from updraft
+    const uview_1d<const Real>& eu, // mass entraining from updraft
+    const uview_1d<const Real>& ed, // mass entraining from downdraft
+    const uview_1d<const Real>& dp, // gathered pressure delta between interfaces
+    const Int& jt, // index of cloud top for each column
+    const Int& mx, // index of cloud top for each column
+    const Int& ideep, // gathering array
+    const Int& il1g, // gathered min ncol index
+    const Int& il2g, // gathered max ncol index
+    const Real& dt, // time step in seconds : 2*delta_t
+    // Outputs
+    const uview_2d<Real>& wind_tend, // output momentum tendency
+    const uview_2d<Real>& pguall, // apparent force from  updraft PG
+    const uview_2d<Real>& pgdall, // apparent force from  downdraft PG
+    const uview_2d<Real>& icwu, // in-cloud winds in updraft
+    const uview_2d<Real>& icwd, // in-cloud winds in downdraft
+    const uview_1d<Real>& seten); // dry static energy tendency);
 }; // struct Functions
 
 } // namespace zm
@@ -397,5 +425,6 @@ struct Functions {
 # include "impl/zm_invert_entropy_impl.hpp"
 # include "impl/zm_entropy_impl.hpp"
 # include "impl/zm_zm_transport_tracer_impl.hpp"
+# include "impl/zm_zm_transport_momentum_impl.hpp"
 #endif // GPU && !KOKKOS_ENABLE_*_RELOCATABLE_DEVICE_CODE
 #endif // ZM_FUNCTIONS_HPP
