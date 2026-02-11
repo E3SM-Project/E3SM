@@ -6,10 +6,14 @@
 //
 //===-----------------------------------------------------------------------===/
 
+#include <algorithm>
+#include <cmath>
+#include <limits>
 #include <string>
 
 #include <mpi.h>
 
+#include "Error.h"
 #include "Logging.h"
 #include "MachEnv.h"
 #include "OmegaKokkos.h"
@@ -18,367 +22,1655 @@
 
 using namespace OMEGA;
 
+//------------------------------------------------------------------------------
+// utility function to compute one iteration of the DD algorithm for
+// reproducible double precision sums
+void sumDDTest(complex<double> &ddb, double &dda) {
+   double t1 = dda + real(ddb);
+   double e  = t1 - dda;
+   double t2 = ((real(ddb) - e) + (dda - (t1 - e))) + imag(ddb);
+   ddb       = complex<double>(t1 + t2, t2 - ((t1 + t2) - t1));
+}
+
+//------------------------------------------------------------------------------
+// Scalar reduction test function
+void testScalarReductions() {
+
+   // Get some MPI values based on default environment
+   MachEnv *DefEnv = MachEnv::getDefault();
+   MPI_Comm Comm   = DefEnv->getComm();
+   int MyTask      = DefEnv->getMyTask();
+   int NTasks      = DefEnv->getNumTasks();
+
+   // Get similar values based on subset environment for reproducibility tests
+   MachEnv *SubEnv  = MachEnv::get("Subset");
+   MPI_Comm CommSub = SubEnv->getComm();
+   bool IsSubMember = SubEnv->isMember();
+
+   // For reproducibility tests, define a full range of values within
+   // each data type.  We want the smallest (abs) value > 0
+   // Further restrict the max values so that we do not inadvertantly
+   // exceed limits.
+   I4 MaxEntries = 8;
+   I4 MaxI4      = std::numeric_limits<I4>::max() / (10 * MaxEntries);
+   I8 MaxI8      = std::numeric_limits<I8>::max() / (10 * MaxEntries);
+   R4 MaxR4      = std::numeric_limits<R4>::max() / (10.0 * MaxEntries);
+   R8 MaxR8      = std::numeric_limits<R8>::max() / (10.0 * MaxEntries);
+   R4 EpsR4      = 0.0001;
+   R8 EpsR8      = 0.0000000000001;
+   // Compute max safe exponents based on adjusted max above
+   I4 ExpI4 = std::log2(MaxI4);
+   I4 ExpI8 = std::log2(MaxI8);
+   I4 ExpR4 = std::log10(MaxR4);
+   I4 ExpR8 = std::log10(MaxR8);
+   // To cover a large range of values, compute a factor for test vals
+   // on each rank
+   std::vector<I4> FacI4(NTasks);
+   std::vector<I8> FacI8(NTasks);
+   std::vector<R4> FacR4(NTasks);
+   std::vector<R8> FacR8(NTasks);
+   for (int I = 0; I < NTasks; ++I) {
+      FacI4[I] = pow(2, std::min(I, ExpI4));
+      FacI8[I] = pow(2, std::min(I, ExpI8));
+      FacR4[I] = pow(10.0, std::min(I, ExpR4));
+      FacR8[I] = pow(10.0, std::min(I, ExpR8));
+   }
+
+   // Initialize test and reference values
+   I4 TstI4    = MyTask * FacI4[MyTask];
+   I4 SumI4    = 0;
+   I4 RefI4    = 0;
+   I4 SubI4    = 0;
+   I4 RefMinI4 = 0;
+   I4 SubMinI4 = 0;
+   I4 RefMaxI4 = (NTasks - 1) * FacI4[NTasks - 1];
+   I4 SubMaxI4 = 3 * FacI4[3];
+   I8 TstI8    = MyTask * FacI8[MyTask];
+   I8 SumI8    = 0;
+   I8 RefI8    = 0;
+   I8 SubI8    = 0;
+   I8 RefMinI8 = 0;
+   I8 SubMinI8 = 0;
+   I8 RefMaxI8 = (NTasks - 1) * FacI8[NTasks - 1];
+   I8 SubMaxI8 = 3 * FacI8[3];
+   R4 TstR4    = (MyTask + EpsR4) * FacR4[MyTask];
+   R4 SumR4    = 0.0;
+   R4 RefR4    = 0.0;
+   R4 SubR4    = 0.0;
+   R4 RefMinR4 = EpsR4 * FacR4[0];
+   R4 SubMinR4 = EpsR4 * FacR4[0];
+   R4 RefMaxR4 = (NTasks - 1 + EpsR4) * FacR4[NTasks - 1];
+   R4 SubMaxR4 = (3 + EpsR4) * FacR4[3];
+   R8 TstR8    = (MyTask + EpsR8) * FacR8[MyTask];
+   R8 SumR8    = 0.0;
+   R8 RefR8    = 0.0;
+   R8 SubR8    = 0.0;
+   R8 TmpR1    = 0.0; // for reproducible R4 sums
+   R8 TmpR2    = 0.0; // for reproducible R4 sums
+   R8 RefMinR8 = EpsR8 * FacR8[0];
+   R8 SubMinR8 = EpsR8 * FacR8[0];
+   R8 RefMaxR8 = (NTasks - 1 + EpsR8) * FacR8[NTasks - 1];
+   R8 SubMaxR8 = (3 + EpsR8) * FacR8[3];
+   // For reference sums, compute a serial sum of all test values on default
+   // and subset domains. Use special reproducible sum function for R8.
+   double DDValRef;
+   double DDValSub;
+   complex<double> DDSumRef(0.0, 0.0);
+   complex<double> DDSumSub(0.0, 0.0);
+   for (int Task = 0; Task < NTasks; ++Task) {
+      RefI4 += Task * FacI4[Task];
+      RefI8 += Task * FacI8[Task];
+      TmpR1 += (Task + EpsR4) * FacR4[Task];
+      DDValRef = (Task + EpsR8) * FacR8[Task];
+      sumDDTest(DDSumRef, DDValRef);
+      if (Task < 4) {
+         SubI4 += Task * FacI4[Task];
+         SubI8 += Task * FacI8[Task];
+         TmpR2 += (Task + EpsR4) * FacR4[Task];
+         DDValSub = (Task + EpsR8) * FacR8[Task];
+         sumDDTest(DDSumSub, DDValSub);
+      }
+   }
+   RefR4 = TmpR1;
+   RefR8 = real(DDSumRef);
+   if (MyTask < 4) {
+      SubR4 = TmpR2;
+      SubR8 = real(DDSumSub);
+   }
+
+   // Test global scalar sums against ref values
+   SumI4 = globalSum(TstI4, Comm);
+   SumI8 = globalSum(TstI8, Comm);
+   SumR4 = globalSum(TstR4, Comm);
+   SumR8 = globalSum(TstR8, Comm);
+
+   if (SumI4 != RefI4)
+      ABORT_ERROR("ReductionsTest: FAIL globalSum (I4 scalar)"
+                  "Expected = {} Actual = {}",
+                  RefI4, SumI4);
+   if (SumI8 != RefI8)
+      ABORT_ERROR("ReductionsTest: FAIL globalSum (I8 scalar)"
+                  "Expected = {} Actual = {}",
+                  RefI8, SumI8);
+   if (SumR4 != RefR4)
+      ABORT_ERROR("ReductionsTest: FAIL globalSum (R4 scalar)"
+                  "Expected = {} Actual = {}",
+                  RefR4, SumR4);
+   if (SumR8 != RefR8)
+      ABORT_ERROR("ReductionsTest: FAIL globalSum (R8 scalar)"
+                  "Expected = {} Actual = {}",
+                  RefR8, SumR8);
+
+   // Test global scalar minval against ref values - reuse sums for result
+   SumI4 = globalMinVal(TstI4, Comm);
+   SumI8 = globalMinVal(TstI8, Comm);
+   SumR4 = globalMinVal(TstR4, Comm);
+   SumR8 = globalMinVal(TstR8, Comm);
+
+   if (SumI4 != RefMinI4)
+      ABORT_ERROR("ReductionsTest: FAIL globalMinVal (I4 scalar)"
+                  "Expected = {} Actual = {}",
+                  RefMinI4, SumI4);
+   if (SumI8 != RefMinI8)
+      ABORT_ERROR("ReductionsTest: FAIL globalMinVal (I8 scalar)"
+                  "Expected = {} Actual = {}",
+                  RefMinI8, SumI8);
+   if (SumR4 != RefMinR4)
+      ABORT_ERROR("ReductionsTest: FAIL globalMinVal (R4 scalar)"
+                  "Expected = {} Actual = {}",
+                  RefMinR4, SumR4);
+   if (SumR8 != RefMinR8)
+      ABORT_ERROR("ReductionsTest: FAIL globalMinVal (R8 scalar)"
+                  "Expected = {} Actual = {}",
+                  RefMinR8, SumR8);
+
+   // Test global scalar maxval against ref values - reuse sums for result
+   SumI4 = globalMaxVal(TstI4, Comm);
+   SumI8 = globalMaxVal(TstI8, Comm);
+   SumR4 = globalMaxVal(TstR4, Comm);
+   SumR8 = globalMaxVal(TstR8, Comm);
+
+   if (SumI4 != RefMaxI4)
+      ABORT_ERROR("ReductionsTest: FAIL globalMaxVal (I4 scalar)"
+                  "Expected = {} Actual = {}",
+                  RefMaxI4, SumI4);
+   if (SumI8 != RefMaxI8)
+      ABORT_ERROR("ReductionsTest: FAIL globalMaxVal (I8 scalar)"
+                  "Expected = {} Actual = {}",
+                  RefMaxI8, SumI8);
+   if (SumR4 != RefMaxR4)
+      ABORT_ERROR("ReductionsTest: FAIL globalMaxVal (R4 scalar)"
+                  "Expected = {} Actual = {}",
+                  RefMaxR4, SumR4);
+   if (SumR8 != RefMaxR8)
+      ABORT_ERROR("ReductionsTest: FAIL globalMaxVal (R8 scalar)"
+                  "Expected = {} Actual = {}",
+                  RefMaxR8, SumR8);
+
+   // Test scalar reductions with subset communicator
+   if (IsSubMember) {
+      SumI4 = globalSum(TstI4, CommSub);
+      SumI8 = globalSum(TstI8, CommSub);
+      SumR4 = globalSum(TstR4, CommSub);
+      SumR8 = globalSum(TstR8, CommSub);
+
+      if (SumI4 != SubI4)
+         ABORT_ERROR("ReductionsTest: FAIL globalSum (I4 scalar) subset"
+                     "Expected = {} Actual = {}",
+                     SubI4, SumI4);
+      if (SumI8 != SubI8)
+         ABORT_ERROR("ReductionsTest: FAIL globalSum (I8 scalar) subset"
+                     "Expected = {} Actual = {}",
+                     SubI8, SumI8);
+      if (SumR4 != SubR4)
+         ABORT_ERROR("ReductionsTest: FAIL globalSum (R4 scalar) subset"
+                     "Expected = {} Actual = {}",
+                     SubR4, SumR4);
+      if (SumR8 != SubR8)
+         ABORT_ERROR("ReductionsTest: FAIL globalSum (R8 scalar) subset"
+                     "Expected = {} Actual = {}",
+                     SubR8, SumR8);
+
+      // Minval
+      SumI4 = globalMinVal(TstI4, CommSub);
+      SumI8 = globalMinVal(TstI8, CommSub);
+      SumR4 = globalMinVal(TstR4, CommSub);
+      SumR8 = globalMinVal(TstR8, CommSub);
+
+      if (SumI4 != SubMinI4)
+         ABORT_ERROR("ReductionsTest: FAIL globalMinVal (I4 scalar) subset"
+                     "Expected = {} Actual = {}",
+                     SubMinI4, SumI4);
+      if (SumI8 != SubMinI8)
+         ABORT_ERROR("ReductionsTest: FAIL globalMinVal (I8 scalar) subset"
+                     "Expected = {} Actual = {}",
+                     SubMinI8, SumI8);
+      if (SumR4 != SubMinR4)
+         ABORT_ERROR("ReductionsTest: FAIL globalMinVal (R4 scalar) subset"
+                     "Expected = {} Actual = {}",
+                     SubMinR4, SumR4);
+      if (SumR8 != SubMinR8)
+         ABORT_ERROR("ReductionsTest: FAIL globalMinVal (R8 scalar) subset"
+                     "Expected = {} Actual = {}",
+                     SubMinR8, SumR8);
+
+      // Maxval
+      SumI4 = globalMaxVal(TstI4, CommSub);
+      SumI8 = globalMaxVal(TstI8, CommSub);
+      SumR4 = globalMaxVal(TstR4, CommSub);
+      SumR8 = globalMaxVal(TstR8, CommSub);
+
+      if (SumI4 != SubMaxI4)
+         ABORT_ERROR("ReductionsTest: FAIL globalMaxVal (I4 scalar) subset"
+                     "Expected = {} Actual = {}",
+                     SubMaxI4, SumI4);
+      if (SumI8 != SubMaxI8)
+         ABORT_ERROR("ReductionsTest: FAIL globalMaxVal (I8 scalar) subset"
+                     "Expected = {} Actual = {}",
+                     SubMaxI8, SumI8);
+      if (SumR4 != SubMaxR4)
+         ABORT_ERROR("ReductionsTest: FAIL globalMaxVal (R4 scalar) subset"
+                     "Expected = {} Actual = {}",
+                     SubMaxR4, SumR4);
+      if (SumR8 != SubMaxR8)
+         ABORT_ERROR("ReductionsTest: FAIL globalMaxVal (R8 scalar) subset"
+                     "Expected = {} Actual = {}",
+                     SubMaxR8, SumR8);
+
+   } // end if subset member
+
+   // Scalar sum multi-field checks - checks both value and reproducibility
+   // For reproducibility, we set the second field to have values in the
+   // reverse order of the original
+   int NFields = 2;
+
+   std::vector<I4> LocVecI4(NFields);
+   std::vector<I8> LocVecI8(NFields);
+   std::vector<R4> LocVecR4(NFields);
+   std::vector<R8> LocVecR8(NFields);
+   std::vector<I4> SumVecI4(NFields);
+   std::vector<I8> SumVecI8(NFields);
+   std::vector<R4> SumVecR4(NFields);
+   std::vector<R8> SumVecR8(NFields);
+   I4 TaskRev  = NTasks - 1 - MyTask;
+   LocVecI4[0] = TstI4;
+   LocVecI8[0] = TstI8;
+   LocVecR4[0] = TstR4;
+   LocVecR8[0] = TstR8;
+   LocVecI4[1] = TaskRev * FacI4[TaskRev];
+   LocVecI8[1] = TaskRev * FacI8[TaskRev];
+   LocVecR4[1] = (TaskRev + EpsR4) * FacR4[TaskRev];
+   LocVecR8[1] = (TaskRev + EpsR8) * FacR8[TaskRev];
+
+   // Test multi-field sums
+   SumVecI4 = globalSum(LocVecI4, Comm);
+   SumVecI8 = globalSum(LocVecI8, Comm);
+   SumVecR4 = globalSum(LocVecR4, Comm);
+   SumVecR8 = globalSum(LocVecR8, Comm);
+   // Test sum for each field
+   for (int I = 0; I < NFields; ++I) {
+      if (SumVecI4[I] != RefI4)
+         ABORT_ERROR("ReductionsTest: FAIL globalSum (I4 scalar multifield)"
+                     "Field {} Expected = {} Actual = {}",
+                     I, RefI4, SumVecI4[I]);
+      if (SumVecI8[I] != RefI8)
+         ABORT_ERROR("ReductionsTest: FAIL globalSum (I8 scalar multifield)"
+                     "Field {} Expected = {} Actual = {}",
+                     I, RefI8, SumVecI8[I]);
+      if (SumVecR4[I] != RefR4)
+         ABORT_ERROR("ReductionsTest: FAIL globalSum (R4 scalar multifield)"
+                     "Field {} Expected = {} Actual = {}",
+                     I, RefR4, SumVecR4[I]);
+      if (SumVecR8[I] != RefR8)
+         ABORT_ERROR("ReductionsTest: FAIL globalSum (R8 scalar multifield)"
+                     "Field {} Expected = {} Actual = {}",
+                     I, RefR8, SumVecR8[I]);
+   }
+
+   // Test multi-field minval
+   SumVecI4 = globalMinVal(LocVecI4, Comm);
+   SumVecI8 = globalMinVal(LocVecI8, Comm);
+   SumVecR4 = globalMinVal(LocVecR4, Comm);
+   SumVecR8 = globalMinVal(LocVecR8, Comm);
+   // Test sum for each field
+   for (int I = 0; I < NFields; ++I) {
+      if (SumVecI4[I] != RefMinI4)
+         ABORT_ERROR("ReductionsTest: FAIL globalMinVal (I4 scalar multifield)"
+                     "Field {} Expected = {} Actual = {}",
+                     I, RefMinI4, SumVecI4[I]);
+      if (SumVecI8[I] != RefMinI8)
+         ABORT_ERROR("ReductionsTest: FAIL globalMinVal (I8 scalar multifield)"
+                     "Field {} Expected = {} Actual = {}",
+                     I, RefMinI8, SumVecI8[I]);
+      if (SumVecR4[I] != RefMinR4)
+         ABORT_ERROR("ReductionsTest: FAIL globalMinVal (R4 scalar multifield)"
+                     "Field {} Expected = {} Actual = {}",
+                     I, RefMinR4, SumVecR4[I]);
+      if (SumVecR8[I] != RefMinR8)
+         ABORT_ERROR("ReductionsTest: FAIL globalMinVal (R8 scalar multifield)"
+                     "Field {} Expected = {} Actual = {}",
+                     I, RefMinR8, SumVecR8[I]);
+   }
+
+   // Test multi-field maxval
+   SumVecI4 = globalMaxVal(LocVecI4, Comm);
+   SumVecI8 = globalMaxVal(LocVecI8, Comm);
+   SumVecR4 = globalMaxVal(LocVecR4, Comm);
+   SumVecR8 = globalMaxVal(LocVecR8, Comm);
+   // Test sum for each field
+   for (int I = 0; I < NFields; ++I) {
+      if (SumVecI4[I] != RefMaxI4)
+         ABORT_ERROR("ReductionsTest: FAIL globalMaxVal (I4 scalar multifield)"
+                     "Field {} Expected = {} Actual = {}",
+                     I, RefMaxI4, SumVecI4[I]);
+      if (SumVecI8[I] != RefMaxI8)
+         ABORT_ERROR("ReductionsTest: FAIL globalMaxVal (I8 scalar multifield)"
+                     "Field {} Expected = {} Actual = {}",
+                     I, RefMaxI8, SumVecI8[I]);
+      if (SumVecR4[I] != RefMaxR4)
+         ABORT_ERROR("ReductionsTest: FAIL globalMaxVal (R4 scalar multifield)"
+                     "Field {} Expected = {} Actual = {}",
+                     I, RefMaxR4, SumVecR4[I]);
+      if (SumVecR8[I] != RefMaxR8)
+         ABORT_ERROR("ReductionsTest: FAIL globalMaxVal (R8 scalar multifield)"
+                     "Field {} Expected = {} Actual = {}",
+                     I, RefMaxR8, SumVecR8[I]);
+   }
+
+} // End testScalarSums
+
+//------------------------------------------------------------------------------
+// Individual array test functions
+template <typename AT, typename T>
+void testArray(const std::string &TestLabel, ///< [in] label for test
+               const AT Array,               ///< [in] array to be summed
+               const T RefResult,            ///< [in] reference result
+               const std::vector<I4> *IndxRange = nullptr ///< [in] index range
+) {
+   MachEnv *DefEnv = MachEnv::getDefault();
+   MPI_Comm Comm   = DefEnv->getComm();
+   T TestResult    = 0;
+
+   if (IndxRange == nullptr) {
+      TestResult = globalSum(Array, Comm);
+   } else {
+      TestResult = globalSum(Array, Comm, IndxRange);
+   }
+
+   // Exit on error
+   if (TestResult != RefResult)
+      ABORT_ERROR("GlobalSum {} Test FAIL: Expected {} Actual {}", TestLabel,
+                  RefResult, TestResult);
+}
+//------------------------------------------------------------------------------
+// Individual array test function for min, max
+template <typename AT, typename T>
+void testArrayMinMax(
+    const std::string &TestLabel, ///< [in] label for test
+    const AT Array,               ///< [in] array to find min, max
+    const T RefMin,               ///< [in] reference result for minval
+    const T RefMax,               ///< [in] reference result for maxval
+    const std::vector<I4> *IndxRange = nullptr ///< [in] index range
+) {
+   MachEnv *DefEnv = MachEnv::getDefault();
+   MPI_Comm Comm   = DefEnv->getComm();
+   T TestMax       = -999;
+   T TestMin       = 999;
+
+   if (IndxRange == nullptr) {
+      TestMax = globalMaxVal(Array, Comm);
+      TestMin = globalMinVal(Array, Comm);
+   } else {
+      TestMax = globalMaxVal(Array, Comm, IndxRange);
+      TestMin = globalMinVal(Array, Comm, IndxRange);
+   }
+
+   // Exit on error
+   if (TestMin != RefMin)
+      ABORT_ERROR("GlobalMinVal {} Test FAIL: Expected {} Actual {}", TestLabel,
+                  RefMin, TestMin);
+   if (TestMax != RefMax)
+      ABORT_ERROR("GlobalMaxVal {} Test FAIL: Expected {} Actual {}", TestLabel,
+                  RefMax, TestMax);
+}
+//------------------------------------------------------------------------------
+// Individual array product test functions
+template <typename AT, typename T>
+void testArrayProd(
+    const std::string &TestLabel,              ///< [in] label for test
+    const AT Arr1,                             ///< [in] first array in product
+    const AT Arr2,                             ///< [in] second array in product
+    const T RefResult,                         ///< [in] reference result
+    const std::vector<I4> *IndxRange = nullptr ///< [in] index range
+) {
+   MachEnv *DefEnv = MachEnv::getDefault();
+   MPI_Comm Comm   = DefEnv->getComm();
+   T TestResult    = 0;
+
+   if (IndxRange == nullptr) {
+      TestResult = globalSum(Arr1, Arr2, Comm);
+   } else {
+      TestResult = globalSum(Arr1, Arr2, Comm, IndxRange);
+   }
+
+   // Exit on error
+   if (TestResult != RefResult)
+      ABORT_ERROR("GlobalSum {} Test FAIL: Expected {} Actual {}", TestLabel,
+                  RefResult, TestResult);
+}
+//------------------------------------------------------------------------------
+// Array product test function for min, max
+template <typename AT, typename T>
+void testArrayMinMax(
+    const std::string &TestLabel, ///< [in] label for test
+    const AT Arr1,                ///< [in] 1st array in product
+    const AT Arr2,                ///< [in] 2nd array in product
+    const T RefMin,               ///< [in] reference result for minval
+    const T RefMax,               ///< [in] reference result for maxval
+    const std::vector<I4> *IndxRange = nullptr ///< [in] index range
+) {
+   MachEnv *DefEnv = MachEnv::getDefault();
+   MPI_Comm Comm   = DefEnv->getComm();
+   T TestMax       = -999;
+   T TestMin       = 999;
+
+   if (IndxRange == nullptr) {
+      TestMax = globalMaxVal(Arr1, Arr2, Comm);
+      TestMin = globalMinVal(Arr1, Arr2, Comm);
+   } else {
+      TestMax = globalMaxVal(Arr1, Arr2, Comm, IndxRange);
+      TestMin = globalMinVal(Arr1, Arr2, Comm, IndxRange);
+   }
+
+   // Exit on error
+   if (TestMin != RefMin)
+      ABORT_ERROR("GlobalMinVal {} Product Test FAIL: Expected {} Actual {}",
+                  TestLabel, RefMin, TestMin);
+   if (TestMax != RefMax)
+      ABORT_ERROR("GlobalMaxVal {} Product Test FAIL: Expected {} Actual {}",
+                  TestLabel, RefMax, TestMax);
+}
+//------------------------------------------------------------------------------
+// Array reductions test function
+void testArrayReductions() {
+
+   // Get some MPI values based on default environment
+   MachEnv *DefEnv = MachEnv::getDefault();
+   int MyTask      = DefEnv->getMyTask();
+   int NTasks      = DefEnv->getNumTasks();
+
+   // Set model size for array tests
+   int Nx        = 5;
+   int Ny        = 5;
+   int Nz        = 3;
+   int Nm        = 3;
+   int Nn        = 3;
+   int NxGlob    = Nx * NTasks;
+   I8 MaxEntries = NxGlob * Ny * Nz * Nm * Nn;
+
+   // For reproducibility tests, define a full range of values within
+   // each data type.  We want the smallest (abs) value > 0
+   // Further restrict the max values so that we do not inadvertantly
+   // exceed limits.
+   I4 MaxI4 = std::numeric_limits<I4>::max() / (10 * MaxEntries);
+   I8 MaxI8 = std::numeric_limits<I8>::max() / (10 * MaxEntries);
+   R4 MaxR4 = std::numeric_limits<R4>::max() / (10.0 * MaxEntries);
+   R8 MaxR8 = std::numeric_limits<R8>::max() / (10.0 * MaxEntries);
+   R4 EpsR4 = 0.0001;
+   R8 EpsR8 = 0.0000000000001;
+   // Compute max safe exponents based on adjusted max above
+   I4 ExpI4 = std::log2(MaxI4);
+   I4 ExpI8 = std::log2(MaxI8);
+   I4 ExpR4 = std::log10(MaxR4);
+   I4 ExpR8 = std::log10(MaxR8);
+   // To cover a large range of values, compute a factor for test vals
+   // on each rank
+   std::vector<I4> FacI4(NTasks);
+   std::vector<I8> FacI8(NTasks);
+   std::vector<R4> FacR4(NTasks);
+   std::vector<R8> FacR8(NTasks);
+   for (int I = 0; I < NTasks; ++I) {
+      FacI4[I] = pow(2, std::min(I, ExpI4));
+      FacI8[I] = pow(2, std::min(I, ExpI8));
+      FacR4[I] = pow(10.0, std::min(I, ExpR4));
+      FacR8[I] = pow(10.0, std::min(I, ExpR8));
+   }
+
+   // Allocate test arrays
+   HostArray1DI4 TestHost1DI4("Host1DI4", Nx);
+   HostArray2DI4 TestHost2DI4("Host2DI4", Nx, Ny);
+   HostArray3DI4 TestHost3DI4("Host3DI4", Nx, Ny, Nz);
+   HostArray4DI4 TestHost4DI4("Host4DI4", Nx, Ny, Nz, Nm);
+   HostArray5DI4 TestHost5DI4("Host5DI4", Nx, Ny, Nz, Nm, Nn);
+   HostArray1DI8 TestHost1DI8("Host1DI8", Nx);
+   HostArray2DI8 TestHost2DI8("Host2DI8", Nx, Ny);
+   HostArray3DI8 TestHost3DI8("Host3DI8", Nx, Ny, Nz);
+   HostArray4DI8 TestHost4DI8("Host4DI8", Nx, Ny, Nz, Nm);
+   HostArray5DI8 TestHost5DI8("Host5DI8", Nx, Ny, Nz, Nm, Nn);
+   HostArray1DR4 TestHost1DR4("Host1DR4", Nx);
+   HostArray2DR4 TestHost2DR4("Host2DR4", Nx, Ny);
+   HostArray3DR4 TestHost3DR4("Host3DR4", Nx, Ny, Nz);
+   HostArray4DR4 TestHost4DR4("Host4DR4", Nx, Ny, Nz, Nm);
+   HostArray5DR4 TestHost5DR4("Host5DR4", Nx, Ny, Nz, Nm, Nn);
+   HostArray1DR8 TestHost1DR8("Host1DR8", Nx);
+   HostArray2DR8 TestHost2DR8("Host2DR8", Nx, Ny);
+   HostArray3DR8 TestHost3DR8("Host3DR8", Nx, Ny, Nz);
+   HostArray4DR8 TestHost4DR8("Host4DR8", Nx, Ny, Nz, Nm);
+   HostArray5DR8 TestHost5DR8("Host5DR8", Nx, Ny, Nz, Nm, Nn);
+   Array1DI4 Test1DI4("Test1DI4", Nx);
+   Array2DI4 Test2DI4("Test2DI4", Nx, Ny);
+   Array3DI4 Test3DI4("Test3DI4", Nx, Ny, Nz);
+   Array4DI4 Test4DI4("Test4DI4", Nx, Ny, Nz, Nm);
+   Array5DI4 Test5DI4("Test5DI4", Nx, Ny, Nz, Nm, Nn);
+   Array1DI8 Test1DI8("Test1DI8", Nx);
+   Array2DI8 Test2DI8("Test2DI8", Nx, Ny);
+   Array3DI8 Test3DI8("Test3DI8", Nx, Ny, Nz);
+   Array4DI8 Test4DI8("Test4DI8", Nx, Ny, Nz, Nm);
+   Array5DI8 Test5DI8("Test5DI8", Nx, Ny, Nz, Nm, Nn);
+   Array1DR4 Test1DR4("Test1DR4", Nx);
+   Array2DR4 Test2DR4("Test2DR4", Nx, Ny);
+   Array3DR4 Test3DR4("Test3DR4", Nx, Ny, Nz);
+   Array4DR4 Test4DR4("Test4DR4", Nx, Ny, Nz, Nm);
+   Array5DR4 Test5DR4("Test5DR4", Nx, Ny, Nz, Nm, Nn);
+   Array1DR8 Test1DR8("Test1DR8", Nx);
+   Array2DR8 Test2DR8("Test2DR8", Nx, Ny);
+   Array3DR8 Test3DR8("Test3DR8", Nx, Ny, Nz);
+   Array4DR8 Test4DR8("Test4DR8", Nx, Ny, Nz, Nm);
+   Array5DR8 Test5DR8("Test5DR8", Nx, Ny, Nz, Nm, Nn);
+
+   // Compute reference values using a serial reproducible sum
+   I4 Ref1DI4 = 0;
+   I8 Ref1DI8 = 0;
+   R4 Ref1DR4 = 0.0;
+   R8 Ref1DR8 = 0.0;
+   I4 Ref2DI4 = 0;
+   I8 Ref2DI8 = 0;
+   R4 Ref2DR4 = 0.0;
+   R8 Ref2DR8 = 0.0;
+   I4 Ref3DI4 = 0;
+   I8 Ref3DI8 = 0;
+   R4 Ref3DR4 = 0.0;
+   R8 Ref3DR8 = 0.0;
+   I4 Ref4DI4 = 0;
+   I8 Ref4DI8 = 0;
+   R4 Ref4DR4 = 0.0;
+   R8 Ref4DR8 = 0.0;
+   I4 Ref5DI4 = 0;
+   I8 Ref5DI8 = 0;
+   R4 Ref5DR4 = 0.0;
+   R8 Ref5DR8 = 0.0;
+   R8 Tmp1DR4 = 0.0;
+   R8 Tmp2DR4 = 0.0;
+   R8 Tmp3DR4 = 0.0;
+   R8 Tmp4DR4 = 0.0;
+   R8 Tmp5DR4 = 0.0;
+   R8 DDVal1D = 0.0;
+   R8 DDVal2D = 0.0;
+   R8 DDVal3D = 0.0;
+   R8 DDVal4D = 0.0;
+   R8 DDVal5D = 0.0;
+   complex<double> DDSumRef1D(0.0, 0.0);
+   complex<double> DDSumRef2D(0.0, 0.0);
+   complex<double> DDSumRef3D(0.0, 0.0);
+   complex<double> DDSumRef4D(0.0, 0.0);
+   complex<double> DDSumRef5D(0.0, 0.0);
+   // Ref values for min, max
+   I4 RefMin1DI4 = MaxI4;
+   I8 RefMin1DI8 = MaxI8;
+   R4 RefMin1DR4 = MaxR4;
+   R8 RefMin1DR8 = MaxR8;
+   I4 RefMin2DI4 = MaxI4;
+   I8 RefMin2DI8 = MaxI8;
+   R4 RefMin2DR4 = MaxR4;
+   R8 RefMin2DR8 = MaxR8;
+   I4 RefMin3DI4 = MaxI4;
+   I8 RefMin3DI8 = MaxI8;
+   R4 RefMin3DR4 = MaxR4;
+   R8 RefMin3DR8 = MaxR8;
+   I4 RefMin4DI4 = MaxI4;
+   I8 RefMin4DI8 = MaxI8;
+   R4 RefMin4DR4 = MaxR4;
+   R8 RefMin4DR8 = MaxR8;
+   I4 RefMin5DI4 = MaxI4;
+   I8 RefMin5DI8 = MaxI8;
+   R4 RefMin5DR4 = MaxR4;
+   R8 RefMin5DR8 = MaxR8;
+   I4 RefMax1DI4 = -MaxI4;
+   I8 RefMax1DI8 = -MaxI8;
+   R4 RefMax1DR4 = -MaxR4;
+   R8 RefMax1DR8 = -MaxR8;
+   I4 RefMax2DI4 = -MaxI4;
+   I8 RefMax2DI8 = -MaxI8;
+   R4 RefMax2DR4 = -MaxR4;
+   R8 RefMax2DR8 = -MaxR8;
+   I4 RefMax3DI4 = -MaxI4;
+   I8 RefMax3DI8 = -MaxI8;
+   R4 RefMax3DR4 = -MaxR4;
+   R8 RefMax3DR8 = -MaxR8;
+   I4 RefMax4DI4 = -MaxI4;
+   I8 RefMax4DI8 = -MaxI8;
+   R4 RefMax4DR4 = -MaxR4;
+   R8 RefMax4DR8 = -MaxR8;
+   I4 RefMax5DI4 = -MaxI4;
+   I8 RefMax5DI8 = -MaxI8;
+   R4 RefMax5DR4 = -MaxR4;
+   R8 RefMax5DR8 = -MaxR8;
+
+   // Compute reference sums
+   for (int Task = 0; Task < NTasks; ++Task) {
+      for (int I = 0; I < Nx; ++I) {
+         int IGlob = Task * Nx + I;
+         Ref1DI4 += IGlob * FacI4[Task];
+         Ref1DI8 += IGlob * FacI8[Task];
+         Tmp1DR4 += (IGlob + EpsR4) * FacR4[Task];
+         DDVal1D = (IGlob + EpsR8) * FacR8[Task];
+         sumDDTest(DDSumRef1D, DDVal1D); // local repro sum
+         RefMin1DI4 = std::min(RefMin1DI4, IGlob * FacI4[Task]);
+         RefMin1DI8 = std::min(RefMin1DI8, IGlob * FacI8[Task]);
+         RefMin1DR4 = std::min(RefMin1DR4, (IGlob + EpsR4) * FacR4[Task]);
+         RefMin1DR8 = std::min(RefMin1DR8, (IGlob + EpsR8) * FacR8[Task]);
+         RefMax1DI4 = std::max(RefMax1DI4, IGlob * FacI4[Task]);
+         RefMax1DI8 = std::max(RefMax1DI8, IGlob * FacI8[Task]);
+         RefMax1DR4 = std::max(RefMax1DR4, (IGlob + EpsR4) * FacR4[Task]);
+         RefMax1DR8 = std::max(RefMax1DR8, (IGlob + EpsR8) * FacR8[Task]);
+         for (int J = 0; J < Ny; ++J) {
+            int Jindx = IGlob + J;
+            Ref2DI4 += Jindx * FacI4[Task];
+            Ref2DI8 += Jindx * FacI8[Task];
+            Tmp2DR4 += (Jindx + EpsR4) * FacR4[Task];
+            DDVal2D = (Jindx + EpsR8) * FacR8[Task];
+            sumDDTest(DDSumRef2D, DDVal2D); // local repro sum
+            RefMin2DI4 = std::min(RefMin2DI4, Jindx * FacI4[Task]);
+            RefMin2DI8 = std::min(RefMin2DI8, Jindx * FacI8[Task]);
+            RefMin2DR4 = std::min(RefMin2DR4, (Jindx + EpsR4) * FacR4[Task]);
+            RefMin2DR8 = std::min(RefMin2DR8, (Jindx + EpsR8) * FacR8[Task]);
+            RefMax2DI4 = std::max(RefMax2DI4, Jindx * FacI4[Task]);
+            RefMax2DI8 = std::max(RefMax2DI8, Jindx * FacI8[Task]);
+            RefMax2DR4 = std::max(RefMax2DR4, (Jindx + EpsR4) * FacR4[Task]);
+            RefMax2DR8 = std::max(RefMax2DR8, (Jindx + EpsR8) * FacR8[Task]);
+            for (int K = 0; K < Nz; ++K) {
+               int Kindx = IGlob + J + K;
+               Ref3DI4 += Kindx * FacI4[Task];
+               Ref3DI8 += Kindx * FacI8[Task];
+               Tmp3DR4 += (Kindx + EpsR4) * FacR4[Task];
+               DDVal3D = (Kindx + EpsR8) * FacR8[Task];
+               sumDDTest(DDSumRef3D, DDVal3D); // local repro sum
+               RefMin3DI4 = std::min(RefMin3DI4, Kindx * FacI4[Task]);
+               RefMin3DI8 = std::min(RefMin3DI8, Kindx * FacI8[Task]);
+               RefMin3DR4 = std::min(RefMin3DR4, (Kindx + EpsR4) * FacR4[Task]);
+               RefMin3DR8 = std::min(RefMin3DR8, (Kindx + EpsR8) * FacR8[Task]);
+               RefMax3DI4 = std::max(RefMax3DI4, Kindx * FacI4[Task]);
+               RefMax3DI8 = std::max(RefMax3DI8, Kindx * FacI8[Task]);
+               RefMax3DR4 = std::max(RefMax3DR4, (Kindx + EpsR4) * FacR4[Task]);
+               RefMax3DR8 = std::max(RefMax3DR8, (Kindx + EpsR8) * FacR8[Task]);
+               for (int M = 0; M < Nm; ++M) {
+                  int Mindx = IGlob + J + K + M;
+                  Ref4DI4 += Mindx * FacI4[Task];
+                  Ref4DI8 += Mindx * FacI8[Task];
+                  Tmp4DR4 += (Mindx + EpsR4) * FacR4[Task];
+                  DDVal4D = (Mindx + EpsR8) * FacR8[Task];
+                  sumDDTest(DDSumRef4D, DDVal4D); // local repro sum
+                  RefMin4DI4 = std::min(RefMin4DI4, Mindx * FacI4[Task]);
+                  RefMin4DI8 = std::min(RefMin4DI8, Mindx * FacI8[Task]);
+                  RefMin4DR4 =
+                      std::min(RefMin4DR4, (Mindx + EpsR4) * FacR4[Task]);
+                  RefMin4DR8 =
+                      std::min(RefMin4DR8, (Mindx + EpsR8) * FacR8[Task]);
+                  RefMax4DI4 = std::max(RefMax4DI4, Mindx * FacI4[Task]);
+                  RefMax4DI8 = std::max(RefMax4DI8, Mindx * FacI8[Task]);
+                  RefMax4DR4 =
+                      std::max(RefMax4DR4, (Mindx + EpsR4) * FacR4[Task]);
+                  RefMax4DR8 =
+                      std::max(RefMax4DR8, (Mindx + EpsR8) * FacR8[Task]);
+                  for (int N = 0; N < Nn; ++N) {
+                     int Nindx = IGlob + J + K + M + N;
+                     Ref5DI4 += Nindx * FacI4[Task];
+                     Ref5DI8 += Nindx * FacI8[Task];
+                     Tmp5DR4 += (Nindx + EpsR4) * FacR4[Task];
+                     DDVal5D = (Nindx + EpsR8) * FacR8[Task];
+                     sumDDTest(DDSumRef5D, DDVal5D); // local repro sum
+                     RefMin5DI4 = std::min(RefMin5DI4, Nindx * FacI4[Task]);
+                     RefMin5DI8 = std::min(RefMin5DI8, Nindx * FacI8[Task]);
+                     RefMin5DR4 =
+                         std::min(RefMin5DR4, (Nindx + EpsR4) * FacR4[Task]);
+                     RefMin5DR8 =
+                         std::min(RefMin5DR8, (Nindx + EpsR8) * FacR8[Task]);
+                     RefMax5DI4 = std::max(RefMax5DI4, Nindx * FacI4[Task]);
+                     RefMax5DI8 = std::max(RefMax5DI8, Nindx * FacI8[Task]);
+                     RefMax5DR4 =
+                         std::max(RefMax5DR4, (Nindx + EpsR4) * FacR4[Task]);
+                     RefMax5DR8 =
+                         std::max(RefMax5DR8, (Nindx + EpsR8) * FacR8[Task]);
+                  }
+               }
+            }
+         }
+      }
+   }
+   Ref1DR4 = Tmp1DR4;
+   Ref2DR4 = Tmp2DR4;
+   Ref3DR4 = Tmp3DR4;
+   Ref4DR4 = Tmp4DR4;
+   Ref5DR4 = Tmp5DR4;
+   Ref1DR8 = real(DDSumRef1D);
+   Ref2DR8 = real(DDSumRef2D);
+   Ref3DR8 = real(DDSumRef3D);
+   Ref4DR8 = real(DDSumRef4D);
+   Ref5DR8 = real(DDSumRef5D);
+
+   // Fill host arrays
+   for (int I = 0; I < Nx; ++I) {
+      int IGlobal     = MyTask * Nx + I;
+      TestHost1DI4(I) = IGlobal * FacI4[MyTask];
+      TestHost1DI8(I) = IGlobal * FacI8[MyTask];
+      TestHost1DR4(I) = (IGlobal + EpsR4) * FacR4[MyTask];
+      TestHost1DR8(I) = (IGlobal + EpsR8) * FacR8[MyTask];
+      for (int J = 0; J < Ny; ++J) {
+         int JIndx          = IGlobal + J;
+         TestHost2DI4(I, J) = JIndx * FacI4[MyTask];
+         TestHost2DI8(I, J) = JIndx * FacI8[MyTask];
+         TestHost2DR4(I, J) = (JIndx + EpsR4) * FacR4[MyTask];
+         TestHost2DR8(I, J) = (JIndx + EpsR8) * FacR8[MyTask];
+         for (int K = 0; K < Nz; ++K) {
+            int KIndx             = IGlobal + J + K;
+            TestHost3DI4(I, J, K) = KIndx * FacI4[MyTask];
+            TestHost3DI8(I, J, K) = KIndx * FacI8[MyTask];
+            TestHost3DR4(I, J, K) = (KIndx + EpsR4) * FacR4[MyTask];
+            TestHost3DR8(I, J, K) = (KIndx + EpsR8) * FacR8[MyTask];
+            for (int M = 0; M < Nm; ++M) {
+               int MIndx                = IGlobal + J + K + M;
+               TestHost4DI4(I, J, K, M) = MIndx * FacI4[MyTask];
+               TestHost4DI8(I, J, K, M) = MIndx * FacI8[MyTask];
+               TestHost4DR4(I, J, K, M) = (MIndx + EpsR4) * FacR4[MyTask];
+               TestHost4DR8(I, J, K, M) = (MIndx + EpsR8) * FacR8[MyTask];
+               for (int N = 0; N < Nn; ++N) {
+                  int NIndx                   = IGlobal + J + K + M + N;
+                  TestHost5DI4(I, J, K, M, N) = NIndx * FacI4[MyTask];
+                  TestHost5DI8(I, J, K, M, N) = NIndx * FacI8[MyTask];
+                  TestHost5DR4(I, J, K, M, N) = (NIndx + EpsR4) * FacR4[MyTask];
+                  TestHost5DR8(I, J, K, M, N) = (NIndx + EpsR8) * FacR8[MyTask];
+               }
+            }
+         }
+      }
+   }
+
+   // Copy values to device test arrays
+   deepCopy(Test1DI4, TestHost1DI4);
+   deepCopy(Test2DI4, TestHost2DI4);
+   deepCopy(Test3DI4, TestHost3DI4);
+   deepCopy(Test4DI4, TestHost4DI4);
+   deepCopy(Test5DI4, TestHost5DI4);
+   deepCopy(Test1DI8, TestHost1DI8);
+   deepCopy(Test2DI8, TestHost2DI8);
+   deepCopy(Test3DI8, TestHost3DI8);
+   deepCopy(Test4DI8, TestHost4DI8);
+   deepCopy(Test5DI8, TestHost5DI8);
+   deepCopy(Test1DR4, TestHost1DR4);
+   deepCopy(Test2DR4, TestHost2DR4);
+   deepCopy(Test3DR4, TestHost3DR4);
+   deepCopy(Test4DR4, TestHost4DR4);
+   deepCopy(Test5DR4, TestHost5DR4);
+   deepCopy(Test1DR8, TestHost1DR8);
+   deepCopy(Test2DR8, TestHost2DR8);
+   deepCopy(Test3DR8, TestHost3DR8);
+   deepCopy(Test4DR8, TestHost4DR8);
+   deepCopy(Test5DR8, TestHost5DR8);
+
+   //-----
+   // Test results for full arrays
+   testArray("1DI4Host Full", TestHost1DI4, Ref1DI4);
+   testArray("1DI8Host Full", TestHost1DI8, Ref1DI8);
+   testArray("1DR4Host Full", TestHost1DR4, Ref1DR4);
+   testArray("1DR8Host Full", TestHost1DR8, Ref1DR8);
+   testArray("2DI4Host Full", TestHost2DI4, Ref2DI4);
+   testArray("2DI8Host Full", TestHost2DI8, Ref2DI8);
+   testArray("2DR4Host Full", TestHost2DR4, Ref2DR4);
+   testArray("2DR8Host Full", TestHost2DR8, Ref2DR8);
+   testArray("3DI4Host Full", TestHost3DI4, Ref3DI4);
+   testArray("3DI8Host Full", TestHost3DI8, Ref3DI8);
+   testArray("3DR4Host Full", TestHost3DR4, Ref3DR4);
+   testArray("3DR8Host Full", TestHost3DR8, Ref3DR8);
+   testArray("4DI4Host Full", TestHost4DI4, Ref4DI4);
+   testArray("4DI8Host Full", TestHost4DI8, Ref4DI8);
+   testArray("4DR4Host Full", TestHost4DR4, Ref4DR4);
+   testArray("4DR8Host Full", TestHost4DR8, Ref4DR8);
+   testArray("5DI4Host Full", TestHost5DI4, Ref5DI4);
+   testArray("5DI8Host Full", TestHost5DI8, Ref5DI8);
+   testArray("5DR4Host Full", TestHost5DR4, Ref5DR4);
+   testArray("5DR8Host Full", TestHost5DR8, Ref5DR8);
+
+   testArray("1DI4Dev Full", Test1DI4, Ref1DI4);
+   testArray("1DI8Dev Full", Test1DI8, Ref1DI8);
+   testArray("1DR4Dev Full", Test1DR4, Ref1DR4);
+   testArray("1DR8Dev Full", Test1DR8, Ref1DR8);
+   testArray("2DI4Dev Full", Test2DI4, Ref2DI4);
+   testArray("2DI8Dev Full", Test2DI8, Ref2DI8);
+   testArray("2DR4Dev Full", Test2DR4, Ref2DR4);
+   testArray("2DR8Dev Full", Test2DR8, Ref2DR8);
+   testArray("3DI4Dev Full", Test3DI4, Ref3DI4);
+   testArray("3DI8Dev Full", Test3DI8, Ref3DI8);
+   testArray("3DR4Dev Full", Test3DR4, Ref3DR4);
+   testArray("3DR8Dev Full", Test3DR8, Ref3DR8);
+   testArray("4DI4Dev Full", Test4DI4, Ref4DI4);
+   testArray("4DI8Dev Full", Test4DI8, Ref4DI8);
+   testArray("4DR4Dev Full", Test4DR4, Ref4DR4);
+   testArray("4DR8Dev Full", Test4DR8, Ref4DR8);
+   testArray("5DI4Dev Full", Test5DI4, Ref5DI4);
+   testArray("5DI8Dev Full", Test5DI8, Ref5DI8);
+   testArray("5DR4Dev Full", Test5DR4, Ref5DR4);
+   testArray("5DR8Dev Full", Test5DR8, Ref5DR8);
+
+   testArrayMinMax("1DI4 Host MinMax Full", TestHost1DI4, RefMin1DI4,
+                   RefMax1DI4);
+   testArrayMinMax("1DI8 Host MinMax Full", TestHost1DI8, RefMin1DI8,
+                   RefMax1DI8);
+   testArrayMinMax("1DR4 Host MinMax Full", TestHost1DR4, RefMin1DR4,
+                   RefMax1DR4);
+   testArrayMinMax("1DR8 Host MinMax Full", TestHost1DR8, RefMin1DR8,
+                   RefMax1DR8);
+   testArrayMinMax("2DI4 Host MinMax Full", TestHost2DI4, RefMin2DI4,
+                   RefMax2DI4);
+   testArrayMinMax("2DI8 Host MinMax Full", TestHost2DI8, RefMin2DI8,
+                   RefMax2DI8);
+   testArrayMinMax("2DR4 Host MinMax Full", TestHost2DR4, RefMin2DR4,
+                   RefMax2DR4);
+   testArrayMinMax("2DR8 Host MinMax Full", TestHost2DR8, RefMin2DR8,
+                   RefMax2DR8);
+   testArrayMinMax("3DI4 Host MinMax Full", TestHost3DI4, RefMin3DI4,
+                   RefMax3DI4);
+   testArrayMinMax("3DI8 Host MinMax Full", TestHost3DI8, RefMin3DI8,
+                   RefMax3DI8);
+   testArrayMinMax("3DR4 Host MinMax Full", TestHost3DR4, RefMin3DR4,
+                   RefMax3DR4);
+   testArrayMinMax("3DR8 Host MinMax Full", TestHost3DR8, RefMin3DR8,
+                   RefMax3DR8);
+   testArrayMinMax("4DI4 Host MinMax Full", TestHost4DI4, RefMin4DI4,
+                   RefMax4DI4);
+   testArrayMinMax("4DI8 Host MinMax Full", TestHost4DI8, RefMin4DI8,
+                   RefMax4DI8);
+   testArrayMinMax("4DR4 Host MinMax Full", TestHost4DR4, RefMin4DR4,
+                   RefMax4DR4);
+   testArrayMinMax("4DR8 Host MinMax Full", TestHost4DR8, RefMin4DR8,
+                   RefMax4DR8);
+   testArrayMinMax("5DI4 Host MinMax Full", TestHost5DI4, RefMin5DI4,
+                   RefMax5DI4);
+   testArrayMinMax("5DI8 Host MinMax Full", TestHost5DI8, RefMin5DI8,
+                   RefMax5DI8);
+   testArrayMinMax("5DR4 Host MinMax Full", TestHost5DR4, RefMin5DR4,
+                   RefMax5DR4);
+   testArrayMinMax("5DR8 Host MinMax Full", TestHost5DR8, RefMin5DR8,
+                   RefMax5DR8);
+
+   testArrayMinMax("1DI4 Dev MinMax Full", Test1DI4, RefMin1DI4, RefMax1DI4);
+   testArrayMinMax("1DI8 Dev MinMax Full", Test1DI8, RefMin1DI8, RefMax1DI8);
+   testArrayMinMax("1DR4 Dev MinMax Full", Test1DR4, RefMin1DR4, RefMax1DR4);
+   testArrayMinMax("1DR8 Dev MinMax Full", Test1DR8, RefMin1DR8, RefMax1DR8);
+   testArrayMinMax("2DI4 Dev MinMax Full", Test2DI4, RefMin2DI4, RefMax2DI4);
+   testArrayMinMax("2DI8 Dev MinMax Full", Test2DI8, RefMin2DI8, RefMax2DI8);
+   testArrayMinMax("2DR4 Dev MinMax Full", Test2DR4, RefMin2DR4, RefMax2DR4);
+   testArrayMinMax("2DR8 Dev MinMax Full", Test2DR8, RefMin2DR8, RefMax2DR8);
+   testArrayMinMax("3DI4 Dev MinMax Full", Test3DI4, RefMin3DI4, RefMax3DI4);
+   testArrayMinMax("3DI8 Dev MinMax Full", Test3DI8, RefMin3DI8, RefMax3DI8);
+   testArrayMinMax("3DR4 Dev MinMax Full", Test3DR4, RefMin3DR4, RefMax3DR4);
+   testArrayMinMax("3DR8 Dev MinMax Full", Test3DR8, RefMin3DR8, RefMax3DR8);
+   testArrayMinMax("4DI4 Dev MinMax Full", Test4DI4, RefMin4DI4, RefMax4DI4);
+   testArrayMinMax("4DI8 Dev MinMax Full", Test4DI8, RefMin4DI8, RefMax4DI8);
+   testArrayMinMax("4DR4 Dev MinMax Full", Test4DR4, RefMin4DR4, RefMax4DR4);
+   testArrayMinMax("4DR8 Dev MinMax Full", Test4DR8, RefMin4DR8, RefMax4DR8);
+   testArrayMinMax("5DI4 Dev MinMax Full", Test5DI4, RefMin5DI4, RefMax5DI4);
+   testArrayMinMax("5DI8 Dev MinMax Full", Test5DI8, RefMin5DI8, RefMax5DI8);
+   testArrayMinMax("5DR4 Dev MinMax Full", Test5DR4, RefMin5DR4, RefMax5DR4);
+   testArrayMinMax("5DR8 Dev MinMax Full", Test5DR8, RefMin5DR8, RefMax5DR8);
+
+   //-----
+   // Test arrays with index range and restrictions and test sums with product
+   // by creating a mask that is only 1 where index range is valid and compare.
+   //-----
+
+   // Initialize mask arrays
+   HostArray1DI4 MaskHost1DI4("MaskH1DI4", Nx);
+   HostArray1DI8 MaskHost1DI8("MaskH1DI8", Nx);
+   HostArray1DR4 MaskHost1DR4("MaskH1DR4", Nx);
+   HostArray1DR8 MaskHost1DR8("MaskH1DR8", Nx);
+   HostArray2DI4 MaskHost2DI4("MaskH2DI4", Nx, Ny);
+   HostArray2DI8 MaskHost2DI8("MaskH2DI8", Nx, Ny);
+   HostArray2DR4 MaskHost2DR4("MaskH2DR4", Nx, Ny);
+   HostArray2DR8 MaskHost2DR8("MaskH2DR8", Nx, Ny);
+   HostArray3DI4 MaskHost3DI4("MaskH3DI4", Nx, Ny, Nz);
+   HostArray3DI8 MaskHost3DI8("MaskH3DI8", Nx, Ny, Nz);
+   HostArray3DR4 MaskHost3DR4("MaskH3DR4", Nx, Ny, Nz);
+   HostArray3DR8 MaskHost3DR8("MaskH3DR8", Nx, Ny, Nz);
+   HostArray4DI4 MaskHost4DI4("MaskH4DI4", Nx, Ny, Nz, Nm);
+   HostArray4DI8 MaskHost4DI8("MaskH4DI8", Nx, Ny, Nz, Nm);
+   HostArray4DR4 MaskHost4DR4("MaskH4DR4", Nx, Ny, Nz, Nm);
+   HostArray4DR8 MaskHost4DR8("MaskH4DR8", Nx, Ny, Nz, Nm);
+   HostArray5DI4 MaskHost5DI4("MaskH5DI4", Nx, Ny, Nz, Nm, Nn);
+   HostArray5DI8 MaskHost5DI8("MaskH5DI8", Nx, Ny, Nz, Nm, Nn);
+   HostArray5DR4 MaskHost5DR4("MaskH5DR4", Nx, Ny, Nz, Nm, Nn);
+   HostArray5DR8 MaskHost5DR8("MaskH5DR8", Nx, Ny, Nz, Nm, Nn);
+   Array1DI4 Mask1DI4("Mask1DI4", Nx);
+   Array1DI8 Mask1DI8("Mask1DI8", Nx);
+   Array1DR4 Mask1DR4("Mask1DR4", Nx);
+   Array1DR8 Mask1DR8("Mask1DR8", Nx);
+   Array2DI4 Mask2DI4("Mask2DI4", Nx, Ny);
+   Array2DI8 Mask2DI8("Mask2DI8", Nx, Ny);
+   Array2DR4 Mask2DR4("Mask2DR4", Nx, Ny);
+   Array2DR8 Mask2DR8("Mask2DR8", Nx, Ny);
+   Array3DI4 Mask3DI4("Mask3DI4", Nx, Ny, Nz);
+   Array3DI8 Mask3DI8("Mask3DI8", Nx, Ny, Nz);
+   Array3DR4 Mask3DR4("Mask3DR4", Nx, Ny, Nz);
+   Array3DR8 Mask3DR8("Mask3DR8", Nx, Ny, Nz);
+   Array4DI4 Mask4DI4("Mask4DI4", Nx, Ny, Nz, Nm);
+   Array4DI8 Mask4DI8("Mask4DI8", Nx, Ny, Nz, Nm);
+   Array4DR4 Mask4DR4("Mask4DR4", Nx, Ny, Nz, Nm);
+   Array4DR8 Mask4DR8("Mask4DR8", Nx, Ny, Nz, Nm);
+   Array5DI4 Mask5DI4("Mask5DI4", Nx, Ny, Nz, Nm, Nn);
+   Array5DI8 Mask5DI8("Mask5DI8", Nx, Ny, Nz, Nm, Nn);
+   Array5DR4 Mask5DR4("Mask5DR4", Nx, Ny, Nz, Nm, Nn);
+   Array5DR8 Mask5DR8("Mask5DR8", Nx, Ny, Nz, Nm, Nn);
+
+   // Set restricted index range
+   int IMin = 2;
+   int IMax = Nx - 2;
+   int JMin = 1;
+   int JMax = Ny - 1;
+   int KMin = 1;
+   int KMax = 1;
+   int MMin = 1;
+   int MMax = 1;
+   int NMin = 1;
+   int NMax = 1;
+   std::vector<int> AddRange(10);
+   AddRange[0] = IMin;
+   AddRange[1] = IMax;
+   AddRange[2] = JMin;
+   AddRange[3] = JMax;
+   AddRange[4] = KMin;
+   AddRange[5] = KMax;
+   AddRange[6] = MMin;
+   AddRange[7] = MMax;
+   AddRange[8] = NMin;
+   AddRange[9] = NMax;
+   // Reset various sums and compute new reference values
+   Ref1DI4    = 0;
+   Ref1DI8    = 0;
+   Ref1DR4    = 0.0;
+   Ref1DR8    = 0.0;
+   Tmp1DR4    = 0.0;
+   DDVal1D    = 0.0;
+   Ref2DI4    = 0;
+   Ref2DI8    = 0;
+   Ref2DR4    = 0.0;
+   Ref2DR8    = 0.0;
+   Tmp2DR4    = 0.0;
+   DDVal2D    = 0.0;
+   Ref3DI4    = 0;
+   Ref3DI8    = 0;
+   Ref3DR4    = 0.0;
+   Ref3DR8    = 0.0;
+   Tmp3DR4    = 0.0;
+   DDVal3D    = 0.0;
+   Ref4DI4    = 0;
+   Ref4DI8    = 0;
+   Ref4DR4    = 0.0;
+   Ref4DR8    = 0.0;
+   Tmp4DR4    = 0.0;
+   DDVal4D    = 0.0;
+   Ref5DI4    = 0;
+   Ref5DI8    = 0;
+   Ref5DR4    = 0.0;
+   Ref5DR8    = 0.0;
+   Tmp5DR4    = 0.0;
+   DDVal5D    = 0.0;
+   DDSumRef1D = complex<double>(0.0, 0.0);
+   DDSumRef2D = complex<double>(0.0, 0.0);
+   DDSumRef3D = complex<double>(0.0, 0.0);
+   DDSumRef4D = complex<double>(0.0, 0.0);
+   DDSumRef5D = complex<double>(0.0, 0.0);
+   // Reset ref values for min, max
+   RefMin1DI4 = MaxI4;
+   RefMin1DI8 = MaxI8;
+   RefMin1DR4 = MaxR4;
+   RefMin1DR8 = MaxR8;
+   RefMin2DI4 = MaxI4;
+   RefMin2DI8 = MaxI8;
+   RefMin2DR4 = MaxR4;
+   RefMin2DR8 = MaxR8;
+   RefMin3DI4 = MaxI4;
+   RefMin3DI8 = MaxI8;
+   RefMin3DR4 = MaxR4;
+   RefMin3DR8 = MaxR8;
+   RefMin4DI4 = MaxI4;
+   RefMin4DI8 = MaxI8;
+   RefMin4DR4 = MaxR4;
+   RefMin4DR8 = MaxR8;
+   RefMin5DI4 = MaxI4;
+   RefMin5DI8 = MaxI8;
+   RefMin5DR4 = MaxR4;
+   RefMin5DR8 = MaxR8;
+   RefMax1DI4 = -MaxI4;
+   RefMax1DI8 = -MaxI8;
+   RefMax1DR4 = -MaxR4;
+   RefMax1DR8 = -MaxR8;
+   RefMax2DI4 = -MaxI4;
+   RefMax2DI8 = -MaxI8;
+   RefMax2DR4 = -MaxR4;
+   RefMax2DR8 = -MaxR8;
+   RefMax3DI4 = -MaxI4;
+   RefMax3DI8 = -MaxI8;
+   RefMax3DR4 = -MaxR4;
+   RefMax3DR8 = -MaxR8;
+   RefMax4DI4 = -MaxI4;
+   RefMax4DI8 = -MaxI8;
+   RefMax4DR4 = -MaxR4;
+   RefMax4DR8 = -MaxR8;
+   RefMax5DI4 = -MaxI4;
+   RefMax5DI8 = -MaxI8;
+   RefMax5DR4 = -MaxR4;
+   RefMax5DR8 = -MaxR8;
+   // Compute new reference sums for restricted range
+   for (int Task = 0; Task < NTasks; ++Task) {
+      for (int I = IMin; I <= IMax; ++I) {
+         int IGlob = Task * Nx + I;
+         Ref1DI4 += IGlob * FacI4[Task];
+         Ref1DI8 += IGlob * FacI8[Task];
+         Tmp1DR4 += (IGlob + EpsR4) * FacR4[Task];
+         DDVal1D = (IGlob + EpsR8) * FacR8[Task];
+         sumDDTest(DDSumRef1D, DDVal1D); // local repro sum
+         RefMin1DI4 = std::min(RefMin1DI4, IGlob * FacI4[Task]);
+         RefMin1DI8 = std::min(RefMin1DI8, IGlob * FacI8[Task]);
+         RefMin1DR4 = std::min(RefMin1DR4, (IGlob + EpsR4) * FacR4[Task]);
+         RefMin1DR8 = std::min(RefMin1DR8, (IGlob + EpsR8) * FacR8[Task]);
+         RefMax1DI4 = std::max(RefMax1DI4, IGlob * FacI4[Task]);
+         RefMax1DI8 = std::max(RefMax1DI8, IGlob * FacI8[Task]);
+         RefMax1DR4 = std::max(RefMax1DR4, (IGlob + EpsR4) * FacR4[Task]);
+         RefMax1DR8 = std::max(RefMax1DR8, (IGlob + EpsR8) * FacR8[Task]);
+         for (int J = JMin; J <= JMax; ++J) {
+            int Jindx = IGlob + J;
+            Ref2DI4 += Jindx * FacI4[Task];
+            Ref2DI8 += Jindx * FacI8[Task];
+            Tmp2DR4 += (Jindx + EpsR4) * FacR4[Task];
+            DDVal2D = (Jindx + EpsR8) * FacR8[Task];
+            sumDDTest(DDSumRef2D, DDVal2D); // local repro sum
+            RefMin2DI4 = std::min(RefMin2DI4, Jindx * FacI4[Task]);
+            RefMin2DI8 = std::min(RefMin2DI8, Jindx * FacI8[Task]);
+            RefMin2DR4 = std::min(RefMin2DR4, (Jindx + EpsR4) * FacR4[Task]);
+            RefMin2DR8 = std::min(RefMin2DR8, (Jindx + EpsR8) * FacR8[Task]);
+            RefMax2DI4 = std::max(RefMax2DI4, Jindx * FacI4[Task]);
+            RefMax2DI8 = std::max(RefMax2DI8, Jindx * FacI8[Task]);
+            RefMax2DR4 = std::max(RefMax2DR4, (Jindx + EpsR4) * FacR4[Task]);
+            RefMax2DR8 = std::max(RefMax2DR8, (Jindx + EpsR8) * FacR8[Task]);
+            for (int K = KMin; K <= KMax; ++K) {
+               int Kindx = IGlob + J + K;
+               Ref3DI4 += Kindx * FacI4[Task];
+               Ref3DI8 += Kindx * FacI8[Task];
+               Tmp3DR4 += (Kindx + EpsR4) * FacR4[Task];
+               DDVal3D = (Kindx + EpsR8) * FacR8[Task];
+               sumDDTest(DDSumRef3D, DDVal3D); // local repro sum
+               RefMin3DI4 = std::min(RefMin3DI4, Kindx * FacI4[Task]);
+               RefMin3DI8 = std::min(RefMin3DI8, Kindx * FacI8[Task]);
+               RefMin3DR4 = std::min(RefMin3DR4, (Kindx + EpsR4) * FacR4[Task]);
+               RefMin3DR8 = std::min(RefMin3DR8, (Kindx + EpsR8) * FacR8[Task]);
+               RefMax3DI4 = std::max(RefMax3DI4, Kindx * FacI4[Task]);
+               RefMax3DI8 = std::max(RefMax3DI8, Kindx * FacI8[Task]);
+               RefMax3DR4 = std::max(RefMax3DR4, (Kindx + EpsR4) * FacR4[Task]);
+               RefMax3DR8 = std::max(RefMax3DR8, (Kindx + EpsR8) * FacR8[Task]);
+               for (int M = MMin; M <= MMax; ++M) {
+                  int Mindx = IGlob + J + K + M;
+                  Ref4DI4 += Mindx * FacI4[Task];
+                  Ref4DI8 += Mindx * FacI8[Task];
+                  Tmp4DR4 += (Mindx + EpsR4) * FacR4[Task];
+                  DDVal4D = (Mindx + EpsR8) * FacR8[Task];
+                  sumDDTest(DDSumRef4D, DDVal4D); // local repro sum
+                  RefMin4DI4 = std::min(RefMin4DI4, Mindx * FacI4[Task]);
+                  RefMin4DI8 = std::min(RefMin4DI8, Mindx * FacI8[Task]);
+                  RefMin4DR4 =
+                      std::min(RefMin4DR4, (Mindx + EpsR4) * FacR4[Task]);
+                  RefMin4DR8 =
+                      std::min(RefMin4DR8, (Mindx + EpsR8) * FacR8[Task]);
+                  RefMax4DI4 = std::max(RefMax4DI4, Mindx * FacI4[Task]);
+                  RefMax4DI8 = std::max(RefMax4DI8, Mindx * FacI8[Task]);
+                  RefMax4DR4 =
+                      std::max(RefMax4DR4, (Mindx + EpsR4) * FacR4[Task]);
+                  RefMax4DR8 =
+                      std::max(RefMax4DR8, (Mindx + EpsR8) * FacR8[Task]);
+                  for (int N = NMin; N <= NMax; ++N) {
+                     int Nindx = IGlob + J + K + M + N;
+                     Ref5DI4 += Nindx * FacI4[Task];
+                     Ref5DI8 += Nindx * FacI8[Task];
+                     Tmp5DR4 += (Nindx + EpsR4) * FacR4[Task];
+                     DDVal5D = (Nindx + EpsR8) * FacR8[Task];
+                     sumDDTest(DDSumRef5D, DDVal5D); // local repro sum
+                     RefMin5DI4 = std::min(RefMin5DI4, Nindx * FacI4[Task]);
+                     RefMin5DI8 = std::min(RefMin5DI8, Nindx * FacI8[Task]);
+                     RefMin5DR4 =
+                         std::min(RefMin5DR4, (Nindx + EpsR4) * FacR4[Task]);
+                     RefMin5DR8 =
+                         std::min(RefMin5DR8, (Nindx + EpsR8) * FacR8[Task]);
+                     RefMax5DI4 = std::max(RefMax5DI4, Nindx * FacI4[Task]);
+                     RefMax5DI8 = std::max(RefMax5DI8, Nindx * FacI8[Task]);
+                     RefMax5DR4 =
+                         std::max(RefMax5DR4, (Nindx + EpsR4) * FacR4[Task]);
+                     RefMax5DR8 =
+                         std::max(RefMax5DR8, (Nindx + EpsR8) * FacR8[Task]);
+                  }
+               }
+            }
+         }
+      }
+   }
+   Ref1DR4 = Tmp1DR4;
+   Ref2DR4 = Tmp2DR4;
+   Ref3DR4 = Tmp3DR4;
+   Ref4DR4 = Tmp4DR4;
+   Ref5DR4 = Tmp5DR4;
+   Ref1DR8 = real(DDSumRef1D);
+   Ref2DR8 = real(DDSumRef2D);
+   Ref3DR8 = real(DDSumRef3D);
+   Ref4DR8 = real(DDSumRef4D);
+   Ref5DR8 = real(DDSumRef5D);
+
+   // Fill mask arrays on host
+   for (int I = IMin; I <= IMax; ++I) {
+      MaskHost1DI4(I) = 1;
+      MaskHost1DI8(I) = 1;
+      MaskHost1DR4(I) = 1.0;
+      MaskHost1DR8(I) = 1.0;
+      for (int J = JMin; J <= JMax; ++J) {
+         MaskHost2DI4(I, J) = 1;
+         MaskHost2DI8(I, J) = 1;
+         MaskHost2DR4(I, J) = 1.0;
+         MaskHost2DR8(I, J) = 1.0;
+         for (int K = KMin; K <= KMax; ++K) {
+            MaskHost3DI4(I, J, K) = 1;
+            MaskHost3DI8(I, J, K) = 1;
+            MaskHost3DR4(I, J, K) = 1.0;
+            MaskHost3DR8(I, J, K) = 1.0;
+            for (int M = MMin; M <= MMax; ++M) {
+               MaskHost4DI4(I, J, K, M) = 1;
+               MaskHost4DI8(I, J, K, M) = 1;
+               MaskHost4DR4(I, J, K, M) = 1.0;
+               MaskHost4DR8(I, J, K, M) = 1.0;
+               for (int N = NMin; N <= NMax; ++N) {
+                  MaskHost5DI4(I, J, K, M, N) = 1;
+                  MaskHost5DI8(I, J, K, M, N) = 1;
+                  MaskHost5DR4(I, J, K, M, N) = 1.0;
+                  MaskHost5DR8(I, J, K, M, N) = 1.0;
+               }
+            }
+         }
+      }
+   }
+
+   // create equivalent device arrays
+   deepCopy(Mask1DI4, MaskHost1DI4);
+   deepCopy(Mask1DI8, MaskHost1DI8);
+   deepCopy(Mask1DR4, MaskHost1DR4);
+   deepCopy(Mask1DR8, MaskHost1DR8);
+   deepCopy(Mask2DI4, MaskHost2DI4);
+   deepCopy(Mask2DI8, MaskHost2DI8);
+   deepCopy(Mask2DR4, MaskHost2DR4);
+   deepCopy(Mask2DR8, MaskHost2DR8);
+   deepCopy(Mask3DI4, MaskHost3DI4);
+   deepCopy(Mask3DI8, MaskHost3DI8);
+   deepCopy(Mask3DR4, MaskHost3DR4);
+   deepCopy(Mask3DR8, MaskHost3DR8);
+   deepCopy(Mask4DI4, MaskHost4DI4);
+   deepCopy(Mask4DI8, MaskHost4DI8);
+   deepCopy(Mask4DR4, MaskHost4DR4);
+   deepCopy(Mask4DR8, MaskHost4DR8);
+   deepCopy(Mask5DI4, MaskHost5DI4);
+   deepCopy(Mask5DI8, MaskHost5DI8);
+   deepCopy(Mask5DR4, MaskHost5DR4);
+   deepCopy(Mask5DR8, MaskHost5DR8);
+
+   //-----
+   // Test sums with range limits
+   testArray("1DI4Host Add Range", TestHost1DI4, Ref1DI4, &AddRange);
+   testArray("1DI8Host Add Range", TestHost1DI8, Ref1DI8, &AddRange);
+   testArray("1DR4Host Add Range", TestHost1DR4, Ref1DR4, &AddRange);
+   testArray("1DR8Host Add Range", TestHost1DR8, Ref1DR8, &AddRange);
+   testArray("2DI4Host Add Range", TestHost2DI4, Ref2DI4, &AddRange);
+   testArray("2DI8Host Add Range", TestHost2DI8, Ref2DI8, &AddRange);
+   testArray("2DR4Host Add Range", TestHost2DR4, Ref2DR4, &AddRange);
+   testArray("2DR8Host Add Range", TestHost2DR8, Ref2DR8, &AddRange);
+   testArray("3DI4Host Add Range", TestHost3DI4, Ref3DI4, &AddRange);
+   testArray("3DI8Host Add Range", TestHost3DI8, Ref3DI8, &AddRange);
+   testArray("3DR4Host Add Range", TestHost3DR4, Ref3DR4, &AddRange);
+   testArray("3DR8Host Add Range", TestHost3DR8, Ref3DR8, &AddRange);
+   testArray("4DI4Host Add Range", TestHost4DI4, Ref4DI4, &AddRange);
+   testArray("4DI8Host Add Range", TestHost4DI8, Ref4DI8, &AddRange);
+   testArray("4DR4Host Add Range", TestHost4DR4, Ref4DR4, &AddRange);
+   testArray("4DR8Host Add Range", TestHost4DR8, Ref4DR8, &AddRange);
+   testArray("5DI4Host Add Range", TestHost5DI4, Ref5DI4, &AddRange);
+   testArray("5DI8Host Add Range", TestHost5DI8, Ref5DI8, &AddRange);
+   testArray("5DR4Host Add Range", TestHost5DR4, Ref5DR4, &AddRange);
+   testArray("5DR8Host Add Range", TestHost5DR8, Ref5DR8, &AddRange);
+
+   testArray("1DI4Dev Add Range", Test1DI4, Ref1DI4, &AddRange);
+   testArray("1DI8Dev Add Range", Test1DI8, Ref1DI8, &AddRange);
+   testArray("1DR4Dev Add Range", Test1DR4, Ref1DR4, &AddRange);
+   testArray("1DR8Dev Add Range", Test1DR8, Ref1DR8, &AddRange);
+   testArray("2DI4Dev Add Range", Test2DI4, Ref2DI4, &AddRange);
+   testArray("2DI8Dev Add Range", Test2DI8, Ref2DI8, &AddRange);
+   testArray("2DR4Dev Add Range", Test2DR4, Ref2DR4, &AddRange);
+   testArray("2DR8Dev Add Range", Test2DR8, Ref2DR8, &AddRange);
+   testArray("3DI4Dev Add Range", Test3DI4, Ref3DI4, &AddRange);
+   testArray("3DI8Dev Add Range", Test3DI8, Ref3DI8, &AddRange);
+   testArray("3DR4Dev Add Range", Test3DR4, Ref3DR4, &AddRange);
+   testArray("3DR8Dev Add Range", Test3DR8, Ref3DR8, &AddRange);
+   testArray("4DI4Dev Add Range", Test4DI4, Ref4DI4, &AddRange);
+   testArray("4DI8Dev Add Range", Test4DI8, Ref4DI8, &AddRange);
+   testArray("4DR4Dev Add Range", Test4DR4, Ref4DR4, &AddRange);
+   testArray("4DR8Dev Add Range", Test4DR8, Ref4DR8, &AddRange);
+   testArray("5DI4Dev Add Range", Test5DI4, Ref5DI4, &AddRange);
+   testArray("5DI8Dev Add Range", Test5DI8, Ref5DI8, &AddRange);
+   testArray("5DR4Dev Add Range", Test5DR4, Ref5DR4, &AddRange);
+   testArray("5DR8Dev Add Range", Test5DR8, Ref5DR8, &AddRange);
+
+   //-----
+   // Test min max with range limits
+   testArrayMinMax("1DI4 Host MinMax Add Range", TestHost1DI4, RefMin1DI4,
+                   RefMax1DI4, &AddRange);
+   testArrayMinMax("1DI8 Host MinMax Add Range", TestHost1DI8, RefMin1DI8,
+                   RefMax1DI8, &AddRange);
+   testArrayMinMax("1DR4 Host MinMax Add Range", TestHost1DR4, RefMin1DR4,
+                   RefMax1DR4, &AddRange);
+   testArrayMinMax("1DR8 Host MinMax Add Range", TestHost1DR8, RefMin1DR8,
+                   RefMax1DR8, &AddRange);
+   testArrayMinMax("2DI4 Host MinMax Add Range", TestHost2DI4, RefMin2DI4,
+                   RefMax2DI4, &AddRange);
+   testArrayMinMax("2DI8 Host MinMax Add Range", TestHost2DI8, RefMin2DI8,
+                   RefMax2DI8, &AddRange);
+   testArrayMinMax("2DR4 Host MinMax Add Range", TestHost2DR4, RefMin2DR4,
+                   RefMax2DR4, &AddRange);
+   testArrayMinMax("2DR8 Host MinMax Add Range", TestHost2DR8, RefMin2DR8,
+                   RefMax2DR8, &AddRange);
+   testArrayMinMax("3DI4 Host MinMax Add Range", TestHost3DI4, RefMin3DI4,
+                   RefMax3DI4, &AddRange);
+   testArrayMinMax("3DI8 Host MinMax Add Range", TestHost3DI8, RefMin3DI8,
+                   RefMax3DI8, &AddRange);
+   testArrayMinMax("3DR4 Host MinMax Add Range", TestHost3DR4, RefMin3DR4,
+                   RefMax3DR4, &AddRange);
+   testArrayMinMax("3DR8 Host MinMax Add Range", TestHost3DR8, RefMin3DR8,
+                   RefMax3DR8, &AddRange);
+   testArrayMinMax("4DI4 Host MinMax Add Range", TestHost4DI4, RefMin4DI4,
+                   RefMax4DI4, &AddRange);
+   testArrayMinMax("4DI8 Host MinMax Add Range", TestHost4DI8, RefMin4DI8,
+                   RefMax4DI8, &AddRange);
+   testArrayMinMax("4DR4 Host MinMax Add Range", TestHost4DR4, RefMin4DR4,
+                   RefMax4DR4, &AddRange);
+   testArrayMinMax("4DR8 Host MinMax Add Range", TestHost4DR8, RefMin4DR8,
+                   RefMax4DR8, &AddRange);
+   testArrayMinMax("5DI4 Host MinMax Add Range", TestHost5DI4, RefMin5DI4,
+                   RefMax5DI4, &AddRange);
+   testArrayMinMax("5DI8 Host MinMax Add Range", TestHost5DI8, RefMin5DI8,
+                   RefMax5DI8, &AddRange);
+   testArrayMinMax("5DR4 Host MinMax Add Range", TestHost5DR4, RefMin5DR4,
+                   RefMax5DR4, &AddRange);
+   testArrayMinMax("5DR8 Host MinMax Add Range", TestHost5DR8, RefMin5DR8,
+                   RefMax5DR8, &AddRange);
+
+   testArrayMinMax("1DI4 Dev MinMax Add Range", Test1DI4, RefMin1DI4,
+                   RefMax1DI4, &AddRange);
+   testArrayMinMax("1DI8 Dev MinMax Add Range", Test1DI8, RefMin1DI8,
+                   RefMax1DI8, &AddRange);
+   testArrayMinMax("1DR4 Dev MinMax Add Range", Test1DR4, RefMin1DR4,
+                   RefMax1DR4, &AddRange);
+   testArrayMinMax("1DR8 Dev MinMax Add Range", Test1DR8, RefMin1DR8,
+                   RefMax1DR8, &AddRange);
+   testArrayMinMax("2DI4 Dev MinMax Add Range", Test2DI4, RefMin2DI4,
+                   RefMax2DI4, &AddRange);
+   testArrayMinMax("2DI8 Dev MinMax Add Range", Test2DI8, RefMin2DI8,
+                   RefMax2DI8, &AddRange);
+   testArrayMinMax("2DR4 Dev MinMax Add Range", Test2DR4, RefMin2DR4,
+                   RefMax2DR4, &AddRange);
+   testArrayMinMax("2DR8 Dev MinMax Add Range", Test2DR8, RefMin2DR8,
+                   RefMax2DR8, &AddRange);
+   testArrayMinMax("3DI4 Dev MinMax Add Range", Test3DI4, RefMin3DI4,
+                   RefMax3DI4, &AddRange);
+   testArrayMinMax("3DI8 Dev MinMax Add Range", Test3DI8, RefMin3DI8,
+                   RefMax3DI8, &AddRange);
+   testArrayMinMax("3DR4 Dev MinMax Add Range", Test3DR4, RefMin3DR4,
+                   RefMax3DR4, &AddRange);
+   testArrayMinMax("3DR8 Dev MinMax Add Range", Test3DR8, RefMin3DR8,
+                   RefMax3DR8, &AddRange);
+   testArrayMinMax("4DI4 Dev MinMax Add Range", Test4DI4, RefMin4DI4,
+                   RefMax4DI4, &AddRange);
+   testArrayMinMax("4DI8 Dev MinMax Add Range", Test4DI8, RefMin4DI8,
+                   RefMax4DI8, &AddRange);
+   testArrayMinMax("4DR4 Dev MinMax Add Range", Test4DR4, RefMin4DR4,
+                   RefMax4DR4, &AddRange);
+   testArrayMinMax("4DR8 Dev MinMax Add Range", Test4DR8, RefMin4DR8,
+                   RefMax4DR8, &AddRange);
+   testArrayMinMax("5DI4 Dev MinMax Add Range", Test5DI4, RefMin5DI4,
+                   RefMax5DI4, &AddRange);
+   testArrayMinMax("5DI8 Dev MinMax Add Range", Test5DI8, RefMin5DI8,
+                   RefMax5DI8, &AddRange);
+   testArrayMinMax("5DR4 Dev MinMax Add Range", Test5DR4, RefMin5DR4,
+                   RefMax5DR4, &AddRange);
+   testArrayMinMax("5DR8 Dev MinMax Add Range", Test5DR8, RefMin5DR8,
+                   RefMax5DR8, &AddRange);
+
+   //-----
+   // Test sums with product - full arrays
+   testArrayProd("1DI4Host Product Full", TestHost1DI4, MaskHost1DI4, Ref1DI4);
+   testArrayProd("1DI8Host Product Full", TestHost1DI8, MaskHost1DI8, Ref1DI8);
+   testArrayProd("1DR4Host Product Full", TestHost1DR4, MaskHost1DR4, Ref1DR4);
+   testArrayProd("1DR8Host Product Full", TestHost1DR8, MaskHost1DR8, Ref1DR8);
+   testArrayProd("2DI4Host Product Full", TestHost2DI4, MaskHost2DI4, Ref2DI4);
+   testArrayProd("2DI8Host Product Full", TestHost2DI8, MaskHost2DI8, Ref2DI8);
+   testArrayProd("2DR4Host Product Full", TestHost2DR4, MaskHost2DR4, Ref2DR4);
+   testArrayProd("2DR8Host Product Full", TestHost2DR8, MaskHost2DR8, Ref2DR8);
+   testArrayProd("3DI4Host Product Full", TestHost3DI4, MaskHost3DI4, Ref3DI4);
+   testArrayProd("3DI8Host Product Full", TestHost3DI8, MaskHost3DI8, Ref3DI8);
+   testArrayProd("3DR4Host Product Full", TestHost3DR4, MaskHost3DR4, Ref3DR4);
+   testArrayProd("3DR8Host Product Full", TestHost3DR8, MaskHost3DR8, Ref3DR8);
+   testArrayProd("4DI4Host Product Full", TestHost4DI4, MaskHost4DI4, Ref4DI4);
+   testArrayProd("4DI8Host Product Full", TestHost4DI8, MaskHost4DI8, Ref4DI8);
+   testArrayProd("4DR4Host Product Full", TestHost4DR4, MaskHost4DR4, Ref4DR4);
+   testArrayProd("4DR8Host Product Full", TestHost4DR8, MaskHost4DR8, Ref4DR8);
+   testArrayProd("5DI4Host Product Full", TestHost5DI4, MaskHost5DI4, Ref5DI4);
+   testArrayProd("5DI8Host Product Full", TestHost5DI8, MaskHost5DI8, Ref5DI8);
+   testArrayProd("5DR4Host Product Full", TestHost5DR4, MaskHost5DR4, Ref5DR4);
+   testArrayProd("5DR8Host Product Full", TestHost5DR8, MaskHost5DR8, Ref5DR8);
+
+   testArrayProd("1DI4Dev Product Full", Test1DI4, Mask1DI4, Ref1DI4);
+   testArrayProd("1DI8Dev Product Full", Test1DI8, Mask1DI8, Ref1DI8);
+   testArrayProd("1DR4Dev Product Full", Test1DR4, Mask1DR4, Ref1DR4);
+   testArrayProd("1DR8Dev Product Full", Test1DR8, Mask1DR8, Ref1DR8);
+   testArrayProd("2DI4Dev Product Full", Test2DI4, Mask2DI4, Ref2DI4);
+   testArrayProd("2DI8Dev Product Full", Test2DI8, Mask2DI8, Ref2DI8);
+   testArrayProd("2DR4Dev Product Full", Test2DR4, Mask2DR4, Ref2DR4);
+   testArrayProd("2DR8Dev Product Full", Test2DR8, Mask2DR8, Ref2DR8);
+   testArrayProd("3DI4Dev Product Full", Test3DI4, Mask3DI4, Ref3DI4);
+   testArrayProd("3DI8Dev Product Full", Test3DI8, Mask3DI8, Ref3DI8);
+   testArrayProd("3DR4Dev Product Full", Test3DR4, Mask3DR4, Ref3DR4);
+   testArrayProd("3DR8Dev Product Full", Test3DR8, Mask3DR8, Ref3DR8);
+   testArrayProd("4DI4Dev Product Full", Test4DI4, Mask4DI4, Ref4DI4);
+   testArrayProd("4DI8Dev Product Full", Test4DI8, Mask4DI8, Ref4DI8);
+   testArrayProd("4DR4Dev Product Full", Test4DR4, Mask4DR4, Ref4DR4);
+   testArrayProd("4DR8Dev Product Full", Test4DR8, Mask4DR8, Ref4DR8);
+   testArrayProd("5DI4Dev Product Full", Test5DI4, Mask5DI4, Ref5DI4);
+   testArrayProd("5DI8Dev Product Full", Test5DI8, Mask5DI8, Ref5DI8);
+   testArrayProd("5DR4Dev Product Full", Test5DR4, Mask5DR4, Ref5DR4);
+   testArrayProd("5DR8Dev Product Full", Test5DR8, Mask5DR8, Ref5DR8);
+
+   //-----
+   // Test min max with product, full arrays
+   // Since multiplicative masks creates zero entries, the min in all these
+   // full-array cases will be zero
+   I4 RefI4Zero = 0;
+   I8 RefI8Zero = 0;
+   R4 RefR4Zero = 0.0;
+   R8 RefR8Zero = 0.0;
+   testArrayMinMax("1DI4 Host MinMax Prod Full", TestHost1DI4, MaskHost1DI4,
+                   RefI4Zero, RefMax1DI4);
+   testArrayMinMax("1DI8 Host MinMax Prod Full", TestHost1DI8, MaskHost1DI8,
+                   RefI8Zero, RefMax1DI8);
+   testArrayMinMax("1DR4 Host MinMax Prod Full", TestHost1DR4, MaskHost1DR4,
+                   RefR4Zero, RefMax1DR4);
+   testArrayMinMax("1DR8 Host MinMax Prod Full", TestHost1DR8, MaskHost1DR8,
+                   RefR8Zero, RefMax1DR8);
+   testArrayMinMax("2DI4 Host MinMax Prod Full", TestHost2DI4, MaskHost2DI4,
+                   RefI4Zero, RefMax2DI4);
+   testArrayMinMax("2DI8 Host MinMax Prod Full", TestHost2DI8, MaskHost2DI8,
+                   RefI8Zero, RefMax2DI8);
+   testArrayMinMax("2DR4 Host MinMax Prod Full", TestHost2DR4, MaskHost2DR4,
+                   RefR4Zero, RefMax2DR4);
+   testArrayMinMax("2DR8 Host MinMax Prod Full", TestHost2DR8, MaskHost2DR8,
+                   RefR8Zero, RefMax2DR8);
+   testArrayMinMax("3DI4 Host MinMax Prod Full", TestHost3DI4, MaskHost3DI4,
+                   RefI4Zero, RefMax3DI4);
+   testArrayMinMax("3DI8 Host MinMax Prod Full", TestHost3DI8, MaskHost3DI8,
+                   RefI8Zero, RefMax3DI8);
+   testArrayMinMax("3DR4 Host MinMax Prod Full", TestHost3DR4, MaskHost3DR4,
+                   RefR4Zero, RefMax3DR4);
+   testArrayMinMax("3DR8 Host MinMax Prod Full", TestHost3DR8, MaskHost3DR8,
+                   RefR8Zero, RefMax3DR8);
+   testArrayMinMax("4DI4 Host MinMax Prod Full", TestHost4DI4, MaskHost4DI4,
+                   RefI4Zero, RefMax4DI4);
+   testArrayMinMax("4DI8 Host MinMax Prod Full", TestHost4DI8, MaskHost4DI8,
+                   RefI8Zero, RefMax4DI8);
+   testArrayMinMax("4DR4 Host MinMax Prod Full", TestHost4DR4, MaskHost4DR4,
+                   RefR4Zero, RefMax4DR4);
+   testArrayMinMax("4DR8 Host MinMax Prod Full", TestHost4DR8, MaskHost4DR8,
+                   RefR8Zero, RefMax4DR8);
+   testArrayMinMax("5DI4 Host MinMax Prod Full", TestHost5DI4, MaskHost5DI4,
+                   RefI4Zero, RefMax5DI4);
+   testArrayMinMax("5DI8 Host MinMax Prod Full", TestHost5DI8, MaskHost5DI8,
+                   RefI8Zero, RefMax5DI8);
+   testArrayMinMax("5DR4 Host MinMax Prod Full", TestHost5DR4, MaskHost5DR4,
+                   RefR4Zero, RefMax5DR4);
+   testArrayMinMax("5DR8 Host MinMax Prod Full", TestHost5DR8, MaskHost5DR8,
+                   RefR8Zero, RefMax5DR8);
+
+   testArrayMinMax("1DI4 Dev MinMax Prod Full", Test1DI4, Mask1DI4, RefI4Zero,
+                   RefMax1DI4);
+   testArrayMinMax("1DI8 Dev MinMax Prod Full", Test1DI8, Mask1DI8, RefI8Zero,
+                   RefMax1DI8);
+   testArrayMinMax("1DR4 Dev MinMax Prod Full", Test1DR4, Mask1DR4, RefR4Zero,
+                   RefMax1DR4);
+   testArrayMinMax("1DR8 Dev MinMax Prod Full", Test1DR8, Mask1DR8, RefR8Zero,
+                   RefMax1DR8);
+   testArrayMinMax("2DI4 Dev MinMax Prod Full", Test2DI4, Mask2DI4, RefI4Zero,
+                   RefMax2DI4);
+   testArrayMinMax("2DI8 Dev MinMax Prod Full", Test2DI8, Mask2DI8, RefI8Zero,
+                   RefMax2DI8);
+   testArrayMinMax("2DR4 Dev MinMax Prod Full", Test2DR4, Mask2DR4, RefR4Zero,
+                   RefMax2DR4);
+   testArrayMinMax("2DR8 Dev MinMax Prod Full", Test2DR8, Mask2DR8, RefR8Zero,
+                   RefMax2DR8);
+   testArrayMinMax("3DI4 Dev MinMax Prod Full", Test3DI4, Mask3DI4, RefI4Zero,
+                   RefMax3DI4);
+   testArrayMinMax("3DI8 Dev MinMax Prod Full", Test3DI8, Mask3DI8, RefI8Zero,
+                   RefMax3DI8);
+   testArrayMinMax("3DR4 Dev MinMax Prod Full", Test3DR4, Mask3DR4, RefR4Zero,
+                   RefMax3DR4);
+   testArrayMinMax("3DR8 Dev MinMax Prod Full", Test3DR8, Mask3DR8, RefR8Zero,
+                   RefMax3DR8);
+   testArrayMinMax("4DI4 Dev MinMax Prod Full", Test4DI4, Mask4DI4, RefI4Zero,
+                   RefMax4DI4);
+   testArrayMinMax("4DI8 Dev MinMax Prod Full", Test4DI8, Mask4DI8, RefI8Zero,
+                   RefMax4DI8);
+   testArrayMinMax("4DR4 Dev MinMax Prod Full", Test4DR4, Mask4DR4, RefR4Zero,
+                   RefMax4DR4);
+   testArrayMinMax("4DR8 Dev MinMax Prod Full", Test4DR8, Mask4DR8, RefR8Zero,
+                   RefMax4DR8);
+   testArrayMinMax("5DI4 Dev MinMax Prod Full", Test5DI4, Mask5DI4, RefI4Zero,
+                   RefMax5DI4);
+   testArrayMinMax("5DI8 Dev MinMax Prod Full", Test5DI8, Mask5DI8, RefI8Zero,
+                   RefMax5DI8);
+   testArrayMinMax("5DR4 Dev MinMax Prod Full", Test5DR4, Mask5DR4, RefR4Zero,
+                   RefMax5DR4);
+   testArrayMinMax("5DR8 Dev MinMax Prod Full", Test5DR8, Mask5DR8, RefR8Zero,
+                   RefMax5DR8);
+
+   //------
+   // Test sums with product and subset range
+   testArrayProd("1DI4Host Prod Range", TestHost1DI4, MaskHost1DI4, Ref1DI4,
+                 &AddRange);
+   testArrayProd("1DI8Host Prod Range", TestHost1DI8, MaskHost1DI8, Ref1DI8,
+                 &AddRange);
+   testArrayProd("1DR4Host Prod Range", TestHost1DR4, MaskHost1DR4, Ref1DR4,
+                 &AddRange);
+   testArrayProd("1DR8Host Prod Range", TestHost1DR8, MaskHost1DR8, Ref1DR8,
+                 &AddRange);
+   testArrayProd("2DI4Host Prod Range", TestHost2DI4, MaskHost2DI4, Ref2DI4,
+                 &AddRange);
+   testArrayProd("2DI8Host Prod Range", TestHost2DI8, MaskHost2DI8, Ref2DI8,
+                 &AddRange);
+   testArrayProd("2DR4Host Prod Range", TestHost2DR4, MaskHost2DR4, Ref2DR4,
+                 &AddRange);
+   testArrayProd("2DR8Host Prod Range", TestHost2DR8, MaskHost2DR8, Ref2DR8,
+                 &AddRange);
+   testArrayProd("3DI4Host Prod Range", TestHost3DI4, MaskHost3DI4, Ref3DI4,
+                 &AddRange);
+   testArrayProd("3DI8Host Prod Range", TestHost3DI8, MaskHost3DI8, Ref3DI8,
+                 &AddRange);
+   testArrayProd("3DR4Host Prod Range", TestHost3DR4, MaskHost3DR4, Ref3DR4,
+                 &AddRange);
+   testArrayProd("3DR8Host Prod Range", TestHost3DR8, MaskHost3DR8, Ref3DR8,
+                 &AddRange);
+   testArrayProd("4DI4Host Prod Range", TestHost4DI4, MaskHost4DI4, Ref4DI4,
+                 &AddRange);
+   testArrayProd("4DI8Host Prod Range", TestHost4DI8, MaskHost4DI8, Ref4DI8,
+                 &AddRange);
+   testArrayProd("4DR4Host Prod Range", TestHost4DR4, MaskHost4DR4, Ref4DR4,
+                 &AddRange);
+   testArrayProd("4DR8Host Prod Range", TestHost4DR8, MaskHost4DR8, Ref4DR8,
+                 &AddRange);
+   testArrayProd("5DI4Host Prod Range", TestHost5DI4, MaskHost5DI4, Ref5DI4,
+                 &AddRange);
+   testArrayProd("5DI8Host Prod Range", TestHost5DI8, MaskHost5DI8, Ref5DI8,
+                 &AddRange);
+   testArrayProd("5DR4Host Prod Range", TestHost5DR4, MaskHost5DR4, Ref5DR4,
+                 &AddRange);
+   testArrayProd("5DR8Host Prod Range", TestHost5DR8, MaskHost5DR8, Ref5DR8,
+                 &AddRange);
+
+   testArrayProd("1DI4Dev Prod Range", Test1DI4, Mask1DI4, Ref1DI4, &AddRange);
+   testArrayProd("1DI8Dev Prod Range", Test1DI8, Mask1DI8, Ref1DI8, &AddRange);
+   testArrayProd("1DR4Dev Prod Range", Test1DR4, Mask1DR4, Ref1DR4, &AddRange);
+   testArrayProd("1DR8Dev Prod Range", Test1DR8, Mask1DR8, Ref1DR8, &AddRange);
+   testArrayProd("2DI4Dev Prod Range", Test2DI4, Mask2DI4, Ref2DI4, &AddRange);
+   testArrayProd("2DI8Dev Prod Range", Test2DI8, Mask2DI8, Ref2DI8, &AddRange);
+   testArrayProd("2DR4Dev Prod Range", Test2DR4, Mask2DR4, Ref2DR4, &AddRange);
+   testArrayProd("2DR8Dev Prod Range", Test2DR8, Mask2DR8, Ref2DR8, &AddRange);
+   testArrayProd("3DI4Dev Prod Range", Test3DI4, Mask3DI4, Ref3DI4, &AddRange);
+   testArrayProd("3DI8Dev Prod Range", Test3DI8, Mask3DI8, Ref3DI8, &AddRange);
+   testArrayProd("3DR4Dev Prod Range", Test3DR4, Mask3DR4, Ref3DR4, &AddRange);
+   testArrayProd("3DR8Dev Prod Range", Test3DR8, Mask3DR8, Ref3DR8, &AddRange);
+   testArrayProd("4DI4Dev Prod Range", Test4DI4, Mask4DI4, Ref4DI4, &AddRange);
+   testArrayProd("4DI8Dev Prod Range", Test4DI8, Mask4DI8, Ref4DI8, &AddRange);
+   testArrayProd("4DR4Dev Prod Range", Test4DR4, Mask4DR4, Ref4DR4, &AddRange);
+   testArrayProd("4DR8Dev Prod Range", Test4DR8, Mask4DR8, Ref4DR8, &AddRange);
+   testArrayProd("5DI4Dev Prod Range", Test5DI4, Mask5DI4, Ref5DI4, &AddRange);
+   testArrayProd("5DI8Dev Prod Range", Test5DI8, Mask5DI8, Ref5DI8, &AddRange);
+   testArrayProd("5DR4Dev Prod Range", Test5DR4, Mask5DR4, Ref5DR4, &AddRange);
+   testArrayProd("5DR8Dev Prod Range", Test5DR8, Mask5DR8, Ref5DR8, &AddRange);
+
+   //-----
+   // Test min max with product, address range
+
+   testArrayMinMax("1DI4 Host MinMax Prod Add Range", TestHost1DI4,
+                   MaskHost1DI4, RefMin1DI4, RefMax1DI4, &AddRange);
+   testArrayMinMax("1DI8 Host MinMax Prod Add Range", TestHost1DI8,
+                   MaskHost1DI8, RefMin1DI8, RefMax1DI8, &AddRange);
+   testArrayMinMax("1DR4 Host MinMax Prod Add Range", TestHost1DR4,
+                   MaskHost1DR4, RefMin1DR4, RefMax1DR4, &AddRange);
+   testArrayMinMax("1DR8 Host MinMax Prod Add Range", TestHost1DR8,
+                   MaskHost1DR8, RefMin1DR8, RefMax1DR8, &AddRange);
+   testArrayMinMax("2DI4 Host MinMax Prod Add Range", TestHost2DI4,
+                   MaskHost2DI4, RefMin2DI4, RefMax2DI4, &AddRange);
+   testArrayMinMax("2DI8 Host MinMax Prod Add Range", TestHost2DI8,
+                   MaskHost2DI8, RefMin2DI8, RefMax2DI8, &AddRange);
+   testArrayMinMax("2DR4 Host MinMax Prod Add Range", TestHost2DR4,
+                   MaskHost2DR4, RefMin2DR4, RefMax2DR4, &AddRange);
+   testArrayMinMax("2DR8 Host MinMax Prod Add Range", TestHost2DR8,
+                   MaskHost2DR8, RefMin2DR8, RefMax2DR8, &AddRange);
+   testArrayMinMax("3DI4 Host MinMax Prod Add Range", TestHost3DI4,
+                   MaskHost3DI4, RefMin3DI4, RefMax3DI4, &AddRange);
+   testArrayMinMax("3DI8 Host MinMax Prod Add Range", TestHost3DI8,
+                   MaskHost3DI8, RefMin3DI8, RefMax3DI8, &AddRange);
+   testArrayMinMax("3DR4 Host MinMax Prod Add Range", TestHost3DR4,
+                   MaskHost3DR4, RefMin3DR4, RefMax3DR4, &AddRange);
+   testArrayMinMax("3DR8 Host MinMax Prod Add Range", TestHost3DR8,
+                   MaskHost3DR8, RefMin3DR8, RefMax3DR8, &AddRange);
+   testArrayMinMax("4DI4 Host MinMax Prod Add Range", TestHost4DI4,
+                   MaskHost4DI4, RefMin4DI4, RefMax4DI4, &AddRange);
+   testArrayMinMax("4DI8 Host MinMax Prod Add Range", TestHost4DI8,
+                   MaskHost4DI8, RefMin4DI8, RefMax4DI8, &AddRange);
+   testArrayMinMax("4DR4 Host MinMax Prod Add Range", TestHost4DR4,
+                   MaskHost4DR4, RefMin4DR4, RefMax4DR4, &AddRange);
+   testArrayMinMax("4DR8 Host MinMax Prod Add Range", TestHost4DR8,
+                   MaskHost4DR8, RefMin4DR8, RefMax4DR8, &AddRange);
+   testArrayMinMax("5DI4 Host MinMax Prod Add Range", TestHost5DI4,
+                   MaskHost5DI4, RefMin5DI4, RefMax5DI4, &AddRange);
+   testArrayMinMax("5DI8 Host MinMax Prod Add Range", TestHost5DI8,
+                   MaskHost5DI8, RefMin5DI8, RefMax5DI8, &AddRange);
+   testArrayMinMax("5DR4 Host MinMax Prod Add Range", TestHost5DR4,
+                   MaskHost5DR4, RefMin5DR4, RefMax5DR4, &AddRange);
+   testArrayMinMax("5DR8 Host MinMax Prod Add Range", TestHost5DR8,
+                   MaskHost5DR8, RefMin5DR8, RefMax5DR8, &AddRange);
+
+   testArrayMinMax("1DI4 Dev MinMax Prod Add Range", Test1DI4, Mask1DI4,
+                   RefMin1DI4, RefMax1DI4, &AddRange);
+   testArrayMinMax("1DI8 Dev MinMax Prod Add Range", Test1DI8, Mask1DI8,
+                   RefMin1DI8, RefMax1DI8, &AddRange);
+   testArrayMinMax("1DR4 Dev MinMax Prod Add Range", Test1DR4, Mask1DR4,
+                   RefMin1DR4, RefMax1DR4, &AddRange);
+   testArrayMinMax("1DR8 Dev MinMax Prod Add Range", Test1DR8, Mask1DR8,
+                   RefMin1DR8, RefMax1DR8, &AddRange);
+   testArrayMinMax("2DI4 Dev MinMax Prod Add Range", Test2DI4, Mask2DI4,
+                   RefMin2DI4, RefMax2DI4, &AddRange);
+   testArrayMinMax("2DI8 Dev MinMax Prod Add Range", Test2DI8, Mask2DI8,
+                   RefMin2DI8, RefMax2DI8, &AddRange);
+   testArrayMinMax("2DR4 Dev MinMax Prod Add Range", Test2DR4, Mask2DR4,
+                   RefMin2DR4, RefMax2DR4, &AddRange);
+   testArrayMinMax("2DR8 Dev MinMax Prod Add Range", Test2DR8, Mask2DR8,
+                   RefMin2DR8, RefMax2DR8, &AddRange);
+   testArrayMinMax("3DI4 Dev MinMax Prod Add Range", Test3DI4, Mask3DI4,
+                   RefMin3DI4, RefMax3DI4, &AddRange);
+   testArrayMinMax("3DI8 Dev MinMax Prod Add Range", Test3DI8, Mask3DI8,
+                   RefMin3DI8, RefMax3DI8, &AddRange);
+   testArrayMinMax("3DR4 Dev MinMax Prod Add Range", Test3DR4, Mask3DR4,
+                   RefMin3DR4, RefMax3DR4, &AddRange);
+   testArrayMinMax("3DR8 Dev MinMax Prod Add Range", Test3DR8, Mask3DR8,
+                   RefMin3DR8, RefMax3DR8, &AddRange);
+   testArrayMinMax("4DI4 Dev MinMax Prod Add Range", Test4DI4, Mask4DI4,
+                   RefMin4DI4, RefMax4DI4, &AddRange);
+   testArrayMinMax("4DI8 Dev MinMax Prod Add Range", Test4DI8, Mask4DI8,
+                   RefMin4DI8, RefMax4DI8, &AddRange);
+   testArrayMinMax("4DR4 Dev MinMax Prod Add Range", Test4DR4, Mask4DR4,
+                   RefMin4DR4, RefMax4DR4, &AddRange);
+   testArrayMinMax("4DR8 Dev MinMax Prod Add Range", Test4DR8, Mask4DR8,
+                   RefMin4DR8, RefMax4DR8, &AddRange);
+   testArrayMinMax("5DI4 Dev MinMax Prod Add Range", Test5DI4, Mask5DI4,
+                   RefMin5DI4, RefMax5DI4, &AddRange);
+   testArrayMinMax("5DI8 Dev MinMax Prod Add Range", Test5DI8, Mask5DI8,
+                   RefMin5DI8, RefMax5DI8, &AddRange);
+   testArrayMinMax("5DR4 Dev MinMax Prod Add Range", Test5DR4, Mask5DR4,
+                   RefMin5DR4, RefMax5DR4, &AddRange);
+   testArrayMinMax("5DR8 Dev MinMax Prod Add Range", Test5DR8, Mask5DR8,
+                   RefMin5DR8, RefMax5DR8, &AddRange);
+
+} // End testArrayReductions
+
+//------------------------------------------------------------------------------
+// Main test driver
 int main(int argc, char *argv[]) {
 
-   int RetVal = 0;
-
-   // Initialize the global MPI environment
+   // Initialize various environments and utilities
    MPI_Init(&argc, &argv);
    Kokkos::initialize();
+   MachEnv::init(MPI_COMM_WORLD);
+   MachEnv *DefEnv = MachEnv::getDefault();
    Pacer::initialize(MPI_COMM_WORLD);
    Pacer::setPrefix("Omega:");
-   {
+   OMEGA::initLogging(DefEnv);
+   LOG_INFO("------ Global Reductions Unit Tests ------");
 
-      // Create reference values based on MPI_COMM_WORLD
-      MPI_Comm Comm;
-      int MyTask, MySize, err;
-      MachEnv::init(MPI_COMM_WORLD);
-      MachEnv *DefEnv = MachEnv::getDefault();
-      Comm            = DefEnv->getComm();
-      MyTask          = DefEnv->getMyTask();
-      MySize          = DefEnv->getNumTasks();
+   // For reproducibility across tasks, create a smaller sub-environment
+   int NTasks = DefEnv->getNumTasks();
+   if (NTasks < 8)
+      ABORT_ERROR(
+          "ReductionsTest: FAIL must run unit test with at least 8 tasks");
+   MachEnv::create("Subset", DefEnv, 4); // contiguous subset environment
 
-      // Initialize the Logging system
-      OMEGA::initLogging(DefEnv);
+   // Call individual test routines
+   testScalarReductions();
+   testArrayReductions();
 
-      I4 MyInt4 = 1, MyResI4 = 0;
-      I8 MyInt8 = 2, MyResI8 = 0;
-      R4 MyR4 = 3.000001, MyResR4 = 0.0;
-      R8 MyR8 = 4.0000000000001, MyResR8 = 0.0;
-      Real MyReal = 5.000001, MyResReal = 0.0;
+   LOG_INFO("------ Global Reductions Unit Tests Sucessful ------");
 
-      // test SUM for scalars
-      err             = globalSum(&MyInt4, Comm, &MyResI4);
-      I4 expI4        = MyInt4 * MySize;
-      char const *res = "FAIL";
-      if (err == 0 && MyResI4 == expI4)
-         res = "PASS";
-      else
-         RetVal += 1;
-      printf("Global sum I4:    %s (exp,act=%d,%d)\n", res, expI4, MyResI4);
-
-      err      = globalSum(&MyInt8, Comm, &MyResI8);
-      I8 expI8 = MyInt8 * MySize;
-      res      = "FAIL";
-      if (err == 0 && MyResI8 == expI8)
-         res = "PASS";
-      else
-         RetVal += 1;
-      printf("Global sum I8:    %s (exp,act=%ld,%ld)\n", res, expI8, MyResI8);
-
-      err      = globalSum(&MyR4, Comm, &MyResR4);
-      R4 expR4 = MyR4 * MySize;
-      res      = "FAIL";
-      if (err == 0 && MyResR4 == expR4)
-         res = "PASS";
-      else
-         RetVal += 1;
-      printf("Global sum R4:    %s (exp,act=%f,%f)\n", res, expR4, MyResR4);
-
-      err      = globalSum(&MyR8, Comm, &MyResR8);
-      R8 expR8 = MyR8 * MySize;
-      res      = "FAIL";
-      if (err == 0 && MyResR8 == expR8)
-         res = "PASS";
-      else
-         RetVal += 1;
-      printf("Global sum R8:    %s (exp,act=%.15lf,%.15lf)\n", res, expR8,
-             MyResR8);
-
-      err          = globalSum(&MyReal, Comm, &MyResReal);
-      Real expReal = MyReal * MySize;
-      res          = "FAIL";
-      if (err == 0 && MyResReal == expReal)
-         res = "PASS";
-      else
-         RetVal += 1;
-      printf("Global sum real:  %s (exp,act=%.15lf,%.15lf)\n", res, expReal,
-             MyResReal);
-
-      // test SUM of I4 arrays
-      int i, j, k;
-      I4 NumCells = 10, NumVertLyrs = 10, c = 0;
-      HostArray1DI4 HostArr1DI4("HostArrD1", NumCells);
-      HostArray2DI4 HostArr2DI4("HostArrD2", NumCells, NumVertLyrs);
-      I4 Sum1DI4 = 0, Sum2DI4 = 0;
-      for (i = 0; i < NumCells; i++) {
-         HostArr1DI4(i) = i;
-         Sum1DI4 += i;
-         for (j = 0; j < NumVertLyrs; j++) {
-            HostArr2DI4(i, j) = c;
-            Sum2DI4 += c;
-            c++;
-         }
-      }
-      err   = globalSum(HostArr1DI4, Comm, &MyResI4);
-      expI4 = Sum1DI4 * MySize;
-      res   = "FAIL";
-      if (err == 0 && MyResI4 == expI4)
-         res = "PASS";
-      else
-         RetVal += 1;
-      printf("Global sum A1DI4: %s (exp,act=%d,%d)\n", res, expI4, MyResI4);
-
-      err   = globalSum(HostArr2DI4, Comm, &MyResI4);
-      expI4 = Sum2DI4 * MySize;
-      res   = "FAIL";
-      if (err == 0 && MyResI4 == expI4)
-         res = "PASS";
-      else
-         RetVal += 1;
-      printf("Global sum A2DI4: %s (exp,act=%d,%d)\n", res, expI4, MyResI4);
-
-      // test SUM of I8 arrays
-      HostArray1DI8 HostArr1DI8("HostArrD1I8", NumCells);
-      HostArray2DI8 HostArr2DI8("HostArrD2I8", NumCells, NumVertLyrs);
-      I8 Sum1DI8 = 0, Sum2DI8 = 0, c8 = 0;
-      for (i = 0; i < NumCells; i++) {
-         HostArr1DI8(i) = i;
-         Sum1DI8 += i;
-         for (j = 0; j < NumVertLyrs; j++) {
-            HostArr2DI8(i, j) = c8;
-            Sum2DI8 += c8;
-            c8++;
-         }
-      }
-      err   = globalSum(HostArr1DI8, Comm, &MyResI8);
-      expI8 = Sum1DI8 * MySize;
-      res   = "FAIL";
-      if (err == 0 && MyResI8 == expI8)
-         res = "PASS";
-      else
-         RetVal += 1;
-      printf("Global sum A1DI8: %s (exp,act=%ld,%ld)\n", res, expI8, MyResI8);
-
-      err   = globalSum(HostArr2DI8, Comm, &MyResI8);
-      expI8 = Sum2DI8 * MySize;
-      res   = "FAIL";
-      if (err == 0 && MyResI8 == expI8)
-         res = "PASS";
-      else
-         RetVal += 1;
-      printf("Global sum A2DI8: %s (exp,act=%ld,%ld)\n", res, expI8, MyResI8);
-
-      // test SUM of R4 arrays
-      HostArray1DR4 HostArr1DR4("HostArrD1R4", NumCells);
-      HostArray2DR4 HostArr2DR4("HostArrD2R4", NumCells, NumVertLyrs);
-      R4 Sum1DR4 = 0.0, Sum2DR4 = 0.0, f = 0.0;
-      for (i = 0; i < NumCells; i++) {
-         HostArr1DR4(i) = i + 0.00001;
-         Sum1DR4 += HostArr1DR4(i);
-         for (j = 0; j < NumVertLyrs; j++) {
-            HostArr2DR4(i, j) = f;
-            Sum2DR4 += HostArr2DR4(i, j);
-            f += 1.00001;
-         }
-      }
-      err   = globalSum(HostArr1DR4, Comm, &MyResR4);
-      expR4 = Sum1DR4 * MySize;
-      res   = "FAIL";
-      if (err == 0 && MyResR4 == expR4)
-         res = "PASS";
-      else
-         RetVal += 1;
-      printf("Global sum A1DR4: %s (exp,act=%.10f,%.10f)\n", res, expR4,
-             MyResR4);
-
-      err   = globalSum(HostArr2DR4, Comm, &MyResR4);
-      expR4 = Sum2DR4 * MySize;
-      res   = "FAIL";
-      if (err == 0 && MyResR4 == expR4)
-         res = "PASS";
-      else
-         RetVal += 1;
-      printf("Global sum A2DR4: %s (exp,act=%f,%f)\n", res, expR4, MyResR4);
-
-      // test SUM of R8 arrays
-      HostArray1DR8 HostArr1DR8("HostArrD1R8", NumCells);
-      HostArray2DR8 HostArr2DR8("HostArrD2R8", NumCells, NumVertLyrs);
-      R8 Sum1DR8 = 0.0, Sum2DR8 = 0.0, d = 0.0;
-      complex<double> LocalSum1D(0.0, 0.0), LocalSum2D(0.0, 0.0);
-      double e, t1, t2, ai;
-      for (i = 0; i < NumCells; i++) {
-         HostArr1DR8(i) = i + 0.0000000000001;
-         // local ddsum
-         ai = HostArr1DR8(i);
-         t1 = ai + real(LocalSum1D);
-         e  = t1 - ai;
-         t2 = ((real(LocalSum1D) - e) + (ai - (t1 - e))) + imag(LocalSum1D);
-         LocalSum1D = complex<double>(t1 + t2, t2 - ((t1 + t2) - t1));
-         for (j = 0; j < NumVertLyrs; j++) {
-            HostArr2DR8(i, j) = d;
-            d += 1.0000000000001;
-            ai = HostArr2DR8(i, j);
-            t1 = ai + real(LocalSum2D);
-            e  = t1 - ai;
-            t2 = ((real(LocalSum2D) - e) + (ai - (t1 - e))) + imag(LocalSum2D);
-            LocalSum2D = complex<double>(t1 + t2, t2 - ((t1 + t2) - t1));
-         }
-      }
-      Sum1DR8 = real(LocalSum1D);
-      Sum2DR8 = real(LocalSum2D);
-      MyResR8 = 0.0;
-      err     = globalSum(HostArr1DR8, Comm, &MyResR8);
-      // perform serial sum across all MPI tasks
-      complex<double> SerialSum(0.0, 0.0);
-      for (i = 0; i < MySize; i++) {
-         // ddsum across tasks
-         t1 = Sum1DR8 + real(SerialSum);
-         e  = t1 - Sum1DR8;
-         t2 = ((real(SerialSum) - e) + (Sum1DR8 - (t1 - e))) + imag(SerialSum);
-         SerialSum = complex<double>(t1 + t2, t2 - ((t1 + t2) - t1));
-      }
-      expR8 = real(SerialSum);
-      res   = "FAIL";
-      if (err == 0 && MyResR8 == expR8)
-         res = "PASS";
-      else
-         RetVal += 1;
-      printf("Global sum A1DR8: %s (exp,act=%.13lf,%.13lf)\n", res, expR8,
-             MyResR8);
-
-      err   = globalSum(HostArr2DR8, Comm, &MyResR8);
-      expR8 = Sum2DR8 * MySize;
-      res   = "FAIL";
-      if (err == 0 && MyResR8 == expR8)
-         res = "PASS";
-      else
-         RetVal += 1;
-      printf("Global sum A2DR8: %s (exp,act=%.13lf,%.13lf)\n", res, expR8,
-             MyResR8);
-
-      //==========================================================================
-      // test MIN, MAX of scalars
-      MyInt4 = MyTask;
-      err    = globalMin(&MyInt4, &MyResI4, Comm);
-      res    = "FAIL";
-      if (err == 0 && MyResI4 == 0)
-         res = "PASS";
-      else
-         RetVal += 1;
-      printf("Global min I4:    %s (exp,act=0,%d)\n", res, MyResI4);
-
-      MyInt8 = MyTask;
-      err    = globalMax(&MyInt8, &MyResI8, Comm);
-      res    = "FAIL";
-      if (err == 0 && MyResI8 == MySize - 1)
-         res = "PASS";
-      else
-         RetVal += 1;
-      printf("Global max I4:    %s (exp,act=%d,%ld)\n", res, MySize - 1,
-             MyResI8);
-
-      R8 MyR8Tmp = MyTask + MyR8;
-      err        = globalMin(&MyR8Tmp, &MyResR8, Comm);
-      res        = "FAIL";
-      if (err == 0 && MyResR8 == MyR8)
-         res = "PASS";
-      else
-         RetVal += 1;
-      printf("Global min R8:    %s (exp,act=%.13lf,%.13lf)\n", res, MyR8,
-             MyResR8);
-
-      err = globalMax(&MyR8Tmp, &MyResR8, Comm);
-      res = "FAIL";
-      if (err == 0 && MyResR8 == (MySize - 1 + MyR8))
-         res = "PASS";
-      else
-         RetVal += 1;
-      printf("Global max R8:    %s (exp,act=%.13lf,%.13lf)\n", res,
-             MySize - 1 + MyR8, MyResR8);
-
-      //==========================================================================
-      // test MIN, MAX of arrays
-      HostArray1DI4 HostA1DI4Work("HostA1DI4Work", NumCells * MySize);
-      HostArray1DI4 HostA1DI4Min("HostA1DI4Min", NumCells * MySize);
-      for (j = 0; j < NumCells; j++) {
-         for (i = 0; i < MySize; i++) {
-            k = i * NumCells + j;
-            if (MyTask == i) {
-               HostA1DI4Work(k) = (i + 1) * k; // processor-specific work array
-            } else {
-               HostA1DI4Work(k) = k; // default
-            }
-         }
-      }
-      err = globalMin(HostA1DI4Work, HostA1DI4Min, Comm);
-      res = "PASS";
-      for (i = 0; i < NumCells * MySize; i++) {
-         if (HostA1DI4Min(i) != i) {
-            res = "FAIL";
-            RetVal += 1;
-         }
-      }
-      printf("Global min A1DI4: %s\n", res);
-
-      HostArray1DI4 HostA1DI4Max("HostA1DI4Max", NumCells * MySize);
-      err = globalMax(HostA1DI4Work, HostA1DI4Max, Comm);
-      res = "PASS";
-      for (i = 0; i < MySize; i++) {
-         for (j = 0; j < NumCells; j++) {
-            k = i * NumCells + j;
-            if (HostA1DI4Max(k) != (i + 1) * k) {
-               res = "FAIL";
-               RetVal += 1;
-            }
-         }
-      }
-      printf("Global max A1DI4: %s\n", res);
-
-      // test SUM of I4 arrays on device
-      Array1DI4 DevArr1DI4("DevArr1DI4", NumCells);
-      Array2DI4 DevArr2DI4("DevArr2DI4", NumCells, NumVertLyrs);
-
-      parallelFor({NumCells}, KOKKOS_LAMBDA(int i) { DevArr1DI4(i) = i; });
-      parallelFor(
-          {NumCells, NumVertLyrs},
-          KOKKOS_LAMBDA(int i, int j) { DevArr2DI4(i, j) = i * 10 + j; });
-      Kokkos::fence();
-
-      err   = globalSum(DevArr1DI4, Comm, &MyResI4);
-      expI4 = Sum1DI4 * MySize;
-      res   = "FAIL";
-      if (err == 0 && MyResI4 == expI4)
-         res = "PASS";
-      else
-         RetVal += 1;
-      printf("Global sum device A1DI4: %s (exp,act=%d,%d)\n", res, expI4,
-             MyResI4);
-
-      err   = globalSum(DevArr2DI4, Comm, &MyResI4);
-      expI4 = Sum2DI4 * MySize;
-      res   = "FAIL";
-      if (err == 0 && MyResI4 == expI4)
-         res = "PASS";
-      else
-         RetVal += 1;
-      printf("Global sum device A2DI4: %s (exp,act=%d,%d)\n", res, expI4,
-             MyResI4);
-
-      // test SUM of R4 arrays on device
-      Array1DR4 DevArr1DR4("DevArrD1R4", NumCells);
-      parallelFor(
-          {NumCells}, KOKKOS_LAMBDA(int i) { DevArr1DR4(i) = i + 0.00001; });
-      Kokkos::fence();
-
-      err   = globalSum(DevArr1DR4, Comm, &MyResR4);
-      expR4 = Sum1DR4 * MySize;
-      res   = "FAIL";
-      if (err == 0 && MyResR4 == expR4)
-         res = "PASS";
-      else
-         RetVal += 1;
-      printf("Global sum device A1DR4: %s (exp,act=%.10f,%.10f)\n", res, expR4,
-             MyResR4);
-   }
-   Pacer::finalize();
+   // clean up
+   MachEnv::removeAll();
    Kokkos::finalize();
    MPI_Finalize();
 
-   if (RetVal >= 256)
-      RetVal = 255;
-
-   return RetVal;
+   return 0; // if we made it here, return success
 
 } // end of main
 //===-----------------------------------------------------------------------===/

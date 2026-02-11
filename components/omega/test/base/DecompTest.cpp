@@ -61,8 +61,6 @@ void initDecompTest() {
 //
 int main(int argc, char *argv[]) {
 
-   int RetVal = 0;
-
    // Initialize the global MPI environment
    MPI_Init(&argc, &argv);
    Kokkos::initialize();
@@ -114,44 +112,32 @@ int main(int argc, char *argv[]) {
          LocSumEdges += EdgeIDH(n);
       for (int n = 0; n < NVerticesOwned; ++n)
          LocSumVertices += VertexIDH(n);
-      I4 SumCells    = 0;
-      I4 SumEdges    = 0;
-      I4 SumVertices = 0;
-      RetVal += globalSum(&LocSumCells, Comm, &SumCells);
-      RetVal += globalSum(&LocSumEdges, Comm, &SumEdges);
-      RetVal += globalSum(&LocSumVertices, Comm, &SumVertices);
+      I4 SumCells    = globalSum(LocSumCells, Comm);
+      I4 SumEdges    = globalSum(LocSumEdges, Comm);
+      I4 SumVertices = globalSum(LocSumVertices, Comm);
 
-      if (SumCells != RefSumCells) {
-         RetVal += 1;
-         LOG_ERROR("DecompTest: Sum cell ID test FAIL {} {}", SumCells,
-                   RefSumCells);
-      }
-      if (SumEdges != RefSumEdges) {
-         RetVal += 1;
-         LOG_ERROR("DecompTest: Sum edge ID test FAIL {} {}", SumEdges,
-                   RefSumEdges);
-      }
-      if (SumVertices != RefSumVertices) {
-         RetVal += 1;
-         LOG_ERROR("DecompTest: Sum vertex ID test FAIL {} {}", SumVertices,
-                   RefSumVertices);
-      }
+      if (SumCells != RefSumCells)
+         ABORT_ERROR("DecompTest: Sum cell ID test FAIL {} {}", SumCells,
+                     RefSumCells);
+      if (SumEdges != RefSumEdges)
+         ABORT_ERROR("DecompTest: Sum edge ID test FAIL {} {}", SumEdges,
+                     RefSumEdges);
+      if (SumVertices != RefSumVertices)
+         ABORT_ERROR("DecompTest: Sum vertex ID test FAIL {} {}", SumVertices,
+                     RefSumVertices);
 
       // Clean up
       Decomp::clear();
       MachEnv::removeAll();
 
-      if (RetVal == 0)
-         LOG_INFO("---- DecompTest: Successful completion ----");
+      LOG_INFO("---- DecompTest: Successful completion ----");
    }
    Pacer::finalize();
    Kokkos::finalize();
    MPI_Finalize();
 
-   if (RetVal >= 256)
-      RetVal = 255;
-
-   return RetVal;
+   // if we made it to the end, return success
+   return 0;
 
 } // end of main
 //===-----------------------------------------------------------------------===/
