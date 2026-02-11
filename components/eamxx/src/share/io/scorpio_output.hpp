@@ -211,6 +211,9 @@ protected:
   Real m_avg_coeff_threshold =
       0.5; // % of unfilled values required to not just assign value as FillValue
 
+  // Whether to defer horizontal remapping until write time (to reduce MPI calls)
+  bool m_defer_horiz_remap = false;
+
   // Internal maps to the output fields, how the columns are distributed, the file dimensions and
   // the global ids.
   strvec_t m_fields_names;

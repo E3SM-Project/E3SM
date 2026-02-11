@@ -318,10 +318,10 @@ void AtmosphereOutput::init()
   // to minimize MPI calls. The Scorpio FM is created on the appropriate grid for accumulation.
   // However, if we're tracking avg count, we don't defer because avg count fields would need
   // special handling to be remapped as well.
-  const bool defer_horiz_remap = m_horiz_remapper!=nullptr and 
-                                 m_avg_type!=OutputAvgType::Instant and
-                                 not m_track_avg_cnt;
-  auto fm_for_accum = defer_horiz_remap ? fm_after_vr : fm_after_hr;
+  m_defer_horiz_remap = m_horiz_remapper!=nullptr and 
+                        m_avg_type!=OutputAvgType::Instant and
+                        not m_track_avg_cnt;
+  auto fm_for_accum = m_defer_horiz_remap ? fm_after_vr : fm_after_hr;
 
   // Create FM for scorpio. The fields in this FM are guaranteed to NOT have parents/padding
   auto fm_scorpio = m_field_mgrs[Scorpio] = std::make_shared<FieldManager>(fm_for_accum->get_grid(),RepoState::Closed);
@@ -465,10 +465,8 @@ run (const std::string& filename,
   // to minimize MPI calls. For instant output, we do horiz remap every time (if needed).
   // However, if we're tracking avg count, we don't defer because the avg count fields
   // are not registered with the horiz remapper and would need special handling.
-  const bool defer_horiz_remap = m_horiz_remapper!=nullptr and 
-                                 m_avg_type!=OutputAvgType::Instant and
-                                 not m_track_avg_cnt;
-  if (m_horiz_remapper and not defer_horiz_remap) {
+  // The decision to defer is made during init() and stored in m_defer_horiz_remap.
+  if (m_horiz_remapper and not m_defer_horiz_remap) {
     start_timer("EAMxx::IO::horiz_remap");
     apply_remap(*m_horiz_remapper);
     stop_timer("EAMxx::IO::horiz_remap");
@@ -479,7 +477,7 @@ run (const std::string& filename,
   auto fm_after_vr = m_field_mgrs[AfterVertRemap];
 
   // The FM to read from for accumulation depends on whether we defer horiz remap
-  auto fm_for_accum = defer_horiz_remap ? fm_after_vr : fm_after_hr;
+  auto fm_for_accum = m_defer_horiz_remap ? fm_after_vr : fm_after_hr;
 
   // If tracking avg count, update the count at each field location separately.
   // We do count++ only where the fields are NOT equal to the fill value.
@@ -587,7 +585,7 @@ run (const std::string& filename,
   }
 
   // If we deferred horiz remap, do it now (once for all fields) before writing
-  if (is_write_step and defer_horiz_remap) {
+  if (is_write_step and m_defer_horiz_remap) {
     // First, copy accumulated fields from Scorpio FM to the source fields of horiz remapper
     for (size_t i = 0; i < m_fields_names.size(); ++i) {
       const auto& field_name = m_fields_names[i];
@@ -607,9 +605,10 @@ run (const std::string& filename,
     for (size_t i = 0; i < m_fields_names.size(); ++i) {
       const auto& field_name = m_fields_names[i];
       
-      // Get the field to write (either from fm_after_hr if we did horiz remap, or from scorpio FM)
-      auto f_to_write = defer_horiz_remap ? fm_after_hr->get_field(field_name)
-                                          : fm_scorpio->get_field(field_name);
+      // When deferring horiz remap, we just remapped to fm_after_hr so use that for writing.
+      // Otherwise, scorpio FM already contains the accumulated data on the final grid.
+      auto f_to_write = m_defer_horiz_remap ? fm_after_hr->get_field(field_name)
+                                            : fm_scorpio->get_field(field_name);
 
       // NOTE: we don't divide by the avg cnt for checkpoint output
       if (output_step and m_avg_type==OutputAvgType::Average) {
