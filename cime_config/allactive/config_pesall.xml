@@ -65,7 +65,7 @@
       </pes>
     </mach>
     <!-- machine-specific generic defaults -->
-    <mach name="anvil|compy">
+    <mach name="compy">
       <pes compset="any" pesize="any">
         <comment>allactive: default, 4 nodes x MAX_MPITASKS_PER_NODE mpi x 1 omp @ root 0</comment>
         <ntasks>
@@ -260,19 +260,6 @@
         </ntasks>
       </pes>
     </mach>
-    <mach name="anvil">
-      <pes compset="JRA_ELM.+MPASSI.+MPASO.+MOSART.+SGLC" pesize="any">
-        <comment>"anvil, GPMPAS-JRA compset, 6 nodes"</comment>
-        <ntasks>
-          <ntasks_atm>-6</ntasks_atm>
-          <ntasks_lnd>-6</ntasks_lnd>
-          <ntasks_rof>-6</ntasks_rof>
-          <ntasks_ice>-6</ntasks_ice>
-          <ntasks_ocn>-6</ntasks_ocn>
-          <ntasks_cpl>-6</ntasks_cpl>
-        </ntasks>
-      </pes>
-    </mach>
     <mach name="crusher">
       <pes compset="JRA_ELM.+MPASSI.+MPASO.+MOSART.+SGLC" pesize="any">
         <comment>"crusher, GPMPAS-JRA compset, 2 nodes"</comment>
@@ -301,7 +288,7 @@
     </mach>
   </grid>
   <grid name="a%ne30np4_l%.+_oi%oEC60to30v3">
-    <mach name="anvil|bebop">
+    <mach name="bebop">
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV" pesize="S">
         <comment> A_WCYCL*/ne30_oECv3 on 29 nodes pure-MPI, sypd=2.88 </comment>
         <ntasks>
@@ -490,84 +477,6 @@
     </mach>
   </grid>
   <grid name="a%ne30np4.pg2_l%.+_oi%EC30to60E2r2">
-    <mach name="anvil">
-      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV.+_SESP$" pesize="S">
-        <comment> --compset WCYCL* --res ne30pg2_EC30to60E2r2 on 25 nodes pure-MPI, ~5.4 sypd </comment>
-        <ntasks>
-          <ntasks_atm>675</ntasks_atm>
-          <ntasks_lnd>36</ntasks_lnd>
-          <ntasks_rof>36</ntasks_rof>
-          <ntasks_ice>648</ntasks_ice>
-          <ntasks_ocn>216</ntasks_ocn>
-          <ntasks_cpl>684</ntasks_cpl>
-        </ntasks>
-        <rootpe>
-          <rootpe_atm>0</rootpe_atm>
-          <rootpe_lnd>648</rootpe_lnd>
-          <rootpe_rof>648</rootpe_rof>
-          <rootpe_ice>0</rootpe_ice>
-          <rootpe_ocn>684</rootpe_ocn>
-          <rootpe_cpl>0</rootpe_cpl>
-        </rootpe>
-      </pes>
-      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV.+_SESP$" pesize="M">
-        <comment> --compset WCYCL* --res ne30pg2_EC30to60E2r2 on 48 nodes pure-MPI, ~9.4 sypd </comment>
-        <ntasks>
-          <ntasks_atm>1350</ntasks_atm>
-          <ntasks_lnd>72</ntasks_lnd>
-          <ntasks_rof>72</ntasks_rof>
-          <ntasks_ice>1296</ntasks_ice>
-          <ntasks_ocn>360</ntasks_ocn>
-          <ntasks_cpl>1368</ntasks_cpl>
-        </ntasks>
-        <rootpe>
-          <rootpe_atm>0</rootpe_atm>
-          <rootpe_lnd>1296</rootpe_lnd>
-          <rootpe_rof>1296</rootpe_rof>
-          <rootpe_ice>0</rootpe_ice>
-          <rootpe_ocn>1368</rootpe_ocn>
-          <rootpe_cpl>0</rootpe_cpl>
-        </rootpe>
-      </pes>
-      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV.+_SESP$" pesize="L">
-        <comment> --compset WCYCL* --res ne30pg2_EC30to60E2r2 on 90 nodes pure-MPI, ~12 sypd </comment>
-        <ntasks>
-          <ntasks_atm>2700</ntasks_atm>
-          <ntasks_lnd>180</ntasks_lnd>
-          <ntasks_rof>180</ntasks_rof>
-          <ntasks_ice>2520</ntasks_ice>
-          <ntasks_ocn>540</ntasks_ocn>
-          <ntasks_cpl>2700</ntasks_cpl>
-        </ntasks>
-        <rootpe>
-          <rootpe_atm>0</rootpe_atm>
-          <rootpe_lnd>2520</rootpe_lnd>
-          <rootpe_rof>2520</rootpe_rof>
-          <rootpe_ice>0</rootpe_ice>
-          <rootpe_ocn>2700</rootpe_ocn>
-          <rootpe_cpl>0</rootpe_cpl>
-        </rootpe>
-      </pes>
-      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+SGLC_SWAV_SIAC_SESP_BGC.*" pesize="M">
-        <comment>anvil: --compset BGC* --res ne30pg2_r05_EC30to60E2r2 on 30 nodes pure-MPI, ~3 sypd </comment>
-        <ntasks>
-          <ntasks_atm>675</ntasks_atm>
-          <ntasks_lnd>684</ntasks_lnd>
-          <ntasks_rof>684</ntasks_rof>
-          <ntasks_ice>684</ntasks_ice>
-          <ntasks_ocn>396</ntasks_ocn>
-          <ntasks_cpl>684</ntasks_cpl>
-        </ntasks>
-        <rootpe>
-          <rootpe_atm>0</rootpe_atm>
-          <rootpe_lnd>0</rootpe_lnd>
-          <rootpe_rof>0</rootpe_rof>
-          <rootpe_ice>0</rootpe_ice>
-          <rootpe_ocn>684</rootpe_ocn>
-          <rootpe_cpl>0</rootpe_cpl>
-        </rootpe>
-      </pes>
-    </mach>
     <mach name="crusher">
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+SGLC_SWAV_SIAC_SESP_BGC.*" pesize="any">
         <comment>crusher: --compset BGC* --res ne30pg2_r05_EC30to60E2r2 on 2 nodes pure-MPI</comment>
@@ -703,27 +612,6 @@
     </mach>
   </grid>
   <grid name="a%ne30np4.pg2_l%.+_oi%SOwISC12to60E2r4">
-    <mach name="anvil">
-      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV.+" pesize="L">
-        <comment> -compset WCYCL*/CRYO* -res SOwISC12to60E2r4* on 75 nodes pure-MPI, ~5 sypd </comment>
-        <ntasks>
-          <ntasks_atm>900</ntasks_atm>
-          <ntasks_lnd>900</ntasks_lnd>
-          <ntasks_rof>900</ntasks_rof>
-          <ntasks_ice>900</ntasks_ice>
-          <ntasks_ocn>1620</ntasks_ocn>
-          <ntasks_cpl>900</ntasks_cpl>
-        </ntasks>
-        <rootpe>
-          <rootpe_atm>0</rootpe_atm>
-          <rootpe_lnd>0</rootpe_lnd>
-          <rootpe_rof>0</rootpe_rof>
-          <rootpe_ice>0</rootpe_ice>
-          <rootpe_ocn>900</rootpe_ocn>
-          <rootpe_cpl>0</rootpe_cpl>
-        </rootpe>
-      </pes>
-    </mach>
     <mach name="chrysalis">
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV.+" pesize="L">
         <comment> -compset WCYCL*/CRYO* -res ne30pg*SOwISC12to60E2r4* on 105 nodes pure-MPI, ~18.5 sypd </comment>
@@ -791,27 +679,6 @@
     </mach>
   </grid>
   <grid name="a%ne30np4.pg2_l%.+_oi%ECwISC30to60E2r1">
-    <mach name="anvil">
-      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV.+" pesize="M">
-        <comment> -compset WCYCL*/CRYO* -res ECwISC30to60E2r1* on 48 nodes pure-MPI, ~8.5 sypd </comment>
-        <ntasks>
-          <ntasks_atm>1350</ntasks_atm>
-          <ntasks_lnd>108</ntasks_lnd>
-          <ntasks_rof>108</ntasks_rof>
-          <ntasks_ice>1260</ntasks_ice>
-          <ntasks_ocn>360</ntasks_ocn>
-          <ntasks_cpl>1368</ntasks_cpl>
-        </ntasks>
-        <rootpe>
-          <rootpe_atm>0</rootpe_atm>
-          <rootpe_lnd>1260</rootpe_lnd>
-          <rootpe_rof>1260</rootpe_rof>
-          <rootpe_ice>0</rootpe_ice>
-          <rootpe_ocn>1368</rootpe_ocn>
-          <rootpe_cpl>0</rootpe_cpl>
-        </rootpe>
-      </pes>
-    </mach>
     <mach name="chrysalis">
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV.+" pesize="L">
         <comment> -compset WCYCL*/CRYO* -res ne30pg*ECwISC30to60E2r1* on 105 nodes pure-MPI, ~40 sypd </comment>
@@ -1174,65 +1041,6 @@
           <rootpe_ice>0</rootpe_ice>
           <rootpe_rof>4352</rootpe_rof>
           <rootpe_lnd>4352</rootpe_lnd>
-        </rootpe>
-      </pes>
-    </mach>
-    <mach name="anvil">
-      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV.+_SESP$" pesize="S">
-        <comment> --compset WCYCL* --res ne30pg2_r05_IcoswISC30E3r5 on 25 nodes pure-MPI, ~2.9 sypd </comment>
-        <ntasks>
-          <ntasks_atm>675</ntasks_atm>
-          <ntasks_lnd>324</ntasks_lnd>
-          <ntasks_rof>324</ntasks_rof>
-          <ntasks_ice>360</ntasks_ice>
-          <ntasks_ocn>216</ntasks_ocn>
-          <ntasks_cpl>684</ntasks_cpl>
-        </ntasks>
-        <rootpe>
-          <rootpe_atm>0</rootpe_atm>
-          <rootpe_lnd>360</rootpe_lnd>
-          <rootpe_rof>360</rootpe_rof>
-          <rootpe_ice>0</rootpe_ice>
-          <rootpe_ocn>684</rootpe_ocn>
-          <rootpe_cpl>0</rootpe_cpl>
-        </rootpe>
-      </pes>
-      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV.+_SESP$" pesize="M">
-        <comment> --compset WCYCL* --res ne30pg2_r05_IcoswISC30E3r5 on 50 nodes pure-MPI, ~5.6 sypd </comment>
-        <ntasks>
-          <ntasks_atm>1350</ntasks_atm>
-          <ntasks_lnd>648</ntasks_lnd>
-          <ntasks_rof>648</ntasks_rof>
-          <ntasks_ice>720</ntasks_ice>
-          <ntasks_ocn>432</ntasks_ocn>
-          <ntasks_cpl>1368</ntasks_cpl>
-        </ntasks>
-        <rootpe>
-          <rootpe_atm>0</rootpe_atm>
-          <rootpe_lnd>720</rootpe_lnd>
-          <rootpe_rof>720</rootpe_rof>
-          <rootpe_ice>0</rootpe_ice>
-          <rootpe_ocn>1368</rootpe_ocn>
-          <rootpe_cpl>0</rootpe_cpl>
-        </rootpe>
-      </pes>
-      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV.+_SESP$" pesize="L">
-        <comment> --compset WCYCL* --res ne30pg2_r05_IcoswISC30E3r5 on 100 nodes pure-MPI, ~8.8 sypd </comment>
-        <ntasks>
-          <ntasks_atm>2700</ntasks_atm>
-          <ntasks_lnd>1260</ntasks_lnd>
-          <ntasks_rof>1260</ntasks_rof>
-          <ntasks_ice>1440</ntasks_ice>
-          <ntasks_ocn>900</ntasks_ocn>
-          <ntasks_cpl>2700</ntasks_cpl>
-        </ntasks>
-        <rootpe>
-          <rootpe_atm>0</rootpe_atm>
-          <rootpe_lnd>1440</rootpe_lnd>
-          <rootpe_rof>1440</rootpe_rof>
-          <rootpe_ice>0</rootpe_ice>
-          <rootpe_ocn>2700</rootpe_ocn>
-          <rootpe_cpl>0</rootpe_cpl>
         </rootpe>
       </pes>
     </mach>
@@ -1825,27 +1633,6 @@
         </rootpe>
       </pes>
     </mach>
-    <mach name="anvil">
-      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV.+" pesize="S">
-        <comment> RRM-WCYCL: 64 nodes 2.133 sypd </comment>
-        <ntasks>
-          <ntasks_atm>1800</ntasks_atm>
-          <ntasks_lnd>1800</ntasks_lnd>
-          <ntasks_rof>1800</ntasks_rof>
-          <ntasks_ice>1800</ntasks_ice>
-          <ntasks_ocn>504</ntasks_ocn>
-          <ntasks_cpl>1800</ntasks_cpl>
-        </ntasks>
-        <rootpe>
-          <rootpe_atm>0</rootpe_atm>
-          <rootpe_lnd>0</rootpe_lnd>
-          <rootpe_rof>0</rootpe_rof>
-          <rootpe_ice>0</rootpe_ice>
-          <rootpe_ocn>1800</rootpe_ocn>
-          <rootpe_cpl>0</rootpe_cpl>
-        </rootpe>
-      </pes>
-    </mach>
     <mach name="improv">
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV.+" pesize="S">
         <comment>improv+allactive: RRM-WCYCL on 6 nodes</comment>
@@ -2094,55 +1881,9 @@
         </rootpe>
       </pes>
     </mach>
-    <mach name="anvil">
-      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV.+" pesize="S">
-        <comment>allactive+anvil: v3.NARRM tri-grid on 64 nodes ~1.8 sypd</comment>
-        <ntasks>
-          <ntasks_atm>2160</ntasks_atm>
-          <ntasks_cpl>2160</ntasks_cpl>
-          <ntasks_lnd>2160</ntasks_lnd>
-          <ntasks_rof>2160</ntasks_rof>
-          <ntasks_ice>2160</ntasks_ice>
-          <ntasks_ocn>144</ntasks_ocn>
-        </ntasks>
-        <rootpe>
-          <rootpe_ocn>2160</rootpe_ocn>
-        </rootpe>
-      </pes>
-      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV.+" pesize="M">
-        <comment>allactive+anvil: v3.NARRM tri-grid on 96 nodes ~2.5 sypd</comment>
-        <ntasks>
-          <ntasks_atm>3240</ntasks_atm>
-          <ntasks_cpl>3240</ntasks_cpl>
-          <ntasks_lnd>1080</ntasks_lnd>
-          <ntasks_rof>1080</ntasks_rof>
-          <ntasks_ice>2160</ntasks_ice>
-          <ntasks_ocn>216</ntasks_ocn>
-        </ntasks>
-        <rootpe>
-          <rootpe_ocn>3240</rootpe_ocn>
-          <rootpe_lnd>2160</rootpe_lnd>
-          <rootpe_rof>2160</rootpe_rof>
-        </rootpe>
-      </pes>
-      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV.+" pesize="L">
-        <comment>allactive+anvil: v3.NARRM tri-grid on 128 nodes ~3.2 sypd</comment>
-        <ntasks>
-          <ntasks_atm>4320</ntasks_atm>
-          <ntasks_cpl>4320</ntasks_cpl>
-          <ntasks_lnd>4320</ntasks_lnd>
-          <ntasks_rof>4320</ntasks_rof>
-          <ntasks_ice>4320</ntasks_ice>
-          <ntasks_ocn>288</ntasks_ocn>
-        </ntasks>
-        <rootpe>
-          <rootpe_ocn>4320</rootpe_ocn>
-        </rootpe>
-      </pes>
-    </mach>
   </grid>
   <grid name="a%ne30np4_l%.+oi%oEC60to30.+w%wQU225EC60to30">
-    <mach name="anvil|chrysalis">
+    <mach name="chrysalis">
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+WW3" pesize="any">
         <comment>none</comment>
         <ntasks>
@@ -2164,38 +1905,6 @@
     </mach>
   </grid>
   <grid name="a%ne30np4.pg2_l%.+_oi%EC30to60E2r2.+w%wQU225EC30to60E2r2">
-    <mach name="anvil">
-      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC+WW3." pesize="M">
-        <comment> --compset WCYCL* --res ne30pg2_EC30to60E2r2_wQU225EC30to60E2r2 on 48 nodes pure-MPI, ~8.8 sypd </comment>
-        <ntasks>
-          <ntasks_atm>1350</ntasks_atm>
-          <ntasks_lnd>288</ntasks_lnd>
-          <ntasks_rof>288</ntasks_rof>
-          <ntasks_ice>1080</ntasks_ice>
-          <ntasks_ocn>360</ntasks_ocn>
-          <ntasks_cpl>1080</ntasks_cpl>
-          <ntasks_wav>612</ntasks_wav>
-        </ntasks>
-        <nthrds>
-          <nthrds_atm>1</nthrds_atm>
-          <nthrds_lnd>1</nthrds_lnd>
-          <nthrds_rof>1</nthrds_rof>
-          <nthrds_ice>1</nthrds_ice>
-          <nthrds_ocn>1</nthrds_ocn>
-          <nthrds_cpl>1</nthrds_cpl>
-          <nthrds_wav>1</nthrds_wav>
-        </nthrds>
-        <rootpe>
-          <rootpe_atm>0</rootpe_atm>
-          <rootpe_lnd>1080</rootpe_lnd>
-          <rootpe_rof>1080</rootpe_rof>
-          <rootpe_ice>0</rootpe_ice>
-          <rootpe_ocn>1368</rootpe_ocn>
-          <rootpe_cpl>0</rootpe_cpl>
-          <rootpe_wav>1728</rootpe_wav>
-        </rootpe>
-      </pes>
-    </mach>
   </grid>
   <grid name="a%ne30.+oi%oARRM60to10|a%ne30.+oi%ARRM10to60">
     <mach name="onyx|warhawk|narwhal">

@@ -17,7 +17,7 @@
       </pes>
     </mach>
     <!-- machine-specific generic defaults -->
-    <mach name="anvil|compy">
+    <mach name="compy">
       <pes compset="any" pesize="any">
         <comment>elm: default, 4 nodes x MAX_MPITASKS_PER_NODE mpi x 1 omp @ root 0</comment>
         <ntasks>
@@ -220,21 +220,6 @@
         </ntasks>
       </pes>
     </mach>
-    <mach name="anvil">
-      <pes compset="any" pesize="any">
-        <comment>elm: anvil PEs for grid l%360x720cru</comment>
-        <ntasks>
-          <ntasks_atm>-8</ntasks_atm>
-          <ntasks_lnd>-8</ntasks_lnd>
-          <ntasks_rof>-8</ntasks_rof>
-          <ntasks_ice>-8</ntasks_ice>
-          <ntasks_ocn>-8</ntasks_ocn>
-          <ntasks_glc>-8</ntasks_glc>
-          <ntasks_wav>-8</ntasks_wav>
-          <ntasks_cpl>-8</ntasks_cpl>
-        </ntasks>
-      </pes>
-    </mach>
     <mach name="ascent|summit">
       <pes compset=".*ELM%CN.*" pesize="any">
         <comment>elm: ascent|summit PEs for grid l%360x720cru</comment>
@@ -399,7 +384,7 @@
     </mach>
   </grid>
   <grid name="a%r05_l%r05_oi%null_r%r05_g%null_w%null_z%null_m%oEC60to30v3">
-    <mach name="sandiatoss3|anvil|bebop">
+    <mach name="sandiatoss3|bebop">
       <pes compset="any" pesize="any">
         <comment>none</comment>
         <ntasks>

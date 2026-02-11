@@ -98,7 +98,7 @@
       </pes>
     </mach>
     <!-- machine-specific generic defaults -->
-    <mach name="anvil|compy">
+    <mach name="compy">
       <pes compset="any" pesize="any">
         <comment>eam: default, 4 nodes x MAX_MPITASKS_PER_NODE mpi x 1 omp @ root 0</comment>
         <ntasks>
@@ -282,7 +282,7 @@
     </mach>
   </grid>
   <grid name="a%ne4np4.*">
-    <mach name="anvil|bebop">
+    <mach name="bebop">
       <pes compset="any" pesize="any">
         <comment>ne4 grid on 4 nodes pure-MPI </comment>
         <ntasks>
@@ -587,7 +587,7 @@
     </mach>
   </grid>
   <grid name="a%ne30np4_l%ne30np4_oi%ne30np4_">
-    <mach name="anvil|bebop">
+    <mach name="bebop">
       <pes compset="any" pesize="any">
         <comment>ne30_ne30 grid on 40 nodes 36 ppn pure-MPI</comment>
         <ntasks>
@@ -753,21 +753,6 @@
           <ntasks_ice>-6</ntasks_ice>
           <ntasks_glc>-6</ntasks_glc>
           <ntasks_wav>-6</ntasks_wav>
-        </ntasks>
-      </pes>
-    </mach>
-  </grid>
-  <grid name="a%ne30np4.pg2_l%.+_oi%oEC60to30v3">
-    <mach name="anvil">
-      <pes compset=".*EAM.+ELM.+MPASSI.+DOCN.+" pesize="any">
-        <comment> for F-cases on anvil, to fix testing issues that default to 144 pes </comment>
-        <ntasks>
-          <ntasks_atm>-12</ntasks_atm>
-          <ntasks_lnd>-12</ntasks_lnd>
-          <ntasks_rof>-12</ntasks_rof>
-          <ntasks_ice>-12</ntasks_ice>
-          <ntasks_ocn>-12</ntasks_ocn>
-          <ntasks_cpl>-12</ntasks_cpl>
         </ntasks>
       </pes>
     </mach>
@@ -995,21 +980,6 @@
         </rootpe>
       </pes>
     </mach>
-    <mach name="anvil">
-      <pes compset=".*EAM.+ELM.+MPASSI.+DOCN.+SGLC_SWAV_SIAC_SESP_BGC.*" pesize="M">
-        <comment>anvil pelayout for tri-grid BGC tests with EAM+DOCN</comment>
-        <ntasks>
-          <ntasks_atm>-8</ntasks_atm>
-          <ntasks_lnd>-8</ntasks_lnd>
-          <ntasks_rof>-8</ntasks_rof>
-          <ntasks_ice>-8</ntasks_ice>
-          <ntasks_ocn>-8</ntasks_ocn>
-          <ntasks_glc>-8</ntasks_glc>
-          <ntasks_wav>-8</ntasks_wav>
-          <ntasks_cpl>-8</ntasks_cpl>
-        </ntasks>
-      </pes>
-    </mach>
   </grid>
   <grid name="a%ne30np4_l%ne30np4_oi%oEC60to30v3_r%r05_g%null_w%null_z%null_m%oEC60to30v3">
     <mach name="sandiatoss3">
@@ -1069,19 +1039,6 @@
           <ntasks_glc>128</ntasks_glc>
           <ntasks_wav>128</ntasks_wav>
           <ntasks_cpl>128</ntasks_cpl>
-        </ntasks>
-      </pes>
-    </mach>
-    <mach name="anvil">
-      <pes compset=".*EAM.+ELM.+MPASSI.+DOCN.+MOSART.+" pesize="M">
-        <comment>--res conusx4v1_r05_oECv3 --compset F2010 </comment>
-        <ntasks>
-          <ntasks_atm>360</ntasks_atm>
-          <ntasks_lnd>360</ntasks_lnd>
-          <ntasks_rof>360</ntasks_rof>
-          <ntasks_ice>360</ntasks_ice>
-          <ntasks_ocn>360</ntasks_ocn>
-          <ntasks_cpl>360</ntasks_cpl>
         </ntasks>
       </pes>
     </mach>
