@@ -217,15 +217,52 @@ void AuxiliaryState::computeAll(const OceanState *State,
 
    const int NTracers = TracerArray.extent_int(0);
 
+   OMEGA_SCOPE(LocLayerThicknessAux, LayerThicknessAux);
    OMEGA_SCOPE(LocTracerAux, TracerAux);
    OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
    OMEGA_SCOPE(MaxLayerCell, VCoord->MaxLayerCell);
    OMEGA_SCOPE(MinLayerEdgeBot, VCoord->MinLayerEdgeBot);
    OMEGA_SCOPE(MaxLayerEdgeTop, VCoord->MaxLayerEdgeTop);
 
+   R8 TimeStepSeconds;
+   TimeStep.get(TimeStepSeconds, TimeUnits::Seconds);
+
    Pacer::start("AuxState:computeAll", 1);
 
    computeMomAux(State, ThickTimeLevel, VelTimeLevel);
+
+   Pacer::start("AuxState:cellAuxState3", 2);
+   parallelForOuter(
+       "cellAuxState3", {Mesh->NCellsAll},
+       KOKKOS_LAMBDA(int ICell, const TeamMember &Team) {
+          const int KMin   = MinLayerCell(ICell);
+          const int KMax   = MaxLayerCell(ICell);
+          const int KRange = vertRangeChunked(KMin, KMax);
+
+          parallelForInner(
+              Team, KRange, INNER_LAMBDA(int KChunk) {
+                 LocLayerThicknessAux.computeVarsOnCells(
+                     ICell, KChunk, LayerThickCell, NormalVelEdge,
+                     TimeStepSeconds);
+              });
+       });
+   Pacer::stop("AuxState:cellAuxState3", 2);
+
+   Pacer::start("AuxState:edgeAuxState4", 2);
+   parallelForOuter(
+       "edgeAuxState4", {NTracers, Mesh->NEdgesAll},
+       KOKKOS_LAMBDA(int LTracer, int IEdge, const TeamMember &Team) {
+          const int KMin   = MinLayerEdgeBot(IEdge);
+          const int KMax   = MaxLayerEdgeTop(IEdge);
+          const int KRange = vertRangeChunked(KMin, KMax);
+          parallelForInner(
+              Team, KRange, INNER_LAMBDA(int KChunk) {
+                 LocTracerAux.computeVarsOnEdge(LTracer, IEdge, KChunk,
+                                                NormalVelEdge, LayerThickCell,
+                                                TracerArray);
+              });
+       });
+   Pacer::stop("AuxState:edgeAuxState4", 2);
 
    const auto &MeanLayerThickEdge = LayerThicknessAux.MeanLayerThickEdge;
 
@@ -277,17 +314,16 @@ AuxiliaryState *AuxiliaryState::create(const std::string &Name,
 // Create the default auxiliary state. Assumes that HorzMesh, VertCoord and
 // Halo have been initialized.
 void AuxiliaryState::init() {
-   const HorzMesh *DefMesh    = HorzMesh::getDefault();
-   Halo *DefHalo              = Halo::getDefault();
-   const VertCoord *DefVCoord = VertCoord::getDefault();
+   const HorzMesh *DefMesh           = HorzMesh::getDefault();
+   Halo *DefHalo                     = Halo::getDefault();
+   const VertCoord *DefVCoord        = VertCoord::getDefault();
    const TimeStepper *DefTimeStepper = TimeStepper::getDefault();
 
-   int NTracers = Tracers::getNumTracers();
+   int NTracers          = Tracers::getNumTracers();
    TimeInterval TimeStep = DefTimeStepper->getTimeStep();
 
-   AuxiliaryState::DefaultAuxState =
-       AuxiliaryState::create("Default", DefMesh, DefHalo, DefVCoord, NTracers,
-                              TimeStep);
+   AuxiliaryState::DefaultAuxState = AuxiliaryState::create(
+       "Default", DefMesh, DefHalo, DefVCoord, NTracers, TimeStep);
 
    Config *OmegaConfig = Config::getOmegaConfig();
    DefaultAuxState->readConfigOptions(OmegaConfig);
