@@ -2033,9 +2033,9 @@ XXXXXXXXXX
 
 5/22/2020
 
-* Some links to help runnign and debugging:
+* Some links to help running and debugging:
 
-1 https://acme-climate.atlassian.net/wiki/spaces/ED/pages/98992379/
+1 https://acme-climate.atlassian.net/wiki/spaces/ED/pages/98992379/[machine-documentation]
 2 https://www.lcrc.anl.gov/for-users/using-lcrc/running-jobs/running-jobs-on-blues/
 
 * To make an interactive session, use salloc (from 2, above).  
