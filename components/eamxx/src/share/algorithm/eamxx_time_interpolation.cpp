@@ -2,8 +2,6 @@
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 #include "share/io/eamxx_io_utils.hpp"
 
-#include <iostream>
-
 namespace scream{
 namespace util {
 
@@ -253,10 +251,10 @@ void TimeInterpolation::set_file_data_triplets(const vos_type& list_of_files) {
     
     // Warn if case_t0 attribute exists (deprecated and ignored)
     if (scorpio::has_attribute(filename,"GLOBAL","case_t0")) {
-      std::cout << "WARNING: The 'case_t0' global attribute in file '" << filename 
-                << "' is deprecated and will be ignored.\n"
-                << "         Please ensure the time coordinate's 'units' attribute "
-                << "is correct for your needs.\n";
+      m_logger->warn("The 'case_t0' global attribute in file '" + filename 
+                     + "' is deprecated and will be ignored.\n"
+                     + "         Please ensure the time coordinate's 'units' attribute "
+                     + "is correct for your needs.");
     }
     
     // Parse the time variable's units attribute to extract the reference time

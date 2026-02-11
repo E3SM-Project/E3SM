@@ -18,7 +18,6 @@
 #include <fstream>
 #include <regex>
 #include <unordered_set>
-#include <iostream>
 
 namespace scream{
 
@@ -237,7 +236,8 @@ init_data_interval (const util::TimeStamp& t0)
 void DataInterpolation::
 setup_time_database (const strvec_t& input_files,
                      const util::TimeLine timeline,
-                     const TimeInterpType interp_type)
+                     const TimeInterpType interp_type,
+                     const util::TimeStamp& ref_ts)
 {
   // Log the final list of files, so the user know if something went wrong (e.g. a bad regex)
   m_logger->debug("Setting up DataInerpolation object. List of input files:");
@@ -285,13 +285,19 @@ setup_time_database (const strvec_t& input_files,
     
     // Warn if reference_time_stamp attribute exists (deprecated and ignored)
     if (scorpio::has_attribute(fname,"GLOBAL","reference_time_stamp")) {
-      std::cout << "WARNING: The 'reference_time_stamp' global attribute in file '" << fname 
-                << "' is deprecated and will be ignored.\n"
-                << "         The time coordinate's 'units' attribute will be used instead.\n";
+      m_logger->warn("The 'reference_time_stamp' global attribute in file '" + fname 
+                     + "' is deprecated and will be ignored.\n"
+                     + "         The time coordinate's 'units' attribute will be used instead.");
     }
     
     // Parse the time variable's units attribute to extract the reference time
-    auto t_ref = parse_cf_time_units(time_units);
+    // If ref_ts was provided, use it instead (allows using datasets from different years)
+    util::TimeStamp t_ref;
+    if (ref_ts.is_valid()) {
+      t_ref = ref_ts;
+    } else {
+      t_ref = parse_cf_time_units(time_units);
+    }
     
     // Determine time multiplier from units (time values are in this unit)
     int time_mult;
