@@ -269,6 +269,7 @@ module ELMFatesInterfaceMod
       procedure, public :: wrap_photosynthesis
       procedure, public :: WrapPatchPhotosynthesis
       procedure, public :: wrap_accumulatefluxes
+      procedure, public :: WrapAccumulateFluxes
       procedure, public :: prep_canopyfluxes
       procedure, public :: wrap_canopy_radiation
       procedure, public :: wrap_WoodProducts
@@ -2763,19 +2764,54 @@ contains
       rssun(p) = this%fates(nc)%bc_out(s)%rssun_pa(ifp)
       rssha(p) = this%fates(nc)%bc_out(s)%rssha_pa(ifp)
       
-      dtime = real(get_step_size(),r8)
-      call FatesPlantRespPatch(ifp,this%fates(nc)%sites(s),this%fates(nc)%bc_in(s),dtime)
+      
 
       photosyns_inst%psnsun_patch(p)   = spval
       photosyns_inst%psnsha_patch(p)   = spval
 
       ! This flags that this patch has experienced photosynthesis
-      this%fates(nc)%bc_in%filter_photo_pa(ifp) == 3
+      this%fates(nc)%bc_in(s)%filter_photo_pa(ifp) = 3
       
     end associate
     call t_stopf('edpsn')
 
   end subroutine WrapPatchPhotosynthesis
+
+  ! ======================================================================================
+
+  subroutine WrapAccumulateFluxes(this, bounds_clump, fn, filterp)
+
+   ! !ARGUMENTS:
+   class(hlm_fates_interface_type), intent(inout) :: this
+   type(bounds_type)              , intent(in)    :: bounds_clump
+   integer                        , intent(in)    :: fn                   ! size of pft filter
+   integer                        , intent(in)    :: filterp(fn)          ! pft filter
+
+   ! Locals
+   integer                                        :: s,c,p,ifp,icp
+   real(r8)                                       :: dtime
+   integer                                        :: nc
+
+   dtime = real(get_step_size(),r8)
+   nc = bounds_clump%clump_index
+   ! Run a check on the filter
+   do icp = 1,fn
+       p = filterp(icp)
+       c = veg_pp%column(p)
+       s = this%f2hmap(nc)%hsites(c)
+       ifp = p-col_pp%pfti(c)
+       call FatesPlantRespPatch(ifp,this%fates(nc)%sites(s),this%fates(nc)%bc_in(s),dtime)
+    end do
+   
+    dtime = real(get_step_size(),r8)
+
+    call  AccumulateFluxes_ED(this%fates(nc)%nsites,  &
+                               this%fates(nc)%sites, &
+                               this%fates(nc)%bc_in,  &
+                               this%fates(nc)%bc_out, &
+                               dtime)
+    return
+  end subroutine WrapAccumulateFluxes
   
  ! ======================================================================================
 
@@ -2793,28 +2829,15 @@ contains
    integer                                        :: nc
 
    nc = bounds_clump%clump_index
-    ! Run a check on the filter
-    !do icp = 1,fn
-    !   p = filterp(icp)
-    !   c = veg_pp%column(p)
-    !   s = this%f2hmap(nc)%hsites(c)
-    !   ifp = p-col_pp%pfti(c)
-       !if(this%fates(nc)%bc_in(s)%filter_photo_pa(ifp) /= 3)then
-       !   write(iulog,*) 'Not all patches on the natveg column in the canopys'
-       !   write(iulog,*) 'filter ran canopy fluxes: s, p, icp, ifp: ',s,p,icp,ifp
-       !   call endrun(msg=errMsg(sourcefile, __LINE__))
-       !end if
-    !end do
-
-
-    dtime = real(get_step_size(),r8)
-
-    call  AccumulateFluxes_ED(this%fates(nc)%nsites,  &
-                               this%fates(nc)%sites, &
-                               this%fates(nc)%bc_in,  &
-                               this%fates(nc)%bc_out, &
-                               dtime)
-    return
+   
+   dtime = real(get_step_size(),r8)
+   
+   call  AccumulateFluxes_ED(this%fates(nc)%nsites,  &
+        this%fates(nc)%sites, &
+        this%fates(nc)%bc_in,  &
+        this%fates(nc)%bc_out, &
+        dtime)
+   return
  end subroutine wrap_accumulatefluxes
 
  ! ======================================================================================

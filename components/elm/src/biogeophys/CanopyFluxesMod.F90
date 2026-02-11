@@ -332,9 +332,9 @@ contains
     ! to be equal to the maximum allowable stomatal resistance (this number is from fates)
     real(r8),parameter :: max_del_gs =  1._r8/2.e8_r8   ! [m/s]
 
-    integer, parameter  :: itmax_stomata = 10
+    integer, parameter  :: itmax_stomata = 3
 
-    logical, parameter :: do_b4b = .true.  ! Set this true to reproduce results before
+    logical, parameter :: do_b4b = .false.  ! Set this true to reproduce results before
                                            ! refactoring the patch-loops
     
     !------------------------------------------------------------------------------
@@ -778,7 +778,7 @@ contains
       !$OMP PARALLEL DO PRIVATE (f,p,c,t,g,itstoma,itlef,converge_stoma, &
       !$OMP                      converge_tveg,cf,w,csoilb,ri,csoilcn,  &
       !$OMP                      ricsoilc,wta,wtl,wtshi,wtg0,wtga,rppdry, &
-      !$OMP                      efpot,rpp,wtag,wtlq,snow_depth_c,fsno_dl, &
+      !$OMP                      efpot,rpp,wtaq,wtlq,snow_depth_c,fsno_dl, &
       !$OMP                      elai_dl,rdl,wtsqi,wtgq0,dc1,dc2,efsh,     &
       !$OMP                      efeold,erre,lw_grnd,dels,ecidif,tstar,    &
       !$OMP                      qstar,thvstar,iter_final,del_gs ) if (use_fates)
@@ -1309,7 +1309,7 @@ contains
       if ( use_fates ) then
 
 #ifndef _OPENACC
-        call alm_fates%wrap_accumulatefluxes(bounds,fn,filterp(1:fn))
+        call alm_fates%WrapAccumulateFluxes(bounds,fn,filterp(1:fn))
         call alm_fates%wrap_hydraulics_drive(bounds,fn,filterp(1:fn),soilstate_vars, &
              solarabs_vars,energyflux_vars)
 #endif
