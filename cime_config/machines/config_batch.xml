@@ -384,14 +384,6 @@
       </queues>
     </batch_system>
 
-    <batch_system MACH="anvil" type="slurm" >
-      <queues>
-	<queue walltimemax="48:00:00" nodemax="5" default="true" strict="true">acme-small</queue>
-	<queue walltimemax="24:00:00" nodemin="6" nodemax="60" strict="true">acme-medium</queue>
-	<queue walltimemax="12:00:00" nodemin="61" strict="true">acme-large</queue>
-      </queues>
-    </batch_system>
-
     <batch_system MACH="chrysalis" type="slurm" >
       <directives>
         <directive> --switches=$SHELL{echo "(`./xmlquery --value NUM_NODES` + 19) / 20" |bc}</directive>
