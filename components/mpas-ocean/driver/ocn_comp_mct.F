@@ -411,6 +411,7 @@ contains
     ! Setup function pointers for MPASO core and domain types
     call ocn_setup_core(corelist)
     call ocn_setup_domain(domain_ptr)
+    domain_ptr % domainID = 0
 
     ! ===========
     ! Initialize log manager
