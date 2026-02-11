@@ -2,6 +2,7 @@
 
 #include "share/grid/point_grid.hpp"
 #include "share/grid/grid_import_export.hpp"
+#include "share/util/eamxx_timing.hpp"
 
 #include <ekat_team_policy_utils.hpp>
 #include <ekat_pack_utils.hpp>
@@ -154,6 +155,8 @@ template<int PackSize>
 void HorizInterpRemapperBase::
 local_mat_vec (const Field& x, const Field& y) const
 {
+  start_timer(name()+" mat-vec");
+
   using RangePolicy = typename KT::RangePolicy;
   using MemberType  = typename KT::MemberType;
   using TPF         = ekat::TeamPolicyFactory<DefaultDevice::execution_space>;
@@ -271,6 +274,7 @@ local_mat_vec (const Field& x, const Field& y) const
       EKAT_ERROR_MSG("[HorizInterpRemapperBase::local_mat_vec] Error! Fields of rank 4 or greater are not supported.\n");
     }
   }
+  stop_timer(name()+" mat-vec");
 }
 
 void HorizInterpRemapperBase::clean_up ()

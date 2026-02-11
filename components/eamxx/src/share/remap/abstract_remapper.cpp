@@ -1,4 +1,5 @@
 #include "share/remap/abstract_remapper.hpp"
+#include "share/util/eamxx_timing.hpp"
 
 namespace scream
 {
@@ -99,6 +100,7 @@ void AbstractRemapper::registration_ends ()
 
 void AbstractRemapper::remap_fwd ()
 {
+  start_timer(name()+" remap_fwd");
   EKAT_REQUIRE_MSG(m_state!=RepoState::Open,
       "Error! Cannot perform remapping at this time.\n"
       "       Did you forget to call 'registration_ends'?\n");
@@ -108,10 +110,12 @@ void AbstractRemapper::remap_fwd ()
   EKAT_REQUIRE_MSG (not m_has_read_only_tgt_fields,
       "Error! Forward remap IS allowed by this remapper, but some of the tgt fields are read-only\n");
   remap_fwd_impl ();
+  stop_timer(name()+" remap_fwd");
 }
 
 void AbstractRemapper::remap_bwd ()
 {
+  start_timer(name()+" remap_bwd");
   EKAT_REQUIRE_MSG(m_state!=RepoState::Open,
       "Error! Cannot perform remapping at this time.\n"
       "       Did you forget to call 'registration_ends'?\n");
@@ -121,6 +125,7 @@ void AbstractRemapper::remap_bwd ()
   EKAT_REQUIRE_MSG (not m_has_read_only_src_fields,
       "Error! Backward remap IS allowed by this remapper, but some of the src fields are read-only\n");
   remap_bwd_impl ();
+  stop_timer(name()+" remap_bwd");
 }
 
 void AbstractRemapper::

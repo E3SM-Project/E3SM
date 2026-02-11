@@ -3,6 +3,7 @@
 #include "share/grid/point_grid.hpp"
 #include "share/grid/grid_import_export.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
+#include "share/util/eamxx_timing.hpp"
 
 #include <numeric>
 
@@ -16,6 +17,7 @@ build (const std::string& map_file,
        const ekat::Comm& comm_in,
        const InterpType type_in)
 {
+  start_timer ("Build HorizRemap data " + map_file);
   comm = comm_in;
   fine_grid = fine_grid_in;
   type = type_in;
@@ -28,6 +30,8 @@ build (const std::string& map_file,
 
   // Create crs matrix
   create_crs_matrix_structures (my_triplets);
+
+  stop_timer ("Build HorizRemap data " + map_file);
 }
 
 auto HorizRemapperData::
