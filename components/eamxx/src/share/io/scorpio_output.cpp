@@ -318,8 +318,8 @@ void AtmosphereOutput::init()
   // to minimize MPI calls. The Scorpio FM is created on the appropriate grid for accumulation.
   // However, if we're tracking avg count, we don't defer because avg count fields would need
   // special handling to be remapped as well.
-  m_defer_horiz_remap = m_horiz_remapper!=nullptr and 
-                        m_avg_type!=OutputAvgType::Instant and
+  m_defer_horiz_remap = m_horiz_remapper != nullptr and 
+                        m_avg_type != OutputAvgType::Instant and
                         not m_track_avg_cnt;
   auto fm_for_accum = m_defer_horiz_remap ? fm_after_vr : fm_after_hr;
 
