@@ -4526,10 +4526,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#set_grids" class="md-nav__link">
+  <a href="#create_requests" class="md-nav__link">
     <span class="md-ellipsis">
       
-        set_grids
+        create_requests
       
     </span>
   </a>
@@ -4800,8 +4800,7 @@ cp<span class="w"> </span>/global/cfs/cdirs/e3sm/eamxx-tutorial-2025/source/pomp
 
 <span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="nf">name</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="s">&quot;my_disastrous_pompei&quot;</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
 
-<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">set_grids</span><span class="p">(</span>
-<span class="w">      </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="k">const</span><span class="w"> </span><span class="n">GridsManager</span><span class="o">&gt;</span><span class="w"> </span><span class="n">grids_manager</span><span class="p">)</span><span class="w"> </span><span class="k">override</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">create_requests</span><span class="p">()</span><span class="w"> </span><span class="k">override</span><span class="p">;</span>
 <span class="c1">// Define the protected functions, usually at least initialize_impl, run_impl</span>
 <span class="c1">// and finalize_impl, but others could be included.  See</span>
 <span class="c1">// eamxx_template_process_interface.cpp for definitions of each of these.</span>
@@ -4828,7 +4827,7 @@ cp<span class="w"> </span>/global/cfs/cdirs/e3sm/eamxx-tutorial-2025/source/pomp
 <p>Replace <code>AP_TEMPLATE</code> with <code>POMPEI</code> and then:</p>
 <ul>
 <li>Define a constructor for the process</li>
-<li>Define <code>set_grids</code>, which tells EAMxx variables and grid</li>
+<li>Define <code>create_requests</code>, which tells EAMxx variables and grid</li>
 <li>Define <code>initialize_impl</code>, which initializes the process</li>
 <li>Define <code>run_impl</code>, what this process does each time step it is called</li>
 <li>Define <code>finalize_impl</code>, and last actions to take at the end of the simulation</li>
@@ -4883,7 +4882,7 @@ cp<span class="w"> </span>/global/cfs/cdirs/e3sm/eamxx-tutorial-2025/source/pomp
 <span class="p">}</span>
 </code></pre></div>
 <hr />
-<h2 id="set_grids"><code>set_grids</code></h2>
+<h2 id="create_requests"><code>create_requests</code></h2>
 <ul>
 <li>EAMxx stores grid info</li>
 <li>FieldManager stores fields</li>
@@ -4896,23 +4895,18 @@ cp<span class="w"> </span>/global/cfs/cdirs/e3sm/eamxx-tutorial-2025/source/pomp
 </ul>
 <hr />
 <div class="highlight"><pre><span></span><code><span class="cm">/*-----------------------------------------------------------------------------------------------</span>
-<span class="cm"> * set_grids(grids_manager)</span>
+<span class="cm"> * create_requests()</span>
 <span class="cm"> *</span>
-<span class="cm"> * set_grids establishes which grid this process will be run on.</span>
+<span class="cm"> * create_requests establishes which grid this process will be run on.</span>
 <span class="cm"> * It is also where all fields (variables) that the process will need access to.</span>
-<span class="cm"> *</span>
-<span class="cm"> * Inputs:</span>
-<span class="cm"> *     grids_manager - a grids manager object which stores all grids used in</span>
-<span class="cm"> * this simulation</span>
 <span class="cm"> */</span>
-<span class="kt">void</span><span class="w"> </span><span class="nf">POMPEI::set_grids</span><span class="p">(</span>
-<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="k">const</span><span class="w"> </span><span class="n">GridsManager</span><span class="o">&gt;</span><span class="w"> </span><span class="n">grids_manager</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="c1">// Some typical namespaces used in set_grids,</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">POMPEI::create_requests</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="c1">// Some typical namespaces used in create_requests,</span>
 <span class="w">  </span><span class="c1">//   using namespace ShortFieldTagsNames;</span>
 <span class="w">  </span><span class="c1">//   using PC = scream::physics::Constants&lt;Real&gt;;</span>
 
 <span class="w">  </span><span class="c1">// Specify which grid this process will act upon, typical options are</span>
-<span class="w">  </span><span class="c1">// &quot;dynamics&quot; or &quot;physics&quot;. auto m_grid = grids_manager-&gt;get_grid(&quot;physics&quot;);</span>
+<span class="w">  </span><span class="c1">// &quot;dynamics&quot; or &quot;physics&quot;. auto m_grid = m_grids_manager-&gt;get_grid(&quot;physics&quot;);</span>
 
 <span class="w">  </span><span class="c1">// When declaring a field for use we need:</span>
 <span class="w">  </span><span class="c1">//</span>
