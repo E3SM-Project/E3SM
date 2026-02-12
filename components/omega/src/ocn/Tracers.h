@@ -120,35 +120,32 @@ class Tracers {
    );
 
    /// get a device array by tracer index
-   static I4 getByIndex(Array2DReal &TracerArray, ///< [out] tracer device array
-                        const I4 TimeLevel,       ///< [in] time level index
-                        const I4 TracerIndex      ///< [in] global tracer index
+   static Array2DReal
+   getByIndex(const I4 TimeLevel,  ///< [in] time level index
+              const I4 TracerIndex ///< [in] global tracer index
    );
 
    /// get a device array by tracer name
-   static I4
-   getByName(Array2DReal &TracerArray,     ///< [out] tracer device array
-             const I4 TimeLevel,           ///< [in] time level index
+   static Array2DReal
+   getByName(const I4 TimeLevel,           ///< [in] time level index
              const std::string &TracerName ///< [in] global tracer name
    );
 
    /// get a host array for all tracers
-   static HostArray3DReal getAllHost( ///< [out] tracer host array
-       const I4 TimeLevel             ///< [in] time level index
+   static HostArray3DReal
+   getAllHost(const I4 TimeLevel ///< [in] time level index
    );
 
    /// get a host array by tracer index
-   static I4
-   getHostByIndex(HostArray2DReal &TracerArrayH, ///< [out] tracer host array
-                  const I4 TimeLevel,            ///< [in] time level index
-                  const I4 TracerIndex           ///< [in] global tracer index
+   static HostArray2DReal
+   getHostByIndex(const I4 TimeLevel,  ///< [in] time level index
+                  const I4 TracerIndex ///< [in] global tracer index
    );
 
    /// get a host array by tracer name
-   static I4
-   getHostByName(HostArray2DReal &TracerArrayH, ///< [out] tracer host array
-                 const I4 TimeLevel,            ///< [in] time level index
-                 const std::string &TracerName  ///< [in] global tracer name
+   static HostArray2DReal getHostByName( ///< [out] tracer host array
+       const I4 TimeLevel,               ///< [in] time level index
+       const std::string &TracerName     ///< [in] global tracer name
    );
 
    /// get a field by tracer index. If not found, returns nullptr

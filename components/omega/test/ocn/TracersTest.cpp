@@ -302,14 +302,7 @@ int main(int argc, char *argv[]) {
          std::string TracerName;
          Tracers::getName(TracerName, Tracer);
 
-         Array2DReal CurTracer;
-         Err = Tracers::getByName(CurTracer, 0, TracerName);
-         if (Err != 0) {
-            LOG_ERROR("getByName(CurTracer, 0, TracerName) returns non-zero "
-                      "code: {}",
-                      Err);
-            RetVal += 1;
-         }
+         Array2DReal CurTracer = Tracers::getByName(0, TracerName);
 
          count = -1;
 
@@ -402,11 +395,10 @@ int main(int argc, char *argv[]) {
 
       count = 0;
 
-      Array2DReal SaltTracerByName;
-      Err = Tracers::getByName(SaltTracerByName, 1, "Salinity");
+      Array2DReal SaltTracerByName = Tracers::getByName(1, "Salinity");
 
-      Array2DReal SaltTracerByIndexVar;
-      Err = Tracers::getByIndex(SaltTracerByIndexVar, 1, Tracers::IndxSalt);
+      Array2DReal SaltTracerByIndexVar =
+          Tracers::getByIndex(1, Tracers::IndxSalt);
 
       count = -1;
 
@@ -436,14 +428,7 @@ int main(int argc, char *argv[]) {
          std::string TracerName;
          Tracers::getName(TracerName, Tracer);
 
-         HostArray2DReal TestHostArray;
-         Err = Tracers::getHostByName(TestHostArray, 1, TracerName);
-         if (Err != 0) {
-            LOG_ERROR("getHostByName(TestHostArray, 1, TracerName) returns "
-                      "non-zero code: {}",
-                      Err);
-            RetVal += 1;
-         }
+         HostArray2DReal TestHostArray = Tracers::getHostByName(1, TracerName);
 
          for (I4 Cell = 0; Cell < NCellsOwned; Cell++) {
             for (I4 Vert = 0; Vert < NVertLayers; Vert++) {

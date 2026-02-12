@@ -29,8 +29,6 @@ void ForwardBackwardStepper::doStep(
     TimeInstant &SimTime // current simulation time
 ) const {
 
-   int Err = 0;
-
    const int CurLevel  = 0;
    const int NextLevel = 1;
 

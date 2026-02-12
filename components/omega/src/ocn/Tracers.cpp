@@ -268,77 +268,56 @@ I4 Tracers::getName(std::string &TracerName, const I4 TracerIndex) {
 //---------------------------------------------------------------------------
 Array3DReal Tracers::getAll(const I4 TimeLevel) {
    const I4 TimeIndex = getTimeIndex(TimeLevel);
-
    return TracerArrays[TimeIndex];
 }
 
-I4 Tracers::getByIndex(Array2DReal &TracerArray, const I4 TimeLevel,
-                       const I4 TracerIndex) {
+Array2DReal Tracers::getByIndex(const I4 TimeLevel, const I4 TracerIndex) {
 
    // Check if tracer index is valid
-   if (TracerIndex < 0 || TracerIndex >= NumTracers) {
-      LOG_ERROR("Tracers: Tracer index {} is out of range", TracerIndex);
-      return -2;
-   }
+   OMEGA_REQUIRE(TracerIndex >= 0 && TracerIndex < NumTracers,
+                 "Tracers: Tracer index {} is out of range", TracerIndex);
 
    const I4 TimeIndex = getTimeIndex(TimeLevel);
-   TracerArray        = Kokkos::subview(TracerArrays[TimeIndex], TracerIndex,
-                                        Kokkos::ALL, Kokkos::ALL);
-   return 0;
+   return Kokkos::subview(TracerArrays[TimeIndex], TracerIndex, Kokkos::ALL,
+                          Kokkos::ALL);
 }
 
-I4 Tracers::getByName(Array2DReal &TracerArray, const I4 TimeLevel,
-                      const std::string &TracerName) {
+Array2DReal Tracers::getByName(const I4 TimeLevel,
+                               const std::string &TracerName) {
+
    // Check if tracer exists
-   if (TracerIndexes.find(TracerName) == TracerIndexes.end()) {
-      LOG_ERROR("Tracers: Tracer '{}' does not exist", TracerName);
-      return -1;
-   }
+   OMEGA_REQUIRE(TracerIndexes.find(TracerName) != TracerIndexes.end(),
+                 "Tracers: Tracer '{}' does not exist", TracerName);
 
-   int Err = getByIndex(TracerArray, TimeLevel, TracerIndexes[TracerName]);
-   if (Err != 0)
-      return -2;
-
-   return 0;
+   return getByIndex(TimeLevel, TracerIndexes[TracerName]);
 }
 
 HostArray3DReal Tracers::getAllHost(const I4 TimeLevel) {
-
    const I4 TimeIndex = getTimeIndex(TimeLevel);
-
    return TracerArraysH[TimeIndex];
 }
 
-I4 Tracers::getHostByIndex(HostArray2DReal &TracerArrayH, const I4 TimeLevel,
-                           const I4 TracerIndex) {
+HostArray2DReal Tracers::getHostByIndex(const I4 TimeLevel,
+                                        const I4 TracerIndex) {
 
    // Check if tracer index is valid
-   if (TracerIndex < 0 || TracerIndex >= NumTracers) {
-      LOG_ERROR("Tracers: Tracer index {} is out of range", TracerIndex);
-      return -2;
-   }
+   OMEGA_REQUIRE(TracerIndex >= 0 && TracerIndex < NumTracers,
+                 "Tracers: Tracer index {} is out of range", TracerIndex);
 
    const I4 TimeIndex = getTimeIndex(TimeLevel);
-   TracerArrayH       = Kokkos::subview(TracerArraysH[TimeIndex], TracerIndex,
-                                        Kokkos::ALL, Kokkos::ALL);
-   return 0;
+   return Kokkos::subview(TracerArraysH[TimeIndex], TracerIndex, Kokkos::ALL,
+                          Kokkos::ALL);
 }
-
-I4 Tracers::getHostByName(HostArray2DReal &TracerArrayH, const I4 TimeLevel,
-                          const std::string &TracerName) {
+HostArray2DReal Tracers::getHostByName(const I4 TimeLevel,
+                                       const std::string &TracerName) {
    // Check if tracer exists
-   if (TracerIndexes.find(TracerName) == TracerIndexes.end()) {
-      LOG_ERROR("Tracers: Tracer '{}' does not exist", TracerName);
-      return -1;
-   }
+   OMEGA_REQUIRE(TracerIndexes.find(TracerName) != TracerIndexes.end(),
+                 "Tracers: Tracer '{}' does not exist", TracerName);
 
    // Get the index of the tracer
    I4 TracerIndex = TracerIndexes[TracerName];
-   I4 Err         = getHostByIndex(TracerArrayH, TimeLevel, TracerIndex);
-   if (Err != 0)
-      return -2;
 
-   return 0;
+   return getHostByIndex(TimeLevel, TracerIndex);
 }
 
 //---------------------------------------------------------------------------
@@ -436,8 +415,7 @@ void Tracers::copyToHost(const I4 TimeLevel) {
 //---------------------------------------------------------------------------
 I4 Tracers::exchangeHalo(const I4 TimeLevel) {
 
-   I4 Err = 0;
-
+   I4 Err             = 0;
    const I4 TimeIndex = getTimeIndex(TimeLevel);
 
    Err = MeshHalo->exchangeFullArrayHalo(TracerArrays[TimeIndex], OnCell);
@@ -480,8 +458,6 @@ void Tracers::updateTimeLevels() {
 // TimeLevel == [1:new, 0:current, -1:previous, -2:two times ago, ...]
 //---------------------------------------------------------------------------
 I4 Tracers::getTimeIndex(const I4 TimeLevel) {
-
-   // Check if time level is valid
    OMEGA_REQUIRE(NTimeLevels <= 1 ||
                      !(TimeLevel > 1 || (TimeLevel + NTimeLevels) <= 1),
                  "Tracers: Time level {} is out of range for NTimeLevels {}",
