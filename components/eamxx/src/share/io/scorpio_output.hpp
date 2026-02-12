@@ -177,28 +177,26 @@ protected:
   // More specifically, the order of operations is as follows:
   //  - compute diags (if any)
   //  - vert remap (if any)
-  //  - horiz remap (if any)
+  //  - accumulate (for avg/max/min output)
+  //  - horiz remap (if any, only at write time)
   //  - call scorpio
   // and the field mgrs are connected by the following ops
-  //         VERT_REMAP        HORIZ_REMAP       TALLY_UPDATE
-  //  FromModel -> AfterVertRemap -> AfterHorizRemap -> Scorpio
-  // The last 2 field mgrs contain DIFFERENT fields if 1+ of the following happens:
-  //  - fields are padded: we have PackSize>1 during remaps, but Scorpio needs CONTIGUOUS memory
-  //  - there's no remap (so the first 3 FM are the same), but the field is a subfield: again NOT
-  //  CONTIGUOUS
-  //  - the avg type is NOT instant: we need a separate Field to store the tallies
+  //         VERT_REMAP        TALLY_UPDATE     HORIZ_REMAP
+  //  FromModel -> AfterVertRemap -> AfterAccum -> AfterHorizRemap -> Scorpio
+  // Field managers may alias each other when operations are not needed:
+  //  - AfterVertRemap aliases FromModel if no vert remap
+  //  - AfterAccum aliases AfterVertRemap if avg_type is Instant
+  //  - AfterHorizRemap aliases AfterAccum if no horiz remap
+  //  - Scorpio may alias AfterHorizRemap if no padding/parent and avg_type is Instant
   // Also, FromModel is NOT the same field mgr as stored in the AD. In particular, it is a "clone"
   // of the AD field mgr but restricted to the grid that this object is handling, AND we stuff all
   // diags in this field mgr (so that we do not pollute the AD field mgr with output-only fields).
-  // NOTE: if avg_type!=Instant, then ALL fields in the last two field mgrs are different, otherwise
-  // SOME field
-  //       MAY be the same. E.g., field that are NOT subfields and are NOT padded can be "soft
-  //       copies", to reduce memory footprint and runtime costs.
   enum Phase {
     FromModel,       // Output fields as from the model (or diags computed from model fields)
     AfterVertRemap,  // Output fields after vertical remap
+    AfterAccum,      // Output fields after avg/max/min accumulation
     AfterHorizRemap, // Output fields after horiz remap
-    Scorpio // Output fields to pass to scorpio (may differ from the above in case of packing)
+    Scorpio          // Output fields to pass to scorpio (may differ from the above in case of packing)
   };
   std::map<Phase, std::shared_ptr<fm_type>> m_field_mgrs;
 
@@ -210,9 +208,6 @@ protected:
   OutputAvgType m_avg_type;
   Real m_avg_coeff_threshold =
       0.5; // % of unfilled values required to not just assign value as FillValue
-
-  // Whether to defer horizontal remapping until write time (to reduce MPI calls)
-  bool m_defer_horiz_remap = false;
 
   // Internal maps to the output fields, how the columns are distributed, the file dimensions and
   // the global ids.
