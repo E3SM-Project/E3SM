@@ -4996,6 +4996,8 @@ contains
        do efi = 1,num_inst_frc
           eii = mod((efi-1),num_inst_ice) + 1
           call seq_frac_set(infodata, ice(eii), ocn(1), fractions_ax(efi), fractions_ix(efi), fractions_ox(efi))
+          ! Update MOAB atm mesh tags with the fractions computed by seq_frac_set
+          call update_moab_fractions_from_mct(fractions_ax(efi), mbaxid)
        enddo
        call t_drvstopf  ('CPL:fracset_fracset')
 
@@ -5487,5 +5489,63 @@ contains
     call t_adj_detailf(-1)
 
   end subroutine cime_write_performance_checkpoint
+
+!----------------------------------------------------------------------------------
+
+  subroutine update_moab_fractions_from_mct(fractions_a, mbid)
+    !----------------------------------------------------------
+    ! Update MOAB mesh tags with fractions from MCT aVect
+    ! This ensures MOAB tags are synchronized with fractions  
+    ! computed by seq_frac_set
+    !----------------------------------------------------------
+    use iMOAB, only: iMOAB_SetDoubleTagStorage
+    use iso_c_binding
+    use shr_kind_mod, only: R8 => SHR_KIND_R8, CXX => SHR_KIND_CXX
+    use shr_sys_mod, only: shr_sys_abort
+
+    type(mct_aVect), intent(in) :: fractions_a
+    integer, intent(in) :: mbid
+    
+    ! Local variables
+    integer :: lsize, ent_type, ierr, arrsize
+    integer :: kaf, kif, kof, klf, klf_st
+    character(CXX) :: tagname
+    real(R8), allocatable :: frac_array(:,:)
+    character(*), parameter :: subname = '(update_moab_fractions_from_mct) '
+    
+    if (mbid < 0) return  ! No MOAB instance, skip
+    
+    lsize = mct_aVect_lsize(fractions_a)
+    
+    ! Get fraction indices from MCT aVect
+    kaf = mct_aVect_indexRA(fractions_a, "afrac")
+    kif = mct_aVect_indexRA(fractions_a, "ifrac")
+    kof = mct_aVect_indexRA(fractions_a, "ofrac")
+    klf = mct_aVect_indexRA(fractions_a, "lfrac")
+    klf_st = mct_aVect_indexRA(fractions_a, "lfrin")
+    
+    ! Allocate temporary array for all 5 fractions: afrac, ifrac, ofrac, lfrac, lfrin
+    allocate(frac_array(lsize, 5))
+    
+    ! Extract fractions from MCT aVect
+    frac_array(:, 1) = fractions_a%rAttr(kaf, :)   ! afrac
+    frac_array(:, 2) = fractions_a%rAttr(kif, :)   ! ifrac
+    frac_array(:, 3) = fractions_a%rAttr(kof, :)   ! ofrac
+    frac_array(:, 4) = fractions_a%rAttr(klf, :)   ! lfrac
+    frac_array(:, 5) = fractions_a%rAttr(klf_st, :) ! lfrin
+    
+    ! Write all fractions to MOAB tags
+    tagname = 'afrac:ifrac:ofrac:lfrac:lfrin'//C_NULL_CHAR
+    arrsize = 5 * lsize
+    ent_type = 1  ! cell/element type
+    ierr = iMOAB_SetDoubleTagStorage(mbid, tagname, arrsize, ent_type, frac_array)
+    
+    if (ierr /= 0) then
+       call shr_sys_abort(subname//' error writing fractions to MOAB tags')
+    endif
+    
+    deallocate(frac_array)
+    
+  end subroutine update_moab_fractions_from_mct
 
 end module cime_comp_mod
