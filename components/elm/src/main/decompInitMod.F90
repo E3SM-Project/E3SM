@@ -119,6 +119,8 @@ contains
        write(iulog,*) 'decompInit_moab(): allocation error for procinfo%cid'
        call endrun(msg=errMsg(__FILE__, __LINE__))
     endif
+
+    
     procinfo%nclumps   = clump_pproc
     procinfo%cid(:)    = -1
     procinfo%ncells    = moab_gcell%num_owned ! owned elements in the current task
@@ -198,7 +200,7 @@ contains
        call endrun(msg=errMsg(__FILE__, __LINE__))
     end if
 
-    if (nclumps > numg) then
+    if (.not.use_fates .and. nclumps > numg) then
        write(iulog,*) 'decompInit_moab(): Number of clumps exceeds number ', &
             'of land grid cells',nclumps,numg
        call endrun(msg=errMsg(__FILE__, __LINE__))
@@ -457,7 +459,7 @@ contains
             'of land grid cells',npes,numg
        call endrun(msg=errMsg(__FILE__, __LINE__))
     end if
-    if (nclumps > numg) then
+    if (.not.use_fates .and. nclumps > numg) then
        write(iulog,*) 'decompInit_lnd(): Number of clumps exceeds number ', &
             'of land grid cells',nclumps,numg
        call endrun(msg=errMsg(__FILE__, __LINE__))
@@ -760,7 +762,7 @@ contains
             'of land grid cells',npes,numg
        call endrun(msg=errMsg(__FILE__, __LINE__))
     end if
-    if (nclumps > numg) then
+    if (.not.use_fates .and. nclumps > numg) then
        write(iulog,*) 'decompInit_lnd(): Number of clumps exceeds number ', &
             'of land grid cells',nclumps,numg
        call endrun(msg=errMsg(__FILE__, __LINE__))
@@ -1921,7 +1923,7 @@ contains
        call endrun(msg=errMsg(__FILE__, __LINE__))
     end if
 
-    if (nclumps > numg) then
+    if (.not.use_fates .and. nclumps > numg) then
        write(iulog,*) trim(subname) // '(): Number of clumps exceeds number ', &
             'of land grid cells',nclumps,numg
        call endrun(msg=errMsg(__FILE__, __LINE__))

@@ -10,6 +10,7 @@ module decompMod
   ! Must use shr_sys_abort rather than endrun here to avoid circular dependency
   use shr_sys_mod , only : shr_sys_abort 
   use elm_varctl  , only : iulog
+  use elm_varctl  , only : use_fates
   use elm_varcon  , only : grlnd, nameg, namet, namel, namec, namep, nameCohort
   use mct_mod     , only : mct_gsMap
   !
@@ -302,7 +303,7 @@ contains
      !write(iulog,*) 'SPM omp debug decompMod 1 ', &
           !OMP_GET_NUM_THREADS(),OMP_GET_MAX_THREADS(),OMP_GET_THREAD_NUM()
 
-     if ( OMP_GET_NUM_THREADS() == 1 .and. OMP_GET_MAX_THREADS() > 1 )then
+     if (.not.use_fates .and. ( OMP_GET_NUM_THREADS() == 1 .and. OMP_GET_MAX_THREADS() > 1 ))then
         call shr_sys_abort( trim(subname)//' ERROR: Calling from inside a non-threaded region)')
      end if
 #endif

@@ -910,6 +910,8 @@ contains
 
       nclumps = get_proc_clumps()
 
+      write(iulog,*) "NCLUMPS?:",nclumps
+      
       !$OMP PARALLEL DO PRIVATE (nc,bounds_clump,nmaxcol,s,c,l,g,collist,pi,pf,ft)
       do nc = 1,nclumps
 
