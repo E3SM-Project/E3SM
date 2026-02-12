@@ -342,11 +342,12 @@ void zm_transport_momentum(ZmTransportMomentumData& d)
 
   const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.pcols, d.pver);
 
+  WSM wsm(d.pver * d.nwind, 13, policy);
+
   // unpack data scalars because we do not want the lambda to capture d
   const Real dt = d.dt;
   const Int il1g = d.il1g;
   const Int il2g = d.il2g;
-  const Int ncol = d.ncol;
   const Int nwind = d.nwind;
   const Int pver = d.pver;
   const Int pverp = d.pverp;
@@ -372,7 +373,7 @@ void zm_transport_momentum(ZmTransportMomentumData& d)
 
     ZMF::zm_transport_momentum(
       team,
-      ncol,
+      wsm.get_workspace(team),
       pver,
       pverp,
       wind_in_c,

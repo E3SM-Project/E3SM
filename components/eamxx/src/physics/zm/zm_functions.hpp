@@ -47,6 +47,7 @@ struct Functions {
   template <typename S> using uview_1d          = typename ekat::template Unmanaged<view_1d<S> >;
   template <typename S> using uview_2d          = typename ekat::template Unmanaged<view_2d<S> >;
   template <typename S> using uview_2dl         = typename ekat::template Unmanaged<view_2dl<S> >;
+  template <typename S> using uview_3d          = typename ekat::template Unmanaged<view_3d<S> >;
   template <typename S> using view_2dh          = typename view_2dl<S>::HostMirror;
   template <typename S> using view_1dh          = typename view_1d<S>::HostMirror;
 
@@ -388,7 +389,7 @@ struct Functions {
   static void zm_transport_momentum(
     // Inputs
     const MemberType& team,
-    const Int& ncol, // actual number of columns
+    const Workspace& workspace,
     const Int& pver, // number of mid-point levels
     const Int& pverp, // number of interface levels
     const uview_2d<const Real>& wind_in, // input Momentum array
