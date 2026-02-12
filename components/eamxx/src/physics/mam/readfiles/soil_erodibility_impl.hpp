@@ -2,7 +2,7 @@
 #define SOIL_ERODIBILITY_IMPL_HPP
 
 #include "share/remap/identity_remapper.hpp"
-#include "share/remap/refining_remapper_p2p.hpp"
+#include "share/remap/horizontal_remapper.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 #include "share/util/eamxx_timing.hpp"
 
@@ -47,7 +47,7 @@ soilErodibilityFunctions<S, D>::create_horiz_remapper(
                      "parameter list.");
 
     remapper =
-        std::make_shared<RefiningRemapperP2P>(horiz_interp_tgt_grid, map_file);
+        std::make_shared<HorizontalRemapper>(horiz_interp_tgt_grid, map_file);
   }
 
   const auto tgt_grid = remapper->get_tgt_grid();

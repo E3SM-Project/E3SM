@@ -363,10 +363,12 @@ AbstractGrid::get_geometry_data (const std::string& name) const {
   return m_geo_fields.at(name).get_const();
 }
 
-Field
-AbstractGrid::create_geometry_data (const FieldIdentifier& fid, const int pack_size)
+Field AbstractGrid::
+create_geometry_data(const std::string& name, const FieldLayout& layout,
+                     const ekat::units::Units& units, const DataType data_type,
+                     const int pack_size) const
 {
-  const auto& name = fid.name();
+  FieldIdentifier fid(name,layout,units,this->name(),data_type);
 
   EKAT_REQUIRE_MSG (not has_geometry_data(name),
       "Error! Cannot create geometry data, since it already exists.\n"

@@ -102,8 +102,8 @@ create_fields (const std::shared_ptr<const AbstractGrid>& grid,
     double dv = v_max / nlevs;
     auto gids = grid->get_dofs_gids().get_view<const int*,Host>();
     for (int icol=0; icol<ncols; ++icol) {
-      auto gid = gids[icol];
-      h_value = gid*dh + 1.0; // +1.0 to avoid a whole column full of zeros
+      auto gid_0based = gids[icol]-1;
+      h_value = gid_0based*dh + 1.0; // +1.0 to avoid a whole column full of zeros
       // 3D quantities
       for (int ilev=0; ilev<nlevs; ++ilev) {
         v_value = ilev*dv;
