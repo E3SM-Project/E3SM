@@ -575,7 +575,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_dynamics_area_minimum" type="real"
 	category="velocity_solver" group="velocity_solver">
-Minimum sea ice area for dynamics calculation.
+Minimum sea-ice area for dynamics calculation.
 
 Valid values: Any nonnegative number.
 Default: Defined in namelist_defaults.xml
@@ -583,7 +583,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_dynamics_mass_minimum" type="real"
 	category="velocity_solver" group="velocity_solver">
-Minimum seaice and snow mass for dynamics calculation.
+Minimum sea-ice and snow mass for dynamics calculation.
 
 Valid values: Any nonnegative number.
 Default: Defined in namelist_defaults.xml
