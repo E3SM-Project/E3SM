@@ -85,4 +85,18 @@ subroutine entropy_bridge_f(tk, p, qtot, entropy_rv) bind(C)
   entropy_rv = entropy(tk, p, qtot, zm_const)
 end subroutine entropy_bridge_f
 
+subroutine zm_transport_tracer_bridge_f(pcols, pver, doconvtran, q, ncnst, mu, md, du, eu, ed, dp, jt, mx, ideep, il1g, il2g, fracis, dqdt, dpdry, dt) bind(C)
+  use zm_transport, only : zm_transport_tracer
+
+  integer(kind=c_int) , value, intent(in) :: pcols, pver, ncnst, il1g, il2g
+  logical(kind=c_bool) , intent(in), dimension(ncnst) :: doconvtran
+  real(kind=c_real) , intent(in), dimension(pcols, pver, ncnst) :: q, fracis
+  real(kind=c_real) , intent(in), dimension(pcols, pver) :: mu, md, du, eu, ed, dp, dpdry
+  integer(kind=c_int) , intent(in), dimension(pcols) :: jt, mx, ideep
+  real(kind=c_real) , intent(out), dimension(pcols, pver, ncnst) :: dqdt
+  real(kind=c_real) , value, intent(in) :: dt
+
+  call zm_transport_tracer(pcols, pver, doconvtran, q, ncnst, mu, md, du, eu, ed, dp, jt, mx, ideep, il1g, il2g, fracis, dqdt, dpdry, dt)
+end subroutine zm_transport_tracer_bridge_f
+
 end module zm_c2f_bridge
