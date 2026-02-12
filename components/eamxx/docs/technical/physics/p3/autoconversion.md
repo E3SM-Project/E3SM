@@ -43,7 +43,6 @@ N_{c,\text{vol}} = N_c \cdot \rho \cdot 10^{-6}
 \;\equiv\; \texttt{nc\_incld} \cdot \texttt{sp(1.e-6)} \cdot \rho
 $$
 
-\equiv \texttt{nc_incld} \cdot \texttt{sp(1.e-6)} \cdot \rho
 ### Number Tendencies
 
 Consistent with the 2-moment approach, the parameterization calculates the
@@ -140,6 +139,30 @@ $$
 The unit testing suite (`p3_autoconversion_unit_tests.cpp`) employs a "Physics
 Property Test" strategy. We validate that the implementation adheres to
 fundamental physical principles across a wide parameter space.
+
+### Test Organization
+
+The test suite uses Catch2 `SECTION` clauses to organize property checks into
+independent test cases:
+
+* **`monotonicity`** - Physical sensitivity tests (dR/dqc > 0, dR/dNc < 0)
+* **`consistency`** - Conservation laws and parameter validation
+* **`limits`** - Threshold behavior and regime limits
+* **`variance`** - Subgrid variance scaling verification
+* **`bfb`** - Bit-for-bit reproducibility checks
+
+This structure enables running individual checks for faster debugging:
+
+```bash
+# Run all property tests
+./p3_tests "p3_cloud_water_autoconversion_test"
+
+# Run only monotonicity checks
+./p3_tests "p3_cloud_water_autoconversion_test" -c monotonicity
+
+# Run multiple specific sections
+./p3_tests "p3_cloud_water_autoconversion_test" -c monotonicity -c consistency
+```
 
 ### Tolerance Philosophy
 

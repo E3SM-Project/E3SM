@@ -28,25 +28,21 @@ void cloud_water_autoconversion_unit_bfb_tests() {
     // rho, qc_incld, nc_incld, inv_qc_relvar
     {9.703E-01, 5.100E-03, 2.061E+08, 1.0},
     {1.006E+00,  5.100E-03, 1.988E+08,1.0},
-    //{1.139E+00 },
     {1.139E+00,  0.0,       0.0,      1.0},
     {1.151E+00,  1.000E-06, 1.737E+08,1.0},
 
     {9.703E-01, 5.100E-03, 2.061E+08, 1.0},
     {1.006E+00,  5.100E-03, 1.988E+08,1.0},
-    //{1.139E+00 },
     {1.139E+00,  0.0,       0.0,      1.0},
     {1.151E+00,  1.000E-06, 1.737E+08,1.0},
 
     {9.703E-01, 5.100E-03, 2.061E+08, 1.0},
     {1.006E+00,  5.100E-03, 1.988E+08,1.0},
-    //{1.139E+00 },
     {1.139E+00,  0.0,       0.0,      1.0},
     {1.151E+00,  1.000E-06, 1.737E+08,1.0},
 
     {9.703E-01, 5.100E-03, 2.061E+08, 1.0},
     {1.006E+00,  5.100E-03, 1.988E+08,1.0},
-    //{1.139E+00 },
     {1.139E+00,  0.0,       0.0,      1.0},
     {1.151E+00,  1.000E-06, 1.737E+08,1.0},
   };
@@ -126,65 +122,62 @@ void cloud_water_autoconversion_unit_bfb_tests() {
   }
 
   void validate_autoconversion_parameters() {
-    std::cout << "\n=== Parameter Validation ===\n";
-    
     auto runtime = p3::Functions<Real,DefaultDevice>::P3Runtime();
     
-    const Real expected_prefactor = 1350.0;     // s^-1
-    const Real expected_qc_exp = 2.47;          // dimensionless
-    const Real expected_nc_exp = 1.79;          // dimensionless
-    const Real expected_radius = 25.0e-6;       // m (25 um)
+    // Sanity bounds: Ensure parameters are physically reasonable
+    // These catch catastrophic configuration errors (typos, unit mistakes, etc.)
+    REQUIRE(runtime.autoconversion_radius > 1e-6);      // > 1 μm (activated droplet)
+    REQUIRE(runtime.autoconversion_radius < 1e-3);      // < 1 mm (would be rain)
+    REQUIRE(runtime.autoconversion_prefactor > 0);
+    REQUIRE(runtime.autoconversion_qc_exponent > 0);
+    REQUIRE(runtime.autoconversion_nc_exponent > 0);
     
-    const Real tolerance = 0.01;  // 1% tolerance
-    
-    // Validate prefactor
-    Real prefactor_error = std::abs(runtime.autoconversion_prefactor - expected_prefactor) 
-                          / expected_prefactor;
-    if (prefactor_error > tolerance) {
-        std::cout << "WARNING: Prefactor mismatch\n";
-        std::cout << "  Expected: " << expected_prefactor << " s^-1\n";
-        std::cout << "  Actual: " << runtime.autoconversion_prefactor << " s^-1\n";
-    } else {
-        std::cout << "  Prefactor: " << runtime.autoconversion_prefactor << " s^-1\n";
-    }
-    
-    // Validate qc exponent
-    Real qc_exp_error = std::abs(runtime.autoconversion_qc_exponent - expected_qc_exp) 
-                       / expected_qc_exp;
-    if (qc_exp_error > tolerance) {
-        std::cout << "WARNING: qc exponent mismatch\n";
-        std::cout << "  Expected: " << expected_qc_exp << "\n";
-        std::cout << "  Actual: " << runtime.autoconversion_qc_exponent << "\n";
-    } else {
-        std::cout << "  qc exponent: " << runtime.autoconversion_qc_exponent << "\n";
-    }
-    
-    // Validate Nc exponent
-    Real nc_exp_error = std::abs(runtime.autoconversion_nc_exponent - expected_nc_exp) 
-                       / expected_nc_exp;
-    if (nc_exp_error > tolerance) {
-        std::cout << "WARNING: Nc exponent mismatch\n";
-        std::cout << "  Expected: " << expected_nc_exp << "\n";
-        std::cout << "  Actual: " << runtime.autoconversion_nc_exponent << "\n";
-    } else {
-        std::cout << "  Nc exponent: " << runtime.autoconversion_nc_exponent << "\n";
-    }
-    
-    // Validate characteristic radius
-    Real radius_error = std::abs(runtime.autoconversion_radius - expected_radius) 
-                       / expected_radius;
-    if (radius_error > tolerance) {
-        std::cout << "INFO: Characteristic radius differs from documented value\n";
-        std::cout << "  Documentation: " << expected_radius*1e6 << " um\n";
-        std::cout << "  Implementation: " << runtime.autoconversion_radius*1e6 << " um\n";
-    } else {
-        std::cout << "  Characteristic radius: " << runtime.autoconversion_radius*1e6 << " um\n";
-    }
-    
-    std::cout << "===========================\n\n";
+    // Informational output: Display current parameter values
+    // Note: These are tunable parameters that may differ from KK2000 reference values
+    std::cout << "\n=== Autoconversion Parameters ===\n";
+    std::cout << "  Prefactor: " << runtime.autoconversion_prefactor << " s^-1\n";
+    std::cout << "  qc exponent: " << runtime.autoconversion_qc_exponent << "\n";
+    std::cout << "  Nc exponent: " << runtime.autoconversion_nc_exponent << "\n";
+    std::cout << "  Characteristic radius: " << runtime.autoconversion_radius*1e6 << " μm\n";
+    std::cout << "==================================\n\n";
   }
 
-  void run_physics() {
+  // ============================================================================
+  // Test Data Structure (holds grid sweep results and tolerance definitions)
+  // ============================================================================
+  struct AutoconversionTestData {
+    // Grid dimensions
+    int n_qc;
+    int n_nc;
+    int num_cases;
+    
+    // Input host views
+    typename view_1d<Real>::HostMirror qc_host;
+    typename view_1d<Real>::HostMirror nc_host;
+    
+    // Output host views
+    typename view_1d<Real>::HostMirror qc2qr_host;
+    typename view_1d<Real>::HostMirror nc2nr_host;
+    typename view_1d<Real>::HostMirror ncautr_host;
+    
+    // Runtime parameters
+    Real autoconversion_radius;
+    
+    // Tolerance definitions
+    Real identity_tol;
+    Real physics_tol;
+    Real small_droplet_regime_floor;
+    Real absolute_floor;
+    Real detect_threshold;
+  };
+
+  // ============================================================================
+  // Setup: Execute grid sweep and populate test data structure
+  // ============================================================================
+  AutoconversionTestData setup_parameter_sweep() {
+    // Get runtime parameters for use in property checks
+    auto runtime = p3::Functions<Real,DefaultDevice>::P3Runtime();
+    
     validate_autoconversion_parameters();
 
     // =========================================================================
@@ -317,17 +310,32 @@ void cloud_water_autoconversion_unit_bfb_tests() {
     Kokkos::deep_copy(qc2qr_host, qc2qr_dev);
     Kokkos::deep_copy(nc2nr_host, nc2nr_dev);
     Kokkos::deep_copy(ncautr_host, ncautr_dev);
+    
+    return AutoconversionTestData{
+      n_qc, n_nc, num_cases,
+      qc_host, nc_host,
+      qc2qr_host, nc2nr_host, ncautr_host,
+      runtime.autoconversion_radius,
+      identity_tol, physics_tol, small_droplet_regime_floor, 
+      absolute_floor, detect_threshold
+    };
+  }
 
+  // ============================================================================
+  // Property Check 1: Monotonicity Tests
+  // ============================================================================
+  void run_monotonicity_checks(const AutoconversionTestData& data) {
     int failures = 0;
+    const Real relative_tolerance = 1e-3;  // 0.1% sensitivity threshold for qc monotonicity
 
-    for (int j = 0; j < n_nc; ++j) {
-      for (int i = 0; i < n_qc; ++i) {
-        int idx = j * n_qc + i;
-        Real qc = qc_host(idx);
-        Real nc = nc_host(idx);
-        Real R = qc2qr_host(idx);
-        Real N_loss = nc2nr_host(idx);
-        Real R_ncautr = ncautr_host(idx); 
+    for (int j = 0; j < data.n_nc; ++j) {
+      for (int i = 0; i < data.n_qc; ++i) {
+        int idx = j * data.n_qc + i;
+        Real qc = data.qc_host(idx);
+        Real nc = data.nc_host(idx);
+        Real R = data.qc2qr_host(idx);
+        Real N_loss = data.nc2nr_host(idx);
+        Real R_ncautr = data.ncautr_host(idx); 
 
         // Check for non-zero below threshold
         if (qc < 1e-8) {
@@ -343,21 +351,19 @@ void cloud_water_autoconversion_unit_bfb_tests() {
         if (R_ncautr < 1e-30) R_ncautr = 0.0;
         
         // =====================================================================
-        // 1. Physical Sensitivity Tests (Monotonicity)
+        // Physical Sensitivity Tests (Monotonicity)
         // =====================================================================
         // Uses strict inequality for Nc (physics requirement) and 0.1% tolerance for qc
         // (sensitivity detection). Both reference the global absolute_floor (1e-30).
-        
-        const Real relative_tolerance = 1e-3;  // 0.1% sensitivity threshold for qc monotonicity
 
-        if (j < n_nc - 1) {
-            int idx_next = (j + 1) * n_qc + i;
-            Real R_next = qc2qr_host(idx_next);
+        if (j < data.n_nc - 1) {
+            int idx_next = (j + 1) * data.n_qc + i;
+            Real R_next = data.qc2qr_host(idx_next);
             if (R_next < 1e-30) R_next = 0.0;
             
             // A. Colloidal Stability (Inverse Nc Dependency): dR/dNc < 0
             // R_next (high Nc) must be strictly less than R (low Nc).
-            if (R > absolute_floor) {
+            if (R > data.absolute_floor) {
                 // FAIL if R_next is greater than or equal to R.
                 // We do not use the loose 'relative_tolerance' here because the physics 
                 // requires strict monotonicity.
@@ -369,14 +375,13 @@ void cloud_water_autoconversion_unit_bfb_tests() {
             }
         }
         
-        if (i < n_qc - 1) {
-            int idx_next = j * n_qc + (i + 1);
-            Real R_next = qc2qr_host(idx_next);
+        if (i < data.n_qc - 1) {
+            int idx_next = j * data.n_qc + (i + 1);
+            Real R_next = data.qc2qr_host(idx_next);
              if (R_next < 1e-30) R_next = 0.0;
-            
             // B. Water Content Sensitivity (Positive qc Dependency): dR/dqc > 0
             // R_next (high qc) should be greater than R (low qc).
-            if (R_next > absolute_floor) {
+            if (R_next > data.absolute_floor) {
                 // If R_next < R, it's a failure. 
                 Real min_allowed_R_next = R * (1.0 - relative_tolerance);
                 if (R_next < min_allowed_R_next) {
@@ -386,22 +391,42 @@ void cloud_water_autoconversion_unit_bfb_tests() {
                 }
             }
         }
-        
-        // =====================================================================
-        // 2. Consistency Tests (Constraint Satisfaction)
-        // =====================================================================
+      }
+    }
 
-        if (R > absolute_floor) {
+    REQUIRE(failures == 0);
+  }
+
+  // ============================================================================
+  // Property Check 2: Consistency Tests
+  // ============================================================================
+  void run_consistency_checks(const AutoconversionTestData& data) {
+    int failures = 0;
+
+    for (int j = 0; j < data.n_nc; ++j) {
+      for (int i = 0; i < data.n_qc; ++i) {
+        int idx = j * data.n_qc + i;
+        Real qc = data.qc_host(idx);
+        Real nc = data.nc_host(idx);
+        Real R = data.qc2qr_host(idx);
+        Real N_loss = data.nc2nr_host(idx);
+        Real R_ncautr = data.ncautr_host(idx);
+
+        if (R < 1e-30) R = 0.0;
+        if (N_loss < 1e-30) N_loss = 0.0;
+        if (R_ncautr < 1e-30) R_ncautr = 0.0;
+
+        if (R > data.absolute_floor) {
              // A. Specific Loss Conservation (Mathematical Identity)
              // Verifies: nc2nr_autoconv_tend = qc2qr_autoconv_tend * (nc/qc)
              Real expected_N_loss = R * nc / qc;
-             Real rel_error = std::abs(N_loss - expected_N_loss) / std::max(absolute_floor, expected_N_loss);
+             Real rel_error = std::abs(N_loss - expected_N_loss) / std::max(data.absolute_floor, expected_N_loss);
              
-             if (rel_error > identity_tol) {
+             if (rel_error > data.identity_tol) {
                  std::cout << "Specific Loss Conservation Fail (should be near machine precision):\n";
                  std::cout << "  Expected: " << expected_N_loss << "\n";
                  std::cout << "  Actual:   " << N_loss << "\n";
-                 std::cout << "  Rel Error: " << rel_error << " (tolerance: " << identity_tol << ")\n";
+                 std::cout << "  Rel Error: " << rel_error << " (tolerance: " << data.identity_tol << ")\n";
                  failures++;
              }
         }
@@ -413,21 +438,37 @@ void cloud_water_autoconversion_unit_bfb_tests() {
              Real mass_drop = R / R_ncautr;
              
              using C = scream::physics::Constants<Real>;
-             const Real r_expected = 25.0e-6;  // Must match autoconversion_radius
+             const Real r_expected = data.autoconversion_radius;  // Use runtime config
              const Real expected_mass = (4.0/3.0) * C::Pi * 1000.0 * std::pow(r_expected, 3);
              
-             if (std::abs(mass_drop - expected_mass) / expected_mass > physics_tol) {
+             if (std::abs(mass_drop - expected_mass) / expected_mass > data.physics_tol) {
                   std::cout << "Embryo Size Fail (configuration mismatch):\n";
                   std::cout << "  Computed mass: " << mass_drop << " kg\n";
                   std::cout << "  Expected mass: " << expected_mass << " kg (r=25um)\n";
-                  std::cout << "  Tolerance: " << physics_tol*100 << "%\n";
+                  std::cout << "  Tolerance: " << data.physics_tol*100 << "%\n";
                   failures++;
              }
         }
-        
-        // =====================================================================
-        // 3. Limit & Singularity Tests
-        // =====================================================================
+      }
+    }
+
+    REQUIRE(failures == 0);
+  }
+
+  // ============================================================================
+  // Property Check 3: Limit Tests
+  // ============================================================================
+  void run_limit_checks(const AutoconversionTestData& data) {
+    int failures = 0;
+
+    for (int j = 0; j < data.n_nc; ++j) {
+      for (int i = 0; i < data.n_qc; ++i) {
+        int idx = j * data.n_qc + i;
+        Real qc = data.qc_host(idx);
+        Real nc = data.nc_host(idx);
+        Real R = data.qc2qr_host(idx);
+
+        if (R < 1e-30) R = 0.0;
         
         Real mean_mass = qc / nc;
         // Correct formula: r = (3*m / (4*pi*rho))^(1/3)
@@ -435,26 +476,29 @@ void cloud_water_autoconversion_unit_bfb_tests() {
         using C = scream::physics::Constants<Real>;
         Real mean_rad = std::pow((3.0 * mean_mass) / (4.0 * C::Pi * 1000.0), 1.0/3.0);
         
-        // A. Small Droplet Regime Limit
+        // A. Small Droplet Regime Limit (Physical Relevance Check)
+        // For very small activated droplets (r < 1 μm), autoconversion rates 
+        // should be physically negligible due to low collision efficiency.
+        // This regime represents incipient cloud or sub-threshold conditions.
+        // Note: Implementation threshold is qc < 1e-8, not radius-based.
         if (mean_rad < 1e-6) {
-            // A. Small Droplet Regime Limit (Physical Relevance Check)
-            // For very small activated droplets (r < 1 μm), autoconversion rates 
-            // should be physically negligible due to low collision efficiency.
-            // This regime represents incipient cloud or sub-threshold conditions.
-            // Note: Implementation threshold is qc < 1e-8, not radius-based.
-            if (R > small_droplet_regime_floor) {
+            if (R > data.small_droplet_regime_floor) {
                 std::cout << "Small Droplet Regime Fail: r=" << mean_rad << " m, R=" << R << " kg/kg/s\n";
-                std::cout << "  (Rate exceeds physical relevance threshold: " << small_droplet_regime_floor << ")\n";
+                std::cout << "  (Rate exceeds physical relevance threshold: " << data.small_droplet_regime_floor << ")\n";
                 failures++;
             }
         }
       }
     }
 
-    // =========================================================================
-    // CHECK 4: Subgrid Variance Scaling
-    // =========================================================================
-    
+    REQUIRE(failures == 0);
+  }
+
+  // ============================================================================
+  // Property Check 4: Variance Scaling
+  // ============================================================================
+  void run_variance_check() {
+    const int n_qc = 40;
     view_1d<Real> var_rate_1("rate_1", n_qc);
     view_1d<Real> var_rate_2("rate_2", n_qc); 
     
@@ -491,8 +535,8 @@ void cloud_water_autoconversion_unit_bfb_tests() {
 
     bool is_variance_scaling_active = false;
     int variance_suppression_failures = 0;
-    const Real variance_detect_eps = detect_threshold;  // 0.1% change indicates active scaling
-    const Real variance_validate_eps = 1e-12;           // Numerical noise floor for suppression check
+    const Real variance_detect_eps = 1e-3;   // 0.1% change indicates active scaling
+    const Real variance_validate_eps = 1e-12;  // Numerical noise floor for suppression check
 
     for(int i=0; i<n_qc; ++i) {
         if (h_rate_1(i) > 1e-30) {
@@ -512,10 +556,11 @@ void cloud_water_autoconversion_unit_bfb_tests() {
         }
     }
 
+    int failures = 0;
     if (is_variance_scaling_active) {
         if (variance_suppression_failures > 0) {
              std::cout << "Variance Scaling FAIL: " << variance_suppression_failures << " cases suppressed rate (physical violation).\n";
-             failures += variance_suppression_failures;
+             failures = variance_suppression_failures;
         } else {
              std::cout << "Variance Scaling: ACTIVE and working correctly (rates enhanced).\n";
         }
@@ -524,6 +569,14 @@ void cloud_water_autoconversion_unit_bfb_tests() {
     }
 
     REQUIRE(failures == 0);
+  }
+
+  void run_physics() {
+    auto data = setup_parameter_sweep();
+    run_monotonicity_checks(data);
+    run_consistency_checks(data);
+    run_limit_checks(data);
+    run_variance_check();
   }
 
 }; //  TestP3CloudWaterAutoconversion
@@ -538,8 +591,30 @@ TEST_CASE("p3_cloud_water_autoconversion_test", "[p3_cloud_water_autoconversion_
   using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3CloudWaterAutoconversion;
 
   T t;
-  t.run_physics();
-  t.run_bfb();
+  
+  SECTION("monotonicity") {
+    auto data = t.setup_parameter_sweep();
+    t.run_monotonicity_checks(data);
+  }
+  
+  SECTION("consistency") {
+    auto data = t.setup_parameter_sweep();
+    t.run_consistency_checks(data);
+  }
+  
+  SECTION("limits") {
+    auto data = t.setup_parameter_sweep();
+    t.run_limit_checks(data);
+  }
+  
+  SECTION("variance") {
+    t.run_variance_check();
+  }
+  
+  SECTION("bfb") {
+    t.run_bfb();
+  }
 }
 
 } // namespace
+
