@@ -297,8 +297,7 @@ cp /global/cfs/cdirs/e3sm/eamxx-tutorial-2025/source/pompei/pompei.* ./
 
   <span class="hljs-function">std::string <span class="hljs-title">name</span><span class="hljs-params">()</span> <span class="hljs-type">const</span> <span class="hljs-keyword">override</span> </span>{ <span class="hljs-keyword">return</span> <span class="hljs-string">&quot;my_disastrous_pompei&quot;</span>; }
 
-  <span class="hljs-function"><span class="hljs-type">void</span> <span class="hljs-title">set_grids</span><span class="hljs-params">(
-      <span class="hljs-type">const</span> std::shared_ptr&lt;<span class="hljs-type">const</span> GridsManager&gt; grids_manager)</span> <span class="hljs-keyword">override</span></span>;
+  <span class="hljs-function"><span class="hljs-type">void</span> <span class="hljs-title">create_requests</span><span class="hljs-params">()</span> <span class="hljs-keyword">override</span></span>;
 <span class="hljs-comment">// Define the protected functions, usually at least initialize_impl, run_impl</span>
 <span class="hljs-comment">// and finalize_impl, but others could be included.  See</span>
 <span class="hljs-comment">// eamxx_template_process_interface.cpp for definitions of each of these.</span>
@@ -341,7 +340,7 @@ cp /global/cfs/cdirs/e3sm/eamxx-tutorial-2025/source/pompei/pompei.* ./
 <p>Replace <code>AP_TEMPLATE</code> with <code>POMPEI</code> and then:</p>
 <ul>
 <li>Define a constructor for the process</li>
-<li>Define <code>set_grids</code>, which tells EAMxx variables and grid</li>
+<li>Define <code>create_requests</code>, which tells EAMxx variables and grid</li>
 <li>Define <code>initialize_impl</code>, which initializes the process</li>
 <li>Define <code>run_impl</code>, what this process does each time step it is called</li>
 <li>Define <code>finalize_impl</code>, and last actions to take at the end of the simulation</li>
@@ -477,7 +476,7 @@ POMPEI::<span class="hljs-built_in">POMPEI</span>(<span class="hljs-type">const<
 }
 ;background-color:#fff;background-image:url('./background.png');background-position:center;background-repeat:no-repeat;background-size:cover;" data-marpit-pagination-total="31">
 <header></header>
-<h2 id="set_grids"><code>set_grids</code></h2>
+<h2 id="create_requests"><code>create_requests</code></h2>
 <ul>
 <li>EAMxx stores grid info</li>
 <li>FieldManager stores fields</li>
@@ -509,23 +508,18 @@ POMPEI::<span class="hljs-built_in">POMPEI</span>(<span class="hljs-type">const<
 ;background-color:#fff;background-image:url('./background.png');background-position:center;background-repeat:no-repeat;background-size:cover;" data-marpit-pagination-total="31">
 <header></header>
 <pre is="marp-pre" data-auto-scaling="downscale-only"><code class="language-cpp"><span class="hljs-comment">/*-----------------------------------------------------------------------------------------------
- * set_grids(grids_manager)
+ * create_requests()
  *
- * set_grids establishes which grid this process will be run on.
+ * create_requests establishes which grid this process will be run on.
  * It is also where all fields (variables) that the process will need access to.
- *
- * Inputs:
- *     grids_manager - a grids manager object which stores all grids used in
- * this simulation
  */</span>
-<span class="hljs-function"><span class="hljs-type">void</span> <span class="hljs-title">POMPEI::set_grids</span><span class="hljs-params">(
-    <span class="hljs-type">const</span> std::shared_ptr&lt;<span class="hljs-type">const</span> GridsManager&gt; grids_manager)</span> </span>{
-  <span class="hljs-comment">// Some typical namespaces used in set_grids,</span>
+<span class="hljs-function"><span class="hljs-type">void</span> <span class="hljs-title">POMPEI::create_requests</span><span class="hljs-params">()</span> </span>{
+  <span class="hljs-comment">// Some typical namespaces used in create_requests,</span>
   <span class="hljs-comment">//   using namespace ShortFieldTagsNames;</span>
   <span class="hljs-comment">//   using PC = scream::physics::Constants&lt;Real&gt;;</span>
 
   <span class="hljs-comment">// Specify which grid this process will act upon, typical options are</span>
-  <span class="hljs-comment">// &quot;dynamics&quot; or &quot;physics&quot;. auto m_grid = grids_manager-&gt;get_grid(&quot;physics&quot;);</span>
+  <span class="hljs-comment">// &quot;dynamics&quot; or &quot;physics&quot;. auto m_grid = m_grids_manager-&gt;get_grid(&quot;physics&quot;);</span>
 
   <span class="hljs-comment">// When declaring a field for use we need:</span>
   <span class="hljs-comment">//</span>
