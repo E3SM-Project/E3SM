@@ -6000,67 +6000,6 @@
 </ul>
 </li>
 </ul>
-<h2 id="ml_correction">ml_correction</h2>
-<ul>
-<li>ml_correction::ml_model_path_tq:<ul>
-<li>description: Path to pre-trained ML model for temperature and specific humidity</li>
-<li>type: string</li>
-</ul>
-</li>
-<li>ml_correction::ml_model_path_uv:<ul>
-<li>description: Path to pre-trained ML model for wind fields</li>
-<li>type: string</li>
-</ul>
-</li>
-<li>ml_correction::ml_model_path_sfc_fluxes:<ul>
-<li>description: Path to pre-trained ML model for surface fluxes</li>
-<li>type: string</li>
-</ul>
-</li>
-<li>ml_correction::ml_output_fields:<ul>
-<li>description: ML correction output variables, the following variables are supported: T_mid,qv,u,v</li>
-<li>type: array(string)</li>
-</ul>
-</li>
-<li>ml_correction::ml_correction_unit_test:<ul>
-<li>description: <strong>MISSING</strong></li>
-<li>type: logical</li>
-</ul>
-</li>
-<li>ml_correction::number_of_subcycles:<ul>
-<li>description: how many times to subcycle this atm process</li>
-<li>type: <strong>MISSING</strong></li>
-<li>constraints: gt 0</li>
-</ul>
-</li>
-<li>ml_correction::enable_precondition_checks:<ul>
-<li>description: <strong>MISSING</strong></li>
-<li>type: logical</li>
-</ul>
-</li>
-<li>ml_correction::enable_postcondition_checks:<ul>
-<li>description: <strong>MISSING</strong></li>
-<li>type: logical</li>
-</ul>
-</li>
-<li>ml_correction::repair_log_level:<ul>
-<li>description: <strong>MISSING</strong></li>
-<li>type: string</li>
-<li>valid values: trace,debug,info,warn</li>
-</ul>
-</li>
-<li>ml_correction::internal_diagnostics_level:<ul>
-<li>description: Whether to print hashes of the atm proc fields: 0=no, 1=yes (lump fields), 2=yes (individual fields)</li>
-<li>type: integer</li>
-<li>valid values: 0,1,2</li>
-</ul>
-</li>
-<li>ml_correction::compute_tendencies:<ul>
-<li>description: list of computed fields/groups for which this process will back out tendencies</li>
-<li>type: array(string)</li>
-</ul>
-</li>
-</ul>
 <h2 id="iop_forcing">iop_forcing</h2>
 <ul>
 <li>iop_forcing::number_of_subcycles:<ul>
