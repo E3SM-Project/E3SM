@@ -213,7 +213,7 @@ void Functions<S,D>::zm_transport_momentum(
     if (k >= jt) {
       const Int km1 = (k == 0) ? 0 : k-1;
       const Int kp1 = (k == pver-1) ? pver-1 : k+1;
-      
+
       // Calculate KE fluxes at top and bot of layer
       const Real utop = (wind0(k,0) + wind0(km1,0)) / 2.0;
       const Real vtop = (wind0(k,1) + wind0(km1,1)) / 2.0;
@@ -221,14 +221,14 @@ void Functions<S,D>::zm_transport_momentum(
       const Real vbot = (wind0(kp1,1) + wind0(k,1)) / 2.0;
       const Real fket = utop*mflux(k,0) + vtop*mflux(k,1);
       const Real fkeb = ubot*mflux(k+1,0) + vbot*mflux(k+1,1);
-      
+
       // Divergence of fluxes gives conservative redistribution of KE
       const Real ketend_cons = (fket-fkeb)/dp(k);
-      
+
       // Tendency in kinetic energy from momentum transport
       const Real ketend = ((windf(k,0)*windf(k,0) + windf(k,1)*windf(k,1)) -
                           (wind0(k,0)*wind0(k,0) + wind0(k,1)*wind0(k,1))) * 0.5 / dt;
-      
+
       // The difference is the dissipation
       seten(k) = ketend_cons - ketend;
     }
