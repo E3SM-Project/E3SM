@@ -124,18 +124,14 @@ CONTAINS
 #ifdef HAVE_MOAB
     ierr = iMOAB_RegisterApplication(trim("XICE")//C_NULL_CHAR, mpicom, compid, mpsiid)
     if (ierr .ne. 0) then
-      write(logunit,*) subname,' error in registering data ice comp'
-      call shr_sys_abort(subname//' ERROR in registering data ice comp')
+      write(logunit,*) subname,' error in registering XICE comp'
+      call shr_sys_abort(subname//' ERROR in registering XICE comp')
     endif
 #endif
     call dead_init_mct('ice', Eclock, x2d, d2x, &
          seq_flds_x2i_fields, seq_flds_i2x_fields, &
          gsmap, ggrid, gbuf, mpicom, compid, my_task, master_task, &
          inst_index, inst_suffix, inst_name, logunit, nxg, nyg )
-
-#ifdef HAVE_MOAB
-    call dead_init_moab( mpsiid, 'ice', gsMap, gbuf, x2d, d2x, mpicom, compid, logunit, nxg, nyg )
-#endif
 
     if (nxg == 0 .and. nyg == 0) then
        ice_present = .false.
@@ -146,6 +142,12 @@ CONTAINS
        ice_prognostic = .true.
        iceberg_prognostic = .true.
     end if
+
+#ifdef HAVE_MOAB
+    if (ice_present) then
+      call dead_init_moab( mpsiid, 'ice', gsMap, gbuf, x2d, d2x, mpicom, compid, logunit, nxg, nyg )
+    end if
+#endif
 
     call seq_infodata_PutData(infodata, dead_comps=.true., &
          ice_present=ice_present, &

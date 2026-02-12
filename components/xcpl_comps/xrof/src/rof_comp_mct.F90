@@ -128,8 +128,8 @@ CONTAINS
 #ifdef HAVE_MOAB
     ierr = iMOAB_RegisterApplication(trim("XROF")//C_NULL_CHAR, mpicom, compid, mrofid)
     if (ierr .ne. 0) then
-      write(logunit,*) subname,' error in registering data rof comp'
-      call shr_sys_abort(subname//' ERROR in registering data rof comp')
+      write(logunit,*) subname,' error in registering XROF comp'
+      call shr_sys_abort(subname//' ERROR in registering XROF comp')
     endif
 #endif
 
@@ -137,10 +137,6 @@ CONTAINS
          seq_flds_x2r_fields, seq_flds_r2x_fields, &
          gsmap, ggrid, gbuf, mpicom, compid, my_task, master_task, &
          inst_index, inst_suffix, inst_name, logunit, nxg, nyg)
-
-#ifdef HAVE_MOAB
-    call dead_init_moab( mrofid, 'rof', gsMap, gbuf, x2d, d2x, mpicom, compid, logunit, nxg, nyg )
-#endif
 
     if (nxg == 0 .and. nyg == 0) then
        rof_present = .false.
@@ -153,6 +149,12 @@ CONTAINS
        rofice_present = .false.
        flood_present = .true.
     end if
+
+#ifdef HAVE_MOAB
+    if (rof_present) then
+      call dead_init_moab( mrofid, 'rof', gsMap, gbuf, x2d, d2x, mpicom, compid, logunit, nxg, nyg )
+    end if
+#endif
 
     call seq_infodata_PutData( infodata, dead_comps=.true., &
          rof_present=rof_present, &
