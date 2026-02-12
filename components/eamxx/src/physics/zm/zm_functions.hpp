@@ -78,6 +78,18 @@ struct Functions {
     static inline constexpr Real tol_coeff = 0.001; // tolerance coefficient
 
     static inline constexpr Real tol_eps   = 3.e-8; // small value for tolerance calculation
+
+    static inline constexpr Real half = 0.5; // Useful for bfb with fortran
+
+    static inline constexpr Real small = 1.e-36; // a small number to avoid division by zero
+
+    static inline constexpr Real cdifr_min = 1.e-6; // minimum layer difference for geometric averaging
+
+    static inline constexpr Real maxc_factor = 1.e-12; // Small numerical regularization constant used in the maximum cloud fraction
+
+    static inline constexpr Real flux_factor = 1.e-12; // Small numerical regularization constant used in convective flux related calculations
+
+    static inline constexpr Real mbsth = 1.e-15; // threshold below which we treat the mass fluxes as zero (in mb/s)
   };
 
   //----------------------------------------------------------------------------
@@ -342,11 +354,36 @@ struct Functions {
     es = es*0.01;
   }
 
+  KOKKOS_FUNCTION
+  static void zm_transport_tracer(
+    // Inputs
+    const MemberType& team,
+    const Workspace& workspace,
+    const ZmRuntimeOpt& runtime_opt,
+    const Int& pver,                        // number of mid-point levels
+    const uview_1d<const bool>& doconvtran, // flag for doing convective transport
+    const uview_2d<const Real>& q,          // tracer array (including water vapor)
+    const Int& ncnst,                       // number of tracers to transport
+    const uview_1d<const Real>& mu,         // mass flux up
+    const uview_1d<const Real>& md,         // mass flux down
+    const uview_1d<const Real>& du,         // mass detraining from updraft
+    const uview_1d<const Real>& eu,         // mass entraining from updraft
+    const uview_1d<const Real>& ed,         // mass entraining from downdraft
+    const uview_1d<const Real>& dp,         // delta pressure between interfaces
+    const Int& jt,                          // index of cloud top for this column
+    const Int& mx,                          // index of cloud bottom for this column
+    const Int& ktm,                         // Highest top level for any column
+    const Int& kbm,                         // Highest bottom level for any column
+    const uview_2d<const Real>& fracis,     // fraction of tracer that is insoluble
+    const uview_1d<const Real>& dpdry,      // delta pressure between interfaces
+    const Real& dt,                         // model time increment)
+    // Outputs
+    const uview_2d<Real>& dqdt);            // output tendency array
+
   //
   // --------- Members ---------
   //
   inline static ZmRuntimeOpt s_common_init;
-
 }; // struct Functions
 
 } // namespace zm
@@ -359,5 +396,6 @@ struct Functions {
 # include "impl/zm_common_init_impl.hpp"
 # include "impl/zm_invert_entropy_impl.hpp"
 # include "impl/zm_entropy_impl.hpp"
+# include "impl/zm_zm_transport_tracer_impl.hpp"
 #endif // GPU && !KOKKOS_ENABLE_*_RELOCATABLE_DEVICE_CODE
 #endif // ZM_FUNCTIONS_HPP
