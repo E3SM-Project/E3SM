@@ -59,6 +59,7 @@ Real tendTest(const int NLayers, VertAdv *VAdv) {
    Array2DReal LayerThick("LayerThickness", 1, NLayers);
    Array3DReal TracerArray("TracerArray", 1, 1, NLayers);
    Array3DReal Tend("TracerArray", 1, 1, NLayers);
+   TimeInterval ZeroTimeStep;
 
    // Set uniform velocity throughout domain
    deepCopy(VAdv->TotalVerticalVelocity, 1._Real);
@@ -77,7 +78,7 @@ Real tendTest(const int NLayers, VertAdv *VAdv) {
        });
 
    // Compute tracer tendencies
-   VAdv->computeTracerVAdvTend(Tend, TracerArray, LayerThick);
+   VAdv->computeTracerVAdvTend(Tend, TracerArray, LayerThick, ZeroTimeStep);
 
    HostArray3DReal TendH   = createHostMirrorCopy(Tend);
    HostArray1DReal XLayerH = createHostMirrorCopy(XLayer);

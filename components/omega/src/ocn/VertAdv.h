@@ -149,8 +149,7 @@ class VertAdv {
        const Array3DReal &TracerTend,     ///< [inout] tracer tendencies
        const Array3DReal &Tracers,        ///< [in] tracer array
        const Array2DReal &LayerThickness, ///< [in] layer thickness
-       const TimeInterval TimeStep =
-           TimeInterval() ///< [in] (optional) time step
+       const TimeInterval TimeStep        ///< [in] time step
    );
 
    /// Compute tracer fluxes due to vertical advection

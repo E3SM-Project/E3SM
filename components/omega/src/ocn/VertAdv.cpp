@@ -565,7 +565,7 @@ void VertAdv::computeTracerVAdvTend(
     const Array3DReal &TracerTend,     //< [inout] tracer tendencies
     const Array3DReal &Tracers,        //< [in] tracer array
     const Array2DReal &LayerThickness, //< [in] layer thickness
-    const TimeInterval TimeStep        //< [in] (optional) time step
+    const TimeInterval TimeStep        //< [in] time step
 ) {
 
    // Return if vertical advection tracer tendency not enabled
