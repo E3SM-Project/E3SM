@@ -33,6 +33,8 @@ void Functions<S,D>::zm_transport_momentum(
   const Int& il1g, // gathered min ncol index
   const Int& il2g, // gathered max ncol index
   const Real& dt, // time step in seconds : 2*delta_t
+  const Int& ktm, // Highest top level for any column
+  const Int& kbm, // Highest bottom level for any column
   // Outputs
   const uview_2d<Real>& wind_tend, // output momentum tendency
   const uview_2d<Real>& pguall, // apparent force from  updraft PG
@@ -142,10 +144,10 @@ void Functions<S,D>::zm_transport_momentum(
       const Int km1 = 0;
       const Int kk = pver-1;
       const Real mupdudp = mu(kk) + du(kk)*dp(kk);
-      if (mupdudp > mbsth) {
+      if (mupdudp > ZMC::mbsth) {
         wind_int_u(m,kk) = (eu(kk)*wind_mid(m,kk)*dp(kk) + pgu(m,kk)*dp(kk)) / mupdudp;
       }
-      if (md(k) < -mbsth) {
+      if (md(k) < -ZMC::mbsth) {
         wind_int_d(m,k) = (-ed(km1)*wind_mid(m,km1)*dp(km1) - pgd(m,km1)*dp(km1)) / md(k);
       }
     }
@@ -154,7 +156,7 @@ void Functions<S,D>::zm_transport_momentum(
     for (Int kk = pver-2; kk >= 0; --kk) {
       const Int kkp1 = kk+1;
       const Real mupdudp = mu(kk) + du(kk)*dp(kk);
-      if (mupdudp > mbsth) {
+      if (mupdudp > ZMC::mbsth) {
         wind_int_u(m,kk) = (mu(kkp1)*wind_int_u(m,kkp1) + eu(kk)*wind_mid(m,kk)*dp(kk) + pgu(m,kk)*dp(kk)) / mupdudp;
       }
     }
@@ -162,7 +164,7 @@ void Functions<S,D>::zm_transport_momentum(
     // Downdraft from top to bottom
     for (Int k = 2; k < pver; ++k) {
       const Int km1 = k-1;
-      if (md(k) < -mbsth) {
+      if (md(k) < -ZMC::mbsth) {
         wind_int_d(m,k) = (md(km1)*wind_int_d(m,km1) - ed(km1)*wind_mid(m,km1)*dp(km1) - pgd(m,km1)*dp(km1)) / md(k);
       }
     }

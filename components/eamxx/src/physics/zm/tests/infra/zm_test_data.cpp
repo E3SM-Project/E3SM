@@ -352,6 +352,23 @@ void zm_transport_momentum(ZmTransportMomentumData& d)
   const Int pver = d.pver;
   const Int pverp = d.pverp;
 
+  // Find min top and bottom
+  assert(d.il1g == 0 && d.il2g == d.pcols-1);
+  Int ktm, kbm;
+  Kokkos::RangePolicy<ExeSpace> rpolicy(0, d.pcols);
+  Kokkos::parallel_reduce("FindMinJt", rpolicy, KOKKOS_LAMBDA(const int i, Int& update) {
+    if (jt_d(i) < update) {
+      update = jt_d(i);
+    }
+  }, Kokkos::Min<Int>(ktm));
+
+  Kokkos::parallel_reduce("FindMinMx", rpolicy, KOKKOS_LAMBDA(const int i, Int& update) {
+    if (mx_d(i) < update) {
+      update = mx_d(i);
+    }
+  }, Kokkos::Min<Int>(kbm));
+
+
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const Int i = team.league_rank();
 
@@ -390,6 +407,8 @@ void zm_transport_momentum(ZmTransportMomentumData& d)
       il1g,
       il2g,
       dt,
+      ktm,
+      kbm,
       wind_tend_c,
       pguall_c,
       pgdall_c,

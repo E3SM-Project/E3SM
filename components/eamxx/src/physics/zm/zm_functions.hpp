@@ -406,6 +406,8 @@ struct Functions {
     const Int& il1g, // gathered min ncol index
     const Int& il2g, // gathered max ncol index
     const Real& dt, // time step in seconds : 2*delta_t
+    const Int& ktm, // Highest top level for any column
+    const Int& kbm, // Highest bottom level for any column
     // Outputs
     const uview_2d<Real>& wind_tend, // output momentum tendency
     const uview_2d<Real>& pguall, // apparent force from  updraft PG
