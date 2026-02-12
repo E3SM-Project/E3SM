@@ -63,10 +63,7 @@ apply_vertical_interpolation(const Field& f_src, const Field& f_tgt) const
   const auto datain = f_src.get_view<Real **>();
   const auto dataout =  f_tgt.get_view<Real **>();
 
-  const auto& f_tgt_l = f_tgt.get_header().get_identifier().get_layout();
   const int ncols = m_src_grid->get_num_local_dofs();
-
-  const auto& f_src_l = f_src.get_header().get_identifier().get_layout();
 
   using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
 
