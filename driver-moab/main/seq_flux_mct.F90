@@ -1793,16 +1793,38 @@ contains
          call mbGetCellTagVals(mbfid, 'So_warm_diurn', warm, nloc)
          call mbGetCellTagVals(mbfid, 'So_salt_diurn', salt, nloc)
          call mbGetCellTagVals(mbfid, 'So_speed_diurn', speed, nloc)
-         ! TODO:  Finish with more diun if we're keeping that option
+         call mbGetCellTagVals(mbfid, 'So_regime_diurn', regime, nloc)
+         call mbGetCellTagVals(mbfid, 'So_warmMax_diurn', warmMax, nloc)
+         call mbGetCellTagVals(mbfid, 'So_windMax_diurn', windMax, nloc)
+         call mbGetCellTagVals(mbfid, 'So_qsolavg_diurn', qSolAvg, nloc)
+         call mbGetCellTagVals(mbfid, 'So_windavg_diurn', windAvg, nloc)
+         call mbGetCellTagVals(mbfid, 'So_warmMaxInc_diurn', warmMaxInc, nloc)
+         call mbGetCellTagVals(mbfid, 'So_windMaxInc_diurn', windMaxInc, nloc)
+         call mbGetCellTagVals(mbfid, 'So_qSolInc_diurn', qSolInc, nloc)
+         call mbGetCellTagVals(mbfid, 'So_windInc_diurn', windInc, nloc)
+         call mbGetCellTagVals(mbfid, 'So_nInc_diurn', nInc, nloc)
+         call mbGetCellTagVals(mbfid, 'So_tbulk_diurn', tbulk, nloc)
+         call mbGetCellTagVals(mbfid, 'So_tskin_diurn', tskin, nloc)
+         call mbGetCellTagVals(mbfid, 'So_tskin_day_diurn', tskin_day, nloc)
+         call mbGetCellTagVals(mbfid, 'So_tskin_night_diurn', tskin_night, nloc)
+         call mbGetCellTagVals(mbfid, 'So_cskin_diurn', cskin, nloc)
+         call mbGetCellTagVals(mbfid, 'So_cskin_night_diurn', cskin_night, nloc)
+       else
+         ! Initialize nInc to 0 when not using diurnal warm layer
+         do n = 1,nloc
+            nInc(n) = 0._r8
+         enddo
        endif
 
        do n = 1,nloc
-          nInc(n) = 0._r8 ! needed for minval/maxval calculation
-
           ! set some values that are needed but not a tag.
           if (mask(n) /= 0) then
              uGust(n) = 0.0_r8
              prec(n)  = rainc(n)+rainl(n)+snowc(n)+snowl(n)
+             !--- mask missing atm or ocn data if found
+             if (dens(n) < 1.0e-12 .or. tocn(n) < 1.0) then
+                emask(n) = 0
+             endif
           endif
           ! make sure values are 0 where mask is 0 (ocean is not active)
           if (mask(n) == 0) then
@@ -1832,13 +1854,7 @@ contains
              if ( index_o2x_So_roce_HDO /= 0 ) roce_HDO(n) = 0.0_r8
              if ( index_o2x_So_roce_18O /= 0 ) roce_18O(n) = 0.0_r8
 
-             !--- mask missing atm or ocn data if found
-             if (dens(n) < 1.0e-12 .or. tocn(n) < 1.0) then
-                emask(n) = 0
-             endif
-             !           !!uGust(n) = 1.5_r8*sqrt(uocn(n)**2 + vocn(n)**2) ! there is no wind gust data from ocn
              lwdn (n) = 0.0_r8
-
              prec (n) = 0.0_r8
              fswpen(n)= 0.0_r8
              ocnsal(n)= 0.0_r8
