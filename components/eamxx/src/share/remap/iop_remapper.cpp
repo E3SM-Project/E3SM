@@ -29,6 +29,8 @@ IOPRemapper (const grid_ptr_type src_grid,
              const Real lat, const Real lon)
  : AbstractRemapper (src_grid,tgt_grid)
 {
+  set_name("IOP");
+
   m_bwd_allowed = false;
 
   EKAT_REQUIRE_MSG (src_grid->has_geometry_data("lat") and src_grid->has_geometry_data("lon"),

@@ -747,6 +747,10 @@ void AtmosphereDriver::create_output_managers () {
     params.sublist("provenance") = m_atm_params.sublist("provenance");
     params.sublist("restart").set("branch_run",m_branch_run);
 
+    if (not params.isParameter("enable_fine_grain_timers")) {
+      params.set("enable_fine_grain_timers",io_params.get("enable_fine_grain_timers",false));
+    }
+
     auto& om = m_output_managers.emplace_back();
     om.initialize(m_atm_comm,
                   params,
