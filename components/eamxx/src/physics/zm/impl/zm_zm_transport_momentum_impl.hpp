@@ -80,14 +80,13 @@ void Functions<S,D>::zm_transport_momentum(
     icwd(k,m) = wind_in(k,m);
     wind0(m,k) = 0.0;
     windf(m,k) = 0.0;
-  });
-
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, pver), [&] (const Int& k) {
-    seten(k) = 0.0;
-  });
-
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, pverp*nwind), [&] (const Int& idx) {
-    mflux_1d(idx) = 0.0;
+    mflux(m,k) = 0.0;
+    if (k == pver-1) {
+      mflux(m, k+1) = 0.0;
+    }
+    if (m == 0) {
+      seten(k) = 0.0;
+    }
   });
 
   team.team_barrier();
@@ -103,14 +102,19 @@ void Functions<S,D>::zm_transport_momentum(
 
     // Interpolate winds to interfaces
     for (Int k = 0; k < pver; ++k) {
-      const Int km1 = (k == 0) ? 0 : k-1;
-      wind_int(m,k) = 0.5 * (wind_mid(m,k) + wind_mid(m,km1));
+      const Int km1 = ekat::impl::max(0, k-1);
+      // use arithmetic mean
+      wind_int(m,k) = ZMC::half * (wind_mid(m,k) + wind_mid(m,km1));
+      // Provisional up and down draft values
       wind_int_u(m,k) = wind_int(m,k);
       wind_int_d(m,k) = wind_int(m,k);
+      // provisional tendency
       wind_tend_tmp(m,k) = 0.0;
     }
 
+    // -------------------------------------------------------------------------
     // Calculate pressure perturbation terms
+
     // upper boundary
     pgu(m,0) = 0.0;
     pgd(m,0) = 0.0;
@@ -123,8 +127,8 @@ void Functions<S,D>::zm_transport_momentum(
                      mu(kp1)*(wind_mid(m,kp1)-wind_mid(m,k)  )/dp(k));
       mddudp(m,k) = (md(k)  *(wind_mid(m,k)  -wind_mid(m,km1))/dp(km1) +
                      md(kp1)*(wind_mid(m,kp1)-wind_mid(m,k)  )/dp(k));
-      pgu(m,k) = -momcu * 0.5 * mududp(m,k);
-      pgd(m,k) = -momcd * 0.5 * mddudp(m,k);
+      pgu(m,k) = -momcu * ZMC::half * mududp(m,k);
+      pgd(m,k) = -momcd * ZMC::half * mddudp(m,k);
     }
 
     // bottom boundary
@@ -137,7 +141,9 @@ void Functions<S,D>::zm_transport_momentum(
       pgd(m,k) = -momcd * mddudp(m,k);
     }
 
+    // -------------------------------------------------------------------------
     // Calculate in-cloud velocity
+
     // levels adjacent to top and bottom
     {
       const Int k = 1;
@@ -169,7 +175,9 @@ void Functions<S,D>::zm_transport_momentum(
       }
     }
 
+    // -------------------------------------------------------------------------
     // Calculate momentum tendency
+
     for (Int k = ktm; k < pver; ++k) {
       const Int kp1 = k+1;
       wind_tend_tmp(m,k) = (mu(kp1)*(wind_int_u(m,kp1)-wind_int(m,kp1)) -
@@ -186,9 +194,10 @@ void Functions<S,D>::zm_transport_momentum(
       }
     }
 
-    // Set outputs
+    // Initialize to zero everywhere, then scatter tendency back to full array
     for (Int k = 0; k < pver; ++k) {
       wind_tend(k,m) = wind_tend_tmp(m,k);
+      // Output apparent force on the mean flow from pressure gradient
       pguall(k,m) = -pgu(m,k);
       pgdall(k,m) = -pgd(m,k);
       icwu(k,m) = wind_int_u(m,k);
@@ -211,30 +220,30 @@ void Functions<S,D>::zm_transport_momentum(
 
   team.team_barrier();
 
-  // Energy fix to account for dissipation of kinetic energy
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, pver), [&] (const Int& k) {
-    if (k >= ktm) {
-      const Int km1 = (k == 0) ? 0 : k-1;
-      const Int kp1 = (k == pver-1) ? pver-1 : k+1;
+  //----------------------------------------------------------------------------
+  // Need to add an energy fix to account for the dissipation of kinetic energy
+  // Formulation follows from Boville and Bretherton (2003) - modified by Phil Rasch
+  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, ktm, pver), [&] (const Int& k) {
+    const Int km1 = ekat::impl::max(0, k-1);
+    const Int kp1 = ekat::impl::min(pver-1, k+1);
 
-      // Calculate KE fluxes at top and bot of layer
-      const Real utop = (wind0(0,k) + wind0(0,km1)) / 2.0;
-      const Real vtop = (wind0(1,k) + wind0(1,km1)) / 2.0;
-      const Real ubot = (wind0(0,kp1) + wind0(0,k)) / 2.0;
-      const Real vbot = (wind0(1,kp1) + wind0(1,k)) / 2.0;
-      const Real fket = utop*mflux(0,k) + vtop*mflux(1,k);
-      const Real fkeb = ubot*mflux(0,k+1) + vbot*mflux(1,k+1);
+    // Calculate KE fluxes at top and bot of layer
+    const Real utop = (wind0(0,k) + wind0(0,km1)) / 2;
+    const Real vtop = (wind0(1,k) + wind0(1,km1)) / 2;
+    const Real ubot = (wind0(0,kp1) + wind0(0,k)) / 2;
+    const Real vbot = (wind0(1,kp1) + wind0(1,k)) / 2;
+    const Real fket = utop*mflux(0,k) + vtop*mflux(1,k);
+    const Real fkeb = ubot*mflux(0,k+1) + vbot*mflux(1,k+1);
 
-      // Divergence of fluxes gives conservative redistribution of KE
-      const Real ketend_cons = (fket-fkeb)/dp(k);
+    // Divergence of fluxes gives conservative redistribution of KE
+    const Real ketend_cons = (fket-fkeb)/dp(k);
 
-      // Tendency in kinetic energy from momentum transport
-      const Real ketend = ((windf(0,k)*windf(0,k) + windf(1,k)*windf(1,k)) -
-                          (wind0(0,k)*wind0(0,k) + wind0(1,k)*wind0(1,k))) * 0.5 / dt;
+    // Tendency in kinetic energy from momentum transport
+    const Real ketend = ((windf(0,k)*windf(0,k) + windf(1,k)*windf(1,k)) -
+                         (wind0(0,k)*wind0(0,k) + wind0(1,k)*wind0(1,k))) * ZMC::half / dt;
 
-      // The difference is the dissipation
-      seten(k) = ketend_cons - ketend;
-    }
+    // The difference is the dissipation
+    seten(k) = ketend_cons - ketend;
   });
 
   team.team_barrier();
