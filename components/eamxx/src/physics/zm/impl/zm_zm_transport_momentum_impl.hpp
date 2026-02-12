@@ -179,7 +179,7 @@ void Functions<S,D>::zm_transport_momentum(
     // Calculate momentum tendency
 
     for (Int k = ktm; k < pver; ++k) {
-      const Int kp1 = k+1;
+      const Int kp1 = ekat::impl::min(pver-1, k+1);
       wind_tend_tmp(m,k) = (mu(kp1)*(wind_int_u(m,kp1)-wind_int(m,kp1)) -
                             mu(k)  *(wind_int_u(m,k)  -wind_int(m,k)  ) +
                             md(kp1)*(wind_int_d(m,kp1)-wind_int(m,kp1)) -
@@ -190,7 +190,7 @@ void Functions<S,D>::zm_transport_momentum(
     for (Int k = kbm; k < pver; ++k) {
       if (k == mx) {
         wind_tend_tmp(m,k) = (-mu(k)*(wind_int_u(m,k)-wind_int(m,k)) -
-                              md(k)*(wind_int_d(m,k)-wind_int(m,k))) / dp(k);
+                              md(k)*(wind_int_d(m,k)-wind_int(m,k))) * (1/dp(k));
       }
     }
 

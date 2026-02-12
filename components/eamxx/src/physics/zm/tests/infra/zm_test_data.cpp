@@ -353,6 +353,7 @@ void zm_transport_momentum(ZmTransportMomentumData& d)
   const Int pverp = d.pverp;
 
   // Find min top and bottom
+  assert(d.pverp == d.pver + 1);
   assert(d.il1g == 0 && d.il2g == d.pcols-1);
   Int ktm, kbm;
   Kokkos::RangePolicy<ExeSpace> rpolicy(0, d.pcols);
