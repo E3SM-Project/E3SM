@@ -170,7 +170,7 @@ void Functions<S,D>::zm_transport_momentum(
     }
 
     // Calculate momentum tendency
-    for (Int k = jt; k < pver; ++k) {
+    for (Int k = ktm; k < pver; ++k) {
       const Int kp1 = k+1;
       wind_tend_tmp(m,k) = (mu(kp1)*(wind_int_u(m,kp1)-wind_int(m,kp1)) -
                             mu(k)  *(wind_int_u(m,k)  -wind_int(m,k)  ) +
@@ -179,10 +179,11 @@ void Functions<S,D>::zm_transport_momentum(
     }
 
     // dcont for bottom layer
-    if (mx >= mx && mx < pver) {
-      const Int k = mx;
-      wind_tend_tmp(m,k) = (-mu(k)*(wind_int_u(m,k)-wind_int(m,k)) -
-                            md(k)*(wind_int_d(m,k)-wind_int(m,k))) / dp(k);
+    for (Int k = kbm; k < pver; ++k) {
+      if (k == mx) {
+        wind_tend_tmp(m,k) = (-mu(k)*(wind_int_u(m,k)-wind_int(m,k)) -
+                              md(k)*(wind_int_d(m,k)-wind_int(m,k))) / dp(k);
+      }
     }
 
     // Set outputs
@@ -195,13 +196,13 @@ void Functions<S,D>::zm_transport_momentum(
     }
 
     // Calculate momentum flux
-    for (Int k = jt; k < pver; ++k) {
+    for (Int k = ktm; k < pver; ++k) {
       mflux(m,k) = -mu(k)*(wind_int_u(m,k) - wind_int(m,k)) -
                    md(k)*(wind_int_d(m,k) - wind_int(m,k));
     }
 
     // Calculate winds at the end of the time step
-    for (Int k = jt; k < pver; ++k) {
+    for (Int k = ktm; k < pver; ++k) {
       const Int kp1 = k+1;
       windf(m,k) = wind_mid(m,k) - (mflux(m,kp1) - mflux(m,k)) * dt/dp(k);
     }
@@ -212,7 +213,7 @@ void Functions<S,D>::zm_transport_momentum(
 
   // Energy fix to account for dissipation of kinetic energy
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team, pver), [&] (const Int& k) {
-    if (k >= jt) {
+    if (k >= ktm) {
       const Int km1 = (k == 0) ? 0 : k-1;
       const Int kp1 = (k == pver-1) ? pver-1 : k+1;
 
