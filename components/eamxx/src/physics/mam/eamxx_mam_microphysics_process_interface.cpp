@@ -473,7 +473,7 @@ void MAMMicrophysics::set_linoz_reader(){
 void MAMMicrophysics::set_exo_coldens_reader()
 {
   const auto pint = get_field_in("p_int");
-  // Oxid fields read initialization
+  // Exo column density fields read initialization
   const std::string exo_coldens_file_name = m_params.get<std::string>("mam4_exo_coldens_file_name");
   const std::string exo_coldens_map_file =
         m_params.get<std::string>("aero_microphys_remap_file", "");
