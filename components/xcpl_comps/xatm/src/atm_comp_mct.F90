@@ -130,8 +130,8 @@ CONTAINS
     ATM_PHYS_CID = 200 + compid
     ierr = iMOAB_RegisterApplication(trim("XATM")//C_NULL_CHAR, mpicom, ATM_PHYS_CID, mphaid)
     if (ierr .ne. 0) then
-      write(logunit,*) subname,' error in registering data atm comp'
-      call shr_sys_abort(subname//' ERROR in registering data atm comp')
+      write(logunit,*) subname,' error in registering XATM comp'
+      call shr_sys_abort(subname//' ERROR in registering XATM comp')
     endif
 #endif
 
@@ -140,10 +140,6 @@ CONTAINS
          gsmap, ggrid, gbuf, mpicom, compid, my_task, master_task, &
          inst_index, inst_suffix, inst_name, logunit, nxg, nyg)
 
-#ifdef HAVE_MOAB
-    call dead_init_moab( mphaid, 'atm', gsMap, gbuf, x2d, d2x, mpicom, compid, logunit, nxg, nyg )
-#endif
-
     if (nxg == 0 .and. nyg == 0) then
        atm_present = .false.
        atm_prognostic = .false.
@@ -151,6 +147,12 @@ CONTAINS
        atm_present = .true.
        atm_prognostic = .true.
     end if
+
+#ifdef HAVE_MOAB
+    if (atm_present) then
+      call dead_init_moab( mphaid, 'atm', gsMap, gbuf, x2d, d2x, mpicom, compid, logunit, nxg, nyg )
+    end if
+#endif
 
     call seq_infodata_PutData( infodata, dead_comps=.true., &
          atm_present=atm_present, &
