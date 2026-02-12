@@ -17,7 +17,7 @@ module controlMod
   use shr_log_mod             , only: errMsg => shr_log_errMsg
   use abortutils              , only: endrun
   use spmdMod                 , only: masterproc
-  use decompMod               , only: clump_pproc
+  use decompMod               , only: clump_pproc,fates_pproc
   use elm_varpar              , only: maxpatch_pft, maxpatch_glcmec, more_vertlayers,nlevdecomp_full, nsoilorder
   use histFileMod             , only: max_tapes, max_namlen
   use histFileMod             , only: hist_empty_htapes, hist_dov2xy, hist_avgflag_pertape, hist_type1d_pertape
@@ -374,18 +374,8 @@ contains
 
     ! Set clumps per procoessor
 
-#if (defined _OPENMP)
-    if(use_fates)then
-       fates_pproc = omp_get_max_threads()
-       clump_pproc = 1
-    else
-       clump_pproc = omp_get_max_threads()
-    end if
-#else
-    clump_pproc = 1
-    fates_pproc = 1
-#endif
 
+    
     override_nsrest = nsrest
 
     if (masterproc) then
@@ -592,8 +582,24 @@ contains
           endif
        endif
 
+#if (defined _OPENMP)
+       if(use_fates)then
+          fates_pproc = omp_get_max_threads()
+          clump_pproc = 1
+       else
+          clump_pproc = omp_get_max_threads()
+          fates_pproc = 1
+       end if
+#else
+       clump_pproc = 1
+       fates_pproc = 1
+#endif
+
     endif   ! end of if-masterproc if-block
 
+
+
+    
     ! ----------------------------------------------------------------------
     ! Read in other namelists for other modules
     ! ----------------------------------------------------------------------
