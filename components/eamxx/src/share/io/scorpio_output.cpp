@@ -237,7 +237,7 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
     // For avg/max/min, we need separate fields to store accumulated values
     fm_after_accum = std::make_shared<FieldManager>(grid_after_vr,RepoState::Closed);
     for (const auto& fname : m_fields_names) {
-      auto src = fm_after_vr->get_field(fname,grid_after_vr->name());
+      auto src = fm_after_vr->get_field(fname);
       Field accum(src.get_header().get_identifier());
       accum.allocate_view();
       transfer_extra_data(src,accum);
@@ -267,7 +267,7 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
 
     // Register fields from AfterAccum FM (not AfterVertRemap) so we can remap accumulated values
     for (const auto& fname : m_fields_names) {
-      auto src = fm_after_accum->get_field(fname,grid_after_vr->name());
+      auto src = fm_after_accum->get_field(fname);
       auto tgt = m_horiz_remapper->register_field_from_src(src);
       transfer_extra_data (src,tgt);
       fm_after_hr->add_field(tgt);
@@ -340,8 +340,8 @@ void AtmosphereOutput::init()
     const auto& fh = f.get_header();
     const auto& fid = fh.get_identifier();
 
-    // Check if the field for scorpio can alias the field after hremap.
-    // It can do so only for Instant output, and if the field is NOT a subfield ant NOT padded
+    // Check if the field for scorpio can alias the field after horiz remap.
+    // It can do so only for Instant output, and if the field is NOT a subfield and NOT padded
     // Also, if we track avg cnt, we MUST add the fill_value extra data, to trigger fill-value logic
     // when calling Field's update methods
     if (m_avg_type!=OutputAvgType::Instant or
