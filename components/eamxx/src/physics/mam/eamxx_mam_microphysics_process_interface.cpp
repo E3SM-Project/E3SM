@@ -491,9 +491,9 @@ void MAMMicrophysics::set_exo_coldens_reader()
   }
 
   // Beg of any year, since we use yearly periodic timeline
-  util::TimeStamp ref_ts_oxid (1,1,1,0,0,0);
+  util::TimeStamp ref_ts_exo_coldens (1,1,1,0,0,0);
   data_interp_exo_coldens_ = std::make_shared<DataInterpolation>(grid_exo_coldens,exo_coldens_fields_);
-  data_interp_exo_coldens_->setup_time_database ({exo_coldens_file_name},util::TimeLine::YearlyPeriodic,DataInterpolation::Linear, ref_ts_oxid);
+  data_interp_exo_coldens_->setup_time_database ({exo_coldens_file_name},util::TimeLine::YearlyPeriodic,DataInterpolation::Linear, ref_ts_exo_coldens);
   data_interp_exo_coldens_->create_horiz_remappers (exo_coldens_map_file=="none" ? "" : exo_coldens_map_file);
   data_interp_exo_coldens_->set_logger(m_atm_logger);
   DataInterpolation::VertRemapData remap_exo_coldens;
