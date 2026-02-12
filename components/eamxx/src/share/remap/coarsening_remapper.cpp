@@ -276,7 +276,8 @@ template<int PackSize>
 void CoarseningRemapper::
 rescale_masked_fields (const Field& x, const Field& mask) const
 {
-  start_timer(name()+" rescale");
+  if (m_timers_enabled)
+    start_timer(name()+" rescale");
 
   using RangePolicy = typename KT::RangePolicy;
   using MemberType  = typename KT::MemberType;
@@ -450,14 +451,16 @@ rescale_masked_fields (const Field& x, const Field& mask) const
       break;
     }
   }
-  stop_timer(name()+" rescale");
+  if (m_timers_enabled)
+    stop_timer(name()+" rescale");
 }
 
 template<int PackSize>
 void CoarseningRemapper::
 local_mat_vec (const Field& x, const Field& y, const Field& mask) const
 {
-  start_timer(name()+" mat-vec (masked)");
+  if (m_timers_enabled)
+    start_timer(name()+" mat-vec (masked)");
 
   using RangePolicy = typename KT::RangePolicy;
   using MemberType  = typename KT::MemberType;
@@ -611,12 +614,14 @@ local_mat_vec (const Field& x, const Field& y, const Field& mask) const
       EKAT_ERROR_MSG("Error::coarsening_remapper::local_mat_vec doesn't support fields of rank 4 or greater");
     }
   }
-  stop_timer(name()+" mat-vec (masked)");
+  if (m_timers_enabled)
+    stop_timer(name()+" mat-vec (masked)");
 }
 
 void CoarseningRemapper::pack_and_send ()
 {
-  start_timer(name()+" pack");
+  if (m_timers_enabled)
+    start_timer(name()+" pack");
 
   using RangePolicy = typename KT::RangePolicy;
   using MemberType  = typename KT::MemberType;
@@ -734,7 +739,8 @@ void CoarseningRemapper::pack_and_send ()
     Kokkos::deep_copy (m_mpi_send_buffer,m_send_buffer);
   }
 
-  stop_timer(name()+" pack");
+  if (m_timers_enabled)
+    stop_timer(name()+" pack");
 
   if (not m_send_req.empty()) {
     int ierr = MPI_Startall(m_send_req.size(),m_send_req.data());
@@ -753,7 +759,8 @@ void CoarseningRemapper::recv_and_unpack ()
         "  - recv rank: " + std::to_string(m_comm.rank()) + "\n");
   }
 
-  start_timer(name()+" unpack");
+  if (m_timers_enabled)
+    start_timer(name()+" unpack");
 
   // If MPI does not use dev pointers, we need to deep copy from host to dev
   if (not MpiOnDev) {
@@ -879,7 +886,8 @@ void CoarseningRemapper::recv_and_unpack ()
             "  - field rank: " + std::to_string(fl.rank()) + "\n");
     }
   }
-  stop_timer(name()+" unpack");
+  if (m_timers_enabled)
+    stop_timer(name()+" unpack");
 }
 
 std::vector<int>
@@ -977,7 +985,8 @@ recv_gids_from_pids (const std::map<int,std::vector<int>>& pid2gids_send) const
 
 void CoarseningRemapper::setup_mpi_data_structures ()
 {
-  start_timer(name()+" setup MPI");
+  if (m_timers_enabled)
+    start_timer(name()+" setup MPI");
 
   using namespace ShortFieldTagsNames;
   using gid_type = AbstractGrid::gid_type;
@@ -1176,7 +1185,8 @@ void CoarseningRemapper::setup_mpi_data_structures ()
     MPI_Recv_init (recv_ptr, n, mpi_real, pid,
                    0, mpi_comm, &req);
   }
-  stop_timer(name()+" setup MPI");
+  if (m_timers_enabled)
+    stop_timer(name()+" setup MPI");
 }
 
 void CoarseningRemapper::setup_latlon_coarse_grid(const std::string& map_file)

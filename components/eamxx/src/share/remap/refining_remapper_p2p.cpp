@@ -85,7 +85,8 @@ void RefiningRemapperP2P::remap_fwd_impl ()
 
 void RefiningRemapperP2P::setup_mpi_data_structures ()
 {
-  start_timer(name()+" setup MPI");
+  if (m_timers_enabled)
+    start_timer(name()+" setup MPI");
 
   using namespace ShortFieldTagsNames;
 
@@ -168,12 +169,15 @@ void RefiningRemapperP2P::setup_mpi_data_structures ()
                      0, mpi_comm, &req);
     }
   }
-  stop_timer(name()+" setup MPI");
+  if (m_timers_enabled)
+    stop_timer(name()+" setup MPI");
 }
 
 void RefiningRemapperP2P::pack_and_send ()
 {
-  start_timer(name()+" pack");
+  if (m_timers_enabled)
+    start_timer(name()+" pack");
+
   using RangePolicy = typename KT::RangePolicy;
   using TeamMember  = typename KT::MemberType;
   using TPF         = ekat::TeamPolicyFactory<typename KT::ExeSpace>;
@@ -304,7 +308,9 @@ void RefiningRemapperP2P::pack_and_send ()
   if (not MpiOnDev) {
     Kokkos::deep_copy (m_mpi_send_buffer,m_send_buffer);
   }
-  stop_timer(name()+" pack");
+
+  if (m_timers_enabled)
+    stop_timer(name()+" pack");
 
   if (not m_send_req.empty()) {
     check_mpi_call(MPI_Startall(m_send_req.size(),m_send_req.data()),
@@ -319,7 +325,8 @@ void RefiningRemapperP2P::recv_and_unpack ()
                    "[RefiningRemapperP2P] waiting on persistent recv requests.\n");
   }
 
-  start_timer(name()+" unpack");
+  if (m_timers_enabled)
+    start_timer(name()+" unpack");
 
   // If MPI does not use dev pointers, we need to deep copy from host to dev
   if (not MpiOnDev) {
@@ -448,7 +455,8 @@ void RefiningRemapperP2P::recv_and_unpack ()
             "  - field rank: " + std::to_string(fl.rank()) + "\n");
     }
   }
-  stop_timer(name()+" unpack");
+  if (m_timers_enabled)
+    stop_timer(name()+" unpack");
 }
 
 void RefiningRemapperP2P::clean_up ()

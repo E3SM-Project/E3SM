@@ -371,7 +371,9 @@ void VerticalRemapper::remap_fwd_impl ()
   using namespace ShortFieldTagsNames;
 
   // 1. Setup any interp object that was created (if nullptr, no fields need it)
-  start_timer(name() + " setup LI");
+  if (m_timers_enabled)
+    start_timer(name() + " setup LI");
+
   if (m_lin_interp_mid_packed) {
     setup_lin_interp(*m_lin_interp_mid_packed,m_src_pmid,m_tgt_pmid);
   }
@@ -384,7 +386,8 @@ void VerticalRemapper::remap_fwd_impl ()
   if (m_lin_interp_int_scalar) {
     setup_lin_interp(*m_lin_interp_int_scalar,m_src_pint,m_tgt_pint);
   }
-  stop_timer(name() + " setup LI");
+  if (m_timers_enabled)
+    stop_timer(name() + " setup LI");
 
   // 2. Init all masks fields (if any) to 1 (signaling no masked entries)
   for (auto& [name, mask] : m_masks) {
@@ -482,7 +485,8 @@ apply_vertical_interpolation(const ekat::LinInterp<Real,Packsize>& lin_interp,
                              const Field& f_src, const Field& f_tgt,
                              const Field& p_src, const Field& p_tgt) const
 {
-  start_timer(name() + " run LI");
+  if (m_timers_enabled)
+    start_timer(name() + " run LI");
 
   // Note: if Packsize==1, we grab packs of size 1, which are for sure
   //       compatible with the allocation
@@ -572,7 +576,8 @@ apply_vertical_interpolation(const ekat::LinInterp<Real,Packsize>& lin_interp,
           " - src field name: " + f_src.name() + "\n"
           " - src field rank: " + std::to_string(f_src.rank()) + "\n");
   }
-  stop_timer(name() + " run LI");
+  if (m_timers_enabled)
+    stop_timer(name() + " run LI");
 }
 
 void VerticalRemapper::
@@ -581,7 +586,8 @@ extrapolate (const Field& f_src,
              const Field& p_src,
              const Field& p_tgt) const
 {
-  start_timer(name() + " extrapolate");
+  if (m_timers_enabled)
+    start_timer(name() + " extrapolate");
 
   using TPF = ekat::TeamPolicyFactory<DefaultDevice::execution_space>;
 
@@ -733,7 +739,8 @@ extrapolate (const Field& f_src,
           " - src field name: " + f_src.name() + "\n"
           " - src field rank: " + std::to_string(f_src.rank()) + "\n");
   }
-  stop_timer(name() + " extrapolate");
+  if (m_timers_enabled)
+    stop_timer(name() + " extrapolate");
 }
 
 } // namespace scream

@@ -730,6 +730,7 @@ be lost if SCREAM_HACK_XML is not enabled.
   <!-- List of yaml files containing I/O output specs -->
   <scorpio>
     <output_yaml_files type="array(string)"/>
+    <enable_fine_grain_timers type="logical" doc="If enabled, more timers in the IO streams will be active">false</enable_fine_grain_timers>
     <model_restart>
       <iotype>default</iotype>
       <output_control locked="true">

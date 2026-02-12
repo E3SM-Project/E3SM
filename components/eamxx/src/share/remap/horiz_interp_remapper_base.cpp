@@ -155,7 +155,8 @@ template<int PackSize>
 void HorizInterpRemapperBase::
 local_mat_vec (const Field& x, const Field& y) const
 {
-  start_timer(name()+" mat-vec");
+  if (m_timers_enabled)
+    start_timer(name()+" mat-vec");
 
   using RangePolicy = typename KT::RangePolicy;
   using MemberType  = typename KT::MemberType;
@@ -274,7 +275,8 @@ local_mat_vec (const Field& x, const Field& y) const
       EKAT_ERROR_MSG("[HorizInterpRemapperBase::local_mat_vec] Error! Fields of rank 4 or greater are not supported.\n");
     }
   }
-  stop_timer(name()+" mat-vec");
+  if (m_timers_enabled)
+    stop_timer(name()+" mat-vec");
 }
 
 void HorizInterpRemapperBase::clean_up ()

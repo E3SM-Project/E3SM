@@ -43,6 +43,8 @@ public:
   // Call this to indicate that field registration is complete.
   void registration_ends ();
 
+  void toggle_timers (const bool enable) { m_timers_enabled = enable; }
+
   //  ------- Getter methods ------- //
   RepoState get_state () const { return m_state; }
 
@@ -117,6 +119,7 @@ protected:
   // The number of fields to remap
   int           m_num_fields = 0;
 
+  bool          m_timers_enabled = false;
 
   std::vector<Field> m_src_fields;
   std::vector<Field> m_tgt_fields;
