@@ -589,11 +589,11 @@
 	</nml_record>
 	<nml_record name="velocity_solver" in_defaults="true">
 		<nml_option name="config_dynamics_area_minimum" type="real" default_value="1.0e-11" units="1"
-			description="Minimum sea ice area for dynamics calculation."
+			description="Minimum sea-ice area for dynamics calculation."
 			possible_values="Any nonnegative number."
 		/>
 		<nml_option name="config_dynamics_mass_minimum" type="real" default_value="1.0e-10" units="kg m-3"
-			description="Minimum sea ice mass for dynamics calculation."
+			description="Minimum sea-ice and snow mass for dynamics calculation."
 			possible_values="Any nonnegative number."
 		/>
 		<nml_option name="config_dynamics_subcycle_number" type="integer" default_value="1" units="unitless"
