@@ -307,7 +307,7 @@ PHYSICS = {
         "components/eamxx/src/physics/zm",
         "zm_common_init(); // Might need more specific init",
         "zm_finalize_cxx();",
-        "ncol",
+        "pcols",
         True,
         "ZMF",
     ),

@@ -69,6 +69,7 @@ struct UnitWrap {
     
     struct TestIentropy;
     struct TestEntropy;
+    struct TestZmTransportTracer;
   }; // UnitWrap
 };
 

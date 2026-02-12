@@ -127,11 +127,8 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
   logical :: loc_is_first_step
 
   ! arguments for zm_conv_main - order somewhat consistent with current interface
-  integer :: lchnk = 0
-
   integer,  dimension(ncol)      :: jctop          ! output top-of-deep-convection indices
   integer,  dimension(ncol)      :: jcbot          ! output bot-of-deep-convection indices
-  real(r8), dimension(ncol,pver) :: cme            ! condensation - evaporation
   real(r8), dimension(ncol,pver) :: dlf            ! detrained convective cloud water mixing ratio
   real(r8), dimension(ncol,pver) :: zdu            ! detraining mass flux
   real(r8), dimension(ncol,pver) :: mu             ! updraft cloud mass flux
