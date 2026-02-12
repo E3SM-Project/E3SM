@@ -55,10 +55,8 @@ int initState() {
    auto *State  = OceanState::getDefault();
    auto *VCoord = VertCoord::getDefault();
 
-   Array2DReal LayerThickCell;
-   Array2DReal NormalVelEdge;
-   Err = State->getLayerThickness(LayerThickCell, 0);
-   Err += State->getNormalVelocity(NormalVelEdge, 0);
+   Array2DReal LayerThickCell = State->getLayerThickness(0);
+   Array2DReal NormalVelEdge  = State->getNormalVelocity(0);
    Array3DReal TracerArray;
    Err += Tracers::getAll(TracerArray, 0);
 

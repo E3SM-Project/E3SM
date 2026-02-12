@@ -262,8 +262,7 @@ void Tendencies::computeThicknessTendenciesOnly(
    OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
    OMEGA_SCOPE(MaxLayerCell, VCoord->MaxLayerCell);
 
-   Array2DReal NormalVelEdge;
-   State->getNormalVelocity(NormalVelEdge, VelTimeLevel);
+   Array2DReal NormalVelEdge = State->getNormalVelocity(VelTimeLevel);
 
    Pacer::start("Tend:computeThicknessTendenciesOnly", 1);
 
@@ -353,8 +352,7 @@ void Tendencies::computeVelocityTendenciesOnly(
        AuxState->LayerThicknessAux.FluxLayerThickEdge;
    const Array2DReal &NormRVortEdge = AuxState->VorticityAux.NormRelVortEdge;
    const Array2DReal &NormFEdge     = AuxState->VorticityAux.NormPlanetVortEdge;
-   Array2DReal NormVelEdge;
-   State->getNormalVelocity(NormVelEdge, VelTimeLevel);
+   Array2DReal NormVelEdge          = State->getNormalVelocity(VelTimeLevel);
    if (LocPotientialVortHAdv.Enabled) {
       Pacer::start("Tend:potientialVortHAdv", 2);
       parallelForOuter(
@@ -519,8 +517,7 @@ void Tendencies::computeTracerTendenciesOnly(
        });
 
    // compute tracer horizotal advection
-   Array2DReal NormalVelEdge;
-   State->getNormalVelocity(NormalVelEdge, VelTimeLevel);
+   Array2DReal NormalVelEdge       = State->getNormalVelocity(VelTimeLevel);
    const Array3DReal &HTracersEdge = AuxState->TracerAux.HTracersEdge;
    if (LocTracerHorzAdv.Enabled) {
       Pacer::start("Tend:tracerHorzAdv", 2);
@@ -592,10 +589,8 @@ void Tendencies::computeThicknessTendencies(
     TimeInstant Time                ///< [in] Time
 ) {
    // only need LayerThicknessAux on edge
-   Array2DReal LayerThick;
-   Array2DReal NormVel;
-   State->getLayerThickness(LayerThick, ThickTimeLevel);
-   State->getNormalVelocity(NormVel, VelTimeLevel);
+   Array2DReal LayerThick = State->getLayerThickness(ThickTimeLevel);
+   Array2DReal NormVel    = State->getNormalVelocity(VelTimeLevel);
    OMEGA_SCOPE(LayerThicknessAux, AuxState->LayerThicknessAux);
    OMEGA_SCOPE(LayerThickCell, LayerThick);
    OMEGA_SCOPE(NormalVelEdge, NormVel);
@@ -650,10 +645,8 @@ void Tendencies::computeTracerTendencies(
     int VelTimeLevel,               ///< [in] Time level
     TimeInstant Time                ///< [in] Time
 ) {
-   Array2DReal LayerThickCell;
-   Array2DReal NormalVelEdge;
-   State->getLayerThickness(LayerThickCell, ThickTimeLevel);
-   State->getNormalVelocity(NormalVelEdge, VelTimeLevel);
+   Array2DReal LayerThickCell = State->getLayerThickness(ThickTimeLevel);
+   Array2DReal NormalVelEdge  = State->getNormalVelocity(VelTimeLevel);
    OMEGA_SCOPE(TracerAux, AuxState->TracerAux);
    OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
    OMEGA_SCOPE(MaxLayerCell, VCoord->MaxLayerCell);
