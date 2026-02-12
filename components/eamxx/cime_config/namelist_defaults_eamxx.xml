@@ -490,6 +490,22 @@ be lost if SCREAM_HACK_XML is not enabled.
       <spa_data_file hgrid="ne4np4.pg2">${DIN_LOC_ROOT}/atm/scream/init/spa_file_unified_and_complete_ne4pg2_20231222.nc</spa_data_file>
     </spa>
 
+    <!-- Simple Prescribed Chemistry (SPC) -->
+    <spc inherit="atm_proc_base">
+      <spc_remap_file type="file" doc="File containing mapping data from the grid of spc_data_file to the model grid. Unused if the grid is the same.">none</spc_remap_file>
+      <spc_remap_file hgrid="ne120np4">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_ne120np4_mono_20220502.nc</spc_remap_file>
+      <spc_remap_file hgrid="ne120np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne120pg2_20231201.nc</spc_remap_file>
+      <spc_remap_file hgrid="ne256np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne256pg2_20231201.nc</spc_remap_file>
+      <spc_remap_file hgrid="ne512np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne512pg2_20231201.nc</spc_remap_file>
+      <spc_remap_file hgrid="ne1024np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne1024pg2_20231201.nc</spc_remap_file>
+      <spc_remap_file hgrid="ne0np4_CAx32v1">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_CAx32v1pg2_intbilin_se2fv_20230420.nc</spc_remap_file>
+      <spc_remap_file COMPSET=".*DP-EAMxx">none</spc_remap_file>
+
+      <spc_data_file type="file" doc="File containing chemistry data. Must be on same grid as the atm, or a coarser one">none</spc_data_file>
+      <spc_data_file hgrid="ne.*np4.pg2">${DIN_LOC_ROOT}/atm/scream/init/spc_from_v3LRamip_2010_clim_ne30pg2_c20260206.nc</spc_data_file>
+      <spc_data_file hgrid="ne4np4.pg2">${DIN_LOC_ROOT}/atm/scream/init/spc_from_v3LRamip_2010_clim_ne4pg2_c20260211.nc</spc_data_file>
+    </spc>
+
     <!-- Radiation -->
     <rrtmgp inherit="atm_proc_base">
       <rrtmgp_coefficients_file_sw type="file">${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-data-sw-g112-210809.nc</rrtmgp_coefficients_file_sw>
