@@ -44,4 +44,4 @@ public:
 
 } // namespace scream
 
-#endif // EAMXX_VERTICAL_REMAPPER_MAM4_HPP
+#endif // EAMXX_VERTICAL_REMAPPER_EXO_COLDENS_MAM4_HPP
