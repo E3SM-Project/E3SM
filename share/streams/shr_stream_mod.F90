@@ -2720,7 +2720,7 @@ contains
           strm(k)%found_lvd = found_lvd
           strm(k)%k_gvd     = k_gvd
           strm(k)%n_gvd     = n_gvd
-          strm(k)%found_gvd = found_gvd
+          strm(k)%found_gvd = .false. 
        endif
 
        ! tcraig, april 2012, don't overwrite these from input

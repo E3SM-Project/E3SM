@@ -82,5 +82,5 @@
 [submodule "gcam"]
 	path = components/gcam/src
 	url = git@github.com:E3SM-Project/giac
-	branch = aldivi/iac_gcam6_merge_co2
+	branch = master
 
