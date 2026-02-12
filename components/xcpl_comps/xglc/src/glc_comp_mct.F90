@@ -16,6 +16,13 @@ module glc_comp_mct
   use dead_mct_mod    , only: dead_init_mct, dead_run_mct, dead_final_mct
   use seq_flds_mod    , only: seq_flds_g2x_fields, seq_flds_x2g_fields
 
+#ifdef HAVE_MOAB
+  !use seq_comm_mct, only : mglcid !            iMOAB app id for GLC (Land-ICE)
+  use iso_c_binding
+  use iMOAB          , only: iMOAB_RegisterApplication
+  use dead_mct_mod   , only: dead_init_moab
+#endif
+
   ! !PUBLIC TYPES:
   implicit none
   save
@@ -41,6 +48,9 @@ module glc_comp_mct
   integer(IN)            :: compid              ! mct comp id
   real(r8) ,  pointer    :: gbuf(:,:)           ! model grid
   integer(IN),parameter  :: master_task=0       ! task number of master task
+#ifdef HAVE_MOAB
+  integer(IN)            :: mglcid              ! iMOAB app id for GLC
+#endif
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 CONTAINS
@@ -72,6 +82,7 @@ CONTAINS
     logical                          :: glcocn_present
     logical                          :: glcice_present
     logical                          :: glclnd_present
+    character(*), parameter :: subName = "(glc_init_mct) "
     !-------------------------------------------------------------------------------
 
     ! Set cdata pointers to derived types (in coupler)
@@ -115,6 +126,14 @@ CONTAINS
     ! Initialize xglc
     !----------------------------------------------------------------------------
 
+#ifdef HAVE_MOAB
+    ierr = iMOAB_RegisterApplication(trim("XGLC")//C_NULL_CHAR, mpicom, compid, mglcid)
+    if (ierr .ne. 0) then
+      write(logunit,*) subname,' error in registering XGLC comp'
+      call shr_sys_abort(subname//' ERROR in registering XGLC comp')
+    endif
+#endif
+
     call dead_init_mct('glc', Eclock, x2d, d2x, &
          seq_flds_x2g_fields, seq_flds_g2x_fields, &
          gsmap, ggrid, gbuf, mpicom, compid, my_task, master_task, &
@@ -133,6 +152,12 @@ CONTAINS
        glcocn_present = .false.
        glcice_present = .false.
     end if
+
+#ifdef HAVE_MOAB
+    if (glc_present) then
+      call dead_init_moab( mglcid, 'glc', gsMap, gbuf, x2d, d2x, mpicom, compid, logunit, nxg, nyg )
+    end if
+#endif
 
     call seq_infodata_PutData( infodata, dead_comps=.true., &
          glc_present=glc_present, &
@@ -182,8 +207,17 @@ CONTAINS
          dom=ggrid, &
          infodata=infodata)
 
+#ifdef HAVE_MOAB
+
+    call dead_run_mct('glc', EClock, x2d, d2x, &
+       gsmap, ggrid, gbuf, mpicom, compid, my_task, master_task, logunit, mglcid )
+
+#else
+
     call dead_run_mct('glc', EClock, x2d, d2x, &
        gsmap, ggrid, gbuf, mpicom, compid, my_task, master_task, logunit)
+
+#endif
 
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)

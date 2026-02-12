@@ -124,8 +124,8 @@ CONTAINS
 #ifdef HAVE_MOAB
   ierr = iMOAB_RegisterApplication(trim("XOCN")//C_NULL_CHAR, mpicom, compid, mpoid)
   if (ierr .ne. 0) then
-    write(logunit,*) subName,' error in registering data ocn comp'
-    call shr_sys_abort(subName//' ERROR in registering data ocn comp')
+    write(logunit,*) subName,' error in registering XOCN comp'
+    call shr_sys_abort(subName//' ERROR in registering XOCN comp')
   endif
 #endif
 
@@ -133,10 +133,6 @@ CONTAINS
          seq_flds_x2o_fields, seq_flds_o2x_fields, &
          gsmap, ggrid, gbuf, mpicom, compid, my_task, master_task, &
          inst_index, inst_suffix, inst_name, logunit, nxg, nyg)
-
-#ifdef HAVE_MOAB
-    call dead_init_moab( mpoid, 'ocn', gsMap, gbuf, x2d, d2x, mpicom, compid, logunit, nxg, nyg )
-#endif
 
     if (nxg == 0 .and. nyg == 0) then
        ocn_present = .false.
@@ -147,6 +143,12 @@ CONTAINS
        ocn_prognostic = .true.
        ocnrof_prognostic = .true.
     end if
+
+#ifdef HAVE_MOAB
+    if (ocn_present) then
+       call dead_init_moab( mpoid, 'ocn', gsMap, gbuf, x2d, d2x, mpicom, compid, logunit, nxg, nyg )
+    end if
+#endif
 
     call seq_infodata_PutData( infodata, dead_comps=.true., &
          ocn_present=ocn_present, &

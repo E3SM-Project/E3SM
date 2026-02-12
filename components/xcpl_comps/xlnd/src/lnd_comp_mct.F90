@@ -123,8 +123,8 @@ CONTAINS
 #ifdef HAVE_MOAB
     ierr = iMOAB_RegisterApplication(trim("XLND")//C_NULL_CHAR, mpicom, compid, mlnid)
     if (ierr .ne. 0) then
-      write(logunit,*) subname,' error in registering data lnd comp'
-      call shr_sys_abort(subname//' ERROR in registering data lnd comp')
+      write(logunit,*) subname,' error in registering XLND comp'
+      call shr_sys_abort(subname//' ERROR in registering XLND comp')
     endif
 #endif
 
@@ -133,10 +133,6 @@ CONTAINS
          gsmap, ggrid, gbuf, mpicom, compid, my_task, master_task, &
          inst_index, inst_suffix, inst_name, logunit, nxg, nyg )
 
-#ifdef HAVE_MOAB
-    call dead_init_moab( mlnid, 'lnd', gsMap, gbuf, x2d, d2x, mpicom, compid, logunit, nxg, nyg )
-#endif
-
     if (nxg == 0 .and. nyg == 0) then
        lnd_present = .false.
        lnd_prognostic = .false.
@@ -144,6 +140,12 @@ CONTAINS
        lnd_present = .true.
        lnd_prognostic = .true.
     end if
+
+#ifdef HAVE_MOAB
+    if (lnd_present) then
+       call dead_init_moab( mlnid, 'lnd', gsMap, gbuf, x2d, d2x, mpicom, compid, logunit, nxg, nyg )
+    end if
+#endif
 
     call seq_infodata_PutData( infodata, dead_comps=.true., &
          lnd_present=lnd_present, &

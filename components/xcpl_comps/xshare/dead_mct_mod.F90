@@ -248,9 +248,7 @@ contains
        ki = mct_aVect_indexRA(d2x,"Si_ifrac",perrWith=subname)
        d2x%rAttr(ki,:) = min(1.0_R8,max(0.0_R8,d2x%rAttr(ki,:)))
 #ifdef HAVE_MOAB
-         do n=1,lsize
-           data_d2x(n,ki) = d2x%rAttr(ki,n)
-         enddo
+       data_d2x(:,ki) = d2x%rAttr(ki,:)
 #endif
 
     case('glc')
@@ -423,7 +421,6 @@ contains
                      iMOAB_SetDoubleTagStorage, &
                      iMOAB_ResolveSharedEntities, &
                      iMOAB_UpdateMeshInfo, &
-                     iMOAB_GetMeshInfo, &
                      iMOAB_WriteMesh
       implicit none
     !-------------------------------------------------------------------
@@ -432,8 +429,6 @@ contains
     character(len=*) , intent(in) :: model
     type(mct_gsMap), intent(in)   :: gsMap
     real(R8)       , intent(in)   :: gbuf(:,:)
-   !  character(len=*) , intent(in)    :: flds_x2d
-   !  character(len=*) , intent(in)    :: flds_d2x
     type(mct_aVect)  , intent(in) :: x2d         ! driver -> dead
     type(mct_aVect)  , intent(in) :: d2x         ! dead   -> driver
     integer(IN)    , intent(in)   :: mpicom
@@ -482,6 +477,7 @@ contains
    !  end if
 
     if (fullmesh) then
+       etype = 1  ! elements
        ! Create RLL dual mesh: centroids (lat,lon) become element centers; vertices at corners
        ! For nxg x nyg centroid grid, we need (nxg+1) x (nyg+1) corner vertices
        ! Each centroid becomes a quad element using its 4 neighboring corners
@@ -613,7 +609,7 @@ contains
       ! create the vertices with coordinates from MCT domain
       ierr = iMOAB_CreateVertices(mbdomain, lsize*3, 3, moab_vert_coords)
       if (ierr .ne. 0)  &
-         call shr_sys_abort('Error: fail to create MOAB vertices in data lnd model')
+         call shr_sys_abort('Error: fail to create MOAB vertices in X-' // trim(model) // ' model')
       deallocate(moab_vert_coords)
 
     end if
@@ -631,7 +627,7 @@ contains
     call mct_gsMap_orderedPoints(gsMap, my_task, idata)
 
     ierr = iMOAB_SetIntTagStorage ( mbdomain, tagname, lsize, &
-                                     0, & ! vertex type
+                                     etype, & ! vertex type
                                      idata)
     if (ierr .ne. 0)  &
        call shr_sys_abort('Error: fail to set GLOBAL_ID tag ')
@@ -648,7 +644,6 @@ contains
 
     deallocate(idata)
 
-    allocate(data(lsize))
     ierr = iMOAB_DefineTagStorage( mbdomain, "lat:lon:area:aream:frac:mask"//C_NULL_CHAR, &
                                      1, & ! dense, double
                                      1, & ! number of components
@@ -656,60 +651,65 @@ contains
     if (ierr > 0 )  &
        call shr_sys_abort('Error: fail to create tag: area:aream:frac:mask' )
 
+    if (lsize .gt. 0) then
 
-    data(:) = gbuf(:,dead_grid_lat)
-    tagname='lat'//C_NULL_CHAR
-    ierr = iMOAB_SetDoubleTagStorage ( mbdomain, tagname, lsize, &
-                                    0, & ! set data on vertices
-                                    data)
-    if (ierr > 0 )  &
-       call shr_sys_abort('Error: fail to set lat tag ')
+         allocate(data(lsize))
+         data(:) = gbuf(:,dead_grid_lat)
+         tagname='lat'//C_NULL_CHAR
+         ierr = iMOAB_SetDoubleTagStorage ( mbdomain, tagname, lsize, &
+                                          etype, & ! set data on vertices
+                                          data)
+         if (ierr > 0 )  &
+            call shr_sys_abort('Error: fail to set lat tag ')
 
-    data(:) = gbuf(:,dead_grid_lon)
-    tagname='lon'//C_NULL_CHAR
-    ierr = iMOAB_SetDoubleTagStorage ( mbdomain, tagname, lsize, &
-                                    0, & ! set data on vertices
-                                    data)
-    if (ierr > 0 )  &
-       call shr_sys_abort('Error: fail to set lon tag ')
+         data(:) = gbuf(:,dead_grid_lon)
+         tagname='lon'//C_NULL_CHAR
+         ierr = iMOAB_SetDoubleTagStorage ( mbdomain, tagname, lsize, &
+                                          etype, & ! set data on vertices
+                                          data)
+         if (ierr > 0 )  &
+            call shr_sys_abort('Error: fail to set lon tag ')
 
-    data(:) = gbuf(:,dead_grid_area)
-    tagname='area'//C_NULL_CHAR
-    ierr = iMOAB_SetDoubleTagStorage ( mbdomain, tagname, lsize, &
-                                     etype, & ! set data on elements
-                                     data)
-    if (ierr > 0 )  &
-       call shr_sys_abort('Error: fail to get area tag ')
+         data(:) = gbuf(:,dead_grid_area)
+         tagname='area'//C_NULL_CHAR
+         ierr = iMOAB_SetDoubleTagStorage ( mbdomain, tagname, lsize, &
+                                          etype, & ! set data on elements
+                                          data)
+         if (ierr > 0 )  &
+            call shr_sys_abort('Error: fail to get area tag ')
 
-    ! set the same data for aream (model area) as area
-    ! data(:) = ggrid%data%rAttr(mct_aVect_indexRA(ggrid%data,'aream'),:)
-    tagname='aream'//C_NULL_CHAR
-    ierr = iMOAB_SetDoubleTagStorage ( mbdomain, tagname, lsize, &
-                                     etype, & ! set data on elements
-                                     data)
-    if (ierr > 0 )  &
-       call shr_sys_abort('Error: fail to set aream tag ')
+         ! set the same data for aream (model area) as area
+         ! data(:) = ggrid%data%rAttr(mct_aVect_indexRA(ggrid%data,'aream'),:)
+         tagname='aream'//C_NULL_CHAR
+         ierr = iMOAB_SetDoubleTagStorage ( mbdomain, tagname, lsize, &
+                                          etype, & ! set data on elements
+                                          data)
+         if (ierr > 0 )  &
+            call shr_sys_abort('Error: fail to set aream tag ')
 
-    data(:) = gbuf(:,dead_grid_mask)
-    tagname='mask'//C_NULL_CHAR
-    ierr = iMOAB_SetDoubleTagStorage ( mbdomain, tagname, lsize, &
-                                     etype, & ! set data on elements
-                                     data)
-    if (ierr > 0 )  &
-       call shr_sys_abort('Error: fail to set mask tag ')
+         data(:) = gbuf(:,dead_grid_mask)
+         tagname='mask'//C_NULL_CHAR
+         ierr = iMOAB_SetDoubleTagStorage ( mbdomain, tagname, lsize, &
+                                          etype, & ! set data on elements
+                                          data)
+         if (ierr > 0 )  &
+            call shr_sys_abort('Error: fail to set mask tag ')
 
-    data(:) = gbuf(:,dead_grid_frac)
-    tagname='frac'//C_NULL_CHAR
-    ierr = iMOAB_SetDoubleTagStorage ( mbdomain, tagname, lsize, &
-                                     etype, & ! set data on elements
-                                     data)
-    if (ierr > 0 )  &
-       call shr_sys_abort('Error: fail to set frac tag ')
+         data(:) = gbuf(:,dead_grid_frac)
+         tagname='frac'//C_NULL_CHAR
+         ierr = iMOAB_SetDoubleTagStorage ( mbdomain, tagname, lsize, &
+                                          etype, & ! set data on elements
+                                          data)
+         if (ierr > 0 )  &
+            call shr_sys_abort('Error: fail to set frac tag ')
 
-    ! deallocate temporary arrays
-    deallocate(data)
+         ! deallocate temporary arrays
+         deallocate(data)
 
-    call define_reset_fields_moab(mbdomain, model, x2d, d2x, mpicom, logunit )
+         call define_reset_fields_moab(mbdomain, model, x2d, d2x, mpicom, logunit )
+
+    end if
+
 
   !      debug test
    !  outfile = trim(model) // '_deadModels.h5m'//C_NULL_CHAR
@@ -769,20 +769,14 @@ contains
 
     flds_d2x = trim(mct_aVect_exportRList2c(d2x)) ! exportRListToChar
     nflds_d2x = mct_avect_nRattr(d2x)
-    allocate(data_d2x(lsize,nflds_d2x))
 
     flds_x2d = trim(mct_aVect_exportRList2c(x2d)) ! exportRListToChar
     nflds_x2d = mct_avect_nRattr(x2d)
-    allocate(data_x2d(lsize,nflds_x2d), data_d2x(lsize,nflds_d2x))
 
     !
     ! Initialize attribute vector with special value
     !
     call mpi_comm_rank(mpicom, my_task, ier)
-
-   !  data(:) = -9999.0_R8  ! generic special value
-    data_x2d(:,:) = 0.0_R8  ! generic special value
-    data_d2x(:,:) = 0.0_R8  ! generic special value
 
     etype = 0  ! vertices
    !  if (trim(model) .ne. 'atm' .and. trim(model) .ne. 'lnd' .and. trim(model) .ne. 'rof') then
@@ -798,15 +792,6 @@ contains
     if (ierr > 0 )  &
        call shr_sys_abort('Error: fail to create tag: ' // trim(flds_x2d) )
 
-
-    ierr = iMOAB_SetDoubleTagStorage( mbdomain, trim(flds_x2d)//C_NULL_CHAR, &
-                                     lsize*nflds_x2d, & ! size
-                                     etype, & ! set data on vertices
-                                     data_x2d )
-    if (ierr > 0 )  &
-       call shr_sys_abort('Error: fail to reset tag: ' // trim(flds_x2d) )
-
-
     ierr = iMOAB_DefineTagStorage( mbdomain, trim(flds_d2x)//C_NULL_CHAR, &
                                      1, & ! dense, double
                                      1, & ! number of components
@@ -814,15 +799,32 @@ contains
     if (ierr > 0 )  &
        call shr_sys_abort('Error: fail to create tag: ' // trim(flds_d2x) )
 
-    ierr = iMOAB_SetDoubleTagStorage( mbdomain, trim(flds_d2x)//C_NULL_CHAR, &
-                                     lsize*nflds_d2x, & ! size
-                                     etype, & ! set data on vertices
-                                     data_d2x )
-    if (ierr > 0 )  &
-       call shr_sys_abort('Error: fail to reset tag: ' // trim(flds_d2x) )
+    if (lsize .gt. 0) then
+       allocate(data_x2d(lsize,nflds_x2d), data_d2x(lsize,nflds_d2x))
 
-    deallocate(data_x2d)
-    deallocate(data_d2x)
+       !  data(:) = -9999.0_R8  ! generic special value
+       data_x2d(:,:) = 0.0_R8  ! generic special value
+       data_d2x(:,:) = 0.0_R8  ! generic special value
+
+       ierr = iMOAB_SetDoubleTagStorage( mbdomain, trim(flds_x2d)//C_NULL_CHAR, &
+                                       lsize*nflds_x2d, & ! size
+                                       etype, & ! set data on vertices
+                                       data_x2d )
+       if (ierr > 0 )  &
+          call shr_sys_abort('Error: fail to reset tag: ' // trim(flds_x2d) )
+
+
+       ierr = iMOAB_SetDoubleTagStorage( mbdomain, trim(flds_d2x)//C_NULL_CHAR, &
+                                          lsize*nflds_d2x, & ! size
+                                          etype, & ! set data on vertices
+                                          data_d2x )
+       if (ierr > 0 )  &
+            call shr_sys_abort('Error: fail to reset tag: ' // trim(flds_d2x) )
+
+       deallocate(data_x2d)
+       deallocate(data_d2x)
+
+     end if
 
 #ifdef MOABDEBUG
        !      debug test
