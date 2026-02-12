@@ -44,34 +44,28 @@ void Functions<S,D>::zm_transport_momentum(
   constexpr Real momcu = 0.4; // pressure gradient term constant for updrafts
   constexpr Real momcd = 0.4; // pressure gradient term constant for downdrafts
 
-  // Get workspace manager views (1d views)
-  const auto ws_size = pver * nwind;
-  uview_1d<Real> wind0_ws        = workspace.take_macro_block("wind0",        ws_size);
-  uview_1d<Real> windf_ws        = workspace.take_macro_block("windf",        ws_size);
-  uview_1d<Real> wind_mid_ws     = workspace.take_macro_block("wind_mid",     pver*nwind);
-  uview_1d<Real> wind_int_ws     = workspace.take_macro_block("wind_int",     pver*nwind);
-  uview_1d<Real> wind_int_d_ws   = workspace.take_macro_block("wind_int_d",   pver*nwind);
-  uview_1d<Real> wind_int_u_ws   = workspace.take_macro_block("wind_int_u",   pver*nwind);
-  uview_1d<Real> wind_tend_tmp_ws= workspace.take_macro_block("wind_tend_tmp",pver*nwind);
-  uview_1d<Real> mududp_ws       = workspace.take_macro_block("mududp",       pver*nwind);
-  uview_1d<Real> mddudp_ws       = workspace.take_macro_block("mddudp",       pver*nwind);
-  uview_1d<Real> pgu_ws          = workspace.take_macro_block("pgu",          pver*nwind);
-  uview_1d<Real> pgd_ws          = workspace.take_macro_block("pgd",          pver*nwind);
-  uview_1d<Real> mflux_ws        = workspace.take_macro_block("mflux",        pverp*nwind);
+  // Allocate temporary arrays (2D: pver x nwind or pverp x nwind)
+  uview_1d<Real> wind0_1d, windf_1d, wind_mid_1d, wind_int_1d, wind_int_d_1d, wind_int_u_1d;
+  uview_1d<Real> wind_tend_tmp_1d, mududp_1d, mddudp_1d, pgu_1d, pgd_1d, mflux_1d;
+  workspace.template take_many_contiguous_unsafe<12>(
+    {"wind0", "windf", "wind_mid", "wind_int", "wind_int_d", "wind_int_u",
+     "wind_tend_tmp", "mududp", "mddudp", "pgu", "pgd", "mflux"},
+    {&wind0_1d, &windf_1d, &wind_mid_1d, &wind_int_1d, &wind_int_d_1d, &wind_int_u_1d,
+     &wind_tend_tmp_1d, &mududp_1d, &mddudp_1d, &pgu_1d, &pgd_1d, &mflux_1d});
 
-  // Convert 1d workspace views to 2d views (pver, nwind)
-  auto wind0 = ekat::screamify<Real[::][::], ekat::MemLayout::Right>(wind0_ws.data(), pver, nwind);
-  auto windf = ekat::screamify<Real[::][::], ekat::MemLayout::Right>(windf_ws.data(), pver, nwind);
-  auto wind_mid = ekat::screamify<Real[::][::], ekat::MemLayout::Right>(wind_mid_ws.data(), pver, nwind);
-  auto wind_int = ekat::screamify<Real[::][::], ekat::MemLayout::Right>(wind_int_ws.data(), pver, nwind);
-  auto wind_int_d = ekat::screamify<Real[::][::], ekat::MemLayout::Right>(wind_int_d_ws.data(), pver, nwind);
-  auto wind_int_u = ekat::screamify<Real[::][::], ekat::MemLayout::Right>(wind_int_u_ws.data(), pver, nwind);
-  auto wind_tend_tmp = ekat::screamify<Real[::][::], ekat::MemLayout::Right>(wind_tend_tmp_ws.data(), pver, nwind);
-  auto mududp = ekat::screamify<Real[::][::], ekat::MemLayout::Right>(mududp_ws.data(), pver, nwind);
-  auto mddudp = ekat::screamify<Real[::][::], ekat::MemLayout::Right>(mddudp_ws.data(), pver, nwind);
-  auto pgu = ekat::screamify<Real[::][::], ekat::MemLayout::Right>(pgu_ws.data(), pver, nwind);
-  auto pgd = ekat::screamify<Real[::][::], ekat::MemLayout::Right>(pgd_ws.data(), pver, nwind);
-  auto mflux = ekat::screamify<Real[::][::], ekat::MemLayout::Right>(mflux_ws.data(), pverp, nwind);
+  uview_2d<Real>
+    wind0(wind0_1d.data(), pver, nwind),
+    windf(windf_1d.data(), pver, nwind),
+    wind_mid(wind_mid_1d.data(), pver, nwind),
+    wind_int(wind_int_1d.data(), pver, nwind),
+    wind_int_d(wind_int_d_1d.data(), pver, nwind),
+    wind_int_u(wind_int_u_1d.data(), pver, nwind),
+    wind_tend_tmp(wind_tend_tmp_1d.data(), pver, nwind),
+    mududp(mududp_1d.data(), pver, nwind),
+    mddudp(mddudp_1d.data(), pver, nwind),
+    pgu(pgu_1d.data(), pver, nwind),
+    pgd(pgd_1d.data(), pver, nwind),
+    mflux(mflux_1d.data(), pverp, nwind);
 
   // Initialize outputs
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team, pver*nwind), [&] (const Int& idx) {
@@ -91,7 +85,7 @@ void Functions<S,D>::zm_transport_momentum(
   });
 
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team, pverp*nwind), [&] (const Int& idx) {
-    mflux_ws(idx) = 0.0;
+    mflux_1d(idx) = 0.0;
   });
 
   team.team_barrier();
@@ -242,19 +236,9 @@ void Functions<S,D>::zm_transport_momentum(
 
   team.team_barrier();
 
-  // Release workspace
-  workspace.release_macro_block(wind0_ws,        ws_size);
-  workspace.release_macro_block(windf_ws,        ws_size);
-  workspace.release_macro_block(wind_mid_ws,     pver*nwind);
-  workspace.release_macro_block(wind_int_ws,     pver*nwind);
-  workspace.release_macro_block(wind_int_d_ws,   pver*nwind);
-  workspace.release_macro_block(wind_int_u_ws,   pver*nwind);
-  workspace.release_macro_block(wind_tend_tmp_ws,pver*nwind);
-  workspace.release_macro_block(mududp_ws,       pver*nwind);
-  workspace.release_macro_block(mddudp_ws,       pver*nwind);
-  workspace.release_macro_block(pgu_ws,          pver*nwind);
-  workspace.release_macro_block(pgd_ws,          pver*nwind);
-  workspace.release_macro_block(mflux_ws,        pverp*nwind);
+  workspace.template release_many_contiguous<12>(
+    {&wind0_1d, &windf_1d, &wind_mid_1d, &wind_int_1d, &wind_int_d_1d, &wind_int_u_1d,
+     &wind_tend_tmp_1d, &mududp_1d, &mddudp_1d, &pgu_1d, &pgd_1d, &mflux_1d});
 }
 
 } // namespace zm
