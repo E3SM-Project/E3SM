@@ -54,18 +54,18 @@ void Functions<S,D>::zm_transport_momentum(
      &wind_tend_tmp_1d, &mududp_1d, &mddudp_1d, &pgu_1d, &pgd_1d, &mflux_1d});
 
   uview_2d<Real>
-    wind0(wind0_1d.data(), pver, nwind),
-    windf(windf_1d.data(), pver, nwind),
-    wind_mid(wind_mid_1d.data(), pver, nwind),
-    wind_int(wind_int_1d.data(), pver, nwind),
-    wind_int_d(wind_int_d_1d.data(), pver, nwind),
-    wind_int_u(wind_int_u_1d.data(), pver, nwind),
-    wind_tend_tmp(wind_tend_tmp_1d.data(), pver, nwind),
-    mududp(mududp_1d.data(), pver, nwind),
-    mddudp(mddudp_1d.data(), pver, nwind),
-    pgu(pgu_1d.data(), pver, nwind),
-    pgd(pgd_1d.data(), pver, nwind),
-    mflux(mflux_1d.data(), pverp, nwind);
+    wind0(wind0_1d.data(), nwind, pver),
+    windf(windf_1d.data(), nwind, pver),
+    wind_mid(wind_mid_1d.data(), nwind, pver),
+    wind_int(wind_int_1d.data(), nwind, pver),
+    wind_int_d(wind_int_d_1d.data(), nwind, pver),
+    wind_int_u(wind_int_u_1d.data(), nwind, pver),
+    wind_tend_tmp(wind_tend_tmp_1d.data(), nwind, pver),
+    mududp(mududp_1d.data(), nwind, pver),
+    mddudp(mddudp_1d.data(), nwind, pver),
+    pgu(pgu_1d.data(), nwind, pver),
+    pgd(pgd_1d.data(), nwind, pver),
+    mflux(mflux_1d.data(), nwind, pverp);
 
   // Initialize outputs
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team, pver*nwind), [&] (const Int& idx) {
@@ -76,8 +76,8 @@ void Functions<S,D>::zm_transport_momentum(
     pgdall(k,m) = 0.0;
     icwu(k,m) = wind_in(k,m);
     icwd(k,m) = wind_in(k,m);
-    wind0(k,m) = 0.0;
-    windf(k,m) = 0.0;
+    wind0(m,k) = 0.0;
+    windf(m,k) = 0.0;
   });
 
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team, pver), [&] (const Int& k) {
@@ -95,44 +95,44 @@ void Functions<S,D>::zm_transport_momentum(
 
     // Gather up the winds
     for (Int k = 0; k < pver; ++k) {
-      wind_mid(k,m) = wind_in(k,m);
-      wind0(k,m) = wind_mid(k,m);
+      wind_mid(m,k) = wind_in(k,m);
+      wind0(m,k) = wind_mid(m,k);
     }
 
     // Interpolate winds to interfaces
     for (Int k = 0; k < pver; ++k) {
       const Int km1 = (k == 0) ? 0 : k-1;
-      wind_int(k,m) = 0.5 * (wind_mid(k,m) + wind_mid(km1,m));
-      wind_int_u(k,m) = wind_int(k,m);
-      wind_int_d(k,m) = wind_int(k,m);
-      wind_tend_tmp(k,m) = 0.0;
+      wind_int(m,k) = 0.5 * (wind_mid(m,k) + wind_mid(m,km1));
+      wind_int_u(m,k) = wind_int(m,k);
+      wind_int_d(m,k) = wind_int(m,k);
+      wind_tend_tmp(m,k) = 0.0;
     }
 
     // Calculate pressure perturbation terms
     // upper boundary
-    pgu(0,m) = 0.0;
-    pgd(0,m) = 0.0;
+    pgu(m,0) = 0.0;
+    pgd(m,0) = 0.0;
 
     // interior points
     for (Int k = 1; k < pver-1; ++k) {
       const Int km1 = k-1;
       const Int kp1 = k+1;
-      mududp(k,m) = (mu(k)  *(wind_mid(k,m)  -wind_mid(km1,m))/dp(km1) +
-                     mu(kp1)*(wind_mid(kp1,m)-wind_mid(k,m)  )/dp(k));
-      mddudp(k,m) = (md(k)  *(wind_mid(k,m)  -wind_mid(km1,m))/dp(km1) +
-                     md(kp1)*(wind_mid(kp1,m)-wind_mid(k,m)  )/dp(k));
-      pgu(k,m) = -momcu * 0.5 * mududp(k,m);
-      pgd(k,m) = -momcd * 0.5 * mddudp(k,m);
+      mududp(m,k) = (mu(k)  *(wind_mid(m,k)  -wind_mid(m,km1))/dp(km1) +
+                     mu(kp1)*(wind_mid(m,kp1)-wind_mid(m,k)  )/dp(k));
+      mddudp(m,k) = (md(k)  *(wind_mid(m,k)  -wind_mid(m,km1))/dp(km1) +
+                     md(kp1)*(wind_mid(m,kp1)-wind_mid(m,k)  )/dp(k));
+      pgu(m,k) = -momcu * 0.5 * mududp(m,k);
+      pgd(m,k) = -momcd * 0.5 * mddudp(m,k);
     }
 
     // bottom boundary
     {
       const Int k = pver-1;
       const Int km1 = k-1;
-      mududp(k,m) = mu(k) * (wind_mid(k,m)-wind_mid(km1,m))/dp(km1);
-      mddudp(k,m) = md(k) * (wind_mid(k,m)-wind_mid(km1,m))/dp(km1);
-      pgu(k,m) = -momcu * mududp(k,m);
-      pgd(k,m) = -momcd * mddudp(k,m);
+      mududp(m,k) = mu(k) * (wind_mid(m,k)-wind_mid(m,km1))/dp(km1);
+      mddudp(m,k) = md(k) * (wind_mid(m,k)-wind_mid(m,km1))/dp(km1);
+      pgu(m,k) = -momcu * mududp(m,k);
+      pgd(m,k) = -momcd * mddudp(m,k);
     }
 
     // Calculate in-cloud velocity
@@ -143,10 +143,10 @@ void Functions<S,D>::zm_transport_momentum(
       const Int kk = pver-1;
       const Real mupdudp = mu(kk) + du(kk)*dp(kk);
       if (mupdudp > mbsth) {
-        wind_int_u(kk,m) = (eu(kk)*wind_mid(kk,m)*dp(kk) + pgu(kk,m)*dp(kk)) / mupdudp;
+        wind_int_u(m,kk) = (eu(kk)*wind_mid(m,kk)*dp(kk) + pgu(m,kk)*dp(kk)) / mupdudp;
       }
       if (md(k) < -mbsth) {
-        wind_int_d(k,m) = (-ed(km1)*wind_mid(km1,m)*dp(km1) - pgd(km1,m)*dp(km1)) / md(k);
+        wind_int_d(m,k) = (-ed(km1)*wind_mid(m,km1)*dp(km1) - pgd(m,km1)*dp(km1)) / md(k);
       }
     }
 
@@ -155,7 +155,7 @@ void Functions<S,D>::zm_transport_momentum(
       const Int kkp1 = kk+1;
       const Real mupdudp = mu(kk) + du(kk)*dp(kk);
       if (mupdudp > mbsth) {
-        wind_int_u(kk,m) = (mu(kkp1)*wind_int_u(kkp1,m) + eu(kk)*wind_mid(kk,m)*dp(kk) + pgu(kk,m)*dp(kk)) / mupdudp;
+        wind_int_u(m,kk) = (mu(kkp1)*wind_int_u(m,kkp1) + eu(kk)*wind_mid(m,kk)*dp(kk) + pgu(m,kk)*dp(kk)) / mupdudp;
       }
     }
 
@@ -163,45 +163,45 @@ void Functions<S,D>::zm_transport_momentum(
     for (Int k = 2; k < pver; ++k) {
       const Int km1 = k-1;
       if (md(k) < -mbsth) {
-        wind_int_d(k,m) = (md(km1)*wind_int_d(km1,m) - ed(km1)*wind_mid(km1,m)*dp(km1) - pgd(km1,m)*dp(km1)) / md(k);
+        wind_int_d(m,k) = (md(km1)*wind_int_d(m,km1) - ed(km1)*wind_mid(m,km1)*dp(km1) - pgd(m,km1)*dp(km1)) / md(k);
       }
     }
 
     // Calculate momentum tendency
     for (Int k = jt; k < pver; ++k) {
       const Int kp1 = k+1;
-      wind_tend_tmp(k,m) = (mu(kp1)*(wind_int_u(kp1,m)-wind_int(kp1,m)) -
-                            mu(k)  *(wind_int_u(k,m)  -wind_int(k,m)  ) +
-                            md(kp1)*(wind_int_d(kp1,m)-wind_int(kp1,m)) -
-                            md(k)  *(wind_int_d(k,m)  -wind_int(k,m)  )) / dp(k);
+      wind_tend_tmp(m,k) = (mu(kp1)*(wind_int_u(m,kp1)-wind_int(m,kp1)) -
+                            mu(k)  *(wind_int_u(m,k)  -wind_int(m,k)  ) +
+                            md(kp1)*(wind_int_d(m,kp1)-wind_int(m,kp1)) -
+                            md(k)  *(wind_int_d(m,k)  -wind_int(m,k)  )) / dp(k);
     }
 
     // dcont for bottom layer
     if (mx >= mx && mx < pver) {
       const Int k = mx;
-      wind_tend_tmp(k,m) = (-mu(k)*(wind_int_u(k,m)-wind_int(k,m)) -
-                            md(k)*(wind_int_d(k,m)-wind_int(k,m))) / dp(k);
+      wind_tend_tmp(m,k) = (-mu(k)*(wind_int_u(m,k)-wind_int(m,k)) -
+                            md(k)*(wind_int_d(m,k)-wind_int(m,k))) / dp(k);
     }
 
     // Set outputs
     for (Int k = 0; k < pver; ++k) {
-      wind_tend(k,m) = wind_tend_tmp(k,m);
-      pguall(k,m) = -pgu(k,m);
-      pgdall(k,m) = -pgd(k,m);
-      icwu(k,m) = wind_int_u(k,m);
-      icwd(k,m) = wind_int_d(k,m);
+      wind_tend(k,m) = wind_tend_tmp(m,k);
+      pguall(k,m) = -pgu(m,k);
+      pgdall(k,m) = -pgd(m,k);
+      icwu(k,m) = wind_int_u(m,k);
+      icwd(k,m) = wind_int_d(m,k);
     }
 
     // Calculate momentum flux
     for (Int k = jt; k < pver; ++k) {
-      mflux(k,m) = -mu(k)*(wind_int_u(k,m) - wind_int(k,m)) -
-                   md(k)*(wind_int_d(k,m) - wind_int(k,m));
+      mflux(m,k) = -mu(k)*(wind_int_u(m,k) - wind_int(m,k)) -
+                   md(k)*(wind_int_d(m,k) - wind_int(m,k));
     }
 
     // Calculate winds at the end of the time step
     for (Int k = jt; k < pver; ++k) {
       const Int kp1 = k+1;
-      windf(k,m) = wind_mid(k,m) - (mflux(kp1,m) - mflux(k,m)) * dt/dp(k);
+      windf(m,k) = wind_mid(m,k) - (mflux(m,kp1) - mflux(m,k)) * dt/dp(k);
     }
 
   }); // end parallel_for over nwind
@@ -215,19 +215,19 @@ void Functions<S,D>::zm_transport_momentum(
       const Int kp1 = (k == pver-1) ? pver-1 : k+1;
 
       // Calculate KE fluxes at top and bot of layer
-      const Real utop = (wind0(k,0) + wind0(km1,0)) / 2.0;
-      const Real vtop = (wind0(k,1) + wind0(km1,1)) / 2.0;
-      const Real ubot = (wind0(kp1,0) + wind0(k,0)) / 2.0;
-      const Real vbot = (wind0(kp1,1) + wind0(k,1)) / 2.0;
-      const Real fket = utop*mflux(k,0) + vtop*mflux(k,1);
-      const Real fkeb = ubot*mflux(k+1,0) + vbot*mflux(k+1,1);
+      const Real utop = (wind0(0,k) + wind0(0,km1)) / 2.0;
+      const Real vtop = (wind0(1,k) + wind0(1,km1)) / 2.0;
+      const Real ubot = (wind0(0,kp1) + wind0(0,k)) / 2.0;
+      const Real vbot = (wind0(1,kp1) + wind0(1,k)) / 2.0;
+      const Real fket = utop*mflux(0,k) + vtop*mflux(1,k);
+      const Real fkeb = ubot*mflux(0,k+1) + vbot*mflux(1,k+1);
 
       // Divergence of fluxes gives conservative redistribution of KE
       const Real ketend_cons = (fket-fkeb)/dp(k);
 
       // Tendency in kinetic energy from momentum transport
-      const Real ketend = ((windf(k,0)*windf(k,0) + windf(k,1)*windf(k,1)) -
-                          (wind0(k,0)*wind0(k,0) + wind0(k,1)*wind0(k,1))) * 0.5 / dt;
+      const Real ketend = ((windf(0,k)*windf(0,k) + windf(1,k)*windf(1,k)) -
+                          (wind0(0,k)*wind0(0,k) + wind0(1,k)*wind0(1,k))) * 0.5 / dt;
 
       // The difference is the dissipation
       seten(k) = ketend_cons - ketend;
