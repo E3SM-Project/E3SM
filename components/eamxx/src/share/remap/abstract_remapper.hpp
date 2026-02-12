@@ -43,6 +43,8 @@ public:
   // Call this to indicate that field registration is complete.
   void registration_ends ();
 
+  void toggle_timers (const bool enable) { m_timers_enabled = enable; }
+
   //  ------- Getter methods ------- //
   RepoState get_state () const { return m_state; }
 
@@ -77,6 +79,8 @@ public:
     return m_tgt_grid->is_valid_layout(layout);
   }
 
+  const std::string& name() const { return m_name; }
+  void set_name (const std::string& n) { m_name = n; }
 protected:
 
   virtual FieldLayout create_layout (const FieldLayout& from_layout,
@@ -115,6 +119,7 @@ protected:
   // The number of fields to remap
   int           m_num_fields = 0;
 
+  bool          m_timers_enabled = false;
 
   std::vector<Field> m_src_fields;
   std::vector<Field> m_tgt_fields;
@@ -124,6 +129,8 @@ private:
   // This allow better error msg in case fwd/bwd remap is not allowed.
   bool m_has_read_only_src_fields = false;
   bool m_has_read_only_tgt_fields = false;
+
+  std::string m_name = "UNSET";
 };
 
 // A short name for an AbstractRemapper factory

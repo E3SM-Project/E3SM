@@ -4,6 +4,7 @@
 #include "share/grid/point_grid.hpp"
 #include "share/grid/grid_import_export.hpp"
 #include "share/field/field.hpp"
+#include "share/util/eamxx_timing.hpp"
 
 #include <ekat_team_policy_utils.hpp>
 #include <ekat_pack_utils.hpp>
@@ -275,6 +276,9 @@ template<int PackSize>
 void CoarseningRemapper::
 rescale_masked_fields (const Field& x, const Field& mask) const
 {
+  if (m_timers_enabled)
+    start_timer(name()+" rescale");
+
   using RangePolicy = typename KT::RangePolicy;
   using MemberType  = typename KT::MemberType;
   using TPF         = ekat::TeamPolicyFactory<DefaultDevice::execution_space>;
@@ -447,12 +451,17 @@ rescale_masked_fields (const Field& x, const Field& mask) const
       break;
     }
   }
+  if (m_timers_enabled)
+    stop_timer(name()+" rescale");
 }
 
 template<int PackSize>
 void CoarseningRemapper::
 local_mat_vec (const Field& x, const Field& y, const Field& mask) const
 {
+  if (m_timers_enabled)
+    start_timer(name()+" mat-vec (masked)");
+
   using RangePolicy = typename KT::RangePolicy;
   using MemberType  = typename KT::MemberType;
   using TPF         = ekat::TeamPolicyFactory<DefaultDevice::execution_space>;
@@ -605,10 +614,15 @@ local_mat_vec (const Field& x, const Field& y, const Field& mask) const
       EKAT_ERROR_MSG("Error::coarsening_remapper::local_mat_vec doesn't support fields of rank 4 or greater");
     }
   }
+  if (m_timers_enabled)
+    stop_timer(name()+" mat-vec (masked)");
 }
 
 void CoarseningRemapper::pack_and_send ()
 {
+  if (m_timers_enabled)
+    start_timer(name()+" pack");
+
   using RangePolicy = typename KT::RangePolicy;
   using MemberType  = typename KT::MemberType;
   using TPF         = ekat::TeamPolicyFactory<DefaultDevice::execution_space>;
@@ -725,6 +739,9 @@ void CoarseningRemapper::pack_and_send ()
     Kokkos::deep_copy (m_mpi_send_buffer,m_send_buffer);
   }
 
+  if (m_timers_enabled)
+    stop_timer(name()+" pack");
+
   if (not m_send_req.empty()) {
     int ierr = MPI_Startall(m_send_req.size(),m_send_req.data());
     EKAT_REQUIRE_MSG (ierr==MPI_SUCCESS,
@@ -741,6 +758,10 @@ void CoarseningRemapper::recv_and_unpack ()
         "Error! Something whent wrong while waiting on persistent recv requests.\n"
         "  - recv rank: " + std::to_string(m_comm.rank()) + "\n");
   }
+
+  if (m_timers_enabled)
+    start_timer(name()+" unpack");
+
   // If MPI does not use dev pointers, we need to deep copy from host to dev
   if (not MpiOnDev) {
     Kokkos::deep_copy (m_recv_buffer,m_mpi_recv_buffer);
@@ -865,6 +886,8 @@ void CoarseningRemapper::recv_and_unpack ()
             "  - field rank: " + std::to_string(fl.rank()) + "\n");
     }
   }
+  if (m_timers_enabled)
+    stop_timer(name()+" unpack");
 }
 
 std::vector<int>
@@ -962,6 +985,9 @@ recv_gids_from_pids (const std::map<int,std::vector<int>>& pid2gids_send) const
 
 void CoarseningRemapper::setup_mpi_data_structures ()
 {
+  if (m_timers_enabled)
+    start_timer(name()+" setup MPI");
+
   using namespace ShortFieldTagsNames;
   using gid_type = AbstractGrid::gid_type;
 
@@ -1159,6 +1185,8 @@ void CoarseningRemapper::setup_mpi_data_structures ()
     MPI_Recv_init (recv_ptr, n, mpi_real, pid,
                    0, mpi_comm, &req);
   }
+  if (m_timers_enabled)
+    stop_timer(name()+" setup MPI");
 }
 
 void CoarseningRemapper::setup_latlon_coarse_grid(const std::string& map_file)
