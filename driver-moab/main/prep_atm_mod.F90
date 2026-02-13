@@ -127,7 +127,8 @@ contains
 
    use iMOAB, only: iMOAB_ComputeMeshIntersectionOnSphere, iMOAB_RegisterApplication, &
    iMOAB_WriteMesh , iMOAB_ComputeCommGraph, iMOAB_ComputeScalarProjectionWeights, &
-   iMOAB_DefineTagStorage, iMOAB_MigrateMapMesh
+   iMOAB_DefineTagStorage, iMOAB_MigrateMapMesh, iMOAB_SetDoubleTagStorage
+   use shr_moab_mod, only: mbGetnCells
    !---------------------------------------------------------------
    ! Description
    ! Initialize module attribute vectors and  mappers
@@ -172,6 +173,9 @@ contains
    integer                  :: context_id ! we will use a special context for the extra flux ocean instance
    logical                  :: no_match ! used to force a new mapper
    integer                  :: arearead ! to signal read of area_a or area_b, or both
+   type(mct_list)           :: temp_list ! for counting fields
+   integer                  :: nfields, nloc ! for initializing tags
+   real(R8), allocatable    :: vals(:,:) ! for initializing tags to zero
 
    !---------------------------------------------------------------
 
@@ -289,7 +293,29 @@ contains
                write(logunit,*) subname,' error in defining tags for seq_flds_o2x_fields'
                call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_o2x_fields')
             endif
-           
+
+            ! Initialize o2x tags on mbaxid to 0.0 to match MCT behavior
+            call mct_list_init(temp_list, seq_flds_o2x_fields)
+            nfields = mct_list_nitem(temp_list)
+            call mct_list_clean(temp_list)
+            nloc = mbGetnCells(mbaxid)
+            if (iamroot_CPLID) then
+               write(logunit,*) subname, ' Initializing o2x tags: nfields=', nfields, ' nloc=', nloc
+            endif
+            ! Use 1D array for MOAB (Fortran will pass it correctly in column-major order)
+            allocate(vals(nloc, nfields))
+            vals = 0.0_R8
+            ierr = iMOAB_SetDoubleTagStorage(mbaxid, tagname, nloc*nfields, 1, vals(1,1))
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' WARNING: Could not initialize o2x tags, ierr=', ierr
+               write(logunit,*) subname,' This may be OK if tags do not exist yet'
+            else
+               if (iamroot_CPLID) then
+                  write(logunit,*) subname, ' Successfully initialized', nfields, ' o2x tags to 0.0'
+               endif
+            endif
+            deallocate(vals)
+
 
             if (.not. samegrid_ao) then ! most cases
 
@@ -471,7 +497,7 @@ contains
             mapper_Fo2a%intx_context = mapper_So2a%intx_context ! it could be different, based on samegrid_ao
             mapper_Fo2a%weight_identifier = wgtIdFo2a
             mapper_Fo2a%mbname = 'mapper_Fo2a'
-            ! we do not need to call compute comm graph for samegrid_ao, it was already called 
+            ! we do not need to call compute comm graph for samegrid_ao, it was already called
             ! it was called earlier, around line 403, for mapper_So2a
          endif
 
@@ -515,11 +541,11 @@ contains
             mapper_Fof2a%weight_identifier = wgtIdFo2a
             mapper_Fof2a%mbname = 'mapper_Fof2a'
 
-            type1 = 3; !  fv for ocean and atm; 
+            type1 = 3; !  fv for ocean and atm;
             if (atm_pg_active) then !
                type2 = 3
             else
-               type2 = 2 ! PC cloud 
+               type2 = 2 ! PC cloud
             endif
             if (.not. samegrid_ao) then ! data-OCN case
                ! we use the same intx, because the mesh will be the same, between mbofxid and mboxid
@@ -550,6 +576,25 @@ contains
          write(logunit,*) subname,' error in defining tags for seq_flds_i2x_fields'
          call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_i2x_fields')
       endif
+
+      ! Initialize i2x tags on mbaxid to 0.0 to match MCT behavior
+      call mct_list_init(temp_list, seq_flds_i2x_fields)
+      nfields = mct_list_nitem(temp_list)
+      call mct_list_clean(temp_list)
+      nloc = mbGetnCells(mbaxid)
+      allocate(vals(nloc, nfields))
+      vals = 0.0_R8
+      ierr = iMOAB_SetDoubleTagStorage(mbaxid, tagname, nloc*nfields, 1, vals(1,1))
+      if (ierr .ne. 0) then
+         if (iamroot_CPLID) then
+            write(logunit,*) subname,' WARNING: Could not initialize i2x tags, ierr=', ierr
+         endif
+      else
+         if (iamroot_CPLID) then
+            write(logunit,*) subname, ' Successfully initialized', nfields, ' i2x tags to 0.0'
+         endif
+      endif
+      deallocate(vals)
 
       if (ice_c2_atm) then
          if (iamroot_CPLID) then
@@ -753,7 +798,7 @@ contains
          mapper_Fi2a%weight_identifier = wgtIdFi2a
          mapper_Fi2a%mbname = 'mapper_Fi2a'
          if ( samegrid_ao ) then ! this case can appear in cice case
-            type1 = 3 !  fv for ice 
+            type1 = 3 !  fv for ice
             if (atm_pg_active) then
                type2 = 3
             else
@@ -780,6 +825,25 @@ contains
             write(logunit,*) subname,' error in defining tags for seq_flds_l2x_fields'
             call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_l2x_fields')
          endif
+
+         ! Initialize l2x tags on mbaxid to 0.0 to match MCT behavior
+         call mct_list_init(temp_list, seq_flds_l2x_fields)
+         nfields = mct_list_nitem(temp_list)
+         call mct_list_clean(temp_list)
+         nloc = mbGetnCells(mbaxid)
+         allocate(vals(nloc, nfields))
+         vals = 0.0_R8
+         ierr = iMOAB_SetDoubleTagStorage(mbaxid, tagname, nloc*nfields, 1, vals(1,1))
+         if (ierr .ne. 0) then
+            if (iamroot_CPLID) then
+               write(logunit,*) subname,' WARNING: Could not initialize l2x tags, ierr=', ierr
+            endif
+         else
+            if (iamroot_CPLID) then
+               write(logunit,*) subname, ' Successfully initialized', nfields, ' l2x tags to 0.0'
+            endif
+         endif
+         deallocate(vals)
       endif
 
       ! needed for domain checking
@@ -1320,7 +1384,7 @@ contains
     if (atm_pg_active) then
        ent_type = 1 ! cells
     else
-       ent_type = 0 ! vertices, it is PC 
+       ent_type = 0 ! vertices, it is PC
     endif
     tagname = trim(seq_flds_x2a_fields)//C_NULL_CHAR
     arrsize = naflds * lsize
@@ -1359,6 +1423,14 @@ contains
          call shr_sys_abort(subname//' error in getting fractions_am from atm instance ')
     endif
 
+    ! DEBUG: Print what we read
+    if (iamroot .and. first_time) then
+       write(logunit,*) subname, ' Read fractions from mbaxid:'
+       write(logunit,*) '  fractions_am(1,:) = ', fractions_am(1,1:5)
+       write(logunit,*) '  Using klf index = ', klf, ' (', trim(fracstr), ')'
+       call shr_sys_flush(logunit)
+    endif
+
     if (mboxid > 0) then ! retrieve projection only when ox is active ?
        tagname = trim(seq_flds_o2x_fields)//C_NULL_CHAR
        arrsize = noflds * lsize !        allocate (o2x_am (lsize, noflds))
@@ -1369,7 +1441,7 @@ contains
     else ! o2x_am will still be used in merge so make sure its 0 when no ocean
        o2x_am(:,:)=0.0_r8
     endif
-    
+
     if (mbixid > 0) then
        tagname = trim(seq_flds_i2x_fields)//C_NULL_CHAR
        arrsize = niflds * lsize !        allocate (i2x_am (lsize, niflds))
