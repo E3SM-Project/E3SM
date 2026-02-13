@@ -72,10 +72,9 @@ struct DecayVelocityTendency {
 int initState() {
    int Err = 0;
 
-   auto *Mesh  = HorzMesh::getDefault();
-   auto *State = OceanState::get("TestState");
-   Array3DReal TracerArray;
-   Err = Tracers::getAll(TracerArray, 0);
+   auto *Mesh              = HorzMesh::getDefault();
+   auto *State             = OceanState::get("TestState");
+   Array3DReal TracerArray = Tracers::getAll(0);
 
    Array2DReal LayerThickCell = State->getLayerThickness(0);
    Array2DReal NormalVelEdge  = State->getNormalVelocity(0);
@@ -91,10 +90,9 @@ int initState() {
 int createExactSolution(Real TimeEnd) {
    int Err = 0;
 
-   auto *DefHalo = Halo::getDefault();
-   auto *DefMesh = HorzMesh::getDefault();
-   Array3DReal TracerArray;
-   Err = Tracers::getAll(TracerArray, 0);
+   auto *DefHalo           = Halo::getDefault();
+   auto *DefMesh           = HorzMesh::getDefault();
+   Array3DReal TracerArray = Tracers::getAll(0);
 
    auto *ExactState =
        OceanState::create("Exact", DefMesh, DefHalo, NVertLayers, 1);

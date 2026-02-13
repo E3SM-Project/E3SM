@@ -71,7 +71,7 @@ class Tracers {
    static I4 CurTimeIndex; ///< Time dimension array index for current level
 
    /// get the time level index
-   static I4 getTimeIndex(I4 &TimeIndex, const I4 TimeLevel);
+   static I4 getTimeIndex(const I4 TimeLevel);
 
    /// locally defines all tracers but do not allocates memory
    static I4
@@ -116,8 +116,7 @@ class Tracers {
    );
 
    /// get a device array for all tracers
-   static I4 getAll(Array3DReal &TracerArray, ///< [out] tracer device array
-                    const I4 TimeLevel        ///< [in] time level index
+   static Array3DReal getAll(const I4 TimeLevel ///< [in] time level index
    );
 
    /// get a device array by tracer index
@@ -134,9 +133,8 @@ class Tracers {
    );
 
    /// get a host array for all tracers
-   static I4
-   getAllHost(HostArray3DReal &TracerArrayH, ///< [out] tracer host array
-              const I4 TimeLevel             ///< [in] time level index
+   static HostArray3DReal getAllHost( ///< [out] tracer host array
+       const I4 TimeLevel             ///< [in] time level index
    );
 
    /// get a host array by tracer index
@@ -203,11 +201,11 @@ class Tracers {
    //---------------------------------------------------------------------------
 
    /// Copy tracers variables from host to device
-   static I4 copyToDevice(const I4 TimeLevel ///< [in] tracer time level
+   static void copyToDevice(const I4 TimeLevel ///< [in] tracer time level
    );
 
    /// Copy tracers variables from device to host
-   static I4 copyToHost(const I4 TimeLevel ///< [in] tracer time level
+   static void copyToHost(const I4 TimeLevel ///< [in] tracer time level
    );
 
    //---------------------------------------------------------------------------

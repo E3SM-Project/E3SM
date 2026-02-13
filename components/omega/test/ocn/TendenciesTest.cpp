@@ -60,9 +60,8 @@ int initState() {
    Array2DReal LayerThickCell = State->getLayerThickness(0);
    Array2DReal NormalVelEdge  = State->getNormalVelocity(0);
 
-   Array3DReal TracersArray;
-   Err += Tracers::getAll(TracersArray, 0);
-   const auto &TracersCell = TracersArray;
+   Array3DReal TracersArray = Tracers::getAll(0);
+   const auto &TracersCell  = TracersArray;
 
    int NTracers = Tracers::getNumTracers();
 
@@ -188,12 +187,11 @@ int testTendencies() {
    deepCopy(DefTendencies->TracerTend, NAN);
 
    // compute tendencies
-   const auto *State    = OceanState::getDefault();
-   const auto *AuxState = AuxiliaryState::getDefault();
-   Array3DReal TracerArray;
-   Err += Tracers::getAll(TracerArray, 0);
-   int ThickTimeLevel = 0;
-   int VelTimeLevel   = 0;
+   const auto *State       = OceanState::getDefault();
+   const auto *AuxState    = AuxiliaryState::getDefault();
+   Array3DReal TracerArray = Tracers::getAll(0);
+   int ThickTimeLevel      = 0;
+   int VelTimeLevel        = 0;
    TimeInstant Time;
    DefTendencies->computeAllTendencies(State, AuxState, TracerArray,
                                        ThickTimeLevel, VelTimeLevel, Time);

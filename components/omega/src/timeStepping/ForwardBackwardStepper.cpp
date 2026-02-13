@@ -34,11 +34,8 @@ void ForwardBackwardStepper::doStep(
    const int CurLevel  = 0;
    const int NextLevel = 1;
 
-   Array3DReal CurTracerArray, NextTracerArray;
-   Err = Tracers::getAll(CurTracerArray, CurLevel);
-   Err = Tracers::getAll(NextTracerArray, NextLevel);
-   if (Err != 0)
-      ABORT_ERROR("ForwardBackward doStep: error retrieving tracers");
+   Array3DReal CurTracerArray  = Tracers::getAll(CurLevel);
+   Array3DReal NextTracerArray = Tracers::getAll(NextLevel);
 
    if (State == nullptr)
       LOG_CRITICAL("Invalid State");
