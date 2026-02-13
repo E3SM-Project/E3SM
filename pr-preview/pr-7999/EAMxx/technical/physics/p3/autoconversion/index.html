@@ -3666,6 +3666,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#test-organization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test Organization
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#tolerance-philosophy" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4930,6 +4941,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#test-organization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test Organization
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#tolerance-philosophy" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5255,7 +5277,6 @@ where <span class="arithmatex">\(N_c\)</span> corresponds to the variable <code>
 N_{c,\text{vol}} = N_c \cdot \rho \cdot 10^{-6}
 \;\equiv\; \texttt{nc\_incld} \cdot \texttt{sp(1.e-6)} \cdot \rho
 \]</div>
-<p>\equiv \texttt{nc_incld} \cdot \texttt{sp(1.e-6)} \cdot \rho</p>
 <h3 id="number-tendencies">Number Tendencies</h3>
 <p>Consistent with the 2-moment approach, the parameterization calculates the
 tendencies for both mass and number.</p>
@@ -5328,6 +5349,26 @@ $$</p>
 <p>The unit testing suite (<code>p3_autoconversion_unit_tests.cpp</code>) employs a "Physics
 Property Test" strategy. We validate that the implementation adheres to
 fundamental physical principles across a wide parameter space.</p>
+<h3 id="test-organization">Test Organization</h3>
+<p>The test suite uses Catch2 <code>SECTION</code> clauses to organize property checks into
+independent test cases:</p>
+<ul>
+<li><strong><code>monotonicity</code></strong> - Physical sensitivity tests (dR/dqc &gt; 0, dR/dNc &lt; 0)</li>
+<li><strong><code>consistency</code></strong> - Conservation laws and parameter validation</li>
+<li><strong><code>limits</code></strong> - Threshold behavior and regime limits</li>
+<li><strong><code>variance</code></strong> - Subgrid variance scaling verification</li>
+<li><strong><code>bfb</code></strong> - Bit-for-bit reproducibility checks</li>
+</ul>
+<p>This structure enables running individual checks for faster debugging:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Run all property tests</span>
+./p3_tests<span class="w"> </span><span class="s2">&quot;p3_cloud_water_autoconversion_test&quot;</span>
+
+<span class="c1"># Run only monotonicity checks</span>
+./p3_tests<span class="w"> </span><span class="s2">&quot;p3_cloud_water_autoconversion_test&quot;</span><span class="w"> </span>-c<span class="w"> </span>monotonicity
+
+<span class="c1"># Run multiple specific sections</span>
+./p3_tests<span class="w"> </span><span class="s2">&quot;p3_cloud_water_autoconversion_test&quot;</span><span class="w"> </span>-c<span class="w"> </span>monotonicity<span class="w"> </span>-c<span class="w"> </span>consistency
+</code></pre></div>
 <h3 id="tolerance-philosophy">Tolerance Philosophy</h3>
 <p>The test suite uses two categories of tolerances based on what is being
 validated:</p>
