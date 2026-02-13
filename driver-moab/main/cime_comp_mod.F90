@@ -2338,6 +2338,12 @@ contains
 
           call seq_frac_set(infodata, ice(eii), ocn(ens1), &
                fractions_ax(efi), fractions_ix(efi), fractions_ox(efi))
+          ! Update MOAB atm mesh tags with the fractions computed by seq_frac_set
+          if (iamroot_CPLID) then
+             write(logunit,*) '(cime_init) Calling update_moab_fractions_from_mct with mbaxid=', mbaxid
+             call shr_sys_flush(logunit)
+          endif
+          call update_moab_fractions_from_mct(fractions_ax(efi), mbaxid)
 
        enddo
        if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
@@ -4987,6 +4993,8 @@ contains
 
   subroutine cime_run_update_fractions()
 
+    use seq_comm_mct, only: mbaxid
+
     if (iamin_CPLID) then
        call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:FRACSET_BARRIER')
        call t_drvstartf ('CPL:FRACSET',cplrun=.true.,barrier=mpicom_CPLID)
@@ -5495,57 +5503,98 @@ contains
   subroutine update_moab_fractions_from_mct(fractions_a, mbid)
     !----------------------------------------------------------
     ! Update MOAB mesh tags with fractions from MCT aVect
-    ! This ensures MOAB tags are synchronized with fractions  
+    ! This ensures MOAB tags are synchronized with fractions
     ! computed by seq_frac_set
     !----------------------------------------------------------
-    use iMOAB, only: iMOAB_SetDoubleTagStorage
+    use iMOAB, only: iMOAB_SetDoubleTagStorage, iMOAB_GetDoubleTagStorage
     use iso_c_binding
     use shr_kind_mod, only: R8 => SHR_KIND_R8, CXX => SHR_KIND_CXX
     use shr_sys_mod, only: shr_sys_abort
+    use seq_comm_mct, only: logunit, CPLID, num_inst_total
+    use shr_sys_mod, only: shr_sys_flush
 
     type(mct_aVect), intent(in) :: fractions_a
     integer, intent(in) :: mbid
-    
+
     ! Local variables
     integer :: lsize, ent_type, ierr, arrsize
     integer :: kaf, kif, kof, klf, klf_st
+    logical :: iamroot
     character(CXX) :: tagname
-    real(R8), allocatable :: frac_array(:,:)
+    real(R8), allocatable :: frac_array(:,:), frac_verify(:,:)
     character(*), parameter :: subname = '(update_moab_fractions_from_mct) '
-    
-    if (mbid < 0) return  ! No MOAB instance, skip
-    
+
+    if (mbid < 0) then
+       if (iamroot) then
+          write(logunit,*) subname, ' WARNING: mbid < 0, skipping. mbid=', mbid
+          call shr_sys_flush(logunit)
+       endif
+       return  ! No MOAB instance, skip
+    endif
+
+    iamroot = seq_comm_iamroot(CPLID)
     lsize = mct_aVect_lsize(fractions_a)
-    
+
     ! Get fraction indices from MCT aVect
     kaf = mct_aVect_indexRA(fractions_a, "afrac")
     kif = mct_aVect_indexRA(fractions_a, "ifrac")
     kof = mct_aVect_indexRA(fractions_a, "ofrac")
     klf = mct_aVect_indexRA(fractions_a, "lfrac")
     klf_st = mct_aVect_indexRA(fractions_a, "lfrin")
-    
+
     ! Allocate temporary array for all 5 fractions: afrac, ifrac, ofrac, lfrac, lfrin
     allocate(frac_array(lsize, 5))
-    
+
     ! Extract fractions from MCT aVect
     frac_array(:, 1) = fractions_a%rAttr(kaf, :)   ! afrac
     frac_array(:, 2) = fractions_a%rAttr(kif, :)   ! ifrac
     frac_array(:, 3) = fractions_a%rAttr(kof, :)   ! ofrac
     frac_array(:, 4) = fractions_a%rAttr(klf, :)   ! lfrac
     frac_array(:, 5) = fractions_a%rAttr(klf_st, :) ! lfrin
-    
+
+    ! DEBUG output
+    if (iamroot) then
+       write(logunit,*) subname, ' CALLED with mbid=', mbid, ' lsize=', lsize
+       write(logunit,*) subname, ' Sample fractions_a(1): afrac=', fractions_a%rAttr(kaf,1), &
+                        ' ifrac=', fractions_a%rAttr(kif,1), &
+                        ' ofrac=', fractions_a%rAttr(kof,1), &
+                        ' lfrac=', fractions_a%rAttr(klf,1), &
+                        ' lfrin=', fractions_a%rAttr(klf_st,1)
+       call shr_sys_flush(logunit)
+    endif
+
     ! Write all fractions to MOAB tags
     tagname = 'afrac:ifrac:ofrac:lfrac:lfrin'//C_NULL_CHAR
     arrsize = 5 * lsize
-    ent_type = 1  ! cell/element type
+    ent_type = 0  ! cell/element type
     ierr = iMOAB_SetDoubleTagStorage(mbid, tagname, arrsize, ent_type, frac_array)
-    
+
     if (ierr /= 0) then
+       if (iamroot) write(logunit,*) subname, ' ERROR: iMOAB_SetDoubleTagStorage returned ', ierr
        call shr_sys_abort(subname//' error writing fractions to MOAB tags')
     endif
-    
+
+    if (iamroot) then
+       write(logunit,*) subname, ' Successfully wrote fractions to MOAB tags, ierr=', ierr
+       ! Verify by reading back
+       allocate(frac_verify(lsize, 5))
+       tagname = 'afrac:ifrac:ofrac:lfrac:lfrin'//C_NULL_CHAR
+       ierr = iMOAB_GetDoubleTagStorage(mbid, tagname, arrsize, ent_type, frac_verify)
+       if (ierr == 0) then
+          write(logunit,*) subname, ' Verified readback(1): afrac=', frac_verify(1,1), &
+                           ' ifrac=', frac_verify(1,2), &
+                           ' ofrac=', frac_verify(1,3), &
+                           ' lfrac=', frac_verify(1,4), &
+                           ' lfrin=', frac_verify(1,5)
+       else
+          write(logunit,*) subname, ' ERROR: Cannot read back fractions, ierr=', ierr
+       endif
+       deallocate(frac_verify)
+       call shr_sys_flush(logunit)
+    endif
+
     deallocate(frac_array)
-    
+
   end subroutine update_moab_fractions_from_mct
 
 end module cime_comp_mod
