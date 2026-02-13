@@ -869,51 +869,49 @@ void set_var_decomp (PIOVar& var,
     int decomp_loc_len = dim_offsets.size();
     decomp->offsets.resize (non_decomp_dim_prod*decomp_loc_len);
     
-    // For transposed output, we need to compute offsets with correct stride
+    // For transposed output, decomposed dimension may not be slowest-striding
+    // We need to calculate offsets based on actual dimension order
     if (is_transposed) {
-      // For transposed variables, calculate strides in reverse order
-      std::vector<int> strides(ndims, 1);
-      for (int idim = 0; idim < ndims-1; ++idim) {
-        strides[idim+1] = strides[idim] * gdimlen[idim];
+      // Calculate stride for each dimension based on file layout order
+      std::vector<PIO_Offset> strides(ndims);
+      strides[ndims-1] = 1;  // Fastest dimension has stride 1
+      for (int idim = ndims-2; idim >= 0; --idim) {
+        strides[idim] = strides[idim+1] * gdimlen[idim+1];
       }
       
-      // Calculate base offset for each non-decomposed dimension combination
-      std::vector<int> base_offsets;
-      std::function<void(int, int)> generate_offsets = [&](int dim, int offset) {
-        if (dim == ndims) {
-          base_offsets.push_back(offset);
-          return;
+      // Find which dimension is decomposed
+      int decomp_dim_idx = -1;
+      for (int idim = 0; idim < ndims; ++idim) {
+        if (var.dims[idim]->decomp_rank > 0) {
+          decomp_dim_idx = idim;
+          break;
         }
-        
-        auto d = var.dims[dim];
-        if (d->decomp_rank > 0) {
-          // Skip decomposed dimension - will handle separately
-          generate_offsets(dim + 1, offset);
-        } else {
-          // Iterate through non-decomposed dimension
-          for (int i = 0; i < d->length; ++i) {
-            generate_offsets(dim + 1, offset + i * strides[dim]);
-          }
-        }
-      };
-      generate_offsets(0, 0);
+      }
+      EKAT_REQUIRE_MSG(decomp_dim_idx >= 0, "Error! Could not find decomposed dimension");
       
-      // Fill in offsets for each DOF
+      // Generate offsets for all combinations
       int idx = 0;
       for (int idof = 0; idof < decomp_loc_len; ++idof) {
-        auto dof_offset = dim_offsets[idof];
-        // Find which dimension is decomposed and get its stride
-        int decomp_stride = 1;
-        for (int idim = 0; idim < ndims; ++idim) {
-          if (var.dims[idim]->decomp_rank > 0) {
-            decomp_stride = strides[idim];
-            break;
-          }
-        }
+        auto dof_idx = dim_offsets[idof];  // Index in decomposed dimension
         
-        for (int ibase = 0; ibase < base_offsets.size(); ++ibase) {
-          decomp->offsets[idx++] = base_offsets[ibase] + dof_offset * decomp_stride;
-        }
+        // Generate all combinations of non-decomposed dimensions
+        std::function<void(int, PIO_Offset)> generate = [&](int dim, PIO_Offset offset) {
+          if (dim == ndims) {
+            decomp->offsets[idx++] = offset;
+            return;
+          }
+          
+          if (dim == decomp_dim_idx) {
+            // Add contribution from decomposed dimension
+            generate(dim + 1, offset + dof_idx * strides[dim]);
+          } else {
+            // Iterate through non-decomposed dimension
+            for (int i = 0; i < var.dims[dim]->length; ++i) {
+              generate(dim + 1, offset + i * strides[dim]);
+            }
+          }
+        };
+        generate(0, 0);
       }
     } else {
       // Original non-transposed logic

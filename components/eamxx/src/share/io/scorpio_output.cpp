@@ -622,9 +622,6 @@ run (const std::string& filename,
         }
       }
 
-      // Bring data to host
-      f_out.sync_to_host();
-
       // Write to file
       auto func_start = std::chrono::steady_clock::now();
       if (m_transpose) {
@@ -637,6 +634,8 @@ run (const std::string& filename,
         temp.sync_to_host();
         scorpio::write_var(filename,field_name,temp.get_internal_view_data<Real,Host>());
       } else {
+        // Bring data to host (only needed for non-transposed output)
+        f_out.sync_to_host();
         scorpio::write_var(filename,field_name,f_out.get_internal_view_data<Real,Host>());
       }
       auto func_finish = std::chrono::steady_clock::now();
