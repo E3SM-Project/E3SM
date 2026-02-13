@@ -115,8 +115,6 @@ public:
 
   void biharmonic_wk_theta () const;
 
-  void apply_horizontal_turbulent_diffusion () const;
-
   // first iter of laplace, const hv
   KOKKOS_INLINE_FUNCTION
   void operator() (const TagFirstLaplaceHV&, const TeamMember& team) const {
