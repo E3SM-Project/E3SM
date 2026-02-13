@@ -889,30 +889,28 @@ void set_var_decomp (PIOVar& var,
       }
       EKAT_REQUIRE_MSG(decomp_dim_idx >= 0, "Error! Could not find decomposed dimension");
       
-      // Generate offsets for all combinations
+      // Generate offsets in memory order (C-order, last dimension fastest)
+      // The offsets array maps local buffer positions to global file positions
       int idx = 0;
-      for (int idof = 0; idof < decomp_loc_len; ++idof) {
-        auto dof_idx = dim_offsets[idof];  // Index in decomposed dimension
+      std::function<void(int, PIO_Offset, int)> generate = [&](int dim, PIO_Offset offset, int dof_idx) {
+        if (dim == ndims) {
+          decomp->offsets[idx++] = offset;
+          return;
+        }
         
-        // Generate all combinations of non-decomposed dimensions
-        std::function<void(int, PIO_Offset)> generate = [&](int dim, PIO_Offset offset) {
-          if (dim == ndims) {
-            decomp->offsets[idx++] = offset;
-            return;
+        if (dim == decomp_dim_idx) {
+          // For decomposed dimension, iterate through local DOFs
+          for (int i = 0; i < decomp_loc_len; ++i) {
+            generate(dim + 1, offset + dim_offsets[i] * strides[dim], i);
           }
-          
-          if (dim == decomp_dim_idx) {
-            // Add contribution from decomposed dimension
-            generate(dim + 1, offset + dof_idx * strides[dim]);
-          } else {
-            // Iterate through non-decomposed dimension
-            for (int i = 0; i < var.dims[dim]->length; ++i) {
-              generate(dim + 1, offset + i * strides[dim]);
-            }
+        } else {
+          // For non-decomposed dimension, iterate through all indices
+          for (int i = 0; i < var.dims[dim]->length; ++i) {
+            generate(dim + 1, offset + i * strides[dim], dof_idx);
           }
-        };
-        generate(0, 0);
-      }
+        }
+      };
+      generate(0, 0, 0);
     } else {
       // Original non-transposed logic
       for (int idof=0; idof<decomp_loc_len; ++idof) {
