@@ -1,6 +1,7 @@
 #include <catch2/catch.hpp>
 
 #include "share/io/eamxx_output_manager.hpp"
+#include "share/io/scorpio_input.hpp"
 
 #include "share/data_managers/mesh_free_grids_manager.hpp"
 
@@ -181,6 +182,82 @@ void write (const std::string& avg_type, const std::string& freq_units,
   om.finalize();
 }
 
+// Verify transposed data matches non-transposed data
+void verify_transpose(const std::string& avg_type, const ekat::Comm& comm) {
+  using namespace scorpio;
+  
+  const int freq = 3;
+  std::string prefix_N = "io_transpose_N";
+  std::string prefix_T = "io_transpose_T";
+  std::string suffix = avg_type + ".nsteps_x3.np" + std::to_string(comm.size()) + ".2023-02-17-00000.nc";
+  std::string file_N = prefix_N + "." + suffix;
+  std::string file_T = prefix_T + "." + suffix;
+  
+  // Read dimensions from normal file
+  register_file(file_N, Read);
+  int ncol_N = get_dimlen(file_N, "ncol");
+  int lev_N = get_dimlen(file_N, "lev");
+  int time_N = get_dimlen(file_N, "time");
+  
+  // Read dimensions from transposed file
+  register_file(file_T, Read);
+  int ncol_T = get_dimlen(file_T, "ncol");
+  int lev_T = get_dimlen(file_T, "lev");
+  int time_T = get_dimlen(file_T, "time");
+  
+  // Verify dimensions are swapped correctly
+  REQUIRE(ncol_N == ncol_T);
+  REQUIRE(lev_N == lev_T);
+  REQUIRE(time_N == time_T);
+  
+  // For field f_1 which has layout (ncol, lev), verify data is correctly transposed
+  // Read a subset of data from both files and verify correspondence
+  std::string varname = "f_1";
+  
+  // Get the variable dimensions
+  auto dims_N = get_var_dims(file_N, varname);
+  auto dims_T = get_var_dims(file_T, varname);
+  
+  // Normal file should be (time, ncol, lev)
+  // Transposed file should be (time, lev, ncol)
+  REQUIRE(dims_N.size() == 3);
+  REQUIRE(dims_T.size() == 3);
+  REQUIRE(dims_N[0] == "time");
+  REQUIRE(dims_N[1] == "ncol");
+  REQUIRE(dims_N[2] == "lev");
+  REQUIRE(dims_T[0] == "time");
+  REQUIRE(dims_T[1] == "lev");
+  REQUIRE(dims_T[2] == "ncol");
+  
+  // Read data from first timestep to verify
+  const int t = 0;
+  std::vector<Real> data_N(ncol_N * lev_N);
+  std::vector<Real> data_T(lev_T * ncol_T);
+  
+  // Set decomposition for normal file (ncol decomposed)
+  set_dim_decomp(file_N, "ncol", ncol_N, 0, comm.rank() * ncol_N, comm.size() == 1 ? ncol_N : 1);
+  
+  // Set decomposition for transposed file (ncol decomposed, but it's last dimension)
+  set_dim_decomp(file_T, "ncol", ncol_T, 0, comm.rank() * ncol_T, comm.size() == 1 ? ncol_T : 1);
+  
+  // Read the data
+  read_var(file_N, varname, data_N.data());
+  read_var(file_T, varname, data_T.data());
+  
+  // Verify that data_N[col, lev] == data_T[lev, col]
+  // For C-order storage: data_N[col * lev_N + lev] == data_T[lev * ncol_T + col]
+  for (int col = 0; col < (comm.size() == 1 ? ncol_N : 1); ++col) {
+    for (int lev = 0; lev < lev_N; ++lev) {
+      Real val_N = data_N[col * lev_N + lev];
+      Real val_T = data_T[lev * ncol_T + col];
+      REQUIRE(val_N == val_T);
+    }
+  }
+  
+  release_file(file_N);
+  release_file(file_T);
+}
+
 TEST_CASE ("io_transpose") {
   std::vector<std::string> avg_type = {
     "INSTANT",
@@ -214,6 +291,9 @@ TEST_CASE ("io_transpose") {
     // Write both transposed and non-transposed versions
     write(avg,freq_units,freq,seed,comm,false);  // Non-transposed
     write(avg,freq_units,freq,seed,comm,true);   // Transposed
+    
+    // Verify the transposed data is correct
+    verify_transpose(avg, comm);
     
     print(" PASS\n");
   }
