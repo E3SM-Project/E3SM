@@ -21,6 +21,7 @@ typedef ExecViewUnmanaged<      Scalar[2][NP*NP][NUM_LEV]> evus_2_np2_nlev;
 typedef ExecViewUnmanaged<const Scalar[2][NP*NP][NUM_LEV]> evucs_2_np2_nlev;
 typedef ExecViewUnmanaged<Scalar*  > evus1;
 typedef ExecViewUnmanaged<Scalar** > evus2;
+typedef ExecViewUnmanaged<const Scalar** >  evucs2;
 typedef ExecViewUnmanaged<Scalar***> evus3;
 typedef ExecViewUnmanaged<const Scalar***> evucs3;
 typedef ExecViewUnmanaged<Real*  > evur1;
@@ -644,8 +645,8 @@ run_fv_phys_to_dyn (const int timeidx, const CPhys2T& Ts, const CPhys3T& uvs,
     {
       using Homme::Scalar;
 
-      const evus2 Km_f_ie(const_cast<Scalar*>(&Km(ie,0,0)), nf2, nlevpk);
-      const evus2 Kh_f_ie(const_cast<Scalar*>(&Kh(ie,0,0)), nf2, nlevpk);
+      const evucs2 Km_f_ie(&Km(ie,0,0), nf2, nlevpk);
+      const evucs2 Kh_f_ie(&Kh(ie,0,0), nf2, nlevpk);
 
       // GLL-side Km/Kh on this element: [NP*NP][nlevpk]
       evus_np2_nlev Km_g_ie(&Km_gll(ie,0,0,0));
