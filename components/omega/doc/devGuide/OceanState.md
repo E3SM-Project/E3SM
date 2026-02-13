@@ -40,18 +40,19 @@ For now, member variables that are host arrays have variable names are appended 
 `H`.  Array variable names not ending in `H` are device arrays.  For a given time level,
 host to device array is performed via:
 ```c++
-Err = State->copyToDevice(TimeLevel);
+State->copyToDevice(TimeLevel);
 ```
 and a copy from device to host is performed by:
 ```c++
-Err = State->copyToHost(TimeLevel);
+State->copyToHost(TimeLevel);
 ```
+These functions validate the `TimeLevel` via `OMEGA_REQUIRE` and will abort if invalid.
 Eventually, the host arrays will be eliminated when `IO` and `Halo` are extended to
 handle host <-> device transfers.
 
 A time level update to advance the solution at the end of a model timestep is done by:
 ```c++
-Err = State->updateTimeLevels();
+State->updateTimeLevels();
 ```
 This shifts the time level indices within the `State` instance. A halo exchange is
 also performed on these arrays and the IOFields data pointer is attached
@@ -59,19 +60,18 @@ to the current time level.
 
 The arrays associated with a given time level can be accessed with the functions:
 ```c++
-Array2DReal LayerThick;
-Err = State->getLayerThickness(LayerThick, TimeLevel);
-Array2DReal NormVel;
-Err = State->getNormalVelocity(NormVel, TimeLevel);
+Array2DReal LayerThick = State->getLayerThickness(TimeLevel);
+Array2DReal NormVel = State->getNormalVelocity(TimeLevel);
 ```
 for the device arrays and
 ```c++
-HostArray2DReal LayerThickH;
-Err = State->getLayerThicknessH(LayerThickH, TimeLevel);
-HostArray2DReal NormVelH;
-Err = State->getNormalVelocityH(NormVelH, TimeLevel);
+HostArray2DReal LayerThickH = State->getLayerThicknessH(TimeLevel);
+HostArray2DReal NormVelH = State->getNormalVelocityH(TimeLevel);
 ```
-for the host arrays. The time level convention is:
+for the host arrays. These functions return the arrays directly and will abort 
+via `OMEGA_REQUIRE` if an invalid `TimeLevel` is provided.
+
+The time level convention is:
 | time level | `TimeLevel` |
 |------------|-------------|
 | New | 1 |

@@ -85,10 +85,7 @@ I4 Err = Tracers::getGroupRange(GroupRange, GroupName);
 auto [StartIndex, GroupLength] = GroupRange;
 
 // Get all tracers at the current time level (0)
-Array3DReal TracerArray;
-Err = OMEGA::Tracers::getAll(TracerArray, 0);
-if (Err != 0)
-   LOG_ERROR("getAll returns an error code: {}.", Err);
+Array3DReal TracerArray = OMEGA::Tracers::getAll(0);
 
 
 OMEGA::parallelFor(
@@ -112,12 +109,10 @@ previous time levels:
 
 ```c++
 // Get all tracers at the current time level (0)
-Array3DReal CurrentTracerArray;
-I4 Err1 = OMEGA::Tracers::getAll(CurrentTracerArray, 0);
+Array3DReal CurrentTracerArray = OMEGA::Tracers::getAll(0);
 
 // Get all tracers at the previous time level (-1)
-Array3DReal PreviousTracerArray;
-I4 Err2 = OMEGA::Tracers::getAll(PreviousTracerArray, -1);
+Array3DReal PreviousTracerArray = OMEGA::Tracers::getAll(-1);
 ```
 
 ## Initialization and Finalization
@@ -132,16 +127,14 @@ OMEGA itself, so users may not need to call them separately.
 ### `getAll` and `getAllHost`
 
 These functions return all device and host tracer arrays, respectively. If
-the specified `TimeLevel` does not exist, they return a negative integer.
+the specified `TimeLevel` does not exist, they will abort via `OMEGA_REQUIRE`.
 
 ```c++
 static HostArray3DReal getAllHost(
-   HostArray3DReal &TracerArrayH, ///< [out] tracer host array
    const I4 TimeLevel ///< [in] Time level index
 );
 
 static Array3DReal getAll(
-   Array3DReal &TracerArray, ///< [out] tracer device array
    const I4 TimeLevel ///< [in] Time level index
 );
 ```
@@ -162,17 +155,17 @@ static I4 getGroupRange(
 ### `getByIndex` and `getHostByIndex`
 
 These functions return device and host tracer arrays, respectively, based
-on the `TracerIndex`. If the specified `TimeLevel` and/or `TracerIndex`
-does not exist, they return a negative integer.
+on the `TracerIndex`. If the specified `TimeLevel` is invalid, they will abort 
+via `OMEGA_REQUIRE`. If the `TracerIndex` is invalid, they return a negative error code.
 
 ```c++
-static Array2DReal getByIndex(
+static I4 getByIndex(
    Array2DReal &TracerArray, ///< [out] tracer device array
    const I4 TimeLevel,  ///< [in] Time level index
    const I4 TracerIndex ///< [in] Global tracer index
 );
 
-static HostArray2DReal getHostByIndex(
+static I4 getHostByIndex(
    HostArray2DReal &TracerArrayH, ///< [out] tracer host array
    const I4 TimeLevel,  ///< [in] Time level index
    const I4 TracerIndex ///< [in] Global tracer index
