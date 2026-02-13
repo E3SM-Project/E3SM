@@ -7,8 +7,6 @@
 ./xmlchange DATM_MODE=CLM1PT
 ./xmlchange DATM_CLMNCEP_YR_START=1970
 ./xmlchange DATM_CLMNCEP_YR_END=1990
-./xmlchange NTASKS=1
-./xmlchange NTHRDS=1
 echo "
  taxmode = 'cycle','extend','extend'
 ">>user_nl_datm
