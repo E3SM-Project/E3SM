@@ -91,6 +91,8 @@ public:
   struct TagHyperPreExchange {};
   struct TagNutopUpdateStates {};
   struct TagNutopLaplace {};
+  struct TagSGSTurbUpdateStates {};
+  struct TagSGSTurbLaplace {};
 
   HyperviscosityFunctorImpl (const SimulationParams&     params,
                              const ElementsGeometry&     geometry,
@@ -197,6 +199,13 @@ public:
 
   KOKKOS_INLINE_FUNCTION
   void operator()(const TagNutopUpdateStates&, const TeamMember& team) const;
+
+  // Laplace for SGS Horizontal Turbulence
+  KOKKOS_INLINE_FUNCTION
+  void operator()(const TagSGSTurbLaplace&, const TeamMember& team) const;
+
+  KOKKOS_INLINE_FUNCTION
+  void operator()(const TagSGSTurbUpdateStates&, const TeamMember& team) const;
 
   //second iter of laplace, const hv
   KOKKOS_INLINE_FUNCTION
@@ -415,9 +424,12 @@ protected:
   Kokkos::TeamPolicy<ExecSpace,TagNutopLaplace>      m_policy_nutop_laplace;
   Kokkos::TeamPolicy<ExecSpace,TagNutopUpdateStates> m_policy_nutop_update_states;
 
+  Kokkos::TeamPolicy<ExecSpace,TagSGSTurbLaplace>      m_policy_sgsturb_laplace;
+  Kokkos::TeamPolicy<ExecSpace,TagSGSTurbUpdateStates> m_policy_sgsturb_update_states;
+
   TeamUtils<ExecSpace> m_tu; // If the policies only differ by tag, just need one tu
 
-  std::shared_ptr<BoundaryExchange> m_be, m_be_tom;
+  std::shared_ptr<BoundaryExchange> m_be, m_be_tom, m_be_sgs;
 
   ExecViewManaged<Scalar[NUM_LEV]> m_nu_scale_top;
   int m_nu_scale_top_ilev_pack_lim;

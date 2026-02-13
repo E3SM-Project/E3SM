@@ -38,6 +38,8 @@ HyperviscosityFunctorImpl (const SimulationParams&     params,
  , m_policy_pre_exchange (Homme::get_default_team_policy<ExecSpace, TagHyperPreExchange>(m_num_elems))
  , m_policy_nutop_laplace (Homme::get_default_team_policy<ExecSpace, TagNutopLaplace>(m_num_elems))
  , m_policy_nutop_update_states (Homme::get_default_team_policy<ExecSpace,TagNutopUpdateStates>(m_num_elems))
+ , m_policy_sgsturb_laplace (Homme::get_default_team_policy<ExecSpace, TagSGSTurbLaplace>(m_num_elems))
+ , m_policy_sgsturb_update_states (Homme::get_default_team_policy<ExecSpace,TagSGSTurbUpdateStates>(m_num_elems))
  , m_tu(m_policy_update_states)
 {
   init_params(params);
@@ -59,6 +61,8 @@ HyperviscosityFunctorImpl (const int num_elems, const SimulationParams &params)
   , m_policy_pre_exchange (Homme::get_default_team_policy<ExecSpace, TagHyperPreExchange>(m_num_elems))
   , m_policy_nutop_laplace (Homme::get_default_team_policy<ExecSpace, TagNutopLaplace>(m_num_elems))
   , m_policy_nutop_update_states (Homme::get_default_team_policy<ExecSpace,TagNutopUpdateStates>(m_num_elems))
+  , m_policy_sgsturb_laplace (Homme::get_default_team_policy<ExecSpace, TagSGSTurbLaplace>(m_num_elems))
+  , m_policy_sgsturb_update_states (Homme::get_default_team_policy<ExecSpace,TagSGSTurbUpdateStates>(m_num_elems))
   , m_tu(m_policy_update_states)
 {
   init_params(params);
@@ -210,11 +214,13 @@ void HyperviscosityFunctorImpl::init_boundary_exchanges () {
   const auto& sp = Context::singleton().get<SimulationParams>();
   m_be = std::make_shared<BoundaryExchange>();
   m_be_tom = std::make_shared<BoundaryExchange>();
+  m_be_sgs = std::make_shared<BoundaryExchange>();
   m_be->set_label("Hyperviscosity-std");
   m_be_tom->set_label("Hyperviscosity-TOM");
-  std::shared_ptr<BoundaryExchange> bes[] = {m_be, m_be_tom};
-  const int nlevs[] = {NUM_LEV, m_nu_scale_top_ilev_pack_lim};
-  for (int i = 0; i < 2; ++i) {
+  m_be_sgs->set_label("Hyperviscosity-SGS");
+  std::shared_ptr<BoundaryExchange> bes[] = {m_be, m_be_tom, m_be_sgs};
+  const int nlevs[] = {NUM_LEV, m_nu_scale_top_ilev_pack_lim, NUM_LEV};
+  for (int i = 0; i < 3; ++i) {
     if (i == 1 && m_data.nu_top <= 0) continue;
     auto be = bes[i];
     be->set_diagnostics_level(sp.internal_diagnostics_level);
@@ -294,15 +300,26 @@ void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real et
     Kokkos::parallel_for(m_policy_update_states, *this);
     Kokkos::fence();
 
-    // Apply horizontal turbulent diffusion using SGS eddy diffusivities
-    if (m_data.do_3d_turbulence) {
-      GPTLstart("hvf-3dturb");
-      apply_horizontal_turbulent_diffusion();
-      Kokkos::fence();
-      GPTLstop("hvf-3dturb");
-    }
-
   } //subcycle
+
+  // SGS Horizontal turbulent diffusion
+  if (m_data.do_3d_turbulence > 0) {
+    for (int icycle = 0; icycle < m_data.hypervis_subcycle; ++icycle) {
+      // laplace(fields) --> ttens, etc.
+      Kokkos::parallel_for(m_policy_sgsturb_laplace, *this);
+      Kokkos::fence();
+
+      // exchange is done on ttens, dptens, vtens, etc.
+      assert (m_be->is_registration_completed());
+      GPTLstart("sgsturb-bexch");
+      m_be_sgs->exchange();
+      GPTLstop("sgsturb-bexch");
+
+      // update states
+      Kokkos::parallel_for(m_policy_sgsturb_update_states, *this);
+      Kokkos::fence();
+    }
+  } // SGS horizontal turbulent diffusion
 
   // Convert theta back to vtheta, and adjust w at surface
   auto geo = m_geometry;
@@ -394,147 +411,6 @@ void HyperviscosityFunctorImpl::biharmonic_wk_theta() const
   }
   Kokkos::fence();
 } //biharmonic
-
-void HyperviscosityFunctorImpl::apply_horizontal_turbulent_diffusion () const
-{
-
-  // If we somehow have no time step, do nothing.
-  if (m_data.dt <= 0) return;
-
-  // Use the same subcycled dt as hypervis if it’s active, otherwise full dt.
-  const Real dt_loc = (m_data.hypervis_subcycle > 0 ? m_data.dt_hvs : m_data.dt);
-
-  auto state   = m_state;
-  auto derived = m_derived;
-  auto sphere_ops = m_sphere_ops;
-
-  // Reuse the existing hv buffers (m_buffers.*) as scratch to hold the Laplacians,
-  // just like lap_s and lap_v to mirror original Fortran implementation.
-  using MidColumn = decltype(Homme::subview(m_buffers.ttens,0,0,0));
-  using IntColumn = decltype(Homme::subview(state.m_w_i,0,0,0,0));
-
-  auto policy = Homme::get_default_team_policy<ExecSpace>(m_geometry.num_elems());
-
-  // Note that the following had to be redeclared before entering the kernel
-  //  the kernel to avoid hangs:
-  auto tu = m_tu;
-  auto data = m_data;
-  auto buffers = m_buffers;
-  auto geometry = m_geometry;
-  auto process_nh_vars = m_process_nh_vars;
-
-  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const TeamMember& team) {
-    KernelVariables kv(team, tu);
-    const int ie = kv.ie;
-
-    // 1) Compute Laplacians on the current state, like the lap_s / lap_v
-    // in the original F90 implementaiton.  These fill the hv buffers with Lap(state).
-    sphere_ops.laplace_simple(
-      kv,
-      Homme::subview(state.m_dp3d, ie, data.np1),
-      Homme::subview(buffers.dptens, ie));
-
-    sphere_ops.laplace_simple(
-      kv,
-      Homme::subview(state.m_vtheta_dp, ie, data.np1),
-      Homme::subview(buffers.ttens, ie));
-
-    if (process_nh_vars) {
-      sphere_ops.laplace_simple<NUM_LEV,NUM_LEV_P>(
-        kv,
-        Homme::subview(state.m_w_i, ie, data.np1),
-        Homme::subview(buffers.wtens, ie));
-
-      sphere_ops.laplace_simple<NUM_LEV,NUM_LEV_P>(
-        kv,
-        Homme::subview(state.m_phinh_i, ie, data.np1),
-        Homme::subview(buffers.phitens, ie));
-    }
-
-    // Laplacian of horizontal velocity (u,v) without any nu scaling.
-    sphere_ops.vlaplace_sphere_wk_contra(
-      kv,
-      1.0, // no nu_ratio here, we want plain Lap(v)
-      Homme::subview(state.m_v, ie, data.np1),
-      Homme::subview(buffers.vtens, ie));
-
-    kv.team_barrier();
-
-    // 2) Apply SHOC’s Km / Kh to those Laplacians and update the state.
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, NP*NP),
-                         [&] (const int idx) {
-      const int igp = idx / NP;
-      const int jgp = idx % NP;
-
-      // SHOC diffusivities on dynamics grid
-      auto Km = Homme::subview(derived.m_turb_diff_mom,  ie, igp, jgp);
-      auto Kh = Homme::subview(derived.m_turb_diff_heat, ie, igp, jgp);
-
-      // State variables
-      auto dp     = Homme::subview(state.m_dp3d,     ie, data.np1, igp, jgp);
-      auto theta  = Homme::subview(state.m_vtheta_dp,ie, data.np1, igp, jgp);
-      auto u      = Homme::subview(state.m_v,        ie, data.np1, 0, igp, jgp);
-      auto v      = Homme::subview(state.m_v,        ie, data.np1, 1, igp, jgp);
-
-      IntColumn w, phi_i;
-      if (process_nh_vars) {
-        w      = Homme::subview(state.m_w_i,     ie, data.np1, igp, jgp);
-        phi_i  = Homme::subview(state.m_phinh_i, ie, data.np1, igp, jgp);
-      }
-
-      // Laplacians (scratch buffers)
-      auto dp_lap    = Homme::subview(buffers.dptens,  ie, igp, jgp);
-      auto theta_lap = Homme::subview(buffers.ttens,   ie, igp, jgp);
-      auto u_lap     = Homme::subview(buffers.vtens,   ie, 0, igp, jgp);
-      auto v_lap     = Homme::subview(buffers.vtens,   ie, 1, igp, jgp);
-      const auto& rspheremp = geometry.m_rspheremp(ie, igp, jgp);
-
-      MidColumn w_lap, phi_lap;
-      IntColumn Km_i, Kh_i;
-      if (process_nh_vars) {
-        w_lap   = Homme::subview(buffers.wtens,   ie, igp, jgp);
-        phi_lap = Homme::subview(buffers.phitens, ie, igp, jgp);
-
-        // Diffusivities on the interface vertical grid
-        Km_i = Homme::subview(buffers.turb_diff_mom_i,  ie, igp, jgp);
-        Kh_i = Homme::subview(buffers.turb_diff_heat_i, ie, igp, jgp);
-
-        // Get diffusivities on the interface vertical grid from those
-        //  on the mid-point grid that were passed from physics
-        ColumnOps::compute_interface_values(kv, Km, Km_i);
-        ColumnOps::compute_interface_values(kv, Kh, Kh_i);
-
-        // kv.team_barrier();
-      }
-
-      // Vertical loop: dp, theta, u, v, (w, phi) all get K * Lapterm * dt_loc
-      Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
-                           [&] (const int k) {
-        const auto km = Km(k);
-        const auto kh = Kh(k);
-
-        // Scalars (heat-like)
-        dp(k)    += dt_loc * kh * dp_lap(k) * rspheremp;
-        theta(k) += dt_loc * kh * theta_lap(k) * rspheremp;
-
-        // Momentum (u,v)
-        u(k)     += dt_loc * km * u_lap(k) * rspheremp;
-        v(k)     += dt_loc * km * v_lap(k) * rspheremp;
-
-        // NH variables are on interface grid, thus apply
-        //  diffusivities on the interface vertical grid
-        if (process_nh_vars) {
-          const auto km_i = Km_i(k);
-          const auto kh_i = Kh_i(k);
-          w(k)     += dt_loc * km_i * w_lap(k) * rspheremp;
-          phi_i(k) += dt_loc * kh_i * phi_lap(k) * rspheremp;
-        }
-      });
-    }); // TeamThreadRange
-  }); // parallel_for(policy)
-
-  Kokkos::fence();
-}
 
 // Laplace for nu_top
 KOKKOS_INLINE_FUNCTION
@@ -665,5 +541,148 @@ void HyperviscosityFunctorImpl::operator() (const TagNutopUpdateStates&, const T
     }); // threadvectorrange
   }); // threadteamrange
 } // tagUpdateStates2
+
+// Laplace for horizontal SGS turbulent diffusion
+KOKKOS_INLINE_FUNCTION
+void HyperviscosityFunctorImpl::operator() (const TagSGSTurbLaplace&, const TeamMember& team) const {
+  KernelVariables kv(team, m_tu);
+
+  using MidColumn = decltype(Homme::subview(m_buffers.wtens,0,0,0));
+  using IntColumn = decltype(Homme::subview(m_state.m_w_i,0,0,0,0));
+
+  // Laplacian of layer thickness
+  m_sphere_ops.laplace_simple(kv,
+                              Homme::subview(m_state.m_dp3d,kv.ie,m_data.np1),
+                              Homme::subview(m_buffers.dptens,kv.ie));
+  // Laplacian of theta
+  m_sphere_ops.laplace_simple(kv,
+                              Homme::subview(m_state.m_vtheta_dp,kv.ie,m_data.np1),
+                              Homme::subview(m_buffers.ttens,kv.ie));
+  if (m_process_nh_vars) {
+    // Laplacian of vertical velocity
+    m_sphere_ops.laplace_simple<NUM_LEV,NUM_LEV_P>(kv,
+                                                   Homme::subview(m_state.m_w_i,kv.ie,m_data.np1),
+                                                   Homme::subview(m_buffers.wtens,kv.ie));
+    // Laplacian of geopotential
+    m_sphere_ops.laplace_simple<NUM_LEV,NUM_LEV_P>(kv,
+                                                   Homme::subview(m_state.m_phinh_i,kv.ie,m_data.np1),
+                                                   Homme::subview(m_buffers.phitens,kv.ie));
+  }
+
+  // Laplacian of velocity
+  m_sphere_ops.vlaplace_sphere_wk_contra(kv,
+                                         1.0, // no nu_ratio here, we want plain Lap(v)
+                                         Homme::subview(m_state.m_v,kv.ie,m_data.np1),
+                                         Homme::subview(m_buffers.vtens,kv.ie));
+
+  kv.team_barrier();
+
+  Kokkos::parallel_for(
+    Kokkos::TeamThreadRange(kv.team,NP*NP),
+    [&] (const int idx) {
+      const int igp = idx / NP;
+      const int jgp = idx % NP;
+
+      const auto utens  = Homme::subview(m_buffers.vtens,kv.ie,0,igp,jgp);
+      const auto vtens  = Homme::subview(m_buffers.vtens,kv.ie,1,igp,jgp);
+      const auto ttens  = Homme::subview(m_buffers.ttens,kv.ie,igp,jgp);
+      const auto dptens = Homme::subview(m_buffers.dptens,kv.ie,igp,jgp);
+
+      auto Km = Homme::subview(m_derived.m_turb_diff_mom,kv.ie,igp,jgp);
+      auto Kh = Homme::subview(m_derived.m_turb_diff_heat,kv.ie,igp,jgp);
+
+      MidColumn wtens, phitens;
+      IntColumn Km_i, Kh_i;
+      if (m_process_nh_vars) {
+        wtens   = Homme::subview(m_buffers.wtens,kv.ie,igp,jgp);
+        phitens = Homme::subview(m_buffers.phitens,kv.ie,igp,jgp);
+
+        // Diffusivities on the interface grid
+        Km_i = Homme::subview(m_buffers.turb_diff_mom_i,kv.ie,igp,jgp);
+        Kh_i = Homme::subview(m_buffers.turb_diff_heat_i,kv.ie,igp,jgp);
+
+        // Get diffusivities on the interface vertical grid from those
+        //  on the mid-point grid that were passed from physics
+        ColumnOps::compute_interface_values(kv, Km, Km_i);
+        ColumnOps::compute_interface_values(kv, Kh, Kh_i);
+      }
+
+      Kokkos::parallel_for(
+        Kokkos::ThreadVectorRange(kv.team, NUM_LEV),
+        [&] (const int k) {
+
+          const auto xf_m = m_data.dt_hvs * Km(k); // Momentum diffusivity
+          const auto xf_h = m_data.dt_hvs * Kh(k); // Heat diffusivity
+          utens(k)  *= xf_m;
+          vtens(k)  *= xf_m;
+          ttens(k)  *= xf_h;
+          dptens(k) *= xf_h;
+
+          if (m_process_nh_vars) {
+            const auto xf_mi = m_data.dt_hvs * Km_i(k); // Momentum diffusivity on interface
+            const auto xf_hi = m_data.dt_hvs * Kh_i(k); // Heat diffusivity on interface
+            wtens(k)   *= xf_mi;
+            phitens(k) *= xf_hi;
+          }
+
+        }); // threadvectorrange
+    }); // teamthreadrange
+} // TagSGSTurbLaplace
+
+// SGS Horizontal turbulent diffusion, update states
+KOKKOS_INLINE_FUNCTION
+void HyperviscosityFunctorImpl::operator() (const TagSGSTurbUpdateStates&, const TeamMember& team) const {
+  KernelVariables kv(team, m_tu);
+
+  using MidColumn = decltype(Homme::subview(m_buffers.wtens,0,0,0));
+  using IntColumn = decltype(Homme::subview(m_state.m_w_i,0,0,0,0));
+
+  Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
+                       [&](const int idx) {
+    const int igp = idx / NP;
+    const int jgp = idx % NP;
+
+    // Add Xtens quantities back to the states, except for vtheta
+    auto u = Homme::subview(m_state.m_v,kv.ie,m_data.np1,0,igp,jgp);
+    auto v = Homme::subview(m_state.m_v,kv.ie,m_data.np1,1,igp,jgp);
+    auto vtheta = Homme::subview(m_state.m_vtheta_dp,kv.ie,m_data.np1,igp,jgp);
+    auto dp     = Homme::subview(m_state.m_dp3d,kv.ie,m_data.np1,igp,jgp);
+
+    auto utens   = Homme::subview(m_buffers.vtens,kv.ie,0,igp,jgp);
+    auto vtens   = Homme::subview(m_buffers.vtens,kv.ie,1,igp,jgp);
+    auto ttens   = Homme::subview(m_buffers.ttens,kv.ie,igp,jgp);
+    auto dptens  = Homme::subview(m_buffers.dptens,kv.ie,igp,jgp);
+    const auto& rspheremp = m_geometry.m_rspheremp(kv.ie,igp,jgp);
+
+    MidColumn wtens, phitens;
+    IntColumn w, phi_i;
+
+    if (m_process_nh_vars) {
+      wtens   = Homme::subview(m_buffers.wtens,kv.ie,igp,jgp);
+      phitens = Homme::subview(m_buffers.phitens,kv.ie,igp,jgp);
+      w       = Homme::subview(m_state.m_w_i,kv.ie,m_data.np1,igp,jgp);
+      phi_i   = Homme::subview(m_state.m_phinh_i,kv.ie,m_data.np1,igp,jgp);
+    }
+
+    Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team, NUM_LEV),
+                         [&](const int k) {
+      utens(k)   *= rspheremp;
+      vtens(k)   *= rspheremp;
+      ttens(k)   *= rspheremp;
+      dptens(k)  *= rspheremp;
+      u(k)      += utens(k);
+      v(k)      += vtens(k);
+      vtheta(k) += ttens(k);
+      dp(k)     += dptens(k);
+
+      if (m_process_nh_vars) {
+        wtens(k)   *= rspheremp;
+        phitens(k) *= rspheremp;
+        w(k)     += wtens(k);
+        phi_i(k) += phitens(k);
+      }
+    }); // threadvectorrange
+  }); // threadteamrange
+} // tagSGSTurbUpdateStates
 
 } // namespace Homme
