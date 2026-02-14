@@ -361,6 +361,10 @@ void VertAdv::computeVerticalVelocity(
     const Array2DReal &FluxLayerThickEdge //< [in] layer thickness at edges
 ) {
 
+   // Return if mesh only has a single vertical layer
+   if (NVertLayers == 1)
+      return;
+
    OMEGA_SCOPE(LocVertVel, VerticalVelocity);
    OMEGA_SCOPE(LocNVertLayers, NVertLayers);
    OMEGA_SCOPE(LocAreaCell, Mesh->AreaCell);
@@ -449,6 +453,10 @@ void VertAdv::computeThicknessVAdvTend(
    if (!ThickVertAdvEnabled)
       return;
 
+   // Return if mesh only has a single vertical layer
+   if (NVertLayers == 1)
+      return;
+
    OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
    OMEGA_SCOPE(MaxLayerCell, VCoord->MaxLayerCell);
    OMEGA_SCOPE(LocTotVertVelocity, TotalVerticalVelocity);
@@ -487,6 +495,10 @@ void VertAdv::computeVelocityVAdvTend(
 
    // Return if vertical advection velocity tendency not enabled
    if (!VelVertAdvEnabled)
+      return;
+
+   // Return if mesh only has a single vertical layer
+   if (NVertLayers == 1)
       return;
 
    OMEGA_SCOPE(LocCOnE, Mesh->CellsOnEdge);
@@ -570,6 +582,10 @@ void VertAdv::computeTracerVAdvTend(
 
    // Return if vertical advection tracer tendency not enabled
    if (!TracerVertAdvEnabled)
+      return;
+
+   // Return if mesh only has a single vertical layer
+   if (NVertLayers == 1)
       return;
 
    // Compute tracer fluxes at the interfaces
