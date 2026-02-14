@@ -9,8 +9,8 @@ import os
 import subprocess
 import sys
 from datetime import datetime
-from validation import validate_resolution, validate_years
-from xml_query import NamelistDefinition, QueryDefaultNamelist, get_namelist_definition
+from validation import validate_resolution, validate_years, get_valid_resolutions
+from xml_query import get_namelist_definition
 
 def parse_args():
     """Parse command-line arguments."""
@@ -134,10 +134,17 @@ def query_namelist(scrdir, csmdata, namelist, var, options=None, res=None, usrna
         result = subprocess.run(cmd, capture_output=True, text=True, check=True)
         return trim(result.stdout)
     except subprocess.CalledProcessError as e:
-        print(f"Warning: Query failed for var={var}, options={options}")
-        print(f"  Command: {' '.join(cmd)}")
-        print(f"  Error: {e.stderr}")
-        return ""
+        # Only show detailed error in debug mode or for specific cases
+        stderr_msg = e.stderr.strip() if e.stderr else ''
+        if 'invalid resolution' in stderr_msg.lower():
+            # Don't print warning here - let the caller handle it with better context
+            return ""
+        else:
+            print(f"\nWarning: Query failed for variable '{var}'")
+            if options:
+                print(f"         Options: {options}")
+            print(f"         Error: {stderr_msg}")
+            return ""
 
 
 def check_soil(opts):
@@ -242,9 +249,19 @@ def query_data_files(res, opts, scrdir):
                               options={'type': typ, 'mergeGIS': merge_gis, 'hirespft': hirespft},
                               res=res, usrname=usrname)
         
+        if not lmask:
+            sys.exit(f"\nERROR: Could not determine land mask for resolution '{res}' and type '{typ}'.\n"
+                    f"       This usually means the resolution is not supported.\n"
+                    f"       Check that '{res}' is a valid resolution in the namelist definition files.")
+        
         hgrid = query_namelist(scrdir, csmdata, 'default_settings', 'hgrid',
                               options={'type': typ, 'hirespft': hirespft},
                               res=res, usrname=usrname)
+        
+        if not hgrid:
+            sys.exit(f"\nERROR: Could not determine source grid for resolution '{res}' and type '{typ}'.\n"
+                    f"       This usually means the resolution is not supported.\n"
+                    f"       Check that '{res}' is a valid resolution in the namelist definition files.")
         
         hgrid_map[typ] = hgrid
         lmask_map[typ] = lmask
@@ -261,11 +278,13 @@ def query_data_files(res, opts, scrdir):
         
         # Check mapping file
         if not map_files[typ] or not map_files[typ].strip():
-            sys.exit(f"ERROR: could NOT find a mapping file for resolution: {res} "
-                    f"and type: {typ} at {hgrid} and {lmask}.")
+            sys.exit(f"\nERROR: Could not find mapping file for resolution '{res}' (type '{typ}').\n"
+                    f"       Source grid: {hgrid}, Land mask: {lmask}\n"
+                    f"       Target resolution: {res}")
         
         if not opts['allownofile'] and not os.path.isfile(map_files[typ]):
-            sys.exit(f"ERROR: mapping file for this resolution does NOT exist ({map_files[typ]}).")
+            sys.exit(f"\nERROR: Mapping file does not exist:\n       {map_files[typ]}\n"
+                    f"       Resolution: {res}, Type: {typ}")
         
         # Query for data file (skip veg - will be queried later with sim_year)
         if typ in data_file_types:
@@ -280,11 +299,12 @@ def query_data_files(res, opts, scrdir):
             
             # Check data file
             if not data_files[typ] or not data_files[typ].strip():
-                sys.exit(f"ERROR: could NOT find a {filnm} data file for resolution: {hgrid} "
-                        f"and type: {typ} and {lmask}.")
+                sys.exit(f"\nERROR: Could not find data file '{filnm}' for type '{typ}'.\n"
+                        f"       Source grid: {hgrid}, Land mask: {lmask}")
             
             if not opts['allownofile'] and not os.path.isfile(data_files[typ]):
-                sys.exit(f"ERROR: data file for this resolution does NOT exist ({data_files[typ]}).")
+                sys.exit(f"\nERROR: Data file does not exist:\n       {data_files[typ]}\n"
+                        f"       Type: {typ}")
     
     # Get grid data file from the pft map file or grid if not found
     griddata = map_files.get('veg', '')
@@ -355,13 +375,25 @@ def main():
     
     # Get resolution list
     if hgrid == 'all':
-        # TODO: Query XML for all valid resolutions
-        print("WARNING: 'all' resolution not yet fully implemented")
-        hresols = ['0.9x1.25']  # Placeholder
+        # Query XML for all valid resolutions
+        hresols = get_valid_resolutions()
+        if not hresols:
+            print("WARNING: Could not query valid resolutions from XML")
+            hresols = ['0.9x1.25']  # Fallback
     elif hgrid == 'usrspec':
         hresols = [opts['usr_gname']]
     else:
         hresols = hgrid.split(',')
+        # Validate non-usrspec resolutions unless usrname is specified
+        if not opts['usrname']:
+            valid_resolutions = get_valid_resolutions()
+            for res in hresols:
+                if res not in valid_resolutions:
+                    print(f"\nERROR: Invalid resolution: '{res}'")
+                    print(f"\nValid resolutions are:")
+                    for vr in sorted(valid_resolutions):
+                        print(f"  {vr}")
+                    sys.exit(1)
     
     # Parse years list
     years_list = years.split(',')
