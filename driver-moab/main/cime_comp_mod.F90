@@ -697,7 +697,7 @@ module cime_comp_mod
 
 #ifdef MOABDEBUG
 ! allocate to get data frpm moab
-  real(r8) ,  private, pointer :: moab_tag_vals(:,:) ! various tags for debug purposes 
+  real(r8) ,  private, pointer :: moab_tag_vals(:,:) ! various tags for debug purposes
   integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3), arrsize, ent_type
   character(100) :: tagname
   type(mct_aVect) , pointer :: a2x_aa => null()
@@ -2449,7 +2449,7 @@ contains
              endif
           endif
 
-          call component_diag(infodata, atm, flow='x2c', comment='send atm', info_debug=info_debug)
+          call component_diag(infodata, atm, flow='x2c', comment='send ALB atm', info_debug=info_debug)
 
        endif
 
@@ -2471,13 +2471,8 @@ contains
        endif
 
        ! Send atm input data from coupler pes to atm pes
-       if (atm_prognostic) then
-          call component_exch(atm, flow='x2c', infodata=infodata, &
-               infodata_string='cpl2atm_init')
-          ! moab too
-          call component_exch_moab(atm(1), mbaxid, mphaid, 'x2c', seq_flds_x2a_fields, &
-               infodata=infodata, infodata_string='cpl2atm_init')
-       endif
+       call component_exch_moab(atm(1), mbaxid, mphaid, 'x2c', seq_flds_x2a_fields, &
+            infodata=infodata, infodata_string='cpl2atm_init')
 
        ! Set atm init phase to 2 for all atm instances on component instance pes
        do eai = 1,num_inst_atm
@@ -2493,9 +2488,6 @@ contains
             seq_flds_c2x_fluxes=seq_flds_a2x_fluxes)
 
        ! Send atm output data from atm pes to cpl pes
-       call component_exch(atm, flow='c2x', infodata=infodata, &
-            infodata_string='atm2cpl_init')
-       !
        call component_exch_moab(atm(1), mphaid, mbaxid, 'c2x', seq_flds_a2x_fields, &
             infodata=infodata, infodata_string='atm2cpl_init')
 
@@ -4154,10 +4146,6 @@ contains
     !----------------------------------------------------------
 
     if (iamin_CPLALLATMID .and. atm_prognostic) then
-       call component_exch(atm, flow='x2c', infodata=infodata, infodata_string='cpl2atm_run', &
-            mpicom_barrier=mpicom_CPLALLATMID, run_barriers=run_barriers, &
-            timer_barrier='CPL:C2A_BARRIER', timer_comp_exch='CPL:C2A', &
-            timer_map_exch='CPL:c2a_atmx2atmg', timer_infodata_exch='CPL:c2a_infoexch')
        ! will migrate the tag from coupler pes to component pes, on atm mesh
        call component_exch_moab(atm(1), mbaxid, mphaid, 'x2c', seq_flds_x2a_fields, &
             infodata=infodata, infodata_string='cpl2atm_run', &
@@ -4177,11 +4165,6 @@ contains
     !| atm -> cpl
     !----------------------------------------------------------
     if (iamin_CPLALLATMID) then
-       call component_exch(atm, flow='c2x', infodata=infodata, infodata_string='atm2cpl_run', &
-            mpicom_barrier=mpicom_CPLALLATMID, run_barriers=run_barriers, &
-            timer_barrier='CPL:A2C_BARRIER', timer_comp_exch='CPL:A2C', &
-            timer_map_exch='CPL:a2c_atma2atmx', timer_infodata_exch='CPL:a2c_infoexch')
-
        ! will migrate the tag from component pes to coupler pes, on atm mesh
        call component_exch_moab(atm(1), mphaid, mbaxid, 'c2x', seq_flds_a2x_fields, &
             infodata=infodata, infodata_string='atm2cpl_run', &
@@ -4209,19 +4192,6 @@ contains
        if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
        call t_drvstopf  ('CPL:ATMPOST',cplrun=.true.)
     endif
-
-   !  ! send projected data from atm to ocean mesh, after projection in coupler
-   !  if (iamin_CPLALLOCNID .and. ocn_c2_atm) then
-   !     ! migrate that tag from coupler pes to ocean pes
-   !     call prep_ocn_migrate_moab(infodata)
-   !  endif
-
-   !  ! send projected data from atm to land mesh, after projection in coupler
-   !  if (iamin_CPLALLLNDID .and. atm_c2_lnd) then
-   !     ! migrate that tag from coupler pes to ocean pes
-   !     call prep_lnd_migrate_moab(infodata)
-   !  endif
-
 
   end subroutine cime_run_atm_recv_post
 
