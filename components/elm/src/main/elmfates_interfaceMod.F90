@@ -2735,9 +2735,7 @@ contains
           tgcm      => veg_es%thm                    , &
           forc_pbot => top_as%pbot                   , &
           rssun     => photosyns_inst%rssun_patch    , &
-          rssha     => photosyns_inst%rssha_patch) !    , &
-          !psnsun    => photosyns_inst%psnsun_patch   , &
-          !psnsha    => photosyns_inst%psnsha_patch)
+          rssha     => photosyns_inst%rssha_patch)
 
 
       nc = bounds_clump%clump_index
@@ -2765,8 +2763,6 @@ contains
       
       rssun(p) = this%fates(nc)%bc_out(s)%rssun_pa(ifp)
       rssha(p) = this%fates(nc)%bc_out(s)%rssha_pa(ifp)
-      
-      
 
       photosyns_inst%psnsun_patch(p)   = spval
       photosyns_inst%psnsha_patch(p)   = spval

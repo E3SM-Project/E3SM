@@ -35,7 +35,7 @@ module FrictionVelocityMod
 contains
 
   !------------------------------------------------------------------------------
-  subroutine FrictionVelocity(lbn, ubn, fn, filtern, &
+  pure subroutine FrictionVelocity(lbn, ubn, fn, filtern, &
        displa, z0m, z0h, z0q, &
        obu, iter, ur, um, ugust, ustar, &
        temp1, temp2, temp12m, temp22m, fm,frictionvel_vars,landunit_index)
@@ -393,10 +393,10 @@ contains
 
      end associate
 
-  end subroutine FrictionVelocity
+   end subroutine FrictionVelocity
 
   !------------------------------------------------------------------------------
-  real(r8) function StabilityFunc1(zeta)
+  pure real(r8) function StabilityFunc1(zeta)
     !$acc routine seq
     ! !DESCRIPTION:
     ! Stability function for rib < 0.
@@ -420,7 +420,7 @@ contains
   end function StabilityFunc1
 
   !------------------------------------------------------------------------------
-  real(r8) function StabilityFunc2(zeta)
+  pure real(r8) function StabilityFunc2(zeta)
     !$acc routine seq
     ! !DESCRIPTION:
     ! Stability function for rib < 0.
@@ -442,7 +442,7 @@ contains
   end function StabilityFunc2
 
   !-----------------------------------------------------------------------
-  subroutine MoninObukIni (ur, thv, dthv, zldis, z0m, um, obu)
+  pure subroutine MoninObukIni (ur, thv, dthv, zldis, z0m, um, obu)
     !$acc routine seq
     ! !DESCRIPTION:
     ! Initialization of the Obukhov length scale.

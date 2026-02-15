@@ -42,7 +42,7 @@ module CanopyFluxesMod
   use ColumnDataType        , only : col_es, col_ef, col_ws
   use VegetationType        , only : veg_pp
   use VegetationDataType    , only : veg_es, veg_ef, veg_ws, veg_wf
-
+  use omp_lib
   !!! using elm_instMod messes with the compilation order
   use elm_instMod           , only : alm_fates, soil_water_retention_curve
   use TemperatureType , only : temperature_vars
@@ -334,7 +334,7 @@ contains
 
     integer, parameter  :: itmax_stomata = 3
 
-    logical, parameter :: do_b4b = .false.  ! Set this true to reproduce results before
+    logical, parameter :: do_b4b = .true.  ! Set this true to reproduce results before
                                            ! refactoring the patch-loops
     
     !------------------------------------------------------------------------------
@@ -740,7 +740,6 @@ contains
             wind_speed0(p) = max(0.01_r8, hypot(forc_u(t), forc_v(t)))
             wind_speed_adj(p) = wind_speed0(p)
             ur(p) = max(1.0_r8, sqrt(wind_speed_adj(p)**2 + ugust(t)**2))
-
             prev_tau(p) = tau_est(t)
          else
             ur(p) = max(1.0_r8,sqrt(forc_u(t)*forc_u(t)+forc_v(t)*forc_v(t)+ugust(t)*ugust(t)))
@@ -753,7 +752,6 @@ contains
          delq(p) = qg(c) - qaf(p)
          dthv(p) = dth(p)*(1._r8+0.61_r8*forc_q(t))+0.61_r8*forc_th(t)*dqh(p)
          zldis(p) = forc_hgt_u_patch(p) - displa(p)
-
 
          ! Check to see if the forcing height is below the canopy height
          if (zldis(p) < 0._r8) then
@@ -781,7 +779,10 @@ contains
       !$OMP                      efpot,rpp,wtaq,wtlq,snow_depth_c,fsno_dl, &
       !$OMP                      elai_dl,rdl,wtsqi,wtgq0,dc1,dc2,efsh,     &
       !$OMP                      efeold,erre,lw_grnd,dels,ecidif,tstar,    &
-      !$OMP                      qstar,thvstar,iter_final,del_gs ) if (use_fates)
+      !$OMP                      qstar,thvstar,iter_final,del_gs ) SCHEDULE(DYNAMIC, 1) if (use_fates)
+
+      ! NOTE ON "V2" APPROACH. LETS CREATE THREADED FILTERS? OR elemental subroutines
+      ! to hold the math that is here inline?
       
       patch_loop1: do f = 1, fn
 
@@ -789,7 +790,6 @@ contains
          c = veg_pp%column(p)
          t = veg_pp%topounit(p)
          g = veg_pp%gridcell(p)
-
 
          ! Initialize Obukhov length scale and wind speed
          call MoninObukIni(ur(p), thv(c), dthv(p), zldis(p), z0mv(p), um(p), obu(p))
@@ -1143,19 +1143,22 @@ contains
                ! Test for convergence
                iter_final = itlef
                itlef = itlef+1
-               
-               dele(p) = abs(efe(p)-efeb(p))
-               efeb(p) = efe(p)
-               det(p)  = max(del(p),del2(p))
-               num_iter(p) = real(itlef,r8)
-               
-               if ( (.not. (det(p) < dtmin .and. dele(p) < dlemin) .or. &
-                    (implicit_stress .and. abs(tau_diff(p)) >= dtaumin)) .and. &
-                    (itlef < itmax)) then
-                  converge_tveg = .false.
-               else
-                  converge_tveg = .true.
+
+               if(itlef>itmin)then
+                  dele(p) = abs(efe(p)-efeb(p))
+                  efeb(p) = efe(p)
+                  det(p)  = max(del(p),del2(p))
+                  num_iter(p) = real(itlef,r8)
+                  
+                  if ( (.not. (det(p) < dtmin .and. dele(p) < dlemin) .or. &
+                       (implicit_stress .and. abs(tau_diff(p)) >= dtaumin)) .and. &
+                       (itlef < itmax)) then
+                     converge_tveg = .false.
+                  else
+                     converge_tveg = .true.
+                  end if
                end if
+               
             end do iterate_tveg
 
             ! Evaluate quality of conductance solution
@@ -1333,22 +1336,22 @@ contains
 
   ! =========================================================================
   
-  subroutine WrapPhotosynthesis(bounds,p,svpts,eah,o2,co2,rb,dayl_factor, &
+ subroutine WrapPhotosynthesis(bounds,p,svpts,eah,o2,co2,rb,dayl_factor, &
        btran,qsatl,qaf,atm2lnd_vars,canopystate_vars,photosyns_vars, &
        soilstate_vars, surfalb_vars,solarabs_vars,cnstate_vars,energyflux_vars)
 
     
     type(bounds_type)         , intent(in)    :: bounds
-    integer  :: p                                        ! patch index from begp:endp
-    real(r8) :: svpts(bounds%begp:bounds%endp)
-    real(r8) :: eah(bounds%begp:bounds%endp)
-    real(r8) :: o2(bounds%begp:bounds%endp)
-    real(r8) :: co2(bounds%begp:bounds%endp)
-    real(r8) :: rb(bounds%begp:bounds%endp)
-    real(r8) :: dayl_factor(bounds%begp:bounds%endp)
-    real(r8) :: btran(bounds%begp:bounds%endp)
-    real(r8) :: qsatl(bounds%begp:bounds%endp)
-    real(r8) :: qaf(bounds%begp:bounds%endp)
+    integer,intent(in)  :: p                                        ! patch index from begp:endp
+    real(r8),intent(in) :: svpts(bounds%begp:bounds%endp)
+    real(r8),intent(in) :: eah(bounds%begp:bounds%endp)
+    real(r8),intent(in) :: o2(bounds%begp:bounds%endp)
+    real(r8),intent(in) :: co2(bounds%begp:bounds%endp)
+    real(r8),intent(in) :: rb(bounds%begp:bounds%endp)
+    real(r8),intent(in) :: dayl_factor(bounds%begp:bounds%endp)
+    real(r8),intent(inout) :: btran(bounds%begp:bounds%endp)
+    real(r8),intent(in) :: qsatl(bounds%begp:bounds%endp)
+    real(r8),intent(in) :: qaf(bounds%begp:bounds%endp)
     
     type(atm2lnd_type)        , intent(inout) :: atm2lnd_vars
     type(canopystate_type)    , intent(inout) :: canopystate_vars
