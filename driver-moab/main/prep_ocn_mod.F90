@@ -2118,29 +2118,6 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
              write(logunit,'(A)') trim(mrgstr(ko))
           enddo
           write(logunit,'(A)') subname//' shared fields between xao and x2o '//trim(shared_fields_xao_x2o)
-#ifdef MOABDEBUG
-          write(logunit, *) ' Ocean fields computed on coupler'
-          do ko=1,noflds
-             write(logunit, *) trim(field_ocn(ko)), aindx(ko), amerge(ko), iindx(ko), imerge(ko), xindx(ko), xmerge(ko)
-          enddo
-          write(logunit, *) ' Atm fields projected on coupler'
-          do ka = 1,naflds
-             write(logunit, *) trim(field_atm(ka))
-          enddo
-          write(logunit, *) ' Ice fields projected on coupler'
-          do ki = 1,niflds
-             write(logunit, *) trim(field_ice(ki))
-          enddo
-          write(logunit, *) ' Runoff fields projected on coupler'
-          do kr = 1,nrflds
-             write(logunit, *) trim(field_rof(kr))
-          enddo
-          write(logunit, *) ' xao flux fields '
-          do kx = 1,nxflds
-             write(logunit, *) trim(field_xao(kx))
-          enddo
-#endif
-
        endif
        deallocate(mrgstr)
 
