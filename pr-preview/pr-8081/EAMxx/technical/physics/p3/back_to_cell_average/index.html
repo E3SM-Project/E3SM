@@ -3662,6 +3662,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#known-answer-philosophy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Known-Answer Philosophy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#tolerance-philosophy" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3699,17 +3710,6 @@
     <span class="md-ellipsis">
       
         Number-Tendency Validation Policy
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#bookkeeping-diagnostics" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Bookkeeping Diagnostics
       
     </span>
   </a>
@@ -4820,6 +4820,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#known-answer-philosophy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Known-Answer Philosophy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#tolerance-philosophy" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4857,17 +4868,6 @@
     <span class="md-ellipsis">
       
         Number-Tendency Validation Policy
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#bookkeeping-diagnostics" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Bookkeeping Diagnostics
       
     </span>
   </a>
@@ -5299,15 +5299,25 @@ f_{\text{glaciated}} = \max(10^{-4}, f_i - f_{il}).
 sections:</p>
 <ul>
 <li><code>process_location</code></li>
-<li><code>bounds_and_scaling</code></li>
-<li><code>cloud_fraction_logic</code></li>
+<li><code>known_answer_tests</code></li>
 <li><code>runtime_option</code></li>
 <li><code>context_mask</code></li>
-<li><code>signed_inputs</code></li>
 <li><code>edge_cases</code></li>
 <li><code>extreme_values</code></li>
-<li><code>bookkeeping_diagnostics</code> (non-gating)</li>
 <li><code>bfb</code></li>
+</ul>
+<h3 id="known-answer-philosophy">Known-Answer Philosophy</h3>
+<p>The sweep-based <code>process_location</code> checks use a shared mapping table
+(<code>ScaleKind</code>/<code>cloud_factor</code>) for broad coverage. To avoid mirrored bugs where
+both implementation and helper table are wrong in the same way, the
+<code>known_answer_tests</code> section adds hand-computed reference cases with hardcoded
+expected values.</p>
+<p>These checks intentionally do not use the shared helper and cover:</p>
+<ul>
+<li>L, R, I, IL, IR, LR mappings</li>
+<li><code>GLACIATED_OR_I</code> in both runtime modes</li>
+<li><code>UNCHANGED</code> pass-through behavior</li>
+<li>explicit glaciated-floor activation (<code>f_glaciated = 1e-4</code>)</li>
 </ul>
 <h3 id="tolerance-philosophy">Tolerance Philosophy</h3>
 <table>
@@ -5327,6 +5337,12 @@ sections:</p>
 <td>Exact implementation formula</td>
 </tr>
 <tr>
+<td>Known-answer mapping</td>
+<td>Identity</td>
+<td><code>10 * epsilon</code></td>
+<td>Independent hand-calculated reference checks</td>
+</tr>
+<tr>
 <td>Runtime branch mapping</td>
 <td>Identity</td>
 <td><code>10 * epsilon</code></td>
@@ -5339,28 +5355,10 @@ sections:</p>
 <td><code>context=false</code> lanes must remain unchanged</td>
 </tr>
 <tr>
-<td>Intersection consistency</td>
-<td>Identity</td>
-<td><code>10 * epsilon</code></td>
-<td><code>min</code>/<code>max</code> identity checks</td>
-</tr>
-<tr>
-<td>Scaling reduction</td>
-<td>Identity</td>
-<td><code>10 * epsilon</code></td>
-<td>For factors in <code>[0,1]</code></td>
-</tr>
-<tr>
-<td>Non-negativity</td>
-<td>Absolute</td>
-<td><code>1e-30</code></td>
-<td>Numerical zero proxy</td>
-</tr>
-<tr>
 <td>Glaciated threshold</td>
-<td>Hard bound</td>
-<td><code>&gt;= 1e-4</code></td>
-<td>Explicit implementation floor</td>
+<td>Identity + floor</td>
+<td><code>10 * epsilon</code>, <code>&gt;= 1e-4</code></td>
+<td>Explicit implementation floor in edge/known-answer checks</td>
 </tr>
 <tr>
 <td>Extreme-value finite checks</td>
@@ -5377,8 +5375,9 @@ sections:</p>
 <li><code>n_frac = 15</code> per dimension</li>
 <li><code>num_cases = 15^3 = 3375</code></li>
 </ul>
-<p>All tendency inputs are deterministic and distinct. A dedicated <code>signed_inputs</code>
-section applies alternating signs to verify mapping is sign-agnostic.</p>
+<p>All tendency inputs are deterministic and distinct. The <code>process_location</code>
+section also runs a mixed-sign sweep variant to cover both source and sink
+tendencies.</p>
 <h3 id="context-mask-coverage">Context-Mask Coverage</h3>
 <p>The implementation applies updates with <code>.set(context, ...)</code>. The <code>context_mask</code>
 section verifies that lanes with <code>context=false</code> are unchanged, including an
@@ -5390,10 +5389,6 @@ sublimation, nucleation, and shedding are not globally number-conservative.</p>
 <p>Instead, number tendencies are validated via process-location mapping checks:
 for each number tendency, the test verifies the exact cloud-fraction factor used
 by the implementation.</p>
-<h3 id="bookkeeping-diagnostics">Bookkeeping Diagnostics</h3>
-<p>A non-gating diagnostic reports the maximum residual of an assembled total-water
-bookkeeping sum over the sweep. This is informational and not used as a pass/
-fail criterion.</p>
 <h3 id="bfb-serialization-scope">BFB Serialization Scope</h3>
 <p>The BFB compare list intentionally follows the
 <code>BackToCellAverageData::PTD_RW_SCALARS_ONLY</code> serialized subset:</p>
