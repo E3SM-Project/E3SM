@@ -88,27 +88,37 @@ The Catch2 test case `p3_back_to_cell_average` is split into independent
 sections:
 
 - `process_location`
-- `bounds_and_scaling`
-- `cloud_fraction_logic`
+- `known_answer_tests`
 - `runtime_option`
 - `context_mask`
-- `signed_inputs`
 - `edge_cases`
 - `extreme_values`
-- `bookkeeping_diagnostics` (non-gating)
 - `bfb`
+
+### Known-Answer Philosophy
+
+The sweep-based `process_location` checks use a shared mapping table
+(`ScaleKind`/`cloud_factor`) for broad coverage. To avoid mirrored bugs where
+both implementation and helper table are wrong in the same way, the
+`known_answer_tests` section adds hand-computed reference cases with hardcoded
+expected values.
+
+These checks intentionally do not use the shared helper and cover:
+
+- L, R, I, IL, IR, LR mappings
+- `GLACIATED_OR_I` in both runtime modes
+- `UNCHANGED` pass-through behavior
+- explicit glaciated-floor activation (`f_glaciated = 1e-4`)
 
 ### Tolerance Philosophy
 
 | Test Category | Tolerance Type | Value | Rationale |
 | --- | --- | --- | --- |
 | Process-location mapping | Identity | `10 * epsilon` | Exact implementation formula |
+| Known-answer mapping | Identity | `10 * epsilon` | Independent hand-calculated reference checks |
 | Runtime branch mapping | Identity | `10 * epsilon` | Exact branch behavior |
 | Context mask behavior | Identity | `10 * epsilon` | `context=false` lanes must remain unchanged |
-| Intersection consistency | Identity | `10 * epsilon` | `min`/`max` identity checks |
-| Scaling reduction | Identity | `10 * epsilon` | For factors in `[0,1]` |
-| Non-negativity | Absolute | `1e-30` | Numerical zero proxy |
-| Glaciated threshold | Hard bound | `>= 1e-4` | Explicit implementation floor |
+| Glaciated threshold | Identity + floor | `10 * epsilon`, `>= 1e-4` | Explicit implementation floor in edge/known-answer checks |
 | Extreme-value finite checks | Finite | `isfinite` | Guard against NaN/Inf under very large/small magnitudes |
 
 ### Parameter Sweep Strategy
@@ -119,8 +129,9 @@ A 3D linear sweep over cloud fractions is used:
 - `n_frac = 15` per dimension
 - `num_cases = 15^3 = 3375`
 
-All tendency inputs are deterministic and distinct. A dedicated `signed_inputs`
-section applies alternating signs to verify mapping is sign-agnostic.
+All tendency inputs are deterministic and distinct. The `process_location`
+section also runs a mixed-sign sweep variant to cover both source and sink
+tendencies.
 
 ### Context-Mask Coverage
 
@@ -137,12 +148,6 @@ sublimation, nucleation, and shedding are not globally number-conservative.
 Instead, number tendencies are validated via process-location mapping checks:
 for each number tendency, the test verifies the exact cloud-fraction factor used
 by the implementation.
-
-### Bookkeeping Diagnostics
-
-A non-gating diagnostic reports the maximum residual of an assembled total-water
-bookkeeping sum over the sweep. This is informational and not used as a pass/
-fail criterion.
 
 ### BFB Serialization Scope
 

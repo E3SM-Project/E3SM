@@ -457,8 +457,9 @@ struct UnitWrap::UnitTest<D>::TestP3BackToCellAverage : public UnitWrap::UnitTes
     }
   }
 
-  // Primary bookkeeping check: each tendency must use the cloud-fraction factor
-  // defined by its process location in the implementation.
+  // Primary mapping check over dense sweep cases. This uses the shared
+  // ScaleKind/cloud_factor table and is paired with known-answer tests below
+  // that hardcode expectations independently of this helper.
   void run_process_location_checks(const BackToCellAverageTestData& data) const {
     int failures = 0;
 
@@ -486,83 +487,86 @@ struct UnitWrap::UnitTest<D>::TestP3BackToCellAverage : public UnitWrap::UnitTes
     REQUIRE(failures == 0);
   }
 
-  // Physical and mathematical bounds:
-  // non-negative inputs remain non-negative, and cell-avg tendencies do not
-  // exceed in-cloud tendencies for scaled processes.
-  void run_bounds_and_scaling_checks(const BackToCellAverageTestData& data) const {
+  // Hand-calculated known-answer checks independent of cloud_factor/ScaleKind.
+  // These catch mirrored mapping bugs shared by implementation and helper table.
+  void run_known_answer_tests() {
+    const Real identity_tol = 10 * std::numeric_limits<Real>::epsilon();
+
+    auto run_single_case = [&](const BackToCellAverageCase& c0,
+                               const bool use_separate_ice_liq_frac) {
+      view_1d<BackToCellAverageCase> case_dev("back_to_cell_average_known_answer", 1);
+      auto case_host = Kokkos::create_mirror_view(case_dev);
+      case_host(0) = c0;
+      Kokkos::deep_copy(case_dev, case_host);
+      run_back_to_cell_average_kernel(case_dev, use_separate_ice_liq_frac);
+      Kokkos::deep_copy(case_host, case_dev);
+      return case_host(0);
+    };
+
     int failures = 0;
 
-    for (int i = 0; i < data.num_cases; ++i) {
-      const auto& c = data.cases(i);
-#define CHECK_BOUNDS(name, scale)                                                                \
-      {                                                                                          \
-        const Real input = c.name##_input;                                                       \
-        const Real output = c.name##_output;                                                     \
-        if (is_scaled(scale)) {                                                                  \
-          if (input >= 0 && output < -data.absolute_floor) {                                    \
-            std::cout << "Non-negativity FAIL: " #name                                          \
-                      << " case=" << i << " input=" << input                                   \
-                      << " output=" << output << "\n";                                        \
-            ++failures;                                                                          \
-          }                                                                                      \
-          const Real upper = input + data.identity_tol * std::max<Real>(1, std::abs(input));    \
-          if (output > upper) {                                                                  \
-            std::cout << "Scaling reduction FAIL: " #name                                        \
-                      << " case=" << i << " input=" << input                                   \
-                      << " output=" << output << " upper=" << upper << "\n";               \
-            ++failures;                                                                          \
-          }                                                                                      \
-        } else {                                                                                 \
-          const Real diff = std::abs(output - input);                                            \
-          const Real tol = data.identity_tol * std::max<Real>(1, std::abs(input));              \
-          if (diff > tol) {                                                                      \
-            std::cout << "Unchanged-term identity FAIL: " #name                                 \
-                      << " case=" << i << " input=" << input                                   \
-                      << " output=" << output << " diff=" << diff                              \
-                      << " tol=" << tol << "\n";                                              \
-            ++failures;                                                                          \
-          }                                                                                      \
-        }                                                                                        \
-      }
-      BACK_TO_CELL_AVERAGE_TENDENCY_LIST(CHECK_BOUNDS)
-#undef CHECK_BOUNDS
+    // Case A: fl=0.4, fr=0.6, fi=0.5
+    // lr=min(0.4,0.6)=0.4, ir=min(0.5,0.6)=0.5, il=min(0.5,0.4)=0.4,
+    // glaciated=max(1e-4,0.5-0.4)=0.1.
+    BackToCellAverageCase c_a;
+    c_a.cld_frac_l = 0.4;
+    c_a.cld_frac_r = 0.6;
+    c_a.cld_frac_i = 0.5;
+    c_a.context = true;
+    set_case_inputs(c_a, 1.0);
+    c_a.qc2qr_accret_tend_input = 1.0;   // LR -> 0.4
+    c_a.qr2qv_evap_tend_input = 1.0;     // R  -> 0.6
+    c_a.qc2qr_autoconv_tend_input = 1.0; // L  -> 0.4
+    c_a.qi2qr_melt_tend_input = 1.0;     // I  -> 0.5
+    c_a.qc2qi_collect_tend_input = 1.0;  // IL -> 0.4
+    c_a.qr2qi_collect_tend_input = 1.0;  // IR -> 0.5
+    c_a.qi2qv_sublim_tend_input = 1.0;   // GLACIATED_OR_I -> 0.5 or 0.1
+    c_a.qv2qi_nucleat_tend_input = 1.0;  // UNCHANGED -> 1.0
+
+    const auto c_a_default = run_single_case(c_a, false);
+    const auto c_a_separate = run_single_case(c_a, true);
+
+#define CHECK_KNOWN(name, actual, expected)                                                      \
+    {                                                                                           \
+      const Real diff = std::abs((actual) - (expected));                                        \
+      if (diff > identity_tol) {                                                                 \
+        std::cout << "Known-answer FAIL: " #name                                                 \
+                  << " actual=" << (actual)                                                      \
+                  << " expected=" << (expected)                                                  \
+                  << " diff=" << diff << "\n";                                                   \
+        ++failures;                                                                              \
+      }                                                                                          \
     }
+    CHECK_KNOWN(qc2qr_accret_tend, c_a_default.qc2qr_accret_tend_output, 0.4);
+    CHECK_KNOWN(qr2qv_evap_tend, c_a_default.qr2qv_evap_tend_output, 0.6);
+    CHECK_KNOWN(qc2qr_autoconv_tend, c_a_default.qc2qr_autoconv_tend_output, 0.4);
+    CHECK_KNOWN(qi2qr_melt_tend, c_a_default.qi2qr_melt_tend_output, 0.5);
+    CHECK_KNOWN(qc2qi_collect_tend, c_a_default.qc2qi_collect_tend_output, 0.4);
+    CHECK_KNOWN(qr2qi_collect_tend, c_a_default.qr2qi_collect_tend_output, 0.5);
+    CHECK_KNOWN(qi2qv_sublim_tend_default, c_a_default.qi2qv_sublim_tend_output, 0.5);
+    CHECK_KNOWN(qi2qv_sublim_tend_separate, c_a_separate.qi2qv_sublim_tend_output, 0.1);
+    CHECK_KNOWN(qv2qi_nucleat_tend_default, c_a_default.qv2qi_nucleat_tend_output, 1.0);
+    CHECK_KNOWN(qv2qi_nucleat_tend_separate, c_a_separate.qv2qi_nucleat_tend_output, 1.0);
 
-    REQUIRE(failures == 0);
-  }
+    // Case B: fl=0.6, fr=0.2, fi=0.6
+    // il=min(0.6,0.6)=0.6 -> fi-il=0.0, so glaciated floor applies: 1e-4.
+    // This case targets only GLACIATED_OR_I floor activation; other tendencies
+    // are initialized by set_case_inputs for completeness but not checked here.
+    BackToCellAverageCase c_b;
+    c_b.cld_frac_l = 0.6;
+    c_b.cld_frac_r = 0.2;
+    c_b.cld_frac_i = 0.6;
+    c_b.context = true;
+    set_case_inputs(c_b, 1.0);
+    c_b.qi2qv_sublim_tend_input = 2.0;
 
-  // Validates overlap geometry (intersection <= constituents) and enforces the
-  // glaciated minimum used for numerical robustness.
-  void run_cloud_fraction_logic_checks(const BackToCellAverageTestData& data) const {
-    int failures = 0;
-
-    for (int i = 0; i < data.num_cases; ++i) {
-      const auto& c = data.cases(i);
-      const Real ir_max = std::min(c.cld_frac_i, c.cld_frac_r) + data.identity_tol;
-      const Real il_max = std::min(c.cld_frac_i, c.cld_frac_l) + data.identity_tol;
-      const Real lr_max = std::min(c.cld_frac_l, c.cld_frac_r) + data.identity_tol;
-
-      if (c.ir_cldm > ir_max) {
-        std::cout << "Intersection FAIL (ir): case=" << i
-                  << " ir_cldm=" << c.ir_cldm << " max=" << ir_max << "\n";
-        ++failures;
-      }
-      if (c.il_cldm > il_max) {
-        std::cout << "Intersection FAIL (il): case=" << i
-                  << " il_cldm=" << c.il_cldm << " max=" << il_max << "\n";
-        ++failures;
-      }
-      if (c.lr_cldm > lr_max) {
-        std::cout << "Intersection FAIL (lr): case=" << i
-                  << " lr_cldm=" << c.lr_cldm << " max=" << lr_max << "\n";
-        ++failures;
-      }
-      if (c.cld_frac_glaciated < kGlaciatedFloor - data.identity_tol) {
-        std::cout << "Glaciated fraction floor FAIL: case=" << i
-                  << " cld_frac_glaciated=" << c.cld_frac_glaciated << "\n";
-        ++failures;
-      }
-    }
+    const auto c_b_default = run_single_case(c_b, false);
+    const auto c_b_separate = run_single_case(c_b, true);
+    // Expected: input * f_i = 2.0 * 0.6 = 1.2.
+    CHECK_KNOWN(qi2qv_sublim_floor_default, c_b_default.qi2qv_sublim_tend_output, 2.0 * 0.6);
+    // Expected: input * glaciated_floor = 2.0 * 1e-4 = 2e-4.
+    CHECK_KNOWN(qi2qv_sublim_floor_separate, c_b_separate.qi2qv_sublim_tend_output, 2.0 * kGlaciatedFloor);
+#undef CHECK_KNOWN
 
     REQUIRE(failures == 0);
   }
@@ -677,20 +681,9 @@ struct UnitWrap::UnitTest<D>::TestP3BackToCellAverage : public UnitWrap::UnitTes
     REQUIRE(failures == 0);
   }
 
-  // Signed tendencies are common in microphysics (sources and sinks). This
-  // check confirms scaling uses output=input*factor for either sign.
-  void run_signed_input_checks() {
-    const auto data_default = setup_parameter_sweep(false, true);
-    run_process_location_checks(data_default);
-
-    const auto data_separate = setup_parameter_sweep(true, true);
-    run_process_location_checks(data_separate);
-  }
-
-  // Spot checks for numerical robustness across extreme magnitude regimes.
+  // Extreme-value spot checks focus on numerical robustness only.
+  // Mapping algebra is already covered by process_location + known_answer_tests.
   void run_extreme_value_checks() {
-    const Real identity_tol = 10 * std::numeric_limits<Real>::epsilon();
-    const Real absolute_floor = kAbsoluteFloor;
     const Real denorm = std::numeric_limits<Real>::denorm_min();
     const Real tiny = denorm > 0 ? 10 * denorm : 10 * std::numeric_limits<Real>::min();
 
@@ -744,19 +737,15 @@ struct UnitWrap::UnitTest<D>::TestP3BackToCellAverage : public UnitWrap::UnitTes
                     << " case=" << i << " output=" << c.name##_output << "\n";                  \
           ++failures;                                                                            \
         }                                                                                        \
-        const Real expected = c.name##_input * cloud_factor(c, scale, true);                    \
-        const Real diff = std::abs(c.name##_output - expected);                                 \
-        const Real rel = diff / std::max(absolute_floor, std::abs(expected));                   \
-        if (rel > identity_tol) {                                                                \
-          std::cout << "Extreme-value mapping FAIL: " #name                                      \
-                    << " case=" << i                                                             \
-                    << " expected=" << expected                                                  \
-                    << " actual=" << c.name##_output << "\n";                                   \
-          ++failures;                                                                            \
-        }                                                                                        \
       }
       BACK_TO_CELL_AVERAGE_TENDENCY_LIST(CHECK_EXTREME)
 #undef CHECK_EXTREME
+      if (!std::isfinite(c.ir_cldm) || !std::isfinite(c.il_cldm) ||
+          !std::isfinite(c.lr_cldm) || !std::isfinite(c.cld_frac_glaciated)) {
+        std::cout << "Extreme-value finite FAIL: derived cloud fractions"
+                  << " case=" << i << "\n";
+        ++failures;
+      }
     }
 
     REQUIRE(failures == 0);
@@ -876,6 +865,11 @@ struct UnitWrap::UnitTest<D>::TestP3BackToCellAverage : public UnitWrap::UnitTes
         std::cout << "Edge liquid-without-ice FAIL: il_cldm=" << c.il_cldm << "\n";
         ++failures;
       }
+      if (std::abs(c.cld_frac_glaciated - kGlaciatedFloor) > identity_tol) {
+        std::cout << "Edge liquid-without-ice glaciated-floor FAIL: cld_frac_glaciated="
+                  << c.cld_frac_glaciated << " expected=" << kGlaciatedFloor << "\n";
+        ++failures;
+      }
 #define CHECK_IL_ZERO(name, scale)                                                               \
       if (scale == ScaleKind::IL) {                                                              \
         if (std::abs(c.name##_output) > absolute_floor) {                                       \
@@ -889,67 +883,6 @@ struct UnitWrap::UnitTest<D>::TestP3BackToCellAverage : public UnitWrap::UnitTes
     }
 
     REQUIRE(failures == 0);
-  }
-
-  // Informational-only total-water closure diagnostic for this tendency set.
-  // Non-gating: the system includes open-process terms, so this is reported
-  // as a bookkeeping indicator rather than a strict pass/fail invariant.
-  void run_bookkeeping_diagnostics(const BackToCellAverageTestData& data) const {
-    Real max_abs_residual = 0;
-    int max_idx = -1;
-
-    for (int i = 0; i < data.num_cases; ++i) {
-      const auto& c = data.cases(i);
-
-      const Real dqc =
-          -c.qc2qr_accret_tend_output
-          -c.qc2qr_autoconv_tend_output
-          -c.qc2qi_hetero_freeze_tend_output
-          -c.qc2qi_collect_tend_output
-          -c.qc2qr_ice_shed_tend_output
-          -c.qc2qi_berg_tend_output;
-
-      const Real dqr =
-          +c.qc2qr_accret_tend_output
-          +c.qc2qr_autoconv_tend_output
-          -c.qr2qv_evap_tend_output
-          -c.qr2qi_collect_tend_output
-          +c.qi2qr_melt_tend_output
-          -c.qr2qi_immers_freeze_tend_output
-          +c.qc2qr_ice_shed_tend_output;
-
-      const Real dqi =
-          +c.qv2qi_vapdep_tend_output
-          +c.qv2qi_nucleat_tend_output
-          +c.qc2qi_berg_tend_output
-          +c.qr2qi_collect_tend_output
-          +c.qc2qi_collect_tend_output
-          +c.qr2qi_immers_freeze_tend_output
-          +c.qc2qi_hetero_freeze_tend_output
-          -c.qi2qv_sublim_tend_output
-          -c.qi2qr_melt_tend_output;
-
-      const Real dqv =
-          -c.qv2qi_vapdep_tend_output
-          +c.qi2qv_sublim_tend_output
-          -c.qv2qi_nucleat_tend_output
-          +c.qr2qv_evap_tend_output;
-
-      const Real residual = dqc + dqr + dqi + dqv;
-      const Real abs_residual = std::abs(residual);
-      if (abs_residual > max_abs_residual) {
-        max_abs_residual = abs_residual;
-        max_idx = i;
-      }
-    }
-
-    std::cout << "\n=== Back-to-cell-average bookkeeping diagnostics (non-gating) ===\n"
-              << "  Cases checked: " << data.num_cases << "\n"
-              << "  Max |total-water residual|: " << max_abs_residual << "\n"
-              << "  Case index: " << max_idx << "\n"
-              << "===============================================================\n";
-
-    REQUIRE(true);
   }
 };
 
@@ -965,19 +898,18 @@ TEST_CASE("p3_back_to_cell_average", "[p3_back_to_cell_average]") {
   T t;
 
   // Each section runs independently so failures isolate quickly.
+  // Tautological algebra checks (e.g., generic bounds from multiplying by
+  // factors in [0,1]) are intentionally omitted in favor of mapping-focused
+  // and known-answer coverage.
   SECTION("process_location") {
     const auto data = t.setup_parameter_sweep();
     t.run_process_location_checks(data);
+    const auto data_mixed_sign = t.setup_parameter_sweep(false, true);
+    t.run_process_location_checks(data_mixed_sign);
   }
 
-  SECTION("bounds_and_scaling") {
-    const auto data = t.setup_parameter_sweep();
-    t.run_bounds_and_scaling_checks(data);
-  }
-
-  SECTION("cloud_fraction_logic") {
-    const auto data = t.setup_parameter_sweep();
-    t.run_cloud_fraction_logic_checks(data);
+  SECTION("known_answer_tests") {
+    t.run_known_answer_tests();
   }
 
   SECTION("runtime_option") {
@@ -988,21 +920,12 @@ TEST_CASE("p3_back_to_cell_average", "[p3_back_to_cell_average]") {
     t.run_context_mask_checks();
   }
 
-  SECTION("signed_inputs") {
-    t.run_signed_input_checks();
-  }
-
   SECTION("edge_cases") {
     t.run_edge_case_checks();
   }
 
   SECTION("extreme_values") {
     t.run_extreme_value_checks();
-  }
-
-  SECTION("bookkeeping_diagnostics") {
-    const auto data = t.setup_parameter_sweep();
-    t.run_bookkeeping_diagnostics(data);
   }
 
   SECTION("bfb") {
