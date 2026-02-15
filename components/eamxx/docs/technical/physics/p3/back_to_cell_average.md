@@ -91,7 +91,10 @@ sections:
 - `bounds_and_scaling`
 - `cloud_fraction_logic`
 - `runtime_option`
+- `context_mask`
+- `signed_inputs`
 - `edge_cases`
+- `extreme_values`
 - `bookkeeping_diagnostics` (non-gating)
 - `bfb`
 
@@ -101,10 +104,12 @@ sections:
 | --- | --- | --- | --- |
 | Process-location mapping | Identity | `10 * epsilon` | Exact implementation formula |
 | Runtime branch mapping | Identity | `10 * epsilon` | Exact branch behavior |
+| Context mask behavior | Identity | `10 * epsilon` | `context=false` lanes must remain unchanged |
 | Intersection consistency | Identity | `10 * epsilon` | `min`/`max` identity checks |
 | Scaling reduction | Identity | `10 * epsilon` | For factors in `[0,1]` |
 | Non-negativity | Absolute | `1e-30` | Numerical zero proxy |
 | Glaciated threshold | Hard bound | `>= 1e-4` | Explicit implementation floor |
+| Extreme-value finite checks | Finite | `isfinite` | Guard against NaN/Inf under very large/small magnitudes |
 
 ### Parameter Sweep Strategy
 
@@ -114,7 +119,14 @@ A 3D linear sweep over cloud fractions is used:
 - `n_frac = 15` per dimension
 - `num_cases = 15^3 = 3375`
 
-All tendency inputs are deterministic, distinct, and non-negative.
+All tendency inputs are deterministic and distinct. A dedicated `signed_inputs`
+section applies alternating signs to verify mapping is sign-agnostic.
+
+### Context-Mask Coverage
+
+The implementation applies updates with `.set(context, ...)`. The `context_mask`
+section verifies that lanes with `context=false` are unchanged, including an
+explicit all-zero cloud-fraction lane.
 
 ### Number-Tendency Validation Policy
 
@@ -131,3 +143,11 @@ by the implementation.
 A non-gating diagnostic reports the maximum residual of an assembled total-water
 bookkeeping sum over the sweep. This is informational and not used as a pass/
 fail criterion.
+
+### BFB Serialization Scope
+
+The BFB compare list intentionally follows the
+`BackToCellAverageData::PTD_RW_SCALARS_ONLY` serialized subset:
+
+- Includes legacy pass-through fields `qcnuc` and `nc_nuceat_tend`.
+- Excludes `*_cnt` fields, which are not part of this BFB serialization set.

@@ -19,6 +19,10 @@ namespace unit_test {
 
 namespace {
 
+constexpr int kFracSweepSize = 15;
+constexpr Real kGlaciatedFloor = 1e-4;
+constexpr Real kAbsoluteFloor = 1e-30;
+
 // Physical region tags used by back_to_cell_average scaling:
 // L/R/I are single-phase cloud fractions; IL/IR/LR are pairwise intersections;
 // GLACIATED_OR_I depends on runtime option use_separate_ice_liq_frac.
@@ -75,8 +79,10 @@ enum class ScaleKind {
   X(ninuc_cnt,                ScaleKind::L)                                                     \
   X(qinuc_cnt,                ScaleKind::L)
 
-// If a tendency is serialized in BackToCellAverageData PTD_RW_SCALARS_ONLY,
-// keep it in this list so BFB compare/generate stays aligned.
+// BFB list matches the PTD_RW_SCALARS_ONLY serialized subset in
+// BackToCellAverageData:
+// - Includes legacy pass-through fields qcnuc and nc_nuceat_tend.
+// - Excludes *_cnt fields, which are not serialized for BFB in test data.
 #define BACK_TO_CELL_AVERAGE_BFB_COMPARE_LIST(X)                                                \
   X(qc2qr_accret_tend)                                                                           \
   X(qr2qv_evap_tend)                                                                             \
@@ -178,6 +184,19 @@ struct UnitWrap::UnitTest<D>::TestP3BackToCellAverage : public UnitWrap::UnitTes
 #undef INIT_INPUT
   }
 
+  // Applies alternating signs so mapping checks exercise both source and sink
+  // tendencies. Multiplicative scaling should be sign-agnostic.
+  void apply_alternating_sign_pattern(BackToCellAverageCase& c, const int case_idx) const {
+    int tidx = 0;
+#define APPLY_SIGN(name, scale)                                                                  \
+    if (((case_idx + tidx) % 2) == 1) {                                                         \
+      c.name##_input = -c.name##_input;                                                         \
+    }                                                                                            \
+    ++tidx;
+    BACK_TO_CELL_AVERAGE_TENDENCY_LIST(APPLY_SIGN)
+#undef APPLY_SIGN
+  }
+
   // Executes back_to_cell_average for a batch of synthetic cases and stores
   // both derived overlap fractions and output tendencies for host-side checks.
   void run_back_to_cell_average_kernel(const view_1d<BackToCellAverageCase>& cases_dev,
@@ -224,7 +243,7 @@ struct UnitWrap::UnitTest<D>::TestP3BackToCellAverage : public UnitWrap::UnitTes
       const Spack ir_cldm = min(cld_frac_i, cld_frac_r);
       const Spack il_cldm = min(cld_frac_i, cld_frac_l);
       const Spack lr_cldm = min(cld_frac_l, cld_frac_r);
-      const Spack cld_frac_glaciated = max(0.0001, cld_frac_i - il_cldm);
+      const Spack cld_frac_glaciated = max(kGlaciatedFloor, cld_frac_i - il_cldm);
 
       Functions::back_to_cell_average(
         cld_frac_l, cld_frac_r, cld_frac_i,
@@ -261,11 +280,12 @@ struct UnitWrap::UnitTest<D>::TestP3BackToCellAverage : public UnitWrap::UnitTes
 
   // Dense coverage of cloud-fraction phase space:
   // 15x15x15 combinations spanning the full [0,1] range for fi/fl/fr.
-  BackToCellAverageTestData setup_parameter_sweep(const bool use_separate_ice_liq_frac = false) {
-    const int n_frac = 15;
+  BackToCellAverageTestData setup_parameter_sweep(const bool use_separate_ice_liq_frac = false,
+                                                  const bool mixed_sign_inputs = false) {
+    const int n_frac = kFracSweepSize;
     const int num_cases = n_frac * n_frac * n_frac;
     const Real identity_tol = 10 * std::numeric_limits<Real>::epsilon();
-    const Real absolute_floor = 1e-30;
+    const Real absolute_floor = kAbsoluteFloor;
 
     view_1d<BackToCellAverageCase> cases_dev("back_to_cell_average_cases", num_cases);
     auto cases_host = Kokkos::create_mirror_view(cases_dev);
@@ -282,6 +302,9 @@ struct UnitWrap::UnitTest<D>::TestP3BackToCellAverage : public UnitWrap::UnitTes
 
           const Real base = 1e-6 * (1 + 0.02 * (idx % 23));
           set_case_inputs(c, base);
+          if (mixed_sign_inputs) {
+            apply_alternating_sign_pattern(c, idx);
+          }
           ++idx;
         }
       }
@@ -353,6 +376,9 @@ struct UnitWrap::UnitTest<D>::TestP3BackToCellAverage : public UnitWrap::UnitTes
   // Bit-for-bit regression check for the baseline test infrastructure.
   // Kept separate from property tests that validate physics bookkeeping logic.
   void run_bfb() {
+    static_assert(max_pack_size >= 16,
+                  "Deterministic BFB fixture assumes max_pack_size >= 16.");
+
     std::array<BackToCellAverageData, max_pack_size> baseline_data;
     initialize_deterministic_bfb_inputs(baseline_data);
 
@@ -531,7 +557,7 @@ struct UnitWrap::UnitTest<D>::TestP3BackToCellAverage : public UnitWrap::UnitTes
                   << " lr_cldm=" << c.lr_cldm << " max=" << lr_max << "\n";
         ++failures;
       }
-      if (c.cld_frac_glaciated < 1e-4) {
+      if (c.cld_frac_glaciated < kGlaciatedFloor - data.identity_tol) {
         std::cout << "Glaciated fraction floor FAIL: case=" << i
                   << " cld_frac_glaciated=" << c.cld_frac_glaciated << "\n";
         ++failures;
@@ -569,11 +595,13 @@ struct UnitWrap::UnitTest<D>::TestP3BackToCellAverage : public UnitWrap::UnitTes
                       << " err_separate=" << err1 << "\n";                                   \
             ++failures;                                                                          \
           }                                                                                      \
-          const Real expected_diff = std::abs(expected0 - expected1);                           \
-          if (expected_diff > data_default.absolute_floor && diff <= tol) {                     \
+          /* If il_cldm==0, cld_frac_glaciated==cld_frac_i, so identical outputs */             \
+          /* are expected. Require sensitivity only when scaling factors differ. */              \
+          const Real scaling_diff = std::abs(d0.cld_frac_i - d1.cld_frac_glaciated);            \
+          if (scaling_diff > data_default.identity_tol && diff <= tol) {                         \
             std::cout << "Runtime branch sensitivity FAIL: " #name                              \
                       << " case=" << i                                                          \
-                      << " expected_diff=" << expected_diff                                     \
+                      << " scaling_diff=" << scaling_diff                                       \
                       << " actual_diff=" << diff << "\n";                                     \
             ++failures;                                                                          \
           }                                                                                      \
@@ -593,11 +621,152 @@ struct UnitWrap::UnitTest<D>::TestP3BackToCellAverage : public UnitWrap::UnitTes
     REQUIRE(failures == 0);
   }
 
+  // Verifies .set(context, ...) masking semantics: context=false lanes must
+  // retain their input tendency values even when neighboring lanes are active.
+  void run_context_mask_checks() {
+    const int num_cases = 2 * Spack::n;
+    const Real identity_tol = 10 * std::numeric_limits<Real>::epsilon();
+    const Real absolute_floor = kAbsoluteFloor;
+
+    view_1d<BackToCellAverageCase> cases_dev("back_to_cell_average_context_mask", num_cases);
+    auto cases_host = Kokkos::create_mirror_view(cases_dev);
+
+    for (int i = 0; i < num_cases; ++i) {
+      auto& c = cases_host(i);
+      c.cld_frac_i = (i % 3) * 0.3;
+      c.cld_frac_l = ((i + 1) % 4) * 0.25;
+      c.cld_frac_r = ((i + 2) % 5) * 0.2;
+      c.context = (i < Spack::n) ? ((i % 2) == 0) : ((i % 2) == 1);
+      set_case_inputs(c, 2e-6 * (i + 1));
+      apply_alternating_sign_pattern(c, i);
+    }
+    // Explicitly pin one all-zero/cloud-fraction lane with context=false.
+    cases_host(0).cld_frac_i = 0;
+    cases_host(0).cld_frac_l = 0;
+    cases_host(0).cld_frac_r = 0;
+    cases_host(0).context = false;
+
+    Kokkos::deep_copy(cases_dev, cases_host);
+    run_back_to_cell_average_kernel(cases_dev, true);
+    Kokkos::deep_copy(cases_host, cases_dev);
+
+    int failures = 0;
+    for (int i = 0; i < num_cases; ++i) {
+      const auto& c = cases_host(i);
+#define CHECK_CONTEXT_MASK(name, scale)                                                          \
+      {                                                                                          \
+        const Real expected = c.context                                                          \
+                                ? c.name##_input * cloud_factor(c, scale, true)                 \
+                                : c.name##_input;                                                \
+        const Real diff = std::abs(c.name##_output - expected);                                 \
+        const Real tol = identity_tol * std::max<Real>(1, std::abs(expected));                  \
+        const Real rel = diff / std::max(absolute_floor, std::abs(expected));                   \
+        if (diff > tol && rel > identity_tol) {                                                  \
+          std::cout << "Context-mask FAIL: " #name                                               \
+                    << " case=" << i << " context=" << c.context                                 \
+                    << " input=" << c.name##_input                                               \
+                    << " output=" << c.name##_output                                             \
+                    << " expected=" << expected << "\n";                                         \
+          ++failures;                                                                            \
+        }                                                                                        \
+      }
+      BACK_TO_CELL_AVERAGE_TENDENCY_LIST(CHECK_CONTEXT_MASK)
+#undef CHECK_CONTEXT_MASK
+    }
+
+    REQUIRE(failures == 0);
+  }
+
+  // Signed tendencies are common in microphysics (sources and sinks). This
+  // check confirms scaling uses output=input*factor for either sign.
+  void run_signed_input_checks() {
+    const auto data_default = setup_parameter_sweep(false, true);
+    run_process_location_checks(data_default);
+
+    const auto data_separate = setup_parameter_sweep(true, true);
+    run_process_location_checks(data_separate);
+  }
+
+  // Spot checks for numerical robustness across extreme magnitude regimes.
+  void run_extreme_value_checks() {
+    const Real identity_tol = 10 * std::numeric_limits<Real>::epsilon();
+    const Real absolute_floor = kAbsoluteFloor;
+    const Real denorm = std::numeric_limits<Real>::denorm_min();
+    const Real tiny = denorm > 0 ? 10 * denorm : 10 * std::numeric_limits<Real>::min();
+
+    view_1d<BackToCellAverageCase> cases_dev("back_to_cell_average_extreme_values", 3);
+    auto cases_host = Kokkos::create_mirror_view(cases_dev);
+
+    for (int i = 0; i < 3; ++i) {
+      auto& c = cases_host(i);
+      if (i == 0) {
+        c.cld_frac_i = 1e-10;
+        c.cld_frac_l = 2e-10;
+        c.cld_frac_r = 3e-10;
+      } else if (i == 1) {
+        c.cld_frac_i = 0.8;
+        c.cld_frac_l = 0.4;
+        c.cld_frac_r = 0.7;
+      } else {
+        c.cld_frac_i = 1.0;
+        c.cld_frac_l = 1.0;
+        c.cld_frac_r = 1.0;
+      }
+      c.context = true;
+      set_case_inputs(c, 1.0);
+
+      int tidx = 0;
+#define SET_EXTREME(name, scale)                                                                 \
+      if (i == 0) {                                                                              \
+        c.name##_input = (tidx % 2 == 0) ? 1e15 : -1e15;                                        \
+      } else if (i == 1) {                                                                       \
+        c.name##_input = (tidx % 2 == 0) ? tiny : -tiny;                                        \
+      } else {                                                                                   \
+        c.name##_input = (tidx % 2 == 0) ? 1e5 : -1e5;                                          \
+      }                                                                                          \
+      c.name##_output = -1;                                                                      \
+      ++tidx;
+      BACK_TO_CELL_AVERAGE_TENDENCY_LIST(SET_EXTREME)
+#undef SET_EXTREME
+    }
+
+    Kokkos::deep_copy(cases_dev, cases_host);
+    run_back_to_cell_average_kernel(cases_dev, true);
+    Kokkos::deep_copy(cases_host, cases_dev);
+
+    int failures = 0;
+    for (int i = 0; i < 3; ++i) {
+      const auto& c = cases_host(i);
+#define CHECK_EXTREME(name, scale)                                                               \
+      {                                                                                          \
+        if (!std::isfinite(c.name##_output)) {                                                   \
+          std::cout << "Extreme-value finite FAIL: " #name                                       \
+                    << " case=" << i << " output=" << c.name##_output << "\n";                  \
+          ++failures;                                                                            \
+        }                                                                                        \
+        const Real expected = c.name##_input * cloud_factor(c, scale, true);                    \
+        const Real diff = std::abs(c.name##_output - expected);                                 \
+        const Real rel = diff / std::max(absolute_floor, std::abs(expected));                   \
+        if (rel > identity_tol) {                                                                \
+          std::cout << "Extreme-value mapping FAIL: " #name                                      \
+                    << " case=" << i                                                             \
+                    << " expected=" << expected                                                  \
+                    << " actual=" << c.name##_output << "\n";                                   \
+          ++failures;                                                                            \
+        }                                                                                        \
+      }
+      BACK_TO_CELL_AVERAGE_TENDENCY_LIST(CHECK_EXTREME)
+#undef CHECK_EXTREME
+    }
+
+    REQUIRE(failures == 0);
+  }
+
   // Explicit corner regimes (zero, full, and exclusive overlaps) complement
   // the dense sweep and make expected limiting behavior explicit.
   void run_edge_case_checks() {
     const Real identity_tol = 10 * std::numeric_limits<Real>::epsilon();
-    const Real absolute_floor = 1e-30;
+    const Real absolute_floor = kAbsoluteFloor;
 
     view_1d<BackToCellAverageCase> cases_dev("back_to_cell_average_edge_cases", 4);
     auto cases_host = Kokkos::create_mirror_view(cases_dev);
@@ -608,8 +777,6 @@ struct UnitWrap::UnitTest<D>::TestP3BackToCellAverage : public UnitWrap::UnitTes
     cases_host(0).cld_frac_i = 0;
     cases_host(0).context = true;
     set_case_inputs(cases_host(0), 2e-6);
-    cases_host(0).qv2qi_nucleat_tend_input = 0;
-    cases_host(0).ni_nucleat_tend_input = 0;
 
     // Case 1: full coverage.
     cases_host(1).cld_frac_l = 1;
@@ -638,15 +805,27 @@ struct UnitWrap::UnitTest<D>::TestP3BackToCellAverage : public UnitWrap::UnitTes
 
     int failures = 0;
 
-    // Zero-cloud case: all scaled tendencies should collapse to ~0.
+    // Zero-cloud case: scaled tendencies collapse to ~0, while UNCHANGED
+    // tendencies pass through.
     {
       const auto& c = cases_host(0);
 #define CHECK_ZERO_CASE(name, scale)                                                             \
       {                                                                                          \
-        if (std::abs(c.name##_output) > absolute_floor) {                                       \
-          std::cout << "Edge zero-cloud FAIL: " #name                                           \
-                    << " output=" << c.name##_output << "\n";                                \
-          ++failures;                                                                            \
+        if (is_scaled(scale)) {                                                                  \
+          if (std::abs(c.name##_output) > absolute_floor) {                                     \
+            std::cout << "Edge zero-cloud FAIL: " #name                                         \
+                      << " output=" << c.name##_output << "\n";                                 \
+            ++failures;                                                                          \
+          }                                                                                      \
+        } else {                                                                                 \
+          const Real diff = std::abs(c.name##_output - c.name##_input);                         \
+          const Real tol = identity_tol * std::max<Real>(1, std::abs(c.name##_input));          \
+          if (diff > tol) {                                                                      \
+            std::cout << "Edge zero-cloud unchanged FAIL: " #name                               \
+                      << " input=" << c.name##_input                                             \
+                      << " output=" << c.name##_output << "\n";                                  \
+            ++failures;                                                                          \
+          }                                                                                      \
         }                                                                                        \
       }
       BACK_TO_CELL_AVERAGE_TENDENCY_LIST(CHECK_ZERO_CASE)
@@ -805,8 +984,20 @@ TEST_CASE("p3_back_to_cell_average", "[p3_back_to_cell_average]") {
     t.run_runtime_option_checks();
   }
 
+  SECTION("context_mask") {
+    t.run_context_mask_checks();
+  }
+
+  SECTION("signed_inputs") {
+    t.run_signed_input_checks();
+  }
+
   SECTION("edge_cases") {
     t.run_edge_case_checks();
+  }
+
+  SECTION("extreme_values") {
+    t.run_extreme_value_checks();
   }
 
   SECTION("bookkeeping_diagnostics") {
