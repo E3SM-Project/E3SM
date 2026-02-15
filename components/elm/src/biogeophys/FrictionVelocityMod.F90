@@ -16,7 +16,6 @@ module FrictionVelocityMod
   !
   ! !PUBLIC TYPES:
   implicit none
-  save
 
   logical, public :: implicit_stress = .false.
   logical, public :: atm_gustiness = .false.

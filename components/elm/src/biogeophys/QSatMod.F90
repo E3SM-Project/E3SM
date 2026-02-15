@@ -7,7 +7,7 @@ module QSatMod
   ! !PUBLIC TYPES:
   use shr_kind_mod , only: r8 => shr_kind_r8
   implicit none
-  save
+
   private 
   !
   ! !PUBLIC MEMBER FUNCTIONS:
@@ -60,7 +60,7 @@ contains
 
 
   !-----------------------------------------------------------------------
-  subroutine QSat (T, p, es, esdT, qs, qsdT)
+  elemental subroutine QSat (T, p, es, esdT, qs, qsdT)
     !
     ! !DESCRIPTION:
     ! Computes saturation mixing ratio and the change in saturation

@@ -52,7 +52,7 @@ module CanopyFluxesMod
   !
   ! !PUBLIC TYPES:
   implicit none
-  save
+
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: CanopyFluxes
