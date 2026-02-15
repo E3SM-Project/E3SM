@@ -133,10 +133,12 @@ contains
           if (flow == 'c2x') then
              mapper%gsmap_s => component_get_gsmap_cc(comp)
              mapper%gsmap_d => component_get_gsmap_cx(comp)
+             mapper%mapfile = "compc2x"
           end if
           if (flow == 'x2c') then
              mapper%gsmap_s => component_get_gsmap_cx(comp)
              mapper%gsmap_d => component_get_gsmap_cc(comp)
+             mapper%mapfile = "compx2c"
           end if
        endif
 
@@ -192,10 +194,12 @@ contains
        if (flow == 'c2x') then
           mapper%gsmap_s => component_get_gsmap_cc(comp)
           mapper%gsmap_d => component_get_gsmap_cx(comp)
+          mapper%mapfile = "compc2x"
        end if
        if (flow == 'x2c') then
           mapper%gsmap_s => component_get_gsmap_cx(comp)
           mapper%gsmap_d => component_get_gsmap_cc(comp)
+          mapper%mapfile = "compx2c"
        end if
        call seq_map_gsmapcheck(gsmap_s_join, gsmap_d_join)
        call mct_rearr_init(gsmap_s_join, gsmap_d_join, mpicom_join, mapper%rearr)
