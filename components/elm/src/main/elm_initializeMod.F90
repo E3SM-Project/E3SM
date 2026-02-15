@@ -435,7 +435,7 @@ contains
     call t_stopf('init_filters')
 
     nclumps = get_proc_clumps()
-    !$OMP PARALLEL DO PRIVATE (nc, bounds_clump)
+    !$OMP PARALLEL DO PRIVATE (nc, bounds_clump) if(nclumps>1)
     do nc = 1, nclumps
        call get_clump_bounds(nc, bounds_clump)
        call reweight_wrapup(bounds_clump, &
@@ -890,7 +890,7 @@ contains
                'finidat and finidat_interp_source cannot both be non-blank')
        end if
 
-       !$OMP PARALLEL DO PRIVATE (nc, bounds_clump)
+       !$OMP PARALLEL DO PRIVATE (nc, bounds_clump) if(nclumps>1)
        do nc = 1, nclumps
           call get_clump_bounds(nc, bounds_clump)
           call reweight_wrapup(bounds_clump, &
@@ -926,7 +926,7 @@ contains
 
     end if
 
-    !$OMP PARALLEL DO PRIVATE (nc, bounds_clump)
+    !$OMP PARALLEL DO PRIVATE (nc, bounds_clump) if(nclumps>1)
     do nc = 1, nclumps
        call get_clump_bounds(nc, bounds_clump)
        call reweight_wrapup(bounds_clump, &
@@ -1035,7 +1035,7 @@ contains
     !------------------------------------------------------------
 
     if (create_glacier_mec_landunit) then
-       !$OMP PARALLEL DO PRIVATE (nc, bounds_clump)
+       !$OMP PARALLEL DO PRIVATE (nc, bounds_clump) if(nclumps>1)
        do nc = 1,nclumps
           call get_clump_bounds(nc, bounds_clump)
 
@@ -1065,7 +1065,7 @@ contains
        ! If fates is using satellite phenology mode, make sure to call the SatellitePhenology
        ! procedure prior to init_coldstart which will eventually call leaf_area_profile
        if ( use_fates_sp ) then
-          !$OMP PARALLEL DO PRIVATE (nc, bounds_clump)
+          !$OMP PARALLEL DO PRIVATE (nc, bounds_clump) if(nclumps>1)
           do nc = 1,nclumps
              call get_clump_bounds(nc, bounds_clump)
              call SatellitePhenology(bounds_clump, &

@@ -114,7 +114,7 @@ contains
     nclumps = get_proc_clumps()
 
     ! FIX(SPM,032414) add private vars for cohort and perhaps patch dimension
-    !$OMP PARALLEL DO PRIVATE (nc, bounds_clump, ti, li, ci, pi, gdc, topounit)
+    !$OMP PARALLEL DO PRIVATE (nc, bounds_clump, ti, li, ci, pi, gdc, topounit) if(nclumps>1)
     do nc = 1, nclumps
 
        call get_clump_bounds(nc, bounds_clump)

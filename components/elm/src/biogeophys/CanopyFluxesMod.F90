@@ -777,13 +777,9 @@ contains
       !$OMP                      converge_tveg,cf,w,csoilb,ri,csoilcn,  &
       !$OMP                      ricsoilc,wta,wtl,wtshi,wtg0,wtga,rppdry, &
       !$OMP                      efpot,rpp,wtaq,wtlq,snow_depth_c,fsno_dl, &
-      !$OMP                      elai_dl,rdl,wtsqi,wtgq0,dc1,dc2,efsh,     &
+      !$OMP                      elai_dl,rdl,wtsqi,wtgq0,wtgaq,dc1,dc2,efsh,     &
       !$OMP                      efeold,erre,lw_grnd,dels,ecidif,tstar,    &
-      !$OMP                      qstar,thvstar,iter_final,del_gs ) SCHEDULE(DYNAMIC, 1) if (use_fates)
-
-      ! NOTE ON "V2" APPROACH. LETS CREATE THREADED FILTERS? OR elemental subroutines
-      ! to hold the math that is here inline?
-      
+      !$OMP                      qstar,thvstar,wc, iter_final,del_gs ) SCHEDULE(DYNAMIC, 1) if (use_fates)
       patch_loop1: do f = 1, fn
 
          p = filterp(f)
@@ -1208,7 +1204,7 @@ contains
             end if istoma_converge_if
 
          end do iterate_stoma
-         
+
       end do patch_loop1
       !$OMP END PARALLEL DO
       call t_stop_lnd(event)

@@ -144,7 +144,7 @@ contains
        call dyncrop_interp(bounds, crop_vars)
     end if
 
-    !$OMP PARALLEL DO PRIVATE (nc, bounds_clump)
+    !$OMP PARALLEL DO PRIVATE (nc, bounds_clump) if(nclumps>1)
     do nc = 1, nclumps
        call get_clump_bounds(nc, bounds_clump)
        call dynSubgrid_wrapup_weight_changes(bounds_clump, glc2lnd_vars)
@@ -241,7 +241,7 @@ contains
     ! Do initialization, prior to land cover change
     ! ==========================================================================
 
-    !$OMP PARALLEL DO PRIVATE (nc, bounds_clump)
+    !$OMP PARALLEL DO PRIVATE (nc, bounds_clump) if(nclumps>1)
     do nc = 1, nclumps
        call get_clump_bounds(nc, bounds_clump)
 
@@ -289,7 +289,7 @@ contains
     ! Do everything else related to land cover change
     ! ==========================================================================
 
-    !$OMP PARALLEL DO PRIVATE (nc, bounds_clump)
+    !$OMP PARALLEL DO PRIVATE (nc, bounds_clump) if(nclumps>1)
     do nc = 1, nclumps
        call get_clump_bounds(nc, bounds_clump)
 

@@ -909,10 +909,7 @@ contains
       end if
 
       nclumps = get_proc_clumps()
-
-      write(iulog,*) "NCLUMPS?:",nclumps
-      
-      !$OMP PARALLEL DO PRIVATE (nc,bounds_clump,nmaxcol,s,c,l,g,collist,pi,pf,ft)
+      !$OMP PARALLEL DO PRIVATE (nc,bounds_clump,nmaxcol,s,c,l,g,collist,pi,pf,ft) if(nclumps>1)
       do nc = 1,nclumps
 
          call get_clump_bounds(nc, bounds_clump)
@@ -1825,7 +1822,7 @@ contains
          call this%fates_restart%Init(nclumps, fates_bounds)
 
          ! Define the bounds on the first dimension for each thread
-         !$OMP PARALLEL DO PRIVATE (nc,bounds_clump,fates_clump)
+         !$OMP PARALLEL DO PRIVATE (nc,bounds_clump,fates_clump) if(nclumps>1)
          do nc = 1,nclumps
             call get_clump_bounds(nc, bounds_clump)
 
@@ -1835,7 +1832,7 @@ contains
          end do
          !$OMP END PARALLEL DO
 
-         !$OMP PARALLEL DO PRIVATE (nc,s,c,g)
+         !$OMP PARALLEL DO PRIVATE (nc,s,c,g) if(nclumps>1)
          do nc = 1,nclumps
 
             allocate(this%fates_restart%restart_map(nc)%site_index(this%fates(nc)%nsites))
@@ -1871,7 +1868,7 @@ contains
       ! ---------------------------------------------------------------------------------
 
       if(flag=='write')then
-         !$OMP PARALLEL DO PRIVATE (nc)
+         !$OMP PARALLEL DO PRIVATE (nc) if(nclumps>1)
          do nc = 1, nclumps
             if (this%fates(nc)%nsites>0) then
                call this%fates_restart%set_restart_vectors(nc,this%fates(nc)%nsites, &
@@ -1944,7 +1941,7 @@ contains
 
       if(flag=='read')then
 
-         !$OMP PARALLEL DO PRIVATE (nc,bounds_clump,s)
+         !$OMP PARALLEL DO PRIVATE (nc,bounds_clump,s) if(nclumps>1)
          do nc = 1, nclumps
             if (this%fates(nc)%nsites>0) then
 
@@ -2116,7 +2113,7 @@ contains
 
      nclumps = get_proc_clumps()
 
-     !$OMP PARALLEL DO PRIVATE (nc,bounds_clump,s,c,j,vol_ice,eff_porosity)
+     !$OMP PARALLEL DO PRIVATE (nc,bounds_clump,s,c,j,vol_ice,eff_porosity) if(nclumps>1)
      do nc = 1, nclumps
 
         if ( this%fates(nc)%nsites>0 ) then
@@ -3500,7 +3497,7 @@ end subroutine wrap_update_hifrq_hist
    call fates_hist%Init(nclumps, fates_bounds)
 
    ! Define the bounds on the first dimension for each thread
-   !$OMP PARALLEL DO PRIVATE (nc,bounds_clump,fates_clump)
+   !$OMP PARALLEL DO PRIVATE (nc,bounds_clump,fates_clump) if(nclumps>1)
    do nc = 1,nclumps
 
       call get_clump_bounds(nc, bounds_clump)

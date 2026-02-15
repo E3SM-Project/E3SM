@@ -178,7 +178,7 @@ contains
 
     ! Loop over clumps on this processor
 
-!$OMP PARALLEL DO PRIVATE (nc,bounds)
+!$OMP PARALLEL DO PRIVATE (nc,bounds) if(nclumps>1)
     do nc = 1, nclumps
        call get_clump_bounds(nc, bounds)
 
