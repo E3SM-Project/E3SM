@@ -888,8 +888,8 @@ subroutine component_init_areacor_moab (comp, samegrid, mbccid, mbcxid, seq_flds
          deallocate(vals)
 
       endif
-       ! send data to coupler exchange ? everything, not only fluxes ?
-      call component_exch_moab(comp(1), mbccid, mbcxid, 'c2x', seq_flds_c2x_fields, context_exch='areacor')
+      ! send area corrected data to coupler.
+      call component_exch_moab(comp(1), mbccid, mbcxid, 'c2x', seq_flds_c2x_fields, context_exch='aftareacor')
    endif
 
   end subroutine component_init_areacor_moab
