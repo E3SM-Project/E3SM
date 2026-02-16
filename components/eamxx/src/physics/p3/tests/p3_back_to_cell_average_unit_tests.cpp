@@ -81,7 +81,9 @@ enum class ScaleKind {
 
 // BFB list matches the PTD_RW_SCALARS_ONLY serialized subset in
 // BackToCellAverageData:
-// - Includes legacy pass-through fields qcnuc and nc_nuceat_tend.
+// - Includes legacy pass-through fields qcnuc and nc_nuceat_tend, which map to
+//   the current kernel's pass-through nucleation tendencies
+//   qv2qi_nucleat_tend and ni_nucleat_tend.
 // - Excludes *_cnt fields, which are not serialized for BFB in test data.
 #define BACK_TO_CELL_AVERAGE_BFB_COMPARE_LIST(X)                                                \
   X(qc2qr_accret_tend)                                                                           \

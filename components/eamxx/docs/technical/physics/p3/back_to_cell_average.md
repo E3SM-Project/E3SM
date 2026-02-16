@@ -19,14 +19,34 @@ $$
 Cloud overlap factors used in the implementation are:
 
 $$
+f_l \equiv \mathrm{cld\_frac\_l},\quad
+f_r \equiv \mathrm{cld\_frac\_r},\quad
+f_i \equiv \mathrm{cld\_frac\_i},\quad
 f_{ir} = \min(f_i, f_r),\quad
 f_{il} = \min(f_i, f_l),\quad
 f_{lr} = \min(f_l, f_r),\quad
 f_{\text{glaciated}} = \max(10^{-4}, f_i - f_{il}).
 $$
 
-`f_glaciated` is used for the ice-only branch when
-`use_separate_ice_liq_frac=true`.
+In code terms, the mapping tags used by tests are:
+
+- `L` = `cld_frac_l` = \(f_l\)
+- `R` = `cld_frac_r` = \(f_r\)
+- `I` = `cld_frac_i` = \(f_i\)
+- `IL` = `min(cld_frac_i, cld_frac_l)` = \(f_{il}\)
+- `IR` = `min(cld_frac_i, cld_frac_r)` = \(f_{ir}\)
+- `LR` = `min(cld_frac_l, cld_frac_r)` = \(f_{lr}\)
+
+Runtime branch behavior:
+
+- `use_separate_ice_liq_frac=false`: use \(f_i\) for
+  `qi2qv_sublim_tend`, `qv2qi_vapdep_tend`, and `ni_sublim_tend`.
+- `use_separate_ice_liq_frac=true`: use \(f_{\text{glaciated}}\) for those
+  same three tendencies.
+
+Because \(f_{\text{glaciated}}=\max(10^{-4}, f_i-f_{il})\), a minimum factor
+of \(10^{-4}\) is applied even when there is no pure-ice-only portion
+(\(f_i \le f_{il}\)).
 
 ## Implementation Details
 
@@ -105,9 +125,11 @@ expected values.
 
 These checks intentionally do not use the shared helper and cover:
 
-- L, R, I, IL, IR, LR mappings
+- L, R, I, IL, IR, LR mappings (for example:
+  `qc2qr_accret_tend -> LR`, `nr_evap_tend -> R`)
 - `GLACIATED_OR_I` in both runtime modes
-- `UNCHANGED` pass-through behavior
+- `UNCHANGED` pass-through behavior for
+  `qv2qi_nucleat_tend` and `ni_nucleat_tend`
 - explicit glaciated-floor activation (`f_glaciated = 1e-4`)
 
 ### Tolerance Philosophy
@@ -117,9 +139,12 @@ These checks intentionally do not use the shared helper and cover:
 | Process-location mapping | Identity | `10 * epsilon` | Exact implementation formula |
 | Known-answer mapping | Identity | `10 * epsilon` | Independent hand-calculated reference checks |
 | Runtime branch mapping | Identity | `10 * epsilon` | Exact branch behavior |
-| Context mask behavior | Identity | `10 * epsilon` | `context=false` lanes must remain unchanged |
+| Context mask behavior | Identity | `10 * epsilon` | `context=false` lanes are not written |
 | Glaciated threshold | Identity + floor | `10 * epsilon`, `>= 1e-4` | Explicit implementation floor in edge/known-answer checks |
 | Extreme-value finite checks | Finite | `isfinite` | Guard against NaN/Inf under very large/small magnitudes |
+
+Here, `epsilon` is machine epsilon for EAMxx `Real`
+(`std::numeric_limits<Real>::epsilon()`).
 
 ### Parameter Sweep Strategy
 
@@ -136,8 +161,8 @@ tendencies.
 ### Context-Mask Coverage
 
 The implementation applies updates with `.set(context, ...)`. The `context_mask`
-section verifies that lanes with `context=false` are unchanged, including an
-explicit all-zero cloud-fraction lane.
+section verifies that lanes with `context=false` are unchanged (not written),
+including an explicit all-zero cloud-fraction lane.
 
 ### Number-Tendency Validation Policy
 
@@ -154,5 +179,9 @@ by the implementation.
 The BFB compare list intentionally follows the
 `BackToCellAverageData::PTD_RW_SCALARS_ONLY` serialized subset:
 
-- Includes legacy pass-through fields `qcnuc` and `nc_nuceat_tend`.
-- Excludes `*_cnt` fields, which are not part of this BFB serialization set.
+- Includes legacy pass-through fields `qcnuc` and `nc_nuceat_tend`
+  from `BackToCellAverageData` serialization. In the current kernel argument
+  list, the corresponding pass-through tendencies are
+  `qv2qi_nucleat_tend` and `ni_nucleat_tend`.
+- Excludes `*_cnt` fields from this serialized BFB subset, even though those
+  counters are scaled in `back_to_cell_average`.
