@@ -23,7 +23,8 @@
 
 namespace {
 
-static const std::string ATM_INSTANCE_NAME = "eatm_default";
+// Instance name derived from comp_id (supports multi-instance)
+static std::string s_instance_name;
 
 // Minimal log stream – opened once on master rank, points to atm.log
 static std::ofstream s_log_stream;
@@ -31,12 +32,12 @@ static bool s_log_open = false;
 
 emulator::EmulatorAtm &get_atm() {
   return emulator::EmulatorRegistry::instance()
-      .get_mut<emulator::EmulatorAtm>(ATM_INSTANCE_NAME);
+      .get_mut<emulator::EmulatorAtm>(s_instance_name);
 }
 
 const emulator::EmulatorAtm &get_atm_const() {
   return emulator::EmulatorRegistry::instance()
-      .get<emulator::EmulatorAtm>(ATM_INSTANCE_NAME);
+      .get<emulator::EmulatorAtm>(s_instance_name);
 }
 
 } // anonymous namespace
@@ -66,8 +67,11 @@ void emulator_atm_create_instance(const int f_comm, const int comp_id,
     }
   }
 
+  // Derive unique instance name from comp_id (multi-instance safe)
+  s_instance_name = "eatm_" + std::to_string(comp_id);
+
   auto &reg = emulator::EmulatorRegistry::instance();
-  auto &atm = reg.create<emulator::EmulatorAtm>(ATM_INSTANCE_NAME);
+  auto &atm = reg.create<emulator::EmulatorAtm>(s_instance_name);
 
   std::string inf = input_file ? input_file : "";
   atm.create_instance(f_comm, comp_id, inf, run_type,

@@ -39,6 +39,10 @@ target_include_directories(eatm PUBLIC
 # Link to common emulator framework
 target_link_libraries(eatm PUBLIC emulator_common)
 
+# MPI is required for both standalone and full builds
+find_package(MPI REQUIRED)
+target_link_libraries(eatm PUBLIC MPI::MPI_CXX)
+
 # C++17 required
 target_compile_features(eatm PUBLIC cxx_std_17)
 
