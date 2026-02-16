@@ -55,10 +55,10 @@ function(build_emulator_comps)
     set(EMULATOR_EOCN_LIB eocn CACHE INTERNAL "EOCN library")
 
     # Create aliases for common component class names so build_model.cmake works
-    if(EATM_FOUND)
+    if(EATM_FOUND AND TARGET eatm)
       add_library(atm ALIAS eatm)
     endif()
-    if(EOCN_FOUND)
+    if(EOCN_FOUND AND TARGET eocn)
       add_library(ocn ALIAS eocn)
     endif()
 

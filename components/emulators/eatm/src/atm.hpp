@@ -25,14 +25,19 @@ namespace emulator {
  * - AI model integration via configurable inference backends
  * - MCT interface for CIME integration
  *
+ * Currently assumes a structured lat-lon grid. Grid dimensions (nx, ny)
+ * are read from atm_in and used to compute the total global column count
+ * as nx * ny. Lat/lon coordinates are stored and passed to MCT in degrees.
+ *
  * ## Lifecycle
  * 1. Constructor creates EmulatorAtm with ATM_COMP type
- * 2. set_grid_data() sets spatial decomposition
- * 3. init_coupling_indices() parses MCT field lists
- * 4. setup_coupling() sets buffer pointers
- * 5. initialize() loads model and reads initial conditions
- * 6. run() executes time steps (import -> inference -> export)
- * 7. finalize() cleans up resources
+ * 2. create_instance() sets MPI, comp_id, parses config for grid dims
+ * 3. set_grid_data() sets spatial decomposition (optional override)
+ * 4. init_coupling_indices() parses MCT field lists
+ * 5. setup_coupling() sets buffer pointers
+ * 6. initialize() loads model and reads initial conditions
+ * 7. run() executes time steps (import -> inference -> export)
+ * 8. finalize() cleans up resources
  */
 class EmulatorAtm : public Emulator {
 public:
@@ -99,8 +104,8 @@ private:
   int m_num_local_cols = 0;    ///< Local columns on this rank
   int m_num_global_cols = 0;   ///< Total global columns
   std::vector<int> m_col_gids; ///< Global IDs for local columns
-  std::vector<double> m_lat;   ///< Latitude [radians]
-  std::vector<double> m_lon;   ///< Longitude [radians]
+  std::vector<double> m_lat;   ///< Latitude [degrees]
+  std::vector<double> m_lon;   ///< Longitude [degrees]
   std::vector<double> m_area;  ///< Cell areas
 
   // =========================================================================
@@ -115,10 +120,8 @@ private:
   // Configuration
   // =========================================================================
   int m_comm = 0;              ///< MPI communicator
-  int m_comp_id = 0;           ///< Component ID from driver
   std::string m_input_file;    ///< Path to atm_in config file
   int m_run_type = 0;          ///< Run type (startup/continue/branch)
-  int m_step_count = 0;        ///< Timestep counter
 
   // =========================================================================
   // Helper methods

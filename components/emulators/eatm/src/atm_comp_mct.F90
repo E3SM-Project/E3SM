@@ -292,7 +292,7 @@ CONTAINS
 
       deallocate(data1)
       deallocate(data2)
-      deallocate(idata)
+      if (associated(idata)) deallocate(idata)
 
    end subroutine atm_domain_mct
 

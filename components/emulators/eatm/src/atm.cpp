@@ -24,7 +24,7 @@ void EmulatorAtm::create_instance(int comm, int comp_id,
                                   int run_type, int start_ymd,
                                   int start_tod) {
   m_comm = comm;
-  m_comp_id = comp_id;
+  m_id = comp_id;  // set base class ID
   m_input_file = input_file;
   m_run_type = run_type;
   (void)start_ymd;
@@ -48,8 +48,7 @@ void EmulatorAtm::create_instance(int comm, int comp_id,
         val.erase(val.find_last_not_of(" \t") + 1);
 
         if (key == "nx") {
-          m_num_global_cols = std::stoi(val);
-          m_nx = m_num_global_cols;
+          m_nx = std::stoi(val);
         }
         if (key == "ny") {
           m_ny = std::stoi(val);
@@ -59,6 +58,11 @@ void EmulatorAtm::create_instance(int comm, int comp_id,
         }
       }
     }
+  }
+
+  // Compute global column count from grid dimensions
+  if (m_nx > 0) {
+    m_num_global_cols = m_nx * std::max(1, m_ny);
   }
 
   // If we have a global size but no local size, create a default decomposition
@@ -173,8 +177,6 @@ void EmulatorAtm::run_impl(int dt) {
 
   // 6. Export fields to coupler
   export_coupling_fields();
-
-  m_step_count++;
 }
 
 void EmulatorAtm::final_impl() {
