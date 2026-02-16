@@ -5052,13 +5052,15 @@ appropriate cloud fraction:</p>
 \]</div>
 <p>Cloud overlap factors used in the implementation are:</p>
 <div class="arithmatex">\[
-f_l \equiv \mathrm{cld\_frac\_l},\quad
-f_r \equiv \mathrm{cld\_frac\_r},\quad
-f_i \equiv \mathrm{cld\_frac\_i},\quad
-f_{ir} = \min(f_i, f_r),\quad
-f_{il} = \min(f_i, f_l),\quad
-f_{lr} = \min(f_l, f_r),\quad
-f_{\text{glaciated}} = \max(10^{-4}, f_i - f_{il}).
+\begin{aligned}
+f_l &amp;\equiv \mathrm{cld\_frac\_l} \\
+f_r &amp;\equiv \mathrm{cld\_frac\_r} \\
+f_i &amp;\equiv \mathrm{cld\_frac\_i} \\
+f_{ir} &amp;= \min(f_i, f_r) \\
+f_{il} &amp;= \min(f_i, f_l) \\
+f_{lr} &amp;= \min(f_l, f_r) \\
+f_{\text{glaciated}} &amp;= \max(10^{-4}, f_i - f_{il})
+\end{aligned}
 \]</div>
 <p>In code terms, the mapping tags used by tests are:</p>
 <ul>
