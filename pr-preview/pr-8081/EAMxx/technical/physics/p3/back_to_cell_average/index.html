@@ -5052,13 +5052,33 @@ appropriate cloud fraction:</p>
 \]</div>
 <p>Cloud overlap factors used in the implementation are:</p>
 <div class="arithmatex">\[
+f_l \equiv \mathrm{cld\_frac\_l},\quad
+f_r \equiv \mathrm{cld\_frac\_r},\quad
+f_i \equiv \mathrm{cld\_frac\_i},\quad
 f_{ir} = \min(f_i, f_r),\quad
 f_{il} = \min(f_i, f_l),\quad
 f_{lr} = \min(f_l, f_r),\quad
 f_{\text{glaciated}} = \max(10^{-4}, f_i - f_{il}).
 \]</div>
-<p><code>f_glaciated</code> is used for the ice-only branch when
-<code>use_separate_ice_liq_frac=true</code>.</p>
+<p>In code terms, the mapping tags used by tests are:</p>
+<ul>
+<li><code>L</code> = <code>cld_frac_l</code> = <span class="arithmatex">\(f_l\)</span></li>
+<li><code>R</code> = <code>cld_frac_r</code> = <span class="arithmatex">\(f_r\)</span></li>
+<li><code>I</code> = <code>cld_frac_i</code> = <span class="arithmatex">\(f_i\)</span></li>
+<li><code>IL</code> = <code>min(cld_frac_i, cld_frac_l)</code> = <span class="arithmatex">\(f_{il}\)</span></li>
+<li><code>IR</code> = <code>min(cld_frac_i, cld_frac_r)</code> = <span class="arithmatex">\(f_{ir}\)</span></li>
+<li><code>LR</code> = <code>min(cld_frac_l, cld_frac_r)</code> = <span class="arithmatex">\(f_{lr}\)</span></li>
+</ul>
+<p>Runtime branch behavior:</p>
+<ul>
+<li><code>use_separate_ice_liq_frac=false</code>: use <span class="arithmatex">\(f_i\)</span> for
+  <code>qi2qv_sublim_tend</code>, <code>qv2qi_vapdep_tend</code>, and <code>ni_sublim_tend</code>.</li>
+<li><code>use_separate_ice_liq_frac=true</code>: use <span class="arithmatex">\(f_{\text{glaciated}}\)</span> for those
+  same three tendencies.</li>
+</ul>
+<p>Because <span class="arithmatex">\(f_{\text{glaciated}}=\max(10^{-4}, f_i-f_{il})\)</span>, a minimum factor
+of <span class="arithmatex">\(10^{-4}\)</span> is applied even when there is no pure-ice-only portion
+(<span class="arithmatex">\(f_i \le f_{il}\)</span>).</p>
 <h2 id="implementation-details">Implementation Details</h2>
 <ul>
 <li>Source: <code>components/eamxx/src/physics/p3/impl/p3_back_to_cell_average_impl.hpp</code>.</li>
@@ -5314,9 +5334,11 @@ both implementation and helper table are wrong in the same way, the
 expected values.</p>
 <p>These checks intentionally do not use the shared helper and cover:</p>
 <ul>
-<li>L, R, I, IL, IR, LR mappings</li>
+<li>L, R, I, IL, IR, LR mappings (for example:
+  <code>qc2qr_accret_tend -&gt; LR</code>, <code>nr_evap_tend -&gt; R</code>)</li>
 <li><code>GLACIATED_OR_I</code> in both runtime modes</li>
-<li><code>UNCHANGED</code> pass-through behavior</li>
+<li><code>UNCHANGED</code> pass-through behavior for
+  <code>qv2qi_nucleat_tend</code> and <code>ni_nucleat_tend</code></li>
 <li>explicit glaciated-floor activation (<code>f_glaciated = 1e-4</code>)</li>
 </ul>
 <h3 id="tolerance-philosophy">Tolerance Philosophy</h3>
@@ -5352,7 +5374,7 @@ expected values.</p>
 <td>Context mask behavior</td>
 <td>Identity</td>
 <td><code>10 * epsilon</code></td>
-<td><code>context=false</code> lanes must remain unchanged</td>
+<td><code>context=false</code> lanes are not written</td>
 </tr>
 <tr>
 <td>Glaciated threshold</td>
@@ -5368,6 +5390,8 @@ expected values.</p>
 </tr>
 </tbody>
 </table>
+<p>Here, <code>epsilon</code> is machine epsilon for EAMxx <code>Real</code>
+(<code>std::numeric_limits&lt;Real&gt;::epsilon()</code>).</p>
 <h3 id="parameter-sweep-strategy">Parameter Sweep Strategy</h3>
 <p>A 3D linear sweep over cloud fractions is used:</p>
 <ul>
@@ -5380,8 +5404,8 @@ section also runs a mixed-sign sweep variant to cover both source and sink
 tendencies.</p>
 <h3 id="context-mask-coverage">Context-Mask Coverage</h3>
 <p>The implementation applies updates with <code>.set(context, ...)</code>. The <code>context_mask</code>
-section verifies that lanes with <code>context=false</code> are unchanged, including an
-explicit all-zero cloud-fraction lane.</p>
+section verifies that lanes with <code>context=false</code> are unchanged (not written),
+including an explicit all-zero cloud-fraction lane.</p>
 <h3 id="number-tendency-validation-policy">Number-Tendency Validation Policy</h3>
 <p>The suite does <strong>not</strong> enforce a global number-conservation identity
 (<span class="arithmatex">\(\sum \partial N / \partial t = 0\)</span>). In P3, self-collection, evaporation/
@@ -5393,8 +5417,12 @@ by the implementation.</p>
 <p>The BFB compare list intentionally follows the
 <code>BackToCellAverageData::PTD_RW_SCALARS_ONLY</code> serialized subset:</p>
 <ul>
-<li>Includes legacy pass-through fields <code>qcnuc</code> and <code>nc_nuceat_tend</code>.</li>
-<li>Excludes <code>*_cnt</code> fields, which are not part of this BFB serialization set.</li>
+<li>Includes legacy pass-through fields <code>qcnuc</code> and <code>nc_nuceat_tend</code>
+  from <code>BackToCellAverageData</code> serialization. In the current kernel argument
+  list, the corresponding pass-through tendencies are
+  <code>qv2qi_nucleat_tend</code> and <code>ni_nucleat_tend</code>.</li>
+<li>Excludes <code>*_cnt</code> fields from this serialized BFB subset, even though those
+  counters are scaled in <code>back_to_cell_average</code>.</li>
 </ul>
 
 
