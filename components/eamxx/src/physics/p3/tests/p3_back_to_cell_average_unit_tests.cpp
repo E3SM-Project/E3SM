@@ -23,6 +23,13 @@ constexpr int kFracSweepSize = 15;
 constexpr Real kGlaciatedFloor = 1e-4;
 constexpr Real kAbsoluteFloor = 1e-30;
 
+// For BFB scalar compares, treat +0 and -0 as equivalent while preserving
+// exact equality for all nonzero values.
+KOKKOS_INLINE_FUNCTION
+bool bfb_equal_allow_signed_zero(const Real a, const Real b) {
+  return a == b || (a == 0 && b == 0);
+}
+
 // Physical region tags used by back_to_cell_average scaling:
 // L/R/I are single-phase cloud fractions; IL/IR/LR are pairwise intersections;
 // GLACIATED_OR_I depends on runtime option use_separate_ice_liq_frac.
@@ -245,7 +252,7 @@ struct UnitWrap::UnitTest<D>::TestP3BackToCellAverage : public UnitWrap::UnitTes
       const Spack ir_cldm = min(cld_frac_i, cld_frac_r);
       const Spack il_cldm = min(cld_frac_i, cld_frac_l);
       const Spack lr_cldm = min(cld_frac_l, cld_frac_r);
-      const Spack cld_frac_glaciated = max(kGlaciatedFloor, cld_frac_i - il_cldm);
+      const Spack cld_frac_glaciated = max(Real(1e-4), cld_frac_i - il_cldm);
 
       Functions::back_to_cell_average(
         cld_frac_l, cld_frac_r, cld_frac_i,
@@ -448,7 +455,7 @@ struct UnitWrap::UnitTest<D>::TestP3BackToCellAverage : public UnitWrap::UnitTes
 
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int s = 0; s < max_pack_size; ++s) {
-#define REQUIRE_BFB(name) REQUIRE(baseline_data[s].name == host_data[s].name);
+#define REQUIRE_BFB(name) REQUIRE(bfb_equal_allow_signed_zero(baseline_data[s].name, host_data[s].name));
         BACK_TO_CELL_AVERAGE_BFB_COMPARE_LIST(REQUIRE_BFB)
 #undef REQUIRE_BFB
       }

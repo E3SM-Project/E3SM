@@ -19,13 +19,15 @@ $$
 Cloud overlap factors used in the implementation are:
 
 $$
-f_l \equiv \mathrm{cld\_frac\_l},\quad
-f_r \equiv \mathrm{cld\_frac\_r},\quad
-f_i \equiv \mathrm{cld\_frac\_i},\quad
-f_{ir} = \min(f_i, f_r),\quad
-f_{il} = \min(f_i, f_l),\quad
-f_{lr} = \min(f_l, f_r),\quad
-f_{\text{glaciated}} = \max(10^{-4}, f_i - f_{il}).
+\begin{aligned}
+f_l &\equiv \mathrm{cld\_frac\_l} \\
+f_r &\equiv \mathrm{cld\_frac\_r} \\
+f_i &\equiv \mathrm{cld\_frac\_i} \\
+f_{ir} &= \min(f_i, f_r) \\
+f_{il} &= \min(f_i, f_l) \\
+f_{lr} &= \min(f_l, f_r) \\
+f_{\text{glaciated}} &= \max(10^{-4}, f_i - f_{il})
+\end{aligned}
 $$
 
 In code terms, the mapping tags used by tests are:
