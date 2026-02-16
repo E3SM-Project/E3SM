@@ -1,3 +1,4 @@
+<!-- markdownlint-disable -->
 # AGENTS.md
 
 E3SM (Energy Exascale Earth System Model) is a state-of-the-art fully coupled Earth System Model. This guide helps you work effectiv
