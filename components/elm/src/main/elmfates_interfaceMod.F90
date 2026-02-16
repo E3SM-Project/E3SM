@@ -168,6 +168,7 @@ module ELMFatesInterfaceMod
    use EDPftVarcon           , only : EDpftvarcon_inst
    use FatesRadiationDriveMod, only : FatesSunShadeFracs
    use FatesRadiationDriveMod, only : FatesNormalizedCanopyRadiation
+   use FatesRadiationDriveMod, only : FatesNormalizedPatchRadiation
    use EDBtranMod            , only : btran_ed, &
                                       get_active_suction_layers
    use EDCanopyStructureMod  , only : canopy_summarization, update_hlm_dynamics
@@ -1393,11 +1394,13 @@ contains
       ! Part IV:
       ! Update history IO fields that depend on ecosystem dynamics
       ! ---------------------------------------------------------------------------------
+      call t_startf('hbuf_fatesdyn')
       call fates_hist%update_history_dyn( nc,                    &
            this%fates(nc)%nsites, &
            this%fates(nc)%sites,  &
            this%fates(nc)%bc_in)
-
+      call t_stopf('hbuf_fatesdyn')
+      
       if (masterproc) then
          write(iulog, *) 'FATES dynamics complete'
       end if
@@ -3000,16 +3003,6 @@ contains
 
        this%fates(nc)%bc_in(s)%coszen = coszen_col(c)
        
-       do ifp = 1, this%fates(nc)%sites(s)%youngest_patch%patchno
-          
-          p = ifp+col_pp%pfti(c)
-          if (veg_es%t_veg(p) <= tfrz) then
-             this%fates(nc)%bc_in(s)%fcansno_pa(ifp) = veg_ws%fwet(p)
-          else
-             this%fates(nc)%bc_in(s)%fcansno_pa(ifp) = 0._r8
-          end if
-       end do
-       
        if(coszen_col(c) > 0._r8) then
 
           this%fates(nc)%bc_in(s)%albgr_dir_rb(:) = albgrd_col(c,:)
@@ -3021,12 +3014,32 @@ contains
           this%fates(nc)%bc_in(s)%albgr_dif_rb(:) = spval
 
        end if
+
+       
+       ! OMP PARALLEL DO PRIVATE (ifp,p) SCHEDULE(DYNAMIC, 1) if (use_fates)
+       do ifp = 1, this%fates(nc)%sites(s)%youngest_patch%patchno
+          
+          p = ifp+col_pp%pfti(c)
+          if (veg_es%t_veg(p) <= tfrz) then
+             this%fates(nc)%bc_in(s)%fcansno_pa(ifp) = veg_ws%fwet(p)
+          else
+             this%fates(nc)%bc_in(s)%fcansno_pa(ifp) = 0._r8
+          end if
+
+          call FatesNormalizedPatchRadiation(ifp, &
+               this%fates(nc)%sites(s), &
+               this%fates(nc)%bc_in(s),  &
+               this%fates(nc)%bc_out(s))
+          
+       end do
+       ! OMP END PARALLEL DO
+       
     end do
     
-    call FatesNormalizedCanopyRadiation( &
-         this%fates(nc)%sites, &
-         this%fates(nc)%bc_in,  &
-         this%fates(nc)%bc_out)
+    !call FatesNormalizedCanopyRadiation( &
+    !     this%fates(nc)%sites, &
+    !     this%fates(nc)%bc_in,  &
+    !     this%fates(nc)%bc_out)
 
     ! Pass FATES BC's back to HLM
     ! -----------------------------------------------------------------------------------
@@ -3210,13 +3223,14 @@ contains
       end do
 
       ! Update history variables that track these variables
+      call t_startf('hbuf_fateshifrq')
       call fates_hist%update_history_hifrq(nc, &
            this%fates(nc)%nsites,  &
            this%fates(nc)%sites,   &
            this%fates(nc)%bc_in,   &
            this%fates(nc)%bc_out,  &
            dtime)
-
+      call t_stopf('hbuf_fateshifrq')
 
     end associate
 end subroutine wrap_update_hifrq_hist
