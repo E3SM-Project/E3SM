@@ -467,6 +467,7 @@ contains
 
       real (kind=RKIND), dimension(:), allocatable :: bTemp, C, rTemp
       real (kind=RKIND) :: A, m
+      real (kind=RKIND) :: wetFraction, sshMean, implicitCd
 
       err = 0
 
@@ -495,8 +496,20 @@ contains
 
          ! one active layer
          if (N .eq. Nsurf) then
+           if (config_use_subgrid_wetting_drying) then 
+              sshMean = 0.5_RKIND * (subgridSSH(cell1) + subgridSSH(cell2))
+    
+              call ocn_subgrid_wet_fraction_lookup(sshMean, &
+                                                   subgridWetFractionEdgeTable(:,iEdge), &
+                                                   subgridSshEdgeTableRange(:,iEdge), &
+                                                   wetFraction)
+              implicitCd = wetFraction * implicitBottomDragCoef
+           else
+              implicitCd = implicitBottomDragCoef
+           endif
+
             normalVelocity(N,iEdge) = normalVelocity(N,iEdge)  &
-                / (1.0_RKIND + dt*(implicitTopDragCoef * landIceEdgeFraction(iEdge) + implicitBottomDragCoef) &
+                / (1.0_RKIND + dt*(implicitTopDragCoef * landIceEdgeFraction(iEdge) + implicitCd) &
                    * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThickEdgeDrag(N,iEdge) )
          else
 
