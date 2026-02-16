@@ -81,6 +81,7 @@ module elm_cpl_indices
   integer, public ::index_l2x_Sl_hr(0:iac_npft_max)  = 0
   integer, public ::index_l2x_Sl_npp(0:iac_npft_max)  = 0
   integer, public ::index_l2x_Sl_pftwgt(0:iac_npft_max)  = 0
+  integer, public ::index_l2x_Sl_t_ref2m(0:iac_npft_max)   = 0
 
   ! drv -> lnd (required)
 
@@ -378,6 +379,7 @@ contains
          index_l2x_Sl_hr(p) = mct_avect_indexra(l2x,trim('Sl_hr_pft' // cpft))
          index_l2x_Sl_npp(p) = mct_avect_indexra(l2x,trim('Sl_npp_pft' // cpft))
          index_l2x_Sl_pftwgt(p) = mct_avect_indexra(l2x,trim('Sl_pftwgt_pft' // cpft))
+         index_l2x_Sl_t_ref2m(p)   = mct_avect_indexra(l2x,trim('Sl_t_ref2m_topo' // cpft))
        
          ! iac pfts to land
          name = 'Sz_pct_pft' // cpft
@@ -391,6 +393,7 @@ contains
             index_x2l_Sz_harvest_frac(p) = mct_avect_indexra(x2l,trim(name))
          end if
       enddo
+
     endif
 
     call mct_aVect_clean(x2l)
