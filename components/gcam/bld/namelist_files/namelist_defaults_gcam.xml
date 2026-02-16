@@ -73,6 +73,7 @@ for the iac data in the e3sm distribution
 <write_co2>.false.</write_co2>
 <elm_ehc_agyield_scaling>.true.</elm_ehc_agyield_scaling>
 <elm_ehc_carbon_scaling>.true.</elm_ehc_carbon_scaling>
+<elm_ehc_deg_days>.true.</elm_ehc_deg_days>
 <ehc_eam_co2_emissions>.true.</ehc_eam_co2_emissions>
 <gcam_spinup>.false.</gcam_spinup>
 <run_gcam>.true.</run_gcam>

@@ -375,6 +375,13 @@ Changes in land productivity from elm scale ag yield in gcam
 Changes in land productivity from elm scale carbon density in gcam
 </entry>
 
+<entry id="elm_ehc_deg_days"
+        type="logical"
+        category="gcam"
+        group="gcam_inparm">
+Temperature from elm to gcam
+</entry>
+
 <entry id="ehc_eam_co2_emissions"
 	type="logical"
 	category="gcam"

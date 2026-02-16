@@ -2815,6 +2815,15 @@ contains
        attname  = 'Sl_pftwgt_pft' //pftstr
        call metadata_set(attname, longname, stdname, units)
 
+       ! Temperature and humidity fields for EHC
+       if(add_iac_to_cplstate)call seq_flds_add(l2x_states,'Sl_t_ref2m_topo' // pftstr)
+       call seq_flds_add(x2z_states,'Sl_t_ref2m_topo' // pftstr)
+       longname = '2m reference temperature for pft ' // pftstr
+       stdname  = 'lnd_t_ref2m_topo' // pftstr
+       units    = 'K'
+       attname  = 'Sl_t_ref2m_topo' // pftstr
+       call metadata_set(attname, longname, stdname, units)
+
        ! iac->lnd 
 
        ! This is pft for beginning of model year + 1

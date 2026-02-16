@@ -1549,6 +1549,7 @@ contains
              l2x(index_l2x_Sl_hr(p),i) = lnd2iac_vars%hr(g,p)
              l2x(index_l2x_Sl_npp(p),i) = lnd2iac_vars%npp(g,p)
              l2x(index_l2x_Sl_pftwgt(p),i) = lnd2iac_vars%pftwgt(g,p)
+             l2x(index_l2x_Sl_t_ref2m(p),i) = lnd2iac_vars%t_ref2m(g,p)
           end do
        end if
     end do
