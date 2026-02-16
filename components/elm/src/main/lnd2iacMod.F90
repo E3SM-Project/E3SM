@@ -14,6 +14,7 @@ module lnd2iacMod
   use ColumnDataType  , only : col_cf   ! for hr
   use VegetationType  , only : veg_pp   ! pftwgt
   use VegetationDataType, only: veg_cf  ! for npp
+  use VegetationDataType, only: veg_es  ! for t_ref2m
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -27,6 +28,7 @@ module lnd2iacMod
      real(r8), pointer :: hr(:,:) => null()
      real(r8), pointer :: npp(:,:) => null()
      real(r8), pointer :: pftwgt(:,:) => null()
+     real(r8), pointer :: t_ref2m(:,:)   => null()
 
    contains
      ! This object oriented stuff...
@@ -57,10 +59,12 @@ contains
     allocate(this%hr(begg:endg,0:numpft)) 
     allocate(this%npp(begg:endg,0:numpft))
     allocate(this%pftwgt(begg:endg,0:numpft)) 
+    allocate(this%t_ref2m(begg:endg,0:numpft))
 
     this%hr(:,:)=0.0_r8
     this%npp(:,:)=0.0_r8
     this%pftwgt(:,:)=0.0_r8
+    this%t_ref2m(:,:)  = 0.0_r8
 
   end subroutine Init
 
@@ -88,6 +92,7 @@ contains
     this%hr(begg:endg,:)=0.0_r8
     this%npp(begg:endg,:)=0.0_r8
     this%pftwgt(begg:endg,:)=0.0_r8
+    this%t_ref2m(begg:endg,:)  = 0.0_r8
 
     ! Loop over patch index, extract fields by pft type and gridcell
     do p = begp, endp
@@ -103,6 +108,7 @@ contains
          ! this is the fraction of actual grid cell
          this%pftwgt(g,pft) = veg_pp%wtgcell(p) * ldomain%frac(g) * &
                              ldomain%mask(g)
+         this%t_ref2m(g,pft)  = veg_es%t_ref2m(p)   ! Every pft in this column gets this hr value
       end if
     end do
   end subroutine update_lnd2iac
