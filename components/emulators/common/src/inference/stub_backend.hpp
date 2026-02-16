@@ -3,8 +3,8 @@
  * @brief Stub inference backend for testing without ML dependencies.
  */
 
-#ifndef STUB_BACKEND_HPP
-#define STUB_BACKEND_HPP
+#ifndef E3SM_STUB_BACKEND_HPP
+#define E3SM_STUB_BACKEND_HPP
 
 #include "inference_backend.hpp"
 
@@ -14,15 +14,16 @@ namespace inference {
 /**
  * @brief Stub backend for testing without actual inference.
  *
+ * Leaves outputs unchanged. Useful for testing the data pipeline
+ * without actual model inference.
+ *
  * @see InferenceBackend for the base interface
  */
 class StubBackend : public InferenceBackend {
 public:
-  StubBackend() = default;
+  explicit StubBackend(const InferenceConfig &config)
+      : InferenceBackend(config) {}
   ~StubBackend() override = default;
-
-  /// @copydoc InferenceBackend::initialize
-  bool initialize(const InferenceConfig &config) override;
 
   /// @copydoc InferenceBackend::infer
   bool infer(const double *inputs, double *outputs,
@@ -33,16 +34,9 @@ public:
 
   /// @copydoc InferenceBackend::name
   std::string name() const override { return "Stub"; }
-
-  /// @copydoc InferenceBackend::is_initialized
-  bool is_initialized() const override { return m_initialized; }
-
-private:
-  bool m_initialized = false; ///< Initialization state
-  InferenceConfig m_config;   ///< Stored configuration
 };
 
 } // namespace inference
 } // namespace emulator
 
-#endif // STUB_BACKEND_HPP
+#endif // E3SM_STUB_BACKEND_HPP

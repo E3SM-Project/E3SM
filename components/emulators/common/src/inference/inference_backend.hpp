@@ -3,8 +3,8 @@
  * @brief Abstract interface for neural network inference backends.
  */
 
-#ifndef INFERENCE_BACKEND_HPP
-#define INFERENCE_BACKEND_HPP
+#ifndef E3SM_INFERENCE_BACKEND_HPP
+#define E3SM_INFERENCE_BACKEND_HPP
 
 #include <string>
 
@@ -34,17 +34,14 @@ struct InferenceConfig {
  * All backends:
  * - Accept input as a flat array [batch_size * input_channels]
  * - Produce output as a flat array [batch_size * output_channels]
+ *
+ * Backends are fully configured on construction (config is passed
+ * to the constructor). No separate initialization step is needed.
  */
 class InferenceBackend {
 public:
+  explicit InferenceBackend(const InferenceConfig &config) : m_config(config) {}
   virtual ~InferenceBackend() = default;
-
-  /**
-   * @brief Initialize the backend with configuration.
-   * @param config Configuration options
-   * @return true if initialization succeeded
-   */
-  virtual bool initialize(const InferenceConfig &config) = 0;
 
   /**
    * @brief Run inference on input data.
@@ -66,13 +63,11 @@ public:
    */
   virtual std::string name() const = 0;
 
-  /**
-   * @brief Check if the backend is ready for inference.
-   */
-  virtual bool is_initialized() const = 0;
+protected:
+  InferenceConfig m_config; ///< Backend configuration
 };
 
 } // namespace inference
 } // namespace emulator
 
-#endif // INFERENCE_BACKEND_HPP
+#endif // E3SM_INFERENCE_BACKEND_HPP
