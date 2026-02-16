@@ -132,6 +132,7 @@ contains
     real (kind=RKIND), dimension(:), pointer :: areaCell
     real (kind=RKIND), dimension(:,:), pointer :: edgeNormalVectors
     real (kind=RKIND), dimension(:,:), pointer :: normalVelocity
+    real (kind=RKIND), dimension(:), pointer :: bottomDrag
     ! Elevation Bcs
     real (kind=RKIND), dimension(:), pointer :: tidalInputMask
 
@@ -302,6 +303,8 @@ contains
     call mpas_pool_get_array(verticalMeshPool, 'refZMid', refZMid)
     call mpas_pool_get_array(verticalMeshPool, 'restingThickness', restingThickness)
 
+    call mpas_pool_get_array(forcingPool, 'bottomDrag', bottomDrag)
+
     call mpas_pool_get_array(meshPool, 'subgridWetVolumeCellTable', &
                              subgridWetVolumeCellTable)
     call mpas_pool_get_array(meshPool, 'subgridWetVolumeEdgeTable', &
@@ -468,7 +471,7 @@ contains
 
           else
             ! Initial condition for a standard run
-            call ocn_init_subgrid_interpolate_topo(xCell(iCell), yCell(iCell), bottomDepth(iCell))
+            !call ocn_init_subgrid_interpolate_topo(xCell(iCell), yCell(iCell), bottomDepth(iCell))
 
             ssh(iCell) = -bottomDepth(iCell) ;
             do k = 1, maxLevelCell(iCell)
@@ -521,6 +524,10 @@ contains
         ! if (yCell(iCell) > (25.0e3 - 3*dcEdgeMinGlobal)) then
         !  tidalInputMask(iCell) = exp(-((yCell(iCell)-25.0e3)/dcEdgeMinGlobal)**2.0)
        end if
+     end do
+
+     do iCell = 1, nCellsSolve
+         bottomDrag(iCell) = 0.025_RKIND
      end do
 
     deallocate(interfaceLocations)
@@ -613,7 +620,7 @@ contains
 
    !--------------------------------------------------------------------
 
-      drag = 0.0_RKIND 
+      drag = 0.025_RKIND 
 
    !--------------------------------------------------------------------
 
