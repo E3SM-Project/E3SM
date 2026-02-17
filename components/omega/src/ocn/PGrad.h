@@ -10,6 +10,7 @@
 
 #include "Config.h"
 #include "Eos.h"
+#include "GlobalConstants.h"
 #include "HorzMesh.h"
 #include "OceanState.h"
 #include "OmegaKokkos.h"
@@ -45,8 +46,6 @@ class PressureGradCentered {
       const I4 ICell0      = CellsOnEdge(IEdge, 0);
       const I4 ICell1      = CellsOnEdge(IEdge, 1);
       const Real InvDcEdge = 1.0_Real / DcEdge(IEdge);
-      Real Rho0            = 1026.0_Real;
-      Real Gravity         = 9.80616_Real;
 
       for (int KVec = 0; KVec < KLen; ++KVec) {
          const I4 K = KStart + KVec;
