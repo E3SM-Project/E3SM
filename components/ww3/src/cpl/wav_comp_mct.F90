@@ -1237,8 +1237,10 @@ CONTAINS
                w2x_w%rattr(index_w2x_Sw_Ustar,jsea) = 0.0
                w2x_w%rattr(index_w2x_Sw_Z0,jsea) = 0.0
             endif
-            if (wav_ocn_coup .eq. 'twoway') then
+            if (wav_ocn_coup .eq. 'twoway' .or. wav_ice_coup .eq. 'twoway') then
                w2x_w%rattr(index_w2x_Sw_Hs,jsea) = 0.0
+            endif
+            if (wav_ocn_coup .eq. 'twoway') then
                w2x_w%rattr(index_w2x_Sw_Fp,jsea) = 0.0
                w2x_w%rattr(index_w2x_Sw_Dp,jsea) = 0.0
             
