@@ -796,11 +796,13 @@
 <config_use_ecosysTracers_river_inputs_from_coupler>.false.</config_use_ecosysTracers_river_inputs_from_coupler>
 <config_use_ecosys_frazil_tendencies>.false.</config_use_ecosys_frazil_tendencies>
 <config_use_ecosysTracers_sea_ice_coupling>.false.</config_use_ecosysTracers_sea_ice_coupling>
+<config_use_ecosysTracers_atm_dust_from_coupler>.false.</config_use_ecosysTracers_atm_dust_from_coupler>
 <config_ecosysTracers_diagnostic_fields_level1>.false.</config_ecosysTracers_diagnostic_fields_level1>
 <config_ecosysTracers_diagnostic_fields_level2>.false.</config_ecosysTracers_diagnostic_fields_level2>
 <config_ecosysTracers_diagnostic_fields_level3>.false.</config_ecosysTracers_diagnostic_fields_level3>
 <config_ecosysTracers_diagnostic_fields_level4>.false.</config_ecosysTracers_diagnostic_fields_level4>
 <config_ecosysTracers_diagnostic_fields_level5>.false.</config_ecosysTracers_diagnostic_fields_level5>
+<config_use_ecosysTracers_iron_solubility_file>.false.</config_use_ecosysTracers_iron_solubility_file>
 
 <!-- tracer_forcing_freshwaterTracers -->
 <config_use_freshwaterTracers>.false.</config_use_freshwaterTracers>

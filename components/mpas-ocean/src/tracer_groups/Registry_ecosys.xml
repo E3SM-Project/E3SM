@@ -59,6 +59,10 @@
 			description="if true, couple ecosys fields with sea ice"
 			possible_values=".true. or .false."
 		/>
+		<nml_option name="config_use_ecosysTracers_atm_dust_from_coupler" type="logical" default_value=".false." units="unitless"
+			description="if true, get atmospheric dust inputs from the coupler, else from ecosys monthly forcing file"
+			possible_values=".true. or .false."
+		/>
 		<nml_option name="config_ecosysTracers_diagnostic_fields_level1" type="logical" default_value=".false." units="unitless"
 			description="if true, make variables in ecosysDiagFieldsLevel1 available for output"
 			possible_values=".true. or .false."
@@ -77,6 +81,10 @@
 		/>
 		<nml_option name="config_ecosysTracers_diagnostic_fields_level5" type="logical" default_value=".false." units="unitless"
 			description="if true, make variables in ecosysDiagFieldsLevel5 available for output"
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_ecosysTracers_iron_solubility_file" type="logical" default_value=".false." units="unitless"
+			description="if true, read in Fe solubility from the ecosys forcing file"
 			possible_values=".true. or .false."
 		/>
 	</nml_record>
@@ -712,9 +720,24 @@
 			<var name="dust_FLUX_IN" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
 				description="Surface Dust Flux"
 			/>
+                        <var name="dust_FLUX_WET" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
+                                description="Surface Dust Flux due to wet deposition"
+                        />
+                        <var name="dust_FLUX_DRY" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
+                                description="Surface Dust Flux due to dry deposition"
+                        />
 			<var name="IRON_FLUX_IN" type="real" dimensions="nCells Time" units="mmol Fe m^{-3} m s^{-1}"
 				description="Surface Fe Flux"
 			/>
+                        <var name="IRON_Solubility_wet" type="real" dimensions="nCells Time" units="mmol bio Fe per mmol total Fe"
+                                description="Bioavailable wet solubility fraction of total Fe "
+                        />
+                        <var name="IRON_Solubility_dry" type="real" dimensions="nCells Time" units="mmol bio Fe per mmol total Fe"
+                                description="Bioavailable dry solubility fraction of total Fe "
+                        />
+                        <var name="IRON_in_dust_fraction" type="real" dimensions="nCells Time" units="none"
+                                description="Fraction of dust that is Fe"
+                        />
 			<var name="PAR_surface" type="real" dimensions="nCells Time" units="TEMP or Watts m s^{-1}"
 				description="Photosynthetically Available Radiation at Ocean Surface"
 			/>
@@ -2152,7 +2175,22 @@
 		<var name="dust_FLUZ_IN" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
 			description="Surface Dust Flux"
 		/>
+                <var name="dust_FLUZ_WET" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
+                        description="Surface Dust Flux due to wet deposition"
+                />
+                <var name="dust_FLUZ_DRY" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
+                        description="Surface Dust Flux due to dry deposition"
+                />
 		<var name="IRON_FLUZ_IN" type="real" dimensions="nCells Time" units="mmol Fe m^{-3} m s^{-1}"
 			description="Surface Fe Flux"
 		/>
+                <var name="IRON_Zolubility_wet" type="real" dimensions="nCells Time" units="mmol bio Fe per mmol total Fe"
+                        description="Bioavailable wet solubility fraction of total Fe "
+                />
+                <var name="IRON_Zolubility_dry" type="real" dimensions="nCells Time" units="mmol bio Fe per mmol total Fe"
+                        description="Bioavailable dry solubility fraction of total Fe "
+                />
+                <var name="IRON_in_duzt_fraction" type="real" dimensions="nCells Time" units="none"
+                        description="Fraction of dust that is Fe"
+                />
 	</var_struct>

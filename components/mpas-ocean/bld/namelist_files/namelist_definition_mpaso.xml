@@ -3252,6 +3252,14 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_use_ecosysTracers_atm_dust_from_coupler" type="logical"
+	category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
+if true, get atmospheric dust inputs from the coupler, else from ecosys monthly forcing file
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_ecosysTracers_diagnostic_fields_level1" type="logical"
 	category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
 if true, make variables in ecosysDiagFieldsLevel1 available for output
@@ -3287,6 +3295,14 @@ Default: Defined in namelist_defaults.xml
 <entry id="config_ecosysTracers_diagnostic_fields_level5" type="logical"
 	category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
 if true, make variables in ecosysDiagFieldsLevel5 available for output
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_ecosysTracers_iron_solubility_file" type="logical"
+	category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
+if true, read in Fe solubility from the ecosys forcing file
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
