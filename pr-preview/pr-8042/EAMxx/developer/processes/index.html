@@ -3406,6 +3406,8 @@
       
         
       
+        
+      
     
     
     
@@ -3455,6 +3457,156 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_4_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_3_4_2" id="__nav_3_3_4_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Physics
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_3_4_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3_4_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Physics
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_4_2_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_3_4_2_1" id="__nav_3_3_4_2_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    P3
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="5" aria-labelledby="__nav_3_3_4_2_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3_4_2_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    P3
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../technical/physics/p3/autoconversion/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Autoconversion
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
               
             
               
@@ -4674,7 +4826,7 @@ this</p>
 <span class="w">  </span><span class="n">MyProcess</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">ekat</span><span class="o">::</span><span class="n">Comm</span><span class="o">&amp;</span><span class="w"> </span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">ekat</span><span class="o">::</span><span class="n">ParameterList</span><span class="o">&amp;</span><span class="w"> </span><span class="n">pl</span><span class="p">);</span>
 
 <span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="nf">name</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="s">&quot;my_fancy_process&quot;</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
-<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">set_grids</span><span class="w"> </span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">gm_ptr</span><span class="o">&amp;</span><span class="w"> </span><span class="n">grids_manager</span><span class="p">)</span><span class="w"> </span><span class="k">override</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">create_requests</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="k">override</span><span class="p">;</span>
 <span class="w">  </span><span class="kt">size_t</span><span class="w"> </span><span class="nf">requested_buffer_size_in_bytes</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">override</span><span class="p">;</span>
 <span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">init_buffers</span><span class="w"> </span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">ATMBufferManager</span><span class="o">&amp;</span><span class="w"> </span><span class="n">buffer_manager</span><span class="p">)</span><span class="w"> </span><span class="k">override</span><span class="p">;</span>
 <span class="k">protected</span><span class="o">:</span>
@@ -4720,12 +4872,12 @@ explain</p>
 <span class="w">  </span><span class="n">m_has_blah</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">m_params</span><span class="p">.</span><span class="n">get</span><span class="o">&lt;</span><span class="kt">bool</span><span class="o">&gt;</span><span class="p">(</span><span class="s">&quot;enable_blah&quot;</span><span class="p">);</span>
 <span class="p">}</span>
 
-<span class="kt">void</span><span class="w"> </span><span class="n">MyProcess</span><span class="o">::</span><span class="n">set_grids</span><span class="w"> </span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">GridsManager</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">gm</span><span class="p">)</span>
+<span class="kt">void</span><span class="w"> </span><span class="n">MyProcess</span><span class="o">::</span><span class="n">create_requests</span><span class="w"> </span><span class="p">()</span>
 <span class="p">{</span>
 <span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="k">namespace</span><span class="w"> </span><span class="nn">ekat</span><span class="o">::</span><span class="nn">units</span><span class="p">;</span>
 <span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="k">auto</span><span class="w"> </span><span class="n">nondim</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Units</span><span class="o">::</span><span class="n">nondimensional</span><span class="p">();</span>
 
-<span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="n">grid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gm</span><span class="o">-&gt;</span><span class="n">get_grid</span><span class="p">(</span><span class="s">&quot;physics&quot;</span><span class="p">);</span>
+<span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="n">grid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">m_grids_manager</span><span class="o">-&gt;</span><span class="n">get_grid</span><span class="p">(</span><span class="s">&quot;physics&quot;</span><span class="p">);</span>
 <span class="w">  </span><span class="n">m_ncols</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">grid</span><span class="o">-&gt;</span><span class="n">get_num_local_dofs</span><span class="p">();</span>
 <span class="w">  </span><span class="n">m_nlevs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">grid</span><span class="o">-&gt;</span><span class="n">get_num_vertical_levels</span><span class="p">();</span>
 
