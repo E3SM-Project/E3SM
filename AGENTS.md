@@ -1,8 +1,7 @@
 <!-- markdownlint-disable -->
 # AGENTS.md
 
-E3SM (Energy Exascale Earth System Model) is a state-of-the-art fully coupled Earth System Model. This guide helps you work effectiv
-ely with this codebase.
+E3SM (Energy Exascale Earth System Model) is a state-of-the-art fully coupled Earth System Model. This guide helps you work effectively with this codebase.
 
 ## Project Overview
 
@@ -14,23 +13,29 @@ E3SM (Energy Exascale Earth System Model) is a state-of-the-art fully coupled Ea
 
 ## Build Commands
 
-E3SM uses the CIME (Common Infrastructure for Modeling the Earth) case control system. Building requires a supported machine.
+E3SM uses the CIME (Common Infrastructure for Modeling the Earth) case control system.
 Build is done out-of-source and is not under the source directory.
+First a CASEDIR is created using create_newcase.  In the CASEDIR, you can run ./case.build
+after running ./case.setup.
+Supported machines are in cime_config/machines/config_machines.xml and grouped by hostname.
+Do not try and create a case or test unless on a supported machine.
 
 ### Creating and Building a Case
+Ask the user to specify a CASENAME. Create the case in the top level project directory unless
+the case name includes a absolute or relative path.
 
 ```bash
 # Navigate to CIME scripts directory
 cd cime/scripts
 
 # Create a new case
-./create_newcase --case /path/to/case --compset COMPSET --res RESOLUTION --machine MACHINE
+./create_newcase --case ../../CASENAME --compset COMPSET --res RESOLUTION --mach MACHINE
 
 # Setup the case
 cd /path/to/case
 ./case.setup
 
-# Build the case
+# Build the code for the case
 ./case.build
 
 #Find the directory of the build output
@@ -48,8 +53,12 @@ cd /path/to/case
 #Do not clean just build again
 ./case.build
 
-#if only components or driver were modified
+#if only components or driver were modified its faster to do
 ./case.build -m
+
+#if the pelayout is modified, do
+./case.setup --reset
+./case.build
 ```
 
 ### Rerun a case
@@ -59,8 +68,18 @@ cd /path/to/case
 ```
 
 ### Common Compsets and Resolutions
-- **Compsets:** WCYCL1850, F2010, I1850ELM
-- **Resolutions:** ne30pg2_r05_IcoswISC30E3r5, ne4pg2_oQU480
+Use these when testing changes to code made only in the specified component
+- elm: COMPSET I1850CNPRDCTCBCTOP, RESOLUTION ne4pg2_ne4pg2
+- eam: COMPSET F1850, RESOLUTION ne4pg2_oQU480
+- mosart: COMPSET RMOSGPCC, RESOLUTION r05_r05
+- eamxx: COMPSET F2010-SCREAMv1, RESOLUTION ne4pg2_ne4pg2
+- mpas-ocean: COMPSET CMPASO-NYF, RESOLUTION T62_oQU120
+- mpas-seaice: COMPSET DTESTM, RESOLUTION T62_oQU240
+
+If code has been changed in elm and eam, use the F1850 compeset.
+If code has been changed in 2 or more other components, use the
+coupled case: COMPSET WCYCL1850NS, RESOLUTION ne4pg2_r05_oQU480
+
 
 ## Compsets
 
@@ -69,33 +88,7 @@ Compsets define the component configuration for a simulation. The longname forma
 
 Compset definitions are in `cime_config/allactive/config_compsets.xml` and component-specific files in `components/*/cime_config/config_compsets.xml`.
 
-### Fully Coupled (WCYCL - Water Cycle)
-| Alias | Description |
-|-------|-------------|
-| WCYCL1850 | Pre-industrial (1850) fully coupled |
-| WCYCL1950 | Mid-century (1950) fully coupled |
-| WCYCL20TR | 20th century transient fully coupled |
-| WCYCL1850NS | 1850 without spun-up ocean/ice ICs (for testing) |
-| WCYCLSSP585/370/245 | Future scenario projections |
-
-### Atmosphere-Only (F compsets)
-| Alias | Description |
-|-------|-------------|
-| F1850 | 1850 atmosphere with prescribed ocean/ice |
-| F1950 | 1950 atmosphere with prescribed ocean/ice |
-| F2010 | 2010 atmosphere with prescribed ocean/ice |
-| F20TR | 20th century transient atmosphere |
-| FSCM | Single column model |
-
-### Land-Only (I compsets)
-| Alias | Description |
-|-------|-------------|
-| IELM | Present-day land with data atmosphere |
-| I1850ELM | 1850 land-only |
-| I1850ELMCN | 1850 land with carbon-nitrogen cycle |
-| I20TRELM | 20th century transient land |
-| IELMBC | Land with black carbon |
-| IERA5ELM | Land forced by ERA5 reanalysis |
+For a created case, the longname is in the README.case file in the case directory.
 
 ### Component Abbreviations in Compset Names
 - **ATM:** EAM (atmosphere), EAMXX/SCREAM (next-gen), DATM (data), SATM (stub)
@@ -106,57 +99,22 @@ Compset definitions are in `cime_config/allactive/config_compsets.xml` and compo
 - **GLC:** MALI (land ice), SGLC (stub)
 - **WAV:** WW3 (waves), SWAV (stub)
 
-### Physics Options (% modifiers)
-- `%CMIP6` - CMIP6 configuration
-- `%CNPRDCTCBCTOP` - Carbon-nitrogen-phosphorus with RDCTC biogeochemistry
-- `%SP` / `%SPBC` - Satellite phenology (with/without black carbon)
-- `%PRES` - Prescribed mode
-- `%DOM` - Data ocean model mode
-
 ## Grid Resolutions
 
 Grid definitions are in `cime_config/config_grids.xml`. The grid alias format is:
 `a%name_l%name_oi%name_r%name_m%mask_g%name_w%name` (atm_lnd_ocn/ice_rof_mask_glc_wav)
 
-### Atmosphere Grids
-| Grid | Description | Approximate Resolution |
-|------|-------------|------------------------|
-| ne4np4.pg2 | Cubed-sphere, very coarse | ~7.5° (testing only) |
-| ne30np4.pg2 | Cubed-sphere, low-res | ~1° (100 km) |
-| ne120np4 | Cubed-sphere, high-res | ~0.25° (25 km) |
-| 0.9x1.25 (f09) | Finite-volume | ~1° |
-| 1.9x2.5 (f19) | Finite-volume | ~2° |
-| 4x5 (f45) | Finite-volume | ~4° |
+## Testing
 
-### Ocean/Ice Grids (MPAS)
-| Grid | Description |
-|------|-------------|
-| oQU480 | Quasi-uniform 480 km (testing) |
-| oQU240 | Quasi-uniform 240 km |
-| oEC60to30v3 | Eddy-closure 60-30 km variable |
-| IcoswISC30E3r5 | Icosahedral with ice-shelf cavities 30 km |
-| SOwISC12to60E2r4 | Southern Ocean 12-60 km variable |
+While doing development, create a single case that uses the component
+being modified and run ./case.build and ./case.submit as needed to test
+code modifications.
 
-### River Routing Grids
-| Grid | Description |
-|------|-------------|
-| r05 | 0.5° river routing (standard) |
-| r01 | 0.1° river routing (high-res) |
-| rx1 | 1° river routing |
-
-### Common Combined Grid Aliases
-| Alias | Components | Use Case |
-|-------|------------|----------|
-| ne30pg2_r05_IcoswISC30E3r5 | 1° atm + 0.5° river + 30km ocean | Production coupled |
-| ne4pg2_oQU480 | Very coarse atm + 480km ocean | Testing/debugging |
-| f09_g16 | 1° FV atm + 1° POP ocean | Legacy configurations |
-| f19_g16 | 2° FV atm + 1° POP ocean | Coarse testing |
-| f09_f09 | 1° FV atm-only | Atmosphere-only runs |
-| r05_r05 | 0.5° land/river only | Land-only runs |
-| hcru_hcru | 0.5° CRU grid | Land with CRU forcing |
-| ELM_USRDAT | User-defined | Custom regional grids |
+Most of E3SM does not have unit tests.
 
 ### EAMxx (SCREAM) Standalone Testing
+Code modifications in components/eamxx can be tested
+in a standalone mode without CIME or a driver.
 
 ```bash
 cd components/eamxx
@@ -173,25 +131,29 @@ cd components/eamxx
 # Run with local baselines
 ./scripts/test-all-eamxx -m MACHINE --baseline-dir=LOCAL
 ```
-
-## Testing
-
-### CIME-Based Tests
+### CIME-Based System Tests
 
 ```bash
 cd cime/scripts
 
 # Run a single test
-./create_test TEST_NAME --wait
+./create_test TEST_NAME
 
-# Test naming format: TEST_TYPE.GRID.COMPSET[.MACHINE][.TESTMOD]
+# Run a test suite
+./create_test SUITE_NAME
+
+# Monitor test progress by going to the test directory and tailing the TestStatus.log file
+
+# Test naming format: TEST_TYPE.RESOLUTION.COMPSET[.MACHINE][.TESTMOD]
 # Example: SMS_D_Ln5_P4.ne4pg2_oQU480.F2010.ghci-oci_gnu
 ```
 
-Test types:
+Test types for various properties of the model:
 - **SMS** - Short smoke test
 - **ERS** - Exact restart test
 - **SMS_D** - Debug smoke test
+- **PEM** - Test bit-for-bit when changing mpi task count
+- **PET** - Test bit-for-bit when changing thread count
 - **ERS_Ld** - Exact restart test run for lenght of d days
 
 ### Test Suites (defined in cime_config/tests.py)
@@ -224,6 +186,7 @@ Test types:
 - `/cime/` - CIME submodule (case control system)
 - `/cime_config/` - E3SM-specific CIME configuration
   - `machines/` - Machine, compiler, batch specifications
+  - `machines/config_machines.xml` - supported machines
   - `machines/cmake_macros/` - Machine-specific CMake settings
   - `tests.py` - Test suite definitions
   - `config_grids.xml` - Grid definitions
@@ -245,7 +208,7 @@ Key submodules in `/externals/`:
 
 After cloning, initialize submodules:
 ```bash
-git submodule update --init --recursive
+git submodule update --init --recursive --depth=1
 ```
 
 ### Build System
@@ -272,8 +235,9 @@ Build types tested: sp (single precision), dbg (debug), fpe (floating point exce
 4. Cosmetic-only changes from non-staff are generally not accepted
 5. New features should be coordinated via E3SM management and science plan
 
-## Rules for pull requests
-1. PR description should be brief and in plain text with no markdown and with lines wrapped at 80 characters.
-2. PR description should use imperative tense and start with a verb like Fix or Add
-3. After the plan text, you can add a line and under the line provide more description with markdown formatting and tables, etc.
+## Rules for pull request (PR)
+1. PR description should have two parts.  The fist should be a brief description in plain
+ text with no markdown or other formatting. Add a line.  The second part should be the full
+description with markdown formatting.
+2. PR description should use imperative tense and start with a verb like 'Fix' or 'Add'
 
