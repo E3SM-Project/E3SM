@@ -20,6 +20,12 @@ after running ./case.setup.
 Supported machines are in cime_config/machines/config_machines.xml and grouped by hostname.
 Do not try and create a case or test unless on a supported machine.
 
+```bash
+#list supported machines
+cd cime/scripts
+./query_config --machines
+```
+
 ### Creating and Building a Case
 Ask the user to specify a CASENAME. Create the case in the top level project directory unless
 the case name includes a absolute or relative path.
@@ -88,6 +94,12 @@ Compsets define the component configuration for a simulation. The longname forma
 
 Compset definitions are in `cime_config/allactive/config_compsets.xml` and component-specific files in `components/*/cime_config/config_compsets.xml`.
 
+```bash
+#list all compsets
+cd cime/scripts
+./query_config --compsets all
+```
+
 For a created case, the longname is in the README.case file in the case directory.
 
 ### Component Abbreviations in Compset Names
@@ -103,6 +115,12 @@ For a created case, the longname is in the README.case file in the case director
 
 Grid definitions are in `cime_config/config_grids.xml`. The grid alias format is:
 `a%name_l%name_oi%name_r%name_m%mask_g%name_w%name` (atm_lnd_ocn/ice_rof_mask_glc_wav)
+
+```bash
+#list all grids
+cd cime/scripts
+./query_config --grids
+```
 
 ## Testing
 
@@ -229,13 +247,14 @@ Build types tested: sp (single precision), dbg (debug), fpe (floating point exce
 
 ## Development Workflow
 
-1. Development guide: https://e3sm.org/model/running-e3sm/developing-e3sm/
-2. E3SM requires running on supported machines (see https://e3sm.org/model/running-e3sm/supported-machines/)
-3. PR-based workflow with automated testing
-4. Cosmetic-only changes from non-staff are generally not accepted
-5. New features should be coordinated via E3SM management and science plan
+1. Developing E3SM requires running on supported machines.
+2. E3SM uses gitworkflows but without a 'seen' branch https://www.kernel.org/pub/software/scm/git/docs/gitworkflows.html
+3. Development guide: https://e3sm.org/model/running-e3sm/developing-e3sm/
+4. PR-based workflow with automated testing
+5. Feature branch names should use this pattern: ```<github username>/<source code area or component>/<feature-description>```
+6. New features should be coordinated via E3SM management and science plan
 
-## Rules for pull request (PR)
+## Rules for pull request (PR) description
 1. PR description should have two parts.  The fist should be a brief description in plain
  text with no markdown or other formatting. Add a line.  The second part should be the full
 description with markdown formatting.
