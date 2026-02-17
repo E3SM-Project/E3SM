@@ -607,6 +607,10 @@ void Tendencies::computeVelocityTendenciesOnly(
       Err = Tracers::getByName(Temp, VelTimeLevel, "Temperature");
       Err = Tracers::getByName(Salinity, VelTimeLevel, "Salinity");
 
+      // Temporary: ensure vertical geometric/geopotential fields are updated
+      // for pressure-gradient tendency calculations.
+      VCoord->computeZHeight(LayerThick, EqState->SpecVol);
+
       EqState->computeSpecVol(Temp, Salinity, LocPressureMid);
       PGrad->computePressureGrad(LocNormalVelocityTend, State, VCoord, EqState,
                                  VelTimeLevel);
