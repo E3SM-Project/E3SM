@@ -26,9 +26,9 @@ class PressureGradCentered {
    bool Enabled;
 
    // constructor declaration
-   PressureGradCentered(const HorzMesh *Mesh, ///< [in] Horizontal mesh
-                       const VertCoord *VCoord  ///< [in] Vertical coordinate
-                       );
+   PressureGradCentered(const HorzMesh *Mesh,   ///< [in] Horizontal mesh
+                        const VertCoord *VCoord ///< [in] Vertical coordinate
+   );
 
    // Compute centered pressure gradient contribution for given edge and
    // vertical chunk. This appends results into the Tend array (in-place).
@@ -37,34 +37,43 @@ class PressureGradCentered {
                                    const Array2DReal &PressureInterface,
                                    const Array2DReal &ZInterface,
                                    const Array2DReal &LayerThick,
-                                   const Array2DReal &SpecVol
-                                   ) const {
+                                   const Array2DReal &SpecVol) const {
 
       const I4 KStart = chunkStart(KChunk, MinLayerEdgeBot(IEdge));
       const I4 KLen   = chunkLength(KChunk, KStart, MaxLayerEdgeTop(IEdge));
-      
+
       const I4 ICell0      = CellsOnEdge(IEdge, 0);
       const I4 ICell1      = CellsOnEdge(IEdge, 1);
       const Real InvDcEdge = 1.0_Real / DcEdge(IEdge);
-      Real Rho0   = 1026.0_Real;
-      Real Gravity = 9.80616_Real;
+      Real Rho0            = 1026.0_Real;
+      Real Gravity         = 9.80616_Real;
 
       for (int KVec = 0; KVec < KLen; ++KVec) {
          const I4 K = KStart + KVec;
-         Real MontPotCell0K = PressureInterface(ICell0, K) * SpecVol(ICell0, K) + Gravity * ZInterface(ICell0, K);
-         Real MontPotCell1K = PressureInterface(ICell1, K) * SpecVol(ICell1, K) + Gravity * ZInterface(ICell1, K);
+         Real MontPotCell0K =
+             PressureInterface(ICell0, K) * SpecVol(ICell0, K) +
+             Gravity * ZInterface(ICell0, K);
+         Real MontPotCell1K =
+             PressureInterface(ICell1, K) * SpecVol(ICell1, K) +
+             Gravity * ZInterface(ICell1, K);
          Real GradMontPotK = (MontPotCell1K - MontPotCell0K) * InvDcEdge;
 
-         Real MontPotCell0Kp1 = PressureInterface(ICell0, K+1) * SpecVol(ICell0, K) + Gravity * ZInterface(ICell0, K+1);
-         Real MontPotCell1Kp1 = PressureInterface(ICell1, K+1) * SpecVol(ICell1, K) + Gravity * ZInterface(ICell1, K+1);
+         Real MontPotCell0Kp1 =
+             PressureInterface(ICell0, K + 1) * SpecVol(ICell0, K) +
+             Gravity * ZInterface(ICell0, K + 1);
+         Real MontPotCell1Kp1 =
+             PressureInterface(ICell1, K + 1) * SpecVol(ICell1, K) +
+             Gravity * ZInterface(ICell1, K + 1);
          Real GradMontPotKp1 = (MontPotCell1Kp1 - MontPotCell0Kp1) * InvDcEdge;
-         Real GradMontPot = 0.5_Real * (GradMontPotK + GradMontPotKp1);
+         Real GradMontPot    = 0.5_Real * (GradMontPotK + GradMontPotKp1);
 
-         Real PGradAlpha = 0.5 * (PressureMid(ICell1, K) + PressureMid(ICell0, K)) * (SpecVol(ICell1, K) - SpecVol(ICell0, K)) * InvDcEdge;
-         Tend(IEdge, K) +=
-             EdgeMask(IEdge, K) * (-GradMontPot + PGradAlpha);
-         if (IEdge == 0)    
-         LOG_INFO("IEdge {}, K {}: GradMontPot {}, PGradAlpha {}, Tend {}", IEdge, K, GradMontPot, PGradAlpha, Tend(IEdge, K));
+         Real PGradAlpha =
+             0.5 * (PressureMid(ICell1, K) + PressureMid(ICell0, K)) *
+             (SpecVol(ICell1, K) - SpecVol(ICell0, K)) * InvDcEdge;
+         Tend(IEdge, K) += EdgeMask(IEdge, K) * (-GradMontPot + PGradAlpha);
+         if (IEdge == 0)
+            LOG_INFO("IEdge {}, K {}: GradMontPot {}, PGradAlpha {}, Tend {}",
+                     IEdge, K, GradMontPot, PGradAlpha, Tend(IEdge, K));
       }
    }
 
@@ -82,9 +91,9 @@ class PressureGradHighOrder {
    bool Enabled;
 
    // constructor declaration
-   PressureGradHighOrder(const HorzMesh *Mesh, ///< [in] Horizontal mesh
-                        const VertCoord *VCoord ///< [in] Vertical coordinate
-                        );
+   PressureGradHighOrder(const HorzMesh *Mesh,   ///< [in] Horizontal mesh
+                         const VertCoord *VCoord ///< [in] Vertical coordinate
+   );
 
    KOKKOS_FUNCTION void operator()(const Array2DReal &Tend, I4 IEdge, I4 KChunk,
                                    const Array2DReal &Pressure,
@@ -112,7 +121,6 @@ class PressureGradHighOrder {
 // Pressure gradient manager class
 class PressureGrad {
  public:
-
    // Flag to indicate if pressure gradient term is enabled
    bool Enabled;
 
@@ -145,7 +153,6 @@ class PressureGrad {
                             const VertCoord *VCoord, const Eos *EqState,
                             const int TimeLevel) const;
 
-
  private:
    // Construct a new pressure gradient object
    PressureGrad(const HorzMesh *Mesh, const VertCoord *VCoord, Config *Options);
@@ -158,17 +165,17 @@ class PressureGrad {
    static PressureGrad *DefaultPGrad;
 
    // Mesh-related sizes
-   I4 NEdgesAll   = 0;
-   I4 NChunks     = 0;
-   I4 NVertLayers = 0;
+   I4 NEdgesAll     = 0;
+   I4 NChunks       = 0;
+   I4 NVertLayers   = 0;
    I4 NVertLayersP1 = 0;
 
    // Data required for computation (stored copies of mesh/VCoord arrays)
    Array2DI4 CellsOnEdge;      ///< cells surrounding each edge
    Array1DReal DcEdge;         ///< distance between cell centers across edge
    Array2DReal EdgeSignOnCell; ///< orientation of edge relative to cell
-   Array1DI4 MinLayerEdgeBot;   ///< min vertical layer on each edge
-   Array1DI4 MaxLayerEdgeTop;   ///< max vertical layer on each edge
+   Array1DI4 MinLayerEdgeBot;  ///< min vertical layer on each edge
+   Array1DI4 MaxLayerEdgeTop;  ///< max vertical layer on each edge
 
    // Instances of functors
    PressureGradCentered CenteredPGrad;

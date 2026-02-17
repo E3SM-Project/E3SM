@@ -10,8 +10,8 @@
 #include "Error.h"
 #include "Field.h"
 #include "HorzMesh.h"
-#include "VertCoord.h"
 #include "OmegaKokkos.h"
+#include "VertCoord.h"
 
 namespace OMEGA {
 
@@ -76,15 +76,17 @@ PressureGrad::PressureGrad(
     const HorzMesh *Mesh,    ///< [in] Horizontal mesh
     const VertCoord *VCoord, ///< [in] Vertical coordinate
     Config *Options)         ///< [in] Configuration options
-    : CellsOnEdge(Mesh->CellsOnEdge), DcEdge(Mesh->DcEdge), EdgeSignOnCell(Mesh->EdgeSignOnCell),
-      MinLayerEdgeBot(VCoord->MinLayerEdgeBot), MaxLayerEdgeTop(VCoord->MaxLayerEdgeTop),
-      CenteredPGrad(Mesh, VCoord), HighOrderPGrad(Mesh, VCoord) {
+    : CellsOnEdge(Mesh->CellsOnEdge), DcEdge(Mesh->DcEdge),
+      EdgeSignOnCell(Mesh->EdgeSignOnCell),
+      MinLayerEdgeBot(VCoord->MinLayerEdgeBot),
+      MaxLayerEdgeTop(VCoord->MaxLayerEdgeTop), CenteredPGrad(Mesh, VCoord),
+      HighOrderPGrad(Mesh, VCoord) {
 
    // store mesh sizes
-   NEdgesAll   = Mesh->NEdgesAll;
-   NVertLayers = VCoord->NVertLayers;
+   NEdgesAll     = Mesh->NEdgesAll;
+   NVertLayers   = VCoord->NVertLayers;
    NVertLayersP1 = NVertLayers + 1;
-   NChunks     = NVertLayers / VecLength;
+   NChunks       = NVertLayers / VecLength;
 
    // Read config options for PressureGrad type
    // and enable the appropriate functor
@@ -175,16 +177,14 @@ void PressureGrad::computePressureGrad(Array2DReal &Tend,
       parallelForOuter(
           "pgrad-centered", {NEdgesAll},
           KOKKOS_LAMBDA(I4 IEdge, const TeamMember &Team) {
-             const int KMin = LocMinLayerEdgeBot(IEdge);
-             const int KMax = LocMaxLayerEdgeTop(IEdge);
+             const int KMin   = LocMinLayerEdgeBot(IEdge);
+             const int KMax   = LocMaxLayerEdgeTop(IEdge);
              const int KRange = vertRange(KMin, KMax);
 
              parallelForInner(
-                 Team, KRange,
-                 INNER_LAMBDA(int KChunk) {
+                 Team, KRange, INNER_LAMBDA(int KChunk) {
                     LocCenteredPGrad(Tend, IEdge, KChunk, PressureMid,
-                                     PressureInterface, ZInterface,
-                                     LayerThick,
+                                     PressureInterface, ZInterface, LayerThick,
                                      SpecVol);
                  });
           });
@@ -195,35 +195,35 @@ void PressureGrad::computePressureGrad(Array2DReal &Tend,
       parallelForOuter(
           "pgrad-highorder", {NEdgesAll},
           KOKKOS_LAMBDA(I4 IEdge, const TeamMember &Team) {
-             const int KMin = MinLayerEdgeBot(IEdge);
-             const int KMax = MaxLayerEdgeTop(IEdge);
+             const int KMin   = MinLayerEdgeBot(IEdge);
+             const int KMax   = MaxLayerEdgeTop(IEdge);
              const int KRange = vertRange(KMin, KMax);
 
              parallelForInner(
-                 Team, KRange,
-                 INNER_LAMBDA(int KChunk) {
+                 Team, KRange, INNER_LAMBDA(int KChunk) {
                     LocHighOrderPGrad(Tend, IEdge, KChunk, PressureMid,
                                       Geopotential, SpecVol);
                  });
           });
-
    }
 } // end compute pressure gradient
 
 //------------------------------------------------------------------------------
 // Constructor for centered pressure gradient functor
-PressureGradCentered::PressureGradCentered(const HorzMesh *Mesh, ///< [in] Horizontal mesh
-                                           const VertCoord *VCoord  ///< [in] Vertical coordinate
-                                           )
+PressureGradCentered::PressureGradCentered(
+    const HorzMesh *Mesh,   ///< [in] Horizontal mesh
+    const VertCoord *VCoord ///< [in] Vertical coordinate
+    )
     : CellsOnEdge(Mesh->CellsOnEdge), DcEdge(Mesh->DcEdge),
       EdgeMask(VCoord->EdgeMask), MinLayerEdgeBot(VCoord->MinLayerEdgeBot),
       MaxLayerEdgeTop(VCoord->MaxLayerEdgeTop) {}
 
 //------------------------------------------------------------------------------
 // Constructor for high order pressure gradient functor
-PressureGradHighOrder::PressureGradHighOrder(const HorzMesh *Mesh, ///< [in] Horizontal mesh
-                                             const VertCoord *VCoord  ///< [in] Vertical coordinate
-                                             )
+PressureGradHighOrder::PressureGradHighOrder(
+    const HorzMesh *Mesh,   ///< [in] Horizontal mesh
+    const VertCoord *VCoord ///< [in] Vertical coordinate
+    )
     : CellsOnEdge(Mesh->CellsOnEdge), DcEdge(Mesh->DcEdge),
       EdgeMask(VCoord->EdgeMask), MinLayerEdgeBot(VCoord->MinLayerEdgeBot),
       MaxLayerEdgeTop(VCoord->MaxLayerEdgeTop) {}
