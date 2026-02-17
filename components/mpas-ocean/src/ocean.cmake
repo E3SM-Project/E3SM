@@ -39,6 +39,7 @@ list(APPEND RAW_SOURCES
 
   core_ocean/shared/mpas_ocn_init_routines.F
   core_ocean/shared/mpas_ocn_gm.F
+  core_ocean/shared/mpas_ocn_redi.F
   core_ocean/shared/mpas_ocn_submesoscale_eddies.F
   core_ocean/shared/mpas_ocn_eddy_parameterization_helpers.F
   core_ocean/shared/mpas_ocn_diagnostics.F

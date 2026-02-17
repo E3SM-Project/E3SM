@@ -161,17 +161,18 @@ contains
       !
       !-----------------------------------------------------------------
 
-      real (kind=RKIND), dimension(:), intent(in) :: &
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
          RediKappa
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          k33
 
-      real (kind=RKIND) :: rediKappaCell
+      real (kind=RKIND),dimension(:), allocatable :: rediKappaCell
       real (kind=RKIND),dimension(:),pointer :: dvEdge, dcEdge, areaCell
 
-      integer :: i, iCell, nCells, iEdge
+      integer :: i, iCell, k, nCells, iEdge
 
+      integer, pointer :: nVertLevels
       integer, dimension(:), pointer :: nEdgesOnCell, nCellsArray
       integer, dimension(:,:), pointer :: edgesOnCell
 
@@ -195,19 +196,23 @@ contains
       call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
       call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
       call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
-
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
       nCells = nCellsArray(1)
 
+      allocate(rediKappaCell(nVertLevels+1))
       !$omp parallel
-      !$omp do schedule(runtime) private(i, rediKappaCell, iEdge)
+      !$omp do schedule(runtime) private(i, k, rediKappaCell, iEdge)
       do iCell = 1, nCells
-         rediKappaCell = 0.0_RKIND
+         rediKappaCell(:) = 0.0_RKIND
          do i = 1, nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i, iCell)
-            rediKappaCell = rediKappaCell + 0.25_RKIND*RediKappa(iEdge) * dvEdge(iEdge) * dcEdge(iEdge)
+            do k = 1, nVertLevels + 1
+               rediKappaCell(k) = rediKappaCell(k) + 0.25_RKIND*RediKappa(k,iEdge) &
+                                                   * dvEdge(iEdge) * dcEdge(iEdge)
+            enddo
          enddo
 
-         vertDiffTopOfCell(:, iCell) = vertDiffTopOfCell(:, iCell) + rediKappaCell * k33(:, iCell) &
+         vertDiffTopOfCell(:, iCell) = vertDiffTopOfCell(:, iCell) + rediKappaCell(:) * k33(:, iCell) &
                         / areaCell(iCell)
       end do
       !$omp end do

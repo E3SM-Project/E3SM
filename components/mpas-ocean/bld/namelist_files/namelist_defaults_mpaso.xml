@@ -183,8 +183,13 @@
 <config_use_Redi ocn_grid="oRRS15to5">.false.</config_use_Redi>
 <config_use_Redi ocn_grid="RRSwISC6to18E3r5">.false.</config_use_Redi>
 <config_Redi_closure>'constant'</config_Redi_closure>
+<config_redi_transition_layer_bld_fraction>0.8</config_redi_transition_layer_bld_fraction>
+<config_Redi_use_new_sfc_taper>.false.</config_Redi_use_new_sfc_taper>
+<config_Redi_use_cavity_fix>.false.</config_Redi_use_cavity_fix>
 <config_Redi_constant_kappa>400.0</config_Redi_constant_kappa>
 <config_Redi_constant_kappa ocn_forcing="datm_forced_restoring">400.0</config_Redi_constant_kappa>
+<config_redi_spatially_variable_min_kappa>100.0</config_redi_spatially_variable_min_kappa>
+<config_redi_spatially_variable_max_kappa>1000.0</config_redi_spatially_variable_max_kappa>
 <config_Redi_maximum_slope>0.01</config_Redi_maximum_slope>
 <config_Redi_use_slope_taper>.true.</config_Redi_use_slope_taper>
 <config_Redi_use_surface_taper>.true.</config_Redi_use_surface_taper>

@@ -307,14 +307,34 @@
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_Redi_closure" type="character" default_value="constant"
-					description="Control what type of function is used for Redi $\kappa$. For 'equalGM', RediKappa is set to gmBolusKappa, so picks up the closure used by GM. Note that equalGM should only be used with 2D GM schemes (e.g. config_GM_closure=constant or Visbeck), not with EdenGreatbatch."
-					possible_values="'constant', 'equalGM', 'data'"
+					description="Control what type of function is used for Redi $\kappa$. For 'equalGM', RediKappa is set to gmBolusKappa, so picks up the closure used by GM. For N2_dependent, the range varies from config_redi_constant_kappa down to 10% of that value" 
+					possible_values="'constant', 'N2_dependent', 'equalGM', 'data'"
+		/>
+		<nml_option name="config_redi_transition_layer_bld_fraction" type="real" default_value="0.8" units="m"
+		            description="Parameter that controls over what fraction the redi tensor transitions from isopycnal to horizontal.  For example a value of 0.8 means at z = -0.8*bld the tensor is fully horizontal.  Transition is linear between the bld base and this point"
+					possible_values="Positive real numbers."
+		/>
+		<nml_option name="config_Redi_use_new_sfc_taper" type="logical" default_value=".false."
+					description="Controls if the taper where redi is purely horizontal in the boundary layer instead of off"
+					possible_values=".true. or .false."
+		/>
+	  <nml_option name="config_Redi_use_cavity_fix" type="logical" default_value=".false."
+					description="if true use the corrected form of the horizontal temperature and salinity gradients"
+					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_Redi_constant_kappa" type="real" default_value="600.0" units="m^2 s^-1"
 					description="The Redi diffusion coefficient. Only used when config_Redi_closure = 'constant'."
 					possible_values="Positive real numbers."
 		/>
-		<nml_option name="config_Redi_maximum_slope" type="real" default_value="0.3" units="non-dimensional"
+	   <nml_option name="config_redi_spatially_variable_min_kappa" type="real" default_value="100.0" units="m^2 s^-1"
+					description="minimum value of redi diffusivity for N2_dependent redi scheme."
+					possible_values="values around 100s"
+		/>
+		<nml_option name="config_redi_spatially_variable_max_kappa" type="real" default_value="1000.0" units="m^2 s^-1"
+					description="minimum value of redi diffusivity for N2_dependent redi scheme."
+					possible_values="values around 100s"
+		/>
+	<nml_option name="config_Redi_maximum_slope" type="real" default_value="0.3" units="non-dimensional"
 					description="value of maximum allowed isopycnal slope from Danabasoglu et al 2008 equation (2)"
 					possible_values="positive real numbers, but small"
 		/>
@@ -1814,6 +1834,7 @@
 		<package name="tracerBudget" description="This package controls variables that record the tracer budget."/>
 		<package name="gm" description="This package is for GM variables, which are only needed at lower resolutions."/>
 		<package name="submeso" description="This package is for submesoscale eddy (MLE) variables, needed at resolutions greater than O(1km)"/>
+		<package name="redi" description="This package is for redi isoneutral mixing, it is used when the rossby radius is not resolved"/>
 		<package name="tidalPotentialForcingPKG" description="This package controls variables required for tidal potential forcing"/>
 		<package name="topographicWaveDragPKG" description="This package controls variables required for topographic wave drag"/>
 		<package name="gotmPKG" description="This package is for GOTM variables, which are only needed when using GOTM for the vertical turbulence closure."/>
@@ -2132,6 +2153,7 @@
 			<var_array name="SSHGradient"/>
 			<var_array name="vertNonLocalFlux"/>
 			<var name="boundaryLayerDepth"/>
+			<var name="dThreshMLD"/>
 			<var name="effectiveDensityInLandIce"/>
 			<var_struct name="ecosysAuxiliary"/>
 			<var name="accumulatedFrazilIceMass"/>
@@ -3291,7 +3313,7 @@
 		<var name="normalGMBolusVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^-1"
 			 description="Bolus velocity in Gent-McWilliams eddy parameterization"
 			 missing_value="FILLVAL" missing_value_mask="edgeMask"
-			 packages="gm"
+			 packages="gm;redi"
 		/>
 		<var name="normalMLEvelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^-1"
 			description="Velocity from mixed layer eddies (fox kemper 2011 submesoscale parameterization)"
@@ -3308,13 +3330,13 @@
 			description="spatially and depth varying GM kappa.  The scaling is based on the Brunt Vaisala Frequency relative to a maximum value below the mixed layer, follows from Danabasoglu and Marshall 2007.  If config_GM_closure is not set to N2_dependent the scaling value is set to 1 everywhere."
 			packages="gm"
 		/>
-		<var name="RediKappaSfcTaper" type="real" dimensions="nVertLevelsP1 nCells Time" units="1"
+		<var name="RediKappaSfcTaper" type="real" dimensions="nVertLevelsP1 nEdges Time" units="1"
 			description="Scaling coefficient for Redi kappa. Varies from 0 to 1."
-			packages="gm"
+			packages="gm;redi"
 		/>
 		<var name="rediLimiterCount" type="integer" dimensions="nVertLevels nCells Time"
 			description="count of times redi limiter is invoked on a timestep"
-			packages="gm"
+			packages="gm;redi"
 		/>
 		<var name="gradDensityEddy" type="real" dimensions="nVertLevels nEdges Time" units="kg m^-4"
 			description="horizontal gradient of density at cell edge and interfaces in vertical.  this is used for the GM parameterization and the submesoscale eddy parameterization"
@@ -3461,7 +3483,7 @@
 		/>
 		<var name="k33" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^-1"
 			 description="The (3,3) entry of the Redi diffusion tensor. Added to the model vertical diffusion. Defined at the top of cell k"
-			 packages="forwardMode;analysisMode"
+			 packages="redi"
 		/>
 		<var name="gmStreamFuncTopOfEdge" type="real" dimensions="nVertLevelsP1 nEdges Time" units="m^2 s^-1"
 			 description="GM stream function"
@@ -3489,23 +3511,23 @@
 		/>
 		<var name="gmBolusKappa" type="real" dimensions="nEdges Time" units="m^2 s^-1"
 			 description="GM Bolus Kappa value.  On output, it has NOT been multiplied by the horizontal taper array gmHorizontalTaper, because that is applied at the end to the normalGMBolusVelocity variable, not to the gmBolusKappa."
-			 packages="gm"
+			 packages="gm;redi"
 		/>
-		<var name="RediKappa" type="real" dimensions="nEdges Time" units="m^2 s^-1"
+		<var name="RediKappa" type="real" dimensions="nVertLevelsP1 nEdges Time" units="m^2 s^-1"
 			 description="Redi Kappa value.  On output, it has already been multiplied by the horizontal taper array RediHorizontalTaper (as opposed to gmBolusKappa, which has not been multiplied by the horizontal taper)."
-			 packages="gm"
+			 packages="forwardMode;analysisMode"
 		/>
 		<var name="RediHorizontalTaper" type="real" dimensions="nEdges Time"
 			 description="Horizontal tapering for Redi. Varies between 0 and 1."
-			 packages="gm"
+			 packages="gm;redi"
 		/>
 		<var name="gmHorizontalTaper" type="real" dimensions="nEdges Time"
 			 description="Horizontal tapering for GM. Varies between 0 and 1."
-			 packages="gm"
+			 packages="gm;redi"
 		/>
 		<var name="RossbyRadius" type="real" dimensions="nEdges Time" units="m"
 			 description="Rossby Radius, computed in GM routine for some settings"
-			 packages="gm"
+			 packages="gm;redi"
 		/>
 		<var name="surfaceFluxAttenuationCoefficient" type="real" dimensions="nCells Time" units="m"
 			description="The spatially-dependent length scale of exponential decay of surface fluxes. Fluxes are multiplied by $e^{z/\gamma}$, where this coefficient is $\gamma$."

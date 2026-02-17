@@ -1232,7 +1232,7 @@ contains
             end if
             ! Compute normalGMBolusVelocity, relativeSlope and RediDiffVertCoef if respective flags are turned on
             if (config_use_Redi.or.config_use_GM) then
-              call ocn_gm_compute_Bolus_velocity(statePool, meshPool, scratchPool, timeLevelIn=1)
+              call ocn_gm_compute_Bolus_velocity(statePool, meshPool, timeLevelIn=1)
             endif
 
             block_ptr => block_ptr % next
