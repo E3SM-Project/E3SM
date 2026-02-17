@@ -8,10 +8,12 @@
 //===----------------------------------------------------------------------===//
 
 #include "IO.h"
+#include "Broadcast.h"
 #include "Config.h"
 #include "DataTypes.h"
 #include "Error.h"
 #include "Logging.h"
+#include "MachEnv.h"
 #include "mpi.h"
 #include "pio.h"
 
@@ -289,8 +291,17 @@ void openFile(
       // If the write should append or add to an existing file
       // we open the file for reading and writing, but also must create
       // the file if it doesn't already exist
-      case IfExists::Append:
-         if (std::filesystem::exists(Filename)) {
+      case IfExists::Append: {
+         // Check for existence with one task and then broadcast to avoid
+         // the case where some tasks create and some open
+         bool FileExists;
+         MachEnv *DefEnv = MachEnv::getDefault();
+         if (DefEnv->isMasterTask()) {
+            FileExists = std::filesystem::exists(Filename);
+         }
+         Broadcast(FileExists);
+
+         if (FileExists) {
             PIOErr = PIOc_openfile(SysID, &FileID, &Format, Filename.c_str(),
                                    IsCDF5 | InMode);
          } else {
@@ -301,7 +312,7 @@ void openFile(
          if (PIOErr != PIO_NOERR)
             ABORT_ERROR("IO::openFile: PIO error opening file {} for writing",
                         Filename);
-         break;
+      } break;
 
       default:
          ABORT_ERROR("IO::openFile: unknown IfExists option for writing");
