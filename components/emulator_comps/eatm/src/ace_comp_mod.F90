@@ -3,6 +3,7 @@ module ace_comp_mod
   use esmf
   use eatmMod
   use eatmIO
+  use mct_mod
   use seq_timemgr_mod, only: seq_timemgr_EClockGetData
   use shr_const_mod
   use shr_kind_mod, only: R4=>SHR_KIND_R4, R8=>SHR_KIND_R8, CL=>SHR_KIND_CL, IN=>SHR_KIND_IN
@@ -64,10 +65,11 @@ module ace_comp_mod
   !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 CONTAINS
 
-  subroutine ace_comp_init()
+  subroutine ace_comp_init(ggrid)
 
     implicit none
 
+    type(mct_gGrid), intent(in), pointer :: ggrid
     integer     :: i, j, k           ! loop indicies
 
     input_tensor_shape = [ &
@@ -106,19 +108,20 @@ CONTAINS
     end do
 
     ! using restart data from ACE set the fields passed to the coupler
-    call ace_eatm_export()
+    call ace_eatm_export(ggrid)
 
     call init_normalizer(normalizer, norm_file, n_input_channels)
     call init_normalizer(denormalizer, denorm_file, n_output_channels)
 
   end subroutine ace_comp_init
 
-  subroutine ace_comp_run(EClock)
+  subroutine ace_comp_run(EClock, ggrid)
     ! !DESCRIPTION: run method for ace model
     implicit none
 
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Clock), intent(in) :: EClock
+    type(mct_gGrid), intent(in), pointer :: ggrid
 
     !--- local ---
     integer     :: i, j, k           ! loop indicies
@@ -204,7 +207,7 @@ CONTAINS
       end do
     end do
 
-    call ace_eatm_export()
+    call ace_eatm_export(ggrid)
   end subroutine ace_comp_run
 
   subroutine ace_comp_finalize()
@@ -329,16 +332,20 @@ CONTAINS
 
     do j = 1, lsize_y
       do i = 1, lsize_x
-        net_inputs(1,  1, i, j) = lndfrac(i, j)            ! ACE2-EAMv3: LANDFRAC
-        net_inputs(1,  2, i, j) = ocnfrac(i, j)            ! ACE2-EAMv3: OCNFRAC
-        net_inputs(1,  3, i, j) = icefrac(i, j)            ! ACE2-EAMv3: ICEFRAC
+        ! net_inputs(1,  1, i, j) = lndfrac(i, j)            ! ACE2-EAMv3: LANDFRAC
+        ! net_inputs(1,  2, i, j) = ocnfrac(i, j)            ! ACE2-EAMv3: OCNFRAC
+        ! net_inputs(1,  3, i, j) = icefrac(i, j)            ! ACE2-EAMv3: ICEFRAC
+        net_inputs(1,  1, i, j) = net_inputs(1,  1, i, j)  ! ACE2-EAMv3: LANDFRAC
+        net_inputs(1,  2, i, j) = net_inputs(1,  2, i, j)  ! ACE2-EAMv3: OCNFRAC
+        net_inputs(1,  3, i, j) = net_inputs(1,  3, i, j)  ! ACE2-EAMv3: ICEFRAC
         net_inputs(1,  4, i, j) = net_inputs(1, 4, i, j)   ! ACE2-EAMv3: PHIS
         ! -----------------------------------------------------------------------
         ! TODO (AN): Evolve `SOLIN`, `PS`, and TS fileds intime
         ! -----------------------------------------------------------------------
         net_inputs(1,  5, i, j) = net_inputs(1, 5, i, j)   ! ACE2-EAMv3: SOLIN
         net_inputs(1,  6, i, j) = net_outputs(1, 1, i, j)  ! ACE2-EAMv3: PS
-        net_inputs(1,  7, i, j) = ts(i, j)                 ! ACE2-EAMv3: TS
+        ! use landfrac as weights...
+        net_inputs(1,  7, i, j) = net_outputs(1, 2, i, j)  ! ACE2-EAMv3: TS
         ! For 3D fields just advance through with time
         net_inputs(1,  8, i, j) = net_outputs(1,  3, i, j) ! ACE2-EAMv3: T_0
         net_inputs(1,  9, i, j) = net_outputs(1,  4, i, j) ! ACE2-EAMv3: T_1
@@ -375,16 +382,34 @@ CONTAINS
       enddo
     enddo
 
+    write(logunit_atm, *) "----------------------------------------------------------------"
+    write(logunit_atm, *) "ace_eatm_import"
+    write(logunit_atm, *) "----------------------------------------------------------------"
+    write(logunit_atm, *) "ts  (min, max):   ( ", minval(ts(:, :)),  maxval(ts(:, :)), " )"
+    call shr_sys_flush(logunit_atm)
+
   end subroutine ace_eatm_import
 
-  subroutine ace_eatm_export()
+  subroutine ace_eatm_export(ggrid)
     ! !LOCAL VARIABLES:
-    integer :: i, j
-    !--- temporaries
-    real(kind=R8) :: e
+    type(mct_gGrid), pointer :: ggrid
+    real(R8),        pointer :: yc(:)
 
+    integer(IN) :: klat
+    integer     :: i, j, n
+    real(R8)    :: e, avg_alb
+    real(R8), parameter :: degtorad = SHR_CONST_PI/180.0_R8
+
+    allocate(yc(lsize))
+
+    klat = mct_aVect_indexRA(ggrid%data,'lat')
+    yc(:) = ggrid%data%rAttr(klat,:)
+
+    n = 0
     do j = 1, lsize_y
       do i = 1, lsize_x
+        n = n + 1
+
         zbot(i, j) = 10.0_R8
         ubot(i, j) = net_outputs(1, 26, i, j) ! U_7
         vbot(i, j) = net_outputs(1, 34, i, j) ! V_7
@@ -412,15 +437,34 @@ CONTAINS
           snowl(i, j) = 0.0_R8
         endif
 
-        ! swnet = (Downwelling solar flux at surface) - (surface upward shortwave flux)
-        swnet(i, j) = net_outputs(1, 41, i, j) - net_outputs(1, 42, i, j)
+        ! Downwelling solar flux at surface
+        swnet(i, j) = net_outputs(1, 41, i, j)
         !--- fabricate required sw[n,v]d[r,f] components from swnet ---
         swvdr(i, j) = swnet(i, j) * 0.28_R8
         swndr(i, j) = swnet(i, j) * 0.31_R8
         swvdf(i, j) = swnet(i, j) * 0.24_R8
         swndf(i, j) = swnet(i, j) * 0.17_R8
+
+        ! avg_alb = ( 0.069 - 0.011*cos(2.0_R8*yc(n)*degtorad ) )
+        ! swnet(i, j) = swnet(i, j) * (1.0_R4 - REAL(avg_alb, R4))
       enddo
     enddo
+
+    deallocate(yc)
+
+    write(logunit_atm, *) "----------------------------------------------------------------"
+    write(logunit_atm, *) "ace_eatm_export"
+    write(logunit_atm, *) "----------------------------------------------------------------"
+    write(logunit_atm, *) "zbot  (min, max):   ( ", minval(zbot(:, :)),  maxval(zbot(:, :)), " )"
+    write(logunit_atm, *) "tbot   (min, max):  ( ", minval(tbot(:, :)),  maxval(tbot(:, :)), " )"
+    write(logunit_atm, *) "pbot   (min, max):  ( ", minval(pbot(:, :)),  maxval(pbot(:, :)), " )"
+    write(logunit_atm, *) "ubot   (min, max):  ( ", minval(ubot(:, :)),  maxval(ubot(:, :)), " )"
+    write(logunit_atm, *) "vbot   (min, max):  ( ", minval(vbot(:, :)),  maxval(vbot(:, :)), " )"
+    write(logunit_atm, *) "swnet  (min, max):  ( ", minval(swnet(:, :)), maxval(swnet(:, :)), " )"
+    write(logunit_atm, *) "rainl (min, max):   ( ", minval(rainl(:, :)), maxval(rainl(:, :)), " )"
+    write(logunit_atm, *) "snowl (min, max):   ( ", minval(snowl(:, :)), maxval(snowl(:, :)), " )"
+    call shr_sys_flush(logunit_atm)
+
   end subroutine ace_eatm_export
 
   subroutine ace_read_netcdf(varname, data, ncid)
