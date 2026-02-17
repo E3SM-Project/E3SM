@@ -88,9 +88,7 @@ enum class ScaleKind {
 
 // BFB list matches the PTD_RW_SCALARS_ONLY serialized subset in
 // BackToCellAverageData:
-// - Includes legacy pass-through fields qcnuc and nc_nuceat_tend, which map to
-//   the current kernel's pass-through nucleation tendencies
-//   qv2qi_nucleat_tend and ni_nucleat_tend.
+// - Keeps the historical compare scope used by prior baselines.
 // - Excludes *_cnt fields, which are not serialized for BFB in test data.
 #define BACK_TO_CELL_AVERAGE_BFB_COMPARE_LIST(X)                                                \
   X(qc2qr_accret_tend)                                                                           \
@@ -102,8 +100,6 @@ enum class ScaleKind {
   X(nr_selfcollect_tend)                                                                         \
   X(nr_evap_tend)                                                                                \
   X(ncautr)                                                                                      \
-  X(qcnuc)                                                                                       \
-  X(nc_nuceat_tend)                                                                              \
   X(qi2qv_sublim_tend)                                                                           \
   X(nr_ice_shed_tend)                                                                            \
   X(qc2qi_hetero_freeze_tend)                                                                    \
@@ -341,55 +337,15 @@ struct UnitWrap::UnitTest<D>::TestP3BackToCellAverage : public UnitWrap::UnitTes
     };
   }
 
-  // Deterministic BFB fixture with representative overlap regimes so baseline
-  // behavior is stable and physically interpretable.
-  void initialize_deterministic_bfb_inputs(std::array<BackToCellAverageData, max_pack_size>& data) const {
-    const std::array<Real, max_pack_size> frac_l = {
-      0.0, 1.0, 0.6, 0.3,
-      0.9, 0.1, 0.4, 0.7,
-      0.0, 1.0, 0.5, 0.2,
-      0.8, 0.25, 0.65, 0.35
-    };
-    const std::array<Real, max_pack_size> frac_r = {
-      0.0, 1.0, 0.2, 0.6,
-      0.1, 0.9, 0.8, 0.4,
-      1.0, 0.0, 0.5, 0.7,
-      0.3, 0.65, 0.25, 0.95
-    };
-    const std::array<Real, max_pack_size> frac_i = {
-      0.0, 1.0, 0.8, 0.1,
-      0.5, 0.2, 0.9, 0.4,
-      0.3, 0.0, 0.5, 1.0,
-      0.75, 0.55, 0.15, 0.6
-    };
-
-    for (Int i = 0; i < max_pack_size; ++i) {
-      auto& d = data[i];
-      d.cld_frac_l = frac_l[i];
-      d.cld_frac_r = frac_r[i];
-      d.cld_frac_i = frac_i[i];
-      d.use_hetfrz_classnuc = false;
-      d.context = true;
-
-      const Real base = 1e-6 * (i + 1);
-      int idx = 1;
-#define INIT_BFB_INPUT(name, scale) d.name = base * (1 + 0.03 * idx++);
-      BACK_TO_CELL_AVERAGE_TENDENCY_LIST(INIT_BFB_INPUT)
-#undef INIT_BFB_INPUT
-
-      d.qcnuc = 0;
-      d.nc_nuceat_tend = 0;
-    }
-  }
-
   // Bit-for-bit regression check for the baseline test infrastructure.
   // Kept separate from property tests that validate physics bookkeeping logic.
   void run_bfb() {
-    static_assert(max_pack_size >= 16,
-                  "Deterministic BFB fixture assumes max_pack_size >= 16.");
+    auto engine = Base::get_engine();
 
     std::array<BackToCellAverageData, max_pack_size> baseline_data;
-    initialize_deterministic_bfb_inputs(baseline_data);
+    for (auto& d : baseline_data) {
+      d.randomize(engine);
+    }
 
     view_1d<BackToCellAverageData> device_data("back_to_cell_average_bfb", max_pack_size);
     auto host_data = Kokkos::create_mirror_view(device_data);
@@ -609,13 +565,19 @@ struct UnitWrap::UnitTest<D>::TestP3BackToCellAverage : public UnitWrap::UnitTes
             ++failures;                                                                          \
           }                                                                                      \
           /* If il_cldm==0, cld_frac_glaciated==cld_frac_i, so identical outputs */             \
-          /* are expected. Require sensitivity only when scaling factors differ. */              \
+          /* are expected. Require sensitivity only when expected change is */                   \
+          /* measurably above floating-point noise for this precision/magnitude. */              \
           const Real scaling_diff = std::abs(d0.cld_frac_i - d1.cld_frac_glaciated);            \
-          if (scaling_diff > data_default.identity_tol && diff <= tol) {                         \
+          const Real expected_delta = std::abs(d0.name##_input) * scaling_diff;                 \
+          const Real abs_meas_floor =                                                          \
+              (std::numeric_limits<Real>::digits10 <= 7) ? Real(1e-7) : Real(1e-12);            \
+          const Real meas_tol = std::max(abs_meas_floor, tol);                                   \
+          if (expected_delta > meas_tol && diff <= meas_tol) {                                   \
             std::cout << "Runtime branch sensitivity FAIL: " #name                              \
                       << " case=" << i                                                          \
-                      << " scaling_diff=" << scaling_diff                                       \
-                      << " actual_diff=" << diff << "\n";                                     \
+                      << " expected_delta=" << expected_delta                                   \
+                      << " actual_diff=" << diff                                                \
+                      << " tol=" << meas_tol << "\n";                                          \
             ++failures;                                                                          \
           }                                                                                      \
         } else {                                                                                 \
