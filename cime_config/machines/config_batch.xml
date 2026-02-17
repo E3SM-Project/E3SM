@@ -417,6 +417,7 @@
     <queues>
       <queue walltimemax="00:30:00" nodemin="1" nodemax="8" strict="true" default="true">debug</queue>
       <queue walltimemax="00:30:00" nodemin="9" nodemax="805" strict="true">compute</queue>
+      <queue walltimemax="00:30:00" nodemin="1" nodemax="12" strict="true">bigmem</queue>
     </queues>
   </batch_system>
 
