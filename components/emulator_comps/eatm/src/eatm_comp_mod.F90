@@ -178,16 +178,7 @@ CONTAINS
 
     ! based on a list in the compset, we should know the emulator
     ! then call the correct read_ic / init based on that.
-    call ace_comp_init()
-
-    if (masterproc) then
-      write(logunit_atm, *) "zbot  (min, max):  ( ", minval(zbot(:, :)),  maxval(zbot(:, :)), " )"
-      write(logunit_atm, *) "ubot  (min, max):  ( ", minval(ubot(:, :)),  maxval(ubot(:, :)), " )"
-      write(logunit_atm, *) "vbot  (min, max):  ( ", minval(vbot(:, :)),  maxval(vbot(:, :)), " )"
-      write(logunit_atm, *) "rainl (min, max):  ( ", minval(rainl(:, :)), maxval(rainl(:, :)), " )"
-      write(logunit_atm, *) "snowl (min, max):  ( ", minval(snowl(:, :)), maxval(snowl(:, :)), " )"
-      call shr_sys_flush(logunit_atm)
-    endif
+    call ace_comp_init(ggrid)
 
     call t_stopf ('eatm_grid')
 
@@ -258,7 +249,7 @@ CONTAINS
     call t_startf('eatm_datamode')
 
     !JW real work goes here
-    call ace_comp_run(EClock)
+    call ace_comp_run(EClock, ggrid)
 
     call t_stopf('eatm_datamode')
 
