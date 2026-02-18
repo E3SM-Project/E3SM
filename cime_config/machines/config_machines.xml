@@ -4439,7 +4439,7 @@
 
       <modules compiler="gnu">
         <command name="load">PrgEnv-gnu/8.5.0</command>
-        <command name="load">gcc-native/12.3</command>
+        <command name="load">gcc/12.3</command>
         <command name="load">cray-libsci/23.12.5</command>
       </modules>
 
@@ -4462,7 +4462,6 @@
       </modules>
 
       <modules>
-        <command name="load">craype-accel-host</command>
         <command name="load">craype/2.7.30</command>
         <command name="load">cray-mpich/8.1.28</command>
         <command name="load">cray-hdf5-parallel/1.12.2.9</command>
