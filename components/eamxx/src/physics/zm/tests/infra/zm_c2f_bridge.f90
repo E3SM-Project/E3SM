@@ -182,4 +182,26 @@ subroutine compute_dilute_parcel_bridge_f(pcols, ncol, pver, num_msg, klaunch, p
   call compute_dilute_parcel(pcols, ncol, pver, num_msg, klaunch, pmid, temperature, sp_humidity, tpert, pblt, zm_const, zm_param, parcel_temp, parcel_vtemp, parcel_qsat, lcl_pmid, lcl_temperature, lcl_klev)
 end subroutine compute_dilute_parcel_bridge_f
 
+subroutine compute_cape_from_parcel_bridge_f(pcols, ncol, pver, pverp, num_cin, num_msg, temperature, tv, zmid, sp_humidity, pint, msemax_klev, lcl_pmid, lcl_klev, parcel_qsat, parcel_temp, parcel_vtemp, eql_klev, cape) bind(C)
+  use zm_conv_cape, only : compute_cape_from_parcel
+  use zm_conv_types,  only: zm_const_t, zm_param_t
+  use zm_conv_types,  only: zm_param_set_for_testing, zm_const_set_for_testing
+
+  integer(kind=c_int) , value, intent(in) :: pcols, ncol, pver, pverp, num_cin, num_msg
+  real(kind=c_real) , intent(in), dimension(pcols, pver) :: temperature, tv, zmid, sp_humidity
+  real(kind=c_real) , intent(in), dimension(pcols, pverp) :: pint
+  integer(kind=c_int) , intent(in), dimension(pcols) :: msemax_klev, lcl_klev
+  real(kind=c_real) , intent(in), dimension(pcols) :: lcl_pmid
+  real(kind=c_real) , intent(inout), dimension(pcols, pver) :: parcel_qsat, parcel_temp, parcel_vtemp
+  integer(kind=c_int) , intent(inout), dimension(pcols) :: eql_klev
+  real(kind=c_real) , intent(inout), dimension(pcols) :: cape
+
+  type(zm_const_t) :: zm_const ! derived type to hold ZM constants
+  type(zm_param_t) :: zm_param ! derived type to hold ZM tunable parameters
+  !-----------------------------------------------------------------------------
+  call zm_param_set_for_testing(zm_param)
+  call zm_const_set_for_testing(zm_const)
+
+  call compute_cape_from_parcel(pcols, ncol, pver, pverp, num_cin, num_msg, temperature, tv, zmid, sp_humidity, pint, msemax_klev, lcl_pmid, lcl_klev, zm_const, zm_param, parcel_qsat, parcel_temp, parcel_vtemp, eql_klev, cape)
+end subroutine compute_cape_from_parcel_bridge_f
 end module zm_c2f_bridge

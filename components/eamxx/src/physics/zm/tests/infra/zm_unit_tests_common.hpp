@@ -74,6 +74,7 @@ struct UnitWrap {
     struct TestComputeDiluteCape;
     struct TestFindMseMax;
     struct TestComputeDiluteParcel;
+    struct TestComputeCapeFromParcel;
   }; // UnitWrap
 };
 
