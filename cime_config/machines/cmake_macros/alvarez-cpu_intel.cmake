@@ -27,3 +27,6 @@ if (COMP_NAME STREQUAL cice)
   string(APPEND CMAKE_Fortran_FLAGS_DEBUG " -init=nosnan,arrays")
 endif()
 
+if (COMP_NAME STREQUAL gcam)
+  string(APPEND CMAKE_CXX_FLAGS " -DNDEBUG")
+endif()
