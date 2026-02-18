@@ -179,6 +179,21 @@ Test types for various properties of the model:
 - e3sm_mosart_developer
 - e3sm_land_exeshare
 
+```bash
+#get list of test suites
+cd cime/CIME/Tools
+./list_e3sm_tests
+
+#list compsets in a test suite
+cd cime/CIME/Tools
+./list_e3sm_tests -t compsets SUITE_NAME
+
+#list compset longnames in a test suite
+./list_e3sm_tests -t compsets -l SUITE_NAME
+```
+
+Nightly results from test suites appear on https://my.cdash.org/index.php?project=E3SM
+
 ## Architecture
 
 ### Primary Languages
@@ -239,9 +254,7 @@ git submodule update --init --recursive --depth=1
 
 GitHub Actions workflows in `/.github/workflows/`:
 - `eamxx-sa-testing.yml` - EAMxx standalone (gcc-openmp, gcc-cuda)
-- `e3sm-gh-ci-cime-tests.yml` - CIME integration tests
-- `eamxx-sa-coverage.yml` - Code coverage
-- `eamxx-gh-clang-format.yml` - Code formatting
+- `eamxx-v1-testing.yml` - CIME tests with EAMxx/MAM4xx
 
 Build types tested: sp (single precision), dbg (debug), fpe (floating point exceptions), opt (optimized)
 
