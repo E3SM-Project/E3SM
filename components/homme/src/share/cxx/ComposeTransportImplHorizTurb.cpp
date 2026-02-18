@@ -51,13 +51,11 @@ void ComposeTransportImpl::advance_horizontal_turbulent_diffusion_scalar (const 
         Q(ie,q,i,j,lev) = (Q(ie,q,i,j,lev) * spheremp(ie,i,j)
                            - dt * Kh(ie,i,j,lev) * Qtens(ie,q,i,j,lev));
       };
-      Kokkos::fence();
       launch_ie_q_ij_nlev<num_lev_pack>(hv_q, f);
     }
     // Halo exchange Q and apply rspheremp.
     Kokkos::fence();
     m_hv_dss_be[1]->exchange(m_geometry.m_rspheremp);
-    Kokkos::fence();
   }
 }
 
