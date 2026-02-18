@@ -13,18 +13,6 @@ using scream::Int;
 // A C++ interface to ZM fortran calls and vice versa
 //
 
-using MinPair = Kokkos::pair<int, int>;
-
-// 1. Specialize the identity so Kokkos knows how to start the Min reduction
-namespace Kokkos {
-template<>
-struct reduction_identity<MinPair> {
-  KOKKOS_FORCEINLINE_FUNCTION static MinPair min() {
-    return MinPair(INT_MAX, INT_MAX);
-  }
-};
-}
-
 namespace scream {
 namespace zm {
 
@@ -56,6 +44,9 @@ void ientropy_bridge_f(Real s, Real p, Real qt, Real* t, Real* qst, Real tfg);
 void entropy_bridge_f(Real tk, Real p, Real qtot, Real* entropy);
 
 void zm_transport_tracer_bridge_f(Int pcols, Int pver, bool* doconvtran, Real* q, Int ncnst, Real* mu, Real* md, Real* du, Real* eu, Real* ed, Real* dp, Int* jt, Int* mx, Int* ideep, Int il1g, Int il2g, Real* fracis, Real* dqdt, Real* dpdry, Real dt);
+
+void zm_transport_momentum_bridge_f(Int pcols, Int ncol, Int pver, Int pverp, Real* wind_in, Int nwind, Real* mu, Real* md, Real* du, Real* eu, Real* ed, Real* dp, Int* jt, Int* mx, Int* ideep, Int il1g, Int il2g, Real* wind_tend, Real* pguall, Real* pgdall, Real* icwu, Real* icwd, Real dt, Real* seten);
+
 } // extern "C" : end _f decls
 
 // Inits and finalizes are not intended to be called outside this comp unit
@@ -187,7 +178,7 @@ void entropy(EntropyData& d)
 void zm_transport_tracer_f(ZmTransportTracerData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  zm_common_init_f(); // Might need more specific init
+  zm_common_init_f();
   zm_transport_tracer_bridge_f(d.pcols, d.pver, d.doconvtran, d.q, d.ncnst, d.mu, d.md, d.du, d.eu, d.ed, d.dp, d.jt, d.mx, d.ideep, d.il1g, d.il2g, d.fracis, d.dqdt, d.dpdry, d.dt);
   zm_common_finalize_f();
   d.transition<ekat::TransposeDirection::f2c>();
@@ -301,6 +292,138 @@ void zm_transport_tracer(ZmTransportTracerData& d)
   // Now get arrays
   std::vector<view3dr_d> vec3dr_out = {dqdt_d};
   ekat::device_to_host({d.dqdt}, d.pcols, d.pver, d.ncnst, vec3dr_out);
+
+  zm_finalize_cxx();
+}
+void zm_transport_momentum_f(ZmTransportMomentumData& d)
+{
+  d.transition<ekat::TransposeDirection::c2f>();
+  zm_common_init_f();
+  zm_transport_momentum_bridge_f(d.pcols, d.ncol, d.pver, d.pverp, d.wind_in, d.nwind, d.mu, d.md, d.du, d.eu, d.ed, d.dp, d.jt, d.mx, d.ideep, d.il1g, d.il2g, d.wind_tend, d.pguall, d.pgdall, d.icwu, d.icwd, d.dt, d.seten);
+  zm_common_finalize_f();
+  d.transition<ekat::TransposeDirection::f2c>();
+}
+
+void zm_transport_momentum(ZmTransportMomentumData& d)
+{
+  zm_common_init();
+
+  // create device views and copy
+  std::vector<view2dr_d> vec2dr_in(7);
+  ekat::host_to_device({d.dp, d.du, d.ed, d.eu, d.md, d.mu, d.seten}, d.pcols, d.pver, vec2dr_in);
+
+  std::vector<view3dr_d> vec3dr_in(6);
+  ekat::host_to_device({d.icwd, d.icwu, d.pgdall, d.pguall, d.wind_in, d.wind_tend}, d.pcols, d.pver, d.nwind, vec3dr_in);
+
+  std::vector<view1di_d> vec1di_in(3);
+  ekat::host_to_device({d.ideep, d.jt, d.mx}, d.pcols, vec1di_in);
+
+  view2dr_d
+    dp_d(vec2dr_in[0]),
+    du_d(vec2dr_in[1]),
+    ed_d(vec2dr_in[2]),
+    eu_d(vec2dr_in[3]),
+    md_d(vec2dr_in[4]),
+    mu_d(vec2dr_in[5]),
+    seten_d(vec2dr_in[6]);
+
+  view3dr_d
+    icwd_d(vec3dr_in[0]),
+    icwu_d(vec3dr_in[1]),
+    pgdall_d(vec3dr_in[2]),
+    pguall_d(vec3dr_in[3]),
+    wind_in_d(vec3dr_in[4]),
+    wind_tend_d(vec3dr_in[5]);
+
+  view1di_d
+    ideep_d(vec1di_in[0]),
+    jt_d(vec1di_in[1]),
+    mx_d(vec1di_in[2]);
+
+  const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.pcols, d.pver);
+
+  WSM wsm(d.pverp * d.nwind, 12, policy);
+
+  // unpack data scalars because we do not want the lambda to capture d
+  const Real dt = d.dt;
+  const Int il1g = d.il1g;
+  const Int il2g = d.il2g;
+  const Int nwind = d.nwind;
+  const Int pver = d.pver;
+  const Int pverp = d.pverp;
+
+  // Find min top and bottom
+  assert(d.pverp == d.pver + 1);
+  assert(d.il1g == 0 && d.il2g == d.pcols-1);
+  Int ktm, kbm;
+  Kokkos::RangePolicy<ExeSpace> rpolicy(0, d.pcols);
+  Kokkos::parallel_reduce("FindMinJt", rpolicy, KOKKOS_LAMBDA(const int i, Int& update) {
+    if (jt_d(i) < update) {
+      update = jt_d(i);
+    }
+  }, Kokkos::Min<Int>(ktm));
+
+  Kokkos::parallel_reduce("FindMinMx", rpolicy, KOKKOS_LAMBDA(const int i, Int& update) {
+    if (mx_d(i) < update) {
+      update = mx_d(i);
+    }
+  }, Kokkos::Min<Int>(kbm));
+
+
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    const Int i = team.league_rank();
+
+    // Get single-column subviews of all inputs, shouldn't need any i-indexing
+    // after this.
+    const auto wind_in_c = ekat::subview(wind_in_d, i);
+    const auto mu_c = ekat::subview(mu_d, i);
+    const auto md_c = ekat::subview(md_d, i);
+    const auto du_c = ekat::subview(du_d, i);
+    const auto eu_c = ekat::subview(eu_d, i);
+    const auto ed_c = ekat::subview(ed_d, i);
+    const auto dp_c = ekat::subview(dp_d, i);
+    const auto wind_tend_c = ekat::subview(wind_tend_d, i);
+    const auto pguall_c = ekat::subview(pguall_d, i);
+    const auto pgdall_c = ekat::subview(pgdall_d, i);
+    const auto icwu_c = ekat::subview(icwu_d, i);
+    const auto icwd_c = ekat::subview(icwd_d, i);
+    const auto seten_c = ekat::subview(seten_d, i);
+
+    ZMF::zm_transport_momentum(
+      team,
+      wsm.get_workspace(team),
+      pver,
+      pverp,
+      wind_in_c,
+      nwind,
+      mu_c,
+      md_c,
+      du_c,
+      eu_c,
+      ed_c,
+      dp_c,
+      jt_d(i),
+      mx_d(i),
+      ideep_d(i),
+      il1g,
+      il2g,
+      dt,
+      ktm,
+      kbm,
+      wind_tend_c,
+      pguall_c,
+      pgdall_c,
+      icwu_c,
+      icwd_c,
+      seten_c);
+  });
+
+  // Now get arrays
+  std::vector<view2dr_d> vec2dr_out = {seten_d};
+  ekat::device_to_host({d.seten}, d.pcols, d.pver, vec2dr_out);
+
+  std::vector<view3dr_d> vec3dr_out = {icwd_d, icwu_d, pgdall_d, pguall_d, wind_tend_d};
+  ekat::device_to_host({d.icwd, d.icwu, d.pgdall, d.pguall, d.wind_tend}, d.pcols, d.pver, d.nwind, vec3dr_out);
 
   zm_finalize_cxx();
 }

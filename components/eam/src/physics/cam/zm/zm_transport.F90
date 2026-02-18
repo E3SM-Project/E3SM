@@ -352,7 +352,6 @@ subroutine zm_transport_momentum( pcols, ncol, pver, pverp, wind_in, nwind, &
    integer  :: kbm                        ! Highest altitude index of cloud base
    integer  :: kk                         ! Work index
    integer  :: kkp1                       ! Work index
-   integer  :: kkm1                       ! Work index
    integer  :: km1                        ! Work index
    integer  :: kp1                        ! Work index
    integer  :: ktm                        ! Highest altitude index of cloud top
@@ -467,7 +466,6 @@ subroutine zm_transport_momentum( pcols, ncol, pver, pverp, wind_in, nwind, &
       k = 2
       km1 = 1
       kk = pver
-      kkm1 = max(1,kk-1)
       do i = il1g,il2g
          mupdudp = mu(i,kk) + du(i,kk)*dp(i,kk)
          if (mupdudp > mbsth) then
@@ -480,7 +478,6 @@ subroutine zm_transport_momentum( pcols, ncol, pver, pverp, wind_in, nwind, &
 
       ! Updraft from bottom to top
       do kk = pver-1,1,-1
-         kkm1 = max(1,kk-1)
          kkp1 = min(pver,kk+1)
          do i = il1g,il2g
             mupdudp = mu(i,kk) + du(i,kk)*dp(i,kk)
@@ -504,7 +501,6 @@ subroutine zm_transport_momentum( pcols, ncol, pver, pverp, wind_in, nwind, &
       ! Calculate momentum tendency
 
       do k = ktm,pver
-         km1 = max(1,k-1)
          kp1 = min(pver,k+1)
          do i = il1g,il2g
             wind_tend_tmp(i,k) = ( mu(i,kp1)* (wind_int_u(i,kp1)-wind_int(i,kp1)) &
@@ -520,7 +516,6 @@ subroutine zm_transport_momentum( pcols, ncol, pver, pverp, wind_in, nwind, &
 
       ! dcont for bottom layer
       do k = kbm,pver
-         km1 = max(1,k-1)
          do i = il1g,il2g
             if (k==mx(i)) then
                wind_tend_tmp(i,k) = (-mu(i,k)*(wind_int_u(i,k)-wind_int(i,k)) &
@@ -554,7 +549,6 @@ subroutine zm_transport_momentum( pcols, ncol, pver, pverp, wind_in, nwind, &
       ! Calculate winds at the end of the time step
       do k = ktm,pver
          do i = il1g,il2g
-            km1 = max(1,k-1)
             kp1 = k+1
             windf(i,k,m) = wind_mid(i,k) - ( mflux(i,kp1,m) - mflux(i,k,m) ) * dt/dp(i,k)
          end do

@@ -148,6 +148,61 @@ struct ZmTransportTracerData : public PhysicsTestData {
   }
 };
 
+struct ZmTransportMomentumData : public PhysicsTestData {
+  // Inputs
+  Int pcols, ncol, pver, pverp, nwind, il1g, il2g;
+  Int *jt, *mx, *ideep;
+  Real dt;
+  Real *wind_in, *mu, *md, *du, *eu, *ed, *dp;
+
+  // Outputs
+  Real *wind_tend, *pguall, *pgdall, *icwu, *icwd, *seten;
+
+  ZmTransportMomentumData(Int pcols_, Int ncol_, Int pver_, Int pverp_, Int nwind_, Int il1g_, Int il2g_, Real dt_) :
+    PhysicsTestData({
+      {pcols_, pver_, nwind_},
+      {pcols_, pver_},
+      {pcols_}
+    },
+    {
+      {&wind_in, &wind_tend, &pguall, &pgdall, &icwu, &icwd},
+      {&mu, &md, &du, &eu, &ed, &dp, &seten}
+    },
+    {
+      {&jt, &mx, &ideep}
+    }),
+    pcols(pcols_), ncol(ncol_), pver(pver_), pverp(pverp_), nwind(nwind_), il1g(il1g_), il2g(il2g_), dt(dt_)
+  {}
+
+  PTD_STD_DEF(ZmTransportMomentumData, 8, pcols, ncol, pver, pverp, nwind, il1g, il2g, dt);
+
+  template <ekat::TransposeDirection::Enum D>
+  void transition()
+  {
+    PhysicsTestData::transition<D>();
+    shift_int_scalar<D>(il1g);
+    shift_int_scalar<D>(il2g);
+  }
+
+  template <typename Engine>
+  void randomize(Engine& engine)
+  {
+    PhysicsTestData::randomize(engine);
+
+    // We don't want ideep random, we want it to match current col for now
+    for (Int i = 0; i < pcols; ++i) {
+      ideep[i] = i;
+    }
+
+    // We don't want jt or mx to be random. Those represent cloud tops and bottoms within pver
+    for (Int i = 0; i < pcols; ++i) {
+      jt[i] = i + 1;
+      mx[i] = jt[i] + pver / 2;
+      assert(mx[i] < pver);
+    }
+  }
+};
+
 // Glue functions for host test data. We can call either fortran or CXX with this data (_f -> fortran)
 void zm_find_mse_max(zm_data_find_mse_max& d);
 void ientropy_f(IentropyData& d);
@@ -156,6 +211,8 @@ void entropy_f(EntropyData& d);
 void entropy(EntropyData& d);
 void zm_transport_tracer_f(ZmTransportTracerData& d);
 void zm_transport_tracer(ZmTransportTracerData& d);
+void zm_transport_momentum_f(ZmTransportMomentumData& d);
+void zm_transport_momentum(ZmTransportMomentumData& d);
 // End glue function decls
 
 }  // namespace zm
