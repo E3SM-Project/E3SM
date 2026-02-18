@@ -472,6 +472,7 @@ void MAMMicrophysics::set_linoz_reader(){
 // set DataInterpolation object for elevated emissions reader.
 void MAMMicrophysics::set_exo_coldens_reader()
 {
+  using namespace ekat::units;
   const auto pint = get_field_in("p_int");
   // Exo column density fields read initialization
   const std::string exo_coldens_file_name = m_params.get<std::string>("mam4_exo_coldens_file_name");
@@ -481,11 +482,13 @@ void MAMMicrophysics::set_exo_coldens_reader()
   auto grid_exo_coldens = grid_->clone("exo_grid",true);
   grid_exo_coldens->reset_num_vertical_lev(1);
   auto layout = grid_exo_coldens->get_3d_scalar_layout(true);
-  // FIXME: units are wrong.
-  auto mbar = ekat::units::Units(100*ekat::units::Pa,"mbar");
+
+  auto molec = Units::nondimensional();// example;
+  auto cm2 = pow(m / 100,2);
+  auto molec_cm2 = Units(molec/cm2,"molecules/cm2");
   std::vector<std::string> exo_coldens_names={"O3_column_density"};
   for(const auto &field_name : exo_coldens_names) {
-      Field field_exo(FieldIdentifier(field_name,layout,mbar,grid_exo_coldens->name()));
+      Field field_exo(FieldIdentifier(field_name,layout,molec_cm2,grid_exo_coldens->name()));
       field_exo.allocate_view();
       exo_coldens_fields_.push_back(field_exo);
   }
@@ -643,7 +646,7 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
       {"mam4_microphysics_tendency_renaming_cloud_borne",
       "MAM4xx microphysics tendencies due to gas aerosol exchange (renaming cloud borne) [mixed units: mol/mol/s or #/mol/s]"},
 
-      {"mam4_gas_dry_deposition_flux", 
+      {"mam4_gas_dry_deposition_flux",
       "MAM4xx microphysics deposition flux [units: 1/cm^2/s]"},
     };
     // Add docstring to the fields with mixed units
