@@ -433,7 +433,7 @@ void compute_dilute_cape_f(ComputeDiluteCapeData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
   zm_common_init_f();
-  compute_dilute_cape_f(d.pcols, d.ncol, d.pver, d.pverp, d.num_cin, d.num_msg, d.sp_humidity_in, d.temperature_in, d.zmid, d.pmid, d.pint, d.pblt, d.tpert, d.parcel_temp, d.parcel_qsat, d.msemax_klev, d.lcl_temperature, d.lcl_klev, d.eql_klev, d.cape, d.calc_msemax_klev, d.prev_msemax_klev, d.use_input_tq_mx, d.q_mx, d.t_mx);
+  compute_dilute_cape_bridge_f(d.pcols, d.ncol, d.pver, d.pverp, d.num_cin, d.num_msg, d.sp_humidity_in, d.temperature_in, d.zmid, d.pmid, d.pint, d.pblt, d.tpert, d.parcel_temp, d.parcel_qsat, d.msemax_klev, d.lcl_temperature, d.lcl_klev, d.eql_klev, d.cape, d.calc_msemax_klev, d.prev_msemax_klev, d.use_input_tq_mx, d.q_mx, d.t_mx);
   zm_common_finalize_f();
   d.transition<ekat::TransposeDirection::f2c>();
 }

@@ -34,7 +34,7 @@ subroutine zm_find_mse_max_f( pcols, ncol, pver, num_msg, msemax_top_k, pergro_a
   ! Local Variables
   type(zm_const_t) :: zm_const ! derived type to hold ZM constants
   type(zm_param_t) :: zm_param ! derived type to hold ZM tunable parameters
-  logical :: pergro_active_f
+  logical(kind=c_bool) :: pergro_active_f
   !-----------------------------------------------------------------------------
   call zm_param_set_for_testing(zm_param)
   call zm_const_set_for_testing(zm_const)
@@ -115,6 +115,7 @@ end subroutine zm_transport_momentum_bridge_f
 
 subroutine compute_dilute_cape_bridge_f(pcols, ncol, pver, pverp, num_cin, num_msg, sp_humidity_in, temperature_in, zmid, pmid, pint, pblt, tpert, parcel_temp, parcel_qsat, msemax_klev, lcl_temperature, lcl_klev, eql_klev, cape, calc_msemax_klev, prev_msemax_klev, use_input_tq_mx, q_mx, t_mx) bind(C)
   use zm_conv_cape, only : compute_dilute_cape
+  use zm_conv_types,  only: zm_const_t, zm_param_t
   use zm_conv_types,  only: zm_param_set_for_testing, zm_const_set_for_testing
 
   integer(kind=c_int) , value, intent(in) :: pcols, ncol, pver, pverp, num_cin, num_msg

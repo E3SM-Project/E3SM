@@ -3,7 +3,7 @@ module zm_conv_cape
    ! Purpose: CAPE calculation methods for ZM deep convection scheme
    !----------------------------------------------------------------------------
 #ifdef SCREAM_CONFIG_IS_CMAKE
-   use zm_eamxx_bridge_params, only: r8
+   use zm_eamxx_bridge_params, only: r8, btype
 #else
    use shr_kind_mod,     only: r8=>shr_kind_r8
 #endif
@@ -22,6 +22,11 @@ module zm_conv_cape
    real(r8), parameter :: lcl_pressure_threshold     = 600._r8   ! if LCL pressure is lower => no convection and cape is zero
    real(r8), parameter :: ull_upper_launch_pressure  = 600._r8   ! upper search limit for unrestricted launch level (ULL)
    real(r8), parameter :: pergro_rhd_threshold       = -1.e-4_r8 ! MSE difference threshold for perturbation growth test
+
+#ifndef SCREAM_CONFIG_IS_CMAKE
+   integer,parameter,public :: btype = kind(.true.)
+#endif
+
 !===================================================================================================
 contains
 !===================================================================================================
@@ -72,9 +77,9 @@ subroutine compute_dilute_cape( pcols, ncol, pver, pverp, &
    real(r8), dimension(pcols),           intent(inout) :: cape                ! convective available potential energy
    type(zm_const_t),                     intent(in   ) :: zm_const            ! derived type to hold ZM constants
    type(zm_param_t),                     intent(in   ) :: zm_param            ! derived type to hold ZM tunable parameters
-   logical,                              intent(in   ) :: calc_msemax_klev    ! true for normal procedure, otherwise use prev_msemax_klev from 1st call
+   logical(btype),                       intent(in   ) :: calc_msemax_klev    ! true for normal procedure, otherwise use prev_msemax_klev from 1st call
    integer,  dimension(pcols), optional, intent(in   ) :: prev_msemax_klev    ! values of msemax_klev from previous call for dcape closure
-   logical,                    optional, intent(in   ) :: use_input_tq_mx     ! if .true., use input values of prev_msemax_klev, q_mx, t_mx in the CAPE calculation
+   logical(btype),             optional, intent(in   ) :: use_input_tq_mx     ! if .true., use input values of prev_msemax_klev, q_mx, t_mx in the CAPE calculation
    real(r8), dimension(pcols), optional, intent(inout) :: q_mx                ! specified sp humidity to apply at level of max MSE if use_input_tq_mx=.true.
    real(r8), dimension(pcols), optional, intent(inout) :: t_mx                ! specified temperature to apply at level of max MSE if use_input_tq_mx=.true.
    !----------------------------------------------------------------------------
@@ -89,8 +94,8 @@ subroutine compute_dilute_cape( pcols, ncol, pver, pverp, &
    integer,  dimension(pcols)         :: msemax_top_k    ! upper limit index of max MSE search
 
    integer  :: i, k                       ! loop iterators
-   logical  :: pergro_active              ! flag for perturbation growth test (pergro)
-   logical  :: use_input_tq_mx_loc    ! flag to use input parcel temperature and specific humidity
+   logical(btype)  :: pergro_active              ! flag for perturbation growth test (pergro)
+   logical(btype)  :: use_input_tq_mx_loc    ! flag to use input parcel temperature and specific humidity
    !----------------------------------------------------------------------------
    ! set flag for perturbation growth test
 #ifdef PERGRO
@@ -220,7 +225,7 @@ subroutine find_mse_max( pcols, ncol, pver, num_msg, msemax_top_k, pergro_active
    integer,                         intent(in   ) :: pver            ! number of mid-point vertical levels
    integer,                         intent(in   ) :: num_msg         ! number of missing moisture levels at the top of model
    integer,  dimension(pcols),      intent(in   ) :: msemax_top_k    ! upper limit index of max MSE search
-   logical,                         intent(in   ) :: pergro_active   ! flag for perturbation growth test (pergro)
+   logical(btype),                  intent(in   ) :: pergro_active   ! flag for perturbation growth test (pergro)
    real(r8), dimension(pcols,pver), intent(in   ) :: temperature     ! environement temperature
    real(r8), dimension(pcols,pver), intent(in   ) :: zmid            ! height/altitude at mid-levels
    real(r8), dimension(pcols,pver), intent(in   ) :: sp_humidity     ! specific humidity
