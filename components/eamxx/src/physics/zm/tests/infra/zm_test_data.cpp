@@ -48,6 +48,8 @@ void zm_transport_tracer_bridge_f(Int pcols, Int pver, bool* doconvtran, Real* q
 void zm_transport_momentum_bridge_f(Int pcols, Int ncol, Int pver, Int pverp, Real* wind_in, Int nwind, Real* mu, Real* md, Real* du, Real* eu, Real* ed, Real* dp, Int* jt, Int* mx, Int* ideep, Int il1g, Int il2g, Real* wind_tend, Real* pguall, Real* pgdall, Real* icwu, Real* icwd, Real dt, Real* seten);
 
 void compute_dilute_cape_bridge_f(Int pcols, Int ncol, Int pver, Int pverp, Int num_cin, Int num_msg, Real* sp_humidity_in, Real* temperature_in, Real* zmid, Real* pmid, Real* pint, Int* pblt, Real* tpert, Real* parcel_temp, Real* parcel_qsat, Int* msemax_klev, Real* lcl_temperature, Int* lcl_klev, Int* eql_klev, Real* cape, bool calc_msemax_klev, Int* prev_msemax_klev, bool use_input_tq_mx, Real* q_mx, Real* t_mx);
+
+void find_mse_max_bridge_f(Int pcols, Int ncol, Int pver, Int num_msg, Int* msemax_top_k, bool pergro_active, Real* temperature, Real* zmid, Real* sp_humidity, Int* msemax_klev, Real* mse_max_val);
 } // extern "C" : end _f decls
 
 // Inits and finalizes are not intended to be called outside this comp unit
@@ -142,7 +144,7 @@ void ientropy(IentropyData& d)
 void entropy_f(EntropyData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  zm_common_init_f(); // Might need more specific init
+  zm_common_init_f();
   entropy_bridge_f(d.tk, d.p, d.qtot, &d.entropy);
   zm_common_finalize_f();
   d.transition<ekat::TransposeDirection::f2c>();
@@ -150,7 +152,7 @@ void entropy_f(EntropyData& d)
 
 void entropy(EntropyData& d)
 {
-  zm_common_init(); // Might need more specific init
+  zm_common_init();
 
   // create device views and copy
   const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(1, 1);
@@ -440,7 +442,7 @@ void compute_dilute_cape_f(ComputeDiluteCapeData& d)
 
 void compute_dilute_cape(ComputeDiluteCapeData& d)
 {
-  zm_common_init(); // Might need more specific init
+  zm_common_init();
 
   // create device views and copy
   std::vector<view1dr_d> vec1dr_in(5);
@@ -539,6 +541,80 @@ void compute_dilute_cape(ComputeDiluteCapeData& d)
 
   std::vector<view1di_d> vec1di_out = {eql_klev_d, lcl_klev_d, msemax_klev_d};
   ekat::device_to_host({d.eql_klev, d.lcl_klev, d.msemax_klev}, d.pcols, vec1di_out);
+
+  zm_finalize_cxx();
+}
+
+void find_mse_max_f(FindMseMaxData& d)
+{
+  d.transition<ekat::TransposeDirection::c2f>();
+  zm_common_init_f();
+  find_mse_max_bridge_f(d.pcols, d.ncol, d.pver, d.num_msg, d.msemax_top_k, d.pergro_active, d.temperature, d.zmid, d.sp_humidity, d.msemax_klev, d.mse_max_val);
+  zm_common_finalize_f();
+  d.transition<ekat::TransposeDirection::f2c>();
+}
+
+void find_mse_max(FindMseMaxData& d)
+{
+  zm_common_init();
+
+  // create device views and copy
+  std::vector<view1dr_d> vec1dr_in(1);
+  ekat::host_to_device({d.mse_max_val}, d.pcols, vec1dr_in);
+
+  std::vector<view2dr_d> vec2dr_in(3);
+  ekat::host_to_device({d.sp_humidity, d.temperature, d.zmid}, d.pcols, d.pver, vec2dr_in);
+
+  std::vector<view1di_d> vec1di_in(2);
+  ekat::host_to_device({d.msemax_klev, d.msemax_top_k}, d.pcols, vec1di_in);
+
+  view1dr_d
+    mse_max_val_d(vec1dr_in[0]);
+
+  view2dr_d
+    sp_humidity_d(vec2dr_in[0]),
+    temperature_d(vec2dr_in[1]),
+    zmid_d(vec2dr_in[2]);
+
+  view1di_d
+    msemax_klev_d(vec1di_in[0]),
+    msemax_top_k_d(vec1di_in[1]);
+
+  const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.pcols, d.pver);
+
+  // unpack data scalars because we do not want the lambda to capture d
+  const Int num_msg = d.num_msg;
+  const Int pver = d.pver;
+  const bool pergro_active = d.pergro_active;
+
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    const Int i = team.league_rank();
+
+    // Get single-column subviews of all inputs, shouldn't need any i-indexing
+    // after this.
+    const auto temperature_c = ekat::subview(temperature_d, i);
+    const auto zmid_c = ekat::subview(zmid_d, i);
+    const auto sp_humidity_c = ekat::subview(sp_humidity_d, i);
+
+    ZMF::find_mse_max(
+      team,
+      pver,
+      num_msg,
+      msemax_top_k_d(i),
+      pergro_active,
+      temperature_c,
+      zmid_c,
+      sp_humidity_c,
+      msemax_klev_d(i),
+      mse_max_val_d(i));
+  });
+
+  // Now get arrays
+  std::vector<view1dr_d> vec1dr_out = {mse_max_val_d};
+  ekat::device_to_host({d.mse_max_val}, d.pcols, vec1dr_out);
+
+  std::vector<view1di_d> vec1di_out = {msemax_klev_d};
+  ekat::device_to_host({d.msemax_klev}, d.pcols, vec1di_out);
 
   zm_finalize_cxx();
 }

@@ -238,6 +238,36 @@ struct ComputeDiluteCapeData : public PhysicsTestData {
   PTD_STD_DEF(ComputeDiluteCapeData, 8, pcols, ncol, pver, pverp, num_cin, num_msg, calc_msemax_klev, use_input_tq_mx);
 };
 
+struct FindMseMaxData : public PhysicsTestData {
+  // Inputs
+  Int pcols, ncol, pver, num_msg;
+  Int *msemax_top_k;
+  Real *temperature, *zmid, *sp_humidity;
+  bool pergro_active;
+
+  // Inputs/Outputs
+  Int *msemax_klev;
+  Real *mse_max_val;
+
+  FindMseMaxData(Int pcols_, Int ncol_, Int pver_, Int num_msg_, bool pergro_active_) :
+    PhysicsTestData({
+      {pcols_, pver_},
+      {pcols_},
+      {pcols_}
+    },
+    {
+      {&temperature, &zmid, &sp_humidity},
+      {&mse_max_val}
+    },
+    {
+      {&msemax_top_k, &msemax_klev}
+    }),
+    pcols(pcols_), ncol(ncol_), pver(pver_), num_msg(num_msg_), pergro_active(pergro_active_)
+  {}
+
+  PTD_STD_DEF(FindMseMaxData, 5, pcols, ncol, pver, num_msg, pergro_active);
+};
+
 // Glue functions for host test data. We can call either fortran or CXX with this data (_f -> fortran)
 void zm_find_mse_max(zm_data_find_mse_max& d);
 void ientropy_f(IentropyData& d);
@@ -250,6 +280,8 @@ void zm_transport_momentum_f(ZmTransportMomentumData& d);
 void zm_transport_momentum(ZmTransportMomentumData& d);
 void compute_dilute_cape_f(ComputeDiluteCapeData& d);
 void compute_dilute_cape(ComputeDiluteCapeData& d);
+void find_mse_max_f(FindMseMaxData& d);
+void find_mse_max(FindMseMaxData& d);
 // End glue function decls
 
 }  // namespace zm

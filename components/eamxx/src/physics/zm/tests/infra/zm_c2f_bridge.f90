@@ -139,4 +139,25 @@ subroutine compute_dilute_cape_bridge_f(pcols, ncol, pver, pverp, num_cin, num_m
   call compute_dilute_cape(pcols, ncol, pver, pverp, num_cin, num_msg, sp_humidity_in, temperature_in, zmid, pmid, pint, pblt, tpert, parcel_temp, parcel_qsat, msemax_klev, lcl_temperature, lcl_klev, eql_klev, cape, zm_const, zm_param, calc_msemax_klev, prev_msemax_klev, use_input_tq_mx, q_mx, t_mx)
 end subroutine compute_dilute_cape_bridge_f
 
+subroutine find_mse_max_bridge_f(pcols, ncol, pver, num_msg, msemax_top_k, pergro_active, temperature, zmid, sp_humidity, msemax_klev, mse_max_val) bind(C)
+  use zm_conv_cape, only : find_mse_max
+  use zm_conv_types,  only: zm_const_t, zm_param_t
+  use zm_conv_types,  only: zm_param_set_for_testing, zm_const_set_for_testing
+
+  integer(kind=c_int) , value, intent(in) :: pcols, ncol, pver, num_msg
+  integer(kind=c_int) , intent(in), dimension(pcols) :: msemax_top_k
+  logical(kind=c_bool) , value, intent(in) :: pergro_active
+  real(kind=c_real) , intent(in), dimension(pcols, pver) :: temperature, zmid, sp_humidity
+  integer(kind=c_int) , intent(inout), dimension(pcols) :: msemax_klev
+  real(kind=c_real) , intent(inout), dimension(pcols) :: mse_max_val
+
+  type(zm_const_t) :: zm_const ! derived type to hold ZM constants
+  type(zm_param_t) :: zm_param ! derived type to hold ZM tunable parameters
+  !-----------------------------------------------------------------------------
+  call zm_param_set_for_testing(zm_param)
+  call zm_const_set_for_testing(zm_const)
+
+  call find_mse_max(pcols, ncol, pver, num_msg, msemax_top_k, pergro_active, temperature, zmid, sp_humidity, zm_const, zm_param, msemax_klev, mse_max_val)
+end subroutine find_mse_max_bridge_f
+
 end module zm_c2f_bridge

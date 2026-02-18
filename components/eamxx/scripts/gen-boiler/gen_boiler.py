@@ -1682,13 +1682,15 @@ class GenBoiler(object):
         transition_code_2 = "d.transition<ekat::TransposeDirection::f2c>();"
         data_struct      = get_data_struct_name(sub)
         init_code        = get_physics_data(phys, INIT_CODE).replace("(", "_f(")
+        finalize         = get_physics_data(phys, FINALIZE_CODE)
+        finalize_code    = ("\n  " + get_physics_data(phys, INIT_CODE).replace("init(", "finalize_f(")) if finalize else ""
 
         result = \
 f"""void {sub}_f({data_struct}& d)
 {{
   {transition_code_1}
   {init_code}
-  {sub}_f({arg_data_args});
+  {sub}_bridge_f({arg_data_args});{finalize_code}
   {transition_code_2}
 }}
 

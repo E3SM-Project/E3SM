@@ -443,6 +443,21 @@ struct Functions {
     const uview_1d<Real>& parcel_temp, // parcel temperature
     Real& lcl_temperature); // lifting condensation level (LCL) temperature
 
+  KOKKOS_FUNCTION
+  static void find_mse_max(
+    // Inputs
+    const MemberType& team,
+    const Int& pver, // number of mid-point vertical levels
+    const Int& num_msg, // number of missing moisture levels at the top of model
+    const Int& msemax_top_k, // upper limit index of max MSE search
+    const bool& pergro_active, // flag for perturbation growth test (pergro)
+    const uview_1d<const Real>& temperature, // environement temperature
+    const uview_1d<const Real>& zmid, // height/altitude at mid-levels
+    const uview_1d<const Real>& sp_humidity, // specific humidity
+    // Inputs/Outputs
+    Int& msemax_klev, // index of max MSE at parcel launch level
+    Real& mse_max_val); // value of max MSE at parcel launch level
+
   //
   // --------- Members ---------
   //
@@ -462,5 +477,6 @@ struct Functions {
 # include "impl/zm_zm_transport_tracer_impl.hpp"
 # include "impl/zm_zm_transport_momentum_impl.hpp"
 # include "impl/zm_compute_dilute_cape_impl.hpp"
+# include "impl/zm_find_mse_max_impl.hpp"
 #endif // GPU && !KOKKOS_ENABLE_*_RELOCATABLE_DEVICE_CODE
 #endif // ZM_FUNCTIONS_HPP
