@@ -45,9 +45,9 @@ void Functions<S,D>
       Spack brunt_tmp(stable_mask, brunt(k));
 
       // Define length scale for stable cells
-      const auto length_tmp = ekat::sqrt(0.76*tk(k)/0.1/ekat::sqrt(brunt_tmp + 1.e-10));
+      const auto length_tmp = ekat::sqrt(sp(0.76)*tk(k)/sp(0.1)/ekat::sqrt(brunt_tmp + sp(1.e-10)));
       // Limit the stability corrected length scale between 0.1*dz and dz
-	    const auto limited_len = ekat::min(dz_zt(k),ekat::max(0.1*dz_zt(k),length_tmp));
+	    const auto limited_len = ekat::min(dz_zt(k),ekat::max(sp(0.1)*dz_zt(k),length_tmp));
 
       // Set length scale to vertical grid if unstable, otherwise the stability adjusted value.
       shoc_mix(k).set(stable_mask, limited_len, dz_zt(k));

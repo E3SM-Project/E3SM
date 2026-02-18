@@ -118,7 +118,7 @@ struct UnitWrap::UnitTest<D>::TestEvapSublPrecip : public UnitWrap::UnitTest<D>:
     //for case with lots of evap, make sure doesn't overdeplete qr_incld
     Functions::evaporate_rain(qr_incld,qc_incld,nr_incld,qi_incld,
 			      //qv -> qv*0.1 to encourage lots of rain evap
-			      cld_frac_l,cld_frac_r,qv*0.1,qv_prev,qv_sat_l,qv_sat_i,
+			      cld_frac_l,cld_frac_r,qv*sp(0.1),qv_prev,qv_sat_l,qv_sat_i,
 			      ab,abi,epsr,epsi_tot,t,t_prev,dqsdt,dt,
 			      qrtend,nrtend);
     REQUIRE( qrtend[0] <= qr_incld[0]/dt);
