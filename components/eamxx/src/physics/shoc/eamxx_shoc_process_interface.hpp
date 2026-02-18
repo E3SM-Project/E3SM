@@ -279,7 +279,16 @@ public:
       Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_packs), [&] (const Int& k) {
         // See comment in SHOCPreprocess::operator() about the necessity of *_copy views
         tke(i,k) = tke_copy(i,k);
-        qc(i,k)  = qc_copy(i,k);
+        if ( runtime_opts.shoc_nocond ) {
+          // If SHOC does not do condensation then we need to include the effects of vertical
+          //  diffusion on qc.  Thus, do not use the qc_copy variable, which was created for the sole
+          //  purpose of NOT including the effects of vertical diffusion.  However, apply a lower bound
+          //  limiter to ensure no values went below zero.
+          qc(i,k) = ekat::max(0, qc(i,k));
+        }
+        else{
+          qc(i,k)  = qc_copy(i,k);
+        }
 
         qv(i,k) = qw(i,k) - qc(i,k);
 
@@ -334,13 +343,16 @@ public:
     view_1d ice_flux;
     view_1d heat_flux;
 
+    SHF::SHOCRuntime runtime_opts;
+
     // Assigning local variables
     void set_variables(const int ncol_, const int nlev_,
                        const view_2d_const& rrho_,
                        const view_2d& qv_, const view_2d_const& qw_, const view_2d& qc_, const view_2d_const& qc_copy_,
                        const view_2d& tke_, const view_2d_const& tke_copy_, const view_3d_strided& qtracers_, const view_2d_const& qc2_,
                        const view_2d& cldfrac_liq_, const view_2d& inv_qc_relvar_,
-                       const view_2d& T_mid_, const view_2d_const& dse_, const view_2d_const& z_mid_, const view_1d_const phis_)
+                       const view_2d& T_mid_, const view_2d_const& dse_, const view_2d_const& z_mid_, const view_1d_const phis_,
+                       const SHF::SHOCRuntime& runtime_options)
     {
       ncol = ncol_;
       nlev = nlev_;
@@ -359,6 +371,7 @@ public:
       dse = dse_;
       z_mid = z_mid_;
       phis = phis_;
+      runtime_opts = runtime_options;
     } // set_variables
 
     void set_mass_and_energy_fluxes (const view_1d_const& surf_evap_, const view_1d_const surf_sens_flux_,

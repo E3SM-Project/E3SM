@@ -144,6 +144,10 @@ void P3Microphysics::create_requests()
     add_field<Computed>("qi_sed", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
   }
 
+//[shanyp 20251119
+    add_field<Required>("omega", scalar3d_layout_mid, Pa/s, grid_name, ps);
+//shanyp 20251119]  
+
   // History Only: (all fields are just outputs and are really only meant for I/O purposes)
   // TODO: These should be averaged over subcycle as well.  But there is no simple mechanism
   //       yet to reset these values at the beginning of the atmosphere timestep.  When this
@@ -387,6 +391,9 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   diag_outputs.diag_eff_radius_qc      = get_field_out("eff_radius_qc").get_view<Pack**>();
   diag_outputs.diag_eff_radius_qi      = get_field_out("eff_radius_qi").get_view<Pack**>();
   diag_outputs.diag_eff_radius_qr      = get_field_out("eff_radius_qr").get_view<Pack**>();
+//[shanyp 20251119
+  diag_inputs.omega_mp                 = get_field_in("omega").get_view<const Pack**>();
+//shanyp 20251119]
   diag_outputs.precip_total_tend       = get_field_out("precip_total_tend").get_view<Pack**>();
   diag_outputs.nevapr                  = get_field_out("nevapr").get_view<Pack**>();
   diag_outputs.diag_equiv_reflectivity = get_field_out("diag_equiv_reflectivity").get_view<Pack**>();
