@@ -122,7 +122,7 @@ module ELMFatesInterfaceMod
    use ColumnType        , only : col_pp
    use ColumnDataType    , only : col_es, col_ws, col_wf, col_cs, col_cf
    use ColumnDataType    , only : col_nf, col_pf
-   use VegetationDataType, only : veg_es, veg_wf, veg_ws
+   use VegetationDataType, only : veg_es, veg_wf, veg_ws, veg_ef
    use LandunitType      , only : lun_pp
 
    use landunit_varcon   , only : istsoil
@@ -3079,24 +3079,31 @@ contains
 
  ! ======================================================================================
 
- subroutine wrap_update_hifrq_hist(this, bounds_clump )
+ subroutine wrap_update_hifrq_hist(this, bounds_clump, solarabs_inst)
 
 
 
     ! Arguments
     class(hlm_fates_interface_type), intent(inout) :: this
     type(bounds_type),  intent(in)                 :: bounds_clump
+    type(solarabs_type)     , intent(in)           :: solarabs_inst
 
     ! locals
     real(r8) :: dtime
     integer  :: nstep
     logical  :: is_beg_day
     integer  :: s,c,nc
+    integer  :: ifp,p
 
     associate(&
         hr            => col_cf%hr,      & ! (gC/m2/s) total heterotrophic respiration
         totsomc       => col_cs%totsomc, & ! (gC/m2) total soil organic matter carbon
-        totlitc       => col_cs%totlitc)   ! (gC/m2) total litter carbon in BGC pools
+        totlitc       => col_cs%totlitc, &   ! (gC/m2) total litter carbon in BGC pools
+        eflx_lh_tot   => veg_ef%eflx_lh_tot, &   ! (W/m2) latent heat flux
+        eflx_sh_tot   => veg_ef%eflx_sh_tot, &   ! (W/m2) sensible heat flux
+        fsa_patch     => solarabs_inst%fsa_patch, &  ! (W/m2) absorbed solar flux
+        eflx_lwrad_net=> veg_ef%eflx_lwrad_net, & ! (W/m2) net longwave radiative flux
+        t_ref2m       => veg_es%t_ref2m)          ! (K) 2-m air temperature
 
       nc = bounds_clump%clump_index
       dtime = real(get_step_size(),r8)
@@ -3107,6 +3114,22 @@ contains
          this%fates(nc)%bc_in(s)%tot_het_resp = hr(c)
          this%fates(nc)%bc_in(s)%tot_somc     = totsomc(c)
          this%fates(nc)%bc_in(s)%tot_litc     = totlitc(c)
+      end do
+
+      ! summarize biophysical variables that we want ot output on FATES dimensions
+
+      do s = 1, this%fates(nc)%nsites
+         c = this%f2hmap(nc)%fcolumn(s)
+         do ifp = 0, this%fates(nc)%sites(s)%youngest_patch%patchno   !!!CDK was 1
+            p = ifp+col_pp%pfti(c)
+
+            this%fates(nc)%bc_in(s)%lhflux_pa(ifp) = eflx_lh_tot(p)
+            this%fates(nc)%bc_in(s)%shflux_pa(ifp) = eflx_sh_tot(p)
+            this%fates(nc)%bc_in(s)%swabs_pa(ifp)  = fsa_patch(p)
+            this%fates(nc)%bc_in(s)%netlw_pa(ifp)  = eflx_lwrad_net(p)
+            this%fates(nc)%bc_in(s)%t2m_pa(ifp)    = t_ref2m(p)
+
+         end do
       end do
 
       ! Update history variables that track these variables
