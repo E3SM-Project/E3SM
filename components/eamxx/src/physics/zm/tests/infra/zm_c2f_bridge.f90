@@ -113,4 +113,29 @@ subroutine zm_transport_momentum_bridge_f(pcols, ncol, pver, pverp, wind_in, nwi
   call zm_transport_momentum(pcols, ncol, pver, pverp, wind_in, nwind, mu, md, du, eu, ed, dp, jt, mx, ideep, il1g, il2g, wind_tend, pguall, pgdall, icwu, icwd, dt, seten)
 end subroutine zm_transport_momentum_bridge_f
 
+subroutine compute_dilute_cape_bridge_f(pcols, ncol, pver, pverp, num_cin, num_msg, sp_humidity_in, temperature_in, zmid, pmid, pint, pblt, tpert, parcel_temp, parcel_qsat, msemax_klev, lcl_temperature, lcl_klev, eql_klev, cape, calc_msemax_klev, prev_msemax_klev, use_input_tq_mx, q_mx, t_mx) bind(C)
+  use zm_conv_cape, only : compute_dilute_cape
+  use zm_conv_types,  only: zm_param_set_for_testing, zm_const_set_for_testing
+
+  integer(kind=c_int) , value, intent(in) :: pcols, ncol, pver, pverp, num_cin, num_msg
+  real(kind=c_real) , intent(in), dimension(pcols, pver) :: sp_humidity_in, temperature_in, zmid, pmid
+  real(kind=c_real) , intent(in), dimension(pcols, pverp) :: pint
+  integer(kind=c_int) , intent(in), dimension(pcols) :: pblt, prev_msemax_klev
+  real(kind=c_real) , intent(in), dimension(pcols) :: tpert
+  real(kind=c_real) , intent(out), dimension(pcols, pver) :: parcel_temp
+  real(kind=c_real) , intent(inout), dimension(pcols, pver) :: parcel_qsat
+  integer(kind=c_int) , intent(inout), dimension(pcols) :: msemax_klev, lcl_klev, eql_klev
+  real(kind=c_real) , intent(out), dimension(pcols) :: lcl_temperature
+  real(kind=c_real) , intent(inout), dimension(pcols) :: cape, q_mx, t_mx
+  logical(kind=c_bool) , value, intent(in) :: calc_msemax_klev, use_input_tq_mx
+
+  type(zm_const_t) :: zm_const ! derived type to hold ZM constants
+  type(zm_param_t) :: zm_param ! derived type to hold ZM tunable parameters
+  !-----------------------------------------------------------------------------
+  call zm_param_set_for_testing(zm_param)
+  call zm_const_set_for_testing(zm_const)
+
+  call compute_dilute_cape(pcols, ncol, pver, pverp, num_cin, num_msg, sp_humidity_in, temperature_in, zmid, pmid, pint, pblt, tpert, parcel_temp, parcel_qsat, msemax_klev, lcl_temperature, lcl_klev, eql_klev, cape, zm_const, zm_param, calc_msemax_klev, prev_msemax_klev, use_input_tq_mx, q_mx, t_mx)
+end subroutine compute_dilute_cape_bridge_f
+
 end module zm_c2f_bridge

@@ -8,6 +8,7 @@ set(ZM_TESTS_SRCS
   zm_entropy_tests.cpp
   zm_zm_transport_tracer_tests.cpp
   zm_zm_transport_momentum_tests.cpp
+  zm_compute_dilute_cape_tests.cpp
 ) # ZM_TESTS_SRCS
 
 # All tests should understand the same baseline args

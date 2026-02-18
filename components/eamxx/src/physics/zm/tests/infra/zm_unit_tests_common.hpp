@@ -71,6 +71,7 @@ struct UnitWrap {
     struct TestEntropy;
     struct TestZmTransportTracer;
     struct TestZmTransportMomentum;
+    struct TestComputeDiluteCape;
   }; // UnitWrap
 };
 

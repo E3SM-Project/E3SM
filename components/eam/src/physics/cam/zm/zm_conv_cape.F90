@@ -110,7 +110,7 @@ subroutine compute_dilute_cape( pcols, ncol, pver, pverp, &
    end if
 
    !----------------------------------------------------------------------------
-   ! Copy the incoming temperature and specific humidity values to local arrays 
+   ! Copy the incoming temperature and specific humidity values to local arrays
    temperature(1:ncol,1:pver) = temperature_in(1:ncol,1:pver)
    sp_humidity(1:ncol,1:pver) = sp_humidity_in(1:ncol,1:pver)
 
@@ -119,8 +119,8 @@ subroutine compute_dilute_cape( pcols, ncol, pver, pverp, &
    if (use_input_tq_mx_loc) then
       ! note - in this case we expect:
       ! (1) the incoming array prev_msemax_klev contains prev identified launching level index, and
-      ! (2) the arrays q_mx and t_mx contain q and T values at the old launching level 
-      !     at the time when the old launching level was identified. 
+      ! (2) the arrays q_mx and t_mx contain q and T values at the old launching level
+      !     at the time when the old launching level was identified.
       ! Copy the old values to work arrays for calculations in the rest of this subroutine
       msemax_klev(1:ncol) = prev_msemax_klev(1:ncol)
       do i=1,ncol
@@ -270,8 +270,8 @@ subroutine compute_dilute_parcel( pcols, ncol, pver, num_msg, klaunch, &
                                   parcel_temp, parcel_vtemp, parcel_qsat, &
                                   lcl_pmid, lcl_temperature, lcl_klev )
    !----------------------------------------------------------------------------
-   ! Purpose: Calculate thermodynamic properties of an entraining air parcel 
-   !          lifted from the PBL using fractional mass entrainment rate 
+   ! Purpose: Calculate thermodynamic properties of an entraining air parcel
+   !          lifted from the PBL using fractional mass entrainment rate
    !          specified by zm_param%dmpdz
    !----------------------------------------------------------------------------
    implicit none
@@ -286,7 +286,7 @@ subroutine compute_dilute_parcel( pcols, ncol, pver, num_msg, klaunch, &
    real(r8), dimension(pcols,pver), intent(in   ) :: temperature     ! ambient env temperature at cell center
    real(r8), dimension(pcols,pver), intent(in   ) :: sp_humidity     ! ambient env specific humidity at cell center
    real(r8), dimension(pcols),      intent(in   ) :: tpert           ! PBL temperature perturbation
-   integer,  dimension(pcols),      intent(in   ) :: pblt            ! index of pbl depth 
+   integer,  dimension(pcols),      intent(in   ) :: pblt            ! index of pbl depth
    type(zm_const_t),                intent(in   ) :: zm_const        ! derived type to hold ZM constants
    type(zm_param_t),                intent(in   ) :: zm_param        ! derived type to hold ZM tunable parameters
    real(r8), dimension(pcols,pver), intent(inout) :: parcel_temp     ! Parcel temperature
@@ -339,7 +339,7 @@ subroutine compute_dilute_parcel( pcols, ncol, pver, num_msg, klaunch, &
    real(r8) qslcl    ! LCL saturated vapor mixing ratio
 
    integer rcall     ! ientropy call id for error message
-   
+
    integer,  parameter :: nit_lheat = 2      ! Number of iterations for condensation/freezing loop
    real(r8), parameter :: lwmax = 1.e-3_r8   ! maximum condesate that can be held in cloud before rainout
 
@@ -361,12 +361,12 @@ subroutine compute_dilute_parcel( pcols, ncol, pver, num_msg, klaunch, &
    new_q       = 0._r8
    new_s       = 0._r8
    !----------------------------------------------------------------------------
-   ! The original ZM scheme only treated PBL-rooted convection. A PBL temperature 
+   ! The original ZM scheme only treated PBL-rooted convection. A PBL temperature
    ! perturbation (tpert) was then used to increase the parcel temperatue at launch
    ! level, which is in PBL. The dcape_ull or ull trigger enables ZM scheme to treat
    ! elevated convection with launch level above PBL. If parcel launch level is
-   ! above PBL top, tempeature perturbation in PBL should not be able to influence 
-   ! it. In this situation, the temporary variable tpert_loc is reset to zero.  
+   ! above PBL top, tempeature perturbation in PBL should not be able to influence
+   ! it. In this situation, the temporary variable tpert_loc is reset to zero.
    do i=1,ncol
       tpert_loc(i) = tpert(i)
       if ( zm_param%tpert_fix .and. klaunch(i)<pblt(i) ) then
@@ -379,7 +379,7 @@ subroutine compute_dilute_parcel( pcols, ncol, pver, num_msg, klaunch, &
    do k = pver, num_msg+1, -1
       do i = 1,ncol
 
-         if ( k == klaunch(i) ) then 
+         if ( k == klaunch(i) ) then
 
             ! initialize values at launch level
             mp0(i)      = 1._r8            ! initial relative mass - value of 1.0 does not change for undilute (dmpdp=0)
@@ -390,13 +390,13 @@ subroutine compute_dilute_parcel( pcols, ncol, pver, num_msg, klaunch, &
             tfguess     = temperature(i,k)
             rcall = 1
             call ientropy( rcall, smix(i,k), pmid(i,k), qtmix(i,k), tmix(i,k), qsmix(i,k), tfguess, zm_const )
-         
-         elseif ( k < klaunch(i) ) then 
+
+         elseif ( k < klaunch(i) ) then
 
             ! set environmental values for this level
             dp    = pmid(i,k) - pmid(i,k+1)
             qtenv = 0.5_r8*(sp_humidity(i,k)+sp_humidity(i,k+1))
-            tenv  = 0.5_r8*(temperature(i,k)+temperature(i,k+1)) 
+            tenv  = 0.5_r8*(temperature(i,k)+temperature(i,k+1))
             penv  = 0.5_r8*(pmid(i,k)+pmid(i,k+1))
             senv  = entropy( tenv, penv, qtenv, zm_const )
 
@@ -405,12 +405,12 @@ subroutine compute_dilute_parcel( pcols, ncol, pver, num_msg, klaunch, &
             dzdp = 1._r8/dpdz                  ! [m/mb]
             dmpdp = zm_param%dmpdz*dzdp   ! Fractional entrainment [1/mb]
 
-            ! sum entrainment to current level - entrain q,s out of intervening dp layers, 
+            ! sum entrainment to current level - entrain q,s out of intervening dp layers,
             ! assuming linear variation (i.e. entrain the mean of the 2 stored values)
-            sp(i)  = sp(i)  - dmpdp*dp*senv 
-            qtp(i) = qtp(i) - dmpdp*dp*qtenv 
+            sp(i)  = sp(i)  - dmpdp*dp*senv
+            qtp(i) = qtp(i) - dmpdp*dp*qtenv
             mp(i)  = mp(i)  - dmpdp*dp
-            
+
             ! entrain s and qt to next level
             smix(i,k)  = (sp0(i)  +  sp(i)) / (mp0(i) + mp(i))
             qtmix(i,k) = (qtp0(i) + qtp(i)) / (mp0(i) + mp(i))
@@ -431,7 +431,7 @@ subroutine compute_dilute_parcel( pcols, ncol, pver, num_msg, klaunch, &
                lcl_pmid(i) = pmid(i,k+1) - qxskp1/dqxsdp
                dsdp        = (smix(i,k)  - smix(i,k+1))/dp
                dqtdp       = (qtmix(i,k) - qtmix(i,k+1))/dp
-               slcl        = smix(i,k+1)  + dsdp* (lcl_pmid(i)-pmid(i,k+1))  
+               slcl        = smix(i,k+1)  + dsdp* (lcl_pmid(i)-pmid(i,k+1))
                qtlcl       = qtmix(i,k+1) + dqtdp*(lcl_pmid(i)-pmid(i,k+1))
                tfguess     = tmix(i,k)
                rcall = 3
@@ -444,13 +444,13 @@ subroutine compute_dilute_parcel( pcols, ncol, pver, num_msg, klaunch, &
    end do ! k = pver, num_msg+1, -1
    !----------------------------------------------------------------------------
    ! end of entrainment loop
-   
+
    !----------------------------------------------------------------------------
    ! We now have a profile of entropy and total water of the entraining parcel
    ! Varying with height from the launch level klaunch parcel=environment. To the
-   ! top allowed level for the existence of convection. If we stop now it will 
+   ! top allowed level for the existence of convection. If we stop now it will
    ! provide some estimate of buoyancy without the effects of freezing/condensation.
-   ! 
+   !
    ! Instead, we will adjust these values such that the water held in vapor is
    ! <=qsmix. We assume that the cloud holds a certain amount of condensate (lwmax)
    ! and the rest is rained out (xsh2o). This provides latent heating to the
@@ -462,14 +462,14 @@ subroutine compute_dilute_parcel( pcols, ncol, pver, num_msg, klaunch, &
    ds_xsh2o = 0._r8
    ds_freeze = 0._r8
    do k = pver, num_msg+1, -1
-      do i = 1,ncol      
+      do i = 1,ncol
 
          if ( k == klaunch(i) ) then
 
             ! initialize values at launch level - assume no liquid water
             parcel_temp(i,k)  = tmix(i,k)
-            parcel_qsat(i,k)  = sp_humidity(i,k) 
-            parcel_vtemp(i,k) = ( parcel_temp(i,k) +zm_param%tpert_fac*tpert_loc(i) ) & 
+            parcel_qsat(i,k)  = sp_humidity(i,k)
+            parcel_vtemp(i,k) = ( parcel_temp(i,k) +zm_param%tpert_fac*tpert_loc(i) ) &
                                 * (1._r8+zm_const%zvir*parcel_qsat(i,k)) / (1._r8+parcel_qsat(i,k))
 
          elseif ( k < klaunch(i) ) then
@@ -486,18 +486,18 @@ subroutine compute_dilute_parcel( pcols, ncol, pver, num_msg, klaunch, &
                ! calculate entropy of freezing => ( latice x amount of water involved ) / T
 
                ! one off freezing of condensate
-               if (tmix(i,k) <= (zm_const%tfreez+tscool) .and. ds_freeze(i,k+1) == 0._r8) then 
+               if (tmix(i,k) <= (zm_const%tfreez+tscool) .and. ds_freeze(i,k+1) == 0._r8) then
                   ! entropy change from latent heat
-                  ds_freeze(i,k) = (zm_const%latice/tmix(i,k)) * max(0._r8,qtmix(i,k)-qsmix(i,k)-xsh2o(i,k)) 
+                  ds_freeze(i,k) = (zm_const%latice/tmix(i,k)) * max(0._r8,qtmix(i,k)-qsmix(i,k)-xsh2o(i,k))
                end if
-            
-               if (tmix(i,k) <= zm_const%tfreez+tscool .and. ds_freeze(i,k+1) /= 0._r8) then 
+
+               if (tmix(i,k) <= zm_const%tfreez+tscool .and. ds_freeze(i,k+1) /= 0._r8) then
                   ! continual freezing of additional condensate
                   ds_freeze(i,k) = ds_freeze(i,k+1)+(zm_const%latice/tmix(i,k)) * max(0._r8,(qsmix(i,k+1)-qsmix(i,k)))
                end if
-            
+
                ! adjust entropy and accordingly to sum of ds (be careful of signs)
-               new_s = smix(i,k) + ds_xsh2o(i,k) + ds_freeze(i,k) 
+               new_s = smix(i,k) + ds_xsh2o(i,k) + ds_freeze(i,k)
 
                ! adjust liquid water and accordingly to xsh2o
                new_q = qtmix(i,k) - xsh2o(i,k)
@@ -506,7 +506,7 @@ subroutine compute_dilute_parcel( pcols, ncol, pver, num_msg, klaunch, &
                tfguess = tmix(i,k)
                rcall =4
                call ientropy( rcall, new_s, pmid(i,k), new_q, tmix(i,k), qsmix(i,k), tfguess, zm_const )
-               
+
             end do  ! iteration loop for freezing processes
 
             ! parcel temp is temp of mixture
@@ -524,7 +524,7 @@ subroutine compute_dilute_parcel( pcols, ncol, pver, num_msg, klaunch, &
                                 * (1._r8+zm_const%zvir*parcel_qsat(i,k)) / (1._r8+ new_q)
 
          end if ! k < klaunch
-      
+
       end do ! i = 1,ncol
    end do ! k = pver, num_msg+1, -1
 
@@ -591,7 +591,7 @@ subroutine compute_cape_from_parcel( pcols, ncol, pver, pverp, num_cin, num_msg,
             buoyancy(i,k) = parcel_vtemp(i,k) - tv(i,k) + zm_param%tiedke_add
          else
             parcel_qsat(i,k)  = sp_humidity(i,k)
-            parcel_temp(i,k)  = temperature(i,k)            
+            parcel_temp(i,k)  = temperature(i,k)
             parcel_vtemp(i,k) = tv(i,k)
          endif
       end do
