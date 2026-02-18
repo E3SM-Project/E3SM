@@ -3002,6 +3002,7 @@ contains
        coszen_col(c) = shr_orb_cosz (nextsw_cday, grc_pp%lat(g), grc_pp%lon(g), declinp1)
 
        this%fates(nc)%bc_in(s)%coszen = coszen_col(c)
+       this%fates(nc)%sites(s)%coszen = this%fates(nc)%bc_in(s)%coszen
        
        if(coszen_col(c) > 0._r8) then
 
@@ -3025,7 +3026,7 @@ contains
           else
              this%fates(nc)%bc_in(s)%fcansno_pa(ifp) = 0._r8
           end if
-
+          
           call FatesNormalizedPatchRadiation(ifp, &
                this%fates(nc)%sites(s), &
                this%fates(nc)%bc_in(s),  &
