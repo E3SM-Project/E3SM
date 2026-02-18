@@ -4260,7 +4260,7 @@
 		/>
 		<var name="areaIntegAnnMeanDataIcebergIceShelfFreshwaterFlux"  type="real" dimensions="Time" units="kg s^-1"
 			description="The area integrated, annually averaged freshwater flux into the ocean from both data icebergs and ice-shelf melting."
-			packages="scaledDISMFPKG"
+			packages="scaledDISMFPKG;dataLandIceFluxesPKG"
 		/>
 
 		<!-- Input fields for forcing due to tides -->
