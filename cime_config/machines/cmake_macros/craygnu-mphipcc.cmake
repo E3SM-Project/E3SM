@@ -11,9 +11,9 @@ if (COMP_NAME STREQUAL gptl)
 endif()
 string(APPEND CMAKE_Fortran_FLAGS " -fconvert=big-endian -ffree-line-length-none -ffixed-line-length-none -fallow-argument-mismatch -cpp")
 
-string(APPEND CMAKE_C_FLAGS_DEBUG " -O0 -g -Wall -fbacktrace -fcheck=bounds -ffpe-trap=invalid,zero,overflow")
+string(APPEND CMAKE_C_FLAGS_DEBUG " -O0 -g -Wall -fcheck=bounds -ffpe-trap=invalid,zero,overflow")
 string(APPEND CMAKE_Fortran_FLAGS_DEBUG " -O0 -g -Wall -fbacktrace -fcheck=bounds -ffpe-trap=zero,overflow")
-string(APPEND CMAKE_CXX_FLAGS_DEBUG " -O0 -g -Wall -fbacktrace")
+string(APPEND CMAKE_CXX_FLAGS_DEBUG " -O0 -g -Wall")
 
 string(APPEND CMAKE_C_FLAGS_RELEASE " -g -O2")
 string(APPEND CMAKE_CXX_FLAGS_RELEASE " -g -O2")
