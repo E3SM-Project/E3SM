@@ -289,6 +289,10 @@ module mpas_subdriver
          mesh_iotype = MPAS_IO_ADIOS
       else if (trim(iotype) == 'adiosc') then
          mesh_iotype = MPAS_IO_ADIOSC
+      else if (trim(iotype) == 'hdf5') then
+         mesh_iotype = MPAS_IO_HDF5
+      else if (trim(iotype) == 'hdf5c') then
+         mesh_iotype = MPAS_IO_HDF5C
       else
          mesh_iotype = MPAS_IO_PNETCDF
       end if

@@ -1,0 +1,3 @@
+#!/bin/bash
+./xmlchange PIO_TYPENAME="hdf5c"
+#./xmlchange PIO_BUFFER_SIZE_LIMIT=33554432
