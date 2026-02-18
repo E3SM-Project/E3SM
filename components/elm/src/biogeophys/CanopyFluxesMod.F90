@@ -780,6 +780,25 @@ contains
       event = 'can_iter'
       call t_start_lnd(event)
 
+
+      ! THINGS TO IMPROVE EFFICIENCY:
+      ! 1) Guided schedule
+      ! 2) provide load balancing via cohort counts (then use static)
+      ! 3) Adjusting environment parameters, and calcualting work efficiency
+      !! total_work_sum = 0.0d0
+      !! Start the global timer
+      !! start_time = omp_get_wtime()
+      !! omp parallel do schedule(dynamic, 1) private(work_start, work_end) reduction(+:total_work_sum)
+      !! do i = 1, n
+      !!   work_start = omp_get_wtime()
+      !!   ! Simulate uneven load: i**2 makes later iterations much heavier
+      !!   call heavy_computation(i)
+      !!   work_end = omp_get_wtime()
+      !!   total_work_sum = total_work_sum + (work_end - work_start)
+      !! end do
+      !! omp end parallel do
+      !! end_time = omp_get_wtime()
+    
       !$OMP PARALLEL DO PRIVATE (f,p,c,t,g,itstoma,itlef,converge_stoma, &
       !$OMP                      converge_tveg,cf,w,csoilb,ri,csoilcn,  &
       !$OMP                      ricsoilc,wta,wtl,wtshi,wtg0,wtga,rppdry, &
