@@ -15,7 +15,7 @@ void update_gas_aerosols_using_constituents(
     // output
     const mam_coupling::AerosolState &wet_aero) {
   using C                      = physics::Constants<Real>;
-  static constexpr auto gravit = C::gravit;  // Gravity [m/s2]
+  static constexpr auto gravit = C::gravit.value;  // Gravity [m/s2]
   static constexpr int pcnst   = mam4::aero_model::pcnst;
 
   // Declare local variables

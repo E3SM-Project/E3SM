@@ -30,6 +30,11 @@ public:
                   // to set up the src pressure profile (the user will take care of it)
   };
 
+  enum TimeInterpType {
+    Linear,
+    Nearest
+  };
+
   struct VertRemapData {
     VertRemapData() = default;
 
@@ -51,6 +56,7 @@ public:
 
   void setup_time_database (const strvec_t& input_files,
                             const util::TimeLine timeline,
+                            const TimeInterpType interp_type = Linear,
                             const util::TimeStamp& ref_ts = util::TimeStamp());
 
   // In case the input files store col/lev dims with exhotic names, the user can provide them here
@@ -125,12 +131,16 @@ protected:
   std::pair<int,int>    m_curr_interval_idx;
 
   TimeDatabase          m_time_database;
+  TimeInterpType        m_time_interp_type;
 
   ekat::Comm            m_comm;
-  ekat::ParameterList   m_params;
 
   bool                  m_time_db_created   = false;
   bool                  m_data_initialized  = false;
+
+  bool                  m_fields_have_col_dim = false;
+  bool                  m_fields_have_lev_dim = false;
+  bool                  m_fields_have_ilev_dim = false;
 
   std::shared_ptr<ekat::logger::LoggerBase> m_logger;
 };

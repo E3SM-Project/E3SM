@@ -74,7 +74,7 @@ struct Functions
     static inline constexpr int north = 3;
 
     // rair/gravit
-    static inline constexpr Real rog = C::Rair / C::gravit;
+    static inline constexpr Real rog = C::Rair.value / C::gravit.value;
 
     // Background diffusivity.
     static inline constexpr Real dback = 0.05;

@@ -19,7 +19,7 @@ class NumberPathDiagnostic : public AtmosphereDiagnostic {
   std::string name() const override { return "NumberPath"; }
 
   // Set the grid
-  void set_grids(const std::shared_ptr<const GridsManager> grids_manager);
+  void create_requests ();
 
  protected:
 #ifdef KOKKOS_ENABLE_CUDA

@@ -264,7 +264,7 @@ load_vertical_coordinates (const nonconstgrid_ptr_type& grid, const std::string&
 
   // Build lev and ilev from hyam and hybm, and ilev from hyai and hybi
   using PC       = scream::physics::Constants<Real>;
-  const Real ps0 = PC::P0;
+  const Real ps0 = PC::P0.value;
 
   auto num_lev = grid->get_num_vertical_levels();
   for (int ii=0;ii<num_lev;ii++) {

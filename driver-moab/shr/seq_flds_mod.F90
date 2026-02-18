@@ -18,6 +18,7 @@ module seq_flds_mod
   !    g => glc
   !    r => rof
   !    w => wav
+  !    z => iac
   !
   !  state-name
   !    what follows state prefix
@@ -164,6 +165,7 @@ module seq_flds_mod
   logical            :: rof_heat            ! .true. if river model includes temperature
   logical            :: add_ndep_fields     ! .true. => add ndep fields
   logical            :: fan_have_fields     ! .true. if FAN coupled to atmosphere
+  logical            :: add_iac_to_cplstate  ! .true. if iac fields are added to coupler history files
 
   character(len=CS)  :: atm_flux_method     ! explicit => no extra fields needed
                                             ! implicit_stress => atm provides wsresp and tau_est
@@ -171,6 +173,7 @@ module seq_flds_mod
   logical            :: rof2ocn_nutrients   ! .true. if the runoff model passes nutrient fields to the ocn
   logical            :: lnd_rof_two_way     ! .true. if land-river two-way coupling turned on
   logical            :: ocn_rof_two_way     ! .true. if river-ocean two-way coupling turned on
+  logical            :: ocn_lnd_one_way     ! .true. if ocean to land one-way coupling turned on
   logical            :: rof_sed             ! .true. if river model includes sediment
 
   character(len=CS)  :: wav_ocn_coup     ! 'twoway' if wave-ocean two-way coupling turned on
@@ -218,6 +221,8 @@ module seq_flds_mod
   character(CXX) :: seq_flds_x2o_fluxes
   character(CXX) :: seq_flds_o2x_states_to_rof
   character(CXX) :: seq_flds_o2x_fluxes_to_rof
+  character(CXX) :: seq_flds_o2x_states_to_lnd
+  character(CXX) :: seq_flds_o2x_fluxes_to_lnd
 
   character(CXX) :: seq_flds_g2x_states
   character(CXX) :: seq_flds_g2x_states_to_lnd
@@ -249,8 +254,8 @@ module seq_flds_mod
   character(CXX) :: seq_flds_r2o_liq_fluxes
   character(CXX) :: seq_flds_r2o_ice_fluxes
 
-  !character(CXX) :: seq_flds_x2z_states
-  !character(CXX) :: seq_flds_z2x_states
+  character(CXX) :: seq_flds_x2z_states
+  character(CXX) :: seq_flds_z2x_states
   character(CXX) :: seq_flds_z2x_fluxes
   character(CXX) :: seq_flds_x2z_fluxes
 
@@ -279,6 +284,9 @@ module seq_flds_mod
   character(CXX) :: seq_flds_w2x_fields
   character(CXX) :: seq_flds_x2w_fields
   character(CXX) :: seq_flds_o2x_fields_to_rof
+  character(CXX) :: seq_flds_o2x_fields_to_lnd
+  character(CXX) :: seq_flds_z2x_fields
+  character(CXX) :: seq_flds_x2z_fields
 
   !----------------------------------------------------------------------------
   ! component names
@@ -291,6 +299,7 @@ module seq_flds_mod
   character(32) :: glcname='glc'
   character(32) :: wavname='wav'
   character(32) :: rofname='rof'
+  character(32) :: iacname='iac'
 
   ! namelist variables
   logical :: nan_check_component_fields
@@ -356,6 +365,8 @@ contains
     character(CXX) :: o2x_fluxes = ''
     character(CXX) :: o2x_states_to_rof = ''
     character(CXX) :: o2x_fluxes_to_rof = ''
+    character(CXX) :: o2x_states_to_lnd = ''
+    character(CXX) :: o2x_fluxes_to_lnd = ''
     character(CXX) :: x2o_states = ''
     character(CXX) :: x2o_fluxes = ''
     character(CXX) :: g2x_states = ''
@@ -385,6 +396,11 @@ contains
     character(CXX) :: r2o_liq_fluxes = ''
     character(CXX) :: r2o_ice_fluxes = ''
 
+    character(CXX) :: z2x_states = ''
+    character(CXX) :: z2x_fluxes = ''
+    character(CXX) :: x2z_states = ''
+    character(CXX) :: x2z_fluxes = ''
+
     character(CXX) :: stringtmp  = ''
 
     !------ namelist -----
@@ -392,7 +408,9 @@ contains
 
     type(mct_string)    :: mctOStr  ! mct string for output outfield
     logical :: is_state, is_flux
-    integer :: i,n
+    integer :: i,n,m
+    character(len=3) :: pftstr = ''
+    character(len=2) :: monstr = ''
 
     ! use cases namelists
     logical :: flds_co2a
@@ -406,12 +424,17 @@ contains
     integer :: glc_nec
     integer :: glc_nzoc
 
+    ! set these here because the cplflds namelist is not the right place
+    !    this namelist is called only under special circumstances
+    integer :: iac_npft = 17
+    integer :: iac_nharvest = 5
+
     namelist /seq_cplflds_inparm/  &
          flds_co2a, flds_co2b, flds_co2c, flds_co2_dmsa, flds_wiso, flds_polar, flds_tf, &
          glc_nec, glc_nzoc, ice_ncat, seq_flds_i2o_per_cat, flds_bgc_oi, &
          nan_check_component_fields, rof_heat, atm_flux_method, atm_gustiness, &
-         rof2ocn_nutrients, lnd_rof_two_way, ocn_rof_two_way, rof_sed, &
-         wav_ocn_coup,wav_atm_coup, wav_ice_coup
+         rof2ocn_nutrients, lnd_rof_two_way, ocn_rof_two_way, ocn_lnd_one_way, rof_sed, &
+         wav_ocn_coup, wav_atm_coup, wav_ice_coup, add_iac_to_cplstate
 
     ! user specified new fields
     integer,  parameter :: nfldmax = 200
@@ -455,10 +478,12 @@ contains
        rof2ocn_nutrients = .false.
        lnd_rof_two_way   = .false.
        ocn_rof_two_way   = .false.
+       ocn_lnd_one_way   = .false.
        rof_sed   = .false.
        wav_ocn_coup = 'none'
        wav_atm_coup = 'none'
        wav_ice_coup = 'none'
+       add_iac_to_cplstate = .false.
 
        unitn = shr_file_getUnit()
        write(logunit,"(A)") subname//': read seq_cplflds_inparm namelist from: '&
@@ -494,10 +519,12 @@ contains
     call shr_mpi_bcast(rof2ocn_nutrients, mpicom)
     call shr_mpi_bcast(lnd_rof_two_way,   mpicom)
     call shr_mpi_bcast(ocn_rof_two_way,   mpicom)
+    call shr_mpi_bcast(ocn_lnd_one_way,   mpicom)
     call shr_mpi_bcast(rof_sed,   mpicom)
     call shr_mpi_bcast(wav_ocn_coup, mpicom)
     call shr_mpi_bcast(wav_atm_coup, mpicom)
     call shr_mpi_bcast(wav_ice_coup, mpicom)
+    call shr_mpi_bcast(add_iac_to_cplstate, mpicom)
 
     call glc_elevclass_init(glc_nec)
     call glc_zocnclass_init(glc_nzoc)
@@ -590,6 +617,12 @@ contains
           case('x2g')
              if (is_state) call seq_flds_add(x2g_states,trim(fldname))
              if (is_flux ) call seq_flds_add(x2g_fluxes,trim(fldname))
+          case('z2x')
+             if (add_iac_to_cplstate .and. is_state) call seq_flds_add(z2x_states,trim(fldname))
+             if (add_iac_to_cplstate .and. is_flux ) call seq_flds_add(z2x_fluxes,trim(fldname))
+          case('x2z')
+             if (add_iac_to_cplstate .and. is_state) call seq_flds_add(x2z_states,trim(fldname))
+             if (add_iac_to_cplstate .and. is_flux ) call seq_flds_add(x2z_fluxes,trim(fldname))
           case default
              write(logunit,*) subname//'ERROR: ',trim(cplflds_custom(n)),&
                   ' not a recognized value'
@@ -1120,6 +1153,7 @@ contains
     call seq_flds_add(x2a_states,'Sf_lfrac')
     call seq_flds_add(x2a_states,'Sf_ifrac')
     call seq_flds_add(x2a_states,'Sf_ofrac')
+    if(add_iac_to_cplstate)call seq_flds_add(x2a_states,'Sf_zfrac')
     longname = 'Surface land fraction'
     stdname  = 'land_area_fraction'
     units    = '1'
@@ -1132,6 +1166,10 @@ contains
     longname = 'Surface ocean fraction'
     stdname  = 'sea_area_fraction'
     attname  = 'Sf_ofrac'
+    call metadata_set(attname, longname, stdname, units)
+    longname = 'Surface iac fraction'
+    stdname  = 'iac_area_fraction'
+    attname  = 'Sf_zfrac'
     call metadata_set(attname, longname, stdname, units)
 
     ! Direct albedo (visible radiation)
@@ -1759,12 +1797,27 @@ contains
     call seq_flds_add(o2x_states,"So_ssh")
     call seq_flds_add(x2r_states,"So_ssh")
     call seq_flds_add(o2x_states_to_rof,"So_ssh")
+    if (ocn_lnd_one_way) then
+      call seq_flds_add(x2l_states,"So_ssh") ! ocn -> lnd one-way coupling
+      call seq_flds_add(o2x_states_to_lnd,"So_ssh")
+    endif
     if (wav_ocn_coup .ne. 'none') call seq_flds_add(x2w_states,'So_ssh')
     longname = 'Sea surface height'
     stdname  = 'sea_surface_height'
     units    = 'm'
     attname  = 'So_ssh'
     call metadata_set(attname, longname, stdname, units)
+
+    if (ocn_lnd_one_way) then
+      call seq_flds_add(o2x_states,"So_frac_h2oocn")
+      call seq_flds_add(x2l_states,"So_frac_h2oocn")
+      call seq_flds_add(o2x_states_to_lnd,"So_frac_h2oocn")
+      longname = 'Oceanic inundation fraction'
+      stdname  = 'oceanic_inundation_fraction'
+      units    = '-'
+      attname  = 'So_frac_h2oocn'
+      call metadata_set(attname, longname, stdname, units)
+    endif
 
     ! Meridional sea surface slope
     call seq_flds_add(o2x_states,"So_dhdy")
@@ -2732,6 +2785,123 @@ contains
        call metadata_set(attname, longname, stdname, units)
     endif
 
+   !----------------------------
+   ! lnd->iac, iac->lnd, iac->atm
+   !----------------------------
+   
+   ! lnd/iac coupling needs one field in each class per pft
+   ! Note that this ends up as 17*4=68 coupled fields...
+   ! also send harvest fraction from iac to land
+   ! use the same loop and index string
+ 
+   ! these two variables are hardcoded above because there is not an appropriate
+   !    namelist to put them in: iac_npft and iac_nharvest
+
+   do i = 1,iac_npft
+
+      ! Zero offset the tags, since that's how we access them in lnd and iac
+      write(pftstr,'(I0)') i-1
+      pftstr=trim(pftstr)
+
+      ! Only hr and npp matter, for now
+      if(add_iac_to_cplstate)call seq_flds_add(l2x_states,trim('Sl_hr_pft' // pftstr))
+      call seq_flds_add(x2z_states,trim('Sl_hr_pft' // pftstr))
+      longname = 'Total heterotrophic respiration' // pftstr
+      stdname  = 'lnd_total_heterotrophic_respiration' // pftstr
+      units    = 'gC/m^2/s'
+      attname  = 'Sl_hr_pft' // pftstr
+      attname  = trim(attname)
+      call metadata_set(attname, longname, stdname, units)
+      
+      if(add_iac_to_cplstate)call seq_flds_add(l2x_states,'Sl_npp_pft' // pftstr)
+      call seq_flds_add(x2z_states,'Sl_npp_pft' // pftstr)
+      longname = 'Net primary production for pft ' // pftstr
+      stdname  = 'lnd_net_primary_production_pft' // pftstr
+      units    = 'gC/m^2/s'
+      attname  = 'Sl_npp_pft' // pftstr
+      call metadata_set(attname, longname, stdname, units)
+   
+      ! Review
+      if(add_iac_to_cplstate)call seq_flds_add(l2x_states,'Sl_pftwgt_pft' //pftstr)
+      call seq_flds_add(x2z_states,'Sl_pftwgt_pft' //pftstr)
+      longname = 'PFT weight relative to gridcell for pft ' //pftstr
+      stdname  = 'lnd_pft_weight_pft' //pftstr
+      units    = ''
+      attname  = 'Sl_pftwgt_pft' //pftstr
+      call metadata_set(attname, longname, stdname, units)
+
+      ! iac->lnd
+
+      ! This is pft for beginning of model year + 1
+      ! ts wonders if landfrac should go as well - just to
+      ! verify that we are all using the same values.
+      if(add_iac_to_cplstate)call seq_flds_add(z2x_states,trim('Sz_pct_pft' //pftstr))
+      if(add_iac_to_cplstate)call seq_flds_add(x2l_states,trim('Sz_pct_pft' //pftstr))
+      longname = 'Percent pft of vegetated land unit for pft ' //pftstr
+      stdname  = 'iac_pct_pft' //pftstr
+      stdname  = trim(stdname)
+      units    = 'percent'
+      attname  = 'Sz_pct_pft' //pftstr
+      attname  = trim(attname)
+      call metadata_set(attname, longname, stdname, units)
+
+      ! Need to send the beginning model year pft data as well
+      if(add_iac_to_cplstate)call seq_flds_add(z2x_states,trim('Sz_pct_pft_prev' //pftstr))
+      if(add_iac_to_cplstate)call seq_flds_add(x2l_states,trim('Sz_pct_pft_prev' //pftstr))
+      longname = 'Previous percent pft of vegetated land unit for pft ' //pftstr
+      stdname  = 'iac_pct_pft_prev' //pftstr
+      stdname  = trim(stdname)
+      units    = 'percent'
+      attname  = 'Sz_pct_pft_prev' //pftstr
+      attname  = trim(attname)
+      call metadata_set(attname, longname, stdname, units)
+ 
+      ! send the harvest data also, these are for model year
+      if (i <= iac_nharvest) then
+         call seq_flds_add(z2x_states,trim('Sz_harvest_frac' //pftstr))
+         if(add_iac_to_cplstate)call seq_flds_add(x2l_states,trim('Sz_harvest_frac' //pftstr))
+         longname = 'Harvest fraction of vegetated land unit for category ' //pftstr
+         stdname  = 'iac_harvest_frac' //pftstr
+         stdname  = trim(stdname)
+         units    = 'fraction'
+         attname  = 'Sz_harvest_frac' //pftstr
+         attname  = trim(attname)
+         call metadata_set(attname, longname, stdname, units)
+      end if
+
+   end do
+   ! iac->atm flux.
+   ! Monthly values of surface, low alt, high alt co2 fluxes, so we
+   ! loop over 36 total fields.
+   do m=1,12
+      ! Month index tag
+      write(monstr,'(I0)') m
+      monstr=trim(monstr)
+
+      if(add_iac_to_cplstate)call seq_flds_add(z2x_fluxes,trim("Fazz_co2sfc_mon" //monstr))
+      if(add_iac_to_cplstate)call seq_flds_add(x2a_fluxes,trim("Fazz_co2sfc_mon" //monstr))
+      longname = trim('Surface flux of CO2 from iac for month' //monstr)
+      stdname  = trim('surface_upward_flux_of_carbon_dioxide_from_iac_mon' //monstr)
+      units    = 'moles m-2 s-1'
+      attname  = trim('Fazz_co2sfc_mon' //monstr)
+      call metadata_set(attname, longname, stdname, units)
+
+      if(add_iac_to_cplstate)call seq_flds_add(z2x_fluxes,trim("Fazz_co2airlo_mon" //monstr))
+      if(add_iac_to_cplstate)call seq_flds_add(x2a_fluxes,trim("Fazz_co2airlo_mon" //monstr))
+      longname = trim('Low altitude flux of CO2 from iac for month' //monstr)
+      stdname  = trim('low_alt_upward_flux_of_carbon_dioxide_from_iac_mon' //monstr)
+      units    = 'moles m-2 s-1'
+      attname  = trim('Fazz_co2airlo_mon' //monstr)
+      call metadata_set(attname, longname, stdname, units)
+
+      if(add_iac_to_cplstate)call seq_flds_add(z2x_fluxes,trim("Fazz_co2airhi_mon" //monstr))
+      if(add_iac_to_cplstate)call seq_flds_add(x2a_fluxes,trim("Fazz_co2airhi_mon" //monstr))
+      longname = trim('High altitude flux of CO2 from iac for month' //monstr)
+      stdname  = trim('high_alt_upward_flux_of_carbon_dioxide_from_iac_mon' //monstr)
+      units    = 'moles m-2 s-1'
+      attname  = trim('Fazz_co2airhi_mon' //monstr)
+      call metadata_set(attname, longname, stdname, units)
+   end do
     !-----------------------------
     ! New xao_states diagnostic
     ! fields for history output only
@@ -4067,6 +4237,8 @@ contains
     seq_flds_x2r_states = trim(x2r_states)
     seq_flds_w2x_states = trim(w2x_states)
     seq_flds_x2w_states = trim(x2w_states)
+    seq_flds_x2z_states = trim(x2z_states)
+    seq_flds_z2x_states = trim(z2x_states)
 
     seq_flds_dom_other  = trim(dom_other )
     seq_flds_a2x_fluxes = trim(a2x_fluxes)
@@ -4092,10 +4264,14 @@ contains
     seq_flds_x2r_fluxes = trim(x2r_fluxes)
     seq_flds_w2x_fluxes = trim(w2x_fluxes)
     seq_flds_x2w_fluxes = trim(x2w_fluxes)
+    seq_flds_z2x_fluxes = trim(z2x_fluxes)
+    seq_flds_x2z_fluxes = trim(x2z_fluxes)
     seq_flds_r2o_liq_fluxes = trim(r2o_liq_fluxes)
     seq_flds_r2o_ice_fluxes = trim(r2o_ice_fluxes)
     seq_flds_o2x_states_to_rof = trim(o2x_states_to_rof)
     seq_flds_o2x_fluxes_to_rof = trim(o2x_fluxes_to_rof)
+    seq_flds_o2x_states_to_lnd = trim(o2x_states_to_lnd)
+    seq_flds_o2x_fluxes_to_lnd = trim(o2x_fluxes_to_lnd)
 
     if (seq_comm_iamroot(ID)) then
        write(logunit,*) subname//': seq_flds_a2x_states= ',trim(seq_flds_a2x_states)
@@ -4147,6 +4323,11 @@ contains
        write(logunit,*) subname//': seq_flds_x2w_states= ',trim(seq_flds_x2w_states)
        write(logunit,*) subname//': seq_flds_x2w_fluxes= ',trim(seq_flds_x2w_fluxes)
        write(logunit,*) subname//': seq_flds_o2x_states_to_rof=',trim(seq_flds_o2x_states_to_rof)
+       write(logunit,*) subname//': seq_flds_z2x_states= ',trim(seq_flds_z2x_states)
+       write(logunit,*) subname//': seq_flds_z2x_fluxes= ',trim(seq_flds_z2x_fluxes)
+       write(logunit,*) subname//': seq_flds_x2z_states= ',trim(seq_flds_x2z_states)
+       write(logunit,*) subname//': seq_flds_x2z_fluxes= ',trim(seq_flds_x2z_fluxes)
+       write(logunit,*) subname//': seq_flds_o2x_states_to_lnd=',trim(seq_flds_o2x_states_to_lnd)
     end if
 
     call catFields(seq_flds_dom_fields, seq_flds_dom_coord , seq_flds_dom_other )
@@ -4172,6 +4353,9 @@ contains
     call catFields(seq_flds_w2x_fields, seq_flds_w2x_states, seq_flds_w2x_fluxes)
     call catFields(seq_flds_x2w_fields, seq_flds_x2w_states, seq_flds_x2w_fluxes)
     call catFields(seq_flds_o2x_fields_to_rof, seq_flds_o2x_states_to_rof, seq_flds_o2x_fluxes_to_rof)
+    call catFields(seq_flds_z2x_fields, seq_flds_z2x_states, seq_flds_z2x_fluxes)
+    call catFields(seq_flds_x2z_fields, seq_flds_x2z_states, seq_flds_x2z_fluxes)
+    call catFields(seq_flds_o2x_fields_to_lnd, seq_flds_o2x_states_to_lnd, seq_flds_o2x_fluxes_to_lnd)
  
     if (seq_comm_iamroot(ID)) then
       write(logunit,*) subname//': seq_flds_dom_fields= ',trim(seq_flds_dom_fields)

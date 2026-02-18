@@ -12,7 +12,7 @@
 
 #include <iomanip>
 
-namespace{
+namespace scream {
 
 template<typename ScalarT, int NumLevels>
 struct ChecksHelpers {
@@ -73,8 +73,8 @@ void run_scalar_valued_fns(std::mt19937_64& engine)
   using Check = ChecksHelpers<RealType,1>; //1 is for number of levels.
 
   static constexpr auto pi       = PC::Pi;
-  static constexpr auto Rd       = PC::RD;
-  static constexpr auto g        = PC::gravit;
+  static constexpr auto Rd       = PC::RD.value;
+  static constexpr auto g        = PC::gravit.value;
   static constexpr auto test_tol = PC::macheps*1e3;
   static constexpr auto coeff_1  = PC::earth_ellipsoid1;
   static constexpr auto coeff_2  = PC::earth_ellipsoid2;
@@ -185,10 +185,10 @@ void run(std::mt19937_64& engine)
   using rview_1d   = typename KT::template view_1d<RealType>;
   using TPF        = ekat::TeamPolicyFactory<ExecSpace>;
 
-  static constexpr auto Rd       = PC::RD;
-  static constexpr auto cp       = PC::CP;
-  static constexpr auto inv_cp   = PC::INV_CP;
-  static constexpr auto g        = PC::gravit;
+  static constexpr auto Rd       = PC::RD.value;
+  static constexpr auto cp       = PC::CP.value;
+  static constexpr auto inv_cp   = PC::INV_CP.value;
+  static constexpr auto g        = PC::gravit.value;
   static constexpr auto test_tol = PC::macheps*1e3;
 
   constexpr int pack_size = sizeof(ScalarT) / sizeof(RealType);
@@ -238,7 +238,7 @@ void run(std::mt19937_64& engine)
   using RPDF = std::uniform_real_distribution<RealType>;
   RPDF pdf_qv(1e-6,1e-3),
        pdf_dp(1.0,100.0),
-       pdf_pres(0.0,PC::P0),
+       pdf_pres(0.0,PC::P0.value),
        pdf_temp(200.0,400.0),
        pdf_height(0.0,1e5),
        pdf_dz(1.0,1e5),
@@ -270,7 +270,7 @@ void run(std::mt19937_64& engine)
 
   // ---- Single-scalar functions tests ---- //
 
-  const ScalarT p0   = PC::P0;
+  const ScalarT p0   = PC::P0.value;
   const ScalarT zero = 0.0;
   const ScalarT one  = 1.0;
 

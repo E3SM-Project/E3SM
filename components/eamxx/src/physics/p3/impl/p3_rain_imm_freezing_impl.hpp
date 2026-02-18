@@ -20,11 +20,11 @@ void Functions<S,D>
                           const P3Runtime& runtime_options,
 			  const Smask& context)
 {
-  constexpr Scalar qsmall = C::QSMALL;
-  constexpr Scalar T_rainfrz = C::T_rainfrz;
-  constexpr Scalar T_zerodegc = C::T_zerodegc;
-  constexpr Scalar CONS5 = C::CONS5;
-  constexpr Scalar CONS6 = C::CONS6;
+  constexpr Scalar qsmall     = C::QSMALL;
+  constexpr Scalar T_rainfrz  = C::T_rainfrz.value;
+  constexpr Scalar T_zerodegc = C::T_zerodegc.value;
+  constexpr Scalar CONS5      = C::CONS5;
+  constexpr Scalar CONS6      = C::CONS6;
 
   const Scalar immersion_freezing_exponent =
       runtime_options.immersion_freezing_exponent;

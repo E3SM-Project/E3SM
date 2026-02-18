@@ -54,11 +54,11 @@ MAMMicrophysics::MAMMicrophysics(const ekat::Comm &comm, const ekat::ParameterLi
 //  SET_GRIDS
 // ================================================================
 void
-MAMMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
+MAMMicrophysics::create_requests()
 {
   // set grid for all the inputs and outputs
   // use physics grid
-  grid_                 = grids_manager->get_grid("physics");
+  grid_                 = m_grids_manager->get_grid("physics");
   const auto &grid_name = grid_->name();
 
   ncol_ = grid_->get_num_local_dofs();      // number of columns on this rank
@@ -209,6 +209,8 @@ MAMMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_manag
         true, mam_coupling::gas_pcnst(), "num_gas_aerosol_constituents");
 
     const FieldLayout vector2d_nmodes = grid_->get_2d_vector_layout(nmodes, "nmodes");
+    const FieldLayout vector2d_pcnst =
+        grid_->get_2d_vector_layout(mam_coupling::gas_pcnst(), "num_gas_aerosol_constituents");
 
     // Diagnostics: tendencies due to gas phase chemistry [mixed units: kg/kg/s or #/kg/s]
     add_field<Computed>("mam4_microphysics_tendency_gas_phase_chemistry",
@@ -245,6 +247,8 @@ MAMMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_manag
                         vector3d_num_gas_aerosol_constituents, nondim, grid_name);
     add_field<Computed>("mam4_microphysics_tendency_renaming_cloud_borne",
                         vector3d_num_gas_aerosol_constituents, nondim, grid_name);
+    constexpr auto cm2 = m * m / 10000;
+    add_field<Computed>("mam4_gas_dry_deposition_flux", vector2d_pcnst, 1 / cm2 / s, grid_name);
   }
 
   // Creating a Linoz reader and setting Linoz parameters involves reading data
@@ -405,7 +409,7 @@ void MAMMicrophysics::set_oxid_reader()
   // Beg of any year, since we use yearly periodic timeline
   util::TimeStamp ref_ts_oxid (1,1,1,0,0,0);
   data_interp_oxid_ = std::make_shared<DataInterpolation>(grid_,oxid_fields);
-  data_interp_oxid_->setup_time_database ({oxid_file_name},util::TimeLine::YearlyPeriodic, ref_ts_oxid);
+  data_interp_oxid_->setup_time_database ({oxid_file_name},util::TimeLine::YearlyPeriodic, DataInterpolation::Linear, ref_ts_oxid);
   data_interp_oxid_->create_horiz_remappers (oxid_map_file=="none" ? "" : oxid_map_file);
   data_interp_oxid_->set_logger(m_atm_logger);
   DataInterpolation::VertRemapData remap_data_oxid;
@@ -441,7 +445,7 @@ void MAMMicrophysics::set_linoz_reader(){
   }
 
   data_interp_linoz_ = std::make_shared<DataInterpolation>(grid_,linoz_fields);
-  data_interp_linoz_->setup_time_database ({m_linoz_file_name},util::TimeLine::YearlyPeriodic, ref_ts_linoz);
+  data_interp_linoz_->setup_time_database ({m_linoz_file_name},util::TimeLine::YearlyPeriodic, DataInterpolation::Linear, ref_ts_linoz);
   data_interp_linoz_->create_horiz_remappers (linoz_map_file=="none" ? "" : linoz_map_file);
   data_interp_linoz_->set_logger(m_atm_logger);
 
@@ -484,7 +488,7 @@ void MAMMicrophysics::set_elevated_emissions_reader()
     std::shared_ptr<DataInterpolation> di_vertical = std::make_shared<DataInterpolation>(grid_,vertical_fields);
     di_vertical->set_input_files_dimname(ShortFieldTagsNames::LEV,"altitude");
     di_vertical->set_input_files_dimname(ShortFieldTagsNames::ILEV,"altitude_int");
-    di_vertical->setup_time_database ({file_name},util::TimeLine::YearlyPeriodic, ref_ts_vertical);
+    di_vertical->setup_time_database ({file_name},util::TimeLine::YearlyPeriodic, DataInterpolation::Linear, ref_ts_vertical);
     di_vertical->create_horiz_remappers (extfrc_map_file=="none" ? "" : extfrc_map_file);
     di_vertical->set_logger(m_atm_logger);
     DataInterpolation::VertRemapData remap_data_vertical;
@@ -598,6 +602,8 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
       {"mam4_microphysics_tendency_renaming_cloud_borne",
       "MAM4xx microphysics tendencies due to gas aerosol exchange (renaming cloud borne) [mixed units: mol/mol/s or #/mol/s]"},
 
+      {"mam4_gas_dry_deposition_flux", 
+      "MAM4xx microphysics deposition flux [units: 1/cm^2/s]"},
     };
     // Add docstring to the fields with mixed units
     add_io_docstring_to_fields_with_mixed_units(mixed_units_fields);
@@ -735,7 +741,7 @@ void MAMMicrophysics::run_impl(const double dt) {
       get_field_in("snow_depth_land").get_view<const Real *>();
 
   // - dvmr/dt: Tendencies for mixing ratios  [kg/kg/s]
-  view_2d dqdt_so4_aqueous_chemistry, dqdt_h2so4_uptake;
+  view_2d dqdt_so4_aqueous_chemistry, dqdt_h2so4_uptake, gas_dry_deposition_flux;
   view_3d gas_phase_chemistry_dvmrdt, aqueous_chemistry_dvmrdt;
   view_3d aqso4_incloud_mmr_tendency, aqh2so4_incloud_mmr_tendency;
   view_3d gas_aero_exchange_condensation, gas_aero_exchange_renaming,
@@ -754,6 +760,7 @@ void MAMMicrophysics::run_impl(const double dt) {
     gas_aero_exchange_nucleation = get_field_out("mam4_microphysics_tendency_nucleation").get_view<Real***>();
     gas_aero_exchange_coagulation = get_field_out("mam4_microphysics_tendency_coagulation").get_view<Real***>();
     gas_aero_exchange_renaming_cloud_borne = get_field_out("mam4_microphysics_tendency_renaming_cloud_borne").get_view<Real***>();
+    gas_dry_deposition_flux = get_field_out("mam4_gas_dry_deposition_flux").get_view<Real**>();
   }
 
   // climatology data for linear stratospheric chemistry
@@ -982,7 +989,7 @@ void MAMMicrophysics::run_impl(const double dt) {
         const auto nevapr_icol       = ekat::subview(nevapr, icol);
         const auto prain_icol        = ekat::subview(prain, icol);
         const auto work_set_het_icol = ekat::subview(work_set_het, icol);
-
+        view_1d diag_arrays_gas_dry_deposition_flux;
         mam4::MicrophysDiagnosticArrays diag_arrays;
         if (extra_mam4_aero_microphys_diags) {
           diag_arrays.dqdt_so4_aqueous_chemistry = ekat::subview(dqdt_so4_aqueous_chemistry, icol);
@@ -998,6 +1005,7 @@ void MAMMicrophysics::run_impl(const double dt) {
           diag_arrays.gas_aero_exchange_nucleation = ekat::subview(gas_aero_exchange_nucleation, icol);
           diag_arrays.gas_aero_exchange_coagulation = ekat::subview(gas_aero_exchange_coagulation, icol);
           diag_arrays.gas_aero_exchange_renaming_cloud_borne = ekat::subview(gas_aero_exchange_renaming_cloud_borne, icol);
+          diag_arrays_gas_dry_deposition_flux = ekat::subview(gas_dry_deposition_flux, icol);
         }
         // Wind speed at the surface
         const Real wind_speed =
@@ -1041,8 +1049,8 @@ void MAMMicrophysics::run_impl(const double dt) {
           }
         }
         // These output values need to be put somewhere:
-        Real dflx_col[num_gas_aerosol_constituents] = {};  // deposition velocity [1/cm/s]
-        Real dvel_col[num_gas_aerosol_constituents] = {};  // deposition flux [1/cm^2/s]
+        Real dflx_col[num_gas_aerosol_constituents] = {};  // deposition flux [1/cm^2/s]
+        Real dvel_col[num_gas_aerosol_constituents] = {};  // deposition velocity [1/cm/s]
         // Output: values are dvel, dflx
         // Input/Output: progs::stateq, progs::qqcw
         team.team_barrier();
@@ -1069,6 +1077,11 @@ void MAMMicrophysics::run_impl(const double dt) {
         Kokkos::parallel_for(Kokkos::TeamVectorRange(team, offset_aerosol, pcnst), [&](int ispc) {
           constituent_fluxes(icol, ispc) -= dflx_col[ispc - offset_aerosol];
         });
+	if (diag_arrays_gas_dry_deposition_flux.size()) {
+          Kokkos::parallel_for(Kokkos::TeamVectorRange(team, pcnst), [&](int ispc) {
+            diag_arrays_gas_dry_deposition_flux[ispc] = dflx_col[ispc];
+          });
+	}
       });  // parallel_for for the column loop
   Kokkos::fence();
 

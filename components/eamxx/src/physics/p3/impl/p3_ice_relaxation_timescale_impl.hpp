@@ -17,9 +17,9 @@ void Functions<S,D>
   const Smask& context)
 {
   constexpr Scalar qsmall = C::QSMALL;
-  constexpr Scalar tmelt = C::Tmelt;
-  constexpr Scalar zero = C::ZERO;
-  constexpr Scalar pi = C::Pi;
+  constexpr Scalar tmelt  = C::Tmelt.value;
+  constexpr Scalar zero   = C::ZERO;
+  constexpr Scalar pi     = C::Pi;
 
   const auto t_is_negative = temp < tmelt;
   const auto qi_incld_ge_small = qi_incld >= qsmall;

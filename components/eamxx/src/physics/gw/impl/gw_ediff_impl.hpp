@@ -101,7 +101,7 @@ void Functions<S,D>::gw_ediff(
   // Calculate dt * (gravit*rho)^2/dp at interior interfaces.
   Kokkos::parallel_for(
     Kokkos::TeamVectorRange(team, ktop+2, kbot+2), [&] (const int k) {
-      tmpi2(k) = dt * bfb_square(C::gravit * rho(k)) / (pmid(k) - pmid(k-1));
+      tmpi2(k) = dt * bfb_square(C::gravit.value * rho(k)) / (pmid(k) - pmid(k-1));
   });
 
   team.team_barrier();

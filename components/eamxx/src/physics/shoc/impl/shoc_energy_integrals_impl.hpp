@@ -27,7 +27,7 @@ void Functions<S,D>
 {
   using RU = ekat::ReductionUtils<typename KT::ExeSpace>;
 
-  const auto ggr = C::gravit;
+  const auto ggr = C::gravit.value;
 
   // The team_barriers protect what we think is unexpected behavior in
   // Kokkos::parallel_reduce. We expect not to need these based on the semantics

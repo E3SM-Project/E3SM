@@ -34,7 +34,7 @@ struct UnitWrap::UnitTest<D>::TestShocPdfComputeTemp {
     // Input liquid water potential temperature [K]
     static constexpr Real thl1 = 305;
     // Input basepressure [Pa]
-    static constexpr Real basepres = C::P0;
+    static constexpr Real basepres = C::P0.value;
     // Input value of pval [Pa]
     Real pval = 110000;
 
@@ -54,7 +54,7 @@ struct UnitWrap::UnitTest<D>::TestShocPdfComputeTemp {
     SDS.thl1 = thl1;
     SDS.pval = pval;
 
-    Int num_tests = SDS.pval/abs(presincr);
+    Int num_tests = SDS.pval/std::abs(presincr);
 
     REQUIRE(num_tests > 1);
     REQUIRE(presincr < 0);

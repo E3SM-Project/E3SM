@@ -2,7 +2,6 @@
 #define SCREAM_COARSENING_REMAPPER_HPP
 
 #include "share/remap/horiz_interp_remapper_base.hpp"
-#include "eamxx_config.h"
 
 #include <mpi.h>
 
@@ -83,6 +82,8 @@ public:
   using HorizInterpRemapperBase::local_mat_vec;
 
 protected:
+
+  void setup_latlon_coarse_grid(const std::string& map_file);
 
   static constexpr bool MpiOnDev = SCREAM_MPI_ON_DEVICE;
 

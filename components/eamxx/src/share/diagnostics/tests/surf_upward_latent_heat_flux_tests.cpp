@@ -61,7 +61,7 @@ void run(std::mt19937_64& engine, const ekat::Comm& comm, LoggerType& logger)
 
   // Set the required fields for the diagnostic.
   std::map<std::string,Field> input_fields;
-  for (const auto& req: diag_latent_heat->get_required_field_requests()) {
+  for (const auto& req: diag_latent_heat->get_field_requests()) {
     Field f(req.fid);
     f.get_header().get_alloc_properties().request_allocation();
     f.allocate_view();
@@ -85,7 +85,7 @@ void run(std::mt19937_64& engine, const ekat::Comm& comm, LoggerType& logger)
   Field surf_lhf = diag_latent_heat_out.clone();
   surf_lhf.deep_copy(0);
   const auto& surf_lhf_v = surf_lhf.get_view<Real*>();
-  constexpr auto latent_heat_evap = PC::LatVap; // [J/kg]
+  constexpr Real latent_heat_evap = PC::LatVap.value; // [J/kg]
   Kokkos::parallel_for("surf_upward_latent_heat_flux_test",
     typename KT::RangePolicy(0, ncols),
     KOKKOS_LAMBDA (const int& icol) {

@@ -198,7 +198,7 @@ void run_bfb_ice_sed()
 
 void run_bfb_homogeneous_freezing()
 {
-  constexpr Scalar latice = C::LatIce;
+  constexpr Scalar latice = C::LatIce.value;
 
   auto engine = Base::get_engine();
 
@@ -215,7 +215,7 @@ void run_bfb_homogeneous_freezing()
   // Set up random input data
   for (auto& d : hfds_baseline) {
     const auto qsmall_r = std::make_pair(C::QSMALL/2, C::QSMALL*2);
-    d.randomize(engine, { {d.T_atm, {C::T_homogfrz - 10, C::T_homogfrz + 10}}, {d.qc, qsmall_r}, {d.qr, qsmall_r} });
+    d.randomize(engine, { {d.T_atm, {C::T_homogfrz.value - 10, C::T_homogfrz.value + 10}}, {d.qc, qsmall_r}, {d.qr, qsmall_r} });
 
     // C++ impl uses constants for latent_heat values. Manually set here
     // so F90 can match

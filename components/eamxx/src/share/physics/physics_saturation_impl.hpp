@@ -50,7 +50,7 @@ Functions<S,D>::MurphyKoop_svp(const Spack& t_atm, const bool ice, const Smask& 
   //Soc., 131(608), 1539–1565,
 
   Spack result;
-  static constexpr  auto tmelt = C::Tmelt;
+  static constexpr  auto tmelt = C::Tmelt.value;
   const Smask ice_mask = (t_atm < tmelt) && ice;
   const Smask liq_mask = !ice_mask;
 
@@ -93,7 +93,7 @@ Functions<S,D>::polysvp1(const Spack& t, const bool ice, const Smask& range_mask
 
   const Spack dt = max(t - sp(273.15), sp(-80));
   Spack result;
-  static constexpr  auto tmelt = C::Tmelt;
+  static constexpr  auto tmelt = C::Tmelt.value;
   const Smask ice_mask = (t < tmelt) && ice;
   const Smask liq_mask = !ice_mask;
 
@@ -152,7 +152,7 @@ Functions<S,D>::qv_sat_dry(const Spack& t_atm, const Spack& p_atm_dry, const boo
       EKAT_KERNEL_ERROR_MSG("Error! Invalid func_idx supplied to qv_sat_dry.");
     }
 
-  static constexpr  auto ep_2 = C::ep_2;
+  static constexpr auto ep_2 = C::ep_2.value;
   return ep_2 * e_pres / max(p_atm_dry, sp(1.e-3));
 }
 

@@ -391,14 +391,14 @@ contains
        call add_landunit(li=li, ti=ti, ltype=ltype, wttopounit=wtlunit2topounit)
        
        ! Assume one column on the landunit
-       call add_column(ci=ci, li=li, ctype=1, wtlunit=1.0_r8)
+       call add_column(ci=ci, li=li, ctype=1, wtlunit=1.0_r8, is_soil=.true.)
        do m = natpft_lb,natpft_ub
           if(use_fates .and. .not.use_fates_sp)then
              p_wt = 1.0_r8/real(natpft_size,r8)
           else
              p_wt = wt_nat_patch(gi,topo_ind,m)
           end if
-          call add_patch(pi=pi, ci=ci, ptype=m, wtcol=p_wt)
+          call add_patch(pi=pi, ci=ci, ptype=m, wtcol=p_wt, is_on_soil_col=.true.)
        end do
 
        ! add polygonal landunits and columns if feature turned on
@@ -409,7 +409,7 @@ contains
            ! get new weight for wttopounit:
            wtpoly2lndunit = wt_lunit(gi, topo_ind, z) 
            call add_polygon_landunit(li=li, ti=ti, ltype=ltype, wttopounit=wtpoly2lndunit, polytype = z - max_non_poly_lunit)
-           call add_column(ci=ci, li=li, ctype=1, wtlunit=1.0_r8)
+           call add_column(ci=ci, li=li, ctype=1, wtlunit=1.0_r8, is_soil=.true.)
            ! add patch:
            do m = natpft_lb,natpft_ub
              if(use_fates .and. .not.use_fates_sp) then
@@ -417,7 +417,7 @@ contains
              else
                p_wt = wt_nat_patch(gi,topo_ind,m)
              end if
-             call add_patch(pi=pi, ci=ci, ptype=m, wtcol=p_wt)
+             call add_patch(pi=pi, ci=ci, ptype=m, wtcol=p_wt, is_on_soil_col=.true.)
            end do
          end do
        end if 
@@ -459,6 +459,7 @@ contains
     integer  :: npfts                            ! number of pfts in landunit
     real(r8) :: wtlunit2topounit                 ! landunit weight in topounit
     real(r8) :: wtcol2lunit                      ! col weight in landunit
+    logical  :: is_lake_col
     !------------------------------------------------------------------------
 
     ! Set decomposition properties
@@ -467,9 +468,11 @@ contains
     ! gridcell as the new landunit weights on each topounit.
     ! Later, this information will come from new surface datasat.
 
+    is_lake_col = .false.
     if (ltype == istwet) then
        call subgrid_get_topounitinfo(ti, gi,tgi=topo_ind, nwetland=npfts)
     else if (ltype == istdlak) then
+       is_lake_col = .true.
        call subgrid_get_topounitinfo(ti, gi,tgi=topo_ind, nlake=npfts)
     else if (ltype == istice) then 
        call subgrid_get_topounitinfo(ti, gi,tgi=topo_ind, nglacier=npfts)
@@ -522,7 +525,7 @@ contains
           ! and that each column has its own pft
        
           call add_landunit(li=li, ti=ti, ltype=ltype, wttopounit=wtlunit2topounit)
-          call add_column(ci=ci, li=li, ctype=ltype, wtlunit=1.0_r8)
+          call add_column(ci=ci, li=li, ctype=ltype, wtlunit=1.0_r8, is_lake=is_lake_col)
           call add_patch(pi=pi, ci=ci, ptype=noveg, wtcol=1.0_r8)
 
        end if   ! ltype = istice_mec
@@ -591,8 +594,8 @@ contains
 
        if (create_crop_landunit) then
           do m = cft_lb, cft_ub
-             call add_column(ci=ci, li=li, ctype=((istcrop*100) + m), wtlunit=wt_cft(gi,topo_ind,m))
-             call add_patch(pi=pi, ci=ci, ptype=m, wtcol=1.0_r8)
+             call add_column(ci=ci, li=li, ctype=((istcrop*100) + m), wtlunit=wt_cft(gi,topo_ind,m), is_crop=.true.)
+             call add_patch(pi=pi, ci=ci, ptype=m, wtcol=1.0_r8, is_on_crop_col=.true.)
           end do
        end if
 
@@ -1165,10 +1168,11 @@ contains
     grid_count(:) = 0.d0
     last_lun_type   = -1
     do c = bounds_proc%begc_all, bounds_proc%endc_all
-       g             = col_pp%gridcell(c)
-       if (last_lun_type /= lun_pp%itype(col_pp%landunit(c))) then
+       g = col_pp%gridcell(c)
+       l = col_pp%landunit(c)
+       if (last_lun_type /= lun_pp%itype(l)) then
           grid_count(:) = 0.d0
-          last_lun_type = lun_pp%itype(col_pp%landunit(c))
+          last_lun_type = lun_pp%itype(l)
        endif
        grid_count(g) = grid_count(g) + 1.d0
        col_rank(c)   = grid_count(g)

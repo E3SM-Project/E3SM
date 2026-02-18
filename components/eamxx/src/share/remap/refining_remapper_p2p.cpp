@@ -3,6 +3,7 @@
 #include "share/grid/point_grid.hpp"
 #include "share/grid/grid_import_export.hpp"
 #include "share/util/eamxx_utils.hpp"
+#include "share/util/eamxx_timing.hpp"
 
 #include <ekat_team_policy_utils.hpp>
 
@@ -84,6 +85,9 @@ void RefiningRemapperP2P::remap_fwd_impl ()
 
 void RefiningRemapperP2P::setup_mpi_data_structures ()
 {
+  if (m_timers_enabled)
+    start_timer(name()+" setup MPI");
+
   using namespace ShortFieldTagsNames;
 
   const int nranks = m_comm.size();
@@ -165,10 +169,15 @@ void RefiningRemapperP2P::setup_mpi_data_structures ()
                      0, mpi_comm, &req);
     }
   }
+  if (m_timers_enabled)
+    stop_timer(name()+" setup MPI");
 }
 
 void RefiningRemapperP2P::pack_and_send ()
 {
+  if (m_timers_enabled)
+    start_timer(name()+" pack");
+
   using RangePolicy = typename KT::RangePolicy;
   using TeamMember  = typename KT::MemberType;
   using TPF         = ekat::TeamPolicyFactory<typename KT::ExeSpace>;
@@ -300,6 +309,9 @@ void RefiningRemapperP2P::pack_and_send ()
     Kokkos::deep_copy (m_mpi_send_buffer,m_send_buffer);
   }
 
+  if (m_timers_enabled)
+    stop_timer(name()+" pack");
+
   if (not m_send_req.empty()) {
     check_mpi_call(MPI_Startall(m_send_req.size(),m_send_req.data()),
                    "[RefiningRemapperP2P] start persistent send requests.\n");
@@ -312,6 +324,10 @@ void RefiningRemapperP2P::recv_and_unpack ()
     check_mpi_call(MPI_Waitall(m_recv_req.size(),m_recv_req.data(), MPI_STATUSES_IGNORE),
                    "[RefiningRemapperP2P] waiting on persistent recv requests.\n");
   }
+
+  if (m_timers_enabled)
+    start_timer(name()+" unpack");
+
   // If MPI does not use dev pointers, we need to deep copy from host to dev
   if (not MpiOnDev) {
     Kokkos::deep_copy (m_recv_buffer,m_mpi_recv_buffer);
@@ -439,6 +455,8 @@ void RefiningRemapperP2P::recv_and_unpack ()
             "  - field rank: " + std::to_string(fl.rank()) + "\n");
     }
   }
+  if (m_timers_enabled)
+    stop_timer(name()+" unpack");
 }
 
 void RefiningRemapperP2P::clean_up ()

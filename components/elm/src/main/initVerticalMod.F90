@@ -358,7 +358,7 @@ contains
        l = col_pp%landunit(c)
 
        if (lun_pp%urbpoi(l)) then
-          if (col_pp%itype(c)==icol_sunwall .or. col_pp%itype(c)==icol_shadewall) then
+          if (col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) == icol_shadewall) then
              col_pp%z(c,1:nlevurb)  = zurb_wall(l,1:nlevurb)
              col_pp%zi(c,0:nlevurb) = ziurb_wall(l,0:nlevurb)
              col_pp%dz(c,1:nlevurb) = dzurb_wall(l,1:nlevurb)
@@ -367,7 +367,7 @@ contains
                 col_pp%zi(c,nlevurb+1:nlevgrnd) = spval
                 col_pp%dz(c,nlevurb+1:nlevgrnd) = spval
              end if
-          else if (col_pp%itype(c)==icol_roof) then
+          else if (col_pp%itype(c) == icol_roof) then
              col_pp%z(c,1:nlevurb)  = zurb_roof(l,1:nlevurb)
              col_pp%zi(c,0:nlevurb) = ziurb_roof(l,0:nlevurb)
              col_pp%dz(c,1:nlevurb) = dzurb_roof(l,1:nlevurb)
@@ -474,7 +474,7 @@ contains
     do c = bounds%begc,bounds%endc
        l = col_pp%landunit(c)
 
-       if (lun_pp%itype(l) == istdlak) then
+       if (col_pp%is_lake(c)) then
 
           if (col_pp%lakedepth(c) == spval) then
              col_pp%lakedepth(c)         = zlak(nlevlak) + 0.5_r8*dzlak(nlevlak)
@@ -705,7 +705,7 @@ contains
                
                if (lun_pp%urbpoi(l) .and. col_pp%itype(c) /= icol_road_imperv .and. col_pp%itype(c) /= icol_road_perv) then
                	  col_pp%nlevbed(c) = nlevurb
-               else if (lun_pp%itype(l) == istdlak) then
+               else if (col_pp%is_lake(c)) then
                	  col_pp%nlevbed(c) = nlevlak
                else if (lun_pp%itype(l) == istice_mec) then
                	  col_pp%nlevbed(c) = 5
@@ -745,7 +745,7 @@ contains
       do c = begc,endc
          l = col_pp%landunit(c)
 
-         if (lun_pp%itype(l)==istice_mec) then
+         if (lun_pp%itype(l) == istice_mec) then
             ! ice_mec columns already account for subgrid topographic variability through
             ! their use of multiple elevation classes; thus, to avoid double-accounting for
             ! topographic variability in these columns, we ignore topo_std and use a value

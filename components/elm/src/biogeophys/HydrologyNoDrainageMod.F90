@@ -451,7 +451,7 @@ contains
             t_soi_10cm(c) = t_soi_10cm(c)/0.1_r8
             tsoi17(c) =  tsoi17(c)/0.17_r8         ! F. Li and S. Levis
          end if
-         if (lun_pp%itype(l)==istsoil .or. lun_pp%itype(l)==istcrop) then
+         if (col_pp%is_soil(c) .or. col_pp%is_crop(c)) then
             t_grnd_r(c) = t_soisno(c,snl(c)+1)
          end if
 

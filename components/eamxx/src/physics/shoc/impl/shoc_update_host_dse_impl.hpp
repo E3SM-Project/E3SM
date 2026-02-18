@@ -22,9 +22,9 @@ void Functions<S,D>
   const Int nlev_pack = ekat::npack<Spack>(nlev);
 
   // Constants used
-  const auto lcond = C::LatVap;
-  const auto cp = C::CP;
-  const auto ggr = C::gravit;
+  const auto lcond = C::LatVap.value;
+  const auto cp    = C::CP.value;
+  const auto ggr   = C::gravit.value;
 
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {
       Spack temp = (thlm(k)/inv_exner(k))+(lcond/cp)*shoc_ql(k);

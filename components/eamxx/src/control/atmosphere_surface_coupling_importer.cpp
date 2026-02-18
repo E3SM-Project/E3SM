@@ -17,11 +17,11 @@ SurfaceCouplingImporter::SurfaceCouplingImporter (const ekat::Comm& comm, const 
 
 }
 // =========================================================================================
-void SurfaceCouplingImporter::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
+void SurfaceCouplingImporter::create_requests()
 {
   using namespace ekat::units;
 
-  m_grid = grids_manager->get_grid("physics");
+  m_grid = m_grids_manager->get_grid("physics");
   const auto& grid_name = m_grid->name();
 
   m_num_cols = m_grid->get_num_local_dofs();      // Number of columns on this rank
@@ -231,8 +231,8 @@ void SurfaceCouplingImporter::overwrite_iop_imports (const bool called_during_in
   // TODO: this is using the TS from the beg of the step. Should it use end_of_step_ts() instead?
   m_iop_data_manager->read_iop_file_data(start_of_step_ts());
 
-  static constexpr Real latvap = C::LatVap;
-  static constexpr Real stebol = C::stebol;
+  static constexpr Real latvap = C::LatVap.value;
+  static constexpr Real stebol = C::stebol.value;
 
   const auto& col_info_h = m_column_info_h;
   const auto& col_info_d = m_column_info_d;

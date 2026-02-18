@@ -18,11 +18,11 @@ SurfaceCouplingExporter::SurfaceCouplingExporter (const ekat::Comm& comm, const 
 
 }
 // =========================================================================================
-void SurfaceCouplingExporter::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
+void SurfaceCouplingExporter::create_requests()
 {
   using namespace ekat::units;
 
-  m_grid = grids_manager->get_grid("physics");
+  m_grid = m_grids_manager->get_grid("physics");
   const auto& grid_name = m_grid->name();
   m_num_cols = m_grid->get_num_local_dofs();       // Number of columns on this rank
   m_num_levs = m_grid->get_num_vertical_levels();  // Number of levels per column
@@ -498,7 +498,7 @@ void SurfaceCouplingExporter::compute_eamxx_exports(const double dt, const bool 
       // provide theta based on an exner function that evaluates to 1 at the bottom interface.
       // To accomplish this we calculate a theta that replaces the reference pressure (P0) for exner
       // with the pressure of the lowest interface level => s_p_int_i(num_levs)
-      Sa_ptem(i) = s_T_mid_i(num_levs-1) / pow( s_p_mid_i(num_levs-1)/s_p_int_i(num_levs), PC::RD*PC::INV_CP);
+      Sa_ptem(i) = s_T_mid_i(num_levs-1) / pow( s_p_mid_i(num_levs-1)/s_p_int_i(num_levs), PC::RD.value*PC::INV_CP.value);
     }
 
     if (export_source(idx_Sa_pbot)==FROM_MODEL) {
@@ -529,8 +529,8 @@ void SurfaceCouplingExporter::compute_eamxx_exports(const double dt, const bool 
       // Precipitation has units of kg/m2, and Faxa_rainl/snowl
       // need units mm/s. Here, 1000 converts m->mm, dt has units s, and
       // rho_h2o has units kg/m3.
-      if (export_source(idx_Faxa_rainl)==FROM_MODEL) { Faxa_rainl(i) = precip_liq_surf_mass(i)/dt*(1000.0/PC::RHO_H2O); }
-      if (export_source(idx_Faxa_snowl)==FROM_MODEL) { Faxa_snowl(i) = precip_ice_surf_mass(i)/dt*(1000.0/PC::RHO_H2O); }
+      if (export_source(idx_Faxa_rainl)==FROM_MODEL) { Faxa_rainl(i) = precip_liq_surf_mass(i)/dt*(1000.0/PC::RHO_H2O.value); }
+      if (export_source(idx_Faxa_snowl)==FROM_MODEL) { Faxa_snowl(i) = precip_ice_surf_mass(i)/dt*(1000.0/PC::RHO_H2O.value); }
     }
   });
   // Variables that are already surface vars in the ATM can just be copied directly.

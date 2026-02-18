@@ -81,15 +81,15 @@ struct UnitWrap::UnitTest<D>::TestShocThlParameters {
     REQUIRE(SDS.w1_1 > 0);
     REQUIRE(SDS.w1_2 < 0);
     if (SDS.skew_w > 0){
-      REQUIRE(abs(SDS.w1_1) > abs(SDS.w1_2));
+      REQUIRE(std::abs(SDS.w1_1) > std::abs(SDS.w1_2));
       REQUIRE(SDS.a < 0.5);
     }
     else if (SDS.skew_w < 0){
-      REQUIRE(abs(SDS.w1_1) < abs(SDS.w1_2));
+      REQUIRE(std::abs(SDS.w1_1) < std::abs(SDS.w1_2));
       REQUIRE(SDS.a > 0.5);
     }
     else if (SDS.skew_w == 0){
-      REQUIRE(abs(SDS.w1_1) == abs(SDS.w1_2));
+      REQUIRE(std::abs(SDS.w1_1) == std::abs(SDS.w1_2));
       REQUIRE(SDS.a == 0);
     }
 
@@ -144,7 +144,7 @@ struct UnitWrap::UnitTest<D>::TestShocThlParameters {
     shoc_assumed_pdf_thl_parameters(SDS);
 
     // Save absolute difference between the two gaussian temps
-    Real thlgaus_diff_result1 = abs(SDS.thl1_2 - SDS.thl1_1);
+    Real thlgaus_diff_result1 = std::abs(SDS.thl1_2 - SDS.thl1_1);
 
     // Now laod up value for the large wthlsec test
     SDS.wthlsec = wthlsec_large;
@@ -153,7 +153,7 @@ struct UnitWrap::UnitTest<D>::TestShocThlParameters {
     shoc_assumed_pdf_thl_parameters(SDS);
 
     // Save absolute difference between the two gaussian temps
-    Real thlgaus_diff_result2 = abs(SDS.thl1_2 - SDS.thl1_1);
+    Real thlgaus_diff_result2 = std::abs(SDS.thl1_2 - SDS.thl1_1);
 
     // Now check the result
     REQUIRE(thlgaus_diff_result2 > thlgaus_diff_result1);

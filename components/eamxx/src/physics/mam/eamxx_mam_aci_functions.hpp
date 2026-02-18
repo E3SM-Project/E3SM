@@ -22,9 +22,9 @@ void compute_w0_and_rho(haero::ThreadTeamPolicy team_policy,
         const int icol = team.league_rank();
         // Get physical constants
         using C                      = physics::Constants<Real>;
-        static constexpr auto gravit = C::gravit;  // Gravity [m/s2]
+        static constexpr auto gravit = C::gravit.value;  // Gravity [m/s2]
         // Gas constant for dry air [J/(kg*K) or J/Kg/K]
-        static constexpr auto rair = C::Rair;
+        static constexpr auto rair = C::Rair.value;
         Kokkos::parallel_for(Kokkos::TeamVectorRange(team, 0u, top_lev),
                              [&](int kk) {
                                w0(icol, kk)  = 0;

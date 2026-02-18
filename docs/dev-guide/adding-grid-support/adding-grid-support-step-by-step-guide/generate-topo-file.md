@@ -48,15 +48,21 @@ eval $(${e3sm_root}/cime/CIME/Tools/get_case_env)
 mach_file=${e3sm_root}/components/homme/cmake/machineFiles/pm-cpu.cmake
 # mach_file=${e3sm_root}/components/homme/cmake/machineFiles/chrysalis.cmake
 
-cmake -C ${mach_file} \
--DBUILD_HOMME_THETA_KOKKOS=FALSE \
--DBUILD_HOMME_PREQX_KOKKOS=FALSE \
--DHOMME_ENABLE_COMPOSE=FALSE \
--DHOMME_BUILD_EXECS=FALSE \
--DBUILD_HOMME_TOOL=TRUE \
--DBUILD_HOMME_WITHOUT_PIOLIBRARY=FALSE \
--DPREQX_PLEV=26 \
+cmake -C ${mach_file}  \
+-DBUILD_HOMME_WITHOUT_PIOLIBRARY=OFF \
+-DPREQX_PLEV=26  \
 ${e3sm_root}/components/homme
+
+# NOTE - if you run into problems building with the above CMake command you can try adding additional options as shown below
+# cmake -C ${mach_file} \
+# -DBUILD_HOMME_THETA_KOKKOS=FALSE \
+# -DBUILD_HOMME_PREQX_KOKKOS=FALSE \
+# -DHOMME_ENABLE_COMPOSE=FALSE \
+# -DHOMME_BUILD_EXECS=FALSE \
+# -DBUILD_HOMME_TOOL=TRUE \
+# -DBUILD_HOMME_WITHOUT_PIOLIBRARY=FALSE \
+# -DPREQX_PLEV=26 \
+# ${e3sm_root}/components/homme
 
 make -j4 homme_tool
 ```

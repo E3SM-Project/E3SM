@@ -63,26 +63,33 @@ struct PIOFileEntity : public PIOEntity {
 
 // A dimension
 struct PIODim : public PIOFileEntity {
-  int length       = -1;
-  bool unlimited   = false;
+  int length        = -1;
+  bool unlimited    = false;
 
-  // In case we decompose the dimension, this will store
-  // the owned offsets on this rank
-  // NOTE: use a pointer, so we can detect if a decomposition already
-  //       existed or not when we set one.
-  std::shared_ptr<std::vector<offset_t>> offsets;
+  // Track if/how this dim is decomposed
+  //  - if 0, this dim is NOT decomposed.
+  //  - if 1, this dim is decomposed by itself
+  //  - if N, this dim is part of a joint decomp of N dimensions
+  int decomp_rank = 0;
 };
 
-// A decomposition
+// A decomposition of a set of 1+ dimensions. The offsets establish
+// which of the (global) indices of the dims tensor product
+// are owned on the current rank.
+struct DimDecomp {
+  std::vector<offset_t>                offsets;  // Owned offsets
+  std::vector<std::shared_ptr<PIODim>> dims;     // Dimensions that participate in the decomp
+};
+
 // NOTE: the offsets of a PIODecomp are not the same as the offsets of
-//       stored in its dim. The latter are the offsets *along that dim*.
-//       A PIODecomp is associated with a Nd layout, which includes decomp_dim
-//       among its dimensions. PIODecomp::offsets are the offsets of the full
-//       array layout owned by this rank. Hence, there can be many PIODecomp
+//       stored in DimDecomp. The latter are the offsets *along those dims*.
+//       A PIOVarDecomp is associated with a Nd layout, which may include additional
+//       dimensions on top of the decomposed one. Hence, there can be many PIOVarDecomp
 //       all storing the same dim
 struct PIODecomp : public PIOEntity {
-  std::vector<offset_t>           offsets;  // Owned offsets
-  std::shared_ptr<const PIODim>   dim; 
+  std::vector<offset_t>  offsets;  // Owned var offsets
+
+  std::shared_ptr<DimDecomp> dim_decomp;
 };
 
 // A variable
@@ -118,8 +125,9 @@ struct PIOVar : public PIOFileEntity {
 
 // A file, which is basically a container for dims and vars
 struct PIOFile : public PIOEntity {
-  std::map<std::string,std::shared_ptr<PIODim>>   dims;
-  std::map<std::string,std::shared_ptr<PIOVar>>   vars;
+  std::map<std::string,std::shared_ptr<PIODim>>    dims;
+  std::map<std::string,std::shared_ptr<PIOVar>>    vars;
+  std::map<std::string,std::shared_ptr<DimDecomp>> dim_decomps;
 
   std::shared_ptr<PIODim> time_dim;
   FileMode mode;

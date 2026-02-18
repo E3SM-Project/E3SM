@@ -25,8 +25,8 @@ void Functions<S,D>::compute_shoc_temperature(
   const uview_1d<Spack>&       tabs)
 {
 
-  const Scalar cp = C::CP;
-  const Scalar lcond = C::LatVap;
+  const Scalar cp    = C::CP.value;
+  const Scalar lcond = C::LatVap.value;
 
   const Int nlev_pack = ekat::npack<Spack>(nlev);
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {

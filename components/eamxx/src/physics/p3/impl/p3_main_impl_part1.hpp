@@ -69,16 +69,16 @@ void Functions<S,D>
   using physics = scream::physics::Functions<Scalar, Device>;
 
   // load constants into local vars
-  constexpr Scalar g            = C::gravit;
-  constexpr Scalar rho_1000mb   = C::RHO_1000MB;
+  constexpr Scalar g            = C::gravit.value;
+  constexpr Scalar rho_1000mb   = C::RHO_1000MB.value;
   constexpr Scalar rho_600mb    = C::RHO_600MB;
-  constexpr Scalar rho_h2o      = C::RHO_H2O;
+  constexpr Scalar rho_h2o      = C::RHO_H2O.value;
   constexpr Scalar nccnst       = C::NCCNST;
-  constexpr Scalar T_zerodegc   = C::T_zerodegc;
+  constexpr Scalar T_zerodegc   = C::T_zerodegc.value;
   constexpr Scalar qsmall       = C::QSMALL;
-  constexpr Scalar inv_cp       = C::INV_CP;
-  constexpr Scalar latvap       = C::LatVap;
-  constexpr Scalar latice       = C::LatIce;
+  constexpr Scalar inv_cp       = C::INV_CP.value;
+  constexpr Scalar latvap       = C::LatVap.value;
+  constexpr Scalar latice       = C::LatIce.value;
 
   const Scalar spa_ccn_to_nc_factor = runtime_options.spa_ccn_to_nc_factor;
   const Scalar spa_ccn_to_nc_exponent = runtime_options.spa_ccn_to_nc_exponent;

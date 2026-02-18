@@ -1,4 +1,4 @@
-#ifndef EAMXX_HISTOTGRAM_HPP
+#ifndef EAMXX_HISTOGRAM_HPP
 #define EAMXX_HISTOGRAM_HPP
 
 #include "share/atm_process/atmosphere_diagnostic.hpp"
@@ -20,7 +20,7 @@ public:
   std::string name() const { return m_diag_name; }
 
   // Set the grid
-  void set_grids(const std::shared_ptr<const GridsManager> grids_manager);
+  void create_requests ();
 
 protected:
 #ifdef KOKKOS_ENABLE_CUDA

@@ -189,7 +189,7 @@ void Functions<S,D>
 
     Kokkos::single(
       Kokkos::PerTeam(team), [&] () {
-        precip_ice_surf += prt_accum * C::INV_RHO_H2O * inv_dt;
+        precip_ice_surf += prt_accum * C::INV_RHO_H2O.value * inv_dt;
     });
   }
 
@@ -224,10 +224,10 @@ void Functions<S,D>
 {
   constexpr Scalar qsmall          = C::QSMALL;
   constexpr Scalar nsmall          = C::NSMALL;
-  constexpr Scalar T_homogfrz       = C::T_homogfrz;
+  constexpr Scalar T_homogfrz      = C::T_homogfrz.value;
   constexpr Scalar inv_rho_rimeMax = C::INV_RHO_RIMEMAX;
-  constexpr Scalar inv_cp          = C::INV_CP;
-  constexpr Scalar latice          = C::LatIce;
+  constexpr Scalar inv_cp          = C::INV_CP.value;
+  constexpr Scalar latice          = C::LatIce.value;
 
   const Int kmin_scalar = ( kdir == 1 ? kbot : ktop);
   const Int kmax_scalar = ( kdir == 1 ? ktop : kbot);

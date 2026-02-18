@@ -2,6 +2,7 @@
 
 #include "share/grid/point_grid.hpp"
 #include "share/grid/grid_import_export.hpp"
+#include "share/util/eamxx_timing.hpp"
 
 #include <ekat_team_policy_utils.hpp>
 #include <ekat_pack_utils.hpp>
@@ -19,6 +20,8 @@ HorizInterpRemapperBase (const grid_ptr_type& fine_grid,
  , m_type (type)
  , m_comm (fine_grid->get_comm())
 {
+  set_name("HorizRemapper " + map_file);
+
   // Sanity checks
   EKAT_REQUIRE_MSG (fine_grid->type()==GridType::Point,
       "Error! Horizontal interpolatory remap only works on PointGrid grids.\n"
@@ -152,6 +155,9 @@ template<int PackSize>
 void HorizInterpRemapperBase::
 local_mat_vec (const Field& x, const Field& y) const
 {
+  if (m_timers_enabled)
+    start_timer(name()+" mat-vec");
+
   using RangePolicy = typename KT::RangePolicy;
   using MemberType  = typename KT::MemberType;
   using TPF         = ekat::TeamPolicyFactory<DefaultDevice::execution_space>;
@@ -269,6 +275,8 @@ local_mat_vec (const Field& x, const Field& y) const
       EKAT_ERROR_MSG("[HorizInterpRemapperBase::local_mat_vec] Error! Fields of rank 4 or greater are not supported.\n");
     }
   }
+  if (m_timers_enabled)
+    stop_timer(name()+" mat-vec");
 }
 
 void HorizInterpRemapperBase::clean_up ()

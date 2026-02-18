@@ -111,7 +111,7 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
 
   // By default, IO is done directly on the field mgr grid
   auto fm_grid = field_mgr->get_grids_manager()->get_grid(grid_name);
-  
+
   std::string output_data_layout = "default";
   if (params.isParameter("field_names")) {
     // This simple parameter list option does *not* allow to remap fields
@@ -214,6 +214,10 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
     vert_remapper->set_source_pressure (p_mid,p_int);
     vert_remapper->set_extrapolation_type(VerticalRemapper::Mask); // both Top AND Bot
     m_vert_remapper = vert_remapper;
+    m_vert_remapper->set_name(m_stream_name + " VertRemap");
+    if (params.isParameter("enable_fine_grain_timers")) {
+      m_vert_remapper->toggle_timers(params.get<bool>("enable_fine_grain_timers"));
+    }
 
     grid_after_vr = m_vert_remapper->get_tgt_grid();
     fm_after_vr = std::make_shared<FieldManager>(grid_after_vr,RepoState::Closed);
@@ -242,6 +246,10 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
       // Construct a generic remapper (likely, Dyn->PhysicsGLL)
       grid_after_hr = fm_grid->get_aux_grid(output_data_layout);
       m_horiz_remapper = gm->create_remapper(grid_after_vr,grid_after_hr);
+    }
+    m_horiz_remapper->set_name(m_stream_name + " HorizRemap");
+    if (params.isParameter("enable_fine_grain_timers")) {
+      m_horiz_remapper->toggle_timers(params.get<bool>("enable_fine_grain_timers"));
     }
 
     grid_after_hr = m_horiz_remapper->get_tgt_grid();
@@ -304,6 +312,7 @@ void AtmosphereOutput::init()
 {
   auto fm_after_hr = m_field_mgrs[AfterHorizRemap];
   m_io_grid  = fm_after_hr->get_grid();
+  m_latlon_output = m_io_grid->has_geometry_data("lat_idx");
 
   EKAT_REQUIRE_MSG (m_io_grid->is_unique(),
       "Error! I/O only supports grids which are 'unique', meaning that the\n"
@@ -343,6 +352,16 @@ void AtmosphereOutput::init()
     const auto& tags = layout.tags();
     const auto& dims = layout.dims();
     for (int j=0; j<layout.rank(); ++j) {
+      if (tags[j]==FieldTag::Column and m_latlon_output) {
+        // We need to make sure we are registering lat and lon as dimensions
+        auto lat = m_io_grid->get_geometry_data("lat");
+        auto lon = m_io_grid->get_geometry_data("lon");
+
+        m_dims_len.emplace("lat",lat.get_header().get_identifier().get_layout().size());
+        m_dims_len.emplace("lon",lon.get_header().get_identifier().get_layout().size());
+
+        continue;
+      }
       // check tag against m_dims_len map.  If not in there, then add it.
       std::string dimname = m_io_grid->has_special_tag_name(tags[j])
                           ? m_io_grid->get_special_tag_name(tags[j])
@@ -858,19 +877,32 @@ register_variables(const std::string& filename,
 
 void AtmosphereOutput::set_decompositions(const std::string& filename)
 {
-  if (m_decomp_dimname=="")
-    return;
+  if (m_latlon_output) {
+    // We need to find out which (lat,lon) offsets we own
+    auto lat_idx_h = m_io_grid->get_geometry_data("lat_idx").get_view<const int*,Host>();
+    auto lon_idx_h = m_io_grid->get_geometry_data("lon_idx").get_view<const int*,Host>();
+    int ncols = m_io_grid->get_num_local_dofs();
+    int nlon = m_io_grid->get_geometry_data("lon").get_header().get_identifier().get_layout().size();
+    std::vector<scorpio::offset_t> offsets(ncols);
+    for (int i=0; i<ncols; ++i) {
+      offsets[i] = lat_idx_h(i)*nlon + lon_idx_h(i);
+    }
+    scorpio::set_dims_decomp(filename,{"lat","lon"},offsets);
+  } else {
+    if (m_decomp_dimname=="")
+      return;
 
-  // Set the decomposition for the partitioned dimension
-  const int local_dim = m_io_grid->get_partitioned_dim_local_size();
-  auto gids_f = m_io_grid->get_partitioned_dim_gids();
-  auto gids_h = gids_f.get_view<const AbstractGrid::gid_type*,Host>();
-  auto min_gid = m_io_grid->get_global_min_partitioned_dim_gid();
-  std::vector<scorpio::offset_t> offsets(local_dim);
-  for (int idof=0; idof<local_dim; ++idof) {
-    offsets[idof] = gids_h[idof] - min_gid;
+    // Set the decomposition for the partitioned dimension
+    const int local_dim = m_io_grid->get_partitioned_dim_local_size();
+    auto gids_f = m_io_grid->get_partitioned_dim_gids();
+    auto gids_h = gids_f.get_view<const AbstractGrid::gid_type*,Host>();
+    auto min_gid = m_io_grid->get_global_min_partitioned_dim_gid();
+    std::vector<scorpio::offset_t> offsets(local_dim);
+    for (int idof=0; idof<local_dim; ++idof) {
+      offsets[idof] = gids_h[idof] - min_gid;
+    }
+    scorpio::set_dim_decomp(filename,m_decomp_dimname,offsets);
   }
-  scorpio::set_dim_decomp(filename,m_decomp_dimname,offsets);
 }
 
 void AtmosphereOutput::
@@ -1006,7 +1038,7 @@ process_requested_fields()
   // Helper lambda that initializes a diagnostic
   auto init_diag = [&](const std::shared_ptr<AtmosphereDiagnostic>& diag) {
     // Set inputs in the diag
-    for (const auto& freq : diag->get_required_field_requests()) {
+    for (const auto& freq : diag->get_field_requests()) {
       const auto& dep_name = freq.fid.name();
 
       auto dep = fm_model->get_field(dep_name);
@@ -1102,7 +1134,7 @@ process_requested_fields()
         }
         // Add its deps to the list of fields to process (if not already in fm_model)
         bool deps_met = true;
-        for (const auto& req : diag->get_required_field_requests()) {
+        for (const auto& req : diag->get_field_requests()) {
           if (not fm_model->has_field(req.fid.name())) {
             deps_met = false;
             add_these.insert(req.fid.name());
@@ -1143,16 +1175,24 @@ process_requested_fields()
 std::vector<std::string> AtmosphereOutput::
 get_var_dimnames (const FieldLayout& layout) const
 {
+  using namespace ShortFieldTagsNames;
   strvec_t dims;
   for (int i=0; i<layout.rank(); ++i) {
     const auto t = layout.tag(i);
-    auto tag_name = m_io_grid->has_special_tag_name(t)
-                  ? m_io_grid->get_special_tag_name(t)
-                  : layout.names()[i];
-    if (tag_name=="dim" or tag_name=="bin") {
-      tag_name += std::to_string(layout.dim(i));
+    if (t==COL and m_latlon_output) {
+      // Lat-Lon remapping uses a PointGrid target grid, so we replace the
+      // single column dimension with separate latitude and longitude dimensions.
+      dims.push_back("lat");
+      dims.push_back("lon");
+    } else {
+      auto tag_name = m_io_grid->has_special_tag_name(t)
+                    ? m_io_grid->get_special_tag_name(t)
+                    : layout.names()[i];
+      if (tag_name=="dim" or tag_name=="bin") {
+        tag_name += std::to_string(layout.dim(i));
+      }
+      dims.push_back(tag_name); // Add dimensions string to vector of dims.
     }
-    dims.push_back(tag_name); // Add dimensions string to vector of dims.
   }
   return dims;
 }

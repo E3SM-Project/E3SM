@@ -15,8 +15,8 @@ struct UnitWrap::UnitTest<D>::TestIceSupersatConservation : public UnitWrap::Uni
 
   void run_bfb()
   {
-    constexpr Scalar latvap       = C::LatVap;
-    constexpr Scalar latice       = C::LatIce;
+    constexpr Scalar latvap       = C::LatVap.value;
+    constexpr Scalar latice       = C::LatIce.value;
 
     auto engine = Base::get_engine();
 

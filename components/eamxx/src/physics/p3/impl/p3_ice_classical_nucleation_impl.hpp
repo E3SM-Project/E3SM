@@ -22,7 +22,7 @@ void Functions<S,D>
   Spack& ninuc_cnt, Spack& qinuc_cnt)
 {
   constexpr Scalar pi       = C::Pi;
-  constexpr Scalar rho_h2o  = C::RHO_H2O;
+  constexpr Scalar rho_h2o  = C::RHO_H2O.value;
 
   // TODO: Verify if qsmall can be unified with other "small" numeric literals 
   constexpr Scalar qsmall   = 1.0e-18;

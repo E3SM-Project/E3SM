@@ -37,7 +37,7 @@ ScalarT PhysicsFunctions<DeviceT>::calculate_density(const ScalarT& pseudo_densi
 {
   using C = scream::physics::Constants<Real>;
 
-  static constexpr auto g = C::gravit;
+  static constexpr auto g = C::gravit.value;
 
   return pseudo_density/dz/g;
 }
@@ -63,7 +63,7 @@ ScalarT PhysicsFunctions<DeviceT>::calculate_vertical_velocity(const ScalarT& om
 {
   using C = scream::physics::Constants<Real>;
 
-  static constexpr auto g = C::gravit;
+  static constexpr auto g = C::gravit.value;
 
   return -omega/(density * g);
 }
@@ -89,9 +89,9 @@ ScalarT PhysicsFunctions<DeviceT>::exner_function(const ScalarT& pressure)
 {
   using C = scream::physics::Constants<Real>;
 
-  static constexpr auto p0 = C::P0;
-  static constexpr auto rd = C::RD;
-  static constexpr auto inv_cp = C::INV_CP;
+  static constexpr auto p0 = C::P0.value;
+  static constexpr auto rd = C::RD.value;
+  static constexpr auto inv_cp = C::INV_CP.value;
 
   return pow( pressure/p0, rd*inv_cp );
 }
@@ -124,7 +124,7 @@ ScalarT PhysicsFunctions<DeviceT>::calculate_thetal_from_theta(const ScalarT& th
 {
   using C = scream::physics::Constants<Real>;
 
-  return theta - (theta / temperature) * (C::LatVap/C::Cpair) * qc;
+  return theta - (theta / temperature) * (C::LatVap.value/C::Cpair.value) * qc;
 }
 
 template<typename DeviceT>
@@ -186,7 +186,7 @@ calculate_temperature_from_virtual_temperature(const ScalarT& T_virtual, const S
 {
   using C = scream::physics::Constants<Real>;
 
-  static constexpr auto ep_2 = C::ep_2;
+  static constexpr auto ep_2 = C::ep_2.value;
   static constexpr auto one  = C::ONE;
   static constexpr auto c1   = - one + one/ep_2;
 
@@ -215,7 +215,7 @@ ScalarT PhysicsFunctions<DeviceT>::calculate_virtual_temperature(const ScalarT& 
 {
   using C = scream::physics::Constants<Real>;
 
-  static constexpr auto ep_2 = C::ep_2;
+  static constexpr auto ep_2 = C::ep_2.value;
   static constexpr auto one  = C::ONE;
   static constexpr auto c1   = - one + one/ep_2;
 
@@ -245,8 +245,8 @@ calculate_dse(const ScalarT& temperature, const ScalarT& z, const Real surf_geop
 {
   using C = scream::physics::Constants<Real>;
 
-  static constexpr auto cp = C::CP;
-  static constexpr auto g  = C::gravit;
+  static constexpr auto cp = C::CP.value;
+  static constexpr auto g  = C::gravit.value;
 
   return cp*temperature + g*z + surf_geopotential;
 }
@@ -275,8 +275,8 @@ calculate_temperature_from_dse(const ScalarT& dse, const ScalarT& z, const Real 
 {
   using C = scream::physics::Constants<Real>;
 
-  static constexpr auto cp = C::CP;
-  static constexpr auto g  = C::gravit;
+  static constexpr auto cp = C::CP.value;
+  static constexpr auto g  = C::gravit.value;
 
   return (dse - g*z - surf_geopotential)/cp;
 }
@@ -403,8 +403,8 @@ calculate_dz(const ScalarT& pseudo_density, const ScalarT& p_mid, const ScalarT&
 
   const ScalarT& T_virtual = calculate_virtual_temperature(T_mid,qv);
 
-  static constexpr auto rd = C::RD;
-  static constexpr auto g  = C::gravit;
+  static constexpr auto rd = C::RD.value;
+  static constexpr auto g  = C::gravit.value;
   return (rd/g)*pseudo_density*T_virtual / p_mid;
 }
 
@@ -460,7 +460,7 @@ KOKKOS_INLINE_FUNCTION
 ScalarT PhysicsFunctions<DeviceT>::calculate_vmr_from_mmr(const Real& gas_mol_weight, const ScalarT& qv, const ScalarT& mmr)
 {
   using C = scream::physics::Constants<Real>;
-  constexpr Real air_mol_weight   = C::MWdry;
+  constexpr Real air_mol_weight   = C::MWdry.value;
 
   return mmr / (1.0 - qv) * air_mol_weight/gas_mol_weight;
 
@@ -487,7 +487,7 @@ KOKKOS_INLINE_FUNCTION
 ScalarT PhysicsFunctions<DeviceT>::calculate_mmr_from_vmr(const Real& gas_mol_weight, const ScalarT& qv, const ScalarT& vmr)
 {
   using C = scream::physics::Constants<Real>;
-  constexpr Real air_mol_weight   = C::MWdry;
+  constexpr Real air_mol_weight   = C::MWdry.value;
   const Real mol_weight_ratio = gas_mol_weight/air_mol_weight;
 
   return mol_weight_ratio * vmr * (1.0 - qv);
@@ -541,7 +541,7 @@ void PhysicsFunctions<DeviceT>::lapse_T_for_psl(const Real& T_ground, const Real
  */
 
   using C = scream::physics::Constants<Real>;
-  constexpr Real gravit = C::gravit;
+  constexpr Real gravit = C::gravit.value;
 
   //Get preliminary surface and sea level temperature to decide on lapse rate
   auto T_sl = T_ground + sp(0.0065)*phi_ground/gravit; //start by assuming lapse rate is 6.5 K/km
@@ -577,8 +577,8 @@ Real PhysicsFunctions<DeviceT>::calculate_psl(const Real& T_ground, const Real& 
 
 
   using C = scream::physics::Constants<Real>;
-  constexpr Real gravit = C::gravit;
-  constexpr Real Rair = C::Rair;
+  constexpr Real gravit = C::gravit.value;
+  constexpr Real Rair = C::Rair.value;
   Real psl;
 
   // if phi_ground is very close to sea level already, set psl to existing p_ground
@@ -604,7 +604,7 @@ void PhysicsFunctions<DeviceT>::apply_rayleigh_friction(const Real dt, const Sca
                                                         ScalarT& u_wind, ScalarT& v_wind, ScalarT& T_mid)
 {
   using C = scream::physics::Constants<Real>;
-  constexpr Real cp = C::CP;
+  constexpr Real cp = C::CP.value;
 
   const Real dt_inv = 1.0/dt;
 

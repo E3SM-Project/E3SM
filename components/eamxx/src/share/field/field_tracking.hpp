@@ -15,17 +15,11 @@
 
 namespace scream {
 
-// Forward declarations
-class AtmosphereProcess;
-class FieldHeader;
-
 class FieldTracking : public FamilyTracking<FieldTracking> {
 public:
 
   using TimeStamp         = util::TimeStamp;
   using ci_string         = ekat::CaseInsensitiveString;
-  using atm_proc_ptr_type = std::weak_ptr<AtmosphereProcess>;
-  using atm_proc_set_type = ekat::WeakPtrSet<AtmosphereProcess>;
 
   FieldTracking() = default;
   FieldTracking(const FieldTracking&) = default;
@@ -41,8 +35,8 @@ public:
 
   //  - provider: can compute the field as an output
   //  - customer: requires the field as an input
-  const atm_proc_set_type& get_providers () const { return m_providers; }
-  const atm_proc_set_type& get_customers () const { return m_customers; }
+  const std::set<std::string>& get_providers () const { return m_providers; }
+  const std::set<std::string>& get_customers () const { return m_customers; }
 
   // List of field groups that this field belongs to
   const std::set<ci_string>& get_groups_names () const { return m_groups; }
@@ -50,11 +44,11 @@ public:
   // ----- Setters ----- //
 
   // Add to the list of providers/customers
-  void add_provider (const std::weak_ptr<AtmosphereProcess>& provider);
-  void add_customer (const std::weak_ptr<AtmosphereProcess>& customer);
+  void add_provider (const std::string& provider) { m_providers.insert(provider); }
+  void add_customer (const std::string& customer) { m_customers.insert(customer); }
 
   // Add group name to the list of groups we belong to
-  void add_group (const std::string& group_name);
+  void add_group (const std::string& group) { m_groups.insert(group); }
 
   // Set the time stamp for this field. This can only be called once, due to TimeStamp implementation.
   // NOTE: if the field has 'children' (see FamilyTracking), their ts will be updated too.
@@ -76,13 +70,12 @@ protected:
 
   // For accumulated vars, the time where the accumulation started
   TimeStamp         m_accum_start;
-  ci_string         m_accum_type;
 
-  // List of provider/customer processes. A provider is an atm process that computes/updates the field.
-  // A customer is an atm process that uses the field just as an input.
-  // NOTE: do NOT use shared_ptr, since you would create circular references.
-  atm_proc_set_type       m_providers;
-  atm_proc_set_type       m_customers;
+  // List of providers and customers of this field.
+  //  - A provider is an entity that uses the field in writable mode
+  //  - A customer is an entity that uses the field in read-only mode
+  std::set<std::string> m_providers;
+  std::set<std::string> m_customers;
 
   // Groups are used to bundle together fields, so that a process can request all of them
   // without knowing/listing all their names. For instance, the dynamics process needs to

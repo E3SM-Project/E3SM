@@ -1,11 +1,11 @@
 #ifndef SCREAM_FIELD_MANAGER_HPP
 #define SCREAM_FIELD_MANAGER_HPP
 
-#include "share/grid/abstract_grid.hpp"
 #include "share/data_managers/grids_manager.hpp"
+#include "share/data_managers/field_request.hpp"
+#include "share/grid/abstract_grid.hpp"
 #include "share/field/field.hpp"
 #include "share/field/field_group.hpp"
-#include "share/field/field_request.hpp"
 #include "share/util/eamxx_utils.hpp"
 #include "share/core/eamxx_types.hpp"
 

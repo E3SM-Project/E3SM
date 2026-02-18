@@ -40,6 +40,7 @@ module prep_lnd_mod
     iMOAB_WriteMesh, iMOAB_GetMeshInfo, iMOAB_SetDoubleTagStorage, &
     iMOAB_SetMapGhostLayers, iMOAB_MigrateMapMesh
   use seq_comm_mct,     only : num_moab_exports
+  use shr_moab_mod,      only : mbGetnCells, mbGetCellTagVals
 
 #ifdef MOABCOMP
   use component_type_mod, only:  compare_mct_av_moab_tag
@@ -152,6 +153,7 @@ contains
     character(CL)            :: rof_gnam      ! rof grid
     character(CL)            :: glc_gnam      ! glc grid
     type(mct_avect), pointer :: l2x_lx
+    type(mct_avect), pointer :: x2l_lx
    ! MOAB stuff
     integer                  :: ierr, idintx, rank
     character*32             :: appname
@@ -168,6 +170,7 @@ contains
     integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3) ! for moab info
     integer  mlsize ! moab land size
     integer  nrflds  ! number of rof fields projected on land
+    integer  nflds   ! number of x2l fields for MOAB allocation
     integer arrsize  ! for setting the r2x fields on land to 0
     integer ent_type ! for setting tags
     real (kind=R8) , allocatable :: tmparray (:) ! used to set the r2x fields to 0
@@ -208,7 +211,16 @@ contains
             mpicom=mpicom_CPLID, iamroot=iamroot_CPLID)
 
        l2x_lx => component_get_c2x_cx(lnd(1))
+       x2l_lx => component_get_x2c_cx(lnd(1))
        lsize_l = mct_aVect_lsize(l2x_lx)
+
+       ! Allocate x2l_lm for MOAB history output (used by prep_lnd_get_x2l_lm)
+       if (mblxid .ge. 0) then
+          mlsize = mbGetnCells(mblxid)
+          nflds = mct_aVect_nRattr(x2l_lx)
+          allocate(x2l_lm(mlsize, nflds))
+          x2l_lm = 0.0_r8
+       endif
 
        allocate(a2x_lx(num_inst_atm))
        do eai = 1,num_inst_atm
@@ -749,9 +761,6 @@ contains
 ! this does almost nothing now, except documenting
   subroutine prep_lnd_mrg_moab (infodata)
 
-    use shr_moab_mod, only : mbGetnCells
-    use shr_moab_mod, only : mbGetCellTagVals
-
     type(seq_infodata_type) , intent(in) :: infodata
 
 
@@ -801,8 +810,6 @@ contains
        nflds = mct_aVect_nRattr(x2l_l)
        mbsize = mbGetnCells(mblxid)
 
-       allocate (x2l_lm(mbsize,nflds))
-
        allocate(mrgstr(nflds))
        do i = 1,nflds
           field = mct_aVect_getRList2c(i, x2l_l)
@@ -839,7 +846,7 @@ contains
     ! call mct_aVect_copy(aVin=r2x_l, aVout=x2l_l, vector=mct_usevector, sharedIndices=r2x_SharedIndices)
     ! call mct_aVect_copy(aVin=g2x_l, aVout=x2l_l, vector=mct_usevector, sharedIndices=g2x_SharedIndices)
 
-    call mbGetCellTagVals(mblxid, trim(seq_flds_x2l_fields)//C_NULL_CHAR,x2l_lm,mbsize*nflds)
+    call mbGetCellTagVals(mblxid, trim(seq_flds_x2l_fields),x2l_lm,mbsize*nflds)
 
     if (first_time) then
        if (iamroot) then

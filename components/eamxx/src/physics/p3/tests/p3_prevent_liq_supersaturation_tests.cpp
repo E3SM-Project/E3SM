@@ -21,9 +21,9 @@ struct UnitWrap::UnitTest<D>::TestPreventLiqSupersaturation : public UnitWrap::U
 
     using physics = scream::physics::Functions<Scalar, Device>;
 
-    constexpr Scalar inv_cp       = C::INV_CP;
-    constexpr Scalar latvap       = C::LatVap;
-    constexpr Scalar latice       = C::LatIce;
+    constexpr Scalar inv_cp       = C::INV_CP.value;
+    constexpr Scalar latvap       = C::LatVap.value;
+    constexpr Scalar latice       = C::LatIce.value;
 
     //Start with reasonable values
     //============================
@@ -87,8 +87,8 @@ struct UnitWrap::UnitTest<D>::TestPreventLiqSupersaturation : public UnitWrap::U
 
   void run_bfb()
   {
-    constexpr Scalar latvap = C::LatVap;
-    constexpr Scalar latice = C::LatIce;
+    constexpr Scalar latvap = C::LatVap.value;
+    constexpr Scalar latice = C::LatIce.value;
 
     auto engine = Base::get_engine();
 

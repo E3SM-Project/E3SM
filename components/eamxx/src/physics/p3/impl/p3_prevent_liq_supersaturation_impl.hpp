@@ -20,11 +20,11 @@ void Functions<S,D>::prevent_liq_supersaturation(const Spack& pres, const Spack&
 {
   using physics = scream::physics::Functions<Scalar, Device>;
 
-  constexpr Scalar inv_cp       = C::INV_CP;
-  constexpr Scalar rv           = C::RV;
+  constexpr Scalar inv_cp       = C::INV_CP.value;
+  constexpr Scalar rv           = C::RV.value;
   constexpr Scalar qsmall       = C::QSMALL;
-  constexpr Scalar latvap       = C::LatVap;
-  constexpr Scalar latice       = C::LatIce;
+  constexpr Scalar latvap       = C::LatVap.value;
+  constexpr Scalar latice       = C::LatIce.value;
 
   Spack qv_sinks, qv_sources, qv_endstep, T_endstep, A, frac;
 

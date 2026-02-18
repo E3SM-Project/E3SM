@@ -260,9 +260,6 @@
       <env name="MPICH_ENV_DISPLAY">1</env>
       <env name="MPICH_VERSION_DISPLAY">1</env>
       <env name="MPICH_MPIIO_DVS_MAXNODES">1</env>
-      <env name="OMP_STACKSIZE">128M</env>
-      <env name="OMP_PROC_BIND">spread</env>
-      <env name="OMP_PLACES">threads</env>
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
       <env name="PERL5LIB">/global/cfs/cdirs/e3sm/perl/lib/perl5-only-switch</env>
       <env name="FI_MR_CACHE_MONITOR">kdreg2</env>
@@ -272,6 +269,11 @@
       <env name="GATOR_INITIAL_MB">4000MB</env>
       <env name="LD_LIBRARY_PATH">$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env> <!-- https://github.com/E3SM-Project/E3SM/issues/7117 -->
       <env name="MPICH_SMP_SINGLE_COPY_MODE">CMA</env> <!-- https://github.com/E3SM-Project/E3SM/issues/7207 -->
+    </environment_variables>
+    <environment_variables BUILD_THREADED="TRUE">
+      <env name="OMP_STACKSIZE">128M</env>
+      <env name="OMP_PROC_BIND">spread</env>
+      <env name="OMP_PLACES">threads</env>
     </environment_variables>
     <environment_variables compiler="intel" mpilib="mpich">
       <env name="PKG_CONFIG_PATH">/global/cfs/cdirs/e3sm/3rdparty/protobuf/21.6/intel-2023.2.0/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}</env>
@@ -367,6 +369,7 @@
         <arg name="thread_count">-c $SHELL{echo 128/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
         <arg name="binding"> $SHELL{if [ 64 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu-bind=cores"; else echo "--cpu-bind=threads";fi;} </arg>
         <arg name="placement"> -m plane=$SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
+        <arg name="gpu-bind"> $SHELL{mpn=`./xmlquery --value MAX_MPITASKS_PER_NODE`; if [ 64 -le $mpn ]; then echo $CIMEROOT/../cime_config/machines/scripts/pm-gpu_set_affinity_npergpu.sh $mpn; fi;} </arg>
     </arguments>
     </mpirun>
     <module_system type="module" allow_error="true">
@@ -726,7 +729,8 @@
         <arg name="thread_count">-c $SHELL{echo 128/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
         <arg name="binding"> $SHELL{if [ 64 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu-bind=cores"; else echo "--cpu-bind=threads";fi;} </arg>
         <arg name="placement"> -m plane=$SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
-    </arguments>
+        <arg name="gpu-bind"> $SHELL{mpn=`./xmlquery --value MAX_MPITASKS_PER_NODE`; if [ 64 -le $mpn ]; then echo $CIMEROOT/../cime_config/machines/scripts/pm-gpu_set_affinity_npergpu.sh $mpn; fi;} </arg>
+      </arguments>
     </mpirun>
     <module_system type="module" allow_error="true">
       <init_path lang="perl">/opt/cray/pe/lmod/8.7.19/init/perl</init_path>
@@ -1084,7 +1088,8 @@
         <arg name="thread_count">-c $SHELL{echo 128/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
         <arg name="binding"> $SHELL{if [ 64 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu-bind=cores"; else echo "--cpu-bind=threads";fi;} </arg>
         <arg name="placement"> -m plane=$SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
-    </arguments>
+        <arg name="gpu-bind"> $SHELL{mpn=`./xmlquery --value MAX_MPITASKS_PER_NODE`; if [ 64 -le $mpn ]; then echo $CIMEROOT/../cime_config/machines/scripts/pm-gpu_set_affinity_npergpu.sh $mpn; fi;} </arg>
+      </arguments>
     </mpirun>
     <module_system type="module" allow_error="true">
       <init_path lang="perl">/opt/cray/pe/lmod/8.7.19/init/perl</init_path>
@@ -1303,7 +1308,7 @@
     <CCSM_CPRNC>/lustre/orion/cli115/world-shared/e3sm/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
     <NTEST_PARALLEL_JOBS>1</NTEST_PARALLEL_JOBS>
-    <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
+    <BATCH_SYSTEM>frontier_slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>e3sm</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>56</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>8</MAX_MPITASKS_PER_NODE>
@@ -2664,15 +2669,15 @@
         <command name="load">parallel-netcdf/1.11.0-ifdodru</command>
       </modules>
       <modules compiler="oneapi-ifx">
-        <command name="load">intel-oneapi-compilers/2022.2.0-dioefq5</command>
-        <command name="load">intel-oneapi-mkl/2022.2.0-w2y75l6</command>
+        <command name="load">intel-oneapi-compilers/2025.2.0-mdlxe55</command>
       </modules>
       <modules compiler="oneapi-ifx" mpilib="openmpi">
-        <command name="load">openmpi/4.1.3-ti25nay</command>
-        <command name="load">hdf5/1.10.7-clocd2t</command>
-        <command name="load">netcdf-c/4.7.4-nw7dztf</command>
-        <command name="load">netcdf-fortran/4.5.3-qa6rhpj</command>
-        <command name="load">parallel-netcdf/1.11.0-ejxy7kk</command>
+        <command name="load">openmpi/4.1.8-nygtpa3</command>
+        <command name="load">intel-oneapi-mkl/2025.2.0-bcimxay</command>
+        <command name="load">hdf5/1.14.6-5cgownf</command>
+        <command name="load">netcdf-c/4.9.3-mekqsor</command>
+        <command name="load">netcdf-fortran/4.6.2-cjqpiwp</command>
+        <command name="load">parallel-netcdf/1.14.1-f2fwvr2</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
@@ -3022,8 +3027,7 @@
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
       <modules>
-        <command name="--force purge"/>
-        <command name="load">cmake/3.27.4</command>
+        <command name="load">cmake/3.30.5-gcc-12.3.0</command>
       </modules>
       <modules compiler="gnu">
         <command name="load">gcc/12.3.0</command>
@@ -3036,9 +3040,9 @@
     <environment_variables compiler="gnu" mpilib="openmpi">
       <env name="NETCDF_C_PATH">/lcrc/group/e3sm/soft/improv/netcdf-c/4.9.2b/gcc-12.3.0/openmpi-4.1.6</env>
       <env name="NETCDF_FORTRAN_PATH">/lcrc/group/e3sm/soft/improv/netcdf-fortran/4.6.1b/gcc-12.3.0/openmpi-4.1.6</env>
-      <env name="PNETCDF_PATH">/lcrc/group/e3sm/soft/improv/pnetcdf/1.12.3/gcc-12.3.0/openmpi-4.1.6</env>
-      <env name="PATH">/lcrc/group/e3sm/soft/improv/pnetcdf/1.12.3/gcc-12.3.0/openmpi-4.1.6/bin:/lcrc/group/e3sm/soft/improv/netcdf-fortran/4.6.1b/gcc-12.3.0/openmpi-4.1.6/bin:/lcrc/group/e3sm/soft/improv/netcdf-c/4.9.2b/gcc-12.3.0/openmpi-4.1.6/bin:/lcrc/group/e3sm/soft/improv/openmpi/4.1.6/gcc-12.3.0/bin:/lcrc/group/e3sm/soft/perl/improv/bin:$ENV{PATH}</env>
-      <env name="LD_LIBRARY_PATH">$SHELL{lp=/lcrc/group/e3sm/soft/improv/netlib-lapack/3.12.0/gcc-12.3.0:/lcrc/group/e3sm/soft/improv/pnetcdf/1.12.3/gcc-12.3.0/openmpi-4.1.6/lib:/lcrc/group/e3sm/soft/improv/netcdf-fortran/4.6.1b/gcc-12.3.0/openmpi-4.1.6/lib:/lcrc/group/e3sm/soft/improv/netcdf-c/4.9.2b/gcc-12.3.0/openmpi-4.1.6/lib:/opt/pbs/lib:/lcrc/group/e3sm/soft/improv/openmpi/4.1.6/gcc-12.3.0/lib; if [ -z "$LD_LIBRARY_PATH" ]; then echo $lp; else echo "$lp:$LD_LIBRARY_PATH"; fi}</env>
+      <env name="PNETCDF_PATH">/lcrc/group/e3sm/soft/improv/pnetcdf/1.14.1/gcc-12.3.0/openmpi-4.1.6</env>
+      <env name="PATH">/lcrc/group/e3sm/soft/improv/pnetcdf/1.14.1/gcc-12.3.0/openmpi-4.1.6/bin:/lcrc/group/e3sm/soft/improv/netcdf-fortran/4.6.1b/gcc-12.3.0/openmpi-4.1.6/bin:/lcrc/group/e3sm/soft/improv/netcdf-c/4.9.2b/gcc-12.3.0/openmpi-4.1.6/bin:/lcrc/group/e3sm/soft/improv/openmpi/4.1.6/gcc-12.3.0/bin:/lcrc/group/e3sm/soft/perl/improv/bin:$ENV{PATH}</env>
+      <env name="LD_LIBRARY_PATH">$SHELL{lp=/lcrc/group/e3sm/soft/improv/netlib-lapack/3.12.0/gcc-12.3.0:/lcrc/group/e3sm/soft/improv/pnetcdf/1.14.1/gcc-12.3.0/openmpi-4.1.6/lib:/lcrc/group/e3sm/soft/improv/netcdf-fortran/4.6.1b/gcc-12.3.0/openmpi-4.1.6/lib:/lcrc/group/e3sm/soft/improv/netcdf-c/4.9.2b/gcc-12.3.0/openmpi-4.1.6/lib:/opt/pbs/lib:/lcrc/group/e3sm/soft/improv/openmpi/4.1.6/gcc-12.3.0/lib; if [ -z "$LD_LIBRARY_PATH" ]; then echo $lp; else echo "$lp:$LD_LIBRARY_PATH"; fi}</env>
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /lcrc/soft/climate/moab/improv/gnu; else echo "$MOAB_ROOT"; fi}</env>
       <env name="OMPI_MCA_sharedfp">^lockedfile,individual</env>
     </environment_variables>
@@ -3248,8 +3252,8 @@
     <OS>Linux</OS>
     <COMPILERS>gnugpu,gnu,nvidiagpu,nvidia</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
-    <PROJECT>E3SM_RRM</PROJECT>
-    <CHARGE_ACCOUNT>E3SM_RRM</CHARGE_ACCOUNT>
+    <PROJECT>E3SMinput</PROJECT>
+    <CHARGE_ACCOUNT>E3SMinput</CHARGE_ACCOUNT>
     <SAVE_TIMING_DIR>/grand/E3SMinput/polaris/</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
     <CIME_OUTPUT_ROOT>/eagle/$PROJECT/$USER/scratch</CIME_OUTPUT_ROOT>
@@ -3286,9 +3290,7 @@
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
       <modules>
-        <command name="reset"></command>
         <command name="use">/grand/E3SMinput/soft/modulefiles/polaris</command>
-        <command name="load">cray-python</command>
         <command name="load">cmake/3.27.9</command>
         <command name="load">craype-accel-host</command>
       </modules>
@@ -3304,7 +3306,7 @@
         <command name="load">netcdf-nvidia/4.9.3c-4.6.2f</command>
       </modules>
       <modules compiler=".*gpu">
-        <command name="load">cuda/12.6</command>
+        <command name="load">cuda/12.9</command>
         <command name="load">craype-accel-nvidia80</command>
       </modules>
       <modules>
@@ -3491,6 +3493,7 @@
         <command name="load">netcdf/4.9.3c-4.6.2f</command>
         <command name="load">pnetcdf/1.14.0</command>
         <command name="load">adios2/2.10.2</command>
+        <command name="load">moab/5.6.0</command>
         </modules>
       <modules mpilib="mpich1024">
         <command name="load">mpich-config/collective-tuning/1024</command>
@@ -3552,6 +3555,76 @@
     <resource_limits>
         <resource name="RLIMIT_STACK">-1</resource>
     </resource_limits>
+  </machine>
+
+  <machine MACH="crux">
+    <DESC>ALCF Cray 256 nodes, AMD EPYC Rome 7742 2-socket 64c CPU, 256GB DDR4</DESC>
+    <NODENAME_REGEX>crux-*</NODENAME_REGEX>
+    <OS>Linux</OS>
+    <COMPILERS>gnu</COMPILERS>
+    <MPILIBS>mpich</MPILIBS> 
+    <PROJECT>crocus</PROJECT>
+    <CHARGE_ACCOUNT>crocus</CHARGE_ACCOUNT>
+    <SAVE_TIMING_DIR>/grand/E3SMinput/crux/</SAVE_TIMING_DIR>  
+    <SAVE_TIMING_DIR_PROJECTS>crocus</SAVE_TIMING_DIR_PROJECTS>
+    <CIME_OUTPUT_ROOT>/eagle/$PROJECT/$USER/e3sm_scratch</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/grand/E3SMinput/data</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/grand/E3SMinput/data/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/grand/E3SMinput/baselines/crux/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/grand/E3SMinput/soft/crux/cprnc/cprnc</CCSM_CPRNC>
+    <GMAKE_J>4</GMAKE_J>
+    <TESTS>e3sm_prod</TESTS>
+    <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
+    <BATCH_SYSTEM>pbspro</BATCH_SYSTEM>
+    <SUPPORTED_BY>e3sm</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>
+    <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+    <mpirun mpilib="default">
+       <executable>mpiexec</executable>
+       <arguments>
+          <arg name="total_num_tasks">-np {{ total_tasks }} --label</arg>
+          <arg name="ranks_per_node">-ppn {{ tasks_per_node }}</arg>
+          <arg name="ranks_bind">--cpu-bind core </arg>
+          <arg name="threads_per_rank">-d $SHELL{echo 128/ {{ tasks_per_node }} |bc}</arg>
+       </arguments>
+    </mpirun>
+    <module_system type="module" allow_error="true">
+      <init_path lang="python">/opt/cray/pe/lmod/lmod/init/env_modules_python.py</init_path>
+      <init_path lang="sh">/opt/cray/pe/lmod/lmod/init/sh</init_path>  
+      <init_path lang="csh">/opt/cray/pe/lmod/lmod/init/csh</init_path>
+      <cmd_path lang="python">/opt/cray/pe/lmod/lmod/libexec/lmod python</cmd_path>
+      <cmd_path lang="sh">module</cmd_path> 
+      <cmd_path lang="csh">module</cmd_path>
+      <modules>
+        <command name="reset"></command>
+        <command name="use">/grand/E3SMinput/soft/modulefiles/crux</command>
+        <command name="load">cmake/3.27.9</command>
+        <command name="load">cray-python/3.11.7</command>
+        <command name="load">craype-accel-host</command>
+        <command name="load">PrgEnv-gnu/8.5.0</command>   
+        <command name="load">cray-libsci/24.03.0</command>
+        <command name="load">cray-hdf5-parallel/1.12.2.11</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.9.0.11</command>
+        <command name="load">cray-parallel-netcdf/1.12.3.11</command>
+      </modules>
+    </module_system>
+    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>  
+    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+    <MAX_GB_OLD_TEST_DATA>0</MAX_GB_OLD_TEST_DATA>
+    <environment_variables>
+      <env name="PERL5LIB">/grand/E3SMinput/soft/perl5/lib/perl5</env>   
+      <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
+      <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
+      <env name="LD_LIBRARY_PATH">$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env>
+      <env name="FI_CXI_RX_MATCH_MODE">hybrid</env>
+    </environment_variables>
+    <environment_variables BUILD_THREADED="TRUE">
+      <env name="OMP_STACKSIZE">128M</env>  
+      <env name="OMP_PROC_BIND">spread</env>
+      <env name="OMP_PLACES">cores</env>
+    </environment_variables>
   </machine>
 
   <machine MACH="sooty">

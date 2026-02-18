@@ -120,7 +120,7 @@ module cime_comp_mod
   use seq_infodata_mod, only: seq_infodata_print, seq_infodata_init2
 
   ! domain related routines
-  use seq_domain_mct, only : seq_domain_check
+  use seq_domain_mct, only : seq_domain_check_moab
 
   ! history file routines
   use seq_hist_mod, only : seq_hist_write, seq_hist_writeavg, seq_hist_writeaux
@@ -1853,9 +1853,6 @@ contains
     if (single_column         ) domain_check = .false.
     if (dead_comps            ) domain_check = .false.
 
-    ! for MOAB
-    domain_check = .false.
-
     ! set skip_ocean_run flag, used primarily for ocn run on first timestep
     ! use reading a restart as a surrogate from whether this is a startup run
 
@@ -2137,12 +2134,12 @@ contains
        if (domain_check) then
           if (iamroot_CPLID) then
              write(logunit,*) ' '
-             write(logunit,F00) 'Performing domain checking'
+             write(logunit,F00) 'Performing MOAB domain checking'
              call shr_sys_flush(logunit)
           endif
 
-          call seq_domain_check( infodata,                                             &
-               atm(ens1), ice(ens1), lnd(ens1), ocn(ens1), rof(ens1), glc(ens1),       &
+          ! MOAB-based domain checking
+          call seq_domain_check_moab( infodata,                                         &
                samegrid_al, samegrid_ao, samegrid_ro, samegrid_lg)
 
        endif

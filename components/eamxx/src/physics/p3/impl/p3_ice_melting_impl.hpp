@@ -28,9 +28,9 @@ void Functions<S,D>
 
   const auto Pi     = C::Pi;
   const auto QSMALL = C::QSMALL;
-  const auto Tmelt  = C::Tmelt;
-  const auto latvap = C::LatVap;
-  const auto latice = C::LatIce;
+  const auto Tmelt  = C::Tmelt.value;
+  const auto latvap = C::LatVap.value;
+  const auto latice = C::LatIce.value;
 
   //Find cells above freezing AND which have ice
   const auto has_melt_qi = (qi_incld >= QSMALL ) && (T_atm > Tmelt) && context;

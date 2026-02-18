@@ -40,7 +40,7 @@ void run(std::mt19937_64 &engine) {
   using view_1d    = typename KT::template view_1d<Real>;
 
   constexpr int num_levs = 33;
-  constexpr Real g       = PC::gravit;
+  constexpr Real g       = PC::gravit.value;
   constexpr Real macheps = PC::macheps;
 
   // A world comm
@@ -94,7 +94,7 @@ void run(std::mt19937_64 &engine) {
   std::map<std::string, Field> input_fields;
   for(const auto &dd : diags) {
     const auto &diag = dd.second;
-    for(const auto &req : diag->get_required_field_requests()) {
+    for(const auto &req : diag->get_field_requests()) {
       if(input_fields.find(req.fid.name()) == input_fields.end()) {
         Field f(req.fid);
         f.allocate_view();

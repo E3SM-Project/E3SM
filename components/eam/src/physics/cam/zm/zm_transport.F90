@@ -1,54 +1,54 @@
+#include "bfb_math.inc"
+
 module zm_transport
    !----------------------------------------------------------------------------
-   ! 
+   !
    ! Transport routines for the Zhang-McFarlane deep convection scheme
    !
    !----------------------------------------------------------------------------
 #ifdef SCREAM_CONFIG_IS_CMAKE
-   use zm_eamxx_bridge_params, only: r8
+  use zm_eamxx_bridge_params, only: r8, btype
+  use physics_share_f2c, only: scream_log
 #else
    use shr_kind_mod,     only: r8=>shr_kind_r8
-   use ppgrid
-   use cam_abortutils,   only: endrun
-   use cam_logfile,      only: iulog
 #endif
 
    implicit none
 
    ! public methods
-#ifndef SCREAM_CONFIG_IS_CMAKE
    public :: zm_transport_tracer    ! convective tracer transport
-#endif
    public :: zm_transport_momentum  ! convective momentum transport
 
    private
 
+#ifndef SCREAM_CONFIG_IS_CMAKE
+   integer,parameter,public :: btype = kind(.true.)
+#endif
+
    real(r8), parameter :: mbsth = 1.e-15_r8  ! threshold below which we treat the mass fluxes as zero (in mb/s)
-   
+
 contains
 
 !===================================================================================================
 
-! We need to avoid building this for now when bridging from EAMxx
-#ifndef SCREAM_CONFIG_IS_CMAKE
-
-subroutine zm_transport_tracer( pcols, ncol, pver, &
+subroutine zm_transport_tracer( pcols, pver, &
                                 doconvtran, q, ncnst, &
                                 mu, md, du, eu, ed, dp, &
                                 jt, mx, ideep, il1g, il2g, &
-                                fracis, dqdt, dpdry, dt ) 
-   !---------------------------------------------------------------------------- 
+                                fracis, dqdt, dpdry, dt )
+   !----------------------------------------------------------------------------
    ! Purpose: Convective transport of tracer species
    !----------------------------------------------------------------------------
    use zm_conv,         only: zm_param
+#ifndef SCREAM_CONFIG_IS_CMAKE
    use constituents,    only: cnst_get_type_byind
+#endif
    !----------------------------------------------------------------------------
    ! Arguments
    integer,                               intent(in)  :: pcols       ! maximum number of columns
-   integer,                               intent(in)  :: ncol        ! actual number of columns
    integer,                               intent(in)  :: pver        ! number of mid-point levels
    integer,                               intent(in)  :: ncnst       ! number of tracers to transport
-   logical,  dimension(ncnst),            intent(in)  :: doconvtran  ! flag for doing convective transport
+   logical(btype),   dimension(ncnst),    intent(in)  :: doconvtran  ! flag for doing convective transport
    real(r8), dimension(pcols,pver,ncnst), intent(in)  :: q           ! tracer array (including water vapor)
    real(r8), dimension(pcols,pver),       intent(in)  :: mu          ! mass flux up
    real(r8), dimension(pcols,pver),       intent(in)  :: md          ! mass flux down
@@ -58,7 +58,7 @@ subroutine zm_transport_tracer( pcols, ncol, pver, &
    real(r8), dimension(pcols,pver),       intent(in)  :: dp          ! delta pressure between interfaces
    real(r8), dimension(pcols,pver,ncnst), intent(in)  :: fracis      ! fraction of tracer that is insoluble
    integer,  dimension(pcols),            intent(in)  :: jt          ! index of cloud top for each column
-   integer,  dimension(pcols),            intent(in)  :: mx          ! index of cloud top for each column
+   integer,  dimension(pcols),            intent(in)  :: mx          ! index of cloud bottom for each column
    integer,  dimension(pcols),            intent(in)  :: ideep       ! gathering array
    integer,                               intent(in)  :: il1g        ! gathered min ncol index
    integer,                               intent(in)  :: il2g        ! gathered max ncol index
@@ -67,7 +67,7 @@ subroutine zm_transport_tracer( pcols, ncol, pver, &
    real(r8), dimension(pcols,pver,ncnst), intent(out) :: dqdt        ! output tendency array
    !----------------------------------------------------------------------------
    ! Local variables
-   integer  :: i,k                   ! loop indeces
+   integer  :: i,k                   ! loop indices
    integer  :: kbm                   ! Highest altitude index of cloud base
    integer  :: kk                    ! Work index
    integer  :: kkp1                  ! Work index
@@ -102,7 +102,7 @@ subroutine zm_transport_tracer( pcols, ncol, pver, &
    real(r8), parameter :: maxc_factor  = 1.e-12_r8
    real(r8), parameter :: flux_factor  = 1.e-12_r8
    !----------------------------------------------------------------------------
-   
+
    ! Find the highest level top and bottom levels of convection
    ktm = pver
    kbm = pver
@@ -116,7 +116,11 @@ subroutine zm_transport_tracer( pcols, ncol, pver, &
 
       if (doconvtran(m)) then
 
+#ifndef SCREAM_CONFIG_IS_CMAKE
          if (cnst_get_type_byind(m).eq.'dry') then
+#else
+         if (.false.) then
+#endif
             do k = 1,pver
                do i =il1g,il2g
                   dptmp(i,k) = dpdry(i,k)
@@ -161,7 +165,7 @@ subroutine zm_transport_tracer( pcols, ncol, pver, &
                if (cdifr > cdifr_min) then
                   cabv = max(const(i,km1),maxc*maxc_factor)
                   cbel = max(const(i,k  ),maxc*maxc_factor)
-                  chat(i,k) = log(cabv/cbel)/(cabv-cbel)*cabv*cbel
+                  chat(i,k) = bfb_log(cabv/cbel)/(cabv-cbel)*cabv*cbel
                else ! Small diff, so just arithmetic mean
                   chat(i,k) = 0.5_r8*( const(i,k) + const(i,km1) )
                end if
@@ -291,7 +295,6 @@ subroutine zm_transport_tracer( pcols, ncol, pver, &
          ! Initialize output tendency to zero, then scatter tendency back to full array
          dqdt(:,:,m) = 0._r8
          do k = 1,pver
-            kp1 = min(pver,k+1)
 #ifdef CPRCRAY
 !DIR$ CONCURRENT
 #endif
@@ -308,18 +311,15 @@ subroutine zm_transport_tracer( pcols, ncol, pver, &
 
 end subroutine zm_transport_tracer
 
-#endif /* SCREAM_CONFIG_IS_CMAKE */
-
 !===================================================================================================
 
 subroutine zm_transport_momentum( pcols, ncol, pver, pverp, wind_in, nwind, &
                                   mu, md, du, eu, ed, dp, &
                                   jt, mx, ideep, il1g, il2g, &
                                   wind_tend, pguall, pgdall, icwu, icwd, dt, seten )
-   !---------------------------------------------------------------------------- 
+   !----------------------------------------------------------------------------
    ! Purpose: Convective transport of momentum
    !----------------------------------------------------------------------------
-   use zm_conv,         only: zm_param
    !----------------------------------------------------------------------------
    ! Arguments
    integer,                               intent(in)  :: pcols       ! maximum number of columns
@@ -379,7 +379,7 @@ subroutine zm_transport_momentum( pcols, ncol, pver, pverp, wind_in, nwind, &
    real(r8), parameter :: momcu = 0.4_r8  ! pressure gradient term constant for updrafts
    real(r8), parameter :: momcd = 0.4_r8  ! pressure gradient term constant for downdrafts
    !----------------------------------------------------------------------------
-   
+
    ! Initialize variables
    pguall(1:ncol,1:pver, 1:nwind) = 0.0_r8
    pgdall(1:ncol,1:pver, 1:nwind) = 0.0_r8
@@ -450,16 +450,16 @@ subroutine zm_transport_momentum( pcols, ncol, pver, pverp, wind_in, nwind, &
          end do
       end do
 
-      ! bottom boundary 
+      ! bottom boundary
       k = pver
       km1 = max(1,k-1)
       do i=il1g,il2g
          mududp(i,k) = mu(i,k) * (wind_mid(i,k)-wind_mid(i,km1))/dp(i,km1)
-         mddudp(i,k) = md(i,k) * (wind_mid(i,k)-wind_mid(i,km1))/dp(i,km1) 
+         mddudp(i,k) = md(i,k) * (wind_mid(i,k)-wind_mid(i,km1))/dp(i,km1)
          pgu(i,k) = -momcu * mududp(i,k)
          pgd(i,k) = -momcd * mddudp(i,k)
       end do
-       
+
       !-------------------------------------------------------------------------
       ! Calculate in-cloud velocity
 
@@ -475,7 +475,7 @@ subroutine zm_transport_momentum( pcols, ncol, pver, pverp, wind_in, nwind, &
          endif
          if (md(i,k) < -mbsth) then
             wind_int_d(i,k) = ( -ed(i,km1)*wind_mid(i,km1)*dp(i,km1) ) - pgd(i,km1)*dp(i,km1)/md(i,k)
-         endif                     
+         endif
       end do
 
       ! Updraft from bottom to top
@@ -543,7 +543,7 @@ subroutine zm_transport_momentum( pcols, ncol, pver, pverp, wind_in, nwind, &
          end do
       end do
 
-      ! Calculate momentum flux in units of mb*m/s2 
+      ! Calculate momentum flux in units of mb*m/s2
       do k = ktm,pver
          do i = il1g,il2g
             mflux(i,k,m) = -mu(i,k)*( wind_int_u(i,k) - wind_int(i,k) ) &
@@ -551,7 +551,7 @@ subroutine zm_transport_momentum( pcols, ncol, pver, pverp, wind_in, nwind, &
          end do
       end do
 
-      ! Calculate winds at the end of the time step 
+      ! Calculate winds at the end of the time step
       do k = ktm,pver
          do i = il1g,il2g
             km1 = max(1,k-1)
@@ -569,7 +569,7 @@ subroutine zm_transport_momentum( pcols, ncol, pver, pverp, wind_in, nwind, &
       km1 = max(1,k-1)
       kp1 = min(pver,k+1)
       do i = il1g,il2g
-         ! calculate the KE fluxes at top and bot of layer 
+         ! calculate the KE fluxes at top and bot of layer
          ! based on a discrete approximation to b&b eq(35) F_KE = u*F_u + v*F_v at interface
          utop = ( wind0(i,k  ,1) + wind0(i,km1,1) )/2._r8
          vtop = ( wind0(i,k  ,2) + wind0(i,km1,2) )/2._r8

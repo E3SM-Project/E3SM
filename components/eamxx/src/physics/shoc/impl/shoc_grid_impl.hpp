@@ -30,7 +30,7 @@ void Functions<S,D>::shoc_grid(
   const uview_1d<Spack>&       dz_zi,
   const uview_1d<Spack>&       rho_zt)
 {
-  const auto ggr = C::gravit;
+  const auto ggr = C::gravit.value;
 
   const auto s_zi_grid = ekat::scalarize(zi_grid);
   const auto s_zt_grid = ekat::scalarize(zt_grid);

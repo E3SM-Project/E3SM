@@ -1,5 +1,5 @@
 set(INFRA_SRCS
-  zm_iso_c.f90
+  zm_c2f_bridge.f90
   zm_test_data.cpp
 )
 

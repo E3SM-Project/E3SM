@@ -2,6 +2,7 @@
 
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 #include "share/io/scorpio_input.hpp"
+#include "share/physics/physics_constants.hpp"
 #include "share/util/eamxx_timing.hpp"
 #include "share/core/eamxx_config.hpp"
 
@@ -150,6 +151,10 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
           // NOTE: without this, the code crash while attempting to get a
           //       pio decomp for this var, since there are no dimensions.
           //       Perhaps you can explore setting the var as a global att
+          continue;
+        } else if (f.get_header().has_extra_data("save_as_geo_data") and
+                   not f.get_header().get_extra_data<bool>("save_as_geo_data")) {
+          // This field is NOT to be saved as geo data
           continue;
         }
         if (use_suffix) {
@@ -854,6 +859,15 @@ setup_file (      IOFileSpecs& filespecs,
     }
     scorpio::set_attribute(filename,"GLOBAL","fp_precision",fp_precision);
     set_file_header(filespecs);
+
+    const auto& pc_names = m_params.get<std::vector<std::string>>("constants",{});
+    const auto& pc_dict = physics::Constants<Real>::dictionary();
+    for (const auto& n: pc_names) {
+      const auto& c = pc_dict.at(n);
+      scorpio::define_var (filename, n, c.units.to_string(), {},
+                           "real", "real", false);
+      scorpio::write_var (filename, n, &c.value);
+    }
   }
 
   // Make all output streams register their dims/vars

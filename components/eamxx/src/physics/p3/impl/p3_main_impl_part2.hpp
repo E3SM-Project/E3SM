@@ -111,13 +111,13 @@ void Functions<S,D>
 {
   constexpr Scalar qsmall       = C::QSMALL;
   constexpr Scalar nsmall       = C::NSMALL;
-  constexpr Scalar T_zerodegc   = C::T_zerodegc;
+  constexpr Scalar T_zerodegc   = C::T_zerodegc.value;
   constexpr Scalar f1r          = C::f1r;
   constexpr Scalar f2r          = C::f2r;
   constexpr Scalar nmltratio    = C::nmltratio;
-  constexpr Scalar inv_cp       = C::INV_CP;
-  constexpr Scalar latvap       = C::LatVap;
-  constexpr Scalar latice       = C::LatIce;
+  constexpr Scalar inv_cp       = C::INV_CP.value;
+  constexpr Scalar latvap       = C::LatVap.value;
+  constexpr Scalar latice       = C::LatIce.value;
 
   const bool do_ice_production   = runtime_options.do_ice_production;
   const bool use_hetfrz_classnuc = runtime_options.use_hetfrz_classnuc;

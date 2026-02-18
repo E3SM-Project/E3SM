@@ -3,8 +3,6 @@
 #include "share/property_checks/field_lower_bound_check.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
 
-#include "eamxx_config.h" // for SCREAM_CIME_BUILD
-
 #include <ekat_assert.hpp>
 #include <ekat_team_policy_utils.hpp>
 #include <ekat_reduction_utils.hpp>
@@ -22,11 +20,11 @@ SHOCMacrophysics::SHOCMacrophysics (const ekat::Comm& comm,const ekat::Parameter
 }
 
 // =========================================================================================
-void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
+void SHOCMacrophysics::create_requests()
 {
   using namespace ekat::units;
 
-  m_grid = grids_manager->get_grid("physics");
+  m_grid = m_grids_manager->get_grid("physics");
   const auto& grid_name = m_grid->name();
 
   m_num_cols = m_grid->get_num_local_dofs(); // Number of columns on this rank
@@ -456,7 +454,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   const auto s_pref_mid = ekat::scalarize(pref_mid);
   const auto hyam = m_grid->get_geometry_data("hyam").get_view<const Real*>();
   const auto hybm = m_grid->get_geometry_data("hybm").get_view<const Real*>();
-  const auto ps0 = C::P0;
+  const auto ps0 = C::P0.value;
   const auto psref = ps0;
   Kokkos::parallel_for(Kokkos::RangePolicy<>(0, m_num_levs), KOKKOS_LAMBDA (const int lev) {
     s_pref_mid(lev) = ps0*hyam(lev) + psref*hybm(lev);
@@ -610,7 +608,7 @@ void SHOCMacrophysics::check_flux_state_consistency(const double dt)
   using RU = ekat::ReductionUtils<KT::ExeSpace>;
   using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
 
-  const Real gravit = PC::gravit;
+  const Real gravit = PC::gravit.value;
   const Real qmin   = 1e-12; // minimum permitted constituent concentration (kg/kg)
 
   const auto& pseudo_density = get_field_in ("pseudo_density").get_view<const Spack**>();
@@ -637,7 +635,7 @@ void SHOCMacrophysics::check_flux_state_consistency(const double dt)
     // the moisture in the lowest model level. If so, apply fixer.
     const auto condition = surf_evap(i) - (qmin - qv_i(last_pack_idx)[last_pack_entry])/(dt*gravit*rpdel);
     if (condition < 0) {
-      const auto cc = abs(surf_evap(i)*dt*gravit);
+      const auto cc = ekat::abs(surf_evap(i)*dt*gravit);
 
       auto tracer_mass = [&](const int k) {
         return qv_i(k)*pseudo_density_i(k);

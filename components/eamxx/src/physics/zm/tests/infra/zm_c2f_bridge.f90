@@ -1,0 +1,102 @@
+module zm_c2f_bridge
+  use iso_c_binding
+  implicit none
+
+#include "eamxx_config.f"
+#ifdef SCREAM_DOUBLE_PRECISION
+# define c_real c_double
+#else
+# define c_real c_float
+#endif
+
+!===================================================================================================
+contains
+!===================================================================================================
+
+subroutine zm_find_mse_max_f( pcols, ncol, pver, num_msg, msemax_top_k, pergro_active, temperature, zmid, sp_humidity, msemax_klev, mse_max_val ) bind(C)
+  use zm_conv_cape,   only: find_mse_max
+  use zm_conv_types,  only: zm_const_t, zm_param_t
+  use zm_conv_types,  only: zm_param_set_for_testing, zm_const_set_for_testing
+  !-----------------------------------------------------------------------------
+  ! Interface Arguments
+  integer(kind=c_int), value,                intent(in) :: pcols           ! number of atmospheric columns (max)
+  integer(kind=c_int), value,                intent(in) :: ncol            ! number of atmospheric columns (actual)
+  integer(kind=c_int), value,                intent(in) :: pver            ! number of mid-point vertical levels
+  integer(kind=c_int), value,                intent(in) :: num_msg         ! number of missing moisture levels at the top of model
+  integer(kind=c_int), dimension(ncol),      intent(in) :: msemax_top_k    ! upper limit index of max MSE search
+  logical(kind=c_bool),value,                intent(in) :: pergro_active   ! flag for perturbation growth test (pergro)
+  real(kind=c_real),   dimension(ncol,pver), intent(in) :: temperature     ! environement temperature
+  real(kind=c_real),   dimension(ncol,pver), intent(in) :: zmid            ! height/altitude at mid-levels
+  real(kind=c_real),   dimension(ncol,pver), intent(in) :: sp_humidity     ! specific humidity
+  integer(kind=c_int), dimension(ncol),      intent(out):: msemax_klev     ! index of max MSE at parcel launch level
+  real(kind=c_real),   dimension(ncol),      intent(out):: mse_max_val     ! value of max MSE at parcel launch level
+  !-----------------------------------------------------------------------------
+  ! Local Variables
+  type(zm_const_t) :: zm_const ! derived type to hold ZM constants
+  type(zm_param_t) :: zm_param ! derived type to hold ZM tunable parameters
+  logical :: pergro_active_f
+  !-----------------------------------------------------------------------------
+  call zm_param_set_for_testing(zm_param)
+  call zm_const_set_for_testing(zm_const)
+  !-----------------------------------------------------------------------------
+  pergro_active_f = pergro_active
+  call find_mse_max( pcols, ncol, pver, num_msg, msemax_top_k, pergro_active_f, temperature, zmid, sp_humidity, zm_const, zm_param, msemax_klev, mse_max_val )
+  !-----------------------------------------------------------------------------
+end subroutine zm_find_mse_max_f
+
+!===================================================================================================
+
+subroutine zm_common_init_bridge_f() bind(C)
+  use zm_eamxx_bridge_wv_saturation, only: wv_sat_init
+
+  call wv_sat_init()
+end subroutine zm_common_init_bridge_f
+
+subroutine zm_common_finalize_bridge_f() bind(C)
+  use zm_eamxx_bridge_wv_saturation, only: wv_sat_final
+
+  call wv_sat_final()
+end subroutine zm_common_finalize_bridge_f
+
+
+subroutine ientropy_bridge_f(s, p, qt, t, qst, tfg) bind(C)
+  use zm_conv_util, only : ientropy
+  use zm_conv_types,  only: zm_const_t, zm_const_set_for_testing
+
+  real(kind=c_real) , value, intent(in) :: s, p, qt, tfg
+  real(kind=c_real) , intent(out) :: t, qst
+
+  type(zm_const_t) :: zm_const
+
+  call zm_const_set_for_testing(zm_const)
+  call ientropy(1, s, p, qt, t, qst, tfg, zm_const)
+end subroutine ientropy_bridge_f
+
+subroutine entropy_bridge_f(tk, p, qtot, entropy_rv) bind(C)
+  use zm_conv_util, only : entropy
+  use zm_conv_types, only: zm_const_t, zm_const_set_for_testing
+
+  real(kind=c_real) , value, intent(in) :: tk, p, qtot
+  real(kind=c_real) , intent(out) :: entropy_rv
+
+  type(zm_const_t) :: zm_const
+
+  call zm_const_set_for_testing(zm_const)
+  entropy_rv = entropy(tk, p, qtot, zm_const)
+end subroutine entropy_bridge_f
+
+subroutine zm_transport_tracer_bridge_f(pcols, pver, doconvtran, q, ncnst, mu, md, du, eu, ed, dp, jt, mx, ideep, il1g, il2g, fracis, dqdt, dpdry, dt) bind(C)
+  use zm_transport, only : zm_transport_tracer
+
+  integer(kind=c_int) , value, intent(in) :: pcols, pver, ncnst, il1g, il2g
+  logical(kind=c_bool) , intent(in), dimension(ncnst) :: doconvtran
+  real(kind=c_real) , intent(in), dimension(pcols, pver, ncnst) :: q, fracis
+  real(kind=c_real) , intent(in), dimension(pcols, pver) :: mu, md, du, eu, ed, dp, dpdry
+  integer(kind=c_int) , intent(in), dimension(pcols) :: jt, mx, ideep
+  real(kind=c_real) , intent(out), dimension(pcols, pver, ncnst) :: dqdt
+  real(kind=c_real) , value, intent(in) :: dt
+
+  call zm_transport_tracer(pcols, pver, doconvtran, q, ncnst, mu, md, du, eu, ed, dp, jt, mx, ideep, il1g, il2g, fracis, dqdt, dpdry, dt)
+end subroutine zm_transport_tracer_bridge_f
+
+end module zm_c2f_bridge

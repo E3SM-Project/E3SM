@@ -26,10 +26,10 @@ void Functions<S,D>::shoc_assumed_pdf_compute_qs(
   Spack&       qs2,
   Spack&       beta2)
 {
-  const Scalar rair = C::Rair;
-  const Scalar rv = C::RV;
-  const Scalar cp = C::CP;
-  const Scalar lcond = C::LatVap;
+  const Scalar rair  = C::Rair.value;
+  const Scalar rv    = C::RV.value;
+  const Scalar cp    = C::CP.value;
+  const Scalar lcond = C::LatVap.value;
 
   // Compute MurphyKoop_svp
   const int liquid = 0;

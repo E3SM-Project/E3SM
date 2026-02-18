@@ -144,8 +144,8 @@ struct UnitWrap::UnitTest<D>::TestIceDepositionSublimation : public UnitWrap::Un
         REQUIRE( (d_cxx.qi2qv_sublim_tend==0 || d_cxx.qv + d_cxx.qi2qv_sublim_tend*d_cxx.inv_dt <= d_cxx.qv_sat_i) );
 
         //if T>frz, berg and vapdep should be 0:
-        REQUIRE( (d_cxx.T_atm<C::T_zerodegc || d_cxx.qc2qi_berg_tend==0) );
-        REQUIRE( (d_cxx.T_atm<C::T_zerodegc || d_cxx.qv2qi_vapdep_tend==0) );
+        REQUIRE( (d_cxx.T_atm<C::T_zerodegc.value || d_cxx.qc2qi_berg_tend==0) );
+        REQUIRE( (d_cxx.T_atm<C::T_zerodegc.value || d_cxx.qv2qi_vapdep_tend==0) );
       }
     }
     else if (this->m_baseline_action == GENERATE) {

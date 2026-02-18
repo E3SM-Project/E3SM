@@ -112,8 +112,8 @@ void compute_column_pressure(Int col, Int nlev, const Array2& z,
                              Array2& pres) {
   using consts = scream::physics::Constants<Real>;
   const Int i = col;
-  const Real k = consts::Rair / consts::Cpair;
-  const Real c = -consts::gravit * pow(consts::P0, k) / consts::Rair;
+  const Real k = consts::Rair.value / consts::Cpair.value;
+  const Real c = -consts::gravit.value * pow(consts::P0.value, k) / consts::Rair.value;
   const Real p_s = surface_pressure;
 
   // Move up the column, computing the pressures at each elevation.
@@ -167,7 +167,7 @@ FortranData::Ptr make_standard(const Int shcol, Int nlev, Int num_qtracers) {
       const Real ql = interpolate_data(z_ref, ql_ref, zt);
       d.qw(i, k) = qw;
       d.shoc_ql(i, k) = ql;
-      Real zvir = (consts::RH2O / consts::Rair) - 1.0;
+      Real zvir = (consts::RH2O.value / consts::Rair.value) - 1.0;
       d.thv(i, k) = theta_zt * (1.0 + zvir * qw);
       d.thetal(i, k) = theta_zt;
 
@@ -202,9 +202,9 @@ FortranData::Ptr make_standard(const Int shcol, Int nlev, Int num_qtracers) {
     // Compute pressure differences and host_dse * exner.
     for (Int k = 0; k < nlev; ++k) {
       d.pdel(i, k) = std::abs(d.presi(i, k+1) - d.presi(i, k));
-      d.inv_exner(i, k) = 1/pow(d.pres(i, k)/consts::P0, consts::Rair/consts::Cpair);
-      d.host_dse(i, k) = consts::Cpair * d.thv(i, k)/d.inv_exner(i, k) +
-                         consts::gravit * d.zt_grid(i, k);
+      d.inv_exner(i, k) = 1/pow(d.pres(i, k)/consts::P0.value, consts::Rair.value/consts::Cpair.value);
+      d.host_dse(i, k) = consts::Cpair.value * d.thv(i, k)/d.inv_exner(i, k) +
+                         consts::gravit.value * d.zt_grid(i, k);
     }
 
     // Zero the other input fields.

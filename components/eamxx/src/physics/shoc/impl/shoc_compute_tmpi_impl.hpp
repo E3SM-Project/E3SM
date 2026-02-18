@@ -17,7 +17,7 @@ void Functions<S,D>
   const uview_1d<const Spack>& dz_zi,
   const uview_1d<Spack>&       tmpi)
 {
-  const auto ggr = C::gravit;
+  const auto ggr = C::gravit.value;
 
   tmpi(0)[0] = 0;
 

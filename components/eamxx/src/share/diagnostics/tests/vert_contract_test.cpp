@@ -168,7 +168,7 @@ TEST_CASE("vert_contract") {
   auto dp_scaled   = dp.clone("dp_scaled");
   // auto dz_scaled   = dz.clone("dz_scaled");
 
-  dp_scaled.scale(sp(1.0) / scream::physics::Constants<Real>::gravit);
+  dp_scaled.scale(sp(1.0) / scream::physics::Constants<Real>::gravit.value);
 
   vert_contraction(dps, dp_scaled, dp_ones);
 

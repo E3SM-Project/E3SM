@@ -27,7 +27,6 @@
     │   │   ├── cosp/
     │   │   ├── iop_forcing/
     │   │   ├── mam/
-    │   │   ├── ml_correction/
     │   │   ├── nudging/
     │   │   ├── p3/
     │   │   ├── rrtmgp/
@@ -105,13 +104,6 @@
         in conjunction with the Doubly-Periodic (DP) configuration of SCREAM.
         - `mam`: Contains the high-performance **M**odal **A**erosol **M**odel,
         parameterized with **4** size modes known as **MAM4xx**.
-        - `ml_correction`: This is a product developed as a part of a Lawrence
-        Livermore National Laboratory LDRD project in which the goal was to
-        improve the results of low-resolution SCREAM runs by employing
-        machine-learning algorithms to analyze the output of nudged
-        high-resolution runs.
-            - This code is not actively supported but may be useful/or
-            interesting to some.
         - `nudging`: Contains machinery that can be applied to "nudge"
         quantities in EAMxx toward desired values, typically coming from
         previous model runs or reanalysis data.

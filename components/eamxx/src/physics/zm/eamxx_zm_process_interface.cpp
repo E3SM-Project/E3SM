@@ -1,5 +1,3 @@
-#include "eamxx_config.h" // for SCREAM_CIME_BUILD
-
 #include "share/property_checks/field_lower_bound_check.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
 
@@ -27,7 +25,7 @@ ZMDeepConvection::ZMDeepConvection( const ekat::Comm& comm,
 }
 
 /*------------------------------------------------------------------------------------------------*/
-void ZMDeepConvection::set_grids (const std::shared_ptr<const GridsManager> grids_manager)
+void ZMDeepConvection::create_requests ()
 {
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
@@ -37,7 +35,7 @@ void ZMDeepConvection::set_grids (const std::shared_ptr<const GridsManager> grid
   // Gather runtime options from file
   zm_opts.load_runtime_options(m_params);
 
-  m_grid = grids_manager->get_grid("physics");
+  m_grid = m_grids_manager->get_grid("physics");
 
   const auto& grid_name = m_grid->name();
   const auto layout     = m_grid->get_3d_scalar_layout(true);
@@ -259,8 +257,8 @@ void ZMDeepConvection::run_impl (const double dt)
     // accumulate surface precipitation fluxes
     Kokkos::parallel_for("zm_update_precip",KT::RangePolicy(0, m_ncol), KOKKOS_LAMBDA (const int i) {
       auto prec_liq = loc_zm_output_prec(i) - loc_zm_output_snow(i);
-      precip_liq_surf_mass(i) += ekat::impl::max(0.0,prec_liq) * PC::RHO_H2O * dt;
-      precip_ice_surf_mass(i) += loc_zm_output_snow(i) * PC::RHO_H2O * dt;
+      precip_liq_surf_mass(i) += ekat::impl::max(0.0,prec_liq) * PC::RHO_H2O.value * dt;
+      precip_ice_surf_mass(i) += loc_zm_output_snow(i) * PC::RHO_H2O.value * dt;
     });
 
     Kokkos::parallel_for("zm_update_prognostic",KT::RangePolicy(0, m_ncol*nlev_mid_packs), KOKKOS_LAMBDA (const int idx) {
@@ -319,15 +317,15 @@ size_t ZMDeepConvection::requested_buffer_size_in_bytes() const
   const int nlev_int_packs = ekat::npack<Spack>(m_nlev+1);
   size_t zm_buffer_size = 0;
 
-  zm_buffer_size+= ZMF::zm_input_state::num_1d_intgr * sizeof(Int)   * m_ncol;
-  zm_buffer_size+= ZMF::zm_input_state::num_1d_scalr * sizeof(Scalar)* m_ncol;
-  zm_buffer_size+= ZMF::zm_input_state::num_2d_midlv * sizeof(Spack) * m_ncol * nlev_mid_packs;
-  zm_buffer_size+= ZMF::zm_input_state::num_2d_intfc * sizeof(Spack) * m_ncol * nlev_int_packs;
+  zm_buffer_size+= ZMF::ZmInputState::num_1d_intgr * sizeof(Int)   * m_ncol;
+  zm_buffer_size+= ZMF::ZmInputState::num_1d_scalr * sizeof(Scalar)* m_ncol;
+  zm_buffer_size+= ZMF::ZmInputState::num_2d_midlv * sizeof(Spack) * m_ncol * nlev_mid_packs;
+  zm_buffer_size+= ZMF::ZmInputState::num_2d_intfc * sizeof(Spack) * m_ncol * nlev_int_packs;
 
-  zm_buffer_size+= ZMF::zm_output_tend::num_1d_intgr * sizeof(Int)   * m_ncol;
-  zm_buffer_size+= ZMF::zm_output_tend::num_1d_scalr * sizeof(Scalar)* m_ncol;
-  zm_buffer_size+= ZMF::zm_output_tend::num_2d_midlv * sizeof(Spack) * m_ncol * nlev_mid_packs;
-  zm_buffer_size+= ZMF::zm_output_tend::num_2d_intfc * sizeof(Spack) * m_ncol * nlev_int_packs;
+  zm_buffer_size+= ZMF::ZmOutputTend::num_1d_intgr * sizeof(Int)   * m_ncol;
+  zm_buffer_size+= ZMF::ZmOutputTend::num_1d_scalr * sizeof(Scalar)* m_ncol;
+  zm_buffer_size+= ZMF::ZmOutputTend::num_2d_midlv * sizeof(Spack) * m_ncol * nlev_mid_packs;
+  zm_buffer_size+= ZMF::ZmOutputTend::num_2d_intfc * sizeof(Spack) * m_ncol * nlev_int_packs;
 
   int num_f_mid  = (9+6);
   int num_f_int  = (2+3);
@@ -347,10 +345,10 @@ void ZMDeepConvection::init_buffers(const ATMBufferManager &buffer_manager)
   const int nlev_mid_packs = ekat::npack<Spack>(m_nlev);
   const int nlev_int_packs = ekat::npack<Spack>(m_nlev+1);
 
-  constexpr auto num_1d_intgr = ZMF::zm_input_state::num_1d_intgr + ZMF::zm_output_tend::num_1d_intgr;
-  constexpr auto num_1d_scalr = ZMF::zm_input_state::num_1d_scalr + ZMF::zm_output_tend::num_1d_scalr;
-  constexpr auto num_2d_midlv = ZMF::zm_input_state::num_2d_midlv + ZMF::zm_output_tend::num_2d_midlv;
-  constexpr auto num_2d_intfc = ZMF::zm_input_state::num_2d_intfc + ZMF::zm_output_tend::num_2d_intfc;
+  constexpr auto num_1d_intgr = ZMF::ZmInputState::num_1d_intgr + ZMF::ZmOutputTend::num_1d_intgr;
+  constexpr auto num_1d_scalr = ZMF::ZmInputState::num_1d_scalr + ZMF::ZmOutputTend::num_1d_scalr;
+  constexpr auto num_2d_midlv = ZMF::ZmInputState::num_2d_midlv + ZMF::ZmOutputTend::num_2d_midlv;
+  constexpr auto num_2d_intfc = ZMF::ZmInputState::num_2d_intfc + ZMF::ZmOutputTend::num_2d_intfc;
 
   constexpr int num_f_mid  = (9+6);
   constexpr int num_f_int  = (2+3);

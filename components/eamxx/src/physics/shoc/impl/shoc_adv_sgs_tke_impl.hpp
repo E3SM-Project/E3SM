@@ -29,7 +29,7 @@ void Functions<S,D>
 {
 
   //Shared constants
-  static constexpr Scalar ggr      = C::gravit;
+  static constexpr Scalar ggr      = C::gravit.value;
   static constexpr Scalar basetemp = C::basetemp;
   static constexpr Scalar mintke   = scream::shoc::Constants<Real>::mintke;
   static constexpr Scalar maxtke   = scream::shoc::Constants<Real>::maxtke;

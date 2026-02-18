@@ -1,5 +1,7 @@
 add_library (eamxx_physics_share
   eamxx_trcmix.cpp
+  physics_share.cpp
+  physics_share_f2c.F90
 )
 
 # Add ETI source files if not on CUDA/HIP
@@ -21,11 +23,6 @@ target_link_libraries(eamxx_physics_share PUBLIC
   ekat::Pack)
 
 if (NOT SCREAM_LIB_ONLY)
-  # Add source files that are only used in testing
-  target_sources(eamxx_physics_share PRIVATE
-    physics_share_f2c.F90
-    physics_share.cpp
-  )
 
   # This file does not add any other dependency to eamxx_test_support,
   # so it makes sense to add it to that lib (unlike mesh_free_grids_manager.cpp,

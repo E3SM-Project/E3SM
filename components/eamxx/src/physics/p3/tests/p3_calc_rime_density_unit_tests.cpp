@@ -37,8 +37,8 @@ void run_bfb()
 
   // We need to test the calculation under freezing and not-freezing
   // conditions.
-  constexpr Scalar t_freezing = 0.9 * C::T_rainfrz,
-                   t_not_freezing = 2.0 * C::T_rainfrz;
+  constexpr Scalar t_freezing = 0.9 * C::T_rainfrz.value,
+                   t_not_freezing = 2.0 * C::T_rainfrz.value;
 
   // Ideally, we'd also test the calculation based on the mass-weighted mean
   // size Ri--whether it's above or below 8, specifically. Unfortunately,

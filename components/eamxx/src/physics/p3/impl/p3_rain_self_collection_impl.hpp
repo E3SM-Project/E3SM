@@ -19,7 +19,7 @@ void Functions<S,D>
   // (breakup following modified Verlinde and Cotton scheme)
 
   constexpr Scalar qsmall   = C::QSMALL;
-  constexpr Scalar rho_h2o  = C::RHO_H2O;
+  constexpr Scalar rho_h2o  = C::RHO_H2O.value;
   constexpr Scalar pi       = C::Pi;
 
   const Scalar rain_selfcollection_breakup_diameter =

@@ -67,6 +67,9 @@ struct UnitWrap {
     // Put struct decls here
     struct Test_zm_find_mse_max;
     
+    struct TestIentropy;
+    struct TestEntropy;
+    struct TestZmTransportTracer;
   }; // UnitWrap
 };
 

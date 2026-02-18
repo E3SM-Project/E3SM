@@ -37,8 +37,8 @@ void Functions<S,D>::gw_prof(
   // atmosphere above the top level.
   Kokkos::single(Kokkos::PerTeam(team), [&] {
     ti(0) = t(0);
-    rhoi(0) = pint(0) / (C::Rair*ti(0));
-    ni(0) = sqrt(C::gravit*C::gravit / (cpair*ti(0)));
+    rhoi(0) = pint(0) / (C::Rair.value*ti(0));
+    ni(0) = sqrt(C::gravit.value*C::gravit.value / (cpair*ti(0)));
   });
 
   // Interior points use centered differences.
@@ -47,9 +47,9 @@ void Functions<S,D>::gw_prof(
   static constexpr Real n2min = GWC::n2min;
   Kokkos::parallel_for(
     Kokkos::TeamVectorRange(team, 1, pver), [&] (const int k) {
-    rhoi(k) = pint(k) / (C::Rair*ti(k));
+    rhoi(k) = pint(k) / (C::Rair.value*ti(k));
     const Real dtdp = (t(k)-t(k-1)) / (pmid(k)-pmid(k-1));
-    const Real n2 = C::gravit*C::gravit/ti(k) * (1/cpair - rhoi(k)*dtdp);
+    const Real n2 = C::gravit.value*C::gravit.value/ti(k) * (1/cpair - rhoi(k)*dtdp);
     ni(k) = std::sqrt(ekat::impl::max(n2min, n2));
   });
 
@@ -58,7 +58,7 @@ void Functions<S,D>::gw_prof(
   team.team_barrier();
   Kokkos::single(Kokkos::PerTeam(team), [&] {
     ti(pver) = t(pver-1);
-    rhoi(pver) = pint(pver) / (C::Rair*ti(pver));
+    rhoi(pver) = pint(pver) / (C::Rair.value*ti(pver));
     ni(pver) = ni(pver-1);
   });
 

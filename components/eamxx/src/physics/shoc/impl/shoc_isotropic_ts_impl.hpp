@@ -29,7 +29,7 @@ void Functions<S,D>
 {
 
   //constants from share/physics
-  static constexpr  Scalar ggr = C::gravit;
+  static constexpr  Scalar ggr = C::gravit.value;
 
   //Declare constants
          const     Scalar lambda_low    = lambda_low_in; 

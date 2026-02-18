@@ -16,12 +16,12 @@ void Functions<S,D>
   const P3Runtime& runtime_options, 
   const Smask& context)
 {
-   constexpr Scalar nsmall  = C::NSMALL;
-   constexpr Scalar tmelt   = C::Tmelt;
-   constexpr Scalar T_icenuc = C::Tmelt-sp(15.0);
-   constexpr Scalar zero    = C::ZERO;
-   constexpr Scalar piov3   = C::PIOV3;
-   constexpr Scalar mi0     = sp(4.0)*piov3*sp(900.0)*sp(1.e-18);
+   constexpr Scalar nsmall   = C::NSMALL;
+   constexpr Scalar tmelt    = C::Tmelt.value;
+   constexpr Scalar T_icenuc = C::Tmelt.value-sp(15.0);
+   constexpr Scalar zero     = C::ZERO;
+   constexpr Scalar piov3    = C::PIOV3;
+   constexpr Scalar mi0      = sp(4.0)*piov3*sp(900.0)*sp(1.e-18);
 
    const Scalar deposition_nucleation_exponent =
        runtime_options.deposition_nucleation_exponent;

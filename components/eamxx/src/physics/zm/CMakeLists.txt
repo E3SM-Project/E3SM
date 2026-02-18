@@ -32,7 +32,7 @@ set(ZM_F90_SRCS
   # ----------------------------------------------------------------------------
 )
 
-set(ZM_CXX_SRCS
+set(ZM_SRCS
   # ----------------------------------------------------------------------------
   # C++/EAMxx atomsphere process for ZM
   eamxx_zm_process_interface.cpp
@@ -42,10 +42,16 @@ set(ZM_CXX_SRCS
 # Add ETI source files if not on CUDA/HIP
 if (NOT EAMXX_ENABLE_GPU OR Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE OR Kokkos_ENABLE_HIP_RELOCATABLE_DEVICE_CODE)
   list(APPEND ZM_SRCS
-  )
+    eti/zm_common_init.cpp
+    eti/zm_input_state.cpp
+    eti/zm_output_tend.cpp
+    eti/zm_invert_entropy.cpp
+    eti/zm_entropy.cpp
+    eti/zm_zm_transport_tracer.cpp
+  ) # ZM ETI SRCS
 endif()
 
-add_library(zm ${ZM_F90_SRCS} ${ZM_CXX_SRCS})
+add_library(zm ${ZM_F90_SRCS} ${ZM_SRCS})
 
 set_target_properties(zm PROPERTIES
   Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules
@@ -58,6 +64,7 @@ target_include_directories(zm PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/fortran_bridge
   ${CMAKE_CURRENT_BINARY_DIR}/modules
   ${PATH_TO_LEGACY_ZM}
+  ${PATH_TO_LEGACY_ZM}/..
 )
 target_link_libraries(zm eamxx_physics_share scream_share csm_share)
 
