@@ -15,7 +15,9 @@ module zm_conv_cape
    private
 
    public :: compute_dilute_cape ! calculate convective available potential energy (CAPE) with dilute parcel ascent
-
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   public :: compute_dilute_parcel
+#endif
    ! Only public for testing
    public :: find_mse_max        ! find level of max moist static energy for parcel initialization
 

@@ -458,6 +458,26 @@ struct Functions {
     Int& msemax_klev, // index of max MSE at parcel launch level
     Real& mse_max_val); // value of max MSE at parcel launch level
 
+  KOKKOS_FUNCTION
+  static void compute_dilute_parcel(
+    // Inputs
+    const MemberType& team,
+    const Int& pver, // number of mid-point vertical levels
+    const Int& num_msg, // number of missing moisture levels at the top of model
+    const Int& klaunch, // index of parcel launch level based on max MSE
+    const uview_1d<const Real>& pmid, // ambient env pressure at cell center
+    const uview_1d<const Real>& temperature, // ambient env temperature at cell center
+    const uview_1d<const Real>& sp_humidity, // ambient env specific humidity at cell center
+    const Real& tpert, // PBL temperature perturbation
+    const Int& pblt, // index of pbl depth
+    // Inputs/Outputs
+    const uview_1d<Real>& parcel_temp, // Parcel temperature
+    const uview_1d<Real>& parcel_vtemp, // Parcel virtual temperature
+    const uview_1d<Real>& parcel_qsat, // Parcel water vapour (sat value above lcl)
+    Real& lcl_pmid, // lifting condensation level (LCL) pressure
+    Real& lcl_temperature, // lifting condensation level (LCL) temperature
+    Int& lcl_klev); // lifting condensation level (LCL) vertical index
+
   //
   // --------- Members ---------
   //
@@ -478,5 +498,6 @@ struct Functions {
 # include "impl/zm_zm_transport_momentum_impl.hpp"
 # include "impl/zm_compute_dilute_cape_impl.hpp"
 # include "impl/zm_find_mse_max_impl.hpp"
+# include "impl/zm_compute_dilute_parcel_impl.hpp"
 #endif // GPU && !KOKKOS_ENABLE_*_RELOCATABLE_DEVICE_CODE
 #endif // ZM_FUNCTIONS_HPP

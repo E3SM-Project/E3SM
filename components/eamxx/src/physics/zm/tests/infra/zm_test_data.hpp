@@ -268,6 +268,35 @@ struct FindMseMaxData : public PhysicsTestData {
   PTD_STD_DEF(FindMseMaxData, 5, pcols, ncol, pver, num_msg, pergro_active);
 };
 
+struct ComputeDiluteParcelData : public PhysicsTestData {
+  // Inputs
+  Int pcols, ncol, pver, num_msg;
+  Int *klaunch, *pblt;
+  Real *pmid, *temperature, *sp_humidity, *tpert;
+
+  // Inputs/Outputs
+  Int *lcl_klev;
+  Real *parcel_temp, *parcel_vtemp, *parcel_qsat, *lcl_pmid, *lcl_temperature;
+
+  ComputeDiluteParcelData(Int pcols_, Int ncol_, Int pver_, Int num_msg_) :
+    PhysicsTestData({
+      {pcols_, pver_},
+      {pcols_},
+      {pcols_}
+    },
+    {
+      {&pmid, &temperature, &sp_humidity, &parcel_temp, &parcel_vtemp, &parcel_qsat},
+      {&tpert, &lcl_pmid, &lcl_temperature}
+    },
+    {
+      {&klaunch, &pblt, &lcl_klev}
+    }),
+    pcols(pcols_), ncol(ncol_), pver(pver_), num_msg(num_msg_)
+  {}
+
+  PTD_STD_DEF(ComputeDiluteParcelData, 4, pcols, ncol, pver, num_msg);
+};
+
 // Glue functions for host test data. We can call either fortran or CXX with this data (_f -> fortran)
 void zm_find_mse_max(zm_data_find_mse_max& d);
 void ientropy_f(IentropyData& d);
@@ -282,6 +311,8 @@ void compute_dilute_cape_f(ComputeDiluteCapeData& d);
 void compute_dilute_cape(ComputeDiluteCapeData& d);
 void find_mse_max_f(FindMseMaxData& d);
 void find_mse_max(FindMseMaxData& d);
+void compute_dilute_parcel_f(ComputeDiluteParcelData& d);
+void compute_dilute_parcel(ComputeDiluteParcelData& d);
 // End glue function decls
 
 }  // namespace zm

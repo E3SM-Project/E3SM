@@ -50,6 +50,8 @@ void zm_transport_momentum_bridge_f(Int pcols, Int ncol, Int pver, Int pverp, Re
 void compute_dilute_cape_bridge_f(Int pcols, Int ncol, Int pver, Int pverp, Int num_cin, Int num_msg, Real* sp_humidity_in, Real* temperature_in, Real* zmid, Real* pmid, Real* pint, Int* pblt, Real* tpert, Real* parcel_temp, Real* parcel_qsat, Int* msemax_klev, Real* lcl_temperature, Int* lcl_klev, Int* eql_klev, Real* cape, bool calc_msemax_klev, Int* prev_msemax_klev, bool use_input_tq_mx, Real* q_mx, Real* t_mx);
 
 void find_mse_max_bridge_f(Int pcols, Int ncol, Int pver, Int num_msg, Int* msemax_top_k, bool pergro_active, Real* temperature, Real* zmid, Real* sp_humidity, Int* msemax_klev, Real* mse_max_val);
+
+void compute_dilute_parcel_bridge_f(Int pcols, Int ncol, Int pver, Int num_msg, Int* klaunch, Real* pmid, Real* temperature, Real* sp_humidity, Real* tpert, Int* pblt, Real* parcel_temp, Real* parcel_vtemp, Real* parcel_qsat, Real* lcl_pmid, Real* lcl_temperature, Int* lcl_klev);
 } // extern "C" : end _f decls
 
 // Inits and finalizes are not intended to be called outside this comp unit
@@ -615,6 +617,95 @@ void find_mse_max(FindMseMaxData& d)
 
   std::vector<view1di_d> vec1di_out = {msemax_klev_d};
   ekat::device_to_host({d.msemax_klev}, d.pcols, vec1di_out);
+
+  zm_finalize_cxx();
+}
+void compute_dilute_parcel_f(ComputeDiluteParcelData& d)
+{
+  d.transition<ekat::TransposeDirection::c2f>();
+  zm_common_init_f();
+  compute_dilute_parcel_bridge_f(d.pcols, d.ncol, d.pver, d.num_msg, d.klaunch, d.pmid, d.temperature, d.sp_humidity, d.tpert, d.pblt, d.parcel_temp, d.parcel_vtemp, d.parcel_qsat, d.lcl_pmid, d.lcl_temperature, d.lcl_klev);
+  zm_common_finalize_f();
+  d.transition<ekat::TransposeDirection::f2c>();
+}
+
+void compute_dilute_parcel(ComputeDiluteParcelData& d)
+{
+  zm_common_init();
+
+  // create device views and copy
+  std::vector<view1dr_d> vec1dr_in(3);
+  ekat::host_to_device({d.lcl_pmid, d.lcl_temperature, d.tpert}, d.pcols, vec1dr_in);
+
+  std::vector<view2dr_d> vec2dr_in(6);
+  ekat::host_to_device({d.parcel_qsat, d.parcel_temp, d.parcel_vtemp, d.pmid, d.sp_humidity, d.temperature}, d.pcols, d.pver, vec2dr_in);
+
+  std::vector<view1di_d> vec1di_in(3);
+  ekat::host_to_device({d.klaunch, d.lcl_klev, d.pblt}, d.pcols, vec1di_in);
+
+  view1dr_d
+    lcl_pmid_d(vec1dr_in[0]),
+    lcl_temperature_d(vec1dr_in[1]),
+    tpert_d(vec1dr_in[2]);
+
+  view2dr_d
+    parcel_qsat_d(vec2dr_in[0]),
+    parcel_temp_d(vec2dr_in[1]),
+    parcel_vtemp_d(vec2dr_in[2]),
+    pmid_d(vec2dr_in[3]),
+    sp_humidity_d(vec2dr_in[4]),
+    temperature_d(vec2dr_in[5]);
+
+  view1di_d
+    klaunch_d(vec1di_in[0]),
+    lcl_klev_d(vec1di_in[1]),
+    pblt_d(vec1di_in[2]);
+
+  const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.pcols, d.pver);
+
+  // unpack data scalars because we do not want the lambda to capture d
+  const Int num_msg = d.num_msg;
+  const Int pver = d.pver;
+
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    const Int i = team.league_rank();
+
+    // Get single-column subviews of all inputs, shouldn't need any i-indexing
+    // after this.
+    const auto pmid_c = ekat::subview(pmid_d, i);
+    const auto temperature_c = ekat::subview(temperature_d, i);
+    const auto sp_humidity_c = ekat::subview(sp_humidity_d, i);
+    const auto parcel_temp_c = ekat::subview(parcel_temp_d, i);
+    const auto parcel_vtemp_c = ekat::subview(parcel_vtemp_d, i);
+    const auto parcel_qsat_c = ekat::subview(parcel_qsat_d, i);
+
+    ZMF::compute_dilute_parcel(
+      team,
+      pver,
+      num_msg,
+      klaunch_d(i),
+      pmid_c,
+      temperature_c,
+      sp_humidity_c,
+      tpert_d(i),
+      pblt_d(i),
+      parcel_temp_c,
+      parcel_vtemp_c,
+      parcel_qsat_c,
+      lcl_pmid_d(i),
+      lcl_temperature_d(i),
+      lcl_klev_d(i));
+  });
+
+  // Now get arrays
+  std::vector<view1dr_d> vec1dr_out = {lcl_pmid_d, lcl_temperature_d};
+  ekat::device_to_host({d.lcl_pmid, d.lcl_temperature}, d.pcols, vec1dr_out);
+
+  std::vector<view2dr_d> vec2dr_out = {parcel_qsat_d, parcel_temp_d, parcel_vtemp_d};
+  ekat::device_to_host({d.parcel_qsat, d.parcel_temp, d.parcel_vtemp}, d.pcols, d.pver, vec2dr_out);
+
+  std::vector<view1di_d> vec1di_out = {lcl_klev_d};
+  ekat::device_to_host({d.lcl_klev}, d.pcols, vec1di_out);
 
   zm_finalize_cxx();
 }

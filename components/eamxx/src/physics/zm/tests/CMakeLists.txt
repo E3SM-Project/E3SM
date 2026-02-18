@@ -10,6 +10,7 @@ set(ZM_TESTS_SRCS
   zm_zm_transport_momentum_tests.cpp
   zm_compute_dilute_cape_tests.cpp
   zm_find_mse_max_tests.cpp
+  zm_compute_dilute_parcel_tests.cpp
 ) # ZM_TESTS_SRCS
 
 # All tests should understand the same baseline args

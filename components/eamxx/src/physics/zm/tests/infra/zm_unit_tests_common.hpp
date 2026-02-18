@@ -73,6 +73,7 @@ struct UnitWrap {
     struct TestZmTransportMomentum;
     struct TestComputeDiluteCape;
     struct TestFindMseMax;
+    struct TestComputeDiluteParcel;
   }; // UnitWrap
 };
 
