@@ -310,7 +310,7 @@ void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real et
       Kokkos::fence();
 
       // exchange is done on ttens, dptens, vtens, etc.
-      assert (m_be->is_registration_completed());
+      assert (m_be_sgs->is_registration_completed());
       GPTLstart("sgsturb-bexch");
       m_be_sgs->exchange();
       GPTLstop("sgsturb-bexch");
