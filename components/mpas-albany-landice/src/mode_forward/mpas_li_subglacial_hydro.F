@@ -1167,9 +1167,8 @@ module li_subglacial_hydro
                effectiveConducEdge(iEdge) = 0.0_RKIND
             else
                effectiveConducEdge(iEdge) = kin_visc_water / (2.0_RKIND * flow_transition_param) * &
-                  (waterThicknessEdge(iEdge) / bedRoughMax)** &
-                  ((-2.0_RKIND + 2.0_RKIND * alpha) / (3.0_RKIND - 2.0_RKIND * alpha)) &
-                  * &
+                  bedRoughMax ** (3.0_RKIND - 2.0_RKIND * alpha) / &
+                  waterThicknessEdge(iEdge) ** (4.0_RKIND - 2.0_RKIND * alpha) * &
                   (-1.0_RKIND + sqrt(1.0_RKIND + 4.0_RKIND * (flow_transition_param / kin_visc_water) * &
                   (waterThicknessEdge(iEdge) / bedRoughMax)**(3.0_RKIND - 2.0_RKIND * alpha) * &
                   conduc_coeff_wtd(iEdge) * waterThicknessEdge(iEdge)**3 * gradMagPhiBaseEdge(iEdge))) / &
