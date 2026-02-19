@@ -432,6 +432,10 @@ in the run directory.
 - `frequency_units`: units of the output frequency.
       - Valid options are `nsteps` (the number of atmosphere time steps),
       `nsecs`, `nmins`, `nhours`, `ndays`, `nmonths`, `nyears`.
+- `transpose`: optional boolean flag to enable transposed output (default: `false`).
+      - When set to `true`, all field dimensions will be reversed in the output file.
+      - For example, a field with layout `(ncol, nlev)` will be written as `(nlev, ncol)`.
+      - This can be useful for post-processing tools that expect a specific dimension ordering.
 
 ## Diagnostic output
 

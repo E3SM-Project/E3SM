@@ -54,6 +54,41 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
   )
 
+  ## Test transposed output (all averaging types)
+  CreateUnitTest(io_transpose "io_transpose.cpp"
+    LIBS eamxx_io LABELS io
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+    FIXTURES_SETUP_INDIVIDUAL io_transpose_output
+  )
+
+  # For each averaging type, compare transposed vs non-transposed output
+  # to verify they contain the same data (just with dimensions reversed)
+  set(AVG_TYPES INSTANT MAX MIN AVERAGE)
+  foreach (AVG_TYPE IN LISTS AVG_TYPES)
+    foreach (MPI_RANKS RANGE 1 ${SCREAM_TEST_MAX_RANKS})
+      set(prefix_N "io_transpose_N")
+      set(prefix_T "io_transpose_T")
+      set(suffix "${AVG_TYPE}.nsteps_x3.np${MPI_RANKS}.2023-02-17-00000.nc")
+      set(file_N "${prefix_N}.${suffix}")
+      set(file_T "${prefix_T}.${suffix}")
+      
+      # Add test to compare files using compare-nc-files script
+      # The script should handle transposed dimensions automatically with -a flag
+      add_test(
+        NAME io_transpose_check_${AVG_TYPE}_np${MPI_RANKS}
+        COMMAND ${SCREAM_BASE_DIR}/scripts/compare-nc-files
+          -s ${file_N} -t ${file_T}
+          -c "f_0=f_0" "f_1=f_1" "f_2=f_2"
+          -a
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+      )
+      set_tests_properties(io_transpose_check_${AVG_TYPE}_np${MPI_RANKS} PROPERTIES
+        LABELS "io"
+        FIXTURES_REQUIRED io_transpose_output_np${MPI_RANKS}_omp1
+      )
+    endforeach()
+  endforeach()
+
   # Test output on SE grid
   CreateUnitTest(io_se_grid "io_se_grid.cpp"
     LIBS eamxx_io LABELS io

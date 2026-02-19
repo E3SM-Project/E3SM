@@ -11,6 +11,7 @@
 
 #include <set>
 #include <numeric>
+#include <functional>
 
 namespace scream {
 namespace scorpio {
@@ -794,12 +795,18 @@ void set_var_decomp (PIOVar& var,
       " - var dims: " + ekat::join(var.dims,get_entity_name,",") + "\n"
       " - decomp dims: " + ekat::join(decomposed_dims,",") + "\n");
 
-  EKAT_REQUIRE_MSG (last_decomp==(num_decomp-1),
-      "Error! We cannot decompose this variable, as the decomp dims are not the slowest striding ones.\n"
-      " - filename: " + filename + "\n"
-      " - varname : " + var.name + "\n"
-      " - var dims: " + ekat::join(var.dims,get_entity_name,",") + "\n"
-      " - decomp dims: " + ekat::join(decomposed_dims,",") + "\n");
+  // Check if this is transposed output - if so, skip the stride check
+  // For transposed output, decomposed dimensions may not be the slowest striding
+  bool is_transposed = has_attribute(filename, var.name, "transposed_output");
+  
+  if (!is_transposed) {
+    EKAT_REQUIRE_MSG (last_decomp==(num_decomp-1),
+        "Error! We cannot decompose this variable, as the decomp dims are not the slowest striding ones.\n"
+        " - filename: " + filename + "\n"
+        " - varname : " + var.name + "\n"
+        " - var dims: " + ekat::join(var.dims,get_entity_name,",") + "\n"
+        " - decomp dims: " + ekat::join(decomposed_dims,",") + "\n");
+  }
 
   // Create decomp name: dtype-dim1<len1>_dim2<len2>_..._dimk<lenN>
   auto get_dimtag = [](const auto dim) {
@@ -861,11 +868,57 @@ void set_var_decomp (PIOVar& var,
     const auto& dim_offsets = decomp->dim_decomp->offsets;
     int decomp_loc_len = dim_offsets.size();
     decomp->offsets.resize (non_decomp_dim_prod*decomp_loc_len);
-    for (int idof=0; idof<decomp_loc_len; ++idof) {
-      auto dof_offset = dim_offsets[idof];
-      auto beg = decomp->offsets.begin()+ idof*non_decomp_dim_prod;
-      auto end = beg + non_decomp_dim_prod;
-      std::iota (beg,end,non_decomp_dim_prod*dof_offset);
+    
+    // For transposed output, decomposed dimension may not be slowest-striding
+    // We need to calculate offsets based on actual dimension order
+    if (is_transposed) {
+      // Calculate stride for each dimension based on file layout order
+      std::vector<PIO_Offset> strides(ndims);
+      strides[ndims-1] = 1;  // Fastest dimension has stride 1
+      for (int idim = ndims-2; idim >= 0; --idim) {
+        strides[idim] = strides[idim+1] * gdimlen[idim+1];
+      }
+      
+      // Find which dimension is decomposed
+      int decomp_dim_idx = -1;
+      for (int idim = 0; idim < ndims; ++idim) {
+        if (var.dims[idim]->decomp_rank > 0) {
+          decomp_dim_idx = idim;
+          break;
+        }
+      }
+      EKAT_REQUIRE_MSG(decomp_dim_idx >= 0, "Error! Could not find decomposed dimension");
+      
+      // Generate offsets in memory order (C-order, last dimension fastest)
+      // The offsets array maps local buffer positions to global file positions
+      int idx = 0;
+      std::function<void(int, PIO_Offset, int)> generate = [&](int dim, PIO_Offset offset, int dof_idx) {
+        if (dim == ndims) {
+          decomp->offsets[idx++] = offset;
+          return;
+        }
+        
+        if (dim == decomp_dim_idx) {
+          // For decomposed dimension, iterate through local DOFs
+          for (int i = 0; i < decomp_loc_len; ++i) {
+            generate(dim + 1, offset + dim_offsets[i] * strides[dim], i);
+          }
+        } else {
+          // For non-decomposed dimension, iterate through all indices
+          for (int i = 0; i < var.dims[dim]->length; ++i) {
+            generate(dim + 1, offset + i * strides[dim], dof_idx);
+          }
+        }
+      };
+      generate(0, 0, 0);
+    } else {
+      // Original non-transposed logic
+      for (int idof=0; idof<decomp_loc_len; ++idof) {
+        auto dof_offset = dim_offsets[idof];
+        auto beg = decomp->offsets.begin()+ idof*non_decomp_dim_prod;
+        auto end = beg + non_decomp_dim_prod;
+        std::iota (beg,end,non_decomp_dim_prod*dof_offset);
+      }
     }
 
     // Create PIO decomp

@@ -37,6 +37,13 @@ transfer_extra_data(const scream::Field &src, scream::Field &tgt)
   }
 };
 
+// Helper function to get the name of a transposed helper field from a layout and data type
+std::string
+get_transposed_helper_name(const scream::FieldLayout& layout, const scream::DataType data_type)
+{
+  return "transposed_" + layout.transpose().to_string() + "_" + e2str(data_type);
+}
+
 // Note: this is also declared in eamxx_scorpio_interface.cpp. Move it somewhere else?
 template <typename T>
 std::string
@@ -99,6 +106,11 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
   // This works great for regular CIME cases, where the param list name is
   // the name of the yaml file where the options are read from.
   m_stream_name = params.name();
+
+  // Is this output set to be transposed?
+  if (params.isParameter("transpose")) {
+    m_transpose = params.get<bool>("transpose");
+  }
 
   auto gm = field_mgr->get_grids_manager();
 
@@ -346,7 +358,27 @@ void AtmosphereOutput::init()
 
     // Store the field layout, so that calls to setup_output_file are easier
     const auto& layout = fid.get_layout();
-    m_vars_dims[fname] = get_var_dimnames(layout);
+    m_vars_dims[fname] = get_var_dimnames(m_transpose ? layout.transpose() : layout);
+
+    // Initialize a helper_field for each unique layout.  This can be used for operations
+    // such as writing transposed output.
+    if (m_transpose) {
+      const auto helper_layout = layout.transpose();
+      const auto data_type = fid.data_type();
+      // Note: helper name is based on the ORIGINAL layout (not transposed) and data type, so that
+      // when we look up the helper during write, we use the field's original layout and data type
+      const std::string helper_name = get_transposed_helper_name(layout, data_type);
+      if (m_helper_fields.find(helper_name) == m_helper_fields.end()) {
+        // We can add a new helper field for this layout and data type
+        // Use Units::invalid() since this helper is reused for fields with same layout but different units
+        using namespace ekat::units;
+        FieldIdentifier fid_helper(helper_name,helper_layout,Units::invalid(),fid.get_grid_name(),data_type);
+        Field helper(fid_helper);
+        helper.get_header().get_alloc_properties().request_allocation();
+        helper.allocate_view();
+        m_helper_fields[helper_name] = helper;
+      }
+    }
 
     // Now check that all the dims of this field are already set to be registered.
     const auto& tags = layout.tags();
@@ -514,7 +546,18 @@ run (const std::string& filename,
         count.sync_to_host();
 
         auto func_start = std::chrono::steady_clock::now();
-        scorpio::write_var(filename,count.name(),count.get_internal_view_data<int,Host>());
+        if (m_transpose) {
+          const auto& id = count.get_header().get_identifier();
+          const auto& layout = id.get_layout();
+          const auto data_type = id.data_type();
+          const std::string helper_name = get_transposed_helper_name(layout, data_type);
+          auto& temp = m_helper_fields.at(helper_name);
+          transpose(count,temp);
+          temp.sync_to_host();
+          scorpio::write_var(filename,count.name(),temp.get_internal_view_data<int,Host>());
+        } else {
+          scorpio::write_var(filename,count.name(),count.get_internal_view_data<int,Host>());
+        }
         auto func_finish = std::chrono::steady_clock::now();
         auto duration_loc = std::chrono::duration_cast<std::chrono::milliseconds>(func_finish - func_start);
         duration_write += duration_loc.count();
@@ -587,12 +630,22 @@ run (const std::string& filename,
         }
       }
 
-      // Bring data to host
-      f_out.sync_to_host();
-
       // Write to file
       auto func_start = std::chrono::steady_clock::now();
-      scorpio::write_var(filename,field_name,f_out.get_internal_view_data<Real,Host>());
+      if (m_transpose) {
+        const auto& id = f_out.get_header().get_identifier();
+        const auto& layout = id.get_layout();
+        const auto data_type = id.data_type();
+        const std::string helper_name = get_transposed_helper_name(layout, data_type);
+        auto& temp = m_helper_fields.at(helper_name);
+        transpose(f_out,temp);
+        temp.sync_to_host();
+        scorpio::write_var(filename,field_name,temp.get_internal_view_data<Real,Host>());
+      } else {
+        // Bring data to host (only needed for non-transposed output)
+        f_out.sync_to_host();
+        scorpio::write_var(filename,field_name,f_out.get_internal_view_data<Real,Host>());
+      }
       auto func_finish = std::chrono::steady_clock::now();
       auto duration_loc = std::chrono::duration_cast<std::chrono::milliseconds>(func_finish - func_start);
       duration_write += duration_loc.count();
@@ -670,7 +723,7 @@ void AtmosphereOutput::set_avg_cnt_tracking(const std::string& name, const Field
   }
 
   // We have not created this avg count field yet.
-  m_vars_dims[avg_cnt_name] = get_var_dimnames(layout);
+  m_vars_dims[avg_cnt_name] = get_var_dimnames(m_transpose ? layout.transpose() : layout);
 
   auto nondim = ekat::units::Units::nondimensional();
   FieldIdentifier count_id (avg_cnt_name,layout,nondim,m_io_grid->name(),DataType::IntType);
@@ -839,6 +892,11 @@ register_variables(const std::string& filename,
       // If output contains the column dimension add a "coordinates" attribute.
       if (fid.get_layout().has_tag(COL)) {
         scorpio::set_attribute(filename, field_name, "coordinates", "lat lon");
+      }
+
+      // If this is transposed output, mark the variable
+      if (m_transpose) {
+        scorpio::set_attribute(filename, field_name, "transposed_output", "true");
       }
     }
   }
