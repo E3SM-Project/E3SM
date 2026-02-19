@@ -40,6 +40,7 @@ module elm_driver
   !
   use BareGroundFluxesMod    , only : BareGroundFluxes
   use CanopyFluxesMod        , only : CanopyFluxes
+  use CanopyFluxesMod        , only : PatchLoadBalance
   use SedYieldMod            , only : SoilErosion
   use SoilFluxesMod          , only : SoilFluxes ! (formerly Biogeophysics2Mod)
   use UrbanFluxesMod         , only : UrbanFluxes
@@ -1315,6 +1316,11 @@ contains
                call alm_fates%dynamics_driv( bounds_clump, top_as,          &
                     top_af, atm2lnd_vars, soilstate_vars, &
                     canopystate_vars, frictionvel_vars, soil_water_retention_curve)
+
+               call PatchLoadBalance(bounds_clump, filter(nc)%num_nolakeurbanp, &
+                    filter(nc)%nolakeurbanp,canopystate_vars, &
+                    alm_fates%fates(nc)%bc_out,alm_fates%f2hmap(nc)%hsites)
+               
            end if
        end if
 

@@ -1712,12 +1712,12 @@ contains
              z0m(p)    = this%fates(nc)%bc_out(s)%z0m_pa(ifp)
              displa(p) = this%fates(nc)%bc_out(s)%displa_pa(ifp)
              dleaf_patch(p) = this%fates(nc)%bc_out(s)%dleaf_pa(ifp)
-             
-             
-
 
           end do
 
+          
+
+          
           if(abs(areacheck - 1.0_r8).gt.1.e-9_r8)then
             write(iulog,*) 'area wrong in interface',areacheck - 1.0_r8
             call endrun(msg=errMsg(sourcefile, __LINE__))

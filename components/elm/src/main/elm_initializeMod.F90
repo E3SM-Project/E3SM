@@ -36,7 +36,7 @@ module elm_initializeMod
   use ColumnDataType         , only : col_es
   use VegetationType         , only : veg_pp
   use VegetationDataType     , only : veg_es
-
+  use CanopyFluxesMod        , only : PatchLoadBalance
   use elm_instMod
   use WaterBudgetMod         , only : WaterBudget_Reset
   use CNPBudgetMod           , only : CNPBudget_Reset
@@ -1063,6 +1063,16 @@ contains
        !$OMP END PARALLEL DO
     end if
 
+    ! This load balancing is used in canopy fluxes
+    !$OMP PARALLEL DO PRIVATE (nc, bounds_clump) if(nclumps>1)
+    do nc = 1,nclumps
+       call get_clump_bounds(nc, bounds_clump)
+       call PatchLoadBalance(bounds_clump, filter(nc)%num_nolakeurbanp, &
+            filter(nc)%nolakeurbanp,canopystate_vars, &
+            alm_fates%fates(nc)%bc_out,alm_fates%f2hmap(nc)%hsites)
+    end do
+    !$OMP END PARALLEL DO
+       
     !------------------------------------------------------------
     ! Deallocate wt_nat_patch
     !------------------------------------------------------------

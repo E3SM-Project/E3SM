@@ -42,6 +42,8 @@ module CanopyFluxesMod
   use ColumnDataType        , only : col_es, col_ef, col_ws
   use VegetationType        , only : veg_pp
   use VegetationDataType    , only : veg_es, veg_ef, veg_ws, veg_wf
+  use decompMod             , only : fates_pproc
+  use FatesInterfaceTypesMod, only : bc_out_type
   use omp_lib
   !!! using elm_instMod messes with the compilation order
   use elm_instMod           , only : alm_fates, soil_water_retention_curve
@@ -56,6 +58,7 @@ module CanopyFluxesMod
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: CanopyFluxes
+  public :: PatchLoadBalance
 
 contains
 
@@ -798,7 +801,19 @@ contains
       !! end do
       !! omp end parallel do
       !! end_time = omp_get_wtime()
-    
+
+      !canopystate_vars%patch_par(ct)%npatch = 0
+      !canopystate_vars%patch_par(ct)%task_list(:) = 0
+
+      !omp parallel private(tid, i, task_count) num_threads(M)
+      !thread_loop: do m=1,mt
+
+      !   call PatchCanopyFluxes(canopystate_vars%patch_par(m)%npatch, &
+      !                          canopystate_vars%patch_par(m)%npatch
+      !)
+      !end do thread_loop
+         
+      
       !$OMP PARALLEL DO PRIVATE (f,p,c,t,g,itstoma,itlef,converge_stoma, &
       !$OMP                      converge_tveg,cf,w,csoilb,ri,csoilcn,  &
       !$OMP                      ricsoilc,wta,wtl,wtshi,wtg0,wtga,rppdry, &
@@ -1450,5 +1465,115 @@ contains
     end if if_fates ! end of if use_fates
 
   end subroutine WrapPhotosynthesis
+
+  ! =========================================================================================================
+
+  pure subroutine sort_tasks(n, load_size, indices)
+
+    integer, intent(in) :: n
+    real(8), intent(inout) :: load_size(n)
+    integer, intent(inout) :: indices(n)
+    
+    integer :: i, j, temp_idx
+    real(8) :: temp_load
+    
+    ! Insertion sort is extremely efficient for N < 30
+    do i = 2, n
+       temp_load = load_size(i)
+       temp_idx = indices(i)
+       j = i - 1
+       
+       ! Move elements that are smaller than temp_load to one position ahead
+       ! to achieve descending order
+       do while (j >= 1)
+          if (load_size(j) < temp_load) then
+             load_size(j+1) = load_size(j)
+             indices(j+1) = indices(j)
+             j = j - 1
+          else
+             exit
+          end if
+       end do
+       
+       load_size(j+1) = temp_load
+       indices(j+1) = temp_idx
+    end do
+    
+  end subroutine sort_tasks
+
+  
+  subroutine PatchLoadBalance(bounds,  num_nolakeurbanp, filter_nolakeurbanp, canopystate_vars, fates_bc_out, fates_hsites)
+
+    type(bounds_type)         , intent(in)    :: bounds
+    integer                   , intent(in)    :: num_nolakeurbanp       ! number of column non-lake, non-urban points in pft filter
+    integer                   , intent(in)    :: filter_nolakeurbanp(:) ! patch filter for non-lake, non-urban points
+    type(canopystate_type)    , intent(inout) :: canopystate_vars
+    type(bc_out_type)         , intent(in)    :: fates_bc_out(:)
+    integer                   , intent(in)    :: fates_hsites(:)
+    
+    integer  :: filterp(bounds%endp-bounds%begp+1)
+    real(r8) :: load_size(bounds%endp-bounds%begp+1)
+    real(r8) :: task_load(0:bounds%endp-bounds%begp+1) ! this works because M <= N
+    integer  :: f,fn,ifp,c,p,s
+    integer  :: npt  ! number of patches per thread
+    integer  :: ct   ! Current thread
+    integer  :: ctask ! thread with lowest task load
+    real(r8), parameter :: bl_default = 1._r8  ! The load size for a big-leaf canopy
+                                               ! This is roughly how many leaf layers
+
+    ! If there is no patch-parallism
+    ! or there is no fates, then we have nothing to update here
+    
+    filterp(:)=0
+    fn = 0
+    do f = 1,num_nolakeurbanp
+       p = filter_nolakeurbanp(f)
+       c = veg_pp%column(p)
+       s = fates_hsites(c)
+       fn = fn + 1
+       filterp(fn) = p
+       ! This is a predictive filter, we don't load
+       ! balance every day, so we are using the
+       ! sno fraction from once a day to guess
+       ! the sno fraction over the time-steps.
+       ! The actual snow fraction will indeed be used
+       ! to filter out patches though
+       if (canopystate_vars%frac_veg_nosno_patch(p) == 0) then
+          load_size(fn) = 0.25*bl_default
+       else
+          if(veg_pp%is_fates(p))then
+             ifp = p - col_pp%pfti(c)
+             load_size(fn) = fates_bc_out(s)%load_size(ifp)
+          else
+             load_size(fn) = bl_default
+          end if
+       end if
+    end do
+    
+    do ct = 0,fates_pproc-1
+       canopystate_vars%patch_par(ct)%npatch = 0
+       canopystate_vars%patch_par(ct)%patch_list(:) = 0
+    end do
+
+    if(fates_pproc==1 .or. .not.use_fates)then
+       do f = 1,fn
+          canopystate_vars%patch_par(0)%patch_list(f) = filterp(f)
+       end do
+       canopystate_vars%patch_par(0)%npatch = fn
+    else
+       ! Sorts the load sizes and their indices in decending order
+       call sort_tasks(fn, load_size, filterp)
+       task_load(:) = 0._r8
+       do f = 1,fn
+          ct = min(fates_pproc-1,minloc(task_load,dim=1))
+          task_load(ct) = task_load(ct) + load_size(f)
+          canopystate_vars%patch_par(ct)%npatch = canopystate_vars%patch_par(ct)%npatch + 1
+          npt = canopystate_vars%patch_par(ct)%npatch
+          canopystate_vars%patch_par(ct)%patch_list(npt) = filterp(f)
+       end do
+    end if
+    
+  end subroutine PatchLoadBalance
+
   
 end module CanopyFluxesMod

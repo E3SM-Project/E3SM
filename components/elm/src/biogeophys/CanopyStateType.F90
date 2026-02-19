@@ -5,7 +5,7 @@ module CanopyStateType
   use shr_infnan_mod  , only : shr_infnan_isnan,nan => shr_infnan_nan, assignment(=)
   use shr_log_mod     , only : errMsg => shr_log_errMsg
   use abortutils      , only : endrun
-  use decompMod       , only : bounds_type
+  use decompMod       , only : bounds_type,fates_pproc
   use landunit_varcon , only : istsoil, istcrop
   use elm_varcon      , only : spval,ispval
   use elm_varpar      , only : nlevcan, nvegwcs
@@ -31,6 +31,13 @@ module CanopyStateType
   !------------------------------------------------------------------------------
   !$acc declare create(perchroot )
   !$acc declare create(perchroot_alt)
+
+  ! 
+  type :: PatchPar_type
+     integer :: npatch
+     integer,allocatable :: patch_list(:)
+  end type PatchPar_type
+  
   !
   ! !PUBLIC TYPES:
   type, public :: CanopyState_type
@@ -76,6 +83,9 @@ module CanopyStateType
                                                           ! for non-ED/FATES this is the same as pftcon%dleaf()
      real(r8),  pointer :: lbl_rsc_h2o_patch        (:)   ! laminar boundary layer resistance for water over dry leaf (s/m)
      real(r8) , pointer :: vegwp_patch              (:,:) ! patch vegetation water matric potential (mm)
+
+     type(patchpar_type), pointer :: patch_par(:)   ! Patch index data for patch-level parallism
+     
    contains
 
      procedure, public  :: Init
@@ -114,6 +124,7 @@ contains
     integer :: begp, endp
     integer :: begc, endc
     integer :: begg, endg
+    integer :: m,mt
 
     !------------------------------------------------------------------------
 
@@ -160,7 +171,13 @@ contains
     allocate(this%lbl_rsc_h2o_patch        (begp:endp))           ; this%lbl_rsc_h2o_patch        (:)   = spval
     allocate(this%vegwp_patch              (begp:endp,1:nvegwcs)) ; this%vegwp_patch              (:,:) = spval
 
-
+    allocate(this%patch_par(0:fates_pproc-1))
+    do m = 0,fates_pproc-1
+       allocate(this%patch_par(m)%patch_list(1:endp-begp+1))
+       this%patch_par(m)%patch_list(:) = -1
+       this%patch_par(m)%npatch = 0
+    end do
+    
   end subroutine InitAllocate
 
   !-----------------------------------------------------------------------
